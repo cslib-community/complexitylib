@@ -102,8 +102,6 @@ families and full-input native runtime.
 
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers.
-- **Chosen-ciphertext security** ([#1885]): multi-challenge CCA from the single-challenge
-  Cramer–Shoup theorem.
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
@@ -868,7 +866,6 @@ not planned, not as proved.
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#2468]: https://github.com/cslib-community/complexitylib/issues/2468
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
-[#1885]: https://github.com/cslib-community/complexitylib/pull/1885
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
 [#2062]: https://github.com/cslib-community/complexitylib/issues/2062
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063

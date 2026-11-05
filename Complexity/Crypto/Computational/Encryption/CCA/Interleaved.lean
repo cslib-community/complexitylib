@@ -127,7 +127,7 @@ queries and decryption queries in arbitrary order:
   Section 12.2.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.OracleComp
 
@@ -137,7 +137,7 @@ open Cslib.Probability
 `rem : ℕ`, forwarding external queries `q` while `0 < rem` (decrementing `rem` to `rem - 1`) and
 returning the fallback response `defaultReply q` without calling the external oracle once
 `rem = 0`. -/
-def limitQueriesHandler {Query : Type} {spec : OracleSpec Query}
+@[expose] def limitQueriesHandler {Query : Type} {spec : OracleSpec Query}
     (defaultReply : (q : Query) → spec q)
     (q : Query) :
     StateT ℕ (ProbOracleComp spec) (spec q) := fun rem =>
@@ -149,7 +149,7 @@ def limitQueriesHandler {Query : Type} {spec : OracleSpec Query}
 /-- Enforce a hard query cap `Q : ℕ` on the external oracle `spec` in a
 `ProbOracleComp spec` program, answering any external query after the first `Q` with
 `defaultReply`. -/
-def limitQueries {Query : Type} {spec : OracleSpec Query} {α : Type}
+@[expose] def limitQueries {Query : Type} {spec : OracleSpec Query} {α : Type}
     (defaultReply : (q : Query) → spec q)
     (Q : ℕ) (prog : ProbOracleComp spec α) :
     ProbOracleComp spec α :=
@@ -188,26 +188,26 @@ abbrev CCAResponse (Plaintext Ciphertext : Type) : Type :=
 
 /-- Represent a `CCAQuery Msg (List Bool)` as `Option (Msg × Msg) × List Bool`, mapping
 `.challenge m₀ m₁` to `(some (m₀, m₁), [])` and `.decrypt c` to `(none, c)`. -/
-def CCAQuery.toOptionPair {Msg : Type} :
+@[expose] def CCAQuery.toOptionPair {Msg : Type} :
     CCAQuery Msg (List Bool) → Option (Msg × Msg) × List Bool
   | .challenge m₀ m₁ => (some (m₀, m₁), [])
   | .decrypt c => (none, c)
 
 /-- Test whether a `CCAQuery` is an encryption / challenge query. -/
-def CCAQuery.isChallenge {Plaintext Ciphertext : Type} :
+@[expose] def CCAQuery.isChallenge {Plaintext Ciphertext : Type} :
     CCAQuery Plaintext Ciphertext → Bool
   | .challenge _ _ => true
   | .decrypt _ => false
 
 /-- Extract the challenge message pair `(m₀, m₁)` from `.challenge m₀ m₁`, or `(default, default)`
 on `.decrypt _`. -/
-def CCAQuery.challengePair {Plaintext Ciphertext : Type} [Inhabited Plaintext] :
+@[expose] def CCAQuery.challengePair {Plaintext Ciphertext : Type} [Inhabited Plaintext] :
     CCAQuery Plaintext Ciphertext → Plaintext × Plaintext
   | .challenge m₀ m₁ => (m₀, m₁)
   | .decrypt _ => (default, default)
 
 /-- Extract the ciphertext `c` from `.decrypt c`, or `[]` on `.challenge _ _`. -/
-def CCAQuery.decryptCiphertext {Plaintext : Type} :
+@[expose] def CCAQuery.decryptCiphertext {Plaintext : Type} :
     CCAQuery Plaintext (List Bool) → List Bool
   | .challenge _ _ => []
   | .decrypt c => c
@@ -238,7 +238,7 @@ def CCAQuery.decryptCiphertext {Plaintext : Type} :
 
 /-- Injective bit-string encoding of `CCAQuery Msg (List Bool)` via `CCAQuery.toOptionPair` and
 `encPair (encOption (encPair encMsg encMsg)) encBits`. -/
-def encCCAQuery {Msg : Type} (encMsg : Msg ↪ List Bool) :
+@[expose] def encCCAQuery {Msg : Type} (encMsg : Msg ↪ List Bool) :
     CCAQuery Msg (List Bool) ↪ List Bool where
   toFun q := encPair (encOption (encPair encMsg encMsg)) encBits q.toOptionPair
   inj' := by
@@ -260,7 +260,7 @@ def encCCAQuery {Msg : Type} (encMsg : Msg ↪ List Bool) :
 
 /-- Encode the payload of a `CCAResponse Out (List Bool)` as an optional bit word
 (`encOption encBits` on encryption responses and `encOption encOut` on decryption responses). -/
-def encodeCCAResponseWord {Out : Type} (encOut : Out ↪ List Bool) :
+@[expose] def encodeCCAResponseWord {Out : Type} (encOut : Out ↪ List Bool) :
     CCAResponse Out (List Bool) → List Bool
   | Sum.inl ctOpt => encOption encBits ctOpt
   | Sum.inr outOpt => encOption encOut outOpt
@@ -276,13 +276,12 @@ def encodeCCAResponseWord {Out : Type} (encOut : Out ↪ List Bool) :
     (outOpt : Option Out) :
     encodeCCAResponseWord encOut (Sum.inr outOpt) = encOption encOut outOpt := rfl
 
-/-- `CCAQuery.toOptionPair` is tidily computable in polynomial time (with identical bit
-encoding). -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_toOptionPair {Msg : Type} (encMsg : Msg ↪ List Bool) :
+private theorem computableTidilyInPolyTime_toOptionPair {Msg : Type} (encMsg : Msg ↪ List Bool) :
     ComputableTidilyInPolyTime (CCAQuery.toOptionPair (Msg := Msg))
       (encCCAQuery encMsg) (encPair (encOption (encPair encMsg encMsg)) encBits) :=
   .of_eq fun _ => rfl
+
+attribute [local fun_prop] computableTidilyInPolyTime_toOptionPair
 
 /-- `CCAQuery.toOptionPair` is computable in plain polynomial time. -/
 @[fun_prop]
@@ -291,14 +290,15 @@ theorem computableInPolyTime_toOptionPair {Msg : Type} (encMsg : Msg ↪ List Bo
       (encCCAQuery encMsg) (encPair (encOption (encPair encMsg encMsg)) encBits) :=
   .of_eq fun _ => rfl
 
-/-- Constructing `.challenge m₀ m₁` from `(m₀, m₁)` is tidily computable in polynomial time. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_ccaQuery_challenge {Msg : Type} (encMsg : Msg ↪ List Bool) :
+private theorem computableTidilyInPolyTime_ccaQuery_challenge {Msg : Type}
+    (encMsg : Msg ↪ List Bool) :
     ComputableTidilyInPolyTime
       (fun p : Msg × Msg => (CCAQuery.challenge p.1 p.2 : CCAQuery Msg (List Bool)))
       (encPair encMsg encMsg) (encCCAQuery encMsg) :=
   ((ComputableTidilyInPolyTime.optionSome (encPair encMsg encMsg)).prod
     (ComputableTidilyInPolyTime.const ([] : List Bool))).of_enc_eq fun _ => rfl
+
+attribute [local fun_prop] computableTidilyInPolyTime_ccaQuery_challenge
 
 /-- Constructing `.challenge m₀ m₁` from `(m₀, m₁)` is computable in plain polynomial time. -/
 @[fun_prop]
@@ -308,14 +308,15 @@ theorem computableInPolyTime_ccaQuery_challenge {Msg : Type} (encMsg : Msg ↪ L
       (encPair encMsg encMsg) (encCCAQuery encMsg) :=
   (computableTidilyInPolyTime_ccaQuery_challenge encMsg).computableInPolyTime
 
-/-- Constructing `.decrypt c` from `c : List Bool` is tidily computable in polynomial time. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_ccaQuery_decrypt {Msg : Type} (encMsg : Msg ↪ List Bool) :
+private theorem computableTidilyInPolyTime_ccaQuery_decrypt {Msg : Type}
+    (encMsg : Msg ↪ List Bool) :
     ComputableTidilyInPolyTime
       (CCAQuery.decrypt (Plaintext := Msg) (Ciphertext := List Bool))
       encBits (encCCAQuery encMsg) :=
   ((ComputableTidilyInPolyTime.const (none : Option (Msg × Msg))).prod
     ComputableTidilyInPolyTime.id').of_enc_eq fun _ => rfl
+
+attribute [local fun_prop] computableTidilyInPolyTime_ccaQuery_decrypt
 
 /-- Constructing `.decrypt c` from `c : List Bool` is computable in plain polynomial time. -/
 @[fun_prop]
@@ -325,9 +326,7 @@ theorem computableInPolyTime_ccaQuery_decrypt {Msg : Type} (encMsg : Msg ↪ Lis
       encBits (encCCAQuery encMsg) :=
   (computableTidilyInPolyTime_ccaQuery_decrypt encMsg).computableInPolyTime
 
-/-- `CCAQuery.isChallenge` is tidily computable in polynomial time. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_isChallenge {Msg : Type} (encMsg : Msg ↪ List Bool) :
+private theorem computableTidilyInPolyTime_isChallenge {Msg : Type} (encMsg : Msg ↪ List Bool) :
     ComputableTidilyInPolyTime (CCAQuery.isChallenge (Plaintext := Msg) (Ciphertext := List Bool))
       (encCCAQuery encMsg) encBool := by
   have h : ComputableTidilyInPolyTime
@@ -337,6 +336,8 @@ theorem computableTidilyInPolyTime_isChallenge {Msg : Type} (encMsg : Msg ↪ Li
   refine h.of_enc_eq fun q => ?_
   cases q <;> rfl
 
+attribute [local fun_prop] computableTidilyInPolyTime_isChallenge
+
 /-- `CCAQuery.isChallenge` is computable in plain polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_isChallenge {Msg : Type} (encMsg : Msg ↪ List Bool) :
@@ -344,9 +345,7 @@ theorem computableInPolyTime_isChallenge {Msg : Type} (encMsg : Msg ↪ List Boo
       (encCCAQuery encMsg) encBool :=
   (computableTidilyInPolyTime_isChallenge encMsg).computableInPolyTime
 
-/-- `CCAQuery.challengePair` is tidily computable in polynomial time when `[Inhabited Msg]`. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_challengePair {Msg : Type} [Inhabited Msg]
+private theorem computableTidilyInPolyTime_challengePair {Msg : Type} [Inhabited Msg]
     (encMsg : Msg ↪ List Bool) :
     ComputableTidilyInPolyTime
       (CCAQuery.challengePair (Plaintext := Msg) (Ciphertext := List Bool))
@@ -359,6 +358,8 @@ theorem computableTidilyInPolyTime_challengePair {Msg : Type} [Inhabited Msg]
   refine h.of_enc_eq fun q => ?_
   cases q <;> rfl
 
+attribute [local fun_prop] computableTidilyInPolyTime_challengePair
+
 /-- `CCAQuery.challengePair` is computable in plain polynomial time when `[Inhabited Msg]`. -/
 @[fun_prop]
 theorem computableInPolyTime_challengePair {Msg : Type} [Inhabited Msg]
@@ -368,9 +369,8 @@ theorem computableInPolyTime_challengePair {Msg : Type} [Inhabited Msg]
       (encCCAQuery encMsg) (encPair encMsg encMsg) :=
   (computableTidilyInPolyTime_challengePair encMsg).computableInPolyTime
 
-/-- `CCAQuery.decryptCiphertext` is tidily computable in polynomial time. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_decryptCiphertext {Msg : Type} (encMsg : Msg ↪ List Bool) :
+private theorem computableTidilyInPolyTime_decryptCiphertext {Msg : Type}
+    (encMsg : Msg ↪ List Bool) :
     ComputableTidilyInPolyTime (CCAQuery.decryptCiphertext (Plaintext := Msg))
       (encCCAQuery encMsg) encBits := by
   have h : ComputableTidilyInPolyTime
@@ -379,6 +379,8 @@ theorem computableTidilyInPolyTime_decryptCiphertext {Msg : Type} (encMsg : Msg 
     (computableTidilyInPolyTime_toOptionPair encMsg).snd'
   refine h.of_enc_eq fun q => ?_
   cases q <;> rfl
+
+attribute [local fun_prop] computableTidilyInPolyTime_decryptCiphertext
 
 /-- `CCAQuery.decryptCiphertext` is computable in plain polynomial time. -/
 @[fun_prop]
@@ -409,7 +411,7 @@ list `S : List (List Bool)` of challenge ciphertexts produced *so far*:
 * On `.decrypt c`: if `c ∈ S` (among challenge ciphertexts generated so far), reject with
   `Sum.inr none` and leave `S` unchanged; otherwise return `Sum.inr (decrypt n sk c)` with `S`
   unchanged. -/
-noncomputable def interleavedCcaOracle {Msg Out : Type}
+@[expose] noncomputable def interleavedCcaOracle {Msg Out : Type}
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
     (decrypt : ℕ → List Bool → List Bool → Option Out)
@@ -431,7 +433,7 @@ noncomputable def interleavedCcaOracle {Msg Out : Type}
 
 /-- Word-encoded response wrapper around `interleavedCcaOracle`, returning the bit-encoded reply
 `encodeCCAResponseWord encOut resp` alongside the updated challenge-ciphertext list `S'`. -/
-noncomputable def interleavedCcaWordOracle {Msg Out : Type}
+@[expose] noncomputable def interleavedCcaWordOracle {Msg Out : Type}
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -521,7 +523,7 @@ abbrev WordInterleavedCCA2Adversary : Type := InterleavedCCA2AdversaryOf (List B
 * `numRounds` is computable in polynomial time on the unary security parameter `n`.
 * `step` is uniformly strict oracle PPT on `(n, pk, state, lastReply)`.
 * `finish` is uniformly strict oracle PPT on `(n, pk, state, lastReply)`.
-* `state_length_le`: the adversary's saved state word `state'` output by `step n pk state lastReply`
+* `step_length_le`: the encoded `(query, nextState)` output of `step n pk state lastReply`
   is bounded by a polynomial in `(n, pk.length)` (ensuring that the state passed across polynomially
   many adaptive rounds remains polynomially bounded without telescope blowup). -/
 structure InterleavedCCA2AdversaryOf.IsPPT {Msg : Type} (encMsg : Msg ↪ List Bool)
@@ -555,7 +557,7 @@ abbrev WordInterleavedCCA2Adversary.IsPPT (adversary : WordInterleavedCCA2Advers
 /-- Per-stage query bound for an `InterleavedCCA2AdversaryOf Msg`: at security parameter `n`, the
 number of rounds is at most `qRounds n`, each `step` call makes at most `qStep n` inner decryption
 queries, and `finish` makes at most `qFinish n` inner decryption queries. -/
-def InterleavedCCA2AdversaryOf.IsQueryBounded {Msg : Type}
+@[expose] def InterleavedCCA2AdversaryOf.IsQueryBounded {Msg : Type}
     (adversary : InterleavedCCA2AdversaryOf Msg) (qRounds qStep qFinish : ℕ → ℕ) : Prop :=
   (∀ n, adversary.numRounds n ≤ qRounds n) ∧
   (∀ n pk state lastReply,
@@ -569,21 +571,31 @@ def InterleavedCCA2AdversaryOf.IsQueryBounded {Msg : Type}
 * `S : List (List Bool)` is the list of challenge ciphertexts generated so far. -/
 abbrev InterleavedLoopState : Type := List Bool × List Bool × List (List Bool)
 
+/-- The adversary's saved state word in an `InterleavedLoopState`. -/
+abbrev InterleavedLoopState.state (st : InterleavedLoopState) : List Bool := st.1
+
+/-- The encoded oracle response from the previous round in an `InterleavedLoopState`. -/
+abbrev InterleavedLoopState.lastReply (st : InterleavedLoopState) : List Bool := st.2.1
+
+/-- The list of forbidden challenge ciphertexts generated so far in an `InterleavedLoopState`. -/
+abbrev InterleavedLoopState.forbidden (st : InterleavedLoopState) : List (List Bool) := st.2.2
+
 /-- Standard bit-string encoding of `InterleavedLoopState`. -/
-def encInterleavedLoopState : InterleavedLoopState ↪ List Bool :=
+@[expose] def encInterleavedLoopState : InterleavedLoopState ↪ List Bool :=
   encPair encBits (encPair encBits (encList encBits))
 
 /-- Initial loop state `([], [], [])` before round `0`. -/
-def initInterleavedLoopState : InterleavedLoopState := ([], [], [])
+@[expose] def initInterleavedLoopState : InterleavedLoopState := ([], [], [])
 
 /-- One closed adaptive round of the interleaved CCA experiment at challenge bit `roundBit`:
-1. Run `adversary.step n pk st.1 st.2.1` against `cca2MultiPhase2Oracle encOut decrypt n sk st.2.2`
-   (which rejects any decryption query in the current forbidden challenge set `S = st.2.2`).
+1. Run `adversary.step n pk st.state st.lastReply` against
+   `cca2MultiPhase2Oracle encOut decrypt n sk st.forbidden` (which rejects any decryption query in
+   the current forbidden challenge set `S = st.forbidden`).
 2. Execute the returned combined query `q : CCAQuery Msg (List Bool)` against
-   `interleavedCcaWordOracle valid encOut encrypt decrypt n pk sk roundBit q st.2.2` to obtain
+   `interleavedCcaWordOracle valid encOut encrypt decrypt n pk sk roundBit q st.forbidden` to obtain
    the encoded response `reply` and updated forbidden challenge set `S'`.
 3. Return the updated loop state `(state', reply, S')`. -/
-noncomputable def interleavedRoundStep {Msg Out : Type}
+@[expose] noncomputable def interleavedRoundStep {Msg Out : Type}
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -591,21 +603,21 @@ noncomputable def interleavedRoundStep {Msg Out : Type}
     (adversary : InterleavedCCA2AdversaryOf Msg)
     (n : ℕ) (pk sk : List Bool) (roundBit : Bool)
     (st : InterleavedLoopState) : ProbComp InterleavedLoopState := do
-  let stepOut ← (OracleComp.interpret
+  let stepRun ← (OracleComp.interpret
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-      (cca2MultiPhase2Oracle encOut decrypt n sk st.2.2))
-    (adversary.step n pk st.1 st.2.1)).run ()
-  let q := stepOut.1.1
-  let state' := stepOut.1.2
-  let orcOut ← interleavedCcaWordOracle valid encOut encrypt decrypt n pk sk roundBit q st.2.2
-  return (state', orcOut.1, orcOut.2)
+      (cca2MultiPhase2Oracle encOut decrypt n sk st.forbidden))
+    (adversary.step n pk st.state st.lastReply)).run ()
+  let stepOut := stepRun.1
+  let orcOut ← interleavedCcaWordOracle valid encOut encrypt decrypt n pk sk roundBit
+    stepOut.1 st.forbidden
+  return (stepOut.2, orcOut.1, orcOut.2)
 
 /-- The fully adaptive interleaved-query multi-challenge CCA experiment
 ([BonehShoup2023], Section 12.1, Attack Game 12.1 and Definition 12.1, printed pp. 467–468):
 sample `(pk, sk) ← keyGen n`, iterate `interleavedRoundStep` for `adversary.numRounds n` rounds
 from `([], [], [])`, and run `adversary.finish` against `cca2MultiPhase2Oracle` with the final
 forbidden challenge-ciphertext set `S`. -/
-noncomputable def interleavedCca2Exp {Msg Out : Type}
+@[expose] noncomputable def interleavedCca2Exp {Msg Out : Type}
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
@@ -618,8 +630,8 @@ noncomputable def interleavedCca2Exp {Msg Out : Type}
     initInterleavedLoopState
   let guessOut ← (OracleComp.interpret
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-      (cca2MultiPhase2Oracle encOut decrypt n keys.2 finalSt.2.2))
-    (adversary.finish n keys.1 finalSt.1 finalSt.2.1)).run ()
+      (cca2MultiPhase2Oracle encOut decrypt n keys.2 finalSt.forbidden))
+    (adversary.finish n keys.1 finalSt.state finalSt.lastReply)).run ()
   return guessOut.1
 
 /-- Alias for `interleavedCca2Exp` matching the `cca2GameOn` / `cca2MultiGameOn` naming
@@ -647,7 +659,7 @@ noncomputable abbrev interleavedCca2Game {Msg Out : Type}
 ([BonehShoup2023], Section 12.1, Attack Game 12.1 and Definition 12.1, printed pp. 467–468;
 [KatzLindell2020], Section 12.2) with respect to challenge-pair admissibility predicate `valid`,
 message encoding `encMsg`, and decryption output encoding `encOut`. -/
-def INDCCA2InterleavedOn {Msg Out : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
+@[expose] def INDCCA2InterleavedOn {Msg Out : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encMsg : Msg ↪ List Bool) (encOut : Out ↪ List Bool)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -712,18 +724,19 @@ Interleaved CCA2 -/
 /-- Embed a single-challenge `CCA2AdversaryOf Msg` as a 1-round `InterleavedCCA2AdversaryOf Msg`
 ([BonehShoup2023], Section 12.1, Definition 12.2, printed p. 468):
 * In Round 0 (`S = []`), `step` runs `adversary.choose n pk` (which makes Phase 1 decryption queries
-  against `cca2MultiPhase2Oracle ... [] = cca2Phase1Oracle`) and submits `.challenge m₀ m₁` along
-  with the saved state `choice.2`.
+  against `cca2MultiPhase2Oracle ... [] = cca2Phase1Oracle`) and submits
+  `.challenge (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice)` along with the saved state
+  `ChoiceOut.state choice`.
 * In `finish` (`S = [ct]` when `valid n pk m₀ m₁ = true`), if `lastReply` begins with `true`
   (`lastReply = true :: ct`), `finish` runs `adversary.guess n state lastReply.tail` against
   `cca2MultiPhase2Oracle ... [ct] = cca2Phase2Oracle ... ct`; otherwise (`lastReply = []`), `finish`
   returns `false`. -/
-def CCA2AdversaryOf.toInterleaved {Msg : Type}
+@[expose] def CCA2AdversaryOf.toInterleaved {Msg : Type}
     (adversary : CCA2AdversaryOf Msg) : InterleavedCCA2AdversaryOf Msg where
   numRounds _ := 1
   step n pk _ _ := do
     let choice ← adversary.choose n pk
-    return (.challenge choice.1.1 choice.1.2, choice.2)
+    return (.challenge (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice), ChoiceOut.state choice)
   finish n _ state lastReply :=
     if lastReply.headD false then
       adversary.guess n state lastReply.tail
@@ -807,6 +820,8 @@ theorem eval_interleavedCca2GameOn_toInterleaved {Msg Out : Type}
   simp only [interleavedCca2GameOn, interleavedCca2Exp, cca2GameOn, CCA2AdversaryOf.toInterleaved,
     OracleComp.iterate_succ, OracleComp.iterate_zero, initInterleavedLoopState,
     interleavedRoundStep, interleavedCcaWordOracle, interleavedCcaOracle,
+    InterleavedLoopState.state, InterleavedLoopState.lastReply, InterleavedLoopState.forbidden,
+    ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.state,
     cca2MultiPhase2Oracle_nil, OracleComp.interpret_bind, StateT.run_bind,
     OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.bind_bind, PMF.pure_bind]
@@ -857,13 +872,13 @@ theorem INDCCA2InterleavedOn.indcca2MultiOn {Msg Out : Type} [Inhabited Msg]
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (h : INDCCA2InterleavedOn valid encMsg encOut keyGen encrypt decrypt) :
     INDCCA2MultiOn valid encMsg encOut keyGen encrypt decrypt :=
@@ -878,13 +893,13 @@ theorem IsInterleavedCCA2Secure.toIsMultiCCA2Secure {Msg Out : Type} [Inhabited 
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (h : IsInterleavedCCA2Secure valid encMsg encOut keyGen encrypt decrypt) :
     IsMultiCCA2Secure valid encMsg encOut keyGen encrypt decrypt :=
@@ -894,18 +909,25 @@ theorem IsInterleavedCCA2Secure.toIsMultiCCA2Secure {Msg Out : Type} [Inhabited 
 
 /-- Saved state `(active, pk, remRounds, stateA, S)` passed from Phase 1 (`choose`) to Phase 2
 (`guess`) of `interleavedToSingleAt`. -/
-abbrev InterleavedSingleState : Type :=
+private abbrev InterleavedSingleState : Type :=
   Bool × List Bool × ℕ × List Bool × List (List Bool)
 
+private abbrev InterleavedSingleState.active (s : InterleavedSingleState) : Bool := s.1
+private abbrev InterleavedSingleState.pk (s : InterleavedSingleState) : List Bool := s.2.1
+private abbrev InterleavedSingleState.remRounds (s : InterleavedSingleState) : ℕ := s.2.2.1
+private abbrev InterleavedSingleState.state (s : InterleavedSingleState) : List Bool := s.2.2.2.1
+private abbrev InterleavedSingleState.forbidden (s : InterleavedSingleState) :
+    List (List Bool) := s.2.2.2.2
+
 /-- Standard bit-string encoding of `InterleavedSingleState`. -/
-def encInterleavedSingleState : InterleavedSingleState ↪ List Bool :=
+private def encInterleavedSingleState : InterleavedSingleState ↪ List Bool :=
   encPair encBool
     (encPair encBits
       (encPair encUnary
         (encPair encBits (encList encBits))))
 
 /-- Total polynomial-time decoder for `encInterleavedSingleState`. -/
-def interleavedSingleStateDecoder : Decoder encInterleavedSingleState :=
+private def interleavedSingleStateDecoder : Decoder encInterleavedSingleState :=
   Decoder.pair Decoder.bool
     (Decoder.pair Decoder.bits
       (Decoder.pair Decoder.unary
@@ -913,10 +935,10 @@ def interleavedSingleStateDecoder : Decoder encInterleavedSingleState :=
 
 /-- Inactive state returned when `split ≥ adversary.numRounds n` or round `split` does not submit an
 admissible challenge pair. -/
-def rejectInterleavedSingleState : List Bool :=
+private def rejectInterleavedSingleState : List Bool :=
   encInterleavedSingleState (false, [], 0, [], [])
 
-@[simp] theorem decode_rejectInterleavedSingleState :
+@[simp] private theorem decode_rejectInterleavedSingleState :
     interleavedSingleStateDecoder.decode rejectInterleavedSingleState =
       (false, [], 0, [], []) :=
   interleavedSingleStateDecoder.decode_enc (false, [], 0, [], [])
@@ -924,33 +946,33 @@ def rejectInterleavedSingleState : List Bool :=
 /-- Inner single-round program for `interleavedOpenRoundStep`, where external queries
 `List.take (decBound n q.decryptCiphertext) <$> ProbOracleComp.query ((), q.decryptCiphertext)`
 represent bounded-prefix queries to `cca2MultiPhase2Oracle` on the current forbidden ciphertext list
-`st.2.2`. -/
-noncomputable def interleavedInnerRound {Msg : Type} [Inhabited Msg]
+`st.forbidden`. -/
+private noncomputable def interleavedInnerRound {Msg : Type} [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
     (decBound : ℕ → List Bool → ℕ)
     (adversary : InterleavedCCA2AdversaryOf Msg)
     (roundBit : Bool) (n : ℕ) (pk : List Bool)
     (st : InterleavedLoopState) : WordOracleComp Unit InterleavedLoopState := do
-  let stepOut ← adversary.step n pk st.1 st.2.1
+  let stepOut ← adversary.step n pk st.state st.lastReply
   let q := stepOut.1
   let state' := stepOut.2
   if q.isChallenge then
     let pair := q.challengePair
     if valid n pk pair.1 pair.2 then do
       let ct ← ProbOracleComp.sample (encrypt n pk (if roundBit then pair.2 else pair.1))
-      return (state', true :: ct, ct :: st.2.2)
+      return (state', true :: ct, ct :: st.forbidden)
     else
-      return (state', [], st.2.2)
+      return (state', [], st.forbidden)
   else do
     let reply ←
       List.take (decBound n q.decryptCiphertext) <$>
         ProbOracleComp.query ((), q.decryptCiphertext)
-    return (state', reply, st.2.2)
+    return (state', reply, st.forbidden)
 
 /-- Open single-round step for the interleaved-to-single CCA reduction: run `interleavedInnerRound`
-through `multiPhase2FilterHandler (decBound n) st.2.2`. -/
-noncomputable def interleavedOpenRoundStep {Msg : Type} [Inhabited Msg]
+through `multiPhase2FilterHandler (decBound n) st.forbidden`. -/
+private noncomputable def interleavedOpenRoundStep {Msg : Type} [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
     (decBound : ℕ → List Bool → ℕ)
@@ -960,14 +982,14 @@ noncomputable def interleavedOpenRoundStep {Msg : Type} [Inhabited Msg]
   Prod.fst <$> (OracleComp.interpret
     (OracleComp.sumHandler
       (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
-      (multiPhase2FilterHandler (decBound n) st.2.2))
+      (multiPhase2FilterHandler (decBound n) st.forbidden))
     (interleavedInnerRound valid encrypt decBound adversary roundBit n pk st)).run ()
 
 /-- Hybrid interleaved CCA experiment at round index `split : ℕ` ([BonehShoup2023], Section 12.1,
 Theorem 12.1, printed p. 468): run the first `min split (adversary.numRounds n)` rounds with
 `roundBit = true`, the remaining `adversary.numRounds n - split` rounds with `roundBit = false`, and
 `adversary.finish` against the resulting forbidden challenge set `S`. -/
-noncomputable def interleavedHybridGameOn {Msg Out : Type}
+@[expose] noncomputable def interleavedHybridGameOn {Msg Out : Type}
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
@@ -983,8 +1005,8 @@ noncomputable def interleavedHybridGameOn {Msg Out : Type}
     stMid
   let guessOut ← (OracleComp.interpret
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-      (cca2MultiPhase2Oracle encOut decrypt n keys.2 finalSt.2.2))
-    (adversary.finish n keys.1 finalSt.1 finalSt.2.1)).run ()
+      (cca2MultiPhase2Oracle encOut decrypt n keys.2 finalSt.forbidden))
+    (adversary.finish n keys.1 finalSt.state finalSt.lastReply)).run ()
   return guessOut.1
 
 /-- At `split = 0`, `interleavedHybridGameOn` coincides with `interleavedCca2GameOn ... false`. -/
@@ -1042,34 +1064,34 @@ noncomputable def interleavedToSingleAt {Msg : Type} [Inhabited Msg]
       let stepOut ← Prod.fst <$> (OracleComp.interpret
         (OracleComp.sumHandler
           (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
-          (multiPhase2FilterHandler (decBound n) stMid.2.2))
-        (adversary.step n pk stMid.1 stMid.2.1)).run ()
+          (multiPhase2FilterHandler (decBound n) stMid.forbidden))
+        (adversary.step n pk stMid.state stMid.lastReply)).run ()
       let q := stepOut.1
       let state' := stepOut.2
       let pair := q.challengePair
       if q.isChallenge && valid n pk pair.1 pair.2 then
         return (pair,
           encInterleavedSingleState
-            (true, pk, adversary.numRounds n - 1 - split, state', stMid.2.2))
+            (true, pk, adversary.numRounds n - 1 - split, state', stMid.forbidden))
       else
         return ((default, default), rejectInterleavedSingleState)
     else
       return ((default, default), rejectInterleavedSingleState)
   guess n state ct :=
     let decoded := interleavedSingleStateDecoder.decode state
-    if decoded.1 then do
-      let pk := decoded.2.1
-      let remRounds := decoded.2.2.1
-      let state' := decoded.2.2.2.1
-      let S := decoded.2.2.2.2
+    if decoded.active then do
+      let pk := decoded.pk
+      let remRounds := decoded.remRounds
+      let state' := decoded.state
+      let S := decoded.forbidden
       let finalSt ← OracleComp.iterate remRounds
         (interleavedOpenRoundStep valid encrypt decBound adversary false n pk)
         (state', true :: ct, ct :: S)
       let guessOut ← (OracleComp.interpret
         (OracleComp.sumHandler
           (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
-          (multiPhase2FilterHandler (decBound n) finalSt.2.2))
-        (adversary.finish n pk finalSt.1 finalSt.2.1)).run ()
+          (multiPhase2FilterHandler (decBound n) finalSt.forbidden))
+        (adversary.finish n pk finalSt.state finalSt.lastReply)).run ()
       return guessOut.1
     else
       pure false
@@ -1192,18 +1214,18 @@ private theorem mem_support_of_mem_support_run_interpret {α : Type}
   exact ProbOracleComp.mem_support_of_mem _ hmem
 
 /-- `interleavedInnerRound` is uniformly strict oracle PPT on `((n, pk), st)`. -/
-theorem isOraclePPTOn_interleavedInnerRound {Msg : Type} [Inhabited Msg]
+private theorem isOraclePPTOn_interleavedInnerRound {Msg : Type} [Inhabited Msg]
     {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decBound : ℕ → List Bool → ℕ}
     {adversary : InterleavedCCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
-    (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
+    (hdecBound : ComputableInPolyTime (fun ⟨n, req⟩ => decBound n req)
       (encPair encUnary encBits) encUnary)
     (hA : adversary.IsPPT encMsg) (roundBit : Bool) :
     IsOraclePPTOn (Operation := Unit)
@@ -1364,18 +1386,18 @@ theorem isOraclePPTOn_interleavedInnerRound {Msg : Type} [Inhabited Msg]
       hdecBranch)
 
 /-- `interleavedOpenRoundStep` is uniformly strict oracle PPT on `((n, pk), st)`. -/
-theorem isOraclePPTOn_interleavedOpenRoundStep {Msg : Type} [Inhabited Msg]
+private theorem isOraclePPTOn_interleavedOpenRoundStep {Msg : Type} [Inhabited Msg]
     {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decBound : ℕ → List Bool → ℕ}
     {adversary : InterleavedCCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
-    (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
+    (hdecBound : ComputableInPolyTime (fun ⟨n, req⟩ => decBound n req)
       (encPair encUnary encBits) encUnary)
     (hA : adversary.IsPPT encMsg) (roundBit : Bool) :
     IsOraclePPTOn (Operation := Unit)
@@ -1486,12 +1508,13 @@ private theorem length_interleavedOpenRoundStep_le_aux {Msg : Type} [Inhabited M
         (ProbOracleComp.support_sample _).subset hctSample
       obtain rfl := OracleComp.eq_of_mem_supportWith_pure hret
       have hctLen : ct.length ≤ ctMax := hlenEnc _ hmLen ct hctMem
-      simp only [encInterleavedLoopState, length_encPair, encBits_apply, List.length_cons,
-        encList_cons, length_frame, List.length_append]
+      simp only [encInterleavedLoopState, InterleavedLoopState.forbidden, length_encPair,
+        encBits_apply, List.length_cons, encList_cons, length_frame, List.length_append]
       omega
     · simp only [hv, Bool.false_eq_true, ↓reduceIte] at hbranch
       obtain rfl := OracleComp.eq_of_mem_supportWith_pure hbranch
-      simp only [encInterleavedLoopState, length_encPair, encBits_apply, List.length_nil]
+      simp only [encInterleavedLoopState, InterleavedLoopState.forbidden, length_encPair,
+        encBits_apply, List.length_nil]
       omega
   | decrypt c =>
     rw [hqCase] at hbranch hqLen
@@ -1506,7 +1529,8 @@ private theorem length_interleavedOpenRoundStep_le_aux {Msg : Type} [Inhabited M
       omega
     have hdecLen : (List.take (decBound n c) rawReply).length ≤ decMax :=
       (List.length_take_le _ _).trans (hlenDec c hcLen)
-    simp only [encInterleavedLoopState, length_encPair, encBits_apply]
+    simp only [encInterleavedLoopState, InterleavedLoopState.forbidden, length_encPair,
+      encBits_apply]
     omega
 
 /-- Single-step encoded state growth bound for `interleavedOpenRoundStep` in terms of polynomial
@@ -1578,11 +1602,11 @@ private theorem isOraclePPTOn_interleavedOpenRoundStep_loop {Msg : Type} [Inhabi
     {decBound : ℕ → List Bool → ℕ}
     {adversary : InterleavedCCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
-    (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
+    (hdecBound : ComputableInPolyTime (fun ⟨n, req⟩ => decBound n req)
       (encPair encUnary encBits) encUnary)
     (hA : adversary.IsPPT encMsg) (roundBit : Bool) :
     IsOraclePPTOn (Operation := Unit)
@@ -1598,18 +1622,18 @@ private theorem isOraclePPTOn_interleavedOpenRoundStep_loop {Msg : Type} [Inhabi
 
 /-- Iterating `interleavedOpenRoundStep` `q.1` times from `q.2.2` is uniformly strict oracle PPT in
 `q = (count, (n, pk), initSt)`. -/
-theorem isOraclePPTOn_iterate_interleavedOpenRoundStep {Msg : Type} [Inhabited Msg]
+private theorem isOraclePPTOn_iterate_interleavedOpenRoundStep {Msg : Type} [Inhabited Msg]
     {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decBound : ℕ → List Bool → ℕ}
     {adversary : InterleavedCCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
-    (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
+    (hdecBound : ComputableInPolyTime (fun ⟨n, req⟩ => decBound n req)
       (encPair encUnary encBits) encUnary)
     (hA : adversary.IsPPT encMsg) (roundBit : Bool) :
     IsOraclePPTOn (Operation := Unit)
@@ -1636,18 +1660,18 @@ theorem isOraclePPTOn_iterate_interleavedOpenRoundStep {Msg : Type} [Inhabited M
 
 /-- Phase 1 (`choose`) of `interleavedToSingleAt` is uniformly strict oracle PPT in
 `((n, pk), split)`. -/
-theorem isOraclePPTOn_interleavedToSingleAt_choose {Msg : Type} [Inhabited Msg]
+private theorem isOraclePPTOn_interleavedToSingleAt_choose {Msg : Type} [Inhabited Msg]
     {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decBound : ℕ → List Bool → ℕ}
     {adversary : InterleavedCCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
-    (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
+    (hdecBound : ComputableInPolyTime (fun ⟨n, req⟩ => decBound n req)
       (encPair encUnary encBits) encUnary)
     (hA : adversary.IsPPT encMsg) :
     IsOraclePPTOn (Operation := Unit)
@@ -1823,18 +1847,18 @@ theorem isOraclePPTOn_interleavedToSingleAt_choose {Msg : Type} [Inhabited Msg]
 
 /-- Phase 2 (`guess`) of `interleavedToSingleAt` is uniformly strict oracle PPT in
 `(n, state, ct)`. -/
-theorem isOraclePPTOn_interleavedToSingleAt_guess {Msg : Type} [Inhabited Msg]
+private theorem isOraclePPTOn_interleavedToSingleAt_guess {Msg : Type} [Inhabited Msg]
     {encMsg : Msg ↪ List Bool}
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
     {decBound : ℕ → List Bool → ℕ}
     {adversary : InterleavedCCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
-    (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
+    (hdecBound : ComputableInPolyTime (fun ⟨n, req⟩ => decBound n req)
       (encPair encUnary encBits) encUnary)
     (hA : adversary.IsPPT encMsg) (split : ℕ) :
     IsOraclePPTOn (Operation := Unit)
@@ -1965,11 +1989,11 @@ theorem isPPT_interleavedToSingleAt {Msg : Type} [Inhabited Msg]
     {decBound : ℕ → List Bool → ℕ}
     {adversary : InterleavedCCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
-    (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
+    (hdecBound : ComputableInPolyTime (fun ⟨n, req⟩ => decBound n req)
       (encPair encUnary encBits) encUnary)
     (hA : adversary.IsPPT encMsg) (split : ℕ) :
     (interleavedToSingleAt valid encrypt decBound adversary split).IsPPT encMsg where
@@ -1989,11 +2013,11 @@ theorem isPPT_interleavedToSingle {Msg : Type} [Inhabited Msg]
     {decBound : ℕ → List Bool → ℕ} {Q : ℕ → ℕ}
     {adversary : InterleavedCCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
-    (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
+    (hdecBound : ComputableInPolyTime (fun ⟨n, req⟩ => decBound n req)
       (encPair encUnary encBits) encUnary)
     (hQ : ComputableInPolyTime Q encUnary encUnary)
     (hA : adversary.IsPPT encMsg) :
@@ -2010,7 +2034,7 @@ theorem isPPT_interleavedToSingle {Msg : Type} [Inhabited Msg]
 /-- Interpreting `multiPhase2FilterHandler` against `cca2Phase1Oracle` has the exact same output
 distribution as running directly against `cca2MultiPhase2Oracle` on `cts`, whenever `decBound`
 upper-bounds every encoded decryption output length. -/
-theorem eval_run_multiPhase2FilterHandler_phase1 {Out α : Type}
+private theorem eval_run_multiPhase2FilterHandler_phase1 {Out α : Type}
     (encOut : Out ↪ List Bool)
     (decrypt : ℕ → List Bool → List Bool → Option Out)
     (decBound : List Bool → ℕ)
@@ -2066,71 +2090,9 @@ theorem eval_run_multiPhase2FilterHandler_phase1 {Out α : Type}
   have hid2 : (fun x : α × Unit => (x.1, ())) = id := rfl
   simpa only [PMF.map_comp, Function.comp_def, hid1, hid2, PMF.map_id] using hfst
 
-/-- Interpreting `multiPhase2FilterHandler` against `cca2Phase2Oracle` on `ct ∈ cts` has the exact
-same output distribution as running directly against `cca2MultiPhase2Oracle` on `cts`, whenever
-`decBound` upper-bounds every encoded decryption output length. -/
-theorem eval_run_multiPhase2FilterHandler_phase2 {Out α : Type}
-    (encOut : Out ↪ List Bool)
-    (decrypt : ℕ → List Bool → List Bool → Option Out)
-    (decBound : List Bool → ℕ)
-    (n : ℕ) (sk ct : List Bool) (cts : List (List Bool))
-    (hct : ct ∈ cts)
-    (hdecBound : ∀ req, (encOption encOut (decrypt n sk req)).length ≤ decBound req)
-    (prog : WordOracleComp Unit α) :
-    ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (cca2Phase2Oracle encOut decrypt n sk ct))
-      (Prod.fst <$> (OracleComp.interpret
-        (OracleComp.sumHandler
-          (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
-          (multiPhase2FilterHandler decBound cts))
-        prog).run ())).run ()) =
-    ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (cca2MultiPhase2Oracle encOut decrypt n sk cts))
-      prog).run ()) := by
-  rw [OracleComp.interpret_map, StateT.run_map, ProbComp.eval_map,
-    ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  have hsim := ProbOracleComp.run_interpret_map_state
-    (oracle := fun q s => ProbComp.eval (cca2MultiPhase2Oracle encOut decrypt n sk cts q s))
-    (oracle' := fun q (state : Unit × Unit) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-          (fun q s => ProbComp.eval (cca2Phase2Oracle encOut decrypt n sk ct q s)))
-        ((multiPhase2FilterHandler decBound cts q).run state.1)).run state.2).map
-          (fun result => (result.1.1, result.1.2, result.2)))
-    (represent := fun _ : Unit => ((), ()))
-    (step := by
-      intro ⟨⟨⟩, req⟩ ⟨⟩
-      change (ProbComp.eval (cca2MultiPhase2Oracle encOut decrypt n sk cts ((), req) ())).map
-          (fun x => (x.1, (), ())) =
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-            (fun q s => ProbComp.eval (cca2Phase2Oracle encOut decrypt n sk ct q s)))
-          (multiPhase2FilterHandler decBound cts ((), req) ())).run ()).map
-          (fun result => (result.1.1, result.1.2, result.2))
-      by_cases hmem : req ∈ cts
-      · simp [cca2MultiPhase2Oracle, multiPhase2FilterHandler, hmem,
-          OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure]
-      · have hne : (req == ct) = false :=
-          beq_eq_false_iff_ne.mpr fun heq => hmem (heq ▸ hct)
-        unfold cca2MultiPhase2Oracle multiPhase2FilterHandler
-        simp only [hmem, decide_false, Bool.false_eq_true, ↓reduceIte, Functor.map_map,
-          OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
-          cca2Phase2Oracle, hne, _root_.PMF.monad_map_eq_map,
-          ProbComp.eval_pure, PMF.map_comp, PMF.pure_map, Function.comp_def]
-        dsimp only [StateT.run]
-        simp only [PMF.pure_map, List.take_of_length_le (hdecBound req)])
-    prog ()
-  have hfst := congrArg (PMF.map fun x => (x.1, ())) hsim.symm
-  have hid1 : (fun x : α × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
-  have hid2 : (fun x : α × Unit => (x.1, ())) = id := rfl
-  simpa only [PMF.map_comp, Function.comp_def, hid1, hid2, PMF.map_id] using hfst
-
 /-- Interpreting `interleavedInnerRound` against `cca2MultiPhase2Oracle` has the same distribution
 as `interleavedRoundStep`. -/
-theorem eval_interpret_interleavedInnerRound {Msg Out : Type} [Inhabited Msg]
+private theorem eval_interpret_interleavedInnerRound {Msg Out : Type} [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -2174,7 +2136,7 @@ theorem eval_interpret_interleavedInnerRound {Msg Out : Type} [Inhabited Msg]
 
 /-- Interpreting `interleavedOpenRoundStep` against `cca2Phase1Oracle` has the same distribution as
 `interleavedRoundStep`. -/
-theorem eval_interpret_interleavedOpenRoundStep_phase1 {Msg Out : Type} [Inhabited Msg]
+private theorem eval_interpret_interleavedOpenRoundStep_phase1 {Msg Out : Type} [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -2197,7 +2159,7 @@ theorem eval_interpret_interleavedOpenRoundStep_phase1 {Msg Out : Type} [Inhabit
 
 /-- Interpreting `interleavedOpenRoundStep` against `cca2Phase2Oracle` on `ct ∈ st.2.2` has the
 same distribution as `interleavedRoundStep`. -/
-theorem eval_interpret_interleavedOpenRoundStep_phase2 {Msg Out : Type} [Inhabited Msg]
+private theorem eval_interpret_interleavedOpenRoundStep_phase2 {Msg Out : Type} [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -2215,14 +2177,14 @@ theorem eval_interpret_interleavedOpenRoundStep_phase2 {Msg Out : Type} [Inhabit
       (interleavedRoundStep valid encOut encrypt decrypt adversary n pk sk roundBit st)).map
       (fun st' => (st', ())) := by
   unfold interleavedOpenRoundStep
-  rw [eval_run_multiPhase2FilterHandler_phase2 encOut decrypt (decBound n) n sk ct st.2.2
+  rw [eval_run_multiPhase2FilterHandler encOut decrypt (decBound n) n sk ct st.2.2
       hct hdecBound,
     eval_interpret_interleavedInnerRound valid encOut encrypt decrypt decBound adversary
       roundBit n pk sk st hdecBound]
 
 /-- Every supported transition of `interleavedRoundStep` preserves membership in the forbidden
 challenge-ciphertext list `S`. -/
-theorem mem_S_of_mem_support_interleavedRoundStep {Msg Out : Type}
+private theorem mem_S_of_mem_support_interleavedRoundStep {Msg Out : Type}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {encOut : Out ↪ List Bool}
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
@@ -2263,7 +2225,7 @@ theorem mem_S_of_mem_support_interleavedRoundStep {Msg Out : Type}
 
 /-- Every supported multi-step transition of `OracleComp.iterate k (interleavedRoundStep ...)`
 preserves membership in `S`. -/
-theorem mem_S_of_mem_support_iterate_interleavedRoundStep {Msg Out : Type}
+private theorem mem_S_of_mem_support_iterate_interleavedRoundStep {Msg Out : Type}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {encOut : Out ↪ List Bool}
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
@@ -2287,7 +2249,8 @@ theorem mem_S_of_mem_support_iterate_interleavedRoundStep {Msg Out : Type}
 
 /-- Iterating `interleavedOpenRoundStep` `k` times under `cca2Phase1Oracle` has the same
 distribution as iterating `interleavedRoundStep` `k` times. -/
-theorem eval_interpret_iterate_interleavedOpenRoundStep_phase1 {Msg Out : Type} [Inhabited Msg]
+private theorem eval_interpret_iterate_interleavedOpenRoundStep_phase1 {Msg Out : Type}
+    [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -2319,7 +2282,8 @@ theorem eval_interpret_iterate_interleavedOpenRoundStep_phase1 {Msg Out : Type} 
 
 /-- Iterating `interleavedOpenRoundStep` `k` times under `cca2Phase2Oracle` on `ct ∈ st.2.2` has the
 same distribution as iterating `interleavedRoundStep` `k` times. -/
-theorem eval_interpret_iterate_interleavedOpenRoundStep_phase2 {Msg Out : Type} [Inhabited Msg]
+private theorem eval_interpret_iterate_interleavedOpenRoundStep_phase2 {Msg Out : Type}
+    [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -2350,19 +2314,9 @@ theorem eval_interpret_iterate_interleavedOpenRoundStep_phase2 {Msg Out : Type} 
     intro st' hst'
     exact ih st' (mem_S_of_mem_support_interleavedRoundStep hst' hct)
 
-private theorem bind_apply_add_eq_of_support {α β : Type*} {p : PMF α}
-    {f₁ f₂ g₁ g₂ : α → PMF β} {b : β}
-    (h : ∀ a ∈ p.support, f₁ a b + g₂ a b = f₂ a b + g₁ a b) :
-    p.bind f₁ b + p.bind g₂ b = p.bind f₂ b + p.bind g₁ b := by
-  simp only [PMF.bind_apply, ← tsum_add]
-  refine tsum_congr fun a => ?_
-  by_cases ha : a ∈ p.support
-  · rw [← mul_add, ← mul_add, h a ha]
-  · simp [(PMF.apply_eq_zero_iff p a).mpr ha]
-
 /-- Continuation of `interleavedHybridGameOn` after round `split` has emitted `stepOut` from state
 `stMid`, parameterized by the challenge bit `roundBit` used in round `split`. -/
-noncomputable def interleavedHybridAfterStep {Msg Out : Type}
+private noncomputable def interleavedHybridAfterStep {Msg Out : Type}
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -2372,14 +2326,15 @@ noncomputable def interleavedHybridAfterStep {Msg Out : Type}
     (stMid : InterleavedLoopState)
     (stepOut : CCAQuery Msg (List Bool) × List Bool) : ProbComp Bool := do
   let replyOut ←
-    interleavedCcaWordOracle valid encOut encrypt decrypt n pk sk roundBit stepOut.1 stMid.2.2
+    interleavedCcaWordOracle valid encOut encrypt decrypt n pk sk roundBit
+      stepOut.1 stMid.forbidden
   let finalSt ← OracleComp.iterate (adversary.numRounds n - 1 - split)
     (interleavedRoundStep valid encOut encrypt decrypt adversary n pk sk false)
     (stepOut.2, replyOut.1, replyOut.2)
   let guessOut ← (OracleComp.interpret
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-      (cca2MultiPhase2Oracle encOut decrypt n sk finalSt.2.2))
-    (adversary.finish n pk finalSt.1 finalSt.2.1)).run ()
+      (cca2MultiPhase2Oracle encOut decrypt n sk finalSt.forbidden))
+    (adversary.finish n pk finalSt.state finalSt.lastReply)).run ()
   return guessOut.1
 
 private theorem interleavedHybridAfterStep_eq_of_not_chalValid {Msg Out : Type} [Inhabited Msg]
@@ -2440,7 +2395,7 @@ private theorem eval_interleavedToSingleAt_guess_active {Msg Out : Type} [Inhabi
   intro finalSt hfinalSt
   have hctFinal : ct ∈ finalSt.2.2 :=
     mem_S_of_mem_support_iterate_interleavedRoundStep hfinalSt (List.mem_cons_self ..)
-  have hfin := eval_run_multiPhase2FilterHandler_phase2 encOut decrypt (decBound n) n sk ct
+  have hfin := eval_run_multiPhase2FilterHandler encOut decrypt (decBound n) n sk ct
     finalSt.2.2 hctFinal hdecBound (adversary.finish n pk finalSt.1 finalSt.2.1)
   have hmap := congrArg (fun p : PMF (Bool × Unit) => p.bind (fun x => PMF.pure x.1)) hfin
   simpa only [OracleComp.interpret_map, StateT.run_map, ProbComp.eval_map, PMF.bind_map,
@@ -2450,7 +2405,7 @@ private theorem eval_interleavedToSingleAt_guess_active {Msg Out : Type} [Inhabi
 evaluates the first `split` rounds via `interleavedRoundStep ... true`, runs round `split`'s
 `adversary.step`, and either continues as `interleavedHybridAfterStep ... bit` (when round `split`
 emits an admissible `.challenge` query) or outputs `false`. -/
-theorem eval_cca2GameOn_interleavedToSingleAt_of_lt {Msg Out : Type} [Inhabited Msg]
+private theorem eval_cca2GameOn_interleavedToSingleAt_of_lt {Msg Out : Type} [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
@@ -2549,7 +2504,7 @@ theorem eval_cca2GameOn_interleavedToSingleAt_of_lt {Msg Out : Type} [Inhabited 
 
 /-- When `adversary.numRounds n ≤ split`, `interleavedToSingleAt ... split` always outputs `false`
 in `cca2GameOn`. -/
-theorem eval_cca2GameOn_interleavedToSingleAt_of_le {Msg Out : Type} [Inhabited Msg]
+private theorem eval_cca2GameOn_interleavedToSingleAt_of_le {Msg Out : Type} [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
@@ -2603,7 +2558,7 @@ theorem eval_cca2GameOn_interleavedToSingleAt_of_le {Msg Out : Type} [Inhabited 
 
 /-- Decomposition of `interleavedHybridGameOn ... (if roundBit then split + 1 else split)` at round
 `split < adversary.numRounds n` through `interleavedHybridAfterStep`. -/
-theorem eval_interleavedHybridGameOn_split_of_lt {Msg Out : Type}
+private theorem eval_interleavedHybridGameOn_split_of_lt {Msg Out : Type}
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
@@ -2867,13 +2822,13 @@ theorem INDCCA2On.indcca2InterleavedOn {Msg Out : Type} [Inhabited Msg]
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (h : INDCCA2On valid encMsg encOut keyGen encrypt decrypt) :
     INDCCA2InterleavedOn valid encMsg encOut keyGen encrypt decrypt := by
@@ -2916,13 +2871,13 @@ theorem IsCCA2Secure.toIsInterleavedCCA2Secure {Msg Out : Type} [Inhabited Msg]
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (h : IsCCA2Secure valid encMsg encOut keyGen encrypt decrypt) :
     IsInterleavedCCA2Secure valid encMsg encOut keyGen encrypt decrypt :=
@@ -2938,13 +2893,13 @@ theorem indcca2InterleavedOn_iff_indcca2On {Msg Out : Type} [Inhabited Msg]
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut)) :
     INDCCA2InterleavedOn valid encMsg encOut keyGen encrypt decrypt ↔
       INDCCA2On valid encMsg encOut keyGen encrypt decrypt :=
@@ -2961,13 +2916,13 @@ theorem indcca2InterleavedOn_iff_indcca2MultiOn {Msg Out : Type} [Inhabited Msg]
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut)) :
     INDCCA2InterleavedOn valid encMsg encOut keyGen encrypt decrypt ↔
       INDCCA2MultiOn valid encMsg encOut keyGen encrypt decrypt :=
@@ -2983,9 +2938,9 @@ theorem INDCCA2Of.indcca2InterleavedOf {Msg Out : Type} [Inhabited Msg]
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (h : INDCCA2Of encMsg encOut keyGen encrypt decrypt) :
     INDCCA2InterleavedOf encMsg encOut keyGen encrypt decrypt :=
@@ -3000,9 +2955,9 @@ theorem INDCCA2.indcca2Interleaved
     {decrypt : ℕ → List Bool → List Bool → Option Bool}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encBool))
     (h : INDCCA2 keyGen encrypt decrypt) :
     INDCCA2Interleaved keyGen encrypt decrypt :=
@@ -3016,9 +2971,9 @@ theorem WordINDCCA2.wordINDCCA2Interleaved
     {decrypt : ℕ → List Bool → List Bool → Option (List Bool)}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, m⟩ => encrypt n pk m))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encBits))
     (h : WordINDCCA2 keyGen encrypt decrypt) :
     WordINDCCA2Interleaved keyGen encrypt decrypt := by
