@@ -119,3 +119,47 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [goldreich04]: ../sources.md#goldreich04
+
+## One-shot tetrahedral random oblivious transfer
+
+Import [Tetrahedral.lean](../../Complexity/Crypto/Multiparty/Tetrahedral.lean) for
+Beaver's STOC 2027 submission 1234, Theorem 4.1 (PDF p. 3). `shuffle` enumerates
+all 24 permutations exactly once; `aliceTable` and `bobTable` are Figures 2–3.
+Alice's ordered two-card hand and Bob's third card come from one uniform shuffle.
+`correctness` proves that the selected bit is received, and `uniform_output`
+gives each sender-bits/selection triple exactly three preimages, hence probability
+$1/8$. `alice_privacy` and `bob_privacy` condition on complete views, including the
+local hand, public announcement and outputs. Their count identities make the
+selection or unselected bit exactly fair within every view fiber; zero-probability
+views have zero counts on both sides.
+
+The [checked client](../../ComplexityTests/PaperEndpointsBatchB.lean) reproduces
+Figure 4 and a pair of Bob-indistinguishable shuffles with opposite hidden bits.
+It also checks an obstruction to Section 5's reverse privacy assertion: given
+Bob's card 0, the event that Alice has ordered hand (1,3) has probability $1/6$;
+message X has probability $1/3$; their joint probability is $1/6$, not $1/18$.
+Thus the reverse public announcement leaks hand information beyond the dealt
+card. The forward random-OT theorem is separate. No reverse simulation,
+optimality, chosen-input realization, composability or machine-time bound is
+provided by this module.
+
+## Exact signed correlation of Add/XNOR chains
+
+Import [AddXNOR.lean](../../Complexity/Cryptanalysis/AddXNOR.lean) for Wang,
+Lv, Shen and Zhang's submission 733, Theorem 4 (PDF p. 16).
+`step` uses Lean's actual full-width `BitVec` modular addition or bitwise XNOR.
+The sampler `word` is bijective from a high-part index and a two-bit index to
+all words of width $h+2$ (`word_bijective`); uniform independent indices therefore
+give a uniform word. `averageFrom` samples a fresh operand and fair operator at
+each step and tracks the affine bit-1 approximation in parallel. It averages
+$+1$ for agreement and $-1$ for disagreement, without taking absolute values.
+`word_low` and `step_low` connect full-width sampling and operations to their
+low two bits before the proof derives the recurrence.
+
+`averageCorrelation_eq h k` gives $(k+2)/2^{k+1}$ for $k$ operators and $k+1$
+operands. `averageCorrelation_source N m` uses the paper's $N,m\ge2$ parameters,
+with $k=N-1$ and $h=m-2$ (word width $m-2+2=m$), yielding $(N+1)/2^N$.
+The [client](../../ComplexityTests/PaperEndpointsBatchB.lean) checks full-width
+operations, a direct two-operand average and a longer-chain theorem application.
+These are uniform-ensemble signed expectations; they do not establish an absolute
+correlation bound, a planted-instance statistic, NP-hardness or a search bound.

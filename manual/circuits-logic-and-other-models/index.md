@@ -63,3 +63,6 @@ exports from the semantic judgments that require review.
 
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
+
+[Finite additive fair division](fair-division.md) explains the four-agent maximin-share
+instance, its exact partition semantics and the $20/21$ impossibility endpoint.
