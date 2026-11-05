@@ -17,6 +17,14 @@ public import Complexity.Crypto.Game.CloseTo.UntilBad
 This is the read-to-program hop for the actual all-attempt box signer. Programming retains
 aborted entries and the effects of later attempts after the first success. The matrix is uniform,
 and histories are sampled before each fresh mask without conditioning on collision survival.
+
+## Main results
+
+* `closeTo_lyubashevskySign_program`: the actual all-attempt signature and complete cache laws
+  differ by at most the sum of unconditional average-key commitment collision bounds.
+
+This is an original finite-attempt adaptation of the read-to-program hop, not an efficient
+secret-free simulation or a full chosen-message security reduction.
 -/
 
 public section
@@ -135,11 +143,53 @@ theorem closeTo_lyubashevskySign_program {Ω M : Type} [DecidableEq M]
   classical
   induction K generalizing Ω Q with
   | zero =>
-    simp only [iid, fiatShamirAbortSign, run_interpret_pure, StateT.run_pure,
+    simp only [iid, fiatShamirAbortSign, run_interpret_pure,
       PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.pure_bind, Finset.range_zero,
       Finset.sum_empty]
     exact CloseTo.refl _
   | succ K ih =>
-    trace_state
+    -- Retain the programmed first attempt as public history, without conditioning on its hit.
+    let History := Ω × (((Fin n → ZMod q) × Option (Fin m → ℤ)) ×
+      List ((M × (Fin n → ZMod q)) × BitString k))
+    let history : Matrix (Fin n) (Fin m) (ZMod q) → PMF History := fun A => do
+      let h ← H A
+      let coin ← (lyubashevsky n m k q γ β).commit (S h) (A, T A h)
+      let c ← PMF.uniformOfFintype (BitString k)
+      return (h, ((coin.1, (lyubashevsky n m k q γ β).respond (S h) (A, T A h) coin.2 c),
+        ((msg h, coin.1), c) :: cache h))
+    have hlength : ∀ A v, v ∈ (history A).support → v.2.2.length ≤ Q + 1 := by
+      intro A v hv
+      simp only [history, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+        PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hv
+      obtain ⟨h, hh, coin, _, c, _, rfl⟩ := hv
+      exact Nat.succ_le_succ (hcache A h hh)
+    let combine := fun (A : Matrix (Fin n) (Fin m) (ZMod q)) (v : History)
+        (later : Option ((Fin n → ZMod q) × (Fin m → ℤ)) ×
+          List ((M × (Fin n → ZMod q)) × BitString k)) =>
+      (A, v.1, ((v.2.1.2.map fun z => (v.2.1.1, z)).orElse (fun _ => later.1), later.2))
+    have htail := (ih (Q + 1) history (fun v => S v.1) (fun A v => T A v.1)
+      (fun v => msg v.1) (fun v => v.2.2) hlength).map
+      (fun out => combine out.1 out.2.1 out.2.2)
+    -- Use the same real continuation for the first hop, then the induction hypothesis.
+    have hhead := (closeTo_attempt_program n m k q η γ β Q hγ H S T msg cache hcache).bind_left
+      (fun out => ((iid ((lyubashevsky n m k q γ β).commit (S out.2.1)
+        (out.1, T out.1 out.2.1)) K).bind fun coins =>
+        (interpret (oracle (BitString k))
+          (fiatShamirAbortSign (lyubashevsky n m k q γ β) (lyubashevskyKeyGen n m k q η)
+            (S out.2.1, (out.1, T out.1 out.2.1)) (msg out.2.1) K coins)).run out.2.2.2).map
+              (fun later => combine out.1 (out.2.1, out.2.2) later))
+    simp only [history, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      PMF.bind_bind, PMF.pure_bind, PMF.map,
+      Function.comp_def] at htail hhead
+    have hboth := hhead.trans htail
+    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      fiatShamirAbortSign_run_succ, PMF.bind_bind, PMF.pure_bind,
+      PMF.map, Function.comp_def]
+    simp only [fiatShamir, interpret_map, interpret_query, StateT.run_map,
+      PMF.monad_map_eq_map, PMF.map, PMF.bind_bind, PMF.pure_bind,
+      Function.comp_def, combine] at hboth ⊢
+    simp only [StateT.run, PMF.bind_bind, PMF.pure_bind] at hboth ⊢
+    simpa only [Finset.sum_range_succ', Nat.add_zero, add_assoc,
+      add_left_comm, add_comm] using hboth
 
 end Cslib.Crypto.Protocols.SigmaProtocol

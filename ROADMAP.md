@@ -251,8 +251,11 @@ families and full-input native runtime.
   actual box commitments and the simulator's published commitments follow from matrix
   universality and the joint leftover-hash bound
   ([#2712](https://github.com/cslib-community/complexitylib/issues/2712)), for ideal uniform
-  prime-modulus matrices and histories sampled before fresh masks. An efficient secret-free
-  simulator, corrected abort-query simulation, paired same-coins fork equality, native
+  prime-modulus matrices and histories sampled before fresh masks. The one-call all-attempt
+  read-to-program hop ([#2750](https://github.com/cslib-community/complexitylib/issues/2750))
+  retains the complete cache, with an unconditional finite sum of collision bounds. Adaptive
+  multiple-call replacement, visible-law programmed-to-simulated signing with abort-query
+  accounting, an efficient secret-free simulator, paired same-coins fork equality, native
   shared-oracle reduction and a security parameter family remain open. Other endpoints include
   identification security under SIS and Dilithium-style
   signature schemes over module SIS and module LWE, as theory.
