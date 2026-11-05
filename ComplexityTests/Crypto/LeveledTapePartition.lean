@@ -4,8 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-module
-
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreePrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
