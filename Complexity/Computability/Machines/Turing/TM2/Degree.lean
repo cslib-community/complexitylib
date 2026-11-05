@@ -374,12 +374,6 @@ private theorem stack_le (C : ℕ)
       _ ≤ s.length + C * i + C := hC _ _ ih k
       _ = s.length + C * (i + 1) := by ring
 
-private theorem foldl_step {β γ : Type*} (g : β → β) (l : List γ) (c : β) :
-    l.foldl (fun c _ => g c) c = g^[l.length] c := by
-  induction l generalizing c with
-  | nil => rfl
-  | cons a l ih => simp only [List.foldl_cons, ih, List.length_cons, Function.iterate_succ_apply]
-
 /-- **The clocked run in degree two.** On `(w, t)`, with the bits of `w` framed one by one and
 `t` in unary, `runBit M` has time and space degree two and output degree one, for every machine
 whose stack alphabets are finite. -/
@@ -410,7 +404,7 @@ theorem runBit_computableInDegree :
     (step := fun c _ => stepTotal M.tm.m c) hlist (initList_computableInDegree M) hstep hB
     (fun x i hi => by
       rw [List.take_replicate]
-      erw [foldl_step]
+      erw [List.foldl_const]
       rw [List.length_replicate]
       refine hA _ _ fun k => (stack_le M C hC _ _ k).trans ?_
       simp only [List.length_map, List.length_replicate] at hi ⊢
@@ -436,7 +430,7 @@ theorem runBit_eq (M : TM2ComputableAux Bool Bool) {w : List Bool} {b : Bool} {T
     ⟨h.toEvalsTo, h.steps_le_m.trans hT⟩
   have heval := iterate_stepTotal_of_evals M.tm _ _ _ h'
   unfold runBit
-  erw [foldl_step]
+  erw [List.foldl_const]
   rw [List.length_replicate]
   change M.outputAlphabet ((((stepTotal M.tm.m)^[t]
     (initList M.tm (w.map M.inputAlphabet.invFun))).stk M.tm.k₁).headD _) = b
