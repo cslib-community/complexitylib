@@ -141,8 +141,11 @@ In order:
   and `VOLE/MulCheck.lean` bounds arbitrary single-gate affine claims by `2 / |F|` with an
   independent secret key. `VOLE/BatchMulCheck.lean` batches constraints using a public vector of
   independent weights and an adaptive affine reply, with error at most
-  `1 / |F| + (1 - 1 / |F|) * (2 / |F|)`. Scalar-challenge batching, zero knowledge,
-  efficient protocol realizations and the full VOLE-in-the-head transform remain;
+  `1 / |F| + (1 - 1 / |F|) * (2 / |F|)`. `VOLE/MaskedMulCheck.lean` executes the check
+  in a cached ideal `World` with separate role interfaces and one fresh affine mask, proving
+  completeness and exact simulation of the full honest receiver view (private key/tags and
+  public transcript). Scalar-challenge batching, malicious-verifier zero knowledge, certified
+  efficient realizations and the full VOLE-in-the-head transform remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security
