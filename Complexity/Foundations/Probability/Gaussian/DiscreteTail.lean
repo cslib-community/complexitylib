@@ -28,9 +28,10 @@ the ratio of the two lattice normalizers.
 These are original intermediate results in the conventions of [Regev2009], §2, equations (4),(6).
 The intended consumer is the finite-radius truncation in Lemma 3.2's bootstrapping analysis
 (printed p. 19 of the May 2, 2009 author version). The ratio is not bounded uniformly in lattice
-dimension here: the mass-scaling estimate of Lemma 2.4, the dimension-uniform tail bound of
-Lemma 2.5, multidimensional Poisson summation, and the bootstrapping algorithm remain separate
-work. No sampling or resource bound follows from this mathematical tail estimate alone.
+dimension here. The centered mass-scaling and tail estimates of Lemmas 2.4–2.5 are proved in
+`Gaussian.CenteredTail`, using the arbitrary-lattice Poisson theorem in `Gaussian.Poisson`.
+The bootstrapping algorithm remains separate work. No sampling or resource bound follows
+from this mathematical tail estimate alone.
 -/
 
 public section

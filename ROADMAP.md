@@ -69,8 +69,10 @@ Priorities live in this list and in the tiers of [#897].
   Full arbitrary-lattice Poisson summation for Schwartz functions and shifted positive-width
   Gaussians, including the covolume normalization, is proved in
   [#2624](https://github.com/cslib-community/complexitylib/issues/2624).
-  Uniform control of Gaussian mass ratios, smoothing estimates, efficient sampling and the
-  quantum reduction remain open in
+  Centered Gaussian mass scaling and the strict radius-`s√n` tail bound of Regev’s
+  Lemmas 2.4–2.5 are proved in
+  [#2646](https://github.com/cslib-community/complexitylib/issues/2646). Uniform off-center
+  estimates, smoothing, efficient sampling and the quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
