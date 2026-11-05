@@ -157,6 +157,25 @@ theorem run_coins [DecidableEq Oracle] {Query : Type} {spec : OracleSpec Query}
     simp_rw [ih _ _ htail hend]
     simp [runConfigFromCoins_cons, map_bind, add_left_comm, add_comm]
 
+/-- Padding after the saved-coin tape ends cannot change the data or cause another oracle call. -/
+theorem run_coins_add [DecidableEq Oracle] {Query : Type} {spec : OracleSpec Query}
+    (machine : MultiTapePTM k Bool State Oracle)
+    (query : Oracle → List Bool → OracleComp spec (List Bool))
+    (cfg : Config k Bool State Oracle input) (coins : List Bool)
+    (tape : ℤ → Option Bool) (position : ℤ) (padding : ℕ)
+    (hcoins : ∀ i : ℕ, i < coins.length → tape (position + i) = coins[i]?)
+    (hstop : tape (position + coins.length) = none) :
+    machine.replayWithOracle.runConfigFrom (pure false) query (2 * coins.length + 1 + padding)
+        (config cfg tape position none) =
+      (fun final => stopped final tape (position + coins.length)) <$>
+        machine.runConfigFromCoins query coins cfg := by
+  rw [runConfigFrom, MultiTapeMachine.runConfigFrom_add]
+  change (machine.replayWithOracle.runConfigFrom (pure false) query (2 * coins.length + 1)
+    (config cfg tape position none) >>= _) = _
+  rw [run_coins machine query cfg coins tape position hcoins hstop]
+  simp only [bind_map_left,
+    MultiTapeMachine.runConfigFrom_halted _ _ _ _ _ (stopped_state ..), bind_pure_comp]
+
 /-- The controller's fresh private samples are ignored, so any stateless coin law agrees with
 constant private coins, retaining the full external state. The saved source coins are unchanged. -/
 theorem run_interpret_coin_independent [DecidableEq Oracle]
