@@ -105,6 +105,11 @@ private abbrev scatterBody : Code .exact rFib :=
     s3 ← *s0
   ]
 
+/-- The collision body writes only its degree counter and inner scratch registers. -/
+private theorem scatterBody_preserves :
+    ∀ r : Fin rFib, r.val < 34 → scatterBody.Preserves r := by
+  decide +kernel
+
 
 /-- Single collision step of `scatterRootCode`: clears `cons[curD]`, links the tree `T_cur` in
 `s4` with the table's tree of the same degree (the one that precedes becomes the parent), and
@@ -276,7 +281,6 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
           (.op (.copy s0 zeroP))) a2 a3 4 ∧
       a3.Bounded w ∧ BaseRegs n base a3 ∧ a3.mem = a1.mem ∧
       RawState.ofData n base a3 = RawState.ofData n base a1 ∧
-      (∀ r : Fin rFib, r.val < 35 → a3.regs r = a.regs r) ∧
       ValidRoot (RawState.ofData n base a1) none T₁ ∧ T₁.deg = curD ∧
       (T₁.nodes ++ T₂.nodes).Nodup ∧
       a3.regs s4 = T₁.root.val ∧ a3.regs s5 = T₂.root.val ∧
@@ -287,14 +291,6 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
     have hs4_a2 : a2.regs s4 = u4.val := ha_s4
     have hs5_a2 : a2.regs s5 = u5.val := by
       simp only [a2, Data.set_regs, Function.update_of_ne (by decide : s5 ≠ s6), ha2_s5]
-    have hlow_a2 : ∀ r : Fin rFib, r.val < 35 → a2.regs r = a.regs r := fun r hr => by
-      have ne_of : ∀ q : Fin rFib, 35 ≤ q.val → r ≠ q := fun q hq e => by subst e; omega
-      simp only [a2, a2_pre, a1, Data.set_regs, Data.write_regs,
-        Function.update_of_ne (ne_of s6 (by decide)),
-        Function.update_of_ne (ne_of s2 (by decide)),
-        Function.update_of_ne (ne_of s0 (by decide)),
-        Function.update_of_ne (ne_of s1 (by decide)),
-        Function.update_of_ne (ne_of s5 (by decide))]
     by_cases hlt54 : IndexedMinPQ.PrioLT (u5, st.key u5) (u4, st.key u4)
     · have hc_sw : (Cond.lt zeroP s6).Holds a2 := by
         rw [Cond.Holds, hz_a2]
@@ -325,18 +321,13 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
         ExecWithin.branch_pos hc_sw (c1.seq (c2.seq c3))
       refine ⟨T_slot, T_cur, a3, he_sw, he_sw.bounded hb2,
         ((hbr2.set_non_base (by decide) _).set_non_base (by decide) _).set_non_base (by decide) _,
-        rfl, ?_, ?_, hT_slot1, hslot_deg, List.perm_append_comm.nodup_iff.mp hnd_pair, ?_, ?_,
+        rfl, ?_, hT_slot1, hslot_deg, List.perm_append_comm.nodup_iff.mp hnd_pair, ?_, ?_,
         fun hl => (LinksAs.linked hT_slot1 hT_cur1 (List.perm_append_comm.nodup_iff.mp hnd_pair)
           (hslot_deg.trans hcur_deg.symm) (by rw [hkey1]; exact hlt54) hl).symm
           (hcur_deg.trans hslot_deg.symm)⟩
       · simp only [a3, ofData_set_scratch _ (by decide : 17 ≤ s5.val),
           ofData_set_scratch _ (by decide : 17 ≤ s4.val),
           ofData_set_scratch _ (by decide : 17 ≤ s6.val), hst2]
-      · intro r hr
-        have ne_of : ∀ q : Fin rFib, 35 ≤ q.val → r ≠ q := fun q hq e => by subst e; omega
-        simp only [a3, Data.set_regs, Function.update_of_ne (ne_of s5 (by decide)),
-          Function.update_of_ne (ne_of s4 (by decide)),
-          Function.update_of_ne (ne_of s6 (by decide)), hlow_a2 r hr]
       · simp only [a3, Data.set_regs, Function.update_of_ne (by decide : s4 ≠ s5),
           Function.update_self, u5]
       · simp only [a3, Data.set_regs, Function.update_self, u4]
@@ -356,15 +347,12 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
       have hlt45 : IndexedMinPQ.PrioLT (u4, st.key u4) (u5, st.key u5) :=
         (IndexedMinPQ.prioLT_or_prioLT_of_ne hu4_ne_u5 (st.key u4) (st.key u5)).resolve_right hlt54
       refine ⟨T_cur, T_slot, a3, he_sw, he_sw.bounded hb2, hbr2.set_non_base (by decide) 0,
-        rfl, (ofData_set_scratch a2 (by decide : 17 ≤ s0.val) 0).trans hst2, ?_,
+        rfl, (ofData_set_scratch a2 (by decide : 17 ≤ s0.val) 0).trans hst2,
         hT_cur1, hcur_deg, hnd_pair, ?_, ?_, fun hl => LinksAs.linked hT_cur1 hT_slot1 hnd_pair
           (hcur_deg.trans hslot_deg.symm) (by rw [hkey1]; exact hlt45) hl⟩
-      · intro r hr
-        have hne : r ≠ s0 := fun e => by subst e; change 35 < 35 at hr; omega
-        simp only [a3, Data.set_regs, Function.update_of_ne hne, hlow_a2 r hr]
       · simp only [a3, Data.set_regs, Function.update_of_ne (by decide : s4 ≠ s0), hs4_a2, u4]
       · simp only [a3, Data.set_regs, Function.update_of_ne (by decide : s5 ≠ s0), hs5_a2, u5]
-  obtain ⟨T₁, T₂, a3, e3, hb3, hbr3, hmem3, hst3, ha3_low, hT₁, hd₁, hnd12, ha3_s4, ha3_s5,
+  obtain ⟨T₁, T₂, a3, e3, hb3, hbr3, hmem3, hst3, hT₁, hd₁, hnd12, ha3_s4, ha3_s5,
     hlinked⟩ := hswap_step
   let w1 := T₁.root
   let w2 := T₂.root
@@ -447,6 +435,7 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
         (d := s1) (a := s0))
   have hb4 : a4.Bounded w :=
     e4_5.bounded (e4_4.bounded (e4_3.bounded (e4_2.bounded (e4_1.bounded hb3))))
+  have e4 := e4_1.seq <| e4_2.seq <| e4_3.seq <| e4_4.seq e4_5
   have hbr4 : BaseRegs n base a4 :=
     ((((hbr3.set_non_base (by decide) _).set_non_base (by decide) _).write_eq _ _).set_non_base
       (by decide) _).set_non_base (by decide) _
@@ -462,17 +451,8 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
         par := Function.update st.par w2 (w1.val + 1)
         cons := Function.update st.cons curD 0 } :=
     (ofData_set_scratch _ (by decide : 17 ≤ s1.val) curD).trans hst4_pre
-  have ha4_low : ∀ r : Fin rFib, r.val < 35 → a4.regs r = a.regs r := fun r hr => by
-    have ne0 : r ≠ s0 := fun e => by subst e; change 35 < 35 at hr; omega
-    have ne1 : r ≠ s1 := fun e => by subst e; change 36 < 35 at hr; omega
-    simp only [a4, Data.set_regs, Data.write_regs, Function.update_of_ne ne1,
-      Function.update_of_ne ne0, ha3_low r hr]
-  have ha4_s4 : a4.regs s4 = w1.val := by
-    simp only [a4, Data.set_regs, Data.write_regs, Function.update_of_ne (by decide : s4 ≠ s1),
-      Function.update_of_ne (by decide : s4 ≠ s0), ha3_s4, w1]
-  have ha4_s5 : a4.regs s5 = w2.val := by
-    simp only [a4, Data.set_regs, Data.write_regs, Function.update_of_ne (by decide : s5 ≠ s1),
-      Function.update_of_ne (by decide : s5 ≠ s0), ha3_s5, w2]
+  have ha4_s4 : a4.regs s4 = w1.val := (e4.regs_eq (by decide)).trans ha3_s4
+  have ha4_s5 : a4.regs s5 = w2.val := (e4.regs_eq (by decide)).trans ha3_s5
   have ha4_s1 : a4.regs s1 = curD := by
     simp only [a4, Data.set_regs, Function.update_self]
   -- Step 5 (`a4 → a5`, ≤ 18 steps): splice `w2` into `w1`'s child list and increment `deg[w1]`
@@ -503,8 +483,6 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
       ExecWithin w cStep5 a4 a5 18 ∧
       a5.Bounded w ∧ BaseRegs n base a5 ∧
       Modifies (Block.mk base (space n)).footprint a4.mem a5.mem ∧
-      (∀ r : Fin rFib, r.val < 35 → a5.regs r = a.regs r) ∧
-      a5.regs s4 = w1.val ∧
       LinksAs (RawState.ofData n base a1) w1 w2 (RawState.ofData n base a5) := by
     have hz_4 : a4.regs zeroP = 0 := hbr4.regs_zeroP
     have ho_4 : a4.regs oneP = 1 := hbr4.regs_oneP
@@ -618,15 +596,7 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
         simp only [a5, p3, p2, p1, ofData_write_deg, ofData_write_child, ofData_write_right,
           ofData_write_left, ofData_set_scratch _ (by decide : 17 ≤ s0.val),
           ofData_set_scratch _ (by decide : 17 ≤ s2.val), hst4]
-      refine ⟨a5, he5, he5.bounded hb4, hbr5, hmod5, ?_, ?_, Or.inl ⟨?_, ?_⟩⟩
-      · intro r hr
-        have ne0 : r ≠ s0 := fun e => by subst e; change 35 < 35 at hr; omega
-        have ne2 : r ≠ s2 := fun e => by subst e; change 37 < 35 at hr; omega
-        simp only [a5, p3, p2, p1, Data.write_regs, Data.set_regs,
-          Function.update_of_ne ne0, Function.update_of_ne ne2, ha4_low r hr]
-      · simp only [a5, p3, p2, p1, Data.write_regs, Data.set_regs,
-          Function.update_of_ne (by decide : s4 ≠ s0),
-          Function.update_of_ne (by decide : s4 ≠ s2), ha4_s4, w1]
+      refine ⟨a5, he5, he5.bounded hb4, hbr5, hmod5, Or.inl ⟨?_, ?_⟩⟩
       · rw [hst1]
         exact hdeg_w1.trans hd0
       · rw [hst5, hst1]
@@ -732,18 +702,7 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
             cons := Function.update st.cons curD 0 } := by
         simp only [a5, ofData_write_deg, ofData_set_scratch _ (by decide : 17 ≤ s0.val),
           ofData_set_scratch _ (by decide : 17 ≤ s1.val), hst_q2]
-      refine ⟨a5, he5, he5.bounded hb4, hbr5, hmod5, ?_, ?_, Or.inr ⟨h_c, r_c, ?_, ?_, ?_, ?_⟩⟩
-      · intro r hr
-        have ne0 : r ≠ s0 := fun e => by subst e; change 35 < 35 at hr; omega
-        have ne1 : r ≠ s1 := fun e => by subst e; change 36 < 35 at hr; omega
-        have ne2 : r ≠ s2 := fun e => by subst e; change 37 < 35 at hr; omega
-        have ne6 : r ≠ s6 := fun e => by subst e; change 41 < 35 at hr; omega
-        have hq2_r := t4.regs_eq (insertIntoNonEmptyList_preserves ne0 ne2)
-        simp only [a5, Data.write_regs, Data.set_regs, Function.update_of_ne ne0,
-          Function.update_of_ne ne1, hq2_r, q1, Function.update_of_ne ne6, ha4_low r hr]
-      · simp only [a5, Data.write_regs, Data.set_regs,
-          Function.update_of_ne (by decide : s4 ≠ s0),
-          Function.update_of_ne (by decide : s4 ≠ s1), hq2_s4, w1]
+      refine ⟨a5, he5, he5.bounded hb4, hbr5, hmod5, Or.inr ⟨h_c, r_c, ?_, ?_, ?_, ?_⟩⟩
       · rw [hst1]
         exact fun h => hd0 (hdeg_w1.symm.trans h)
       · rw [hst1]
@@ -752,11 +711,17 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
         exact hr_c
       · rw [hst5, hst1]
         simp only [hdeg_w1]
-  obtain ⟨a5, e5, hb5, hbr5, hmod5, ha5_low, ha5_s4, hlink5⟩ := hstep5
+  obtain ⟨a5, e5, hb5, hbr5, hmod5, hlink5⟩ := hstep5
+  have ha5_s4 : a5.regs s4 = w1.val := (e5.regs_eq (by decide)).trans ha4_s4
   have hL := hlinked hlink5
   obtain ⟨hP_next, hback⟩ := hnext hL
   -- Step 6 (`a5 → a6`, 3 steps): `curDReg ← curDReg + oneP; s0 ← consBase + curDReg; s3 ← *s0`
-  have ha5_curD : a5.regs curDReg = curD := (ha5_low curDReg (by decide)).trans ha_curD
+  -- The verified phases before the increment preserve the degree counter.
+  have he_prefix := e1_1.seq <| e1_2.seq <| e1_3.seq <| e2_1.seq <| e2_2.seq <| e2_3.seq <|
+    e2_4.seq <| e2_5.seq <| e3.seq <| e4_1.seq <| e4_2.seq <| e4_3.seq <| e4_4.seq <|
+    e4_5.seq e5
+  have ha5_curD : a5.regs curDReg = curD :=
+    (he_prefix.regs_eq (by decide +kernel)).trans ha_curD
   let a6 := ((a5.set curDReg (curD + 1)).set s0 (base + 8 * n + (curD + 1))).set s3
     ((RawState.ofData n base a5).cons (curD + 1))
   have e6_1 : ExecWithin w (.op (.exactBin .add curDReg curDReg oneP)) a5
@@ -800,12 +765,7 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
   refine ⟨a6, T_next, slotTrees', he_all, hb6, hbr6, modifies_block_trans hmod4 hmod5, ?_,
     hlen_er, hL.deg.trans (by rw [hcur_deg]), ?_, ?_, ?_, by rw [hst6]; exact hP_next,
     fun hc => hback (by rw [← hst6]; exact hc)⟩
-  · intro r hr
-    have ne_cd : r ≠ curDReg := fun e => by subst e; change 34 < 34 at hr; omega
-    have ne0 : r ≠ s0 := fun e => by subst e; change 35 < 34 at hr; omega
-    have ne3 : r ≠ s3 := fun e => by subst e; change 38 < 34 at hr; omega
-    simp only [a6, Data.set_regs, Function.update_of_ne ne3, Function.update_of_ne ne0,
-      Function.update_of_ne ne_cd, ha5_low r (by omega)]
+  · exact fun r hr => he_all.regs_eq (scatterBody_preserves r hr)
   · simp only [a6, Data.set_regs, Function.update_of_ne (by decide : s4 ≠ s3),
       Function.update_of_ne (by decide : s4 ≠ s0),
       Function.update_of_ne (by decide : s4 ≠ curDReg), ha5_s4, T_next, FHTree.root_node]
