@@ -122,7 +122,8 @@ In order:
   output oracles, as in ArkLib), with knowledge soundness and zero knowledge in oracle worlds;
 - efficiency-certified simulators and extractors, and auxiliary-input zero knowledge on the core;
 - polynomial commitment and evaluation-query reductions, and the Ligero IOP;
-- the BCS transform to non-interactive arguments in the random-oracle model;
+- random-oracle query-trace probability bounds and `Interactive.Reduction` / Ligero composition
+  on top of the core BCS transform (`Complexity/Crypto/Protocols/BCS/Basic.lean`);
 - VOLE as an ideal functionality, and VOLE-in-the-head;
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 

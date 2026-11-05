@@ -65,6 +65,39 @@ application. At `n = 2` its honest transcript has exactly **12 payload bits**,
 attaining the generic bound. Its constant hash exercises accounting only;
 it is not a collision-resistance example.
 
+## The BCS transform: public-coin IOPs to non-interactive arguments
+
+Import `Complexity.Crypto.Protocols.BCS.Basic`
+([`BCS/Basic.lean`](../../Complexity/Crypto/Protocols/BCS/Basic.lean)) for the
+core Ben-Sasson–Chiesa–Spooner compilation [bcs16][bcs16] of an `r`-round,
+depth-`d` public-coin Interactive Oracle Proof (`PublicCoinIOP r d Stmt Wit Sym Chal`)
+into a non-interactive proof (`BCSProof r Sym`, `bcsProve`, `bcsVerify`):
+
+- **Execution and Fiat–Shamir challenges:** in round `j : Fin r`, the honest
+  prover computes the table `bcsHonestTables ... j : Fin (2 ^ d) → Sym` from the
+  prior Fiat–Shamir challenges `c_i = bcsChallenge hFS x roots i = hFS x (rootPrefix roots i)`
+  (`i < j`) and commits to its encoded leaf list `oracleLeaves encSym d π_j`
+  via `merkleRoot H k`. Causal consistency (`bcsHonestTables_eq_iopProverOracles`)
+  identifies the sequentially computed tables with `iopProverOracles` evaluated
+  on the full challenge vector `bcsHonestChallenges`, yielding perfect
+  completeness (`bcsVerify_bcsProve_eq_true`) for every hash `H k` and every
+  Fiat–Shamir function `hFS`.
+- **Binding and knowledge-extraction reductions:** against committed round
+  tables `oracles : Fin r → OracleTable d Sym` with injective symbol encoding
+  `encSym`, `bcs_sound_or_merkleCollision` proves that any accepted `BCSProof`
+  either makes `iopVerify` accept `oracles` at `bcsChallenge hFS x prf.roots` or
+  causes `bcsExtractTableCollision` to output an explicit hash collision for
+  `H k` (`isCollision_of_bcsVerify_conflict` covers two proofs with conflicting
+  openings against a shared round root). Given a straight-line IOP extractor
+  `iopExtract`, `bcs_knowledge_or_soundness_violation_or_collision` and
+  `bcs_knowledge_or_merkleCollision` reduce an accepting BCS proof to a valid
+  extracted witness `rel x (iopExtract x oracles)`, an IOP knowledge-soundness
+  violation at the Fiat–Shamir challenge, or an explicit `H k` collision. These
+  are deterministic algebraic reductions for fixed `H k` and `hFS`; composing
+  them with random-oracle query-trace extraction and `OracleComp` probability
+  bounds is separate. Checked examples are in
+  [`ComplexityTests/Crypto/BCSTransform.lean`](../../ComplexityTests/Crypto/BCSTransform.lean).
+
 ## Shared random oracles and ideal permutations
 
 [Complexity/Crypto/Protocols/Signature/RandomOracle.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Signature/RandomOracle.lean) defines a typed random-oracle signature experiment. Signer, verifier and forger share one lazy hash cache. The forger's coins are drawn explicitly before deterministic oracle interaction, enabling replay. Signing and hash queries have separate bounds. Key generation can be an arbitrary PMF, so this finite experiment is not identical to the native `SignatureScheme` interface.
@@ -115,6 +148,7 @@ No differential-privacy model was identified by the recorded local/upstream sear
 
 Only selected protocol endpoints and key definitions were traced. The source files themselves give detailed source mappings; this pass did not independently reconcile every textbook constant, lattice-abort construction or signature reduction. Existing regression tests are not newly executed evidence. The precise coalition and advice restrictions above should be retained even when summarizing the results compactly.
 
+[bcs16]: ../sources.md#bcs16
 [bs23]: ../sources.md#bs23
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
