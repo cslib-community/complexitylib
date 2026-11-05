@@ -279,8 +279,8 @@ jobs:
       - name: Stage cache publication
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.LAKE_CACHE_BUCKET != '' || vars.CACHE_SERVER_PUBLISH_ENABLED == 'true')
         run: python3 scripts/cache/publish.py stage "$RUNNER_TEMP/lake-publication"
-      # The second host consumes this run's own package, never a PR/other-run artifact.
-      - name: Hand off staged files to the optional cache server publisher
+      # The MIT publisher consumes this run's own package, never a PR/other-run artifact.
+      - name: Hand off staged files to the optional MIT publisher
         id: upload-publication
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CACHE_SERVER_PUBLISH_ENABLED == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -314,7 +314,7 @@ jobs:
           path: ${{ steps.handoff-measurement.outputs.report }}
           retention-days: 14
 
-  publish-cache-server:
+  publish-mit-cache:
     needs: ci-checks
     # The package exists only after all validation gates passed. Permit this independent
     # publisher to finish even if the subsequent GCS upload failed.
@@ -324,8 +324,7 @@ jobs:
           needs.ci-checks.outputs.publication != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # MUST restrict this environment to the main branch before installing its secret and target
-    # variables. Publication may not require approval, but it must not share the admin identity.
+    # MUST restrict this environment to the main branch before installing its write-only key.
     environment: cache-server-publish
     permissions:
       contents: read
@@ -338,17 +337,14 @@ jobs:
           path: ${{ runner.temp }}/lake-publication
       - name: Verify this run's publication
         run: python3 scripts/cache/publish.py verify "$RUNNER_TEMP/lake-publication" --revision "$GITHUB_SHA"
-      - uses: ./.github/actions/cache-rsync
-      - name: Prepare restricted publisher identity
-        env:
-          CACHE_SERVER_HOST: ${{ vars.CACHE_SERVER_HOST }}
-          CACHE_SERVER_SSH_PORT: ${{ vars.CACHE_SERVER_SSH_PORT }}
-          CACHE_SERVER_UPLOAD_USER: cache-upload
-          CACHE_SERVER_UPLOAD_KEY: ${{ secrets.CACHE_SERVER_UPLOAD_KEY }}
-          CACHE_SERVER_KNOWN_HOSTS: ${{ vars.CACHE_SERVER_KNOWN_HOSTS }}
-        run: python3 scripts/cache/ssh.py "$RUNNER_TEMP/cache-ssh" --identity CACHE_SERVER_UPLOAD_KEY --user CACHE_SERVER_UPLOAD_USER
       - name: Publish artifacts, then the revision mapping
-        run: python3 scripts/cache/publish.py ssh "$RUNNER_TEMP/lake-publication" --config "$RUNNER_TEMP/cache-ssh/config"
-      - name: Remove publisher identity
-        if: always()
-        run: rm -rf "$RUNNER_TEMP/cache-ssh"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CACHE_SERVER_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CACHE_SERVER_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.CACHE_SERVER_REGION }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          CACHE_SERVER_BUCKET: ${{ vars.CACHE_SERVER_BUCKET }}
+          CACHE_SERVER_S3_ENDPOINT: ${{ vars.CACHE_SERVER_S3_ENDPOINT }}
+        run: >-
+          python3 scripts/cache/publish.py s3 "$CACHE_SERVER_BUCKET"
+          "$CACHE_SERVER_S3_ENDPOINT" "$RUNNER_TEMP/lake-publication"

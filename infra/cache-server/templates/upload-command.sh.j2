@@ -1,9 +1,0 @@
-#!/bin/sh
-set -eu
-
-# A missing cache mount must never turn this account into a writer on the OS filesystem.
-/usr/bin/mountpoint --quiet -- {{ cache_server_data_root }}
-
-# Bound any one mapping, artifact or unserved file created by a compromised upload key.
-ulimit -f {{ cache_server_upload_max_file_bytes // 512 }}
-exec {{ cache_server_rsync_prefix }}/bin/rrsync -wo -no-del -no-overwrite -munge {{ cache_server_data_root }}

@@ -119,19 +119,15 @@ def output(env, name, value):
 
 
 def published(root, env):
-    # Keep this import/configuration access inside the active-study path: disabled is inert.
-    from cache.restore import endpoints
-    urls = endpoints(root, env)
-    require(bool(urls), "Unknown cache endpoint")
+    url = env.get("COMPLEXITYLIB_CACHE_URL", "https://storage.googleapis.com/complexitylib-lake-cache")
+    require(url.startswith("https://"), "Unknown cache endpoint")
     toolchain = (root / "lean-toolchain").read_text().strip().replace("/", "--").replace(":", "---")
-    for url in urls:
-        require(url.startswith("https://"), "Unknown cache endpoint")
-        request = Request(f"{url}/r0/{REPOSITORY}/tc/{toolchain}/{env['GITHUB_SHA']}.jsonl", method="HEAD")
-        try:
-            with urlopen(request, timeout=15) as response:
-                require(response.status == 404, "Target already published: contaminated baseline")
-        except HTTPError as error:
-            require(error.code == 404, f"Unknown target-cache status: HTTP {error.code}")
+    request = Request(f"{url}/r0/{REPOSITORY}/tc/{toolchain}/{env['GITHUB_SHA']}.jsonl", method="HEAD")
+    try:
+        with urlopen(request, timeout=15) as response:
+            require(response.status == 404, "Target already published: contaminated baseline")
+    except HTTPError as error:
+        require(error.code == 404, f"Unknown target-cache status: HTTP {error.code}")
 
 
 def prepare(root, env, now=None, api=handoff.gh_get):

@@ -46,14 +46,12 @@ stamp = root / ".lake/cache-bootstrap/attempt.json"
 try:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     files = {}
-    for name in ("lean-toolchain", "lake-manifest.json", "lakefile.toml", "lakefile.lean",
-                 "scripts/cache/endpoints.json"):
+    for name in ("lean-toolchain", "lake-manifest.json", "lakefile.toml", "lakefile.lean"):
         path = root / name
-        if name == "scripts/cache/endpoints.json" and not path.exists():
-            path = script_root / name
         files[name] = hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
     state = {"checkout": str(root), "head": head, "files": files,
-             "endpoint": os.environ.get("COMPLEXITYLIB_CACHE_URL"),
+             "endpoint": os.environ.get("COMPLEXITYLIB_CACHE_URL",
+                                        "https://storage.googleapis.com/complexitylib-lake-cache"),
              "cache_dir": os.environ.get("LAKE_CACHE_DIR")}
     fingerprint = hashlib.sha256(json.dumps(state, sort_keys=True).encode()).hexdigest()
 except (OSError, subprocess.CalledProcessError) as error:

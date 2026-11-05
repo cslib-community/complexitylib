@@ -24,7 +24,6 @@ resource bound: the encoding and cost convention are part of the theorem.
 | Write randomized or oracle programs and prove efficiency | [Probabilistic workflows](workflows/probabilistic-workflows.md) |
 | Locate a theorem and check its assumptions | [Find results](workflows/finding-results.md) |
 | Understand a failed proof or build | [Troubleshoot](workflows/troubleshooting.md) |
-| Configure or maintain a build-cache server | [Cache operations](../scripts/cache/README.md#optional-self-hosted-cache) |
 | Prepare, validate and review a change | [Contribute and review](workflows/contributing.md) |
 | Look up a command or term | [Commands and vocabulary](COMMANDS.md) |
 | Coordinate implementation and review | [Participant and reviewer procedures](workflows/agent-operations.md) |

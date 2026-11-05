@@ -212,8 +212,7 @@ class MathlibCacheTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("git"), "git is required for the real build wrapper")
     def test_cache_failure_still_runs_and_preserves_the_strict_build_failure(self):
         for name in ("scripts/build.sh", "scripts/cache/ensure.sh", "scripts/cache/get.sh",
-                     "scripts/cache/get_mathlib.py", "scripts/cache/restore.py",
-                     "scripts/cache/endpoints.json"):
+                     "scripts/cache/get_mathlib.py"):
             target = self.root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(REPO / name, target)
@@ -248,8 +247,9 @@ class WorkflowWiringTests(unittest.TestCase):
         for name in ("lean_action_ci.yml", "docs.yml", "comparator.yml"):
             with self.subTest(workflow=name):
                 text = (REPO / ".github/workflows" / name).read_text()
-                action = text.split("      - uses: leanprover/lean-action@", 1)[1]
-                action = action.split("\n", 1)[1].split("      - ", 1)[0]
+                marker = next(line for line in text.splitlines(keepends=True)
+                              if line.startswith("      - uses: leanprover/lean-action@"))
+                action = text.split(marker, 1)[1].split("      - ", 1)[0]
                 self.assertRegex(action, r"use-mathlib-cache: [\"']false[\"']")
                 self.assertNotIn("continue-on-error", action)
                 step = text.split("      - name: Restore Mathlib cache with retries\n", 1)[1].split("      - ", 1)[0]

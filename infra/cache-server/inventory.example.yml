@@ -1,7 +1,0 @@
-# Uses the controller's `Host cache-server` SSH config/agent. Supply a verified known_hosts entry.
-# This host must be a dedicated Debian/Ubuntu VM with systemd, Python 3 and passwordless sudo.
-all:
-  children:
-    cache_server:
-      hosts:
-        cache-server:

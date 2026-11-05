@@ -1,4 +1,4 @@
-"""Publication order, transfer integrity, SSH isolation, and a real tiny Lake package."""
+"""Publication order, transfer integrity, and a real tiny Lake package."""
 
 import importlib.util
 import json
@@ -21,7 +21,6 @@ def module(name, path):
 
 
 publish = module("cache_publish", REPO / "scripts/cache/publish.py")
-ssh = module("cache_ssh", REPO / "scripts/cache/ssh.py")
 
 
 class PublicationTests(unittest.TestCase):
@@ -55,17 +54,22 @@ class PublicationTests(unittest.TestCase):
             self.assertEqual(google[0].kwargs["input"], str(self.stage / self.artifact) + "\n")
             self.assertIn(str(self.stage / self.mapping), google[1].args[0])
         with patch.object(publish, "run") as run:
-            publish.ssh(self.stage, self.root / "private config")
+            publish.s3("mit-cache", "https://cache-write.example.edu", self.stage)
             server = run.call_args_list
             self.assertEqual(len(server), 2)
-            self.assertIn("--ignore-existing", server[0].args[0])
+            self.assertIn("--no-overwrite", server[0].args[0])
+            self.assertIn("--no-follow-symlinks", server[0].args[0])
+            self.assertIn("--recursive", server[0].args[0])
+            self.assertIn("https://cache-write.example.edu", server[0].args[0])
             self.assertIn(str(self.stage / "a0") + "/", server[0].args[0])
-            self.assertIn(str(self.stage) + "/./" + self.mapping, server[1].args[0])
+            self.assertIn("s3://mit-cache/a0/", server[0].args[0])
+            self.assertIn(str(self.stage / self.mapping), server[1].args[0])
+            self.assertIn("s3://mit-cache/" + self.mapping, server[1].args[0])
             self.assertNotIn("--delete", server[0].args[0])
 
     def test_failed_artifact_upload_never_publishes_a_mapping(self):
         for backend in (lambda: publish.gcs("example-cache", self.stage),
-                        lambda: publish.ssh(self.stage, self.root / "config")):
+                        lambda: publish.s3("mit-cache", "https://cache.example.edu", self.stage)):
             with self.subTest(backend=backend), patch.object(publish, "run", side_effect=subprocess.CalledProcessError(1, "transfer")) as run:
                 with self.assertRaises(subprocess.CalledProcessError):
                     backend()
@@ -118,6 +122,14 @@ class PublicationTests(unittest.TestCase):
             capture_output=True, text=True)
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn("<publication-directory>", result.stderr)
+
+    def test_s3_rejects_insecure_or_credentialed_endpoints_before_upload(self):
+        for endpoint in ("http://cache.example.edu", "https://user@cache.example.edu",
+                         "https://cache.example.edu/a/path", "https://cache.example.edu?query"):
+            with self.subTest(endpoint=endpoint), patch.object(publish, "run") as run:
+                with self.assertRaisesRegex(ValueError, "HTTPS origin"):
+                    publish.s3("mit-cache", endpoint, self.stage)
+                run.assert_not_called()
 
 
 @unittest.skipUnless(shutil.which("git"), "Git is required")
@@ -192,49 +204,6 @@ class SourceStateTests(unittest.TestCase):
             self.assertFalse(work_directories[0].exists())
             self.assertEqual(mapping.read_text(), '"2026-11-04"\n')
             self.assertEqual(len(data["files"]), 2)
-
-
-class SSHTests(unittest.TestCase):
-    def test_both_roles_get_private_configs_and_strict_host_verification(self):
-        with tempfile.TemporaryDirectory(prefix="cache ssh ") as temporary:
-            root = Path(temporary)
-            env = {"CACHE_SERVER_HOST": "cache.example.org", "CACHE_SERVER_ADMIN_USER": "admin",
-                   "CACHE_SERVER_UPLOAD_USER": "cache-upload", "CACHE_SERVER_SSH_PORT": "2222",
-                   "ADMIN_KEY": "private fixture", "UPLOAD_KEY": "private fixture",
-                   "CACHE_SERVER_KNOWN_HOSTS": "independently verified host key"}
-            for role in ("ADMIN", "UPLOAD"):
-                directory = root / role
-                with patch.object(ssh.subprocess, "run") as validate:
-                    config = ssh.prepare(directory, role + "_KEY", "CACHE_SERVER_" + role + "_USER", env)
-                self.assertIn("ssh-keygen", validate.call_args.args[0])
-                self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
-                self.assertEqual((directory / "identity").stat().st_mode & 0o777, 0o600)
-                data = config.read_text()
-                self.assertIn("HostName cache.example.org", data)
-                self.assertIn("StrictHostKeyChecking yes", data)
-                self.assertIn("IdentitiesOnly yes", data)
-                self.assertIn("GlobalKnownHostsFile", data)
-                self.assertIn(str(Path(os.devnull).resolve()), data)
-                self.assertIn("KnownHostsCommand none", data)
-                self.assertIn("Port 2222", data)
-            with self.assertRaises(ValueError):
-                ssh.prepare(root / "bad", "ADMIN_KEY", "CACHE_SERVER_ADMIN_USER", {**env, "CACHE_SERVER_HOST": "host\nProxyCommand bad"})
-
-    @unittest.skipUnless(os.environ.get("CACHE_SERVER_INTEGRATION") == "1", "Linux SSH integration is opt-in")
-    @unittest.skipUnless(shutil.which("ssh") and shutil.which("ssh-keygen"), "OpenSSH is required")
-    def test_real_openssh_parses_identity_and_config(self):
-        with tempfile.TemporaryDirectory(prefix="cache ssh ") as temporary:
-            root = Path(temporary)
-            key = root / "key"
-            subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(key)], check=True)
-            config = ssh.prepare(root / "ssh", "KEY", "USER", {
-                "CACHE_SERVER_HOST": "cache.example.org", "USER": "cache-upload",
-                "KEY": key.read_text(), "CACHE_SERVER_KNOWN_HOSTS": "cache.example.org " + key.with_suffix(".pub").read_text()})
-            parsed = subprocess.check_output(["ssh", "-G", "-F", str(config), "cache-server"], text=True)
-            self.assertIn("stricthostkeychecking true", parsed)
-            self.assertIn(f"globalknownhostsfile {Path(os.devnull).resolve()}", parsed)
-            # OpenSSH accepts `KnownHostsCommand none` but some releases omit a disabled
-            # command from `ssh -G`; the source-level assertion above covers that exact setting.
 
 
 @unittest.skipUnless(shutil.which("lake") and shutil.which("git"), "Lean and Git are required")

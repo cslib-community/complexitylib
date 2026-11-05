@@ -144,8 +144,7 @@ class CacheBootstrapTests(unittest.TestCase):
     def test_configuration_revision_endpoint_and_cache_directory_each_invalidate(self):
         self.assert_success(self.run_script("cache/ensure.sh"))
         count = 1
-        for name in ("lean-toolchain", "lake-manifest.json", "lakefile.toml", "lakefile.lean",
-                     "scripts/cache/endpoints.json"):
+        for name in ("lean-toolchain", "lake-manifest.json", "lakefile.toml", "lakefile.lean"):
             with self.subTest(name=name):
                 path = self.root / name
                 self.write(name, (path.read_text() if path.exists() else "") + "\n")

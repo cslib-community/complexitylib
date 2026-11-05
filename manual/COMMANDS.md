@@ -21,10 +21,6 @@ The full validation sequence is maintained in [AGENTS.md](../AGENTS.md#validatio
 and cache behavior in [the cache guide](../scripts/cache/README.md). Commands above call
 those same scripts; they do not define an independent validation policy.
 
-For hosting and deployment commands, follow the [cache operations runbook](../scripts/cache/README.md#optional-self-hosted-cache).
-It distinguishes server configuration updates, artifact publication and changing the public read
-locations. Each operation has its own activation and rollback procedure.
-
 ## Search before adding an API
 
 The following read-only searches use `rg` (ripgrep). If it is unavailable, use editor
