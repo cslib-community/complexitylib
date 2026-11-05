@@ -2412,6 +2412,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.C
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Embed
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.QueryBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork
@@ -2619,6 +2620,7 @@ public import Complexity.Computability.Probabilistic.Oracle.Memoize
 public import Complexity.Computability.Probabilistic.Oracle.Normalization
 public import Complexity.Computability.Probabilistic.Oracle.Parameter
 public import Complexity.Computability.Probabilistic.Oracle.Replay
+public import Complexity.Computability.Probabilistic.Oracle.ReplayParameter
 public import Complexity.Computability.Probabilistic.Oracle.SingleOracle
 public import Complexity.Computability.Probabilistic.Oracle.Substitution
 public import Complexity.Computability.Probabilistic.Oracle.Tidy
@@ -3178,6 +3180,7 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.P
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
+public import Complexity.Crypto.Protocols.Signature.RandomOracle.Simulation
 public import Complexity.Crypto.Protocols.VOLE.Basic
 public import Complexity.Crypto.Protocols.VOLE.MulCheck
 public import Complexity.DataStructure.AVLTree.Basic

@@ -102,6 +102,23 @@ copy an unbounded reply into a configuration encoding. This completes the replay
 and freshness bridge for the full ROM forking reduction remains
 [#2568](https://github.com/cslib-community/complexitylib/issues/2568).
 
+[`Oracle/ReplayParameter.lean`](../../Complexity/Computability/Probabilistic/Oracle/ReplayParameter.lean)
+derives a public-key length bound `keyC * (n + 1)^keyD` from actual strict-PPT key generation.
+`IsOraclePPT.exists_savedCoins_of_keyGen` then uses one uniform tape of length
+`c * (2*n + 2 + keyC*(n + 1)^keyD)^d`, independent of the sampled key. Replay takes only the prefix
+specified by the original full-input machine clock. Equality holds for every key within the derived
+bound and retains the complete external state; the handler's own randomness stays external.
+[`CoinTape/QueryBounds.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/CoinTape/QueryBounds.lean)
+bounds calls on every fixed tape, including tapes outside the intended sampling support.
+
+[`RandomOracle/Simulation.lean`](../../Complexity/Crypto/Protocols/Signature/RandomOracle/Simulation.lean)
+transports such joint-state mixtures through the existing shared-world signature game. Its
+`eval_worldRealize_eq_bind` includes the cache and signing log before final verification, and works
+with any acceptance rule. In particular, final-message freshness permits repeated signing queries.
+These shared laws complete [#2652](https://github.com/cslib-community/complexitylib/issues/2652);
+the concrete word-channel adapter remains [#2636](https://github.com/cslib-community/complexitylib/issues/2636),
+and the full efficient Schnorr reduction remains open.
+
 ## Exact versus approximate randomness
 
 `ProbComp.uniform` permits exact finite uniform laws. A fair-coin machine with a fixed finite time bound has dyadic probabilities, so exact uniform sampling on three elements cannot follow simply from writing that program. This is a mathematical consequence of the definitions, not a reported failure. The sampling libraries distinguish power-of-two/dyadic laws, bounded samplers and approximate modular sampling. Group protocols can retain exact ideal PMFs and separately prove closeness and native efficiency of a word-level sampler.

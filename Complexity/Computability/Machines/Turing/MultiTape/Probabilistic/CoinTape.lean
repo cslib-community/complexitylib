@@ -171,6 +171,33 @@ def runCoins (machine : MultiTapePTM k Symbol State Oracle)
     (coins : List Bool) (input : List Symbol) : OracleComp spec (List Symbol) :=
   machine.runFromCoins query coins (machine.initialConfig input)
 
+/-- Replacing external calls commutes with fixed-coin replay, without changing the coin tape. -/
+theorem interpret_runConfigFromCoins_substitute {Query' : Type}
+    {target : OracleSpec Query'} (machine : MultiTapePTM k Symbol State Oracle)
+    (query : Oracle → List Symbol → OracleComp spec (List Symbol))
+    (handler : (q : Query) → OracleComp target (spec q)) (coins : List Bool)
+    (cfg : Config k Symbol State Oracle input) :
+    OracleComp.interpret handler (machine.runConfigFromCoins query coins cfg) =
+      machine.runConfigFromCoins (fun op word => OracleComp.interpret handler (query op word))
+        coins cfg := by
+  induction coins generalizing cfg with
+  | nil => rfl
+  | cons bit coins ih =>
+    simp only [runConfigFromCoins_cons, OracleComp.interpret_bind, runConfigFrom,
+      MultiTapeMachine.interpret_runConfigFrom, OracleComp.interpret_map,
+      OracleComp.interpret_pure, ih]
+
+/-- Substituting external calls preserves the output and all effects of fixed-coin replay. -/
+theorem interpret_runCoins {Query' : Type} {target : OracleSpec Query'}
+    (machine : MultiTapePTM k Symbol State Oracle)
+    (query : Oracle → List Symbol → OracleComp spec (List Symbol))
+    (handler : (q : Query) → OracleComp target (spec q)) (coins : List Bool)
+    (input : List Symbol) :
+    OracleComp.interpret handler (machine.runCoins query coins input) =
+      machine.runCoins (fun op word => OracleComp.interpret handler (query op word)) coins input := by
+  simp only [runCoins, runFromCoins, OracleComp.interpret_map,
+    interpret_runConfigFromCoins_substitute]
+
 /-- Fix one Boolean branch of a closed table, retaining its original states and tapes. -/
 def withCoin (machine : MultiTapePTM k Symbol State) (bit : Bool) :
     MultiTapeMachine k Symbol State Empty Id where

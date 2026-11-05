@@ -133,7 +133,9 @@ families and full-input native runtime.
   endpoint. Remaining work includes shared encoded signing/hash access, final-message freshness,
   and an efficient realization of the full forking reduction ([#2568]). The private-coin replay
   prerequisite now includes a full-input oracle-PPT certificate, tape preparation, and joint
-  external-state preservation ([#2579]).
+  external-state preservation ([#2579]). Shared replacement laws derive a key-independent tape
+  from actual PPT key-generation support and transport joint-state mixtures through the existing
+  ROM game ([#2652]); the concrete word-forger adapter remains [#2636].
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
@@ -918,3 +920,5 @@ not planned, not as proved.
 
 [#2579]: https://github.com/cslib-community/complexitylib/issues/2579
 [#2585]: https://github.com/cslib-community/complexitylib/issues/2585
+[#2636]: https://github.com/cslib-community/complexitylib/issues/2636
+[#2652]: https://github.com/cslib-community/complexitylib/issues/2652
