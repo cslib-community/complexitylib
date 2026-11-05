@@ -222,6 +222,38 @@ theorem isCostBounded_MT_adaptiveCheatingProver :
         IsCostBounded.pure (cost := micaliMTCost)
           (x, MicaliProof.mk rt [[(false, [sib])]]) 0
 
+/-- The supplied single opening is hashed at most twice, regardless of the FS answer. -/
+theorem isCostBounded_MT_halfVerifier (rt sib : List Bool) :
+    IsCostBounded micaliMTCost
+      (micaliVerify halfVerifier x { root := rt, response := [[(false, [sib])]] }) 2 := by
+  unfold micaliVerify
+  refine IsCostBounded.liftBind (cost := micaliMTCost) (Sum.inr (x, rt)) _ 2 ?_
+  intro challenges
+  apply isCostBounded_micaliMTCost_liftLeft
+  cases challenges with
+  | nil => exact .pure _ 2
+  | cons ρ ρs =>
+      simp only [kilianVerifyProg, List.zip_cons_cons, List.zip_nil_right,
+        List.mapM_cons, List.mapM_nil, bind_assoc, pure_bind]
+      exact .liftBind _ _ 1 fun _ => .liftBind _ _ 0 fun _ => .pure _ 0
+
+/-- Every possible output has the bounded shape actually emitted by the adaptive prover. -/
+theorem isCostBounded_MT_verifier_of_mem_support_adaptiveCheatingProver
+    (s : List Bool) (proof : MicaliProof) (hmem : (s, proof) ∈ adaptiveCheatingProver.support) :
+    IsCostBounded micaliMTCost (micaliVerify halfVerifier s proof) 2 := by
+  simp only [adaptiveCheatingProver, mem_supportWith_bind_iff, supportWith_query,
+    Set.mem_univ, true_and, supportWith_pure, Set.mem_singleton_iff] at hmem
+  obtain ⟨rt, _, sib, h⟩ := hmem
+  cases h
+  exact isCostBounded_MT_halfVerifier rt sib
+
+/-- Two prover hashes and at most two verifier hashes give a genuine total budget of four. -/
+theorem isCostBounded_MT_soundness_adaptiveCheatingProver :
+    IsCostBounded micaliMTCost (micaliSoundnessProg halfVerifier ∅ adaptiveCheatingProver) 4 :=
+  isCostBounded_micaliMTCost_micaliSoundnessProg halfVerifier ∅
+    isCostBounded_MT_adaptiveCheatingProver
+    isCostBounded_MT_verifier_of_mem_support_adaptiveCheatingProver
+
 -- Honest proof payload bit length and succinctness bound.
 example : micaliProofBits honestProof = 8 := by decide
 
@@ -238,24 +270,22 @@ example : micaliProofBits
     (hq := fun _ _ => le_rfl)
 
 -- Instantiating the adaptive two-channel ROM soundness theorems and the `NP` CS-proof corollary.
-example (σ m Q_MT : ℕ)
-    (hMT : IsCostBounded micaliMTCost
-      (micaliSoundnessProg halfVerifier ∅ adaptiveCheatingProver) Q_MT) :
+example (σ m : ℕ) :
     micaliSoundnessGame halfVerifier ∅ adaptiveCheatingProver σ m true ≤
       ((1 + 1 : ℕ) : ℝ≥0∞) * (1 / 2) ^ m +
-        (Q_MT : ℝ≥0∞) * (((3 * Q_MT + (1 + 1) : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ σ)) :=
+        (4 : ℝ≥0∞) * (((3 * 4 + (1 + 1) : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ σ)) :=
   micaliSoundness_bound halfVerifier ∅ σ m (fun s _ π => halfVerifier_sound s π)
-    isCostBounded_FS_adaptiveCheatingProver hMT
+    isCostBounded_FS_adaptiveCheatingProver isCostBounded_MT_soundness_adaptiveCheatingProver
 
-example (σ m q_V : ℕ)
-    (hV : ∀ s proof, IsCostBounded micaliMTCost (micaliVerify halfVerifier s proof) q_V) :
+example (σ m : ℕ) :
     micaliSoundnessGame halfVerifier ∅ adaptiveCheatingProver σ m true ≤
       ((1 + 1 : ℕ) : ℝ≥0∞) * (1 / 2) ^ m +
-        ((2 + q_V : ℕ) : ℝ≥0∞) *
-          (((3 * (2 + q_V) + (1 + 1) : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ σ)) :=
+        ((2 + 2 : ℕ) : ℝ≥0∞) *
+          (((3 * (2 + 2) + (1 + 1) : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ σ)) :=
   micaliSoundness_bound_of_prover_verifier halfVerifier ∅ σ m
     (fun s _ π => halfVerifier_sound s π)
-    isCostBounded_MT_adaptiveCheatingProver isCostBounded_FS_adaptiveCheatingProver hV
+    isCostBounded_MT_adaptiveCheatingProver isCostBounded_FS_adaptiveCheatingProver
+    isCostBounded_MT_verifier_of_mem_support_adaptiveCheatingProver
 
 example {enc : List Bool ↪ List Bool} {L : Set (List Bool)} (hL : L ∈ NP enc) :
     ∃ (V : PCPVerifier (List Bool)) (c d : ℕ),

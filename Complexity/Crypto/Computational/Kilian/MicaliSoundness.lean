@@ -12,9 +12,11 @@ public import Complexity.Crypto.Computational.Kilian.Soundness
 public import Complexity.Crypto.Computational.Kilian.Succinct
 public import Complexity.Crypto.Computational.MerkleTree.ROMExtract
 public import Complexity.Computability.Complexity.Classes.NP
+public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 import Complexity.Computability.Complexity.Classes.SharpP.Probability
 import Complexity.Computability.PCP.Completeness
 import Complexity.Foundations.Data.List.Lookup
+import Complexity.Languages.Probabilistic.QueryCount.Support
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Mathlib.Data.List.GetD
@@ -22,8 +24,9 @@ import Mathlib.Data.List.GetD
 /-!
 # Soundness of Micali's Computationally Sound Proofs in the Random Oracle Model
 
-This module proves the soundness of Micali's non-interactive random-oracle compilation of Kilian's
-protocol ([Micali2000]; [ChiesaYogev2024], Section 21.1, Theorem 21.1.2 / Theorem 21.2.1) by
+This module proves an explicit soundness bound for an unsalted, two-channel adaptation of
+Micali's non-interactive random-oracle compilation of Kilian's protocol ([Micali2000];
+[ChiesaYogev2024], Construction 21.1.1 and Theorem 21.2.1, printed pp. 239–242) by
 combining the straight-line Merkle trace extractor of
 `Complexity/Crypto/Computational/MerkleTree/ROMExtract.lean` with a union bound over the
 Fiat–Shamir challenge queries:
@@ -68,6 +71,13 @@ Fiat–Shamir challenge queries:
    non-interactive random-oracle CS proofs with polylogarithmic proof size for every language
    `L ∈ NP`, with compact PCP tables (`V.tableVerifier`) as the honest prover's witness relation.
 
+The cited construction includes privacy parameters and a salt in the Fiat–Shamir query; here
+that query is `(x, root)`. Our explicit error expression counts all Merkle queries in the prover
+and verifier execution, including queries on malformed paths, and is not the source's literal
+multi-extraction bound. The separate-budget corollary requires a verifier bound only for outputs
+in `P.support`. Native verifier runtime, truncation, and polynomial-time conversion of arbitrary
+NP witnesses to compact PCP tables are not established here.
+
 ## Main definitions
 
 * `Cslib.Crypto.AllOpeningsQueriedInTrace`: all Merkle opening paths in a `KilianResponse` are
@@ -106,7 +116,7 @@ Fiat–Shamir challenge queries:
 
 * [S. Micali, *Computationally Sound Proofs*][Micali2000]
 * [A. Chiesa, E. Yogev, *Building Cryptographic Proofs from Hash Functions*][ChiesaYogev2024],
-  Section 21.1, Construction 21.1.1, Theorem 21.1.2 / Theorem 21.2.1.
+  Construction 21.1.1 and Theorem 21.2.1, printed pp. 239–242, March 25, 2026 version.
 * [E. Ben-Sasson, A. Chiesa, N. Spooner, *Interactive Oracle Proofs*][BenSassonChiesaSpooner2016]
 * [J. Kilian, *A note on efficient zero-knowledge proofs and arguments*][Kilian1992]
 -/
@@ -611,17 +621,18 @@ theorem isCostBounded_micaliFSCost_micaliSoundnessProg (V : PCPVerifier α) (L :
       IsCostBounded.pure (decide (x ∉ L) && ok) 0
 
 /-- If `P` makes at most `t_MT` Merkle hash queries and `micaliVerify V x proof` makes at most
-`q_V` Merkle hash queries for every `(x, proof)`, then `micaliSoundnessProg V L P` makes at most
-`t_MT + q_V` Merkle hash queries. -/
+`q_V` Merkle hash queries for every `(x, proof)` that `P` can output, then
+`micaliSoundnessProg V L P` makes at most `t_MT + q_V` Merkle hash queries. -/
 theorem isCostBounded_micaliMTCost_micaliSoundnessProg (V : PCPVerifier α) (L : Set α)
     {P : OracleComp (MicaliSpec α) (α × MicaliProof)} {t_MT q_V : ℕ}
     (hMT : IsCostBounded micaliMTCost P t_MT)
-    (hV : ∀ x proof, IsCostBounded micaliMTCost (micaliVerify V x proof) q_V) :
+    (hV : ∀ x proof, (x, proof) ∈ P.support →
+      IsCostBounded micaliMTCost (micaliVerify V x proof) q_V) :
     IsCostBounded micaliMTCost (micaliSoundnessProg V L P) (t_MT + q_V) := by
   unfold micaliSoundnessProg
   open Classical in
-  exact hMT.bind fun (x, proof) =>
-    (hV x proof).bind fun ok =>
+  exact hMT.bind_on_support fun (x, proof) hmem =>
+    (hV x proof hmem).bind fun ok =>
       IsCostBounded.pure (decide (x ∉ L) && ok) 0
 
 /-- The Micali ROM soundness experiment with `σ`-bit Merkle digests and `m` PCP repetitions: runs
@@ -825,86 +836,6 @@ theorem toOuterMeasure_micaliMemoize_not_goodState_step [BEq α]
           exact hbad ⟨hst.1, hfs⟩
       _ ≤ (1 / 2) ^ m :=
           toOuterMeasure_memoize_not_fsTraceSound_step V L m tr_MT hsound xrt hst.2
-
-/-- **Two-channel accumulated bad-state probability**: let each call `q` from a good state `¬bad s`
-turn bad with probability at most `cost₁ q * budget s + cost₂ q * ε`, and raise `budget` by at most
-`cost₁ q * δ₁ + cost₂ q * δ₂`. Then a program with `IsCostBounded cost₁ program k₁` and
-`IsCostBounded cost₂ program k₂` reaches a bad state from `s` with probability at most
-`k₁ * (budget s + k₁ * δ₁ + k₂ * δ₂) + k₂ * ε`. -/
-theorem toOuterMeasure_bad_le_two {ι σ β : Type} {spec : ι → Type}
-    {handler : (q : ι) → StateT σ PMF (spec q)} {bad : σ → Prop}
-    (cost₁ cost₂ : ι → ℕ) (budget : σ → ℝ≥0∞) (δ₁ δ₂ ε : ℝ≥0∞)
-    (hstep : ∀ q s, ¬bad s →
-      (handler q s).toOuterMeasure {x | bad x.2} ≤ cost₁ q * budget s + cost₂ q * ε)
-    (hgrow : ∀ q s, ¬bad s → ∀ x ∈ (handler q s).support, ¬bad x.2 →
-      budget x.2 ≤ budget s + cost₁ q * δ₁ + cost₂ q * δ₂)
-    {program : OracleComp spec β} {k₁ k₂ : ℕ}
-    (hk₁ : IsCostBounded cost₁ program k₁) (hk₂ : IsCostBounded cost₂ program k₂)
-    {s : σ} (hs : ¬bad s) :
-    ((OracleComp.interpret handler program).run s).toOuterMeasure {x | bad x.2} ≤
-      (k₁ : ℝ≥0∞) * (budget s + (k₁ : ℝ≥0∞) * δ₁ + (k₂ : ℝ≥0∞) * δ₂) + (k₂ : ℝ≥0∞) * ε := by
-  induction hk₁ generalizing s k₂ with
-  | pure a k₁ =>
-    simp only [run_interpret_pure, Probability.PMF.monad_pure_eq_pure,
-      PMF.toOuterMeasure_pure_apply, ite_eq_right (show (a, s) ∉ {x : β × σ | bad x.2} from hs)]
-    exact zero_le
-  | liftBind q cont k₁ _ ih =>
-    classical
-    obtain ⟨hle₂, hcont₂⟩ := IsCostBounded.liftBind_iff.mp hk₂
-    simp only [run_interpret_bind, run_interpret_query,
-      Probability.PMF.monad_bind_eq_bind, PMF.toOuterMeasure_bind_apply]
-    set B : ℝ≥0∞ := budget s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ₁ + (k₂ : ℝ≥0∞) * δ₂
-    set K : ℝ≥0∞ := (k₁ : ℝ≥0∞) * B + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * ε
-    have hterm (y : spec q × σ) : (handler q s) y *
-        ((OracleComp.interpret handler (cont y.1)).run y.2).toOuterMeasure {x | bad x.2} ≤
-        (handler q s) y * ({x : spec q × σ | bad x.2}.indicator 1 y + K) := by
-      by_cases hmem : y ∈ (handler q s).support
-      · refine mul_le_mul_of_nonneg_left ?_ zero_le
-        by_cases hy : bad y.2
-        · have : y ∈ {x : spec q × σ | bad x.2} := hy
-          rw [Set.indicator_of_mem this, Pi.one_apply]
-          exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
-        · have : y ∉ {x : spec q × σ | bad x.2} := hy
-          rw [Set.indicator_of_notMem this, zero_add]
-          refine (ih y.1 (hcont₂ y.1) hy).trans ?_
-          simp only [K, B]
-          refine add_le_add (mul_le_mul_of_nonneg_left ?_ zero_le) le_rfl
-          calc budget y.2 + (k₁ : ℝ≥0∞) * δ₁ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ₂
-              ≤ budget s + (cost₁ q : ℝ≥0∞) * δ₁ + (cost₂ q : ℝ≥0∞) * δ₂ +
-                  (k₁ : ℝ≥0∞) * δ₁ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ₂ :=
-                add_le_add (add_le_add (hgrow q s hs y hmem hy) le_rfl) le_rfl
-            _ = budget s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ₁ +
-                  (((k₂ - cost₂ q) + cost₂ q : ℕ) : ℝ≥0∞) * δ₂ := by
-                simp only [Nat.cast_add]
-                ring
-            _ = budget s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ₁ + (k₂ : ℝ≥0∞) * δ₂ := by
-                rw [Nat.sub_add_cancel hle₂]
-      · rw [(PMF.apply_eq_zero_iff _ _).mpr hmem, zero_mul, zero_mul]
-    calc ∑' y, (handler q s) y *
-          ((OracleComp.interpret handler (cont y.1)).run y.2).toOuterMeasure {x | bad x.2}
-        ≤ ∑' y, (handler q s) y * ({x : spec q × σ | bad x.2}.indicator 1 y + K) :=
-          tsum_le_tsum hterm
-      _ = (handler q s).toOuterMeasure {x | bad x.2} + K := by
-          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun y => ?_
-          by_cases hy : y ∈ {x : spec q × σ | bad x.2}
-          · rw [Set.indicator_of_mem hy, Set.indicator_of_mem hy, Pi.one_apply, mul_one]
-          · rw [Set.indicator_of_notMem hy, Set.indicator_of_notMem hy, mul_zero]
-      _ ≤ ((cost₁ q : ℝ≥0∞) * B + (cost₂ q : ℝ≥0∞) * ε) + K := by
-          refine add_le_add ((hstep q s hs).trans ?_) le_rfl
-          gcongr
-          simp only [B]
-          exact le_self_add.trans le_self_add
-      _ = ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * B + (k₂ : ℝ≥0∞) * ε := by
-          simp only [K]
-          have hsub : (cost₂ q : ℝ≥0∞) * ε + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * ε = (k₂ : ℝ≥0∞) * ε := by
-            rw [← add_mul, ← Nat.cast_add, Nat.add_sub_cancel' hle₂]
-          have hadd : (cost₁ q : ℝ≥0∞) * B + (k₁ : ℝ≥0∞) * B = ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * B := by
-            rw [← add_mul, add_comm (cost₁ q : ℝ≥0∞), ← Nat.cast_add]
-          rw [← hsub, ← hadd]
-          ring
 
 /-- **Accumulated bad-state bound for `micaliMemoize`**: any program with Merkle query budget
 `Q_MT` and Fiat–Shamir query budget `Q_FS` starting from `([], [])` violates `MicaliGoodState V L`
@@ -1352,7 +1283,8 @@ theorem not_micaliGoodState_of_mem_support_micaliSoundnessProg [DecidableEq α]
   exact hfs_sound ((x, proof.root), ρs') hρs_in_FS₂ hx_not_L fun ρ hρ =>
     kilianVerify_sound_of_traceCollisionFree hfree hpaths hver hρ (hρs_len ρ hρ)
 
-/-- **Micali's ROM Soundness Theorem** ([Micali2000]; [ChiesaYogev2024], Theorem 21.1.2 / 21.2.1):
+/-- **Adaptive ROM soundness for the unsalted two-channel variant** (compare [Micali2000];
+[ChiesaYogev2024], Theorem 21.2.1, printed pp. 241–242):
 for any PCP verifier `V` whose soundness error on statements outside `L` is at most `1 / 2` per
 repetition, and any cheating prover `P` making at most `t_FS` Fiat–Shamir queries such that the
 combined execution `micaliSoundnessProg V L P` makes at most `Q_MT` Merkle hash queries, the
@@ -1384,7 +1316,8 @@ theorem micaliSoundness_bound [DecidableEq α] (V : PCPVerifier α) (L : Set α)
 
 /-- **Micali's ROM Soundness Theorem (separate prover/verifier Merkle budgets)**: if the cheating
 prover `P` makes at most `t_MT` Merkle hash queries and at most `t_FS` Fiat–Shamir queries, and
-`micaliVerify V x proof` makes at most `q_V` Merkle hash queries, then `micaliSoundnessGame`
+`micaliVerify V x proof` makes at most `q_V` Merkle hash queries for outputs in `P.support`,
+then `micaliSoundnessGame`
 accepts a false statement with probability at most
 `(t_FS + 1) * (1 / 2) ^ m + (t_MT + q_V) * ((3 * (t_MT + q_V) + (t_FS + 1)) * (1 / 2 ^ σ))`. -/
 theorem micaliSoundness_bound_of_prover_verifier [DecidableEq α] (V : PCPVerifier α) (L : Set α)
@@ -1394,7 +1327,8 @@ theorem micaliSoundness_bound_of_prover_verifier [DecidableEq α] (V : PCPVerifi
     {P : OracleComp (MicaliSpec α) (α × MicaliProof)} {t_MT t_FS q_V : ℕ}
     (hMT : IsCostBounded micaliMTCost P t_MT)
     (hFS : IsCostBounded micaliFSCost P t_FS)
-    (hV : ∀ x proof, IsCostBounded micaliMTCost (micaliVerify V x proof) q_V) :
+    (hV : ∀ x proof, (x, proof) ∈ P.support →
+      IsCostBounded micaliMTCost (micaliVerify V x proof) q_V) :
     micaliSoundnessGame V L P σ m true ≤
       ((t_FS + 1 : ℕ) : ℝ≥0∞) * (1 / 2) ^ m +
         ((t_MT + q_V : ℕ) : ℝ≥0∞) *
@@ -1495,7 +1429,8 @@ theorem micaliProofBits_micaliProvePure_le_log {enc : α ↪ List Bool} {c : ℕ
   nlinarith
 
 /-- **Micali's CS Proofs for `NP` in the Random Oracle Model**
-([Micali2000]; [ChiesaYogev2024], Theorem 21.1.2): every language `L ∈ NP` has a polynomial-time
+([Micali2000]; compare [ChiesaYogev2024], Construction 21.1.1 and Theorem 21.2.1): every language
+`L ∈ NP` has a polynomial-time
 PCP verifier `V` with `O(log n)` random bits and a constant number of queries whose accepted
 compact tables (`V.tableVerifier`) characterize `L`, such that Micali's non-interactive ROM
 protocol over `V`:
