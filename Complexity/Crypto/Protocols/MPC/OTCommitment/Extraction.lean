@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Crypto.Protocols.MPC.OTCommitment
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.Opening
 public import Complexity.Foundations.Data.BitString.Threshold
 public import Complexity.Probability.StatisticalDistance.Coupling
 import Complexity.Probability.PMF.Event
@@ -111,14 +111,6 @@ theorem wrongOpening_bound {k : ℕ} (ts : Fin k → Fin 4 → Bool) (b : Bool)
       · rw [ENNReal.mul_inv_cancel (by positivity) (by finiteness)]
         simp [ENNReal.inv_pow]
       all_goals simp
-
-/-- Receiver output after one opening; `none` represents either sender abort or rejection. -/
-@[expose] noncomputable def openResult {k : ℕ} (choices received : Fin k → Bool)
-    (submission : Option (Bool × Opening k)) : Option Bool :=
-  match submission with
-  | none => none
-  | some (b, o) => if @decide (Accepts choices received b o) (Classical.propDecidable _) then
-      some b else none
 
 /-- Real corrupted-sender experiment, using the actual OT world. The sender state at the commit
 boundary and its arbitrary auxiliary output are retained jointly with the honest receiver's result.

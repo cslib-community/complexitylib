@@ -54,7 +54,9 @@ Priorities live in this list and in the tiers of [#897].
   majority extraction error `2⁻⌈k/2⌉`. `OTCommitment/Equivocation` proves the exact joint law of
   the receiver's transcript, state and later opening from a bit-independent commit prefix.
   `OTCommitment/PolyTime` certifies only the deterministic extraction and equivocation maps on
-  explicit lists. Full ideal commitment realization, efficient simulation, composition, the
+  explicit lists. `OTCommitment/Opening/PolyTime` adds a total list opening checker with
+  exact-length rejection and a native polynomial-time certificate. Full ideal commitment
+  realization, efficient simulation, composition, the
   malicious compiler, and MPC simulation remain open in
   [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
   `Crypto/Protocols/Commitment/World` supplies an original single-session phased abort
