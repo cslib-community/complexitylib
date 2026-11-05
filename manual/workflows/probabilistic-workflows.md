@@ -131,6 +131,34 @@ Run `scripts/build.sh ComplexityTests.DiscreteGaussianCenteredTail` from the rep
 A missing full-rank instance can be supplied by the basis-spanned construction in that file.
 For a nonzero center, use the earlier explicit normalizer-ratio estimate instead.
 
+## Condition a discrete Gaussian on coefficient residues
+
+Import [Gaussian/CoefficientFiber.lean](../../Complexity/Foundations/Probability/Gaussian/CoefficientFiber.lean).
+Give an integer basis `b` of the discrete lattice, a positive modulus `p`, a width `r > 0`,
+and an arbitrary center `c`. `ZLattice.coefficientMod L b p` reduces the basis coordinates
+into `ι → ZMod p`; `coefficientLift` supplies their least-nonnegative-coordinate representative
+`u`. With `open scoped Pointwise`, the canonical submodule `(p : ℝ) • L` is the image of
+multiplication by `p`.
+
+`map_coefficientMod_discreteGaussian_apply` identifies each residue probability as
+`gaussianMass (p • L) r (c - u) / gaussianMass L r c`, in `ENNReal` form.
+`map_coefficientMod_discreteGaussian_pos` proves every event has positive probability.
+`filter_coefficientMod_discreteGaussian` then identifies the actual `PMF.filter` with a draw
+from `discreteGaussian (p • L) r hr (c - u)` followed by translation by `u`.
+There is no index or covolume factor in this conditional law.
+
+`map_coefficientMod_pair_discreteGaussian` reconstructs the tagged sample by drawing its
+actual residue marginal and then the corresponding coset Gaussian. These weights are not
+assumed uniform. The [checked clients](../../ComplexityTests/DiscreteGaussianCoefficientFiber.lean)
+use the infinite lattice `2ℤ`, composite modulus `6`, residue `1`, and center `1/2`:
+the representative is `2`, the scalar lattice contains `12`, and the conditional center is
+`-3/2`. Rank-zero and dimension-zero cases are also checked. Run
+`scripts/build.sh ComplexityTests.DiscreteGaussianCoefficientFiber` to check the clients.
+
+This is the exact conditioning step used in Regev's Lemma 3.11, not its joint LWE sample
+bound or an efficient sampling procedure. The [joint experiment](https://github.com/cslib-community/complexitylib/issues/2767)
+and the [full reduction](https://github.com/cslib-community/complexitylib/issues/1213) remain separate.
+
 ## Fold a density onto a quotient
 
 Import [QuotientDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/QuotientDensity.lean)

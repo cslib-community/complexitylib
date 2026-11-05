@@ -109,6 +109,13 @@ transporting key-generation error, and realizing the efficient forking reduction
   discrete-Gaussian convolution consumer is tracked separately in
   [#2707](https://github.com/cslib-community/complexitylib/issues/2707); the shared measure
   identity alone does not establish Claim 3.9 or a sampler.
+  Exact coefficient-fiber disintegration is proved in
+  [#2766](https://github.com/cslib-community/complexitylib/issues/2766): reducing integer basis
+  coordinates modulo any positive integer, including composite moduli, gives actual positive
+  residue masses and filtered coset Gaussians. Tagged samples reconstruct with the actual
+  marginal weights. The joint LWE sample bound of Lemma 3.11 remains separate in
+  [#2767](https://github.com/cslib-community/complexitylib/issues/2767); no uniform-residue or
+  efficient-sampling claim follows from disintegration alone.
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
   to a PCP with Merkle trees; Micali's CS proofs and the BCS transform give the random-oracle
