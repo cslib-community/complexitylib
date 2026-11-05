@@ -17,7 +17,7 @@ import Mathlib.Tactic
 # All-out-of-r sharing with imperfect randomness
 
 The construction of STOC submission 886 [Aggarwal2026], Section 5, equations
-(7)–(9), Theorem 5.1 and Lemmas 5.2–5.3 (PDF pp. 10–11). An active subset is
+(7)–(9), Theorem 5.1 and Lemmas 5.2–5.4 (PDF pp. 10–11). An active subset is
 nonempty, the pads are the actual zero-sum pads on `V^n`, and the source is the
 common `OddSources.source`, with odd active subsets at indices in `T`.
 
@@ -32,6 +32,7 @@ common `OddSources.source`, with odd active subsets at indices in `T`.
 * `reconstruct_shares`: correctness for every ambient key.
 * `view_law`, `coalition_privacy`: the exact uniform view and all proper coalitions.
 * `card_keys`, `source_minEntropy_at_bit_size`: exact support size and entropy.
+* `binary_separation`: all four items of Theorem 5.1, including sharp extraction bounds.
 * `binary_construction`: coefficients, encodings, correctness and privacy for every
   `r=n+1 ≥ 2`, `b ≥ r`, without assuming any desired pad or privacy properties.
 
@@ -44,6 +45,7 @@ public section
 namespace Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllOutOfR
 
 open Finset
+open scoped Cslib.Probability.PMF
 
 variable {V : Type*} {n : ℕ}
 
@@ -579,6 +581,73 @@ theorem branch_class_proper (hn : 1 ≤ n) :
     (oddBranches n).Nonempty ∧ (univ \ oddBranches n).Nonempty :=
   ⟨oddBranches_nonempty n, evenBranches_nonempty hn⟩
 
+open Cslib.Probability in
+/-- Theorem 5.1, item 3: every positive-length string extractor fails on an
+actual source, with the exact `1/(2(2^r-1))` error bound. -/
+theorem no_string_extractor [Field V] [Fintype V] [DecidableEq V]
+    (hn : 1 ≤ n) (ℓ : ℕ) (hℓ : 0 < ℓ) (ext : Key V n → (Fin ℓ → Bool)) :
+    ∃ T, (1 : ℝ) / (2 * (2 ^ (n + 1) - 1 : ℕ)) ≤
+      dist ((source hn T).map ext) (PMF.uniformOfFintype (Fin ℓ → Bool)) := by
+  simpa only [source, card_branch] using
+    OddSources.no_string_extractor (oddBranches n) (oddBranches_nonempty n)
+      (evenBranches_nonempty hn) (odd_card_branch n) ℓ hℓ ext
+
+open Cslib.Probability in
+/-- Theorem 5.1, item 4: a constructed balanced function of the actual pad index
+has the matching all-source upper bound, attained on some source. -/
+theorem exists_tight_index_extractor [Field V] [Fintype V] [DecidableEq V]
+    (hn : 1 ≤ n) {b : ℕ} (hb : 1 ≤ b) (hV : Fintype.card V = 2 ^ b) :
+    ∃ g : Index V n → Bool,
+      (univ.filter fun u => g u = true).card = (univ.filter fun u => g u = false).card ∧
+      (∀ T, dist ((source hn T).map (fun k => g k.2))
+        (PMF.uniformOfFintype Bool) ≤ (1 : ℝ) / (2 * (2 ^ (n + 1) - 1 : ℕ))) ∧
+      (∃ T, dist ((source hn T).map (fun k => g k.2))
+        (PMF.uniformOfFintype Bool) = (1 : ℝ) / (2 * (2 ^ (n + 1) - 1 : ℕ))) := by
+  have hclasses : ((oddBranches n).card = (2 ^ n - 1) + 1 ∧
+      (univ \ oddBranches n).card = 2 ^ n - 1) := by
+    rw [card_oddBranches, card_evenBranches]
+    have := Nat.one_le_two_pow (n := n)
+    omega
+  simpa only [source, card_branch] using
+    OddSources.exists_tight_index_extractor (oddBranches n) (oddBranches_nonempty n)
+      (evenBranches_nonempty hn) (2 ^ n - 1) (Or.inr hclasses)
+      (even_card_index hn hb hV)
+
+open Cslib.Probability in
+/-- The attained tight bound on literal one-bit strings, matching item 3 at `ℓ=1`. -/
+theorem exists_tight_one_bit_index_extractor [Field V] [Fintype V] [DecidableEq V]
+    (hn : 1 ≤ n) {b : ℕ} (hb : 1 ≤ b) (hV : Fintype.card V = 2 ^ b) :
+    ∃ g : Index V n → (Fin 1 → Bool),
+      (univ.filter fun u => g u 0 = true).card =
+        (univ.filter fun u => g u 0 = false).card ∧
+      (∀ T, dist ((source hn T).map (fun k => g k.2))
+        (PMF.uniformOfFintype (Fin 1 → Bool)) ≤
+          (1 : ℝ) / (2 * (2 ^ (n + 1) - 1 : ℕ))) ∧
+      (∃ T, dist ((source hn T).map (fun k => g k.2))
+        (PMF.uniformOfFintype (Fin 1 → Bool)) =
+          (1 : ℝ) / (2 * (2 ^ (n + 1) - 1 : ℕ))) := by
+  classical
+  obtain ⟨g, hbalance, hu, T, ht⟩ := exists_tight_index_extractor hn hb hV
+  let e : Bool ≃ (Fin 1 → Bool) := (Equiv.funUnique (Fin 1) Bool).symm
+  have hd (p : PMF Bool) : dist (p.map e) (PMF.uniformOfFintype (Fin 1 → Bool)) =
+      dist p (PMF.uniformOfFintype Bool) := by
+    have h₁ := PMF.dist_map_le p (PMF.uniformOfFintype Bool) e
+    rw [PMF.uniformOfFintype_map_equiv] at h₁
+    have h₂ := PMF.dist_map_le (p.map e)
+      (PMF.uniformOfFintype (Fin 1 → Bool)) e.symm
+    rw [PMF.uniformOfFintype_map_equiv, PMF.map_comp] at h₂
+    have hid : e.symm ∘ e = id := funext e.symm_apply_apply
+    rw [hid, PMF.map_id] at h₂
+    exact le_antisymm h₁ h₂
+  refine ⟨fun u _ => g u, hbalance, ?_, T, ?_⟩
+  · intro S
+    have h := hd ((source hn S).map (fun k => g k.2))
+    rw [PMF.map_comp] at h
+    exact h.le.trans (hu S)
+  · have h := hd ((source hn T).map (fun k => g k.2))
+    rw [PMF.map_comp] at h
+    exact h.trans ht
+
 /-- Actual bit-string sharing through fixed message and share bijections. -/
 @[expose] def encodedShare [Field V] {b : ℕ}
     (em : V ≃ (Fin b → Bool)) (es : Share V ≃ (Fin (b + 1) → Bool))
@@ -625,8 +694,8 @@ theorem exists_coefficients {b : ℕ} (hb : n + 1 ≤ b) :
 open scoped Classical in
 open Cslib.Probability in
 /-- The constructive sharing portion of Theorem 5.1 for every `r=n+1 ≥ 2`, `b ≥ r`.
-The coefficients and encodings are produced, not assumed. The extraction bounds
-are supplied separately by the common odd-source obstruction and balanced-index theorem. -/
+The coefficients and encodings are produced, not assumed. `binary_separation`
+also includes the extraction lower bound and its attained matching upper bound. -/
 theorem binary_construction (n b : ℕ) (hn : 1 ≤ n) (hb : n + 1 ≤ b) :
     let V := GaloisField 2 b
     let : Fintype V := Fintype.ofFinite _
@@ -653,5 +722,49 @@ theorem binary_construction (n b : ℕ) (hn : 1 ≤ n) (hb : n + 1 ≤ b) :
   exact ⟨γ, em, es, hγ, card_key_at_bit_size hV, encoded_correct em es hγ,
     fun T J hJ => encoded_privacy hn em es γ T J hJ,
     source_minEntropy_at_bit_size hn hV⟩
+
+open scoped Classical in
+open Cslib.Probability in
+/-- All four items of STOC submission 886, Theorem 5.1, on the actual construction.
+For `r=n+1 ≥ 2` and `b ≥ r` the coefficients, literal message/share encodings,
+source laws and tight index extractor all exist without linking assumptions.
+Every proper coalition has joint privacy. All positive output lengths are covered
+by the extraction lower bound; the matching one-bit upper bound is attained. -/
+theorem binary_separation (n b : ℕ) (hn : 1 ≤ n) (hb : n + 1 ≤ b) :
+    let V := GaloisField 2 b
+    let : Fintype V := Fintype.ofFinite _
+    ∃ (γ : Fin (n + 1) → V) (em : V ≃ (Fin b → Bool))
+      (es : Share V ≃ (Fin (b + 1) → Bool)),
+      LinearIndependent (ZMod 2) γ ∧
+      Fintype.card (Key V n) = (2 ^ (n + 1) - 1) * 2 ^ (n * b) ∧
+      (∀ m k, encodedReconstruct em es γ (encodedShare em es γ m k) = m) ∧
+      (∀ (T : Finset (Index V n)) (J : Finset (Fin (n + 1))), J ≠ univ →
+        ∀ m m',
+        (source hn T).map (fun k => fun i : J => encodedShare em es γ m k i.val) =
+          (source hn T).map (fun k => fun i : J => encodedShare em es γ m' k i.val)) ∧
+      (∀ T : Finset (Index V n), ∃ (K : Finset (Key V n)) (hK : K.Nonempty),
+        source hn T = PMF.uniformOfFinset K hK ∧
+        K.card = (2 ^ n - 1) * 2 ^ (n * b) + T.card ∧
+        (2 ^ n - 1) * 2 ^ (n * b) ≤ K.card ∧ K.card ≤ 2 ^ n * 2 ^ (n * b)) ∧
+      (∀ T : Finset (Index V n),
+        (n * b : ℕ) + Real.logb 2 (2 ^ n - 1 : ℕ) ≤ PMF.minEntropy (source hn T)) ∧
+      (∀ ℓ : ℕ, 0 < ℓ → ∀ ext : Key V n → (Fin ℓ → Bool),
+        ∃ T, (1 : ℝ) / (2 * (2 ^ (n + 1) - 1 : ℕ)) ≤
+          dist ((source hn T).map ext) (PMF.uniformOfFintype (Fin ℓ → Bool))) ∧
+      (∃ g : Index V n → (Fin 1 → Bool),
+        (univ.filter fun u => g u 0 = true).card =
+          (univ.filter fun u => g u 0 = false).card ∧
+        (∀ T, dist ((source hn T).map (fun k => g k.2))
+          (PMF.uniformOfFintype (Fin 1 → Bool)) ≤ (1 : ℝ) / (2 * (2 ^ (n + 1) - 1 : ℕ))) ∧
+        (∃ T, dist ((source hn T).map (fun k => g k.2))
+          (PMF.uniformOfFintype (Fin 1 → Bool)) = (1 : ℝ) / (2 * (2 ^ (n + 1) - 1 : ℕ)))) := by
+  classical
+  let V := GaloisField 2 b
+  let : Fintype V := Fintype.ofFinite _
+  have hV : Fintype.card V = 2 ^ b := by
+    rw [← Nat.card_eq_fintype_card, GaloisField.card 2 b (by omega)]
+  obtain ⟨γ, em, es, hγ, hk, hc, hp, he⟩ := binary_construction n b hn hb
+  exact ⟨γ, em, es, hγ, hk, hc, hp, flat_sources_at_bit_size hn hV, he,
+    no_string_extractor hn, exists_tight_one_bit_index_extractor hn (by omega) hV⟩
 
 end Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllOutOfR

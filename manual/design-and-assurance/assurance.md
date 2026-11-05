@@ -98,7 +98,7 @@ $6/7$ strengthening. These ancillary claims are distinct from the main-results c
 
 Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllOutOfR` and open
 `Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllOutOfR`.
-For $r=n+1\ge2$ parties and $b\ge r$, `binary_construction n b` produces actual
+For $r=n+1\ge2$ parties and $b\ge r$, `binary_separation n b` produces actual
 coefficients in $\mathrm{GF}(2^b)$ and fixed message/share bijections to $b$- and
 $(b+1)$-bit strings. It proves reconstruction for every ambient key, joint privacy
 for every proper coalition, the exact key cardinality $(2^r-1)2^{(r-1)b}$, and the
@@ -117,18 +117,25 @@ contrast, `full_view_not_private` proves that the full view distinguishes distin
 messages, so the privacy statement has a substantive threshold boundary.
 
 `card_branch`, `card_oddBranches`, `card_evenBranches`, `card_keys`, and
-`card_keys_bounds` expose the exact counts used in Theorem 5.1. The generic
-extraction lower bound and matching balanced-index upper bound are separate
-results; `odd_card_branch`, `branch_class_proper`, and `even_card_index` supply
-the actual construction's parity, nonemptiness and balance prerequisites.
-This construction theorem covers the sharing portion of Theorem 5.1, not a
-standalone claim that all of its extraction assertions have been integrated.
+`card_keys_bounds` expose the exact counts used in Theorem 5.1.
+`no_string_extractor` proves error at least $1/(2(2^r-1))$ on some actual source
+for every deterministic extractor with any positive output length.
+`exists_tight_index_extractor` constructs a balanced bit of the actual pad index,
+proves the matching upper bound on every source, and proves that some source
+attains equality. `exists_tight_one_bit_index_extractor` transports the same
+attained bound to literal one-bit strings, so it matches item 3 at output length one.
+These instantiate the common odd-source parity and tightness
+results using proved branch counts, nonempty classes and even index cardinality.
+`binary_separation` bundles all four items of Theorem 5.1 without unproved
+linking assumptions. `binary_construction` remains the sharing-only entry point.
 The fixed bijections are noncomputable choices; no bit-level runtime is claimed.
 
 From the repository root, run `scripts/build.sh ComplexityTests.Crypto.AllOutOfR`.
 The [checked client](../../ComplexityTests/Crypto/AllOutOfR.lean) constructs the
 $r=2,b=2$ and $r=3,b=3$ instances, checks both support endpoints, tests joint privacy
 for two of three parties as well as singletons and the empty coalition, and shows
-that a single party has no nonempty even branch. The source locator is
+that a single party has no nonempty even branch. It also applies the full bundle,
+checks arbitrary positive output lengths and the attained sharp constants $1/6$
+for two parties and $1/14$ for three. The source locator is
 [Aggarwal2026](../../references.bib), Section 5, equations (7)–(9), Theorem 5.1
-and Lemmas 5.2–5.3, submission PDF pp. 10–11.
+and Lemmas 5.2–5.4, submission PDF pp. 10–11.

@@ -18,6 +18,7 @@ case has three branches, the three-party case seven; the latter checks joint
 privacy for a two-party coalition rather than only single-party marginals.
 -/
 
+open scoped Cslib.Probability.PMF
 open Finset Cslib.Probability
 open Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness
 open AllOutOfR
@@ -60,11 +61,11 @@ example : Fintype.card (AllOutOfR.Key V 2) = 448 := by
 
 /-- Empty and full index sets attain the exact support-size endpoints. -/
 example : (OddSources.keys (oddBranches 2) (∅ : Finset (Index V 2))).card = 192 := by
-  rw [card_keys]
+  rw [AllOutOfR.card_keys]
   simp [Index, card_v]
 
 example : (OddSources.keys (oddBranches 2) (univ : Finset (Index V 2))).card = 256 := by
-  rw [card_keys]
+  rw [AllOutOfR.card_keys]
   simp [Index, card_v]
 
 example (u : Index V 2) : pad u 0 = u 0 ∧ pad u 1 = u 1 ∧
@@ -116,5 +117,57 @@ example (T : Finset (Index V 2)) :
     (6 : ℝ) + Real.logb 2 3 ≤ PMF.minEntropy (AllOutOfR.source (by decide : 1 ≤ 2) T) := by
   simpa using source_minEntropy_at_bit_size (by decide : 1 ≤ 2)
     (b := 3) (by simpa using card_v) T
+
+/-- All positive output lengths are obstructed on the actual three-party source family. -/
+example (ℓ : ℕ) (hℓ : 0 < ℓ) (ext : AllOutOfR.Key V 2 → (Fin ℓ → Bool)) :
+    ∃ T, (1 : ℝ) / 14 ≤ dist
+      ((AllOutOfR.source (by decide : 1 ≤ 2) T).map ext)
+      (PMF.uniformOfFintype (Fin ℓ → Bool)) := by
+  have h := AllOutOfR.no_string_extractor (by decide : 1 ≤ 2) ℓ hℓ ext
+  norm_num at h
+  exact h
+
+/-- The actual three-party pad index admits an extractor with attained error exactly 1/14. -/
+example : ∃ g : Index V 2 → Bool,
+    (∀ T, dist ((AllOutOfR.source (by decide : 1 ≤ 2) T).map (fun k => g k.2))
+      (PMF.uniformOfFintype Bool) ≤ (1 : ℝ) / 14) ∧
+    (∃ T, dist ((AllOutOfR.source (by decide : 1 ≤ 2) T).map (fun k => g k.2))
+      (PMF.uniformOfFintype Bool) = (1 : ℝ) / 14) := by
+  obtain ⟨g, _, hu, ht⟩ := AllOutOfR.exists_tight_index_extractor
+    (by decide : 1 ≤ 2) (b := 3) (by decide) (by simpa using card_v)
+  exact ⟨g, by norm_num at hu; exact hu, by norm_num at ht; exact ht⟩
+
+/-- The full bundle's same coefficients/encodings reconstruct and have sharp extraction
+bounds, with no leftover source, coefficient or pad assumptions. -/
+example : ∃ (γ : Fin 3 → V) (em : V ≃ (Fin 3 → Bool))
+    (es : AllOutOfR.Share V ≃ (Fin 4 → Bool)),
+    (∀ m k, encodedReconstruct em es γ (encodedShare em es γ m k) = m) ∧
+    (∀ ext : AllOutOfR.Key V 2 → (Fin 2 → Bool), ∃ T,
+      (1 : ℝ) / 14 ≤ dist ((AllOutOfR.source (by decide : 1 ≤ 2) T).map ext)
+        (PMF.uniformOfFintype (Fin 2 → Bool))) ∧
+    (∃ g : Index V 2 → (Fin 1 → Bool),
+      (∀ T, dist ((AllOutOfR.source (by decide : 1 ≤ 2) T).map (fun k => g k.2))
+        (PMF.uniformOfFintype (Fin 1 → Bool)) ≤ (1 : ℝ) / 14) ∧
+      (∃ T, dist ((AllOutOfR.source (by decide : 1 ≤ 2) T).map (fun k => g k.2))
+        (PMF.uniformOfFintype (Fin 1 → Bool)) = (1 : ℝ) / 14)) := by
+  obtain ⟨γ, em, es, _, _, hc, _, _, _, hl, g, _, hu, ht⟩ :=
+    binary_separation 2 3 (by decide) (by decide)
+  exact ⟨γ, em, es, hc, by have h := hl 2 (by decide); norm_num at h; exact h,
+    g, by norm_num at hu; exact hu, by norm_num at ht; exact ht⟩
+
+open scoped Classical in
+/-- The r=2 specialization has the paper's sharp 1/6 constant as well. -/
+example :
+    let W := GaloisField 2 2
+    let : Fintype W := Fintype.ofFinite _
+    ∃ g : Index W 1 → (Fin 1 → Bool),
+      (∀ T, dist ((AllOutOfR.source (by decide : 1 ≤ 1) T).map (fun k => g k.2))
+        (PMF.uniformOfFintype (Fin 1 → Bool)) ≤ (1 : ℝ) / 6) ∧
+      (∃ T, dist ((AllOutOfR.source (by decide : 1 ≤ 1) T).map (fun k => g k.2))
+        (PMF.uniformOfFintype (Fin 1 → Bool)) = (1 : ℝ) / 6) := by
+  classical
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, g, _, hu, ht⟩ :=
+    binary_separation 1 2 (by decide) (by decide)
+  exact ⟨g, by norm_num at hu; exact hu, by norm_num at ht; exact ht⟩
 
 end ComplexityTests.AllOutOfR
