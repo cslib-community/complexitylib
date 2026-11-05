@@ -179,6 +179,39 @@ Signature EUF-CMA instead gives adaptive signing and hash access, uses the same 
 answer at verification, and rejects a final message previously signed. Discarding a message field
 from an identification adversary does not supply this signature reduction.
 
+[`Complexity/Crypto/Protocols/SigmaProtocol/FiatShamirNIZK.lean`](../../Complexity/Crypto/Protocols/SigmaProtocol/FiatShamirNIZK.lean)
+compiles a public-coin `SigmaProtocol X Y T C Z` into a non-interactive proof system
+(`fiatShamirNIZKProve`, `fiatShamirNIZKVerify`) over the statement-bound random-oracle specification
+`NIZKHashSpec Y T C := fun _ : Y × T => C` [bs23][bs23]:
+
+- **Completeness and statement binding:** `fiatShamirNIZK_complete` proves acceptance with
+  probability `1` (`= PMF.pure true`) from any initial lazy random-oracle cache when `R x y` holds.
+  Querying `H` on `(y, t)` rather than `t` alone is required when statements can be chosen
+  adaptively after querying `H`; a concrete `ZMod 5 × ZMod 5` Schnorr counterexample in
+  [`ComplexityTests/Crypto/FiatShamirNIZK.lean`](../../ComplexityTests/Crypto/FiatShamirNIZK.lean)
+  forges accepted proofs of false statements with probability `4 / 5` under `H(t)` (`Qro = 1`),
+  versus the `2 / 5` cap enforced by `H(y, t)`.
+- **Adaptive multi-theorem zero knowledge (`fiatShamirNIZKRealGame`, `fiatShamirNIZKSimGame`):**
+  over `NIZKDistinguisherSpec` (`.inl (x, y)` for proving, `.inr (y, t)` for hashing) with an
+  explicit checker `valid : X → Y → Bool`, invalid queries (`valid x y = false`) return `none`
+  identically without modifying the cache, while valid queries are answered in `fiatShamirNIZKSimGame`
+  by the witness-free programmable-ROM simulator `nizkSimProve simulate`. Under `SpecialHVZK` and
+  `UnpredictableCommitments R δ`, `abs_sub_fiatShamirNIZKRealGame_simGame_le` and
+  `advantage_fiatShamirNIZKRealGame_simGame_le` bound the advantage of any `(Qp, Qro)`-bounded
+  distinguisher by `Qp * (Qp + Qro) * δ`.
+- **ROM proof of knowledge and simulation-extractability:** via `Forking.fork`,
+  `succProbability_fiatShamirNIZKPokGame_le` bounds an explicit-coin `Qro`-hash cheating prover's
+  acceptance probability by `(Qro + 1) / |C| + √((Qro + 1) * ε')` for `fiatShamirNIZKExtract` (with
+  `oneWayGame` and false-statement soundness corollaries). When the adversary also makes up to `Qp`
+  adaptive prove calls and outputs `(y*, (t*, z*))` whose pair `(y*, t*)` was not returned by the
+  prove oracle, `fiatShamirNIZKSimExtractWith` (parameterized by a `SimCoinSource`, with
+  `fiatShamirNIZKSimExtract` using `PMF.pi` over finite `Y` and `linearSimCoinSource` avoiding
+  statement/group finiteness on `SigmaProtocol.linear` and `SigmaProtocol.schnorr`) achieves
+  `ε ≤ Qp * (Qp + Qro) * δ + (Qro + 1) / |C| + √((Qro + 1) * ε')`
+  (`succProbability_fiatShamirNIZKRealExtGameOn_le`, `succProbability_fiatShamirNIZKRealExtGame_le`).
+  All bounds are exact finite probability laws in `OracleComp`; machine-level `IsPPT` efficiency
+  bridges for rewinding extractors are separate.
+
 The ideal-permutation model gives an adversary both forward and inverse access to one consistent random permutation. Separate cipher/primitive channels support [Complexity/Crypto/Protocols/Cipher/EvenMansour.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Cipher/EvenMansour.lean); the two-key and single-key advantages are bounded by `2*Q_cipher*Q_primitive/|G|`. [Complexity/Crypto/Protocols/Cipher/LubyRackoff.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Cipher/LubyRackoff.lean) proves three-round forward and four-round strong/bidirectional Feistel results and an explicit three-round chosen-ciphertext attack. These are bounded-query theorems over finite groups with exact ideal functions/permutations. Native local computation is not charged merely by `IsQueryBounded`. The uniform computational counterparts live in [Complexity/Crypto/Computational/PseudorandomPermutation.lean](../../Complexity/Crypto/Computational/PseudorandomPermutation.lean) (`BlockCipher`, `BlockCipher.PRP`, `BlockCipher.StrongPRP` against oracle-PPT word distinguishers, with explicit security parameter and the `[]` convention for malformed blocks), [Complexity/Crypto/Computational/EvenMansour.lean](../../Complexity/Crypto/Computational/EvenMansour.lean) (`evenMansourCipher` and `singleKeyEvenMansourCipher`, randomized `ProbOracleComp` and `WordOracleComp (Bool × Bool)` ideal-permutation security bounds `2 * Q_e * Q_π / 2 ^ n`, polynomial-query `Negligible` advantage, and `Game.Indistinguishable` against `IsOraclePPT encBool` distinguishers), and [Complexity/Crypto/Computational/LubyRackoff.lean](../../Complexity/Crypto/Computational/LubyRackoff.lean): `PseudorandomFunction.prp_lubyRackoffCipher` proves that the three-round cipher `lubyRackoffCipher` built from a `PseudorandomFunction` is a PRP. Its proof reduces to `PseudorandomFunction.multiKey` with an oracle-PPT adapter, and both modules transfer their finite-group bounds to randomized adversaries by fixing their private coins (`ProbOracleComp.coinLaw`, [CoinFixing.lean](../../Complexity/Languages/Probabilistic/Oracle/CoinFixing.lean)). `PseudorandomFunction.strongPRP_lubyRackoff4Cipher` proves that the four-round cipher `lubyRackoff4Cipher` is a strong PRP, in the same way, through a bidirectional adapter.
 
 ## General zero knowledge: quantifier orders, primary-input clocks, and instance indexing
