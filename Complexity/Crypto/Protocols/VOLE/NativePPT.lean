@@ -18,10 +18,12 @@ import Complexity.Tactic.PPT
 /-!
 # Strict PPT realization of the native VOLE simulator
 
-The scalar ring and its encoding are fixed before the input. Wire counts use unary encoding;
-gate lists use binary wire indices, with bounded list lookups even on malformed inputs. Lists,
-callback state and the full output are charged explicitly. Four fixed callback invocations
-compose polynomially without a separate iterative storage-growth assumption.
+The scalar ring and its encoding are fixed before the input. The public-input encoding is supplied
+and charged in every callback, along with polynomial-time layout extraction and first-message
+preprocessing. Extracted wire counts use unary encoding; gate lists use binary wire indices, with
+bounded list lookups even on malformed inputs. Lists, callback state and the full raw view are
+charged explicitly. Four fixed callback invocations compose polynomially without a separate
+iterative storage-growth assumption.
 
 ## Main definitions
 
@@ -145,52 +147,59 @@ theorem computableInPolyTime_checkValue
   unfold checkValue
   polytime
 
-variable {State Result : Type}
+variable {I First State Result : Type}
 
 /-- A fixed ring's certified sampler and four certified callbacks give one strict fair-coin
-machine for all wire counts, layouts and auxiliary words. This certificate is total even on
-malformed layouts. It assumes no efficient realization of arbitrary strategy trees. -/
-theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F State Result)
+machine over the complete encoded input. Layout extraction and first-message preprocessing are
+charged, including their output growth; a runtime circuit cannot be hidden in a fixed callback
+when invoking this theorem for a varying circuit input. The certificate is total even on malformed
+layouts. It assumes no efficient realization of arbitrary strategy trees. -/
+theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F I First State Result)
+    (layout : I → Input) (first : I → Share F → List F → First)
+    (eInput : I ↪ List Bool) (eFirst : First ↪ List Bool)
     (eState : State ↪ List Bool) (eResult : Result ↪ List Bool)
     (hsample : IsPPTOn encUnit eF (fun _ : Unit => sample))
     (hadd : ComputableInPolyTime (fun p : F × F => p.1 + p.2) (encPair eF eF) eF)
     (hsub : ComputableInPolyTime (fun p : F × F => p.1 - p.2) (encPair eF eF) eF)
     (hmul : ComputableInPolyTime (fun p : F × F => p.1 * p.2) (encPair eF eF) eF)
-    (hinit : IsPPTOn (encPair encInput (encShare eF)) eState
-      (fun p : Input × Share F => receiver.init p.1 p.2))
+    (hlayout : ComputableInPolyTime layout eInput encInput)
+    (hfirst : ComputableInPolyTime (fun p : I × Share F × List F => first p.1 p.2.1 p.2.2)
+      (encPair eInput (encPair (encShare eF) (encList eF))) eFirst)
+    (hinit : IsPPTOn (encPair eInput (encShare eF)) eState
+      (fun p : I × Share F => receiver.init p.1 p.2))
     (hchallenge : IsPPTOn
-      (encPair encInput (encPair (encShare eF) (encPair eState (encList eF))))
+      (encPair eInput (encPair (encShare eF) (encPair eState eFirst)))
       (encPair (encList eF) eState)
-      (fun p : Input × Share F × State × List F =>
+      (fun p : I × Share F × State × First =>
         receiver.challenge p.1 p.2.1 p.2.2.1 p.2.2.2))
     (hreceive : IsPPTOn
-      (encPair encInput (encPair (encShare eF) (encPair eState (encPair eF eF)))) eState
-      (fun p : Input × Share F × State × (F × F) =>
+      (encPair eInput (encPair (encShare eF) (encPair eState (encPair eF eF)))) eState
+      (fun p : I × Share F × State × (F × F) =>
         receiver.receive p.1 p.2.1 p.2.2.1 p.2.2.2))
-    (hterminal : IsPPTOn (encPair encInput (encPair (encShare eF) eState)) eResult
-      (fun p : Input × Share F × State => receiver.terminal p.1 p.2.1 p.2.2)) :
-    IsPPTOn encInput (encView eF eResult) (simulate sample receiver) := by
+    (hterminal : IsPPTOn (encPair eInput (encPair (encShare eF) eState)) eResult
+      (fun p : I × Share F × State => receiver.terminal p.1 p.2.1 p.2.2)) :
+    IsPPTOn eInput (encView eF eResult) (simulate sample receiver layout first) := by
   have hsamples : IsPPTOn encUnary (encList eF)
       (fun n => OracleComp.replicate n sample) :=
     (hsample.preprocess (ComputableInPolyTime.const ())).replicate .id'
   have hc := computableInPolyTime_checkValue hadd hsub hmul
   have hfinish : IsPPTOn
-      (encPair encInput (encPair (encShare eF) (encPair (encList eF)
+      (encPair eInput (encPair (encShare eF) (encPair (encList eF)
         (encPair (encList eF) (encPair eState (encPair eF eF))))))
       (encView eF eResult)
-      (fun p : Input × Share F × List F × List F × State × (F × F) => do
+      (fun p : I × Share F × List F × List F × State × (F × F) => do
         let state ← receiver.receive p.1 p.2.1 p.2.2.2.2.1 p.2.2.2.2.2
         let result ← receiver.terminal p.1 p.2.1 state
         return (p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2.2, result)) := by
     apply IsPPTOn.bind_with (left := eState)
     · apply hreceive.preprocess
-        (prepare := fun p : Input × Share F × List F × List F × State × (F × F) =>
+        (prepare := fun p : I × Share F × List F × List F × State × (F × F) =>
           (p.1, p.2.1, p.2.2.2.2.1, p.2.2.2.2.2))
       fun_prop
     simp only [bind_pure_comp]
     apply IsPPTOn.map_with
     · apply hterminal.preprocess (prepare := fun p :
-          (Input × Share F × List F × List F × State × (F × F)) × State =>
+          (I × Share F × List F × List F × State × (F × F)) × State =>
         (p.1.1, p.1.2.1, p.2))
       fun_prop
     · unfold encView
@@ -209,12 +218,12 @@ theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F State Resu
   apply IsPPTOn.bind_with (left := eF)
   · exact hsample.preprocess (ComputableInPolyTime.const ())
   apply hfinish.preprocess (prepare := fun p :
-      (((((Input × F) × List F) × State) × List F) × (List F × State)) × F =>
+      (((((I × F) × List F) × State) × List F) × (List F × State)) × F =>
     (p.1.1.1.1.1.1, (p.1.1.1.1.1.2, p.1.1.1.1.2), p.1.1.2,
-      weights p.1.1.1.1.1.1.2.1.length p.1.2.1, p.1.2.2,
-      (p.2, checkValue p.1.1.1.1.1.1 (p.1.1.1.1.1.2, p.1.1.1.1.2) p.1.1.2
-        (weights p.1.1.1.1.1.1.2.1.length p.1.2.1) - p.2 * p.1.1.1.1.1.2)))
-  let e1 := encPair encInput eF
+      weights (layout p.1.1.1.1.1.1).2.1.length p.1.2.1, p.1.2.2,
+      (p.2, checkValue (layout p.1.1.1.1.1.1) (p.1.1.1.1.1.2, p.1.1.1.1.2) p.1.1.2
+        (weights (layout p.1.1.1.1.1.1).2.1.length p.1.2.1) - p.2 * p.1.1.1.1.1.2)))
+  let e1 := encPair eInput eF
   let e2 := encPair e1 (encList eF)
   let e3 := encPair e2 eState
   let e4 := encPair e3 (encList eF)
@@ -228,10 +237,11 @@ theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F State Resu
   have hraw := hp.snd'.fst'
   have hstate := hp.snd'.snd'
   have hshare := hdelta.prod hq
+  have hshape := hlayout.comp hinput
   have hlen := (ComputableInPolyTime.length_list
-    (encPair encNat (encPair encNat encNat))).comp hinput.snd'.fst'
+    (encPair encNat (encPair encNat encNat))).comp hshape.snd'.fst'
   have hr := computableInPolyTime_weights hlen hraw
-  have hvalue := hc.comp (hinput.prod (hshare.prod (hd.prod hr)))
+  have hvalue := hc.comp (hshape.prod (hshare.prod (hd.prod hr)))
   have hreply := ha.prod (hsub.comp (hvalue.prod (hmul.comp (ha.prod hdelta))))
   exact hinput.prod (hshare.prod (hd.prod (hr.prod (hstate.prod hreply))))
 
