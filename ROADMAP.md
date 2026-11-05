@@ -83,7 +83,9 @@ current libraries and workloads.
    experiment separately; an ordinary-LWE reduction does not give them. Nearest-integer
    coefficient conversion and the Module-LWE phase-error bound are available in
    `SIS/ModulusSwitch`; decoding preservation under modulus changes, parity-preserving
-   variants and native certificates remain open.
+   variants remain open. `SIS/ModulusSwitch/Native` certifies exact coefficient conversion
+   uniformly over binary moduli and framed runtime row lists; subsequent scheme operations
+   still need native certificates.
 2. **FHEW/TFHE programmable bootstrapping**
    ([Ducas–Micciancio](https://eprint.iacr.org/2014/816);
    [Chillotti–Gama–Georgieva–Izabachène](https://eprint.iacr.org/2016/870)). Ring-GSW external

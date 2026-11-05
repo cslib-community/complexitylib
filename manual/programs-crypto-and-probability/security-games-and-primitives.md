@@ -50,6 +50,24 @@ ties, composite moduli, modulus one, nonadditivity, and a ciphertext with nonzer
 This nearest-integer phase bound is original supporting algebra; it does not assert Boolean
 plaintext preservation, parity-preserving switching, a security reduction, or a runtime bound.
 
+For its native implementation, import
+[`SIS/ModulusSwitch/Native.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch/Native.lean).
+`ZMod.modulusSwitchResidue q p x` computes the rounded integer by signed Euclidean division
+`(2*p*x + q) / (2*q)`, then reduces it to a natural residue modulo `p`.
+`modulusSwitchResidue_eq_val` identifies that result with the existing coefficient switch for
+positive moduli, including negative half ties. The plain `intBin_roundScale` and
+`ComputableInPolyTime.modulusSwitchResidue` certificates use binary `encNat` moduli and signed
+binary `encIntBin` representatives; they reuse the existing signed division and remainder
+certificates. `computableInPolyTime_modulusSwitchRows` lifts the implementation to arbitrary
+runtime nested rows in `encList (encList encNat)`. Dimensions vary through the actual list
+structure, and the polynomial bound counts the complete encoded input. The
+`modulusSwitchRows_encodeMatrix_extendCiphertext` theorem identifies the output with
+`GeneralSIS.encodeMatrix (extendCiphertext (moduleLWEModulusSwitch p ct))`, so there is no
+separate ciphertext format. The [native tests](../../ComplexityTests/Crypto/ModulusSwitchNative.lean)
+exercise a 128-bit modulus, negative representatives, modulus one, ragged/empty rows, the
+existing ciphertext encoding, and composition of two certified conversions. This runtime
+certificate adds no decoding or security guarantee.
+
 ## Encryption and chosen-message attacks
 
 [AdversaryOf](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/Basic.lean#L73) has a first stage choosing two messages and a saved word from the public key, and a second stage guessing from that saved state and the challenge ciphertext. Each stage has a native certificate. `INDCPAOn` explicitly constrains admissible message pairs. `WordINDCPA` requires equal lengths; the general `INDCPAOf` with all pairs is stronger for variable-length word messages. Invalid challenges are made independent of the hidden experiment bit.

@@ -22,11 +22,13 @@ toward positive infinity, as in Mathlib's `round`.
 ## Main definitions
 
 * `ZMod.modulusSwitch`: the canonical coefficient conversion.
+* `ZMod.modulusSwitchResidue`: its integer-only implementation on a signed representative.
 
 ## Main results
 
 * `ZMod.modulusSwitch_intCast`: for nonzero source modulus, any integer representative gives
   the same converted residue, including negative representatives and half-integer ties.
+* `ZMod.modulusSwitchResidue_eq_val`: integer division realizes the canonical conversion.
 
 This is a numerical conversion, not a ring homomorphism. The intended source and target moduli
 are positive; the definition is total, and representative independence is stated for nonzero
@@ -57,5 +59,31 @@ theorem modulusSwitch_intCast {q p : ℕ} (hq : q ≠ 0) (x : ℤ) :
     field_simp
   rw [hs, round_add_intCast]
   simp [modulusSwitch]
+
+/-- Integer-only implementation of scaled nearest-integer rounding followed by reduction.
+Both moduli and the signed representative are runtime arithmetic inputs. At zero source or
+target modulus the formula is still total, using Lean's division and remainder conventions. -/
+@[expose] def modulusSwitchResidue (q p : ℕ) (x : ℤ) : ℕ :=
+  (((2 * (p : ℤ) * x + q) / (2 * (q : ℤ))) % (p : ℤ)).toNat
+
+/-- For positive source modulus, Euclidean integer division implements nearest rounding,
+including negative half-integer ties towards positive infinity. -/
+theorem round_scale_eq_div {q : ℕ} (hq : 0 < q) (p : ℕ) (x : ℤ) :
+    round ((p : ℚ) / q * x) = (2 * (p : ℤ) * x + q) / (2 * (q : ℤ)) := by
+  rw [round_eq]
+  have hq' : (q : ℚ) ≠ 0 := by exact_mod_cast hq.ne'
+  have h : (p : ℚ) / q * x + 1 / 2 =
+      ((2 * (p : ℤ) * x + q : ℤ) : ℚ) / ((2 * q : ℕ) : ℚ) := by
+    push_cast
+    field_simp
+  rw [h, Rat.floor_intCast_div_natCast]
+  norm_cast
+
+/-- The integer-only implementation returns exactly the existing switch's canonical residue. -/
+theorem modulusSwitchResidue_eq_val {q p : ℕ} (hq : 0 < q) (hp : 0 < p) (x : ℤ) :
+    modulusSwitchResidue q p x = (modulusSwitch p (x : ZMod q)).val := by
+  let : NeZero p := ⟨hp.ne'⟩
+  rw [modulusSwitch_intCast hq.ne', round_scale_eq_div hq]
+  exact (congrArg Int.toNat (val_intCast ((2 * (p : ℤ) * x + q) / (2 * (q : ℤ))))).symm
 
 end ZMod
