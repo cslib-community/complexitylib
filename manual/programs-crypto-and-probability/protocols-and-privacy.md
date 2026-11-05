@@ -234,6 +234,27 @@ and double-opening binding. It has no polynomial-time certificate or ideal commi
 realization. The malicious MPC compiler and real/ideal simulation remain open in
 [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
 
+For a stateful functionality with separate commit and open phases, import
+[`Complexity.Crypto.Protocols.Commitment.World`](../../Complexity/Crypto/Protocols/Commitment/World.lean)
+and open `Cslib.Crypto.Protocols.Commitment.Phased`. `world` implements the existing
+`Interactive.World`: sender queries are `Sum.inl (Command.commit b)`, `Sum.inl Command.open`,
+and `Sum.inl Command.abort`; the receiver can only query `Sum.inr ()` to poll. Use
+`ProbOracleComp.query (spec := senderSpec ⊕ₒ receiverSpec)` to make these calls and
+`world.eval` to observe a program's result. The private `Store` is available for proofs, but is
+excluded from that observation. Polling returns `Observation.receipt` while a bit is committed,
+then `Observation.opened b` after opening.
+
+This original single-session abort variant ignores early opening and repeated commitments.
+Abort before opening is terminal; abort after opening cannot retract the released bit.
+`polling_secrecy` handles arbitrary receiver-only programs with private sampling before opening;
+it does not assert secrecy when sender commands interleave and open the commitment.
+`committed_invariant` preserves the committed bit or abort under arbitrary supported joint
+executions. The [checked world clients](../../ComplexityTests/Crypto/CommitmentWorld.lean)
+show honest opening, early opening followed by commitment, attempted overwrite, both abort
+orders, and adaptive private polling. These are functionality laws, not an OT realization,
+UC security, or a simulator runtime certificate. Connecting OT extraction and equivocation to
+these phases is a separate milestone; full malicious MPC remains open.
+
 ## Upstream perfect secrecy and sharing
 
 Pinned cslib supplies [PerfectlySecret](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Protocols/PerfectSecrecy/Defs.lean#L76): observing any positive-probability ciphertext leaves every message prior unchanged. Its equivalent ciphertext-distribution formulation and one-time-pad instance are finite semantic security, with no PPT restriction. The upstream commitment interface separately defines perfect/statistical hiding and perfect binding [cslib][cslib].
