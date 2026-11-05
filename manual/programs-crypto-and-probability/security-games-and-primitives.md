@@ -33,6 +33,23 @@ For universal one-way hashing from general one-way functions without permutation
 
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. The LWE interface exposes only the serialized public matrix `[B*t+e | B]`, with independent errors and one shared uniform secret; in [`SIS/Module.lean`](../../Complexity/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`ComplexityTests/Crypto/ModuleSIS.lean`](../../ComplexityTests/Crypto/ModuleSIS.lean)), and [`SIS/ModuleEncryption.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) builds dual-Regev public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`ComplexityTests/Crypto/ModuleEncryption.lean`](../../ComplexityTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
+For numerical modulus conversion, import
+[`SIS/ModulusSwitch.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch.lean).
+`moduleLWEModulusSwitch p ct` converts the existing ciphertext components with the reusable
+[`ZMod.modulusSwitch`](../../Complexity/Foundations/Data/ZMod/ModulusSwitch.lean): take
+`valMinAbs`, multiply by the rational ratio `p / q`, round to the nearest integer with half
+ties toward positive infinity, and reduce modulo `p`. It is not a ring homomorphism.
+For `q,p > 0`, `exists_moduleLWEModulusSwitch_phase` supplies an integer representative of
+the target phase whose distance from the scaled canonical source phase is at most
+`(1 + ∑ j, ∑ l, |s j l|) / 2`. The secret at both moduli is the cast of the same integer
+vector. The representative supplied at the target need not be its centered lift.
+`exists_moduleLWEModulusSwitch_phase_of_lifts` exposes arbitrary integer lifts and their
+carry equation; the canonical theorem constructs these carries automatically.
+The [checked examples](../../ComplexityTests/Crypto/ModulusSwitch.lean) cover negative half
+ties, composite moduli, modulus one, nonadditivity, and a ciphertext with nonzero carry.
+This nearest-integer phase bound is original supporting algebra; it does not assert Boolean
+plaintext preservation, parity-preserving switching, a security reduction, or a runtime bound.
+
 ## Encryption and chosen-message attacks
 
 [AdversaryOf](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/Basic.lean#L73) has a first stage choosing two messages and a saved word from the public key, and a second stage guessing from that saved state and the challenge ciphertext. Each stage has a native certificate. `INDCPAOn` explicitly constrains admissible message pairs. `WordINDCPA` requires equal lengths; the general `INDCPAOf` with all pairs is stronger for variable-length word messages. Invalid challenges are made independent of the hidden experiment bit.
