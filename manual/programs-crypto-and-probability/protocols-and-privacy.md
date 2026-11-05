@@ -144,7 +144,7 @@ $r$-out-of-$r$ constructions, Theorems 4.1 and 5.1. The next section documents t
 all-key reconstruction, joint privacy of every proper coalition, exact size/entropy bounds
 and sharp extraction. See the
 [all-out-of-r instructions](../design-and-assurance/assurance.md#all-out-of-r-sharing-from-odd-sources)
-for its model and complete client. Import `ImperfectRandomness.ThresholdEntropy`
+for its model and complete client. Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.ThresholdEntropy`
 for `TwoOutOfN.minEntropy_key_relative` and `AllOutOfR.minEntropy_key_relative`,
 which give Theorem 1.2's explicit common bound $H_\infty(P)\ge\log_2|K|-\log_2 3$
 on the actual unpadded threshold key alphabets. Review and final integration evidence remain in
