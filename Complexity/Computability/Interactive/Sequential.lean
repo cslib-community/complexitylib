@@ -37,10 +37,12 @@ when the intermediate statement type is empty.
   `Interactive.PerChallenge.iterate`.
 * `Interactive.ProverStrategy.append`, `Interactive.ProverStrategy.split`,
   `Interactive.ProverStrategy.bindLeaf`.
-* `Interactive.Verifier.extractAppend`.
+* `Interactive.compState`, `Interactive.Verifier.extractAppend`.
 
 ## Main results
 
+* `Interactive.not_compState_empty`, `Interactive.rbrFrom_false`, `Interactive.RbrFrom.congr`,
+  `Interactive.rbrFrom_append`.
 * `Interactive.Reduction.Complete.append`, `Interactive.Verifier.Sound.append`,
   `Interactive.Verifier.KnowledgeSound.append`, `Interactive.Verifier.RbrSound.append`.
 * `Interactive.Reduction.Complete.iterate`, `Interactive.Verifier.RbrSound.iterate`.
@@ -171,7 +173,7 @@ def Reduction.append (R₁ : Reduction oP oV s₁ S₁ W₁ S₂ W₂)
 section Rbr
 
 /-- The challenges of a composed transcript split into those of its halves. -/
-private theorem challenges_split : ∀ (s₁ s₂ : Spec) (τ : Transcript (s₁ ++ s₂)),
+theorem challenges_split : ∀ (s₁ s₂ : Spec) (τ : Transcript (s₁ ++ s₂)),
     PerChallenge.split s₁ s₂ (Transcript.challenges (s₁ ++ s₂) τ) =
       (Transcript.challenges s₁ (Transcript.split s₁ s₂ τ).1,
         Transcript.challenges s₂ (Transcript.split s₁ s₂ τ).2)
@@ -213,16 +215,16 @@ private theorem interpret_liftMsgRight : ∀ (s₁ s₂ : Spec) (τ : Transcript
 
 
 /-- The answers to the verifier's queries from a transcript, in the plain model. -/
-private abbrev answerAll (s : Spec) (τ : Transcript s) :
+abbrev answerAll (s : Spec) (τ : Transcript s) :
     (q : Empty ⊕ MsgQuery s) → (OracleSpec.empty ⊕ₒ msgSpec s) q :=
   OracleComp.sumHandler (m := Id) (fun e : Empty => e.elim) (Transcript.answer s τ)
 
-private theorem outputOn_eq (V : Verifier OracleSpec.empty s₁ S₁ S₂) (x : S₁) (τ : Transcript s₁) :
+theorem outputOn_eq (V : Verifier OracleSpec.empty s₁ S₁ S₂) (x : S₁) (τ : Transcript s₁) :
     V.outputOn x τ = OracleComp.interpret (m := Id) (answerAll s₁ τ)
       (V.decide x (Transcript.challenges s₁ τ)) :=
   rfl
 
-private theorem interpret_liftDecisionLeft {α : Type} (τ : Transcript (s₁ ++ s₂))
+theorem interpret_liftDecisionLeft {α : Type} (τ : Transcript (s₁ ++ s₂))
     (p : OracleComp (OracleSpec.empty ⊕ₒ msgSpec s₁) α) :
     OracleComp.interpret (m := Id) (answerAll (s₁ ++ s₂) τ) (liftDecisionLeft s₁ s₂ p) =
       OracleComp.interpret (m := Id) (answerAll s₁ (Transcript.split s₁ s₂ τ).1) p := by
@@ -235,7 +237,7 @@ private theorem interpret_liftDecisionLeft {α : Type} (τ : Transcript (s₁ ++
   · refine (OracleComp.interpret_interpret (m := Id) _ _ _).trans ?_
     exact interpret_liftMsgLeft s₁ s₂ τ q
 
-private theorem interpret_liftDecisionRight {α : Type} (τ : Transcript (s₁ ++ s₂))
+theorem interpret_liftDecisionRight {α : Type} (τ : Transcript (s₁ ++ s₂))
     (p : OracleComp (OracleSpec.empty ⊕ₒ msgSpec s₂) α) :
     OracleComp.interpret (m := Id) (answerAll (s₁ ++ s₂) τ) (liftDecisionRight s₁ s₂ p) =
       OracleComp.interpret (m := Id) (answerAll s₂ (Transcript.split s₁ s₂ τ).2) p := by
@@ -269,7 +271,7 @@ theorem outputOn_append (V₁ : Verifier OracleSpec.empty s₁ S₁ S₂)
 
 /-- The state function of a composition: that of the first half, then, once the first half is
 complete, the second half's state function for that first half. -/
-private def compState :
+def compState :
     (s₁ s₂ : Spec) → (Prefix s₁ → Prop) → (Transcript s₁ → Prefix s₂ → Prop) →
     Prefix (s₁ ++ s₂) → Prop
   | [], _, _, next, p => next () p
@@ -278,7 +280,7 @@ private def compState :
     compState s₁ s₂ (fun q => S (some (m, q))) (fun τ => next (m, τ)) p
 
 /-- A doomed start of the first half is a doomed start of the composition. -/
-private theorem not_compState_empty {s₁ s₂ : Spec} {smp : PerChallenge ProbComp s₁}
+theorem not_compState_empty {s₁ s₂ : Spec} {smp : PerChallenge ProbComp s₁}
     {ε : PerChallenge (fun _ => ℝ≥0∞) s₁} {S : Prefix s₁ → Prop} {wins : Transcript s₁ → Prop}
     {next : Transcript s₁ → Prefix s₂ → Prop} (h : RbrFrom s₁ smp ε S wins)
     (hjunc : ∀ τ, ¬ wins τ → ¬ next τ (Prefix.empty s₂)) (hS : ¬ S (Prefix.empty s₁)) :
@@ -288,7 +290,7 @@ private theorem not_compState_empty {s₁ s₂ : Spec} {smp : PerChallenge ProbC
   | cons r s₁ => exact hS
 
 /-- The round-by-round condition holds trivially when nothing is ever alive. -/
-private theorem rbrFrom_false : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
+theorem rbrFrom_false : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
     (ε : PerChallenge (fun _ => ℝ≥0∞) s), RbrFrom s smp ε (fun _ => False) (fun _ => False)
   | [], _, _ => fun _ h => h
   | .prover _ _ :: s, smp, ε => ⟨fun _ _ h => h, fun _ => rbrFrom_false s smp ε⟩
@@ -313,7 +315,7 @@ theorem RbrFrom.congr : ∀ {s : Spec} {smp : PerChallenge ProbComp s}
       fun c => RbrFrom.congr (fun p => hS _) (fun τ => hw _) (h.2 c)⟩
 
 /-- **Round-by-round composition, per prefix.** -/
-private theorem rbrFrom_append : ∀ (s₁ s₂ : Spec) (smp₁ : PerChallenge ProbComp s₁)
+theorem rbrFrom_append : ∀ (s₁ s₂ : Spec) (smp₁ : PerChallenge ProbComp s₁)
     (smp₂ : PerChallenge ProbComp s₂) (ε₁ : PerChallenge (fun _ => ℝ≥0∞) s₁)
     (ε₂ : PerChallenge (fun _ => ℝ≥0∞) s₂) (S : Prefix s₁ → Prop) (wins₁ : Transcript s₁ → Prop)
     (next : Transcript s₁ → Prefix s₂ → Prop) (wins₂ : Transcript s₁ → Transcript s₂ → Prop),

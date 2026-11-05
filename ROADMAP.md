@@ -117,7 +117,7 @@ families and full-input native runtime.
 
 In order:
 - the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding;
-- parallel and AND/OR composition, and round-by-round knowledge soundness;
+- parallel and OR composition of interactive reductions;
 - oracle statements, so a later phase can query an earlier phase's oracle message (virtual
   output oracles, as in ArkLib), with knowledge soundness and zero knowledge in oracle worlds;
 - efficiency-certified simulators and extractors, and auxiliary-input zero knowledge on the core;

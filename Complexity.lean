@@ -1914,6 +1914,7 @@ public import Complexity.Computability.Interactive.GKR.Layered
 public import Complexity.Computability.Interactive.GKR.Protocol
 public import Complexity.Computability.Interactive.GKR.Summand
 public import Complexity.Computability.Interactive.Plain
+public import Complexity.Computability.Interactive.RbrKnowledge
 public import Complexity.Computability.Interactive.Security
 public import Complexity.Computability.Interactive.Sequential
 public import Complexity.Computability.Interactive.Sumcheck
