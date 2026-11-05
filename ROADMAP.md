@@ -145,10 +145,15 @@ families and full-input native runtime.
   external-state preservation ([#2579]). Shared replacement laws derive a key-independent tape
   from actual PPT key-generation support and transport joint-state mixtures through the existing
   ROM game ([#2652]); the concrete word-forger adapter remains [#2636].
-- **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
-  2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
-  certificates for the simulator and extractor; full interactive-view simulation;
-  Dilithium-style signature schemes over module SIS and module LWE, as theory.
+- **Lattices**: full random-oracle EUF-CMA signatures from SIS (Lyubashevsky 2009,
+  2012) remain open. Strict-PPT box sampling, bounded signing and negligible availability are
+  proved. The public-key-only fork milestone ([#2620]) bounds accepting-fork probability by
+  actual homogeneous SIS success plus `k*q^n/(2η+1)^m`, for independent uniform box secrets
+  and an arbitrary kernel receiving only `(A,T)`. This joint-law extraction uses the sampled
+  secret; an `A`-only native reduction and the actual signing/fork distribution bridge remain
+  open. Corrected full-view simulation must account for aborted hash queries. Other endpoints
+  include identification security under SIS, efficient full-view simulation, and Dilithium-style
+  signature schemes over module SIS and module LWE, as theory.
 - **Hybrid encryption:** prove modular KEM–DEM CCA composition with compatible key spaces and
   rejection-aware canonical ciphertext parsing (Boneh–Shoup Exercise 12.5(a)); adaptive
   decapsulation security of a KEM alone does not supply this composition.
@@ -934,5 +939,7 @@ not planned, not as proved.
 
 [#2579]: https://github.com/cslib-community/complexitylib/issues/2579
 [#2585]: https://github.com/cslib-community/complexitylib/issues/2585
+
+[#2620]: https://github.com/cslib-community/complexitylib/issues/2620
 [#2636]: https://github.com/cslib-community/complexitylib/issues/2636
 [#2652]: https://github.com/cslib-community/complexitylib/issues/2652

@@ -28,6 +28,8 @@ the overwritten string and the old part together determine `(a, b)`.
 ## Main results
 
 * `Cslib.Probability.PMF.mem_support_uniformOfFintype`: every value has positive uniform mass.
+* `Cslib.Probability.PMF.uniformOfFintype_finset_map_val`: subtype and finite-set uniform
+  laws agree.
 * `Cslib.Probability.PMF.uniformOfFintype_prod_map_fst`: the first component of a uniform pair is
   uniform.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_map_fst_equiv`,
