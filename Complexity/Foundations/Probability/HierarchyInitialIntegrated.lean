@@ -24,7 +24,8 @@ parent induction.
 * `exists_compressedBin_fourMax`: successful actual output with concrete four-max inputs.
 * `initialFourMax_moment`: both centered noises paid, deterministic mean norms explicit.
 * `initialFourMaxReserve_le`: explicit finite numerical charge for all sharp reserve terms.
-* `initialFourMaxReserve_le_tail`: same actual reserve with a separate tail payment.
+* `initialFourMaxReserve_le_tail`: actual reserve with four separate numerical payments.
+* `initialFirstTransportPayment_exists_charge`: one charge for all first-mean transport.
 * `initialFourMax_preloss`: finite Minkowski stationary payment without a group-count loss.
 * `initialFourMax_tail`: deterministic heavy-tail norm plus unconditional noise payment.
 * `initialSignals_falseBudget`: raw j+1 false-event moments with both noises paid.
@@ -118,18 +119,58 @@ theorem initialNumericalReserve_ge_final (HP : FourthRootHierarchyParams 16 1 16
         (by positivity))
     _ ≤ _ := le_add_of_nonneg_right (by positivity)
 
-/-- Numerical reserve with a separate actual heavy-tail payment. This permits rarity
-for deterministic means while retaining unconditional centered-noise payments. -/
+/-- Numerical reserve with separate stationary, final, heavy-tail and aggregate raw
+payments. Callers keep deterministic transport, semantic deficit and centered noise
+separate inside these payments; only deterministic tails may receive rarity. -/
 @[expose] def initialSeparatedReserve (HP : FourthRootHierarchyParams 16 1 16 32 8)
-    (M : ℕ) (floor cap C Cpre : ℝ) (a : ℕ → ℝ) (tailBudget : ℝ) : ℝ :=
-  let m := Nat.log2 M + 1
-  let n := compatibleCapacity HP.K m
+    (C Cpre preBudget finalBudget tailBudget rawBudget : ℝ) : ℝ :=
   128 * (HP.K : ℝ) *
-    (Cpre ^ 4 * (∑ i ∈ range m, dyadicFloor floor m i * a i) ^ 4 +
-      C ^ 4 * a (Nat.log2 M) ^ 4 + C ^ 4 * tailBudget ^ 4) +
-    ∑ j ∈ range m,
+    (Cpre ^ 4 * preBudget ^ 4 + C ^ 4 * finalBudget ^ 4 + C ^ 4 * tailBudget ^ 4) + rawBudget
+
+/-- The four first-mean transport components after exact endpoint summation. This
+excludes semantic deficits, the second mean and centered noise. `x` is the scalar
+endpoint factor, including structural decay and parent precision. -/
+@[expose] def initialFirstTransportPayment (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (floor cap C Cpre x : ℝ) : ℝ :=
+  initialSeparatedReserve HP C Cpre
+    ((8 : ℝ) ^ (4⁻¹ : ℝ) * x * floor / 511)
+    ((8 : ℝ) ^ (4⁻¹ : ℝ) * x)
+    ((8 : ℝ) ^ (4⁻¹ : ℝ) * x * (2 + 256 / floor) ^ (4⁻¹ : ℝ) / 63)
+    (64 * 8 * x ^ 4 *
       (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 /
-        ((n j : ℝ) * dyadicFloor floor m j ^ 4)) * a j ^ 4
+        ((HP.K + 1) * floor ^ 4)) / 63)
+
+/-- One structural charge pays all four deterministic first-mean transport components.
+The charge is chosen after the fixed decoder/floor/cap constants and endpoint factor,
+but before any precision, budget, request exponents, width or field. This does not pay
+semantic deficits or either noise. -/
+theorem initialFirstTransportPayment_exists_charge
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (floor cap C Cpre L : ℝ) :
+    ∃ A : ℕ, ∀ t : ℝ,
+      initialFirstTransportPayment HP floor cap C Cpre
+        (L * ((2 : ℝ) ^ (-(A : ℝ))) * t) ≤ t ^ 4 := by
+  let F := initialFirstTransportPayment HP floor cap C Cpre
+  have hhom (x y : ℝ) : F (x * y) = F x * y ^ 4 := by
+    dsimp only [F, initialFirstTransportPayment, initialSeparatedReserve]
+    ring
+  obtain ⟨A, hA⟩ := exists_nat_gt (F L)
+  have hpow : (A : ℝ) ≤ (2 : ℝ) ^ A := by
+    exact_mod_cast (Nat.lt_two_pow_self (n := A)).le
+  have hlarge : F L ≤ ((2 : ℝ) ^ A) ^ 4 :=
+    hA.le.trans (hpow.trans (le_self_pow₀ (one_le_pow₀ (by norm_num)) (by decide : 4 ≠ 0)))
+  refine ⟨A, fun t => ?_⟩
+  change F (L * ((2 : ℝ) ^ (-(A : ℝ))) * t) ≤ t ^ 4
+  rw [mul_assoc, hhom, mul_pow, Real.rpow_neg (by norm_num : (0 : ℝ) ≤ 2),
+    Real.rpow_natCast]
+  have hp : (0 : ℝ) < 2 ^ A := by positivity
+  have hh := mul_le_mul_of_nonneg_right hlarge (by positivity : 0 ≤ ((2 : ℝ) ^ A)⁻¹ ^ 4)
+  rw [← mul_pow, mul_inv_cancel₀ hp.ne', one_pow] at hh
+  calc
+    F L * ((((2 : ℝ) ^ A)⁻¹) ^ 4 * t ^ 4) =
+      (F L * (((2 : ℝ) ^ A)⁻¹) ^ 4) * t ^ 4 := by ring
+    _ ≤ 1 * t ^ 4 := mul_le_mul_of_nonneg_right hh (by positivity)
+    _ = _ := one_mul _
 
 /-- Assemble the literal reserve with a separately paid actual tail. Stationary and
 raw terms retain their coefficients, including the postincrement raw prefix. -/
@@ -141,7 +182,11 @@ theorem initialFourMaxReserve_le_tail {P : ℕ} [Fact P.Prime]
     (G : Matrix (ZMod P) (ZMod P) ℝ)
     (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
     (W : List (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ))
-    (cap C Cpre : ℝ) (a : ℕ → ℝ) (tailBudget : ℝ) (ha : ∀ j, 0 ≤ a j)
+    (cap C Cpre : ℝ) (a : ℕ → ℝ) (preBudget finalBudget tailBudget rawBudget : ℝ)
+    (ha : ∀ j, 0 ≤ a j)
+    (hprealloc : (∑ i ∈ range (Nat.log2 M + 1),
+      dyadicFloor floor (Nat.log2 M + 1) i * a i) ≤ preBudget)
+    (hfinalalloc : a (Nat.log2 M) ≤ finalBudget)
     (hb : ∀ j < Nat.log2 M + 1,
       vertexNormPow 4 P r.source.rate
         (fun σ x => r.source.retains (channels B.padding) σ x)
@@ -149,8 +194,10 @@ theorem initialFourMaxReserve_le_tail {P : ℕ} [Fact P.Prime]
           B.padding ss st k G ζ
           (firstSignalIncrement F k
             (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)) 0 j) ≤ a j ^ 4)
-    (hraw : ∀ j < Nat.log2 M + 1,
-      rowNormPow 4 P r.source.rate
+    (hraw : (∑ j ∈ range (Nat.log2 M + 1),
+      (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 /
+        ((compatibleCapacity HP.K (Nat.log2 M + 1) j : ℝ) *
+          dyadicFloor floor (Nat.log2 M + 1) j ^ 4)) * rowNormPow 4 P r.source.rate
         (fun σ x => r.source.retains (channels B.padding) σ x)
         (fun σ y => r.terminal.retains (channels B.padding) σ y)
         (fun σ x y =>
@@ -159,7 +206,7 @@ theorem initialFourMaxReserve_le_tail {P : ℕ} [Fact P.Prime]
           clippedError (truth 0) (truth 1)
             (uncompressedRow ((firstSignalIncrement F k
               (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)) σ x)
-              0 (j + 1) y)) ≤ a j ^ 4)
+              0 (j + 1) y))) ≤ rawBudget)
     (htail : vertexNormPow 4 P r.source.rate
       (fun σ x => r.source.retains (channels B.padding) σ x)
       (fun σ x => ∑ j ∈ range (Nat.log2 M + 1),
@@ -181,7 +228,7 @@ theorem initialFourMaxReserve_le_tail {P : ℕ} [Fact P.Prime]
                 (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)) 0 i σ x
         else 0) ≤ tailBudget ^ 4) :
     B.initialFourMaxReserve M bin k ζ floor r R ks ku ss st G F W cap C Cpre ≤
-      initialSeparatedReserve HP M floor cap C Cpre a tailBudget := by
+      initialSeparatedReserve HP C Cpre preBudget finalBudget tailBudget rawBudget := by
   unfold initialFourMaxReserve initialSeparatedReserve
   extract_lets m n X Y Δ raw truth ε εfinal S Pre No Tail
   change ∀ j < m, vertexNormPow 4 P r.source.rate X (ε j) ≤ a j ^ 4 at hb
@@ -216,15 +263,16 @@ theorem initialFourMaxReserve_le_tail {P : ℕ} [Fact P.Prime]
     funext σ x
     split_ifs <;> rfl
   change vertexNormPow 4 P r.source.rate X Tail ≤ tailBudget ^ 4 at htail
+  have hpre' := hpre.trans (pow_le_pow_left₀
+    (sum_nonneg fun i _ => mul_nonneg (dyadicFloor_nonneg hf m i) (ha i)) hprealloc 4)
+  have hno' := hno.trans (pow_le_pow_left₀ (ha _) hfinalalloc 4)
   apply add_le_add
   · apply mul_le_mul_of_nonneg_left _ (by positivity)
     exact add_le_add (add_le_add
-      (mul_le_mul_of_nonneg_left hpre (by positivity))
-      (mul_le_mul_of_nonneg_left hno (by positivity)))
+      (mul_le_mul_of_nonneg_left hpre' (by positivity))
+      (mul_le_mul_of_nonneg_left hno' (by positivity)))
       (mul_le_mul_of_nonneg_left htail (by positivity))
-  · apply sum_le_sum
-    intro j hj
-    exact mul_le_mul_of_nonneg_left (hraw j (mem_range.mp hj)) (by positivity)
+  · exact hraw
 
 /-- A finite numerical allocation for the sharp reserve. This conservative payment
 keeps every stationary, final, heavy-selected and raw false-event coefficient. Dropping

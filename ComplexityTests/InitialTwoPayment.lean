@@ -579,7 +579,23 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
           B'.initialComputedPrecisionMoment M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
             ks ka [] [] 1 ζ Lh Lρ i false 0 ^ (4⁻¹ : ℝ)) ≤
         B'.initialComputedFirstTailBudget M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
-          ks ka [] [] 1 1 := by
+          ks ka [] [] 1 1 ∧
+      (∑ j ∈ range (Nat.log2 M + 1), dyadicFloor 1 (Nat.log2 M + 1) j *
+        B'.initialComputedPrecisionMoment M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
+          ks ka [] [] 1 ζ Lh Lρ j false 0 ^ (4⁻¹ : ℝ)) ≤
+        B'.initialComputedFirstPreBudget M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
+          ks ka [] [] 1 1 ∧
+      B'.initialComputedPrecisionMoment M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
+          ks ka [] [] 1 ζ Lh Lρ (Nat.log2 M) false 0 ^ (4⁻¹ : ℝ) ≤
+        B'.initialComputedFirstFinalBudget M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
+          ks ka [] [] 1 ∧
+      (∑ j ∈ range (Nat.log2 M + 1), (64 * (HP.K : ℝ) * (2 : ℝ) ^ 4 /
+        ((compatibleCapacity HP.K (Nat.log2 M + 1) j : ℝ) *
+          dyadicFloor 1 (Nat.log2 M + 1) j ^ 4)) *
+        B'.initialComputedPrecisionMoment M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
+          ks ka [] [] 1 ζ Lh Lρ j false 0) ≤
+        B'.initialComputedFirstRawBudget M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
+          ks ka [] [] 1 1 2 := by
   dsimp only
   let B' : BudgetData HP P := { B with rankCharge := 64 }
   let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
@@ -597,6 +613,40 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
   constructor
   · rw [hpeq]
     exact_mod_cast hp
-  · exact B'.initialComputedPrecisionMoment_first_tail_le (by norm_num) hrate H M 2 ks ka
-      ha hi r (rate_pos ks).le rfl rfl rfl
-      ⟨0, 1, 2, by decide, by decide, by decide⟩ [] [] 1 ζ Lh Lρ 1 (by norm_num)
+  · refine ⟨?_, ?_, ?_, ?_⟩
+    · exact B'.initialComputedPrecisionMoment_first_tail_le (by norm_num) hrate H M 2 ks ka
+        ha hi r (rate_pos ks).le rfl rfl rfl
+        ⟨0, 1, 2, by decide, by decide, by decide⟩ [] [] 1 ζ Lh Lρ 1 (by norm_num)
+    · exact B'.initialComputedPrecisionMoment_first_pre_le (by norm_num) hrate H M 2 ks ka
+        ha hi r (rate_pos ks).le rfl rfl rfl
+        ⟨0, 1, 2, by decide, by decide, by decide⟩ [] [] 1 ζ Lh Lρ 1 (by norm_num)
+    · exact B'.initialComputedPrecisionMoment_first_final_le (by norm_num) hrate H M 2 ks ka
+        ha hi r (rate_pos ks).le rfl rfl rfl
+        ⟨0, 1, 2, by decide, by decide, by decide⟩ [] [] 1 ζ Lh Lρ
+    · exact B'.initialComputedPrecisionMoment_first_raw_le (by norm_num) hrate H M 2 ks ka
+        ha hi r rfl rfl rfl
+        ⟨0, 1, 2, by decide, by decide, by decide⟩ [] [] 1 ζ Lh Lρ 1 2 (by norm_num)
+
+-- All four transport components share a charge selected before arbitrary precision.
+-- This numerical allocation excludes the separate semantic deficit and noise budgets.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (floor cap C Cpre L : ℝ) :
+    ∃ A : ℕ, ∀ p : ℝ,
+      BudgetData.initialFirstTransportPayment HP floor cap C Cpre
+        (L * (2 : ℝ) ^ (-(A : ℝ)) * (2 : ℝ) ^ (-p)) ≤
+          (2 : ℝ) ^ (-4 * p) := by
+  obtain ⟨A, hA⟩ := BudgetData.initialFirstTransportPayment_exists_charge HP floor cap C Cpre L
+  refine ⟨A, fun p => ?_⟩
+  convert hA ((2 : ℝ) ^ (-p)) using 1
+  rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num : (0 : ℝ) ≤ 2)]
+  congr 1
+  ring
+
+-- The exact raw coefficient keeps K+1 and exponent -24d at the literal unit floor.
+open Cslib.RowCompression in
+example (K m j : ℕ) :
+    64 * (K : ℝ) * (2 : ℝ) ^ 4 /
+      ((compatibleCapacity K m j : ℝ) * dyadicFloor 1 m j ^ 4) =
+      (1024 * (K : ℝ) / (K + 1)) * (1 / 16777216 : ℝ) ^ dyadicSlack m j := by
+  convert compatible_false_weight_eq 1 K m j 2 using 1
+  norm_num
+  ring

@@ -2226,19 +2226,31 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         base (fun _ => 0) [0] 1 1 1 ≤
       let a := fun j noise ν => (data HP).initialComputedPrecisionMoment 1 1 (request HP)
         threeRoles 0 0 [1] [2, 3] 0 ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
-      BudgetData.initialSeparatedReserve HP 1 ζ 1 1 1
-        (fun j =>
-          let a := fun noise ν => (data HP).initialComputedPrecisionMoment 1 1 (request HP)
-            threeRoles 0 0 [1] [2, 3] 0 ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
-          (a false 0 + a false 1) + (a true 0 + a true 1))
-        (((data HP).initialComputedFirstTailBudget 1 1 (request HP) threeRoles 0 0 [1] [2, 3]
-            0 ζ +
-          ∑ j ∈ range (Nat.log2 1 + 1),
-            (((2 + 256 / dyadicFloor ζ (Nat.log2 1 + 1) j) /
-              (compatibleCapacity HP.K (Nat.log2 1 + 1) j : ℝ)) ^ (4⁻¹ : ℝ)) *
-            ∑ i ∈ Ico j (Nat.log2 1 + 1), (28 : ℝ) ^ (Nat.log2 1 + 1 - i) * a i false 1) +
-          ∑ i ∈ range (Nat.log2 1 + 1), (28 : ℝ) ^ (Nat.log2 1 + 1 - i) *
-            (a i true 0 + a i true 1)) := by
+      BudgetData.initialSeparatedReserve HP 1 1
+            ((data HP).initialComputedFirstPreBudget 1 1 (request HP) threeRoles 0 0 [1] [2,
+              3] 0 ζ +
+              ∑ j ∈ range (Nat.log2 1 + 1), dyadicFloor ζ (Nat.log2 1 + 1) j *
+                (a j false 1 + (a j true 0 + a j true 1)))
+            ((data HP).initialComputedFirstFinalBudget 1 1 (request HP) threeRoles 0 0 [1] [2,
+              3] 0 +
+              (a (Nat.log2 1) false 1 + (a (Nat.log2 1) true 0 + a (Nat.log2 1) true 1)))
+            (((data HP).initialComputedFirstTailBudget 1 1 (request HP) threeRoles 0 0 [1] [2,
+              3] 0 ζ +
+              ∑ j ∈ range (Nat.log2 1 + 1),
+              (((2 + 256 / dyadicFloor ζ (Nat.log2 1 + 1) j) /
+                (compatibleCapacity HP.K (Nat.log2 1 + 1) j : ℝ)) ^ (4⁻¹ : ℝ)) *
+              ∑ i ∈ Ico j (Nat.log2 1 + 1), (28 : ℝ) ^ (Nat.log2 1 + 1 - i) *
+                a i false 1) +
+              ∑ i ∈ range (Nat.log2 1 + 1), (28 : ℝ) ^ (Nat.log2 1 + 1 - i) *
+                (a i true 0 + a i true 1))
+            (64 * ((data HP).initialComputedFirstRawBudget 1 1 (request HP) threeRoles 0 0 [1]
+              [2, 3] 0 ζ
+                ((2 * max 1 16) ^ (4⁻¹ : ℝ)) +
+              ∑ j ∈ range (Nat.log2 1 + 1),
+                (64 * (HP.K : ℝ) * ((2 * max 1 16) ^ (4⁻¹ : ℝ)) ^ 4 /
+                  ((compatibleCapacity HP.K (Nat.log2 1 + 1) j : ℝ) *
+                    dyadicFloor ζ (Nat.log2 1 + 1) j ^ 4)) *
+                ((a j false 1 ^ 4) + (a j true 0 ^ 4 + a j true 1 ^ 4)))) := by
   dsimp only
   let ζ := min HP.η (1 / 10000) / 4
   obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := preparation_stability_constants HP

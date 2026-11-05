@@ -1318,7 +1318,7 @@ retains weighted roots for stationary preloss and mean tails. The actual compute
 first-mean minimum consumes the fourth-moment bound in `initialComputedPrecisionMoment_first_weighted_le`, keeping the weighted semantic
 deficit separate. For raw false-event allocation use the coefficient indexed by $j$ on
 the statistic for prefix $j+1$, as in `initialFourMaxReserve`; stationary and tail payments
-still need their rooted Minkowski sums. This weighted moment lemma alone does not close
+use their rooted Minkowski sums. This weighted moment lemma alone does not close
 those sums or replace the other three statistics in the reserve.
 
 The existing deterministic mean-tail API has a different weight:
@@ -1338,15 +1338,35 @@ $4(\sum_h\mathrm{scaleMajorant}(h))2^{d_i}$, including unrestricted large slack.
 rooted tail by a horizon-independent transport coefficient plus its separately weighted
 semantic deficit. `initialComputedFirstTailBudget` records this payment.
 
-The existing `initial_compressed_precision_reserve` now consumes it through
-`initialFourMaxReserve_le_tail` and `initialSeparatedReserve`. Its terminal exponent must
-be in the field horizon, its floor must be positive, and its structural charge nonnegative;
-the initial request has the stated pilot task. These are explicit hypotheses, not
-successful parent accuracy. Stationary preloss and final statistics retain their previous
-rooted sums, and raw false-event moments retain their coefficient at $j$ on prefix $j+1$.
-The second deterministic mean retains its literal rarity-weighted sum; both centered noises
-retain unconditional weighted sums. This pays the first deterministic tail transport,
-not the complete reserve or its remaining progress/preparation costs.
+The existing `initial_compressed_precision_reserve` consumes all four deterministic
+first-mean transport payments through `initialFourMaxReserve_le_tail` and
+`initialSeparatedReserve`. The latter now accepts separate stationary, final, tail and
+aggregate raw payments. Its terminal exponent must be in the field horizon, its floor
+must be positive, and its structural charge nonnegative; the initial request has the
+stated pilot task. These are explicit hypotheses, not successful parent accuracy.
+
+For $E=4\sum_h\mathrm{scaleMajorant}(h)$, slope-one endpoint growth gives stationary
+payment $\delta E/511$. Final slack is one, so its window is at most $E$, even when the
+scheduled child budget is zero. The exact raw weight is
+$64KR^4/((K+1)\delta^4)\,2^{-24d_j}$ and pays fourth-power endpoint growth with a
+summable ratio. `initialComputedPrecisionMoment_first_raw_le` uses
+`initialComputedPrecisionMoment_first_weighted_le` on the raw prefix $j+1$ with its
+coefficient at $j$; it does not substitute the old unconditional weighted envelope.
+`initialComputedFirstPreBudget`, `initialComputedFirstFinalBudget` and
+`initialComputedFirstRawBudget` retain the separately weighted semantic deficit.
+`initialFirstTransportPayment_exists_charge` chooses one structural charge for the
+combined transport part after the fixed decoder/floor/cap and endpoint constants, before
+precision, request coordinates, width, field or budget. This isolated transport allocation
+excludes semantic deficits and the other three statistics.
+
+The actual reserve consumer uses all these payments. Its raw assembly costs the fixed
+factor $4^3=64$ for the four statistics, independent of the number of groups. The second
+deterministic mean retains its literal rarity-weighted sum; both centered noises retain
+unconditional weighted sums. Semantic omitted/inactive loss remains explicit: the existing
+`initialPolynomialLoss_div_le` and `initialMeanCharge_geometric` bound it under their
+retained-depth and cutoff-fit premises, which are additional schedule obligations. No
+uniform smallness of that deficit follows just from scalar child accuracy. Complete
+reserve allocation, ordinary progress and saturated preparation remain open.
 
 `initialClippedEndpointWindow_growth` gives a necessary condition for a proposed
 allocation $wW_{\mathrm{end}}\le2^A$ when $w\ge1$: every live bin $i$ must satisfy
@@ -1372,6 +1392,13 @@ This tests positive-precision numerical allocation and the actual minimum, condi
 the separate child IH; it does not certify recursive availability or a complete reserve.
 The executed history regression checks adjacent unequal groups with a shared nonzero
 endpoint and exact prefix means after their different completed walks.
+The joint positive-precision fixture fixes charge $64$, varies both source and terminal
+exponents within the horizon, and checks all four first-mean payments for every positive
+integer precision, with no surviving-slack cutoff. A separate test chooses one charge
+for `initialFirstTransportPayment` before an arbitrary real precision. The existing
+small-floor, nonzero executed compressed-child and zero-boundary full-reserve regressions
+remain checked. Neither the conditional numerical tests nor the zero-boundary fixture
+prove a nonzero executed full reserve.
 
 The literal computed first-coordinate consumers are
 [`initial_compressed_precision_clipped_first`](../../Complexity/Foundations/Probability/HierarchyTransportedPreparation.lean)

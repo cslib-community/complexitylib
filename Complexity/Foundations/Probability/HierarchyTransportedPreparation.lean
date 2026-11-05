@@ -27,8 +27,9 @@ and preparation costs. Its sharp fine-bin coefficient and finite Minkowski remov
 and prefix cubes from clipped means. An explicit joint window condition pays that finite
 transport part, without asserting the condition uniformly. The actual reserve also
 separates deterministic tails from correlated noise. All surviving first-mean endpoints
-receive a geometric rarity payment, with the semantic deficit kept separate.
-Uniform absorption of the displayed costs, simultaneous
+receive geometric stationary, final, raw and rarity-tail payments, with the semantic
+deficit kept separate. One structural charge pays all four transport components before
+request coordinates, width and budget. Uniform absorption of the remaining costs, simultaneous
 changing-request induction and native RL=L remain open.
 
 ## Main results
@@ -44,6 +45,9 @@ changing-request induction and native RL=L remain open.
 * `initialComputedPrecisionMoment`: clipped own-mask first-mean cost in the literal reserve.
 * `initialComputedPrecisionMoment_first_weighted_le`: weighted moments with separate deficit.
 * `initialComputedPrecisionMoment_first_tail_le`: paid actual deterministic first-mean tail.
+* `initialComputedPrecisionMoment_first_pre_le`: stationary floor-weighted endpoint payment.
+* `initialComputedPrecisionMoment_first_final_le`: final slack-one endpoint payment.
+* `initialComputedPrecisionMoment_first_raw_le`: aggregate weighted raw endpoint payment.
 * `initial_compressed_precision_clipped_first`: actual clipped first-coordinate payment.
 * `initialPerturbationFactor`: target-dependent worst-pair transport payment.
 * `initialComputedMoment_final_firstNoise_zero`: exact old absolute-envelope noise cost.
@@ -707,6 +711,176 @@ theorem initialComputedPrecisionMoment_first_tail_le (B : BudgetData HP P)
         ring
     _ ≤ _ := mul_le_mul_of_nonneg_left
       (add_le_add (mul_le_mul_of_nonneg_left hwindow hK) le_rfl) (by positivity)
+
+/-- Uniform deterministic first-mean pre payment, retaining the semantic
+omitted/inactive deficit separately. Structural charge is fixed in `B` before requests. -/
+@[expose] def initialComputedFirstPreBudget (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (coefficient : ℝ) (floor : ℝ) : ℝ :=
+  let m := Nat.log2 M + 1
+  let K := (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+    |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)
+  let E := 4 * ∑' h, LogSpaceEstimation.scaleMajorant h
+  let D := fun i => rowNormPow 4 P r.source.rate
+    (retainedMask R.source (side P ks) B.padding ss)
+    (retainedMask R.terminal (side P ka) B.padding st)
+    (fun _ x y => min 1 (|B.initialPolynomialLoss M n i r x y| / (rate ka + B.base x y)))
+  (8 : ℝ) ^ (4⁻¹ : ℝ) * (K * (floor * E / 511) +
+    ∑ i ∈ range m, dyadicFloor floor m i * D i ^ (4⁻¹ : ℝ))
+
+/-- Uniform deterministic first-mean final payment, retaining the semantic
+omitted/inactive deficit separately. Structural charge is fixed in `B` before requests. -/
+@[expose] def initialComputedFirstFinalBudget (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (coefficient : ℝ) : ℝ :=
+  let K := (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+    |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)
+  let E := 4 * ∑' h, LogSpaceEstimation.scaleMajorant h
+  let D := fun i => rowNormPow 4 P r.source.rate
+    (retainedMask R.source (side P ks) B.padding ss)
+    (retainedMask R.terminal (side P ka) B.padding st)
+    (fun _ x y => min 1 (|B.initialPolynomialLoss M n i r x y| / (rate ka + B.base x y)))
+  (8 : ℝ) ^ (4⁻¹ : ℝ) * (K * E + D (Nat.log2 M) ^ (4⁻¹ : ℝ))
+
+/-- Uniform deterministic first-mean raw payment, retaining the semantic
+omitted/inactive deficit separately. Structural charge is fixed in `B` before requests. -/
+@[expose] def initialComputedFirstRawBudget (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (coefficient : ℝ) (floor Rraw : ℝ) : ℝ :=
+  let m := Nat.log2 M + 1
+  let K := (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+    |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)
+  let E := 4 * ∑' h, LogSpaceEstimation.scaleMajorant h
+  let D := fun i => rowNormPow 4 P r.source.rate
+    (retainedMask R.source (side P ks) B.padding ss)
+    (retainedMask R.terminal (side P ka) B.padding st)
+    (fun _ x y => min 1 (|B.initialPolynomialLoss M n i r x y| / (rate ka + B.base x y)))
+  8 * (K ^ 4 * ((64 * (HP.K : ℝ) * Rraw ^ 4 / ((HP.K + 1) * floor ^ 4)) * E ^ 4 / 63) +
+    ∑ i ∈ range m, (64 * (HP.K : ℝ) * Rraw ^ 4 /
+      ((compatibleCapacity HP.K m i : ℝ) * dyadicFloor floor m i ^ 4)) * D i)
+
+/-- The stationary first-mean roots use the exact telescoped endpoints and floor. -/
+theorem initialComputedPrecisionMoment_first_pre_le (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M n ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hr : 0 ≤ r.source.rate)
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (R : RoleProfile 3) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ)
+    (floor : ℝ) (hf : 0 ≤ floor) :
+    (∑ j ∈ range (Nat.log2 M + 1), dyadicFloor floor (Nat.log2 M + 1) j *
+      B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j false 0 ^
+        (4⁻¹ : ℝ)) ≤
+      B.initialComputedFirstPreBudget M n r R ks ka ss st coefficient floor := by
+  let m := Nat.log2 M + 1
+  let K := (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+    |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)
+  let E := 4 * ∑' h, LogSpaceEstimation.scaleMajorant h
+  let D := fun i => rowNormPow 4 P r.source.rate
+    (retainedMask R.source (side P ks) B.padding ss)
+    (retainedMask R.terminal (side P ka) B.padding st)
+    (fun _ x y => min 1 (|B.initialPolynomialLoss M n i r x y| / (rate ka + B.base x y)))
+  have hE : 0 ≤ E := mul_nonneg (by norm_num) (tsum_nonneg fun h =>
+    LogSpaceEstimation.scaleMajorant_nonneg h)
+  have hK : 0 ≤ K := by have hc := B.binCap_nonneg; dsimp only [K]; positivity
+  have hg := compatible_growing_mean_pre_le hf hE m
+    (fun i => B.initialClippedEndpointWindow M i ka { r with usage := r.terminal })
+    (fun i _ => B.initialClippedEndpointWindow_growing M i ka _)
+  change _ ≤ (8 : ℝ) ^ (4⁻¹ : ℝ) * (K * (floor * E / 511) + _)
+  calc
+    _ ≤ ∑ i ∈ range m, dyadicFloor floor m i * ((8 : ℝ) ^ (4⁻¹ : ℝ) *
+      (K * B.initialClippedEndpointWindow M i ka { r with usage := r.terminal } +
+        D i ^ (4⁻¹ : ℝ))) := by
+      apply sum_le_sum
+      intro i _
+      exact mul_le_mul_of_nonneg_left
+        (B.initialComputedPrecisionMoment_first_root_le hcharge hrate H M n i ks ka
+          ha hi r hr hs ht htask R ss st coefficient ζ Lh Lρ) (dyadicFloor_nonneg hf m i)
+    _ = (8 : ℝ) ^ (4⁻¹ : ℝ) * (K * (∑ i ∈ range m,
+      dyadicFloor floor m i * B.initialClippedEndpointWindow M i ka
+        { r with usage := r.terminal }) + _) := by
+      simp only [mul_add, sum_add_distrib, mul_sum]
+      congr 1 <;> apply sum_congr rfl <;> intros <;> ring
+    _ ≤ _ := mul_le_mul_of_nonneg_left
+      (add_le_add (mul_le_mul_of_nonneg_left hg hK) le_rfl) (by positivity)
+
+/-- Final slack is one, including when the scheduled child is zero. No positive
+scheduled-child premise is inferred from positive parent precision. -/
+theorem initialComputedPrecisionMoment_first_final_le (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M n ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hr : 0 ≤ r.source.rate)
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (R : RoleProfile 3) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ) :
+    B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ
+      (Nat.log2 M) false 0 ^ (4⁻¹ : ℝ) ≤
+      B.initialComputedFirstFinalBudget M n r R ks ka ss st coefficient := by
+  let K := (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+    |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)
+  have hK : 0 ≤ K := by have hc := B.binCap_nonneg; dsimp only [K]; positivity
+  have hslack : dyadicSlack (Nat.log2 M + 1) (Nat.log2 M) ≤ 16 * B.slack := by
+    simp only [dyadicSlack, Nat.sub_self, pow_zero]
+    have h := B.slack_pos
+    omega
+  have hg := B.initialClippedEndpointWindow_uniform M (Nat.log2 M) ka
+    { r with usage := r.terminal } hslack
+  apply (B.initialComputedPrecisionMoment_first_root_le hcharge hrate H M n
+    (Nat.log2 M) ks ka ha hi r hr hs ht htask R ss st coefficient ζ Lh Lρ).trans
+  exact mul_le_mul_of_nonneg_left
+    (add_le_add (mul_le_mul_of_nonneg_left hg hK) le_rfl) (by positivity)
+
+/-- Aggregate raw first-mean charge uses the weighted endpoint theorem, with literal
+postincrement indexing and no unconditional weighted-moment envelope. -/
+theorem initialComputedPrecisionMoment_first_raw_le (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M n ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (R : RoleProfile 3) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ)
+    (floor Rraw : ℝ) (hf : 0 < floor) :
+    (∑ j ∈ range (Nat.log2 M + 1), (64 * (HP.K : ℝ) * Rraw ^ 4 /
+      ((compatibleCapacity HP.K (Nat.log2 M + 1) j : ℝ) *
+        dyadicFloor floor (Nat.log2 M + 1) j ^ 4)) *
+      B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j false 0) ≤
+      B.initialComputedFirstRawBudget M n r R ks ka ss st coefficient floor Rraw := by
+  let m := Nat.log2 M + 1
+  let K := (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+    |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)
+  let E := 4 * ∑' h, LogSpaceEstimation.scaleMajorant h
+  let D := fun i => rowNormPow 4 P r.source.rate
+    (retainedMask R.source (side P ks) B.padding ss)
+    (retainedMask R.terminal (side P ka) B.padding st)
+    (fun _ x y => min 1 (|B.initialPolynomialLoss M n i r x y| / (rate ka + B.base x y)))
+  have hK : 0 ≤ K := by have hc := B.binCap_nonneg; dsimp only [K]; positivity
+  let w := fun j => 64 * (HP.K : ℝ) * Rraw ^ 4 /
+    ((compatibleCapacity HP.K m j : ℝ) * dyadicFloor floor m j ^ 4)
+  have hw (j : ℕ) : 0 ≤ w j := by dsimp only [w]; positivity
+  have hg := compatible_growing_mean_raw_le hf HP.K m Rraw
+    (fun i => B.initialClippedEndpointWindow M i ka { r with usage := r.terminal })
+    (fun i _ => ⟨by unfold initialClippedEndpointWindow
+                    exact sum_nonneg fun _ _ => by split_ifs <;> positivity,
+      B.initialClippedEndpointWindow_growing M i ka _⟩)
+  have hb := B.initialComputedPrecisionMoment_first_weighted_le hcharge hrate H M n ks ka
+    ha hi r hs ht htask R ss st coefficient ζ Lh Lρ (range m) w (fun j _ => hw j)
+  exact hb.trans (mul_le_mul_of_nonneg_left
+    (add_le_add (mul_le_mul_of_nonneg_left hg (pow_nonneg hK 4)) le_rfl) (by norm_num))
+
+private lemma four_sum_pow_le (a b c d : ℝ) (ha : 0 ≤ a) (hb : 0 ≤ b)
+    (hc : 0 ≤ c) (hd : 0 ≤ d) :
+    ((a + b) + (c + d)) ^ 4 ≤ 64 * ((a ^ 4 + b ^ 4) + (c ^ 4 + d ^ 4)) := by
+  have h := Real.rpow_sum_le_const_mul_sum_rpow_of_nonneg
+    (f := ![a, b, c, d]) (univ : Finset (Fin 4)) (by norm_num : (1 : ℝ) ≤ 4)
+    (fun i _ => by fin_cases i <;> assumption)
+  norm_num only [Real.rpow_natCast, Fin.sum_univ_succ, Matrix.cons_val_zero,
+    Matrix.cons_val_succ, sum_empty, add_zero, card_univ,
+    Fintype.card_fin, Nat.cast_ofNat, show (4 : ℝ) - 1 = 3 by norm_num,
+    show (4 : ℝ) ^ (3 : ℝ) = 64 by norm_num] at h
+  simpa only [Real.rpow_ofNat, add_assoc] using h
 
 section Polynomial
 variable (B : BudgetData HP P) (M : ℕ) (hM : 0 < M) (n : ℕ)
@@ -1512,9 +1686,11 @@ theorem initial_compressed_precision_fourMax
 /-- The literal decoded-history sharp reserve is paid by explicit numerical costs of
 strict lower-budget own-request rooted hypotheses. No parent accuracy, supplied four-max
 budget or desired reserve is assumed. The first noise uses the minimum of the absolute
-and pairwise conditional payments. The second bound pays deterministic first-mean
-tail transport through actual rarity, separately from semantic deficit and both centered
-noises. The original unconditional envelope remains available as the first bound.
+and pairwise conditional payments. The second bound consumes the joint stationary, final,
+raw and actual rarity-tail deterministic first-mean payments, separately from semantic
+deficit, second mean and both centered noises. Raw is charged after aggregating weighted
+first moments, rather than using the old unconditional fourth-moment envelope. The original
+unconditional envelope remains available as the first bound.
 Uniform absorption of the remaining finite charge and simultaneous IH are separate obligations. -/
 theorem initial_compressed_precision_reserve
     (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
@@ -1559,8 +1735,12 @@ theorem initial_compressed_precision_reserve
             (fun j => (a j false 0 + a j false 1) + (a j true 0 + a j true 1))) ∧
         B.initialFourMaxReserve M bin ka ζ floor r R ks ku ss st B.base F W cap
           Cdecoder Cpre ≤
-          initialSeparatedReserve HP M floor cap Cdecoder Cpre
-            (fun j => (a j false 0 + a j false 1) + (a j true 0 + a j true 1))
+          initialSeparatedReserve HP Cdecoder Cpre
+            (B.initialComputedFirstPreBudget M n r R ks ka ss st coefficient floor +
+              ∑ j ∈ range (Nat.log2 M + 1), dyadicFloor floor (Nat.log2 M + 1) j *
+                (a j false 1 + (a j true 0 + a j true 1)))
+            (B.initialComputedFirstFinalBudget M n r R ks ka ss st coefficient +
+              (a (Nat.log2 M) false 1 + (a (Nat.log2 M) true 0 + a (Nat.log2 M) true 1)))
             ((B.initialComputedFirstTailBudget M n r R ks ka ss st coefficient floor +
               ∑ j ∈ range (Nat.log2 M + 1),
               (((2 + 256 / dyadicFloor floor (Nat.log2 M + 1) j) /
@@ -1568,7 +1748,14 @@ theorem initial_compressed_precision_reserve
               ∑ i ∈ Ico j (Nat.log2 M + 1), (28 : ℝ) ^ (Nat.log2 M + 1 - i) *
                 a i false 1) +
               ∑ i ∈ range (Nat.log2 M + 1), (28 : ℝ) ^ (Nat.log2 M + 1 - i) *
-                (a i true 0 + a i true 1)) := by
+                (a i true 0 + a i true 1))
+            (64 * (B.initialComputedFirstRawBudget M n r R ks ka ss st coefficient floor
+                ((2 * max cap 16) ^ (4⁻¹ : ℝ)) +
+              ∑ j ∈ range (Nat.log2 M + 1),
+                (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 /
+                  ((compatibleCapacity HP.K (Nat.log2 M + 1) j : ℝ) *
+                    dyadicFloor floor (Nat.log2 M + 1) j ^ 4)) *
+                ((a j false 1 ^ 4) + (a j true 0 ^ 4 + a j true 1 ^ 4)))) := by
   obtain ⟨groups, hgroups, hpaid⟩ := B.initial_compressed_precision_fourMax M hM n hbins hrate
     hcutoff haux hD H hn r R ks ka ss st hs ht hks hC hC1 exponent ζ floor D hzero coefficient
     ih bin ku husage hu hLh hLρ hh hρ
@@ -1601,23 +1788,71 @@ theorem initial_compressed_precision_reserve
         semanticSide_grid] at h ⊢
       convert h using 1; congr 8
   · apply B.initialFourMaxReserve_le_tail M bin ka ζ floor hfloor.le r hr R ks ku ss st B.base _ W
-      cap Cdecoder Cpre _ _ (fun j => by
+      cap Cdecoder Cpre (fun j =>
+        let a := fun noise ν => B.initialComputedPrecisionMoment M n r R ks ka ss st
+          coefficient ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+        (a false 0 + a false 1) + (a true 0 + a true 1)) _ _ _ _ (fun j => by
         have hc (noise : Bool) (ν : Fin 2) :=
           B.initialComputedPrecisionMoment_nonneg M n r hr R ks ka ss st
             coefficient ζ Lh Lρ j noise ν
         exact add_nonneg
           (add_nonneg (Real.rpow_nonneg (hc false 0) _) (Real.rpow_nonneg (hc false 1) _))
           (add_nonneg (Real.rpow_nonneg (hc true 0) _) (Real.rpow_nonneg (hc true 1) _)))
+    · have hp := B.initialComputedPrecisionMoment_first_pre_le hcharge hrate H M n ks ka
+        hka (fun bin hi => by rw [hbins, mem_range] at hi; omega) r hr
+        (by simp only [hs, gridChannel]) (by simp only [ht, gridChannel]) htask
+        R ss st coefficient ζ Lh Lρ floor hfloor.le
+      simp only [mul_add, sum_add_distrib]
+      linarith only [hp]
+    · have hp := B.initialComputedPrecisionMoment_first_final_le hcharge hrate H M n ks ka
+        hka (fun bin hi => by rw [hbins, mem_range] at hi; omega) r hr
+        (by simp only [hs, gridChannel]) (by simp only [ht, gridChannel]) htask
+        R ss st coefficient ζ Lh Lρ
+      linarith only [hp]
     · intro j hj
       have h := (hpaid W hW j hj).1
       simp only [hs, gridChannel, CorrectionRowTask.Channel.retains, channels,
         semanticSide_grid] at h ⊢
       convert h using 1; congr 8
-    · intro j hj
-      have h := (hpaid W hW j hj).2
+    · let cost := B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ
+      let w := fun j => 64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 /
+        ((compatibleCapacity HP.K (Nat.log2 M + 1) j : ℝ) *
+          dyadicFloor floor (Nat.log2 M + 1) j ^ 4)
+      have hw (j : ℕ) : 0 ≤ w j := by dsimp only [w]; positivity
+      have hc (j : ℕ) (noise : Bool) (ν : Fin 2) : 0 ≤ cost j noise ν :=
+        B.initialComputedPrecisionMoment_nonneg M n r hr R ks ka ss st coefficient
+          ζ Lh Lρ j noise ν
+      have hp := B.initialComputedPrecisionMoment_first_raw_le hcharge hrate H M n ks ka
+        hka (fun bin hi => by rw [hbins, mem_range] at hi; omega) r
+        (by simp only [hs, gridChannel]) (by simp only [ht, gridChannel]) htask
+        R ss st coefficient ζ Lh Lρ floor ((2 * max cap 16) ^ (4⁻¹ : ℝ)) hfloor
+      have hsum : (∑ j ∈ range (Nat.log2 M + 1), w j *
+          (let a := fun noise ν => cost j noise ν ^ (4⁻¹ : ℝ)
+           ((a false 0 + a false 1) + (a true 0 + a true 1)) ^ 4)) ≤
+          (64 * (B.initialComputedFirstRawBudget M n r R ks ka ss st coefficient floor
+            ((2 * max cap 16) ^ (4⁻¹ : ℝ)) +
+            ∑ j ∈ range (Nat.log2 M + 1), w j *
+              ((cost j false 1 ^ (4⁻¹ : ℝ)) ^ 4 +
+                ((cost j true 0 ^ (4⁻¹ : ℝ)) ^ 4 + (cost j true 1 ^ (4⁻¹ : ℝ)) ^ 4)))) := by
+        apply le_trans (sum_le_sum fun j _ => mul_le_mul_of_nonneg_left
+          (four_sum_pow_le _ _ _ _
+            (Real.rpow_nonneg (hc j false 0) _) (Real.rpow_nonneg (hc j false 1) _)
+            (Real.rpow_nonneg (hc j true 0) _) (Real.rpow_nonneg (hc j true 1) _)) (hw j))
+        simp only [mul_add, sum_add_distrib, mul_left_comm (w _) 64, ← mul_sum]
+        have hpow (j : ℕ) : (cost j false 0 ^ (4⁻¹ : ℝ)) ^ 4 = cost j false 0 :=
+          Real.rpow_inv_natCast_pow (hc j false 0) (by decide : 4 ≠ 0)
+        simp_rw [hpow]
+        change (∑ j ∈ range (Nat.log2 M + 1), w j * cost j false 0) ≤ _ at hp
+        linarith only [hp]
+      apply le_trans _ hsum
+      apply sum_le_sum
+      intro j hj
+      apply mul_le_mul_of_nonneg_left _ (hw j)
+      have hh := (hpaid W hW j (mem_range.mp hj)).2
       simp only [hs, ht, gridChannel, CorrectionRowTask.Channel.retains, channels,
-        semanticSide_grid] at h ⊢
-      convert h using 1; congr 8
+        semanticSide_grid] at hh ⊢
+      convert hh using 1
+      congr 8
     · let F := fun p σ x y => ((groups.take p).map (fun T => T σ x y)).sum
       let Δ := firstSignalIncrement F ka
         (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)

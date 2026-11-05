@@ -127,6 +127,59 @@ theorem compatible_growing_mean_tail_le {η E : ℝ} (hη : 0 < η) (hE : 0 ≤ 
       convert hh using 1
       ring_nf
 
+/-- Stationary means with slope-one endpoint growth have no horizon loss. The
+literal floor is retained; the resulting dyadic ratio is exactly `1 / 512`. -/
+theorem compatible_growing_mean_pre_le {η E : ℝ} (hη : 0 ≤ η) (hE : 0 ≤ E)
+    (m : ℕ) (e : ℕ → ℝ)
+    (he : ∀ i < m, e i ≤ E * (2 : ℝ) ^ dyadicSlack m i) :
+    (∑ i ∈ range m, dyadicFloor η m i * e i) ≤ η * E / 511 := by
+  apply le_trans _ (pre_schedule_sum hη hE m)
+  exact sum_le_sum fun i hi => mul_le_mul_of_nonneg_left
+    (he i (mem_range.mp hi)) (dyadicFloor_nonneg hη m i)
+
+/-- Exact false-event coefficient, before charging its actual postincrement prefix.
+The capacity gain `K + 1` and the floor's fourth power remain visible. -/
+theorem compatible_false_weight_eq (η : ℝ) (K m j : ℕ) (R : ℝ) :
+    64 * (K : ℝ) * R ^ 4 /
+      ((compatibleCapacity K m j : ℝ) * dyadicFloor η m j ^ 4) =
+      (64 * (K : ℝ) * R ^ 4 / ((K + 1) * η ^ 4)) *
+        (1 / 16777216 : ℝ) ^ dyadicSlack m j := by
+  let d := dyadicSlack m j
+  have hp : (2 : ℝ) ^ (64 * d) = ((2 : ℝ) ^ 64) ^ d := by rw [pow_mul]
+  change _ = _ * (1 / 16777216 : ℝ) ^ d
+  rw [compatibleCapacity, Nat.cast_mul, Nat.cast_add, Nat.cast_one, Nat.cast_pow,
+    Nat.cast_ofNat]
+  change 64 * (K : ℝ) * R ^ 4 /
+    ((((K : ℝ) + 1) * 2 ^ (64 * d)) * (η * (1 / 1024) ^ d) ^ 4) = _
+  have hfour : (((1 / 1024 : ℝ) ^ d) ^ 4) = ((1 / 1024 : ℝ) ^ 4) ^ d := by
+    rw [← pow_mul, Nat.mul_comm d 4, pow_mul]
+  rw [mul_pow, hp, hfour,
+    show (1 / 16777216 : ℝ) = ((2 : ℝ) ^ 64 * (1 / 1024) ^ 4)⁻¹ by norm_num,
+    inv_pow, mul_pow]
+  field_simp
+
+/-- Fourth-moment endpoint growth is absorbed by the actual raw false-event weight.
+This statement uses `e j` for the prefix `j + 1`, exactly as the literal decoder does. -/
+theorem compatible_growing_mean_raw_le {η E : ℝ} (hη : 0 < η)
+    (K m : ℕ) (R : ℝ) (e : ℕ → ℝ)
+    (he : ∀ i < m, 0 ≤ e i ∧ e i ≤ E * (2 : ℝ) ^ dyadicSlack m i) :
+    (∑ i ∈ range m, (64 * (K : ℝ) * R ^ 4 /
+      ((compatibleCapacity K m i : ℝ) * dyadicFloor η m i ^ 4)) * e i ^ 4) ≤
+      (64 * (K : ℝ) * R ^ 4 / ((K + 1) * η ^ 4)) * E ^ 4 / 63 := by
+  have hs := false_schedule_sum (K := (K : ℝ) / (K + 1)) (ε := E) (R := R)
+    hη (by positivity) m
+  have hs' : _ ≤ (64 * (K : ℝ) * R ^ 4 / ((K + 1) * η ^ 4)) * E ^ 4 / 63 :=
+    hs.trans_eq (by field_simp)
+  apply le_trans _ hs'
+  apply sum_le_sum
+  intro i hi
+  have hf := dyadicFloor_pos hη m i
+  have hb := (he i (mem_range.mp hi))
+  apply (mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hb.1 hb.2 4) (by positivity)).trans_eq
+  rw [compatibleCapacity, Nat.cast_mul, Nat.cast_add, Nat.cast_one, Nat.cast_pow,
+    Nat.cast_ofNat]
+  field_simp
+
 /-- The exceptional first rarity weight decays in the actual first dyadic slack,
 even after all factor-28 propagation. -/
 theorem compatible_first_rarity_decay {η : ℝ} (hη : 0 < η) (K m : ℕ) (hm : 0 < m) :
