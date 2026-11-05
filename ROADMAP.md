@@ -59,6 +59,8 @@ Priorities live in this list and in the tiers of [#897].
   restrictions and quantum reduction are part of the theorem.
   The discrete Gaussian foundation proves convergence, positive normalization and translation
   laws on shifted discrete lattices ([#2573](https://github.com/cslib-community/complexitylib/issues/2573));
+  finite exponential moments and normalizer-ratio tails are proved in
+  [#2592](https://github.com/cslib-community/complexitylib/issues/2592).
   local normal convergence and continuous lattice periodization, including Schwartz and
   Gaussian clients, are proved in
   [#2608](https://github.com/cslib-community/complexitylib/issues/2608).

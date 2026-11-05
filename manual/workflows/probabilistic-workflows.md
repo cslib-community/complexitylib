@@ -20,6 +20,18 @@ zero lattice. This is a mathematical distribution, with no efficient sampler or 
 bound. Regev's quantum worst-case/average-case reduction remains open in
 [issue #1213](https://github.com/cslib-community/complexitylib/issues/1213).
 
+For a quantitative radius estimate, import
+[Gaussian/DiscreteTail.lean](../../Complexity/Foundations/Probability/Gaussian/DiscreteTail.lean).
+Choose a second width `t > s` and a radius `R ≥ 0`.
+`summable_discreteGaussian_mul_exp` proves that the exponential norm-square moment is finite;
+`tsum_toReal_discreteGaussian_mul_exp` identifies it with `gaussianMass L t c / gaussianMass L s c`.
+Writing `κ = π * (1 / s² - 1 / t²) > 0`, `discreteGaussian_norm_ge_le` bounds the probability
+of `R ≤ ‖z - c‖` by `exp (-κ * R²)` times that same ratio. The checked integer-lattice
+client uses `s = 1`, `t = 2`, center `1/2` and radius `2`, giving the decay factor `exp (-3π)`.
+The ratio remains explicit; these results supply neither the dimension-uniform lattice tail
+bound nor the sampling algorithm used in Regev's bootstrapping lemma. Controlling the ratio
+remains open; the lattice Poisson formula below supplies an analytic prerequisite.
+
 To vary the center continuously, import
 [Gaussian/Periodization.lean](../../Complexity/Foundations/Probability/Gaussian/Periodization.lean).
 `ZLattice.continuous_gaussianMass L s hs` proves continuity of the normalizer for `hs : 0 < s`.
