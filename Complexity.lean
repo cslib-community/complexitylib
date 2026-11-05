@@ -2413,6 +2413,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.C
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Embed
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.QueryBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Substitution
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork

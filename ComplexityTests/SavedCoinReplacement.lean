@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Probabilistic.Oracle.ReplayParameter
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.QueryBounds
+import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Substitution
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Crypto.Protocols.Signature.RandomOracle.Simulation
@@ -38,6 +39,14 @@ example (coins input : List Bool) :
 
 private def record (q : Bool × List Bool) : StateT ℕ Id (List Bool) :=
   fun s => ([q.1], s + 1)
+
+-- Channel substitution preserves the saved tape before any stateful world is selected.
+example (coins input : List Bool) :
+    OracleComp.interpret (fun request => query (!request.1) request.2)
+      (machine.runCoins query coins input) =
+    machine.runCoins (fun op word => query (!op) word) coins input := by
+  simpa only [query, OracleComp.interpret_query] using
+    machine.interpret_runCoins query (fun request => query (!request.1) request.2) coins input
 
 -- Selecting another saved first coin changes the output channel, while both runs change state.
 example : (OracleComp.interpret record (machine.runCoins query [true, false] [])).run 4 =
@@ -75,7 +84,8 @@ example : ∃ (budget : ℕ → ℕ)
     (replay : ℕ → List Bool → List Bool → WordOracleComp Bool (List Bool)),
     PolynomiallyBounded budget ∧ ∀ n keys, keys ∈ (ProbComp.eval (gen n)).support → ∀ s,
       observe (machine.runOracle 2 keys.1) s =
-        (BitString.uniformList (budget n)).bind (fun coins => observe (replay n keys.1 coins) s) := by
+        (BitString.uniformList (budget n)).bind
+          (fun coins => observe (replay n keys.1 coins) s) := by
   have hsource : IsOraclePPT encBits (fun _ pk => machine.runOracle 2 pk) := by
     have h : IsOraclePPTOn encBits encBits (fun input => machine.runOracle 2 input) := by
       simpa only [encBits_apply, pow_zero, mul_one] using
@@ -115,7 +125,7 @@ example (scheme : Scheme Unit Unit Bool Unit Bool Bool) :
   apply eval_worldRealize_eq_bind
   intro Store oracle s
   simp only [randomizedForger, OracleComp.interpret_bind, StateT.run_bind,
-    ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform, PMF.monad_bind_eq_bind, PMF.bind_map,
-    Function.comp_def]
+    ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform, PMF.monad_bind_eq_bind,
+    PMF.bind_map, Function.comp_def]
 
 end ComplexityTests.SavedCoinReplacement
