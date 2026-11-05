@@ -202,7 +202,7 @@ theorem sendWitnessProd_knowledgeSound :
   simpa using (sendWitness_knowledgeSound rel₁).seqProd (sendWitness_knowledgeSound rel₂)
 
 /-- The verifier of `sendWitnessProd` has soundness error `0` for `language (relProd rel₁ rel₂)`. -/
-theorem sendWitnessProd_sound [Nonempty W₁] [Nonempty W₂] :
+theorem sendWitnessProd_sound :
     (sendWitnessProd rel₁ rel₂).verifier.Sound (oP := OracleSpec.empty) World.plain
       (language (relProd rel₁ rel₂)) (language (relProd Accept Accept)) 0 := by
   rw [language_relProd, language_relProd]

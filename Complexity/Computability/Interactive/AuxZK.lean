@@ -278,8 +278,8 @@ noncomputable def Reduction.viewOf
   plainLaw do
     let p ← R.prover x w
     let v ← Vstar x z
-    let r ← runAgainst s p v
-    return r.2.2
+    let (_, _, view) ← runAgainst s p v
+    return view
 
 /-- **Malicious-verifier auxiliary-input zero knowledge** ([Goldreich2001], §4.3.3,
 Definition 4.3.10) with statistical error `ε`, in the plain model: for every malicious verifier
@@ -312,7 +312,7 @@ theorem plainLaw_runAgainst_map : ∀ (s : Spec) {α β γ : Type} (f : β → �
     (p : ProverStrategy (ProbOracleComp OracleSpec.empty) s α)
     (v : VerifierStrategy (ProbOracleComp OracleSpec.empty) s β),
     plainLaw (runAgainst s p (VerifierStrategy.map s f v)) =
-      (plainLaw (runAgainst s p v)).map fun r => (r.1, r.2.1, f r.2.2)
+      (plainLaw (runAgainst s p v)).map fun (τ, a, b) => (τ, a, f b)
   | [], _, _, _, f, a, v => by
     simp [VerifierStrategy.map, runAgainst, PMF.map_comp, Function.comp_def]
   | .prover M _ :: s, _, _, _, f, p, v => by
@@ -445,7 +445,7 @@ theorem SimulatorRealizedBy.auxSimulatorRealizedBy
     {program : I × List Bool → ProbComp (List Bool)} {δ : I → ℝ≥0∞}
     (h : SimulatorRealizedBy enc Sim program δ) :
     AuxSimulatorRealizedBy enc encAux (fun i x _ => Sim i x)
-      (fun p => program (p.1, p.2.1)) δ :=
+      (fun (i, xw, _) => program (i, xw)) δ :=
   fun i x _ => h i x
 
 /-- **Efficient auxiliary-input honest-verifier zero knowledge**, with simulation error `ε` and
@@ -479,7 +479,7 @@ theorem Reduction.EfficientHVZK.efficientAuxHVZK
   auxHVZK i := (h.hvzk i).auxHVZK
   realized := by
     obtain ⟨program, hppt, hreal⟩ := h.realized
-    refine ⟨fun p => program (p.1, p.2.1), ?_, hreal.auxSimulatorRealizedBy encAux⟩
+    refine ⟨fun (i, xw, _) => program (i, xw), ?_, hreal.auxSimulatorRealizedBy encAux⟩
     exact hppt.preprocess (prepare := fun p : I × List Bool × List Bool => (p.1, p.2.1))
       (by fun_prop)
 
@@ -556,7 +556,7 @@ theorem Reduction.ComputationalHVZK.computationalAuxHVZK
     (encAux : ∀ i, AuxI i ↪ List Bool)
     {program : I × List Bool → ProbComp (List Bool)}
     (h : Reduction.ComputationalHVZK R rel enc program) :
-    Reduction.ComputationalAuxHVZK R rel enc encAux (fun p => program (p.1, p.2.1)) where
+    Reduction.ComputationalAuxHVZK R rel enc encAux (fun (i, xw, _) => program (i, xw)) where
   ppt := h.ppt.preprocess (prepare := fun p : I × List Bool × List Bool => (p.1, p.2.1))
     (by fun_prop)
   indistinguishable idx x w z hidx hx hz hrel D hD :=
@@ -752,7 +752,7 @@ theorem Reduction.plainLaw_run_liftFirst
     plainLaw ((R₁.liftFirst (S₂ := S₂) (W₂ := W₂)).prover x w >>=
         runStrategy s₁ (R₁.liftFirst (S₂ := S₂) (W₂ := W₂)).verifier.samplers) =
       (plainLaw (R₁.prover x.1 w.1 >>= runStrategy s₁ R₁.verifier.samplers)).map
-        fun r => (r.1, ((r.2.1, x.2), (r.2.2, w.2))) := by
+        fun (τ, y₁, w₁) => (τ, ((y₁, x.2), (w₁, w.2))) := by
   simp only [Reduction.liftFirst, Verifier.liftFirst, bind_assoc, plainLaw_bind, PMF.map_bind]
   congr 1
   funext st
@@ -767,7 +767,7 @@ theorem Reduction.plainLaw_run_liftSecond
     plainLaw ((R₂.liftSecond (S₁' := S₁') (W₁' := W₁')).prover y w >>=
         runStrategy s₂ (R₂.liftSecond (S₁' := S₁') (W₁' := W₁')).verifier.samplers) =
       (plainLaw (R₂.prover y.2 w.2 >>= runStrategy s₂ R₂.verifier.samplers)).map
-        fun r => (r.1, ((y.1, r.2.1), (w.1, r.2.2))) := by
+        fun (τ, y₂, w₂) => (τ, ((y.1, y₂), (w.1, w₂))) := by
   simp only [Reduction.liftSecond, Verifier.liftSecond, bind_assoc, plainLaw_bind, PMF.map_bind]
   congr 1
   funext st
