@@ -183,8 +183,8 @@ proves the required probability normalizations before applying a distance formul
 
 Import [Gaussian/Quotient.lean](../../Complexity/Foundations/Probability/Gaussian/Quotient.lean).
 Let `L` be a discrete full-rank lattice in a finite-dimensional real inner-product space `E`,
-let `n = Module.finrank ℝ E`, and take `s > 0`. Use the canonical quotient map
-`q : E → E ⧸ L.toAddSubgroup` and an actual fundamental domain
+let `n = Module.finrank ℝ E`, and take `s > 0`. Use `q = QuotientAddGroup.mk`, the
+canonical map to the quotient by `L.toAddSubgroup`, and an actual fundamental domain
 `hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume`. The measures are ordinary
 `Measure.withDensity`, `Measure.map` and scalar multiplication:
 

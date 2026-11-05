@@ -242,4 +242,17 @@ example {F : Set ℝ} (hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume) 
   simpa [covolume_two, lineUniform, lineDomain] using
     ZLattice.normalized_quotient_eq L volume (basis_domain_op twoBasis) hF
 
+/-- Every positive target error admits an actual width on any full-rank lattice. -/
+example {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+    (M : Submodule ℤ E) [DiscreteTopology M] [IsZLattice ℝ M] {F : Set E}
+    (hF : IsAddFundamentalDomain M.toAddSubgroup.op F volume) (ε : ℝ) (hε : 0 < ε) :
+    ∃ s : ℝ, 0 < s ∧
+      tvDist
+        (Measure.map (QuotientAddGroup.mk : E → E ⧸ M.toAddSubgroup)
+          (volume.withDensity (fun x ↦ ENNReal.ofReal (gaussianWeight s x / s ^ finrank ℝ E))))
+        ((ENNReal.ofReal (ZLattice.covolume M))⁻¹ •
+          Measure.map (QuotientAddGroup.mk : E → E ⧸ M.toAddSubgroup) (volume.restrict F)) ≤ ε :=
+  (ZLattice.eventually_tvDist_gaussian_quotient_le M hF ε hε).exists
+
 end ComplexityTests.DiscreteGaussianShiftBounds
