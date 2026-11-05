@@ -2995,6 +2995,7 @@ public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Double
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
 public import Complexity.Crypto.Computational.Kilian
+public import Complexity.Crypto.Computational.Kilian.Micali
 public import Complexity.Crypto.Computational.Kilian.NP
 public import Complexity.Crypto.Computational.Kilian.Soundness
 public import Complexity.Crypto.Computational.Kilian.Succinct
@@ -3079,9 +3080,11 @@ public import Complexity.Crypto.Computational.PseudorandomGenerator
 public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
+public import Complexity.Crypto.Computational.SchnorrEavesdrop
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
 public import Complexity.Crypto.Computational.Signature
+public import Complexity.Crypto.Computational.Signature.RandomOracle
 public import Complexity.Crypto.Computational.Stretch
 public import Complexity.Crypto.Computational.Stretch.Quantitative
 public import Complexity.Crypto.Computational.TCRSignature

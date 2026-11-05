@@ -17,7 +17,7 @@ When statistical simulation is too strong or callers interact through game indis
 
 Abort is observable in [Complexity/Crypto/Protocols/SigmaProtocol/Abort.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/SigmaProtocol/Abort.lean): accepted transcripts and conversations return `Option`, with `none` representing abort. `NonAbortSpecialHVZK` matches the entire law including abort mass. Nonabort completeness alone does not give a lower bound on success, an expected retry cost, or a strict-PPT rejection-sampling implementation.
 
-Identification and Fiat–Shamir add adversarial interaction to this same transcript model. Their security is not merely the existence of a mathematical witness extractor: the computational instances require an encoded efficient extractor, and finite quantitative transformations explicitly track replay and calls.
+Identification and Fiat–Shamir add adversarial interaction to this same transcript model. Their security is not merely the existence of a mathematical witness extractor: the computational instances require an encoded efficient extractor, and finite quantitative transformations explicitly track replay and calls. For Schnorr identification over a `PrimeOrderGroupFamily`, [`SchnorrIdentification.lean`](../../Complexity/Crypto/Computational/SchnorrIdentification.lean) formalizes the direct impersonation game (`schnorrDirectGame`) and the rewinding discrete-logarithm extractor (`SchnorrImpersonator.rewind`, `succProbability_schnorrDirectGame_le`, `negligible_schnorrDirectGame`), while [`SchnorrEavesdrop.lean`](../../Complexity/Crypto/Computational/SchnorrEavesdrop.lean) adds eavesdropping security (`SchnorrEavesdropAdversary`, `schnorrEavesdropGame`, `schnorrIdealEavesdropGame`, `IsEavesdropSecure`, `IsIdealEavesdropSecure`; [bs23][bs23], Attack Game 18.2 and Theorems 19.3 and 19.5): because strict-PPT exponent sampling `sampleExp n d` (`ProbComp.sampleModNat`) has statistical distance at most `1 / 2 ^ n` from uniform on `ZMod q`, `Q n` simulated conversations (`schnorrSimulatedTranscript`) are within statistical distance `Q n / 2 ^ n` of ideal honest conversations (`schnorrHonestTranscript`) and within `2 * Q n / 2 ^ n` of strict-PPT honest conversations (`schnorrRealTranscript`), reducing any uniform strict-PPT eavesdropper via `SchnorrEavesdropAdversary.toDirect` to `schnorrDirectGame` and hence to `DiscreteLog` (`succProbability_schnorrEavesdropGame_le`, `negligible_schnorrEavesdropGame`, `schnorr_isEavesdropSecure_of_discreteLogHard`; checked on the order-`11` Schnorr group in `(ZMod 23)ˣ` in [`ComplexityTests/Crypto/SchnorrDiscreteLog.lean`](../../ComplexityTests/Crypto/SchnorrDiscreteLog.lean)).
 
 ## VOLE ideal functionality, IT-MACs, and VOLE-in-the-head
 
@@ -73,6 +73,22 @@ includes the import, one-bit/one-query verifier, digest-length proof and bound
 application. At `n = 2` its honest transcript has exactly **12 payload bits**,
 attaining the generic bound. Its constant hash exercises accounting only;
 it is not a collision-resistance example.
+
+For Micali's non-interactive random-oracle compilation of Kilian's protocol,
+import `Complexity.Crypto.Computational.Kilian.Micali`
+([`Kilian/Micali.lean`](../../Complexity/Crypto/Computational/Kilian/Micali.lean)).
+It lifts Merkle tree commitment, opening and verification to `OracleComp`
+programs (`merkleRootProg`, `merklePathProg`, `merkleVerifyProg`) over
+`MerkleHashSpec`, proves their pure-oracle simulation lemmas under
+`OracleComp.evalPure` and lazy random-oracle opening completeness
+(`merkleVerifyProg_merklePathProg`), and defines the two-channel Micali prover
+and verifier (`micaliProve`, `micaliVerify` over `MicaliSpec α`) where the
+Fiat–Shamir query `Sum.inr (x, root)` includes both the statement `x` and the
+Merkle root. `micaliVerify_micaliProve_eq_true` and
+`micaliHonestGame_eq_pure_true` prove perfect completeness under deterministic
+oracles and in the lazy random-oracle experiment `micaliHonestGame` (checked
+in [`ComplexityTests/Crypto/Micali.lean`](../../ComplexityTests/Crypto/Micali.lean));
+ROM soundness and extraction belong to subsequent milestones.
 
 ## Shared random oracles and ideal permutations
 
