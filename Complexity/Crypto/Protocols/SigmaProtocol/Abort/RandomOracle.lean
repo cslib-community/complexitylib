@@ -1,0 +1,166 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Samuel Schlesinger
+-/
+
+module
+-- upstream: candidate
+
+public import Complexity.Crypto.Protocols.SigmaProtocol.FiatShamir
+public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.View
+public import Complexity.Probability.IID
+
+/-!
+# Bounded aborting Fiat–Shamir signing in the shared random oracle
+
+The signer executes every attempt, including attempts after the first success. Consequently
+all attempted hash inputs affect the shared cache. Only the returned signature selects the
+first success. The underlying one-attempt program is the existing `fiatShamir` signer.
+
+## Main definitions
+
+* `fiatShamirAbortSign`: all-attempt oracle program.
+* `fiatShamirAbort`: canonical optional-signature scheme with a fixed attempt budget.
+
+## Main results
+
+* `fiatShamirAbortSign_queryBound`: the program makes at most the attempt budget of hash calls.
+-/
+
+@[expose] public section
+
+namespace Cslib.Crypto.Protocols.SigmaProtocol
+
+open Probability Probability.PMF OracleComp ROMSignature
+
+variable {X Y T C Z M : Type}
+
+/-- Execute all attempts and return the first success. Even when the first attempt succeeds,
+the recursive call runs and retains its oracle effects. -/
+noncomputable def fiatShamirAbortSign (P : SigmaProtocol X Y T C (Option Z))
+    (keyGen : PMF (X × Y)) (sk : X × Y) (msg : M) :
+    (K : ℕ) → (Fin K → T × P.State) → OracleComp (fun _ : M × T => C) (Option (T × Z))
+  | 0, _ => pure none
+  | K + 1, coins => do
+      let view ← (fiatShamir P keyGen).sign sk msg (coins 0)
+      let later ← fiatShamirAbortSign P keyGen sk msg K (Fin.tail coins)
+      return (view.2.map fun z => (view.1, z)).orElse fun _ => later
+
+/-- An aborting Fiat–Shamir scheme with exactly `K` attempted hash calls per signing request.
+The `none` reply is an abort and never verifies. No total correctness assertion is made. -/
+noncomputable def fiatShamirAbort (P : SigmaProtocol X Y T C (Option Z))
+    (keyGen : PMF (X × Y)) (K : ℕ) : Scheme Y (X × Y) M (Option (T × Z)) (M × T) C where
+  keyGen := (fiatShamir (M := M) P keyGen).keyGen
+  SignCoins := Fin K → T × P.State
+  signCoins sk _ := iid (P.commit sk.1 sk.2) K
+  sign sk msg coins := fiatShamirAbortSign P keyGen sk msg K coins
+  verify y msg
+    | none => pure false
+    | some (w, z) => (fiatShamir P keyGen).verify y msg (w, some z)
+
+/-- Every branch of the all-attempt signer has at most `K` hash calls. This counts queries,
+not running time. -/
+theorem fiatShamirAbortSign_queryBound (P : SigmaProtocol X Y T C (Option Z))
+    (keyGen : PMF (X × Y)) (sk : X × Y) (msg : M) (K : ℕ)
+    (coins : Fin K → T × P.State) :
+    IsQueryBounded (fiatShamirAbortSign P keyGen sk msg K coins) K := by
+  induction K with
+  | zero => exact .pure _ _
+  | succ K ih =>
+    unfold fiatShamirAbortSign fiatShamir
+    simp only [map_eq_pure_bind, bind_assoc, pure_bind]
+    apply IsCostBounded.liftBind
+    intro c
+    simpa only [Nat.add_zero] using
+      (ih (Fin.tail coins)).bind (fun _ => IsCostBounded.pure _ 0)
+
+section View
+
+variable {R : Type} (P : SigmaProtocol X Y T C (Option Z)) (keyGen : PMF (X × Y))
+  (answer : (q : M × T) → StateT R PMF C)
+
+/-- The complete one-attempt reply and external state have the same law for witnesses with
+equal full transcripts. The stateful answering kernel is common to both witnesses. -/
+theorem fiatShamir_sign_run_eq_of_transcript_eq {x x' : X} {y : Y}
+    (h : ∀ c, P.transcript x y c = P.transcript x' y c) (msg : M) (state : R) :
+    ((P.commit x y).bind fun coin =>
+      (interpret answer ((fiatShamir P keyGen).sign (x, y) msg coin)).run state) =
+    (P.commit x' y).bind fun coin =>
+      (interpret answer ((fiatShamir P keyGen).sign (x', y) msg coin)).run state := by
+  have hk := bind_respond_challenge_eq_of_transcript_eq P h
+    (fun w => (answer (msg, w)).run state)
+  simpa only [fiatShamir, interpret_map, interpret_query, StateT.run_map,
+    PMF.monad_map_eq_map, PMF.map_bind, PMF.map_comp, Function.comp_def] using
+    congrArg (PMF.map fun view => ((view.1, view.2.2.1), view.2.2.2)) hk
+
+/-- Sampling coins in advance agrees with executing the first attempt, then sampling and
+executing the remaining attempts from its updated state. -/
+theorem fiatShamirAbortSign_run_succ (x : X) (y : Y) (msg : M) (K : ℕ) (state : R) :
+    ((iid (P.commit x y) (K + 1)).bind fun coins =>
+      (interpret answer (fiatShamirAbortSign P keyGen (x, y) msg (K + 1) coins)).run state) =
+    ((P.commit x y).bind fun coin =>
+      (interpret answer ((fiatShamir P keyGen).sign (x, y) msg coin)).run state).bind fun first =>
+    ((iid (P.commit x y) K).bind fun coins =>
+      (interpret answer (fiatShamirAbortSign P keyGen (x, y) msg K coins)).run first.2).map
+      fun later => ((first.1.2.map fun z => (first.1.1, z)).orElse (fun _ => later.1), later.2) := by
+  simp only [iid, PMF.monad_bind_eq_bind, PMF.bind_bind, Fin.cons_zero,
+    Fin.tail_cons, fiatShamirAbortSign, run_interpret_bind, run_interpret_pure,
+    PMF.monad_pure_eq_pure, PMF.map, Function.comp_def, PMF.pure_bind]
+  congr 1
+  funext coin
+  exact PMF.bind_comm _ _ _
+
+/-- Sequential witness invariance retains the complete final external state of all attempts.
+It applies in particular to a memoizing random oracle, including aborts and repeated inputs. -/
+theorem fiatShamirAbortSign_run_eq_of_transcript_eq {x x' : X} {y : Y}
+    (h : ∀ c, P.transcript x y c = P.transcript x' y c) (msg : M) (K : ℕ) (state : R) :
+    ((iid (P.commit x y) K).bind fun coins =>
+      (interpret answer (fiatShamirAbortSign P keyGen (x, y) msg K coins)).run state) =
+    (iid (P.commit x' y) K).bind fun coins =>
+      (interpret answer (fiatShamirAbortSign P keyGen (x', y) msg K coins)).run state := by
+  induction K generalizing state with
+  | zero => simp [iid, fiatShamirAbortSign]
+  | succ K ih =>
+    rw [fiatShamirAbortSign_run_succ, fiatShamirAbortSign_run_succ,
+      fiatShamir_sign_run_eq_of_transcript_eq P keyGen answer h]
+    congr 1
+    funext first
+    rw [ih]
+
+end View
+
+section Adaptive
+
+variable [DecidableEq M] [DecidableEq T] [Fintype C] [Nonempty C]
+
+/-- The canonical signing/hash handler, including its message log and shared cache, is
+witness-invariant. Failed signing requests are logged just like successful requests. -/
+theorem fiatShamirAbort_handler_eq_of_transcript_eq
+    (P : SigmaProtocol X Y T C (Option Z)) (keyGen : PMF (X × Y)) (K : ℕ)
+    {x x' : X} {y : Y} (h : ∀ c, P.transcript x y c = P.transcript x' y c) :
+    handler (fiatShamirAbort (M := M) P keyGen K) (x, y) =
+      handler (fiatShamirAbort (M := M) P keyGen K) (x', y) := by
+  funext request state
+  cases request with
+  | inl msg =>
+    simp only [handler, fiatShamirAbort, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      ← PMF.bind_bind]
+    rw [fiatShamirAbortSign_run_eq_of_transcript_eq P keyGen (oracle C) h]
+  | inr query => rfl
+
+/-- Every common adaptive forger program has the same joint output, hash cache and queried
+message log for witnesses with equal transcripts. This is a single-run law, not a paired
+execution that shares private signing coins between different witnesses. -/
+theorem fiatShamirAbort_forger_run_eq_of_transcript_eq
+    (P : SigmaProtocol X Y T C (Option Z)) (keyGen : PMF (X × Y)) (K : ℕ)
+    {x x' : X} {y : Y} (h : ∀ c, P.transcript x y c = P.transcript x' y c)
+    {α : Type} (program : OracleComp (ForgerSpec M (M × T) (Option (T × Z)) C) α)
+    (state : List ((M × T) × C) × List M) :
+    (interpret (handler (fiatShamirAbort P keyGen K) (x, y)) program).run state =
+      (interpret (handler (fiatShamirAbort P keyGen K) (x', y)) program).run state := by
+  rw [fiatShamirAbort_handler_eq_of_transcript_eq P keyGen K h]
+
+end Adaptive
+
+end Cslib.Crypto.Protocols.SigmaProtocol
