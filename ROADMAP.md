@@ -71,7 +71,10 @@ current libraries and workloads.
 1. **Ring arithmetic and RLWE.** Polynomial-ring operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
    conversions, rounding and modulus-switching error bounds, and negacyclic NTTs implementing
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
-   experiment separately; an ordinary-LWE reduction does not give them.
+   experiment separately; an ordinary-LWE reduction does not give them. Nearest-integer
+   coefficient conversion and the Module-LWE phase-error bound are available in
+   `SIS/ModulusSwitch`; decoding preservation under modulus changes, parity-preserving
+   variants and native certificates remain open.
 2. **FHEW/TFHE programmable bootstrapping**
    ([Ducas–Micciancio](https://eprint.iacr.org/2014/816);
    [Chillotti–Gama–Georgieva–Izabachène](https://eprint.iacr.org/2016/870)). Ring-GSW external
