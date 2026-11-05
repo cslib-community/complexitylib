@@ -53,6 +53,23 @@ an off-center compact interval. For Fourier coefficient identification, see
 [the quotient-integral workflow below](#unfold-a-lattice-fourier-coefficient). Covolume normalization
 and full lattice Poisson summation remain separate work.
 
+## Fold a density onto a quotient
+
+Import [QuotientDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/QuotientDensity.lean)
+to push a nonnegative density through a countable additive-subgroup quotient. Given a measurable
+`f : G → ℝ≥0∞`, measurable subgroup translations, an invariant ambient measure `μ`, and
+`hF : IsAddFundamentalDomain Γ.op F μ`, apply
+`QuotientAddGroup.map_withDensity_eq_withDensity_automorphize hF hf`. It identifies the image of
+`μ.withDensity f` with the density `QuotientAddGroup.automorphize f` relative to the image of
+`μ.restrict F`. At the coset of `x`, that density sums `f (x + γ)` over subgroup elements.
+
+The theorem derives measurability on the canonical quotient measurable space and allows infinite
+values and infinite total mass. It does not require a measurable fundamental domain beyond the
+null-measurability already in `hF`. The [checked clients](../../ComplexityTests/QuotientDensity.lean)
+cover bottom and top subgroups, a two-element group, infinite densities on a null measure, and
+the Borel measurable space of a discrete lattice quotient. Gaussian quotient normalization and
+distance estimates are a separate consumer in
+[issue #2681](https://github.com/cslib-community/complexitylib/issues/2681).
 
 ## Certify a closed randomized routine
 
