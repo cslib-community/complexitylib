@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Crypto.Computational.SIS.Basic
 import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky
+import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Efficient
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF
 
@@ -126,5 +127,92 @@ example : P.acceptedTranscript S (A, T) ![true] (some (![2], ![1, 0])) = 25⁻¹
     ![true]
   rw [← h]
   exact simulate_apply
+
+/-! ### Strict-PPT integer-box samplers and Lyubashevsky efficiency certificates -/
+
+/-- `sampleIntBoxCoins` maps fair coin bits into `[-B, B]`. -/
+example : sampleIntBoxCoins 2 [] = -2 := by decide
+example : sampleIntBoxCoins 2 [true, true] = 1 := by decide
+example : |sampleIntBoxCoins 2 [true, true, false, false]| ≤ (2 : ℤ) :=
+  abs_sampleIntBoxCoins_le 2 [true, true, false, false]
+
+/-- Dyadic centered box sampler maps `3` coin bits into `[-4, 3]`. -/
+example : sampleDyadicIntBoxCoins 3 [] = -4 := by decide
+example : sampleDyadicIntBoxCoins 3 [true, true, true] = 3 := by decide
+
+/-- The serialized verifier accepts the encoded accepting conversation `((A, T), ![2], ![true],
+some ![1, 0])` and rejects `none`. -/
+abbrev params : LyubashevskyParams := ((1, 2, 1, 4), (7, 2, 1))
+
+example :
+    lyubashevskyVerifyWord
+      (params,
+        lyubashevskyEncoding.statement params (A, T),
+        lyubashevskyEncoding.commitment params ![2],
+        lyubashevskyEncoding.challenge params ![true],
+        lyubashevskyEncoding.response params (some ![1, 0])) = true := by
+  rw [verifierRealizedBy_lyubashevskyVerifyWord]
+  decide
+
+example :
+    lyubashevskyVerifyWord
+      (params,
+        lyubashevskyEncoding.statement params (A, T),
+        lyubashevskyEncoding.commitment params ![2],
+        lyubashevskyEncoding.challenge params ![true],
+        lyubashevskyEncoding.response params none) = false := by
+  rw [verifierRealizedBy_lyubashevskyVerifyWord]
+  decide
+
+example : ComputableInPolyTime (fun p : ℕ × List Bool => sampleIntBoxCoins p.1 p.2)
+    (encPair encNat encBits) encIntBin :=
+  computableInPolyTime_sampleIntBoxCoins
+
+example (B width : ℕ) :
+    Interactive.CloseTo (uniformBox1D B) (ProbComp.eval (sampleIntBox B width))
+      ((2 * B + 1 : ℝ≥0∞) / 2 ^ width) :=
+  closeTo_uniformBox1D_sampleIntBox B width
+
+example (B m width : ℕ) :
+    Interactive.CloseTo (PMF.uniformOfFinset (intBox (Fin m) B) (intBox_nonempty B))
+      (ProbComp.eval (sampleIntBoxVec B m width))
+      ((m : ℝ≥0∞) * ((2 * B + 1 : ℝ≥0∞) / 2 ^ width)) :=
+  closeTo_uniform_intBox_sampleIntBoxVec B m width
+
+example (width : ℕ) :
+    Interactive.CloseTo (uniformDyadicIntBox width) (ProbComp.eval (sampleDyadicIntBox width)) 0 :=
+  closeTo_uniformDyadicIntBox_sampleDyadicIntBox width
+
+example : EfficientSpecialSoundness lyubashevskyFamily
+    (fun p u y => SIS.IsSolution (Matrix.fromCols y.1 y.2) (max (2 * (p.2.2.1 - p.2.2.2)) 1) u)
+    lyubashevskyEncoding encLyubashevskyExtracted
+    (fun p => lyubashevskyExtract p.1.1 p.1.2.1 p.1.2.2.1 p.2.1) :=
+  efficientSpecialSoundness_lyubashevsky
+
+example : EfficientVerifier lyubashevskyFamily lyubashevskyEncoding :=
+  efficientVerifier_lyubashevsky
+
+example : ComputableInPolyTime lyubashevskySimulateCoins
+    (encPair (encPair encLyubashevskyParams (encPair encBits encBits)) encBits)
+    (encOption (encPair encBits encBits)) :=
+  computableInPolyTime_lyubashevskySimulateCoins
+
+example : IsPPTOn (encPair encLyubashevskyParams (encPair encBits encBits))
+    (encOption (encPair encBits encBits)) lyubashevskySimulateWord :=
+  isPPTOn_lyubashevskySimulateWord
+
+example : NonAbortSimulatorRealizedBy lyubashevskyEncoding
+    (fun p => lyubashevskySimulate p.1.1 p.1.2.1 p.1.2.2.1 p.2.1 p.2.2.1 p.2.2.2)
+    lyubashevskySimulateWord
+    (fun p => (p.1.2.1 : ℝ≥0∞) * ((2 * p.2.2.1 + 1 : ℝ≥0∞) / 2 ^ p.1.2.2.2)) :=
+  nonAbortSimulatorRealizedBy_lyubashevskySimulateWord
+
+example (hβ : ∀ p : LyubashevskyParams, p.2.2.2 ≤ p.2.2.1) :
+    EfficientNonAbortSpecialHVZK lyubashevskyFamily
+      (fun _ => lyubashevskyRelation 0)
+      lyubashevskyEncoding
+      (fun p => lyubashevskySimulate p.1.1 p.1.2.1 p.1.2.2.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun p => (p.1.2.1 : ℝ≥0∞) * ((2 * p.2.2.1 + 1 : ℝ≥0∞) / 2 ^ p.1.2.2.2)) :=
+  efficientNonAbortSpecialHVZK_lyubashevsky (fun _ => 0) hβ (fun _ => by simp)
 
 end ComplexityTests.Crypto.Lyubashevsky
