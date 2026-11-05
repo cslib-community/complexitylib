@@ -110,8 +110,12 @@ transporting key-generation error, and realizing the efficient forking reduction
   normalized continuous Gaussian and fundamental-domain quotient measures are probabilities;
   their density identity gives full-L1 distance at most the actual nonzero dual Gaussian mass,
   with eventual small error, in [#2681](https://github.com/cslib-community/complexitylib/issues/2681).
-  This is a precise quotient consequence of Claim 3.8. An attained minimum smoothing parameter,
-  Claim 3.9 convolution bounds, efficient sampling and the quantum reduction remain open in
+  This is a precise quotient consequence of Claim 3.8. The actual arbitrary-width
+  coset discrete-Gaussian convolution density and Claim 3.9 full-L1 bound, with a sufficient
+  dual-gap width criterion, are proved in
+  [#2707](https://github.com/cslib-community/complexitylib/issues/2707). An attained minimum
+  smoothing parameter, the projected/mod-one law, arbitrary-modulus search-LWE sampling
+  experiment, efficient finite-precision sampling and quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
   `Foundations/MeasureTheory/Group/ConvolutionDensity` proves the convolution density formula
   for an arbitrary s-finite first measure, including singular inputs. Its actual shifted
