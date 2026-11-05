@@ -80,9 +80,13 @@ transporting key-generation error, and realizing the efficient forking reduction
   unary `k`; actual OT rows, seal-time ideal commitment, terminal first opening attempts and abort
   retain the same majority-extraction coupling, including `2^-n` at `k = 2n`. A globally polynomial
   private-buffer client lies outside the old constant-growth premise. This does not supply a
-  universal two-sided realization: a global receiver-program adapter and common honest execution
-  with role-local corruption adapters and uniform observation/phase/input contracts still need
-  to connect both real experiments. Arbitrary two-sided scheduling and composition remain open.
+  universal two-sided realization. `OTCommitment/Serial` supplies a common role-local OT world:
+  one pending row is consumed once, and the first terminal attempt freezes further selections.
+  Its explicit honest-party schedulers reproduce both existing real experiments, retaining the
+  receiver's raw opening as well as transcript, state and continuation. This connects those
+  executions under their stated serial schedules; a global receiver-program adapter, uniform
+  native contracts for the common execution, arbitrary two-sided scheduling and composition
+  remain open.
 - **Regev's worst-case to average-case reduction.** For suitable `q` and Gaussian noise rate
   `α` with `αq > 2√n`, an efficient search-LWE algorithm yields a quantum polynomial-time
   algorithm for worst-case GapSVP and SIVP within `Õ(n/α)`. The noise distribution, modulus
