@@ -101,14 +101,14 @@ families and full-input native runtime.
 ### Public-key, lattice and symmetric constructions ([#640])
 
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
-  log against strict PPT forgers; eavesdropping security in the strict-PPT model, with the
-  statistical-distance term from sampling `ZMod q`.
-- **Chosen-ciphertext security** ([#1885]): multi-challenge CCA from the single-challenge
-  Cramer–Shoup theorem.
+  log against strict PPT forgers. The arithmetic algorithms and exact typed ROM reduction are
+  proved; strict-PPT identification and eavesdropping results do not discharge this signature
+  endpoint. Remaining work includes shared encoded signing/hash access, final-message freshness,
+  and a polynomial-time private-coin replay/forking realization ([#2568]).
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
-  certificates for the simulator and extractor; full interactive-view simulation; SIS for
-  general moduli; module SIS and module LWE toward Dilithium-style schemes, as theory.
+  certificates for the simulator and extractor; full interactive-view simulation;
+  Dilithium-style signature schemes over module SIS and module LWE, as theory.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -117,10 +117,16 @@ families and full-input native runtime.
 
 In order:
 - the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding;
-- parallel and AND/OR composition, and round-by-round knowledge soundness;
+- parallel and AND/OR composition (`Verifier.seqProd`, `Reduction.seqProd`, `relProd`, `relDisj`
+  in `Interactive/AuxZK.lean`) and round-by-round knowledge soundness (`Verifier.RbrKnowledgeSound`,
+  `Verifier.RbrKnowledgeSound.append`, `Verifier.RbrKnowledgeSound.seqProd`,
+  `Verifier.RbrKnowledgeSound.iterate`, `Verifier.RbrKnowledgeSound.bundle` in
+  `Interactive/RbrKnowledge.lean`; parallel and OR protocol composition remain);
 - oracle statements, so a later phase can query an earlier phase's oracle message (virtual
   output oracles, as in ArkLib), with knowledge soundness and zero knowledge in oracle worlds;
-- efficiency-certified simulators and extractors, and auxiliary-input zero knowledge on the core;
+- efficiency-certified simulators and extractors (`Interactive/Efficient.lean`), and
+  auxiliary-input zero knowledge on the core (`Reduction.AuxHVZK`, `Reduction.ZK`,
+  `Reduction.EfficientAuxHVZK`, `Reduction.ComputationalAuxHVZK` in `Interactive/AuxZK.lean`);
 - polynomial commitment and evaluation-query reductions, and the Ligero IOP;
 - the BCS transform to non-interactive arguments in the random-oracle model;
 - VOLE as an ideal functionality, and VOLE-in-the-head;
@@ -863,7 +869,6 @@ not planned, not as proved.
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#2468]: https://github.com/cslib-community/complexitylib/issues/2468
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
-[#1885]: https://github.com/cslib-community/complexitylib/pull/1885
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
 [#2062]: https://github.com/cslib-community/complexitylib/issues/2062
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
@@ -876,3 +881,5 @@ not planned, not as proved.
 [#2423]: https://github.com/cslib-community/complexitylib/issues/2423
 
 [#2521]: https://github.com/cslib-community/complexitylib/issues/2521
+
+[#2568]: https://github.com/cslib-community/complexitylib/issues/2568

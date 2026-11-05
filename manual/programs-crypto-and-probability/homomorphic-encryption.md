@@ -37,7 +37,7 @@ The exported [Complexity/Crypto/Computational/Homomorphic/GSW/DepthParameters/Sc
 
 The leveled theorem chooses an efficiently computable budget dominating the requested polynomially bounded depth family. The separate [Leveled.schemeFamily_spec](../../Complexity/Crypto/Computational/Homomorphic/Leveled/Bootstrapping.lean) supplies joint polynomial runtime in unary security parameter and depth. The constructions themselves are explicit in [Leveled.Basic](../../Complexity/Crypto/Computational/Homomorphic/Leveled/Basic.lean) and [FixedKey.Basic](../../Complexity/Crypto/Computational/Homomorphic/FixedKey/Basic.lean): the former uses a chain of keys, while the latter reuses one key and encryptions of its own secret bits.
 
-The library also proves quantitative reduction bounds in `GSW/FullyHomomorphic.lean`. Their docstrings distinguish the advantage loss, which matches Gentry's Theorem 4 up to a constant factor, from the unformalized running-time comparison relative to the adversary.
+The library also proves quantitative reduction bounds in `GSW/FullyHomomorphic.lean` and [Leveled.ExactSecurity](../../Complexity/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean). `GSW/FullyHomomorphic.lean` uses power-of-two `dyadicSize` coin sampling (matching Gentry's Theorem 4 up to a constant factor), whereas `Leveled/ExactSecurity.lean` supplies both the exact `(2 * budget n) * capacity n` uniform-index loss (`exactLeveledAdversary`), its strict-PPT `sampleModNat` counterpart (`modLeveledAdversary`) with an explicit `O(1 / 2^n)` statistical tail, and explicit polynomial public-key, saved-state, and coin-budget overhead bounds (`exists_leveledAdversary_overhead`).
 
 ## Review path and remaining boundaries
 

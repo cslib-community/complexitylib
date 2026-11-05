@@ -1732,14 +1732,14 @@ theorem isQueryBounded_multiPhase2FilterHandler (decBound : List Bool → ℕ)
 /-- Interpreting `multiPhase2FilterHandler` against `cca2Phase2Oracle` on `ct ∈ cts` has the exact
 same output distribution as running directly against `cca2MultiPhase2Oracle` on `cts`, whenever
 `decBound` upper-bounds every encoded decryption output length. -/
-theorem eval_run_multiPhase2FilterHandler {Out : Type}
+theorem eval_run_multiPhase2FilterHandler {Out α : Type}
     (encOut : Out ↪ List Bool)
     (decrypt : ℕ → List Bool → List Bool → Option Out)
     (decBound : List Bool → ℕ)
     (n : ℕ) (sk ct : List Bool) (cts : List (List Bool))
     (hct : ct ∈ cts)
     (hdecBound : ∀ req, (encOption encOut (decrypt n sk req)).length ≤ decBound req)
-    (prog : WordOracleComp Unit Bool) :
+    (prog : WordOracleComp Unit α) :
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2Phase2Oracle encOut decrypt n sk ct))
@@ -1787,8 +1787,8 @@ theorem eval_run_multiPhase2FilterHandler {Out : Type}
         simp only [PMF.pure_map, List.take_of_length_le (hdecBound req)])
     prog ()
   have hfst := congrArg (PMF.map fun x => (x.1, ())) hsim.symm
-  have hid1 : (fun x : Bool × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
-  have hid2 : (fun x : Bool × Unit => (x.1, ())) = id := rfl
+  have hid1 : (fun x : α × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
+  have hid2 : (fun x : α × Unit => (x.1, ())) = id := rfl
   simpa only [PMF.map_comp, Function.comp_def, hid1, hid2, PMF.map_id] using hfst
 
 /-- Continuation of the multi-challenge hybrid experiment at index `split : ℕ` after
@@ -2433,7 +2433,9 @@ theorem eval_cca2GameOn_cca2MultiToSingle {Msg Out : Type} [Inhabited Msg]
   simp only [hsample, hguess, PMF.bind_bind]
   exact PMF.bind_comm _ _ _
 
-private theorem bind_apply_add_eq_of_support {α β : Type*} {p : PMF α}
+/-- If two pairs of continuations satisfy `f₁ a b + g₂ a b = f₂ a b + g₁ a b` on the support of
+`p`, then `(p.bind f₁) b + (p.bind g₂) b = (p.bind f₂) b + (p.bind g₁) b`. -/
+theorem bind_apply_add_eq_of_support {α β : Type*} {p : PMF α}
     {f₁ f₂ g₁ g₂ : α → PMF β} {b : β}
     (h : ∀ a ∈ p.support, f₁ a b + g₂ a b = f₂ a b + g₁ a b) :
     p.bind f₁ b + p.bind g₂ b = p.bind f₂ b + p.bind g₁ b := by

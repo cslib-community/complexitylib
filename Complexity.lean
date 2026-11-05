@@ -1907,6 +1907,7 @@ public import Complexity.Computability.GenericRAM.SparseMemory.Basic
 public import Complexity.Computability.GenericRAM.SparseMemory.Turing
 public import Complexity.Computability.Geometry.Orthogonal.Encoding
 public import Complexity.Computability.Geometry.Orthogonal.Subdivision
+public import Complexity.Computability.Interactive.AuxZK
 public import Complexity.Computability.Interactive.Basic
 public import Complexity.Computability.Interactive.Bundle
 public import Complexity.Computability.Interactive.Efficient
@@ -1914,9 +1915,12 @@ public import Complexity.Computability.Interactive.GKR.Layered
 public import Complexity.Computability.Interactive.GKR.Protocol
 public import Complexity.Computability.Interactive.GKR.Summand
 public import Complexity.Computability.Interactive.Plain
+public import Complexity.Computability.Interactive.RbrKnowledge
 public import Complexity.Computability.Interactive.Security
+public import Complexity.Computability.Interactive.Security.Repeat
 public import Complexity.Computability.Interactive.Sequential
 public import Complexity.Computability.Interactive.Sumcheck
+public import Complexity.Computability.Interactive.ToIP
 public import Complexity.Computability.Kolmogorov.AverageCase
 public import Complexity.Computability.Kolmogorov.Basic
 public import Complexity.Computability.Kolmogorov.ChainRule
@@ -2597,6 +2601,7 @@ public import Complexity.Computability.Probabilistic.AffineHash
 public import Complexity.Computability.Probabilistic.BoundedUniform
 public import Complexity.Computability.Probabilistic.CenteredBinomial
 public import Complexity.Computability.Probabilistic.CoinTape
+public import Complexity.Computability.Probabilistic.CoinTape.Bounds
 public import Complexity.Computability.Probabilistic.Finite
 public import Complexity.Computability.Probabilistic.Fold
 public import Complexity.Computability.Probabilistic.LinearHash
@@ -2890,11 +2895,13 @@ public import Complexity.Crypto.Computational.ElGamal.ProbComp
 public import Complexity.Crypto.Computational.Encryption.Authenticated
 public import Complexity.Crypto.Computational.Encryption.Basic
 public import Complexity.Crypto.Computational.Encryption.CCA
+public import Complexity.Crypto.Computational.Encryption.CCA.Interleaved
 public import Complexity.Crypto.Computational.Encryption.Circular
 public import Complexity.Crypto.Computational.Encryption.EncryptThenMAC
 public import Complexity.Crypto.Computational.Encryption.Hybrid
 public import Complexity.Crypto.Computational.Encryption.PolyTime
 public import Complexity.Crypto.Computational.Encryption.PublicKeyReplacement
+public import Complexity.Crypto.Computational.EvenMansour
 public import Complexity.Crypto.Computational.GGM.Circuit
 public import Complexity.Crypto.Computational.GGM.Evaluation
 public import Complexity.Crypto.Computational.GGM.Expansion
@@ -2976,6 +2983,7 @@ public import Complexity.Crypto.Computational.Homomorphic.Leveled.Bootstrapping
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Compactness
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Correctness
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Encoding
+public import Complexity.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.PolyTime
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Reduction
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Reduction.Game
@@ -2995,6 +3003,8 @@ public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Double
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
 public import Complexity.Crypto.Computational.Kilian
+public import Complexity.Crypto.Computational.Kilian.Micali
+public import Complexity.Crypto.Computational.Kilian.MicaliSoundness
 public import Complexity.Crypto.Computational.Kilian.NP
 public import Complexity.Crypto.Computational.Kilian.Soundness
 public import Complexity.Crypto.Computational.Kilian.Succinct
@@ -3006,6 +3016,7 @@ public import Complexity.Crypto.Computational.MerkleSignature
 public import Complexity.Crypto.Computational.MerkleSignature.Security
 public import Complexity.Crypto.Computational.MerkleTree
 public import Complexity.Crypto.Computational.MerkleTree.Binding
+public import Complexity.Crypto.Computational.MerkleTree.ROMExtract
 public import Complexity.Crypto.Computational.NaorReingold
 public import Complexity.Crypto.Computational.NaorReingold.PRF
 public import Complexity.Crypto.Computational.NaorReingold.Security
@@ -3079,9 +3090,14 @@ public import Complexity.Crypto.Computational.PseudorandomGenerator
 public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
+public import Complexity.Crypto.Computational.SIS.Module
+public import Complexity.Crypto.Computational.SIS.ModuleEncryption
+public import Complexity.Crypto.Computational.SchnorrEavesdrop
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
+public import Complexity.Crypto.Computational.SchnorrSignature
 public import Complexity.Crypto.Computational.Signature
+public import Complexity.Crypto.Computational.Signature.RandomOracle
 public import Complexity.Crypto.Computational.Stretch
 public import Complexity.Crypto.Computational.Stretch.Quantitative
 public import Complexity.Crypto.Computational.TCRSignature
@@ -3114,6 +3130,7 @@ public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Derandomization
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Design
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Reconstruction
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Sampling
+public import Complexity.Crypto.Protocols.BCS.Basic
 public import Complexity.Crypto.Protocols.Cipher.EvenMansour
 public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
@@ -3122,6 +3139,7 @@ public import Complexity.Crypto.Protocols.MPC.CircuitEval
 public import Complexity.Crypto.Protocols.MPC.Composition
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
+public import Complexity.Crypto.Protocols.PolynomialCommitment.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
@@ -3129,12 +3147,17 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Computational
 public import Complexity.Crypto.Protocols.SigmaProtocol.Efficient
 public import Complexity.Crypto.Protocols.SigmaProtocol.FiatShamir
 public import Complexity.Crypto.Protocols.SigmaProtocol.Identification
+public import Complexity.Crypto.Protocols.SigmaProtocol.Interactive
 public import Complexity.Crypto.Protocols.SigmaProtocol.Linear
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky
+public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Efficient
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract
+public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature
+public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Efficient
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
+public import Complexity.Crypto.Protocols.VOLE.Basic
 public import Complexity.DataStructure.AVLTree.Basic
 public import Complexity.DataStructure.AVLTree.Erase
 public import Complexity.DataStructure.AVLTree.Impl
@@ -4018,6 +4041,7 @@ public import Complexity.Languages.Probabilistic.Traverse
 public import Complexity.Languages.Probabilistic.UniformNat
 public import Complexity.Languages.Probabilistic.UniformNat.Support
 public import Complexity.Languages.Probabilistic.UntilBad
+public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 public import Complexity.Languages.Probabilistic.Vector
 public import Complexity.Logics.FirstOrder.Basic
 public import Complexity.Logics.FirstOrder.Encoding
@@ -4257,6 +4281,7 @@ public import Complexity.Probability.KWiseIndependent.Reduced
 public import Complexity.Probability.KWiseIndependent.ReducedLimbs
 public import Complexity.Probability.KWiseIndependent.Restriction
 public import Complexity.Probability.KWiseIndependent.Trinomial
+public import Complexity.Probability.LinearCombination
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
 public import Complexity.Probability.MinEntropy
