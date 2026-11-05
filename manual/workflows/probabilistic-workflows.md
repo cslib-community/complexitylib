@@ -53,6 +53,21 @@ an off-center compact interval. For Fourier coefficient identification, see
 [the quotient-integral workflow below](#unfold-a-lattice-fourier-coefficient). Covolume normalization
 and full lattice Poisson summation remain separate work.
 
+## Bound a centered-binomial sampler tail
+
+[CenteredBinomial/Concentration.lean](../../Complexity/Languages/Probabilistic/CenteredBinomial/Concentration.lean)
+bounds the law of the existing `sampleCenteredBinomial η` program. For `η > 0` and real
+`B ≥ 0`, `sampleCenteredBinomial_tail_le` gives
+`Pr[B ≤ |z|] ≤ 4 exp(-B²/(2η))`; `sampleCenteredBinomial_strict_tail_le` gives the same
+bound for `B < |z|`. This original two-count union bound is not optimal. Width zero remains
+`pure 0`, so its strict and non-strict zero cutoffs differ.
+
+The [checked clients](../../ComplexityTests/CenteredBinomialConcentration.lean) show positive
+mass at both width-eight endpoints, an empty strict tail above eight, and a non-strict tail
+bound below one. They also certify the actual growing program with `η = 8(l+1)` as
+`IsPPTOn encUnary encIntBin` and bound its strict tail above `4(l+1)` by `4 exp(-(l+1))`.
+The native certificate charges unary width and signed binary output; this scalar result
+supplies neither encryption correctness nor a security reduction.
 
 ## Certify a closed randomized routine
 

@@ -4035,6 +4035,7 @@ public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString
 public import Complexity.Languages.Probabilistic.BoundedUniform
 public import Complexity.Languages.Probabilistic.CenteredBinomial
+public import Complexity.Languages.Probabilistic.CenteredBinomial.Concentration
 public import Complexity.Languages.Probabilistic.Concentration
 public import Complexity.Languages.Probabilistic.Expect
 public import Complexity.Languages.Probabilistic.Forking
