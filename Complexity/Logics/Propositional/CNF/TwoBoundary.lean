@@ -380,6 +380,7 @@ theorem query_length (B : CNF V) (P : Fin (r + 1) → List (List (Literal V))) (
       omega
   have h := hl (List.finRange (r + 1))
   simpa [query, CNF.relabel, List.length_append, List.length_map,
-    List.finRange, List.map_ofFn, List.sum_ofFn, Fin.sum_univ_succ] using Nat.add_le_add_left h B.length
+    List.finRange, List.map_ofFn, List.sum_ofFn, Fin.sum_univ_succ] using
+      Nat.add_le_add_left h B.length
 
 end Cslib.Logic.PL.TwoBoundary

@@ -24,6 +24,30 @@ The existing BLR local test compiles to a decision tree through `PCP.LocalTest.d
 
 The corresponding [one-sided lower bound](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PropertyTesting/LinearityLowerBound.lean) shows that a tester of depth at most two that accepts every parity perfectly cannot reject the specified nonlinearity witness with value false at zero. This establishes the three-query boundary under those hypotheses. It is a lower bound for worst-case query depth, not expected queries, and it is formulated for arbitrary randomness support through the tested tree property.
 
+## Exact finite counterexamples
+
+For the circumference-eight circle, import
+[`QuarterQCD`](../../Complexity/GameTheory/FacilityLocation/QuarterQCD.lean).
+`weights` computes the squared opposite arcs with floor four and `cost` normalizes
+by their sum. Coordinates must be canonical, in $[0,8)$; the three reports are in
+increasing order. `quarterQCD_counterexample` gives an improving first-agent report
+from $(0,3,4)$ to $(1,3,4)$ and ratio $137/116>7/6$. `witness_optimum` proves the
+optimum is four against every real canonical facility location. The restricted
+ordered-report strategyproofness predicate is already false. This does not provide
+the paper's general graph mechanism search. See the
+[complete checked client](../../ComplexityTests/PaperEndpoints/QuarterQCD.lean).
+
+For the six rational least-squares observations, import
+[`NonRange`](../../Complexity/Statistics/LeastSquares/NonRange.lean).
+`scatter` is centered cross-scatter, $\sum xy-(\sum x)(\sum y)/|S|$.
+`nonrange_optimum` identifies the unique minimizing four-set and proves that no
+real plane cuts it out on the saddle lift $(x,y,xy)$. The rational oriented-volume
+certificates cover the fifteen four-lift determinants. Indices are zero based;
+`retained` is the source's points 2, 3, 5 and 6. This finite obstruction does not
+supply an integral-stability algorithm. The
+[checked client](../../ComplexityTests/PaperEndpoints/NonRange.lean) also constructs
+an empty lifted-plane range, distinguishing the range notion from the failed optimum.
+
 ## Known Limitations
 
 The examples use semantic hypotheses and real probability/analysis. These results provide formal sample/query guarantees and formal bridges to PAC/query models. Claims of polynomial native training time or succinct executable output hypotheses require separate resource theorems. Keep these limitations in view when choosing a learning model: the notions of efficiency differ.

@@ -3958,6 +3958,7 @@ public import Complexity.Foundations.RingTheory.AdjoinRoot
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
+public import Complexity.GameTheory.FacilityLocation.QuarterQCD
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString
@@ -4113,6 +4114,7 @@ public import Complexity.Logics.Propositional.CNF.ThreeCNF.Exact.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
+public import Complexity.Logics.Propositional.CNF.TwoBoundary
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CSP
@@ -4291,6 +4293,7 @@ public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
+public import Complexity.Statistics.LeastSquares.NonRange
 public import Complexity.Tactic.FOOperator
 public import Complexity.Tactic.FOOperator.Init
 public import Complexity.Tactic.FirstOrder

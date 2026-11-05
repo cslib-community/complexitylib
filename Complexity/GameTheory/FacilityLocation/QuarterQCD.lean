@@ -27,6 +27,8 @@ from these weights, rather than from a separately specified lottery.
 in [RogowskiDziubinski2027], Remark P.1, PDF pp. 50–51. This is a counterexample to
 quarter-QCD, not a formalization of the paper's mechanism search or its other results.
 The source's unit circle is scaled by eight, so the weight floor is four.
+The original rule is [Meir2019Circle], Definition 3.1;
+its strategyproofness and ratio claims are Theorem 3.2 and Proposition 3.3.
 -/
 
 public section

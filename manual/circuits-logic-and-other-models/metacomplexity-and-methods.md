@@ -47,6 +47,27 @@ The Razborov–Rudich barrier is stated through concrete circuit distinguishers:
 
 These are mathematical proof interfaces, not automatically encoded certificates or proof-search procedures. Other reusable measures in the query and formula layers—sensitivity, certificate complexity, degree, Khrapchenko edge counts—play a similar role while using different objects and costs.
 
+## Two-boundary CNF counting
+
+Import [`TwoBoundary`](../../Complexity/Logics/Propositional/CNF/TwoBoundary.lean)
+and open `Cslib.Logic.PL.TwoBoundary`. Supply an existing `CNF V`, an internal
+path length `r`, and `P : Fin (r + 1) → List (List (Literal V))`.
+Each `P j` is a DNF with conjunctions of literals as terms. `query B r P false`
+and `query B r P true` are ordinary CNFs on `V ⊕ Fin r`; the two endpoint bits
+are substituted constants, not declared variables. Empty term lists are false,
+whereas an empty term is true. Every variable of the finite type is declared,
+including those that do not occur in any generated clause.
+
+`counting_identity` subtracts the satisfying-assignment cardinalities of those
+queries to recover the solution count of `B` and all the predicates.
+`query_width`, `query_length` and `declared_variables` give width at most
+$\max(b,d+2)$, at most $m_B+2\sum_j |T_j|$ clauses, and exactly
+$n+h-1$ variables with $h=r+1$. With no predicates, use `B` itself.
+The [checked client](../../ComplexityTests/PaperEndpoints/TwoBoundary.lean)
+includes one-edge paths, empty terms, failed predicates, unused variables and
+a general three-variable count identity. This is an algebraic reduction;
+no external subexponential SAT theorem or native runtime bound is assumed.
+
 ## Known Limitations
 
 The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.
