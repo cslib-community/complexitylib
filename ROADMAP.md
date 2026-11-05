@@ -103,8 +103,11 @@ is Gentry's exact concrete-security loss together with the `poly(ℓ, d)` runnin
 of his Theorem 4. The complete existing modular reduction game now has an exact saved-tape law
 in both challenge worlds, with a native evaluator and polynomial allocated coin budget derived
 from strict-PPT components. Its original selector bias, message swap, tagged state and zero-link
-fallback are preserved; supports are derived inside the game. The literal source loss mapping
-and multiplicative machine-runtime comparison remain open. Develop these in reviewable
+fallback are preserved; supports are derived inside the game. Bit-encryption replay also retains
+linear dependence on participating callback time, with independent workspace and supported
+ciphertext-size bounds and a callback-independent preparation polynomial. This component bound
+does not compare primitive costs with adversary runtime. The literal source loss mapping and
+multiplicative machine-runtime comparison remain open. Develop these in reviewable
 milestones, reusing the finite sampling, gadget algebra, native certificates and game reductions
 where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
 current libraries and workloads.
