@@ -265,7 +265,7 @@ theorem length_evenMansourDecryptWord {n : ℕ} {P_inv : List Bool → List Bool
 
 /-- Word-level Even–Mansour decryption inverts encryption on `n`-bit words whenever `P_inv`
 left-inverts `P` on `n`-bit words and `P` preserves `n`-bit length. -/
-@[simp] theorem evenMansourDecryptWord_evenMansourEncryptWord {n : ℕ}
+theorem evenMansourDecryptWord_evenMansourEncryptWord {n : ℕ}
     {P P_inv : List Bool → List Bool}
     (hP : ∀ u : List Bool, u.length = n → (P u).length = n)
     (hleft : ∀ u : List Bool, u.length = n → P_inv (P u) = u)
@@ -280,7 +280,7 @@ left-inverts `P` on `n`-bit words and `P` preserves `n`-bit length. -/
 
 /-- Word-level Even–Mansour encryption inverts decryption on `n`-bit words whenever `P_inv`
 right-inverts `P` on `n`-bit words and `P_inv` preserves `n`-bit length. -/
-@[simp] theorem evenMansourEncryptWord_evenMansourDecryptWord {n : ℕ}
+theorem evenMansourEncryptWord_evenMansourDecryptWord {n : ℕ}
     {P P_inv : List Bool → List Bool}
     (hP_inv : ∀ v : List Bool, v.length = n → (P_inv v).length = n)
     (hright : ∀ v : List Bool, v.length = n → P (P_inv v) = v)
@@ -294,7 +294,7 @@ right-inverts `P` on `n`-bit words and `P_inv` preserves `n`-bit length. -/
     evenMansourPostKeyWord_self k₂ y (hy.trans hk₂.symm)]
 
 /-- Single-key word-level decryption inverts encryption on `n`-bit words. -/
-@[simp] theorem singleKeyEvenMansourDecryptWord_singleKeyEvenMansourEncryptWord {n : ℕ}
+theorem singleKeyEvenMansourDecryptWord_singleKeyEvenMansourEncryptWord {n : ℕ}
     {P P_inv : List Bool → List Bool}
     (hP : ∀ u : List Bool, u.length = n → (P u).length = n)
     (hleft : ∀ u : List Bool, u.length = n → P_inv (P u) = u)
@@ -303,7 +303,7 @@ right-inverts `P` on `n`-bit words and `P_inv` preserves `n`-bit length. -/
   evenMansourDecryptWord_evenMansourEncryptWord hP hleft hk hk hx
 
 /-- Single-key word-level encryption inverts decryption on `n`-bit words. -/
-@[simp] theorem singleKeyEvenMansourEncryptWord_singleKeyEvenMansourDecryptWord {n : ℕ}
+theorem singleKeyEvenMansourEncryptWord_singleKeyEvenMansourDecryptWord {n : ℕ}
     {P P_inv : List Bool → List Bool}
     (hP_inv : ∀ v : List Bool, v.length = n → (P_inv v).length = n)
     (hright : ∀ v : List Bool, v.length = n → P (P_inv v) = v)
