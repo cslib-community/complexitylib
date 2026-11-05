@@ -6,7 +6,7 @@ Authors: Samuel Schlesinger
 
 module
 
-import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Extraction
+public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Extraction
 import Complexity.Probability.PMF.Bind
 
 public section
@@ -103,7 +103,7 @@ example :
   norm_num at h
 
 /-- Empty challenges never form a distinct fork, regardless of the public-key kernel. -/
-example {n m q η : ℕ} [NeZero q] {Ω : Type}
+theorem empty_challenge_prediction_eq_zero {n m q η : ℕ} [NeZero q] {Ω : Type}
     (A : Matrix (Fin n) (Fin m) (ZMod q))
     (K : Matrix (Fin n) (Fin 0) (ZMod q) → PMF Ω)
     (c c' : Ω → BitString 0) (d : Ω → Fin m → ℤ) :
