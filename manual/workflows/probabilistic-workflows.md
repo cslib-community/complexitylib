@@ -160,6 +160,17 @@ For a runtime conclusion, use `isPPTOn_kemCCAGames_encryptKeyEncaps` with native
 
 Check freshness against raw ciphertext words. The test's native `adaptiveTagDistinguisher` first observes rejection of the exact challenge, then flips a redundant tag and queries again. Because the malformed scheme ignores that tag, the distinct word reveals the key. Its exact advantage is `1 - 2^(-keyLen n)`; the comparison uses a bounded reply prefix, so its strict oracle runtime certificate holds even for arbitrarily long external replies.
 
+For hybrid ciphertexts, use [`hybridDecrypt`](../../Complexity/Crypto/Computational/Encryption/Hybrid.lean)
+with Option-valued decapsulation and symmetric decryption. It first checks that re-encoding
+`(unframe ct, dropFrame ct)` gives exactly `ct`, then propagates either component's `none` result.
+Apply `hybridDecrypt_hybridEncrypt` with component correctness returning `some k` and `some msg`;
+`computableInPolyTime_hybridDecrypt` takes the corresponding certificates with `encOption` outputs.
+The [hybrid clients](../../ComplexityTests/Crypto/HybridEncryption.lean) show why the framing check
+matters: `[true, true]` and `[true, true, false]` have the same projections, but only the latter
+is a canonical pair. They also check accepted empty plaintext (`[true]` as an oracle reply),
+rejection (`[]`), and exact challenge-word rejection. This parsing repair is a prerequisite for
+the separate [DEM reduction](https://github.com/cslib-community/complexitylib/issues/2694).
+
 ## Certify a list accumulator
 
 Import `Complexity.Computability.Probabilistic.Fold` for
