@@ -3962,6 +3962,7 @@ public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
 public import Complexity.GameTheory.FairDivision.EFX
+public import Complexity.GameTheory.FairDivision.EFXApproximation
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString
