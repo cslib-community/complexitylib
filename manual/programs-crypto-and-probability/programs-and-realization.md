@@ -116,8 +116,26 @@ transports such joint-state mixtures through the existing shared-world signature
 `eval_worldRealize_eq_bind` includes the cache and signing log before final verification, and works
 with any acceptance rule. In particular, final-message freshness permits repeated signing queries.
 These shared laws complete [#2652](https://github.com/cslib-community/complexitylib/issues/2652);
-the concrete word-channel adapter remains [#2636](https://github.com/cslib-community/complexitylib/issues/2636),
-and the full efficient Schnorr reduction remains open.
+the full efficient Schnorr reduction remains open.
+
+[`Signature/WordRandomOracle.lean`](../../Complexity/Crypto/Computational/Signature/WordRandomOracle.lean)
+routes Boolean channel `false` to signing and `true` to hashing. All word hash payloads remain
+distinct, and digest replies use an injective encoding. `exists_eufCmaGame_savedCoinForger`
+starts from actual strict-PPT key generation and an actual `IsOraclePPT` word forger, and proves
+equality of the existing shared-world game and explicit-coin EUF-CMA game. One native machine
+and clock work uniformly for all digest types and encodings, including parameter-dependent ones.
+Its native replay
+certificate charges the whole `(n, pk, coins)` input, the key-length guard, tape truncation, and
+the existing total pair decoder. Oversized keys return the empty pair without calls; every tape
+obeys the parameter-only call bounds, including tapes outside the sampling support. Plain
+`ComputableInPolyTime.encoding_comp` supplies the encoded machine input.
+
+This completes the generic word-forger adapter
+[#2636](https://github.com/cslib-community/complexitylib/issues/2636). The scheme's signer, hash
+handler and final verifier still run in the existing typed shared world. Native realizations of
+those components, Schnorr's concrete query encoding, and the full efficient forking reduction are
+separate obligations. Repeated signing/hash and fresh/replayed-message examples are checked in
+[`Crypto/WordRandomOracle.lean`](../../ComplexityTests/Crypto/WordRandomOracle.lean).
 
 ## Exact versus approximate randomness
 

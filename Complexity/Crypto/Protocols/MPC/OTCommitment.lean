@@ -106,15 +106,33 @@ noncomputable def senderRun {State : Type} (A : Sender State) :
       let (rest, final) ← senderRun A k (A.receive next (ans 0)) (Fin.tail choices)
       pure (Fin.cons (ans 1) rest, final)
 
-/-- The same sender's local table transcript. Its independence from receiver choices is a
-consequence of `senderRun_eq`, not a restriction that the tables encode a consistent bit. -/
-noncomputable def senderTables {State : Type} (A : Sender State) :
-    (k : ℕ) → State → PMF ((Fin k → Fin 4 → Bool) × State)
+/-- Common sender-table recursion, with only the sampling backend varied. Receiver choices
+are not an input; the semantic specialization is related to actual OT by `senderRun_eq`. -/
+def senderTablesWith {m : Type → Type} [Monad m] {State : Type}
+    (choose : ℕ → State → m ((Fin 4 → Bool) × State)) (receive : State → Unit → State) :
+    (k : ℕ) → State → m ((Fin k → Fin 4 → Bool) × State)
   | 0, st => pure (Fin.elim0, st)
   | k + 1, st => do
+      let (t, next) ← choose k st
+      let (rest, final) ← senderTablesWith choose receive k (receive next ())
+      pure (Fin.cons t rest, final)
+
+/-- The same sender's local table transcript. Its independence from receiver choices is a
+consequence of `senderRun_eq`, not a restriction that the tables encode a consistent bit. -/
+noncomputable def senderTables {State : Type} (A : Sender State) (k : ℕ) (st : State) :
+    PMF ((Fin k → Fin 4 → Bool) × State) :=
+  senderTablesWith A.choose A.receive k st
+
+/-- No sender table is generated at zero rounds. -/
+theorem senderTables_zero {State : Type} (A : Sender State) (st : State) :
+    senderTables A 0 st = pure (Fin.elim0, st) := rfl
+
+/-- One sender round chooses its table, receives only `Unit`, then continues. -/
+theorem senderTables_succ {State : Type} (A : Sender State) (k : ℕ) (st : State) :
+    senderTables A (k + 1) st = (do
       let (t, next) ← A.choose k st
       let (rest, final) ← senderTables A k (A.receive next ())
-      pure (Fin.cons t rest, final)
+      pure (Fin.cons t rest, final)) := rfl
 
 /-- Exact factorization of actual OT execution: the sender's local transcript does not depend
 on the private choices, and the receiver gets precisely the selected table entries. -/
@@ -124,12 +142,12 @@ theorem senderRun_eq {State : Type} (A : Sender State) (k : ℕ) (st : State)
       (fun (ts, final) => (fun i => ts i (boolPairToFin4 (false, choices i)), final)) := by
   induction k generalizing st with
   | zero =>
-      simp only [senderRun, senderTables, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
+      simp only [senderRun, senderTables_zero, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
       congr 2
       funext i
       exact Fin.elim0 i
   | succ k ih =>
-      simp only [senderRun, senderTables, transfer_eq, Probability.PMF.monad_bind_eq_bind,
+      simp only [senderRun, senderTables_succ, transfer_eq, Probability.PMF.monad_bind_eq_bind,
         Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, ih,
         PMF.bind_map, PMF.map_bind, PMF.pure_map, Function.comp_def]
       congr 1
