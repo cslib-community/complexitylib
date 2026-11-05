@@ -63,8 +63,8 @@ include nonzero supported secrets, zero dimensions/width, and a variable-row nat
 They also show that uniform rank-one, degree-one secrets and ephemeral values modulo sixteen,
 with all errors one, decrypt a true message correctly with probability only `7/16`.
 The existing deterministic correctness theorem requires bounded secrets as well as bounded noise;
-this example does not contradict it. Small-secret correctness and security require their own
-statements for the chosen laws.
+this example does not contradict it. Small-secret security requires its own assumption and reduction;
+the randomized correctness result below uses explicit support and noise-tail hypotheses.
 
 For numerical modulus conversion, import
 [`SIS/ModulusSwitch.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch.lean).
@@ -120,6 +120,24 @@ The exact scale mismatch is zero for two even moduli, `1/2` for even source and 
 encryption theorem in all four cases with nonzero noise, and exercise negative half ties and a
 nonzero carry. They also show plaintext loss at target moduli one and two and failure at the
 strict decoder threshold. This is deterministic correctness, with no additional security claim.
+
+For randomized correctness, import
+[`SIS/ModulusSwitch/Failure.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch/Failure.lean).
+`toOuterMeasure_moduleLWEModulusSwitch_failure_le` uses the existing encryption view while
+retaining the actual secret that generated the public key. Suppose the secret and ephemeral laws
+are supported in centered coefficient bounds `Bs,Br`, and write `ν` for the polynomial-noise law.
+Set `Q = k*n*Be*Br + k*n*Be*Bs + Be`. For positive source modulus `q`, target margin `4*Bp+2 < p`,
+and `(p/q)*Q + (1+k*n*Bs)/2 + Δ ≤ Bp`, switched decryption fails with probability at most
+`(2*k+1) * ν{e | e exceeds centered coefficient bound Be}`. The count is `k` key-error
+polynomials, `k` encryption-error polynomials and one final polynomial, each sampled independently
+as in the existing view. The proof reuses the deterministic theorem and the product-event union
+bound; it assumes neither a decryption conclusion nor a source decoding margin.
+[Checked clients](../../ComplexityTests/Crypto/ModulusSwitchFailure.lean) use the native
+centered-binomial small-secret law for rank and degree one, switching from 32 to 16. Width-one
+errors give zero failure. Width-two errors exceed good radius one with exact probability `1/8`,
+giving an upper bound `3/8`; a supported error triple produces target phase 12 and proves positive
+actual failure. These are original sufficient correctness bounds for the supplied laws. They add
+no small-secret security reduction, Gaussian sampler or native certificate for the entire scheme.
 
 ## Encryption and chosen-message attacks
 

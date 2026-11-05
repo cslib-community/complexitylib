@@ -3119,6 +3119,7 @@ public import Complexity.Crypto.Computational.SIS.ModuleEncryption
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Sampling
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch.Correctness
+public import Complexity.Crypto.Computational.SIS.ModulusSwitch.Failure
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch.Native
 public import Complexity.Crypto.Computational.SIS.Polynomial
 public import Complexity.Crypto.Computational.SchnorrEavesdrop
@@ -4355,6 +4356,7 @@ public import Complexity.Probability.PairwiseIndependentHash.Universal
 public import Complexity.Probability.PairwiseIndependentHash.ValidatedWords
 public import Complexity.Probability.Pinsker
 public import Complexity.Probability.Product
+public import Complexity.Probability.Product.Event
 public import Complexity.Probability.ProductConditioning
 public import Complexity.Probability.ProductConditioning.SideInformation
 public import Complexity.Probability.Quantile
