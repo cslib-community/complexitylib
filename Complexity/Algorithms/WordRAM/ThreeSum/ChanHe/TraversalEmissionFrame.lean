@@ -148,38 +148,48 @@ theorem Emission.heap_mono {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
   rw [h.heap_eq, recordLayout_endpoint]
   omega
 
-/-- Every actual child column lies below the advanced native allocation frontier. -/
-theorem Emission.children_ends {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+/-- Every live child column ends before the packed tail, including unchanged parent columns. -/
+theorem Emission.children_ends_packed {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
     {x y : Data 128} {published : Bool}
     (h : Emission Q Λ e x y published) (hl : e.Loaded x)
     (hend : ∀ j, e.source j + (e.data j).length ≤ x.regs heap) :
-    ∀ d ∈ h.children, ∀ k, d.source k + (d.data k).length ≤ y.regs heap := by
-  have hpacked : (recordLayout x h.M).packed ≤ (recordLayout x h.M).endpoint := by
-    dsimp only [NodePacking.Layout.endpoint, NodePacking.Layout.hist, NodePacking.Layout.scratch]
+    ∀ d ∈ h.children, ∀ k, d.source k + (d.data k).length ≤ (recordLayout x h.M).packed := by
+  have hpacked : x.regs heap ≤ (recordLayout x h.M).packed := by
+    dsimp only [recordLayout, NodePacking.Layout.packed]
     omega
   have heavyEnd (j : Fin 3) :
-      (recordLayout x h.M).heavy j + (h.lists j).length ≤ y.regs heap := by
-    rw [h.heap_eq]
+      (recordLayout x h.M).heavy j + (h.lists j).length ≤ (recordLayout x h.M).packed := by
     calc (recordLayout x h.M).heavy j + (h.lists j).length
         ≤ (recordLayout x h.M).heavy j + (recordLayout x h.M).n j := by
           apply Nat.add_le_add_left
           simpa only [recordLayout, hl.2.2] using h.length_le j
       _ ≤ (recordLayout x h.M).packed := (recordLayout x h.M).heavy_end_le_packed j
-      _ ≤ (recordLayout x h.M).endpoint := hpacked
   have hc (j k : Fin 3) :
       (e.child j ((recordLayout x h.M).heavy j) (h.lists j)).source k +
         ((e.child j ((recordLayout x h.M).heavy j) (h.lists j)).data k).length ≤
-          y.regs heap := by
+          (recordLayout x h.M).packed := by
     by_cases he : k = j
     · subst k
       simpa only [Entry.child, Function.update_self] using heavyEnd j
-    · simpa only [Entry.child, Function.update_of_ne he] using (hend k).trans h.heap_mono
+    · simpa only [Entry.child, Function.update_of_ne he] using (hend k).trans hpacked
   intro d hd k
   simp only [Emission.children, List.mem_cons, List.not_mem_nil, or_false] at hd
   rcases hd with rfl | rfl | rfl
   · exact hc 0 k
   · exact hc 1 k
   · exact hc 2 k
+
+/-- Every actual child column lies below the advanced native allocation frontier. -/
+theorem Emission.children_ends {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) (hl : e.Loaded x)
+    (hend : ∀ j, e.source j + (e.data j).length ≤ x.regs heap) :
+    ∀ d ∈ h.children, ∀ k, d.source k + (d.data k).length ≤ y.regs heap := by
+  intro d hd k
+  apply (h.children_ends_packed hl hend d hd k).trans
+  rw [h.heap_eq]
+  dsimp only [NodePacking.Layout.endpoint, NodePacking.Layout.hist, NodePacking.Layout.scratch]
+  omega
 
 /-- Every new heavy child begins above the reserved stack/table gap. -/
 theorem Emission.children_around {Q : Finset ℕ} {Λ : ℕ} {e : Entry}

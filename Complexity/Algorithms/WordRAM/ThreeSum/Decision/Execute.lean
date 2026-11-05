@@ -17,21 +17,29 @@ import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Registers
 /-!
 # Composing initialized ordinary 3SUM with the native visitor
 
-The actual frontend supplies compact native arrays, multiplicity counts and descriptors.
-Shared preparation computes the prime bitmap, conservative arena and value envelope before the
-forest. Each node's actual packed block enters the certified Convolution host before its
-children are pushed. The forest consumes exactly the finite node preorder, including repeated
-occurrences, and folds all answers without early exit.
+The actual frontend supplies compact native arrays, multiplicity counts and descriptors. Shared
+preparation computes the prime bitmap, conservative arena and value envelope before the forest.
+Each node's actual packed block enters the certified Convolution host before its dead packed tail
+is released and children are pushed. The forest consumes exactly the finite node preorder,
+including repeated occurrences, and folds all answers without early exit.
 
 Each call receives the current allocation endpoint as workspace. Its lower-prefix return frame
-retains pending heavy arrays and source data despite arbitrary higher scratch writes. Allocation
-remains monotone, with the old table gap reserved; there is no ordinary packed-pointer publication
-or later table readback. The finite Chan–He correctness theorem gives the same distinct-position
-3SUM verdict, and the charged ledger is covered by the unchanged `Decision.cost` envelope.
+retains pending heavy arrays and source data despite arbitrary higher scratch writes. Persistent
+heavy-buffer capacities and count cells remain allocated while one charged copy releases each
+consumed packed/residue/histogram tail for reuse. The old table gap remains reserved; there is no
+ordinary packed-pointer publication or later table readback. The finite Chan–He correctness
+theorem gives the same distinct-position 3SUM verdict, and the charged ledger is covered by the
+unchanged `Decision.cost` envelope.
+
+`Visitor.live_transition` gives the actual live body's final committed heap as its initial heap
+plus three count cells and the sum of current input-column lengths. Skipped bodies leave the heap
+unchanged. The emission witness describes the state before release; release lemmas describe the
+smaller frontier and retained children. No improved total-space or arbitrary-callee high-water
+bound is asserted.
 
 `exec_large` assumes the complete initial register file is physically bounded. The initialized
-ordinary endpoint derives this premise from `Data.init` and its actual saved-header prefix;
-it adds no hypothesis to that endpoint's magnitude and width contract.
+ordinary endpoint derives this premise from `Data.init` and its actual saved-header prefix; it
+adds no hypothesis to that endpoint's magnitude and width contract.
 
 ## Main results
 
@@ -112,7 +120,7 @@ theorem exec_large {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
   · change ExecWithin w (forest c.code) b y
       ((ForestCursor.mk 0 []).credit a l U rs
         (Host.callerTime (4 * a.N)
-          (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7) + 2)
+          (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8) + 2)
       at he
     rw [hN] at he
     change ExecWithin w (forest c.code) b y

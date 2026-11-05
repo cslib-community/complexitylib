@@ -75,8 +75,14 @@ theorem oneRoot_preserves {r : ℕ} (solver : Code .standard (r + 7))
   have hreceive : (receive (r := r)).Preserves (preprocessingRegisters r i) := by
     simp only [receive, Code.Preserves, Op.dest, ne_eq, Option.some.injEq]
     exact ⟨controller_ne_preprocessing answer i, controller_ne_preprocessing answer i⟩
+  have hrelease : (releasePacked (r := r)).Preserves (preprocessingRegisters r i) := by
+    simp only [releasePacked, Code.Preserves, Op.dest, ne_eq, Option.some.injEq]
+    intro he
+    have hv := congrArg Fin.val he
+    simp only [preprocessingRegisters, Fin.val_castAdd, heap] at hv
+    omega
   exact ⟨lift (hinit i hi), lift (hpush i hi), lift (hpop i hi), hskip, hskip, hskip, hskip,
-    lift (hlocal i hi), ⟨hprepare, hhost, hreceive⟩, lift (hchildren i hi)⟩
+    lift (hlocal i hi), ⟨hprepare, hhost, hreceive⟩, hrelease, lift (hchildren i hi)⟩
 
 /-- Caller obligations for an actual root descriptor and its already accumulated Boolean fold. -/
 structure RootInput {r : ℕ} (a : Arena) (w κ n : ℕ) (e : Entry) (ns : List Node)
@@ -128,7 +134,7 @@ theorem root_exec {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
       60 * a.U + 40 ≤ (n + 2) ^ envelopeExponent κ)
     (hready : a.Ready w) (h : RootInput a w κ n e ns x) :
     let T := Host.callerTime (4 * a.N)
-      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
     ∃ y, ExecWithin (w + 2) (oneRoot c.code) x y
         (70 + Math.work e.fuel * (visitTime a.n a.m a.N + 316) +
           (e.task.output (Nat.primesLE a.m) a.Λ).length * T) ∧
@@ -138,7 +144,7 @@ theorem root_exec {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
       ∀ i : Fin 128, 109 ≤ i.val →
         y.regs (preprocessingRegisters r i) = x.regs (preprocessingRegisters r i) := by
   let T := Host.callerTime (4 * a.N)
-    (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+    (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
   have hunsigned := Signed.unsigned_fits_of_signed hready.2.2
   have hsum := envelope_ge_sum a.ceiling a.n a.m a.Λ a.U a.N
   have h2 : Fits (w + 2) 2 := hunsigned.of_le (by omega)

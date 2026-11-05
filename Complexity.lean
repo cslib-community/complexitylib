@@ -697,6 +697,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorInvariant
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorLive
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorLoop
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorPop
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorRelease
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorRoot
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorSetup
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorSkip

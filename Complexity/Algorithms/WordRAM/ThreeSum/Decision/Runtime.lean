@@ -15,14 +15,13 @@ import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingTime
 /-!
 # Uniform runtime transfer for the canonical ordinary 3SUM visitor
 
-The ordinary algorithm constructs and consumes a short ordered list of Convolution-3SUM nodes
-in place during Chan–He traversal. Each actual packed node leads to Exact Triangle (ET) calls.
-No packed-pointer catalogue is retained on this path. The saving comes from the ET calls'
-square-root dimension, after charging all frontend, traversal, matrix and solver work.
+The ordinary algorithm constructs and consumes a short ordered list of Convolution-3SUM nodes in
+place during Chan–He traversal. Each actual packed node leads to Exact Triangle (ET) calls. No
+packed-pointer catalogue is retained on this path. The saving comes from the ET calls' square-root
+dimension, after charging all frontend, traversal, matrix and solver work.
 
-Write `ℓ = log₂(n+2)+1`, `q = instanceBound κ n`,
-`s = Host.sideLength (instanceLength κ n)` and `E = envelopeExponent κ`.
-The actual ET magnitude argument is `F = 2*(n+2)^E+1`. For fixed `κ`:
+Write `ℓ = log₂(n+2)+1`, `q = instanceBound κ n`, `s = Host.sideLength (instanceLength κ n)` and
+`E = envelopeExponent κ`. The actual ET magnitude argument is `F = 2*(n+2)^E+1`. For fixed `κ`:
 
 * `ChanHe.Preprocessing.cost_bound` bounds the reused preparation/traversal allowance by
   `Kκ*(n+2)*(sqrt(n+2)+1)*ℓ^13`.
@@ -33,21 +32,24 @@ The actual ET magnitude argument is `F = 2*(n+2)^E+1`. For fixed `κ`:
 * `callerTime_add_twelve_le` bounds the existing per-call allowance, including outer control,
   by `2*s*c.time s F + 355*s³`.
 
-The unchanged definition `cost` combines that preparation/traversal allowance, the fixed
-`4E+32` setup/halt reserve and at most `q` per-call allowances. `Visitor.cost_ledger` separately
-shows that it covers the actual in-place callback's host charge plus seven instructions;
-solver work is charged only for emitted nodes, while skipped descriptors pay traversal work.
-This numerical module uses the shared `Decision.Cost` definitions without importing the
-ordinary execution proof.
+The unchanged definition `cost` combines that preparation/traversal allowance, the fixed `4E+32`
+setup/halt reserve and at most `q` per-call allowances. `Visitor.cost_ledger` separately shows
+that it covers the in-place consumer's host charge plus seven instructions and the one-instruction
+packed-tail release, giving eight extra instructions per emitted node. The identity retains fixed
+slack eighteen and four units per emitted node in the reused allowance. Solver work is charged
+only for emitted nodes; skipped descriptors pay traversal work. Tail reuse retains persistent
+heavy-buffer allocation and the old table gap, without tightening the proved total-space or
+arbitrary-callee high-water envelope. This numerical module uses the shared `Decision.Cost`
+definitions without importing the ordinary execution proof.
 
-An ET bound `T(s)=O(s^(3-δ))` contributes `O(q*s^(4-δ))`. Substituting the displayed bounds
-gives `n^(2-δ/2)` times a fixed logarithmic factor. `exists_cost_bound` absorbs those logarithms
-only after composition, proving every `a > 2-δ/2` for `0 < δ ≤ 1`; the boundary exponent with
-those factors removed is not asserted.
+An ET bound `T(s)=O(s^(3-δ))` contributes `O(q*s^(4-δ))`. Substituting the displayed bounds gives
+`n^(2-δ/2)` times a fixed logarithmic factor. `exists_cost_bound` absorbs those logarithms only
+after composition, proving every `a > 2-δ/2` for `0 < δ ≤ 1`; the boundary exponent with those
+factors removed is not asserted.
 
-All constants and thresholds precede original inputs and physical widths. The hypothesis
-concerns the time field of an actual certified `Host.Callee`. No concrete ET supplier is
-imported here; `Decision.Transfer` adds initialized correctness and prefix-resource guarantees.
+All constants and thresholds precede original inputs and physical widths. The hypothesis concerns
+the time field of an actual certified `Host.Callee`. No concrete ET supplier is imported here;
+`Decision.Transfer` adds initialized correctness and prefix-resource guarantees.
 
 ## Main results
 

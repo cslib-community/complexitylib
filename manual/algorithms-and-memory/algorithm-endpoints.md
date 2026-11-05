@@ -383,9 +383,28 @@ and can be reused. The polynomial value envelope bounds signed values and arithm
 it does not supply a workspace address.
 
 The prefix frame is a return-state guarantee, not a ban on transient callee writes.
-Allocation remains monotone, and the initial layout conservatively reserves the old table gap.
-Packed blocks and heavy buffers are not reclaimed by this visitor. The existing polynomial
-word/support envelope remains unchanged; no improved total-space bound is claimed.
+After consuming the node, one actual copy sets the committed heap to its packed pointer.
+[`VisitorRelease`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorRelease.lean)
+proves that all heavy children and pending ancestor columns end below that released frontier.
+The packed block, residue workspace and histogram tail can be overwritten by later construction;
+the copy itself changes no memory cells. Persistent heavy-buffer allocation remains monotone,
+and the old table gap stays reserved.
+
+The actual
+[`Visitor.live_transition`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorTransition.lean)
+postcondition gives final committed heap equal to the body's initial heap plus
+`3 + len(column0) + len(column1) + len(column2)`; skipped bodies leave it unchanged.
+The three count cells and full heavy-buffer capacities remain allocated. The discarded tail
+has `len(column0)+len(column1)+len(column2)+4*N+M` words, where `N` is the common group count
+and `M` is this node's selected modulus. These are native body storage equalities, not a bound
+on arbitrary callee scratch or touched high-water memory. The existing polynomial word/support
+envelope remains unchanged; no improved total-space bound is claimed.
+
+The [native fixture source](../../ComplexityTests/NativeChanHeVisitor.lean) includes an initial
+heap of 100 with expected final frontiers 106 for one live node and 115 for the two-node
+branching case. It also overwrites a released packed cell after the actual child pushes and
+checks an empty heavy column whose pointer equals the frontier. The build command above checks
+these local cases alongside the endpoint clients; they are not asymptotic-space measurements.
 
 The [actual automatic callee](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ExactTriangle/ParameterSelecting/Callee.lean)
 executes parameter computation, prime selection and the real box-backed calls. Its integer
@@ -430,9 +449,10 @@ term includes matrix construction and every ET invocation. The passed magnitude 
 `F = 2*(n+2)^E+1`. `ChanHe.packed_weight_le` bounds it by `(s+2)^(2*E+2)`, so an ET theorem
 for polynomial weights applies at the actual side `s`.
 
-The callback itself costs `Host.callerTime(...)+7`.
+The Convolution consumer alone costs `Host.callerTime(...)+7`. The one-copy packed-tail
+release makes the traversal's callback-and-release charge `Host.callerTime(...)+8`.
 [`Visitor.cost_ledger`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorCost.lean)
-proves that the fused initialized budget plus `18+5*emitted` equals the reused budget with
+proves that the fused initialized budget plus `18+4*emitted` equals the reused budget with
 `emitted` call allowances. The finite node-count theorem gives `emitted <= q`, so the visitor
 fits the existing `Decision.cost`. Every skipped descriptor is charged as traversal work;
 only emitted nodes incur solver charges. This is an identity of proved instruction budgets,

@@ -164,6 +164,18 @@ uses the same rule for its Convolution host. Actual copies deliver the current n
 pointer and allocation endpoint; the complete traversal register bank and lower live prefix
 survive the call, while higher scratch may be dirty. This permits pending heavy arrays to be
 used after the call without publishing or reading a packed-pointer catalogue.
+
+The subsequent
+[`Visitor.exec_releasePacked`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorRelease.lean)
+executes one copy from the actual packed pointer to the heap register, making the dead packed,
+residue and histogram tail reusable. The memory function is unchanged by that copy. Heavy-buffer
+capacities and count cells remain below the committed frontier, whose persistent allocation
+advances monotonically; the old reserved gap remains too. Keep the `Emission` witness anchored
+at the consumer's return state before release: its `heap_eq` describes the complete node
+endpoint. Use `release_frontier` and `release_children_ends` for the smaller released frontier
+and the retained actual child arrays. The visitor's body storage equality is in
+[`live_transition`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorTransition.lean);
+it does not bound total space or arbitrary callee high-water scratch.
 For a renamed execution without a surrounding preparation and continuation, use
 `Exec.rename_post` or `ExecWithin.rename_post`. They return the postcondition on the callee
 bank and the unchanged outside registers; the first retains an exact instruction count.

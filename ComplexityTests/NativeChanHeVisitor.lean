@@ -93,12 +93,12 @@ private def observeVisitor (f n : ℕ) (z : ℤ) :=
 -- The old pointer-table cell is untouched, and all three aliased root inputs survive.
 /-- info: true -/
 #guard_msgs in
-#eval decide (observeVisitor 1 1 0 = some [1, 145, 79, 0, 0, 0, 0])
+#eval decide (observeVisitor 1 1 0 = some [1, 106, 79, 0, 0, 0, 0])
 
 /-- info: true -/
 #guard_msgs in
 #eval decide (observeVisitor 1 1 (-1) =
-  some [0, 145, 79, Signed.encode (-1), Signed.encode (-1), Signed.encode (-1), 0])
+  some [0, 106, 79, Signed.encode (-1), Signed.encode (-1), Signed.encode (-1), 0])
 
 -- Zero fuel and an empty column still execute their native pop/guard path, without a node call.
 /-- info: true -/
@@ -127,7 +127,7 @@ private def branchingVisitorInput : Data (Decision.registerCount 17) where
     | _ => (visitorInput 2 1 0).mem a
 
 -- A true parent followed by a false heavy child keeps the true accumulator. The second node
--- allocates into the previous host's dirty workspace, while pending siblings alias old columns.
+-- reuses the parent's dead packed tail despite dirty host scratch and sibling aliases.
 /-- info: true -/
 #guard_msgs in
 #eval decide ((Code.eval 16 4096 (Decision.Visitor.oneRoot Host.Slow.callee.code)
@@ -136,7 +136,7 @@ private def branchingVisitorInput : Data (Decision.registerCount 17) where
       y.regs (Decision.preprocessingRegisters 17 heap), y.mem 60, y.mem 61,
       [y.mem 1, y.mem 2, y.mem 3, y.mem 4, y.mem 5],
       y.regs (Decision.preprocessingRegisters 17 (registers WordStack.len)))) =
-    some (1, 196, 79, 79, [Signed.encode 0, Signed.encode 4, Signed.encode 1,
+    some (1, 115, 79, 79, [Signed.encode 0, Signed.encode 4, Signed.encode 1,
       Signed.encode 0, Signed.encode (-1)], 0))
 
 -- The complete initialized program retains the distinct-position short-input path.
@@ -154,3 +154,51 @@ private def branchingVisitorInput : Data (Decision.registerCount 17) where
 #guard_msgs in
 #eval decide (run 4 (Decision.flatProgram 1 Host.Slow.callee.code) 10
   (State.init [Signed.encode 0, Signed.encode 0]) = some (0, 7))
+
+private def tailPending : List ℕ := [0, 1, 2, 4, 3, 7, 1]
+
+private def tailInput : Data 128 where
+  regs i := if i = heap then 100 else if i = slot 0 then 2
+    else if i = slot 1 then 1 else if i = slot 2 then 2
+    else if i = slot 3 then 4 else if i = slot 4 then 3
+    else if i = slot 5 then 7 else if i = slot 6 then 0
+    else if i = groups then 8 else if i = selected then 4
+    else if i = one then 1 else if i = outputs ∨ i = outputCount then 255
+    else if i = registers WordStack.ptr then 20 else if i = registers WordStack.len then 7
+    else 79
+  mem a := if 20 ≤ a ∧ a < 27 then tailPending.reverse.getD (a - 20) 79
+    else if a = 100 then 1 else if a = 103 then 2 else if a = 107 then 0
+    else if a = 101 then Signed.encode (-2) else if a = 104 then Signed.encode 3
+    else if a = 105 then Signed.encode 4 else 79
+
+private def tailPrepared : Data (Decision.registerCount 17) :=
+  let x := localDeliveryState tailInput
+  { regs i := if hi : i.val < 128 then x.regs ⟨i.val, hi⟩
+      else if i = Decision.controllerRegisters 17 Decision.answer then 1 else 79
+    mem := x.mem }
+
+private def reuseTailWord : Code .standard (Decision.registerCount 17) :=
+  let p := Decision.preprocessingRegisters 17
+  let h := p heap
+  let t := p temporary
+  ram[ t ← #17; *h ← t ]
+
+-- Execute the production release, the unchanged actual three-child push and a real overwrite
+-- of the first released packed cell. An empty heavy column starts exactly at the released
+-- frontier108; its zero length permits reuse. Nonempty heavy arrays, Boolean answer and all
+-- pending/child descriptor words survive, including pointers aliased into ancestor columns.
+/-- info: true -/
+#guard_msgs in
+#eval
+  let p := Decision.preprocessingRegisters 17
+  let x := tailPrepared.comap p
+  let words := childWords x 0 ++ childWords x 1 ++ childWords x 2 ++ tailPending
+  match Code.eval 8 128 (.seq Decision.Visitor.releasePacked
+      (.seq (pushChildren.rename p) reuseTailWord)) tailPrepared with
+  | some (z, t) => decide (t = 210 ∧ z.regs (p heap) = 108 ∧ z.mem 108 = 17 ∧
+      x.regs (heavyBase 2) = 108 ∧ x.regs (heavyLength 2) = 0 ∧
+      z.mem 101 = Signed.encode (-2) ∧ z.mem 104 = Signed.encode 3 ∧
+      z.mem 105 = Signed.encode 4 ∧ z.regs (Decision.controllerRegisters 17 Decision.answer) = 1 ∧
+      z.mem 60 = 79 ∧ z.regs (p outputs) = 255 ∧ z.regs (p outputCount) = 255 ∧
+      (List.range words.length).map (fun i => z.mem (20 + i)) = words.reverse)
+  | none => false

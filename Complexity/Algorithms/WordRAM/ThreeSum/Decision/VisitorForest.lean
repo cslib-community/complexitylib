@@ -54,7 +54,7 @@ theorem execute_next_root {r κ n w U : ℕ} {a : Arena} {l : Frontend.Layout}
     (hvalues : ∀ z ∈ input, |z| ≤ (U : ℤ)) :
     let e := ChanHe.Preprocessing.entry l U a.fuel rs s.index
     let T := Host.callerTime (4 * a.N)
-      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
     ∃ y, ExecWithin (w + 2)
         (.seq (ChanHe.Preprocessing.loadRoot.rename (preprocessingRegisters r)) (oneRoot c.code))
         x y (14 + rootTime a.fuel a.n a.m a.N +
@@ -166,7 +166,7 @@ theorem forest_body_exec {r κ n w U : ℕ} {a : Arena} {l : Frontend.Layout}
     (hnd : (rs.map Prod.fst).Nodup) (hcard : rs.length ≤ l.n)
     (hvalues : ∀ z ∈ input, |z| ≤ (U : ℤ)) :
     let T := Host.callerTime (4 * a.N)
-      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
     ∃ (s' : ForestCursor) (y : Data (registerCount r)) (t : ℕ),
       ExecWithin (w + 2)
         (.seq (ChanHe.Preprocessing.loadRoot.rename (preprocessingRegisters r))
@@ -178,7 +178,7 @@ theorem forest_body_exec {r κ n w U : ℕ} {a : Arena} {l : Frontend.Layout}
       t + 2 + s'.credit a l U rs T ≤ s.credit a l U rs T := by
   let e := ChanHe.Preprocessing.entry l U a.fuel rs s.index
   let T := Host.callerTime (4 * a.N)
-    (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+    (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
   have hi : s.index < l.count := by
     simpa only [Cond.holds_lt, h.current, h.roots] using hc
   obtain ⟨y, he, hy, hprefix, hregs⟩ :=
@@ -279,14 +279,14 @@ theorem forest_exec {r κ n w U : ℕ} {a : Arena} {l : Frontend.Layout}
     (hnd : (rs.map Prod.fst).Nodup) (hcard : rs.length ≤ l.n)
     (hvalues : ∀ z ∈ input, |z| ≤ (U : ℤ)) :
     let T := Host.callerTime (4 * a.N)
-      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
     ∃ (s' : ForestCursor) (y : Data (registerCount r)),
       ExecWithin (w + 2) (forest c.code) x y (s.credit a l U rs T + 2) ∧
       s'.Invariant a w κ n l U rs y ∧ s'.index = l.count ∧
       s'.nodes = Math.output (Nat.primesLE a.m) a.Λ
         ((ChanHe.Preprocessing.entries l U rs).map Entry.task) := by
   let T := Host.callerTime (4 * a.N)
-    (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+    (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
   obtain ⟨s', y, he, hy, hc⟩ := ExecWithin.loop_potential_state
     (fun (s : ForestCursor) y => s.Invariant a w κ n l U rs y)
     (fun s => s.credit a l U rs T)

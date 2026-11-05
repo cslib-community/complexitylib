@@ -14,7 +14,8 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Cost
 
 Traversal charges every pending descriptor, including skipped entries. Solver charges depend
 only on the number of emitted mathematical nodes. The fixed root and forest overheads reuse
-the existing traversal budgets; the callback itself costs the actual host bound plus seven.
+the existing traversal budgets; the callback and packed-tail release cost the actual host bound
+plus eight.
 
 The ledger below combines proved instruction budgets, rather than asserting exact running time.
 It includes initialized frontend execution, all scalar and layout setup, the value-envelope
@@ -41,11 +42,11 @@ namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision.Visitor
 
 open Cslib.WordRAM
 
-/-- Four native argument copies, the certified host, and Boolean receive at most three. -/
+/-- Four native argument copies, the certified host, Boolean receive and one packed-tail release. -/
 @[expose] def callbackTime {r : ℕ} (κ : ℕ) (c : Host.Callee r) (n : ℕ) : ℕ :=
   Host.callerTime (instanceLength κ n)
     (c.time (Host.sideLength (instanceLength κ n))
-      (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+      (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
 
 /-- Charge all root work and descriptor/control overhead, but callbacks only for emitted nodes. -/
 @[expose] def forestCost (κ n emitted T : ℕ) : ℕ :=
@@ -74,10 +75,10 @@ theorem largeCost_eq {r : ℕ} (κ : ℕ) (c : Host.Callee r) (n emitted : ℕ) 
   dsimp only [largeCost, forestCost, ChanHe.Preprocessing.cost]
   omega
 
-/-- Full initialized prefix/branch/halt costs seven. Five units per callback and eighteen
+/-- Full initialized prefix/branch/halt costs seven. Four units per callback and eighteen
 fixed units remain as slack in the old budget; no solver call is charged for a skipped entry. -/
 theorem cost_ledger {r : ℕ} (κ : ℕ) (c : Host.Callee r) (n emitted : ℕ) :
-    largeCost κ c n emitted + 7 + 18 + 5 * emitted =
+    largeCost κ c n emitted + 7 + 18 + 4 * emitted =
       ChanHe.Preprocessing.cost κ n + 4 * envelopeExponent κ + 32 +
         emitted * (Host.callerTime (instanceLength κ n)
           (c.time (Host.sideLength (instanceLength κ n))

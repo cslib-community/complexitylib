@@ -12,17 +12,20 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Execute
 /-!
 # Initialized ordinary 3SUM through the native Chan–He visitor
 
-One finite program per fixed magnitude exponent and certified finite Exact Triangle block
-starts from signed-encoded `State.init`. It computes the frontend and consumes every actual
-packed node during traversal through the caller-safe Convolution host. Calls retain the exact
-finite preorder, including multiplicity, and continue after a positive result. The final raw
-Boolean decides a zero-sum triple of distinct positions, allowing repeated input values.
+One finite program per fixed magnitude exponent and certified finite Exact Triangle block starts
+from signed-encoded `State.init`. It computes the frontend and consumes every actual packed node
+during traversal through the caller-safe Convolution host. Calls retain the exact finite preorder,
+including multiplicity, and continue after a positive result. The final raw Boolean decides a
+zero-sum triple of distinct positions, allowing repeated input values.
 
 The initialized endpoint retains its existing magnitude and physical-width hypotheses, charged
-cost and same-state prehalt/halt witness. The lower-level `exec_large` helper additionally needs
-a fully bounded register file; the actual initialized prefix derives this premise here.
-The ordinary decision path publishes no packed-pointer table. Allocation remains
-monotone and reserves the old table gap; every call preserves its current lower live prefix.
+cost and same-state prehalt/halt witness. The lower-level `exec_large` helper additionally needs a
+fully bounded register file; the actual initialized prefix derives this premise here. The ordinary
+decision path publishes no packed-pointer table. Each call preserves its lower live prefix at the
+complete current-node endpoint, then one native copy releases the dead packed/residue/histogram
+tail. Persistent heavy-buffer capacities and count cells remain allocated, with a monotone
+committed frontier and the old table gap reserved. The unchanged polynomial support envelope does
+not assert a tighter total-space or callee high-water bound.
 
 The generic result consumes actual finite callee code with its explicit protocol. The certified
 exhaustive block inhabits that protocol; the concrete fast endpoint is supplied in `One9992`.
@@ -65,7 +68,8 @@ theorem not_readsWidth {r : ℕ} (κ : ℕ) (c : Host.Callee r) :
   have hre : ¬ChanHe.Preprocessing.reserve.ReadsWidth := by decide
   have hfi : ¬ChanHe.Preprocessing.finishLayout.ReadsWidth := by decide
   have hload : ¬ChanHe.Preprocessing.loadRoot.ReadsWidth := by decide
-  simp only [program, large, forest, oneRoot, body, visit, consume, prepareHost, receive,
+  simp only [program, large, forest, oneRoot, body, visit, consume, releasePacked, prepareHost,
+    receive,
     prepareEnvelope, prepareTraversal, Code.ReadsWidth, Code.readsWidth_rename,
     Op.bin, Op.ReadsWidth,
     reduceCtorEq, hr, hp, hd, hc, hpop, hpush, hs, hpr, hprime, hst, hre, hfi, hload,

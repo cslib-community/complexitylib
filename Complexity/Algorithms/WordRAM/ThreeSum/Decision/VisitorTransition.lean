@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorLive
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorSkip
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorRelease
 import Complexity.Computability.WordRAM.Call
 import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Registers
 
@@ -16,7 +17,8 @@ import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Registers
 # Complete live transitions of the fused Chan–He visitor
 
 Each live transition executes actual popping, local node construction, the certified solver
-and three child pushes. No pointer-table readback is assumed. Pending arrays and the frontend
+one packed-tail release and three child pushes. No pointer-table readback is assumed. Pending
+arrays and the frontend
 prefix survive the callee's arbitrary higher scratch writes.
 -/
 
@@ -45,14 +47,16 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
       a w κ n target x)
     (hf : e.fuel ≠ 0) (hn : ∀ j, (e.data j).length ≠ 0) :
     let T := Host.callerTime (4 * a.N)
-      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+      (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
     ∃ (s : Cursor) (y : Data (registerCount r)),
       ExecWithin (w + 2) (body c.code) x y (visitTime a.n a.m a.N + 314 + T) ∧
       s.Invariant a w κ n target y ∧
       (Cursor.mk (e :: es) ns).remaining a = e.task.node (Nat.primesLE a.m) a.Λ ::
-        s.remaining a ∧ s.work + 1 ≤ (Cursor.mk (e :: es) ns).work := by
+        s.remaining a ∧ s.work + 1 ≤ (Cursor.mk (e :: es) ns).work ∧
+      y.regs (preprocessingRegisters r heap) = x.regs (preprocessingRegisters r heap) + 3 +
+        ((e.data 0).length + (e.data 1).length + (e.data 2).length) := by
   let T := Host.callerTime (4 * a.N)
-    (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7
+    (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
   obtain ⟨p, hp, hstack, hl, hframe, hpr, hpm⟩ := pop_entry x e es h2 hcap h.stack
   have preg (i : Fin 128) (hi : 71 ≤ i.val) (hi' : i.val < 96) :
       p.regs (preprocessingRegisters r i) = x.regs (preprocessingRegisters r i) :=
@@ -126,15 +130,25 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     have hs := ha.2.1
     have hf := ha.2.2.1
     simp only [Data.comap_regs] at *; omega)
-  have hpush := pushChildren_exec (v.comap (preprocessingRegisters r)) (es.flatMap Entry.words)
-    vbp vc.2.2.2.2.2.2.2.2.2.2 h2 hcap vstack capacity
+  let u := releaseState v
+  have hrelease : Exec (w + 2) releasePacked v u 1 := exec_releasePacked v
+  have ub := hrelease.bounded vb
+  have ubp : (u.comap (preprocessingRegisters r)).Bounded (w + 2) :=
+    ⟨fun i => ub.1 (preprocessingRegisters r i), ub.2⟩
+  have uc : a.Controls (u.comap (preprocessingRegisters r)) := release_controls vc
+  have ur (i : Fin 128) (hi : i ≠ heap) :
+      u.regs (preprocessingRegisters r i) = v.regs (preprocessingRegisters r i) :=
+    releaseState_regs v _ (fun he => hi ((preprocessing_injective r) he))
+  have hpush := pushChildren_exec (u.comap (preprocessingRegisters r)) (es.flatMap Entry.words)
+    ubp uc.2.2.2.2.2.2.2.2.2.2 h2 hcap (release_stack vstack) capacity
   obtain ⟨y, hy, ⟨hystack, hyframe, hyr⟩, hyouter⟩ :=
     Exec.rename_post (preprocessing_injective r) hpush
   have yreg (i : Fin 128) (hi : 71 ≤ i.val) (hi' : i.val < 96) :
-      y.regs (preprocessingRegisters r i) = v.regs (preprocessingRegisters r i) :=
+      y.regs (preprocessingRegisters r i) = u.regs (preprocessingRegisters r i) :=
     hyr i (Or.inl ⟨hi, hi'⟩)
   have ym (i : Fin 16) : y.regs (controllerRegisters r i) = v.regs (controllerRegisters r i) :=
-    hyouter _ (fun j => (controller_ne_preprocessing i j).symm)
+    (hyouter _ (fun j => (controller_ne_preprocessing i j).symm)).trans
+      (releaseState_regs v _ (controller_ne_preprocessing i heap))
   have yframe (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : y.mem q = v.mem q := by
     apply hyframe
     simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
@@ -143,7 +157,7 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     obtain ⟨t, ht, he⟩ := hv
     cases he with
     | seq hlocal hcall =>
-      exact (hlocal.seq (hcall.seq hy)).within.mono (by
+      exact (hlocal.seq (hcall.seq (hrelease.seq hy))).within.mono (by
         simp only [T, Data.comap_regs] at *
         omega)
   have hbody := body_live c.code hp hl hc.2.2.2.2.2.2.2.2.2.1 hf hn hvisit
@@ -167,15 +181,26 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
         omega) d hd
     · exact h.around d (List.mem_cons_of_mem e hd)
   have newEnds : ∀ d ∈ s.pending, ∀ j,
-      d.source j + (d.data j).length ≤ v.regs (preprocessingRegisters r heap) := by
+      d.source j + (d.data j).length ≤ u.regs (preprocessingRegisters r heap) := by
     intro d hd j
     rcases List.mem_append.mp hd with hd | hd
-    · exact em.children_ends hl (oldEnds e (by simp)) d hd j
-    · exact (oldEnds d (List.mem_cons_of_mem e hd) j).trans em.heap_mono
+    · exact release_children_ends em hl (oldEnds e (by simp)) d hd j
+    · exact (oldEnds d (List.mem_cons_of_mem e hd) j).trans (release_heap_mono em)
   have yh : y.regs (preprocessingRegisters r heap) =
-      v.regs (preprocessingRegisters r heap) := yreg _ (by decide) (by decide)
-  have heapAllocation : v.regs (preprocessingRegisters r heap) ≤
+      u.regs (preprocessingRegisters r heap) := yreg _ (by decide) (by decide)
+  have bodyFrontier : y.regs (preprocessingRegisters r heap) =
+      x.regs (preprocessingRegisters r heap) + 3 +
+        ((e.data 0).length + (e.data 1).length + (e.data 2).length) := by
+    have hr : u.regs (preprocessingRegisters r heap) = p.regs (preprocessingRegisters r heap) + 3 +
+        (p.regs (preprocessingRegisters r (slot 2)) + p.regs (preprocessingRegisters r (slot 4)) +
+          p.regs (preprocessingRegisters r (slot 6))) := release_frontier em
+    have h₀ : p.regs (preprocessingRegisters r (slot 2)) = (e.data 0).length := hl.2.2 0
+    have h₁ : p.regs (preprocessingRegisters r (slot 4)) = (e.data 1).length := hl.2.2 1
+    have h₂ : p.regs (preprocessingRegisters r (slot 6)) = (e.data 2).length := hl.2.2 2
+    rw [yh, hr, ph, h₀, h₁, h₂]
+  have heapAllocation : u.regs (preprocessingRegisters r heap) ≤
       p.regs (preprocessingRegisters r heap) + allocationSize a.n a.m a.N := by
+    apply (release_heap_le em).trans
     have heh := em.heap_eq
     simp only [Data.comap_regs] at heh
     rw [heh]
@@ -191,10 +216,11 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     rw [mathStep] at he
     simpa only [Cursor.remaining, s, List.map_cons, Option.toList_some,
       List.singleton_append] using he
-  refine ⟨s, y, hbody.mono (by simp only [T, Data.comap_regs] at *; omega), ?_, hremaining, hdec⟩
+  refine ⟨s, y, hbody.mono (by simp only [T, Data.comap_regs] at *; omega), ?_,
+    hremaining, hdec, bodyFrontier⟩
   refine {
     bounded := hbody.bounded h.bounded
-    controls := vc.congr (by
+    controls := uc.congr (by
       intro i hi
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
       exact yreg i (by omega) (by omega))
@@ -221,7 +247,8 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
       have ht := ha.2.1
       simp only [T, Data.comap_regs] at *; omega)
     simpa only [Data.comap_mem] using hm.trans (oldBitmap q hq)
-  · simpa only [s, em.children_words hl, List.flatMap_append, List.append_assoc] using hystack
+  · simpa only [s, u, release_childWords, em.children_words hl, List.flatMap_append,
+      List.append_assoc] using hystack
   · intro d hd
     rcases List.mem_append.mp hd with hd | hd
     · exact em.children_valid (h.valid e (by simp)) d hd
@@ -232,7 +259,7 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     rw [yh]
     exact newEnds d hd j
   · rw [yh]
-    exact hfloor.trans em.heap_mono
+    exact hfloor.trans (release_heap_mono em)
   · rw [yh]
     have hb : x.regs (preprocessingRegisters r heap) +
         (Cursor.mk (e :: es) ns).work * allocationSize a.n a.m a.N ≤ a.ceiling := h.heapBudget
@@ -243,8 +270,8 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
   · have hr := hyr ChanHe.Preprocessing.packedLength (Or.inr (by decide))
     have hv := em.registers ChanHe.Preprocessing.packedLength (by decide) (by decide)
       (by decide) (by decide) (by decide) (Or.inr (by decide))
-    exact hr.trans (hv.trans ((hpr _ (Or.inr (by decide)) (Or.inr (by decide))).trans
-      h.packedLength))
+    exact hr.trans ((ur _ (by decide)).trans (hv.trans
+      ((hpr _ (Or.inr (by decide)) (Or.inr (by decide))).trans h.packedLength)))
   · rw [ym, hvm _ (by decide), hpm]
     exact h.envelopeValue
   · rw [ym, hvm _ (by decide), hpm]

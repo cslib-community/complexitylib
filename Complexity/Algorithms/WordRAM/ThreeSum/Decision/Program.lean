@@ -20,21 +20,25 @@ accumulation does not exit early. The host receives the runtime packed pointer a
 allocation endpoint. Its return frame preserves every lower-prefix cell needed by pending work,
 while permitting arbitrary higher scratch writes.
 
-The ordinary path neither publishes nor reads a packed-pointer table. Allocation is monotone
-and retains the conservative old table-gap reservation. The separately computed polynomial
-value envelope bounds signed values and arithmetic width, rather than selecting a workspace
-address. The existing register ABI, width threshold and charged cost envelope are retained.
+The ordinary path neither publishes nor reads a packed-pointer table. After each node is consumed,
+one native copy releases its packed/residue/histogram tail before pushing the children. Persistent
+heavy-array allocation is monotone and retains the conservative old table-gap reservation.
+Heavy-buffer capacities and count cells remain allocated; the dead tail is reused. The separately
+computed polynomial value envelope bounds signed values and arithmetic width, rather than
+selecting a workspace address. No improved total-space or callee high-water bound is asserted. The
+existing register ABI, width threshold and charged cost envelope are retained.
 
-Executable constructors accept only finite solver code. Execution and resource certificates
-are separate consumers, so evaluating the program does not evaluate proof-only time metadata.
-Inputs shorter than three positions return false directly; this verdict shortcut does not claim
-that their exact mathematical preprocessing instance lists are empty.
+Executable constructors accept only finite solver code. Execution and resource certificates are
+separate consumers, so evaluating the program does not evaluate proof-only time metadata. Inputs
+shorter than three positions return false directly; this verdict shortcut does not claim that
+their exact mathematical preprocessing instance lists are empty.
 
 ## Main definitions
 
 * `registerCount`, `preprocessingRegisters`, `hostRegisters`, `controllerRegisters`: fixed banks.
 * `readLength`, `power`: actual header and value-envelope instructions.
-* `Visitor.consume`, `Visitor.oneRoot`, `Visitor.forest`: in-place calls and native traversal.
+* `Visitor.consume`, `Visitor.releasePacked`: actual node consumption and one-copy tail release.
+* `Visitor.oneRoot`, `Visitor.forest`: the native root and forest traversals.
 * `program`, `flatProgram`: the single canonical controller and its raw Boolean-returning halt.
 
 These native control and layout choices are original. Consumer modules prove initialized
@@ -122,10 +126,16 @@ def receive {r : ℕ} : Code .standard (registerCount r) :=
 def consume {r : ℕ} (solver : Code .standard (r + 7)) : Code .standard (registerCount r) :=
   .seq prepareHost (.seq ((Host.bodyAt solver).rename (hostRegisters r)) receive)
 
-/-- Construct, expose, consume and expand one live node; no catalogue pointer is published. -/
+/-- Release the consumed packed/residue/histogram tail, retaining all live heavy arrays. -/
+def releasePacked {r : ℕ} : Code .standard (registerCount r) :=
+  .op (.copy (preprocessingRegisters r ChanHe.Traversal.heap)
+    (preprocessingRegisters r ChanHe.Traversal.packed))
+
+/-- Construct, consume, release the dead packed tail and expand one actual live node. -/
 def visit {r : ℕ} (solver : Code .standard (r + 7)) : Code .standard (registerCount r) :=
   .seq (ChanHe.Traversal.localVisit.rename (preprocessingRegisters r))
-    (.seq (consume solver) (ChanHe.Traversal.pushChildren.rename (preprocessingRegisters r)))
+    (.seq (consume solver)
+      (.seq releasePacked (ChanHe.Traversal.pushChildren.rename (preprocessingRegisters r))))
 
 /-- Pop and apply the exact zero-fuel and three empty-column guards before a live visit. -/
 def body {r : ℕ} (solver : Code .standard (r + 7)) : Code .standard (registerCount r) :=

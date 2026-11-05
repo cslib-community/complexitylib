@@ -236,8 +236,14 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   supply the Convolution host's arguments. No pointer-table store or subsequent table read is
   executed. The caller-owned matrices start at the current node endpoint; the callee preserves
   every pending heavy buffer and frontend source below it. The exact preorder and all calls
-  remain, including after a positive verdict. Allocation is monotone and still reserves the
-  conservative table gap, so this does not improve the proved total-space bound.
+  remain, including after a positive verdict. One actual post-consumer copy releases the
+  packed/residue/histogram tail for later construction. Persistent heavy-buffer allocation is
+  monotone and the conservative table gap remains reserved. `Decision/VisitorRelease` proves
+  the retained child endpoints and exact released frontier. `Visitor.live_transition` gives
+  the actual body's final heap as its initial heap plus three count cells and the sum of current
+  input-column lengths; skipped bodies leave the heap unchanged. The discarded tail has that
+  length sum plus `4*N+M` words. These storage equalities do not improve the proved total-space
+  or arbitrary-callee touched-high-water bound.
   One finite program per fixed exponent and certified finite
   Exact Triangle block returns the existing distinct-position verdict, with derived positive
   logarithmic physical width, polynomial words/space at every admitted-width prefix, and a fully
@@ -276,8 +282,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Controls`, `Call`, `Body`, `Loop` and `Initialize` proof modules are removed. Shared quantitative
   definitions live in `Decision.Cost`; their values, the initialized endpoint's admission and
   the 1.9992 bound are unchanged. The internal arbitrary-state `exec_large` helper now requires
-  full initial boundedness, derived by the initialized-input caller. `VisitorCost` proves the
-  budget transfer, while `GhostLoop.loop_potential_state` charges variable actual body costs
+  full initial boundedness, derived by the initialized-input caller. `VisitorCost` charges the
+  consumer plus packed-tail release at `Host.callerTime+8` and proves the unchanged budget
+  transfer with fixed slack 18 and four per emitted node; `exec_consume` alone retains its
+  `Host.callerTime+7` contract. `GhostLoop.loop_potential_state` charges variable actual body costs
   and both loop-control instructions through an explicit mathematical potential.
   `One9992` adds admissibility/input fitting and standard uniform decision/time corollaries
   while retaining the complete initialized-run theorem. The Operator Manual companion documents

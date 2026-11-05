@@ -41,7 +41,8 @@ theorem skip_transition {r w κ n : ℕ} {a : Arena} {target : List Node}
       (Cursor.mk es ns).Invariant a w κ n target y ∧
       (Cursor.mk es ns).remaining a = (Cursor.mk (e :: es) ns).remaining a ∧
       (Cursor.mk es ns).work + 1 ≤ (Cursor.mk (e :: es) ns).work ∧
-      ∀ T, 109 + (Cursor.mk es ns).credit a T ≤ (Cursor.mk (e :: es) ns).credit a T := by
+      (∀ T, 109 + (Cursor.mk es ns).credit a T ≤ (Cursor.mk (e :: es) ns).credit a T) ∧
+      y.regs (preprocessingRegisters r heap) = x.regs (preprocessingRegisters r heap) := by
   obtain ⟨y, hy, hstack, hloaded, hframe, hp, hm⟩ := pop_entry x e es h2 hcap h.stack
   have hreg (i : Fin 128) (hi : 71 ≤ i.val) (hi' : i.val < 96) :
       y.regs (preprocessingRegisters r i) = x.regs (preprocessingRegisters r i) :=
@@ -86,7 +87,7 @@ theorem skip_transition {r w κ n : ℕ} {a : Arena} {target : List Node}
     have hd := Nat.mul_le_mul_right (visitTime a.n a.m a.N + 316) hdec
     rw [Nat.add_mul, Nat.one_mul] at hd
     omega
-  refine ⟨y, hbody, ?_, hremaining, hdec, hcredit⟩
+  refine ⟨y, hbody, ?_, hremaining, hdec, hcredit, hheap⟩
   refine {
     bounded := hbody.bounded h.bounded
     controls := hcontrols
