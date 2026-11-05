@@ -211,8 +211,10 @@ In order:
   completeness and exact simulation of the full honest receiver view (private key/tags and
   public transcript). `VOLE/AdaptiveMulCheck.lean` extends the exact full-view law to arbitrary
   receivers in that fixed schedule, retaining private coins, state and repeated setup reads.
-  Scalar-challenge batching, adversarial setup and scheduling, full zero-knowledge protocol
-  security, certified efficient realizations and the full VOLE-in-the-head transform remain (#643);
+  `VOLE/NativePPT.lean` certifies a list simulator for variable-size batches and supplied encoded-state
+  receiver callbacks over one fixed ring with a certified exact-uniform sampler (with an F2 client).
+  Scalar-challenge batching, native honest-sender realization, growing-field arithmetic, adversarial
+  setup and scheduling, full zero-knowledge protocol security and VOLE-in-the-head remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security
