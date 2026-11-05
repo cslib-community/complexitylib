@@ -116,7 +116,9 @@ families and full-input native runtime.
   log against strict PPT forgers. The arithmetic algorithms and exact typed ROM reduction are
   proved; strict-PPT identification and eavesdropping results do not discharge this signature
   endpoint. Remaining work includes shared encoded signing/hash access, final-message freshness,
-  and a polynomial-time private-coin replay/forking realization ([#2568]).
+  and a polynomial-time private-coin replay/forking realization ([#2568]). The native saved-coin
+  controller preserves external oracle channels in `2 * coins.length + 1` transitions; its full
+  encoded-input certificate must still charge tape preparation ([#2579]).
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
@@ -898,3 +900,5 @@ not planned, not as proved.
 [#2521]: https://github.com/cslib-community/complexitylib/issues/2521
 
 [#2568]: https://github.com/cslib-community/complexitylib/issues/2568
+
+[#2579]: https://github.com/cslib-community/complexitylib/issues/2579
