@@ -81,6 +81,8 @@ oracles and in the lazy random-oracle experiment `micaliHonestGame` (checked
 in [`ComplexityTests/Crypto/Micali.lean`](../../ComplexityTests/Crypto/Micali.lean));
 ROM soundness and extraction belong to subsequent milestones.
 
+In the random-oracle model, [`Complexity/Crypto/Computational/MerkleTree/ROMExtract.lean`](../../Complexity/Crypto/Computational/MerkleTree/ROMExtract.lean) replaces two-transcript rewinding with straight-line extraction from a recorded hash query-answer trace `tr : List (List Bool × List Bool)` ([bcs16][bcs16]; Chiesa–Yogev Construction 18.5.3 and Lemma 18.5.7): `findPreimageInTrace` inverts `encPair encBits encBits` via `(unframe, dropFrame)`, `extractNodeFromTrace` and `extractLeafFromTrace` walk `d` levels down from the Merkle root `rt` along the bits of position `i`, and `extractTableFromTrace` reconstructs all `2 ^ d` leaves. When `tr` is collision-free (`TraceCollisionFree tr`) and records every hash step along a valid opening (`PathQueriedInTrace H k tr i leaf path` and `merkleVerify H k d rt i leaf path = true`), `extractLeafFromTrace_eq_some_of_merkleVerify` and `getD_extractTableFromTrace_eq_of_merkleVerify` prove that the extracted leaf and table entry equal `leaf`; conversely, when `tr` is consistent with `H k` (`TraceConsistentWith (H k) tr`) and an accepted queried opening disagrees with `extractLeafFromTrace`, `extractTraceCollision` deterministically extracts a hash collision in `tr` (`extractTraceCollision_spec`, `isCollision_extractTraceCollision`). For a lazy uniform `m`-bit random oracle `memoize (fun _ => BitString.uniformList m)`, `toOuterMeasure_uniformList_mem_list_le`, `toOuterMeasure_memoize_not_traceCollisionFree_step` and `toOuterMeasure_run_memoize_not_traceCollisionFree_le` bound the preimage-hitting probability and the `Q * (Q * (1 / 2 ^ m))` collision probability of any `IsQueryBounded program Q` computation; executable checks are in [`ComplexityTests/Crypto/ROMMerkleExtract.lean`](../../ComplexityTests/Crypto/ROMMerkleExtract.lean).
+
 ## Shared random oracles and ideal permutations
 
 [Complexity/Crypto/Protocols/Signature/RandomOracle.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Signature/RandomOracle.lean) defines a typed random-oracle signature experiment. Signer, verifier and forger share one lazy hash cache. The forger's coins are drawn explicitly before deterministic oracle interaction, enabling replay. Signing and hash queries have separate bounds. Key generation can be an arbitrary PMF, so this finite experiment is not identical to the native `SignatureScheme` interface.
@@ -131,6 +133,7 @@ No differential-privacy model was identified by the recorded local/upstream sear
 
 Only selected protocol endpoints and key definitions were traced. The source files themselves give detailed source mappings; this pass did not independently reconcile every textbook constant, lattice-abort construction or signature reduction. Existing regression tests are not newly executed evidence. The precise coalition and advice restrictions above should be retained even when summarizing the results compactly.
 
+[bcs16]: ../sources.md#bcs16
 [bs23]: ../sources.md#bs23
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib

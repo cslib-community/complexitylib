@@ -3007,6 +3007,7 @@ public import Complexity.Crypto.Computational.MerkleSignature
 public import Complexity.Crypto.Computational.MerkleSignature.Security
 public import Complexity.Crypto.Computational.MerkleTree
 public import Complexity.Crypto.Computational.MerkleTree.Binding
+public import Complexity.Crypto.Computational.MerkleTree.ROMExtract
 public import Complexity.Crypto.Computational.NaorReingold
 public import Complexity.Crypto.Computational.NaorReingold.PRF
 public import Complexity.Crypto.Computational.NaorReingold.Security
