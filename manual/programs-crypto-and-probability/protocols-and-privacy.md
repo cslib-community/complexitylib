@@ -254,8 +254,26 @@ For native computation, import
 `encList (encPair encBool encBool)` and output `encBool`. `extractPairs_ofFn` connects the explicit
 list algorithm to the OT table extractor. This certificate applies only to the extractor.
 
-These fixed-schedule experiments do not provide full ideal commitment realization, corrupt-receiver
-simulation, composition, or a polynomial-time simulator. The malicious MPC compiler and its
+For a corrupted receiver, import
+[`OTCommitment.Equivocation`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/Equivocation.lean).
+`equivocation` proves the exact joint law of the transcript, receiver state and revealed opening.
+The simulator runs `receiverRun A false` without the committed bit, then uses `equivocate b` only
+when that bit is released at opening. For each recorded index and answer, it keeps the selected
+component equal to the answer and reconstructs the other component using the supplied parity.
+`equivocation_bind` permits any randomized post-opening continuation on that entire view.
+The common `receiverCommit` runner retains the honest sender's actual masks for the proof;
+`receiverRun` projects them away and the receiver strategy never sees them. The simulator does
+see the corrupted receiver's indices, which are unavailable to a malicious sender in the binding
+game. The [checked examples](../../ComplexityTests/Crypto/OTCommitmentEquivocation.lean) cover
+slots 2 and 3, adaptive private state and the failure of reusing parity-zero pairs to open to one.
+
+`equivocatePairs_polyTime` in the same `OTCommitment.PolyTime` import certifies the deterministic
+map from a revealed bit and an explicit receipt list to opening pairs. Its input encoding is
+`encPair encBool (encList (encPair (encFinEnum (Fin 4)) encBool))`; the full four-valued indices
+are retained. `equivocatePairs_ofFn` connects this list operation to the transcript reconstruction.
+
+These fixed-schedule corruption-specific laws do not provide full ideal commitment scheduling,
+mid-commit abort, composition, or polynomial-time simulators. The malicious MPC compiler and its
 real/ideal simulation remain open in
 [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
 
