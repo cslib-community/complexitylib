@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.Analysis.Lattice.Dual
 public import Complexity.Foundations.Analysis.Lattice.Covolume
 public import Complexity.Foundations.Analysis.Lattice.Fourier
 public import Complexity.Foundations.Analysis.Lattice.Schwartz
@@ -24,6 +25,8 @@ multivariate Fourier reconstruction with the lattice covolume normalization.
 
 * `ZLattice.tsum_eq_tsum_fourier_of_rpow_decay`: Poisson summation from polynomial decay,
   integrability, and summability of the actual Fourier samples on the dual lattice.
+* `SchwartzMap.tsum_eq_tsum_fourier_lattice`: the full formula for Schwartz functions, with
+  convergence proved on both lattices.
 
 ## References
 
@@ -248,3 +251,29 @@ theorem tsum_eq_tsum_fourier_of_rpow_decay (f : C(E, ℂ)) {r : ℝ}
   exact poisson_basis L (Module.Free.chooseBasis ℤ L) f hr hf hi hF x
 
 end ZLattice
+
+namespace SchwartzMap
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+variable [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+
+/-- Poisson summation for a Schwartz function on any full-rank discrete lattice.
+Schwartz decay proves the needed summability on both the lattice and its actual dual. -/
+theorem tsum_eq_tsum_fourier_lattice (f : 𝓢(E, ℂ)) (L : Submodule ℤ E)
+    [DiscreteTopology L] [IsZLattice ℝ L] (x : E) :
+    (∑' z : L, f (x + z)) = (ZLattice.covolume L : ℂ)⁻¹ *
+      ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
+        𝓕 (f : E → ℂ) w * (Real.fourierChar ⟪x, (w : E)⟫ : ℂ) := by
+  let D := LinearMap.BilinForm.dualSubmodule (innerₗ E) L
+  have : DiscreteTopology D := ZLattice.discreteTopology_dualSubmodule L
+  apply ZLattice.tsum_eq_tsum_fourier_of_rpow_decay L f.toContinuousMap
+    (r := (finrank ℤ L : ℝ) + 1) (by linarith) (f.isBigO_cocompact_rpow _) f.integrable
+  have hs := ZLattice.summable_translate D (𝓕 f).toContinuousMap
+    (b := (finrank ℤ D : ℝ) + 1) (by linarith) ((𝓕 f).isBigO_cocompact_rpow _)
+  change Summable (fun w : D ↦ 𝓕 (f : E → ℂ) w)
+  simpa only [ContinuousMap.comp_apply, ContinuousMap.coe_addRight, zero_add,
+    SchwartzMap.toContinuousMap, BoundedContinuousFunction.coe_toContinuousMap,
+    SchwartzMap.toBoundedContinuousFunction_apply, SchwartzMap.fourier_coe] using
+    ContinuousMap.summable_apply hs (0 : E)
+
+end SchwartzMap
