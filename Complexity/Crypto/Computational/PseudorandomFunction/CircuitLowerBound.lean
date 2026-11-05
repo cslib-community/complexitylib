@@ -23,7 +23,6 @@ import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Languages.Probabilistic.Oracle.Support
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.Uniform
-import Complexity.Tactic.PolyTime
 
 /-!
 # Unconditional `2n - 2` `B₂`-circuit size lower bound for pseudorandom functions
@@ -189,10 +188,9 @@ private theorem interpret_firstBitDistinguisher (oracle : Unit × List Bool → 
 theorem isOraclePPT_firstBitDistinguisher {adversary : OracleDistinguisher}
     (hadversary : IsOraclePPT encBool adversary) :
     IsOraclePPT encBool (firstBitDistinguisher adversary) := by
-  have hhandler : IsOraclePPTOn
-      (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit)))
-      (encPair encBits (encFinEnum Unit))
+  let EIn := encPair (encPair encUnary encBits)
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
+  have hhandler : IsOraclePPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
         firstBitHandler pair.2.1 pair.2.2) := by
     have heq : (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
@@ -201,20 +199,20 @@ theorem isOraclePPT_firstBitDistinguisher {adversary : OracleDistinguisher}
             (List.take 1 <$>
               ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
                 ((), pair.2.1.2)) := by
-      funext pair
-      obtain ⟨_, _, ⟨⟩⟩ := pair
+      funext ⟨_, _, ⟨⟩⟩
       rfl
     rw [heq]
-    refine (IsOraclePPTOn.query_take' () ?_ ?_).map' ?_
-    · polytime
-    · polytime
-    · polytime
+    exact (IsOraclePPTOn.query_take' ()
+      ((ComputableInPolyTime.snd (encPair encUnary encBits)
+        (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))).fst'.snd')
+      (.const 1)).map'
+      ((ComputableInPolyTime.id' (encIn := encBits)).prod (.const ()))
   have hrun := hadversary.run_interpret_preprocess_open' (External := Unit)
     (handler := fun _ => firstBitHandler)
     (prepare := fun c : ℕ × List Bool => c) (initial := fun _ => ())
     (resources := fun _ _ => 1)
     ComputableInPolyTime.id' hhandler (ComputableInPolyTime.const ()) (fun _ _ => True)
-    (fun _ => trivial) (by polytime) ?_
+    (fun _ => trivial) (ComputableInPolyTime.const 1) ?_
   · refine (hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))).congr
       fun c External oracle e => ?_
     have hlift : OracleComp.sumHandler
@@ -268,7 +266,7 @@ theorem booleanPRFRealGame_prfFirstBitEnsemble_eq {family : List Bool → List B
       rw [hfam, List.length_nil] at hout
       omega
     | cons b bs => rfl
-  · simp [hq]
+  · simp only [hq, ↓reduceIte, List.take_nil]
 
 /-- For `0 < n`, the ideal `BooleanPRF` game agrees with the ideal `PseudorandomFunction` game of
 `firstBitDistinguisher adversary`. -/
@@ -290,7 +288,7 @@ theorem booleanPRFIdealGame_eq_prfIdealGame (adversary : OracleDistinguisher) {n
     obtain ⟨k, rfl⟩ : ∃ k, n = k + 1 := ⟨n - 1, by omega⟩
     simp only [List.ofFn_succ, List.take_succ_cons, List.take_zero]
     rfl
-  · simp [hq]
+  · simp only [hq, ↓reduceIte, List.take_nil]
 
 /-- **First-bit projection of a PRF is a `BooleanPRF`**: any `PseudorandomFunction` induces a
 `BooleanPRF` via its first output bit on `n`-bit inputs. -/
@@ -375,7 +373,8 @@ private theorem lowBits_injective_of_lt {w a b : ℕ} (ha : a < 2 ^ w) (hb : b <
   by_cases hi : i < w
   · have hget := congrArg (fun l : List Bool => l.getD i false) h
     simpa only [BitString.lowBits, List.getD_eq_getElem?_getD,
-      List.getElem?_eq_getElem (by simp [hi] : i < ((List.range w).map _).length),
+      List.getElem?_eq_getElem (by simp only [List.length_map, List.length_range, hi] :
+        i < ((List.range w).map _).length),
       List.getElem_map, List.getElem_range, Option.getD_some] using hget
   · have hpow : 2 ^ w ≤ 2 ^ i := Nat.pow_le_pow_right two_pos (by omega)
     rw [Nat.testBit_lt_two_pow (ha.trans_le hpow), Nat.testBit_lt_two_pow (hb.trans_le hpow)]
@@ -503,24 +502,38 @@ private theorem ofList_spliceTwo_injective {n : ℕ} (hn : 5 ≤ n) {x y : Fin n
 /-! ### Polynomial-time certificates and uniform finite-probability helpers -/
 
 private theorem bitsLowUnary {α : Type} {input : α ↪ List Bool} {width value : α → ℕ}
-    (hwidth : ComputableTidilyInPolyTime width input encUnary)
-    (hvalue : ComputableTidilyInPolyTime value input encUnary) :
-    ComputableTidilyInPolyTime (fun a => BitString.lowBits (width a) (value a)) input encBits :=
-  ComputableTidilyInPolyTime.bitsLow hwidth (ComputableTidilyInPolyTime.unary_to_binary.comp hvalue)
+    (hwidth : ComputableInPolyTime width input encUnary)
+    (hvalue : ComputableInPolyTime value input encUnary) :
+    ComputableInPolyTime (fun a => BitString.lowBits (width a) (value a)) input encBits :=
+  ComputableInPolyTime.bitsLow hwidth (ComputableInPolyTime.unary_to_binary.comp' hvalue)
 
-private theorem insertBitAt_tidy {α : Type} {input : α ↪ List Bool}
+private theorem insertBitAt_poly {α : Type} {input : α ↪ List Bool}
     {w : α → List Bool} {i : α → ℕ} {b : α → Bool}
-    (hw : ComputableTidilyInPolyTime w input encBits)
-    (hi : ComputableTidilyInPolyTime i input encUnary)
-    (hb : ComputableTidilyInPolyTime b input encBool) :
-    ComputableTidilyInPolyTime (fun a => insertBitAt (w a) (i a) (b a)) input encBits := by
-  unfold insertBitAt
-  exact ComputableTidilyInPolyTime.bitsAppend
-    (ComputableTidilyInPolyTime.bitsTakeWithInput hw hi)
-    (ComputableTidilyInPolyTime.bitsCons hb
-      (ComputableTidilyInPolyTime.bitsDropWithInput hw hi))
+    (hw : ComputableInPolyTime w input encBits)
+    (hi : ComputableInPolyTime i input encUnary)
+    (hb : ComputableInPolyTime b input encBool) :
+    ComputableInPolyTime (fun a => insertBitAt (w a) (i a) (b a)) input encBits :=
+  ComputableInPolyTime.bitsAppend
+    (ComputableInPolyTime.bitsTakeWithInput hw hi)
+    (ComputableInPolyTime.bitsCons hb
+      (ComputableInPolyTime.bitsDropWithInput hw hi))
 
-attribute [local fun_prop] bitsLowUnary insertBitAt_tidy
+private theorem spliceOne_poly {α : Type} {input : α ↪ List Bool}
+    {n x t : α → ℕ} (hn : ComputableInPolyTime n input encUnary)
+    (hx : ComputableInPolyTime x input encUnary)
+    (ht : ComputableInPolyTime t input encUnary) (b : Bool) :
+    ComputableInPolyTime (fun a => spliceOne (n a) (x a) (t a) b) input encBits :=
+  insertBitAt_poly (bitsLowUnary (hn.unary_sub' (.const 1)) ht) hx (.const b)
+
+private theorem spliceTwo_poly {α : Type} {input : α ↪ List Bool}
+    {n x y t : α → ℕ} (hn : ComputableInPolyTime n input encUnary)
+    (hx : ComputableInPolyTime x input encUnary)
+    (hy : ComputableInPolyTime y input encUnary)
+    (ht : ComputableInPolyTime t input encUnary) (bx by_ : Bool) :
+    ComputableInPolyTime (fun a => spliceTwo (n a) (x a) (y a) (t a) bx by_) input encBits :=
+  insertBitAt_poly
+    (insertBitAt_poly (bitsLowUnary (hn.unary_sub' (.const 2)) ht) hx (.const bx))
+    hy (.const by_)
 
 private theorem uniformOfFintype_exists_le {α ι : Type*} [Fintype α] [Nonempty α] [Fintype ι]
     (P : ι → α → Bool) [DecidablePred fun a => ∃ i, P i a = true] :
@@ -597,31 +610,38 @@ def isolatedVarDistinguisher : OracleDistinguisher :=
 private theorem computableInPolyTime_isoQueries :
     ComputableInPolyTime (fun p : ℕ × List Bool => isoQueries p.1)
       (encPair encUnary encBits) (encList encBits) := by
-  refine .of_tidy ?_
-  unfold isoQueries spliceOne
-  fun_prop
+  let E0 := encPair encUnary encBits
+  let E1 := encPair E0 encUnary
+  let hn0 := ComputableInPolyTime.fst encUnary encBits
+  let hn1 := (ComputableInPolyTime.fst E0 encUnary).fst'
+  let hp2 := ComputableInPolyTime.fst E1 encUnary
+  exact ComputableInPolyTime.flatMapWithInput hn0.unary_range'
+    (ComputableInPolyTime.flatMapWithInput hn1.unary_range'
+      ((spliceOne_poly hp2.fst'.fst' hp2.snd' (ComputableInPolyTime.snd E1 encUnary) false).cons'
+        ((spliceOne_poly hp2.fst'.fst' hp2.snd' (ComputableInPolyTime.snd E1 encUnary) true).cons'
+          (.const []))))
 
 private theorem computableInPolyTime_rowEq2 :
     ComputableInPolyTime (fun p : List Bool × ℕ => rowEq2 p.1 p.2)
-      (encPair encBits encUnary) encBool := by
-  unfold rowEq2
-  exact (ComputableInPolyTime.of_finite (encIn := encPair encBool encBool)
-    (fun b : Bool × Bool => b.1 == b.2)).comp
-    (g := fun p : List Bool × ℕ =>
-      ((BitString.listRow 2 p.2 p.1).getD 0 false,
-       (BitString.listRow 2 p.2 p.1).getD 1 false))
-    (.of_tidy (by fun_prop))
+      (encPair encBits encUnary) encBool :=
+  let hrow := ComputableInPolyTime.bitsRowWithInput (.const 2)
+    (ComputableInPolyTime.snd encBits encUnary) (ComputableInPolyTime.fst encBits encUnary)
+  (ComputableInPolyTime.bitsGetDWithInput hrow (.const 0) false).beq
+    (ComputableInPolyTime.bitsGetDWithInput hrow (.const 1) false)
 
 private theorem computableInPolyTime_checkIsoAnswers :
     ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => checkIsoAnswers p.1.1 p.2)
       (encPair (encPair encUnary encBits) encBits) encBool := by
-  unfold checkIsoAnswers
-  refine ComputableInPolyTime.anyWithInput (encA := encUnary) (by polytime) ?_
-  refine ComputableInPolyTime.allWithInput (encA := encUnary) (by polytime) ?_
-  exact computableInPolyTime_rowEq2.comp
-    (g := fun q : (((ℕ × List Bool) × List Bool) × ℕ) × ℕ =>
-      (BitString.listRow (2 * q.1.1.1.1) q.1.2 q.1.1.2, q.2))
-    (by polytime)
+  let E0 := encPair (encPair encUnary encBits) encBits
+  let hp1 := ComputableInPolyTime.fst E0 encUnary
+  let hn1 := hp1.fst'.fst'
+  exact ComputableInPolyTime.anyWithInput
+    (ComputableInPolyTime.fst (encPair encUnary encBits) encBits).fst'.unary_range'
+    (ComputableInPolyTime.allWithEncoding computableInPolyTime_rowEq2
+      (ComputableInPolyTime.bitsRowWithInput
+        ((ComputableInPolyTime.const 2).unary_mul' hn1)
+        (ComputableInPolyTime.snd E0 encUnary) hp1.snd')
+      hn1.unary_range')
 
 /-- `isolatedVarDistinguisher` is a uniform strict oracle-PPT adversary. -/
 theorem isOraclePPT_isolatedVarDistinguisher : IsOraclePPT encBool isolatedVarDistinguisher := by
@@ -643,65 +663,42 @@ private theorem checkIsoAnswers_map_isoQueries {n : ℕ} (hn : 1 ≤ n) (f : Boo
         f (BitString.ofList n (spliceOne n x.val t.val false)) =
           f (BitString.ofList n (spliceOne n x.val t.val true))) := by
   set answers := (isoQueries n).map fun word => (booleanOracle n f word).headD false
-  have hg : ∀ x t b,
+  let rowT (x t : ℕ) : List Bool :=
+    [f (BitString.ofList n (spliceOne n x t false)),
+     f (BitString.ofList n (spliceOne n x t true))]
+  have hg (x t : ℕ) (b : Bool) :
       (booleanOracle n f (spliceOne n x t b)).headD false =
         f (BitString.ofList n (spliceOne n x t b)) := by
-    intro x t b
     simp only [booleanOracle, length_spliceOne hn, ↓reduceIte, List.headD_cons]
-  have houter : ∀ x : Fin n,
-      BitString.listRow (2 * n) x.val answers =
-        (List.range n).flatMap fun t =>
-          [f (BitString.ofList n (spliceOne n x.val t false)),
-           f (BitString.ofList n (spliceOne n x.val t true))] := by
-    intro x
+  have houter (x : Fin n) :
+      BitString.listRow (2 * n) x.val answers = (List.range n).flatMap (rowT x.val) := by
     have hmap : answers =
-        (List.range n).flatMap fun x' =>
-          (List.range n).flatMap fun t =>
-            [(booleanOracle n f (spliceOne n x' t false)).headD false,
-             (booleanOracle n f (spliceOne n x' t true)).headD false] := by
-      simp [answers, isoQueries, List.map_flatMap]
+        (List.range n).flatMap fun x' => (List.range n).flatMap (rowT x') := by
+      simp only [answers, isoQueries, List.map_flatMap, List.map_cons, List.map_nil, hg, rowT]
     rw [hmap]
-    have hrow := BitString.listRow_flatMap_append
-      (width := 2 * n)
-      (fun x' => (List.range n).flatMap fun t =>
-        [(booleanOracle n f (spliceOne n x' t false)).headD false,
-         (booleanOracle n f (spliceOne n x' t true)).headD false])
-      (List.range n)
+    have hrow := BitString.listRow_flatMap_append (width := 2 * n)
+      (fun x' => (List.range n).flatMap (rowT x')) (List.range n)
       (fun x' _ => by
         rw [List.length_flatMap]
-        simp [Nat.mul_comm])
-      [] x.val (by simp [x.isLt])
-    simp only [List.append_nil, List.getElem_range] at hrow
-    rw [hrow]
-    simp only [hg]
-  have hinner : ∀ x t : Fin n,
-      BitString.listRow 2 t.val (BitString.listRow (2 * n) x.val answers) =
-        [f (BitString.ofList n (spliceOne n x.val t.val false)),
-         f (BitString.ofList n (spliceOne n x.val t.val true))] := by
-    intro x t
+        simp only [rowT, List.length_cons, List.length_nil, Nat.reduceAdd, List.map_const',
+          List.length_range, List.sum_replicate, smul_eq_mul, Nat.mul_comm])
+      [] x.val (by simp only [List.length_range, x.isLt])
+    simpa only [List.append_nil, List.getElem_range] using hrow
+  have hinner (x t : Fin n) :
+      BitString.listRow 2 t.val (BitString.listRow (2 * n) x.val answers) = rowT x.val t.val := by
     rw [houter x]
-    have hrow := BitString.listRow_flatMap_append
-      (width := 2)
-      (fun t' => [f (BitString.ofList n (spliceOne n x.val t' false)),
-                  f (BitString.ofList n (spliceOne n x.val t' true))])
-      (List.range n)
-      (fun _ _ => rfl)
-      [] t.val (by simp [t.isLt])
+    have hrow := BitString.listRow_flatMap_append (width := 2) (rowT x.val) (List.range n)
+      (fun _ _ => rfl) [] t.val (by simp only [List.length_range, t.isLt])
     simpa only [List.append_nil, List.getElem_range] using hrow
   rw [Bool.eq_iff_iff]
   simp only [checkIsoAnswers, rowEq2, List.any_eq_true, List.mem_range, List.all_eq_true,
     beq_iff_eq, decide_eq_true_eq]
-  constructor
-  · rintro ⟨x, hx, hall⟩
-    refine ⟨⟨x, hx⟩, fun t => ?_⟩
-    have ht := hall t.val t.isLt
-    rw [hinner ⟨x, hx⟩ t] at ht
-    exact ht
-  · rintro ⟨x, hall⟩
-    refine ⟨x.val, x.isLt, fun t ht => ?_⟩
-    have h := hall ⟨t, ht⟩
-    rw [hinner x ⟨t, ht⟩]
-    simpa only [List.getD_cons_zero, List.getD_cons_succ] using h
+  refine ⟨fun ⟨x, hx, hall⟩ => ⟨⟨x, hx⟩, fun t => ?_⟩,
+    fun ⟨x, hall⟩ => ⟨x.val, x.isLt, fun t ht => ?_⟩⟩
+  · simpa only [hinner ⟨x, hx⟩ t, rowT, List.getD_cons_zero, List.getD_cons_succ] using
+      hall t.val t.isLt
+  · simpa only [hinner x ⟨t, ht⟩, rowT, List.getD_cons_zero, List.getD_cons_succ] using
+      hall ⟨t, ht⟩
 
 /-- **Fan–Li–Yang Lemma 7.3 (completeness)**: if `C` computes `single f` (`1 ≤ n`) and has an
 isolated variable, `isolatedVarDistinguisher` accepts `f` with probability `1`. -/
@@ -725,7 +722,7 @@ theorem succProbability_isolatedVarDistinguisher_of_hasIsolatedVar {n : ℕ} (hn
     have hup := ofList_spliceOne x t.val true
     rw [hup, hindep]
   rw [evalBooleanOracle_isolatedVarDistinguisher, htrue]
-  simp [Game.succProbability]
+  simp only [Game.succProbability, PMF.pure_apply_self, ENNReal.toNNReal_one]
 
 private def evalSingleHom (n : ℕ) (x : Fin n) : BooleanFunction n →+ (Fin n → Bool × Bool) where
   toFun f t :=
@@ -750,9 +747,9 @@ private theorem evalSingleHom_surjective {n : ℕ} (hn : 2 ≤ n) (x : Fin n) :
   have hc1 : h1.choose = (t, true) := hemb h1.choose_spec
   ext
   · change (if h : ∃ p, emb p = emb (t, false) then _ else false) = (φ t).1
-    simp [h0, hc0]
+    simp only [h0, ↓reduceDIte, hc0, Bool.false_eq_true, ↓reduceIte]
   · change (if h : ∃ p, emb p = emb (t, true) then _ else false) = (φ t).2
-    simp [h1, hc1]
+    simp only [h1, ↓reduceDIte, hc1, ↓reduceIte]
 
 /-- **Fan–Li–Yang Lemma 7.3 (soundness against random functions)**: for `2 ≤ n`,
 `isolatedVarDistinguisher` accepts a uniformly random Boolean function with probability at most
@@ -801,7 +798,8 @@ theorem negligible_booleanPRFIdealGame_isolatedVarDistinguisher :
     Negligible
       (fun n => Game.succProbability (booleanPRFIdealGame isolatedVarDistinguisher n)) := by
   have hgeom : Negligible (fun n => (n : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n) :=
-    (negligible_geometric (by norm_num : (1 / 2 : ℝ≥0) < 1)).polynomiallyBounded_mul (by fun_prop)
+    (negligible_geometric (by norm_num : (1 / 2 : ℝ≥0) < 1)).polynomiallyBounded_mul
+      PolynomiallyBounded.id
   refine negligible_of_eventually_le hgeom ?_
   filter_upwards [Filter.eventually_ge_atTop 2] with n hn
   exact succProbability_booleanPRFIdealGame_isolatedVarDistinguisher_le hn
@@ -876,60 +874,65 @@ def criticalPathDistinguisher : OracleDistinguisher :=
 private theorem computableInPolyTime_critQueries :
     ComputableInPolyTime (fun p : ℕ × List Bool => critQueries p.1)
       (encPair encUnary encBits) (encList encBits) := by
-  refine .of_tidy ?_
-  unfold critQueries spliceTwo
-  fun_prop
+  let E0 := encPair encUnary encBits
+  let E1 := encPair E0 encUnary
+  let E2 := encPair E1 encUnary
+  let hp3 := ComputableInPolyTime.fst E2 encUnary
+  have hs (bx by_ : Bool) := spliceTwo_poly hp3.fst'.fst'.fst' hp3.fst'.snd' hp3.snd'
+    (ComputableInPolyTime.snd E2 encUnary) bx by_
+  exact ComputableInPolyTime.flatMapWithInput
+    (ComputableInPolyTime.fst encUnary encBits).unary_range'
+    (ComputableInPolyTime.flatMapWithInput (ComputableInPolyTime.fst E0 encUnary).fst'.unary_range'
+      (ComputableInPolyTime.flatMapWithInput
+        (ComputableInPolyTime.fst E1 encUnary).fst'.fst'.unary_range'
+        ((hs false false).cons' ((hs true false).cons'
+          ((hs false true).cons' ((hs true true).cons' (ComputableInPolyTime.const [])))))))
 
-private theorem computableInPolyTime_rowNotAnd4 :
-    ComputableInPolyTime (fun p : List Bool × ℕ => rowNotAnd4 p.1 p.2)
+private theorem computableInPolyTime_rowQuadTest (f : QuadBool → Bool) :
+    ComputableInPolyTime
+      (fun p : List Bool × ℕ =>
+        f ((BitString.listRow 4 p.2 p.1).getD 0 false,
+           (BitString.listRow 4 p.2 p.1).getD 1 false,
+           (BitString.listRow 4 p.2 p.1).getD 2 false,
+           (BitString.listRow 4 p.2 p.1).getD 3 false))
       (encPair encBits encUnary) encBool := by
-  unfold rowNotAnd4
-  exact (ComputableInPolyTime.of_finite
+  have hrow := ComputableInPolyTime.bitsRowWithInput (.const 4)
+    (ComputableInPolyTime.snd encBits encUnary) (ComputableInPolyTime.fst encBits encUnary)
+  have h := (ComputableInPolyTime.of_finite
     (encIn := encPair encBool (encPair encBool (encPair encBool encBool)))
-    (fun q : QuadBool => !isAnd4 q.1 q.2.1 q.2.2.1 q.2.2.2)).comp
-    (g := fun p : List Bool × ℕ =>
-      ((BitString.listRow 4 p.2 p.1).getD 0 false,
-       (BitString.listRow 4 p.2 p.1).getD 1 false,
-       (BitString.listRow 4 p.2 p.1).getD 2 false,
-       (BitString.listRow 4 p.2 p.1).getD 3 false))
-    (.of_tidy (by fun_prop))
-
-private theorem computableInPolyTime_rowNotXor4 :
-    ComputableInPolyTime (fun p : List Bool × ℕ => rowNotXor4 p.1 p.2)
-      (encPair encBits encUnary) encBool := by
-  unfold rowNotXor4
-  exact (ComputableInPolyTime.of_finite
-    (encIn := encPair encBool (encPair encBool (encPair encBool encBool)))
-    (fun q : QuadBool => !isXor4 q.1 q.2.1 q.2.2.1 q.2.2.2)).comp
-    (g := fun p : List Bool × ℕ =>
-      ((BitString.listRow 4 p.2 p.1).getD 0 false,
-       (BitString.listRow 4 p.2 p.1).getD 1 false,
-       (BitString.listRow 4 p.2 p.1).getD 2 false,
-       (BitString.listRow 4 p.2 p.1).getD 3 false))
-    (.of_tidy (by fun_prop))
+    (encOut := encBool) f).comp'
+    ((ComputableInPolyTime.bitsGetDWithInput hrow (.const 0) false).prod
+      ((ComputableInPolyTime.bitsGetDWithInput hrow (.const 1) false).prod
+        ((ComputableInPolyTime.bitsGetDWithInput hrow (.const 2) false).prod
+          (ComputableInPolyTime.bitsGetDWithInput hrow (.const 3) false))))
+  exact h
 
 private theorem computableInPolyTime_checkCritAnswers :
     ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => checkCritAnswers p.1.1 p.2)
       (encPair (encPair encUnary encBits) encBits) encBool := by
-  unfold checkCritAnswers
-  refine ComputableInPolyTime.anyWithInput (encA := encUnary) (by polytime) ?_
-  refine ComputableInPolyTime.anyWithInput (encA := encUnary) (by polytime) ?_
-  refine (ComputableInPolyTime.of_finite
+  let E0 := encPair (encPair encUnary encBits) encBits
+  let E1 := encPair E0 encUnary
+  let hp2 := ComputableInPolyTime.fst E1 encUnary
+  let hn2 := hp2.fst'.fst'.fst'
+  let hy2 := ComputableInPolyTime.snd E1 encUnary
+  have h4n2 := (ComputableInPolyTime.const 4).unary_mul' hn2
+  have hrxy2 := ComputableInPolyTime.bitsRowWithInput h4n2 hy2
+    (ComputableInPolyTime.bitsRowWithInput (hn2.unary_mul' h4n2) hp2.snd' hp2.fst'.snd')
+  have hbody := (ComputableInPolyTime.of_finite
     (encIn := encPair encBool (encPair encBool encBool))
-    (fun b : Bool × Bool × Bool => b.1 && (b.2.1 || b.2.2))).comp
-    (ComputableInPolyTime.prod (by polytime) (ComputableInPolyTime.prod ?_ ?_))
-  · refine ComputableInPolyTime.allWithInput (encA := encUnary) (by polytime) ?_
-    exact computableInPolyTime_rowNotAnd4.comp
-      (g := fun q : ((((ℕ × List Bool) × List Bool) × ℕ) × ℕ) × ℕ =>
-        (BitString.listRow (4 * q.1.1.1.1.1) q.1.2
-          (BitString.listRow (q.1.1.1.1.1 * (4 * q.1.1.1.1.1)) q.1.1.2 q.1.1.1.2), q.2))
-      (by polytime)
-  · refine ComputableInPolyTime.allWithInput (encA := encUnary) (by polytime) ?_
-    exact computableInPolyTime_rowNotXor4.comp
-      (g := fun q : ((((ℕ × List Bool) × List Bool) × ℕ) × ℕ) × ℕ =>
-        (BitString.listRow (4 * q.1.1.1.1.1) q.1.2
-          (BitString.listRow (q.1.1.1.1.1 * (4 * q.1.1.1.1.1)) q.1.1.2 q.1.1.1.2), q.2))
-      (by polytime)
+    (encOut := encBool)
+    (fun b : Bool × Bool × Bool => b.1 && (b.2.1 || b.2.2))).comp'
+    ((hp2.snd'.unary_lt' hy2).prod
+      ((ComputableInPolyTime.allWithEncoding
+          (computableInPolyTime_rowQuadTest fun q => !isAnd4 q.1 q.2.1 q.2.2.1 q.2.2.2)
+          hrxy2 hn2.unary_range').prod
+        (ComputableInPolyTime.allWithEncoding
+          (computableInPolyTime_rowQuadTest fun q => !isXor4 q.1 q.2.1 q.2.2.1 q.2.2.2)
+          hrxy2 hn2.unary_range')))
+  exact ComputableInPolyTime.anyWithInput
+    (ComputableInPolyTime.fst (encPair encUnary encBits) encBits).fst'.unary_range'
+    (ComputableInPolyTime.anyWithInput
+      (ComputableInPolyTime.fst E0 encUnary).fst'.fst'.unary_range' hbody)
 
 /-- `criticalPathDistinguisher` is a uniform strict oracle-PPT adversary. -/
 theorem isOraclePPT_criticalPathDistinguisher : IsOraclePPT encBool criticalPathDistinguisher := by
@@ -961,124 +964,69 @@ private theorem checkCritAnswers_map_critQueries {n : ℕ} (hn : 2 ≤ n) (f : B
             (!isXor4 (quadAt n x y f t).1 (quadAt n x y f t).2.1
               (quadAt n x y f t).2.2.1 (quadAt n x y f t).2.2.2) = true))) := by
   set answers := (critQueries n).map fun word => (booleanOracle n f word).headD false
-  have hg : ∀ x y t bx by_,
+  let rowT (x y t : ℕ) : List Bool :=
+    [f (BitString.ofList n (spliceTwo n x y t false false)),
+     f (BitString.ofList n (spliceTwo n x y t true false)),
+     f (BitString.ofList n (spliceTwo n x y t false true)),
+     f (BitString.ofList n (spliceTwo n x y t true true))]
+  have hg (x y t : ℕ) (bx by_ : Bool) :
       (booleanOracle n f (spliceTwo n x y t bx by_)).headD false =
         f (BitString.ofList n (spliceTwo n x y t bx by_)) := by
-    intro x y t bx by_
     simp only [booleanOracle, length_spliceTwo hn, ↓reduceIte, List.headD_cons]
-  have hrowX : ∀ x : Fin n,
+  have hlenY (x' y : ℕ) : ((List.range n).flatMap (rowT x' y)).length = 4 * n := by
+    rw [List.length_flatMap]
+    simp only [rowT, List.length_cons, List.length_nil, Nat.reduceAdd, List.map_const',
+      List.length_range, List.sum_replicate, smul_eq_mul, Nat.mul_comm]
+  have hrowX (x : Fin n) :
       BitString.listRow (n * (4 * n)) x.val answers =
-        (List.range n).flatMap fun y =>
-          (List.range n).flatMap fun t =>
-            [f (BitString.ofList n (spliceTwo n x.val y t false false)),
-             f (BitString.ofList n (spliceTwo n x.val y t true false)),
-             f (BitString.ofList n (spliceTwo n x.val y t false true)),
-             f (BitString.ofList n (spliceTwo n x.val y t true true))] := by
-    intro x
-    have hmap : answers =
-        (List.range n).flatMap fun x' =>
-          (List.range n).flatMap fun y =>
-            (List.range n).flatMap fun t =>
-              [(booleanOracle n f (spliceTwo n x' y t false false)).headD false,
-               (booleanOracle n f (spliceTwo n x' y t true false)).headD false,
-               (booleanOracle n f (spliceTwo n x' y t false true)).headD false,
-               (booleanOracle n f (spliceTwo n x' y t true true)).headD false] := by
-      simp [answers, critQueries, List.map_flatMap]
+        (List.range n).flatMap fun y => (List.range n).flatMap (rowT x.val y) := by
+    have hmap : answers = (List.range n).flatMap fun x' =>
+        (List.range n).flatMap fun y => (List.range n).flatMap (rowT x' y) := by
+      simp only [answers, critQueries, List.map_flatMap, List.map_cons, List.map_nil, hg, rowT]
     rw [hmap]
-    have hrow := BitString.listRow_flatMap_append
-      (width := n * (4 * n))
-      (fun x' => (List.range n).flatMap fun y =>
-        (List.range n).flatMap fun t =>
-          [(booleanOracle n f (spliceTwo n x' y t false false)).headD false,
-           (booleanOracle n f (spliceTwo n x' y t true false)).headD false,
-           (booleanOracle n f (spliceTwo n x' y t false true)).headD false,
-           (booleanOracle n f (spliceTwo n x' y t true true)).headD false])
+    have hrow := BitString.listRow_flatMap_append (width := n * (4 * n))
+      (fun x' => (List.range n).flatMap fun y => (List.range n).flatMap (rowT x' y))
       (List.range n)
       (fun x' _ => by
-        rw [List.length_flatMap]
-        have hlenY : ∀ y ∈ List.range n,
-            ((List.range n).flatMap fun t =>
-              [(booleanOracle n f (spliceTwo n x' y t false false)).headD false,
-               (booleanOracle n f (spliceTwo n x' y t true false)).headD false,
-               (booleanOracle n f (spliceTwo n x' y t false true)).headD false,
-               (booleanOracle n f (spliceTwo n x' y t true true)).headD false]).length =
-              4 * n := by
-          intro y _
-          rw [List.length_flatMap]
-          simp [Nat.mul_comm]
-        rw [List.map_congr_left hlenY]
-        simp)
-      [] x.val (by simp [x.isLt])
-    simp only [List.append_nil, List.getElem_range] at hrow
-    rw [hrow]
-    simp only [hg]
-  have hrowXY : ∀ x y : Fin n,
-      BitString.listRow (4 * n) y.val
-          (BitString.listRow (n * (4 * n)) x.val answers) =
-        (List.range n).flatMap fun t =>
-          [f (BitString.ofList n (spliceTwo n x.val y.val t false false)),
-           f (BitString.ofList n (spliceTwo n x.val y.val t true false)),
-           f (BitString.ofList n (spliceTwo n x.val y.val t false true)),
-           f (BitString.ofList n (spliceTwo n x.val y.val t true true))] := by
-    intro x y
-    rw [hrowX x]
-    have hrow := BitString.listRow_flatMap_append
-      (width := 4 * n)
-      (fun y' => (List.range n).flatMap fun t =>
-        [f (BitString.ofList n (spliceTwo n x.val y' t false false)),
-         f (BitString.ofList n (spliceTwo n x.val y' t true false)),
-         f (BitString.ofList n (spliceTwo n x.val y' t false true)),
-         f (BitString.ofList n (spliceTwo n x.val y' t true true))])
-      (List.range n)
-      (fun _ _ => by
-        rw [List.length_flatMap]
-        simp [Nat.mul_comm])
-      [] y.val (by simp [y.isLt])
+        rw [List.length_flatMap, List.map_congr_left (fun y _ => hlenY x' y)]
+        simp only [List.map_const', List.length_range, List.sum_replicate, smul_eq_mul])
+      [] x.val (by simp only [List.length_range, x.isLt])
     simpa only [List.append_nil, List.getElem_range] using hrow
-  have hrowXYT : ∀ x y t : Fin n,
+  have hrowXY (x y : Fin n) :
+      BitString.listRow (4 * n) y.val (BitString.listRow (n * (4 * n)) x.val answers) =
+        (List.range n).flatMap (rowT x.val y.val) := by
+    rw [hrowX x]
+    have hrow := BitString.listRow_flatMap_append (width := 4 * n)
+      (fun y' => (List.range n).flatMap (rowT x.val y')) (List.range n)
+      (fun y' _ => hlenY x.val y') [] y.val (by simp only [List.length_range, y.isLt])
+    simpa only [List.append_nil, List.getElem_range] using hrow
+  have hrowXYT (x y t : Fin n) :
       BitString.listRow 4 t.val
-          (BitString.listRow (4 * n) y.val
-            (BitString.listRow (n * (4 * n)) x.val answers)) =
+          (BitString.listRow (4 * n) y.val (BitString.listRow (n * (4 * n)) x.val answers)) =
         [(quadAt n x y f t).1, (quadAt n x y f t).2.1,
          (quadAt n x y f t).2.2.1, (quadAt n x y f t).2.2.2] := by
-    intro x y t
     rw [hrowXY x y]
-    have hrow := BitString.listRow_flatMap_append
-      (width := 4)
-      (fun t' => [f (BitString.ofList n (spliceTwo n x.val y.val t' false false)),
-                  f (BitString.ofList n (spliceTwo n x.val y.val t' true false)),
-                  f (BitString.ofList n (spliceTwo n x.val y.val t' false true)),
-                  f (BitString.ofList n (spliceTwo n x.val y.val t' true true))])
-      (List.range n)
-      (fun _ _ => rfl)
-      [] t.val (by simp [t.isLt])
-    simpa only [List.append_nil, List.getElem_range, quadAt] using hrow
+    have hrow := BitString.listRow_flatMap_append (width := 4) (rowT x.val y.val) (List.range n)
+      (fun _ _ => rfl) [] t.val (by simp only [List.length_range, t.isLt])
+    simpa only [List.append_nil, List.getElem_range, quadAt, rowT] using hrow
   rw [Bool.eq_iff_iff]
   simp only [checkCritAnswers, rowNotAnd4, rowNotXor4, List.any_eq_true, List.mem_range,
     Bool.and_eq_true, Bool.or_eq_true, decide_eq_true_eq, List.all_eq_true]
   constructor
-  · rintro ⟨x, hx, y, hy, hlt, hor⟩
-    refine ⟨⟨x, hx⟩, ⟨y, hy⟩, hlt, ?_⟩
-    rcases hor with hand | hxor
-    · refine Or.inl fun t => ?_
-      have ht := hand t.val t.isLt
-      rw [hrowXYT ⟨x, hx⟩ ⟨y, hy⟩ t] at ht
-      simpa only [List.getD_cons_zero, List.getD_cons_succ] using ht
-    · refine Or.inr fun t => ?_
-      have ht := hxor t.val t.isLt
-      rw [hrowXYT ⟨x, hx⟩ ⟨y, hy⟩ t] at ht
-      simpa only [List.getD_cons_zero, List.getD_cons_succ] using ht
-  · rintro ⟨x, y, hlt, hor⟩
-    refine ⟨x.val, x.isLt, y.val, y.isLt, hlt, ?_⟩
-    rcases hor with hand | hxor
-    · refine Or.inl fun t ht => ?_
-      have h := hand ⟨t, ht⟩
-      rw [hrowXYT x y ⟨t, ht⟩]
-      simpa only [List.getD_cons_zero, List.getD_cons_succ] using h
-    · refine Or.inr fun t ht => ?_
-      have h := hxor ⟨t, ht⟩
-      rw [hrowXYT x y ⟨t, ht⟩]
-      simpa only [List.getD_cons_zero, List.getD_cons_succ] using h
+  · rintro ⟨x, hx, y, hy, hlt, hand | hxor⟩
+    · refine ⟨⟨x, hx⟩, ⟨y, hy⟩, hlt, Or.inl fun t => ?_⟩
+      simpa only [hrowXYT ⟨x, hx⟩ ⟨y, hy⟩ t, List.getD_cons_zero, List.getD_cons_succ] using
+        hand t.val t.isLt
+    · refine ⟨⟨x, hx⟩, ⟨y, hy⟩, hlt, Or.inr fun t => ?_⟩
+      simpa only [hrowXYT ⟨x, hx⟩ ⟨y, hy⟩ t, List.getD_cons_zero, List.getD_cons_succ] using
+        hxor t.val t.isLt
+  · rintro ⟨x, y, hlt, hand | hxor⟩
+    · refine ⟨x.val, x.isLt, y.val, y.isLt, hlt, Or.inl fun t ht => ?_⟩
+      simpa only [hrowXYT x y ⟨t, ht⟩, List.getD_cons_zero, List.getD_cons_succ] using
+        hand ⟨t, ht⟩
+    · refine ⟨x.val, x.isLt, y.val, y.isLt, hlt, Or.inr fun t ht => ?_⟩
+      simpa only [hrowXYT x y ⟨t, ht⟩, List.getD_cons_zero, List.getD_cons_succ] using
+        hxor ⟨t, ht⟩
 
 /-- **Fan–Li–Yang Lemma 7.2 (completeness)**: if `C` is a single-output `B₂` circuit with
 `NoDeadGates` (*normalized* in [FanLiYang2022]) computing `single f` (`2 ≤ n`) whose critical paths
@@ -1103,40 +1051,29 @@ theorem succProbability_criticalPathDistinguisher_of_not_disjoint_criticalPath {
     · refine ⟨x₀, y₀, hlt, ?_⟩
       simpa only [hfeq] using
         not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath C hnoDead hne hinter
-    · have hinter' : ¬ Disjoint (C.criticalPath y₀).toFinset (C.criticalPath x₀).toFinset :=
-        fun hd => hinter hd.symm
-      refine ⟨y₀, x₀, hgt, ?_⟩
+    · refine ⟨y₀, x₀, hgt, ?_⟩
       simpa only [hfeq] using
-        not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath C hnoDead hne.symm hinter'
+        not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath C hnoDead hne.symm
+          (fun hd => hinter hd.symm)
   obtain ⟨x, y, hxy, hor⟩ := hpair
   have htrue :
       checkCritAnswers n ((critQueries n).map fun word => (booleanOracle n f word).headD false) =
         true := by
     rw [checkCritAnswers_map_critQueries hn, decide_eq_true_eq]
+    have hq (t : Fin n) : quadAt n x y f t =
+        (let ρ := BitString.ofList n (spliceTwo n x.val y.val t.val false false)
+         let h : Bool → Bool → Bool := fun bx by_ =>
+           f (Function.update (Function.update ρ x bx) y by_)
+         (h false false, h true false, h false true, h true true)) := by
+      simp only [quadAt, ← ofList_spliceTwo hxy]
     refine ⟨x, y, hxy, ?_⟩
     rcases hor with hand | hxor
-    · refine Or.inl fun t => ?_
-      let ρ := BitString.ofList n (spliceTwo n x.val y.val t.val false false)
-      let h : Bool → Bool → Bool := fun bx by_ =>
-        f (Function.update (Function.update ρ x bx) y by_)
-      have hq : quadAt n x y f t = (h false false, h true false, h false true, h true true) := by
-        simp only [quadAt, h, ρ, ← ofList_spliceTwo hxy]
-      rw [hq]
-      dsimp only
-      rw [not_isAnd4_eq_true_iff]
-      exact hand ρ
-    · refine Or.inr fun t => ?_
-      let ρ := BitString.ofList n (spliceTwo n x.val y.val t.val false false)
-      let h : Bool → Bool → Bool := fun bx by_ =>
-        f (Function.update (Function.update ρ x bx) y by_)
-      have hq : quadAt n x y f t = (h false false, h true false, h false true, h true true) := by
-        simp only [quadAt, h, ρ, ← ofList_spliceTwo hxy]
-      rw [hq]
-      dsimp only
-      rw [not_isXor4_eq_true_iff]
-      exact hxor ρ
+    · exact Or.inl fun t => by
+        rw [hq t]; dsimp only; exact (not_isAnd4_eq_true_iff _).mpr (hand _)
+    · exact Or.inr fun t => by
+        rw [hq t]; dsimp only; exact (not_isXor4_eq_true_iff _).mpr (hxor _)
   rw [evalBooleanOracle_criticalPathDistinguisher, htrue]
-  simp [Game.succProbability]
+  simp only [Game.succProbability, PMF.pure_apply_self, ENNReal.toNNReal_one]
 
 private def evalPairHom (n : ℕ) (x y : Fin n) : BooleanFunction n →+ (Fin n → QuadBool) where
   toFun f t := quadAt n x y f t
@@ -1156,25 +1093,16 @@ private theorem evalPairHom_surjective {n : ℕ} (hn : 5 ≤ n) {x y : Fin n} (h
   have hemb := ofList_spliceTwo_injective hn hxy
   let pick : QuadBool → Bool → Bool → Bool := fun q bx by_ =>
     match bx, by_ with
-    | false, false => q.1
-    | true, false => q.2.1
-    | false, true => q.2.2.1
-    | true, true => q.2.2.2
+    | false, false => q.1 | true, false => q.2.1 | false, true => q.2.2.1 | true, true => q.2.2.2
   refine ⟨fun z => if h : ∃ p, emb p = z then
-    pick (φ h.choose.1) h.choose.2.1 h.choose.2.2 else false, ?_⟩
-  funext t
-  have hAt : ∀ bx by_ : Bool,
+    pick (φ h.choose.1) h.choose.2.1 h.choose.2.2 else false, funext fun t => ?_⟩
+  have hAt (bx by_ : Bool) :
       (if h : ∃ p, emb p = emb (t, bx, by_) then
         pick (φ h.choose.1) h.choose.2.1 h.choose.2.2 else false) = pick (φ t) bx by_ := by
-    intro bx by_
     have hex : ∃ p, emb p = emb (t, bx, by_) := ⟨(t, bx, by_), rfl⟩
-    have hc : hex.choose = (t, bx, by_) := hemb hex.choose_spec
-    simp [hex, hc]
-  ext
-  · exact hAt false false
-  · exact hAt true false
-  · exact hAt false true
-  · exact hAt true true
+    simp only [hex, ↓reduceDIte, hemb hex.choose_spec]
+  exact Prod.ext (hAt false false)
+    (Prod.ext (hAt true false) (Prod.ext (hAt false true) (hAt true true)))
 
 /-- **Fan–Li–Yang Lemma 7.2 (soundness against random functions)**: for `5 ≤ n`,
 `criticalPathDistinguisher` accepts a uniformly random Boolean function with probability at most
@@ -1207,62 +1135,53 @@ theorem succProbability_booleanPRFIdealGame_criticalPathDistinguisher_le {n : �
     congr 1
     rw [Bool.eq_iff_iff]
     simp only [decide_eq_true_eq, P, evalPairHom_apply, Bool.not_eq_true']
-    constructor
+    refine ⟨?_, ?_⟩
     · rintro ⟨x, y, hxy, hand | hxor⟩
-      · exact ⟨(⟨(x, y), hxy⟩, false), by simp [hand]⟩
-      · exact ⟨(⟨(x, y), hxy⟩, true), by simp [hxor]⟩
-    · rintro ⟨⟨⟨⟨x, y⟩, hxy⟩, b⟩, hb⟩
-      cases b
-      · exact ⟨x, y, hxy, Or.inl (by simpa using hb)⟩
-      · exact ⟨x, y, hxy, Or.inr (by simpa using hb)⟩
+      · exact ⟨(⟨(x, y), hxy⟩, false),
+          by simp only [Bool.false_eq_true, ↓reduceIte, decide_eq_true_eq]; exact hand⟩
+      · exact ⟨(⟨(x, y), hxy⟩, true),
+          by simp only [↓reduceIte, decide_eq_true_eq]; exact hxor⟩
+    · rintro ⟨⟨⟨⟨x, y⟩, hxy⟩, false | true⟩, hb⟩
+      · exact ⟨x, y, hxy, Or.inl (by
+          simpa only [Bool.false_eq_true, ↓reduceIte, decide_eq_true_eq] using hb)⟩
+      · exact ⟨x, y, hxy, Or.inr (by
+          simpa only [↓reduceIte, decide_eq_true_eq] using hb)⟩
   rw [Game.succProbability, heq]
   refine (uniformOfFintype_exists_le P).trans ?_
-  have hAnd : ∀ p : PairLt,
+  have hc2 : Fintype.card QuadBool = 16 := by decide
+  have hAnd (p : PairLt) :
       ((PMF.uniformOfFintype (BooleanFunction n)).map (P (p, false)) true).toNNReal =
         (1 / 2 : ℝ≥0) ^ n := by
-    intro p
-    have hcomp : P (p, false) =
-        (fun T : Fin n → QuadBool =>
-          decide (∀ t : Fin n, (!isAnd4 (T t).1 (T t).2.1 (T t).2.2.1 (T t).2.2.2) = true)) ∘
-        evalPairHom n p.1.1 p.1.2 := rfl
-    rw [hcomp, ← _root_.PMF.map_comp,
-      PMF.uniformOfFintype_map_addHom _ (evalPairHom_surjective hn p.2),
-      uniformOfFintype_forall_fin_eq
-        (fun q : QuadBool => !isAnd4 q.1 q.2.1 q.2.2.1 q.2.2.2) n]
-    have hc1 : (Finset.univ.filter fun q : QuadBool =>
-        (!isAnd4 q.1 q.2.1 q.2.2.1 q.2.2.2) = true).card = 8 := by decide
-    have hc2 : Fintype.card QuadBool = 16 := by decide
-    rw [hc1, hc2]
+    change ((PMF.uniformOfFintype (BooleanFunction n)).map
+      ((fun T : Fin n → QuadBool =>
+        decide (∀ t : Fin n, (!isAnd4 (T t).1 (T t).2.1 (T t).2.2.1 (T t).2.2.2) = true)) ∘
+        evalPairHom n p.1.1 p.1.2) true).toNNReal = _
+    rw [← _root_.PMF.map_comp, PMF.uniformOfFintype_map_addHom _ (evalPairHom_surjective hn p.2),
+      uniformOfFintype_forall_fin_eq (fun q : QuadBool => !isAnd4 q.1 q.2.1 q.2.2.1 q.2.2.2) n,
+      (by decide : (Finset.univ.filter fun q : QuadBool =>
+        (!isAnd4 q.1 q.2.1 q.2.2.1 q.2.2.2) = true).card = 8), hc2]
     norm_num
-  have hXor : ∀ p : PairLt,
+  have hXor (p : PairLt) :
       ((PMF.uniformOfFintype (BooleanFunction n)).map (P (p, true)) true).toNNReal =
         (7 / 8 : ℝ≥0) ^ n := by
-    intro p
-    have hcomp : P (p, true) =
-        (fun T : Fin n → QuadBool =>
-          decide (∀ t : Fin n, (!isXor4 (T t).1 (T t).2.1 (T t).2.2.1 (T t).2.2.2) = true)) ∘
-        evalPairHom n p.1.1 p.1.2 := rfl
-    rw [hcomp, ← _root_.PMF.map_comp,
-      PMF.uniformOfFintype_map_addHom _ (evalPairHom_surjective hn p.2),
-      uniformOfFintype_forall_fin_eq
-        (fun q : QuadBool => !isXor4 q.1 q.2.1 q.2.2.1 q.2.2.2) n]
-    have hc1 : (Finset.univ.filter fun q : QuadBool =>
-        (!isXor4 q.1 q.2.1 q.2.2.1 q.2.2.2) = true).card = 14 := by decide
-    have hc2 : Fintype.card QuadBool = 16 := by decide
-    rw [hc1, hc2]
+    change ((PMF.uniformOfFintype (BooleanFunction n)).map
+      ((fun T : Fin n → QuadBool =>
+        decide (∀ t : Fin n, (!isXor4 (T t).1 (T t).2.1 (T t).2.2.1 (T t).2.2.2) = true)) ∘
+        evalPairHom n p.1.1 p.1.2) true).toNNReal = _
+    rw [← _root_.PMF.map_comp, PMF.uniformOfFintype_map_addHom _ (evalPairHom_surjective hn p.2),
+      uniformOfFintype_forall_fin_eq (fun q : QuadBool => !isXor4 q.1 q.2.1 q.2.2.1 q.2.2.2) n,
+      (by decide : (Finset.univ.filter fun q : QuadBool =>
+        (!isXor4 q.1 q.2.1 q.2.2.1 q.2.2.2) = true).card = 14), hc2]
     norm_num
   rw [Fintype.sum_prod_type]
-  have hsumPair : ∀ p : PairLt,
+  have hsumPair (p : PairLt) :
       (∑ b : Bool, ((PMF.uniformOfFintype (BooleanFunction n)).map (P (p, b)) true).toNNReal) =
         (1 / 2 : ℝ≥0) ^ n + (7 / 8 : ℝ≥0) ^ n := by
-    intro p
     rw [Fintype.sum_bool, hXor p, hAnd p, add_comm]
   simp_rw [hsumPair]
   rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-  have hcard : Fintype.card PairLt ≤ n ^ 2 := by
-    calc
-      Fintype.card PairLt ≤ Fintype.card (Fin n × Fin n) := Fintype.card_subtype_le _
-      _ = n ^ 2 := by simp [sq]
+  have hcard : Fintype.card PairLt ≤ n ^ 2 :=
+    (Fintype.card_subtype_le _).trans_eq (by simp only [Fintype.card_prod, Fintype.card_fin, sq])
   exact mul_le_mul_of_nonneg_right (by exact_mod_cast hcard) (by positivity)
 
 /-- The ideal-game acceptance probability of `criticalPathDistinguisher` is negligible. -/
@@ -1270,9 +1189,11 @@ theorem negligible_booleanPRFIdealGame_criticalPathDistinguisher :
     Negligible
       (fun n => Game.succProbability (booleanPRFIdealGame criticalPathDistinguisher n)) := by
   have h1 : Negligible (fun n => (n ^ 2 : ℕ) * (1 / 2 : ℝ≥0) ^ n) :=
-    (negligible_geometric (by norm_num : (1 / 2 : ℝ≥0) < 1)).polynomiallyBounded_mul (by fun_prop)
+    (negligible_geometric (by norm_num : (1 / 2 : ℝ≥0) < 1)).polynomiallyBounded_mul
+      (PolynomiallyBounded.id.pow 2)
   have h2 : Negligible (fun n => (n ^ 2 : ℕ) * (7 / 8 : ℝ≥0) ^ n) :=
-    (negligible_geometric (by norm_num : (7 / 8 : ℝ≥0) < 1)).polynomiallyBounded_mul (by fun_prop)
+    (negligible_geometric (by norm_num : (7 / 8 : ℝ≥0) < 1)).polynomiallyBounded_mul
+      (PolynomiallyBounded.id.pow 2)
   refine negligible_of_eventually_le (h1.add h2) ?_
   filter_upwards [Filter.eventually_ge_atTop 5] with n hn
   simpa only [Pi.add_apply, Nat.cast_pow, mul_add] using
@@ -1358,7 +1279,7 @@ theorem BooleanPRF.negligible_complexity_lt_two_mul_sub_two {D : ∀ n, PMF (Boo
             ENNReal.coe_one] using this
         rw [h1']
         exact le_add_self
-    · simp [hlt]
+    · simp only [hlt, decide_false, PMF.pure_apply, Bool.true_eq_false, ↓reduceIte, zero_le]
   have htsum :
       ((D n).map (fun f =>
         decide (complexity (fullInterpretation (k := 2)) (single f) < 2 * n - 2))) true ≤
@@ -1384,7 +1305,8 @@ theorem BooleanPRF.eventually_exists_mem_support_two_mul_sub_two_le_complexity
     ∀ᶠ n in Filter.atTop,
       ∃ f ∈ (D n).support, 2 * n - 2 ≤ complexity (fullInterpretation (k := 2)) (single f) := by
   have hnegl := hD.negligible_complexity_lt_two_mul_sub_two
-  have hev := hnegl.eventually_le_inv_polynomial (p := fun _ => 2) (by fun_prop) (fun _ => by omega)
+  have hev := hnegl.eventually_le_inv_polynomial (p := fun _ => 2)
+    (PolynomiallyBounded.const 2) (fun _ => by omega)
   filter_upwards [hev] with n hn
   by_contra hall
   push Not at hall
@@ -1393,7 +1315,7 @@ theorem BooleanPRF.eventually_exists_mem_support_two_mul_sub_two_le_complexity
       PMF.pure true := by
     rw [← _root_.PMF.bind_pure_comp, ← PMF.bind_const (D n) (PMF.pure true)]
     refine PMF.bind_congr_on_support _ _ _ fun f hf => ?_
-    simp [hall f hf]
+    simp only [Function.comp_apply, hall f hf, decide_true]
   rw [hmap, PMF.pure_apply_self, ENNReal.toNNReal_one, NNReal.coe_one] at hn
   norm_num at hn
 
@@ -1452,8 +1374,9 @@ theorem PseudorandomFunction.negligible_complexity_lt_two_mul_sub_two
     by_cases hlt : complexity (fullInterpretation (k := 2))
         (fun x : BitString n => BitString.ofList n (family key (List.ofFn x))) < 2 * n - 2
     · have hlt' := (hproj key).trans_lt hlt
-      simp [hlt, hlt']
-    · simp [hlt]
+      simp only [Function.comp_apply, hlt, hlt', decide_true, le_refl]
+    · simp only [Function.comp_apply, hlt, decide_false, PMF.pure_apply, Bool.true_eq_false,
+        ↓reduceIte, zero_le]
   exact ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) hle
 
 /-- For every `PseudorandomFunction family` and all sufficiently large `n`, there exists an `n`-bit

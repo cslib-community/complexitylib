@@ -12,14 +12,17 @@ import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.QueryBounds
 import Complexity.Computability.Probabilistic.Adaptive
 import Complexity.Computability.Probabilistic.Oracle.Composition
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Computability.Probabilistic.Sampling
+import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Probability.PMF.Bind
-import Complexity.Tactic.PPT
 
 /-!
 # Multi-session zero-knowledge simulator and PRG reduction for sequentially amplified GMW
@@ -72,11 +75,9 @@ sequence yields the single-challenge reduction `gmwSeqViewReduction` with exact 
 
 namespace Cslib.Crypto.GMW
 
-open Probability Complexity Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Probability Complexity Logic.PL Turing.MultiTapeTM
 open _root_.Turing.MultiTapeMachine _root_.Turing.MultiTapePTM
 open scoped NNReal ENNReal
-
-attribute [local fun_prop] ComputableInPolyTime.tidy
 
 /-! ### Step 1: Multi-session rejection-sampling hybrid -/
 
@@ -123,8 +124,7 @@ theorem advantage_iterate_realSessionStep_realPRGPadsSessionStep_le
         (realPRGPadsSessionStep machine generator s m limit att φ w) st)).bind post) ≤
       (K : ℝ≥0) * (7 / 8 : ℝ≥0) ^ att := by
   induction K generalizing st with
-  | zero =>
-    simp [OracleComp.iterate_zero]
+  | zero => simp [OracleComp.iterate_zero]
   | succ K ih =>
     simp only [OracleComp.iterate_succ_bind, ProbComp.eval_bind, PMF.bind_bind]
     have h1 : Game.advantage
@@ -163,13 +163,12 @@ theorem eval_replicate_add_take_drop {α β : Type} (A B : ℕ) (d : ProbComp α
       let ys ← OracleComp.replicate B d
       f xs ys) := by
   induction A generalizing f with
-  | zero =>
-    simp [OracleComp.replicate_zero]
+  | zero => simp [OracleComp.replicate_zero]
   | succ A ih =>
     rw [Nat.succ_add, OracleComp.replicate_succ, OracleComp.replicate_succ]
-    simp only [bind_assoc, bind_map_left, List.take_succ_cons, List.drop_succ_cons]
-    simp only [ProbComp.eval_bind]
-    congr 1; funext x
+    simp only [bind_assoc, bind_map_left, List.take_succ_cons, List.drop_succ_cons,
+      ProbComp.eval_bind]
+    refine congrArg (PMF.bind _) (funext fun x => ?_)
     simpa only [ProbComp.eval_bind] using ih (fun xs ys => f (x :: xs) ys)
 
 private theorem foldl_or_some {β : Type} (xs : List (Option β)) (v : β) :
@@ -185,8 +184,7 @@ private theorem getD_foldl_or_none {β : Type} (xs : List (Option β)) (d : β) 
   | cons x xs ih =>
     cases x with
     | none => exact ih
-    | some v =>
-      simp [List.foldl_cons, Option.or, firstSuccess, foldl_or_some]
+    | some v => simp [List.foldl_cons, Option.or, firstSuccess, foldl_or_some]
 
 /-- One attempt of a session consuming `totalLen φ` pre-sampled pads from `state.2` and updating
 the first-success accumulator `state.1`. -/
@@ -240,8 +238,7 @@ theorem eval_replicate_iterate_attemptWithPadsStep {tapes : ℕ} {Control : Type
       let rest ← OracleComp.replicate B d_pad
       return (attempts.foldl Option.or acc, rest)) := by
   induction att generalizing acc with
-  | zero =>
-    simp [OracleComp.iterate_zero, OracleComp.replicate_zero]
+  | zero => simp [OracleComp.iterate_zero, OracleComp.replicate_zero]
   | succ att ih =>
     have hadd : (att + 1) * totalLen φ + B = totalLen φ + (att * totalLen φ + B) := by ring
     rw [hadd]
@@ -251,11 +248,11 @@ theorem eval_replicate_iterate_attemptWithPadsStep {tapes : ℕ} {Control : Type
         let res ← gmwRealWithPadsOpt generator s m φ w (sessionStep machine limit st.1 2 st.2) p
         OracleComp.iterate att (attemptWithPadsStep machine generator s m limit φ w st)
           (acc.or res, pads'))]
-    simp only [OracleComp.replicate_succ, bind_assoc, bind_map_left, List.foldl_cons]
-    simp only [ProbComp.eval_bind]
-    congr 1; funext p
+    simp only [OracleComp.replicate_succ, bind_assoc, bind_map_left, List.foldl_cons,
+      ProbComp.eval_bind]
+    refine congrArg (PMF.bind _) (funext fun p => ?_)
     rw [PMF.bind_comm]
-    congr 1; funext res
+    refine congrArg (PMF.bind _) (funext fun res => ?_)
     simpa only [ProbComp.eval_bind] using ih (acc.or res)
 
 theorem eval_replicate_sessionWithPadsStep {tapes : ℕ} {Control : Type}
@@ -294,8 +291,7 @@ theorem eval_replicate_iterate_sessionWithPadsStep {tapes : ℕ} {Control : Type
         let p ← OracleComp.replicate (totalLen φ) d_pad
         gmwRealWithPadsOpt generator s m φ w (sessionStep machine limit cur.1 2 cur.2) p)) st) := by
   induction K generalizing st with
-  | zero =>
-    simp [OracleComp.iterate_zero, OracleComp.replicate_zero]
+  | zero => simp [OracleComp.iterate_zero, OracleComp.replicate_zero]
   | succ K ih =>
     have hmul : (K + 1) * (att * totalLen φ) = att * totalLen φ + K * (att * totalLen φ) := by ring
     rw [hmul]
@@ -308,7 +304,7 @@ theorem eval_replicate_iterate_sessionWithPadsStep {tapes : ℕ} {Control : Type
         (K * (att * totalLen φ)))
     simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind] at hstep ⊢
     rw [hstep]
-    congr 1; funext st'
+    refine congrArg (PMF.bind _) (funext fun st' => ?_)
     simpa only [ProbComp.eval_bind] using ih st'
 
 private theorem eval_iterate_congr {α : Type} {f g : α → ProbComp α}
@@ -318,7 +314,7 @@ private theorem eval_iterate_congr {α : Type} {f g : α → ProbComp α}
   | zero => rfl
   | succ K ih =>
     simp only [OracleComp.iterate_succ_bind, ProbComp.eval_bind, h x]
-    congr 1; funext y; exact ih y
+    exact congrArg (PMF.bind _) (funext ih)
 
 theorem eval_replicate_runAllSessionsWithPads_prg {tapes : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM tapes Bool Control Unit)
@@ -376,15 +372,14 @@ theorem eval_replicate_runAllSessionsWithPads_uniform {tapes : ℕ} {Control : T
 
 /-! ### Step 3: Strict polynomial-time certificates for session and multi-session loops -/
 
-@[fun_prop]
-private theorem computableTidilyInPolyTime_optionOr {α β : Type}
-    {encA : α ↪ List Bool} {encB : β ↪ List Bool}
-    {left right : α → Option β}
-    (hleft : ComputableTidilyInPolyTime left encA (encOption encB))
-    (hright : ComputableTidilyInPolyTime right encA (encOption encB)) :
-    ComputableTidilyInPolyTime (fun a => (left a).or (right a)) encA (encOption encB) := by
-  convert hleft.optionIsSome.cond hleft hright using 1
-  funext a; cases left a <;> rfl
+private theorem computableInPolyTime_optionOr {α β : Type}
+    {encA : α ↪ List Bool} {encB : β ↪ List Bool} {left right : α → Option β}
+    (hleft : ComputableInPolyTime left encA (encOption encB))
+    (hright : ComputableInPolyTime right encA (encOption encB)) :
+    ComputableInPolyTime (fun a => (left a).or (right a)) encA (encOption encB) :=
+  (congrArg (ComputableInPolyTime · encA (encOption encB))
+    (by funext a; cases left a <;> rfl)).mp
+    ((hleft.tidy.optionIsSome.computableInPolyTime).ite' hleft hright)
 
 private abbrev SessionCtx (α : Type) (tapes : ℕ) (Control : Type) :=
   α × (ℕ × (ℕ × FiniteConfig tapes Bool Control Unit))
@@ -404,12 +399,12 @@ private theorem isOraclePPTOn_VstarSession {α : Type} {enc : α ↪ List Bool}
       (encPair encUnary encFiniteConfig)
       (fun p => VstarSession (α := α) machine p.1 p.2.1 p.2.2) := by
   let encCfg := encFiniteConfig (k := tapes) (State := Control) (Oracle := Unit)
-  let encCtx := encPair enc (encPair encUnary (encPair encUnary encCfg))
-  exact (isOraclePPTOn_sessionStep machine).preprocess
-    (input := encPair encUnary (encPair encCtx encBits))
-    (prepare := fun p : ℕ × SessionCtx α tapes Control × List Bool =>
-      (p.2.1.2.1, p.2.1.2.2.1, 2, p.2.1.2.2.2))
-    (by dsimp [encCtx, encCfg]; fun_prop)
+  let encSt := encPair encUnary encCfg
+  let encCtx := encPair enc (encPair encUnary encSt)
+  have hctx := (ComputableInPolyTime.snd encUnary (encPair encCtx encBits)).fst'.snd'
+  have h := (isOraclePPTOn_sessionStep machine).preprocess'
+    (hctx.fst'.prod (hctx.snd'.fst'.prod ((ComputableInPolyTime.const 2).prod hctx.snd'.snd')))
+  exact (congrArg (IsOraclePPTOn _ _) (by funext p; rfl)).mp h
 
 theorem isPPTOn_simSessionStep {α Param : Type} {enc : α ↪ List Bool}
     {input : Param ↪ List Bool} {tapes : ℕ} {Control : Type} [Finite Control]
@@ -431,20 +426,16 @@ theorem isPPTOn_simSessionStep {α Param : Type} {enc : α ↪ List Bool}
   let encCfg := encFiniteConfig (k := tapes) (State := Control) (Oracle := Unit)
   let encSt := encPair encUnary encCfg
   let encCtx := encPair enc (encPair encUnary encSt)
-  have hfCtx : ComputableInPolyTime (fun x : SessionCtx α tapes Control => f x.1) encCtx encCNF :=
-    hf.comp (ComputableInPolyTime.fst enc (encPair encUnary encSt))
+  have hfCtx := hf.comp' (ComputableInPolyTime.fst enc (encPair encUnary encSt))
   have hattOpt := isPPTOn_gmwSimAttemptOpt hg hlen hfCtx
     (isOraclePPTOn_VstarSession (α := α) (enc := enc) machine)
-  have hsingle : IsPPTOn input (encOption encSt) (fun p =>
-      gmwSimAttemptOpt generator (n p + 7) (length (n p + 7)) (f (a p))
-        (sessionStep machine (limit p) (st p).1 2 (st p).2)) :=
-    hattOpt.preprocess (input := input)
-      (prepare := fun p => (n p, (a p, (limit p, st p)), ([] : List Bool)))
-      (by dsimp [encCtx, encSt, encCfg]; fun_prop)
-  dsimp only [simSessionStep]
-  exact (hsingle.replicate hatt).map_with
-    (computableInPolyTime_firstSuccess (enc := encSt) (by dsimp [encSt, encCfg]; fun_prop)
-      (by dsimp [encSt, encCfg]; fun_prop))
+  have hsingle := hattOpt.preprocess
+    (hn.prod ((ha.prod (hlimit.prod hst)).prod (.const ([] : List Bool))))
+  have hfirst := computableInPolyTime_firstSuccess (enc := encSt)
+    (hst.comp' (.fst input (encList (encOption encSt))))
+    (.snd input (encList (encOption encSt)))
+  have hres := (hsingle.replicate hatt).map_with (f := fun p xs => firstSuccess (st p) xs) hfirst
+  exact (congrArg (IsPPTOn _ _) (by funext p; rfl)).mp hres
 
 theorem mem_support_simSessionStep {tapes : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM tapes Bool Control Unit)
@@ -484,9 +475,9 @@ theorem isPPTOn_iterate_simSessionStep_finishSessionRun {α Param : Type}
   obtain ⟨cf, hcf⟩ := length_encFiniteConfig_le (k := tapes) (State := Control) (Oracle := Unit)
   let inv (p : Param) (_ : ℕ) (st : ℕ × FiniteConfig tapes Bool Control Unit) : Prop :=
     st.1 ≤ T p ∧ FiniteConfig.SpaceBound (word p).length (T p - st.1) (T p) st.2
-  have hbase (p : Param) : inv p 0 (T p, FiniteConfig.init machine.initial (word p)) := by
-    refine ⟨le_rfl, ?_⟩
-    simpa only [Nat.sub_self] using FiniteConfig.spaceBound_init machine.initial (word p) (T p)
+  have hbase (p : Param) : inv p 0 (T p, FiniteConfig.init machine.initial (word p)) :=
+    ⟨le_rfl, by simpa only [Nat.sub_self] using
+      FiniteConfig.spaceBound_init machine.initial (word p) (T p)⟩
   have hpres (p : Param) (i : ℕ) (st : ℕ × FiniteConfig tapes Bool Control Unit)
       (_ : i < K p) (hst : inv p i st)
       (next : ℕ × FiniteConfig tapes Bool Control Unit)
@@ -497,11 +488,10 @@ theorem isPPTOn_iterate_simSessionStep_finishSessionRun {α Param : Type}
         (T p) (att p) (f (a p)) hnext with rfl | hmem
     · exact hst
     · exact mem_support_sessionStep machine (T p) 2 hst.1 hst.2 hmem
-  have hstep : IsPPTOn (encPair input encSt) encSt (fun pair =>
-      simSessionStep machine generator (n pair.1 + 7) (length (n pair.1 + 7))
-        (T pair.1) (att pair.1) (f (a pair.1)) pair.2) := by
-    apply isPPTOn_simSessionStep machine hg hlen hf
-    all_goals dsimp [encSt, encCfg]; fun_prop
+  have hp1 := ComputableInPolyTime.fst input encSt
+  have hp2 := ComputableInPolyTime.snd input encSt
+  have hstep := isPPTOn_simSessionStep machine hg hlen hf
+    (hn.comp' hp1) (hT.comp' hp1) (hatt.comp' hp1) (ha.comp' hp1) hp2
   have hTPoly : PolyBounded (fun p => (input p).length) T := by
     simpa only [encUnary_apply, List.length_replicate] using hT.polyBounded_length
   have hwordPoly : PolyBounded (fun p => (input p).length) (fun p => (word p).length) := by
@@ -509,24 +499,27 @@ theorem isPPTOn_iterate_simSessionStep_finishSessionRun {α Param : Type}
   have hsizePoly : PolyBounded (fun p => (input p).length)
       (fun p => (2 * cf + 3) * ((word p).length + T p + 1)) :=
     (PolyBounded.const (2 * cf + 3)).mul ((hwordPoly.add hTPoly).add (.const 1))
+  have hinit := hT.tidy.prod
+    (ComputableTidilyInPolyTime.finiteConfig_init (k := tapes) (Oracle := Unit)
+      hword.tidy machine.initial)
   have hiter := (IsPPTOn.iterateWith_spec (input := input) (stateEncoding := encSt)
     (count := K) (initial := fun p => (T p, FiniteConfig.init machine.initial (word p)))
-    (step := fun p st => simSessionStep machine generator (n p + 7) (length (n p + 7))
-      (T p) (att p) (f (a p)) st)
-    hK.tidy (by dsimp [encSt, encCfg]; fun_prop) hstep inv hbase hpres hsizePoly
+    (step := fun p => simSessionStep machine generator (n p + 7) (length (n p + 7))
+      (T p) (att p) (f (a p)))
+    hK.tidy hinit hstep inv hbase hpres hsizePoly
     (by
       intro p i st _ ⟨h1, h2⟩
-      have hcfg := hcf (word p).length (T p - st.1) (T p) st.2 h2
+      have hcfg : (encFiniteConfig st.2).length ≤ cf * (2 * ((word p).length + T p + 1)) :=
+        (hcf (word p).length (T p - st.1) (T p) st.2 h2).trans (Nat.mul_le_mul_left cf (by omega))
       have hstlen : (encSt st).length = 2 * st.1 + 1 + (encCfg st.2).length := by
         simp only [encSt, length_encPair, encUnary_apply, List.length_replicate]
-      have hsub : T p - st.1 ≤ T p := Nat.sub_le _ _
       dsimp only [encCfg] at hstlen
-      nlinarith)).1
-  exact hiter.bind_with ((isPPTOn_finishSessionRun machine).preprocess
-    (input := encPair input encSt)
-    (prepare := fun pair : Param × (ℕ × FiniteConfig tapes Bool Control Unit) =>
-      (T pair.1, pair.2))
-    (by dsimp [encSt, encCfg]; fun_prop))
+      rw [Nat.add_mul, Nat.mul_assoc, show 2 * (cf * ((word p).length + T p + 1)) =
+        cf * (2 * ((word p).length + T p + 1)) by ring]
+      omega)).1
+  have hfinish := (isPPTOn_finishSessionRun machine).preprocess ((hT.comp' hp1).prod hp2)
+  have hres := hiter.bind_with (second := fun p st' => finishSessionRun machine (T p) st') hfinish
+  exact (congrArg (IsPPTOn _ _) (by funext p; rfl)).mp hres
 
 theorem length_enc_of_mem_support_sessionStep {tapes : ℕ} {Control : Type} [Finite Control]
     (machine : _root_.Turing.MultiTapePTM tapes Bool Control Unit) :
@@ -541,12 +534,10 @@ theorem length_enc_of_mem_support_sessionStep {tapes : ℕ} {Control : Type} [Fi
   let L₀ := (encCfg st.2).length
   let T₀ := L₀ + st.1
   have hbase : FiniteConfig.SpaceBound L₀ (T₀ - st.1) limit st.2 := by
-    have hsub : T₀ - st.1 = L₀ := Nat.add_sub_cancel _ _
-    rw [hsub]
+    rw [show T₀ - st.1 = L₀ from Nat.add_sub_cancel _ _]
     exact (spaceBound_of_encFiniteConfig st.2).mono le_rfl le_rfl (Nat.zero_le _)
   obtain ⟨hrem, hsb⟩ := mem_support_sessionStep machine limit q
     (T := T₀) (by dsimp [T₀]; omega) hbase hres
-  have hcfg := hcf L₀ (T₀ - res.1) limit res.2 hsb
   have hst_len : (encSt st).length = 2 * st.1 + 1 + L₀ := by
     simp only [encSt, L₀, length_encPair, encUnary_apply, List.length_replicate]
   have hres_len : (encOption encSt (some res)).length =
@@ -554,8 +545,11 @@ theorem length_enc_of_mem_support_sessionStep {tapes : ℕ} {Control : Type} [Fi
     simp [encOption, encSt]
   have hT : T₀ - res.1 ≤ L₀ + st.1 := by dsimp [T₀]; omega
   have hrem' : res.1 ≤ L₀ + st.1 := hrem
-  dsimp only [encCfg, encSt] at hres_len hst_len hcfg
-  nlinarith
+  have hcfg : (encFiniteConfig res.2).length ≤ cf * (2 * (limit + (encSt st).length + 1)) :=
+    (hcf L₀ (T₀ - res.1) limit res.2 hsb).trans (Nat.mul_le_mul_left cf (by omega))
+  dsimp only [encCfg, encSt] at hres_len hst_len hcfg ⊢
+  rw [Nat.add_mul, show 4 * cf = 2 * (cf * 2) by omega, Nat.mul_assoc, Nat.mul_assoc]
+  omega
 
 theorem isPPTOn_attemptWithPadsStep {α Param : Type}
     {enc : α ↪ List Bool} {input : Param ↪ List Bool}
@@ -581,19 +575,22 @@ theorem isPPTOn_attemptWithPadsStep {α Param : Type}
         (f (a p)) (w p) (st p) (state p)) := by
   let encCfg := encFiniteConfig (k := tapes) (State := Control) (Oracle := Unit)
   let encSt := encPair encUnary encCfg
-  let encCtx := encPair enc (encPair encUnary encSt)
-  have htotal : ComputableInPolyTime (fun p => totalLen (f (a p))) input encUnary :=
-    (computableInPolyTime_totalLen hf).comp ha
-  have hreal : IsPPTOn input (encOption encSt) (fun p =>
-      gmwRealWithPadsOpt generator (s p) (m p) (f (a p)) (w p)
-        (VstarSession machine (n p) (a p, (limit p, st p)) [])
-        ((state p).2.take (totalLen (f (a p))))) := by
-    exact isPPTOn_gmwRealWithPadsOpt hg (isOraclePPTOn_VstarSession (α := α) (enc := enc) machine)
-      hn hs hm (by fun_prop) (by fun_prop) hw
-      (by fun_prop) (by fun_prop)
-  dsimp only [attemptWithPadsStep, VstarSession] at hreal ⊢
-  simp only [bind_pure_comp]
-  exact hreal.map_with (by dsimp [encSt, encCfg]; fun_prop)
+  have htotal := (computableInPolyTime_totalLen hf).comp' ha
+  have htake := (ComputableTidilyInPolyTime.takeUnary encBits).computableInPolyTime.comp'
+    (hstate.snd'.prod htotal)
+  have hreal := isPPTOn_gmwRealWithPadsOpt hg
+    (isOraclePPTOn_VstarSession (α := α) (enc := enc) machine)
+    hn hs hm (ha.prod (hlimit.prod hst)) (.const ([] : List Bool)) hw (hf.comp' ha) htake
+  have hp1 := ComputableInPolyTime.fst input (encOption encSt)
+  have hp2 := ComputableInPolyTime.snd input (encOption encSt)
+  have hdrop := (ComputableTidilyInPolyTime.dropUnary (encA := encBits)
+    (encL := encList encBits)).computableInPolyTime.comp'
+    ((hstate.comp' hp1).snd'.prod (htotal.comp' hp1))
+  have hpost := (computableInPolyTime_optionOr (hstate.comp' hp1).fst' hp2).prod hdrop
+  have hres := hreal.map_with
+    (f := fun p res => ((state p).1.or res, (state p).2.drop (totalLen (f (a p))))) hpost
+  exact (congrArg (IsPPTOn _ _) (by funext p; simp only [attemptWithPadsStep, VstarSession,
+    bind_pure_comp])).mp hres
 
 theorem mem_support_attemptWithPadsStep {tapes : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM tapes Bool Control Unit)
@@ -611,13 +608,9 @@ theorem mem_support_attemptWithPadsStep {tapes : ℕ} {Control : Type}
   refine ⟨fun v hv => ?_, length_encList_sublist encBits (List.drop_sublist _ _)⟩
   dsimp only at hv
   cases h1 : state.1 with
-  | some u =>
-    rw [h1] at hv
-    exact Or.inl hv
+  | some u => rw [h1] at hv; exact Or.inl hv
   | none =>
-    rw [h1] at hv
-    simp only [Option.or] at hv
-    subst hv
+    rw [h1] at hv; simp only [Option.or] at hv; subst hv
     exact Or.inr (mem_support_gmwRealWithPadsOpt generator s m φ w _ _ hres)
 
 theorem isPPTOn_sessionWithPadsStep_and_support {α Param : Type}
@@ -656,9 +649,7 @@ theorem isPPTOn_sessionWithPadsStep_and_support {α Param : Type}
     (∀ v, cur.1 = some v →
       v ∈ OracleComp.support (sessionStep machine (limit p) (state p).1.1 2 (state p).1.2)) ∧
     (encList encBits cur.2).length ≤ (encList encBits (state p).2).length
-  have hbase (p : Param) : inv p 0 (none, (state p).2) := by
-    refine ⟨fun _ h => ?_, le_rfl⟩
-    cases h
+  have hbase (p : Param) : inv p 0 (none, (state p).2) := ⟨by rintro _ ⟨⟩, le_rfl⟩
   have hpres (p : Param) (i : ℕ)
       (cur : Option (ℕ × FiniteConfig tapes Bool Control Unit) × List (List Bool))
       (_ : i < att p) (hcur : inv p i cur)
@@ -672,30 +663,30 @@ theorem isPPTOn_sessionWithPadsStep_and_support {α Param : Type}
     rcases h1 v hv with hprev | hmem
     · exact hcur.1 v hprev
     · exact hmem
-  have hstep : IsPPTOn (encPair input encLoop) encLoop (fun pair =>
-      attemptWithPadsStep machine generator (s pair.1) (m pair.1) (limit pair.1)
-        (f (a pair.1)) (w pair.1) (state pair.1).1 pair.2) := by
-    apply isPPTOn_attemptWithPadsStep machine hg hf (n := fun pair => n pair.1)
-    all_goals dsimp [encLoop, encSt, encCfg]; fun_prop
+  have hp1 := ComputableInPolyTime.fst input encLoop
+  have hp2 := ComputableInPolyTime.snd input encLoop
+  have hstep := isPPTOn_attemptWithPadsStep machine hg hf
+    (hn.comp' hp1) (hs.comp' hp1) (hm.comp' hp1) (hlimit.comp' hp1)
+    (ha.comp' hp1) (hw.comp' hp1) (hstate.comp' hp1).fst' hp2
   have hlimPoly : PolyBounded (fun p => (input p).length) limit := by
     simpa only [encUnary_apply, List.length_replicate] using hlimit.polyBounded_length
   have hstPoly : PolyBounded (fun p => (input p).length)
-      (fun p => (encSt (state p).1).length) :=
-    (hstate.fst').polyBounded_length
+      (fun p => (encSt (state p).1).length) := (hstate.fst').polyBounded_length
   have hpadsPoly : PolyBounded (fun p => (input p).length)
-      (fun p => (encList encBits (state p).2).length) :=
-    (hstate.snd').polyBounded_length
+      (fun p => (encList encBits (state p).2).length) := (hstate.snd').polyBounded_length
   have hsizePoly : PolyBounded (fun p => (input p).length)
       (fun p => 2 * (C * (limit p + (encSt (state p).1).length + 1) + 1) +
         (encList encBits (state p).2).length) :=
     ((PolyBounded.const 2).mul
       (((PolyBounded.const C).mul ((hlimPoly.add hstPoly).add (.const 1))).add (.const 1))).add
       hpadsPoly
+  have hinit := ((ComputableInPolyTime.const (encOut := encOption encSt)
+    (none : Option (ℕ × FiniteConfig tapes Bool Control Unit))).prod hstate.snd').tidy
   have hiter := IsPPTOn.iterateWith_spec (input := input) (stateEncoding := encLoop)
     (count := att) (initial := fun p => (none, (state p).2))
-    (step := fun p cur => attemptWithPadsStep machine generator (s p) (m p) (limit p)
-      (f (a p)) (w p) (state p).1 cur)
-    hatt.tidy (by dsimp [encLoop, encSt, encCfg]; fun_prop) hstep inv hbase hpres hsizePoly
+    (step := fun p => attemptWithPadsStep machine generator (s p) (m p) (limit p)
+      (f (a p)) (w p) (state p).1)
+    hatt.tidy hinit hstep inv hbase hpres hsizePoly
     (by
       intro p i cur _ ⟨h1, h2⟩
       have hcur_len : (encLoop cur).length =
@@ -706,11 +697,17 @@ theorem isPPTOn_sessionWithPadsStep_and_support {α Param : Type}
         cases hopt_eq : cur.1 with
         | none => simp [encOption]
         | some v => exact hC (limit p) 2 (state p).1 v (h1 v hopt_eq)
-      nlinarith)
+      omega)
   refine ⟨?_, fun p next hnext => ?_⟩
-  · dsimp only [sessionWithPadsStep]
-    simp only [bind_pure_comp]
-    exact hiter.1.map_with (by dsimp [encLoop, encSt, encCfg]; fun_prop)
+  · have hgetD := (hp2.fst'.tidy.optionGetDWithInput
+      (hstate.comp' hp1).fst'.tidy).computableInPolyTime
+    have hpost := hgetD.prod hp2.snd'
+    have hres := hiter.1.map_with
+      (f := fun (p : Param)
+        (cur : Option (ℕ × FiniteConfig tapes Bool Control Unit) × List (List Bool)) =>
+        (cur.1.getD (state p).1, cur.2)) hpost
+    exact (congrArg (IsPPTOn _ _) (by funext p; simp only [sessionWithPadsStep,
+      bind_pure_comp])).mp hres
   · simp only [sessionWithPadsStep, bind_pure_comp, ProbComp.eval_map,
       PMF.mem_support_map_iff] at hnext
     obtain ⟨cur, hcur, rfl⟩ := hnext
@@ -746,28 +743,20 @@ theorem isPPTOn_runAllSessionsWithPads {α Param : Type}
   let encSt := encPair encUnary encCfg
   let encOuter := encPair encSt (encList encBits)
   obtain ⟨cf, hcf⟩ := length_encFiniteConfig_le (k := tapes) (State := Control) (Oracle := Unit)
-  have hstep_and_supp := isPPTOn_sessionWithPadsStep_and_support
-    (input := encPair input encOuter) machine hg hf
-    (n := fun pair => n pair.1) (s := fun pair => s pair.1) (m := fun pair => m pair.1)
-    (limit := fun pair => T pair.1) (att := fun pair => att pair.1)
-    (a := fun pair => a pair.1) (w := fun pair => w pair.1) (state := fun pair => pair.2)
-    (by dsimp [encOuter, encSt, encCfg]; fun_prop)
-    (by dsimp [encOuter, encSt, encCfg]; fun_prop)
-    (by dsimp [encOuter, encSt, encCfg]; fun_prop)
-    (by dsimp [encOuter, encSt, encCfg]; fun_prop)
-    (by dsimp [encOuter, encSt, encCfg]; fun_prop)
-    (by dsimp [encOuter, encSt, encCfg]; fun_prop)
-    (by dsimp [encOuter, encSt, encCfg]; fun_prop)
-    (by dsimp [encOuter, encSt, encCfg]; fun_prop)
+  have hp1 := ComputableInPolyTime.fst input encOuter
+  have hp2 := ComputableInPolyTime.snd input encOuter
+  have hstep_and_supp := isPPTOn_sessionWithPadsStep_and_support machine hg hf
+    (hn.comp' hp1) (hs.comp' hp1) (hm.comp' hp1) (hT.comp' hp1) (hatt.comp' hp1)
+    (ha.comp' hp1) (hw.comp' hp1) hp2
   let inv (p : Param) (_ : ℕ)
       (cur : (ℕ × FiniteConfig tapes Bool Control Unit) × List (List Bool)) : Prop :=
     cur.1.1 ≤ T p ∧
     FiniteConfig.SpaceBound (word p).length (T p - cur.1.1) (T p) cur.1.2 ∧
     (encList encBits cur.2).length ≤ (encList encBits (pads p)).length
   have hbase (p : Param) :
-      inv p 0 ((T p, FiniteConfig.init machine.initial (word p)), pads p) := by
-    refine ⟨le_rfl, ?_, le_rfl⟩
-    simpa only [Nat.sub_self] using FiniteConfig.spaceBound_init machine.initial (word p) (T p)
+      inv p 0 ((T p, FiniteConfig.init machine.initial (word p)), pads p) :=
+    ⟨le_rfl, by simpa only [Nat.sub_self] using
+      FiniteConfig.spaceBound_init machine.initial (word p) (T p), le_rfl⟩
   have hpres (p : Param) (i : ℕ)
       (cur : (ℕ × FiniteConfig tapes Bool Control Unit) × List (List Bool))
       (_ : i < K p) (hcur : inv p i cur)
@@ -778,9 +767,7 @@ theorem isPPTOn_runAllSessionsWithPads {α Param : Type}
     obtain ⟨h1, h2⟩ := hstep_and_supp.2 (p, cur) next hnext
     dsimp only at h1 h2
     rcases h1 with hst_eq | hmem
-    · refine ⟨?_, ?_, h2.trans hcur.2.2⟩
-      · rw [hst_eq]; exact hcur.1
-      · rw [hst_eq]; exact hcur.2.1
+    · exact ⟨hst_eq ▸ hcur.1, hst_eq ▸ hcur.2.1, h2.trans hcur.2.2⟩
     · obtain ⟨hrem, hsb⟩ := mem_support_sessionStep machine (T p) 2 hcur.1 hcur.2.1 hmem
       exact ⟨hrem, hsb, h2.trans hcur.2.2⟩
   have hTPoly : PolyBounded (fun p => (input p).length) T := by
@@ -788,37 +775,42 @@ theorem isPPTOn_runAllSessionsWithPads {α Param : Type}
   have hwordPoly : PolyBounded (fun p => (input p).length) (fun p => (word p).length) := by
     simpa only [encBits_apply] using hword.polyBounded_length
   have hpadsPoly : PolyBounded (fun p => (input p).length)
-      (fun p => (encList encBits (pads p)).length) :=
-    hpads.polyBounded_length
+      (fun p => (encList encBits (pads p)).length) := hpads.polyBounded_length
   have hsizePoly : PolyBounded (fun p => (input p).length)
       (fun p => 2 * ((2 * cf + 3) * ((word p).length + T p + 1)) + 1 +
         (encList encBits (pads p)).length) :=
     (((PolyBounded.const 2).mul
       ((PolyBounded.const (2 * cf + 3)).mul ((hwordPoly.add hTPoly).add (.const 1)))).add
       (.const 1)).add hpadsPoly
+  have hinit := (hT.tidy.prod
+    (ComputableTidilyInPolyTime.finiteConfig_init (k := tapes) (Oracle := Unit)
+      hword.tidy machine.initial)).prod
+    hpads.tidy
   have hiter := (IsPPTOn.iterateWith_spec (input := input) (stateEncoding := encOuter)
     (count := K)
     (initial := fun p => ((T p, FiniteConfig.init machine.initial (word p)), pads p))
-    (step := fun p cur => sessionWithPadsStep machine generator (s p) (m p) (T p) (att p)
-      (f (a p)) (w p) cur)
-    hK.tidy (by dsimp [encOuter, encSt, encCfg]; fun_prop) hstep_and_supp.1 inv hbase hpres
-    hsizePoly
+    (step := fun p => sessionWithPadsStep machine generator (s p) (m p) (T p) (att p)
+      (f (a p)) (w p))
+    hK.tidy hinit hstep_and_supp.1 inv hbase hpres hsizePoly
     (by
       intro p i cur _ ⟨h1, h2, h3⟩
-      have hcfg := hcf (word p).length (T p - cur.1.1) (T p) cur.1.2 h2
+      have hcfg : (encFiniteConfig cur.1.2).length ≤ cf * (2 * ((word p).length + T p + 1)) :=
+        (hcf (word p).length (T p - cur.1.1) (T p) cur.1.2 h2).trans
+          (Nat.mul_le_mul_left cf (by omega))
       have houtlen : (encOuter cur).length =
           2 * (2 * cur.1.1 + 1 + (encCfg cur.1.2).length) + 1 +
             (encList encBits cur.2).length := by
         simp only [encOuter, encSt, length_encPair, encUnary_apply, List.length_replicate]
-      have hsub : T p - cur.1.1 ≤ T p := Nat.sub_le _ _
       dsimp only [encCfg] at houtlen
-      nlinarith)).1
-  exact hiter.bind_with ((isPPTOn_finishSessionRun machine).preprocess
-    (input := encPair input encOuter)
-    (prepare := fun pair :
-      Param × ((ℕ × FiniteConfig tapes Bool Control Unit) × List (List Bool)) =>
-      (T pair.1, pair.2.1))
-    (by dsimp [encOuter, encSt, encCfg]; fun_prop))
+      rw [Nat.add_mul, Nat.mul_assoc, show 2 * (cf * ((word p).length + T p + 1)) =
+        cf * (2 * ((word p).length + T p + 1)) by ring]
+      omega)).1
+  have hfinish := (isPPTOn_finishSessionRun machine).preprocess ((hT.comp' hp1).prod hp2.fst')
+  have hres := hiter.bind_with
+    (second := fun (p : Param)
+      (cur : (ℕ × FiniteConfig tapes Bool Control Unit) × List (List Bool)) =>
+      finishSessionRun machine (T p) cur.1) hfinish
+  exact (congrArg (IsPPTOn _ _) (by funext p; rfl)).mp hres
 
 /-! ### Step 4: Multi-session simulator `gmwSeqSimulator` and reduction `gmwSeqViewReduction` -/
 
@@ -871,24 +863,17 @@ theorem isPPTOn_gmwSeqSimulator {α : Type} {enc : α ↪ List Bool}
   let d := hV.2.choose_spec.choose_spec.choose_spec.choose_spec.choose_spec.choose
   have hword : ComputableInPolyTime encIn encIn encBits :=
     ComputableInPolyTime.of_eq fun _ => rfl
-  have hclockBits : ComputableInPolyTime (fun w : List Bool => c * (w.length + 1) ^ d)
-      encBits encUnary := by fun_prop
-  have hT : ComputableInPolyTime (fun p : ℕ × α × List Bool => c * ((encIn p).length + 1) ^ d)
-      encIn encUnary := hclockBits.comp hword
-  have hmain := isPPTOn_iterate_simSessionStep_finishSessionRun (input := encIn) machine
-    hg hlen hf
-    (n := fun p => p.1)
-    (T := fun p => c * ((encIn p).length + 1) ^ d)
-    (att := fun p => p.1 + 1)
-    (K := fun p => k p.1)
-    (a := fun p => p.2.1)
-    (word := encIn)
-    (by dsimp [encIn]; fun_prop) hT
-    (by dsimp [encIn]; fun_prop)
-    (by dsimp [encIn]; fun_prop)
-    (by dsimp [encIn]; fun_prop) hword
-  refine hmain.congr fun ⟨n, a, z⟩ => ?_
-  simp only [gmwSeqSimulator, encIn, hV, ↓reduceDIte, machine, c, d]
+  have hclockBits := (ComputableInPolyTime.const c).unary_mul'
+    ((ComputableInPolyTime.unary_pow d).comp'
+      (ComputableInPolyTime.length_bits.unary_add' (.const 1)))
+  have hT := hclockBits.comp' hword
+  have hn := ComputableInPolyTime.fst encUnary (encPair enc encBits)
+  have ha := (ComputableInPolyTime.snd encUnary (encPair enc encBits)).fst'
+  have hmain := isPPTOn_iterate_simSessionStep_finishSessionRun machine
+    hg hlen hf hn hT (hn.unary_add' (.const 1)) (hk.comp' hn) ha hword
+  exact (congrArg (IsPPTOn _ _) (by
+    funext ⟨n, a, z⟩
+    simp only [gmwSeqSimulator, encIn, hV, ↓reduceDIte, machine, c, d])).mp hmain
 
 /-- Single-challenge PRG distinguisher for the `k n`-session GMW view hybrid.
 It uses `sequenceTest` to splice `challenge` into the flat sequence of
@@ -943,8 +928,7 @@ private theorem eval_gmwSeqInteract_eq_machine_of_isOraclePPTOn {α : Type} {enc
           (c * ((encPair encUnary (encPair enc encBits) (n, a, z)).length + 1) ^ d)
           (encPair encUnary (encPair enc encBits) (n, a, z)))) := by
   simp only [gmwSeqInteract, ProbComp.eval_bind, eval_runSeq]
-  congr 1; funext coinsList
-  congr 1
+  refine congrArg (PMF.bind _) (funext fun coinsList => congrArg (PMF.map Prod.fst) ?_)
   have h := hspec (n, a, z) (Bool × List (List Bool × List (List Bool)))
     (fun q state => PMF.pure (seqStep (honestReply1 generator m φ) (honestReply2 s φ) q.2 state))
     (false, coinsList)
@@ -1061,6 +1045,92 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
   rw [hreal_eq, hsim_eq, ← hseq]
   exact (Game.advantage_triangle _ guessGame _).trans (add_le_add_left h1 _)
 
+private theorem isPPTOn_gmwSeqViewReduction_aux {α Aux : Type}
+    {enc : α ↪ List Bool} {encAux : Aux ↪ List Bool}
+    {generator : List Bool → List Bool} {length k : ℕ → ℕ} {f : α → CNF ℕ}
+    {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
+    {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
+    {zV zA : Aux → List Bool}
+    (hzV : ComputableInPolyTime zV encAux encBits)
+    (hzA : ComputableInPolyTime zA encAux encBits)
+    (hg : ComputableInPolyTime generator encBits encBits)
+    (hlen : ∀ s, (generator s).length = length s.length)
+    (hf : ComputableInPolyTime f enc encCNF)
+    (hk : ComputableInPolyTime k encUnary encUnary)
+    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
+      (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+      (fun ((n, a, z'), view) => adversary n a z' view)) :
+    IsPPTOn
+      (encPair (encPair encUnary (encPair enc (encPair encBits encAux))) encBits) encBool
+      (fun ((n, a, w, aux), challenge) =>
+        gmwSeqViewReduction enc generator length f k Vstar
+          (fun n a _ view => adversary n a (zA aux) view) n a w (zV aux) challenge) := by
+  let encIn := encPair encUnary (encPair enc encBits)
+  let input := encPair encUnary (encPair enc (encPair encBits encAux))
+  let tapes := hV.2.choose
+  let Control := hV.2.choose_spec.choose
+  have : Finite Control := hV.2.choose_spec.choose_spec.choose
+  let machine := hV.2.choose_spec.choose_spec.choose_spec.choose
+  let c := hV.2.choose_spec.choose_spec.choose_spec.choose_spec.choose
+  let d := hV.2.choose_spec.choose_spec.choose_spec.choose_spec.choose_spec.choose
+  have htotal := computableInPolyTime_totalLen hf
+  have hlength := PRG.polyTime_length hg hlen
+  have hn_in := ComputableInPolyTime.fst encUnary (encPair enc (encPair encBits encAux))
+  have hrest_in := ComputableInPolyTime.snd encUnary (encPair enc (encPair encBits encAux))
+  have ha_in := hrest_in.fst'
+  have hw_in := hrest_in.snd'.fst'
+  have haux_in := hrest_in.snd'.snd'
+  let wordFn (p : ℕ × (α × (List Bool × Aux))) : List Bool :=
+    encIn (p.1, p.2.1, zV p.2.2.2)
+  have hwordFn : ComputableInPolyTime wordFn input encBits :=
+    (ComputableInPolyTime.of_eq (encIn := encIn) (encOut := encBits) fun _ => rfl).comp'
+      (hn_in.prod (ha_in.prod (hzV.comp' haux_in)))
+  have hclockBits := (ComputableInPolyTime.const c).unary_mul'
+    ((ComputableInPolyTime.unary_pow d).comp'
+      (ComputableInPolyTime.length_bits.unary_add' (.const 1)))
+  have hTFn := hclockBits.comp' hwordFn
+  let encTestIn := encPair (encPair input encBits) (encList encBits)
+  have hqp := (ComputableInPolyTime.fst (encPair input encBits) (encList encBits)).fst'
+  have hqn := hn_in.comp' hqp
+  have hqs := hqn.unary_add' (.const 7)
+  have hrun := isPPTOn_runAllSessionsWithPads machine hg hf
+    hqn hqs (hlength.comp' hqs) (hTFn.comp' hqp) (hqn.unary_add' (.const 1)) (hk.comp' hqn)
+    (ha_in.comp' hqp) (hw_in.comp' hqp) (hwordFn.comp' hqp)
+    (.snd (encPair input encBits) (encList encBits))
+  have hrp := (ComputableInPolyTime.fst encTestIn encBits).fst'.fst'
+  have hadvPrep := hadv.preprocess
+    (((hn_in.comp' hrp).prod ((ha_in.comp' hrp).prod (hzA.comp' (haux_in.comp' hrp)))).prod
+      (.snd encTestIn encBits))
+  have htest := hrun.bind_with
+    (second := fun (q : ((ℕ × (α × (List Bool × Aux))) × List Bool) × List (List Bool))
+      (view : List Bool) => adversary q.1.1.1 q.1.1.2.1 (zA q.1.1.2.2.2) view) hadvPrep
+  have hp1 := ComputableInPolyTime.fst input encBits
+  have hn1 := hn_in.comp' hp1
+  have hs1 := hn1.unary_add' (.const 7)
+  have hm1 := hlength.comp' hs1
+  have ha1 := ha_in.comp' hp1
+  have hcount1 := (hk.comp' hn1).unary_mul'
+    ((hn1.unary_add' (.const 1)).unary_mul' (htotal.comp' ha1))
+  have hseq := isPPTOn_sequenceTest (input := encPair input encBits) (sample := encBits)
+    (replacement := fun p => BitString.sampleList (length (p.1.1 + 7)))
+    (original := fun p => generator <$> BitString.sampleList (p.1.1 + 7))
+    (count := fun p => k p.1.1 * ((p.1.1 + 1) * totalLen (f p.1.2.1)))
+    (test := fun p xs => do
+      let view ← runAllSessionsWithPads machine generator
+        (p.1.1 + 7) (length (p.1.1 + 7))
+        (c * ((wordFn p.1).length + 1) ^ d)
+        (p.1.1 + 1) (k p.1.1)
+        (f p.1.2.1) p.1.2.2.1 (wordFn p.1) xs
+      adversary p.1.1 p.1.2.1 (zA p.1.2.2.2) view)
+    (challenge := fun p => p.2)
+    (isPPTOn_sampleList.preprocess hm1)
+    ((isPPTOn_sampleList.preprocess hs1).map hg)
+    hcount1 htest (ComputableInPolyTime.snd input encBits)
+  exact (congrArg (IsPPTOn _ _) (by
+    funext ⟨⟨n, a, w, aux⟩, challenge⟩
+    simp only [gmwSeqViewReduction, encIn, hV, ↓reduceDIte, machine, c, d, wordFn])).mp hseq
+
 /-- `gmwSeqViewReduction` has a strict uniform clock polynomial in its complete encoded input
 `((1^n, (a, (w, z))), challenge)`. -/
 theorem isPPTOn_gmwSeqViewReduction {α : Type} {enc : α ↪ List Bool}
@@ -1079,80 +1149,11 @@ theorem isPPTOn_gmwSeqViewReduction {α : Type} {enc : α ↪ List Bool}
       (encPair (encPair encUnary (encPair enc (encPair encBits encBits))) encBits) encBool
       (fun ((n, a, w, z), challenge) =>
         gmwSeqViewReduction enc generator length f k Vstar adversary n a w z challenge) := by
-  let encIn := encPair encUnary (encPair enc encBits)
-  let input := encPair encUnary (encPair enc (encPair encBits encBits))
-  let tapes := hV.2.choose
-  let Control := hV.2.choose_spec.choose
-  have : Finite Control := hV.2.choose_spec.choose_spec.choose
-  let machine := hV.2.choose_spec.choose_spec.choose_spec.choose
-  let c := hV.2.choose_spec.choose_spec.choose_spec.choose_spec.choose
-  let d := hV.2.choose_spec.choose_spec.choose_spec.choose_spec.choose_spec.choose
-  have htotal := computableInPolyTime_totalLen hf
-  have hlength := PRG.polyTime_length hg hlen
-  let wordFn (p : ℕ × (α × (List Bool × List Bool))) : List Bool :=
-    encIn (p.1, p.2.1, p.2.2.2)
-  have hwordFn : ComputableInPolyTime wordFn input encBits :=
-    (ComputableInPolyTime.of_eq (encIn := encIn) (encOut := encBits) fun _ => rfl).comp
-      (by dsimp [input, encIn]; fun_prop)
-  have hclockBits : ComputableInPolyTime (fun w : List Bool => c * (w.length + 1) ^ d)
-      encBits encUnary := by fun_prop
-  have hTFn : ComputableInPolyTime (fun p => c * ((wordFn p).length + 1) ^ d)
-      input encUnary := hclockBits.comp hwordFn
-  let encTestIn := encPair (encPair input encBits) (encList encBits)
-  have hrun : IsPPTOn encTestIn encBits
-      (fun q : ((ℕ × (α × (List Bool × List Bool))) × List Bool) × List (List Bool) =>
-        runAllSessionsWithPads machine generator
-          (q.1.1.1 + 7) (length (q.1.1.1 + 7))
-          (c * ((wordFn q.1.1).length + 1) ^ d)
-          (q.1.1.1 + 1) (k q.1.1.1)
-          (f q.1.1.2.1) q.1.1.2.2.1 (wordFn q.1.1) q.2) := by
-    apply isPPTOn_runAllSessionsWithPads (input := encTestIn) machine hg hf
-      (n := fun q => q.1.1.1)
-      (s := fun q => q.1.1.1 + 7)
-      (m := fun q => length (q.1.1.1 + 7))
-      (T := fun q => c * ((wordFn q.1.1).length + 1) ^ d)
-      (att := fun q => q.1.1.1 + 1)
-      (K := fun q => k q.1.1.1)
-      (a := fun q => q.1.1.2.1)
-      (w := fun q => q.1.1.2.2.1)
-      (word := fun q => wordFn q.1.1)
-      (pads := fun q => q.2)
-    all_goals dsimp only [encTestIn, input]; fun_prop
-  have htest : IsPPTOn encTestIn encBool
-      (fun q : ((ℕ × (α × (List Bool × List Bool))) × List Bool) × List (List Bool) => do
-        let view ← runAllSessionsWithPads machine generator
-          (q.1.1.1 + 7) (length (q.1.1.1 + 7))
-          (c * ((wordFn q.1.1).length + 1) ^ d)
-          (q.1.1.1 + 1) (k q.1.1.1)
-          (f q.1.1.2.1) q.1.1.2.2.1 (wordFn q.1.1) q.2
-        adversary q.1.1.1 q.1.1.2.1 q.1.1.2.2.2 view) := by
-    apply IsPPTOn.bind_with hrun
-    exact hadv.preprocess
-      (input := encPair encTestIn encBits)
-      (prepare := fun r => ((r.1.1.1.1, r.1.1.1.2.1, r.1.1.1.2.2.2), r.2))
-      (by dsimp [encTestIn, input]; fun_prop)
-  have hseq : IsPPTOn (encPair input encBits) encBool
-      (fun p : (ℕ × (α × (List Bool × List Bool))) × List Bool =>
-        sequenceTest
-          (BitString.sampleList (length (p.1.1 + 7)))
-          (generator <$> BitString.sampleList (p.1.1 + 7))
-          (k p.1.1 * ((p.1.1 + 1) * totalLen (f p.1.2.1)))
-          (fun pads => do
-            let view ← runAllSessionsWithPads machine generator
-              (p.1.1 + 7) (length (p.1.1 + 7))
-              (c * ((wordFn p.1).length + 1) ^ d)
-              (p.1.1 + 1) (k p.1.1)
-              (f p.1.2.1) p.1.2.2.1 (wordFn p.1) pads
-            adversary p.1.1 p.1.2.1 p.1.2.2.2 view)
-          p.2) := by
-    apply isPPTOn_sequenceTest (sample := encBits)
-    · exact isPPTOn_sampleList.preprocess (by dsimp [input]; fun_prop)
-    · exact (isPPTOn_sampleList.preprocess (by dsimp [input]; fun_prop)).map hg
-    · dsimp [input]; fun_prop
-    · exact htest
-    · dsimp [input]; fun_prop
-  refine hseq.congr fun ⟨⟨n, a, w, z⟩, challenge⟩ => ?_
-  simp only [gmwSeqViewReduction, encIn, hV, ↓reduceDIte, machine, c, d, wordFn]
+  have h := isPPTOn_gmwSeqViewReduction_aux
+    (.id' (encIn := encBits)) (.id' (encIn := encBits)) hg hlen hf hk hV hadv
+  exact (congrArg (IsPPTOn _ _) (by
+    funext ⟨⟨n, a, w, z⟩, challenge⟩
+    simp only [gmwSeqViewReduction])).mp h
 
 private theorem isPPTOn_gmwSeqViewReduction_pair {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length k : ℕ → ℕ} {f : α → CNF ℕ}
@@ -1171,83 +1172,9 @@ private theorem isPPTOn_gmwSeqViewReduction_pair {α : Type} {enc : α ↪ List 
       encBool
       (fun ((n, a, w, (z, z')), challenge) =>
         gmwSeqViewReduction enc generator length f k Vstar
-          (fun n a _ view => adversary n a z' view) n a w z challenge) := by
-  let encIn := encPair encUnary (encPair enc encBits)
-  let input := encPair encUnary (encPair enc (encPair encBits (encPair encBits encBits)))
-  let tapes := hV.2.choose
-  let Control := hV.2.choose_spec.choose
-  have : Finite Control := hV.2.choose_spec.choose_spec.choose
-  let machine := hV.2.choose_spec.choose_spec.choose_spec.choose
-  let c := hV.2.choose_spec.choose_spec.choose_spec.choose_spec.choose
-  let d := hV.2.choose_spec.choose_spec.choose_spec.choose_spec.choose_spec.choose
-  have htotal := computableInPolyTime_totalLen hf
-  have hlength := PRG.polyTime_length hg hlen
-  let wordFn (p : ℕ × (α × (List Bool × (List Bool × List Bool)))) : List Bool :=
-    encIn (p.1, p.2.1, p.2.2.2.1)
-  have hwordFn : ComputableInPolyTime wordFn input encBits :=
-    (ComputableInPolyTime.of_eq (encIn := encIn) (encOut := encBits) fun _ => rfl).comp
-      (by dsimp [input, encIn]; fun_prop)
-  have hclockBits : ComputableInPolyTime (fun w : List Bool => c * (w.length + 1) ^ d)
-      encBits encUnary := by fun_prop
-  have hTFn : ComputableInPolyTime (fun p => c * ((wordFn p).length + 1) ^ d)
-      input encUnary := hclockBits.comp hwordFn
-  let encTestIn := encPair (encPair input encBits) (encList encBits)
-  have hrun : IsPPTOn encTestIn encBits
-      (fun q : ((ℕ × (α × (List Bool × (List Bool × List Bool)))) × List Bool) ×
-          List (List Bool) =>
-        runAllSessionsWithPads machine generator
-          (q.1.1.1 + 7) (length (q.1.1.1 + 7))
-          (c * ((wordFn q.1.1).length + 1) ^ d)
-          (q.1.1.1 + 1) (k q.1.1.1)
-          (f q.1.1.2.1) q.1.1.2.2.1 (wordFn q.1.1) q.2) := by
-    apply isPPTOn_runAllSessionsWithPads (input := encTestIn) machine hg hf
-      (n := fun q => q.1.1.1)
-      (s := fun q => q.1.1.1 + 7)
-      (m := fun q => length (q.1.1.1 + 7))
-      (T := fun q => c * ((wordFn q.1.1).length + 1) ^ d)
-      (att := fun q => q.1.1.1 + 1)
-      (K := fun q => k q.1.1.1)
-      (a := fun q => q.1.1.2.1)
-      (w := fun q => q.1.1.2.2.1)
-      (word := fun q => wordFn q.1.1)
-      (pads := fun q => q.2)
-    all_goals dsimp only [encTestIn, input]; fun_prop
-  have htest : IsPPTOn encTestIn encBool
-      (fun q : ((ℕ × (α × (List Bool × (List Bool × List Bool)))) × List Bool) ×
-          List (List Bool) => do
-        let view ← runAllSessionsWithPads machine generator
-          (q.1.1.1 + 7) (length (q.1.1.1 + 7))
-          (c * ((wordFn q.1.1).length + 1) ^ d)
-          (q.1.1.1 + 1) (k q.1.1.1)
-          (f q.1.1.2.1) q.1.1.2.2.1 (wordFn q.1.1) q.2
-        adversary q.1.1.1 q.1.1.2.1 q.1.1.2.2.2.2 view) := by
-    apply IsPPTOn.bind_with hrun
-    exact hadv.preprocess
-      (input := encPair encTestIn encBits)
-      (prepare := fun r => ((r.1.1.1.1, r.1.1.1.2.1, r.1.1.1.2.2.2.2), r.2))
-      (by dsimp [encTestIn, input]; fun_prop)
-  have hseq : IsPPTOn (encPair input encBits) encBool
-      (fun p : (ℕ × (α × (List Bool × (List Bool × List Bool)))) × List Bool =>
-        sequenceTest
-          (BitString.sampleList (length (p.1.1 + 7)))
-          (generator <$> BitString.sampleList (p.1.1 + 7))
-          (k p.1.1 * ((p.1.1 + 1) * totalLen (f p.1.2.1)))
-          (fun pads => do
-            let view ← runAllSessionsWithPads machine generator
-              (p.1.1 + 7) (length (p.1.1 + 7))
-              (c * ((wordFn p.1).length + 1) ^ d)
-              (p.1.1 + 1) (k p.1.1)
-              (f p.1.2.1) p.1.2.2.1 (wordFn p.1) pads
-            adversary p.1.1 p.1.2.1 p.1.2.2.2.2 view)
-          p.2) := by
-    apply isPPTOn_sequenceTest (sample := encBits)
-    · exact isPPTOn_sampleList.preprocess (by dsimp [input]; fun_prop)
-    · exact (isPPTOn_sampleList.preprocess (by dsimp [input]; fun_prop)).map hg
-    · dsimp [input]; fun_prop
-    · exact htest
-    · dsimp [input]; fun_prop
-  refine hseq.congr fun ⟨⟨n, a, w, z, z'⟩, challenge⟩ => ?_
-  simp only [gmwSeqViewReduction, encIn, hV, ↓reduceDIte, machine, c, d, wordFn]
+          (fun n a _ view => adversary n a z' view) n a w z challenge) :=
+  isPPTOn_gmwSeqViewReduction_aux
+    (.fst encBits encBits) (.snd encBits encBits) hg hlen hf hk hV hadv
 
 /-- Under `AdvicePRG enc generator length`, the `k n`-session real GMW interaction view and
 `gmwSeqSimulator` have negligible distinguishing advantage against every full-input uniform strict
@@ -1283,23 +1210,25 @@ theorem AdvicePRG.gmwSeqView_negligible {α : Type} {enc : α ↪ List Bool}
   have hclock := isPPTOn_gmwSeqViewReduction_pair hAdv.1 hAdv.2.1 hf hk hV hadv
   have haux : PolynomiallyBounded (fun n => (encPair encBits encBits (z n, z' n)).length) := by
     simp only [length_encPair, encBits_apply]
-    fun_prop
+    exact (((PolynomiallyBounded.const 2).mul hz).add (.const 1)).add hz'
   have hneg := hAdv.negligible_encoded hclock ha hw haux
   have hcount : ComputableTidilyInPolyTime (fun a => totalLen (f a)) enc encUnary :=
     (computableInPolyTime_totalLen hf).tidy
-  have hsize : PolyBounded id (fun n => (enc (a n)).length) :=
-    ⟨_, ha, fun _ => le_rfl⟩
+  have hsize : PolyBounded id (fun n => (enc (a n)).length) := ⟨_, ha, fun _ => le_rfl⟩
   have hcount_poly := (hcount.polyBounded.comp hsize).polynomiallyBounded
   have hk_poly : PolynomiallyBounded k := hk.tidy.polynomiallyBounded
   have hloss : PolynomiallyBounded
-      (fun n => dyadicSize (k n * ((n + 1) * totalLen (f (a n))))) := by fun_prop
+      (fun n => dyadicSize (k n * ((n + 1) * totalLen (f (a n))))) :=
+    PolynomiallyBounded.comp ComputableInPolyTime.unary_dyadicSize.tidy.polynomiallyBounded
+      (hk_poly.mul ((PolynomiallyBounded.id.add (.const 1)).mul hcount_poly))
   have hgeom := (negligible_geometric (by norm_num : (7 / 8 : ℝ≥0) < 1)).shift 1
   have herr := hgeom.polynomiallyBounded_mul hk_poly
   apply negligible_of_le (herr.add_fun (hneg.polynomiallyBounded_mul hloss))
   intro n
-  exact gmwSeqView_advantage_le generator length f k hV
-    (fun m a _ view => adversary m a (z' n) view)
-    n (a n) (w n) (z n) (hw_sat n)
+  simpa only [ProbComp.eval_bind] using
+    gmwSeqView_advantage_le generator length f k hV
+      (fun m a _ view => adversary m a (z' n) view)
+      n (a n) (w n) (z n) (hw_sat n)
 
 /-- **Zero-knowledge simulation of the sequentially amplified GMW protocol.** For any uniform strict
 oracle PPT malicious verifier `Vstar` and any deterministic polynomial-time families of instances
@@ -1324,35 +1253,32 @@ theorem gmwSeqView_indistinguishable_gmwSeqSimulator {α : Type} {enc : α ↪ L
         (Vstar n (a n) (z n))
         (gmwSeqProver generator (n + 7) (length (n + 7)) (f (a n)) (w n) (k n)).init).map Prod.fst)
       (fun n => ProbComp.eval (gmwSeqSimulator enc generator length f k Vstar n (a n) (z n))) := by
-  have hfPlain := hf
-  have hkPlain := hk
-  have hf := hf.tidy
-  have hk := hk.tidy
-  have ha := ha.tidy
-  have hw_comp := hw_comp.tidy
-  have hz := hz.tidy
   intro adversary hadversary
-  have htest : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+  let encIn := encPair encUnary (encPair enc encBits)
+  have htest : IsPPTOn (encPair encIn encBits) encBool
       (fun p => adversary p.1.1 p.2) :=
-    hadversary.preprocess (by fun_prop) (by fun_prop)
+    hadversary.on.preprocess
+      (((ComputableInPolyTime.fst encIn encBits).fst').prod (.snd encIn encBits))
   have hclock := isPPTOn_gmwSeqViewReduction
     (adversary := fun n _ _ view => adversary n view)
-    hG.polyTime hG.length_eq hfPlain hkPlain hV htest
+    hG.polyTime hG.length_eq hf hk hV htest
   let red : Distinguisher := fun n challenge =>
     gmwSeqViewReduction enc generator length f k Vstar (fun n _ _ view => adversary n view)
       n (a n) (w n) (z n) challenge
-  have hred : IsPPT encBool red := by
-    exact hclock.preprocess
-      (input := encPair encUnary encBits)
-      (prepare := fun p => ((p.1, a p.1, w p.1, z p.1), p.2)) (by fun_prop)
+  have hn1 := ComputableInPolyTime.fst encUnary encBits
+  have hred : IsPPT encBool red :=
+    hclock.preprocess (input := encPair encUnary encBits)
+      (prepare := fun p => ((p.1, a p.1, w p.1, z p.1), p.2))
+      ((hn1.prod ((ha.comp hn1).prod ((hw_comp.comp hn1).prod (hz.comp hn1)))).prod
+        (.snd encUnary encBits))
   have hneg := (hG.indistinguishable.shift 7) red hred
-  have hcount : ComputableTidilyInPolyTime (fun n => totalLen (f (a n)))
-      encUnary encUnary :=
-    (computableInPolyTime_totalLen hfPlain).tidy.comp ha
-  have hcount_poly := hcount.polynomiallyBounded
-  have hk_poly : PolynomiallyBounded k := hk.polynomiallyBounded
+  have hcount_poly : PolynomiallyBounded (fun n => totalLen (f (a n))) :=
+    ((computableInPolyTime_totalLen hf).comp ha).tidy.polynomiallyBounded
+  have hk_poly : PolynomiallyBounded k := hk.tidy.polynomiallyBounded
   have hloss : PolynomiallyBounded
-      (fun n => dyadicSize (k n * ((n + 1) * totalLen (f (a n))))) := by fun_prop
+      (fun n => dyadicSize (k n * ((n + 1) * totalLen (f (a n))))) :=
+    PolynomiallyBounded.comp ComputableInPolyTime.unary_dyadicSize.tidy.polynomiallyBounded
+      (hk_poly.mul ((PolynomiallyBounded.id.add (.const 1)).mul hcount_poly))
   have hgeom := (negligible_geometric (by norm_num : (7 / 8 : ℝ≥0) < 1)).shift 1
   have herr := hgeom.polynomiallyBounded_mul hk_poly
   apply negligible_of_le (herr.add_fun (hneg.polynomiallyBounded_mul hloss))

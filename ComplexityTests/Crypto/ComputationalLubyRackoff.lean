@@ -14,7 +14,9 @@ The toy family that masks the input with the key is length preserving and comput
 polynomial time, so it instantiates `lubyRackoffCipher`. Concrete encryptions follow the three
 Feistel rounds of Boneh–Shoup, decryption inverts them, and the oracle rejects blocks of the wrong
 length. The adapter's query program answers malformed blocks without querying. The Luby–Rackoff
-theorem applies to every pseudorandom function.
+theorem applies to every pseudorandom function. The four-round cipher of the toy family adds one
+round, its strong oracle decrypts its own ciphertexts, and the four-round theorem applies to every
+pseudorandom function.
 -/
 
 namespace ComplexityTests.Crypto.ComputationalLubyRackoff
@@ -66,5 +68,36 @@ example {family : List Bool → List Bool → List Bool} (hfamily : Pseudorandom
         adversary n))
       (ProbComp.eval (prpIdealGame (fun n => 2 * n) adversary n)) :=
   hfamily.prp_lubyRackoffCipher adversary hadversary
+
+/-- The four-round Luby–Rackoff cipher of the toy family. -/
+abbrev toyCipher4 : BlockCipher := lubyRackoff4Cipher xorFamily xorFamily_polyTime length_xorFamily
+
+-- A fourth round `(x, y) ↦ (y, x ⊕ k₄ ⊕ y)` follows the three-round output `[false, false]`.
+example : toyCipher4.encrypt 1 [true, true, false, true] [false, true] = [false, true] := by
+  decide
+example : toyCipher4.decrypt 1 [true, true, false, true] [false, true] = [false, true] := by
+  decide
+example : toyCipher4.keyLen 5 = 20 := rfl
+
+-- The decryption channel of the strong oracle inverts the encryption channel.
+example : toyCipher4.strongPRPOracle 1 [true, true, false, true]
+    (true, toyCipher4.strongPRPOracle 1 [true, true, false, true] (false, [true, false])) =
+      [true, false] := by
+  decide
+
+-- A malformed bidirectional query is answered without any query.
+example : strongLubyRackoffQuery 2 (true, [true]) = pure [] := by
+  simp [strongLubyRackoffQuery]
+
+-- The four-round theorem, applied to an arbitrary pseudorandom function.
+example {family : List Bool → List Bool → List Bool} (hfamily : PseudorandomFunction family)
+    {adversary : StrongPRPDistinguisher}
+    (hadversary : Probability.IsOraclePPT encBool adversary) :
+    Negligible fun n => Game.advantage
+      (ProbComp.eval
+        ((lubyRackoff4Cipher family hfamily.polyTime hfamily.length_eq).strongPRPRealGame
+          adversary n))
+      (ProbComp.eval (strongPRPIdealGame (fun n => 2 * n) adversary n)) :=
+  hfamily.strongPRP_lubyRackoff4Cipher adversary hadversary
 
 end ComplexityTests.Crypto.ComputationalLubyRackoff

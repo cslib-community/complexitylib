@@ -30,6 +30,24 @@ Prove certificates for opaque subroutines, then let `fun_prop` compose registere
 
 The [automation reference](../design-and-assurance/automation.md) explains registration and [troubleshooting](troubleshooting.md) handles failures.
 
+For binary sign-magnitude integers, import
+`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary`.
+The plain `ComputableInPolyTime.intBin_natAbs`, `intBin_isNeg`, `intBin_signMagnitude`,
+`intBin_prod` and `intBin_pow` rules compose through `fun_prop`; `intBin_pow'` accepts computed
+base and unary exponent certificates. The complete
+[IntBinary client](../../ComplexityTests/RationalHitting/IntBinary.lean) checks composed products, powers,
+magnitudes and signs. A binary exponent has a different output-size obligation: do not replace
+the unary exponent encoding merely to make a goal match.
+
+Keep a record's encoded tuple layout at its construction boundary. For example,
+[`NativePacket.PacketCtx.mk_polyTime`](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
+composes certificates for named fields while preserving the existing encoded words; its
+[packet-construction client](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/NativeChildPolyTime.lean)
+does not reconstruct the product tree. The
+[`BranchEvalInput` interface](../../Complexity/Computability/PolyTime/BooleanAnalysis/SparsePolyCounter.lean)
+similarly supplies named parameter access and certificates with the original unary/binary
+choices. Use these boundaries when changing a client, and retain its encoded-length bounds.
+
 ## Certify a loop and its postcondition
 
 **Goal:** a plain computation certificate together with a final invariant. Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration`. The public import exposes [ComputableInPolyTime.iterate_spec](../../Complexity/Computability/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean); its current implementation lives in the machine layer.

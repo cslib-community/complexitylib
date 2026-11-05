@@ -83,6 +83,24 @@ Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on externa
 
 When replacing the external handler with an implementation, open [Oracle/Substitution.lean](../../Complexity/Computability/Probabilistic/Oracle/Substitution.lean). The plain-certificate variant `IsOraclePPTOn.run_interpret_preprocess_open'` requires efficient preparation, initialization and handling, plus an invariant and bounds on reply length and added encoded state. Its `hresources` premise also certifies a uniform unary computation of the resource allowance from the original caller and request; an abstract polynomial bound alone does not supply this certificate. Repeated state doubling explains why “each call is polynomial time” is insufficient.
 
+## Certify a list accumulator
+
+Import `Complexity.Computability.Probabilistic.Fold` for
+`IsPPTOn.foldlM_of_bounded_growth` and `IsOraclePPTOn.foldlM_of_bounded_growth`.
+They certify ordinary `List.foldlM` with the accumulator as the step's first argument.
+Supply plain polynomial-time certificates for the input list and initial accumulator, a joint
+step certificate, and a constant bound on the encoded accumulator's growth at every supported
+result. For an oracle fold that bound covers arbitrary external replies; truncate replies or
+prove a suitable support bound before applying it.
+
+The complete [ProbabilisticFold client](../../ComplexityTests/ProbabilisticFold.lean) checks a
+noncommutative accumulator, an oracle fold's ordered calls and final external
+counter, and an empty fold that makes no calls. From the configured repository root, run
+`scripts/build.sh --wfail --iofail ComplexityTests.ProbabilisticFold`. The fallback argument
+only totalizes the internal iteration step; it is never used on an empty list. If the growth
+premise fails, check the output encoding and reply cap rather than assuming that efficient
+individual steps make an arbitrarily growing accumulator efficient.
+
 ## Connect a randomized RAM loop to its answer law
 
 Use this route when a randomized Word-RAM loop already exists and you want to derive its answer
