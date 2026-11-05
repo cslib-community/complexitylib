@@ -417,7 +417,7 @@ map from a revealed bit and an explicit receipt list to opening pairs. Its input
 `encPair encBool (encList (encPair (encFinEnum (Fin 4)) encBool))`; the full four-valued indices
 are retained. `equivocatePairs_ofFn` connects this list operation to the transcript reconstruction.
 
-These fixed-schedule corruption-specific laws do not provide full ideal commitment scheduling,
+These semantic corruption-specific laws alone do not provide full ideal commitment scheduling,
 mid-commit abort, composition, or polynomial-time simulators. The malicious MPC compiler and its
 real/ideal simulation remain open in
 [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
@@ -488,8 +488,41 @@ state; receipt and opening lists retain all four OT indices and all pair bits. T
 adaptive private-coin receiver with growing answer history, randomized withholding and a
 randomized final continuation. They also show why a separately efficient state-doubling
 callback fails the additive-growth contract. This certificate covers the fixed receiver
-schedule under those hypotheses; sender-simulator efficiency, arbitrary scheduling,
-composition and full malicious MPC remain open.
+schedule under those hypotheses; arbitrary scheduling, composition and full malicious MPC remain open.
+
+For the corrupted sender, import
+[`OTCommitment.SenderProgram.PolyTime`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/SenderProgram/PolyTime.lean).
+Supply closed `ProbComp` table-selection and finish callbacks and the deterministic `Sender.receive`
+update. `senderOfPrograms` keeps the existing semantic interface; `senderTablesWith` shares its
+recursion with the native table-list program. `senderIdealProgram` commits the extracted bit before
+sampling finish, privately samples the honest choices, and makes the same four phased-world calls.
+Finish receives only the round count and commit-final sender state. It can retain an updated state
+or other private information in its auxiliary output. `decodeOpening` maps incorrect list lengths
+to rejection; no malformed list is silently truncated into a valid finite opening.
+
+`eval_senderClosedProgram` identifies the actual handler's closed execution with `senderIdeal`.
+`senderClosedProgram_coupled` retains both public observations, commit-final sender state and
+arbitrary finish output with majority-extraction error `2⁻⌈k/2⌉`.
+`senderClosedProgram_coupled_two_mul` gives error `2⁻ⁿ` for `k = 2n`, and
+`senderClosedProgram_negligible_error` proves that schedule's error negligible. This is the
+extraction error, not the smaller double-opening bound.
+
+Apply `senderClosedProgram_isPPT` with uniform callback certificates on full joint inputs and an
+additive encoded-size bound on the **combined round's final state**, for every supported choose
+result. The intermediate state may grow polynomially and then shrink in the update; callback
+composition charges that work. Every table uses the fixed sixteen-element `Fin 4 → Bool` encoding,
+and the growing table list, unary round count, initial state and complete output are all charged.
+The [checked sender programs](../../ComplexityTests/Crypto/OTCommitmentSenderProgram.lean) include
+private-coin masks with retained history, randomized opening or abort and auxiliary output, the
+actual two-round attack with real success `1/2` versus ideal abort, and a separately efficient
+doubling update excluded by the growth premise. They instantiate one uniform machine at `k = 2n`
+with empty initial history; an arbitrary initial distribution needs its own efficient sampler.
+
+Together the two native results give efficient simulations under their callback and growth
+restrictions. A reusable realization theorem for all globally PPT adversaries still needs a common
+honest protocol execution, role-local corruption adapters, and one uniform observation, phase and
+input contract connecting both real experiments. The additive-growth restrictions, arbitrary
+scheduling, mid-commit abort, composition/UC and full malicious MPC remain separate obligations.
 
 ## Upstream perfect secrecy and sharing
 
