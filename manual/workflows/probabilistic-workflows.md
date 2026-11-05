@@ -102,6 +102,31 @@ the Borel measurable space of a discrete lattice quotient. Gaussian quotient nor
 distance estimates are a separate consumer in
 [issue #2681](https://github.com/cslib-community/complexitylib/issues/2681).
 
+## Convolve a singular law with a density
+
+Import [ConvolutionDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/ConvolutionDensity.lean).
+For a measurable group with measurable multiplication and inversion, let `σ` and `μ` be
+s-finite measures, let `μ` be left invariant, and supply `hf : Measurable f` for
+`f : G → ℝ≥0∞`. Apply
+`MeasureTheory.mconv_withDensity_eq_withDensity_lintegral hf` to identify
+`Measure.mconv σ (μ.withDensity f)` with a density relative to `μ`: at `x`, integrate
+`f (y⁻¹ * x)` against `σ`. The theorem derives measurability of that density.
+
+For additive groups, use `conv_withDensity_eq_withDensity_lintegral`; the translated density
+is `f (-y + x)`. The first measure can be singular, such as a discrete distribution.
+The existing two-density convolution theorem requires both input laws to have densities with
+respect to the same reference measure. This theorem needs only the second one to have a density.
+It allows infinite total mass and infinite density values, and assumes no integrability or
+probability normalization.
+
+The [checked clients](../../ComplexityTests/ConvolutionDensity.lean) translate an actual
+Gaussian by an atom and recover the variance-two Gaussian from two variance-one inputs.
+A noncommutative permutation-group example checks the order of translation; infinite-density
+and zero-input cases check the absence of hidden finiteness premises. Run
+`scripts/build.sh ComplexityTests.ConvolutionDensity` from the repository root.
+The later [lattice Gaussian convolution bound](https://github.com/cslib-community/complexitylib/issues/2707)
+still needs its actual discrete weights, completion of the square and quantitative error proof.
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.
