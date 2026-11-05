@@ -50,8 +50,10 @@ Priorities live in this list and in the tiers of [#897].
   real/ideal simulation and abort, under the standard communication assumptions.
   `Crypto/Protocols/MPC/OTCommitment` supplies the Crépeau commitment ingredient: perfect hiding
   against adaptive receiver queries and a `2⁻ᵏ` malicious double-opening bound in ideal OT.
-  This fixed-schedule, information-theoretic commitment game has no efficiency certificate or
-  ideal-functionality realization; the malicious compiler and MPC simulation remain open in
+  `OTCommitment/Extraction` adds a stand-alone corrupted-sender output/state simulation with
+  majority extraction error `2⁻⌈k/2⌉`; `OTCommitment/PolyTime` certifies only the deterministic
+  extractor on explicitly encoded bit-pair lists. Full ideal commitment realization, efficient
+  simulation, composition, the malicious compiler, and MPC simulation remain open in
   [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
 - **Regev's worst-case to average-case reduction.** For suitable `q` and Gaussian noise rate
   `α` with `αq > 2√n`, an efficient search-LWE algorithm yields a quantum polynomial-time

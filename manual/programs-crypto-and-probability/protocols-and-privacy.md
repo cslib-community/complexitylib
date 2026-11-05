@@ -180,9 +180,27 @@ Keep receiver choices and selected values private; giving either to the sender c
 [OT commitment tests](../../ComplexityTests/Crypto/OTCommitment.lean) demonstrate rejection of an
 inconsistent opening, a tight one-call attack with success `1/2`, and the zero-call bound `1`.
 
-This is a fixed-schedule information-theoretic commitment construction, with honest correctness
-and double-opening binding. It has no polynomial-time certificate or ideal commitment
-realization. The malicious MPC compiler and real/ideal simulation remain open in
+To extract a bit before opening, import
+[`OTCommitment.Extraction`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/Extraction.lean).
+`extract` takes the strict majority of the actual OT input pair parities, choosing false on a tie.
+Only the simulator receives these corrupted sender inputs; this is not extraction from a public
+commitment string. `simulatedOpening_coupled` couples `realOpening` with `simulatedOpening` within
+`2⁻⌈k/2⌉`, jointly preserving the sender's state at the commit boundary and any auxiliary output
+from its opening continuation. The simulator fixes the bit before that continuation runs and
+releases only the stored bit or abort. Apply the coupling's `toOuterMeasure_le` for any event of
+this joint output. With two mixed-parity rows, extraction error can be `1/2` even though the
+double-opening bound is `1/4`; the
+[checked examples](../../ComplexityTests/Crypto/OTCommitmentExtraction.lean) attain both bounds.
+
+For native computation, import
+[`OTCommitment.PolyTime`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/PolyTime.lean).
+`extractPairs_polyTime` certifies the deterministic extractor with input encoding
+`encList (encPair encBool encBool)` and output `encBool`. `extractPairs_ofFn` connects the explicit
+list algorithm to the OT table extractor. This certificate applies only to the extractor.
+
+These fixed-schedule experiments do not provide full ideal commitment realization, corrupt-receiver
+simulation, composition, or a polynomial-time simulator. The malicious MPC compiler and its
+real/ideal simulation remain open in
 [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
 
 ## Upstream perfect secrecy and sharing
