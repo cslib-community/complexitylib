@@ -33,7 +33,7 @@ def honest (b : Bool) : Program (Observation × Observation) := do
 
 example (b : Bool) : world.eval (honest b) = PMF.pure (.receipt, .opened b) := by
   simp [honest, send, poll, Interactive.World.eval, ProbOracleComp.runWith_bind,
-    ProbOracleComp.runWith_query, OracleComp.sumHandler,
+    ProbOracleComp.runWith_query, handler, OracleComp.sumHandler,
     advance, observe]
 
 -- Opening too early does not consume the session. A later commitment can still open.
@@ -44,7 +44,7 @@ example : world.eval (do
     send .open
     return (early, ← poll)) = PMF.pure (.idle, .opened true) := by
   simp [send, poll, Interactive.World.eval, ProbOracleComp.runWith_bind,
-    ProbOracleComp.runWith_query, OracleComp.sumHandler,
+    ProbOracleComp.runWith_query, handler, OracleComp.sumHandler,
     advance, observe]
 
 -- A second commitment cannot replace the first bit; abort cannot retract the released value.
@@ -57,7 +57,7 @@ example : world.eval (do
     send (.commit true)
     return (received, ← poll)) = PMF.pure (.receipt, .opened false) := by
   simp [send, poll, Interactive.World.eval, ProbOracleComp.runWith_bind,
-    ProbOracleComp.runWith_query, OracleComp.sumHandler,
+    ProbOracleComp.runWith_query, handler, OracleComp.sumHandler,
     advance, observe]
 
 -- Abort before commitment and abort after commitment both prevent a subsequent opening.
@@ -68,7 +68,7 @@ example (b : Bool) : world.eval (do
     send .open
     poll) = PMF.pure .aborted := by
   simp [send, poll, Interactive.World.eval, ProbOracleComp.runWith_bind,
-    ProbOracleComp.runWith_query, OracleComp.sumHandler,
+    ProbOracleComp.runWith_query, handler, OracleComp.sumHandler,
     advance, observe]
 
 example : world.eval (do
@@ -77,7 +77,7 @@ example : world.eval (do
     send .open
     poll) = PMF.pure .aborted := by
   simp [send, poll, Interactive.World.eval, ProbOracleComp.runWith_bind,
-    ProbOracleComp.runWith_query, OracleComp.sumHandler,
+    ProbOracleComp.runWith_query, handler, OracleComp.sumHandler,
     advance, observe]
 
 -- Retain the receiver's private random bit and choose the number of polls using it.

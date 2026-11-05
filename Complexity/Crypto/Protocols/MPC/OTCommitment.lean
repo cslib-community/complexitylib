@@ -24,6 +24,7 @@ selected values. We use the existing `ot14World`, duplicating the two payloads a
 * `OTCommitment.Sender`: arbitrary randomized, stateful malicious sender.
 * `OTCommitment.Receiver`: arbitrary randomized, stateful malicious receiver.
 * `OTCommitment.bindingGame`: two openings after a single commit interaction.
+* `OTCommitment.receiverCommitWith`: the common monadic receiver recursion.
 * `OTCommitment.receiverCommit`, `OTCommitment.receiverRun`: one honest commit execution with
   private sender masks retained internally, and its receiver-only observation.
 
@@ -225,19 +226,44 @@ structure Receiver (State : Type) where
   /-- Randomized state update after seeing the selected bit. -/
   receive : State → Bool → PMF State
 
-/-- Honest commit execution, retaining the sender's private masks alongside the receiver's
-transcript and final state. The masks are never passed to the receiver strategy. This common
-runner supports both the receiver-only observation and the later honest opening. -/
-noncomputable def receiverCommit {State : Type} (A : Receiver State) (b : Bool) :
-    (k : ℕ) → State → PMF ((Fin k → Bool) × (Fin k → Fin 4 × Bool) × State)
+/-- One receiver commit recursion, shared by semantic and program executions. The backend
+supplies receiver-local actions, fresh masks, and the selected OT answer. No sender mask is
+passed to `choose` or `receive`. -/
+def receiverCommitWith {m : Type → Type} [Monad m] {State : Type}
+    (choose : ℕ → State → m (Fin 4 × State)) (receive : State → Bool → m State)
+    (coin : m Bool)
+    (call : (Fin 4 → Bool) → Fin 4 → m ((i : Fin 2) → ot14Spec.Answer () i))
+    (b : Bool) :
+    (k : ℕ) → State → m ((Fin k → Bool) × (Fin k → Fin 4 × Bool) × State)
   | 0, st => pure (Fin.elim0, Fin.elim0, st)
   | k + 1, st => do
+      let (j, next) ← choose k st
+      let r ← coin
+      let answers ← call (table b r) j
+      let next ← receive next (answers 1)
+      let (masks, rest, final) ← receiverCommitWith choose receive coin call b k next
+      pure (Fin.cons r masks, Fin.cons (j, answers 1) rest, final)
+
+/-- Honest commit execution, retaining the sender's private masks alongside the receiver's
+transcript and final state. The masks are never passed to the receiver strategy. The semantic
+backend uses the actual OT world and is the original PMF specialization of the shared recursion. -/
+noncomputable def receiverCommit {State : Type} (A : Receiver State) (b : Bool) (k : ℕ)
+    (st : State) : PMF ((Fin k → Bool) × (Fin k → Fin 4 × Bool) × State) :=
+  receiverCommitWith A.choose A.receive (PMF.uniformOfFintype Bool) transfer b k st
+
+/-- No receiver calls or masks are sampled at zero rounds. -/
+theorem receiverCommit_zero {State : Type} (A : Receiver State) (b : Bool) (st : State) :
+    receiverCommit A b 0 st = pure (Fin.elim0, Fin.elim0, st) := rfl
+
+/-- The PMF backend keeps the original actual-OT execution, including sampling order. -/
+theorem receiverCommit_succ {State : Type} (A : Receiver State) (b : Bool) (k : ℕ) (st : State) :
+    receiverCommit A b (k + 1) st = (do
       let (j, next) ← A.choose k st
       let r ← PMF.uniformOfFintype Bool
       let ans ← transfer (table b r) j
       let next ← A.receive next (ans 1)
       let (masks, rest, final) ← receiverCommit A b k next
-      pure (Fin.cons r masks, Fin.cons (j, ans 1) rest, final)
+      pure (Fin.cons r masks, Fin.cons (j, ans 1) rest, final)) := rfl
 
 /-- Honest sender against an adaptive receiver. The result explicitly includes every receiver
 query and answer, as well as final private state. Each fresh sender mask is independent of the
@@ -249,7 +275,7 @@ noncomputable def receiverRun {State : Type} (A : Receiver State) (b : Bool) (k 
 /-- Observing zero commit calls returns an empty receiver transcript. -/
 theorem receiverRun_zero {State : Type} (A : Receiver State) (b : Bool) (st : State) :
     receiverRun A b 0 st = pure (Fin.elim0, st) := by
-  simp [receiverRun, receiverCommit]
+  simp [receiverRun, receiverCommit_zero]
 
 /-- The receiver observation keeps the original step-by-step OT execution, without exposing
 any honest sender mask to the strategy. -/
@@ -261,7 +287,7 @@ theorem receiverRun_succ {State : Type} (A : Receiver State) (b : Bool) (k : ℕ
       let next ← A.receive next (ans 1)
       let (rest, final) ← receiverRun A b k next
       pure (Fin.cons (j, ans 1) rest, final)) := by
-  simp only [receiverRun, receiverCommit, Probability.PMF.monad_bind_eq_bind,
+  simp only [receiverRun, receiverCommit_succ, Probability.PMF.monad_bind_eq_bind,
     Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map, PMF.bind_map,
     Function.comp_def]
 
