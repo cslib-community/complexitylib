@@ -105,10 +105,11 @@ families and full-input native runtime.
   statistical-distance term from sampling `ZMod q`.
 - **Chosen-ciphertext security** ([#1885]): multi-challenge CCA from the single-challenge
   Cramer–Shoup theorem.
-- **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
-  2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
-  certificates for the simulator and extractor; full interactive-view simulation; SIS for
-  general moduli; module SIS and module LWE toward Dilithium-style schemes, as theory.
+- **Lattices**: random-oracle EUF-CMA game-hop bounds and strict-PPT computational security under
+  `SIS` for Fiat–Shamir with aborts and Lyubashevsky identification and signatures (Lyubashevsky
+  2009, 2012); strict-PPT samplers for integer boxes; efficiency certificates for the simulator;
+  full interactive-view simulation; SIS for general moduli; module SIS and module LWE toward
+  Dilithium-style schemes, as theory.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
