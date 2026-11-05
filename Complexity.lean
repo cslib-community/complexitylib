@@ -3213,6 +3213,9 @@ public import Complexity.Crypto.Protocols.Signature.RandomOracle.Simulation
 public import Complexity.Crypto.Protocols.VOLE.AdaptiveMulCheck
 public import Complexity.Crypto.Protocols.VOLE.Basic
 public import Complexity.Crypto.Protocols.VOLE.BatchMulCheck
+public import Complexity.Crypto.Protocols.VOLE.Circuit
+public import Complexity.Crypto.Protocols.VOLE.CircuitPrivacy
+public import Complexity.Crypto.Protocols.VOLE.CircuitSound
 public import Complexity.Crypto.Protocols.VOLE.MaskedMulCheck
 public import Complexity.Crypto.Protocols.VOLE.MulCheck
 public import Complexity.Crypto.Protocols.VOLE.World
