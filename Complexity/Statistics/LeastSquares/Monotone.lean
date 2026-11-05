@@ -27,9 +27,10 @@ antitone. No sign hypothesis on the response or target is required.
 The module also proves successive rounding with a positive definite fixed backbone,
 including strict retained-mass loss below the number of fractional weights.
 `Backbone` derives the fixed backbone from general position, retained mass and an
-explicit sparsity bound and assembles the sparse rounding theorem. The full
-Theorem 3.3 remains unproved: sparse optimal weights and attainment are not
-provided by either module.
+explicit sparsity bound and assembles the sparse rounding theorem.
+`Sparsification` proves Lemma 3.2 from arbitrary input weights; `Stability`
+proves attainment and the full mathematical stability and ceiling bounds of
+Theorem 3.3 and Corollary 3.4. Certified algorithmic resource bounds remain open.
 
 ## Main definitions
 

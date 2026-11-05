@@ -77,12 +77,44 @@ $d$ retained mass, and proves the rounded Gram matrix positive definite.
 The [checked client](../../ComplexityTests/PaperEndpoints/Submission1326.lean)
 starts with three scalar rows and weights $(1,1,1/2)$; no backbone is supplied.
 
-These are the monotonicity and sparse rounding steps of STOC submission1326,
-Lemma 3.1, Theorem 3.3 and Remark 3.5 (PDF pp. 6–7). **The full generic stability
-theorem remains open:** Lemma 3.2's sparsification, attainment, stability assembly
-and the LP/inversion/update resource guarantees are not proved. The sparsity
-premise of `exists_round_sparse` must be established independently; feasibility
-and general position alone do not supply it.
+Import [`Stability`](../../Complexity/Statistics/LeastSquares/Stability.lean) for
+the complete mathematical rounding assembly. `Feasible x y e θ w` requires box
+weights, a positive definite Gram matrix and the linear inequality target.
+`fractionalStability` is the infimum of deleted mass over these weights;
+`integralStability` is the natural minimum over feasible retained subsets. Its
+empty-set value is zero, so use the theorems' feasibility hypotheses rather than
+interpreting that value as an infeasibility certificate.
+
+`exists_sparse_weights` (Lemma 3.2, through
+[`Sparsification`](../../Complexity/Statistics/LeastSquares/Sparsification.lean))
+starts with arbitrary box weights of mass above $d-1$. It preserves the fitted
+coefficient vector, does not decrease mass and leaves at most $d$ fractional
+coordinates. It maximizes mass subject to the residual normal equations and
+chooses an extreme point, using the reusable finite-dimensional box-fiber API
+in [`Box`](../../Complexity/Foundations/LinearAlgebra/Box.lean).
+`exists_round_subset` starts with arbitrary feasible weights of mass at least
+$2d$ and produces an actual feasible retained subset with loss strictly below $d$.
+No sparse-input or supplied-backbone premise remains.
+
+`fractionalStability_attained_of_gap` proves attainment whenever feasibility is
+nonempty and $n-s_{\rm frac}>d-1$. `fractionalStability_attained_sparse` also
+provides a sparse optimizer. `stability_bounds` proves
+$s_{\rm frac}\le s_{\rm int}<s_{\rm frac}+d$ under GP and the $2d$ feasible-mass
+hypothesis. `stability_ceiling_bounds` gives the interval of $d$ consecutive
+integers starting at $\lceil s_{\rm frac}\rceil$; the dimension-one and dimension-two
+specializations are `integralStability_eq_ceil_of_card_eq_one` and
+`integralStability_eq_ceil_or_succ`. These conclusions allow arbitrary linear
+targets and do not require an intercept or a positive original target value.
+The [complete checked client](../../ComplexityTests/PaperEndpoints/FullRounding1326.lean)
+has six nonzero scalar rows, four half weights and a violated full-data target;
+it exercises sparsification, subset rounding and the dimension-one equality.
+
+These are the mathematical statements of STOC submission1326, Lemmas 3.1–3.2,
+Theorem 3.3 and Corollary 3.4 (PDF pp. 6–7). The formalization proves existence,
+including the LP extreme-point argument. It does not certify an executable LP
+solver, a maintained-inverse rounding implementation or the advertised
+one-LP/one-inversion/$O(d)$-update cost. Corollary 3.4(iii)'s fractional solver
+and $n^{O(d^3)}$ running time are an external ingredient, not established locally.
 
 ## Exact least-squares stability gaps
 

@@ -3785,6 +3785,7 @@ public import Complexity.Foundations.GroupTheory.Perm.Fin
 public import Complexity.Foundations.GroupTheory.Perm.FiveCycle
 public import Complexity.Foundations.GroupTheory.Perm.Fixing
 public import Complexity.Foundations.GroupTheory.Perm.Last
+public import Complexity.Foundations.LinearAlgebra.Box
 public import Complexity.Foundations.LinearAlgebra.CubeSum
 public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
@@ -4302,6 +4303,8 @@ public import Complexity.Statistics.LeastSquares.RangeAudit
 public import Complexity.Statistics.LeastSquares.Rational
 public import Complexity.Statistics.LeastSquares.SharpGap
 public import Complexity.Statistics.LeastSquares.Simple
+public import Complexity.Statistics.LeastSquares.Sparsification
+public import Complexity.Statistics.LeastSquares.Stability
 public import Complexity.Tactic.FOOperator
 public import Complexity.Tactic.FOOperator.Init
 public import Complexity.Tactic.FirstOrder
