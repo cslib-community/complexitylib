@@ -146,7 +146,8 @@ theorem DecidableInSubexpTime.of_computableInO_interpolationScale {α : Type} {e
 
 /-! ### From dense-variable model counting to `DecidableInSubexpTime (KSAT k)` -/
 
-private theorem computableInPolyTime_pos_nat :
+/-- Testing a binary number for positivity is polynomial-time. -/
+theorem computableInPolyTime_pos_nat :
     ComputableInPolyTime (fun n : ℕ => decide (0 < n)) encNat encBool :=
   ComputableInPolyTime.binary_lt.comp
     ((ComputableInPolyTime.const 0).prod ComputableInPolyTime.id')
