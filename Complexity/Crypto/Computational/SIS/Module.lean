@@ -51,7 +51,7 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
 4. **Module-LWE (`ModuleLWE`, `DecisionModuleLWE`)**:
    Samples `(A, A · s + e)` over `R_q` expand via `expandModuleMatrix` and `flattenPolyVec` into
    standard LWE relations `(expandModuleMatrix A) *ᵥ flattenPolyVec s + flattenPolyVec e`
-   (`flattenPolyVec_moduleLWESample`), and `DecisionModuleLWE` states computational
+   (`ModuleLWE.flattenPolyVec_sample`), and `DecisionModuleLWE` states computational
    indistinguishability of encoded Module-LWE samples from uniform module samples.
 
 ## Main definitions
@@ -216,15 +216,14 @@ instance {q : ℕ} {ρ ι : Type*} [Fintype ρ] [Fintype ι] (A : Matrix ρ ι (
 def liftCentered {q : ℕ} {ι : Type*} (z : ι → ZMod q) : ι → ℤ :=
   fun i => (z i).valMinAbs
 
-/-- Reducing the centered integer lift modulo `q` recovers the original residue vector for any
-nonzero modulus `q`. -/
-@[simp] theorem intCast_comp_liftCentered {q : ℕ} [NeZero q] {ι : Type*} (z : ι → ZMod q) :
+/-- Reducing the centered integer lift modulo `q` recovers the original residue vector. -/
+@[simp] theorem intCast_comp_liftCentered {q : ℕ} {ι : Type*} (z : ι → ZMod q) :
     (Int.cast ∘ liftCentered z : ι → ZMod q) = z := by
   funext i
   exact ZMod.coe_valMinAbs (z i)
 
 /-- The centered integer lift is nonzero if and only if the residue vector is nonzero. -/
-@[simp] theorem liftCentered_ne_zero_iff {q : ℕ} [NeZero q] {ι : Type*} (z : ι → ZMod q) :
+@[simp] theorem liftCentered_ne_zero_iff {q : ℕ} {ι : Type*} (z : ι → ZMod q) :
     liftCentered z ≠ 0 ↔ z ≠ 0 := by
   refine not_iff_not.mpr ⟨fun h => ?_, fun h => ?_⟩
   · rw [← intCast_comp_liftCentered z, h]
@@ -233,9 +232,9 @@ nonzero modulus `q`. -/
     funext i
     exact ZMod.valMinAbs_zero q
 
-/-- For any nonzero modulus `q`, a residue vector satisfies `isSISChallenge` if and only if its
-centered integer lift satisfies `SIS.IsSolution`. -/
-theorem isSISChallenge_iff_isSolution {q : ℕ} [NeZero q] {ρ ι : Type*} [Fintype ι]
+/-- A residue vector satisfies `isSISChallenge` if and only if its centered integer lift satisfies
+`SIS.IsSolution`. -/
+theorem isSISChallenge_iff_isSolution {q : ℕ} {ρ ι : Type*} [Fintype ι]
     (A : Matrix ρ ι (ZMod q)) (β : ℕ) (z : ι → ZMod q) :
     isSISChallenge A β z ↔ SIS.IsSolution A β (liftCentered z) := by
   simp only [isSISChallenge, SIS.IsSolution, inInfNormBound, liftCentered_ne_zero_iff,
@@ -669,7 +668,7 @@ theorem flattenPolyVec_injective {k n : ℕ} {α : Type*} :
   ⟨fun h => flattenPolyVec_injective (by simpa using h), fun h => by subst h; rfl⟩
 
 /-- Flattening preserves non-zeroness. -/
-@[simp] theorem flattenPolyVec_ne_zero_iff {k n : ℕ} {α : Type*} [Zero α]
+theorem flattenPolyVec_ne_zero_iff {k n : ℕ} {α : Type*} [Zero α]
     (z : Fin k → Fin n → α) :
     flattenPolyVec z ≠ 0 ↔ z ≠ 0 :=
   not_congr (flattenPolyVec_eq_zero_iff z)
@@ -843,7 +842,7 @@ distributions for every adversary and security parameter. -/
 
 /-- Every adversary achieves the same success probability in `structuredSISGame` and
 `moduleSISGame`. -/
-@[simp] theorem succProbability_structuredSISGame (M : ModuleSISParams)
+theorem succProbability_structuredSISGame (M : ModuleSISParams)
     (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) :
     Game.succProbability (structuredSISGame M adversary security) =
       Game.succProbability (moduleSISGame M adversary security) := by
@@ -919,7 +918,7 @@ noncomputable def sampleLaw (m d n q : ℕ) [NeZero q] (noise : PMF (Fin n → Z
 
 /-- Encoded real Module-LWE ensemble at each security parameter. -/
 noncomputable def realEnsemble (m d n q : ℕ → ℕ)
-    [∀ security, NeZero (q security)] [∀ security, NeZero (n security)]
+    [∀ security, NeZero (q security)]
     (noise : (security : ℕ) → PMF (Fin (n security) → ZMod (q security)))
     (security : ℕ) : PMF (List Bool) :=
   (sampleLaw (m security) (d security) (n security) (q security) (noise security)).map
@@ -927,7 +926,7 @@ noncomputable def realEnsemble (m d n q : ℕ → ℕ)
 
 /-- Encoded uniform comparison ensemble `(A, u)` with independent uniform `A` and `u`. -/
 noncomputable def uniformEnsemble (m d n q : ℕ → ℕ)
-    [∀ security, NeZero (q security)] [∀ security, NeZero (n security)]
+    [∀ security, NeZero (q security)]
     (security : ℕ) : PMF (List Bool) :=
   (PMF.uniformOfFintype
     (Matrix (Fin (m security)) (Fin (d security)) (Fin (n security) → ZMod (q security)) ×
@@ -939,7 +938,7 @@ end ModuleLWE
 `(A, A · s + e)` are computationally indistinguishable from uniform pairs `(A, u)` against
 uniform classical strict PPT distinguishers. -/
 def DecisionModuleLWE (m d n q : ℕ → ℕ)
-    [∀ security, NeZero (q security)] [∀ security, NeZero (n security)]
+    [∀ security, NeZero (q security)]
     (noise : (security : ℕ) → PMF (Fin (n security) → ZMod (q security))) : Prop :=
   ComputationallyIndistinguishable
     (ModuleLWE.realEnsemble m d n q noise)
