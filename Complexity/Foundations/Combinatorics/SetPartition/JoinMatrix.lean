@@ -30,8 +30,9 @@ whose Möbius function satisfies $\mu(a, \top) \ne 0$ for all $a$, which holds i
 [DowlingWilson1975, Lemma 1 and the proof of Theorem 2]; here it is proved for the partition
 lattice, the lattice of flats of the graphic matroid of a complete graph. In the terms of
 [LovaszSaks1993, Theorems 3.4 and 3.6] the join matrix is the span indicator of that matroid, and
-Lindström's diagonalisation by the Möbius function [Lindstrom1969] reduces its rank to the number
-of partitions $x$ with $\mu(x, \top) \ne 0$, which is all of them.
+its rank is the number of partitions $x$ with $\mu(x, \top) \ne 0$, which is all of them.
+Lindström's determinant formula for meet semilattices [Lindstrom1969, Theorem], applied to the
+dual order with $f_i(x) = [x = \top]$, gives $\det J = \prod_x \mu(x, \top)$ directly.
 
 The proof writes the join matrix as $J = Z \Delta Z^{\mathsf{T}}$, where $Z$ is the zeta matrix of
 the refinement order, which is triangular with unit diagonal when the partitions are ordered by
