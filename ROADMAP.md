@@ -74,8 +74,14 @@ Priorities live in this list and in the tiers of [#897].
   [#2646](https://github.com/cslib-community/complexitylib/issues/2646). Uniform shifted-mass
   control by the actual nonzero dual Gaussian mass, with a quantitative sufficient width
   criterion and eventual satisfiability, is proved in
-  [#2659](https://github.com/cslib-community/complexitylib/issues/2659). Quotient-distribution
-  consequences, convolution bounds, efficient sampling and the quantum reduction remain open in
+  [#2659](https://github.com/cslib-community/complexitylib/issues/2659). The actual arbitrary-width
+  coset discrete-Gaussian convolution density and Claim 3.9 full-L1 bound, with a sufficient
+  dual-gap width criterion, are proved in
+  [#2707](https://github.com/cslib-community/complexitylib/issues/2707). Quotient-distribution
+  consequences are developed separately in
+  [#2681](https://github.com/cslib-community/complexitylib/issues/2681). The projected/mod-one
+  law, arbitrary-modulus search-LWE sampling experiment, efficient finite-precision sampling
+  and quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
