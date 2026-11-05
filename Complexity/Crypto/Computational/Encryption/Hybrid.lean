@@ -12,11 +12,11 @@ public import Complexity.Crypto.Computational.Encryption.PolyTime
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Languages.Probabilistic.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.BitString.List
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
 
 /-!
 # KEM–DEM hybrid public-key encryption
@@ -179,28 +179,16 @@ theorem isPPTOn_kemRealGame {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ}
     (hn : ComputableInPolyTime n input encUnary) :
     IsPPTOn input encBool (fun a => kemRealGame keyGen encaps distinguisher (n a)) := by
-  have hn' := hn.tidy
   let E1 := encPair input (encPair encBits encBits)
-  let E2 := encPair E1 (encPair encBits encBits)
-  have h1 : ComputableTidilyInPolyTime
-      (fun p : α × List Bool × List Bool => (n p.1, p.2.1))
-      E1 (encPair encUnary encBits) := by
-    dsimp only [E1]; fun_prop
-  have h2 : ComputableTidilyInPolyTime
-      (fun p : (α × List Bool × List Bool) × List Bool × List Bool =>
-        encPair encBits (encPair encBits encBits) (p.1.2.1, p.2))
-      E2 encBits := by
-    dsimp only [E2, E1]
-    exact (ComputableTidilyInPolyTime.encode (encPair encBits (encPair encBits encBits))).comp
-      (by fun_prop)
-  have h3 : IsPPTOn E2 encBool
-      (fun p => distinguisher (n p.1.1)
-        (encPair encBits (encPair encBits encBits) (p.1.2.1, p.2))) := by
-    dsimp only [E2, E1]
-    exact hdist.preprocess (by fun_prop) h2
-  unfold kemRealGame
+  let hp1 := ComputableInPolyTime.fst input (encPair encBits encBits)
+  let hp2 := ComputableInPolyTime.snd input (encPair encBits encBits)
+  let hq1 := ComputableInPolyTime.fst E1 (encPair encBits encBits)
+  let hq2 := ComputableInPolyTime.snd E1 (encPair encBits encBits)
   exact (hkeyGen.preprocess hn).bind_with
-    ((hencaps.preprocess h1.computableInPolyTime).bind_with h3)
+    ((hencaps.preprocess ((hn.comp' hp1).prod hp2.fst')).bind_with
+      (hdist.on.preprocess
+        ((hn.comp' (hp1.comp' hq1)).prod
+          (((hp2.fst'.comp' hq1).prod hq2).encoding_comp))))
 
 /-- The ideal KEM IND-CPA experiment is uniform strict PPT when key generation, encapsulation, and
 the distinguisher have native certificates. -/
@@ -214,34 +202,22 @@ theorem isPPTOn_kemIdealGame {keyGen : ℕ → ProbComp (List Bool × List Bool)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ}
     (hn : ComputableInPolyTime n input encUnary) :
     IsPPTOn input encBool (fun a => kemIdealGame keyGen encaps distinguisher (n a)) := by
-  have hn' := hn.tidy
   let E1 := encPair input (encPair encBits encBits)
   let E2 := encPair E1 (encPair encBits encBits)
-  let E3 := encPair E2 encBits
-  have h1 : ComputableTidilyInPolyTime
-      (fun p : α × List Bool × List Bool => (n p.1, p.2.1))
-      E1 (encPair encUnary encBits) := by
-    dsimp only [E1]; fun_prop
-  have h2 : IsPPTOn E2 encBits
-      (fun p : (α × List Bool × List Bool) × List Bool × List Bool =>
-        BitString.sampleList (n p.1.1)) := by
-    dsimp only [E2, E1]
-    exact ComputableInPolyTime.sampleList (by fun_prop)
-  have h3 : ComputableTidilyInPolyTime
-      (fun p : ((α × List Bool × List Bool) × List Bool × List Bool) × List Bool =>
-        encPair encBits (encPair encBits encBits) (p.1.1.2.1, (p.2, p.1.2.2)))
-      E3 encBits := by
-    dsimp only [E3, E2, E1]
-    exact (ComputableTidilyInPolyTime.encode (encPair encBits (encPair encBits encBits))).comp
-      (by fun_prop)
-  have h4 : IsPPTOn E3 encBool
-      (fun p => distinguisher (n p.1.1.1)
-        (encPair encBits (encPair encBits encBits) (p.1.1.2.1, (p.2, p.1.2.2)))) := by
-    dsimp only [E3, E2, E1]
-    exact hdist.preprocess (by fun_prop) h3
-  unfold kemIdealGame
+  let hp1 := ComputableInPolyTime.fst input (encPair encBits encBits)
+  let hp2 := ComputableInPolyTime.snd input (encPair encBits encBits)
+  let hq1 := ComputableInPolyTime.fst E1 (encPair encBits encBits)
+  let hq2 := ComputableInPolyTime.snd E1 (encPair encBits encBits)
+  let hr1 := ComputableInPolyTime.fst E2 encBits
+  let hr2 := ComputableInPolyTime.snd E2 encBits
+  have hn2 := hn.comp' (hp1.comp' hq1)
   exact (hkeyGen.preprocess hn).bind_with
-    ((hencaps.preprocess h1.computableInPolyTime).bind_with (h2.bind_with h4))
+    ((hencaps.preprocess ((hn.comp' hp1).prod hp2.fst')).bind_with
+      (hn2.sampleList.bind_with
+        (hdist.on.preprocess
+          ((hn2.comp' hr1).prod
+            (((hp2.fst'.comp' (hq1.comp' hr1)).prod
+              (hr2.prod (hq2.snd'.comp' hr1))).encoding_comp)))))
 
 /-- IND-CPA / semantic security for a Key Encapsulation Mechanism ([BonehShoup2023],
 Exercise 11.9): every uniform strict PPT distinguisher has negligible advantage between
@@ -355,12 +331,28 @@ theorem isPPTOn_demKeyGameOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     (hbit : ComputableInPolyTime bit input encBool) :
     IsPPTOn input encBool
       (fun a => demKeyGameOn valid keyLen encryptSym adversary (bit a) (n a)) := by
-  have hchoose := hadversary.choose
-  have hguess := hadversary.guess
-  have hsample : IsPPTOn input encBits (fun a => BitString.sampleList (keyLen (n a))) :=
-    ComputableInPolyTime.sampleList (hkeyLen.comp hn)
-  unfold demKeyGameOn
-  ppt
+  let E1 := encPair input encBits
+  let EChoice := encPair (encPair encMsg encMsg) encBits
+  let E2 := encPair E1 EChoice
+  let hp1 := ComputableInPolyTime.fst input encBits
+  let hp2 := ComputableInPolyTime.snd input encBits
+  let hq1 := ComputableInPolyTime.fst E1 EChoice
+  let hq2 := ComputableInPolyTime.snd E1 EChoice
+  let hr1 := ComputableInPolyTime.fst E2 encBits
+  let hr2 := ComputableInPolyTime.snd E2 encBits
+  have ha2 := hp1.comp' hq1
+  have hn2 := hn.comp' ha2
+  exact (hkeyLen.comp' hn).sampleList.bind_with
+    ((hadversary.choose.on.preprocess ((hn.comp' hp1).prod (.const []))).bind_with
+      (IsPPTOn.cond'
+        (hvalid.comp' (hn2.prod ((ComputableInPolyTime.const []).prod hq2.fst')))
+        ((hencrypt.preprocess
+          (hn2.prod
+            ((hp2.comp' hq1).prod
+              ((hbit.comp' ha2).ite hq2.fst'.snd' hq2.fst'.fst')))).bind_with
+          (hadversary.guess.preprocess
+            ((hn2.comp' hr1).prod ((hq2.snd'.comp' hr1).prod hr2))))
+        (ComputableInPolyTime.const false).isPPTOn))
 
 /-- The unrestricted one-time symmetric experiment `demKeyGame keyLen` has a strict polynomial
 clock when `keyLen` is computable in polynomial time and symmetric encryption and both adversary
@@ -549,24 +541,16 @@ theorem isPPTOn_hybridEncrypt {Msg : Type} {encMsg : Msg ↪ List Bool}
       (fun ⟨n, pk, msg⟩ => hybridEncrypt encaps encryptSym n pk msg) := by
   let E0 := encPair encUnary (encPair encBits encMsg)
   let E1 := encPair E0 (encPair encBits encBits)
-  let E2 := encPair E1 encBits
-  have h1 : ComputableTidilyInPolyTime
-      (fun p : ℕ × List Bool × Msg => (p.1, p.2.1))
-      E0 (encPair encUnary encBits) := by
-    dsimp only [E0]; fun_prop
-  have h2 : ComputableTidilyInPolyTime
-      (fun p : (ℕ × List Bool × Msg) × List Bool × List Bool => (p.1.1, p.2.1, p.1.2.2))
-      E1 (encPair encUnary (encPair encBits encMsg)) := by
-    dsimp only [E1, E0]; fun_prop
-  have h3 : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool × Msg) × List Bool × List Bool) × List Bool =>
-        encPair encBits encBits (p.1.2.2, p.2))
-      E2 encBits := by
-    dsimp only [E2, E1, E0]
-    exact (ComputableTidilyInPolyTime.encode (encPair encBits encBits)).comp (by fun_prop)
-  unfold hybridEncrypt
-  exact (hencaps.preprocess h1.computableInPolyTime).bind_with
-    ((hencryptSym.preprocess h2.computableInPolyTime).bind_with h3.isPPTOn)
+  let hp1 := ComputableInPolyTime.fst encUnary (encPair encBits encMsg)
+  let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encMsg)
+  let hq1 := ComputableInPolyTime.fst E0 (encPair encBits encBits)
+  let hq2 := ComputableInPolyTime.snd E0 (encPair encBits encBits)
+  let hr1 := ComputableInPolyTime.fst E1 encBits
+  let hr2 := ComputableInPolyTime.snd E1 encBits
+  exact (hencaps.preprocess (hp1.prod hp2.fst')).bind_with
+    ((hencryptSym.preprocess
+      ((hp1.comp' hq1).prod (hq2.fst'.prod (hp2.snd'.comp' hq1)))).bind_with
+      (((hq2.snd'.comp' hr1).prod hr2).encoding_comp.isPPTOn))
 
 /-- Hybrid decryption is computable in polynomial time when decapsulation and symmetric decryption
 are computable in polynomial time. -/
@@ -582,21 +566,14 @@ theorem computableInPolyTime_hybridDecrypt {Msg : Type} {encMsg : Msg ↪ List B
       (encPair encUnary (encPair encBits encBits)) encMsg) :
     ComputableInPolyTime
       (fun ⟨n, sk, ct⟩ => hybridDecrypt decaps decryptSym n sk ct)
-      (encPair encUnary (encPair encBits encBits)) encMsg := by
-  let E0 := encPair encUnary (encPair encBits encBits)
-  have hctKem : ComputableTidilyInPolyTime
-      (fun p : ℕ × List Bool × List Bool => unframe p.2.2) E0 encBits :=
-    ComputableTidilyInPolyTime.unframe.comp (by dsimp only [E0]; fun_prop)
-  have hctDem : ComputableTidilyInPolyTime
-      (fun p : ℕ × List Bool × List Bool => dropFrame p.2.2) E0 encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [E0]; fun_prop)
-  have hk : ComputableTidilyInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decaps p.1 p.2.1 (unframe p.2.2)) E0 encBits :=
-    hdecaps.tidy.comp (ComputableTidilyInPolyTime.prod (by dsimp only [E0]; fun_prop)
-      (ComputableTidilyInPolyTime.prod (by dsimp only [E0]; fun_prop) hctKem))
-  unfold hybridDecrypt
-  exact .of_tidy (hdecryptSym.tidy.comp
-    (ComputableTidilyInPolyTime.prod (by dsimp only [E0]; fun_prop) (hk.prod hctDem)))
+      (encPair encUnary (encPair encBits encBits)) encMsg :=
+  let hp1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+  let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
+  hdecryptSym.comp'
+    (hp1.prod
+      ((hdecaps.comp'
+        (hp1.prod (hp2.fst'.prod (ComputableInPolyTime.unframe.comp' hp2.snd')))).prod
+        (ComputableInPolyTime.dropFrame.comp' hp2.snd')))
 
 /-- Hybrid decryption on an encoded ciphertext pair `(ctKem, ctDem)` decapsulates `ctKem` and
 decrypts `ctDem` under the resulting key. -/
@@ -710,46 +687,27 @@ theorem isPPT_hybridToKEMDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     (hadversary : AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
     IsPPT encBool (hybridToKEMDistinguisher encryptSym adversary bit) := by
   let E0 := encPair encUnary encBits
-  let E1 := encPair E0 (encPair (encPair encMsg encMsg) encBits)
-  let E2 := encPair E1 encBits
-  have hpk : ComputableTidilyInPolyTime (fun p : ℕ × List Bool => unframe p.2) E0 encBits :=
-    ComputableTidilyInPolyTime.unframe.comp (by dsimp only [E0]; fun_prop)
-  have h1 : IsPPTOn E0 (encPair (encPair encMsg encMsg) encBits)
-      (fun p => adversary.choose p.1 (unframe p.2)) := by
-    dsimp only [E0]
-    exact hadversary.choose.preprocess (by fun_prop) hpk
-  have hk2 : ComputableTidilyInPolyTime
-      (fun p : (ℕ × List Bool) × (Msg × Msg) × List Bool => unframe (dropFrame p.1.2))
-      E1 encBits :=
-    ComputableTidilyInPolyTime.unframe.comp
-      (ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [E1, E0]; fun_prop))
-  have h2 : ComputableTidilyInPolyTime
-      (fun p : (ℕ × List Bool) × (Msg × Msg) × List Bool =>
-        (p.1.1, unframe (dropFrame p.1.2), if bit then p.2.1.2 else p.2.1.1))
-      E1 (encPair encUnary (encPair encBits encMsg)) :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [E1, E0]; fun_prop)
-      (hk2.prod (by dsimp only [E1, E0]; cases bit <;> fun_prop))
-  have hctKem3 : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × (Msg × Msg) × List Bool) × List Bool =>
-        dropFrame (dropFrame p.1.1.2)) E2 encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp
-      (ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [E2, E1, E0]; fun_prop))
-  have hct3 : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × (Msg × Msg) × List Bool) × List Bool =>
-        encPair encBits encBits (dropFrame (dropFrame p.1.1.2), p.2))
-      E2 encBits :=
-    (ComputableTidilyInPolyTime.encode (encPair encBits encBits)).comp
-      (hctKem3.prod (by dsimp only [E2]; fun_prop))
-  have h3 : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × (Msg × Msg) × List Bool) × List Bool =>
-        (p.1.1.1, p.1.2.2, encPair encBits encBits (dropFrame (dropFrame p.1.1.2), p.2)))
-      E2 (encPair encUnary (encPair encBits encBits)) :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [E2, E1, E0]; fun_prop)
-      (ComputableTidilyInPolyTime.prod (by dsimp only [E2, E1, E0]; fun_prop) hct3)
-  unfold IsPPT hybridToKEMDistinguisher
-  exact h1.bind_with
-    ((hencryptSym.preprocess h2.computableInPolyTime).bind_with
-      (hadversary.guess.preprocess h3.computableInPolyTime))
+  let EChoice := encPair (encPair encMsg encMsg) encBits
+  let E1 := encPair E0 EChoice
+  let hp1 := ComputableInPolyTime.fst encUnary encBits
+  let hp2 := ComputableInPolyTime.snd encUnary encBits
+  let hq1 := ComputableInPolyTime.fst E0 EChoice
+  let hq2 := ComputableInPolyTime.snd E0 EChoice
+  let hr1 := ComputableInPolyTime.fst E1 encBits
+  let hr2 := ComputableInPolyTime.snd E1 encBits
+  have hrest := ComputableInPolyTime.dropFrame.comp' hp2
+  exact (hadversary.choose.on.preprocess
+    (hp1.prod (ComputableInPolyTime.unframe.comp' hp2))).bind_with
+    ((hencryptSym.preprocess
+      ((hp1.comp' hq1).prod
+        ((ComputableInPolyTime.unframe.comp' (hrest.comp' hq1)).prod
+          ((ComputableInPolyTime.const (encOut := encBool) bit).ite
+            hq2.fst'.snd' hq2.fst'.fst')))).bind_with
+      (hadversary.guess.preprocess
+        ((hp1.comp' (hq1.comp' hr1)).prod
+          ((hq2.snd'.comp' hr1).prod
+            (((ComputableInPolyTime.dropFrame.comp' (hrest.comp' (hq1.comp' hr1))).prod
+              hr2).encoding_comp)))))
 
 /-- `hybridToKEMHiddenBitDistinguisher` is uniform strict PPT whenever symmetric encryption and the
 hybrid adversary are. -/
@@ -761,53 +719,37 @@ theorem isPPT_hybridToKEMHiddenBitDistinguisher {Msg : Type} {encMsg : Msg ↪ L
     (hadversary : AdversaryOf.IsPPT encMsg adversary) :
     IsPPT encBool (hybridToKEMHiddenBitDistinguisher encryptSym adversary) := by
   let E0 := encPair encUnary encBits
-  let E1 := encPair E0 (encPair (encPair encMsg encMsg) encBits)
+  let EChoice := encPair (encPair encMsg encMsg) encBits
+  let E1 := encPair E0 EChoice
   let E2 := encPair E1 encBool
   let E3 := encPair E2 encBits
-  let E4 := encPair E3 encBool
-  have hpk : ComputableTidilyInPolyTime (fun p : ℕ × List Bool => unframe p.2) E0 encBits :=
-    ComputableTidilyInPolyTime.unframe.comp (by dsimp only [E0]; fun_prop)
-  have h1 : IsPPTOn E0 (encPair (encPair encMsg encMsg) encBits)
-      (fun p => adversary.choose p.1 (unframe p.2)) := by
-    dsimp only [E0]; exact hadversary.choose.preprocess (by fun_prop) hpk
-  have hk2 : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × (Msg × Msg) × List Bool) × Bool =>
-        unframe (dropFrame p.1.1.2)) E2 encBits :=
-    ComputableTidilyInPolyTime.unframe.comp
-      (ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [E2, E1, E0]; fun_prop))
-  have h2 : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × (Msg × Msg) × List Bool) × Bool =>
-        (p.1.1.1, unframe (dropFrame p.1.1.2), if p.2 then p.1.2.1.2 else p.1.2.1.1))
-      E2 (encPair encUnary (encPair encBits encMsg)) :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [E2, E1, E0]; fun_prop)
-      (hk2.prod (by dsimp only [E2, E1, E0]; fun_prop))
-  have hctKem3 : ComputableTidilyInPolyTime
-      (fun p : (((ℕ × List Bool) × (Msg × Msg) × List Bool) × Bool) × List Bool =>
-        dropFrame (dropFrame p.1.1.1.2)) E3 encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp
-      (ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [E3, E2, E1, E0]; fun_prop))
-  have hct3 : ComputableTidilyInPolyTime
-      (fun p : (((ℕ × List Bool) × (Msg × Msg) × List Bool) × Bool) × List Bool =>
-        encPair encBits encBits (dropFrame (dropFrame p.1.1.1.2), p.2))
-      E3 encBits :=
-    (ComputableTidilyInPolyTime.encode (encPair encBits encBits)).comp
-      (hctKem3.prod (by dsimp only [E3]; fun_prop))
-  have h3 : ComputableTidilyInPolyTime
-      (fun p : (((ℕ × List Bool) × (Msg × Msg) × List Bool) × Bool) × List Bool =>
-        (p.1.1.1.1, p.1.1.2.2, encPair encBits encBits (dropFrame (dropFrame p.1.1.1.2), p.2)))
-      E3 (encPair encUnary (encPair encBits encBits)) :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [E3, E2, E1, E0]; fun_prop)
-      (ComputableTidilyInPolyTime.prod (by dsimp only [E3, E2, E1, E0]; fun_prop) hct3)
-  have h4 : ComputableTidilyInPolyTime
-      (fun p : ((((ℕ × List Bool) × (Msg × Msg) × List Bool) × Bool) × List Bool) × Bool =>
-        p.2 ^^ p.1.1.2)
-      E4 encBool := by
-    dsimp only [E4, E3, E2, E1, E0]; fun_prop
-  unfold IsPPT hybridToKEMHiddenBitDistinguisher
-  exact h1.bind_with
+  let hp1 := ComputableInPolyTime.fst encUnary encBits
+  let hp2 := ComputableInPolyTime.snd encUnary encBits
+  let hq1 := ComputableInPolyTime.fst E0 EChoice
+  let hq2 := ComputableInPolyTime.snd E0 EChoice
+  let hr1 := ComputableInPolyTime.fst E1 encBool
+  let hr2 := ComputableInPolyTime.snd E1 encBool
+  let hs1 := ComputableInPolyTime.fst E2 encBits
+  let hs2 := ComputableInPolyTime.snd E2 encBits
+  let ht1 := ComputableInPolyTime.fst E3 encBool
+  let ht2 := ComputableInPolyTime.snd E3 encBool
+  have hrest := ComputableInPolyTime.dropFrame.comp' hp2
+  have h0_2 := hq1.comp' hr1
+  have h0_3 := h0_2.comp' hs1
+  exact (hadversary.choose.on.preprocess
+    (hp1.prod (ComputableInPolyTime.unframe.comp' hp2))).bind_with
     ((isPPTOn_uniform_bool E1).bind_with
-      ((hencryptSym.preprocess h2.computableInPolyTime).bind_with
-        ((hadversary.guess.preprocess h3.computableInPolyTime).bind_with h4.isPPTOn)))
+      ((hencryptSym.preprocess
+        ((hp1.comp' h0_2).prod
+          ((ComputableInPolyTime.unframe.comp' (hrest.comp' h0_2)).prod
+            (hr2.ite (hq2.fst'.snd'.comp' hr1) (hq2.fst'.fst'.comp' hr1))))).bind_with
+        ((hadversary.guess.preprocess
+          ((hp1.comp' h0_3).prod
+            ((hq2.snd'.comp' (hr1.comp' hs1)).prod
+              (((ComputableInPolyTime.dropFrame.comp' (hrest.comp' h0_3)).prod
+                hs2).encoding_comp)))).bind_with
+          ((ComputableInPolyTime.bool_xor.comp'
+            (ht2.prod (hr2.comp' (hs1.comp' ht1)))).isPPTOn))))
 
 /-- `hybridToDEMAdversary` is an admissible uniform strict PPT `Encryption.AdversaryOf Msg` whenever
 key generation, encapsulation, and the hybrid adversary are. -/
@@ -822,53 +764,26 @@ theorem isPPT_hybridToDEMAdversary {Msg : Type} {encMsg : Msg ↪ List Bool}
     AdversaryOf.IsPPT encMsg (hybridToDEMAdversary keyGen encaps adversary) := by
   let E0 := encPair encUnary encBits
   let E1 := encPair E0 (encPair encBits encBits)
-  let E2 := encPair E1 (encPair (encPair encMsg encMsg) encBits)
-  let E3 := encPair E2 (encPair encBits encBits)
-  have h1 : ComputableTidilyInPolyTime (fun p : ℕ × List Bool => p.1) E0 encUnary := by
-    dsimp only [E0]; fun_prop
-  have h2 : IsPPTOn E1 (encPair (encPair encMsg encMsg) encBits)
-      (fun p => adversary.choose p.1.1 p.2.1) := by
-    dsimp only [E1, E0]; exact hadversary.choose.preprocess (by fun_prop) (by fun_prop)
-  have h3 : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool × List Bool) × (Msg × Msg) × List Bool =>
-        (p.1.1.1, p.1.2.1))
-      E2 (encPair encUnary encBits) := by
-    dsimp only [E2, E1, E0]; fun_prop
-  have hstate4 : ComputableTidilyInPolyTime
-      (fun p : (((ℕ × List Bool) × List Bool × List Bool) × (Msg × Msg) × List Bool) ×
-          List Bool × List Bool =>
-        encPair encBits encBits (p.2.2, p.1.2.2))
-      E3 encBits :=
-    (ComputableTidilyInPolyTime.encode (encPair encBits encBits)).comp
-      (by dsimp only [E3, E2, E1, E0]; fun_prop)
-  have h4 : ComputableTidilyInPolyTime
-      (fun p : (((ℕ × List Bool) × List Bool × List Bool) × (Msg × Msg) × List Bool) ×
-          List Bool × List Bool =>
-        (p.1.2.1, encPair encBits encBits (p.2.2, p.1.2.2)))
-      E3 (encPair (encPair encMsg encMsg) encBits) :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [E3, E2, E1, E0]; fun_prop) hstate4
-  let EG := encPair encUnary (encPair encBits encBits)
-  have hstate5 : ComputableTidilyInPolyTime
-      (fun p : ℕ × List Bool × List Bool => dropFrame p.2.1) EG encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [EG]; fun_prop)
-  have hctKem5 : ComputableTidilyInPolyTime
-      (fun p : ℕ × List Bool × List Bool => unframe p.2.1) EG encBits :=
-    ComputableTidilyInPolyTime.unframe.comp (by dsimp only [EG]; fun_prop)
-  have hct5 : ComputableTidilyInPolyTime
-      (fun p : ℕ × List Bool × List Bool => encPair encBits encBits (unframe p.2.1, p.2.2))
-      EG encBits :=
-    (ComputableTidilyInPolyTime.encode (encPair encBits encBits)).comp
-      (hctKem5.prod (by dsimp only [EG]; fun_prop))
-  have h5 : ComputableTidilyInPolyTime
-      (fun p : ℕ × List Bool × List Bool =>
-        (p.1, dropFrame p.2.1, encPair encBits encBits (unframe p.2.1, p.2.2)))
-      EG EG :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [EG]; fun_prop) (hstate5.prod hct5)
-  refine ⟨?_, hadversary.guess.preprocess h5.computableInPolyTime⟩
-  unfold Probability.IsPPT hybridToDEMAdversary
-  exact (hkeyGen.preprocess h1.computableInPolyTime).bind_with
-    (h2.bind_with
-      ((hencaps.preprocess h3.computableInPolyTime).bind_with h4.isPPTOn))
+  let EChoice := encPair (encPair encMsg encMsg) encBits
+  let E2 := encPair E1 EChoice
+  let hp1 := ComputableInPolyTime.fst encUnary encBits
+  let hq1 := ComputableInPolyTime.fst E0 (encPair encBits encBits)
+  let hq2 := ComputableInPolyTime.snd E0 (encPair encBits encBits)
+  let hr1 := ComputableInPolyTime.fst E1 EChoice
+  let hr2 := ComputableInPolyTime.snd E1 EChoice
+  let hs1 := ComputableInPolyTime.fst E2 (encPair encBits encBits)
+  let hs2 := ComputableInPolyTime.snd E2 (encPair encBits encBits)
+  let hg1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+  let hg2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
+  refine ⟨(hkeyGen.preprocess hp1).bind_with
+    ((hadversary.choose.on.preprocess ((hp1.comp' hq1).prod hq2.fst')).bind_with
+      ((hencaps.preprocess (((hp1.comp' hq1).comp' hr1).prod (hq2.fst'.comp' hr1))).bind_with
+        (((hr2.fst'.comp' hs1).prod
+          ((hs2.snd'.prod (hr2.snd'.comp' hs1)).encoding_comp)).isPPTOn))),
+    hadversary.guess.preprocess
+      (hg1.prod
+        ((ComputableInPolyTime.dropFrame.comp' hg2.fst').prod
+          (((ComputableInPolyTime.unframe.comp' hg2.fst').prod hg2.snd').encoding_comp)))⟩
 
 /-- In the real KEM experiment, `hybridToKEMDistinguisher` reproduces the actual hybrid encryption
 experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
@@ -1152,7 +1067,7 @@ theorem eval_demGame_hybridToDEMAdversary_restrict {Msg : Type}
   congr 1; funext choice
   rw [hpk n keys.1]
   cases valid n [] choice.1.1 choice.1.2 <;>
-    simp [PMF.bind_const]
+    simp only [Bool.false_eq_true, ↓reduceIte, List.headD_cons, List.tail_cons, PMF.bind_const]
 
 /-- **IND-CPA security of KEM–DEM hybrid encryption under an admissibility predicate**
 ([BonehShoup2023], Exercise 11.9(b)), for a polynomial-time predicate `valid` that ignores the
@@ -1211,19 +1126,23 @@ theorem otpDecrypt_otpEncrypt (n : ℕ) (k : List Bool) (bit : Bool) :
 @[fun_prop]
 theorem isPPTOn_otpEncrypt :
     IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun ⟨n, k, bit⟩ => otpEncrypt n k bit) := by
-  unfold otpEncrypt
-  apply ComputableInPolyTime.isPPTOn
-  fun_prop
+      (fun ⟨n, k, bit⟩ => otpEncrypt n k bit) :=
+  let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBool)
+  (ComputableInPolyTime.bitsCons
+    (ComputableInPolyTime.bool_xor.comp'
+      (((ComputableInPolyTime.headD false).comp' hp2.fst').prod hp2.snd'))
+    (.const [])).isPPTOn
 
 /-- One-time pad decryption is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_otpDecrypt :
     ComputableInPolyTime
       (fun ⟨n, k, ct⟩ => otpDecrypt n k ct)
-      (encPair encUnary (encPair encBits encBits)) encBool := by
-  unfold otpDecrypt
-  exact ComputableInPolyTime.of_tidy (by fun_prop)
+      (encPair encUnary (encPair encBits encBits)) encBool :=
+  let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
+  ComputableInPolyTime.bool_xor.comp'
+    (((ComputableInPolyTime.headD false).comp' hp2.fst').prod
+      ((ComputableInPolyTime.headD false).comp' hp2.snd'))
 
 /-- For `1 ≤ n`, a uniform `n`-bit key masks the challenge bit perfectly in `demGame otpEncrypt`,
 so the `false` and `true` experiment distributions are identical. -/
@@ -1244,7 +1163,8 @@ theorem eval_demGame_otpEncrypt_false_eq_true {n : ℕ} (hn : 1 ≤ n) (adversar
   congr 1; funext choice
   ext out
   simp only [PMF.bind_apply, PMF.uniformOfFintype_apply, Fintype.card_bool, tsum_bool]
-  cases choice.1.1 <;> cases choice.1.2 <;> simp [add_comm]
+  cases choice.1.1 <;> cases choice.1.2 <;>
+    simp only [Bool.bne_true, Bool.bne_false, Bool.not_true, Bool.not_false, add_comm]
 
 /-- For `1 ≤ n`, every adversary has exact advantage `0` in `demGame otpEncrypt`. -/
 theorem advantage_demGame_otpEncrypt_eq_zero {n : ℕ} (hn : 1 ≤ n) (adversary : Adversary) :
@@ -1258,7 +1178,7 @@ theorem demOneTimeINDCPA_otpEncrypt : DEMOneTimeINDCPA otpEncrypt := by
   intro adversary _ c
   refine tendsto_const_nhds.congr' ?_
   filter_upwards [Filter.eventually_ge_atTop 1] with n hn
-  simp [advantage_demGame_otpEncrypt_eq_zero hn adversary]
+  simp only [advantage_demGame_otpEncrypt_eq_zero hn adversary, mul_zero]
 
 /-- **KEM-to-PKE corollary**: combining any IND-CPA secure KEM with the one-time pad DEM yields an
 IND-CPA secure public-key bit-encryption scheme. -/
@@ -1295,13 +1215,10 @@ time in unary. -/
 theorem isPPTOn_otpKeyWordEncrypt {keyLen : ℕ → ℕ}
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => otpKeyWordEncrypt keyLen p.1 p.2.1 p.2.2) := by
-  have hk : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => keyLen p.1)
-      (encPair encUnary (encPair encBits encBits)) encUnary :=
-    hkeyLen.comp (ComputableInPolyTime.fst _ _)
-  unfold otpKeyWordEncrypt
-  ppt
+      (fun p => otpKeyWordEncrypt keyLen p.1 p.2.1 p.2.2) :=
+  let hp1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+  let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
+  ((hkeyLen.comp' hp1).bitsXorWithInput (hp2.fst'.cons' (hp2.snd'.cons' (.const [])))).isPPTOn
 
 /-- `otpKeyWordDecrypt keyLen` is computable in polynomial time whenever `keyLen` is computable in
 polynomial time in unary. -/
@@ -1311,14 +1228,10 @@ theorem computableInPolyTime_otpKeyWordDecrypt {keyLen : ℕ → ℕ}
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool =>
         otpKeyWordDecrypt keyLen p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
-  have hk : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => keyLen p.1)
-      (encPair encUnary (encPair encBits encBits)) encUnary :=
-    hkeyLen.comp (ComputableInPolyTime.fst _ _)
-  have hkt := hk.tidy
-  unfold otpKeyWordDecrypt
-  exact ComputableInPolyTime.of_tidy (by polytime)
+      (encPair encUnary (encPair encBits encBits)) encBits :=
+  let hp1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+  let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
+  (hkeyLen.comp' hp1).bitsXorWithInput (hp2.fst'.cons' (hp2.snd'.cons' (.const [])))
 
 /-- A uniform `keyLen n`-bit key masks any challenge word perfectly in
 `demKeyGame keyLen (otpKeyWordEncrypt keyLen)`, so the `false` and `true` experiment distributions
@@ -1362,14 +1275,15 @@ theorem demOneTimeKeyINDCPA_otpKeyWordEncrypt (keyLen : ℕ → ℕ) :
   intro adversary _ c
   refine tendsto_const_nhds.congr' ?_
   filter_upwards with n
-  simp [advantage_demKeyGame_otpKeyWordEncrypt_eq_zero keyLen n adversary]
+  simp only [advantage_demKeyGame_otpKeyWordEncrypt_eq_zero keyLen n adversary, mul_zero]
 
 /-- **The `keyLen n`-bit word one-time pad satisfies equal-length word DEM security**
 (`DEMOneTimeKeyWordINDCPA keyLen (otpKeyWordEncrypt keyLen)`). -/
 theorem demOneTimeKeyWordINDCPA_otpKeyWordEncrypt (keyLen : ℕ → ℕ) :
     DEMOneTimeKeyWordINDCPA keyLen (otpKeyWordEncrypt keyLen) :=
+  let hm := (ComputableInPolyTime.snd encUnary (encPair encBits (encPair encBits encBits))).snd'
   (demOneTimeKeyINDCPA_otpKeyWordEncrypt keyLen).demOneTimeKeyINDCPAOn
-    (ComputableInPolyTime.of_tidy (by polytime))
+    (hm.fst'.length_bits_comp.beq hm.snd'.length_bits_comp)
 
 /-- One-time pad `n`-bit word symmetric encryption: `otpKeyWordEncrypt` specialized to
 `keyLen n = n`. -/
@@ -1437,8 +1351,9 @@ theorem KEMINDCPA.hybrid_otpWordEncrypt_indcpa
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2)) :
     WordINDCPA keyGen (hybridEncrypt encaps otpWordEncrypt) :=
+  let hm := (ComputableInPolyTime.snd encUnary (encPair encBits (encPair encBits encBits))).snd'
   hkem.hybrid_indcpaOn demOneTimeWordINDCPA_otpWordEncrypt
-    (ComputableInPolyTime.of_tidy (by polytime)) (fun _ _ _ _ => rfl) hkeyGen hencaps
+    (hm.fst'.length_bits_comp.beq hm.snd'.length_bits_comp) (fun _ _ _ _ => rfl) hkeyGen hencaps
     isPPTOn_otpWordEncrypt
 
 end Cslib.Crypto.Encryption
