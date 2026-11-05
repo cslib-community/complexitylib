@@ -94,12 +94,15 @@ bounds: time `exp(O(L log s))` and polynomial space.
 
 namespace Cslib.Circuits.Frontier
 
+set_option quotPrecheck false in
 /-- The subring `ℤ_(2)` of rationals with odd denominator. -/
-local notation "ℤ₍₂₎" => Valuation.integer (Rat.padicValuation 2)
+local macro "ℤ₍₂₎" : term => `(Valuation.integer (Rat.padicValuation 2))
 
 namespace NativePacket
 
 open GaloisRingArith TensorNetwork Turing.MultiTapeTM Cslib.GenericRAM
+
+attribute [local irreducible] ComputableInPolyTime
 
 /-! ### The `2`-adic valuation by halving -/
 
@@ -273,14 +276,6 @@ section PolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-private theorem intBin_natAbs'' :
-    ComputableInPolyTime Int.natAbs encIntBin encNat :=
-  .of_tidy ComputableTidilyInPolyTime.intBin_natAbs
-
-private theorem intBin_isNeg'' :
-    ComputableInPolyTime (fun z : ℤ => decide (z < 0)) encIntBin encBool :=
-  .of_tidy ComputableTidilyInPolyTime.intBin_isNeg
-
 private theorem intBin_signMagnitude' :
     ComputableInPolyTime (fun p : Bool × ℕ => if p.1 then -(p.2 : ℤ) else p.2)
       (encPair encBool encNat) encIntBin :=
@@ -293,9 +288,9 @@ private theorem two_pow' {k : α → ℕ} (hk : ComputableInPolyTime k encIn enc
 /-- The odd part of a binary integer. -/
 theorem oddPart_polyTime {z : α → ℤ} (hz : ComputableInPolyTime z encIn encIntBin) :
     ComputableInPolyTime (fun x => z x / 2 ^ twoVal (z x)) encIn encIntBin := by
-  have habs := intBin_natAbs''.comp hz
+  have habs := intBin_natAbs'.comp hz
   have hv := twoVal_polyTime.comp hz
-  refine (intBin_signMagnitude'.comp ((intBin_isNeg''.comp hz).prod
+  refine (intBin_signMagnitude'.comp ((intBin_isNeg'.comp hz).prod
     (ComputableInPolyTime.binary_div.comp (habs.prod (two_pow' hv))))).of_enc_eq fun x => ?_
   simp only [Function.comp_apply, decide_eq_true_eq, ediv_two_pow_twoVal (z x)]
 
@@ -1104,32 +1099,27 @@ theorem entryCertificate_le :
   have hvalS : (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space q ≤ K₁ * Z ^ D :=
     hvs.trans (Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left hZn _).trans (hpowZ (by omega))))
   -- The final multiplication reads the input and two reduced lists.
+  let q' := (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2))
   have hred1 := hRv _ (reduced_value packetTerms q.1 q.2.1 q.2.2)
   have hred2 := hRv _ (reduced_sourceProduct q.1 q.2.2)
-  have hmulIn : (encPair encEntryInput (encPair (encList encNat) (encList encNat))
-      (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2))).length + 1 ≤ 8 * Z := by
+  have hmulIn : (encPair encEntryInput (encPair (encList encNat) (encList encNat)) q').length + 1 ≤
+      8 * Z := by
     have e1 := length_encPair (enc₁ := encEntryInput)
-      (enc₂ := encPair (encList encNat) (encList encNat))
-      (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2))
-    have e2 := length_encPair (enc₁ := encList encNat) (enc₂ := encList encNat)
-      (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)
-    simp only [packetTerms] at hred1 e1 e2 ⊢
+      (enc₂ := encPair (encList encNat) (encList encNat)) q'
+    have e2 := length_encPair (enc₁ := encList encNat) (enc₂ := encList encNat) q'.2
+    simp only [q', packetTerms] at hred1 e1 e2 ⊢
     rw [e1, e2, ← hn]
     omega
-  have hmulT : (NativeCertificate.ofPolyTime mulFinal_polyTime).time
-      (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)) ≤ cm * 8 ^ dm * Z ^ D :=
-    (hmt _).trans (by
-      calc cm * (_ + 1) ^ dm ≤ cm * (8 * Z) ^ dm :=
-            Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hmulIn _)
-        _ = cm * 8 ^ dm * Z ^ dm := by rw [Nat.mul_pow]; ring
-        _ ≤ cm * 8 ^ dm * Z ^ D := Nat.mul_le_mul_left _ (hpowZ (by omega)))
-  have hmulS : (NativeCertificate.ofPolyTime mulFinal_polyTime).space
-      (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)) ≤ cm' * 8 ^ dm' * Z ^ D :=
-    (hms _).trans (by
-      calc cm' * (_ + 1) ^ dm' ≤ cm' * (8 * Z) ^ dm' :=
-            Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hmulIn _)
-        _ = cm' * 8 ^ dm' * Z ^ dm' := by rw [Nat.mul_pow]; ring
-        _ ≤ cm' * 8 ^ dm' * Z ^ D := Nat.mul_le_mul_left _ (hpowZ (by omega)))
+  have hmulB {c d : ℕ} (hd : d ≤ D) :
+      c * ((encPair encEntryInput (encPair (encList encNat) (encList encNat)) q').length + 1) ^ d ≤
+        c * 8 ^ d * Z ^ D := by
+    calc _ ≤ c * (8 * Z) ^ d := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hmulIn _)
+      _ = c * 8 ^ d * Z ^ d := by rw [Nat.mul_pow]; ring
+      _ ≤ c * 8 ^ d * Z ^ D := Nat.mul_le_mul_left _ (hpowZ hd)
+  have hmulT : (NativeCertificate.ofPolyTime mulFinal_polyTime).time q' ≤ cm * 8 ^ dm * Z ^ D :=
+    (hmt q').trans (hmulB (by omega))
+  have hmulS : (NativeCertificate.ofPolyTime mulFinal_polyTime).space q' ≤ cm' * 8 ^ dm' * Z ^ D :=
+    (hms q').trans (hmulB (by omega))
   have hit' := (hit q).trans (hpoly (c := ci) (by omega) (show di ≤ D by omega))
   have his' := (his q).trans (hpoly (c := ci') (by omega) (show di' ≤ D by omega))
   have hnt' := (hnt q).trans (hpoly (c := cn) (by omega) (show dn ≤ D by omega))
@@ -1144,15 +1134,13 @@ theorem entryCertificate_le :
         ((NativeCertificate.ofPolyTime node_polyTime).time q +
           (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).time q +
           (NativeCertificate.ofPolyTime sourceProduct_polyTime).time q) +
-        (NativeCertificate.ofPolyTime mulFinal_polyTime).time
-          (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)) := rfl
+        (NativeCertificate.ofPolyTime mulFinal_polyTime).time q' := rfl
   have hspace : entryCertificate.space q =
       (NativeCertificate.ofPolyTime ComputableInPolyTime.id').space q +
         ((NativeCertificate.ofPolyTime node_polyTime).space q +
           (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space q +
           (NativeCertificate.ofPolyTime sourceProduct_polyTime).space q) +
-        (NativeCertificate.ofPolyTime mulFinal_polyTime).space
-          (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)) := rfl
+        (NativeCertificate.ofPolyTime mulFinal_polyTime).space q' := rfl
   constructor
   · rw [htime]
     have e : G * (P * Z ^ D) = P * (K₁ * Z ^ D) + P * ((G - K₁) * Z ^ D) := by
@@ -1291,14 +1279,13 @@ theorem vertexCertificate_le :
   obtain ⟨P, hPdef⟩ : ∃ P, P = (m + 2) ^ (sidePorts q.1.2.1 q.2 true).length := ⟨_, rfl⟩
   rw [← hPdef]
   have hP1 : 1 ≤ P := hPdef ▸ Nat.one_le_pow _ _ (by omega)
-  have hentry := hK₀ ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
-    (sidePorts q.1.2.1 q.2 true, q.1.2.2))) Rv hRv
+  let q' : PacketCtx × (List (ℕ × Bool) × List ℕ) :=
+    ({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false }, (sidePorts q.1.2.1 q.2 true, q.1.2.2))
+  have hentry := hK₀ q' Rv hRv
   -- The input of the entry is polynomially long.
   have hin := hlen q
   rw [← hn] at hin
-  obtain ⟨n', hn'⟩ : ∃ n', n' = (encEntryInput ((({ q.1.1 with
-    cols := sidePorts q.1.2.1 q.2 false } : PacketCtx), (sidePorts q.1.2.1 q.2 true,
-      q.1.2.2)))).length := ⟨_, rfl⟩
+  obtain ⟨n', hn'⟩ : ∃ n', n' = (encEntryInput q').length := ⟨_, rfl⟩
   rw [← hn'] at hin hentry
   have hZ' : n' + m + Rv + 2 ≤ (cl + 1) * Z ^ (dl + 1) := by
     have h1 : cl * (n + 1) ^ dl ≤ cl * Z ^ (dl + 1) :=
@@ -1312,12 +1299,9 @@ theorem vertexCertificate_le :
     calc (n' + m + Rv + 2) ^ K₀ ≤ ((cl + 1) * Z ^ (dl + 1)) ^ K₀ := Nat.pow_le_pow_left hZ' _
       _ = (cl + 1) ^ K₀ * Z ^ ((dl + 1) * K₀) := by rw [Nat.mul_pow, ← pow_mul]
       _ ≤ (cl + 1) ^ K₀ * Z ^ D := Nat.mul_le_mul_left _ (hpowZ (by omega))
-  have het : entryCertificate.time ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } :
-      PacketCtx), (sidePorts q.1.2.1 q.2 true, q.1.2.2))) ≤
-      K₀ * P * (n' + m + Rv + 2) ^ K₀ := by
+  have het : entryCertificate.time q' ≤ K₀ * P * (n' + m + Rv + 2) ^ K₀ := by
     rw [hPdef, hm]; exact hentry.1
-  have hes : entryCertificate.space ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } :
-      PacketCtx), (sidePorts q.1.2.1 q.2 true, q.1.2.2))) ≤ K₀ * (n' + m + Rv + 2) ^ K₀ := by
+  have hes : entryCertificate.space q' ≤ K₀ * (n' + m + Rv + 2) ^ K₀ := by
     rw [hm]; exact hentry.2
   have hit' : (NativeCertificate.ofPolyTime entryInput_polyTime).time q ≤ ci * Z ^ D :=
     (hit q).trans (Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left (by omega) _).trans
@@ -1327,13 +1311,9 @@ theorem vertexCertificate_le :
       (hpowZ (by omega))))
   have hWK : Z ^ D ≤ Z ^ (G + D) := hpowZ (by omega)
   have htime : vertexCertificate.time q =
-      (NativeCertificate.ofPolyTime entryInput_polyTime).time q +
-      entryCertificate.time ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
-        (sidePorts q.1.2.1 q.2 true, q.1.2.2))) := rfl
+      (NativeCertificate.ofPolyTime entryInput_polyTime).time q + entryCertificate.time q' := rfl
   have hspace : vertexCertificate.space q =
-      (NativeCertificate.ofPolyTime entryInput_polyTime).space q +
-      entryCertificate.space ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
-        (sidePorts q.1.2.1 q.2 true, q.1.2.2))) := rfl
+      (NativeCertificate.ofPolyTime entryInput_polyTime).space q + entryCertificate.space q' := rfl
   constructor
   · rw [htime]
     have h1 : K₀ * P * (n' + m + Rv + 2) ^ K₀ ≤ P * (K₀ * (cl + 1) ^ K₀ * Z ^ D) := by
