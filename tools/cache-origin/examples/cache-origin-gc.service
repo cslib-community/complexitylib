@@ -1,0 +1,18 @@
+[Unit]
+Description=Draft Complexitylib cache garbage collection
+RequiresMountsFor=/srv/cache-origin
+AssertPathIsMountPoint=/srv/cache-origin
+
+[Service]
+Type=oneshot
+User=cache-origin
+Group=www-data
+UMask=0022
+ExecStart=/usr/local/bin/cache-origin gc --root /srv/cache-origin --apply
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/cache-origin
+MemoryMax=256M
+TimeoutStartSec=15min

@@ -1,0 +1,152 @@
+# HTTP cache origin draft
+
+Local, unpushed prototype for [#2503](https://github.com/cslib-community/complexitylib/issues/2503)
+and the alternatives discussed for [#2506](https://github.com/cslib-community/complexitylib/pull/2506).
+Owner: this Codex session, branch `draft/http-cache-origin-20261105`. This is a separate draft,
+not a takeover of that PR. It changes neither publication workflows nor default readers.
+Nothing here provisions a server, installs credentials, or authorizes deployment.
+
+One Linux Go executable has three commands: `serve` accepts synchronous PUTs over a Unix socket,
+`pack` streams a publication package to stdout, and `gc` runs separately under a systemd timer.
+They share a store and a permanent interprocess lock. nginx supplies HTTPS, upload authentication,
+request buffering, and public GET/HEAD. There is no SSH upload path, database, watcher, queue,
+custom TLS implementation, shell execution by the handler, or third-party Go dependency.
+
+## Build and test locally
+
+Prerequisites: Linux, a supported patched Go release (the module currently requires 1.27.3),
+and a local filesystem supporting hard links, directory fsync, and flock. From this directory:
+
+```bash
+go test -race -count=1 ./...
+go vet ./...
+go test -run='^$' -fuzz=FuzzMapping -fuzztime=10s -parallel=2
+go build -o /tmp/cache-origin .
+```
+
+The tests use temporary directories and local HTTP servers. No real server, cloud account,
+repository credential, or Complexitylib build is needed. Linux-only source is intentional.
+
+To prepare real bytes, start from a reviewed, clean Complexitylib checkout with its dependencies
+and toolchain available, and use an absolute scratch directory outside the source checkout:
+
+```bash
+publication_dir=$(mktemp -d)
+lake build Complexity ComplexityTests -o "$publication_dir/mapping.jsonl"
+lake cache stage "$publication_dir/mapping.jsonl" "$publication_dir/archives"
+cache_revision=$(git rev-parse HEAD)
+cache_toolchain=$(tr -d '[:space:]' < lean-toolchain | sed 's#/#--#; s#:#---#')
+/tmp/cache-origin pack --mapping "$publication_dir/mapping.jsonl" \
+  --archives "$publication_dir/archives" --revision "$cache_revision" \
+  --toolchain "$cache_toolchain" > "$publication_dir/package.tar"
+```
+
+`pack` deliberately does not certify the producer. CI integration must stage only the exact clean
+revision after its required checks; it is not implemented by this prototype. The inventory is
+compatible with the SHA-256 inventory proposed in #2506, wrapped in an uncompressed USTAR package
+with `publication.json` first. The .ltar payloads are already compressed and stay opaque.
+Only the pinned Lake module-output subset is accepted: header `"2026-03-17"` followed by
+`["<16-hex input>","<16-hex artifact>.ltar"]` rows. Unfamiliar versions/shapes stop publication
+and GC. Lake's 64-bit artifact IDs are separate from the inventory's SHA-256 digests.
+
+A mapping is the index for one repository revision and toolchain. Its URL contains the Git
+revision and toolchain; each row associates a module's build-input fingerprint with its compiled
+artifact archive. Different revisions can reference the same artifact when those inputs match.
+The first string is a format version, not an expiration date. GC only needs these references;
+it neither fetches Git history nor runs Lean.
+
+## Publication contract
+
+The sole application route is `PUT /publish/<40-hex revision>` with `Content-Type: application/x-tar`.
+The socket is an authenticated-proxy boundary: only the operator and nginx may connect to it.
+After an operator configures nginx authentication, a CI upload would look like:
+
+```bash
+curl --fail-with-body --user cache-publisher --header 'Content-Type: application/x-tar' \
+  --upload-file "$publication_dir/package.tar" \
+  "https://cache.example.edu/publish/$cache_revision"
+```
+
+curl prompts for the password in this example; CI must use its protected secret facility.
+Do not embed a password in the URL or a checked-in command. Authentication is nginx's job;
+the application intentionally has no public TCP listener or independent credential store.
+
+A 201 response means all referenced artifacts and the mapping have been installed. A retry with
+identical bytes succeeds; a conflicting existing key returns 409. A held publication/GC lock
+returns 503 with Retry-After; storage exhaustion returns 507. A timeout can leave the outcome
+unknown: retry the same package. Successful retries do not refresh mapping retention timestamps.
+Malformed packages are fully rejected before anything enters the public namespace. A failure
+during installation may leave unreferenced complete artifacts, but installs the mapping last.
+
+Uploads stream to private, server-created staging files, with limits of 1 GiB per request,
+256 MiB per artifact, 8 MiB per mapping, 4 MiB inventory and 10,000 inventory entries. Links,
+unexpected paths/files, duplicate tar entries, missing references and unknown mapping versions
+are rejected. Only regular USTAR entries are accepted. The handler never executes uploaded bytes.
+
+Only the program/operator may modify the store. nginx gets read access to `public/`, no write
+access to it, and its own separate `nginx-tmp/` for request buffering. Application files are
+installed read-only using atomic hard-link creation; completed files are never edited in place.
+The program uses `os.Root` to confine filesystem access. This is not a sandbox against a
+compromised operator or program: publication and GC currently run as the same Unix user.
+
+## Retention and cleanup
+
+```bash
+/tmp/cache-origin gc --root /srv/cache-origin          # dry run; report without deleting files
+/tmp/cache-origin gc --root /srv/cache-origin --apply  # delete expired mappings and unused artifacts
+```
+
+Every mapping expires two days after its first installation on this server, including the final
+mapping for a toolchain. There are no indefinite pins or repository lookups: toolchains with no
+recent publications naturally lose all mappings. Regular publications keep active toolchains
+cached, while identical retries do not extend an existing mapping's lifetime. If no publications
+arrive for two days, every mapping can expire and clients fall back to compilation.
+Every remaining mapping marks its artifacts live, including artifacts shared across toolchains.
+GC deletes every unreferenced artifact in the same pass that deletes its final referring mapping;
+there is no additional grace period. It also deletes orphaned artifacts from interrupted uploads,
+regardless of their age. References are recomputed each pass, with no persistent reference counts
+or deletion timers. The `state/` directory holds only the permanent publication/GC lock.
+GC validates all mappings, including ones due to expire, before deleting anything. An unreadable
+mapping, missing reference, unsupported format or unexpected public entry stops
+the pass. Publication admission caps the public store at 100,000 objects so it cannot grow
+beyond the collector's supported bound; the filesystem quota separately bounds bytes/inodes.
+
+The `--retain` option sets mapping retention (default `48h`). Expiration and deletion occur on
+GC runs; the example timer runs daily. nginx downloads do not hold the publication/GC lock:
+a client that fetched a mapping just before its expiration can miss an artifact deleted by GC
+and compile that module instead. An already-open artifact file remains readable after unlinking.
+Abandoned application staging directories are removed after 24 hours under the same lock;
+nginx's own request-body temporary files remain nginx/operator-managed.
+
+The lock spans each complete upload/validation/installation and each GC pass, so no scan races
+a new mapping referencing an old artifact. This intentionally serializes the small write workload;
+public nginx reads continue. The timer retries on its next run if the store is busy.
+GC deletion is restartable, not an all-or-nothing filesystem transaction. Dry runs are local
+inspection; the lock file and empty store control directories may be created on first use.
+
+## Operator-owned deployment examples and remaining gaps
+
+The [nginx fragment](examples/nginx.conf) and [systemd units](examples/cache-origin.service)
+are opt-in examples. The [GC timer](examples/cache-origin-gc.timer) invokes the separate
+[GC service](examples/cache-origin-gc.service). They require an operator-created `cache-origin`
+user, a `www-data` nginx group, a dedicated bounded filesystem mounted at `/srv/cache-origin`,
+operator-managed DNS/TLS and an upload password file. Set the store root owner to `cache-origin`
+with mode 0711, its `public/` to 0755, and `staging/` and `state/` to 0700. Create `nginx-tmp/`
+owned by nginx on the same bounded filesystem. The application creates its own control directories.
+Check nginx configuration and real identity/permission behavior before any activation.
+
+This is a draft, not production commissioning. Not included: CI wiring, cryptographic producer
+attestations, automatic provisioning, OS quota setup, capacity alerts, TLS/certificate lifecycle,
+historical backfill, or reader cutover. A stolen publisher credential can still publish malicious
+bytes under previously unused keys; the origin operator controls served bytes. SHA-256 detects
+package corruption, not authorized provenance. Keep GCS readers/publication until a separately
+reviewed deployment and cold restore succeed. Do not put Lean or private operator keys on this host.
+
+Review references: [Go filesystem confinement](https://pkg.go.dev/os#Root),
+[nginx Unix-socket proxying](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass),
+[pinned Lake mapping producer](https://github.com/leanprover/lean4/blob/v4.36.0-rc2/src/lake/Lake/Build/Module.lean#L1336).
+
+Manual impact: the Operator's Manual reaches this opt-in draft from the canonical cache guide;
+normal build/restoration instructions are unchanged. The Agent Operator's Manual needs no edit:
+roles, authorization and handoffs are unchanged. No Lean/API/abstract/roadmap/upstream impact.
+AI assistance: OpenAI Codex wrote this prototype and its tests. It has no human approval.
