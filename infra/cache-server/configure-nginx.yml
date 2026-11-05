@@ -1,0 +1,77 @@
+# Keep the last usable on-disk configuration if rendering, validation or reload fails.
+- name: Inspect the existing cache virtual host
+  ansible.builtin.stat:
+    path: /etc/nginx/sites-available/complexitylib-cache
+  register: cache_server_previous_nginx_stat
+
+- name: Remember the existing cache virtual host
+  ansible.builtin.slurp:
+    src: /etc/nginx/sites-available/complexitylib-cache
+  when: cache_server_previous_nginx_stat.stat.exists
+  register: cache_server_previous_nginx
+
+- name: Inspect the existing virtual host link
+  ansible.builtin.stat:
+    path: /etc/nginx/sites-enabled/complexitylib-cache
+    follow: false
+  register: cache_server_previous_nginx_link
+
+- name: Apply and validate the cache virtual host
+  block:
+    - name: Render the cache virtual host
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/sites-available/complexitylib-cache
+        owner: root
+        group: root
+        mode: '0644'
+      register: cache_server_nginx_template
+
+    - name: Enable the cache virtual host without changing other virtual hosts
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/complexitylib-cache
+        dest: /etc/nginx/sites-enabled/complexitylib-cache
+        state: link
+      register: cache_server_nginx_link
+
+    - name: Validate the complete nginx configuration before reload
+      ansible.builtin.command: /usr/sbin/nginx -t
+      changed_when: false
+
+    - name: Start nginx
+      ansible.builtin.systemd_service:
+        name: nginx
+        enabled: true
+        state: started
+
+    - name: Reload changed configuration
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: reloaded
+      when: cache_server_nginx_template.changed or cache_server_nginx_link.changed
+
+  rescue:
+    - name: Restore the previous virtual host after a failed apply
+      ansible.builtin.copy:
+        content: "{{ cache_server_previous_nginx.content | b64decode }}"
+        dest: /etc/nginx/sites-available/complexitylib-cache
+        owner: root
+        group: root
+        mode: '0644'
+      when: cache_server_previous_nginx_stat.stat.exists
+
+    - name: Remove an invalid first virtual host
+      ansible.builtin.file:
+        path: /etc/nginx/sites-available/complexitylib-cache
+        state: absent
+      when: not cache_server_previous_nginx_stat.stat.exists
+
+    - name: Remove a newly enabled virtual host after failure
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/complexitylib-cache
+        state: absent
+      when: not cache_server_previous_nginx_link.stat.exists
+
+    - name: Report failure with the previous configuration restored
+      ansible.builtin.fail:
+        msg: "Cache nginx apply failed; the previous file was restored: {{ ansible_failed_result.msg | default('see failed task') }}"

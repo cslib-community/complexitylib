@@ -1,0 +1,36 @@
+# Public configuration. Private keys belong in SSH/the protected GitHub environments, never here.
+cache_server_domain: "{{ lookup('ansible.builtin.env', 'CACHE_SERVER_DOMAIN') }}"
+cache_server_acme_email: "{{ lookup('ansible.builtin.env', 'CACHE_SERVER_ACME_EMAIL') }}"
+cache_server_revision: "{{ lookup('ansible.builtin.env', 'CACHE_SERVER_REVISION') }}"
+cache_server_upload_user: cache-upload
+cache_server_upload_home: /var/lib/complexitylib-cache-upload
+cache_server_data_root: /srv/complexitylib-cache
+cache_server_acme_root: /var/lib/complexitylib-cache-acme
+cache_server_certificate_directory: "/etc/letsencrypt/live/{{ cache_server_domain }}"
+cache_server_http_port: 80
+cache_server_https_port: 443
+
+# The cache must be an exact, dedicated ext4 mount on a different device from `/`. These
+# reviewed ceilings bound storage/inode exhaustion even if a publication key is compromised.
+cache_server_data_max_bytes: 68719476736
+cache_server_data_min_free_bytes: 2147483648
+cache_server_data_max_inodes: 4194304
+cache_server_data_min_free_inodes: 65536
+cache_server_mount_facts: "{{ ansible_facts.mounts }}"
+cache_server_upload_max_file_bytes: 1073741824
+cache_server_upload_command: /usr/local/libexec/complexitylib-cache-upload
+cache_server_upload_pubkey_algorithms: ssh-ed25519,rsa-sha2-512,rsa-sha2-256,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521
+# Accepting loader, interpreter or path variables would bypass the forced upload command. Keep
+# only the conventional locale variables accepted by Debian and Ubuntu's default SSH policy.
+cache_server_upload_accept_env_pattern: '^acceptenv(?: (?:LANG|LC_\*))*$'
+cache_server_sshd_config: /etc/ssh/sshd_config.d/60-complexitylib-cache-upload.conf
+
+# Upstream 3.5.0 fixed rrsync escape/no-overwrite defects; use its current security release.
+# Digest: https://api.github.com/repos/RsyncProject/rsync/releases/tags/v3.5.2
+cache_server_rsync_version: 3.5.2
+cache_server_rsync_sha256: a10d591825251e070f74c98df3daad195def4ed81b4a2de16169026aea33f6c8
+# Source or recipe changes must rebuild on the host even when the version is unchanged.
+cache_server_rsync_recipe: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/install-rsync.yml') | hash('sha256') }}"
+cache_server_rsync_installation_id: "{{ cache_server_rsync_version }}-{{ cache_server_rsync_sha256 }}-{{ cache_server_rsync_recipe }}"
+cache_server_rsync_prefix: "/opt/complexitylib-rsync/{{ cache_server_rsync_installation_id }}"
+cache_server_rsync_source: "/usr/local/src/complexitylib-rsync-{{ cache_server_rsync_installation_id }}"

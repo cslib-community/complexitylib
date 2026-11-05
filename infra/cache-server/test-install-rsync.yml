@@ -1,0 +1,9 @@
+# Linux CI only: install exactly the implementation used by the production forced command.
+- name: Install the cache upload implementation for integration tests
+  hosts: all
+  become: true
+  gather_facts: false
+  vars_files: [vars.yml]
+  tasks:
+    - name: Install pinned rsync and rrsync
+      ansible.builtin.import_tasks: install-rsync.yml

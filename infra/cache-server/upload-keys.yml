@@ -1,0 +1,3 @@
+# Repository-reviewed cache publication allowlist. Add bare public keys through a pull request;
+# never put authorized_keys options or private key material in this file.
+cache_server_upload_keys: []

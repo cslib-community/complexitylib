@@ -1,0 +1,172 @@
+- name: Provision and upgrade the optional Complexitylib cache origin
+  hosts: cache_server
+  become: true
+  gather_facts: true
+  vars_files: [vars.yml, upload-keys.yml]
+  pre_tasks:
+    - name: Require a supported host and explicit public configuration
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.os_family == 'Debian'
+          - ansible_facts.service_mgr == 'systemd'
+          - cache_server_domain is match('^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$')
+          - cache_server_acme_email is match('^[^\s@]+@[^\s@]+$')
+          - cache_server_revision is match('^[0-9a-f]{40}$')
+          - cache_server_upload_keys is sequence
+          - cache_server_upload_keys is not string
+          - cache_server_upload_max_file_bytes | int >= 1048576
+          - cache_server_upload_max_file_bytes | int % 512 == 0
+        fail_msg: >-
+          Use a dedicated Debian/Ubuntu systemd VM, supply the documented public values and
+          keep the repository-reviewed upload allowlist and size limits well formed.
+
+    - name: Validate bare public keys without authorized_keys options
+      ansible.builtin.assert:
+        that:
+          - item is match('^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp(256|384|521)) [A-Za-z0-9+/]+={0,3}( [^\r\n]*)?$')
+        fail_msg: "upload-keys.yml must contain bare SSH public keys without options."
+      loop: "{{ cache_server_upload_keys }}"
+
+    - name: Validate the dedicated bounded cache filesystem
+      ansible.builtin.import_tasks: validate-storage.yml
+
+  tasks:
+    - name: Install and update the serving packages
+      ansible.builtin.apt:
+        name: [nginx, certbot, openssh-server, util-linux]
+        state: latest
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install pinned rsync and rrsync
+      ansible.builtin.import_tasks: install-rsync.yml
+
+    - name: Create the publisher's private group
+      ansible.builtin.group:
+        name: "{{ cache_server_upload_user }}"
+        system: true
+
+    - name: Create a dedicated unprivileged publisher
+      ansible.builtin.user:
+        name: "{{ cache_server_upload_user }}"
+        group: "{{ cache_server_upload_user }}"
+        home: "{{ cache_server_upload_home }}"
+        create_home: false
+        shell: /bin/sh
+        password: '!'
+        system: true
+
+    - name: Keep service control paths outside publisher write permissions
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop:
+        - "{{ cache_server_upload_home }}"
+        - "{{ cache_server_upload_home }}/.ssh"
+        - "{{ cache_server_data_root }}"
+        - "{{ cache_server_acme_root }}"
+        - "{{ cache_server_upload_command | dirname }}"
+
+    - name: Create the only writable publication namespaces
+      ansible.builtin.file:
+        path: "{{ cache_server_data_root }}/{{ item }}"
+        state: directory
+        owner: "{{ cache_server_upload_user }}"
+        group: "{{ cache_server_upload_user }}"
+        mode: '0755'
+      loop: [a0, r0]
+
+    - name: Install the bounded immutable upload command
+      ansible.builtin.template:
+        src: upload-command.sh.j2
+        dest: "{{ cache_server_upload_command }}"
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Install the complete set of restricted publication keys
+      ansible.builtin.template:
+        src: authorized_keys.j2
+        dest: "{{ cache_server_upload_home }}/.ssh/authorized_keys"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enforce the upload boundary for every account authentication path
+      ansible.builtin.import_tasks: configure-sshd.yml
+
+    - name: Check whether this host already has its certificate
+      ansible.builtin.stat:
+        path: "{{ cache_server_certificate_directory }}/fullchain.pem"
+      register: cache_server_certificate
+
+    - name: Configure HTTP certificate bootstrap when needed
+      ansible.builtin.include_tasks: configure-nginx.yml
+      vars:
+        cache_server_https: false
+      when: not cache_server_certificate.stat.exists
+
+    - name: Obtain the initial certificate without rewriting nginx configuration
+      ansible.builtin.command:
+        argv:
+          - certbot
+          - certonly
+          - --non-interactive
+          - --agree-tos
+          - --webroot
+          - --webroot-path
+          - "{{ cache_server_acme_root }}"
+          - --email
+          - "{{ cache_server_acme_email }}"
+          - --cert-name
+          - "{{ cache_server_domain }}"
+          - --domain
+          - "{{ cache_server_domain }}"
+        creates: "{{ cache_server_certificate_directory }}/fullchain.pem"
+
+    - name: Install the final HTTPS configuration
+      ansible.builtin.include_tasks: configure-nginx.yml
+      vars:
+        cache_server_https: true
+
+    - name: Ensure the certificate deploy hook directory exists
+      ansible.builtin.file:
+        path: /etc/letsencrypt/renewal-hooks/deploy
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Reload nginx only after a valid certificate renewal
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/renewal-hooks/deploy/complexitylib-cache-nginx
+        owner: root
+        group: root
+        mode: '0755'
+        content: |
+          #!/bin/sh
+          set -eu
+          /usr/sbin/nginx -t
+          /bin/systemctl reload nginx
+
+    - name: Enable the packaged certificate renewal timer
+      ansible.builtin.systemd_service:
+        name: certbot.timer
+        enabled: true
+        state: started
+
+    - name: Check the HTTPS endpoint and deployed revision from the controller
+      ansible.builtin.uri:
+        url: "https://{{ cache_server_domain }}/healthz"
+        return_content: true
+        follow_redirects: none
+        validate_certs: true
+      become: false
+      delegate_to: localhost
+      register: cache_server_health
+      failed_when: >-
+        cache_server_health.status | default(-1) != 200 or
+        cache_server_health.content | default('') | trim != cache_server_revision

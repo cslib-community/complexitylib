@@ -1,0 +1,37 @@
+- name: Locate the cache and operating-system filesystems
+  ansible.builtin.set_fact:
+    cache_server_data_mount_matches: >-
+      {{ cache_server_mount_facts | selectattr('mount', 'equalto', cache_server_data_root) | list }}
+    cache_server_root_mount_matches: >-
+      {{ cache_server_mount_facts | selectattr('mount', 'equalto', '/') | list }}
+
+- name: Require exact cache and operating-system mount facts
+  ansible.builtin.assert:
+    that:
+      - cache_server_data_mount_matches | length == 1
+      - cache_server_root_mount_matches | length == 1
+    fail_msg: >-
+      {{ cache_server_data_root }} must already be an exact dedicated mount; mounting a
+      subdirectory of the operating-system filesystem is not accepted.
+
+- name: Record the validated filesystem facts
+  ansible.builtin.set_fact:
+    cache_server_data_mount: "{{ cache_server_data_mount_matches[0] }}"
+    cache_server_root_mount: "{{ cache_server_root_mount_matches[0] }}"
+
+- name: Require a bounded dedicated cache filesystem
+  ansible.builtin.assert:
+    that:
+      - cache_server_data_mount.device != cache_server_root_mount.device
+      - cache_server_data_mount.fstype == 'ext4'
+      - cache_server_data_mount.size_total | int > 0
+      - cache_server_data_mount.size_total | int <= cache_server_data_max_bytes
+      - cache_server_data_mount.size_available | int >= cache_server_data_min_free_bytes
+      - cache_server_data_mount.inode_total | int > 0
+      - cache_server_data_mount.inode_total | int <= cache_server_data_max_inodes
+      - cache_server_data_mount.inode_available | int >= cache_server_data_min_free_inodes
+    fail_msg: >-
+      {{ cache_server_data_root }} must be a separate ext4 filesystem no larger than
+      {{ cache_server_data_max_bytes }} bytes or {{ cache_server_data_max_inodes }} inodes,
+      with at least {{ cache_server_data_min_free_bytes }} free bytes and
+      {{ cache_server_data_min_free_inodes }} free inodes.
