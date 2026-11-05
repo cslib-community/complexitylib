@@ -5,14 +5,17 @@ Use scripts/build_operator_manual.py; no archived datasets are needed.
 """
 import copy
 import json
-import os
 import re
 import subprocess
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_ROOT = ROOT / '_build'
+SOURCE_REVISION = None
+SOURCE_PATHS = set()
+CHANGED_PATHS = set()
+REPOSITORY_URL = 'https://github.com/cslib-community/complexitylib'
 ORDER = [
     ('design-and-assurance', ['index', 'architecture', 'automation', 'assurance', 'upstream-and-credit']),
     ('machines-and-classes', ['index', 'native-and-resources', 'intermediate-and-legacy',
@@ -72,6 +75,22 @@ def write_latex(ast):
     return run(['pandoc', '-f', 'json', '-t', 'latex', '--top-level-division=chapter', '--wrap=none'], input=json.dumps(ast))
 
 
+def repository_link(resolved, parsed):
+    """Link to committed repository content, never an unpublished local target."""
+    try:
+        relative = resolved.relative_to(ROOT.parent).as_posix()
+    except ValueError as error:
+        raise ValueError(f'Link target is outside the repository: {resolved}') from error
+    if SOURCE_REVISION is None or relative not in SOURCE_PATHS:
+        raise ValueError(f'Link target is absent from the rendered revision: {relative}; commit it first')
+    if any(path == relative or path.startswith(relative + '/') for path in CHANGED_PATHS):
+        raise ValueError(f'Link target has uncommitted changes: {relative}; commit them first')
+    kind = 'tree' if resolved.is_dir() else 'blob'
+    repository = urlparse(REPOSITORY_URL)
+    path = f'{repository.path}/{kind}/{SOURCE_REVISION}/{quote(relative, safe="/")}'
+    return parsed._replace(scheme=repository.scheme, netloc=repository.netloc, path=path).geturl()
+
+
 def transform(node, path, chapter_index=False, references=False):
     if isinstance(node, list):
         return [transform(x, path, chapter_index, references) for x in node]
@@ -90,7 +109,7 @@ def transform(node, path, chapter_index=False, references=False):
         attr, content, target = node['c']
         href, title = target
         parsed = urlparse(href)
-        if not parsed.scheme:
+        if not parsed.scheme and not parsed.netloc:
             resolved = (ROOT / path).parent.joinpath(unquote(parsed.path)).resolve() if parsed.path else ROOT / path
             try:
                 relative = resolved.relative_to(ROOT).as_posix()
@@ -102,8 +121,7 @@ def transform(node, path, chapter_index=False, references=False):
                 return {'t': 'Link', 'c': [attr, transform(content, path, chapter_index, references), ['#doc-sources', title]]}
             if relative in FILES:
                 return {'t': 'Link', 'c': [attr, transform(content, path, chapter_index, references), ['#' + label(relative, parsed.fragment), title]]}
-            # Preserve actual source/artifact links from the selected output directory.
-            href = Path(os.path.relpath(resolved, OUTPUT_ROOT)).as_posix() + ('#' + parsed.fragment if parsed.fragment else '')
+            href = repository_link(resolved, parsed)
         return {'t': 'Link', 'c': [attr, transform(content, path, chapter_index, references), [href, title]]}
     if typ == 'Code':
         text = node['c'][1]

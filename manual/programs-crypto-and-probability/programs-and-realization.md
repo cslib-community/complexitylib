@@ -21,11 +21,11 @@ The adjacent modules supply different semantic tools, not alternative machines:
 | Pathwise query/cost bounds | [Complexity/Languages/Probabilistic/QueryCount.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/QueryCount.lean) | Bound every branch by an explicit request charge |
 | Transcripts | [Complexity/Languages/Probabilistic/Transcript.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/Transcript.lean) | Retain dependent request/reply pairs |
 | Memoization and random oracles | [Complexity/Languages/Probabilistic/RandomOracle.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/RandomOracle.lean) | Repeated calls receive the same cached random answer |
-| Bidirectional random permutations | [Complexity/Languages/Probabilistic/RandomPermutation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/RandomPermutation.lean) | Forward/inverse consistency and sampling without replacement |
+| Bidirectional random permutations | [Complexity/Languages/Probabilistic/RandomPermutation.lean](../../Complexity/Languages/Probabilistic/RandomPermutation.lean) | Forward/inverse consistency, `bidirDedup` query deduplication, and sampling without replacement |
 | Coupled simulation and until-bad | [Complexity/Languages/Probabilistic/UntilBad.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/UntilBad.lean) | Transfer probability bounds until a designated bad event |
 | Replay/forking | [Complexity/Languages/Probabilistic/Forking.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/Forking.lean) | Explicit tapes and reply lists permit repeatable adversary runs |
 
-An ideal full random function table and its lazy cache can have the same transcript distribution while radically different representation costs. Their semantic equivalence does not, by itself, prove efficient materialization of the full table.
+An ideal full random function table and its lazy cache can have the same transcript distribution while radically different representation costs. Their semantic equivalence does not, by itself, prove efficient materialization of the full table. At the open `OracleComp` level, forward-only query deduplication wraps a program with `memoize OracleComp.query` ([Memoize.lean](../../Complexity/Foundations/Control/Monad/Memoize.lean)), while bidirectional permutation reductions wrap `PermOracleSpec α` programs with `RandomPermutation.bidirDedupStep` / `RandomPermutation.bidirDedup` ([RandomPermutation.lean](../../Complexity/Languages/Probabilistic/RandomPermutation.lean), checked in [RandomPermutationSwitching.lean](../../ComplexityTests/RandomPermutationSwitching.lean)) so both forward hits in `dom(cache)` and inverse hits in `ran(cache)` reuse cached answers without repeating underlying oracle calls, preserving `evalPerm π` output laws, pathwise query bounds, and pairwise-distinct domain/range cache invariants.
 
 ## Closed strict polynomial time
 
@@ -38,6 +38,17 @@ For a common coin and output budget, import [CoinTape.Bounds](../../Complexity/C
 [IsPPT](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Parameter.lean#L48) passes security parameter `n` in unary together with an auxiliary bit string. The clock is polynomial in the combined encoded input, not only in `n`. This is why a security claim over arbitrarily long samples is not automatically the same as a conventional polynomial-length ensemble statement.
 
 The inspectable abstract uses a finite random tape and a deterministic polynomial-time evaluator: [StrictPPT](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/Randomized.lean#L36). [strictPPT_iff](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/CryptographyBridge.lean#L59) relates that presentation to the library's native predicate. It is an equivalent presentation with an explicit bridge, not a second unconnected efficiency convention.
+
+For a list traversal with known component seed laws, import
+[Languages.Probabilistic.Traverse.CoinTape](../../Complexity/Languages/Probabilistic/Traverse/CoinTape.lean).
+`ProbComp.eval_mapM_of_uniformList` realizes the original `list.mapM program` by splitting
+`list.length * width` uniform bits into rows and applying `List.zipWith evaluate` to inputs
+and rows. The component law is required only for values in the supplied list. Repeated input
+values still receive independent blocks; empty lists and width zero are allowed. This semantic
+law supplies an explicit seed allocation, while native efficiency remains a separate obligation.
+The existing `IsPPTOn.mapM` certificate uses this same law. The
+[checked examples](../../ComplexityTests/TraversalCoinTape.lean) show distinct seeds at repeated
+inputs and a component law that deliberately fails outside the input list.
 
 ## Open oracle polynomial time
 
@@ -66,6 +77,30 @@ The dotted arrows are obligations of [IsOraclePPTOn](https://github.com/cslib-co
 Request construction, tape-head movement and reply inspection are charged machine operations. The external handler's own computation is outside the oracle machine's cost. A reply may be arbitrarily long; the machine cannot return an arbitrarily long output for free, as the native `length_le` theorem records. Typed oracle interfaces need explicit word encodings and realization certificates before this native predicate applies.
 
 [Complexity/Computability/Probabilistic/Oracle/Substitution.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle/Substitution.lean) closes an efficient open program under efficient stateful oracle replacement. The principal endpoint `IsOraclePPTOn.run_interpret_preprocess_open` includes an invariant and controlled growth of replies and encoded handler state. Merely saying that each call is polynomial time would permit iterated state doubling and does not imply a polynomial total run. The underlying [Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean) supplies a machine-configuration simulation; the public theorem is supported by that realization.
+
+Saved-coin execution reuses `MultiTapePTM.runConfigFromCoins` from
+[`CoinTape.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/CoinTape.lean).
+The native [`Replay/WithOracle.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Replay/WithOracle.lean)
+controller reads a supplied bit before executing the source instruction, so a query retains that
+bit's branch and the original request/reply channels. `ReplayWithOracle.run_coins` equates the
+complete programs in `2 * coins.length + 1` transitions, including the final stop. The controller's
+own private samples may be discarded only under a stateless coin law. Its auxiliary-tape operations
+are shared with the native clock in
+[`Machine/AuxiliaryTape.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Machine/AuxiliaryTape.lean).
+That controller bound assumes prepared tapes. The native `exists_oracleReplay` theorem in
+[`Replay/WithOracleInput.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Replay/WithOracleInput.lean)
+adds pair decoding and virtual-input marking, proving a linear clock in the entire encoded
+`(coins, input)` pair and actual halting. The shared pair preparer also serves closed replay.
+
+[`Oracle/Replay.lean`](../../Complexity/Computability/Probabilistic/Oracle/Replay.lean) exposes
+`MultiTapePTM.isOraclePPTOn_runCoins` and `IsOraclePPTOn.exists_savedCoins`. The latter starts with
+an actual certified oracle-PPT program, fixes one bit per native instruction, and gives an efficient
+replay whose polynomial-length uniform coin tape reproduces the joint encoded-output and external
+state law for every stateful handler. Replies remain on their original channels; replay does not
+copy an unbounded reply into a configuration encoding. This completes the replay prerequisite
+[#2579](https://github.com/cslib-community/complexitylib/issues/2579). The Schnorr signing/hash/cache
+and freshness bridge for the full ROM forking reduction remains
+[#2568](https://github.com/cslib-community/complexitylib/issues/2568).
 
 ## Exact versus approximate randomness
 

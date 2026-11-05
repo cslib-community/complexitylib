@@ -80,9 +80,9 @@ theorem cell_bound : cellModule.ChargeBound storageCharge cellCharge :=
     cases o <;> exact Nat.le_refl _
 
 /-- Read the counter and increment it only when its value is zero. -/
-def ensurePositive : counter.Client Nat :=
-  (.liftBind false (fun n => .pure n) : counter.Client Nat).bind fun n =>
-    if n = 0 then .liftBind true (fun m => .pure m) else .pure n
+def ensurePositive : counter.Client Nat := do
+  let n ← counter.call false
+  if n = 0 then counter.call true else .pure n
 
 theorem read_contract : counter.CostHoare counterCharge (fun _ => True)
     (.liftBind false fun n => .pure n) (fun n s => n = s) (fun s => counterCharge s false) := by
@@ -177,8 +177,9 @@ example : counter.CostHoare counterCharge (fun _ => True)
 
 -- State-dependent charges must use the changed state for the second call.
 example (n : Nat) : counter.CostHoare (fun s _ => s + 1) (fun s => s = n)
-    ((.liftBind true (fun a => .pure a) : counter.Client Nat).bind fun _ =>
-      .liftBind false fun a => .pure a)
+    (do
+      let _ ← counter.call true
+      counter.call false)
     (fun a s => a = s ∧ s = n + 1) (fun s => 2 * s + 3) := by
   apply StateTransitionSpec.CostHoare.bind (mid := fun a s => a = s ∧ s = n + 1)
     (first := fun s => s + 1) (next := fun _ s => s + 1)

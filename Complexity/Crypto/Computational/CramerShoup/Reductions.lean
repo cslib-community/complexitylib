@@ -81,26 +81,26 @@ private theorem computableTidilyInPolyTime_decodeCramerShoup
 /-! ### Approximate exponent sampling via `sampleModNat` -/
 
 /-- Sample a pair of approximate exponents modulo `F.order d`. -/
-noncomputable def sampleCramerShoupPair (n : ℕ) (d : F.Desc) : ProbComp (ℕ × ℕ) :=
-  F.sampleExp n d >>= fun s =>
-    F.sampleExp n d >>= fun t =>
-      pure (s, t)
+noncomputable def sampleCramerShoupPair (n : ℕ) (d : F.Desc) : ProbComp (ℕ × ℕ) := do
+  let s ← F.sampleExp n d
+  let t ← F.sampleExp n d
+  return (s, t)
 
 /-- Sample a 3-tuple of approximate exponents `(a, b, c)` modulo `F.order d`. -/
 noncomputable def sampleCramerShoupTripleExponents (n : ℕ) (d : F.Desc) :
-    ProbComp (ℕ × ℕ × ℕ) :=
-  F.sampleExp n d >>= fun a =>
-    F.sampleCramerShoupPair n d >>= fun bc =>
-      pure (a, bc)
+    ProbComp (ℕ × ℕ × ℕ) := do
+  let a ← F.sampleExp n d
+  let bc ← F.sampleCramerShoupPair n d
+  return (a, bc)
 
 /-- Sample a 6-tuple secret key `((s, t), ((s₁, t₁), (s₂, t₂)))` of approximate exponents modulo
 `F.order d`. -/
 noncomputable def sampleCramerShoupSK (n : ℕ) (d : F.Desc) :
-    ProbComp ((ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :=
-  F.sampleCramerShoupPair n d >>= fun p =>
-    F.sampleCramerShoupPair n d >>= fun p₁ =>
-      F.sampleCramerShoupPair n d >>= fun p₂ =>
-        pure (p, (p₁, p₂))
+    ProbComp ((ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) := do
+  let p ← F.sampleCramerShoupPair n d
+  let p₁ ← F.sampleCramerShoupPair n d
+  let p₂ ← F.sampleCramerShoupPair n d
+  return (p, (p₁, p₂))
 
 private theorem isPPTOn_sampleCramerShoupPair {γ : Type} {encIn : γ ↪ List Bool}
     {n : γ → ℕ} {d : γ → F.Desc}
@@ -555,27 +555,27 @@ noncomputable def cramerShoupMsgToDDHDistinguisher
     (encodeAD : F.Desc × AD → List Bool)
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool)
-    (n : ℕ) (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  F.sampleCramerShoupSK n input.1 >>= fun sk =>
-    let pk := F.encodeCramerShoupPublicKey input.1 (csDdhU input) sk
-    ((OracleComp.interpret
+    (n : ℕ) (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
+  let sk ← F.sampleCramerShoupSK n input.1
+  let pk := F.encodeCramerShoupPublicKey input.1 (csDdhU input) sk
+  let choiceOut ← (OracleComp.interpret
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+      (F.cramerShoupPhase1Oracle hasAD H isElem input.1 sk))
+    (adversary.choose n pk)).run ()
+  let choice := choiceOut.1
+  let m₀ := encodeMsg (input.1, csChoiceMsg₀ choice)
+  let m₁ := encodeMsg (input.1, csChoiceMsg₁ choice)
+  let ad := encodeAD (input.1, csChoiceAD choice)
+  if isElem (input.1, m₀) && isElem (input.1, m₁) then
+    let m := if bit then m₁ else m₀
+    let ct := F.encodeCramerShoupChallenge H input.1 sk (csDdhV input) (csDdhW input) m ad
+    let guessOut ← (OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (F.cramerShoupPhase1Oracle hasAD H isElem input.1 sk))
-      (adversary.choose n pk)).run ()) >>= fun choiceOut =>
-      let choice := choiceOut.1
-      let m₀ := encodeMsg (input.1, csChoiceMsg₀ choice)
-      let m₁ := encodeMsg (input.1, csChoiceMsg₁ choice)
-      let ad := encodeAD (input.1, csChoiceAD choice)
-      if isElem (input.1, m₀) && isElem (input.1, m₁) then
-        let m := if bit then m₁ else m₀
-        let ct := F.encodeCramerShoupChallenge H input.1 sk (csDdhV input) (csDdhW input) m ad
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-            (F.cramerShoupPhase2Oracle hasAD H isElem input.1 sk ct ad))
-          (adversary.guess n choice.2 ct)).run ()) >>= fun guessOut =>
-          pure guessOut.1
-      else
-        pure false
+        (F.cramerShoupPhase2Oracle hasAD H isElem input.1 sk ct ad))
+      (adversary.guess n choice.2 ct)).run ()
+    return guessOut.1
+  else
+    return false
 
 /-- The DDH distinguisher constructed from a group-message 1CCA adversary with associated data
 (`Msg = List Bool`, `encodeMsg = Prod.snd`, `encodeAD = fun p => encAD p.2`). -/
@@ -683,33 +683,33 @@ noncomputable def cramerShoupMsgToCollisionFinder
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) :
     CollisionFinderFor F.Desc :=
-  fun n d =>
-    F.sampleCramerShoupTripleExponents n d >>= fun abc =>
-      F.sampleCramerShoupSK n d >>= fun sk =>
-        let gen := F.encode d (F.generator d)
-        let u := F.smul (d, csExpA abc, gen)
-        let v := F.smul (d, csExpB abc, gen)
-        let w := F.smul (d, csExpC abc, gen)
-        let pk := F.encodeCramerShoupPublicKey d u sk
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-            (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
-          (adversary.choose n pk)).run ()) >>= fun choiceOut =>
-          let choice := choiceOut.1
-          let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
-          let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
-          let ad := encodeAD (d, csChoiceAD choice)
-          if isElem (d, m₀) && isElem (d, m₁) then
-            let m := if bit then m₁ else m₀
-            let ct := F.encodeCramerShoupChallenge H d sk v w m ad
-            ((OracleComp.interpret
-              (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-                (F.cramerShoupCollisionPhase2Oracle hasAD H isElem d sk ct ad))
-              (adversary.guess n choice.2 ct)).run none) >>= fun out =>
-              let target := extractCramerShoupTuple ct ad
-              pure (out.2.getD target, target)
-          else
-            pure ([], [])
+  fun n d => do
+    let abc ← F.sampleCramerShoupTripleExponents n d
+    let sk ← F.sampleCramerShoupSK n d
+    let gen := F.encode d (F.generator d)
+    let u := F.smul (d, csExpA abc, gen)
+    let v := F.smul (d, csExpB abc, gen)
+    let w := F.smul (d, csExpC abc, gen)
+    let pk := F.encodeCramerShoupPublicKey d u sk
+    let choiceOut ← (OracleComp.interpret
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+        (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
+      (adversary.choose n pk)).run ()
+    let choice := choiceOut.1
+    let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
+    let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
+    let ad := encodeAD (d, csChoiceAD choice)
+    if isElem (d, m₀) && isElem (d, m₁) then
+      let m := if bit then m₁ else m₀
+      let ct := F.encodeCramerShoupChallenge H d sk v w m ad
+      let out ← (OracleComp.interpret
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+          (F.cramerShoupCollisionPhase2Oracle hasAD H isElem d sk ct ad))
+        (adversary.guess n choice.2 ct)).run none
+      let target := extractCramerShoupTuple ct ad
+      return (out.2.getD target, target)
+    else
+      return ([], [])
 
 /-- The setup-parameterized collision finder constructed from a group-message 1CCA adversary with
 associated data (`Msg = List Bool`, `encodeMsg = Prod.snd`, `encodeAD = fun p => encAD p.2`). -/
@@ -974,29 +974,29 @@ def cramerShoupValid (isElem : F.Desc × List Bool → Bool) (d : ℕ → F.Desc
 /-- Probabilistic polynomial-time Cramer–Shoup key generation for a group family `d : ℕ → F.Desc`,
 sampling approximate uniform exponents via `sampleModNat`. -/
 noncomputable def cramerShoupKeyGenProb (d : ℕ → F.Desc) (n : ℕ) :
-    ProbComp (List Bool × List Bool) :=
-  F.sampleExp n (d n) >>= fun a =>
-    F.sampleCramerShoupSK n (d n) >>= fun sk =>
-      let u := F.smul (d n, a, F.encode (d n) (F.generator (d n)))
-      pure (F.encodeCramerShoupPublicKey (d n) u sk, encCramerShoupSK sk)
+    ProbComp (List Bool × List Bool) := do
+  let a ← F.sampleExp n (d n)
+  let sk ← F.sampleCramerShoupSK n (d n)
+  let u := F.smul (d n, a, F.encode (d n) (F.generator (d n)))
+  return (F.encodeCramerShoupPublicKey (d n) u sk, encCramerShoupSK sk)
 
 /-- Probabilistic polynomial-time Cramer–Shoup encryption with associated data for a group family
 `d : ℕ → F.Desc`, sampling the encryption exponent via `sampleModNat`. -/
 noncomputable def cramerShoupADEncryptProb
     {AD : Type} (encAD : AD ↪ List Bool)
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
-    (n : ℕ) (pk m : List Bool) (ad : AD) : ProbComp (List Bool) :=
-  F.sampleExp n (d n) >>= fun b =>
-    pure (F.encodeCramerShoupEncrypt H (d n) (decodeBits4 (dropFrame pk)) m (encAD ad) b)
+    (n : ℕ) (pk m : List Bool) (ad : AD) : ProbComp (List Bool) := do
+  let b ← F.sampleExp n (d n)
+  return F.encodeCramerShoupEncrypt H (d n) (decodeBits4 (dropFrame pk)) m (encAD ad) b
 
 /-- Probabilistic polynomial-time Cramer–Shoup encryption for a group family `d : ℕ → F.Desc`
 (associated-data-free specialization `ad = []`), sampling the encryption exponent via
 `sampleModNat`. -/
 noncomputable def cramerShoupEncryptProb
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
-    (n : ℕ) (pk m : List Bool) : ProbComp (List Bool) :=
-  F.sampleExp n (d n) >>= fun b =>
-    pure (F.encodeCramerShoupEncrypt H (d n) (decodeBits4 (dropFrame pk)) m [] b)
+    (n : ℕ) (pk m : List Bool) : ProbComp (List Bool) := do
+  let b ← F.sampleExp n (d n)
+  return F.encodeCramerShoupEncrypt H (d n) (decodeBits4 (dropFrame pk)) m [] b
 
 /-- Deterministic polynomial-time Cramer–Shoup decryption with associated data for
 `Encryption.cca2ADGameOn`. -/

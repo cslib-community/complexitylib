@@ -1077,20 +1077,21 @@ $((h_1, \mathrm{hash}_1(h_1, f(x))), (h_2, \mathrm{hash}_2(h_2, x)))$. -/
 private noncomputable def coreLHLDist {k imgLen_k m1 m2 c2 : ℕ}
     (f : BitString k → BitString imgLen_k) (r : Fin (k + 1))
     (hS : (regularityBucket f r).Nonempty) (hm1 : m1 ≤ k) (hm2 : m2 ≤ c2) :
-    PMF ((BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) :=
-  (PMF.uniformOfFinset (regularityBucket f r) hS).bind fun x =>
-    (PMF.uniformOfFintype (BitString (k * imgLen_k))).bind fun h1 =>
-      (PMF.uniformOfFintype (BitString (c2 * k))).map fun h2 =>
-        ((h1, LinearHash.hash (block h1 ∘ Fin.castLE hm1) (f x)),
-          (h2, LinearHash.hash (block h2 ∘ Fin.castLE hm2) x))
+    PMF ((BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) := do
+  let x ← PMF.uniformOfFinset (regularityBucket f r) hS
+  let h1 ← PMF.uniformOfFintype (BitString (k * imgLen_k))
+  (PMF.uniformOfFintype (BitString (c2 * k))).map fun h2 =>
+    ((h1, LinearHash.hash (block h1 ∘ Fin.castLE hm1) (f x)),
+      (h2, LinearHash.hash (block h2 ∘ Fin.castLE hm2) x))
 
 /-- Ideal uniform core tuple distribution matching `coreLHLDist`. -/
 private noncomputable def unifCoreDist (k imgLen_k m1 m2 c2 : ℕ) :
-    PMF ((BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) :=
-  ((PMF.uniformOfFintype (BitString (k * imgLen_k))).bind fun h1 =>
-    (PMF.uniformOfFintype (BitString m1)).map (h1, ·)).bind fun p1 =>
-      ((PMF.uniformOfFintype (BitString (c2 * k))).bind fun h2 =>
-        (PMF.uniformOfFintype (BitString m2)).map fun d2 => (p1, (h2, d2)))
+    PMF ((BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) := do
+  let p1 ← do
+    let h1 ← PMF.uniformOfFintype (BitString (k * imgLen_k))
+    (PMF.uniformOfFintype (BitString m1)).map (h1, ·)
+  let h2 ← PMF.uniformOfFintype (BitString (c2 * k))
+  (PMF.uniformOfFintype (BitString m2)).map fun d2 => (p1, (h2, d2))
 
 /-- Statistical distance between `coreLHLDist` and `unifCoreDist` is bounded by the sum of the
 fiber leftover-hash error on $x$ and the image leftover-hash error on $f(x)$
@@ -1121,6 +1122,7 @@ private theorem dist_coreLHLDist_unifCoreDist_le {k imgLen_k m1 m2 c2 : ℕ}
   have hcore_eq : coreLHLDist f r hS hm1 hm2 =
       (side.bind fun x₀ => (seededHash seed2 (source x₀) hash2).map (x₀, ·)).bind stepF := by
     unfold coreLHLDist
+    simp only [PMF.monad_bind_eq_bind]
     conv_lhs => rw [← bind_regularityBucket_fiber_eq f r hS]
     change ((side.bind source).bind fun x => seed1.bind fun h1 =>
       seed2.map fun h2 => ((h1, hash1 h1 (f x)), (h2, hash2 h2 x))) = _
@@ -1156,7 +1158,8 @@ private theorem dist_coreLHLDist_unifCoreDist_le {k imgLen_k m1 m2 c2 : ℕ}
   have hunif_eq : unifCoreDist k imgLen_k m1 m2 c2 =
       (seed1.bind fun h1 => (PMF.uniformOfFintype (BitString m1)).map (h1, ·)).bind
         fun p1 => unif2.map (p1, ·) := by
-    simp [unifCoreDist, seed1, seed2, unif2, PMF.map_bind, PMF.map_comp, Function.comp_def]
+    simp [unifCoreDist, seed1, seed2, unif2, PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp,
+      Function.comp_def]
   have hhash1 : IsTwoUniversal seed1 hash1 := isTwoUniversal_block_prefix hm1
   have hdist2 : dist midCore (unifCoreDist k imgLen_k m1 m2 c2) ≤
       Real.sqrt ((2 : ℝ) ^ m1 * ((2 * (k + 1 : ℝ) * (2 : ℝ) ^ r.val) / (2 : ℝ) ^ k)) / 2 := by
@@ -1293,7 +1296,7 @@ private theorem unifCoreDist_bind_packLHL (k imgLen_k m1 m2 c2 padLen m_lhl : �
             (PMF.uniformOfFintype (BitString m2)).map fun d2 =>
               List.ofFn pad ++ List.ofFn h1 ++ List.ofFn d1 ++
                 List.ofFn h2 ++ List.ofFn d2).map (ofList m_lhl) := by
-    simp only [unifCoreDist, PMF.bind_bind, PMF.bind_map, PMF.map_bind,
+    simp only [unifCoreDist, PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, PMF.map_bind,
       PMF.map_comp, Function.comp_def]
     exact bind_four_comm_fifth _ _ _ _ _ _
   rw [h1, uniformOfFintype_five_append, hlen, Cslib.BitString.uniformList_ofList]
@@ -1382,6 +1385,7 @@ private theorem entropy_fullGen_condSeedSet_ge (g : List Bool → List Bool) (im
       dsimp [D_seed]
       rw [h1, h2]
     dsimp only [D_lhl, coreLHLDist, packLHL]
+    simp only [PMF.monad_bind_eq_bind]
     rw [hcond_seed]
     refine map_bind_four_eq_bind_three_map _ _ _ _ _ _ _ _ fun x h1 h2 pad => ?_
     have hplen : (packSeedWords (r k).val (x, h1, h2, pad)).length = n :=
@@ -2054,16 +2058,17 @@ private noncomputable def fiberHybridAcceptDist {k imgLen_k : ℕ}
     (n d γ_core r_val padLen m coinLen j : ℕ)
     (hlen : l2Val d k r_val + j ≤ h2Rows d γ_core k) : PMF Bool :=
   haveI : Nonempty {x : BitString k // f x = f x₀} := ⟨⟨x₀, rfl⟩⟩
-  (BitString.uniformList padLen).bind fun pad =>
-    (BitString.uniformList (k * imgLen_k)).bind fun h1 =>
-      (BitString.uniformList (m - j)).bind fun z_tail =>
-        (BitString.uniformList coinLen).bind fun coins =>
-          (PMF.uniformOfFintype (Fin (h2Rows d γ_core k) → BitString k)).bind fun rows =>
-            (PMF.uniformOfFintype {x : BitString k // f x = f x₀}).map fun x =>
-              (evaluate (n, pad ++ h1 ++
-                LinearHash.wordHash (l1Val d k r_val) h1 (List.ofFn (f x₀)) ++
-                List.ofFn ((blocksEquiv (m := h2Rows d γ_core k) (k := k)).symm rows) ++
-                List.ofFn (LinearHash.hash (rows ∘ Fin.castLE hlen) x.val) ++ z_tail) coins) ^^ pol
+  do
+    let pad ← BitString.uniformList padLen
+    let h1 ← BitString.uniformList (k * imgLen_k)
+    let z_tail ← BitString.uniformList (m - j)
+    let coins ← BitString.uniformList coinLen
+    let rows ← PMF.uniformOfFintype (Fin (h2Rows d γ_core k) → BitString k)
+    (PMF.uniformOfFintype {x : BitString k // f x = f x₀}).map fun x =>
+      (evaluate (n, pad ++ h1 ++
+        LinearHash.wordHash (l1Val d k r_val) h1 (List.ofFn (f x₀)) ++
+        List.ofFn ((blocksEquiv (m := h2Rows d γ_core k) (k := k)).symm rows) ++
+        List.ofFn (LinearHash.hash (rows ∘ Fin.castLE hlen) x.val) ++ z_tail) coins) ^^ pol
 
 private theorem eval_stepAuxInverter_map_eq (g : List Bool → List Bool) (imgLen : ℕ → ℕ)
     {k : ℕ} (f : BitString k → BitString (imgLen k))
@@ -2158,6 +2163,7 @@ private theorem fiberHybrid_step_le (g : List Bool → List Bool) (imgLen : ℕ 
         (Nat.succ_le_of_lt hidx_lt) =
       (PMF.uniformOfFintype Aux).bind p_succ := by
     unfold fiberHybridAcceptDist
+    simp only [PMF.monad_bind_eq_bind]
     rw [uniformList_four_bind_eq]
     refine congrArg (PMF.bind _) (funext fun a => ?_)
     congr 1; funext rows; congr 1; funext x
@@ -2174,6 +2180,7 @@ private theorem fiberHybrid_step_le (g : List Bool → List Bool) (imgLen : ℕ 
       rw [hm_sub, BitString.uniformList_succ]
       simp [PMF.map_bind, PMF.map_comp, Function.comp_def]
     unfold fiberHybridAcceptDist
+    simp only [PMF.monad_bind_eq_bind]
     rw [hunif_split]
     simp only [PMF.bind_map, Function.comp_def]
     conv_lhs =>
@@ -2620,6 +2627,7 @@ private theorem bind_fiberHybridAcceptDist_eq {k imgLen_k : ℕ}
           z_tail) coins) ^^ pol := by
     congr 1; funext x; rw [x.property]
   unfold fiberHybridAcceptDist
+  simp only [PMF.monad_bind_eq_bind]
   simp_rw [hinner]
   rw [bind_comm_five_inner_map (PMF.uniformOfFinset (regularityBucket f r) hS)
     (BitString.uniformList padLen) (BitString.uniformList (k * imgLen_k))
@@ -2648,12 +2656,12 @@ private noncomputable def evalCore {k imgLen_k m1 m2 c2 : ℕ}
     (evaluate : (ℕ × List Bool) → List Bool → Bool) (pol : Bool)
     (n padLen m coinLen : ℕ)
     (c : (BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) :
-    PMF Bool :=
-  (BitString.uniformList padLen).bind fun pad =>
-    (BitString.uniformList m).bind fun z_tail =>
-      (BitString.uniformList coinLen).map fun coins =>
-        (evaluate (n, pad ++ List.ofFn c.1.1 ++ List.ofFn c.1.2 ++
-          List.ofFn c.2.1 ++ List.ofFn c.2.2 ++ z_tail) coins) ^^ pol
+    PMF Bool := do
+  let pad ← BitString.uniformList padLen
+  let z_tail ← BitString.uniformList m
+  (BitString.uniformList coinLen).map fun coins =>
+    (evaluate (n, pad ++ List.ofFn c.1.1 ++ List.ofFn c.1.2 ++
+      List.ofFn c.2.1 ++ List.ofFn c.2.2 ++ z_tail) coins) ^^ pol
 
 /-- At hybrid step `j = 0`, averaging `fiberHybridAcceptDist` over $S_{k, r}$ equals
 `coreLHLDist` bound to `evalCore`. -/
@@ -2669,7 +2677,7 @@ private theorem bind_fiberHybridAcceptDist_zero_eq {k imgLen_k : ℕ}
       (evalCore evaluate pol n padLen m coinLen) := by
   rw [bind_fiberHybridAcceptDist_eq]
   unfold coreLHLDist evalCore
-  simp only [Nat.sub_zero, PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [Nat.sub_zero, PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, Function.comp_def]
   congr 1; funext x
   have h1_eq : BitString.uniformList (k * imgLen_k) =
       (PMF.uniformOfFintype (BitString (k * imgLen_k))).map List.ofFn := rfl
@@ -2724,7 +2732,7 @@ private theorem unifCoreDist_bind_evalCore_eq (k imgLen_k m1 m2 c2 : ℕ)
             (evaluate (n, prefix_word ++ z_tail) coins) ^^ pol := by
     unfold unifCoreDist evalCore
     rw [hpad]
-    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
+    simp only [PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, Function.comp_def]
     exact bind_four_comm_fifth_bind _ _ _ _ _ _
   rw [hstep1, uniformOfFintype_five_append]
   have hadd :
