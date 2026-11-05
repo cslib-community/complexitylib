@@ -108,7 +108,8 @@ families and full-input native runtime.
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
-  Dilithium-style signature schemes over module SIS and module LWE, as theory.
+  Dilithium-style signature schemes and native strict-PPT reductions over module SIS and module LWE,
+  as theory.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
