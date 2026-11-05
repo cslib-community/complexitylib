@@ -37,6 +37,17 @@ Encodings are embeddings into bit lists. This gives faithful representations but
 
 The inspectable abstract uses a finite random tape and a deterministic polynomial-time evaluator: [StrictPPT](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/Randomized.lean#L36). [strictPPT_iff](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/CryptographyBridge.lean#L59) relates that presentation to the library's native predicate. It is an equivalent presentation with an explicit bridge, not a second unconnected efficiency convention.
 
+For a list traversal with known component seed laws, import
+[Languages.Probabilistic.Traverse.CoinTape](../../Complexity/Languages/Probabilistic/Traverse/CoinTape.lean).
+`ProbComp.eval_mapM_of_uniformList` realizes the original `list.mapM program` by splitting
+`list.length * width` uniform bits into rows and applying `List.zipWith evaluate` to inputs
+and rows. The component law is required only for values in the supplied list. Repeated input
+values still receive independent blocks; empty lists and width zero are allowed. This semantic
+law supplies an explicit seed allocation, while native efficiency remains a separate obligation.
+The existing `IsPPTOn.mapM` certificate uses this same law. The
+[checked examples](../../ComplexityTests/TraversalCoinTape.lean) show distinct seeds at repeated
+inputs and a component law that deliberately fails outside the input list.
+
 ## Open oracle polynomial time
 
 [WordOracleComp](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle.lean#L56) combines private samples with a finite operation name and an arbitrary bit-string payload/reply. [IsOraclePPTOn](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle.lean#L63) chooses one native oracle machine and one polynomial clock before all inputs, state types, stateful handlers and starting states. The equality includes the final external state.
