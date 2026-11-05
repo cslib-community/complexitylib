@@ -213,6 +213,8 @@ In order:
   receivers in that fixed schedule, retaining private coins, state and repeated setup reads.
   `VOLE/NativePPT.lean` certifies a list simulator for variable-size batches and supplied encoded-state
   receiver callbacks over one fixed ring with a certified exact-uniform sampler (with an F2 client).
+  Its generalized input/first-message adapters charge the full encoded public input, layout and
+  conversion; the raw-view law alone does not assert sender realizability of transformed messages.
   Scalar-challenge batching, native honest-sender realization, growing-field arithmetic, adversarial
   setup and scheduling, full zero-knowledge protocol security and VOLE-in-the-head remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
