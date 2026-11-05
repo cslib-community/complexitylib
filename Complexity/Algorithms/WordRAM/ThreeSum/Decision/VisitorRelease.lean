@@ -20,9 +20,9 @@ the packed pointer. Every live heavy child and pending ancestor column ends befo
 The packed, residue and histogram tail can therefore be overwritten by the next native node.
 Heavy arrays and their capacity/count cells remain allocated; the shared reserved gap remains.
 
-The emission witness stays anchored before release: its heap equation describes the complete
-node endpoint, whereas the released state has the smaller committed frontier. No total-space
-or touched-high-water bound for arbitrary callee scratch is asserted here.
+The emission witness stays anchored before consumption and release. Its heap equation describes
+the complete node endpoint, whereas the released state has the smaller committed frontier.
+No total-space or touched-high-water bound for arbitrary callee scratch is asserted here.
 
 ## Main definitions
 
@@ -66,53 +66,59 @@ theorem releaseState_pre {r : ℕ} (v : Data (registerCount r)) :
 
 /-- The committed allocation advances by exactly the heavy capacities and three count cells. -/
 theorem release_frontier {r : ℕ} {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
-    {x : Data 128} {v : Data (registerCount r)}
-    (em : Emission Q Λ e x (v.comap (preprocessingRegisters r)) false) :
+    {x q : Data 128} {v : Data (registerCount r)}
+    (em : Emission Q Λ e x q false)
+    (hr : ∀ i, v.regs (preprocessingRegisters r i) = q.regs i) :
     (releaseState v).regs (preprocessingRegisters r heap) = x.regs heap + 3 +
       (x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6)) := by
   have hp : v.regs (preprocessingRegisters r packed) = (recordLayout x em.M).packed :=
-    em.packedPointer
+    (hr packed).trans em.packedPointer
   change v.regs (preprocessingRegisters r packed) = _
   rw [hp]
   rfl
 
 /-- Releasing a dead tail retains a monotonically advancing persistent heavy-array frontier. -/
 theorem release_heap_mono {r : ℕ} {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
-    {x : Data 128} {v : Data (registerCount r)}
-    (em : Emission Q Λ e x (v.comap (preprocessingRegisters r)) false) :
+    {x q : Data 128} {v : Data (registerCount r)}
+    (em : Emission Q Λ e x q false)
+    (hr : ∀ i, v.regs (preprocessingRegisters r i) = q.regs i) :
     x.regs heap ≤ (releaseState v).regs (preprocessingRegisters r heap) := by
-  rw [release_frontier em]
+  rw [release_frontier em hr]
   omega
 
 /-- The exact discarded tail consists of the packed block, residue workspace and histogram. -/
 theorem release_dead_tail {r : ℕ} {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
-    {x : Data 128} {v : Data (registerCount r)}
-    (em : Emission Q Λ e x (v.comap (preprocessingRegisters r)) false) :
+    {x q : Data 128} {v : Data (registerCount r)}
+    (em : Emission Q Λ e x q false)
+    (hr : ∀ i, v.regs (preprocessingRegisters r i) = q.regs i) :
     v.regs (preprocessingRegisters r heap) =
       (releaseState v).regs (preprocessingRegisters r heap) +
         (x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6)) + 4 * x.regs groups + em.M := by
-  have hh : v.regs (preprocessingRegisters r heap) = (recordLayout x em.M).endpoint := em.heap_eq
-  rw [hh, release_frontier em, recordLayout_endpoint]
+  have hh : v.regs (preprocessingRegisters r heap) = (recordLayout x em.M).endpoint :=
+    (hr heap).trans em.heap_eq
+  rw [hh, release_frontier em hr, recordLayout_endpoint]
   omega
 
 /-- The released frontier stays below the completed node's original allocation endpoint. -/
 theorem release_heap_le {r : ℕ} {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
-    {x : Data 128} {v : Data (registerCount r)}
-    (em : Emission Q Λ e x (v.comap (preprocessingRegisters r)) false) :
+    {x q : Data 128} {v : Data (registerCount r)}
+    (em : Emission Q Λ e x q false)
+    (hr : ∀ i, v.regs (preprocessingRegisters r i) = q.regs i) :
     (releaseState v).regs (preprocessingRegisters r heap) ≤
       v.regs (preprocessingRegisters r heap) := by
-  have h := release_dead_tail em
+  have h := release_dead_tail em hr
   omega
 
 /-- Every child, including unchanged parent columns, remains live below the new frontier. -/
 theorem release_children_ends {r : ℕ} {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
-    {x : Data 128} {v : Data (registerCount r)}
-    (em : Emission Q Λ e x (v.comap (preprocessingRegisters r)) false) (hl : e.Loaded x)
+    {x q : Data 128} {v : Data (registerCount r)}
+    (em : Emission Q Λ e x q false)
+    (hr : ∀ i, v.regs (preprocessingRegisters r i) = q.regs i) (hl : e.Loaded x)
     (hend : ∀ j, e.source j + (e.data j).length ≤ x.regs heap) :
     ∀ d ∈ em.children, ∀ j, d.source j + (d.data j).length ≤
       (releaseState v).regs (preprocessingRegisters r heap) := by
   have hp : v.regs (preprocessingRegisters r packed) = (recordLayout x em.M).packed :=
-    em.packedPointer
+    (hr packed).trans em.packedPointer
   change ∀ d ∈ em.children, ∀ j, d.source j + (d.data j).length ≤
     v.regs (preprocessingRegisters r packed)
   rw [hp]

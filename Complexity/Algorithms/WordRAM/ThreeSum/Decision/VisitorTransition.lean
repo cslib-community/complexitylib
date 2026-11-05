@@ -100,7 +100,8 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     have hm := Nat.mul_le_mul_right (allocationSize a.n a.m a.N) hwork
     rw [ph]
     omega
-  obtain ⟨v, hv, ⟨em⟩, hvb, hva, hvm⟩ := construct_consume c e p hw ha hresources hready hc hl
+  obtain ⟨q, v, hq, hv, ⟨em⟩, hvb, hva, hvr, hvm, hvf⟩ :=
+    construct_consume c e p hw ha hresources hready hc hl
     (h.valid e (by simp)) (oldStored e (by simp)) oldBitmap hfloor hbudget
     (oldEnds e (by simp))
     ((hpr _ (Or.inr (by decide)) (Or.inr (by decide))).trans h.packedLength)
@@ -122,14 +123,26 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     rw [length_serialized]
     have hh := ha.2.2.2
     omega
-  have vb := hv.bounded (hp.bounded h.bounded)
-  have vbp : (v.comap (preprocessingRegisters r)).Bounded (w + 2) :=
-    ⟨fun i => vb.1 (preprocessingRegisters r i), vb.2⟩
-  have vc := em.controls hc
-  have vstack := em.stack ha hc vbp (es.flatMap Entry.words) hstack (by
-    have hs := ha.2.1
-    have hf := ha.2.2.1
-    simp only [Data.comap_regs] at *; omega)
+  have qb := hq.bounded (hp.bounded h.bounded)
+  have vb := hv.bounded qb
+  have vc : a.Controls (v.comap (preprocessingRegisters r)) :=
+    (em.controls hc).congr (fun i _ => hvr i)
+  have qstack := em.stack ha hc
+    ⟨fun i => qb.1 (preprocessingRegisters r i), qb.2⟩ (es.flatMap Entry.words) hstack (by
+      have hs := ha.2.1
+      have hf := ha.2.2.1
+      simp only [Data.comap_regs] at *; omega)
+  have vstack : WordStack.Rep (w + 2) a.stack a.capacity (es.flatMap Entry.words)
+      ((v.comap (preprocessingRegisters r)).comap registers) := by
+    refine ⟨⟨fun i => vb.1 (preprocessingRegisters r (registers i)), vb.2⟩,
+      (hvr _).trans qstack.pointer, (hvr _).trans qstack.length_eq, qstack.capacity_le, ?_⟩
+    intro i
+    exact (hvf _ (by
+      have ht := ha.2.1
+      have hf := ha.2.2.1
+      have hm := em.heap_mono
+      have hi := i.isLt.trans_le qstack.capacity_le
+      simp only [Data.comap_regs] at *; omega)).trans (qstack.contents i)
   let u := releaseState v
   have hrelease : Exec (w + 2) releasePacked v u 1 := exec_releasePacked v
   have ub := hrelease.bounded vb
@@ -154,16 +167,16 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
     simp only [Data.comap_regs] at *; omega
   have hvisit : ExecWithin (w + 2) (visit c.code) p y (visitTime a.n a.m a.N + T + 207) := by
-    obtain ⟨t, ht, he⟩ := hv
-    cases he with
-    | seq hlocal hcall =>
-      exact (hlocal.seq (hcall.seq (hrelease.seq hy))).within.mono (by
-        simp only [T, Data.comap_regs] at *
-        omega)
+    exact (hq.seq (hv.seq (hrelease.within.seq hy.within))).mono (by
+      simp only [T, Data.comap_regs] at *
+      omega)
+  have oldPrefix (a : ℕ) (ha : a < p.regs (preprocessingRegisters r heap)) :
+      v.mem a = p.mem a :=
+    (hvf a (ha.trans_le em.heap_mono)).trans (em.local_prefix a ha)
   have hbody := body_live c.code hp hl hc.2.2.2.2.2.2.2.2.2.1 hf hn hvisit
-  have retainedStored (d : Entry) (hd : d ∈ e :: es) : d.Stored v.mem := by
+  have retainedStored (d : Entry) (hd : d ∈ e :: es) : d.Stored q.mem := by
     exact (oldStored d hd).of_prefix (oldEnds d hd) em.local_prefix
-  have newStored : ∀ d ∈ s.pending, d.Stored v.mem := by
+  have newStored : ∀ d ∈ s.pending, d.Stored q.mem := by
     intro d hd
     rcases List.mem_append.mp hd with hd | hd
     · exact em.children_stored (retainedStored e (by simp)) d hd
@@ -179,8 +192,8 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
       d.source j + (d.data j).length ≤ u.regs (preprocessingRegisters r heap) := by
     intro d hd j
     rcases List.mem_append.mp hd with hd | hd
-    · exact release_children_ends em hl (oldEnds e (by simp)) d hd j
-    · exact (oldEnds d (List.mem_cons_of_mem e hd) j).trans (release_heap_mono em)
+    · exact release_children_ends em hvr hl (oldEnds e (by simp)) d hd j
+    · exact (oldEnds d (List.mem_cons_of_mem e hd) j).trans (release_heap_mono em hvr)
   have yh : y.regs (preprocessingRegisters r heap) =
       u.regs (preprocessingRegisters r heap) := yreg _ (by decide) (by decide)
   have bodyFrontier : y.regs (preprocessingRegisters r heap) =
@@ -188,14 +201,15 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
         ((e.data 0).length + (e.data 1).length + (e.data 2).length) := by
     have hr : u.regs (preprocessingRegisters r heap) = p.regs (preprocessingRegisters r heap) + 3 +
         (p.regs (preprocessingRegisters r (slot 2)) + p.regs (preprocessingRegisters r (slot 4)) +
-          p.regs (preprocessingRegisters r (slot 6))) := release_frontier em
+          p.regs (preprocessingRegisters r (slot 6))) := release_frontier em hvr
     have h₀ : p.regs (preprocessingRegisters r (slot 2)) = (e.data 0).length := hl.2.2 0
     have h₁ : p.regs (preprocessingRegisters r (slot 4)) = (e.data 1).length := hl.2.2 1
     have h₂ : p.regs (preprocessingRegisters r (slot 6)) = (e.data 2).length := hl.2.2 2
     rw [yh, hr, ph, h₀, h₁, h₂]
   have heapAllocation : u.regs (preprocessingRegisters r heap) ≤
       p.regs (preprocessingRegisters r heap) + allocationSize a.n a.m a.N := by
-    apply (release_heap_le em).trans
+    apply (release_heap_le em hvr).trans
+    rw [hvr]
     have heh := em.heap_eq
     simp only [Data.comap_regs] at heh
     rw [heh]
@@ -235,26 +249,30 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     verdict := ?_
     exactOutput := ?_
     protectedMemory := ?_ }
-  · intro q hq
+  · intro a ha'
     rw [yframe _ (Or.inl (by have := ha.1; simp only [T, Data.comap_regs] at *; omega))]
-    have hm := em.local_prefix (a.primes + q) (by
+    exact (oldPrefix _ (by
       have hs := ha.1
       have ht := ha.2.1
-      simp only [T, Data.comap_regs] at *; omega)
-    simpa only [Data.comap_mem] using hm.trans (oldBitmap q hq)
-  · simpa only [s, u, release_childWords, em.children_words hl, List.flatMap_append,
+      simp only [Data.comap_regs] at *; omega)).trans (oldBitmap a ha')
+  · have words (j : Fin 3) : childWords (v.comap (preprocessingRegisters r)) j =
+        childWords (q.comap (preprocessingRegisters r)) j := by
+      simp only [childWords, Data.comap_regs, hvr]
+    simpa only [s, u, release_childWords, words, em.children_words hl, List.flatMap_append,
       List.append_assoc] using hystack
   · intro d hd
     rcases List.mem_append.mp hd with hd | hd
     · exact em.children_valid (h.valid e (by simp)) d hd
     · exact h.valid d (List.mem_cons_of_mem e hd)
   · intro d hd
-    exact (newStored d hd).of_stack_frame ((newAround d hd).mono_capacity gap) hyframe
+    exact ((newStored d hd).of_prefix (fun j =>
+      (newEnds d hd j).trans ((release_heap_le em hvr).trans_eq (hvr heap))) hvf).of_stack_frame
+        ((newAround d hd).mono_capacity gap) hyframe
   · intro d hd j
     rw [yh]
     exact newEnds d hd j
   · rw [yh]
-    exact hfloor.trans (release_heap_mono em)
+    exact hfloor.trans (release_heap_mono em hvr)
   · rw [yh]
     have hb : x.regs (preprocessingRegisters r heap) +
         (Cursor.mk (e :: es) ns).work * allocationSize a.n a.m a.N ≤ a.ceiling := h.heapBudget
@@ -265,8 +283,8 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
   · have hr := hyr ChanHe.Preprocessing.packedLength (Or.inr (by decide))
     have hv := em.registers ChanHe.Preprocessing.packedLength (by decide) (by decide)
       (by decide) (by decide) (by decide) (Or.inr (by decide))
-    exact hr.trans ((ur _ (by decide)).trans (hv.trans
-      ((hpr _ (Or.inr (by decide)) (Or.inr (by decide))).trans h.packedLength)))
+    exact hr.trans ((ur _ (by decide)).trans ((hvr _).trans (hv.trans
+      ((hpr _ (Or.inr (by decide)) (Or.inr (by decide))).trans h.packedLength))))
   · rw [ym, hvm _ (by decide), hpm]
     exact h.envelopeValue
   · rw [ym, hvm _ (by decide), hpm]
@@ -279,10 +297,11 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
   · change (ns ++ [e.task.node (Nat.primesLE a.m) a.Λ]) ++ s.remaining a = target
     rw [List.append_assoc, List.singleton_append, ← hremaining]
     exact h.exactOutput
-  · intro q hq
-    rw [yframe q (Or.inl hq)]
-    have hm := em.local_prefix q (by have := ha.2.1; simp only [T, Data.comap_regs] at *; omega)
-    simpa only [Data.comap_mem] using
-      hm.trans ((frame q (Or.inl hq)).trans (h.protectedMemory q hq))
+  · intro a ha'
+    rw [yframe a (Or.inl ha')]
+    exact (oldPrefix a (by
+      have := ha.2.1
+      simp only [Data.comap_regs] at *; omega)).trans
+        ((frame a (Or.inl ha')).trans (h.protectedMemory a ha'))
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Decision.Visitor

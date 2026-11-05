@@ -114,49 +114,5 @@ theorem Emission.local_prefix {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Dat
   rw [hm]
   exact h.prefixMemory p hp
 
-/-- An in-place consumer may dirty arbitrary higher scratch. Exact metadata and preservation
-below the current endpoint retain the entire local emission view and every pending child. -/
-def Emission.afterPrefix {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y z : Data 128}
-    (h : Emission Q Λ e x y false) (hl : e.Loaded x)
-    (hr : ∀ i, z.regs i = y.regs i)
-    (hf : ∀ p < y.regs heap, z.mem p = y.mem p) : Emission Q Λ e x z false := by
-  have hmono : x.regs heap ≤ y.regs heap := h.heap_mono
-  have hm : y.mem = h.before := by simpa using h.memory
-  have hp : (recordLayout x h.M).packed ≤ y.regs heap := by
-    rw [h.heap_eq]
-    dsimp only [NodePacking.Layout.endpoint, NodePacking.Layout.hist, NodePacking.Layout.scratch]
-    omega
-  refine ⟨h.M, h.exactModulus, h.positive, h.upper, h.lists, h.nodup, h.sets,
-    h.length_le, ?_, ?_, ?_, ?_, ?_, ?_, ?_, z.mem, ?_, rfl, ?_⟩
-  · intro j
-    exact (hr _).trans (h.lengths j)
-  · intro j
-    exact (hr _).trans (h.bases j)
-  · intro j i
-    have hlen : (h.lists j).length ≤ (recordLayout x h.M).n j := by
-      simpa only [recordLayout, hl.2.2] using h.length_le j
-    have hend := (recordLayout x h.M).heavy_end_le_packed j
-    have hi : i.val < (h.lists j).length := i.isLt
-    change z.mem ((recordLayout x h.M).heavy j + i.val) = _
-    rw [hf _ (by omega)]
-    exact h.heavy j i
-  · intro i
-    have hend : (recordLayout x h.M).packed + 4 * x.regs groups ≤ y.regs heap := by
-      rw [h.heap_eq]
-      dsimp only [NodePacking.Layout.endpoint, NodePacking.Layout.hist,
-        NodePacking.Layout.scratch, recordLayout]
-      omega
-    have hi : i.val < 4 * x.regs groups := i.isLt
-    change z.mem ((recordLayout x h.M).packed + i.val) = _
-    rw [hf _ (by omega)]
-    exact h.packed i
-  · exact (hr _).trans h.packedPointer
-  · exact (hr _).trans h.count
-  · exact (hr _).trans h.heap_eq
-  · intro p hp
-    rw [hf p (hp.trans_le hmono), hm]
-    exact h.prefixMemory p hp
-  · intro i hi hsel hh hc ht hw
-    exact (hr _).trans (h.registers i hi hsel hh hc ht hw)
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal

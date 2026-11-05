@@ -30,7 +30,7 @@ open ChanHe.Traversal (Entry Arena)
 open ChanHe.Traversal
 
 /-- Construct the actual current node and consume it before modifying the pending worklist.
-The returned local emission remains valid despite arbitrary higher solver scratch writes. -/
+The construction witness stays at the pre-call state; the actual return frame retains live data. -/
 theorem construct_consume {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
     (e : Entry) (x : Data (registerCount r))
     (hw : width κ c.widthCoefficient n ≤ w + 2)
@@ -60,18 +60,14 @@ theorem construct_consume {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
     (henv : x.regs (controllerRegisters r envelope) = (n + 2) ^ envelopeExponent κ)
     (hone : x.regs (controllerRegisters r one) = 1)
     (hb : x.regs (controllerRegisters r answer) ≤ 1) :
-    ∃ y, ExecWithin (w + 2)
-        (.seq (ChanHe.Traversal.localVisit.rename (preprocessingRegisters r)) (consume c.code))
-        x y (ChanHe.Traversal.visitTime a.n
-          a.m
-          a.N +
-          (Host.callerTime (4 * a.N)
-            (c.time (Host.sideLength (4 * a.N))
-              (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7)) ∧
-      Nonempty (ChanHe.Traversal.Emission
-        (Nat.primesLE a.m)
-        a.Λ e
-        (x.comap (preprocessingRegisters r)) (y.comap (preprocessingRegisters r)) false) ∧
+    ∃ q y, ExecWithin (w + 2)
+        (ChanHe.Traversal.localVisit.rename (preprocessingRegisters r)) x q
+        (ChanHe.Traversal.visitTime a.n a.m a.N) ∧
+      ExecWithin (w + 2) (consume c.code) q y
+        (Host.callerTime (4 * a.N)
+          (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 7) ∧
+      Nonempty (ChanHe.Traversal.Emission (Nat.primesLE a.m) a.Λ e
+        (x.comap (preprocessingRegisters r)) (q.comap (preprocessingRegisters r)) false) ∧
       y.regs (controllerRegisters r answer) ≤ 1 ∧
       (y.regs (controllerRegisters r answer) = 1 ↔
         x.regs (controllerRegisters r answer) = 1 ∨
@@ -80,8 +76,10 @@ theorem construct_consume {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
             ((e.task.node (Nat.primesLE a.m)
               a.Λ).oneArray
                 a.U)) ∧
-      ∀ i, i ≠ answer →
-        y.regs (controllerRegisters r i) = x.regs (controllerRegisters r i) := by
+      (∀ i, y.regs (preprocessingRegisters r i) = q.regs (preprocessingRegisters r i)) ∧
+      (∀ i, i ≠ answer →
+        y.regs (controllerRegisters r i) = x.regs (controllerRegisters r i)) ∧
+      ∀ p < q.regs (preprocessingRegisters r ChanHe.Traversal.heap), y.mem p = q.mem p := by
   have hheap : x.regs (preprocessingRegisters r ChanHe.Traversal.heap) ≤
       a.ceiling := by
     omega
@@ -110,13 +108,7 @@ theorem construct_consume {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
   obtain ⟨y, hy, hyb, hya, hyp, hym, hyf⟩ := exec_consume_emission c e
     (x.comap (preprocessingRegisters r)) v em hc hv hw hresources (by omega) hlenv
     ((hframe _).trans henv) ((hframe _).trans hone) (by rw [hframe]; exact hb)
-  have hyem := em.afterPrefix (z := y.comap (preprocessingRegisters r)) hl
-    (by intro i; simpa only [Data.comap_regs] using hyp i)
-    (by
-      intro q hq
-      simpa only [Data.comap_mem] using hyf q
-        (by simpa only [Data.comap_regs] using hq))
-  refine ⟨y, he.seq hy, ⟨hyem⟩, hyb, ?_, ?_⟩
+  refine ⟨v, y, he, hy, ⟨em⟩, hyb, ?_, hyp, ?_, hyf⟩
   · rw [hya, hframe]
   · intro i hi
     exact (hym i hi).trans (hframe i)
