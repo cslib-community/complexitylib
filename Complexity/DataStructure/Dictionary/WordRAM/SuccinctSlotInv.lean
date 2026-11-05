@@ -12,9 +12,32 @@ public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctLayout
 /-!
 # Slab/Tail Slot-Store Invariant for Succinct Dictionaries
 
-This module defines the `GlobalMeta` index map and the bijection invariants
+This module defines the `GlobalMeta` index map, the logical-to-physical slot mapping `slotOf`,
+the table hysteresis potential `slotPotential`, and the bijection invariants
 (`TailBijection`, `SlabBijection`, `SlotStoreInv`) governing physical slot allocation in the
 fixed-capacity succinct dictionary.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmQIdx`, `gmRIdx`, `gmSlabTopIdx`,
+  `gmSlabDirBase`, `gmSlabDirIdx`, `gmTailPtrBase`, `gmTailPtrFlatIdx`, `gmTailPtrIdx`,
+  `gmTailOwnerBase`, `gmTailOwnerIdx`, `gmSlabMetaBase`, `gmSlabOwnerBIdx`, `gmSlabOwnerSIdx`,
+  `gmSlabBelowIdx`, `gmSlabAboveIdx`: index map of per-bucket, per-tail, and per-slab fields inside
+  `GlobalMeta`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.bCount`, `slabPtrOf`, `slotOf`: bucket item
+  count, physical slab lookup, and logical-to-physical slot map `(b, j) ↦ g < n_max`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.TailBijection`, `SlabBijection`, `SlotStoreInv`:
+  bijection invariants for the tail pool, full-slab pool, and overall `GlobalMeta` slot store.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.slotPotential`: table-wide hysteresis potential
+  `∑_{b < numBuckets n_max} bucketPotential (slabSize n_max) (gm (gmQIdx b)) (gm (gmRIdx b))`.
+
+## Main results
+
+* `slotStoreInv_of_zero`: an all-zero `GlobalMeta` array satisfies `SlotStoreInv` with `bCount = 0`
+  and `slotPotential = 0`.
+* `slotOf_lt_and_injective`: under `SlotStoreInv`, `slotOf` maps every active `(b, j)` into
+  `[0, n_max)` and is injective across all active `(b, j)`.
+* `bCount_le_n_max`: under `SlotStoreInv`, every bucket contains at most `n_max` items.
 -/
 
 public section

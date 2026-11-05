@@ -22,6 +22,25 @@ bucket-level lookup and insertion operations of the fixed-capacity succinct dict
   `BucketStateInv`;
 * `insertBodyProg` and `realizes_insertBodyGen`: bucket-level `insert` (update in-place if present,
   otherwise append to bucket and prepend to micro-chain if `< effBucketCap n_max`).
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.BucketStateInv`: bucket-level representation
+  invariant coupling `SlotStoreInv`, `AllChainsValid`, and the abstract per-bucket map `B`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.insertBodyProg`: `Memory.Prog` operation for
+  bucket-level insertion (`update` in place if present, otherwise `pushBackSlotProg` +
+  `prependIfIndexedProg`).
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.bucketStateInv_of_zero`: an all-zero dictionary
+  memory region satisfies `BucketStateInv` with empty buckets and zero potential.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.queryBodyProg_bucket_spec`: lookup correctness
+  and probe-excess `memoryCost` bound for `queryBodyProg` under `BucketStateInv`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.insertBodyProg_bucket_spec`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_insertBodyGen`: insertion correctness,
+  `BucketStateInv` preservation, amortized `memoryCost` bound, and `Realizes` certificate for
+  `insertBodyProg`.
 -/
 
 public section

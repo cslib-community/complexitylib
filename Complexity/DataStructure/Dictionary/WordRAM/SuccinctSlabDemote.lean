@@ -20,6 +20,26 @@ removing its last tail item, `demoteSlabProg` moves the `K` items from the top s
 `p_del = gm (gmSlabTopIdx b)` into the tail of bucket `b`, compacts the physical slab pool by
 copying the `K` items of `p_last = gm 0 - 1` into `p_del`, and pops the top slab descriptor via
 `gmPopSlabProg`.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.demoteStepProg`: single step `k < slabSize n_max`
+  of slab demotion.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.demoteLoopProg`: `K`-step iteration of
+  `demoteStepProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.demoteSlabProg`: complete slab demotion
+  (`demoteLoopProg` followed by `gmPopSlabProg`).
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.DemoteSlabInv`: entry invariant for
+  `demoteSlabProg` (`gm (gmRIdx b) = 0 ∧ 0 < gm (gmQIdx b)`).
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.demoteStepProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_demoteStepGen`: single-step invariant
+  preservation and `Realizes` certificate for `demoteStepProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.demoteSlabProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_demoteSlabGen`: full-slab demotion
+  invariant preservation, `O(K)` `memoryCost`, and `Realizes` certificate for `demoteSlabProg`.
 -/
 
 public section

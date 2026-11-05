@@ -23,8 +23,20 @@ reusable `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` certificat
 
 ## Mathematical and algorithmic design
 
-Following Bender, Farach-Colton, J. Kuszmaul, and W. Kuszmaul (*"Modern Hashing Made Simple"*,
-SOSA 2024, Sections 3–4):
+This implementation combines the partitioned-bucket, micro-hash chain, and hysteresis-potential
+design of [Bender, Farach-Colton, J. Kuszmaul, and W. Kuszmaul, SOSA 2024,
+Sections 3–4][BenderFarachColtonKuszmaulKuszmaul2024] with one-round Feistel quotienting
+([Arbitman, Naor, and Segev, FOCS 2010, Claim 5.7][ArbitmanNaorSegev2010];
+[Bender, Conway, Farach-Colton, Kuszmaul, and Tagliavini, *J. ACM* 2023, Section 7, arXiv
+pp. 31–33][BenderConwayFarachColtonKuszmaulTagliavini2023]) and fixed-width slabs with a shared
+tail pool ([Bender, Farach-Colton, J. Kuszmaul, W. Kuszmaul, and M. Liu, STOC 2022, Sections 5.2
+and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]).
+Material differences from [Bender, Farach-Colton, J. Kuszmaul, and W. Kuszmaul, SOSA
+2024][BenderFarachColtonKuszmaulKuszmaul2024]: the capacity `n_max` is fixed (no table resizing),
+and operations run in `O(1)` expected amortized time for oblivious operation sequences fixed before
+initialization (whereas SOSA 2024 Sections 5–6 prove with-high-probability bounds and support
+resizing).
+
 1. **One-round Feistel quotienting (`FeistelQuotient`)**: splits each key `u : Fin U` into a
    `bucketBits n_max`-bit low part and a `quotientBits U n_max`-bit quotient `q`, storing only `q`
    and reconstructing `u` injectively within each bucket
@@ -91,11 +103,15 @@ SOSA 2024, Sections 3–4):
 
 ## References
 
-* [M. A. Bender, M. Farach-Colton, J. Kuszmaul, W. Kuszmaul,
-  *Modern Hashing Made Simple*][BenderFarachColtonKuszmaulKuszmaul2024]
+* [Y. Arbitman, M. Naor, G. Segev, *Backyard Cuckoo Hashing: Constant Worst-Case Operations with a
+  Succinct Representation*][ArbitmanNaorSegev2010]
+* [M. A. Bender, M. Farach-Colton, J. Kuszmaul, W. Kuszmaul, M. Liu,
+  *On the Optimal Time/Space Tradeoff for Hash Tables*][BenderFarachColtonKuszmaulKuszmaulLiu2022]
 * [M. A. Bender, A. Conway, M. Farach-Colton, W. Kuszmaul, G. Tagliavini,
   *Iceberg Hashing: Optimizing Many Hash-Table Criteria at
   Once*][BenderConwayFarachColtonKuszmaulTagliavini2023]
+* [M. A. Bender, M. Farach-Colton, J. Kuszmaul, W. Kuszmaul,
+  *Modern Hashing Made Simple*][BenderFarachColtonKuszmaulKuszmaul2024]
 -/
 
 public section
@@ -165,7 +181,7 @@ theorem setup_exec_succinct {U V w n_max base : ℕ}
       (∀ θ, (ν₀.map Prod.fst) θ ≤ 1 * (PMF.uniformOfFintype (QuotHashSeed U n_max)) θ) ∧
       ∀ p ∈ ν₀.support,
         p.2.regs frontierReg = base + space U V w n_max ∧
-        Rep U V w n_max base p.1 (Dynamic.empty U) p.2 ∧
+        Rep U V w n_max base p.1 (Dictionary.empty U) p.2 ∧
         potential U V w n_max base p.1 p.2 ≤ 0 ∧
         Modifies (Block.mk base (space U V w n_max)).footprint x₁.mem p.2.mem := by
   have hfit_hash : Fits w (base + hashSpace U w n_max) := by
@@ -298,28 +314,29 @@ theorem setup_exec_succinct {U V w n_max base : ℕ}
     rw [hpot0, Nat.mul_zero]
 
 theorem tsum_mul_probeExcess_le {U V w n_max base : ℕ} (hnU : n_max ≤ U)
-    {s_abs : Dynamic.State U} (u : Fin U)
+    {s_abs : Dictionary.State U} (u : Fin U)
     (ν : PMF (QuotHashSeed U n_max × Data rSuccinct))
     (hseed : ∀ θ, (ν.map Prod.fst) θ ≤ 1 * (PMF.uniformOfFintype (QuotHashSeed U n_max)) θ)
     (hsupp : ∀ p ∈ ν.support, Rep U V w n_max base p.1 s_abs p.2) :
     (∑' p, ν p *
       ((8 * opFactor) *
         probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
-          (Dynamic.dom s_abs) u : ℕ)) ≤
+          (Dictionary.dom s_abs) u : ℕ)) ≤
       (40 * opFactor : ℝ≥0∞) := by
   obtain ⟨p₀, hp₀⟩ := ν.support_nonempty
   have hdict₀ := (hsupp p₀ hp₀).2.2.2.2.2
   obtain ⟨L₀, hb₀⟩ := hdict₀.hbucket
-  have hcard_le : (Dynamic.dom s_abs).card ≤ n_max := by
+  have hcard_le : (Dictionary.dom s_abs).card ≤ n_max := by
     rw [← hdict₀.htot]
     unfold totalSlots
     split_ifs with hb_z
     · exact hb₀.hslot.single_valid hb_z
     · exact hb₀.hslot.multi_total_le (Nat.pos_of_ne_zero hb_z)
-  have herase_le : #((Dynamic.dom s_abs).erase u) ≤ n_max :=
+  have herase_le : #((Dictionary.dom s_abs).erase u) ≤ n_max :=
     Finset.card_erase_le.trans hcard_le
   let E (θ : QuotHashSeed U n_max) : ℝ≥0∞ :=
-    (probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2 (Dynamic.dom s_abs) u : ℝ≥0∞)
+    (probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
+      (Dictionary.dom s_abs) u : ℝ≥0∞)
   have hmap :
       (∑' p, ν p * ((8 * opFactor : ℝ≥0∞) * E p.1)) =
         (8 * opFactor : ℝ≥0∞) * ∑' θ, (ν.map Prod.fst) θ * E θ := by
@@ -335,11 +352,11 @@ theorem tsum_mul_probeExcess_le {U V w n_max base : ℕ} (hnU : n_max ≤ U)
     have hs := hseed θ
     rw [one_mul] at hs
     exact mul_le_mul' hs le_rfl
-  have h5 := tsum_uniform_probeExcess_reducedPolyHash_le_five hnU (Dynamic.dom s_abs) u herase_le
+  have h5 := tsum_uniform_probeExcess_reducedPolyHash_le_five hnU (Dictionary.dom s_abs) u herase_le
   calc (∑' p, ν p *
         ((8 * opFactor) *
           probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
-            (Dynamic.dom s_abs) u : ℕ))
+            (Dictionary.dom s_abs) u : ℕ))
       = ∑' p, ν p * ((8 * opFactor : ℝ≥0∞) * E p.1) := by
         refine tsum_congr fun p => ?_
         push_cast
@@ -385,7 +402,7 @@ noncomputable def impl {U V w n_max base : ℕ}
     (hw : 0 < w) (hnU : n_max ≤ U) (hU : Fits w U) (hV : Fits w V)
     (hfit : Fits w (base + space U V w n_max)) :
     Randomized.StateTransitionImpl (subroutineCode U V w n_max)
-      (Dynamic.spec U V n_max) w base Fin.elim0 (Dynamic.empty U) :=
+      (Dynamic.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) :=
   have hwf : DictParamsWf U V w n_max := ⟨hw, hnU, hU, le_of_lt hV⟩
   have hw2 : 2 ≤ w := two_le_w_of_fits_space hfit
   Randomized.StateTransitionImpl.ofFn
@@ -549,7 +566,7 @@ noncomputable def impl {U V w n_max base : ℕ}
                   (273 * opFactor + 284725 : ℝ≥0∞) +
                   ((8 * opFactor) *
                     probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
-                      (Dynamic.dom s) (opKey o) : ℕ)) := by
+                      (Dictionary.dom s) (opKey o) : ℕ)) := by
           refine tsum_le_tsum fun p => ?_
           by_cases hp : p ∈ ν.support
           · refine mul_le_mul' le_rfl ?_
@@ -574,13 +591,13 @@ noncomputable def impl {U V w n_max base : ℕ}
                 (273 * opFactor + 284725 : ℝ≥0∞) +
                 ((8 * opFactor) *
                   probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
-                    (Dynamic.dom s) (opKey o) : ℕ))) =
+                    (Dictionary.dom s) (opKey o) : ℕ))) =
               (∑' p, ν p * (potential U V w n_max base p.1 p.2 : ℝ≥0∞)) +
                 (273 * opFactor + 284725 : ℝ≥0∞) +
                 ∑' p, ν p *
                   ((8 * opFactor) *
                     probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
-                      (Dynamic.dom s) (opKey o) : ℕ) := by
+                      (Dictionary.dom s) (opKey o) : ℕ) := by
           simp_rw [mul_add, tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
         have hch_eq :
             (273 * opFactor + 284725 : ℝ≥0∞) +
@@ -595,7 +612,7 @@ noncomputable def impl {U V w n_max base : ℕ}
                 ∑' p, ν p *
                   ((8 * opFactor) *
                     probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
-                      (Dynamic.dom s) (opKey o) : ℕ) := hsplit ▸ hptwise
+                      (Dictionary.dom s) (opKey o) : ℕ) := hsplit ▸ hptwise
           _ ≤ (∑' p, ν p * (potential U V w n_max base p.1 p.2 : ℝ≥0∞)) +
                 (273 * opFactor + 284725 : ℝ≥0∞) +
                 (40 * opFactor : ℝ≥0∞) :=
@@ -611,7 +628,7 @@ noncomputable def implStandard {U V w n_max base : ℕ}
     (hw : 0 < w) (hnU : n_max ≤ U) (hU : Fits w U) (hV : Fits w V)
     (hfit : Fits w (base + space U V w n_max)) :
     Randomized.StateTransitionImpl (subroutineCode U V w n_max).toStandard
-      (Dynamic.spec U V n_max) w base Fin.elim0 (Dynamic.empty U) :=
+      (Dynamic.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) :=
   (impl hw hnU hU hV hfit).toStandard
 
 /-- The total initialization time `(impl hw hnU hU hV hfit).initTime` is bounded by
@@ -627,7 +644,7 @@ theorem initTime_impl_le {U V w n_max base : ℕ}
   unfold initSteps
   omega
 
-theorem totalCost_charge_eq (U V n_max : ℕ) (s₀ : Dynamic.State U)
+theorem totalCost_charge_eq (U V n_max : ℕ) (s₀ : Dictionary.State U)
     (ops : List (Dynamic.Op U)) :
     (Dynamic.spec U V n_max).totalCost charge s₀ ops =
       ops.length * chargeVal := by
@@ -641,7 +658,7 @@ theorem totalCost_charge_eq (U V n_max : ℕ) (s₀ : Dynamic.State U)
 
 /-- **Headline multi-operation theorem (`seq_expected_amortized`):**
 Starting from zeroed memory on `[base, base + space U V w n_max)`, fresh initialization followed by
-any valid operation sequence `ops : List (Dynamic.Op U)` (`ValidHistory (Dynamic.empty U) ops`)
+any valid operation sequence `ops : List (Dynamic.Op U)` (`ValidHistory (Dictionary.empty U) ops`)
 preserves `Rep` across `ops` with expected total instruction count at most
 `initTime + ops.length * chargeVal` for the parameter-free `O(1)` operation charge `chargeVal`
 (amortized across `ops`). Companion theorems `space_le_succinctWords` and
@@ -653,15 +670,15 @@ theorem seq_expected_amortized {U V w n_max base : ℕ}
     {x : Data rSuccinct} (ops : List (Dynamic.Op U))
     (hx : x.Bounded w) (hfr : x.regs frontierReg = base)
     (hz : ∀ a ∈ (Block.mk base (space U V w n_max)).footprint, x.mem a = 0)
-    (hv : (Dynamic.spec U V n_max).ValidHistory (Dynamic.empty U) ops) :
+    (hv : (Dynamic.spec U V n_max).ValidHistory (Dictionary.empty U) ops) :
     ∃ (ν₀ ν_final : PMF ((impl hw hnU hU hV hfit).Seed × Data rSuccinct))
       (T_ops : ℝ≥0∞),
       ExecCodeDist w (subroutineCode U V w n_max).initFresh x (ν₀.map Prod.snd)
         (impl hw hnU hU hV hfit).initTime ∧
-      (impl hw hnU hU hV hfit).ExecStepsOfFn (Dynamic.empty U) ops ν₀ ν_final T_ops ∧
+      (impl hw hnU hU hV hfit).ExecStepsOfFn (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ (PMF.uniformOfFintype (QuotHashSeed U n_max)) θ) ∧
       (∀ p ∈ ν_final.support,
-        Rep U V w n_max base p.1 ((Dynamic.spec U V n_max).run (Dynamic.empty U) ops).1 p.2) ∧
+        Rep U V w n_max base p.1 ((Dynamic.spec U V n_max).run (Dictionary.empty U) ops).1 p.2) ∧
       (impl hw hnU hU hV hfit).initTime + T_ops +
         (∑' q, ν_final q * (potential U V w n_max base q.1 q.2 : ℝ≥0∞)) ≤
         (impl hw hnU hU hV hfit).initTime + (ops.length * chargeVal : ℕ) := by
@@ -675,7 +692,7 @@ theorem seq_expected_amortized {U V w n_max base : ℕ}
   · change C.initTime + T_ops +
         (∑' q, ν_final q * (potential U V w n_max base q.1 q.2 : ℝ≥0∞)) ≤
       C.initTime + (0 : ℕ) +
-        ((Dynamic.spec U V n_max).totalCost charge (Dynamic.empty U) ops : ℝ≥0∞)
+        ((Dynamic.spec U V n_max).totalCost charge (Dictionary.empty U) ops : ℝ≥0∞)
       at hamort
     rw [totalCost_charge_eq] at hamort
     simpa only [Nat.cast_zero, add_zero] using hamort

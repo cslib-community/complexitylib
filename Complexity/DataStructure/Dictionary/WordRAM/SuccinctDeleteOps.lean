@@ -21,6 +21,25 @@ in `Memory.Prog` via `realize`:
 * `deleteSwapProg`, `deleteFoundProg`, `deleteFinishProg`, and `realizes_deleteFinishGen`: Phase 2
   of `delete` (unlink the deleted slot, swap the last slot into the deleted slot and relink into
   `m_last` when `j_del < j_last`, and pop the last slot from the bucket).
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.deletePrepProg`: Phase 1 of `delete` in
+  `Memory.Prog` (searches bucket `b` and reads `q_last` when found).
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.deleteSwapProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.deleteFoundProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.deleteFinishProg`: Phase 2 of `delete` in
+  `Memory.Prog` (unlinks `j_del`, relocates `j_last` into `j_del` when `j_del < j_last`, and calls
+  `popBackSlotProg`).
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_deletePrepGen`: `Realizes` certificate
+  for `deletePrepGenProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_deleteFinishGen`: `Realizes`
+  certificate for `deleteFinishGenProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.delete_bucket_spec`: combined two-phase deletion
+  correctness, `BucketStateInv` preservation, and amortized `memoryCost` bound.
 -/
 
 public section

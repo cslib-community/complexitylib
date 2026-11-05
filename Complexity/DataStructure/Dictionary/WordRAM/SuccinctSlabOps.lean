@@ -24,6 +24,32 @@ bucket-local slot operations:
 * `popBackSlotProg`: removes the last logical slot `bCount n_max gm b - 1` of bucket `b`, demoting
   the top full slab into `K` tail items when `r_b' = 0 ∧ 0 < q_b`, with `O(1)` amortized cost
   against `66 * slotPotential n_max gm`.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.totalSlots`: total active slots across all
+  buckets (`gm 0` in the single-bucket regime, `gm 0 * slabSize n_max + gm 1` in the multi-bucket
+  regime).
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lastSlotOfProg`: `Memory.Prog` operation
+  resolving `slotOf n_max gm b (bCount n_max gm b - 1)`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.pushBackSlotProg`: `Memory.Prog` operation
+  appending `(q_val, v_val)` to bucket `b` with hysteresis promotion.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.popBackSlotProg`: `Memory.Prog` operation
+  removing the last item of bucket `b` with hysteresis demotion.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.slotPotential_pushBack_le`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.slotPotential_popBack_le`: global hysteresis
+  potential bounds under `pushBackCounts` and `popBackCounts`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.totalSlots_eq_sum_bCount`: `totalSlots` equals
+  the sum of `bCount` across all buckets.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.pushBackSlotProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_pushBackSlotGen`: effect, amortized
+  `memoryCost` bound, and `Realizes` certificate for `pushBackSlotProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.popBackSlotProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_popBackSlotGen`: effect, amortized
+  `memoryCost` bound, and `Realizes` certificate for `popBackSlotProg`.
 -/
 
 public section
@@ -95,7 +121,6 @@ theorem pos_gmRIdx_of_pos_bCount {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
 /-- Global potential bound when bucket `b` transitions according to `pushBackCounts`. -/
 theorem slotPotential_pushBack_le {n_max b : ℕ} {gm gm' : ℕ → ℕ}
     (hb_pos : 0 < bucketBits n_max) (hb : b < numBuckets n_max)
-    (hr : gm (gmRIdx b) < 2 * slabSize n_max)
     (hb_upd : gm' (gmQIdx b) = (pushBackCounts (slabSize n_max) (gm (gmQIdx b)) (gm (gmRIdx b))).1 ∧
       gm' (gmRIdx b) = (pushBackCounts (slabSize n_max) (gm (gmQIdx b)) (gm (gmRIdx b))).2)
     (hother : ∀ b' < numBuckets n_max, b' ≠ b →
@@ -103,7 +128,6 @@ theorem slotPotential_pushBack_le {n_max b : ℕ} {gm gm' : ℕ → ℕ}
     slotPotential n_max gm' + pushBackWork (slabSize n_max) (gm (gmRIdx b)) ≤
       slotPotential n_max gm + 1 := by
   have hb0 : bucketBits n_max ≠ 0 := by omega
-  have hK : 1 ≤ slabSize n_max := slabSize_pos n_max
   unfold slotPotential
   rw [ite_eq_right hb0, ite_eq_right hb0]
   have hmem : b ∈ Finset.range (numBuckets n_max) := Finset.mem_range.mpr hb
@@ -120,7 +144,7 @@ theorem slotPotential_pushBack_le {n_max b : ℕ} {gm gm' : ℕ → ℕ}
     rw [Finset.mem_range] at hlt
     rw [(hother x hlt hne).1, (hother x hlt hne).2]
   rw [hsum_eq, hb_upd.1, hb_upd.2]
-  have hpt := bucketPotential_pushBack_le (slabSize n_max) (gm (gmQIdx b)) (gm (gmRIdx b)) hK hr
+  have hpt := bucketPotential_pushBack_le (slabSize n_max) (gm (gmQIdx b)) (gm (gmRIdx b))
   omega
 
 /-- Global potential bound when bucket `b` transitions according to `popBackCounts`. -/
@@ -134,7 +158,6 @@ theorem slotPotential_popBack_le {n_max b : ℕ} {gm gm' : ℕ → ℕ}
     slotPotential n_max gm' + popBackWork (slabSize n_max) (gm (gmQIdx b)) (gm (gmRIdx b)) ≤
       slotPotential n_max gm + 1 := by
   have hb0 : bucketBits n_max ≠ 0 := by omega
-  have hK : 1 ≤ slabSize n_max := slabSize_pos n_max
   unfold slotPotential
   rw [ite_eq_right hb0, ite_eq_right hb0]
   have hmem : b ∈ Finset.range (numBuckets n_max) := Finset.mem_range.mpr hb
@@ -151,7 +174,7 @@ theorem slotPotential_popBack_le {n_max b : ℕ} {gm gm' : ℕ → ℕ}
     rw [Finset.mem_range] at hlt
     rw [(hother x hlt hne).1, (hother x hlt hne).2]
   rw [hsum_eq, hb_upd.1, hb_upd.2]
-  have hpt := bucketPotential_popBack_le (slabSize n_max) (gm (gmQIdx b)) (gm (gmRIdx b)) hK hr1 hr2
+  have hpt := bucketPotential_popBack_le (slabSize n_max) (gm (gmQIdx b)) (gm (gmRIdx b)) hr1 hr2
   omega
 
 /-- Under `SlabBijection`, `n_slabs` equals the sum of per-bucket slab counts `q_fn b`. -/
@@ -1009,7 +1032,7 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
         intro b' hb' hne
         exact ⟨(hother2 b' hb' hne).1.trans (hother1 b' hb' hne).1,
           (hother2 b' hb' hne).2.trans (hother1 b' hb' hne).2⟩
-      have hpot := slotPotential_pushBack_le hb_pos hb hr0_lt hupd hother_all
+      have hpot := slotPotential_pushBack_le hb_pos hb hupd hother_all
       have hwork : pushBackWork (slabSize n_max) (gm₀ (gmRIdx b)) = slabSize n_max := by
         unfold pushBackWork; rw [ite_eq_left hprom]
       rw [hwork] at hpot
@@ -1065,7 +1088,7 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
       have hother_all : ∀ b' < numBuckets n_max, b' ≠ b →
           gm' (gmQIdx b') = gm₀ (gmQIdx b') ∧ gm' (gmRIdx b') = gm₀ (gmRIdx b') := by
         intro b' hb' hne; rw [hgm'_eq]; exact hother1 b' hb' hne
-      have hpot := slotPotential_pushBack_le hb_pos hb hr0_lt hupd hother_all
+      have hpot := slotPotential_pushBack_le hb_pos hb hupd hother_all
       have hwork : pushBackWork (slabSize n_max) (gm₀ (gmRIdx b)) = 0 := by
         unfold pushBackWork; rw [ite_eq_right hprom]
       rw [hwork, Nat.add_zero] at hpot

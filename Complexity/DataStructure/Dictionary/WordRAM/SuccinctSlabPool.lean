@@ -17,6 +17,29 @@ This module defines the `Memory.Prog` operations that push and pop full-slab des
 `GlobalMeta` (`gmPushSlabProg`, `gmUnlinkTopSlabProg`, `gmCompactSlabProg`, `gmPopSlabProg`),
 proves their exact pure effects (`gmPushSlab`, `gmUnlinkTopSlab`, `gmCompactSlab`, `gmPopSlab`),
 and certifies them via the `realize` tactic.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmPushSlabProg`: `Memory.Prog` operation
+  allocating `p_new = gm 0` as the new top slab of bucket `b`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmUnlinkTopSlabProg`: `Memory.Prog` operation
+  unlinking the top slab of bucket `b`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmCompactSlabProg`: `Memory.Prog` operation
+  compacting `p_last = gm 0 - 1` into `p_del`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmPopSlabProg`: `Memory.Prog` operation popping
+  the top slab of bucket `b` and compacting the slab pool.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmPushSlabProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_gmPushSlabGen`: effect and `Realizes`
+  certificate for `gmPushSlabProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmUnlinkTopSlabProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmCompactSlabProg_effect`: effects of the two
+  stages of `gmPopSlabProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmPopSlabProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_gmPopSlabGen`: effect and `Realizes`
+  certificate for `gmPopSlabProg`.
 -/
 
 public section

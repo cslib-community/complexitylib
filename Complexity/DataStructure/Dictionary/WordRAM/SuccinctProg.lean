@@ -25,9 +25,48 @@ This module wraps the overflow-free bit-packed array operations (`readPacked`, `
 the four dictionary arrays (`Quotients`, `Values`, `LocalMeta`, `GlobalMeta`) as `Memory.Prog`
 operations with uniform `Realizes .exact` certificates, and realizes `readBucketCountProg` and
 `resolveIndexedSlotProg` via the `realize` tactic.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.readPackedProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writePackedProg`: `Memory.Prog` wrappers for
+  bit-packed array reads and writes.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.DictParams`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.mkDictParams`: 36-word runtime register block
+  holding precomputed layout parameters for parameter-free `Realizes` certificates.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.DictEnv`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.DictEnvGen`: common entry envelopes for
+  dictionary `Memory.Prog` subroutines.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.readQuotProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeQuotProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.readValProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeValProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.readLMProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeLMProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.readGMProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeGMProg`: typed `Memory.Prog` read/write
+  accessors for the four packed dictionary arrays.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.readBucketCountProg`: `Memory.Prog` operation
+  reading `bCount`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.resolveIndexedSlotProg`: `Memory.Prog`
+  operation translating a bucket-local index `j` into physical slot `slotOf n_max gm b j`.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_readPackedGen`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_writePackedGen`: uniform `Realizes`
+  certificates for bit-packed reads and writes.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_readBucketCountGen`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_resolveIndexedSlotGen`: uniform
+  `Realizes` certificates for `readBucketCountGenProg` and `resolveIndexedSlotGenProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeQuotProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeValProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeLMProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeGMProg_effect`: pure logical array update
+  lemmas for the four packed dictionary arrays.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.Dictionary.WordRAM.Succinct
 
@@ -43,7 +82,7 @@ open Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
 
 /-- `Memory.Prog` operation reading the `k`-bit entry at index `idx` from a bit-packed array at
 `base + offset` on a `w`-bit machine. -/
-def readPackedProg (base offset k w idx : ℕ) : Memory.Prog ℕ := do
+@[expose] def readPackedProg (base offset k w idx : ℕ) : Memory.Prog ℕ := do
   let wOff := wordOffset k w idx
   let bOff := bitOffset k w idx
   let k₀ := lowWidth k w idx
@@ -56,7 +95,7 @@ def readPackedProg (base offset k w idx : ℕ) : Memory.Prog ℕ := do
 
 /-- `Memory.Prog` operation writing `val` (`< 2 ^ k`) into the `k`-bit entry at index `idx` of a
 bit-packed array at `base + offset` on a `w`-bit machine. -/
-def writePackedProg (base offset k w idx val : ℕ) : Memory.Prog Unit := do
+@[expose] def writePackedProg (base offset k w idx val : ℕ) : Memory.Prog Unit := do
   let wOff := wordOffset k w idx
   let bOff := bitOffset k w idx
   let k₀ := lowWidth k w idx
@@ -174,12 +213,12 @@ private theorem writePackedCode_not_readsWidth :
 
 /-- Parameter-free `Memory.Prog` wrapper for `readPackedProg` taking
 `d = (((base, offset), (k, w)), idx)`. -/
-def readPackedGenProg (d : ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) : Memory.Prog ℕ :=
+@[expose] def readPackedGenProg (d : ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) : Memory.Prog ℕ :=
   readPackedProg d.1.1.1 d.1.1.2 d.1.2.1 d.1.2.2 d.2
 
 /-- Parameter-free `Memory.Prog` wrapper for `writePackedProg` taking
 `d = ((((base, offset), (k, w)), idx), val)`. -/
-def writePackedGenProg (d : (((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose] def writePackedGenProg (d : (((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) × ℕ) : Memory.Prog Unit :=
   writePackedProg d.1.1.1.1 d.1.1.1.2 d.1.1.2.1 d.1.1.2.2 d.1.2 d.2
 
 /-- Uniform parameter-free `Realizes .exact` certificate for `readPackedGenProg`. -/
@@ -398,12 +437,12 @@ theorem realizes_writePackedGen :
 /-! ## Section 2: Dictionary array `Memory.Prog` primitives (`Quot`, `Val`, `LM`, `GM`) -/
 
 /-- Runtime register block of 36 precomputed dictionary layout parameters. -/
-def DictParams : Type := Fin 36 → ℕ
+@[expose] def DictParams : Type := Fin 36 → ℕ
 
 instance : WordEncoding DictParams := ⟨36, Function.Embedding.refl (Fin 36 → ℕ)⟩
 
 /-- Construct the 36-word parameter vector for `(U, V, w, n_max, h_space)`. -/
-def mkDictParams (U V w n_max h_space : ℕ) : DictParams := fun i =>
+@[expose] def mkDictParams (U V w n_max h_space : ℕ) : DictParams := fun i =>
   match i.val with
   | 0 => w
   | 1 => n_max
@@ -444,21 +483,21 @@ def mkDictParams (U V w n_max h_space : ℕ) : DictParams := fun i =>
   | _ => 0
 
 /-- Word width `w` in `DictParams`. -/
-def dpW (dp : DictParams) : ℕ := dp ⟨0, by decide⟩
+@[expose] def dpW (dp : DictParams) : ℕ := dp ⟨0, by decide⟩
 /-- Maximum capacity `n_max` in `DictParams`. -/
-def dpNMax (dp : DictParams) : ℕ := dp ⟨1, by decide⟩
+@[expose] def dpNMax (dp : DictParams) : ℕ := dp ⟨1, by decide⟩
 /-- Precomputed `n_max - 1` in `DictParams`. -/
-def dpNMaxSubOne (dp : DictParams) : ℕ := dp ⟨2, by decide⟩
+@[expose] def dpNMaxSubOne (dp : DictParams) : ℕ := dp ⟨2, by decide⟩
 /-- Quotient array word offset `offQuot h_space` in `DictParams`. -/
-def dpOffQuot (dp : DictParams) : ℕ := dp ⟨3, by decide⟩
+@[expose] def dpOffQuot (dp : DictParams) : ℕ := dp ⟨3, by decide⟩
 /-- Quotient bit width `quotientBits U n_max` in `DictParams`. -/
-def dpQuotBits (dp : DictParams) : ℕ := dp ⟨4, by decide⟩
+@[expose] def dpQuotBits (dp : DictParams) : ℕ := dp ⟨4, by decide⟩
 /-- Value array word offset `offVal U w n_max h_space` in `DictParams`. -/
-def dpOffVal (dp : DictParams) : ℕ := dp ⟨5, by decide⟩
+@[expose] def dpOffVal (dp : DictParams) : ℕ := dp ⟨5, by decide⟩
 /-- Value bit width `valBits V` in `DictParams`. -/
-def dpValBits (dp : DictParams) : ℕ := dp ⟨6, by decide⟩
+@[expose] def dpValBits (dp : DictParams) : ℕ := dp ⟨6, by decide⟩
 /-- Sub-array word offset `offLMSub U V w n_max h_space c` in `DictParams`. -/
-def dpOffLMSub (c : Fin 9) (dp : DictParams) : ℕ :=
+@[expose] def dpOffLMSub (c : Fin 9) (dp : DictParams) : ℕ :=
   match c.val with
   | 0 => dp ⟨7, by decide⟩
   | 1 => dp ⟨8, by decide⟩
@@ -470,45 +509,45 @@ def dpOffLMSub (c : Fin 9) (dp : DictParams) : ℕ :=
   | 7 => dp ⟨14, by decide⟩
   | _ => dp ⟨15, by decide⟩
 /-- Local metadata bit width `effBucketPosBits n_max` in `DictParams`. -/
-def dpLmBits (dp : DictParams) : ℕ := dp ⟨16, by decide⟩
+@[expose] def dpLmBits (dp : DictParams) : ℕ := dp ⟨16, by decide⟩
 /-- Global metadata word offset `offGM U V w n_max h_space` in `DictParams`. -/
-def dpOffGM (dp : DictParams) : ℕ := dp ⟨17, by decide⟩
+@[expose] def dpOffGM (dp : DictParams) : ℕ := dp ⟨17, by decide⟩
 /-- Global metadata pointer bit width `globalPtrBits n_max` in `DictParams`. -/
-def dpGmBits (dp : DictParams) : ℕ := dp ⟨18, by decide⟩
+@[expose] def dpGmBits (dp : DictParams) : ℕ := dp ⟨18, by decide⟩
 /-- Bucket index bit width `bucketBits n_max` in `DictParams`. -/
-def dpBucketBits (dp : DictParams) : ℕ := dp ⟨19, by decide⟩
+@[expose] def dpBucketBits (dp : DictParams) : ℕ := dp ⟨19, by decide⟩
 /-- Bucket bitmask `2 ^ bucketBits n_max - 1` in `DictParams`. -/
-def dpBucketMask (dp : DictParams) : ℕ := dp ⟨20, by decide⟩
+@[expose] def dpBucketMask (dp : DictParams) : ℕ := dp ⟨20, by decide⟩
 /-- Full-slab size `slabSize n_max` in `DictParams`. -/
-def dpSlabSize (dp : DictParams) : ℕ := dp ⟨21, by decide⟩
+@[expose] def dpSlabSize (dp : DictParams) : ℕ := dp ⟨21, by decide⟩
 /-- Precomputed `slabSize n_max - 1` in `DictParams`. -/
-def dpSlabSizeSubOne (dp : DictParams) : ℕ := dp ⟨22, by decide⟩
+@[expose] def dpSlabSizeSubOne (dp : DictParams) : ℕ := dp ⟨22, by decide⟩
 /-- Precomputed `2 * slabSize n_max` in `DictParams`. -/
-def dpTwoSlabSize (dp : DictParams) : ℕ := dp ⟨23, by decide⟩
+@[expose] def dpTwoSlabSize (dp : DictParams) : ℕ := dp ⟨23, by decide⟩
 /-- Per-bucket slab directory size `dirSlabsPerBucket n_max` in `DictParams`. -/
-def dpDirSlabs (dp : DictParams) : ℕ := dp ⟨24, by decide⟩
+@[expose] def dpDirSlabs (dp : DictParams) : ℕ := dp ⟨24, by decide⟩
 /-- Precomputed `dirSlabsPerBucket n_max - 1` in `DictParams`. -/
-def dpDirSlabsSubOne (dp : DictParams) : ℕ := dp ⟨25, by decide⟩
+@[expose] def dpDirSlabsSubOne (dp : DictParams) : ℕ := dp ⟨25, by decide⟩
 /-- Per-bucket tail capacity `tailCapPerBucket n_max` in `DictParams`. -/
-def dpTailCap (dp : DictParams) : ℕ := dp ⟨26, by decide⟩
+@[expose] def dpTailCap (dp : DictParams) : ℕ := dp ⟨26, by decide⟩
 /-- Slab directory base index `gmSlabDirBase n_max` in `DictParams`. -/
-def dpGmSlabDirBase (dp : DictParams) : ℕ := dp ⟨27, by decide⟩
+@[expose] def dpGmSlabDirBase (dp : DictParams) : ℕ := dp ⟨27, by decide⟩
 /-- Tail pointer base index `gmTailPtrBase n_max` in `DictParams`. -/
-def dpGmTailPtrBase (dp : DictParams) : ℕ := dp ⟨28, by decide⟩
+@[expose] def dpGmTailPtrBase (dp : DictParams) : ℕ := dp ⟨28, by decide⟩
 /-- Tail owner base index `gmTailOwnerBase n_max` in `DictParams`. -/
-def dpGmTailOwnerBase (dp : DictParams) : ℕ := dp ⟨29, by decide⟩
+@[expose] def dpGmTailOwnerBase (dp : DictParams) : ℕ := dp ⟨29, by decide⟩
 /-- Slab metadata base index `gmSlabMetaBase n_max` in `DictParams`. -/
-def dpGmSlabMetaBase (dp : DictParams) : ℕ := dp ⟨30, by decide⟩
+@[expose] def dpGmSlabMetaBase (dp : DictParams) : ℕ := dp ⟨30, by decide⟩
 /-- Micro-buckets per bucket `numMicroPerBucket n_max` in `DictParams`. -/
-def dpNumMicro (dp : DictParams) : ℕ := dp ⟨31, by decide⟩
+@[expose] def dpNumMicro (dp : DictParams) : ℕ := dp ⟨31, by decide⟩
 /-- Effective per-bucket slot cap `min n_max (effBucketCap n_max)` in `DictParams`. -/
-def dpMinCap (dp : DictParams) : ℕ := dp ⟨32, by decide⟩
+@[expose] def dpMinCap (dp : DictParams) : ℕ := dp ⟨32, by decide⟩
 /-- Key universe size `U` in `DictParams`. -/
-def dpU (dp : DictParams) : ℕ := dp ⟨33, by decide⟩
+@[expose] def dpU (dp : DictParams) : ℕ := dp ⟨33, by decide⟩
 /-- Value universe size `V` in `DictParams`. -/
-def dpV (dp : DictParams) : ℕ := dp ⟨34, by decide⟩
+@[expose] def dpV (dp : DictParams) : ℕ := dp ⟨34, by decide⟩
 /-- Hash block word count `h_space` in `DictParams`. -/
-def dpHSpace (dp : DictParams) : ℕ := dp ⟨35, by decide⟩
+@[expose] def dpHSpace (dp : DictParams) : ℕ := dp ⟨35, by decide⟩
 
 @[simp] theorem p_w_mk (U V w n_max h_space : ℕ) :
     dpW (mkDictParams U V w n_max h_space) = w := rfl
@@ -570,7 +609,7 @@ def dpHSpace (dp : DictParams) : ℕ := dp ⟨35, by decide⟩
   omega
 
 /-- Common entry envelope for dictionary `Memory.Prog` operations at `base`. -/
-def DictEnv (U V w n_max h_space : ℕ) (w' base : ℕ) : Prop :=
+@[expose] def DictEnv (U V w n_max h_space : ℕ) (w' base : ℕ) : Prop :=
   w' = w ∧ Fits w (base + totalSpace U V w n_max h_space)
 
 /-- Combined runtime parameter and memory envelope for parameter-free `Realizes` certificates. -/
@@ -581,11 +620,11 @@ structure DictEnvGen (w : ℕ) (dp : DictParams) (base : ℕ) : Prop where
   env : DictEnv (dpU dp) (dpV dp) (dpW dp) (dpNMax dp) (dpHSpace dp) w base
 
 /-- Parameter-free `Memory.Prog` operation reading `Quotients[d.2.2]` at `base = d.2.1`. -/
-def readQuotGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+@[expose] def readQuotGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
   readPackedGenProg (((d.2.1, dpOffQuot d.1), (dpQuotBits d.1, dpW d.1)), d.2.2)
 
 /-- Read `Quotients[d.2]` at `base = d.1` in `Memory.Prog`. -/
-def readQuotProg (U w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+@[expose] def readQuotProg (U w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   readPackedProg d.1 (offQuot h_space) (quotientBits U n_max) w d.2
 
 @[simp] theorem readQuotGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
@@ -594,11 +633,11 @@ def readQuotProg (U w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
 
 /-- Parameter-free `Memory.Prog` operation writing `d.2.2` to `Quotients[d.2.1.2]` at
 `base = d.2.1.1`. -/
-def writeQuotGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
+@[expose] def writeQuotGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
   writePackedGenProg ((((d.2.1.1, dpOffQuot d.1), (dpQuotBits d.1, dpW d.1)), d.2.1.2), d.2.2)
 
 /-- Write `d.2` to `Quotients[d.1.2]` at `base = d.1.1` in `Memory.Prog`. -/
-def writeQuotProg (U w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose] def writeQuotProg (U w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   writePackedProg d.1.1 (offQuot h_space) (quotientBits U n_max) w d.1.2 d.2
 
 @[simp] theorem writeQuotGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
@@ -606,11 +645,11 @@ def writeQuotProg (U w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.P
       writeQuotProg U w n_max h_space d := rfl
 
 /-- Parameter-free `Memory.Prog` operation reading `Values[d.2.2]` at `base = d.2.1`. -/
-def readValGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+@[expose] def readValGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
   readPackedGenProg (((d.2.1, dpOffVal d.1), (dpValBits d.1, dpW d.1)), d.2.2)
 
 /-- Read `Values[d.2]` at `base = d.1` in `Memory.Prog`. -/
-def readValProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+@[expose] def readValProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   readPackedProg d.1 (offVal U w n_max h_space) (valBits V) w d.2
 
 @[simp] theorem readValGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
@@ -619,11 +658,11 @@ def readValProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :
 
 /-- Parameter-free `Memory.Prog` operation writing `d.2.2` to `Values[d.2.1.2]` at
 `base = d.2.1.1`. -/
-def writeValGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
+@[expose] def writeValGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
   writePackedGenProg ((((d.2.1.1, dpOffVal d.1), (dpValBits d.1, dpW d.1)), d.2.1.2), d.2.2)
 
 /-- Write `d.2` to `Values[d.1.2]` at `base = d.1.1` in `Memory.Prog`. -/
-def writeValProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose] def writeValProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   writePackedProg d.1.1 (offVal U w n_max h_space) (valBits V) w d.1.2 d.2
 
 @[simp] theorem writeValGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
@@ -631,11 +670,11 @@ def writeValProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.
       writeValProg U V w n_max h_space d := rfl
 
 /-- Parameter-free `Memory.Prog` operation reading `LocalMeta[c, d.2.2]` at `base = d.2.1`. -/
-def readLMGenProg (c : Fin 9) (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+@[expose] def readLMGenProg (c : Fin 9) (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
   readPackedGenProg (((d.2.1, dpOffLMSub c d.1), (dpLmBits d.1, dpW d.1)), d.2.2)
 
 /-- Read `LocalMeta[c, d.2]` at `base = d.1` in `Memory.Prog`. -/
-def readLMProg (U V w n_max h_space c : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+@[expose] def readLMProg (U V w n_max h_space c : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   readPackedProg d.1 (offLMSub U V w n_max h_space c) (effBucketPosBits n_max) w d.2
 
 @[simp] theorem readLMGenProg_mk (U V w n_max h_space : ℕ) (c : Fin 9) (d : ℕ × ℕ) :
@@ -645,11 +684,11 @@ def readLMProg (U V w n_max h_space c : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ 
 
 /-- Parameter-free `Memory.Prog` operation writing `d.2.2` to `LocalMeta[c, d.2.1.2]` at
 `base = d.2.1.1`. -/
-def writeLMGenProg (c : Fin 9) (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
+@[expose] def writeLMGenProg (c : Fin 9) (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
   writePackedGenProg ((((d.2.1.1, dpOffLMSub c d.1), (dpLmBits d.1, dpW d.1)), d.2.1.2), d.2.2)
 
 /-- Write `d.2` to `LocalMeta[c, d.1.2]` at `base = d.1.1` in `Memory.Prog`. -/
-def writeLMProg (U V w n_max h_space c : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose] def writeLMProg (U V w n_max h_space c : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   writePackedProg d.1.1 (offLMSub U V w n_max h_space c) (effBucketPosBits n_max) w d.1.2 d.2
 
 @[simp] theorem writeLMGenProg_mk (U V w n_max h_space : ℕ) (c : Fin 9) (d : (ℕ × ℕ) × ℕ) :
@@ -658,11 +697,11 @@ def writeLMProg (U V w n_max h_space c : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory
   simp [writeLMGenProg, writeLMProg, writePackedGenProg]
 
 /-- Parameter-free `Memory.Prog` operation reading `GlobalMeta[d.2.2]` at `base = d.2.1`. -/
-def readGMGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+@[expose] def readGMGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
   readPackedGenProg (((d.2.1, dpOffGM d.1), (dpGmBits d.1, dpW d.1)), d.2.2)
 
 /-- Read `GlobalMeta[d.2]` at `base = d.1` in `Memory.Prog`. -/
-def readGMProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+@[expose] def readGMProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   readPackedProg d.1 (offGM U V w n_max h_space) (globalPtrBits n_max) w d.2
 
 @[simp] theorem readGMGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
@@ -671,11 +710,11 @@ def readGMProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
 
 /-- Parameter-free `Memory.Prog` operation writing `d.2.2` to `GlobalMeta[d.2.1.2]` at
 `base = d.2.1.1`. -/
-def writeGMGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
+@[expose] def writeGMGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
   writePackedGenProg ((((d.2.1.1, dpOffGM d.1), (dpGmBits d.1, dpW d.1)), d.2.1.2), d.2.2)
 
 /-- Write `d.2` to `GlobalMeta[d.1.2]` at `base = d.1.1` in `Memory.Prog`. -/
-def writeGMProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
+@[expose] def writeGMProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   writePackedProg d.1.1 (offGM U V w n_max h_space) (globalPtrBits n_max) w d.1.2 d.2
 
 @[simp] theorem writeGMGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
@@ -683,7 +722,7 @@ def writeGMProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.P
       writeGMProg U V w n_max h_space d := rfl
 
 /-- Parameter-free `Memory.Prog` operation reading `bCount` (`d = (dp, (base, b))`). -/
-def readBucketCountGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+@[expose] def readBucketCountGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
   if dpBucketBits d.1 = 0 then
     readGMGenProg (d.1, (d.2.1, 0))
   else do
@@ -692,7 +731,7 @@ def readBucketCountGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
     pure (q_b * dpSlabSize d.1 + r_b)
 
 /-- `Memory.Prog` operation reading `bCount n_max gm b` (`d = (base, b)`). -/
-def readBucketCountProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+@[expose] def readBucketCountProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   if bucketBits n_max = 0 then
     readGMProg U V w n_max h_space (d.1, 0)
   else do
@@ -706,7 +745,7 @@ def readBucketCountProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Pr
 
 /-- Parameter-free `Memory.Prog` operation resolving indexed local slot `j = d.2.2` of bucket
 `b = d.2.1.2` at `base = d.2.1.1`. -/
-def resolveIndexedSlotGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog ℕ :=
+@[expose] def resolveIndexedSlotGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog ℕ :=
   if dpBucketBits d.1 = 0 then
     pure d.2.2
   else do
@@ -723,7 +762,7 @@ def resolveIndexedSlotGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory
 
 /-- `Memory.Prog` operation resolving indexed local slot `j = d.2 < effBucketCap n_max` of bucket
 `b = d.1.2` at `base = d.1.1` to physical slot `slotOf n_max gm b j < n_max`. -/
-def resolveIndexedSlotProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
+@[expose] def resolveIndexedSlotProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
   if bucketBits n_max = 0 then
     pure d.2
   else do
@@ -745,7 +784,7 @@ def resolveIndexedSlotProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ)
 set_option hygiene false in
 /-- Helper tactic that simplifies all `DictParams` field accessors and primitive `Memory.Prog`
 projections after `dp = mkDictParams U V w₀ n_max h_space` has been substituted. -/
-macro "simpDictParamsWith" "[" extra:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
+scoped macro "simpDictParamsWith" "[" extra:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
   `(tactic|
     try simp only [
       $extra,*,
@@ -762,7 +801,7 @@ macro "simpDictParamsWith" "[" extra:Lean.Parser.Tactic.simpLemma,* "]" : tactic
 set_option hygiene false in
 /-- Helper tactic for parameter-free `Realizes` proofs over `DictParams × D`:
 runs `realize` and unpacks `d = (dp, d)` and `DictEnvGen` (`h.1`) in every resulting goal. -/
-macro "realizeDict" : tactic =>
+scoped macro "realizeDict" : tactic =>
   `(tactic| (
     realize
     all_goals (
@@ -774,7 +813,7 @@ macro "realizeDict" : tactic =>
 set_option hygiene false in
 /-- Helper tactic for parameter-free `Realizes` proofs over `DictParams × D` with extra
 simplification lemmas for sub-programs and preconditions. -/
-macro "realizeDictWith" "[" extra:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
+scoped macro "realizeDictWith" "[" extra:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
   `(tactic| (
     realize
     all_goals (
@@ -816,7 +855,7 @@ theorem realizes_readValGen :
   unfold readValGenProg
   realizeDict
   rcases henv with ⟨rfl, hspace⟩
-  exact ⟨n_max, rfl, hw, valBits_le_of_le_pow hV, h.2,
+  exact ⟨n_max, rfl, hw, Nat.clog_le_of_le_pow hV, h.2,
     hspace.of_le (by unfold totalSpace offGM offLM offVal; omega)⟩
 
 theorem realizes_writeValGen :
@@ -828,7 +867,7 @@ theorem realizes_writeValGen :
   unfold writeValGenProg
   realizeDict
   rcases henv with ⟨rfl, hspace⟩
-  exact ⟨n_max, rfl, hw, valBits_le_of_le_pow hV, h.2,
+  exact ⟨n_max, rfl, hw, Nat.clog_le_of_le_pow hV, h.2,
     hspace.of_le (by unfold totalSpace offGM offLM offVal; omega)⟩
 
 theorem realizes_readLMGen (c : Fin 9) :

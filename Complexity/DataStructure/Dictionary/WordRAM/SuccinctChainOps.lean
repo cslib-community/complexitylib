@@ -21,6 +21,38 @@ dictionary operations (`insertBodyProg`, `deletePrepProg`, `deleteFinishProg`):
 * `readTotalSlotsProg`: `O(1)` reader for `totalSlots` (`readBucketCountProg` for `bCount` lives in
   `SuccinctProg.lean`);
 * `copyLastPayloadProg`: `O(1)` payload copy from the last logical slot of bucket `b` to `phys_del`.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.AllChainsValid`: global doubly-linked chain
+  invariant across all `(b, m)` pairs.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.prependIfIndexedProg`: conditional `Memory.Prog`
+  prepending `j_new` to micro-chain `(b, m)` when `j_new < effBucketCap n_max`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.unlinkIfIndexedProg`: conditional `Memory.Prog`
+  unlinking `j_del` from micro-chain `(b, m)` when `j_del < effBucketCap n_max`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.readTotalSlotsProg`: `Memory.Prog` operation
+  reading `totalSlots`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.copyLastPayloadProg`: `Memory.Prog` operation
+  copying `(Quotients, Values)` from the last slot of bucket `b` to `phys_del`.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmPrependProg_allChainsValid`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmUnlinkProg_allChainsValid`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmRelocateProg_allChainsValid`: preservation of
+  `AllChainsValid` under prepend, unlink, and relocation.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.prependIfIndexedProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_prependIfIndexedGen`: effect and
+  `Realizes` certificate for `prependIfIndexedProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.unlinkIfIndexedProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_unlinkIfIndexedGen`: effect and
+  `Realizes` certificate for `unlinkIfIndexedProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.readTotalSlotsProg_spec`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_readTotalSlotsGen`: specification and
+  `Realizes` certificate for `readTotalSlotsProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.copyLastPayloadProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_copyLastPayloadGen`: effect and
+  `Realizes` certificate for `copyLastPayloadProg`.
 -/
 
 public section

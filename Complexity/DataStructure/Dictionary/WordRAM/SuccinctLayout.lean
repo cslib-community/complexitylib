@@ -33,6 +33,24 @@ fixed-capacity succinct dynamic dictionary.
 5. `GlobalMeta`: `packedWords (globalMetaLen n_max) (globalPtrBits n_max) w` words storing global
    counts, per-bucket slab/tail counts, direct slab directories, tail pointers, tail back-pointers,
    and the logical/physical slab pool bijection (`offGM`).
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.offQuot`, `offVal`, `offLM`, `lmSubWords`,
+  `offLMSub`, `offGM`, `totalSpace`: word offsets and total footprint of the succinct dictionary
+  block.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.quotAt`, `valAt`, `lmAt`, `gmAt`: pure extraction
+  functions for `Quotients`, `Values`, `LocalMeta`, and `GlobalMeta`.
+
+## Main results
+
+* `totalSpace_le_succinctWords`: `totalSpace U V w n_max h_space` is at most
+  `Dynamic.succinctWords 79 (35 + h_space) U V w n_max` whenever `n_max ≤ U`.
+* `quotAt_lt`, `valAt_lt`, `lmAt_lt`, `gmAt_lt`: bit-width bounds on extracted array entries.
+* `quotAt_zero_of_init`, `valAt_zero_of_init`, `lmAt_zero_of_init`, `gmAt_zero_of_init`: extracted
+  arrays are identically zero on zero-initialized table memory.
+* `arrays_congr_of_eq_on`: extracted arrays depend only on words inside
+  `[base + h_space, base + totalSpace U V w n_max h_space)`.
 -/
 
 public section

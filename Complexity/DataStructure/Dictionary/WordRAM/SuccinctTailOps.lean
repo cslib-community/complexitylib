@@ -17,6 +17,32 @@ This module defines the pure `GlobalMeta` updates (`gmAppendTail`, `gmRemoveTail
 corresponding branch-free `Memory.Prog` operations (`appendTailItemProg`, `removeLastTailItemProg`,
 realized to Word-RAM code via `realize`) that allocate and compact tail items while preserving
 `TailBijection` and `SlabBijection`.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmAppendTail`: pure `GlobalMeta` update
+  appending one tail item to bucket `b`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmRemoveTail`: pure `GlobalMeta` update
+  removing the last tail item of bucket `b` and compacting the tail pool.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.appendTailItemProg`: `Memory.Prog` subroutine
+  realizing `gmAppendTail`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.removeLastTailItemProg`: `Memory.Prog`
+  subroutine realizing `gmRemoveTail` and relocating the compacted payload.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.tailBijection_gmAppendTail`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.slabBijection_gmAppendTail`: `gmAppendTail`
+  preserves `TailBijection` and `SlabBijection`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.tailBijection_gmRemoveTail`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.slabBijection_gmRemoveTail`: `gmRemoveTail`
+  preserves `TailBijection` and `SlabBijection`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.appendTailItemProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_appendTailItemGen`: effect and
+  `Realizes` certificate for `appendTailItemProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.removeLastTailItemProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_removeLastTailItemGen`: effect and
+  `Realizes` certificate for `removeLastTailItemProg`.
 -/
 
 public section
@@ -68,10 +94,10 @@ def gmRemoveTail (n_max : ℕ) (gm : ℕ → ℕ) (b : ℕ) : ℕ → ℕ :=
       (gmRIdx b) r_del)
     1 t_last
 
-theorem flat_descriptor_div_mod (n_max b r : ℕ) (hr : r < tailCapPerBucket n_max) :
-    (b * tailCapPerBucket n_max + r) / tailCapPerBucket n_max = b ∧
-    (b * tailCapPerBucket n_max + r) % tailCapPerBucket n_max = r := by
-  have hpos : 0 < tailCapPerBucket n_max := by omega
+/-- Quotient and remainder of a flat two-dimensional index `b * c + r` when `r < c`. -/
+theorem mul_add_div_mod_of_lt {b c r : ℕ} (hr : r < c) :
+    (b * c + r) / c = b ∧ (b * c + r) % c = r := by
+  have hpos : 0 < c := by omega
   refine ⟨?_, ?_⟩
   · rw [Nat.mul_comm, Nat.mul_add_div hpos, Nat.div_eq_of_lt hr, Nat.add_zero]
   · rw [Nat.mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hr]
@@ -80,8 +106,8 @@ theorem flat_descriptor_inj {n_max b₁ r₁ b₂ r₂ : ℕ}
     (hr₁ : r₁ < tailCapPerBucket n_max) (hr₂ : r₂ < tailCapPerBucket n_max)
     (heq : b₁ * tailCapPerBucket n_max + r₁ = b₂ * tailCapPerBucket n_max + r₂) :
     b₁ = b₂ ∧ r₁ = r₂ := by
-  have h1 := flat_descriptor_div_mod n_max b₁ r₁ hr₁
-  have h2 := flat_descriptor_div_mod n_max b₂ r₂ hr₂
+  have h1 := mul_add_div_mod_of_lt (b := b₁) hr₁
+  have h2 := mul_add_div_mod_of_lt (b := b₂) hr₂
   refine ⟨?_, ?_⟩
   · rw [← h1.1, heq, h2.1]
   · rw [← h1.2, heq, h2.2]
@@ -246,7 +272,7 @@ theorem tailBijection_gmAppendTail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     rw [hpres.2.1] at ht'
     rw [hown_val t (by omega)]
     split_ifs with hteq
-    · have hdm := flat_descriptor_div_mod n_max b (gm (gmRIdx b)) hr
+    · have hdm := mul_add_div_mod_of_lt (b := b) hr
       rw [hdm.1, hdm.2, hr_fn b hb, hptr_val _ hd_lt]
       simp only [↓reduceIte]
       exact ⟨hb, by omega, hteq.symm⟩
@@ -880,7 +906,7 @@ theorem ntails_lt_maxTailItems_of_r_lt {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ
     refine Finset.mem_erase.mpr ⟨?_, Finset.mem_range.mpr hd_lt⟩
     intro heq
     rw [heq] at hr_t
-    have hdm := flat_descriptor_div_mod n_max b (gm (gmRIdx b)) hr_lt
+    have hdm := mul_add_div_mod_of_lt (b := b) hr_lt
     change d_new / tailCapPerBucket n_max = b ∧
       d_new % tailCapPerBucket n_max = gm (gmRIdx b) at hdm
     rw [hdm.1, hdm.2] at hr_t

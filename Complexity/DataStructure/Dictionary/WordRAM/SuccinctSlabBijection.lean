@@ -15,6 +15,31 @@ public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctTailOps
 This module defines the pure `GlobalMeta` slab-stack updates (`gmPushSlab`, `gmUnlinkTopSlab`,
 `gmCompactSlab`, `gmPopSlab`) and proves that they preserve `SlabBijection` and `TailBijection`
 when promoting or demoting a full slab of `K = slabSize n_max` items.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmPushSlab`: pure `GlobalMeta` update
+  allocating a new full slab as the top slab of bucket `b`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmUnlinkTopSlab`: Stage A of slab pop,
+  unlinking the top slab of bucket `b`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmCompactSlab`: Stage B of slab pop,
+  compacting the physical slab pool into the vacated slab `p_del`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmPopSlab`: composite `GlobalMeta` update
+  popping the top slab of bucket `b` and compacting the slab pool.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmPushSlab_fields`: field-by-field description
+  of `gmPushSlab`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.tailBijection_gmPushSlab`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.slabBijection_gmPushSlab`: `gmPushSlab`
+  preserves `TailBijection` and `SlabBijection`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmUnlinkTopSlab_fields`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.gmCompactSlab_fields_lt`: field-by-field
+  descriptions of the two stages of `gmPopSlab`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.tailBijection_gmPopSlab`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.slabBijection_gmPopSlab`: `gmPopSlab`
+  preserves `TailBijection` and `SlabBijection`.
 -/
 
 public section
@@ -24,24 +49,6 @@ namespace Cslib.DataStructure.Dictionary.WordRAM.Succinct
 open Cslib.DataStructure.Dictionary.FeistelQuotient
 open Cslib.DataStructure.Dictionary.SuccinctBucket
 open Finset
-
-theorem slab_dir_div_mod (n_max b s : ℕ) (hs : s < dirSlabsPerBucket n_max) :
-    (b * dirSlabsPerBucket n_max + s) / dirSlabsPerBucket n_max = b ∧
-    (b * dirSlabsPerBucket n_max + s) % dirSlabsPerBucket n_max = s := by
-  have hpos : 0 < dirSlabsPerBucket n_max := by omega
-  refine ⟨?_, ?_⟩
-  · rw [Nat.mul_comm, Nat.mul_add_div hpos, Nat.div_eq_of_lt hs, Nat.add_zero]
-  · rw [Nat.mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hs]
-
-theorem slab_dir_inj {n_max b₁ s₁ b₂ s₂ : ℕ}
-    (hs₁ : s₁ < dirSlabsPerBucket n_max) (hs₂ : s₂ < dirSlabsPerBucket n_max)
-    (heq : gmSlabDirIdx n_max b₁ s₁ = gmSlabDirIdx n_max b₂ s₂) :
-    b₁ = b₂ ∧ s₁ = s₂ := by
-  unfold gmSlabDirIdx at heq
-  have heq' : b₁ * dirSlabsPerBucket n_max + s₁ = b₂ * dirSlabsPerBucket n_max + s₂ := by omega
-  have h1 := slab_dir_div_mod n_max b₁ s₁ hs₁
-  have h2 := slab_dir_div_mod n_max b₂ s₂ hs₂
-  exact ⟨by rw [← h1.1, heq', h2.1], by rw [← h1.2, heq', h2.2]⟩
 
 theorem nslabs_lt_maxFullSlabs_of_mul_le {n_max n_slabs : ℕ}
     (hb_pos : 0 < bucketBits n_max)
@@ -89,6 +96,7 @@ def gmPushSlab (n_max : ℕ) (gm : ℕ → ℕ) (b : ℕ) : ℕ → ℕ :=
       (gmQIdx b) (q_b + 1))
     0 (p_new + 1)
 
+/-- Field-by-field description of `gmPushSlab` across all `GlobalMeta` sub-arrays. -/
 theorem gmPushSlab_fields {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ} (hb : b < numBuckets n_max) :
     gmPushSlab n_max gm b 0 = gm 0 + 1 ∧
     gmPushSlab n_max gm b 1 = gm 1 ∧
@@ -168,14 +176,14 @@ theorem gmPushSlab_fields {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ} (hb : b < n
       split_ifs with hq_dir hq_pos
       · have hne_idx : b' * dirSlabsPerBucket n_max + s ≠ b * dirSlabsPerBucket n_max + q₀ := by
           intro heq
-          have h1 := slab_dir_div_mod n_max b' s hs
-          have h2 := slab_dir_div_mod n_max b q₀ hq_dir
+          have h1 := mul_add_div_mod_of_lt (b := b') hs
+          have h2 := mul_add_div_mod_of_lt (b := b) hq_dir
           exact hcond ⟨by rw [← h1.1, heq, h2.1], by rw [← h1.2, heq, h2.2]⟩
         repeat rw [Function.update_of_ne (by omega)]
       · have hne_idx : b' * dirSlabsPerBucket n_max + s ≠ b * dirSlabsPerBucket n_max + q₀ := by
           intro heq
-          have h1 := slab_dir_div_mod n_max b' s hs
-          have h2 := slab_dir_div_mod n_max b q₀ hq_dir
+          have h1 := mul_add_div_mod_of_lt (b := b') hs
+          have h2 := mul_add_div_mod_of_lt (b := b) hq_dir
           exact hcond ⟨by rw [← h1.1, heq, h2.1], by rw [← h1.2, heq, h2.2]⟩
         repeat rw [Function.update_of_ne (by omega)]
       · repeat rw [Function.update_of_ne (by omega)]
@@ -223,6 +231,7 @@ theorem gmPushSlab_fields {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ} (hb : b < n
         repeat rw [Function.update_of_ne (by omega)]
       · repeat rw [Function.update_of_ne (by omega)]
 
+/-- `gmPushSlab` preserves `TailBijection`. -/
 theorem tailBijection_gmPushSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (hb : b < numBuckets n_max)
     (htail : TailBijection n_max gm (fun b' => gm (gmRIdx b')) (gm 1)) :
@@ -285,6 +294,8 @@ theorem tailBijection_gmPushSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     · rw [hf.2.2.1 _ hb_d]; exact hr_d
     · rw [hptr_eq _ hd_lt, hptr_d]
 
+/-- `gmPushSlab` assigns physical slab `gm 0` to `(b, gm (gmQIdx b))` and preserves
+`SlabBijection`. -/
 theorem slabBijection_gmPushSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (hb : b < numBuckets n_max)
     (hp_lt : gm 0 < maxFullSlabs n_max)
@@ -518,6 +529,7 @@ pool. -/
 def gmPopSlab (n_max : ℕ) (gm : ℕ → ℕ) (b : ℕ) : ℕ → ℕ :=
   gmCompactSlab n_max (gmUnlinkTopSlab n_max gm b) (gm (gmSlabTopIdx b))
 
+/-- Field-by-field description of `gmUnlinkTopSlab` (Stage A of slab pop). -/
 theorem gmUnlinkTopSlab_fields {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ} (hb : b < numBuckets n_max) :
     gmUnlinkTopSlab n_max gm b 0 = gm 0 ∧
     gmUnlinkTopSlab n_max gm b 1 = gm 1 ∧
@@ -569,6 +581,7 @@ theorem gmUnlinkTopSlab_fields {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ} (hb : 
         gmTailOwnerBase gmTailPtrBase gmSlabDirBase
       rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
 
+/-- Field-by-field description of `gmCompactSlab` when `p_del < gmA 0 - 1` (Stage B of slab pop). -/
 theorem gmCompactSlab_fields_lt {n_max : ℕ} (gmA : ℕ → ℕ) {p_del : ℕ}
     (hlt : p_del < gmA 0 - 1)
     (hb_last : gmA (gmSlabOwnerBIdx n_max (gmA 0 - 1)) < numBuckets n_max) :
@@ -661,8 +674,8 @@ theorem gmCompactSlab_fields_lt {n_max : ℕ} (gmA : ℕ → ℕ) {p_del : ℕ}
       by_cases hs_dir : s₀ < dirSlabsPerBucket n_max
       · have hne_idx : b' * dirSlabsPerBucket n_max + s ≠ b₀ * dirSlabsPerBucket n_max + s₀ := by
           intro heq
-          have h1 := slab_dir_div_mod n_max b' s hs
-          have h2 := slab_dir_div_mod n_max b₀ s₀ hs_dir
+          have h1 := mul_add_div_mod_of_lt (b := b') hs
+          have h2 := mul_add_div_mod_of_lt (b := b₀) hs_dir
           exact hcond ⟨by rw [← h1.1, heq, h2.1], by rw [← h1.2, heq, h2.2]⟩
         simp only [hs_dir, ↓reduceIte]
         split_ifs <;>
@@ -716,6 +729,7 @@ theorem gmCompactSlab_fields_lt {n_max : ℕ} (gmA : ℕ → ℕ) {p_del : ℕ}
         split_ifs <;>
         repeat (first | rw [Function.update_of_ne (by omega)] | rfl)
 
+/-- `gmPopSlab` decrements `gm 0` and `gm (gmQIdx b)` while preserving all tail fields. -/
 theorem gmPopSlab_preserves_tail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (hb : b < numBuckets n_max)
     (hslab : SlabBijection n_max gm (fun b' => gm (gmQIdx b')) (gm 0)) :
@@ -752,6 +766,7 @@ theorem gmPopSlab_preserves_tail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
         rw [Function.update_of_ne (by unfold gmTailPtrBase gmSlabDirBase at hlo; omega),
           hu.2.2.2.2.2.1 idx (by unfold gmTailPtrBase at hlo; omega)]⟩
 
+/-- `gmPopSlab` preserves `TailBijection`. -/
 theorem tailBijection_gmPopSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (hb : b < numBuckets n_max)
     (hslab : SlabBijection n_max gm (fun b' => gm (gmQIdx b')) (gm 0))
@@ -815,6 +830,8 @@ theorem tailBijection_gmPopSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     · rw [hp.2.2.1 _ hb_d]; exact hr_d
     · rw [hptr_eq _ hd_lt, hptr_d]
 
+/-- `gmPopSlab` relocates the last physical slab `gm 0 - 1` into `gm (gmSlabTopIdx b)` and
+preserves `SlabBijection`. -/
 theorem slabBijection_gmPopSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (hb : b < numBuckets n_max)
     (hq_pos : 1 ≤ gm (gmQIdx b))

@@ -18,6 +18,26 @@ This module implements the `K`-step (`K = slabSize n_max`) slab promotion (`prom
 `SlotStoreInv`, `bCount`, and all logical `(quotAt, valAt)` entries via `slotOf`, and certifies
 its Word-RAM realization via `realize` and `Realizes.iterate₀`. Slab demotion (`demoteSlabProg`)
 is implemented in `Complexity.DataStructure.Dictionary.WordRAM.SuccinctSlabDemote`.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.promoteStepProg`: single step
+  `k < slabSize n_max` of slab promotion.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.promoteLoopProg`: `K`-step iteration of
+  `promoteStepProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.promoteSlabProg`: complete slab promotion
+  (`promoteLoopProg` followed by `gmPushSlabProg`).
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.PromoteSlabInv`: entry invariant for
+  `promoteSlabProg` (`gm (gmRIdx b) = 2 * slabSize n_max`).
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.promoteStepProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_promoteStepGen`: single-step invariant
+  preservation and `Realizes` certificate for `promoteStepProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.promoteSlabProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_promoteSlabGen`: full-slab promotion
+  invariant preservation, `O(K)` `memoryCost`, and `Realizes` certificate for `promoteSlabProg`.
 -/
 
 public section

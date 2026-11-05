@@ -25,6 +25,37 @@ in `Memory.Prog`, certified via the `realize` tactic:
   `IsDLChain`;
 * `searchMicroChainProg`: Phase 1 micro-chain traversal via `boundedWhile`, taking `O(1 + |L|)`
   memory accesses and instructions.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmHead`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmPrev`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmNext`: functional views of the 9 `LocalMeta`
+  sub-arrays.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.IsDLChainAux`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.IsDLChain`: doubly-linked list invariant for a
+  per-micro-bucket chain `L : List ℕ`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmPrependProg`: `Memory.Prog` operation
+  prepending a local slot `j_new` to micro-chain `(b, m)`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmUnlinkProg`: `Memory.Prog` operation unlinking
+  a local slot `j_del` from micro-chain `(b, m)`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.searchMicroChainProg`: `Memory.Prog` operation
+  scanning micro-chain `(b, m)` for a target quotient `q_target`.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.isDLChain_prepend`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.isDLChain_unlink`: pure preservation of
+  `IsDLChain` under prepend and unlink.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmPrependProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_lmPrependGen`: effect and `Realizes`
+  certificate for `lmPrependProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.lmUnlinkProg_effect`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_lmUnlinkGen`: effect and `Realizes`
+  certificate for `lmUnlinkProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.searchMicroChainProg_spec`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_searchMicroChainGen`: correctness,
+  `O(1 + |L|)` `memoryCost`, and `Realizes` certificate for `searchMicroChainProg`.
 -/
 
 public section

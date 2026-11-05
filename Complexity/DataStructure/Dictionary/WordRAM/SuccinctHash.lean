@@ -17,16 +17,40 @@ import Complexity.Tactic.Realize
 This module couples the bucket-level `Memory.Prog` operations of the fixed-capacity succinct
 dictionary with the two-stage universe-reduced 3-wise independent hash family
 (`Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise`) and proves the full dictionary-level state
-transition, space, initialization, and expected probe-excess bounds:
-* `qBits`, `hashB`, `hashSpace`, `space`, `initSteps`, `space_le_succinctWords`, `initSteps_le`:
-  hash parameter instantiation and space and initialization step bounds;
-* `tsum_uniform_probeExcess_reducedPolyHash_le_five`: expected combined probe excess `≤ 5` under a
-  uniformly sampled `ReducedPolySeed`;
-* `bucketMapOfState` and `DictStateInv`: coupling between `Dynamic.State U` and `BucketStateInv` via
-  one-round Feistel reconstruction `feistelReconstruct`;
-* `extractQuotProg`, `queryWithHashProg`, `insertWithHashProg`, `deletePrepWithHashProg`,
-  `deleteFinishWithHashProg`: `Memory.Prog` operations performing Feistel bit extraction and bucket
-  dispatch, realized to native Word-RAM code via `realize`.
+transition, space, initialization, and expected probe-excess bounds.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.qBits`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.hashB`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.hashSpace`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.space`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.initSteps`:
+  hash parameter instantiation, total Word-RAM footprint, and initialization instruction budget.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.bucketMapOfState`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.DictStateInv`:
+  coupling between `Dictionary.State U` and `BucketStateInv` via one-round Feistel reconstruction
+  `feistelReconstruct`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.extractQuotProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.queryWithHashProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.insertWithHashProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.deletePrepWithHashProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.deleteFinishWithHashProg`:
+  `Memory.Prog` operations performing Feistel bit extraction and bucket dispatch, realized to
+  native Word-RAM code via `realize`.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.initSteps_le`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.space_le_succinctWords`:
+  linear initialization instruction bound and succinct word-space bound.
+* `tsum_uniform_probeExcess_reducedPolyHash_le_five`:
+  expected combined probe excess `≤ 5` under a uniformly sampled `ReducedPolySeed`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.queryWithHashProg_dict_spec`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.insertWithHashProg_dict_spec`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.deleteWithHashProg_dict_spec`:
+  dictionary-level functional correctness and amortized `memoryCost` bounds for `query`, `insert`,
+  and two-phase `delete`.
 -/
 
 public section
@@ -443,9 +467,9 @@ theorem feistelLocalMicro_val_eq_mOfSeed (U n_max : ℕ) (θ : QuotHashSeed U n_
   rw [Nat.shiftRight_eq_div_pow, evalQuotHash_keyQuotient_eq]
 
 /-- Per-bucket quotient-to-value map induced by an abstract dictionary state
-`s_abs : Dynamic.State U` via `feistelReconstruct`. -/
+`s_abs : Dictionary.State U` via `feistelReconstruct`. -/
 @[expose]
-def bucketMapOfState (U n_max : ℕ) (h1 : ℕ → ℕ) (s_abs : Dynamic.State U) (b q : ℕ) :
+def bucketMapOfState (U n_max : ℕ) (h1 : ℕ → ℕ) (s_abs : Dictionary.State U) (b q : ℕ) :
     Option ℕ :=
   if h : feistelReconstruct (bucketBits n_max) h1 b q < U ∧
       b < numBuckets n_max ∧ q < 2 ^ quotientBits U n_max then
@@ -455,13 +479,13 @@ def bucketMapOfState (U n_max : ℕ) (h1 : ℕ → ℕ) (s_abs : Dynamic.State U
 
 @[simp]
 theorem bucketMapOfState_empty (U n_max : ℕ) (h1 : ℕ → ℕ) :
-    bucketMapOfState U n_max h1 (Dynamic.empty U) = fun _ _ => none := by
+    bucketMapOfState U n_max h1 (Dictionary.empty U) = fun _ _ => none := by
   funext b q
   unfold bucketMapOfState
   split_ifs <;> rfl
 
 theorem bucketMapOfState_feistelBucket {U n_max : ℕ} (hnU : n_max ≤ U) (h1 : ℕ → ℕ)
-    (s_abs : Dynamic.State U) (u : Fin U) :
+    (s_abs : Dictionary.State U) (u : Fin U) :
     bucketMapOfState U n_max h1 s_abs
       (feistelBucket (bucketBits n_max) h1 u.val)
       (keyQuotient (bucketBits n_max) u.val) = s_abs u := by
@@ -483,7 +507,7 @@ theorem bucketMapOfState_feistelBucket {U n_max : ℕ} (hnU : n_max ≤ U) (h1 :
   exact Fin.ext hrec
 
 theorem bucketMapOfState_update {U n_max : ℕ} (hnU : n_max ≤ U) (h1 : ℕ → ℕ)
-    (s_abs : Dynamic.State U) (u : Fin U) (v_opt : Option ℕ) :
+    (s_abs : Dictionary.State U) (u : Fin U) (v_opt : Option ℕ) :
     let b := feistelBucket (bucketBits n_max) h1 u.val
     let q := keyQuotient (bucketBits n_max) u.val
     Function.update (bucketMapOfState U n_max h1 s_abs) b
@@ -522,22 +546,22 @@ theorem bucketMapOfState_update {U n_max : ℕ} (hnU : n_max ≤ U) (h1 : ℕ �
       rw [Function.update_of_ne hne]
     · rfl
 
-/-- Full dictionary state invariant coupling `s_abs : Dynamic.State U` with `BucketStateInv` at
+/-- Full dictionary state invariant coupling `s_abs : Dictionary.State U` with `BucketStateInv` at
 `base` under quotient hash seed `θ`. -/
 structure DictStateInv (U V w₀ n_max base : ℕ) (θ : QuotHashSeed U n_max)
-    (s_abs : Dynamic.State U) (s : Memory.State) : Prop where
+    (s_abs : Dictionary.State U) (s : Memory.State) : Prop where
   hbucket : ∃ L, BucketStateInv U V w₀ n_max (hashSpace U w₀ n_max) base
     (mOfSeed U n_max θ) L (bucketMapOfState U n_max (hValOfSeed U n_max θ) s_abs) s
   htot : totalSlots n_max (gmAt base U V w₀ n_max (hashSpace U w₀ n_max) s.mem) =
-    (Dynamic.dom s_abs).card
+    (Dictionary.dom s_abs).card
 
-/-- An all-zero dictionary memory region satisfies `DictStateInv` for `Dynamic.empty U` with zero
-`slotPotential`. -/
+/-- An all-zero dictionary memory region satisfies `DictStateInv` for `Dictionary.empty U` with
+zero `slotPotential`. -/
 theorem dictStateInv_of_zero {U V w₀ n_max base : ℕ} (θ : QuotHashSeed U n_max)
     {s : Memory.State}
     (hgm0 : ∀ i, gmAt base U V w₀ n_max (hashSpace U w₀ n_max) s.mem i = 0)
     (hlm0 : ∀ p, lmAt base U V w₀ n_max (hashSpace U w₀ n_max) s.mem p = 0) :
-    DictStateInv U V w₀ n_max base θ (Dynamic.empty U) s ∧
+    DictStateInv U V w₀ n_max base θ (Dictionary.empty U) s ∧
     slotPotential n_max (gmAt base U V w₀ n_max (hashSpace U w₀ n_max) s.mem) = 0 := by
   obtain ⟨hinv, htot0, hpot0⟩ :=
     bucketStateInv_of_zero (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
@@ -545,14 +569,14 @@ theorem dictStateInv_of_zero {U V w₀ n_max base : ℕ} (θ : QuotHashSeed U n_
   refine ⟨⟨⟨fun _ _ => [], ?_⟩, ?_⟩, hpot0⟩
   · rwa [bucketMapOfState_empty]
   · rw [htot0]
-    simp [Dynamic.dom, Dictionary.dom_empty]
+    simp [Dictionary.dom_empty]
 
 /-- Under `BucketStateInv ... (bucketMapOfState U n_max (hValOfSeed U n_max θ) s_abs)`, the length
 of the micro-chain `L b m` for key `u` is at most `1 + microCollCount` and the bucket overflow
 `bCount b - effBucketCap n_max` is at most `1 + bucketOvfCount`. -/
 theorem chain_and_overflow_le_probeExcess {U V w₀ n_max base : ℕ}
     (θ : QuotHashSeed U n_max) {L : ℕ → ℕ → List ℕ}
-    {s_abs : Dynamic.State U} {s : Memory.State}
+    {s_abs : Dictionary.State U} {s : Memory.State}
     (hinv : BucketStateInv U V w₀ n_max (hashSpace U w₀ n_max) base
       (mOfSeed U n_max θ) L (bucketMapOfState U n_max (hValOfSeed U n_max θ) s_abs) s)
     (u : Fin U) :
@@ -563,13 +587,13 @@ theorem chain_and_overflow_le_probeExcess {U V w₀ n_max base : ℕ}
     let gm := gmAt base U V w₀ n_max (hashSpace U w₀ n_max) s.mem
     (L b m).length ≤
       1 + microCollCount n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-        (Dynamic.dom s_abs) u ∧
+        (Dictionary.dom s_abs) u ∧
     bCount n_max gm b - effBucketCap n_max ≤
       1 + bucketOvfCount n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-        (Dynamic.dom s_abs) u ∧
+        (Dictionary.dom s_abs) u ∧
     8 * (L b m).length + 6 * (bCount n_max gm b - effBucketCap n_max) ≤
       14 + 8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-        (Dynamic.dom s_abs) u := by
+        (Dictionary.dom s_abs) u := by
   classical
   intro h1 b q m gm
   have hb : b < numBuckets n_max := feistelBucket_lt (bucketBits n_max) h1 u.val
@@ -580,7 +604,7 @@ theorem chain_and_overflow_le_probeExcess {U V w₀ n_max base : ℕ}
     feistelReconstruct (bucketBits n_max) h1 b (qSlot j)
   have hslot_key : ∀ j < bCount n_max gm b,
       ∃ hu_j : uVal j < U,
-        (⟨uVal j, hu_j⟩ : Fin U) ∈ Dynamic.dom s_abs ∧
+        (⟨uVal j, hu_j⟩ : Fin U) ∈ Dictionary.dom s_abs ∧
         feistelBucket (bucketBits n_max) h1 (uVal j) = b ∧
         keyQuotient (bucketBits n_max) (uVal j) = qSlot j := by
     intro j hj
@@ -596,7 +620,7 @@ theorem chain_and_overflow_le_probeExcess {U V w₀ n_max base : ℕ}
     else
       u
   have hkeyAt_props : ∀ j (hj : j < bCount n_max gm b),
-      keyAt j ∈ Dynamic.dom s_abs ∧
+      keyAt j ∈ Dictionary.dom s_abs ∧
       feistelBucketHash n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2 (keyAt j) =
         feistelBucketHash n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2 u ∧
       keyQuotient (bucketBits n_max) (keyAt j).val = qSlot j := by
@@ -622,13 +646,13 @@ theorem chain_and_overflow_le_probeExcess {U V w₀ n_max base : ℕ}
   -- Bound 1: micro-chain length
   have hlen : (L b m).length ≤
       1 + microCollCount n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-        (Dynamic.dom s_abs) u := by
+        (Dictionary.dom s_abs) u := by
     have hnodup : (L b m).Nodup := (hinv.hchains.1 b hb m hm).nodup
     have hcard_eq : (L b m).length = #(L b m).toFinset :=
       (List.toFinset_card_of_nodup hnodup).symm
     rw [hcard_eq]
     refine card_microSlots_le (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-      (Dynamic.dom s_abs) u (L b m).toFinset keyAt ?_ ?_
+      (Dictionary.dom s_abs) u (L b m).toFinset keyAt ?_ ?_
     · intro j₁ hj₁ j₂ hj₂ heq
       have hj₁_lt := ((hinv.hchain_mem b hb m hm j₁).mp (List.mem_toFinset.mp hj₁)).1
       have hj₂_lt := ((hinv.hchain_mem b hb m hm j₂).mp (List.mem_toFinset.mp hj₂)).1
@@ -643,9 +667,9 @@ theorem chain_and_overflow_le_probeExcess {U V w₀ n_max base : ℕ}
   -- Bound 2: bucket overflow
   have hovf : bCount n_max gm b - effBucketCap n_max ≤
       1 + bucketOvfCount n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-        (Dynamic.dom s_abs) u := by
+        (Dictionary.dom s_abs) u := by
     refine bucketOverflow_le (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-      (Dynamic.dom s_abs) u (fun j : Fin (bCount n_max gm b) => keyAt j.val) ?_ ?_
+      (Dictionary.dom s_abs) u (fun j : Fin (bCount n_max gm b) => keyAt j.val) ?_ ?_
     · intro j₁ j₂ heq
       exact Fin.ext (hkeyAt_inj j₁.val j₁.isLt j₂.val j₂.isLt heq)
     · intro j
@@ -1061,7 +1085,7 @@ theorem validProg_deleteFinishWithHash {U V w n_max : ℕ}
 theorem queryWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
     (hwf : DictParamsWf U V w₀ n_max)
     (henv : DictEnvGen w (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max)) base)
-    (θ : QuotHashSeed U n_max) {s_abs : Dynamic.State U} {s : Memory.State}
+    (θ : QuotHashSeed U n_max) {s_abs : Dictionary.State U} {s : Memory.State}
     (hinv : DictStateInv U V w₀ n_max base θ s_abs s) (u : Fin U) :
     let h_q := hValOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val)
     let d := ((base, u.val), h_q)
@@ -1071,7 +1095,7 @@ theorem queryWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
     (Memory.spec 0).clientResult s prog = s_abs u ∧
     memoryCost prog s ≤
       26 + 8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-        (Dynamic.dom s_abs) u := by
+        (Dictionary.dom s_abs) u := by
   intro h_q d prog
   obtain ⟨L, hb_inv⟩ := hinv.hbucket
   let h1 := hValOfSeed U n_max θ
@@ -1115,7 +1139,7 @@ dictionary table arrays, and satisfies the amortized `memoryCost + 66 * slotPote
 theorem insertWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
     (hwf : DictParamsWf U V w₀ n_max)
     (henv : DictEnvGen w (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max)) base)
-    (θ : QuotHashSeed U n_max) {s_abs : Dynamic.State U} {s : Memory.State}
+    (θ : QuotHashSeed U n_max) {s_abs : Dictionary.State U} {s : Memory.State}
     (hinv : DictStateInv U V w₀ n_max base θ s_abs s)
     (u : Fin U) (v : ℕ)
     (hval : (Dynamic.spec U V n_max).valid s_abs (.insert u v)) :
@@ -1133,7 +1157,7 @@ theorem insertWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
     memoryCost prog s + 66 * slotPotential n_max gm' ≤
       66 * slotPotential n_max gm₀ + 184 +
         8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-          (Dynamic.dom s_abs) u := by
+          (Dictionary.dom s_abs) u := by
   intro h_q d prog s' gm₀ gm'
   obtain ⟨L, hb_inv⟩ := hinv.hbucket
   let h1 := hValOfSeed U n_max θ
@@ -1181,7 +1205,7 @@ theorem insertWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
     dsimp only [gm']
     rw [hs'_eq]
   have htot_dom : totalSlots n_max gm' =
-      (Dynamic.dom (Function.update s_abs u (some v))).card := by
+      (Dictionary.dom (Function.update s_abs u (some v))).card := by
     rw [hgm'_eq, htot', hB_eq, hinv.htot]
     by_cases his : (s_abs u).isSome
     · rw [ite_eq_left his, Dictionary.card_dom_insert_eq_of_isSome his]
@@ -1209,7 +1233,7 @@ combined amortized `memoryCost` by `270 + 8 * probeExcess`. -/
 theorem deleteWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
     (hwf : DictParamsWf U V w₀ n_max)
     (henv : DictEnvGen w (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max)) base)
-    (θ : QuotHashSeed U n_max) {s_abs : Dynamic.State U} {s : Memory.State}
+    (θ : QuotHashSeed U n_max) {s_abs : Dictionary.State U} {s : Memory.State}
     (hinv : DictStateInv U V w₀ n_max base θ s_abs s) (u : Fin U) :
     let h_q := hValOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val)
     let d_prep := ((base, u.val), h_q)
@@ -1234,7 +1258,7 @@ theorem deleteWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
       memoryCost prog_prep s + memoryCost prog_fin s + 66 * slotPotential n_max gm' ≤
         66 * slotPotential n_max gm₀ + 270 +
           8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-            (Dynamic.dom s_abs) u := by
+            (Dictionary.dom s_abs) u := by
   intro h_q d_prep prog_prep
   obtain ⟨L, hb_inv⟩ := hinv.hbucket
   let h1 := hValOfSeed U n_max θ
@@ -1304,7 +1328,7 @@ theorem deleteWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
   have hB_eq : bucketMapOfState U n_max h1 s_abs b q = s_abs u :=
     bucketMapOfState_feistelBucket hwf.2.1 h1 s_abs u
   have htot_dom : totalSlots n_max gm' =
-      (Dynamic.dom (Function.update s_abs u none)).card := by
+      (Dictionary.dom (Function.update s_abs u none)).card := by
     rw [hgm'_eq, htot', hB_eq, hinv.htot]
     by_cases his : (s_abs u).isSome
     · rw [ite_eq_left his, Dynamic.card_dom_delete_eq_of_isSome his]

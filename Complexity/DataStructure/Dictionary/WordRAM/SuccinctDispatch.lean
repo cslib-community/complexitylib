@@ -23,6 +23,34 @@ This module wires the five parameter-free `Realizes .exact` certificates from `S
 parameter-free constant number of registers `rSuccinct`, and proves the unified per-operation
 deterministic execution theorem (`exec_opCode`) with a parameter-free `O(1)` amortized instruction
 charge `chargeVal`.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.rSuccinct`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.opFactor`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.chargeVal`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.charge`:
+  parameter-free register budget, exchange factor dominating the five `Realizes` certificates, and
+  per-operation amortized instruction charge.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.opCode`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.subroutineCode`:
+  native Word-RAM operation dispatch code and `SubroutineCode` record.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.Rep`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.potential`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.encode`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.argMatch`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.decode`:
+  concrete Word-RAM representation invariant, scaled potential, and ABI register conventions.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.le_rSuccinct`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.one_le_opFactor`:
+  basic bounds on `rSuccinct` (`292 ≤ rSuccinct`) and `opFactor` (`1 ≤ opFactor`).
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.fits_mkDictParams`:
+  every entry of `mkDictParams U V w n_max (hashSpace U w n_max)` fits in a `w`-bit word.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.exec_opCode`:
+  unified per-operation deterministic execution of `opCode` for any `o : Dynamic.Op U`.
 -/
 
 public section
@@ -656,10 +684,10 @@ theorem srcDelFin_ne_frontier (i : Fin (36 + 7)) :
 /-! ## Section 4: Representation invariant, potential, charge, and ABI encoding -/
 
 /-- Concrete Word-RAM representation invariant at `base` coupling `θ : QuotHashSeed U n_max`,
-abstract dictionary state `s_abs : Dynamic.State U`, and machine state `x`. -/
+abstract dictionary state `s_abs : Dictionary.State U`, and machine state `x`. -/
 @[expose]
 def Rep (U V w n_max base : ℕ) (θ : QuotHashSeed U n_max)
-    (s_abs : Dynamic.State U) (x : Data rSuccinct) : Prop :=
+    (s_abs : Dictionary.State U) (x : Data rSuccinct) : Prop :=
   x.Bounded w ∧
   x.regs baseReg = base ∧
   x.regs frontierReg = base + space U V w n_max ∧
@@ -682,7 +710,7 @@ noncomputable def chargeVal : ℕ :=
 
 /-- Per-operation amortized instruction charge (`chargeVal` for every operation). -/
 @[expose]
-noncomputable def charge {U : ℕ} (_s : Dynamic.State U) (_o : Dynamic.Op U) : ℕ :=
+noncomputable def charge {U : ℕ} (_s : Dictionary.State U) (_o : Dynamic.Op U) : ℕ :=
   chargeVal
 
 /-- Standalone register encoding for `Dynamic.Op U`:
@@ -799,7 +827,7 @@ theorem bucketStateInv_congr {U V w n_max h_space base : ℕ} (hw : 0 < w)
   · simpa only [← hgm, ← hq] using hdom
 
 theorem dictStateInv_congr {U V w n_max base : ℕ} (hw : 0 < w)
-    {θ : QuotHashSeed U n_max} {s_abs : Dynamic.State U} {s₁ s₂ : Memory.State}
+    {θ : QuotHashSeed U n_max} {s_abs : Dictionary.State U} {s₁ s₂ : Memory.State}
     (heq : ∀ a, base + hashSpace U w n_max ≤ a → a < base + space U V w n_max →
       s₁.mem a = s₂.mem a)
     (hinv : DictStateInv U V w n_max base θ s_abs s₁) :
@@ -911,7 +939,7 @@ theorem fits_mkDictParams {U V w n_max base : ℕ}
   · exact hoffQ_fit
   · exact hw_fit.of_le (quotientBits_le_of_le_pow (le_of_lt hU))
   · exact hoffV_fit
-  · exact hw_fit.of_le (valBits_le_of_le_pow hV)
+  · exact hw_fit.of_le (Nat.clog_le_of_le_pow hV)
   · exact hoffLM_fit 0 (by decide)
   · exact hoffLM_fit 1 (by decide)
   · exact hoffLM_fit 2 (by decide)
@@ -1127,7 +1155,7 @@ private theorem exec_opPrefix {U V w n_max base : ℕ}
     (hwf : DictParamsWf U V w n_max)
     (hV_fit : Fits w V)
     (hfit : Fits w (base + space U V w n_max))
-    (θ : QuotHashSeed U n_max) {s_abs : Dynamic.State U} (u : Fin U)
+    (θ : QuotHashSeed U n_max) {s_abs : Dictionary.State U} (u : Fin U)
     {x : Data rSuccinct}
     (hrep : Rep U V w n_max base θ s_abs x)
     (hu_reg : x.regs argUReg = u.val) :
@@ -1219,7 +1247,7 @@ private theorem exec_opCode_query {U V w n_max base : ℕ}
     (hwf : DictParamsWf U V w n_max)
     (hV_fit : Fits w V)
     (hfit : Fits w (base + space U V w n_max))
-    (θ : QuotHashSeed U n_max) (s_abs : Dynamic.State U) (u : Fin U)
+    (θ : QuotHashSeed U n_max) (s_abs : Dictionary.State U) (u : Fin U)
     {x : Data rSuccinct}
     (hrep : Rep U V w n_max base θ s_abs x)
     (harg : argMatch (.query u) x.regs) :
@@ -1232,7 +1260,7 @@ private theorem exec_opCode_query {U V w n_max base : ℕ}
         potential U V w n_max base θ x + (273 * opFactor + 284725) +
           (8 * opFactor) *
             probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-              (Dynamic.dom s_abs) u := by
+              (Dictionary.dom s_abs) u := by
   rcases harg with ⟨htag, hu_reg⟩
   obtain ⟨x₃, hex_pre, hx₃_bdd, hmem₃, hfr₃, hbase₃, hzero₃, htag₃, hu₃, _, hout₃, hparam₃⟩ :=
     exec_opPrefix hwf hV_fit hfit θ u hrep hu_reg
@@ -1302,7 +1330,7 @@ private theorem exec_opCode_query {U V w n_max base : ℕ}
   have hcost_qry' :
       memoryCost (queryWithHashGenProg (dp, d_qry)) (memoryState frontierReg x₃) + 0 + 1 ≤
       26 + 8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-        (Dynamic.dom s_abs) u + 1 := by
+        (Dictionary.dom s_abs) u + 1 := by
     rw [queryWithHashGenProg_mk]
     exact Nat.add_le_add_right hcost_qry 1
   have hmul_qry :
@@ -1312,18 +1340,18 @@ private theorem exec_opCode_query {U V w n_max base : ℕ}
       27 * opFactor +
         (8 * opFactor) *
           probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-            (Dynamic.dom s_abs) u := by
+            (Dictionary.dom s_abs) u := by
     calc realizes_queryWithHashGen.factor *
           (memoryCost (queryWithHashGenProg (dp, d_qry))
             (memoryState frontierReg x₃) + 0 + 1)
         ≤ opFactor *
             (26 + 8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-              (Dynamic.dom s_abs) u + 1) :=
+              (Dictionary.dom s_abs) u + 1) :=
           Nat.mul_le_mul hF_qry hcost_qry'
       _ = 27 * opFactor +
             (8 * opFactor) *
               probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-                (Dynamic.dom s_abs) u := by ring
+                (Dictionary.dom s_abs) u := by ring
   refine ⟨y, _, hex_all, hy_dec, hy_rep, hmod, ?_⟩
   rw [hpot_eq]
   omega
@@ -1332,7 +1360,7 @@ private theorem exec_opCode_insert {U V w n_max base : ℕ}
     (hwf : DictParamsWf U V w n_max)
     (hV_fit : Fits w V)
     (hfit : Fits w (base + space U V w n_max))
-    (θ : QuotHashSeed U n_max) (s_abs : Dynamic.State U) (u : Fin U) (v : ℕ)
+    (θ : QuotHashSeed U n_max) (s_abs : Dictionary.State U) (u : Fin U) (v : ℕ)
     (hval : (Dynamic.spec U V n_max).valid s_abs (.insert u v))
     {x : Data rSuccinct}
     (hrep : Rep U V w n_max base θ s_abs x)
@@ -1346,7 +1374,7 @@ private theorem exec_opCode_insert {U V w n_max base : ℕ}
         potential U V w n_max base θ x + (273 * opFactor + 284725) +
           (8 * opFactor) *
             probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-              (Dynamic.dom s_abs) u := by
+              (Dictionary.dom s_abs) u := by
   rcases harg with ⟨htag, hu_reg, hv_reg⟩
   obtain ⟨x₃, hex_pre, hx₃_bdd, hmem₃, hfr₃, hbase₃, hzero₃, htag₃, hu₃, hv₃, hout₃, hparam₃⟩ :=
     exec_opPrefix hwf hV_fit hfit θ u hrep hu_reg
@@ -1499,7 +1527,7 @@ private theorem exec_opCode_insert {U V w n_max base : ℕ}
       184 * opFactor +
       (8 * opFactor) *
         probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-          (Dynamic.dom s_abs) u := by
+          (Dictionary.dom s_abs) u := by
     calc opFactor *
           memoryCost (insertWithHashProg U V w n_max d_ins)
             (memoryState frontierReg x₄) +
@@ -1519,14 +1547,14 @@ private theorem exec_opCode_insert {U V w n_max base : ℕ}
             (66 * slotPotential n_max (gmAt base U V w n_max (hashSpace U w n_max) x.mem) +
               184 +
               8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-                (Dynamic.dom s_abs) u) :=
+                (Dictionary.dom s_abs) u) :=
           Nat.mul_le_mul_left _ hcost_ins
       _ = (66 * opFactor) *
             slotPotential n_max (gmAt base U V w n_max (hashSpace U w n_max) x.mem) +
           184 * opFactor +
           (8 * opFactor) *
             probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-              (Dynamic.dom s_abs) u := by ring
+              (Dictionary.dom s_abs) u := by ring
   refine ⟨y, _, hex_all, rfl, hy_rep, hmod, ?_⟩
   unfold potential
   rw [hgm_y]
@@ -1536,7 +1564,7 @@ private theorem exec_opCode_delete {U V w n_max base : ℕ}
     (hwf : DictParamsWf U V w n_max)
     (hV_fit : Fits w V)
     (hfit : Fits w (base + space U V w n_max))
-    (θ : QuotHashSeed U n_max) (s_abs : Dynamic.State U) (u : Fin U)
+    (θ : QuotHashSeed U n_max) (s_abs : Dictionary.State U) (u : Fin U)
     {x : Data rSuccinct}
     (hrep : Rep U V w n_max base θ s_abs x)
     (harg : argMatch (.delete u) x.regs) :
@@ -1549,7 +1577,7 @@ private theorem exec_opCode_delete {U V w n_max base : ℕ}
         potential U V w n_max base θ x + (273 * opFactor + 284725) +
           (8 * opFactor) *
             probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-              (Dynamic.dom s_abs) u := by
+              (Dictionary.dom s_abs) u := by
   rcases harg with ⟨htag, hu_reg⟩
   obtain ⟨x₃, hex_pre, hx₃_bdd, hmem₃, hfr₃, hbase₃, hzero₃, htag₃, hu₃, _, hout₃, hparam₃⟩ :=
     exec_opPrefix hwf hV_fit hfit θ u hrep hu_reg
@@ -1805,7 +1833,7 @@ private theorem exec_opCode_delete {U V w n_max base : ℕ}
       270 * opFactor +
       (8 * opFactor) *
         probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-          (Dynamic.dom s_abs) u := by
+          (Dictionary.dom s_abs) u := by
     calc opFactor * memoryCost prog_prep s₅ +
         opFactor * memoryCost prog_fin s₅ +
         (66 * opFactor) *
@@ -1821,14 +1849,14 @@ private theorem exec_opCode_delete {U V w n_max base : ℕ}
             (66 * slotPotential n_max (gmAt base U V w n_max (hashSpace U w n_max) x.mem) +
               270 +
               8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-                (Dynamic.dom s_abs) u) :=
+                (Dictionary.dom s_abs) u) :=
           Nat.mul_le_mul_left _ hcost_del
       _ = (66 * opFactor) *
             slotPotential n_max (gmAt base U V w n_max (hashSpace U w n_max) x.mem) +
           270 * opFactor +
           (8 * opFactor) *
             probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-              (Dynamic.dom s_abs) u := by ring
+              (Dictionary.dom s_abs) u := by ring
   refine ⟨y, _, hex_all, rfl, hy_rep, hmod, ?_⟩
   unfold potential
   rw [hgm_y]
@@ -1846,7 +1874,7 @@ theorem exec_opCode {U V w n_max base : ℕ}
     (hwf : DictParamsWf U V w n_max)
     (hV_fit : Fits w V)
     (hfit : Fits w (base + space U V w n_max))
-    (θ : QuotHashSeed U n_max) (s_abs : Dynamic.State U) (o : Dynamic.Op U)
+    (θ : QuotHashSeed U n_max) (s_abs : Dictionary.State U) (o : Dynamic.Op U)
     (hval : (Dynamic.spec U V n_max).valid s_abs o)
     {x : Data rSuccinct}
     (hrep : Rep U V w n_max base θ s_abs x)
@@ -1860,7 +1888,7 @@ theorem exec_opCode {U V w n_max base : ℕ}
         potential U V w n_max base θ x + (273 * opFactor + 284725) +
           (8 * opFactor) *
             probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-              (Dynamic.dom s_abs) (opKey o) := by
+              (Dictionary.dom s_abs) (opKey o) := by
   cases o with
   | query u => exact exec_opCode_query hwf hV_fit hfit θ s_abs u hrep harg
   | insert u v => exact exec_opCode_insert hwf hV_fit hfit θ s_abs u v hval hrep harg

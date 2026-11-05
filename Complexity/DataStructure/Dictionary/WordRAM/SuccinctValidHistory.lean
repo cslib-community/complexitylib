@@ -26,6 +26,23 @@ This module proves `(Memory.spec w).ValidHistory` for all `Memory.Prog` operatio
 fixed-capacity succinct dictionary (`queryBodyProg`, `insertBodyProg`, `deletePrepProg`, and
 `deleteFinishProg`), discharging the admissibility obligation required when extracting native
 Word-RAM `Code` via `Realizes.code_spec`.
+
+## Main definitions
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.ValidMem`: memory state well-formedness at word
+  width `w` and frontier `≥ F`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.ValidProg`: predicate asserting that a
+  `Memory.Prog` client produces a valid memory history from `s` whenever `ValidMem w F s` holds.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.dictFrontier`: standard dictionary frontier
+  `base + totalSpace U V w n_max h_space`.
+
+## Main results
+
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validHistory_queryBodyProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validHistory_insertBodyProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validHistory_deletePrepProg`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validHistory_deleteFinishProg`: memory history
+  admissibility for the four top-level `Memory.Prog` dictionary subroutines.
 -/
 
 public section
@@ -148,7 +165,7 @@ theorem validProg_writeVal {U V w n_max h_space base idx val : ℕ} {s : Memory.
     ValidProg w (dictFrontier U V w n_max h_space base) s
       (writeValProg U V w n_max h_space ((base, idx), val)) := by
   intro ⟨hwf, hf⟩
-  exact validHistory_writePackedProg hw (valBits_le_of_le_pow hV) hidx hwf
+  exact validHistory_writePackedProg hw (Nat.clog_le_of_le_pow hV) hidx hwf
     (by dsimp only [dictFrontier, totalSpace, offGM, offLM, offVal] at hf ⊢; omega)
 
 theorem validProg_readLM {U V w n_max h_space c base idx : ℕ} {s : Memory.State}
