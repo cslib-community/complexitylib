@@ -3796,6 +3796,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.CopyStage
 public import Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
 public import Complexity.Foundations.LinearAlgebra.Matrix.FactorialTruncation
+public import Complexity.Foundations.LinearAlgebra.Matrix.Gram
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
 public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
 public import Complexity.Foundations.LinearAlgebra.Matrix.ListProd
@@ -4294,8 +4295,13 @@ public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
+public import Complexity.Statistics.LeastSquares.Backbone
 public import Complexity.Statistics.LeastSquares.Monotone
 public import Complexity.Statistics.LeastSquares.NonRange
+public import Complexity.Statistics.LeastSquares.RangeAudit
+public import Complexity.Statistics.LeastSquares.Rational
+public import Complexity.Statistics.LeastSquares.SharpGap
+public import Complexity.Statistics.LeastSquares.Simple
 public import Complexity.Tactic.FOOperator
 public import Complexity.Tactic.FOOperator.Init
 public import Complexity.Tactic.FirstOrder

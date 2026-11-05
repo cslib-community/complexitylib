@@ -66,11 +66,53 @@ Both require the fixed base itself to be positive definite, even after all varia
 observations are removed. The [checked client](../../ComplexityTests/PaperEndpoints/MonotoneRounding.lean)
 includes different endpoint estimates and two observations with opposite responses.
 
-These are the monotonicity and rounding steps of STOC submission 1326, Lemma 3.1,
-Theorem 3.3 and Remark 3.5 (PDF pp. 6–7). They do not yet prove the full general-position
-stability theorem: sparse-optimum existence, attainment, and deriving a spanning
-backbone from retained mass at least $2d$ remain necessary. A caller cannot infer
-those hypotheses merely from feasibility of the original weighted estimate.
+Import [`Backbone`](../../Complexity/Statistics/LeastSquares/Backbone.lean) when the
+fixed observations have not been specified separately. `GeneralPosition x` means
+that every set of $d$ design rows is linearly independent. Given weights in $[0,1]$,
+retained mass at least $2d$, and at most $d$ fractional coordinates,
+`exists_round_sparse` derives a positive definite backbone from the fully retained
+observations and rounds the entire design. It preserves observations outside the
+index set, does not increase any chosen linear target, loses strictly less than
+$d$ retained mass, and proves the rounded Gram matrix positive definite.
+The [checked client](../../ComplexityTests/PaperEndpoints/Submission1326.lean)
+starts with three scalar rows and weights $(1,1,1/2)$; no backbone is supplied.
+
+These are the monotonicity and sparse rounding steps of STOC submission1326,
+Lemma 3.1, Theorem 3.3 and Remark 3.5 (PDF pp. 6–7). **The full generic stability
+theorem remains open:** Lemma 3.2's sparsification, attainment, stability assembly
+and the LP/inversion/update resource guarantees are not proved. The sparsity
+premise of `exists_round_sparse` must be established independently; feasibility
+and general position alone do not supply it.
+
+## Exact least-squares stability gaps
+
+For exact simple regression, import
+[`Rational`](../../Complexity/Statistics/LeastSquares/Rational.lean) and open
+`Cslib.LeastSquares.Simple`. `crossNumerator` and `xNumerator` are retained mass
+times centered cross-scatter and regressor scatter. `slope` is their ratio;
+`intercept` and `normal_equations` include the fitted intercept. Require positive
+regressor scatter rather than trusting Lean's total division on singular data.
+`realVector` and the four cast lemmas transfer exact rational certificates to
+real-valued mass, scatter and slope. `keep s` gives integral retention weights.
+The [checked client](../../ComplexityTests/PaperEndpoints/Submission1326.lean)
+checks slope two/intercept one and separately rejects a constant regressor.
+
+[`SharpGap`](../../Complexity/Statistics/LeastSquares/SharpGap.lean), `sharp_gap`,
+proves Proposition 3.6 (PDF pp. 7–8): the ten-point instance has positive initial
+slope, real fractional stability below $0.98$, and integral stability exactly two.
+`fractionalStability` is an infimum over all feasible **real** weights, with
+nonsingularity and an inequality target. The explicit fractional witness deletes
+$4899/5000=0.9798$ mass; the proof does not use floating-point approximations.
+
+[`RangeAudit`](../../Complexity/Statistics/LeastSquares/RangeAudit.lean),
+`range_audit_gap`, proves Theorem 5.5 (PDF p. 13): the twelve-point instance has
+integral stability two and best lifted-plane-range stability three. General
+position and lifted general position are checked exactly. The nonseparation
+argument covers every real plane; an explicit integer-coefficient plane witnesses
+the feasible three-deletion range. `feasible_iff_real` connects the exact scatter
+test with nonsingular real OLS. These endpoints leave the general geometry,
+equality-target hardness, fixed-effects algorithm and empirical certificates
+unproved; see [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
 
 ## Known Limitations
 
