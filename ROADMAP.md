@@ -119,7 +119,10 @@ current libraries and workloads.
    margins including odd-modulus message scaling. Parity-preserving switching variants remain
    open. `SIS/ModulusSwitch/Native` certifies exact coefficient conversion
    uniformly over binary moduli and framed runtime row lists; subsequent scheme operations
-   still need native certificates.
+   still need native certificates. The actual centered-binomial sampler now has a shared
+   scalar concentration bound in `Languages/Probabilistic/CenteredBinomial/Concentration`;
+   a growing-parameter switched-encryption correctness family still needs the coordinate
+   union bound and explicit modulus/rounding margins.
 2. **FHEW/TFHE programmable bootstrapping**
    ([Ducas–Micciancio](https://eprint.iacr.org/2014/816);
    [Chillotti–Gama–Georgieva–Izabachène](https://eprint.iacr.org/2016/870)). Ring-GSW external

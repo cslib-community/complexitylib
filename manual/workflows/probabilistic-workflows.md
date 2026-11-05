@@ -113,6 +113,22 @@ example (test : List Bool × Bool × ℕ → Bool)
 
 Also check the sampler itself. `ProbComp.uniform (Fin 3)` has exact uniform semantics, but a strictly bounded fair-coin machine cannot give each outcome probability one third. The client deliberately tests that `ppt` does not certify it for free. Use an applicable dyadic sampler or the library's approximate-sampling results, carrying the approximation error into the later probability proof.
 
+## Bound a centered-binomial sampler tail
+
+[CenteredBinomial/Concentration.lean](../../Complexity/Languages/Probabilistic/CenteredBinomial/Concentration.lean)
+bounds the law of the existing `sampleCenteredBinomial η` program. For `η > 0` and real
+`B ≥ 0`, `sampleCenteredBinomial_tail_le` gives
+`Pr[B ≤ |z|] ≤ 4 exp(-B²/(2η))`; `sampleCenteredBinomial_strict_tail_le` gives the same
+bound for `B < |z|`. This original two-count union bound is not optimal. Width zero remains
+`pure 0`, so its strict and non-strict zero cutoffs differ.
+
+The [checked clients](../../ComplexityTests/CenteredBinomialConcentration.lean) show positive
+mass at both width-eight endpoints, an empty strict tail above eight, and a non-strict tail
+bound below one. They also certify the actual growing program with `η = 8(l+1)` as
+`IsPPTOn encUnary encIntBin` and bound its strict tail above `4(l+1)` by `4 exp(-(l+1))`.
+The native certificate charges unary width and signed binary output; this scalar result
+supplies neither encryption correctness nor a security reduction.
+
 ## Certify an adaptive oracle client
 
 For native oracle efficiency, start with `WordOracleComp Operation α`: finite operation names and word payloads/replies.
