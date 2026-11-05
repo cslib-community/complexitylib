@@ -15,11 +15,12 @@ public import Complexity.DataStructure.Dictionary.WordRAM.Succinct
 
 Exercises:
 1. `Cslib.DataStructure.Dictionary.Dynamic`:
-   - concrete evaluations of `optBits`, `logLogFactor`, `succinctWords`, `dom`, `step`, and
+   - concrete evaluations of `optBits`, `logLogFactor`, and `succinctWords`, and verification of
      `ValidHistory` across insertions, overwrites, queries, and deletions;
 2. `Cslib.DataStructure.Dictionary.FeistelQuotient`:
-   - concrete evaluations of `bucketBits`, `numBuckets`, `quotientBits`, and round-trip
-     verification of `feistelReconstruct_feistelBucket` and `quotient_val_bits_le_optBits`;
+   - concrete evaluations of `bucketBits`, `numBuckets`, and `quotientBits`, round-trip
+     verification of `feistelReconstruct_feistelBucket`, and verification of the
+     `quotient_val_bits_le_optBits` bound;
 3. `Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray`:
    - concrete evaluations of `packedWords` and verification of `readPacked_writePacked_self` and
      `readPacked_writePacked_of_ne`;

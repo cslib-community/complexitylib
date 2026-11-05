@@ -21,9 +21,9 @@ This file defines a bit-packed array primitive storing `N` entries of `k` bits e
 across `packedWords N k w = ⌈N * k / w⌉ + 2` contiguous `w`-bit machine words starting at address
 `base`.
 
-To avoid intermediate arithmetic overflow `(idx * k ≥ 2^w)` when `idx < N < 2^w` and `k ≤ w` are
-both `Θ(w)`, the word and bit offsets of index `idx` are computed via the Euclidean decomposition
-`idx = (idx / w) * w + (idx % w)`:
+To avoid intermediate arithmetic overflow `(idx * k ≥ 2^w)` when `idx < N < 2^w` approaches `2^w`
+and `k ≤ w` is `Θ(w)` (so that `idx * k` can reach `2^w`), the word and bit offsets of index `idx`
+are computed via the Euclidean decomposition `idx = (idx / w) * w + (idx % w)`:
 * `wordOffset k w idx = (idx / w) * k + ((idx % w) * k) / w = (idx * k) / w`,
 * `bitOffset k w idx = ((idx % w) * k) % w = (idx * k) % w`.
 Because `(idx % w) * k ≤ (w - 1) * w < 2^w` holds for every word width `w ≥ 1`
