@@ -2937,6 +2937,7 @@ public import Complexity.Crypto.Computational.Homomorphic.Basic
 public import Complexity.Crypto.Computational.Homomorphic.BitEncryption
 public import Complexity.Crypto.Computational.Homomorphic.BitEncryption.CoinTape
 public import Complexity.Crypto.Computational.Homomorphic.BitEncryption.PolyTime
+public import Complexity.Crypto.Computational.Homomorphic.BitEncryption.Size
 public import Complexity.Crypto.Computational.Homomorphic.Circuit
 public import Complexity.Crypto.Computational.Homomorphic.Circuit.PolyTime
 public import Complexity.Crypto.Computational.Homomorphic.Efficiency
@@ -2986,6 +2987,7 @@ public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Reduction.Coi
 public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Reduction.Game
 public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Reduction.PolyTime
 public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Security
+public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Size
 public import Complexity.Crypto.Computational.Homomorphic.Layered
 public import Complexity.Crypto.Computational.Homomorphic.Layered.Correctness
 public import Complexity.Crypto.Computational.Homomorphic.Layered.PolyTime
@@ -2997,11 +2999,14 @@ public import Complexity.Crypto.Computational.Homomorphic.Leveled.Correctness
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Encoding
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.GuessCoinTape
+public import Complexity.Crypto.Computational.Homomorphic.Leveled.GuessOverhead
+public import Complexity.Crypto.Computational.Homomorphic.Leveled.GuessSize
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.PolyTime
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Reduction
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Reduction.Game
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Reduction.PolyTime
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Security
+public import Complexity.Crypto.Computational.Homomorphic.Leveled.Size
 public import Complexity.Crypto.Computational.Homomorphic.Refresh
 public import Complexity.Crypto.Computational.Hybrid.SavedPrediction
 public import Complexity.Crypto.Computational.Hybrid.Sequence
