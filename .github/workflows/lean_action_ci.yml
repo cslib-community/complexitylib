@@ -25,6 +25,8 @@ concurrency:
 jobs:
   ci-checks:
     runs-on: ubuntu-latest
+    outputs:
+      publication: ${{ steps.upload-publication.outputs.artifact-id }}
     # Temporary #1728 hooks: absent plan is OFF. Activation needs a separately reviewed protocol.
     env:
       HANDOFF_MEASUREMENT_PLAN: ${{ vars.HANDOFF_MEASUREMENT_PLAN }}
@@ -36,7 +38,7 @@ jobs:
       # also refuses tokens for any other repository, ref or event (scripts/cache/README.md).
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prepare optional handoff measurement
         id: handoff-measurement
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.HANDOFF_MEASUREMENT_PLAN != ''
@@ -76,7 +78,7 @@ jobs:
       # Restore the toolchain from the Actions cache, or install it with retries, so that
       # lean-action does not download it (.github/actions/install-lean, #1426).
       - uses: ./.github/actions/install-lean
-      - uses: leanprover/lean-action@v1
+      - uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1.7.0
         with:
           auto-config: "false"
           build: "false"
@@ -91,9 +93,14 @@ jobs:
       # The earlier script tests run before Lean is installed and skip this real build test.
       # Exercise both compiler setup-input omissions with an isolated, cache-disabled project.
       - name: Test Lake build handoff reuse
+        working-directory: scripts
         env:
           COMPLEXITYLIB_TEST_LAKE_HANDOFF: "1"
-        run: python3 -B -m unittest discover -s scripts -p 'test_cache_handoff.py'
+        run: >-
+          python3 -B -m unittest
+          test_cache_handoff.HandoffTests.test_real_lake_reuses_module_and_native_outputs_without_setup_inputs
+      - name: Test real Lake cache publication staging
+        run: python3 -B -m unittest scripts.test_cache_publish.RealLakePublicationTests
       # Download the outputs that `main` CI uploaded for the nearest uploaded ancestor of this
       # commit, skipping modules that `.lake` already has (scripts/cache/README.md). The script
       # deepens the depth-1 checkout to 100 generations to find that ancestor. Lake reuses an
@@ -261,13 +268,28 @@ jobs:
         if: github.event_name == 'merge_group' && steps.cache-handoff.outputs.artifact-name != ''
         continue-on-error: true
         timeout-minutes: 3
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.cache-handoff.outputs.artifact-name }}
           path: ${{ runner.temp }}/lean-handoff/
           if-no-files-found: error
           compression-level: 0
           retention-days: 2
+      # Stage once for every enabled publisher; compilation and archive creation stay here.
+      - name: Stage cache publication
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.LAKE_CACHE_BUCKET != '' || vars.CACHE_SERVER_PUBLISH_ENABLED == 'true')
+        run: python3 scripts/cache/publish.py stage "$RUNNER_TEMP/lake-publication"
+      # The second host consumes this run's own package, never a PR/other-run artifact.
+      - name: Hand off staged files to the optional cache server publisher
+        id: upload-publication
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CACHE_SERVER_PUBLISH_ENABLED == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lake-publication-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/lake-publication
+          compression-level: 0
+          retention-days: 2
+          if-no-files-found: error
       # Publish the build outputs to the remote cache read by scripts/cache/get.sh. Skipped until
       # the maintainer sets the repository variables described in scripts/cache/README.md.
       - name: "Authenticate to the remote cache"
@@ -278,14 +300,55 @@ jobs:
           service_account: ${{ vars.LAKE_CACHE_SERVICE_ACCOUNT }}
       - name: "Upload to the remote cache"
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.LAKE_CACHE_BUCKET != ''
+        env:
+          LAKE_CACHE_BUCKET: ${{ vars.LAKE_CACHE_BUCKET }}
         run: |
           set -e
-          scripts/cache/upload.sh "${{ vars.LAKE_CACHE_BUCKET }}"
+          scripts/cache/upload.sh "$LAKE_CACHE_BUCKET" "$RUNNER_TEMP/lake-publication"
       - name: Record optional handoff measurement
         if: always() && steps.handoff-measurement.outputs.report != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: handoff-measurement-${{ github.run_id }}-${{ github.run_attempt }}
           # Metadata only: the directory also holds private trial state and must never be uploaded.
           path: ${{ steps.handoff-measurement.outputs.report }}
           retention-days: 14
+
+  publish-cache-server:
+    needs: ci-checks
+    # The package exists only after all validation gates passed. Permit this independent
+    # publisher to finish even if the subsequent GCS upload failed.
+    if: >-
+      ${{ always() && !cancelled() && github.event_name == 'push' &&
+          github.ref == 'refs/heads/main' && vars.CACHE_SERVER_PUBLISH_ENABLED == 'true' &&
+          needs.ci-checks.outputs.publication != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # MUST restrict this environment to the main branch before installing its secret and target
+    # variables. Publication may not require approval, but it must not share the admin identity.
+    environment: cache-server-publish
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.ci-checks.outputs.publication }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/lake-publication
+      - name: Verify this run's publication
+        run: python3 scripts/cache/publish.py verify "$RUNNER_TEMP/lake-publication" --revision "$GITHUB_SHA"
+      - uses: ./.github/actions/cache-rsync
+      - name: Prepare restricted publisher identity
+        env:
+          CACHE_SERVER_HOST: ${{ vars.CACHE_SERVER_HOST }}
+          CACHE_SERVER_SSH_PORT: ${{ vars.CACHE_SERVER_SSH_PORT }}
+          CACHE_SERVER_UPLOAD_USER: cache-upload
+          CACHE_SERVER_UPLOAD_KEY: ${{ secrets.CACHE_SERVER_UPLOAD_KEY }}
+          CACHE_SERVER_KNOWN_HOSTS: ${{ vars.CACHE_SERVER_KNOWN_HOSTS }}
+        run: python3 scripts/cache/ssh.py "$RUNNER_TEMP/cache-ssh" --identity CACHE_SERVER_UPLOAD_KEY --user CACHE_SERVER_UPLOAD_USER
+      - name: Publish artifacts, then the revision mapping
+        run: python3 scripts/cache/publish.py ssh "$RUNNER_TEMP/lake-publication" --config "$RUNNER_TEMP/cache-ssh/config"
+      - name: Remove publisher identity
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/cache-ssh"

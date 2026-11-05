@@ -1,0 +1,114 @@
+name: Cache server
+
+on:
+  pull_request:
+    paths:
+      - "infra/cache-server/**"
+      - ".github/actions/cache-rsync/**"
+      - "scripts/cache/**"
+      - "scripts/test_cache*.py"
+      - ".github/workflows/cache-server.yml"
+      - ".github/workflows/lean_action_ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "infra/cache-server/**"
+      - ".github/actions/cache-rsync/**"
+      - "scripts/cache/**"
+      - "scripts/test_cache*.py"
+      - ".github/workflows/cache-server.yml"
+      - ".github/workflows/lean_action_ci.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "17 9 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cache-server-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - run: python3 -m pip install --require-hashes --requirement infra/cache-server/requirements.txt
+      - name: Check provisioning syntax
+        working-directory: infra/cache-server
+        run: ansible-playbook -i inventory.example.yml playbook.yml --syntax-check
+      - name: Install nginx, OpenSSH and mount tooling for integration tests
+        run: sudo apt-get update && sudo apt-get install -y nginx openssh-server util-linux
+      - uses: ./.github/actions/cache-rsync
+        id: rsync
+      - name: Test clients, publication, nginx and restricted uploads
+        env:
+          CACHE_SERVER_INTEGRATION: "1"
+          CACHE_SERVER_RSYNC_PREFIX: ${{ steps.rsync.outputs.prefix }}
+        run: >-
+          python3 -B -m unittest scripts.test_cache_publish scripts.test_cache_restore
+          scripts.test_cache_server
+      - name: Check operator manual
+        run: python3 -B scripts/check_operator_manual.py
+
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.CACHE_SERVER_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Separate root-equivalent administrative identity; never used by the artifact writer.
+    # MUST require a non-author approval, restrict deployments to main, and prevent administrator
+    # bypass before installing its secret and reviewed target variables.
+    environment: cache-server-admin
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - run: python3 -m pip install --require-hashes --requirement infra/cache-server/requirements.txt
+      - name: Prepare administrative identity
+        env:
+          CACHE_SERVER_HOST: ${{ vars.CACHE_SERVER_HOST }}
+          CACHE_SERVER_ADMIN_USER: ${{ vars.CACHE_SERVER_ADMIN_USER }}
+          CACHE_SERVER_SSH_PORT: ${{ vars.CACHE_SERVER_SSH_PORT }}
+          CACHE_SERVER_ADMIN_KEY: ${{ secrets.CACHE_SERVER_ADMIN_KEY }}
+          CACHE_SERVER_KNOWN_HOSTS: ${{ vars.CACHE_SERVER_KNOWN_HOSTS }}
+        run: python3 scripts/cache/ssh.py "$RUNNER_TEMP/cache-ssh" --identity CACHE_SERVER_ADMIN_KEY --user CACHE_SERVER_ADMIN_USER
+      - name: Apply reviewed server configuration
+        working-directory: infra/cache-server
+        env:
+          ANSIBLE_SSH_ARGS: -F ${{ runner.temp }}/cache-ssh/config
+          CACHE_SERVER_HOST: ${{ vars.CACHE_SERVER_HOST }}
+          CACHE_SERVER_ADMIN_USER: ${{ vars.CACHE_SERVER_ADMIN_USER }}
+          CACHE_SERVER_SSH_PORT: ${{ vars.CACHE_SERVER_SSH_PORT }}
+          CACHE_SERVER_DOMAIN: ${{ vars.CACHE_SERVER_DOMAIN }}
+          CACHE_SERVER_ACME_EMAIL: ${{ vars.CACHE_SERVER_ACME_EMAIL }}
+          CACHE_SERVER_REVISION: ${{ github.sha }}
+        run: ansible-playbook -i inventory.example.yml playbook.yml
+      - name: Verify public HTTPS serves the deployed revision
+        env:
+          CACHE_SERVER_DOMAIN: ${{ vars.CACHE_SERVER_DOMAIN }}
+        run: |
+          response="$(curl --fail --silent --show-error --retry 2 --connect-timeout 10 --max-time 30 "https://$CACHE_SERVER_DOMAIN/healthz")"
+          test "$response" = "$GITHUB_SHA"
+      - name: Remove administrative identity
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/cache-ssh"
+
+  health:
+    if: github.event_name == 'schedule' && vars.CACHE_SERVER_PUBLISH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check the optional origin from outside MIT
+        env:
+          CACHE_SERVER_DOMAIN: ${{ vars.CACHE_SERVER_DOMAIN }}
+        run: |
+          response="$(curl --fail --silent --show-error --retry 2 --connect-timeout 10 --max-time 30 "https://$CACHE_SERVER_DOMAIN/healthz")"
+          [[ "$response" =~ ^[0-9a-f]{40}$ ]]
