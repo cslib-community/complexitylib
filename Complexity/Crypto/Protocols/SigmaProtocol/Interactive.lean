@@ -233,7 +233,7 @@ noncomputable def toInteractiveReduction (sampleCommit : X → Y → ProbComp (T
       if P.verify y (P.commitOfTranscript τ) (P.challengeOfTranscript τ)
         (P.responseOfTranscript τ) then some () else none := rfl
 
-@[simp] theorem toInteractiveVerifier_outputOn_eq_some_iff (y : Y)
+theorem toInteractiveVerifier_outputOn_eq_some_iff (y : Y)
     (τ : Transcript P.interactiveSpec) (u : Unit) :
     P.toInteractiveVerifier.outputOn y τ = some u ↔
       P.Accepts y (P.commitOfTranscript τ) (P.challengeOfTranscript τ)
@@ -412,7 +412,7 @@ noncomputable def interactiveSim (P : SigmaProtocol X Y T C Z)
   let tz ← simComp y c
   return P.interactiveTranscript tz.1 c tz.2
 
-@[simp] theorem eval_interactiveSim (P : SigmaProtocol X Y T C Z)
+theorem eval_interactiveSim (P : SigmaProtocol X Y T C Z)
     (simComp : Y → C → ProbComp (T × Z)) (y : Y) :
     ProbComp.eval (P.interactiveSim simComp y) =
       (PMF.uniformOfFintype C).bind fun c =>
@@ -469,7 +469,7 @@ def Encoding.toInteractiveEncoding (enc : Encoding I YF TF CF ZF) :
      (encPair (enc.commitment i) (encPair (enc.challenge i) (enc.response i))).injective.comp
       (PF i).conversationOfTranscript_injective⟩
 
-@[simp] theorem Encoding.toInteractiveEncoding_transcript_apply
+theorem Encoding.toInteractiveEncoding_transcript_apply
     (enc : Encoding I YF TF CF ZF) (i : I) (τ : Transcript (PF i).interactiveSpec) :
     (enc.toInteractiveEncoding PF).transcript i τ =
       encPair encBits (encPair encBits encBits)
