@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Flat
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.TimeBound
 
 /-!
 # Streaming charges fit the existing fixed-prime envelope

@@ -25,8 +25,9 @@ proves that its construction, consumption, reset, loop and halt charges fit this
 `CallableFixedPrime` uses this program through the real memory-window compiler, so the ordinary
 3SUM and ExactTriangle quantitative endpoints retain their existing bounds.
 
-`Instances` and `FixedPrime` remain available as standalone all-record programs. Their genuine
-Output is useful as a derived mathematical reference, but is never asserted for a reused slot.
+The independent `Instances` all-record producer remains available. Its genuine Output supplies
+a derived mathematical reference, but is never asserted for a reused slot. The superseded
+materialized fixed-prime controller and its execution certificates have been retired.
 The slot's raw matrix pair may be overwritten by solver work; queries, catalogue and original
 signed arrays remain protected for subsequent records and calls. No dirty scratch is cleared.
 -/

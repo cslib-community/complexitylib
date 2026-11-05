@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Controller
 
 /-!
 # One-slot fixed-prime ExactTriangle program
@@ -74,7 +74,7 @@ theorem program_not_readsWidth : ¬program.ReadsWidth := by
   have hc := RecordWitness.consume_fixed.2
   tauto
 
-/-- Streaming uses the same fixed finite code envelope as the all-record solver. -/
+/-- The one-slot solver fits the retained fixed finite code envelope. -/
 theorem program_fixed : (program.program FixedPrime.Reg.found).length ≤ 133152 ∧
     ¬(program.program FixedPrime.Reg.found).ReadsWidth := by
   constructor

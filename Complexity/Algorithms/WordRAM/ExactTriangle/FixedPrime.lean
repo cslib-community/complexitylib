@@ -7,32 +7,18 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.SourceBounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.NumericBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.TimeBound
 
 /-!
-# Complete box-backed native Exact Triangle decision at a fixed prime
+# Numerical support for fixed-prime Exact Triangle
 
-`FixedPrime.runs_input` executes the actual producer once and traverses its occupied
-records with `RecordBoxProduct`, followed by the existing original-weight verifier. The
-same-state prefix and halt return one exactly for `HasZeroTriangle`, and retain original
-witness coordinates. Calls reuse dirty workspace and preserve the producer catalogue.
+`FixedPrime.timeBound` retains the conservative complete charge envelope and
+`FixedPrime.timeBound_le` its aggregate product saving. `admissionWidth` and `wordBound`
+provide the logarithmic admission and polynomial word envelopes from original scalar bounds.
 
-For `m = 9k`, `FixedPrime.timeBound_le` bounds aggregate product charges by
-`125829120 (189k+1)^2 (9k+1) D^(-8/125) n^3 g`, with the actual producer, roots, queries,
-controller and one global `F(p)+1` original-weight scan reserve stated separately. Correctness
-also holds for general `m`, using the executable threshold `m/9`.
-
-The concrete program uses 416 registers, at most 133152 flat slots including halt, and never
-reads physical width. It shares `FixedPrime.admissionWidth` and `FixedPrime.wordBound`:
-logarithmic admission and polynomial prefix words/support follow from original scalar bounds
-and polynomial original weight magnitude. No solver, intermediate execution, clean workspace
-or sparse occurrence certificate is supplied as an input hypothesis.
-
-Parameters and the prime remain explicit admitted inputs of this component (`D >= 16`,
-`n >= D^18`, `g >= 1` and the stated prime window). `ParameterSelecting.callee` computes those
-values and calls the one-slot `StreamingFixedPrime` program through `CallableFixedPrime`.
-That program retains this conservative time envelope; `ThreeSum.Decision.exists_one9992_runs`
-composes the complete native ordinary 3SUM endpoint. Both standalone implementations remain
-available without a supplied fast solver.
+The canonical solver is `StreamingFixedPrime`: it computes the catalogue, constructs and
+consumes one physical slot at a time, and verifies original signed weights before success.
+The superseded materialized controller and its program-specific execution certificates have
+been retired. The independent `Instances` producer and record product/witness APIs remain.
 -/

@@ -188,9 +188,12 @@ To decide whether three signed integer matrices contain a zero-weight triangle, 
 `Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime` and use
 `StreamingFixedPrime.runs_input`. The complete initialized client is
 [the streaming test module](../../ComplexityTests/WordRAMExactTriangleStreamingFixedPrime.lean):
-it discharges admission,
-recovers a successful witness, and checks negative exhaustion. The standalone all-record
-`FixedPrime.runs_input` and its existing client remain available.
+it discharges admission, recovers a successful witness, and checks negative exhaustion. The
+[general-threshold client](../../ComplexityTests/WordRAMExactTriangleFixedPrimeInput.lean)
+checks the same canonical solver at `m=2`, including prime-three false positives. The old
+materialized fixed-prime program and its execution certificates have been retired;
+`Instances` remains an independent all-record producer, and standalone record products and
+witness consumers remain available. `FixedPrime` now holds numerical and controller support.
 
 Provide `3*n²` signed weights in row-major AB, BC, AC order, with every absolute value at most
 `A`. `PreparationInput.input n (D m) g p values` supplies the scalar headers and canonical

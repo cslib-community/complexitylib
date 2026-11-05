@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Flat
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.SourceBounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.NumericBounds
 
 /-!
 # Original-input bounds for every fixed-prime native prefix

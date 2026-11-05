@@ -1,21 +1,23 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Anthropic, PBC, Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Anthropic, PBC, Erik Demaine
 -/
 
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Width
 
 /-!
-# Charged catalogue-controller setup and return
+# Fixed-prime callee bank and early-stop return
 
-The occupied count is read from the real producer bank. The return code adds the actual
-callee scan count, retains its actual unsigned flag, advances the visited prefix and closes
-the loop only after success. These internal rules use concrete data instructions; neither
-the scan count nor the verdict is supplied as an execution oracle.
+The one-slot solver uses the complete 400-register box-product/witness callee and five disjoint
+controller registers. The return accumulates actual scans, advances the visited prefix and
+closes the loop exactly on success. These shared instructions contain no materialized solver.
+The control adapts `Host.Loop` at
+`anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`; native charges are original.
 -/
 
 public section
@@ -24,36 +26,38 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.FixedPrime
 
 open Cslib.WordRAM
 
--- These closed checks cover only the short controller and its finite register bank.
-set_option maxRecDepth 4096 in
-private theorem setup_preserves : ∀ i : Fin 416, i.val < 400 → setup.Preserves i := by
-  decide
+/-- The complete record-product/witness bank moves together, including both internal banks. -/
+@[expose] def recordBank : Fin 400 → Fin 416 := Fin.castLE (by decide)
+
+namespace Reg
+
+/-- Number of actual occupied records visited. -/
+abbrev index : Fin 416 := 400
+/-- Logical record count, shortened to the visited prefix only after success. -/
+abbrev limit : Fin 416 := 401
+/-- Raw unsigned original-witness verdict. -/
+abbrev found : Fin 416 := 402
+/-- Total actual original-weight scans across all visited records. -/
+abbrev scans : Fin 416 := 403
+/-- Constant one outside the callee bank. -/
+abbrev one : Fin 416 := 404
+end Reg
+
+/-- Actual product computation, descriptor reading and original signed-weight verification. -/
+@[expose] def record : Code .standard 416 := BoxRecordWitness.program.rename recordBank
+
+open Reg in
+/-- Accumulate the actual scan counter and close the loop exactly on a successful return. -/
+@[expose] def receive : Code .standard 416 :=
+  let returned := recordBank RecordWitness.Reg.found
+  let performed := recordBank RecordWitness.Reg.scans
+  ram[ scans ← scans + performed; found ← returned; index ← index + one;
+    if found = one then [ limit ← index ] else [ limit ← limit ] ]
 
 -- The return branch writes four controller registers and no part of the callee bank.
 set_option maxRecDepth 4096 in
 private theorem receive_preserves : ∀ i : Fin 416,
     i.val < 400 ∨ i = Reg.one → receive.Preserves i := by decide
-
-/-- Read the actual occupied count, with all five initialization instructions charged. -/
-theorem exec_setup {w : ℕ} (x : Data 416) (h1 : Fits w 1) :
-    ∃ y, ExecWithin w setup x y 5 ∧ y.mem = x.mem ∧
-      y.regs Reg.index = 0 ∧
-      y.regs Reg.limit = x.regs (recordBank
-        (RecordWitness.productBank (RecordProduct.producerBank Instances.produced))) ∧
-      y.regs Reg.found = 0 ∧ y.regs Reg.scans = 0 ∧
-      y.regs Reg.one = 1 ∧
-      ∀ j : Fin 416, j.val < 400 → y.regs j = x.regs j := by
-  let M := x.regs (recordBank
-    (RecordWitness.productBank (RecordProduct.producerBank Instances.produced)))
-  let y := x.set Reg.index 0 |>.set Reg.limit M |>.set Reg.found 0 |>.set Reg.scans 0
-    |>.set Reg.one 1
-  have he : ExecWithin w setup x y 5 := by
-    ram_eval [setup, y, M, h1, Reg.index, Reg.limit, Reg.found, Reg.scans, Reg.one,
-      recordBank, RecordWitness.productBank, RecordProduct.producerBank,
-      Instances.produced, Fin.castLE]
-  refine ⟨y, he, rfl, ?_, ?_, ?_, ?_, ?_, fun j hj =>
-    he.regs_eq (setup_preserves j hj)⟩
-  all_goals simp +decide [y, M, Reg.index, Reg.limit, Reg.found, Reg.scans, Reg.one]
 
 /-- The native return needs at most six instructions, including control. Its limit
 is shortened exactly when the actual callee flag equals one. The complete callee bank survives. -/

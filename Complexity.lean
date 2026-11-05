@@ -193,15 +193,9 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Sourc
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Accounting
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Controller
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Entry
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Flat
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Indexing
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Loop
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.NumericBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Potential
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Program
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Record
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.SourceBounds
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Step
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.TimeBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Width
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Window

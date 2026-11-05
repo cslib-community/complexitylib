@@ -208,7 +208,7 @@ theorem exec_traverse {w m n g p A : ℕ} (values : List ℤ)
   have hp0 := (Nat.mem_sqrtPrimeWindow_iff_sq.mp hp).1.ne_zero
   let M := a.regs Instances.produced
   let I := instanceIndices wAB (D m) g p
-  obtain ⟨f, -, hf, fsurj⟩ := exists_occupied_order V hout hD hDn hg hp0
+  obtain ⟨f, finj, hf, fsurj⟩ := exists_occupied_order V hout hD hDn hg hp0
   let order : ℕ → InstanceIndex p := fun i =>
     if hi : i < M then f ⟨i, hi⟩ else (⟨0, Nat.pos_of_ne_zero hp0⟩, 0, 0)
   have order_at (i : ℕ) (hi : i < M) : order i = f ⟨i, hi⟩ := dite_eq_left hi
@@ -219,23 +219,17 @@ theorem exec_traverse {w m n g p A : ℕ} (values : List ℤ)
       RecordProduct.recordOrdinal n (D m) g p V (order i) = i := by
     rw [order_at i hi]
     exact (hf _).2
-  have order_inj : Set.InjOn order (Finset.range M) := by
-    intro i hi j hj hij
-    exact (order_ord i (Finset.mem_range.mp hi)).symm.trans
-      ((congrArg (RecordProduct.recordOrdinal n (D m) g p V) hij).trans
-        (order_ord j (Finset.mem_range.mp hj)))
-  have image_eq : (Finset.range M).image order = I := by
-    ext idx
-    simp only [Finset.mem_image, Finset.mem_range]
-    constructor
-    · rintro ⟨i, hi, rfl⟩
-      exact order_mem i hi
-    · intro hi
-      obtain ⟨i, hi⟩ := fsurj idx hi
-      exact ⟨i.val, i.isLt, (order_at i.val i.isLt).trans hi⟩
   have sum_eq (charge : InstanceIndex p → ℕ) :
       (∑ j ∈ Finset.range M, charge (order j)) = ∑ idx ∈ I, charge idx := by
-    rw [← image_eq, Finset.sum_image order_inj]
+    apply Finset.sum_bij (fun i hi => f ⟨i, Finset.mem_range.mp hi⟩)
+    · exact fun i hi => (hf _).1
+    · intro i hi j hj heq
+      exact congrArg Fin.val (finj heq)
+    · intro idx hidx
+      obtain ⟨i, hi⟩ := fsurj idx hidx
+      exact ⟨i.val, Finset.mem_range.mpr i.isLt, hi⟩
+    · intro i hi
+      rw [order_at i (Finset.mem_range.mp hi)]
   let charge := fun (idx : InstanceIndex p) =>
     recordBase (m := m) hn V a.mem idx + (40 * (n * D m) + 67)
   let B := fun i => charge (order i)

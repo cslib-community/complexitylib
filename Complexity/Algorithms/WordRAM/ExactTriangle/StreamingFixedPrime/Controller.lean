@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Program
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Controller
 
 /-!
 # Charged one-slot controller setup and reclamation
