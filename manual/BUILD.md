@@ -68,9 +68,13 @@ python3 scripts/build_operator_manual.py --output-dir /tmp/complexitylib-manual-
 
 The second path is an example destination that you choose. No files in that directory are
 removed automatically. For repeated independent TeX compilation, run XeLaTeX three times
-from the output directory so the contents and citations stabilize. Links to repository
-files are relative to that output directory; retain the checkout or rebuild at the
-intended destination when using those links. A successful builder exits
+from the output directory so the contents and citations stabilize. Generated links to repository
+files outside the selected book point to GitHub at the rendered commit; the PDF can be moved
+without retaining the checkout. Push that commit before sharing the PDF. Links within the book
+remain internal anchors, and source Markdown keeps its checkout-relative links. The builder
+rejects links to uncommitted or locally modified repository targets: commit those targets first
+so the linked content matches the source being reviewed. Uncommitted book prose can still be
+rendered when its external source targets are committed. A successful builder exits
 zero; the full build also prints the PDF metadata. Inspect the output for missing glyphs,
 unresolved references, clipped lines and unreadable tables before distributing it.
 
