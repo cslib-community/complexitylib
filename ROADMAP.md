@@ -134,10 +134,15 @@ families and full-input native runtime.
   and an efficient realization of the full forking reduction ([#2568]). The private-coin replay
   prerequisite now includes a full-input oracle-PPT certificate, tape preparation, and joint
   external-state preservation ([#2579]).
-- **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
-  2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
-  certificates for the simulator and extractor; full interactive-view simulation;
-  Dilithium-style signature schemes over module SIS and module LWE, as theory.
+- **Lattices**: full random-oracle EUF-CMA signatures from SIS (Lyubashevsky 2009,
+  2012) remain open. Strict-PPT box sampling, bounded signing and negligible availability are
+  proved. The public-key-only fork milestone ([#2620]) bounds accepting-fork probability by
+  actual homogeneous SIS success plus `k*q^n/(2η+1)^m`, for independent uniform box secrets
+  and an arbitrary kernel receiving only `(A,T)`. This joint-law extraction uses the sampled
+  secret; an `A`-only native reduction and the actual signing/fork distribution bridge remain
+  open. Corrected full-view simulation must account for aborted hash queries. Other endpoints
+  include identification security under SIS, efficient full-view simulation, and Dilithium-style
+  signature schemes over module SIS and module LWE, as theory.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -918,3 +923,5 @@ not planned, not as proved.
 
 [#2579]: https://github.com/cslib-community/complexitylib/issues/2579
 [#2585]: https://github.com/cslib-community/complexitylib/issues/2585
+
+[#2620]: https://github.com/cslib-community/complexitylib/issues/2620

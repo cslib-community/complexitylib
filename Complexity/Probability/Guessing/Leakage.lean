@@ -7,9 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.Product
-import Complexity.Probability.PMF.Uniform
 import Complexity.Probability.PMF.Bind
 
 /-!
@@ -21,6 +19,8 @@ observations. The guessing strategy may be randomized and its output type may be
 ## Main results
 
 * `Cslib.Probability.PMF.bind_le_card_mul_of_fiber_subsingleton`: the finite-leakage bound.
+* `Cslib.Probability.PMF.uniform_bind_le_div_of_coordinate_subsingleton`: its independent
+  uniform-coordinate specialization.
 -/
 
 @[expose] public section
@@ -32,13 +32,14 @@ open scoped ENNReal
 /-- A randomized test after finite leakage succeeds with probability at most the number of
 observations times the largest source mass, when each observation and test output identifies
 at most one successful source value. -/
-theorem bind_le_card_mul_of_fiber_subsingleton {X Y Z : Type*} [Fintype X] [Fintype Y]
+theorem bind_le_card_mul_of_fiber_subsingleton {X Y Z : Type*} [Finite X] [Fintype Y]
     (source : PMF X) (leak : X → Y) (kernel : Y → PMF Z) (event : X → Z → Prop)
     [∀ x z, Decidable (event x z)] {mass : ℝ≥0∞} (hmass : ∀ x, source x ≤ mass)
     (hunique : ∀ y z, Set.Subsingleton {x | leak x = y ∧ event x z}) :
     (source.bind fun x => (kernel (leak x)).map fun z => decide (event x z)) true ≤
       Fintype.card Y * mass := by
   classical
+  let _ : Fintype X := Fintype.ofFinite X
   have hrow (y : Y) :
       (∑ x : X, if leak x = y then
         ((kernel y).map fun z => decide (event x z)) true else 0) ≤ 1 := by
