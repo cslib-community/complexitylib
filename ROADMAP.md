@@ -195,8 +195,8 @@ families and full-input native runtime.
 
 - **Fiat–Shamir query representations**: the finite theorem permits an injective hash-point
   embedding into an arbitrary query domain, retaining every out-of-image query and the same bound
-  ([#2684](https://github.com/cslib-community/complexitylib/issues/2684)). Concrete word Schnorr
-  specialization and explicit key-generation/signing approximation transport remain open.
+  ([#2684](https://github.com/cslib-community/complexitylib/issues/2684)). The canonical word Schnorr
+  instance is recorded below; explicit key-generation/signing approximation transport remains open.
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers. Word verification now enforces canonical commitments for canonical
   public keys ([#2672](https://github.com/cslib-community/complexitylib/issues/2672)).
@@ -236,6 +236,12 @@ families and full-input native runtime.
   Two KEM hops and compatible key distributions/key postprocessing remain open; encoded
   Encrypt-then-MAC keys are not uniform over all words of their encoded length. Adaptive
   decapsulation security of a KEM alone does not supply the composition.
+- **Canonical word Schnorr ROM** ([#2696](https://github.com/cslib-community/complexitylib/issues/2696)):
+  completeness, special soundness on all word transcripts, perfect HVZK, commitment
+  unpredictability and the finite ROM bound retain every word hash query. Public keys remain
+  actual group elements and scalar sampling is ideal; native adapter composition,
+  key-generation/signing approximation transport and the complete efficient forking reduction
+  remain open under [#2568].
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
