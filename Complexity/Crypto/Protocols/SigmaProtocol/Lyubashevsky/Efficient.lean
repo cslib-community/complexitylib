@@ -11,8 +11,7 @@ public import Complexity.Init
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract
 public import Complexity.Crypto.Protocols.SigmaProtocol.Efficient
-public import Complexity.Crypto.Game.CloseTo
-public import Complexity.Crypto.Game.Statistical
+public import Complexity.Crypto.Game.CloseTo.Statistical
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Computability.Probabilistic.Repeat
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.BinaryDiv
@@ -108,21 +107,6 @@ machine-backed efficiency certificates for `SigmaProtocol.lyubashevsky`:
 -/
 
 @[expose] public section
-
-namespace Cslib.Interactive
-
-open Probability Probability.PMF Crypto
-open scoped ENNReal NNReal Cslib.Probability.PMF
-
-/-- Finite-support statistical distance bounds `CloseTo` on all events. -/
-theorem closeTo_of_dist_le {α : Type} [Fintype α] {μ ν : PMF α} {ε : ℝ≥0}
-    (h : dist μ ν ≤ ε) : CloseTo μ ν ε := by
-  classical
-  refine Game.closeTo_of_advantage_decide_le fun E => ?_
-  rw [Game.advantage_eq_nndist, ← NNReal.coe_le_coe, coe_nndist]
-  exact (PMF.dist_map_le μ ν _).trans h
-
-end Cslib.Interactive
 
 namespace Cslib.Probability
 
