@@ -1624,6 +1624,54 @@ horizon for the terminal and all bins. `initial_compressed_precision_moments` pr
 new branch on actual computed histories; the existing four-max and raw separated-reserve
 consumers use the same updated minimum.
 
+The normalized prefix payment retains $16^{-d}$ decay after correlated-prefix Minkowski.
+`sum_propagation_mul_sixteenth_le` pays the literal factor-$28$ unconditional noise tail
+with the fixed geometric constant $1792/57$, including the two-unit exponent offset;
+it uses no heavy-event rarity. `compatible_sixteenth_noise_schedule` retains the actual
+floor, compatible capacity, $K+1$ gain and raw postincrement weights.
+`initialComputedPrecisionMoment_firstNoise_weighted_le` and
+`initialComputedPrecisionMoment_firstNoise_schedule_le` apply these bounds to the
+actual computed first-noise minimum. Each allocation keeps the supported semantic
+`initialRelativeNoiseBudget` residual explicitly. The tail residual has its full
+factor-$28$ propagation and receives no rarity discount.
+
+`initialComputedFirstCoordinate_reserve_le` exposes the four semantic-noise residuals
+beside the unchanged complete first-mean budgets. The checked canonical budget-boundary
+primitive now pays those residuals with $4^{-d}$ rooted decay, strengthening the earlier
+$2^{-d}$ envelope without changing steps or its support argument. This primitive applies
+to canonical semantic input; approximate children still use their own-request transport
+bound and separate reset-right availability. Its hypotheses retain the polynomial cutoff,
+grid requests, nonnegative row-substochastic base, positive budget, nonnegative parent
+precision and one admissible bin/terminal horizon.
+
+`initialComputedPrecisionMoment_firstNoise_polynomial_schedule` pays the complete
+actual computed first-noise minimum in the stationary, final, unconditional tail and raw
+allocations. Current `meanRowTail`, `integrated_fourMax_tail_schedule` and the actual
+reserve consumer use $28^{m-i}$ at root level. We therefore retain that literal weight:
+$4(m-i)\le d_i+8$ gives geometric ratio $28/4^4=7/64$ and tail constant $458752/57$.
+For transported noise, $2(m-i)\le d_i+2$ gives ratio $28/16^2=7/64$ and constant
+$1792/57$. No fourth root of the factor 28 or heavy-rarity discount is inserted into
+these unconditional noise sums. Raw allocation keeps the literal capacity, floor,
+postincrement index and $K+1$ gain.
+
+`initialComputedFirstCoordinateReserve` adds the complete first-mean budgets to these
+actual computed first-noise terms in `initialSeparatedReserve`, including the outer
+raw factor 64. `initialComputedFirstCoordinateReserve_exists_charge` pays it with one
+charge chosen after the primitive bin cap, child coefficient, floor, decoder and capacity
+constants, before field, horizon, requests, depth, budget and precision. It retains the
+first mean's full-bin fixed-depth/bounded-budget family, including width and budget
+bounds and the common horizon. This is a complete conditional first-coordinate numerical
+certificate; the second mean/noise and successful recursive execution are separate.
+The original `initial_compressed_precision_reserve` still provides the actual `hb` and
+weighted raw consumers under explicit lower-child IH; the new certificate pays its
+first-coordinate allocations, not the full four-statistic reserve.
+
+The full-bin positive-precision family in InitialTwoPayment also checks the actual
+computed minimum's unconditional tail. PolynomialBudgetHistory checks a fully correlated
+two-atom tail at every horizon and its nonzero exact third-horizon fourth moment
+$(5271/1024)^4$. These are complementary to its actual nonzero child-error execution
+fixture, whose centered stationary noise may vanish.
+
 `initialComputedPrecisionMoment_firstNoise_uniform_charge` chooses one charge from the
 primitive bin cap and child coefficient before field, horizon, request, budget or precision.
 The checked full-bin family in [InitialTwoPayment](../../ComplexityTests/InitialTwoPayment.lean)
@@ -1644,13 +1692,13 @@ charge by $M$, and the original $64^{-d}$ schedule pays this charge, the budget 
 the last dyadic slack. The original correlated-prefix cube is retained and absorbed
 using $j\le\log_2 M+1\le M\le2^M$; no independence is assumed.
 `initialRelativeNoiseBudget_polynomial_uniform_le` bounds that same semantic budget
-by the fourth power of $256\,\mathrm{binCap}\,2^{-p}2^{-A}(1/2)^{\mathrm{slack}}$.
+by the fourth power of $256\,\mathrm{binCap}\,2^{-p}2^{-A}(1/4)^{\mathrm{slack}}$.
 
 `initialComputedNormalizedNoise_polynomial_uniform_le` combines this with the
 normalized transport payment. `initialComputedPrecisionMoment_firstNoise_polynomial_paid`
 chooses one natural charge before every field, horizon, bin family, request and budget,
 and pays the complete first-noise coordinate of the actual computed minimum by
-$(2^{-p}(1/2)^{\mathrm{slack}})^4$. The canonical support argument applies to the
+$(2^{-p}(1/4)^{\mathrm{slack}})^4$. The canonical support argument applies to the
 semantic input; approximate children still use the conditional own-request IH above.
 The evaluator and walk steps are unchanged.
 
@@ -1662,11 +1710,11 @@ checks the complete computed cost with one charge chosen before arbitrary field,
 depth and positive precision, together with existence of admissible prime horizons.
 These numerical allocation clients do not construct successful recursive children.
 
-The complete initial first-noise allocation is proved under the stated guards and
-conditional child execution/IH. The other three reserve statistics, second mean/saturated
-preparation, terminal rank, general products, full changing-request accuracy/availability
-and native RL=L remain open. The assembled bounded first mean and production leaves
-are unchanged.
+The complete first-coordinate allocation combines the previously assembled bounded
+first mean with complete first noise under the stated guards and conditional child
+execution/IH. Second mean/saturated preparation, second noise, terminal rank, general
+products, full changing-request accuracy/availability and native RL=L remain open.
+Production leaves are unchanged.
 
 For the same executed prefixes, `initial_compressed_first_noise` now also returns a
 pairwise normalized payment. `initialRelativeNoiseBudget` sums the scheduled conditional

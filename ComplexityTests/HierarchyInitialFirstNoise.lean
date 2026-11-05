@@ -34,7 +34,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
         B.initialComputedPrecisionMoment M n r threeRoles n (n + 1) [1] [2, 3]
           coefficient 0 0 0 j true 0 ≤
           ((2 : ℝ) ^ (-((p : ℝ) + 2)) *
-            (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4 := by
+            (1 / 4 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4 := by
   obtain ⟨A, hA⟩ := BudgetData.initialComputedPrecisionMoment_firstNoise_polynomial_paid
     (HP := HP) 16 coefficient
   refine ⟨A, ?_⟩

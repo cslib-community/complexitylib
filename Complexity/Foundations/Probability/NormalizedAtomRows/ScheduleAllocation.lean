@@ -180,6 +180,74 @@ theorem compatible_growing_mean_raw_le {η E : ℝ} (hη : 0 < η)
     Nat.cast_ofNat]
   field_simp
 
+/-- Unconditional centered-noise allocations use the actual floor, capacity and
+postincrement weights. Factor-28 tail propagation is paid without a rarity factor;
+all prefixes and events may be correlated. The envelope constant precedes the horizon. -/
+theorem compatible_sixteenth_noise_schedule {η E : ℝ} (hη : 0 < η) (hE : 0 ≤ E)
+    (K m : ℕ) (R : ℝ) (e : ℕ → ℝ)
+    (he : ∀ i < m, 0 ≤ e i ∧ e i ≤ E * (1 / 16 : ℝ) ^ dyadicSlack m i) :
+    (∑ i ∈ range m, dyadicFloor η m i * e i) ≤ η * E / 511 ∧
+    (∀ i < m, e i ≤ E / 16) ∧
+    (∑ i ∈ range m, (28 : ℝ) ^ (m - i) * e i) ≤ E * (1792 / 57) ∧
+    (∑ i ∈ range m, (64 * (K : ℝ) * R ^ 4 /
+      ((compatibleCapacity K m i : ℝ) * dyadicFloor η m i ^ 4)) * e i ^ 4) ≤
+        (64 * (K : ℝ) * R ^ 4 / ((K + 1) * η ^ 4)) * E ^ 4 / 63 := by
+  have hg (i : ℕ) (hi : i < m) : e i ≤ E * (2 : ℝ) ^ dyadicSlack m i :=
+    (he i hi).2.trans (mul_le_mul_of_nonneg_left
+      (pow_le_pow_left₀ (by norm_num) (by norm_num : (1 / 16 : ℝ) ≤ 2) _) hE)
+  refine ⟨compatible_growing_mean_pre_le hη.le hE m e hg, ?_, ?_,
+    compatible_growing_mean_raw_le hη K m R e (fun i hi => ⟨(he i hi).1, hg i hi⟩)⟩
+  · intro i hi
+    have hd : 1 ≤ dyadicSlack m i := Nat.one_le_pow _ _ (by decide)
+    have hp := pow_le_pow_of_le_one (by norm_num : (0 : ℝ) ≤ 1 / 16)
+      (by norm_num : (1 / 16 : ℝ) ≤ 1) hd
+    simpa only [pow_one, mul_one_div] using
+      (he i hi).2.trans (mul_le_mul_of_nonneg_left hp hE)
+  · apply le_trans (sum_le_sum fun i hi => mul_le_mul_of_nonneg_left
+      (he i (mem_range.mp hi)).2 (by positivity : (0 : ℝ) ≤ 28 ^ (m - i)))
+    calc
+      _ = E * ∑ i ∈ range m, (28 : ℝ) ^ (m - i) *
+          (1 / 16 : ℝ) ^ dyadicSlack m i := by
+        simp only [mul_sum]
+        apply sum_congr rfl
+        intros
+        ring
+      _ ≤ _ := mul_le_mul_of_nonneg_left (sum_propagation_mul_sixteenth_le m) hE
+
+/-- Unconditional centered-noise allocations use the actual floor, capacity and
+postincrement weights. Factor-28 tail propagation is paid without a rarity factor;
+all prefixes and events may be correlated. The envelope constant precedes the horizon. -/
+theorem compatible_quarter_noise_schedule {η E : ℝ} (hη : 0 < η) (hE : 0 ≤ E)
+    (K m : ℕ) (R : ℝ) (e : ℕ → ℝ)
+    (he : ∀ i < m, 0 ≤ e i ∧ e i ≤ E * (1 / 4 : ℝ) ^ dyadicSlack m i) :
+    (∑ i ∈ range m, dyadicFloor η m i * e i) ≤ η * E / 511 ∧
+    (∀ i < m, e i ≤ E / 4) ∧
+    (∑ i ∈ range m, (28 : ℝ) ^ (m - i) * e i) ≤ E * (458752 / 57) ∧
+    (∑ i ∈ range m, (64 * (K : ℝ) * R ^ 4 /
+      ((compatibleCapacity K m i : ℝ) * dyadicFloor η m i ^ 4)) * e i ^ 4) ≤
+        (64 * (K : ℝ) * R ^ 4 / ((K + 1) * η ^ 4)) * E ^ 4 / 63 := by
+  have hg (i : ℕ) (hi : i < m) : e i ≤ E * (2 : ℝ) ^ dyadicSlack m i :=
+    (he i hi).2.trans (mul_le_mul_of_nonneg_left
+      (pow_le_pow_left₀ (by norm_num) (by norm_num : (1 / 4 : ℝ) ≤ 2) _) hE)
+  refine ⟨compatible_growing_mean_pre_le hη.le hE m e hg, ?_, ?_,
+    compatible_growing_mean_raw_le hη K m R e (fun i hi => ⟨(he i hi).1, hg i hi⟩)⟩
+  · intro i hi
+    have hd : 1 ≤ dyadicSlack m i := Nat.one_le_pow _ _ (by decide)
+    have hp := pow_le_pow_of_le_one (by norm_num : (0 : ℝ) ≤ 1 / 4)
+      (by norm_num : (1 / 4 : ℝ) ≤ 1) hd
+    simpa only [pow_one, mul_one_div] using
+      (he i hi).2.trans (mul_le_mul_of_nonneg_left hp hE)
+  · apply le_trans (sum_le_sum fun i hi => mul_le_mul_of_nonneg_left
+      (he i (mem_range.mp hi)).2 (by positivity : (0 : ℝ) ≤ 28 ^ (m - i)))
+    calc
+      _ = E * ∑ i ∈ range m, (28 : ℝ) ^ (m - i) *
+          (1 / 4 : ℝ) ^ dyadicSlack m i := by
+        simp only [mul_sum]
+        apply sum_congr rfl
+        intros
+        ring
+      _ ≤ _ := mul_le_mul_of_nonneg_left (sum_propagation_mul_quarter_le m) hE
+
 /-- The exceptional first rarity weight decays in the actual first dyadic slack,
 even after all factor-28 propagation. -/
 theorem compatible_first_rarity_decay {η : ℝ} (hη : 0 < η) (K m : ℕ) (hm : 0 < m) :

@@ -148,9 +148,10 @@ theorem initialRelativeGroupNoiseBudget_polynomial_le (B : BudgetData HP P)
     _ ≤ C * ((2 : ℝ) ^ (-B.requestPrecision M q) * (64 : ℝ)⁻¹ ^ d) ^ 4 :=
       mul_le_mul_of_nonneg_left hpay hC0
 
-private theorem inverse_two_pow (n : ℕ) :
-    (1 / 2 : ℝ) ^ n = (2 : ℝ) ^ (-(n : ℝ)) := by
-  rw [Real.rpow_neg (by norm_num : (0 : ℝ) ≤ 2), Real.rpow_natCast, one_div, inv_pow]
+private theorem inverse_four_pow (n : ℕ) :
+    (1 / 4 : ℝ) ^ n = (2 : ℝ) ^ (-2 * (n : ℝ)) := by
+  have hb : (1 / 4 : ℝ) = (2 : ℝ) ^ (-2 : ℝ) := by norm_num [Real.rpow_neg]
+  rw [hb, ← Real.rpow_mul_natCast (by norm_num : (0 : ℝ) ≤ 2)]
 
 private theorem inverse_sixtyfour_pow (n : ℕ) :
     (64 : ℝ)⁻¹ ^ n = (2 : ℝ) ^ (-6 * (n : ℝ)) := by
@@ -195,11 +196,11 @@ theorem initialRelativeNoiseBudget_polynomial_uniform_le (B : BudgetData HP P)
     B.initialRelativeNoiseBudget M r s t hst ks ka ss st B.base j ≤
       (256 * B.binCap * (2 : ℝ) ^ (-B.requestPrecision M {r with usage := r.terminal}) *
         (2 : ℝ) ^ (-B.rankCharge) *
-        (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) (j - 1)) ^ 4 := by
+        (1 / 4 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) (j - 1)) ^ 4 := by
   let m := Nat.log2 M + 1
   let last := dyadicSlack m (j - 1)
   let e := (2 : ℝ) ^ (-B.requestPrecision M {r with usage := r.terminal})
-  let T := 256 * B.binCap * e * (2 : ℝ) ^ (-B.rankCharge) * (1 / 2 : ℝ) ^ last
+  let T := 256 * B.binCap * e * (2 : ℝ) ^ (-B.rankCharge) * (1 / 4 : ℝ) ^ last
   let z := (2 : ℝ) ^ (-(M : ℝ))
   have hcap := B.binCap_nonneg
   have hT : 0 ≤ T := by dsimp only [T, e]; positivity
@@ -224,8 +225,8 @@ theorem initialRelativeNoiseBudget_polynomial_uniform_le (B : BudgetData HP P)
       dsimp only [last, d, dyadicSlack]
       exact Nat.pow_le_pow_right (by decide : 0 < 2) (by have := mem_range.mp hi; omega)
     have hdecay : (64 : ℝ)⁻¹ ^ d ≤
-        (2 : ℝ) ^ (-B.rankCharge) * (2 : ℝ) ^ (-(M : ℝ)) * (1 / 2 : ℝ) ^ last := by
-      rw [inverse_sixtyfour_pow, inverse_two_pow,
+        (2 : ℝ) ^ (-B.rankCharge) * (2 : ℝ) ^ (-(M : ℝ)) * (1 / 4 : ℝ) ^ last := by
+      rw [inverse_sixtyfour_pow, inverse_four_pow,
         ← Real.rpow_add (by norm_num : (0 : ℝ) < 2),
         ← Real.rpow_add (by norm_num : (0 : ℝ) < 2)]
       apply Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2)
@@ -242,7 +243,7 @@ theorem initialRelativeNoiseBudget_polynomial_uniform_le (B : BudgetData HP P)
     calc
       _ = (256 * B.binCap * e) * (64 : ℝ)⁻¹ ^ d := by dsimp only [e]; ring
       _ ≤ 256 * B.binCap * e * ((2 : ℝ) ^ (-B.rankCharge) *
-          (2 : ℝ) ^ (-(M : ℝ)) * (1 / 2 : ℝ) ^ last) := hh
+          (2 : ℝ) ^ (-(M : ℝ)) * (1 / 4 : ℝ) ^ last) := hh
       _ = T * z := by dsimp only [T, z]; ring
   unfold initialRelativeNoiseBudget
   dsimp only

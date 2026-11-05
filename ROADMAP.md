@@ -207,8 +207,10 @@ index links to canonical definitions rather than keeping a second set.
   structural charge pays the complete initial first-noise cost uniformly over admissible
   finite bin families and terminal exponents. Canonical budget-boundary support absorbs
   the existing semantic noise as well as normalized transported noise. This is
-  conditional on lower-budget child accuracy and reset-right execution. The full reserve,
-  second preparation/terminal rank, general correction products, simultaneous recursive
+  conditional on lower-budget child accuracy and reset-right execution. Complete first-mean
+  and first-noise allocations are now paid together on the first mean's explicit joint
+  bounded-budget/full-horizon family, including unconditional noise-tail propagation.
+  The full four-statistic reserve, second preparation/terminal rank, general correction products, simultaneous recursive
   accuracy/availability and native logarithmic workspace/class equality remain open.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.

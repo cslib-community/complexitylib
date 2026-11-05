@@ -46,7 +46,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
         0 0 [1] [2, 3] B.base j ≤
         (256 * B.binCap * (2 : ℝ) ^ (-B.requestPrecision (16 * (n + 257))
           {r with usage := r.terminal}) * (2 : ℝ) ^ (-B.rankCharge) *
-          (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 (16 * (n + 257)) + 1) (j - 1)) ^ 4 := by
+          (1 / 4 : ℝ) ^ dyadicSlack (Nat.log2 (16 * (n + 257)) + 1) (j - 1)) ^ 4 := by
   dsimp only
   let B : BudgetData HP P := { uniformData HP P n with rankCharge := 7 }
   let r := uniformRequest HP P

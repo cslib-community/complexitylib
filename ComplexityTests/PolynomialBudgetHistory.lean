@@ -2743,6 +2743,53 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
       (by change 16 * n ≤ 32 * 1 * n; omega) (by omega) hP H (by omega) r
       (by rw [hrank]; decide) rfl rfl hC threeRoles [1] [2, 3]
 
+-- The combined first-coordinate charge precedes the field and every depth/budget.
+-- Every bin shares the horizon; precision is positive and the supported base is nonzero.
+-- This is the numerical certificate, not joint recursive availability.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (coefficient floor cap C Cp : ℝ) (hf : 0 < floor) :
+    ∃ A : ℕ, ∀ n : ℕ, A * 36 + 1 < n →
+      ∃ P, ∃ _ : Fact P.Prime, ∃ H : Horizon P,
+      let B : BudgetData HP P := {uniformData HP P n with rankCharge := A}
+      let r := uniformRequest HP P
+      H.maxExponent = n ∧ B.bins = range (n + 1) ∧ B.base 0 0 = 1 ∧
+      0 < B.requestPrecision (16 * n) r ∧
+      ∀ ζ Lh Lρ : ℝ,
+        B.initialComputedFirstCoordinateReserve (16 * n) n r threeRoles 0 0 [1] [2, 3]
+          coefficient ζ Lh Lρ floor cap C Cp ≤
+          ((2 : ℝ) ^ (-B.requestPrecision (16 * n) r)) ^ 4 := by
+  obtain ⟨A, hA⟩ := BudgetData.initialComputedFirstCoordinateReserve_exists_charge HP 16
+    coefficient floor cap C Cp hf
+  refine ⟨A, ?_⟩
+  intro n hn
+  obtain ⟨P, hprime, _, hP, H, he, _⟩ := exists_bounded_depth_prime n 0 (by positivity)
+  let : Fact P.Prime := ⟨hprime⟩
+  let B : BudgetData HP P := {uniformData HP P n with rankCharge := A}
+  let r := uniformRequest HP P
+  have hrank : r.task.rank = 36 := by
+    norm_num [r, uniformRequest, HierarchyTask.rank, BoundedRowTask.localTask,
+      CorrectionRowTask.rank, PilotRowTask.rank, PilotTask.rank]
+  have hp : B.requestPrecision (16 * n) r = (n : ℝ) - A * 36 := by
+    rw [B.requestPrecision_grid (16 * n) 0 0 r rfl rfl, hrank]
+    dsimp only [B, uniformData]
+    push_cast
+    ring
+  have hpositive : 0 < B.requestPrecision (16 * n) r := by
+    rw [hp]
+    have hn' : (A : ℝ) * 36 + 1 < n := by exact_mod_cast hn
+    linarith
+  refine ⟨P, inferInstance, H, he, rfl, ?_, hpositive, ?_⟩
+  · simp [uniformData]
+  · intro ζ Lh Lρ
+    exact hA B rfl rfl rfl rfl (16 * n) n 0 0 (by omega) rfl
+      (by change 1 * (1 + 4 * (n + 0)) < 16 * n; omega)
+      (by change 16 * n ≤ 32 * 1 * n; omega) (by omega) hP H
+      (by omega) (by omega) r threeRoles [1] [2, 3] rfl rfl rfl hpositive.le
+      (by intro x y; by_cases h : x = y <;> simp [B, uniformData, h])
+      (by change (1 : Matrix (ZMod P) (ZMod P) ℝ) *ᵥ 1 ≤ 1; simp)
+      ζ Lh Lρ
+
 -- A full-horizon nonzero semantic client of the actual reserve. Successful own-request
 -- children remain an explicit hypothesis; this checks the assembled consumer without
 -- claiming simultaneous recursive availability or paying the other three statistics.
@@ -3327,5 +3374,34 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
       exact ⟨hd, hroot, right_available HP ζ 1 (by decide)⟩)
     (by intro x y; by_cases h : x = y <;> simp [data, base, h])
   exact ⟨groups, hg, hb (side 5 0) (fun _ _ _ _ => 0) 1 (by decide)⟩
+
+-- The same two-atom noise is shared by every prefix. The full factor-28 tail is
+-- unconditional and remains nonzero; the geometric bound is uniform in the horizon.
+open Cslib.RowCompression NormalizedMoments in
+example (m : ℕ) :
+    let Z := fun (σ : Fin 2) (_ _ : Unit) => if σ = 0 then (1 : ℝ) else -1
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ x y => ∑ i ∈ range m, (28 : ℝ) ^ (m - i) *
+        (1 / 16 : ℝ) ^ dyadicSlack m i * Z σ x y) ≤ (1792 / 57 : ℝ) ^ 4 := by
+  dsimp only
+  have h := rowNormPow_sum_le_pow_sum
+    (X := fun (_ : Fin 2) (_ : Unit) => True) (by decide : 4 ≠ 0)
+    (by norm_num : (0 : ℝ) ≤ 1 * 1) (fun (_ : Fin 2) (_ : Unit) => True)
+    (range m) (fun _ σ (_ _ : Unit) => if σ = 0 then (1 : ℝ) else -1)
+    (fun i => (28 : ℝ) ^ (m - i) * (1 / 16 : ℝ) ^ dyadicSlack m i) (fun _ => 1)
+    (by intros; positivity) (by intros; norm_num)
+    (by intros; norm_num [rowNormPow, Fin.sum_univ_two, expect_eq_sum_div_card])
+  simp only [mul_one] at h
+  exact h.trans (pow_le_pow_left₀ (sum_nonneg fun _ _ => by positivity)
+    (sum_propagation_mul_sixteenth_le m) 4)
+
+open Cslib.RowCompression NormalizedMoments in
+example :
+    let Z := fun (σ : Fin 2) (_ _ : Unit) => if σ = 0 then (1 : ℝ) else -1
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ x y => ∑ i ∈ range 3, (28 : ℝ) ^ (3 - i) *
+        (1 / 16 : ℝ) ^ dyadicSlack 3 i * Z σ x y) = (5271 / 1024 : ℝ) ^ 4 := by
+  norm_num [rowNormPow, Fin.sum_univ_two, expect_eq_sum_div_card, sum_range_succ,
+    dyadicSlack]
 
 end PolynomialBudgetHistory

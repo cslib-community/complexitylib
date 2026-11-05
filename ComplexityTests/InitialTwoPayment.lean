@@ -831,7 +831,7 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} (binCap coefficient : ℝ)
       B.initialComputedPrecisionMoment M (n + 2) r R n (n + 1) [] [] coefficient ζ Lh Lρ
           j true 0 ≤
         8 * (((2 : ℝ) ^ (-B.requestPrecision M r) *
-          (1 / 2 : ℝ) ^ Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ^ 4 +
+          (1 / 16 : ℝ) ^ Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ^ 4 +
           B.initialRelativeNoiseBudget M r R.source R.terminal R.source_terminal
             n (n + 1) [] [] B.base (j + 1)) := by
   obtain ⟨A, hA⟩ := BudgetData.initialComputedPrecisionMoment_firstNoise_uniform_charge
@@ -853,6 +853,45 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} (binCap coefficient : ℝ)
     (fun bin hb => by rw [hbins, mem_range] at hb; omega) r rfl
     (by rw [hq, hp]; positivity) R [] [] (n + 2) ζ Lh Lρ
   simpa only [hq] using h
+
+-- The actual computed first-noise minimum pays its unconditional propagated tail
+-- on the same unbounded full-horizon family. The supported semantic tail stays literal.
+open Cslib.RowCompression in
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (A n p : ℕ) (hcharge : B.rankCharge = A)
+    (hrate : B.binRate = rate) (hslack : B.slack = 1)
+    (hbins : B.bins = range (n + 3)) (H : Horizon P) (hn : n + 2 ≤ H.maxExponent)
+    (coefficient : ℝ) :
+    let r := unboundedNoiseRequest HP n (P := P)
+    let M := 16 * (A * r.task.rank + p + 4 * n + 4)
+    let m := Nat.log2 M + 1
+    0 < B.requestPrecision M r ∧
+    (∑ j ∈ range m, (28 : ℝ) ^ (m - j) *
+      B.initialComputedPrecisionMoment M (n + 2) r threeRoles n (n + 1) [] []
+        coefficient 0 0 0 j true 0 ^ (4⁻¹ : ℝ)) ≤
+      (8 : ℝ) ^ (4⁻¹ : ℝ) *
+        (BudgetData.initialNormalizedNoiseConstant B.binCap coefficient *
+          (2 : ℝ) ^ (-((p : ℝ) + 2)) * (2 : ℝ) ^ (-(A : ℝ)) * (1792 / 57) +
+        ∑ j ∈ range m, (28 : ℝ) ^ (m - j) *
+          B.initialRelativeNoiseBudget M r threeRoles.source threeRoles.terminal
+            threeRoles.source_terminal n (n + 1) [] [] B.base (j + 1) ^ (4⁻¹ : ℝ)) := by
+  dsimp only
+  let r := unboundedNoiseRequest HP n (P := P)
+  let M := 16 * (A * r.task.rank + p + 4 * n + 4)
+  have hp : B.requestPrecision M r = p + 2 := by
+    rw [B.requestPrecision_grid M n (n + 1) r rfl rfl, hslack, hcharge]
+    dsimp only [M]
+    push_cast
+    ring
+  have hq : { r with usage := r.terminal } = r := rfl
+  have hadm : B.initialNormalizedNoiseAdmissible M r (n + 1) :=
+    ⟨by rw [hcharge]; positivity, hrate, rfl, by rw [hq, hp]; positivity,
+      H, by omega, fun bin hb => by rw [hbins, mem_range] at hb; omega⟩
+  have ht := (B.initialComputedPrecisionMoment_firstNoise_schedule_le M (n + 2) n (n + 1)
+    r (by change 0 ≤ rate n; exact (rate_pos n).le) hadm threeRoles [] [] coefficient
+      0 0 0 1 1 (by norm_num)).2.2.1
+  refine ⟨by rw [hp]; positivity, ?_⟩
+  simpa only [hq, hp, hcharge] using ht
 
 -- Concrete unbounded source n / terminal n+1, full bins and positive actual precision.
 -- Actual own-request/reset execution remains an explicit conditional IH, restricted
