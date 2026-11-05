@@ -3161,6 +3161,7 @@ public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.PolynomialCommitment.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.FiatShamir
+public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.RandomOracle
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.View
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
@@ -3178,6 +3179,7 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.E
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Extraction
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Failure
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Parameters
+public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.RandomOracle
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.View
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature

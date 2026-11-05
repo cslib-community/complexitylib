@@ -141,9 +141,10 @@ families and full-input native runtime.
   and an arbitrary kernel receiving only `(A,T)`. This joint-law extraction uses the sampled
   secret; an `A`-only native reduction and the actual signing/fork distribution bridge remain
   open. Full-view witness invariance ([#2642]) retains aborted commitments for common
-  commitment-dependent challenges and finite independent attempt histories. An efficient
-  secret-free simulator, adaptive oracle-cache simulation and paired same-coins fork equality
-  remain open. Other endpoints include identification security under SIS and Dilithium-style
+  commitment-dependent challenges and finite independent attempt histories. The canonical ROM
+  bridge ([#2661]) extends this to sequential shared-cache signing and adaptive forger views,
+  retaining abort queries and later attempts after success. An efficient secret-free simulator,
+  paired same-coins fork equality and a native shared-oracle reduction remain open. Other endpoints include identification security under SIS and Dilithium-style
   signature schemes over module SIS and module LWE, as theory.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
@@ -929,3 +930,5 @@ not planned, not as proved.
 [#2620]: https://github.com/cslib-community/complexitylib/issues/2620
 
 [#2642]: https://github.com/cslib-community/complexitylib/issues/2642
+
+[#2661]: https://github.com/cslib-community/complexitylib/issues/2661
