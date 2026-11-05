@@ -87,10 +87,20 @@ complete programs in `2 * coins.length + 1` transitions, including the final sto
 own private samples may be discarded only under a stateless coin law. Its auxiliary-tape operations
 are shared with the native clock in
 [`Machine/AuxiliaryTape.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Machine/AuxiliaryTape.lean).
-This bound assumes the saved-coin and input tapes are already prepared. The full encoded-input
-`IsOraclePPTOn` certificate must additionally charge decoding and preparation; that obligation
-remains [#2579](https://github.com/cslib-community/complexitylib/issues/2579), before the Schnorr ROM
-replay/forking bridge can use it.
+That controller bound assumes prepared tapes. The native `exists_oracleReplay` theorem in
+[`Replay/WithOracleInput.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Replay/WithOracleInput.lean)
+adds pair decoding and virtual-input marking, proving a linear clock in the entire encoded
+`(coins, input)` pair and actual halting. The shared pair preparer also serves closed replay.
+
+[`Oracle/Replay.lean`](../../Complexity/Computability/Probabilistic/Oracle/Replay.lean) exposes
+`MultiTapePTM.isOraclePPTOn_runCoins` and `IsOraclePPTOn.exists_savedCoins`. The latter starts with
+an actual certified oracle-PPT program, fixes one bit per native instruction, and gives an efficient
+replay whose polynomial-length uniform coin tape reproduces the joint encoded-output and external
+state law for every stateful handler. Replies remain on their original channels; replay does not
+copy an unbounded reply into a configuration encoding. This completes the replay prerequisite
+[#2579](https://github.com/cslib-community/complexitylib/issues/2579). The Schnorr signing/hash/cache
+and freshness bridge for the full ROM forking reduction remains
+[#2568](https://github.com/cslib-community/complexitylib/issues/2568).
 
 ## Exact versus approximate randomness
 

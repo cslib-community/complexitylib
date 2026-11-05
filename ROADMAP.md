@@ -116,9 +116,9 @@ families and full-input native runtime.
   log against strict PPT forgers. The arithmetic algorithms and exact typed ROM reduction are
   proved; strict-PPT identification and eavesdropping results do not discharge this signature
   endpoint. Remaining work includes shared encoded signing/hash access, final-message freshness,
-  and a polynomial-time private-coin replay/forking realization ([#2568]). The native saved-coin
-  controller preserves external oracle channels in `2 * coins.length + 1` transitions; its full
-  encoded-input certificate must still charge tape preparation ([#2579]).
+  and an efficient realization of the full forking reduction ([#2568]). The private-coin replay
+  prerequisite now includes a full-input oracle-PPT certificate, tape preparation, and joint
+  external-state preservation ([#2579]).
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
