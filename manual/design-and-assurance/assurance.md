@@ -45,4 +45,22 @@ The current policy requires a nonauthor to inspect correctness and API quality o
 
 The historical [withdrawal case](../development-history/case-studies.md) demonstrates why that distinction matters: accepted proofs can have hypotheses that assume the advertised endpoint, or noncomputational operations that silently provide the hard part. The library's response included deletion, narrower claims, model recovery and stricter headline selection. This is evidence of a correction process and a documented failure, not evidence that all later semantics have been independently certified.
 
+## Finite EFX counterexample
+
+Import `Complexity.GameTheory.FairDivision.EFX`. `Cslib.FairDivision.EFX` uses complete
+ownership functions and additive natural-valued item utilities. An EFX comparison removes
+every possible single good from another agent's bundle. `ParetoDominates` requires all agents
+to weakly improve and at least one to strictly improve.
+
+`PositiveCounterexample.not_efx_and_paretoOptimal` applies to the explicit positive
+four-agent, eight-good instance of Mahabadi, Ramakrishnan and Tarnawski, Theorem 1.
+The finite proof covers every ownership function via `finFunctionFinEquiv`; each of the
+$4^8$ allocations is checked by ordinary kernel reduction in blocks of 256 against a list of
+24 possible strict improvements. Neither a search script nor native evaluation is trusted.
+The [checked client](../../ComplexityTests/GameTheory/EFX.lean) shows an actual EFX allocation
+and its strict improvement, and applies the general counterexample theorem. From the
+repository root, run `scripts/build.sh ComplexityTests.GameTheory.EFX` to check it.
+The result rules out EFX and Pareto efficiency together; EFX alone exists for this instance.
+The paper's parameterized approximate-EFX Theorem 2 is outside this formalization.
+
 [lean-validation]: ../sources.md#lean-validation

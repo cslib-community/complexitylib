@@ -3120,6 +3120,8 @@ public import Complexity.Crypto.Protocols.MPC.CircuitEval
 public import Complexity.Crypto.Protocols.MPC.Composition
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomnessBinary
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
@@ -3958,6 +3960,7 @@ public import Complexity.Foundations.RingTheory.AdjoinRoot
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
+public import Complexity.GameTheory.FairDivision.EFX
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString
@@ -4288,6 +4291,7 @@ public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
+public import Complexity.Probability.Thinning
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash

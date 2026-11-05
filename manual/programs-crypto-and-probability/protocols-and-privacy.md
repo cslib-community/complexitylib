@@ -116,6 +116,45 @@ No differential-privacy model was identified by the recorded local/upstream sear
 Only selected protocol endpoints and key definitions were traced. The source files themselves give detailed source mappings; this pass did not independently reconcile every textbook constant, lattice-abort construction or signature reduction. Existing regression tests are not newly executed evidence. The precise coalition and advice restrictions above should be retained even when summarizing the results compactly.
 
 [bs23]: ../sources.md#bs23
+## Sharing with imperfect randomness
+
+Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomnessBinary` and use
+`Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.binary_field_separation` for an actual
+finite-field family at every message length $b \ge 2$. The source class varies a set of field
+indices; each source is uniform on its selected key set. The theorem supplies perfect
+reconstruction, equality of each share's marginal law across all messages, source min-entropy
+at least $b$, and extraction error at least $1/6$ for every deterministic bit extractor on some
+source. The ambient key and share alphabets have cardinalities $2^{b+2}$ and $2^{b+1}$.
+These are exact information-theoretic statements; literal coordinate bijections to bit strings
+and a machine cost bound for field arithmetic are separate. The existing upstream `Scheme`
+fixes one generator, whereas this endpoint quantifies over a class of generator laws.
+
+The [checked clients](../../ComplexityTests/Crypto/ImperfectRandomness.lean) instantiate the
+four-element field, show both source-size endpoints, check concrete sharing rules, and apply
+the extraction obstruction. From the repository root after setup, run
+`scripts/build.sh ComplexityTests.Crypto.ImperfectRandomness`; a successful build checks these
+examples. The [source](../../Complexity/Crypto/Protocols/SecretSharing/ImperfectRandomness.lean)
+maps the construction to Aggarwal's Theorem 1.1 and Section 3.
+
+## Independent thinning of spread sources
+
+Import `Complexity.Probability.Thinning`. In namespace `Cslib.Probability.Thinning`,
+`pmf_thinning_le_bernoulli` compares the independent $t$-thinning of any $q$-spread parent PMF
+with Bernoulli density $p$ on every increasing event, under
+$tq(1-p) \le p(1-t)$, $0 \le t < 1$, $0 < p < 1$ and $0 \le q$.
+Parent coordinates may be correlated; the retention mask is independent of the parent.
+`IsSpread` bounds the probability of containing each fixed subset.
+`thinning_le_bernoulli_explicit_density` gives density $tq/(1-t+tq)$ for $0<t<1$ and $q>0$;
+`thinning_le_bernoulli_of_alpha` gives the universal thinning corollary when
+$\alpha^2 \le 1-\alpha$.
+
+This is stochastic domination in increasing-event form. A containing coupling and the general
+finite Strassen equivalence are not constructed here. The signed kernel used in the proof
+can have negative entries; it is an algebraic device rather than a conditional probability.
+The [checked clients](../../ComplexityTests/Thinning.lean) use a correlated, nonempty singleton
+parent at the exact boundary $t=q=1/2$, $p=1/3$, and check the negative-kernel case. Run
+`scripts/build.sh ComplexityTests.Thinning` from the repository root to check them.
+
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [goldreich04]: ../sources.md#goldreich04
