@@ -23,6 +23,7 @@ representation from the native data alone.
 
 ## Main results
 
+* `ExecWithin.loop_potential_state`: variable charged work paid by an explicit ghost potential.
 * `ExecWithin.loop_invariant_state`: the native loop rule with explicit proof state and a natural
   decreasing measure, including all loop-control instructions in the bound.
 * `ExecWithin.loop_invariant_state_additive`: same-code bounds with additive control overhead.
@@ -37,6 +38,31 @@ is actual `ExecWithin` execution of the given native code, not a source executio
 
 namespace Cslib.WordRAM
 
+/-- Native loop rule with an explicit proof-state potential. Each actual body execution and
+its two loop-control instructions must be paid by the potential decrease. Semantic successor
+states and body charges may depend on the reached native state. -/
+theorem ExecWithin.loop_potential_state {B : Basis} {r w : ℕ} {σ : Type*}
+    (I : σ → Data r → Prop) (μ : σ → ℕ) {cond : Cond r} {body : Code B r}
+    (hbody : ∀ s x, I s x → cond.Holds x →
+      ∃ s' y t, ExecWithin w body x y t ∧ I s' y ∧ t + 2 + μ s' ≤ μ s)
+    {s : σ} {x : Data r} (hx : I s x) :
+    ∃ s' y, ExecWithin w (.loop cond body) x y (μ s + 2) ∧
+      I s' y ∧ ¬cond.Holds y := by
+  have aux : ∀ n, ∀ s x, μ s ≤ n → I s x →
+      ∃ s' y, ExecWithin w (.loop cond body) x y (n + 2) ∧
+        I s' y ∧ ¬cond.Holds y := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | ind n ih =>
+      intro s x hμ hI
+      by_cases hc : cond.Holds x
+      · obtain ⟨s₁, y, t, hy, hIy, hpay⟩ := hbody s x hI hc
+        have hdec : μ s₁ < n := by omega
+        obtain ⟨s₂, z, hz, hIz, hexit⟩ := ih (μ s₁) hdec s₁ y le_rfl hIy
+        exact ⟨s₂, z, (ExecWithin.loop_iter hc hy hz).mono (by omega), hIz, hexit⟩
+      · exact ⟨s, x, (ExecWithin.loop_exit hc).mono (by omega), hI, hc⟩
+  exact aux (μ s) s x le_rfl hx
+
 /-- Native loop rule carrying explicit mathematical proof state. The body must execute the
 actual native code, preserve the relation and strictly decrease the proof-state measure. -/
 theorem ExecWithin.loop_invariant_state {B : Basis} {r w T : ℕ} {σ : Type*}
@@ -46,22 +72,13 @@ theorem ExecWithin.loop_invariant_state {B : Basis} {r w T : ℕ} {σ : Type*}
     {s : σ} {x : Data r} (hx : I s x) :
     ∃ s' y, ExecWithin w (.loop cond body) x y (μ s * (T + 2) + 2) ∧
       I s' y ∧ ¬cond.Holds y := by
-  have aux : ∀ n, ∀ s x, μ s ≤ n → I s x →
-      ∃ s' y, ExecWithin w (.loop cond body) x y (n * (T + 2) + 2) ∧
-        I s' y ∧ ¬cond.Holds y := by
-    intro n
-    induction n using Nat.strong_induction_on with
-    | ind n ih =>
-      intro s x hμ hI
-      by_cases hc : cond.Holds x
-      · obtain ⟨s₁, y, hy, hIy, hdec⟩ := hbody s x hI hc
-        obtain ⟨s₂, z, hz, hIz, hexit⟩ := ih (μ s₁) (by omega) s₁ y le_rfl hIy
-        refine ⟨s₂, z, (ExecWithin.loop_iter hc hy hz).mono ?_, hIz, hexit⟩
-        have hm := Nat.mul_le_mul_right (T + 2) (show μ s₁ + 1 ≤ n by omega)
-        rw [Nat.add_mul] at hm
-        omega
-      · exact ⟨s, x, (ExecWithin.loop_exit hc).mono (by omega), hI, hc⟩
-  exact aux (μ s) s x le_rfl hx
+  apply ExecWithin.loop_potential_state I (fun s => μ s * (T + 2)) ?_ hx
+  intro s x hI hc
+  obtain ⟨s', y, he, hIy, hdec⟩ := hbody s x hI hc
+  refine ⟨s', y, T, he, hIy, ?_⟩
+  have hpay := Nat.mul_le_mul_right (T + 2) (show μ s' + 1 ≤ μ s by omega)
+  simp only [Nat.add_mul, Nat.one_mul] at hpay
+  omega
 
 /-- Sum a state-dependent charge along a fixed semantic transition. -/
 def iterationSum {σ : Type*} (next : σ → σ) (charge : σ → ℕ) : ℕ → σ → ℕ

@@ -14,6 +14,7 @@ public import Complexity.Computability.WordRAM.Structured
 
 ## Main results
 
+* `Code.preserves_rename`: injective renaming retains a register preservation guarantee.
 * `Code.preserves_rename_of_forall_ne`: registers outside an embedded register bank are
   preserved without unfolding the subroutine's instruction graph.
 * `Code.preserves_rename_of_offset`: a contiguous bank preserves registers outside its interval.
@@ -22,6 +23,19 @@ public import Complexity.Computability.WordRAM.Structured
 public section
 
 namespace Cslib.WordRAM
+
+/-- An injectively embedded routine preserves the corresponding embedded register. -/
+theorem Code.preserves_rename {B : Basis} {r s : ℕ} {f : Fin r → Fin s}
+    (hf : f.Injective) {i : Fin r} {c : Code B r} (h : c.Preserves i) :
+    (c.rename f).Preserves (f i) := by
+  induction c with
+  | op o =>
+    cases o <;> simp only [Code.rename, Code.Preserves, Op.rename, Op.dest,
+      ne_eq, Option.some.injEq, hf.eq_iff, reduceCtorEq, not_false_eq_true] at h ⊢ <;> exact h
+  | seq a b iha ihb => exact ⟨iha h.1, ihb h.2⟩
+  | branch cond pos neg ihp ihn => exact ⟨ihp h.1, ihn h.2⟩
+  | loop cond body ih => exact ih h
+  | rand dst src => simpa only [Code.rename, Code.Preserves, ne_eq, hf.eq_iff] using h
 
 /-- A renamed subroutine cannot write a register outside the image of its register embedding.
 This generalizes the former private framing rule of the fusion-node register banks. -/

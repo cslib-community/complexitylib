@@ -99,8 +99,9 @@ theorem live_transition {a : Arena} {w : ℕ} {target : List Node}
   have htablep : p.regs outputs + p.regs outputCount < a.floor := by
     rw [hc.2.2.2.2.2.2.1, pc]
     exact htable
-  obtain ⟨v, hv, ⟨em⟩⟩ := emit_admitted p e ha hw hc hl (h.valid e (by simp))
-    (oldStored e (by simp)) oldBitmap hfloor hheap (oldEnds e (by simp)) (by omega)
+  obtain ⟨v, hv₀, ⟨em⟩⟩ := emit_admitted true p e ha hw hc hl (h.valid e (by simp))
+    (oldStored e (by simp)) oldBitmap hfloor hheap (oldEnds e (by simp)) (fun _ => by omega)
+  have hv : ExecWithin (w + 2) visit p v (visitTime a.n a.m a.N) := by simpa using hv₀
   let s : Cursor := ⟨em.children ++ es, ns ++ [((recordLayout p em.M).packed,
     e.task.node (Nat.primesLE a.m) a.Λ)]⟩
   have mathStep := em.math_step es hf hn
@@ -121,7 +122,10 @@ theorem live_transition {a : Arena} {w : ℕ} {target : List Node}
     omega
   have vcontrols := em.controls hc
   have vstack := em.stack ha hc (hv.bounded (hp.bounded h.bounded))
-    (es.flatMap Entry.words) hstack (by omega)
+    (es.flatMap Entry.words) hstack (by
+      have hs := ha.2.1
+      have hf := ha.2.2.1
+      omega)
   obtain ⟨y, hy, hystack, hyframe, hyr⟩ := pushChildren_exec v (es.flatMap Entry.words)
     (hv.bounded (hp.bounded h.bounded)) vcontrols.2.2.2.2.2.2.2.2.2.2 h2 hcap vstack capacity
   have yreg (i : Fin 128) (hi : 71 ≤ i.val) (hi' : i.val < 96) :
@@ -192,7 +196,7 @@ theorem live_transition {a : Arena} {w : ℕ} {target : List Node}
     rw [ph] at heapAllocation
     omega
   · rw [yreg outputCount (by decide) (by decide), em.count, pc]
-    simp only [s, List.length_append, List.length_singleton]
+    simp only [s, List.length_append, List.length_singleton, Bool.toNat_true]
   · have hb := h.tableBudget
     change ns.length + (Cursor.mk (e :: es) ns).work ≤ a.outputCapacity at hb
     change (ns ++ [_]).length + s.work ≤ a.outputCapacity
