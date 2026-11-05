@@ -43,6 +43,12 @@ Priorities live in this list and in the tiers of [#897].
 
 ## Cryptography
 
+The original STOC experiment's remaining secret-sharing main results are tracked in
+[issue 2524](https://github.com/cslib-community/complexitylib/issues/2524): arbitrary-party
+two-out-of-$n$ and $r$-out-of-$r$ separations with exact source bounds and tight extraction
+constants (STOC submission 886, Theorems 1.2, 4.1 and 5.1). The current two-party
+Theorem 1.1 does not complete those advertised threshold extensions.
+
 ### Cryptographic landmarks
 
 - **Completeness of oblivious transfer.** In the ideal OT-hybrid model, every polynomial-time

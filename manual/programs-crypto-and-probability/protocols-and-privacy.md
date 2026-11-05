@@ -137,6 +137,12 @@ field-operation bounds, with no bit-level runtime claim for arithmetic or encodi
 The existing upstream `Scheme`
 fixes one generator, whereas this endpoint quantifies over a class of generator laws.
 
+This currently covers Theorem 1.1's two-party separation. The abstract also advertises
+Theorem 1.2's two-out-of-$n$ and $r$-out-of-$r$ constructions, expanded in Theorems 4.1
+and 5.1, with their matching extractor upper bounds. Those supplementary main results,
+including tightness of the two-party $1/6$ constant, remain unproved here. Track them in
+[issue 2524](https://github.com/cslib-community/complexitylib/issues/2524).
+
 The [checked clients](../../ComplexityTests/Crypto/ImperfectRandomness.lean) instantiate the
 four-element field, show both source-size endpoints, check concrete sharing rules, and apply
 the extraction obstruction. From the repository root after setup, run

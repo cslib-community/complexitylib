@@ -82,10 +82,14 @@ a Pareto improvement follows from nonnegative affine utility differences, with o
 positive constant difference. The witnesses are the paper's trades and their symmetries or
 a swap of the two large goods. Kernel reduction verifies the finite certificates; algebra
 then establishes their validity for every $K\ge6$. No upper bound on $K$ is checked or assumed.
-The [approximation client](../../ComplexityTests/GameTheory/EFXApproximation.lean) checks an
+The [approximation client](../../ComplexityTests/GameTheory/EFXApproximation.lean) checks a
 complete EFX allocation throughout the family, an actual strict improvement at $K=6$,
 failure of EFX when one agent receives everything, factors $3/4$ and $667/1000$ at $K=13$ and $K=3001$, and arbitrary real-factor use.
 From the repository root, run
 `scripts/build.sh ComplexityTests.GameTheory.EFXApproximation` to check it.
+
+The EFX formalization covers the paper's two primary theorems. It does not yet cover
+Appendix A's nondegenerate valuation variant or separately establish the eight-good
+$6/7$ strengthening. These ancillary claims are distinct from the main-results coverage.
 
 [lean-validation]: ../sources.md#lean-validation
