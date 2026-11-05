@@ -97,7 +97,7 @@ caught at column `j` with probability `1 - 1 / |F|` (`toOuterMeasure_ligeroRowCo
   Applications*][KateZaveruchaGoldberg2010]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols
 
@@ -129,7 +129,7 @@ variable {Poly Randomness Point F Commit Proof : Type u}
   (S : PolyCommitScheme Poly Randomness Point F Commit Proof)
 
 /-- The proposition that the verifier accepts opening `(y, π)` for commitment `c` at point `z`. -/
-def AcceptsEval (c : Commit) (z : Point) (y : F) (π : Proof) : Prop :=
+@[expose] def AcceptsEval (c : Commit) (z : Point) (y : F) (π : Proof) : Prop :=
   S.verifyEval c z y π = true
 
 instance (c : Commit) (z : Point) (y : F) (π : Proof) : Decidable (S.AcceptsEval c z y π) :=
@@ -138,37 +138,37 @@ instance (c : Commit) (z : Point) (y : F) (π : Proof) : Decidable (S.AcceptsEva
 /-- Evaluation completeness: for every valid polynomial `p`, commitment randomness `r`, and query
 point `z`, the honest opening proof `(openEval p r z).2` is accepted for the true evaluation
 `eval p z` on `commit p r`. -/
-def EvalComplete : Prop :=
+@[expose] def EvalComplete : Prop :=
   ∀ p r z, S.ValidPoly p →
     S.verifyEval (S.commit p r) z (S.eval p z) (S.openEval p r z).2 = true
 
 /-- Honest opening value correctness: the value component of `openEval p r z` is `eval p z`. -/
-def OpenValueCorrect : Prop :=
+@[expose] def OpenValueCorrect : Prop :=
   ∀ p r z, S.ValidPoly p → (S.openEval p r z).1 = S.eval p z
 
 /-- Commitment binding: no two distinct valid polynomials produce the same commitment. -/
-def CommitmentBinding : Prop :=
+@[expose] def CommitmentBinding : Prop :=
   ∀ p₁ r₁ p₂ r₂, S.ValidPoly p₁ → S.ValidPoly p₂ →
     S.commit p₁ r₁ = S.commit p₂ r₂ → p₁ = p₂
 
 /-- Witness-extracting commitment binding: from any two distinct valid polynomials with the same
 commitment, `extract` recovers a witness satisfying `Collision` (such as a hash collision or
 discrete-logarithm relation). -/
-def CommitmentBindingExtract {Witness : Type*} (Collision : Witness → Prop)
+@[expose] def CommitmentBindingExtract {Witness : Type*} (Collision : Witness → Prop)
     (extract : Poly → Randomness → Poly → Randomness → Witness) : Prop :=
   ∀ p₁ r₁ p₂ r₂, S.ValidPoly p₁ → S.ValidPoly p₂ →
     p₁ ≠ p₂ → S.commit p₁ r₁ = S.commit p₂ r₂ → Collision (extract p₁ r₁ p₂ r₂)
 
 /-- Evaluation binding: at any query point `z`, no commitment `c` has two accepting openings
 `(y₁, π₁)` and `(y₂, π₂)` for distinct values `y₁ ≠ y₂`. -/
-def EvaluationBinding : Prop :=
+@[expose] def EvaluationBinding : Prop :=
   ∀ c z y₁ π₁ y₂ π₂,
     S.verifyEval c z y₁ π₁ = true → S.verifyEval c z y₂ π₂ = true → y₁ = y₂
 
 /-- Witness-extracting evaluation binding: from any two accepting openings `(y₁, π₁)` and `(y₂, π₂)`
 of the same commitment `c` at point `z` with `y₁ ≠ y₂`, `extract` recovers a witness satisfying
 `Collision`. -/
-def EvaluationBindingExtract {Witness : Type*} (Collision : Witness → Prop)
+@[expose] def EvaluationBindingExtract {Witness : Type*} (Collision : Witness → Prop)
     (extract : Commit → Point → F → Proof → F → Proof → Witness) : Prop :=
   ∀ c z y₁ π₁ y₂ π₂, y₁ ≠ y₂ →
     S.verifyEval c z y₁ π₁ = true → S.verifyEval c z y₂ π₂ = true →
@@ -221,7 +221,7 @@ theorem EvaluationBinding.evaluationBindingExtract (hbind : S.EvaluationBinding)
 /-- The canonical transparent degree-bounded polynomial commitment scheme over `Polynomial F`, in
 which the commitment is the polynomial itself and verification checks the degree bound and direct
 evaluation. -/
-def direct (F : Type) [CommSemiring F] [DecidableEq F] (d : ℕ) :
+@[expose] def direct (F : Type) [CommSemiring F] [DecidableEq F] (d : ℕ) :
     PolyCommitScheme (Polynomial F) Unit F F (Polynomial F) Unit where
   eval p z := p.eval z
   ValidPoly p := p.natDegree ≤ d
@@ -269,7 +269,7 @@ def linearCombAddHom [Semiring F] (d : ι → F) : (ι → F) →+ F where
 omit [DecidableEq ι] in
 @[simp]
 theorem linearCombAddHom_apply [Semiring F] (d r : ι → F) :
-    linearCombAddHom d r = ∑ i, r i * d i :=
+    linearCombAddHom d r = ∑ i, r i * d i := by
   rfl
 
 omit [DecidableEq ι] in
@@ -292,8 +292,8 @@ theorem linearCombAddHom_surjective [Field F] {d : ι → F} {i₀ : ι} (hd : d
 `r : ι → F` over a finite field, `∑ i, r i * d i` is uniformly distributed on `F`. -/
 theorem uniformOfFintype_map_linearComb [Field F] [Fintype F] {d : ι → F} {i₀ : ι}
     (hd : d i₀ ≠ 0) :
-    (PMF.uniformOfFintype (ι → F)).map (fun r => ∑ i, r i * d i) = PMF.uniformOfFintype F :=
-  Cslib.Probability.PMF.uniformOfFintype_map_addHom (linearCombAddHom d)
+    (PMF.uniformOfFintype (ι → F)).map (fun r => ∑ i, r i * d i) = PMF.uniformOfFintype F := by
+  exact Cslib.Probability.PMF.uniformOfFintype_map_addHom (linearCombAddHom d)
     (linearCombAddHom_surjective hd)
 
 /-- If `d i₀ ≠ 0`, a uniform random linear combination `∑ i, r i * d i` hits any fixed target
@@ -331,14 +331,14 @@ abbrev BatchEvalClaim (k : ℕ) (F : Type) : Type := (Fin k → F) × F
 
 /-- The input relation for batching `k` evaluation claims at `z`: all `k` claimed values `y i` match
 `eval (p i) z`. -/
-def batchEvalRelIn (eval : Poly → Point → F) (p : Fin k → Poly) (z : Point) :
+@[expose] def batchEvalRelIn (eval : Poly → Point → F) (p : Fin k → Poly) (z : Point) :
     (Fin k → F) → Unit → Prop :=
   fun y _ => ∀ i, eval (p i) z = y i
 
 /-- The output relation after sampling the batching weights `r : Fin k → F`: the single linear
 combination `∑ i, r i * eval (p i) z` equals the batched value. -/
-def batchEvalRelOut [Semiring F] (eval : Poly → Point → F) (p : Fin k → Poly) (z : Point) :
-    BatchEvalClaim k F → Unit → Prop :=
+@[expose] def batchEvalRelOut [Semiring F] (eval : Poly → Point → F) (p : Fin k → Poly)
+    (z : Point) : BatchEvalClaim k F → Unit → Prop :=
   fun c _ => (∑ i, c.1 i * eval (p i) z) = c.2
 
 /-- If `eval (p i₀) z ≠ y i₀` for some `i₀ : Fin k`, then over uniform `r : Fin k → F`, the
@@ -382,7 +382,7 @@ noncomputable def batchEvalReduction [Field F] [Fintype F] (_eval : Poly → Poi
 
 theorem batchEvalReduction_outputOn [Field F] [Fintype F] (eval : Poly → Point → F)
     (p : Fin k → Poly) (z : Point) (y : Fin k → F) (τ : Transcript (batchEvalSpec k F)) :
-    (batchEvalReduction eval p z).verifier.outputOn y τ = some (τ.1, ∑ i, τ.1 i * y i) :=
+    (batchEvalReduction eval p z).verifier.outputOn y τ = some (τ.1, ∑ i, τ.1 i * y i) := by
   rfl
 
 /-- **Completeness of random linear combination batching**: when all `k` claimed evaluations are
@@ -445,7 +445,8 @@ variable {F : Type} {m l n : ℕ}
 /-- The Ligero prover's row linear combination `v = r ᵥ* U : Fin l → F` for challenge vector
 `r : Fin m → F` and witness matrix `U : Matrix (Fin m) (Fin l) F` [Ames, Hazay, Ishai and
 Venkitasubramaniam][AmesHazayIshaiVenkitasubramaniam2017]. -/
-def ligeroRowComb [Semiring F] (r : Fin m → F) (U : Matrix (Fin m) (Fin l) F) : Fin l → F :=
+@[expose] def ligeroRowComb [Semiring F] (r : Fin m → F) (U : Matrix (Fin m) (Fin l) F) :
+    Fin l → F :=
   r ᵥ* U
 
 /-- **Ligero row-combination completeness identity**: encoding the row linear combination
@@ -472,18 +473,19 @@ theorem ligeroRowComb_mul_eq_sum [CommSemiring F] (r : Fin m → F) (U : Matrix 
 
 /-- Target bilinear evaluation `(b ᵥ* U) ⬝ᵥ c` of a witness matrix `U : Matrix (Fin m) (Fin l) F` at
 outer-product query vectors `b : Fin m → F` and `c : Fin l → F`. -/
-def ligeroEval [Semiring F] (U : Matrix (Fin m) (Fin l) F) (b : Fin m → F) (c : Fin l → F) : F :=
+@[expose] def ligeroEval [Semiring F] (U : Matrix (Fin m) (Fin l) F) (b : Fin m → F)
+    (c : Fin l → F) : F :=
   ligeroRowComb b U ⬝ᵥ c
 
 /-- The Ligero verifier's column check at column `j : Fin n`: the `j`-th coordinate of the encoded
 response `v ᵥ* G` matches the `r`-linear combination of column `j` of the oracle matrix `M`. -/
-def ligeroColumnCheck [Semiring F] [DecidableEq F] (G : Matrix (Fin l) (Fin n) F)
+@[expose] def ligeroColumnCheck [Semiring F] [DecidableEq F] (G : Matrix (Fin l) (Fin n) F)
     (M : Matrix (Fin m) (Fin n) F) (r : Fin m → F) (v : Fin l → F) (j : Fin n) : Bool :=
   decide ((v ᵥ* G) j = (r ᵥ* M) j)
 
 /-- The Ligero verifier's combined evaluation and column check at column `j : Fin n` for a linear
 evaluation claim `(b, c, w)`: checks both `v ⬝ᵥ c = w` and `(v ᵥ* G) j = (b ᵥ* M) j`. -/
-def ligeroEvalCheck [Semiring F] [DecidableEq F] (G : Matrix (Fin l) (Fin n) F)
+@[expose] def ligeroEvalCheck [Semiring F] [DecidableEq F] (G : Matrix (Fin l) (Fin n) F)
     (M : Matrix (Fin m) (Fin n) F) (b : Fin m → F) (c : Fin l → F) (w : F) (v : Fin l → F)
     (j : Fin n) : Bool :=
   decide (v ⬝ᵥ c = w ∧ (v ᵥ* G) j = (b ᵥ* M) j)
@@ -560,7 +562,7 @@ structure LigeroMatrixIOP (F : Type) (m l n : ℕ) where
 namespace LigeroMatrixIOP
 
 /-- All rows of `M` at column `j` equal the encoded rows of `U`. -/
-def RowConsistentAt [Semiring F] (L : LigeroMatrixIOP F m l n) (j : Fin n) : Prop :=
+@[expose] def RowConsistentAt [Semiring F] (L : LigeroMatrixIOP F m l n) (j : Fin n) : Prop :=
   ∀ i : Fin m, L.M i j = ((L.U i) ᵥ* L.G) j
 
 /-- The round specification of a Ligero row-consistency check: the verifier sends a uniform
@@ -570,12 +572,12 @@ abbrev spec (m l : ℕ) (F : Type) : Spec :=
 
 /-- The input relation at column `j`: the purported matrix `M` is row-consistent with `U * G` at
 column `j`. -/
-def relIn [Semiring F] (L : LigeroMatrixIOP F m l n) : Fin n → Unit → Prop :=
+@[expose] def relIn [Semiring F] (L : LigeroMatrixIOP F m l n) : Fin n → Unit → Prop :=
   fun j _ => L.RowConsistentAt j
 
 /-- The output relation of the Ligero column reduction: the prover's response `v` equals the true
 row combination `ligeroRowComb r L.U`. -/
-def relOut [Semiring F] (L : LigeroMatrixIOP F m l n) :
+@[expose] def relOut [Semiring F] (L : LigeroMatrixIOP F m l n) :
     ((Fin m → F) × (Fin l → F)) → Unit → Prop :=
   fun rv _ => rv.2 = ligeroRowComb rv.1 L.U
 
@@ -602,9 +604,9 @@ noncomputable def columnReduction [Field F] [Fintype F] [DecidableEq F]
         return if ligeroColumnCheck L.G L.M c.1 v j then some (c.1, v) else none }
 
 theorem columnReduction_outputOn [Field F] [Fintype F] [DecidableEq F]
-    (L : LigeroMatrixIOP F m l n) (j : Fin n) (τ : Transcript (spec m l F)) :
-    L.columnReduction.verifier.outputOn j τ =
-      if ligeroColumnCheck L.G L.M τ.1 τ.2.1 j then some (τ.1, τ.2.1) else none :=
+    (L : LigeroMatrixIOP F m l n) (j : Fin n) (r : Fin m → F) (v : Fin l → F) :
+    L.columnReduction.verifier.outputOn j (r, v, ()) =
+      if ligeroColumnCheck L.G L.M r v j then some (r, v) else none := by
   rfl
 
 /-- **Completeness of the Ligero column reduction**: if `L.M` is row-consistent with `L.U * L.G` at
@@ -623,7 +625,7 @@ theorem columnReduction_complete [Field F] [Fintype F] [DecidableEq F]
     rw [Matrix.vecMul_apply_eq_sum r L.M j]
     exact (Finset.sum_congr rfl fun i _ => by rw [hj i]).symm
   refine (PMF.toOuterMeasure_pure_apply _ _).trans (ite_eq_right fun h => h ⟨?_, rfl⟩)
-  exact (L.columnReduction_outputOn j _).trans (ite_eq_left hchk)
+  exact (L.columnReduction_outputOn j r (ligeroRowComb r L.U)).trans (ite_eq_left hchk)
 
 /-- **Round-by-round soundness of the Ligero column reduction**: if column `j` has any inconsistent
 row `L.M i₀ j ≠ ((L.U i₀) ᵥ* L.G) j`, then any prover produces an accepted transcript in
