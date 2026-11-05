@@ -196,7 +196,8 @@ families and full-input native runtime.
   and transport joint-state mixtures through the existing
   ROM game ([#2652]). The word-forger adapter ([#2636]) now has an efficient full-input guarded
   replay and exact shared-world/EUF-CMA equality with separate signing/hash channels. Applying it
-  to Schnorr's encoded query space and realizing the complete efficient reduction remain open.
+  to Schnorr's encoded query space for deterministic descriptions is covered below; random-setup
+  routing and the complete efficient reduction remain open.
 - **Lattices**: full random-oracle EUF-CMA signatures from SIS (Lyubashevsky 2009,
   2012) remain open. Strict-PPT box sampling, bounded signing and negligible availability are
   proved. The public-key-only fork milestone ([#2620]) bounds accepting-fork probability by
@@ -221,8 +222,9 @@ families and full-input native runtime.
   instance now supplies completeness, special soundness on all word transcripts, perfect HVZK,
   commitment unpredictability and the finite ROM bound with every word hash query retained
   ([#2696](https://github.com/cslib-community/complexitylib/issues/2696)). Public keys remain actual
-  group elements and scalar sampling is ideal; native adapter composition, key-generation/signing
-  approximation transport and the complete efficient forking reduction remain open.
+  group elements and scalar sampling is ideal. The native adapter and statistical transport for
+  deterministic descriptions are covered below; random-setup routing and the complete efficient
+  forking reduction remain open.
 - **Native Schnorr ROM algorithms** ([#2708](https://github.com/cslib-community/complexitylib/issues/2708)):
   actual sampled signing and verification have full-input oracle-PPT certificates with bounded
   hash-reply reads. Joint signature/cache realization under typed `m`-bit replies is exact after
@@ -233,7 +235,13 @@ families and full-input native runtime.
   the existing word-key/outer-word scheme and canonical-key/word-pair scheme have equal ideal
   EUF-CMA games after an adapter preserving coins, both query budgets, the shared cache and message
   log. Total signature decoding retains accepted malformed outer words. Key and nonce laws remain
-  explicit; adaptive actual-sampling replacement and full efficient forking remain [#2568].
+  explicit; actual sampling is handled by the separate statistical milestone below.
+- **Adaptive Schnorr sampling transport** ([#2764](https://github.com/cslib-community/complexitylib/issues/2764)):
+  actual nonce sampling costs at most `Qs/2^n` in the joint output/cache/log law, for arbitrary raw
+  secret keys and starting states. Adding actual whole-keypair sampling gives `(Qs+1)/2^n` between
+  the existing actual and ideal ROM games. The native forger corollary derives its polynomial
+  budget from actual key generation for explicit efficient deterministic descriptions. Random
+  setup routing, overall native composition and efficient forking remain [#2568].
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.

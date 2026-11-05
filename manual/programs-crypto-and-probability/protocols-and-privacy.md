@@ -283,9 +283,9 @@ extractor reuse the typed Schnorr laws, proving perfect HVZK, special soundness 
 challenges when `2 ^ m ≤ F.order d`, retaining all other hash words in the same cache. Its finite
 bound is `Qs*(Qs+Qro)/F.order d + (Qro+1)/2^m + sqrt((Qro+1)*ε')`, where `ε'` is the displayed
 forking reduction's discrete-log success. Key and signing scalars use ideal uniform laws. This
-completes the representation milestone [#2696](https://github.com/cslib-community/complexitylib/issues/2696);
-native saved-forger composition, the actual key-generation/signing `CloseTo` hops and efficient
-forking remain open. No guarantee is asserted for malformed public keys, and no group decoder is
+completes the representation milestone [#2696](https://github.com/cslib-community/complexitylib/issues/2696).
+The native adapter and statistical sampling transport are described below; random-setup routing
+and efficient forking remain open. No guarantee is asserted for malformed public keys, and no group decoder is
 assumed. Concrete scalar-alias extraction, rejected commitments, and distinct/repeated junk hash
 queries are checked in
 [`Crypto/SchnorrWordROM.lean`](../../ComplexityTests/Crypto/SchnorrWordROM.lean).
@@ -302,8 +302,9 @@ full-input replay and retains external state.
 [`Signature/WordRandomOracle.lean`](../../Complexity/Crypto/Computational/Signature/WordRandomOracle.lean)
 also gives a key-independent saved-coin adapter for actual Boolean-channel word forgers, with
 full-input native replay and equality of the existing shared-world and EUF-CMA games. All word
-hash payloads stay distinct. Applying that adapter to Schnorr's concrete query encoding, realizing
-the signer/hash handlers, and certifying the complete forking reduction remain open. See the
+hash payloads stay distinct. Its application to Schnorr for deterministic descriptions is given
+below; random-setup routing, overall native composition, and the complete efficient forking
+reduction remain open. See the
 checked algorithms and typed-ROM examples in
 [`ComplexityTests/Crypto/SchnorrSignature.lean`](../../ComplexityTests/Crypto/SchnorrSignature.lean).
 
@@ -343,8 +344,30 @@ rejected: `[true,true]` decodes to the identity commitment and zero response and
 the identity public key in the checked order-11 example. The regressions in
 [`Crypto/SchnorrEncodedROM.lean`](../../ComplexityTests/Crypto/SchnorrEncodedROM.lean) also retain
 distinct junk-cache entries and distinguish fresh from signed final messages. This completes the
-representation milestone #2742; adaptive actual-sampling error composition, the key-generation
-transport and the native efficient forking reduction remain #2568.
+representation milestone #2742; actual sampling is handled by the separate transport below.
+
+[`SchnorrSignature/StatisticalROM.lean`](../../Complexity/Crypto/Computational/SchnorrSignature/StatisticalROM.lean)
+composes the actual sampler laws through adaptive signing. For every raw secret-key word and
+starting typed cache/signing log, `closeTo_runWith_schnorrEncodedROMScheme` bounds the complete
+output/state distribution by `Qs / 2^n`. Hash requests have zero cost because their joint
+transitions are identical, including new cache entries. Repeated signing and arbitrary distinct
+junk queries remain allowed. `closeTo_eufCmaGame_schnorrEncodedROMScheme` first pays the actual
+whole-keypair error and then the signing error, comparing the existing actual game with the
+canonical ideal word game within `(Qs+1) / 2^n`. Final verification and message freshness use the
+same continuation; no coupling or approximate game hop is assumed.
+
+For an actual oracle-PPT word forger and an explicitly polynomial-time deterministic description
+function, `exists_closeTo_worldGame_schnorrEncodedROMScheme` obtains one native replay machine and
+parameter-only budget from actual key-generation support. It reuses
+`savedCoinBudget c e keyC keyD n = c * (2*n+2+keyC*(n+1)^keyD)^e`, already proved polynomial.
+The guard and tape cutoff bound every public key and saved tape, so the ideal-key hop requires no
+assumption that ideal keys occur in the actual generator's support. This completes the statistical
+milestone [#2764](https://github.com/cslib-community/complexitylib/issues/2764). It does not provide
+random-descriptor setup routing, an overall efficient setup/signer composition, or a native
+forking certificate; these remain #2568. The checked clients in
+[`Crypto/SchnorrStatisticalROM.lean`](../../ComplexityTests/Crypto/SchnorrStatisticalROM.lean) include
+hash-only zero cost, an adaptive full-state bound `1/8`, actual-game error `3/16`, and an actual
+native bounded-reply forger.
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest
