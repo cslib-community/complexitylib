@@ -189,7 +189,6 @@ theorem valid_of_mem_support_voleIdealDist [Fintype R] [Nonempty R]
   exact valid_voleSample u v delta
 
 /-- A correlation belongs to the support of `voleIdealDist R n` if and only if it is `Valid`. -/
-@[simp]
 theorem mem_support_voleIdealDist_iff [Fintype R] [Nonempty R] (c : VOLECorrelation R n) :
     c ∈ (voleIdealDist R n).support ↔ c.Valid := by
   constructor
