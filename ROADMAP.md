@@ -810,6 +810,13 @@ library. Use a growing, source-pinned sample of papers, including some chosen af
 designed, as demanding clients, and promote recurring obligations into shared APIs only after
 reuse is demonstrated.
 
+- **Finite weighted measure mixtures.** `Foundations/MeasureTheory/Measure/TotalVariation/Mixture`
+  bounds the existing full-L1 distance when both finite component measures and their nonnegative
+  weights change. It keeps the comparison components' total masses explicit, so neither
+  probability normalization nor equal masses are required. The tagged finite-PMF client supplies
+  the error-composition step for [#2767](https://github.com/cslib-community/complexitylib/issues/2767);
+  identifying and bounding the actual Regev conditional laws remains that separate consumer.
+
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
