@@ -125,7 +125,9 @@ families and full-input native runtime.
 ### Public-key, lattice and symmetric constructions ([#640])
 
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
-  log against strict PPT forgers. The arithmetic algorithms and exact typed ROM reduction are
+  log against strict PPT forgers. Word verification now enforces canonical commitments for canonical
+  public keys ([#2672](https://github.com/cslib-community/complexitylib/issues/2672)).
+  The arithmetic algorithms and exact typed ROM reduction are
   proved; strict-PPT identification and eavesdropping results do not discharge this signature
   endpoint. Remaining work includes shared encoded signing/hash access, final-message freshness,
   and a polynomial-time private-coin replay/forking realization ([#2568]). The native saved-coin
