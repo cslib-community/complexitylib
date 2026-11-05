@@ -69,6 +69,28 @@ includes one-edge paths, empty terms, failed predicates, unused variables and
 a general three-variable count identity. This is an algebraic reduction;
 no external subexponential SAT theorem or native runtime bound is assumed.
 
+## Original-row selection
+
+Import [`RowSelection`](../../Complexity/Foundations/LinearAlgebra/RowSelection.lean)
+and open `Cslib.LinearSystem`. Supply coefficient rows `A`, right-hand side `b`,
+and an actual rational solution `x₀` to `exists_original_rows`. It returns a finite
+subset of original row indices, independent coefficient rows, the same rational
+solution set, and selected cardinality equal to the row-space dimension.
+`exists_original_rows_of_two_solutions` takes two distinct rational solutions and
+proves that the selected cardinality is strictly below the number of columns.
+`solution_eq_of_span_eq_top` handles uniqueness when the rows span the column space.
+The [checked client](../../ComplexityTests/PaperEndpoints/RowSelection.lean) uses five
+repeated exact-one equations, an unused column, two distinct solutions, and an
+inconsistent system that cannot supply the required witness.
+
+This is the algebraic row-selection step of STOC submission 1575, Lemma 3.1
+(PDF pp. 10–11). It is not an elimination implementation or a polynomial bit-time
+certificate. The complete exact-one-to-query construction, local VC-dimension-one
+table representation and advertised runtime remain open. In particular, the
+[native counting endpoint](../machines-and-classes/native-counting.md) currently
+has a weaker exponent with an additional $\log\log$ factor; it cannot establish
+the sharper quantitative bound by direct substitution.
+
 ## Known Limitations
 
 The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.

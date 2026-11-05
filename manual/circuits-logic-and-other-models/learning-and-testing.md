@@ -48,6 +48,30 @@ supply an integral-stability algorithm. The
 [checked client](../../ComplexityTests/PaperEndpoints/NonRange.lean) also constructs
 an empty lifted-plane range, distinguishing the range notion from the failed optimum.
 
+## Weighted least-squares monotonicity and rounding
+
+Import [`Monotone`](../../Complexity/Statistics/LeastSquares/Monotone.lean) and open
+`Cslib.LeastSquares`. A base Gram matrix `G` and normal-equation right-hand side `g`
+represent fixed observations. `rankOneEstimate G g x y a` is the actual estimate
+$(G+a x x^\top)^{-1}(g+a x y)$ for one added observation.
+Supply `hG : G.PosDef` and a nonnegative weight to `rankOneEstimate_eq` for its
+Sherman–Morrison formula. `rankOneEstimate_monotone_or_antitone` covers every linear
+target `e`; the direction depends on the data and target.
+
+For a finite set of observations `s`, `weightedEstimate` adds their contributions
+to the fixed base. `exists_round_weights` rounds weights in $[0,1]$ to endpoints
+without increasing the target. `exists_round_weights_loss_lt` bounds lost mass
+strictly below any positive `k` bounding the number of genuinely fractional weights.
+Both require the fixed base itself to be positive definite, even after all variable
+observations are removed. The [checked client](../../ComplexityTests/PaperEndpoints/MonotoneRounding.lean)
+includes different endpoint estimates and two observations with opposite responses.
+
+These are the monotonicity and rounding steps of STOC submission 1326, Lemma 3.1,
+Theorem 3.3 and Remark 3.5 (PDF pp. 6–7). They do not yet prove the full general-position
+stability theorem: sparse-optimum existence, attainment, and deriving a spanning
+backbone from retained mass at least $2d$ remain necessary. A caller cannot infer
+those hypotheses merely from feasibility of the original weighted estimate.
+
 ## Known Limitations
 
 The examples use semantic hypotheses and real probability/analysis. These results provide formal sample/query guarantees and formal bridges to PAC/query models. Claims of polynomial native training time or succinct executable output hypotheses require separate resource theorems. Keep these limitations in view when choosing a learning model: the notions of efficiency differ.
