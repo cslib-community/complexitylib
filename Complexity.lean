@@ -3159,6 +3159,7 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Efficient
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Efficient
+public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Extraction
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Failure
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Parameters
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
@@ -4255,6 +4256,7 @@ public import Complexity.Probability.Fooling
 public import Complexity.Probability.Fooling.OneSided
 public import Complexity.Probability.Forking
 public import Complexity.Probability.Guessing
+public import Complexity.Probability.Guessing.Leakage
 public import Complexity.Probability.HashFamily
 public import Complexity.Probability.HashFamily.MultiplyShift
 public import Complexity.Probability.HashFamily.Polynomial
