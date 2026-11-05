@@ -55,7 +55,8 @@ example {X Y T C Z M : Type} [DecidableEq M] [DecidableEq T]
     (x : X) (y : Y) (msg : M) (cache : List ((M × T) × C)) :
     CloseTo
       ((P.commit x y).bind fun coin =>
-        (interpret (oracle C) ((fiatShamir P keyGen).sign (x, y) msg coin)).run cache)
+        (interpret (oracle C)
+          ((fiatShamir (Function.Embedding.refl _) P keyGen).sign (x, y) msg coin)).run cache)
       ((P.commit x y).bind fun coin => (PMF.uniformOfFintype C).map fun c =>
         ((coin.1, P.respond x y coin.2 c), ((msg, coin.1), c) :: cache))
       ((P.commit x y).toOuterMeasure {coin | (cache.lookup (msg, coin.1)).isSome}) := by
