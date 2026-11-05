@@ -31,7 +31,11 @@ Because `(idx % w) * k ≤ (w - 1) * w < 2^w` holds for every word width `w ≥ 
 
 Each `k`-bit entry at `(wOff, bOff)` splits into `lowWidth = min k (w - bOff)` low bits at offset
 `bOff` of word `base + wOff` and `highWidth = k - lowWidth` high bits at offset `0` of word
-`base + wOff + 1`, updated in place via bitwise XOR.
+`base + wOff + 1`, updated in place via bitwise XOR. Unlike single-word packing primitives such as
+`QuotientFilter`'s `extractPacked`/`writePackedMem` or `Cslib.BitString.readPackedField` (which pack
+`⌊w / k⌋` entries per word without crossing word boundaries and thus waste up to half of each word
+when `k > w / 2`), allowing entries to straddle adjacent words achieves the tight `⌈N * k / w⌉ + 2`
+word bound needed for succinctness.
 
 ## Main definitions
 
@@ -45,6 +49,8 @@ Each `k`-bit entry at `(wOff, bOff)` splits into `lowWidth = min k (w - bOff)` l
 
 ## Main results
 
+* `div_add_packedWords_le`, `packedWords_add_le`, `div_add_mul_packedWords_le`: ceiling-division
+  subadditivity bounds for `packedWords`.
 * `pred_mul_self_lt_two_pow`, `mod_mul_lt_two_pow`: `(w - 1) * w < 2 ^ w` and
   `(idx % w) * k < 2 ^ w` for all `w ≥ 1` and `k ≤ w`.
 * `wordOffset_eq_mul_div`, `bitOffset_eq_mul_mod`: equivalence of the overflow-free formula with
@@ -67,6 +73,53 @@ The `+ 2` slack ensures that for every `idx < N`, both `wordOffset k w idx` and
 @[expose]
 def packedWords (N k w : ℕ) : ℕ :=
   (N * k + w - 1) / w + 2
+
+/-- Adding an auxiliary bit-packed array `packedWords N_aux k_aux w` to an existing word bound
+`((B + w - 1) / w) + C₀` increases the bit numerator to `B + N_aux * k_aux` and the additive word
+constant by at most `3`. -/
+theorem div_add_packedWords_le (B C₀ N_aux k_aux w : ℕ) :
+    ((B + w - 1) / w + C₀) + packedWords N_aux k_aux w ≤
+      (B + N_aux * k_aux + w - 1) / w + (C₀ + 3) := by
+  unfold packedWords
+  rcases Nat.eq_zero_or_pos w with rfl | hw
+  · simp
+  · have hdiv : (B + w - 1) / w + (N_aux * k_aux + w - 1) / w ≤
+        (B + N_aux * k_aux + w - 1) / w + 1 := by
+      have h1 := Nat.div_add_mod (B + w - 1) w
+      have h2 := Nat.div_add_mod (N_aux * k_aux + w - 1) w
+      have h3 := Nat.div_add_mod (B + N_aux * k_aux + w - 1) w
+      have hm3 : (B + N_aux * k_aux + w - 1) % w < w := Nat.mod_lt _ hw
+      have hlt :
+          w * ((B + w - 1) / w + (N_aux * k_aux + w - 1) / w) <
+            w * ((B + N_aux * k_aux + w - 1) / w + 2) := by
+        rw [Nat.left_distrib, Nat.left_distrib, Nat.mul_two]
+        omega
+      have hlt' := (Nat.mul_lt_mul_left hw).mp hlt
+      omega
+    omega
+
+/-- Ceiling-division subadditivity for `packedWords`:
+`packedWords N₁ k₁ w + packedWords N₂ k₂ w ≤ (N₁ * k₁ + N₂ * k₂ + w - 1) / w + 5`. -/
+theorem packedWords_add_le (N₁ k₁ N₂ k₂ w : ℕ) :
+    packedWords N₁ k₁ w + packedWords N₂ k₂ w ≤
+      (N₁ * k₁ + N₂ * k₂ + w - 1) / w + 5 :=
+  div_add_packedWords_le (N₁ * k₁) 2 N₂ k₂ w
+
+/-- Adding `c` copies of `packedWords N_aux k_aux w` increases the bit numerator to
+`B + (c * N_aux) * k_aux` and the additive word constant by at most `3 * c`. -/
+theorem div_add_mul_packedWords_le (c B C₀ N_aux k_aux w : ℕ) :
+    ((B + w - 1) / w + C₀) + c * packedWords N_aux k_aux w ≤
+      (B + (c * N_aux) * k_aux + w - 1) / w + (C₀ + 3 * c) := by
+  induction c generalizing B C₀ with
+  | zero => simp
+  | succ c ih =>
+    have h1 := div_add_packedWords_le B C₀ N_aux k_aux w
+    have h2 := ih (B + N_aux * k_aux) (C₀ + 3)
+    have hmul : (c + 1) * packedWords N_aux k_aux w =
+        packedWords N_aux k_aux w + c * packedWords N_aux k_aux w := by ring
+    have hB : B + N_aux * k_aux + (c * N_aux) * k_aux = B + ((c + 1) * N_aux) * k_aux := by ring
+    rw [hB] at h2
+    omega
 
 /-- Overflow-free word offset `(idx / w) * k + ((idx % w) * k) / w`, equal to `(idx * k) / w`. -/
 @[expose]

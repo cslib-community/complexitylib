@@ -10,10 +10,13 @@ module
 public import Complexity.Init
 public import Complexity.DataStructure.Dictionary.Dynamic.Spec
 public import Complexity.Probability.KWiseIndependent
+public import Mathlib.Data.LawfulXor.Equiv
 public import Mathlib.Data.Nat.Choose.Basic
 public import Mathlib.Data.Nat.Factorial.Basic
 public import Mathlib.Data.Nat.Log
 import Complexity.Foundations.Data.Finset.Expect
+import Complexity.Foundations.Data.Nat.Choose
+import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Data.Rat.Cast.Lemmas
@@ -21,7 +24,6 @@ import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
-import Mathlib.Tactic.Zify
 
 /-!
 # One-round Feistel quotienting and universal succinct bit accounting
@@ -150,24 +152,10 @@ theorem quotientBits_add_bucketBits {U n : ℕ} (hnU : n ≤ U) :
     quotientBits U n + bucketBits n = keyBits U :=
   Nat.sub_add_cancel (bucketBits_le_keyBits hnU)
 
-/-- If `U ≤ 2 ^ w`, then `keyBits U ≤ w`. -/
-theorem keyBits_le_of_le_pow {U w : ℕ} (hU : U ≤ 2 ^ w) :
-    keyBits U ≤ w := by
-  unfold keyBits
-  calc Nat.clog 2 U ≤ Nat.clog 2 (2 ^ w) := Nat.clog_mono_right 2 hU
-    _ = w := Nat.clog_pow 2 w (by decide)
-
 /-- If `U ≤ 2 ^ w`, then `quotientBits U n ≤ w`. -/
 theorem quotientBits_le_of_le_pow {U w n : ℕ} (hU : U ≤ 2 ^ w) :
     quotientBits U n ≤ w :=
-  (Nat.sub_le _ _).trans (keyBits_le_of_le_pow hU)
-
-/-- If `V ≤ 2 ^ w`, then `valBits V ≤ w`. -/
-theorem valBits_le_of_le_pow {V w : ℕ} (hV : V ≤ 2 ^ w) :
-    valBits V ≤ w := by
-  unfold valBits
-  calc Nat.clog 2 V ≤ Nat.clog 2 (2 ^ w) := Nat.clog_mono_right 2 hV
-    _ = w := Nat.clog_pow 2 w (by decide)
+  (Nat.sub_le _ _).trans (Nat.clog_le_of_le_pow hU)
 
 /-- For every `n`, `n ≤ 2 ^ (bucketBits n + 3 * Dynamic.logLogFactor n + 1)`. -/
 theorem le_two_pow_bucketBits_add (n : ℕ) :
@@ -284,47 +272,10 @@ theorem feistelBucket_ne_of_keyQuotient_eq_of_ne {b : ℕ} {h1 : ℕ → ℕ} {u
 
 /-! ## Section 3: Universal quotienting bit accounting against `Dynamic.optBits` -/
 
-/-- Auxiliary descending-factorial inequality: for all `k ≤ n` and `n ≤ U`,
-`U ^ k * n.descFactorial k ≤ n ^ k * U.descFactorial k`. -/
-theorem pow_mul_descFactorial_le {U n : ℕ} (hnU : n ≤ U) :
-    ∀ k ≤ n, U ^ k * n.descFactorial k ≤ n ^ k * U.descFactorial k
-  | 0, _ => by simp
-  | k + 1, hk => by
-    have hkn : k ≤ n := by omega
-    have hkU : k ≤ U := by omega
-    have ih := pow_mul_descFactorial_le hnU k hkn
-    have hstep : U * (n - k) ≤ n * (U - k) := by
-      zify [hkn, hkU]
-      nlinarith
-    rw [Nat.pow_succ', Nat.descFactorial_succ, Nat.pow_succ', Nat.descFactorial_succ]
-    calc U * U ^ k * ((n - k) * n.descFactorial k)
-        = (U ^ k * n.descFactorial k) * (U * (n - k)) := by ring
-      _ ≤ (n ^ k * U.descFactorial k) * (n * (U - k)) := Nat.mul_le_mul ih hstep
-      _ = n * n ^ k * ((U - k) * U.descFactorial k) := by ring
-
 /-- For all `n ≤ U`, `U ^ n ≤ n ^ n * U.choose n`. -/
 theorem pow_le_pow_mul_choose {U n : ℕ} (hnU : n ≤ U) :
     U ^ n ≤ n ^ n * U.choose n := by
-  have h := pow_mul_descFactorial_le hnU n (le_refl n)
-  rw [Nat.descFactorial_self, Nat.descFactorial_eq_factorial_mul_choose] at h
-  have h' : U ^ n * n.factorial ≤ (n ^ n * U.choose n) * n.factorial := by
-    linarith
-  exact Nat.le_of_mul_le_mul_right h' (Nat.factorial_pos n)
-
-/-- For every `1 ≤ U`, `2 ^ (keyBits U) ≤ 2 * U`. -/
-theorem two_pow_keyBits_le_two_mul {U : ℕ} (hU : 1 ≤ U) :
-    2 ^ keyBits U ≤ 2 * U := by
-  unfold keyBits
-  rcases eq_or_lt_of_le hU with rfl | hlt
-  · decide
-  · have hpos : 0 < Nat.clog 2 U :=
-      (Nat.clog_pos (by decide) hlt)
-    have hlt_pow : 2 ^ (Nat.clog 2 U - 1) < U :=
-      (Nat.lt_clog_iff_pow_lt (by decide)).mp (Nat.sub_lt hpos (by decide))
-    have hpow : 2 ^ Nat.clog 2 U = 2 * 2 ^ (Nat.clog 2 U - 1) := by
-      conv_lhs => rw [← Nat.sub_add_cancel hpos]
-      rw [Nat.pow_succ']
-    omega
+  simpa [Nat.choose_self, Nat.mul_comm] using Nat.choose_mul_pow_le hnU n
 
 /-- Universal quotient bit bound: for every `n ≤ U`, storing `n` quotients of `quotientBits U n`
 bits uses at most `⌈log₂ C(U, n)⌉ + 5 * n * Dynamic.logLogFactor n` bits. -/
@@ -334,7 +285,7 @@ theorem quotient_bits_le_choose {U n : ℕ} (hnU : n ≤ U) :
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · simp
   · have hU : 1 ≤ U := hn.trans_le hnU
-    have hpow_key : 2 ^ keyBits U ≤ 2 * U := two_pow_keyBits_le_two_mul hU
+    have hpow_key : 2 ^ keyBits U ≤ 2 * U := Nat.pow_clog_le_mul Nat.one_lt_two (by omega)
     have hpow_n : n ≤ 2 ^ (bucketBits n + 3 * Dynamic.logLogFactor n + 1) :=
       le_two_pow_bucketBits_add n
     have hchoose : U.choose n ≤ 2 ^ Nat.clog 2 (U.choose n) :=
@@ -421,32 +372,26 @@ theorem feistelXor_ne_of_qOf_eq_pt {U b m : ℕ} (hbm : b ≤ m) (qOf : Fin U �
       _ = u₂.val := Nat.div_add_mod u₂.val (2 ^ b)
   exact hne (Fin.ext hu)
 
-/-- Equivalence on `Fin (2 ^ m)` given by bitwise XOR with `Δ < 2 ^ m`. -/
-@[expose]
-def finXorEquiv {m : ℕ} (Δ : ℕ) (hΔ : Δ < 2 ^ m) : Fin (2 ^ m) ≃ Fin (2 ^ m) where
-  toFun y := ⟨y.val ^^^ Δ, Nat.xor_lt_two_pow y.isLt hΔ⟩
-  invFun y := ⟨y.val ^^^ Δ, Nat.xor_lt_two_pow y.isLt hΔ⟩
-  left_inv y := by
-    ext
-    dsimp only
-    rw [Nat.xor_assoc, Nat.xor_self, Nat.xor_zero]
-  right_inv y := by
-    ext
-    dsimp only
-    rw [Nat.xor_assoc, Nat.xor_self, Nat.xor_zero]
-
 omit [Fintype ι] in
-/-- Two `feistelXor` values are equal iff `H i (qOf u₁)` equals `finXorEquiv Δ (H i (qOf u₂))`. -/
+/-- Two `feistelXor` values are equal iff `H i (qOf u₁)` equals `Equiv.xor Δ (H i (qOf u₂))`. -/
 theorem feistelXor_eq_iff {U b m : ℕ} (hbm : b ≤ m) (qOf : Fin U → Q)
     (H : ι → Q → Fin (2 ^ m)) (i : ι) (u₁ u₂ : Fin U) :
     feistelXor b m hbm qOf H i u₁ = feistelXor b m hbm qOf H i u₂ ↔
       H i (qOf u₁) =
-        finXorEquiv (keyLow b u₂.val ^^^ keyLow b u₁.val)
-          (Nat.xor_lt_two_pow
+        Equiv.xor ⟨keyLow b u₂.val ^^^ keyLow b u₁.val,
+          Nat.xor_lt_two_pow
             ((keyLow_lt b u₂.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))
-            ((keyLow_lt b u₁.val).trans_le (Nat.pow_le_pow_right (by decide) hbm)))
+            ((keyLow_lt b u₁.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))⟩
           (H i (qOf u₂)) := by
-  simp only [feistelXor, finXorEquiv, Fin.ext_iff, Equiv.coe_fn_mk]
+  simp only [feistelXor, Equiv.xor_apply, Fin.ext_iff]
+  change (H i (qOf u₁)).val ^^^ keyLow b u₁.val = (H i (qOf u₂)).val ^^^ keyLow b u₂.val ↔
+    (H i (qOf u₁)).val =
+      ((keyLow b u₂.val ^^^ keyLow b u₁.val) ^^^ (H i (qOf u₂)).val) % 2 ^ m
+  rw [Nat.mod_eq_of_lt (Nat.xor_lt_two_pow
+    (Nat.xor_lt_two_pow
+      ((keyLow_lt b u₂.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))
+      ((keyLow_lt b u₁.val).trans_le (Nat.pow_le_pow_right (by decide) hbm)))
+    (H i (qOf u₂)).isLt), Nat.xor_comm _ (H i (qOf u₂)).val]
   constructor
   · intro h
     have h1 := congrArg (· ^^^ keyLow b u₁.val) h
@@ -521,10 +466,10 @@ theorem expect_card_feistelXor_eq_on [DecidableEq Q] {U b m : ℕ} {𝕜 : Type*
     intro x hx
     have hqne : qOf x ≠ qOf u := (mem_filter.mp hx).2
     let e : Fin (2 ^ m) ≃ Fin (2 ^ m) :=
-      finXorEquiv (keyLow b u.val ^^^ keyLow b x.val)
-        (Nat.xor_lt_two_pow
+      Equiv.xor ⟨keyLow b u.val ^^^ keyLow b x.val,
+        Nat.xor_lt_two_pow
           ((keyLow_lt b u.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))
-          ((keyLow_lt b x.val).trans_le (Nat.pow_le_pow_right (by decide) hbm)))
+          ((keyLow_lt b x.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))⟩
     have hiff (i : ι) :
         (feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u) ↔
           H i (qOf x) = e (H i (qOf u)) :=
@@ -668,15 +613,15 @@ theorem expect_feistelXor_mul_sub_one_le_on [DecidableEq Q] {U b m : ℕ}
       rw [hexp0]
       positivity
     · let e₁ : Fin (2 ^ m) ≃ Fin (2 ^ m) :=
-        finXorEquiv (keyLow b u.val ^^^ keyLow b p.1.val)
-          (Nat.xor_lt_two_pow
+        Equiv.xor ⟨keyLow b u.val ^^^ keyLow b p.1.val,
+          Nat.xor_lt_two_pow
             ((keyLow_lt b u.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))
-            ((keyLow_lt b p.1.val).trans_le (Nat.pow_le_pow_right (by decide) hbm)))
+            ((keyLow_lt b p.1.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))⟩
       let e₂ : Fin (2 ^ m) ≃ Fin (2 ^ m) :=
-        finXorEquiv (keyLow b u.val ^^^ keyLow b p.2.val)
-          (Nat.xor_lt_two_pow
+        Equiv.xor ⟨keyLow b u.val ^^^ keyLow b p.2.val,
+          Nat.xor_lt_two_pow
             ((keyLow_lt b u.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))
-            ((keyLow_lt b p.2.val).trans_le (Nat.pow_le_pow_right (by decide) hbm)))
+            ((keyLow_lt b p.2.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))⟩
       have hiff (i : ι) :
           (feistelXor b m hbm qOf H i p.1 = feistelXor b m hbm qOf H i u ∧
               feistelXor b m hbm qOf H i p.2 = feistelXor b m hbm qOf H i u) ↔

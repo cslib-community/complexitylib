@@ -30,9 +30,11 @@ capacity condition `(dom s).card < n_max ∨ (s u).isSome` holds automatically f
 and key `u`, so `spec U V n_max` also covers unbounded-capacity dynamic dictionaries over `Fin U`
 (`valid_insert_iff_of_le`).
 
-This file also defines the information-theoretic minimum bit bound
-`optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` (note that `n ≤ U` is required for
-`U.choose n > 0`, since `C(U, n) = 0` for `n > U`) and the succinct word bound
+This file also defines the per-key ceiling bit bound
+`optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` (which equals the exact information-theoretic
+minimum `⌈log₂ (C(U, n) * V^n)⌉` when `V` is a power of two and exceeds it by at most `n` bits
+otherwise; note that `n ≤ U` is required for `U.choose n > 0`, since `C(U, n) = 0` for `n > U`)
+and the succinct word bound
 `succinctWords C C₀ U V w n_max =`
 `⌈(optBits U V n_max + C * n_max * ⌈log₂ ⌈log₂ (max n_max 4)⌉⌉) / w⌉ + C₀`
 used by succinct dictionary implementations on the `w`-bit Word RAM.
@@ -41,13 +43,10 @@ used by succinct dictionary implementations on the `w`-bit Word RAM.
 
 * `Cslib.DataStructure.Dictionary.Dynamic.Op`: dynamic dictionary operations (`query`, `insert`,
   `delete`).
-* `Cslib.DataStructure.Dictionary.Dynamic.State`, `empty`, `dom`, `ValuesBounded`: abstract map
-  state, empty dictionary, finite set of present keys, and value bound re-exported from
-  `Cslib.DataStructure.Dictionary`.
 * `Cslib.DataStructure.Dictionary.Dynamic.step`, `valid`, `spec`: pure transition function,
   admissibility predicate, and `StateTransitionSpec` for bounded-capacity dynamic dictionaries.
 * `Cslib.DataStructure.Dictionary.Dynamic.optBits`, `logLogFactor`, `succinctWords`:
-  information-theoretic optimum bit count and succinct Word-RAM space bound.
+  information-theoretic bit bound and succinct Word-RAM space bound.
 
 ## Main results
 
@@ -91,19 +90,6 @@ inductive Op (U : ℕ) where
   | delete (u : Fin U)
   deriving DecidableEq, Repr
 
-/-- Abstract state of a dynamic dictionary over universe `Fin U`. -/
-abbrev State (U : ℕ) := Dictionary.State U
-
-/-- The empty dictionary on `Fin U`. -/
-abbrev empty (U : ℕ) : State U := Dictionary.empty U
-
-/-- The finite set of keys currently present in state `s`. -/
-abbrev dom {U : ℕ} (s : State U) : Finset (Fin U) := Dictionary.dom s
-
-/-- Predicate asserting that every value stored in state `s` is strictly less than `V`. -/
-abbrev ValuesBounded {U : ℕ} (V : ℕ) (s : State U) : Prop :=
-  Dictionary.ValuesBounded V s
-
 /-- Return type for each `Op U`. -/
 abbrev Op.Result {U : ℕ} : Op U → Type
   | .query _ => Option ℕ
@@ -139,8 +125,8 @@ theorem dom_delete {U : ℕ} (s : State U) (u : Fin U) :
     dom (Function.update s u none) = (dom s).erase u := by
   ext x
   by_cases hxu : x = u
-  · subst hxu; simp [dom, Dictionary.dom]
-  · simp [dom, Dictionary.dom, hxu]
+  · subst hxu; simp [Dictionary.dom]
+  · simp [Dictionary.dom, hxu]
 
 /-- Deleting an absent key `u ∉ dom s` leaves `dom s` unchanged. -/
 theorem dom_delete_of_notMem {U : ℕ} {s : State U} {u : Fin U} (hu : u ∉ dom s) :
@@ -205,9 +191,9 @@ theorem card_dom_step_le_of_valid {U V n_max : ℕ} {s : State U} {o : Op U}
   | insert u v =>
     rcases hval.1 with hlt | hisSome
     · have hle := Dictionary.card_dom_insert_le s u v
-      dsimp only [spec, StateTransitionSpec.stepFn, step, dom] at hlt ⊢
+      dsimp only [spec, StateTransitionSpec.stepFn, step] at hlt ⊢
       omega
-    · dsimp only [spec, StateTransitionSpec.stepFn, step, dom]
+    · dsimp only [spec, StateTransitionSpec.stepFn, step]
       rw [Dictionary.card_dom_insert_eq_of_isSome hisSome]
       exact hs
   | delete u =>
@@ -279,9 +265,10 @@ theorem valuesBounded_run_empty {U V n_max : ℕ} {os : List (Op U)}
 
 /-! ### Information-theoretic minimum bits and succinct word bounds -/
 
-/-- Information-theoretic minimum bit count `OPT(U, V, n) = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉`
-required to represent an `n`-element subset of `Fin U` with values in `Fin V` (valid for `n ≤ U`,
-since `U.choose n = 0` when `n > U`). -/
+/-- Per-key ceiling bit bound `OPT(U, V, n) = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉`
+for representing an `n`-element subset of `Fin U` with values in `Fin V` (equals the exact
+information-theoretic minimum `⌈log₂ (C(U, n) * V^n)⌉` when `V` is a power of two and is within
+`< n` bits otherwise; valid for `n ≤ U`, since `U.choose n = 0` when `n > U`). -/
 @[expose]
 def optBits (U V n : ℕ) : ℕ :=
   Nat.clog 2 (U.choose n) + n * Nat.clog 2 V

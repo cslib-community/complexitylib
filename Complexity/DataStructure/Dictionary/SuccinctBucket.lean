@@ -83,7 +83,8 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
   `expect_bucketOvfCount_le_one_on`, `expect_probeExcess_le_three_on`,
   `sum_probeExcess_le_three_mul_card_on`, `tsum_uniform_probeExcess_twoStage_le`: expected
   probe-excess bounds under 3-wise independence.
-* `packedWords_add_le`, `succinct_space_le_succinctWords`: master word-level space accounting.
+* `succinct_space_le_succinctWords`, `tableArrays_words_le_succinctWords`: master word-level space
+  accounting.
 
 ## References
 
@@ -224,7 +225,7 @@ theorem totalMicroBits_le_keyBits {U n : ℕ} (hnU : n ≤ U) :
 /-- If `U ≤ 2 ^ w` and `n ≤ U`, then `totalMicroBits n ≤ w`. -/
 theorem totalMicroBits_le_of_le_pow {U w n : ℕ} (hnU : n ≤ U) (hU : U ≤ 2 ^ w) :
     totalMicroBits n ≤ w :=
-  (totalMicroBits_le_keyBits hnU).trans (keyBits_le_of_le_pow hU)
+  (totalMicroBits_le_keyBits hnU).trans (Nat.clog_le_of_le_pow hU)
 
 /-- `numMicroPerBucket n` is always positive. -/
 theorem numMicroPerBucket_pos (n : ℕ) : 0 < numMicroPerBucket n := by
@@ -586,7 +587,7 @@ def popBackWork (K q r : ℕ) : ℕ :=
   if r = 1 ∧ 0 < q then K else 0
 
 /-- `pushBackCounts` increments the total item count `q * K + r` by `1`. -/
-theorem pushBackCounts_sum {K q r : ℕ} (_hK : 1 ≤ K) (_hr : r < 2 * K) :
+theorem pushBackCounts_sum (K q r : ℕ) :
     (pushBackCounts K q r).1 * K + (pushBackCounts K q r).2 = q * K + r + 1 := by
   unfold pushBackCounts
   split_ifs with h
@@ -603,7 +604,7 @@ theorem pushBackCounts_bounds {K q r : ℕ} (hK : 1 ≤ K) (hr : r < 2 * K) :
   split_ifs <;> dsimp only <;> omega
 
 /-- `popBackCounts` decrements the total item count `q * K + r` by `1` when `1 ≤ r`. -/
-theorem popBackCounts_sum {K q r : ℕ} (_hK : 1 ≤ K) (hr : 1 ≤ r) :
+theorem popBackCounts_sum {K q r : ℕ} (hr : 1 ≤ r) :
     (popBackCounts K q r).1 * K + (popBackCounts K q r).2 = q * K + r - 1 := by
   unfold popBackCounts
   split_ifs with h
@@ -625,7 +626,7 @@ theorem popBackCounts_bounds {K q r : ℕ} (hK : 1 ≤ K) (hr1 : 1 ≤ r) (hr2 :
 
 /-- **Pointwise hysteresis amortization for `pushBack`:**
 `bucketPotential K q' r' + pushBackWork K r ≤ bucketPotential K q r + 1`. -/
-theorem bucketPotential_pushBack_le (K q r : ℕ) (_hK : 1 ≤ K) (_hr : r < 2 * K) :
+theorem bucketPotential_pushBack_le (K q r : ℕ) :
     bucketPotential K (pushBackCounts K q r).1 (pushBackCounts K q r).2 +
       pushBackWork K r ≤ bucketPotential K q r + 1 := by
   unfold bucketPotential pushBackCounts pushBackWork
@@ -633,7 +634,7 @@ theorem bucketPotential_pushBack_le (K q r : ℕ) (_hK : 1 ≤ K) (_hr : r < 2 *
 
 /-- **Pointwise hysteresis amortization for `popBack`:**
 `bucketPotential K q' r' + popBackWork K q r ≤ bucketPotential K q r + 1`. -/
-theorem bucketPotential_popBack_le (K q r : ℕ) (_hK : 1 ≤ K) (hr1 : 1 ≤ r) (hr2 : r < 2 * K) :
+theorem bucketPotential_popBack_le (K q r : ℕ) (hr1 : 1 ≤ r) (hr2 : r < 2 * K) :
     bucketPotential K (popBackCounts K q r).1 (popBackCounts K q r).2 +
       popBackWork K q r ≤ bucketPotential K q r + 1 := by
   unfold bucketPotential popBackCounts popBackWork
@@ -669,28 +670,6 @@ theorem isKWiseIndependentHash_projLowBits {k b m : ℕ} (hbm : b ≤ m)
     rfl
   rwa [heq]
 
-/-- For any `x, y, b : ℕ` with `y < 2 ^ b`, `(x ^^^ y) % 2 ^ b = (x % 2 ^ b) ^^^ y`. -/
-theorem xor_mod_two_pow {x y b : ℕ} (hy : y < 2 ^ b) :
-    (x ^^^ y) % 2 ^ b = (x % 2 ^ b) ^^^ y := by
-  apply Nat.eq_of_testBit_eq
-  intro j
-  rw [Nat.testBit_mod_two_pow, Nat.testBit_xor, Nat.testBit_xor, Nat.testBit_mod_two_pow]
-  by_cases hj : j < b
-  · simp [hj]
-  · have hyj : y.testBit j = false :=
-      Nat.testBit_lt_two_pow (hy.trans_le (Nat.pow_le_pow_right (by decide) (by omega)))
-    simp [hj, hyj]
-
-/-- For any `x, y, b : ℕ` with `y < 2 ^ b`, `(x ^^^ y) / 2 ^ b = x / 2 ^ b`. -/
-theorem xor_div_two_pow {x y b : ℕ} (hy : y < 2 ^ b) :
-    (x ^^^ y) / 2 ^ b = x / 2 ^ b := by
-  apply Nat.eq_of_testBit_eq
-  intro j
-  rw [Nat.testBit_div_two_pow, Nat.testBit_xor, Nat.testBit_div_two_pow]
-  have hyj : ∀ k, b ≤ k → y.testBit k = false := fun k hk =>
-    Nat.testBit_lt_two_pow (hy.trans_le (Nat.pow_le_pow_right (by decide) hk))
-  rw [hyj _ (by omega), Bool.xor_false]
-
 omit [Fintype ι] in
 /-- Projecting `feistelXor b m hbm qOf H i u` onto its low `b` bits agrees with `feistelXor`
 evaluated on the projected hash `fun i q => projLowBits hbm (H i q)`. -/
@@ -699,8 +678,8 @@ theorem projLowBits_feistelXor {U b m : ℕ} (hbm : b ≤ m) (qOf : Fin U → Q)
     projLowBits hbm (feistelXor b m hbm qOf H i u) =
       feistelXor b b le_rfl qOf (fun i q => projLowBits hbm (H i q)) i u := by
   apply Fin.ext
-  dsimp only [projLowBits, feistelXor, finXorEquiv]
-  exact xor_mod_two_pow (keyLow_lt b u.val)
+  dsimp only [projLowBits, feistelXor]
+  rw [Nat.xor_mod_two_pow, Nat.mod_eq_of_lt (keyLow_lt b u.val)]
 
 /-- Combined `(bucket, microBucket)` Feistel hash mapping `u : Fin U` into
 `Fin (2 ^ totalMicroBits n_max)`. -/
@@ -741,8 +720,8 @@ theorem feistelMicroHash_val_eq {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
         (feistelBucketHash n_max qOf H i u).val := by
   have hdiv : (feistelMicroHash n_max qOf H i u).val / 2 ^ bucketBits n_max =
       (feistelLocalMicro n_max qOf H i u).val := by
-    dsimp only [feistelMicroHash, feistelXor, finXorEquiv, feistelLocalMicro]
-    exact xor_div_two_pow (keyLow_lt (bucketBits n_max) u.val)
+    dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
+    rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u.val), Nat.xor_zero]
   have hmod : (feistelMicroHash n_max qOf H i u).val % 2 ^ bucketBits n_max =
       (feistelBucketHash n_max qOf H i u).val := rfl
   have h := Nat.div_add_mod (feistelMicroHash n_max qOf H i u).val (2 ^ bucketBits n_max)
@@ -762,12 +741,12 @@ theorem feistelMicroHash_eq_iff {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
     have hval := congrArg Fin.val h
     have hdiv : (feistelMicroHash n_max qOf H i u₁).val / 2 ^ bucketBits n_max =
         (feistelLocalMicro n_max qOf H i u₁).val := by
-      dsimp only [feistelMicroHash, feistelXor, finXorEquiv, feistelLocalMicro]
-      exact xor_div_two_pow (keyLow_lt (bucketBits n_max) u₁.val)
+      dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
+      rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u₁.val), Nat.xor_zero]
     have hdiv2 : (feistelMicroHash n_max qOf H i u₂).val / 2 ^ bucketBits n_max =
         (feistelLocalMicro n_max qOf H i u₂).val := by
-      dsimp only [feistelMicroHash, feistelXor, finXorEquiv, feistelLocalMicro]
-      exact xor_div_two_pow (keyLow_lt (bucketBits n_max) u₂.val)
+      dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
+      rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u₂.val), Nat.xor_zero]
     refine ⟨congrArg (projLowBits (bucketBits_le_totalMicroBits n_max)) h, Fin.ext ?_⟩
     rw [← hdiv, ← hdiv2, hval]
   · rintro ⟨hb, hm⟩
@@ -781,9 +760,9 @@ theorem feistelBucketHash_val_eq_feistelBucket {U : ℕ} (n_max : ℕ) (qOf : Fi
     (H : ι → Q → Fin (2 ^ totalMicroBits n_max)) (i : ι) (u : Fin U) :
     (feistelBucketHash n_max qOf H i u).val =
       feistelBucket (bucketBits n_max) (fun _ => (H i (qOf u)).val) u.val := by
-  dsimp only [feistelBucketHash, projLowBits, feistelMicroHash, feistelXor, finXorEquiv,
+  dsimp only [feistelBucketHash, projLowBits, feistelMicroHash, feistelXor,
     feistelBucket]
-  exact xor_mod_two_pow (keyLow_lt (bucketBits n_max) u.val)
+  rw [Nat.xor_mod_two_pow, Nat.mod_eq_of_lt (keyLow_lt (bucketBits n_max) u.val)]
 
 /-- Number of keys in `S.erase u` colliding with `u` in the combined `(bucket, microBucket)` hash
 `feistelMicroHash`. -/
@@ -1078,37 +1057,6 @@ theorem bucketOverflow_le {ι Q : Type*} {U n_max c_b : ℕ}
 
 /-! ## Section 5: Master word-level space accounting (`succinctWords`) -/
 
-/-- Adding an auxiliary bit-packed array `packedWords N_aux k_aux w` to an existing word bound
-`((B + w - 1) / w) + C₀` increases the bit numerator to `B + N_aux * k_aux` and the additive word
-constant by at most `3`. -/
-theorem div_add_packedWords_le (B C₀ N_aux k_aux w : ℕ) :
-    ((B + w - 1) / w + C₀) + packedWords N_aux k_aux w ≤
-      (B + N_aux * k_aux + w - 1) / w + (C₀ + 3) := by
-  unfold packedWords
-  rcases Nat.eq_zero_or_pos w with rfl | hw
-  · simp
-  · have hdiv : (B + w - 1) / w + (N_aux * k_aux + w - 1) / w ≤
-        (B + N_aux * k_aux + w - 1) / w + 1 := by
-      have h1 := Nat.div_add_mod (B + w - 1) w
-      have h2 := Nat.div_add_mod (N_aux * k_aux + w - 1) w
-      have h3 := Nat.div_add_mod (B + N_aux * k_aux + w - 1) w
-      have hm3 : (B + N_aux * k_aux + w - 1) % w < w := Nat.mod_lt _ hw
-      have hlt :
-          w * ((B + w - 1) / w + (N_aux * k_aux + w - 1) / w) <
-            w * ((B + N_aux * k_aux + w - 1) / w + 2) := by
-        rw [Nat.left_distrib, Nat.left_distrib, Nat.mul_two]
-        omega
-      have hlt' := (Nat.mul_lt_mul_left hw).mp hlt
-      omega
-    omega
-
-/-- Ceiling-division subadditivity for `packedWords`:
-`packedWords N₁ k₁ w + packedWords N₂ k₂ w ≤ (N₁ * k₁ + N₂ * k₂ + w - 1) / w + 5`. -/
-theorem packedWords_add_le (N₁ k₁ N₂ k₂ w : ℕ) :
-    packedWords N₁ k₁ w + packedWords N₂ k₂ w ≤
-      (N₁ * k₁ + N₂ * k₂ + w - 1) / w + 5 :=
-  div_add_packedWords_le (N₁ * k₁) 2 N₂ k₂ w
-
 /-- **Master succinct word-space bound:** if `n_max ≤ U` and the auxiliary bit budget `B_aux` is at
 most `C_aux * n_max * Dynamic.logLogFactor n_max`, then storing `n_max` quotients of
 `quotientBits U n_max` bits, `n_max` values of `valBits V` bits, `B_aux` auxiliary bits (with
@@ -1153,8 +1101,9 @@ def globalMetaVarLen (n : ℕ) : ℕ :=
   if bucketBits n = 0 then 0
   else numBuckets n * (3 + dirSlabsPerBucket n + 2 * tailCapPerBucket n) + 4 * maxFullSlabs n
 
-/-- Total number of `globalPtrBits n`-bit entries in `GlobalMeta`: `4` global scalars (`n_slabs`,
-`n_tails`, `n_slab_hwm`, `c_0`) plus `globalMetaVarLen n`. -/
+/-- Total number of `globalPtrBits n`-bit entries in `GlobalMeta`: `4` global header slots (slots
+`0` and `1` store `n_slabs` and `n_tails`; slots `2` and `3` are unused) plus `globalMetaVarLen n`.
+-/
 @[expose]
 def globalMetaLen (n : ℕ) : ℕ :=
   4 + globalMetaVarLen n
@@ -1304,22 +1253,6 @@ theorem globalMetaLen_le_of_bucketBits_pos {n : ℕ} (hb : 0 < bucketBits n) :
   rw [ite_eq_right hb0, ite_eq_right hb0, ite_eq_right hb0, ite_eq_right hb0]
   rw [hK] at hdiv ⊢
   omega
-
-/-- Adding `c` copies of `packedWords N_aux k_aux w` increases the bit numerator to
-`B + (c * N_aux) * k_aux` and the additive word constant by at most `3 * c`. -/
-theorem div_add_mul_packedWords_le (c B C₀ N_aux k_aux w : ℕ) :
-    ((B + w - 1) / w + C₀) + c * packedWords N_aux k_aux w ≤
-      (B + (c * N_aux) * k_aux + w - 1) / w + (C₀ + 3 * c) := by
-  induction c generalizing B C₀ with
-  | zero => simp
-  | succ c ih =>
-    have h1 := div_add_packedWords_le B C₀ N_aux k_aux w
-    have h2 := ih (B + N_aux * k_aux) (C₀ + 3)
-    have hmul : (c + 1) * packedWords N_aux k_aux w =
-        packedWords N_aux k_aux w + c * packedWords N_aux k_aux w := by ring
-    have hB : B + N_aux * k_aux + (c * N_aux) * k_aux = B + ((c + 1) * N_aux) * k_aux := by ring
-    rw [hB] at h2
-    omega
 
 /-- **Succinct table word-space bound:** the sum of the word sizes of `Quotients`,
 `Values`, the 9 `LocalMeta` sub-arrays of length `totalMicroBuckets n_max`, `GlobalMeta`, and
