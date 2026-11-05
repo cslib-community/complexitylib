@@ -14,6 +14,7 @@ on:
       - "lake-manifest.json"
       - "scripts/guide.sh"
       - "scripts/check_docs.py"
+      - "scripts/ci/prepare-runner.sh"
       - "lean-toolchain"
       - ".github/actions/install-lean/**"
       - ".github/workflows/guide.yml"
@@ -54,6 +55,9 @@ jobs:
             fi
           fi
           echo "render=$render" >> "$GITHUB_OUTPUT"
+      - name: Reclaim unused hosted-runner SDK space
+        continue-on-error: true
+        run: scripts/ci/prepare-runner.sh
       # Restore the `.lake` entry that Lean CI saves on `main` (lean_action_ci.yml). Without it,
       # every run downloaded a complete set of outputs (about 200 MB) from the public bucket.
       # This workflow only reads the entry; Lean CI remains its only writer.
