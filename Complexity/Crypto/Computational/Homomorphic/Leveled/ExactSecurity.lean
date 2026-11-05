@@ -1524,12 +1524,13 @@ theorem polynomiallyBounded_leveledGuessCoinBudget
   unfold leveledGuessCoinBudget
   fun_prop
 
-/-- **Quantitative Gentry Theorem 4 runtime, artifact-length, and coin-budget overhead witness**
-([Gentry2009], Section 2, Theorem 4, p. 171):
+/-- Polynomial artifact-length, component replay and native-efficiency witnesses for the
+leveled reduction motivated by [Gentry2009], Section 2, Theorem 4, p. 171. These witnesses do not
+assert the source's multiplicative runtime comparison.
 Given uniform strict-PPT certificates for `E.keyGen`, `E.encrypt`, and `adversary`, and
 polynomial-time unary certificates for `budget` and `capacity`, there exist explicit polynomial
 bounds:
-* `pkBound n = c_kg * (n + 1) ^ d_kg` on base key lengths,
+* `pkBound n = c_kg * (n + 1) ^ d_kg` on base key lengths and key-generation coin count,
 * `ctBound n = c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc` on base ciphertext lengths and coin
   count,
 * `pubLen n = publicKeyLengthBound (2 * budget n) (capacity n) (pkBound n) (ctBound n)` on every
@@ -1538,9 +1539,9 @@ bounds:
   `advGuessBudget n = c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu` on
   `adversary`'s own coin and output-state lengths at the leveled public-key and ciphertext sizes,
 such that:
-1. Supported base keys obey the stated public-key and secret-capacity bounds. Every bounded
-   base public key has a native encryption replay using `ctBound n` coins, and every supported
-   ciphertext fits that same bound.
+1. Key generation has native replay using `pkBound n` coins, and supported base keys obey the
+   stated public-key and secret-capacity bounds. Every bounded base public key has native
+   encryption replay using `ctBound n` coins, and every supported ciphertext fits that bound.
 2. Every supported public artifact
    `artifact ∈ (ProbComp.eval (E.publicKeyChainHybrid n (2 * budget n) cut)).support`
    has `(encPublicKey artifact).length ≤ pubLen n`.
@@ -1564,6 +1565,7 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
     (hbudget : ComputableInPolyTime budget encUnary encUnary)
     (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
     ∃ (c_kg d_kg c_enc d_enc c_ch d_ch c_gu d_gu : ℕ)
+      (evalKey : ℕ → List Bool → List Bool × List Bool)
       (evalEncrypt : ℕ × List Bool × Bool → List Bool → List Bool)
       (evalChoose : ℕ × List Bool → List Bool → (Bool × Bool) × List Bool)
       (evalGuess : ℕ × List Bool × List Bool → List Bool → Bool),
@@ -1574,6 +1576,8 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
       let advChooseBudget (n : ℕ) := c_ch * (2 * n + pubLen n + 2) ^ d_ch
       let advGuessBudget (n : ℕ) :=
         c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
+      ComputableInPolyTime (fun (n, coins) => evalKey n coins)
+        (encPair encUnary encBits) (encPair encBits encBits) ∧
       ComputableInPolyTime (fun (x, coins) => evalEncrypt x coins)
         (encPair (encPair encUnary (encPair encBits encBool)) encBits) encBits ∧
       ComputableInPolyTime (fun (x, coins) => evalChoose x coins)
@@ -1581,6 +1585,8 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
         (encPair (encPair encBool encBool) encBits) ∧
       ComputableInPolyTime (fun (x, coins) => evalGuess x coins)
         (encPair (encPair encUnary (encPair encBits encBits)) encBits) encBool ∧
+      (∀ n, ProbComp.eval (E.keyGen n) =
+        (BitString.uniformList (pkBound n)).map (evalKey n)) ∧
       (∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
         keys.1.length ≤ pkBound n ∧ keys.2.length ≤ capacity n) ∧
       (∀ n pk bit, pk.length ≤ pkBound n →
@@ -1607,7 +1613,13 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
       (leveledAdversary E (fun n => 2 * budget n) capacity adversary).IsPPT ∧
       (modLeveledAdversary E (fun n => 2 * n) (fun n => 2 * budget n) capacity
         adversary).IsPPT := by
-  obtain ⟨c_kg, d_kg, _, hkg_len⟩ := Encryption.exists_keyLength_bound hkeyGen
+  obtain ⟨c_kg, d_kg, evalKey, hevalKey, _, hkey_law, hkey_len⟩ :=
+    hkeyGen.exists_total_seeded_evaluator_with_length
+  have hkg_len (n keys) (hkeys : keys ∈ (ProbComp.eval (E.keyGen n)).support) :
+      keys.1.length + keys.2.length ≤ c_kg * (n + 1) ^ d_kg := by
+    have hlen := hkey_len n keys hkeys
+    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hlen
+    omega
   obtain ⟨c_enc, d_enc, evalEncrypt, hevalEncrypt, _, henc_law, henc_len⟩ :=
     hencrypt.exists_total_seeded_evaluator_with_length
   obtain ⟨c_ch, d_ch, evalChoose, hevalChoose, _, hchoose_law, hchoose_len⟩ :=
@@ -1622,10 +1634,12 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
   let advGuessBudget (n : ℕ) :=
     c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
   have hdepth : ComputableInPolyTime (fun n => 2 * budget n) encUnary encUnary := by fun_prop
-  refine ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, evalEncrypt, evalChoose, evalGuess,
-    hevalEncrypt, hevalChoose, hevalGuess, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+  refine ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, evalKey, evalEncrypt, evalChoose,
+    evalGuess, hevalKey, hevalEncrypt, hevalChoose, hevalGuess, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
     isPPT_leveledAdversary hencrypt hadversary hkeyGen hdepth hcapacity,
     isPPT_modLeveledAdversary_two_mul hkeyGen hencrypt hadversary hdepth hcapacity⟩
+  · intro n
+    exact hkey_law n (pkBound n) (by simp [pkBound, encUnary_apply])
   · intro n keys hkeys
     have hlen := hkg_len n keys hkeys
     have hw := hwidth n keys hkeys
