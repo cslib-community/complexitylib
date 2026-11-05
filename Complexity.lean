@@ -720,6 +720,7 @@ public import Complexity.Computability.Circuit.Arithmetic
 public import Complexity.Computability.Circuit.Arithmetic.CircuitLowerBound
 public import Complexity.Computability.Circuit.Arithmetic.Determinant
 public import Complexity.Computability.Circuit.Arithmetic.Encoding
+public import Complexity.Computability.Circuit.Arithmetic.Encoding.Check
 public import Complexity.Computability.Circuit.Arithmetic.EvaluationTime
 public import Complexity.Computability.Circuit.Arithmetic.Formula
 public import Complexity.Computability.Circuit.Arithmetic.GeneralLowerBound
@@ -1038,6 +1039,7 @@ public import Complexity.Computability.Circuit.Cyclic.Feedback
 public import Complexity.Computability.Circuit.DagProtocol
 public import Complexity.Computability.Circuit.Decomposable
 public import Complexity.Computability.Circuit.Depth
+public import Complexity.Computability.Circuit.Encoding.Check
 public import Complexity.Computability.Circuit.Encoding.Evaluation
 public import Complexity.Computability.Circuit.Encoding.MapOp
 public import Complexity.Computability.Circuit.Erase

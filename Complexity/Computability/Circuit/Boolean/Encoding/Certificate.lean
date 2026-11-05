@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.EvaluationTime
+public import Complexity.Computability.Circuit.Encoding.Check
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -46,7 +47,7 @@ polynomial-time test `codeCheck` tells the codes of circuits apart (`codeCheck_e
 * `Cslib.Circuits.Boolean.certLength`: the length of certificates.
 * `Cslib.Circuits.Boolean.certificate`: the certificate of a circuit code.
 * `Cslib.Circuits.Boolean.readCertificate`: the gates and the output wire read from a certificate.
-* `Cslib.Circuits.Boolean.codeCheck`: the test for codes of circuits.
+* `Cslib.Circuits.codeCheck`: the test for codes of circuits.
 
 ## Main results
 
@@ -54,7 +55,7 @@ polynomial-time test `codeCheck` tells the codes of circuits apart (`codeCheck_e
 * `Cslib.Circuits.Boolean.length_certificate`: certificates have length `certLength n s`.
 * `Cslib.Circuits.Boolean.readCertificate_certificate_append`: a certificate reads as the code of
   its circuit.
-* `Cslib.Circuits.Boolean.codeCheck_eq_true_iff`: `codeCheck` tests `Program.IsCodeFrom`.
+* `Cslib.Circuits.codeCheck_eq_true_iff`: `codeCheck` tests `Program.IsCodeFrom`.
 * `Cslib.Circuits.Boolean.computableInPolyTime_readCertificate`,
   `Cslib.Circuits.Boolean.computableInPolyTime_codeCheck`: reading certificates and checking
   codes are polynomial-time.
@@ -252,29 +253,6 @@ theorem length_certificate_code {n s : ℕ} (c : Circuit signature n 1) (hs : c.
   have : j < c.size := by rwa [Circuit.length_code_fst] at hj
   omega
 
-/-! ### Checking codes -/
-
-/-- Whether a list of gates is the code of a program on `n` inputs (`Program.IsCodeFrom`), as a
-Boolean test: every entry has the arity of its operation and reads only inputs and earlier
-gates. -/
-def codeCheck (n : ℕ) (gates : List (Op × List ℕ)) : Bool :=
-  gates.zipIdx.all fun g => decide (g.1.2.length = signature.Arity g.1.1) && g.1.2.all (· < n + g.2)
-
-private theorem all_zipIdx_eq_true_iff {n : ℕ} (k : ℕ) (gates : List (Op × List ℕ)) :
-    ((gates.zipIdx k).all fun g =>
-      decide (g.1.2.length = signature.Arity g.1.1) && g.1.2.all (· < n + g.2)) = true ↔
-      Program.IsCodeFrom signature n k gates := by
-  induction gates generalizing k with
-  | nil => simp [Program.IsCodeFrom]
-  | cons g gates ih =>
-    rw [List.zipIdx_cons, List.all_cons, Bool.and_eq_true, ih, Program.isCodeFrom_cons]
-    simp
-
-/-- `codeCheck n gates` returns `true` iff `gates` is a valid program code on `n` inputs. -/
-theorem codeCheck_eq_true_iff {n : ℕ} {gates : List (Op × List ℕ)} :
-    codeCheck n gates = true ↔ Program.IsCodeFrom signature n 0 gates :=
-  all_zipIdx_eq_true_iff 0 gates
-
 /-! ### Reading certificates in polynomial time -/
 
 open ComputableInPolyTime
@@ -308,18 +286,8 @@ unary. -/
 theorem computableInPolyTime_codeCheck {γ : Type} {encIn : γ ↪ List Bool}
     {n : γ → ℕ} {gates : γ → List (Op × List ℕ)} (hn : ComputableInPolyTime n encIn encUnary)
     (hgates : ComputableInPolyTime gates encIn (encList encGate)) :
-    ComputableInPolyTime (fun a => codeCheck (n a) (gates a)) encIn encBool := by
-  have harity : ComputableInPolyTime (fun op : Op => signature.Arity op) encOp encUnary :=
-    of_finite _
-  have hbound : ComputableInPolyTime (fun p : (γ × ((Op × List ℕ) × ℕ)) × ℕ =>
-      decide (p.2 < n p.1.1 + p.1.2.2))
-      (encPair (encPair encIn (encPair encGate encUnary)) encNat) encBool :=
-    binary_lt' (snd _ _) (unary_to_binary.comp (by fun_prop))
-  have hzip : ComputableInPolyTime (fun a => (gates a).zipIdx)
-      encIn (encList (encPair encGate encUnary)) := by fun_prop
-  unfold codeCheck
-  exact allWithInput hzip (bool_and'
-    (decide_eq' (by fun_prop) (harity.comp (by fun_prop))) (allWithInput (by fun_prop) hbound))
+    ComputableInPolyTime (fun a => codeCheck signature (n a) (gates a)) encIn encBool := by
+  exact Circuits.computableInPolyTime_codeCheck (σ := signature) (of_finite _) hn hgates
 
 /-- **Reading certificates is polynomial-time**, for the number of inputs and the number of gates
 in unary. -/
