@@ -3604,6 +3604,7 @@ public import Complexity.Foundations.Data.Code.Basic
 public import Complexity.Foundations.Data.Code.BerlekampWelch
 public import Complexity.Foundations.Data.Code.Concatenation
 public import Complexity.Foundations.Data.Code.Hadamard
+public import Complexity.Foundations.Data.Code.HammingBallBounds
 public import Complexity.Foundations.Data.Code.HammingBound
 public import Complexity.Foundations.Data.Code.HintDecoding
 public import Complexity.Foundations.Data.Code.Johnson
@@ -3965,6 +3966,7 @@ public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
 public import Complexity.GameTheory.FairDivision.MMSAsymptotic
 public import Complexity.GameTheory.FairDivision.MMSChores
+public import Complexity.GameTheory.FairDivision.MMSCodes
 public import Complexity.GameTheory.FairDivision.MMSImpossibility
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic

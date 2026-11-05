@@ -84,9 +84,24 @@ goods and chores MMS $204k^3$ for every balanced even-length word, over all
 complete partitions. The checked client includes a concrete balanced type with
 $k=8$, $d=110$ and exact MMS $104448$, so these premises are satisfiable.
 
-Theorems 1 and 3 remain unfinished: existence of the exponentially large balanced
-code, the contradiction for every allocation, the inverse-log-squared gap and
-the logarithmic item budget are still required.
+Import [MMSCodes.lean](../../Complexity/GameTheory/FairDivision/MMSCodes.lean)
+for actual code existence. `exists_population_code n` constructs $n$ distinct
+balanced words of length $64(\lfloor\log_2 n\rfloor+1)$ and pairwise Hamming
+distance at least $2(\lfloor\log_2 n\rfloor+2)$. The proof uses the existing
+Gilbert–Varshamov bound, followed by appending each word's complement.
+This gives a weaker relative distance than Lemma 5's $1/4$, but a positive
+constant distance and rate. It does not claim Lemma 5's exact constants.
+`high_items_le_population` shows that $n\ge65536$ accommodates the high items;
+`population_item_count` proves the actual instantiated item type has exactly
+$n+5k$ items and at most $n+640\lfloor\log_2 n\rfloor$ items. The common
+binomial estimates now live in
+[HammingBallBounds.lean](../../Complexity/Foundations/Data/Code/HammingBallBounds.lean),
+shared with Justesen codes, with their original declarations and source credit.
+
+Theorems 1 and 3 remain unfinished: the contradiction for every allocation and
+the quantified inverse-log-squared loss are still required. The weaker distance
+constant in the constructed code also requires a correspondingly smaller
+additive shortfall in the final hardness proof.
 The existence side of the claimed MMS threshold also requires the cited external
 existence theorem. The finite four-agent result and this structural lemma do not
 complete those headline claims.

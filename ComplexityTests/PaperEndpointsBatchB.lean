@@ -11,6 +11,7 @@ public import Complexity.Crypto.Multiparty.Tetrahedral
 import Complexity.Crypto.Multiparty.TetrahedralChosen
 import Complexity.Crypto.Multiparty.TetrahedralYield
 import Complexity.Cryptanalysis.AddXNORRuns
+import Complexity.GameTheory.FairDivision.MMSCodes
 import Complexity.GameTheory.FairDivision.MMSChores
 import Complexity.GameTheory.FairDivision.MMSAsymptotic
 import Complexity.Cryptanalysis.AddXNOR
@@ -138,3 +139,14 @@ example (t : ℤ) :
     Cslib.FairDivision.MMSAsymptotic.Guarantees 8 110
       (labelSet (fun h => decide (h.val < 4))) t ↔ t ≤ 104448 :=
   balanced_guarantees_iff 110 _ (by decide) (by decide) t
+
+-- The balanced encoder really doubles Hamming distance, including opposite words.
+example : Cslib.FairDivision.MMSCodes.balance ![false, true, false] =
+    ![false, true, false, true, false, true] := by decide
+
+example : hammingDist
+    (Cslib.FairDivision.MMSCodes.balance ![false, true, false])
+    (Cslib.FairDivision.MMSCodes.balance ![true, false, true]) = 6 := by decide
+
+-- A full population, rather than an assumed codebook, has a quantified item budget.
+example : Fintype.card (Good 1088 63358) = 70976 := by rw [card_goods]
