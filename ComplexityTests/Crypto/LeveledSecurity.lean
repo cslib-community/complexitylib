@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Crypto.Computational.Homomorphic.Leveled.Bootstrapping
+import Complexity.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
 import Complexity.Tactic.PPT
 
 /-!
@@ -216,6 +217,135 @@ example : Encryption.INDCPA (scheme forgetfulCircuits (fun n => n + 1)).keyGen
     (scheme forgetfulCircuits (fun n => n + 1)).encrypt :=
   indCPA_scheme forgetful_secure keyGen_ppt forgetful_encrypt_ppt secret_width
     (by fun_prop) forgetfulCircuits
+
+-- Exact Gentry Theorem 4 reduction loss (without dyadicSize rounding) on the forgetful scheme.
+example (n : ℕ) :
+    Game.advantage
+      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun n => n + 1)).keyGen
+        (scheme forgetfulCircuits (fun n => n + 1)).encrypt adversary false n))
+      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun n => n + 1)).keyGen
+        (scheme forgetfulCircuits (fun n => n + 1)).encrypt adversary true n)) =
+    3 * (2 * ((n + 1 : ℕ) : NNReal)) * (2 : ℕ) *
+      Game.advantage
+        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+          (exactLeveledAdversary forgetful (fun n => 2 * (n + 1)) (fun _ => 2) adversary)
+          false n))
+        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+          (exactLeveledAdversary forgetful (fun n => 2 * (n + 1)) (fun _ => 2) adversary)
+          true n)) :=
+  advantage_scheme_eq_exactLeveledAdversary forgetfulCircuits (fun n => n + 1) (fun _ => 2)
+    adversary n 2 (Nat.succ_pos n) (by decide) (secret_width n) le_rfl
+
+-- Unattenuated three-hop decomposition via exactLinkAdversary and zeroLinkAdversary.
+example (n : ℕ) :
+    Game.advantage
+      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
+        (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary false n))
+      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
+        (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary true n)) ≤
+    (2 * (1 : ℕ) : NNReal) * 2 *
+      Game.advantage
+        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+          (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
+            (publicKeyGame forgetful adversary false)) false n))
+        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+          (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
+            (publicKeyGame forgetful adversary false)) true n)) +
+    Game.advantage
+      (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+        (zeroLinkAdversary forgetful (fun _ => 2 * 1) adversary) false n))
+      (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+        (zeroLinkAdversary forgetful (fun _ => 2 * 1) adversary) true n)) +
+    (2 * (1 : ℕ) : NNReal) * 2 *
+      Game.advantage
+        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+          (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
+            (publicKeyGame forgetful adversary true)) false n))
+        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+          (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
+            (publicKeyGame forgetful adversary true)) true n)) :=
+  advantage_scheme_le_exactLinkAdversary_add_zeroLinkAdversary forgetfulCircuits (fun _ => 1)
+    (fun _ => 2) adversary n 2 (secret_width n) le_rfl
+
+-- Strict-PPT sampleModNat reduction and concrete advantage bound with O(1 / 2 ^ n) tail.
+example : (modLeveledAdversary fixture (fun n => 2 * n) (fun n => 2 * (n + 1))
+    (fun _ => 2) adversary).IsPPT :=
+  isPPT_modLeveledAdversary_two_mul keyGen_ppt encrypt_ppt adversary_ppt
+    (by fun_prop) (by fun_prop)
+
+example (n : ℕ) (htail : 3 + 2 * 1 + 2 ≤ 2 ^ n) :
+    Game.advantage
+      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
+        (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary false n))
+      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
+        (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary true n)) ≤
+    3 * (2 * (1 : ℕ) : NNReal) * 2 *
+      (Game.advantage
+        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+          (modLeveledAdversary forgetful (fun n => 2 * n) (fun _ => 2 * 1) (fun _ => 2) adversary)
+          false n))
+        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
+          (modLeveledAdversary forgetful (fun n => 2 * n) (fun _ => 2 * 1) (fun _ => 2) adversary)
+          true n)) +
+        2 / 2 ^ n) :=
+  advantage_scheme_le_modLeveledAdversary_two_mul forgetfulCircuits (fun _ => 1) (fun _ => 2)
+    adversary n 2 (by decide) (by decide) (secret_width n) le_rfl htail
+
+-- Explicit public-key length bound on supported leveled keys.
+example (n : ℕ) (keys : List Bool × List Bool)
+    (hkeys : keys ∈ (ProbComp.eval (keyGen fixture n 1)).support) :
+    keys.1.length ≤ publicKeyLengthBound (2 * 1) 2 1 3 := by
+  refine length_publicKey_support_keyGen_le n 1 2 1 3 ?_ ?_ hkeys
+  · intro baseKeys hbase
+    obtain ⟨first, second, rfl⟩ := (keys_supported n baseKeys).1 hbase
+    exact ⟨by simp, by simp⟩
+  · intro baseKeys _ b ct hct
+    simp only [fixture, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
+      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, PMF.uniformOfFintype,
+      PMF.mem_support_uniformOfFinset_iff, Finset.mem_univ, true_and] at hct
+    obtain ⟨nonce, rfl⟩ := hct
+    simp
+
+-- Quantitative polynomial coin-budget, artifact-length, and seeded-evaluator overhead package.
+example :
+    ∃ (c_kg d_kg c_enc d_enc c_ch d_ch c_gu d_gu : ℕ)
+      (evalChoose : (ℕ × List Bool) → List Bool → ((Bool × Bool) × List Bool))
+      (evalGuess : (ℕ × List Bool × List Bool) → List Bool → Bool),
+      let pkBound (n : ℕ) := c_kg * (n + 1) ^ d_kg
+      let ctBound (n : ℕ) := c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc
+      let pubLen (n : ℕ) :=
+        publicKeyLengthBound (2 * (n + 1)) 2 (pkBound n) (ctBound n)
+      let advChooseBudget (n : ℕ) := c_ch * (2 * n + pubLen n + 2) ^ d_ch
+      let advGuessBudget (n : ℕ) :=
+        c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
+      ComputableInPolyTime (fun (x, coins) => evalChoose x coins)
+        (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair encBool encBool) encBits) ∧
+      ComputableInPolyTime (fun (x, coins) => evalGuess x coins)
+        (encPair (encPair encUnary (encPair encBits encBits)) encBits) encBool ∧
+      (∀ n cut artifact,
+        artifact ∈ (ProbComp.eval (fixture.publicKeyChainHybrid n (2 * (n + 1)) cut)).support →
+          (encPublicKey artifact).length ≤ pubLen n) ∧
+      (∀ n pk', pk'.length ≤ pubLen n →
+        ProbComp.eval (adversary.choose n pk') =
+          (BitString.uniformList (advChooseBudget n)).map (evalChoose (n, pk')) ∧
+        ∀ choice ∈ (ProbComp.eval (adversary.choose n pk')).support,
+          choice.2.length ≤ advChooseBudget n) ∧
+      (∀ n state ct', state.length ≤ advChooseBudget n → ct'.length ≤ ctBound n + 1 →
+        ProbComp.eval (adversary.guess n state ct') =
+          (BitString.uniformList (advGuessBudget n)).map (evalGuess (n, state, ct'))) ∧
+      PolynomiallyBounded (fun n =>
+        leveledChooseCoinBudget (2 * (n + 1)) 2 (pkBound n) (ctBound n)
+          (advChooseBudget n)) ∧
+      PolynomiallyBounded (fun n =>
+        leveledGuessCoinBudget (2 * (n + 1)) 2 (ctBound n)
+          (advChooseBudget n) (advGuessBudget n)) ∧
+      (leveledAdversary fixture (fun n => 2 * (n + 1)) (fun _ => 2) adversary).IsPPT ∧
+      (modLeveledAdversary fixture (fun n => 2 * n) (fun n => 2 * (n + 1))
+        (fun _ => 2) adversary).IsPPT :=
+  exists_leveledAdversary_overhead keyGen_ppt encrypt_ppt adversary_ppt
+    (budget := fun n => n + 1) (capacity := fun _ => 2) (width := fun _ => 2)
+    secret_width (fun _ => le_rfl) (by fun_prop) (by fun_prop)
 
 -- This fixture cannot satisfy encryption correctness: both messages encrypt to the same word.
 example : ¬ forgetful.Correct := by
