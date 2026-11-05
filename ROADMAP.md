@@ -274,13 +274,16 @@ In order:
   completeness and exact simulation of the full honest receiver view (private key/tags and
   public transcript). `VOLE/AdaptiveMulCheck.lean` extends the exact full-view law to arbitrary
   receivers in that fixed schedule, retaining private coins, state and repeated setup reads.
+  `VOLE/NativePPT.lean` certifies a list simulator for variable-size batches and supplied encoded-state
+  receiver callbacks over one fixed ring with a certified exact-uniform sampler (with an F2 client).
   `VOLE/Circuit.lean`, `CircuitSound.lean` and `CircuitPrivacy.lean` bind the session to the existing
   arithmetic-circuit relation `∃ w, C.eval (x ++ w) = y`: public input/output, constant and addition
   rows join the multiplication batch. Actual role-local soundness has the same mixture bound
   (5/8 over the fixed F4), and satisfying traces retain exact full-view simulation. Fresh-session
-  amplification, scalar-challenge batching, a complete native circuit prover/verifier certificate,
-  growing-field arithmetic, adversarial setup and scheduling, full zero-knowledge protocol security
-  and VOLE-in-the-head remain (#643);
+  amplification, scalar-challenge batching, a complete native circuit prover/verifier certificate
+  (including honest-sender realization, #2765), raw-bit adversarial transport (#2744), growing-field
+  arithmetic, adversarial setup and scheduling, full zero-knowledge protocol security and
+  VOLE-in-the-head remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security
