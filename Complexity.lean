@@ -3172,6 +3172,7 @@ public import Complexity.Crypto.Protocols.MPC.OTCommitment
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Equivocation
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Extraction
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.PolyTime
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.PolynomialCommitment.Basic

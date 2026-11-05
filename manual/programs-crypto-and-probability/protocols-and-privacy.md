@@ -377,8 +377,31 @@ it does not assert secrecy when sender commands interleave and open the commitme
 executions. The [checked world clients](../../ComplexityTests/Crypto/CommitmentWorld.lean)
 show honest opening, early opening followed by commitment, attempted overwrite, both abort
 orders, and adaptive private polling. These are functionality laws, not an OT realization,
-UC security, or a simulator runtime certificate. Connecting OT extraction and equivocation to
-these phases is a separate milestone; full malicious MPC remains open.
+UC security, or a simulator runtime certificate.
+
+To connect the OT simulations to these commands, import
+[`OTCommitment.World`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/World.lean).
+`senderIdeal` samples the actual sender tables and commits `extract ts` before invoking the
+sender's opening continuation. It then opens that stored bit or aborts and polls the world.
+`senderIdeal_run` identifies its public law with `simulatedOpening`, now including the receipt
+and terminal observation; `senderIdeal_coupled` retains the sender state and auxiliary output
+with error at most `2⁻⌈k/2⌉`. Start the driver at `.idle` and map `Prod.fst` over its result to hide
+the final functionality store.
+
+For a corrupted receiver, `receiverPrefix` has no bit input and `receiverPrefix_committed` proves
+its observation is bit-independent in every committed state. `receiverIdeal` runs this prefix,
+then a randomized `plan` receiving only the transcript and receiver state. The plan selects
+release or abort and returns a retained later private state. Only after the actual open/abort
+command and poll does `finish` receive the terminal observation and optional reconstructed
+opening. `receiverIdeal_eq_real` equates this complete joint law with the actual honest OT
+execution, including both observations, both private states, and any randomized continuation
+output. See the [checked simulation clients](../../ComplexityTests/Crypto/OTCommitmentWorld.lean)
+for all four OT slots, the mixed-parity attack, withholding and zero calls.
+
+These are semantic `StateT Store PMF` drivers for arbitrary PMF strategies, not realized
+`ProbOracleComp` programs or efficient simulators. They cover a fixed-length single session
+with one later release decision; arbitrary scheduling, mid-commit abort, malformed bytes,
+composition and full malicious MPC remain open.
 
 ## Upstream perfect secrecy and sharing
 
