@@ -81,8 +81,11 @@ Priorities live in this list and in the tiers of [#897].
   [#2608](https://github.com/cslib-community/complexitylib/issues/2608).
   `Foundations/Analysis/Lattice/Fourier` identifies the unnormalized Fourier coefficients of
   integrable lattice periodizations at dual frequencies, including arbitrary sheared bases.
-  Fourier-series reconstruction, covolume normalization, uniform Gaussian mass estimates,
-  smoothing estimates, efficient sampling and the quantum reduction remain open in
+  Full arbitrary-lattice Poisson summation for Schwartz functions and shifted positive-width
+  Gaussians, including the covolume normalization, is proved in
+  [#2624](https://github.com/cslib-community/complexitylib/issues/2624).
+  Uniform control of Gaussian mass ratios, smoothing estimates, efficient sampling and the
+  quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
   `Foundations/MeasureTheory/Group/QuotientDensity` folds arbitrary measurable nonnegative
   densities onto countable subgroup quotients, with no finite-mass assumption. Its Gaussian
@@ -111,8 +114,11 @@ current libraries and workloads.
 
 1. **Ring arithmetic and RLWE.** The coefficient `negacyclicMul` and Module-SIS map now have
    a canonical `AdjoinRoot (X^d + 1)` interpretation in `SIS/Polynomial`, for positive dimension
-   over a nontrivial commutative coefficient ring. Remaining: certified polynomial-ring
-   operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
+   over a nontrivial commutative coefficient ring. `SIS/Native` now bridges a certified list
+   product to the existing negacyclic multiplication, uniformly over unary dimension and binary
+   modulus/coefficients, with a rank-one key-generation client. Full native scheme execution
+   still needs matrix/vector traversal and canonical key/ciphertext packing and parsing.
+   Remaining: further certified polynomial-ring operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
    conversions, rounding and modulus-switching error bounds, and negacyclic NTTs implementing
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
    experiment separately; an ordinary-LWE reduction does not give them. Module-LWE sampling now
@@ -215,8 +221,10 @@ In order:
   `1 / |F| + (1 - 1 / |F|) * (2 / |F|)`. `VOLE/MaskedMulCheck.lean` executes the check
   in a cached ideal `World` with separate role interfaces and one fresh affine mask, proving
   completeness and exact simulation of the full honest receiver view (private key/tags and
-  public transcript). Scalar-challenge batching, malicious-verifier zero knowledge, certified
-  efficient realizations and the full VOLE-in-the-head transform remain (#643);
+  public transcript). `VOLE/AdaptiveMulCheck.lean` extends the exact full-view law to arbitrary
+  receivers in that fixed schedule, retaining private coins, state and repeated setup reads.
+  Scalar-challenge batching, adversarial setup and scheduling, full zero-knowledge protocol
+  security, certified efficient realizations and the full VOLE-in-the-head transform remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security

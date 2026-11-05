@@ -6,6 +6,8 @@
 
 For finite-source statistical bounds, import [Game/CloseTo/Statistical.lean](../../Complexity/Crypto/Game/CloseTo/Statistical.lean). `Cslib.Interactive.closeTo_of_dist_le` turns a bound on the finite-PMF metric (half the L1 distance) into the existing all-event `CloseTo` relation with the same error. Its `CloseTo.bind_left` law then handles arbitrary randomized continuations, including infinite output types. This shared import exposes the existing bridge without importing lattice protocols or their native sampler certificates; the former `Lyubashevsky.Efficient` import still reexports it.
 
+For two continuations that agree outside a bad input event, import [Game/CloseTo/UntilBad.lean](../../Complexity/Crypto/Game/CloseTo/UntilBad.lean). `CloseTo.bind_of_eq_on μ f g bad` bounds the mixtures by the actual probability `μ.toOuterMeasure bad`; agreement is required only on supported inputs outside `bad`, and neither type must be finite. This lets a cache-programming step charge only the probability that the sampled point was already cached. The [checked clients](../../ComplexityTests/CloseToUntilBad.lean) retain the actual Fiat–Shamir reply and final cache, show a sharp one-half error on an infinite output type, and allow arbitrary disagreement on impossible inputs at zero cost. This law does not identify different hidden cache states or justify removing aborted queries.
+
 [ComputationallyIndistinguishable](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Basic.lean#L94) specializes admissibility to a uniform native strict-PPT test on `(1^n, sample)`. Its ensembles are arbitrary PMFs on bit strings: sampleability and polynomial output length are not bundled. `IsPPTTest` admits semantic tests whose laws have a native program witness. Efficient postprocessing and hybrid results use those certificates, not the mere presence of a Lean function.
 
 Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Primitives/PRG/Defs.lean#L38) interface, whose `Secure` accepts any chosen predicate on randomized tests, while expansion is a separate cardinality property. Complexitylib adds circuit-bounded tests and uniform machine tests on top. These are intentionally different quantifiers; the circuit version can select a new bounded circuit at each input length [cslib][cslib].
@@ -45,6 +47,25 @@ integers, composite modulus `6`, characteristic `2`, dimension `1`, and reflecti
 Module-SIS zero equation. The source function type retains pointwise multiplication; use
 `negacyclicMul` for polynomial multiplication. Dimension zero is excluded because its quotient
 is `R/(2)`. This algebraic bridge adds no hardness or runtime claim.
+
+The pure coefficient identity `negacyclicMul_eq_coeff_mul` is available separately in
+[SIS/Polynomial/Coefficients.lean](../../Complexity/Crypto/Computational/SIS/Polynomial/Coefficients.lean),
+so algebra clients need not import native computation certificates. For native multiplication, import
+[SIS/Native.lean](../../Complexity/Crypto/Computational/SIS/Native.lean).
+`negacyclicMulResidues n q a b` truncates two natural-coefficient lists to `n`, computes the
+existing integer `mulZJet (2*n)`, and reduces each lower coefficient minus its wrapped upper
+coefficient modulo `q`. Short lists are zero-padded and the output has exactly `n` entries.
+The plain certificate charges unary `n`, binary `q`, and both complete framed binary input
+lists. It imposes no coefficient-size bound. For `q > 0`, `negacyclicMulResidues_ofFn` identifies
+the output with the canonical coefficients of the existing `negacyclicMul`; neither primality
+nor positive dimension is needed. At `q = 0`, the total operation instead truncates each
+signed result at zero, with no canonical-residue interpretation claimed.
+The [checked clients](../../ComplexityTests/Crypto/NegacyclicNative.lean) include `X² = -1`
+modulo six, modulus one, empty and irregular inputs, a 128-bit modulus, and the actual
+rank-one `moduleLWEKeyGen` coefficient computation. Full key generation, encryption and
+decryption still need variable-rank traversal and canonical key/ciphertext packing and parsing.
+This arithmetic certificate does not remove the existing restrictions on exact native samplers
+or imply small-secret security.
 
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. The LWE interface exposes only the serialized public matrix `[B*t+e | B]`, with independent errors and one shared uniform secret; in [`SIS/Module.lean`](../../Complexity/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`ComplexityTests/Crypto/ModuleSIS.lean`](../../ComplexityTests/Crypto/ModuleSIS.lean)), and [`SIS/ModuleEncryption.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) builds dual-Regev public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`ComplexityTests/Crypto/ModuleEncryption.lean`](../../ComplexityTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 

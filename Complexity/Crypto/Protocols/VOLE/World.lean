@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Protocols.VOLE.Basic
 public import Complexity.Computability.Interactive.Basic
 import Complexity.Languages.Probabilistic.Oracle.Interaction
+import Complexity.Languages.Probabilistic.Oracle.Simulation
 
 /-!
 # A cached ideal VOLE world
@@ -27,6 +28,7 @@ starts a fresh session. Repeated reads do not supply fresh correlations.
 ## Main results
 
 * `voleWorld_cached_sender`, `voleWorld_cached_receiver`: cached requests return the same share.
+* `voleWorld_cached_run`: arbitrary randomized clients preserve that cache and read fixed shares.
 -/
 
 @[expose] public section
@@ -72,5 +74,38 @@ theorem voleWorld_cached_sender (c : VOLECorrelation F n) :
 theorem voleWorld_cached_receiver (c : VOLECorrelation F n) :
     (voleWorld F n).impl (.inr ()) (some c) = PMF.pure (c.receiverView, some c) := by
   simp [voleWorld]
+
+/-- Once cached, an arbitrary randomized client reads the same role-specific shares throughout
+its execution. The equality retains the final cache and all client outputs. -/
+theorem voleWorld_cached_run {α : Type} (c : VOLECorrelation F n)
+    (program : ProbOracleComp (voleSenderSpec F n ⊕ₒ voleReceiverSpec F n) α) :
+    ProbOracleComp.runWith (voleWorld F n).impl program (some c) =
+      (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+        (OracleComp.sumHandler (fun _ => PMF.pure c.senderView)
+          (fun _ => PMF.pure c.receiverView))) program).map (·, some c) := by
+  let oracle := OracleComp.sumHandler (fun _ : Unit => PMF.pure c.senderView)
+    (fun _ : Unit => PMF.pure c.receiverView)
+  have h := ProbOracleComp.run_interpret_map_state
+    (fun q => StateT.lift (σ := Unit) (oracle q)) (voleWorld F n).impl
+    (fun _ => some c) (fun q state => ?_) program ()
+  · change (ProbOracleComp.runWith (fun q => StateT.lift (σ := Unit) (oracle q))
+      program ()).map (fun (a, _) => (a, some c)) =
+        ProbOracleComp.runWith (voleWorld F n).impl program (some c) at h
+    rw [ProbOracleComp.runWith_lift] at h
+    simp only [PMF.map_comp, Function.comp_def, OracleComp.evalWith, oracle] at h
+    exact h.symm
+  · cases q with
+    | inl q =>
+      cases q
+      simp only [oracle, OracleComp.sumHandler, StateT.lift, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.pure_bind, PMF.pure_map,
+        voleWorld_cached_sender]
+      rfl
+    | inr q =>
+      cases q
+      simp only [oracle, OracleComp.sumHandler, StateT.lift, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.pure_bind, PMF.pure_map,
+        voleWorld_cached_receiver]
+      rfl
 
 end Cslib.Crypto.Protocols.VOLE
