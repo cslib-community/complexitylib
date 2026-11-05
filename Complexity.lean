@@ -4284,6 +4284,7 @@ public import Complexity.Probability.Fooling.OneSided
 public import Complexity.Probability.Forking
 public import Complexity.Probability.Guessing
 public import Complexity.Probability.HashFamily
+public import Complexity.Probability.HashFamily.Matrix
 public import Complexity.Probability.HashFamily.MultiplyShift
 public import Complexity.Probability.HashFamily.Polynomial
 public import Complexity.Probability.HashFamily.Uniform
