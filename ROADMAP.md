@@ -244,8 +244,13 @@ In order:
   completeness and exact simulation of the full honest receiver view (private key/tags and
   public transcript). `VOLE/AdaptiveMulCheck.lean` extends the exact full-view law to arbitrary
   receivers in that fixed schedule, retaining private coins, state and repeated setup reads.
-  Scalar-challenge batching, adversarial setup and scheduling, full zero-knowledge protocol
-  security, certified efficient realizations and the full VOLE-in-the-head transform remain (#643);
+  `VOLE/Circuit.lean`, `CircuitSound.lean` and `CircuitPrivacy.lean` bind the session to the existing
+  arithmetic-circuit relation `∃ w, C.eval (x ++ w) = y`: public input/output, constant and addition
+  rows join the multiplication batch. Actual role-local soundness has the same mixture bound
+  (5/8 over the fixed F4), and satisfying traces retain exact full-view simulation. Fresh-session
+  amplification, scalar-challenge batching, a complete native circuit prover/verifier certificate,
+  growing-field arithmetic, adversarial setup and scheduling, full zero-knowledge protocol security
+  and VOLE-in-the-head remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security
@@ -738,8 +743,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Exact fixed-field sampling:** `Languages/Probabilistic/Sampling/F4.lean` samples Mathlib's
   four-element quadratic field using two fair bits, with encoded arithmetic and sampler
   certificates in `Computability/Probabilistic/Sampling/F4.lean`. Uniform growing extension-field
-  arithmetic remains open. Public circuit binding for VOLE (#2688) and fresh-session soundness
-  amplification remain separate from this scalar prerequisite.
+  arithmetic remains open. The public circuit-bound VOLE session (#2688) consumes its field and
+  gives single-copy error 5/8; fresh-session amplification remains separate.
 - **Markov-chain sampling:** finite kernels, stationarity, reversibility and total-variation
   mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
   Metropolis sampling for encoded rational target weights, charging initialization, arithmetic
