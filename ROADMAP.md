@@ -796,9 +796,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `Circuit/Arithmetic/EvaluationTime.lean` certifies the full existing code trace uniformly in the
   runtime circuit and input over any fixed finite semiring, with binary indices and an F4 client.
   The public circuit-bound VOLE session (#2688) consumes F4 and gives single-copy error 5/8.
-  Growing extension-field arithmetic, complete native circuit-bound VOLE execution (#2765; #643;
-  prerequisite #2738), raw-bit adversarial transport (#2744) and fresh-session amplification
-  remain separate endpoints.
+  The shared `Circuit/Encoding/Check.lean` validates the existing gate-code predicate with
+  certified binary arity, including arithmetic codes and malformed huge indices/arity (#2770).
+  Output/count validation and complete native circuit-bound VOLE execution (#2765; #643;
+  prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
+  and fresh-session amplification remain separate endpoints.
 - **Markov-chain sampling:** finite kernels, stationarity, reversibility and total-variation
   mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
   Metropolis sampling for encoded rational target weights, charging initialization, arithmetic
