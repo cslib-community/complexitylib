@@ -3153,6 +3153,8 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Efficient
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Efficient
+public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Failure
+public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Parameters
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
