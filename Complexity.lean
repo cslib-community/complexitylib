@@ -2976,6 +2976,7 @@ public import Complexity.Crypto.Computational.Homomorphic.Leveled.Bootstrapping
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Compactness
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Correctness
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Encoding
+public import Complexity.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.PolyTime
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Reduction
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Reduction.Game
