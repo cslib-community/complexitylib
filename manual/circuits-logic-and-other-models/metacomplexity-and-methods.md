@@ -51,8 +51,9 @@ These are mathematical proof interfaces, not automatically encoded certificates 
 
 Import [`TwoBoundary`](../../Complexity/Logics/Propositional/CNF/TwoBoundary.lean)
 and open `Cslib.Logic.PL.TwoBoundary`. Supply an existing `CNF V`, an internal
-path length `r`, and `P : Fin (r + 1) → List (List (Literal V))`.
-Each `P j` is a DNF with conjunctions of literals as terms. `query B r P false`
+path length `r`, and `P : Fin (r + 1) → DNF V`.
+Each `P j` uses the existing `DNF` syntax with conjunctions of literals as terms;
+`DNF.eval x (P j)` evaluates it under assignment `x`. `query B r P false`
 and `query B r P true` are ordinary CNFs on `V ⊕ Fin r`; the two endpoint bits
 are substituted constants, not declared variables. Empty term lists are false,
 whereas an empty term is true. Every variable of the finite type is declared,

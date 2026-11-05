@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Logics.Propositional.CNF
+public import Complexity.Logics.Propositional.DNF
 public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Data.Fintype.Sum
 public import Mathlib.Data.Fintype.Sigma
@@ -40,7 +40,7 @@ external subexponential SAT theorem, row-selection algorithm or exact-one applic
 
 ## Main definitions
 
-* `query`, `predicate`: ordinary CNF boundary queries and explicit DNF predicates.
+* `query`: ordinary CNF boundary queries over the existing `DNF` syntax.
 
 ## References
 
@@ -93,44 +93,36 @@ theorem lowerClause_eval (σ : W → Bool) (c : List ((Bool ⊕ W) × Bool)) :
     lowerClause (neg ++ [(port r β j.castSucc, true), (port r β j.succ, false)])
 
 /-- Ordinary unweighted CNF after substituting both boundary constants. -/
-@[expose] def query (B : CNF V) (r : ℕ) (P : Fin (r + 1) → List (List (Literal V)))
+@[expose] def query (B : CNF V) (r : ℕ) (P : Fin (r + 1) → DNF V)
     (β : Bool) : CNF (V ⊕ Fin r) :=
   B.relabel Sum.inl ++ (List.finRange (r + 1)).flatMap fun j =>
     (P j).flatMap (termClauses r β j)
-
-/-- The DNF predicate on edge `j`. -/
-@[expose] def predicate (P : List (List (Literal V))) (x : V → Bool) : Bool :=
-  P.any fun t => t.all (Literal.eval x)
 
 /-- Each term's clauses express exactly the activated path equality. -/
 theorem termClauses_eval (r : ℕ) (β : Bool) (j : Fin (r + 1))
     (t : List (Literal V)) (σ : V ⊕ Fin r → Bool) :
     (termClauses r β j t).eval σ = true ↔
-      t.all (Literal.eval (fun v => σ (.inl v))) = true →
+      Term.eval (fun v => σ (.inl v)) t = true →
       atomEval σ (port r β j.castSucc) = atomEval σ (port r β j.succ) := by
   simp only [termClauses, CNF.eval_append, Bool.and_eq_true, lowerClause_eval,
     List.any_append, List.any_map, List.any_cons, List.any_nil]
   have hn :
       t.any (fun l => atomEval σ (.inr (.inl l.1)) == !l.2) =
-      !(t.all (Literal.eval (fun v => σ (.inl v)))) := by
-    induction t with
-    | nil => rfl
-    | cons l t ih =>
-      rcases l with ⟨v, b⟩
-      cases b <;> cases h : σ (.inl v) <;>
-        simp_all [atomEval, Literal.eval]
+      !(Term.eval (fun v => σ (.inl v)) t) := by
+    simpa only [Term.negate, Clause.eval, List.any_map, Literal.eval, atomEval,
+      Function.comp_def, Sum.elim_inr] using Term.eval_negate (fun v => σ (.inl v)) t
   simp only [Function.comp_def] at *
   rw [hn]
-  cases t.all (Literal.eval (fun v => σ (.inl v))) <;>
+  cases Term.eval (fun v => σ (.inl v)) t <;>
     cases atomEval σ (port r β j.castSucc) <;>
     cases atomEval σ (port r β j.succ) <;> decide
 
 /-- The full query is the base CNF and precisely the activated path equalities. -/
-theorem query_eval (B : CNF V) (r : ℕ) (P : Fin (r + 1) → List (List (Literal V)))
+theorem query_eval (B : CNF V) (r : ℕ) (P : Fin (r + 1) → DNF V)
     (β : Bool) (σ : V ⊕ Fin r → Bool) :
     (query B r P β).eval σ = true ↔
       B.eval (fun v => σ (.inl v)) = true ∧
-      ∀ j, predicate (P j) (fun v => σ (.inl v)) = true →
+      ∀ j, DNF.eval (fun v => σ (.inl v)) (P j) = true →
         atomEval σ (port r β j.castSucc) = atomEval σ (port r β j.succ) := by
   simp only [query, CNF.eval_append, Bool.and_eq_true, CNF.eval_relabel, Function.comp_def]
   apply and_congr_right
@@ -139,7 +131,7 @@ theorem query_eval (B : CNF V) (r : ℕ) (P : Fin (r + 1) → List (List (Litera
   simp only [List.mem_flatMap, List.mem_finRange, true_and]
   constructor
   · intro h j hj
-    obtain ⟨t, ht, htrue⟩ := List.any_eq_true.mp hj
+    obtain ⟨t, ht, htrue⟩ := (DNF.eval_eq_true_iff _ _).mp hj
     exact (termClauses_eval r β j t σ).mp
       ((CNF.eval_eq_true_iff _ _).mpr fun c hc => h c ⟨j, t, ht, hc⟩) htrue
   · intro h
@@ -172,9 +164,9 @@ theorem port_flip (x : V → Bool) (z : Fin r → Bool) (β : Bool)
   all_goals omega
 
 /-- An unrestricted edge makes the two boundary extension sets equinumerous. -/
-theorem query_flip (B : CNF V) (P : Fin (r + 1) → List (List (Literal V)))
+theorem query_flip (B : CNF V) (P : Fin (r + 1) → DNF V)
     (x : V → Bool) (z : Fin r → Bool) (β : Bool) (j : Fin (r + 1))
-    (hj : predicate (P j) x = false) :
+    (hj : DNF.eval x (P j) = false) :
     (query B r P (!β)).eval (Sum.elim x (flip j z)) = true ↔
       (query B r P β).eval (Sum.elim x z) = true := by
   simp only [query_eval, Sum.elim_inl]
@@ -201,14 +193,14 @@ theorem query_flip (B : CNF V) (P : Fin (r + 1) → List (List (Literal V)))
     · simp only [ite_eq_right hj', ite_eq_right (fun hh => hj' (hs.mpr hh)), hh]
 
 /-- Fixed-input extension count, retaining every internal variable even if unused. -/
-noncomputable def extensions [Fintype V] (B : CNF V)
-    (P : Fin (r + 1) → List (List (Literal V))) (x : V → Bool) (β : Bool) : ℕ :=
+noncomputable def extensions (B : CNF V)
+    (P : Fin (r + 1) → DNF V) (x : V → Bool) (β : Bool) : ℕ :=
   Fintype.card {z : Fin r → Bool // (query B r P β).eval (Sum.elim x z) = true}
 
 /-- Suffix-flip cancellation, including empty term lists and the zero-internal-bit case. -/
-theorem extensions_cancel [Fintype V] (B : CNF V)
-    (P : Fin (r + 1) → List (List (Literal V))) (x : V → Bool) (β : Bool)
-    (j : Fin (r + 1)) (hj : predicate (P j) x = false) :
+theorem extensions_cancel (B : CNF V)
+    (P : Fin (r + 1) → DNF V) (x : V → Bool) (β : Bool)
+    (j : Fin (r + 1)) (hj : DNF.eval x (P j) = false) :
     extensions B P x (!β) = extensions B P x β := by
   classical
   apply Fintype.card_congr
@@ -220,9 +212,9 @@ theorem extensions_cancel [Fintype V] (B : CNF V)
       right_inv := fun z => Subtype.ext (flip_flip j z.1) }
 
 /-- When every predicate holds, the path is forced to its left boundary. -/
-theorem query_all (B : CNF V) (P : Fin (r + 1) → List (List (Literal V)))
+theorem query_all (B : CNF V) (P : Fin (r + 1) → DNF V)
     (x : V → Bool) (z : Fin r → Bool) (β : Bool)
-    (hp : ∀ j, predicate (P j) x = true) :
+    (hp : ∀ j, DNF.eval x (P j) = true) :
     (query B r P β).eval (Sum.elim x z) = true ↔
       B.eval x = true ∧ β = false ∧ z = fun _ => false := by
   rw [query_eval]
@@ -250,9 +242,9 @@ theorem query_all (B : CNF V) (P : Fin (r + 1) → List (List (Literal V)))
     rw [hz, hz]
 
 /-- If all predicates hold, the unique zero-boundary extension is the all-zero assignment. -/
-theorem extensions_all [Fintype V] (B : CNF V)
-    (P : Fin (r + 1) → List (List (Literal V))) (x : V → Bool) (β : Bool)
-    (hp : ∀ j, predicate (P j) x = true) :
+theorem extensions_all (B : CNF V)
+    (P : Fin (r + 1) → DNF V) (x : V → Bool) (β : Bool)
+    (hp : ∀ j, DNF.eval x (P j) = true) :
     extensions B P x β = if B.eval x = true ∧ β = false then 1 else 0 := by
   classical
   unfold extensions
@@ -261,23 +253,23 @@ theorem extensions_all [Fintype V] (B : CNF V)
   by_cases hb : B.eval x = true <;> cases β <;> simp [hb, Finset.filter_eq']
 
 /-- Fixed-input cancellation identity before summing over the original assignments. -/
-theorem extensions_identity [Fintype V] (B : CNF V)
-    (P : Fin (r + 1) → List (List (Literal V))) (x : V → Bool) :
+theorem extensions_identity (B : CNF V)
+    (P : Fin (r + 1) → DNF V) (x : V → Bool) :
     extensions B P x false =
-      (if B.eval x = true ∧ ∀ j, predicate (P j) x = true then 1 else 0) +
+      (if B.eval x = true ∧ ∀ j, DNF.eval x (P j) = true then 1 else 0) +
         extensions B P x true := by
   classical
-  by_cases hp : ∀ j, predicate (P j) x = true
+  by_cases hp : ∀ j, DNF.eval x (P j) = true
   · rw [extensions_all B P x false hp, extensions_all B P x true hp]
     by_cases hb : B.eval x = true <;> simp [hb, hp]
   · obtain ⟨j, hj⟩ := not_forall.mp hp
-    have hj' : predicate (P j) x = false := Bool.eq_false_iff.mpr hj
+    have hj' : DNF.eval x (P j) = false := Bool.eq_false_iff.mpr hj
     have hc := extensions_cancel B P x true j hj'
     simpa [hp] using hc
 
 /-- Counting all declared query variables is the sum of the fixed-input extension counts. -/
 theorem query_count [Fintype V] [DecidableEq V] (B : CNF V)
-    (P : Fin (r + 1) → List (List (Literal V))) (β : Bool) :
+    (P : Fin (r + 1) → DNF V) (β : Bool) :
     Fintype.card {σ : V ⊕ Fin r → Bool // (query B r P β).eval σ = true} =
       ∑ x : V → Bool, extensions B P x β := by
   classical
@@ -297,8 +289,8 @@ theorem query_count [Fintype V] [DecidableEq V] (B : CNF V)
 
 /-- The exact unweighted two-query count identity; every declared variable is counted. -/
 theorem counting_identity [Fintype V] [DecidableEq V] (B : CNF V)
-    (P : Fin (r + 1) → List (List (Literal V))) :
-    Fintype.card {x : V → Bool // B.eval x = true ∧ ∀ j, predicate (P j) x = true} =
+    (P : Fin (r + 1) → DNF V) :
+    Fintype.card {x : V → Bool // B.eval x = true ∧ ∀ j, DNF.eval x (P j) = true} =
       Fintype.card {σ : V ⊕ Fin r → Bool // (query B r P false).eval σ = true} -
       Fintype.card {σ : V ⊕ Fin r → Bool // (query B r P true).eval σ = true} := by
   classical
@@ -307,8 +299,8 @@ theorem counting_identity [Fintype V] [DecidableEq V] (B : CNF V)
     (fun x _ => extensions_identity B P x)
   rw [Finset.sum_add_distrib] at h
   have hc : (∑ x : V → Bool,
-      if B.eval x = true ∧ ∀ j, predicate (P j) x = true then 1 else 0) =
-      Fintype.card {x : V → Bool // B.eval x = true ∧ ∀ j, predicate (P j) x = true} := by
+      if B.eval x = true ∧ ∀ j, DNF.eval x (P j) = true then 1 else 0) =
+      Fintype.card {x : V → Bool // B.eval x = true ∧ ∀ j, DNF.eval x (P j) = true} := by
     simp [Fintype.card_subtype]
   rw [hc] at h
   omega
@@ -358,7 +350,7 @@ theorem termClauses_width (r : ℕ) (β : Bool) (j : Fin (r + 1))
     List.length_nil] using h
 
 /-- The common width bound of the two queries. -/
-theorem query_width (B : CNF V) (P : Fin (r + 1) → List (List (Literal V)))
+theorem query_width (B : CNF V) (P : Fin (r + 1) → DNF V)
     (b d : ℕ) (hb : ∀ c ∈ B, c.length ≤ b)
     (hp : ∀ j t, t ∈ P j → t.length ≤ d) (β : Bool)
     (c : Clause (V ⊕ Fin r)) (hc : c ∈ query B r P β) :
@@ -370,9 +362,9 @@ theorem query_width (B : CNF V) (P : Fin (r + 1) → List (List (Literal V)))
       ((Nat.add_le_add_right (hp j t ht) 2).trans (le_max_right _ _))
 
 /-- The clause budget counts terms, with no additional variables or endpoint clauses. -/
-theorem query_length (B : CNF V) (P : Fin (r + 1) → List (List (Literal V))) (β : Bool) :
+theorem query_length (B : CNF V) (P : Fin (r + 1) → DNF V) (β : Bool) :
     (query B r P β).length ≤ B.length + 2 * ∑ j : Fin (r + 1), (P j).length := by
-  have ht (j : Fin (r + 1)) (ts : List (List (Literal V))) :
+  have ht (j : Fin (r + 1)) (ts : DNF V) :
       (ts.flatMap (termClauses r β j)).length ≤ 2 * ts.length := by
     induction ts with
     | nil => simp

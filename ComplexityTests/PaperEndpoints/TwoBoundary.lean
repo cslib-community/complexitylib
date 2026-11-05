@@ -27,7 +27,7 @@ example : Fintype.card {σ : Fin 1 ⊕ Fin 1 → Bool //
 
 example : Fintype.card {x : Fin 1 → Bool //
     CNF.eval x ([] : CNF (Fin 1)) = true ∧
-      ∀ j, predicate (repeatedPositive j) x = true} = 1 := by
+      ∀ j, DNF.eval x (repeatedPositive j) = true} = 1 := by
   decide +kernel
 
 example : query ([] : CNF (Fin 0)) 0 (fun _ => [[]]) false = [] := by
@@ -41,7 +41,7 @@ example : query ([] : CNF (Fin 1)) 0 (fun _ => []) false = [] ∧
   decide +kernel
 
 public theorem query_counts (B : CNF (Fin 3)) (P : Fin 4 → List (List (Literal (Fin 3)))) :
-    Fintype.card {x : Fin 3 → Bool // B.eval x = true ∧ ∀ j, predicate (P j) x = true} =
+    Fintype.card {x : Fin 3 → Bool // B.eval x = true ∧ ∀ j, DNF.eval x (P j) = true} =
       Fintype.card {σ : Fin 3 ⊕ Fin 3 → Bool // (query B 3 P false).eval σ = true} -
       Fintype.card {σ : Fin 3 ⊕ Fin 3 → Bool // (query B 3 P true).eval σ = true} :=
   counting_identity B P
