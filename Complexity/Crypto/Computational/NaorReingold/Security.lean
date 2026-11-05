@@ -29,6 +29,7 @@ import Complexity.Languages.Probabilistic.Presample
 import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Uniform
+import Complexity.Probability.Product
 import Complexity.Probability.StatisticalDistance.Product
 import Complexity.Tactic.PPT
 
@@ -248,44 +249,6 @@ private theorem naorReingoldWordHybridAt_self (F : PrimeOrderGroupFamily) (d : F
     simp [naorReingoldHybridEval]
   simp_rw [hfn, PMF.bind_const]
 
-private def shiftFinAtEquiv {m : ℕ} {α : Type*} [AddGroup α] (i : Fin m) (δ : α) :
-    (Fin m → α) ≃ (Fin m → α) where
-  toFun f := Function.update f i (f i + δ)
-  invFun f := Function.update f i (f i - δ)
-  left_inv f := by
-    funext j
-    by_cases hj : j = i
-    · subst hj; simp
-    · simp [hj]
-  right_inv f := by
-    funext j
-    by_cases hj : j = i
-    · subst hj; simp
-    · simp [hj]
-
-private theorem uniformOfFintype_bind_update_fin {m : ℕ} {α β : Type*}
-    [AddGroup α] [Fintype α] [Nonempty α] (i : Fin m) (g : (Fin m → α) → PMF β) :
-    ((PMF.uniformOfFintype α).bind fun a =>
-      (PMF.uniformOfFintype (Fin m → α)).bind fun f =>
-        g (Function.update f i a)) =
-    (PMF.uniformOfFintype (Fin m → α)).bind g := by
-  rw [PMF.bind_comm]
-  have h1 (f : Fin m → α) :
-      ((PMF.uniformOfFintype α).bind fun a => g (Function.update f i a)) =
-      ((PMF.uniformOfFintype α).bind fun δ => g (shiftFinAtEquiv i δ f)) := by
-    change (PMF.uniformOfFintype α).bind (fun a => g (Function.update f i a)) =
-      (PMF.uniformOfFintype α).bind
-        ((fun a => g (Function.update f i a)) ∘ Equiv.addLeft (f i))
-    rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
-  simp_rw [h1]
-  rw [PMF.bind_comm]
-  have h2 (δ : α) :
-      ((PMF.uniformOfFintype (Fin m → α)).bind fun f => g (shiftFinAtEquiv i δ f)) =
-      (PMF.uniformOfFintype (Fin m → α)).bind g := by
-    change (PMF.uniformOfFintype (Fin m → α)).bind (g ∘ shiftFinAtEquiv i δ) = _
-    rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
-  simp_rw [h2, PMF.bind_const]
-
 private def wordPrefixTableEquiv (α : Type*) (k : ℕ) :
     (BitString k → α × α) ≃ (BitString (k + 1) → α) :=
   ((Equiv.piCongrRight fun _ : BitString k =>
@@ -381,8 +344,10 @@ private theorem multiDDHRealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGr
       exact congrArg (· • F.generator d) (by ring)
     · simp [hxk, smul_smul, mul_comm]
   simp_rw [hfn]
-  exact uniformOfFintype_bind_update_fin ⟨k, hk⟩
-    (fun α => naorReingoldWordRun F d prog (F.naorReingoldHybridEval d k B α))
+  simpa only [PMF.bind_bind, PMF.bind_map, Function.comp_def] using
+    congrArg (fun p : PMF (Fin m → ZMod (F.order d)) => p.bind
+      (fun α => naorReingoldWordRun F d prog (F.naorReingoldHybridEval d k B α)))
+      (PMF.uniformOfFintype_update (γ := ZMod (F.order d)) ⟨k, hk⟩)
 
 private theorem multiDDHIdealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGroupFamily)
     (d : F.Desc) {m : ℕ} (k : ℕ) (hk : k < m) (prog : WordOracleComp Unit Bool) :

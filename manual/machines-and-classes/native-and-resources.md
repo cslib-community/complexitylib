@@ -84,6 +84,15 @@ The source of [MachinePrograms.lean](https://github.com/cslib-community/complexi
 
 ## Composing polynomial resource envelopes
 
+For a polynomial-time map on pairs, import
+[`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Families`](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Families.lean).
+Given `hg : ComputableInPolyTime g (encPair encA encB) encC` and polynomial bounds `ha`, `hb`
+on the encoded lengths of two input families, `hg.polynomiallyBounded_length_prod ha hb`
+bounds the encoded output family. The families themselves need not be computable. The
+[Levin](../../Complexity/Crypto/Computational/ZeroKnowledge/Levin.lean) and
+[amplification](../../Complexity/Crypto/Computational/ZeroKnowledge/Amplification.lean)
+proofs use this rule to transport witness families through the same deterministic reduction.
+
 Import
 [`ResourceBounds.Polynomial.Automation`](../../Complexity/Computability/Machines/Turing/MultiTape/ResourceBounds/Polynomial/Automation.lean)
 and use `growth_poly` for `Turing.MultiTapeTM.PolyBounded size cost`. Local certificates supply
@@ -97,6 +106,13 @@ factorials need independent bounds and are rejected by the
 [ordinary-import examples](../../ComplexityTests/PolynomialGrowth.lean). Exact instruction
 allowances, encoded-output bounds and physical word fits remain separate obligations; a coarse
 polynomial envelope does not certify a particular word width or a fixed degree.
+
+Pure lookup in `frame u ++ v` uses the small
+[`Encodings.Frame.Lookup`](../../Complexity/Computability/Machines/Turing/MultiTape/Encodings/Frame/Lookup.lean)
+module. `getElem?_frame_append` identifies each marker and data bit;
+`getElem?_frame_append_boundary` identifies the terminator and suffix, including out-of-bounds
+lookup. Both the unary take/drop and zip-transducer machine proofs use these list laws, so
+clients can reuse them without importing either machine implementation.
 
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib

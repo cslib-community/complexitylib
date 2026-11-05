@@ -14,7 +14,7 @@ public import Complexity.Computability.Complexity.Classes.WPP.Lowness
 import Complexity.Computability.Complexity.Classes.Oracle.PolyTime
 import Complexity.Computability.Complexity.Classes.SharpP.Aggregation
 import Complexity.Computability.Complexity.Classes.SharpP.PolyTime
-import Complexity.Computability.Complexity.Classes.SharpP.Products
+import Complexity.Computability.Complexity.Classes.SharpP.OracleReplay
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Oracle
@@ -139,23 +139,6 @@ section Replay
 
 variable {tapes : ℕ} {Control Operation : Type} [DecidableEq Operation]
 
-/-- The `#P` factor certifying instruction `x.2` of transcript `x.1.2` on instance `x.1.1`. -/
-private def replayStepFactor (machine : MultiTapePTM tapes Bool Control Operation)
-    (input : α → List Bool) (fYes fNo : List Bool → ℕ)
-    (x : (α × List Bool) × ℕ) : ℕ :=
-  let cfg := machine.replayPrefix (input x.1.1) x.1.2 x.2
-  if (machine.pendingQuery cfg).isSome then
-    let q := machine.pendingRequest cfg
-    if x.1.2.getD x.2 false then fYes q else fNo q
-  else
-    if x.1.2.getD x.2 false then 0 else 1
-
-/-- The `#P` product certifying all instructions of transcript `x.2` on instance `x.1`. -/
-private def replayPathCount (machine : MultiTapePTM tapes Bool Control Operation)
-    (input : α → List Bool) (fYes fNo : List Bool → ℕ)
-    (x : α × List Bool) : ℕ :=
-  ∏ i ∈ range x.2.length, replayStepFactor machine input fYes fNo (x, i)
-
 /-- The `#P` sum over all transcripts of length `T a` weighted by an outer `#P` function `F` of the
 replayed output. -/
 private def replayWeightedSum (machine : MultiTapePTM tapes Bool Control Operation)
@@ -164,45 +147,6 @@ private def replayWeightedSum (machine : MultiTapePTM tapes Bool Control Operati
   ∑ w : Fin (T a) → Bool,
     replayPathCount machine input fYes fNo (a, List.ofFn w) *
       F (a, machine.replayOutput (input a) (List.ofFn w))
-
-private theorem replayStepFactor_mem_SharpP [Finite Control] [Finite Operation]
-    (machine : MultiTapePTM tapes Bool Control Operation) {input : α → List Bool}
-    {fYes fNo : List Bool → ℕ}
-    (hinput : ComputableInPolyTime input enc encBits)
-    (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits) :
-    replayStepFactor machine input fYes fNo ∈ SharpP (encPair (encPair enc encBits) encUnary) := by
-  let _ := Fintype.ofFinite Operation
-  let cfg : (α × List Bool) × ℕ → FiniteConfig tapes Bool Control Operation :=
-    fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
-  have hcfg : ComputableInPolyTime cfg
-      (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    machine.computableInPolyTime_replayPrefix.comp (g := fun x : (α × List Bool) × ℕ =>
-      ((input x.1.1, x.1.2), x.2)) (by fun_prop)
-  have hquery : ComputableInPolyTime
-      (fun x => (machine.pendingQuery (cfg x)).isSome)
-      (encPair (encPair enc encBits) encUnary) encBool :=
-    (ComputableInPolyTime.of_finite Option.isSome).comp
-      (machine.pendingQuery_pt.comp hcfg)
-  have hreq : ComputableInPolyTime
-      (fun x => machine.pendingRequest (cfg x))
-      (encPair (encPair enc encBits) encUnary) encBits :=
-    machine.pendingRequest_pt.comp hcfg
-  have hbit : ComputableInPolyTime
-      (fun x : (α × List Bool) × ℕ => x.1.2.getD x.2 false)
-      (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
-  exact SharpP.ite_mem hquery
-    (SharpP.ite_mem hbit (SharpP.comp_mem hYes hreq)
-      (SharpP.comp_mem hNo hreq))
-    (SharpP.ite_mem hbit SharpP.zero_mem SharpP.one_mem)
-
-private theorem replayPathCount_mem_SharpP [Finite Control] [Finite Operation]
-    (machine : MultiTapePTM tapes Bool Control Operation) {input : α → List Bool}
-    {fYes fNo : List Bool → ℕ}
-    (hinput : ComputableInPolyTime input enc encBits)
-    (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits) :
-    replayPathCount machine input fYes fNo ∈ SharpP (encPair enc encBits) :=
-  SharpP.prod_range_mem (replayStepFactor_mem_SharpP machine hinput hYes hNo)
-    (r := fun x : α × List Bool => x.2.length) (by fun_prop)
 
 private theorem replayWeightedSum_mem_SharpP [Finite Control] [Finite Operation]
     (machine : MultiTapePTM tapes Bool Control Operation) {input : α → List Bool}
@@ -221,92 +165,6 @@ private theorem replayWeightedSum_mem_SharpP [Finite Control] [Finite Operation]
     SharpP.comp_mem hF ((ComputableInPolyTime.fst enc encBits).prod
       (machine.computableInPolyTime_replayOutput.comp hpair))
   exact SharpP.sum_bits_mem (SharpP.mul_mem hpath hout) hT
-
-private theorem replayStepFactor_pos_iff (machine : MultiTapePTM tapes Bool Control Operation)
-    (input : α → List Bool) {fYes fNo : List Bool → ℕ} {g : List Bool → Bool}
-    (hYes : ∀ q, g q = true ↔ 0 < fYes q) (hNo : ∀ q, g q = false ↔ 0 < fNo q)
-    (a : α) (answers : List Bool) (i : ℕ) :
-    0 < replayStepFactor machine input fYes fNo ((a, answers), i) ↔
-      answers.getD i false =
-        let cfg := machine.replayPrefix (input a) answers i
-        if (machine.pendingQuery cfg).isSome then g (machine.pendingRequest cfg) else false := by
-  unfold replayStepFactor
-  dsimp only
-  set cfg := machine.replayPrefix (input a) answers i
-  cases hq : (machine.pendingQuery cfg).isSome
-  · cases hb : answers.getD i false <;> simp
-  · cases hb : answers.getD i false
-    · simp [← hNo (machine.pendingRequest cfg)]
-    · simp [← hYes (machine.pendingRequest cfg)]
-
-private theorem take_eq_take_oracleReplies_of_forall_getD
-    (machine : MultiTapePTM tapes Bool Control Operation) (g : List Bool → Bool)
-    (input answers : List Bool)
-    (h : ∀ i < answers.length, answers.getD i false =
-      let cfg := machine.replayPrefix input answers i
-      if (machine.pendingQuery cfg).isSome then g (machine.pendingRequest cfg) else false) :
-    ∀ m ≤ answers.length,
-      answers.take m = (machine.oracleReplies g answers.length input).take m := by
-  set oracle := machine.oracleReplies g answers.length input
-  have hlen_or : oracle.length = answers.length :=
-    machine.length_oracleReplies g answers.length input
-  intro m hm
-  induction m with
-  | zero => rfl
-  | succ m ih =>
-    have hm_lt : m < answers.length := Nat.lt_of_succ_le hm
-    have hm_or : m < oracle.length := hlen_or ▸ hm_lt
-    have ih_m : answers.take m = oracle.take m := ih hm_lt.le
-    have hcfg : machine.replayPrefix input answers m =
-        machine.replayPrefix input oracle m := by
-      simp only [replayPrefix, ih_m]
-    have hbit : answers[m] = oracle[m] := by
-      rw [← List.getD_eq_getElem answers false hm_lt,
-        ← List.getD_eq_getElem oracle false hm_or,
-        h m hm_lt, machine.getD_oracleReplies g answers.length input m hm_lt, hcfg]
-    calc
-      answers.take (m + 1) = answers.take m ++ [answers[m]] :=
-        List.take_succ_eq_append_getElem hm_lt
-      _ = oracle.take m ++ [oracle[m]] := by rw [ih_m, hbit]
-      _ = oracle.take (m + 1) := (List.take_succ_eq_append_getElem hm_or).symm
-
-private theorem replayPathCount_pos_iff (machine : MultiTapePTM tapes Bool Control Operation)
-    (input : α → List Bool) {fYes fNo : List Bool → ℕ} {g : List Bool → Bool}
-    (hYes : ∀ q, g q = true ↔ 0 < fYes q) (hNo : ∀ q, g q = false ↔ 0 < fNo q)
-    (a : α) (answers : List Bool) :
-    0 < replayPathCount machine input fYes fNo (a, answers) ↔
-      answers = machine.oracleReplies g answers.length (input a) := by
-  unfold replayPathCount
-  rw [CanonicallyOrderedAdd.prod_pos]
-  simp only [mem_range,
-    replayStepFactor_pos_iff machine input hYes hNo a answers]
-  constructor
-  · intro h
-    have htake := take_eq_take_oracleReplies_of_forall_getD machine g (input a) answers h
-      answers.length le_rfl
-    have hlen : (machine.oracleReplies g answers.length (input a)).length = answers.length :=
-      machine.length_oracleReplies g answers.length (input a)
-    rwa [List.take_length, List.take_of_length_le hlen.le] at htake
-  · intro h i hi
-    have hstep := machine.getD_oracleReplies g answers.length (input a) i hi
-    rwa [← h] at hstep
-
-private theorem replayStepFactor_le_one (machine : MultiTapePTM tapes Bool Control Operation)
-    (input : α → List Bool) {fYes fNo : List Bool → ℕ}
-    (hYes_le : ∀ q, fYes q ≤ 1) (hNo_le : ∀ q, fNo q ≤ 1)
-    (x : (α × List Bool) × ℕ) :
-    replayStepFactor machine input fYes fNo x ≤ 1 := by
-  unfold replayStepFactor
-  dsimp only
-  split_ifs <;> first | exact hYes_le _ | exact hNo_le _ | omega
-
-private theorem replayPathCount_le_one (machine : MultiTapePTM tapes Bool Control Operation)
-    (input : α → List Bool) {fYes fNo : List Bool → ℕ}
-    (hYes_le : ∀ q, fYes q ≤ 1) (hNo_le : ∀ q, fNo q ≤ 1)
-    (x : α × List Bool) :
-    replayPathCount machine input fYes fNo x ≤ 1 :=
-  Finset.prod_le_one fun i _ =>
-    replayStepFactor_le_one machine input hYes_le hNo_le (x, i)
 
 private theorem replayWeightedSum_eq_of_le_one
     (machine : MultiTapePTM tapes Bool Control Operation)

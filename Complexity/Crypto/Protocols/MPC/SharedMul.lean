@@ -221,7 +221,9 @@ private theorem twoPartyMul_target_eq (x : Fin 2 → Bool × Bool) :
 instance instFintypeFinCasesBoolUnit (i : Fin 2) : Fintype (Fin.cases Bool (fun _ => Unit) i) :=
   Fin.cases (inferInstanceAs (Fintype Bool)) (fun _ => inferInstanceAs (Fintype Unit)) i
 
-private theorem eval_pi_twoPartyMulCoins :
+/-- The independent local coin samplers are a single uniform sender bit and a fixed receiver
+coin. -/
+theorem eval_pi_twoPartyMulCoins :
     ProbComp.eval (OracleComp.pi twoPartyMulProtocol.sampleCoins) =
       (PMF.uniformOfFintype Bool).map twoPartyMulCoins := by
   ext r
