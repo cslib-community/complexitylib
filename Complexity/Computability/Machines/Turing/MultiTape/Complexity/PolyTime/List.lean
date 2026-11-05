@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.DecoderPrimit
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Foundations.Data.BitString.List.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
 import Mathlib.Data.List.GetD
 
 /-!
@@ -868,8 +869,7 @@ theorem bitsTakeWithInput {γ : Type}
     (hcount : ComputableInPolyTime count encIn encUnary) :
     ComputableInPolyTime (fun (x : γ) => List.take (count x) (list x))
   encIn encBits :=
-  .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTakeWithInput γ encIn list count
-      hlist.tidy hcount.tidy)
+  ComputableInDegree.bitsTake.computableInPolyTime.comp (hlist.prod hcount)
 
 /-- The encoded input length, computed in unary by reading the input word. -/
 @[fun_prop]
@@ -1036,7 +1036,7 @@ theorem bitsDropWithInput {α : Type} {input : α ↪ List Bool}
     (hlist : ComputableInPolyTime list input encBits)
     (hcount : ComputableInPolyTime count input encUnary) :
     ComputableInPolyTime (fun a => (list a).drop (count a)) input encBits :=
-  .of_tidy (ComputableTidilyInPolyTime.bitsDropWithInput hlist.tidy hcount.tidy)
+  ComputableInDegree.bitsDrop.computableInPolyTime.comp (hlist.prod hcount)
 
 /-- Length of a computed raw word, fixing the intermediate encoding for proof search. -/
 @[fun_prop]

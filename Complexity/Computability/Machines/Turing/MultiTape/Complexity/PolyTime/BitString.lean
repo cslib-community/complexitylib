@@ -16,6 +16,7 @@ public import Complexity.Foundations.Data.BitString.Enumeration
 public import Complexity.Foundations.Data.BitString.WordCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -539,7 +540,7 @@ theorem binary_to_unary_bounded {α : Type} {input : α ↪ List Bool} {value bo
 /-- Convert a raw bit string to the framed list encoding. -/
 @[fun_prop]
 theorem bitsToList : ComputableInPolyTime (fun l => l) encBits (encList encBool) :=
-  .of_tidy (ComputableTidilyInPolyTime.bitsToList)
+  ComputableInDegree.bitsToList.computableInPolyTime
 
 /-- Optional lookup in a raw bit string, fixing the representation of the returned bit. -/
 @[fun_prop]
