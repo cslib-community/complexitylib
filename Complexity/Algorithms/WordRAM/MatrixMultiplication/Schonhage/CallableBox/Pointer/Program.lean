@@ -98,7 +98,7 @@ end Reg
 /-- Computed layout, physical gather and the unchanged source continuation. -/
 @[expose] def core : Code .standard 173 :=
   .seq setupLayout <| .seq gather <|
-    ((MemoryWindow.compile PointerInput.continuation).rename callableBank)
+    ((MemoryWindow.compile (BoxProduct.programFromSnapshot true)).rename callableBank)
 
 /-- Complete pointer front with the existing exact physical input/answer normalization. -/
 @[expose] def program : Code .standard 173 :=

@@ -180,6 +180,20 @@ advertised envelope. This compares certified allowances, not measured execution 
 neither the reserved window nor the 1.9992/2.99835 headline exponents. The original `RecordProduct`
 and contiguous-input `CallableBoxProduct` retain their own initialized/restoring clients.
 
+For a source-level continuation after a real gather, import
+`Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.Exec` and use
+[`BoxProduct.exec_fromSnapshot`](../../Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/BoxProduct/Exec.lean).
+It requires actual computed parameters, threshold, ordinary scalar header and protected-snapshot
+readback. Low matrix/query words may be dirty; snapshot word zero is restored exactly.
+Both raw unsigned and canonical signed matrix inputs use this same charged suffix:
+`QueriedProduct.exec_routingFromSnapshot` routes occurrences,
+`BoxProduct.exec_frontFromSnapshot` prepares matrices and bands, and `exec_fromSnapshot`
+constructs geometry, evaluates tiles, reconstructs original occurrences and restores input.
+The contiguous `BoxProduct.exec` establishes the snapshot by its actual original copy, then
+uses the same suffix. Pointer-only routing/front/execution modules have been removed; use
+the shared source topics directly. The physical gather and native memory-window frames remain
+proved in `CallableBox.Pointer`; a canonical register view does not establish a memory frame.
+
 When composing another proved record product with the existing verifier, use
 `RecordWitness.exec_after_product` from `RecordWitness.AfterProduct`. Supply its actual
 execution, actual output offset, exact signed matrix-product answers, outside-window memory

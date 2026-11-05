@@ -9,7 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Setup
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Readback
-public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PointerInput.Exec
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.Exec
 import all Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Exec
 
 /-!
@@ -31,7 +31,7 @@ open CallableProduct
 /-- Setup, source layout, native gather, and the remaining translated source instructions. -/
 @[expose] def coreTime (m t : ℕ) {N : ℕ} (qs : List (Fin N × Fin N)) : ℕ :=
   517 * Nat.clog 2 (N + qs.length + 3) + 184 + 3 * PointerInput.prefixTime (21 * m) +
-    gatherTime (N * D m) qs.length + 3 * PointerInput.continuationTime (21 * m) m t qs
+    gatherTime (N * D m) qs.length + 3 * BoxProduct.snapshotTimeBound (21 * m) m t qs
 
 /-- Execute the genuine pointer front, including all source work after the removed copy. -/
 theorem exec_core {W b m t N s r q : ℕ}
@@ -149,11 +149,11 @@ theorem exec_core {W b m t N s r q : ℕ}
     rw [gm, gatherMemory_outside _ _ _ _ _ _ _ _ _ (Or.inl (by omega)), um,
       hheader a ha5, Nat.mod_eq_of_lt (hi'.2 a)]
     exact hsource a ha (by unfold QueriedProduct.inputEnd; omega)
-  obtain ⟨p, hp, pp, _, pv, pi, pt, _⟩ := PointerInput.exec hw (show m ≤ 21 * m by omega)
-    ht X Y qs original (view (sourceWidth N qs.length) b g) hsource gp gt gheader gsnapshot
-    hXabs hYabs ⟨fun i k => (hX i k).1, fun k j => (hY k j).1⟩ hmag hbudget'
-  have hp' : ExecWithin (sourceWidth N qs.length) PointerInput.continuation
-      (view (sourceWidth N qs.length) b g) p (PointerInput.continuationTime (21 * m) m t qs) := by
+  obtain ⟨p, hp, pp, _, pv, pi, pt, _⟩ := BoxProduct.exec_fromSnapshot hw (show m ≤ 21 * m by omega)
+    ht true X Y qs original (view (sourceWidth N qs.length) b g) hsource gp gt gheader gsnapshot
+    hXabs hYabs (fun _ => ⟨fun i k => (hX i k).1, fun k j => (hY k j).1⟩) hmag hbudget'
+  have hp' : ExecWithin (sourceWidth N qs.length) (BoxProduct.programFromSnapshot true)
+      (view (sourceWidth N qs.length) b g) p (BoxProduct.snapshotTimeBound (21 * m) m t qs) := by
     simpa only [htwo] using hp
   obtain ⟨y, hy, ym, yf, _⟩ := exec_source hp' (by decide) gvbound g
     ⟨rfl, gb, gM⟩ (setup_fits hphysical).1

@@ -14,6 +14,7 @@ public import Complexity.Computability.WordRAM.Structured
 
 ## Main results
 
+* `WordRAM.ExecWithin.seq_iff`: split a block at its actual intermediate state and stage budgets.
 * `WordRAM.ExecWithin.seq_assoc`: compose an already proved instruction block with the
   surrounding right-associated program, without repeating its execution proof.
 
@@ -24,6 +25,17 @@ module avoids extending the interface of the widely imported structured-code cor
 @[expose] public section
 
 namespace Cslib.WordRAM.ExecWithin
+
+/-- Split sequential execution into actual intermediate data and charged stage budgets. -/
+theorem seq_iff {B : Basis} {r w T : ℕ} {a b : Code B r} {x z : Data r} :
+    ExecWithin w (.seq a b) x z T ↔
+      ∃ y T₁ T₂, ExecWithin w a x y T₁ ∧ ExecWithin w b y z T₂ ∧ T₁ + T₂ ≤ T := by
+  constructor
+  · rintro ⟨n, hn, he⟩
+    cases he with
+    | seq ha hb => exact ⟨_, _, _, ha.within, hb.within, hn⟩
+  · rintro ⟨y, T₁, T₂, ha, hb, hT⟩
+    exact (ha.seq hb).mono hT
 
 /-- Sequential blocks may be regrouped while preserving every instruction charge. -/
 theorem seq_assoc {B : Basis} {r w T : ℕ} {a b c : Code B r} {x y : Data r} :

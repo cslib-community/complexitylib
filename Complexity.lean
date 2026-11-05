@@ -466,10 +466,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Forms
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Header
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Input
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Meaning
-public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PointerInput.Exec
-public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PointerInput.Front
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PointerInput.Program
-public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PointerInput.Routing
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PointerInput.Setup
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Admission
