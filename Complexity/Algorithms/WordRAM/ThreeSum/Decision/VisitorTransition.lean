@@ -16,7 +16,7 @@ import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Registers
 /-!
 # Complete live transitions of the fused Chan–He visitor
 
-Each live transition executes actual popping, local node construction, the certified solver
+Each live transition executes actual popping, local node construction, the certified solver,
 one packed-tail release and three child pushes. No pointer-table readback is assumed. Pending
 arrays and the frontend
 prefix survive the callee's arbitrary higher scratch writes.
