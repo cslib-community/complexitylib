@@ -56,6 +56,43 @@ example : schnorrGroups.schnorrSigVerifyBits
     (d23, Nat.bits 8, [true], (Nat.bits 9, Nat.bits 4), [true, false, true]) = false := by
   decide
 
+/-- The old verification equation reduced an unchecked commitment modulo `23`: the word for
+`32 = 9 + 23` passed in place of the canonical commitment `9`. This records that old expression,
+not another public verifier. -/
+example :
+    (schnorrGroups.smul (d23, 9, schnorrGroups.encode d23 (schnorrGroups.generator d23)) ==
+      schnorrGroups.add (d23, Nat.bits 32,
+        schnorrGroups.smul (d23, 5, Nat.bits 8))) = true := by decide
+
+/-- The bad commitment is outside the actual Schnorr group's encoding range. -/
+example : Nat.bits 32 ∉ Set.range (schnorrGroups.encode d23) := by
+  rintro ⟨x, hx⟩
+  change SchnorrGroup.encode d23 x = Nat.bits 32 at hx
+  have h := congrArg ofBits hx
+  simp only [SchnorrGroup.encode, ofBits, Nat.foldr_bit_bits] at h
+  have hlt := ZMod.val_lt
+    (((Additive.toMul x : Subgroup.zpowers (SchnorrGroup.generatorUnit d23)) :
+      (ZMod d23.modulus)ˣ) : ZMod d23.modulus)
+  change _ < 23 at hlt
+  omega
+
+/-- Canonical recovery rejects the same malformed commitment. -/
+example : schnorrGroups.schnorrSigVerifyBits
+    (d23, Nat.bits 8, [true], (Nat.bits 32, Nat.bits 9), [true, false, true]) = false := by
+  decide
+
+/-- A redundant high zero bit also fails exact word equality. -/
+example : schnorrGroups.schnorrSigVerifyBits
+    (d23, Nat.bits 8, [true], (Nat.bits 9 ++ [false], Nat.bits 9),
+      [true, false, true]) = false := by decide
+
+/-- Accepted commitments lie in the group's encoding range for every response/challenge word. -/
+example (F : PrimeOrderGroupFamily) (d : F.Desc) (u : F.Carrier d)
+    (msg t z roOut : List Bool)
+    (h : F.schnorrSigVerifyBits (d, F.encode d u, msg, (t, z), roOut) = true) :
+    t ∈ Set.range (F.encode d) :=
+  F.schnorrSigVerifyBits_commitment_mem_range d u msg t z roOut h
+
 /-- Public commitment recovery reconstructs `2 ^ 9 · (8 ^ (11 - 5)) ≡ 9 (mod 23)`. -/
 example : schnorrGroups.schnorrRecoverCommitBits
     (d23, Nat.bits 8, [true, false, true], Nat.bits 9) = Nat.bits 9 := by

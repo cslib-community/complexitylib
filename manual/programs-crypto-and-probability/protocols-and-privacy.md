@@ -173,6 +173,15 @@ verification and commitment recovery, with polynomial-time certificates. The sup
 must come from hashing `(message, commitment)` in the surrounding signature protocol; these
 arithmetic operations alone do not enforce random-oracle consistency.
 
+The word verifier compares the supplied commitment with canonical public commitment recovery.
+For a canonical public key, acceptance forces the commitment into the encoding range, for arbitrary
+response and challenge words; no group-membership decoder is assumed. This rejects aliases such as
+`32` in place of residue `9` in the group modulo `23`, which the previous arithmetic comparison
+normalized. The encoded verification equation, honest completeness and native runtime certificates
+are preserved. Malformed public keys have no encoding-range guarantee. The typed-game transport of
+arbitrary hash words and the approximate key-generation law remain part of the full ROM bridge
+[#2568](https://github.com/cslib-community/complexitylib/issues/2568).
+
 The same module instantiates `schnorrFamilyROMScheme` with `m`-bit challenges when
 `2 ^ m ≤ F.order d`, and `schnorrScalarROMScheme` with full scalar challenges. Their exact typed
 EUF-CMA bounds account for both signing queries and random-oracle queries. The asymptotic theorem
