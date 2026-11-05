@@ -90,17 +90,6 @@ def lowWidth (k w idx : ℕ) : ℕ :=
 def highWidth (k w idx : ℕ) : ℕ :=
   k - lowWidth k w idx
 
-/-- For every `w ≥ 2`, `2 * w ≤ 2 ^ w`. -/
-theorem two_mul_le_two_pow : ∀ {w : ℕ}, 2 ≤ w → 2 * w ≤ 2 ^ w
-  | 2, _ => by decide
-  | w + 3, _ => by
-    have ih := two_mul_le_two_pow (w := w + 2) (by omega)
-    have hpos : 2 ≤ 2 ^ (w + 2) :=
-      calc 2 = 2 ^ 1 := by decide
-        _ ≤ 2 ^ (w + 2) := Nat.pow_le_pow_right (by decide) (by omega)
-    rw [Nat.pow_succ]
-    omega
-
 /-- For every `w ≥ 1`, `(w - 1) * w < 2 ^ w`. -/
 theorem pred_mul_self_lt_two_pow : ∀ {w : ℕ}, 1 ≤ w → (w - 1) * w < 2 ^ w
   | 1, _ => by decide
@@ -108,7 +97,7 @@ theorem pred_mul_self_lt_two_pow : ∀ {w : ℕ}, 1 ≤ w → (w - 1) * w < 2 ^ 
   | 3, _ => by decide
   | w + 4, _ => by
     have ih := pred_mul_self_lt_two_pow (w := w + 3) (by omega)
-    have h2 := two_mul_le_two_pow (w := w + 3) (by omega)
+    have h2 : 2 * (w + 3) ≤ 2 ^ (w + 3) := Nat.mul_le_pow (a := 2) (by decide) (w + 3)
     have hrew : (w + 4 - 1) * (w + 4) = (w + 3 - 1) * (w + 3) + 2 * (w + 3) := by
       change (w + 3) * (w + 4) = (w + 2) * (w + 3) + 2 * (w + 3)
       ring
