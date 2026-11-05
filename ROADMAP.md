@@ -104,9 +104,10 @@ current libraries and workloads.
    conversions, rounding and modulus-switching error bounds, and negacyclic NTTs implementing
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
    experiment separately; an ordinary-LWE reduction does not give them. Module-LWE sampling now
-   permits explicit small-secret laws, with a native centered-binomial instance; randomized
-   correctness and small-secret security for those laws remain separate goals. Nearest-integer
-   coefficient conversion and the Module-LWE phase-error bound are available in
+   permits explicit small-secret laws, with a native centered-binomial instance.
+   `SIS/ModulusSwitch/Failure` bounds randomized switched-decryption failure by the actual noise
+   tail under explicit secret-support and decoding margins; small-secret security remains open.
+   Nearest-integer coefficient conversion and the Module-LWE phase-error bound are available in
    `SIS/ModulusSwitch`; `SIS/ModulusSwitch/Correctness` gives sufficient decryption-preserving
    margins including odd-modulus message scaling. Parity-preserving switching variants remain
    open. `SIS/ModulusSwitch/Native` certifies exact coefficient conversion
