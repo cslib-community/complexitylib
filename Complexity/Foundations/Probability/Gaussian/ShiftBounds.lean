@@ -18,6 +18,8 @@ public import Complexity.Foundations.Probability.Gaussian.Poisson
   Gaussian sum over nonzero lattice points.
 * `ZLattice.abs_gaussianMass_normalized_sub_one_le`: normalized mass at every center differs
   from one by at most the nonzero reciprocal-width dual mass.
+* `ZLattice.gaussianMass_mem_Icc_of_dual_mass_le`: a bound on that actual dual mass gives
+  the two-sided shifted-mass interval.
 
 ## References
 

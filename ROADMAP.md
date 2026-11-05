@@ -71,8 +71,11 @@ Priorities live in this list and in the tiers of [#897].
   [#2624](https://github.com/cslib-community/complexitylib/issues/2624).
   Centered Gaussian mass scaling and the strict radius-`s√n` tail bound of Regev’s
   Lemmas 2.4–2.5 are proved in
-  [#2646](https://github.com/cslib-community/complexitylib/issues/2646). Uniform off-center
-  estimates, smoothing, efficient sampling and the quantum reduction remain open in
+  [#2646](https://github.com/cslib-community/complexitylib/issues/2646). Uniform shifted-mass
+  control by the actual nonzero dual Gaussian mass, with a quantitative sufficient width
+  criterion and eventual satisfiability, is proved in
+  [#2659](https://github.com/cslib-community/complexitylib/issues/2659). Quotient-distribution
+  consequences, convolution bounds, efficient sampling and the quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
