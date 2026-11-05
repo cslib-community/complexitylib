@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import Cslib.Algorithms.Lean.TimeM
 public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.MinEntropy
 public import Complexity.Probability.PMF.Uniform
@@ -40,6 +41,8 @@ sharing maps and these source PMFs. No parallel scheme interface is introduced.
 
 * `perfect_privacy`: each single-share distribution is independent of the secret.
 * `no_bit_extractor`: every deterministic extractor has error at least `1/6` on some source.
+* `shareWithFieldCost_spec`, `reconstructWithFieldCost_spec`: the concrete sharing and
+  reconstruction routines use at most three and four field operations, respectively.
 * `sharing_at_bit_size`: exact alphabet sizes, entropy, reconstruction, privacy and extraction
   obstruction at each admissible field cardinality.
 
@@ -392,6 +395,25 @@ noncomputable def paddedSource [Fintype V] [DecidableEq V] [Nonempty V]
     (T : Finset V) : PMF (PaddedKey V) :=
   PMF.uniformOfFinset (paddedKeys T) ((keys_nonempty T).image pad)
 
+/-- Every padded source has at least one allowed key. -/
+theorem paddedKeys_nonempty [Fintype V] [DecidableEq V] [Nonempty V]
+    (T : Finset V) : (paddedKeys T).Nonempty :=
+  (keys_nonempty T).image pad
+
+/-- Padding preserves the number of allowed keys. -/
+theorem card_paddedKeys [Fintype V] [DecidableEq V] (T : Finset V) :
+    (paddedKeys T).card = 2 * Fintype.card V - T.card := by
+  rw [paddedKeys, Finset.card_image_of_injective _ pad_injective, card_keys]
+
+open scoped Classical in
+/-- The padded source is uniform on precisely its allowed keys. -/
+theorem paddedSource_apply [Fintype V] [DecidableEq V] [Nonempty V]
+    (T : Finset V) (k : PaddedKey V) :
+    paddedSource T k = if k ∈ paddedKeys T then (↑(paddedKeys T).card : ENNReal)⁻¹ else 0 := by
+  have h := PMF.uniformOfFinset_apply (paddedKeys T) ((keys_nonempty T).image pad) k
+  by_cases hk : k ∈ paddedKeys T <;>
+    simpa only [paddedSource, hk, ite_true, ite_false] using h
+
 /-- Padding is an injective re-encoding of the actual uniform source. -/
 theorem paddedSource_eq_map [Fintype V] [DecidableEq V] [Nonempty V]
     (T : Finset V) : paddedSource T = (source T).map pad := by
@@ -499,5 +521,64 @@ theorem sharing_at_bit_size [Field V] [Fintype V] [DecidableEq V]
   rw [hV, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
     Real.logb_self_eq_one (by norm_num), mul_one] at hent
   exact hent
+
+/-- Both shares, charging one unit for each field addition or multiplication.
+Tag inspection, pairing and field-coordinate access are free, as in Theorem 1.1's
+field-operation model; this is not a bit-operation count. -/
+@[expose] def shareWithFieldCost [Field V] (α m : V) (k : Key V) :
+    Cslib.Algorithms.Lean.TimeM ℕ (Share V × Share V) := do
+  match k with
+  | (.central, i) =>
+    let x ← (⟨i + m, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    let y ← (⟨α * i, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    let z ← (⟨y + m, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    pure (.inl x, .inl z)
+  | (.left, i) =>
+    let x ← (⟨i + m, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    pure (.inl x, .inr i)
+  | (.right, i) =>
+    let y ← (⟨α * i, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    let z ← (⟨y + m, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    pure (.inr i, .inl z)
+
+/-- The charged sharing routine computes the actual two shares using at most
+three field operations, independently of field size and source choice. -/
+theorem shareWithFieldCost_spec [Field V] (α m : V) (k : Key V) :
+    (shareWithFieldCost α m k).ret = (first m k, second α m k) ∧
+      (shareWithFieldCost α m k).time ≤ 3 := by
+  rcases k with ⟨b, i⟩
+  cases b <;> exact ⟨rfl, by norm_num [shareWithFieldCost,
+    Cslib.Algorithms.Lean.TimeM.bind, Cslib.Algorithms.Lean.TimeM.pure]⟩
+
+/-- The three-operation sharing bound also covers every key of the padded ambient alphabet. -/
+theorem shareWithFieldCost_padded_spec [Field V] (α m : V) (k : PaddedKey V) :
+    (shareWithFieldCost α m (k.1.getD .central, k.2)).ret =
+        (paddedFirst m k, paddedSecond α m k) ∧
+      (shareWithFieldCost α m (k.1.getD .central, k.2)).time ≤ 3 :=
+  shareWithFieldCost_spec α m _
+
+/-- Reconstruction with a unit charge for every field multiplication, subtraction or division.
+A division is one field operation, not a constant number of bit operations. -/
+@[expose] def reconstructWithFieldCost [Field V] (α : V) (s t : Share V) :
+    Cslib.Algorithms.Lean.TimeM ℕ V := do
+  match s, t with
+  | .inl x, .inl y =>
+    let a ← (⟨α * x, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    let z ← (⟨a - y, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    let d ← (⟨α - 1, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    (⟨z / d, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+  | .inl x, .inr i => (⟨x - i, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+  | .inr i, .inl y =>
+    let z ← (⟨α * i, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+    (⟨y - z, 1⟩ : Cslib.Algorithms.Lean.TimeM ℕ V)
+  | .inr _, .inr _ => pure 0
+
+/-- The charged reconstruction routine agrees everywhere with the scheme and costs
+at most four field operations. -/
+theorem reconstructWithFieldCost_spec [Field V] (α : V) (s t : Share V) :
+    (reconstructWithFieldCost α s t).ret = reconstruct α s t ∧
+      (reconstructWithFieldCost α s t).time ≤ 4 := by
+  cases s <;> cases t <;> exact ⟨rfl, by norm_num [reconstructWithFieldCost,
+    Cslib.Algorithms.Lean.TimeM.bind, Cslib.Algorithms.Lean.TimeM.pure]⟩
 
 end Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness

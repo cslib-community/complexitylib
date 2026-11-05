@@ -63,4 +63,31 @@ example (ext : PaddedKey V4 → Bool) : ∃ T : Finset V4,
 /-- The two-element field cannot supply the required third slope. -/
 example : ¬∃ α : ZMod 2, α ≠ 0 ∧ α ≠ 1 := by decide
 
+/-- One two-bit scheme works for all sixteen dealer inputs, hides every message,
+and defeats every three-bit extractor on one of its flat high-entropy sources. -/
+example : ∃ (sources : Finset V4 → PMF (Fin 4 → Bool))
+    (shr₁ shr₂ : (Fin 2 → Bool) → (Fin 4 → Bool) → (Fin 3 → Bool))
+    (rec : (Fin 3 → Bool) → (Fin 3 → Bool) → (Fin 2 → Bool)),
+    (∀ m k, rec (shr₁ m k) (shr₂ m k) = m) ∧
+    (∀ T m m', (sources T).map (shr₁ m) = (sources T).map (shr₁ m') ∧
+      (sources T).map (shr₂ m) = (sources T).map (shr₂ m')) ∧
+    (∀ T, (2 : ℝ) ≤ PMF.minEntropy (sources T)) ∧
+    (∀ ext : (Fin 4 → Bool) → (Fin 3 → Bool), ∃ T,
+      (1 : ℝ) / 6 ≤ dist ((sources T).map ext) (PMF.uniformOfFintype (Fin 3 → Bool))) := by
+  obtain ⟨sources, shr₁, shr₂, rec, hc, hp, _, he, hx⟩ :=
+    binary_string_separation 2 (by decide)
+  exact ⟨sources, shr₁, shr₂, rec, hc, hp, he, hx 3 (by decide)⟩
+
+/-- The field-operation guarantee applies to the entire padded key alphabet. -/
+example (α m : V4) (k : PaddedKey V4) :
+    (shareWithFieldCost α m (k.1.getD .central, k.2)).ret =
+        (paddedFirst m k, paddedSecond α m k) ∧
+      (shareWithFieldCost α m (k.1.getD .central, k.2)).time ≤ 3 :=
+  shareWithFieldCost_padded_spec α m k
+
+example (α : V4) (s t : Share V4) :
+    (reconstructWithFieldCost α s t).ret = reconstruct α s t ∧
+      (reconstructWithFieldCost α s t).time ≤ 4 :=
+  reconstructWithFieldCost_spec α s t
+
 end ComplexityTests.ImperfectRandomness

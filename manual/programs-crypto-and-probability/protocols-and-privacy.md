@@ -125,8 +125,16 @@ indices; each source is uniform on its selected key set. The theorem supplies pe
 reconstruction, equality of each share's marginal law across all messages, source min-entropy
 at least $b$, and extraction error at least $1/6$ for every deterministic bit extractor on some
 source. The ambient key and share alphabets have cardinalities $2^{b+2}$ and $2^{b+1}$.
-These are exact information-theoretic statements; literal coordinate bijections to bit strings
-and a machine cost bound for field arithmetic are separate. The existing upstream `Scheme`
+Use `binary_string_separation` for the same separation on literal `Fin n → Bool`
+alphabets. It supplies one scheme and source family, flat supports of size between
+$2^b$ and $2^{b+1}$, and the extraction obstruction for every positive output length.
+The checked two-bit client uses the same scheme for correctness, privacy and failure
+of arbitrary three-bit extractors. The encoding bijections are chosen noncomputably. The separate `shareWithFieldCost_spec`
+and `reconstructWithFieldCost_spec` certify the actual algebraic routines with at most
+three field operations for sharing and four for reconstruction. Each field arithmetic
+operation costs one; tags, pairing and field-coordinate access are free. These are
+field-operation bounds, with no bit-level runtime claim for arithmetic or encoding.
+The existing upstream `Scheme`
 fixes one generator, whereas this endpoint quantifies over a class of generator laws.
 
 The [checked clients](../../ComplexityTests/Crypto/ImperfectRandomness.lean) instantiate the
