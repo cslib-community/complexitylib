@@ -656,6 +656,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalEmissionFra
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalExec
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalFold
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalFrames
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalInitialize
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalInvariant
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalLive
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalLocalDelivery

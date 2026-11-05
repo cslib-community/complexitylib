@@ -143,18 +143,8 @@ theorem release_stack {r w base capacity : ℕ} {vs : List ℕ} {v : Data (regis
       ((v.comap (preprocessingRegisters r)).comap registers)) :
     WordStack.Rep w base capacity vs
       (((releaseState v).comap (preprocessingRegisters r)).comap registers) := by
-  have hv : ((releaseState v).comap (preprocessingRegisters r)).comap registers =
-      (v.comap (preprocessingRegisters r)).comap registers := by
-    apply Data.ext
-    · funext i
-      apply releaseState_regs
-      intro he
-      have hei := (preprocessing_injective r) he
-      have hval := congrArg Fin.val hei
-      dsimp only [registers, heap] at hval
-      omega
-    · rfl
-  rw [hv]
+  have hne : ∀ i : Fin 9, registers i ≠ heap := by decide
+  rw [releaseState_pre, Data.comap_set_of_forall_ne _ _ _ hne]
   exact hs
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Decision.Visitor

@@ -162,12 +162,7 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
         omega)
   have hbody := body_live c.code hp hl hc.2.2.2.2.2.2.2.2.2.1 hf hn hvisit
   have retainedStored (d : Entry) (hd : d ∈ e :: es) : d.Stored v.mem := by
-    apply (oldStored d hd).congr
-    intro j i hi
-    simpa only [Data.comap_mem] using em.local_prefix _ (by
-      have := oldEnds d hd j
-      simp only [T, Data.comap_regs] at *
-      omega)
+    exact (oldStored d hd).of_prefix (oldEnds d hd) em.local_prefix
   have newStored : ∀ d ∈ s.pending, d.Stored v.mem := by
     intro d hd
     rcases List.mem_append.mp hd with hd | hd

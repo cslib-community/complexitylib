@@ -12,6 +12,9 @@ import Complexity.Computability.WordRAM.RegisterFrame
 import Complexity.Computability.WordRAM.Call
 import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Registers
 
+import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalInitialize
+import Complexity.Computability.WordRAM.Sequence
+
 /-!
 # Complete native root traversal with an in-place Convolution consumer
 
@@ -154,90 +157,20 @@ theorem root_exec {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
     have ht := ha.2.1
     have hgap := ha.2.2.1
     omega)
-  let p := (((x.set (preprocessingRegisters r ChanHe.Traversal.zero) 0).set
-    (preprocessingRegisters r ChanHe.Traversal.one) 1).set
-    (preprocessingRegisters r (registers WordStack.ptr))
-      (x.regs (preprocessingRegisters r stackBase))).set
-    (preprocessingRegisters r (registers WordStack.len)) 0
-  let ptr := preprocessingRegisters r (registers WordStack.ptr)
-  let len := preprocessingRegisters r (registers WordStack.len)
-  let z := preprocessingRegisters r ChanHe.Traversal.zero
-  let o := preprocessingRegisters r ChanHe.Traversal.one
-  let stack := preprocessingRegisters r stackBase
-  have h1 : Fits (w + 2) 1 := h2.of_le (by decide)
-  have hp : Exec (B := .standard) (w + 2)
-      (ram[ z ← #0; o ← #1; ptr ← stack; len ← #0 ]) x p 4 := by
-    ram_eval [p, ptr, len, z, o, stack, preprocessingRegisters, ChanHe.Traversal.zero,
-      ChanHe.Traversal.one, registers, WordStack.ptr, WordStack.len, stackBase, h1]
-  have pmeta (i : Fin 128) (hi : i.val < 96) :
-      p.regs (preprocessingRegisters r i) = x.regs (preprocessingRegisters r i) := by
-    have hp' : i ≠ registers WordStack.ptr := by
-      intro he; have := congrArg Fin.val he; norm_num [registers, WordStack.ptr] at this; omega
-    have hl' : i ≠ registers WordStack.len := by
-      intro he; have := congrArg Fin.val he; norm_num [registers, WordStack.len] at this; omega
-    have hne (i j : Fin 128) : preprocessingRegisters r i = preprocessingRegisters r j ↔
-        i = j := (preprocessing_injective r).eq_iff
-    simp only [p, Data.set_regs, Function.update_apply, hne, hp', hl', ↓reduceIte]
-    by_cases hz : i = ChanHe.Traversal.zero
-    · subst i
-      simpa +decide [ChanHe.Traversal.zero, ChanHe.Traversal.one] using
-        h.controls.2.2.2.2.2.2.2.2.2.1.symm
-    · by_cases ho : i = ChanHe.Traversal.one
-      · subst i
-        simpa +decide [ChanHe.Traversal.zero, ChanHe.Traversal.one] using
-          h.controls.2.2.2.2.2.2.2.2.2.2.symm
-      · simp only [hz, ho, ↓reduceIte]
-  have poutside (i : Fin 128) (hi : 109 ≤ i.val) :
-      p.regs (preprocessingRegisters r i) = x.regs (preprocessingRegisters r i) := by
-    have hne (j : Fin 128) (hj : j.val < 109) :
-        preprocessingRegisters r i ≠ preprocessingRegisters r j := by
-      intro he
-      have hv := congrArg Fin.val he
-      simp only [preprocessingRegisters, Fin.val_castAdd] at hv
-      omega
-    have hz := hne ChanHe.Traversal.zero (by decide)
-    have ho := hne ChanHe.Traversal.one (by decide)
-    have hp := hne (registers WordStack.ptr) (by decide)
-    have hl := hne (registers WordStack.len) (by decide)
-    simp only [p, Data.set_regs, Function.update_apply, hz, ho, hp, hl, ↓reduceIte]
-  have pouter (i : Fin 16) :
-      p.regs (controllerRegisters r i) = x.regs (controllerRegisters r i) := by
-    simp only [p, Data.set_regs, Function.update_apply, controller_ne_preprocessing, ↓reduceIte]
-  have pcontrols : a.Controls (p.comap (preprocessingRegisters r)) := h.controls.congr (by
-    intro i hi
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-    exact pmeta i (by omega))
-  have ploaded : e.Loaded (p.comap (preprocessingRegisters r)) := by
-    refine ⟨(pmeta _ (by decide)).trans h.loaded.1, ?_, ?_⟩
-    · intro j
-      exact (pmeta _ (by dsimp [arraySource, slot]; omega)).trans (h.loaded.2.1 j)
-    · intro j
-      exact (pmeta _ (by dsimp [arrayLength, slot]; omega)).trans (h.loaded.2.2 j)
-  have pstack : WordStack.Rep (w + 2) a.stack a.capacity []
-      ((p.comap (preprocessingRegisters r)).comap registers) := by
-    refine ⟨⟨fun i => (hp.bounded h.bounded).1 (preprocessingRegisters r (registers i)),
-      (hp.bounded h.bounded).2⟩, ?_, ?_, Nat.zero_le _, fun i => Fin.elim0 i⟩
-    · simpa +decide [p, Data.comap, Data.set, preprocessingRegisters, registers,
-        WordStack.ptr, WordStack.len, ChanHe.Traversal.zero, ChanHe.Traversal.one] using
-          h.controls.2.2.2.2.2.2.2.1
-    · simp +decide [p, Data.comap, Data.set, preprocessingRegisters, registers,
-        WordStack.ptr, WordStack.len, ChanHe.Traversal.zero, ChanHe.Traversal.one]
-  have hpush := pushFrame_exec (p.comap (preprocessingRegisters r)) [] h2 hcap pstack
-    (fun i => (hp.bounded h.bounded).1 (preprocessingRegisters r (slot i))) (by
-      have := ha.2.2.2
-      simp only [List.length_nil]
-      omega)
-  obtain ⟨b, hb, ⟨hstack, hframe, hbr⟩, hbouter⟩ :=
-    Exec.rename_post (preprocessing_injective r) hpush
+  obtain ⟨b, hinit, ⟨hstack, bcontrols, hframe, hbr⟩, hbouter⟩ :=
+    Exec.rename_post (preprocessing_injective r)
+      (initializeRoot_exec (x.comap (preprocessingRegisters r)) e
+        ⟨fun i => h.bounded.1 (preprocessingRegisters r i), h.bounded.2⟩
+        h.controls h.loaded h2 hcap (by have := ha.2.2.2; omega))
   have breg (i : Fin 128) (hi : i.val < 96) :
       b.regs (preprocessingRegisters r i) = x.regs (preprocessingRegisters r i) :=
-    (hbr i (Or.inl hi)).trans (pmeta i hi)
+    hbr i (Or.inl hi)
   have bframe (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : b.mem q = x.mem q := by
     apply hframe
     simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
     omega
   have bm (i : Fin 16) : b.regs (controllerRegisters r i) = x.regs (controllerRegisters r i) :=
-    (hbouter _ (fun j => (controller_ne_preprocessing i j).symm)).trans (pouter i)
+    hbouter _ (fun j => (controller_ne_preprocessing i j).symm)
   let s : Cursor := ⟨[e], ns⟩
   have work : s.work = Math.work e.fuel := by
     simp only [s, Cursor.work, List.map_cons, List.map_nil, Math.potential, List.sum_cons,
@@ -251,11 +184,8 @@ theorem root_exec {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
     omega
   have hi : s.Invariant a w κ n (ns ++ e.task.output (Nat.primesLE a.m) a.Λ) b := by
     refine {
-      bounded := hb.bounded (hp.bounded h.bounded)
-      controls := h.controls.congr (by
-        intro i hi
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-        exact breg i (by omega))
+      bounded := hinit.bounded h.bounded
+      controls := bcontrols
       bitmap := ?_
       stack := ?_
       depth := ?_
@@ -275,8 +205,7 @@ theorem root_exec {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
     · intro q hq
       rw [bframe _ (Or.inl (by have := ha.1; omega))]
       exact h.bitmap q hq
-    · simpa only [s, List.flatMap_cons, List.flatMap_nil, Entry.loaded_words ploaded,
-        List.append_nil] using hstack
+    · simpa only [s, List.flatMap_cons, List.flatMap_nil, List.append_nil] using hstack
     · rw [← h.fuel]
       exact Math.bounded_singleton e.task
     · intro d hd
@@ -298,7 +227,7 @@ theorem root_exec {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
       exact h.floor
     · rw [breg heap (by decide), work]
       exact h.heapBudget
-    · exact (hbr _ (Or.inr (by decide))).trans ((poutside _ (by decide)).trans h.packedLength)
+    · exact (hbr _ (Or.inr (by decide))).trans h.packedLength
     · rw [bm]
       exact h.verdict
     · rw [remaining]
@@ -308,7 +237,7 @@ theorem root_exec {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
   have hexec : ExecWithin (w + 2) (oneRoot c.code) x y
       (70 + Math.work e.fuel * (visitTime a.n a.m a.N + 316) +
         (e.task.output (Nat.primesLE a.m) a.Λ).length * T) := by
-    have hc := hp.within.seq (hb.within.seq he)
+    have hc := ExecWithin.seq_assoc.mp (hinit.within.seq he)
     exact hc.mono (by rw [Cursor.credit, work, remaining]; dsimp only [T]; omega)
   refine ⟨y, hexec, hfinal, ?_, ?_⟩
   · intro q hq
