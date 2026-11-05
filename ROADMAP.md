@@ -125,8 +125,10 @@ families and full-input native runtime.
   actual homogeneous SIS success plus `k*q^n/(2η+1)^m`, for independent uniform box secrets
   and an arbitrary kernel receiving only `(A,T)`. This joint-law extraction uses the sampled
   secret; an `A`-only native reduction and the actual signing/fork distribution bridge remain
-  open. Corrected full-view simulation must account for aborted hash queries. Other endpoints
-  include identification security under SIS, efficient full-view simulation, and Dilithium-style
+  open. Full-view witness invariance ([#2642]) retains aborted commitments for common
+  commitment-dependent challenges and finite independent attempt histories. An efficient
+  secret-free simulator, adaptive oracle-cache simulation and paired same-coins fork equality
+  remain open. Other endpoints include identification security under SIS and Dilithium-style
   signature schemes over module SIS and module LWE, as theory.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
@@ -909,3 +911,5 @@ not planned, not as proved.
 [#2579]: https://github.com/cslib-community/complexitylib/issues/2579
 
 [#2620]: https://github.com/cslib-community/complexitylib/issues/2620
+
+[#2642]: https://github.com/cslib-community/complexitylib/issues/2642
