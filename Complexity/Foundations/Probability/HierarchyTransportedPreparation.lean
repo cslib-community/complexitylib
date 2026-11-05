@@ -32,8 +32,10 @@ receive geometric stationary, final, raw and rarity-tail payments, with the sema
 deficit kept separate. One structural charge pays all four transport components before
 request coordinates, width and budget. A joint fixed-depth, bounded-budget family now pays
 the positive-prefix semantic row moments and the final semantic term in the actual reserve.
-The exceptional initial semantic group and its stationary/raw/tail allocation, the other
-three statistics, simultaneous changing-request induction and native RL=L remain open.
+The exceptional initial semantic row now has stationary/raw/deterministic-tail component
+payments retaining the structural rank salary. Their assembly with positive-prefix payments
+and uniform transport in the actual reserve, the other three statistics, simultaneous
+changing-request induction and native RL=L remain open.
 
 ## Main results
 
@@ -51,6 +53,8 @@ three statistics, simultaneous changing-request induction and native RL=L remain
 * `initialComputedPrecisionMoment_first_pre_le`: stationary floor-weighted endpoint payment.
 * `initialComputedPrecisionMoment_first_final_le`: final slack-one endpoint payment.
 * `initialPolynomialLoss_row_bounded_family`: positive-prefix semantic row payment.
+* `initialPolynomialLoss_first_weighted_family`: full inactive first row with exponential weight.
+* `initialPolynomialLoss_first_schedule_family`: literal stationary/raw/tail first-row payments.
 * `initialComputedFirstFinalPayment`: final semantic payment in the actual reserve.
 * `initialComputedPrecisionMoment_first_final_payment_le`: computed final payment consumer.
 * `initialComputedFirstFinalBudget_bounded_family`: actual final semantic budget absorption.
@@ -878,6 +882,127 @@ theorem initialPolynomialLoss_row_bounded_family (B : BudgetData HP P)
         (add_nonneg (rate_pos ka).le (hC x y))))]
       exact hp x y)).trans
     (B.bounded_family_omission_row hcharge n M ks ka hhi ha hP r hs ht)
+
+/-- Exceptional initial semantic row moment, paid with any literal exponential
+weight at most 2⁻ᵈ. Unlike the positive-prefix bound this permits the full inactive
+mass, uses the clipped bound one, and retains the structural rank salary. -/
+theorem initialPolynomialLoss_first_weighted_family (B : BudgetData HP P)
+    (M n ks ka q : ℕ) (hq : 1 ≤ q)
+    (hlo : B.slack * (1 + 4 * (n + ka)) < M) (hP : P ≤ 2 ^ (n + 1))
+    (H : Horizon P) (hks : ks ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (hC : ∀ x y, 0 ≤ B.base x y)
+    (R : RoleProfile 3) (ss st : List (ZMod P)) :
+    (2 : ℝ) ^ (-(q : ℝ) * dyadicSlack (Nat.log2 M + 1) 0) *
+      rowNormPow 4 P r.source.rate
+        (retainedMask R.source (side P ks) B.padding ss)
+        (retainedMask R.terminal (side P ka) B.padding st)
+        (fun _ x y => min 1 (|B.initialPolynomialLoss M n 0 r x y| /
+          (rate ka + B.base x y))) ≤
+      32 * ((2 : ℝ) ^ (-B.requestPrecision M r) *
+        (2 : ℝ) ^ (-(B.rankCharge * r.task.rank))) ^ 4 := by
+  have hb : rowNormPow 4 P r.source.rate
+      (retainedMask R.source (side P ks) B.padding ss)
+      (retainedMask R.terminal (side P ka) B.padding st)
+      (fun _ x y => min 1 (|B.initialPolynomialLoss M n 0 r x y| /
+        (rate ka + B.base x y))) ≤ 16 * (P : ℝ) := by
+    rw [hs]
+    apply (grid_row_moment_le B.padding R.source ks ss H hks _ _
+      (by norm_num : (0 : ℝ) ≤ 1) ?_).trans_eq (by ring)
+    intro σ x y
+    rw [abs_of_nonneg]
+    · exact min_le_left _ _
+    · exact le_min (by norm_num) (div_nonneg (abs_nonneg _)
+        (add_nonneg (rate_pos ka).le (hC x y)))
+  have he : (2 : ℝ) ^ (-(q : ℝ) * dyadicSlack (Nat.log2 M + 1) 0) ≤
+      (2 : ℝ) ^ (-(dyadicSlack (Nat.log2 M + 1) 0 : ℝ)) := by
+    apply Real.rpow_le_rpow_of_exponent_le (by norm_num)
+    have hq' : (1 : ℝ) ≤ q := by exact_mod_cast hq
+    nlinarith [Nat.cast_nonneg (α := ℝ) (dyadicSlack (Nat.log2 M + 1) 0)]
+  calc
+    _ ≤ (2 : ℝ) ^ (-(q : ℝ) * dyadicSlack (Nat.log2 M + 1) 0) * (16 * (P : ℝ)) :=
+      mul_le_mul_of_nonneg_left hb (by positivity)
+    _ ≤ (2 : ℝ) ^ (-(dyadicSlack (Nat.log2 M + 1) 0 : ℝ)) * (16 * (P : ℝ)) :=
+      mul_le_mul_of_nonneg_right he (by positivity)
+    _ = 16 * (P : ℝ) * (2 : ℝ) ^
+        (-(dyadicSlack (Nat.log2 M + 1) 0 : ℝ)) := by ring
+    _ ≤ _ := B.bounded_family_initial_row_decay n M ks ka hlo hP r hs ht
+
+/-- All three literal exceptional-group weights pay the actual clipped semantic
+row moment. Raw uses prefix one (index zero), not the next schedule coefficient.
+The tail is deterministic; no centered noise receives this rarity factor. These are
+component payments, not an assembled reserve or recursive availability certificate. -/
+theorem initialPolynomialLoss_first_schedule_family (B : BudgetData HP P)
+    (M n ks ka : ℕ)
+    (hlo : B.slack * (1 + 4 * (n + ka)) < M) (hP : P ≤ 2 ^ (n + 1))
+    (H : Horizon P) (hks : ks ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (hC : ∀ x y, 0 ≤ B.base x y)
+    (R : RoleProfile 3) (ss st : List (ZMod P)) (floor Rraw : ℝ) (hf : 0 < floor) :
+    let m := Nat.log2 M + 1
+    let D := rowNormPow 4 P r.source.rate
+      (retainedMask R.source (side P ks) B.padding ss)
+      (retainedMask R.terminal (side P ka) B.padding st)
+      (fun _ x y => min 1 (|B.initialPolynomialLoss M n 0 r x y| /
+        (rate ka + B.base x y)))
+    let Q := 32 * ((2 : ℝ) ^ (-B.requestPrecision M r) *
+      (2 : ℝ) ^ (-(B.rankCharge * r.task.rank))) ^ 4
+    dyadicFloor floor m 0 ^ 4 * D ≤ floor ^ 4 * Q ∧
+    (64 * (HP.K : ℝ) * Rraw ^ 4 /
+      ((compatibleCapacity HP.K m 0 : ℝ) * dyadicFloor floor m 0 ^ 4)) * D ≤
+      (64 * (HP.K : ℝ) * Rraw ^ 4 / ((HP.K + 1) * floor ^ 4)) * Q ∧
+    ((((2 + 256 / dyadicFloor floor m 0) / (compatibleCapacity HP.K m 0 : ℝ)) ^
+      (4⁻¹ : ℝ)) * 28 ^ m) ^ 4 * D ≤
+      ((2 + 256 / floor) ^ (4⁻¹ : ℝ)) ^ 4 * Q := by
+  dsimp only
+  let m := Nat.log2 M + 1
+  let D := rowNormPow 4 P r.source.rate
+    (retainedMask R.source (side P ks) B.padding ss)
+    (retainedMask R.terminal (side P ka) B.padding st)
+    (fun _ x y => min 1 (|B.initialPolynomialLoss M n 0 r x y| /
+      (rate ka + B.base x y)))
+  have hD : 0 ≤ D := rowNormPow_nonneg
+    (by rw [hs]; exact mul_nonneg (Nat.cast_nonneg P) (rate_pos ks).le) _
+  have hexp (k : ℕ) : ((1 / (2 : ℝ) ^ k) ^ dyadicSlack m 0) =
+      (2 : ℝ) ^ (-(k : ℝ) * dyadicSlack m 0) := by
+    rw [one_div, inv_pow, ← pow_mul, ← Real.rpow_natCast,
+      ← Real.rpow_neg (by norm_num : (0 : ℝ) ≤ 2)]
+    congr 1
+    push_cast
+    ring
+  have h40 := B.initialPolynomialLoss_first_weighted_family M n ks ka 40
+    (by decide) hlo hP H hks r hs ht hC R ss st
+  have h24 := B.initialPolynomialLoss_first_weighted_family M n ks ka 24
+    (by decide) hlo hP H hks r hs ht hC R ss st
+  have hfloor : dyadicFloor floor m 0 ^ 4 =
+      floor ^ 4 * (2 : ℝ) ^ (-(40 : ℝ) * dyadicSlack m 0) := by
+    rw [dyadicFloor, mul_pow, ← pow_mul, Nat.mul_comm _ 4, pow_mul]
+    have he := hexp 40
+    norm_num only [Nat.cast_ofNat] at he
+    convert congrArg (fun x : ℝ => floor ^ 4 * x) he using 1; norm_num
+  have hraw := compatible_false_weight_eq floor HP.K m 0 Rraw
+  have hrawexp : (1 / 16777216 : ℝ) ^ dyadicSlack m 0 =
+      (2 : ℝ) ^ (-(24 : ℝ) * dyadicSlack m 0) := by
+    convert hexp 24 using 1; norm_num
+  have htail := compatible_first_rarity_decay hf HP.K m (by dsimp only [m]; omega)
+  have htailexp : ((1 / 64 : ℝ) ^ dyadicSlack m 0) ^ 4 =
+      (2 : ℝ) ^ (-(24 : ℝ) * dyadicSlack m 0) := by
+    rw [← pow_mul, Nat.mul_comm _ 4, pow_mul]
+    convert hexp 24 using 1; norm_num
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hfloor, mul_assoc]
+    exact mul_le_mul_of_nonneg_left h40 (by positivity)
+  · rw [hraw, hrawexp, mul_assoc]
+    exact mul_le_mul_of_nonneg_left h24 (by positivity)
+  · have ht0 : 0 ≤ ((2 + 256 / dyadicFloor floor m 0) /
+        (compatibleCapacity HP.K m 0 : ℝ)) ^ (4⁻¹ : ℝ) * 28 ^ m := by
+      have hh := (dyadicFloor_pos hf m 0).le
+      positivity
+    apply (mul_le_mul_of_nonneg_right (pow_le_pow_left₀ ht0 htail 4) hD).trans
+    rw [mul_pow, htailexp, mul_assoc]
+    exact mul_le_mul_of_nonneg_left h24 (by positivity)
 
 /-- The existing computed final first-mean payment consumes the joint semantic schedule.
 Transport still pays its own structural charge. This does not certify the complete

@@ -1390,14 +1390,28 @@ consumes this payment through `initialComputedPrecisionMoment_first_final_paymen
 `initialComputedPrecisionMoment_first_final_le`. The final transport term still retains
 its independent structural charge.
 
-This is a bounded positive-prefix/final milestone. Group zero can have every bin inactive:
-the test at $M=16$ checks its full inactive charge. Stationary, raw and tail semantic
-absorption, including that group's weight relative to parent precision, remains unproved.
-No combination with `initialFirstTransportPayment_exists_charge` is claimed to pay all
-four semantic terms or the complete reserve. The tests vary depth with positive precision,
-retain nonzero omitted true mass, and exhibit a fixed-depth semantic obstruction; they do
-not establish a nonzero executed full reserve. `exists_bounded_depth_prime` supplies
-bounded field horizons separately for each depth.
+The exceptional initial group now has component payments too. `initial_dyadicSlack_half`
+proves its literal slack $d\ge M/2$. Under cutoff fit and $P\le2^{n+1}$,
+`bounded_family_initial_row_decay` pays even $16P\,2^{-d}$ by
+$32(2^{-p(M,r)}2^{-A\,\mathrm{rank}(r)})^4$, keeping the structural rank salary explicit.
+`initialPolynomialLoss_first_weighted_family` applies this to the actual clipped semantic
+row, permitting its full inactive mass. `initialPolynomialLoss_first_schedule_family`
+pays its stationary fourth-power weight $\delta^4 2^{-40d}$, raw coefficient with exact
+$K+1$ and $2^{-24d}$, and deterministic rarity-tail weight after all factor-28 propagation.
+Index zero is the raw postincrement prefix one; it must not use the next coefficient.
+Centered noises receive no rarity discount.
+
+These are component payments, not a complete first-mean reserve certificate. Their
+assembly with the positive-prefix payments and
+`initialFirstTransportPayment_exists_charge` in the actual separated-reserve consumer
+remains unproved. The consumer still uses its existing exact stationary/raw/tail semantic
+budgets and its paid final minimum. The checked
+[positive inactive fixture](../../ComplexityTests/PolynomialBudgetHistory.lean) has actual
+precision one, a full inactive semantic loss one at $M=16$, and the stationary component
+payment; it does not execute a nonzero full reserve. Existing tests vary depth with positive
+precision, retain nonzero omitted true mass and exhibit a fixed-depth semantic obstruction.
+`exists_bounded_depth_prime` supplies bounded field horizons separately for each depth.
+No joint recursive availability or native RL=L is claimed.
 
 `initialClippedEndpointWindow_growth` gives a necessary condition for a proposed
 allocation $wW_{\mathrm{end}}\le2^A$ when $w\ge1$: every live bin $i$ must satisfy

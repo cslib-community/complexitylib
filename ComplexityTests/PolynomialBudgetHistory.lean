@@ -2618,4 +2618,39 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     rw [hu]
     norm_num [data, rate, base]
 
+-- A positive-precision, full inactive initial prefix at a literal power-of-two budget.
+-- Increasing retained depth changes this evaluator, not bins during an execution.
+-- The schedule theorem pays its actual semantic row; no child availability is asserted.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let B : BudgetData HP 5 := {data HP with bins := range 3}
+    let r := request HP
+    B.requestPrecision 16 r = 1 ∧
+    B.initialPolynomialLoss 16 2 0 r 0 0 = 1 ∧
+    Cslib.RowCompression.dyadicFloor 1 (Nat.log2 16 + 1) 0 ^ 4 *
+      rowNormPow 4 5 r.source.rate
+        (NormalizedMoments.retainedMask (0 : Fin 3) (side 5 0) B.padding [1])
+        (NormalizedMoments.retainedMask (2 : Fin 3) (side 5 0) B.padding [2, 3])
+        (fun _ x y => min 1 (|B.initialPolynomialLoss 16 2 0 r x y| /
+          (rate 0 + B.base x y))) ≤
+      32 * ((2 : ℝ) ^ (-B.requestPrecision 16 r)) ^ 4 := by
+  dsimp only
+  let B : BudgetData HP 5 := {data HP with bins := range 3}
+  have hp : B.requestPrecision 16 (request HP) = 1 := by
+    rw [B.requestPrecision_grid 16 0 0 (request HP) rfl rfl]
+    norm_num [B, data]
+  refine ⟨hp, ?_, ?_⟩
+  · have hcoarse := B.initialCoarseLoss_eq_zero 16 (request HP) 0 0
+    rw [BudgetData.initialPolynomialLoss, hcoarse]
+    norm_num [BudgetData.initialFineLoss, B, data, base, numerator,
+      boundedRoutedBinCutoff, routedBinCutoff, binWeight, rate, polynomialSwitch4,
+      polynomialTransition4, transitionPolynomial4, LogSpaceEstimation.lastBudget,
+      Cslib.RowCompression.dyadicSlack, sum_range_succ]
+  · have h := B.initialPolynomialLoss_first_schedule_family 16 2 0 0
+      (by norm_num [B, data]) (by decide)
+      (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide) (request HP) rfl rfl
+      (by intro x y; by_cases h : x = y <;> simp [B, data, base, h])
+      threeRoles [1] [2, 3] 1 2 (by norm_num)
+    simpa only [B, show (data HP).rankCharge = 0 from rfl, zero_mul, neg_zero,
+      Real.rpow_zero, mul_one, one_mul, one_pow, threeRoles, Nat.cast_ofNat] using h.1
+
 end PolynomialBudgetHistory

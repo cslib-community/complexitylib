@@ -29,6 +29,8 @@ rank and source exponents must be tracked separately when using the omitted-dept
 * `requestPrecision_le_omitted_depth_iff`: exact maximum-budget interface.
 * `bounded_family_depth_guards`: joint cutoff-fit and parent-precision payment.
 * `bounded_family_omission_row`: bounded width paid at parent precision.
+* `initial_dyadicSlack_half`: literal first slack is at least half the budget.
+* `bounded_family_initial_row_decay`: exceptional width paid with the rank salary retained.
 * `sampleScale_grid`: exact integer scale offset.
 * `retained_scaleCutoff_lt`: every retained cutoff is below a sufficient budget.
 * `slow_depth_guards`: depth M/(128*slack) pays cutoffs and positive precision.
@@ -376,6 +378,61 @@ theorem bounded_family_omission_row (B : BudgetData HP P)
       mul_le_mul_of_nonneg_left
         (Real.rpow_le_rpow_of_exponent_le (by norm_num) he) (by norm_num)
     _ = _ := by rw [Real.rpow_add (by norm_num)]; norm_num; ring
+
+/-- The literal first slack is at least half the parent budget. -/
+theorem initial_dyadicSlack_half (M : ℕ) :
+    M ≤ 2 * Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) 0 := by
+  have h := Nat.lt_pow_succ_log_self (b := 2) (by decide) M
+  rw [← Nat.log2_eq_log_two] at h
+  simpa only [Cslib.RowCompression.dyadicSlack, Nat.add_sub_cancel,
+    Nat.pow_succ, Nat.mul_comm] using h.le
+
+/-- Even the slow decay 2⁻ᵈ at the exceptional first group pays its entire rounded
+row width. The structural rank salary is retained as a factor, chosen before request
+exponents. Only cutoff fit and the bounded width are used; no accuracy is assumed. -/
+theorem bounded_family_initial_row_decay (B : BudgetData HP P)
+    (n M ks ka : ℕ)
+    (hlo : B.slack * (1 + 4 * (n + ka)) < M) (hP : P ≤ 2 ^ (n + 1))
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka) :
+    16 * (P : ℝ) * (2 : ℝ) ^
+        (-(Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) 0 : ℝ)) ≤
+      32 * ((2 : ℝ) ^ (-B.requestPrecision M r) *
+        (2 : ℝ) ^ (-(B.rankCharge * r.task.rank))) ^ 4 := by
+  let d := Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) 0
+  have hc : (1 : ℝ) ≤ B.slack := by exact_mod_cast B.slack_pos
+  have hm : (B.slack : ℝ) * (1 + 4 * ((n : ℝ) + ka)) < M := by exact_mod_cast hlo
+  have hd : (M : ℝ) ≤ 2 * d := by exact_mod_cast initial_dyadicSlack_half M
+  have hn : (n : ℝ) ≤ (M : ℝ) / (4 * B.slack) := by
+    apply (le_div_iff₀ (by positivity)).mpr
+    nlinarith [Nat.cast_nonneg (α := ℝ) ka]
+  have hb : (M : ℝ) / (4 * B.slack) ≤ (M : ℝ) / 4 :=
+    div_le_div_of_nonneg_left (Nat.cast_nonneg M) (by norm_num) (by linarith)
+  have hp := B.requestPrecision_grid M ks ka r hs ht
+  have he : (n : ℝ) - d ≤
+      (-B.requestPrecision M r - B.rankCharge * r.task.rank) * 4 := by
+    have hh : (M : ℝ) / (16 * B.slack) * 4 = (M : ℝ) / (4 * B.slack) := by ring
+    nlinarith [Nat.cast_nonneg (α := ℝ) ks, Nat.cast_nonneg (α := ℝ) ka]
+  have hP' : (P : ℝ) ≤ (2 : ℝ) ^ ((n : ℝ) + 1) := by
+    rw [show (n : ℝ) + 1 = ((n + 1 : ℕ) : ℝ) by push_cast; rfl,
+      Real.rpow_natCast]
+    exact_mod_cast hP
+  calc
+    _ ≤ 16 * (2 : ℝ) ^ ((n : ℝ) + 1) * (2 : ℝ) ^ (-(d : ℝ)) :=
+      mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hP' (by norm_num))
+        (by positivity)
+    _ = 32 * (2 : ℝ) ^ ((n : ℝ) - d) := by
+      rw [mul_assoc, ← Real.rpow_add (by norm_num)]
+      rw [show (n : ℝ) + 1 + -(d : ℝ) = 1 + ((n : ℝ) - d) by ring,
+        Real.rpow_add (by norm_num)]
+      norm_num
+      ring
+    _ ≤ 32 * (2 : ℝ) ^ ((-B.requestPrecision M r -
+        B.rankCharge * r.task.rank) * 4) := mul_le_mul_of_nonneg_left
+      (Real.rpow_le_rpow_of_exponent_le (by norm_num) he) (by norm_num)
+    _ = _ := by
+      rw [← Real.rpow_add (by norm_num), ← Real.rpow_mul_natCast (by norm_num)]
+      congr 2
 
 /-- The literal slow linear depth pays all retained cutoffs and leaves a quantitative
 precision margin. Structural rank cost is exposed, rather than silently absorbed.
