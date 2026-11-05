@@ -12,12 +12,14 @@ public import Complexity.Crypto.Protocols.BCS.Basic
 public import Complexity.Crypto.Computational.Kilian.Micali
 public import Complexity.Crypto.Computational.MerkleTree.ROMExtract
 public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
+import Complexity.Foundations.Data.List.Counting
 import Complexity.Foundations.Data.List.Lookup
 import Complexity.Languages.Probabilistic.QueryCount.Support
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
 import Complexity.Probability.PMF.Uniform
+import Complexity.Probability.PMF.UniformBound
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.OfFn
 
@@ -26,8 +28,12 @@ import Mathlib.Data.List.OfFn
 
 This module lifts the multi-round Ben-Sasson–Chiesa–Spooner (BCS) transformation
 (`Complexity/Crypto/Protocols/BCS/Basic.lean`) to an explicit two-channel random-oracle model
-([BenSassonChiesaSpooner2016]; [ChiesaYogev2024], Chapter 18, Construction 18.5.3 and Theorem
-18.5.8) and proves unconditional adaptive soundness and straight-line knowledge soundness bounds:
+([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024], Construction 25.1.1, Remark 25.1.3, and
+Theorem 25.2.1, printed pp. 274–278, Theorem 26.1.1 and Construction 26.1.3, printed pp. 288–289,
+Chapter 31, Definitions 31.1.1–31.1.2, Definition 31.1.6, Construction 31.1.8, Theorem 31.2.1, and
+Theorem 31.3.1, composed with Merkle trace extraction from Chapter 18, Construction 18.5.3 and
+Lemma 18.5.7, printed pp. 199 and 207) and proves unconditional adaptive soundness and straight-line
+knowledge soundness bounds:
 
 1. **Straight-line multi-round oracle-table reconstruction (`bcsExtractTable`, `bcsExtractOracles`,
    `bcsExtractWitness`).** Given a symbol decoder `decSym : List Bool → Sym` with
@@ -77,15 +83,43 @@ This module lifts the multi-round Ben-Sasson–Chiesa–Spooner (BCS) transforma
    rewinding, and bounds the probability that `bcsVerifyROM` accepts while `rel x w` fails by the
    same explicit two-channel ROM error bound.
 
-**Model and scope notes:** As in `Complexity/Crypto/Computational/Kilian/MicaliSoundness.lean`, this
-formalization models an unsalted (`s_MT = s_FS = 0`), two-channel random oracle separating Merkle
-hashing from transcript-chained Fiat–Shamir challenge derivation (compare single-oracle domain
-separation and zero-knowledge salts in [BenSassonChiesaSpooner2016] and [ChiesaYogev2024],
-Construction 18.5.3). Query budgets count all Merkle and Fiat–Shamir oracle calls; the
-separate-budget corollaries (`bcsROMSoundness_bound_of_prover_verifier`,
-`bcsROMKnowledgeSoundness_bound_of_prover_verifier`) bound verifier Merkle cost only on outputs in
-`P.support`. Native Turing-machine runtime of the extractor and zero-knowledge simulation are not
-established here.
+**Source-to-Lean adaptation and scope notes:**
+* *Oracle and transcript convention:* [ChiesaYogev2024], Construction 25.1.1 (printed pp. 274–275)
+  already uses `2 * r` separate domain-separated per-round Merkle and Fiat–Shamir random oracles
+  (with zero-knowledge salt lengths `s_MT`, `s_FS`; see Remark 25.1.3 on root-prefix vs. hash-chain
+  Fiat–Shamir queries). Here (`s_MT = s_FS = 0`), `BCSROMSpec Stmt Chal := MerkleHashSpec ⊕ₒ
+  BCSFSSpec Stmt Chal` uses two unindexed typed channels: one shared Merkle hash channel on
+  `Sum.inl` (`List Bool → List Bool`, via `merkleRootProg` / `merklePathProg` / `merkleVerifyProg`
+  with `encPair` node framing) and one transcript-chained Fiat–Shamir channel on `Sum.inr`
+  (`BCSFSQuery Stmt Chal := Stmt × List (List Bool) × List Chal ↦ Chal`, querying
+  `(x, rootPrefix roots j, [c_0, ..., c_{j-1}]) ↦ c_j` in round `j`).
+* *Round-by-round vs. state-restoration hypotheses:* Both [BenSassonChiesaSpooner2016] and
+  [ChiesaYogev2024], Theorem 25.2.1 and Theorem 26.1.1 (printed pp. 276–278 and 288–289) formulate
+  BCS ROM soundness and straight-line knowledge soundness via IOP state-restoration soundness and
+  state-restoration knowledge soundness, while [ChiesaYogev2024], Chapter 31 (Definitions
+  31.1.1–31.1.2, Definition 31.1.6, Construction 31.1.8, Theorem 31.2.1, and Theorem 31.3.1)
+  reduces state-restoration soundness and knowledge soundness to round-by-round hypotheses. This
+  layer proves the ROM bounds directly from `IOPRoundByRoundSoundness` and
+  `IOPRoundByRoundKnowledgeSoundness` (whose deterministic `extract_of_doomed` on complete `doomed`
+  transcripts is stronger than Definition 31.1.6's two-phase per-round experiment) with per-round
+  uniform challenge escape probability `≤ ε_rbr`, bounding adaptive Fiat–Shamir grinding directly
+  via `ε_rbr` and out-of-order chain-guessing targets (`fsOutOfOrderTargets`).
+* *Explicit additive loss and query budgets:* Accumulating growing budgets across both channels via
+  `OracleComp.toOuterMeasure_bad_le_two_budgets` and
+  `Complexity/Crypto/Computational/MerkleTree/ROMExtract.lean` yields the explicit additive bound
+  `(t_FS + r) * (ε_rbr + (t_FS + r) * (1 / Fintype.card Chal)) + Q_MT *
+  ((3 * Q_MT + r * (t_FS + r)) * (1 / 2 ^ σ))` (rather than the book's state-restoration plus
+  multi-instance Merkle extraction error expression). Query budgets count all Merkle and Fiat–Shamir
+  oracle calls, including malformed opening paths; the separate-budget corollaries
+  (`bcsROMSoundness_bound_of_prover_verifier`, `bcsROMKnowledgeSoundness_bound_of_prover_verifier`)
+  bound verifier Merkle cost only on outputs in `P.support`.
+* *Straight-line trace extraction and absent runtime certificate:* `bcsKnowledgeSoundnessGame`
+  reconstructs `bcsExtractWitness iopExtract decSym defaultSym tr_P x prf.roots` directly from the
+  prover's pre-verifier Merkle query trace `tr_P` with zero rewinding (compare [ChiesaYogev2024],
+  Construction 26.1.3). These theorems establish exact `OracleComp` probability/query-budget laws;
+  machine-level (`IsPPT` / native Turing-machine) runtime certificates for the verifier and
+  multi-extractor (compare [ChiesaYogev2024], Remark 18.5.8), digest truncation accounting,
+  polynomial-time NP-witness-to-IOP encoding, and zero-knowledge simulation remain outside scope.
 
 ## Main definitions
 
@@ -153,7 +187,10 @@ established here.
 
 * [E. Ben-Sasson, A. Chiesa, N. Spooner, *Interactive Oracle Proofs*][BenSassonChiesaSpooner2016]
 * [A. Chiesa, E. Yogev, *Building Cryptographic Proofs from Hash Functions*][ChiesaYogev2024],
-  Chapter 18, Construction 18.5.3 and Theorem 18.5.8.
+  Chapter 18 (Construction 18.5.3 and Lemma 18.5.7, printed pp. 199, 207), Chapter 25
+  (Construction 25.1.1, Remark 25.1.3, and Theorem 25.2.1, printed pp. 274–278), Chapter 26
+  (Theorem 26.1.1 and Construction 26.1.3, printed pp. 288–289), and Chapter 31 (Definitions
+  31.1.1–31.1.2, Definition 31.1.6, Construction 31.1.8, Theorem 31.2.1, and Theorem 31.3.1).
 -/
 
 public section
@@ -385,14 +422,6 @@ theorem chainedFSChallenges_concat {Stmt Chal : Type} (f : BCSFSQuery Stmt Chal 
 private def snocFin {m : ℕ} {α : Type} (v : Fin m → α) (last : α) (i : Fin (m + 1)) : α :=
   if h : i.val < m then v ⟨i.val, h⟩ else last
 
-private theorem snocFin_castSucc {m : ℕ} {α : Type} (v : Fin m → α) (last : α) (i : Fin m) :
-    snocFin v last i.castSucc = v i := by
-  simp [snocFin, i.isLt]
-
-private theorem snocFin_last {m : ℕ} {α : Type} (v : Fin m → α) (last : α) :
-    snocFin v last (Fin.last m) = last := by
-  simp [snocFin]
-
 private theorem ofFn_snocFin {m : ℕ} {α : Type} (v : Fin m → α) (last : α) :
     List.ofFn (snocFin v last) = List.ofFn v ++ [last] := by
   refine List.ext_getElem (by simp) fun k hk₁ hk₂ => ?_
@@ -491,7 +520,8 @@ private def bcsProveRoundsProg (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
 
 /-- **The BCS prover in the two-channel random-oracle model** (`bcsProveROM`): runs all `r`
 commit-and-challenge rounds via `bcsProveRoundsProg` and opens every queried entry under
-`merklePathProg` ([BenSassonChiesaSpooner2016]; [ChiesaYogev2024], Construction 18.5.3). -/
+`merklePathProg` ([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024], Construction 25.1.1,
+printed pp. 274–275). -/
 def bcsProveROM (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
     (encSym : Sym → List Bool) (x : Stmt) (w : Wit) :
     OracleComp (BCSROMSpec Stmt Chal) (BCSProof r Sym) := do
@@ -517,7 +547,7 @@ derived challenges `chals`. -/
 /-- **The BCS verifier in the two-channel random-oracle model** (`bcsVerifyROM`): re-derives all `r`
 round challenges on the Fiat–Shamir channel via `bcsChallengesProg` and checks all Merkle openings
 and `iop.decide` on the Merkle channel via `bcsVerifyOpeningsProg` ([BenSassonChiesaSpooner2016];
-[ChiesaYogev2024], Construction 18.5.3). -/
+compare [ChiesaYogev2024], Construction 25.1.1, printed pp. 274–275). -/
 @[expose] def bcsVerifyROM (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
     (encSym : Sym → List Bool) (x : Stmt) (prf : BCSProof r Sym) :
     OracleComp (BCSROMSpec Stmt Chal) Bool := do
@@ -689,8 +719,8 @@ empty cache. -/
 
 /-- **Perfect completeness of the BCS transform in the lazy two-channel random-oracle model**: if
 `iop` satisfies `IOPCompleteness iop rel` and `rel x w` holds, then for every digest length `σ`,
-`bcsHonestROMGame` outputs `true` with probability `1` ([BenSassonChiesaSpooner2016];
-[ChiesaYogev2024], Lemma 18.5.5). -/
+`bcsHonestROMGame` outputs `true` with probability `1` ([BenSassonChiesaSpooner2016]; compare
+[ChiesaYogev2024], Construction 25.1.1, printed pp. 274–275). -/
 theorem bcsHonestROMGame_eq_pure_true [DecidableEq Stmt] [DecidableEq Chal]
     [Fintype Chal] [Nonempty Chal] {iop : PublicCoinIOP r d Stmt Wit Sym Chal}
     {rel : Stmt → Wit → Prop} (hcomp : IOPCompleteness iop rel)
@@ -715,8 +745,10 @@ variable {r d : ℕ} {Stmt Wit Sym Chal : Type}
 
 /-- **Round-by-round knowledge soundness** of a `PublicCoinIOP` for relation `rel` with
 straight-line IOP extractor `iopExtract`, doomed-prefix predicate `doomed`, and non-escaping round
-transitions `goodStep` ([BenSassonChiesaSpooner2016]; [ChiesaYogev2024], Chapter 18, Section
-18.5.2):
+transitions `goodStep` (compare `IOPRoundByRoundSoundness` and [ChiesaYogev2024], Chapter 31,
+Definition 31.1.6 and Theorem 31.3.1, as well as state-restoration knowledge soundness in
+[BenSassonChiesaSpooner2016] and [ChiesaYogev2024], Chapter 26, Theorem 26.1.1; note that
+`extract_of_doomed` here is deterministic on complete `doomed` transcripts):
 1. Every statement `x` starts in `doomed x []` on the empty transcript prefix.
 2. Every non-escaping challenge `goodStep x pref π c` preserves `doomed`.
 3. On any complete transcript `List.ofFn (fun j => (oracles j, chals j))` that remains `doomed`, if
@@ -973,26 +1005,16 @@ length independent of adversarial Fiat–Shamir root-list sizes. -/
     st.1.map (fun (q, _) => dropFrame q) ++
     st.2.flatMap (fun ((_, rts, _), _) => rts.take r)
 
-private theorem length_flatMap_le {α β : Type} (f : α → List β) (xs : List α) (k : ℕ)
-    (hf : ∀ x ∈ xs, (f x).length ≤ k) :
-    (xs.flatMap f).length ≤ k * xs.length := by
-  induction xs with
-  | nil => simp
-  | cons x xs ih =>
-    simp only [List.flatMap_cons, List.length_append, List.length_cons]
-    have hx := hf x List.mem_cons_self
-    have hxs := ih fun y hy => hf y (List.mem_cons_of_mem _ hy)
-    have hmul : k * (xs.length + 1) = k * xs.length + k := Nat.mul_add_one k xs.length
-    omega
-
 theorem length_bcsForbiddenDigests_le (r : ℕ) {Stmt Chal : Type}
     (st : BCSTraceState Stmt Chal) :
     (bcsForbiddenDigests r st).length ≤ 3 * st.1.length + r * st.2.length := by
   unfold bcsForbiddenDigests
   rw [List.length_append, List.length_append, List.length_append,
     List.length_map, List.length_map, List.length_map]
-  have hfs : (st.2.flatMap (fun ((_, rts, _), _) => rts.take r)).length ≤ r * st.2.length :=
-    length_flatMap_le _ st.2 r fun ⟨⟨_, rts, _⟩, _⟩ _ => List.length_take_le r rts
+  have hfs : (st.2.flatMap (fun ((_, rts, _), _) => rts.take r)).length ≤ r * st.2.length := by
+    simpa only [Nat.mul_comm] using
+      List.length_flatMap_le (l := st.2) (f := fun ((_, rts, _), _) => rts.take r) (k := r)
+        fun ⟨⟨_, rts, _⟩, _⟩ _ => List.length_take_le r rts
   omega
 
 /-- If `BCSGoodState` holds on `st` and prepending `(msg, ans)` to `st.1` violates `BCSGoodState`,
@@ -1048,21 +1070,6 @@ theorem length_fsOutOfOrderTargets_le {Stmt Chal : Type} (idx : ℕ)
     (tr_FS : List (BCSFSQuery Stmt Chal × Chal)) :
     (fsOutOfOrderTargets idx tr_FS).length ≤ tr_FS.length :=
   List.length_filterMap_le _ _
-
-/-- **Target-hitting union bound for `PMF.uniformOfFintype`**: a uniformly sampled `c : Chal` lands
-in `targets` with probability at most `targets.length * (1 / Fintype.card Chal)`. -/
-theorem toOuterMeasure_uniformOfFintype_mem_list_le {Chal : Type} [Fintype Chal] [Nonempty Chal]
-    (targets : List Chal) :
-    (PMF.uniformOfFintype Chal).toOuterMeasure {c | c ∈ targets} ≤
-      (targets.length : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card Chal) := by
-  classical
-  rw [Cslib.Probability.PMF.toOuterMeasure_uniformOfFintype, one_div]
-  gcongr
-  have hsub : Finset.univ.filter (· ∈ {c : Chal | c ∈ targets}) ⊆ targets.toFinset := by
-    intro c hc
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hc
-    exact List.mem_toFinset.mpr hc
-  exact_mod_cast (Finset.card_le_card hsub).trans (List.toFinset_card_le targets)
 
 /-- Structural analysis of a fresh Fiat–Shamir entry `((x₀, rts₀, prev₀), c)` violating
 `BCSChainDoomed`: `x₀ ∈ S`, and either `c` hits `fsOutOfOrderTargets (rts₀.length - 1) tr_FS` (an
@@ -1238,7 +1245,7 @@ theorem toOuterMeasure_memoize_not_bcsChainDoomed_step {r d : ℕ} {Stmt Sym Cha
             · calc (PMF.uniformOfFintype Chal).toOuterMeasure E₂
                   ≤ ((fsOutOfOrderTargets (rts₀.length - 1) tr_FS).length : ℝ≥0∞) *
                       ((1 : ℝ≥0∞) / Fintype.card Chal) :=
-                    toOuterMeasure_uniformOfFintype_mem_list_le _
+                    PMF.toOuterMeasure_uniformOfFintype_mem_list_le _
                 _ ≤ (tr_FS.length : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card Chal) := by
                     gcongr
                     exact_mod_cast length_fsOutOfOrderTargets_le _ tr_FS
@@ -1986,12 +1993,13 @@ private theorem not_bcsGoodState_of_mem_support_bcsSoundnessProg
   rw [hiop_rej] at hiop_acc
   cases hiop_acc
 
-/-- **Adaptive two-channel BCS ROM soundness theorem** ([BenSassonChiesaSpooner2016];
-[ChiesaYogev2024], Theorem 18.5.8): under `IOPRoundByRoundSoundness iop lang doomed goodStep` with
-per-round challenge escape probability `≤ ε_rbr`, any adaptive cheating prover `P` making at most
-`t_FS` Fiat–Shamir queries such that `bcsSoundnessProg iop encSym lang P` makes at most `Q_MT`
-Merkle hash queries convinces `bcsVerifyROM` on a false statement `x ∉ lang` with probability at
-most
+/-- **Adaptive two-channel BCS ROM soundness theorem** (compare state-restoration soundness in
+[BenSassonChiesaSpooner2016] and [ChiesaYogev2024], Theorem 25.2.1, printed pp. 276–278, and the
+round-by-round reduction in [ChiesaYogev2024], Chapter 31, Definitions 31.1.1–31.1.2 and Theorem
+31.2.1): under `IOPRoundByRoundSoundness iop lang doomed goodStep` with per-round challenge escape
+probability `≤ ε_rbr`, any adaptive cheating prover `P` making at most `t_FS` Fiat–Shamir queries
+such that `bcsSoundnessProg iop encSym lang P` makes at most `Q_MT` Merkle hash queries convinces
+`bcsVerifyROM` on a false statement `x ∉ lang` with probability at most
 `(t_FS + r) * (ε_rbr + (t_FS + r) * (1 / Fintype.card Chal)) +`
 `Q_MT * ((3 * Q_MT + r * (t_FS + r)) * (1 / 2 ^ σ))`. -/
 theorem bcsROMSoundness_bound [DecidableEq Stmt] [DecidableEq Chal] [Fintype Chal] [Nonempty Chal]
@@ -2519,14 +2527,16 @@ private theorem bcsKnowledgeSoundnessGame_eq_sticky [BEq Stmt] [BEq Chal]
     (bcsVerifyROM iop encSym x prf) (tr_P, tr_FS) flag₁, PMF.map_comp]
   rfl
 
-/-- **Adaptive straight-line BCS ROM knowledge soundness theorem** ([BenSassonChiesaSpooner2016];
-[ChiesaYogev2024], Theorem 18.5.8): under `IOPRoundByRoundKnowledgeSoundness iop rel iopExtract
-doomed goodStep` with per-round challenge escape probability `≤ ε_rbr`, for any adaptive cheating
-prover `P` making at most `t_FS` Fiat–Shamir queries such that `bcsExecROM iop encSym P` makes at
-most `Q_MT` Merkle hash queries, the probability that `bcsVerifyROM` accepts `(x, prf)` while the
-straight-line witness `bcsExtractWitness iopExtract decSym defaultSym tr_P x prf.roots` (extracted
-from the prover's own Merkle trace `tr_P` with zero rewinding, before running the verifier) fails
-`rel x` is at most
+/-- **Adaptive straight-line BCS ROM knowledge soundness theorem** (compare state-restoration
+knowledge soundness and direct extraction in [BenSassonChiesaSpooner2016] and [ChiesaYogev2024],
+Theorem 26.1.1 and Construction 26.1.3, printed pp. 288–289, and the round-by-round reduction in
+[ChiesaYogev2024], Chapter 31, Definition 31.1.6 and Theorem 31.3.1): under
+`IOPRoundByRoundKnowledgeSoundness iop rel iopExtract doomed goodStep` with per-round challenge
+escape probability `≤ ε_rbr`, for any adaptive cheating prover `P` making at most `t_FS`
+Fiat–Shamir queries such that `bcsExecROM iop encSym P` makes at most `Q_MT` Merkle hash queries,
+the probability that `bcsVerifyROM` accepts `(x, prf)` while the straight-line witness
+`bcsExtractWitness iopExtract decSym defaultSym tr_P x prf.roots` (extracted from the prover's own
+Merkle trace `tr_P` with zero rewinding, before running the verifier) fails `rel x` is at most
 `(t_FS + r) * (ε_rbr + (t_FS + r) * (1 / Fintype.card Chal)) +`
 `Q_MT * ((3 * Q_MT + r * (t_FS + r)) * (1 / 2 ^ σ))`. -/
 theorem bcsROMKnowledgeSoundness_bound [DecidableEq Stmt] [DecidableEq Chal]

@@ -150,7 +150,10 @@ into a non-interactive proof (`BCSProof r Sym`, `bcsProve`, `bcsVerify`):
 For unconditional random-oracle soundness and straight-line knowledge extraction, import
 `Complexity.Crypto.Protocols.BCS.ROM` ([`BCS/ROM.lean`](../../Complexity/Crypto/Protocols/BCS/ROM.lean)),
 which lifts the multi-round BCS transform to an explicit two-channel random-oracle model
-([bcs16][bcs16]; Chiesa–Yogev Chapter 18, Construction 18.5.3 and Theorem 18.5.8):
+([bcs16][bcs16]; compare Chiesa–Yogev Construction 25.1.1, Remark 25.1.3, and Theorem 25.2.1,
+March 25, 2026 version, pp. 274–278, Theorem 26.1.1 and Construction 26.1.3, pp. 288–289, Chapter
+31 Definitions 31.1.1–31.1.2, Definition 31.1.6, Theorem 31.2.1, and Theorem 31.3.1, and Merkle
+trace extraction from Construction 18.5.3 and Lemma 18.5.7, pp. 199 and 207):
 
 - **Two-channel BCS random-oracle execution and completeness:** over
   `BCSROMSpec Stmt Chal := MerkleHashSpec ⊕ₒ BCSFSSpec Stmt Chal` (reusing `MerkleHashSpec`,
@@ -196,10 +199,25 @@ which lifts the multi-round BCS transform to an explicit two-channel random-orac
   Concrete two-round examples, including an adaptive prover with out-of-order and oversized
   Fiat–Shamir queries, are in [`ComplexityTests/Crypto/BCSROM.lean`](../../ComplexityTests/Crypto/BCSROM.lean).
 
-This ROM formalization uses an unsalted (`s_MT = s_FS = 0`), two-channel oracle separating Merkle
-hashing from transcript-chained Fiat–Shamir queries rather than single-oracle domain separation and
-zero-knowledge salts, and bounds oracle query counts rather than native Turing-machine extractor
-runtime or zero-knowledge simulation.
+In Chiesa–Yogev Construction 25.1.1 (pp. 274–275; see also Remark 25.1.3 on root-prefix vs.
+hash-chain Fiat–Shamir queries), the BCS protocol already uses `2 * r` separate domain-separated
+per-round Merkle and Fiat–Shamir random oracles (with zero-knowledge salt parameters `s_MT`,
+`s_FS`), while [bcs16][bcs16] and Chiesa–Yogev Theorems 25.2.1 and 26.1.1 formulate ROM soundness
+and straight-line knowledge soundness via IOP state-restoration hypotheses (reduced to
+round-by-round soundness and knowledge soundness in Chapter 31, Definitions 31.1.1–31.1.2,
+Definition 31.1.6, and Theorems 31.2.1 and 31.3.1) with a state-restoration plus multi-extractor
+error expression. Here (`s_MT = s_FS = 0`), `BCSROMSpec` models oracle separation via two unindexed
+typed channels (one shared Merkle hash channel with `encPair` node framing, and one
+transcript-chained Fiat–Shamir channel) and derives the explicit additive loss above directly from
+round-by-round escape hypotheses (`IOPRoundByRoundSoundness`, `IOPRoundByRoundKnowledgeSoundness`,
+whose deterministic `extract_of_doomed` on complete `doomed` transcripts is stronger than
+Definition 31.1.6's two-phase per-round experiment) and two-channel query budgets (`bcsMTCost`,
+`bcsFSCost`), counting all oracle queries including malformed opening paths. Straight-line
+extraction (`bcsExtractWitness` on the prover's pre-verifier Merkle trace `tr_P`; compare
+Construction 26.1.3) and the soundness games establish exact `OracleComp` probability bounds without
+machine-level (`IsPPT` / native Turing-machine) verifier or multi-extractor runtime certificates
+(compare Chiesa–Yogev Remark 18.5.8), digest truncation accounting, NP-witness-to-IOP encoding
+runtime, or zero-knowledge simulation.
 
 ## Shared random oracles and ideal permutations
 

@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Crypto.Protocols.BCS.ROM
 import Complexity.Languages.Probabilistic.QueryCount.Support
+import Complexity.Probability.PMF.UniformBound
 
 /-!
 # Tests for BCS ROM soundness and straight-line knowledge soundness
@@ -31,14 +32,16 @@ two-channel BCS random-oracle transform (`Complexity.Crypto.Protocols.BCS.ROM`):
    oversized 5-root Fiat–Shamir query, and adaptive Merkle queries, discharges tight prover and
    `P.support`-restricted verifier query budgets, and instantiates `bcsROMSoundness_bound`,
    `bcsROMSoundness_bound_of_prover_verifier`, `bcsROMKnowledgeSoundness_trace_bound`,
-   `bcsROMKnowledgeSoundness_bound`, and `bcsROMKnowledgeSoundness_bound_of_prover_verifier`.
+   `bcsROMKnowledgeSoundness_bound`, and `bcsROMKnowledgeSoundness_bound_of_prover_verifier`,
+   including a concrete larger-alphabet instantiation (`Chal = Fin 64`, `σ = 16`) with final
+   soundness and knowledge-soundness error strictly `< 1 / 3 < 1`.
 -/
 
 namespace ComplexityTests.Crypto.BCSROM
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols.BCS Cslib.Probability Cslib.OracleComp
 open Turing.MultiTapeTM
-open scoped ENNReal
+open scoped NNReal ENNReal
 
 /-! ### Protocol Setup: Concrete 2-Round, Depth-1 Public-Coin IOP -/
 
@@ -290,7 +293,7 @@ theorem romIOP_escape (s : Bool × Bool) (pref : List (OracleTable 1 Bool × Boo
             generalize π ⟨1, by decide⟩ = a₁ at hc
             cases flag <;> cases target <;> cases a₀ <;> cases a₁ <;> simp_all
       _ ≤ (([badChal].length : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card Bool) :=
-          toOuterMeasure_uniformOfFintype_mem_list_le [badChal]
+          PMF.toOuterMeasure_uniformOfFintype_mem_list_le [badChal]
       _ = 1 / 2 := by norm_num
 
 -- Concrete check of `IOPRoundByRoundKnowledgeSoundness.rel_iopExtract_of_goodSteps`.
@@ -431,5 +434,150 @@ example (σ : ℕ) :
   bcsROMKnowledgeSoundness_bound_of_prover_verifier romIOP_rbrKS romIOP_escape decSym_encSym
     false σ isCostBounded_MT_adaptiveBCSCheater isCostBounded_FS_adaptiveBCSCheater
     isCostBounded_MT_verifier_of_mem_support_adaptiveBCSCheater
+
+/-! ### Part 4: Concrete `< 1 / 3` Numerical Security Bound (`Chal = Fin 64`, `σ = 16`) -/
+
+/-- Witness relation on `Stmt = Bool`, `Wit = Bool` for the larger-challenge (`Fin 64`) test IOP. -/
+def largeRel (x w : Bool) : Prop :=
+  x = true ∧ w = true
+
+/-- Straight-line IOP extractor reading leaf `0` of the round-`0` table. -/
+def largeExtract (_ : Bool) (oracles : Fin 2 → OracleTable 1 Bool) : Bool :=
+  oracles ⟨0, by decide⟩ ⟨0, by decide⟩
+
+/-- Concrete 2-round, depth-1 IOP over `Chal = Fin 64` with genuine soundness/knowledge escape on
+`c₀ = 0` (`ε_rbr = 1 / 64`). -/
+def largeChalIOP : PublicCoinIOP 2 1 Bool Bool Bool (Fin 64) where
+  proveRound _ _ w _ := fun _ => w
+  queries _ _ := [(⟨0, by decide⟩, ⟨0, by decide⟩), (⟨1, by decide⟩, ⟨0, by decide⟩)]
+  decide x chals ans :=
+    match ans with
+    | [a₀, a₁] => x && (a₀ || decide (chals ⟨0, by decide⟩ = 0)) && a₁
+    | _ => false
+
+theorem largeChalIOP_complete : IOPCompleteness largeChalIOP largeRel := by
+  intro x w ⟨hx, hw⟩ chals
+  subst hx hw
+  simp [iopVerify, iopAnswers, iopProverOracles, largeChalIOP]
+
+def largeDoomed (_ : Bool) (tr : List (OracleTable 1 Bool × Fin 64)) : Prop :=
+  match tr with
+  | [] => True
+  | (_, c₀) :: _ => c₀ ≠ 0
+
+def largeGoodStep (_ : Bool) (tr : List (OracleTable 1 Bool × Fin 64))
+    (_ : OracleTable 1 Bool) (c : Fin 64) : Prop :=
+  tr = [] → c ≠ 0
+
+theorem largeChalIOP_rbrKS :
+    IOPRoundByRoundKnowledgeSoundness largeChalIOP largeRel largeExtract
+      largeDoomed largeGoodStep where
+  init_doomed _ := trivial
+  step_doomed _ pref _ _ hd hgood := by
+    cases pref with
+    | nil => exact hgood rfl
+    | cons _ _ => exact hd
+  extract_of_doomed x oracles chals hd hver := by
+    change chals ⟨0, by decide⟩ ≠ 0 at hd
+    simp only [iopVerify, iopAnswers, largeChalIOP, List.map_cons, List.map_nil, hd, decide_false,
+      Bool.or_false, Bool.and_eq_true] at hver
+    exact hver.1
+
+theorem largeChalIOP_escape (x : Bool) (pref : List (OracleTable 1 Bool × Fin 64))
+    (π : OracleTable 1 Bool) (_ : largeDoomed x pref) :
+    (PMF.uniformOfFintype (Fin 64)).toOuterMeasure {c | ¬ largeGoodStep x pref π c} ≤ 1 / 64 := by
+  cases pref with
+  | cons hd tl =>
+    have hempty : {c : Fin 64 | ¬ largeGoodStep x (hd :: tl) π c} = ∅ := by
+      ext c
+      simp [largeGoodStep]
+    simp [hempty]
+  | nil =>
+    calc (PMF.uniformOfFintype (Fin 64)).toOuterMeasure {c | ¬ largeGoodStep x [] π c}
+        ≤ (PMF.uniformOfFintype (Fin 64)).toOuterMeasure {c | c ∈ ([0] : List (Fin 64))} := by
+          refine (PMF.uniformOfFintype (Fin 64)).toOuterMeasure.mono fun c hc => ?_
+          simpa [largeGoodStep] using hc
+      _ ≤ ((([0] : List (Fin 64)).length : ℕ) : ℝ≥0∞) *
+            ((1 : ℝ≥0∞) / Fintype.card (Fin 64)) :=
+          PMF.toOuterMeasure_uniformOfFintype_mem_list_le [0]
+      _ = 1 / 64 := by simp [Fintype.card_fin]
+
+/-- Adaptive out-of-order cheating prover over `Chal = Fin 64` (`t_FS = 2`, `t_MT = 2`). -/
+def largeChalCheater :
+    OracleComp (BCSROMSpec Bool (Fin 64)) (Bool × BCSProof 2 Bool) := do
+  let d₀ ← query (spec := BCSROMSpec Bool (Fin 64)) (.inl [false])
+  let c₁ ← query (spec := BCSROMSpec Bool (Fin 64)) (.inr (false, [d₀, d₀], [0]))
+  let c₀ ← query (spec := BCSROMSpec Bool (Fin 64)) (.inr (false, [d₀], []))
+  let sib ← query (spec := BCSROMSpec Bool (Fin 64)) (.inl [decide (c₀ = c₁)])
+  return (false,
+    { roots := fun _ => d₀
+      openings := [(true, [sib]), (true, [sib])] })
+
+theorem isCostBounded_FS_largeChalCheater :
+    IsCostBounded bcsFSCost largeChalCheater 2 :=
+  IsCostBounded.liftBind (cost := bcsFSCost) (Sum.inl [false]) _ 2 fun d₀ =>
+    IsCostBounded.liftBind (cost := bcsFSCost) (Sum.inr (false, [d₀, d₀], [0])) _ 1 fun c₁ =>
+      IsCostBounded.liftBind (cost := bcsFSCost) (Sum.inr (false, [d₀], [])) _ 0 fun c₀ =>
+        IsCostBounded.liftBind (cost := bcsFSCost) (Sum.inl [decide (c₀ = c₁)]) _ 0 fun _ =>
+          IsCostBounded.pure (cost := bcsFSCost) _ 0
+
+theorem isCostBounded_MT_largeChalCheater :
+    IsCostBounded bcsMTCost largeChalCheater 2 :=
+  IsCostBounded.liftBind (cost := bcsMTCost) (Sum.inl [false]) _ 1 fun d₀ =>
+    IsCostBounded.liftBind (cost := bcsMTCost) (Sum.inr (false, [d₀, d₀], [0])) _ 1 fun c₁ =>
+      IsCostBounded.liftBind (cost := bcsMTCost) (Sum.inr (false, [d₀], [])) _ 1 fun c₀ =>
+        IsCostBounded.liftBind (cost := bcsMTCost) (Sum.inl [decide (c₀ = c₁)]) _ 0 fun _ =>
+          IsCostBounded.pure (cost := bcsMTCost) _ 0
+
+theorem isCostBounded_MT_verifier_largeChalCheater
+    (x : Bool) (prf : BCSProof 2 Bool) (hmem : (x, prf) ∈ largeChalCheater.support) :
+    IsCostBounded bcsMTCost (bcsVerifyROM largeChalIOP encSym x prf) 4 := by
+  simp only [largeChalCheater, mem_supportWith_bind_iff, supportWith_query, Set.mem_univ,
+    true_and, supportWith_pure, Set.mem_singleton_iff] at hmem
+  obtain ⟨d₀, c₁, c₀, sib, h⟩ := hmem
+  cases h
+  exact isCostBounded_bcsMTCost_bcsVerifyROM_of_queries_le largeChalIOP encSym false _
+    (q_iop := 2) (L_path := 1) (fun _ => le_rfl) (by simp)
+
+private theorem largeChal_bound_lt_one_third :
+    ((2 + 2 : ℕ) : ℝ≥0∞) *
+        (1 / 64 + ((2 + 2 : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card (Fin 64))) +
+      ((2 + 4 : ℕ) : ℝ≥0∞) *
+        (((3 * (2 + 4) + 2 * (2 + 2) : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ 16)) < 1 / 3 := by
+  have hnn : (4 * (64⁻¹ + 4 * 64⁻¹) + 6 * (26 * 65536⁻¹) : ℝ≥0) < 3⁻¹ := by norm_num
+  have hcast :
+      ((4 * (64⁻¹ + 4 * 64⁻¹) + 6 * (26 * 65536⁻¹) : ℝ≥0) : ℝ≥0∞) < ((3⁻¹ : ℝ≥0) : ℝ≥0∞) :=
+    ENNReal.coe_lt_coe.mpr hnn
+  simp only [ENNReal.coe_add, ENNReal.coe_mul, ENNReal.coe_ofNat,
+    ENNReal.coe_inv (by norm_num : (64 : ℝ≥0) ≠ 0),
+    ENNReal.coe_inv (by norm_num : (65536 : ℝ≥0) ≠ 0),
+    ENNReal.coe_inv (by norm_num : (3 : ℝ≥0) ≠ 0)] at hcast
+  simpa only [Fintype.card_fin, one_div,
+    (by norm_num : ((2 + 2 : ℕ) : ℝ≥0∞) = 4),
+    (by norm_num : ((2 + 4 : ℕ) : ℝ≥0∞) = 6),
+    (by norm_num : ((3 * (2 + 4) + 2 * (2 + 2) : ℕ) : ℝ≥0∞) = 26),
+    (by norm_num : ((64 : ℕ) : ℝ≥0∞) = 64),
+    (by norm_num : (2 : ℝ≥0∞) ^ 16 = 65536)] using hcast
+
+-- At `σ = 16` (`2 ^ 16 = 65536`) and `|Chal| = 64`, both the adaptive ROM soundness error and
+-- straight-line knowledge-soundness error are strictly `< 1 / 3 < 1` (`5159 / 16384`).
+example :
+    bcsSoundnessGame largeChalIOP encSym {x | ∃ w, largeRel x w} largeChalCheater 16 true <
+      1 / 3 :=
+  lt_of_le_of_lt
+    (bcsROMSoundness_bound_of_prover_verifier largeChalIOP_rbrKS.toRoundByRoundSoundness
+      (fun x _ pref π hd => largeChalIOP_escape x pref π hd.2) decSym_encSym false 16
+      isCostBounded_MT_largeChalCheater isCostBounded_FS_largeChalCheater
+      isCostBounded_MT_verifier_largeChalCheater)
+    largeChal_bound_lt_one_third
+
+example :
+    bcsKnowledgeSoundnessGame largeChalIOP largeRel largeExtract encSym decSym false
+      largeChalCheater 16 true < 1 / 3 :=
+  lt_of_le_of_lt
+    (bcsROMKnowledgeSoundness_bound_of_prover_verifier largeChalIOP_rbrKS largeChalIOP_escape
+      decSym_encSym false 16 isCostBounded_MT_largeChalCheater isCostBounded_FS_largeChalCheater
+      isCostBounded_MT_verifier_largeChalCheater)
+    largeChal_bound_lt_one_third
 
 end ComplexityTests.Crypto.BCSROM
