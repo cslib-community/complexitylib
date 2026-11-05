@@ -65,6 +65,22 @@ application. At `n = 2` its honest transcript has exactly **12 payload bits**,
 attaining the generic bound. Its constant hash exercises accounting only;
 it is not a collision-resistance example.
 
+For Micali's non-interactive random-oracle compilation of Kilian's protocol,
+import `Complexity.Crypto.Computational.Kilian.Micali`
+([`Kilian/Micali.lean`](../../Complexity/Crypto/Computational/Kilian/Micali.lean)).
+It lifts Merkle tree commitment, opening and verification to `OracleComp`
+programs (`merkleRootProg`, `merklePathProg`, `merkleVerifyProg`) over
+`MerkleHashSpec`, proves their pure-oracle simulation lemmas under
+`OracleComp.evalPure` and lazy random-oracle opening completeness
+(`merkleVerifyProg_merklePathProg`), and defines the two-channel Micali prover
+and verifier (`micaliProve`, `micaliVerify` over `MicaliSpec α`) where the
+Fiat–Shamir query `Sum.inr (x, root)` includes both the statement `x` and the
+Merkle root. `micaliVerify_micaliProve_eq_true` and
+`micaliHonestGame_eq_pure_true` prove perfect completeness under deterministic
+oracles and in the lazy random-oracle experiment `micaliHonestGame` (checked
+in [`ComplexityTests/Crypto/Micali.lean`](../../ComplexityTests/Crypto/Micali.lean));
+ROM soundness and extraction belong to subsequent milestones.
+
 ## Shared random oracles and ideal permutations
 
 [Complexity/Crypto/Protocols/Signature/RandomOracle.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Signature/RandomOracle.lean) defines a typed random-oracle signature experiment. Signer, verifier and forger share one lazy hash cache. The forger's coins are drawn explicitly before deterministic oracle interaction, enabling replay. Signing and hash queries have separate bounds. Key generation can be an arbitrary PMF, so this finite experiment is not identical to the native `SignatureScheme` interface.
