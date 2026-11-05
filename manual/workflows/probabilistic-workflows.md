@@ -1280,31 +1280,54 @@ For uniform use, choose the structural charge first and prove the condition for 
 allowed budget and terminal exponent. The theorem does not assert that the current
 unbounded schedule satisfies it. In particular, stationarity preserves the clipped mean,
 so a spectral sampling contraction cannot be applied to erase its slack growth.
-The geometric offset decay alone does not pay the remaining sum over prefix slacks.
-A telescoping comparison or a proved relation to the actual compression tail weights is
-still needed for that unrestricted conclusion.
+The groupwise bound remains available, but the actual initial conditional mean has a
+sharper signed telescope. `initial_sample_prefix_mean` applies stationarity separately to
+each complete walk, even when lengths differ, and then cancels identical `sample` calls.
+`initial_compressed_prefix_mean` supplies the literal compressed children: the same bin,
+history, precision exponent, reset source, raw budget and environment occur at a shared
+endpoint. Positive calls still require direct and reset-right availability; unavailable
+calls are not filled in. Equal-budget groups execute zero. The schedule proves the starting
+coarse budget is zero (`initial_start_budget`). Thus at prefix $j+1$ only the fine endpoint
+at $d=\mathrm{dyadicSlack}(m,j)$ survives per bin. This cancellation concerns conditional
+means; sampled centered noise does not telescope.
 
-The [finite allocation regressions](../../ComplexityTests/InitialTwoPayment.lean) fix charge
-$64$ before the exponents and field width, take positive budget $M=4$, and pay all three
-prefix groups for terminal exponents $0,1,2$. The matching bin has literal endpoint
-budgets $3$ and $2$, whereas an adjacent bin has equal zero endpoints. This is a bounded
-numerical allocation test, not recursive availability or a uniformly paid reserve.
-Its parent precision is negative: the bound permits a large error and does not establish
-positive requested precision or small-error payment. The separate executed-child fixtures
-retain nonzero child output and nonzero child error; they do not assert that stronger claim.
+`initial_compressed_prefix_clipped_endpoint` applies the sharp own-mask bound only after
+this signed cancellation. Its `initialClippedEndpointPrefixCharge` is
+$(\sum_i (K(a,i)E_i(M-d))^{1/4})^4$, retaining actual scale cutoffs and zero endpoints.
+`initialClippedEndpointWindow` contains only the surviving factor, and
+`initialClippedEndpointPrefixCharge_paid` needs
+$$
+C^{1/4}W_{\mathrm{end}}(M,j,a,r)\le 2^{\mathrm{rankCharge}}.
+$$
+There is no sum over earlier large-slack windows. For $d\le16\,\mathrm{slack}$,
+`initialClippedEndpointWindow_uniform` bounds this window by
+$4\sum_{h\in\mathbb Z}\mathrm{scaleMajorant}(h)$ independently of bin count, horizon,
+source/terminal exponents and field width. The existing summable majorant has the explicit
+value `tsum_scaleMajorant`. `initialClippedEndpointPrefixCharge_uniform_paid` consequently
+uses a single structural allocation chosen before those coordinates. Larger surviving
+slacks still have their explicit exponential factor; absorption into compression tails
+is not proved here.
 
-The literal computed first-coordinate consumer is
-[`initial_compressed_precision_clipped_first`](../../Complexity/Foundations/Probability/HierarchyTransportedPreparation.lean).
-It adds the semantic omitted/inactive deficit to the clipped prefix perturbation.
-`initialComputedPrecisionMoment` takes the minimum of that payment and the previous first
-mean cost. The existing precision four-statistic, `actualFourMax`, raw `clippedError` and
-sharp-reserve proofs consume this minimum. Ordinary first sampling noise and saturated
-second preparation retain their previous costs.
-`initialComputedPrecisionMoment_first_paid` consumes the joint window condition in this
-same first-mean minimum and leaves the semantic omitted/inactive deficit explicit.
-Uniform window absorption, the separate ordinary-noise and preparation payments, and the
-simultaneous changing-request invariant remain open; no uniformly paid reserve or native
-endpoint follows here.
+The [allocation regressions](../../ComplexityTests/InitialTwoPayment.lean) retain the older
+$M=4$ fixture, whose parent precision is negative. A new fixture fixes charge $64$ first,
+then chooses $M=16(64\,\mathrm{rank}(r)+8)$ at full source/terminal rate and three bins.
+Its parent precision is exactly $8$, and its surviving transport fourth moment is paid by
+$2^{-32}$. The bound is consumed by `initialComputedPrecisionMoment_first_endpoint_paid`.
+This tests positive-precision numerical allocation and the actual minimum, conditional on
+the separate child IH; it does not certify recursive availability or a complete reserve.
+The executed history regression checks adjacent unequal groups with a shared nonzero
+endpoint and exact prefix means after their different completed walks.
+
+The literal computed first-coordinate consumers are
+[`initial_compressed_precision_clipped_first`](../../Complexity/Foundations/Probability/HierarchyTransportedPreparation.lean)
+and `initial_compressed_precision_clipped_endpoint_first`. They add the semantic
+omitted/inactive deficit explicitly. `initialComputedPrecisionMoment` takes the minimum
+of the previous mean cost, the groupwise bound and the telescoped endpoint bound. The
+existing precision four-statistic, `actualFourMax`, raw `clippedError` and sharp-reserve
+proofs consume this minimum. Ordinary first sampling noise and saturated second preparation
+retain their previous costs. Unrestricted large-slack tail absorption, the separate
+ordinary-noise/preparation payments and the simultaneous changing-request invariant remain
+open; no uniformly paid full reserve or native endpoint follows here.
 The [two-atom regression](../../ComplexityTests/InitialTwoPayment.lean) shows why: scalar
 rooted fourth error $1/32$ can coexist with centered normalized fourth error $1$ after
 physical scaling. It also distinguishes clipping after averaging from averaging clipped

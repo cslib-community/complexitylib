@@ -15,6 +15,7 @@ set_option linter.privateModule false
 set_option backward.isDefEq.respectTransparency false
 noncomputable section
 open Finset Cslib Cslib.Probability
+open Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments
 open scoped BigOperators
 attribute [local instance] Classical.propDecidable
 
@@ -331,7 +332,7 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
     (hslack : B.slack = 1) (hrate : B.binRate = rate) (H : Horizon P)
     (hH : 2 ≤ H.maxExponent) (ks ka : ℕ) (ha : ka ≤ 2)
     (R : RoleProfile 3) (ζ Lh Lρ : ℝ) :
-    let B' := { B with rankCharge := 64 }
+    let B' : BudgetData HP P := { B with rankCharge := 64 }
     let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
       ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 ks [],
         gridChannel 2 ka [], gridChannel 2 ka []⟩
@@ -356,7 +357,7 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
 example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
     (B : BudgetData HP P) (hslack : B.slack = 1) (hrate : B.binRate = rate)
     (ks ka : ℕ) :
-    let B' := { B with rankCharge := 64 }
+    let B' : BudgetData HP P := { B with rankCharge := 64 }
     let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
       ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 ks [],
         gridChannel 2 ka [], gridChannel 2 ka []⟩
@@ -379,3 +380,97 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
   rw [BudgetData.sampleScale_grid { B with rankCharge := 64 } r ka ka hrate rfl,
     BudgetData.sampleScale_grid { B with rankCharge := 64 } r ka (ka + 1) hrate rfl]
   norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff, hslack]
+
+-- The endpoint window is independent of the parent budget at the final slack. Charge 64
+-- is fixed before M, both request exponents and the field width; there are three bins.
+private lemma endpoint_window {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
+    (B : BudgetData HP P) (hbins : B.bins = range 3) (hcap : B.binCap = 16)
+    (hslack : B.slack = 1) (M ka : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+      B.initialClippedEndpointWindow M (Nat.log2 M) ka r ≤ (2 : ℝ) ^ (64 : ℝ) := by
+  have hc : (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
+      (4⁻¹ : ℝ) ≤ 1024 := by
+    have hh := Real.rpow_le_rpow (by rw [hcap]; norm_num :
+      0 ≤ max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3))
+      (show max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3) ≤
+        (1024 : ℝ) ^ 4 by rw [hcap]; norm_num) (by norm_num : (0 : ℝ) ≤ 4⁻¹)
+    have he : ((1024 : ℝ) ^ 4) ^ (4⁻¹ : ℝ) = 1024 :=
+      Real.pow_rpow_inv_natCast (by norm_num) (by decide : (4 : ℕ) ≠ 0)
+    rwa [he] at hh
+  have hw : B.initialClippedEndpointWindow M (Nat.log2 M) ka r ≤ 12 := by
+    unfold BudgetData.initialClippedEndpointWindow
+    rw [hbins]
+    calc
+      _ ≤ ∑ _bin ∈ range 3, (4 : ℝ) := by
+        apply sum_le_sum
+        intro bin _
+        split_ifs
+        · norm_num
+        · apply (Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2)
+            (show _ ≤ (2 : ℝ) by
+              simp only [Cslib.RowCompression.dyadicSlack_last, hslack]
+              linarith [abs_nonneg ((bin : ℝ) - ka)])).trans_eq
+          norm_num
+      _ = 12 := by norm_num
+  have hw0 : 0 ≤ B.initialClippedEndpointWindow M (Nat.log2 M) ka r := by
+    unfold BudgetData.initialClippedEndpointWindow
+    exact sum_nonneg fun _ _ => by split_ifs <;> positivity
+  exact (mul_le_mul hc hw hw0 (by norm_num)).trans (by norm_num)
+
+-- Positive parent precision 8, with a nontrivial 2^(-32) fourth-moment transport payment.
+-- The structural charge is 64 before choosing the parent budget. This is an allocation
+-- and actual-minimum client, conditional on the separate child IH, not a full reserve.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (hbins : B.bins = range 3) (hcap : B.binCap = 16)
+    (hslack : B.slack = 1) (hrate : B.binRate = rate) (H : Horizon P)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent) (ζ Lh Lρ : ℝ) :
+    let B' : BudgetData HP P := { B with rankCharge := 64 }
+    let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+      ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 0 [],
+        gridChannel 2 0 [], gridChannel 2 0 []⟩
+    let M := 16 * (64 * r.task.rank + 8)
+    B'.requestPrecision M r = 8 ∧
+      B'.initialClippedEndpointPrefixCharge M (Nat.log2 M) r 0 1 ≤ (2 : ℝ) ^ (-32 : ℝ) ∧
+      B'.initialComputedPrecisionMoment M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
+        0 0 [] [] 1 ζ Lh Lρ (Nat.log2 M) false 0 ≤
+        8 * ((2 : ℝ) ^ (-32 : ℝ) + rowNormPow 4 P r.source.rate
+          (retainedMask (0 : Fin 3) (side P 0) B'.padding [])
+          (retainedMask (2 : Fin 3) (side P 0) B'.padding [])
+          (fun _ x y => min 1 (|B'.initialPolynomialLoss M 2 (Nat.log2 M) r x y| /
+            (rate 0 + B'.base x y)))) := by
+  dsimp only
+  let B' : BudgetData HP P := { B with rankCharge := 64 }
+  let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+    ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 0 [],
+      gridChannel 2 0 [], gridChannel 2 0 []⟩
+  let M := 16 * (64 * r.task.rank + 8)
+  have hp : B'.requestPrecision M r = 8 := by
+    change (M : ℝ) / (16 * B.slack) +
+      (Real.logb 2 (rate 0) + Real.logb 2 (rate 0)) / 2 - 64 * r.task.rank = 8
+    rw [hslack]
+    norm_num [rate, M]
+  have hw := endpoint_window B' hbins hcap hslack M 0 r
+  have he := B'.initialClippedEndpointPrefixCharge_paid (by norm_num) hrate H M
+    (Nat.log2 M) 0 0 (Nat.zero_le _) hi r rfl rfl rfl hw 1
+  have hm := B'.initialComputedPrecisionMoment_first_endpoint_paid (by norm_num) hrate H
+    M 2 (Nat.log2 M) 0 0 (Nat.zero_le _) hi r rfl rfl rfl
+    ⟨0, 1, 2, by decide, by decide, by decide⟩ [] [] 1 ζ Lh Lρ hw
+  have hpow : ((2 : ℝ) ^ (-8 : ℝ)) ^ 4 = (2 : ℝ) ^ (-32 : ℝ) := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num : (0 : ℝ) ≤ 2)]
+    norm_num
+  simp only [hp, one_pow, one_mul, hpow] at he hm
+  exact ⟨hp, he, hm⟩
+
+-- Unavailable positive endpoints are not invented by the telescope. The zero boundary
+-- remains available, and exhausted equal pairs make no lower call at all.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (hslack : B.slack = 1)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : B.sampleScale r (some 0) = 0) :
+    B.sample (fun _ _ => none) 0 (.pilotInput ⟨0, HP.k_pos⟩) r (some 0) = some 0 ∧
+      B.pairedSample (fun _ _ => none) 4 4 (.pilotInput ⟨0, HP.k_pos⟩) r (some 0) = some 0 ∧
+      B.pairedSample (fun _ _ => none) 4 2 (.pilotInput ⟨0, HP.k_pos⟩) r (some 0) = none := by
+  simp [BudgetData.sample, BudgetData.pairedSample, hs, hslack,
+    LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+    BudgetData.positiveSample, BudgetData.row]

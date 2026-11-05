@@ -427,14 +427,20 @@ payments. This minimum is consumed by the literal four-max and raw clipped-error
     { r with usage := r.terminal } coefficient
   let old := B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν
   if !noise ∧ ν = 0 then min old
-    (8 * (((∑ i ∈ range (j + 1),
+    (min (8 * (((∑ i ∈ range (j + 1),
       (B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
         { r with usage := r.terminal } ka coefficient) ^ (4⁻¹ : ℝ)) ^ 4) +
       rowNormPow 4 P r.source.rate
         (retainedMask R.source (side P ks) B.padding ss)
         (retainedMask R.terminal (side P ka) B.padding st)
         (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
-          (rate ka + B.base x y))))) else old
+          (rate ka + B.base x y)))))
+      (8 * (B.initialClippedEndpointPrefixCharge M j { r with usage := r.terminal } ka
+        coefficient + rowNormPow 4 P r.source.rate
+          (retainedMask R.source (side P ks) B.padding ss)
+          (retainedMask R.terminal (side P ka) B.padding st)
+          (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
+            (rate ka + B.base x y)))))) else old
 
 /-- The existing first-mean minimum consumes the finite joint allocation condition.
 Only the clipped transport part is paid here; the semantic deficit and other three
@@ -461,10 +467,40 @@ theorem initialComputedPrecisionMoment_first_paid (B : BudgetData HP P)
             (rate ka + B.base x y)))) := by
   unfold initialComputedPrecisionMoment
   simp only [Bool.not_false, Fin.isValue, and_self, ↓reduceIte]
-  apply (min_le_right _ _).trans
+  apply ((min_le_right _ _).trans (min_le_left _ _)).trans
   apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
   apply add_le_add _ le_rfl
   exact B.initialClippedRootPrefix_paid hcharge hrate H M (j + 1) ks ka ha hi
+    { r with usage := r.terminal } hs ht htask hwindow coefficient
+
+/-- The existing first-mean minimum consumes the finite joint allocation condition.
+Only the surviving clipped endpoints are paid here; the semantic deficit and other
+three statistics remain separate. Uniform use requires the one-window condition uniformly. -/
+theorem initialComputedPrecisionMoment_first_endpoint_paid (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M n j ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (R : RoleProfile 3) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ)
+    (hwindow :
+      (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+        B.initialClippedEndpointWindow M j ka { r with usage := r.terminal } ≤
+      (2 : ℝ) ^ B.rankCharge) :
+    B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j false 0 ≤
+      8 * (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision M r)) ^ 4 +
+        rowNormPow 4 P r.source.rate
+          (retainedMask R.source (side P ks) B.padding ss)
+          (retainedMask R.terminal (side P ka) B.padding st)
+          (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
+            (rate ka + B.base x y)))) := by
+  unfold initialComputedPrecisionMoment
+  simp only [Bool.not_false, Fin.isValue, and_self, ↓reduceIte]
+  apply ((min_le_right _ _).trans (min_le_right _ _)).trans
+  apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
+  apply add_le_add _ le_rfl
+  exact B.initialClippedEndpointPrefixCharge_paid hcharge hrate H M j ks ka ha hi
     { r with usage := r.terminal } hs ht htask hwindow coefficient
 
 /-- The new first-mean minimum and all retained costs are nonnegative. -/
@@ -485,6 +521,8 @@ lemma initialComputedPrecisionMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
     (X := retainedMask R.source (side P ks) B.padding ss)
     (Y := retainedMask R.terminal (side P ka) B.padding st)
     (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| / (rate ka + B.base x y)))
+  have hep := B.initialClippedEndpointPrefixCharge_nonneg M j
+    { r with usage := r.terminal } ka coefficient
   unfold initialComputedPrecisionMoment
   split_ifs <;> positivity
 
@@ -984,6 +1022,112 @@ theorem initial_compressed_precision_clipped_first
       semanticSide_grid, retainedMask, Xs, Ya, f, g, rowNormPow, rowSliceMean,
       Pi.sub_apply]
 
+/-- The literal computed first clipped coordinate from own-request scalar rooted IH.
+The signed stationary prefix telescopes before absolute values, clipping and root bounds.
+Only the surviving fine endpoints are paid. Rounded masses, endpoint guards and precision remain
+explicit. Ordinary progress and the saturated second coordinate are separate payments. -/
+theorem initial_compressed_precision_clipped_endpoint_first
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ)
+    (D : ℕ → ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hzero : ∀ bin, D bin 0 = 0) (coefficient : ℝ)
+    (ih : ∀ bin ∈ B.bins, ∀ m < M, 0 < m →
+      let q := { r with usage := r.terminal }
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        q.source (midpoint q) q.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.direct) ζ floor Q.direct = some (D bin m) ∧
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D bin m)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision m Q.direct)) ^ 4 ∧
+      ∃ R, B.compressedBin m bin (exponent Q.right) ζ floor Q.right = some R)
+    (Lt : ℕ)
+    (second : Environment P 3 → ZMod P → ℕ → ZMod P → ℝ) :
+    ∃ groups,
+      (List.range (Nat.log2 M + 1)).mapM (fun j =>
+        B.completedGroup (fun m q => if m < M then B.compressedHistory exponent ζ floor m q
+          else none) M (dyadicSlack (Nat.log2 M + 1) j) (.pilotInput ⟨0, HP.k_pos⟩)
+          { r with usage := r.terminal }) = some groups ∧
+      let F := fun p σ x y => ((groups.take p).map (fun T => T σ x y)).sum
+      let Xs := retainedMask R.source (side P ks) B.padding ss
+      let Ya := retainedMask R.terminal (side P ka) B.padding st
+      ∀ j < Nat.log2 M + 1,
+        rowNormPow 4 P r.source.rate Xs Ya
+          (fun _ x y => actualClippedMean HP R.source R.terminal (side P ks) (side P ka)
+            Lt B.padding ss st ka B.base ζ (firstSignalIncrement F ka second) 0 0 j x y) ≤
+        8 * (B.initialClippedEndpointPrefixCharge M j { r with usage := r.terminal } ka
+          coefficient +
+          rowNormPow 4 P r.source.rate Xs Ya (fun _ x y =>
+            min 1 (|B.initialPolynomialLoss M n j r x y| / (rate ka + B.base x y)))) := by
+  have hne : B.bins.Nonempty := by rw [hbins]; exact ⟨0, mem_range.mpr (by omega)⟩
+  have hsr : 0 ≤ r.source.rate := by rw [hs]; exact (rate_pos ks).le
+  have hk : 2 * (1 + 32 / HP.η) ≤ HP.K := by
+    have hk1 : (1 : ℝ) ≤ HP.k := by exact_mod_cast HP.k_pos
+    have hdiv := div_le_div_of_nonneg_right
+      (mul_le_mul_of_nonneg_left hk1 (by norm_num : (0 : ℝ) ≤ 32)) HP.η_pos.le
+    have hg := HP.gate
+    norm_num only [mul_one] at hdiv
+    nlinarith [div_nonneg (by norm_num : (0 : ℝ) ≤ 32) HP.η_pos.le]
+  have hprep (bin : ℕ) (v : ℝ) (hv : B.cutoff bin v ≠ 0) : B.auxiliary bin v = 1 := by
+    rw [hcutoff] at hv
+    rw [haux]
+    exact HP.routedBin_prep_eq_one (by norm_num)
+      (fun w hw => polynomialSwitch4_of_le (by norm_num) hw) rate_pos rate_antitone
+      bin (fun _ => 1) hv
+  let q := { r with usage := r.terminal }
+  obtain ⟨groups, reference, hgroups, href, hprefix⟩ :=
+    B.initial_compressed_prefix_clipped_endpoint hrate hcutoff hD H exponent ζ floor M hM
+      hne q R.source R.terminal R.source_terminal ks ka ss st hs ht rfl hks
+      (fun bin hb => by
+        have hi : bin ∈ range (n + 1) := by simpa only [hbins] using hb
+        have hb' := mem_range.mp hi
+        omega)
+      (fun bin _ => hprep bin) hC hC1 hk D hzero coefficient ih
+  let f : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun p σ x y => ((groups.take p).map (fun T => T σ x y)).sum
+  let g : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun p σ x y => ((reference.take p).map (fun T => T σ x y)).sum
+  have hgrun : B.initialPrefixes M r = some g := by
+    unfold initialPrefixes
+    rw [href]
+    rfl
+  refine ⟨groups, hgroups, ?_⟩
+  dsimp only
+  intro j hj
+  let Xs := retainedMask R.source (side P ks) B.padding ss
+  let Ya := retainedMask R.terminal (side P ka) B.padding st
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := mul_nonneg (Nat.cast_nonneg _) hsr
+  have hm (x y : ZMod P) : B.base x y - rowSliceMean Xs Ya (g (j + 1)) x y =
+      B.initialPolynomialLoss M n j r x y := by
+    have h := B.initialPrefix_polynomial_mean M hM n hbins hrate hcutoff haux hD H hn
+      r R.source R.terminal R.source_terminal ks ka ss st hs ht hks hC hC1 g hgrun j hj x y
+    change B.base x y - _ = B.initialPolynomialLoss M n j r x y at h
+    exact h
+  simp_rw [actualClippedMean_first_prefix_eq]
+  have hmean (x y : ZMod P) : rowSliceMean Xs Ya (f (j + 1)) x y - B.base x y =
+      rowSliceMean Xs Ya (f (j + 1) - g (j + 1)) x y +
+        -B.initialPolynomialLoss M n j r x y := by
+    simp only [rowSliceMean, Pi.sub_apply, Matrix.sub_apply, expect_sub_distrib]
+    have h := hm x y
+    unfold rowSliceMean at h
+    linarith
+  change rowNormPow 4 P r.source.rate Xs Ya
+    (fun _ x y => min 1 (|rowSliceMean Xs Ya (f (j + 1)) x y - B.base x y| /
+      (rate ka + B.base x y))) ≤ _
+  simp_rw [hmean]
+  apply (rowNormPow_clipped_add_le hNu Xs Ya
+    (rowSliceMean Xs Ya (f (j + 1) - g (j + 1)))
+    (fun x y => -B.initialPolynomialLoss M n j r x y)
+    (fun x y => rate ka + B.base x y)
+    (fun x y => add_pos_of_pos_of_nonneg (rate_pos ka) (hC x y))).trans
+  simp only [abs_neg]
+  apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
+  apply add_le_add _ le_rfl
+  have hp := hprefix j hj
+  convert hp using 1; rfl
+
 /-- Literal all-four payment from strict lower-budget own-request rooted precision.
 No parent accuracy or four-max budgets are premises. The child hypothesis is conditional:
 this does not prove simultaneous recursive availability or uniform numerical absorption. -/
@@ -1050,6 +1194,12 @@ theorem initial_compressed_precision_moments
     hrate hcutoff haux hD H hn r R ks ka ss st hs ht hks hC hC1 exponent ζ floor D hzero
     coefficient ih (side P ku)
     (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
+  obtain ⟨gendpoint, hgendpoint, hendpoint⟩ :=
+    B.initial_compressed_precision_clipped_endpoint_first M hM n hbins hrate hcutoff haux
+      hD H hn r R ks ka ss st hs ht hks hC hC1 exponent ζ floor D hzero coefficient ih
+      (side P ku) (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
+  have heendpoint := Option.some.inj (hgendpoint.symm.trans hgroups)
+  subst gendpoint
   have he := Option.some.inj (hgmean.symm.trans hgroups)
   subst gmean
   have hold := hrows W hW j hj ν
@@ -1058,7 +1208,7 @@ theorem initial_compressed_precision_moments
     · subst ν
       simp only [initialComputedPrecisionMoment, Bool.not_false,
         and_self, ↓reduceIte]
-      exact le_min hold.1 (hmean j hj)
+      exact le_min hold.1 (le_min (hmean j hj) (hendpoint j hj))
     · simpa only [initialComputedPrecisionMoment, Bool.not_false, Bool.coe_true,
         hν, and_false, ↓reduceIte] using hold.1
   · simpa only [initialComputedPrecisionMoment, Bool.not_true, Bool.false_eq_true,
