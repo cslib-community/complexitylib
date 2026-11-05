@@ -28,6 +28,8 @@ the per-round errors (`Interactive.Verifier.RbrSound.sound`), against arbitrary 
 ## Main results
 
 * `Interactive.World.plain_eval_execute`: the law of an execution in the plain model.
+* `Interactive.rbrFrom_le`: from a doomed prefix, the rest of a run wins with probability at most
+  the remaining errors.
 * `Interactive.Verifier.RbrSound.sound`: round-by-round soundness implies soundness.
 
 ## References
@@ -160,7 +162,7 @@ theorem World.plain_eval_execute {s : Spec} {StmtIn StmtOut α : Type}
   rfl
 
 /-- From a doomed prefix, the rest of a run wins with probability at most the remaining errors. -/
-private theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
+theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
     (ε : PerChallenge (fun _ => ℝ≥0∞) s) (S : Prefix s → Prop) (wins : Transcript s → Prop),
     RbrFrom s smp ε S wins → ¬ S (Prefix.empty s) →
     ∀ {α : Type} (st : ProverStrategy (ProbOracleComp OracleSpec.empty) s α),

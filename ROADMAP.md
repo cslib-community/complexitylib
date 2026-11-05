@@ -117,8 +117,10 @@ families and full-input native runtime.
 In order:
 - the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding;
 - parallel and AND/OR composition (`Verifier.seqProd`, `Reduction.seqProd`, `relProd`, `relDisj`
-  in `Interactive/AuxZK.lean`; OR protocol composition and round-by-round knowledge soundness
-  remain);
+  in `Interactive/AuxZK.lean`) and round-by-round knowledge soundness (`Verifier.RbrKnowledgeSound`,
+  `Verifier.RbrKnowledgeSound.append`, `Verifier.RbrKnowledgeSound.seqProd`,
+  `Verifier.RbrKnowledgeSound.iterate`, `Verifier.RbrKnowledgeSound.bundle` in
+  `Interactive/RbrKnowledge.lean`; parallel and OR protocol composition remain);
 - oracle statements, so a later phase can query an earlier phase's oracle message (virtual
   output oracles, as in ArkLib), with knowledge soundness and zero knowledge in oracle worlds;
 - efficiency-certified simulators and extractors (`Interactive/Efficient.lean`), and
