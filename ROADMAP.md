@@ -56,8 +56,8 @@ Priorities live in this list and in the tiers of [#897].
   `OTCommitment/PolyTime` certifies only the deterministic extraction and equivocation maps on
   explicit lists. `OTCommitment/Opening/PolyTime` adds a total list opening checker with
   exact-length rejection and a native polynomial-time certificate. Full ideal commitment
-  realization, efficient simulation, composition, the
-  malicious compiler, and MPC simulation remain open in
+  realization, unrestricted efficient simulation, composition, the malicious compiler,
+  and MPC simulation remain open in
   [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
   `Crypto/Protocols/Commitment/World` supplies an original single-session phased abort
   functionality with receiver-poll secrecy and an immutable committed bit.
@@ -66,8 +66,13 @@ Priorities live in this list and in the tiers of [#897].
   `OTCommitment/Program` realizes the receiver driver with exactly four public calls and its
   honest-OT joint law. `Program/PolyTime` gives uniform strict PPT for supplied efficient
   callbacks with supported additive growth of both intermediate and final receiver states;
-  the unary count, initial state and all list outputs are charged. Sender-simulator efficiency,
-  unrestricted receiver growth, arbitrary scheduling and composition remain open.
+  the unary count, initial state and all list outputs are charged.
+  `OTCommitment/SenderProgram/PolyTime` gives the corrupted-sender counterpart under combined
+  supported round-growth bounds, with actual-world coupling and negligible error at `k = 2n`.
+  These are two restricted efficient simulations, not universal realization for all globally PPT
+  adversaries. A common honest protocol execution with role-local corruption adapters and uniform
+  observation/phase/input contracts is still needed to connect both real experiments. Removing
+  the growth restrictions, arbitrary scheduling and composition also remain open.
 - **Regev's worst-case to average-case reduction.** For suitable `q` and Gaussian noise rate
   `α` with `αq > 2√n`, an efficient search-LWE algorithm yields a quantum polynomial-time
   algorithm for worst-case GapSVP and SIVP within `Õ(n/α)`. The noise distribution, modulus
