@@ -2,6 +2,36 @@
 
 Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [complexitylib][complexitylib]
 
+## Describe a discrete Gaussian law
+
+Import [Gaussian/Discrete.lean](../../Complexity/Foundations/Probability/Gaussian/Discrete.lean)
+for `ZLattice.discreteGaussian L s hs c`, a PMF on a discrete `ℤ`-submodule `L` of a
+finite-dimensional real normed space. Supply `hs : 0 < s`; the center `c` is any ambient
+point. `summable_gaussianWeight` proves convergence of the infinite lattice sum, and
+`gaussianMass_pos` proves its strict positivity. `discreteGaussian_apply` gives each
+probability as `exp (-π * ‖z - c‖² / s²)` divided by that total mass. No full-rank assumption
+is needed.
+
+Use `map_add_discreteGaussian` to move the law along a lattice translation, and
+`support_discreteGaussian` to discharge point-support obligations. The
+[checked examples](../../ComplexityTests/DiscreteGaussian.lean) use the infinite integer
+lattice at the off-lattice center `1/2`, distinguish its law from a point mass, and check the
+zero lattice. This is a mathematical distribution, with no efficient sampler or smoothing
+bound. Regev's quantum worst-case/average-case reduction remains open in
+[issue #1213](https://github.com/cslib-community/complexitylib/issues/1213).
+
+For a quantitative radius estimate, import
+[Gaussian/DiscreteTail.lean](../../Complexity/Foundations/Probability/Gaussian/DiscreteTail.lean).
+Choose a second width `t > s` and a radius `R ≥ 0`.
+`summable_discreteGaussian_mul_exp` proves that the exponential norm-square moment is finite;
+`tsum_toReal_discreteGaussian_mul_exp` identifies it with `gaussianMass L t c / gaussianMass L s c`.
+Writing `κ = π * (1 / s² - 1 / t²) > 0`, `discreteGaussian_norm_ge_le` bounds the probability
+of `R ≤ ‖z - c‖` by `exp (-κ * R²)` times that same ratio. The checked integer-lattice
+client uses `s = 1`, `t = 2`, center `1/2` and radius `2`, giving the decay factor `exp (-3π)`.
+The ratio remains explicit; these results supply neither the dimension-uniform lattice tail
+bound nor the sampling algorithm used in Regev's bootstrapping lemma. Controlling the ratio
+and proving multidimensional lattice Poisson summation remain open.
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.

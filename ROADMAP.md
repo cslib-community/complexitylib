@@ -57,6 +57,13 @@ Priorities live in this list and in the tiers of [#897].
   `α` with `αq > 2√n`, an efficient search-LWE algorithm yields a quantum polynomial-time
   algorithm for worst-case GapSVP and SIVP within `Õ(n/α)`. The noise distribution, modulus
   restrictions and quantum reduction are part of the theorem.
+  The discrete Gaussian foundation proves convergence, positive normalization and translation
+  laws on shifted discrete lattices ([#2573](https://github.com/cslib-community/complexitylib/issues/2573));
+  finite exponential moments and normalizer-ratio tails are proved in
+  [#2592](https://github.com/cslib-community/complexitylib/issues/2592). Uniform control of that
+  ratio, multidimensional lattice Poisson summation, smoothing estimates, efficient sampling
+  and the quantum reduction remain open in
+  [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
   to a PCP with Merkle trees; Micali's CS proofs and the BCS transform give the random-oracle
