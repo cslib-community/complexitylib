@@ -62,8 +62,11 @@ variable {V : Type*}
 
 /-- An arbitrary undirected graph and its two disjoint forced classes. -/
 structure Problem (V : Type*) where
+  /-- Adjacency specifies which inputs must have replicable decisions. -/
   graph : SimpleGraph V
+  /-- Inputs on which correctness forces the decision `false`. -/
   forcedZero : Set V
+  /-- Inputs on which correctness forces the decision `true`. -/
   forcedOne : Set V
   disjoint : Disjoint forcedZero forcedOne
 
