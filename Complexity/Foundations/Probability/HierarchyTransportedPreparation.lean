@@ -8,6 +8,7 @@ module
 public import Complexity.Foundations.Probability.HierarchyInitialPerturbation
 public import Complexity.Foundations.Probability.HierarchyInitialIntegrated
 public import Complexity.Foundations.Probability.HierarchyInitialSemanticNoise
+public import Complexity.Foundations.Probability.HierarchySupportedPreparation
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ScheduledMeanTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ScheduleAllocation
 import Complexity.Foundations.Probability.HierarchyInitialFeasibility
@@ -54,7 +55,10 @@ budget-boundary support also pays the original semantic noise. One structural ch
 therefore pays the complete initial first-noise statistic under the polynomial cutoff;
 all four first-noise allocations retain the literal unconditional tail. The complete
 first mean and this noise are paid together on the original first-mean family. The
-second coordinate and joint recursive availability remain open.
+second-coordinate reserve and joint recursive availability remain open. Actual second-mean
+stability now uses saturated relative errors and the union of the two preparation supports;
+the computed minimum consumes full-rank first-mean and centered-noise payments without
+an endpoint width factor. Both previous fallbacks remain available.
 
 ## Main results
 
@@ -67,6 +71,7 @@ second coordinate and joint recursive availability remain open.
 * `initialComputedRelativeMoment_polynomial_firstNoise_le`: actual semantic minimum consumer.
 * `initialComputedRelativeMoment`: denominator-retaining semantic first-noise costs.
 * `initialComputedPrecisionMoment`: clipped mean and centered noise in the literal reserve.
+* `initialComputedPrecisionMoment_secondMean_le`: supported relative preparation payment.
 * `initial_compressed_centered_first_noise`: correlated centered actual prefix payment.
 * `initialComputedPrecisionMoment_firstNoise_exists_charge`: fixed-charge bounded noise family.
 * `initialComputedNormalizedNoise_polynomial_uniform_le`: complete initial noise envelope.
@@ -1071,32 +1076,51 @@ lemma initialComputedCenteredNoise_nonneg (B : BudgetData HP P) (M : ℕ)
 
 /-- Four computed costs from own-request precision, using clipped mean transport for
 the first coordinate and centered spectral transport for first noise. Both keep their
-previous fallbacks; saturated preparation retains its existing payment. This minimum is
-consumed by the literal four-max and raw clipped-error gates. -/
+previous fallbacks. Saturated preparation also uses the two actual supports and the
+first-coordinate mean/noise payments, without repeating a maximum across the field.
+These minima are consumed by the literal four-max and raw clipped-error gates. -/
 @[expose] def initialComputedPrecisionMoment (B : BudgetData HP P) (M n : ℕ)
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
     (ks ka : ℕ) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ)
     (j : ℕ) (noise : Bool) (ν : Fin 2) : ℝ :=
   let ε := fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
     { r with usage := r.terminal } coefficient
-  let old := B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν
-  if !noise ∧ ν = 0 then min old
-    (min (8 * (((∑ i ∈ range (j + 1),
-      (B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
-        { r with usage := r.terminal } ka coefficient) ^ (4⁻¹ : ℝ)) ^ 4) +
-      rowNormPow 4 P r.source.rate
-        (retainedMask R.source (side P ks) B.padding ss)
-        (retainedMask R.terminal (side P ka) B.padding st)
-        (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
-          (rate ka + B.base x y)))))
-      (8 * (B.initialClippedEndpointPrefixCharge M j { r with usage := r.terminal } ka
-        coefficient + rowNormPow 4 P r.source.rate
+  let cost := fun (isNoise : Bool) (coordinate : Fin 2) =>
+    let old := B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j isNoise coordinate
+    if !isNoise ∧ coordinate = 0 then min old
+      (min (8 * (((∑ i ∈ range (j + 1),
+        (B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
+          { r with usage := r.terminal } ka coefficient) ^ (4⁻¹ : ℝ)) ^ 4) +
+        rowNormPow 4 P r.source.rate
           (retainedMask R.source (side P ks) B.padding ss)
           (retainedMask R.terminal (side P ka) B.padding st)
           (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
-            (rate ka + B.base x y)))))) else
-    if noise ∧ ν = 0 then
-      min old (B.initialComputedCenteredNoise M r R ks ka ss st coefficient j) else old
+            (rate ka + B.base x y)))))
+        (8 * (B.initialClippedEndpointPrefixCharge M j { r with usage := r.terminal } ka
+          coefficient + rowNormPow 4 P r.source.rate
+            (retainedMask R.source (side P ks) B.padding ss)
+            (retainedMask R.terminal (side P ka) B.padding st)
+            (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
+              (rate ka + B.base x y)))))) else
+      if isNoise ∧ coordinate = 0 then
+        min old (B.initialComputedCenteredNoise M r R ks ka ss st coefficient j) else old
+  if !noise ∧ ν = 1 then min (cost noise ν)
+    (8 * (2 * HP.K) * (|ζ| * preparationRelativeConstant HP Lh Lρ) ^ 4 *
+      (cost false 0 + cost true 0)) else cost noise ν
+
+/-- The actual supported second-mean minimum consumes the same first-mean and first-noise
+costs. Its full-rank input moments are supplied by the executed-history theorem. -/
+theorem initialComputedPrecisionMoment_secondMean_le (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ) (j : ℕ) :
+    B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j false 1 ≤
+      8 * (2 * HP.K) * (|ζ| * preparationRelativeConstant HP Lh Lρ) ^ 4 *
+        (B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j false 0 +
+          B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j true 0) := by
+  simp only [initialComputedPrecisionMoment, Bool.not_false, Bool.not_true,
+    Bool.false_eq_true, false_and, (show (0 : Fin 2) ≠ 1 by decide),
+    (show (1 : Fin 2) ≠ 0 by decide), and_false, and_self, ↓reduceIte]
+  exact min_le_right _ _
 
 /-- A single structural charge allocates actual conditional first noise on a bounded
 full-bin family, before field width, request coordinates and budgets are chosen. This
@@ -1425,11 +1449,15 @@ lemma initialComputedPrecisionMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
     (R : RoleProfile 3) (ks ka : ℕ) (ss st : List (ZMod P))
     (coefficient ζ Lh Lρ : ℝ) (j : ℕ) (noise : Bool) (ν : Fin 2) :
     0 ≤ B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j noise ν := by
-  have hold := B.initialComputedRelativeMoment_nonneg M n r hr R ks ka ss st
+  have hold (isNoise : Bool) (coordinate : Fin 2) :=
+    B.initialComputedRelativeMoment_nonneg M n r hr R ks ka ss st
     (fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
       { r with usage := r.terminal } coefficient)
     (fun i => B.initialRootGroupCharge_nonneg M (dyadicSlack (Nat.log2 M + 1) i)
-      { r with usage := r.terminal } coefficient) ζ Lh Lρ j noise ν
+      { r with usage := r.terminal } coefficient) ζ Lh Lρ j isNoise coordinate
+  have holdCurrent := hold noise ν
+  have holdMean := hold false 0
+  have holdNoise := hold true 0
   have hsum := sum_nonneg (fun i (_ : i ∈ range (j + 1)) =>
     B.initialClippedRootGroupCharge_nonneg M (dyadicSlack (Nat.log2 M + 1) i)
       { r with usage := r.terminal } ka coefficient)
@@ -2109,7 +2137,8 @@ theorem initialPolynomialLoss_first_schedule_family (B : BudgetData HP P)
     rw [mul_pow, htailexp, mul_assoc]
     exact mul_le_mul_of_nonneg_left h24 (by positivity)
 
-private lemma initialComputedFirstBudgets_nonneg (B : BudgetData HP P) (M n ks ka : ℕ)
+/-- The three literal first-mean payments are nonnegative. -/
+lemma initialComputedFirstBudgets_nonneg (B : BudgetData HP P) (M n ks ka : ℕ)
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hr : 0 ≤ r.source.rate)
     (R : RoleProfile 3) (ss st : List (ZMod P)) (coefficient floor : ℝ) (hf : 0 ≤ floor) :
     0 ≤ B.initialComputedFirstPreBudget M n r R ks ka ss st coefficient floor ∧
@@ -3373,7 +3402,7 @@ theorem initial_compressed_precision_moments
     bin ku husage hu hLh hLρ hh hρ
   refine ⟨groups, hgroups, ?_⟩
   dsimp only
-  intro W hW j hj ν
+  intro W hW j hj
   obtain ⟨gmean, hgmean, hmean⟩ := B.initial_compressed_precision_clipped_first M hM n hbins
     hrate hcutoff haux hD H hn r R ks ka ss st hs ht hks hC hC1 exponent ζ floor D hzero
     coefficient ih (side P ku)
@@ -3386,38 +3415,65 @@ theorem initial_compressed_precision_moments
   subst gendpoint
   have he := Option.some.inj (hgmean.symm.trans hgroups)
   subst gmean
-  have hold := hrows W hW j hj ν
-  constructor
-  · by_cases hν : ν = 0
-    · subst ν
-      simp only [initialComputedPrecisionMoment, Bool.not_false,
-        and_self, ↓reduceIte]
-      exact le_min hold.1 (le_min (hmean j hj) (hendpoint j hj))
-    · simpa only [initialComputedPrecisionMoment, Bool.not_false, Bool.coe_true,
-        hν, and_false, ↓reduceIte] using hold.1
-  · by_cases hν : ν = 0
-    · subst ν
-      simp only [initialComputedPrecisionMoment, initialComputedCenteredNoise,
-      Bool.not_true, Bool.false_eq_true,
-        false_and, ↓reduceIte, and_self]
-      apply le_min hold.2
-      have hb := B.initial_compressed_centered_first_noise exponent ζ floor M hM hnonempty
-        r R ks ka ss st hs ht A C coefficient (fun i _ => hA i)
-        (fun i _ => hCrun i) (fun i _ => hcenter i) groups hgroups hC (side P ku)
+  let F := fun p σ x y => ((groups.take p).map (fun T => T σ x y)).sum
+  let Δ := firstSignalIncrement F ka
+    (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
+  let cost := B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j
+  let mean := fun (ν : Fin 2) => rowNormPow 4 P r.source.rate
+    (retainedMask R.source (side P ks) B.padding ss)
+    (retainedMask R.terminal (if ν = 0 then side P ka else side P ku) B.padding st)
+    (fun _ x y => actualClippedMean HP R.source R.terminal (side P ks) (side P ka)
+      (side P ku) B.padding ss st ka B.base ζ Δ 0 ν j x y)
+  let centered := fun (ν : Fin 2) => rowNormPow 4 P r.source.rate
+    (retainedMask R.source (side P ks) B.padding ss)
+    (retainedMask R.terminal (if ν = 0 then side P ka else side P ku) B.padding st)
+    (actualNoiseEntry R.source R.terminal (side P ks) (side P ka) (side P ku)
+      B.padding ss st ka B.base Δ 0 ν j)
+  have hm0 : mean 0 ≤ cost false 0 := by
+    dsimp only [mean, cost]
+    simp only [initialComputedPrecisionMoment, Bool.not_false,
+      and_self, ↓reduceIte]
+    exact le_min (hrows W hW j hj 0).1 (le_min (hmean j hj) (hendpoint j hj))
+  have hn0 : centered 0 ≤ cost true 0 := by
+    dsimp only [centered, cost]
+    simp only [initialComputedPrecisionMoment, initialComputedCenteredNoise,
+      Bool.not_true, Bool.false_eq_true, false_and, ↓reduceIte, and_self]
+    apply le_min (hrows W hW j hj 0).2
+    have hb := B.initial_compressed_centered_first_noise exponent ζ floor M hM hnonempty
+      r R ks ka ss st hs ht A C coefficient (fun i _ => hA i)
+      (fun i _ => hCrun i) (fun i _ => hcenter i) groups hgroups hC (side P ku)
+      (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ) j hj
+    apply le_min hb
+    split_ifs with hadm
+    · obtain ⟨hcharge, hrate', htask, hp, H', ha, hi⟩ := hadm
+      obtain ⟨g, hg, hn⟩ := B.initial_compressed_normalized_noise_consumer hcharge hrate' H'
+        exponent ζ floor M hM hnonempty r R ks ka ss st hs ht htask ha hi hp D hzero
+        coefficient (fun _ bin hb _ m _ hm hp => ih bin hb m hm hp) hC
+      have he : g = groups := Option.some.inj (hg.symm.trans hgroups)
+      subst g
+      exact hn (side P ku)
         (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ) j hj
-      apply le_min hb
-      split_ifs with hadm
-      · obtain ⟨hcharge, hrate', htask, hp, H', ha, hi⟩ := hadm
-        obtain ⟨g, hg, hn⟩ := B.initial_compressed_normalized_noise_consumer hcharge hrate' H'
-          exponent ζ floor M hM hnonempty r R ks ka ss st hs ht htask ha hi hp D hzero
-          coefficient (fun _ bin hb _ m _ hm hp => ih bin hb m hm hp) hC
-        have he : g = groups := Option.some.inj (hg.symm.trans hgroups)
-        subst g
-        exact hn (side P ku)
-          (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ) j hj
-      · exact hb
-    · simpa only [initialComputedPrecisionMoment, Bool.not_true, Bool.false_eq_true,
-        false_and, hν, and_false, ↓reduceIte] using hold.2
+    · exact hb
+  have hm1 := B.initialSecondSignal_relative_mean_moment M bin ka ku husage r R ks ss st
+    hs ht hu (congrFun haux bin) F W hW hC hLh hLρ hh hρ ζ j hj hm0 hn0
+  intro ν
+  change mean ν ≤ cost false ν ∧ centered ν ≤ cost true ν
+  by_cases hν : ν = 0
+  · subst ν
+    exact ⟨hm0, hn0⟩
+  · have hν1 : ν = 1 := by fin_cases ν <;> simp_all
+    subst ν
+    constructor
+    · dsimp only [mean, cost]
+      simp only [initialComputedPrecisionMoment, Bool.not_false, and_self, ↓reduceIte]
+      apply le_min (hrows W hW j hj 1).1
+      simpa only [cost, initialComputedPrecisionMoment, Bool.not_false, Bool.not_true,
+        Bool.false_eq_true, false_and, (show (0 : Fin 2) ≠ 1 by decide),
+        (show (1 : Fin 2) ≠ 0 by decide), and_false, and_self, ↓reduceIte] using hm1
+    · dsimp only [centered, cost]
+      simpa only [initialComputedPrecisionMoment, Bool.not_true, Bool.false_eq_true,
+        false_and, (show (1 : Fin 2) ≠ 0 by decide), and_false,
+        ↓reduceIte] using (hrows W hW j hj 1).2
 
 /-- The four literal row maxima are paid from own-request lower-budget rooted precision.
 Minkowski retains all explicit computed costs and their separate masks. -/

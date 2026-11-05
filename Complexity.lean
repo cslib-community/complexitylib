@@ -3855,6 +3855,7 @@ public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.GridRowMoment
+public import Complexity.Foundations.Probability.GridRowMoment.JointDensity
 public import Complexity.Foundations.Probability.GridRowMoment.Rate
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
@@ -3884,9 +3885,11 @@ public import Complexity.Foundations.Probability.HierarchyInitialHistory
 public import Complexity.Foundations.Probability.HierarchyInitialIntegrated
 public import Complexity.Foundations.Probability.HierarchyInitialMean
 public import Complexity.Foundations.Probability.HierarchyInitialMeanPayment
+public import Complexity.Foundations.Probability.HierarchyInitialMeanUniform
 public import Complexity.Foundations.Probability.HierarchyInitialPaid
 public import Complexity.Foundations.Probability.HierarchyInitialPerturbation
 public import Complexity.Foundations.Probability.HierarchyInitialPreparation
+public import Complexity.Foundations.Probability.HierarchyInitialSecondMeanAllocation
 public import Complexity.Foundations.Probability.HierarchyInitialSecondNoise
 public import Complexity.Foundations.Probability.HierarchyInitialSemanticNoise
 public import Complexity.Foundations.Probability.HierarchyInitialUniform
@@ -3899,6 +3902,7 @@ public import Complexity.Foundations.Probability.HierarchySampling
 public import Complexity.Foundations.Probability.HierarchySharedMidpoint
 public import Complexity.Foundations.Probability.HierarchySignedMean
 public import Complexity.Foundations.Probability.HierarchySourceSampling
+public import Complexity.Foundations.Probability.HierarchySupportedPreparation
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
@@ -3933,6 +3937,7 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.ScheduledMea
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondEnvelope
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
+public import Complexity.Foundations.Probability.NormalizedAtomRows.SupportedPreparation
 public import Complexity.Foundations.Probability.NormalizedAtomRows.TwoMask
 public import Complexity.Foundations.Probability.PilotDetectorTransport
 public import Complexity.Foundations.Probability.PilotRowStability

@@ -208,10 +208,16 @@ index links to canonical definitions rather than keeping a second set.
   finite bin families and terminal exponents. Canonical budget-boundary support absorbs
   the existing semantic noise as well as normalized transported noise. This is
   conditional on lower-budget child accuracy and reset-right execution. Complete first-mean
-  and first-noise allocations are now paid together on the first mean's explicit joint
-  bounded-budget/full-horizon family, including unconditional noise-tail propagation.
-  The full four-statistic reserve, second preparation/terminal rank, general correction products, simultaneous recursive
-  accuracy/availability and native logarithmic workspace/class equality remain open.
+  and first-noise allocations are now paid together, including unconditional noise-tail
+  propagation. A true-mass first-mean payment also pays this combined reserve without
+  the extra field-width, half-depth and all-bins-active restrictions, retaining necessary
+  depth-versus-budget coverage and a common full-bin horizon.
+  Actual second-mean stability uses the two preparation supports and full-terminal-rank
+  clipped mean/noise inputs, without the old width factor. Its literal stationary,
+  final, tail and raw allocations now have a fixed-charge numerical payment. The full
+  four-statistic reserve, second centered-noise allocation, general terminal-rank and
+  correction products, simultaneous recursive accuracy/availability and native logarithmic workspace/class
+  equality remain open.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): implicit Tree Evaluation with the
