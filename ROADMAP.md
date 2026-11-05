@@ -276,6 +276,8 @@ In order:
   receivers in that fixed schedule, retaining private coins, state and repeated setup reads.
   `VOLE/NativePPT.lean` certifies a list simulator for variable-size batches and supplied encoded-state
   receiver callbacks over one fixed ring with a certified exact-uniform sampler (with an F2 client).
+  Its generalized input/first-message adapters charge the full encoded public input, layout and
+  conversion; the raw-view law alone does not assert sender realizability of transformed messages.
   `VOLE/Circuit.lean`, `CircuitSound.lean` and `CircuitPrivacy.lean` bind the session to the existing
   arithmetic-circuit relation `∃ w, C.eval (x ++ w) = y`: public input/output, constant and addition
   rows join the multiplication batch. Actual role-local soundness has the same mixture bound
