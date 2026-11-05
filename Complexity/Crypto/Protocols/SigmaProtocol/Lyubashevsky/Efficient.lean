@@ -41,11 +41,11 @@ machine-backed efficiency certificates for `SigmaProtocol.lyubashevsky`:
      `boxShift B u = (u : ℤ) - B`.
    - Every sample stays inside `[-B, B]` (`abs_sampleIntBoxCoins_le`,
      `abs_le_of_mem_support_sampleIntBox`, `mem_intBox_of_mem_support_sampleIntBoxVec`).
-   - Statistical distance (`dist` and `Interactive.CloseTo`) from the exact uniform distribution
+   - Statistical distance (`Interactive.CloseTo`) from the exact uniform distribution
      `uniformBox1D B` on `[-B, B]` is at most `(2 * B + 1) / 2 ^ width`
-     (`dist_sampleIntBox_uniformBox1D_le`, `closeTo_uniformBox1D_sampleIntBox`), and for `m`
-     independent coordinates at most `m * ((2 * B + 1) / 2 ^ width)`
-     (`closeTo_uniform_intBox_sampleIntBoxVec`, `closeTo_uniform_intBox_sampleIntBoxList`).
+     (`closeTo_uniformBox1D_sampleIntBox`), and for `m` independent coordinates at most
+     `m * ((2 * B + 1) / 2 ^ width)` (`closeTo_uniform_intBox_sampleIntBoxVec`,
+     `closeTo_uniform_intBox_sampleIntBoxList`).
    - For dyadic centered ranges `[-2 ^ (width - 1), 2 ^ width - 1 - 2 ^ (width - 1)]`,
      `sampleDyadicIntBox width` is exact (`0` statistical distance) and strict PPT.
 2. **Efficient special soundness** (`efficientSpecialSoundness_lyubashevsky`): connects
@@ -122,19 +122,6 @@ theorem closeTo_of_dist_le {α : Type} [Fintype α] {μ ν : PMF α} {ε : ℝ�
   rw [Game.advantage_eq_nndist, ← NNReal.coe_le_coe, coe_nndist]
   exact (PMF.dist_map_le μ ν _).trans h
 
-/-- `m` independent draws from `ε`-close distributions are `(m * ε)`-close, without finiteness
-assumptions on the sample space. -/
-theorem CloseTo.iid {α : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h : CloseTo μ ν ε) (m : ℕ) :
-    CloseTo (PMF.iid μ m) (PMF.iid ν m) (m * ε) := by
-  induction m with
-  | zero =>
-    simp only [PMF.iid, Nat.cast_zero, zero_mul, CloseTo.refl]
-  | succ m ih =>
-    simp only [PMF.iid, PMF.monad_bind_eq_bind]
-    have hstep := CloseTo.bind h (fun a _ => CloseTo.map ih (Fin.cons (α := fun _ => α) a))
-    refine hstep.mono ?_
-    rw [Nat.cast_add, Nat.cast_one, add_mul, one_mul, add_comm]
-
 end Cslib.Interactive
 
 namespace Cslib.Probability
@@ -150,44 +137,34 @@ instance (B : ℕ) : NeZero (2 * B + 1) := ⟨by omega⟩
 /-- Shift a nonnegative residue `u < 2 * B + 1` into the symmetric interval `[-B, B]`. -/
 def boxShift (B u : ℕ) : ℤ := (u : ℤ) - B
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_boxShift :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => boxShift p.1 p.2)
-      (encPair encNat encNat) encIntBin := by
-  unfold boxShift
-  fun_prop
-
 /-- `boxShift` is computable in polynomial time on binary natural inputs. -/
 @[fun_prop]
 theorem computableInPolyTime_boxShift :
     ComputableInPolyTime (fun p : ℕ × ℕ => boxShift p.1 p.2)
-      (encPair encNat encNat) encIntBin :=
-  .of_tidy computableTidilyInPolyTime_boxShift
+      (encPair encNat encNat) encIntBin := by
+  apply ComputableInPolyTime.of_tidy
+  unfold boxShift
+  fun_prop
 
 /-- Deterministic coin-to-residue map underlying `ProbComp.sampleModNat`. -/
 def sampleModNatCoins (modulus : ℕ) (coins : List Bool) : ℕ :=
   BitString.binaryValue coins % modulus
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_sampleModNatCoins :
-    ComputableTidilyInPolyTime (fun p : ℕ × List Bool => sampleModNatCoins p.1 p.2)
-      (encPair encNat encBits) encNat := by
-  unfold sampleModNatCoins
-  fun_prop
-
 /-- `sampleModNatCoins` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_sampleModNatCoins :
     ComputableInPolyTime (fun p : ℕ × List Bool => sampleModNatCoins p.1 p.2)
-      (encPair encNat encBits) encNat :=
-  .of_tidy computableTidilyInPolyTime_sampleModNatCoins
+      (encPair encNat encBits) encNat := by
+  apply ComputableInPolyTime.of_tidy
+  unfold sampleModNatCoins
+  fun_prop
 
 /-- Deterministic coin-to-box map for the symmetric integer interval `[-B, B]`. -/
 def sampleIntBoxCoins (B : ℕ) (coins : List Bool) : ℤ :=
   boxShift B (sampleModNatCoins (2 * B + 1) coins)
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_sampleIntBoxCoins :
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_sampleIntBoxCoins :
     ComputableTidilyInPolyTime (fun p : ℕ × List Bool => sampleIntBoxCoins p.1 p.2)
       (encPair encNat encBits) encIntBin := by
   unfold sampleIntBoxCoins sampleModNatCoins boxShift
@@ -400,22 +377,16 @@ def sampleIntBoxListCoins (B m width : ℕ) (coins : List Bool) : List ℤ :=
     (sampleIntBoxListCoins B m width coins).length = m := by
   simp [sampleIntBoxListCoins]
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_sampleIntBoxListCoins :
-    ComputableTidilyInPolyTime
-      (fun p : ℕ × ℕ × ℕ × List Bool => sampleIntBoxListCoins p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encNat (encPair encUnary (encPair encUnary encBits))) (encList encIntBin) := by
-  unfold sampleIntBoxListCoins
-  fun_prop
-
 /-- `sampleIntBoxListCoins` is computable in polynomial time when `B` is in binary and `m, width`
 are in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_sampleIntBoxListCoins :
     ComputableInPolyTime
       (fun p : ℕ × ℕ × ℕ × List Bool => sampleIntBoxListCoins p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encNat (encPair encUnary (encPair encUnary encBits))) (encList encIntBin) :=
-  .of_tidy computableTidilyInPolyTime_sampleIntBoxListCoins
+      (encPair encNat (encPair encUnary (encPair encUnary encBits))) (encList encIntBin) := by
+  apply ComputableInPolyTime.of_tidy
+  unfold sampleIntBoxListCoins
+  fun_prop
 
 /-- Deterministic coin-to-vector sampler for `intBox (Fin m) B = [-B, B]^m`. -/
 def sampleIntBoxVecCoins (B m width : ℕ) (coins : List Bool) : Fin m → ℤ :=
@@ -494,7 +465,14 @@ theorem closeTo_uniform_intBox_sampleIntBoxVec (B m width : ℕ) :
       (ProbComp.eval (sampleIntBoxVec B m width))
       ((m : ℝ≥0∞) * ((2 * B + 1 : ℝ≥0∞) / 2 ^ width)) := by
   rw [← iid_uniformBox1D B m, eval_sampleIntBoxVec_eq_iid B m width]
-  exact CloseTo.iid (closeTo_uniformBox1D_sampleIntBox B width) m
+  have h1 := closeTo_uniformBox1D_sampleIntBox B width
+  induction m with
+  | zero =>
+    simp only [PMF.iid, Nat.cast_zero, zero_mul, CloseTo.refl]
+  | succ m ih =>
+    simp only [PMF.iid, PMF.monad_bind_eq_bind]
+    refine (CloseTo.bind h1 (fun a _ => CloseTo.map ih (Fin.cons (α := fun _ => ℤ) a))).mono ?_
+    rw [Nat.cast_add, Nat.cast_one, add_mul, one_mul, add_comm]
 
 /-- **Multi-coordinate box sampler statistical distance (list form).** `sampleIntBoxList B m width`
 is within `m * ((2 * B + 1) / 2 ^ width)` of the encoded uniform distribution on
@@ -516,19 +494,14 @@ theorem closeTo_uniform_intBox_sampleIntBoxList (B m width : ℕ) :
 def sampleDyadicIntBoxCoins (width : ℕ) (coins : List Bool) : ℤ :=
   (BitString.binaryValue coins : ℤ) - (2 : ℤ) ^ (width - 1)
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_sampleDyadicIntBoxCoins :
-    ComputableTidilyInPolyTime (fun p : ℕ × List Bool => sampleDyadicIntBoxCoins p.1 p.2)
-      (encPair encUnary encBits) encIntBin := by
-  unfold sampleDyadicIntBoxCoins
-  fun_prop
-
 /-- `sampleDyadicIntBoxCoins` is computable in polynomial time for a unary bit width. -/
 @[fun_prop]
 theorem computableInPolyTime_sampleDyadicIntBoxCoins :
     ComputableInPolyTime (fun p : ℕ × List Bool => sampleDyadicIntBoxCoins p.1 p.2)
-      (encPair encUnary encBits) encIntBin :=
-  .of_tidy computableTidilyInPolyTime_sampleDyadicIntBoxCoins
+      (encPair encUnary encBits) encIntBin := by
+  apply ComputableInPolyTime.of_tidy
+  unfold sampleDyadicIntBoxCoins
+  fun_prop
 
 /-- Sample an integer uniformly from the dyadic range `[0, 2 ^ width - 1] - 2 ^ (width - 1)`. -/
 noncomputable def sampleDyadicIntBox (width : ℕ) : ProbComp ℤ :=
@@ -648,6 +621,27 @@ unary dimensions `(n, m, k)` and per-coordinate sampling bit width `width`, pair
 modulus and box radii `(q, γ, β)`. -/
 abbrev LyubashevskyParams := (ℕ × ℕ × ℕ × ℕ) × (ℕ × ℕ × ℕ)
 
+/-- Number of rows `n` in the public matrix `A`. -/
+abbrev LyubashevskyParams.n (p : LyubashevskyParams) : ℕ := p.1.1
+
+/-- Number of columns `m` in the public matrix `A` (and response dimension). -/
+abbrev LyubashevskyParams.m (p : LyubashevskyParams) : ℕ := p.1.2.1
+
+/-- Challenge bit length `k` (and number of columns in `T`). -/
+abbrev LyubashevskyParams.k (p : LyubashevskyParams) : ℕ := p.1.2.2.1
+
+/-- Per-coordinate sampling bit width `width`. -/
+abbrev LyubashevskyParams.width (p : LyubashevskyParams) : ℕ := p.1.2.2.2
+
+/-- Modulus `q`. -/
+abbrev LyubashevskyParams.q (p : LyubashevskyParams) : ℕ := p.2.1
+
+/-- Outer commitment box radius `γ`. -/
+abbrev LyubashevskyParams.γ (p : LyubashevskyParams) : ℕ := p.2.2.1
+
+/-- Rejection margin `β` (inner response box radius is `γ - β`). -/
+abbrev LyubashevskyParams.β (p : LyubashevskyParams) : ℕ := p.2.2.2
+
 /-- Word encoding of `LyubashevskyParams`: `(n, m, k, width)` in unary and `(q, γ, β)` in binary. -/
 def encLyubashevskyParams : LyubashevskyParams ↪ List Bool :=
   encPair (encPair encUnary (encPair encUnary (encPair encUnary encUnary)))
@@ -706,30 +700,30 @@ def encExtractedWitness (m k : ℕ) : (Fin m ⊕ Fin k → ℤ) ↪ List Bool :=
 
 /-- Lyubashevsky's identification protocol indexed by `p : LyubashevskyParams`. -/
 noncomputable def lyubashevskyFamily (p : LyubashevskyParams) :
-    SigmaProtocol (Matrix (Fin p.1.2.1) (Fin p.1.2.2.1) ℤ)
-      (Matrix (Fin p.1.1) (Fin p.1.2.1) (ZMod p.2.1) ×
-        Matrix (Fin p.1.1) (Fin p.1.2.2.1) (ZMod p.2.1))
-      (Fin p.1.1 → ZMod p.2.1) (BitString p.1.2.2.1) (Option (Fin p.1.2.1 → ℤ)) :=
-  lyubashevsky p.1.1 p.1.2.1 p.1.2.2.1 p.2.1 p.2.2.1 p.2.2.2
+    SigmaProtocol (Matrix (Fin p.m) (Fin p.k) ℤ)
+      (Matrix (Fin p.n) (Fin p.m) (ZMod p.q) ×
+        Matrix (Fin p.n) (Fin p.k) (ZMod p.q))
+      (Fin p.n → ZMod p.q) (BitString p.k) (Option (Fin p.m → ℤ)) :=
+  lyubashevsky p.n p.m p.k p.q p.γ p.β
 
 /-- Word encodings for `lyubashevskyFamily`. -/
 def lyubashevskyEncoding :
     Encoding LyubashevskyParams
-      (fun p => Matrix (Fin p.1.1) (Fin p.1.2.1) (ZMod p.2.1) ×
-        Matrix (Fin p.1.1) (Fin p.1.2.2.1) (ZMod p.2.1))
-      (fun p => Fin p.1.1 → ZMod p.2.1)
-      (fun p => BitString p.1.2.2.1)
-      (fun p => Option (Fin p.1.2.1 → ℤ)) where
+      (fun p => Matrix (Fin p.n) (Fin p.m) (ZMod p.q) ×
+        Matrix (Fin p.n) (Fin p.k) (ZMod p.q))
+      (fun p => Fin p.n → ZMod p.q)
+      (fun p => BitString p.k)
+      (fun p => Option (Fin p.m → ℤ)) where
   index := encLyubashevskyParams
-  statement p := encPair (encZModMatrix p.1.1 p.1.2.1 p.2.1) (encZModMatrix p.1.1 p.1.2.2.1 p.2.1)
-  commitment p := encZModVec p.1.1 p.2.1
-  challenge p := encBitString p.1.2.2.1
-  response p := encIntVecOption p.1.2.1
+  statement p := encPair (encZModMatrix p.n p.m p.q) (encZModMatrix p.n p.k p.q)
+  commitment p := encZModVec p.n p.q
+  challenge p := encBitString p.k
+  response p := encIntVecOption p.m
 
 /-- Extracted-witness encoding family for `lyubashevskyFamily`. -/
 def encLyubashevskyExtracted (p : LyubashevskyParams) :
-    (Fin p.1.2.1 ⊕ Fin p.1.2.2.1 → ℤ) ↪ List Bool :=
-  encExtractedWitness p.1.2.1 p.1.2.2.1
+    (Fin p.m ⊕ Fin p.k → ℤ) ↪ List Bool :=
+  encExtractedWitness p.m p.k
 
 /-! ### Part 1a: Efficient special soundness via `NativeExtract` -/
 
@@ -738,11 +732,11 @@ def encLyubashevskyExtracted (p : LyubashevskyParams) :
 def lyubashevskyExtractorAdapter
     (inp : LyubashevskyParams × List Bool × List Bool × List Bool × List Bool ×
       List Bool × List Bool) : List Bool :=
+  let (p, _, _, c, z, c', z') := inp
   lyubashevskyExtractWord
     (encPair (encPair encUnary encUnary)
       (encPair (encPair encBits encBits) (encPair encBits encBits))
-      ((inp.1.1.2.1, inp.1.1.2.2.1),
-        ((inp.2.2.2.1, inp.2.2.2.2.1), (inp.2.2.2.2.2.1, inp.2.2.2.2.2.2))))
+      ((p.m, p.k), ((c, z), (c', z'))))
 
 /-- `lyubashevskyExtractorAdapter` is computable in polynomial time. -/
 @[fun_prop]
@@ -755,10 +749,11 @@ theorem computableInPolyTime_lyubashevskyExtractorAdapter :
   have hpack : ComputableTidilyInPolyTime
       (fun inp : LyubashevskyParams × List Bool × List Bool × List Bool × List Bool ×
           List Bool × List Bool =>
-        ((inp.1.1.2.1, inp.1.1.2.2.1),
-          ((inp.2.2.2.1, inp.2.2.2.2.1), (inp.2.2.2.2.2.1, inp.2.2.2.2.2.2))))
+        let (p, _, _, c, z, c', z') := inp
+        ((p.m, p.k), ((c, z), (c', z'))))
       (encPair encLyubashevskyParams (encPair encBits (encPair encBits
         (encPair encBits (encPair encBits (encPair encBits encBits)))))) encPack := by
+    dsimp only [LyubashevskyParams.m, LyubashevskyParams.k]
     unfold encPack encLyubashevskyParams
     fun_prop
   apply ComputableInPolyTime.of_tidy
@@ -769,28 +764,28 @@ theorem computableInPolyTime_lyubashevskyExtractorAdapter :
 parameter tuples `p : LyubashevskyParams`. -/
 theorem extractorRealizedBy_lyubashevskyExtractorAdapter :
     ExtractorRealizedBy lyubashevskyEncoding encLyubashevskyExtracted
-      (fun p => lyubashevskyExtract p.1.1 p.1.2.1 p.1.2.2.1 p.2.1)
+      (fun p => lyubashevskyExtract p.n p.m p.k p.q)
       lyubashevskyExtractorAdapter := by
   intro p y t c z c' z'
   have hinput :
       encPair (encPair encUnary encUnary)
         (encPair (encPair encBits encBits) (encPair encBits encBits))
-        ((p.1.2.1, p.1.2.2.1),
+        ((p.m, p.k),
           ((lyubashevskyEncoding.challenge p c, lyubashevskyEncoding.response p z),
             (lyubashevskyEncoding.challenge p c', lyubashevskyEncoding.response p z'))) =
-      encLyubashevskyExtractInput ((p.1.2.1, p.1.2.2.1),
+      encLyubashevskyExtractInput ((p.m, p.k),
         ((List.ofFn c, z.map List.ofFn), (List.ofFn c', z'.map List.ofFn))) := rfl
   dsimp only [lyubashevskyExtractorAdapter]
-  rw [hinput, lyubashevskyExtractWord_eq_extract p.1.1 p.1.2.1 p.1.2.2.1 p.2.1 y t c z c' z']
+  rw [hinput, lyubashevskyExtractWord_eq_extract p.n p.m p.k p.q y t c z c' z']
   rfl
 
 /-- **Lyubashevsky's identification protocol has efficient special soundness** for the relaxed SIS
 relation with norm bound `max (2 * (γ - β)) 1`. -/
 theorem efficientSpecialSoundness_lyubashevsky :
     EfficientSpecialSoundness lyubashevskyFamily
-      (fun p u y => SIS.IsSolution (Matrix.fromCols y.1 y.2) (max (2 * (p.2.2.1 - p.2.2.2)) 1) u)
+      (fun p u y => SIS.IsSolution (Matrix.fromCols y.1 y.2) (max (2 * (p.γ - p.β)) 1) u)
       lyubashevskyEncoding encLyubashevskyExtracted
-      (fun p => lyubashevskyExtract p.1.1 p.1.2.1 p.1.2.2.1 p.2.1) where
+      (fun p => lyubashevskyExtract p.n p.m p.k p.q) where
   specialSoundness _ := lyubashevsky_specialSoundness
   polyTime := ⟨lyubashevskyExtractorAdapter,
     computableInPolyTime_lyubashevskyExtractorAdapter,
@@ -816,18 +811,18 @@ def intMatrixDecoder : Decoder (encList (encList encIntBin)) :=
 def responseListDecoder : Decoder (encOption (encList encIntBin)) :=
   Decoder.option intListDecoder
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_decodeIntList :
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_decodeIntList :
     ComputableTidilyInPolyTime intListDecoder.decode encBits (encList encIntBin) :=
   intListDecoder.computableInPolyTime.tidy
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_decodeIntMatrix :
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_decodeIntMatrix :
     ComputableTidilyInPolyTime intMatrixDecoder.decode encBits (encList (encList encIntBin)) :=
   intMatrixDecoder.computableInPolyTime.tidy
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_decodeResponseList :
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_decodeResponseList :
     ComputableTidilyInPolyTime responseListDecoder.decode encBits
       (encOption (encList encIntBin)) :=
   responseListDecoder.computableInPolyTime.tidy
@@ -837,8 +832,8 @@ theorem computableTidilyInPolyTime_decodeResponseList :
 def zmodReduce (q : ℕ) (a : ℤ) : ℤ :=
   if q == 0 then a else ((a % (q : ℤ)).toNat : ℤ)
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_zmodReduce :
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_zmodReduce :
     ComputableTidilyInPolyTime (fun p : ℕ × ℤ => zmodReduce p.1 p.2)
       (encPair encNat encIntBin) encIntBin := by
   have hmod : ComputableInPolyTime (fun p : ℕ × ℤ => ((p.2 % (p.1 : ℤ)).toNat : ℤ))
@@ -872,33 +867,19 @@ theorem zmodReduce_eq_cast (q : ℕ) (a : ℤ) :
 def listDot (m : ℕ) (row v : List ℤ) : ℤ :=
   ((List.range m).map fun j => row.getD j 0 * v.getD j 0).sum
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_listDot :
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_listDot :
     ComputableTidilyInPolyTime (fun p : ℕ × List ℤ × List ℤ => listDot p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair (encList encIntBin) (encList encIntBin))) encIntBin := by
   unfold listDot
-  fun_prop
-
-/-- Matrix-vector product of the first `n` rows of `M` (each of width `m`) with `v`. -/
-def listMulVec (n m : ℕ) (M : List (List ℤ)) (v : List ℤ) : List ℤ :=
-  (List.range n).map fun i => listDot m (M.getD i []) v
-
-@[fun_prop]
-theorem computableTidilyInPolyTime_listMulVec :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ × List (List ℤ) × List ℤ =>
-        listMulVec p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary
-        (encPair encUnary (encPair (encList (encList encIntBin)) (encList encIntBin))))
-      (encList encIntBin) := by
-  unfold listMulVec
   fun_prop
 
 /-- Convert the first `k` bits of a raw challenge word `c` into a `0`-`1` integer list. -/
 def challengeIntList (k : ℕ) (c : List Bool) : List ℤ :=
   (List.range k).map fun j => if c.getD j false then 1 else 0
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_challengeIntList :
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_challengeIntList :
     ComputableTidilyInPolyTime (fun p : ℕ × List Bool => challengeIntList p.1 p.2)
       (encPair encUnary encBits) (encList encIntBin) := by
   unfold challengeIntList
@@ -907,13 +888,6 @@ theorem computableTidilyInPolyTime_challengeIntList :
 /-- Check whether the first `m` coordinates of `z` lie in `[-B, B]`. -/
 def inBoxList (m B : ℕ) (z : List ℤ) : Bool :=
   (List.range m).all fun j => decide ((z.getD j 0).natAbs ≤ B)
-
-@[fun_prop]
-theorem computableTidilyInPolyTime_inBoxList :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ × List ℤ => inBoxList p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encNat (encList encIntBin))) encBool := by
-  unfold inBoxList
-  fun_prop
 
 /-- Check whether `A z = w + T ĉ` modulo `q` across the first `n` rows. -/
 def lyubashevskyVerifyEqList (n m k q : ℕ) (A T : List (List ℤ)) (w z : List ℤ)
@@ -932,13 +906,13 @@ def lyubashevskyVerifyList (n m k q γ β : ℕ) (A T : List (List ℤ)) (w : Li
 /-- Complete serialized verifier program for `lyubashevskyFamily`. -/
 def lyubashevskyVerifyWord
     (inp : LyubashevskyParams × List Bool × List Bool × List Bool × List Bool) : Bool :=
-  lyubashevskyVerifyList inp.1.1.1 inp.1.1.2.1 inp.1.1.2.2.1
-    inp.1.2.1 inp.1.2.2.1 inp.1.2.2.2
-    (intMatrixDecoder.decode (unframe inp.2.1))
-    (intMatrixDecoder.decode (dropFrame inp.2.1))
-    (intListDecoder.decode inp.2.2.1)
-    inp.2.2.2.1
-    (responseListDecoder.decode inp.2.2.2.2)
+  let (p, yw, ww, cw, zw) := inp
+  lyubashevskyVerifyList p.n p.m p.k p.q p.γ p.β
+    (intMatrixDecoder.decode (unframe yw))
+    (intMatrixDecoder.decode (dropFrame yw))
+    (intListDecoder.decode ww)
+    cw
+    (responseListDecoder.decode zw)
 
 /-- `lyubashevskyVerifyWord` is computable in polynomial time. -/
 @[fun_prop]
@@ -947,20 +921,16 @@ theorem computableInPolyTime_lyubashevskyVerifyWord :
       (encPair encLyubashevskyParams (encPair encBits (encPair encBits (encPair encBits encBits))))
       encBool := by
   apply ComputableInPolyTime.of_tidy
-  unfold lyubashevskyVerifyWord lyubashevskyVerifyList inBoxList lyubashevskyVerifyEqList
-    encLyubashevskyParams
+  unfold lyubashevskyVerifyWord LyubashevskyParams.n LyubashevskyParams.m
+    LyubashevskyParams.k LyubashevskyParams.q LyubashevskyParams.γ LyubashevskyParams.β
+    lyubashevskyVerifyList inBoxList lyubashevskyVerifyEqList encLyubashevskyParams
   fun_prop
-
-private theorem map_range_eq_ofFn {α : Type} (n : ℕ) (f : ℕ → α) (g : Fin n → α)
-    (h : ∀ i : Fin n, f i.val = g i) : (List.range n).map f = List.ofFn g := by
-  rw [← List.map_coe_finRange_eq_range, List.map_map]
-  conv_rhs => rw [List.ofFn_eq_map]
-  exact List.map_congr_left fun i _ => h i
 
 theorem challengeIntList_ofFn {k : ℕ} (c : BitString k) :
     challengeIntList k (List.ofFn c) = List.ofFn (lyubashevskyChallenge c) := by
-  apply map_range_eq_ofFn
-  intro j
+  rw [challengeIntList, ← List.map_coe_finRange_eq_range, List.map_map]
+  conv_rhs => rw [List.ofFn_eq_map]
+  refine List.map_congr_left fun j _ => ?_
   simp [List.getD_eq_getElem?_getD, lyubashevskyChallenge]
 
 theorem inBoxList_ofFn {m B : ℕ} (z : Fin m → ℤ) :
@@ -983,9 +953,13 @@ theorem inBoxList_ofFn {m B : ℕ} (z : Fin m → ℤ) :
 
 theorem listDot_ofFn {m : ℕ} (u v : Fin m → ℤ) :
     listDot m (List.ofFn u) (List.ofFn v) = ∑ j : Fin m, u j * v j := by
-  rw [listDot, map_range_eq_ofFn m _ (fun j => u j * v j), List.sum_ofFn]
-  intro j
-  simp [List.getD_eq_getElem?_getD]
+  have hmap : ((List.range m).map fun j => (List.ofFn u).getD j 0 * (List.ofFn v).getD j 0) =
+      List.ofFn (fun j => u j * v j) := by
+    rw [← List.map_coe_finRange_eq_range, List.map_map]
+    conv_rhs => rw [List.ofFn_eq_map]
+    refine List.map_congr_left fun j _ => ?_
+    simp [List.getD_eq_getElem?_getD]
+  rw [listDot, hmap, List.sum_ofFn]
 
 theorem intCast_listDot_matrix_ofFn {n m q : ℕ} (A : Matrix (Fin n) (Fin m) (ZMod q))
     (z : Fin m → ℤ) (i : Fin n) :
@@ -1099,10 +1073,11 @@ theorem lyubashevskySimCommitList_ofFn (n m k q : ℕ)
       (List.ofFn z) (List.ofFn c) =
       List.ofFn fun i : Fin n =>
         ZMod.cast ((A *ᵥ (Int.cast ∘ z) - T *ᵥ (Int.cast ∘ lyubashevskyChallenge c)) i) := by
-  rw [lyubashevskySimCommitList, challengeIntList_ofFn]
-  apply map_range_eq_ofFn
-  intro i
-  rw [zmodReduce_eq_cast, Int.cast_sub, intCast_listDot_matrix_ofFn A z i,
+  rw [lyubashevskySimCommitList, challengeIntList_ofFn, ← List.map_coe_finRange_eq_range,
+    List.map_map]
+  conv_rhs => rw [List.ofFn_eq_map]
+  refine List.map_congr_left fun i _ => ?_
+  rw [Function.comp_apply, zmodReduce_eq_cast, Int.cast_sub, intCast_listDot_matrix_ofFn A z i,
     intCast_listDot_matrix_ofFn T (lyubashevskyChallenge c) i]
   rfl
 
@@ -1112,45 +1087,52 @@ simulator: check `z ∈ [-(γ - β), γ - β]^m` and, if so, return the encoded 
 def lyubashevskySimulatePostprocess
     (inp : (LyubashevskyParams × List Bool × List Bool) × List ℤ) :
     Option (List Bool × List Bool) :=
-  if inBoxList inp.1.1.1.2.1 (inp.1.1.2.2.1 - inp.1.1.2.2.2) inp.2 then
+  let ((p, yw, cw), z) := inp
+  if inBoxList p.m (p.γ - p.β) z then
     some (
       encList encIntBin
-        (lyubashevskySimCommitList inp.1.1.1.1 inp.1.1.1.2.1 inp.1.1.1.2.2.1 inp.1.1.2.1
-          (intMatrixDecoder.decode (unframe inp.1.2.1))
-          (intMatrixDecoder.decode (dropFrame inp.1.2.1))
-          inp.2 inp.1.2.2),
-      encOption (encList encIntBin) (some inp.2))
+        (lyubashevskySimCommitList p.n p.m p.k p.q
+          (intMatrixDecoder.decode (unframe yw))
+          (intMatrixDecoder.decode (dropFrame yw))
+          z cw),
+      encOption (encList encIntBin) (some z))
   else
     none
 
-@[fun_prop]
-theorem computableTidilyInPolyTime_lyubashevskySimulatePostprocess :
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_lyubashevskySimulatePostprocess :
     ComputableTidilyInPolyTime lyubashevskySimulatePostprocess
       (encPair (encPair encLyubashevskyParams (encPair encBits encBits)) (encList encIntBin))
       (encOption (encPair encBits encBits)) := by
   let encIn := encPair (encPair encLyubashevskyParams (encPair encBits encBits)) (encList encIntBin)
   have hcond : ComputableTidilyInPolyTime
       (fun inp : (LyubashevskyParams × List Bool × List Bool) × List ℤ =>
-        inBoxList inp.1.1.1.2.1 (inp.1.1.2.2.1 - inp.1.1.2.2.2) inp.2)
+        let ((p, _, _), z) := inp
+        inBoxList p.m (p.γ - p.β) z)
       encIn encBool := by
+    dsimp only [LyubashevskyParams.m, LyubashevskyParams.γ, LyubashevskyParams.β]
     unfold inBoxList encIn encLyubashevskyParams
     fun_prop
   have hw_list : ComputableTidilyInPolyTime
       (fun inp : (LyubashevskyParams × List Bool × List Bool) × List ℤ =>
-        lyubashevskySimCommitList inp.1.1.1.1 inp.1.1.1.2.1 inp.1.1.1.2.2.1 inp.1.1.2.1
-          (intMatrixDecoder.decode (unframe inp.1.2.1))
-          (intMatrixDecoder.decode (dropFrame inp.1.2.1))
-          inp.2 inp.1.2.2)
+        let ((p, yw, cw), z) := inp
+        lyubashevskySimCommitList p.n p.m p.k p.q
+          (intMatrixDecoder.decode (unframe yw))
+          (intMatrixDecoder.decode (dropFrame yw))
+          z cw)
       encIn (encList encIntBin) := by
+    dsimp only [LyubashevskyParams.n, LyubashevskyParams.m, LyubashevskyParams.k,
+      LyubashevskyParams.q]
     unfold lyubashevskySimCommitList encIn encLyubashevskyParams
     fun_prop
   have hw : ComputableTidilyInPolyTime
       (fun inp : (LyubashevskyParams × List Bool × List Bool) × List ℤ =>
+        let ((p, yw, cw), z) := inp
         encList encIntBin
-          (lyubashevskySimCommitList inp.1.1.1.1 inp.1.1.1.2.1 inp.1.1.1.2.2.1 inp.1.1.2.1
-            (intMatrixDecoder.decode (unframe inp.1.2.1))
-            (intMatrixDecoder.decode (dropFrame inp.1.2.1))
-            inp.2 inp.1.2.2))
+          (lyubashevskySimCommitList p.n p.m p.k p.q
+            (intMatrixDecoder.decode (unframe yw))
+            (intMatrixDecoder.decode (dropFrame yw))
+            z cw))
       encIn encBits :=
     (ComputableTidilyInPolyTime.encode (encList encIntBin)).comp hw_list
   have hz : ComputableTidilyInPolyTime
@@ -1162,13 +1144,14 @@ theorem computableTidilyInPolyTime_lyubashevskySimulatePostprocess :
         (ComputableTidilyInPolyTime.snd _ _))
   have hsome : ComputableTidilyInPolyTime
       (fun inp : (LyubashevskyParams × List Bool × List Bool) × List ℤ =>
+        let ((p, yw, cw), z) := inp
         some (
           encList encIntBin
-            (lyubashevskySimCommitList inp.1.1.1.1 inp.1.1.1.2.1 inp.1.1.1.2.2.1 inp.1.1.2.1
-              (intMatrixDecoder.decode (unframe inp.1.2.1))
-              (intMatrixDecoder.decode (dropFrame inp.1.2.1))
-              inp.2 inp.1.2.2),
-          encOption (encList encIntBin) (some inp.2)))
+            (lyubashevskySimCommitList p.n p.m p.k p.q
+              (intMatrixDecoder.decode (unframe yw))
+              (intMatrixDecoder.decode (dropFrame yw))
+              z cw),
+          encOption (encList encIntBin) (some z)))
       encIn (encOption (encPair encBits encBits)) :=
     (ComputableTidilyInPolyTime.optionSome (encPair encBits encBits)).comp (hw.prod hz)
   exact hcond.ite' hsome (ComputableTidilyInPolyTime.const none)
@@ -1187,8 +1170,9 @@ theorem computableInPolyTime_lyubashevskySimulatePostprocess :
 def lyubashevskySimulateCoins
     (inp : (LyubashevskyParams × List Bool × List Bool) × List Bool) :
     Option (List Bool × List Bool) :=
+  let ((p, yw, cw), coins) := inp
   lyubashevskySimulatePostprocess
-    (inp.1, sampleIntBoxListCoins inp.1.1.2.2.1 inp.1.1.1.2.1 inp.1.1.1.2.2.2 inp.2)
+    ((p, yw, cw), sampleIntBoxListCoins p.γ p.m p.width coins)
 
 /-- `lyubashevskySimulateCoins` is computable in polynomial time. -/
 @[fun_prop]
@@ -1196,16 +1180,19 @@ theorem computableInPolyTime_lyubashevskySimulateCoins :
     ComputableInPolyTime lyubashevskySimulateCoins
       (encPair (encPair encLyubashevskyParams (encPair encBits encBits)) encBits)
       (encOption (encPair encBits encBits)) := by
+  have := computableInPolyTime_sampleIntBoxListCoins.tidy
   apply ComputableInPolyTime.of_tidy
-  unfold lyubashevskySimulateCoins sampleIntBoxListCoins encLyubashevskyParams
+  unfold lyubashevskySimulateCoins LyubashevskyParams.γ LyubashevskyParams.m
+    LyubashevskyParams.width encLyubashevskyParams
   fun_prop
 
 /-- Uniform strict-PPT simulator program for `lyubashevskyFamily` on encoded words. -/
 noncomputable def lyubashevskySimulateWord
     (inp : LyubashevskyParams × List Bool × List Bool) :
     ProbComp (Option (List Bool × List Bool)) :=
+  let (p, _, _) := inp
   (fun z => lyubashevskySimulatePostprocess (inp, z)) <$>
-    sampleIntBoxList inp.1.2.2.1 inp.1.1.2.1 inp.1.1.2.2.2
+    sampleIntBoxList p.γ p.m p.width
 
 /-- `lyubashevskySimulateWord` is uniformly strict PPT. -/
 theorem isPPTOn_lyubashevskySimulateWord :
@@ -1213,19 +1200,19 @@ theorem isPPTOn_lyubashevskySimulateWord :
       (encOption (encPair encBits encBits)) lyubashevskySimulateWord := by
   let encIn := encPair encLyubashevskyParams (encPair encBits encBits)
   have hγ : ComputableInPolyTime
-      (fun inp : LyubashevskyParams × List Bool × List Bool => inp.1.2.2.1) encIn encNat := by
+      (fun inp : LyubashevskyParams × List Bool × List Bool => inp.1.γ) encIn encNat := by
     apply ComputableInPolyTime.of_tidy
-    unfold encIn encLyubashevskyParams
+    unfold LyubashevskyParams.γ encIn encLyubashevskyParams
     fun_prop
   have hm : ComputableInPolyTime
-      (fun inp : LyubashevskyParams × List Bool × List Bool => inp.1.1.2.1) encIn encUnary := by
+      (fun inp : LyubashevskyParams × List Bool × List Bool => inp.1.m) encIn encUnary := by
     apply ComputableInPolyTime.of_tidy
-    unfold encIn encLyubashevskyParams
+    unfold LyubashevskyParams.m encIn encLyubashevskyParams
     fun_prop
   have hwidth : ComputableInPolyTime
-      (fun inp : LyubashevskyParams × List Bool × List Bool => inp.1.1.2.2.2) encIn encUnary := by
+      (fun inp : LyubashevskyParams × List Bool × List Bool => inp.1.width) encIn encUnary := by
     apply ComputableInPolyTime.of_tidy
-    unfold encIn encLyubashevskyParams
+    unfold LyubashevskyParams.width encIn encLyubashevskyParams
     fun_prop
   exact (isPPTOn_sampleIntBoxList hγ hm hwidth).map_with
     computableInPolyTime_lyubashevskySimulatePostprocess
@@ -1235,7 +1222,7 @@ on `m * width` uniform fair coin bits. -/
 theorem eval_lyubashevskySimulateWord_eq_coins
     (inp : LyubashevskyParams × List Bool × List Bool) :
     ProbComp.eval (lyubashevskySimulateWord inp) =
-      (BitString.uniformList (inp.1.1.2.1 * inp.1.1.2.2.2)).map
+      (BitString.uniformList (inp.1.m * inp.1.width)).map
         (fun coins => lyubashevskySimulateCoins (inp, coins)) := by
   rw [lyubashevskySimulateWord, ProbComp.eval_map, eval_sampleIntBoxList_eq_coins, PMF.map_comp]
   rfl
@@ -1243,13 +1230,13 @@ theorem eval_lyubashevskySimulateWord_eq_coins
 /-- On canonical encoded statements and challenges, `lyubashevskySimulatePostprocess` computes the
 exact simulator's postprocessing of a candidate vector `z ∈ [-γ, γ]^m`. -/
 theorem lyubashevskySimulatePostprocess_ofFn (p : LyubashevskyParams)
-    (y : Matrix (Fin p.1.1) (Fin p.1.2.1) (ZMod p.2.1) ×
-      Matrix (Fin p.1.1) (Fin p.1.2.2.1) (ZMod p.2.1))
-    (c : BitString p.1.2.2.1) (z : Fin p.1.2.1 → ℤ) :
+    (y : Matrix (Fin p.n) (Fin p.m) (ZMod p.q) ×
+      Matrix (Fin p.n) (Fin p.k) (ZMod p.q))
+    (c : BitString p.k) (z : Fin p.m → ℤ) :
     lyubashevskySimulatePostprocess
       ((p, lyubashevskyEncoding.statement p y, lyubashevskyEncoding.challenge p c),
         List.ofFn z) =
-      if z ∈ intBox (Fin p.1.2.1) (p.2.2.1 - p.2.2.2) then
+      if z ∈ intBox (Fin p.m) (p.γ - p.β) then
         some (lyubashevskyEncoding.commitment p
             (y.1 *ᵥ (Int.cast ∘ z) - y.2 *ᵥ (Int.cast ∘ lyubashevskyChallenge c)),
           lyubashevskyEncoding.response p (some z))
@@ -1265,20 +1252,20 @@ theorem lyubashevskySimulatePostprocess_ofFn (p : LyubashevskyParams)
 encodings up to statistical distance `m * ((2 * γ + 1) / 2 ^ width)`. -/
 theorem nonAbortSimulatorRealizedBy_lyubashevskySimulateWord :
     NonAbortSimulatorRealizedBy lyubashevskyEncoding
-      (fun p => lyubashevskySimulate p.1.1 p.1.2.1 p.1.2.2.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun p => lyubashevskySimulate p.n p.m p.k p.q p.γ p.β)
       lyubashevskySimulateWord
-      (fun p => (p.1.2.1 : ℝ≥0∞) * ((2 * p.2.2.1 + 1 : ℝ≥0∞) / 2 ^ p.1.2.2.2)) := by
+      (fun p => (p.m : ℝ≥0∞) * ((2 * p.γ + 1 : ℝ≥0∞) / 2 ^ p.width)) := by
   intro p y c
-  let post (z : Fin p.1.2.1 → ℤ) : Option (List Bool × List Bool) :=
+  let post (z : Fin p.m → ℤ) : Option (List Bool × List Bool) :=
     lyubashevskySimulatePostprocess
       ((p, lyubashevskyEncoding.statement p y, lyubashevskyEncoding.challenge p c), List.ofFn z)
   have hideal :
-      ((lyubashevskySimulate p.1.1 p.1.2.1 p.1.2.2.1 p.2.1 p.2.2.1 p.2.2.2 y c).map
+      ((lyubashevskySimulate p.n p.m p.k p.q p.γ p.β y c).map
         (Option.map fun tz =>
           (lyubashevskyEncoding.commitment p tz.1,
             lyubashevskyEncoding.response p (some tz.2)))) =
-        (PMF.uniformOfFinset (intBox (Fin p.1.2.1) p.2.2.1)
-          (intBox_nonempty p.2.2.1)).map post := by
+        (PMF.uniformOfFinset (intBox (Fin p.m) p.γ)
+          (intBox_nonempty p.γ)).map post := by
     simp only [lyubashevskySimulate, boxReject, shiftReject, PMF.map_comp]
     congr 1
     funext z
@@ -1287,27 +1274,58 @@ theorem nonAbortSimulatorRealizedBy_lyubashevskySimulateWord :
   have hreal :
       ProbComp.eval (lyubashevskySimulateWord
         (p, lyubashevskyEncoding.statement p y, lyubashevskyEncoding.challenge p c)) =
-        (ProbComp.eval (sampleIntBoxVec p.2.2.1 p.1.2.1 p.1.2.2.2)).map post := by
-    have hlist : ProbComp.eval (sampleIntBoxList p.2.2.1 p.1.2.1 p.1.2.2.2) =
-        (ProbComp.eval (sampleIntBoxVec p.2.2.1 p.1.2.1 p.1.2.2.2)).map List.ofFn := by
+        (ProbComp.eval (sampleIntBoxVec p.γ p.m p.width)).map post := by
+    have hlist : ProbComp.eval (sampleIntBoxList p.γ p.m p.width) =
+        (ProbComp.eval (sampleIntBoxVec p.γ p.m p.width)).map List.ofFn := by
       rw [eval_sampleIntBoxVec_eq_iid, sampleIntBoxList, ProbComp.eval_replicate_iid]
     rw [lyubashevskySimulateWord, ProbComp.eval_map, hlist, PMF.map_comp]
     rfl
   rw [hideal, hreal]
-  exact (closeTo_uniform_intBox_sampleIntBoxVec p.2.2.1 p.1.2.1 p.1.2.2.2).map post
+  exact (closeTo_uniform_intBox_sampleIntBoxVec p.γ p.m p.width).map post
 
-/-- **Efficient non-abort special HVZK for Lyubashevsky's identification protocol.** When
-`k * η p ≤ β ≤ γ` at every parameter tuple `p`, `lyubashevskySimulateWord` realizes non-abort
-special HVZK with statistical error `m * ((2 * γ + 1) / 2 ^ width)`. -/
-theorem efficientNonAbortSpecialHVZK_lyubashevsky (η : LyubashevskyParams → ℕ)
-    (hβ : ∀ p : LyubashevskyParams, p.2.2.2 ≤ p.2.2.1)
-    (hη : ∀ p : LyubashevskyParams, p.1.2.2.1 * η p ≤ p.2.2.2) :
+/-- Witness-statement relation for `lyubashevskyFamily` at norm bound `η p`, bundling the
+rejection-sampling parameter conditions `p.β ≤ p.γ` and `p.k * η p ≤ p.β` required for perfect
+non-abort HVZK. -/
+def lyubashevskyFamilyRelation (η : LyubashevskyParams → ℕ) (p : LyubashevskyParams)
+    (S : Matrix (Fin p.m) (Fin p.k) ℤ)
+    (y : Matrix (Fin p.n) (Fin p.m) (ZMod p.q) × Matrix (Fin p.n) (Fin p.k) (ZMod p.q)) : Prop :=
+  p.β ≤ p.γ ∧ p.k * η p ≤ p.β ∧ lyubashevskyRelation (η p) S y
+
+instance (η : LyubashevskyParams → ℕ) (p : LyubashevskyParams)
+    (S : Matrix (Fin p.m) (Fin p.k) ℤ)
+    (y : Matrix (Fin p.n) (Fin p.m) (ZMod p.q) × Matrix (Fin p.n) (Fin p.k) (ZMod p.q)) :
+    Decidable (lyubashevskyFamilyRelation η p S y) := by
+  unfold lyubashevskyFamilyRelation lyubashevskyRelation
+  infer_instance
+
+/-- At every parameter tuple `p : LyubashevskyParams`, `lyubashevskySimulate` is a perfect
+`NonAbortSpecialHVZK` simulator for `lyubashevskyFamilyRelation η p`. -/
+theorem lyubashevskyFamily_nonAbortSpecialHVZK (η : LyubashevskyParams → ℕ)
+    (p : LyubashevskyParams) :
+    (lyubashevskyFamily p).NonAbortSpecialHVZK (lyubashevskyFamilyRelation η p)
+      (lyubashevskySimulate p.n p.m p.k p.q p.γ p.β) where
+  accepts y c t z h := by
+    obtain ⟨oz, hoz, hsome⟩ := (PMF.mem_support_map_iff _ _ _).mp h
+    cases oz with
+    | none => cases hsome
+    | some z' =>
+      simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at hsome
+      obtain ⟨rfl, rfl⟩ := hsome
+      rw [lyubashevskyFamily, lyubashevsky_accepts_some_iff]
+      exact ⟨mem_intBox_of_some_mem_support_boxReject hoz, (sub_add_cancel _ _).symm⟩
+  acceptedTranscript_eq S y hSy c :=
+    (lyubashevsky_nonAbortSpecialHVZK hSy.1 hSy.2.1).acceptedTranscript_eq S y hSy.2.2 c
+
+/-- **Efficient non-abort special HVZK for Lyubashevsky's identification protocol.** For any witness
+norm schedule `η : LyubashevskyParams → ℕ`, `lyubashevskySimulateWord` realizes non-abort special
+HVZK for `lyubashevskyFamilyRelation η` with statistical error `m * ((2 * γ + 1) / 2 ^ width)`. -/
+theorem efficientNonAbortSpecialHVZK_lyubashevsky (η : LyubashevskyParams → ℕ) :
     EfficientNonAbortSpecialHVZK lyubashevskyFamily
-      (fun p => lyubashevskyRelation (η p))
+      (lyubashevskyFamilyRelation η)
       lyubashevskyEncoding
-      (fun p => lyubashevskySimulate p.1.1 p.1.2.1 p.1.2.2.1 p.2.1 p.2.2.1 p.2.2.2)
-      (fun p => (p.1.2.1 : ℝ≥0∞) * ((2 * p.2.2.1 + 1 : ℝ≥0∞) / 2 ^ p.1.2.2.2)) where
-  nonAbortSpecialHVZK p := lyubashevsky_nonAbortSpecialHVZK (hβ p) (hη p)
+      (fun p => lyubashevskySimulate p.n p.m p.k p.q p.γ p.β)
+      (fun p => (p.m : ℝ≥0∞) * ((2 * p.γ + 1 : ℝ≥0∞) / 2 ^ p.width)) where
+  nonAbortSpecialHVZK := lyubashevskyFamily_nonAbortSpecialHVZK η
   realized := ⟨lyubashevskySimulateWord,
     isPPTOn_lyubashevskySimulateWord,
     nonAbortSimulatorRealizedBy_lyubashevskySimulateWord⟩
