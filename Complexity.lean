@@ -2946,6 +2946,7 @@ public import Complexity.Crypto.Computational.Homomorphic.BitEncryption
 public import Complexity.Crypto.Computational.Homomorphic.BitEncryption.CoinTape
 public import Complexity.Crypto.Computational.Homomorphic.BitEncryption.PolyTime
 public import Complexity.Crypto.Computational.Homomorphic.BitEncryption.Size
+public import Complexity.Crypto.Computational.Homomorphic.BitEncryption.Time
 public import Complexity.Crypto.Computational.Homomorphic.Circuit
 public import Complexity.Crypto.Computational.Homomorphic.Circuit.PolyTime
 public import Complexity.Crypto.Computational.Homomorphic.Efficiency
