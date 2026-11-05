@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "read": [
+    "https://storage.googleapis.com/complexitylib-lake-cache"
+  ]
+}

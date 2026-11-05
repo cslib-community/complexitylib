@@ -148,6 +148,23 @@ class Fixture(unittest.TestCase):
         with patch.object(study, "urlopen", side_effect=HTTPError("https://example.invalid", 404, "missing", {}, None)):
             study.published(self.root, self.env)
 
+    def test_target_must_be_unpublished_on_every_configured_mirror(self):
+        config = self.root / "scripts/cache/endpoints.json"
+        config.parent.mkdir(parents=True)
+        config.write_text(json.dumps({"version": 1, "read": [
+            "https://mit.example.org", "https://gcs.example.org"]}))
+        absent = HTTPError("https://example.invalid", 404, "missing", {}, None)
+        present = unittest.mock.MagicMock()
+        present.__enter__.return_value.status = 200
+        env = {k: v for k, v in self.env.items() if k != "COMPLEXITYLIB_CACHE_URL"}
+        with patch.object(study, "urlopen", side_effect=[absent, present]) as request:
+            with self.assertRaises(study.handoff.Rejected):
+                study.published(self.root, env)
+            self.assertEqual(request.call_count, 2)
+        with patch.object(study, "urlopen", side_effect=absent) as request:
+            study.published(self.root, env)
+            self.assertEqual(request.call_count, 2)
+
     def test_initial_ancestor_and_actions_key_are_both_checked(self):
         self.prepared()
         self.assertEqual(study.initial(self.root, self.env, self.state, self.sha)["remote_revision"], self.ancestor)
