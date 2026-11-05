@@ -4276,11 +4276,13 @@ public import Complexity.Probability.MinEntropy
 public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
 public import Complexity.Probability.Minimax
+public import Complexity.Probability.Option
 public import Complexity.Probability.PMF
 public import Complexity.Probability.PMF.Bind
 public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Map
+public import Complexity.Probability.PMF.Option.Bind
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound
