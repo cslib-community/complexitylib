@@ -215,8 +215,14 @@ In order:
   receiver callbacks over one fixed ring with a certified exact-uniform sampler (with an F2 client).
   Its generalized input/first-message adapters charge the full encoded public input, layout and
   conversion; the raw-view law alone does not assert sender realizability of transformed messages.
-  Scalar-challenge batching, native honest-sender realization, growing-field arithmetic, adversarial
-  setup and scheduling, full zero-knowledge protocol security and VOLE-in-the-head remain (#643);
+  `VOLE/Circuit.lean`, `CircuitSound.lean` and `CircuitPrivacy.lean` bind the session to the existing
+  arithmetic-circuit relation `∃ w, C.eval (x ++ w) = y`: public input/output, constant and addition
+  rows join the multiplication batch. Actual role-local soundness has the same mixture bound
+  (5/8 over the fixed F4), and satisfying traces retain exact full-view simulation. Fresh-session
+  amplification, scalar-challenge batching, a complete native circuit prover/verifier certificate,
+  raw-bit adversarial transport (#2744), growing-field arithmetic, adversarial setup and scheduling,
+  full zero-knowledge protocol security
+  and VOLE-in-the-head remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security
@@ -708,12 +714,18 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 - **Exact fixed-field sampling:** `Languages/Probabilistic/Sampling/F4.lean` samples Mathlib's
   four-element quadratic field using two fair bits, with encoded arithmetic and sampler
+<<<<<<< HEAD
   certificates in `Computability/Probabilistic/Sampling/F4.lean`.
   `Circuit/Arithmetic/EvaluationTime.lean` certifies the full existing code trace uniformly in the
   runtime circuit and input over any fixed finite semiring, with binary indices and an F4 client.
   Growing extension-field arithmetic, complete native circuit-bound VOLE execution (#643;
   prerequisite #2738), raw-bit adversarial transport (#2744) and fresh-session amplification
   remain separate endpoints.
+=======
+  certificates in `Computability/Probabilistic/Sampling/F4.lean`. Uniform growing extension-field
+  arithmetic remains open. The public circuit-bound VOLE session (#2688) consumes its field and
+  gives single-copy error 5/8; fresh-session amplification remains separate.
+>>>>>>> f53644d9b096ff402304f0435b94d6d7009f0c48
 - **Markov-chain sampling:** finite kernels, stationarity, reversibility and total-variation
   mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
   Metropolis sampling for encoded rational target weights, charging initialization, arithmetic
