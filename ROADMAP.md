@@ -79,8 +79,11 @@ Priorities live in this list and in the tiers of [#897].
   dual-gap width criterion, are proved in
   [#2707](https://github.com/cslib-community/complexitylib/issues/2707). Quotient-distribution
   consequences are developed separately in
-  [#2681](https://github.com/cslib-community/complexitylib/issues/2681). The projected/mod-one
-  law, arbitrary-modulus search-LWE sampling experiment, efficient finite-precision sampling
+  [#2681](https://github.com/cslib-community/complexitylib/issues/2681). The actual scalar and
+  canonical mod-one pushforward bounds of Corollary 3.10, including a discharged dual-gap
+  criterion and the exact zero-projection case, are proved in
+  [#2734](https://github.com/cslib-community/complexitylib/issues/2734). The periodic-density
+  series, arbitrary-modulus search-LWE sampling experiment, efficient finite-precision sampling
   and quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
