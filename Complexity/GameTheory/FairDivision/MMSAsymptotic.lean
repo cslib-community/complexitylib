@@ -33,9 +33,11 @@ G-good or a matched pair X_j,Y_j. It uses weight ranges, not finite enumeration
 at a selected parameter. `guarantees_iff` and `caps_iff` prove the exact goods and chores MMS under
 the two explicit source label invariants (cardinality and X-weight sum), by
 constructing the actual equal-bundle partitions of Lemma 6. Total valuations
-equal n times that MMS target. This is preliminary work toward Theorems 1
-and 3: code existence, universal allocation loss, the inverse-log-squared
-bounds, and the MMS-existence threshold are not yet proved.
+equal n times that MMS target. The allocation-loss argument is in `MMSAllocationLoss`;
+uniform population bounds and inverse-polynomial exclusion are in `MMSPopulation`.
+The exact-existence
+threshold consequences in `MMSExistence`. The latter explicitly separates the
+external positive-existence dependency from the proved negative direction.
 -/
 
 public section
@@ -570,7 +572,8 @@ theorem witness_choreCost (k d : ℕ) (S : Finset (Fin (2 * k))) (e : Fin k ≃ 
 @[expose] def Caps (k d : ℕ) (S : Finset (Fin (2 * k))) (t : ℤ) : Prop :=
   ∃ a : Allocation k d, ∀ i, (∑ g ∈ bundle k d a i, choreCost k d S g) ≤ t
 
-private theorem allocation_total (k d : ℕ) (a : Allocation k d) (f : Good k d → ℤ) :
+/-- Every complete allocation partitions the total additive value among its fibers. -/
+theorem allocation_total (k d : ℕ) (a : Allocation k d) (f : Good k d → ℤ) :
     (∑ i : HighGood k d, ∑ g ∈ bundle k d a i, f g) = ∑ g, f g := by
   classical
   simp only [bundle, Finset.sum_filter]

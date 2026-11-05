@@ -3964,10 +3964,14 @@ public import Complexity.Foundations.RingTheory.AdjoinRoot
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
+public import Complexity.GameTheory.FairDivision.MMSAllocationLoss
 public import Complexity.GameTheory.FairDivision.MMSAsymptotic
 public import Complexity.GameTheory.FairDivision.MMSChores
 public import Complexity.GameTheory.FairDivision.MMSCodes
+public import Complexity.GameTheory.FairDivision.MMSExistence
 public import Complexity.GameTheory.FairDivision.MMSImpossibility
+public import Complexity.GameTheory.FairDivision.MMSPopulation
+public import Complexity.GameTheory.FairDivision.MaximinShare
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString

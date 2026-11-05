@@ -52,7 +52,7 @@ source partition attains costs $(90,90,93,81)$, as checked in the client. Thus
 the instance witnesses the factor $93/90=31/30$. The proof uses a kernel-checked
 subset-splitting certificate, with no restrictions on allocations.
 
-## Asymptotic construction in progress
+## Uniform asymptotic goods and chores hardness
 
 Import [MMSAsymptotic.lean](../../Complexity/GameTheory/FairDivision/MMSAsymptotic.lean)
 for the actual parameterized construction in Section 2.1 of STOC submission 115
@@ -98,10 +98,62 @@ binomial estimates now live in
 [HammingBallBounds.lean](../../Complexity/Foundations/Data/Code/HammingBallBounds.lean),
 shared with Justesen codes, with their original declarations and source credit.
 
-Theorems 1 and 3 remain unfinished: the contradiction for every allocation and
-the quantified inverse-log-squared loss are still required. The weaker distance
-constant in the constructed code also requires a correspondingly smaller
-additive shortfall in the final hardness proof.
-The existence side of the claimed MMS threshold also requires the cited external
-existence theorem. The finite four-agent result and this structural lemma do not
-complete those headline claims.
+Import [MMSPopulation.lean](../../Complexity/GameTheory/FairDivision/MMSPopulation.lean)
+for the quantified Theorems 1 and 3. `population_hardness n hn` applies to every
+$n\ge65536$. It supplies the actual label sets, strictly positive item values
+and costs, exact goods and chores MMS over all partitions, and a loss for every
+complete allocation. `card_population` proves that the actual agent type has
+exactly $n$ elements. Set $r=\lfloor\log_2 n\rfloor$; the code length is
+$k=64(r+1)$ and the relative loss is explicitly
+$1/(4{,}000{,}000{,}000r^2)$. These constants are weaker than the source's displayed
+$1/(400{,}000(\log_2 n)^2)$, and establish the same asymptotic order. They account
+for the constructed code's weaker distance; the source's original constants are
+not asserted.
+
+The proof in
+[MMSAllocationLoss.lean](../../Complexity/GameTheory/FairDivision/MMSAllocationLoss.lean)
+first forces one high item per bundle and auxiliary weight exactly $T$.
+`allocation_label_distance` then proves that the types receiving $P$ and $Q$
+have one-sided label distance at most $5\ell$ when every correction is at least
+$-\ell$. `universal_goods_loss` and `universal_chores_loss` contradict the code
+distance. Their explicit label invariants are discharged by the actual code in
+`population_hardness`; allocation hardness is not a hypothesis. The chosen
+integer additive loss is $\ell=\lfloor(r+1)/4\rfloor$. Chores use the reversed
+corrections and the same exact-MMS partitions.
+
+`inverse_polynomial_lt_gap` proves that for every real $\varepsilon>0$ and
+$C\ge0$, $Cn^{-\varepsilon}$ is eventually smaller than the constructed gap.
+`no_inverse_polynomial_guarantee` supplies an actual counterexample for every
+sufficiently large $n$, ruling out simultaneous $1-Cn^{-\varepsilon}$ goods
+and $1+Cn^{-\varepsilon}$ chores guarantees. The exponent is an arbitrary
+positive real, not only an integer.
+
+Import [MMSExistence.lean](../../Complexity/GameTheory/FairDivision/MMSExistence.lean)
+for the exact-existence consequences. The reusable model definitions live in
+[MaximinShare.lean](../../Complexity/GameTheory/FairDivision/MaximinShare.lean),
+which can be imported independently of the construction. `bundleValue` is a complete allocation's
+additive fiber value. `GoodsMMSAllocation` compares the received bundle with the
+least bundle of every competing partition; `ChoresMMSAllocation` compares it
+with the greatest bundle. This avoids a choice of extremum representation while
+preserving the max-min/min-max semantics. `GoodsExistenceBudget n m` and
+`ChoresExistenceBudget n m` quantify over all finite instances with exactly $n$
+agents, at most $m$ items, and nonnegative real additive values or costs.
+`not_goodsExistenceBudget` and `not_choresExistenceBudget` refute these universal
+guarantees at $m=n+640\lfloor\log_2 n\rfloor$ for every $n\ge65536$.
+
+`logarithmic_threshold_of_external_existence` combines this negative direction
+with an **explicit external hypothesis**: the positive logarithmic-budget
+existence result attributed to Feige by the source. The resulting quantified
+bracket gives guaranteed existence below one logarithmic excess and failure at
+another, for goods and chores. Feige's theorem is neither proved nor independently
+source-audited here. Hummel's four-agent minimality result also remains external;
+the four-agent constructions prove the advertised ratios without proving minimality.
+
+The [uniform-hardness client](../../ComplexityTests/MMSPopulation.lean) checks the
+first admissible population's code length and dummy count, applies both
+existence-budget obstructions, and checks exact-MMS semantics on one-agent and
+two-agent instances (including failed allocations). It also applies the
+asymptotic comparison to the nonintegral exponent $1/3$. From a bootstrapped
+checkout with the library built, run
+`lake env lean ComplexityTests/MMSPopulation.lean`; success produces no diagnostics.
+Use the normal cache bootstrap if imported artifacts are missing.
