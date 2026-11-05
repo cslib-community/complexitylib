@@ -2835,4 +2835,210 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
   exact (hp W hW).2.2 (by decide) (by norm_num [B, data])
     (by norm_num [B, data]) (by decide) (by decide)
 
+-- Literal active/equal/zero endpoint budgets on both sides of the terminal grid.
+-- The charge is fixed before either exponent varies.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ks k : ℕ) :
+    let B : BudgetData HP 5 := {data HP with rankCharge := 7}
+    let r : HierarchyTask.Request HP.k (Fin 3) (ZMod 5) := {uniformRequest HP 5 with
+      source := gridChannel 0 ks [1]
+      terminal := gridChannel 2 (k + 1) [2, 3]}
+    ∀ bin ∈ ({k, k + 2} : Finset ℕ),
+      LogSpaceEstimation.lastBudget 20 4 B.slack (B.sampleScale r (some bin)) = 15 ∧
+      LogSpaceEstimation.lastBudget 20 8 B.slack (B.sampleScale r (some bin)) = 12 ∧
+      LogSpaceEstimation.lastBudget 20 1 B.slack (B.sampleScale r (some bin)) =
+        LogSpaceEstimation.lastBudget 20 2 B.slack (B.sampleScale r (some bin)) ∧
+      LogSpaceEstimation.lastBudget 0 4 B.slack (B.sampleScale r (some bin)) = 0 ∧
+      ∀ e ∈ ({4, 8} : Finset ℕ),
+        let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+          r.source (BudgetData.midpoint r) r.terminal (B.binRate bin)
+        (2 : ℝ) ^ (4 * |(bin : ℝ) - (k + 1 : ℕ)|) *
+            (2 : ℝ) ^ (-B.requestPrecision
+              (LogSpaceEstimation.lastBudget 20 e B.slack (B.sampleScale r (some bin)))
+              Q.direct) ≤
+          (2 : ℝ) ^ (-B.requestPrecision 20 r) * (2 : ℝ) ^ (-B.rankCharge) *
+            (2 : ℝ) ^ (25 * (4 : ℝ) / (8 * B.slack)) ∧
+          25 * (4 : ℝ) / (8 * B.slack) < 6 * 4 := by
+  dsimp only
+  let B : BudgetData HP 5 := {data HP with rankCharge := 7}
+  let r : HierarchyTask.Request HP.k (Fin 3) (ZMod 5) := {uniformRequest HP 5 with
+    source := gridChannel 0 ks [1]
+    terminal := gridChannel 2 (k + 1) [2, 3]}
+  intro bin hb
+  have hscale : (B.sampleScale r (some bin)).natAbs = 4 := by
+    rw [B.sampleScale_grid r (k + 1) bin rfl rfl]
+    simp only [mem_insert, mem_singleton] at hb
+    rcases hb with hbin | hbin <;> subst bin
+    · have he : 4 * (((k + 1 : ℕ) : ℤ) - k) = 4 := by omega
+      rw [he]; rfl
+    · have he : 4 * (((k + 1 : ℕ) : ℤ) - (k + 2 : ℕ)) = -4 := by omega
+      rw [he]; rfl
+  have hf : LogSpaceEstimation.lastBudget 20 4 B.slack (B.sampleScale r (some bin)) = 15 := by
+    norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+      hscale, show B.slack = 1 from rfl]
+  have hc : LogSpaceEstimation.lastBudget 20 8 B.slack (B.sampleScale r (some bin)) = 12 := by
+    norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+      hscale, show B.slack = 1 from rfl]
+  refine ⟨hf, hc, ?_, ?_, ?_⟩
+  · change LogSpaceEstimation.lastBudget 20 1 B.slack (B.sampleScale r (some bin)) =
+      LogSpaceEstimation.lastBudget 20 2 B.slack (B.sampleScale r (some bin))
+    norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+      hscale, show B.slack = 1 from rfl]
+  · exact Nat.zero_sub _
+  · intro e he
+    exact B.requestPrecision_initial_active_pay (by norm_num [B]) rfl 20 4 ks (k + 1)
+      bin e r rfl rfl rfl (by rw [hf, show 2 * 4 = 8 from rfl, hc]; decide) he
+
+-- Exhaustion of just the coarse endpoint is literal, and equal positive pairs cancel.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    LogSpaceEstimation.lastBudget 2 1 (data HP).slack
+      ((data HP).sampleScale (request HP) (some 0)) = 1 ∧
+    LogSpaceEstimation.lastBudget 2 2 (data HP).slack
+      ((data HP).sampleScale (request HP) (some 0)) = 0 ∧
+    (data HP).pairedSample (fun _ _ => none) 20 1 (.pilotInput ⟨0, HP.k_pos⟩)
+      {request HP with terminal := gridChannel 2 1 [2, 3]} (some 0) = some 0 := by
+  refine ⟨?_, ?_, ?_⟩
+  · norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+      BudgetData.sampleScale, data, request, gridChannel, rate]
+  · norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+      BudgetData.sampleScale, data, request, gridChannel, rate]
+  · have hscale := (data HP).sampleScale_grid
+      {request HP with terminal := gridChannel 2 1 [2, 3]} 1 0 rfl rfl
+    norm_num only [Int.cast_ofNat, Int.cast_zero, sub_zero, mul_one] at hscale
+    unfold BudgetData.pairedSample
+    rw [hscale]
+    norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+      show (data HP).slack = 1 from rfl]
+
+-- The centered actual group consumer also accepts an arbitrary signed coefficient
+-- at exhaustion; it demands no positive-budget child or reset-right call.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
+    ∃ F G,
+      (data HP).completedGroup (fun n q => if n < 1 then
+        (data HP).compressedHistory (fun _ => 0) (HP.η / 4) (HP.η / 4) n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some F ∧
+      (data HP).completedGroup (fun n q => if n < 1 then (data HP).evaluate n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some G ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
+        (fun σ x y => (F - G) σ x y - rowSliceMean
+          (X 0 (side 5 0) (CopyPadding.identifier (data HP).padding [1]))
+          (Y 2 (side 5 0) (CopyPadding.identifier (data HP).padding [2, 3]))
+          (F - G) x y) ≤ 0 := by
+  obtain ⟨F, G, hf, hg, hb, _⟩ :=
+    (data HP).completedGroup_initial_compressed_centered_precision (fun _ => 0)
+      (HP.η / 4) (HP.η / 4) 1 1 (by decide) (by simp [data]) (request HP)
+      0 2 (by decide) 0 0 [1] [2, 3] rfl rfl (fun _ _ => 0) (fun _ => rfl) coefficient
+      (by intro bin hb; dsimp only; intro _ n _ hn hnpos; omega)
+  refine ⟨F, G, hf, hg, ?_⟩
+  simpa only [(data HP).initialRootGroupCharge_eq_zero_of_le 1 1 (request HP)
+    coefficient le_rfl, mul_zero, Nat.cast_ofNat] using hb
+
+-- The sharp allocation envelope also cancels all exhausted pairs literally.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
+    (data HP).initialActiveRootGroupCharge 1 1 (request HP) 0 coefficient = 0 := by
+  have hf (bin : ℕ) : LogSpaceEstimation.lastBudget 1 1 (data HP).slack
+      ((data HP).sampleScale (request HP) (some bin)) = 0 := by
+    unfold LogSpaceEstimation.lastBudget
+    omega
+  have hc (bin : ℕ) : LogSpaceEstimation.lastBudget 1 (2 * 1) (data HP).slack
+      ((data HP).sampleScale (request HP) (some bin)) = 0 := by
+    unfold LogSpaceEstimation.lastBudget
+    omega
+  simp only [BudgetData.initialActiveRootGroupCharge, hf, hc, ↓reduceIte,
+    sum_const_zero, mul_zero]
+
+-- Actual budget-one direct error is nonzero, and its reset-right call succeeds.
+-- Only the active top bin demands IH; the unused fine bin is not called at budget one.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let ζ := min HP.η (1 / 10000) / 4
+    let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+      (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+      ((data HP).binRate 0)
+    let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
+    (data HP).compressedBin 1 0 0 ζ ζ Q.direct = some 0 ∧
+    (∀ σ, |(0 : ℝ) - denseChild (data HP).padding id Q.direct ((data HP).cutoff 0)
+      ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base σ 0 0| = 1) ∧
+    ∃ F G,
+      (data HP).completedGroup (fun n q => if n < 2 then
+        (data HP).compressedHistory (fun _ => 0) ζ ζ n q else none)
+        2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some F ∧
+      (data HP).completedGroup (fun n q => if n < 2 then (data HP).evaluate n q else none)
+        2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some G ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
+        (fun σ x y => (F - G) σ x y - rowSliceMean
+          (X 0 (side 5 0) (CopyPadding.identifier (data HP).padding [1]))
+          (Y 2 (side 5 0) (CopyPadding.identifier (data HP).padding [2, 3]))
+          (F - G) x y) ≤
+        ((2 : ℝ) ^ (-(data HP).requestPrecision 2 (request HP)) * (64 : ℝ)⁻¹ ^ 1) ^ 4 *
+          (data HP).initialActiveRootGroupCharge 2 1 (request HP) 0 c := by
+  dsimp only
+  let ζ := min HP.η (1 / 10000) / 4
+  let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+    (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+    ((data HP).binRate 0)
+  let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
+  have hζ : 0 < ζ := div_pos (lt_min HP.η_pos (by norm_num)) (by norm_num)
+  have hd : (data HP).compressedBin 1 0 0 ζ ζ Q.direct = some 0 := by
+    simpa only [Q, HierarchyTask.rawRequests, request, data, gridChannel, rate, pow_zero,
+      inv_one, min_self] using compressed_one HP (.baseNormalized 0 0) ζ hζ
+      (by dsimp only [ζ]; exact div_le_div_of_nonneg_right (min_le_left _ _) (by norm_num))
+  have ht : denseChild (data HP).padding id Q.direct ((data HP).cutoff 0)
+      ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base = (fun _ => base) := by
+    funext σ x y
+    have hq : Q.direct = {request HP with task := .baseNormalized 0 0} := by
+      simp [Q, HierarchyTask.rawRequests, request, data, gridChannel, rate]
+    rw [hq, denseChild_congr_task]
+    exact top_dense HP σ x y
+  have hroot : rootDistPow 4 5 Q.direct.source.rate
+      (fun σ x => Q.direct.source.retains (channels (data HP).padding) σ x)
+      (fun σ y => Q.direct.usage.retains (channels (data HP).padding) σ y) 0
+      (denseChild (data HP).padding id Q.direct ((data HP).cutoff 0)
+        ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base) ≤
+      c ^ 4 * ((2 : ℝ) ^ (-(data HP).requestPrecision 1 Q.direct)) ^ 4 := by
+    rw [ht, ← mul_pow]
+    have hc : c * (2 : ℝ) ^ (-(data HP).requestPrecision 1 Q.direct) = 1 := by
+      dsimp only [c]
+      rw [← Real.rpow_add (by norm_num)]
+      simp
+    rw [hc, one_pow]
+    have hs : Q.direct.source = gridChannel 0 0 [1] := rfl
+    have hu : Q.direct.usage = gridChannel 2 0 [2, 3] := by
+      simp [Q, HierarchyTask.rawRequests, request, data, gridChannel, rate]
+    rw [hs, hu]
+    simp only [rootDistPow, rowNormPow, data, full, filter_true]
+    norm_num only [gridChannel, rate, base, Matrix.one_apply, Pi.zero_apply,
+      zero_sub, abs_neg, Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0),
+      apply_ite (fun t : ℝ => |t ^ (4⁻¹ : ℝ)| ^ 4)]
+    norm_num [apply_ite abs, ite_pow]
+  refine ⟨hd, ?_, ?_⟩
+  · intro σ
+    rw [ht]
+    norm_num [base]
+  · obtain ⟨F, G, hf, hg, _, ha⟩ :=
+      (data HP).completedGroup_initial_compressed_centered_precision (fun _ => 0)
+        ζ ζ 2 1 (by decide) (by simp [data]) (request HP) 0 2 (by decide)
+        0 0 [1] [2, 3] rfl rfl (fun _ _ => 0) (fun _ => rfl) c (by
+          intro bin hb
+          dsimp only
+          intro hne n _ hn hnpos
+          have hbin : bin = 0 := by
+            have hb' : bin = 0 ∨ bin = 1 := by simpa [data] using hb
+            rcases hb' with h | h
+            · exact h
+            · subst bin
+              exfalso
+              have hscale := (data HP).sampleScale_grid (request HP) 0 1 rfl rfl
+              norm_num at hscale
+              rw [hscale] at hne
+              norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+                show (data HP).slack = 1 from rfl] at hne
+          subst bin
+          have hn1 : n = 1 := by omega
+          subst n
+          exact ⟨hd, hroot, right_available HP ζ 1 (by decide)⟩)
+    exact ⟨F, G, hf, hg, ha 0 0 (by norm_num [data]) rfl rfl rfl rfl⟩
+
 end PolynomialBudgetHistory

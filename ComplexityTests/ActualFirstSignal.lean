@@ -87,3 +87,32 @@ example :
     rowNormPow 4 1 1 (fun (_ : Bool) (_ : Unit) => True) (fun _ _ => True)
       (fun σ _ _ => (if σ then (2 : ℝ) else 7) - 9 / 2) = 625 / 16 := by
   norm_num [rowNormPow, expect_eq_sum_div_card, Fintype.sum_bool]
+
+-- Two samples use the same Boolean atom. Their centered sum costs sixteen, while
+-- the sum of their separate fourth moments is only two; independence is unavailable.
+example :
+    let X := fun (_ : Bool) (_ : Unit) => True
+    let F := fun (σ : Bool) (_ _ : Unit) => if σ then (1 : ℝ) else -1
+    rowNormPow 4 1 1 X X
+      (fun σ x y => F σ x y + F σ x y - rowSliceMean X X
+        (fun τ u v => F τ u v + F τ u v) x y) = 16 ∧
+      rowNormPow 4 1 1 X X F + rowNormPow 4 1 1 X X F = 2 := by
+  norm_num [rowNormPow, rowSliceMean, expect_eq_sum_div_card, Fintype.sum_bool]
+
+-- Raw spectral contraction applies to that correlated difference before centering.
+example :
+    let X := fun (_ : Bool) (_ : Unit) => True
+    let G := fun (_ _ : Unit) => (⟨id, fun _ => rfl⟩ : RotationMap
+      (RetainedPairSlice X X () ()) Unit)
+    let F := fun (σ : Bool) (_ _ : Unit) => if σ then (2 : ℝ) else -2
+    rowNormPow 4 1 1 X X (fun σ x y =>
+      conditionalWalk X X G (fun _ _ => 0) F σ x y - rowSliceMean X X F x y) ≤
+      32 * rowNormPow 4 1 1 X X F := by
+  dsimp only
+  have h := rowNormPow_conditionalWalk_le_raw
+    (fun (_ : Bool) (_ : Unit) => True) (fun (_ : Bool) (_ : Unit) => True)
+    (by norm_num : 0 ≤ (1 : ℝ) * 1)
+    (fun (_ _ : Unit) => (⟨id, fun _ => rfl⟩ : RotationMap _ Unit))
+    (fun _ _ => RotationMap.spectralExpansion_le_one _) 0
+    (fun (σ : Bool) (_ _ : Unit) => if σ then (2 : ℝ) else -2)
+  simpa only [Nat.mul_zero, pow_zero, mul_one] using h

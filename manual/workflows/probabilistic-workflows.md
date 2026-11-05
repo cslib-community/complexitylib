@@ -1522,6 +1522,43 @@ $\sum_j (\sum_{i\ge j}28^{m-i}a_i)^4$, without an outer group-count cube. The
 literal heavy events remain in `initialFourMaxReserve`; the numerical comparison
 still supplies no rarity discount.
 
+For a single literal completed group, use
+`completedGroup_initial_compressed_centered_precision` to retain the spectral factor
+before uncentered contraction loses it. This consumes strict lower-budget direct-child
+rooted moments on their own usage and actual precision, together with separate
+reset-right availability. `pairedSample_initial_compressed_precision_at` requires these
+facts only for positive endpoints of an unequal pair, rather than every smaller budget
+or inactive bin. Successful compression supplies the bounded range used in
+the root-to-ordinary conversion. The actual compressed-minus-semantic input is summed
+before completion, then centered on its original source/usage slice. The integrated
+comparison retains joint slice densities, including empty slices, and costs
+$32\rho^{2\,\mathrm{steps}(M,r,d)}$, with the existing graph gap and walk length.
+No noise receives a rarity discount.
+
+`initial_active_pair_losses` proves that unequal executed endpoint budgets force
+$c(1+4|i-k_a|)<2d$, and both losses are at most $2d$, even when the coarse endpoint
+is zero. `requestPrecision_initial_active_pay` cancels the inherited source and actual
+direct-rank decrease against the literal precision formula. Its ordinary scale-plus-
+precision exponent is bounded by $25d/(8c)<6d$ for $c\ge1$; it does not use the older
+conservative $8w$ window. `initialRootGroupCharge_le_active` feeds this comparison into
+`initialActiveRootGroupCharge`, and the completed-group theorem returns that sharp-cancellation
+finite envelope as well as the original own-endpoint payment.
+`initial_completion_gap_payment` bounds the spectral coefficient by the unchanged
+scheduled fourth power $(2^{-\mathrm{precision}(M,r)}64^{-d})^4$ in this consumer. Equal pairs retain zero
+charge; a zero endpoint demands no child accuracy. The charge is fixed before request
+exponents vary. Complete checked active fine/coarse, equal-positive and exhausted
+clients, including an actual budget-one child with diagonal error one feeding the
+completed-group bound, are in [PolynomialBudgetHistory](../../ComplexityTests/PolynomialBudgetHistory.lean);
+[ActualFirstSignal](../../ComplexityTests/ActualFirstSignal.lean) checks fully correlated
+two-atom centered inputs and their raw spectral comparison.
+
+This is a completed-group consumer, not a uniformly paid prefix reserve. The active
+payment still contains bin sums, importance sup norms, range constants and parent
+precision. Summing these centered group discrepancies with correlated geometric weights,
+proving uniform structural allocation, and feeding that payment through the computed
+first-noise minimum remain open. The conditional first-mean assembly and production
+leaves are unchanged.
+
 For the same executed prefixes, `initial_compressed_first_noise` now also returns a
 pairwise normalized payment. `initialRelativeNoiseBudget` sums the scheduled conditional
 group contractions, retaining the joint slice density and the actual centered input

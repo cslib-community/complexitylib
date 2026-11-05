@@ -30,6 +30,10 @@ Finite weighted endpoint moments retain the compression coefficients; a live end
 gives a necessary growth condition for allocating the unconditional rooted tail.
 The slope-one window envelope permits deterministic rarity allocation in the computed
 reserve; ordinary sampling progress and saturated preparation remain separate obligations.
+`completedGroup_initial_compressed_centered_precision` retains spectral contraction on
+the actual input difference. `initialRootGroupCharge_le_active` feeds sharp active-pair
+own-precision cancellation into that completed-group consumer, while leaving the correlated
+prefix allocation and computed first-noise minimum unchanged.
 -/
 public section
 noncomputable section
@@ -1458,6 +1462,91 @@ theorem completedGroup_initial_compressed_error
   apply (rowNormPow_sum_fourth_le B.bins hNu _ _ (fun i => A i - C i)).trans
   exact mul_le_mul_of_nonneg_left (sum_le_sum herr) (by positivity)
 
+/-- Spectral completion of the actual compressed-minus-semantic input, centered on
+its original joint slice. Unlike uncentered contraction this keeps the scheduled gap
+factor. Input moments may come from strict own-request child accuracy; no rarity or
+independence assumption is introduced. -/
+theorem completedGroup_initial_compressed_centered_error
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M d : ℕ) (hbins : B.bins.Nonempty)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ku : ℕ) (ss su : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (hu : r.usage = gridChannel t ku su)
+    (A C : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) (ε : ℕ → ℝ)
+    (hA : ∀ i ∈ B.bins,
+      B.pairedSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r (some i) = some (A i))
+    (hC : ∀ i ∈ B.bins,
+      B.pairedSample (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r (some i) = some (C i))
+    (herr : ∀ i ∈ B.bins, rowNormPow 4 P r.source.rate
+      (fun σ x => r.source.retains (channels B.padding) σ x)
+      (fun σ y => r.usage.retains (channels B.padding) σ y) (A i - C i) ≤ ε i) :
+    let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+    let Yu := Y t (side P ku) (CopyPadding.identifier B.padding su)
+    ∃ F G,
+      B.completedGroup (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r = some F ∧
+      B.completedGroup (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r = some G ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y)
+        (fun σ x y => (F - G) σ x y - rowSliceMean Xs Yu (F - G) x y) ≤
+        32 * (1 - 1 / (155648 * (3 + 1) * (4 : ℝ)^4)) ^ (2 * B.steps M r d) *
+          ((#B.bins : ℝ) ^ 3 * ∑ i ∈ B.bins, ε i) := by
+  dsimp only
+  let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+  let Yu := Y t (side P ku) (CopyPadding.identifier B.padding su)
+  let graphV := graph s t hst (side P ks) (side P ku) (side_le P ks) (side_le P ku)
+    (CopyPadding.identifier B.padding ss) (CopyPadding.identifier B.padding su)
+  let walk := conditionalWalk Xs Yu graphV (fun _ _ => B.steps M r d)
+  let sumA : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun σ x y => ∑ i ∈ B.bins, A i σ x y
+  let sumC : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun σ x y => ∑ i ∈ B.bins, C i σ x y
+  have hrun := fun history T hT => B.completedGroup_initial_of_paired history M d hbins
+    r s t hst ks ku ss su hs hu T hT
+  refine ⟨walk sumA, walk sumC, hrun _ A hA, hrun _ C hC, ?_⟩
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
+    rw [hs]
+    exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
+  let ρ : ℝ := 1 - 1 / (155648 * (3 + 1) * (4 : ℝ)^4)
+  have hgap (x y : ZMod P) : (graphV x y).spectralExpansion ≤ ρ := by
+    dsimp only [graphV]
+    unfold graph
+    rw [RotationMap.spectralExpansion_reindex, RotationMap.spectralExpansion_reindex]
+    exact spectralExpansion_lazy_ofPerms_componentMove_le (by decide)
+  have hcontract := rowNormPow_conditionalWalk_le_raw Xs Yu hNu graphV hgap
+    (B.steps M r d) (sumA - sumC)
+  have hmean : rowSliceMean Xs Yu (walk sumA - walk sumC) =
+      rowSliceMean Xs Yu (sumA - sumC) := by
+    funext x y
+    rw [← conditionalWalk_sub, rowSliceMean_conditionalWalk]
+  have hx : (fun σ x => r.source.retains (channels B.padding) σ x) = Xs := by
+    funext σ x
+    simp only [hs, Xs, gridChannel, CorrectionRowTask.Channel.retains, channels,
+      semanticSide_grid, X]
+  have hy : (fun σ y => r.usage.retains (channels B.padding) σ y) = Yu := by
+    funext σ y
+    simp only [hu, Yu, gridChannel, CorrectionRowTask.Channel.retains, channels,
+      semanticSide_grid, Y]
+  rw [conditionalWalk_sub] at hcontract
+  simp only [hx, hy]
+  change rowNormPow 4 P r.source.rate Xs Yu
+    (fun σ x y => (walk sumA - walk sumC) σ x y -
+      rowSliceMean Xs Yu (walk sumA - walk sumC) x y) ≤ _
+  rw [hmean]
+  apply hcontract.trans
+  apply mul_le_mul_of_nonneg_left _ (by positivity)
+  have he : sumA - sumC = fun σ x y => ∑ i ∈ B.bins, (A i - C i) σ x y := by
+    funext σ x y
+    simp only [sumA, sumC, Pi.sub_apply, Matrix.sub_apply, sum_sub_distrib]
+  rw [he]
+  apply (rowNormPow_sum_fourth_le B.bins hNu _ _ (fun i => A i - C i)).trans
+  exact mul_le_mul_of_nonneg_left
+    (sum_le_sum (fun i hi => by simpa only [hx, hy] using herr i hi)) (by positivity)
+
 /-- Stationarity transfers signed paired clipped means through the actual completion.
 No contraction or independence argument is applied to a clipped sampling error. -/
 theorem completedGroup_initial_compressed_clipped_mean
@@ -1805,6 +1894,92 @@ lemma initialRootGroupCharge_nonneg (M d : ℕ)
   exact mul_nonneg (by positivity) (add_nonneg
     (B.initialEndpointCharge_nonneg _ _ _) (B.initialEndpointCharge_nonneg _ _ _))
 
+/-- On an actual grid source the unchanged walk schedule pays its raw spectral factor.
+The norm-level slack is literally `64⁻ᵈ = 2^(-6*d)`; precision and the original magnitude
+allocator are retained. This comparison does not pay an input discrepancy. -/
+theorem initial_completion_gap_payment (M d ks : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hs : r.source.rate = rate ks) :
+    32 * (1 - 1 / (155648 * (3 + 1) * (4 : ℝ)^4)) ^ (2 * B.steps M r d) ≤
+      ((2 : ℝ) ^ (-B.requestPrecision M r) * (64 : ℝ)⁻¹ ^ d) ^ 4 := by
+  have hsource : 0 < r.source.rate := by rw [hs]; exact rate_pos ks
+  have hsource1 : r.source.rate ≤ 1 := by
+    rw [hs]
+    simpa only [rate, pow_zero, inv_one, one_pow] using rate_antitone (Nat.zero_le ks)
+  have hP : (1 : ℝ) ≤ P := by exact_mod_cast (Fact.out : P.Prime).one_lt.le
+  have hNu : 0 < (P : ℝ) * r.source.rate := mul_pos (by linarith) hsource
+  have hwidth : 1 ≤ (P : ℝ)^2 / (P * r.source.rate) := by
+    apply (le_div_iff₀ hNu).mpr
+    nlinarith
+  have hm := one_le_pow₀ (B.one_le_magnitude r) (n := 4)
+  have hC : 32 ≤ 32 * ((P : ℝ)^2 / (P * r.source.rate) * B.magnitude r ^ 4) := by
+    nlinarith [mul_le_mul hwidth hm (by norm_num : (0 : ℝ) ≤ 1) (by positivity)]
+  have hr : 0 < 1 - 1 / (155648 * (3 + 1) * (4 : ℝ)^4) := by norm_num
+  have hp := spectralWalkLength_payment hr (sub_lt_self _ (by positivity))
+    (show 0 ≤ 32 * ((P : ℝ)^2 / (P * r.source.rate) * B.magnitude r ^ 4) by positivity)
+    (Real.rpow_pos_of_pos (by norm_num) _) d (B.steps M r d) (Nat.le_max_right _ _)
+  exact (mul_le_mul_of_nonneg_right hC (by positivity)).trans hp
+
+/-- Finite active-pair payment after sharp own-precision cancellation. The ordinary
+scale is divided out before bin addition. Equal pairs still cost zero; zero endpoint
+precision is never demanded. This finite sum does not assert uniform absorption. -/
+@[expose] def initialActiveRootGroupCharge (M d : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (ka : ℕ) (coefficient : ℝ) : ℝ :=
+  (#B.bins : ℝ) ^ 3 * ∑ bin ∈ B.bins,
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+    if fine = coarse then 0 else
+    16 * (‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+      (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision M r) *
+        (2 : ℝ) ^ (-B.rankCharge) * (2 : ℝ) ^ (25 * (d : ℝ) / (8 * B.slack)) /
+          (2 : ℝ) ^ (4 * |(bin : ℝ) - ka|)) ^ 4)
+
+/-- The literal two-endpoint charge is bounded by sharp active cancellation, keeping
+all bin constants and the fixed structural charge explicit. -/
+theorem initialRootGroupCharge_le_active (hcharge : 0 ≤ B.rankCharge)
+    (hrate : B.binRate = rate) (M d ks ka : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩)) (coefficient : ℝ) :
+    B.initialRootGroupCharge M d r coefficient ≤
+      B.initialActiveRootGroupCharge M d r ka coefficient := by
+  unfold initialRootGroupCharge initialActiveRootGroupCharge
+  apply mul_le_mul_of_nonneg_left _ (by positivity)
+  apply sum_le_sum
+  intro bin _
+  dsimp only
+  split_ifs with heq
+  · exact le_rfl
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  let a := (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+    (2 : ℝ) ^ (25 * (d : ℝ) / (8 * B.slack)) / (2 : ℝ) ^ (4 * |(bin : ℝ) - ka|)
+  have hend (e : ℕ) (he : e ∈ ({d, 2 * d} : Finset ℕ)) :
+      B.initialEndpointCharge
+        (LogSpaceEstimation.lastBudget M e B.slack (B.sampleScale r (some bin)))
+        Q.direct coefficient ≤ coefficient ^ 4 * a ^ 4 := by
+    unfold initialEndpointCharge
+    split_ifs with hz
+    · positivity
+    have hp := (B.requestPrecision_initial_active_pay hcharge hrate M d ks ka bin e
+      r hs ht htask heq he).1
+    have hbound : (2 : ℝ) ^ (-B.requestPrecision
+        (LogSpaceEstimation.lastBudget M e B.slack (B.sampleScale r (some bin))) Q.direct) ≤ a := by
+      apply (le_div_iff₀ (Real.rpow_pos_of_pos (by norm_num : (0 : ℝ) < 2) _)).mpr
+      simpa only [mul_comm] using hp
+    exact mul_le_mul_of_nonneg_left
+      (pow_le_pow_left₀ (Real.rpow_pos_of_pos (by norm_num) _).le hbound 4) (by positivity)
+  have hf := hend d (by simp only [mem_insert, mem_singleton, true_or])
+  have hc := hend (2 * d) (by simp only [mem_insert, mem_singleton, or_true])
+  have hh := add_le_add hf hc
+  have hmul := mul_le_mul_of_nonneg_left hh
+    (show 0 ≤ 8 * (‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) by positivity)
+  dsimp only [Q, a] at hmul
+  nlinarith only [hmul]
+
 /-- All endpoints vanish when the group slack exhausts the parent budget. This holds
 for every coefficient and every request, without an accuracy hypothesis. -/
 lemma initialRootGroupCharge_eq_zero_of_le (M d : ℕ)
@@ -1871,6 +2046,87 @@ theorem completedGroup_initial_compressed_precision
     (fun i hi => by simpa only [a, dite_eq_left hi] using hA ⟨i, hi⟩)
     (fun i hi => by simpa only [c, dite_eq_left hi] using hC ⟨i, hi⟩)
     (fun i hi => by simpa only [a, c, dite_eq_left hi] using he ⟨i, hi⟩)
+
+/-- The literal completed group's centered discrepancy consumes the actual bounded
+child rooted moments on their own usage and precision. The positive/paired consumers use
+`compressedBin_range_usage` before completion; conditional integration then retains the
+actual joint densities. Reset-right execution remains separate. Equal pairs and zero
+endpoints retain zero charge. The spectral factor uses the unchanged actual walk length. -/
+theorem completedGroup_initial_compressed_centered_precision
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M d : ℕ) (hM : 0 < M) (hbins : B.bins.Nonempty)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ku : ℕ) (ss su : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (hu : r.usage = gridChannel t ku su)
+    (D : ℕ → ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hzero : ∀ bin, D bin 0 = 0) (coefficient : ℝ)
+    (ih : ∀ bin ∈ B.bins,
+      let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+      let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+      fine ≠ coarse → ∀ n ∈ ({fine, coarse} : Finset ℕ), n < M → 0 < n →
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin n bin (exponent Q.direct) ζ floor Q.direct = some (D bin n) ∧
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D bin n)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision n Q.direct)) ^ 4 ∧
+      ∃ R, B.compressedBin n bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+    let Yu := Y t (side P ku) (CopyPadding.identifier B.padding su)
+    ∃ F G,
+      B.completedGroup (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r = some F ∧
+      B.completedGroup (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r = some G ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y)
+        (fun σ x y => (F - G) σ x y - rowSliceMean Xs Yu (F - G) x y) ≤
+        32 * (1 - 1 / (155648 * (3 + 1) * (4 : ℝ)^4)) ^ (2 * B.steps M r d) *
+          B.initialRootGroupCharge M d r coefficient ∧
+      ∀ ks ka, 0 ≤ B.rankCharge → B.binRate = rate →
+        r.source.rate = rate ks → r.terminal.rate = rate ka →
+        r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩) →
+        rowNormPow 4 P r.source.rate
+          (fun σ x => r.source.retains (channels B.padding) σ x)
+          (fun σ y => r.usage.retains (channels B.padding) σ y)
+          (fun σ x y => (F - G) σ x y - rowSliceMean Xs Yu (F - G) x y) ≤
+          ((2 : ℝ) ^ (-B.requestPrecision M r) * (64 : ℝ)⁻¹ ^ d) ^ 4 *
+            B.initialActiveRootGroupCharge M d r ka coefficient := by
+  dsimp only
+  have hsr : 0 ≤ r.source.rate := by rw [hs]; exact (rate_pos ks).le
+  have hp (i : {i // i ∈ B.bins}) :=
+    B.pairedSample_initial_compressed_precision_at exponent ζ floor M d i.val hM r hsr
+      (D i.val) (hzero i.val) coefficient (ih i.val i.property)
+  choose A C hA hC he using hp
+  let a := fun i => if hi : i ∈ B.bins then A ⟨i, hi⟩ else 0
+  let c := fun i => if hi : i ∈ B.bins then C ⟨i, hi⟩ else 0
+  let ε := fun bin =>
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+    if fine = coarse then 0 else
+    8 * (‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+      (B.initialEndpointCharge fine Q.direct coefficient +
+        B.initialEndpointCharge coarse Q.direct coefficient)
+  obtain ⟨F, G, hf, hg, hb⟩ := B.completedGroup_initial_compressed_centered_error
+    exponent ζ floor M d hbins r s t hst
+    ks ku ss su hs hu a c ε
+    (fun i hi => by simpa only [a, dite_eq_left hi] using hA ⟨i, hi⟩)
+    (fun i hi => by simpa only [c, dite_eq_left hi] using hC ⟨i, hi⟩)
+    (fun i hi => by simpa only [a, c, dite_eq_left hi] using he ⟨i, hi⟩)
+  refine ⟨F, G, hf, hg, hb, ?_⟩
+  intro ks ka hcharge hrate hsource hterminal htask
+  have hactive := B.initialRootGroupCharge_le_active hcharge hrate M d ks ka r
+    hsource hterminal htask coefficient
+  exact hb.trans ((mul_le_mul_of_nonneg_left hactive (by positivity)).trans
+    (mul_le_mul_of_nonneg_right (B.initial_completion_gap_payment M d ks r hsource)
+      ((B.initialRootGroupCharge_nonneg M d r coefficient).trans hactive)))
 
 /-- Executed group certificates control every actual prefix before parent compression.
 Both lists are the results of the literal history computations, in scheduler order. The

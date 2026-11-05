@@ -20,6 +20,8 @@ rank and source exponents must be tracked separately when using the omitted-dept
 
 ## Main results
 
+* `initial_active_pair_losses`: literal active cutoff and both endpoint losses.
+* `requestPrecision_initial_active_pay`: sharp active-pair ordinary payment below spectral salary.
 * `requestPrecision_grid`: exact actual-request precision on the grid.
 * `requestPrecision_initial_clipped_transfer`: sharp piecewise scale/source/rank transport.
 * `requestPrecision_initial_clipped_scheduled`: actual child-budget loss window.
@@ -234,6 +236,100 @@ theorem sampleScale_grid (B : BudgetData HP P)
     push_cast
     ring
   simp only [sampleScale, Option.map_some, Option.getD_some, hrate, ht, he, Int.floor_intCast]
+
+/-- An unequal literal pair forces the cutoff below its coarse slack. Both endpoint
+losses are at most `2*d`, including a zero coarse endpoint. No admissibility is assumed. -/
+theorem initial_active_pair_losses (B : BudgetData HP P) (M d ka bin : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hrate : B.binRate = rate) (ht : r.terminal.rate = rate ka)
+    (hne : LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) ≠
+      LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))) :
+    (LogSpaceEstimation.scaleCutoff B.slack (B.sampleScale r (some bin)) : ℝ) =
+        B.slack * (1 + 4 * |(bin : ℝ) - ka|) ∧
+      B.slack * (1 + 4 * |(bin : ℝ) - ka|) < 2 * d ∧
+      ∀ e ∈ ({d, 2 * d} : Finset ℕ),
+        M - LogSpaceEstimation.lastBudget M e B.slack (B.sampleScale r (some bin)) ≤ 2 * d := by
+  have hcut : LogSpaceEstimation.scaleCutoff B.slack (B.sampleScale r (some bin)) < 2 * d := by
+    unfold LogSpaceEstimation.lastBudget at hne
+    omega
+  have heq : (LogSpaceEstimation.scaleCutoff B.slack (B.sampleScale r (some bin)) : ℝ) =
+      B.slack * (1 + 4 * |(bin : ℝ) - ka|) := by
+    have habs : (((ka : ℤ) - bin).natAbs : ℝ) = |(bin : ℝ) - ka| := by
+      rw [Nat.cast_natAbs, Int.cast_abs]
+      push_cast
+      exact abs_sub_comm _ _
+    rw [B.sampleScale_grid r ka bin hrate ht, LogSpaceEstimation.scaleCutoff,
+      Int.natAbs_mul]
+    norm_num only [Int.natAbs_natCast, Nat.cast_mul, Nat.cast_add, Nat.cast_one,
+      Nat.cast_ofNat, habs]
+  refine ⟨heq, ?_, ?_⟩
+  · rw [← heq]
+    exact_mod_cast hcut
+  · intro e he
+    simp only [Finset.mem_insert, Finset.mem_singleton] at he
+    unfold LogSpaceEstimation.lastBudget
+    rcases he with rfl | rfl <;> omega
+
+/-- Sharp ordinary scale plus own-precision payment at either endpoint of an active pair.
+The inherited source cancels and the actual direct rank drops. The exponent is at most
+`25*d/(8*slack)`, strictly below the norm-level spectral salary `6*d`. This does not
+pay bin sums, range constants or the remaining structural allocation. -/
+theorem requestPrecision_initial_active_pay (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate)
+    (M d ks ka bin e : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (hne : LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) ≠
+      LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin)))
+    (he : e ∈ ({d, 2 * d} : Finset ℕ)) :
+    let m := LogSpaceEstimation.lastBudget M e B.slack (B.sampleScale r (some bin))
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    (2 : ℝ) ^ (4 * |(bin : ℝ) - ka|) * (2 : ℝ) ^ (-B.requestPrecision m Q.direct) ≤
+      (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+        (2 : ℝ) ^ (25 * (d : ℝ) / (8 * B.slack)) ∧
+      25 * (d : ℝ) / (8 * B.slack) < 6 * d := by
+  dsimp only
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  let m := LogSpaceEstimation.lastBudget M e B.slack (B.sampleScale r (some bin))
+  obtain ⟨_, hcut, hloss⟩ := B.initial_active_pair_losses M d ka bin r hrate ht hne
+  have hslack : (1 : ℝ) ≤ B.slack := by exact_mod_cast B.slack_pos
+  have hden : (0 : ℝ) < 16 * B.slack := by positivity
+  have hd : 0 < (d : ℝ) := by nlinarith [abs_nonneg ((bin : ℝ) - ka)]
+  have hl : (M : ℝ) - m ≤ 2 * d := by
+    have hn := hloss e he
+    have hm : m ≤ M := Nat.sub_le _ _
+    exact_mod_cast hn
+  have hbudget := (div_le_div_of_nonneg_right hl hden.le)
+  have hdist : 6 * |(bin : ℝ) - ka| + 2 * d / (16 * B.slack) ≤
+      25 * d / (8 * B.slack) := by
+    apply (le_div_iff₀ (show (0 : ℝ) < 8 * B.slack by positivity)).mpr
+    have hid : (2 * (d : ℝ) / (16 * B.slack)) * (8 * B.slack) = d := by
+      field_simp
+      ring
+    nlinarith
+  have hq := B.requestPrecision_grid m ks bin Q.direct hs (by
+    dsimp only [Q, HierarchyTask.rawRequests]
+    exact congrFun hrate bin)
+  have hp := B.requestPrecision_grid M ks ka r hs ht
+  have hrank : Q.direct.task.rank < r.task.rank := by
+    rw [htask]
+    exact HierarchyTask.rawRequests_rank_lt 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin) Q.direct
+      (by simp only [Q, HierarchyTask.RawRequests.calls, List.mem_append, List.mem_cons,
+        true_or, true_or, true_or])
+  have hrank' : (Q.direct.task.rank : ℝ) + 1 ≤ r.task.rank := by exact_mod_cast hrank
+  have hr := mul_le_mul_of_nonneg_left hrank' hcharge
+  constructor
+  · simp only [← Real.rpow_add (by norm_num : (0 : ℝ) < 2)]
+    apply Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2)
+    change 4 * |(bin : ℝ) - ka| - B.requestPrecision m Q.direct ≤ _
+    rw [hq, hp]
+    rw [sub_div] at hbudget
+    nlinarith [le_abs_self ((bin : ℝ) - ka)]
+  · apply (div_lt_iff₀ (show (0 : ℝ) < 8 * B.slack by positivity)).mpr
+    nlinarith
 
 /-- Divide the literal scale-cutoff loss by the evaluator's `16*slack` precision salary.
 On the rate-16 grid the remaining norm decay is `2^(-3|i-a|/4)`, with the explicit

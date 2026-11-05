@@ -456,6 +456,119 @@ theorem pairedSample_initial_compressed_precision
   intro n hn hp
   simpa only [initialEndpointCharge, ite_eq_right (Nat.ne_of_gt hp)] using ih n hn hp
 
+/-- Own-precision payment requiring success only at this unequal pair's actual positive
+endpoints. Equal pairs execute no child. This avoids imposing availability at unrelated
+small budgets or at an unused bin's endpoints. Reset-right success remains separate. -/
+theorem pairedSample_initial_compressed_precision_at
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M d bin : ℕ) (hM : 0 < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hs : 0 ≤ r.source.rate)
+    (D : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) (hzero : D 0 = 0)
+    (coefficient : ℝ)
+    (ih :
+      let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+      let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+      fine ≠ coarse → ∀ n ∈ ({fine, coarse} : Finset ℕ), n < M → 0 < n →
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin n bin (exponent Q.direct) ζ floor Q.direct = some (D n) ∧
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D n)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision n Q.direct)) ^ 4 ∧
+      ∃ R, B.compressedBin n bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+    ∃ A C,
+      B.pairedSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some A ∧
+      B.pairedSample (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some C ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (A - C) ≤
+        if fine = coarse then 0 else
+        8 * (‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+          r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+          (B.initialEndpointCharge fine Q.direct coefficient +
+            B.initialEndpointCharge coarse Q.direct coefficient) := by
+  dsimp only at ih ⊢
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+  let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+  by_cases heq : fine = coarse
+  · dsimp only [fine, coarse] at heq
+    refine ⟨0, 0, ?_, ?_, ?_⟩
+    · simp only [pairedSample, heq, ↓reduceIte]
+    · simp only [pairedSample, heq, ↓reduceIte]
+    · simp [rowNormPow, heq]
+  dsimp only [fine, coarse] at heq
+  let K := ‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+    r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4
+  let E : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ := fun n σ x y =>
+    B.binRate bin * HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y * D n σ x y
+  let C := fun n => if n = 0 then 0 else B.initialSample r bin
+  have hend (n : ℕ) (hn : n ∈ ({fine, coarse} : Finset ℕ)) (hlt : n < M) :
+      B.sample (fun m q => if m < M then B.compressedHistory exponent ζ floor m q else none)
+          n (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some (E n) ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (E n - C n) ≤
+          K * B.initialEndpointCharge n Q.direct coefficient := by
+    by_cases hz : n = 0
+    · subst n
+      have hE : E 0 = 0 := by ext; simp [E, hzero]
+      rw [hE]
+      simp [sample, C, initialEndpointCharge, rowNormPow]
+    obtain ⟨hd, herr, R, hr⟩ := ih heq n hn hlt (Nat.pos_of_ne_zero hz)
+    obtain ⟨A, hA, hb⟩ := B.positiveSample_initial_compressed_root exponent ζ floor
+      M n bin hlt r hs (D n) R hd hr
+    have ha : A = E n := Option.some.inj (hA.symm.trans
+      (B.positiveSample_initial_compressed exponent ζ floor M n bin hlt r (D n) R hd hr).1)
+    rw [ha] at hA hb
+    refine ⟨?_, ?_⟩
+    · simpa only [sample, ite_eq_right hz] using hA
+    · have he : E n - C n = (fun σ x y => E n σ x y - B.initialSample r bin σ x y) := by
+        funext σ x y
+        simp only [Pi.sub_apply, Matrix.sub_apply, C, ite_eq_right hz]
+      rw [he]
+      simpa only [initialEndpointCharge, ite_eq_right hz, K, Q] using
+        hb.trans (mul_le_mul_of_nonneg_left herr (show 0 ≤ K by positivity))
+  have hlt := B.pairedSample_budgets_lt M d hM r (some bin)
+  have hf := hend fine (by simp only [mem_insert, mem_singleton, true_or]) hlt.1
+  have hc := hend coarse (by simp only [mem_insert, mem_singleton, or_true]) hlt.2
+  dsimp only [fine, coarse] at hf hc
+  refine ⟨E fine - E coarse, C fine - C coarse, ?_,
+    B.pairedSample_initial M d hM bin r, ?_⟩
+  · rw [pairedSample, ite_eq_right heq, hf.1, hc.1]
+    rfl
+  · have he : (E fine - E coarse) - (C fine - C coarse) =
+        (fun σ x y => (E fine - C fine) σ x y + (-(E coarse - C coarse)) σ x y) := by
+      funext σ x y
+      simp only [Pi.sub_apply, Matrix.sub_apply, Pi.neg_apply, Matrix.neg_apply]
+      ring
+    rw [he, ite_eq_right heq]
+    have hb := rowNormPow_add_le
+      (X := fun σ x => r.source.retains (channels B.padding) σ x)
+      (Y := fun σ y => r.usage.retains (channels B.padding) σ y)
+      (mul_nonneg (Nat.cast_nonneg P) hs) (E fine - C fine) (-(E coarse - C coarse))
+    simp only [rowNormPow, Pi.neg_apply, Matrix.neg_apply, abs_neg] at hb
+    change rowNormPow 4 P r.source.rate _ _ _ ≤ _ at hb
+    apply hb.trans
+    change 8 * (_ + _) ≤ 8 * K *
+      (B.initialEndpointCharge fine Q.direct coefficient +
+        B.initialEndpointCharge coarse Q.direct coefficient)
+    have hf' := hf.2
+    have hc' := hc.2
+    unfold rowNormPow at hf' hc'
+    dsimp only [fine, coarse, Q, K] at hf' hc' ⊢
+    linarith
+
 /-- Completion transports the literal paired-history difference through the same graph,
 length, source and usage suffixes. It introduces no canonical-equality assumption. -/
 theorem complete_grid_sub (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
