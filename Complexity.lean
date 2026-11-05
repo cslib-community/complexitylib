@@ -2896,6 +2896,7 @@ public import Complexity.Crypto.Computational.Encryption.EncryptThenMAC
 public import Complexity.Crypto.Computational.Encryption.Hybrid
 public import Complexity.Crypto.Computational.Encryption.PolyTime
 public import Complexity.Crypto.Computational.Encryption.PublicKeyReplacement
+public import Complexity.Crypto.Computational.EvenMansour
 public import Complexity.Crypto.Computational.GGM.Circuit
 public import Complexity.Crypto.Computational.GGM.Evaluation
 public import Complexity.Crypto.Computational.GGM.Expansion
