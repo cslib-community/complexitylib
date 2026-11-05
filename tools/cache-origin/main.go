@@ -75,7 +75,7 @@ func run(args []string) error {
 	f := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	root := f.String("root", "", "existing dedicated store directory (serve/gc)")
 	socket := f.String("socket", "", "new Unix socket path (serve)")
-	retain := f.Duration("retain", 48*time.Hour, "maximum age of every mapping, including the last for a toolchain (gc)")
+	retain := f.Duration("retain", 48*time.Hour, "maximum age of superseded mappings; latest publication is kept (gc)")
 	apply := f.Bool("apply", false, "apply GC; otherwise report without deleting files")
 	mapping := f.String("mapping", "", "Lake build -o mapping (pack)")
 	archives := f.String("archives", "", "Lake cache stage directory (pack)")

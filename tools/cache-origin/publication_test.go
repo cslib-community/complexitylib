@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 const testRevision = "1111111111111111111111111111111111111111"
@@ -134,6 +135,27 @@ func TestConflictNeverPublishesMapping(t *testing.T) {
 	m := inventory{Revision: revision, Toolchain: testToolchain}
 	if _, err := s.root.Stat("public/" + m.mapping()); !os.IsNotExist(err) {
 		t.Fatal("conflicting mapping became visible")
+	}
+}
+
+func TestRetryDoesNotRefreshMappingInstallationTime(t *testing.T) {
+	s := testStore(t)
+	body := testBundle(t, testRevision, []byte("artifact"), nil)
+	if w := testPut(s, testRevision, body); w.Code != 201 {
+		t.Fatal(w.Code)
+	}
+	key := (inventory{Revision: testRevision, Toolchain: testToolchain}).mapping()
+	name := filepath.Join(s.root.Name(), "public", filepath.FromSlash(key))
+	old := time.Now().Add(-72 * time.Hour).Truncate(time.Second)
+	if err := os.Chtimes(name, old, old); err != nil {
+		t.Fatal(err)
+	}
+	if w := testPut(s, testRevision, body); w.Code != 201 {
+		t.Fatal(w.Code)
+	}
+	info, err := os.Stat(name)
+	if err != nil || !info.ModTime().Equal(old) {
+		t.Fatalf("identical retry refreshed mapping age: %v %v", info, err)
 	}
 }
 

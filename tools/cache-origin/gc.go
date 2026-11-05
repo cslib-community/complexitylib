@@ -34,6 +34,14 @@ func (s *store) collect(retain time.Duration, apply bool) (gcReport, error) {
 	if err != nil {
 		return report, err
 	}
+	// Preserve one latest publication across ALL toolchains, including idle periods.
+	// Identical retries keep their original mtime, so they cannot become latest.
+	latest := ""
+	for key, modified := range objects {
+		if mappingKey.MatchString(key) && (latest == "" || modified.After(objects[latest]) || modified.Equal(objects[latest]) && key > latest) {
+			latest = key
+		}
+	}
 	staging, err := fs.ReadDir(s.root.FS(), "staging")
 	if err != nil {
 		return report, err
@@ -68,7 +76,7 @@ func (s *store) collect(retain time.Duration, apply bool) (gcReport, error) {
 		if err != nil {
 			return report, fmt.Errorf("%s: %w", key, err)
 		}
-		expired := s.now().Sub(modified) >= retain
+		expired := key != latest && s.now().Sub(modified) >= retain
 		for ref := range refs {
 			if _, ok := objects[ref]; !ok {
 				return report, fmt.Errorf("missing artifact %s", ref)

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Stage Lake outputs once, then publish the same immutable files to GCS or S3."""
+"""Stage Lake outputs once, then publish the same immutable files to GCS or HTTPS."""
 
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
+import tarfile
 import tempfile
 from urllib.parse import urlsplit
 
@@ -126,28 +128,36 @@ def gcs(bucket, directory):
     print(f"Published {data['revision']} to gs://{bucket}")
 
 
-def s3(bucket, endpoint, directory):
-    if not re.fullmatch(r"[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]", bucket):
-        raise ValueError("Invalid S3 bucket name")
+def http(endpoint, directory):
     parsed = urlsplit(endpoint)
     if (parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password
             or parsed.path not in ("", "/") or parsed.query or parsed.fragment):
-        raise ValueError("S3 endpoint must be an HTTPS origin without credentials or a path")
-    data, mapping = validate(directory)
-    # AWS CLI 2.33+ implements --no-overwrite with S3 conditional writes. The origin must
-    # enforce If-None-Match atomically; publisher credentials must not allow deletion.
-    base = ["aws", "--endpoint-url", endpoint, "--no-cli-pager", "s3", "cp"]
-    run([*base, str(directory / "a0") + "/", f"s3://{bucket}/a0/", "--recursive",
-         "--no-follow-symlinks", "--no-overwrite", "--only-show-errors",
-         "--content-type", "application/vnd.reservoir.artifact",
-         "--cache-control", "public,max-age=31536000,immutable"])
-    # Publish this revision's mapping only after its artifacts have arrived.
-    relative = mapping.relative_to(directory).as_posix()
-    run([*base, str(mapping), f"s3://{bucket}/{relative}", "--no-overwrite",
-         "--only-show-errors", "--content-type",
-         "application/vnd.reservoir.outputs+json-lines",
-         "--cache-control", "public,max-age=31536000,immutable"])
-    print(f"Published {data['revision']} to {endpoint} bucket {bucket}")
+        raise ValueError("Upload endpoint must be an HTTPS origin without credentials or a path")
+    data, _ = validate(directory)
+    user = os.environ.get("CACHE_SERVER_USER", "")
+    password = os.environ.get("CACHE_SERVER_PASSWORD", "")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", user) or not password or any(ord(c) < 32 or ord(c) == 127 for c in password):
+        raise ValueError("Set CACHE_SERVER_USER and a nonempty, single-line CACHE_SERVER_PASSWORD")
+    # Keep the password out of argv, URLs and error messages. curl reads its quoted
+    # configuration from stdin; escape the only special characters allowed here.
+    credential = (user + ":" + password).replace("\\", "\\\\").replace('"', '\\"')
+    config = f'user = "{credential}"\n'
+    with tempfile.TemporaryDirectory(prefix="cache-upload-") as temporary:
+        package = Path(temporary) / "publication.tar"
+        with tarfile.open(package, "w", format=tarfile.USTAR_FORMAT) as archive:
+            for name in ["publication.json", *sorted(data["files"])]:
+                archive.add(directory / name, arcname=name, recursive=False)
+        result = run(["curl", "--disable", "--config", "-", "--silent", "--show-error",
+             "--fail-with-body", "--proto", "=https", "--connect-timeout", "30",
+             "--max-time", "360", "--retry", "5", "--retry-max-time", "600",
+             "--output", str(Path(temporary) / "response"), "--write-out", "%{http_code}",
+             "--retry-connrefused", "--header", "Content-Type: application/x-tar",
+             "--upload-file", str(package),
+             endpoint.rstrip("/") + "/publish/" + data["revision"]],
+             input=config, text=True, stdout=subprocess.PIPE)
+        if result.stdout.strip() != "201":
+            raise ValueError("Cache origin did not acknowledge publication with HTTP 201")
+    print(f"Published {data['revision']} to {endpoint}")
 
 
 def main():
@@ -160,8 +170,7 @@ def main():
     google = commands.add_parser("gcs")
     google.add_argument("bucket")
     google.add_argument("directory", type=Path)
-    server = commands.add_parser("s3")
-    server.add_argument("bucket")
+    server = commands.add_parser("http")
     server.add_argument("endpoint")
     server.add_argument("directory", type=Path)
     args = parser.parse_args()
@@ -172,8 +181,8 @@ def main():
             data, _ = validate(args.directory)
             if args.revision is not None and data["revision"] != args.revision:
                 raise ValueError("Publication is from a different revision")
-        elif args.command == "s3":
-            s3(args.bucket, args.endpoint, args.directory)
+        elif args.command == "http":
+            http(args.endpoint, args.directory)
         else:
             gcs(args.bucket, args.directory)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:

@@ -175,24 +175,23 @@ be combined with `--copy-cslib` or `--copy-packages`; the default seeded behavio
 Downloaded `.olean` files are trusted by Lean: imported modules are not re-checked by the
 kernel, and their compiled code (tactics, macros, initializers) runs during your build. Whoever
 can write to the cache could therefore make a false theorem appear proved or run code on your
-machine. The cache is set up so that this is no more trust than building `main` already
-requires:
+machine. For the current GCS-only reader default, this is no more trust than building `main`
+already requires:
 
-- Only push runs on `main` in this repository can publish. GCS uses GitHub OIDC through Workload
-  Identity Federation. The optional MIT publisher is a separate job which receives the exact
-  staged artifact from that successful run; its static S3 key is confined to the main-only
-  `cache-server-publish` environment and is unavailable while repository code is built.
-  Pull requests, forks, merge-queue groups and other branches cannot enter either write path.
-- Each writer can create objects but not delete them. GCS uses no-clobber writes; the MIT origin
-  must atomically enforce S3 `If-None-Match: *`. A published artifact or mapping therefore cannot
-  be replaced. Lake also checks every downloaded artifact against the hash in its mapping.
+- Only push runs on `main` in this repository can obtain the GCS writer identity. It uses
+  GitHub OIDC through Workload Identity Federation, restricted to this repository, main ref and
+  push event. Pull requests, forks, merge groups and other branches cannot obtain that identity.
+- The GCS writer can create objects but cannot delete them, so it cannot replace existing
+  objects. The optional MIT publisher instead receives an upload password only in its final
+  protected job step. Its additional trust roots are described in the migration section below.
+  Lake checks every downloaded artifact against the hash recorded in its mapping.
 
 Merge-gating CI also reuses these outputs. Lean CI on pull requests, merge-queue groups and
 `main` pushes restores modules that earlier `main` runs uploaded instead of compiling them, so a
-module restored this way is not re-checked by the kernel in that run. This adds no party to
+module restored this way is not re-checked by the kernel in that run. Reading GCS adds no party to
 trust. CI already restores `.lake` from the GitHub Actions cache, where runs on `main` save the
 copies that other branches and pull requests fall back to, and Lake reuses those outputs in the
-same way. The remote cache's writers are a subset of those runs, so both caches hold what code
+same way. The GCS remote cache's writers are a subset of those runs, so both caches hold what code
 already on `main` built (the Actions cache also holds a pull request's own earlier runs).
 
 Lake reuses an output only for a module whose input hash (its source, the outputs of its
@@ -210,57 +209,49 @@ requests to Google Cloud Storage until a separately reviewed reader cutover.
 
 ## MIT origin migration
 
-This repository does not provision or administer the MIT server. MIT operations should use an
-existing institutionally supported object store if one is available and otherwise select and
-maintain the server product. There is deliberately no Ansible playbook, container stack, web
-server template or custom SSH service here.
+The optional [HTTP origin](../../tools/cache-origin/README.md) uses nginx for HTTPS,
+upload authentication and public file serving, plus a small Linux Go executable for synchronous
+publication and garbage collection. MIT owns the VM, operating-system updates, DNS/TLS,
+credentials, bounded storage and monitoring. The repository supplies source and operator examples,
+not automatic provisioning. There is no SSH upload or S3 service dependency.
 
-The repository depends on a small S3-compatible contract instead:
+After all required Lean checks, `publish.py stage` records the exact clean producer revision
+and SHA-256 inventory once. GCS and the separate MIT publisher job consume those same staged bytes.
+The MIT job verifies this run's artifact ID and producer revision before obtaining its upload
+password for the final step. It packs the inventory and files into an uncompressed USTAR package
+and sends `PUT /publish/<commit>` over HTTPS. curl retries transient failures; credentials travel
+through its stdin configuration rather than URLs or command-line arguments.
 
-1. The write endpoint uses valid HTTPS and implements `PutObject` and
-   `CompleteMultipartUpload` with atomic `If-None-Match: *` behavior. Of concurrent writes to one
-   absent key, exactly one may succeed; later writes must leave its bytes unchanged.
-2. A public HTTPS origin maps object keys to anonymous `GET` and `HEAD` without directory or
-   bucket listing. It serves only the `a0/cslib-community/complexitylib/` and
-   `r0/cslib-community/complexitylib/` prefixes.
-3. The CI identity can create objects in those prefixes and abort its own incomplete multipart
-   uploads. It cannot delete objects, alter bucket policy, create credentials or administer the
-   service. If the implementation supports a policy requiring conditional writes, enable it.
-4. MIT owns supported-version updates, storage limits, monitoring, backups and incident response.
-   A dedicated bounded volume is preferred because the public cache is reproducible and must not
-   endanger unrelated host data.
+The handler validates the whole package before publishing anything, installs artifacts before
+the mapping and rejects conflicting existing keys even when the client omits conditional headers.
+Identical retries succeed. HTTP credentials allow publication only: there is no remote deletion
+or administration route. Anonymous `GET`/`HEAD` expose exact artifact/mapping keys without listing.
+GC locally preserves the newest publication across all toolchains, expires other mappings after
+two days and deletes artifacts immediately when no retained mapping refers to them. See the
+[retention contract](../../tools/cache-origin/README.md#retention-and-cleanup).
 
-AWS documents the required [conditional-write semantics](https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html).
-The publisher uses AWS CLI 2.33 or newer: its
-[`s3 cp --no-overwrite`](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html)
-sends the conditional request while retaining parallel multipart transfer performance. Artifacts
-are sent before the revision mapping, so readers never discover a mapping from this publisher
-before its referenced objects have been attempted.
+The GitHub environment restricts when Actions receives the password; the server does not establish
+that a request came from a main push. A stolen password can publish malicious bytes under unused
+keys, and the MIT origin operator can control served bytes. Both are additional trust roots once
+clients use this origin. Hashes establish transfer consistency, not producer provenance. Imported
+Lean outputs can execute code during a build. If compromised, disable MIT publication and reader
+use, revoke the password, discard poisoned origin and retained local outputs, and rebuild from
+trusted sources. The GCS-only trust description above applies until the explicit reader cutover.
 
-The implementation choice is intentionally outside this repository. As of November 2026:
-
-| Option | Disposition |
-|---|---|
-| Existing MIT S3 or Ceph service | Preferred: smallest new operational surface and an institutional owner |
-| Maintained S3-compatible server | Acceptable only after the exact conditional-write and access-control contract above passes against its supported release |
-| MinIO Community | Not selected: the [community repository was archived](https://github.com/minio/minio) in April 2026 |
-| SFTP/WebDAV/custom rsync host | Not selected: adds transport-specific publication and public-serving glue that S3 already defines |
-
-Before production use, MIT should exercise a throwaway bucket with two simultaneous conflicting
-conditional writes and prove that exactly one wins, the winner's bytes remain unchanged, anonymous
-`GET`/`HEAD` work without listing, and the production publisher cannot delete. This is a server
-acceptance test, not a unit test against a mock.
+Before activation, commission the actual server: verify TLS, upload authentication, Unix-socket
+permissions, service restart, storage limits and GC; prove concurrent conflicting uploads cannot
+replace a key; test unauthorized PUT and all DELETE requests; then cold-restore a real build through
+the public HTTPS origin. CI checks the same nginx routes over loopback TLS, but cannot establish
+the target host's identity, permissions or disk configuration.
 
 After that evidence is reviewed, create the GitHub environment `cache-server-publish`, restrict it
 to `main`, and configure:
 
 | Kind | Name |
 |---|---|
-| Environment secret | `CACHE_SERVER_ACCESS_KEY_ID` |
-| Environment secret | `CACHE_SERVER_SECRET_ACCESS_KEY` |
-| Environment variable | `CACHE_SERVER_S3_ENDPOINT` |
-| Environment variable | `CACHE_SERVER_BUCKET` |
-| Environment variable | `CACHE_SERVER_REGION` |
+| Environment secret | `CACHE_SERVER_PASSWORD` (nonempty, no control characters) |
+| Environment variable | `CACHE_SERVER_USER` (upload account name) |
+| Environment variable | `CACHE_SERVER_URL` (HTTPS origin without a path, e.g. `https://cache.example.edu`) |
 | Repository variable | `CACHE_SERVER_PUBLISH_ENABLED` (`false` until commissioning passes) |
 
 Enabling publication does not change readers. Keep GCS publication and the GCS default URL during

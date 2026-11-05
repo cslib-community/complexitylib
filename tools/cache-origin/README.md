@@ -1,10 +1,10 @@
-# HTTP cache origin draft
+# HTTP cache origin
 
-Local, unpushed prototype for [#2503](https://github.com/cslib-community/complexitylib/issues/2503)
-and the alternatives discussed for [#2506](https://github.com/cslib-community/complexitylib/pull/2506).
-Owner: this Codex session, branch `draft/http-cache-origin-20261105`. This is a separate draft,
-not a takeover of that PR. It changes neither publication workflows nor default readers.
-Nothing here provisions a server, installs credentials, or authorizes deployment.
+Optional MIT cache origin for [#2503](https://github.com/cslib-community/complexitylib/issues/2503)
+and [#2506](https://github.com/cslib-community/complexitylib/pull/2506). The
+[migration guide](../../scripts/cache/README.md#mit-origin-migration) describes CI publication.
+GCS remains the active publisher and default reader; MIT publication is disabled until commissioned.
+Nothing here provisions a server or installs credentials.
 
 One Linux Go executable has three commands: `serve` accepts synchronous PUTs over a Unix socket,
 `pack` streams a publication package to stdout, and `gc` runs separately under a systemd timer.
@@ -26,6 +26,16 @@ go build -o /tmp/cache-origin .
 
 The tests use temporary directories and local HTTP servers. No real server, cloud account,
 repository credential, or Complexitylib build is needed. Linux-only source is intentional.
+The Lean CI workflow also runs these checks and a real loopback nginx HTTPS test. To run that
+test by hand, install nginx, OpenSSL and curl locally, then from the repository root run:
+
+```bash
+CACHE_ORIGIN_NGINX_TEST=1 CACHE_ORIGIN_BIN=/tmp/cache-origin \
+  NGINX_BIN=/usr/sbin/nginx python3 -B -m unittest discover \
+  -s scripts -p 'test_cache_origin_nginx.py'
+```
+
+It uses a temporary self-signed certificate and upload password and starts only loopback listeners.
 
 To prepare real bytes, start from a reviewed, clean Complexitylib checkout with its dependencies
 and toolchain available, and use an absolute scratch directory outside the source checkout:
@@ -41,9 +51,9 @@ cache_toolchain=$(tr -d '[:space:]' < lean-toolchain | sed 's#/#--#; s#:#---#')
   --toolchain "$cache_toolchain" > "$publication_dir/package.tar"
 ```
 
-`pack` deliberately does not certify the producer. CI integration must stage only the exact clean
-revision after its required checks; it is not implemented by this prototype. The inventory is
-compatible with the SHA-256 inventory proposed in #2506, wrapped in an uncompressed USTAR package
+`pack` deliberately does not certify the producer; it is a local packaging helper. CI instead uses
+`scripts/cache/publish.py stage` to check clean source state and stage the exact revision after
+its required checks. Both paths use the same SHA-256 inventory, wrapped in an uncompressed USTAR package
 with `publication.json` first. The .ltar payloads are already compressed and stay opaque.
 Only the pinned Lake module-output subset is accepted: header `"2026-03-17"` followed by
 `["<16-hex input>","<16-hex artifact>.ltar"]` rows. Unfamiliar versions/shapes stop publication
@@ -96,11 +106,12 @@ compromised operator or program: publication and GC currently run as the same Un
 /tmp/cache-origin gc --root /srv/cache-origin --apply  # delete expired mappings and unused artifacts
 ```
 
-Every mapping expires two days after its first installation on this server, including the final
-mapping for a toolchain. There are no indefinite pins or repository lookups: toolchains with no
-recent publications naturally lose all mappings. Regular publications keep active toolchains
-cached, while identical retries do not extend an existing mapping's lifetime. If no publications
-arrive for two days, every mapping can expire and clients fall back to compilation.
+GC keeps the single newest publication across all toolchains, even during idle periods.
+Every other mapping expires two days after its first installation on this server. Publishing a
+new toolchain therefore lets old toolchains' mappings expire; there is no pin per toolchain.
+The newest publication is selected by server installation time (ties by object key), not Git
+history or a Lean release-date lookup. Identical retries preserve that installation time and
+cannot make an old mapping newest. CI serializes main runs, so normal uploads follow build order.
 Every remaining mapping marks its artifacts live, including artifacts shared across toolchains.
 GC deletes every unreferenced artifact in the same pass that deletes its final referring mapping;
 there is no additional grace period. It also deletes orphaned artifacts from interrupted uploads,
@@ -111,7 +122,7 @@ mapping, missing reference, unsupported format or unexpected public entry stops
 the pass. Publication admission caps the public store at 100,000 objects so it cannot grow
 beyond the collector's supported bound; the filesystem quota separately bounds bytes/inodes.
 
-The `--retain` option sets mapping retention (default `48h`). Expiration and deletion occur on
+The `--retain` option sets superseded-mapping retention (default `48h`). Expiration and deletion occur on
 GC runs; the example timer runs daily. nginx downloads do not hold the publication/GC lock:
 a client that fetched a mapping just before its expiration can miss an artifact deleted by GC
 and compile that module instead. An already-open artifact file remains readable after unlinking.
@@ -135,8 +146,8 @@ with mode 0711, its `public/` to 0755, and `staging/` and `state/` to 0700. Crea
 owned by nginx on the same bounded filesystem. The application creates its own control directories.
 Check nginx configuration and real identity/permission behavior before any activation.
 
-This is a draft, not production commissioning. Not included: CI wiring, cryptographic producer
-attestations, automatic provisioning, OS quota setup, capacity alerts, TLS/certificate lifecycle,
+Passing source and loopback tests does not establish production commissioning. Not included:
+cryptographic producer attestations, automatic provisioning, OS quota setup, capacity alerts, TLS/certificate lifecycle,
 historical backfill, or reader cutover. A stolen publisher credential can still publish malicious
 bytes under previously unused keys; the origin operator controls served bytes. SHA-256 detects
 package corruption, not authorized provenance. Keep GCS readers/publication until a separately
@@ -149,4 +160,4 @@ Review references: [Go filesystem confinement](https://pkg.go.dev/os#Root),
 Manual impact: the Operator's Manual reaches this opt-in draft from the canonical cache guide;
 normal build/restoration instructions are unchanged. The Agent Operator's Manual needs no edit:
 roles, authorization and handoffs are unchanged. No Lean/API/abstract/roadmap/upstream impact.
-AI assistance: OpenAI Codex wrote this prototype and its tests. It has no human approval.
+AI assistance: OpenAI Codex wrote the origin and its tests. Agent review is not human approval.

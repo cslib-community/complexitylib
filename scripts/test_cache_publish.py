@@ -6,7 +6,9 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
+import tarfile
 import unittest
 from unittest.mock import patch
 
@@ -53,24 +55,30 @@ class PublicationTests(unittest.TestCase):
             self.assertIn("--no-clobber", google[0].args[0])
             self.assertEqual(google[0].kwargs["input"], str(self.stage / self.artifact) + "\n")
             self.assertIn(str(self.stage / self.mapping), google[1].args[0])
-        with patch.object(publish, "run") as run:
-            publish.s3("mit-cache", "https://cache-write.example.edu", self.stage)
-            server = run.call_args_list
-            self.assertEqual(len(server), 2)
-            self.assertIn("--no-overwrite", server[0].args[0])
-            self.assertIn("--no-follow-symlinks", server[0].args[0])
-            self.assertIn("--recursive", server[0].args[0])
-            self.assertIn("https://cache-write.example.edu", server[0].args[0])
-            self.assertIn(str(self.stage / "a0") + "/", server[0].args[0])
-            self.assertIn("s3://mit-cache/a0/", server[0].args[0])
-            self.assertIn(str(self.stage / self.mapping), server[1].args[0])
-            self.assertIn("s3://mit-cache/" + self.mapping, server[1].args[0])
-            self.assertNotIn("--delete", server[0].args[0])
+        def inspect_upload(args, **kwargs):
+            self.assertEqual(args[0], "curl")
+            self.assertIn("--retry", args)
+            self.assertIn("--fail-with-body", args)
+            self.assertEqual(args[-1], "https://cache.example.edu/publish/" + "a" * 40)
+            self.assertNotIn("test-password", " ".join(args))
+            self.assertEqual(kwargs["input"], 'user = "publisher:test-password"\n')
+            package = Path(args[args.index("--upload-file") + 1])
+            with tarfile.open(package) as archive:
+                self.assertEqual(archive.getnames(), ["publication.json", *sorted(self.metadata["files"])])
+                for name in archive.getnames():
+                    self.assertEqual(archive.extractfile(name).read(), (self.stage / name).read_bytes())
+            return subprocess.CompletedProcess(args, 0, stdout="201")
+        with (
+            patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD="test-password"),
+            patch.object(publish, "run", side_effect=inspect_upload) as run,
+        ):
+            publish.http("https://cache.example.edu", self.stage)
+            self.assertEqual(run.call_count, 1)
 
     def test_failed_artifact_upload_never_publishes_a_mapping(self):
         for backend in (lambda: publish.gcs("example-cache", self.stage),
-                        lambda: publish.s3("mit-cache", "https://cache.example.edu", self.stage)):
-            with self.subTest(backend=backend), patch.object(publish, "run", side_effect=subprocess.CalledProcessError(1, "transfer")) as run:
+                        lambda: publish.http("https://cache.example.edu", self.stage)):
+            with self.subTest(backend=backend), patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD="test-password"), patch.object(publish, "run", side_effect=subprocess.CalledProcessError(1, "transfer")) as run:
                 with self.assertRaises(subprocess.CalledProcessError):
                     backend()
                 self.assertEqual(run.call_count, 1)
@@ -105,31 +113,71 @@ class PublicationTests(unittest.TestCase):
             publish.validate(self.stage)
 
     def test_wrong_producer_revision_fails_verification(self):
-        result = subprocess.run(["python3", str(REPO / "scripts/cache/publish.py"), "verify",
+        result = subprocess.run([sys.executable, str(REPO / "scripts/cache/publish.py"), "verify",
                                  str(self.stage), "--revision", "b" * 40], capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("different revision", result.stderr)
 
     def test_gcs_requires_an_existing_publication(self):
-        result = subprocess.run(["python3", str(REPO / "scripts/cache/publish.py"), "gcs",
+        result = subprocess.run([sys.executable, str(REPO / "scripts/cache/publish.py"), "gcs",
                                  "example-cache"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
         self.assertIn("directory", result.stderr)
 
     def test_upload_wrapper_requires_a_staged_directory(self):
         result = subprocess.run(
-            ["bash", str(REPO / "scripts/cache/upload.sh"), "example-cache"],
+            ["bash", (REPO / "scripts/cache/upload.sh").as_posix(), "example-cache"],
             capture_output=True, text=True)
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn("<publication-directory>", result.stderr)
 
-    def test_s3_rejects_insecure_or_credentialed_endpoints_before_upload(self):
+    def test_http_rejects_insecure_or_credentialed_endpoints_before_upload(self):
         for endpoint in ("http://cache.example.edu", "https://user@cache.example.edu",
                          "https://cache.example.edu/a/path", "https://cache.example.edu?query"):
             with self.subTest(endpoint=endpoint), patch.object(publish, "run") as run:
                 with self.assertRaisesRegex(ValueError, "HTTPS origin"):
-                    publish.s3("mit-cache", endpoint, self.stage)
+                    publish.http(endpoint, self.stage)
                 run.assert_not_called()
+
+    def test_http_rejects_missing_or_injected_credentials_without_upload(self):
+        for user, password in (("", "secret"), ("publisher", ""), ("bad:user", "secret"),
+                               ("publisher", "secret\nurl = injected")):
+            with (
+                self.subTest(user=user),
+                patch.dict(os.environ, CACHE_SERVER_USER=user, CACHE_SERVER_PASSWORD=password),
+                patch.object(publish, "run") as run,
+            ):
+                with self.assertRaisesRegex(ValueError, "CACHE_SERVER"):
+                    publish.http("https://cache.example.edu", self.stage)
+                run.assert_not_called()
+
+    def test_http_quotes_password_and_keeps_it_out_of_error_command(self):
+        password = r'quote"and\backslash'
+        def failed_upload(args, **kwargs):
+            self.assertNotIn(password, " ".join(args))
+            self.assertEqual(kwargs["input"], r'user = "publisher:quote\"and\\backslash"' + "\n")
+            raise subprocess.CalledProcessError(22, args)
+        with (
+            patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=password),
+            patch.object(publish, "run", side_effect=failed_upload),
+        ):
+            with self.assertRaises(subprocess.CalledProcessError) as caught:
+                publish.http("https://cache.example.edu", self.stage)
+            self.assertNotIn(password, str(caught.exception))
+
+    def test_http_requires_exact_201_acknowledgement(self):
+        for status in ("200", "301", "302", "201"):
+            with (
+                self.subTest(status=status),
+                patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD="secret"),
+                patch.object(publish, "run", return_value=subprocess.CompletedProcess([], 0, stdout=status)) as run,
+            ):
+                if status == "201":
+                    publish.http("https://cache.example.edu", self.stage)
+                else:
+                    with self.assertRaisesRegex(ValueError, "HTTP 201"):
+                        publish.http("https://cache.example.edu", self.stage)
+                self.assertNotIn("--location", run.call_args.args[0])
 
 
 @unittest.skipUnless(shutil.which("git"), "Git is required")

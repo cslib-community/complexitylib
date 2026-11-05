@@ -111,7 +111,7 @@ func gcSnapshot(t *testing.T, dir string) map[string]gcFileSnapshot {
 	return out
 }
 
-func TestGCExpiresEveryOldMappingIncludingFinalToolchains(t *testing.T) {
+func TestGCExpiresSupersededMappingsAndKeepsLatestAcrossIdlePeriods(t *testing.T) {
 	s, dir, now := gcStore(t)
 	for _, n := range []int{1, 2, 3, 4} {
 		gcPut(t, s, dir, gcArtifact(n), []byte{byte(n)}, now.Add(-400*gcDay))
@@ -137,13 +137,13 @@ func TestGCExpiresEveryOldMappingIncludingFinalToolchains(t *testing.T) {
 	}
 	gcMustExist(t, s, recent, true)
 	gcMustExist(t, s, gcArtifact(3), true)
-	// Once even the recent toolchain goes idle, its last mapping and artifact expire.
-	s.now = func() time.Time { return now.Add(time.Hour) }
+	// The latest publication stays useful even if the repository is quiet.
+	s.now = func() time.Time { return now.Add(365 * gcDay) }
 	if _, err := s.collect(2*gcDay, true); err != nil {
 		t.Fatal(err)
 	}
-	gcMustExist(t, s, recent, false)
-	gcMustExist(t, s, gcArtifact(3), false)
+	gcMustExist(t, s, recent, true)
+	gcMustExist(t, s, gcArtifact(3), true)
 }
 
 func TestGCRetiringToolchainPreservesSharedArtifacts(t *testing.T) {
@@ -159,6 +159,24 @@ func TestGCRetiringToolchainPreservesSharedArtifacts(t *testing.T) {
 	}
 	gcMustExist(t, s, gcArtifact(1), true)
 	gcMustExist(t, s, current, true)
+}
+
+func TestGCLatestTimestampTieIsDeterministicAcrossToolchains(t *testing.T) {
+	s, dir, now := gcStore(t)
+	first, latest := gcMapping("tc-a", 1), gcMapping("tc-b", 2)
+	old := now.Add(-3 * gcDay)
+	for _, n := range []int{1, 2} {
+		gcPut(t, s, dir, gcArtifact(n), []byte{byte(n)}, old)
+	}
+	gcPut(t, s, dir, first, gcMappingBytes(1), old)
+	gcPut(t, s, dir, latest, gcMappingBytes(2), old)
+	report, err := s.collect(2*gcDay, true)
+	if err != nil || !reflect.DeepEqual(report.ExpiredMappings, []string{first}) {
+		t.Fatalf("unexpected latest selection: %+v %v", report, err)
+	}
+	gcMustExist(t, s, latest, true)
+	gcMustExist(t, s, gcArtifact(2), true)
+	gcMustExist(t, s, gcArtifact(1), false)
 }
 
 func TestGCDeletesUnreferencedArtifactsImmediatelyRegardlessOfAge(t *testing.T) {

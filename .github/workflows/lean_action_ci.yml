@@ -23,6 +23,36 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  cache-origin-checks:
+    name: HTTP cache origin
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.x'
+          cache: false
+      - name: Test and vet the Linux origin
+        working-directory: tools/cache-origin
+        run: |
+          go test -race -count=1 ./...
+          go vet ./...
+          go test -run='^$' -fuzz=FuzzMapping -fuzztime=10s -parallel=2
+          go build -o "$RUNNER_TEMP/cache-origin" .
+      - name: Install nginx for loopback integration tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y nginx
+      - name: Test actual HTTPS publication, serving and GC
+        env:
+          CACHE_ORIGIN_NGINX_TEST: "1"
+          CACHE_ORIGIN_BIN: ${{ runner.temp }}/cache-origin
+          NGINX_BIN: /usr/sbin/nginx
+        run: python3 -B -m unittest discover -s scripts -p 'test_cache_origin_nginx.py'
+
   ci-checks:
     runs-on: ubuntu-latest
     outputs:
@@ -315,16 +345,17 @@ jobs:
           retention-days: 14
 
   publish-mit-cache:
-    needs: ci-checks
+    needs: [ci-checks, cache-origin-checks]
     # The package exists only after all validation gates passed. Permit this independent
     # publisher to finish even if the subsequent GCS upload failed.
     if: >-
       ${{ always() && !cancelled() && github.event_name == 'push' &&
           github.ref == 'refs/heads/main' && vars.CACHE_SERVER_PUBLISH_ENABLED == 'true' &&
+          needs.cache-origin-checks.result == 'success' &&
           needs.ci-checks.outputs.publication != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # MUST restrict this environment to the main branch before installing its write-only key.
+    # MUST restrict this environment to the main branch before installing its upload password.
     environment: cache-server-publish
     permissions:
       contents: read
@@ -337,14 +368,11 @@ jobs:
           path: ${{ runner.temp }}/lake-publication
       - name: Verify this run's publication
         run: python3 scripts/cache/publish.py verify "$RUNNER_TEMP/lake-publication" --revision "$GITHUB_SHA"
-      - name: Publish artifacts, then the revision mapping
+      - name: Publish the package over HTTPS
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.CACHE_SERVER_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.CACHE_SERVER_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.CACHE_SERVER_REGION }}
-          AWS_EC2_METADATA_DISABLED: "true"
-          CACHE_SERVER_BUCKET: ${{ vars.CACHE_SERVER_BUCKET }}
-          CACHE_SERVER_S3_ENDPOINT: ${{ vars.CACHE_SERVER_S3_ENDPOINT }}
+          CACHE_SERVER_PASSWORD: ${{ secrets.CACHE_SERVER_PASSWORD }}
+          CACHE_SERVER_USER: ${{ vars.CACHE_SERVER_USER }}
+          CACHE_SERVER_URL: ${{ vars.CACHE_SERVER_URL }}
         run: >-
-          python3 scripts/cache/publish.py s3 "$CACHE_SERVER_BUCKET"
-          "$CACHE_SERVER_S3_ENDPOINT" "$RUNNER_TEMP/lake-publication"
+          python3 scripts/cache/publish.py http "$CACHE_SERVER_URL"
+          "$RUNNER_TEMP/lake-publication"
