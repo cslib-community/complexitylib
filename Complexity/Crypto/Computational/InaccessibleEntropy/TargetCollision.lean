@@ -781,10 +781,10 @@ private theorem listXor_ne_listXor_iff {W : ℕ} {w₀ w₁ y : List Bool}
 
 private noncomputable def rompelTargetDist (G : ShrinkingCollisionGrid)
     (adversary : TargetCollisionFinder) (n : ℕ) :
-    PMF ((List Bool × List Bool) × List Bool × List Bool) :=
-  (ProbComp.eval (adversary.choose n)).bind fun choice =>
-    (BitString.uniformList (rompelCascadeSteps G n * G.inLen n)).bind fun K =>
-      (ProbComp.eval (adversary.find n choice.2 K)).map fun x₁ => (choice, K, x₁)
+    PMF ((List Bool × List Bool) × List Bool × List Bool) := do
+  let choice ← ProbComp.eval (adversary.choose n)
+  let K ← BitString.uniformList (rompelCascadeSteps G n * G.inLen n)
+  (ProbComp.eval (adversary.find n choice.2 K)).map fun x₁ => (choice, K, x₁)
 
 private noncomputable def rompelInverterTrial (G : ShrinkingCollisionGrid)
     (adversary : TargetCollisionFinder) (n qStar qGuess slot : ℕ) : Game := do
@@ -921,8 +921,8 @@ theorem succProbability_targetCollisionGame_rompelCompression_le
           (rompelCompression G).validInput adversary n) =
         μ.map winComp := by
     simp only [targetCollisionGame, rompelCompression, rompelKeyLen, μ, rompelTargetDist, winComp,
-      ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.map,
-      PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+      ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.monad_bind_eq_bind,
+      PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
   have hred_eq :
       ProbComp.eval
         (randomCollisionGame (fun k => G.evalGrid k qStar) G.inLen
@@ -950,7 +950,8 @@ theorem succProbability_targetCollisionGame_rompelCompression_le
   have hcover : ∀ t ∈ μ.support, winComp t = true →
       ∃ s : Fin Ds, rompelSlotCollisionEvent G n qStar s.val t = true := by
     intro t ht hW
-    simp only [μ, rompelTargetDist, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at ht
+    simp only [μ, rompelTargetDist, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+      PMF.mem_support_map_iff] at ht
     obtain ⟨choice, _, K, _, ⟨x₁, _, rfl⟩⟩ := ht
     rw [isCollision_eq_true_iff] at hW
     obtain ⟨hx₀_v, hx₁_v, hne, hcol⟩ := hW

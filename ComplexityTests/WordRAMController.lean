@@ -86,9 +86,9 @@ private theorem second_refines {w a : ℕ} :
 
 /-- Exchange `v` in, then put the old contents back: the second argument is the first answer, with
 fixed code for every answer. -/
-private def swapBack (w v : ℕ) : (exchangeSpec w).Client ℕ :=
-  ((.liftBind v fun a => .pure a) : (exchangeSpec w).Client ℕ).bind fun a =>
-    .liftBind a fun b => .pure b
+private def swapBack (w v : ℕ) : (exchangeSpec w).Client ℕ := do
+  let a ← (exchangeSpec w).call v
+  (exchangeSpec w).call a
 
 private def swapCode (v : ℕ) : Code .standard 3 :=
   .seq (.seq (firstPrep v) (exchangeProgram 0).code) (.seq secondPrep (exchangeProgram 0).code)
@@ -362,9 +362,9 @@ private theorem choose_refines :
 
 /-- A caller whose continuation is admissible after *both* permitted answers (`true` and `false`) of
 `choose`. -/
-def validAfterBothClient : choiceSpec.Client Unit :=
-  ((.liftBind .choose fun b => .pure b) : choiceSpec.Client Bool).bind fun b =>
-    if b then .pure () else .pure ()
+def validAfterBothClient : choiceSpec.Client Unit := do
+  let b ← choiceSpec.call .choose
+  if b then .pure () else .pure ()
 
 /-- `Refines.bind` certifies `validAfterBothClient` on the relational specification `choiceSpec`. -/
 example :
@@ -384,9 +384,9 @@ example :
 
 /-- A caller that issues `bad` (`valid := False`) when `choose` returns `false`, while succeeding
 when `choose` returns `true`. -/
-def badAfterFalseClient : choiceSpec.Client Unit :=
-  ((.liftBind .choose fun b => .pure b) : choiceSpec.Client Bool).bind fun b =>
-    if b then .pure () else .liftBind .bad fun u => .pure u
+def badAfterFalseClient : choiceSpec.Client Unit := do
+  let b ← choiceSpec.call .choose
+  if b then .pure () else choiceSpec.call .bad
 
 /-- Choosing `true` produces a valid `ClientRun` of `badAfterFalseClient`. -/
 example : choiceSpec.ClientRun () badAfterFalseClient () () [⟨ChoiceOp.choose, true, ()⟩] :=

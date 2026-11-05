@@ -133,7 +133,8 @@ def append (n v : ℕ) : Prog Unit := do
 def push (v : ℕ) : Prog Unit := do
   let n ← read hdr
   let c ← read (hdr + 1)
-  ensure hdr n c >>= fun _ => append hdr n v
+  ensure hdr n c
+  append hdr n v
 
 /-- Pop: an empty stack returns `none`; otherwise read the top item and decrement the count. -/
 def pop : Prog (Option ℕ) := do

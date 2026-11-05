@@ -21,11 +21,11 @@ The adjacent modules supply different semantic tools, not alternative machines:
 | Pathwise query/cost bounds | [Complexity/Languages/Probabilistic/QueryCount.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/QueryCount.lean) | Bound every branch by an explicit request charge |
 | Transcripts | [Complexity/Languages/Probabilistic/Transcript.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/Transcript.lean) | Retain dependent request/reply pairs |
 | Memoization and random oracles | [Complexity/Languages/Probabilistic/RandomOracle.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/RandomOracle.lean) | Repeated calls receive the same cached random answer |
-| Bidirectional random permutations | [Complexity/Languages/Probabilistic/RandomPermutation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/RandomPermutation.lean) | Forward/inverse consistency and sampling without replacement |
+| Bidirectional random permutations | [Complexity/Languages/Probabilistic/RandomPermutation.lean](../../Complexity/Languages/Probabilistic/RandomPermutation.lean) | Forward/inverse consistency, `bidirDedup` query deduplication, and sampling without replacement |
 | Coupled simulation and until-bad | [Complexity/Languages/Probabilistic/UntilBad.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/UntilBad.lean) | Transfer probability bounds until a designated bad event |
 | Replay/forking | [Complexity/Languages/Probabilistic/Forking.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/Forking.lean) | Explicit tapes and reply lists permit repeatable adversary runs |
 
-An ideal full random function table and its lazy cache can have the same transcript distribution while radically different representation costs. Their semantic equivalence does not, by itself, prove efficient materialization of the full table.
+An ideal full random function table and its lazy cache can have the same transcript distribution while radically different representation costs. Their semantic equivalence does not, by itself, prove efficient materialization of the full table. At the open `OracleComp` level, forward-only query deduplication wraps a program with `memoize OracleComp.query` ([Memoize.lean](../../Complexity/Foundations/Control/Monad/Memoize.lean)), while bidirectional permutation reductions wrap `PermOracleSpec α` programs with `RandomPermutation.bidirDedupStep` / `RandomPermutation.bidirDedup` ([RandomPermutation.lean](../../Complexity/Languages/Probabilistic/RandomPermutation.lean), checked in [RandomPermutationSwitching.lean](../../ComplexityTests/RandomPermutationSwitching.lean)) so both forward hits in `dom(cache)` and inverse hits in `ran(cache)` reuse cached answers without repeating underlying oracle calls, preserving `evalPerm π` output laws, pathwise query bounds, and pairwise-distinct domain/range cache invariants.
 
 ## Closed strict polynomial time
 
@@ -78,9 +78,35 @@ Request construction, tape-head movement and reply inspection are charged machin
 
 [Complexity/Computability/Probabilistic/Oracle/Substitution.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle/Substitution.lean) closes an efficient open program under efficient stateful oracle replacement. The principal endpoint `IsOraclePPTOn.run_interpret_preprocess_open` includes an invariant and controlled growth of replies and encoded handler state. Merely saying that each call is polynomial time would permit iterated state doubling and does not imply a polynomial total run. The underlying [Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean) supplies a machine-configuration simulation; the public theorem is supported by that realization.
 
+Saved-coin execution reuses `MultiTapePTM.runConfigFromCoins` from
+[`CoinTape.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/CoinTape.lean).
+The native [`Replay/WithOracle.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Replay/WithOracle.lean)
+controller reads a supplied bit before executing the source instruction, so a query retains that
+bit's branch and the original request/reply channels. `ReplayWithOracle.run_coins` equates the
+complete programs in `2 * coins.length + 1` transitions, including the final stop. The controller's
+own private samples may be discarded only under a stateless coin law. Its auxiliary-tape operations
+are shared with the native clock in
+[`Machine/AuxiliaryTape.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Machine/AuxiliaryTape.lean).
+That controller bound assumes prepared tapes. The native `exists_oracleReplay` theorem in
+[`Replay/WithOracleInput.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Replay/WithOracleInput.lean)
+adds pair decoding and virtual-input marking, proving a linear clock in the entire encoded
+`(coins, input)` pair and actual halting. The shared pair preparer also serves closed replay.
+
+[`Oracle/Replay.lean`](../../Complexity/Computability/Probabilistic/Oracle/Replay.lean) exposes
+`MultiTapePTM.isOraclePPTOn_runCoins` and `IsOraclePPTOn.exists_savedCoins`. The latter starts with
+an actual certified oracle-PPT program, fixes one bit per native instruction, and gives an efficient
+replay whose polynomial-length uniform coin tape reproduces the joint encoded-output and external
+state law for every stateful handler. Replies remain on their original channels; replay does not
+copy an unbounded reply into a configuration encoding. This completes the replay prerequisite
+[#2579](https://github.com/cslib-community/complexitylib/issues/2579). The Schnorr signing/hash/cache
+and freshness bridge for the full ROM forking reduction remains
+[#2568](https://github.com/cslib-community/complexitylib/issues/2568).
+
 ## Exact versus approximate randomness
 
 `ProbComp.uniform` permits exact finite uniform laws. A fair-coin machine with a fixed finite time bound has dyadic probabilities, so exact uniform sampling on three elements cannot follow simply from writing that program. This is a mathematical consequence of the definitions, not a reported failure. The sampling libraries distinguish power-of-two/dyadic laws, bounded samplers and approximate modular sampling. Group protocols can retain exact ideal PMFs and separately prove closeness and native efficiency of a word-level sampler.
+
+For a concrete field with exact fair-bit sampling, import [Sampling/F4](../../Complexity/Computability/Probabilistic/Sampling/F4.lean). `F4.sample` draws the two Boolean coordinates of Mathlib's `QuadraticAlgebra (ZMod 2) 1 1`, where the generator satisfies `θ² = θ + 1`. `F4.eval_sample` proves exact uniformity over its four elements, and `F4.isPPTOn_sample` supplies the strict-PPT certificate under `F4.encoding`, the standard pair encoding of those coordinates. Addition, subtraction and multiplication have `F4.computableInPolyTime_add`, `F4.computableInPolyTime_sub` and `F4.computableInPolyTime_mul` certificates for the same encoding. These are fixed-field lookup certificates; they do not supply uniform arithmetic for a growing extension degree. Probability-only clients can import [the sampler semantics](../../Complexity/Languages/Probabilistic/Sampling/F4.lean) without the machine calculus. [Checked clients](../../ComplexityTests/F4Sampling.lean) compose the sampler into runtime-varying lists with the full independent uniform vector law.
 
 Randomized Word-RAM takes another convention: one instruction may sample uniformly from any fitted finite interval. Its query count and `unifBitCost` are explicit currencies; neither equals the strict fair-coin runtime without a further implementation theorem. See [the RAM discussion](../algorithms-and-memory/wordram-and-bridges.md).
 

@@ -27,6 +27,10 @@ For an executable bounded signer, import [Lyubashevsky/Signature/Efficient.lean]
 `closeTo_lyubashevskySignBoundedNative` compares the resulting law, including `none`, with the exact bounded signer at distance at most `K * m * (2γ + 1) / 2^width`. `lyubashevskySignBoundedNative_none_le` bounds failure by the exact single-attempt abort probability raised to `K`, plus this sampling error. Keep that exact probability when the hash depends on the commitment: the interactive fixed-challenge abort formula cannot simply be substituted. [The checked one-dimensional example](../../ComplexityTests/Crypto/LyubashevskySigning.lean) covers success, rejection, missing rows, challenge truncation, zero attempts and a two-attempt distance bound `10/64`. These are implementation and distribution guarantees for a deterministic hash; the full random-oracle security obligations remain open.
 
 
+For an explicit schedule with negligible signing failure, import [Lyubashevsky/Signature/Parameters.lean](../../Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/Parameters.lean). `lyubashevskySigningParams λ` uses `t = λ + 1`, dimensions `n = m = k = t`, secret-entry bound one, margin `β = t`, radius `γ = 4t²`, sampling width `λ`, modulus `2^t` and `t` attempts. The exponential modulus is encoded in binary. `isPPTOn_lyubashevskySigningParams` certifies the actual signer jointly in unary `λ` and the complete raw matrix/message input sizes, for a polynomial-time deterministic word hash.
+
+The new [hash-uniform abort bound](../../Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/Failure.lean), `lyubashevskySignAttempt_none_le`, holds for every deterministic hash, including one that chooses its challenge from the commitment: if `2β ≤ γ`, `kη ≤ β` and the secret entries are bounded by `η`, exact single-attempt failure is at most `4mβ/(2γ+1)`. Under the schedule above this is at most one half. `lyubashevskySigningParams_failure_le` bounds actual native failure by `2^−(λ+1) + (λ+1)^2 * (8(λ+1)^2+1) / 2^λ`; `negligible_lyubashevskySigningParams_failure` proves it negligible for arbitrary bounded-secret, public-matrix and message sequences. The probability guarantee does not require short messages; the runtime theorem charges their actual lengths. [Checked examples](../../ComplexityTests/Crypto/LyubashevskySigningParameters.lean) include a commitment-dependent hash, nonzero bounded secrets, certainty of native failure at `λ=0`, and an upper bound below one percent at `λ=32`. This schedule demonstrates efficient availability, not SIS hardness or EUF-CMA security.
+
 Identification and Fiat–Shamir add adversarial interaction to this same transcript model. Their security is not merely the existence of a mathematical witness extractor: the computational instances require an encoded efficient extractor, and finite quantitative transformations explicitly track replay and calls. For Schnorr identification over a `PrimeOrderGroupFamily`, [`SchnorrIdentification.lean`](../../Complexity/Crypto/Computational/SchnorrIdentification.lean) formalizes the direct impersonation game (`schnorrDirectGame`) and the rewinding discrete-logarithm extractor (`SchnorrImpersonator.rewind`, `succProbability_schnorrDirectGame_le`, `negligible_schnorrDirectGame`), while [`SchnorrEavesdrop.lean`](../../Complexity/Crypto/Computational/SchnorrEavesdrop.lean) adds eavesdropping security (`SchnorrEavesdropAdversary`, `schnorrEavesdropGame`, `schnorrIdealEavesdropGame`, `IsEavesdropSecure`, `IsIdealEavesdropSecure`; [bs23][bs23], Attack Game 18.2 and Theorems 19.3 and 19.5): because strict-PPT exponent sampling `sampleExp n d` (`ProbComp.sampleModNat`) has statistical distance at most `1 / 2 ^ n` from uniform on `ZMod q`, `Q n` simulated conversations (`schnorrSimulatedTranscript`) are within statistical distance `Q n / 2 ^ n` of ideal honest conversations (`schnorrHonestTranscript`) and within `2 * Q n / 2 ^ n` of strict-PPT honest conversations (`schnorrRealTranscript`), reducing any uniform strict-PPT eavesdropper via `SchnorrEavesdropAdversary.toDirect` to `schnorrDirectGame` and hence to `DiscreteLog` (`succProbability_schnorrEavesdropGame_le`, `negligible_schnorrEavesdropGame`, `schnorr_isEavesdropSecure_of_discreteLogHard`; checked on the order-`11` Schnorr group in `(ZMod 23)ˣ` in [`ComplexityTests/Crypto/SchnorrDiscreteLog.lean`](../../ComplexityTests/Crypto/SchnorrDiscreteLog.lean)).
 
 ## VOLE ideal functionality, IT-MACs, and VOLE-in-the-head
@@ -175,8 +179,11 @@ The same module instantiates `schnorrFamilyROMScheme` with `m`-bit challenges wh
 EUF-CMA bounds account for both signing queries and random-oracle queries. The asymptotic theorem
 `negligible_eufCmaGame_schnorrFamilyROMScheme` assumes negligible success of the specified forking
 reduction. Applying the strict-PPT discrete-logarithm assumption still requires an efficient
-realization of that reduction, with encoded oracle access and polynomial private-coin replay.
-See the checked algorithms and typed-ROM examples in
+realization of that reduction, with encoded adaptive signing/hash access and final-message
+freshness. The private-coin prerequisite is supplied by `IsOraclePPTOn.exists_savedCoins` in
+[`Oracle/Replay.lean`](../../Complexity/Computability/Probabilistic/Oracle/Replay.lean), which charges
+full-input replay and retains external state; connecting it to the signature ROM reduction remains
+open. See the checked algorithms and typed-ROM examples in
 [`ComplexityTests/Crypto/SchnorrSignature.lean`](../../ComplexityTests/Crypto/SchnorrSignature.lean).
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
@@ -233,10 +240,49 @@ Keep receiver choices and selected values private; giving either to the sender c
 [OT commitment tests](../../ComplexityTests/Crypto/OTCommitment.lean) demonstrate rejection of an
 inconsistent opening, a tight one-call attack with success `1/2`, and the zero-call bound `1`.
 
-This is a fixed-schedule information-theoretic commitment construction, with honest correctness
-and double-opening binding. It has no polynomial-time certificate or ideal commitment
-realization. The malicious MPC compiler and real/ideal simulation remain open in
+To extract a bit before opening, import
+[`OTCommitment.Extraction`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/Extraction.lean).
+`extract` takes the strict majority of the actual OT input pair parities, choosing false on a tie.
+Only the simulator receives these corrupted sender inputs; this is not extraction from a public
+commitment string. `simulatedOpening_coupled` couples `realOpening` with `simulatedOpening` within
+`2⁻⌈k/2⌉`, jointly preserving the sender's state at the commit boundary and any auxiliary output
+from its opening continuation. The simulator fixes the bit before that continuation runs and
+releases only the stored bit or abort. Apply the coupling's `toOuterMeasure_le` for any event of
+this joint output. With two mixed-parity rows, extraction error can be `1/2` even though the
+double-opening bound is `1/4`; the
+[checked examples](../../ComplexityTests/Crypto/OTCommitmentExtraction.lean) attain both bounds.
+
+For native computation, import
+[`OTCommitment.PolyTime`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/PolyTime.lean).
+`extractPairs_polyTime` certifies the deterministic extractor with input encoding
+`encList (encPair encBool encBool)` and output `encBool`. `extractPairs_ofFn` connects the explicit
+list algorithm to the OT table extractor. This certificate applies only to the extractor.
+
+These fixed-schedule experiments do not provide full ideal commitment realization, corrupt-receiver
+simulation, composition, or a polynomial-time simulator. The malicious MPC compiler and its
+real/ideal simulation remain open in
 [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
+
+For a stateful functionality with separate commit and open phases, import
+[`Complexity.Crypto.Protocols.Commitment.World`](../../Complexity/Crypto/Protocols/Commitment/World.lean)
+and open `Cslib.Crypto.Protocols.Commitment.Phased`. `world` implements the existing
+`Interactive.World`: sender queries are `Sum.inl (Command.commit b)`, `Sum.inl Command.open`,
+and `Sum.inl Command.abort`; the receiver can only query `Sum.inr ()` to poll. Use
+`ProbOracleComp.query (spec := senderSpec ⊕ₒ receiverSpec)` to make these calls and
+`world.eval` to observe a program's result. The private `Store` is available for proofs, but is
+excluded from that observation. Polling returns `Observation.receipt` while a bit is committed,
+then `Observation.opened b` after opening.
+
+This original single-session abort variant ignores early opening and repeated commitments.
+Abort before opening is terminal; abort after opening cannot retract the released bit.
+`polling_secrecy` handles arbitrary receiver-only programs with private sampling before opening;
+it does not assert secrecy when sender commands interleave and open the commitment.
+`committed_invariant` preserves the committed bit or abort under arbitrary supported joint
+executions. The [checked world clients](../../ComplexityTests/Crypto/CommitmentWorld.lean)
+show honest opening, early opening followed by commitment, attempted overwrite, both abort
+orders, and adaptive private polling. These are functionality laws, not an OT realization,
+UC security, or a simulator runtime certificate. Connecting OT extraction and equivocation to
+these phases is a separate milestone; full malicious MPC remains open.
 
 ## Upstream perfect secrecy and sharing
 

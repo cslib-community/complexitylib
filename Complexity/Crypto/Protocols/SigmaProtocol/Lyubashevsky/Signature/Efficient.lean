@@ -55,7 +55,7 @@ abbrev LyubashevskySignInput :=
   LyubashevskyParams × List (List ℤ) × List (List ℤ) × List Bool
 
 /-- Matrix entries are binary; dimensions and sampling width retain the parameter encoding. -/
-def encLyubashevskySignInput : LyubashevskySignInput ↪ List Bool :=
+@[expose] def encLyubashevskySignInput : LyubashevskySignInput ↪ List Bool :=
   encPair encLyubashevskyParams
     (encPair (encList (encList encIntBin)) (encPair (encList (encList encIntBin)) encBits))
 

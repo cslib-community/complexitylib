@@ -188,7 +188,9 @@ noncomputable def contractStep : ProbOracleComp Op.Result Unit := do
 /-- Contract `s` times. -/
 noncomputable def contractTimes : ℕ → ProbOracleComp Op.Result Unit
   | 0 => pure ()
-  | s + 1 => contractStep >>= fun _ => contractTimes s
+  | s + 1 => do
+    contractStep
+    contractTimes s
 
 /-- **Karger's algorithm**: contract down to two supervertices, and answer the weight between
 them, half their total weight. -/

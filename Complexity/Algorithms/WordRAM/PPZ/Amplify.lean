@@ -122,8 +122,9 @@ finds a satisfying assignment of `φ`: `true` if some round found one. -/
 noncomputable def repeatRoundWith (O : (Fin n → Option Bool) → Fin n → Option Bool)
     (φ : CNF (Fin n)) : ℕ → PMF Bool
   | 0 => PMF.pure false
-  | R + 1 => (roundWith O).bind fun τ =>
-    if succeeds φ τ then PMF.pure true else repeatRoundWith O φ R
+  | R + 1 => do
+    let τ ← roundWith O
+    if succeeds φ τ then pure true else repeatRoundWith O φ R
 
 /-- The output of up to `R` independent rounds of PPZ, stopping at the first success: `true` if
 some round found a satisfying assignment. -/
@@ -150,7 +151,8 @@ theorem repeatRoundWith_false_toReal (O : (Fin n → Option Bool) → Fin n → 
         exact Finset.sum_congr rfl fun τ _ => by by_cases hτ : succeeds φ τ = true <;> simp [hτ]
       rw [hcongr, roundSuccessProbWith]
       linarith
-    rw [repeatRoundWith, h, pow_succ]
+    rw [repeatRoundWith, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
+      h, pow_succ]
     calc ∑ τ, ((roundWith O) τ).toReal *
           ((if succeeds φ τ = true then PMF.pure true else repeatRoundWith O φ R) false).toReal
         = ∑ τ, ((roundWith O) τ).toReal * (if succeeds φ τ = true then 0 else 1) *
