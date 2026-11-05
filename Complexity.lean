@@ -3134,6 +3134,7 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Computational
 public import Complexity.Crypto.Protocols.SigmaProtocol.Efficient
 public import Complexity.Crypto.Protocols.SigmaProtocol.FiatShamir
 public import Complexity.Crypto.Protocols.SigmaProtocol.Identification
+public import Complexity.Crypto.Protocols.SigmaProtocol.Interactive
 public import Complexity.Crypto.Protocols.SigmaProtocol.Linear
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract
