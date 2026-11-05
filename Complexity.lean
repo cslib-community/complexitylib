@@ -3983,6 +3983,8 @@ public import Complexity.Foundations.Probability.Gaussian.Periodization
 public import Complexity.Foundations.Probability.Gaussian.Poisson
 public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
+public import Complexity.Foundations.Probability.Gaussian.ShiftBounds
+public import Complexity.Foundations.Probability.Gaussian.Smoothing
 public import Complexity.Foundations.Probability.GridRowMoment
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
