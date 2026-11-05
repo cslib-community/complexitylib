@@ -3898,6 +3898,8 @@ public import Complexity.Foundations.Probability.HierarchyInitialSparseSecondNoi
 public import Complexity.Foundations.Probability.HierarchyInitialUniform
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchyPilotStability
+public import Complexity.Foundations.Probability.HierarchyProductMean
+public import Complexity.Foundations.Probability.HierarchyProductTransport
 public import Complexity.Foundations.Probability.HierarchyRankCutoffs
 public import Complexity.Foundations.Probability.HierarchyRankEnvironment
 public import Complexity.Foundations.Probability.HierarchyRawMoment

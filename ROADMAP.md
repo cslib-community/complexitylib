@@ -218,7 +218,10 @@ index links to canonical definitions rather than keeping a second set.
   second centered noise uses spare decay in the unchanged usage-walk allocation.
   One common charge pays the actual initial four-statistic mixed-tail reserve on an
   explicit covered-field/depth family, conditional on the lower-budget accuracy and
-  separate reset-right execution premises. General terminal-rank and correction products,
+  separate reset-right execution premises. Bounded finite residual products now have
+  canonical-reference mean identities and conditional executed own-request root payments;
+  their conservative scalar allowances are not allocated from the precision schedule.
+  General terminal-rank applications and request-scheduled correction-product allocations,
   simultaneous recursive accuracy/availability and native logarithmic workspace/class
   equality remain open.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a

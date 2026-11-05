@@ -234,6 +234,31 @@ stay literal; positive-bin errors are summed and the negative error occurs once.
 The [checked error client](../../ComplexityTests/HierarchyChildError.lean) instantiates the
 actual two-bin cap and exact adjacent ratio on the shared spectator/suffix fixture.
 
+For literal executed residual calls, import
+[HierarchyProductTransport](../../Complexity/Foundations/Probability/HierarchyProductTransport.lean).
+`positiveSample_residual_compressed` extracts the compressed direct/reset-right calls
+and the evaluated normalized left correction. `finiteInput_residual_root_payment` keeps
+the actual per-bin `binBudget` and the separate negative `childBudget`, and consumes each
+child's scalar rooted allowance on its own source/usage masks. Successful calls and
+estimated-child range/usage bounds remain premises. The conservative field-width, bin,
+importance and density costs stay explicit; they are not paid from the precision schedule.
+The [execution clients](../../ComplexityTests/HierarchyProductTransport.lean) distinguish
+supplied nonzero histories from recursively available compressed calls.
+
+[HierarchyProductMean](../../Complexity/Foundations/Probability/HierarchyProductMean.lean)
+identifies that finite canonical reference with the actual residual $C+EC-E$.
+`residualCanonicalInput_mean` derives preparation support and rank thresholds from the
+polynomial/hierarchy laws; `residualCanonicalInput_stage_mean` transports the result to
+the request's true stage channels. The base is nonnegative and row-substochastic, its
+entries are bounded by the terminal rank rate, every positive entry in the queried column
+is covered by the finite bin family, and the source/horizon/stage bounds remain explicit.
+The source may be narrower than the terminal. `finiteInput_residual_mean_payment` composes this identity
+with the conditional executed root payment on one environment, subtracting the negative
+correction once. The [canonical client](../../ComplexityTests/HierarchyProductMean.lean)
+has two actual bins, unequal nonempty reset suffixes and positive genuine $E$ and $EC$.
+It executes a supplied canonical history; it does not establish simultaneous recursive
+compressed availability or allocate the conservative scalar allowances.
+
 [FirstMeanError](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstMeanError.lean)
 then proves `actualEstimatedResidual_first_mean_le`: the completed full-terminal raw walk
 preserves this input mean and the actual first prefix has bound
