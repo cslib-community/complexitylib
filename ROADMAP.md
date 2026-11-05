@@ -55,8 +55,10 @@ Priorities live in this list and in the tiers of [#897].
   The discrete Gaussian foundation proves convergence, positive normalization and translation
   laws on shifted discrete lattices ([#2573](https://github.com/cslib-community/complexitylib/issues/2573));
   finite exponential moments and normalizer-ratio tails are proved in
-  [#2592](https://github.com/cslib-community/complexitylib/issues/2592). Uniform control of that
-  ratio, multidimensional lattice Poisson summation, smoothing estimates, efficient sampling
+  [#2592](https://github.com/cslib-community/complexitylib/issues/2592). Local normal convergence
+  and continuous lattice periodization, including Schwartz and Gaussian clients, are proved in
+  [#2608](https://github.com/cslib-community/complexitylib/issues/2608). Uniform control of the
+  normalizer ratio, multidimensional lattice Poisson summation, smoothing estimates, efficient sampling
   and the quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
