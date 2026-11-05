@@ -263,6 +263,15 @@ are preserved. Malformed public keys have no encoding-range guarantee. The typed
 arbitrary hash words and the approximate key-generation law remain part of the full ROM bridge
 [#2568](https://github.com/cslib-community/complexitylib/issues/2568).
 
+The existing `fiatShamir` and its finite security theorem accept an injective
+`hashPoint : (M × T) ↪ Query`. Signing and final verification query `hashPoint (m, t)`, while
+arbitrary other `Query` values remain in the same cache and count toward the hash-query budget.
+The original clients use the identity embedding. The proof uses injectivity to recover the same
+message and commitment at a successful fork; it requires no image-membership test or decoder.
+This representation generalization ([#2684](https://github.com/cslib-community/complexitylib/issues/2684))
+preserves the quantitative bound. It does not certify a native implementation of `hashPoint` or
+complete the concrete word Schnorr reduction and its key-generation/signing approximation hops.
+
 The same module instantiates `schnorrFamilyROMScheme` with `m`-bit challenges when
 `2 ^ m ≤ F.order d`, and `schnorrScalarROMScheme` with full scalar challenges. Their exact typed
 EUF-CMA bounds account for both signing queries and random-oracle queries. The asymptotic theorem

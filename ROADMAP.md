@@ -183,6 +183,10 @@ families and full-input native runtime.
 
 ### Public-key, lattice and symmetric constructions ([#640])
 
+- **Fiat–Shamir query representations**: the finite theorem permits an injective hash-point
+  embedding into an arbitrary query domain, retaining every out-of-image query and the same bound
+  ([#2684](https://github.com/cslib-community/complexitylib/issues/2684)). Concrete word Schnorr
+  specialization and explicit key-generation/signing approximation transport remain open.
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers. Word verification now enforces canonical commitments for canonical
   public keys ([#2672](https://github.com/cslib-community/complexitylib/issues/2672)).
