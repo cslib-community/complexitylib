@@ -3120,6 +3120,14 @@ public import Complexity.Crypto.Protocols.MPC.CircuitEval
 public import Complexity.Crypto.Protocols.MPC.Composition
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllOutOfR
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.OddSources
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.ThresholdEntropy
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.ZeroSumPads
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomnessBinary
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
@@ -3378,6 +3386,7 @@ public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.Sqrt
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
+public import Complexity.Foundations.BooleanAnalysis.BernoulliPMF
 public import Complexity.Foundations.BooleanAnalysis.Bonami
 public import Complexity.Foundations.BooleanAnalysis.BucketWeight
 public import Complexity.Foundations.BooleanAnalysis.Concentration
@@ -3958,6 +3967,8 @@ public import Complexity.Foundations.RingTheory.AdjoinRoot
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
+public import Complexity.GameTheory.FairDivision.EFX
+public import Complexity.GameTheory.FairDivision.EFXApproximation
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString
@@ -4244,6 +4255,7 @@ public import Complexity.Probability.PMF.Bind
 public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Map
+public import Complexity.Probability.PMF.MonotoneCoupling
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound
@@ -4288,6 +4300,7 @@ public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
+public import Complexity.Probability.Thinning
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash

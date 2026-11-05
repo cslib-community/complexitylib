@@ -43,6 +43,13 @@ Priorities live in this list and in the tiers of [#897].
 
 ## Cryptography
 
+The optional original STOC experiment is tracked in
+[issue 2524](https://github.com/cslib-community/complexitylib/issues/2524). STOC submission 886's
+primary two-party and supplementary threshold separation results, sharp extraction bounds
+and key-relative entropy guarantees are implemented; final independent review and integrated
+validation remain required. The broader optional programme stays open, and primary-headline
+coverage does not claim every ancillary result in a paper.
+
 ### Cryptographic landmarks
 
 - **Completeness of oblivious transfer.** In the ideal OT-hybrid model, every polynomial-time

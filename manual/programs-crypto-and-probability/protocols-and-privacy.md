@@ -116,6 +116,152 @@ No differential-privacy model was identified by the recorded local/upstream sear
 Only selected protocol endpoints and key definitions were traced. The source files themselves give detailed source mappings; this pass did not independently reconcile every textbook constant, lattice-abort construction or signature reduction. Existing regression tests are not newly executed evidence. The precise coalition and advice restrictions above should be retained even when summarizing the results compactly.
 
 [bs23]: ../sources.md#bs23
+## Sharing with imperfect randomness
+
+Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomnessBinary` and use
+`Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.binary_field_separation` for an actual
+finite-field family at every message length $b \ge 2$. The source class varies a set of field
+indices; each source is uniform on its selected key set. The theorem supplies perfect
+reconstruction, equality of each share's marginal law across all messages, source min-entropy
+at least $b$, and extraction error at least $1/6$ for every deterministic bit extractor on some
+source. The ambient key and share alphabets have cardinalities $2^{b+2}$ and $2^{b+1}$.
+Use `binary_string_separation` for the same separation on literal `Fin n → Bool`
+alphabets. It supplies one scheme and source family, flat supports of size between
+$2^b$ and $2^{b+1}$, and the extraction obstruction for every positive output length.
+The checked two-bit client uses the same scheme for correctness, privacy and failure
+of arbitrary three-bit extractors. The encoding bijections are chosen noncomputably. The separate `shareWithFieldCost_spec`
+and `reconstructWithFieldCost_spec` certify the actual algebraic routines with at most
+three field operations for sharing and four for reconstruction. Each field arithmetic
+operation costs one; tags, pairing and field-coordinate access are free. These are
+field-operation bounds, with no bit-level runtime claim for arithmetic or encoding.
+The existing upstream `Scheme`
+fixes one generator, whereas this endpoint quantifies over a class of generator laws.
+
+The abstract's supplementary main Theorem 1.2 is covered by the two-out-of-$n$ and
+$r$-out-of-$r$ constructions, Theorems 4.1 and 5.1. The next section documents the full
+`TwoOutOfN.binary_theorem4_1` bundle. For $r=n+1\ge2$ and $b\ge r$, use
+`AllOutOfR.binary_separation`: it constructs coefficients and literal encodings and proves
+all-key reconstruction, joint privacy of every proper coalition, exact size/entropy bounds
+and sharp extraction. See the
+[all-out-of-r instructions](../design-and-assurance/assurance.md#all-out-of-r-sharing-from-odd-sources)
+for its model and complete client. Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.ThresholdEntropy`
+for `TwoOutOfN.minEntropy_key_relative` and `AllOutOfR.minEntropy_key_relative`,
+which give Theorem 1.2's explicit common bound $H_\infty(P)\ge\log_2|K|-\log_2 3$
+on the actual unpadded threshold key alphabets. Review and final integration evidence remain in
+[issue 2524](https://github.com/cslib-community/complexitylib/issues/2524).
+
+Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness`
+and apply `binary_padded_extraction_tight` for the matching $1/6$ upper bound at every
+admitted field size. It constructs an index bit whose error is at most $1/6$ on every
+original padded source and exactly $1/6$ on some source. The generic
+`OddSources.no_string_extractor` proves the lower bound $1/(2|B|)$ for every positive
+output length when the branch type is odd. `exists_tight_index_extractor` supplies
+an attaining bit extractor for even nonempty index spaces when the branch classes
+have consecutive sizes. These are actual source laws and constructed extractors;
+correctness and joint privacy of an arbitrary-party scheme are separate obligations.
+The [generic and tightness clients](../../ComplexityTests/Crypto/OddSourcesTests.lean)
+exercise both class orientations, real branch/source counts and the original two-party
+class, including the padded case.
+
+The [checked clients](../../ComplexityTests/Crypto/ImperfectRandomness.lean) instantiate the
+four-element field, show both source-size endpoints, check concrete sharing rules, and apply
+the extraction obstruction. From the repository root after setup, run
+`scripts/build.sh ComplexityTests.Crypto.ImperfectRandomness`; a successful build checks these
+examples. The [source](../../Complexity/Crypto/Protocols/SecretSharing/ImperfectRandomness.lean)
+maps the construction to Aggarwal's Theorem 1.1 and Section 3.
+
+## Two-out-of-n sharing with the actual source class
+
+Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN`. In namespace
+`Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN`, use
+`binary_theorem4_1 n b hn hb` with $n \ge 2$ and $n < 2^b$. It constructs distinct nonzero
+slopes in `GaloisField 2 b`, fixed message/share bijections onto `Fin b → Bool` and
+`Fin (b + 1) → Bool`, and the sharing map `bitShare`. These bijections transport actual sharing
+functions. They are noncomputable choices,
+so no bit-level runtime is claimed. Field operations have the convention of the preceding
+section. Theorem 4.1 itself states no additional runtime bound.
+
+Keys are `(Fin (n - 1) ⊕ Fin n) × GaloisField 2 b`: the $n-1$ central branches are distinct keys,
+although their outputs agree. At a side key only its owning party receives a tagged index;
+every other party gets $\alpha_j i+m$. The shared `OddSources.source (central n)` law takes
+all central branches at indices in $T$ and all side branches outside $T$, then samples uniformly
+from that entire set, with no additional dealer randomness. Every choice of $T$ is retained.
+The key space has $(2n-1)2^b$ elements. The exact support size is $n2^b-|T|$, between
+$(n-1)2^b$ and $n2^b$, and min-entropy is at least $b+\log_2(n-1)$.
+
+`authorized_correctness` reconstructs from the complete view of every coalition with at least
+two members, on every ambient key. `unauthorized_privacy` equates the joint view laws of every
+coalition with fewer than two members, including the empty coalition. The `bit_` versions
+preserve these claims for the encoded shares. `share_apply_inl` and `share_apply_inr` expose
+Lemma 4.3's exact ordinary and tagged masses, $(n-1)/Z_T$ and $1/Z_T$ outside $T$, respectively.
+Subtraction in the general-field reconstruction formulas becomes addition in characteristic two,
+matching equations (5)–(6), PDF pp. 8–9 of STOC submission 886.
+
+`extraction_parameters` proves that the actual central/side counts are $n-1$ and $n$, that both
+are nonempty, and that the total is odd. `binary_index_parameters` proves even index cardinality
+and slope existence at every admissible $n,b$. The constructor's `no_string_extractor`
+instantiates `OddSources.no_string_extractor` on exactly these sources, for every positive
+output length and every deterministic extractor, with lower bound $1/(4n-2)$.
+`exists_tight_index_extractor` instantiates the common balanced-index theorem: it constructs
+an actual index function attaining that error on one source and at most that error on every
+source. `binary_theorem4_1` bundles these with the same sharing scheme, source family,
+correctness, privacy, literal encodings and size/entropy statements, with no unproved linking
+premises. `binary_construction` remains the intermediate correctness/privacy/items 1–2 result.
+
+From the repository root after setup, run `scripts/build.sh ComplexityTests.Crypto.TwoOutOfN`.
+The [checked client](../../ComplexityTests/Crypto/TwoOutOfN.lean) covers $n=2,3$ at $b=2$, rejects
+the inadmissible $b=1$ edge, checks the actual tag ownership and duplicated central keys,
+reconstructs an actual pair, proves singleton/empty privacy and failure of authorized privacy,
+checks both extremal source supports and masses, and applies the full bundle to arbitrary
+three-bit extractors at $n=3$ while obtaining tight index errors $1/10$ and $1/6$ at $n=3,2$.
+The [source module](../../Complexity/Crypto/Protocols/SecretSharing/ImperfectRandomness/TwoOutOfN.lean)
+gives the precise result-to-declaration mapping.
+
+## Independent thinning of spread sources
+
+Import `Complexity.Probability.Thinning`. In namespace `Cslib.Probability.Thinning`,
+`pmf_thinning_le_bernoulli` compares the independent $t$-thinning of any $q$-spread parent PMF
+with Bernoulli density $p$ on every increasing event, under
+$tq(1-p) \le p(1-t)$, $0 \le t < 1$, $0 < p < 1$ and $0 \le q$.
+Parent coordinates may be correlated; the retention mask is independent of the parent.
+`IsSpread` bounds the probability of containing each fixed subset.
+`thinning_le_bernoulli_explicit_density` gives density $tq/(1-t+tq)$ for $0<t<1$ and $q>0$;
+`thinning_le_bernoulli_of_alpha` gives the universal thinning corollary when
+$\alpha^2 \le 1-\alpha$.
+
+For the actual containing coupling, apply `exists_thinning_coupling` to the parent PMF and
+its spread proof under the same parameter hypotheses. It returns a joint PMF `γ` with
+`γ.map Prod.fst = thin μ t ht ht'.le`,
+`γ.map Prod.snd = bernoulliSet p hp.le hp'.le`, and
+`∀ z ∈ γ.support, z.1 ⊆ z.2`. Thus containment holds almost surely, and both marginals
+are actual laws. `thin` draws the parent and a fresh independent retention mask;
+`Cslib.BitString.bernoulliPMF` gives the mask its normalized product weights.
+The coupled output sets need not be independent. These are semantic probability laws with
+no sampler runtime bound.
+
+`exists_thinning_coupling_explicit_density` returns this coupling at $tq/(1-t+tq)$, together
+with proofs that the density lies in $[0,1]$. `exists_thinning_coupling_of_alpha` gives the
+containing-coupling form of the corollary, including the universal choice $α=1/2$.
+These cover STOC submission 1278, Definition 1.1, Theorem 1.2 (including (1.4)) and
+Corollary 1.3 on PDF page 2. Every finite ground type is allowed, including the empty type.
+The parameter extensions $t=0$ and $q=0$ are also supported by the general endpoint.
+The signed kernel used to prove event comparison can have negative entries; it is an
+algebraic device rather than a conditional probability.
+
+For other finite ordered state spaces, import `Complexity.Probability.PMF.MonotoneCoupling`
+and use `Cslib.Probability.PMF.exists_monotone_coupling`. Supply upper-event comparison for
+the two PMFs; the theorem produces an ordered joint law on any finite preorder.
+`upperSet_le_of_monotone_coupling` recovers event comparison from a joint law. The proof
+uses finite level sets and compact convex separation, so it requires no assumed Strassen
+or transport theorem.
+
+The [checked thinning clients](../../ComplexityTests/Thinning.lean) use a correlated, nonempty
+singleton parent at the exact boundary $t=q=1/2$, $p=1/3$, recover the same density from the
+explicit formula, exclude a noncontained pair from the joint support, and exercise the
+corollary and empty ground type. The [generic coupling clients](../../ComplexityTests/ProbabilityMonotoneCoupling.lean)
+also rule out reversed deterministic marginals. From the repository root, run
+`scripts/build.sh ComplexityTests.Thinning ComplexityTests.ProbabilityMonotoneCoupling` to check them.
+
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [goldreich04]: ../sources.md#goldreich04
