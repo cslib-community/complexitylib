@@ -277,6 +277,13 @@ This representation generalization ([#2684](https://github.com/cslib-community/c
 preserves the quantitative bound. It does not certify a native implementation of `hashPoint` or
 complete the concrete word Schnorr reduction and its key-generation/signing approximation hops.
 
+`FiatShamir.reduction` now takes an explicit `fallback` output for a failed fork. The existing
+quantitative theorem holds for every such value, with no requirement that it satisfy the witness
+relation. The Schnorr reduction wrappers use zero. This removes the hidden choice of the failure
+output ([#2774](https://github.com/cslib-community/complexitylib/issues/2774)); it does not certify
+the reduction's native runtime or its ideal scalar sampling. Replacing the transcript and answer
+defaults in a native implementation still requires a bounded-execution nonexhaustion proof.
+
 [`SchnorrSignature/WordROM.lean`](../../Complexity/Crypto/Computational/SchnorrSignature/WordROM.lean)
 instantiates that theorem with the actual native word verifier. `schnorrWordSigma` keeps statements
 as group elements, so the public key is canonical, but permits arbitrary commitment and response
