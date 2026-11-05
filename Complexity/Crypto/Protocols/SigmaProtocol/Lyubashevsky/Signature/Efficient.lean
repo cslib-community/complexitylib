@@ -47,6 +47,8 @@ public section
 
 namespace Cslib.Crypto.Protocols.SigmaProtocol
 
+open Mathlib.Tactic.Matrix
+
 open Probability Probability.PMF Turing.MultiTapeTM Interactive
 open scoped ENNReal _root_.Matrix
 
@@ -64,14 +66,15 @@ def lyubashevskySignCommitment
     (input : LyubashevskySignInput × List ℤ) : List Bool :=
   let ((p, _, matrix, _), randomness) := input
   encList encIntBin ((List.range p.n).map fun i =>
-    zmodReduce p.q (listDot p.m (matrix.getD i []) randomness))
+    zmodReduce p.q (ListMatrix.dotProduct p.m (matrix.getD i []) randomness))
 
 /-- Native shifted response from secret rows, commitment randomness and raw challenge bits. -/
 def lyubashevskySignResponse
     (input : (LyubashevskySignInput × List ℤ) × List Bool) : List ℤ :=
   let (((p, secret, _, _), randomness), challenge) := input
   (List.range p.m).map fun i =>
-    randomness.getD i 0 + listDot p.k (secret.getD i []) (challengeIntList p.k challenge)
+    randomness.getD i 0 +
+      ListMatrix.dotProduct p.k (secret.getD i []) (challengeIntList p.k challenge)
 
 /-- Compute the commitment and shifted response, retaining exactly the inner-box responses.
 A short hash result is padded with false bits, and excess bits are ignored. -/
@@ -193,7 +196,8 @@ theorem lyubashevskySignCommitment_ofFn (p : LyubashevskyParams)
   rw [← List.map_coe_finRange_eq_range, List.map_map]
   conv_rhs => rw [List.ofFn_eq_map]
   refine List.map_congr_left fun i _ => ?_
-  rw [Function.comp_apply, zmodReduce_eq_cast, intCast_listDot_matrix_ofFn A r i]
+  rw [Function.comp_apply, zmodReduce_eq_cast,
+    ListMatrix.intCast_dotProduct_matrix_ofFn A r i]
 
 /-- Response computation agrees with the typed integer matrix product on canonical inputs. -/
 theorem lyubashevskySignResponse_ofFn (p : LyubashevskyParams)
@@ -214,7 +218,7 @@ theorem lyubashevskySignResponse_ofFn (p : LyubashevskyParams)
   refine List.map_congr_left fun i _ => ?_
   simp only [Function.comp_apply, List.getD_eq_getElem?_getD, List.getElem?_ofFn,
     i.isLt, ↓reduceDIte, Option.getD_some]
-  rw [listDot_ofFn]
+  rw [ListMatrix.dotProduct_ofFn]
   rfl
 
 /-- Native postprocessing has exactly the deterministic signing-step semantics. -/

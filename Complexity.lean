@@ -2593,6 +2593,7 @@ public import Complexity.Computability.PolyTime.GaloisRingSeries
 public import Complexity.Computability.PolyTime.GaloisRingUnits
 public import Complexity.Computability.PolyTime.GreedyLabelSchedule
 public import Complexity.Computability.PolyTime.GreedySlotScore
+public import Complexity.Computability.PolyTime.Int.DotProduct
 public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Computability.PolyTime.Int.Jet
 public import Complexity.Computability.PolyTime.Int.Table
@@ -3735,6 +3736,7 @@ public import Complexity.Foundations.Data.List.Basic
 public import Complexity.Foundations.Data.List.Blocks
 public import Complexity.Foundations.Data.List.Boole
 public import Complexity.Foundations.Data.List.Counting
+public import Complexity.Foundations.Data.List.DotProduct
 public import Complexity.Foundations.Data.List.Equiv
 public import Complexity.Foundations.Data.List.EraseDups
 public import Complexity.Foundations.Data.List.EraseDupsBy
@@ -3837,6 +3839,7 @@ public import Complexity.Foundations.Data.Seq.Computation
 public import Complexity.Foundations.Data.Set.Card
 public import Complexity.Foundations.Data.StackTape
 public import Complexity.Foundations.Data.ZMod.Basic
+public import Complexity.Foundations.Data.ZMod.DotProduct
 public import Complexity.Foundations.Data.ZMod.ModulusSwitch
 public import Complexity.Foundations.FieldTheory.Finite.Basic
 public import Complexity.Foundations.FieldTheory.Finite.BinaryField

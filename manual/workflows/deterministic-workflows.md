@@ -39,6 +39,21 @@ base and unary exponent certificates. The complete
 magnitudes and signs. A binary exponent has a different output-size obligation: do not replace
 the unary exponent encoding merely to make a goal match.
 
+For a padded integer dot product, import
+[PolyTime/Int/DotProduct.lean](../../Complexity/Computability/PolyTime/Int/DotProduct.lean)
+and use `ComputableInPolyTime.listDotProduct`. It certifies the existing pure public
+`Mathlib.Tactic.Matrix.ListMatrix.dotProduct`: the cutoff is unary, coefficients are signed
+binary, missing entries are zero, and entries beyond the cutoff are ignored. Runtime still
+charges both complete framed input lists. The operation lives in a Mathlib tactic-support
+file but is ordinary term-level arithmetic, not a meta program.
+The pure [list identities](../../Complexity/Foundations/Data/List/DotProduct.lean) and
+[residue-matrix bridge](../../Complexity/Foundations/Data/ZMod/DotProduct.lean) require neither
+crypto nor native imports. The former local Lyubashevsky `listDot` duplicate has been removed;
+its verifier, extractor and signer use the same upstream operation. The
+[checked clients](../../ComplexityTests/ListDotProduct.lean) cover padding, truncation, signed
+large coefficients and unchanged verifier outcomes and commitment bytes. This API
+consolidation adds no cryptographic security claim.
+
 Keep a record's encoded tuple layout at its construction boundary. For example,
 [`NativePacket.PacketCtx.mk_polyTime`](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
 composes certificates for named fields while preserving the existing encoded words; its
