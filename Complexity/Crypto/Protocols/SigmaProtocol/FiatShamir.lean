@@ -103,14 +103,6 @@ noncomputable def fiatShamir (P : SigmaProtocol X Y T C Z) (keyGen : PMF (X × Y
 
 variable [DecidableEq M] [DecidableEq T] [Fintype C] [Nonempty C]
 
-/-- A table entry produced by a call of the oracle is found at its point. -/
-private theorem lookup_of_mem_support_oracle {x : M × T} {cache : List ((M × T) × C)}
-    {result : C × List ((M × T) × C)} (h : result ∈ (oracle C x cache).support) :
-    result.2.lookup x = some result.1 := by
-  rcases (RandomOracle.mem_support_memoize_iff _ _ _ _).mp h with ⟨hlookup, hnext⟩ | ⟨_, _, hnext⟩
-  · rw [hnext, hlookup]
-  · rw [hnext, List.lookup_cons_self]
-
 /-- **Correctness** of Fiat–Shamir signatures: with a complete Sigma protocol and keys in the
 relation, every honest signature verifies. -/
 theorem fiatShamir_correct {P : SigmaProtocol X Y T C Z} {keyGen : PMF (X × Y)}
@@ -289,15 +281,6 @@ private theorem realHandler_map (P : SigmaProtocol X Y T C Z) (keyGen : PMF (X �
       PMF.map_comp, Function.comp_def]
     rfl
 
-/-- An oracle call adds at most one entry to the table. -/
-private theorem length_le_of_mem_support_oracle {x : M × T} {cache : List ((M × T) × C)}
-    {result : C × List ((M × T) × C)} (h : result ∈ (oracle C x cache).support) :
-    result.2.length ≤ cache.length + 1 := by
-  rcases (RandomOracle.mem_support_memoize_iff _ _ _ _).mp h with ⟨_, hnext⟩ | ⟨_, _, hnext⟩
-  · rw [hnext]
-    exact Nat.le_succ _
-  · rw [hnext, List.length_cons]
-
 /-- The real and the programming signer agree until the flag is raised. -/
 private theorem identicalUntilBad (P : SigmaProtocol X Y T C Z) (key : X × Y) :
     IdenticalUntilBad (realHandler (M := M) P key) (programHandler P key)
@@ -468,16 +451,6 @@ and the unused transcripts. -/
 private def represent (st : ReductionState M T C Z) : GameState M T C × List (T × C × Z) :=
   ((st.table.map fun e => (e.1, e.2.1), st.signed), st.transcripts)
 
-omit [Fintype C] [Nonempty C] in
-/-- Forgetting positions commutes with looking up a point. -/
-private theorem lookup_map_table (table : List ((M × T) × C × Option ℕ)) (x : M × T) :
-    (table.map fun e => (e.1, e.2.1)).lookup x = (table.lookup x).map Prod.fst := by
-  induction table with
-  | nil => rfl
-  | cons e rest ih =>
-    obtain ⟨k, b⟩ := e
-    cases hxk : x == k <;> simp [List.lookup_cons, hxk, ih]
-
 variable [Nonempty T] [Nonempty Z]
 
 omit [Fintype C] in
@@ -534,7 +507,7 @@ private theorem combined_step (q : M ⊕ (M × T)) (s : ReductionState M T C Z �
     cases h : s.1.table.lookup x with
     | some e =>
       have hcache : (represent s.1).1.1.lookup x = some e.1 := by
-        rw [represent, lookup_map_table, h]
+        rw [represent, List.lookup_map_snd, h]
         rfl
       rw [run_reductionHandler_inr_some h]
       simp only [run_interpret_countingUniform_pure, PMF.monad_map_eq_map, PMF.pure_map,
@@ -544,7 +517,7 @@ private theorem combined_step (q : M ⊕ (M × T)) (s : ReductionState M T C Z �
       rfl
     | none =>
       have hcache : (represent s.1).1.1.lookup x = none := by
-        rw [represent, lookup_map_table, h]
+        rw [represent, List.lookup_map_snd, h]
         rfl
       rw [run_reductionHandler_inr_none h]
       simp only [interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map,
@@ -564,7 +537,7 @@ private theorem map_run_finish (P : SigmaProtocol X Y T C Z) (y : Y) (a : M × (
   cases h : st.table.lookup (a.1, a.2.1) with
   | some e =>
     have hcache : (represent st).1.1.lookup (a.1, a.2.1) = some e.1 := by
-      rw [represent, lookup_map_table, h]
+      rw [represent, List.lookup_map_snd, h]
       rfl
     simp only [finish, h, run_interpret_countingUniform_pure, PMF.pure_map, finishGame]
     rw [oracle, memoize_of_some _ _ _ _ hcache]
@@ -572,7 +545,7 @@ private theorem map_run_finish (P : SigmaProtocol X Y T C Z) (y : Y) (a : M × (
     rfl
   | none =>
     have hcache : (represent st).1.1.lookup (a.1, a.2.1) = none := by
-      rw [represent, lookup_map_table, h]
+      rw [represent, List.lookup_map_snd, h]
       rfl
     simp only [finish, h, interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map,
       finishGame]

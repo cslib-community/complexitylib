@@ -37,6 +37,7 @@ import Mathlib.Data.List.OfFn
   `ys.length = xs.length`.
 * `List.find?_range_getD_eq_sInf`: the least index below `m` passing a test, or `m`, as a search
   over a range.
+* `List.lookup_map_snd`: mapping stored values in an association list commutes with `List.lookup`.
 -/
 
 @[expose] public section
@@ -174,3 +175,12 @@ theorem List.find?_range_getD_eq_sInf (m : ℕ) (p : ℕ → Bool) :
       · have := hmin i hi
         simp_all
   exact le_antisymm (not_lt.mp fun h => hmem.2 _ h (Nat.sInf_mem ⟨v, hmem.1⟩)) (Nat.sInf_le hmem.1)
+
+/-- Mapping stored values in an association list commutes with `List.lookup` at every key. -/
+theorem List.lookup_map_snd {α β γ : Type*} [BEq α] (l : List (α × β)) (f : β → γ) (k : α) :
+    (l.map fun e => (e.1, f e.2)).lookup k = (l.lookup k).map f := by
+  induction l with
+  | nil => rfl
+  | cons e rest ih =>
+    rcases e with ⟨k', v⟩
+    cases h : k == k' <;> simp [List.lookup_cons, h, ih]
