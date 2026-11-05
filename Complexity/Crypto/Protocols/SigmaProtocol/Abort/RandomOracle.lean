@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Protocols.SigmaProtocol.FiatShamir
+public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.FiatShamir
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.View
 public import Complexity.Probability.IID
 
@@ -75,6 +76,37 @@ theorem fiatShamirAbortSign_queryBound (P : SigmaProtocol X Y T C (Option Z))
     simpa only [Nat.add_zero] using
       (ih (Fin.tail coins)).bind (fun _ => IsCostBounded.pure _ 0)
 
+/-- With a fixed hash, the oracle program returns the first successful deterministic step. -/
+theorem fiatShamirAbortSign_fixedHash (P : SigmaProtocol X Y T C (Option Z))
+    (keyGen : PMF (X × Y)) (hash : M × T → C) (x : X) (y : Y) (msg : M)
+    (K : ℕ) (coins : Fin K → T × P.State) :
+    interpret (fun q => PMF.pure (hash q)) (fiatShamirAbortSign P keyGen (x, y) msg K coins) =
+      PMF.pure ((((List.ofFn coins).map (fsAbortSignStep P hash x y msg)).find?
+        Option.isSome).getD none) := by
+  induction K with
+  | zero => simp [fiatShamirAbortSign]
+  | succ K ih =>
+    simp only [fiatShamirAbortSign, fiatShamir, interpret_bind, interpret_map, interpret_query,
+      PMF.monad_map_eq_map, PMF.pure_map, PMF.monad_bind_eq_bind, PMF.pure_bind, ih,
+      interpret_pure, PMF.monad_pure_eq_pure, List.ofFn_succ, List.map_cons]
+    simp only [show Fin.tail coins = (fun i => coins i.succ) from rfl]
+    cases hr : P.respond x y (coins 0).2 (hash (msg, (coins 0).1)) <;>
+      simp [fsAbortSignStep, hr]
+
+/-- Averaging the canonical all-attempt program with a fixed hash recovers the existing
+bounded signer exactly. This identifies the output law, not a stopped oracle-cache trace. -/
+theorem fiatShamirAbort_sign_fixedHash (P : SigmaProtocol X Y T C (Option Z))
+    (keyGen : PMF (X × Y)) (hash : M × T → C) (x : X) (y : Y) (msg : M) (K : ℕ) :
+    (((fiatShamirAbort P keyGen K).signCoins (x, y) msg).bind fun coins =>
+      interpret (fun q => PMF.pure (hash q))
+        ((fiatShamirAbort P keyGen K).sign (x, y) msg coins)) =
+      fsAbortSignBounded P hash K x y msg := by
+  simp only [fiatShamirAbort, fiatShamirAbortSign_fixedHash]
+  have h := (fsAbortSignBounded_map_eq_iid P hash id K x y msg).symm
+  simp only [Option.map_id, id_eq, PMF.map_id, fsAbortSignAttempt, iid_map, PMF.map_comp,
+    Function.comp_def] at h
+  simpa only [PMF.map, Function.comp_def, List.map_ofFn] using h
+
 section View
 
 variable {R : Type} (P : SigmaProtocol X Y T C (Option Z)) (keyGen : PMF (X × Y))
@@ -103,7 +135,8 @@ theorem fiatShamirAbortSign_run_succ (x : X) (y : Y) (msg : M) (K : ℕ) (state 
       (interpret answer ((fiatShamir P keyGen).sign (x, y) msg coin)).run state).bind fun first =>
     ((iid (P.commit x y) K).bind fun coins =>
       (interpret answer (fiatShamirAbortSign P keyGen (x, y) msg K coins)).run first.2).map
-      fun later => ((first.1.2.map fun z => (first.1.1, z)).orElse (fun _ => later.1), later.2) := by
+      fun later =>
+        ((first.1.2.map fun z => (first.1.1, z)).orElse (fun _ => later.1), later.2) := by
   simp only [iid, PMF.monad_bind_eq_bind, PMF.bind_bind, Fin.cons_zero,
     Fin.tail_cons, fiatShamirAbortSign, run_interpret_bind, run_interpret_pure,
     PMF.monad_pure_eq_pure, PMF.map, Function.comp_def, PMF.pure_bind]

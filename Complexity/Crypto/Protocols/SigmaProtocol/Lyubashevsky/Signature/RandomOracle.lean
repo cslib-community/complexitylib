@@ -32,8 +32,8 @@ secret-free simulator, a paired fork with common private coins, or an EUF-CMA re
 
 ## References
 
-These exact box-signer statements are original. The requirement to preserve aborted hash
-queries is motivated by [BarbosaEtAl2023], pp. 3–4 and Section 5; no full theorem there is claimed.
+These exact box-signer statements are original. The aborting transformation is motivated by
+[Lyubashevsky2009], Section 3.1; no full signature-security theorem is claimed.
 -/
 
 @[expose] public section
@@ -83,5 +83,24 @@ theorem lyubashevskyROMSignature_forger_run_eq (hβ : β ≤ γ) (hη : k * η �
     (interpret (handler (lyubashevskyROMSignature M n m k q η γ β K) (S', y)) program).run state :=
   fiatShamirAbort_forger_run_eq_of_transcript_eq _ _ K
     (lyubashevsky_transcript_eq hβ hη hS hS') program state
+
+/-- The canonical randomized forger also has the same full view after averaging its explicit
+coins. Its program receives the common public key, not the chosen witness. -/
+theorem lyubashevskyROMSignature_forger_eq (hβ : β ≤ γ) (hη : k * η ≤ β)
+    (hS : lyubashevskyRelation η S y) (hS' : lyubashevskyRelation η S' y)
+    (A : Forger
+      (Matrix (Fin n) (Fin m) (ZMod q) × Matrix (Fin n) (Fin k) (ZMod q)) M
+      (Option ((Fin n → ZMod q) × (Fin m → ℤ))) (M × (Fin n → ZMod q)) (BitString k))
+    (state : List ((M × (Fin n → ZMod q)) × BitString k) × List M) :
+    (do
+      let coins ← A.coins
+      (interpret (handler (lyubashevskyROMSignature M n m k q η γ β K) (S, y))
+        (A.forge y coins)).run state) = do
+      let coins ← A.coins
+      (interpret (handler (lyubashevskyROMSignature M n m k q η γ β K) (S', y))
+        (A.forge y coins)).run state := by
+  congr 1
+  funext coins
+  exact lyubashevskyROMSignature_forger_run_eq hβ hη hS hS' (A.forge y coins) state
 
 end Cslib.Crypto.Protocols.SigmaProtocol
