@@ -3125,6 +3125,7 @@ public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllO
 public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.OddSources
 public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness
 public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.ZeroSumPads
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN
 public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomnessBinary
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
