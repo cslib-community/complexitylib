@@ -37,8 +37,38 @@ on the quotient of `E` by `L.toAddSubgroup`. For a Schwartz function, import
 `SchwartzMap.continuous_automorphize` directly. The
 [checked clients](../../ComplexityTests/LatticePeriodization.lean) include a nonzero Schwartz
 bump, an infinite integer lattice, a skew two-dimensional basis, and a rank-zero lattice on
-an off-center compact interval. Fourier coefficient identification, covolume normalization,
-and full lattice Poisson summation remain separate work.
+an off-center compact interval. For the full formula, use the Poisson API below.
+
+## Apply lattice Poisson summation
+
+Import [Lattice/Poisson.lean](../../Complexity/Foundations/Analysis/Lattice/Poisson.lean).
+Here `E` is a finite-dimensional real inner-product space with its canonical volume. Supply a
+discrete `L : Submodule ℤ E` and `[IsZLattice ℝ L]`, which requires the lattice to span `E`.
+For a Schwartz function `f`, `SchwartzMap.tsum_eq_tsum_fourier_lattice f L x` identifies the
+sum of `f (x + z)` with the dual-lattice Fourier sum, divided by `ZLattice.covolume L`.
+The dual is Mathlib's existing `LinearMap.BilinForm.dualSubmodule (innerₗ E) L`; the character
+at dual frequency `w` is `exp(2πi * inner x w)`. Convergence of both sums is proved from
+Schwartz decay. The generic `ZLattice.tsum_eq_tsum_fourier_of_rpow_decay` accepts explicit
+polynomial decay, integrability and summability of the actual Fourier samples when a function
+is not supplied as a Schwartz map.
+
+For Gaussian mass, import
+[Gaussian/Poisson.lean](../../Complexity/Foundations/Probability/Gaussian/Poisson.lean) and apply
+`ZLattice.gaussianMass_eq_tsum_dual L s hs c` with `hs : 0 < s` and any center `c`.
+This is an equality in `ℂ`: the real mass equals `s^dim / covolume L` times the dual sum of
+`gaussianWeight (1 / s) w` multiplied by `exp(-2πi * inner c w)`.
+The negative phase comes from evaluating the periodization at `-c`. The theorem includes
+dimension zero and arbitrary full-rank bases, including skew bases. It proves the required
+Gaussian integrability and Fourier summability; it does not assume a Poisson identity.
+
+The complete [LatticePoisson.lean examples](../../ComplexityTests/LatticePoisson.lean) apply
+both endpoints to a skew basis of covolume `2`, check opposite character signs at a nonzero
+frequency, and check the dimension-zero covolume and mass of `1`. From the repository root,
+run `scripts/build.sh ComplexityTests.LatticePoisson` to check these clients. If the
+full-rank instance is missing, start from the basis-spanned lattice in these examples;
+continuity alone also applies to lower-rank lattices, but this Poisson formula needs full rank.
+Dimension-uniform Gaussian estimates, smoothing bounds, efficient sampling and Regev's quantum
+reduction remain open.
 
 ## Certify a closed randomized routine
 
@@ -771,5 +801,5 @@ from the repository root to check these complete examples.
 
 Integrability supplies the almost-everywhere convergence needed for exchanging the sum and
 integral. No pointwise convergence or uniform convergence assumption is hidden in this theorem.
-Continuity of the periodization, reconstruction from Fourier coefficients, covolume normalization,
-Poisson summation and smoothing estimates are separate obligations.
+The [Poisson API](#apply-lattice-poisson-summation) supplies continuity, reconstruction and
+covolume normalization for the stated analytic hypotheses. Smoothing estimates remain separate.

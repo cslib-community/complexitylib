@@ -64,8 +64,11 @@ Priorities live in this list and in the tiers of [#897].
   [#2608](https://github.com/cslib-community/complexitylib/issues/2608).
   `Foundations/Analysis/Lattice/Fourier` identifies the unnormalized Fourier coefficients of
   integrable lattice periodizations at dual frequencies, including arbitrary sheared bases.
-  Fourier-series reconstruction, covolume normalization, uniform Gaussian mass estimates,
-  smoothing estimates, efficient sampling and the quantum reduction remain open in
+  Full arbitrary-lattice Poisson summation for Schwartz functions and shifted positive-width
+  Gaussians, including the covolume normalization, is proved in
+  [#2624](https://github.com/cslib-community/complexitylib/issues/2624).
+  Uniform control of Gaussian mass ratios, smoothing estimates, efficient sampling and the
+  quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
