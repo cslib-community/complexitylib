@@ -77,16 +77,24 @@ end Equation
 
 namespace Trim
 
+-- The generated equality procedure must reduce in imported certificate checkers.
+@[expose] section
+
 /-- Only the two unary symbols needed for the statement experiment. -/
 inductive FunctionSymbol : ℕ → Type
   | s1 : FunctionSymbol 1
   | trim : FunctionSymbol 1
   deriving DecidableEq
 
+end
+
 /-- An arity-indexed fragment, with no relation symbols. It is not the PV language. -/
 @[expose] def language : Language where
   Functions := FunctionSymbol
   Relations _ := Empty
+
+instance (k : ℕ) : DecidableEq (language.Functions k) :=
+  inferInstanceAs (DecidableEq (FunctionSymbol k))
 
 /-- Apply the dyadic-successor symbol to a term. -/
 @[expose] def s1 {n : ℕ} (t : language.Term (Fin n)) : language.Term (Fin n) :=

@@ -44,9 +44,11 @@ It follows Oliver Korten's input in [issue #2736](https://github.com/cslib-commu
 and uses Cook's `TR(s₁(x)) = x` from [§2, p. 86](https://www.karlin.mff.cuni.cz/~krajicek/cookpv.pdf).
 The two symbols have their dyadic natural-number meanings. Examples check agreement of the
 three views, substitution into a larger variable context, and failure of a changed right side.
+The [import client](../../ComplexityTests/BoundedArithmetic/StatementsImport.lean) also checks
+that symbol, term and equation equality can be decided after importing the example.
 
 From a [prepared checkout](../workflows/getting-started.md), run
-`scripts/build.sh ComplexityTests.BoundedArithmetic.Statements --wfail --iofail` at the repository
+`scripts/build.sh ComplexityTests.BoundedArithmetic.StatementsImport --wfail --iofail` at the repository
 root; success checks the whole example, including its counterexample. The source imports all
 needed definitions. These are syntax and interpretation experiments: the full PV signature,
 function admission, defining equations, induction and proof predicate remain open. In particular,
