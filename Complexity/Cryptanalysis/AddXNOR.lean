@@ -10,9 +10,8 @@ module
 public import Complexity.Init
 public import Mathlib.Data.BitVec
 public import Mathlib.Data.Fintype.Fin
-public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.BigOperators.Expect
 import Mathlib.Algebra.BigOperators.Fin
-public import Mathlib.Data.Rat.Cast.Defs
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Ring
@@ -36,6 +35,8 @@ is asserted.
 -/
 
 public section
+
+open scoped BigOperators
 
 namespace Cslib.Cryptanalysis.AddXNOR
 
@@ -95,18 +96,12 @@ theorem step_low (b : Bool) (s a : BitVec (h+2)) :
 /-- Signed agreement statistic. -/
 @[expose] def sign (b : Bool) : ℚ := if b then -1 else 1
 
-/-- Uniform finite average, with multiplicities given by the sampler indices. -/
-@[expose] def mean {n : ℕ} (f : Fin n → ℚ) : ℚ := (∑ i, f i) / n
-
-private theorem mean_const {n : ℕ} (hn : 0 < n) (c : ℚ) : mean (fun _ : Fin n => c) = c := by
-  simp [mean, Finset.sum_const, hn.ne']
-
 /-- Exact expected signed agreement after k further actual word operations.
 The affine bit is updated with operand bit 1 and the XNOR indicator. -/
 @[expose] def averageFrom (h : ℕ) : ℕ → BitVec (h+2) → Bool → ℚ
   | 0, s, ell => sign (s.getLsbD 1 ^^ ell)
   | k+1, s, ell =>
-    mean fun hi : Fin (2^h) => mean fun lo : Fin 4 =>
+    𝔼 hi : Fin (2^h), 𝔼 lo : Fin 4,
       (averageFrom h k (step false s (word hi lo))
           (ell ^^ (word hi lo).getLsbD 1 ^^ false) +
        averageFrom h k (step true s (word hi lo))
@@ -114,7 +109,7 @@ The affine bit is updated with operand bit 1 and the XNOR indicator. -/
 
 /-- Average correlation of a chain with k operators (N=k+1 operands). -/
 @[expose] def averageCorrelation (h k : ℕ) : ℚ :=
-  mean fun hi : Fin (2^h) => mean fun lo : Fin 4 =>
+  𝔼 hi : Fin (2^h), 𝔼 lo : Fin 4,
     averageFrom h k (word hi lo) ((word hi lo).getLsbD 1)
 
 private def closed (k : ℕ) (s : BitVec 2) (ell : Bool) : ℚ :=
@@ -122,7 +117,7 @@ private def closed (k : ℕ) (s : BitVec 2) (ell : Bool) : ℚ :=
     (if s.getLsbD 0 then 1 else (k:ℚ)+1) / 2^k
 
 private theorem closed_step (k : ℕ) : ∀ (s : BitVec 2) (ell : Bool),
-    mean (fun lo : Fin 4 =>
+    Finset.expect Finset.univ (fun lo : Fin 4 =>
       (closed k (step false s (BitVec.ofNat 2 lo.val))
           (ell ^^ (BitVec.ofNat 2 lo.val).getLsbD 1 ^^ false) +
        closed k (step true s (BitVec.ofNat 2 lo.val))
@@ -131,7 +126,7 @@ private theorem closed_step (k : ℕ) : ∀ (s : BitVec 2) (ell : Bool),
   intro s ell
   rcases s with ⟨s⟩
   fin_cases s <;> cases ell <;>
-    norm_num [mean, Fin.sum_univ_succ, closed, step, sign, BitVec.getLsbD,
+    norm_num [Finset.expect_eq_sum_div_card, Fin.sum_univ_succ, closed, step, sign, BitVec.getLsbD,
       BitVec.add_def, BitVec.not_def, Nat.testBit, pow_succ] <;> ring
 
 private theorem bit1_low (s : BitVec (h+2)) :
@@ -144,7 +139,7 @@ private theorem averageFrom_closed (h k : ℕ) (s : BitVec (h+2)) (ell : Bool) :
   | succ k ih =>
     simp only [averageFrom, ih, step_low, word_low, ← bit1_low (word _ _), word_low]
     simp only [closed_step]
-    exact mean_const (Nat.two_pow_pos h) _
+    exact Finset.expect_const Finset.univ_nonempty _
 
 /-- Theorem 4: N=k+1, m=h+2. All full-width operations are evaluated before
 projection. This holds even for k=0 (the source states N≥2). -/
@@ -152,12 +147,12 @@ theorem averageCorrelation_eq (h k : ℕ) :
     averageCorrelation h k = ((k:ℚ)+2) / 2^(k+1) := by
   unfold averageCorrelation
   simp only [averageFrom_closed, word_low, ← bit1_low (word _ _), word_low]
-  have hl : mean (fun lo : Fin 4 => closed k (BitVec.ofNat 2 lo.val)
+  have hl : Finset.expect Finset.univ (fun lo : Fin 4 => closed k (BitVec.ofNat 2 lo.val)
       ((BitVec.ofNat 2 lo.val).getLsbD 1)) = ((k:ℚ)+2) / 2^(k+1) := by
-    norm_num [mean, Fin.sum_univ_succ, closed, sign, BitVec.getLsbD, Nat.testBit, pow_succ]
+    norm_num [Finset.expect_eq_sum_div_card, Fin.sum_univ_succ, closed, sign, BitVec.getLsbD, Nat.testBit, pow_succ]
     ring
   simp only [hl]
-  exact mean_const (Nat.two_pow_pos h) _
+  exact Finset.expect_const Finset.univ_nonempty _
 
 /-- Source parameters N≥2 and m≥2. The sampled word width is
 m-2+2=m, with N-1 independent uniformly sampled operators. -/
