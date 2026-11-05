@@ -3081,6 +3081,7 @@ public import Complexity.Crypto.Computational.PseudorandomGenerator
 public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
+public import Complexity.Crypto.Computational.SIS.Module
 public import Complexity.Crypto.Computational.SchnorrEavesdrop
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
