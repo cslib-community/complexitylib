@@ -168,8 +168,11 @@ transporting key-generation error, and realizing the efficient forking reduction
   This is a precise quotient consequence of Claim 3.8. The actual arbitrary-width
   coset discrete-Gaussian convolution density and Claim 3.9 full-L1 bound, with a sufficient
   dual-gap width criterion, are proved in
-  [#2707](https://github.com/cslib-community/complexitylib/issues/2707). An attained minimum
-  smoothing parameter, the projected/mod-one law, arbitrary-modulus search-LWE sampling
+  [#2707](https://github.com/cslib-community/complexitylib/issues/2707). The actual scalar and
+  canonical mod-one pushforward bounds of Corollary 3.10, including a discharged dual-gap
+  criterion and the exact zero-projection case, are proved in
+  [#2734](https://github.com/cslib-community/complexitylib/issues/2734). An attained minimum
+  smoothing parameter, the periodic-density series, arbitrary-modulus search-LWE sampling
   experiment, efficient finite-precision sampling and quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
   `Foundations/MeasureTheory/Group/ConvolutionDensity` proves the convolution density formula

@@ -3987,6 +3987,7 @@ public import Complexity.Foundations.MeasureTheory.Group.ConvolutionDensity
 public import Complexity.Foundations.MeasureTheory.Group.QuotientDensity
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Map
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Mixture
+public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Map
 public import Complexity.Foundations.NumberTheory.AKS.Coefficients
 public import Complexity.Foundations.NumberTheory.AKS.Correctness
 public import Complexity.Foundations.NumberTheory.AKS.Criterion
@@ -4037,6 +4038,7 @@ public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.Periodization
 public import Complexity.Foundations.Probability.Gaussian.Poisson
 public import Complexity.Foundations.Probability.Gaussian.Quotient
+public import Complexity.Foundations.Probability.Gaussian.Projection
 public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.Gaussian.ShiftBounds

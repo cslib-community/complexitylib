@@ -36,7 +36,8 @@ The positive combined width `t` satisfies `t² = r² + s²`, equivalently `t = �
 version, with its full-L1 statistical-distance convention from printed page 13 (range `[0, 2]`).
 The minimum smoothing parameter is replaced by the actual nonzero dual mass bound used in
 the source's proof; the final theorem discharges that bound using an explicit dual gap.
-These are analytic probability statements. The projected/mod-one distribution in Corollary 3.10,
+These are analytic probability statements. The actual scalar and mod-one distribution bounds
+of Corollary 3.10 are proved in `Gaussian.Projection`. The periodic-density-series formula,
 the LWE experiment in Lemma 3.11, efficient sampling, finite precision and the quantum reduction
 remain separate.
 -/
