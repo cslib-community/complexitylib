@@ -4256,6 +4256,7 @@ public import Complexity.Probability.KWiseIndependent.Reduced
 public import Complexity.Probability.KWiseIndependent.ReducedLimbs
 public import Complexity.Probability.KWiseIndependent.Restriction
 public import Complexity.Probability.KWiseIndependent.Trinomial
+public import Complexity.Probability.LinearCombination
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
 public import Complexity.Probability.MinEntropy
