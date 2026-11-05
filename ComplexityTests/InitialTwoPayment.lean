@@ -746,3 +746,68 @@ example (n : ℕ) :
     ∃ P, P.Prime ∧ 2 ^ n < P ∧ P ≤ 2 ^ (n + 1) ∧
       ∃ H : Horizon P, H.maxExponent = n ∧ H.maxIdentifier = 0 :=
   exists_bounded_depth_prime n 0 (by positivity)
+
+-- Unbounded source/terminal/bin exponents under ONE charge. The full finite bin
+-- horizon grows with n, and an admissible prime exists for every such horizon below.
+-- Actual positive parent precision and both unequal endpoint budgets are checked.
+-- This tests joint scalar cancellation, not a successful recursive family.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (hrate : B.binRate = rate) (hslack : B.slack = 1)
+    (n p : ℕ) (H : Horizon P) (hn : n + 2 ≤ H.maxExponent) :
+    let B' : BudgetData HP P := { B with rankCharge := 7, bins := range (n + 3) }
+    let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+      ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 n [],
+        gridChannel 2 (n + 1) [], gridChannel 2 (n + 1) []⟩
+    let M := 16 * (7 * r.task.rank + p + 4 * n + 4)
+    B'.requestPrecision M r = p + 2 ∧ 0 < B'.requestPrecision M r ∧
+      ∀ bin ∈ ({n, n + 1, n + 2} : Finset ℕ), ∀ e ∈ ({8, 16} : Finset ℕ),
+      let m := LogSpaceEstimation.lastBudget M e B'.slack (B'.sampleScale r (some bin))
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (BudgetData.midpoint r) r.terminal (B'.binRate bin)
+      ∀ y,
+      (B'.binRate bin * HierarchyTask.usageRatio (channels B'.padding)
+        r.terminal Q.direct y / rate (n + 1)) * (2 : ℝ) ^ (-B'.requestPrecision m Q.direct) ≤
+        16 * ((2 : ℝ) ^ (-((p : ℝ) + 2)) * (2 : ℝ) ^ (-7 : ℝ) *
+          (2 : ℝ) ^ (16 - |(bin : ℝ) - (n + 1)|)) := by
+  dsimp only
+  let B' : BudgetData HP P := { B with rankCharge := 7, bins := range (n + 3) }
+  let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+    ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 n [],
+      gridChannel 2 (n + 1) [], gridChannel 2 (n + 1) []⟩
+  let M := 16 * (7 * r.task.rank + p + 4 * n + 4)
+  have hp : B'.requestPrecision M r = p + 2 := by
+    rw [B'.requestPrecision_grid M n (n + 1) r rfl rfl]
+    dsimp only [B']
+    rw [hslack]
+    dsimp only [M]
+    push_cast
+    ring
+  refine ⟨hp, by rw [hp]; positivity, ?_⟩
+  intro bin hbin e he y
+  have hbin' : bin = n ∨ bin = n + 1 ∨ bin = n + 2 := by simpa using hbin
+  have hcut : LogSpaceEstimation.scaleCutoff B'.slack (B'.sampleScale r (some bin)) ≤ 5 := by
+    rw [B'.sampleScale_grid r (n + 1) bin hrate rfl]
+    change LogSpaceEstimation.scaleCutoff B.slack _ ≤ _
+    rw [hslack]
+    rcases hbin' with hb | hb | hb <;> rw [hb] <;>
+      norm_num [LogSpaceEstimation.scaleCutoff, Int.natAbs_of_nonneg,
+        show (n : ℤ) + 1 - n = 1 by omega,
+        show (n : ℤ) + 1 - (n + 1) = 0 by omega,
+        show (n : ℤ) + 1 - (n + 2) = -1 by omega]
+  have hne : LogSpaceEstimation.lastBudget M 8 B'.slack (B'.sampleScale r (some bin)) ≠
+      LogSpaceEstimation.lastBudget M (2 * 8) B'.slack (B'.sampleScale r (some bin)) := by
+    unfold LogSpaceEstimation.lastBudget
+    dsimp only [M]
+    omega
+  have h := B'.initial_normalized_active_precision_le (by norm_num [B']) hrate H
+    M 8 n (n + 1) bin e (by omega) (by rcases hbin' with rfl | rfl | rfl <;> omega)
+    r rfl rfl rfl hne (by simpa only [show 2 * 8 = 16 by decide] using he) y
+  rw [hp] at h
+  simpa only [B', r, M, hslack, Nat.cast_add, Nat.cast_one, Nat.cast_ofNat, div_one,
+    show (2 : ℝ) * 8 = 16 by norm_num]
+    using h
+
+example (n : ℕ) :
+    ∃ P, P.Prime ∧ 2 ^ (n + 2) < P ∧ P ≤ 2 ^ (n + 3) ∧
+      ∃ H : Horizon P, H.maxExponent = n + 2 ∧ H.maxIdentifier = 0 := by
+  simpa only [Nat.add_assoc] using exists_bounded_depth_prime (n + 2) 0 (by positivity)

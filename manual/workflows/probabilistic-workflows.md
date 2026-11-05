@@ -1577,6 +1577,30 @@ terminal/bin family is claimed. The checked clients vary the full bin family, ho
 and positive precision under this one charge, and check a fully correlated two-atom
 geometrically weighted moment as well as existing nonzero actual child-error/reserve clients.
 
+For unbounded exponents, `initial_normalized_importance_precision_le` keeps rounded
+importance, inverse terminal rate and own-request precision together **pointwise**, before
+sup norms. If $δ=i-a$, the coarse importance exponent $-4δ$ (or zero in the fine
+case) combines with the child's terminal-precision exponent $2δ$ to give $2|δ|$.
+Source precision cancels; the bound is sixteen times
+$2^{-p}2^{-A}2^{(M-m)/(16c)+2|δ|}$, with actual budgets and direct-rank decrease.
+`initial_normalized_active_precision_le` uses the unequal-pair cutoff and both endpoint
+losses to bound this by $16\,2^{-p}2^{-A}2^{2d/c-|δ|}$. No absolute terminal
+bound or schedule change is needed for this scalar comparison. The checked
+[InitialTwoPayment client](../../ComplexityTests/InitialTwoPayment.lean) fixes charge seven,
+varies unbounded source/terminal/bin exponents and full finite bin horizons, checks actual
+precision $p+2>0$, and checks both endpoints of coarse, equal-scale and fine unequal pairs.
+Admissible prime horizons exist for every tested depth. This is numerical allocation,
+not simultaneous successful recursive execution.
+
+The remaining bridge is a joint **row-moment** estimate on the original masks that
+retains this normalized importance through density/source conversion, sums bin fourth
+roots before taking the fourth power, and applies the actual spectral contraction.
+The current `initialRootGroupCharge` still uses the global bin-cardinality cube;
+`initialComputedCenteredNoise` still extracts `initialPerturbationFactor` separately.
+These existing consumers have not been migrated by the scalar lemmas, so they continue
+to require their explicit bounded-family hypotheses. Neither a schedule obstruction nor
+an unbounded computed first-noise/reserve payment follows from the new comparison.
+
 This is a conditional first-noise allocation on the stated bounded family, not a joint
 recursive availability theorem or a complete reserve allocation. Supported semantic noise
 keeps its existing polynomial payment. The assembled first mean and production leaves

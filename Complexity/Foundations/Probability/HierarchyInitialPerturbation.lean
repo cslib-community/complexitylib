@@ -34,7 +34,10 @@ reserve; ordinary sampling progress and saturated preparation remain separate ob
 the actual input difference. `initialRootGroupCharge_le_active` feeds sharp active-pair
 own-precision cancellation into that completed-group consumer. Rounded-importance and
 bounded full-bin envelopes support the correlated prefix allocation in
-`HierarchyTransportedPreparation`.
+`HierarchyTransportedPreparation`. `initial_normalized_importance_precision_le` cancels
+absolute terminal exponents pointwise before sup norms; its active-pair variant retains
+geometric bin-offset decay. These joint scalar estimates do not yet replace the separately
+normalized row-moment and global bin cube in the actual centered-group consumer.
 -/
 public section
 noncomputable section
@@ -2004,6 +2007,129 @@ theorem initial_importance_norm_le (hrate : B.binRate = rate) (H : Horizon P)
   have hone (k : ℕ) : rate k ≤ 1 := by
     simpa only [rate, pow_zero, inv_one, one_pow] using rate_antitone (Nat.zero_le k)
   exact h.trans (by nlinarith [max_le (hone bin) (hone ka)])
+
+/-- Rounded importance and terminal normalization are compared together. The only
+remaining rate loss is a bin offset, independent of the absolute terminal exponent.
+This is a pointwise bound before any sup norm or bin counting. -/
+theorem initial_normalized_importance_le (hrate : B.binRate = rate) (H : Horizon P)
+    (ka bin : ℕ) (ha : ka ≤ H.maxExponent) (hi : bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (ht : r.terminal.rate = rate ka) (y : ZMod P) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    B.binRate bin * HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y /
+        rate ka ≤
+      16 * (2 : ℝ) ^ (if bin ≤ ka then 4 * ((ka : ℝ) - bin) else 0) := by
+  dsimp only
+  have hratio := usageRatio_grid B.padding r.terminal
+    (HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)).direct ka (max ka bin) ht
+    (by simpa only [HierarchyTask.rawRequests, hrate, ht] using rate_min ka bin) y
+  rw [hratio, hrate]
+  change rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka ≤ _
+  have h := div_le_div_of_nonneg_right (gridMass_importance_le H ha hi) (rate_pos ka).le
+  by_cases hf : bin ≤ ka
+  · rw [max_eq_left (rate_antitone hf)] at h
+    rw [ite_eq_left hf, ← rate_ratio_two_rpow]
+    convert h using 1; ring
+  · rw [max_eq_right (rate_antitone (Nat.le_of_lt (Nat.lt_of_not_ge hf)))] at h
+    rw [ite_eq_right hf, Real.rpow_zero]
+    simpa only [mul_div_cancel_right₀ _ (rate_pos ka).ne', mul_one] using h
+
+/-- Joint ordinary transport at a literal direct child. Terminal normalization,
+rounded importance and own-request precision cancel before a sup norm is taken.
+Only the actual budget loss and twice the offset remain. The source exponent cancels
+and the structural charge is fixed before all request coordinates. -/
+theorem initial_normalized_importance_precision_le (hcharge : 0 ≤ B.rankCharge)
+    (hrate : B.binRate = rate) (H : Horizon P) (M m ks ka bin : ℕ)
+    (ha : ka ≤ H.maxExponent) (hi : bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩)) (y : ZMod P) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    (B.binRate bin * HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y /
+      rate ka) * (2 : ℝ) ^ (-B.requestPrecision m Q.direct) ≤
+      16 * ((2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+        (2 : ℝ) ^ (((M : ℝ) - m) / (16 * B.slack) + 2 * |(bin : ℝ) - ka|)) := by
+  dsimp only
+  have hw := B.initial_normalized_importance_le hrate H ka bin ha hi r ht y
+  have hp := B.requestPrecision_initial_clipped_transfer hcharge hrate M m ks ka bin
+    r hs ht htask
+  dsimp only at hw hp
+  let t : ℝ := if bin ≤ ka then (ka : ℝ) - bin else -3 * ((bin : ℝ) - ka)
+  have he : (if bin ≤ ka then 4 * ((ka : ℝ) - bin) else 0) =
+      t + 3 * |(bin : ℝ) - ka| := by
+    dsimp only [t]
+    split_ifs with hf
+    · have hh : (bin : ℝ) ≤ ka := by exact_mod_cast hf
+      rw [abs_of_nonpos (sub_nonpos.mpr hh)]
+      ring
+    · have hh : (ka : ℝ) ≤ bin := by exact_mod_cast (Nat.le_of_lt (Nat.lt_of_not_ge hf))
+      rw [abs_of_nonneg (sub_nonneg.mpr hh)]
+      ring
+  have hh := mul_le_mul_of_nonneg_right hw (show 0 ≤ (2 : ℝ) ^
+    (-B.requestPrecision m (HierarchyTask.rawRequests 0 bin
+      (.pilotInput ⟨0, HP.k_pos⟩) r.source (midpoint r) r.terminal
+      (B.binRate bin)).direct) by positivity)
+  rw [he, Real.rpow_add (by norm_num : (0 : ℝ) < 2)] at hh
+  have hpaid := mul_le_mul_of_nonneg_left hp
+    (show 0 ≤ 16 * (2 : ℝ) ^ (3 * |(bin : ℝ) - ka|) by positivity)
+  apply hh.trans
+  convert hpaid using 1
+  · dsimp only [t]; ring
+  · rw [show ((M : ℝ) - m) / (16 * B.slack) + 2 * |(bin : ℝ) - ka| =
+        3 * |(bin : ℝ) - ka| +
+          (((M : ℝ) - m) / (16 * B.slack) - |(bin : ℝ) - ka|) by ring,
+      Real.rpow_add (by norm_num : (0 : ℝ) < 2)]
+    ring
+
+/-- An unequal executed pair turns the joint normalized payment into geometric offset
+decay. No terminal bound, bin-cardinality bound, independence, support of approximate
+children or weighted IH is assumed. This endpoint estimate alone is not a group sum. -/
+theorem initial_normalized_active_precision_le (hcharge : 0 ≤ B.rankCharge)
+    (hrate : B.binRate = rate) (H : Horizon P) (M d ks ka bin e : ℕ)
+    (ha : ka ≤ H.maxExponent) (hi : bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (hne : LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) ≠
+      LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin)))
+    (he : e ∈ ({d, 2 * d} : Finset ℕ)) (y : ZMod P) :
+    let m := LogSpaceEstimation.lastBudget M e B.slack (B.sampleScale r (some bin))
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    (B.binRate bin * HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y /
+      rate ka) * (2 : ℝ) ^ (-B.requestPrecision m Q.direct) ≤
+      16 * ((2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+        (2 : ℝ) ^ (2 * (d : ℝ) / B.slack - |(bin : ℝ) - ka|)) := by
+  dsimp only
+  apply (B.initial_normalized_importance_precision_le hcharge hrate H M _ ks ka bin
+    ha hi r hs ht htask y).trans
+  apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 16)
+  apply mul_le_mul_of_nonneg_left _ (by positivity)
+  apply Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2)
+  obtain ⟨_, hcut, hloss⟩ := B.initial_active_pair_losses M d ka bin r hrate ht hne
+  have hl : (M : ℝ) - LogSpaceEstimation.lastBudget M e B.slack
+      (B.sampleScale r (some bin)) ≤ 2 * d := by
+    have hn := hloss e he
+    have hreal : ((M - LogSpaceEstimation.lastBudget M e B.slack
+        (B.sampleScale r (some bin)) : ℕ) : ℝ) ≤ 2 * d := by exact_mod_cast hn
+    rw [Nat.cast_sub (show LogSpaceEstimation.lastBudget M e B.slack
+      (B.sampleScale r (some bin)) ≤ M from Nat.sub_le _ _)] at hreal
+    exact hreal
+  have hc : (0 : ℝ) < B.slack := by exact_mod_cast B.slack_pos
+  have hd : (0 : ℝ) ≤ d := by positivity
+  have hsmall : ((M : ℝ) - LogSpaceEstimation.lastBudget M e B.slack
+      (B.sampleScale r (some bin))) / (16 * B.slack) ≤
+      2 * (d : ℝ) / B.slack - 3 * |(bin : ℝ) - ka| := by
+    apply (div_le_iff₀ (by positivity : (0 : ℝ) < 16 * B.slack)).mpr
+    have hdiv : (2 * (d : ℝ) / B.slack) * (16 * B.slack) = 32 * d := by
+      field_simp
+      ring
+    rw [sub_mul, hdiv]
+    nlinarith [abs_nonneg ((bin : ℝ) - ka)]
+  linarith
 
 /-- A bounded full bin family has a uniform active envelope chosen before coordinates.
 The horizon is used only for rounded importance; the cardinal bound is explicit.
