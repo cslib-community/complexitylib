@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Crypto.Computational.SchnorrProtocol
+public import Complexity.Crypto.Computational.SchnorrEavesdrop
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -68,9 +68,9 @@ protocol over a `PrimeOrderGroupFamily` `F`:
      `succProbability_ufCma0RealKeyGame_le`, `negligible_ufCma0Game`,
      `negligible_ufCma0RealKeyGame`).
    * `SchnorrCMASigForger`, `schnorrEufCmaGame`, and `schnorrIdealEufCmaGame` add `Qs n` signing
-     queries answered by strict-PPT (`schnorrRealSignTranscript`) or ideal
-     (`schnorrHonestSignTranscript`) Schnorr signatures. Replacing those signing transcripts by
-     witness-free simulated transcripts (`schnorrSimulatedSignTranscript`,
+     queries answered by strict-PPT (`schnorrRealTranscript`) or ideal
+     (`schnorrHonestTranscript`) Schnorr signatures. Replacing those signing transcripts by
+     witness-free simulated transcripts (`schnorrSimulatedTranscript`,
      `SchnorrCMASigForger.toUF0`) incurs statistical distance at most `2 * Qs n / 2 ^ n` (or
      `Qs n / 2 ^ n`), yielding quantitative and asymptotic EUF-CMA security under
      `F.DiscreteLog setup` (`succProbability_schnorrEufCmaGame_le`,
@@ -804,195 +804,6 @@ theorem negligible_ufCma0RealKeyGame {setup : ℕ → PMF F.Desc} (hDL : F.Discr
 
 /-! ### 4. Simulated-signing-query EUF-CMA reduction under `DiscreteLog` -/
 
-/-- Encoding of a single Schnorr signing transcript `(t, roOut, z)` of bit words. -/
-abbrev encSignTranscript : (List Bool × List Bool × List Bool) ↪ List Bool :=
-  encPair encBits (encPair encBits encBits)
-
-/-- An ideal honest Schnorr signing transcript with an `m`-bit challenge ([BonehShoup2023],
-Section 19.2): sample a uniform commitment exponent `r : ZMod (F.order d)` and a uniform `m`-bit
-random-oracle digest `roOut`, and output `(encode (r • g), roOut, (r + roOut * α).val.bits)`. -/
-noncomputable def schnorrHonestSignTranscript (d : F.Desc) (α : ZMod (F.order d)) (m : ℕ) :
-    PMF (List Bool × List Bool × List Bool) := do
-  let r ← PMF.uniformOfFintype (ZMod (F.order d))
-  let roOut ← BitString.uniformList m
-  return (F.encode d (r • F.generator d), roOut,
-    (r + (ofBits roOut : ZMod (F.order d)) * α).val.bits)
-
-/-- A strict-PPT honest Schnorr signing transcript at security parameter `n` with an `m`-bit
-challenge: sample `r ← F.sampleExp n d` and `roOut ← BitString.sampleList m`, and output
-`(F.smul (d, r, encode g), roOut, ((r + ofBits roOut * α.val) % q).bits)`. -/
-noncomputable def schnorrRealSignTranscript (n : ℕ) (d : F.Desc) (α : ZMod (F.order d)) (m : ℕ) :
-    ProbComp (List Bool × List Bool × List Bool) := do
-  let r ← F.sampleExp n d
-  let roOut ← BitString.sampleList m
-  return (F.smul (d, r, F.encode d (F.generator d)), roOut,
-    ((r + ofBits roOut * α.val) % F.order d).bits)
-
-/-- A strict-PPT simulated Schnorr signing transcript at security parameter `n` with an `m`-bit
-challenge ([BonehShoup2023], Section 19.2.2): sample a uniform `m`-bit random-oracle challenge
-`roOut` and run `F.schnorrSimulateWord ((n, d), pk, roOut)` on the encoded public key `pk` to obtain
-`(t, z)`, returning `(t, roOut, z)` without using the secret key. -/
-noncomputable def schnorrSimulatedSignTranscript (n : ℕ) (d : F.Desc) (pk : List Bool) (m : ℕ) :
-    ProbComp (List Bool × List Bool × List Bool) := do
-  let roOut ← BitString.sampleList m
-  let tz ← F.schnorrSimulateWord ((n, d), pk, roOut)
-  return (tz.1, roOut, tz.2)
-
-private theorem closeTo_iid {α : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h : CloseTo μ ν ε) (k : ℕ) :
-    CloseTo (PMF.iid μ k) (PMF.iid ν k) (k * ε) := by
-  induction k with
-  | zero =>
-    simp only [PMF.iid, Nat.cast_zero, zero_mul, CloseTo.refl]
-  | succ k ih =>
-    rw [PMF.iid, PMF.iid, PMF.monad_bind_eq_bind, PMF.monad_bind_eq_bind,
-      Nat.cast_add, Nat.cast_one, add_mul, one_mul, add_comm (k * ε) ε]
-    refine CloseTo.bind h fun a _ => ?_
-    exact ih.map (@Fin.cons k (fun _ => α) a)
-
-private theorem closeTo_iid_replicate {α : Type} {μ : PMF α} {prog : ProbComp α} {ε : ℝ≥0∞}
-    (h : CloseTo μ (ProbComp.eval prog) ε) (k : ℕ) :
-    CloseTo ((PMF.iid μ k).map List.ofFn) (ProbComp.eval (OracleComp.replicate k prog))
-      (k * ε) := by
-  rw [ProbComp.eval_replicate_iid]
-  exact (closeTo_iid h k).map List.ofFn
-
-private theorem closeTo_eval_replicate {α : Type} {prog₁ prog₂ : ProbComp α} {ε : ℝ≥0∞}
-    (h : CloseTo (ProbComp.eval prog₁) (ProbComp.eval prog₂) ε) (k : ℕ) :
-    CloseTo (ProbComp.eval (OracleComp.replicate k prog₁))
-      (ProbComp.eval (OracleComp.replicate k prog₂)) (k * ε) := by
-  rw [ProbComp.eval_replicate_iid]
-  exact closeTo_iid_replicate h k
-
-private theorem eval_schnorrRealSignTranscript (n : ℕ) (d : F.Desc) (α : ZMod (F.order d))
-    (m : ℕ) :
-    ProbComp.eval (F.schnorrRealSignTranscript n d α m) =
-      ((ProbComp.eval (F.sampleExp n d)).map (Nat.cast : ℕ → ZMod (F.order d))).bind fun r =>
-        (BitString.uniformList m).map fun roOut =>
-          (F.encode d (r • F.generator d), roOut,
-            (r + (ofBits roOut : ZMod (F.order d)) * α).val.bits) := by
-  have hresp (r : ℕ) (roOut : List Bool) :
-      (r + ofBits roOut * α.val) % F.order d =
-        ((r : ZMod (F.order d)) + (ofBits roOut : ZMod (F.order d)) * α).val := by
-    rw [← ZMod.val_natCast (F.order d), Nat.cast_add, Nat.cast_mul, ZMod.natCast_zmod_val]
-  simp only [schnorrRealSignTranscript, ProbComp.eval_bind, ProbComp.eval_pure,
-    BitString.eval_sampleList, PMF.bind_map, Function.comp_def, F.smul_encode, hresp]
-  refine congrArg (PMF.bind _) (funext fun r => ?_)
-  rw [← PMF.bind_pure_comp]
-  rfl
-
-private theorem eval_schnorrSimulateWord_bits (n : ℕ) (d : F.Desc) (u : F.Carrier d)
-    (roOut : List Bool) :
-    ProbComp.eval (F.schnorrSimulateWord ((n, d), F.encode d u, roOut)) =
-      ((ProbComp.eval (F.sampleExp n d)).map (Nat.cast : ℕ → ZMod (F.order d))).map
-        fun z => (F.encode d (z • F.generator d - (ofBits roOut : ZMod (F.order d)) • u),
-          z.val.bits) := by
-  have hneg : ((F.order d - ofBits roOut % F.order d : ℕ) : ZMod (F.order d)) =
-      -(ofBits roOut : ZMod (F.order d)) := by
-    rw [Nat.cast_sub (Nat.mod_lt _ (F.prime_order d).pos).le, ZMod.natCast_self,
-      ZMod.natCast_mod, zero_sub]
-  rw [schnorrSimulateWord, ProbComp.eval_bind, PMF.map_comp]
-  simp only [ProbComp.eval_pure, F.smul_encode, F.add_encode, hneg, neg_smul, ← sub_eq_add_neg]
-  rw [← PMF.bind_pure_comp]
-  congr 1
-  funext a
-  simp only [Function.comp_apply, ZMod.val_natCast]
-
-private theorem eval_schnorrSimulatedSignTranscript (n : ℕ) (d : F.Desc) (u : F.Carrier d)
-    (m : ℕ) :
-    ProbComp.eval (F.schnorrSimulatedSignTranscript n d (F.encode d u) m) =
-      (BitString.uniformList m).bind fun roOut =>
-        ((ProbComp.eval (F.sampleExp n d)).map (Nat.cast : ℕ → ZMod (F.order d))).map
-          fun z => (F.encode d (z • F.generator d - (ofBits roOut : ZMod (F.order d)) • u),
-            roOut, z.val.bits) := by
-  rw [schnorrSimulatedSignTranscript, ProbComp.eval_bind, BitString.eval_sampleList]
-  refine congrArg (PMF.bind _) (funext fun roOut => ?_)
-  rw [ProbComp.eval_bind, eval_schnorrSimulateWord_bits, PMF.bind_map, ← PMF.bind_pure_comp]
-  rfl
-
-private theorem schnorrHonestSignTranscript_eq_bind_uniform (d : F.Desc) (α : ZMod (F.order d))
-    (m : ℕ) :
-    F.schnorrHonestSignTranscript d α m =
-      (BitString.uniformList m).bind fun roOut =>
-        (PMF.uniformOfFintype (ZMod (F.order d))).map fun z =>
-          (F.encode d (z • F.generator d -
-              (ofBits roOut : ZMod (F.order d)) • (α • F.generator d)),
-            roOut, z.val.bits) := by
-  simp only [schnorrHonestSignTranscript, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  rw [PMF.bind_comm]
-  refine congrArg (PMF.bind _) (funext fun roOut => ?_)
-  conv_lhs =>
-    rw [← PMF.uniformOfFintype_map_equiv
-      (Equiv.subRight ((ofBits roOut : ZMod (F.order d)) * α))]
-  rw [PMF.bind_map, ← PMF.bind_pure_comp]
-  congr 1
-  funext z
-  simp only [Function.comp_apply, Equiv.subRight_apply, sub_smul, mul_smul, sub_add_cancel]
-
-/-- A strict-PPT honest Schnorr signing transcript is within statistical distance `1 / 2 ^ n` of an
-ideal honest signing transcript. -/
-theorem closeTo_schnorrRealSignTranscript_honest (n : ℕ) (d : F.Desc)
-    (α : ZMod (F.order d)) (m : ℕ) :
-    CloseTo (ProbComp.eval (F.schnorrRealSignTranscript n d α m))
-      (F.schnorrHonestSignTranscript d α m) (1 / 2 ^ n : ℝ≥0) := by
-  rw [eval_schnorrRealSignTranscript, schnorrHonestSignTranscript]
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, ← PMF.bind_pure_comp]
-  exact (F.closeTo_uniform_sampleExp n d).symm.bind_left _
-
-/-- An ideal honest Schnorr signing transcript is within statistical distance `1 / 2 ^ n` of a
-strict-PPT simulated signing transcript on the public key `encode (α • g)`. -/
-theorem closeTo_schnorrHonestSignTranscript_simulated (n : ℕ) (d : F.Desc)
-    (α : ZMod (F.order d)) (m : ℕ) :
-    CloseTo (F.schnorrHonestSignTranscript d α m)
-      (ProbComp.eval (F.schnorrSimulatedSignTranscript n d (F.encode d (α • F.generator d)) m))
-      (1 / 2 ^ n : ℝ≥0) := by
-  rw [schnorrHonestSignTranscript_eq_bind_uniform, eval_schnorrSimulatedSignTranscript]
-  exact CloseTo.bind_right (BitString.uniformList m) fun roOut _ =>
-    (F.closeTo_uniform_sampleExp n d).map _
-
-/-- A strict-PPT honest Schnorr signing transcript is within statistical distance `2 / 2 ^ n` of a
-strict-PPT simulated signing transcript on the public key `encode (α • g)`. -/
-theorem closeTo_schnorrRealSignTranscript_simulated (n : ℕ) (d : F.Desc)
-    (α : ZMod (F.order d)) (m : ℕ) :
-    CloseTo (ProbComp.eval (F.schnorrRealSignTranscript n d α m))
-      (ProbComp.eval (F.schnorrSimulatedSignTranscript n d (F.encode d (α • F.generator d)) m))
-      (2 / 2 ^ n : ℝ≥0) := by
-  have h := (F.closeTo_schnorrRealSignTranscript_honest n d α m).trans
-    (F.closeTo_schnorrHonestSignTranscript_simulated n d α m)
-  have hadd : ((1 / 2 ^ n : ℝ≥0) : ℝ≥0∞) + ((1 / 2 ^ n : ℝ≥0) : ℝ≥0∞) = (2 / 2 ^ n : ℝ≥0) := by
-    rw [← ENNReal.coe_add]
-    congr 1
-    ring
-  rwa [hadd] at h
-
-/-- `Qs` independent ideal honest Schnorr signing transcripts are within statistical distance
-`Qs / 2 ^ n` of `Qs` strict-PPT simulated signing transcripts on `encode (α • g)`. -/
-theorem closeTo_iid_schnorrHonestSignTranscript_replicate_simulated (n : ℕ) (d : F.Desc)
-    (α : ZMod (F.order d)) (m Qs : ℕ) :
-    CloseTo ((PMF.iid (F.schnorrHonestSignTranscript d α m) Qs).map List.ofFn)
-      (ProbComp.eval (OracleComp.replicate Qs
-        (F.schnorrSimulatedSignTranscript n d (F.encode d (α • F.generator d)) m)))
-      (Qs / 2 ^ n : ℝ≥0) := by
-  have h := closeTo_iid_replicate (F.closeTo_schnorrHonestSignTranscript_simulated n d α m) Qs
-  have hmul : (Qs : ℝ≥0∞) * ((1 / 2 ^ n : ℝ≥0) : ℝ≥0∞) = (Qs / 2 ^ n : ℝ≥0) := by
-    rw [← ENNReal.coe_natCast, ← ENNReal.coe_mul, mul_one_div]
-  rwa [hmul] at h
-
-/-- `Qs` independent strict-PPT honest Schnorr signing transcripts are within statistical distance
-`2 * Qs / 2 ^ n` of `Qs` strict-PPT simulated signing transcripts on `encode (α • g)`. -/
-theorem closeTo_replicate_schnorrRealSignTranscript_simulated (n : ℕ) (d : F.Desc)
-    (α : ZMod (F.order d)) (m Qs : ℕ) :
-    CloseTo
-      (ProbComp.eval (OracleComp.replicate Qs (F.schnorrRealSignTranscript n d α m)))
-      (ProbComp.eval (OracleComp.replicate Qs
-        (F.schnorrSimulatedSignTranscript n d (F.encode d (α • F.generator d)) m)))
-      (2 * Qs / 2 ^ n : ℝ≥0) := by
-  have h := closeTo_eval_replicate (F.closeTo_schnorrRealSignTranscript_simulated n d α m) Qs
-  have hmul : (Qs : ℝ≥0∞) * ((2 / 2 ^ n : ℝ≥0) : ℝ≥0∞) = (2 * Qs / 2 ^ n : ℝ≥0) := by
-    rw [← ENNReal.coe_natCast, ← ENNReal.coe_mul]
-    congr 1
-    ring
-  rwa [hmul] at h
-
 /-- A uniform chosen-message (EUF-CMA) forger against Schnorr signatures ([BonehShoup2023],
 Section 19.2.2): its first stage sees the security parameter, the group description, the encoded
 public key, and `Qs n` signing transcripts `(t, roOut, z)`, and outputs `(msg, t, state)`; its
@@ -1007,7 +818,7 @@ structure SchnorrCMASigForger where
 
 /-- Both stages of a `SchnorrCMASigForger` are uniform strict PPT in their full inputs. -/
 def SchnorrCMASigForger.IsPPT (A : F.SchnorrCMASigForger) : Prop :=
-  IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encList encSignTranscript))))
+  IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encList encTranscript))))
       (encPair encBits (encPair encBits encBits))
       (fun input => A.commit input.1 input.2) ∧
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
@@ -1015,12 +826,12 @@ def SchnorrCMASigForger.IsPPT (A : F.SchnorrCMASigForger) : Prop :=
 
 /-- The EUF-CMA signature forgery game in the strict-PPT model: before committing to its forgery,
 the forger receives `Qs n` signing transcripts generated by the strict-PPT honest signer
-(`schnorrRealSignTranscript`) with `k n`-bit challenges. -/
+(`schnorrRealTranscript`) with `k n`-bit challenges. -/
 noncomputable def schnorrEufCmaGame (setup : ℕ → PMF F.Desc) (k Qs : ℕ → ℕ)
     (A : F.SchnorrCMASigForger) (n : ℕ) : Game := do
   let d ← setup n
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let sigs ← ProbComp.eval (OracleComp.replicate (Qs n) (F.schnorrRealSignTranscript n d α (k n)))
+  let sigs ← ProbComp.eval (OracleComp.replicate (Qs n) (F.schnorrRealTranscript n d α (k n)))
   let mts ← ProbComp.eval (A.commit n (d, F.encode d (α • F.generator d), sigs))
   let roOut ← BitString.uniformList (k n)
   let z ← ProbComp.eval (A.respond n (mts.2.2, roOut))
@@ -1028,12 +839,12 @@ noncomputable def schnorrEufCmaGame (setup : ℕ → PMF F.Desc) (k Qs : ℕ →
     (ofBits roOut : ZMod (F.order d)) • (α • F.generator d)))
 
 /-- The EUF-CMA signature forgery game with exact ideal signing transcripts
-(`schnorrHonestSignTranscript`). -/
+(`schnorrHonestTranscript`). -/
 noncomputable def schnorrIdealEufCmaGame (setup : ℕ → PMF F.Desc) (k Qs : ℕ → ℕ)
     (A : F.SchnorrCMASigForger) (n : ℕ) : Game := do
   let d ← setup n
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let sigs ← (PMF.iid (F.schnorrHonestSignTranscript d α (k n)) (Qs n)).map List.ofFn
+  let sigs ← (PMF.iid (F.schnorrHonestTranscript d α (k n)) (Qs n)).map List.ofFn
   let mts ← ProbComp.eval (A.commit n (d, F.encode d (α • F.generator d), sigs))
   let roOut ← BitString.uniformList (k n)
   let z ← ProbComp.eval (A.respond n (mts.2.2, roOut))
@@ -1042,11 +853,11 @@ noncomputable def schnorrIdealEufCmaGame (setup : ℕ → PMF F.Desc) (k Qs : �
 
 /-- Turn a chosen-message forger `A : F.SchnorrCMASigForger` into a no-signing-query forger
 `F.SchnorrUF0Forger` by simulating `Qs n` signing transcripts on the public key using
-`schnorrSimulatedSignTranscript` ([BonehShoup2023], Section 19.2.2). -/
+`schnorrSimulatedTranscript` ([BonehShoup2023], Section 19.2.2). -/
 noncomputable def SchnorrCMASigForger.toUF0 {F : PrimeOrderGroupFamily} (k Qs : ℕ → ℕ)
     (A : F.SchnorrCMASigForger) : F.SchnorrUF0Forger where
   commit n := fun (d, pk) => do
-    let sigs ← OracleComp.replicate (Qs n) (F.schnorrSimulatedSignTranscript n d pk (k n))
+    let sigs ← OracleComp.replicate (Qs n) (F.schnorrSimulatedTranscript n d pk (k n))
     A.commit n (d, pk, sigs)
   respond := A.respond
 
@@ -1061,7 +872,7 @@ theorem advantage_schnorrIdealEufCmaGame_ufCma0Game_le
   refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
   refine Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun α => ?_
   exact Game.advantage_bind_le_of_closeTo
-    (F.closeTo_iid_schnorrHonestSignTranscript_replicate_simulated n d α (k n) (Qs n)) _
+    (F.closeTo_iid_schnorrHonestTranscript_replicate_simulated n d α (k n) (Qs n)) _
 
 /-- Replacing `Qs n` strict-PPT honest signing transcripts by strict-PPT simulated ones changes the
 game advantage by at most `2 * Qs n / 2 ^ n`. -/
@@ -1074,7 +885,7 @@ theorem advantage_schnorrEufCmaGame_ufCma0Game_le
   refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
   refine Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun α => ?_
   exact Game.advantage_bind_le_of_closeTo
-    (F.closeTo_replicate_schnorrRealSignTranscript_simulated n d α (k n) (Qs n)) _
+    (F.closeTo_replicate_schnorrRealTranscript_simulated n d α (k n) (Qs n)) _
 
 /-- **Quantitative EUF-CMA security bound with ideal signing transcripts**: at each security
 parameter where every supported group has order at least `2 ^ k n`, a forger's success probability
@@ -1134,27 +945,6 @@ theorem succProbability_schnorrEufCmaGame_le
   have huf0 := F.succProbability_ufCma0Game_le setup k (A.toUF0 k Qs) n hkq
   linarith
 
-/-- `schnorrSimulatedSignTranscript` is uniform strict PPT when the security parameter, group
-description, encoded public key, and challenge length are computable in polynomial time. -/
-theorem isPPTOn_schnorrSimulatedSignTranscript {γ : Type} {encIn : γ ↪ List Bool}
-    {n : γ → ℕ} {d : γ → F.Desc} {pk : γ → List Bool} {m : γ → ℕ}
-    (hn : ComputableInPolyTime n encIn encUnary)
-    (hd : ComputableInPolyTime d encIn F.encDesc)
-    (hpk : ComputableInPolyTime pk encIn encBits)
-    (hm : ComputableInPolyTime m encIn encUnary) :
-    IsPPTOn encIn encSignTranscript
-      (fun a => F.schnorrSimulatedSignTranscript (n a) (d a) (pk a) (m a)) := by
-  have hn_t := hn.tidy
-  have hd_t := hd.tidy
-  have hpk_t := hpk.tidy
-  have hsim := F.isPPTOn_schnorrSimulateWord
-  unfold schnorrSimulatedSignTranscript
-  refine hm.sampleList.bind_with ?_
-  refine (hsim.preprocess
-    (prepare := fun p : γ × List Bool => ((n p.1, d p.1), pk p.1, p.2))
-    (by fun_prop)).bind_with ?_
-  exact ComputableTidilyInPolyTime.isPPTOn (by fun_prop)
-
 /-- **The simulated-signing reduction `A.toUF0 k Qs` is uniform strict PPT** when the EUF-CMA
 forger `A` is and both `k` and `Qs` are computable in polynomial time. -/
 theorem isPPT_toUF0 {k Qs : ℕ → ℕ}
@@ -1176,9 +966,9 @@ theorem isPPT_toUF0 {k Qs : ℕ → ℕ}
     fun_prop
   have hcount : ComputableInPolyTime (fun p : ℕ × F.Desc × List Bool => Qs p.1) encIn encUnary := by
     fun_prop
-  have hrep := (F.isPPTOn_schnorrSimulatedSignTranscript hn hd hpk hm).replicate hcount
+  have hrep := (isPPTOn_schnorrSimulatedTranscript hn hd hpk hm).replicate hcount
   change IsPPTOn encIn (encPair encBits (encPair encBits encBits)) fun p =>
-    OracleComp.replicate (Qs p.1) (F.schnorrSimulatedSignTranscript p.1 p.2.1 p.2.2 (k p.1)) >>=
+    OracleComp.replicate (Qs p.1) (F.schnorrSimulatedTranscript p.1 p.2.1 p.2.2 (k p.1)) >>=
       fun sigs => A.commit p.1 (p.2.1, p.2.2, sigs)
   exact hrep.bind_with (hA.1.preprocess
     (prepare := fun p : (ℕ × F.Desc × List Bool) × List (List Bool × List Bool × List Bool) =>
@@ -1193,15 +983,6 @@ theorem isPPTOn_rewind_toUF0 {k Qs : ℕ → ℕ}
     IsPPTOn (encPair encUnary (encPair F.encDesc encBits)) encBits
       (fun input => (A.toUF0 k Qs).toImpersonator.rewind k input.1 input.2) :=
   F.isPPTOn_rewind_toImpersonator hk (F.isPPT_toUF0 hk hQs hA)
-
-private theorem negligible_div_two_pow_of_polyTime {Q : ℕ → ℕ}
-    (hQ : ComputableInPolyTime Q encUnary encUnary) :
-    Negligible fun n => (Q n : ℝ≥0) / 2 ^ n := by
-  have hpoly : PolynomiallyBounded Q := hQ.tidy.polynomiallyBounded
-  have hgeom : Negligible fun n => (2⁻¹ : ℝ≥0) ^ n :=
-    negligible_geometric (by norm_num)
-  refine (hgeom.polynomiallyBounded_mul hpoly).congr fun n => ?_
-  rw [div_eq_mul_inv, inv_pow]
 
 /-- **Schnorr signatures are EUF-CMA secure with ideal signing transcripts under the
 discrete-logarithm assumption** ([BonehShoup2023], Theorem 19.7; [PointchevalStern2000]). -/

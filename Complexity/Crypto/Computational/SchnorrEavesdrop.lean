@@ -623,7 +623,9 @@ def IsIdealEavesdropSecure (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ) : Prop
     ∀ (A : F.SchnorrEavesdropAdversary), A.IsPPT →
       Negligible fun n => Game.succProbability (F.schnorrIdealEavesdropGame setup k Q A n)
 
-private theorem negligible_div_two_pow_of_polyTime {Q : ℕ → ℕ}
+/-- When `Q` is computable in polynomial time on unary inputs, `(Q n : ℝ≥0) / 2 ^ n` is
+negligible. -/
+theorem negligible_div_two_pow_of_polyTime {Q : ℕ → ℕ}
     (hQ : ComputableInPolyTime Q encUnary encUnary) :
     Negligible fun n => (Q n : ℝ≥0) / 2 ^ n := by
   have hpoly : PolynomiallyBounded Q := hQ.tidy.polynomiallyBounded
