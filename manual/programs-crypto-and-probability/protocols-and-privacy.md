@@ -156,12 +156,38 @@ Parent coordinates may be correlated; the retention mask is independent of the p
 `thinning_le_bernoulli_of_alpha` gives the universal thinning corollary when
 $\alpha^2 \le 1-\alpha$.
 
-This is stochastic domination in increasing-event form. A containing coupling and the general
-finite Strassen equivalence are not constructed here. The signed kernel used in the proof
-can have negative entries; it is an algebraic device rather than a conditional probability.
-The [checked clients](../../ComplexityTests/Thinning.lean) use a correlated, nonempty singleton
-parent at the exact boundary $t=q=1/2$, $p=1/3$, and check the negative-kernel case. Run
-`scripts/build.sh ComplexityTests.Thinning` from the repository root to check them.
+For the actual containing coupling, apply `exists_thinning_coupling` to the parent PMF and
+its spread proof under the same parameter hypotheses. It returns a joint PMF `γ` with
+`γ.map Prod.fst = thin μ t ht ht'.le`,
+`γ.map Prod.snd = bernoulliSet p hp.le hp'.le`, and
+`∀ z ∈ γ.support, z.1 ⊆ z.2`. Thus containment holds almost surely, and both marginals
+are actual laws. `thin` draws the parent and a fresh independent retention mask;
+`Cslib.BitString.bernoulliPMF` gives the mask its normalized product weights.
+The coupled output sets need not be independent. These are semantic probability laws with
+no sampler runtime bound.
+
+`exists_thinning_coupling_explicit_density` returns this coupling at $tq/(1-t+tq)$, together
+with proofs that the density lies in $[0,1]$. `exists_thinning_coupling_of_alpha` gives the
+containing-coupling form of the corollary, including the universal choice $α=1/2$.
+These cover STOC submission 1278, Definition 1.1, Theorem 1.2 (including (1.4)) and
+Corollary 1.3 on PDF page 2. Every finite ground type is allowed, including the empty type.
+The parameter extensions $t=0$ and $q=0$ are also supported by the general endpoint.
+The signed kernel used to prove event comparison can have negative entries; it is an
+algebraic device rather than a conditional probability.
+
+For other finite ordered state spaces, import `Complexity.Probability.PMF.MonotoneCoupling`
+and use `Cslib.Probability.PMF.exists_monotone_coupling`. Supply upper-event comparison for
+the two PMFs; the theorem produces an ordered joint law on any finite preorder.
+`upperSet_le_of_monotone_coupling` recovers event comparison from a joint law. The proof
+uses finite level sets and compact convex separation, so it requires no assumed Strassen
+or transport theorem.
+
+The [checked thinning clients](../../ComplexityTests/Thinning.lean) use a correlated, nonempty
+singleton parent at the exact boundary $t=q=1/2$, $p=1/3$, recover the same density from the
+explicit formula, exclude a noncontained pair from the joint support, and exercise the
+corollary and empty ground type. The [generic coupling clients](../../ComplexityTests/ProbabilityMonotoneCoupling.lean)
+also rule out reversed deterministic marginals. From the repository root, run
+`scripts/build.sh ComplexityTests.Thinning ComplexityTests.ProbabilityMonotoneCoupling` to check them.
 
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib

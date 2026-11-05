@@ -7,8 +7,10 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.BooleanAnalysis.Bernoulli
+public import Complexity.Foundations.BooleanAnalysis.BernoulliPMF
 public import Complexity.Probability.PMF
+public import Complexity.Probability.PMF.MonotoneCoupling
+import Complexity.Probability.PMF.Expect
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -27,9 +29,13 @@ whose coordinates need not be independent. `thinning_le_bernoulli_explicit_densi
 the paper's density `t q / (1 - t + t q)`, and `thinning_le_bernoulli_of_alpha` gives
 Corollary 1.3 with the algebraic threshold `α² ≤ 1 - α`.
 
-The source defines stochastic domination through a containing coupling and recalls its
-equivalence to comparison on increasing events. We prove the latter formulation; this file
-does not construct a coupling or formalize the general finite Strassen equivalence.
+`thin` is the actual law of independent retention and `bernoulliSet` the actual product law.
+`exists_thinning_coupling` proves the source's containing-coupling conclusion: a joint PMF
+with these marginals, supported on pairs `(A, B)` with `A ⊆ B`. The proof uses the general
+finite upper-event characterization in `Probability/PMF/MonotoneCoupling`, proved by convex
+separation rather than assumed. The exact-density and `α` variants also produce actual couplings.
+All results are uniform over finite coordinate types, including the empty type. The source uses
+`[N]` with positive dimension; this is a harmless generalization. No sampler runtime is claimed.
 
 The proof follows the source's signed kernel, zero pattern, square majorant and biased Parseval
 argument (Lemmas 2.1–3.2, Proposition 3.3 and Section 4, PDF pages 3–5). Centered products
@@ -40,6 +46,7 @@ may be negative when `p < t`; no positivity or probabilistic interpretation of i
 
 * `IsSpread`: upper bounds on the mass of containing each fixed set.
 * `retain`: restriction of a deterministic parent to a Boolean retention mask.
+* `thin`, `bernoulliSet`: the actual independent thinning and product Bernoulli laws.
 * `coordinateKernel`, `kernel`, `lift`: the signed kernel and its action on real scores.
 
 ## Main results
@@ -47,7 +54,10 @@ may be negative when `p < t`; no positivity or probabilistic interpretation of i
 * `indicator_retain_le_lift_sq`: pointwise square majorant for increasing events.
 * `centered_parseval`: Parseval for unnormalized biased centered products.
 * `pmf_thinning_le_bernoulli`: domination after independent thinning, in increasing-event form.
-* `thinning_le_bernoulli_of_alpha`: the thinning-conjecture corollary.
+* `thinning_le_bernoulli_of_alpha`: the thinning-conjecture corollary for increasing events.
+* `exists_thinning_coupling`: Theorem 1.2 with an actual containing joint PMF.
+* `exists_thinning_coupling_explicit_density`: the coupling at density `t q / (1 - t + t q)`.
+* `exists_thinning_coupling_of_alpha`: Corollary 1.3 with an actual containing joint PMF.
 
 ## References
 
@@ -456,5 +466,89 @@ theorem thinning_le_bernoulli_of_alpha {α p : ℝ} (hα : 0 ≤ α) (hα' : α 
   have hbound : α ^ 2 * (1 - p) ≤ 1 - α := by
     nlinarith [mul_nonneg hp.le (sq_nonneg α)]
   nlinarith [mul_le_mul_of_nonneg_left hbound hp.le]
+
+/-! ### Actual laws and containing couplings -/
+
+/-- The product Bernoulli law on subsets of the ground type. -/
+@[expose] noncomputable def bernoulliSet (p : ℝ) (hp : 0 ≤ p) (hp' : p ≤ 1) :
+    PMF (Finset ι) :=
+  (BitString.bernoulliPMF p hp hp').map (fun x => univ.filter fun i => x i)
+
+/-- Independent thinning of a parent law. The two draws explicitly express independence;
+the parent coordinates themselves need not be independent. -/
+@[expose] noncomputable def thin (μ : PMF (Finset ι))
+    (t : ℝ) (ht : 0 ≤ t) (ht' : t ≤ 1) : PMF (Finset ι) := do
+  let j ← μ
+  let x ← BitString.bernoulliPMF t ht ht'
+  pure (retain j x)
+
+/-- Scores under the actual Bernoulli set law have the expected product average. -/
+theorem sum_bernoulliSet_mul (p : ℝ) (hp : 0 ≤ p) (hp' : p ≤ 1)
+    (f : Finset ι → ℝ) :
+    (∑ j, (bernoulliSet (ι := ι) p hp hp' j).toReal * f j) =
+      BitString.bernoulliAverage p (fun x => f (univ.filter fun i => x i)) := by
+  rw [bernoulliSet, PMF.sum_map_mul, BitString.sum_bernoulliPMF_mul]
+
+/-- Scores under independent thinning are the iterated parent/mask expectation. -/
+theorem sum_thin_mul (μ : PMF (Finset ι)) (t : ℝ) (ht : 0 ≤ t) (ht' : t ≤ 1)
+    (f : Finset ι → ℝ) :
+    (∑ j, (thin μ t ht ht' j).toReal * f j) =
+      ∑ j, (μ j).toReal * BitString.bernoulliAverage t (fun x => f (retain j x)) := by
+  change (∑ j, (μ.bind (fun j =>
+    (BitString.bernoulliPMF t ht ht').map (retain j)) j).toReal * f j) = _
+  rw [PMF.sum_bind_mul]
+  simp_rw [PMF.sum_map_mul, BitString.sum_bernoulliPMF_mul]
+
+/-- **Theorem 1.2 of [FangWang2026], PDF page 2, in its containing-coupling form.**
+The left marginal is independent thinning of an arbitrary `q`-spread parent law; the right
+marginal is the product Bernoulli set law. Every supported pair satisfies containment.
+The multiplicative condition is exactly the source's `η ≤ 1`, with positive denominators.
+Our hypotheses also allow `t = 0`, `q = 0`, `q ≥ 1`, and empty ground types. No runtime bound
+or independence of the two coupled output sets is claimed. -/
+theorem exists_thinning_coupling {t p q : ℝ} (ht : 0 ≤ t) (ht' : t < 1)
+    (hp : 0 < p) (hp' : p < 1) (hq : 0 ≤ q)
+    (hcond : t * q * (1 - p) ≤ p * (1 - t))
+    (μ : PMF (Finset ι)) (hspread : IsSpread q (fun j => (μ j).toReal)) :
+    ∃ γ : PMF (Finset ι × Finset ι),
+      γ.map Prod.fst = thin μ t ht ht'.le ∧
+      γ.map Prod.snd = bernoulliSet p hp.le hp'.le ∧
+      ∀ z ∈ γ.support, z.1 ⊆ z.2 := by
+  apply PMF.exists_monotone_coupling
+  intro U hU
+  rw [sum_thin_mul, sum_bernoulliSet_mul]
+  exact pmf_thinning_le_bernoulli ht ht' hp hp' hq hcond μ hspread hU
+
+/-- **Theorem 1.2, equation (1.4)** of [FangWang2026], PDF page 2: an actual containing
+coupling at the exact density `t q / (1 - t + t q)`, uniformly in finite dimension. -/
+theorem exists_thinning_coupling_explicit_density {t q : ℝ} (ht : 0 < t) (ht' : t < 1)
+    (hq : 0 < q) (μ : PMF (Finset ι)) (hspread : IsSpread q (fun j => (μ j).toReal)) :
+    ∃ (hp : 0 ≤ t * q / (1 - t + t * q)) (hp' : t * q / (1 - t + t * q) ≤ 1)
+      (γ : PMF (Finset ι × Finset ι)),
+      γ.map Prod.fst = thin μ t ht.le ht'.le ∧
+      γ.map Prod.snd = bernoulliSet (t * q / (1 - t + t * q)) hp hp' ∧
+      ∀ z ∈ γ.support, z.1 ⊆ z.2 := by
+  have hd : 0 < 1 - t + t * q := by positivity
+  have hp := div_pos (mul_pos ht hq) hd
+  have hp' : t * q / (1 - t + t * q) < 1 := (div_lt_one hd).mpr (by linarith)
+  refine ⟨hp.le, hp'.le, ?_⟩
+  apply exists_thinning_coupling ht.le ht' hp hp' hq.le _ μ hspread
+  field_simp
+  nlinarith
+
+/-- **Corollary 1.3** of [FangWang2026], PDF page 2, with an actual containing coupling.
+`α² ≤ 1 - α` is the golden-ratio threshold for nonnegative `α`. Unlike the source we also
+allow `α = 0` and the empty ground type. -/
+theorem exists_thinning_coupling_of_alpha {α p : ℝ} (hα : 0 ≤ α) (hα' : α < 1)
+    (hαsq : α ^ 2 ≤ 1 - α) (hp : 0 < p) (hp' : p < 1)
+    (μ : PMF (Finset ι)) (hspread : IsSpread (α * p) (fun j => (μ j).toReal)) :
+    ∃ γ : PMF (Finset ι × Finset ι),
+      γ.map Prod.fst = thin μ α hα hα'.le ∧
+      γ.map Prod.snd = bernoulliSet p hp.le hp'.le ∧
+      ∀ z ∈ γ.support, z.1 ⊆ z.2 := by
+  apply PMF.exists_monotone_coupling
+  intro U hU
+  rw [sum_thin_mul, sum_bernoulliSet_mul]
+  exact thinning_le_bernoulli_of_alpha hα hα' hαsq hp hp' _
+    (fun _ => ENNReal.toReal_nonneg) hspread hU
 
 end Cslib.Probability.Thinning

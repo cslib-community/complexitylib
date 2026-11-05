@@ -41,7 +41,7 @@ private theorem singletonLaw_nonneg (j : Finset Bool) : 0 ≤ singletonLaw j := 
   split_ifs <;> norm_num
 
 /-- The parent masses sum to one. In particular this is not just a subprobability example. -/
-example : (∑ j : Finset Bool, singletonLaw j) = 1 := by
+private theorem singletonLaw_sum : (∑ j : Finset Bool, singletonLaw j) = 1 := by
   norm_num [singletonLaw, sum_add_distrib]
 
 private theorem singletonLaw_spread : IsSpread (1 / 2) singletonLaw := by
@@ -101,5 +101,72 @@ example {ι : Type*} [Fintype ι] [DecidableEq ι] {p : ℝ} (hp : 0 < p) (hp' :
   apply thinning_le_bernoulli_of_alpha (by norm_num) (by norm_num) (by norm_num) hp hp' μ hμ
   · simpa only [one_div, inv_mul_eq_div] using hs
   · exact hU
+
+/-- The mask law uses the two-coordinate product mass, including endpoint densities. -/
+example (p : ℝ) (hp : 0 ≤ p) (hp' : p ≤ 1) :
+    (BitString.bernoulliPMF (ι := Fin 2) p hp hp' (fun _ => true)).toReal = p ^ 2 := by
+  simp [BitString.bernoulliWeight, pow_two]
+
+/-- The correlated parent as an actual PMF, rather than only real-valued weights. -/
+private noncomputable def singletonPMF : PMF (Finset Bool) :=
+  PMF.ofFintype (fun j => ENNReal.ofReal (singletonLaw j)) (by
+    rw [← ENNReal.ofReal_sum_of_nonneg (fun j _ => singletonLaw_nonneg j),
+      singletonLaw_sum, ENNReal.ofReal_one])
+
+private theorem singletonPMF_mass (j : Finset Bool) : (singletonPMF j).toReal = singletonLaw j :=
+  ENNReal.toReal_ofReal (singletonLaw_nonneg j)
+
+/-- At the exact boundary, the joint law has the actual thinning/product marginals and puts
+zero mass on a retained singleton paired with the empty target. -/
+example : ∃ γ : PMF (Finset Bool × Finset Bool),
+    γ.map Prod.fst = thin singletonPMF (1 / 2) (by norm_num) (by norm_num) ∧
+    γ.map Prod.snd = bernoulliSet (1 / 3) (by norm_num) (by norm_num) ∧
+    γ ({false}, ∅) = 0 := by
+  obtain ⟨γ, hl, hr, hs⟩ := exists_thinning_coupling
+    (t := 1 / 2) (p := 1 / 3) (q := 1 / 2)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) singletonPMF (by
+      simpa only [singletonPMF_mass] using singletonLaw_spread)
+  refine ⟨γ, hl, hr, ?_⟩
+  by_contra hn
+  have hh := hs ({false}, ∅) hn
+  simp at hh
+
+/-- The exact-density endpoint on a correlated parent gives density `1/3`. -/
+example : ∃ γ : PMF (Finset Bool × Finset Bool),
+    γ.map Prod.fst = thin singletonPMF (1 / 2) (by norm_num) (by norm_num) ∧
+    γ.map Prod.snd = bernoulliSet (1 / 3) (by norm_num) (by norm_num) ∧
+    ∀ z ∈ γ.support, z.1 ⊆ z.2 := by
+  obtain ⟨hp, hp', γ, hl, hr, hs⟩ := exists_thinning_coupling_explicit_density
+    (t := 1 / 2) (q := 1 / 2) (by norm_num) (by norm_num) (by norm_num)
+    singletonPMF (by simpa only [singletonPMF_mass] using singletonLaw_spread)
+  refine ⟨γ, hl, ?_, hs⟩
+  convert hr using 1
+  norm_num
+
+/-- A nonempty correlated parent also exercises Corollary 1.3 at `α = 3/5`, `p = 5/6`.
+Here `α p = 1/2` and the golden-ratio inequality is strict. -/
+example : ∃ γ : PMF (Finset Bool × Finset Bool),
+    γ.map Prod.fst = thin singletonPMF (3 / 5) (by norm_num) (by norm_num) ∧
+    γ.map Prod.snd = bernoulliSet (5 / 6) (by norm_num) (by norm_num) ∧
+    ∀ z ∈ γ.support, z.1 ⊆ z.2 := by
+  apply exists_thinning_coupling_of_alpha (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
+  convert singletonLaw_spread using 1
+  · norm_num
+  · funext j
+    exact singletonPMF_mass j
+
+/-- Empty ground sets and zero retention are included in the actual coupling theorem. -/
+example : ∃ γ : PMF (Finset (Fin 0) × Finset (Fin 0)),
+    γ.map Prod.fst = thin (PMF.pure ∅) 0 (by norm_num) (by norm_num) ∧
+    γ.map Prod.snd = bernoulliSet (1 / 2) (by norm_num) (by norm_num) ∧
+    ∀ z ∈ γ.support, z.1 ⊆ z.2 := by
+  apply exists_thinning_coupling (q := 0) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  intro s
+  have hs : s = ∅ := Subsingleton.elim _ _
+  subst s
+  simp only [empty_subset, ite_true, card_empty, pow_zero, PMF.sum_toReal, le_refl]
 
 end Cslib.Probability.Thinning

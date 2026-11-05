@@ -3380,6 +3380,7 @@ public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.Sqrt
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
+public import Complexity.Foundations.BooleanAnalysis.BernoulliPMF
 public import Complexity.Foundations.BooleanAnalysis.Bonami
 public import Complexity.Foundations.BooleanAnalysis.BucketWeight
 public import Complexity.Foundations.BooleanAnalysis.Concentration
@@ -4247,6 +4248,7 @@ public import Complexity.Probability.PMF.Bind
 public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Map
+public import Complexity.Probability.PMF.MonotoneCoupling
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound
