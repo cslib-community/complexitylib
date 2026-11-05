@@ -10,7 +10,7 @@ import Mathlib.Data.ZMod.Basic
 import Mathlib.MeasureTheory.Constructions.Polish.Basic
 import Mathlib.MeasureTheory.Group.Measure
 
-/-! Folding clients with trivial and nontrivial quotients, infinite densities, and Borel lattices. -/
+/-! Folding clients with trivial/nontrivial quotients, infinite densities, and Borel lattices. -/
 
 open MeasureTheory QuotientAddGroup
 open scoped ENNReal
@@ -57,7 +57,8 @@ example (f : ℤ → ℝ≥0∞) :
       (Measure.count.map (mk : ℤ → ℤ ⧸ (⊥ : AddSubgroup ℤ))).withDensity
         (automorphize f) := by
   simpa only [Measure.restrict_univ] using
-    map_withDensity_eq_withDensity_automorphize (bottomDomain Measure.count) (measurable_of_countable f)
+    map_withDensity_eq_withDensity_automorphize (bottomDomain Measure.count)
+      (measurable_of_countable f)
 
 -- A nontrivial finite group folds both points into its single top-subgroup coset.
 example (f : ZMod 2 → ℝ≥0∞) :
