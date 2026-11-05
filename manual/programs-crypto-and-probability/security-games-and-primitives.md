@@ -124,10 +124,23 @@ rejects noncanonical ciphertext-pair encodings, and propagates component failure
 correctness theorem concludes `some msg`, preserving accepted empty keys and messages. The
 native certificate charges the framing test and both callbacks. This repairs the representation
 boundary needed by CCA composition, without changing `hybridEncrypt` or its CPA security
-theorems. The [next DEM milestone](https://github.com/cslib-community/complexitylib/issues/2694)
-uses the existing one-time symmetric CCA games; the two KEM steps and key-distribution
-compatibility remain open. In particular, encoded Encrypt-then-MAC keys cannot be treated as
-uniform words merely by matching their encoded length.
+theorems.
+
+[`Hybrid/DEMCCA.lean`](../../Complexity/Crypto/Computational/Encryption/Hybrid/DEMCCA.lean)
+proves the exact DEM leg of Boneh–Shoup Exercise 12.5(a), p. 513 [bs23][bs23]. Its middle game
+retains the original KEM key/encapsulation correlation and independently samples the actual
+symmetric key distribution. The selected KEM component uses that key before and after the
+challenge. A native reduction to the existing `SymmetricCipher.OneTimeINDCCA` game preserves
+each experiment's output law, hence its advantage with factor one. Both challenge messages must
+have length `n`, matching this symmetric-cipher model; invalid pairs return false in both worlds.
+Canonical framing makes component-level challenge rejection agree with exact word rejection.
+
+The [checked clients](../../ComplexityTests/Crypto/HybridDEMCCA.lean) include the existing PRF
+Encrypt-then-MAC construction, a full-advantage echo-cipher counterexample, and a zero-width
+adaptive trace distinguishing `none` from `some []`. The full composition bound still requires
+two KEM steps and key-distribution compatibility. Encoded Encrypt-then-MAC keys are framed
+pairs with `3*n` random bits and encoded length `4*n+1`, so they cannot be replaced by uniform
+words of that encoded length.
 
 ## Authentication, signatures, and state
 
