@@ -3218,6 +3218,8 @@ public import Complexity.Crypto.Protocols.VOLE.Basic
 public import Complexity.Crypto.Protocols.VOLE.BatchMulCheck
 public import Complexity.Crypto.Protocols.VOLE.MaskedMulCheck
 public import Complexity.Crypto.Protocols.VOLE.MulCheck
+public import Complexity.Crypto.Protocols.VOLE.Native
+public import Complexity.Crypto.Protocols.VOLE.NativePPT
 public import Complexity.Crypto.Protocols.VOLE.World
 public import Complexity.DataStructure.AVLTree.Basic
 public import Complexity.DataStructure.AVLTree.Erase
