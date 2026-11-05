@@ -279,7 +279,7 @@ def bitSign (b : Bool) : ℝ := if b then 1 else -1
 
 /-- No labelling of the three branches can balance both complementary source choices.
 This is the parity argument in [Aggarwal2026], Lemma 3.3. -/
-theorem exists_signed_imbalance [Fintype V] [DecidableEq V] [Nonempty V]
+theorem exists_signed_imbalance [Fintype V] [DecidableEq V]
     (ext : Key V → Bool) :
     ∃ T : Finset V, (keys T).card / (3 : ℝ) ≤
       |∑ k ∈ keys T, bitSign (ext k)| := by
