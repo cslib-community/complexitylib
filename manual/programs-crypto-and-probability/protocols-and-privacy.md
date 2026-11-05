@@ -139,9 +139,24 @@ fixes one generator, whereas this endpoint quantifies over a class of generator 
 
 This currently covers Theorem 1.1's two-party separation. The abstract also advertises
 Theorem 1.2's two-out-of-$n$ and $r$-out-of-$r$ constructions, expanded in Theorems 4.1
-and 5.1, with their matching extractor upper bounds. Those supplementary main results,
-including tightness of the two-party $1/6$ constant, remain unproved here. Track them in
+and 5.1, with their matching extractor upper bounds. The arbitrary-party constructions and their complete security/cardinality guarantees
+remain unproved here. The common extraction bounds and tightness are now proved in
+`ImperfectRandomness.OddSources`; the threshold constructions must still instantiate
+those results with their actual branch and index types. Track the remaining scope in
 [issue 2524](https://github.com/cslib-community/complexitylib/issues/2524).
+
+Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness`
+and apply `binary_padded_extraction_tight` for the matching $1/6$ upper bound at every
+admitted field size. It constructs an index bit whose error is at most $1/6$ on every
+original padded source and exactly $1/6$ on some source. The generic
+`OddSources.no_string_extractor` proves the lower bound $1/(2|B|)$ for every positive
+output length when the branch type is odd. `exists_tight_index_extractor` supplies
+an attaining bit extractor for even nonempty index spaces when the branch classes
+have consecutive sizes. These are actual source laws and constructed extractors;
+correctness and joint privacy of an arbitrary-party scheme are separate obligations.
+The [generic and tightness clients](../../ComplexityTests/Crypto/OddSourcesTests.lean)
+exercise both class orientations, real branch/source counts and the original two-party
+class, including the padded case.
 
 The [checked clients](../../ComplexityTests/Crypto/ImperfectRandomness.lean) instantiate the
 four-element field, show both source-size endpoints, check concrete sharing rules, and apply
