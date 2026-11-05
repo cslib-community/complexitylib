@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Crypto.Computational.Homomorphic.Leveled.Bootstrapping
-import Complexity.Crypto.Computational.Homomorphic.Leveled.GuessOverhead
+import Complexity.Crypto.Computational.Homomorphic.Leveled.GameOverhead
 import Complexity.Tactic.PPT
 
 /-!
@@ -309,6 +309,7 @@ example (n : ℕ) (keys : List Bool × List Bool)
 -- Quantitative polynomial coin-budget, artifact-length, and seeded-evaluator overhead package.
 example :
     ∃ (c_kg d_kg c_enc d_enc c_ch d_ch c_gu d_gu : ℕ)
+      (evalKey : ℕ → List Bool → List Bool × List Bool)
       (evalEncrypt : (ℕ × List Bool × Bool) → List Bool → List Bool)
       (evalChoose : (ℕ × List Bool) → List Bool → ((Bool × Bool) × List Bool))
       (evalGuess : (ℕ × List Bool × List Bool) → List Bool → Bool),
@@ -319,6 +320,8 @@ example :
       let advChooseBudget (n : ℕ) := c_ch * (2 * n + pubLen n + 2) ^ d_ch
       let advGuessBudget (n : ℕ) :=
         c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
+      ComputableInPolyTime (fun (n, coins) => evalKey n coins)
+        (encPair encUnary encBits) (encPair encBits encBits) ∧
       ComputableInPolyTime (fun (x, coins) => evalEncrypt x coins)
         (encPair (encPair encUnary (encPair encBits encBool)) encBits) encBits ∧
       ComputableInPolyTime (fun (x, coins) => evalChoose x coins)
@@ -326,6 +329,8 @@ example :
         (encPair (encPair encBool encBool) encBits) ∧
       ComputableInPolyTime (fun (x, coins) => evalGuess x coins)
         (encPair (encPair encUnary (encPair encBits encBits)) encBits) encBool ∧
+      (∀ n, ProbComp.eval (fixture.keyGen n) =
+        (BitString.uniformList (pkBound n)).map (evalKey n)) ∧
       (∀ n keys, keys ∈ (ProbComp.eval (fixture.keyGen n)).support →
         keys.1.length ≤ pkBound n ∧ keys.2.length ≤ 2) ∧
       (∀ n pk bit, pk.length ≤ pkBound n →
@@ -408,6 +413,7 @@ example (depthBudget : ℕ → ℕ)
   exact ⟨encCoins, chooseCoins, guessCoins, evaluate, hevaluate, hpoly, hlaw⟩
 
 -- Zero depth still samples its indices but can only return the original rejection.
+-- This concerns the link sub-reduction; the complete modular reduction has a zero-link fallback.
 example (n : ℕ) : ProbComp.eval ((fixture.modLinkAdversary (fun _ => 1) (fun _ => 0)
     (fun _ => 2) (publicKeyGame fixture inputSizedAdversary false)).choose n []) =
       PMF.pure Scheme.rejectLinkChoice := by
@@ -454,6 +460,29 @@ example : [false, true, false] ∈ (ProbComp.eval (fixture.encrypt 0 [false] tru
 example (message : Bool) : [false, true, false, true] ∉
     (ProbComp.eval (fixture.encrypt 0 [false] message)).support := by
   simp [fixture, ProbComp.eval_uniform]
+
+-- The complete game derives all support premises internally, for both challenge worlds and
+-- the input-sized adversary. The selector's unary coin family may be any native polynomial.
+example (indexCoins depthBudget : ℕ → ℕ)
+    (hindexCoins : ComputableInPolyTime indexCoins encUnary encUnary)
+    (hdepthBudget : ComputableInPolyTime depthBudget encUnary encUnary) :
+    ∃ (keyCoins encCoins chooseCoins guessCoins : ℕ → ℕ)
+      (evaluate : Bool → ℕ → List Bool → Bool),
+      (∀ bit, ComputableInPolyTime (fun (n, tape) => evaluate bit n tape)
+        (encPair encUnary encBits) encBool) ∧
+      PolynomiallyBounded (fun n => modLeveledGameCoinBudget (indexCoins n) (2 * depthBudget n)
+        2 (keyCoins n) (encCoins n) (chooseCoins n) (guessCoins n)) ∧
+      ∀ bit n, ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+        (modLeveledAdversary fixture indexCoins (fun n => 2 * depthBudget n) (fun _ => 2)
+          inputSizedAdversary) bit n) =
+        (BitString.uniformList (modLeveledGameCoinBudget (indexCoins n) (2 * depthBudget n)
+          2 (keyCoins n) (encCoins n) (chooseCoins n) (guessCoins n))).map (evaluate bit n) := by
+  obtain ⟨keyCoins, encCoins, chooseCoins, guessCoins, evaluate, _, _, _, _, hevaluate,
+    hpoly, hlaw⟩ := exists_modLeveledGame_coin_evaluator keyGen_ppt encrypt_ppt
+      inputSizedAdversary_ppt (coins := indexCoins) (budget := depthBudget)
+      (capacity := fun _ => 2) (width := fun _ => 2) secret_width (fun _ => le_rfl)
+      hindexCoins hdepthBudget (by fun_prop)
+  exact ⟨keyCoins, encCoins, chooseCoins, guessCoins, evaluate, hevaluate, hpoly, hlaw⟩
 
 -- This fixture cannot satisfy encryption correctness: both messages encrypt to the same word.
 example : ¬ forgetful.Correct := by

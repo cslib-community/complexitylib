@@ -178,8 +178,8 @@ theorem exists_modLinkAdversary_guess_coin_evaluator {E : Scheme}
           (BitString.uniformList (Leveled.leveledGuessCoinBudget (2 * budget n) (capacity n)
             (encCoins n) (chooseCoins n) (guessCoins n))).map
               (evaluate (n, choice.2, challenge)) := by
-  obtain ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, evalEncrypt, evalChoose, evalGuess,
-    hevalEncrypt, hevalChoose, hevalGuess, hkeys, henc, _, hchoose, hguess, _, hpoly, _, _⟩ :=
+  obtain ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, _, evalEncrypt, evalChoose, evalGuess,
+    _, hevalEncrypt, hevalChoose, hevalGuess, _, hkeys, henc, _, hchoose, hguess, _, hpoly, _, _⟩ :=
       Leveled.exists_leveledAdversary_overhead hkeyGen hencrypt hadversary hwidth hcapacity_le
         hbudget hcapacity
   let pkBound := fun n => c_kg * (n + 1) ^ d_kg
