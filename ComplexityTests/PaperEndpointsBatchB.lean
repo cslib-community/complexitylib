@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-import Complexity.Crypto.Multiparty.Tetrahedral
+public import Complexity.Crypto.Multiparty.Tetrahedral
 import Complexity.Cryptanalysis.AddXNOR
 import Complexity.GameTheory.FairDivision.MMSImpossibility
 import Mathlib.Tactic.NormNum
@@ -17,7 +17,7 @@ import Mathlib.Tactic.NormNum
 open Cslib.Crypto.Tetrahedral
 
 -- Figure 4: shuffle 1230, message Y, Alice 01, Bob receives the second bit 1.
-example : shuffle 9 = ![1, 2, 3, 0] ∧ message 9 = 1 ∧
+public theorem shuffled_example : shuffle 9 = ![1, 2, 3, 0] ∧ message 9 = 1 ∧
     senderOutput 9 = (false, true) ∧ receiverOutput 9 = (true, true) := by decide
 
 -- Receiving the first bit does not determine the other bit: Figure 6, X/0.
@@ -49,13 +49,13 @@ example : ¬ Guarantees true 22 := by
 
 open Cslib.Cryptanalysis.AddXNOR
 
--- Width 5, five operands and four operations; actual full-word average is 3/16.
-example : averageCorrelation 3 4 = 3/16 := by
+-- Width 5, five operands and four operations; actual full-word average is 3 / 16.
+example : averageCorrelation 3 4 = 3 / 16 := by
   rw [averageCorrelation_eq]
   norm_num
 
--- At width 2 and one operator the exact correlation is 3/4.
-example : averageCorrelation 0 1 = 3/4 := by
+-- At width 2 and one operator the exact correlation is 3 / 4.
+example : averageCorrelation 0 1 = 3 / 4 := by
   rw [averageCorrelation_eq]
   norm_num
 

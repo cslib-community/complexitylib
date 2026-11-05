@@ -31,6 +31,21 @@ The proof replaces Appendix B's enumeration of 4^11 allocations by a certificate
 on unions S of the two type-1 agents' bundles. Necessary inequalities leave only
 85 out of 2048 subsets. Each remaining subset is checked for possible two-way
 splits of S and its complement. All finite checking uses kernel `decide`.
+
+## Main definitions
+
+* `itemValue`, `value`, `bundle`: the positive source table and complete-allocation utilities.
+* `Guarantees`: a threshold attainable in an arbitrary four-way partition.
+
+## Main results
+
+* `guarantees_iff`: every agent's maximin share is exactly 21.
+* `unavoidable_loss`: every complete allocation leaves an agent with utility at most 20.
+
+## References
+
+* [T. Ezra and T. Garbuz, *Improved Impossibility Bounds for Maximin Share Allocations*][EzraGarbuz2027],
+  Theorem 2, PDF p. 13, with the finite certificate in Appendix B.
 -/
 
 public section

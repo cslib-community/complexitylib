@@ -27,6 +27,20 @@ party's entire view, and the uniform ideal output triple. Multiplying counts
 avoids division: probability is count divided by 24. This is a single invocation,
 not a composable security or chosen-input OT theorem. In particular it does not
 assert the reverse simulation or optimality in Section 5.
+
+## Main definitions
+
+* `shuffle`, `aliceTable`, `bobTable`: the literal S4 protocol and lookup tables.
+* `aliceView`, `bobView`: complete passive views including local hand, public message and output.
+
+## Main results
+
+* `correctness`, `uniform_output`: selected-bit correctness and the uniform ideal output triple.
+* `alice_privacy`, `bob_privacy`: exact finite counting identities for both passive views.
+
+## References
+
+* [D. Beaver, *Correlated Group Interactions*][Beaver2027], Theorem 4.1 and Figures 2–3.
 -/
 
 public section
