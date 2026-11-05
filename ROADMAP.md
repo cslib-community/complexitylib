@@ -121,7 +121,10 @@ In order:
 - oracle statements, so a later phase can query an earlier phase's oracle message (virtual
   output oracles, as in ArkLib), with knowledge soundness and zero knowledge in oracle worlds;
 - efficiency-certified simulators and extractors, and auxiliary-input zero knowledge on the core;
-- polynomial commitment and evaluation-query reductions, and the Ligero IOP;
+- polynomial commitment instantiations, multi-point evaluation-query reductions, and the full
+  Ligero IOP (Reed–Solomon proximity testing and quadratic constraint reductions) beyond the
+  `PolyCommitScheme` interface, random-linear-combination evaluation batching
+  (`batchEvalReduction`), and Ligero matrix-code row-consistency core (`LigeroMatrixIOP`);
 - the BCS transform to non-interactive arguments in the random-oracle model;
 - VOLE as an ideal functionality, and VOLE-in-the-head;
 - libzk's compositional structure as a composition of these components, without ciphersuites.
