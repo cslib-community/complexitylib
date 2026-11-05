@@ -96,10 +96,29 @@ then reduces each integer coordinate modulo `q`. Short rows/vectors pad with zer
 entries are ignored, but still contribute to input length. Canonical equality requires `q > 0`;
 there is no assertion that malformed words are rejected. [Checked clients](../../ComplexityTests/Crypto/ModuleKeyGenNative.lean)
 use the same certified function for rank two, degree two, composite modulus six, signed wraps,
-modulus one, zero dimensions and a 129-bit modulus. Randomized native key generation still needs
-structured matrix construction from sampled polynomial coefficients: sampling independent entries
-of the expanded scalar matrix would give the wrong law. Full native encryption/decryption,
-seed compression and security remain separate obligations.
+modulus one, zero dimensions and a 129-bit modulus. The structured matrix sampler below supplies
+its public matrix input; full randomized key generation must still compose the actual secret and
+error samplers. Full native encryption/decryption, seed compression and security remain separate
+obligations.
+
+The structured matrix input itself now has a native constructor and exact sampler in
+[`SIS/Module/MatrixSampling.lean`](../../Complexity/Crypto/Computational/SIS/Module/MatrixSampling.lean).
+`exists_computableInPolyTime_encodeModuleMatrix` supplies one total implementation of the existing
+`ModuleSIS.encodeMatrix`, from rectangular nested coefficient lists, unary row/rank/degree and a
+binary modulus. Its canonical identity assumes `q > 0`; zero dimensions and modulus one are
+included. The private implementation pads missing coefficients with zero, ignores excess entries
+while charging their input length, and uses the actual negative wrap of `rotMatrix`. At modulus
+zero it remains total, without a canonical residue interpretation.
+`exists_isPPTOn_sampleEncodedModuleMatrix` samples independent polynomial coefficients using
+`sampleBinaryNat w`, then performs that certified expansion. Its exact law is uniform on the
+original polynomial matrix followed by `ModuleSIS.encodeMatrix`, for unary dimensions and bit
+width, including width zero. The expanded scalar entries are correlated. [Tests](../../ComplexityTests/Crypto/ModuleMatrixSampling.lean)
+check a rectangular modulus-six expansion, empty shapes, a 129-bit modulus, and a nonrotation
+matrix with zero structured-sampler mass but positive independent-scalar-uniform mass. They also
+compose the same obtained sampler with the native key generator: the composition is strict PPT
+for runtime dimensions/width and complete supplied signed secret/error words, and its concrete
+conditional law agrees with the existing key generator. Full CBD randomized key generation,
+native encryption/decryption and security remain separate tasks.
 
 The Module-LWE sampling APIs now accept explicit distributions: `moduleLWEPublicKeyLaw` has an
 optional `secretLaw`, `encryptionViewOfKeyLaw` an optional `ephemeralLaw`, and `realEncryptionView`
