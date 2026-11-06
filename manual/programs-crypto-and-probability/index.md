@@ -65,11 +65,11 @@ sources directly; copied files and generated audit reports are not maintained in
 ## Adaptive policies and finite stochastic experiments
 
 The work associated with STOC submissions 587, 191 and 152 includes the general
-finite-horizon covariance identity and the bounded results below. The expanded
+finite-horizon covariance identity, information and auditing bounds, DPI rigidity
+results, and scheduling policy–LP frontier documented below. The expanded
 headline programme remains open in [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
-The information and auditing sample-complexity bounds, scheduling LP/FPTAS and
-DPI rigidity theorems are not provided by these imports. There is no machine-runtime
-or full-paper completion claim. The source
+Submission 191’s FPTAS and remaining main results are still open. These imports
+do not establish completion of the expanded programme or machine-runtime guarantees. The source
 versions and PDF digests are recorded under `Aldridge2027`, `Wang2027` and `Kong2027`
 in [the bibliography](../../references.bib). The checked clients are in
 [Stoc2027BatchC.lean](../../ComplexityTests/Stoc2027BatchC.lean).
