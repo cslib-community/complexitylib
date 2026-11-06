@@ -345,10 +345,10 @@ private noncomputable def realExp
     (hcap : ComputableInPolyTime (fun n => 2 ^ depth n) encUnary encUnary)
     (adversary : IndexedForger) (n : ℕ) :
     PMF (List Bool × List (List Bool × List Bool) ×
-      ((ℕ × List Bool × List Bool) × List (ℕ × List Bool))) :=
-  (BitString.uniformList n).bind fun k =>
-    (ProbComp.eval (OracleComp.replicate (2 ^ depth n) (S.keyGen n))).bind fun keys =>
-      (realRun S H depth hH hlen hcap adversary n k keys).map fun r => (k, keys, r)
+      ((ℕ × List Bool × List Bool) × List (ℕ × List Bool))) := do
+  let k ← BitString.uniformList n
+  let keys ← ProbComp.eval (OracleComp.replicate (2 ^ depth n) (S.keyGen n))
+  (realRun S H depth hH hlen hcap adversary n k keys).map fun r => (k, keys, r)
 
 variable {S H depth} in
 private theorem map_otsWin_realExp
@@ -366,8 +366,8 @@ private theorem map_otsWin_realExp
   rw [eval_eufOneTimeGame_oneTimeForgerAt hH hlen hcap hbound adversary i, realExp]
   have hsplit : 2 ^ depth n = i + ((2 ^ depth n - i - 1) + 1) := by omega
   rw [hsplit, ← ProbComp.eval_replicate_splice, ← hsplit]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, PMF.bind_bind, PMF.pure_bind,
-    PMF.map_comp, Function.comp_def]
+  simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind,
+    PMF.bind_bind, PMF.pure_bind, PMF.map_comp, Function.comp_def]
   rw [PMF.bind_comm]
 
 variable {S H depth} in
@@ -382,8 +382,8 @@ private theorem eval_indexedEufCmaGame_eq
         !t.2.2.2.contains (t.2.2.1.1, t.2.2.1.2.1) &&
           verify S H depth (publicKey H t.1 t.2.1) t.2.2.1.1 t.2.2.1.2.1 t.2.2.1.2.2 := by
   simp only [IndexedSignatureScheme.indexedEufCmaGame, scheme, keyGen, realExp, realRun,
-    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.map_bind,
-    PMF.bind_bind, PMF.pure_bind, PMF.map_comp, Function.comp_def]
+    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.monad_bind_eq_bind,
+    PMF.map_bind, PMF.bind_bind, PMF.pure_bind, PMF.map_comp, Function.comp_def]
   rfl
 
 variable {S H depth} in
@@ -399,8 +399,8 @@ private theorem eval_collisionGame_eq
         isCollision H (fun _ _ => true) n t.1 (collisionOf H t.1 t.2.1 t.2.2).1
           (collisionOf H t.1 t.2.1 t.2.2).2 := by
   simp only [collisionGame, collisionFinder, realExp, realRun, ProbComp.eval_bind,
-    ProbComp.eval_pure, BitString.eval_sampleList, PMF.map_bind, PMF.bind_bind, PMF.pure_bind,
-    PMF.map_comp, Function.comp_def]
+    ProbComp.eval_pure, BitString.eval_sampleList, PMF.monad_bind_eq_bind, PMF.map_bind,
+    PMF.bind_bind, PMF.pure_bind, PMF.map_comp, Function.comp_def]
   rfl
 
 variable {S H depth} in
@@ -517,7 +517,8 @@ theorem succProbability_indexedEufCmaGame_le
   set X := realExp S H depth hH hlen hcap adversary n with hX
   have hsupp : ∀ t ∈ X.support, t.1.length = n ∧ t.2.1.length = 2 ^ depth n := by
     intro t ht
-    simp only [X, realExp, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at ht
+    simp only [X, realExp, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+      PMF.mem_support_map_iff] at ht
     obtain ⟨k, hk, keys, hkeys, r, _, rfl⟩ := ht
     exact ⟨BitString.length_of_mem_support_uniformList hk,
       ((ProbComp.mem_support_replicate_iff _ _ _).mp hkeys).1⟩

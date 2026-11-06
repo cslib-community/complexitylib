@@ -54,9 +54,9 @@ theorem counter_amortized :
     omega
 
 /-- The second increment depends on the first answer. -/
-def adaptive : counter.Client Nat :=
-  ((.liftBind (1 : Nat) fun n => .pure n) : counter.Client Nat).bind fun n =>
-    .liftBind n fun a => .pure a
+def adaptive : counter.Client Nat := do
+  let n ← counter.call 1
+  counter.call n
 
 /-- A client contract can be proved compositionally, without exposing any backend. -/
 example : counter.Hoare (fun s => s = 0) adaptive (fun a s => a = 2 ∧ s = 2) := by

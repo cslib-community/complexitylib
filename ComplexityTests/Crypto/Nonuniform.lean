@@ -254,9 +254,10 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1) :
     let test : ℕ × List Bool → ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool :=
       fun a i result => pure (a.2.headD false && (result.2.2.headD false ^^ decide (i < a.1)))
     Negligible (fun n => Game.advantage
-      (ProbComp.eval (OracleComp.replicate (count n) (fairPair.sample n) >>= fun values =>
-        Pseudoentropy.extractWordLabels (count n) (bits n) values >>=
-          test (n, nonemptyAdvice n) (choose n)))
+      (ProbComp.eval do
+        let values ← OracleComp.replicate (count n) (fairPair.sample n)
+        let labels ← Pseudoentropy.extractWordLabels (count n) (bits n) values
+        test (n, nonemptyAdvice n) (choose n) labels)
       (ProbComp.eval
         (Pseudoentropy.extractWordLabelsIdeal
           (Prod.fst <$> fairPair.sample n) (count n) (bits n) >>=

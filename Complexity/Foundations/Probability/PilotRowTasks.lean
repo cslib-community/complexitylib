@@ -537,4 +537,20 @@ theorem ofChannels_Kc :
   exact CorrectionSamplingLaws.ofHierarchyChannels_Kc P X Y hXY hYX hf hπ hpair hi
     _ I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
 
+/-- The pilot channel constructor retains its preparation cutoff. -/
+theorem ofChannels_h :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).h = h := by
+  unfold ofChannels
+  exact CorrectionSamplingLaws.ofHierarchyChannels_h P X Y hXY hYX hf hπ hpair hi
+    _ I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
+
+/-- The pilot channel constructor retains the hierarchy row rank. -/
+theorem ofChannels_K :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).K = P.K := by
+  unfold ofChannels
+  exact CorrectionSamplingLaws.ofHierarchyChannels_K P X Y hXY hYX hf hπ hpair hi
+    _ I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
+
 end Matrix.HierarchyParams.PilotSampling
