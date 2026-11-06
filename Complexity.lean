@@ -4371,9 +4371,9 @@ public import Complexity.Probability.StochasticOracle.FullCover
 public import Complexity.Probability.StochasticOracle.PartialCover
 public import Complexity.Probability.StochasticOracle.PartialCoverGreedy
 public import Complexity.Probability.StochasticOracle.PartialCoverRisk
+public import Complexity.Probability.StochasticOracle.PartialCoverThreshold
 public import Complexity.Probability.StochasticOracle.Programs
 public import Complexity.Probability.StochasticOracle.RandomCost
-public import Complexity.Probability.StochasticOracle.PartialCoverThreshold
 public import Complexity.Probability.StochasticOracle.RationalFullCover
 public import Complexity.Probability.StochasticOracle.TwoBatchApproximation
 public import Complexity.Probability.StochasticOracle.TwoBatchBinary
