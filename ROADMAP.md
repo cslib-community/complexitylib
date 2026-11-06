@@ -317,8 +317,15 @@ families and full-input native runtime.
   ([#2712](https://github.com/cslib-community/complexitylib/issues/2712)), for ideal uniform
   prime-modulus matrices and histories sampled before fresh masks. The one-call all-attempt
   read-to-program hop ([#2750](https://github.com/cslib-community/complexitylib/issues/2750))
-  retains the complete cache, with an unconditional finite sum of collision bounds. Adaptive
-  multiple-call replacement, visible-law programmed-to-simulated signing with abort-query
+  retains the complete cache, with an unconditional finite sum of collision bounds. The
+  one-attempt visible simulation milestone
+  ([#2788](https://github.com/cslib-community/complexitylib/issues/2788))
+  bounds the statistical distance between the one-attempt programmed signing hybrid (which prepends
+  a fresh challenge even on an abort) and simulated signing with accepted-transcript caching under
+  any query-bounded visible continuation by `R / q^n + sqrt(q^n / (2γ + 1)^m) / 2`, with exact
+  visible equality for zero-read continuations. Full executions retaining the final cache verify
+  the 0 vs 24/49 empty-cache divergence on the canonical q=17 counterexample. Adaptive
+  multiple-call replacement, full multiple-attempt visible simulation transport with abort-query
   accounting, an efficient secret-free simulator, paired same-coins fork equality, native
   shared-oracle reduction and a security parameter family remain open. Other endpoints include
   identification security under SIS and Dilithium-style
