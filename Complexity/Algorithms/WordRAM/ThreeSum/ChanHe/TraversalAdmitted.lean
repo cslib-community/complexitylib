@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalInvariant
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalEmission
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalLocalEmission
 
 /-!
 # Deriving every native visit fit from the worklist envelope
@@ -31,15 +31,15 @@ namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 open Cslib.WordRAM
 
 /-- The worklist's one signed envelope derives every local native kernel fit. -/
-theorem emit_admitted {a : Arena} {w : ℕ} (x : Data 128) (e : Entry)
+theorem emit_admitted (published : Bool) {a : Arena} {w : ℕ} (x : Data 128) (e : Entry)
     (ha : a.Separated) (hw : a.Ready w) (hc : a.Controls x)
     (hl : e.Loaded x) (hv : e.Valid a.n a.U) (hs : e.Stored x.mem)
     (hbitmap : a.Bitmap x.mem) (hfloor : a.floor ≤ x.regs heap)
     (hheap : x.regs heap ≤ a.ceiling)
     (hsrc : ∀ j, e.source j + (e.data j).length ≤ x.regs heap)
-    (htable : x.regs outputs + x.regs outputCount < x.regs heap) :
-    ∃ y, ExecWithin (w + 2) visit x y (visitTime a.n a.m a.N) ∧
-      Nonempty (Emission (Nat.primesLE a.m) a.Λ e x y) := by
+    (htable : published = true → x.regs outputs + x.regs outputCount < x.regs heap) :
+    ∃ y, ExecWithin (w + 2) (if published then visit else localVisit) x y (visitTime a.n a.m a.N) ∧
+      Nonempty (Emission (Nat.primesLE a.m) a.Λ e x y published) := by
   rcases hc with ⟨hm, hΛ, hU, hN, hb, hcard, ht, hstack, hcap, hz, hone⟩
   have hsum := envelope_ge_sum a.ceiling a.n a.m a.Λ a.U a.N
   have hbound {z : ℤ} (hz : z.natAbs ≤ envelope a.ceiling a.n a.m a.Λ a.U a.N) :
@@ -57,7 +57,7 @@ theorem emit_admitted {a : Arena} {w : ℕ} (x : Data 128) (e : Entry)
     have h₁ := ha.2.1
     have h₂ := ha.2.2.1
     omega
-  obtain ⟨y, he, hem⟩ := emit_entry x e hl (by simpa only [hU] using hv) hs
+  obtain ⟨y, he, hem⟩ := emit_with_publication published x e hl (by simpa only [hU] using hv) hs
     (by rw [hm]; exact hw.1)
     (by apply hbound; simp only [hm, Int.natAbs_natCast]; omega)
     (hunsigned.of_le (modulus_budget_le_envelope x a.ceiling a.n a.m a.Λ a.U a.N hheap

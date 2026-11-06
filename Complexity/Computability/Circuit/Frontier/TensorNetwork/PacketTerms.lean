@@ -97,12 +97,15 @@ bounds: time `exp(O(L log s))` and polynomial space.
 
 namespace Cslib.Circuits.Frontier
 
+set_option quotPrecheck false in
 /-- The subring `ℤ_(2)` of rationals with odd denominator. -/
-local notation "ℤ₍₂₎" => Valuation.integer (Rat.padicValuation 2)
+local macro "ℤ₍₂₎" : term => `(Valuation.integer (Rat.padicValuation 2))
 
 namespace NativePacket
 
 open GaloisRingArith TensorNetwork Turing.MultiTapeTM Cslib.GenericRAM
+
+attribute [local irreducible] ComputableInPolyTime
 
 /-! ### The `2`-adic valuation by halving -/
 

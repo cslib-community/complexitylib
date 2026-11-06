@@ -168,8 +168,11 @@ transporting key-generation error, and realizing the efficient forking reduction
   This is a precise quotient consequence of Claim 3.8. The actual arbitrary-width
   coset discrete-Gaussian convolution density and Claim 3.9 full-L1 bound, with a sufficient
   dual-gap width criterion, are proved in
-  [#2707](https://github.com/cslib-community/complexitylib/issues/2707). An attained minimum
-  smoothing parameter, the projected/mod-one law, arbitrary-modulus search-LWE sampling
+  [#2707](https://github.com/cslib-community/complexitylib/issues/2707). The actual scalar and
+  canonical mod-one pushforward bounds of Corollary 3.10, including a discharged dual-gap
+  criterion and the exact zero-projection case, are proved in
+  [#2734](https://github.com/cslib-community/complexitylib/issues/2734). An attained minimum
+  smoothing parameter, the periodic-density series, arbitrary-modulus search-LWE sampling
   experiment, efficient finite-precision sampling and quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
   `Foundations/MeasureTheory/Group/ConvolutionDensity` proves the convolution density formula
@@ -312,8 +315,11 @@ families and full-input native runtime.
   actual box commitments and the simulator's published commitments follow from matrix
   universality and the joint leftover-hash bound
   ([#2712](https://github.com/cslib-community/complexitylib/issues/2712)), for ideal uniform
-  prime-modulus matrices and histories sampled before fresh masks. An efficient secret-free
-  simulator, corrected abort-query simulation, paired same-coins fork equality, native
+  prime-modulus matrices and histories sampled before fresh masks. The one-call all-attempt
+  read-to-program hop ([#2750](https://github.com/cslib-community/complexitylib/issues/2750))
+  retains the complete cache, with an unconditional finite sum of collision bounds. Adaptive
+  multiple-call replacement, visible-law programmed-to-simulated signing with abort-query
+  accounting, an efficient secret-free simulator, paired same-coins fork equality, native
   shared-oracle reduction and a security parameter family remain open. Other endpoints include
   identification security under SIS and Dilithium-style
   signature schemes over module SIS and module LWE, as theory.
@@ -1032,7 +1038,7 @@ reuse is demonstrated.
 - **Measure postprocessing.** Canonical full-L1 total variation contracts under measurable
   maps of arbitrary finite measures, including unequal masses
   ([#2732](https://github.com/cslib-community/complexitylib/issues/2732)). The actual Gaussian
-  projection/mod-one consumer remains separate in
+  projection/mod-one consumer is proved in
   [#2734](https://github.com/cslib-community/complexitylib/issues/2734).
 - **Finite weighted measure mixtures.** `Foundations/MeasureTheory/Measure/TotalVariation/Mixture`
   bounds the existing full-L1 distance when both finite component measures and their nonnegative
@@ -1044,7 +1050,7 @@ reuse is demonstrated.
 - **Gaussian density and projection laws (available):** the positive-width normalized
   Gaussian weight is proved equal to a scaled standard Gaussian, and its actual scalar
   projection has variance `(s ‖z‖)² / (2π)`, including the zero vector and dimension zero
-  (#2733). The discrete-coset convolution projection and mod-one bound remain #2734;
+  (#2733). The discrete-coset convolution projection and mod-one bound are proved in #2734;
   efficient sampling and the quantum reduction remain #1213.
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.

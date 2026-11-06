@@ -7,52 +7,59 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Execute
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Cost
 public import Complexity.Algorithms.ThreeSum.ChanHe.ConvolutionSizes
 public import Complexity.Foundations.Data.Nat.LogRpow
+import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingTime
 
 /-!
-# Uniform runtime transfer for the actual ordinary 3SUM host
+# Uniform runtime transfer for the canonical ordinary 3SUM visitor
 
-The ordinary algorithm preprocesses an input of length `n` into a short catalogue of
-Convolution-3SUM instances. Each instance becomes a sequence of Exact Triangle (ET) calls.
-The saving comes from their square-root dimension, after charging the entire catalogue and
-the work of constructing the calls. The following ledger keeps those quantities separate.
+The ordinary algorithm constructs and consumes a short ordered list of Convolution-3SUM nodes in
+place during Chan–He traversal. Each actual packed node leads to Exact Triangle (ET) calls. No
+packed-pointer catalogue is retained on this path. The saving comes from the ET calls' square-root
+dimension, after charging all frontend, traversal, matrix and solver work.
 
-Write `ℓ = log₂(n+2)+1`, `q = instanceBound κ n`,
-`s = Host.sideLength (instanceLength κ n)` and `E = envelopeExponent κ`.
-The actual ET magnitude argument is `F = 2*(n+2)^E+1`. For fixed `κ`:
+Write `ℓ = log₂(n+2)+1`, `q = instanceBound κ n`, `s = Host.sideLength (instanceLength κ n)` and
+`E = envelopeExponent κ`. The actual ET magnitude argument is `F = 2*(n+2)^E+1`. For fixed `κ`:
 
-* `ChanHe.Preprocessing.cost_bound` bounds preprocessing by
+* `ChanHe.Preprocessing.cost_bound` bounds the reused preparation/traversal allowance by
   `Kκ*(n+2)*(sqrt(n+2)+1)*ℓ^13`.
-* `instanceBound_le_numBound` bounds `q` by `128*(κ+2)^2*ℓ^7`.
+* `instanceBound_le_numBound` bounds the emitted-node allowance `q` by `128*(κ+2)^2*ℓ^7`.
 * `Cslib.Algorithms.ThreeSum.ChanHe.packed_side_le` gives `s = Oκ(sqrt(n)*ℓ²)`.
   Its companion `packed_weight_le` proves `F ≤ (s+2)^(2E+2)`, so the ET hypothesis applies
   to the actual dimension and magnitude, without padding the original input.
-* `callerTime_add_twelve_le` bounds one complete Convolution call, including outer control,
+* `callerTime_add_twelve_le` bounds the existing per-call allowance, including outer control,
   by `2*s*c.time s F + 355*s³`.
 
-The definition `cost` therefore charges preprocessing, the fixed `4E+32` setup/halt reserve,
-and `q` copies of that last expression. In particular, an ET bound `T(s)=O(s^(3-δ))`
-contributes `O(q*s^(4-δ))`. Substituting the displayed bounds gives the leading scale
-`n^(2-δ/2)` times a fixed logarithmic factor. `exists_cost_bound` absorbs the logarithms
-only after this composition, proving every exponent `a > 2-δ/2` when `0 < δ ≤ 1`.
-The strict inequality pays for those factors; the endpoint `a = 2-δ/2` is not asserted.
+The unchanged definition `cost` combines that preparation/traversal allowance, the fixed `4E+32`
+setup/halt reserve and at most `q` per-call allowances. `Visitor.cost_ledger` separately shows
+that it covers the in-place consumer's host charge plus seven instructions and the one-instruction
+packed-tail release, giving eight extra instructions per emitted node. The identity retains fixed
+slack eighteen and four units per emitted node in the reused allowance. Solver work is charged
+only for emitted nodes; skipped descriptors pay traversal work. Tail reuse retains persistent
+heavy-buffer allocation and the old table gap, without tightening the proved total-space or
+arbitrary-callee high-water envelope. This numerical module uses the shared `Decision.Cost`
+definitions without importing the ordinary execution proof.
 
-All constants and thresholds precede original inputs and physical widths. The hypothesis
-concerns the time field of an actual certified `Host.Callee`, whose execution is already
-charged by the host. No concrete ET supplier is imported here; `Decision.Transfer` adds
-the initialized correctness and prefix-resource guarantees to this quantitative account.
+An ET bound `T(s)=O(s^(3-δ))` contributes `O(q*s^(4-δ))`. Substituting the displayed bounds gives
+`n^(2-δ/2)` times a fixed logarithmic factor. `exists_cost_bound` absorbs those logarithms only
+after composition, proving every `a > 2-δ/2` for `0 < δ ≤ 1`; the boundary exponent with those
+factors removed is not asserted.
+
+All constants and thresholds precede original inputs and physical widths. The hypothesis concerns
+the time field of an actual certified `Host.Callee`. No concrete ET supplier is imported here;
+`Decision.Transfer` adds initialized correctness and prefix-resource guarantees.
 
 ## Main results
 
 * `packed_side_eventually_le_rpow`: packed side below every power above square root.
-* `instanceBound_eventually_le_rpow`: every positive power absorbs the actual catalogue bound.
-* `exists_packed_calleeTime_bound`: transfer of polynomial magnitudes to the actual packed side.
-* `preprocessing_eventually_le_rpow`: preprocessing below every exponent above 3/2.
-* `exists_cost_bound`: complete native host cost from a uniform quantitative callee bound.
+* `instanceBound_eventually_le_rpow`: every positive power absorbs the emitted-node allowance.
+* `exists_packed_calleeTime_bound`: polynomial magnitudes at the actual packed side.
+* `preprocessing_eventually_le_rpow`: the reused allowance below every exponent above 3/2.
+* `exists_cost_bound`: the shared native cost from a uniform quantitative callee bound.
 
-This is original quantitative composition of the existing native reductions and cost ledger.
+This is original quantitative composition of the existing native reduction and charged ledger.
 -/
 
 public section

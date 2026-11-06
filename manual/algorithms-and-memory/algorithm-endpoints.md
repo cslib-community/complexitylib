@@ -159,6 +159,41 @@ Use `RecordProduct.NumericBounds` and `RecordWitness.NumericBounds` for numerica
 and word estimates. The actual all-prefix execution theorems remain in `RecordProduct.SourceBounds` and
 `RecordWitness.SourceBounds`, each following from its real `runs_input` theorem.
 
+`RecordBoxProduct.program` now uses the physical pointer front
+[`PointerBoxProduct.exec`](../../Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/CallableBox/Pointer/Exec.lean).
+For a separate caller, initialize its five scalar/header words and appended threshold, supply
+raw row-major X/Y pointers and the interleaved query pointer, and prove all three source ends
+lie below the private base. The front computes its own virtual width and snapshot layout,
+then physically gathers the header and external arrays directly into that snapshot. Physical
+pointers occupy registers outside the normalized source bank and may exceed the virtual modulus.
+Source/source aliases are permitted when their readback agrees. The private low matrix/query
+payload and remaining workspace may be dirty.
+
+The [pointer client](../../ComplexityTests/WordRAMSchonhagePointerBox.lean) executes raw binary
+matrices, duplicate occurrences, zero queries and dirty reuse with a changed query count at
+physical pointers above the virtual modulus. Returned answers are exact physical signed words;
+external sources and memory outside the window survive. Original routing, matrix doubling,
+restoration and both final normalization loops remain. The snapshot remains live until matrix
+adaptation and restoration finish. `RecordBoxProduct.gatherTimeBound_ledger` accounts for the
+actual gather and bridge instructions, and `gatherTimeBound_le_timeBound` preserves the previous
+advertised envelope. This compares certified allowances, not measured execution times; it changes
+neither the reserved window nor the 1.9992/2.99835 headline exponents. The original `RecordProduct`
+and contiguous-input `CallableBoxProduct` retain their own initialized/restoring clients.
+
+For a source-level continuation after a real gather, import
+`Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.Exec` and use
+[`BoxProduct.exec_fromSnapshot`](../../Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/BoxProduct/Exec.lean).
+It requires actual computed parameters, threshold, ordinary scalar header and protected-snapshot
+readback. Low matrix/query words may be dirty; snapshot word zero is restored exactly.
+Both raw unsigned and canonical signed matrix inputs use this same charged suffix:
+`QueriedProduct.exec_routingFromSnapshot` routes occurrences,
+`BoxProduct.exec_frontFromSnapshot` prepares matrices and bands, and `exec_fromSnapshot`
+constructs geometry, evaluates tiles, reconstructs original occurrences and restores input.
+The contiguous `BoxProduct.exec` establishes the snapshot by its actual original copy, then
+uses the same suffix. Pointer-only routing/front/execution modules have been removed; use
+the shared source topics directly. The physical gather and native memory-window frames remain
+proved in `CallableBox.Pointer`; a canonical register view does not establish a memory frame.
+
 When composing another proved record product with the existing verifier, use
 `RecordWitness.exec_after_product` from `RecordWitness.AfterProduct`. Supply its actual
 execution, actual output offset, exact signed matrix-product answers, outside-window memory
@@ -347,13 +382,15 @@ is its assembled standard Word-RAM program with 848 registers.
 Use `exists_one9992_runs κ` when you also need the final native state, same-state prehalt
 prefix or polynomial bounds on every prefix. None of these interfaces asks for a solver,
 time law, selected prime or layout certificate. The complete
-[checked client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/ThreeSumOne9992.lean)
+[checked client](../../ComplexityTests/ThreeSumOne9992.lean)
 shows the semantic interfaces, positive and negative inputs, repeated values at distinct
 positions, rejection of an inadmissible magnitude, the charged halt and the same-state
-prehalt prefix. On that source revision, run:
+prehalt prefix. The [native visitor client](../../ComplexityTests/NativeChanHeVisitor.lean)
+checks actual node calls, skipped descriptors and resumption with dirty solver scratch.
+From a checkout containing this visitor, run:
 
 ```bash
-scripts/build.sh --wfail --iofail ComplexityTests.ThreeSumOne9992
+scripts/build.sh --wfail --iofail ComplexityTests.ThreeSumOne9992   ComplexityTests.NativeThreeSumDecision ComplexityTests.NativeChanHeVisitor
 ```
 
 The native constructor `Decision.program κ solver` accepts only the finite callee code;
@@ -362,11 +399,22 @@ The native constructor `Decision.program κ solver` accepts only the finite call
 so evaluating it does not require evaluating proof-only resource metadata. There is no
 separate `Decision.Code` import or duplicate `programOfCode` assembly.
 
-For the preprocessing proof, import `Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing`
-for initialized execution, readback, width and resources. Import its `PreprocessingExecute`
-companion to use `Preprocessing.afterFrontend_exec` for the suffix after the frontend, in
-namespace `Cslib.Algorithms.WordRAM.ThreeSum.ChanHe`. The setup and iteration companions
-contain private stage proofs; callers need no snapshot, cursor or individual-stage contracts.
+The canonical controller constructs each actual Chan–He node and immediately passes its
+packed block to the Convolution host before pushing its children. Calls follow the exact
+finite preorder and multiplicity. Boolean accumulation continues after a positive result;
+zero-fuel and empty-column descriptors take their actual skip paths without a solver call.
+The ordinary path publishes no packed-pointer table and performs no later table readback.
+
+For an independently useful complete catalogue, import
+`Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing` for initialized execution,
+readback, width and resources. Its `PreprocessingExecute` companion supplies
+`Preprocessing.afterFrontend_exec` after the frontend, in namespace
+`Cslib.Algorithms.WordRAM.ThreeSum.ChanHe`. This standalone producer remains separate from
+the ordinary visitor. Ordinary clients use `Decision.exec_input` or `Decision.runs_input`;
+they need no snapshot, cursor or individual-stage contracts. The lower-level
+[`Decision.exec_large`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/Execute.lean)
+also requires `x.Bounded W` for its complete starting register file. The initialized endpoint
+derives that premise from `Data.init` and its actual saved-header prefix.
 
 Choose a fixed natural magnitude exponent `κ` and an original `input : List ℤ`. Set
 `n = input.length`, prove every `|z| <= (n+2)^κ`, and supply physical width
@@ -386,16 +434,43 @@ wider width has the same guarantees. Every reachable prefix has register and mem
 below `(n+2)^(2 * Decision.widthCoefficient κ 123357)` and memory zero at addresses at least
 that envelope; the final data also satisfy the physical word bound.
 
-The caller places matrix workspace at the final preprocessing heap frontier `H`, copied by an
-executed register instruction. The preprocessing
-[output-layout contract](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalOutput.lean)
-places the pointer-table endpoint and every live payload endpoint at or below `H`.
-Each solver call preserves memory below `H` on return, so the caller can still read every
-remaining instance. The separately computed polynomial envelope bounds signed values and
-arithmetic width; it no longer determines the workspace address.
-Preprocessing may have touched dead temporary scratch above `H`, which the solver can reuse.
-This layout contract describes live output and a final-state frame, without asserting a ban
-on transient callee writes. The existing polynomial prefix bounds still apply.
+At each reached node, executed argument copies deliver the actual packed pointer, common
+length and current allocation endpoint `H` to the Convolution host. Its matrix workspace starts
+at that current endpoint, as proved by
+[`Visitor.exec_consume`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorCall.lean).
+The return frame preserves every cell below `H`, including the current packed block, pending
+heavy arrays, native stack and frontend descriptors. Arbitrary higher scratch may be dirty
+and can be reused. The polynomial value envelope bounds signed values and arithmetic width;
+it does not supply a workspace address.
+
+The proof composition keeps the original construction-state emission and the actual call's
+register/prefix frames. It transports only the live child and pending-source views needed for
+the next iteration. Root initialization is shared with the standalone catalogue producer through
+[`Traversal.initializeRoot_exec`](../../Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalInitialize.lean).
+
+The prefix frame is a return-state guarantee, not a ban on transient callee writes.
+After consuming the node, one actual copy sets the committed heap to its packed pointer.
+[`VisitorRelease`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorRelease.lean)
+proves that all heavy children and pending ancestor columns end below that released frontier.
+The packed block, residue workspace and histogram tail can be overwritten by later construction;
+the copy itself changes no memory cells. Persistent heavy-buffer allocation remains monotone,
+and the old table gap stays reserved.
+
+The actual
+[`Visitor.live_transition`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorTransition.lean)
+postcondition gives final committed heap equal to the body's initial heap plus
+`3 + len(column0) + len(column1) + len(column2)`; skipped bodies leave it unchanged.
+The three count cells and full heavy-buffer capacities remain allocated. The discarded tail
+has `len(column0)+len(column1)+len(column2)+4*N+M` words, where `N` is the common group count
+and `M` is this node's selected modulus. These are native body storage equalities, not a bound
+on arbitrary callee scratch or touched high-water memory. The existing polynomial word/support
+envelope remains unchanged; no improved total-space bound is claimed.
+
+The [native fixture source](../../ComplexityTests/NativeChanHeVisitor.lean) includes an initial
+heap of 100 with expected final frontiers 106 for one live node and 115 for the two-node
+branching case. It also overwrites a released packed cell after the actual child pushes and
+checks an empty heavy column whose pointer equals the frontier. The build command above checks
+these local cases alongside the endpoint clients; they are not asymptotic-space measurements.
 
 The [actual automatic callee](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ExactTriangle/ParameterSelecting/Callee.lean)
 executes parameter computation, prime selection and the real box-backed calls. Its integer
@@ -427,18 +502,32 @@ The fixed magnitude exponent `κ` may affect constants. The finite account is:
 
 | Quantity | Bound before absorbing logarithms | Checked statement |
 |---|---|---|
-| Native preprocessing `Pκ(n)` | `Kκ*(n+2)*(sqrt(n+2)+1)*ell^13` | `Preprocessing.cost_bound` |
-| Catalogue allowance `q` | `128*(κ+2)^2*ell^7` | `Decision.instanceBound_le_numBound` |
+| Preparation/traversal allowance `Pκ(n)` | `Kκ*(n+2)*(sqrt(n+2)+1)*ell^13` | `Preprocessing.cost_bound` |
+| Emitted-node allowance `q` | `128*(κ+2)^2*ell^7` | `Decision.instanceBound_le_numBound` |
 | ET side `s` | `Oκ(sqrt(n)*ell^2)` | `ChanHe.packed_side_le` |
-| One Convolution call, including outer control | `2*s*T(s,F)+355*s^3` | `Decision.callerTime_add_twelve_le` |
+| One Convolution-call allowance, including outer control | `2*s*T(s,F)+355*s^3` | `Decision.callerTime_add_twelve_le` |
 
-The [runtime module](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ThreeSum/Decision/Runtime.lean)
+The [runtime module](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/Runtime.lean)
 connects these statements to the actual `Decision.cost`:
 `Pκ(n) + 4*E + 32 + q*(Host.callerTime(...)+12)`, where
 `E = Decision.envelopeExponent κ`. The fixed reserve includes setup and halt; the caller
 term includes matrix construction and every ET invocation. The passed magnitude is
 `F = 2*(n+2)^E+1`. `ChanHe.packed_weight_le` bounds it by `(s+2)^(2*E+2)`, so an ET theorem
 for polynomial weights applies at the actual side `s`.
+
+The Convolution consumer alone costs `Host.callerTime(...)+7`. The one-copy packed-tail
+release makes the traversal's callback-and-release charge `Host.callerTime(...)+8`.
+[`Visitor.cost_ledger`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorCost.lean)
+proves that the fused initialized budget plus `18+4*emitted` equals the reused budget with
+`emitted` call allowances. The finite node-count theorem gives `emitted <= q`, so the visitor
+fits the existing `Decision.cost`. Every skipped descriptor is charged as traversal work;
+only emitted nodes incur solver charges. This is an identity of proved instruction budgets,
+not a measured runtime or a completed execution of the standalone catalogue producer.
+
+The native forest pays these different live/skip costs with an explicit ghost potential:
+remaining traversal work plus solver charges for the exact remaining emitted nodes. The
+[variable-cost native loop guide](memory-specifications.md#pay-variable-native-loop-work-with-a-ghost-potential)
+explains the generic `ExecWithin.loop_potential_state` rule and its complete checked client.
 
 If `T(s,F) = O(s^(3-δ))`, the solver term becomes `O(q*s^(4-δ))`.
 Substitution produces the power `n^(2-δ/2)` with a fixed logarithmic factor.
@@ -451,7 +540,7 @@ For a different actual certified ET implementation, import
 `exists_cost_bound` takes a concrete `Host.Callee r`, `0 < δ <= 1`, a target exponent
 `a > 2-δ/2`, and its proved uniform polynomial-weight time bound `Oκ(n^(3-δ))`.
 It derives the full ordinary `Decision.cost` bound `Oκ(n^a)`, retaining native preprocessing,
-actual packed dimensions and catalogue counts, matrix/callee calls, control and halt. The
+actual packed dimensions and emitted-node counts, matrix/callee calls, control and halt. The
 constant and threshold precede all original inputs and admitted physical widths.
 
 Import `Complexity.Algorithms.WordRAM.ThreeSum.Decision.Transfer` for

@@ -43,6 +43,28 @@ noncomputable def echoCipher : SymmetricCipher where
     subst hct
     rfl
 
+/-- Runtime bounds cover off-domain messages without changing the sampler's security parameter. -/
+example : ∃ cap : ℕ → ℕ → ℕ,
+    ComputableInPolyTime (fun p : ℕ × ℕ => cap p.1 p.2)
+      (encPair encUnary encUnary) encUnary ∧
+    (∀ n ℓ, ℓ ≤ cap n ℓ) ∧ 37 ≤ cap 0 37 ∧ 0 ≤ cap 37 0 := by
+  obtain ⟨cap, hcap, hbound⟩ := echoCipher.exists_ciphertext_length_bound
+  have hlen (n ℓ : ℕ) : ℓ ≤ cap n ℓ := by
+    have h := hbound n ℓ [] (by simp [echoCipher, ProbComp.eval_pure])
+      (List.replicate ℓ false) (List.length_replicate) (List.replicate ℓ false)
+      (by simp [echoCipher, ProbComp.eval_pure])
+    simpa only [List.length_replicate] using h
+  exact ⟨cap, hcap, hlen, hlen 0 37, hlen 37 0⟩
+
+/-- Dropping the message-length argument would be false even for the native echo cipher. -/
+example (n : ℕ) : ¬ ∃ cap : ℕ, ∀ msg : List Bool,
+    ∀ ct ∈ (ProbComp.eval (echoCipher.encrypt n [] msg)).support, ct.length ≤ cap := by
+  rintro ⟨cap, hcap⟩
+  have h := hcap (List.replicate (cap + 1) false) (List.replicate (cap + 1) false)
+    (by simp [echoCipher, ProbComp.eval_pure])
+  simp only [List.length_replicate] at h
+  omega
+
 theorem echoCipher_ctLen :
     ∀ n ke, ke ∈ (ProbComp.eval (echoCipher.keyGen n)).support →
       ∀ msg, msg.length = n →
