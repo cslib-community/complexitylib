@@ -361,6 +361,33 @@ additionally checks support of the postprocessed real key. Tests expose the fail
 KEM premise, and show that a perfect zero-width KEM with the insecure echo DEM remains insecure.
 Arbitrary message-space extension and stronger KEM query schedules remain separate.
 
+For explicit-coin public-key encryption and modular Fujisaki–Okamoto KEM transforms ([hhk17][hhk17]),
+import [`FujisakiOkamoto.lean`](../../Complexity/Crypto/Protocols/KEM/FujisakiOkamoto.lean).
+Unlike the word-level encryption interface used by `encryptKeyEncaps`, `ExplicitCoinPKE` exposes
+the coin sampler `sampleCoins : ProbComp R` and deterministic encryption
+`encDet : PK → M → R → CT` alongside `keyGen` and `dec`, together with expected
+worst-case-message `δ`-correctness `ExplicitCoinPKE.DeltaCorrect` (defined via `ProbComp.expect`
+and `PMF.toOuterMeasure`, with `deltaCorrect_zero_of_perfect` and `DeltaCorrect.mono`),
+`γ`-spreadness `ExplicitCoinPKE.GammaSpread`, and the single-challenge two-message experiment
+`ExplicitCoinPKE.indCpaGame` (`ExplicitCoinPKE.indCpaAdvantage`). On top of `ExplicitCoinPKE`,
+`FujisakiOkamoto.encT` and `FujisakiOkamoto.decT` define the derandomization transform `T[PKE, G]`
+with mandatory re-encryption check `encT P G pk m' = c` (`decT_encT_eq_some`,
+`encT_of_decT_eq_some`, `dec_of_decT_eq_some`, `decT_eq_none_of_reencrypt_ne`), while
+`FujisakiOkamoto.Scheme` packages both explicit-rejection `FO^⊥` (`Scheme.encapsBot`,
+`Scheme.decapsBot`; `decapsBot_encT_eq_some`, `decapsBot_eq_none_of_reencrypt_ne`) and a
+deliberate domain-separated variant of implicit-rejection `FO^⫫` (`ImplicitSK`,
+`Scheme.keyGenNotBot`, `Scheme.encapsNotBot`, `Scheme.decapsNotBot`; `decapsNotBot_encT_eq`,
+`decapsNotBot_of_reencrypt_ne`) that tags `H : Bool × M × CT → K` with `false` for valid key
+derivations and `true` for fallback rejection keys `H(true, dk.fallback, c)` in place of HHK17's
+untagged `H(s, c)`. Only the transform definitions, correctness/spreadness predicates, and
+deterministic recovery and re-encryption rigidity lemmas are established in this module; random-oracle
+IND-CCA games and security reductions remain separate objectives. Checked clients in
+[`ComplexityTests/Crypto/FujisakiOkamoto.lean`](../../ComplexityTests/Crypto/FujisakiOkamoto.lean)
+exercise honest `T`/`FO^⊥`/`FO^⫫` recovery and non-canonical-coin rejection on `maskedShiftPKE`,
+zero-error and non-zero tight/non-tight `DeltaCorrect` witnesses (`noisyCoinPKE` with failure
+probability `1 / 2`), and positive and negative `GammaSpread` and `indCpaAdvantage` witnesses on
+`identityPKE`.
+
 ## Authentication, signatures, and state
 
 [SignatureScheme](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Signature.lean#L87) bundles efficient key generation, signing, verification and correctness. The base message space is exactly `n` bits. Its oracle forger chooses signing requests adaptively; ordinary EUF-CMA rejects any message previously signed. [exists_oneWay_iff_exists_oneTimeSignature](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/OneWayToSignature.lean#L882) is the OWF/one-time-signature equivalence via Lamport's construction. Stateless many-time `EUFCMA` `SignatureScheme`s on `n`-bit messages are constructed from any `OneWayPermutation` in [`TCRSignature.lean`](../../Complexity/Crypto/Computational/TCRSignature.lean) (`OneWayPermutation.exists_eufCMA`) and from any general `OneWay` function in [`Rompel.lean`](../../Complexity/Crypto/Computational/Rompel.lean) (`OneWay.exists_eufCMA`, `exists_oneWay_iff_exists_signature`, `exists_oneTimeSignature_iff_exists_signature` [rompel90][rompel90]). For unrestricted bit-string messages (`msg : List Bool`), [`WordSignatureScheme`](../../Complexity/Crypto/Computational/WordSignature.lean) removes the `n`-bit message-length filter from signing, verification and `eufCmaGame` (`WordSignatureScheme.EUFCMA`, strictly stronger than `toSignatureScheme.EUFCMA`), [`TCRSignature.wordScheme`](../../Complexity/Crypto/Computational/TCRSignature/ManyTime.lean) lifts any `SignatureScheme.EUFCMA` scheme via per-signature fresh-key target collision-resistant hash-and-sign (`SignatureScheme.EUFCMA.eufCMA_wordScheme`, `OneWayPermutation.exists_wordEUFCMA`; Boneh–Shoup §13.2.1, construction `(13.2)` on p. 533 and Theorem 13.2 on p. 534 [bs23][bs23]), and [`Rompel.lean`](../../Complexity/Crypto/Computational/Rompel.lean) closes the unrestricted-message equivalence from any uniform `OneWay` function (`OneWay.exists_wordEUFCMA`, `exists_oneWay_iff_exists_wordSignature`, `exists_oneTimeSignature_iff_exists_wordSignature` [rompel90][rompel90]).
@@ -383,6 +410,7 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [fly22]: ../sources.md#fly22
 [ggm86]: ../sources.md#ggm86
 [goldreich04]: ../sources.md#goldreich04
+[hhk17]: ../sources.md#hhk17
 [hhrvw20]: ../sources.md#hhrvw20
 [hill99]: ../sources.md#hill99
 [holenstein06]: ../sources.md#holenstein06
