@@ -2867,10 +2867,14 @@ public import Complexity.Computability.WordRAM.Turing.ListOutput
 public import Complexity.Computability.WordRAM.Turing.Overhead
 public import Complexity.Computability.WordRAM.Width
 public import Complexity.Cryptanalysis.AddXNOR
+public import Complexity.Cryptanalysis.AddXNORBits
 public import Complexity.Cryptanalysis.AddXNORChain
+public import Complexity.Cryptanalysis.AddXNORDecay
 public import Complexity.Cryptanalysis.AddXNORRuns
+public import Complexity.Cryptanalysis.AddXNORSpectrum
 public import Complexity.Cryptanalysis.AddXNORStripping
 public import Complexity.Cryptanalysis.AddXNORSwap
+public import Complexity.Cryptanalysis.AddXNORTransfer
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
 public import Complexity.Crypto.Computational.Commitment

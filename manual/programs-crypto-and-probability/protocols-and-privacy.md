@@ -199,7 +199,7 @@ $(1/\sqrt2)^z\cos(z\pi/4)$ over the runs. `abs_runFactor_le` gives the per-run
 decay bound and `runFactor_eq_zero_iff` characterizes zero factors by
 $z\equiv2\pmod4$. The checked client includes a vanishing run and a negative
 signed correlation. These results cover arbitrary strings and run lengths;
-they do not prove NP-completeness or the general-bit spectrum.
+the general-bit extension is described below. They do not prove NP-completeness.
 
 Import [AddXNORChain.lean](../../Complexity/Cryptanalysis/AddXNORChain.lean) for
 arbitrary-width forward and backward evaluation. `eval` consumes a list of
@@ -241,8 +241,42 @@ The complete [client](../../ComplexityTests/AddXNOR.lean) checks these counts,
 a noncollision, arbitrary context, backward projection, actual carries, both
 stripping parity branches and an impossible low field.
 
-The full general-bit spectrum and bit-1 extremality, NP-completeness and its
-rational-width/linear-3-SAT refinements, certified decision/witness algorithms
-(including dissection's time, balance computation, space and class-size
-expectations), and the ideal-model adversarial search/decision bounds remain
-unproved here. These finite structural theorems do not establish those headlines.
+Import [AddXNORDecay.lean](../../Complexity/Cryptanalysis/AddXNORDecay.lean)
+for all four parts of Theorem 5 (PDF pp. 17–18). `bitCorrelation m j bs`
+fixes the operator list and averages independent uniform full-width operands,
+comparing output bit $j$ with the same bit of the full affine model.
+`bitCorrelation_runs` factors this signed correlation into `bitRunFactor m j z`
+for every addition run. A fresh XNOR operand resets the state by an actual
+permutation; run independence is derived rather than assumed. The bit-one API
+agrees with the earlier experiment (`bitCorrelation_bit_one`).
+
+For $m=(h+1)+j$, `bitRunFactor_spectrum h j z` gives
+$2^{-j(z+2)}\sum_k |\lambda_k|^2\lambda_k^z$ for arbitrary run length $z$.
+The sum is complex, with its imaginary part necessarily zero because the left
+side is rational. The $2^j$ eigenvalues are `carryEigenvalue`; `carryEigenvalue_cot`
+identifies them with $1-i\cot((2k+1)\pi/2^{j+1})$.
+[AddXNORTransfer.lean](../../Complexity/Cryptanalysis/AddXNORTransfer.lean)
+derives the signed matrix entry $(-1)^{[s'<s]}$ from actual addition and proves
+its full-word distribution bridge. [AddXNORSpectrum.lean](../../Complexity/Cryptanalysis/AddXNORSpectrum.lean)
+constructs the invertible geometric eigenvector matrix and its Fourier inverse;
+`carry_diagonalization` and `signedMatrix_pow` are explicit matrix identities.
+No spectral formula is an input hypothesis.
+
+`abs_bitRunFactor_le` bounds each run by `bitDecay j` raised to its length,
+where $\rho_j=1/(2^j\sin(\pi/2^{j+1}))$. `bitDecay_strictAnti`,
+`bitDecay_one` and `tendsto_bitDecay` give strict decrease, $\rho_1=1/\sqrt2$
+and limit $2/\pi$. For $j\ge1$, `abs_bitCorrelation_le_bit_one` bounds any
+operator string by $(1/\sqrt2)^a$, where $a$ counts its additions.
+`abs_bitRunFactor_bit_one_four` gives equality at every bit-one run length
+$4t$. Extremality concerns the decay envelope, not pointwise comparison:
+at length two bit one has correlation zero, while bit two has correlation
+$-1/4$. The complete [spectrum client](../../ComplexityTests/AddXNORSpectrum.lean)
+checks that distinction on actual words, high-bit independence, separated
+higher-bit runs, matrix orientation, zero runs, zero width and quantified bounds.
+The full-word spectrum requires $j<m$; its decay inequality includes $j=0$,
+where $\rho_0=1$, while the uniform half-bit bound requires $j\ge1$.
+
+NP-completeness and its rational-width/linear-3-SAT refinements, certified
+decision/witness algorithms (including dissection's time, balance computation,
+space and class-size expectations), the remaining counting/difference claims,
+and the ideal-model adversarial search/decision bounds remain unproved here.
