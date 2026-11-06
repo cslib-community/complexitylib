@@ -17,6 +17,9 @@ inverse query, follows its pointers and emits full-width records. It does not
 provide the complete class loop, full-state dictionary or global dissection.
 -/
 
+-- The checked examples and private fixtures export no library API.
+set_option linter.privateModule false
+
 public section
 
 open Cslib.WordRAM Cslib.Cryptanalysis.AddXNOR Native.Quarter
@@ -141,7 +144,8 @@ constructed by the real preparation run, with all memory/layout premises supplie
 example : ∃ y, ExecWithin 8 emitLoop emitInput y (2 * (11 * 2 + 20) + 2) ∧
     y.mem = emittedMemory [3#3, 1#3] 2 [(1, 2), (7, 1)] emitInput.mem 40 ∧
     y.regs output = 46 ∧ y.regs link = 0 := by
-  apply emitLoop_exec (b := 8) (v := 2) (ptr := 30) (o := 40) (boundary := 36) [3#3, 1#3] [(1, 2), (7, 1)] emitInput
+  apply emitLoop_exec (b := 8) (v := 2) (ptr := 30) (o := 40) (boundary := 36)
+    [3#3, 1#3] [(1, 2), (7, 1)] emitInput
     (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide)
     (by decide) (by decide) (by decide) (by decide) actual_linked (by decide) (by decide)
   · intro i hi

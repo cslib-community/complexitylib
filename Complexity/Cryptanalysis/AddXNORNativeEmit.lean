@@ -161,7 +161,8 @@ theorem emitLoop_exec {W m b boundary ptr o v : ℕ} (as : List (BitVec m))
           heBody heTail).mono (by simp only [List.length_cons, Nat.add_mul, Nat.one_mul]; omega)
       · rw [emittedMemory, ← nmem]
         exact ym
-      · simpa only [List.length_cons, Nat.mul_add, Nat.mul_one, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using yo
+      · simpa only [List.length_cons, Nat.mul_add, Nat.mul_one, Nat.add_assoc,
+          Nat.add_comm, Nat.add_left_comm] using yo
 
 /-- No record store escapes the output interval, even after later records have
 been emitted. This is a final-state frame, not a global peak-space certificate. -/
@@ -195,7 +196,8 @@ theorem emittedMemory_read {m : ℕ} (as : List (BitVec m)) (v : ℕ)
           emittedMemory as v rs
               (emitMemory mem o (eval ((decode as.length v).zip as) (BitVec.ofNat m s)).toNat u v)
               (o + 3) (o + d) =
-            emitMemory mem o (eval ((decode as.length v).zip as) (BitVec.ofNat m s)).toNat u v (o + d) :=
+            emitMemory mem o
+              (eval ((decode as.length v).zip as) (BitVec.ofNat m s)).toNat u v (o + d) :=
         emittedMemory_outside _ _ _ _ _ _ (by omega)
       have h0 := frame 0 (by omega)
       simp only [Nat.add_zero] at h0

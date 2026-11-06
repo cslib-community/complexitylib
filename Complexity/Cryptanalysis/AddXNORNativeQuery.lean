@@ -105,7 +105,8 @@ theorem backwardEvaluate_exec {W m b v : ℕ} (as : List (BitVec m)) (t : BitVec
     have ho : Fits W out.toNat := hfit.of_le (by have := out.isLt; omega)
     ram_eval [y, rout, rmask, rquery, ho, state, operators, mask, queryOperators, Fin.mk.injEq]
   refine ⟨y, ?_, ?_, ?_, ?_⟩
-  · exact (heReverse.seq (heSetup.seq (heEval.seq heOut))).mono (by simp only [List.length_reverse]; omega)
+  · exact (heReverse.seq (heSetup.seq (heEval.seq heOut))).mono
+      (by simp only [List.length_reverse]; omega)
   · simp +decide [y, state, operators, out]
   · simp [y]
   · simpa only [y, Data.set_mem, u, zm] using rmem
@@ -130,7 +131,10 @@ theorem queryBucket_exec {W p b h v : ℕ} (as : List (BitVec p)) (g : BitVec p)
     (hfit.of_le (by omega))
   have zh : z.regs heads = h := (he.regs_eq (by decide)).trans hh
   let key := (backward ((decode as.length v).zip as) g).toNat
-  have ha : Fits W (h + key) := hfit.of_le (by have := (backward ((decode as.length v).zip as) g).isLt; dsimp [key]; omega)
+  have ha : Fits W (h + key) := hfit.of_le (by
+    have := (backward ((decode as.length v).zip as) g).isLt;
+    dsimp [key];
+    omega)
   let y := (z.set address (h + key)).set link (x.mem (h + key))
   have heRead : ExecWithin (B := .standard) W (ram[ address ← heads + state; link ← *address ])
       z y 2 := by

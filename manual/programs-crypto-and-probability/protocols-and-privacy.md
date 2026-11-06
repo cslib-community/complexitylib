@@ -561,14 +561,64 @@ collisions, empty quarters, width zero, leading zero operator bits, overflow
 rejection and an unread sentinel, and instantiates the generic resource and
 emission contracts.
 
-These are native quarter components with charged evaluation, filtering,
-pointer/list administration and output. The full second-quarter/class iterator,
-full-state dictionary construction and lookup, reusable per-class dictionary
-arena, joint counter/balance execution and one global decision/witness run are
-still unproved. In particular, the materializing hit emitter is for retained
-records; it does not justify retaining the opposite streamed class. These
-components do not complete Lemma 8 or Theorem 7, establish a global peak-space
-bound in terms of the computed $\mu_p$, or prove a multitape bit-operation bound.
+Direct dictionary retention and release are in
+[AddXNORNativeDictionary.lean](../../Complexity/Cryptanalysis/AddXNORNativeDictionary.lean)
+and [AddXNORNativeRetain.lean](../../Complexity/Cryptanalysis/AddXNORNativeRetain.lean).
+From the repository root after normal setup, run:
+
+```bash
+scripts/build.sh --wfail --iofail Complexity.Cryptanalysis.AddXNORNativeRetain
+lake env lean -DwarningAsError=true ComplexityTests/AddXNORNativeDictionary.lean
+```
+
+The [complete dictionary client](../../ComplexityTests/AddXNORNativeDictionary.lean)
+executes original-quarter preparation, inverse bucket query, direct full-state
+retention, lookup and release consecutively. It also supplies every hypothesis
+of the native array-fill and direct-retention lifetime resource contracts.
+Repeated full states replace a witness without adding a second release link;
+zero states and zero packed witnesses remain present records. Absent full states
+with the same low bits remain absent. Two successive lifetimes reuse the same
+slots and restore the original memory, including an unread dirty sentinel.
+
+In namespace `Cslib.Cryptanalysis.AddXNOR.Native.Dictionary`, `put_exec` and
+`get_exec` certify actual native insertion and lookup. A state $s$ addresses
+three cells at $D+3s$: first packed witness plus one (the presence tag), second
+packed witness, and next distinct state plus one (the release link). A zero link
+ends the stack. `Valid.put` derives the stack and its distinctness from insertion;
+`release_exec` loads each successor before clearing all three words, in at most
+$12K+5$ instructions for $K$ distinct states. `filledMemory_read` specifies exact
+last-writer replacement. `fill_exec` reads a real three-word record array below
+$D$; it is available for materialized clients but direct retention does not use it.
+
+In namespace `Native.Quarter`, `retainLoop_exec` follows only the actual bucket
+pointers, evaluates the full second quarter and calls the native dictionary
+insertion immediately. It takes at most $H(11b+30)+2$ instructions for $H$ hits
+and $b$ second-quarter operands. There is no intermediate output-record array.
+`retainLifetime_exec` includes release, within $T=H(11b+42)+7$ instructions.
+Its through-halt resource theorem adds one halt instruction; every continuing
+prefix has bounded words and exact nonzero support within $(|S|+T+32)W$ bits,
+including the initial support cover $S$ and all 32 registers. The final memory
+is exactly the initial memory. Release follows the constructed stack, never a
+caller-provided list of addresses or an assumed resource conclusion.
+
+This implementation uses **sparse WordRAM memory**, rather than the source's
+sorted lists or a compact arena. Its address span is $3\cdot2^m$, while occupied
+words depend on the current hit count. The dictionary region must initially be
+zero; original input support must lie below $D$. This follows for a suitably
+placed region above an installed finite input, but arbitrary dirty dictionary
+cells are not allowed. No exponential table initialization is performed or
+claimed. The word-fit hypotheses must cover these sparse addresses, state and
+witness arithmetic, original input values and all registers. A physical width
+that fits only the state is insufficient. These are instruction and occupied-bit
+bounds for this RAM model, not a multitape bit-time simulation.
+
+The full second-quarter/class iterator, streaming opposite-side dictionary
+consumer, counter-selected orientation, joint counter/balance execution and
+single original-input decision/witness run remain unproved. In particular,
+no theorem yet composes the per-bucket lifetimes across all classes or derives
+the global peak bound from the computed $\mu_p$. The native components do not
+complete Lemma 8 or Theorem 7. A compact sorted-list/arena realization or a
+justified sparse-memory simulation is still needed for the source bit model.
 
 Import [AddXNORNativeBalance.lean](../../Complexity/Cryptanalysis/AddXNORNativeBalance.lean)
 for the native balance traversal. In namespace

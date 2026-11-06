@@ -18,6 +18,9 @@ distinguish reversed addressing, ties, empty arrays and width-zero multiplicity.
 This client supplies counter arrays; it does not claim a combined dissection run.
 -/
 
+-- The checked examples and private fixtures export no library API.
+set_option linter.privateModule false
+
 public section
 
 open Cslib.WordRAM Cslib.Cryptanalysis.AddXNOR Native

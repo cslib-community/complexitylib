@@ -72,11 +72,17 @@ Native first-quarter construction now clears actual low-key heads and stores
 all indexed full-state/witness records with charged instruction, halt, word-fit
 and prefix-support certificates. Native operator reversal, inverse head lookup
 and pointer-based full-state recovery on bucket hits are also proved and checked
-in a consecutive native pipeline. The full second-quarter/class iterator,
-full-state dictionary allocation/sorting/lookup, reusable class arena and the
-single global counter/balance/decision/witness execution remain unproved. These
-components do not close Lemma 8 or Theorem 7; their preparation-space certificate
-must not be applied to the materializing emitter across classes.
+in a consecutive native pipeline. Direct full-state dictionary retention now
+consumes actual bucket hits without an output array. Native sparse-address
+insertion/lookup, distinct-state release and exact memory restoration have
+per-bucket instruction and prefix-support proofs. This is a sparse WordRAM
+implementation, not the source's sorted lists or a compact arena. The full
+second-quarter/class iterator, streaming opposite-side consumer, counter-selected
+orientation and single global counter/balance/decision/witness execution remain
+unproved, as do global width and computed-balance peak-space composition and a
+source-bit-model realization. These components do not close Lemma 8 or Theorem 7;
+per-bucket space bounds must not be summed or reused as an unproved global peak
+certificate.
 The pointer/Boolean and counter-operation
 models do not replace native bit-runtime or peak-space certificates. The actual fixed
 WordRAM reachable-state array program now has an unrestricted standard-input-to-halt

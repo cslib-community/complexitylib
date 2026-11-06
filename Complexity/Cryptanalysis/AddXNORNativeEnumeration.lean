@@ -110,7 +110,8 @@ private theorem operation_exec {W m : ℕ} (x : Data 32) (s a : BitVec m) (b : B
       (neg := ram[ state ← state + operand; state ← state % modulus ])
       (by simp [Cond.holds_eq, hb, ho]) (T := 2) ?_).mono (by omega)
     have he : (s.toNat ^^^ a.toNat) ^^^ (2 ^ m - 1) = (step true s a).toNat := by
-      have h := congrArg BitVec.toNat (show (s ^^^ a) ^^^ BitVec.allOnes m = ~~~(s ^^^ a) from BitVec.xor_allOnes)
+      have h := congrArg BitVec.toNat
+        (show (s ^^^ a) ^^^ BitVec.allOnes m = ~~~(s ^^^ a) from BitVec.xor_allOnes)
       simpa only [step, ↓reduceIte, BitVec.toNat_xor, BitVec.toNat_allOnes] using h
     ram_eval [hs, ha, hm, hxor, hr, he, state, operand, mask, Fin.mk.injEq]
 
@@ -196,7 +197,8 @@ theorem loop_exec {W m b j v : ℕ} (as : List (BitVec m)) (s : BitVec m) (x : D
     obtain ⟨y, heTail, hy, hyBits, hyPos, hym⟩ := ih (step chosen s a) next
       (j := j + 1) (v := v / 2)
       (by rw [frame base (by decide)]; exact hb)
-      (by rw [frame count (by decide)]; simpa only [List.length_cons, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hc)
+      (by rw [frame count (by decide)];
+          simpa only [List.length_cons, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hc)
       (by rw [frame modulus (by decide)]; exact hn)
       (by simpa +decide [next, state, bits, position] using happ)
       (by simp +decide [next, bits, position]) hdiv (by simp [next])

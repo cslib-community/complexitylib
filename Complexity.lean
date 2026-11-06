@@ -2886,11 +2886,13 @@ public import Complexity.Cryptanalysis.AddXNORNative
 public import Complexity.Cryptanalysis.AddXNORNativeBalance
 public import Complexity.Cryptanalysis.AddXNORNativeBuckets
 public import Complexity.Cryptanalysis.AddXNORNativeCounters
+public import Complexity.Cryptanalysis.AddXNORNativeDictionary
 public import Complexity.Cryptanalysis.AddXNORNativeEmit
 public import Complexity.Cryptanalysis.AddXNORNativeEnumeration
 public import Complexity.Cryptanalysis.AddXNORNativeProjection
 public import Complexity.Cryptanalysis.AddXNORNativeQuery
 public import Complexity.Cryptanalysis.AddXNORNativeResources
+public import Complexity.Cryptanalysis.AddXNORNativeRetain
 public import Complexity.Cryptanalysis.AddXNORNativeReverse
 public import Complexity.Cryptanalysis.AddXNORNativeRun
 public import Complexity.Cryptanalysis.AddXNORParity

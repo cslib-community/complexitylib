@@ -279,7 +279,8 @@ theorem prepare_exec {W m b h f p : ℕ} (as : List (BitVec m)) (s : BitVec m)
     (by simp +decide [v, operators, stop]) (by simp +decide [v, stop, operators])
     (Nat.zero_le _) rfl
     (by intro i hi; rw [clear_of_not_owns (hsep i hi).1]; exact hinput i hi) hsep hfit
-  exact ⟨y, (heSetup.seq (heClear.seq (heBound.seq he))).mono (by simp only [Nat.sub_zero]; omega), hm, hv, hf'⟩
+  exact ⟨y, (heSetup.seq (heClear.seq (heBound.seq he))).mono
+    (by simp only [Nat.sub_zero]; omega), hm, hv, hf'⟩
 
 /-- The three-word records retain full states as well as operator indices. The
 head table contains pointers, not counts or distinct-state representatives. -/
