@@ -3154,6 +3154,7 @@ public import Complexity.Crypto.Computational.RabinFactoring
 public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
 public import Complexity.Crypto.Computational.SIS.Module
+public import Complexity.Crypto.Computational.SIS.Module.ApproximateSampling
 public import Complexity.Crypto.Computational.SIS.Module.MatrixSampling
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Native
@@ -3171,6 +3172,7 @@ public import Complexity.Crypto.Computational.SchnorrEavesdrop
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
 public import Complexity.Crypto.Computational.SchnorrSignature
+public import Complexity.Crypto.Computational.SchnorrSignature.EncodedROM
 public import Complexity.Crypto.Computational.SchnorrSignature.NativeROM
 public import Complexity.Crypto.Computational.SchnorrSignature.WordROM
 public import Complexity.Crypto.Computational.Signature
@@ -3196,6 +3198,7 @@ public import Complexity.Crypto.Game
 public import Complexity.Crypto.Game.CloseTo
 public import Complexity.Crypto.Game.CloseTo.RandomOracle
 public import Complexity.Crypto.Game.CloseTo.Statistical
+public import Complexity.Crypto.Game.CloseTo.UniformNat
 public import Complexity.Crypto.Game.CloseTo.UntilBad
 public import Complexity.Crypto.Game.Hybrid
 public import Complexity.Crypto.Game.Statistical
@@ -3270,8 +3273,10 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
 public import Complexity.Crypto.Protocols.Signature.RandomOracle.Simulation
+public import Complexity.Crypto.Protocols.UC.DummyAdversary
 public import Complexity.Crypto.Protocols.UC.Emulation
 public import Complexity.Crypto.Protocols.UC.Execution
+public import Complexity.Crypto.Protocols.UC.Linking
 public import Complexity.Crypto.Protocols.UC.Machine
 public import Complexity.Crypto.Protocols.VOLE.AdaptiveMulCheck
 public import Complexity.Crypto.Protocols.VOLE.Basic
@@ -4024,6 +4029,7 @@ public import Complexity.Foundations.Probability.FineProductMean
 public import Complexity.Foundations.Probability.FourthRootHierarchyParams
 public import Complexity.Foundations.Probability.Gaussian.CenteredTail
 public import Complexity.Foundations.Probability.Gaussian.CoefficientFiber
+public import Complexity.Foundations.Probability.Gaussian.Convolution
 public import Complexity.Foundations.Probability.Gaussian.Discrete
 public import Complexity.Foundations.Probability.Gaussian.DiscreteTail
 public import Complexity.Foundations.Probability.Gaussian.Fourier
@@ -4037,6 +4043,7 @@ public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.Gaussian.ShiftBounds
 public import Complexity.Foundations.Probability.Gaussian.Smoothing
+public import Complexity.Foundations.Probability.Gaussian.Standard
 public import Complexity.Foundations.Probability.GridRowMoment
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity

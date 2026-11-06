@@ -41,6 +41,57 @@ Priorities live in this list and in the tiers of [#897].
 6. [MIP = NEXP](#interactive-proofs) ([#892])
 7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
 
+### Optional landmark projects
+
+These are optional coverage targets, outside the priority queue above. Each requires substantial
+new proof infrastructure; a useful prerequisite milestone does not complete the landmark.
+Choose a source version and proof route before implementation, and reassess scope against
+existing library and upstream developments. The size labels describe prerequisite breadth,
+not staffing or calendar estimates.
+
+- **Babai: graph isomorphism in quasipolynomial time — optional, very large.** Prove a
+  deterministic `exp((log n)^O(1))` decision bound for the existing encoded graph-isomorphism
+  problem, following the [manuscript](https://arxiv.org/abs/1512.03547v2) together with the
+  [January 2017 correction](https://people.cs.uchicago.edu/~laci/upcc-fix.pdf).
+  Reuse the graph encoding, indexed-permutation characterization and native verification API.
+  Develop encoded permutation groups with certified orbit/stabilizer and membership algorithms;
+  the Luks string-isomorphism/coset framework; canonical partition, Johnson-configuration and
+  local-certificate arguments; then the full recursion, termination and native quasipolynomial
+  runtime. Those four stages are independently reviewable projects; an NP verifier is not the
+  required decision algorithm.
+- **Bulatov–Zhuk: the finite-domain CSP dichotomy — optional, very large.** For every fixed
+  finite constraint language, prove its CSP is in P or NP-complete, following either
+  [Bulatov](https://arxiv.org/abs/1703.03021) or
+  [Zhuk](https://arxiv.org/abs/1704.01914v11). Choose one tractability proof route rather than
+  formalizing both. Bridge fixed-arity finite templates to the existing CSP semantics and
+  CNF-compilation APIs; develop polymorphisms and primitive-positive reductions; prove the
+  core/idempotent reductions and algebraic hardness criterion; then the chosen tractability
+  algorithm and its native polynomial bound. Keep template-dependent constants separate from
+  instance size. Special cases and reductions are useful milestones, not the full dichotomy.
+- **QIP = PSPACE — optional, large.** Following
+  [Jain–Ji–Upadhyay–Watrous](https://cs.uwaterloo.ca/~watrous/Papers/QIPequalsPSPACE.pdf),
+  characterize polynomial-time quantum interactive proofs using a uniform verifier, unrestricted
+  prover strategies and explicit completeness/soundness gaps. Reuse quantum circuit and
+  measurement foundations and the classical IP/PSPACE development where their models agree.
+  Supply mixed-state/channel and interactive-strategy semantics, the protocol normal form,
+  the semidefinite optimization and matrix multiplicative-weights argument, and a polynomial-space
+  implementation with controlled precision; prove both inclusions through model bridges.
+  Quantum circuit simulation alone does not provide the interactive upper bound.
+- **MIP* = RE — optional, large integration project; exceptional if rebuilt from scratch.**
+  Target the entangled-multiprover characterization of recursively enumerable languages in
+  [Ji–Natarajan–Vidick–Wright–Yuen, v4](https://arxiv.org/abs/2001.04383v4). Start with an audit
+  and reuse assessment of the Apache-2.0
+  [MIPRE formalization](https://github.com/vidick/MIPRE-formalization), including its low-degree-test
+  dependency, rather than duplicating the compression proof. Pin its source and dependencies;
+  check theorem assumptions, entangled-value semantics, toolchain compatibility and the bridge
+  from its verifier-cost model to this library's native resource conventions. Then integrate
+  compatible operator/game foundations, transfer the halting-to-game reduction and RE upper
+  bound, and establish the native class equality. Preserve finite-dimensional tensor-product
+  strategies, their supremum over unbounded finite dimensions and a uniform polynomial-time
+  verifier; distinguish classical MIP and commuting-operator models. If reuse fails, rigidity,
+  low-degree testing and recursive compression are separate major projects to scope before
+  attempting the endpoint.
+
 ## Cryptography
 
 Shared statistical infrastructure now propagates all-state, joint reply/state replacement
@@ -114,14 +165,18 @@ transporting key-generation error, and realizing the efficient forking reduction
   normalized continuous Gaussian and fundamental-domain quotient measures are probabilities;
   their density identity gives full-L1 distance at most the actual nonzero dual Gaussian mass,
   with eventual small error, in [#2681](https://github.com/cslib-community/complexitylib/issues/2681).
-  This is a precise quotient consequence of Claim 3.8. An attained minimum smoothing parameter,
-  Claim 3.9 convolution bounds, efficient sampling and the quantum reduction remain open in
+  This is a precise quotient consequence of Claim 3.8. The actual arbitrary-width
+  coset discrete-Gaussian convolution density and Claim 3.9 full-L1 bound, with a sufficient
+  dual-gap width criterion, are proved in
+  [#2707](https://github.com/cslib-community/complexitylib/issues/2707). An attained minimum
+  smoothing parameter, the projected/mod-one law, arbitrary-modulus search-LWE sampling
+  experiment, efficient finite-precision sampling and quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
   `Foundations/MeasureTheory/Group/ConvolutionDensity` proves the convolution density formula
   for an arbitrary s-finite first measure, including singular inputs. Its actual shifted
-  discrete-Gaussian convolution consumer is tracked separately in
+  discrete-Gaussian convolution consumer is the Claim 3.9 bound of
   [#2707](https://github.com/cslib-community/complexitylib/issues/2707); the shared measure
-  identity alone does not establish Claim 3.9 or a sampler.
+  identity alone does not establish a sampler.
   Exact coefficient-fiber disintegration is proved in
   [#2766](https://github.com/cslib-community/complexitylib/issues/2766): reducing integer basis
   coordinates modulo any positive integer, including composite moduli, gives actual positive
@@ -176,9 +231,11 @@ modular-game time/space assembly and prepared-metadata accounting remain
    uniformly with unary rank/degree and binary modulus/coefficients, given the expanded structured
    matrix word. `SIS/Module/MatrixSampling` natively constructs the existing rectangular rotation
    blocks and exactly samples their encoded law from independent power-of-two polynomial
-   coefficients, uniformly in unary dimensions/width. Independent uniform scalar entries do not
-   give this law. Full CBD randomized key generation, encryption/decryption and seed codecs
-   remain open.
+   coefficients, uniformly in unary dimensions/width. `SIS/Module/ApproximateSampling` uses the
+   existing bounded modular sampler for arbitrary positive binary moduli, with actual structured
+   law error at most `d*k*n*q/2^width`, or `d*k*n/2^precision` at width `q.size+precision`.
+   Independent uniform scalar entries do not give this law. Full CBD randomized key generation,
+   encryption/decryption and seed codecs remain open.
    `SIS/ModulusSwitch/Failure` bounds randomized switched-decryption failure by the actual noise
    tail under explicit secret-support and decoding margins; small-secret security remains open.
    Nearest-integer coefficient conversion and the Module-LWE phase-error bound are available in
@@ -991,6 +1048,11 @@ reuse is demonstrated.
   the error-composition step for [#2767](https://github.com/cslib-community/complexitylib/issues/2767);
   identifying and bounding the actual Regev conditional laws remains that separate consumer.
 
+- **Gaussian density and projection laws (available):** the positive-width normalized
+  Gaussian weight is proved equal to a scaled standard Gaussian, and its actual scalar
+  projection has variance `(s ‖z‖)² / (2π)`, including the zero vector and dimension zero
+  (#2733). The discrete-coset convolution projection and mod-one bound remain #2734;
+  efficient sampling and the quantum reduction remain #1213.
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
