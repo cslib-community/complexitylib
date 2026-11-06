@@ -2912,6 +2912,9 @@ public import Complexity.Crypto.Computational.DiffieHellman.EncodingBounds
 public import Complexity.Crypto.Computational.DiffieHellman.MultiDDH
 public import Complexity.Crypto.Computational.DiffieHellman.Order
 public import Complexity.Crypto.Computational.DiscreteLog
+public import Complexity.Crypto.Computational.DiscreteLog.GroupHash
+public import Complexity.Crypto.Computational.DiscreteLog.PohligHellman
+public import Complexity.Crypto.Computational.DiscreteLog.PollardRho
 public import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 public import Complexity.Crypto.Computational.ElGamal
 public import Complexity.Crypto.Computational.ElGamal.GeneralCipher
