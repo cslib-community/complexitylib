@@ -13,7 +13,7 @@ public import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
 
 /-!
-# Binary sizes of products, powers, and factorials
+# Binary sizes of sums, products, powers, and factorials
 
 These pure facts are moved unchanged from the binary arithmetic facade. They retain their
 qualified names without depending on a machine calculus.
@@ -21,6 +21,17 @@ qualified names without depending on a machine calculus.
 
 @[expose] public section
 namespace Nat
+
+/-- The binary length of a sum is at most one more than the longer binary length of the
+summands. -/
+theorem size_add_le_max (m n : ℕ) : (m + n).size ≤ max m.size n.size + 1 := by
+  refine Nat.size_le.2 ?_
+  have hm := (Nat.lt_size_self m).trans_le
+    (Nat.pow_le_pow_right (by lia) (le_max_left m.size n.size))
+  have hn := (Nat.lt_size_self n).trans_le
+    (Nat.pow_le_pow_right (by lia) (le_max_right m.size n.size))
+  rw [Nat.pow_succ]
+  lia
 
 /-- The binary length of a product is at most the binary lengths of the factors together. -/
 theorem size_mul_le (m n : ℕ) : (m * n).size ≤ m.size + n.size := by

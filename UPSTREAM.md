@@ -929,3 +929,14 @@ modules under `Foundations/Algebra/Polynomial`. Their current source modules
 also depend on the simplex coordinate API; moving that API is a separate
 migration, not an alternate mathematical definition. Track further extraction
 with the finite-sample-information source/API review in issue 2527.
+
+### Binary rational arithmetic
+
+`Foundations/Data/Rat/BinarySize.lean` is pure mathematics intended for Mathlib,
+following the existing `Foundations/Data/Rat/Basic.lean` exception. Its canonical
+numerator/denominator width bounds are consumed by stochastic-oracle scheduling
+and the native rational encoding. `Nat.size_add_le_max` moves unchanged from
+`PolyTime/Nat/Binary` to the pure `Foundations/Data/Nat/BinarySize` prerequisite,
+keeping its namespace and all existing clients through the existing public import.
+The binary encoding and multitape computation
+certificates remain CSLib candidates; no dependency pin or vendored copy changes.

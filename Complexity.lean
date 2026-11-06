@@ -23,6 +23,7 @@ public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Memory
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Source
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Word
 public import Complexity.Algorithms.Lean.DynamicProgramming.MinProduct
+public import Complexity.Algorithms.Lean.DynamicProgramming.Native
 public import Complexity.Algorithms.Lean.DynamicProgramming.RoundedProduct
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
@@ -2205,6 +2206,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Polynomial
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.Family
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.Tower
@@ -2274,6 +2276,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Optio
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.RatBinary
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StepMachine
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StepMachineComp
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StreamFold
@@ -3764,6 +3767,7 @@ public import Complexity.Foundations.Data.Polynomial.SignQueries
 public import Complexity.Foundations.Data.Polynomial.StagedJetArithmetic
 public import Complexity.Foundations.Data.Polynomial.TaperedHermite
 public import Complexity.Foundations.Data.Rat.Basic
+public import Complexity.Foundations.Data.Rat.BinarySize
 public import Complexity.Foundations.Data.Seq.Computation
 public import Complexity.Foundations.Data.Set.Card
 public import Complexity.Foundations.Data.StackTape
@@ -4366,7 +4370,9 @@ public import Complexity.Probability.StochasticOracle.Programs
 public import Complexity.Probability.StochasticOracle.RandomCost
 public import Complexity.Probability.StochasticOracle.RationalFullCover
 public import Complexity.Probability.StochasticOracle.TwoBatchApproximation
+public import Complexity.Probability.StochasticOracle.TwoBatchGuarantees
 public import Complexity.Probability.StochasticOracle.TwoBatchMinimum
+public import Complexity.Probability.StochasticOracle.TwoBatchResources
 public import Complexity.Probability.Testing
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat

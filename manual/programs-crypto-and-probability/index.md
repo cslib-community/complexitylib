@@ -68,8 +68,8 @@ The work associated with STOC submissions 587, 191 and 152 includes the general
 finite-horizon covariance identity, information and auditing bounds, DPI rigidity
 results, and scheduling policy–LP frontier documented below. The expanded
 headline programme remains open in [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
-Submission 191’s FPTAS and remaining main results are still open. These imports
-do not establish completion of the expanded programme or machine-runtime guarantees. The source
+STOC submission 191’s FPTAS and remaining main results are still open. These imports
+do not establish completion of the expanded programme or a complete selector runtime. The source
 versions and PDF digests are recorded under `Aldridge2027`, `Wang2027` and `Kong2027`
 in [the bibliography](../../references.bib). The checked clients are in
 [Stoc2027BatchC.lean](../../ComplexityTests/Stoc2027BatchC.lean).
@@ -274,10 +274,39 @@ in [the bibliography](../../references.bib). The checked clients are in
   branch. Scaling divides by the number of potentially selected branch members,
   including the mandatory member; this bounds the same total rounding loss as
   the manuscript's division by the full population size.
-  **Theorem 2(2) remains incomplete:** the global approximation bridge from every
-  nonempty feasible comparison batch to a retained candidate and a polynomial
-  binary bit-cost proof are still required. No FPTAS conclusion follows merely
-  from the selector's executability, its branch approximation or its table bound.
+  `choose_approximation` now proves the global saving bound for every nonempty
+  feasible comparison first batch. The product-minimizing witness remains
+  nonempty: strict positivity of success makes the comparison first-batch failure
+  product strictly smaller than one, whereas an empty first batch has product one.
+  For rational $0<ε<1$, import
+  [TwoBatchGuarantees](../../Complexity/Probability/StochasticOracle/TwoBatchGuarantees.lean)
+  and use `choose_real_policy_approximation` to compare with arbitrary real-randomized
+  feasible maximum-success policies. `choose_optimum_guarantees` derives an attained
+  optimum over those policies and both advertised savings/cost inequalities; it
+  also supplies the exact selected-schedule success and deadline. No optimum or
+  approximation inequality is a premise. The complete client above checks the
+  real-policy bound and a three-opportunity rounding collision whose result must
+  retain a nonempty first batch.
+
+  [TwoBatchResources](../../Complexity/Probability/StochasticOracle/TwoBatchResources.lean)
+  defines `inputEncoding` using framed reduced signed binary numerators and positive
+  binary denominators. `inputSize_bounds` bounds the population and each rational
+  field by the full input length. `candidates_length_le` bounds the whole candidate
+  list by a polynomial in $k$ and an integer $m$ with $1\le εm$; $m$ pays inverse
+  tolerance and is not assumed polynomial in the binary tolerance length. The
+  exact products, summed costs and savings comparisons have polynomial binary
+  operand widths. Scaling and flooring operand bounds are in `RoundedProduct`.
+  [PolyTime.Rat.Binary](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Rat/Binary.lean)
+  supplies native multitape polynomial-time arithmetic, comparison, division and
+  flooring under `encRatBin`, including binary gcd normalization and zero/negative
+  cases. [DynamicProgramming.Native](../../Complexity/Algorithms/Lean/DynamicProgramming/Native.lean)
+  certifies the original insertion and pruning passes; table keys use unary because
+  the rounded key budget is polynomial, while all probabilities remain binary.
+
+  **Theorem 2(2) remains incomplete:** the DP recurrence, preprocessing, complete
+  family enumeration and final comparison must still be composed into one uniform
+  native binary-runtime certificate. The arithmetic/table certificates and operand
+  bounds above are ingredients, not a complete FPTAS runtime theorem.
 - [Submodular.OracleSavings](../../Complexity/Algorithms/Lean/Submodular/OracleSavings.lean)
   proves Wang's Theorem 2(1) (PDF p. 7). A finite type indexes all oracles;
   `savings p c A` is exactly $(1-\prod_{i\in A}(1-p_i))\sum_{i\notin A}c_i$.

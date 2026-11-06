@@ -162,7 +162,8 @@ comparisons are single operations in this count; their bit costs are separate. -
   | [] => 1
   | x :: xs => pruneWork xs + insertWork key x (prune key score xs) + 1
 
-private theorem insert_length_le (x : α) (xs : List α) :
+/-- Insertion adds at most one table entry. -/
+theorem insert_length_le (x : α) (xs : List α) :
     (insert key score x xs).length ≤ xs.length + 1 := by
   induction xs with
   | nil => simp [insert]

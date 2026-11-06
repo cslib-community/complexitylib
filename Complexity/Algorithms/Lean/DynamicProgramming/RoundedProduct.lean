@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.Lean.DynamicProgramming.MinProduct
 public import Mathlib.Data.Rat.Floor
+public import Complexity.Foundations.Data.Rat.BinarySize
 import Mathlib.Tactic
 
 /-!
@@ -29,7 +30,9 @@ belong to the application; a bound on table states alone is not a bit-cost proof
 * `run_approximation`: every choice is approximated by an actual retained witness.
 * `rounded_le_bound`: rounded costs of bounded items have a uniform numerical bound.
 * `branch_approximation`: concrete scaling and mandatory-member initialization.
-* `branch_length_le`: a branch-size bound independent of the numerical costs.
+* `branch_length_le`, `branch_budget`: uniform table-size and recurrence-work bounds.
+* `run_product_binaryWidth_le`: binary operand growth of actual retained products.
+* `branchScale_binaryWidth_le`, `rounded_binarySize_le`: binary scaling/key operands.
 -/
 
 public section
@@ -237,5 +240,113 @@ theorem branch_length_le (c q : ι → ℚ) {ε outside : ℚ} (r : ι)
   change (branch c q ε r outside items).length ≤ _ at hb
   change (branch c q ε r outside items).length ≤ (items.length + 1) * N + 1
   nlinarith
+
+/-- Every state actually retained by the DP has linearly bounded rational
+product operands. The bound uses binary numerator/denominator magnitudes, not
+the number of rational multiplications alone. -/
+theorem run_product_binaryWidth_le (z : ι → ℕ) (q : ι → ℚ)
+    (initial : Entry ι) (items : List ι) {e : Entry ι}
+    (he : e ∈ run z q initial items) :
+    e.product.binaryWidth ≤ initial.product.binaryWidth +
+      (items.map (fun i => (q i).binaryWidth)).sum := by
+  have hchoices : ∀ (xs : List ι) (d : Entry ι), d ∈ choices z q initial xs →
+      d.product.binaryWidth ≤ initial.product.binaryWidth +
+        (xs.map (fun i => (q i).binaryWidth)).sum := by
+    intro xs
+    induction xs with
+    | nil =>
+      intro d hd
+      have heq : d = initial := by simpa [choices] using hd
+      subst d
+      simp
+    | cons i is ih =>
+      intro d hd
+      change d ∈ extend i (z i) (q i) (choices z q initial is) at hd
+      simp only [extend, List.mem_append, List.mem_map] at hd
+      rcases hd with ⟨a,ha,rfl⟩ | ⟨a,ha,rfl⟩
+      · have hm := Rat.binaryWidth_mul_le (q i) a.product
+        have hh := ih a ha
+        simp only [Entry.skip, List.map_cons, List.sum_cons]
+        omega
+      · have hh := ih a ha
+        simp only [Entry.take, List.map_cons, List.sum_cons]
+        omega
+  exact hchoices items e (run_sound z q initial items he)
+
+/-- The scaling operand has binary width additive in tolerance, maximum cost
+and the binary item-count counter. Large encoded costs do not create a table
+of their numerical size. -/
+theorem branchScale_binaryWidth_le (c : ι → ℚ) (ε : ℚ) (r : ι) (items : List ι) :
+    (branchScale c ε r items).binaryWidth ≤
+      ε.binaryWidth + (c r).binaryWidth + (items.length + 1).size + 1 := by
+  have hm := Rat.binaryWidth_mul_le ε (c r)
+  have hd := Rat.binaryWidth_div_le (ε * c r) (items.length + 1 : ℕ)
+  have hn := Rat.binaryWidth_natCast_le (items.length + 1)
+  unfold branchScale
+  omega
+
+/-- Binary size of each actually computed rounded key, including the division
+and flooring operands. -/
+theorem rounded_binarySize_le (c : ι → ℚ) (ε : ℚ) (r i : ι) (items : List ι) :
+    (rounded c (branchScale c ε r items) i).size ≤
+      (c i).binaryWidth + ε.binaryWidth + (c r).binaryWidth +
+        (items.length + 1).size + 1 := by
+  have hf := Rat.size_floor_le (c i / branchScale c ε r items)
+  have hd := Rat.binaryWidth_div_le (c i) (branchScale c ε r items)
+  have hs := branchScale_binaryWidth_le c ε r items
+  unfold rounded
+  omega
+
+private theorem branch_key_budget (c : ι → ℚ) {ε : ℚ} (r : ι)
+    (hr : 0 < c r) (hε : 0 < ε) (m : ℕ) (hm : 1 ≤ ε * m)
+    (items : List ι) (hcost : ∀ i ∈ items, c i ≤ c r) :
+    (branchInitial c ε r 1 items).rounded +
+      (items.map (rounded c (branchScale c ε r items))).sum ≤
+        (items.length + 1) ^ 2 * m := by
+  let N := (items.length + 1) * m
+  have hn : (0 : ℚ) < (items.length + 1 : ℕ) := by positivity
+  have hK : 0 < branchScale c ε r items := div_pos (mul_pos hε hr) hn
+  have hratio : c r / branchScale c ε r items = (items.length + 1 : ℕ) / ε := by
+    unfold branchScale
+    field_simp
+  have hN : c r / branchScale c ε r items ≤ N := by
+    rw [hratio, div_le_iff₀ hε]
+    dsimp [N]
+    push_cast
+    nlinarith
+  have hz (i : ι) (hi : c i ≤ c r) :
+      rounded c (branchScale c ε r items) i ≤ N := rounded_le_bound c hK hN hi
+  have hsum : ∀ xs : List ι, (∀ i ∈ xs, c i ≤ c r) →
+      (xs.map (rounded c (branchScale c ε r items))).sum ≤ xs.length * N := by
+    intro xs
+    induction xs with
+    | nil => simp
+    | cons i xs ih =>
+      intro h
+      have ht := ih (fun j hj => h j (List.mem_cons_of_mem _ hj))
+      have hi := hz i (h i (List.mem_cons_self ..))
+      simp only [List.map_cons, List.sum_cons, List.length_cons]
+      nlinarith
+  have hi := hz r le_rfl
+  have hs := hsum items hcost
+  change rounded c (branchScale c ε r items) r + _ ≤ _
+  dsimp [N] at *
+  nlinarith
+
+/-- Uniform state and work bounds in an integer inverse-tolerance budget `m`.
+The budget requires only `1 ≤ ε*m`; its value is not assumed polynomial in the
+binary encoding of epsilon. The work component still counts rational operations;
+`run_product_binaryWidth_le` bounds their product operands separately. -/
+theorem branch_budget (c q : ι → ℚ) {ε outside : ℚ} (r : ι)
+    (hr : 0 < c r) (hε : 0 < ε) (m : ℕ) (hm : 1 ≤ ε * m)
+    (items : List ι) (hcost : ∀ i ∈ items, c i ≤ c r) :
+    (branch c q ε r outside items).length ≤ (items.length + 1) ^ 2 * m + 1 ∧
+    runWork (rounded c (branchScale c ε r items)) q
+      (branchInitial c ε r outside items) items ≤
+        1 + items.length * (32 * ((items.length + 1) ^ 2 * m + 2) ^ 2) := by
+  have hb := branch_key_budget c r hr hε m hm items hcost
+  constructor
+  · exact (run_length_le _ _ _ _).trans (Nat.succ_le_succ hb)
+  · exact runWork_le _ _ _ items _ hb
 
 end Cslib.Algorithms.Lean.DynamicProgramming.MinProduct
