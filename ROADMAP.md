@@ -86,6 +86,11 @@ reconstruction theorem now derives a full original-chain solution from actual fi
 retained entries and semantic backward bucket records, including collision replacement
 and zero packed witnesses. Native projected preparation/filtering and consecutive
 retention-to-probe composition still need to establish its construction premises.
+Consecutive original-input executable clients now cover native projection, both
+preparations, retention, streaming hits and returned-register reconstruction, including
+positive projection width, zero width and collisions. They use one-word quarters
+with self-inverse fourth-quarter operations and one retained second-quarter index;
+these restrictions do not establish the general construction premises.
 General whole-class termination/time and unconditional original-input returned-witness
 correctness remain unproved. This is a sparse WordRAM
 implementation, not the source's sorted lists or a compact arena. The general correctness/resource certificates for the

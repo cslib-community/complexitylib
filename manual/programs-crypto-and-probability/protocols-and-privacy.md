@@ -831,6 +831,18 @@ executing retention and probing consecutively, general whole-class termination,
 and the original-input global endpoint remain open. It does not change the
 instruction model or establish the source's sorted-list bit-runtime theorem.
 
+The same checked client now includes `constructedPipeline`: starting with only
+four original operand cells and an unread sentinel, it executes low-bit projection
+by loads/remainders/stores, first-quarter preparation, projected inverse filtering,
+direct dictionary retention, fourth-quarter preparation and the streaming opposite
+class. It checks the decoded original-chain evaluation on the actual returned
+registers. Runs cover full width two with projection width one, projection-width-zero
+bucket collisions, and full width zero with dictionary replacement. These are
+restricted executable examples: quarters have length one, the fourth-quarter
+operations are self-inverse for these operands, and only retained second-quarter
+index zero is visited. They do not supply a general inverse construction or prove
+the outstanding universal construction-to-witness endpoint.
+
 To execute the complete opposite-class consumer, use `Quarter.probeClass`
 from the same import and root-context client above. Set `count` to the second
 quarter length and `stop` to $2^{\text{count}}$; supply `initial` as the projected

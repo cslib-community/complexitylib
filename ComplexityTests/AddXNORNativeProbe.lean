@@ -187,3 +187,68 @@ example : (probeScan.eval 8 64
       mem := fun a => if a = 40 then 1 else 0 }).map
       (fun r => (r.1.regs operand, r.1.regs bits, r.1.regs state)) =
         some (1, 0, 0) := by decide +kernel
+
+/-- A consecutive original-input client. The four one-word quarters are at
+5..8; projection is executed with loads, remainders and stores. No bucket,
+dictionary payload or projected operand is installed in the initial memory.
+The fourth quarter is self-inverse in the checked instances below; using
+`prepare` for that quarter is specific to those instances, not a general inverse
+construction. Only retained second-quarter index zero is visited. -/
+private def constructedPipeline (N P : ℕ) : Code .standard 32 :=
+  .seq (ram[ modulus ← #P; address ← #5; operand ← *address;
+    operand ← operand % modulus; address ← #10; *address ← operand;
+    address ← #6; operand ← *address; operand ← operand % modulus;
+    address ← #11; *address ← operand;
+    address ← #7; operand ← *address; operand ← operand % modulus;
+    address ← #12; *address ← operand;
+    base ← #5; count ← #1; modulus ← #N; initial ← #0;
+    keyModulus ← #P; heads ← #20; frontier ← #24 ])
+    (.seq prepare
+      (.seq (ram[ base ← #11; modulus ← #P; state ← #0; operators ← #0 ])
+        (.seq queryBucket
+          (.seq (ram[ base ← #6; modulus ← #N; table ← #100; top ← #0;
+            zero ← #0; one ← #1 ])
+            (.seq retainLoop
+              (.seq (ram[ base ← #8; count ← #1; modulus ← #N; initial ← #0;
+                keyModulus ← #P; heads ← #40; frontier ← #44 ])
+                (.seq prepare
+                  (.seq (ram[ fullBase ← #7; projectedBase ← #12;
+                    fullModulus ← #N; projectedModulus ← #P; stop ← #2 ])
+                    probeClass))))))))
+
+private def unconstructedInput (a : ℕ) : Data 32 :=
+  { regs := fun _ => 0
+    mem := fun q => if 5 ≤ q ∧ q < 9 then a else if q = 90 then 17 else 0 }
+
+/-- Width two, projection width one, all four original operands equal two.
+Native stores produce the dictionary, then the actual streaming iterator hits it.
+The result includes both physical payload words, both opposite indices and
+an unread sentinel. No constructed-memory semantic premise is supplied. -/
+example : ((constructedPipeline 4 2).eval 8 256 (unconstructedInput 2)).map
+    (fun r => (r.1.regs operand, r.1.regs bits, r.1.regs firstOperators,
+      r.1.regs operators, r.1.regs state, r.1.mem 90)) =
+        some (1, 0, 0, 0, 0, 17) := by decide +kernel
+
+/-- Reconstruction is checked on the actual returned payload and indices,
+rather than on separately supplied decoded operators. -/
+example : ((constructedPipeline 4 2).eval 8 256 (unconstructedInput 2)).map
+    (fun r => Cslib.Cryptanalysis.AddXNOR.eval
+      (((decode 1 (r.1.regs operand - 1)).zip [2#2]) ++
+        ((decode 1 (r.1.regs bits)).zip [2#2]) ++
+        ((decode 1 (r.1.regs operators)).zip [2#2]) ++
+        ((decode 1 (r.1.regs firstOperators)).zip [2#2])) 0) = some 0 := by
+  decide +kernel
+
+/-- Width zero retains indexed duplicates; replacement chooses index zero
+last. Projection, preparation, dictionary insertion and streaming still run. -/
+example : ((constructedPipeline 1 1).eval 8 256 (unconstructedInput 0)).map
+    (fun r => (r.1.regs operand, r.1.regs bits, r.1.regs firstOperators,
+      r.1.regs operators, r.1.regs state, r.1.mem 90)) =
+        some (1, 0, 1, 0, 0, 17) := by decide +kernel
+
+/-- At projection width zero, distinct full states collide in the bucket;
+full-state lookup still returns an actual matching four-quarter witness. -/
+example : ((constructedPipeline 4 1).eval 8 256 (unconstructedInput 2)).map
+    (fun r => (r.1.regs operand, r.1.regs bits, r.1.regs firstOperators,
+      r.1.regs operators, r.1.regs state)) = some (2, 0, 1, 0, 3) := by
+  decide +kernel
