@@ -910,5 +910,11 @@ and an existing-TwoBoundary count/width wrapper. Nontrivial weighted clients cov
 both polarities, zero demand and unattainable demand. This does not complete the
 bounded-demand endpoint: executable subset enumeration (the present listing is
 noncomputable), capped rank/direct-case
-assembly, global clause deduplication/counting and composed runtime/space remain
+assembly and composed runtime/space remain
 open, as do graph endpoints.
+
+Global weighted upper clauses now deduplicate across all retained rows as finite
+sets of signed literals. Exact evaluation/count preservation, query width and an
+explicit degree-d+1 base bound are proved; the attainment term alone carries the
+row factor. This does not complete Theorem 7.1: capped affine rank/all-direct-case
+assembly, executable listing and composed runtime/space remain open.

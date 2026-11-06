@@ -524,5 +524,20 @@ negative and overlarge targets, zero demand and deletion of a constant row. From
 the repository root, run `scripts/build.sh ComplexityTests.WeightedNormalization`.
 This normalization has no encoded runtime certificate. Subsequent rank selection
 must use its **capped** affine system; the original coefficient matrix can have a
-different rank. Global deduplication and the sharp clause bound, the all-cases
-plan and composed runtime/space remain unproved.
+different rank. The all-cases plan and composed runtime/space remain unproved.
+
+Import `Complexity.Logics.Propositional.CNF.WeightedGlobal` to deduplicate the
+upper clauses across every retained row. `upperKeys` identifies clauses by finite
+sets of signed literals, so literal order and source row do not affect identity.
+`globalBase_upper_eval` proves all upper bounds; `global_counting_identity` and
+`globalQuery_width` use the existing TwoBoundary queries and width `d + 2`.
+`globalQuery_polynomial` gives an explicit polynomial bound: the base contributes
+`(d + 2) * (2 * n + 1)^(d + 1)`, and the attainment terms contribute at most
+`2 * (h + 1) * (d + 1) * (n + 1)^d`, where `n` counts declared variables and
+`h + 1` counts rows. Thus at most `n` rows gives degree `d + 1`, without an
+extra row factor on the upper clauses. This is a noncomputable finite listing;
+it supplies neither capped-rank row selection nor encoded construction time.
+[The complete global client](../../ComplexityTests/WeightedGlobal.lean) checks
+cross-row duplicates, accepted/rejected assignments, count recovery and the
+normalization connection. From the repository root run
+`scripts/build.sh ComplexityTests.WeightedGlobal`.
