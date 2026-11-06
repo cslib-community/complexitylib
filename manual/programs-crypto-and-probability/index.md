@@ -595,6 +595,25 @@ cost bound. The client has perfectly correlated progress events, records the
 first bit in the second history, checks a valid conditional envelope and shows
 that the two events fail the independence identity. A zero-turn edge is included.
 
+For finite conditional response kernels, import
+[AdaptiveComparison](../../Complexity/Probability/StochasticOracle/AdaptiveComparison.lean)
+and check its [complete client](../../ComplexityTests/StochasticOracleAdaptiveComparison.lean).
+`progressExpectation` evaluates a terminal payoff of the progress count using a
+conditional law indexed by the entire response transcript (newest response first).
+`progressExpectation_le` and `le_progressExpectation` compare any increasing
+payoff against `bernoulliExpectation`, the independent-trial recurrence. Supply
+the conditional probability envelope at every history; the actual response laws
+need not be independent or identical. A response may contain auxiliary information,
+so the history need not consist only of progress bits. The client uses success
+probability $1/4$ before any success and $3/4$ afterwards: its two-success
+probability is $3/16$, between comparison values $1/16$ and $9/16$.
+
+These results currently cover finite response alphabets and finite horizons. They
+require envelopes also at unreachable histories and do not construct the selected
+batches, retained/revealed sets, or stopping rule. The comparison recurrence has
+not yet been identified with Mathlib's binomial law. The stopped expected-cost
+sum, negative-binomial mean bound and universal deadline theorem remain open.
+
 The remaining Theorem 5 obligations above, including connection to actual response
 and revealed-set executions, are open. Theorem 4's native runtime/hardness and
 Theorem 6's residual construction and universal optimum remain open. Neither this

@@ -44,7 +44,9 @@ with one event for certified success, bill cap and parallel deadline. This is no
 machine or an unrestricted response/resource execution certificate.
 Theorem 5 now has a finite-transcript conditional-history expected-cost accounting lemma
 with a correlated client; its pathwise required-progress premise still needs the actual
-revealed-set cardinality argument. It still needs history-conditional binomial domination, stopped costs
+revealed-set cardinality argument. Finite-history response kernels now admit increasing-payoff comparison with the independent
+Bernoulli recurrence; its binomial-law identification and actual-execution bridge remain open.
+It still needs the resulting history-conditional binomial bounds, stopped costs
 and universal latency/progress lower bounds; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
 claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.
