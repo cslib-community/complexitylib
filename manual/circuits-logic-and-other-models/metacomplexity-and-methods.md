@@ -503,7 +503,26 @@ demand and the counting wrapper. It can be checked from the repository root with
 This is row-local progress, not the full Theorem 7.1 reduction. Subset listing
 uses noncomputable `Finset.toList`; no executable enumeration or runtime theorem
 is supplied. The wrapper concatenates upper bounds without global deduplication.
-Normalization of repeated opposite-signed occurrences, assignment-preserving
-capping, the capped affine-system/rank bridge, all direct branches, global signed
+The capped affine-system/rank bridge, all direct branches, global signed
 clause counting, and full construction/counting time and space remain open.
 Graph endpoints are unaffected.
+
+Import `Complexity.Logics.Propositional.CNF.WeightedNormalization` for original
+occurrence-indexed rows. `Occurrences r m` accepts repeated variables, both signs,
+positive natural weights and an integer target. `normalize` aggregates each sign,
+extracts the common constant, rejects targets outside the residual interval,
+complements when that gives a smaller demand, drops constant-true rows, and caps
+remaining weights at demand plus one. Its only bound argument is that the computed
+normalized demand is at most `d`; it does not assume normalization correctness.
+`normalize_iff` and `normalize_count` prove exact assignment and count preservation.
+`toRow_iff` and `formula_iff` connect valid rows to the reviewed weighted formulas.
+The original declared variable type is retained throughout, including unused bits.
+
+[The complete normalization client](../../ComplexityTests/WeightedNormalization.lean)
+checks repeated positive occurrences, both polarities, complementation, capping,
+negative and overlarge targets, zero demand and deletion of a constant row. From
+the repository root, run `scripts/build.sh ComplexityTests.WeightedNormalization`.
+This normalization has no encoded runtime certificate. Subsequent rank selection
+must use its **capped** affine system; the original coefficient matrix can have a
+different rank. Global deduplication and the sharp clause bound, the all-cases
+plan and composed runtime/space remain unproved.

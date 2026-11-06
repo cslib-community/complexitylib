@@ -909,6 +909,6 @@ assignment semantics for positive capped signed rows, per-row binomial counts,
 and an existing-TwoBoundary count/width wrapper. Nontrivial weighted clients cover
 both polarities, zero demand and unattainable demand. This does not complete the
 bounded-demand endpoint: executable subset enumeration (the present listing is
-noncomputable), normalization/capping preservation, capped rank/direct-case
+noncomputable), capped rank/direct-case
 assembly, global clause deduplication/counting and composed runtime/space remain
 open, as do graph endpoints.
