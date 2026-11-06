@@ -37,6 +37,7 @@ provides the uniform native binary runtime for the complete selector.
 * `choose_feasible`, `choose_schedule_feasible`: nonempty batches and exact deadlines.
 * `choose_success`, `choose_expectedCost`: maximum success and actual stopped cost.
 * `gain_choose_ge`: exact savings dominate every enumerated candidate.
+* `family_gain_of_branches`: shared reconstruction for exact and approximate comparisons.
 * `choose_approximation`: the global savings guarantee for every feasible first batch.
 * `choose_policy_approximation`: savings and cost guarantees against randomized policies.
 -/
@@ -388,10 +389,23 @@ private theorem branch_gain (ε a b : ℚ) (r : Fin k)
   obtain ⟨hn,hs,hp⟩ := branch_reconstruction I ε a b r hr (run_sound _ _ _ _ he)
   rw [reconstructed_gain I a b e.selected hn hs hf, Entry.gain, Entry.cost, hp]
 
-private theorem family_approximation {ε a b : ℚ} (hε : 0 < ε)
+/-- Cutoff-family comparison reduces to comparison of the actual retained
+maximum-member branch witnesses. This shares reconstruction and nonemptiness
+between approximation and exact integral-cost optimization. -/
+theorem family_gain_of_branches {ε a b μ : ℚ} (hμ : μ ≤ 1)
+    (hbranch : ∀ (r : Fin k) (outside : ℚ), 0 ≤ outside → outside ≤ 1 →
+      ∀ (items : List (Fin k)) (e : Entry (Fin k)),
+        e ∈ choices (rounded I.cost (branchScale I.cost ε r items)) (failure I)
+          (branchInitial I.cost ε r outside items) items →
+        ∃ d ∈ branch I.cost (failure I) ε r outside items,
+          d.product ≤ e.product ∧
+          μ * e.gain I.cost (cost I (population.filter (fun i => a < I.cutoff i)))
+            (I.batchFailure (forced I b).toFinset) ≤
+          d.gain I.cost (cost I (population.filter (fun i => a < I.cutoff i)))
+            (I.batchFailure (forced I b).toFinset))
     {A : Finset (Fin k)} (hn : A.Nonempty)
     (hfamily : I.InCutoffFamily a b A) :
-    ∃ C ∈ familyCandidates I ε a b, (1 - ε) * gain I A ≤ gain I C := by
+    ∃ C ∈ familyCandidates I ε a b, μ * gain I A ≤ gain I C := by
   let S := (optional I a b).toFinset
   let B := S \ A
   have hf : ∀ i ∈ forced I b, I.cutoff i ≤ a := by
@@ -452,16 +466,8 @@ private theorem family_approximation {ε a b : ℚ} (hε : 0 < ε)
         (I.batchFailure (forced I b).toFinset) = gain I A := by
       rw [← heA, reconstructed_gain I a b e.selected her.1 her.2.1 hf,
         Entry.gain, Entry.cost, her.2.2]
-    obtain ⟨d,hd,_,hp,hgain⟩ := branch_approximation I.cost (failure I) r
-      (fun i => (I.cost_pos i).le) (I.cost_pos r) hε
-      (fun i => (failure_bounds I i).1.le) (fun i => (failure_bounds I i).2.le)
-      (E := cost I (population.filter (fun i => a < I.cutoff i)))
-      (f := I.batchFailure (forced I b).toFinset)
-      (by unfold cost; exact List.sum_nonneg (fun x hx => by
-        obtain ⟨i,_,rfl⟩ := List.mem_map.mp hx; exact (I.cost_pos i).le))
-      (Finset.prod_nonneg fun i _ => (failure_bounds I i).1.le)
-      (I.batchFailure_le_one _) (failureProduct_bounds I _).1
-      (failureProduct_bounds I _).2 items he
+    obtain ⟨d,hd,hp,hgain⟩ := hbranch r outside
+      (failureProduct_bounds I _).1 (failureProduct_bounds I _).2 items e he
     have hdrec := branch_reconstruction I ε a b r hrS (run_sound _ _ _ _ hd)
     have hdnonempty : (firstBatch I a b d.selected).Nonempty := by
       by_contra hnot
@@ -514,6 +520,23 @@ private theorem family_approximation {ε a b : ℚ} (hε : 0 < ε)
         apply mul_nonneg (sub_nonneg.mpr (I.batchFailure_le_one A))
         exact Finset.sum_nonneg (fun i _ => (I.cost_pos i).le)
       nlinarith
+
+private theorem family_approximation {ε a b : ℚ} (hε : 0 < ε)
+    {A : Finset (Fin k)} (hn : A.Nonempty)
+    (hfamily : I.InCutoffFamily a b A) :
+    ∃ C ∈ familyCandidates I ε a b, (1 - ε) * gain I A ≤ gain I C := by
+  apply family_gain_of_branches I (by linarith : 1 - ε ≤ 1) ?_ hn hfamily
+  intro r outside ho₀ ho₁ items e he
+  obtain ⟨d,hd,_,hp,hgain⟩ := branch_approximation I.cost (failure I) r
+    (fun i => (I.cost_pos i).le) (I.cost_pos r) hε
+    (fun i => (failure_bounds I i).1.le) (fun i => (failure_bounds I i).2.le)
+    (E := cost I (population.filter (fun i => a < I.cutoff i)))
+    (f := I.batchFailure (forced I b).toFinset)
+    (by unfold cost; exact List.sum_nonneg (fun x hx => by
+      obtain ⟨i,_,rfl⟩ := List.mem_map.mp hx; exact (I.cost_pos i).le))
+    (Finset.prod_nonneg fun i _ => (failure_bounds I i).1.le)
+    (I.batchFailure_le_one _) ho₀ ho₁ items he
+  exact ⟨d,hd,hp,hgain⟩
 
 /-- The implemented selector approximates every nonempty deadline-feasible first
 batch. The returned DP witness remains nonempty because its failure product is

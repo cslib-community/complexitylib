@@ -31,8 +31,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
 
-STOC submission 191 remains incomplete: Theorem 3 still needs the Partition hardness reduction
-and integer-cost pseudopolynomial endpoint; Theorem 4 needs local dual charging, history-conditional risk
+STOC submission 191 remains incomplete: Theorem 4 needs local dual charging, history-conditional risk
 certification, the actual greedy multicover algorithm and logarithmic comparison (with its stated
 hardness dependency); Theorem 5 needs history-conditional binomial domination, stopped costs
 and universal latency/progress lower bounds; Theorem 6 needs the actual dual-certified residual

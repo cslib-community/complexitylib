@@ -17,6 +17,10 @@ It checks head revisions, not source equality or unrecorded overlaps. Follow
 [CONTRIBUTING.md](CONTRIBUTING.md#upstreaming) for preparing an upstream worktree.
 Do not add a ledger row for an ordinary candidate or repeat its source marker here.
 
+`Foundations/Data/Finset/BernoulliProduct.lean` is general ordered-field mathematics
+intended for Mathlib. The scheduling reduction imports this reusable union/quadratic
+product bound rather than keeping it inside the application proof.
+
 ## Coordination before submission
 
 * **Machine calculus.** Build on Christian Reitwiessner's `crei/tidy-universal` branch and its

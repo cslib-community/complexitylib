@@ -30,6 +30,7 @@ belong to the application; a bound on table states alone is not a bit-cost proof
 * `run_approximation`: every choice is approximated by an actual retained witness.
 * `rounded_le_bound`: rounded costs of bounded items have a uniform numerical bound.
 * `branch_approximation`: concrete scaling and mandatory-member initialization.
+* `branch_integral_exact`: subunit rounding loss preserves the exact integer cost.
 * `branch_length_le`, `branch_budget`: uniform table-size and recurrence-work bounds.
 * `run_product_binaryWidth_le`: binary operand growth of actual retained products.
 * `branchScale_binaryWidth_le`, `rounded_binarySize_le`: binary scaling/key operands.
@@ -204,6 +205,63 @@ theorem branch_approximation (c q : ι → ℚ) {ε E f outside : ℚ} (r : ι)
   · simp only [branchInitial, Entry.cost, List.map_cons, List.map_nil, List.sum_cons,
       List.sum_nil, add_zero, branchScale]
     exact le_of_eq (mul_div_cancel₀ _ (ne_of_gt hn))
+
+/-- When original costs are integers and the whole rounding error is below one,
+minimum-product compression preserves the exact cost as well as improving the
+product. This turns the same constructive DP into an exact optimizer. -/
+theorem branch_integral_exact (c : ι → ℕ) (q : ι → ℚ) {ε E f outside : ℚ} (r : ι)
+    (hr : 0 < c r) (hε : 0 < ε) (hsmall : ε * c r < 1)
+    (hq₀ : ∀ i, 0 ≤ q i) (hE : 0 ≤ E) (hf₀ : 0 ≤ f) (items : List ι)
+    {e : Entry ι} (he : e ∈ choices
+      (rounded (fun i => (c i : ℚ)) (branchScale (fun i => (c i : ℚ)) ε r items)) q
+      (branchInitial (fun i => (c i : ℚ)) ε r outside items) items) :
+    ∃ d ∈ branch (fun i => (c i : ℚ)) q ε r outside items,
+      d.cost (fun i => (c i : ℚ)) = e.cost (fun i => (c i : ℚ)) ∧
+      d.product ≤ e.product ∧
+      e.gain (fun i => (c i : ℚ)) E f ≤ d.gain (fun i => (c i : ℚ)) E f := by
+  let cr := fun i => (c i : ℚ)
+  let K := branchScale cr ε r items
+  let initial := branchInitial cr ε r outside items
+  have hn : (0 : ℚ) < (items.length + 1 : ℕ) := by positivity
+  have hK : 0 < K := div_pos (mul_pos hε (show 0 < cr r by dsimp [cr]; exact_mod_cast hr)) hn
+  have hc : ∀ i, 0 ≤ cr i := fun _ => Nat.cast_nonneg _
+  have hi₀ : K * initial.rounded ≤ initial.cost cr := by
+    simpa [initial, branchInitial, Entry.cost, K] using rounded_lower cr hK hc r
+  have hi₁ : initial.cost cr ≤ K * initial.rounded + K := by
+    simpa [initial, branchInitial, Entry.cost, K] using rounded_upper cr hK r
+  obtain ⟨d,hd,hkey,hprod⟩ := run_dominates (rounded cr K) q initial hq₀ items he
+  have hec := choices_cost_bounds cr q hK hc initial hi₀ hi₁ items he
+  have hdc := choices_cost_bounds cr q hK hc initial hi₀ hi₁ items
+    (run_sound _ _ _ _ hd)
+  have hscale : (items.length + 1 : ℕ) * K = ε * c r := by
+    dsimp [K,branchScale,cr]
+    exact mul_div_cancel₀ _ (ne_of_gt hn)
+  rw [hkey] at hdc
+  rw [hscale] at hec hdc
+  have hdlt : d.cost cr < e.cost cr + 1 := by linarith [hec.1,hdc.2.1]
+  have helt : e.cost cr < d.cost cr + 1 := by linarith [hdc.1,hec.2.1]
+  have hcost : d.cost cr = e.cost cr := by
+    have hcSum (xs : List ι) : ((xs.map c).sum : ℚ) = (xs.map cr).sum := by
+      simp [cr,Function.comp_def]
+    change (d.selected.map cr).sum < (e.selected.map cr).sum + 1 at hdlt
+    change (e.selected.map cr).sum < (d.selected.map cr).sum + 1 at helt
+    rw [← hcSum, ← hcSum] at hdlt helt
+    have hdlt' : (d.selected.map c).sum < (e.selected.map c).sum + 1 := by
+      exact_mod_cast hdlt
+    have helt' : (e.selected.map c).sum < (d.selected.map c).sum + 1 := by
+      exact_mod_cast helt
+    have hh : (d.selected.map c).sum = (e.selected.map c).sum := by omega
+    change (d.selected.map cr).sum = (e.selected.map cr).sum
+    rw [← hcSum, ← hcSum, hh]
+  have hfac : 1 - f * e.product ≤ 1 - f * d.product := by nlinarith
+  have hnon : 0 ≤ E + d.cost cr := by
+    exact add_nonneg hE (List.sum_nonneg (fun x hx => by
+      obtain ⟨i,_,rfl⟩ := List.mem_map.mp hx; exact hc i))
+  refine ⟨d,hd,hcost,hprod,?_⟩
+  change e.gain cr E f ≤ d.gain cr E f
+  unfold Entry.gain
+  rw [← hcost]
+  exact mul_le_mul_of_nonneg_left hfac hnon
 
 /-- The actual branch table has polynomially many states in the item count and
 inverse tolerance. This is a state bound, independent of the numerical costs;

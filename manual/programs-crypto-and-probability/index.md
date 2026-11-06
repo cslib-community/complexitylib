@@ -68,8 +68,9 @@ The work associated with STOC submissions 587, 191 and 152 includes the general
 finite-horizon covariance identity, information and auditing bounds, DPI rigidity
 results, and scheduling policy–LP frontier documented below. The expanded
 headline programme remains open in [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
-STOC submission 191’s binary-input two-batch FPTAS is proved; its hardness,
-integer-cost optimization and partial/adaptive-cover main results remain open. These imports
+STOC submission 191’s binary-input two-batch FPTAS, exact-selection hardness and
+integer-cost pseudopolynomial optimizer are proved; its partial/adaptive-cover main results
+remain open. These imports
 do not establish completion of the expanded programme. The source
 versions and PDF digests are recorded under `Aldridge2027`, `Wang2027` and `Kong2027`
 in [the bibliography](../../references.bib). The checked clients are in
@@ -344,6 +345,44 @@ in [the bibliography](../../references.bib). The checked clients are in
   stopped execution law. The complete client above checks the external algorithm's
   heterogeneous deadline, zero-saving fallback, rounding collision, derived budget,
   exact success probability and total behavior on empty/invalid data.
+- For Theorem 3's exact decision problem, import
+  [TwoBatchHardness](../../Complexity/Probability/StochasticOracle/TwoBatchHardness.lean).
+  `TwoBatchHardness.Input` contains the ordered rational probability/cost/cutoff triples,
+  deadline and expected-cost threshold, with valid oracle parameters. `encInput` encodes
+  only those numerical fields in binary. `Decision` asks for a feasible maximum-success
+  two-turn policy of expected cost at most the threshold, allowing arbitrary real private
+  randomization. `restrictedDecision_npHard` derives NP-hardness even with unit cutoffs
+  and a common success/cost ratio. It reuses the binary `SubsetSum` hardness theorem and
+  existing `SubsetSum.toPartition`, removes zero source weights, and preserves repeated
+  positive occurrences as distinct calls. `reduction_mem_iff` is both directions of the
+  actual policy decision equivalence, rather than a deterministic-schedule surrogate.
+
+  For exact optimization with positive integer costs, import
+  [TwoBatchIntegralRuntime](../../Complexity/Probability/StochasticOracle/TwoBatchIntegralRuntime.lean).
+  Build a `TwoBatchIntegral.Input` with binary `calls : List (ℚ × ℕ × ℚ)` and
+  `deadline`; `run` returns a feasibility flag and both batch-index lists. No budget
+  or tolerance is supplied. `runtime` derives uniform native time and workspace
+  polynomial in the binary input length plus the numerical cost sum. `admissible_ofInstance`
+  checks the original deadline, and `infeasible` excludes every real-randomized
+  maximum-success competitor when the flag is false. On true, `optimizer` proves
+  exact deadline feasibility, maximum success and cost optimality for `selectedPlan`,
+  including the empty instance. Apply it with `hc : I.cost = fun i => (c i : ℚ)`;
+  `I.cost_pos` then ensures the integer costs are positive. `selectedProgram_law`
+  relates the emitted batches to their actual stopped oracle execution.
+
+  The implementation reuses the reconstructed minimum-product DP with tolerance
+  $1/(C+1)$, where $C$ is the total integer cost. Equal refined keys imply equal
+  original integer costs because the entire rounding loss is strictly below one;
+  minimum-product dominance therefore preserves the exact objective. This uses
+  polynomially many refined keys instead of the paper's unscaled subset-sum keys.
+  Probabilities and cutoffs stay heterogeneous binary rationals. Empty input has cost
+  zero and is feasible exactly for a nonnegative deadline; an infeasible flag does
+  not claim that the accompanying batch lists meet the deadline. A single call
+  has zero achievable saving. Local selection time is excluded from the cutoff deadline.
+  From a configured checkout, run `lake env lean ComplexityTests/StochasticOracleExact.lean`
+  to check the [complete client](../../ComplexityTests/StochasticOracleExact.lean),
+  including both hardness answers, zeros, duplicate weights, exact output/cost/success,
+  heterogeneous deadlines, impossible deadlines, empty input and a singleton.
 - [Submodular.OracleSavings](../../Complexity/Algorithms/Lean/Submodular/OracleSavings.lean)
   proves Wang's Theorem 2(1) (PDF p. 7). A finite type indexes all oracles;
   `savings p c A` is exactly $(1-\prod_{i\in A}(1-p_i))\sum_{i\notin A}c_i$.
@@ -351,7 +390,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   and $c_i\ge0$. Submodularity reuses the library's `IsSubmodular`; savings need
   not be monotone (the test has singleton saving one and full-set saving zero).
   The scheduling theorem and binary-input FPTAS are supplied by `StochasticOracle`.
-  Theorem 3's hardness/pseudopolynomial optimization and Theorems 4–6's partial
+  Theorem 3's exact-selection results are described above; Theorems 4–6's partial
   and adaptive-cover endpoints remain open.
 - [PeerPrediction.Quadratic](../../Complexity/Probability/PeerPrediction/Quadratic.lean)
   implements Kong's equation (8), Lemma 7.2 and Theorem 7.3 (PDF pp. 18–19).

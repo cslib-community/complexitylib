@@ -3640,6 +3640,7 @@ public import Complexity.Foundations.Data.Fin.Append
 public import Complexity.Foundations.Data.Fin.Order
 public import Complexity.Foundations.Data.Fin.Tuple
 public import Complexity.Foundations.Data.Finset.Average
+public import Complexity.Foundations.Data.Finset.BernoulliProduct
 public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.Finpartition
 public import Complexity.Foundations.Data.Finset.KthLargest
@@ -4372,9 +4373,13 @@ public import Complexity.Probability.StochasticOracle.RationalFullCover
 public import Complexity.Probability.StochasticOracle.TwoBatchApproximation
 public import Complexity.Probability.StochasticOracle.TwoBatchBinary
 public import Complexity.Probability.StochasticOracle.TwoBatchGuarantees
+public import Complexity.Probability.StochasticOracle.TwoBatchHardness
+public import Complexity.Probability.StochasticOracle.TwoBatchIntegral
+public import Complexity.Probability.StochasticOracle.TwoBatchIntegralRuntime
 public import Complexity.Probability.StochasticOracle.TwoBatchMinimum
 public import Complexity.Probability.StochasticOracle.TwoBatchNative
 public import Complexity.Probability.StochasticOracle.TwoBatchNativeCorrectness
+public import Complexity.Probability.StochasticOracle.TwoBatchPartition
 public import Complexity.Probability.StochasticOracle.TwoBatchResources
 public import Complexity.Probability.Testing
 public import Complexity.Probability.Uniform

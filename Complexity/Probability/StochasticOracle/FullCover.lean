@@ -68,6 +68,21 @@ structure FullCoverInstance (ι K : Type) [Field K] [LinearOrder K] where
   /-- Positive cutoff. -/
   cutoff_pos : ∀ i, 0 < cutoff i
 
+omit [Fintype ι] [IsStrictOrderedRing K] in
+/-- Oracle instances are determined by their probabilities, costs and cutoffs. -/
+@[ext] theorem FullCoverInstance.ext (I J : FullCoverInstance ι K)
+    (hp : ∀ i, I.success i = J.success i) (hc : ∀ i, I.cost i = J.cost i)
+    (hl : ∀ i, I.cutoff i = J.cutoff i) : I = J := by
+  have hp := funext hp
+  have hc := funext hc
+  have hl := funext hl
+  cases I
+  cases J
+  cases hp
+  cases hc
+  cases hl
+  rfl
+
 /-- A bounded batch sequence, padded with empty slots. -/
 abbrev Plan (ι : Type) : ℕ → Type
   | 0 => Unit
