@@ -262,7 +262,7 @@ example :
     norm_num
 
 /-- Four-operand rational environment `(1 / 2, -1 / 4, 1 / 4, 3 / 4)` for `balancedAvgRecipe` and
-`rankFinsetRecipe`. -/
+`zeroPaddedRankFinsetRecipe`. -/
 def quadRat : Fin 4 → ℚ
   | 0 => 1 / 2
   | 1 => -1 / 4
@@ -294,10 +294,10 @@ example :
   push_cast
   norm_num
 
-/-- End-to-end check for `rankFinsetRecipe` computing the 2nd largest value of
+/-- End-to-end check for `zeroPaddedRankFinsetRecipe` computing the 2nd largest value of
 `{1 / 2, -1 / 4, 1 / 4, 3 / 4}`, which equals `1 / 2`. -/
 example :
-    let rankR := rankFinsetRecipe (Op := Fin 4) (Struct := Unit) 2 (by decide) 2 univ 1
+    let rankR := zeroPaddedRankFinsetRecipe (Op := Fin 4) (Struct := Unit) 2 (by decide) 2 univ 1
       (by decide)
     streamVal (fun t => (rankR.digitProg t).eval quadRatEnv (fun _ => false)) = 1 / 2 := by
   intro rankR
@@ -306,7 +306,7 @@ example :
   change kthLargest 2 (univ : Finset (Fin 4)) (fun i => streamVal (quadRatEnv i)) = 1 / 2
   have hcongr : kthLargest 2 (univ : Finset (Fin 4)) (fun i => streamVal (quadRatEnv i)) =
       kthLargest 2 (univ : Finset (Fin 4)) (fun i => (quadRat i : ℝ)) :=
-    kthLargest_congr_on 2 univ _ _ fun i _ => streamVal_quadRatEnv i
+    kthLargest_congr fun i _ => streamVal_quadRatEnv i
   rw [hcongr]
   apply le_antisymm
   · rw [← not_lt]
@@ -332,6 +332,39 @@ example :
         simp only [quadRat]
         norm_num
     exact (by decide : 2 ≤ #({0, 3} : Finset (Fin 4))).trans (card_le_card hsub)
+
+/-- Regression check for zero-padded detector-rank clamping: when all candidates are negative
+(`{-1 / 2, -3 / 4}` at `k = 1 ≤ 2`), both `zeroPaddedRankListRecipe` and
+`zeroPaddedRankFinsetRecipe` clamp the selected value up to `0` (`Finset.kthLargest`) rather than
+returning `-1 / 2`. -/
+example :
+    let negEnv : Fin 2 → ℕ → ℤ := fun i =>
+      if i = 0 then ratStream (-1 / 2) else ratStream (-3 / 4)
+    let sEnv : Unit → Bool := fun _ => false
+    let listR := zeroPaddedRankListRecipe (Op := Fin 2) (Struct := Unit) 2 (by decide) 1 [0, 1]
+      (by decide) 1 (by decide)
+    let finsetR := zeroPaddedRankFinsetRecipe (Op := Fin 2) (Struct := Unit) 2 (by decide) 1 univ
+      1 (by decide)
+    streamVal (fun t => (listR.digitProg t).eval negEnv sEnv) = 0 ∧
+      streamVal (fun t => (finsetR.digitProg t).eval negEnv sEnv) = 0 := by
+  intro negEnv sEnv listR finsetR
+  have hNorm : ∀ i : Fin 2, IsNormSignedStream (negEnv i) := fun i => by
+    fin_cases i
+    · exact isNormSignedStream_ratStream (by norm_num)
+    · exact isNormSignedStream_ratStream (by norm_num)
+  have hValLe : ∀ i : Fin 2, streamVal (negEnv i) ≤ 0 := fun i => by
+    fin_cases i
+    · change streamVal (ratStream (-1 / 2)) ≤ 0
+      rw [streamVal_ratStream (by norm_num)]
+      norm_num
+    · change streamVal (ratStream (-3 / 4)) ≤ 0
+      rw [streamVal_ratStream (by norm_num)]
+      norm_num
+  refine ⟨?_, ?_⟩
+  · rw [listR.emits_exact (fun i _ => hNorm i)]
+    exact le_antisymm (kthLargest_le le_rfl fun i _ => hValLe i) kthLargest_nonneg
+  · rw [finsetR.emits_exact (fun i _ => hNorm i)]
+    exact le_antisymm (kthLargest_le le_rfl fun i _ => hValLe i) kthLargest_nonneg
 
 /-- End-to-end check for `bufferedTestRecipe` completeness (`sVal > 2 * uVal`) and soundness
 (`sVal ≤ uVal`) with `AllowanceBound` verification. -/

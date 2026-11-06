@@ -62,8 +62,8 @@ for any `q ≥ 4`. Moreover, signed floor shifts preserve residues: `(a / 2 ^ s)
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 10.1, Equations (10.1)--(10.4), (10.12), and Lemma 10.1 (23 September 2026,
-  revision `7ef5c0cc`, not peer reviewed).
+  Section 10.1 (Equations (10.1)--(10.4) and Lemma 10.1) and Section 10.3 (Equation (10.11))
+  (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 
 public section
@@ -419,7 +419,7 @@ theorem decodeDiffResidue_eq_diffDigit {q : ℕ} (hq : 4 ≤ q) {z : ℝ} {N : �
     rw [← centeredResidue_emod, hmod, centeredResidue_emod]
     exact centeredResidue_eq_self hq hdig
 
-/-- **Signed floor-shift residue identity** [OpenAI2026LogSpace, (10.12)]: discarding the low `s`
+/-- **Signed floor-shift residue identity** [OpenAI2026LogSpace, (10.11)]: discarding the low `s`
 bits of the canonical `(q + s)`-bit Euclidean residue computes the mod-`2^q` residue of the signed
 floor quotient `a / 2 ^ s` for every signed integer `a : ℤ`. -/
 theorem ediv_two_pow_emod_eq (a : ℤ) (q s : ℕ) :

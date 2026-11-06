@@ -29,11 +29,16 @@ A `UniformStreamRecipe Op Struct` at slack `d ≥ 1` packages:
   `L ≤ a * d + b * (t - j)` on digit queries, `L ≤ a * d + b * t` on clock-zero structural leaves)
   and `O(d + t)` peak intrinsic storage bounds.
 
+As in `QueryTree`, `UniformStreamRecipe` and `UniformBoolRecipe` certify exact mathematical stream
+semantics alongside `AllowanceBound` and `maxIntrinsicBits` over caller-supplied `QueryProg`
+annotations; downstream native Turing or counter-program compilation realizes structured recipe
+combinators rather than arbitrary host `QueryProg` continuations.
+
 ## Main definitions
 
 * `Cslib.StreamArithmetic.IsNormSignedStream`: signed-digit stream with value in `[-1, 1]`.
 * `Cslib.StreamArithmetic.AllowanceBound`: per-query overshoot and suspended-record inequality
-  `(10.14)` of [OpenAI2026LogSpace].
+  `(10.18)` of [OpenAI2026LogSpace].
 * `Cslib.StreamArithmetic.UniformStreamRecipe`: certified exact-stream recipe at slack `d ≥ 1`.
 * `Cslib.StreamArithmetic.UniformStreamRecipe.comp`: **Theorem 10.9** stage composition with common
   clock-drop coefficient unification and exact stream substitution.
@@ -71,7 +76,7 @@ universe u u' v
 section AllowanceAccounting
 
 /-- Per-query clock-overshoot and suspended-record inequality of
-[OpenAI2026LogSpace, Equation (10.14), Theorem 10.9] at slack `d`, constants `(a, b, c)`, and
+[OpenAI2026LogSpace, Equation (10.18), Theorem 10.9] at slack `d`, constants `(a, b, c)`, and
 enclosing output clock `t`. -/
 @[expose] def AllowanceBound {Op : Type u} {Struct : Type v} (d a b c t : ℕ) :
     QueryEvent Op Struct → Prop
@@ -232,7 +237,9 @@ end AllowanceAccounting
 section UniformRecipes
 
 /-- Certified exact signed-digit stream recipe at slack `slack ≥ 1`
-[OpenAI2026LogSpace, Theorem 10.9]. -/
+[OpenAI2026LogSpace, Theorem 10.9], packaging exact stream semantics with `AllowanceBound` and
+`maxIntrinsicBits` certificates over the recipe's annotated `QueryProg` family (prior to native
+machine compilation of host continuations). -/
 structure UniformStreamRecipe (Op : Type u) (Struct : Type v) where
   /-- Asymptotic slack parameter `d ≥ 1`. -/
   slack : ℕ
@@ -314,7 +321,7 @@ namespace UniformStreamRecipe
 /-- **Theorem 10.9 (stage composition of uniform stream recipes)**
 [OpenAI2026LogSpace, Theorem 10.9]: substituting a family of certified child recipes `child` for
 the operand streams of `parent` produces an exact stream recipe with zero numerical drift across
-stages and telescoped allowance/intrinsic constants. -/
+stages and telescoped annotated allowance/intrinsic constants. -/
 @[expose] noncomputable def comp {Op₁ : Type u} {Op₂ : Type u'} {Struct : Type v}
     (parent : UniformStreamRecipe Op₁ Struct)
     (child : Op₁ → UniformStreamRecipe Op₂ Struct)
@@ -516,7 +523,8 @@ evaluated or required to satisfy `ValidEnv`. -/
 end UniformStreamRecipe
 
 /-- Certified clock-zero finite Boolean test recipe [OpenAI2026LogSpace, Lemma 10.8, Theorem 10.9],
-whose precision and result are independent of any enclosing numerical clock. -/
+whose precision, result, and annotated query/intrinsic bounds are independent of any enclosing
+numerical clock (prior to native machine compilation). -/
 structure UniformBoolRecipe (Op : Type u) (Struct : Type v) where
   /-- Asymptotic slack parameter `d ≥ 1`. -/
   slack : ℕ

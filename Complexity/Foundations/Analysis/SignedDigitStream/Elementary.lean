@@ -33,8 +33,10 @@ identities for the elementary signed-digit stream operations of
    `streamPrefix y K`.
 4. **Elementary operations** (`pairAvgApprox`, `maxApprox`, `minApprox`, `shiftClipApprox`):
    pair averages `(x + y) / 2`, maxima, minima, and arbitrary `2 ^ v` shifts clipped to `[-1, 1]`.
-5. **Indexed finite order statistics** (`rankApprox`): `Finset.kthLargest` over stream prefixes at
-   `t + 4`, with error `< 2` by `Finset.abs_kthLargest_sub_kthLargest_le`.
+5. **Zero-padded detector ranks** (`zeroPaddedRankApprox`): `Finset.kthLargest` over stream
+   prefixes at `t + 4` (which inserts `0` so negative order statistics clamp up to `0`, matching
+   the detector rank of Sections 4.2 and 8.2 rather than the general signed order statistic of
+   Lemma 10.6), with error `< 2` by `Finset.abs_kthLargest_sub_kthLargest_le`.
 6. **Buffered margin tests** (`cmpBuffered`, `bufferedTest`): 63-state finite-precision test
    accepting all `s > 2 u` and rejecting all `s ≤ u` when `u ≥ ρ ≥ 2 ^ (-R)`.
 
@@ -47,7 +49,8 @@ identities for the elementary signed-digit stream operations of
 * `Cslib.SignedDigitStream.pairAvgApprox`, `Cslib.SignedDigitStream.maxApprox`,
   `Cslib.SignedDigitStream.minApprox`, `Cslib.SignedDigitStream.shiftClipApprox`: scaled integer
   approximations for elementary operations and shifts with clipping.
-* `Cslib.SignedDigitStream.rankApprox`: scaled integer approximation for `Finset.kthLargest`.
+* `Cslib.SignedDigitStream.zeroPaddedRankApprox`: scaled integer approximation for the zero-padded
+  detector rank `Finset.kthLargest`.
 * `Cslib.SignedDigitStream.cmpBuffered`, `Cslib.SignedDigitStream.bufferedTest`: fixed-precision
   buffered margin test.
 
@@ -60,7 +63,8 @@ identities for the elementary signed-digit stream operations of
   `Cslib.SignedDigitStream.maxApprox_isScaledApprox`,
   `Cslib.SignedDigitStream.minApprox_isScaledApprox`,
   `Cslib.SignedDigitStream.shiftClipApprox_isScaledApprox`,
-  `Cslib.SignedDigitStream.rankApprox_isScaledApprox`: `< 2` scaled approximation bounds.
+  `Cslib.SignedDigitStream.zeroPaddedRankApprox_isScaledApprox`: `< 2` scaled approximation
+  bounds.
 * `Cslib.SignedDigitStream.bufferedTest_eq_true_of_two_mul_lt`,
   `Cslib.SignedDigitStream.bufferedTest_eq_false_of_le`: soundness of buffered margin tests.
 
@@ -574,9 +578,13 @@ end ElementaryOperations
 
 section OrderStatisticsAndBufferedTests
 
-/-- Scaled integer approximation to `Finset.kthLargest k s (fun i => streamVal (x i))`
-using prefixes at `K = t + 4` [OpenAI2026LogSpace, Lemma 10.6]. -/
-@[expose] def rankApprox {ι : Type*} (k : ℕ) (s : Finset ι) (x : ι → ℕ → ℤ) (t : ℕ) : ℤ :=
+/-- Scaled integer approximation to the zero-padded detector rank
+`Finset.kthLargest k s (fun i => streamVal (x i))` using prefixes at `K = t + 4`.
+Because `Finset.kthLargest` inserts `0` [OpenAI2026LogSpace, Sections 4.2 and 8.2], negative
+order statistics clamp up to `0` (unlike the general signed order statistic of
+[OpenAI2026LogSpace, Lemma 10.6]). -/
+@[expose] def zeroPaddedRankApprox {ι : Type*} (k : ℕ) (s : Finset ι) (x : ι → ℕ → ℤ)
+    (t : ℕ) : ℤ :=
   kthLargest k s (fun i => intPrefix (x i) (t + 4)) / 16
 
 theorem kthLargest_streamPrefix_eq_div {ι : Type*} (k : ℕ) (s : Finset ι) (x : ι → ℕ → ℤ)
@@ -651,13 +659,14 @@ private theorem abs_kthLargest_zero_sub_le {ι : Type*} (s : Finset ι) {f g : �
   · exact sub_le_iff_le_add'.mpr (hle_side g f fun i hi =>
       sub_le_iff_le_add'.mp (le_of_abs_le ((abs_sub_comm _ _).trans_le (h i hi))))
 
-/-- **Lemma 10.6 (indexed finite rank approximation)** [OpenAI2026LogSpace, Lemma 10.6]:
-`rankApprox k s x` approximates `kthLargest k s (fun i => streamVal (x i))` within `< 2`. -/
-theorem rankApprox_isScaledApprox {ι : Type*} (k : ℕ) (s : Finset ι) {x : ι → ℕ → ℤ}
+/-- **Zero-padded detector-rank approximation** (adapting [OpenAI2026LogSpace, Lemma 10.6] to the
+zero-padded `Finset.kthLargest` of Sections 4.2 and 8.2): `zeroPaddedRankApprox k s x`
+approximates `kthLargest k s (fun i => streamVal (x i))` within `< 2`. -/
+theorem zeroPaddedRankApprox_isScaledApprox {ι : Type*} (k : ℕ) (s : Finset ι) {x : ι → ℕ → ℤ}
     (hx : ∀ i ∈ s, IsSignedStream (x i)) :
-    IsScaledApprox (kthLargest k s fun i => streamVal (x i)) (rankApprox k s x) := by
+    IsScaledApprox (kthLargest k s fun i => streamVal (x i)) (zeroPaddedRankApprox k s x) := by
   intro t
-  unfold rankApprox
+  unfold zeroPaddedRankApprox
   set A := kthLargest k s fun i => intPrefix (x i) (t + 4)
   have hfl := abs_ediv_sub_div_lt_one A (by decide : (0 : ℤ) < 16)
   have hA : (A : ℝ) / (16 : ℝ) =

@@ -18,7 +18,7 @@ import Mathlib.Tactic.Ring
 # Certified stream recipes for logspace smooth estimators and row compression
 
 This module composes the primitive certified stream operations of
-[OpenAI2026LogSpace, Sections 10.3--10.7] into uniform exact signed-digit stream recipes for the
+[OpenAI2026LogSpace, Sections 10.2--10.6] into uniform exact signed-digit stream recipes for the
 smooth estimator and row-compression building blocks used in the logspace derandomization.
 
 All allowance and intrinsic-storage coefficients `(coeffA, coeffB, coeffC, intrinsicCoeff)` depend
@@ -26,7 +26,10 @@ only on the scale/support exponent parameter `κ` and child recipe coefficients,
 `n`, `K`, or the support list `items`. For `Cslib.RowCompression.newDefault` and
 `Cslib.RowCompression.update`, intermediate piecewise-linear combinations whose unscaled range
 exceeds `[-1, 1]` are evaluated at dyadically rescaled magnitudes (`/ 4`, `/ 16`, `/ 32`, `/ 64`)
-inside `[-1, 1]` and then restored to exact unscaled values via `shiftClip`.
+inside `[-1, 1]` and then restored to exact unscaled values via `shiftClip`. As in `Interface` and
+`Primitives`, these recipes certify exact stream values and annotated `QueryProg` bounds prior to
+native machine compilation, and row-compression ranks use the zero-padded detector rank
+`Finset.kthLargest` (`zeroPaddedRankListRecipe`).
 
 ## Main definitions
 
@@ -57,18 +60,10 @@ inside `[-1, 1]` and then restored to exact unscaled values via `shiftClip`.
   for `Cslib.RowCompression.threshold`, `Cslib.RowCompression.newDefault`, and
   `Cslib.RowCompression.update`.
 
-## Main results
-
-* `Cslib.StreamArithmetic.max_self_neg_eq_abs`: `max x (-x) = |x|` for normalized stream values.
-* `Cslib.StreamArithmetic.kthLargest_congr_on`, `Cslib.StreamArithmetic.threshold_congr_on`,
-  `Cslib.StreamArithmetic.newDefault_congr_on`: support-wise congruence lemmas for
-  `Finset.kthLargest`, `Cslib.RowCompression.threshold`, and `Cslib.RowCompression.newDefault`
-  across all `k : ℕ` (including `k = 0`).
-
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Sections 4.1, 8.2, and 10.3--10.7 (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
+  Sections 4.1, 8.2, and 10.2--10.6 (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 
 public section
@@ -319,11 +314,6 @@ noncomputable def FixedRecipe.mul {Op : Type u} {Struct : Type v}
   valid_imp h := ⟨h, h⟩
   target_eq _ := rfl
 
-theorem max_self_neg_eq_abs (x : ℝ) : Max.max x (-x) = |x| := by
-  rcases le_total 0 x with hx | hx
-  · rw [abs_of_nonneg hx, max_eq_left (by linarith)]
-  · rw [abs_of_nonpos hx, max_eq_right (by linarith)]
-
 /-- Exact absolute value `|F| = max F (-F)` on `FixedRecipe`. -/
 noncomputable def FixedRecipe.abs {Op : Type u} {Struct : Type v}
     {d : ℕ} {hd : 1 ≤ d} {V : (Op → ℕ → ℤ) → (Struct → Bool) → Prop}
@@ -331,7 +321,7 @@ noncomputable def FixedRecipe.abs {Op : Type u} {Struct : Type v}
     (F : FixedRecipe d hd V f) :
     FixedRecipe d hd V (fun val sEnv => |f val sEnv|) :=
   (F.max F.neg).congrVal (fun val sEnv => |f val sEnv|)
-    (fun _ => max_self_neg_eq_abs _)
+    (fun _ => abs_eq_max_neg.symm)
 
 /-- Exact absolute-value stream recipe `|R| = max R (-R)`. -/
 @[expose] noncomputable def UniformStreamRecipe.abs {Op : Type u} {Struct : Type v}
@@ -553,7 +543,7 @@ noncomputable def clippedAtomInvFixed {Op : Type u} {Struct : Type v}
     (R : UniformStreamRecipe Op Struct) : UniformStreamRecipe Op Struct :=
   (clippedAtomInvFixed R).toRecipe
 
-/-- `FixedRecipe` computing the degree-9 smooth switch `Cslib.polynomialTransition4 (f val sEnv)`.
+/-- `FixedRecipe` computing the degree-7 smooth switch `Cslib.polynomialTransition4 (f val sEnv)`.
 -/
 noncomputable def polynomialTransition4Fixed {Op : Type u} {Struct : Type v}
     {d : ℕ} {hd : 1 ≤ d} {V : (Op → ℕ → ℤ) → (Struct → Bool) → Prop}
@@ -1343,40 +1333,6 @@ structure RowUpdateValidEnv {ι : Type u} (items : List ι) (y : ι)
     (env : RowStreamIdx ι → ℕ → ℤ) : Prop extends RowSupportValidEnv items env where
   target_norm : ∀ μ, IsNormSignedStream (env (.entry y μ))
 
-theorem kthLargest_congr_on {α : Type u} (k : ℕ) (s : Finset α)
-    (f g : α → ℝ) (hfg : ∀ x ∈ s, f x = g x) :
-    kthLargest k s f = kthLargest k s g := by
-  unfold kthLargest
-  have hflt : (s.filter fun x => k ≤ #{w ∈ s | f x ≤ f w}) =
-      s.filter fun x => k ≤ #{w ∈ s | g x ≤ g w} := by
-    refine filter_congr fun x hx => ?_
-    have hinner : ({w ∈ s | f x ≤ f w} : Finset α) = {w ∈ s | g x ≤ g w} := by
-      refine filter_congr fun w hw => ?_
-      rw [hfg x hx, hfg w hw]
-    rw [hinner]
-  have himg : ((s.filter fun x => k ≤ #{w ∈ s | f x ≤ f w}).image f) =
-      (s.filter fun x => k ≤ #{w ∈ s | g x ≤ g w}).image g := by
-    rw [hflt]
-    exact image_congr fun x hx => hfg x (mem_filter.mp hx).1
-  simp_rw [himg]
-
-theorem threshold_congr_on {ι : Type u} (s : Finset ι) (n : ℕ) (ρ z : ℝ)
-    (w₁ w₂ : ι → Fin 2 → ℝ) (hw : ∀ x ∈ s, ∀ μ, w₁ x μ = w₂ x μ) :
-    Cslib.RowCompression.threshold s n ρ z w₁ =
-      Cslib.RowCompression.threshold s n ρ z w₂ := by
-  unfold Cslib.RowCompression.threshold
-  congr 2
-  exact kthLargest_congr_on n s _ _ fun x hx => by
-    simp only [Cslib.RowCompression.entrySize, hw x hx 0, hw x hx 1]
-
-theorem newDefault_congr_on {ι : Type u} (s : Finset ι) (n K : ℕ) (ρ z : ℝ)
-    (w₁ w₂ : ι → Fin 2 → ℝ) (hw : ∀ x ∈ s, ∀ μ, w₁ x μ = w₂ x μ) :
-    Cslib.RowCompression.newDefault s n K ρ z w₁ =
-      Cslib.RowCompression.newDefault s n K ρ z w₂ := by
-  unfold Cslib.RowCompression.newDefault
-  rw [threshold_congr_on s n ρ z w₁ w₂ hw,
-    kthLargest_congr_on K s _ _ (fun x hx => hw x hx 0)]
-
 private theorem threshold_mem_unit {ι : Type u} {s : Finset ι} {n : ℕ} {ρ z : ℝ}
     {w : ι → Fin 2 → ℝ} (hρ : |ρ| ≤ 1) (hz : |z| ≤ 1)
     (hw : ∀ x ∈ s, ∀ μ, |w x μ| ≤ 1) :
@@ -1397,7 +1353,7 @@ private theorem newDefault_mem_unit {ι : Type u} {s : Finset ι} {n K : ℕ} {�
   exact kthLargest_le zero_le_one fun x hx => (abs_le.mp (hw x hx 0)).2
 
 /-- `FixedRecipe` computing the row-compression threshold `Cslib.RowCompression.threshold` via
-`rankListRecipe` [OpenAI2026LogSpace, Section 8.2, Lemma 10.7]. -/
+`zeroPaddedRankListRecipe` [OpenAI2026LogSpace, Section 8.2, Lemmas 10.6--10.7]. -/
 noncomputable def rowCompressionThresholdFixed {ι : Type u} [DecidableEq ι]
     {Struct : Type v} (d : ℕ) (hd : 1 ≤ d) (items : List ι) (hNodup : items.Nodup)
     (κ : ℕ) (hLen : items.length ≤ 2 ^ (κ * d)) (n : ℕ) :
@@ -1427,7 +1383,7 @@ noncomputable def rowCompressionThresholdFixed {ι : Type u} [DecidableEq ι]
     apply sameCoeffs_of_coeffs_eq
     simp only [sizeTplR, sizeTpl, FixedRecipe.coeffs_toRecipe, FixedRecipe.coeffs_max,
       FixedRecipe.coeffs_abs, FixedRecipe.coeffs_var]
-  let rankSizeRaw := (rankListRecipe (Struct := Struct) d hd n items hNodup κ hLen).comp
+  let rankSizeRaw := (zeroPaddedRankListRecipe (Struct := Struct) d hd n items hNodup κ hLen).comp
     sizeChild sizeTplR.coeffA sizeTplR.coeffB sizeTplR.coeffC (max 8 sizeTplR.intrinsicCoeff)
     (fun x => by dsimp only [sizeChild]; split_ifs <;> rfl)
     (fun x => by
@@ -1464,7 +1420,7 @@ noncomputable def rowCompressionThresholdFixed {ι : Type u} [DecidableEq ι]
     (fun _ => by
       unfold Cslib.RowCompression.threshold
       congr 2
-      exact kthLargest_congr_on n items.toFinset _ _ fun x hx => by
+      exact kthLargest_congr fun x hx => by
         have hmem : x ∈ items := List.mem_toFinset.mp hx
         simp only [sizeChild, hmem, ↓reduceDIte]
         rfl)
@@ -1479,7 +1435,7 @@ length `≤ 2 ^ (κ * d)`. -/
   (rowCompressionThresholdFixed d hd items hNodup κ hLen n).toRecipe
 
 /-- `FixedRecipe` computing `Cslib.RowCompression.newDefault` via `rowCompressionThresholdFixed` and
-`rankListRecipe` [OpenAI2026LogSpace, Section 8.2]. -/
+`zeroPaddedRankListRecipe` [OpenAI2026LogSpace, Section 8.2]. -/
 noncomputable def rowCompressionNewDefaultFixed {ι : Type u} [DecidableEq ι]
     {Struct : Type v} (d : ℕ) (hd : 1 ≤ d) (items : List ι) (hNodup : items.Nodup)
     (κ : ℕ) (hLen : items.length ≤ 2 ^ (κ * d)) (n K : ℕ) :
@@ -1497,7 +1453,7 @@ noncomputable def rowCompressionNewDefaultFixed {ι : Type u} [DecidableEq ι]
         (fun h => h.entry_norm x hx 0)).toRecipe
     else
       (FixedRecipe.const (Struct := Struct) d hd V 0 (by norm_num)).toRecipe
-  let rankFirstRaw := (rankListRecipe (Struct := Struct) d hd K items hNodup κ hLen).comp
+  let rankFirstRaw := (zeroPaddedRankListRecipe (Struct := Struct) d hd K items hNodup κ hLen).comp
     firstChild 4 0 0 8
     (fun x => by dsimp only [firstChild]; split_ifs <;> rfl)
     (fun x => by
@@ -1534,7 +1490,7 @@ noncomputable def rowCompressionNewDefaultFixed {ι : Type u} [DecidableEq ι]
       exact (firstChild x).abs_targetVal_le_one (hCh x))).congrVal
     (fun val _ => kthLargest K items.toFinset (fun x => val (.entry x 0)))
     (fun _ =>
-      kthLargest_congr_on K items.toFinset _ _ fun x hx => by
+      kthLargest_congr fun x hx => by
         have hmem : x ∈ items := List.mem_toFinset.mp hx
         simp only [firstChild, hmem, ↓reduceDIte]
         rfl)
@@ -1833,7 +1789,7 @@ old default, and active support entries. -/
         (floorR.targetVal val sEnv) (oldDefaultR.targetVal val sEnv)
         (fun x μ => (entryR x μ).targetVal val sEnv))
     (fun _ =>
-      newDefault_congr_on items.toFinset n K _ _ _ _ fun x hx μ => by
+      Cslib.RowCompression.newDefault_congr_on fun x hx μ => by
         have hmem : x ∈ items := List.mem_toFinset.mp hx
         dsimp only [child]
         simp only [hmem, ↓reduceIte])
@@ -1955,8 +1911,8 @@ default, and row entries. -/
           (fun x μ => (child (.entry x μ)).targetVal (fun op => streamVal (env op)) sEnv) y ν = _
       unfold Cslib.RowCompression.update
       dsimp only [child]
-      rw [threshold_congr_on items.toFinset n _ _ _ _ hw_on,
-        newDefault_congr_on items.toFinset n K _ _ _ _ hw_on]
+      rw [Cslib.RowCompression.threshold_congr_on hw_on,
+        Cslib.RowCompression.newDefault_congr_on hw_on]
       have hfun : (fun μ => (child (.entry y μ)).targetVal (fun op => streamVal (env op)) sEnv) =
           fun μ => (entryR y μ).targetVal (fun op => streamVal (env op)) sEnv := by
         ext μ

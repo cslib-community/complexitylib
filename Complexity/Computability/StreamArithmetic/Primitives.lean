@@ -18,7 +18,7 @@ import Mathlib.Tactic.Ring
 # Certified stream arithmetic primitives and composition combinators
 
 This module constructs certified `UniformStreamRecipe` implementations for every primitive
-operation in [OpenAI2026LogSpace, Sections 10.3--10.6, Lemmas 10.3--10.7]:
+operation in [OpenAI2026LogSpace, Sections 10.2--10.6, Lemmas 10.3--10.7]:
 
 * **Variables, rational constants, negation, and structural guards**:
   `Cslib.StreamArithmetic.varRecipe`, `Cslib.StreamArithmetic.ratRecipe`,
@@ -38,14 +38,19 @@ operation in [OpenAI2026LogSpace, Sections 10.3--10.6, Lemmas 10.3--10.7]:
 * **Minimum-index dyadic band multiplication** (**Lemma 10.4**): `Cslib.StreamArithmetic.mulPrim`
   and `Cslib.StreamArithmetic.UniformStreamRecipe.mul`, paying for band width `2 ^ (k - 1)` and
   band/offset counters out of the clock drop `t - j`.
-* **Early-word reciprocal on `[1 / 4, 1]` and unit prefix clamping** (**Lemma 10.5 & Section
-  10.6**): `Cslib.StreamArithmetic.clipUnitPrefix`, `Cslib.StreamArithmetic.clippedUnitPrefixProg`,
+* **Early-word reciprocal on `[1 / 4, 1]` and unit prefix clamping** (**Section 10.4, Lemma
+  10.5**): `Cslib.StreamArithmetic.clipUnitPrefix`, `Cslib.StreamArithmetic.clippedUnitPrefixProg`,
   `Cslib.StreamArithmetic.recip64Prim`, and `Cslib.StreamArithmetic.UniformStreamRecipe.recip64`,
   forming the `(t / 2 + 8)`-place prefix (computing `1 / (64 * x)` for inputs `x ∈ [1 / 4, 1]`)
   only during early-word queries `j ≤ t / 2 + 7` and releasing it before any suffix query.
-* **Indexed finite rank** (**Lemma 10.6**): `Cslib.StreamArithmetic.rankListRecipe` and
-  `Cslib.StreamArithmetic.rankFinsetRecipe`, computing `Finset.kthLargest` over `≤ 2 ^ (κ * d)`
-  streams with `O((κ + 1) * d)` index/counter overhead and comparator slope `coeffB = 6`.
+* **Zero-padded detector rank** (adapting **Lemma 10.6** to Sections 4.2 and 8.2):
+  `Cslib.StreamArithmetic.zeroPaddedRankListRecipe` and
+  `Cslib.StreamArithmetic.zeroPaddedRankFinsetRecipe`, computing the zero-padded
+  `Finset.kthLargest` (clamping negative order statistics up to `0`) over `≤ 2 ^ (κ * d)` streams
+  with `O((κ + 1) * d)` index/counter overhead and comparator slope `coeffB = 6`.
+
+As in `QueryTree` and `Interface`, these recipes certify exact stream values and annotated
+`QueryProg` query/intrinsic bounds prior to native machine compilation.
 
 ## Main definitions
 
@@ -57,7 +62,8 @@ operation in [OpenAI2026LogSpace, Sections 10.3--10.6, Lemmas 10.3--10.7]:
   `Cslib.StreamArithmetic.balancedAvgPrim`, `Cslib.StreamArithmetic.balancedAvgRecipe`.
 * `Cslib.StreamArithmetic.mulPrim`, `Cslib.StreamArithmetic.recip64Prim`,
   `Cslib.StreamArithmetic.clipUnitPrefix`, `Cslib.StreamArithmetic.clippedUnitPrefixProg`.
-* `Cslib.StreamArithmetic.rankListRecipe`, `Cslib.StreamArithmetic.rankFinsetRecipe`.
+* `Cslib.StreamArithmetic.zeroPaddedRankListRecipe`,
+  `Cslib.StreamArithmetic.zeroPaddedRankFinsetRecipe`.
 
 ## Main results
 
@@ -69,13 +75,13 @@ operation in [OpenAI2026LogSpace, Sections 10.3--10.6, Lemmas 10.3--10.7]:
   `Cslib.StreamArithmetic.clipUnitPrefix_le_two_pow`,
   `Cslib.StreamArithmetic.abs_clipUnitPrefix_div_sub_streamVal_le`,
   `Cslib.StreamArithmetic.eval_recip64ResProg`.
-* `Cslib.StreamArithmetic.eval_rankListResProg`: exact mod-16 residue evaluation for indexed
-  `Finset.kthLargest` over duplicate-free lists.
+* `Cslib.StreamArithmetic.eval_zeroPaddedRankListResProg`: exact mod-16 residue evaluation for
+  zero-padded `Finset.kthLargest` over duplicate-free lists.
 
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Sections 10.3--10.6, Lemmas 10.3--10.7 (23 September 2026, revision `7ef5c0cc`,
+  Sections 10.2--10.6, Lemmas 10.3--10.7 (23 September 2026, revision `7ef5c0cc`,
   not peer reviewed).
 -/
 
@@ -1518,12 +1524,12 @@ theorem maxIntrinsicBits_intPrefixProg_le {Op : Type u} {Struct : Type v} (op : 
   exact (haux K 0 (K + 1) 0).trans (by omega)
 
 /-- Clamp a `K`-place signed-digit integer prefix into the canonical nonnegative range
-`{0, ..., 2 ^ K}` [OpenAI2026LogSpace, Section 10.6]. -/
+`{0, ..., 2 ^ K}` [OpenAI2026LogSpace, Section 10.4, Lemma 10.5]. -/
 @[expose] def clipUnitPrefix (K : ℕ) (P : ℤ) : ℕ :=
   (min ((2 : ℤ) ^ K) (max 0 P)).toNat
 
 /-- Query program computing the `{0, ..., 2 ^ K}`-clamped integer prefix of `env op` at place `K`
-[OpenAI2026LogSpace, Section 10.6]. -/
+[OpenAI2026LogSpace, Section 10.4, Lemma 10.5]. -/
 @[expose] def clippedUnitPrefixProg {Op : Type u} {Struct : Type v} (op : Op) (K : ℕ) :
     QueryProg Op Struct ℕ :=
   (intPrefixProg op K).map (clipUnitPrefix K)
@@ -2077,10 +2083,10 @@ retained bits. -/
       (cmpPrefixProg w i K).bindOverhead (2 * idxBits + 4) fun c =>
         countAtLeastProg i K idxBits ws (if 0 ≤ c then cnt + 1 else cnt)
 
-/-- Streaming outer scan over candidate elements `rem`, tracking the index `best : Option Op` with
-largest positive `intPrefix` among elements exceeded or matched by at least `k` members of `items`.
--/
-@[expose] def rankFoldProg {Op : Type u} {Struct : Type v} (k : ℕ) (items : List Op)
+/-- Streaming outer scan over candidate elements `rem` for the zero-padded detector rank, tracking
+the index `best : Option Op` with largest positive `intPrefix` among elements exceeded or matched
+by at least `k` members of `items`. -/
+@[expose] def zeroPaddedRankFoldProg {Op : Type u} {Struct : Type v} (k : ℕ) (items : List Op)
     (K idxBits : ℕ) : List Op → Option Op → QueryProg Op Struct (Option Op)
   | [], best => .scratchStep (2 * idxBits + 4) (.ret best)
   | i :: rest, best =>
@@ -2089,21 +2095,24 @@ largest positive `intPrefix` among elements exceeded or matched by at least `k` 
           (cmpWithConstProg i (fun _ => 0) K).bindOverhead (2 * idxBits + 4) fun cPos =>
             if 0 < cPos then
               match best with
-              | none => rankFoldProg k items K idxBits rest (some i)
+              | none => zeroPaddedRankFoldProg k items K idxBits rest (some i)
               | some b =>
                   (cmpPrefixProg i b K).bindOverhead (2 * idxBits + 4) fun cBest =>
-                    rankFoldProg k items K idxBits rest (if 0 < cBest then some i else some b)
+                    zeroPaddedRankFoldProg k items K idxBits rest
+                      (if 0 < cBest then some i else some b)
             else
-              rankFoldProg k items K idxBits rest best
+              zeroPaddedRankFoldProg k items K idxBits rest best
         else
-          rankFoldProg k items K idxBits rest best
+          zeroPaddedRankFoldProg k items K idxBits rest best
 
-/-- Mod-16 residue program for `rankApprox k items.toFinset env s`, sizing its index/count
-registers natively from `Nat.log 2 items.length + 2` [OpenAI2026LogSpace, Lemma 10.6]. -/
-@[expose] def rankListResProg {Op : Type u} {Struct : Type v}
+/-- Mod-16 residue program for `zeroPaddedRankApprox k items.toFinset env s` (clamping negative
+order statistics up to `0` as in `Finset.kthLargest`), sizing its index/count registers natively
+from `Nat.log 2 items.length + 2` (adapting [OpenAI2026LogSpace, Lemma 10.6] to Sections 4.2 and
+8.2). -/
+@[expose] def zeroPaddedRankListResProg {Op : Type u} {Struct : Type v}
     (k : ℕ) (items : List Op) (s : ℕ) : QueryProg Op Struct ℤ :=
   let idxBits := Nat.log 2 items.length + 2
-  (rankFoldProg k items (s + 4) idxBits items none).bindOverhead (idxBits + 4) fun best =>
+  (zeroPaddedRankFoldProg k items (s + 4) idxBits items none).bindOverhead (idxBits + 4) fun best =>
     match best with
     | none => .scratchStep 8 (.ret 0)
     | some b => (windowPrefixModProg b 8 (s + 4)).map (· / 16)
@@ -2175,7 +2184,8 @@ private theorem foldQualMax_le {Op : Type u} (P : Op → Prop) [DecidablePred P]
     · exact max_le hacc (hrem i List.mem_cons_self hPi)
     · exact hacc
 
-private theorem eval_rankFoldProg_optIntPrefix {Op : Type u} [DecidableEq Op] {Struct : Type v}
+private theorem eval_zeroPaddedRankFoldProg_optIntPrefix {Op : Type u} [DecidableEq Op]
+    {Struct : Type v}
     (k : ℕ) (items : List Op) (hNodup : items.Nodup) (K idxBits : ℕ)
     (rem : List Op) (hSub : ∀ x ∈ rem, x ∈ items)
     {env : Op → ℕ → ℤ} (hEnv : ∀ x ∈ items, IsSignedStream (env x)) (sEnv : Struct → Bool)
@@ -2184,13 +2194,14 @@ private theorem eval_rankFoldProg_optIntPrefix {Op : Type u} [DecidableEq Op] {S
     (hBestNonneg : 0 ≤ optIntPrefix env K best) :
     let h : Op → ℤ := fun x => intPrefix (env x) K
     let P : Op → Prop := fun x => k ≤ #{w ∈ items.toFinset | h x ≤ h w}
-    (∀ b, (rankFoldProg k items K idxBits rem best).eval env sEnv = some b → b ∈ items) ∧
-      optIntPrefix env K ((rankFoldProg k items K idxBits rem best).eval env sEnv) =
+    (∀ b, (zeroPaddedRankFoldProg k items K idxBits rem best).eval env sEnv = some b →
+        b ∈ items) ∧
+      optIntPrefix env K ((zeroPaddedRankFoldProg k items K idxBits rem best).eval env sEnv) =
         foldQualMax P h rem (optIntPrefix env K best) := by
   intro h P
   induction rem generalizing best with
   | nil =>
-    dsimp only [rankFoldProg, QueryProg.eval, foldQualMax]
+    dsimp only [zeroPaddedRankFoldProg, QueryProg.eval, foldQualMax]
     exact ⟨hBestMem, rfl⟩
   | cons i rest ih =>
     have hi_mem : i ∈ items := hSub i List.mem_cons_self
@@ -2212,7 +2223,7 @@ private theorem eval_rankFoldProg_optIntPrefix {Op : Type u} [DecidableEq Op] {S
         simp
       rw [h0, Int.cast_zero, zero_div, div_pos_iff_of_pos_right (by positivity)]
       exact Int.cast_pos
-    simp only [rankFoldProg, QueryProg.eval_bindOverhead, hcnt_eq, foldQualMax]
+    simp only [zeroPaddedRankFoldProg, QueryProg.eval_bindOverhead, hcnt_eq, foldQualMax]
     by_cases hPi : P i
     · have hcnt_ge : k ≤ #{w ∈ items.toFinset | h i ≤ h w} := hPi
       simp only [hcnt_ge, hPi, ↓reduceIte, QueryProg.eval_bindOverhead]
@@ -2271,16 +2282,16 @@ private theorem eval_rankFoldProg_optIntPrefix {Op : Type u} [DecidableEq Op] {S
       simp only [hcnt_lt, hPi, ↓reduceIte]
       exact ih (hSub := hrest_sub) best hBestMem hBestNonneg
 
-theorem eval_rankListResProg {Op : Type u} [DecidableEq Op] {Struct : Type v}
+theorem eval_zeroPaddedRankListResProg {Op : Type u} [DecidableEq Op] {Struct : Type v}
     (k : ℕ) (items : List Op) (hNodup : items.Nodup) (s : ℕ)
     {env : Op → ℕ → ℤ} (hEnv : ∀ x ∈ items, IsSignedStream (env x)) (sEnv : Struct → Bool) :
-    (rankListResProg k items s).eval env sEnv =
-      rankApprox k items.toFinset env s % 16 := by
+    (zeroPaddedRankListResProg k items s).eval env sEnv =
+      zeroPaddedRankApprox k items.toFinset env s % 16 := by
   set idxBits := Nat.log 2 items.length + 2
   set K := s + 4
   set h : Op → ℤ := fun x => intPrefix (env x) K
   set P : Op → Prop := fun x => k ≤ #{w ∈ items.toFinset | h x ≤ h w}
-  obtain ⟨_, hFoldVal⟩ := eval_rankFoldProg_optIntPrefix k items hNodup K idxBits items
+  obtain ⟨_, hFoldVal⟩ := eval_zeroPaddedRankFoldProg_optIntPrefix k items hNodup K idxBits items
     (fun _ hx => hx) hEnv sEnv none (fun _ hb => nomatch hb) le_rfl
   have hFold_eq_kth : foldQualMax P h items 0 = kthLargest k items.toFinset h := by
     unfold kthLargest
@@ -2294,10 +2305,10 @@ theorem eval_rankListResProg {Op : Type u} [DecidableEq Op] {Struct : Type v}
       · obtain ⟨x, hx, rfl⟩ := mem_image.mp hr
         obtain ⟨hxs, hPx⟩ := mem_filter.mp hx
         exact mem_le_foldQualMax P h items 0 (List.mem_toFinset.mp hxs) hPx
-  unfold rankListResProg rankApprox
+  unfold zeroPaddedRankListResProg zeroPaddedRankApprox
   dsimp only
   rw [QueryProg.eval_bindOverhead]
-  set best := (rankFoldProg k items K idxBits items none).eval env sEnv
+  set best := (zeroPaddedRankFoldProg k items K idxBits items none).eval env sEnv
   have h16 : (16 : ℤ) = (2 : ℤ) ^ (4 : ℕ) := by decide
   have h256 : (2 : ℤ) ^ (8 : ℕ) = (2 : ℤ) ^ (4 + 4 : ℕ) := rfl
   cases hbest : best with
@@ -2348,15 +2359,15 @@ private theorem maxIntrinsicBits_countAtLeastProg_le {Op : Type u} {Struct : Typ
     have hc := maxIntrinsicBits_cmpPrefixProg_le w i K env sEnv
     omega
 
-theorem mem_activeQueries_rankFoldProg {Op : Type u} {Struct : Type v}
+theorem mem_activeQueries_zeroPaddedRankFoldProg {Op : Type u} {Struct : Type v}
     (k : ℕ) (items : List Op) (K idxBits : ℕ) (rem : List Op) (best : Option Op)
     (env : Op → ℕ → ℤ) (sEnv : Struct → Bool) {ev : QueryEvent Op Struct}
-    (hev : ev ∈ (rankFoldProg k items K idxBits rem best).activeQueries env sEnv) :
+    (hev : ev ∈ (zeroPaddedRankFoldProg k items K idxBits rem best).activeQueries env sEnv) :
     ∃ op j L, j ≤ K ∧ L ≤ 4 * idxBits + 18 + 6 * (K - j) ∧ ev = .digit op j L := by
   induction rem generalizing best with
   | nil => nomatch hev
   | cons i rest ih =>
-    simp only [rankFoldProg, QueryProg.activeQueries_bindOverhead, List.mem_append,
+    simp only [zeroPaddedRankFoldProg, QueryProg.activeQueries_bindOverhead, List.mem_append,
       List.mem_map] at hev
     rcases hev with ⟨ev₀, hev₀, rfl⟩ | hev₁
     · obtain ⟨op, j, L, hj, hL, rfl⟩ :=
@@ -2382,17 +2393,17 @@ theorem mem_activeQueries_rankFoldProg {Op : Type u} {Struct : Type v}
           · exact ih _ hev₂
       · exact ih _ hev₁
 
-theorem maxIntrinsicBits_rankFoldProg_le {Op : Type u} {Struct : Type v}
+theorem maxIntrinsicBits_zeroPaddedRankFoldProg_le {Op : Type u} {Struct : Type v}
     (k : ℕ) (items : List Op) (K idxBits : ℕ) (rem : List Op) (best : Option Op)
     (env : Op → ℕ → ℤ) (sEnv : Struct → Bool) :
-    (rankFoldProg k items K idxBits rem best).maxIntrinsicBits env sEnv ≤
+    (zeroPaddedRankFoldProg k items K idxBits rem best).maxIntrinsicBits env sEnv ≤
       4 * idxBits + 6 * K + 18 := by
   induction rem generalizing best with
   | nil =>
-    simp only [rankFoldProg, QueryProg.maxIntrinsicBits, Nat.max_zero]
+    simp only [zeroPaddedRankFoldProg, QueryProg.maxIntrinsicBits, Nat.max_zero]
     omega
   | cons i rest ih =>
-    simp only [rankFoldProg]
+    simp only [zeroPaddedRankFoldProg]
     refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
     · have hc := maxIntrinsicBits_countAtLeastProg_le i K idxBits items 0 env sEnv
       omega
@@ -2423,25 +2434,26 @@ private theorem log_two_le_of_le_two_pow {n m : ℕ} (h : n ≤ 2 ^ m) : Nat.log
   have hp0 : 0 < 2 ^ m := by positivity
   omega
 
-/-- **Lemma 10.6 (certified indexed finite rank recipe over a duplicate-free list)**
-[OpenAI2026LogSpace, Lemma 10.6]: computes `Finset.kthLargest k items.toFinset` over at most
-`2 ^ (κ * d)` candidate streams with top-down comparator slope `coeffB = 6`, clock overshoot `4`,
-and `O((κ + 1) * d)` slack/index overhead. -/
-@[expose] noncomputable def rankListRecipe {Op : Type u} [DecidableEq Op] {Struct : Type v}
-    (d : ℕ) (hd : 1 ≤ d) (k : ℕ) (items : List Op) (hNodup : items.Nodup)
+/-- **Certified zero-padded detector-rank recipe over a duplicate-free list** (adapting
+[OpenAI2026LogSpace, Lemma 10.6] to the zero-padded `Finset.kthLargest` of Sections 4.2 and 8.2):
+computes `Finset.kthLargest k items.toFinset` (clamping negative order statistics up to `0`) over
+at most `2 ^ (κ * d)` candidate streams with top-down comparator slope `coeffB = 6`, clock
+overshoot `4`, and `O((κ + 1) * d)` slack/index overhead. -/
+@[expose] noncomputable def zeroPaddedRankListRecipe {Op : Type u} [DecidableEq Op]
+    {Struct : Type v} (d : ℕ) (hd : 1 ≤ d) (k : ℕ) (items : List Op) (hNodup : items.Nodup)
     (κ : ℕ) (hLen : items.length ≤ 2 ^ (κ * d)) :
     UniformStreamRecipe Op Struct :=
   recipeOfMod16Prog d hd
     (fun env _ => ∀ x ∈ items.toFinset, IsNormSignedStream (env x))
     (fun val _ => kthLargest k items.toFinset val)
-    (fun env _ => rankApprox k items.toFinset env)
-    (rankListResProg k items) (5 * κ + 56) 6 4 (5 * κ + 56)
+    (fun env _ => zeroPaddedRankApprox k items.toFinset env)
+    (zeroPaddedRankListResProg k items) (5 * κ + 56) 6 4 (5 * κ + 56)
     (fun hV => by
       rw [abs_le]
       refine ⟨(by norm_num : (-1 : ℝ) ≤ 0).trans kthLargest_nonneg, ?_⟩
       exact kthLargest_le zero_le_one fun x hx => (abs_le.mp (hV x hx).2).2)
-    (fun hV => rankApprox_isScaledApprox k items.toFinset fun x hx => (hV x hx).1)
-    (fun hV s => eval_rankListResProg k items hNodup s
+    (fun hV => zeroPaddedRankApprox_isScaledApprox k items.toFinset fun x hx => (hV x hx).1)
+    (fun hV s => eval_zeroPaddedRankListResProg k items hNodup s
       (fun x hx => (hV x (List.mem_toFinset.mpr hx)).1) _)
     (fun s env sEnv _ hev => by
       set idxBits := Nat.log 2 items.length + 2
@@ -2449,16 +2461,16 @@ and `O((κ + 1) * d)` slack/index overhead. -/
       have hIdx : idxBits ≤ κ * d + 2 := Nat.add_le_add_right hlog 2
       have h56 : 56 ≤ 56 * d := Nat.le_mul_of_pos_right 56 hd
       have ha_split : (5 * κ + 56) * d = 5 * (κ * d) + 56 * d := by ring
-      simp only [rankListResProg, QueryProg.activeQueries_bindOverhead, List.mem_append,
+      simp only [zeroPaddedRankListResProg, QueryProg.activeQueries_bindOverhead, List.mem_append,
         List.mem_map] at hev
       rcases hev with ⟨ev₀, hev₀, rfl⟩ | hev₁
       · obtain ⟨op, j, L, hj, hL, rfl⟩ :=
-          mem_activeQueries_rankFoldProg k items (s + 4) idxBits items none env sEnv hev₀
+          mem_activeQueries_zeroPaddedRankFoldProg k items (s + 4) idxBits items none env sEnv hev₀
         refine ⟨by have h4 := Nat.le_mul_of_pos_right 4 hd; omega, ?_⟩
         change (((idxBits + 4) + L : ℕ) : ℤ) ≤
           (((5 * κ + 56) * d : ℕ) : ℤ) + (6 : ℤ) * ((s : ℤ) - (j : ℤ))
         omega
-      · cases hbest : (rankFoldProg k items (s + 4) idxBits items none).eval env sEnv with
+      · cases hbest : (zeroPaddedRankFoldProg k items (s + 4) idxBits items none).eval env sEnv with
         | none =>
           rw [hbest] at hev₁
           nomatch hev₁
@@ -2470,7 +2482,7 @@ and `O((κ + 1) * d)` slack/index overhead. -/
             (((5 * κ + 56) * d : ℕ) : ℤ) + (6 : ℤ) * ((s : ℤ) - (j : ℤ))
           omega)
     (fun s env sEnv => by
-      simp only [rankListResProg]
+      simp only [zeroPaddedRankListResProg]
       set idxBits := Nat.log 2 items.length + 2
       have hlog : Nat.log 2 items.length ≤ κ * d := log_two_le_of_le_two_pow hLen
       have hIdx : idxBits ≤ κ * d + 2 := Nat.add_le_add_right hlog 2
@@ -2478,9 +2490,10 @@ and `O((κ + 1) * d)` slack/index overhead. -/
       have hInt_split : (5 * κ + 56) * (d + s) =
           5 * (κ * d) + 56 * d + 5 * (κ * s) + 56 * s := by ring
       refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-      · have hf := maxIntrinsicBits_rankFoldProg_le k items (s + 4) idxBits items none env sEnv
+      · have hf :=
+          maxIntrinsicBits_zeroPaddedRankFoldProg_le k items (s + 4) idxBits items none env sEnv
         omega
-      · cases (rankFoldProg k items (s + 4) idxBits items none).eval env sEnv with
+      · cases (zeroPaddedRankFoldProg k items (s + 4) idxBits items none).eval env sEnv with
         | none =>
           simp only [QueryProg.maxIntrinsicBits, Nat.max_zero]
           omega
@@ -2489,18 +2502,21 @@ and `O((κ + 1) * d)` slack/index overhead. -/
           have hw := maxIntrinsicBits_windowPrefixModProg_le b 8 (s + 4) env sEnv
           omega)
 
-/-- **Lemma 10.6 (`Finset` specification wrapper for `rankListRecipe`)**
-[OpenAI2026LogSpace, Lemma 10.6]. Note that `Finset.toList` uses `Classical.choose` to pick an
-arbitrary list ordering, so this wrapper is intended only for analytical `Finset` specifications;
-machine-realizable log-space stages must pass a canonical duplicate-free list directly to
-`rankListRecipe` (as in `rowCompressionNewDefaultRecipe` and `rowCompressionUpdateRecipe`). -/
-@[expose] noncomputable def rankFinsetRecipe {Op : Type u} [DecidableEq Op] {Struct : Type v}
-    (d : ℕ) (hd : 1 ≤ d) (k : ℕ) (s : Finset Op) (κ : ℕ) (hCard : s.card ≤ 2 ^ (κ * d)) :
+/-- **`Finset` specification wrapper for `zeroPaddedRankListRecipe`** (adapting
+[OpenAI2026LogSpace, Lemma 10.6] to the zero-padded `Finset.kthLargest` of Sections 4.2 and 8.2,
+clamping negative order statistics up to `0`). Note that `Finset.toList` uses `Classical.choose` to
+pick an arbitrary list ordering, so this wrapper is intended only for analytical `Finset`
+specifications; machine-realizable log-space stages must pass a canonical duplicate-free list
+directly to `zeroPaddedRankListRecipe` (as in `rowCompressionNewDefaultRecipe` and
+`rowCompressionUpdateRecipe`). -/
+@[expose] noncomputable def zeroPaddedRankFinsetRecipe {Op : Type u} [DecidableEq Op]
+    {Struct : Type v} (d : ℕ) (hd : 1 ≤ d) (k : ℕ) (s : Finset Op) (κ : ℕ)
+    (hCard : s.card ≤ 2 ^ (κ * d)) :
     UniformStreamRecipe Op Struct :=
   have htoFinset : s.toList.toFinset = s := by
     ext x
     simp
-  let raw := rankListRecipe (Struct := Struct) d hd k s.toList s.nodup_toList κ
+  let raw := zeroPaddedRankListRecipe (Struct := Struct) d hd k s.toList s.nodup_toList κ
     (by rwa [s.length_toList])
   (raw.weakenValid (fun env _ => ∀ x ∈ s, IsNormSignedStream (env x))
     (fun hV x hx => hV x (htoFinset ▸ hx))).congrTarget

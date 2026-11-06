@@ -52,7 +52,8 @@ together with the normalized stream decompositions of `Cslib.polynomialTransitio
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 10.4, Lemma 10.5 (23 September 2026).
+  Section 10.4, Equations (10.13)--(10.16), and Lemma 10.5 (23 September 2026,
+  revision `7ef5c0cc`, not peer reviewed).
 -/
 
 public section
@@ -68,7 +69,7 @@ section EarlyWordReciprocal
 @[expose] def recipCutoff (t : ℕ) : ℕ :=
   t / 2 + 7
 
-/-- **Early-word clock payment** [OpenAI2026LogSpace, (10.5)]: every query `j ≤ recipCutoff t`
+/-- **Early-word clock payment** [OpenAI2026LogSpace, (10.16)]: every query `j ≤ recipCutoff t`
 during formation of the `(recipCutoff t + 1)`-place integer prefix is paid for by `2 * (t - j)`
 with constant additive slack. -/
 theorem recipCutoff_clock_payment {t j : ℕ} (hj : j ≤ recipCutoff t) :
@@ -77,7 +78,7 @@ theorem recipCutoff_clock_payment {t j : ℕ} (hj : j ≤ recipCutoff t) :
   omega
 
 /-- Also `t + 1` itself is bounded by `15 + 2 * (t - j)` on every early-word query
-`j ≤ recipCutoff t` [OpenAI2026LogSpace, (10.5)]. -/
+`j ≤ recipCutoff t` [OpenAI2026LogSpace, (10.16)]. -/
 theorem clock_succ_le_early_payment {t j : ℕ} (hj : j ≤ recipCutoff t) :
     ((t + 1 : ℕ) : ℤ) ≤ 15 + 2 * ((t : ℤ) - (j : ℤ)) := by
   unfold recipCutoff at hj
@@ -104,7 +105,7 @@ theorem clock_succ_le_early_payment {t j : ℕ} (hj : j ≤ recipCutoff t) :
   diffDigit (pairAvgApprox (ratStream (recipAlpha x t)) (recipProdStream x t))
 
 /-- Scaled integer approximation to `1 / (64 * streamVal x)` at clock `t`
-[OpenAI2026LogSpace, (10.4)]. -/
+[OpenAI2026LogSpace, (10.15)]. -/
 @[expose] def recip64Approx (x : ℕ → ℤ) (t : ℕ) : ℤ :=
   shiftClipApprox 1 (recipHalfStream x t) (t + 3) / 8
 

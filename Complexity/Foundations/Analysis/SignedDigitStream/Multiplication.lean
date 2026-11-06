@@ -10,6 +10,7 @@ module
 public import Complexity.Foundations.Analysis.SignedDigitStream.Elementary
 public import Mathlib.Data.Nat.Log
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Algebra.Order.Field.GeomSum
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -59,7 +60,7 @@ positive dyadic bands `2 ^ k ≤ min i j < 2 ^ (k + 1)` with band-specific trunc
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 10.3, Equations (10.7)--(10.13), and Lemma 10.4 (23 September 2026, revision `7ef5c0cc`,
+  Section 10.3, Equations (10.6)--(10.12), and Lemma 10.4 (23 September 2026, revision `7ef5c0cc`,
   not peer reviewed).
 -/
 
@@ -104,12 +105,12 @@ open Finset
     bandStart k ≤ min p.1 p.2 ∧ min p.1 p.2 < bandEnd k ∧ p.1 + p.2 ≤ t + bandMargin k
 
 /-- Exact mathematical integer sum `S_k` for band `k` at scale `2 ^ (t + bandMargin k)`
-[OpenAI2026LogSpace, (10.7)]. -/
+[OpenAI2026LogSpace, (10.6)]. -/
 @[expose] def bandSum (x y : ℕ → ℤ) (t k : ℕ) : ℤ :=
   ∑ p ∈ bandPairs t k, x p.1 * y p.2 * (2 : ℤ) ^ (t + bandMargin k - (p.1 + p.2))
 
 /-- Downward signed floor-shift fold across the `rem` highest active bands below `maxBand t`
-[OpenAI2026LogSpace, (10.10)]. -/
+[OpenAI2026LogSpace, (10.9)]. -/
 @[expose] def bandFold (x y : ℕ → ℤ) (t : ℕ) : ℕ → ℤ
   | 0 => 0
   | rem + 1 =>
@@ -117,12 +118,12 @@ open Finset
     let shift := bandMargin (k + 1) - bandMargin k
     bandSum x y t k + bandFold x y t rem / (2 : ℤ) ^ shift
 
-/-- Scaled integer product approximation `⌊2 ^ (-h_0) F_0⌋` [OpenAI2026LogSpace, (10.10)]. -/
+/-- Scaled integer product approximation `⌊2 ^ (-h_0) F_0⌋` [OpenAI2026LogSpace, (10.9)]. -/
 @[expose] def mulApprox (x y : ℕ → ℤ) (t : ℕ) : ℤ :=
   bandFold x y t (maxBand t) / (2 : ℤ) ^ mulBaseMargin
 
 /-- Diagonal-windowed band pairs satisfying `t - q < i + j ≤ t + bandMargin k`
-[OpenAI2026LogSpace, (10.11)]. -/
+[OpenAI2026LogSpace, (10.10)]. -/
 @[expose] def bandWindowPairs (t q k : ℕ) : Finset (ℕ × ℕ) :=
   (bandPairs t k).filter fun p => t < p.1 + p.2 + q
 
@@ -247,7 +248,7 @@ theorem two_mul_bandStart_gt_of_maxBand_le {t k : ℕ} (hk : maxBand t ≤ k) :
   set D := bandStart k
   omega
 
-/-- **Clock-drop latency inequality** [OpenAI2026LogSpace, (10.13)]: for any retained pair `(i, j)`
+/-- **Clock-drop latency inequality** [OpenAI2026LogSpace, (10.12)]: for any retained pair `(i, j)`
 in a positive band `k + 1` (`D = 2 ^ k`), `4 * j + 3 * D ≤ 4 * (t + mulBaseMargin)` (and
 symmetrically for `i`). -/
 theorem three_mul_bandStart_le_four_mul_drop {t k : ℕ} {p : ℕ × ℕ}
@@ -328,19 +329,6 @@ theorem mulResidue_eq_mulApprox_emod (x y : ℕ → ℤ) (t q : ℕ) :
 end ModularResidues
 
 section ScaledAccuracy
-
-private theorem geom_sum_le {r : ℝ} (hr0 : 0 ≤ r) (hr1 : r < 1) (n : ℕ) :
-    ∑ k ∈ range n, r ^ k ≤ 1 / (1 - r) := by
-  have hid : (1 - r) * ∑ k ∈ range n, r ^ k = 1 - r ^ n := by
-    induction n with
-    | zero => simp
-    | succ n ih =>
-      rw [sum_range_succ, mul_add, ih]
-      ring
-  have hpos : 0 < 1 - r := sub_pos.mpr hr1
-  rw [le_div_iff₀ hpos, mul_comm, hid]
-  have hrn : 0 ≤ r ^ n := pow_nonneg hr0 n
-  linarith
 
 private def retainedUnion (t K : ℕ) : Finset (ℕ × ℕ) :=
   (range K).biUnion (bandPairs t)
@@ -447,7 +435,10 @@ private theorem sum_floor_err_le (K : ℕ) :
       ≤ ∑ k ∈ range K, (1 / 1024) * (1 / 4 : ℝ) ^ k := sum_le_sum hterm
     _ = (1 / 1024) * ∑ k ∈ range K, (1 / 4 : ℝ) ^ k := (mul_sum _ _ _).symm
     _ ≤ (1 / 1024) * (1 / (1 - (1 / 4 : ℝ))) :=
-        mul_le_mul_of_nonneg_left (geom_sum_le (by norm_num) (by norm_num) K) (by norm_num)
+        mul_le_mul_of_nonneg_left
+          (by simpa only [Finset.range_eq_Ico, pow_zero] using
+            geom_sum_Ico_le_of_lt_one (m := 0) (n := K) (by norm_num) (by norm_num))
+          (by norm_num)
     _ = 1 / 768 := by norm_num
 
 private theorem sum_ray_tail_le (N r M : ℕ) :
@@ -486,7 +477,9 @@ private theorem sum_ray_tail_le (N r M : ℕ) :
         (mul_sum _ _ _).symm
     _ ≤ (1 / (2 : ℝ) ^ (M + 1)) * (1 / (1 - (1 / 2 : ℝ))) :=
         mul_le_mul_of_nonneg_left
-          (geom_sum_le (by norm_num) (by norm_num) (2 * N + r + 1)) (by positivity)
+          (by simpa only [Finset.range_eq_Ico, pow_zero] using
+            geom_sum_Ico_le_of_lt_one (m := 0) (n := 2 * N + r + 1) (by norm_num) (by norm_num))
+          (by positivity)
     _ = 1 / (2 : ℝ) ^ M := by
         rw [pow_succ]
         field_simp
@@ -682,7 +675,10 @@ private theorem sum_omitted_le {x y : ℕ → ℤ} (hx : IsSignedStream x) (hy :
                 field_simp
       _ = (72 / 1024) * ∑ k ∈ range B, (1 / 2 : ℝ) ^ k := (mul_sum _ _ _).symm
       _ ≤ (72 / 1024) * (1 / (1 - (1 / 2 : ℝ))) :=
-          mul_le_mul_of_nonneg_left (geom_sum_le (by norm_num) (by norm_num) B) (by norm_num)
+          mul_le_mul_of_nonneg_left
+            (by simpa only [Finset.range_eq_Ico, pow_zero] using
+              geom_sum_Ico_le_of_lt_one (m := 0) (n := B) (by norm_num) (by norm_num))
+            (by norm_num)
       _ = 9 / 64 := by norm_num
   have htwo : ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) +
       ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) =

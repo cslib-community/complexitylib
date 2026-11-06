@@ -15,7 +15,7 @@ import Mathlib.Tactic.Linarith
 /-!
 # Conditional query programs and regenerated gate evaluation
 
-This module formalizes [OpenAI2026LogSpace, Section 10.2, Lemma 10.2], capturing depth-first
+This module formalizes [OpenAI2026LogSpace, Section 10.1, Lemma 10.2], capturing depth-first
 evaluation of bounded-fan-in conditional Boolean circuits and finite streaming residue procedures
 over operand digit streams and clock-zero structural leaves.
 
@@ -36,8 +36,17 @@ result to `k`.
 We also formalize conditional bounded-fan-in Boolean formula trees (`CondBoolTree`) whose gate
 descriptions are regenerated from root parameters in `regenScratch` shared scratch bits, proving
 **Lemma 10.2** (`CondBoolTree.toQueryProg_eval`, `CondBoolTree.toQueryProg_retainedBits_le`,
-`CondBoolTree.toQueryProg_intrinsic_le`): depth-first evaluation retains at most `2 * depth` local
-bits above any leaf query without storing absolute gate addresses along the path.
+`CondBoolTree.toQueryProg_intrinsic_le`): depth-first evaluation retains at most `2 * depth`
+annotated local bits above any leaf query without storing absolute gate addresses along the path.
+
+## Specification boundary
+
+`QueryProg` and `CondBoolTree` model conditional query-tree semantics and caller-supplied bit
+annotations (`retainedBits`, `scratchBits`, `regenScratch`) prior to native machine compilation.
+Continuations in `QueryProg` (`queryDigit`, `queryStruct`), post-processing maps (`QueryProg.map`),
+and leaf predicates (`CondBoolTree.digitBit`) are host Lean functions; uniform `O(B + d + t)`
+gate/descriptor regeneration and native Turing or counter-program compilation are established by
+downstream machine-realization layers rather than by arbitrary `QueryProg` closures.
 
 ## Main definitions
 
@@ -66,7 +75,7 @@ bits above any leaf query without storing absolute gate addresses along the path
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 10.2, Lemma 10.2 (23 September 2026).
+  Section 10.1, Lemma 10.2 (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 
 public section
@@ -101,7 +110,9 @@ theorem QueryEvent.retained_addBits {Op : Type u} {Struct : Type v} (extra : ℕ
   cases ev <;> rfl
 
 /-- Deterministic finite conditional query program over operand streams `Op` and clock-zero
-structural predicates `Struct`, returning `α`. -/
+structural predicates `Struct`, returning `α`. Here `retainedBits` and `scratchBits` are
+caller-supplied bit annotations on query suspensions and scratch steps, while continuations are
+host Lean functions prior to native machine compilation. -/
 inductive QueryProg (Op : Type u) (Struct : Type v) (α : Type w) : Type (max u v w)
   | ret (val : α)
   | scratchStep (scratchBits : ℕ) (next : QueryProg Op Struct α)
@@ -141,7 +152,8 @@ its live `retainedBits` at the moment of suspension. -/
   | .queryDigit op j w next => max w (maxIntrinsicBits (next (env op j)) env sEnv)
   | .queryStruct sOp w next => max w (maxIntrinsicBits (next (sEnv sOp)) env sEnv)
 
-/-- Functorial post-processing of the return value (adds zero suspended bits). -/
+/-- Host-level post-processing of the return value; preserves `activeQueries` and
+`maxIntrinsicBits` without charging additional machine scratch. -/
 @[expose] def map {α : Type w} {β : Type w'} (f : α → β) :
     QueryProg Op Struct α → QueryProg Op Struct β
   | .ret a => .ret (f a)
@@ -414,10 +426,11 @@ variable {Op : Type u} {Struct : Type v}
   | .digitBit _ _ _ => 0
   | .structLeaf _ => 0
 
-/-- Depth-first evaluation of a `CondBoolTree` with `regenScratch` shared scratch bits for
-path-based gate-address regeneration [OpenAI2026LogSpace, Lemma 10.2]. Each active ancestor gate
-retains at most `2` bits (child mode + at most one saved Boolean value), without storing absolute
-gate addresses. -/
+/-- Depth-first evaluation of a `CondBoolTree` annotated with `regenScratch` shared scratch bits
+for path-based gate-address regeneration [OpenAI2026LogSpace, Lemma 10.2]. Each active ancestor
+gate charges `2` retained bits (child mode + at most one saved Boolean value) without storing
+absolute gate addresses; uniform realization of `regenScratch` and leaf predicates belongs to
+downstream machine compilation. -/
 @[expose] def toQueryProg (regenScratch : ℕ) :
     CondBoolTree Op Struct → QueryProg Op Struct Bool
   | .const b => .scratchStep regenScratch (.ret b)
@@ -461,9 +474,9 @@ theorem toQueryProg_eval (regenScratch : ℕ) (tree : CondBoolTree Op Struct)
   | structLeaf sOp => rfl
 
 /-- **Lemma 10.2 (suspended local record bound)** [OpenAI2026LogSpace, Lemma 10.2]: every leaf
-query executed during `tree.toQueryProg regenScratch` retains at most `2 * tree.depth` suspended
-bits (`O(1)` bits per gate along the active path, zero saved gate addresses, and zero bits from
-unselected conditional branches or completed sibling subtrees). -/
+query executed during `tree.toQueryProg regenScratch` retains at most `2 * tree.depth` annotated
+suspended bits (`O(1)` bits per gate along the active path, zero saved gate addresses, and zero
+bits from unselected conditional branches or completed sibling subtrees). -/
 theorem toQueryProg_retainedBits_le (regenScratch : ℕ) (tree : CondBoolTree Op Struct)
     (env : Op → ℕ → ℤ) (sEnv : Struct → Bool) {ev : QueryEvent Op Struct}
     (hev : ev ∈ (tree.toQueryProg regenScratch).activeQueries env sEnv) :
@@ -538,9 +551,9 @@ theorem toQueryProg_retainedBits_le (regenScratch : ℕ) (tree : CondBoolTree Op
     subst hev
     simp [QueryEvent.retained, depth]
 
-/-- **Lemma 10.2 (intrinsic local + scratch bound)** [OpenAI2026LogSpace, Lemma 10.2]: the peak
-intrinsic local + scratch storage during `tree.toQueryProg regenScratch` is at most
-`regenScratch + 2 * tree.depth`. -/
+/-- **Lemma 10.2 (intrinsic local + scratch bound)** [OpenAI2026LogSpace, Lemma 10.2]: given the
+caller-supplied `regenScratch` annotation, the peak annotated intrinsic local + scratch storage
+during `tree.toQueryProg regenScratch` is at most `regenScratch + 2 * tree.depth`. -/
 theorem toQueryProg_intrinsic_le (regenScratch : ℕ) (tree : CondBoolTree Op Struct)
     (env : Op → ℕ → ℤ) (sEnv : Struct → Bool) :
     (tree.toQueryProg regenScratch).maxIntrinsicBits env sEnv ≤ regenScratch + 2 * tree.depth := by
