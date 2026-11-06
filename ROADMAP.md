@@ -312,16 +312,19 @@ families and full-input native runtime.
   actual box commitments and the simulator's published commitments follow from matrix
   universality and the joint leftover-hash bound
   ([#2712](https://github.com/cslib-community/complexitylib/issues/2712)), for ideal uniform
-  prime-modulus matrices and histories sampled before fresh masks. The one-attempt visible
-  simulation milestone ([#2788](https://github.com/cslib-community/complexitylib/issues/2788))
+  prime-modulus matrices and histories sampled before fresh masks. The one-call all-attempt
+  read-to-program hop ([#2750](https://github.com/cslib-community/complexitylib/issues/2750))
+  retains the complete cache, with an unconditional finite sum of collision bounds. The one-attempt
+  visible simulation milestone ([#2788](https://github.com/cslib-community/complexitylib/issues/2788))
   bounds the statistical distance between the one-attempt programmed signing hybrid (which prepends
   a fresh challenge even on an abort) and simulated signing with accepted-transcript caching under
   any query-bounded visible continuation by `R / q^n + sqrt(q^n / (2γ + 1)^m) / 2`, with exact
   visible equality for zero-read continuations. Full executions retaining the final cache verify
-  the 0 vs 24/49 empty-cache divergence on the canonical q=17 counterexample. The transport from
-  honest memoizing signing (`Sign → Prog`), an efficient secret-free simulator, full
-  multiple-attempt visible simulation transport, paired same-coins fork equality, native
-  shared-oracle reduction and a security parameter family remain open. Other endpoints include
+  the 0 vs 24/49 empty-cache divergence on the canonical q=17 counterexample. The all-attempt visible
+  simulation milestone ([#2798](https://github.com/cslib-community/complexitylib/issues/2798))
+  extends visible simulation to all `K` attempts. Adaptive multiple-call replacement, an efficient
+  secret-free simulator, paired same-coins fork equality, native shared-oracle reduction and a
+  security parameter family remain open. Other endpoints include
   identification security under SIS and Dilithium-style
   signature schemes over module SIS and module LWE, as theory.
 - **Hybrid encryption:** the `n`-bit-message modular KEM–DEM adaptive CCA endpoint
