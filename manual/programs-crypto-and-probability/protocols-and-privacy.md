@@ -758,3 +758,31 @@ and meet-in-the-middle native bit-runtime/space certificates, streaming class
 enumeration and full dissection time/space certificates, and repaired ideal-model
 search/decision lower bounds. The positional-cut result is not a universal
 algorithmic barrier, and experimental CDCL exponents remain finite observations.
+
+
+The single-hit opposite-side component is
+[AddXNORNativeProbe.lean](../../Complexity/Cryptanalysis/AddXNORNativeProbe.lean).
+From the repository root after normal setup, check it and its complete client:
+
+```bash
+scripts/build.sh --wfail --iofail Complexity.Cryptanalysis.AddXNORNativeProbe
+lake env lean ComplexityTests/AddXNORNativeProbe.lean
+```
+
+`Quarter.probeBody_exec` loads one actual node, evaluates a full backward quarter
+using physically reversed operands, and probes the retained full-state slot. For
+$b$ operands it takes at most $18b+33$ standard WordRAM instructions, preserves
+all memory, and returns both the nonzero presence tag and second retained witness.
+The first retained witness is the tag minus one. Zero witnesses remain present;
+a zero tag denotes absence. The node's witness and original backward-quarter
+index remain in `firstOperators` and `operators`. The
+[complete client](../../ComplexityTests/AddXNORNativeProbe.lean) supplies every
+premise and tests present zero payloads, absent full keys and an unread sentinel.
+
+Supply the reversed full-width operand cells, dictionary base and initial one
+register explicitly. The theorem checks the word/address capacity with `Fits`;
+an undersized word cannot satisfy that premise. The dictionary contents are
+returned exactly, rather than assumed to encode a valid solution. This theorem
+does not yet iterate the opposite class, exit with a complete chain witness,
+select orientation from counters or join original-input preprocessing. It proves
+no global peak-space or source multitape bit-time bound.

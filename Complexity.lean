@@ -2889,6 +2889,7 @@ public import Complexity.Cryptanalysis.AddXNORNativeCounters
 public import Complexity.Cryptanalysis.AddXNORNativeDictionary
 public import Complexity.Cryptanalysis.AddXNORNativeEmit
 public import Complexity.Cryptanalysis.AddXNORNativeEnumeration
+public import Complexity.Cryptanalysis.AddXNORNativeProbe
 public import Complexity.Cryptanalysis.AddXNORNativeProjection
 public import Complexity.Cryptanalysis.AddXNORNativeQuery
 public import Complexity.Cryptanalysis.AddXNORNativeResources

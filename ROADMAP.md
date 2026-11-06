@@ -75,9 +75,11 @@ and pointer-based full-state recovery on bucket hits are also proved and checked
 in a consecutive native pipeline. Direct full-state dictionary retention now
 consumes actual bucket hits without an output array. Native sparse-address
 insertion/lookup, distinct-state release and exact memory restoration have
-per-bucket instruction and prefix-support proofs. This is a sparse WordRAM
+per-bucket instruction and prefix-support proofs. A read-only single-hit backward
+probe now has an exact full-state/tag/witness execution theorem; its bucket
+iteration and early witness exit remain absent. This is a sparse WordRAM
 implementation, not the source's sorted lists or a compact arena. The full
-second-quarter/class iterator, streaming opposite-side consumer, counter-selected
+second-quarter/class iterator, complete streaming opposite-side consumer, counter-selected
 orientation and single global counter/balance/decision/witness execution remain
 unproved, as do global width and computed-balance peak-space composition and a
 source-bit-model realization. These components do not close Lemma 8 or Theorem 7;
