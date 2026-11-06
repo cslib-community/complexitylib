@@ -150,8 +150,9 @@ Busy traffic shortens the available history. Rate suppression and forwarding are
 this namespace; no successful-download records are copied into the default journal.
 Keep the kernel audit policy unchanged: the example's empty `Audit=` value is the portable
 equivalent of `Audit=keep` on current systemd. Do not use `Audit=no`, which can disable kernel
-auditing globally. The MIT installation uses a later host drop-in with `Audit=keep`, an empty
-`ForwardToSocket=` and `RateLimitBurst=0`; these have the same effective policy as the example.
+auditing globally. Some installations may have a later `Audit=keep` override. Inspect later
+drop-ins when updating; remove a redundant override only after confirming it has no other
+unique settings and the effective policy is unchanged.
 
 For a small daily summary, stream the retained records through Python (constant memory):
 
