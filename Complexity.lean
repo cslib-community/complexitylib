@@ -4082,6 +4082,7 @@ public import Complexity.Foundations.Probability.FourthRootHierarchyParams
 public import Complexity.Foundations.Probability.Gaussian.CenteredTail
 public import Complexity.Foundations.Probability.Gaussian.CoefficientFiber
 public import Complexity.Foundations.Probability.Gaussian.Convolution
+public import Complexity.Foundations.Probability.Gaussian.Correlated
 public import Complexity.Foundations.Probability.Gaussian.Discrete
 public import Complexity.Foundations.Probability.Gaussian.DiscreteTail
 public import Complexity.Foundations.Probability.Gaussian.Fourier
