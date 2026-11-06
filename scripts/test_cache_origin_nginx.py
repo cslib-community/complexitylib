@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import secrets
 import signal
 import socket
 import ssl
@@ -38,7 +39,8 @@ class RealNginxCacheTests(unittest.TestCase):
         self.origin_bin = os.environ.get("CACHE_ORIGIN_BIN") or shutil.which("cache-origin")
         self.nginx_bin = os.environ.get("NGINX_BIN") or shutil.which("nginx")
         for name, command in (("cache-origin", self.origin_bin), ("nginx", self.nginx_bin),
-                              ("openssl", shutil.which("openssl")), ("curl", shutil.which("curl"))):
+                              ("openssl", shutil.which("openssl")), ("curl", shutil.which("curl")),
+                              ("htpasswd", shutil.which("htpasswd"))):
             self.assertTrue(command and Path(command).is_file(), f"required executable missing: {name}")
         temporary = tempfile.TemporaryDirectory(prefix="cache-nginx-")
         self.addCleanup(temporary.cleanup)
@@ -52,11 +54,13 @@ class RealNginxCacheTests(unittest.TestCase):
                         "-keyout", str(key), "-out", str(self.cert), "-subj", "/CN=localhost",
                         "-addext", "subjectAltName=IP:127.0.0.1,DNS:localhost"],
                        check=True, capture_output=True, timeout=15)
-        self.user, self.password = "fixture-publisher", "test-only-publisher-password"
-        password_hash = subprocess.check_output(["openssl", "passwd", "-apr1", "-stdin"],
-                                                input=(self.password + "\n").encode()).decode().strip()
+        self.user, self.password = "fixture-publisher", secrets.token_urlsafe(32)
+        password_record = subprocess.check_output(["htpasswd", "-niBC", "12", self.user],
+                                                  input=(self.password + "\n").encode()).decode().strip()
+        self.assertTrue(password_record.startswith(self.user + ":$2y$12$"))
         password_file = self.root / "htpasswd"
-        password_file.write_text(self.user + ":" + password_hash + "\n")
+        password_file.write_text(password_record + "\n")
+        password_file.chmod(0o640)
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             port = listener.getsockname()[1]
@@ -80,6 +84,10 @@ class RealNginxCacheTests(unittest.TestCase):
             "/srv/cache-origin/nginx-tmp": nginx_string(self.store / "nginx-tmp"),
             "/etc/nginx/cache-publish.htpasswd": nginx_string(password_file),
             "http://unix:/run/cache-origin/http.sock": nginx_string(f"http://unix:{self.socket}"),
+            "access_log syslog:server=unix:/dev/log,facility=local6,tag=cache-origin,severity=info cache_origin if=$cache_loggable;":
+                f"access_log {nginx_string(self.root / 'nginx-access.log')} cache_origin if=$cache_loggable;",
+            "error_log syslog:server=unix:/dev/log,facility=local6,tag=cache-origin-error warn;":
+                f"error_log {nginx_string(self.root / 'nginx-error.log')} warn;",
         }
         for old, new in replacements.items():
             self.assertIn(old, fragment)
@@ -184,6 +192,7 @@ class RealNginxCacheTests(unittest.TestCase):
         credentials = self.user + ":" + self.password
         import fcntl
         with (self.store / "state/lock").open("a+") as lock:
+            os.fchmod(lock.fileno(), 0o600)
             fcntl.flock(lock, fcntl.LOCK_EX)
             busy = self.request("PUT", path_a, body_a, credentials)
             self.assertEqual(busy[0], 503)
@@ -195,6 +204,8 @@ class RealNginxCacheTests(unittest.TestCase):
         shared = f"/a0/{SCOPE}/{1:016x}.art"
         unique_a = f"/a0/{SCOPE}/{2:016x}.art"
         self.assertEqual(self.request("GET", shared)[:2], (200, b"shared"))
+        self.assertEqual(self.request("GET", shared)[2]["Cache-Control"], "no-store")
+        self.assertEqual(self.request("GET", "/" + map_a)[2]["Cache-Control"], "no-store")
         head = self.request("HEAD", shared)
         self.assertEqual(head[:2], (200, b""))
         self.assertEqual(head[2]["Content-Length"], str(len(b"shared")))
@@ -224,6 +235,35 @@ class RealNginxCacheTests(unittest.TestCase):
         self.assertEqual(self.request("GET", "/" + map_b)[:2], (200, map_b_bytes))
         self.assertEqual(self.request("GET", shared)[:2], (200, b"shared"))
         self.assertEqual(self.request("GET", f"/a0/{SCOPE}/{3:016x}.art")[:2], (200, b"new unique"))
+
+    def test_upload_rate_limit_rejects_abuse(self):
+        path = "/publish/" + "c" * 40
+        statuses = [self.request("PUT", path, b"not a package")[0] for _ in range(12)]
+        self.assertIn(401, statuses)
+        self.assertIn(429, statuses)
+        # Access logs preserve failed-auth evidence but omit rate rejections,
+        # avoiding a request flood turning into an unbounded log flood.
+        self.wait_for(lambda: (self.root / "nginx-access.log").exists(), "auth access log")
+        lines = (self.root / "nginx-access.log").read_text()
+        self.assertIn(" 401 PUT ", lines)
+        self.assertNotIn(" 429 ", lines)
+        self.assertNotIn(self.password, lines)
+
+    def test_simultaneous_upload_connection_limit(self):
+        tls = ssl.create_default_context(cafile=str(self.cert))
+        raw = socket.create_connection(("127.0.0.1", int(self.endpoint.rsplit(":", 1)[1])), timeout=5)
+        held = tls.wrap_socket(raw, server_hostname="127.0.0.1")
+        self.addCleanup(held.close)
+        authorization = base64.b64encode((self.user + ":" + self.password).encode()).decode()
+        path = "/publish/" + "d" * 40
+        # Complete headers but hold the body open, occupying the one per-IP
+        # upload slot while nginx buffers the authenticated request.
+        held.sendall((f"PUT {path} HTTP/1.1\r\nHost: localhost\r\n"
+                      f"Authorization: Basic {authorization}\r\n"
+                      "Content-Type: application/x-tar\r\nContent-Length: 100000\r\n"
+                      "Expect: 100-continue\r\n\r\n").encode())
+        self.assertIn(b"100 Continue", held.recv(4096))
+        self.assertEqual(self.request("PUT", path, b"small", self.user + ":" + self.password)[0], 429)
 
 
 if __name__ == "__main__":

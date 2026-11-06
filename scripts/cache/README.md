@@ -19,7 +19,24 @@ scripts/build.sh --wfail --iofail   # restore caches, then build changed or miss
 A complete set of library and test outputs is about 200 MB compressed (November 2026). Outputs
 are platform independent (`platformIndependent = true`), so Linux CI builds serve macOS checkouts.
 `COMPLEXITYLIB_CACHE_URL` overrides the location; set it to an empty string to skip the
-Complexitylib download.
+Complexitylib download. To test MIT first with GCS fallback, use:
+
+```bash
+COMPLEXITYLIB_CACHE_URLS='https://complexitycache.csail.mit.edu https://storage.googleapis.com/complexitylib-lake-cache' \
+  scripts/cache/get.sh
+```
+
+The ordered list applies only when the single-URL override is unset. Each origin gets a finite
+attempt, including revision lookup and artifact downloads; partial downloads remain available
+for the next origin. If every origin misses or fails, the normal build compiles the remainder.
+This wrapper uses the native Lake reader and mapping/archive format. The checked-in default
+remains GCS until the MIT cold-restore checks pass. CI can use the same ordered list through
+the repository variable `COMPLEXITYLIB_CACHE_URLS`; it does not enable MIT publication.
+
+`COMPLEXITYLIB_CACHE_ORIGIN_TIMEOUT` bounds each Complexitylib origin attempt (default 180
+seconds; accepted range 0.1–600). Mapping lookups made by the missing-only helper also have
+five-second connection and twenty-second request limits, within that origin's overall budget.
+These limits cover lookup and transfer work together, including a stalled server.
 
 CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, Lean CI runs
 `scripts/cache/get-missing.sh`, which downloads the same outputs except those of modules whose
@@ -30,12 +47,17 @@ Mathlib downloads are retried in the same checkout by `scripts/cache/get_mathlib
 three ordinary `lake exe cache get` attempts, each limited to three minutes, with two-second
 pauses. Completed archives remain in place, so the pinned Mathlib client retries only missing
 downloads. Exhausted attempts warn and leave the strict build/check commands to compile what is
-missing. On POSIX, shutdown sends SIGTERM to the attempt's own process group, allowing Git's
+missing. On UNIX, shutdown sends SIGTERM to the attempt's own process group, allowing Git's
 signal handlers to remove their locks, then waits up to five seconds before escalating to
-SIGKILL and waiting up to five more seconds. Parent exit alone does not establish descendant
-exit: retries stop early if the group still exists (including unreaped zombies). On Windows,
-the same bounded terminate/kill sequence applies to the direct child only. The helper never
-removes Git locks; forced termination can still leave one behind.
+SIGKILL and waiting up to five more seconds. Linux supervisors reap orphaned descendants too.
+Windows and Cygwin use an owned Windows Job Object; the wrapper enrolls before launching a
+downloader, and all descendants, including native Windows children, must stop before fallback.
+The same installed Python is used; WSL or a second Python installation is not required.
+Cancellation is deferred while cleanup drains the owned process tree. Parent exit alone is
+not proof of shutdown. If cleanup cannot be confirmed, exit status **125** stops the build
+instead of allowing a downloader to race compilation; ordinary cache misses and completed
+timeouts remain optional. The helpers never remove Git locks; forced termination can still
+leave one behind.
 
 Lean CI, API docs and Comparator disable only lean-action's built-in Mathlib fetch and call this helper
 with `--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACHE_GET_URL` selects
@@ -127,7 +149,8 @@ Complexitylib cache restoration.
 
 The bootstrap records a completed **attempt**, not a successful cache hit, in
 `.lake/cache-bootstrap/attempt.json`. For ten minutes it skips another attempt with the same
-checkout path, `HEAD`, toolchain, manifest, Lake configuration, endpoint and `LAKE_CACHE_DIR`.
+checkout path, `HEAD`, toolchain, manifest, Lake configuration, ordered origins/single-URL override,
+download deadlines, recovery generation and `LAKE_CACHE_DIR`.
 Working proof edits do not trigger another download. A changed `HEAD`, pin or configuration
 triggers a new attempt; an unchanged state is retried after ten minutes, including a previous miss or
 network failure. The stamp is written atomically after the fetch command finishes.
@@ -144,6 +167,12 @@ It leaves existing build outputs and Lake's local cache in place. `scripts/cache
 the explicit, unstamped fetch command. Cache misses and download failures are optional: builds
 compile what is missing, and the bootstrap never claims that all requested artifacts were
 available.
+
+The whole bootstrap has a watchdog as well. Its default budget is 630 seconds plus
+`number_of_origins × (origin_timeout + 10)` seconds, allowing for Mathlib retries and cleanup.
+`COMPLEXITYLIB_CACHE_BOOTSTRAP_TIMEOUT` can override that budget (0.1–7200 seconds). A normal
+timeout leaves the build to compile missing outputs after child cleanup; an unconfirmed
+shutdown returns 125 and stops the build/worktree preparation rather than racing a live writer.
 
 By default, `scripts/worktree.sh create` and `scripts/worktree.sh seed` run
 `scripts/cache/ensure.sh` in the worktree after seeding `.lake` caches. The helper never points a
@@ -236,12 +265,15 @@ two days and deletes artifacts immediately when no retained mapping refers to th
 [retention contract](../../tools/cache-origin/README.md#retention-and-cleanup).
 
 The GitHub environment restricts when Actions receives the password; the server does not establish
-that a request came from a main push. A stolen password can publish malicious bytes under unused
-keys, and the MIT origin operator can control served bytes. Both are additional trust roots once
-clients use this origin. Hashes establish transfer consistency, not producer provenance. Imported
-Lean outputs can execute code during a build. If compromised, disable MIT publication and reader
-use, revoke the password, discard poisoned origin and retained local outputs, and rebuild from
-trusted sources. The GCS-only trust description above applies until the explicit reader cutover.
+that a request came from a main push. The publisher, credential and origin operator are trusted.
+A stolen password can publish malicious bytes under unused or collected keys, and the origin
+operator can change served bytes. Hashes establish transfer consistency, not producer provenance;
+Lake's native artifact hash is 64-bit and not cryptographically secure. Existing keys reject
+conflicting writes, but GC retains no permanent key ledger. Retention frees server storage and
+does not revoke downloaded outputs. The [security contract and recovery procedure](../../tools/cache-origin/SECURITY.md)
+explain this boundary and cleanup of **both origins, Actions caches/handoffs and local caches**
+before rebuilding with restoration disabled. The GCS-only trust description above applies until
+the explicit reader cutover.
 
 Before activation, commission the actual server: verify TLS, upload authentication, Unix-socket
 permissions, service restart, storage limits and GC; prove concurrent conflicting uploads cannot
@@ -255,7 +287,7 @@ publication switch disabled until the commissioning evidence and integration are
 
 | Kind | Name |
 |---|---|
-| Environment secret | `CACHE_SERVER_PASSWORD` (nonempty, no control characters) |
+| Environment secret | `CACHE_SERVER_PASSWORD` (43-character base64url encoding of 32 generated random bytes) |
 | Environment variable | `CACHE_SERVER_USER=cache-publisher` |
 | Environment variable | `CACHE_SERVER_URL=https://complexitycache.csail.mit.edu` (origin without a path) |
 | Repository variable | `CACHE_SERVER_PUBLISH_ENABLED` (`false` until commissioning passes) |
@@ -265,6 +297,19 @@ commissioning. A later small PR can change the single default `COMPLEXITYLIB_CAC
 cold restore from the public MIT URL succeeds; retain GCS long enough to observe the new origin,
 then disable and remove it in another reviewed change. At every stage, an empty cache remains an
 optional performance loss rather than a build failure.
+
+For emergency recovery, `DISABLE_CACHE_RESTORE=true` disables the updated restoration helpers,
+Actions `.lake` restoration/saving and merge-group handoffs. Updated workflows also disable
+Lake's automatic cache use in this mode. `CACHE_RECOVERY_GENERATION` (default `0`) separates
+Actions cache keys and handoff metadata from previous incidents. These controls do not delete
+old data, revoke an origin, stop old workflow revisions or disable publishers: follow the
+[full recovery sequence](../../tools/cache-origin/SECURITY.md#if-a-publisher-origin-or-restored-output-is-compromised).
+Neither variable changes Lake's artifact IDs or ordinary retention.
+
+This PR does not complete repository-managed provisioning or automated upgrades. Those remain
+open under [#2503](https://github.com/cslib-community/complexitylib/issues/2503); the
+[milestone scope](../../tools/cache-origin/SECURITY.md#scope-of-2506-and-remaining-2503-work) separates
+the source/host checks from reader activation and integration approval.
 
 ## Maintainer runbook
 

@@ -2,6 +2,7 @@
 """Stage Lake outputs once, then publish the same immutable files to GCS or HTTPS."""
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -14,6 +15,18 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 SCOPE = "cslib-community/complexitylib"
+
+
+def valid_password_token(password):
+    """Check the canonical encoding of a generated 256-bit publisher token.
+
+    A format check cannot establish entropy: operators must generate these tokens
+    with a CSPRNG, never choose a password and pad it to the required length.
+    """
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", password):
+        return False
+    decoded = base64.urlsafe_b64decode(password + "=")
+    return len(decoded) == 32 and base64.urlsafe_b64encode(decoded).decode().rstrip("=") == password
 
 
 def run(args, **kwargs):
@@ -136,8 +149,8 @@ def http(endpoint, directory):
     data, _ = validate(directory)
     user = os.environ.get("CACHE_SERVER_USER", "")
     password = os.environ.get("CACHE_SERVER_PASSWORD", "")
-    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", user) or not password or any(ord(c) < 32 or ord(c) == 127 for c in password):
-        raise ValueError("Set CACHE_SERVER_USER and a nonempty, single-line CACHE_SERVER_PASSWORD")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", user) or not valid_password_token(password):
+        raise ValueError("Set CACHE_SERVER_USER and a generated 32-byte base64url CACHE_SERVER_PASSWORD")
     # Keep the password out of argv, URLs and error messages. curl reads its quoted
     # configuration from stdin; escape the only special characters allowed here.
     credential = (user + ":" + password).replace("\\", "\\\\").replace('"', '\\"')

@@ -30,7 +30,7 @@ func (s *store) collect(retain time.Duration, apply bool) (gcReport, error) {
 		return report, err
 	}
 	defer unlock()
-	objects, err := s.objects()
+	objects, directories, err := s.scanPublic()
 	if err != nil {
 		return report, err
 	}
@@ -49,6 +49,9 @@ func (s *store) collect(retain time.Duration, apply bool) (gcReport, error) {
 	for _, d := range staging {
 		if !d.IsDir() || !stagingID.MatchString(d.Name()) {
 			return report, fmt.Errorf("unexpected staging entry")
+		}
+		if err := s.safeDirectory("staging/"+d.Name(), true); err != nil {
+			return report, err
 		}
 		info, err := d.Info()
 		if err != nil {
@@ -112,5 +115,5 @@ func (s *store) collect(retain time.Duration, apply bool) (gcReport, error) {
 			return report, err
 		}
 	}
-	return report, nil
+	return report, s.pruneDirectories(directories)
 }

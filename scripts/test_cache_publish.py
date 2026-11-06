@@ -1,6 +1,7 @@
 """Publication order, transfer integrity, and a real tiny Lake package."""
 
 import importlib.util
+import base64
 import json
 import os
 from pathlib import Path
@@ -13,6 +14,7 @@ import unittest
 from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[1]
+TEST_PASSWORD = base64.urlsafe_b64encode(bytes(range(32))).decode().rstrip("=")
 
 
 def module(name, path):
@@ -60,8 +62,8 @@ class PublicationTests(unittest.TestCase):
             self.assertIn("--retry", args)
             self.assertIn("--fail-with-body", args)
             self.assertEqual(args[-1], "https://cache.example.edu/publish/" + "a" * 40)
-            self.assertNotIn("test-password", " ".join(args))
-            self.assertEqual(kwargs["input"], 'user = "publisher:test-password"\n')
+            self.assertNotIn(TEST_PASSWORD, " ".join(args))
+            self.assertEqual(kwargs["input"], f'user = "publisher:{TEST_PASSWORD}"\n')
             package = Path(args[args.index("--upload-file") + 1])
             with tarfile.open(package) as archive:
                 self.assertEqual(archive.getnames(), ["publication.json", *sorted(self.metadata["files"])])
@@ -69,7 +71,7 @@ class PublicationTests(unittest.TestCase):
                     self.assertEqual(archive.extractfile(name).read(), (self.stage / name).read_bytes())
             return subprocess.CompletedProcess(args, 0, stdout="201")
         with (
-            patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD="test-password"),
+            patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=TEST_PASSWORD),
             patch.object(publish, "run", side_effect=inspect_upload) as run,
         ):
             publish.http("https://cache.example.edu", self.stage)
@@ -78,7 +80,7 @@ class PublicationTests(unittest.TestCase):
     def test_failed_artifact_upload_never_publishes_a_mapping(self):
         for backend in (lambda: publish.gcs("example-cache", self.stage),
                         lambda: publish.http("https://cache.example.edu", self.stage)):
-            with self.subTest(backend=backend), patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD="test-password"), patch.object(publish, "run", side_effect=subprocess.CalledProcessError(1, "transfer")) as run:
+            with self.subTest(backend=backend), patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=TEST_PASSWORD), patch.object(publish, "run", side_effect=subprocess.CalledProcessError(1, "transfer")) as run:
                 with self.assertRaises(subprocess.CalledProcessError):
                     backend()
                 self.assertEqual(run.call_count, 1)
@@ -141,7 +143,9 @@ class PublicationTests(unittest.TestCase):
 
     def test_http_rejects_missing_or_injected_credentials_without_upload(self):
         for user, password in (("", "secret"), ("publisher", ""), ("bad:user", "secret"),
-                               ("publisher", "secret\nurl = injected")):
+                               ("publisher", "secret\nurl = injected"), ("publisher", "short"),
+                               ("publisher", TEST_PASSWORD + "="), ("publisher", TEST_PASSWORD[:-1] + "B"),
+                               ("publisher", "x" * 44), ("publisher", "?" * 43)):
             with (
                 self.subTest(user=user),
                 patch.dict(os.environ, CACHE_SERVER_USER=user, CACHE_SERVER_PASSWORD=password),
@@ -151,11 +155,11 @@ class PublicationTests(unittest.TestCase):
                     publish.http("https://cache.example.edu", self.stage)
                 run.assert_not_called()
 
-    def test_http_quotes_password_and_keeps_it_out_of_error_command(self):
-        password = r'quote"and\backslash'
+    def test_http_keeps_generated_token_out_of_error_command(self):
+        password = TEST_PASSWORD
         def failed_upload(args, **kwargs):
             self.assertNotIn(password, " ".join(args))
-            self.assertEqual(kwargs["input"], r'user = "publisher:quote\"and\\backslash"' + "\n")
+            self.assertEqual(kwargs["input"], f'user = "publisher:{password}"\n')
             raise subprocess.CalledProcessError(22, args)
         with (
             patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=password),
@@ -169,7 +173,7 @@ class PublicationTests(unittest.TestCase):
         for status in ("200", "301", "302", "201"):
             with (
                 self.subTest(status=status),
-                patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD="secret"),
+                patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=TEST_PASSWORD),
                 patch.object(publish, "run", return_value=subprocess.CompletedProcess([], 0, stdout=status)) as run,
             ):
                 if status == "201":

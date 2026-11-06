@@ -10,8 +10,14 @@ or install credentials automatically.
 One Linux Go executable has three commands: `serve` accepts synchronous PUTs over a Unix socket,
 `pack` streams a publication package to stdout, and `gc` runs separately under a systemd timer.
 They share a store and a permanent interprocess lock. nginx supplies HTTPS, upload authentication,
-request buffering, and public GET/HEAD. There is no SSH upload path, database, watcher, queue,
+request buffering, and public GET/HEAD. There is no SSH upload path, database, watcher, publication queue,
 custom TLS implementation, shell execution by the handler, or third-party Go dependency.
+
+The publisher and origin are trusted to supply correct compiled outputs. Create-only enforcement
+applies while a key is present; GC does not retain a permanent ledger, and an authorized writer
+can republish a collected key. There is no claim of safety against a malicious writer or origin.
+See the [security contract, incident recovery and milestone scope](SECURITY.md) before activation.
+The [operator runbook](OPERATIONS.md) covers identities, credentials, limits, email alerts and updates.
 
 ## MIT deployment status
 
@@ -127,8 +133,8 @@ compromised operator or program: publication and GC currently run as the same Un
 ## Retention and cleanup
 
 ```bash
-/tmp/cache-origin gc --root /srv/cache-origin          # dry run; report without deleting files
-/tmp/cache-origin gc --root /srv/cache-origin --apply  # delete expired mappings and unused artifacts
+sudo -u cache-origin /usr/local/bin/cache-origin gc --root /srv/cache-origin          # dry run
+sudo -u cache-origin /usr/local/bin/cache-origin gc --root /srv/cache-origin --apply  # apply
 ```
 
 GC keeps the single newest publication across all toolchains, even during idle periods.
@@ -144,8 +150,10 @@ regardless of their age. References are recomputed each pass, with no persistent
 or deletion timers. The `state/` directory holds only the permanent publication/GC lock.
 GC validates all mappings, including ones due to expire, before deleting anything. An unreadable
 mapping, missing reference, unsupported format or unexpected public entry stops
-the pass. Publication admission caps the public store at 100,000 objects so it cannot grow
-beyond the collector's supported bound; the filesystem quota separately bounds bytes/inodes.
+the pass. Publication admission caps the public store at 100,000 entries, counting directories
+as well as files and allowing for new parents before installing anything. GC prunes empty
+namespace directories under the same lock, so successive toolchains do not permanently leak
+directory inodes. The filesystem quota separately bounds bytes/inodes.
 
 The `--retain` option sets superseded-mapping retention (default `48h`). Expiration and deletion occur on
 GC runs; the example timer runs daily. nginx downloads do not hold the publication/GC lock:
@@ -165,24 +173,30 @@ inspection; the lock file and empty store control directories may be created on 
 The [nginx fragment](examples/nginx.conf) and [systemd units](examples/cache-origin.service)
 are opt-in examples. The [GC timer](examples/cache-origin-gc.timer) invokes the separate
 [GC service](examples/cache-origin-gc.service). They require an operator-created `cache-origin`
-user, a `www-data` nginx group, a dedicated bounded filesystem mounted at `/srv/cache-origin`,
+user, an exclusive `cache-origin-proxy` socket group, a dedicated bounded filesystem mounted at `/srv/cache-origin`,
 operator-managed DNS/TLS and an upload password file. Set the store root owner to `cache-origin`
 with mode 0711, its `public/` to 0755, and `staging/` and `state/` to 0700. Create `nginx-tmp/`
 owned by nginx on the same bounded filesystem. The application creates its own control directories.
-Check nginx configuration and real identity/permission behavior before any activation.
+Only the publisher and nginx may use the socket group. Use a dedicated cache host; do not cohost
+untrusted nginx applications or add unrelated processes to that group. The store and its public
+directories must be owned by `cache-origin` without group/other write bits; `state/`, `staging/`
+and the permanent regular lock file are private. Unsafe ownership, modes, namespace entries or
+lock files stop publication/GC. Run administrative GC as `cache-origin`, not root. Check nginx
+configuration and real identity/permission behavior before any activation.
 
 Passing source and loopback tests does not establish production commissioning. Not included:
-cryptographic producer attestations, automatic provisioning, OS quota setup, capacity alerts, TLS/certificate lifecycle,
+cryptographic producer attestations, automatic provisioning, OS quota setup, TLS/certificate lifecycle,
 historical backfill, or reader cutover. A stolen publisher credential can still publish malicious
-bytes under previously unused keys; the origin operator controls served bytes. SHA-256 detects
+bytes under unused or collected keys; the origin operator controls served bytes. SHA-256 detects
 package corruption, not authorized provenance. Keep GCS readers/publication until a separately
-reviewed deployment and cold restore succeed. Do not put Lean or private operator keys on this host.
+reviewed deployment and cold restore succeed. Follow [incident recovery](SECURITY.md) for every
+propagation path. Do not put Lean or private operator keys on this host.
 
 Review references: [Go filesystem confinement](https://pkg.go.dev/os#Root),
 [nginx Unix-socket proxying](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass),
 [pinned Lake mapping producer](https://github.com/leanprover/lean4/blob/v4.36.0-rc2/src/lake/Lake/Build/Module.lean#L1336).
 
-Manual impact: the Operator's Manual reaches this opt-in draft from the canonical cache guide;
-normal build/restoration instructions are unchanged. The Agent Operator's Manual needs no edit:
+Manual impact: the Operator's Manual reaches the updated canonical cache guide, security recovery
+procedure and operator examples; local restoration now supports bounded ordered mirrors. The Agent Operator's Manual needs no edit:
 roles, authorization and handoffs are unchanged. No Lean/API/abstract/roadmap/upstream impact.
 AI assistance: OpenAI Codex wrote the origin and its tests. Agent review is not human approval.

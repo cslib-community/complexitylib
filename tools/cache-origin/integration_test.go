@@ -74,15 +74,16 @@ func TestDotToolchainsCannotEscapeNamespace(t *testing.T) {
 
 func TestCapacityLeavesGCWithinItsSupportedBound(t *testing.T) {
 	objects := map[string]time.Time{}
-	for n := range maxObjects {
+	directories := map[string]bool{"a0": true, "a0/cslib-community": true, "a0/" + scope: true}
+	for n := range maxObjects - len(directories) - 1 {
 		objects[fmt.Sprintf("%s%016x.art", artifactPrefix, n)] = time.Time{}
 	}
 	existing := map[string]string{artifactPrefix + "0000000000000000.art": "digest"}
-	if err := checkAdmission(objects, existing); err != nil {
+	if err := checkAdmission(objects, directories, existing); err != nil {
 		t.Fatal("identical retry rejected:", err)
 	}
 	newKey := map[string]string{mappingPrefix + "tc/" + testRevision + ".jsonl": "digest"}
-	if !errors.Is(checkAdmission(objects, newKey), errCapacity) {
+	if !errors.Is(checkAdmission(objects, directories, newKey), errCapacity) {
 		t.Fatal("publication could exceed GC bound")
 	}
 }

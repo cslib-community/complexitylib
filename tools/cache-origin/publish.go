@@ -20,7 +20,7 @@ import (
 )
 
 var errConflict = errors.New("published key has different contents")
-var errCapacity = errors.New("public object capacity reached")
+var errCapacity = errors.New("public entry capacity reached")
 
 func (s *store) publish(body io.Reader, revision string) error {
 	unlock, err := s.lock()
@@ -119,11 +119,11 @@ func (s *store) publish(body io.Reader, revision string) error {
 	}
 	// Preflight every conflict before installing any file. Retries accept identical
 	// bytes, but never silently preserve an unexpected artifact under a Lake hash.
-	objects, err := s.objects()
+	objects, directories, err := s.scanPublic()
 	if err != nil {
 		return err
 	}
-	if err := checkAdmission(objects, m.Files); err != nil {
+	if err := checkAdmission(objects, directories, m.Files); err != nil {
 		return err
 	}
 	for key, expected := range m.Files {
@@ -167,13 +167,20 @@ func randomID() []byte {
 	return b
 }
 
-func checkAdmission(objects map[string]time.Time, files map[string]string) error {
-	count := len(objects)
+func checkAdmission(objects map[string]time.Time, directories map[string]bool, files map[string]string) error {
+	count := 1 + len(objects) + len(directories)
+	newDirectories := map[string]bool{}
 	for key := range files {
 		if _, ok := objects[key]; !ok {
 			count++
 		}
+		for dir := path.Dir(key); dir != "."; dir = path.Dir(dir) {
+			if !directories[dir] {
+				newDirectories[dir] = true
+			}
+		}
 	}
+	count += len(newDirectories)
 	if count > maxObjects {
 		return errCapacity
 	}

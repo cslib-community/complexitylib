@@ -2,10 +2,13 @@
 Description=Draft Complexitylib cache publisher
 RequiresMountsFor=/srv/cache-origin
 AssertPathIsMountPoint=/srv/cache-origin
+OnFailure=cache-origin-alert@%n.service
 
 [Service]
 User=cache-origin
-Group=www-data
+# Only nginx and cache-origin may belong to this exclusive socket group.
+# nginx must receive this supplementary group; a shared web-host group is unsafe.
+Group=cache-origin-proxy
 RuntimeDirectory=cache-origin
 RuntimeDirectoryMode=0750
 UMask=0022

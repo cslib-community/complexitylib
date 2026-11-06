@@ -22,6 +22,13 @@ concurrency:
     }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  CACHE_RECOVERY_GENERATION: ${{ vars.CACHE_RECOVERY_GENERATION || '0' }}
+  COMPLEXITYLIB_CACHE_URLS: ${{ vars.COMPLEXITYLIB_CACHE_URLS }}
+  DISABLE_CACHE_RESTORE: ${{ vars.DISABLE_CACHE_RESTORE }}
+  LAKE_NO_CACHE: ${{ vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1' }}
+  MATHLIB_NO_CACHE_ON_UPDATE: ${{ (vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1') && '1' || '0' }}
+
 jobs:
   cache-origin-checks:
     name: HTTP cache origin
@@ -45,7 +52,7 @@ jobs:
       - name: Install nginx for loopback integration tests
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y nginx
+          sudo apt-get install --no-install-recommends -y nginx apache2-utils
       - name: Test actual HTTPS publication, serving and GC
         env:
           CACHE_ORIGIN_NGINX_TEST: "1"
@@ -64,9 +71,6 @@ jobs:
       contents: read
       # Main may download the exact landed revision's successful merge-group build artifact.
       actions: read
-      # Only the remote-cache upload on `main` pushes uses this; the Google Cloud identity pool
-      # also refuses tokens for any other repository, ref or event (scripts/cache/README.md).
-      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prepare optional handoff measurement
@@ -100,11 +104,12 @@ jobs:
       # restore and save `.lake` under the same Actions cache key, then build, test and lint.
       - name: Restore .lake from the Actions cache
         id: lake-cache
+        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: ./.lake
-          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
-          restore-keys: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
+          key: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
       # Restore the toolchain from the Actions cache, or install it with retries, so that
       # lean-action does not download it (.github/actions/install-lean, #1426).
       - uses: ./.github/actions/install-lean
@@ -117,6 +122,7 @@ jobs:
           use-github-cache: "false"
           use-mathlib-cache: "false"
       - name: Restore Mathlib cache with retries
+        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
         continue-on-error: true
         timeout-minutes: 10
         run: python3 -B scripts/cache/get_mathlib.py --lean-action
@@ -138,6 +144,7 @@ jobs:
       # module this commit affects. A miss, a timeout or an unreachable bucket only leaves the
       # build colder.
       - name: Restore build outputs from the remote cache
+        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
         continue-on-error: true
         timeout-minutes: 10
         run: |
@@ -164,6 +171,7 @@ jobs:
       - name: Restore validated merge-group build outputs
         if: >-
           github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
           vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true' &&
           steps.handoff-measurement-result.outputs.bypass_restore != 'true'
         continue-on-error: true
@@ -187,6 +195,7 @@ jobs:
       - name: Save .lake to the Actions cache
         if: >-
           ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+              vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
               steps.lake-cache.outputs.cache-hit != 'true' &&
               (success() || steps.test.outcome == 'failure' || steps.lint.outcome == 'failure') }}
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
@@ -309,10 +318,10 @@ jobs:
       - name: Stage cache publication
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.LAKE_CACHE_BUCKET != '' || vars.CACHE_SERVER_PUBLISH_ENABLED == 'true')
         run: python3 scripts/cache/publish.py stage "$RUNNER_TEMP/lake-publication"
-      # The MIT publisher consumes this run's own package, never a PR/other-run artifact.
-      - name: Hand off staged files to the optional MIT publisher
+      # Publishers consume this run's own package, never a PR/other-run artifact.
+      - name: Hand off staged files to the enabled publishers
         id: upload-publication
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CACHE_SERVER_PUBLISH_ENABLED == 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.LAKE_CACHE_BUCKET != '' || vars.CACHE_SERVER_PUBLISH_ENABLED == 'true')
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: lake-publication-${{ github.sha }}-${{ github.run_attempt }}
@@ -320,21 +329,6 @@ jobs:
           compression-level: 0
           retention-days: 2
           if-no-files-found: error
-      # Publish the build outputs to the remote cache read by scripts/cache/get.sh. Skipped until
-      # the maintainer sets the repository variables described in scripts/cache/README.md.
-      - name: "Authenticate to the remote cache"
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.LAKE_CACHE_BUCKET != ''
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-        with:
-          workload_identity_provider: ${{ vars.LAKE_CACHE_WIF_PROVIDER }}
-          service_account: ${{ vars.LAKE_CACHE_SERVICE_ACCOUNT }}
-      - name: "Upload to the remote cache"
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.LAKE_CACHE_BUCKET != ''
-        env:
-          LAKE_CACHE_BUCKET: ${{ vars.LAKE_CACHE_BUCKET }}
-        run: |
-          set -e
-          scripts/cache/upload.sh "$LAKE_CACHE_BUCKET" "$RUNNER_TEMP/lake-publication"
       - name: Record optional handoff measurement
         if: always() && steps.handoff-measurement.outputs.report != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -344,13 +338,45 @@ jobs:
           path: ${{ steps.handoff-measurement.outputs.report }}
           retention-days: 14
 
+  publish-gcs-cache:
+    needs: ci-checks
+    # No PR/merge-group job can mint an OIDC token. This job only consumes a successful
+    # main-push run's exact staged publication, verified before cloud authentication.
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      vars.LAKE_CACHE_BUCKET != '' && needs.ci-checks.result == 'success' &&
+      needs.ci-checks.outputs.publication != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.ci-checks.outputs.publication }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/lake-publication
+      - name: Verify this run's publication
+        run: python3 scripts/cache/publish.py verify "$RUNNER_TEMP/lake-publication" --revision "$GITHUB_SHA"
+      - name: Authenticate to the remote cache
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.LAKE_CACHE_WIF_PROVIDER }}
+          service_account: ${{ vars.LAKE_CACHE_SERVICE_ACCOUNT }}
+      - name: Upload to the remote cache
+        env:
+          LAKE_CACHE_BUCKET: ${{ vars.LAKE_CACHE_BUCKET }}
+        run: scripts/cache/upload.sh "$LAKE_CACHE_BUCKET" "$RUNNER_TEMP/lake-publication"
+
   publish-mit-cache:
     needs: [ci-checks, cache-origin-checks]
-    # The package exists only after all validation gates passed. Permit this independent
-    # publisher to finish even if the subsequent GCS upload failed.
+    # The package exists only after all validation gates passed. Publishers are independent.
     if: >-
-      ${{ always() && !cancelled() && github.event_name == 'push' &&
+      ${{ !cancelled() && github.event_name == 'push' &&
           github.ref == 'refs/heads/main' && vars.CACHE_SERVER_PUBLISH_ENABLED == 'true' &&
+          needs.ci-checks.result == 'success' &&
           needs.cache-origin-checks.result == 'success' &&
           needs.ci-checks.outputs.publication != '' }}
     runs-on: ubuntu-latest

@@ -1,0 +1,15 @@
+# Apply these postconf settings on the dedicated cache host after installing
+# outbound-only Postfix. This is a main.cf fragment, not a complete configuration.
+# Use the distro package's remaining defaults, then run postfix check. No SMTP
+# password, external relay or new public listener is required.
+inet_interfaces = loopback-only
+inet_protocols = ipv4
+myhostname = complexitycache.csail.mit.edu
+myorigin = $myhostname
+mydestination = localhost
+relayhost =
+smtp_tls_security_level = may
+maximal_queue_lifetime = 1d
+bounce_queue_lifetime = 1d
+message_size_limit = 1048576
+queue_minfree = 536870912
