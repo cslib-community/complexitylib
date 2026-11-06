@@ -3806,6 +3806,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.ListProd
 public import Complexity.Foundations.LinearAlgebra.Matrix.Moore
 public import Complexity.Foundations.LinearAlgebra.Matrix.PilotCorrection
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rank
+public import Complexity.Foundations.LinearAlgebra.Matrix.RankOne
 public import Complexity.Foundations.LinearAlgebra.Matrix.RectPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
 public import Complexity.Foundations.LinearAlgebra.Matrix.SubmatrixRobust
@@ -4301,6 +4302,8 @@ public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
 public import Complexity.Statistics.LeastSquares.Backbone
+public import Complexity.Statistics.LeastSquares.EqualityTarget
+public import Complexity.Statistics.LeastSquares.ExternalSolver
 public import Complexity.Statistics.LeastSquares.FixedEffects
 public import Complexity.Statistics.LeastSquares.FixedEffects.FixedColumns
 public import Complexity.Statistics.LeastSquares.FixedEffects.Indexed
@@ -4314,6 +4317,7 @@ public import Complexity.Statistics.LeastSquares.NonRange
 public import Complexity.Statistics.LeastSquares.RadonGeometry
 public import Complexity.Statistics.LeastSquares.RangeAudit
 public import Complexity.Statistics.LeastSquares.Rational
+public import Complexity.Statistics.LeastSquares.RoundingExecution
 public import Complexity.Statistics.LeastSquares.SharpGap
 public import Complexity.Statistics.LeastSquares.Simple
 public import Complexity.Statistics.LeastSquares.SimpleMatrix
