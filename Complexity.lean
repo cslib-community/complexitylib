@@ -3843,6 +3843,8 @@ public import Complexity.Foundations.NumberTheory.Padics.RatValuation
 public import Complexity.Foundations.NumberTheory.PrimeCounting
 public import Complexity.Foundations.NumberTheory.PrimeWindow
 public import Complexity.Foundations.NumberTheory.SqrtPrimeWindow
+public import Complexity.Foundations.Optimization.OneConstraint
+public import Complexity.Foundations.Optimization.RationalOneConstraint
 public import Complexity.Foundations.Order.BooleanSubalgebra
 public import Complexity.Foundations.Order.Changes
 public import Complexity.Foundations.Order.FiniteFixedPoint
@@ -3996,6 +3998,7 @@ public import Complexity.Languages.Probabilistic.QueryCount.Support
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 public import Complexity.Languages.Probabilistic.RandomPermutation
+public import Complexity.Languages.Probabilistic.RationalCoin
 public import Complexity.Languages.Probabilistic.Repeat
 public import Complexity.Languages.Probabilistic.Selection
 public import Complexity.Languages.Probabilistic.Semantics
@@ -4275,6 +4278,7 @@ public import Complexity.Probability.FiniteSampleInformation.WideSchurCoordinate
 public import Complexity.Probability.FiniteSampleInformation.WideSimplexTheorem
 public import Complexity.Probability.FiniteSampleInformation.WideSquarePullback
 public import Complexity.Probability.FiniteSampleInformation.WideTauHomConeContact
+public import Complexity.Probability.FiniteTable
 public import Complexity.Probability.Fooling
 public import Complexity.Probability.Fooling.OneSided
 public import Complexity.Probability.Forking
@@ -4353,6 +4357,11 @@ public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
+public import Complexity.Probability.StochasticOracle.ExecutionFeasibility
+public import Complexity.Probability.StochasticOracle.FullCover
+public import Complexity.Probability.StochasticOracle.Programs
+public import Complexity.Probability.StochasticOracle.RandomCost
+public import Complexity.Probability.StochasticOracle.RationalFullCover
 public import Complexity.Probability.Testing
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
