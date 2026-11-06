@@ -2549,18 +2549,6 @@ private theorem run_interpret_visitNodeM {External : Type}
   cases visited.lookup path <;>
     simp only [pure_bind, OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure]
 
-private theorem lookup_map_val {α β γ : Type} [BEq α] (l : List (α × β)) (f : β → γ)
-    (a : α) :
-    (l.map fun e => (e.1, f e.2)).lookup a = (l.lookup a).map f := by
-  induction l with
-  | nil => rfl
-  | cons hd tl ih =>
-    obtain ⟨k, v⟩ := hd
-    simp only [List.map_cons, List.lookup_cons]
-    cases a == k
-    · exact ih
-    · rfl
-
 private theorem filter_headD_of_mem_unique (visited : NodeSlotCache) {p : List Bool}
     {idx : ℕ} (hmem : (p, idx) ∈ visited)
     (huniq : ∀ e₁ ∈ visited, ∀ e₂ ∈ visited, e₁.2 = e₂.2 → e₁ = e₂) :
@@ -3256,7 +3244,7 @@ private theorem jointVisitKey_lazy_spec (S : IndexedSignatureScheme) (n : ℕ)
   simp only [jointVisitKey, memoize]
   have hlkMap : (nodesOf usedKeys visited).lookup path =
       (visited.lookup path).map (fun i => usedKeys.getD i ([], [])) :=
-    lookup_map_val visited (fun i => usedKeys.getD i ([], [])) path
+    List.lookup_map_snd visited (fun i => usedKeys.getD i ([], [])) path
   cases hlk : visited.lookup path with
   | some idx =>
     rw [hlk, Option.map_some] at hlkMap

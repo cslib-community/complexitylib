@@ -113,6 +113,14 @@ theorem discreteGaussian_apply (s : ℝ) (hs : 0 < s) (c : E) (z : L) :
     (summable_gaussianWeight L s hs c)]
   rfl
 
+/-- The real-valued probability of a lattice point. -/
+theorem discreteGaussian_apply_toReal (s : ℝ) (hs : 0 < s) (c : E) (z : L) :
+    (discreteGaussian L s hs c z).toReal =
+      gaussianWeight s ((z : E) - c) / gaussianMass L s c := by
+  rw [discreteGaussian_apply, ENNReal.toReal_div,
+    ENNReal.toReal_ofReal (gaussianWeight_pos s ((z : E) - c)).le,
+    ENNReal.toReal_ofReal (gaussianMass_pos L s hs c).le]
+
 /-- Every point of the lattice is in the support of its discrete Gaussian. -/
 @[simp] theorem support_discreteGaussian (s : ℝ) (hs : 0 < s) (c : E) :
     (discreteGaussian L s hs c).support = Set.univ := by

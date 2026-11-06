@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Flat
+import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Bounds
+import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationBounds
 import Mathlib.Tactic.Positivity
 
 /-!

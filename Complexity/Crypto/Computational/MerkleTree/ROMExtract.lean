@@ -89,13 +89,18 @@ For a lazy random oracle sampling uniform `m`-bit digests
 * `Cslib.Crypto.extractLeafFromTrace_eq_some_of_merkleVerify`,
   `Cslib.Crypto.getD_extractTableFromTrace_eq_of_merkleVerify`: straight-line extraction agrees
   with every valid opening whose path is in a collision-free trace.
+* `Cslib.Crypto.extractLeafFromTrace_cons_of_ne`,
+  `Cslib.Crypto.extractTableFromTrace_cons_of_ne`: straight-line leaf and table extraction are
+  invariant under prepending a Merkle query whose digest avoids the root and existing query
+  children.
 * `Cslib.Crypto.isCollision_extractTraceCollision`,
   `Cslib.Crypto.exists_collision_of_extractLeafFromTrace_ne`: disagreement between an accepted
   queried opening and the trace extractor yields an explicit hash collision in the trace.
 * `Cslib.Crypto.toOuterMeasure_uniformList_mem_list_le`,
   `Cslib.Crypto.toOuterMeasure_memoize_not_traceCollisionFree_step`,
-  `Cslib.Crypto.toOuterMeasure_run_memoize_not_traceCollisionFree_le`: union bounds for preimage
-  hitting and trace collisions under a lazy random oracle.
+  `Cslib.Crypto.toOuterMeasure_run_memoize_not_traceCollisionFree_le`,
+  `Cslib.Crypto.mem_support_memoize_nodup`: union bounds and trace-support invariants for lazy
+  random oracles.
 
 ## References
 
@@ -219,6 +224,13 @@ theorem findQueryInTrace_eq_some_of_traceCollisionFree {tr : List (Query × Dige
   subst hq
   exact hfind
 
+/-- Prepending `(q, ans)` to `tr` leaves `findQueryInTrace` at `digest` unchanged whenever
+`ans ≠ digest`. -/
+theorem findQueryInTrace_cons_of_ne (tr : List (Query × Digest)) (q : Query) {ans digest : Digest}
+    (hne : ans ≠ digest) :
+    findQueryInTrace ((q, ans) :: tr) digest = findQueryInTrace tr digest := by
+  simp [findQueryInTrace, beq_false_of_ne hne]
+
 end Predicates
 
 /-! ### Straight-line Merkle trace extraction -/
@@ -335,6 +347,93 @@ theorem getD_extractTableFromTrace {tr : List (List Bool × List Bool)} {d : ℕ
       (extractLeafFromTrace tr d rt i).getD defaultLeaf := by
   rw [List.getD_eq_getElem _ _ (by simpa using hi), getElem_extractTableFromTrace]
 
+theorem findPreimageInTrace_cons_of_ne (tr : List (List Bool × List Bool)) (q : List Bool)
+    {ans digest : List Bool} (hne : ans ≠ digest) :
+    findPreimageInTrace ((q, ans) :: tr) digest = findPreimageInTrace tr digest := by
+  simp [findPreimageInTrace, findQueryInTrace_cons_of_ne tr q hne]
+
+/-- If `extractNodeFromTrace tr d rt i = some digest`, then `digest` is either `rt` (when `d = 0`)
+or one of `unframe p.1`, `dropFrame p.1` for some entry `p ∈ tr`. -/
+theorem eq_or_mem_of_extractNodeFromTrace_eq_some {tr : List (List Bool × List Bool)} {d : ℕ}
+    {rt : List Bool} {i : ℕ} {digest : List Bool}
+    (h : extractNodeFromTrace tr d rt i = some digest) :
+    digest = rt ∨ ∃ p ∈ tr, digest = unframe p.1 ∨ digest = dropFrame p.1 := by
+  induction d generalizing rt with
+  | zero =>
+    simp only [extractNodeFromTrace_zero, Option.some.injEq] at h
+    exact Or.inl h.symm
+  | succ d ih =>
+    rw [extractNodeFromTrace_succ, Option.bind_eq_some_iff] at h
+    obtain ⟨⟨left, right⟩, hpre, hnode⟩ := h
+    unfold findPreimageInTrace at hpre
+    obtain ⟨q₀, hfind, hpair⟩ := Option.map_eq_some_iff.mp hpre
+    rw [Prod.mk.injEq] at hpair
+    obtain ⟨rfl, rfl⟩ := hpair
+    have hmem : (q₀, rt) ∈ tr := mem_of_findQueryInTrace_eq_some hfind
+    rcases ih hnode with htop | ⟨p, hp, hchild⟩
+    · refine Or.inr ⟨(q₀, rt), hmem, ?_⟩
+      by_cases hbit : (i / 2 ^ d) % 2 = 0
+      · left; simpa [hbit] using htop
+      · right; simpa [hbit] using htop
+    · exact Or.inr ⟨p, hp, hchild⟩
+
+/-- Prepending `(q, ans)` to `tr` leaves `extractNodeFromTrace` at `rt` unchanged whenever
+`ans ≠ rt` and `ans` does not equal `unframe p.1` or `dropFrame p.1` for any `p ∈ tr`. -/
+theorem extractNodeFromTrace_cons_of_ne (tr : List (List Bool × List Bool)) (q : List Bool)
+    {ans rt : List Bool} (d i : ℕ) (hrt : ans ≠ rt)
+    (hchildren : ∀ p ∈ tr, ans ≠ unframe p.1 ∧ ans ≠ dropFrame p.1) :
+    extractNodeFromTrace ((q, ans) :: tr) d rt i = extractNodeFromTrace tr d rt i := by
+  induction d generalizing rt with
+  | zero => rfl
+  | succ d ih =>
+    rw [extractNodeFromTrace_succ, extractNodeFromTrace_succ,
+      findPreimageInTrace_cons_of_ne tr q hrt]
+    cases hpre : findPreimageInTrace tr rt with
+    | none => rfl
+    | some pair =>
+      rcases pair with ⟨left, right⟩
+      simp only [Option.bind_some]
+      unfold findPreimageInTrace at hpre
+      obtain ⟨q₀, hfind, hpair⟩ := Option.map_eq_some_iff.mp hpre
+      rw [Prod.mk.injEq] at hpair
+      obtain ⟨rfl, rfl⟩ := hpair
+      have hmem : (q₀, rt) ∈ tr := mem_of_findQueryInTrace_eq_some hfind
+      have hne_child : ans ≠ (if (i / 2 ^ d) % 2 = 0 then unframe q₀ else dropFrame q₀) := by
+        split_ifs
+        · exact (hchildren (q₀, rt) hmem).1
+        · exact (hchildren (q₀, rt) hmem).2
+      exact ih hne_child
+
+/-- Prepending `(q, ans)` to `tr` leaves `extractLeafFromTrace` at `rt` unchanged whenever
+`ans ≠ rt` and `ans` does not equal `unframe p.1` or `dropFrame p.1` for any `p ∈ tr`. -/
+theorem extractLeafFromTrace_cons_of_ne (tr : List (List Bool × List Bool)) (q : List Bool)
+    {ans rt : List Bool} (d i : ℕ) (hrt : ans ≠ rt)
+    (hchildren : ∀ p ∈ tr, ans ≠ unframe p.1 ∧ ans ≠ dropFrame p.1) :
+    extractLeafFromTrace ((q, ans) :: tr) d rt i = extractLeafFromTrace tr d rt i := by
+  unfold extractLeafFromTrace
+  rw [extractNodeFromTrace_cons_of_ne tr q d i hrt hchildren]
+  cases hnode : extractNodeFromTrace tr d rt i with
+  | none => rfl
+  | some digest =>
+    simp only [Option.bind_some]
+    have hne : ans ≠ digest := by
+      rcases eq_or_mem_of_extractNodeFromTrace_eq_some hnode with rfl | ⟨p, hp, hchild | hchild⟩
+      · exact hrt
+      · exact hchild ▸ (hchildren p hp).1
+      · exact hchild ▸ (hchildren p hp).2
+    exact findQueryInTrace_cons_of_ne tr q hne
+
+/-- Prepending `(q, ans)` to `tr` leaves `extractTableFromTrace` at `rt` unchanged whenever
+`ans ≠ rt` and `ans` does not equal `unframe p.1` or `dropFrame p.1` for any `p ∈ tr`. -/
+theorem extractTableFromTrace_cons_of_ne (tr : List (List Bool × List Bool)) (q : List Bool)
+    {ans rt : List Bool} (d : ℕ) (defaultLeaf : List Bool) (hrt : ans ≠ rt)
+    (hchildren : ∀ p ∈ tr, ans ≠ unframe p.1 ∧ ans ≠ dropFrame p.1) :
+    extractTableFromTrace ((q, ans) :: tr) d rt defaultLeaf =
+      extractTableFromTrace tr d rt defaultLeaf := by
+  unfold extractTableFromTrace
+  refine List.map_congr_left fun i _ => ?_
+  rw [extractLeafFromTrace_cons_of_ne tr q d i hrt hchildren]
+
 /-! ### Structure of `merkleInputs` and consistency of trace extraction -/
 
 /-- Appending one sibling at the top of `path` prepends the top internal-node hash input to
@@ -369,6 +468,16 @@ theorem leaf_mem_merkleInputs (leaf : List Bool) (i : ℕ) (path : List (List Bo
   | append_singleton path sibling ih =>
     rw [merkleInputs_concat]
     exact List.mem_cons_of_mem _ ih
+
+variable (H k) in
+/-- Every `merkleInputs H k leaf i path` list is non-empty. -/
+theorem merkleInputs_ne_nil (leaf : List Bool) (i : ℕ) (path : List (List Bool)) :
+    merkleInputs H k leaf i path ≠ [] := by
+  induction path using List.reverseRecOn with
+  | nil => simp [merkleInputs]
+  | append_singleton path sibling _ =>
+    rw [merkleInputs_concat]
+    exact List.cons_ne_nil _ _
 
 /-- If `findQueryInTrace tr (H k q) = some q` for every hash input `q` along `(leaf, i, path)`,
 then `extractNodeFromTrace` from the recomputed root recovers the leaf digest `some (H k leaf)`. -/
@@ -680,6 +789,50 @@ theorem traceConsistentWith_lookup_of_nodup {Digest : Type*} (tr : List (Query �
       dsimp only
       rw [List.lookup_cons, beq_false_of_ne hne]
       exact ih hnodup_rest p hp
+
+private theorem lookup_ne_none_of_mem {Value : Type}
+    {tr : List (Query × Value)} {q : Query} {v : Value} (h : (q, v) ∈ tr) :
+    tr.lookup q ≠ none := by
+  induction tr with
+  | nil => cases h
+  | cons hd tl ih =>
+    rw [List.lookup_cons]
+    cases heq : q == hd.1
+    · rcases List.mem_cons.mp h with rfl | htl
+      · simp at heq
+      · exact ih htl
+    · exact Option.some_ne_none _
+
+/-- A single call to `memoize` records `(q, ans)` in the output trace, preserves existing entries,
+keeps keys `Nodup`, and preserves support membership in `dist`. -/
+theorem mem_support_memoize_nodup {Value : Type}
+    (dist : Query → PMF Value) (q : Query) {tr tr' : List (Query × Value)} {ans : Value}
+    (hnodup : (tr.map Prod.fst).Nodup)
+    (hsupp : ∀ e ∈ tr, e.2 ∈ (dist e.1).support)
+    (hmem : (ans, tr') ∈ (memoize dist q tr).support) :
+    (q, ans) ∈ tr' ∧
+      (∀ e ∈ tr, e ∈ tr') ∧
+      (tr'.map Prod.fst).Nodup ∧
+      (∀ e ∈ tr', e.2 ∈ (dist e.1).support) := by
+  rcases (RandomOracle.mem_support_memoize_iff dist q tr (ans, tr')).mp hmem with
+    ⟨hlookup, hnext⟩ | ⟨hlookup, hans, hnext⟩
+  · change tr' = tr at hnext
+    subst hnext
+    obtain ⟨before, after, hlist, _⟩ := List.lookup_eq_some_iff.mp hlookup
+    exact ⟨by simp [hlist], fun _ h => h, hnodup, hsupp⟩
+  · change ans ∈ (dist q).support at hans
+    change tr' = (q, ans) :: tr at hnext
+    subst hnext
+    refine ⟨List.mem_cons_self, fun _ h => List.mem_cons_of_mem _ h, ?_, ?_⟩
+    · rw [List.map_cons, List.nodup_cons]
+      refine ⟨?_, hnodup⟩
+      rintro hq_in
+      obtain ⟨⟨q', v'⟩, hp, rfl⟩ := List.mem_map.mp hq_in
+      exact lookup_ne_none_of_mem hp hlookup
+    · intro e he
+      rcases List.mem_cons.mp he with rfl | he
+      · exact hans
+      · exact hsupp e he
 
 end ProbabilityBounds
 

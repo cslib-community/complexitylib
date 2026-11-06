@@ -69,7 +69,8 @@ example : simulatedOpening mixedSender 2 (pure ()) (fun _ => pure (claimOne 2, (
   let ts : Fin 2 → Fin 4 → Bool :=
     Fin.cons (table false false) (Fin.cons (table true false) Fin.elim0)
   have ht : senderTables mixedSender 2 () = pure (ts, ()) := by
-    simp only [senderTables, mixedSender, Cslib.Probability.PMF.monad_bind_eq_bind,
+    simp only [senderTables_succ, senderTables_zero, mixedSender,
+      Cslib.Probability.PMF.monad_bind_eq_bind,
       Cslib.Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
     rfl
   have he : extract ts = false := by decide
@@ -117,6 +118,6 @@ example : realOpening mixedSender 0 (pure ()) (fun _ => pure (claimOne 0, ())) =
 example : simulatedOpening mixedSender 0 (pure ()) (fun _ => pure (claimOne 0, ())) =
     pure (none, (), ()) := by
   have he : extract (k := 0) Fin.elim0 = false := by decide
-  simp [simulatedOpening, senderTables, he, openResult, claimOne, Accepts, PMF.bind_const]
+  simp [simulatedOpening, senderTables_zero, he, openResult, claimOne, Accepts, PMF.bind_const]
 
 end ComplexityTests.Crypto.OTCommitmentExtraction

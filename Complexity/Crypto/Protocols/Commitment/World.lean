@@ -25,6 +25,7 @@ it does not describe these stateful commands.
 ## Main definitions
 
 * `Command`, `Store`, `Observation`: sender calls, private state, and public polling replies.
+* `handler`: deterministic transitions in either semantic or program effects.
 * `world`: the functionality with separated sender and receiver interfaces.
 
 ## Main results
@@ -60,7 +61,7 @@ inductive Observation where
   | receipt
   | opened (bit : Bool)
   | aborted
-  deriving DecidableEq
+  deriving DecidableEq, Fintype
 
 /-- The public observation of a private state. -/
 def observe : Store → Observation
@@ -83,15 +84,34 @@ abbrev senderSpec : OracleSpec Command := fun _ => Unit
 /-- The receiver's only call is a poll. -/
 abbrev receiverSpec : OracleSpec Unit := fun _ => Observation
 
+/-- The deterministic functionality handler, shared by semantic and program interpretations.
+Only the surrounding pure-effect monad varies; the command and observation rules are identical. -/
+def handler {m : Type → Type} [Pure m] :
+    (q : Command ⊕ Unit) → StateT Store m ((senderSpec ⊕ₒ receiverSpec) q) :=
+  OracleComp.sumHandler
+    (fun cmd s => pure ((), advance cmd s))
+    (fun _ s => pure (observe s, s))
+
+/-- Closing a private probabilistic sample through the actual handler only lifts its state. -/
+theorem interpret_sample {α : Type} (program : ProbComp α) :
+    OracleComp.interpret
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) handler)
+      (ProbOracleComp.sample program) = StateT.lift (σ := Store) program := by
+  funext st
+  rw [ProbOracleComp.interpret_sample]
+  change (OracleComp.interpret (m := StateT Store ProbComp) _ program).run st = _
+  rw [OracleComp.run_interpret_lift]
+  change (fun a => (a, st)) <$> OracleComp.interpret OracleComp.query program = _
+  rw [OracleComp.interpret_query_eq_self]
+  simp [StateT.lift, bind_pure_comp]
+
 /-- One phased session, with sender commands on the left and receiver polls on the right.
 Only `World.eval`'s program output is public; its state remains private.
 Privacy here is the observation boundary, not Lean declaration accessibility. -/
 noncomputable abbrev world : Interactive.World senderSpec receiverSpec where
   State := Store
   init := .idle
-  impl := OracleComp.sumHandler
-    (fun cmd s => pure ((), advance cmd s))
-    (fun _ s => pure (observe s, s))
+  impl := handler
 
 /-- Polling leaves the private state unchanged. Its complete reply law depends only on the
 public observation of that state, including for adaptive programs with private randomness. -/
@@ -107,7 +127,8 @@ theorem polling_run {α : Type} (program : ProbOracleComp receiverSpec α) (s : 
       (fun q => world.impl (.inr q)) =
       fun q s => (fun a => (a, s)) <$> oracle q s := by
     funext q s
-    cases q <;> simp [oracle, OracleComp.sumHandler, StateT.lift, PMF.map, Function.comp_def]
+    cases q <;>
+      simp [oracle, handler, OracleComp.sumHandler, StateT.lift, PMF.map, Function.comp_def]
   unfold ProbOracleComp.runWith OracleComp.runWith
   rw [handlers, OracleComp.run_interpret_readOnly]
   rfl

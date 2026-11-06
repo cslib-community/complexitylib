@@ -90,6 +90,9 @@ specializing `Query := Empty` and `Digest := Unit` and gating final-message admi
 * `Cslib.Crypto.Protocols.ROMSignature.FreshOutputs.freshOutputsOnFinalMessage`,
   `Cslib.Crypto.Protocols.ROMSignature.decide_freshOutputsOnFinalMessage`: full output freshness
   implies final-message freshness, decided by `!queried.contains msg`.
+* `Cslib.Crypto.Protocols.ROMSignature.lookup_of_mem_support_oracle`,
+  `Cslib.Crypto.Protocols.ROMSignature.length_le_of_mem_support_oracle`: post-call cache lookup and
+  one-step cache-growth bounds for `oracle`.
 * `Cslib.Crypto.Protocols.ROMSignature.runWith_world_liftProver`,
   `Cslib.Crypto.Protocols.ROMSignature.runWith_world_liftVerify`,
   `Cslib.Crypto.Protocols.ROMSignature.runWith_world_runLoggedForger_liftOracleForger`,
@@ -206,6 +209,30 @@ variable (Digest) in
 /-- The random oracle: a uniform digest for each new point, remembered thereafter. -/
 noncomputable def oracle (q : Query) : StateT (List (Query × Digest)) PMF Digest :=
   memoize (fun _ => PMF.uniformOfFintype Digest) q
+
+/-- A table entry produced by a call of `oracle` is found at its queried point. -/
+theorem lookup_of_mem_support_oracle {q : Query} {cache : List (Query × Digest)}
+    {result : Digest × List (Query × Digest)} (h : result ∈ (oracle Digest q cache).support) :
+    result.2.lookup q = some result.1 := by
+  cases hlookup : cache.lookup q <;>
+    simp only [oracle, memoize, hlookup, PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind,
+      PMF.mem_support_pure_iff, PMF.mem_support_bind_iff] at h
+  · obtain ⟨_, _, rfl⟩ := h
+    exact List.lookup_cons_self
+  · subst h
+    exact hlookup
+
+/-- A call of `oracle` adds at most one entry to the cache. -/
+theorem length_le_of_mem_support_oracle {q : Query} {cache : List (Query × Digest)}
+    {result : Digest × List (Query × Digest)} (h : result ∈ (oracle Digest q cache).support) :
+    result.2.length ≤ cache.length + 1 := by
+  cases hlookup : cache.lookup q <;>
+    simp only [oracle, memoize, hlookup, PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind,
+      PMF.mem_support_pure_iff, PMF.mem_support_bind_iff] at h
+  · obtain ⟨_, _, rfl⟩ := h
+    exact le_rfl
+  · subst h
+    exact Nat.le_succ _
 
 /-- Answer a forger's calls: sign with the secret key, recording the message, or query the
 oracle. Signing and the forger share the oracle. -/

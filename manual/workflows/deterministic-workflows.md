@@ -39,6 +39,21 @@ base and unary exponent certificates. The complete
 magnitudes and signs. A binary exponent has a different output-size obligation: do not replace
 the unary exponent encoding merely to make a goal match.
 
+For a padded integer dot product, import
+[PolyTime/Int/DotProduct.lean](../../Complexity/Computability/PolyTime/Int/DotProduct.lean)
+and use `ComputableInPolyTime.listDotProduct`. It certifies the existing pure public
+`Mathlib.Tactic.Matrix.ListMatrix.dotProduct`: the cutoff is unary, coefficients are signed
+binary, missing entries are zero, and entries beyond the cutoff are ignored. Runtime still
+charges both complete framed input lists. The operation lives in a Mathlib tactic-support
+file but is ordinary term-level arithmetic, not a meta program.
+The pure [list identities](../../Complexity/Foundations/Data/List/DotProduct.lean) and
+[residue-matrix bridge](../../Complexity/Foundations/Data/ZMod/DotProduct.lean) require neither
+crypto nor native imports. The former local Lyubashevsky `listDot` duplicate has been removed;
+its verifier, extractor and signer use the same upstream operation. The
+[checked clients](../../ComplexityTests/ListDotProduct.lean) cover padding, truncation, signed
+large coefficients and unchanged verifier outcomes and commitment bytes. This API
+consolidation adds no cryptographic security claim.
+
 Keep a record's encoded tuple layout at its construction boundary. For example,
 [`NativePacket.PacketCtx.mk_polyTime`](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
 composes certificates for named fields while preserving the existing encoded words; its
@@ -47,6 +62,19 @@ does not reconstruct the product tree. The
 [`BranchEvalInput` interface](../../Complexity/Computability/PolyTime/BooleanAnalysis/SparsePolyCounter.lean)
 similarly supplies named parameter access and certificates with the original unary/binary
 choices. Use these boundaries when changing a client, and retain its encoded-length bounds.
+
+For a computed optional value, import
+`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option`.
+The shared `ComputableInPolyTime.optionMapWithInput` rule certifies
+`fun x => (value x).map (f x)` from certificates for `value` and the joint callback
+`fun p => f p.1 p.2`. The callback is charged against both the original input and
+the present value; input and output value encodings may differ.
+The [public-import client](../../ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeOptionPublicImport.lean)
+checks a captured parameter and an encoding change.
+[Boolean measurement search](../../Complexity/Computability/PolyTime/LinearAlgebra/BooleanMeasurements.lean)
+uses this rule for its optional-result codec, and
+[hybrid CCA composition](../../Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
+uses it to postprocess successful decapsulation while preserving rejection.
 
 ## Certify a loop and its postcondition
 

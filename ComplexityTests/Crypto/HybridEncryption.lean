@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 module
 
 public import Complexity.Crypto.Computational.Encryption.Hybrid
+import Complexity.Crypto.Computational.Encryption.CCA
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF.Bind
 import Complexity.Tactic.PPT
@@ -57,7 +59,7 @@ def leakingEncaps (_ : ℕ) (pk : List Bool) : ProbComp (List Bool × List Bool)
   pure (true :: pk, true :: pk)
 
 /-- Deterministic decapsulation returning the encapsulation ciphertext directly. -/
-def leakingDecaps (_ : ℕ) (_ ctKem : List Bool) : List Bool := ctKem
+def leakingDecaps (_ : ℕ) (_ ctKem : List Bool) : Option (List Bool) := some ctKem
 
 theorem toyKeyGen_ppt : IsPPTOn encUnary (encPair encBits encBits) toyKeyGen := by
   unfold toyKeyGen
@@ -72,7 +74,7 @@ theorem leakingEncaps_ppt :
 theorem leakingDecaps_polyTime :
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => leakingDecaps p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encPair encUnary (encPair encBits encBits)) (encOption encBits) := by
   unfold leakingDecaps
   fun_prop
 
@@ -96,6 +98,53 @@ theorem eqKemDistinguisher_ppt : IsPPT encBool eqKemDistinguisher := by
 
 -- Native runtime checks for `kemRealGame`, `kemIdealGame`, `demGame`, `hybridEncrypt`,
 -- and `hybridDecrypt`.
+
+-- Canonical pair equality is exactly component equality; reuse the embedding's injectivity.
+example (k₀ k₁ c₀ c₁ : List Bool) :
+    encPair encBits encBits (k₀, c₀) = encPair encBits encBits (k₁, c₁) ↔
+      k₀ = k₁ ∧ c₀ = c₁ := by
+  simp only [(encPair encBits encBits).injective.eq_iff, Prod.mk.injEq]
+
+-- Total frame projections alone admit noncanonical aliases, including a nonempty first component.
+example : unframe [true, true] = unframe [true, true, false] ∧
+    dropFrame [true, true] = dropFrame [true, true, false] ∧
+    ([true, true] : List Bool) ≠ [true, true, false] := by decide
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [true, true] = (none : Option (List Bool)) := rfl
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [true, true, false] = some ([] : List Bool) := rfl
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [] = (none : Option (List Bool)) := rfl
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [true] = (none : Option (List Bool)) := rfl
+
+-- The canonical empty pair is accepted, so an empty key/message is not a rejection.
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [false] = some ([] : List Bool) := rfl
+
+example : hybridDecrypt (fun _ _ _ => none) (fun _ _ _ => some [])
+    0 [] [false] = (none : Option (List Bool)) := rfl
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => none)
+    0 [] [false] = (none : Option (List Bool)) := rfl
+
+-- Actual CCA replies distinguish accepted empty plaintext from a malformed alias and the challenge.
+example : cca2Phase2Oracle encBits
+    (hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some []))
+    0 [] [false] ((), [true, true, false]) () = pure ([true], ()) := rfl
+
+example : cca2Phase2Oracle encBits
+    (hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some []))
+    0 [] [false] ((), []) () = pure ([], ()) := rfl
+
+example : cca2Phase2Oracle encBits
+    (hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some []))
+    0 [] [false] ((), [false]) () = pure ([], ()) := rfl
+
 example : IsPPTOn encUnary encBool
     (kemRealGame toyKeyGen leakingEncaps eqKemDistinguisher) :=
   isPPTOn_kemRealGame toyKeyGen_ppt leakingEncaps_ppt
@@ -116,15 +165,16 @@ example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
 
 example : ComputableInPolyTime
     (fun p : ℕ × List Bool × List Bool =>
-      hybridDecrypt leakingDecaps otpDecrypt p.1 p.2.1 p.2.2)
-    (encPair encUnary (encPair encBits encBits)) encBool :=
-  computableInPolyTime_hybridDecrypt leakingDecaps_polyTime computableInPolyTime_otpDecrypt
+      hybridDecrypt leakingDecaps (fun n k ct => some (otpDecrypt n k ct)) p.1 p.2.1 p.2.2)
+    (encPair encUnary (encPair encBits encBits)) (encOption encBool) :=
+  computableInPolyTime_hybridDecrypt leakingDecaps_polyTime
+    ((ComputableInPolyTime.optionSome encBool).comp computableInPolyTime_otpDecrypt)
 
 /-- Every ciphertext produced by `hybridEncrypt leakingEncaps otpEncrypt` decrypts to the original
-plaintext bit under `hybridDecrypt leakingDecaps otpDecrypt`. -/
+plaintext bit under `hybridDecrypt leakingDecaps (fun n k ct => some (otpDecrypt n k ct))`. -/
 example (n : ℕ) (pk sk ct : List Bool) (bit : Bool)
     (hct : ct ∈ (ProbComp.eval (hybridEncrypt leakingEncaps otpEncrypt n pk bit)).support) :
-    hybridDecrypt leakingDecaps otpDecrypt n sk ct = bit := by
+    hybridDecrypt leakingDecaps (fun n k ct => some (otpDecrypt n k ct)) n sk ct = some bit := by
   refine hybridDecrypt_hybridEncrypt ?_ ?_ hct
   · intro k ctKem hsupp
     simp only [leakingEncaps, ProbComp.eval_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hsupp
@@ -133,12 +183,12 @@ example (n : ℕ) (pk sk ct : List Bool) (bit : Bool)
   · intro k ctDem _ hdemSupp
     simp only [otpEncrypt, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hdemSupp
     subst hdemSupp
-    exact otpDecrypt_otpEncrypt n k bit
+    exact congrArg some (otpDecrypt_otpEncrypt n k bit)
 
 /-- Concrete round-trip evaluation of `hybridDecrypt` on an encoded `(ctKem, ctDem)` pair. -/
 example (bit : Bool) :
-    hybridDecrypt leakingDecaps otpDecrypt 4 []
-      (encPair encBits encBits ([true, false], [true ^^ bit])) = bit := by
+    hybridDecrypt leakingDecaps (fun n k ct => some (otpDecrypt n k ct)) 4 []
+      (encPair encBits encBits ([true, false], [true ^^ bit])) = some bit := by
   rw [hybridDecrypt_encPair]
   simp [leakingDecaps, otpDecrypt]
 
@@ -146,7 +196,8 @@ example (bit : Bool) :
 theorem eval_kemRealGame_leaking (n : ℕ) :
     ProbComp.eval (kemRealGame toyKeyGen leakingEncaps eqKemDistinguisher n) =
       PMF.pure true := by
-  simp only [kemRealGame, toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemRealGame, kemRealGameWith,
+    toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind,
     decide_true, PMF.bind_const]
@@ -156,7 +207,8 @@ ideal key `kIdeal` has length `n` while `ctKem = true :: pk` has length `n + 1`.
 theorem eval_kemIdealGame_leaking (n : ℕ) :
     ProbComp.eval (kemIdealGame (fun n => n) toyKeyGen leakingEncaps eqKemDistinguisher n) =
       PMF.pure false := by
-  simp only [kemIdealGame, toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind]
   trans (BitString.uniformList n).bind (fun _ => PMF.pure false)
@@ -223,7 +275,8 @@ theorem eval_kemRealGame_sameLengthLeaking (n : ℕ) :
     ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps
           eqKemDistinguisher n) =
       PMF.pure true := by
-  simp only [kemRealGame, toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemRealGame, kemRealGameWith,
+    toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind,
     decide_true, PMF.bind_const]
@@ -234,7 +287,8 @@ theorem eval_kemIdealGame_sameLengthLeaking_true (n : ℕ) :
     ProbComp.eval (kemIdealGame (fun n => n) toyKeyGen sameLengthLeakingEncaps
           eqKemDistinguisher n) true =
       (2 ^ n)⁻¹ := by
-  simp only [kemIdealGame, toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind]
   rw [PMF.bind_apply]
@@ -365,7 +419,8 @@ theorem idealEncaps_ppt {keyLen : ℕ → ℕ}
 theorem eval_kemRealGame_idealEncaps_eq_ideal (keyLen : ℕ → ℕ) (D : Distinguisher) (n : ℕ) :
     ProbComp.eval (kemRealGame toyKeyGen (idealEncaps keyLen) D n) =
       ProbComp.eval (kemIdealGame keyLen toyKeyGen (idealEncaps keyLen) D n) := by
-  simp only [kemRealGame, kemIdealGame, idealEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
+  simp only [kemRealGame, kemRealGameWith,
+    kemIdealGame, kemIdealGameWith, idealEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
     BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind, PMF.bind_const]
 
 theorem kemINDCPA_idealEncaps (keyLen : ℕ → ℕ) :
@@ -442,7 +497,8 @@ example (n : ℕ) (pk sk ct m : List Bool) (hm : m.length = 2 * n)
     (hct : ct ∈ (ProbComp.eval
       (hybridEncrypt sameLengthLeakingEncaps (otpKeyWordEncrypt (fun n => 2 * n))
         n pk m)).support) :
-    hybridDecrypt leakingDecaps (otpKeyWordDecrypt (fun n => 2 * n)) n sk ct = m := by
+    hybridDecrypt leakingDecaps
+      (fun n k ct => some (otpKeyWordDecrypt (fun n => 2 * n) n k ct)) n sk ct = some m := by
   refine hybridDecrypt_hybridEncrypt ?_ ?_ hct
   · intro k ctKem hsupp
     simp only [sameLengthLeakingEncaps, ProbComp.eval_pure, PMF.mem_support_pure_iff,
@@ -452,7 +508,7 @@ example (n : ℕ) (pk sk ct m : List Bool) (hm : m.length = 2 * n)
   · intro k ctDem _ hdemSupp
     simp only [otpKeyWordEncrypt, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hdemSupp
     subst ctDem
-    exact otpKeyWordDecrypt_otpKeyWordEncrypt (fun n => 2 * n) n k hm
+    exact congrArg some (otpKeyWordDecrypt_otpKeyWordEncrypt (fun n => 2 * n) n k hm)
 
 /-- Zero key length is permitted by the security predicate; correctness of this zero-width pad
 is restricted to the empty message. -/

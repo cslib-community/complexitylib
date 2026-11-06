@@ -56,7 +56,8 @@ The original saved state and the `false` ciphertext tag are passed to the guessi
   evaluateGuess (input.1, choice.2, false :: ciphertext) (remaining.drop encCoins)
 
 /-- Component laws realize the original adaptive game exactly. No correctness or security
-assumption is needed, and the saved state may depend on the sampled messages. -/
+assumption is needed, and the saved state may depend on the sampled messages. The guessing
+law is required only on the correlated supported choice/ciphertext pairs. -/
 theorem eval_publicKeyGame_eq_map_coins (E : Scheme) (adversary : Encryption.Adversary)
     (evaluateChoose : (ℕ × List Bool) → List Bool → (Bool × Bool) × List Bool)
     (evaluateEncrypt : (ℕ × List Bool × Bool) → List Bool → List Bool)
@@ -68,14 +69,27 @@ theorem eval_publicKeyGame_eq_map_coins (E : Scheme) (adversary : Encryption.Adv
     (hencrypt : ∀ message, ProbComp.eval (E.encrypt n (artifact.1.getD 0 []) message) =
       (BitString.uniformList encCoins).map
         (evaluateEncrypt (n, artifact.1.getD 0 [], message)))
-    (hguess : ∀ state ciphertext, ProbComp.eval (adversary.guess n state (false :: ciphertext)) =
-      (BitString.uniformList guessCoins).map (evaluateGuess (n, state, false :: ciphertext))) :
+    (hguess : ∀ choice ∈ (ProbComp.eval (adversary.choose n (encPublicKey artifact))).support,
+      ∀ ciphertext ∈ (ProbComp.eval (E.encrypt n (artifact.1.getD 0 [])
+        (if bit then choice.1.2 else choice.1.1))).support,
+      ProbComp.eval (adversary.guess n choice.2 (false :: ciphertext)) =
+        (BitString.uniformList guessCoins).map
+          (evaluateGuess (n, choice.2, false :: ciphertext))) :
     ProbComp.eval (publicKeyGame E adversary bit n artifact) =
       (BitString.uniformList (chooseCoins + (encCoins + guessCoins))).map
         (publicKeyGameCoins evaluateChoose evaluateEncrypt evaluateGuess bit chooseCoins encCoins
           (n, artifact)) := by
-  simp only [publicKeyGame, ProbComp.eval_bind, hchoose, hencrypt, hguess, PMF.bind_map,
-    Function.comp_def]
+  simp only [publicKeyGame, ProbComp.eval_bind]
+  trans (ProbComp.eval (adversary.choose n (encPublicKey artifact))).bind (fun choice =>
+    (ProbComp.eval (E.encrypt n (artifact.1.getD 0 [])
+      (if bit then choice.1.2 else choice.1.1))).bind (fun ciphertext =>
+      (BitString.uniformList guessCoins).map
+        (evaluateGuess (n, choice.2, false :: ciphertext))))
+  · apply PMF.bind_congr_on_support
+    intro choice hchoice
+    apply PMF.bind_congr_on_support
+    exact hguess choice hchoice
+  simp only [hchoose, hencrypt, PMF.bind_map, Function.comp_def]
   rw [PMF.map]
   change _ = (BitString.uniformList (chooseCoins + (encCoins + guessCoins))).bind
     (fun tape => PMF.pure (publicKeyGameCoins evaluateChoose evaluateEncrypt evaluateGuess bit
@@ -230,7 +244,7 @@ theorem eval_modLinkAdversary_guess_eq_map_coins (E : Scheme)
       (fun pk _ message => hencrypt pk message)
       (fun links _ => Leveled.eval_publicKeyGame_eq_map_coins E adversary evaluateChoose
         evaluateEncrypt evaluateGuess bit n chooseCoins encCoins guessCoins _ (hchoose _)
-          (hencrypt _) hguess)
+          (hencrypt _) (fun chosen _ ciphertext _ => hguess chosen.2 ciphertext))
 
 /-- The complete link-guess replay has a native deterministic certificate when component
 replays and unary budget families do. Its input includes the complete saved context, challenge,

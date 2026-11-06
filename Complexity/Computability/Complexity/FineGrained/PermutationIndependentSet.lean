@@ -316,15 +316,11 @@ theorem mem_ThreeColoring_iff_fin (G : Graph) :
   · rintro ⟨f, hf⟩
     refine ⟨fun u =>
         if hu : u ∈ G.1 then (f ⟨G.1.idxOf u, List.idxOf_lt_length_iff.2 hu⟩).val else 0,
-      fun v hv => by
-        dsimp only
-        simp only [hv, ↓reduceDIte]
-        exact (f _).isLt,
+      fun v hv => by simp only [hv, ↓reduceDIte]; exact (f _).isLt,
       fun u hu v hv huv h => ?_⟩
-    dsimp only at h
     simp only [hu, hv, ↓reduceDIte] at h
-    have hu' : G.1.idxOf u < G.1.length := List.idxOf_lt_length_iff.2 hu
-    have hv' : G.1.idxOf v < G.1.length := List.idxOf_lt_length_iff.2 hv
+    have hu' := List.idxOf_lt_length_iff.2 hu
+    have hv' := List.idxOf_lt_length_iff.2 hv
     have hpq : G.adjBool G.1[G.1.idxOf u] G.1[G.1.idxOf v] = true := by
       simpa only [List.getElem_idxOf, Graph.adjBool_eq_true_iff] using huv
     exact hf ⟨G.1.idxOf u, hu'⟩ ⟨G.1.idxOf v, hv'⟩ hpq (Fin.ext h)
@@ -337,7 +333,7 @@ theorem ETH.not_decidableInSubexpTime_ThreeColoring_vertices (h : ETH) :
   h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toThreeColoring
     (fun φ _ => SAT.toThreeColoring_mem_iff φ) (k := 93) fun φ hφ => by
       have := SAT.length_toThreeColoring_le hφ
-      nlinarith
+      omega
 
 /-! ### Block parameters and arithmetic bounds for the LMS reduction -/
 
@@ -446,25 +442,18 @@ theorem searchBits_le_div_add (N : ℕ) {M : ℕ} (hM : 0 < M) :
       _ ≤ 4 * (2 ^ k) ^ 2 * (12 * 2 ^ k) := by rw [hA]; exact Nat.mul_le_mul_left _ hW
       _ = 48 * (2 ^ k) ^ 3 := by ring
   by_cases hk : 2 ^ k ≤ 48 * M
-  · have hcube : (2 ^ k) ^ 3 ≤ (48 * M) ^ 3 := Nat.pow_le_pow_left hk 3
-    exact (hSB.trans (Nat.mul_le_mul_left 48 hcube)).trans (Nat.le_add_left _ _)
-  · have hk' : 48 * M < 2 ^ k := Nat.lt_of_not_le hk
-    have hN0 : N ≠ 0 := by
-      rintro rfl
-      have hk0 : 2 ^ k = 1 := by decide
-      omega
+  · exact (hSB.trans (Nat.mul_le_mul_left 48 (Nat.pow_le_pow_left hk 3))).trans
+      (Nat.le_add_left _ _)
+  · have hN0 : N ≠ 0 := by rintro rfl; simp [k] at hk; omega
     have h4k : 4 * k ≤ Nat.log 2 N := by omega
     have hpow4 : (2 ^ k) ^ 4 ≤ N := by
-      calc (2 ^ k) ^ 4 = 2 ^ (4 * k) := by rw [← pow_mul, Nat.mul_comm]
-        _ ≤ 2 ^ Nat.log 2 N := Nat.pow_le_pow_right two_pos h4k
-        _ ≤ N := Nat.pow_log_le_self 2 hN0
+      rw [← pow_mul, Nat.mul_comm]
+      exact (Nat.pow_le_pow_right two_pos h4k).trans (Nat.pow_log_le_self 2 hN0)
     have hmul : 48 * (2 ^ k) ^ 3 * M ≤ N := by
-      calc 48 * (2 ^ k) ^ 3 * M = 48 * M * (2 ^ k) ^ 3 := by ring
-        _ ≤ 2 ^ k * (2 ^ k) ^ 3 := Nat.mul_le_mul_right _ hk'.le
-        _ = (2 ^ k) ^ 4 := by ring
-        _ ≤ N := hpow4
-    have hdiv : 48 * (2 ^ k) ^ 3 ≤ N / M := (Nat.le_div_iff_mul_le hM).2 hmul
-    exact (hSB.trans hdiv).trans (Nat.le_add_right _ _)
+      rw [Nat.mul_right_comm]
+      exact (Nat.mul_le_mul_right _ (Nat.le_of_not_le hk)).trans
+        ((pow_succ' (2 ^ k) 3).symm.trans_le hpow4)
+    exact (hSB.trans ((Nat.le_div_iff_mul_le hM).2 hmul)).trans (Nat.le_add_right _ _)
 
 /-! ### Block-coloring extraction, threshold decoding, and `bpisOfColoring` -/
 
@@ -666,20 +655,18 @@ private theorem exists_block_assignments_of_coloring {N : ℕ} (f : Fin N → Fi
     have h0 : (a i).val.testBit (2 * u) = decide (col i.val u % 2 = 1) := by
       rw [BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD,
         List.getElem?_eq_getElem (by simp only [word, List.length_map, List.length_range]; omega)]
-      simp [word, bitFn, Nat.mul_div_right _ two_pos]
+      simp only [word, List.getElem_map, List.getElem_range, bitFn, Nat.mul_mod_right, ↓reduceIte,
+        Nat.mul_div_right _ two_pos, Option.getD_some]
     have h1 : (a i).val.testBit (2 * u + 1) = decide (col i.val u / 2 = 1) := by
       rw [BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD,
         List.getElem?_eq_getElem (by simp only [word, List.length_map, List.length_range]; omega)]
       have hdiv : (2 * u + 1) / 2 = u := by omega
       have hmod : (2 * u + 1) % 2 = 1 := by omega
-      simp [word, bitFn, hdiv, hmod]
+      simp only [word, List.getElem_map, List.getElem_range, bitFn, hdiv, hmod, one_ne_zero,
+        ↓reduceIte, Option.getD_some]
     rw [extractColor, h0, h1]
     have hc := hcol_lt i.val u
-    rcases hcol : col i.val u with _ | _ | _ | m
-    · rfl
-    · rfl
-    · rfl
-    · omega
+    rcases hcol : col i.val u with _ | _ | _ | m <;> first | rfl | omega
   refine ⟨a, fun i => ?_, fun p => ?_⟩
   · simp only [validAssignment, List.all_eq_true, List.mem_range, decide_eq_true_eq]
     intro u hu
@@ -688,8 +675,7 @@ private theorem exists_block_assignments_of_coloring {N : ℕ} (f : Fin N → Fi
   · have hu : p.val % b < b := Nat.mod_lt _ (blockSize_pos N)
     rw [hextract _ (p.val % b) hu]
     have hp_eq : p.val / b * b + p.val % b = p.val := by
-      have := Nat.div_add_mod p.val b
-      nlinarith
+      rw [Nat.mul_comm, Nat.div_add_mod]
     change (if h : p.val / b * b + p.val % b < N then
       (f ⟨p.val / b * b + p.val % b, h⟩).val else 0) = (f p).val
     simp only [hp_eq, p.isLt, ↓reduceDIte, Fin.eta]
@@ -808,6 +794,8 @@ theorem mem_ThreeColoring_iff_exists_bpisOfColoring (H : Graph) :
     exact hG _ he i₁.isLt (π₁ i₁).isLt i₂.isLt (π₁ i₂).isLt rfl (hπ_eq i₂).symm
 
 /-! ### Polynomial-time computability of the reduction -/
+
+attribute [local irreducible] ComputableInPolyTime
 
 @[local fun_prop]
 private theorem computableInPolyTime_unary_log_two :
@@ -935,14 +923,12 @@ private theorem computableInPolyTime_colorAt
   unfold colorAt
   fun_prop
 
-@[local fun_prop]
 private theorem computableInPolyTime_consistencyEdges :
     ComputableInPolyTime consistencyEdges encUnary
       (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
   unfold consistencyEdges
   fun_prop
 
-@[local fun_prop]
 private theorem computableInPolyTime_invalidBucketEdges :
     ComputableInPolyTime (fun p : ℕ × ℕ => invalidBucketEdges p.1 p.2)
       (encPair encUnary encNat)
@@ -1029,35 +1015,31 @@ private theorem computableInPolyTime_vertexConflictEdges
   unfold vertexConflictEdges
   fun_prop
 
-@[local fun_prop]
 private theorem computableInPolyTime_conflictEdges :
     ComputableInPolyTime (fun p : Graph × ℕ => conflictEdges p.1 p.2)
       (encPair encGraph encNat)
       (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
-  have hH : ComputableInPolyTime (fun p : Graph × ℕ => p.1)
-      (encPair encGraph encNat) encGraph := fst encGraph encNat
-  have hverts : ComputableInPolyTime (fun p : Graph × ℕ => p.1.1)
-      (encPair encGraph encNat) (encList encNat) :=
-    (fst (encList encNat) (encList (encPair encNat encNat))).comp hH
+  have hH := fst encGraph encNat
   have hlen : ComputableInPolyTime (fun p : Graph × ℕ => p.1.1.length)
-      (encPair encGraph encNat) encUnary := (length_list encNat).comp hverts
-  unfold conflictEdges
-  fun_prop
+      (encPair encGraph encNat) encUnary :=
+    (length_list encNat).comp ((fst (encList encNat) (encList (encPair encNat encNat))).comp hH)
+  exact flatMapWithInput (range.comp hlen)
+    (computableInPolyTime_vertexConflictEdges (hH.comp (fst _ _))
+      ((snd encGraph encNat).comp (fst _ _)) (snd _ _))
 
 /-- Constructing `bpisOfColoring (H, r)` is polynomial-time in the plain machine model. -/
 @[fun_prop]
 theorem computableInPolyTime_bpisOfColoring :
     ComputableInPolyTime bpisOfColoring (encPair encGraph encNat)
       encBipartitePermutationGraph := by
-  have hH : ComputableInPolyTime (fun p : Graph × ℕ => p.1)
-      (encPair encGraph encNat) encGraph := fst encGraph encNat
-  have hverts : ComputableInPolyTime (fun p : Graph × ℕ => p.1.1)
-      (encPair encGraph encNat) (encList encNat) :=
-    (fst (encList encNat) (encList (encPair encNat encNat))).comp hH
-  have hlen : ComputableInPolyTime (fun x : Graph × ℕ => x.1.1.length)
-      (encPair encGraph encNat) encUnary := (length_list encNat).comp hverts
-  unfold bpisOfColoring encBipartitePermutationGraph
-  fun_prop
+  have hN : ComputableInPolyTime (fun x : Graph × ℕ => x.1.1.length)
+      (encPair encGraph encNat) encUnary :=
+    (length_list encNat).comp
+      ((fst (encList encNat) (encList (encPair encNat encNat))).comp (fst encGraph encNat))
+  have hn := computableInPolyTime_numBlocks.comp hN
+  have hc1 := computableInPolyTime_consistencyEdges.comp hn
+  have hc2 := computableInPolyTime_invalidBucketEdges.comp (hN.prod (snd encGraph encNat))
+  exact hn.prod (listAppend' (listAppend' hc1 hc2) computableInPolyTime_conflictEdges)
 
 /-- Converting a `BipartitePermutationGraph` from unary to binary coordinate encoding is
 polynomial-time in the plain machine model. -/
@@ -1165,7 +1147,7 @@ theorem ETH.not_decidableInSubexpTime_BipartitePermutationIndependentSet_clog (h
       have h2 : 1 ≤ Nat.log 2 G.1 := Nat.log_pos Nat.one_lt_two hG
       omega
     calc G.1 * Nat.clog 2 G.1 ≤ G.1 * (2 * Nat.log 2 G.1) := Nat.mul_le_mul_left G.1 hclog
-      _ ≤ 2 * (G.1 * Nat.log 2 G.1) + 2 := by ring_nf; omega
+      _ ≤ 2 * (G.1 * Nat.log 2 G.1) + 2 := by rw [Nat.mul_left_comm]; omega
 
 /-- **$2n \log_2(2n)$-parameterized variant of the Lokshtanov–Marx–Saurabh ETH lower bound**
 [LokshtanovMarxSaurabh2018, Theorem 2.11]: under `ETH`, `BipartitePermutationIndependentSet` is not
@@ -1185,7 +1167,9 @@ theorem ETH.not_decidableInSubexpTime_BipartitePermutationIndependentSet_two_mul
       omega
     calc (2 * G.1) * Nat.log 2 (2 * G.1)
         ≤ (2 * G.1) * (2 * Nat.log 2 G.1) := Nat.mul_le_mul_left _ hlog
-      _ ≤ 4 * (G.1 * Nat.log 2 G.1) + 4 := by ring_nf; omega
+      _ ≤ 4 * (G.1 * Nat.log 2 G.1) + 4 := by
+        rw [show (2 * G.1) * (2 * Nat.log 2 G.1) = 4 * (G.1 * Nat.log 2 G.1) by ring]
+        omega
 
 end
 end Cslib.Complexity

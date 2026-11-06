@@ -31,7 +31,7 @@ forger; the computational statement under the discrete-logarithm assumption is s
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.SigmaProtocol.schnorrROMScheme`: the Schnorr random-oracle signature
-  scheme `fiatShamir (schnorr ι g) (schnorrKeyGen g)`.
+  scheme `fiatShamir (Function.Embedding.refl _) (schnorr ι g) (schnorrKeyGen g)`.
 
 ## Main results
 
@@ -86,7 +86,7 @@ variable {M : Type}
 Fiat–Shamir transform of `schnorr ι g` with key generator `schnorrKeyGen g`. -/
 noncomputable abbrev schnorrROMScheme (ι : C ↪ ZMod q) (g : G) :
     Scheme G (ZMod q × G) M (G × ZMod q) (M × G) C :=
-  fiatShamir (schnorr ι g) (schnorrKeyGen g)
+  fiatShamir (Function.Embedding.refl _) (schnorr ι g) (schnorrKeyGen g)
 
 variable [Fintype C] [Nonempty C] [DecidableEq M]
 
@@ -94,7 +94,8 @@ variable [Fintype C] [Nonempty C] [DecidableEq M]
 `schnorrROMScheme ι g` verifies under the shared random oracle. -/
 theorem schnorrROMScheme_correct (ι : C ↪ ZMod q) (g : G) :
     (schnorrROMScheme (M := M) ι g).Correct :=
-  fiatShamir_correct schnorr_complete fun _ h => mem_support_schnorrKeyGen h
+  fiatShamir_correct (Function.Embedding.refl _) schnorr_complete fun _ h =>
+    mem_support_schnorrKeyGen h
 
 variable [DecidableEq C]
 
@@ -102,22 +103,24 @@ variable [DecidableEq C]
 form): with a nonzero base, a forger making at most `Qs` signing calls and `Qro` hash calls
 succeeds with probability at most `Qs · (Qs + Qro) / q + (Qro + 1) / N + √((Qro + 1) · ε')`, where
 `N` is the number of challenges and `ε'` the probability that the forking reduction computes a
-discrete logarithm of the public key. -/
+discrete logarithm of the public key, returning zero on a failed fork. -/
 theorem schnorr_succProbability_eufCmaGame_le (hg : g ≠ 0)
     (A : Forger G M (G × ZMod q) (M × G) C) {Qs Qro : ℕ} (hA : A.CallBounded Qs Qro) :
-    (Game.succProbability (eufCmaGame (fiatShamir (schnorr ι g) (schnorrKeyGen g)) A) : ℝ) ≤
+    (Game.succProbability (eufCmaGame (fiatShamir (Function.Embedding.refl _) (schnorr ι g)
+      (schnorrKeyGen g)) A) : ℝ) ≤
       Qs * (Qs + Qro) / q + (Qro + 1) / Fintype.card C +
         √((Qro + 1) * Game.succProbability (oneWayGame (schnorrKeyGen g)
-          (fun α u => α • g = u) (FiatShamir.reduction (schnorr ι g)
+          (fun α u => α • g = u) (FiatShamir.reduction (Function.Embedding.refl _) (schnorr ι g)
             (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod q) G g) id ι)
-            (linearExtract ι) A Qs Qro))) := by
+            (linearExtract ι) 0 A Qs Qro))) := by
   have hq : (q : ℝ≥0) ≠ 0 := by exact_mod_cast (Fact.out : q.Prime).ne_zero
   have h := succProbability_eufCmaGame_le (P := schnorr ι g) (δ := (q : ℝ≥0)⁻¹)
+    (Function.Embedding.refl _)
     (fun _ h => mem_support_schnorrKeyGen h)
     (schnorr_specialSoundness.specialSoundOn (schnorrKeyGen g)) schnorr_specialHVZK
     (fun key _ t => by
       rw [ENNReal.coe_inv hq, ENNReal.coe_natCast]
-      exact schnorr_commit_map_fst_le (ι := ι) hg key.1 key.2 t) A hA
+      exact schnorr_commit_map_fst_le (ι := ι) hg key.1 key.2 t) 0 A hA
   rwa [NNReal.coe_inv, NNReal.coe_natCast, ← div_eq_mul_inv] at h
 
 end Cslib.Crypto.Protocols.SigmaProtocol

@@ -32,6 +32,7 @@ security reduction, sampling law, or native runtime bound is claimed.
 
 * `exists_moduleLWEModulusSwitch_phase_of_lifts`: phase identity and rounding-error bounds
   from arbitrary integer lifts and an explicit carry equation.
+* `exists_moduleLWEModulusSwitch_phase_of_intCast`: the bound from any integer phase representative.
 * `exists_moduleLWEModulusSwitch_phase`: the bound for the canonical original phase,
   constructing the carry polynomial automatically.
 -/
@@ -161,34 +162,28 @@ theorem exists_moduleLWEModulusSwitch_phase_of_lifts {k n q p : ℕ}
         exact add_le_add (hnear i) le_rfl
       _ = _ := by ring
 
-/-- The actual switched ciphertext phase is close to the scaled canonical original phase.
-Integer carries exist automatically; no no-wrap assumption is needed. The secret at the new
-modulus is obtained from the same integer secret `s`, not by rounding the secret. -/
-theorem exists_moduleLWEModulusSwitch_phase {k n q p : ℕ}
+/-- The phase bound for any supplied integer representative of the original phase.
+Carries are constructed from the modular phase identity, including representatives outside
+the centered interval. This lets plaintext/error decompositions reuse the same rounding bound. -/
+theorem exists_moduleLWEModulusSwitch_phase_of_intCast {k n q p : ℕ}
     (hq : 0 < q) (hp : 0 < p) (ct : ModuleLWECiphertext k n q)
-    (s : Fin k → Fin n → ℤ) :
+    (s : Fin k → Fin n → ℤ) (e : Fin n → ℤ)
+    (he : (fun i => (e i : ZMod q)) =
+      ct.2 - innerPoly ct.1 (fun j l => (s j l : ZMod q))) :
     ∃ e' : Fin n → ℤ,
       (moduleLWEModulusSwitch p ct).2 -
           innerPoly (moduleLWEModulusSwitch p ct).1 (fun j i => (s j i : ZMod p)) =
         (fun i => (e' i : ZMod p)) ∧
-      (∀ i, |(e' i : ℚ) - (p : ℚ) / q *
-          ((ct.2 - innerPoly ct.1 (fun j l => (s j l : ZMod q))) i).valMinAbs| ≤
+      (∀ i, |(e' i : ℚ) - (p : ℚ) / q * e i| ≤
         (1 + ∑ j, ∑ l, |(s j l : ℚ)|) / 2) ∧
-      (∀ i, |(e' i : ℚ)| ≤ (p : ℚ) / q *
-          |(((ct.2 - innerPoly ct.1 (fun j l => (s j l : ZMod q))) i).valMinAbs : ℚ)| +
+      (∀ i, |(e' i : ℚ)| ≤ (p : ℚ) / q * |(e i : ℚ)| +
         (1 + ∑ j, ∑ l, |(s j l : ℚ)|) / 2) := by
   let u : Fin k → Fin n → ℤ := fun j i => (ct.1 j i).valMinAbs
   let v : Fin n → ℤ := fun i => (ct.2 i).valMinAbs
-  let e : Fin n → ℤ := fun i =>
-    ((ct.2 - innerPoly ct.1 (fun j l => (s j l : ZMod q))) i).valMinAbs
   have hu : (fun j i => (u j i : ZMod q)) = ct.1 := by
     funext j i
     exact ZMod.coe_valMinAbs _
   have hv : (fun i => (v i : ZMod q)) = ct.2 := by
-    funext i
-    exact ZMod.coe_valMinAbs _
-  have he : (fun i => (e i : ZMod q)) =
-      ct.2 - innerPoly ct.1 (fun j l => (s j l : ZMod q)) := by
     funext i
     exact ZMod.coe_valMinAbs _
   have hdvd (i : Fin n) : (q : ℤ) ∣ v i - innerPoly u s i - e i := by
@@ -206,5 +201,25 @@ theorem exists_moduleLWEModulusSwitch_phase {k n q p : ℕ}
     dsimp only [Pi.sub_apply]
     linarith
   exact exists_moduleLWEModulusSwitch_phase_of_lifts hq hp ct u s v e w hu hv hphase
+
+/-- The actual switched ciphertext phase is close to the scaled canonical original phase.
+Integer carries exist automatically; no no-wrap assumption is needed. The secret at the new
+modulus is obtained from the same integer secret `s`, not by rounding the secret. -/
+theorem exists_moduleLWEModulusSwitch_phase {k n q p : ℕ}
+    (hq : 0 < q) (hp : 0 < p) (ct : ModuleLWECiphertext k n q)
+    (s : Fin k → Fin n → ℤ) :
+    ∃ e' : Fin n → ℤ,
+      (moduleLWEModulusSwitch p ct).2 -
+          innerPoly (moduleLWEModulusSwitch p ct).1 (fun j i => (s j i : ZMod p)) =
+        (fun i => (e' i : ZMod p)) ∧
+      (∀ i, |(e' i : ℚ) - (p : ℚ) / q *
+          ((ct.2 - innerPoly ct.1 (fun j l => (s j l : ZMod q))) i).valMinAbs| ≤
+        (1 + ∑ j, ∑ l, |(s j l : ℚ)|) / 2) ∧
+      (∀ i, |(e' i : ℚ)| ≤ (p : ℚ) / q *
+          |(((ct.2 - innerPoly ct.1 (fun j l => (s j l : ZMod q))) i).valMinAbs : ℚ)| +
+        (1 + ∑ j, ∑ l, |(s j l : ℚ)|) / 2) := by
+  apply exists_moduleLWEModulusSwitch_phase_of_intCast hq hp ct s
+  funext i
+  exact ZMod.coe_valMinAbs _
 
 end Cslib.Crypto

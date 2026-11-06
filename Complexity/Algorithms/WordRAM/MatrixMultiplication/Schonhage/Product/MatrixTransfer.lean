@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Transfer
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Actual matrix-word adaptation between producer inputs
 
@@ -57,18 +59,16 @@ public theorem exec_prepareBits {w L m N Q A : ℕ} (x : Data 160)
       Reg.index]
   have sp : Parameters L m N Q start :=
     (hp.set_work Reg.source (by decide) _).set_work Reg.index (by decide) _
-  let I (z : Data 160) : Prop := Parameters L m N Q z ∧ z.regs Reg.source = S ∧
-    z.regs Reg.index ≤ M ∧
-    (∀ j < z.regs Reg.index, z.mem (4 + j) = 2 * x.mem (S + j)) ∧
-    (∀ a, a < 4 ∨ 4 + z.regs Reg.index ≤ a → z.mem a = x.mem a)
-  have hstart : I start := ⟨sp, by simp [start, Reg.source, Reg.index], by simp [start],
-    by simp [start], by simp [start]⟩
-  have hbody (z : Data 160) (hz : I z) (hc : (Cond.lt Reg.index Reg.matrixWords).Holds z) :
-      ∃ u, ExecWithin w bitCopyStep z u 6 ∧ I u ∧ M - u.regs Reg.index < M - z.regs Reg.index := by
-    have hi : z.regs Reg.index < M := by
-      simpa only [Cond.holds_lt, hz.1.matrixWords, M] using hc
+  let P (k : ℕ) (z : Data 160) : Prop := Parameters L m N Q z ∧ z.regs Reg.source = S ∧
+    (∀ j < k, z.mem (4 + j) = 2 * x.mem (S + j)) ∧
+    (∀ a, a < 4 ∨ 4 + k ≤ a → z.mem a = x.mem a)
+  have hstart : P (start.regs Reg.index) start :=
+    ⟨sp, by simp [start, Reg.source, Reg.index], by simp [start], by simp [start]⟩
+  have hbody (z : Data 160) (hz : P (z.regs Reg.index) z) (hi : z.regs Reg.index < M) :
+      ∃ u, ExecWithin w bitCopyStep z u 6 ∧ P (z.regs Reg.index + 1) u ∧
+        u.regs Reg.index = z.regs Reg.index + 1 := by
     have hload : z.mem (S + z.regs Reg.index) = x.mem (S + z.regs Reg.index) :=
-      hz.2.2.2.2 _ (Or.inr (by dsimp [S, M] at *; omega))
+      hz.2.2.2 _ (Or.inr (by dsimp [S, M] at *; omega))
     have hsrc : Fits w (S + z.regs Reg.index) := allocated_fits hfit (by
       dsimp [S, M] at *
       omega)
@@ -95,37 +95,30 @@ public theorem exec_prepareBits {w L m N Q A : ℕ} (x : Data 160)
         Reg.value (by decide) _).set_work Reg.address (by decide) _).write _ _).set_work
         Reg.index (by decide) _
     have hn : u.regs Reg.index = z.regs Reg.index + 1 := by simp [u]
-    refine ⟨u, he, ⟨up, ?_, by rw [hn]; omega, ?_, ?_⟩, by rw [hn]; omega⟩
+    refine ⟨u, he, ⟨up, ?_, ?_, ?_⟩, hn⟩
     · simpa [u, Reg.source, Reg.address, Reg.index, Reg.value] using hz.2.1
     · intro j hj
-      rw [hn] at hj
       change Function.update z.mem (4 + z.regs Reg.index) (x.mem (S + z.regs Reg.index) * 2)
         (4 + j) = 2 * x.mem (S + j)
       by_cases h : j = z.regs Reg.index
       · subst j
         simp only [Function.update_self, Nat.mul_comm]
       · rw [Function.update_of_ne (by omega)]
-        exact hz.2.2.2.1 j (by omega)
+        exact hz.2.2.1 j (by omega)
     · intro a ha
       change Function.update z.mem (4 + z.regs Reg.index) (x.mem (S + z.regs Reg.index) * 2) a = _
-      rw [Function.update_of_ne (by rw [hn] at ha; rcases ha with ha | ha <;> omega)]
-      apply hz.2.2.2.2 a
-      rw [hn] at ha
+      rw [Function.update_of_ne (by rcases ha with ha | ha <;> omega)]
+      apply hz.2.2.2 a
       rcases ha with ha | ha <;> omega
-  obtain ⟨y, he, hy, hc⟩ :=
-    ExecWithin.loop_invariant I (fun z => M - z.regs Reg.index) hbody hstart
-  have hn : y.regs Reg.index = M := by
-    have hu := hy.2.2.1
-    simp only [Cond.holds_lt, hy.1.matrixWords] at hc
-    dsimp only [M] at hu ⊢
-    omega
+  obtain ⟨y, he, hy, _⟩ := ExecWithin.loop_count P (fun _ hy => hy.1.matrixWords)
+    hbody (by simp [start]) hstart
   refine ⟨y, (hs.seq he).mono ?_, hy.1, ?_, ?_⟩
   · have hzero : start.regs Reg.index = 0 := by simp [start]
     rw [hzero, Nat.sub_zero]
     dsimp [M]
     omega
-  · simpa only [hn, M, S] using hy.2.2.2.1
-  · simpa only [hn, M] using hy.2.2.2.2
+  · simpa only [M, S] using hy.2.2.1
+  · simpa only [M] using hy.2.2.2
 
 /-- Canonical signed inputs use actual dynamic copying with no conversion arithmetic. -/
 public theorem exec_prepareSigned {w L m N Q : ℕ} (x : Data 160)

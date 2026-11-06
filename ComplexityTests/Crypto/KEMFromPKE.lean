@@ -88,7 +88,8 @@ theorem advantage_encryptKeyEncaps_revealing (n : ℕ) :
       (ProbComp.eval (kemIdealGame (fun _ => 1) (fun _ => pure ([], []))
         (encryptKeyEncaps (fun _ => 1) (fun _ _ m => pure m)) eqKemDistinguisher n)) =
       (1 : ℝ≥0) / 2 := by
-  simp only [kemRealGame, kemIdealGame, encryptKeyEncaps, eqKemDistinguisher,
+  simp only [kemRealGame, kemRealGameWith,
+    kemIdealGame, kemIdealGameWith, encryptKeyEncaps, eqKemDistinguisher,
     ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList,
     BitString.uniformList_succ, BitString.uniformList_zero, encPair_apply, encBits_apply,
     unframe_frame_append, dropFrame_frame_append, PMF.bind_bind, PMF.pure_bind,

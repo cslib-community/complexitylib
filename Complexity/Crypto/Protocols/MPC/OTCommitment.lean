@@ -24,6 +24,9 @@ selected values. We use the existing `ot14World`, duplicating the two payloads a
 * `OTCommitment.Sender`: arbitrary randomized, stateful malicious sender.
 * `OTCommitment.Receiver`: arbitrary randomized, stateful malicious receiver.
 * `OTCommitment.bindingGame`: two openings after a single commit interaction.
+* `OTCommitment.receiverCommitWith`: the common monadic receiver recursion.
+* `OTCommitment.receiverCommit`, `OTCommitment.receiverRun`: one honest commit execution with
+  private sender masks retained internally, and its receiver-only observation.
 
 ## Main results
 
@@ -103,15 +106,33 @@ noncomputable def senderRun {State : Type} (A : Sender State) :
       let (rest, final) ← senderRun A k (A.receive next (ans 0)) (Fin.tail choices)
       pure (Fin.cons (ans 1) rest, final)
 
-/-- The same sender's local table transcript. Its independence from receiver choices is a
-consequence of `senderRun_eq`, not a restriction that the tables encode a consistent bit. -/
-noncomputable def senderTables {State : Type} (A : Sender State) :
-    (k : ℕ) → State → PMF ((Fin k → Fin 4 → Bool) × State)
+/-- Common sender-table recursion, with only the sampling backend varied. Receiver choices
+are not an input; the semantic specialization is related to actual OT by `senderRun_eq`. -/
+def senderTablesWith {m : Type → Type} [Monad m] {State : Type}
+    (choose : ℕ → State → m ((Fin 4 → Bool) × State)) (receive : State → Unit → State) :
+    (k : ℕ) → State → m ((Fin k → Fin 4 → Bool) × State)
   | 0, st => pure (Fin.elim0, st)
   | k + 1, st => do
+      let (t, next) ← choose k st
+      let (rest, final) ← senderTablesWith choose receive k (receive next ())
+      pure (Fin.cons t rest, final)
+
+/-- The same sender's local table transcript. Its independence from receiver choices is a
+consequence of `senderRun_eq`, not a restriction that the tables encode a consistent bit. -/
+noncomputable def senderTables {State : Type} (A : Sender State) (k : ℕ) (st : State) :
+    PMF ((Fin k → Fin 4 → Bool) × State) :=
+  senderTablesWith A.choose A.receive k st
+
+/-- No sender table is generated at zero rounds. -/
+theorem senderTables_zero {State : Type} (A : Sender State) (st : State) :
+    senderTables A 0 st = pure (Fin.elim0, st) := rfl
+
+/-- One sender round chooses its table, receives only `Unit`, then continues. -/
+theorem senderTables_succ {State : Type} (A : Sender State) (k : ℕ) (st : State) :
+    senderTables A (k + 1) st = (do
       let (t, next) ← A.choose k st
       let (rest, final) ← senderTables A k (A.receive next ())
-      pure (Fin.cons t rest, final)
+      pure (Fin.cons t rest, final)) := rfl
 
 /-- Exact factorization of actual OT execution: the sender's local transcript does not depend
 on the private choices, and the receiver gets precisely the selected table entries. -/
@@ -121,12 +142,12 @@ theorem senderRun_eq {State : Type} (A : Sender State) (k : ℕ) (st : State)
       (fun (ts, final) => (fun i => ts i (boolPairToFin4 (false, choices i)), final)) := by
   induction k generalizing st with
   | zero =>
-      simp only [senderRun, senderTables, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
+      simp only [senderRun, senderTables_zero, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
       congr 2
       funext i
       exact Fin.elim0 i
   | succ k ih =>
-      simp only [senderRun, senderTables, transfer_eq, Probability.PMF.monad_bind_eq_bind,
+      simp only [senderRun, senderTables_succ, transfer_eq, Probability.PMF.monad_bind_eq_bind,
         Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, ih,
         PMF.bind_map, PMF.map_bind, PMF.pure_map, Function.comp_def]
       congr 1
@@ -223,19 +244,70 @@ structure Receiver (State : Type) where
   /-- Randomized state update after seeing the selected bit. -/
   receive : State → Bool → PMF State
 
+/-- One receiver commit recursion, shared by semantic and program executions. The backend
+supplies receiver-local actions, fresh masks, and the selected OT answer. No sender mask is
+passed to `choose` or `receive`. -/
+def receiverCommitWith {m : Type → Type} [Monad m] {State : Type}
+    (choose : ℕ → State → m (Fin 4 × State)) (receive : State → Bool → m State)
+    (coin : m Bool)
+    (call : (Fin 4 → Bool) → Fin 4 → m ((i : Fin 2) → ot14Spec.Answer () i))
+    (b : Bool) :
+    (k : ℕ) → State → m ((Fin k → Bool) × (Fin k → Fin 4 × Bool) × State)
+  | 0, st => pure (Fin.elim0, Fin.elim0, st)
+  | k + 1, st => do
+      let (j, next) ← choose k st
+      let r ← coin
+      let answers ← call (table b r) j
+      let next ← receive next (answers 1)
+      let (masks, rest, final) ← receiverCommitWith choose receive coin call b k next
+      pure (Fin.cons r masks, Fin.cons (j, answers 1) rest, final)
+
+/-- Honest commit execution, retaining the sender's private masks alongside the receiver's
+transcript and final state. The masks are never passed to the receiver strategy. The semantic
+backend uses the actual OT world and is the original PMF specialization of the shared recursion. -/
+noncomputable def receiverCommit {State : Type} (A : Receiver State) (b : Bool) (k : ℕ)
+    (st : State) : PMF ((Fin k → Bool) × (Fin k → Fin 4 × Bool) × State) :=
+  receiverCommitWith A.choose A.receive (PMF.uniformOfFintype Bool) transfer b k st
+
+/-- No receiver calls or masks are sampled at zero rounds. -/
+theorem receiverCommit_zero {State : Type} (A : Receiver State) (b : Bool) (st : State) :
+    receiverCommit A b 0 st = pure (Fin.elim0, Fin.elim0, st) := rfl
+
+/-- The PMF backend keeps the original actual-OT execution, including sampling order. -/
+theorem receiverCommit_succ {State : Type} (A : Receiver State) (b : Bool) (k : ℕ) (st : State) :
+    receiverCommit A b (k + 1) st = (do
+      let (j, next) ← A.choose k st
+      let r ← PMF.uniformOfFintype Bool
+      let ans ← transfer (table b r) j
+      let next ← A.receive next (ans 1)
+      let (masks, rest, final) ← receiverCommit A b k next
+      pure (Fin.cons r masks, Fin.cons (j, ans 1) rest, final)) := rfl
+
 /-- Honest sender against an adaptive receiver. The result explicitly includes every receiver
 query and answer, as well as final private state. Each fresh sender mask is independent of the
-receiver's current query and history. -/
-noncomputable def receiverRun {State : Type} (A : Receiver State) (b : Bool) :
-    (k : ℕ) → State → PMF ((Fin k → Fin 4 × Bool) × State)
-  | 0, st => pure (Fin.elim0, st)
-  | k + 1, st => do
+receiver's current query and history. The sender's masks are projected away. -/
+noncomputable def receiverRun {State : Type} (A : Receiver State) (b : Bool) (k : ℕ) (st : State) :
+    PMF ((Fin k → Fin 4 × Bool) × State) :=
+  (receiverCommit A b k st).map Prod.snd
+
+/-- Observing zero commit calls returns an empty receiver transcript. -/
+theorem receiverRun_zero {State : Type} (A : Receiver State) (b : Bool) (st : State) :
+    receiverRun A b 0 st = pure (Fin.elim0, st) := by
+  simp [receiverRun, receiverCommit_zero]
+
+/-- The receiver observation keeps the original step-by-step OT execution, without exposing
+any honest sender mask to the strategy. -/
+theorem receiverRun_succ {State : Type} (A : Receiver State) (b : Bool) (k : ℕ) (st : State) :
+    receiverRun A b (k + 1) st = (do
       let (j, next) ← A.choose k st
       let r ← PMF.uniformOfFintype Bool
       let ans ← transfer (table b r) j
       let next ← A.receive next (ans 1)
       let (rest, final) ← receiverRun A b k next
-      pure (Fin.cons (j, ans 1) rest, final)
+      pure (Fin.cons (j, ans 1) rest, final)) := by
+  simp only [receiverRun, receiverCommit_succ, Probability.PMF.monad_bind_eq_bind,
+    Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map, PMF.bind_map,
+    Function.comp_def]
 
 private theorem uniform_table (b : Bool) (j : Fin 4) :
     (PMF.uniformOfFintype Bool).map (fun r => table b r j) = PMF.uniformOfFintype Bool := by
@@ -255,7 +327,7 @@ theorem perfectHiding {State : Type} (A : Receiver State) (b b' : Bool) (k : ℕ
   induction k generalizing st with
   | zero => rfl
   | succ k ih =>
-      simp only [receiverRun, transfer_eq, Probability.PMF.monad_bind_eq_bind,
+      simp only [receiverRun_succ, transfer_eq, Probability.PMF.monad_bind_eq_bind,
         Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
       congr 1
       funext ⟨j, next⟩

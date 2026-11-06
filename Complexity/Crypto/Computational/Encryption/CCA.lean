@@ -12,6 +12,7 @@ public import Complexity.Computability.Probabilistic.Oracle.Parameter
 public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Crypto.Computational.Encryption.Basic
+public import Complexity.Crypto.Computational.Encryption.DecryptionBound
 public import Complexity.Crypto.Game.Hybrid
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -2778,24 +2779,11 @@ theorem INDCCA2On.indcca2MultiOn {Msg Out : Type} [Inhabited Msg]
     INDCCA2MultiOn valid encMsg encOut keyGen encrypt decrypt := by
   intro adversary hA
   obtain ⟨ck, dk, hlenKey⟩ := hkeyGen.length_le
-  obtain ⟨cd, dd, hlenDec⟩ := hdecrypt.tidy.polyBounded_length.exists_le
+  obtain ⟨decBound, hdecBoundPoly, hdecBound⟩ := exists_decryption_length_bound hkeyGen hdecrypt
   obtain ⟨_, _, _, _, cq, dq, _, _, hlenCh⟩ := hA.query_bounds
-  let decBound : ℕ → List Bool → ℕ :=
-    fun n req => cd * (2 * n + 2 * (ck * (n + 1) ^ dk) + req.length + 5) ^ dd
   let Q : ℕ → ℕ := fun n => cq * (n + ck * (n + 1) ^ dk + 2) ^ dq
-  have hdecBoundPoly :
-      ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
-        (encPair encUnary encBits) encUnary := by
-    dsimp only [decBound]; exact ComputableInPolyTime.of_tidy (by fun_prop)
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by
     dsimp only [Q]; exact ComputableInPolyTime.of_tidy (by fun_prop)
-  have hdecBound (n : ℕ) (keys : List Bool × List Bool)
-      (hkeys : keys ∈ (ProbComp.eval (keyGen n)).support) (req : List Bool) :
-      (encOption encOut (decrypt n keys.2 req)).length ≤ decBound n req := by
-    have hk := hlenKey n keys hkeys
-    have hd := hlenDec (n, keys.2, req)
-    simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply] at hk hd
-    exact hd.trans (Nat.mul_le_mul_left cd (Nat.pow_le_pow_left (by omega) dd))
   have hQ (n : ℕ) (keys : List Bool × List Bool)
       (hkeys : keys ∈ (ProbComp.eval (keyGen n)).support)
       (choiceOut : (List (Msg × Msg) × List Bool) × Unit)

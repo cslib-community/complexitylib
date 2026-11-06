@@ -39,8 +39,9 @@ protocol over a `PrimeOrderGroupFamily` `F`:
      commitment `t = r • g` and response `z = (r + roOut * sk) mod q`, both certified in
      `ComputableInPolyTime` and `IsPPTOn`.
    * **Verification and commitment recovery** (`schnorrSigVerifyBits`, `schnorrRecoverCommitBits`):
-     checks `z • g == t + roOut • pk` (and recovers `z • g - roOut • pk`) on encoded group elements
-     in polynomial time (`computableInPolyTime_schnorrSigVerifyBits`,
+     compares the commitment word with the canonical recovery of `z • g - roOut • pk`.
+     Under a canonical public key, acceptance forces a canonical commitment without a decoder.
+     Both operations run in polynomial time (`computableInPolyTime_schnorrSigVerifyBits`,
      `computableInPolyTime_schnorrRecoverCommitBits`), with exact completeness on honest signatures
      (`schnorrSigVerifyBits_schnorrSignCoins`).
 
@@ -90,6 +91,10 @@ eavesdropping security are provided by `SchnorrIdentification` and `SchnorrEaves
   `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_schnorrRecoverCommitBits`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSigVerifyBits_schnorrSignCoins`: polynomial-time and
   strict-PPT certificates and completeness of the bit-encoded operations.
+* `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSigVerifyBits_eq_true_iff`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSigVerifyBits_commitment_mem_range`: acceptance under
+  a canonical public key forces the exact recovered encoding, for arbitrary response and challenge
+  words.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrFamilyROMScheme_correct`,
   `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_eufCmaGame_schnorrFamilyROMScheme_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_eufCmaGame_schnorrScalarROMScheme_le`,
@@ -304,87 +309,6 @@ theorem isPPTOn_schnorrSignCoins :
       (encPair encBits encBits) (fun input => pure (F.schnorrSignCoins input)) :=
   F.computableInPolyTime_schnorrSignCoins.isPPTOn
 
-/-- Bit-encoded Schnorr signature verification ([BonehShoup2023], Section 19.2): given
-`(d, pk, msg, (t, z), roOut)` where `roOut` is the random-oracle challenge for `(msg, t)`, check
-whether `z • g == t + roOut • pk` on encoded group elements. This checks the algebraic equation
-for a supplied challenge; the caller must enforce `roOut = H(msg, t)` in the same oracle world
-used by the signer and adversary. -/
-def schnorrSigVerifyBits
-    (input : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool) : Bool :=
-  let (d, pk, _msg, (t, z), roOut) := input
-  F.smul (d, ofBits z, F.encode d (F.generator d)) == F.add (d, t, F.smul (d, ofBits roOut, pk))
-
-/-- **Bit-level Schnorr signature verification `schnorrSigVerifyBits` is computable in polynomial
-time**. -/
-theorem computableInPolyTime_schnorrSigVerifyBits :
-    ComputableInPolyTime F.schnorrSigVerifyBits
-      (encPair F.encDesc
-        (encPair encBits (encPair encBits (encPair (encPair encBits encBits) encBits))))
-      encBool := by
-  let encIn := encPair F.encDesc
-    (encPair encBits (encPair encBits (encPair (encPair encBits encBits) encBits)))
-  have hd : ComputableInPolyTime
-      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.1)
-      encIn F.encDesc := by fun_prop
-  have hpk : ComputableInPolyTime
-      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.2.1)
-      encIn encBits := by fun_prop
-  have ht : ComputableInPolyTime
-      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.2.2.2.1.1)
-      encIn encBits := by fun_prop
-  have hz : ComputableInPolyTime
-      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.2.2.2.1.2)
-      encIn encBits := by fun_prop
-  have hro : ComputableInPolyTime
-      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.2.2.2.2)
-      encIn encBits := by fun_prop
-  have hz_nat : ComputableInPolyTime
-      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool =>
-        ofBits p.2.2.2.1.2) encIn encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hz.tidy)
-  have hro_nat : ComputableInPolyTime
-      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool =>
-        ofBits p.2.2.2.2) encIn encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hro.tidy)
-  have hg := F.computableInPolyTime_generator.comp hd
-  have hlhs := F.computableInPolyTime_smul.comp (hd.prod (hz_nat.prod hg))
-  have hcpk := F.computableInPolyTime_smul.comp (hd.prod (hro_nat.prod hpk))
-  have hrhs := F.computableInPolyTime_add.comp (hd.prod (ht.prod hcpk))
-  have hbeq : ComputableInPolyTime (fun q : List Bool × List Bool => q.1 == q.2)
-      (encPair encBits encBits) encBool := by fun_prop
-  exact hbeq.comp (hlhs.prod hrhs)
-
-/-- `schnorrSigVerifyBits` lifted to `ProbComp` is uniform strict PPT. -/
-theorem isPPTOn_schnorrSigVerifyBits :
-    IsPPTOn
-      (encPair F.encDesc
-        (encPair encBits (encPair encBits (encPair (encPair encBits encBits) encBits))))
-      encBool (fun input => pure (F.schnorrSigVerifyBits input)) :=
-  F.computableInPolyTime_schnorrSigVerifyBits.isPPTOn
-
-/-- On encoded group elements `pk = F.encode d u` and `t = F.encode d T`, `schnorrSigVerifyBits`
-decides Schnorr's verification equation `z • g = T + c • u`. -/
-theorem schnorrSigVerifyBits_encode (d : F.Desc) (u T : F.Carrier d)
-    (msg z roOut : List Bool) :
-    F.schnorrSigVerifyBits (d, F.encode d u, msg, (F.encode d T, z), roOut) =
-      decide ((ofBits z : ZMod (F.order d)) • F.generator d =
-        T + (ofBits roOut : ZMod (F.order d)) • u) := by
-  simp only [schnorrSigVerifyBits, F.smul_encode, F.add_encode, beq_eq_decide,
-    (F.encode_injective d).eq_iff]
-
-/-- **Completeness of bit-encoded Schnorr signing and verification**: every signature produced by
-`schnorrSignCoins` on a key pair `(encode (α • g), encScalar α)` verifies under
-`schnorrSigVerifyBits` with the same random-oracle challenge `roOut`. -/
-theorem schnorrSigVerifyBits_schnorrSignCoins (d : F.Desc) (α r : ZMod (F.order d))
-    (msg roOut : List Bool) :
-    F.schnorrSigVerifyBits
-      (d, F.encode d (α • F.generator d), msg,
-        F.schnorrSignCoins (d, F.encScalar d α, msg, F.encScalar d r, roOut), roOut) =
-      true := by
-  rw [schnorrSignCoins_encScalar, schnorrSigVerifyBits_encode]
-  simp only [encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits, Nat.foldr_bit_bits,
-    ZMod.natCast_zmod_val, add_smul, mul_smul, decide_true]
-
 /-- Bit-level Schnorr commitment recovery ([BonehShoup2023], Section 19.2.1): given
 `(d, pk, roOut, z)`, compute the encoded group element `z • g - roOut • pk`. -/
 def schnorrRecoverCommitBits (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
@@ -433,14 +357,102 @@ of `z • g - roOut • u`. -/
   simp only [schnorrRecoverCommitBits, F.smul_encode, F.add_encode, hneg, neg_smul,
     ← sub_eq_add_neg]
 
+/-- Bit-encoded Schnorr signature verification ([BonehShoup2023], Section 19.2): given
+`(d, pk, msg, (t, z), roOut)` where `roOut` is the random-oracle challenge for `(msg, t)`, compare
+`t` with the canonical encoding of `z • g - roOut • pk`. For a canonical public key this rejects
+noncanonical commitments without requiring a group-membership decoder. This checks the algebraic
+equation for a supplied challenge; the caller must enforce `roOut = H(msg, t)` in the same
+oracle world used by the signer and adversary. -/
+def schnorrSigVerifyBits
+    (input : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool) : Bool :=
+  let (d, pk, _msg, (t, z), roOut) := input
+  t == F.schnorrRecoverCommitBits (d, pk, roOut, z)
+
+/-- **Bit-level Schnorr signature verification `schnorrSigVerifyBits` is computable in polynomial
+time**. -/
+theorem computableInPolyTime_schnorrSigVerifyBits :
+    ComputableInPolyTime F.schnorrSigVerifyBits
+      (encPair F.encDesc
+        (encPair encBits (encPair encBits (encPair (encPair encBits encBits) encBits))))
+      encBool := by
+  let encIn := encPair F.encDesc
+    (encPair encBits (encPair encBits (encPair (encPair encBits encBits) encBits)))
+  have hd : ComputableInPolyTime
+      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.1)
+      encIn F.encDesc := by fun_prop
+  have hpk : ComputableInPolyTime
+      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.2.1)
+      encIn encBits := by fun_prop
+  have ht : ComputableInPolyTime
+      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.2.2.2.1.1)
+      encIn encBits := by fun_prop
+  have hz : ComputableInPolyTime
+      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.2.2.2.1.2)
+      encIn encBits := by fun_prop
+  have hro : ComputableInPolyTime
+      (fun p : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool => p.2.2.2.2)
+      encIn encBits := by fun_prop
+  have hrecover := F.computableInPolyTime_schnorrRecoverCommitBits.comp
+    (hd.prod (hpk.prod (hro.prod hz)))
+  have hbeq : ComputableInPolyTime (fun q : List Bool × List Bool => q.1 == q.2)
+      (encPair encBits encBits) encBool := by fun_prop
+  exact hbeq.comp (ht.prod hrecover)
+
+/-- `schnorrSigVerifyBits` lifted to `ProbComp` is uniform strict PPT. -/
+theorem isPPTOn_schnorrSigVerifyBits :
+    IsPPTOn
+      (encPair F.encDesc
+        (encPair encBits (encPair encBits (encPair (encPair encBits encBits) encBits))))
+      encBool (fun input => pure (F.schnorrSigVerifyBits input)) :=
+  F.computableInPolyTime_schnorrSigVerifyBits.isPPTOn
+
 /-- On encoded group elements `pk = F.encode d u` and `t = F.encode d T`, `schnorrSigVerifyBits`
-agrees with checking `t = schnorrRecoverCommitBits (d, pk, roOut, z)`. -/
-theorem schnorrSigVerifyBits_eq_decide_recover (d : F.Desc) (u T : F.Carrier d)
+decides Schnorr's verification equation `z • g = T + c • u`. -/
+theorem schnorrSigVerifyBits_encode (d : F.Desc) (u T : F.Carrier d)
     (msg z roOut : List Bool) :
     F.schnorrSigVerifyBits (d, F.encode d u, msg, (F.encode d T, z), roOut) =
-      decide (F.encode d T = F.schnorrRecoverCommitBits (d, F.encode d u, roOut, z)) := by
-  rw [schnorrSigVerifyBits_encode, schnorrRecoverCommitBits_encode]
-  simp only [(F.encode_injective d).eq_iff, eq_sub_iff_add_eq, eq_comm]
+      decide ((ofBits z : ZMod (F.order d)) • F.generator d =
+        T + (ofBits roOut : ZMod (F.order d)) • u) := by
+  simp only [schnorrSigVerifyBits, schnorrRecoverCommitBits_encode, beq_eq_decide,
+    (F.encode_injective d).eq_iff, eq_sub_iff_add_eq, eq_comm]
+
+/-- **Completeness of bit-encoded Schnorr signing and verification**: every signature produced by
+`schnorrSignCoins` on a key pair `(encode (α • g), encScalar α)` verifies under
+`schnorrSigVerifyBits` with the same random-oracle challenge `roOut`. -/
+theorem schnorrSigVerifyBits_schnorrSignCoins (d : F.Desc) (α r : ZMod (F.order d))
+    (msg roOut : List Bool) :
+    F.schnorrSigVerifyBits
+      (d, F.encode d (α • F.generator d), msg,
+        F.schnorrSignCoins (d, F.encScalar d α, msg, F.encScalar d r, roOut), roOut) =
+      true := by
+  rw [schnorrSignCoins_encScalar, schnorrSigVerifyBits_encode]
+  simp only [encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits, Nat.foldr_bit_bits,
+    ZMod.natCast_zmod_val, add_smul, mul_smul, decide_true]
+
+/-- Verification compares the supplied commitment with public commitment recovery on all words,
+including malformed inputs. -/
+theorem schnorrSigVerifyBits_eq_decide_recover (d : F.Desc)
+    (pk msg t z roOut : List Bool) :
+    F.schnorrSigVerifyBits (d, pk, msg, (t, z), roOut) =
+      decide (t = F.schnorrRecoverCommitBits (d, pk, roOut, z)) := by
+  simp only [schnorrSigVerifyBits, beq_eq_decide]
+
+/-- Under a canonical public key, acceptance forces the exact canonical recovered commitment.
+The response and supplied challenge are arbitrary words, interpreted as scalars modulo the order.
+No encoding-range conclusion is asserted for malformed public keys. -/
+theorem schnorrSigVerifyBits_eq_true_iff (d : F.Desc) (u : F.Carrier d)
+    (msg t z roOut : List Bool) :
+    F.schnorrSigVerifyBits (d, F.encode d u, msg, (t, z), roOut) = true ↔
+      t = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
+        (ofBits roOut : ZMod (F.order d)) • u) := by
+  simp only [schnorrSigVerifyBits, schnorrRecoverCommitBits_encode, beq_iff_eq]
+
+/-- Every accepted commitment is in the encoding range when the public key is canonical. -/
+theorem schnorrSigVerifyBits_commitment_mem_range (d : F.Desc) (u : F.Carrier d)
+    (msg t z roOut : List Bool)
+    (h : F.schnorrSigVerifyBits (d, F.encode d u, msg, (t, z), roOut) = true) :
+    t ∈ Set.range (F.encode d) := by
+  exact ⟨_, ((F.schnorrSigVerifyBits_eq_true_iff d u msg t z roOut).mp h).symm⟩
 
 /-! ### 2. Typed ROM scheme instantiation and Pointcheval–Stern / Bellare–Neven security bound -/
 
@@ -469,47 +481,51 @@ noncomputable def schnorrFamilyROMScheme {M : Type} (d : F.Desc) {m : ℕ}
     (hm : 2 ^ m ≤ F.order d) :
     ROMSignature.Scheme (F.Carrier d) (ZMod (F.order d) × F.Carrier d) M
       (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d) (BitString m) :=
-  fiatShamir (F.schnorrBitSigma d hm) (schnorrKeyGen (F.generator d))
+  fiatShamir (Function.Embedding.refl _) (F.schnorrBitSigma d hm) (schnorrKeyGen (F.generator d))
 
 /-- **Schnorr's Fiat–Shamir ROM signature scheme with full scalar challenges** `ZMod (F.order d)`
 over `F.Carrier d`. -/
 noncomputable def schnorrScalarROMScheme {M : Type} (d : F.Desc) :
     ROMSignature.Scheme (F.Carrier d) (ZMod (F.order d) × F.Carrier d) M
       (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d) (ZMod (F.order d)) :=
-  fiatShamir (schnorr (Function.Embedding.refl _) (F.generator d)) (schnorrKeyGen (F.generator d))
+  fiatShamir (Function.Embedding.refl _) (schnorr (Function.Embedding.refl _) (F.generator d))
+    (schnorrKeyGen (F.generator d))
 
 /-- **Correctness of `schnorrFamilyROMScheme`**: every honest signature verifies. -/
 theorem schnorrFamilyROMScheme_correct {M : Type} [DecidableEq M] (d : F.Desc) {m : ℕ}
     (hm : 2 ^ m ≤ F.order d) :
     (F.schnorrFamilyROMScheme (M := M) d hm).Correct :=
-  fiatShamir_correct schnorr_complete fun _ h => mem_support_schnorrKeyGen h
+  fiatShamir_correct (Function.Embedding.refl _) schnorr_complete fun _ h =>
+    mem_support_schnorrKeyGen h
 
 /-- **Correctness of `schnorrScalarROMScheme`**: every honest signature verifies. -/
 theorem schnorrScalarROMScheme_correct {M : Type} [DecidableEq M] (d : F.Desc) :
     (F.schnorrScalarROMScheme (M := M) d).Correct :=
-  fiatShamir_correct schnorr_complete fun _ h => mem_support_schnorrKeyGen h
+  fiatShamir_correct (Function.Embedding.refl _) schnorr_complete fun _ h =>
+    mem_support_schnorrKeyGen h
 
 /-- The Fiat–Shamir / Bellare–Neven forking discrete-logarithm reduction for
-`schnorrFamilyROMScheme`. -/
+`schnorrFamilyROMScheme`, returning zero on a failed fork. -/
 noncomputable def schnorrFamilyROMSchemeReduction {M : Type} [DecidableEq M] (d : F.Desc) {m : ℕ}
     (hm : 2 ^ m ≤ F.order d)
     (A : Forger (F.Carrier d) M (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d) (BitString m))
     (Qs Qro : ℕ) : F.Carrier d → PMF (ZMod (F.order d)) :=
-  FiatShamir.reduction (F.schnorrBitSigma d hm)
+  FiatShamir.reduction (Function.Embedding.refl _) (F.schnorrBitSigma d hm)
     (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod (F.order d))
       (F.Carrier d) (F.generator d)) id (F.challengeEmbedding d hm))
-    (linearExtract (F.challengeEmbedding d hm)) A Qs Qro
+    (linearExtract (F.challengeEmbedding d hm)) 0 A Qs Qro
 
 /-- The Fiat–Shamir / Bellare–Neven forking discrete-logarithm reduction for
-`schnorrScalarROMScheme`. -/
+`schnorrScalarROMScheme`, returning zero on a failed fork. -/
 noncomputable def schnorrScalarROMSchemeReduction {M : Type} [DecidableEq M] (d : F.Desc)
     (A : Forger (F.Carrier d) M (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d)
       (ZMod (F.order d)))
     (Qs Qro : ℕ) : F.Carrier d → PMF (ZMod (F.order d)) :=
-  FiatShamir.reduction (schnorr (Function.Embedding.refl _) (F.generator d))
+  FiatShamir.reduction (Function.Embedding.refl _) (schnorr (Function.Embedding.refl _)
+    (F.generator d))
     (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod (F.order d))
       (F.Carrier d) (F.generator d)) id (Function.Embedding.refl _))
-    (linearExtract (Function.Embedding.refl _)) A Qs Qro
+    (linearExtract (Function.Embedding.refl _)) 0 A Qs Qro
 
 /-- In `F.Carrier d`, the one-way game for `schnorrKeyGen (F.generator d)` is the exact
 discrete-logarithm experiment: draw `α ← PMF.uniformOfFintype (ZMod (F.order d))`, run `B (α • g)`,
