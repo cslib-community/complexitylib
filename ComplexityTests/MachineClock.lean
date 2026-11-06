@@ -52,17 +52,17 @@ private def observe (cfg : Config 1 Bool (Clock.Control Bool) Bool []) :=
 
 -- Three source instructions submit two queries; extra fuel causes no further query after cutoff.
 example : (OracleComp.interpret record (observe <$> echoForever.withClock.runConfigFrom
-    coin query 12 (Clock.config initial (tape 3) 0 false))).run 7 =
+    coin query 12 (AuxiliaryTape.config initial (tape 3) 0 false))).run 7 =
     (([false], [false], [], [true], none, 3), 9) := by rfl
 
 -- A zero budget stops before even the first source query and retains both pending buffers.
 example : (OracleComp.interpret record (observe <$> echoForever.withClock.runConfigFrom
-    coin query 4 (Clock.config initial (tape 0) 0 false))).run 7 =
+    coin query 4 (AuxiliaryTape.config initial (tape 0) 0 false))).run 7 =
     (([], [false], [true, false], [], none, 0), 7) := by rfl
 
 -- A halted source is padded, a false cell stops the clock, and its head may start below zero.
 example : (OracleComp.interpret record (observe <$> echoForever.withClock.runConfigFrom
-    coin query 8 (Clock.config
+    coin query 8 (AuxiliaryTape.config
       { initial with tapes := { initial.tapes with state := none, output := [true] } }
       (fun z => some (z == -1)) (-1) false))).run 7 =
     (([true], [false], [true, false], [], none, 0), 7) := by rfl
@@ -71,10 +71,10 @@ example : (OracleComp.interpret record (observe <$> echoForever.withClock.runCon
 example (law : PMF Bool) (budget padding s : ℕ) :
     (OracleComp.interpret (oracle law)
       (echoForever.withClock.runConfigFrom coin query (2 * budget + 1 + padding)
-        (Clock.config initial (tape budget) 0 false))).run s =
+        (AuxiliaryTape.config initial (tape budget) 0 false))).run s =
       ((OracleComp.interpret (oracle law)
         (echoForever.runConfigFrom coin query budget initial)).run s).map
-        (fun (final, s') => (Clock.stopped final (tape budget) budget, s')) := by
+        (fun (final, s') => (AuxiliaryTape.stopped final (tape budget) budget, s')) := by
   simpa only [zero_add] using
     MultiTapePTM.run_interpret_runConfigFrom_withClock_add echoForever coin query (oracle law) law
       (fun s => congrArg (fun p => p.run s) (OracleComp.interpret_query (oracle law) (.inl ())))
@@ -88,7 +88,8 @@ private def countCoins : (q : Query) → StateT ℕ Id (spec q)
 
 -- Statelessness is essential: even a zero budget consumes the controller's stopping coin.
 example : (OracleComp.interpret countCoins
-      (echoForever.withClock.runFrom coin query 1 (Clock.config initial (tape 0) 0 false))).run 0 ≠
+      (echoForever.withClock.runFrom coin query 1
+        (AuxiliaryTape.config initial (tape 0) 0 false))).run 0 ≠
     (OracleComp.interpret countCoins (echoForever.runFrom coin query 0 initial)).run 0 := by
   change (([], 1) : List Bool × ℕ) ≠ ([], 0)
   decide

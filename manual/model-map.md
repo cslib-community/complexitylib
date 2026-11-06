@@ -246,6 +246,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `crypto-ideal-oracle` | [Random-oracle signatures and ideal-permutation ciphers](programs-crypto-and-probability/protocols-and-privacy.md) | ideal-oracles |
 | `crypto-zero-knowledge` | [Generable and auxiliary-input zero knowledge](programs-crypto-and-probability/protocols-and-privacy.md) | interactive-proofs |
 | `crypto-mpc` | [Synchronous typed oracle-aided MPC](programs-crypto-and-probability/protocols-and-privacy.md) | protocols |
+| `crypto-uc` | [Call-bounded UC execution and emulation](programs-crypto-and-probability/protocols-and-privacy.md) | protocols |
 | `crypto-perfect-secrecy` | [Perfect-secrecy encryption](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
 | `crypto-secret-sharing` | [Authorized-coalition secret sharing](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
 | `average-exact-ppt` | [MildlyHardOnAverage](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |

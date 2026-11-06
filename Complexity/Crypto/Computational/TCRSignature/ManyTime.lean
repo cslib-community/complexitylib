@@ -1003,10 +1003,10 @@ chronological order. -/
 private noncomputable def pairSigningOracle (S : SignatureScheme) (H : KeyedHashFamily)
     (n : ℕ) (otsk : List Bool) (request : Unit × List Bool)
     (pairs : List (List Bool × List Bool)) :
-    PMF (List Bool × List (List Bool × List Bool)) :=
-  (BitString.uniformList (H.keyLen n)).bind fun k =>
-    (ProbComp.eval (S.sign otsk (otsMsg H n k (H.eval n k request.2)))).map fun ots =>
-      (encPair encBits encBits (k, ots), (request.2, k) :: pairs)
+    PMF (List Bool × List (List Bool × List Bool)) := do
+  let k ← BitString.uniformList (H.keyLen n)
+  (ProbComp.eval (S.sign otsk (otsMsg H n k (H.eval n k request.2)))).map fun ots =>
+    (encPair encBits encBits (k, ots), (request.2, k) :: pairs)
 
 /-- Deterministic step accumulating both `FiniteConfig` and `(msg, hashKey)` query pairs. -/
 private def replayPairStep {k : ℕ} {Control : Type}
@@ -1119,8 +1119,8 @@ private theorem iterate_finiteStep_pairSigningOracle {k : ℕ} {Control : Type}
           StateT.run_pure, ProbOracleComp.interpret_query, Probability.PMF.monad_bind_eq_bind,
           Probability.PMF.monad_pure_eq_pure, ProbComp.eval_bind, ProbComp.eval_pure,
           PMF.map_bind, PMF.pure_map, List.foldl_append, List.foldl_cons, List.foldl_nil, haccEq]
-        simp only [StateT.run, pairSigningOracle, replayPairStep, hs, htr, _root_.PMF.map,
-          Function.comp_def, PMF.bind_bind, PMF.pure_bind]
+        simp only [StateT.run, pairSigningOracle, replayPairStep, hs, htr,
+          PMF.monad_bind_eq_bind, _root_.PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind]
 
 private theorem iterate_add_prob {State : Type} (a b : ℕ) (step : State → ProbComp State)
     (initial : State) :
@@ -1283,11 +1283,11 @@ private def simFuelOf (c d n : ℕ) (otvk : List Bool) : ℕ :=
 private noncomputable def traceSamplePMF {k : ℕ} {Control : Type}
     (S : SignatureScheme) (H : KeyedHashFamily)
     (machine : MultiTapePTM k Bool Control Unit) (c d n : ℕ) :
-    PMF ((List Bool × List Bool) × List TraceStep) :=
-  (ProbComp.eval (S.keyGen (otsParam H n))).bind fun keys =>
-    (ProbComp.eval (OracleComp.iterate (simFuelOf c d n keys.1)
-      (sampleStep S H machine n keys.2 (simFuelOf c d n keys.1) (simWordOf n keys.1)) [])).map
-      fun trace => (keys, trace)
+    PMF ((List Bool × List Bool) × List TraceStep) := do
+  let keys ← ProbComp.eval (S.keyGen (otsParam H n))
+  (ProbComp.eval (OracleComp.iterate (simFuelOf c d n keys.1)
+    (sampleStep S H machine n keys.2 (simFuelOf c d n keys.1) (simWordOf n keys.1)) [])).map
+    fun trace => (keys, trace)
 
 private def winTcrAt {k : ℕ} {Control : Type}
     (H : KeyedHashFamily) (machine : MultiTapePTM k Bool Control Unit)
@@ -1307,32 +1307,32 @@ private def winTcrAt {k : ℕ} {Control : Type}
 
 private noncomputable def tcrSlotTrial {k : ℕ} {Control : Type}
     (S : SignatureScheme) (H : KeyedHashFamily)
-    (machine : MultiTapePTM k Bool Control Unit) (c d n slot : ℕ) : Game :=
-  (ProbComp.eval (S.keyGen (otsParam H n))).bind fun keys =>
-    let B := simFuelOf c d n keys.1
-    let word := simWordOf n keys.1
-    if slot < B then
-      (ProbComp.eval (OracleComp.iterate slot
-        (sampleStep S H machine n keys.2 B word) [])).bind fun preTrace =>
-        (PMF.uniformOfFintype Bool).bind fun b =>
-          let cfg := replayCfg machine B word preTrace
-          let mTarget := (queryOf machine cfg b).getD []
-          (BitString.uniformList (H.keyLen n)).bind fun kStar =>
-            let midComp : ProbComp (List TraceStep) :=
-              match queryOf machine cfg b with
-              | none => pure (preTrace ++ [(b, kStar, [])])
-              | some msg => do
-                let ots ← S.sign keys.2 (otsMsg H n kStar (H.eval n kStar msg))
-                pure (preTrace ++ [(b, kStar, ots)])
-            (ProbComp.eval midComp).bind fun midTrace =>
-              (ProbComp.eval (OracleComp.iterate (B - 1 - slot)
-                (sampleStep S H machine n keys.2 B word) midTrace)).map fun fullTrace =>
-                  let finalCfg := replayCfg machine B word fullTrace
-                  let mOut := (msgSigDecoder.decode finalCfg.tapes.output).1
-                  isCollision (H.eval n) (fun _ _ => true) n kStar mTarget mOut
-    else
-      (BitString.uniformList (H.keyLen n)).map fun kStar =>
-        isCollision (H.eval n) (fun _ _ => true) n kStar [] []
+    (machine : MultiTapePTM k Bool Control Unit) (c d n slot : ℕ) : Game := do
+  let keys ← ProbComp.eval (S.keyGen (otsParam H n))
+  let B := simFuelOf c d n keys.1
+  let word := simWordOf n keys.1
+  if slot < B then
+    let preTrace ← ProbComp.eval (OracleComp.iterate slot
+      (sampleStep S H machine n keys.2 B word) [])
+    let b ← PMF.uniformOfFintype Bool
+    let cfg := replayCfg machine B word preTrace
+    let mTarget := (queryOf machine cfg b).getD []
+    let kStar ← BitString.uniformList (H.keyLen n)
+    let midComp : ProbComp (List TraceStep) :=
+      match queryOf machine cfg b with
+      | none => pure (preTrace ++ [(b, kStar, [])])
+      | some msg => do
+        let ots ← S.sign keys.2 (otsMsg H n kStar (H.eval n kStar msg))
+        pure (preTrace ++ [(b, kStar, ots)])
+    let midTrace ← ProbComp.eval midComp
+    (ProbComp.eval (OracleComp.iterate (B - 1 - slot)
+      (sampleStep S H machine n keys.2 B word) midTrace)).map fun fullTrace =>
+        let finalCfg := replayCfg machine B word fullTrace
+        let mOut := (msgSigDecoder.decode finalCfg.tapes.output).1
+        isCollision (H.eval n) (fun _ _ => true) n kStar mTarget mOut
+  else
+    (BitString.uniformList (H.keyLen n)).map fun kStar =>
+      isCollision (H.eval n) (fun _ _ => true) n kStar [] []
 
 private theorem eval_targetCollisionGame_tcrMultiAdversary {k : ℕ} {Control : Type}
     (S : SignatureScheme) (H : KeyedHashFamily)
@@ -1360,7 +1360,8 @@ private theorem eval_targetCollisionGame_tcrMultiAdversary {k : ℕ} {Control : 
     congr 1; funext kStar
     let w := encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))
     cases queryOf machine (replayCfg machine (c * (w.length + 1) ^ d) w preTrace) b <;>
-      simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+      simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
+        PMF.bind_bind, PMF.pure_bind]
   · dsimp only [tcrSlotTrial, simFuelOf, simWordOf, simPkOf] at hlt ⊢
     simp only [hlt, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind,
       tcrStateDecoder.decode_enc, Bool.false_eq_true, _root_.PMF.map, Function.comp_def]
@@ -1371,7 +1372,7 @@ private theorem succProbability_winTcrAt_le_trial {k : ℕ} {Control : Type}
     (((traceSamplePMF S H machine c d n).map (winTcrAt H machine c d n slot)) true).toNNReal ≤
       Game.succProbability (tcrSlotTrial S H machine c d n slot) := by
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) ?_
-  simp only [traceSamplePMF, tcrSlotTrial, PMF.map_bind]
+  simp only [traceSamplePMF, tcrSlotTrial, PMF.monad_bind_eq_bind, PMF.map_bind]
   refine PMF.bind_apply_mono_on_support _ true fun keys _ => ?_
   let B := simFuelOf c d n keys.1
   let word := simWordOf n keys.1
@@ -1538,7 +1539,7 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
       ProbComp.eval ((wordScheme S H).eufCmaGame adversary n) = μ.map winGame := by
     simp only [WordSignatureScheme.eufCmaGame, wordScheme_keyGen, wordScheme_verify, keyGen,
       ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, PMF.bind_bind,
-      PMF.pure_bind, μ, traceSamplePMF, PMF.map_bind]
+      PMF.pure_bind, μ, traceSamplePMF, PMF.monad_bind_eq_bind, PMF.map_bind]
     congr 1
     funext keys
     have hsim := ProbOracleComp.run_interpret_map_state
@@ -1550,7 +1551,7 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
         intro ⟨⟨⟩, msg⟩ pairs
         simp only [pairSigningOracle, WordSignatureScheme.signingOracle, wordScheme_sign, sign,
           pkOf, simPkOf, keyDecoder.decode_enc, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-          BitString.eval_sampleList, Function.comp_def, _root_.PMF.map,
+          BitString.eval_sampleList, PMF.monad_bind_eq_bind, Function.comp_def, _root_.PMF.map,
           PMF.bind_bind, PMF.pure_bind, List.map_cons])
       (adversary n (pkOf keys.1)) []
     have hrun := hrunPair keys
@@ -1563,7 +1564,7 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
         μ.map winSig := by
     simp only [SignatureScheme.eufCmaGame, manyTimeForger, otsParamInv_otsParam, ↓reduceIte,
       ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, μ,
-      traceSamplePMF, PMF.map_bind]
+      traceSamplePMF, PMF.monad_bind_eq_bind, PMF.map_bind]
     refine PMF.bind_congr_on_support _ _ _ fun keys hkeys => ?_
     simp only [OracleComp.interpret_bind, OracleComp.interpret_pure, StateT.run_bind,
       StateT.run_pure, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
@@ -1611,7 +1612,8 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
       winGame sample = true →
         winSig sample = true ∨ ∃ i : Fin D, winTcrAt H machine c d n i.val sample = true := by
     rintro ⟨keys, trace⟩ hsupp hwin
-    simp only [μ, traceSamplePMF, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hsupp
+    simp only [μ, traceSamplePMF, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+      PMF.mem_support_map_iff] at hsupp
     obtain ⟨keys', hkeys, trace', htrace, heqPair⟩ := hsupp
     rcases Prod.mk.inj heqPair.symm with ⟨rfl, rfl⟩
     have hpkLen : keys.1.length ≤ ckg * (otsParam H n + 1) ^ dkg :=

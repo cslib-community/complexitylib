@@ -17,7 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
-import Complexity.Computability.Probabilistic.Adaptive
+import Complexity.Computability.Probabilistic.Fold
 import Complexity.Computability.Probabilistic.Finite
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Tactic.PolyTime
@@ -771,20 +771,12 @@ private theorem computableInPolyTime_code_comp_xorPreludeCircuit {α : Type} {en
     (computableInPolyTime_code_xorPreludeCircuit m hn hcoins)).tidy
   exact .of_tidy (hcomp.of_enc_eq fun a => by rw [Boolean.compCode_code])
 
-/-! ### Part 4: Bounded-Growth Monadic List Folds and Word-Level Efficiency -/
+/-! ### Part 4: Word-Level Efficiency -/
 
 namespace PolyTimeRunner
 
 open Cslib.Circuits Cslib.Circuits.Boolean
 open Turing.MultiTapeTM ComputableTidilyInPolyTime
-
-private theorem length_encList_tail_le {Item : Type} (enc : Item ↪ List Bool)
-    (L : List Item) :
-    (encList enc L.tail).length ≤ (encList enc L).length := by
-  cases L with
-  | nil => rfl
-  | cons x rest =>
-    simp [encList_cons]
 
 private theorem length_encList_ofFn_le {n : ℕ} (u v : Fin n → List Bool) (d : ℕ)
     (h : ∀ i : Fin n, (v i).length ≤ (u i).length + d) :
@@ -878,133 +870,6 @@ private theorem isPPTOn_pi_sampleList {α : Type} {input : α ↪ List Bool}
     refine hbind.congr fun a => ?_
     rw [OracleComp.pi_succ]
     simp [ProbComp.eval_bind, ProbComp.eval_map]
-
-/-- Left monadic fold over a list in `OracleComp spec`. -/
-private def foldlMList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
-    (singleStep : Item → Acc → OracleComp spec Acc) :
-    List Item → Acc → OracleComp spec Acc
-  | [], acc => pure acc
-  | x :: rest, acc => do
-    let acc' ← singleStep x acc
-    foldlMList singleStep rest acc'
-
-@[simp] private theorem foldlMList_nil {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
-    (singleStep : Item → Acc → OracleComp spec Acc) (acc : Acc) :
-    foldlMList singleStep [] acc = pure acc := rfl
-
-@[simp] private theorem foldlMList_cons {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
-    (singleStep : Item → Acc → OracleComp spec Acc) (x : Item) (rest : List Item) (acc : Acc) :
-    foldlMList singleStep (x :: rest) acc = (do
-      let acc' ← singleStep x acc
-      foldlMList singleStep rest acc') := rfl
-
-@[simp] private theorem foldlMList_append {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
-    (singleStep : Item → Acc → OracleComp spec Acc) (L₁ L₂ : List Item) (acc : Acc) :
-    foldlMList singleStep (L₁ ++ L₂) acc = (do
-      let acc₁ ← foldlMList singleStep L₁ acc
-      foldlMList singleStep L₂ acc₁) := by
-  induction L₁ generalizing acc with
-  | nil => simp
-  | cons x rest ih => simp [ih, bind_assoc]
-
-/-- Single iteration step on `List Item × Acc` that consumes the head element (with `fallback` on
-`[]`) and advances to `tail`. -/
-private def stepList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type} (fallback : Item)
-    (singleStep : Item → Acc → OracleComp spec Acc)
-    (st : List Item × Acc) : OracleComp spec (List Item × Acc) :=
-  (fun acc' => (st.1.tail, acc')) <$> singleStep (st.1.headD fallback) st.2
-
-private theorem iterate_stepList_eq_foldlMList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
-    (fallback : Item) (singleStep : Item → Acc → OracleComp spec Acc)
-    (L : List Item) (acc : Acc) :
-    Prod.snd <$> OracleComp.iterate L.length (stepList fallback singleStep) (L, acc) =
-      foldlMList singleStep L acc := by
-  induction L generalizing acc with
-  | nil => simp [foldlMList]
-  | cons x rest ih =>
-    simp [List.length_cons, OracleComp.iterate_succ_bind, stepList, foldlMList,
-      ← ih, map_bind, bind_map_left]
-
-/-- Certify a monadic list fold `foldlMList singleStep (list a) (init a)` in `WordOracleComp`
-from a constant growth bound on the accumulator encoding `encAcc`. -/
-private theorem isOraclePPTOn_foldlMList_of_bounded_growth
-    {Operation α Item Acc : Type} [DecidableEq Operation]
-    {input : α ↪ List Bool} {encItem : Item ↪ List Bool} {encAcc : Acc ↪ List Bool}
-    (fallback : Item) {list : α → List Item} {init : α → Acc}
-    {singleStep : Item → Acc → WordOracleComp Operation Acc}
-    (hlist : ComputableTidilyInPolyTime list input (encList encItem))
-    (hinit : ComputableTidilyInPolyTime init input encAcc)
-    (hstep : IsOraclePPTOn (encPair encItem encAcc) encAcc (fun p => singleStep p.1 p.2))
-    {growth : ℕ}
-    (hgrowth : ∀ x acc, ∀ next ∈ OracleComp.support (singleStep x acc),
-      (encAcc next).length ≤ (encAcc acc).length + growth) :
-    IsOraclePPTOn input encAcc (fun a => foldlMList singleStep (list a) (init a)) := by
-  have hcount : ComputableTidilyInPolyTime (fun a => (list a).length) input encUnary :=
-    (length (enc := encItem)).comp hlist
-  have hinitial : ComputableTidilyInPolyTime (fun a => (list a, init a))
-      input (encPair (encList encItem) encAcc) :=
-    hlist.prod hinit
-  have hprep : ComputableTidilyInPolyTime
-      (fun st : List Item × Acc => (st.1.headD fallback, st.2))
-      (encPair (encList encItem) encAcc) (encPair encItem encAcc) :=
-    (listHeadDWithInput fallback (fst _ _)).prod (snd _ _)
-  have htail : ComputableTidilyInPolyTime
-      (fun st : List Item × Acc => st.1.tail)
-      (encPair (encList encItem) encAcc) (encList encItem) :=
-    (listTail encItem).comp (fst _ _)
-  have hloopStep : IsOraclePPTOn (encPair (encList encItem) encAcc)
-      (encPair (encList encItem) encAcc) (stepList fallback singleStep) :=
-    (hstep.preprocess hprep).pair htail
-  have hiter := IsOraclePPTOn.iterate_of_bounded_growth hcount hinitial hloopStep
-    (growth := growth) fun ⟨L, acc⟩ next hnext => by
-      obtain ⟨acc', hacc', rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
-      have h1 := length_encList_tail_le encItem L
-      have h2 := hgrowth (L.headD fallback) acc acc' hacc'
-      simp only [encPair_apply, List.length_append, length_frame]
-      omega
-  simpa only [iterate_stepList_eq_foldlMList] using
-    hiter.map (snd (encList encItem) encAcc)
-
-/-- Certify a monadic list fold `foldlMList singleStep (list a) (init a)` in `ProbComp`
-from a constant growth bound on the accumulator encoding `encAcc`. -/
-private theorem isPPTOn_foldlMList_of_bounded_growth
-    {α Item Acc : Type}
-    {input : α ↪ List Bool} {encItem : Item ↪ List Bool} {encAcc : Acc ↪ List Bool}
-    (fallback : Item) {list : α → List Item} {init : α → Acc}
-    {singleStep : Item → Acc → ProbComp Acc}
-    (hlist : ComputableTidilyInPolyTime list input (encList encItem))
-    (hinit : ComputableTidilyInPolyTime init input encAcc)
-    (hstep : IsPPTOn (encPair encItem encAcc) encAcc (fun p => singleStep p.1 p.2))
-    {growth : ℕ}
-    (hgrowth : ∀ x acc, ∀ next ∈ (ProbComp.eval (singleStep x acc)).support,
-      (encAcc next).length ≤ (encAcc acc).length + growth) :
-    IsPPTOn input encAcc (fun a => foldlMList singleStep (list a) (init a)) := by
-  have hcount : ComputableTidilyInPolyTime (fun a => (list a).length) input encUnary :=
-    (length (enc := encItem)).comp hlist
-  have hinitial : ComputableTidilyInPolyTime (fun a => (list a, init a))
-      input (encPair (encList encItem) encAcc) :=
-    hlist.prod hinit
-  have hprep : ComputableTidilyInPolyTime
-      (fun st : List Item × Acc => (st.1.headD fallback, st.2))
-      (encPair (encList encItem) encAcc) (encPair encItem encAcc) :=
-    (listHeadDWithInput fallback (fst _ _)).prod (snd _ _)
-  have htail : ComputableTidilyInPolyTime
-      (fun st : List Item × Acc => st.1.tail)
-      (encPair (encList encItem) encAcc) (encList encItem) :=
-    (listTail encItem).comp (fst _ _)
-  have hloopStep : IsPPTOn (encPair (encList encItem) encAcc)
-      (encPair (encList encItem) encAcc) (stepList fallback singleStep) :=
-    (hstep.preprocess (.of_tidy hprep)).pair htail
-  have hiter := IsPPTOn.iterate_of_bounded_growth hcount hinitial hloopStep
-    (growth := growth) fun ⟨L, acc⟩ next hnext => by
-      simp only [stepList, ProbComp.eval_map, PMF.mem_support_map_iff] at hnext
-      obtain ⟨acc', hacc', rfl⟩ := hnext
-      have h1 := length_encList_tail_le encItem L
-      have h2 := hgrowth (L.headD fallback) acc acc' hacc'
-      simp only [encPair_apply, List.length_append, length_frame]
-      omega
-  simpa only [iterate_stepList_eq_foldlMList] using
-    hiter.map (.of_tidy (snd (encList encItem) encAcc))
 
 /-- Private sampling in `ProbOracleComp` binds directly on `ProbComp.eval` without touching the
 external oracle state `s`. -/
@@ -1963,10 +1828,10 @@ private noncomputable def realRunWord {α : Type} (m : ℕ) [NeZero m] (coins n 
     (sampleTwoPiBits m (fun _ => coins a) (fun _ => (n a + coins a) * (m - 1)))
   let in_shares := step1Wires m (n a + coins a) x_bits rc.1 rc.2
   let init2 : Step2Acc m := (in_shares, fun _ => [], fun _ => [])
-  let acc2 ← foldlMList (realGateStep m) (D a).1 init2
+  let acc2 ← (D a).1.foldlM (flip (realGateStep m)) init2
   let outItems := buildOutItems m (k a) Finset.univ (D a).2 acc2.1 (fun _ => [])
   let init3 : Step3Acc m := (acc2.2.1, acc2.2.2, fun _ => [], fun _ => [])
-  let acc3 ← foldlMList (realOutStep m) outItems init3
+  let acc3 ← List.foldlM (flip (realOutStep m)) init3 outItems
   return packRealOutput m x_bits rc.1 rc.2 in_shares acc3
 
 /-- Word-level simulator for `gmwOT14RandomizedSim` on a polynomial-time circuit code family
@@ -1983,10 +1848,10 @@ private noncomputable def simRunWord {α : Type} (m : ℕ) [NeZero m] (coins n k
     (fun _ => (n a + coins a) * (m - 1))
   let in_shares := step1Wires m (n a + coins a) x_bits rc.1 rc.2
   let init2 : Step2Acc m := (in_shares, fun _ => [], fun _ => [])
-  let acc2 ← foldlMList (simGateStep m I) (D a).1 init2
+  let acc2 ← (D a).1.foldlM (flip (simGateStep m I)) init2
   let outItems := buildOutItems m (k a) I (D a).2 acc2.1 y_bits
   let init3 : Step3Acc m := (acc2.2.1, acc2.2.2, fun _ => [], fun _ => [])
-  let acc3 ← foldlMList (simOutStep m I) outItems init3
+  let acc3 ← List.foldlM (flip (simOutStep m I)) init3 outItems
   return packSimOutput m I x_bits rc.1 rc.2 in_shares acc3
 
 private theorem isOraclePPTOn_realRunWord {α : Type} {encA : α ↪ List Bool}
@@ -2027,8 +1892,12 @@ private theorem isOraclePPTOn_realRunWord {α : Type} {encA : α ↪ List Bool}
     pi fun _ => const []
   have hinit2 := hin1.prod (hempty1.prod hempty1)
   have hD1_gates := comp' (fst (encList Boolean.encGate) (encList encNat)) (comp' hD ha1)
-  have hstage2 := (isOraclePPTOn_foldlMList_of_bounded_growth (.const false, [])
-    hD1_gates hinit2 (isOraclePPTOn_realGateStep m) (realGateStep_growth m)).keep_input
+  have hstage2 := (IsOraclePPTOn.foldlM_of_bounded_growth (.const false, [])
+    (step := fun acc item => realGateStep m item acc)
+    (.of_tidy hD1_gates) (.of_tidy hinit2)
+    ((isOraclePPTOn_realGateStep m).preprocess'
+      (prepare := fun p : Step2Acc m × (Boolean.Op × List ℕ) => (p.2, p.1)) (by fun_prop))
+    (fun acc item => realGateStep_growth m item acc)).keep_input
   have hs2_s1 := fst e1 (encStep2Acc m)
   have hs2_acc2 := snd e1 (encStep2Acc m)
   have ha2 := comp' ha1 hs2_s1
@@ -2044,9 +1913,13 @@ private theorem isOraclePPTOn_realRunWord {α : Type} {encA : α ↪ List Bool}
   have houtItems2 :=
     computableTidilyInPolyTime_buildOutItems m Finset.univ hk2 hD2_outs hwires2 hempty2
   have hinit3 := hot_c2.prod (hot_a2.prod (hempty2.prod hempty2))
-  have hstage3 := (isOraclePPTOn_foldlMList_of_bounded_growth
+  have hstage3 := (IsOraclePPTOn.foldlM_of_bounded_growth
     ((0, fun _ => false, false) : OutItem m)
-    houtItems2 hinit3 (isOraclePPTOn_realOutStep m) (realOutStep_growth m)).keep_input
+    (step := fun acc item => realOutStep m item acc)
+    (.of_tidy houtItems2) (.of_tidy hinit3)
+    ((isOraclePPTOn_realOutStep m).preprocess'
+      (prepare := fun p : Step3Acc m × OutItem m => (p.2, p.1)) (by fun_prop))
+    (fun acc item => realOutStep_growth m item acc)).keep_input
   have hs3_s1 := comp' hs2_s1 (fst e2 (encStep3Acc m))
   have hs3_acc3 := snd e2 (encStep3Acc m)
   have hx3 := comp' hx1 hs3_s1
@@ -2058,7 +1931,7 @@ private theorem isOraclePPTOn_realRunWord {α : Type} {encA : α ↪ List Bool}
   have hres := ((hstage1.bind hstage2).bind hstage3).map hpost
   unfold realRunWord
   simpa only [bind_assoc, bind_map_left, map_bind, Functor.map_map, bind_pure_comp,
-    Function.comp_def] using hres
+    Function.comp_def, Function.flip_def] using hres
 
 private theorem isPPTOn_simRunWord {α : Type} {encA : α ↪ List Bool}
     (m : ℕ) [NeZero m] (I : Finset (Fin m)) {coins n k : α → ℕ}
@@ -2107,8 +1980,12 @@ private theorem isPPTOn_simRunWord {α : Type} {encA : α ↪ List Bool}
     pi fun _ => const []
   have hinit2 := hin1.prod (hempty1.prod hempty1)
   have hD1_gates := comp' (fst (encList Boolean.encGate) (encList encNat)) (comp' hD ha1)
-  have hstage2 := (isPPTOn_foldlMList_of_bounded_growth (.const false, [])
-    hD1_gates hinit2 (isPPTOn_simGateStep m I) (simGateStep_growth m I)).keep_input
+  have hstage2 := (IsPPTOn.foldlM_of_bounded_growth (.const false, [])
+    (step := fun acc item => simGateStep m I item acc)
+    (.of_tidy hD1_gates) (.of_tidy hinit2)
+    ((isPPTOn_simGateStep m I).preprocess
+      (prepare := fun p : Step2Acc m × (Boolean.Op × List ℕ) => (p.2, p.1)) (by fun_prop))
+    (fun acc item => simGateStep_growth m I item acc)).keep_input
   have hs2_s1 := fst e1 (encStep2Acc m)
   have hs2_acc2 := snd e1 (encStep2Acc m)
   have ha2 := comp' ha1 hs2_s1
@@ -2125,8 +2002,12 @@ private theorem isPPTOn_simRunWord {α : Type} {encA : α ↪ List Bool}
     pi fun _ => const []
   have houtItems2 := computableTidilyInPolyTime_buildOutItems m I hk2 hD2_outs hwires2 hy2
   have hinit3 := hot_c2.prod (hot_a2.prod (hempty2.prod hempty2))
-  have hstage3 := (isPPTOn_foldlMList_of_bounded_growth ((0, fun _ => false, false) : OutItem m)
-    houtItems2 hinit3 (isPPTOn_simOutStep m I) (simOutStep_growth m I)).keep_input
+  have hstage3 := (IsPPTOn.foldlM_of_bounded_growth ((0, fun _ => false, false) : OutItem m)
+    (step := fun acc item => simOutStep m I item acc)
+    (.of_tidy houtItems2) (.of_tidy hinit3)
+    ((isPPTOn_simOutStep m I).preprocess
+      (prepare := fun p : Step3Acc m × OutItem m => (p.2, p.1)) (by fun_prop))
+    (fun acc item => simOutStep_growth m I item acc)).keep_input
   have hs3_s1 := comp' hs2_s1 (fst e2 (encStep3Acc m))
   have hs3_acc3 := snd e2 (encStep3Acc m)
   have hx3 := comp' hx1 hs3_s1
@@ -2138,7 +2019,7 @@ private theorem isPPTOn_simRunWord {α : Type} {encA : α ↪ List Bool}
   have hres := ((hstage1.bind hstage2).bind hstage3).map (ComputableInPolyTime.of_tidy hpost)
   unfold simRunWord
   simpa only [bind_assoc, bind_map_left, map_bind, Functor.map_map, bind_pure_comp,
-    Function.comp_def] using hres
+    Function.comp_def, Function.flip_def] using hres
 
 /-! ### Section 4C: Equivalence of Word-Level Runners with `Protocol.runEncoded` and
 `gmwOT14RandomizedSim` -/
@@ -3834,16 +3715,16 @@ private theorem runSharedMulSteps_progSteps {m n g : ℕ} [NeZero m]
     (prog : Program Boolean.signature n g)
     (st : Fin m → Fin n → Bool) :
     packStep2 <$> runSharedMulSteps (GMWCircuit.progSteps m prog) st =
-      foldlMList (realGateStep m) prog.code
-        (fun i => List.ofFn (st i), fun _ => [], fun _ => []) := by
+      List.foldlM (flip (realGateStep m))
+        (fun i => List.ofFn (st i), fun _ => [], fun _ => []) prog.code := by
   induction prog with
   | empty =>
     simp [GMWCircuit.progSteps, GMWCircuit.progSchedule, packStep2,
       encOTSubCoins_nil, encOTOracleAnswers_nil]
   | gate p line ih =>
-    rw [GMWCircuit.progSteps, Program.code_gate, foldlMList_append, ← ih]
+    rw [GMWCircuit.progSteps, Program.code_gate, List.foldlM_append, ← ih]
     simp only [runSharedMulSteps_append, map_bind, bind_map_left, bind_pure_comp,
-      foldlMList_cons, foldlMList_nil, bind_pure, Functor.map_map]
+      List.foldlM_cons, flip.eq_def, List.foldlM_nil, bind_pure, Functor.map_map]
     refine congrArg (Bind.bind _) (funext fun res₁ => ?_)
     dsimp only [packStep2]
     rw [← runSharedMulSteps_lineSteps line res₁.2.2
@@ -3975,16 +3856,16 @@ private theorem eval_simSharedMulSteps_progSteps {m n g : ℕ} [NeZero m] (I : F
             (Schedule.compose (fun _ => multiPartyMulSchedule m) (GMWCircuit.progSchedule m prog))
             i.1 (sub i).2)) =
     ProbComp.eval (projStep2Acc I <$>
-      foldlMList (simGateStep m I) prog.code
-        (fun i => List.ofFn (st i), fun _ => [], fun _ => [])) := by
+      List.foldlM (flip (simGateStep m I))
+        (fun i => List.ofFn (st i), fun _ => [], fun _ => []) prog.code) := by
   induction prog with
   | empty =>
     simp [GMWCircuit.progDist, GMWCircuit.progSteps, GMWCircuit.progSchedule,
       Steps.outputAt, encOTSubCoins_nil, encOTOracleAnswers_nil, projStep2Acc, I.restrict_def]
   | gate p line ih =>
     have hsum_p := (GMWCircuit.evalWith_progSteps x_flat p st hst).2
-    rw [Program.code_gate, foldlMList_append]
-    simp only [foldlMList_cons, foldlMList_nil, bind_pure, map_bind,
+    rw [Program.code_gate, List.foldlM_append]
+    simp only [List.foldlM_cons, flip.eq_def, List.foldlM_nil, bind_pure, map_bind,
       map_projStep2Acc_simGateStep]
     have hih := congrArg
       (PMF.bind · (fun accI => ProbComp.eval (simGateStepProj m I line.code accI))) ih.symm
@@ -4145,28 +4026,32 @@ private theorem appendStep3Acc_assoc {m : ℕ} (a b c : Step3Acc m) :
       appendStep3Acc m a (appendStep3Acc m b c) := by
   simp [appendStep3Acc, List.append_assoc]
 
-private theorem foldlMList_realOutStep_eq_map {m : ℕ} [NeZero m]
+private theorem foldlM_realOutStep_eq_map {m : ℕ} [NeZero m]
     (items : List (OutItem m)) (acc : Step3Acc m) :
-    foldlMList (realOutStep m) items acc =
-      appendStep3Acc m acc <$> foldlMList (realOutStep m) items (zeroStep3Acc m) := by
+    List.foldlM (flip (realOutStep m)) acc items =
+      appendStep3Acc m acc <$> List.foldlM (flip (realOutStep m))
+        (zeroStep3Acc m) items := by
   induction items generalizing acc with
   | nil =>
-    simp [foldlMList]
+    simp [List.foldlM]
   | cons item rest ih =>
-    simp only [foldlMList_cons, realOutStep, map_bind, bind_map_left, appendStep3Acc_zero_left]
+    simp only [List.foldlM_cons, flip.eq_def, realOutStep, map_bind, bind_map_left,
+      appendStep3Acc_zero_left]
     refine congrArg (Bind.bind (realOutCore m item)) (funext fun delta => ?_)
     rw [ih (appendStep3Acc m acc delta), ih delta, Functor.map_map]
     exact congrArg (· <$> _) (funext fun a => appendStep3Acc_assoc acc delta a)
 
-private theorem foldlMList_simOutStep_eq_map {m : ℕ} [NeZero m] (I : Finset (Fin m))
+private theorem foldlM_simOutStep_eq_map {m : ℕ} [NeZero m] (I : Finset (Fin m))
     (items : List (OutItem m)) (acc : Step3Acc m) :
-    foldlMList (simOutStep m I) items acc =
-      appendStep3Acc m acc <$> foldlMList (simOutStep m I) items (zeroStep3Acc m) := by
+    List.foldlM (flip (simOutStep m I)) acc items =
+      appendStep3Acc m acc <$> List.foldlM (flip (simOutStep m I))
+        (zeroStep3Acc m) items := by
   induction items generalizing acc with
   | nil =>
-    simp [foldlMList]
+    simp [List.foldlM]
   | cons item rest ih =>
-    simp only [foldlMList_cons, simOutStep, map_bind, bind_map_left, appendStep3Acc_zero_left]
+    simp only [List.foldlM_cons, flip.eq_def, simOutStep, map_bind, bind_map_left,
+      appendStep3Acc_zero_left]
     refine congrArg (Bind.bind (simOutCore m I item)) (funext fun delta => ?_)
     rw [ih (appendStep3Acc m acc delta), ih delta, Functor.map_map]
     exact congrArg (· <$> _) (funext fun a => appendStep3Acc_assoc acc delta a)
@@ -4565,7 +4450,8 @@ private theorem runSharedMulSteps_outCoordsSteps_add {m k : ℕ} [NeZero m]
     (fun acc3 : Step3Acc m =>
       (y_acc + listToBitString L acc3.2.2.2,
        acc3.1, acc3.2.1, acc3.2.2.1)) <$>
-      foldlMList (realOutStep m) (itemsOfCoords I a_table y L) (zeroStep3Acc m) := by
+      List.foldlM (flip (realOutStep m))
+        (zeroStep3Acc m) (itemsOfCoords I a_table y L) := by
   induction L generalizing y_acc with
   | nil =>
     simp [GMWCircuit.outCoordsSteps, GMWCircuit.outCoordsSchedule, itemsOfCoords,
@@ -4598,7 +4484,7 @@ private theorem runSharedMulSteps_outCoordsSteps_add {m k : ℕ} [NeZero m]
       (runSharedMulSteps_singleCoordSteps coord L a_table y_acc)
     simp only [bind_map_left, Functor.map_map] at hstep1
     rw [hstep1]
-    simp only [itemsOfCoords, List.map_cons, foldlMList_cons, realOutStep,
+    simp only [itemsOfCoords, List.map_cons, List.foldlM_cons, flip.eq_def, realOutStep,
       appendStep3Acc_zero_left, realOutCore, bind_map_left, map_bind]
     refine congrArg (Bind.bind _) (funext fun tr => ?_)
     let mul := realSharedMulPure m
@@ -4614,21 +4500,23 @@ private theorem runSharedMulSteps_outCoordsSteps_add {m k : ℕ} [NeZero m]
            fun i => (if i = coord.1 then List.ofFn mul.1 else []) ++ q_tail.2.2.2 i)))
       (ih (fun i => y_acc i + if i = coord.1 then Pi.single coord.2 (∑ s : Fin m, mul.1 s) else 0))
     simp only [Functor.map_map] at hih
-    rw [hih, foldlMList_realOutStep_eq_map _ (finishOutStep m coord.1 mul), Functor.map_map]
+    rw [hih, foldlM_realOutStep_eq_map _ (finishOutStep m coord.1 mul), Functor.map_map]
     dsimp only [Function.comp_def, appendStep3Acc, finishOutStep]
     refine congrArg (Functor.map (f := WordOracleComp Unit) · _) (funext fun acc_tail => ?_)
     refine Prod.ext ?_ rfl
     rw [listToBitString_cons, ← add_assoc]
     rfl
 
-private theorem map_extractOutBits_foldlMList_realOutStep {m k : ℕ} [NeZero m]
+private theorem map_extractOutBits_foldlM_realOutStep {m k : ℕ} [NeZero m]
     {β : Type} (f : Step3Acc m → (Fin m → List Bool) → β)
     (I : Finset (Fin m)) (a_table : Fin m → Fin m → BitString k) (y : Fin m → BitString k)
     {L : List (Fin m × Fin k)} (hL : L.Nodup) :
     ((fun acc3 => f acc3 (extractOutBits L (listToBitString L acc3.2.2.2))) <$>
-      foldlMList (realOutStep m) (itemsOfCoords I a_table y L) (zeroStep3Acc m)) =
+      List.foldlM (flip (realOutStep m))
+        (zeroStep3Acc m) (itemsOfCoords I a_table y L)) =
     ((fun acc3 => f acc3 acc3.2.2.2) <$>
-      foldlMList (realOutStep m) (itemsOfCoords I a_table y L) (zeroStep3Acc m)) := by
+      List.foldlM (flip (realOutStep m))
+        (zeroStep3Acc m) (itemsOfCoords I a_table y L)) := by
   induction L generalizing f with
   | nil =>
     have hex : extractOutBits ([] : List (Fin m × Fin k)) (listToBitString [] fun _ => []) =
@@ -4642,12 +4530,12 @@ private theorem map_extractOutBits_foldlMList_realOutStep {m k : ℕ} [NeZero m]
             if coord.1 ∈ I then y coord.1 coord.2 else false) ::
             itemsOfCoords I a_table y L := rfl
     rw [hcons]
-    simp only [foldlMList_cons, realOutStep, appendStep3Acc_zero_left,
+    simp only [List.foldlM_cons, flip.eq_def, realOutStep, appendStep3Acc_zero_left,
       realOutCore, bind_map_left, map_bind]
     refine congrArg (Bind.bind _) (funext fun tr => ?_)
     let mul := realSharedMulPure m
       (fun s => (a_table s coord.1 coord.2, GMWCircuit.constShare true s)) tr
-    rw [foldlMList_realOutStep_eq_map _ (finishOutStep m coord.1 mul),
+    rw [foldlM_realOutStep_eq_map _ (finishOutStep m coord.1 mul),
       Functor.map_map, Functor.map_map]
     have hstep (acc_tail : Step3Acc m) :
         extractOutBits (coord :: L)
@@ -4712,9 +4600,9 @@ private theorem runSharedMulSteps_outputSteps {m n k : ℕ} [NeZero m]
        fun i => encOutCoordsMsgReceived i (GMWCircuit.outCoords m k) (res.2.1 i),
        fun i => List.ofFn (res.2.2 i))) <$>
       runSharedMulSteps (GMWCircuit.outputSteps m n k D) w) =
-    foldlMList (realOutStep m)
-      (buildOutItems m k Finset.univ D.code.2 (fun s => wireToList (w s)) (fun _ => []))
-      (c₂, a₂, fun _ => [], fun _ => []) := by
+    List.foldlM (flip (realOutStep m))
+      (c₂, a₂, fun _ => [], fun _ => [])
+      (buildOutItems m k Finset.univ D.code.2 (fun s => wireToList (w s)) (fun _ => [])) := by
   let a_table : Fin m → Fin m → BitString k :=
     fun s r j => w s (D.outputs (finProdFinEquiv (r, j)))
   have hitems :
@@ -4722,7 +4610,7 @@ private theorem runSharedMulSteps_outputSteps {m n k : ℕ} [NeZero m]
         itemsOfCoords Finset.univ a_table 0 (GMWCircuit.outCoords m k) :=
     buildOutItems_eq_itemsOfCoords_of_getD Finset.univ D w (fun _ => []) 0 (fun _ _ _ => rfl)
   rw [hitems, GMWCircuit.outputSteps, runSharedMulSteps_mapState,
-    foldlMList_realOutStep_eq_map _ (c₂, a₂, fun _ => [], fun _ => [])]
+    foldlM_realOutStep_eq_map _ (c₂, a₂, fun _ => [], fun _ => [])]
   have hadd := congrArg
     (Functor.map (f := WordOracleComp Unit)
       (fun q :
@@ -4736,7 +4624,7 @@ private theorem runSharedMulSteps_outputSteps {m n k : ℕ} [NeZero m]
   simp only [Functor.map_map, zero_add] at hadd
   refine hadd.trans ?_
   simp only [← extractOutBits_outCoords]
-  exact map_extractOutBits_foldlMList_realOutStep
+  exact map_extractOutBits_foldlM_realOutStep
     (fun acc3 y_list =>
       (fun i => c₂ i ++ acc3.1 i, fun i => a₂ i ++ acc3.2.1 i, acc3.2.2.1, y_list))
     Finset.univ a_table 0 (nodup_outCoords m k)
@@ -4914,8 +4802,8 @@ private theorem eval_simSharedMulSteps_outCoordsSteps {m k : ℕ} [NeZero m]
          encOutCoordsMsgReceived i.1 L (res i).2)) =
     ProbComp.eval
       ((fun acc3 (i : I) => (acc3.1 i.1, acc3.2.1 i.1, acc3.2.2.1 i.1)) <$>
-        foldlMList (simOutStep m I)
-          (itemsOfCoords I a_table (GMWCircuit.extendByZero I yI) L) (zeroStep3Acc m)) := by
+        List.foldlM (flip (simOutStep m I))
+          (zeroStep3Acc m) (itemsOfCoords I a_table (GMWCircuit.extendByZero I yI) L)) := by
   induction L generalizing y_acc with
   | nil =>
     simp [GMWCircuit.outCoordsDist, GMWCircuit.outCoordsSteps, GMWCircuit.outCoordsSchedule,
@@ -4930,7 +4818,7 @@ private theorem eval_simSharedMulSteps_outCoordsSteps {m k : ℕ} [NeZero m]
     simp only [bind_assoc, bind_map_left, simSharedMulSteps_append, GMWCircuit.outCoordsSchedule,
       GMWCircuit.outputAt_singleCoordSteps, map_bind, bind_pure_comp, Functor.map_map,
       encOTSubCoins_joinOTSubCoins, encOTOracleAnswers_joinOTMulCompose,
-      itemsOfCoords, List.map_cons, foldlMList_cons, simOutStep,
+      itemsOfCoords, List.map_cons, List.foldlM_cons, flip.eq_def, simOutStep,
       appendStep3Acc_zero_left, simOutCore, hy_coord]
     rw [ProbComp.eval_bind, ProbComp.eval_bind]
     refine congrArg (PMF.bind _) (funext fun ans => ?_)
@@ -4976,7 +4864,7 @@ private theorem eval_simSharedMulSteps_outCoordsSteps {m k : ℕ} [NeZero m]
       (ih (fun i => y_acc i + if i = coord.1 then Pi.single coord.2 (∑ s : Fin m, ans s) else 0))
     simp only [bind_pure_comp, ProbComp.eval_bind, ProbComp.eval_map,
       PMF.map_bind, PMF.map_comp, Function.comp_def] at hih ⊢
-    rw [hih, foldlMList_simOutStep_eq_map I _ (finishOutStep m coord.1 (ans, mul))]
+    rw [hih, foldlM_simOutStep_eq_map I _ (finishOutStep m coord.1 (ans, mul))]
     simp only [ProbComp.eval_map, PMF.map_comp, Function.comp_def,
       appendStep3Acc, finishOutStep, itemsOfCoords]
 
@@ -5001,10 +4889,11 @@ private theorem eval_simSharedMulSteps_outputSteps {m n k : ℕ} [NeZero m]
          encOutCoordsMsgReceived i.1 (GMWCircuit.outCoords m k) (res i).2)) =
     ProbComp.eval
       ((fun acc3 (i : I) => (acc3.1 i.1, acc3.2.1 i.1, acc3.2.2.1 i.1)) <$>
-        foldlMList (simOutStep m I)
+        List.foldlM (flip (simOutStep m I))
+          (c₂, a₂, fun _ => [], fun _ => [])
           (buildOutItems m k I D.code.2 (fun s => wireToList (w s))
-            (fun i => if hi : i ∈ I then List.ofFn (yI ⟨i, hi⟩) else List.replicate k false))
-          (c₂, a₂, fun _ => [], fun _ => [])) := by
+            (fun i => if hi : i ∈ I then List.ofFn (yI ⟨i, hi⟩)
+              else List.replicate k false))) := by
   let a_table : Fin m → Fin m → BitString k :=
     fun s r j => w s (D.outputs (finProdFinEquiv (r, j)))
   have hitems :
@@ -5014,7 +4903,7 @@ private theorem eval_simSharedMulSteps_outputSteps {m n k : ℕ} [NeZero m]
     refine buildOutItems_eq_itemsOfCoords_of_getD I D w _ _ fun r hr j => ?_
     simp [hr, GMWCircuit.extendByZero, List.getD_eq_getElem?_getD]
   rw [hitems, GMWCircuit.outputDist, GMWCircuit.outputSteps,
-    foldlMList_simOutStep_eq_map I _ (c₂, a₂, fun _ => [], fun _ => [])]
+    foldlM_simOutStep_eq_map I _ (c₂, a₂, fun _ => [], fun _ => [])]
   simp_rw [simSharedMulSteps_mapState]
   have hout := congrArg
     (PMF.map fun q (i : I) => (c₂ i.1 ++ (q i).1, a₂ i.1 ++ (q i).2.1, (q i).2.2))
@@ -5240,9 +5129,11 @@ private theorem runSharedMulSteps_gmwCircuitSteps {m coins n k : ℕ} [NeZero m]
       runSharedMulSteps (gmwCircuitProtocol m (n + coins) k D).steps
         (fun i => (Fin.append (x i) (r i), c₁ i))) =
     (do
-      let acc2 ← foldlMList (realGateStep m) D.code.1 (in_shares, fun _ => [], fun _ => [])
+      let acc2 ← List.foldlM (flip (realGateStep m))
+        (in_shares, fun _ => [], fun _ => []) D.code.1
       let outItems := buildOutItems m k Finset.univ D.code.2 acc2.1 (fun _ => [])
-      let acc3 ← foldlMList (realOutStep m) outItems (acc2.2.1, acc2.2.2, fun _ => [], fun _ => [])
+      let acc3 ← List.foldlM (flip (realOutStep m))
+        (acc2.2.1, acc2.2.2, fun _ => [], fun _ => []) outItems
       return packRealOutput m x_bits r_bits c1_bits in_shares acc3) := by
   intro D x_bits r_bits c1_bits in_shares
   let st : Fin m → BitString (m * (n + coins)) :=
@@ -5253,9 +5144,9 @@ private theorem runSharedMulSteps_gmwCircuitSteps {m coins n k : ℕ} [NeZero m]
   have hprog := congrArg
     (· >>= fun acc2 =>
       packRealOutput m x_bits r_bits c1_bits in_shares <$>
-        foldlMList (realOutStep m)
-          (buildOutItems m k Finset.univ D.code.2 acc2.1 (fun _ => []))
-          (acc2.2.1, acc2.2.2, fun _ => [], fun _ => []))
+        List.foldlM (flip (realOutStep m))
+          (acc2.2.1, acc2.2.2, fun _ => [], fun _ => [])
+          (buildOutItems m k Finset.univ D.code.2 acc2.1 (fun _ => [])))
     (runSharedMulSteps_progSteps D.program st)
   simp only [bind_map_left, hst] at hprog
   dsimp only [gmwCircuitProtocol]
@@ -5351,18 +5242,17 @@ private noncomputable def simOutStepProj (m k : ℕ) [NeZero m] (I : Finset (Fin
     (accI : (Fin m → List Bool) × ((i : I) → List Bool) × ((i : I) → List Bool)) :
     ProbComp ((i : I) → List Bool × List Bool × List Bool) :=
   (fun acc (i : I) => (accI.2.1 i ++ acc.1 i.1, accI.2.2 i ++ acc.2.1 i.1, acc.2.2.1 i.1)) <$>
-    foldlMList (simOutStep m I)
-      (buildOutItems m k I outs accI.1 y_bits)
-      (zeroStep3Acc m)
+    List.foldlM (flip (simOutStep m I))
+      (zeroStep3Acc m) (buildOutItems m k I outs accI.1 y_bits)
 
 private theorem simOutStepProj_projStep2Acc {m k : ℕ} [NeZero m] (I : Finset (Fin m))
     (outs : List ℕ) (y_bits : Fin m → List Bool) (acc2 : Step2Acc m) :
     simOutStepProj m k I outs y_bits (projStep2Acc I acc2) =
       (fun acc3 (i : I) => (acc3.1 i.1, acc3.2.1 i.1, acc3.2.2.1 i.1)) <$>
-        foldlMList (simOutStep m I)
-          (buildOutItems m k I outs acc2.1 y_bits)
-          (acc2.2.1, acc2.2.2, fun _ => [], fun _ => []) := by
-  rw [foldlMList_simOutStep_eq_map I _ (acc2.2.1, acc2.2.2, fun _ => [], fun _ => []),
+        List.foldlM (flip (simOutStep m I))
+          (acc2.2.1, acc2.2.2, fun _ => [], fun _ => [])
+          (buildOutItems m k I outs acc2.1 y_bits) := by
+  rw [foldlM_simOutStep_eq_map I _ (acc2.2.1, acc2.2.2, fun _ => [], fun _ => []),
     Functor.map_map]
   rfl
 
@@ -5454,9 +5344,11 @@ private theorem eval_simSharedMulSteps_gmwCircuitSim {m coins n k : ℕ} [NeZero
            (rI i, ((c₁ i.1, unitSubCoins (gmwCircuitSchedule m (n + coins) k D) i.1), (sub i).1)),
            (sub i).2⟩)) =
     ProbComp.eval (do
-      let acc2 ← foldlMList (simGateStep m I) D.code.1 (in_shares, fun _ => [], fun _ => [])
+      let acc2 ← List.foldlM (flip (simGateStep m I))
+        (in_shares, fun _ => [], fun _ => []) D.code.1
       let outItems := buildOutItems m k I D.code.2 acc2.1 y_bits
-      let acc3 ← foldlMList (simOutStep m I) outItems (acc2.2.1, acc2.2.2, fun _ => [], fun _ => [])
+      let acc3 ← List.foldlM (flip (simOutStep m I))
+        (acc2.2.1, acc2.2.2, fun _ => [], fun _ => []) outItems
       return packSimOutput m I x_bits r_bits c1_bits in_shares acc3) := by
   intro D xr y x_bits r_bits y_bits c1_bits in_shares
   let st : Fin m → BitString (m * (n + coins)) :=
