@@ -481,25 +481,28 @@ noncomputable def schnorrFamilyROMScheme {M : Type} (d : F.Desc) {m : ℕ}
     (hm : 2 ^ m ≤ F.order d) :
     ROMSignature.Scheme (F.Carrier d) (ZMod (F.order d) × F.Carrier d) M
       (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d) (BitString m) :=
-  fiatShamir (F.schnorrBitSigma d hm) (schnorrKeyGen (F.generator d))
+  fiatShamir (Function.Embedding.refl _) (F.schnorrBitSigma d hm) (schnorrKeyGen (F.generator d))
 
 /-- **Schnorr's Fiat–Shamir ROM signature scheme with full scalar challenges** `ZMod (F.order d)`
 over `F.Carrier d`. -/
 noncomputable def schnorrScalarROMScheme {M : Type} (d : F.Desc) :
     ROMSignature.Scheme (F.Carrier d) (ZMod (F.order d) × F.Carrier d) M
       (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d) (ZMod (F.order d)) :=
-  fiatShamir (schnorr (Function.Embedding.refl _) (F.generator d)) (schnorrKeyGen (F.generator d))
+  fiatShamir (Function.Embedding.refl _) (schnorr (Function.Embedding.refl _) (F.generator d))
+    (schnorrKeyGen (F.generator d))
 
 /-- **Correctness of `schnorrFamilyROMScheme`**: every honest signature verifies. -/
 theorem schnorrFamilyROMScheme_correct {M : Type} [DecidableEq M] (d : F.Desc) {m : ℕ}
     (hm : 2 ^ m ≤ F.order d) :
     (F.schnorrFamilyROMScheme (M := M) d hm).Correct :=
-  fiatShamir_correct schnorr_complete fun _ h => mem_support_schnorrKeyGen h
+  fiatShamir_correct (Function.Embedding.refl _) schnorr_complete fun _ h =>
+    mem_support_schnorrKeyGen h
 
 /-- **Correctness of `schnorrScalarROMScheme`**: every honest signature verifies. -/
 theorem schnorrScalarROMScheme_correct {M : Type} [DecidableEq M] (d : F.Desc) :
     (F.schnorrScalarROMScheme (M := M) d).Correct :=
-  fiatShamir_correct schnorr_complete fun _ h => mem_support_schnorrKeyGen h
+  fiatShamir_correct (Function.Embedding.refl _) schnorr_complete fun _ h =>
+    mem_support_schnorrKeyGen h
 
 /-- The Fiat–Shamir / Bellare–Neven forking discrete-logarithm reduction for
 `schnorrFamilyROMScheme`. -/
@@ -507,7 +510,7 @@ noncomputable def schnorrFamilyROMSchemeReduction {M : Type} [DecidableEq M] (d 
     (hm : 2 ^ m ≤ F.order d)
     (A : Forger (F.Carrier d) M (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d) (BitString m))
     (Qs Qro : ℕ) : F.Carrier d → PMF (ZMod (F.order d)) :=
-  FiatShamir.reduction (F.schnorrBitSigma d hm)
+  FiatShamir.reduction (Function.Embedding.refl _) (F.schnorrBitSigma d hm)
     (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod (F.order d))
       (F.Carrier d) (F.generator d)) id (F.challengeEmbedding d hm))
     (linearExtract (F.challengeEmbedding d hm)) A Qs Qro
@@ -518,7 +521,8 @@ noncomputable def schnorrScalarROMSchemeReduction {M : Type} [DecidableEq M] (d 
     (A : Forger (F.Carrier d) M (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d)
       (ZMod (F.order d)))
     (Qs Qro : ℕ) : F.Carrier d → PMF (ZMod (F.order d)) :=
-  FiatShamir.reduction (schnorr (Function.Embedding.refl _) (F.generator d))
+  FiatShamir.reduction (Function.Embedding.refl _) (schnorr (Function.Embedding.refl _)
+    (F.generator d))
     (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod (F.order d))
       (F.Carrier d) (F.generator d)) id (Function.Embedding.refl _))
     (linearExtract (Function.Embedding.refl _)) A Qs Qro

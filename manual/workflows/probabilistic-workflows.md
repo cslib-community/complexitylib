@@ -2,6 +2,27 @@
 
 Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [complexitylib][complexitylib]
 
+## Transport a distribution bound through a map
+
+Import [TotalVariation/Map.lean](../../Complexity/Foundations/MeasureTheory/Measure/TotalVariation/Map.lean).
+For finite measures `μ` and `ν` and a measurable function `f`, apply
+`MeasureTheory.tvDist_map_le μ ν hf` to bound the distance of their pushforwards by
+`tvDist μ ν`. The measures may have different total masses. The extended-valued theorem
+`etvDist_map_le` has the same hypotheses and avoids conversion to real numbers.
+
+This is Mathlib's full-L1 convention: distinct probability atoms have distance `2`,
+and the distance of `2 • dirac x` from the zero measure is `2` as well. The finite-measure
+instances matter because real `tvDist` is defined as zero if its extended value is infinite.
+A previously proved bound transports with `(tvDist_map_le μ ν hf).trans h`;
+no density, injectivity or probability normalization is required.
+
+The [checked clients](../../ComplexityTests/TotalVariationMap.lean) include identity,
+strict coarsening from distance `2` to `0`, unequal masses, and the canonical measurable
+map from `ℝ` to `UnitAddCircle`. Run `scripts/build.sh ComplexityTests.TotalVariationMap`.
+The theorem transports an existing bound; it does not identify the output laws. In particular,
+the Gaussian projection and mod-one distribution identities remain the separate consumer
+[issue #2734](https://github.com/cslib-community/complexitylib/issues/2734).
+
 ## Describe a discrete Gaussian law
 
 Import [Gaussian/Discrete.lean](../../Complexity/Foundations/Probability/Gaussian/Discrete.lean)
@@ -28,9 +49,9 @@ Choose a second width `t > s` and a radius `R ≥ 0`.
 Writing `κ = π * (1 / s² - 1 / t²) > 0`, `discreteGaussian_norm_ge_le` bounds the probability
 of `R ≤ ‖z - c‖` by `exp (-κ * R²)` times that same ratio. The checked integer-lattice
 client uses `s = 1`, `t = 2`, center `1/2` and radius `2`, giving the decay factor `exp (-3π)`.
-The ratio remains explicit; these results supply neither the dimension-uniform lattice tail
-bound nor the sampling algorithm used in Regev's bootstrapping lemma. Controlling the ratio
-and proving multidimensional lattice Poisson summation remain open.
+The ratio remains explicit for arbitrary centers. For a full-rank lattice centered at zero,
+the [centered bounds below](#bound-a-centered-discrete-gaussian) control this ratio using
+Poisson summation. These distributional estimates supply no sampling algorithm.
 
 To vary the center continuously, import
 [Gaussian/Periodization.lean](../../Complexity/Foundations/Probability/Gaussian/Periodization.lean).
@@ -81,8 +102,34 @@ frequency, and check the dimension-zero covolume and mass of `1`. From the repos
 run `scripts/build.sh ComplexityTests.LatticePoisson` to check these clients. If the
 full-rank instance is missing, start from the basis-spanned lattice in these examples;
 continuity alone also applies to lower-rank lattices, but this Poisson formula needs full rank.
-Dimension-uniform Gaussian estimates, smoothing bounds, efficient sampling and Regev's quantum
-reduction remain open.
+For centered truncation, use the mass and tail bounds below. Uniform off-center estimates,
+smoothing bounds, efficient sampling and Regev's quantum reduction remain open.
+
+## Bound a centered discrete Gaussian
+
+Import [Gaussian/CenteredTail.lean](../../Complexity/Foundations/Probability/Gaussian/CenteredTail.lean).
+Use a finite-dimensional real inner-product space, a discrete full-rank lattice
+`L : Submodule ℤ E`, and center `0`. Write `n = Module.finrank ℝ E`.
+For `0 < s ≤ t`, `ZLattice.gaussianMass_zero_div_le L s hs t hst` bounds
+`gaussianMass L t 0 / gaussianMass L s 0` by `(t / s)^n`. The estimate is uniform over these
+lattices and follows from the proved Poisson identity and positive dual Gaussian weights.
+Equal widths and dimension zero are included.
+
+`ZLattice.discreteGaussian_zero_norm_ge_le L s hs R hR` bounds the probability of
+`R ≤ ‖z‖`, for `R ≥ 0`, by `2^n * exp(-3π R² / (4s²))`. For the source-radius endpoint,
+use `discreteGaussian_zero_norm_gt_sqrt_lt L s hs`: the probability of
+`s * sqrt n < ‖z‖` is strictly less than `(1 / 4)^n`. Both the event and the inequality are
+strict, as in Regev's Lemma 2.5. In dimension zero the event is empty and the bound is `1`.
+These results control the probability discarded by centered finite-radius truncation;
+uniform off-center bounds and an efficient sampler remain separate obligations.
+
+The [complete checked clients](../../ComplexityTests/DiscreteGaussianCenteredTail.lean)
+use the infinite lattice generated by `2` in the real line. They instantiate mass scaling,
+equal widths, and width `2` with radius `2`; the lattice point exactly at that radius is
+excluded by the strict event. They also check the dimension-zero empty-event probability.
+Run `scripts/build.sh ComplexityTests.DiscreteGaussianCenteredTail` from the repository root.
+A missing full-rank instance can be supplied by the basis-spanned construction in that file.
+For a nonzero center, use the earlier explicit normalizer-ratio estimate instead.
 
 ## Fold a density onto a quotient
 
@@ -101,6 +148,31 @@ cover bottom and top subgroups, a two-element group, infinite densities on a nul
 the Borel measurable space of a discrete lattice quotient. Gaussian quotient normalization and
 distance estimates are a separate consumer in
 [issue #2681](https://github.com/cslib-community/complexitylib/issues/2681).
+
+## Convolve a singular law with a density
+
+Import [ConvolutionDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/ConvolutionDensity.lean).
+For a measurable group with measurable multiplication and inversion, let `σ` and `μ` be
+s-finite measures, let `μ` be left invariant, and supply `hf : Measurable f` for
+`f : G → ℝ≥0∞`. Apply
+`MeasureTheory.mconv_withDensity_eq_withDensity_lintegral hf` to identify
+`Measure.mconv σ (μ.withDensity f)` with a density relative to `μ`: at `x`, integrate
+`f (y⁻¹ * x)` against `σ`. The theorem derives measurability of that density.
+
+For additive groups, use `conv_withDensity_eq_withDensity_lintegral`; the translated density
+is `f (-y + x)`. The first measure can be singular, such as a discrete distribution.
+The existing two-density convolution theorem requires both input laws to have densities with
+respect to the same reference measure. This theorem needs only the second one to have a density.
+It allows infinite total mass and infinite density values, and assumes no integrability or
+probability normalization.
+
+The [checked clients](../../ComplexityTests/ConvolutionDensity.lean) translate an actual
+Gaussian by an atom and recover the variance-two Gaussian from two variance-one inputs.
+A noncommutative permutation-group example checks the order of translation; infinite-density
+and zero-input cases check the absence of hidden finiteness premises. Run
+`scripts/build.sh ComplexityTests.ConvolutionDensity` from the repository root.
+The later [lattice Gaussian convolution bound](https://github.com/cslib-community/complexitylib/issues/2707)
+still needs its actual discrete weights, completion of the square and quantitative error proof.
 
 ## Certify a closed randomized routine
 
@@ -206,6 +278,33 @@ Import [`KEMFromPKE/CCA.lean`](../../Complexity/Crypto/Computational/Encryption/
 For a runtime conclusion, use `isPPTOn_kemCCAGames_encryptKeyEncaps` with native key generation, encryption, decryption and adversary certificates. For correctness, apply `decrypt_encryptKeyEncaps_some` to a supported encapsulation and the original encryptor's supported-output correctness. These are separate contracts. The same test file checks a correct empty-key instance and distinguishes `none` from `some []`.
 
 Check freshness against raw ciphertext words. The test's native `adaptiveTagDistinguisher` first observes rejection of the exact challenge, then flips a redundant tag and queries again. Because the malformed scheme ignores that tag, the distinct word reveals the key. Its exact advantage is `1 - 2^(-keyLen n)`; the comparison uses a bounded reply prefix, so its strict oracle runtime certificate holds even for arbitrarily long external replies.
+
+For hybrid ciphertexts, use [`hybridDecrypt`](../../Complexity/Crypto/Computational/Encryption/Hybrid.lean)
+with Option-valued decapsulation and symmetric decryption. It first checks that re-encoding
+`(unframe ct, dropFrame ct)` gives exactly `ct`, then propagates either component's `none` result.
+Apply `hybridDecrypt_hybridEncrypt` with component correctness returning `some k` and `some msg`;
+`computableInPolyTime_hybridDecrypt` takes the corresponding certificates with `encOption` outputs.
+The [hybrid clients](../../ComplexityTests/Crypto/HybridEncryption.lean) show why the framing check
+matters: `[true, true]` and `[true, true, false]` have the same projections, but only the latter
+is a canonical pair. They also check accepted empty plaintext (`[true]` as an oracle reply),
+rejection (`[]`), and exact challenge-word rejection.
+
+For the symmetric leg of CCA composition, import
+[`Hybrid/DEMCCA.lean`](../../Complexity/Crypto/Computational/Encryption/Hybrid/DEMCCA.lean).
+`hybridDEMGame` uses the existing two-phase `cca2GameOn`: it retains the original joint KEM key
+and encapsulation distribution, samples the hidden key from `E.keyGen n`, and redirects the
+selected KEM component to that key in both phases. Challenge messages must each have length `n`.
+`eval_hybridDEMGame` proves exact equality with the existing symmetric `ccaOneTimeGame`, and
+`OneTimeINDCCA.indistinguishable_hybridDEMGame` supplies the loss-one security conclusion.
+The native reduction certificate charges both adaptive phases and bounds every external reply read;
+`isPPTOn_hybridDEMGame` also certifies the closed experiment.
+
+The [checked clients](../../ComplexityTests/Crypto/HybridDEMCCA.lean) apply the result to the
+existing PRF Encrypt-then-MAC cipher, expose an insecure echo cipher, and run a zero-width
+prechallenge/challenge/postchallenge trace. They distinguish an empty encryption reply from an
+encoded successful empty plaintext. This is an intermediate-game result: the two KEM hops and
+ideal-key distribution compatibility still remain. In particular, the Encrypt-then-MAC sampler
+frames an `n`-bit encryption key with a `2*n`-bit MAC key; its `4*n+1` encoded bits are not uniform.
 
 ## Certify a list accumulator
 

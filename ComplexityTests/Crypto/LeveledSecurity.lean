@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Crypto.Computational.Homomorphic.Leveled.Bootstrapping
 import Complexity.Crypto.Computational.Homomorphic.Leveled.GameOverhead
+import Complexity.Crypto.Computational.Homomorphic.Leveled.FlatSecurity
 import Complexity.Tactic.PPT
 
 /-!
@@ -24,6 +25,7 @@ namespace ComplexityTests.Crypto.LeveledSecurity
 
 open Cslib Cslib.Circuits Cslib.Crypto Cslib.Crypto.Homomorphic Cslib.Probability
 open Turing.MultiTapeTM Leveled
+open scoped NNReal ENNReal
 
 private noncomputable def fixture : Scheme where
   keyGen _ := do
@@ -492,5 +494,94 @@ example : ¬ forgetful.Correct := by
   have h := hcorrect.decrypt_encrypt 0 ([false], [false, false]) hkey true []
     (by simp [forgetful])
   simp [forgetful] at h
+
+-- Native execution includes a runtime-varying attempt count and all original callbacks.
+example (attempts depth capacity : ℕ → ℕ)
+    (ha : ComputableInPolyTime attempts encUnary encUnary)
+    (hd : ComputableInPolyTime depth encUnary encUnary)
+    (hc : ComputableInPolyTime capacity encUnary encUnary) :
+    (flatLeveledAdversary fixture attempts depth capacity adversary).IsPPT :=
+  isPPT_flatLeveledAdversary keyGen_ppt encrypt_ppt adversary_ppt ha hd hc
+
+-- This exposed-plaintext fixture has signed source gap -1, not a vacuous zero advantage.
+private theorem flat_signed_gap (attempts budget : ℕ → ℕ) (n : ℕ) :
+    (Game.succProbability (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+      (flatLeveledAdversary fixture attempts (fun n => 2 * budget n) (fun _ => 2) adversary)
+        false n)) : ℝ) -
+    Game.succProbability (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+      (flatLeveledAdversary fixture attempts (fun n => 2 * budget n) (fun _ => 2) adversary)
+        true n)) =
+      -(ProbComp.intervalSuccess (2 * (2 * budget n * 2) + 1) (attempts n) : ℝ) /
+        (2 * (2 * budget n * 2) + 1 : ℕ) := by
+  rw [gap_flatLeveledAdversary fixture attempts budget (fun _ => 2) adversary n 2
+    (secret_width n) le_rfl, eval_game_keyGen fixture budget adversary false n,
+    eval_game_keyGen fixture budget adversary true n]
+  simp [eval_publicKeyGame, Game.succProbability, neg_div]
+
+-- Three attempts strictly improve the actual reduction's selector loss at four link-bit slots.
+example : (9 : ℝ≥0) / ProbComp.intervalSuccess 9 3 < 12 :=
+  by convert flatLeveled_loss_lt 2 2 3 (by decide) (by decide) using 1; norm_num
+
+-- Exhaustion at zero attempts aborts in both worlds even though the exposed source gap is -1.
+example (depth capacity : ℕ → ℕ) (bit : Bool) (n : ℕ) :
+    ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+      (flatLeveledAdversary fixture (fun _ => 0) depth capacity adversary) bit n) =
+        PMF.pure false := by
+  simp [Encryption.game, Encryption.gameOn, flatLeveledAdversary, leveledAdversary,
+    rejectLeveledChoice, ProbComp.eval_bind, PMF.map, Function.comp_def]
+
+-- A concrete nonzero gap: N=9, failure (7/16)^3, and one surviving mass per hybrid step.
+example (n : ℕ) :
+    (Game.succProbability (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+      (flatLeveledAdversary fixture (fun _ => 3) (fun _ => 2) (fun _ => 2) adversary)
+        false n)) : ℝ) -
+    Game.succProbability (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+      (flatLeveledAdversary fixture (fun _ => 3) (fun _ => 2) (fun _ => 2) adversary)
+        true n)) = -(417 / 4096) := by
+  have h := flat_signed_gap (fun _ => 3) (fun _ => 1) n
+  have hp : ProbComp.intervalFailure 9 = (7 / 16 : ℝ≥0) := by
+    norm_num [ProbComp.intervalFailure, dyadicSize, show Nat.log 2 9 = 3 by decide]
+  have hle : (7 / 16 : ℝ≥0) ^ 3 ≤ 1 := by
+    exact_mod_cast (show (7 / 16 : ℝ) ^ 3 ≤ 1 by norm_num)
+  convert h using 1
+  change -(417 / 4096 : ℝ) = -(ProbComp.intervalSuccess 9 3 : ℝ) / 9
+  rw [ProbComp.intervalSuccess, hp, NNReal.coe_sub hle]
+  norm_num
+
+-- A singleton selector retains its exhaustion probability: the source's nonzero gap is halved.
+example (n : ℕ) :
+    (Game.succProbability (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+      (flatLeveledAdversary fixture (fun _ => 1) (fun _ => 0) (fun _ => 2) adversary)
+        false n)) : ℝ) -
+    Game.succProbability (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+      (flatLeveledAdversary fixture (fun _ => 1) (fun _ => 0) (fun _ => 2) adversary)
+        true n)) = -(1 / 2) := by
+  have h := flat_signed_gap (fun _ => 1) (fun _ => 0) n
+  have hp : ProbComp.intervalFailure 1 = (1 / 2 : ℝ≥0) := by
+    norm_num [ProbComp.intervalFailure, dyadicSize]
+  have hle : (1 / 2 : ℝ≥0) ≤ 1 := by
+    exact_mod_cast (show (1 / 2 : ℝ) ≤ 1 by norm_num)
+  convert h using 1; norm_num [ProbComp.intervalSuccess, hp, NNReal.coe_sub hle]
+
+private theorem eval_one_slot_link (testBit bit : Bool) (n : ℕ) :
+    ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+      (fixture.exactLinkAdversary (fun _ => 1) (fun _ => 1)
+        (publicKeyGame fixture adversary testBit)) bit n) = PMF.pure testBit := by
+  rw [fixture.eval_exactLinkAdversary _ _ _ n 2 bit (secret_width n)]
+  simp [Scheme.exactKeyChainHybridGame, eval_publicKeyGame]
+
+-- The one-slot selector has no claimed improvement over the ideal factor `3`. Its two actual
+-- worlds have probabilities 1/4 and 1/2 after one attempt, retaining the fourth abort outcome.
+example (bit : Bool) (n : ℕ) :
+    (Game.succProbability (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+      (flatLeveledAdversary fixture (fun _ => 1) (fun _ => 1) (fun _ => 1) adversary)
+        bit n)) : ℝ) = if bit then 1 / 2 else 1 / 4 := by
+  rw [succProbability_flatLeveledAdversary]
+  simp only [eval_one_slot_link, eval_zeroLinkGame]
+  have hp : ProbComp.intervalFailure 3 = (1 / 4 : ℝ≥0) := by
+    norm_num [ProbComp.intervalFailure, dyadicSize, show Nat.log 2 3 = 1 by decide]
+  have hle : (1 / 4 : ℝ≥0) ≤ 1 := by
+    exact_mod_cast (show (1 / 4 : ℝ) ≤ 1 by norm_num)
+  cases bit <;> norm_num [Game.succProbability, ProbComp.intervalSuccess, hp, NNReal.coe_sub hle]
 
 end ComplexityTests.Crypto.LeveledSecurity

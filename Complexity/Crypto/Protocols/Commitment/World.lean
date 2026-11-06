@@ -61,7 +61,7 @@ inductive Observation where
   | receipt
   | opened (bit : Bool)
   | aborted
-  deriving DecidableEq
+  deriving DecidableEq, Fintype
 
 /-- The public observation of a private state. -/
 def observe : Store → Observation
@@ -91,6 +91,19 @@ def handler {m : Type → Type} [Pure m] :
   OracleComp.sumHandler
     (fun cmd s => pure ((), advance cmd s))
     (fun _ s => pure (observe s, s))
+
+/-- Closing a private probabilistic sample through the actual handler only lifts its state. -/
+theorem interpret_sample {α : Type} (program : ProbComp α) :
+    OracleComp.interpret
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) handler)
+      (ProbOracleComp.sample program) = StateT.lift (σ := Store) program := by
+  funext st
+  rw [ProbOracleComp.interpret_sample]
+  change (OracleComp.interpret (m := StateT Store ProbComp) _ program).run st = _
+  rw [OracleComp.run_interpret_lift]
+  change (fun a => (a, st)) <$> OracleComp.interpret OracleComp.query program = _
+  rw [OracleComp.interpret_query_eq_self]
+  simp [StateT.lift, bind_pure_comp]
 
 /-- One phased session, with sender commands on the left and receiver polls on the right.
 Only `World.eval`'s program output is public; its state remains private.
