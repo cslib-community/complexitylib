@@ -62,8 +62,14 @@ example : ∃ y, ExecWithin 8 probeScan (scanInput 2) y 116 ∧
     (y.regs operand ≠ 0 ↔ ∃ r ∈ [(0, 3), (2, 7)],
       (scanInput 2).mem (slot 40
         (Cslib.Cryptanalysis.AddXNOR.backward
-          ((decode 1 0).zip [1#2]) (BitVec.ofNat 2 r.1)).toNat) ≠ 0) := by
-  exact probeScan_exec (W := 8) (m := 2) (b := 5) (boundary := 20)
+          ((decode 1 0).zip [1#2]) (BitVec.ofNat 2 r.1)).toNat) ≠ 0) ∧
+    (y.regs operand ≠ 0 → ∃ r ∈ [(0, 3), (2, 7)],
+      y.regs firstOperators = r.2 ∧ y.regs operators = 0 ∧
+      y.regs state = (Cslib.Cryptanalysis.AddXNOR.backward
+        ((decode 1 0).zip [1#2]) (BitVec.ofNat 2 r.1)).toNat ∧
+      y.regs operand = (scanInput 2).mem (slot 40 (y.regs state)) ∧
+      y.regs bits = (scanInput 2).mem (slot 40 (y.regs state) + 1)) := by
+  exact probeScan_witness_exec (W := 8) (m := 2) (b := 5) (boundary := 20)
     (ptr := 10) (D := 40) (v := 0) [1#2] [(0, 3), (2, 7)] (scanInput 2)
     (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) (by decide) (by decide)

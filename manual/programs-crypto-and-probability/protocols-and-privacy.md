@@ -802,6 +802,16 @@ misses, an empty bucket, and early exit before an invalid successor. This scan
 is not the second-quarter/class iterator or a global computed-balance bound.
 
 
+`Quarter.probeScan_witness_exec` additionally identifies a node in the actual
+linked bucket when the tag is nonzero. Its first packed index, preserved second
+index, recovered full state and both dictionary cells agree with the returned
+registers. The complete client above instantiates this stronger contract on a
+miss followed by a hit with zero retained witnesses. This is physical witness
+provenance, not original-chain correctness: the latter still requires semantic
+validity of the bucket construction and retained dictionary, plus the general
+class iterator theorem. Empty buckets return tag zero; no witness is asserted
+on exhaustion. Instruction bounds and prerequisites are unchanged.
+
 To execute the complete opposite-class consumer, use `Quarter.probeClass`
 from the same import and root-context client above. Set `count` to the second
 quarter length and `stop` to $2^{\text{count}}$; supply `initial` as the projected

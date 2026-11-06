@@ -127,7 +127,7 @@ The presence tag is tested before advancing, so zero witnesses remain valid. -/
 /-- Every actual linked hit is tested unless an earlier full key is present.
 The initial tag must be zero, including for an empty bucket. Dictionary
 validity is deliberately separate from this exact physical lookup contract. -/
-theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
+theorem probeScan_witness_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
     (rs : List (ℕ × ℕ)) (x : Data 32)
     (hb : x.regs base = b) (hc : x.regs count = as.length)
     (hn : x.regs modulus = 2 ^ m) (hv : x.regs operators = v) (hfv : Fits W v)
@@ -140,14 +140,21 @@ theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
     ∃ y, ExecWithin W probeScan x y (rs.length * (18 * as.length + 39) + 2) ∧
       y.mem = x.mem ∧ y.regs link = 0 ∧
       (y.regs operand ≠ 0 ↔ ∃ r ∈ rs, x.mem (Dictionary.slot D
-        (backward ((decode as.length v).zip as) (BitVec.ofNat m r.1)).toNat) ≠ 0) := by
+        (backward ((decode as.length v).zip as) (BitVec.ofNat m r.1)).toNat) ≠ 0) ∧
+      (y.regs operand ≠ 0 → ∃ r ∈ rs,
+        y.regs firstOperators = r.2 ∧ y.regs operators = v ∧
+        y.regs state = (backward ((decode as.length v).zip as)
+          (BitVec.ofNat m r.1)).toNat ∧
+        y.regs operand = x.mem (Dictionary.slot D (y.regs state)) ∧
+        y.regs bits = x.mem (Dictionary.slot D (y.regs state) + 1)) := by
   induction rs generalizing x ptr with
   | nil =>
     cases hlinked
-    refine ⟨x, ?_, rfl, hl, ?_⟩
+    refine ⟨x, ?_, rfl, hl, ?_, ?_⟩
     · simpa only [probeScan, List.length_nil, Nat.zero_mul, Nat.zero_add] using
         (ExecWithin.loop_exit (w := W) (x := x) (cond := .lt zero link)
           (body := probeScanBody) (by simp [Cond.holds_lt, hz, hl]))
+    · simp [htag]
     · simp [htag]
   | cons r rs ih =>
     obtain ⟨s, u⟩ := r
@@ -165,7 +172,7 @@ theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
         have nm : n.mem = x.mem := zm
         have nl : n.regs link = x.mem ptr := by simpa [n] using zl
         have nt : n.regs operand = 0 := by simpa +decide [n, operand, link] using hit
-        obtain ⟨y, hy, ym, yl, hiff⟩ := ih n
+        obtain ⟨y, hy, ym, yl, hiff, hw⟩ := ih n
           ((hnstep.regs_eq (by decide)).trans hb)
           ((hnstep.regs_eq (by decide)).trans hc)
           ((hnstep.regs_eq (by decide)).trans hn)
@@ -176,7 +183,7 @@ theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
           (by simpa only [nm] using htail)
           (fun r hr => hstates r (List.mem_cons_of_mem _ hr))
           (by simpa only [nm] using hinput)
-        refine ⟨y, ?_, ym.trans nm, yl, ?_⟩
+        refine ⟨y, ?_, ym.trans nm, yl, ?_, ?_⟩
         · exact (ExecWithin.loop_iter (cond := .lt zero link) (by simp [Cond.holds_lt, hz, hl, hp])
             hnstep hy).mono (by simp only [List.length_cons, Nat.add_mul, Nat.one_mul]; omega)
         · rw [hiff, nm]
@@ -184,6 +191,10 @@ theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
           rw [ztag] at hmiss
           simp only [List.mem_cons, exists_eq_or_imp]
           simp only [hmiss, ne_eq, not_true_eq_false, false_or]
+        · intro hit
+          obtain ⟨r, hr, hu, hv, hs, ht, hb⟩ := hw hit
+          exact ⟨r, List.mem_cons_of_mem _ hr, hu, hv, hs,
+            by simpa only [nm] using ht, by simpa only [nm] using hb⟩
       · let n := z.set link 0
         have hnstep : ExecWithin W probeScanBody x n (18 * as.length + 36) := by
           have hcopy : ExecWithin (B := .standard) W (ram[ link ← zero ]) z n 1 := by
@@ -191,7 +202,7 @@ theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
               (w := W) (x := z) (d := link) (s := zero))
           exact (he.seq (ExecWithin.branch_neg
             (by simp [Cond.holds_eq, hit, zz]) hcopy)).mono (by omega)
-        refine ⟨n, ?_, zm, by simp [n], ?_⟩
+        refine ⟨n, ?_, zm, by simp [n], ?_, ?_⟩
         · exact (ExecWithin.loop_iter (cond := .lt zero link)
             (by simp [Cond.holds_lt, hz, hl, hp]) hnstep
             (ExecWithin.loop_exit (x := n) (cond := .lt zero link)
@@ -201,6 +212,32 @@ theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
             simpa +decide [n, operand, link] using hit
           refine ⟨fun _ => ⟨(s, u), List.mem_cons_self, ?_⟩, fun _ => hnTag⟩
           rwa [ztag] at hit
+        · intro _
+          refine ⟨(s, u), List.mem_cons_self, ?_, ?_, ?_, ?_, ?_⟩
+          · simpa +decide [n, firstOperators, link] using zu
+          · simpa +decide [n, operators, link] using zv
+          · simpa +decide [n, state, link] using zs
+          · simpa +decide [n, operand, state, link, zs] using ztag
+          · simpa +decide [n, bits, state, link, zs] using zbits
+
+/-- Membership-only form of `probeScan_witness_exec`. -/
+theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
+    (rs : List (ℕ × ℕ)) (x : Data 32)
+    (hb : x.regs base = b) (hc : x.regs count = as.length)
+    (hn : x.regs modulus = 2 ^ m) (hv : x.regs operators = v) (hfv : Fits W v)
+    (hl : x.regs link = ptr) (hD : x.regs Dictionary.table = D)
+    (hone : x.regs one = 1) (hz : x.regs zero = 0) (htag : x.regs operand = 0)
+    (hlinked : Linked x.mem boundary ptr rs)
+    (hstates : ∀ r ∈ rs, r.1 < 2 ^ m)
+    (hinput : ∀ i (hi : i < as.reverse.length), x.mem (b + i) = as.reverse[i].toNat)
+    (hfit : Fits W (D + boundary + b + as.length + 8 * 2 ^ m + 2 ^ as.length + 4)) :
+    ∃ y, ExecWithin W probeScan x y (rs.length * (18 * as.length + 39) + 2) ∧
+      y.mem = x.mem ∧ y.regs link = 0 ∧
+      (y.regs operand ≠ 0 ↔ ∃ r ∈ rs, x.mem (Dictionary.slot D
+        (backward ((decode as.length v).zip as) (BitVec.ofNat m r.1)).toNat) ≠ 0) := by
+  obtain ⟨y, he, hm, hl, hit, _⟩ := probeScan_witness_exec as rs x
+    hb hc hn hv hfv hl hD hone hz htag hlinked hstates hinput hfit
+  exact ⟨y, he, hm, hl, hit⟩
 
 /-- Reversed full-width operand base, preserved while filtering projected states. -/
 abbrev fullBase : Fin 32 := 24

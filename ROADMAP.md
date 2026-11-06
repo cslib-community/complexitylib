@@ -79,7 +79,9 @@ per-bucket instruction and prefix-support proofs. A read-only single-hit backwar
 probe now has an exact full-state/tag/witness execution theorem; its local bucket
 iteration and early exit are proved. The composed whole-class streaming code now executes packed-index filtering,
 bucket scanning and early exit, with checked success/exhaustion clients and
-a no-store prefix theorem. General whole-class termination/time and
+a no-store prefix theorem. The linked scan also exports the actual hit node,
+packed indices, recovered state and dictionary payload provenance. This physical
+contract does not prove original-chain witness correctness. General whole-class termination/time and
 returned original-chain witness correctness remain unproved. This is a sparse WordRAM
 implementation, not the source's sorted lists or a compact arena. The general correctness/resource certificates for the
 second-quarter/class iterator and streaming opposite-side consumer, counter-selected
