@@ -200,6 +200,10 @@ families and full-input native runtime.
   embedding into an arbitrary query domain, retaining every out-of-image query and the same bound
   ([#2684](https://github.com/cslib-community/complexitylib/issues/2684)). The canonical word Schnorr
   instance is recorded below; explicit key-generation/signing approximation transport remains open.
+- **Fiat–Shamir reduction failure output** ([#2774](https://github.com/cslib-community/complexitylib/issues/2774)):
+  the existing reduction and quantitative bound accept an explicit fallback; Schnorr uses zero.
+  Native fork execution, transcript/answer nonexhaustion and actual simulator-sampling transport
+  remain prerequisites for [#2568].
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers. Word verification now enforces canonical commitments for canonical
   public keys ([#2672](https://github.com/cslib-community/complexitylib/issues/2672)).
@@ -245,10 +249,6 @@ families and full-input native runtime.
   actual group elements and scalar sampling is ideal; native adapter composition,
   key-generation/signing approximation transport and the complete efficient forking reduction
   remain open under [#2568].
-- **Fiat–Shamir reduction failure output** ([#2774](https://github.com/cslib-community/complexitylib/issues/2774)):
-  the existing reduction and quantitative bound accept an explicit fallback; Schnorr uses zero.
-  Native fork execution, transcript/answer nonexhaustion and actual simulator-sampling transport
-  remain prerequisites for [#2568].
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
