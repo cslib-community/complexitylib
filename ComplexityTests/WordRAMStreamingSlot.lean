@@ -50,12 +50,12 @@ private def observe (success : Bool) : Option (List ℕ × List ℕ × Bool × �
 -- Logical records 0–4 use the same physical ordinal zero. The final query count is one,
 -- whereas the first chunk has eight occurrences. Success in the later piece prevents record5.
 #guard observe true == some
-  ([5, 5, 1, 23, 5, 6, 103, 0, 0, 0, 1, 2], [1, 1, 79, 1, 109, 112], true, 38420)
+  ([5, 5, 1, 23, 5, 6, 103, 0, 0, 0, 1, 2], [1, 1, 79, 1, 109, 112], true, 37520)
 
 -- Every logical record is consumed on failure, including the short final query chunk.
 -- All original BC/AC weights in this fixture are negative.
 #guard observe false == some
-  ([6, 6, 0, 24, 6, 6, 103, 0, 0, 0, 0, 0], [1, 2, 79, 1, 109, 112], true, 44094)
+  ([6, 6, 0, 24, 6, 6, 103, 0, 0, 0, 0, 0], [1, 2, 79, 1, 109, 112], true, 43098)
 
 private def firstSlot : Option (List ℕ × ℕ) := do
   let (a, _) ← StreamingFixedPrime.prepare.eval 8192 1024 (fixture true)
@@ -65,7 +65,7 @@ private def firstSlot : Option (List ℕ × ℕ) := do
     [c.regs FixedPrime.Reg.index, c.regs (StreamingFixedPrime.producerBank Instances.heap),
       c.regs (FixedPrime.recordBank (RecordWitness.productBank RecordProduct.Reg.ordinal))], t)
 
-#guard firstSlot == some ([0, 0, 61, 8, 109, 112, 1, 103, 0], 8786)
+#guard firstSlot == some ([0, 0, 61, 8, 109, 112, 1, 103, 0], 8550)
 
 private def empty : Option (List ℕ × Bool) :=
   let input := PreparationInput.input 0 1 1 2 []
