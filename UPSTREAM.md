@@ -911,3 +911,27 @@ preserves earlier integration notes and per-module follow-up ideas.
   schedules connect to Mathlib's real-valued big-O after casting. No effective selection of code,
   width or encoding, or Turing-machine complexity identification, follows. These breaking local
   API changes intentionally retain no deprecated aliases, as authorized by Erik for this redesign.
+
+### Finite-sample information monotones
+
+The generic-minor development under
+`Complexity/Foundations/Algebra/Polynomial/MaximalMinor/` ports Yuqing Kong's
+Apache-2.0 formalization at `4e27ef9d167be69902385307d40123ec665dc532`
+from https://github.com/yuqkong-1844/finite-sample-information-monotones .
+This is general commutative algebra intended for Mathlib, a placement exception
+to the CSLib destination rule. Analytic and statistical consumers are in
+`Complexity/Probability/FiniteSampleInformation/`. Original formalization and
+mathematical credit are preserved; Christian Reitwiessner is the port author.
+The source is not a dependency: local proofs must check against the pinned
+CSLib/Mathlib and use the project module system. This port does not certify the
+source artifact's omitted arithmetic-circuit runtime or coNP-hardness framework.
+
+The port preserves the author's dependency chain for the simplex coordinate
+arguments. A concrete follow-up is to extract
+`SquarePolynomial.genericDetPoly_irreducible` (consumed by
+`SquareDeterminantGauss`) and `SquarePolynomial.eval_smul_of_isHomogeneous`
+(consumed by the square/rectangular contact arguments) into small Mathlib-bound
+modules under `Foundations/Algebra/Polynomial`. Their current source modules
+also depend on the simplex coordinate API; moving that API is a separate
+migration, not an alternate mathematical definition. Track further extraction
+with the finite-sample-information source/API review in issue 2527.

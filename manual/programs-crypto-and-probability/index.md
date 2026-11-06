@@ -62,6 +62,134 @@ The six directly cited CSLib dependency files were byte-identical to independent
 pinned blobs despite the live dependency-checkout drift. The chapters link those pinned
 sources directly; copied files and generated audit reports are not maintained inputs.
 
+## Adaptive policies and finite stochastic experiments
+
+The work associated with STOC submissions 587, 191 and 152 includes the general
+finite-horizon covariance identity and the bounded results below. The expanded
+headline programme remains open in [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
+The information and auditing sample-complexity bounds, scheduling LP/FPTAS and
+DPI rigidity theorems are not provided by these imports. There is no machine-runtime
+or full-paper completion claim. The source
+versions and PDF digests are recorded under `Aldridge2027`, `Wang2027` and `Kong2027`
+in [the bibliography](../../references.bib). The checked clients are in
+[Stoc2027BatchC.lean](../../ComplexityTests/Stoc2027BatchC.lean).
+
+- [AdaptivePolicy.Covariance](../../Complexity/Probability/AdaptivePolicy/Covariance.lean)
+  proves STOC submission 587, Lemma 3.3 and Theorem 3.4 (PDF p. 3), for every finite
+  state/action space, finite horizon and randomized Markov policy. `FiniteMDP`
+  supplies a normalized nonnegative initial law and controlled transition kernels,
+  with arbitrary real costs; `MarkovPolicy` supplies conditional action probabilities.
+  `stateLaw` propagates the evaluated policy through its own action-dependent dynamics.
+  `value` and `actionValue` evaluate the comparison policy backward with zero terminal
+  cost. `openLoop` uses the evaluated policy's action marginals at each time, then runs
+  under its own trajectory law. Apply `performance_difference`,
+  `covariance_characterization` or `joint_product_characterization` without proving
+  a Bellman equation or an identity as a hypothesis. `traceCovariance_sub_state`
+  permits any state-only baseline. Time indices start at zero and `totalCost π H`
+  includes exactly the times in `Finset.range H`, including an empty horizon.
+  [AdaptivePolicyCovariance.lean](../../ComplexityTests/AdaptivePolicyCovariance.lean)
+  constructs the actual two-step investment MDP, independently calculates both
+  trajectory costs and recovers their difference using the general theorem.
+- [AdaptivePolicy.Nonidentifiability](../../Complexity/Probability/AdaptivePolicy/Nonidentifiability.lean)
+  proves the finite-context case of STOC submission 587, Proposition 5.2 (PDF p. 5).
+  `finite_nonidentifiability` takes a context set of positive initial probability and
+  an action with positive marginal probability that is never played on that set.
+  It constructs two deterministic binary loss tables with identical complete logged
+  data laws for every sample count but different policy-minus-open-loop costs.
+  `logLaw` is nonnegative and normalized; `sampleLaw` is the i.i.d. product, including
+  the empty log. Logged propensities are functions of the recorded context, so adding
+  them does not distinguish the instances. The checked client exhibits a gap change
+  of $-1/4$. This result does not cover arbitrary measurable context spaces.
+- [AdaptivePolicy.SignReversal](../../Complexity/Probability/AdaptivePolicy/SignReversal.lean)
+  realizes Aldridge's Proposition 3.8 (PDF p. 4) with Boolean states and actions. The
+  initial state is uniform, investment costs $a(1+s)$, the transition is $s'=s\land a$,
+  and the terminal cost is $-ms'$. `sign_reversal` gives myopic covariance $1/4$ and
+  actual policy-minus-open-loop cost $(1-m)/4<0$ for every real $m>1$. The second
+  action has no effect. Retaining only $s\land a$ preserves the two-state claim;
+  the paper's stored pair contains redundant information.
+- [Submodular.OracleSavings](../../Complexity/Algorithms/Lean/Submodular/OracleSavings.lean)
+  proves Wang's Theorem 2(1) (PDF p. 7). A finite type indexes all oracles;
+  `savings p c A` is exactly $(1-\prod_{i\in A}(1-p_i))\sum_{i\notin A}c_i$.
+  Use `savings_nonneg` and `savings_isSubmodular` with pointwise $0\le p_i\le1$
+  and $c_i\ge0$. Submodularity reuses the library's `IsSubmodular`; savings need
+  not be monotone (the test has singleton saving one and full-set saving zero).
+  The scheduling theorem and FPTAS are outside this endpoint.
+- [PeerPrediction.Quadratic](../../Complexity/Probability/PeerPrediction/Quadratic.lean)
+  implements Kong's equation (8), Lemma 7.2 and Theorem 7.3 (PDF pp. 18–19).
+  `IsJoint` means a nonnegative finite probability table of total mass one;
+  `reportedLaw` sums conditional reporting probabilities over latent signals.
+  `expectFour` uses four independent draws from the same report law. `payment_unbiased`
+  identifies the equality-only payment's expectation with QMI, and `truthful_reward`
+  characterizes independence. `truthful_alice` and `truthful_bob` allow an arbitrary
+  fixed memoryless peer channel; own deviations must have the stated form
+  $T=\lambda D+(1-\lambda)q\mathbf1^T$, with $D$ doubly stochastic and
+  $0\le\lambda\le1$. `centered_mixed` and `qmi_mixed_le` prove Proposition 7.1's
+  identity and contraction. There is no full-support or equal-alphabet assumption.
+  This construction covers restricted own channels; it makes no general-channel
+  QMI or history-dependent-strategy claim. The rigidity APIs are described next.
+- [FiniteSampleInformation.Rigidity](../../Complexity/Probability/FiniteSampleInformation/Rigidity.lean)
+  is the entry point for Kong's finite-sample information limits (STOC submission 152).
+  Import it for the sharp polynomial/sample bounds and actual finite-task payments;
+  import [DimensionChanging](../../Complexity/Probability/FiniteSampleInformation/DimensionChanging.lean)
+  alone for alphabet-changing collapse. The
+  [checked clients](../../ComplexityTests/FiniteSampleInformation/Main.lean) include a
+  dependent zero-row law, nonzero rectangular Gram law, an impossible five-task
+  three-symbol reward, and an attaining eight-task four-symbol mechanism.
+
+  `GeneralAsymmetricC1.Mat n m` is the iterated function space
+  `Fin n → Fin m → ℝ`, so calculus uses its finite-product norm. `Simplex U`
+  means entrywise nonnegativity and total mass one. A `ColumnStochastic T`
+  has nonnegative entries and column sums one, and Alice's channel acts by
+  left multiplication. `swapAgents` transposes a law; `bobReports S U` applies
+  Bob's channel by right multiplication with its transpose. The
+  [QMI bridges](../../Complexity/Probability/FiniteSampleInformation/QuadraticBridge.lean)
+  identify these tables and channels with the existing four-task API.
+
+  For a smooth functional, use `zero_row_vanishing_openNeighborhood` or
+  `general_asymmetric_simplex_C1_openNeighborhood` from `GeneralAsymmetricC1`.
+  Supply an **open ambient neighborhood of the entire closed simplex** and a
+  `ContDiffOn ℝ 1` extension there, in addition to left DPI and rank-one vanishing.
+  Interior smoothness does not meet the hypotheses. With more rows than columns,
+  the functional vanishes everywhere. The zero-row theorem also covers square
+  and wide alphabets. `dimensionChanging_collapse` applies to a family whose
+  rectangular-channel DPI and boundary regularity hold for every alphabet size
+  at least two; its channels adding and retracting an unused state are proved
+  stochastic.
+
+  For polynomials, `determinantal_rigidity` proves membership in the square of
+  the maximal-minor ideal modulo total mass minus one, and
+  `polynomial_degree_lower_bound` gives degree at least $2n$ for a functional
+  nonzero on the simplex. The Gram determinant attains this bound for every
+  $2\le n\le m$; `gramDetPoly_nonzero_on_simplex` supplies a normalized witness.
+  `SquarePolynomial.square_simplex_det_sq` gives the square-case factorization.
+  The general generic-minor algebra is in
+  [Foundations/Algebra/Polynomial/MaximalMinor](../../Complexity/Foundations/Algebra/Polynomial/MaximalMinor/MaximalMinorWeight.lean).
+  The analytic and algebraic proofs port Yuqing Kong's Apache-2.0 author
+  formalization at `4e27ef9d167be69902385307d40123ec665dc532`, with original
+  authorship and port credit preserved.
+
+  `Estimation.unbiased_iff_polynomialOnSimplex` is the fixed-sample characterization:
+  a signed statistic on `Fin d → α` estimates a functional for every probability
+  vector exactly when the functional has a degree-at-most-$d$ representative
+  on the simplex. It permits zero probabilities and unused samples.
+  `expectedPayment_eq_sum` gives the actual product-law payment expectation;
+  `memoryless_payoff_eq` identifies it with first drawing the latent signal
+  vector and then independently randomizing each agent’s report on each task.
+  `square_payment_task_lower_bound` applies to any actual finite-task statistic;
+  `exists_optimal_square_payment` returns a common $2n$-task payment for both
+  agents with dominant truthfulness against all fixed memoryless peer channels.
+  `unequal_alphabets_not_both_nontrivial` permits distinct signed payments to
+  the two agents. `exists_faithful_payment_iff`,
+  `faithful_payment_sample_lower_bound` and
+  `exists_two_sided_faithful_payment_iff` give the binary/four-sample
+  classifications. These results concern the same independently applied channel
+  on each task, not arbitrary strategies using the whole signal vector.
+
+  The port also includes Appendix B's compensation construction and Appendix D's
+  semantic copositivity equivalence. The latter does **not** certify polynomial-time
+  arithmetic-circuit construction or coNP-hardness. Appendix C's unnormalized
+  consequences are outside the main-result API described here.
+
 ## Known Limitations
 
 Primary-source verification was selective. HILL/Holenstein/GGM and selected RAM/algorithm sources were consulted; textbook locator claims and most construction proofs remain code-grounded rather than independently reconciled line by line with the literature. The section intentionally does not infer autonomous-development percentages from theorem counts or test files.
