@@ -3640,6 +3640,7 @@ public import Complexity.Foundations.Data.Finset.SubsetSum
 public import Complexity.Foundations.Data.Finset.SymmDiff
 public import Complexity.Foundations.Data.Finset.UniqueTail
 public import Complexity.Foundations.Data.Finset.Variance
+public import Complexity.Foundations.Data.Function.Tabulate
 public import Complexity.Foundations.Data.Hamming
 public import Complexity.Foundations.Data.Hamming.Expansion
 public import Complexity.Foundations.Data.Int.LogBounds
@@ -3786,6 +3787,7 @@ public import Complexity.Foundations.GroupTheory.Perm.FiveCycle
 public import Complexity.Foundations.GroupTheory.Perm.Fixing
 public import Complexity.Foundations.GroupTheory.Perm.Last
 public import Complexity.Foundations.LinearAlgebra.CubeSum
+public import Complexity.Foundations.LinearAlgebra.Elimination
 public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
@@ -4088,6 +4090,7 @@ public import Complexity.Logics.Propositional.CNF.ExactOne.ModelCount
 public import Complexity.Logics.Propositional.CNF.ExactOne.PolyTime
 public import Complexity.Logics.Propositional.CNF.ExactOne.Positive
 public import Complexity.Logics.Propositional.CNF.ExactOneCounting
+public import Complexity.Logics.Propositional.CNF.ExactOneElimination
 public import Complexity.Logics.Propositional.CNF.ExactTests
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.Gadgets
@@ -4117,10 +4120,11 @@ public import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoBoundary
-public import Complexity.Logics.Propositional.CNF.VCOne
-public import Complexity.Logics.Propositional.CNF.VCOneTables
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
+public import Complexity.Logics.Propositional.CNF.VCOne
+public import Complexity.Logics.Propositional.CNF.VCOneElimination
+public import Complexity.Logics.Propositional.CNF.VCOneTables
 public import Complexity.Logics.Propositional.CSP
 public import Complexity.Logics.Propositional.CSP.BinaryDigits
 public import Complexity.Logics.Propositional.CSP.ExactlyOne

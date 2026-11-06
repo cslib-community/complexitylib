@@ -512,6 +512,24 @@ The empty clause also handles an empty input table. -/
 @[expose] def binary (R : Finset (V → Bool)) : CNF V :=
   ((ExactOne.binaryUniverse (V := V)).filter fun c => ∀ x ∈ R, c.eval x = true).dedup
 
+/-- Compute binary restrictions by scanning only the explicitly listed table.
+This is the compiler implementation of `binary`: the default decidability of a
+finite forall in that definition would enumerate the entire Boolean cube. -/
+@[expose] def scanBinary (R : Finset (V → Bool)) : CNF V :=
+  ((ExactOne.binaryUniverse (V := V)).filter fun c =>
+    @decide (∀ x ∈ R, c.eval x = true) Finset.decidableDforallFinset).dedup
+
+/-- Replacing generic finite forall with bounded table scanning preserves syntax,
+not just satisfying assignments. The compiler uses this proved equality. -/
+@[csimp] theorem binary_eq_scanBinary : @binary = @scanBinary := by
+  funext V _ _ R
+  unfold binary scanBinary
+  congr 1
+  apply List.filter_congr
+  intro c _
+  apply Bool.eq_iff_iff.mpr
+  simp only [decide_eq_true_eq]
+
 /-- The table's side formula has width at most two. -/
 theorem binary_width (R : Finset (V → Bool)) (c : Clause V) (hc : c ∈ binary R) :
     c.length ≤ 2 := by

@@ -87,10 +87,60 @@ This is the algebraic row-selection step of STOC submission 1575, Lemma 3.1
 (PDF pp. 10–11). It is not an elimination implementation or a polynomial bit-time
 certificate. For the construction from selected signed rows to actual counting
 queries, use the next sections, including the table representation below.
-Polynomial-bit-time elimination and the advertised runtime remain open. In particular, the
+The executable assembly below supplements this existence API. Its encoded
+polynomial-bit-time certification and the advertised runtime remain open. In particular, the
 [native counting endpoint](../machines-and-classes/native-counting.md) currently
 has a weaker exponent with an additional $\log\log$ factor; it cannot establish
 the sharper quantitative bound by direct substitution.
+
+## Executing elimination and query assembly
+
+Import [`ExactOneElimination`](../../Complexity/Logics/Propositional/CNF/ExactOneElimination.lean)
+and open `Cslib.Logic.PL.ExactOne`. Supply the original finite signed scopes and
+polarities, with ordered row and declared-variable types (for example `Fin m` and
+`Fin r`), and the side CNF to `preprocess B S p`. The result is a `CountPlan`:
+a direct natural-number answer or two ordinary CNFs on `V ⊕ Fin k`.
+`CountPlan.execute` accepts a counter indexed by the number of added bits. Both
+queries are constructed without using either answer. `preprocess_correct` supplies
+mathematical counting semantics; `preprocess_budget` requires binary side clauses
+and proves width three, at most $13r^2$ clauses and at most $2r-2$ declared variables
+for every emitted query. Every direct answer uses zero queries.
+
+The implementation first handles $r\leq 1$ by at most two assignment tests.
+Larger instances use `originalElimination`, which scans original row indices in
+column order, transforms the coefficient matrix and right-hand side together,
+and back-substitutes a rational point. Inconsistency returns zero. A pivot in
+every column leaves one rational candidate, which is checked against the original
+signed rows and side clauses; a non-Boolean candidate cannot pass this check.
+Otherwise the retained original indices feed the existing two-boundary compiler.
+With no retained rows, the two queries are the deduplicated binary side CNF and
+an unsatisfiable CNF on the same declared bits.
+
+For general rational systems, import
+[`Elimination`](../../Complexity/Foundations/LinearAlgebra/Elimination.lean) and use
+`Cslib.LinearSystem.eliminateCached rows columns A b`. The explicit lists determine
+pivot order. `eliminateCached_eq` connects its materialized computation to the
+verified `eliminate` kernel. `eliminate_point`, `eliminate_consistent_iff` and
+`eliminate_selected_iff` require that all nonzero input columns occur in `columns`;
+`eliminate_unique` determines those coordinates when every listed column gets a
+pivot. Selected indices always come from `rows` and number at most `columns.length`.
+Intermediate matrices, right-hand sides and back-substituted points use
+[`Function.tabulate`](../../Complexity/Foundations/Data/Function/Tabulate.lean)
+to share their computed entries. Lookup is a finite linear scan.
+
+The [executed client](../../ComplexityTests/PaperEndpoints/ExactOneElimination.lean)
+checks all 256 ordered pairs of two-bit signed rows against independent direct
+counts, rational row permutations, inconsistency, unused bits, and a 40-variable
+instance with 80 repeated rows. From the checkout root, validate it with
+`LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.ExactOneElimination`.
+If a different imported version is used, check the module search path and the
+checkout's toolchain and dependency manifest before investigating a proof failure.
+
+These are functional execution and syntax-budget theorems. They do **not** certify
+polynomial bit time or polynomial peak space: coefficient-growth bounds and a
+costed encoded implementation remain open. No arithmetic-operation contract is
+assumed in place of that proof. The sharper fixed-width counting runtime and the
+bounded-demand/graph applications remain separate open objectives.
 
 ## Signed exact-one counting queries
 
@@ -231,13 +281,38 @@ applying the theorem.
 
 These results establish the mathematical representation and global query-budget
 claims of [ChenJiangZhu2027], Theorems 1.3/6.3 (PDF pp. 18–21). They do not yet
-certify a polynomial-bit-time reduction: global row selection/direct-branch
-choice is still classical, and no coefficient-growth/bit-cost proof for exact
-elimination has been supplied. The semantic `closure` remains a finite-cube
+certify a polynomial-bit-time reduction: the executable row selection and direct
+branches below have no coefficient-growth/encoded-bit-cost proof for exact
+elimination. The semantic `closure` remains a finite-cube
 specification; the compiler's equation enumeration uses `listedClosure` instead.
 The greedy separator is supplied explicitly, but no machine-level running-time certificate
 is asserted. The sharper counting runtime and bounded-demand/graph applications
 remain open. The broad issue is not complete and no curated abstract is added.
+
+## Executing plans from overlapping VC-one tables
+
+Import [`VCOneElimination`](../../Complexity/Logics/Propositional/CNF/VCOneElimination.lean)
+and use `Cslib.Logic.PL.VCOne.tablePlan w scope R` with tables indexed by `Fin m`.
+`equationList` enumerates missing closure tuples using the proved prefix listing,
+retaining each table's index. `listedScopes` and `listedPolarity` number and align
+these equations in the global columns, materializing scopes and signs before
+elimination. The compiler then runs the same elimination
+and direct/query branches as `preprocess`. No disjointness of scopes is needed.
+`tablePlan_correct` assumes each input table has VC dimension at most one;
+`tablePlan_budget` gives the emitted query bounds, with the number of globally
+declared variables as parameter.
+
+Binary restrictions execute through `scanBinary`. The proved compiler equality
+`binary_eq_scanBinary` preserves the exact original `binary` syntax while replacing
+a generic finite universal test over all Boolean tuples by a scan of the actual
+table. This distinction matters even when a table contains only two rows on many
+coordinates. The [global executed client](../../ComplexityTests/PaperEndpoints/VCOneElimination.lean)
+counts overlapping positive/negative scopes with an unused bit, handles both
+zero-width table cases, and constructs the plan for a 32-coordinate two-row table.
+From the checkout root, run
+`LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.VCOneElimination`.
+The functional bridge does not discharge the coefficient-growth/encoded-runtime
+obligation described above or prove the whole-paper algorithmic endpoint.
 
 ## Known Limitations
 

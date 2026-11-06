@@ -39,8 +39,12 @@ semantics. `CNF/VCOneTables` aligns arbitrarily overlapping scopes and proves
 the all-cases global two-query budget on declared bits. Its equation enumeration
 now uses a constructive pair-compatible prefix listing, with at most $w+1$
 retained rows per stage and $2w(w+1)$ attempted extensions, rather than enumerating
-the cube. Finite lookup aligns scope signs. Polynomial-bit-time rank
-preprocessing/branch assembly (including coefficient growth), bounded-demand/graph
+the cube. Finite lookup aligns scope signs. `CNF/ExactOneElimination` and
+`CNF/VCOneElimination` now execute materialized rational elimination, original-row
+selection, direct cases and nonadaptive query assembly, including overlapping
+tables. A proved compiler rewrite scans explicit table rows for binary restrictions
+rather than all Boolean tuples. Encoded polynomial-bit-time and peak-space
+certification (including coefficient growth), bounded-demand/graph
 applications and the advertised sharper counting
 runtime remain open under
 [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
