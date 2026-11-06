@@ -271,9 +271,31 @@ in [the bibliography](../../references.bib). The checked clients are in
   The finite observed-response alphabet
   allows arbitrary correlations and real probabilities; no finite underlying
   random-seed assumption is imposed. Token bills, latencies and a native
-  sampler/runtime are not part of this response-law model. The greedy selector,
-  logarithmic cost comparison, resource bridge and
-  hardness transfer remain open, as do Theorems 5–6. From a configured checkout,
+  sampler/runtime are not part of this response-law model.
+  Import [PartialCoverGreedy](../../Complexity/Probability/StochasticOracle/PartialCoverGreedy.lean)
+  for the executable rational-cost selector in `Cslib.Algorithms.Lean.Multicover`. Its input is a
+  list of `Oracle` values with finite eligibility sets and rational cost bounds.
+  `choose_spec` proves exact minimum cost/gain selection among positive marginals;
+  `batch_spec` and `batch_chances` derive full `r`-fold coverage within `n*r` calls
+  when those eligibility sets cover the universe. The universe is the whole finite
+  type; represent a restricted universe by a subtype. `run_bill_le` proves harmonic
+  charging against every feasible benchmark; `greedy_risk_bill` combines the
+  necessary/sufficient thresholds and ceiling repetition factor to derive the
+  source's logarithmic bill bound against every risk-feasible batch. It does not
+  assume an optimizer exists or supply greedy performance as an input.
+  `greedy_certified_completion` proves success at least `1-δ` with the actual
+  history-conditional response law. Costs must be nonnegative for the comparison;
+  positive rational source bounds satisfy this condition. Duplicate calls are
+  billed individually. Ties retain the earlier listed oracle and zero-gain
+  oracles are skipped. `batch` accepts an integral demand; the real logarithmic
+  thresholds are mathematical quantities, without a proved executable evaluator.
+  Native binary time/space, token-bill/deadline execution, asymptotic approximation
+  consequences and hardness transfer remain open, as do Theorems 5–6.
+  From a configured checkout, check the complete
+  [StochasticOracleMulticoverGreedy](../../ComplexityTests/StochasticOracleMulticoverGreedy.lean)
+  client with `lake build ComplexityTests.StochasticOracleMulticoverGreedy` for
+  exact rational choices, repeated calls, harmonic and risk comparisons,
+  empty universes and inputs that fail to cover. For response-law examples,
   import `PartialCoverRisk` and check the complete
   [StochasticOraclePartialCover](../../ComplexityTests/StochasticOraclePartialCover.lean)
   client with `lake build ComplexityTests.StochasticOraclePartialCover`: it

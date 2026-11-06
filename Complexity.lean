@@ -40,6 +40,7 @@ public import Complexity.Algorithms.Lean.MaxFlow.Basic
 public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
 public import Complexity.Algorithms.Lean.MaxFlow.EdmondsKarp
 public import Complexity.Algorithms.Lean.MergeSort.Comparator
+public import Complexity.Algorithms.Lean.Multicover.Greedy
 public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
 public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
@@ -4368,6 +4369,7 @@ public import Complexity.Probability.StochasticOracle.CutoffFamilies
 public import Complexity.Probability.StochasticOracle.ExecutionFeasibility
 public import Complexity.Probability.StochasticOracle.FullCover
 public import Complexity.Probability.StochasticOracle.PartialCover
+public import Complexity.Probability.StochasticOracle.PartialCoverGreedy
 public import Complexity.Probability.StochasticOracle.PartialCoverRisk
 public import Complexity.Probability.StochasticOracle.Programs
 public import Complexity.Probability.StochasticOracle.RandomCost

@@ -31,9 +31,12 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
 
-STOC submission 191 remains incomplete: Theorem 4 still needs the actual greedy multicover
-algorithm, logarithmic cost comparison, algorithm/execution resource bounds and stated hardness
-transfer; Theorem 5 needs history-conditional binomial domination, stopped costs
+STOC submission 191 remains incomplete: Theorem 4 still needs native binary algorithm/resource
+certificates,
+response token-bill/deadline execution, asymptotic approximation consequences and the stated
+Set Cover approximation-hardness transfer; the executable rational-cost greedy batch and its
+harmonic/logarithmic comparison with every risk-feasible competitor are proved.
+Theorem 5 needs history-conditional binomial domination, stopped costs
 and universal latency/progress lower bounds; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
 claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.
