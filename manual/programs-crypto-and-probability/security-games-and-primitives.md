@@ -83,6 +83,24 @@ or imply small-secret security.
 
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. The LWE interface exposes only the serialized public matrix `[B*t+e | B]`, with independent errors and one shared uniform secret; in [`SIS/Module.lean`](../../Complexity/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`ComplexityTests/Crypto/ModuleSIS.lean`](../../ComplexityTests/Crypto/ModuleSIS.lean)), and [`SIS/ModuleEncryption.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) builds dual-Regev public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`ComplexityTests/Crypto/ModuleEncryption.lean`](../../ComplexityTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
+For deterministic native key generation, import
+[`ModuleEncryption/Native.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption/Native.lean).
+`exists_computableInPolyTime_moduleLWEKeyGen` supplies one total word function with a plain
+polynomial-time certificate and exact agreement with `ModuleLWE.encodeSample (moduleLWEKeyGen …)`.
+Both rank and polynomial degree are unary inputs; the positive modulus and signed secret/error
+coefficients are binary. The public matrix input uses `ModuleSIS.encodeMatrix`: its structured
+`(k*n)`-square rotation-block expansion is already present. Runtime charges that complete matrix
+word, both complete framed signed lists and the dimensions; it does not assume a seed codec.
+The implementation reuses total framing/number decoders and the upstream padded list dot product,
+then reduces each integer coordinate modulo `q`. Short rows/vectors pad with zero and excess
+entries are ignored, but still contribute to input length. Canonical equality requires `q > 0`;
+there is no assertion that malformed words are rejected. [Checked clients](../../ComplexityTests/Crypto/ModuleKeyGenNative.lean)
+use the same certified function for rank two, degree two, composite modulus six, signed wraps,
+modulus one, zero dimensions and a 129-bit modulus. Randomized native key generation still needs
+structured matrix construction from sampled polynomial coefficients: sampling independent entries
+of the expanded scalar matrix would give the wrong law. Full native encryption/decryption,
+seed compression and security remain separate obligations.
+
 The Module-LWE sampling APIs now accept explicit distributions: `moduleLWEPublicKeyLaw` has an
 optional `secretLaw`, `encryptionViewOfKeyLaw` an optional `ephemeralLaw`, and `realEncryptionView`
 accepts both. Their defaults remain uniform, and the existing security reductions concern those
