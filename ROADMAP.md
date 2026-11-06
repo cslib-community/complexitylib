@@ -26,6 +26,17 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Crypto frontier track: Kilian's succinct arguments | [#999] |
 | OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002] |
 | STOC manuscript headline results: faithful models, quantitative bounds and algorithmic guarantees | [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527) |
+
+Submission 191 remains incomplete: Proposition 1 and the exact cutoff-family reduction are
+proved; an executable rounded-product selector has branch approximation and deadline/success
+guarantees. Theorem 2(2) still needs the global savings-approximation bridge and polynomial
+binary bit costs. Theorem 3 still needs the Partition hardness reduction and integer-cost
+pseudopolynomial endpoint; Theorem 4 needs local dual charging, history-conditional risk
+certification, the actual greedy multicover algorithm and logarithmic comparison (with its stated
+hardness dependency); Theorem 5 needs history-conditional binomial domination, stopped costs
+and universal latency/progress lower bounds; Theorem 6 needs the actual dual-certified residual
+construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
+claims, not supplied by the earlier policy LP or by the new DP tables.
 | A Verso guide with a chapter per area | [#585] |
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |

@@ -22,6 +22,8 @@ public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Cost
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Memory
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Source
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Word
+public import Complexity.Algorithms.Lean.DynamicProgramming.MinProduct
+public import Complexity.Algorithms.Lean.DynamicProgramming.RoundedProduct
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
@@ -4357,11 +4359,14 @@ public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
+public import Complexity.Probability.StochasticOracle.CutoffFamilies
 public import Complexity.Probability.StochasticOracle.ExecutionFeasibility
 public import Complexity.Probability.StochasticOracle.FullCover
 public import Complexity.Probability.StochasticOracle.Programs
 public import Complexity.Probability.StochasticOracle.RandomCost
 public import Complexity.Probability.StochasticOracle.RationalFullCover
+public import Complexity.Probability.StochasticOracle.TwoBatchApproximation
+public import Complexity.Probability.StochasticOracle.TwoBatchMinimum
 public import Complexity.Probability.Testing
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat

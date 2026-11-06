@@ -244,6 +244,40 @@ in [the bibliography](../../references.bib). The checked clients are in
   support reduction and finite vertex enumeration; its schedule set can be
   exponential. The binary-input FPTAS, hardness, partial-cover and adaptive
   endpoints remain open under [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
+- [TwoBatchMinimum](../../Complexity/Probability/StochasticOracle/TwoBatchMinimum.lean)
+  completes Proposition 1 (PDF pp. 6, 14): `one_turn_cost` gives the exact
+  one-turn value; `two_batch_reduction` and `minimum_two_batch` prove the attained
+  minimum over nonempty complementary first batches against every randomized
+  maximum-success competitor. The two-turn minimum assumes a nonempty population
+  and that querying every opportunity concurrently meets the deadline. Empty
+  first slots in competing schedules are normalized, rather than excluded.
+- [TwoBatchApproximation](../../Complexity/Probability/StochasticOracle/TwoBatchApproximation.lean)
+  supplies an executable rational-input selector indexed by `Fin k`. Starting
+  from a `FullCoverInstance (Fin k) ℚ`, `choose I ε D` returns the best exact-saving
+  candidate from cutoff families and rounded-product tables. It includes the
+  full concurrent batch as fallback. `choose_feasible` needs `0 < k` and the
+  original full-batch deadline; `choose_success` proves maximum success exactly.
+  Check the complete
+  [StochasticOracleApproximation.lean](../../ComplexityTests/StochasticOracleApproximation.lean)
+  client: the heterogeneous example returns saving four at deadline three and
+  saving zero at deadline two; its optimum lower bound covers arbitrary randomized
+  policies. The client also checks zero-rounded-cost collisions and mandatory
+  selections. Kernel evaluation uses `decide +kernel`, not `native_decide`.
+  [CutoffFamilies](../../Complexity/Probability/StochasticOracle/CutoffFamilies.lean)
+  proves exact deadline soundness, coverage and at most $k(k+1)$ families.
+  [MinProduct](../../Complexity/Algorithms/Lean/DynamicProgramming/MinProduct.lean)
+  proves table soundness, minimum-product dominance, reconstruction, state and
+  operation bounds. Its operation count charges rational multiplication and
+  comparison as single operations; it is **not a binary runtime certificate**.
+  [RoundedProduct](../../Complexity/Algorithms/Lean/DynamicProgramming/RoundedProduct.lean)
+  derives the multiplicative product–sum guarantee for each maximum-cost-member
+  branch. Scaling divides by the number of potentially selected branch members,
+  including the mandatory member; this bounds the same total rounding loss as
+  the manuscript's division by the full population size.
+  **Theorem 2(2) remains incomplete:** the global approximation bridge from every
+  nonempty feasible comparison batch to a retained candidate and a polynomial
+  binary bit-cost proof are still required. No FPTAS conclusion follows merely
+  from the selector's executability, its branch approximation or its table bound.
 - [Submodular.OracleSavings](../../Complexity/Algorithms/Lean/Submodular/OracleSavings.lean)
   proves Wang's Theorem 2(1) (PDF p. 7). A finite type indexes all oracles;
   `savings p c A` is exactly $(1-\prod_{i\in A}(1-p_i))\sum_{i\notin A}c_i$.
