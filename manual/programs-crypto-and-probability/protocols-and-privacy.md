@@ -875,6 +875,21 @@ after building its import. This forward consumer of inverse records is a bounded
 component; it does not implement the source's full backward-half enumeration or
 the projected-query/probe/global pipeline.
 
+The direction-exchanged head lookup is available separately from
+`Complexity.Cryptanalysis.AddXNORNativeOppositeQuery` as
+`Quarter.Backward.queryBucket_exec`. Starting with forward-order operands at
+`base`, the class value in `state`, the projected modulus and the original packed
+index, it charges forward evaluation and the two head-address/load instructions.
+It preserves all memory and the packed index. `Backward.retainedMemory_linked`
+shows that the computed retention memory preserves every prepared inverse bucket,
+including buckets other than the consumed one. The complete
+[forward-query client](../../ComplexityTests/AddXNORNativeOppositeQuery.lean)
+checks addition by one (distinguishing forward and inverse lookup) and a
+zero-width collision. Build the module, then run
+`lake env lean ComplexityTests/AddXNORNativeOppositeQuery.lean`.
+These interfaces do not yet connect raw preparation and retention through a
+projected query to original-chain probe soundness.
+
 To execute the complete opposite-class consumer, use `Quarter.probeClass`
 from the same import and root-context client above. Set `count` to the second
 quarter length and `stop` to $2^{\text{count}}$; supply `initial` as the projected

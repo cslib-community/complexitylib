@@ -99,6 +99,11 @@ Consecutive backward preparation followed by native forward retention now derive
 its dictionary and payload provenance from computed inverse records, with operand,
 other-memory and register frames. This bounded component is not the full backward
 class enumerator: projected query and inverse continuation/probe composition remain open.
+A separate charged native forward query now preserves all memory and its packed
+index; a layout lemma shows retention preserves every computed inverse bucket.
+The arbitrary-width query and zero-width collision clients are checked. The
+consecutive projected preparation/query/probe and original-chain reconstruction
+connection is still open; these components do not provide that endpoint.
 General whole-class termination/time and unconditional original-input returned-witness
 correctness remain unproved. This is a sparse WordRAM
 implementation, not the source's sorted lists or a compact arena. The general correctness/resource certificates for the
