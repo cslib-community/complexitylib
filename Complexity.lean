@@ -2946,6 +2946,7 @@ public import Complexity.Computability.WordRAM.Turing.Overhead
 public import Complexity.Computability.WordRAM.Width
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
+public import Complexity.Crypto.Computational.CollisionResistantToOneWay
 public import Complexity.Crypto.Computational.Commitment
 public import Complexity.Crypto.Computational.Commitment.Basic
 public import Complexity.Crypto.Computational.Commitment.PublicOperations
