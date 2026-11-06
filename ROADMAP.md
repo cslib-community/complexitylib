@@ -47,9 +47,10 @@ rather than all Boolean tuples. `PolyTime/Int/Cramer` independently certifies bi
 square-system recovery. `PolyTime/Int/RowBasis` and `PolyTime/Int/Rectangular` now
 supply a division-free greedy original-row basis, computed rank identity, general
 rectangular consistency/candidate recovery and uniform binary polynomial runtime
-with explicit coefficient-width bounds. These components are not yet connected to
-the existing rational `preprocess`/`tablePlan` pipeline. That integration and uniform
-binary time/peak-space certification for the full closure, separator, equation,
+with explicit coefficient-width bounds. `CNF/ExactOneBinary` now materializes signed integer rows and connects the binary
+selector/candidate to every direct/query branch; `binaryTablePlan` composes this
+backend with the actual closure equations, with exact counting and query budgets.
+Uniform binary time/peak-space certification for the full closure, separator, equation,
 branch and two-query assembly remain open, along with bounded-demand/graph
 applications and the advertised sharper counting runtime, under
 [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).

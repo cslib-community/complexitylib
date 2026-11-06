@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CNF.VCOneTables
-public import Complexity.Logics.Propositional.CNF.ExactOneElimination
+public import Complexity.Logics.Propositional.CNF.ExactOneBinary
 
 /-!
 # Executable counting plans from overlapping VC-one tables
@@ -21,7 +21,10 @@ except for the explicitly guarded branch with at most one global variable.
 
 `tablePlan_correct` and `tablePlan_budget` supply functional correctness and syntax
 budgets for [ChenJiangZhu2027], Theorem 6.3, PDF pp. 20–21. Polynomial coefficient
-growth and encoded bit-time execution remain unproved; this is not the complete
+growth and encoded bit-time execution of this rational path remain unproved.
+`binaryTablePlan` supplies an alternative using the binary-certified rectangular
+backend, with exact count and syntax budgets but no whole-pipeline bit-time
+certificate. Neither path is the complete
 algorithmic resource theorem.
 
 ## Main definitions
@@ -122,6 +125,38 @@ theorem tablePlan_correct (hR : ∀ i, DimensionOne (R i)) :
 and at most `13r²` clauses, irrespective of overlap or the number of tables. -/
 theorem tablePlan_budget : (tablePlan w scope R).Budget (Fintype.card V) := by
   apply ExactOne.preprocess_budget
+  intro c hc
+  obtain ⟨i, _, hc⟩ := List.mem_flatMap.mp hc
+  obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
+  simpa only [Clause.relabel, List.length_map] using binary_width (R i) d hd
+
+/-- Table-to-query assembly using integer rectangular row selection in the
+shared declared columns. All closure equations are still constructed locally. -/
+@[expose] def binaryTablePlan {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) : ExactOne.CountPlan (Fin r) :=
+  ExactOne.binaryPreprocess (listedScopes w scope R) (listedPolarity w scope R)
+    (listedSide w scope R)
+
+open scoped Classical in
+/-- Exact global counting after binary original-row selection, including unused
+bits and arbitrarily overlapping scopes. -/
+theorem binaryTablePlan_correct {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) (hR : ∀ i, DimensionOne (R i)) :
+    (binaryTablePlan w scope R).value =
+      Fintype.card {x : Fin r → Bool // Satisfies w scope R x} := by
+  rw [binaryTablePlan, ExactOne.binaryPreprocess_correct]
+  unfold ExactOne.sourceCount
+  simp only [← Nat.card_eq_fintype_card]
+  exact Nat.card_congr (Equiv.subtypeEquivRight (listed_iff w scope R hR))
+
+/-- The binary table compiler emits at most two 3-CNFs within the global budget. -/
+theorem binaryTablePlan_budget {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) :
+    (binaryTablePlan w scope R).Budget r := by
+  apply ExactOne.binaryPreprocess_budget
   intro c hc
   obtain ⟨i, _, hc⟩ := List.mem_flatMap.mp hc
   obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc

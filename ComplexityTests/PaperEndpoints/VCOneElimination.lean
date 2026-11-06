@@ -67,3 +67,18 @@ listing, finite row numbering and the global compiler without forming 2^32 tuple
 #guard_msgs in
 #eval shape (tablePlan (fun _ : Fin 1 => 32) (fun _ => Function.Embedding.refl _)
   (fun _ => wideTwoRows))
+
+/-- info: 4 -/
+#guard_msgs in
+#eval (binaryTablePlan (fun _ : Fin 2 => 3) overlapScope overlapTable).execute
+  (fun _ => bruteCount)
+
+open scoped Classical in
+/-- Binary selection composes with actual overlapping tables. -/
+example : (binaryTablePlan (fun _ : Fin 2 => 3) overlapScope overlapTable).value =
+    Fintype.card {x : Fin 5 → Bool // Satisfies (fun _ : Fin 2 => 3)
+      overlapScope overlapTable x} :=
+  binaryTablePlan_correct _ _ _ (fun t => oneTable_dimension (t == 0))
+
+example : (binaryTablePlan (fun _ : Fin 2 => 3) overlapScope overlapTable).Budget 5 :=
+  binaryTablePlan_budget _ _ _

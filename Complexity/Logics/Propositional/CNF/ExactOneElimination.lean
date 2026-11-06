@@ -260,6 +260,43 @@ theorem preprocess_correct (B : CNF V) (S : I → Finset V) (p : I → V → Boo
       (∀ (β : Bool) c, c ∈ (if β then one else zero) → c.length ≤ 3) ∧
       (∀ β : Bool, (if β then one else zero).length ≤ 13 * n ^ 2)
 
+omit [Fintype I] [LinearOrder I] in
+/-- The two-query compiler's budget depends only on the number of retained
+original equations, independently of the elimination backend. -/
+theorem selectedPlan_budget (B : CNF V) (hb : ∀ c ∈ B, c.length ≤ 2)
+    (S : I → Finset V) (p : I → V → Bool) (is : List I)
+    (hsmall : ¬ Fintype.card V ≤ 1) (hi : is.length < Fintype.card V) :
+    (selectedPlan B S p is).Budget (Fintype.card V) := by
+  cases is with
+  | nil =>
+    refine ⟨by simp only [Fintype.card_sum, Fintype.card_fin]; omega, ?_, ?_⟩
+    · intro β c hc
+      cases β
+      · obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
+        have hm : d ∈ B := List.mem_dedup.mp hd
+        have hdlen : d.length ≤ 3 := (hb d hm).trans (by decide : 2 ≤ 3)
+        simpa only [Clause.relabel, List.length_map] using hdlen
+      · have hh : c = [] := List.mem_singleton.mp hc
+        simp [hh]
+    · intro β
+      cases β
+      · change (CNF.relabel Sum.inl B.dedup).length ≤ _
+        simp only [CNF.relabel, List.length_map]
+        have hd := dedup_binary_length B hb
+        have hr : 2 ≤ Fintype.card V := by omega
+        nlinarith
+      · change 1 ≤ _
+        have hr : 2 ≤ Fintype.card V := by omega
+        nlinarith
+  | cons j js =>
+    have hk : js.length + 1 < Fintype.card V := by
+      simpa only [List.length_cons] using hi
+    refine ⟨(query_variables hk).2, ?_, ?_⟩
+    · intro β c hc
+      cases β <;> exact sideQuery_width B hb _ _ _ c hc
+    · intro β
+      cases β <;> exact sideQuery_length B hb _ _ hk _
+
 /-- Every emitted query has width three, at most `13r²` clauses and at most
 `2r-2` declared variables. Small instances are handled without oracle calls. -/
 theorem preprocess_budget (B : CNF V) (hb : ∀ c ∈ B, c.length ≤ 2)
@@ -273,36 +310,7 @@ theorem preprocess_budget (B : CNF V) (hb : ∀ c ∈ B, c.length ≤ 2)
     · trivial
     · have hlt : (originalElimination S p).indices.length < Fintype.card V :=
         lt_of_le_of_ne (originalElimination_length S p) hl
-      generalize he : (originalElimination S p).indices = is at hlt ⊢
-      cases is with
-      | nil =>
-        refine ⟨by simp only [Fintype.card_sum, Fintype.card_fin]; omega, ?_, ?_⟩
-        · intro β c hc
-          cases β
-          · obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
-            have hm : d ∈ B := List.mem_dedup.mp hd
-            have hdlen : d.length ≤ 3 := (hb d hm).trans (by decide : 2 ≤ 3)
-            simpa only [Clause.relabel, List.length_map] using hdlen
-          · have hh : c = [] := List.mem_singleton.mp hc
-            simp [hh]
-        · intro β
-          cases β
-          · change (CNF.relabel Sum.inl B.dedup).length ≤ _
-            simp only [CNF.relabel, List.length_map]
-            have hd := dedup_binary_length B hb
-            have hr : 2 ≤ Fintype.card V := by omega
-            nlinarith
-          · change 1 ≤ _
-            have hr : 2 ≤ Fintype.card V := by omega
-            nlinarith
-      | cons j js =>
-        have hk : js.length + 1 < Fintype.card V := by
-          simpa only [List.length_cons] using hlt
-        refine ⟨(query_variables hk).2, ?_, ?_⟩
-        · intro β c hc
-          cases β <;> exact sideQuery_width B hb _ _ _ c hc
-        · intro β
-          cases β <;> exact sideQuery_length B hb _ _ hk _
+      exact selectedPlan_budget B hb S p _ hsmall hlt
     · trivial
 
 end Cslib.Logic.PL.ExactOne

@@ -395,13 +395,42 @@ systems/RHS combinations against the existing rational elimination kernel.
 From the checkout root, run
 `LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.RectangularBinary`.
 
-This discharges a general rectangular component, rather than the requested full
-preprocessing algorithm. Its selected indices and candidate still need connecting
-to `preprocess`/`tablePlan`, with uniform resource proofs for closure listing,
-separator construction, equation materialization, direct branches and both emitted
-queries. The existing rational elimination kernel's own coefficient-growth theorem
-is not implied by these bounds. The sharper counting runtime, bounded-demand and
-graph endpoints also remain open.
+### Counting plans using the binary selector
+
+Import `Complexity.Logics.Propositional.CNF.ExactOneBinary` for
+`binaryPreprocess S p B`, on `n` declared bits and `m` signed equations indexed
+by `Fin n` and `Fin m`. `integerRows` materializes coefficients in
+$\{-1,0,1\}$ and `integerRhs` moves negative-literal constants to the right
+side. Their entry theorems identify these integers with the existing rational
+signed equations; this input needs no denominator-clearing compiler.
+`binaryConsistent_iff` detects inconsistency, `binaryIndices_selected` proves
+pointwise equivalence of the computed original equations on acceptance, and
+full computed rank justifies checking the unique candidate. Deficient rank
+emits the existing two-query construction. `binaryPreprocess_correct` and
+`binaryPreprocess_budget` prove exact counting and the global syntax budgets.
+
+For actual tables, import
+`Complexity.Logics.Propositional.CNF.VCOneElimination` and use
+`binaryTablePlan w scope R` with declared variables `Fin r`.
+`binaryTablePlan_correct` requires each table to have dimension at most one;
+`binaryTablePlan_budget` applies without this semantic premise. Overlapping
+scopes share columns, and unused declared variables retain their multiplicity.
+The rational `preprocess` and `tablePlan` interfaces remain available.
+
+From the checkout root, check the [complete binary client](../../ComplexityTests/PaperEndpoints/ExactOneBinary.lean)
+and [overlapping-table client](../../ComplexityTests/PaperEndpoints/VCOneElimination.lean)
+with `scripts/build.sh ComplexityTests.PaperEndpoints.ExactOneBinary ComplexityTests.PaperEndpoints.VCOneElimination`.
+The former executes all 256 ordered pairs of two-bit signed equations against
+an independent source count, plus direct, no-equation and 40-bit cases.
+
+This is a functional composition with a binary-certified elimination backend.
+A uniform encoded binary runtime theorem for the whole composition is still
+missing: closure/separator listing, equation materialization, candidate checking,
+control and query construction all need resource composition. In particular,
+interpreting the certificate by rational division in `checkCandidate` has not
+received a binary runtime proof. Full-pipeline peak space, the sharper counting
+runtime, bounded-demand and graph endpoints remain open. The rational kernel's
+own coefficient-growth theorem is not implied by the binary backend.
 
 ## Known Limitations
 
