@@ -34,6 +34,9 @@ noncomputable example (gen : BlumGen) (F : ℕ → ℕ → _) (n : ℕ) :
       Game.succProbability (rabinInversionGame gen (factorToRabin F) n) :=
   succProbability_factoringGame_le gen F n
 
+example (gen : BlumGen) (h : FactoringHard gen) : RabinOneWay gen :=
+  (rabinOneWay_iff_factoringHard gen).mpr h
+
 /-- info: 'Cslib.Crypto.factoringHard_of_rabinOneWay' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Cslib.Crypto.factoringHard_of_rabinOneWay

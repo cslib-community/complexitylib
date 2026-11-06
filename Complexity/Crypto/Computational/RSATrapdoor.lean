@@ -51,15 +51,18 @@ arbitrary natural numbers and proved mutually inverse on all residues `x < N`
 (`rsaInvert_rsaEval`, `rsaEval_rsaInvert`), inducing bijections both on `Fin N`
 (`rsaEval_bijective_fin`, including nonunits) and on the multiplicative unit group `(ZMod N)ˣ`
 (`rsaEval_bijective_units`). The inversion experiment `rsaInversionGame` samples `x` uniformly
-from `Fin desc.modulus` under an arbitrary generator family `RSAGen := ℕ → PMF RSADesc`
-(efficient key generation and bit-length bounds in `n` are not bundled), and `RSAOneWay`
-quantifies over uniform native strict-PPT inverters (`IsPPTOn`) receiving `(1^n, ((N, e), y))`
-with binary `encNat` encodings.
+from `Fin desc.modulus` (differing from Katz–Lindell Definition 9.46, which samples uniformly
+from `(ZMod N)ˣ`; for valid RSA moduli `N = p * q`, the nonunit fraction in `Fin N` is at most
+`(p + q) / N`) under an arbitrary generator family `RSAGen := ℕ → PMF RSADesc` (efficient key
+generation and bit-length bounds in `n` are not bundled), and `RSAOneWay` quantifies over
+uniform native strict-PPT inverters (`IsPPTOn`) receiving `(1^n, ((N, e), y))` with binary
+`encNat` encodings.
 
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020],
-  Section 9.2.4 (The RSA Assumption) and Section 15.1.1 (Trapdoor Permutations).
+  Section 9.2.4, Definition 9.46 (The RSA Assumption) and Section 15.1.1, Definition 15.1
+  (Trapdoor Permutations; RSA example on p. 526).
 -/
 
 @[expose] public section
