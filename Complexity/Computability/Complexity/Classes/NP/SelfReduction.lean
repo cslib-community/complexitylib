@@ -14,6 +14,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 
 /-!
@@ -152,8 +153,7 @@ theorem length_encList_le_of_mem_vars {φ : CNF ℕ} {answers : List (Literal �
   have h := length_encList_le (encPair encNat encBool) answers (b := 2 * (encCNF φ).length + 2)
     fun l hl => by
       have := length_encNat_le_of_mem_vars (hanswers l hl)
-      rw [length_encPair, encBool_apply, List.length_singleton]
-      omega
+      enc_len
   calc _ ≤ answers.length * (2 * (2 * (encCNF φ).length + 2) + 1) := h
     _ = answers.length * (4 * (encCNF φ).length + 5) := by ring
 
@@ -161,9 +161,7 @@ theorem length_encList_le_of_mem_vars {φ : CNF ℕ} {answers : List (Literal �
 binary digits of `v`. -/
 private theorem length_encCNF_unit (l : Literal ℕ) :
     (encCNF [[l]]).length = 8 * (encNat l.1).length + 11 := by
-  simp only [encCNF, encList_cons, encList_nil, List.append_nil, length_frame, length_encPair,
-    encBool_apply, List.length_singleton]
-  omega
+  enc_len [encCNF, encList_cons, encList_nil, List.append_nil]
 
 /-- The unit clause of a literal on a variable of `φ` takes at most `8 L + 11` bits, where `L`
 is the length of `φ`. -/
@@ -299,9 +297,7 @@ theorem computableInPolyTime_search {γ : Type} {encIn : γ ↪ List Bool}
       ⟨((PolyBounded.const 4).mul hφ.polyBounded_length).add (.const 5),
         fun x answers v hv => ?_⟩
     have := length_encNat_le_of_mem_vars hv
-    simp only [selfReduceStep, encList_append, encList_cons, encList_nil, List.append_nil,
-      List.length_append, length_frame, length_encPair, encBool_apply, List.length_singleton]
-    omega
+    enc_len [selfReduceStep, encList_append, encList_cons, encList_nil, List.append_nil]
   unfold search
   exact listToBits.comp (map (snd encNat encBool) |>.comp hfold)
 
