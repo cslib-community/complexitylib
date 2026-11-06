@@ -3,14 +3,39 @@
 Optional MIT cache origin for [#2503](https://github.com/cslib-community/complexitylib/issues/2503)
 and [#2506](https://github.com/cslib-community/complexitylib/pull/2506). The
 [migration guide](../../scripts/cache/README.md#mit-origin-migration) describes CI publication.
-GCS remains the active publisher and default reader; MIT publication is disabled until commissioned.
-Nothing here provisions a server or installs credentials.
+GCS remains the active CI publisher and default reader; keep MIT CI publication disabled until
+the remaining commissioning checks pass. The source and examples do not provision infrastructure
+or install credentials automatically.
 
 One Linux Go executable has three commands: `serve` accepts synchronous PUTs over a Unix socket,
 `pack` streams a publication package to stdout, and `gc` runs separately under a systemd timer.
 They share a store and a permanent interprocess lock. nginx supplies HTTPS, upload authentication,
 request buffering, and public GET/HEAD. There is no SSH upload path, database, watcher, queue,
 custom TLS implementation, shell execution by the handler, or third-party Go dependency.
+
+## MIT deployment status
+
+As of November 5, 2026, the operator has deployed the origin at
+**https://complexitycache.csail.mit.edu**, using the binary built from
+`51612952aaa6a5016d78568ae7478bfc1abe908d`.
+
+- All 16 GiB of the separate data disk is ext4, mounted persistently at `/srv/cache-origin`.
+- The publisher and daily GC timer are enabled. Socket permissions, restart, remount and
+  empty-store GC checks passed.
+- nginx serves trusted HTTPS with a Let's Encrypt certificate; automatic renewal and nginx
+  reload passed a dry run. The `cache-publisher` account has an installed bcrypt password hash;
+  its password is available for private handoff to the repository administrator.
+- Tests through the VM's production nginx HTTPS listener passed: unauthorized PUT returned 401,
+  publication and identical retry returned 201, conflicting artifacts and mappings returned 409
+  with existing bytes and timestamps unchanged, anonymous GET/HEAD matched, and private paths,
+  listing and DELETE were rejected. Public-origin authentication also passed. Test fixtures were
+  removed under the publication/GC lock, leaving the store empty.
+
+These checks used small synthetic packages. A real Lean build publication and cold restore,
+review of the deployment evidence, and integration approval remain before activation. The
+[migration checklist](../../scripts/cache/README.md#mit-origin-migration) gives the repository
+administrator's configuration and the separate publication/reader cutover steps. Credentials
+and host-specific private configuration must stay outside this repository.
 
 ## Build and test locally
 
@@ -74,7 +99,7 @@ After an operator configures nginx authentication, a CI upload would look like:
 ```bash
 curl --fail-with-body --user cache-publisher --header 'Content-Type: application/x-tar' \
   --upload-file "$publication_dir/package.tar" \
-  "https://cache.example.edu/publish/$cache_revision"
+  "https://complexitycache.csail.mit.edu/publish/$cache_revision"
 ```
 
 curl prompts for the password in this example; CI must use its protected secret facility.

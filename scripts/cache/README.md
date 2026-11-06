@@ -215,6 +215,11 @@ publication and garbage collection. MIT owns the VM, operating-system updates, D
 credentials, bounded storage and monitoring. The repository supplies source and operator examples,
 not automatic provisioning. There is no SSH upload or S3 service dependency.
 
+The deployed MIT origin is **https://complexitycache.csail.mit.edu**. The
+[dated deployment status](../../tools/cache-origin/README.md#mit-deployment-status) records the
+installed source and completed host checks. A real-build publication/cold restore and integration
+approval remain; keep MIT CI publication disabled and GCS readers active during these checks.
+
 After all required Lean checks, `publish.py stage` records the exact clean producer revision
 and SHA-256 inventory once. GCS and the separate MIT publisher job consume those same staged bytes.
 The MIT job verifies this run's artifact ID and producer revision before obtaining its upload
@@ -244,14 +249,15 @@ replace a key; test unauthorized PUT and all DELETE requests; then cold-restore 
 the public HTTPS origin. CI checks the same nginx routes over loopback TLS, but cannot establish
 the target host's identity, permissions or disk configuration.
 
-After that evidence is reviewed, create the GitHub environment `cache-server-publish`, restrict it
-to `main`, and configure:
+A repository administrator can prepare the GitHub environment `cache-server-publish`, restrict it
+to `main`, and configure the following using the privately supplied publisher password. Keep the
+publication switch disabled until the commissioning evidence and integration are approved.
 
 | Kind | Name |
 |---|---|
 | Environment secret | `CACHE_SERVER_PASSWORD` (nonempty, no control characters) |
-| Environment variable | `CACHE_SERVER_USER` (upload account name) |
-| Environment variable | `CACHE_SERVER_URL` (HTTPS origin without a path, e.g. `https://cache.example.edu`) |
+| Environment variable | `CACHE_SERVER_USER=cache-publisher` |
+| Environment variable | `CACHE_SERVER_URL=https://complexitycache.csail.mit.edu` (origin without a path) |
 | Repository variable | `CACHE_SERVER_PUBLISH_ENABLED` (`false` until commissioning passes) |
 
 Enabling publication does not change readers. Keep GCS publication and the GCS default URL during
