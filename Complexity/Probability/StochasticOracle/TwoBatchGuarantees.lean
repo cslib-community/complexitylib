@@ -18,7 +18,7 @@ import Mathlib.Tactic
 approximates savings against every feasible maximum-success two-turn policy,
 including arbitrary real private randomization on rational oracle inputs.
 This supplies the approximation, success and deadline parts of the theorem;
-a polynomial binary running-time certificate is a separate requirement.
+`TwoBatchBinary` supplies the separate uniform binary running-time certificate.
 
 ## Main results
 

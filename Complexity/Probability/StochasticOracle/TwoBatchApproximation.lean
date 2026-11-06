@@ -24,8 +24,8 @@ The global approximation theorem compares the actual selected candidate with
 every nonempty deadline-feasible first batch. Its proof reconstructs the DP
 witnesses and proves that minimum-product dominance preserves nonemptiness.
 `choose_policy_approximation` extends the bound to randomized rational policies;
-`TwoBatchGuarantees` covers arbitrary real private randomization. A polynomial
-binary runtime for the complete selector remains a separate obligation.
+`TwoBatchGuarantees` covers arbitrary real private randomization. `TwoBatchBinary`
+provides the uniform native binary runtime for the complete selector.
 
 ## Main definitions
 
