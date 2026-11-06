@@ -861,6 +861,25 @@ import. This API supplies backward bucket semantics; connecting both prepared
 sides through actual dictionary retention and projected queries to
 `probeScan_original_exec` remains open.
 
+For the retained **forward** side, import
+`Complexity.Cryptanalysis.AddXNORNativeForwardRetain` and apply
+`Quarter.Forward.prepareRetain_exec`. Starting at the repository root with warm
+build outputs, build that module and run
+`lake env lean ComplexityTests/AddXNORNativeForwardRetain.lean`.
+The [complete client](../../ComplexityTests/AddXNORNativeForwardRetain.lean)
+supplies forward-order first-quarter operands, a separate forward second-quarter
+array, disjoint head/record regions below an initially zero dictionary, and the
+physical word-fit bound. The program derives the exact forward dictionary
+insertion stream, top pointer and payload provenance; no computed dictionary is
+an input. `Forward.retainedMemory_linked` preserves every first-quarter bucket.
+The bound covers preparation plus one bucket and one second-quarter word.
+The client distinguishes forward states from inverse states and checks zero-width
+collisions. A failed fit or separation premise requires a larger word/layout;
+it cannot be discharged by treating the dictionary as a host oracle.
+Separate inverse fourth-quarter preparation preserving this dictionary, query
+register transfer and original-chain probing are still uncomposed. In particular,
+the following backward-record consumer cannot supply this forward dictionary.
+
 For consecutive backward preparation and native forward retention, import
 `Complexity.Cryptanalysis.AddXNORNativeBackwardRetain` and apply
 `Quarter.Backward.prepareRetain_exec`. In addition to the preparation layout,

@@ -95,6 +95,13 @@ General native backward preparation now derives full inverse-state bucket record
 and original packed indices for arbitrary operand lists and widths, including
 non-self-inverse additions. Its consecutive connection through projected queries
 and retained dictionary memory to original-chain scan soundness remains open.
+Forward first-quarter preparation followed by forward second-quarter retention now
+derives its exact retained dictionary, top and provenance from actual native stores,
+with a checked direction-distinguishing client and preservation of all forward buckets.
+This covers one bucket and one second-quarter word only. Preserving this dictionary
+through separate inverse fourth-quarter preparation and connecting both computed
+lists through query/probe remains open. The backward-record consumer below cannot
+substitute for the forward dictionary required by original-chain probe soundness.
 Consecutive backward preparation followed by native forward retention now derives
 its dictionary and payload provenance from computed inverse records, with operand,
 other-memory and register frames. This bounded component is not the full backward
