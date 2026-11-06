@@ -116,6 +116,46 @@ solver, a maintained-inverse rounding implementation or the advertised
 one-LP/one-inversion/$O(d)$-update cost. Corollary 3.4(iii)'s fractional solver
 and $n^{O(d^3)}$ running time are an external ingredient, not established locally.
 
+## Exact fixed-effects first crossings
+
+Import [`FixedEffects`](../../Complexity/Statistics/LeastSquares/FixedEffects.lean)
+and open `Cslib.LeastSquares.FixedEffects`. Supply a list of groups, each a list of
+rational `(x, y)` observations. `audit groups` computes `some plan`; each `Choice`
+records the actual retained sublist and its deletion count. `mem_choices` and
+`deletion_accounting` connect these witnesses to removal of input observations,
+including repeated values. `audit_exists` also covers empty inputs. Empty and
+singleton retained groups contribute zero scatter.
+
+The slope is the sum of within-group cross-scatters divided by the sum of
+within-group regressor scatters. Group means are recomputed after each removal;
+`dummy_normal_equation` and `pooled_normal_equation` verify the refitted dummy
+and pooled regressor normal equations. `Feasible` requires a positive denominator
+and a nonpositive slope. A zero denominator is singular, even though Lean's total
+division assigns a value to its slope expression.
+
+`audit_lower_bound` proves that the first crossing's deletion count bounds every
+feasible plan from below. `audit_optimal_of_nondegenerate` proves optimality if a
+numerator minimizer at that cost has positive denominator. The algorithm minimizes
+cross-scatter and then maximizes regressor scatter, so the returned minimizer is
+also nonsingular under that hypothesis. `audit_optimal_of_negative_numerator`
+derives nondegeneracy from a strict negative crossing. The
+[complete checked client](../../ComplexityTests/PaperEndpoints/FixedEffects1326.lean)
+computes a positive-slope example, proves universal optimality, checks a two-group
+convolution and distinguishes singular and nonsingular zero crossings. Its
+`import all` directives load implementation bodies for exact kernel computation;
+ordinary imports suffice to apply the public theorems.
+
+The shared array recurrence in
+[`FiniteMinPlus`](../../Complexity/Foundations/Optimization/FiniteMinPlus.lean)
+is proved equal to its witness-producing reference recurrence. This is correctness
+and recovery progress on Theorem 4.1 (PDF p. 9), not its complete resource theorem.
+The current implementation enumerates untrimmed group alternatives, recomputes
+scores and searches through the full sample size. It does not establish the
+paper's $O(n2^T+n\,s_{\rm int})$ bound, trimmed group curves, output-sensitive
+doubling, or a bit-cost model for rational arithmetic. A full matrix-design
+uniqueness bridge and a connection to the generic `integralStability` API also
+remain separate.
+
 ## Exact least-squares stability gaps
 
 For exact simple regression, import

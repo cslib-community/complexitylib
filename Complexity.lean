@@ -3833,6 +3833,7 @@ public import Complexity.Foundations.NumberTheory.Padics.RatValuation
 public import Complexity.Foundations.NumberTheory.PrimeCounting
 public import Complexity.Foundations.NumberTheory.PrimeWindow
 public import Complexity.Foundations.NumberTheory.SqrtPrimeWindow
+public import Complexity.Foundations.Optimization.FiniteMinPlus
 public import Complexity.Foundations.Order.BooleanSubalgebra
 public import Complexity.Foundations.Order.Changes
 public import Complexity.Foundations.Order.FiniteFixedPoint
@@ -4297,6 +4298,7 @@ public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
 public import Complexity.Statistics.LeastSquares.Backbone
+public import Complexity.Statistics.LeastSquares.FixedEffects
 public import Complexity.Statistics.LeastSquares.Monotone
 public import Complexity.Statistics.LeastSquares.NonRange
 public import Complexity.Statistics.LeastSquares.RangeAudit
