@@ -1231,5 +1231,38 @@ and the events for `v` and `-v` have probabilities summing to `1`. Run
 `scripts/build.sh ComplexityTests.GaussianSheppard` from the repository root to check them.
 
 If a proof needs only an upper bound, or the vectors may be zero, the older
-`measureReal_stdGaussian_mem_uIoc_le_angle` (equal norms, any threshold `t`) still applies. Gaussian
-noise stability and its halfspace formula are not part of this module.
+`measureReal_stdGaussian_mem_uIoc_le_angle` (equal norms, any threshold `t`) still applies. For
+Gaussian noise stability and its halfspace formula, see
+[Compute Gaussian noise stability](#compute-gaussian-noise-stability).
+
+## Compute Gaussian noise stability
+
+Import
+[`Complexity.Foundations.Probability.Gaussian.Correlated`](../../Complexity/Foundations/Probability/Gaussian/Correlated.lean)
+and open the `ProbabilityTheory` namespace. `correlatedGaussian ρ : Measure (ℝ × ℝ)` is the law
+of `(g₁, ρ g₁ + √(1 - ρ²) g₂)` for independent standard Gaussians, and
+`correlatedGaussianPi ι ρ` is its `ι`-indexed product, the law of a `ρ`-correlated pair of
+vectors in `ι → ℝ`. `gaussianNoiseStability ρ f` is `∫ p, f p.1 * f p.2` against that product.
+Most theorems assume `|ρ| ≤ 1`, since `√(1 - ρ²)` is `0` in Lean outside that range.
+
+- To identify a correlated pair, `stdGaussian_map_inner_prod_eq_correlatedGaussian hu hv` says
+  that unit-vector projections `(⟪u, X⟫, ⟪v, X⟫)` of `stdGaussian E` have law
+  `correlatedGaussian ⟪u, v⟫`. Any other jointly Gaussian law with means `0`, variances `1` and
+  covariance `ρ` equals it by `eq_correlatedGaussian`.
+- For halfspaces through the origin with `a ≠ 0`, `gaussianNoiseStability_ite_pos_dotProduct hρ ha`
+  (open, `0 < a ⬝ᵥ z`) and `gaussianNoiseStability_ite_nonneg_dotProduct hρ ha` (closed) both give
+  `1 - 2 / π * arccos ρ`.
+- For one coordinate, `gaussianNoiseStability_indicator_Iic_eval hρ i` gives
+  `1 / 2 - arccos ρ / (2 * π)` for the indicator of `z i ≤ 0`. For any measurable function of a
+  projection, `gaussianNoiseStability_comp_dotProduct` reduces stability to an integral against
+  `correlatedGaussian ρ`.
+
+The checked [`GaussianCorrelated.lean` clients](../../ComplexityTests/GaussianCorrelated.lean)
+evaluate halfspace stability at `ρ = 1, 0, 1/2, -1`, Example 11.19 at `ρ = 0`, a concrete
+projection pair and the `ρ = ±1` laws. Run `scripts/build.sh ComplexityTests.GaussianCorrelated`
+from the repository root to check them.
+
+Halfspaces are stated with `a ⬝ᵥ z` on `ι → ℝ`, which has no inner-product instance, and the
+open form uses `sgn 0 = -1`. Stability is defined for every `f`. The Bochner integral is `0`
+when `f z * f z'` is not integrable, so prove integrability before reading a value off a
+non-`L²` function. The noise operator `U_ρ` and the Hermite basis are not part of this module.
