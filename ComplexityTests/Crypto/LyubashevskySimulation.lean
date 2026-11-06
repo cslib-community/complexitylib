@@ -283,4 +283,54 @@ theorem full_projections_agree :
   rw [progExp_proj_visible, simExp_proj_visible]
   exact zero_reads_visible_eq
 
+/-- Bounded multi-attempt visible simulation client: For K = 0, the programmed hybrid
+and the simulation agree identically on the q = 17 test fixture. -/
+theorem zero_attempts_prog_eq_sim_test :
+    lyubashevskySignAttemptsVisibleProg 1 2 1 17 0 3 1 0 H_fixed (fun _ => 0) (fun _ _ => key.2)
+      (fun _ => ()) (fun _ => []) (fun _ _ sig => pure sig) =
+    lyubashevskySignAttemptsVisibleSim 1 2 1 17 3 1 0 H_fixed (fun _ _ => key.2)
+      (fun _ => ()) (fun _ => []) (fun _ _ sig => pure sig) :=
+  lyubashevskySignAttemptsVisibleProg_zero_eq_sim 1 2 1 17 0 3 1 H_fixed (fun _ => 0)
+    (fun _ _ => key.2) (fun _ => ()) (fun _ => []) (fun _ _ sig => pure sig)
+
+/-- Bounded multi-attempt visible simulation client: For K = 1, the programmed hybrid
+and the simulation agree identically for pure continuations on the q = 17 test fixture. -/
+theorem one_attempt_prog_eq_sim_pure_test :
+    lyubashevskySignAttemptsVisibleProg 1 2 1 17 1 3 1 1 H_fixed (fun _ => 0) (fun _ _ => key.2)
+      (fun _ => ()) (fun _ => []) (fun _ _ sig => pure sig) =
+    lyubashevskySignAttemptsVisibleSim 1 2 1 17 3 1 1 H_fixed (fun _ _ => key.2)
+      (fun _ => ()) (fun _ => []) (fun _ _ sig => pure sig) :=
+  lyubashevskySignAttemptsVisibleProg_eq_sim_of_pure_one 1 2 1 17 1 3 1 (by decide) (by decide)
+    H_fixed (fun _ => 0) (fun _ _ => key.2) zero_relation (fun _ => ()) (fun _ => [])
+    (fun _ _ sig => sig)
+
+/-- Bounded multi-attempt visible simulation client: For K = 1, the simulation bridge matches
+the single-attempt bound on the q = 17 test fixture. -/
+theorem one_attempt_prog_sim_closeTo_test :
+    CloseTo
+      (lyubashevskySignAttemptsVisibleProg 1 2 1 17 1 3 1 1 H_fixed (fun _ => 0) (fun _ _ => key.2)
+        (fun _ => ()) (fun _ => []) (fun _ _ _ => pure ()))
+      (lyubashevskySignAttemptsVisibleSim 1 2 1 17 3 1 1 H_fixed (fun _ _ => key.2)
+        (fun _ => ()) (fun _ => []) (fun _ _ _ => pure ()))
+      ((Nat.cast 0 : ℝ≥0∞) / (Nat.cast 17 : ℝ≥0∞) ^ 1 +
+        ENNReal.ofReal (Real.sqrt ((Nat.cast 17 : ℝ) ^ 1 / ((2 * 3 + 1 : ℕ) : ℝ) ^ 2) / 2)) :=
+  closeTo_lyubashevskySignAttempts_simulate_one 1 2 1 17 1 3 1 0 (by decide) (by decide) (by decide)
+    H_fixed (fun _ => 0) (fun _ _ => key.2) zero_relation (fun _ => ()) (fun _ => [])
+    (fun _ _ _ => pure ()) (fun _ _ _ _ => IsCostBounded.pure () 0)
+
+/-- Bounded multi-attempt visible simulation client: For any K ≤ 1, the simulation distance
+is bounded by the range-K commitment collision sum on the q = 17 test fixture. -/
+theorem le_one_attempts_prog_sim_closeTo_test (K : ℕ) (hK : K ≤ 1) :
+    CloseTo
+      (lyubashevskySignAttemptsVisibleProg 1 2 1 17 1 3 1 K H_fixed (fun _ => 0) (fun _ _ => key.2)
+        (fun _ => ()) (fun _ => []) (fun _ _ _ => pure ()))
+      (lyubashevskySignAttemptsVisibleSim 1 2 1 17 3 1 K H_fixed (fun _ _ => key.2)
+        (fun _ => ()) (fun _ => []) (fun _ _ _ => pure ()))
+      (∑ j ∈ Finset.range K, (((Nat.cast 0 : ℝ≥0∞) + (K : ℝ≥0∞) - 1 - (j : ℝ≥0∞)) /
+        (Nat.cast 17 : ℝ≥0∞) ^ 1 +
+        ENNReal.ofReal (Real.sqrt ((Nat.cast 17 : ℝ) ^ 1 / ((2 * 3 + 1 : ℕ) : ℝ) ^ 2) / 2))) :=
+  closeTo_lyubashevskySignAttempts_simulate_le_one 1 2 1 17 1 3 1 K 0 (by decide) (by decide)
+    (by decide) hK H_fixed (fun _ => 0) (fun _ _ => key.2) zero_relation (fun _ => ())
+    (fun _ => []) (fun _ _ _ => pure ()) (fun _ _ _ _ => IsCostBounded.pure () 0)
+
 end LyubashevskySimulationTests
