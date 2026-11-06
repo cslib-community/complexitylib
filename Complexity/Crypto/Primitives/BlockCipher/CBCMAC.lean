@@ -6,7 +6,12 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 public import Complexity.Crypto.Primitives.BlockCipher.Modes
+public import Complexity.Foundations.Data.BitString.PadBlocks
+public import Complexity.Languages.Probabilistic.Basic
+public import Mathlib.Control.Monad.Writer
+import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Uniform
+import Mathlib.Data.Finset.Density
 import Mathlib.Data.Fintype.Pi
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
@@ -27,13 +32,15 @@ forgery counterexamples for each of the six relaxations in [KatzLindell2020], Ex
   bounded nonempty block-vector domain.
 * `CBCPrefixFree`, `CBCSmooth`: prefix-free query-list predicate and `(q, ℓ, δ)`-smoothness for
   random-function CBC-MAC.
-* `CBCDecision`, `cbcDecisionRun`, `CBCAdmissible`, `cbcRealSuccess`, `cbcIdealSuccess`:
-  finite-depth adaptive decision-tree distinguishers and real/ideal acceptance probabilities for
-  the information-theoretic step of Theorem 4.12.
+* `CBCOracleSpec`, `cbcQueryRun`, `CBCAdmissible`, `cbcRealSuccess`, `cbcIdealSuccess`: adaptive
+  oracle distinguishers as `OracleComp (CBCOracleSpec n ℓ) Bool` programs, their query-logging run
+  through `OracleComp.interpret`, the execution-based prefix-free query budget, and real/ideal
+  acceptance probabilities for the information-theoretic step of Theorem 4.12.
 * `CBCTagForgery`, `cbcForgeryValid`, `cbcTwoToFourAttack`, `cbcToThreeAttack`, `cbcAllTagsTwo`,
-  `allOnes`, `cbcLeakedTagsAttack`, `cbcRandomIVMac`, `cbcRandomIVAttack`, `lengthAppendedCBC`,
-  `cbcLengthSuffixAttack`, `zeroPadTo`, `padBlocks`, `zeroPadCBC`, `zeroPadAttack`: explicit
-  CBC-MAC forgery constructions for Exercises 4.13–4.16.
+  `cbcLeakedTagsAttack`, `cbcRandomIVMac`, `cbcRandomIVAttack`, `lengthAppendedCBC`,
+  `cbcLengthSuffixAttack`, `zeroPadCBC`, `zeroPadAttack`: explicit CBC-MAC forgery constructions
+  for Exercises 4.13–4.16 (the all-ones block is `(1 : BitString n)`, zero padding is
+  `List.rightpad`, and block splitting is `BitString.padBlocks`).
 
 ## Main results
 
@@ -41,13 +48,13 @@ forgery counterexamples for each of the six relaxations in [KatzLindell2020], Ex
   and equivalence between the final block of `cbcEncryptBlocks` and `cbcMacBlocks`.
 * `cbcSmooth_iff`, `cbcSmooth_of_prefixFree`: counting characterization and `(q, ℓ, q^2 * ℓ^2 /
   2^n)`-smoothness of prefix-free CBC-MAC ([KatzLindell2020], Claim 4.13).
-* `abs_cbcRealSuccess_sub_cbcIdealSuccess_le`: adaptive decision-tree PRF bound `|cbcRealSuccess -
-  cbcIdealSuccess| ≤ q^2 * ℓ^2 / 2^n` ([KatzLindell2020], Theorem 4.12).
+* `abs_cbcRealSuccess_sub_cbcIdealSuccess_le`: adaptive oracle-program PRF bound
+  `|cbcRealSuccess - cbcIdealSuccess| ≤ q^2 * ℓ^2 / 2^n` ([KatzLindell2020], Theorem 4.12).
 * `cbcTwoToFourAttack_valid`, `cbcToThreeAttack_valid`, `cbcLeakedTagsAttack_valid`,
   `cbcRandomIVAttack_valid`, `cbcLengthSuffixAttack_valid_any_encoding`,
-  `cbcLengthSuffixAttack_valid`, `zeroPadTo_collide`, `zeroPadAttack_valid`: probability-`1`
-  forgery attacks when prefix-freeness, tag hiding, fixed zero IV, length prepending, or injective
-  padding is violated ([KatzLindell2020], Exercises 4.13–4.16).
+  `cbcLengthSuffixAttack_valid`, `rightpad_false_true_collide`, `zeroPadAttack_valid`:
+  probability-`1` forgery attacks when prefix-freeness, tag hiding, fixed zero IV, length
+  prepending, or injective padding is violated ([KatzLindell2020], Exercises 4.13–4.16).
 
 ## References
 
@@ -468,14 +475,6 @@ open Classical in private theorem card_cbcGoodFunction_le {q ℓ : ℕ} (inputs 
       unfold cbcRetag at this
       simp only [hz, hz2, ↓reduceDIte] at this
       exact this
-private theorem toReal_map_uniformOfFintype_true {α : Type*} [Fintype α] [Nonempty α]
-    (f : α → Bool) : (((PMF.uniformOfFintype α).map f) true).toReal =
-      ((Finset.univ.filter (fun a => f a = true)).card : ℝ) / Fintype.card α := by
-  rw [PMF.map_apply, tsum_fintype]; simp only [PMF.uniformOfFintype_apply]
-  rw [← Finset.sum_filter]; simp only [Finset.sum_const, nsmul_eq_mul]
-  rw [ENNReal.toReal_mul, ENNReal.toReal_inv, ENNReal.toReal_natCast,
-    ENNReal.toReal_natCast, div_eq_mul_inv]
-  congr 3; ext a; simp only [Finset.mem_filter, Finset.mem_univ, true_and]; exact eq_comm
 /-- Counting characterization of `CBCSmooth`. -/
 theorem cbcSmooth_iff (n q ℓ : ℕ) (δ : ℝ) : CBCSmooth n q ℓ δ ↔
       ∀ inputs : Fin q → CBCInput n ℓ, Function.Injective inputs →
@@ -484,7 +483,9 @@ theorem cbcSmooth_iff (n q ℓ : ℕ) (δ : ℝ) : CBCSmooth n q ℓ δ ↔
           ((Finset.univ.filter (fun g : BitString n → BitString n =>
             ∀ i, cbcMacFinite g (inputs i) = tags i)).card : ℝ) /
             Fintype.card (BitString n → BitString n) := by
-  unfold CBCSmooth; simp only [toReal_map_uniformOfFintype_true, decide_eq_true_eq]
+  unfold CBCSmooth
+  simp only [PMF.toReal_uniformOfFintype_map_apply_true, Finset.nnratCast_dens,
+    decide_eq_true_eq]
 /-- **Prefix-Free CBC-MAC Smoothness ([KatzLindell2020], Section 4.4, Claim 4.13, p. 125)**: for
   every block width `n` and all query parameters `q, ℓ`, random-function CBC-MAC is `(q, ℓ, q^2 *
   ℓ^2 / 2^n)`-smooth on prefix-free queries. -/
@@ -524,56 +525,73 @@ theorem cbcSmooth_of_prefixFree (n q ℓ : ℕ) :
       ((1 - (q : ℝ) ^ 2 * (ℓ : ℝ) ^ 2 / (2 : ℝ) ^ n) * N) / ((2 : ℝ) ^ n) ^ q by ring,
     div_le_iff₀ hY]
   nlinarith
-/-! ### Section 3: Adaptive Finite Decision-Tree PRF Bound ([KatzLindell2020], Theorem 4.12) -/
-/-- A finite-depth adaptive decision tree querying an oracle `CBCInput n ℓ → BitString n` and
-  returning a Boolean decision. This models an information-theoretic adaptive oracle distinguisher
-  for the core step of [KatzLindell2020], Theorem 4.12 (prior to replacing the random function `g`
-  with a computational PRF). -/
-inductive CBCDecision (n ℓ : ℕ) where
-  | done (b : Bool)
-  | ask (input : CBCInput n ℓ) (next : BitString n → CBCDecision n ℓ)
-/-- Run a `CBCDecision` tree against an oracle, returning the final Boolean output together with
-  the list of queried inputs. -/
-def cbcDecisionRun {ℓ : ℕ} (oracle : CBCInput n ℓ → BitString n) :
-    CBCDecision n ℓ → Bool × List (CBCInput n ℓ)
-  | .done b => (b, [])
-  | .ask x next =>
-    let out := cbcDecisionRun oracle (next (oracle x))
-    (out.1, x :: out.2)
-/-- A decision tree is `q`-admissible if along every oracle path its queries are prefix-free and
-  it makes at most `q` queries. -/
-def CBCAdmissible {ℓ : ℕ} (q : ℕ) (tree : CBCDecision n ℓ) : Prop :=
-  ∀ oracle, CBCPrefixFree (cbcDecisionRun oracle tree).2 ∧
-    (cbcDecisionRun oracle tree).2.length ≤ q
-/-- Real-world acceptance probability of a distribution `D` over adaptive decision trees when
+/-! ### Section 3: Adaptive Oracle-Program PRF Bound ([KatzLindell2020], Theorem 4.12) -/
+/-- The oracle interface of CBC-MAC distinguishers: a query is a bounded nonempty block input
+  `CBCInput n ℓ`, answered by an `n`-bit tag. -/
+abbrev CBCOracleSpec (n ℓ : ℕ) : OracleSpec (CBCInput n ℓ) := fun _ => BitString n
+/-- Run an oracle program against a fixed oracle `CBCInput n ℓ → BitString n`, interpreting each
+  call with `OracleComp.interpret` in the writer monad that logs the query. Returns the output
+  together with the list of queried inputs, in order and with repetitions. -/
+def cbcQueryRun {ℓ : ℕ} {α : Type} (oracle : CBCInput n ℓ → BitString n)
+    (program : OracleComp (CBCOracleSpec n ℓ) α) : α × List (CBCInput n ℓ) :=
+  (OracleComp.interpret (m := WriterT (List (CBCInput n ℓ)) Id)
+    (fun x => WriterT.mk ((oracle x, [x]) : Id _)) program).run
+@[simp] theorem cbcQueryRun_pure {ℓ : ℕ} {α : Type} (oracle : CBCInput n ℓ → BitString n)
+    (a : α) : cbcQueryRun oracle (pure a : OracleComp (CBCOracleSpec n ℓ) α) = (a, []) := rfl
+/-- One oracle call: the output and log of the continuation on the answer, after the query. -/
+theorem cbcQueryRun_liftBind {ℓ : ℕ} {α : Type} (oracle : CBCInput n ℓ → BitString n)
+    (x : CBCInput n ℓ) (next : BitString n → OracleComp (CBCOracleSpec n ℓ) α) :
+    cbcQueryRun oracle (PFunctor.FreeM.liftBind (P := ⟨CBCInput n ℓ, CBCOracleSpec n ℓ⟩) x next) =
+      ((cbcQueryRun oracle (next (oracle x))).1, x :: (cbcQueryRun oracle (next (oracle x))).2) :=
+  rfl
+@[simp] theorem cbcQueryRun_query_bind {ℓ : ℕ} {α : Type} (oracle : CBCInput n ℓ → BitString n)
+    (x : CBCInput n ℓ) (next : BitString n → OracleComp (CBCOracleSpec n ℓ) α) :
+    cbcQueryRun oracle (OracleComp.query x >>= next) =
+      ((cbcQueryRun oracle (next (oracle x))).1, x :: (cbcQueryRun oracle (next (oracle x))).2) :=
+  rfl
+/-- The output of `cbcQueryRun` is the plain interpretation of the program with the oracle. -/
+theorem cbcQueryRun_fst {ℓ : ℕ} {α : Type} (oracle : CBCInput n ℓ → BitString n) :
+    ∀ program : OracleComp (CBCOracleSpec n ℓ) α,
+      (cbcQueryRun oracle program).1 = OracleComp.interpret (m := Id) oracle program
+  | .pure _ => rfl
+  | .liftBind x next => cbcQueryRun_fst oracle (next (oracle x))
+/-- An oracle program is `q`-admissible if, run against every fixed oracle, its queries are
+  prefix-free and it makes at most `q` of them. Quantifying over executions keeps paths that no
+  consistent oracle produces (inconsistent answers to repeated queries) out of the restriction. -/
+def CBCAdmissible {ℓ : ℕ} (q : ℕ) (tree : OracleComp (CBCOracleSpec n ℓ) Bool) : Prop :=
+  ∀ oracle, CBCPrefixFree (cbcQueryRun oracle tree).2 ∧
+    (cbcQueryRun oracle tree).2.length ≤ q
+/-- Real-world acceptance probability of a distribution `D` over adaptive oracle programs when
   interacting with `cbcMacFinite g` for a uniform random function `g : BitString n → BitString
   n`. -/
-noncomputable def cbcRealSuccess (n ℓ : ℕ) (D : PMF (CBCDecision n ℓ)) : ℝ :=
+noncomputable def cbcRealSuccess (n ℓ : ℕ) (D : PMF (OracleComp (CBCOracleSpec n ℓ) Bool)) : ℝ :=
   ((do
     let g ← PMF.uniformOfFintype (BitString n → BitString n)
     let tree ← D
-    return (cbcDecisionRun (cbcMacFinite g) tree).1 : PMF Bool) true).toReal
-/-- Ideal-world acceptance probability of a distribution `D` over adaptive decision trees when
+    return (cbcQueryRun (cbcMacFinite g) tree).1 : PMF Bool) true).toReal
+/-- Ideal-world acceptance probability of a distribution `D` over adaptive oracle programs when
   interacting with a uniform random function `f : CBCInput n ℓ → BitString n`. -/
-noncomputable def cbcIdealSuccess (n ℓ : ℕ) (D : PMF (CBCDecision n ℓ)) : ℝ :=
+noncomputable def cbcIdealSuccess (n ℓ : ℕ) (D : PMF (OracleComp (CBCOracleSpec n ℓ) Bool)) : ℝ :=
   ((do
     let f ← PMF.uniformOfFintype (CBCInput n ℓ → BitString n)
     let tree ← D
-    return (cbcDecisionRun f tree).1 : PMF Bool) true).toReal
+    return (cbcQueryRun f tree).1 : PMF Bool) true).toReal
 private def cbcDecisionTrace {ℓ : ℕ} (o : CBCInput n ℓ → BitString n) :
-    CBCDecision n ℓ → List (CBCInput n ℓ × BitString n)
-  | .done _ => []
-  | .ask x next => (x, o x) :: cbcDecisionTrace o (next (o x))
+    OracleComp (CBCOracleSpec n ℓ) Bool → List (CBCInput n ℓ × BitString n)
+  | .pure _ => []
+  | .liftBind x next => (x, o x) :: cbcDecisionTrace o (next (o x))
 private theorem cbcDecisionTrace_map_fst {ℓ : ℕ} (o : CBCInput n ℓ → BitString n) :
-    ∀ T : CBCDecision n ℓ, (cbcDecisionTrace o T).map Prod.fst = (cbcDecisionRun o T).2
-  | .done _ => rfl
-  | .ask x next => by
-    simp [cbcDecisionTrace, cbcDecisionRun, cbcDecisionTrace_map_fst o (next (o x))]
+    ∀ T : OracleComp (CBCOracleSpec n ℓ) Bool,
+      (cbcDecisionTrace o T).map Prod.fst = (cbcQueryRun o T).2
+  | .pure _ => rfl
+  | .liftBind x next => by
+    rw [cbcQueryRun_liftBind]
+    simp only [cbcDecisionTrace, List.map_cons, cbcDecisionTrace_map_fst o (next (o x))]
 private theorem cbcDecisionTrace_eq_iff {ℓ : ℕ} (o o' : CBCInput n ℓ → BitString n) :
-    ∀ T : CBCDecision n ℓ, cbcDecisionTrace o T = cbcDecisionTrace o' T ↔
+    ∀ T : OracleComp (CBCOracleSpec n ℓ) Bool, cbcDecisionTrace o T = cbcDecisionTrace o' T ↔
         ∀ e ∈ cbcDecisionTrace o' T, o e.1 = e.2
-  | .done _ => by simp [cbcDecisionTrace]
-  | .ask x next => by
+  | .pure _ => by simp [cbcDecisionTrace]
+  | .liftBind x next => by
     simp only [cbcDecisionTrace, List.cons.injEq, Prod.mk.injEq, true_and, List.mem_cons,
       forall_eq_or_imp]
     constructor
@@ -585,31 +603,34 @@ private theorem cbcDecisionTrace_eq_iff {ℓ : ℕ} (o o' : CBCInput n ℓ → B
       refine ⟨h1, ?_⟩
       rw [h1]
       exact (cbcDecisionTrace_eq_iff o o' (next (o' x))).2 h2
-private theorem cbcDecisionRun_fst_eq_of_trace {ℓ : ℕ} (o o' : CBCInput n ℓ → BitString n) :
-    ∀ T : CBCDecision n ℓ, cbcDecisionTrace o T = cbcDecisionTrace o' T →
-      (cbcDecisionRun o T).1 = (cbcDecisionRun o' T).1
-  | .done _, _ => rfl
-  | .ask x next, h => by
+private theorem cbcQueryRun_fst_eq_of_trace {ℓ : ℕ} (o o' : CBCInput n ℓ → BitString n) :
+    ∀ T : OracleComp (CBCOracleSpec n ℓ) Bool, cbcDecisionTrace o T = cbcDecisionTrace o' T →
+      (cbcQueryRun o T).1 = (cbcQueryRun o' T).1
+  | .pure _, _ => rfl
+  | .liftBind x next, h => by
     simp only [cbcDecisionTrace, List.cons.injEq, Prod.mk.injEq, true_and] at h
-    obtain ⟨h1, h2⟩ := h; rw [h1] at h2; simp only [cbcDecisionRun]; rw [h1]
-    exact cbcDecisionRun_fst_eq_of_trace o o' _ h2
-private def reachableTraces {ℓ : ℕ} (T : CBCDecision n ℓ) :
+    obtain ⟨h1, h2⟩ := h; rw [h1] at h2; simp only [cbcQueryRun_liftBind]; rw [h1]
+    exact cbcQueryRun_fst_eq_of_trace o o' _ h2
+private def reachableTraces {ℓ : ℕ} (T : OracleComp (CBCOracleSpec n ℓ) Bool) :
     Finset (List (CBCInput n ℓ × BitString n)) :=
   Finset.univ.image (fun o : CBCInput n ℓ → BitString n => cbcDecisionTrace o T)
-open Classical in private noncomputable def traceOutput {ℓ : ℕ} (T : CBCDecision n ℓ)
+open Classical in private noncomputable def traceOutput {ℓ : ℕ}
+    (T : OracleComp (CBCOracleSpec n ℓ) Bool)
     (p : List (CBCInput n ℓ × BitString n)) : Bool :=
   if h : ∃ o, cbcDecisionTrace o T = p then
-    (cbcDecisionRun (Classical.choose h) T).1
+    (cbcQueryRun (Classical.choose h) T).1
   else
     false
-open Classical in private theorem traceOutput_cbcDecisionTrace {ℓ : ℕ} (T : CBCDecision n ℓ)
+open Classical in private theorem traceOutput_cbcDecisionTrace {ℓ : ℕ}
+    (T : OracleComp (CBCOracleSpec n ℓ) Bool)
     (o : CBCInput n ℓ → BitString n) :
-    traceOutput T (cbcDecisionTrace o T) = (cbcDecisionRun o T).1 := by
+    traceOutput T (cbcDecisionTrace o T) = (cbcQueryRun o T).1 := by
   have h : ∃ o', cbcDecisionTrace o' T = cbcDecisionTrace o T := ⟨o, rfl⟩
   unfold traceOutput; simp only [h, ↓reduceDIte]
-  exact cbcDecisionRun_fst_eq_of_trace _ _ T (Classical.choose_spec h)
+  exact cbcQueryRun_fst_eq_of_trace _ _ T (Classical.choose_spec h)
 private theorem card_reachableTraces_sum {ℓ : ℕ} {X : Type*} [Fintype X]
-    (O : X → CBCInput n ℓ → BitString n) (T : CBCDecision n ℓ) : ∑ p ∈ reachableTraces T,
+    (O : X → CBCInput n ℓ → BitString n) (T : OracleComp (CBCOracleSpec n ℓ) Bool) :
+    ∑ p ∈ reachableTraces T,
       (Finset.univ.filter (fun x => cbcDecisionTrace (O x) T = p)).card = Fintype.card X := by
   rw [← Finset.card_univ,
     Finset.card_eq_sum_card_fiberwise (f := fun x => cbcDecisionTrace (O x) T)
@@ -617,8 +638,8 @@ private theorem card_reachableTraces_sum {ℓ : ℕ} {X : Type*} [Fintype X]
   intro x _
   exact Finset.mem_image.2 ⟨O x, Finset.mem_univ _, rfl⟩
 private theorem card_accept_eq_sum_reachableTraces {ℓ : ℕ} {X : Type*} [Fintype X]
-    (O : X → CBCInput n ℓ → BitString n) (T : CBCDecision n ℓ) :
-    (Finset.univ.filter (fun x => (cbcDecisionRun (O x) T).1 = true)).card =
+    (O : X → CBCInput n ℓ → BitString n) (T : OracleComp (CBCOracleSpec n ℓ) Bool) :
+    (Finset.univ.filter (fun x => (cbcQueryRun (O x) T).1 = true)).card =
       ∑ p ∈ (reachableTraces T).filter (fun p => traceOutput T p = true),
         (Finset.univ.filter (fun x => cbcDecisionTrace (O x) T = p)).card := by
   rw [Finset.card_eq_sum_card_fiberwise (f := fun x => cbcDecisionTrace (O x) T)
@@ -721,7 +742,8 @@ private theorem tsum_pmf_abs_sub_le {α : Type*} (D : PMF α) (a b : α → ENNR
   have s1 := side a b ha hb (fun T hT => by have := h T hT; rw [abs_le] at this; linarith)
   have s2 := side b a hb ha (fun T hT => by have := h T hT; rw [abs_le] at this; linarith)
   rw [abs_le]; constructor <;> linarith
-private theorem cbcDecisionTrace_prob_lower_bound {ℓ : ℕ} (q : ℕ) (T : CBCDecision n ℓ)
+private theorem cbcDecisionTrace_prob_lower_bound {ℓ : ℕ} (q : ℕ)
+    (T : OracleComp (CBCOracleSpec n ℓ) Bool)
     (hT : CBCAdmissible q T) (p : List (CBCInput n ℓ × BitString n)) (hp : p ∈ reachableTraces T) :
     (1 - (q : ℝ) ^ 2 * (ℓ : ℝ) ^ 2 / (2 : ℝ) ^ n) * (((Finset.univ.filter
         (fun f : CBCInput n ℓ → BitString n => cbcDecisionTrace f T = p)).card : ℝ) /
@@ -729,7 +751,7 @@ private theorem cbcDecisionTrace_prob_lower_bound {ℓ : ℕ} (q : ℕ) (T : CBC
         (fun g : BitString n → BitString n => cbcDecisionTrace (cbcMacFinite g) T = p)).card : ℝ) /
           Fintype.card (BitString n → BitString n) := by
   obtain ⟨o0, -, rfl⟩ := Finset.mem_image.1 hp
-  set S := (cbcDecisionRun o0 T).2.toFinset with hS
+  set S := (cbcQueryRun o0 T).2.toFinset with hS
   have self : ∀ e ∈ cbcDecisionTrace o0 T, o0 e.1 = e.2 :=
     (cbcDecisionTrace_eq_iff o0 o0 T).1 rfl
   have memS : ∀ x, x ∈ S ↔ ∃ e ∈ cbcDecisionTrace o0 T, e.1 = x := by
@@ -756,7 +778,7 @@ private theorem cbcDecisionTrace_prob_lower_bound {ℓ : ℕ} (q : ℕ) (T : CBC
   let e : Fin k ≃ S := S.equivFin.symm
   let inputs : Fin k → CBCInput n ℓ := fun i => (e i).1
   have hinj : Function.Injective inputs := fun i j h => e.injective (Subtype.ext h)
-  have hmem : ∀ x, x ∈ List.ofFn inputs → x ∈ (cbcDecisionRun o0 T).2 := by
+  have hmem : ∀ x, x ∈ List.ofFn inputs → x ∈ (cbcQueryRun o0 T).2 := by
     intro x hx
     obtain ⟨i, rfl⟩ := List.mem_ofFn.1 hx
     exact List.mem_toFinset.1 (e i).2
@@ -797,13 +819,13 @@ private theorem cbcDecisionTrace_prob_lower_bound {ℓ : ℕ} (q : ℕ) (T : CBC
     apply div_le_div_of_nonneg_right _ hX.le
     exact mul_le_mul_of_nonneg_right hk2 (by positivity)
   linarith
-private theorem cbcDecisionTree_gap {ℓ : ℕ} (q : ℕ) (T : CBCDecision n ℓ)
+private theorem cbcDecisionTree_gap {ℓ : ℕ} (q : ℕ) (T : OracleComp (CBCOracleSpec n ℓ) Bool)
     (hT : CBCAdmissible q T) :
     |((Finset.univ.filter (fun g : BitString n → BitString n =>
-        (cbcDecisionRun (cbcMacFinite g) T).1 = true)).card : ℝ) /
+        (cbcQueryRun (cbcMacFinite g) T).1 = true)).card : ℝ) /
         Fintype.card (BitString n → BitString n) -
       ((Finset.univ.filter (fun f : CBCInput n ℓ → BitString n =>
-        (cbcDecisionRun f T).1 = true)).card : ℝ) /
+        (cbcQueryRun f T).1 = true)).card : ℝ) /
         Fintype.card (CBCInput n ℓ → BitString n)| ≤
       (q : ℝ) ^ 2 * (ℓ : ℝ) ^ 2 / (2 : ℝ) ^ n := by
   rw [card_accept_eq_sum_reachableTraces (fun g : BitString n → BitString n => cbcMacFinite g) T,
@@ -824,7 +846,8 @@ private theorem cbcDecisionTree_gap {ℓ : ℕ} (q : ℕ) (T : CBCDecision n ℓ
     exact_mod_cast card_reachableTraces_sum
       (fun f : CBCInput n ℓ → BitString n => f) T
 private theorem uniformOfFintype_bind_comm {ℓ : ℕ} {G : Type} [Fintype G] [Nonempty G]
-    (D : PMF (CBCDecision n ℓ)) (h : G → CBCDecision n ℓ → Bool) : (do
+    (D : PMF (OracleComp (CBCOracleSpec n ℓ) Bool))
+    (h : G → OracleComp (CBCOracleSpec n ℓ) Bool → Bool) : (do
       let g ← PMF.uniformOfFintype G let T ← D return h g T) =
       D.bind (fun T => (PMF.uniformOfFintype G).map (fun g => h g T)) := by
   calc _
@@ -836,23 +859,25 @@ private theorem uniformOfFintype_bind_comm {ℓ : ℕ} {G : Type} [Fintype G] [N
     _ = _ := rfl
 /-- **Prefix-Free CBC-MAC Adaptive PRF Security Bound ([KatzLindell2020], Section 4.4, Theorem
   4.12, p. 124)**: for every block width `n`, query budget `q`, maximum block length `ℓ`, and
-  distribution `D` over `q`-admissible adaptive decision trees, the distinguishing advantage
+  distribution `D` over `q`-admissible adaptive oracle programs, the distinguishing advantage
   between `cbcMacFinite g` (for uniform `g : BitString n → BitString n`) and a uniform random
   function `f : CBCInput n ℓ → BitString n` is at most `q^2 * ℓ^2 / 2^n`. -/
 theorem abs_cbcRealSuccess_sub_cbcIdealSuccess_le (n q ℓ : ℕ)
-    (D : PMF (CBCDecision n ℓ)) (hD : ∀ tree, D tree ≠ 0 → CBCAdmissible q tree) :
+    (D : PMF (OracleComp (CBCOracleSpec n ℓ) Bool))
+    (hD : ∀ tree, D tree ≠ 0 → CBCAdmissible q tree) :
     |cbcRealSuccess n ℓ D - cbcIdealSuccess n ℓ D| ≤
       (q : ℝ) ^ 2 * (ℓ : ℝ) ^ 2 / (2 : ℝ) ^ n := by
   have hδ : (0 : ℝ) ≤ (q : ℝ) ^ 2 * (ℓ : ℝ) ^ 2 / (2 : ℝ) ^ n := by positivity
   unfold cbcRealSuccess cbcIdealSuccess
-  rw [uniformOfFintype_bind_comm D (fun g T => (cbcDecisionRun (cbcMacFinite g) T).1),
+  rw [uniformOfFintype_bind_comm D (fun g T => (cbcQueryRun (cbcMacFinite g) T).1),
     uniformOfFintype_bind_comm D
-      (fun (f : CBCInput n ℓ → BitString n) T => (cbcDecisionRun f T).1),
+      (fun (f : CBCInput n ℓ → BitString n) T => (cbcQueryRun f T).1),
     PMF.bind_apply, PMF.bind_apply]
   apply tsum_pmf_abs_sub_le D _ _ _ hδ (fun T => PMF.coe_le_one _ _)
     (fun T => PMF.coe_le_one _ _)
   intro T hT
-  rw [toReal_map_uniformOfFintype_true, toReal_map_uniformOfFintype_true]
+  rw [PMF.toReal_uniformOfFintype_map_apply_true, PMF.toReal_uniformOfFintype_map_apply_true,
+    Finset.nnratCast_dens, Finset.nnratCast_dens]
   exact cbcDecisionTree_gap q T (hD T hT)
 /-! ### Section 4: Explicit CBC-MAC Forgery Attacks ([KatzLindell2020], Exercises 4.13–4.16) -/
 /-- A CBC-MAC forgery trace `(queriedMessages, forgedMessage, forgedTag)`. -/
@@ -894,18 +919,16 @@ theorem cbcToThreeAttack_valid (g : BitString n → BitString n) :
 def cbcAllTagsTwo (g : BitString n → BitString n) (msg : BitString n × BitString n) :
     BitString n × BitString n :=
   (g msg.1, g (g msg.1 + msg.2))
-/-- All-ones `n`-bit block `1^n`. -/
-def allOnes (n : ℕ) : BitString n := fun _ => true
 /-- **Leaked-intermediate-tags forgery attack ([KatzLindell2020], Exercise 4.14(a), p. 142)**:
   queries `(0, 0)`, `(1^n, 0)`, and `(1^n, 1^n)`, and uses the leaked first-block tags to forge a
   fresh 2-block message. -/
 def cbcLeakedTagsAttack (oracle : (BitString n × BitString n) → BitString n × BitString n) :
     List (BitString n × BitString n) × (BitString n × BitString n) × (BitString n × BitString n) :=
-  let z : BitString n := 0; let o : BitString n := allOnes n
+  let z : BitString n := 0; let o : BitString n := 1
   let a := oracle (z, z); let b := oracle (o, z); let c := oracle (o, o)
   let forge := if a.1 = b.1 then ((z, o), c) else ((z, a.1 + b.1), b)
   ([(z, z), (o, z), (o, o)], forge.1, forge.2)
-private theorem zero_ne_allOnes_of_pos (hn : 0 < n) : (0 : BitString n) ≠ allOnes n := by
+private theorem zero_ne_one_of_pos (hn : 0 < n) : (0 : BitString n) ≠ 1 := by
   intro h; exact Bool.false_ne_true (congrFun h ⟨0, hn⟩)
 /-- `cbcLeakedTagsAttack` makes `3` queries and outputs a fresh 2-block message with a valid
   final tag for every round function `g` whenever `0 < n` ([KatzLindell2020], Exercise 4.14(a),
@@ -914,11 +937,11 @@ theorem cbcLeakedTagsAttack_valid (hn : 0 < n) (g : BitString n → BitString n)
     let trace := cbcLeakedTagsAttack (cbcAllTagsTwo g)
     trace.1.length = 3 ∧ trace.2.1 ∉ trace.1 ∧
       (cbcAllTagsTwo g trace.2.1).2 = trace.2.2.2 := by
-  have hzo : (0 : BitString n) ≠ allOnes n := zero_ne_allOnes_of_pos hn
-  by_cases h : g 0 = g (allOnes n)
+  have hzo : (0 : BitString n) ≠ 1 := zero_ne_one_of_pos hn
+  by_cases h : g 0 = g ((1 : BitString n))
   · simp [cbcLeakedTagsAttack, cbcAllTagsTwo, h, hzo, Ne.symm hzo]
-  · have hx : g 0 + g (allOnes n) ≠ 0 := fun e =>
-      h (by simpa using congrArg (· + g (allOnes n)) e)
+  · have hx : g 0 + g ((1 : BitString n)) ≠ 0 := fun e =>
+      h (by simpa using congrArg (· + g ((1 : BitString n))) e)
     simp [cbcLeakedTagsAttack, cbcAllTagsTwo, h, hzo, hx]
 /-- Insecure random-IV CBC-MAC variant that outputs `(iv, cbcMacBlocks g iv msg)`
   ([KatzLindell2020], Exercise 4.14(b), p. 142). -/
@@ -929,14 +952,14 @@ def cbcRandomIVMac (g : BitString n → BitString n) (iv : BitString n)
   `(iv, t)` for message `[0]`, outputs message `1^n` with modified IV `iv + 1^n` and tag `t`. -/
 def cbcRandomIVAttack (tag : BitString n × BitString n) :
     BitString n × (BitString n × BitString n) :=
-  let o := allOnes n; (o, (tag.1 + o, tag.2))
+  let o := (1 : BitString n); (o, (tag.1 + o, tag.2))
 /-- `cbcRandomIVAttack` produces a fresh 1-block message `1^n ≠ 0` whose random-IV CBC-MAC tag
   (`cbcRandomIVMac`) validates for every `iv` and `g` whenever `0 < n` ([KatzLindell2020],
   Exercise 4.14(b), p. 142). -/
 theorem cbcRandomIVAttack_valid (hn : 0 < n) (g : BitString n → BitString n) (iv : BitString n) :
     let forged := cbcRandomIVAttack (cbcRandomIVMac g iv [0])
     forged.1 ≠ 0 ∧ cbcRandomIVMac g forged.2.1 [forged.1] = forged.2 :=
-  ⟨(zero_ne_allOnes_of_pos hn).symm, by simp [cbcRandomIVAttack, cbcRandomIVMac]⟩
+  ⟨(zero_ne_one_of_pos hn).symm, by simp [cbcRandomIVAttack, cbcRandomIVMac]⟩
 /-- Insecure CBC-MAC variant that appends `encodeLength (msg.length * n)` at the end of `msg`
   ([KatzLindell2020], Exercise 4.15, p. 142). -/
 def lengthAppendedCBC (g : BitString n → BitString n)
@@ -947,7 +970,7 @@ def lengthAppendedCBC (g : BitString n → BitString n)
   `[1^n] ++ encodeLength n ++ [u]`. -/
 def cbcLengthSuffixAttack (encodeLength : ℕ → List (BitString n))
     (oracle : List (BitString n) → BitString n) : CBCTagForgery n :=
-  let z : BitString n := 0; let o : BitString n := allOnes n
+  let z : BitString n := 0; let o : BitString n := 1
   let t := oracle [z]; let u := oracle [o]; let query := [z] ++ encodeLength n ++ [t]
   ([[z], [o], query], [o] ++ encodeLength n ++ [u], oracle query)
 /-- `cbcLengthSuffixAttack` succeeds with `3` queries against `lengthAppendedCBC` for every
@@ -957,7 +980,7 @@ theorem cbcLengthSuffixAttack_valid_any_encoding (hn : 0 < n)
     let trace := cbcLengthSuffixAttack encodeLength (lengthAppendedCBC g encodeLength)
     trace.1.length = 3 ∧ trace.2.1 ∉ trace.1 ∧
       lengthAppendedCBC g encodeLength trace.2.1 = trace.2.2 := by
-  have hzo : (0 : BitString n) ≠ allOnes n := zero_ne_allOnes_of_pos hn
+  have hzo : (0 : BitString n) ≠ 1 := zero_ne_one_of_pos hn
   refine ⟨rfl, ?_, by simp [cbcLengthSuffixAttack, lengthAppendedCBC]⟩
   simp only [cbcLengthSuffixAttack, List.mem_cons, List.not_mem_nil, or_false]
   rintro (h1 | h2 | h3)
@@ -984,27 +1007,22 @@ theorem cbcLengthSuffixAttack_valid (hn : 4 ≤ n) (encodeBlock : ℕ → BitStr
   refine ⟨hvalid.1, ?_, by simp [cbcLengthSuffixAttack, hp], hvalid.2.1, hvalid.2.2⟩
   intro q hq; simp only [cbcLengthSuffixAttack, List.mem_cons, List.not_mem_nil, or_false] at hq
   rcases hq with rfl | rfl | rfl <;> simp [hp1, hp]
-/-- Zero-pad `m : List Bool` with trailing `false` bits to length `L` ([KatzLindell2020], Exercise
-  4.16, p. 142). -/
-def zeroPadTo (L : ℕ) (m : List Bool) : List Bool := m ++ List.replicate (L - m.length) false
-/-- Partition the first `(L / n) * n` bits of `x : List Bool` into `L / n` blocks of `n` bits
-  (exact when `n ∣ L`). -/
-def padBlocks (n L : ℕ) (x : List Bool) : List (BitString n) :=
-  List.ofFn (fun i : Fin (L / n) => fun j : Fin n => x.getD (i.val * n + j.val) false)
-/-- Insecure zero-padded CBC-MAC for messages of length at most `ℓ * 2^n` bits (partitioned into
-  `(ℓ * 2^n) / n` blocks of width `n`, exact when `n ∣ ℓ * 2^n`; [KatzLindell2020], Exercise 4.16,
-  p. 142). -/
+/-- Insecure zero-padded CBC-MAC for messages of length at most `ℓ * 2^n` bits: right-pad with
+  `false` bits to length `ℓ * 2^n` (`List.rightpad`), then split into the `(ℓ * 2^n) / n` blocks of
+  `BitString.padBlocks` (the floor block count; exact when `n ∣ ℓ * 2^n`) ([KatzLindell2020],
+  Exercise 4.16, p. 142). -/
 def zeroPadCBC (g : BitString n → BitString n) (ℓ : ℕ) (m : List Bool) : BitString n :=
-  cbcMacBlocks g 0 (padBlocks n (ℓ * 2 ^ n) (zeroPadTo (ℓ * 2 ^ n) m))
+  cbcMacBlocks g 0 (BitString.padBlocks n (ℓ * 2 ^ n) (List.rightpad (ℓ * 2 ^ n) false m))
 /-- **Zero-padded CBC-MAC forgery attack ([KatzLindell2020], Exercise 4.16, p. 142)**: queries
   `[true]` and outputs the distinct message `[true, false]` with the same tag. -/
 def zeroPadAttack (oracle : List Bool → BitString n) :
     List (List Bool) × List Bool × BitString n := ([[true]], [true, false], oracle [true])
-/-- For any `L ≥ 2`, zero-padding `[true]` and `[true, false]` produces the same bit string. -/
-theorem zeroPadTo_collide (L : ℕ) (hL : 2 ≤ L) :
-    zeroPadTo L [true] = zeroPadTo L [true, false] := by
+/-- For any `L ≥ 2`, right-padding `[true]` and `[true, false]` with `false` to length `L`
+  produces the same bit string. -/
+theorem rightpad_false_true_collide (L : ℕ) (hL : 2 ≤ L) :
+    List.rightpad L false [true] = List.rightpad L false [true, false] := by
   obtain ⟨k, rfl⟩ : ∃ k, L = k + 2 := ⟨L - 2, by omega⟩
-  simp [zeroPadTo, List.replicate_succ]
+  simp [List.rightpad, List.replicate_succ]
 /-- `zeroPadAttack` succeeds with `1` query against `zeroPadCBC` for every `0 < n`, `0 < ℓ`, and
   `g` ([KatzLindell2020], Exercise 4.16, p. 142). -/
 theorem zeroPadAttack_valid {ℓ : ℕ} (hn : 0 < n) (hℓ : 0 < ℓ) (g : BitString n → BitString n) :
@@ -1018,5 +1036,5 @@ theorem zeroPadAttack_valid {ℓ : ℕ} (hn : 0 < n) (hℓ : 0 < ℓ) (g : BitSt
   have h2 : 2 ≤ ℓ * 2 ^ n := (by omega : 2 ≤ 1 * 2 ^ n).trans (Nat.mul_le_mul_right _ hℓ)
   refine ⟨rfl, ?_, by simp [zeroPadAttack]; omega, by simp [zeroPadAttack], ?_⟩
   · intro q hq; simp only [zeroPadAttack, List.mem_singleton] at hq; subst hq; simp; omega
-  · simp only [zeroPadAttack, zeroPadCBC]; rw [zeroPadTo_collide _ h2]
+  · simp only [zeroPadAttack, zeroPadCBC]; rw [rightpad_false_true_collide _ h2]
 end Cslib.Crypto
