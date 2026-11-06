@@ -425,7 +425,7 @@ checks both projections, counter multiplicity and a concentrated balance example
 The recursive work bounds count natural additions/comparisons as arithmetic
 operations; `classCounters_size_le` and `backwardCounters_size_le` prove that
 the counters need at most $q+1$ bits. These facts do not supply a native bit-cost
-or streaming dissection implementation.
+or native streaming dissection resource certificate.
 
 `mean_forwardClassCount` and `mean_backwardClassCount` give exactly $2^q/2^p$
 for each fixed low-bit class at projection width $p\le m$. The former averages
@@ -434,6 +434,53 @@ operand of a **nonempty** suffix, conditional on the remaining operands and
 fixed target. Their uniform counterparts sample all those operands independently.
 An empty suffix has no random operand and is excluded from the backward mean.
 No independence between class sizes or bound on expected maximum balance follows.
+
+Import [AddXNORDissection.lean](../../Complexity/Cryptanalysis/AddXNORDissection.lean)
+for the actual quarter-indexed streaming class search of Lemma 8 and Theorem 7.
+In `Cslib.Cryptanalysis.AddXNOR.Dissection`, call `solve p as s t` on the
+noninitial operands, initial word and target. It uses three consecutive quarters
+of length $k=\lfloor q/4\rfloor$ and a final quarter containing the remainder.
+It caps the projection width at $m$. `solve_correct` proves unrestricted decision
+correctness; `solve_sound` proves that a returned operator list has length $q$
+and evaluates to the target. From the repository root after the normal setup:
+
+```bash
+scripts/build.sh --wfail --iofail Complexity.Cryptanalysis.AddXNORDissection
+lake env lean -DwarningAsError=true ComplexityTests/AddXNORDissection.lean
+```
+
+The complete [streaming client](../../ComplexityTests/AddXNORDissection.lean)
+checks exact emission order in both directions, wraparound, misses, colliding
+witnesses, both dictionary orientations, every quarter-length remainder, empty
+and zero-width instances, and all one-bit four-operand inputs and endpoints.
+A failed concrete equality usually indicates reversed inverse-quarter order or
+a lost collision witness; compare `classRecords` and `backClassRecords` before
+changing the full-state join.
+
+[ClassEnumeration](../../Complexity/Cryptanalysis/AddXNORClassEnumeration.lean)
+indexes the first quarter's full states by low-bit keys. Each second-quarter
+word computes its projected inverse from the requested class, visits one bucket
+and recovers a full output state only on hits. The backward version indexes the
+last quarter and exchanges forward/inverse directions. The reusable
+[collision buckets](../../Complexity/DataStructure/BinaryTrie/Buckets.lean)
+retain all indexed witnesses. `foldClass` and `foldBackClass` pass records directly
+to a consumer; the collecting observers specify their order and multiplicity.
+The two observer lengths agree exactly with the existing counter DP.
+
+The dissection computes both counter tables once, then compares their entries
+to choose the stored side. `storedClass_length` proves that this is the actual
+smaller class; `storedClass_nodes_le_balance` bounds its full-state dictionary
+by $(m+1)\mu_p$ nodes. `all_chainStepCalls` proves an unconditional exact
+chain-call budget for visiting every class, including repeated quarter setup;
+the search may stop at an earlier successful class.
+For four quarters of length $k$ this sum is
+$4k2^{p+k}+2k2^{2k}$. Each quarter index has at most $(p+1)2^k$ trie nodes.
+These statements separate counted chain calls, inspected dictionary nodes and
+retained dictionary size. They leave native counter preprocessing, key/list
+construction, word-bit costs, address capacity, allocation and compiled peak
+storage unproved. Thus the streaming implementation is functionally certified,
+while the paper's full runtime/space endpoint remains open. The existing
+per-class means still give no bound on expected maximum balance.
 
 Import [AddXNORCounting.lean](../../Complexity/Cryptanalysis/AddXNORCounting.lean)
 for Propositions 1–2. `steps` uses all `Fin q → Bool` operator strings on the

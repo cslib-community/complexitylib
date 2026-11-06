@@ -42,12 +42,17 @@ reduction, every positive rational width restriction, and the direct linear-widt
 3-SAT map are implemented, with explicit encoding-length bounds. Theorem 2's
 sparsification/disjunction resource refinement, exact reduction multiplicity,
 multitape bit-runtime certificates, native meet-in-the-middle resources, small-operand
-bounds, streaming class enumeration and full dissection time/space certificates,
+bounds, native streaming class enumeration and full dissection time/space certificates,
 and ideal-chain
 search/decision lower bounds still need proofs. Executable bit-table reachability
 with recursive pointer/Boolean cost bounds, exact forward/backward class-counter
 DP and computed balance, both uniform per-class means, and the exact expected
-operator-flip weight are implemented. The pointer/Boolean and counter-operation
+operator-flip weight are implemented. Quarter-indexed forward/backward class streaming
+and the counter-directed dissection now have unrestricted decision/witness correctness,
+exact indexed multiplicities, output-sensitive chain-call counts and a retained dictionary
+node bound in terms of the actual maximum smaller-class size. Their native runtime,
+preprocessing/address-capacity and compiled peak-space bridges remain open.
+The pointer/Boolean and counter-operation
 models do not replace native bit-runtime or peak-space certificates. The actual fixed
 WordRAM reachable-state array program now has an unrestricted standard-input-to-halt
 correctness theorem, charged initialization and iteration, and a complete access-transcript
