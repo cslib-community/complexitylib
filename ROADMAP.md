@@ -264,6 +264,12 @@ families and full-input native runtime.
   actual group elements and scalar sampling is ideal; native adapter composition,
   key-generation/signing approximation transport and the complete efficient forking reduction
   remain open under [#2568].
+- **Native Schnorr ROM algorithms** ([#2708](https://github.com/cslib-community/complexitylib/issues/2708)):
+  actual sampled signing and verification have full-input oracle-PPT certificates with bounded
+  hash-reply reads. Joint signature/cache realization under typed `m`-bit replies is exact after
+  retaining the actual scalar-sampling law; replacing that law by ideal signing costs at most
+  `2⁻ⁿ` per signature. The actual key-generation error is a separate `2⁻ⁿ` bound. Adaptive signing
+  composition, native forger transport and efficient forking still belong to [#2568].
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
