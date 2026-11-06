@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Entry
+import Complexity.Computability.WordRAM.Width
 
 /-!
 # Initialized flat native producer and product runs
@@ -96,5 +97,21 @@ theorem bounded_reachable {W m n g p A k : ℕ} (values : List ℤ)
       (State.init (PreparationInput.input n (D m) g p values)) s k) : s.data.Bounded W := by
   have hi := (exec_input values hlen hD hg hp hN hv hW).1
   exact hr.bounded_init hi
+
+/-- Every wider prefix of the migrated concrete program has the same input-derived word and
+support envelope. This derives from its actual initialized halting run, without a supplied execution
+certificate. -/
+theorem bounded_reachable_original {W m n g p A k : ℕ} (values : List ℤ)
+    (hlen : values.length = 3 * (n * n)) (hD : 16 ≤ D m)
+    (hg : 1 ≤ g) (hp : 0 < p) (hN : D m ^ 18 ≤ n)
+    (hv : ∀ z ∈ values, z.natAbs ≤ A) (hW : admissionWidth n (D m) g p A ≤ W)
+    {s : State 320} (hr : Runs W (entryProgram.program Reg.result)
+      (State.init (PreparationInput.input n (D m) g p values)) s k) :
+    (∀ i, s.data.regs i < wordBound n (D m) g p A) ∧
+      (∀ a, s.data.mem a < wordBound n (D m) g p A) ∧
+      ∀ a, wordBound n (D m) g p A ≤ a → s.data.mem a = 0 := by
+  obtain ⟨hi, a, idx, ha, hidx, hord, y, t, ht, hpref, he, hy, yr, hv', hf, hreg, hQ⟩ :=
+    runs_input values hlen hD hg hp hN hv le_rfl
+  exact hr.prefix_bounds_init entryProgram_fixed.2 hW hi he le_rfl
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct

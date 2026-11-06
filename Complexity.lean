@@ -258,6 +258,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Flat
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Kernel
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Patch
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.PointerPrepare
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Producer
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Program
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct
@@ -446,6 +447,13 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Calla
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Exec
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Flat
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Input
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Core
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Exec
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Finish
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Gather
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Program
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Readback
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Setup
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Program
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Width
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Cell
@@ -458,6 +466,8 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Forms
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Header
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Input
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Meaning
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PointerInput.Program
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PointerInput.Setup
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Admission
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Arguments
