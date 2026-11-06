@@ -109,6 +109,19 @@ a subset `S ⊆ Fin b`, a staircase selector `τ : Bool` (`true` for `X_S + t_S`
 abbrev AndreevBottomIndex (b m : ℕ) : Type :=
   Σ S : Finset (Fin b), Σ τ : Bool, Fin (andreevStairLength b m S τ)
 
+/-- The subset `S` of a bottom-gate index. -/
+abbrev AndreevBottomIndex.subset {b m : ℕ} (idx : AndreevBottomIndex b m) : Finset (Fin b) :=
+  idx.1
+
+/-- The staircase selector of a bottom-gate index: `true` for `X_S + t_S`, `false` for `t_S`. -/
+abbrev AndreevBottomIndex.stair {b m : ℕ} (idx : AndreevBottomIndex b m) : Bool :=
+  idx.2.1
+
+/-- The threshold step of a bottom-gate index within its staircase. -/
+abbrev AndreevBottomIndex.step {b m : ℕ} (idx : AndreevBottomIndex b m) :
+    Fin (andreevStairLength b m idx.subset idx.stair) :=
+  idx.2.2
+
 /-- The exact number of bottom gates in `andreevCircuit b m` is `2 * 4 ^ b + b * m * 2 ^ b`. -/
 theorem card_andreevBottomIndex (b m : ℕ) :
     Fintype.card (AndreevBottomIndex b m) = 2 * 4 ^ b + b * m * 2 ^ b := by
@@ -205,14 +218,15 @@ def andreevStairWeightInt (b m : ℕ) (S : Finset (Fin b)) (τ : Bool) :
 
 /-- Integer threshold `θ_{S,τ,k} = ℓ_τ + k + 1 - [τ] C_S` of bottom gate `⟨S, τ, k⟩`. -/
 def andreevBottomThresholdInt (b m : ℕ) (idx : AndreevBottomIndex b m) : ℤ :=
-  andreevStairLower b idx.2.1 + idx.2.2 + 1 - (if idx.2.1 then andreevTableOffset b idx.1 else 0)
+  andreevStairLower b idx.stair + idx.step + 1 -
+    (if idx.stair then andreevTableOffset b idx.subset else 0)
 
 /-- Integer top-gate weight on bottom gate `⟨S, τ, k⟩`: the signed step
 `andreevStairSign b τ * (φ(ℓ_τ + k + 1) - φ(ℓ_τ + k))` of `altLinear`. -/
 def andreevTopWeightInt (b m : ℕ) (idx : AndreevBottomIndex b m) : ℤ :=
-  andreevStairSign b idx.2.1 *
-    (altLinear (andreevStairLower b idx.2.1 + idx.2.2 + 1) -
-      altLinear (andreevStairLower b idx.2.1 + idx.2.2))
+  andreevStairSign b idx.stair *
+    (altLinear (andreevStairLower b idx.stair + idx.step + 1) -
+      altLinear (andreevStairLower b idx.stair + idx.step))
 
 /-- Integer threshold of the top gate of `andreevCircuit b m`. -/
 def andreevTopThresholdInt (b : ℕ) : ℤ :=
@@ -364,14 +378,14 @@ theorem sum_andreevStairSign_mul_altLinear (b m : ℕ) (S : Finset (Fin b))
 def andreevBottomEvalInt (b m : ℕ) (idx : AndreevBottomIndex b m)
     (w : BitString (2 ^ b + b * m)) : Bool :=
   decide (andreevBottomThresholdInt b m idx ≤
-    ∑ i : Fin (2 ^ b + b * m), andreevStairWeightInt b m idx.1 idx.2.1 i * (w i).toNat)
+    ∑ i : Fin (2 ^ b + b * m), andreevStairWeightInt b m idx.subset idx.stair i * (w i).toNat)
 
 /-- Bottom gate `⟨S, τ, k⟩` evaluates to `decide (ℓ_τ + k + 1 ≤ andreevStairForm b m S τ w)`. -/
 theorem andreevBottomEvalInt_eq_decide (b m : ℕ) (idx : AndreevBottomIndex b m)
     (w : BitString (2 ^ b + b * m)) :
     andreevBottomEvalInt b m idx w =
-      decide (andreevStairLower b idx.2.1 + idx.2.2 + 1 ≤
-        andreevStairForm b m idx.1 idx.2.1 w) := by
+      decide (andreevStairLower b idx.stair + idx.step + 1 ≤
+        andreevStairForm b m idx.subset idx.stair w) := by
   rw [andreevBottomEvalInt, sum_andreevStairWeightInt_mul, andreevBottomThresholdInt]
   exact decide_eq_decide.mpr ⟨by omega, by omega⟩
 
@@ -417,7 +431,8 @@ theorem sum_andreevTopWeightInt_sub_threshold (b m : ℕ) (w : BitString (2 ^ b 
   refine sum_congr rfl fun τ _ => ?_
   have hbds := andreevStairForm_bounds b m S τ w
   have hsum := sum_sub_mul_decide_le altLinear hbds.1 hbds.2
-  simp only [andreevTopWeightInt, andreevBottomEvalInt_eq_decide, mul_assoc, ← mul_sum]
+  simp only [andreevTopWeightInt, andreevBottomEvalInt_eq_decide, AndreevBottomIndex.subset,
+    AndreevBottomIndex.stair, AndreevBottomIndex.step, mul_assoc, ← mul_sum]
   rw [← hsum]
   ring
 
@@ -444,7 +459,7 @@ theorem andreevCircuitEvalInt_eq_andreev (b m : ℕ) (w : BitString (2 ^ b + b *
 noncomputable abbrev andreevBottomOp (b m : ℕ) (j : Fin (2 * 4 ^ b + b * m * 2 ^ b)) : Op :=
   let idx := (andreevBottomEquiv b m).symm j
   { arity := 2 ^ b + b * m
-    weight := fun i => (andreevStairWeightInt b m idx.1 idx.2.1 i : ℝ)
+    weight := fun i => (andreevStairWeightInt b m idx.subset idx.stair i : ℝ)
     threshold := (andreevBottomThresholdInt b m idx : ℝ) }
 
 /-- The top output gate of `andreevCircuit b m`. -/
@@ -549,13 +564,14 @@ theorem abs_weight_andreevBottomOp_le (b m : ℕ) (j : Fin (2 * 4 ^ b + b * m * 
   unfold andreevBottomOp
   dsimp only
   exact_mod_cast abs_le_two_of_mem (andreevStairWeightInt_mem b m
-    ((andreevBottomEquiv b m).symm j).1 ((andreevBottomEquiv b m).symm j).2.1 i)
+    ((andreevBottomEquiv b m).symm j).subset ((andreevBottomEquiv b m).symm j).stair i)
 
 /-- Every top-gate weight of `andreevCircuit b m` is an odd integer. -/
 theorem andreevTopWeightInt_emod_two_ne_zero (b m : ℕ) (idx : AndreevBottomIndex b m) :
     andreevTopWeightInt b m idx % 2 ≠ 0 := by
   rcases idx with ⟨S, τ, k⟩
-  rw [andreevTopWeightInt, altLinear_add_one_sub]
+  dsimp only [andreevTopWeightInt, AndreevBottomIndex.stair, AndreevBottomIndex.step]
+  rw [altLinear_add_one_sub]
   rcases neg_one_pow_eq_or ℤ (2 ^ b) with h1 | h1 <;>
     rcases Int.units_eq_one_or (andreevStairLower b τ + k + 1).negOnePow with h2 | h2 <;>
     cases τ <;>
@@ -567,8 +583,8 @@ theorem abs_andreevTopWeightInt_le (b m : ℕ) (idx : AndreevBottomIndex b m) :
     |andreevTopWeightInt b m idx| ≤ 2 * (2 ^ b + b * m : ℤ) - 1 := by
   rcases idx with ⟨S, τ, k⟩
   have hsign : |andreevStairSign b τ| = 1 := by cases τ <;> simp [andreevStairSign]
-  rw [andreevTopWeightInt, altLinear_add_one_sub, abs_mul, abs_mul, hsign, Int.abs_negOnePow,
-    one_mul, one_mul]
+  dsimp only [andreevTopWeightInt, AndreevBottomIndex.stair, AndreevBottomIndex.step]
+  rw [altLinear_add_one_sub, abs_mul, abs_mul, hsign, Int.abs_negOnePow, one_mul, one_mul]
   have hS : #S ≤ b := (card_le_univ S).trans_eq (Fintype.card_fin b)
   have hSm : (#S * m : ℤ) ≤ (b * m : ℤ) := by exact_mod_cast Nat.mul_le_mul_right m hS
   have hk_lt : (k : ℤ) < (andreevStairLength b m S τ : ℤ) := by exact_mod_cast k.isLt
