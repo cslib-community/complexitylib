@@ -549,3 +549,55 @@ in [the bibliography](../../references.bib). The checked clients are in
 Primary-source verification was selective. HILL/Holenstein/GGM and selected RAM/algorithm sources were consulted; textbook locator claims and most construction proofs remain code-grounded rather than independently reconciled line by line with the literature. The section intentionally does not infer autonomous-development percentages from theorem counts or test files.
 
 [complexitylib]: ../sources.md#complexitylib
+
+### Submission 191: adaptive Theorem 5 inventory and partial accounting
+
+The primary manuscript is [submission 191](https://github.com/sigact-stoc/stoc2027/releases/download/papers-1/191.pdf),
+SHA-256 `d7c07e91dc65c2dd29234b0edf05fe6bcfcbee569eb1a14c07b3e0f337ca7a48`.
+Section 6, Theorem 5 (PDF page 12), and Appendix A.5 (PDF page 16) require all of
+these obligations; the accounting lemma below does **not** complete the theorem.
+
+- Fix integers $1\le a\le b\le n$, $p_-,p_+\in(0,1]$, costs
+  $0<c_-\le c_+$ and latencies $0<\ell_-\le\ell_+$. Set
+  $r_a=\lceil n/a\rceil$, $r_b=\lceil n/b\rceil$.
+- There exists an adaptive selection-only upper policy. At every reached
+  positive-probability history, conditional also on its selected batch, productive
+  probability is at least $p_-$; productive turns retain locally dual-certified
+  proposals covering at least $\min(a,|R|)$ new elements. Conditional expected
+  token cost is at most $c_+$ and latency at most $\ell_+$ almost surely.
+- For **every** integer $u$ with $u\ell_+\le D$, stop that policy at completion or
+  $u$ turns. Certified success is at least $\Pr[\mathrm{Bin}(u,p_-)\ge r_a]$.
+  Expected cost is at most
+  $c_+\sum_{t=0}^{u-1}\Pr[\mathrm{Bin}(t,p_-)<r_a]$
+  and hence at most $c_+\min(u,r_a/p_-)$. Reached-turn probabilities, stopping,
+  and the negative-binomial mean bound must be derived.
+- Universal lower assumptions quantify over every selection-only policy's reached
+  histories and selected batches. Revealed progress means growth of the union of
+  **all valid proposed sets**, including unretained proposals. Its conditional
+  probability is at most $p_+$, size at most $b$, conditional expected batch cost
+  at least $c_-$, and latency at least $\ell_-$ almost surely.
+- Every deadline- and turn-feasible policy succeeding with probability at least
+  $\eta$ has expected cost at least $\eta r_b c_-/p_+$. With
+  $v=\min(u,\lfloor D/\ell_-\rfloor)$, necessarily
+  $\eta\le\Pr[\mathrm{Bin}(v,p_+)\ge r_b]$. The matching-envelope consequence
+  (equal $a,b$, probabilities and costs) compares bounds within $1/\eta$.
+
+Import [AdaptiveLowerCost](../../Complexity/Probability/StochasticOracle/AdaptiveLowerCost.lean)
+and check the complete
+[client](../../ComplexityTests/StochasticOracleAdaptiveLowerCost.lean).
+`conditional_lower_cost` proves the finite-transcript expectation argument for the
+universal cost bound. `history t` partitions transcripts by all information after
+batch selection and before its response. The two conditional inequalities are
+weighted by history mass, so zero-mass fibers are harmless. `hcount` is a
+pathwise required-progress inequality; callers must derive it from revealed-set
+cardinalities. The result assumes neither independence nor the aggregate desired
+cost bound. The client has perfectly correlated progress events, records the
+first bit in the second history, checks a valid conditional envelope and shows
+that the two events fail the independence identity. A zero-turn edge is included.
+
+The remaining Theorem 5 obligations above, including connection to actual response
+and revealed-set executions, are open. Theorem 4's native runtime/hardness and
+Theorem 6's residual construction and universal optimum remain open. Neither this
+lemma nor its client changes the curated abstract catalogue. The Agent Operator's
+Manual requires no edit: ownership, review, validation and human direction are
+unchanged.

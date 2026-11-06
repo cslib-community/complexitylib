@@ -42,7 +42,9 @@ total token-bill and parallel deadline bounds derived from individual call caps;
 now composes with the actual response law through a finite conditional resource table,
 with one event for certified success, bill cap and parallel deadline. This is not a native
 machine or an unrestricted response/resource execution certificate.
-Theorem 5 needs history-conditional binomial domination, stopped costs
+Theorem 5 now has a finite-transcript conditional-history expected-cost accounting lemma
+with a correlated client; its pathwise required-progress premise still needs the actual
+revealed-set cardinality argument. It still needs history-conditional binomial domination, stopped costs
 and universal latency/progress lower bounds; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
 claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.
