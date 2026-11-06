@@ -70,8 +70,9 @@ part of this file.
   encryptions of the sum), which is generally false for the implemented dyadic sampler plus
   `unitOrOne`: at `N = 143`, `n = 0`, and `m₁ = m₂ = 0`, a fresh ciphertext `encNat 1` has mass
   `44 / 256 = 11 / 64`, while multiplying two independent encryptions gives mass
-  `2316 / 65536 = 579 / 16384`. The full definition of an additively homomorphic scheme and the
-  IND-CPA reduction ([KatzLindell2020], Theorem 15.13) remain separate objectives.
+  `2316 / 65536 = 579 / 16384`. The full definition of an additively homomorphic scheme remains a
+  separate objective; the IND-CPA reduction ([KatzLindell2020], Theorem 15.13) is in
+  `Complexity.Crypto.Computational.Paillier.Security`.
 
 ## References
 

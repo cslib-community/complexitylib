@@ -3104,6 +3104,7 @@ public import Complexity.Crypto.Computational.OneWayToSignature
 public import Complexity.Crypto.Computational.PRGToOneWay
 public import Complexity.Crypto.Computational.Paillier
 public import Complexity.Crypto.Computational.Paillier.Algebra
+public import Complexity.Crypto.Computational.Paillier.Security
 public import Complexity.Crypto.Computational.PedersenCommitment
 public import Complexity.Crypto.Computational.PedersenCommitment.ProbComp
 public import Complexity.Crypto.Computational.PedersenCommitment.PublicOperations
