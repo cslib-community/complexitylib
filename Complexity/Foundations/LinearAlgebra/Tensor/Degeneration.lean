@@ -53,7 +53,8 @@ each a restriction of `unit r`, combine into a restriction of `unit ((D + 1) r)`
   `Cslib.Tensor.IsDegen.reindex_target`, `Cslib.Tensor.IsDegen.reindex_source`: closure.
 * `Cslib.Tensor.IsSLDegen.trans`, `Cslib.Tensor.IsSLDegen.swap23`,
   `Cslib.Tensor.IsSLDegen.tprod`, `Cslib.Tensor.IsSLDegen.tprodPi`,
-  `Cslib.Tensor.IsSLDegen.slSum_comp`, `Cslib.Tensor.IsSLDegen.toIsDegen`.
+  `Cslib.Tensor.IsSLDegen.slSum_comp`, `Cslib.Tensor.IsSLDegen.slSum_source_comp`,
+  `Cslib.Tensor.IsSLDegen.toIsDegen`.
 * `Cslib.Tensor.IsDegen.exists_rank_tpow`: Bini's conversion.
 
 ## References
@@ -398,6 +399,22 @@ theorem IsSLDegen.reindex_source [Fintype X'] [Fintype Y'] [Fintype Z'] [Decidab
     simp
   rw [h₁, hE]
 
+/-- Removing a reindexing of the target of a shared-left degeneration. -/
+theorem IsSLDegen.of_reindex_target [Fintype X'] [Fintype Y'] [Fintype Z'] [DecidableEq X']
+    {f : X'' → X'} {h : ℕ} {T : Tensor K X Y Z} {S : Tensor K X' Y' Z'} {e₁ : X ≃ X''}
+    {e₂ : Y ≃ Y''} {e₃ : Z ≃ Z''} (hT : IsSLDegen f h (reindex e₁ e₂ e₃ T) S) :
+    IsSLDegen (f ∘ e₁) h T S := by
+  have := hT.reindex_target e₁.symm e₂.symm e₃.symm
+  rwa [reindex_symm_reindex, Equiv.symm_symm] at this
+
+/-- Removing a reindexing of the source of a shared-left degeneration. -/
+theorem IsSLDegen.of_reindex_source [Fintype X'] [Fintype Y'] [Fintype Z'] [DecidableEq X']
+    [Fintype X''] [Fintype Y''] [Fintype Z''] [DecidableEq X''] {f : X → X''} {h : ℕ}
+    {T : Tensor K X Y Z} {S : Tensor K X' Y' Z'} {e₁ : X' ≃ X''} {e₂ : Y' ≃ Y''} {e₃ : Z' ≃ Z''}
+    (hT : IsSLDegen f h T (reindex e₁ e₂ e₃ S)) : IsSLDegen (e₁.symm ∘ f) h T S := by
+  have := hT.reindex_source e₁.symm e₂.symm e₃.symm
+  rwa [reindex_symm_reindex] at this
+
 /-! ### Tensor products and sums -/
 
 open scoped Kronecker in
@@ -529,6 +546,21 @@ theorem IsSLDegen.slSum_comp {ι κ : Type*} [Finite ι] [DecidableEq ι] [Decid
     restrict 1 (incl (Prod.map e id)) (incl (Prod.map e id))ᵀ E, ?_⟩
   rw [← hG, ← restrict_smul, ← restrict_smul, ← restrict_add, ← hE, restrict_restrict,
     Matrix.mul_one]
+
+/-- Adding unused sources ([Pass][Pass2026], Observation 2.5): a shared-left degeneration from
+a shared-left sum of some of the summands of `slSum G` is one from `slSum G`. -/
+theorem IsSLDegen.slSum_source_comp {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
+    [DecidableEq κ] [Fintype X'] [Fintype Y'] [Fintype Z'] [DecidableEq X'] {f : X → X'} {h : ℕ}
+    {T : Tensor K X Y Z} {G : ι → Tensor K X' Y' Z'} (e : κ → ι) (he : Function.Injective e)
+    (hT : IsSLDegen f h T (Tensor.slSum (G ∘ e))) : IsSLDegen f h T (Tensor.slSum G) := by
+  classical
+  obtain ⟨β, γ, E, hE⟩ := hT
+  refine ⟨incl (Prod.map e id) * β, γ * (incl (Prod.map e id))ᵀ, E, ?_⟩
+  have hG : restrict 1 (incl (Prod.map e id)) (incl (Prod.map e id))ᵀ ((slSum G).map C) =
+      (slSum (G ∘ e)).map C := by
+    rw [← slSum_comp_eq_restrict G e he, map_restrict, Matrix.map_one _ (map_zero C) (map_one C),
+      map_incl, Matrix.transpose_map, map_incl]
+  rw [← hE, ← hG, restrict_restrict, Matrix.one_mul]
 
 /-- Deleting and reordering the summands of the target of a degeneration. -/
 theorem IsDegen.dsum_comp {ι κ : Type*} [Finite ι] [DecidableEq ι] [DecidableEq κ] [Finite X]

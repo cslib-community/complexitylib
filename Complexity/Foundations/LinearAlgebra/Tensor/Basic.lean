@@ -635,6 +635,124 @@ theorem tpow_slSum {ι : Type*} [DecidableEq ι] (d : ℕ) (G : ι → Tensor R 
     funext_iff]
   split_ifs <;> rfl
 
+/-! ### Rearranging tensor products and direct sums
+
+The isomorphisms of [Pass][Pass2026], Lemma 2.10, as equalities up to reindexing. -/
+
+/-- The tensor product is commutative up to reindexing. -/
+theorem tprod_comm (T : Tensor R X Y Z) (T' : Tensor R X' Y' Z') :
+    tprod T T' =
+      reindex (Equiv.prodComm X' X) (Equiv.prodComm Y' Y) (Equiv.prodComm Z' Z) (tprod T' T) := by
+  funext x y z
+  simp [mul_comm]
+
+/-- The tensor product is associative up to reindexing. -/
+theorem tprod_assoc (T : Tensor R X Y Z) (T' : Tensor R X' Y' Z') (T'' : Tensor R X'' Y'' Z'') :
+    tprod (tprod T T') T'' =
+      reindex (Equiv.prodAssoc X X' X'').symm (Equiv.prodAssoc Y Y' Y'').symm
+        (Equiv.prodAssoc Z Z' Z'').symm (tprod T (tprod T' T'')) := by
+  funext x y z
+  simp [mul_assoc]
+
+/-- Reindexing the second factor of a tensor product. -/
+theorem tprod_reindex_right (T : Tensor R X Y Z) (e₁ : X' ≃ X'') (e₂ : Y' ≃ Y'') (e₃ : Z' ≃ Z'')
+    (T' : Tensor R X' Y' Z') :
+    tprod T (reindex e₁ e₂ e₃ T') =
+      reindex (Equiv.prodCongr (Equiv.refl X) e₁) (Equiv.prodCongr (Equiv.refl Y) e₂)
+        (Equiv.prodCongr (Equiv.refl Z) e₃) (tprod T T') := by
+  funext x y z
+  simp
+
+/-- Regrouping three tensor products of pairs into a tensor product of two triples. -/
+theorem tprod_tprod_tprod_comm {X₂ Y₂ Z₂ X₃ Y₃ Z₃ X₄ Y₄ Z₄ : Type*} (A : Tensor R X Y Z)
+    (B : Tensor R X' Y' Z') (A' : Tensor R X'' Y'' Z'') (B' : Tensor R X₂ Y₂ Z₂)
+    (A'' : Tensor R X₃ Y₃ Z₃) (B'' : Tensor R X₄ Y₄ Z₄) :
+    tprod (tprod A B) (tprod (tprod A' B') (tprod A'' B'')) =
+      reindex ((Equiv.prodProdProdComm X (X'' × X₃) X' (X₂ × X₄)).trans
+          (Equiv.prodCongr (Equiv.refl _) (Equiv.prodProdProdComm X'' X₃ X₂ X₄)))
+        ((Equiv.prodProdProdComm Y (Y'' × Y₃) Y' (Y₂ × Y₄)).trans
+          (Equiv.prodCongr (Equiv.refl _) (Equiv.prodProdProdComm Y'' Y₃ Y₂ Y₄)))
+        ((Equiv.prodProdProdComm Z (Z'' × Z₃) Z' (Z₂ × Z₄)).trans
+          (Equiv.prodCongr (Equiv.refl _) (Equiv.prodProdProdComm Z'' Z₃ Z₂ Z₄)))
+        (tprod (tprod A (tprod A' A'')) (tprod B (tprod B' B''))) := by
+  ext ⟨⟨x₁, x₂⟩, ⟨⟨x₃, x₄⟩, ⟨x₅, x₆⟩⟩⟩ ⟨⟨y₁, y₂⟩, ⟨⟨y₃, y₄⟩, ⟨y₅, y₆⟩⟩⟩
+    ⟨⟨z₁, z₂⟩, ⟨⟨z₃, z₄⟩, ⟨z₅, z₆⟩⟩⟩
+  simp only [tprod_apply, reindex_apply, Equiv.symm_trans_apply, Equiv.prodCongr_symm,
+    Equiv.prodCongr_apply, Equiv.prodProdProdComm_symm, Equiv.prodProdProdComm_apply,
+    Equiv.refl_symm, Equiv.coe_refl, Prod.map_apply, id_eq]
+  ring
+
+/-- The leg exchanges distribute over tensor products. -/
+theorem swap12_tprod (T : Tensor R X Y Z) (T' : Tensor R X' Y' Z') :
+    swap12 (tprod T T') = tprod (swap12 T) (swap12 T') := rfl
+
+theorem swap13_tprod (T : Tensor R X Y Z) (T' : Tensor R X' Y' Z') :
+    swap13 (tprod T T') = tprod (swap13 T) (swap13 T') := rfl
+
+theorem swap23_tprod (T : Tensor R X Y Z) (T' : Tensor R X' Y' Z') :
+    swap23 (tprod T T') = tprod (swap23 T) (swap23 T') := rfl
+
+/-- The leg exchanges distribute over direct sums. -/
+theorem swap12_dsum {ι : Type*} [DecidableEq ι] (G : ι → Tensor R X Y Z) :
+    swap12 (dsum G) = dsum fun i => swap12 (G i) := by
+  ext ⟨i, y⟩ ⟨j, x⟩ ⟨k, z⟩
+  by_cases hij : j = i
+  · subst hij
+    simp
+  · simp [hij, Ne.symm hij]
+
+theorem swap13_dsum {ι : Type*} [DecidableEq ι] (G : ι → Tensor R X Y Z) :
+    swap13 (dsum G) = dsum fun i => swap13 (G i) := by
+  ext ⟨k, z⟩ ⟨j, y⟩ ⟨i, x⟩
+  simp only [swap13_apply, dsum_apply]
+  grind
+
+/-- The tensor product of two direct sums is a direct sum over pairs of summands. -/
+theorem tprod_dsum {ι κ : Type*} [DecidableEq ι] [DecidableEq κ] (G : ι → Tensor R X Y Z)
+    (G' : κ → Tensor R X' Y' Z') :
+    tprod (dsum G) (dsum G') =
+      reindex (Equiv.prodProdProdComm ι κ X X') (Equiv.prodProdProdComm ι κ Y Y')
+        (Equiv.prodProdProdComm ι κ Z Z') (dsum fun p : ι × κ => tprod (G p.1) (G' p.2)) := by
+  ext ⟨⟨i, x⟩, ⟨j, x'⟩⟩ ⟨⟨k, y⟩, ⟨l, y'⟩⟩ ⟨⟨m, z⟩, ⟨n, z'⟩⟩
+  simp only [tprod_apply, dsum_apply, reindex_apply, Equiv.prodProdProdComm_symm,
+    Equiv.prodProdProdComm_apply, Prod.mk.injEq, ite_zero_mul_ite_zero]
+  exact if_congr (by tauto) rfl rfl
+
+/-- A tensor product with a direct sum on the left is a direct sum of tensor products. -/
+theorem tprod_dsum_left {ι : Type*} [DecidableEq ι] (G : ι → Tensor R X Y Z)
+    (S : Tensor R X' Y' Z') :
+    tprod (dsum G) S =
+      reindex (Equiv.prodAssoc ι X X').symm (Equiv.prodAssoc ι Y Y').symm
+        (Equiv.prodAssoc ι Z Z').symm (dsum fun i => tprod (G i) S) := by
+  ext ⟨⟨i, x⟩, x'⟩ ⟨⟨j, y⟩, y'⟩ ⟨⟨k, z⟩, z'⟩
+  simp only [tprod_apply, dsum_apply, reindex_apply, Equiv.symm_symm, Equiv.prodAssoc_apply,
+    ite_mul, zero_mul]
+
+/-- A direct sum of direct sums is a direct sum over pairs. -/
+theorem dsum_dsum {ι κ : Type*} [DecidableEq ι] [DecidableEq κ] (G : ι → κ → Tensor R X Y Z) :
+    dsum (fun i => dsum (G i)) =
+      reindex (Equiv.prodAssoc ι κ X) (Equiv.prodAssoc ι κ Y) (Equiv.prodAssoc ι κ Z)
+        (dsum fun p : ι × κ => G p.1 p.2) := by
+  ext ⟨i, j, x⟩ ⟨i', j', y⟩ ⟨i'', j'', z⟩
+  simp only [dsum_apply, reindex_apply, Equiv.prodAssoc_symm_apply, Prod.mk.injEq]
+  grind
+
+/-- A summand of a direct sum of copies of `T` is a restriction of the sum. -/
+theorem isRestriction_dsum_const [Fintype X] [Fintype Y] [Fintype Z] {ι : Type*} [Fintype ι]
+    [DecidableEq ι] (i : ι) (T : Tensor R X Y Z) : IsRestriction T (dsum fun _ : ι => T) := by
+  classical
+  refine ⟨incl fun x => (i, x), incl fun y => (i, y), (incl fun z => (i, z))ᵀ, ?_⟩
+  rw [restrict_incl]
+  funext x y z
+  simp
+
+/-- Fewer copies of `T` are a restriction of more copies. -/
+theorem isRestriction_dsum_const_of_card_le [Fintype X] [Fintype Y] [Fintype Z] {ι κ : Type*}
+    [Fintype ι] [DecidableEq ι] [Fintype κ] [DecidableEq κ] (h : Fintype.card ι ≤ Fintype.card κ)
+    (T : Tensor R X Y Z) : IsRestriction (dsum fun _ : ι => T) (dsum fun _ : κ => T) := by
+  obtain ⟨e⟩ := Function.Embedding.nonempty_of_card_le h
+  exact isRestriction_dsum_comp (fun _ : κ => T) e e.injective
+
 /-! ### Rank -/
 
 /-- `T` has rank at most `r`: it is a restriction of `unit r`, so a bilinear algorithm with `r`
@@ -778,6 +896,58 @@ theorem tprod_mm_mm (p q r p' q' r' : ℕ) :
     Equiv.prodProdProdComm_apply, Equiv.prodCongr_apply, Prod.map_apply, Equiv.apply_eq_iff_eq,
     Prod.mk.injEq, ite_zero_mul_ite_zero, mul_one]
   grind
+
+/-- Exchanging the inputs of matrix multiplication exchanges the outer dimensions
+([Pass][Pass2026], §2.1, role exchanges). -/
+theorem swap12_mm (p q r : ℕ) :
+    swap12 (mm p q r : Tensor R _ _ _) =
+      reindex (Equiv.prodComm (Fin r) (Fin q)) (Equiv.prodComm (Fin q) (Fin p))
+        (Equiv.prodComm (Fin r) (Fin p)) (mm r q p) := by
+  ext ⟨b₁, b₂⟩ ⟨a₁, a₂⟩ ⟨c₁, c₂⟩
+  simp only [swap12_apply, mm_apply, reindex_apply, Equiv.prodComm_symm, Equiv.prodComm_apply,
+    Prod.swap_prod_mk]
+  exact if_congr ⟨fun ⟨h₁, h₂, h₃⟩ => ⟨h₃, h₂.symm, h₁⟩, fun ⟨h₁, h₂, h₃⟩ => ⟨h₃, h₂.symm, h₁⟩⟩
+    rfl rfl
+
+/-- Exchanging the left input and the output of matrix multiplication exchanges the inner
+dimension with the right one. -/
+theorem swap13_mm (p q r : ℕ) :
+    swap13 (mm p q r : Tensor R _ _ _) =
+      reindex (Equiv.refl _) (Equiv.prodComm (Fin r) (Fin q)) (Equiv.refl _) (mm p r q) := by
+  ext ⟨c₁, c₂⟩ ⟨b₁, b₂⟩ ⟨a₁, a₂⟩
+  simp only [swap13_apply, mm_apply, reindex_apply, Equiv.prodComm_symm, Equiv.prodComm_apply,
+    Equiv.refl_symm, Equiv.coe_refl, id_eq, Prod.swap_prod_mk]
+  exact if_congr ⟨fun ⟨h₁, h₂, h₃⟩ => ⟨h₁.symm, h₃.symm, h₂.symm⟩,
+    fun ⟨h₁, h₂, h₃⟩ => ⟨h₁.symm, h₃.symm, h₂.symm⟩⟩ rfl rfl
+
+/-- `mm 1 1 k` tensored with its two role exchanges computes `mm k k k`
+([Pass][Pass2026], proof of Lemma 4.2). -/
+theorem isRestriction_mm_tprod_swaps (k : ℕ) :
+    IsRestriction (mm k k k : Tensor R _ _ _)
+      (tprod (mm 1 1 k) (tprod (swap12 (mm 1 1 k)) (swap13 (mm 1 1 k)))) := by
+  refine ⟨incl fun a => ((0, 0), ((0, a.1), (0, a.2))),
+    incl fun b => ((0, b.2), ((0, 0), (0, b.1))), (incl fun c => ((0, c.2), ((0, c.1), (0, 0))))ᵀ,
+    ?_⟩
+  rw [restrict_incl]
+  ext ⟨a₁, a₂⟩ ⟨b₁, b₂⟩ ⟨c₁, c₂⟩
+  simp only [tprod_apply, swap12_apply, swap13_apply, mm_apply, true_and, ite_zero_mul_ite_zero,
+    mul_one]
+  exact if_congr ⟨fun ⟨h₁, h₂, h₃⟩ => ⟨h₂, h₃.symm, h₁⟩, fun ⟨h₁, h₂, h₃⟩ => ⟨h₃, h₁, h₂.symm⟩⟩
+    rfl rfl
+
+/-- `mm k k k` computes `mm 1 1 k` tensored with its two role exchanges. -/
+theorem isRestriction_tprod_swaps_mm (k : ℕ) :
+    IsRestriction (tprod (mm 1 1 k) (tprod (swap12 (mm 1 1 k)) (swap13 (mm 1 1 k))))
+      (mm k k k : Tensor R _ _ _) := by
+  refine ⟨incl fun x => (x.2.1.2, x.2.2.2), incl fun y => (y.2.2.2, y.1.2),
+    (incl fun z => (z.2.1.2, z.1.2))ᵀ, ?_⟩
+  rw [restrict_incl]
+  ext ⟨⟨x₁, x₂⟩, ⟨⟨x₃, x₄⟩, ⟨x₅, x₆⟩⟩⟩ ⟨⟨y₁, y₂⟩, ⟨⟨y₃, y₄⟩, ⟨y₅, y₆⟩⟩⟩
+    ⟨⟨z₁, z₂⟩, ⟨⟨z₃, z₄⟩, ⟨z₅, z₆⟩⟩⟩
+  simp only [tprod_apply, swap12_apply, swap13_apply, mm_apply, Fin.fin_one_eq_zero, true_and,
+    ite_zero_mul_ite_zero, mul_one]
+  exact if_congr ⟨fun ⟨h₁, h₂, h₃⟩ => ⟨h₃, h₁, h₂.symm⟩, fun ⟨h₁, h₂, h₃⟩ => ⟨h₂, h₃.symm, h₁⟩⟩
+    rfl rfl
 
 /-- `mm 1 1 1` is the unit tensor `unit 1`, up to reindexing. -/
 theorem mm_one_one_one :
