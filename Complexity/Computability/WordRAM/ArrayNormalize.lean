@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Notation
+import Complexity.Computability.WordRAM.CountingLoop
 
 /-!
 # Charged in-place normalization of an array
@@ -87,15 +88,15 @@ theorem exec {W b M n : ℕ} (x : Data 7) (hb : x.regs base = b)
   let start := (x.set index 0).set one 1
   have hs : ExecWithin (B := .standard) W (ram[ index ← #0; one ← #1 ]) x start 2 := by
     ram_eval [start, h0, h1]
-  let I (y : Data 7) : Prop := y.regs base = b ∧ y.regs length = n ∧
-    y.regs modulus = M ∧ y.regs one = 1 ∧ y.regs index ≤ n ∧
-    y.mem = normalizePrefix x.mem b M (y.regs index)
-  have hi : I start := by
-    simp [I, start, normalizePrefix_zero, hb, hn, hm, base, length, modulus, index, one]
-  have step (y : Data 7) (hy : I y) (hc : (Cond.lt index length).Holds y) :
-      ∃ z, ExecWithin W body y z 5 ∧ I z ∧ n - z.regs index < n - y.regs index := by
-    obtain ⟨yb, yn, ym, yo, yi, ymem⟩ := hy
-    have hlt : y.regs index < n := by simpa only [Cond.holds_lt, yn] using hc
+  let P (j : ℕ) (y : Data 7) : Prop := y.regs base = b ∧ y.regs length = n ∧
+    y.regs modulus = M ∧ y.regs one = 1 ∧
+    y.mem = normalizePrefix x.mem b M j
+  have hi : P (start.regs index) start := by
+    simp [P, start, normalizePrefix_zero, hb, hn, hm, base, length, modulus, index, one]
+  have step (y : Data 7) (hy : P (y.regs index) y) (hlt : y.regs index < n) :
+      ∃ z, ExecWithin W body y z 5 ∧ P (y.regs index + 1) z ∧
+        z.regs index = y.regs index + 1 := by
+    obtain ⟨yb, yn, ym, yo, ymem⟩ := hy
     have ha : Fits W (b + y.regs index) := hfit.of_le (by omega)
     have hv : Fits W (x.mem (b + y.regs index) % M) :=
       hfit.of_le ((Nat.mod_lt _ hM).le.trans (by omega))
@@ -110,28 +111,21 @@ theorem exec {W b M n : ℕ} (x : Data 7) (hb : x.regs base = b)
     have he : ExecWithin W body y z 5 := by
       ram_eval [body, z, yb, ym, yo, hread, ha, hv, hj,
         base, length, modulus, index, address, value, one, Fin.mk.injEq]
-    refine ⟨z, he, ?_, ?_⟩
-    · refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨z, he, ?_, by simp [z]⟩
+    · refine ⟨?_, ?_, ?_, ?_, ?_⟩
       · simpa +decide [z, Function.update_apply] using yb
       · simpa +decide [z, Function.update_apply] using yn
       · simpa +decide [z, Function.update_apply] using ym
       · simpa +decide [z, Function.update_apply] using yo
-      · simpa +decide [z, Function.update_apply] using (show y.regs index + 1 ≤ n by omega)
       · simpa +decide only [z, Data.set_regs, Data.set_mem, Data.write_regs, Data.write_mem,
           Function.update_apply, ymem, index, address, value, one, Fin.reduceEq, ↓reduceIte] using
           (normalizePrefix_succ x.mem b M (y.regs index)).symm
-    · simp only [z, Data.set_regs, Function.update_self]
-      omega
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I (fun y => n - y.regs index) step hi
-  have hj : y.regs index = n := by
-    have := hy.2.2.2.2.1
-    simp only [Cond.holds_lt, hy.2.1] at hc
-    omega
-  refine ⟨y, ?_, ?_, hy.1, hy.2.1, hy.2.2.1⟩
+  obtain ⟨y, he, ⟨hyb, hyn, hym, _, hymem⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => hy.2.1) step (by simp [start, index, one]) hi
+  refine ⟨y, ?_, hymem, hyb, hyn, hym⟩
   · apply (hs.seq he).mono
     have hstart : start.regs index = 0 := by simp [start, index, one]
     rw [hstart]
     omega
-  · simpa only [hj] using hy.2.2.2.2.2
 
 end Cslib.WordRAM.ArrayNormalize

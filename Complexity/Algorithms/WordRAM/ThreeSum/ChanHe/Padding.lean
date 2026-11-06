@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Notation
+import Complexity.Computability.WordRAM.CountingLoop
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -112,31 +113,29 @@ theorem exec {w : ℕ} (x : Data 10) (h4 : Fits w 4)
       y.mem = memory x.mem (x.regs dst) (x.regs pad0) (x.regs pad1)
         (x.regs pad2) (x.regs pad3) (x.regs len) ∧
       ∀ i, i.val < 6 → y.regs i = x.regs i := by
-  let I (y : Data 10) : Prop :=
+  let P (j : ℕ) (y : Data 10) : Prop :=
     (∀ i, i.val < 6 → y.regs i = x.regs i) ∧ y.regs one = 1 ∧ y.regs four = 4 ∧
-      y.regs idx ≤ x.regs len ∧ y.mem = memory x.mem (x.regs dst)
-        (x.regs pad0) (x.regs pad1) (x.regs pad2) (x.regs pad3) (y.regs idx)
-  have hbody (y : Data 10) (hy : I y) (hcond : (Cond.lt idx len).Holds y) :
-      ∃ z, ExecWithin w body y z 10 ∧ I z ∧
-        x.regs len - z.regs idx < x.regs len - y.regs idx := by
-    obtain ⟨hr, h1, hfour, hi, hm⟩ := hy
+      y.mem = memory x.mem (x.regs dst)
+        (x.regs pad0) (x.regs pad1) (x.regs pad2) (x.regs pad3) j
+  have hbody (y : Data 10) (hy : P (y.regs idx) y) (hlt : y.regs idx < x.regs len) :
+      ∃ z, ExecWithin w body y z 10 ∧ P (y.regs idx + 1) z ∧
+        z.regs idx = y.regs idx + 1 := by
+    obtain ⟨hr, h1, hfour, hm⟩ := hy
     have hd := hr dst (by decide)
-    have hl := hr len (by decide)
     have hp₀ := hr pad0 (by decide)
     have hp₁ := hr pad1 (by decide)
     have hp₂ := hr pad2 (by decide)
     have hp₃ := hr pad3 (by decide)
-    have hlt : y.regs idx < x.regs len := by simpa only [Cond.holds_lt, hl] using hcond
     have fa : Fits w (4 * y.regs idx) := hfit.of_le (by omega)
     have fb : Fits w (x.regs dst + 4 * y.regs idx) := hfit.of_le (by omega)
     have fc : Fits w (x.regs dst + 4 * y.regs idx + 1) := hfit.of_le (by omega)
     have fd : Fits w (x.regs dst + 4 * y.regs idx + 1 + 1) := hfit.of_le (by omega)
     have fe : Fits w (x.regs dst + 4 * y.regs idx + 1 + 1 + 1) := hfit.of_le (by omega)
     have fi : Fits w (y.regs idx + 1) := hfit.of_le (by omega)
-    refine ⟨?z, ?run, ?inv, ?decrease⟩
+    refine ⟨?z, ?run, ?inv, ?increment⟩
     case run => ram_eval [body, h1, hfour, hd, hp₀, hp₁, hp₂, hp₃, fa, fb, fc, fd, fe, fi]
     case inv =>
-      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      refine ⟨?_, ?_, ?_, ?_⟩
       · intro i hi
         have ha : i ≠ addr := by intro h; subst i; norm_num [addr] at hi
         have hn : i ≠ idx := by intro h; subst i; norm_num [idx] at hi
@@ -144,14 +143,12 @@ theorem exec {w : ℕ} (x : Data 10) (h4 : Fits w 4)
           Function.update_of_ne hn] using hr i hi
       · simpa +decide [one, addr, idx] using h1
       · simpa +decide [four, addr, idx] using hfour
-      · simpa only [Data.set_regs, Function.update_self, h1] using Nat.succ_le_of_lt hlt
       · simp only [Data.set_mem, Data.write_mem]
         rw [hm, ← memory_succ]
-        rfl
-    case decrease => simp only [Data.set_regs, Function.update_self]; omega
+    case increment => rfl
   let x₀ := ((x.set idx 0).set one 1).set four 4
-  have hx₀ : I x₀ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  have hx₀ : P (x₀.regs idx) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_⟩
     · intro i hi
       have hi₁ : i ≠ one := by intro h; subst i; norm_num [one] at hi
       have hi₄ : i ≠ four := by intro h; subst i; norm_num [four] at hi
@@ -159,16 +156,11 @@ theorem exec {w : ℕ} (x : Data 10) (h4 : Fits w 4)
       simp only [x₀, Data.set_regs, Function.update_of_ne hi₁,
         Function.update_of_ne hi₄, Function.update_of_ne hin]
     all_goals simp +decide [x₀, one, four, idx]
-  obtain ⟨y, he, hy, hstop⟩ := ExecWithin.loop_invariant I
-    (fun y => x.regs len - y.regs idx) hbody hx₀
-  obtain ⟨hr, h1, hfour, hi, hm⟩ := hy
-  have hl := hr len (by decide)
-  have hend : y.regs idx = x.regs len := by
-    simp only [Cond.holds_lt, hl] at hstop
-    omega
+  obtain ⟨y, he, ⟨hr, h1, hfour, hm⟩, hend⟩ := ExecWithin.loop_count P
+    (fun y hy => hy.1 len (by decide)) hbody (by simp +decide [x₀, idx, one, four]) hx₀
   have hinit : ExecWithin (B := .standard) w (ram[ idx ← #0; one ← #1; four ← #4 ]) x x₀ 3 := by
     ram_eval [x₀, h4, h4.of_le (by decide : 1 ≤ 4)]
-  refine ⟨y, ?_, by simpa only [hend] using hm, hr⟩
+  refine ⟨y, ?_, hm, hr⟩
   convert hinit.seq he using 1
   · rfl
   · simp +decide only [x₀, idx, one, four, Data.set_regs, Function.update_apply,

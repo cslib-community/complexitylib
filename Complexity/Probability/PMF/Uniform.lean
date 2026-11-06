@@ -28,6 +28,8 @@ the overwritten string and the old part together determine `(a, b)`.
 ## Main results
 
 * `Cslib.Probability.PMF.mem_support_uniformOfFintype`: every value has positive uniform mass.
+* `Cslib.Probability.PMF.uniformOfFintype_finset_map_val`: subtype and finite-set uniform
+  laws agree.
 * `Cslib.Probability.PMF.uniformOfFintype_prod_map_fst`: the first component of a uniform pair is
   uniform.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_map_fst_equiv`,
@@ -55,6 +57,20 @@ section Uniform
 theorem mem_support_uniformOfFintype [Fintype α] [Nonempty α] (a : α) :
     a ∈ (uniformOfFintype α).support := by
   simp [uniformOfFintype]
+
+/-- Forgetting membership proofs in a uniform draw from a finset subtype gives its uniform
+finite-set law. -/
+theorem uniformOfFintype_finset_map_val (s : Finset α) [Nonempty s] :
+    (uniformOfFintype s).map Subtype.val =
+      uniformOfFinset s (Finset.nonempty_coe_sort.mp inferInstance) := by
+  classical
+  ext a
+  simp only [PMF.map_apply, uniformOfFintype_apply, uniformOfFinset_apply, Fintype.card_coe]
+  erw [tsum_subtype (↑s : Set α) (fun x => if a = x then (s.card : ℝ≥0∞)⁻¹ else 0)]
+  rw [tsum_eq_single a]
+  · simp [Set.indicator_apply]
+  · intro b hb
+    simp [Set.indicator_apply, Ne.symm hb]
 
 variable [Fintype α] [Nonempty α] [Fintype β] [Nonempty β]
 

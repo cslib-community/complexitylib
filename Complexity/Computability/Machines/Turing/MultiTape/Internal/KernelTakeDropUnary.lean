@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Run
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Lookup
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
@@ -257,31 +258,6 @@ private lemma Seg.mono (h : Seg keep S c c' t) (ht : t ≤ t') : Seg keep S c c'
 
 /-! ### The framed input -/
 
-private lemma getElem?_frame_append (u v : List Bool) {i : ℕ} (hi : i < u.length) :
-    (frame u ++ v)[2 * i]? = some true ∧ (frame u ++ v)[2 * i + 1]? = some u[i] := by
-  induction u generalizing i with
-  | nil => simp at hi
-  | cons b u ih =>
-    rcases i with _ | i
-    · simp [frame_cons]
-    · obtain ⟨h₁, h₂⟩ := ih (i := i) (by simpa using hi)
-      have e₁ : 2 * (i + 1) = 2 * i + 1 + 1 := by omega
-      simp only [frame_cons, List.cons_append, e₁, List.getElem?_cons_succ,
-        List.getElem_cons_succ]
-      exact ⟨h₁, h₂⟩
-
-private lemma getElem?_frame_append_length (u v : List Bool) (j : ℕ) :
-    (frame u ++ v)[2 * u.length]? = some false ∧
-      (frame u ++ v)[2 * u.length + 1 + j]? = v[j]? := by
-  have hfl : frame u ++ v = u.flatMap (fun b => [true, b]) ++ false :: v := by simp [frame]
-  have hlen : (u.flatMap (fun b => [true, b])).length = 2 * u.length := by
-    have := length_frame u
-    simp only [frame, List.length_append, List.length_singleton] at this
-    omega
-  rw [hfl, List.getElem?_append_right (by omega), List.getElem?_append_right (by omega), hlen,
-    Nat.sub_self, (by omega : 2 * u.length + 1 + j - 2 * u.length = j + 1)]
-  exact ⟨rfl, rfl⟩
-
 private lemma length_frame_append (u v : List Bool) :
     (frame u ++ v).length = 2 * u.length + 1 + v.length := by
   rw [List.length_append, length_frame]
@@ -296,7 +272,7 @@ private lemma inputAt_frame_append (u v : List Bool) {i : ℕ} (hi : i < u.lengt
 /-- The terminator of the frame. -/
 private lemma inputAt_frame_append_length (u v : List Bool) :
     inputAt (frame u ++ v) (2 * u.length + 1) = some false := by
-  simpa [inputAt] using (getElem?_frame_append_length u v 0).1
+  simpa [inputAt] using (getElem?_frame_append_boundary u v 0).1
 
 /-! ### The phases of the machine -/
 
@@ -382,7 +358,7 @@ private lemma seg_copy {i : ℕ} (hi : i ≤ n) :
   | succ d ih =>
     have hi' : i < n := by omega
     have hx : inputAt (word u n) (2 * u.length + 2 + i) = some true := by
-      have := (getElem?_frame_append_length u (List.replicate n true) i).2
+      have := (getElem?_frame_append_boundary u (List.replicate n true) i).2
       rw [List.getElem?_replicate_of_lt hi'] at this
       simpa [inputAt, (by omega : 2 * u.length + 2 + i - 1 = 2 * u.length + 1 + i)] using this
     have ht : Function.update (tapeOfList (List.replicate i true)) (i : ℤ) (some true) =

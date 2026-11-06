@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Entry
+import Complexity.Computability.WordRAM.Width
 
 /-!
 # Initialized flat native producer and product runs
@@ -26,24 +27,6 @@ open Cslib.WordRAM Cslib.Algorithms.ExactTriangle Cslib.Matrix
 open RecordProduct
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
-
-/-- Constant native record-consumer size and physical-width independence. -/
-theorem program_fixed : program.size ≤ 131584 ∧ ¬program.ReadsWidth := by
-  have hc := CallableBoxProduct.program_length_le
-  simp only [CallableBoxProduct.entryProgram, Code.program, List.length_append,
-    Code.length_assemble, List.length_singleton, Code.size] at hc
-  have hp : RecordProduct.prepare.size ≤ 256 := by decide +kernel
-  have hs : patchInput.size = 16 := by decide +kernel
-  have hprep : ¬RecordProduct.prepare.ReadsWidth := by decide +kernel
-  have hpatch : ¬patchInput.ReadsWidth := by decide +kernel
-  have hcall : ¬CallableBoxProduct.program.ReadsWidth := by
-    simpa only [CallableBoxProduct.entryProgram, Code.ReadsWidth, Op.ReadsWidth, false_or] using
-      CallableBoxProduct.not_readsWidth
-  constructor
-  · simp only [program, prepare, invoke, Code.size, Code.size_rename]
-    omega
-  · simp only [program, prepare, invoke, Code.ReadsWidth, Code.readsWidth_rename,
-      Op.ReadsWidth, hprep, hpatch, hcall, not_false_eq_true, or_self]
 
 /-- Fixed register count, instruction bound including halt, and physical-width independence. -/
 theorem entryProgram_fixed : (entryProgram.program Reg.result).length ≤ 132352 ∧
@@ -114,5 +97,21 @@ theorem bounded_reachable {W m n g p A k : ℕ} (values : List ℤ)
       (State.init (PreparationInput.input n (D m) g p values)) s k) : s.data.Bounded W := by
   have hi := (exec_input values hlen hD hg hp hN hv hW).1
   exact hr.bounded_init hi
+
+/-- Every wider prefix of the migrated concrete program has the same input-derived word and
+support envelope. This derives from its actual initialized halting run, without a supplied execution
+certificate. -/
+theorem bounded_reachable_original {W m n g p A k : ℕ} (values : List ℤ)
+    (hlen : values.length = 3 * (n * n)) (hD : 16 ≤ D m)
+    (hg : 1 ≤ g) (hp : 0 < p) (hN : D m ^ 18 ≤ n)
+    (hv : ∀ z ∈ values, z.natAbs ≤ A) (hW : admissionWidth n (D m) g p A ≤ W)
+    {s : State 320} (hr : Runs W (entryProgram.program Reg.result)
+      (State.init (PreparationInput.input n (D m) g p values)) s k) :
+    (∀ i, s.data.regs i < wordBound n (D m) g p A) ∧
+      (∀ a, s.data.mem a < wordBound n (D m) g p A) ∧
+      ∀ a, wordBound n (D m) g p A ≤ a → s.data.mem a = 0 := by
+  obtain ⟨hi, a, idx, ha, hidx, hord, y, t, ht, hpref, he, hy, yr, hv', hf, hreg, hQ⟩ :=
+    runs_input values hlen hD hg hp hN hv le_rfl
+  exact hr.prefix_bounds_init entryProgram_fixed.2 hW hi he le_rfl
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct

@@ -37,10 +37,12 @@ when the intermediate statement type is empty.
   `Interactive.PerChallenge.iterate`.
 * `Interactive.ProverStrategy.append`, `Interactive.ProverStrategy.split`,
   `Interactive.ProverStrategy.bindLeaf`.
-* `Interactive.Verifier.extractAppend`.
+* `Interactive.compState`, `Interactive.Verifier.extractAppend`.
 
 ## Main results
 
+* `Interactive.not_compState_empty`, `Interactive.rbrFrom_false`, `Interactive.RbrFrom.congr`,
+  `Interactive.rbrFrom_append`.
 * `Interactive.Reduction.Complete.append`, `Interactive.Verifier.Sound.append`,
   `Interactive.Verifier.KnowledgeSound.append`, `Interactive.Verifier.RbrSound.append`.
 * `Interactive.Reduction.Complete.iterate`, `Interactive.Verifier.RbrSound.iterate`.
@@ -269,7 +271,7 @@ theorem outputOn_append (V₁ : Verifier OracleSpec.empty s₁ S₁ S₂)
 
 /-- The state function of a composition: that of the first half, then, once the first half is
 complete, the second half's state function for that first half. -/
-private def compState :
+def compState :
     (s₁ s₂ : Spec) → (Prefix s₁ → Prop) → (Transcript s₁ → Prefix s₂ → Prop) →
     Prefix (s₁ ++ s₂) → Prop
   | [], _, _, next, p => next () p
@@ -278,7 +280,7 @@ private def compState :
     compState s₁ s₂ (fun q => S (some (m, q))) (fun τ => next (m, τ)) p
 
 /-- A doomed start of the first half is a doomed start of the composition. -/
-private theorem not_compState_empty {s₁ s₂ : Spec} {smp : PerChallenge ProbComp s₁}
+theorem not_compState_empty {s₁ s₂ : Spec} {smp : PerChallenge ProbComp s₁}
     {ε : PerChallenge (fun _ => ℝ≥0∞) s₁} {S : Prefix s₁ → Prop} {wins : Transcript s₁ → Prop}
     {next : Transcript s₁ → Prefix s₂ → Prop} (h : RbrFrom s₁ smp ε S wins)
     (hjunc : ∀ τ, ¬ wins τ → ¬ next τ (Prefix.empty s₂)) (hS : ¬ S (Prefix.empty s₁)) :
@@ -288,7 +290,7 @@ private theorem not_compState_empty {s₁ s₂ : Spec} {smp : PerChallenge ProbC
   | cons r s₁ => exact hS
 
 /-- The round-by-round condition holds trivially when nothing is ever alive. -/
-private theorem rbrFrom_false : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
+theorem rbrFrom_false : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
     (ε : PerChallenge (fun _ => ℝ≥0∞) s), RbrFrom s smp ε (fun _ => False) (fun _ => False)
   | [], _, _ => fun _ h => h
   | .prover _ _ :: s, smp, ε => ⟨fun _ _ h => h, fun _ => rbrFrom_false s smp ε⟩
@@ -313,7 +315,7 @@ theorem RbrFrom.congr : ∀ {s : Spec} {smp : PerChallenge ProbComp s}
       fun c => RbrFrom.congr (fun p => hS _) (fun τ => hw _) (h.2 c)⟩
 
 /-- **Round-by-round composition, per prefix.** -/
-private theorem rbrFrom_append : ∀ (s₁ s₂ : Spec) (smp₁ : PerChallenge ProbComp s₁)
+theorem rbrFrom_append : ∀ (s₁ s₂ : Spec) (smp₁ : PerChallenge ProbComp s₁)
     (smp₂ : PerChallenge ProbComp s₂) (ε₁ : PerChallenge (fun _ => ℝ≥0∞) s₁)
     (ε₂ : PerChallenge (fun _ => ℝ≥0∞) s₂) (S : Prefix s₁ → Prop) (wins₁ : Transcript s₁ → Prop)
     (next : Transcript s₁ → Prefix s₂ → Prop) (wins₂ : Transcript s₁ → Transcript s₂ → Prop),

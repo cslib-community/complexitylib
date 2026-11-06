@@ -2,6 +2,387 @@
 
 Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [complexitylib][complexitylib]
 
+## Transport a distribution bound through a map
+
+Import [TotalVariation/Map.lean](../../Complexity/Foundations/MeasureTheory/Measure/TotalVariation/Map.lean).
+For finite measures `μ` and `ν` and a measurable function `f`, apply
+`MeasureTheory.tvDist_map_le μ ν hf` to bound the distance of their pushforwards by
+`tvDist μ ν`. The measures may have different total masses. The extended-valued theorem
+`etvDist_map_le` has the same hypotheses and avoids conversion to real numbers.
+
+This is Mathlib's full-L1 convention: distinct probability atoms have distance `2`,
+and the distance of `2 • dirac x` from the zero measure is `2` as well. The finite-measure
+instances matter because real `tvDist` is defined as zero if its extended value is infinite.
+A previously proved bound transports with `(tvDist_map_le μ ν hf).trans h`;
+no density, injectivity or probability normalization is required.
+
+The [checked clients](../../ComplexityTests/TotalVariationMap.lean) include identity,
+strict coarsening from distance `2` to `0`, unequal masses, and the canonical measurable
+map from `ℝ` to `UnitAddCircle`. Run `scripts/build.sh ComplexityTests.TotalVariationMap`.
+The theorem transports an existing bound; it does not identify the output laws. The Gaussian
+projection and mod-one bounds of
+[issue #2734](https://github.com/cslib-community/complexitylib/issues/2734) apply it to actual laws.
+
+## Combine component and mixture-weight errors
+
+Import [TotalVariation/Mixture.lean](../../Complexity/Foundations/MeasureTheory/Measure/TotalVariation/Mixture.lean).
+For a finite index set `s`, finite measures `μ i`, `ν i`, and weights `a i`, `b i : ℝ≥0`,
+`MeasureTheory.tvDist_finsetSum_smul_le s a b μ ν` bounds the distance between their actual
+weighted sums by the sum of
+`a i * tvDist (μ i) (ν i) + |a i - b i| * (ν i).real Set.univ`.
+The weights need not sum to one, and the component measures need not be probabilities.
+The actual total mass in the second term is necessary for arbitrary finite measures.
+
+For common weights use `tvDist_nnreal_smul`; for a fixed component with changed weights use
+`tvDist_nnreal_smul_same`. The latter is an equality, including zero weights and the zero
+measure. `tvDist_finsetSum_le` handles finite sums directly. All statements keep the full-L1
+convention: distinct probability atoms have distance two.
+
+The [checked clients](../../ComplexityTests/TotalVariationMixture.lean) include sharp unequal-mass
+examples and a tagged mixture on `Fin 6 × ℝ`. In that client, actual finite-PMF weights sum
+to one; component errors bounded by `4 * ε` and a weight discrepancy bounded by `δ` give a
+joint error of `4 * ε + δ`. The tags are actual measurable pushforwards, so map contraction
+supplies their component bounds. Run `scripts/build.sh ComplexityTests.TotalVariationMixture`.
+The [Regev joint experiment](https://github.com/cslib-community/complexitylib/issues/2767) still
+has to discharge those bounds for its actual Gaussian laws and residue marginal.
+
+## Project a continuous Gaussian density
+
+Import [Gaussian/Standard.lean](../../Complexity/Foundations/Probability/Gaussian/Standard.lean)
+when a calculation starts from the density `exp (-π * ‖x‖² / s²) / s^dim` relative to
+ambient volume. For `s > 0`, `gaussianWeight_withDensity_eq_map_stdGaussian` identifies
+this actual measure with `stdGaussian E` scaled by `s / √(2π)`. It reuses the normalized
+`Measure.withDensity` construction; it does not introduce another Gaussian measure.
+
+Apply `gaussianWeight_withDensity_map_inner s hs z` to identify the law of `⟪z, x⟫`
+as `gaussianReal 0 (((s * ‖z‖)^2 / (2 * Real.pi)).toNNReal)`. The theorem includes
+`z = 0` and dimension zero, where the law is a point mass. The
+[checked clients](../../ComplexityTests/GaussianStandard.lean) recover the standard law
+at width `√(2π)` and compute variance `32/π` at width `4` with scalar projection `2`.
+These are analytic measure identities. Projection of a discrete-coset Gaussian convolution
+and its mod-one error bound are proved in [#2734](https://github.com/cslib-community/complexitylib/issues/2734);
+no sampler or runtime certificate follows from this identification.
+
+## Describe a discrete Gaussian law
+
+Import [Gaussian/Discrete.lean](../../Complexity/Foundations/Probability/Gaussian/Discrete.lean)
+for `ZLattice.discreteGaussian L s hs c`, a PMF on a discrete `ℤ`-submodule `L` of a
+finite-dimensional real normed space. Supply `hs : 0 < s`; the center `c` is any ambient
+point. `summable_gaussianWeight` proves convergence of the infinite lattice sum, and
+`gaussianMass_pos` proves its strict positivity. `discreteGaussian_apply` gives each
+probability as `exp (-π * ‖z - c‖² / s²)` divided by that total mass. No full-rank assumption
+is needed.
+
+Use `map_add_discreteGaussian` to move the law along a lattice translation, and
+`support_discreteGaussian` to discharge point-support obligations. The
+[checked examples](../../ComplexityTests/DiscreteGaussian.lean) use the infinite integer
+lattice at the off-lattice center `1/2`, distinguish its law from a point mass, and check the
+zero lattice. This is a mathematical distribution, with no efficient sampler or smoothing
+bound. Regev's quantum worst-case/average-case reduction remains open in
+[issue #1213](https://github.com/cslib-community/complexitylib/issues/1213).
+
+For a quantitative radius estimate, import
+[Gaussian/DiscreteTail.lean](../../Complexity/Foundations/Probability/Gaussian/DiscreteTail.lean).
+Choose a second width `t > s` and a radius `R ≥ 0`.
+`summable_discreteGaussian_mul_exp` proves that the exponential norm-square moment is finite;
+`tsum_toReal_discreteGaussian_mul_exp` identifies it with `gaussianMass L t c / gaussianMass L s c`.
+Writing `κ = π * (1 / s² - 1 / t²) > 0`, `discreteGaussian_norm_ge_le` bounds the probability
+of `R ≤ ‖z - c‖` by `exp (-κ * R²)` times that same ratio. The checked integer-lattice
+client uses `s = 1`, `t = 2`, center `1/2` and radius `2`, giving the decay factor `exp (-3π)`.
+The ratio remains explicit for arbitrary centers. For a full-rank lattice centered at zero,
+the [centered bounds below](#bound-a-centered-discrete-gaussian) control this ratio using
+Poisson summation. These distributional estimates supply no sampling algorithm.
+
+To vary the center continuously, import
+[Gaussian/Periodization.lean](../../Complexity/Foundations/Probability/Gaussian/Periodization.lean).
+`ZLattice.continuous_gaussianMass L s hs` proves continuity of the normalizer for `hs : 0 < s`.
+The proof establishes summable sup norms of the lattice translates on every compact set, so
+the continuous sum comes from local uniform convergence.
+
+For other decaying functions, import
+[Lattice/Periodization.lean](../../Complexity/Foundations/Analysis/Lattice/Periodization.lean).
+Supply a bundled continuous map `f : C(E, F)` into a complete normed additive group, a real exponent
+`b > Module.finrank ℤ L`, and `f =O[cocompact E] (fun x ↦ ‖x‖ ^ (-b))`.
+`ZLattice.continuous_tsum_translate` proves continuity of `x ↦ ∑' z : L, f (x + z)`;
+`continuous_automorphize` proves continuity of Mathlib's existing `QuotientAddGroup.automorphize`
+on the quotient of `E` by `L.toAddSubgroup`. For a Schwartz function, import
+[Lattice/Schwartz.lean](../../Complexity/Foundations/Analysis/Lattice/Schwartz.lean) and use
+`SchwartzMap.continuous_automorphize` directly. The
+[checked clients](../../ComplexityTests/LatticePeriodization.lean) include a nonzero Schwartz
+bump, an infinite integer lattice, a skew two-dimensional basis, and a rank-zero lattice on
+an off-center compact interval. For Fourier coefficient identification, see
+[the quotient-integral workflow below](#unfold-a-lattice-fourier-coefficient). For the full
+formula, use the Poisson API below.
+
+## Apply lattice Poisson summation
+
+Import [Lattice/Poisson.lean](../../Complexity/Foundations/Analysis/Lattice/Poisson.lean).
+Here `E` is a finite-dimensional real inner-product space with its canonical volume. Supply a
+discrete `L : Submodule ℤ E` and `[IsZLattice ℝ L]`, which requires the lattice to span `E`.
+For a Schwartz function `f`, `SchwartzMap.tsum_eq_tsum_fourier_lattice f L x` identifies the
+sum of `f (x + z)` with the dual-lattice Fourier sum, divided by `ZLattice.covolume L`.
+The dual is Mathlib's existing `LinearMap.BilinForm.dualSubmodule (innerₗ E) L`; the character
+at dual frequency `w` is `exp(2πi * inner x w)`. Convergence of both sums is proved from
+Schwartz decay. The generic `ZLattice.tsum_eq_tsum_fourier_of_rpow_decay` accepts explicit
+polynomial decay, integrability and summability of the actual Fourier samples when a function
+is not supplied as a Schwartz map.
+
+For Gaussian mass, import
+[Gaussian/Poisson.lean](../../Complexity/Foundations/Probability/Gaussian/Poisson.lean) and apply
+`ZLattice.gaussianMass_eq_tsum_dual L s hs c` with `hs : 0 < s` and any center `c`.
+This is an equality in `ℂ`: the real mass equals `s^dim / covolume L` times the dual sum of
+`gaussianWeight (1 / s) w` multiplied by `exp(-2πi * inner c w)`.
+The negative phase comes from evaluating the periodization at `-c`. The theorem includes
+dimension zero and arbitrary full-rank bases, including skew bases. It proves the required
+Gaussian integrability and Fourier summability; it does not assume a Poisson identity.
+
+The complete [LatticePoisson.lean examples](../../ComplexityTests/LatticePoisson.lean) apply
+both endpoints to a skew basis of covolume `2`, check opposite character signs at a nonzero
+frequency, and check the dimension-zero covolume and mass of `1`. From the repository root,
+run `scripts/build.sh ComplexityTests.LatticePoisson` to check these clients. If the
+full-rank instance is missing, start from the basis-spanned lattice in these examples;
+continuity alone also applies to lower-rank lattices, but this Poisson formula needs full rank.
+For centered truncation and uniform shifted-mass control, use the bounds below.
+Quotient-distribution consequences, efficient sampling and Regev's quantum reduction remain open.
+
+## Bound a centered discrete Gaussian
+
+Import [Gaussian/CenteredTail.lean](../../Complexity/Foundations/Probability/Gaussian/CenteredTail.lean).
+Use a finite-dimensional real inner-product space, a discrete full-rank lattice
+`L : Submodule ℤ E`, and center `0`. Write `n = Module.finrank ℝ E`.
+For `0 < s ≤ t`, `ZLattice.gaussianMass_zero_div_le L s hs t hst` bounds
+`gaussianMass L t 0 / gaussianMass L s 0` by `(t / s)^n`. The estimate is uniform over these
+lattices and follows from the proved Poisson identity and positive dual Gaussian weights.
+Equal widths and dimension zero are included.
+
+`ZLattice.discreteGaussian_zero_norm_ge_le L s hs R hR` bounds the probability of
+`R ≤ ‖z‖`, for `R ≥ 0`, by `2^n * exp(-3π R² / (4s²))`. For the source-radius endpoint,
+use `discreteGaussian_zero_norm_gt_sqrt_lt L s hs`: the probability of
+`s * sqrt n < ‖z‖` is strictly less than `(1 / 4)^n`. Both the event and the inequality are
+strict, as in Regev's Lemma 2.5. In dimension zero the event is empty and the bound is `1`.
+These results control the probability discarded by centered finite-radius truncation;
+uniform shifted-mass control is described next, while an efficient sampler remains separate.
+
+The [complete checked clients](../../ComplexityTests/DiscreteGaussianCenteredTail.lean)
+use the infinite lattice generated by `2` in the real line. They instantiate mass scaling,
+equal widths, and width `2` with radius `2`; the lattice point exactly at that radius is
+excluded by the strict event. They also check the dimension-zero empty-event probability.
+Run `scripts/build.sh ComplexityTests.DiscreteGaussianCenteredTail` from the repository root.
+A missing full-rank instance can be supplied by the basis-spanned construction in that file.
+For a nonzero center, the earlier tail bound retains its explicit normalizer ratio.
+
+## Control Gaussian mass uniformly over centers
+
+Import [Gaussian/Smoothing.lean](../../Complexity/Foundations/Probability/Gaussian/Smoothing.lean).
+For a discrete full-rank lattice `L` in a finite-dimensional real inner-product space,
+write `D = LinearMap.BilinForm.dualSubmodule (innerₗ E) L`, `n = Module.finrank ℝ E`,
+and take `s > 0`. The error `δ = gaussianMass D (1 / s) 0 - 1` is the actual convergent
+Gaussian sum over nonzero dual lattice points, by `gaussianMass_zero_sub_one_eq_tsum`.
+It is nonnegative; it is not an extra comparison assumption.
+
+`ZLattice.abs_gaussianMass_normalized_sub_one_le L s hs c` proves, for every center `c`,
+`abs(covolume L / s^n * gaussianMass L s c - 1) ≤ δ`.
+Given `δ ≤ ε`, `gaussianMass_mem_Icc_of_dual_mass_le` gives the mass interval
+`(s^n / covolume L) * (1 ± ε)`. This is the dual-tail form of Regev's Claim 3.8;
+the source's translate `L + c` corresponds to center `-c` in the library.
+
+To obtain the small error, supply a positive lower bound `a` for the norm of every nonzero
+point of `D`. The sufficient numerical condition is
+`2^n * exp(-3πs²a² / 4) ≤ ε / (1 + ε)`, with `ε > 0`.
+`gaussianMass_dual_sub_one_le_of_gap` proves `δ ≤ ε` from this condition using the
+centered Gaussian tail. `eventually_gaussianMass_dual_sub_one_le` proves that the bound
+holds for all sufficiently large widths for every such lattice and every positive error.
+It obtains a genuine positive dual gap from the dual lattice’s discrete topology.
+
+The [checked clients](../../ComplexityTests/DiscreteGaussianShiftBounds.lean) use `2ℤ`,
+its dual gap `1/2`, width `2`, error `1/2`, and center `1`, which is outside the lattice.
+They also check the empty nonzero dual sum and exact normalized mass in dimension zero.
+Run `scripts/build.sh ComplexityTests.DiscreteGaussianShiftBounds` from the repository root.
+A width too small to satisfy the sufficient condition can still use the unconditional
+actual-dual-error bound. The [quotient probability](#compare-an-actual-gaussian-quotient-distribution-with-uniform-measure)
+and [coset-convolution](#add-continuous-gaussian-noise-to-a-coset-gaussian) consequences are
+described below; a minimum smoothing parameter and efficient sampler remain separate.
+
+## Condition a discrete Gaussian on coefficient residues
+
+Import [Gaussian/CoefficientFiber.lean](../../Complexity/Foundations/Probability/Gaussian/CoefficientFiber.lean).
+Give an integer basis `b` of the discrete lattice, a positive modulus `p`, a width `r > 0`,
+and an arbitrary center `c`. `ZLattice.coefficientMod L b p` reduces the basis coordinates
+into `ι → ZMod p`; `coefficientLift` supplies their least-nonnegative-coordinate representative
+`u`. With `open scoped Pointwise`, the canonical submodule `(p : ℝ) • L` is the image of
+multiplication by `p`.
+
+`map_coefficientMod_discreteGaussian_apply` identifies each residue probability as
+`gaussianMass (p • L) r (c - u) / gaussianMass L r c`, in `ENNReal` form.
+`map_coefficientMod_discreteGaussian_pos` proves every event has positive probability.
+`filter_coefficientMod_discreteGaussian` then identifies the actual `PMF.filter` with a draw
+from `discreteGaussian (p • L) r hr (c - u)` followed by translation by `u`.
+There is no index or covolume factor in this conditional law.
+
+`map_coefficientMod_pair_discreteGaussian` reconstructs the tagged sample by drawing its
+actual residue marginal and then the corresponding coset Gaussian. These weights are not
+assumed uniform. The [checked clients](../../ComplexityTests/DiscreteGaussianCoefficientFiber.lean)
+use the infinite lattice `2ℤ`, composite modulus `6`, residue `1`, and center `1/2`:
+the representative is `2`, the scalar lattice contains `12`, and the conditional center is
+`-3/2`. Rank-zero and dimension-zero cases are also checked. Run
+`scripts/build.sh ComplexityTests.DiscreteGaussianCoefficientFiber` to check the clients.
+
+This is the exact conditioning step used in Regev's Lemma 3.11, not its joint LWE sample
+bound or an efficient sampling procedure. The [joint experiment](https://github.com/cslib-community/complexitylib/issues/2767)
+and the [full reduction](https://github.com/cslib-community/complexitylib/issues/1213) remain separate.
+
+## Fold a density onto a quotient
+
+Import [QuotientDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/QuotientDensity.lean)
+to push a nonnegative density through a countable additive-subgroup quotient. Given a measurable
+`f : G → ℝ≥0∞`, measurable subgroup translations, an invariant ambient measure `μ`, and
+`hF : IsAddFundamentalDomain Γ.op F μ`, apply
+`QuotientAddGroup.map_withDensity_eq_withDensity_automorphize hF hf`. It identifies the image of
+`μ.withDensity f` with the density `QuotientAddGroup.automorphize f` relative to the image of
+`μ.restrict F`. At the coset of `x`, that density sums `f (x + γ)` over subgroup elements.
+
+The theorem derives measurability on the canonical quotient measurable space and allows infinite
+values and infinite total mass. It does not require a measurable fundamental domain beyond the
+null-measurability already in `hF`. The [checked clients](../../ComplexityTests/QuotientDensity.lean)
+cover bottom and top subgroups, a two-element group, infinite densities on a null measure, and
+the Borel measurable space of a discrete lattice quotient. The following Gaussian consumer
+proves the required probability normalizations before applying a distance formula.
+
+## Compare an actual Gaussian quotient distribution with uniform measure
+
+Import [Gaussian/Quotient.lean](../../Complexity/Foundations/Probability/Gaussian/Quotient.lean).
+Let `L` be a discrete full-rank lattice in a finite-dimensional real inner-product space `E`,
+let `n = Module.finrank ℝ E`, and take `s > 0`. Use `q = QuotientAddGroup.mk`, the
+canonical map to the quotient by `L.toAddSubgroup`, and an actual fundamental domain
+`hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume`. The measures are ordinary
+`Measure.withDensity`, `Measure.map` and scalar multiplication:
+
+- The ambient Gaussian is `volume.withDensity (fun x => ENNReal.ofReal
+  (gaussianWeight s x / s^n))`. Its probability normalization is
+  `ProbabilityTheory.isProbabilityMeasure_gaussianWeight s hs`.
+- The uniform reference is `(ENNReal.ofReal (ZLattice.covolume L))⁻¹ •
+  Measure.map q (volume.restrict F)`.
+  `ZLattice.isProbabilityMeasure_normalized_quotient L volume hF` proves it is a probability;
+  `normalized_quotient_eq` and `isAddLeftInvariant_normalized_quotient` prove independence
+  from the fundamental domain and translation invariance.
+
+`ZLattice.map_gaussianWeight_eq_withDensity L s hs hF` identifies the actual Gaussian
+pushforward's density relative to this reference. At `q x`, the real density is
+`covolume L / s^n * gaussianMass L s (-x)`; the opposite center comes from summing
+`gaussianWeight s (x + z)`. The representative identity is available as
+`automorphize_gaussianWeight_coe`.
+
+`ZLattice.tvDist_gaussian_quotient_le L s hs hF` bounds the distance between these actual
+probability measures by `gaussianMass D (1 / s) 0 - 1`, where `D` is the existing dual
+submodule. Compose it with `gaussianMass_dual_sub_one_le_of_gap` for a numerical sufficient
+width condition. `eventually_tvDist_gaussian_quotient_le L hF ε hε` proves that every positive
+error is achieved at all sufficiently large positive widths. The bound does not assume a
+small dual mass or a conclusion about the quotient distribution.
+
+Here `tvDist` is full L1, matching Regev's printed page 13 convention with range `[0, 2]`;
+there is no extra factor of one half in the stated bound. This is a precise quotient
+consequence of Claim 3.8, not a uniform probability on all of real space or the convolution
+statement of Claim 3.9. Efficient sampling and the quantum reduction remain open.
+
+The [checked clients](../../ComplexityTests/DiscreteGaussianShiftBounds.lean) reuse `2ℤ`
+with covolume `2`, width `2`, and its proved dual gap `1/2`. They check both probability
+normalizations, the actual density at the off-lattice representative `1`, full-L1 distance
+at most `1/2`, and eventual small error. In dimension zero, the two actual measures are
+proved equal and their distance is zero. Run
+`scripts/build.sh ComplexityTests.DiscreteGaussianShiftBounds` from the repository root.
+
+## Convolve a singular law with a density
+
+Import [ConvolutionDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/ConvolutionDensity.lean).
+For a measurable group with measurable multiplication and inversion, let `σ` and `μ` be
+s-finite measures, let `μ` be left invariant, and supply `hf : Measurable f` for
+`f : G → ℝ≥0∞`. Apply
+`MeasureTheory.mconv_withDensity_eq_withDensity_lintegral hf` to identify
+`Measure.mconv σ (μ.withDensity f)` with a density relative to `μ`: at `x`, integrate
+`f (y⁻¹ * x)` against `σ`. The theorem derives measurability of that density.
+
+For additive groups, use `conv_withDensity_eq_withDensity_lintegral`; the translated density
+is `f (-y + x)`. The first measure can be singular, such as a discrete distribution.
+The existing two-density convolution theorem requires both input laws to have densities with
+respect to the same reference measure. This theorem needs only the second one to have a density.
+It allows infinite total mass and infinite density values, and assumes no integrability or
+probability normalization.
+
+The [checked clients](../../ComplexityTests/ConvolutionDensity.lean) translate an actual
+Gaussian by an atom and recover the variance-two Gaussian from two variance-one inputs.
+A noncommutative permutation-group example checks the order of translation; infinite-density
+and zero-input cases check the absence of hidden finiteness premises. Run
+`scripts/build.sh ComplexityTests.ConvolutionDensity` from the repository root.
+The [lattice Gaussian convolution bound](https://github.com/cslib-community/complexitylib/issues/2707)
+below supplies its actual discrete weights, completion of the square and quantitative error proof.
+
+## Add continuous Gaussian noise to a coset Gaussian
+
+Import [Gaussian/Convolution.lean](../../Complexity/Foundations/Probability/Gaussian/Convolution.lean).
+Take a discrete full-rank lattice `L`, an arbitrary translate `u`, positive widths `r`, `s`,
+and positive `t` with `t² = r² + s²`. Thus `t` is the positive square root of the sum.
+The coset law on `L + u` samples `discreteGaussian L r hr (-u)` and maps `z` to `z + u`.
+The continuous noise measure is
+`volume.withDensity (fun x => ENNReal.ofReal (gaussianWeight s x / s^n))`,
+where `n = Module.finrank ℝ E`. The experiment is their actual `Measure.conv`.
+
+Write `h = r*s/t` and `A_w(c) = covolume L / w^n * gaussianMass L w c` for this paragraph.
+`ZLattice.conv_discreteGaussian_eq_withDensity` identifies the experiment's density relative
+to the normalized continuous Gaussian of width `t` as
+`A_h((r/t)² • x - u) / A_r(-u)`.
+The proof completes the square and integrates the actual countable mixture; it does not
+assume a convolution or smoothing conclusion. The denominator is strictly positive.
+
+With `D` the existing dual submodule and `δ_w = gaussianMass D (1/w) 0 - 1`,
+`tvDist_conv_discreteGaussian_le` proves the unconditional bound
+`(δ_h + δ_r) / A_r(-u)`. Both measures are probability measures and the relative density is
+integrable. `tvDist` here is the full-L1 distance, matching Regev's convention and ranging
+from `0` to `2`; there is no factor of one half in this theorem.
+
+For the source's `4ε` conclusion, `tvDist_conv_discreteGaussian_le_of_dual_mass_le` accepts
+`0 ≤ ε < 1/2` and the actual sum bound `δ_h ≤ ε`.
+`tvDist_conv_discreteGaussian_le_of_gap` proves that premise from a positive lower bound
+`a` on nonzero dual norms and `2^n * exp(-3πh²a²/4) ≤ ε/(1+ε)`, with `ε > 0`.
+The [checked clients](../../ComplexityTests/DiscreteGaussianConvolution.lean) use `L = 2ℤ`,
+`u = 1/2`, `r = 3`, `s = 4`, `t = 5`, `a = 1/2`, and a proved numerical criterion giving
+distance at most `4/7`. They also prove equality of the actual measures in dimension zero.
+Run `scripts/build.sh ComplexityTests.DiscreteGaussianConvolution` to check them.
+
+This proves the bounded analytic Claim 3.9 consequence with an explicit sufficient width
+criterion. The scalar and mod-one laws are handled below; the minimum smoothing parameter,
+search-LWE experiment, efficient finite-precision sampling and quantum implementation remain
+separate.
+
+## Project the coset experiment and reduce modulo one
+
+Import [Gaussian/Projection.lean](../../Complexity/Foundations/Probability/Gaussian/Projection.lean)
+for the actual experiment `⟪z, v⟫ + e`, where `v` is drawn from the discrete Gaussian on
+`L + u` and `e` is an independent scalar `gaussianReal` of variance `α²/(2π)`.
+The coset draw is the existing `discreteGaussian L r hr (-u)`, mapped by `v ↦ v + u`.
+For `r, α > 0`, the comparison Gaussian has variance `((r * ‖z‖)² + α²)/(2π)`.
+
+`tvDist_conv_map_inner_discreteGaussian_le_of_dual_mass_le` bounds their full-L1 distance
+by `4ε`, for `0 ≤ ε < 1/2`, when the actual nonzero dual mass at reciprocal width
+`√(1/r² + (‖z‖/α)²)` is at most `ε`. The `_of_gap` theorem discharges that mass bound
+from a positive dual gap `a` and
+`2^dim * exp(-3π h² a²/4) ≤ ε/(1+ε)`, where
+`h = 1/√(1/r² + (‖z‖/α)²)` and `ε > 0`. Projection at `z = 0` is exactly the scalar
+noise law, without a smoothing premise; dimension zero is included.
+
+Use `tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_gap` for the same bound
+after mapping both measures by the canonical `ℝ → UnitAddCircle` coercion. This compares
+actual probability measures, with no density-series assumption.
+The [checked clients](../../ComplexityTests/DiscreteGaussianProjection.lean) use `2ℤ`,
+off-lattice shift `1/2`, `r = 3`, `α = 8` and projection vector `2`. They prove the dual gap
+`1/2` and numerical criterion at `ε = 1/7`, yielding distance at most `4/7` on both the
+real line and the circle. The input scalar noise has variance `32/π`, and the comparison
+has variance `50/π`.
+
+The convention is Regev's full-L1 distance from printed page 13, with range `[0,2]`.
+The source's mod-one Gaussian sampling law is represented by its actual measure pushforward;
+its periodic-density series, the joint LWE sample law in Lemma 3.11, efficient sampling,
+finite precision and the quantum reduction remain separate work.
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.
@@ -44,6 +425,22 @@ example (test : List Bool × Bool × ℕ → Bool)
 
 Also check the sampler itself. `ProbComp.uniform (Fin 3)` has exact uniform semantics, but a strictly bounded fair-coin machine cannot give each outcome probability one third. The client deliberately tests that `ppt` does not certify it for free. Use an applicable dyadic sampler or the library's approximate-sampling results, carrying the approximation error into the later probability proof.
 
+## Bound a centered-binomial sampler tail
+
+[CenteredBinomial/Concentration.lean](../../Complexity/Languages/Probabilistic/CenteredBinomial/Concentration.lean)
+bounds the law of the existing `sampleCenteredBinomial η` program. For `η > 0` and real
+`B ≥ 0`, `sampleCenteredBinomial_tail_le` gives
+`Pr[B ≤ |z|] ≤ 4 exp(-B²/(2η))`; `sampleCenteredBinomial_strict_tail_le` gives the same
+bound for `B < |z|`. This original two-count union bound is not optimal. Width zero remains
+`pure 0`, so its strict and non-strict zero cutoffs differ.
+
+The [checked clients](../../ComplexityTests/CenteredBinomialConcentration.lean) show positive
+mass at both width-eight endpoints, an empty strict tail above eight, and a non-strict tail
+bound below one. They also certify the actual growing program with `η = 8(l+1)` as
+`IsPPTOn encUnary encIntBin` and bound its strict tail above `4(l+1)` by `4 exp(-(l+1))`.
+The native certificate charges unary width and signed binary output; this scalar result
+supplies neither encryption correctness nor a security reduction.
+
 ## Certify an adaptive oracle client
 
 For native oracle efficiency, start with `WordOracleComp Operation α`: finite operation names and word payloads/replies.
@@ -82,6 +479,84 @@ Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on externa
 <!-- /worked-example -->
 
 When replacing the external handler with an implementation, open [Oracle/Substitution.lean](../../Complexity/Computability/Probabilistic/Oracle/Substitution.lean). The plain-certificate variant `IsOraclePPTOn.run_interpret_preprocess_open'` requires efficient preparation, initialization and handling, plus an invariant and bounds on reply length and added encoded state. Its `hresources` premise also certifies a uniform unary computation of the resource allowance from the original caller and request; an abstract polynomial bound alone does not supply this certificate. Repeated state doubling explains why “each call is polynomial time” is insufficient.
+
+## Derive adaptive decapsulation security
+
+Import [`KEMFromPKE/CCA.lean`](../../Complexity/Crypto/Computational/Encryption/KEMFromPKE/CCA.lean) when the starting assumption is `WordINDCCA2 keyGen encrypt decrypt`. Apply `WordINDCCA2.indistinguishable_encryptKeyEncaps` with the unary polynomial-time certificate for `keyLen`. It proves security of the actual `encryptKeyEncaps` constructor against adaptive postchallenge queries, with exact loss one. The [complete checked client](../../ComplexityTests/Crypto/KEMFromPKECCA.lean) uses `keyLen n = 2 * n` and keeps `n` as the security parameter.
+
+For a runtime conclusion, use `isPPTOn_kemCCAGames_encryptKeyEncaps` with native key generation, encryption, decryption and adversary certificates. For correctness, apply `decrypt_encryptKeyEncaps_some` to a supported encapsulation and the original encryptor's supported-output correctness. These are separate contracts. The same test file checks a correct empty-key instance and distinguishes `none` from `some []`.
+
+Check freshness against raw ciphertext words. The test's native `adaptiveTagDistinguisher` first observes rejection of the exact challenge, then flips a redundant tag and queries again. Because the malformed scheme ignores that tag, the distinct word reveals the key. Its exact advantage is `1 - 2^(-keyLen n)`; the comparison uses a bounded reply prefix, so its strict oracle runtime certificate holds even for arbitrarily long external replies.
+
+For hybrid ciphertexts, use [`hybridDecrypt`](../../Complexity/Crypto/Computational/Encryption/Hybrid.lean)
+with Option-valued decapsulation and symmetric decryption. It first checks that re-encoding
+`(unframe ct, dropFrame ct)` gives exactly `ct`, then propagates either component's `none` result.
+Apply `hybridDecrypt_hybridEncrypt` with component correctness returning `some k` and `some msg`;
+`computableInPolyTime_hybridDecrypt` takes the corresponding certificates with `encOption` outputs.
+The [hybrid clients](../../ComplexityTests/Crypto/HybridEncryption.lean) show why the framing check
+matters: `[true, true]` and `[true, true, false]` have the same projections, but only the latter
+is a canonical pair. They also check accepted empty plaintext (`[true]` as an oracle reply),
+rejection (`[]`), and exact challenge-word rejection.
+
+For the symmetric leg of CCA composition, import
+[`Hybrid/DEMCCA.lean`](../../Complexity/Crypto/Computational/Encryption/Hybrid/DEMCCA.lean).
+`hybridDEMGame` uses the existing two-phase `cca2GameOn`: it retains the original joint KEM key
+and encapsulation distribution, samples the hidden key from `E.keyGen n`, and redirects the
+selected KEM component to that key in both phases. Challenge messages must each have length `n`.
+`eval_hybridDEMGame` proves exact equality with the existing symmetric `ccaOneTimeGame`, and
+`OneTimeINDCCA.indistinguishable_hybridDEMGame` supplies the loss-one security conclusion.
+The native reduction certificate charges both adaptive phases and bounds every external reply read;
+`isPPTOn_hybridDEMGame` also certifies the closed experiment.
+For ciphertext reply bounds, `SymmetricCipher.exists_ciphertext_length_bound` returns a native
+unary cap `ctBound n ℓ`, uniform over keys actually sampled by `E.keyGen n` and all messages
+of length `ℓ`. Its runtime guarantee also covers messages outside the cipher's correctness
+and security domain. The current `n`-bit reductions use `ctBound n n`; this bound does not
+extend their security claims to arbitrary words. The
+[authenticated-encryption clients](../../ComplexityTests/Crypto/AuthenticatedEncryption.lean)
+check independent lengths and show why an all-message bound cannot depend only on `n`.
+
+The [checked clients](../../ComplexityTests/Crypto/HybridDEMCCA.lean) apply the result to the
+existing PRF Encrypt-then-MAC cipher, expose an insecure echo cipher, and run a zero-width
+prechallenge/challenge/postchallenge trace. They distinguish an empty encryption reply from an
+encoded successful empty plaintext.
+
+For the complete `n`-bit-message composition, import
+[`Hybrid/CompositionCCA.lean`](../../Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
+and apply `hybrid_indcca2On`. Supply the existing KEM CCA indistinguishability assumption,
+`E.OneTimeINDCCA`, native algorithms, supported KEM correctness, and a native postprocessor
+`F` satisfying `(uniformList (keyLen n)).map (F n) = eval (E.keyGen n)` for every `n`.
+Postprocess every successful decapsulation with `Option.map (F n)` too. The conclusion uses
+`INDCCA2On` with both challenge lengths equal to `n`, not unrestricted `WordINDCCA2`.
+`exists_hybridCCA_reductions` returns native KEM and symmetric adversaries and the exact
+`2 * KEM advantage + symmetric advantage` bound. Reply caps are derived from supported
+secret-key lengths and the native decryptor; external replies need no assumed length bound.
+
+The [complete composition clients](../../ComplexityTests/Crypto/HybridCompositionCCA.lean)
+use `IsPPTOn.exists_total_seeded_evaluator` for arbitrary actual key generators and split `3*n`
+uniform bits into the PRF Encrypt-then-MAC cipher's actual framed keys. Those keys have encoded
+length `4*n+1` and are not uniform words of that length. For perfect correctness, apply
+`hybridDecrypt_postprocessed_hybridEncrypt` with a supported-real-key premise: the total evaluator
+provides it for every seed, while the simple split map needs real keys of length `3*n`.
+The clients also distinguish failed decapsulation from accepted empty keys, detect omitted
+postprocessing on forwarded replies, and exhibit a failed real hop without KEM correctness.
+
+## Certify a list accumulator
+
+Import `Complexity.Computability.Probabilistic.Fold` for
+`IsPPTOn.foldlM_of_bounded_growth` and `IsOraclePPTOn.foldlM_of_bounded_growth`.
+They certify ordinary `List.foldlM` with the accumulator as the step's first argument.
+Supply plain polynomial-time certificates for the input list and initial accumulator, a joint
+step certificate, and a constant bound on the encoded accumulator's growth at every supported
+result. For an oracle fold that bound covers arbitrary external replies; truncate replies or
+prove a suitable support bound before applying it.
+
+The complete [ProbabilisticFold client](../../ComplexityTests/ProbabilisticFold.lean) checks a
+noncommutative accumulator, an oracle fold's ordered calls and final external
+counter, and an empty fold that makes no calls. From the configured repository root, run
+`scripts/build.sh --wfail --iofail ComplexityTests.ProbabilisticFold`. The fallback argument
+only totalizes the internal iteration step; it is never used on an empty list. If the growth
+premise fails, check the output encoding and reply cap rather than assuming that efficient
+individual steps make an arbitrarily growing accumulator efficient.
 
 ## Connect a randomized RAM loop to its answer law
 
@@ -481,6 +956,22 @@ inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive
 lower-child budget induction, native realization and RL=L remain in
 [issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
 
+## Extract an emitted pseudorandom prefix
+
+Import [Stretch/Prefix.lean](../../Complexity/Crypto/Computational/Stretch/Prefix.lean).
+Use `PRGStretch.length_take_forwardIterate` and `take_forwardIterate_prefix` with the global
+one-bit length promise. The latter compares `ℓ ≤ L` rounds only after discarding the final
+seed: take `ℓ` bits from either run. Do not apply it to the complete retained-seed output.
+
+`polyTime_take_forwardIterate` certifies the map from a complete seed and unary round count
+to the emitted prefix. Compose its round count with the plaintext length to obtain a native
+XOR pad computation; the [checked PRGStretch client](../../ComplexityTests/PRGStretch.lean)
+proves actual encryption/recovery and distinguishes emission order from its reversal.
+For security, apply `indistinguishable_take_forwardIterate` to the existing one-bit
+`PseudorandomGenerator` assumption and a native unary length schedule `L`. The seed law stays
+`uniformList n`; the output law is compared with `uniformList (L n)`. This covers `L n = 0`
+and seed width zero, but does not yet supply adaptive-message cipher security.
+
 ## Carry the certificate into a security proof
 
 Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.lean](../../Complexity/Crypto/Computational/Basic.lean), computational indistinguishability quantifies over certified strict-PPT distinguishers. It does not require the compared PMF ensembles to be efficiently sampleable or polynomially bounded in length. Check those properties separately when the intended construction needs them.
@@ -690,3 +1181,121 @@ a selected headline abstract.
 The regressions additionally check a correlated detector moment of
 `1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank
 densities `16/625` and `81/625`.
+
+## Unfold a lattice Fourier coefficient
+
+Import [`Complexity.Foundations.Analysis.Lattice.Fourier`](../../Complexity/Foundations/Analysis/Lattice/Fourier.lean)
+to integrate a periodized function at a dual frequency. For a countable `L : Submodule ℤ E`
+in a finite-dimensional real inner-product space, supply `IsAddFundamentalDomain L s volume`,
+`Integrable f` for `f : E → ℂ`, and membership of `w` in
+`LinearMap.BilinForm.dualSubmodule (innerₗ E) L`. Then
+`ZLattice.integral_fourierChar_tsum_translate` identifies the integral over `s` of
+`(Real.fourierChar (-⟪x,w⟫) : ℂ) * ∑' z : L, f (x + z)` with the Fourier transform of `f`
+evaluated at `w`.
+The character is `exp(-2πi⟪x,w⟫)`. The domain integral uses ambient volume without a
+covolume divisor; it is not the coefficient for probability-normalized quotient measure.
+
+For a real basis `b`, `ZSpan.isAddFundamentalDomain b volume` supplies the domain
+`ZSpan.fundamentalDomain b` of `Submodule.span ℤ (Set.range b)`. The basis may be sheared.
+For a Schwartz function, use `f.integrable`; for a Gaussian, the checked
+[`LatticeFourier.lean` clients](../../ComplexityTests/LatticeFourier.lean) derive integrability
+and evaluate the Fourier coefficient using Mathlib's Gaussian transform. They include the basis
+`(1,0), (1/2,1)` with nonzero dual frequency `(2,0)`, its Gaussian coefficient `exp(-4π)`,
+and the zero-frequency mass identity. Run `scripts/build.sh ComplexityTests.LatticeFourier`
+from the repository root to check these complete examples.
+
+Integrability supplies the almost-everywhere convergence needed for exchanging the sum and
+integral. No pointwise convergence or uniform convergence assumption is hidden in this theorem.
+The [Poisson API](#apply-lattice-poisson-summation) supplies continuity, reconstruction and
+covolume normalization for the stated analytic hypotheses. Smoothing estimates remain separate.
+
+## Compute a Gaussian sign-disagreement probability
+
+Import
+[`Complexity.Foundations.Probability.Gaussian.Sheppard`](../../Complexity/Foundations/Probability/Gaussian/Sheppard.lean)
+and open the `ProbabilityTheory` namespace to use Sheppard's formula. The space `E` is any
+finite-dimensional real inner-product space with its Borel σ-algebra, and `stdGaussian E` is
+Mathlib's standard Gaussian measure on it. The event is
+`{x | (0 : ℝ) ∈ Ι ⟪u, x⟫ ⟪v, x⟫}`: zero lies in the half-open interval between the two
+projections, so they have opposite signs, up to the null event that a projection is zero.
+
+- For nonzero `u` and `v`, `measureReal_stdGaussian_zero_mem_uIoc_eq_angle hu hv` gives
+  probability `InnerProductGeometry.angle u v / π`. The norms need not be equal.
+- For unit vectors, `measureReal_stdGaussian_zero_mem_uIoc_eq_arccos hu hv` gives
+  `arccos ⟪u, v⟫ / π`, the ρ-correlated form of O'Donnell's Example 11.19 with `ρ = ⟪u, v⟫`.
+
+The checked [`GaussianSheppard.lean` clients](../../ComplexityTests/GaussianSheppard.lean)
+evaluate both forms in `EuclideanSpace ℝ (Fin 2)` and `EuclideanSpace ℝ (Fin 3)`: angle `π/4`
+with unequal norms gives `1/4`, orthogonal unit vectors give `1/2`, opposite vectors give `1`,
+and the events for `v` and `-v` have probabilities summing to `1`. Run
+`scripts/build.sh ComplexityTests.GaussianSheppard` from the repository root to check them.
+
+If a proof needs only an upper bound, or the vectors may be zero, the older
+`measureReal_stdGaussian_mem_uIoc_le_angle` (equal norms, any threshold `t`) still applies. For
+Gaussian noise stability and its halfspace formula, see
+[Compute Gaussian noise stability](#compute-gaussian-noise-stability).
+
+## Compute Gaussian noise stability
+
+Import
+[`Complexity.Foundations.Probability.Gaussian.Correlated`](../../Complexity/Foundations/Probability/Gaussian/Correlated.lean)
+and open the `ProbabilityTheory` namespace. `correlatedGaussian ρ : Measure (ℝ × ℝ)` is the law
+of `(g₁, ρ g₁ + √(1 - ρ²) g₂)` for independent standard Gaussians, and
+`correlatedGaussianPi ι ρ` is its `ι`-indexed product, the law of a `ρ`-correlated pair of
+vectors in `ι → ℝ`. `gaussianNoiseStability ρ f` is `∫ p, f p.1 * f p.2` against that product.
+Most theorems assume `|ρ| ≤ 1`, since `√(1 - ρ²)` is `0` in Lean outside that range.
+
+- To identify a correlated pair, `stdGaussian_map_inner_prod_eq_correlatedGaussian hu hv` says
+  that unit-vector projections `(⟪u, X⟫, ⟪v, X⟫)` of `stdGaussian E` have law
+  `correlatedGaussian ⟪u, v⟫`. Any other jointly Gaussian law with means `0`, variances `1` and
+  covariance `ρ` equals it by `eq_correlatedGaussian`.
+- For halfspaces through the origin with `a ≠ 0`, `gaussianNoiseStability_ite_pos_dotProduct hρ ha`
+  (open, `0 < a ⬝ᵥ z`) and `gaussianNoiseStability_ite_nonneg_dotProduct hρ ha` (closed) both give
+  `1 - 2 / π * arccos ρ`.
+- For one coordinate, `gaussianNoiseStability_indicator_Iic_eval hρ i` gives
+  `1 / 2 - arccos ρ / (2 * π)` for the indicator of `z i ≤ 0`. For any measurable function of a
+  projection, `gaussianNoiseStability_comp_dotProduct` reduces stability to an integral against
+  `correlatedGaussian ρ`.
+
+The checked [`GaussianCorrelated.lean` clients](../../ComplexityTests/GaussianCorrelated.lean)
+evaluate halfspace stability at `ρ = 1, 0, 1/2, -1`, Example 11.19 at `ρ = 0`, a concrete
+projection pair and the `ρ = ±1` laws. Run `scripts/build.sh ComplexityTests.GaussianCorrelated`
+from the repository root to check them.
+
+Halfspaces are stated with `a ⬝ᵥ z` on `ι → ℝ`, which has no inner-product instance, and the
+open form uses `sgn 0 = -1`. Stability is defined for every `f`. The Bochner integral is `0`
+when `f z * f z'` is not integrable, so prove integrability before reading a value off a
+non-`L²` function. For the noise operator `U_ρ`, see
+[Apply the Gaussian noise operator](#apply-the-gaussian-noise-operator).
+
+## Apply the Gaussian noise operator
+
+Import
+[`Complexity.Foundations.Probability.Gaussian.NoiseOperator`](../../Complexity/Foundations/Probability/Gaussian/NoiseOperator.lean)
+and open the `ProbabilityTheory` namespace. Write `γ` for the product measure
+`Measure.pi fun _ : ι => gaussianReal 0 1` on `ι → ℝ`. Then
+`gaussianNoiseOp ρ f z = ∫ g, f (fun i => ρ * z i + √(1 - ρ ^ 2) * g i) ∂γ` is O'Donnell's
+`U_ρ f` (Definition 11.12). It is defined for every `ρ` and `f`, and theorems that need the book's
+range assume `|ρ| ≤ 1`.
+
+- `measurePreserving_gaussianNoise hρ`: the noisy point `ρ z + √(1 - ρ²) g` is again distributed
+  as `γ` when `z` and `g` are independent.
+- `eLpNorm_gaussianNoiseOp_le hρ hp hf`: `U_ρ` is a contraction on every `L^p`, `1 ≤ p ≤ ∞`,
+  with only `AEStronglyMeasurable f γ` assumed. For `hf : MemLp f p γ`, the dot-notation form
+  `hf.gaussianNoiseOp hρ hp` (`MeasureTheory.MemLp.gaussianNoiseOp`) gives membership.
+- `gaussianNoiseStability_eq_integral_mul_gaussianNoiseOp hρ hf` rewrites `Stab_ρ[f]` as
+  `∫ z, f z * gaussianNoiseOp ρ f z ∂γ` for `f ∈ L²(γ)`. `integral_mul_gaussianNoiseOp_comm` is
+  self-adjointness, and `integral_gaussianNoiseOp` is mean preservation for integrable `f`.
+- `gaussianNoiseOp_dotProduct ρ a z` computes `U_ρ (a ⬝ᵥ ·) z = ρ * (a ⬝ᵥ z)` exactly, the
+  linear case of Fact 11.13.
+
+The checked [`GaussianNoiseOperator.lean` clients](../../ComplexityTests/GaussianNoiseOperator.lean)
+cover coordinate and linear inputs, `U_0` and `U_1`, the stability of a constant and of a
+coordinate, a self-adjointness and an additivity instance, `L²` and `L^∞` contraction, and mean
+preservation. Run `scripts/build.sh ComplexityTests.GaussianNoiseOperator` from the repository
+root to check them.
+
+Additivity, `gaussianNoiseOp_add`, holds only `γ`-almost everywhere, because the Bochner integral
+is `0` off the integrable functions; scaling by a constant holds everywhere. General multilinear
+polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and Hermite expansions are not part of this
+module.
