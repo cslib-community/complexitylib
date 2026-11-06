@@ -3171,6 +3171,7 @@ public import Complexity.Crypto.Computational.SchnorrEavesdrop
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
 public import Complexity.Crypto.Computational.SchnorrSignature
+public import Complexity.Crypto.Computational.SchnorrSignature.EncodedROM
 public import Complexity.Crypto.Computational.SchnorrSignature.NativeROM
 public import Complexity.Crypto.Computational.SchnorrSignature.WordROM
 public import Complexity.Crypto.Computational.Signature
