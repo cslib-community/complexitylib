@@ -125,12 +125,70 @@ in [the bibliography](../../references.bib). The checked clients are in
   $T=\lambda D+(1-\lambda)q\mathbf1^T$, with $D$ doubly stochastic and
   $0\le\lambda\le1$. `centered_mixed` and `qmi_mixed_le` prove Proposition 7.1's
   identity and contraction. There is no full-support or equal-alphabet assumption.
-  General-channel DPI, history-dependent deviations and the rigidity results are excluded.
-  STOC submission 152 also supplies an existing author formalization of its headline
-  analytic and algebraic results, linked in its PDF p. 20:
-  [finite-sample-information-monotones](https://github.com/yuqkong-1844/finite-sample-information-monotones).
-  That Lean 4.32 development is an external reuse source; it has not been ported or
-  validated against this checkout's toolchain. It does not establish local coverage.
+  This construction covers restricted own channels; it makes no general-channel
+  QMI or history-dependent-strategy claim. The rigidity APIs are described next.
+- [FiniteSampleInformation.Rigidity](../../Complexity/Probability/FiniteSampleInformation/Rigidity.lean)
+  is the entry point for Kong's finite-sample information limits (STOC submission 152).
+  Import it for the sharp polynomial/sample bounds and actual finite-task payments;
+  import [DimensionChanging](../../Complexity/Probability/FiniteSampleInformation/DimensionChanging.lean)
+  alone for alphabet-changing collapse. The
+  [checked clients](../../ComplexityTests/FiniteSampleInformation/Main.lean) include a
+  dependent zero-row law, nonzero rectangular Gram law, an impossible five-task
+  three-symbol reward, and an attaining eight-task four-symbol mechanism.
+
+  `GeneralAsymmetricC1.Mat n m` is the iterated function space
+  `Fin n → Fin m → ℝ`, so calculus uses its finite-product norm. `Simplex U`
+  means entrywise nonnegativity and total mass one. A `ColumnStochastic T`
+  has nonnegative entries and column sums one, and Alice's channel acts by
+  left multiplication. `swapAgents` transposes a law; `bobReports S U` applies
+  Bob's channel by right multiplication with its transpose. The
+  [QMI bridges](../../Complexity/Probability/FiniteSampleInformation/QuadraticBridge.lean)
+  identify these tables and channels with the existing four-task API.
+
+  For a smooth functional, use `zero_row_vanishing_openNeighborhood` or
+  `general_asymmetric_simplex_C1_openNeighborhood` from `GeneralAsymmetricC1`.
+  Supply an **open ambient neighborhood of the entire closed simplex** and a
+  `ContDiffOn ℝ 1` extension there, in addition to left DPI and rank-one vanishing.
+  Interior smoothness does not meet the hypotheses. With more rows than columns,
+  the functional vanishes everywhere. The zero-row theorem also covers square
+  and wide alphabets. `dimensionChanging_collapse` applies to a family whose
+  rectangular-channel DPI and boundary regularity hold for every alphabet size
+  at least two; its channels adding and retracting an unused state are proved
+  stochastic.
+
+  For polynomials, `determinantal_rigidity` proves membership in the square of
+  the maximal-minor ideal modulo total mass minus one, and
+  `polynomial_degree_lower_bound` gives degree at least $2n$ for a functional
+  nonzero on the simplex. The Gram determinant attains this bound for every
+  $2\le n\le m$; `gramDetPoly_nonzero_on_simplex` supplies a normalized witness.
+  `SquarePolynomial.square_simplex_det_sq` gives the square-case factorization.
+  The general generic-minor algebra is in
+  [Foundations/Algebra/Polynomial/MaximalMinor](../../Complexity/Foundations/Algebra/Polynomial/MaximalMinor/MaximalMinorWeight.lean).
+  The analytic and algebraic proofs port Yuqing Kong's Apache-2.0 author
+  formalization at `4e27ef9d167be69902385307d40123ec665dc532`, with original
+  authorship and port credit preserved.
+
+  `Estimation.unbiased_iff_polynomialOnSimplex` is the fixed-sample characterization:
+  a signed statistic on `Fin d → α` estimates a functional for every probability
+  vector exactly when the functional has a degree-at-most-$d$ representative
+  on the simplex. It permits zero probabilities and unused samples.
+  `expectedPayment_eq_sum` gives the actual product-law payment expectation;
+  `memoryless_payoff_eq` identifies it with first drawing the latent signal
+  vector and then independently randomizing each agent’s report on each task.
+  `square_payment_task_lower_bound` applies to any actual finite-task statistic;
+  `exists_optimal_square_payment` returns a common $2n$-task payment for both
+  agents with dominant truthfulness against all fixed memoryless peer channels.
+  `unequal_alphabets_not_both_nontrivial` permits distinct signed payments to
+  the two agents. `exists_faithful_payment_iff`,
+  `faithful_payment_sample_lower_bound` and
+  `exists_two_sided_faithful_payment_iff` give the binary/four-sample
+  classifications. These results concern the same independently applied channel
+  on each task, not arbitrary strategies using the whole signal vector.
+
+  The port also includes Appendix B's compensation construction and Appendix D's
+  semantic copositivity equivalence. The latter does **not** certify polynomial-time
+  arithmetic-circuit construction or coNP-hardness. Appendix C's unnormalized
+  consequences are outside the main-result API described here.
 
 ## Known Limitations
 

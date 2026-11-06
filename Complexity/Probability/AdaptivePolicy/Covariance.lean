@@ -249,7 +249,7 @@ theorem traceCovariance_sub_state (π : MarkovPolicy S A) (t : ℕ)
   simp only [← mul_sum, ← sum_mul, π.sum_prob]
   rw [sum_comm (f := fun a s => _)]
   simp only [← mul_sum, π.sum_prob, mul_one, M.stateLaw_sum]
-  ring
+  ring_nf
 
 end FiniteMDP
 end Cslib.Probability.AdaptivePolicy
