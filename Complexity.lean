@@ -3339,6 +3339,7 @@ public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
 public import Complexity.DataStructure.WordRAM.StateTransition
 public import Complexity.Foundations.Algebra.FiniteMagnitude
 public import Complexity.Foundations.Algebra.GeometricTail
+public import Complexity.Foundations.Algebra.Polynomial.ThresholdIsolation
 public import Complexity.Foundations.Algebra.Shear
 public import Complexity.Foundations.Analysis.Asymptotics.CostBound
 public import Complexity.Foundations.Analysis.Asymptotics.Exponential
@@ -4316,6 +4317,7 @@ public import Complexity.Statistics.LeastSquares.FixedSize
 public import Complexity.Statistics.LeastSquares.FractionalGeometry
 public import Complexity.Statistics.LeastSquares.Monotone
 public import Complexity.Statistics.LeastSquares.NonRange
+public import Complexity.Statistics.LeastSquares.PolynomialDecision
 public import Complexity.Statistics.LeastSquares.RadonGeometry
 public import Complexity.Statistics.LeastSquares.RangeAudit
 public import Complexity.Statistics.LeastSquares.Rational

@@ -153,6 +153,49 @@ The cited endpoint is a threshold decision procedure. This API computes the
 integer bracket without claiming to return an arbitrary exact real value of
 fractional stability.
 
+For the separate exact-output question, import
+[`PolynomialDecision`](../../Complexity/Statistics/LeastSquares/PolynomialDecision.lean).
+`decision_iff` gives the explicit existential rational-polynomial constraints
+for normal equations, with the deletion threshold free; the weights and
+coefficients still range over the reals. `fractional_threshold_iff` identifies
+them with the inequality-stability threshold under GP, a high-mass feasible
+input, strict full-data violation and a query below the singular regime.
+The formula has $n+d$ quantified variables. It does not implement MR23's
+low-variable construction or quantifier elimination.
+
+[`ThresholdIsolation`](../../Complexity/Foundations/Algebra/Polynomial/ThresholdIsolation.lean)
+provides a finite rational `bisect` program. `boundary_product_root` proves that
+a supplied finite polynomial sign description of a threshold has a root at its
+interior boundary. `isolate_fractional_of_sign_description` combines this with
+the normal-equation bridge: supply a sign description equivalent to normal
+feasibility, nonzero rational polynomials, a rational initial bracket with strict
+lower endpoint, a positive root-separation bound, a step count giving width below
+that bound, and rational-threshold normal decisions. The returned `RootInterval`
+contains exactly one real root of its stored polynomial, equal to fractional
+stability. No optimizer-returning oracle is assumed. `isolate_time` charges at
+most $t(B+3)$ for $t$ steps and oracle cost at most $B$, using unit-cost rational
+arithmetic and free packaging of the supplied polynomial. It does not charge
+polynomial construction, elimination, separation computation or rational bit
+sizes. A sign description containing an identically zero polynomial must first
+remove that test; the theorem requires each supplied polynomial to be nonzero.
+
+From the repository root, the complete
+[exact-output client](../../ComplexityTests/PaperEndpoints/ExactOutput1326.lean)
+can be checked with
+`./scripts/build.sh ComplexityTests.PaperEndpoints.ExactOutput1326`.
+It checks rational interval execution and counters, isolation of $\sqrt 2$,
+rejection of a zero defining polynomial, and a concrete GP least-squares input
+with fractional stability $1/2$. The latter supplies its own sign formula and
+separation proof. For a general dataset, these prerequisites remain unavailable:
+a Boolean threshold oracle alone does not produce them.
+`exists_same_finite_threshold_answers` proves that any finite set of threshold
+queries missing the true boundary also fits a different real boundary; this
+obstruction concerns comparison-only access, not algorithms with additional
+algebraic primitives. Consequently the
+literal exact-fractional-output clause and its $n^{O(d^3)}$ output bound remain
+open. Arbitrary real observations also require a representation relative to the
+input field; rational-polynomial output covers only the rational-data bridge.
+
 For a general affine target $e^\top\beta\le\theta$, import
 [`AffinePreprocessing`](../../Complexity/Statistics/LeastSquares/AffinePreprocessing.lean)
 and open `Cslib.LeastSquares.AffineTarget`. `solve` selects a nonzero target

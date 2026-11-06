@@ -25,7 +25,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Boneh–Shoup cryptography tracks; zero-knowledge architecture | [#640], [#643] |
 | Crypto frontier track: Kilian's succinct arguments | [#999] |
 | OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002] |
-| STOC submission headline formalizations, including continuous mechanism verification, general least-squares stability with complete empirical audit certificates, and exact-one counting | [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527) |
+| STOC submission headline formalizations, including continuous mechanism verification, general least-squares stability (including exact fractional-output elimination/representation) with complete empirical audit certificates, and exact-one counting | [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527) |
 | A Verso guide with a chapter per area | [#585] |
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
