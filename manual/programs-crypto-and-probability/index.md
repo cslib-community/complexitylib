@@ -287,8 +287,16 @@ in [the bibliography](../../references.bib). The checked clients are in
   history-conditional response law. Costs must be nonnegative for the comparison;
   positive rational source bounds satisfy this condition. Duplicate calls are
   billed individually. Ties retain the earlier listed oracle and zero-gain
-  oracles are skipped. `batch` accepts an integral demand; the real logarithmic
-  thresholds are mathematical quantities, without a proved executable evaluator.
+  oracles are skipped. `batch` accepts an integral demand. Import
+  [PartialCoverThreshold](../../Complexity/Probability/StochasticOracle/PartialCoverThreshold.lean)
+  for `rationalRepetitions`, an exact rational-power search proved equal to the
+  real-log ceiling, including equality at an integral threshold. `rationalBatch`
+  uses that search and emits exactly the batch analyzed with real logarithms;
+  for the sufficient demand pass the rational failure budget `(1-η)/n`.
+  The search has no native binary resource bound. Check the complete
+  [threshold client](../../ComplexityTests/StochasticOraclePartialCoverThreshold.lean)
+  with `lake build ComplexityTests.StochasticOraclePartialCoverThreshold` for
+  exact-power, between-power and zero-demand cases and compiled selector execution.
   Native binary time/space, token-bill/deadline execution, asymptotic approximation
   consequences and hardness transfer remain open, as do Theorems 5–6.
   From a configured checkout, check the complete
