@@ -182,8 +182,8 @@ its dual gap `1/2`, width `2`, error `1/2`, and center `1`, which is outside the
 They also check the empty nonzero dual sum and exact normalized mass in dimension zero.
 Run `scripts/build.sh ComplexityTests.DiscreteGaussianShiftBounds` from the repository root.
 A width too small to satisfy the sufficient condition can still use the unconditional
-actual-dual-error bound. No minimum smoothing parameter, quotient density, total-variation
-bound, convolution theorem or efficient sampler is supplied by these results.
+actual-dual-error bound. The quotient probability consequence is described below; a minimum
+smoothing parameter, convolution theorem and efficient sampler remain separate.
 
 ## Condition a discrete Gaussian on coefficient residues
 
@@ -227,9 +227,51 @@ The theorem derives measurability on the canonical quotient measurable space and
 values and infinite total mass. It does not require a measurable fundamental domain beyond the
 null-measurability already in `hF`. The [checked clients](../../ComplexityTests/QuotientDensity.lean)
 cover bottom and top subgroups, a two-element group, infinite densities on a null measure, and
-the Borel measurable space of a discrete lattice quotient. Gaussian quotient normalization and
-distance estimates are a separate consumer in
-[issue #2681](https://github.com/cslib-community/complexitylib/issues/2681).
+the Borel measurable space of a discrete lattice quotient. The following Gaussian consumer
+proves the required probability normalizations before applying a distance formula.
+
+## Compare an actual Gaussian quotient distribution with uniform measure
+
+Import [Gaussian/Quotient.lean](../../Complexity/Foundations/Probability/Gaussian/Quotient.lean).
+Let `L` be a discrete full-rank lattice in a finite-dimensional real inner-product space `E`,
+let `n = Module.finrank ℝ E`, and take `s > 0`. Use `q = QuotientAddGroup.mk`, the
+canonical map to the quotient by `L.toAddSubgroup`, and an actual fundamental domain
+`hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume`. The measures are ordinary
+`Measure.withDensity`, `Measure.map` and scalar multiplication:
+
+- The ambient Gaussian is `volume.withDensity (fun x => ENNReal.ofReal
+  (gaussianWeight s x / s^n))`. Its probability normalization is
+  `ProbabilityTheory.isProbabilityMeasure_gaussianWeight s hs`.
+- The uniform reference is `(ENNReal.ofReal (ZLattice.covolume L))⁻¹ •
+  Measure.map q (volume.restrict F)`.
+  `ZLattice.isProbabilityMeasure_normalized_quotient L volume hF` proves it is a probability;
+  `normalized_quotient_eq` and `isAddLeftInvariant_normalized_quotient` prove independence
+  from the fundamental domain and translation invariance.
+
+`ZLattice.map_gaussianWeight_eq_withDensity L s hs hF` identifies the actual Gaussian
+pushforward's density relative to this reference. At `q x`, the real density is
+`covolume L / s^n * gaussianMass L s (-x)`; the opposite center comes from summing
+`gaussianWeight s (x + z)`. The representative identity is available as
+`automorphize_gaussianWeight_coe`.
+
+`ZLattice.tvDist_gaussian_quotient_le L s hs hF` bounds the distance between these actual
+probability measures by `gaussianMass D (1 / s) 0 - 1`, where `D` is the existing dual
+submodule. Compose it with `gaussianMass_dual_sub_one_le_of_gap` for a numerical sufficient
+width condition. `eventually_tvDist_gaussian_quotient_le L hF ε hε` proves that every positive
+error is achieved at all sufficiently large positive widths. The bound does not assume a
+small dual mass or a conclusion about the quotient distribution.
+
+Here `tvDist` is full L1, matching Regev's printed page 13 convention with range `[0, 2]`;
+there is no extra factor of one half in the stated bound. This is a precise quotient
+consequence of Claim 3.8, not a uniform probability on all of real space or the convolution
+statement of Claim 3.9. Efficient sampling and the quantum reduction remain open.
+
+The [checked clients](../../ComplexityTests/DiscreteGaussianShiftBounds.lean) reuse `2ℤ`
+with covolume `2`, width `2`, and its proved dual gap `1/2`. They check both probability
+normalizations, the actual density at the off-lattice representative `1`, full-L1 distance
+at most `1/2`, and eventual small error. In dimension zero, the two actual measures are
+proved equal and their distance is zero. Run
+`scripts/build.sh ComplexityTests.DiscreteGaussianShiftBounds` from the repository root.
 
 ## Convolve a singular law with a density
 

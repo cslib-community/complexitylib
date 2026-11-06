@@ -4,14 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Foundations.Probability.Gaussian.Smoothing
+import Complexity.Foundations.Probability.Gaussian.Quotient
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.Real.Pi.Bounds
 
 /-! Uniform mass at an off-lattice center of `2ℤ`, a genuine dual gap, and dimension zero. -/
 
 open Module ProbabilityTheory MeasureTheory
-open scoped RealInnerProductSpace
+open scoped ENNReal RealInnerProductSpace
 
 noncomputable section
 
@@ -143,5 +143,116 @@ example (s : ℝ) (hs : 0 < s) (c : Point) :
   have h := ZLattice.abs_gaussianMass_normalized_sub_one_le pointLattice s hs c
   rw [point_dual_mass (1 / s) (one_div_pos.mpr hs)] at h
   exact sub_eq_zero.mp (abs_nonpos_iff.mp h)
+
+/-- The same actual basis domains work with the canonical quotient's opposite action. -/
+private theorem basis_domain_op {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] {ι : Type*} [Finite ι]
+    (b : Basis ι ℝ E) :
+    IsAddFundamentalDomain (Submodule.span ℤ (Set.range b)).toAddSubgroup.op
+      (ZSpan.fundamentalDomain b) volume := by
+  have h := (ZSpan.isAddFundamentalDomain' b volume).preimage_of_equiv
+    (QuasiMeasurePreserving.id volume) (AddSubgroup.equivOp _).bijective (fun g x ↦ ?_)
+  · convert! h using 1
+  · change x + (g : E) = (g : E) + x
+    exact add_comm _ _
+
+private abbrev lineDomain := ZSpan.fundamentalDomain twoBasis
+private abbrev lineQuotient := ℝ ⧸ L.toAddSubgroup
+private abbrev lineGaussian (s : ℝ) : Measure ℝ :=
+  volume.withDensity (fun x ↦ ENNReal.ofReal (gaussianWeight s x / s))
+private abbrev lineUniform : Measure lineQuotient :=
+  (1 / 2 : ℝ≥0∞) • Measure.map QuotientAddGroup.mk (volume.restrict lineDomain)
+
+/-- These are actual probability measures, before any real-valued distance is evaluated. -/
+example (s : ℝ) (hs : 0 < s) : IsProbabilityMeasure (lineGaussian s) := by
+  simpa using isProbabilityMeasure_gaussianWeight (E := ℝ) s hs
+
+example : IsProbabilityMeasure lineUniform := by
+  simpa [covolume_two, lineGaussian, lineUniform, lineDomain] using
+    ZLattice.isProbabilityMeasure_normalized_quotient L volume (basis_domain_op twoBasis)
+
+example : Measure.IsAddLeftInvariant lineUniform := by
+  simpa [covolume_two, lineGaussian, lineUniform, lineDomain] using
+    ZLattice.isAddLeftInvariant_normalized_quotient L volume (basis_domain_op twoBasis)
+
+/-- Width and covolume both equal two, so the actual quotient density has coefficient one. -/
+example : Measure.map (QuotientAddGroup.mk : ℝ → lineQuotient) (lineGaussian 2) =
+    lineUniform.withDensity
+      (fun y ↦ ENNReal.ofReal (QuotientAddGroup.automorphize (gaussianWeight 2) y)) := by
+  simpa [covolume_two, lineGaussian, lineUniform, lineDomain] using
+    ZLattice.map_gaussianWeight_eq_withDensity L 2 (by norm_num) (basis_domain_op twoBasis)
+
+/-- This is the value of the density at an off-lattice representative, not a point probability. -/
+example : QuotientAddGroup.automorphize (gaussianWeight 2)
+    (QuotientAddGroup.mk (1 : ℝ) : lineQuotient) ∈ Set.Icc (1 / 2) (3 / 2) := by
+  rw [ZLattice.automorphize_gaussianWeight_coe]
+  have h := ZLattice.gaussianMass_mem_Icc_of_dual_mass_le L 2 (by norm_num)
+    (1 / 2) dual_small (-1)
+  norm_num [covolume_two] at h ⊢
+  exact h
+
+/-- A numerical width criterion gives a distance bound for the actual pushed-forward Gaussian. -/
+example : tvDist (Measure.map (QuotientAddGroup.mk : ℝ → lineQuotient) (lineGaussian 2))
+    lineUniform ≤ 1 / 2 := by
+  have h := (ZLattice.tvDist_gaussian_quotient_le L 2 (by norm_num)
+    (basis_domain_op twoBasis)).trans dual_small
+  simpa [covolume_two, lineGaussian, lineUniform, lineDomain] using h
+
+example (ε : ℝ) (hε : 0 < ε) : ∀ᶠ s : ℝ in Filter.atTop, 0 < s ∧
+    tvDist (Measure.map (QuotientAddGroup.mk : ℝ → lineQuotient) (lineGaussian s))
+      lineUniform ≤ ε := by
+  simpa [covolume_two, lineGaussian, lineUniform, lineDomain] using
+    ZLattice.eventually_tvDist_gaussian_quotient_le L (basis_domain_op twoBasis) ε hε
+
+private abbrev pointQuotient := Point ⧸ pointLattice.toAddSubgroup
+private abbrev pointGaussian (s : ℝ) : Measure Point :=
+  volume.withDensity (fun x ↦ ENNReal.ofReal (gaussianWeight s x / s ^ finrank ℝ Point))
+private abbrev pointUniform : Measure pointQuotient :=
+  (ENNReal.ofReal (ZLattice.covolume pointLattice))⁻¹ •
+    Measure.map QuotientAddGroup.mk (volume.restrict (ZSpan.fundamentalDomain pointBasis))
+
+example (s : ℝ) (hs : 0 < s) : IsProbabilityMeasure (pointGaussian s) :=
+  isProbabilityMeasure_gaussianWeight s hs
+
+example : IsProbabilityMeasure pointUniform :=
+  ZLattice.isProbabilityMeasure_normalized_quotient pointLattice volume (basis_domain_op pointBasis)
+
+/-- The dimension-zero endpoint gives exactly zero distance, with positive width arbitrary. -/
+private theorem point_tv_zero (s : ℝ) (hs : 0 < s) :
+    tvDist (Measure.map (QuotientAddGroup.mk : Point → pointQuotient) (pointGaussian s))
+      pointUniform = 0 := by
+  apply le_antisymm _ tvDist_nonneg
+  have h := ZLattice.tvDist_gaussian_quotient_le pointLattice s hs (basis_domain_op pointBasis)
+  rwa [point_dual_mass (1 / s) (one_div_pos.mpr hs)] at h
+
+/-- Actual probability normalization makes the zero distance an equality of measures. -/
+example (s : ℝ) (hs : 0 < s) :
+    Measure.map (QuotientAddGroup.mk : Point → pointQuotient) (pointGaussian s) =
+      pointUniform := by
+  have : IsProbabilityMeasure (pointGaussian s) := isProbabilityMeasure_gaussianWeight s hs
+  have : IsProbabilityMeasure pointUniform :=
+    ZLattice.isProbabilityMeasure_normalized_quotient pointLattice volume
+      (basis_domain_op pointBasis)
+  exact tvDist_eq_zero_iff.mp (point_tv_zero s hs)
+
+/-- The reference probability does not depend on which actual fundamental domain is used. -/
+example {F : Set ℝ} (hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume) :
+    lineUniform = (1 / 2 : ℝ≥0∞) •
+      Measure.map (QuotientAddGroup.mk : ℝ → lineQuotient) (volume.restrict F) := by
+  simpa [covolume_two, lineUniform, lineDomain] using
+    ZLattice.normalized_quotient_eq L volume (basis_domain_op twoBasis) hF
+
+/-- Every positive target error admits an actual width on any full-rank lattice. -/
+example {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+    (M : Submodule ℤ E) [DiscreteTopology M] [IsZLattice ℝ M] {F : Set E}
+    (hF : IsAddFundamentalDomain M.toAddSubgroup.op F volume) (ε : ℝ) (hε : 0 < ε) :
+    ∃ s : ℝ, 0 < s ∧
+      tvDist
+        (Measure.map (QuotientAddGroup.mk : E → E ⧸ M.toAddSubgroup)
+          (volume.withDensity (fun x ↦ ENNReal.ofReal (gaussianWeight s x / s ^ finrank ℝ E))))
+        ((ENNReal.ofReal (ZLattice.covolume M))⁻¹ •
+          Measure.map (QuotientAddGroup.mk : E → E ⧸ M.toAddSubgroup) (volume.restrict F)) ≤ ε :=
+  (ZLattice.eventually_tvDist_gaussian_quotient_le M hF ε hε).exists
 
 end ComplexityTests.DiscreteGaussianShiftBounds
