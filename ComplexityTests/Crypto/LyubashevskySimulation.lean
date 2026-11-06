@@ -283,4 +283,14 @@ theorem full_projections_agree :
   rw [progExp_proj_visible, simExp_proj_visible]
   exact zero_reads_visible_eq
 
+/-- Bounded multi-attempt visible simulation client: For K = 0, the programmed hybrid
+and the simulation agree identically on the q = 17 test fixture. -/
+theorem zero_attempts_prog_eq_sim_test :
+    lyubashevskySignAttemptsVisibleProg 1 2 1 17 0 3 1 0 H_fixed (fun _ => 0) (fun _ _ => key.2)
+      (fun _ => ()) (fun _ => []) (fun _ _ sig => pure sig) =
+    lyubashevskySignAttemptsVisibleSim 1 2 1 17 3 1 0 H_fixed (fun _ _ => key.2)
+      (fun _ => ()) (fun _ => []) (fun _ _ sig => pure sig) :=
+  lyubashevskySignAttemptsVisibleProg_zero_eq_sim 1 2 1 17 0 3 1 H_fixed (fun _ => 0)
+    (fun _ _ => key.2) (fun _ => ()) (fun _ => []) (fun _ _ sig => pure sig)
+
 end LyubashevskySimulationTests
