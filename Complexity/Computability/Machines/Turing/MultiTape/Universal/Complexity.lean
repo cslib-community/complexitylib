@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Ite
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
+import Complexity.Tactic.Degree
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
 import Complexity.Tactic.OptionMatch
@@ -106,21 +107,21 @@ open ComputableInDegree
 @[local fun_prop]
 public lemma read_deg : ComputableInDegree Tape.read eTape eSym 1 1 := by
   unfold Tape.read
-  fun_prop (disch := lia)
+  degree
 
 /-- A right move. -/
 @[local fun_prop]
 public lemma movePos_deg :
     ComputableInDegree (fun t : Tape => t.move .pos) eTape eTape 1 1 := by
   simp only [Tape.move]
-  fun_prop (disch := lia)
+  degree
 
 /-- A left move. -/
 @[local fun_prop]
 public lemma moveNeg_deg :
     ComputableInDegree (fun t : Tape => t.move .neg) eTape eTape 1 1 := by
   simp only [Tape.move]
-  fun_prop (disch := lia)
+  degree
 
 /-- Moving the head. -/
 @[local fun_prop]
@@ -140,13 +141,8 @@ lemma move_deg : ComputableInDegree (fun p : Tape × SignType => p.1.move p.2)
 @[local fun_prop]
 lemma apply_deg : ComputableInDegree (fun p : Tape × TapeAct =>
     p.1.apply p.2) (encPair eTape eTA) eTape 1 1 := by
-  convert (show ComputableInDegree (fun p : Tape × TapeAct =>
-    (if p.2.1.isSome then p.1.write (p.2.1.getD none) else p.1).move p.2.2)
-    (encPair eTape eTA) eTape 1 1 by
-      unfold Tape.write
-      fun_prop (disch := first | apply le_refl | lia)) using 1
-  funext ⟨t, w, m⟩
-  cases w <;> rfl
+  unfold Tape.apply Tape.write
+  degree
 
 /-! ### Applying actions to all work tapes -/
 
@@ -162,16 +158,11 @@ lemma zipFold_applyOne (ts : List Tape) (as : List TapeAct) :
   | nil => rfl
   | cons t ts ih => cases as <;> simp [zipFold, applyOne, applyTapes, ih, applyTapes_nil_right]
 
-attribute [local fun_prop] ComputableInDegree.optionSome in
 lemma applyOne_deg : ComputableInDegree (fun q : Unit × Tape × Option TapeAct =>
     applyOne q.1 q.2.1 q.2.2) (encPair encUnit (encPair eTape (encOption eTA)))
     (encOption eTape) 1 1 := by
-  convert (show ComputableInDegree (fun q : Unit × Tape × Option TapeAct =>
-    some (if q.2.2.isSome then q.2.1.apply (q.2.2.getD (none, 0)) else q.2.1))
-    (encPair encUnit (encPair eTape (encOption eTA))) (encOption eTape) 1 1 by
-      fun_prop (disch := first | apply le_refl | lia)) using 1
-  funext ⟨_, t, a⟩
-  cases a <;> rfl
+  unfold applyOne
+  degree
 
 end Tape
 

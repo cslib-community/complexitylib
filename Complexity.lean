@@ -2155,6 +2155,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degr
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Option
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Primitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Doubled
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Fold
@@ -4547,6 +4548,7 @@ public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
+public import Complexity.Tactic.Degree
 public import Complexity.Tactic.EncLen
 public import Complexity.Tactic.FOOperator
 public import Complexity.Tactic.FOOperator.Init
