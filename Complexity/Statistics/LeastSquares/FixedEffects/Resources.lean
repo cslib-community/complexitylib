@@ -798,7 +798,3 @@ theorem run_isBigO {ι : Type*} (l : Filter ι) (groups : ι → List (List Poin
     (deletions_pos _ _ (hfull i) (hq i))
 
 end Cslib.LeastSquares.FixedEffects.Resources
-
-
-
-
