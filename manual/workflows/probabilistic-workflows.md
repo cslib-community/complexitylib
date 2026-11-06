@@ -199,8 +199,9 @@ its dual gap `1/2`, width `2`, error `1/2`, and center `1`, which is outside the
 They also check the empty nonzero dual sum and exact normalized mass in dimension zero.
 Run `scripts/build.sh ComplexityTests.DiscreteGaussianShiftBounds` from the repository root.
 A width too small to satisfy the sufficient condition can still use the unconditional
-actual-dual-error bound. The quotient probability consequence is described below; a minimum
-smoothing parameter, convolution theorem and efficient sampler remain separate.
+actual-dual-error bound. The [quotient probability](#compare-an-actual-gaussian-quotient-distribution-with-uniform-measure)
+and [coset-convolution](#add-continuous-gaussian-noise-to-a-coset-gaussian) consequences are
+described below; a minimum smoothing parameter and efficient sampler remain separate.
 
 ## Condition a discrete Gaussian on coefficient residues
 
