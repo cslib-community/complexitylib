@@ -333,10 +333,65 @@ a non-dense 3-SAT variable label and rational-width padding. Start with the two
 imports above; use the semantic equivalence to inspect a constructed instance,
 and the separate polynomial-time theorem for a complexity-class reduction.
 
-The full-paper objective remains open. Still unproved are the sparsification
-refinement, exact solution-multiplicity factor, certified exact decision/witness
-algorithms (including dissection's time, balance computation, space and class-size
-expectations), remaining solution-count/planted-bias/Hamming/difference claims,
-and ideal-model adversarial search/decision bounds. The positional-cut result
-is not a universal algorithmic barrier, and experimental CDCL exponents remain
-finite observations.
+Import [AddXNORSearch.lean](../../Complexity/Cryptanalysis/AddXNORSearch.lean)
+for executable exact witness search at any cut. `meetSearch left right s t`
+builds actual forward records and inverse suffix records, indexes the forward
+states by all their bits in a binary trie, and scans suffix records for a match.
+`meetSearch_sound` checks both witness lengths and actual evaluation;
+`meetSearch_ne_none_iff` proves completeness. Duplicates retain one witness.
+`meetSearch_operation_bounds` bounds full-word step calls, insertion-node
+inspections and lookup-node inspections separately by a polynomial times
+$2^h$ when both cut lengths are at most $h$; `half_cut_lengths` supplies the
+ceiling-half cut. `meetSearch_trie_resources` bounds retained trie nodes too.
+These are concrete operation/data-size bounds, **not** multitape bit-runtime
+or peak working-space certificates: `BitVec` arithmetic, list administration,
+key generation and witness storage still require that bridge. No desired runtime
+is assigned as an annotation. The complete [search client](../../ComplexityTests/AddXNORSearch.lean)
+checks successful and unsuccessful inputs, empty cuts, width zero and duplicate states.
+
+Import [AddXNORCounting.lean](../../Complexity/Cryptanalysis/AddXNORCounting.lean)
+for Propositions 1–2. `steps` uses all `Fin q → Bool` operator strings on the
+actual operands. `uniform_mean_solutionCount` gives $2^q/2^m$ under independent
+uniform full-width inputs, and `uniform_solution_probability_le` bounds the
+probability of any solution by that mean. The balanced mean is exactly $1/2$.
+`plantedLastMass_size_bias` derives the manuscript's exact size-bias identity
+from its actual final-operand planting: sample the operator string and every
+preceding operand independently, then use `plantedLast` to complete the target.
+A second identity covers initial-word planting by inverse evaluation. Neither
+identity asserts independent solution events or a Poisson law.
+
+Import [AddXNORParity.lean](../../Complexity/Cryptanalysis/AddXNORParity.lean)
+for the exact $2^{q-1}$ size of the required parity class and the even Hamming
+distance of every solution pair. Positive width is required; the count bound
+also requires $q>0$. These theorems reuse the existing Boolean parity and
+Hamming-weight APIs. Import [AddXNORDifference.lean](../../Complexity/Cryptanalysis/AddXNORDifference.lean)
+for all three parts of Lemma 7 and the actual complemented-carry formula for
+an operator flip. `addition_difference_probability` uses two independent
+uniform words and a fixed difference; its exponent counts precisely the active
+bits below the MSB. `msb_addition_difference` holds deterministically.
+The complete [counting/difference client](../../ComplexityTests/AddXNORCounting.lean)
+checks mean/planting contracts, degenerate-width exclusions, parity bounds and
+mixed low/MSB differences. It also shows why Proposition 3's parenthetical
+$2^{-w}$ must count non-MSB activity: an MSB-only difference has weight one
+but preservation probability one. The proposition's expected-flip-weight formula
+is still unproved here.
+
+The [search client](../../ComplexityTests/AddXNORSearch.lean) also gives a checked
+obstruction to the literal `Real` simulator in Lemma 10 (PDF pp. 25–26).
+Conditional on $q=3$, $m=5$, $s_0=t=0$ and planted word $000$, the fresh-answer
+rules permit $\pi_{2,0}(0)=0$, $\pi_{1,0}(0)=1$, and $\pi_{3,0}^{-1}(0)=0$.
+These draws use separate initially empty tables and have conditional mass
+$32^{-3}$. The fourth query $\pi_{2,0}(1)$ closes the chain and is forced to
+return zero, violating that table's injectivity. `planted_trace_impossible`
+proves that the same three answers are impossible in the true planted experiment.
+The parameters satisfy Theorem 8's range. This trace already has a collision
+(`BAD`), so it does not challenge the collision-free coupling. It refutes exact
+simulation as written, **not** Theorem 8's inequality; repairing the simulator
+and proving the adversary-quantified lower bound remain open.
+
+The full-paper objective remains open. Remaining endpoints are the sparsification
+resource refinement, exact reduction multiplicity, reachable-state/small-operand
+and meet-in-the-middle bit-runtime certificates, all dissection resources and
+class-size expectations, expected operator-flip weight, and repaired ideal-model
+search/decision lower bounds. The positional-cut result is not a universal
+algorithmic barrier, and experimental CDCL exponents remain finite observations.

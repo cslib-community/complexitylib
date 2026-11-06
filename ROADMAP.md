@@ -41,9 +41,14 @@ objective remains open. The actual guard-based polynomial-time NP-completeness
 reduction, every positive rational width restriction, and the direct linear-width
 3-SAT map are implemented, with explicit encoding-length bounds. Theorem 2's
 sparsification/disjunction resource refinement, exact reduction multiplicity,
-certified algorithm/resource bounds and uniform class-size expectations,
-ideal-chain search/decision lower bounds, and the remaining explicit
-solution-count/planted-bias/Hamming and difference-propagation claims still need proofs.
+certified bit-runtime/working-space bounds and uniform dissection class-size
+expectations, expected operator-flip weight and ideal-chain search/decision lower
+bounds still need proofs. Exact witness search with concrete word-step/trie
+operation counts, uniform solution counts and planted size bias, parity/Hamming
+geometry, and all of Lemma 7's difference propagation are implemented. Lemma 10's
+literal lazy simulator has a checked injectivity obstruction; this invalidates
+that exact simulation claim, not Theorem 8's inequality. A repaired lower-bound
+proof remains part of the objective.
 Empirical CDCL and solution-count observations are not asymptotic theorems.
 
 ### Landmark theorems, in priority order

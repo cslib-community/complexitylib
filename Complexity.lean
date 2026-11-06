@@ -2869,12 +2869,16 @@ public import Complexity.Computability.WordRAM.Width
 public import Complexity.Cryptanalysis.AddXNOR
 public import Complexity.Cryptanalysis.AddXNORBits
 public import Complexity.Cryptanalysis.AddXNORChain
+public import Complexity.Cryptanalysis.AddXNORCounting
 public import Complexity.Cryptanalysis.AddXNORDecay
 public import Complexity.Cryptanalysis.AddXNORDecision
+public import Complexity.Cryptanalysis.AddXNORDifference
 public import Complexity.Cryptanalysis.AddXNORGuard
 public import Complexity.Cryptanalysis.AddXNORGuardedChain
 public import Complexity.Cryptanalysis.AddXNORNPComplete
+public import Complexity.Cryptanalysis.AddXNORParity
 public import Complexity.Cryptanalysis.AddXNORRuns
+public import Complexity.Cryptanalysis.AddXNORSearch
 public import Complexity.Cryptanalysis.AddXNORSpectrum
 public import Complexity.Cryptanalysis.AddXNORStripping
 public import Complexity.Cryptanalysis.AddXNORSubsetSum
@@ -3163,6 +3167,7 @@ public import Complexity.DataStructure.ApproximateMembership.Spec
 public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter
 public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.Cluster
 public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
+public import Complexity.DataStructure.BinaryTrie
 public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
 public import Complexity.DataStructure.CountMin.Probability
