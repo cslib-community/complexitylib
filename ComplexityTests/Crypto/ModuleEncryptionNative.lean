@@ -132,4 +132,11 @@ example :
   rw [hrun 0 2 29 (by decide)]
   decide
 
+/-! ### 4. Malformed and incomplete decoder fallbacks -/
+
+/-- Incomplete framing and noncanonical sign/magnitude words decode safely via total fallbacks. -/
+example : decodeIntBin [] = 0 := by decide
+example : decodeIntBin [true] = 0 := by decide
+example : decodeIntBin [true, false, false] = 0 := by decide
+
 end ComplexityTests.Crypto.ModuleEncryptionNative

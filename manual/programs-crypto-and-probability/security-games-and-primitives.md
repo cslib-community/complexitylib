@@ -108,11 +108,14 @@ runtime inputs; secret coordinates use `ModuleSIS.encodeVec` over signed integer
 uses `GeneralSIS.encodeMatrix (extendCiphertext ct)`. Decryption evaluates each secret polynomial's
 canonical residues modulo `q`, performs negacyclic multiplication against each ciphertext polynomial
 using the certified integer negacyclic engine, sums polynomial columns, and applies centered threshold
-decoding `decodePolyMsg` on canonical natural coefficients.
-[Checked clients](../../ComplexityTests/Crypto/ModuleEncryptionNative.lean) verify honest Ring-LWE and
-Module-LWE encryption/decryption, rank zero, degree zero, modulus one, and threshold edge cases where
-residue differences of `q / 4` and `q / 4 + 1` decode to `false` and `true`. Full native encryption,
-seed codecs, and security reductions under native sampling remain separate obligations.
+decoding `decodePolyMsg` on canonical natural coefficients. The private implementation pads missing
+coefficients and rows with zero, ignores excess entries while charging their input length, and at
+modulus zero or on incomplete framing remains total without asserting quotient-ring semantics.
+In-source checks and [checked clients](../../ComplexityTests/Crypto/ModuleEncryptionNative.lean) verify
+honest Ring-LWE and Module-LWE encryption/decryption, rank zero, degree zero, modulus zero, modulus
+one, incomplete framing, and threshold edge cases where residue differences of `q / 4` and `q / 4 + 1`
+decode to `false` and `true`. Full native encryption, seed codecs, and security reductions under native
+sampling remain separate obligations.
 
 The structured matrix input itself now has a native constructor and exact sampler in
 [`SIS/Module/MatrixSampling.lean`](../../Complexity/Crypto/Computational/SIS/Module/MatrixSampling.lean).

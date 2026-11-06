@@ -651,4 +651,46 @@ theorem exists_computableInPolyTime_moduleLWEDecrypt :
           List.ofFn (moduleLWEDecrypt (fun j i => (s j i : ZMod q)) ct) :=
   ⟨decryptWords, decryptWords_polyTime, fun _ _ _ hq s ct => decryptWords_encode hq s ct⟩
 
+/-! ### Total execution on off-canonical, zero-modulus and malformed inputs -/
+
+/-- At modulus zero, the total runtime function remains defined, producing `false` for every
+output bit without asserting quotient-ring semantics. -/
+example : decryptWords (((1, 2), 0), ([], [])) = [false, false] := by
+  simp only [decryptWords, decodeSignedList, frames_nil, List.map_nil, Decoder.list]
+  decide
+
+/-- Empty ciphertext and secret words are total: missing rows and coefficients pad with default
+values, yielding a total boolean list of length `n`. -/
+example : decryptWords (((2, 3), 29), ([], [])) = [false, false, false] := by
+  simp only [decryptWords, decodeSignedList, frames_nil, List.map_nil, Decoder.list]
+  decide
+
+/-- Excess rows and secret entries are ignored while charging complete input length: a secret
+list with 4 entries when only `k * n = 2` are needed, and a ciphertext matrix with 3 rows when
+only `k + 1 = 2` are needed. -/
+example :
+    decryptWords (((1, 2), 29),
+      (encList encIntBin [1, -1, 5, 10],
+        encList (encList encNat) [[7, 8], [3, 4], [99, 100]])) =
+      [false, false] := by
+  simp only [decryptWords, decodeSignedList_encode, Decoder.decode_enc]
+  decide
+
+/-- Incomplete framing and malformed words do not crash: raw bitstreams with irregular frame
+delimiters decode via total fallbacks and produce valid output lists of length `n`. -/
+example : (frames [true]).map decodeIntBin = [0] := by
+  simp [frames, unframe, dropFrame, decodeIntBin, Decoder.nat, ofBits]
+
+example :
+    decryptWords (((1, 2), 29), ([true], [true])) = [false, false] := by
+  have hf : frames [true] = [[]] := by
+    rw [frames_of_ne_nil (by decide)]
+    simp [unframe, dropFrame]
+  have hs : decodeSignedList [true] = [0] := by
+    simp [decodeSignedList, hf, decodeIntBin, Decoder.nat, ofBits]
+  have hct : (Decoder.list (Decoder.list Decoder.nat)).decode [true] = [[]] := by
+    simp [Decoder.list, hf]
+  simp only [decryptWords, hs, hct]
+  decide
+
 end Cslib.Crypto
