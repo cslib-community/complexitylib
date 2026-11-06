@@ -4367,6 +4367,8 @@ public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.StochasticOracle.CutoffFamilies
 public import Complexity.Probability.StochasticOracle.ExecutionFeasibility
 public import Complexity.Probability.StochasticOracle.FullCover
+public import Complexity.Probability.StochasticOracle.PartialCover
+public import Complexity.Probability.StochasticOracle.PartialCoverRisk
 public import Complexity.Probability.StochasticOracle.Programs
 public import Complexity.Probability.StochasticOracle.RandomCost
 public import Complexity.Probability.StochasticOracle.RationalFullCover

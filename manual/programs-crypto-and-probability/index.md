@@ -244,8 +244,41 @@ in [the bibliography](../../references.bib). The checked clients are in
   success-correlated bills. The rational optimizer uses the generic
   [one-constraint LP](../../Complexity/Foundations/Optimization/OneConstraint.lean)
   support reduction and finite vertex enumeration; its schedule set can be
-  exponential. The binary-input FPTAS, hardness, partial-cover and adaptive
+  exponential. The partial-cover selector and adaptive
   endpoints remain open under [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
+- [PartialCover](../../Complexity/Probability/StochasticOracle/PartialCover.lean)
+  proves submission 191, Lemma 1 (PDF pp. 9, 15). `Instance` supplies the finite
+  universe, original weighted sets and a nonnegative feasible dual vector.
+  `retain` processes returned subfamilies in order and accepts only a nonempty
+  new cover whose weight passes `Certified`. Its invariant charges newly
+  covered elements once; overlapping/repeated sets cannot increase the assembled
+  cover's weight beyond that charge. `retain_cover_bound` compares every
+  completed result with the dual objective and every integral cover.
+  Import [PartialCoverRisk](../../Complexity/Probability/StochasticOracle/PartialCoverRisk.lean)
+  for Theorem 4's conditional-risk probability bound. `ResponseKernel` gives
+  arbitrary real conditional laws on all original-set subfamilies, depending
+  on the complete preceding response-subfamily history. `Admissible` requires
+  joint local certification and coverage probability at least `p` for each
+  eligible uncovered element, only at histories reached with positive mass.
+  `law` executes the actual local tests. `certified_completion_bound` derives
+  success at least `max 0 (1 - ∑ e, (1-p)^d_e)` for a certified completed cover;
+  neither call independence nor element independence is required. `chances_batch`
+  identifies `d_e` with the expanded call-count vector, and `multicover_risk_le`
+  gives the uniform repetition bound. `repetitions` is the source’s logarithmic
+  ceiling: `risk_implies_multicover`, `multicover_implies_risk` and
+  `repetition_thresholds` prove necessity of `r₀`, sufficiency of `r₁` and
+  `1 ≤ r₀ ≤ r₁` when the universe is nonempty and `0 < p, η < 1`.
+  The finite observed-response alphabet
+  allows arbitrary correlations and real probabilities; no finite underlying
+  random-seed assumption is imposed. Token bills, latencies and a native
+  sampler/runtime are not part of this response-law model. The greedy selector,
+  logarithmic cost comparison, resource bridge and
+  hardness transfer remain open, as do Theorems 5–6. From a configured checkout,
+  import `PartialCoverRisk` and check the complete
+  [StochasticOraclePartialCover](../../ComplexityTests/StochasticOraclePartialCover.lean)
+  client with `lake build ComplexityTests.StochasticOraclePartialCover`: it
+  checks accepted/rejected overlaps, exact two-call probability `3/4`, a correlated
+  response law, a failing conditional guarantee, zero calls and an empty universe.
 - [TwoBatchMinimum](../../Complexity/Probability/StochasticOracle/TwoBatchMinimum.lean)
   completes Proposition 1 (PDF pp. 6, 14): `one_turn_cost` gives the exact
   one-turn value; `two_batch_reduction` and `minimum_two_batch` prove the attained
