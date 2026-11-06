@@ -53,6 +53,10 @@ are allowed and count as distinct positions in the scope. -/
     validArity arity F = true ↔ WellFormed arity F := by
   simp [validArity, WellFormed, List.all_eq_true]
 
+/-- Well-formedness is decidable by the executable exact-arity guard. -/
+instance (arity : Rel → ℕ) (F : CSP Rel V) : Decidable (WellFormed arity F) :=
+  decidable_of_iff (validArity arity F = true) (validArity_eq_true_iff arity F)
+
 /-- The relation belonging to a symbol, evaluated only at its declared arity. -/
 @[expose] def booleanRelation (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) (R : Rel) :
     Set (Fin (arity R) → Bool) :=

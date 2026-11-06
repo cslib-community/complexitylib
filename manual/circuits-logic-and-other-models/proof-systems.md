@@ -35,10 +35,31 @@ median `Cslib.BitString.median`.
 The [checked examples](../../ComplexityTests/MajorityCNF.lean) give a signed 2CNF definition of
 equality, an existential projection, a ternary-disjunction counterexample and the nullary edge
 cases. This is the bijunctive structural equivalence used in Schaefer's Boolean dichotomy.
-It does not assert the full complexity classification or a polynomial-time certificate for
-constructing the defining formula. The remaining Boolean theorem is tracked in
+The structural theorem alone makes no complexity claim. The full Boolean theorem is tracked in
 [#2822](https://github.com/cslib-community/complexitylib/issues/2822); symmetric and larger-domain
 dichotomies are outside that task.
+
+For native complexity statements, import
+[`Problems.CSP.Basic`](../../Complexity/Computability/Complexity/Problems/CSP/Basic.lean).
+`Cslib.Complexity.CSPSAT arity sem` uses the existing CSP lists, requires every scope length to
+equal its symbol's declared arity, and asks for one Boolean assignment satisfying all constraints.
+The alphabet, arities and semantics are fixed independently of the input. For a finite alphabet,
+`CSPSAT.mem_NP` proves native NP membership under `encCSP encRel encNat`, with framed lists/pairs
+and binary variable labels. Repeated scope variables, empty relations and nullary relations are
+allowed; malformed arities are rejected. The
+[checked syntax and model examples](../../ComplexityTests/BooleanCSP.lean) include sparse large
+labels, inconsistent unary pins, repeated variables and nullary truth/falsity.
+
+[`Problems.CSP.Constant`](../../Complexity/Computability/Complexity/Problems/CSP/Constant.lean)
+and [`Problems.CSP.Majority`](../../Complexity/Computability/Complexity/Problems/CSP/Majority.lean)
+prove native P membership from a common unary constant (`CSPSAT.mem_P_of_constant`) or a common
+majority operation (`CSPSAT.mem_P_of_majority`). The constant decider first rejects constraints
+using empty relations. In the majority case, fixed local 2CNF templates are instantiated by a
+certified polynomial-time compiler and sent to native 2SAT. Local positions use unary indices
+for list lookup; original variable labels retain their binary encoding. These bounds are for
+each fixed language, with no uniform bound on preprocessing a supplied language or its truth
+tables. The shared six-case criterion is `Cslib.Logic.PL.CSP.HasSchaeferPolymorphism`; this layer
+establishes its two constant cases and majority case, with the remaining cases tracked in #2822.
 
 ## Three resolution representations
 

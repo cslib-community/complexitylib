@@ -1762,6 +1762,9 @@ public import Complexity.Computability.Complexity.Parameterized
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
+public import Complexity.Computability.Complexity.Problems.CSP.Basic
+public import Complexity.Computability.Complexity.Problems.CSP.Constant
+public import Complexity.Computability.Complexity.Problems.CSP.Majority
 public import Complexity.Computability.Complexity.Problems.CircuitSAT
 public import Complexity.Computability.Complexity.Problems.CircuitValue
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Compilation
@@ -2649,6 +2652,7 @@ public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
+public import Complexity.Computability.PolyTime.CSP.CNFTemplate
 public import Complexity.Computability.PolyTime.CSP.ToCNF
 public import Complexity.Computability.PolyTime.CSP.Vars
 public import Complexity.Computability.PolyTime.CommonCountingAccum
@@ -4366,6 +4370,8 @@ public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CSP
 public import Complexity.Logics.Propositional.CSP.BinaryDigits
+public import Complexity.Logics.Propositional.CSP.Boolean
+public import Complexity.Logics.Propositional.CSP.CNFTemplate
 public import Complexity.Logics.Propositional.CSP.ExactlyOne
 public import Complexity.Logics.Propositional.CSP.HardCore
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
