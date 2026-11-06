@@ -4339,6 +4339,7 @@ public import Complexity.Probability.ApproximateCounting.Relative
 public import Complexity.Probability.BitString
 public import Complexity.Probability.BitString.AffineHash
 public import Complexity.Probability.BitString.AffineHash.ThreeWise
+public import Complexity.Probability.BitString.Collision
 public import Complexity.Probability.BitString.LinearHash
 public import Complexity.Probability.BitString.LinearHash.Collisions
 public import Complexity.Probability.BitString.List
