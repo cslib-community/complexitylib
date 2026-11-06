@@ -795,7 +795,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   cache and nested-loop invariants where clients need them; keep separate time, workspace and
   output-size bounds through composition; apply cumulative streaming contracts to captured
   iteration and nested loops; certify PRG stretching with seed length, rounds and generator cost
-  kept separate; and develop general open-program composition. Use Cook–Levin and GGM as
+  kept separate; and develop general open-program composition. Emitted PRG prefixes now have
+  exact length, prefix consistency, a full-input native certificate and security at every native
+  polynomial output schedule ([#2784](https://github.com/cslib-community/complexitylib/issues/2784)).
+  The adaptive arbitrary-word cipher and hash-then-MAC/EtM construction remains open
+  ([#2749](https://github.com/cslib-community/complexitylib/issues/2749)). Use Cook–Levin and GGM as
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.

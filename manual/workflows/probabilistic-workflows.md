@@ -706,6 +706,22 @@ inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive
 lower-child budget induction, native realization and RL=L remain in
 [issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
 
+## Extract an emitted pseudorandom prefix
+
+Import [Stretch/Prefix.lean](../../Complexity/Crypto/Computational/Stretch/Prefix.lean).
+Use `PRGStretch.length_take_forwardIterate` and `take_forwardIterate_prefix` with the global
+one-bit length promise. The latter compares `ℓ ≤ L` rounds only after discarding the final
+seed: take `ℓ` bits from either run. Do not apply it to the complete retained-seed output.
+
+`polyTime_take_forwardIterate` certifies the map from a complete seed and unary round count
+to the emitted prefix. Compose its round count with the plaintext length to obtain a native
+XOR pad computation; the [checked PRGStretch client](../../ComplexityTests/PRGStretch.lean)
+proves actual encryption/recovery and distinguishes emission order from its reversal.
+For security, apply `indistinguishable_take_forwardIterate` to the existing one-bit
+`PseudorandomGenerator` assumption and a native unary length schedule `L`. The seed law stays
+`uniformList n`; the output law is compared with `uniformList (L n)`. This covers `L n = 0`
+and seed width zero, but does not yet supply adaptive-message cipher security.
+
 ## Carry the certificate into a security proof
 
 Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.lean](../../Complexity/Crypto/Computational/Basic.lean), computational indistinguishability quantifies over certified strict-PPT distinguishers. It does not require the compared PMF ensembles to be efficiently sampleable or polynomially bounded in length. Check those properties separately when the intended construction needs them.
