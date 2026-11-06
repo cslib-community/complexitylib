@@ -35,8 +35,8 @@ generator `gen` that outputs valid descriptions `(p, q)` of balanced moduli `N =
 * decryption outputs `((c ^ φ(N) mod N ^ 2) - 1) / N * φ(N)⁻¹ mod N`.
 
 Decryption is correct because raising `c` to the power `φ(N)` removes the randomness and leaves
-`1 + m * φ(N) * N` modulo `N ^ 2`. Multiplying two ciphertexts modulo `N ^ 2` adds their
-plaintexts modulo `N`.
+`1 + m * φ(N) * N` modulo `N ^ 2`. Multiplying two ciphertexts modulo `N ^ 2` preserves plaintext
+addition under decryption modulo `N`.
 
 The randomness `r` is drawn from `n + |N|` fair coins with `ProbComp.sampleModNat`; a draw that
 is not a unit modulo `N` is replaced by `1`, so decryption is correct on every ciphertext in the
@@ -51,7 +51,7 @@ part of this file.
 
 * `Cslib.Crypto.Paillier.keyGen`, `Cslib.Crypto.Paillier.encrypt`, `Cslib.Crypto.Paillier.decrypt`:
   the Paillier scheme on binary words.
-* `Cslib.Crypto.Paillier.addCiphertexts`: the homomorphic addition of ciphertexts.
+* `Cslib.Crypto.Paillier.addCiphertexts`: multiplication of ciphertexts modulo `N ^ 2`.
 
 ## Main results
 
@@ -59,7 +59,19 @@ part of this file.
   `Cslib.Crypto.Paillier.computableInPolyTime_decrypt`: key generation and encryption are uniform
   strict PPT, and decryption is polynomial-time.
 * `Cslib.Crypto.Paillier.decrypt_encrypt`: perfect correctness.
-* `Cslib.Crypto.Paillier.decrypt_addCiphertexts`: the additive homomorphism.
+* `Cslib.Crypto.Paillier.decrypt_addCiphertexts`: preservation of plaintext addition under
+  decryption (the first condition of [KatzLindell2020], Definition 15.14).
+
+## Scope and limitations
+
+* `decrypt_addCiphertexts` establishes preservation of plaintext addition under decryption,
+  corresponding to the first condition of [KatzLindell2020], Definition 15.14. It does not
+  establish the second condition (equality of the multiplied-encryption distribution with fresh
+  encryptions of the sum), which is generally false for the implemented dyadic sampler plus
+  `unitOrOne`: at `N = 143`, `n = 0`, and `m₁ = m₂ = 0`, a fresh ciphertext `encNat 1` has mass
+  `44 / 256 = 11 / 64`, while multiplying two independent encryptions gives mass
+  `2316 / 65536 = 579 / 16384`. The full definition of an additively homomorphic scheme and the
+  IND-CPA reduction ([KatzLindell2020], Theorem 15.13) remain separate objectives.
 
 ## References
 
@@ -288,7 +300,7 @@ theorem computableInPolyTime_decrypt :
 /-- `addCiphertexts` is computable in polynomial time. -/
 theorem computableInPolyTime_addCiphertexts :
     ComputableInPolyTime
-      (fun x : List Bool × List Bool × List Bool => addCiphertexts x.1 x.2.1 x.2.2)
+      (fun ⟨pk, ct₁, ct₂⟩ => addCiphertexts pk ct₁ ct₂)
       (encPair encBits (encPair encBits encBits)) encBits := by
   unfold addCiphertexts
   fun_prop
@@ -344,10 +356,17 @@ theorem decrypt_encrypt {gen : ℕ → ProbComp Desc} {n : ℕ} {keys : List Boo
   rw [decrypt_encPair, decryptNat_eq d.one_lt_modulus d.coprime_totient hr
     (natCast_ciphertext (NeZero.ne _) m r), Nat.mod_eq_of_lt hm]
 
-/-- **Additive homomorphism of Paillier encryption** ([KatzLindell2020], Definition 15.14 and
-the discussion of Paillier encryption that follows it): for every key pair in the support of
+/-- **Preservation of plaintext addition under decryption** ([KatzLindell2020], Definition 15.14
+and the discussion of Paillier encryption that follows it): for every key pair in the support of
 `keyGen gen n` and ciphertexts `ct₁`, `ct₂` in the supports of `encrypt n pk m₁` and
-`encrypt n pk m₂`, the product `addCiphertexts pk ct₁ ct₂` decrypts to `(m₁ + m₂) mod N`. -/
+`encrypt n pk m₂`, the product `addCiphertexts pk ct₁ ct₂` decrypts to `(m₁ + m₂) mod N`.
+
+Note: [KatzLindell2020], Definition 15.14 additionally requires equality of the
+multiplied-ciphertext distribution with fresh encryptions of the sum. That distribution clause is
+not established here (and fails for the dyadic sampler plus `unitOrOne`: at `N = 143`, `n = 0`, and
+`m₁ = m₂ = 0`, fresh `encNat 1` has probability mass `44 / 256 = 11 / 64`, whereas multiplying two
+independent encryptions yields mass `2316 / 65536 = 579 / 16384`). The full source definition
+remains a separate objective. -/
 theorem decrypt_addCiphertexts {gen : ℕ → ProbComp Desc} {n : ℕ} {keys : List Bool × List Bool}
     (hkeys : keys ∈ (ProbComp.eval (keyGen gen n)).support) {m₁ m₂ : ℕ} {ct₁ ct₂ : List Bool}
     (hct₁ : ct₁ ∈ (ProbComp.eval (encrypt n keys.1 m₁)).support)

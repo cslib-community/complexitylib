@@ -129,6 +129,11 @@ Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal 
 
 Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circuits: Derandomizing the XOR Lemma*. Proceedings of the 29th Annual ACM Symposium on Theory of Computing, 220–229, 1997. DOI: [10.1145/258533.258590](https://doi.org/10.1145/258533.258590). ACM metadata checked by the coordinated source pass on 2026-11-02; no complete literature proof audit is asserted.
 
+<a id="katzlindell20"></a>
+## katzlindell20
+
+Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edition. CRC Press, 2020. Authors' 3rd-edition table of contents and preface inspected: https://www.cs.umd.edu/~jkatz/imc/toc-preface-3rd.pdf (Chapter 15 on public-key encryption, specifically Section 15.2 on Paillier encryption, Proposition 15.6, Claims 15.7–15.9, Definition 15.10, Construction 15.11, Example 15.12, and Definition 15.14). The full textbook body was not independently audited; the Lean modules adapt the parameter generators and sampling distribution as documented in the chapter text.
+
 <a id="lean-validation"></a>
 ## lean-validation
 

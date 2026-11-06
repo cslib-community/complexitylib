@@ -105,6 +105,21 @@ example (n : ℕ) {ct₁ ct₂ : List Bool}
   rw [ofBits_encNat_143] at h
   exact h.trans (by norm_num)
 
+/-! ### Decisional composite residuosity assumption client -/
+
+/-- The constant-true distinguisher is uniform strict PPT. -/
+theorem isPPTOn_constDistinguisher :
+    IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool
+      (fun _ => pure true) :=
+  (ComputableInPolyTime.const true).isPPTOn
+
+/-- Under the DCR assumption for any modulus generator `setup`, the constant distinguisher has
+negligible advantage. -/
+example (setup : ℕ → PMF Desc) (h : DCR setup) :
+    Negligible (fun n => Game.advantage (dcrRealGame setup (fun _ _ => pure true) n)
+      (dcrIdealGame setup (fun _ _ => pure true) n)) :=
+  h (fun _ _ => pure true) isPPTOn_constDistinguisher
+
 /-! ### Axiom guards for headline results -/
 
 /--
