@@ -81,14 +81,6 @@ private theorem map_val_liftFinList {N : ℕ} :
   | x :: xs, h =>
     congrArg (x :: ·) (map_val_liftFinList xs fun y hy => h y (List.mem_cons_of_mem x hy))
 
-private theorem nodup_of_map_val {N : ℕ} :
-    ∀ {l : List (Fin N)}, (l.map Fin.val).Nodup → l.Nodup
-  | [], _ => List.nodup_nil
-  | x :: xs, h => by
-    rw [List.map_cons, List.nodup_cons] at h
-    exact List.nodup_cons.mpr
-      ⟨fun hx => h.1 (List.mem_map_of_mem hx), nodup_of_map_val h.2⟩
-
 private theorem mem_of_map_val_iff {N : ℕ} {l : List (Fin N)} {lNat : List ℕ}
     (hmap : l.map Fin.val = lNat) (x : Fin N) :
     x ∈ l ↔ x.val ∈ lNat := by
@@ -140,14 +132,14 @@ theorem map_val_compactInSources (machine : MultiTapePTM k Bool State) (B : ℕ)
 theorem nodup_compactOutTargets (machine : MultiTapePTM k Bool State) (B : ℕ) (w : List Bool)
     (u : Fin (vertexBound (k := k) B)) :
     (compactOutTargets machine B w u).Nodup := by
-  apply nodup_of_map_val
+  apply List.Nodup.of_map Fin.val
   rw [map_val_compactOutTargets]
   exact nodup_coinOutTargetsWithSymbol machine B w.length u.val _
 
 theorem nodup_compactInSources (machine : MultiTapePTM k Bool State) (B : ℕ) (w : List Bool)
     (v : Fin (vertexBound (k := k) B)) :
     (compactInSources machine B w v).Nodup := by
-  apply nodup_of_map_val
+  apply List.Nodup.of_map Fin.val
   rw [map_val_compactInSources]
   exact nodup_coinInSources machine B w v.val
 

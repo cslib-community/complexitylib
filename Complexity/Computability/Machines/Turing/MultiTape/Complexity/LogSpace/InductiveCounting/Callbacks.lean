@@ -101,11 +101,6 @@ private theorem runtime_budget {n B : α → ℕ} {chk : α → Bool}
     ComputableInSpace (fun a => (⟨n a, B a, chk a, c a⟩ : Runtime)) enc encRuntime S :=
   (budget_prod hn (budget_prod hB (budget_prod hchk hc))).of_enc_eq fun _ => rfl
 
-private theorem optionSome_budget {β : Type} {encB : β ↪ List Bool} {f : α → β}
-    (hf : ComputableInSpace f enc encB S) :
-    ComputableInSpace (fun a => some (f a)) enc (encOption encB) S :=
-  budget_comp_linear (of_inO (ComputableInDegree.optionSome (enc₁ := encB)).inO_one) hf
-
 private theorem optionIsSome_budget {β : Type} {encB : β ↪ List Bool} {f : α → Option β}
     (hf : ComputableInSpace f enc (encOption encB) S) :
     ComputableInSpace (fun a => (f a).isSome) enc encBool S :=
@@ -262,12 +257,12 @@ private theorem runtimeNext_budget (ntm : MultiTapeNTM k Bool State)
   have hsource := (startID_budget ntm hB hin)
   have ha := localAnswer_budget ntm hB hn hchk hc hsymbol hin
   have hadvance := runtime_budget hn hB hchk
-    (optionSome_budget (advance_budget hN hw hsource hc ha hchoice hin))
+    (budget_optionSome (advance_budget hN hw hsource hc ha hchoice hin))
   have hB₄ := budget_natMul (budget_const 4 hin) hB
   have hgrow := runtime_budget hn hB₄ (budget_const false hin)
-    (optionSome_budget (install_budget ntm hB₄ hin))
+    (budget_optionSome (install_budget ntm hB₄ hin))
   have hcheck := runtime_budget hn hB (budget_const true hin)
-    (optionSome_budget (install_budget ntm hB hin))
+    (budget_optionSome (install_budget ntm hB hin))
   have hnot := budget_finite (encC := encBool) Bool.not hchk
   have hcounting := budget_ite (and_budget hnot (overflowed_budget hc hin)) hgrow
     (budget_ite (and_budget hnot (phaseEq_budget hc .accept hin)) hcheck hadvance)
@@ -276,7 +271,7 @@ private theorem runtimeNext_budget (ntm : MultiTapeNTM k Bool State)
   have hscan := budget_ite (budget_finite Option.isSome hsymbol)
     (runtime_budget (budget_natSucc hn) hB hchk (budget_const none hin))
     (runtime_budget hn hstart (budget_const false hin)
-      (optionSome_budget (install_budget ntm hstart hin)))
+      (budget_optionSome (install_budget ntm hstart hin)))
   exact (budget_ite (optionIsSome_budget (runtimeCounting_budget hs)) hcounting hscan).of_enc_eq
     fun a => by
       cases h : (s a).counting <;> simp [runtimeNext, h, vertexWidth, startRadix]

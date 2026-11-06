@@ -53,13 +53,6 @@ open CounterProgram CounterProgram.Instr CounterProgram.Expr ComputableInSpace
 
 /-! ### Composing logspace functions of logarithmic output length with linear-space functions -/
 
-private theorem lt_two_pow_self_aux (m : ℕ) : m < 2 ^ m := by
-  induction m with
-  | zero => decide
-  | succ m ih =>
-    rw [pow_succ]
-    omega
-
 /-- Compose a `ComputableInLogSpace` producer whose encoded output has logarithmic length with a
 `ComputableInSpace` consumer running in space linear in its input length. -/
 theorem comp_logSpace_of_length_log {α β γ : Type}
@@ -84,7 +77,7 @@ theorem comp_logSpace_of_length_log {α β γ : Type}
         ≤ C * L + L := Nat.add_le_add hCa hL
       _ = (C + 1) * L := by ring
   have hm_bits : (encNat ((encMid (f a)).length + 1)).length ≤ (C + 1) * L :=
-    (length_encNat_le_of_lt_two_pow (lt_two_pow_self_aux _)).trans hm_len
+    (length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self).trans hm_len
   have hn_bits : (encNat ((encIn a).length + 1)).length ≤ 2 * L := by
     have := length_encNat_le_log2_add_two
       (j := (encIn a).length + 1) (N := (encIn a).length) le_rfl
@@ -130,18 +123,12 @@ theorem length_log_of_inSpace {α β γ : Type}
 
 /-! ### Binary word length and binary-indexed bit lookup in logarithmic space -/
 
-private theorem map_const_true_eq_replicate (w : List Bool) :
-    w.map (fun _ => true) = List.replicate w.length true := by
-  induction w with
-  | nil => rfl
-  | cons _ w ih => simp [ih, List.replicate_succ]
-
 /-- Length of a bit word in binary, computed in logarithmic space. -/
 theorem computableInLogSpace_bitsLength :
     ComputableInLogSpace List.length encBits encNat :=
   ComputableInLogSpace.unaryToBinary
     ((ComputableInLogSpace.bitsMap fun _ => true).congr fun w => by
-      rw [encUnary_apply, encBits_apply, map_const_true_eq_replicate])
+      rw [encUnary_apply, encBits_apply, List.map_const'])
 
 /-- Number of binary digits of a natural number, computed in logarithmic space. -/
 theorem computableInLogSpace_natBitLength :
@@ -175,19 +162,6 @@ private theorem bounded4_regs {B a₀ a₁ a₂ a₃ : ℕ}
     ∀ r ∈ [a₀, a₁, a₂, a₃], r ≤ B := by
   simp only [List.mem_cons, List.not_mem_nil, or_false]
   omega
-
-private theorem frame_marker (w v : List Bool) {j : ℕ} (hj : j < w.length) :
-    (frame w ++ v)[2 * j]? = some true := by
-  rw [List.getElem?_append_left (by rw [length_frame]; omega), getElem?_frame_two_mul hj]
-
-private theorem frame_bit (w v : List Bool) {j : ℕ} (hj : j < w.length) :
-    (frame w ++ v)[2 * j + 1]? = w[j]? := by
-  rw [List.getElem?_append_left (by rw [length_frame]; omega), getElem?_frame_two_mul_add_one hj]
-
-private theorem frame_tail (w v : List Bool) (j : ℕ) :
-    (frame w ++ v)[2 * w.length + 1 + j]? = v[j]? := by
-  rw [List.getElem?_append_right (by rw [length_frame]; omega)]
-  simp [length_frame]
 
 private def valBits : List Bool → ℕ
   | [] => 0
@@ -245,7 +219,7 @@ private theorem bitsGetElem_run (w : List Bool) (i : ℕ) {B : ℕ}
       refine CounterProgram.Reaches.read (by rfl)
         (bounded4_regs (by omega) (by omega) (by omega) (by omega)) ?_
       simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-        frame_marker w i.bits (show j < w.length by omega), readLabel]
+        (getElem?_frame_append w i.bits (show j < w.length by omega)).1, readLabel]
       refine CounterProgram.Reaches.assign (by rfl)
         (bounded4_regs (by omega) (by omega) (by omega) (by omega)) ?_
       simpa using ih (j + 1) (by omega) (by omega)
@@ -274,7 +248,7 @@ private theorem bitsGetElem_run (w : List Bool) (i : ℕ) {B : ℕ}
           (3, [w.length, i.bits.length, 2 ^ i.bits.length, i])
           (9, [w.length, i.bits.length, 2 ^ i.bits.length, i]) := by
         refine CounterProgram.Reaches.read (by rfl) hb ?_
-        simpa [frame_tail, readLabel] using
+        simpa [getElem?_frame_append_boundary, readLabel] using
           CounterProgram.Reaches.refl (9, [w.length, i.bits.length, 2 ^ i.bits.length, i])
       by_cases hiw : i < w.length
       · have h9 : bitsGetElemProgram.Reaches (frame w ++ i.bits) (bitsGetElemProgram.Running B)
@@ -286,13 +260,13 @@ private theorem bitsGetElem_run (w : List Bool) (i : ℕ) {B : ℕ}
         · refine ⟨(12, [w.length, i.bits.length, 2 ^ i.bits.length, i]),
             (h3.trans h9).trans ?_, ?_, hb⟩
           · refine CounterProgram.Reaches.read (by rfl) hb ?_
-            simpa [frame_bit w i.bits hiw, List.getElem?_eq_getElem hiw, hbit, readLabel] using
+            simpa [(getElem?_frame_append w i.bits hiw).2, hbit, readLabel] using
               CounterProgram.Reaches.refl _
           · simp [List.getElem?_eq_getElem hiw, hbit, bitsGetElemProgram, instr]
         · refine ⟨(11, [w.length, i.bits.length, 2 ^ i.bits.length, i]),
             (h3.trans h9).trans ?_, ?_, hb⟩
           · refine CounterProgram.Reaches.read (by rfl) hb ?_
-            simpa [frame_bit w i.bits hiw, List.getElem?_eq_getElem hiw, hbit, readLabel] using
+            simpa [(getElem?_frame_append w i.bits hiw).2, hbit, readLabel] using
               CounterProgram.Reaches.refl _
           · simp [List.getElem?_eq_getElem hiw, hbit, bitsGetElemProgram, instr]
       · refine ⟨(13, [w.length, i.bits.length, 2 ^ i.bits.length, i]), h3.trans ?_, ?_, hb⟩
@@ -311,7 +285,7 @@ private theorem bitsGetElem_run (w : List Bool) (i : ℕ) {B : ℕ}
         refine ⟨(13, [w.length, j, 2 ^ j, valBits (i.bits.take j)]), ?_, ?_, hb⟩
         · refine CounterProgram.Reaches.read (by rfl) hb ?_
           simp only [eval_add, eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-            List.getD_cons_succ, frame_tail, List.getElem?_eq_getElem hj_lt]
+            List.getD_cons_succ, getElem?_frame_append_boundary, List.getElem?_eq_getElem hj_lt]
           cases i.bits[j]
           · dsimp only [readLabel]
             refine CounterProgram.Reaches.lt (by rfl) hb ?_
@@ -347,7 +321,7 @@ private theorem bitsGetElem_run (w : List Bool) (i : ℕ) {B : ℕ}
           simpa using hs
         refine CounterProgram.Reaches.read (by rfl) hb ?_
         simp only [eval_add, eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-          List.getD_cons_succ, frame_tail, List.getElem?_eq_getElem hj_lt]
+          List.getD_cons_succ, getElem?_frame_append_boundary, List.getElem?_eq_getElem hj_lt]
         have hstep_val := (valBits_take_succ i.bits j hj_lt).symm
         cases htb : i.bits[j]
         · simp only [htb, Bool.false_eq_true, ↓reduceIte, Nat.add_zero] at hstep_val
@@ -471,10 +445,7 @@ theorem computableInLogSpace_clockedAccept {k : ℕ} {State : Type} [Fintype Sta
       simp only [encWU, length_encPair, encBits_apply]
       omega
     have hln_le : (encNat x.1.length).length ≤ (encWU x).length :=
-      (length_encNat_le_of_lt_two_pow (by
-        induction x.1.length with
-        | zero => decide
-        | succ m ih => rw [pow_succ]; omega)).trans hw_le
+      (length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self).trans hw_le
     have hlu_le : (encNat x.2).length ≤ (encWU x).length :=
       length_le_encPair_right encBits encNat x
     have h1 := length_encNat_le_log2 hln_le
@@ -657,10 +628,7 @@ private theorem computableInLogSpace_portGuard (k D d P : ℕ) :
       simp only [encTriple, length_encPair, encBits_apply]
       omega
     have hln_le : (encNat w.length).length ≤ (encTriple (w, a, p)).length :=
-      (length_encNat_le_of_lt_two_pow (by
-        induction w.length with
-        | zero => decide
-        | succ m ih => rw [pow_succ]; omega)).trans hw_le
+      (length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self).trans hw_le
     simpa using length_encNat_le_log2 hln_le
   have hla_len : ∃ C, ∀ x : Triple,
       (encNat (encNat (Prod.fst x.2)).length).length ≤

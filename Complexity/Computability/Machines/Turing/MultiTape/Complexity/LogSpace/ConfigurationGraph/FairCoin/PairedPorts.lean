@@ -278,12 +278,6 @@ section FuelBudgets
 
 variable {α : Type} {enc : α ↪ List Bool} {S : α → ℕ}
 
-private theorem budget_optionSomeGeneric {β : Type} {encB : β ↪ List Bool} {f : α → β}
-    (hf : ComputableInSpace f enc encB S) :
-    ComputableInSpace (fun a => some (f a)) enc (encOption encB) S :=
-  budget_comp_linear (of_inO (.of_linear (OptionEncoding.some (enc₁ := encB)
-    (enc := encOption encB)))) hf
-
 private theorem budget_optionIsNoneNat {o : α → Option ℕ}
     (ho : ComputableInSpace o enc (encOption encNat) S) :
     ComputableInSpace (fun x => (o x).isNone) enc encBool S := by
@@ -1416,7 +1410,7 @@ theorem clockedOutPortWithSymbols_budget (machine : MultiTapePTM k Bool State)
   have hinList := coinInSourcesWithSymbols_ofFn_budget machine inSymAt hB hn hvVal hinSym hin
   have hqIdx := idxOfFuel_budget (inPortBound machine) hinList hu hin
   have hbVal := budget_natAdd (budget_natMul (budget_natSucc (budget_natDiv ha hN)) hN) hvVal
-  have hsome := budget_optionSomeGeneric (budget_prod hbVal hqIdx)
+  have hsome := budget_optionSome (budget_prod hbVal hqIdx)
   have hnone : ComputableInSpace (fun _ : α => (none : Option (ℕ × ℕ)))
       enc (encOption (encPair encNat encNat)) S := budget_const none hin
   have hbody := budget_ite (budget_optionIsNoneNat hvOpt) hnone hsome
@@ -1472,7 +1466,7 @@ theorem clockedInPortWithSymbols_budget (machine : MultiTapePTM k Bool State)
   have houtList := coinOutTargetsWithSymbol_budget machine hB hn huVal hsymPred hin
   have hpIdx := idxOfFuel_budget 2 houtList hv hin
   have haVal := budget_natAdd (budget_natMul (budget_natPred (budget_natDiv hb hN)) hN) huVal
-  have hsome := budget_optionSomeGeneric (budget_prod haVal hpIdx)
+  have hsome := budget_optionSome (budget_prod haVal hpIdx)
   have hnone : ComputableInSpace (fun _ : α => (none : Option (ℕ × ℕ)))
       enc (encOption (encPair encNat encNat)) S := budget_const none hin
   have hbody := budget_ite (budget_optionIsNoneNat huOpt) hnone hsome
