@@ -11,6 +11,7 @@ public import Complexity.Crypto.Game.CloseTo
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Languages.Probabilistic.Transcript
 import Complexity.Languages.Probabilistic.UntilBad
+import Complexity.Probability.PMF.Bind
 
 /-!
 # The visible effect of one overwritten oracle entry
@@ -30,7 +31,7 @@ public section
 
 namespace Cslib.RandomOracle
 
-open Probability OracleComp Interactive
+open Crypto Probability OracleComp Interactive
 open scoped ENNReal
 
 variable {Query Value α : Type} [DecidableEq Query]
@@ -183,5 +184,33 @@ theorem closeTo_run_interpret_memoize_cons (distribution : Query → PMF Value)
   rw [PMF.toOuterMeasure_map_apply] at he
   rw [← hl, ← hr, ← he] at h
   exact h
+
+/-- Pointwise error bounds on mixtures under `CloseTo`. -/
+theorem closeTo_bind_of_le {β γ : Type} (μ : PMF β) (f g : β → PMF γ) (err : β → Game)
+    (h : ∀ a ∈ μ.support, ∀ test : γ → Bool,
+      ((f a).map test) true ≤ ((g a).map test) true + err a true ∧
+      ((g a).map test) true ≤ ((f a).map test) true + err a true) :
+    CloseTo (μ.bind f) (μ.bind g) ((μ.bind err) true) := by
+  classical
+  let g' : β → PMF γ := fun a => if a ∈ μ.support then g a else f a
+  have hg : μ.bind g' = μ.bind g := Probability.PMF.bind_congr_on_support μ _ _
+    (fun a ha => by simp only [g', ha, ↓reduceIte])
+  rw [← hg]
+  apply Game.closeTo_of_coe_advantage_decide_le
+  intro event
+  let test : γ → Bool := fun b => decide (b ∈ event)
+  have he (a : β) :
+      ((f a).map test) true ≤ ((g' a).map test) true + err a true ∧
+      ((g' a).map test) true ≤ ((f a).map test) true + err a true := by
+    by_cases ha : a ∈ μ.support
+    · simpa only [g', ha, ↓reduceIte] using h a ha test
+    · simp only [g', ha, ↓reduceIte]
+      exact ⟨le_add_of_nonneg_right zero_le,
+        le_add_of_nonneg_right zero_le⟩
+  have hadv := Game.advantage_bind_le_succProbability_bind μ
+    (fun a => (f a).map test) (fun a => (g' a).map test) err he
+  have hc := ENNReal.coe_le_coe.mpr hadv
+  rw [Game.succProbability, ENNReal.coe_toNNReal (PMF.apply_ne_top _ _)] at hc
+  simpa only [PMF.map_bind] using hc
 
 end Cslib.RandomOracle
