@@ -1,0 +1,117 @@
+/-
+Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Christian Reitwiessner
+-/
+
+module
+-- upstream: candidate
+
+public import Complexity.Probability.StochasticOracle.AdaptiveSelection
+public import ComplexityTests.StochasticOracleAdaptiveComparison
+import Mathlib.Tactic
+
+/-! Actual locally certified selection driven by correlated response kernels. -/
+
+public section
+noncomputable section
+open Cslib.Probability.StochasticOracle
+open AdaptiveSelection PartialCover
+namespace StochasticOracleAdaptiveSelectionTests
+
+/-- A nonempty set system with a tight feasible dual and positive cost. -/
+@[expose] def toy : Instance Unit Unit where
+  ground := {()}
+  sets := fun _ => {()}
+  sets_subset := by simp
+  weight := fun _ => 1
+  weight_nonneg := by simp
+  dual := fun _ => 1
+  dual_nonneg := by simp
+  dual_feasible := by simp
+
+/-- Successful responses propose the actual singleton cover; failures propose nothing. -/
+@[expose] def proposals (_ : List Bool) (x : Bool) : List (Finset Unit) :=
+  if x then [{()}] else []
+
+private theorem selected_eq (h : List Bool) :
+    selected toy 1 proposals h = if true ∈ h then {()} else ∅ := by
+  induction h with
+  | nil => simp [selected]
+  | cons x h ih =>
+    cases x <;> simp only [selected, proposals, Bool.false_eq_true,
+      ite_true, ite_false] <;> rw [ih] <;> by_cases hh : true ∈ h <;>
+      simp [hh, Instance.retain, Instance.Certified, Instance.covered, Instance.cost, toy]
+
+private theorem productive_eq (h : List Bool) (x : Bool) :
+    productive toy 1 proposals 1 h x = (decide (true ∈ h) || x) := by
+  simp only [productive, AdaptiveSelection.residual, selected_eq]
+  cases x <;> by_cases hh : true ∈ h <;>
+    simp [hh, Instance.covered, toy]
+
+/-- The envelope holds at every full history, including after completion where the
+productive extension is one. Actual response probabilities change after success. -/
+theorem completion_bound :
+    (∫ i, (if 1 ≤ i then (1 : ℝ) else 0)
+      ∂ProbabilityTheory.binomial 2 ⟨1 / 4, by norm_num, by norm_num⟩) ≤
+    historyExpectation StochasticOracleAdaptiveComparisonTests.law
+      (fun h => if toy.covered (selected toy 1 proposals h) = toy.ground
+        then 1 else 0) 2 [] := by
+  apply binomial_le_completion toy 1 proposals _ 1 1 2 (by norm_num [toy])
+  intro h
+  by_cases hh : true ∈ h <;>
+    simp [productive_eq, StochasticOracleAdaptiveComparisonTests.law, hh,
+      Cslib.Optimization.OneConstraint.pair_mean]; norm_num
+
+/-- The actual emitted cover succeeds with probability 7/16. Rejection, acceptance,
+repeat responses, and early completion are evaluated by the selection implementation. -/
+theorem actual_completion :
+    historyExpectation StochasticOracleAdaptiveComparisonTests.law
+      (fun h => if toy.covered (selected toy 1 proposals h) = toy.ground
+        then 1 else 0) 2 [] = (7 / 16 : ℝ) := by
+  have he (h : List Bool) :
+      (if toy.covered (selected toy 1 proposals h) = toy.ground then (1 : ℝ) else 0) =
+        if true ∈ h then 1 else 0 := by
+    rw [selected_eq]
+    by_cases hh : true ∈ h <;> simp [hh, Instance.covered, toy]
+  simp_rw [he]
+  norm_num [historyExpectation, StochasticOracleAdaptiveComparisonTests.law,
+    Cslib.Optimization.OneConstraint.pair_mean]
+
+/-- This execution is driven by a genuinely correlated law, as witnessed by the
+probability of two successful oracle responses. -/
+theorem two_responses :
+    progressExpectation StochasticOracleAdaptiveComparisonTests.law (fun _ x => x)
+      (fun k => if 2 ≤ k then 1 else 0) 2 [] 0 = (3 / 16 : ℝ) :=
+  StochasticOracleAdaptiveComparisonTests.actual_tail
+
+private theorem revealed_eq (h : List Bool) :
+    revealed toy proposals h = if true ∈ h then {()} else ∅ := by
+  induction h with
+  | nil => simp [revealed]
+  | cons x h ih =>
+    cases x <;> simp only [revealed, proposals, Bool.false_eq_true,
+      ite_true, ite_false] <;> rw [ih] <;> by_cases hh : true ∈ h <;>
+      simp [hh, Instance.covered, toy]
+
+/-- The universal revealed-set comparison is instantiated on the same correlated
+execution, including histories after full revelation where progress is zero. -/
+theorem universal_bound :
+    historyExpectation StochasticOracleAdaptiveComparisonTests.law
+      (fun h => if toy.ground ⊆ revealed toy proposals h then 1 else 0) 2 [] ≤
+    ∫ i, (if 1 ≤ i then (1 : ℝ) else 0)
+      ∂ProbabilityTheory.binomial 2 ⟨3 / 4, by norm_num, by norm_num⟩ := by
+  apply revealed_completion_le_binomial toy proposals _ 1 1 2
+  · intro k hk
+    have : k = 0 := by omega
+    simp [this, toy]
+  · intro h x
+    rw [revealed_eq, revealed_eq]
+    cases x <;> by_cases hh : true ∈ h <;> simp [hh]
+  · intro h
+    simp only [reveals, revealed_eq]
+    by_cases hh : true ∈ h <;>
+      norm_num [StochasticOracleAdaptiveComparisonTests.law, hh,
+        Cslib.Optimization.OneConstraint.pair_mean]
+
+end StochasticOracleAdaptiveSelectionTests

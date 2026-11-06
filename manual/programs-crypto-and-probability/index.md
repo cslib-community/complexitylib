@@ -608,14 +608,41 @@ so the history need not consist only of progress bits. The client uses success
 probability $1/4$ before any success and $3/4$ afterwards: its two-success
 probability is $3/16$, between comparison values $1/16$ and $9/16$.
 
-These results currently cover finite response alphabets and finite horizons. They
-require envelopes also at unreachable histories and do not construct the selected
-batches, retained/revealed sets, or stopping rule. The comparison recurrence has
-not yet been identified with Mathlib's binomial law. The stopped expected-cost
-sum, negative-binomial mean bound and universal deadline theorem remain open.
+Import [AdaptiveBinomial](../../Complexity/Probability/StochasticOracle/AdaptiveBinomial.lean)
+for `bernoulliExpectation_eq_integral`, `progress_tail_le` and `le_progress_tail`.
+The comparison recurrence is now identified with Mathlib's actual binomial law,
+including both increasing count-tail comparisons. No independence of actual events
+is used.
 
-The remaining Theorem 5 obligations above, including connection to actual response
-and revealed-set executions, are open. Theorem 4's native runtime/hardness and
+For actual proposals, import
+[AdaptiveSelection](../../Complexity/Probability/StochasticOracle/AdaptiveSelection.lean)
+and check [the complete selection client](../../ComplexityTests/StochasticOracleAdaptiveSelection.lean).
+`selected` decodes each response into a list of proposed subfamilies and runs the
+existing local dual test in chronological order; `selected_bound` preserves its
+certificate. `productive` computes the truncated additive decrease from actual
+residual cardinalities, declaring success after completion. `residual_le` and
+`count_completes` derive the count-to-cover bridge. `binomial_le_completion`
+then gives the finite upper-policy coverage probability directly from the
+full-history lower productivity envelope and the arithmetic threshold $ar\ge n$.
+The envelope must include every history, including unreachable ones.
+
+`revealed` accumulates all actual proposed sets, including rejected ones.
+`revealed_card_le` derives the pathwise necessary progress count from a local
+newly revealed cardinality cap. `revealed_completion_le_binomial` gives the
+reverse probability bound under a full-history upper envelope. This observable
+is coverage by all proposals; connection to a universal selection-only machine
+and its returned output remains a separate obligation. The client instantiates
+both directions with a nonempty positive-cost system and the correlated response
+law above, computing actual retained completion probability $7/16$.
+
+These results cover finite response alphabets and finite horizons. They do not
+implement stopping, resource billing or physical latency. The stopped reach
+probabilities, expected-cost sum, negative-binomial mean, deadline/certification
+composition and universal selection-only policy theorem remain open. The
+pathwise dual certificate is proved, but its joint stopped resource event is not.
+
+The remaining Theorem 5 obligations above, including stopped execution and universal
+policy composition, are open. Theorem 4's native runtime/hardness and
 Theorem 6's residual construction and universal optimum remain open. Neither this
 lemma nor its client changes the curated abstract catalogue. The Agent Operator's
 Manual requires no edit: ownership, review, validation and human direction are

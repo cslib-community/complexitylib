@@ -43,11 +43,14 @@ now composes with the actual response law through a finite conditional resource 
 with one event for certified success, bill cap and parallel deadline. This is not a native
 machine or an unrestricted response/resource execution certificate.
 Theorem 5 now has a finite-transcript conditional-history expected-cost accounting lemma
-with a correlated client; its pathwise required-progress premise still needs the actual
-revealed-set cardinality argument. Finite-history response kernels now admit increasing-payoff comparison with the independent
-Bernoulli recurrence; its binomial-law identification and actual-execution bridge remain open.
-It still needs the resulting history-conditional binomial bounds, stopped costs
-and universal latency/progress lower bounds; Theorem 6 needs the actual dual-certified residual
+with a correlated client. Actual proposed/retained-set finite executions now derive
+both productive-count bridges and conditional-history binomial coverage bounds;
+the comparison recurrence is identified with Mathlib's binomial law. The retained
+family carries the local dual certificate. The universal revealed-cover observable
+is not yet composed with a universal selection-only machine/output model or the
+lower-cost accounting theorem. Stopped reach probabilities, expected-cost sums,
+negative-binomial mean, joint latency/certification and universal policy/resource
+composition remain open; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
 claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.
 
