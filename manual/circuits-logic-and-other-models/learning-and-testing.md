@@ -145,16 +145,52 @@ convolution and distinguishes singular and nonsingular zero crossings. Its
 `import all` directives load implementation bodies for exact kernel computation;
 ordinary imports suffice to apply the public theorems.
 
-The shared array recurrence in
-[`FiniteMinPlus`](../../Complexity/Foundations/Optimization/FiniteMinPlus.lean)
-is proved equal to its witness-producing reference recurrence. This is correctness
-and recovery progress on Theorem 4.1 (PDF p. 9), not its complete resource theorem.
-The current implementation enumerates untrimmed group alternatives, recomputes
-scores and searches through the full sample size. It does not establish the
-paper's $O(n2^T+n\,s_{\rm int})$ bound, trimmed group curves, output-sensitive
-doubling, or a bit-cost model for rational arithmetic. A full matrix-design
-uniqueness bridge and a connection to the generic `integralStability` API also
-remain separate.
+For the resource-certified implementation, import
+[`FixedEffects.Resources`](../../Complexity/Statistics/LeastSquares/FixedEffects/Resources.lean)
+and open `Cslib.LeastSquares.FixedEffects.Resources`. From the repository root,
+check its [complete client](../../ComplexityTests/PaperEndpoints/FixedEffectsResources1326.lean)
+with `scripts/build.sh ComplexityTests.PaperEndpoints.FixedEffectsResources1326`.
+`run groups` returns a time-monad computation. Its `.ret` is `some r`, where
+`r.hit.index` is the first crossing, `r.hit.entry.plan` is the actual removal plan,
+and `r.retained` contains the copied retained observations. Its `.time` records
+the counted execution. `run_exists` proves termination and `run_spec` proves
+validity, exact deletion count, first-crossing minimality and score minimality.
+The existing `audit` API and its checked clients remain available.
+
+`groupCurve` computes sufficient statistics once per retained sublist and caches
+one lexicographic minimum per group deletion count. The shared-array convolution
+in [`FiniteMinPlus.Cached`](../../Complexity/Foundations/Optimization/FiniteMinPlus/Cached.lean)
+compares cached scores and shares persistent witness tails; `table_correct`
+proves refinement of the existing reference recurrence, including ties and
+unreachable costs. The pipeline precomputes curves once, doubles the cap from
+one until it finds a crossing, then copies the retained observations. The final
+cap can exceed the sample size by less than a factor two. It is not clipped.
+
+`run_time_of_nondegenerate` proves the explicit bound
+$300(n2^T+nK)$ on this pipeline, including input measurement and recovery, when
+input groups are nonempty, each has size at most $T$, the original numerator is
+positive, and the source's first-crossing nondegeneracy condition holds. It also
+proves that $K$ is the optimal deletion count. `run_time` compares the work
+against any positive-cost feasible removal plan; `run_isBigO` gives the bound
+along any family and filter of admissible inputs. These results derive work
+from the executable loops and do not take a runtime guarantee as a hypothesis.
+The client checks exact work counts, a cap-one failure followed by cap-two
+success, and materialized recovery. Singular crossings remain possible without
+nondegeneracy.
+
+This is an arithmetic RAM count: rational arithmetic, natural indexing,
+constant-size record/list operations, array accesses, and score-pair comparisons
+have unit cost. Expanding a pair operation into rational scalar operations
+changes the constant by at most three. Rational bit time and Lean allocator or
+compiler performance are separate. Inputs are already grouped; sorting raw
+labeled observations is not included. The functions handle empty groups, but
+the advertised $n$-only bound excludes them: reading arbitrary empty groups
+requires a group-count term. Empty input has ten counted initialization/scan
+operations. The subset preprocessing uses $O(n_g2^{n_g})$ work per group, which
+sums to $O(n2^T)$; the sharper per-group Gray-code claim is not asserted.
+A real matrix-design uniqueness bridge, the generic `integralStability`
+connection, general geometry and the other outstanding paper endpoints remain
+separate; this resource endpoint does not complete the paper.
 
 ## Exact least-squares stability gaps
 
