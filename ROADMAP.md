@@ -1035,7 +1035,7 @@ reuse is demonstrated.
 - **Measure postprocessing.** Canonical full-L1 total variation contracts under measurable
   maps of arbitrary finite measures, including unequal masses
   ([#2732](https://github.com/cslib-community/complexitylib/issues/2732)). The actual Gaussian
-  projection/mod-one consumer remains separate in
+  projection/mod-one consumer is proved in
   [#2734](https://github.com/cslib-community/complexitylib/issues/2734).
 - **Finite weighted measure mixtures.** `Foundations/MeasureTheory/Measure/TotalVariation/Mixture`
   bounds the existing full-L1 distance when both finite component measures and their nonnegative
@@ -1047,7 +1047,7 @@ reuse is demonstrated.
 - **Gaussian density and projection laws (available):** the positive-width normalized
   Gaussian weight is proved equal to a scaled standard Gaussian, and its actual scalar
   projection has variance `(s ‖z‖)² / (2π)`, including the zero vector and dimension zero
-  (#2733). The discrete-coset convolution projection and mod-one bound remain #2734;
+  (#2733). The discrete-coset convolution projection and mod-one bound are proved in #2734;
   efficient sampling and the quantum reduction remain #1213.
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.

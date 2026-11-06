@@ -19,9 +19,9 @@ no density, injectivity or probability normalization is required.
 The [checked clients](../../ComplexityTests/TotalVariationMap.lean) include identity,
 strict coarsening from distance `2` to `0`, unequal masses, and the canonical measurable
 map from `ℝ` to `UnitAddCircle`. Run `scripts/build.sh ComplexityTests.TotalVariationMap`.
-The theorem transports an existing bound; it does not identify the output laws. In particular,
-the Gaussian projection and mod-one distribution identities remain the separate consumer
-[issue #2734](https://github.com/cslib-community/complexitylib/issues/2734).
+The theorem transports an existing bound; it does not identify the output laws. The Gaussian
+projection and mod-one bounds of
+[issue #2734](https://github.com/cslib-community/complexitylib/issues/2734) apply it to actual laws.
 
 ## Combine component and mixture-weight errors
 
@@ -60,7 +60,7 @@ as `gaussianReal 0 (((s * ‖z‖)^2 / (2 * Real.pi)).toNNReal)`. The theorem in
 [checked clients](../../ComplexityTests/GaussianStandard.lean) recover the standard law
 at width `√(2π)` and compute variance `32/π` at width `4` with scalar projection `2`.
 These are analytic measure identities. Projection of a discrete-coset Gaussian convolution
-and its mod-one error bound remain [#2734](https://github.com/cslib-community/complexitylib/issues/2734);
+and its mod-one error bound are proved in [#2734](https://github.com/cslib-community/complexitylib/issues/2734);
 no sampler or runtime certificate follows from this identification.
 
 ## Describe a discrete Gaussian law
