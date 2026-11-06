@@ -234,8 +234,10 @@ modular-game time/space assembly and prepared-metadata accounting remain
    coefficients, uniformly in unary dimensions/width. `SIS/Module/ApproximateSampling` uses the
    existing bounded modular sampler for arbitrary positive binary moduli, with actual structured
    law error at most `d*k*n*q/2^width`, or `d*k*n/2^precision` at width `q.size+precision`.
-   Independent uniform scalar entries do not give this law. Full CBD randomized key generation,
-   encryption/decryption and seed codecs remain open.
+   Independent uniform scalar entries do not give this law. `ModuleEncryption/Sampling/Native`
+   composes exact CBD secret/error draws with the matrix sampler and existing keygen, returning
+   the same signed secret and public key with ideal joint/public-law error `k*k*n/2^precision`.
+   Native encryption/decryption and seed codecs remain open.
    `SIS/ModulusSwitch/Failure` bounds randomized switched-decryption failure by the actual noise
    tail under explicit secret-support and decoding margins; small-secret security remains open.
    Nearest-integer coefficient conversion and the Module-LWE phase-error bound are available in
