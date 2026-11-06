@@ -21,6 +21,7 @@ import Complexity.Computability.Complexity.Problems.TSP
 import Complexity.Computability.Complexity.Problems.ThreeSAT
 import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
+import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Tactic.PolyTime
 
 open Verso.Genre Manual
@@ -320,6 +321,30 @@ example : NPHard (encPair encGraph encNat) Clique :=
 
 The module documentation of `Complexity.Computability.Complexity.Reduction` indexes the same
 results by problem, with the module to import for each.
+
+# Boolean Constraint Languages
+
+Schaefer's Boolean dichotomy classifies fixed finite constraint languages over
+`Bool`; the constraints may have any fixed arity. The full six-case complexity
+classification is still open in this library. One structural case is proved:
+majority preservation is equivalent to definability by clauses of width at most
+two, with no auxiliary variables
+({name}`Cslib.Logic.PL.isPolymorphism_majority_iff_exists_twoCNF`).
+
+```lean
+open Cslib.Logic Cslib.Logic.PL in
+example {V : Type} [Finite V] (R : Set (V → Bool))
+    (h : IsPolymorphism (Cslib.majority 3) R) :
+    ∃ φ : CNF V, (∀ c ∈ φ, c.length ≤ 2) ∧
+      ∀ a, a ∈ R ↔ φ.eval a = true :=
+  (isPolymorphism_majority_iff_exists_twoCNF R).mp h
+```
+
+Here preservation applies the operation coordinatewise to satisfying tuples.
+{name}`Cslib.Logic.IsPolymorphism.project` preserves it under existential
+projection, and {name}`Cslib.Logic.IsPolymorphism.substitute` covers repeated
+variables. Empty and nullary relations are allowed. This characterization alone
+does not supply a polynomial-time certificate for constructing the formula.
 
 # Proving a Problem NP-Complete
 %%%
