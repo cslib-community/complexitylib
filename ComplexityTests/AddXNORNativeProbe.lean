@@ -7,6 +7,8 @@ Authors: Christian Reitwiessner
 module
 
 import Complexity.Cryptanalysis.AddXNORNativeProbe
+import all Complexity.Cryptanalysis.AddXNORNativeRetain
+import all Complexity.Cryptanalysis.AddXNORNativeDictionary
 
 /-!
 # Complete native backward-probe clients
@@ -133,4 +135,55 @@ example : (probeClass.eval 8 64 { classInput false with
     mem := fun a => if a = 49 then 1 else if a = 20 then 255
       else (classInput false).mem a }).map
       (fun r => (r.1.regs operand, r.1.regs operators, r.1.regs stop)) =
+        some (1, 0, 0) := by decide +kernel
+
+private def originalMemory : ℕ → ℕ :=
+  fun a => if a = 5 then 1 else if a = 11 then 3 else 0
+
+private def originalInput : Data 32 :=
+  { regs := fun r => if r = base then 5 else if r = count then 1
+      else if r = modulus then 4 else if r = link then 10
+      else if r = table then 40 else if r = one then 1 else 0
+    mem := filledMemory 40 (retainedEntries [1#2] 0 [(1, 0)]) originalMemory 0 }
+
+/-- Four original operands, all additions: 0 + 1 + 1 + 1 + 1 = 0 modulo 4.
+Every precondition is supplied; zero packed payloads are present, not absent. -/
+example : ∃ y, ExecWithin 8 probeScan originalInput y 59 ∧
+    y.mem = originalInput.mem ∧ y.regs link = 0 ∧
+    (y.regs operand ≠ 0 →
+      Cslib.Cryptanalysis.AddXNOR.eval
+        (((decode 1 (y.regs operand - 1)).zip [1#2]) ++
+          ((decode 1 (y.regs bits)).zip [1#2]) ++
+          ((decode 1 (y.regs operators)).zip [1#2]) ++
+          ((decode 1 (y.regs firstOperators)).zip [1#2])) 0 = 0) := by
+  apply probeScan_original_exec (W := 8) (m := 2) (b := 5) (boundary := 20)
+    (ptr := 10) (D := 40) (v := 0) [1#2] [1#2] [1#2] [1#2] 0 0
+    [0] [0] 0 originalMemory 0 originalInput
+  all_goals first
+    | rfl
+    | exact .cons (by decide +kernel) (by decide +kernel)
+        (by decide +kernel) (by decide +kernel) .nil
+    | decide +kernel
+    | (intro q
+       have h5 : 40 + 3 * q ≠ 5 := by omega
+       have h11 : 40 + 3 * q ≠ 11 := by omega
+       simp [originalMemory, slot, h5, h11])
+
+example : (probeScan.eval 8 64 originalInput).map (fun r =>
+    (r.1.regs operand, r.1.regs bits, r.1.regs firstOperators,
+      r.1.regs operators, r.1.regs state)) = some (1, 0, 0, 0, 2) := by
+  decide +kernel
+
+/-- Replacement keeps both words from the last actual writer, including zero. -/
+example : filledMemory 40 [⟨2, 7, 9⟩, ⟨2, 0, 0⟩] (fun _ => 0) 0 46 = 1 ∧
+    filledMemory 40 [⟨2, 7, 9⟩, ⟨2, 0, 0⟩] (fun _ => 0) 0 47 = 0 := by
+  decide +kernel
+
+/-- Width zero and empty operand blocks still distinguish a present zero
+witness from absence; the full recovered state is the unique zero-bit word. -/
+example : (probeScan.eval 8 64
+    { regs := fun r => if r = modulus ∨ r = one then 1
+        else if r = link then 10 else if r = table then 40 else 0
+      mem := fun a => if a = 40 then 1 else 0 }).map
+      (fun r => (r.1.regs operand, r.1.regs bits, r.1.regs state)) =
         some (1, 0, 0) := by decide +kernel

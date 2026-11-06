@@ -812,6 +812,25 @@ validity of the bucket construction and retained dictionary, plus the general
 class iterator theorem. Empty buckets return tag zero; no witness is asserted
 on exhaustion. Instruction bounds and prerequisites are unchanged.
 
+`Quarter.probeScan_original_exec` supplies a bounded original-chain reconstruction
+contract. Supply full original quarters, their initial and target states, a linked
+bucket whose records are the computed backward fourth-quarter states, and memory
+equal to the actual `retainedEntries`/`filledMemory` construction from forward
+first-quarter states. Initial dictionary tags must be empty. On a hit, decoding
+`operand - 1`, `bits`, `operators` and `firstOperators` in quarter order gives
+operations whose full original-chain evaluation equals the target. The subtraction
+removes the presence encoding; packed index zero remains valid.
+`Dictionary.filledMemory_provenance` derives both payload words from one inserted
+record even after replacement, and `Quarter.retained_provenance` identifies its
+originating retained bucket record. No assumed decoded-witness correctness is
+needed. The complete client above supplies all premises for four original
+operands and zero packed witnesses, and checks last-writer replacement.
+This theorem still requires constructed memory and semantic bucket records:
+connecting native projected preparation and class filtering to those premises,
+executing retention and probing consecutively, general whole-class termination,
+and the original-input global endpoint remain open. It does not change the
+instruction model or establish the source's sorted-list bit-runtime theorem.
+
 To execute the complete opposite-class consumer, use `Quarter.probeClass`
 from the same import and root-context client above. Set `count` to the second
 quarter length and `stop` to $2^{\text{count}}$; supply `initial` as the projected

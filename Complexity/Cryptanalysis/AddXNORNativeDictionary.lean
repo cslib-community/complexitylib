@@ -638,6 +638,36 @@ theorem filledMemory_read (D : ℕ) (es : List Entry) (mem : ℕ → ℕ) (t q :
     rw [h0, h1]
     split <;> rfl
 
+/-- A present filled slot comes from an actual inserted record, including both
+payload words from the same record. Only the queried initial tag must be empty;
+collisions replace witnesses together and do not invent a witness. -/
+theorem filledMemory_provenance (D : ℕ) (es : List Entry) (mem : ℕ → ℕ) (t q : ℕ)
+    (hzero : mem (slot D q) = 0)
+    (hit : filledMemory D es mem t (slot D q) ≠ 0) :
+    ∃ e ∈ es, e.state = q ∧
+      filledMemory D es mem t (slot D q) = e.first + 1 ∧
+      filledMemory D es mem t (slot D q + 1) = e.second := by
+  have trace (xs : List Entry) (old : ℕ × ℕ) :
+      xs.foldl (fun prev e => if q = e.state then (e.first + 1, e.second) else prev) old =
+        old ∨ ∃ e ∈ xs, e.state = q ∧
+          xs.foldl (fun prev e => if q = e.state then (e.first + 1, e.second) else prev) old =
+            (e.first + 1, e.second) := by
+    induction xs generalizing old with
+    | nil => exact Or.inl rfl
+    | cons e xs ih =>
+      rw [List.foldl_cons]
+      obtain h | ⟨r, hr, hq, hv⟩ := ih (if q = e.state then (e.first + 1, e.second) else old)
+      · by_cases hq : q = e.state
+        · exact Or.inr ⟨e, List.mem_cons_self, hq.symm, by simpa only [hq, ↓reduceIte] using h⟩
+        · exact Or.inl (by simpa only [hq, ↓reduceIte] using h)
+      · exact Or.inr ⟨r, List.mem_cons_of_mem _ hr, hq, hv⟩
+  have read := filledMemory_read D es mem t q
+  obtain h | ⟨e, he, hq, hv⟩ := trace es (mem (slot D q), mem (slot D q + 1))
+  · have hz := congrArg Prod.fst (read.trans h)
+    exact (hit (hz.trans hzero)).elim
+  · have hp := read.trans hv
+    exact ⟨e, he, hq, congrArg Prod.fst hp, congrArg Prod.snd hp⟩
+
 /-- All cells below the sparse table are unchanged by release. -/
 theorem erasedMemory_below (mem : ℕ → ℕ) (D : ℕ) (ks : List ℕ) (a : ℕ)
     (ha : a < D) : erasedMemory mem D ks a = mem a := by

@@ -220,6 +220,65 @@ theorem probeScan_witness_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec
           · simpa +decide [n, operand, state, link, zs] using ztag
           · simpa +decide [n, bits, state, link, zs] using zbits
 
+/-- Original four-quarter witness soundness for the native linked scan against
+an actually filled retained dictionary. The two record lists are constructed
+from full original-quarter evaluations, rather than an assumed dictionary
+invariant or a supplied decoded-solution claim. The surrounding projected bucket
+construction and whole-class iteration are not certified by this theorem. -/
+theorem probeScan_original_exec {W m b boundary ptr D v : ℕ}
+    (a₁ a₂ a₃ a₄ : List (BitVec m)) (s t : BitVec m)
+    (us ws : List ℕ) (v₂ : ℕ) (mem : ℕ → ℕ) (top : ℕ) (x : Data 32)
+    (hb : x.regs base = b) (hc : x.regs count = a₃.length)
+    (hn : x.regs modulus = 2 ^ m) (hv : x.regs operators = v) (hfv : Fits W v)
+    (hl : x.regs link = ptr) (hD : x.regs Dictionary.table = D)
+    (hone : x.regs one = 1) (hz : x.regs zero = 0) (htag : x.regs operand = 0)
+    (hlinked : Linked x.mem boundary ptr (ws.map fun u =>
+      ((backward ((decode a₄.length u).zip a₄) t).toNat, u)))
+    (hmem : x.mem = Dictionary.filledMemory D
+      (retainedEntries a₂ v₂
+        (us.map fun u => ((eval ((decode a₁.length u).zip a₁) s).toNat, u))) mem top)
+    (hzero : ∀ q, mem (Dictionary.slot D q) = 0)
+    (hinput : ∀ i (hi : i < a₃.reverse.length), x.mem (b + i) = a₃.reverse[i].toNat)
+    (hfit : Fits W (D + boundary + b + a₃.length + 8 * 2 ^ m + 2 ^ a₃.length + 4)) :
+    ∃ y, ExecWithin W probeScan x y (ws.length * (18 * a₃.length + 39) + 2) ∧
+      y.mem = x.mem ∧ y.regs link = 0 ∧
+      (y.regs operand ≠ 0 →
+        eval (((decode a₁.length (y.regs operand - 1)).zip a₁) ++
+          ((decode a₂.length (y.regs bits)).zip a₂) ++
+          ((decode a₃.length (y.regs operators)).zip a₃) ++
+          ((decode a₄.length (y.regs firstOperators)).zip a₄)) s = t) := by
+  obtain ⟨y, he, hm, hl, _, hw⟩ := probeScan_witness_exec a₃
+    (ws.map fun u => ((backward ((decode a₄.length u).zip a₄) t).toNat, u))
+    x hb hc hn hv hfv hl hD hone hz htag hlinked
+    (by
+      intro r hr
+      obtain ⟨u, _, rfl⟩ := List.mem_map.mp hr
+      exact (backward ((decode a₄.length u).zip a₄) t).isLt)
+    hinput hfit
+  refine ⟨y, by simpa only [List.length_map] using he, hm, hl, ?_⟩
+  intro hit
+  obtain ⟨r, hr, hu, hv, hs, ht, hb⟩ := hw hit
+  obtain ⟨u₄, _, rfl⟩ := List.mem_map.mp hr
+  have present : Dictionary.filledMemory D
+      (retainedEntries a₂ v₂
+        (us.map fun u => ((eval ((decode a₁.length u).zip a₁) s).toNat, u))) mem top
+      (Dictionary.slot D (y.regs state)) ≠ 0 := by
+    rw [← hmem, ← ht]
+    exact hit
+  obtain ⟨r, hr, hq, hfirst, hsecond⟩ := retained_provenance D top (y.regs state)
+    mem a₂ v₂ (us.map fun u => ((eval ((decode a₁.length u).zip a₁) s).toNat, u)) (hzero _) present
+  obtain ⟨u₁, _, rfl⟩ := List.mem_map.mp hr
+  have htag : y.regs operand = u₁ + 1 := ht.trans (by simpa only [hmem] using hfirst)
+  have hbits : y.regs bits = v₂ := hb.trans (by simpa only [hmem] using hsecond)
+  have meet : eval ((decode a₂.length v₂).zip a₂) (eval ((decode a₁.length u₁).zip a₁) s) =
+      backward ((decode a₃.length v).zip a₃)
+        (backward ((decode a₄.length u₄).zip a₄) t) := by
+    apply BitVec.eq_of_toNat_eq
+    simpa only [BitVec.ofNat_toNat, BitVec.setWidth_eq] using hq.trans hs
+  rw [htag, Nat.add_sub_cancel, hbits, hv, hu]
+  simp only [eval_append] at meet ⊢
+  rw [meet, eval_backward, eval_backward]
+
 /-- Membership-only form of `probeScan_witness_exec`. -/
 theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
     (rs : List (ℕ × ℕ)) (x : Data 32)

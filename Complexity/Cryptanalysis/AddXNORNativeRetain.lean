@@ -42,6 +42,25 @@ def retainedEntries {m : ℕ} (as : List (BitVec m)) (v : ℕ) (rs : List (ℕ �
     List Dictionary.Entry := rs.map fun (s, u) =>
   ⟨(eval ((decode as.length v).zip as) (BitVec.ofNat m s)).toNat, u, v⟩
 
+/-- The actual retained dictionary exposes a single originating bucket record,
+not two unrelated existential witnesses. This derives payload correctness from
+the insertion stream; the bucket's original-quarter semantics are still separate. -/
+theorem retained_provenance {m : ℕ} (D t q : ℕ) (mem : ℕ → ℕ)
+    (as : List (BitVec m)) (v : ℕ) (rs : List (ℕ × ℕ))
+    (hzero : mem (Dictionary.slot D q) = 0)
+    (hit : Dictionary.filledMemory D (retainedEntries as v rs) mem t
+      (Dictionary.slot D q) ≠ 0) :
+    ∃ r ∈ rs,
+      (eval ((decode as.length v).zip as) (BitVec.ofNat m r.1)).toNat = q ∧
+      Dictionary.filledMemory D (retainedEntries as v rs) mem t
+        (Dictionary.slot D q) = r.2 + 1 ∧
+      Dictionary.filledMemory D (retainedEntries as v rs) mem t
+        (Dictionary.slot D q + 1) = v := by
+  obtain ⟨e, he, hq, hu, hv⟩ :=
+    Dictionary.filledMemory_provenance D (retainedEntries as v rs) mem t q hzero hit
+  obtain ⟨r, hr, rfl⟩ := List.mem_map.mp he
+  exact ⟨r, hr, hq, hu, hv⟩
+
 /-- Direct native retention, without the materializing emitter. The bucket and
 operand cells lie below the sparse dictionary, so insertion preserves all later
 reads. Index bounds come from first-quarter preparation. All chain evaluations,

@@ -81,8 +81,13 @@ iteration and early exit are proved. The composed whole-class streaming code now
 bucket scanning and early exit, with checked success/exhaustion clients and
 a no-store prefix theorem. The linked scan also exports the actual hit node,
 packed indices, recovered state and dictionary payload provenance. This physical
-contract does not prove original-chain witness correctness. General whole-class termination/time and
-returned original-chain witness correctness remain unproved. This is a sparse WordRAM
+contract alone does not prove original-chain witness correctness. A bounded scan
+reconstruction theorem now derives a full original-chain solution from actual filled
+retained entries and semantic backward bucket records, including collision replacement
+and zero packed witnesses. Native projected preparation/filtering and consecutive
+retention-to-probe composition still need to establish its construction premises.
+General whole-class termination/time and unconditional original-input returned-witness
+correctness remain unproved. This is a sparse WordRAM
 implementation, not the source's sorted lists or a compact arena. The general correctness/resource certificates for the
 second-quarter/class iterator and streaming opposite-side consumer, counter-selected
 orientation and single global counter/balance/decision/witness execution remain
