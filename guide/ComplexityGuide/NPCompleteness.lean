@@ -24,6 +24,8 @@ import Complexity.Computability.Complexity.Problems.VertexCover
 import Complexity.Computability.Complexity.Problems.CSP.Constant
 import Complexity.Computability.Complexity.Problems.CSP.Majority
 import Complexity.Computability.Complexity.Problems.CSP.Hardness
+import Complexity.Computability.Complexity.Problems.HornSAT
+import Complexity.Computability.Complexity.Problems.XORSAT
 import Complexity.Computability.PolyTime.CSP.Gadget
 import Complexity.Logics.Polymorphism.BooleanClone
 import Complexity.Logics.Propositional.CNF.Majority
@@ -403,6 +405,20 @@ example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
     NPComplete (encCSP encRel encNat) (CSPSAT arity sem) :=
   CSPSAT.npComplete_of_not_hasSchaeferPolymorphism encRel arity sem h
 ```
+
+The remaining tractable normal forms have proved native solvers:
+{name}`Cslib.Logic.PL.isPolymorphism_and_iff_exists_hornCNF` and
+{name}`Cslib.Logic.PL.isPolymorphism_or_iff_exists_dualHornCNF` characterize
+AND/OR preservation. {name}`HornSAT.mem_P` and {name}`DualHornSAT.mem_P` decide
+all-width formulas under {name}`encCNF`. Horn syntax counts positive occurrences,
+so repeating a positive literal twice is rejected as non-Horn syntax.
+
+{name}`Cslib.Logic.PL.isPolymorphism_parity_iff_exists_affineSystem`
+characterizes ternary parity preservation by affine equations.
+{name}`XORSAT.satisfiable_mem_P` certifies ordinary sparse XOR-SAT with binary
+variable names; repeated variables cancel modulo two. The dense Gaussian
+elimination algorithm and sparse compiler both have native certificates.
+These solvers still need fixed-language CSP compilers to finish the three cases.
 
 # Proving a Problem NP-Complete
 %%%
