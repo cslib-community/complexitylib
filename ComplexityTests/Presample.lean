@@ -64,7 +64,7 @@ example : OracleComp.withSampleList false respond true ([], [true, false]) =
 -- Private draws leave both state components unchanged; the saved values belong only to queries.
 example (state values : List Bool) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (OracleComp.withSampleList false respond))
           (ProbOracleComp.sample (ProbComp.uniform Bool))).run (state, values) =
       (fun bit => (bit, state, values)) <$> ProbComp.uniform Bool := by
@@ -95,10 +95,10 @@ example (state : List Bool) :
     ProbComp.eval (do
       let values ← OracleComp.replicate 2 (ProbComp.uniform Bool)
       (fun (result, next, _) => (result, next)) <$> (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
           (OracleComp.withSampleList false respond)) adaptive).run (state, values)) =
       ProbComp.eval ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
           (fun query state => ProbComp.uniform Bool >>= fun value => respond value query state))
             adaptive).run state) :=
   adaptive_queryBounds.eval_presample (ProbComp.uniform Bool) false respond state

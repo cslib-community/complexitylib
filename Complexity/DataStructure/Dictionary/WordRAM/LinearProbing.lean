@@ -40,10 +40,10 @@ Algorithms*, Section 11.4][CLRS2009].
    - `[valBase, valBase + 2^M)`: stored values `val[0 .. 2^M - 1]`.
    Total footprint is `space n_max = KWise.space n_max 5 + 3 * tableSize n_max = O(n_max)` words.
 
-2. **Self-contained operations (`initSetup`, `get`, `insert`):**
+2. **Self-contained operations (`initSetup`, `query`, `insert`):**
    - `initSetup`: runs `KWise.initCode 5` ($O(n_{\max})$ deterministic Four-Russians carryless
      multiplication table setup plus $5$ `Code.rand` calls, with zero caller-supplied primes).
-   - `get u` and `insert u v`: evaluate $b = h_\theta(u) \in \mathrm{Fin}(2^M)$ via
+   - `query u` and `insert u v`: evaluate $b = h_\theta(u) \in \mathrm{Fin}(2^M)$ via
      `KWise.evalCode 5` in $O(L^2 + 1)$ deterministic steps ($L = \mathrm{limbCount}(n_{\max}, U, M)
      = O(1)$ when $U \le n_{\max}^c$), then scan $(b + d) \bmod 2^M$ until reaching the first slot
      `p` where `used[p] = 0` or `key[p] = u`. Because at most $n_{\max} \le 2^M / 8$ slots are
@@ -116,7 +116,7 @@ follows:
 - **Insert-only dictionary specification vs. source deletions:**
   Whereas `[PaghPaghRuzic2009]` Section 1 (p. 1107) and Section 4 (Theorems 4.3 and 4.5) include
   deletions via greedy backward-shift rearrangement, `Dictionary.spec U V n_max` specifies an
-  insert-only bounded dictionary (`get` and `insert` with at most `n_max` distinct keys and no
+  insert-only bounded dictionary (`query` and `insert` with at most `n_max` distinct keys and no
   deletion operation), so open-addressed slots use `{0, 1}` occupancy flags (`0` = empty, `1` =
   occupied) with zero tombstones.
 
@@ -133,7 +133,7 @@ namespace Cslib.DataStructure.Dictionary.WordRAM.LinearProbing
 
 open Cslib.WordRAM Cslib.Probability
 open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
-open Cslib.Algorithms.WordRAM.ExactLog
+open Cslib.WordRAM.ExactLog
 open Cslib.DataStructure.HashFamily.WordRAM
 open Finset
 open scoped BigOperators ENNReal
@@ -185,92 +185,6 @@ theorem space_le (n_max : ℕ) : space n_max ≤ 49 * max n_max 4 + 13 := by
   have h1 := KWise.two_pow_two_mul_chunkBits_le n_max
   have h2 := tableSize_le_sixteen_mul n_max
   omega
-
-/-- Slot probed at offset `d` from starting bucket `b : Fin (2 ^ M)`: `(b.val + d) mod 2 ^ M`. -/
-@[expose] def probeSlot (M : ℕ) (b : Fin (2 ^ M)) (d : ℕ) : Fin (2 ^ M) :=
-  cyclicSlotMod M (b.val + d)
-
-/-- Slot located `a` positions cyclically before `b : Fin (2 ^ M)`: `(b.val - a) mod 2 ^ M`. -/
-@[expose] def backSlot (M : ℕ) (b : Fin (2 ^ M)) (a : ℕ) : Fin (2 ^ M) :=
-  cyclicSlotMod M (b.val + 2 ^ M * (a + 1) - a)
-
-@[simp]
-theorem probeSlot_zero {M : ℕ} (b : Fin (2 ^ M)) : probeSlot M b 0 = b := by
-  apply Fin.ext
-  simp [probeSlot, cyclicSlotMod, Nat.mod_eq_of_lt b.isLt]
-
-theorem probeSlot_add {M : ℕ} (b : Fin (2 ^ M)) (d₁ d₂ : ℕ) :
-    probeSlot M (probeSlot M b d₁) d₂ = probeSlot M b (d₁ + d₂) := by
-  apply Fin.ext
-  simp [probeSlot, cyclicSlotMod, Nat.add_assoc]
-
-theorem probeSlot_backSlot_eq {M : ℕ} (b : Fin (2 ^ M)) (a idx : ℕ) :
-    probeSlot M (backSlot M b a) idx =
-      cyclicSlotMod M (b.val + 2 ^ M * (a + 1) - a + idx) := by
-  apply Fin.ext
-  simp [probeSlot, backSlot, cyclicSlotMod]
-
-theorem cyclicInterval_eq_image_probeSlot {M : ℕ} (b : Fin (2 ^ M)) (a len : ℕ) :
-    cyclicInterval M b a len =
-      (Finset.range len).image (probeSlot M (backSlot M b a)) := by
-  ext y
-  simp [cyclicInterval, probeSlot_backSlot_eq]
-
-theorem probeSlot_backSlot_add {M : ℕ} (b : Fin (2 ^ M)) (a d : ℕ) :
-    probeSlot M (backSlot M b a) (a + d) = probeSlot M b d := by
-  apply Fin.ext
-  simp only [probeSlot, backSlot, cyclicSlotMod]
-  have h1 : a ≤ 2 ^ M * (a + 1) := by
-    have : 1 ≤ 2 ^ M := Nat.one_le_two_pow
-    calc a ≤ 1 * (a + 1) := by omega
-      _ ≤ 2 ^ M * (a + 1) := Nat.mul_le_mul_right (a + 1) this
-  have heq : (b.val + 2 ^ M * (a + 1) - a) % 2 ^ M + (a + d) =
-      (b.val + 2 ^ M * (a + 1) - a) % 2 ^ M + a + d := by omega
-  rw [Nat.mod_add_mod, show b.val + 2 ^ M * (a + 1) - a + (a + d) =
-      b.val + d + 2 ^ M * (a + 1) by omega, Nat.add_mul_mod_self_left]
-
-theorem probeSlot_backSlot_sub {M : ℕ} (b : Fin (2 ^ M)) {a idx : ℕ} (hidx : idx ≤ a) :
-    probeSlot M (backSlot M b a) idx = backSlot M b (a - idx) := by
-  apply Fin.ext
-  simp only [probeSlot, backSlot, cyclicSlotMod]
-  have h1 : 1 ≤ 2 ^ M := Nat.one_le_two_pow
-  have ha_le : a ≤ 2 ^ M * (a + 1) := by
-    calc a ≤ 1 * (a + 1) := by omega
-      _ ≤ 2 ^ M * (a + 1) := Nat.mul_le_mul_right (a + 1) h1
-  have hsub_le : a - idx ≤ 2 ^ M * (a - idx + 1) := by
-    calc a - idx ≤ 1 * (a - idx + 1) := by omega
-      _ ≤ 2 ^ M * (a - idx + 1) := Nat.mul_le_mul_right (a - idx + 1) h1
-  have hmul : 2 ^ M * (a + 1) = 2 ^ M * (a - idx + 1) + 2 ^ M * idx := by
-    rw [← Nat.mul_add]
-    congr 1
-    omega
-  rw [Nat.mod_add_mod, show b.val + 2 ^ M * (a + 1) - a + idx =
-      (b.val + 2 ^ M * (a - idx + 1) - (a - idx)) + 2 ^ M * idx by omega,
-    Nat.add_mul_mod_self_left]
-
-theorem probeSlot_injOn_range {M : ℕ} (b : Fin (2 ^ M)) {len : ℕ} (hlen : len ≤ 2 ^ M) :
-    Set.InjOn (probeSlot M b) (Finset.range len) := by
-  intro i hi j hj hij
-  simp only [Finset.mem_coe, Finset.mem_range] at hi hj
-  have hval : (b.val + i) % 2 ^ M = (b.val + j) % 2 ^ M := congrArg Fin.val hij
-  have hb : b.val < 2 ^ M := b.isLt
-  have hi_mod : (b.val + i) % 2 ^ M =
-      if b.val + i < 2 ^ M then b.val + i else b.val + i - 2 ^ M := by
-    split_ifs with h
-    · exact Nat.mod_eq_of_lt h
-    · rw [Nat.mod_eq_sub_mod (by omega), Nat.mod_eq_of_lt (by omega)]
-  have hj_mod : (b.val + j) % 2 ^ M =
-      if b.val + j < 2 ^ M then b.val + j else b.val + j - 2 ^ M := by
-    split_ifs with h
-    · exact Nat.mod_eq_of_lt h
-    · rw [Nat.mod_eq_sub_mod (by omega), Nat.mod_eq_of_lt (by omega)]
-  rw [hi_mod, hj_mod] at hval
-  split_ifs at hval <;> omega
-
-theorem card_cyclicInterval {M : ℕ} (b : Fin (2 ^ M)) (a : ℕ) {len : ℕ} (hlen : len ≤ 2 ^ M) :
-    #(cyclicInterval M b a len) = len := by
-  rw [cyclicInterval_eq_image_probeSlot,
-    Finset.card_image_of_injOn (probeSlot_injOn_range (backSlot M b a) hlen), Finset.card_range]
 
 /-! ## Section 2: Open-addressed table invariant, termination, and cluster witness -/
 
@@ -1060,19 +974,19 @@ slot via `probeCheckCode`. -/
 /-- Lookup suffix after `probeLoop` halts at slot `pos` (`reg 2`) with `used[pos]` in `reg 9`:
 if `reg 9 == 1`, loads `val[pos]` and writes `val[pos] + 1` into `reg 2`; otherwise writes `0`
 into `reg 2`. -/
-@[expose] def getFinishCode : Code .exact 24 :=
+@[expose] def queryFinishCode : Code .exact 24 :=
   .branch (.eq 9 10)
     (.seq (.op (.exactBin .add 8 6 2))
     (.seq (.op (.load 2 8))
           (.op (.exactBin .add 2 2 10))))
     (.op (.const 2 0))
 
-/-- Unified operation program for `get u` (`opReg = 0`) and `insert u v` (`opReg = 1`). -/
+/-- Unified operation program for `query u` (`opReg = 0`) and `insert u v` (`opReg = 1`). -/
 @[expose] def opCode (n_max : ℕ) : Code .exact 24 :=
   .seq ((KWise.evalCode 5).rename kwiseMap)
   (.seq (probeSetupCode n_max)
   (.seq probeLoop
-        (.branch (.eq 22 10) insertFinishCode getFinishCode)))
+        (.branch (.eq 22 10) insertFinishCode queryFinishCode)))
 
 /-- `SubroutineCode` bundle for linear probing. -/
 @[expose] def subroutineCode (U n_max : ℕ) : SubroutineCode .exact rLP 0 where
@@ -1092,7 +1006,7 @@ into `reg 2`. -/
 /-- Standalone argument encoding for `Dictionary.Op U`. -/
 @[expose] def encodeOp {U : ℕ} (o : Dictionary.Op U) (i : Fin rLP) : ℕ :=
   match o with
-  | .get u =>
+  | .query u =>
     if i = 1 then u.val else 0
   | .insert u v =>
     if i = 1 then u.val else if i = 22 then 1 else if i = 23 then v else 0
@@ -1100,15 +1014,15 @@ into `reg 2`. -/
 /-- Argument-matching predicate for `Dictionary.Op U`. -/
 @[expose] def argMatchOp {U : ℕ} (o : Dictionary.Op U) (regs : Fin rLP → ℕ) : Prop :=
   match o with
-  | .get u => regs 1 = u.val ∧ regs 22 = 0
+  | .query u => regs 1 = u.val ∧ regs 22 = 0
   | .insert u v => regs 1 = u.val ∧ regs 22 = 1 ∧ regs 23 = v
 
-/-- Output decoder for `Dictionary.Op U`: for `get u`, `0` decodes to `none` and `k + 1` decodes to
-`some k`; for `insert u v`, decodes to `some ()`. -/
+/-- Output decoder for `Dictionary.Op U`: for `query u`, `0` decodes to `none` and `k + 1` decodes
+to `some k`; for `insert u v`, decodes to `some ()`. -/
 @[expose] def decodeOp {U V n_max : ℕ} (o : (Dictionary.spec U V n_max).Op)
     (regs : Fin rLP → ℕ) : Option ((Dictionary.spec U V n_max).Result o) :=
   match o with
-  | .get _ => some (if regs 2 = 0 then none else some (regs 2 - 1))
+  | .query _ => some (if regs 2 = 0 then none else some (regs 2 - 1))
   | .insert _ _ => some ()
 
 /-- Expected instruction count for `initSetup U n_max`:
@@ -1896,10 +1810,10 @@ theorem insertFinishCode_execWithin {U w base n_max : ℕ} (u : Fin U) (v : ℕ)
   exact ⟨s7, ⟨7, le_rfl, hall⟩, rfl, by simp +decide [s7, s6, s5, s4, s3, s2, s1, h0],
     by simp +decide [s7]⟩
 
-/-- `getFinishCode` executes in at most `4` deterministic steps, writing `val[p] + 1` into `reg 2`
+/-- `queryFinishCode` executes in at most `4` deterministic steps, writing `val[p] + 1` into `reg 2`
 when `s u = some (val[p])` (`used[p] = 1`) and `0` into `reg 2` when `s u = none` (`used[p] = 0`).
 -/
-theorem getFinishCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
+theorem queryFinishCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
     {s : Dictionary.State U} {x : Data rLP}
     (hinv : TableInv U V n_max base θ s x.mem)
     (u : Fin U)
@@ -1914,10 +1828,10 @@ theorem getFinishCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
     (hfit_space : Fits w (base + space n_max))
     (hfit_V : Fits w V) :
     ∃ y : Data rLP,
-      ExecWithin w getFinishCode x y 4 ∧
+      ExecWithin w queryFinishCode x y 4 ∧
       y.mem = x.mem ∧
       y.regs 0 = base ∧
-      decodeOp (V := V) (n_max := n_max) (.get u) y.regs = some (s u) := by
+      decodeOp (V := V) (n_max := n_max) (.query u) y.regs = some (s u) := by
   set p := probeSlot (tableLog n_max) (hashFn U n_max θ u) (hinv.probeLen u (hashFn U n_max θ u))
   have hp_lt : p.val < tableSize n_max := p.isLt
   have hfit_vaddr : Fits w (valBase base n_max + p.val) :=
@@ -1928,7 +1842,7 @@ theorem getFinishCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
       simp [Cond.Holds, h9, p, hp0, h10]
     set s1 := x.set 2 0
     have e1 : Exec w (.op (.const 2 0) : Code .exact 24) x s1 1 := Exec.const hfit_0
-    have ebr : Exec w getFinishCode x s1 3 := Exec.branch_neg hc e1
+    have ebr : Exec w queryFinishCode x s1 3 := Exec.branch_neg hc e1
     refine ⟨s1, ⟨3, by decide, ebr⟩, rfl, by simp +decide [s1, h0], ?_⟩
     have hs1_2 : s1.regs 2 = 0 := by simp +decide [s1]
     simp only [decodeOp, hs1_2, ↓reduceIte, hnone]
@@ -1946,14 +1860,14 @@ theorem getFinishCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
     set s3 := s2.set 2 (valAt base n_max x.mem p + 1)
     have e3 : Exec w (.op (.exactBin .add 2 2 10) : Code .exact 24) s2 s3 1 :=
       exec_exactBin (by simp +decide [s2, s1, h10]) hfit_vp1
-    have ebr : Exec w getFinishCode x s3 4 := Exec.branch_pos hc (e1.seq (e2.seq e3))
+    have ebr : Exec w queryFinishCode x s3 4 := Exec.branch_pos hc (e1.seq (e2.seq e3))
     refine ⟨s3, ⟨4, le_rfl, ebr⟩, rfl, by simp +decide [s3, s2, s1, h0], ?_⟩
     have hs3_2 : s3.regs 2 = valAt base n_max x.mem p + 1 := by simp +decide [s3]
     simp only [decodeOp, hs3_2, Nat.add_one_ne_zero, ↓reduceIte, Nat.add_sub_cancel, hsome, p]
 
 /-- The key queried or updated by dictionary operation `o`. -/
 @[expose] def opKey {U : ℕ} : Dictionary.Op U → Fin U
-  | .get u => u
+  | .query u => u
   | .insert u _ => u
 
 /-- `opCode n_max` executes any admissible operation `o` from `Rep U V n_max w base θ s x` and
@@ -1990,7 +1904,7 @@ theorem opCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
     hfit_space.of_le (by dsimp only [space]; omega)
   have hx1_key : x.regs 1 = u.val := by
     cases o with
-    | get u₀ => exact harg.1
+    | query u₀ => exact harg.1
     | insert u₀ v => exact harg.1
   obtain ⟨y₀, heval₀, hy₀_0, hy₀_1, hy₀_2, hy₀_mem⟩ :=
     KWise.evalCode_execWithin u (x := x.comap kwiseMap) hrep.kwise_rep
@@ -2035,20 +1949,20 @@ theorem opCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
   obtain ⟨n2, hn2, hex2⟩ := he2
   obtain ⟨n3, hn3, hex3⟩ := he3
   cases o with
-  | get u₀ =>
+  | query u₀ =>
     have hu₀ : u₀ = u := rfl
     have hc_br : ¬(Cond.eq (22 : Fin 24) 10).Holds x₃ := by
       simp [Cond.Holds, hx₃_22_eq, harg.2, hx₃_10]
     have ht_eq3 : (hx₃_mem_eq.symm ▸ hrep.table_inv).probeLen u (hashFn U n_max θ u) = t :=
       TableInv.probeLen_congr _ hrep.table_inv hx₃_mem_eq u b
     obtain ⟨y, ⟨n4, hn4, hex4⟩, hymem, hy0, hdec⟩ :=
-      getFinishCode_execWithin (hinv := hx₃_mem_eq.symm ▸ hrep.table_inv) u
+      queryFinishCode_execWithin (hinv := hx₃_mem_eq.symm ▸ hrep.table_inv) u
         hx₃_0
         (by simpa only [ht_eq3] using hx₃_2)
         hx₃_6
         (by simpa only [ht_eq3, hx₃_mem_eq] using hx₃_9)
         hx₃_10 hfit_space hfit_V
-    have he_br : Exec w (.branch (.eq 22 10) insertFinishCode getFinishCode) x₃ y (n4 + 2) :=
+    have he_br : Exec w (.branch (.eq 22 10) insertFinishCode queryFinishCode) x₃ y (n4 + 2) :=
       Exec.branch_neg hc_br hex4
     have hall : Exec w (opCode n_max) x y (n1 + (n2 + (n3 + (n4 + 2)))) :=
       hex1.seq (hex2.seq (hex3.seq he_br))
@@ -2069,7 +1983,7 @@ theorem opCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
       insertFinishCode_execWithin u v p
         hx₃_0 hx₃_1 hx₃_2 hx₃_4 hx₃_5 hx₃_6 hx₃_10
         (hx₃_23_eq.trans harg.2.2) hfit_space
-    have he_br : Exec w (.branch (.eq 22 10) insertFinishCode getFinishCode) x₃ y (n4 + 1) :=
+    have he_br : Exec w (.branch (.eq 22 10) insertFinishCode queryFinishCode) x₃ y (n4 + 1) :=
       Exec.branch_pos hc_br hex4
     have hall : Exec w (opCode n_max) x y (n1 + (n2 + (n3 + (n4 + 1)))) :=
       hex1.seq (hex2.seq (hex3.seq he_br))
@@ -2106,7 +2020,7 @@ over `Cslib.WordRAM.Basis.exact`:
 - **Initialization time**: `setupTime U n_max = KWise.initTableSteps n_max U (tableLog n_max) + 38
   = O(n_max + log U)` expected instructions;
 - **Operation charge**: `charge U n_max = KWise.evalSteps n_max U (tableLog n_max) 5 + 3483
-  = O(L ^ 2 + 1)` expected instructions per `get` or `insert`, which is `O(1)` whenever
+  = O(L ^ 2 + 1)` expected instructions per `query` or `insert`, which is `O(1)` whenever
   `U ≤ n_max ^ c` for any constant `c`;
 - **Potential**: `0` (`seedSlack := 1`). -/
 @[expose] noncomputable def impl (U V n_max w base : ℕ)
@@ -2136,7 +2050,7 @@ over `Cslib.WordRAM.Basis.exact`:
         hfit_space.of_le (by dsimp only [space]; have := tableSize_pos n_max; omega)
       have hfit_0 : Fits w 0 := hfit_space.of_le (Nat.zero_le _)
       cases o with
-      | get u =>
+      | query u =>
         dsimp only [encodeOp]
         split_ifs
         · exact hfit_U.of_le (le_of_lt u.isLt)
@@ -2150,7 +2064,7 @@ over `Cslib.WordRAM.Basis.exact`:
         · exact hfit_0)
     (encode_matches := fun o regs => by
       cases o with
-      | get u =>
+      | query u =>
         exact ⟨rfl, rfl⟩
       | insert u v =>
         exact ⟨rfl, rfl, rfl⟩)

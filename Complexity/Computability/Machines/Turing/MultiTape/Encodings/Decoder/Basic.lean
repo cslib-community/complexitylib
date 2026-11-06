@@ -11,7 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degr
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
-public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeClosure
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreePrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeComposition
 
 /-!

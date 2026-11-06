@@ -37,6 +37,8 @@ is certified separately in `Computability.Probabilistic.Repeat`.
 * `Cslib.ProbComp.countTrue_le`: every supported success count respects the trial budget.
 * `Cslib.ProbComp.eval_replicate_of_uniform`: realize the joint law from independent finite seeds.
 * `Cslib.ProbComp.eval_replicate_of_uniformList`: collect independent draws from one flat bit list.
+* `Cslib.ProbComp.toOuterMeasure_replicate_forall`: all runs pass a test with the power of the
+  one-run probability.
 
 ## References
 
@@ -223,6 +225,30 @@ theorem eval_replicate_of_uniformList (count width : ℕ) (program : ProbComp α
   rw [eval_replicate_of_uniform count program _ hseed]
   simpa only [PMF.map_comp, Function.comp_def, List.map_ofFn] using
     (congrArg (PMF.map (List.map evaluate)) (BitString.uniformList_listRows count width)).symm
+
+/-- Every one of `n` independent runs satisfies a test with the `n`-th power of the probability
+of one run. -/
+theorem toOuterMeasure_replicate_forall {β : Type} (program : ProbComp β)
+    (f : β → Bool) (n : ℕ) :
+    (eval (OracleComp.replicate n program)).toOuterMeasure {l | ∀ b ∈ l, f b = true} =
+      (eval program).toOuterMeasure {b | f b = true} ^ n := by
+  induction n with
+  | zero => simp [PMF.toOuterMeasure_pure_apply]
+  | succ n ih =>
+    rw [OracleComp.replicate_succ, eval_bind, PMF.toOuterMeasure_bind_apply, pow_succ',
+      PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
+    refine tsum_congr fun b => ?_
+    rw [eval_map, PMF.toOuterMeasure_map_apply]
+    by_cases hb : f b = true
+    · have hpre : List.cons b ⁻¹' {l | ∀ c ∈ l, f c = true} = {l | ∀ c ∈ l, f c = true} := by
+        ext l
+        simp [hb]
+      rw [hpre, ih, Set.indicator_of_mem (by exact hb), PMF.toOuterMeasure_apply]
+    · have hpre : List.cons b ⁻¹' {l | ∀ c ∈ l, f c = true} = ∅ := by
+        ext l
+        simp [hb]
+      rw [hpre, Set.indicator_of_notMem (by exact hb)]
+      simp
 
 end ProbComp
 

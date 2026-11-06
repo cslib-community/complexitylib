@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.Notation
 public import Mathlib.Data.Nat.GCD.Basic
 
@@ -90,7 +91,7 @@ theorem exec_rename {r w : ℕ} (f : Fin 4 → Fin r) (hf : f.Injective) (x : Da
     (ha : Fits w (x.regs (f a))) (hb : Fits w (x.regs (f b))) :
     ∃ y, ExecWithin w (program.rename f) x y (5 * x.regs (f b) + 3) ∧
       y.regs (f a) = Nat.gcd (x.regs (f a)) (x.regs (f b)) ∧ y.mem = x.mem := by
-  obtain ⟨y, hy, hya, hym⟩ := exec (x.comap f) ha hb
-  exact ⟨y.extend f x, hy.rename hf, (hf.extend_apply _ _ a).trans hya, hym⟩
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post hf (exec (x.comap f) ha hb)
+  exact ⟨y, hy, hpost⟩
 
 end Cslib.Algorithms.WordRAM.NatGcd

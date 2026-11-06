@@ -324,19 +324,11 @@ theorem convJet_assoc (J ℓ : ℕ) (A B C : List (List ℤ)) :
               rowEntry C (j - j₁₂) (u - u₁₂) := by
     refine Finset.sum_congr rfl fun j₁₂ hj₁₂ => ?_
     simp only [Finset.mem_range] at hj₁₂
-    have hj₁₂_lt : j₁₂ < J := by omega
-    calc
-      (∑ u₁₂ ∈ Finset.range (u + 1),
-          rowEntry (convJet J ℓ A B) j₁₂ u₁₂ * rowEntry C (j - j₁₂) (u - u₁₂))
-          = ∑ u₁₂ ∈ Finset.range (u + 1), ∑ j₁ ∈ Finset.range (j₁₂ + 1),
-              ∑ u₁ ∈ Finset.range (u₁₂ + 1),
-                rowEntry A j₁ u₁ * rowEntry B (j₁₂ - j₁) (u₁₂ - u₁) *
-                  rowEntry C (j - j₁₂) (u - u₁₂) := by
-            refine Finset.sum_congr rfl fun u₁₂ hu₁₂ => ?_
-            simp only [Finset.mem_range] at hu₁₂
-            rw [rowEntry_convJet A B hj₁₂_lt (by omega), Finset.sum_mul]
-            exact Finset.sum_congr rfl fun _ _ => Finset.sum_mul ..
-      _ = _ := Finset.sum_comm
+    rw [← Finset.sum_comm]
+    refine Finset.sum_congr rfl fun u₁₂ hu₁₂ => ?_
+    simp only [Finset.mem_range] at hu₁₂
+    rw [rowEntry_convJet A B (by omega) (by omega), Finset.sum_mul]
+    exact Finset.sum_congr rfl fun _ _ => Finset.sum_mul ..
   have hR :
       (∑ j₁ ∈ Finset.range (j + 1), ∑ u₁ ∈ Finset.range (u + 1),
           rowEntry A j₁ u₁ * rowEntry (convJet J ℓ B C) (j - j₁) (u - u₁)) =
@@ -345,20 +337,13 @@ theorem convJet_assoc (J ℓ : ℕ) (A B C : List (List ℤ)) :
             rowEntry A j₁ u₁ * rowEntry B j₂ u₂ * rowEntry C (j - j₁ - j₂) (u - u₁ - u₂) := by
     refine Finset.sum_congr rfl fun j₁ hj₁ => ?_
     simp only [Finset.mem_range] at hj₁
-    have hj_sub : j - j₁ < J := by omega
-    calc
-      (∑ u₁ ∈ Finset.range (u + 1),
-          rowEntry A j₁ u₁ * rowEntry (convJet J ℓ B C) (j - j₁) (u - u₁))
-          = ∑ u₁ ∈ Finset.range (u + 1), ∑ j₂ ∈ Finset.range (j - j₁ + 1),
-              ∑ u₂ ∈ Finset.range (u - u₁ + 1),
-                rowEntry A j₁ u₁ * rowEntry B j₂ u₂ * rowEntry C (j - j₁ - j₂) (u - u₁ - u₂) := by
-            refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
-            simp only [Finset.mem_range] at hu₁
-            rw [rowEntry_convJet B C hj_sub (by omega), Finset.mul_sum]
-            refine Finset.sum_congr rfl fun j₂ _ => ?_
-            rw [Finset.mul_sum]
-            exact Finset.sum_congr rfl fun u₂ _ => (mul_assoc _ _ _).symm
-      _ = _ := Finset.sum_comm
+    rw [← Finset.sum_comm]
+    refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
+    simp only [Finset.mem_range] at hu₁
+    rw [rowEntry_convJet B C (by omega) (by omega), Finset.mul_sum]
+    refine Finset.sum_congr rfl fun j₂ _ => ?_
+    rw [Finset.mul_sum]
+    exact Finset.sum_congr rfl fun u₂ _ => (mul_assoc _ _ _).symm
   rw [hL, hR, sum_range_triangle j fun j₁ j₂ j₃ =>
     ∑ u₁₂ ∈ Finset.range (u + 1), ∑ u₁ ∈ Finset.range (u₁₂ + 1),
       rowEntry A j₁ u₁ * rowEntry B j₂ (u₁₂ - u₁) * rowEntry C j₃ (u - u₁₂)]
@@ -407,7 +392,8 @@ theorem constJet_convJet (J ℓ : ℕ) (c : ℤ) (A : List (List ℤ)) :
     · refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
       simp only [Finset.mem_range] at hu₁
       rw [rowEntry_constJet c (by omega) (by omega)]
-      by_cases hj0 : j₁ = 0 <;> by_cases hu0 : u₁ = 0 <;> simp [hj0, hu0]
+      by_cases hj0 : j₁ = 0 <;> by_cases hu0 : u₁ = 0 <;>
+        simp only [hj0, hu0, and_self, false_and, and_false, ↓reduceIte, zero_mul, Nat.sub_zero]
     · rw [Finset.sum_ite_eq' (Finset.range (u + 1)) 0,
         ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ u))]
   · rw [Finset.sum_ite_eq' (Finset.range (j + 1)) 0,
@@ -448,7 +434,9 @@ theorem shiftZJet_eq_convJet (J ℓ : ℕ) (A : List (List ℤ)) :
     · refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
       simp only [Finset.mem_range] at hu₁
       rw [rowEntry_zJet (by omega) (by omega)]
-      by_cases hj1 : j₁ = 1 <;> by_cases hu0 : u₁ = 0 <;> simp [hj1, hu0]
+      by_cases hj1 : j₁ = 1 <;> by_cases hu0 : u₁ = 0 <;>
+        simp only [hj1, hu0, and_self, false_and, and_false, ↓reduceIte, one_mul, zero_mul,
+          Nat.sub_zero]
     · rw [Finset.sum_ite_eq' (Finset.range (u + 1)) 0,
         ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ u))]
   · rw [Finset.sum_ite_eq' (Finset.range (j + 1)) 1]
@@ -472,12 +460,14 @@ theorem shiftVJet_eq_convJet (J ℓ : ℕ) (A : List (List ℤ)) :
     · refine Finset.sum_congr rfl fun u₁ hu₁ => ?_
       simp only [Finset.mem_range] at hu₁
       rw [rowEntry_vJet (by omega) (by omega)]
-      by_cases hj0 : j₁ = 0 <;> by_cases hu1 : u₁ = 1 <;> simp [hj0, hu1]
+      by_cases hj0 : j₁ = 0 <;> by_cases hu1 : u₁ = 1 <;>
+        simp only [hj0, hu1, and_self, false_and, and_false, ↓reduceIte, one_mul, zero_mul,
+          Nat.sub_zero]
     · rw [Finset.sum_ite_eq' (Finset.range (u + 1)) 1]
       by_cases hu0 : u = 0
       · subst hu0; simp
       · rw [ite_eq_left (by simp only [Finset.mem_range]; omega)]
-        by_cases hj0 : j₁ = 0 <;> simp [hj0, hu0]
+        by_cases hj0 : j₁ = 0 <;> simp only [hj0, hu0, ↓reduceIte]
   · rw [Finset.sum_ite_eq' (Finset.range (j + 1)) 0,
       ite_eq_left (Finset.mem_range.mpr (Nat.zero_lt_succ j))]
 
@@ -542,12 +532,9 @@ theorem jetL1Norm_constJet_le (J ℓ : ℕ) (c : ℤ) :
     cases ℓ with
     | zero => simp
     | succ ℓ' =>
-      rw [Finset.sum_range_succ']
-      have htail :
-          (∑ k ∈ Finset.range J', ∑ u ∈ Finset.range (ℓ' + 1),
-              (if k + 1 = 0 ∧ u = 0 then c else 0).natAbs) = 0 := by simp
-      rw [htail, zero_add, Finset.sum_range_succ']
-      simp
+      rw [Finset.sum_range_succ', Finset.sum_range_succ']
+      simp only [Nat.succ_ne_zero, false_and, and_false, ↓reduceIte, Int.natAbs_zero,
+        Finset.sum_const_zero, zero_add, and_self, le_rfl]
 
 theorem jetL1Norm_negJet_le (J ℓ : ℕ) (A : List (List ℤ)) :
     jetL1Norm (negJet J ℓ A) ≤ jetL1Norm A := by
@@ -604,7 +591,7 @@ theorem jetL1Norm_shiftVJet_le (J ℓ : ℕ) (A : List (List ℤ)) :
         (∑ u ∈ Finset.range (ℓ' + 1), (if u = 0 then 0 else rowEntry A j (u - 1)).natAbs) =
           ∑ u ∈ Finset.range ℓ', (rowEntry A j u).natAbs := by
       rw [Finset.sum_range_succ']
-      simp
+      simp only [Nat.succ_ne_zero, ↓reduceIte, Nat.add_sub_cancel, Int.natAbs_zero, add_zero]
     simp only [hrow]
     exact sum_rowEntry_natAbs_le_jetL1Norm J ℓ' A
 
@@ -767,21 +754,20 @@ theorem length_encIntBin_mem_convJet_le {J ℓ bA bB : ℕ} {A B : List (List �
     (Turing.MultiTapeTM.encIntBin z).length ≤ bA + bB + (J * ℓ).size + 1 := by
   obtain ⟨j, u, rfl⟩ := exists_rowEntry_eq hrow hz
   rw [Turing.MultiTapeTM.length_encIntBin]
-  refine Nat.add_le_add_right (size_natAbs_rowEntry_convJet_le ?_ ?_ j u) 1
-  · intro r hr x hx
-    have h := hA r hr x hx
-    rw [Turing.MultiTapeTM.length_encIntBin] at h
-    omega
-  · intro r hr x hx
-    have h := hB r hr x hx
-    rw [Turing.MultiTapeTM.length_encIntBin] at h
-    omega
+  exact Nat.add_le_add_right (size_natAbs_rowEntry_convJet_le
+    (fun r hr x hx =>
+      Nat.le_of_add_le_add_right (Turing.MultiTapeTM.length_encIntBin x ▸ hA r hr x hx))
+    (fun r hr x hx =>
+      Nat.le_of_add_le_add_right (Turing.MultiTapeTM.length_encIntBin x ▸ hB r hr x hx))
+    j u) 1
 
 /-! ### Plain polynomial-time certificates -/
 
 section PolyTime
 
 open Turing MultiTapeTM
+
+attribute [local irreducible] ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
@@ -918,54 +904,77 @@ theorem zeroJet_polytime :
 
 /-- Direct polynomial-time certificate for `constJet`. -/
 theorem constJet_polytime :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℤ => constJet p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)) := by fun_prop
+    ComputableInPolyTime
+      (fun (((J, ℓ), c) : (ℕ × ℕ) × ℤ) => constJet J ℓ c)
+      (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)) :=
+  show ComputableInPolyTime (fun p : (ℕ × ℕ) × ℤ => constJet p.1.1 p.1.2 p.2) _ _ by fun_prop
 
 /-- Direct polynomial-time certificate for `addJet`. -/
 theorem addJet_polytime :
     ComputableInPolyTime
-      (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => addJet p.1.1.1 p.1.1.2 p.1.2 p.2)
+      (fun ((((J, ℓ), a), b) : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ)) => addJet J ℓ a b)
       (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin))) (encList (encList encIntBin)) := by fun_prop
+        (encList (encList encIntBin))) (encList (encList encIntBin)) :=
+  show ComputableInPolyTime
+    (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => addJet p.1.1.1 p.1.1.2 p.1.2 p.2)
+    _ _ by fun_prop
 
 /-- Direct polynomial-time certificate for `negJet`. -/
 theorem negJet_polytime :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => negJet p.1.1 p.1.2 p.2)
+    ComputableInPolyTime
+      (fun (((J, ℓ), a) : (ℕ × ℕ) × List (List ℤ)) => negJet J ℓ a)
       (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by fun_prop
+      (encList (encList encIntBin)) :=
+  show ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => negJet p.1.1 p.1.2 p.2)
+    _ _ by fun_prop
 
 /-- Direct polynomial-time certificate for `subJet`. -/
 theorem subJet_polytime :
     ComputableInPolyTime
-      (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => subJet p.1.1.1 p.1.1.2 p.1.2 p.2)
+      (fun ((((J, ℓ), a), b) : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ)) => subJet J ℓ a b)
       (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin))) (encList (encList encIntBin)) := by fun_prop
+        (encList (encList encIntBin))) (encList (encList encIntBin)) :=
+  show ComputableInPolyTime
+    (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => subJet p.1.1.1 p.1.1.2 p.1.2 p.2)
+    _ _ by fun_prop
 
 /-- Direct polynomial-time certificate for `smulJet`. -/
 theorem smulJet_polytime :
     ComputableInPolyTime
-      (fun p : ((ℕ × ℕ) × ℤ) × List (List ℤ) => smulJet p.1.1.1 p.1.1.2 p.1.2 p.2)
+      (fun ((((J, ℓ), c), a) : ((ℕ × ℕ) × ℤ) × List (List ℤ)) => smulJet J ℓ c a)
       (encPair (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by fun_prop
+      (encList (encList encIntBin)) :=
+  show ComputableInPolyTime
+    (fun p : ((ℕ × ℕ) × ℤ) × List (List ℤ) => smulJet p.1.1.1 p.1.1.2 p.1.2 p.2)
+    _ _ by fun_prop
 
 /-- Direct polynomial-time certificate for `shiftZJet`. -/
 theorem shiftZJet_polytime :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftZJet p.1.1 p.1.2 p.2)
+    ComputableInPolyTime
+      (fun (((J, ℓ), a) : (ℕ × ℕ) × List (List ℤ)) => shiftZJet J ℓ a)
       (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by fun_prop
+      (encList (encList encIntBin)) :=
+  show ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftZJet p.1.1 p.1.2 p.2)
+    _ _ by fun_prop
 
 /-- Direct polynomial-time certificate for `shiftVJet`. -/
 theorem shiftVJet_polytime :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftVJet p.1.1 p.1.2 p.2)
+    ComputableInPolyTime
+      (fun (((J, ℓ), a) : (ℕ × ℕ) × List (List ℤ)) => shiftVJet J ℓ a)
       (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by fun_prop
+      (encList (encList encIntBin)) :=
+  show ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftVJet p.1.1 p.1.2 p.2)
+    _ _ by fun_prop
 
 /-- Direct polynomial-time certificate for `convJet`. -/
 theorem convJet_polytime :
     ComputableInPolyTime
-      (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => convJet p.1.1.1 p.1.1.2 p.1.2 p.2)
+      (fun ((((J, ℓ), a), b) : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ)) => convJet J ℓ a b)
       (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin))) (encList (encList encIntBin)) := by fun_prop
+        (encList (encList encIntBin))) (encList (encList encIntBin)) :=
+  show ComputableInPolyTime
+    (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => convJet p.1.1.1 p.1.1.2 p.1.2 p.2)
+    _ _ by fun_prop
 
 end PolyTime
 

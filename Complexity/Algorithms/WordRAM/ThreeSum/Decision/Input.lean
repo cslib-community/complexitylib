@@ -10,24 +10,33 @@ module
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Execute
 
 /-!
-# Complete initialized native ordinary 3SUM host
+# Initialized ordinary 3SUM through the native Chan–He visitor
 
-One finite program per fixed input-magnitude exponent and concrete certified finite Exact
-Triangle block starts at actual `State.init`. It computes preprocessing, reads all actual packed
-pointers and calls the caller-safe Convolution host. Its final raw Boolean is equivalent to the
-existing integer 3SUM predicate with distinct positions and repeated values permitted.
+One finite program per fixed magnitude exponent and certified finite Exact Triangle block starts
+from signed-encoded `State.init`. It computes the frontend and consumes every actual packed node
+during traversal through the caller-safe Convolution host. Calls retain the exact finite preorder,
+including multiplicity, and continue after a positive result. The final raw Boolean decides a
+zero-sum triple of distinct positions, allowing repeated input values.
 
-The result is conditional on the supplied *actual finite code* and its explicit callee contract.
-The slow exhaustive certified block provides a live instance; this theorem does not construct a
-fast backend or claim the final subquadratic endpoint.
+The initialized endpoint retains its existing magnitude and physical-width hypotheses, charged
+cost and same-state prehalt/halt witness. The lower-level `exec_large` helper additionally needs a
+fully bounded register file; the actual initialized prefix derives this premise here. The ordinary
+decision path publishes no packed-pointer table. Each call preserves its lower live prefix at the
+complete current-node endpoint, then one native copy releases the dead packed/residue/histogram
+tail. Persistent heavy-buffer capacities and count cells remain allocated, with a monotone
+committed frontier and the old table gap reserved. The unchanged polynomial support envelope does
+not assert a tighter total-space or callee high-water bound.
+
+The generic result consumes actual finite callee code with its explicit protocol. The certified
+exhaustive block inhabits that protocol; the concrete fast endpoint is supplied in `One9992`.
 
 ## Main results
 
-* `exec_input`: complete actual structured execution, global logarithmic width and verdict.
-* `runs_input`: actual halting flat execution and its actual pre-halt state witness.
-* `not_readsWidth`: the complete ordinary host never reads physical width.
+* `exec_input`: actual initialized structured execution at every admitted wider width.
+* `runs_input`: the charged flat halt and its actual prehalt state witness.
+* `not_readsWidth`: the complete ordinary visitor never reads physical width.
 
-The composition and resource bookkeeping are original and reuse the existing finite reductions.
+The native composition and resource bookkeeping are original and reuse the finite reductions.
 -/
 
 @[expose] public section
@@ -42,62 +51,51 @@ theorem seven_le_cost {r : ℕ} (κ : ℕ) (c : Host.Callee r) (n : ℕ) : 7 ≤
   dsimp only [cost]
   omega
 
+open Visitor in
 /-- The fixed ordinary host is independent of physical word width. -/
-theorem not_readsWidth {r : ℕ} (κ : ℕ) (c : Host.Callee r) : ¬(program κ c).ReadsWidth := by
+theorem not_readsWidth {r : ℕ} (κ : ℕ) (c : Host.Callee r) :
+    ¬(program κ c.code).ReadsWidth := by
   have hr : ¬readLength.ReadsWidth := by decide
   have hp : ¬power.ReadsWidth := by decide
-  have hw : ¬reserve.ReadsWidth := by decide
-  have hl : ¬loadSource.ReadsWidth := by decide
-  have hs : ¬(setup (r := r) κ).ReadsWidth := by
-    simp only [setup, Code.ReadsWidth, Op.bin, Op.ReadsWidth, reduceCtorEq,
-      or_self, not_false_eq_true]
-  have hc : ¬(callSetup (r := r)).ReadsWidth := by
-    simp only [callSetup, Code.ReadsWidth, Op.ReadsWidth, or_self, not_false_eq_true]
-  have hf : ¬(finish (r := r)).ReadsWidth := by
-    simp only [finish, Code.ReadsWidth, Op.bin, Op.ReadsWidth, reduceCtorEq,
-      or_self, not_false_eq_true]
-  simp only [program, large, calls, body, Code.ReadsWidth, Code.readsWidth_rename,
-    Op.ReadsWidth, hr, hp, hw, hl, hs, hc, hf, ChanHe.Preprocessing.not_readsWidth κ,
-    c.not_readsWidth_bodyAt, or_false, not_false_eq_true]
+  have hd : ¬ChanHe.Traversal.localVisit.ReadsWidth := by decide
+  have hc : ¬ChanHe.Traversal.pushChildren.ReadsWidth := by decide
+  have hpop : ¬ChanHe.Traversal.popFrame.ReadsWidth := by decide
+  have hpush : ¬ChanHe.Traversal.pushFrame.ReadsWidth := by decide
+  have hs : ¬ChanHe.Preprocessing.snapshot.ReadsWidth := by decide
+  have hpr : ¬ChanHe.Preprocessing.preparePrimes.ReadsWidth := by decide
+  have hprime : ¬PrimeTable.program.ReadsWidth := by decide
+  have hst : ¬ChanHe.Preprocessing.setupTraversal.ReadsWidth := by decide
+  have hre : ¬ChanHe.Preprocessing.reserve.ReadsWidth := by decide
+  have hfi : ¬ChanHe.Preprocessing.finishLayout.ReadsWidth := by decide
+  have hload : ¬ChanHe.Preprocessing.loadRoot.ReadsWidth := by decide
+  simp only [program, large, forest, oneRoot, body, visit, consume, releasePacked, prepareHost,
+    receive,
+    prepareEnvelope, prepareTraversal, Code.ReadsWidth, Code.readsWidth_rename,
+    Op.bin, Op.ReadsWidth,
+    reduceCtorEq, hr, hp, hd, hc, hpop, hpush, hs, hpr, hprime, hst, hre, hfi, hload,
+    Frontend.not_readsWidth κ, c.not_readsWidth_bodyAt, or_self,
+    not_false_eq_true]
 
 /-- Actual execution from initialized signed input, uniformly over all admitted wider words. -/
 theorem exec_input {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     (hw : width κ c.widthCoefficient input.length ≤ w)
     (hvalues : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)) :
-    ∃ y, ExecWithin w (program κ c) (Data.init (input.map Signed.encode)) y
+    ∃ y, ExecWithin w (program κ c.code) (Data.init (input.map Signed.encode)) y
         (cost κ c input.length - 1) ∧
       y.regs (controllerRegisters r answer) ≤ 1 ∧
       (y.regs (controllerRegisters r answer) = 1 ↔
         HasSolution (fun i : Fin input.length => input[i])) := by
   have hcost := seven_le_cost κ c input.length
-  have h3 : Fits w 3 := (reservation_fits hw).2.2.2
+  have h3 : Fits w 3 := (envelope_fits hw).2.2.2
   by_cases hn : input.length < 3
   · obtain ⟨y, hy, ha, hno⟩ := exec_small (κ := κ) input c hn h3
     refine ⟨y, hy.mono (by omega), by omega, ?_⟩
     simp only [ha, reduceCtorEq, false_iff]
     exact hno
-  let x : Data (registerCount r) := Data.init (input.map Signed.encode)
-  let a := (x.comap (controllerRegisters r)).set address 0
-    |>.set inputLength input.length |>.set three 3 |>.set answer 0
-  let q := a.extend (controllerRegisters r) x
-  have hread : ExecWithin w (readLength.rename (controllerRegisters r)) x q 4 := by
-    apply ExecWithin.rename (controller_injective r)
-    simpa only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] using
-      exec_readLength (x.comap (controllerRegisters r)) h3
-  have hqa : q.regs (controllerRegisters r answer) = 0 := by
-    rw [extend_controller]
-    simp +decide [a, answer, three, inputLength, address]
-  have hqn : q.regs (controllerRegisters r inputLength) = input.length := by
-    rw [extend_controller]
-    simp +decide [a, answer, three, inputLength, address]
-  have hq3 : q.regs (controllerRegisters r three) = 3 := by
-    rw [extend_controller]
-    simp +decide [a, answer, three]
-  have hqpp : q.comap (preprocessingRegisters r) = Data.init (input.map Signed.encode) := by
-    ext i
-    · exact (extend_controller_preprocessing _ _ i).trans rfl
-    · rfl
-  obtain ⟨y, hy, hb, hans⟩ := exec_large input c q hw (by omega) hvalues hqpp hqn hqa
+  obtain ⟨q, hread, hqa, hqn, hq3, hqpp⟩ := exec_readLength_init (r := r) input h3
+  have hqb := hread.bounded (Data.Bounded.init (ChanHe.Preprocessing.input_fits input
+    ((preprocessing_width_le κ c.widthCoefficient input.length).trans hw) hvalues))
+  obtain ⟨y, hy, hb, hans⟩ := exec_large input c q hw hqb (by omega) hvalues hqpp hqn hqa
   refine ⟨y, ?_, hb, hans⟩
   unfold program
   exact (hread.seq (hy.branch_neg (show
@@ -110,10 +108,10 @@ theorem runs_input {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     (hw : width κ c.widthCoefficient input.length ≤ w)
     (hvalues : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)) :
     ∃ (y : Data (registerCount r)) (steps : ℕ),
-      Executes w (flatProgram κ c) (State.init (input.map Signed.encode))
+      Executes w (flatProgram κ c.code) (State.init (input.map Signed.encode))
         (y.regs (controllerRegisters r answer)) steps ∧
-      Runs w (flatProgram κ c) (State.init (input.map Signed.encode))
-        ⟨(program κ c).size, y⟩ (steps - 1) ∧ steps ≤ cost κ c input.length ∧
+      Runs w (flatProgram κ c.code) (State.init (input.map Signed.encode))
+        ⟨(program κ c.code).size, y⟩ (steps - 1) ∧ steps ≤ cost κ c input.length ∧
       y.regs (controllerRegisters r answer) ≤ 1 ∧
       (y.regs (controllerRegisters r answer) = 1 ↔
         HasSolution (fun i : Fin input.length => input[i])) ∧ y.Bounded w := by
@@ -122,7 +120,7 @@ theorem runs_input {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
   refine ⟨y, t + 1, ?_, ?_, by omega, hb, hans, ?_⟩
   · simpa only [flatProgram, State.init] using he.executes (controllerRegisters r answer)
   · simpa only [flatProgram, State.init, Nat.zero_add, Nat.add_sub_cancel] using
-      he.runs (pc := 0) (p := flatProgram κ c) (Program.Contains.self _).append_left
+      he.runs (pc := 0) (p := flatProgram κ c.code) (Program.Contains.self _).append_left
   · exact he.bounded (Data.Bounded.init (ChanHe.Preprocessing.input_fits input
       ((preprocessing_width_le κ c.widthCoefficient input.length).trans hw) hvalues))
 

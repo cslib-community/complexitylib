@@ -19,7 +19,7 @@ import Mathlib.Data.Nat.Log
 
 This file implements a textbook chained hash table ([CLRS2009], Sections 11.2 and 11.3.3,
 Theorem 11.3 and Corollary 11.4) realizing the bounded-capacity insert-only dictionary specification
-`Cslib.DataStructure.Dictionary.spec U V n_max` (`get` and `insert` up to `n_max` distinct keys,
+`Cslib.DataStructure.Dictionary.spec U V n_max` (`query` and `insert` up to `n_max` distinct keys,
 with deletion deferred to a follow-up) on the randomized Word RAM over `Cslib.WordRAM.Basis.exact`
 (and lifted to `Basis.standard` via `StateTransitionImpl.toStandard`).
 
@@ -63,9 +63,10 @@ All state resides in a single contiguous memory block `[base, base + space n_max
 * `initSetup`: invokes `MultiplyShift.initCode w₀` (`1` `Instr.rand` call) to sample a uniform odd
   multiplier seed `b ∈ Fin (2 ^ (w₀ - 1))` and writes the 4-word header (`16` instructions total
   for `initFresh` on zeroed memory, `O(n_max)` via `initClear` on arbitrary dirty memory).
-* `get u` and `insert u v`: evaluate the bucket index `bk = multiplyShift w₀ M b (encodeKey u)` via
+* `query u` and `insert u v`: evaluate the bucket index
+  `bk = multiplyShift w₀ M b (encodeKey u)` via
   `MultiplyShift.evalCode w₀ M`, traverse the singly-linked chain from `head[bk]` via
-  `findInChain`, and either return `val[idx] + 1` / `0` (`get`), overwrite `val[idx] ← v` in place
+  `findInChain`, and either return `val[idx] + 1` / `0` (`query`), overwrite `val[idx] ← v` in place
   on a key hit (`insert`), or bump-allocate slot `allocCount` and prepend it to `head[bk]` on a
   key miss (`insert`).
 * By linearity of expectation and the `(2 / 2 ^ M)`-universality of multiply-shift hashing
@@ -95,7 +96,7 @@ All state resides in a single contiguous memory block `[base, base + space n_max
 * `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.expect_collCount_le_card_mul`,
   `expect_collCount_le_two`: universal-hashing expected collision bounds.
 * `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.seq_expected_amortized`: expected subroutine
-  body step bound across any admissible oblivious sequence of `get` and `insert` operations.
+  body step bound across any admissible oblivious sequence of `query` and `insert` operations.
 
 ## References
 
@@ -233,13 +234,13 @@ abbrev regT2 : Fin rHash := 4
 abbrev baseReg : Fin rHash := 5
 /-- Bump-allocation frontier register (`6`). -/
 abbrev frontierReg : Fin rHash := 6
-/-- Operation tag register (`7`: `0` = `get`, `≠ 0` = `insert`). -/
+/-- Operation tag register (`7`: `0` = `query`, `≠ 0` = `insert`). -/
 abbrev tagReg : Fin rHash := 7
 /-- Input key register `u.val` (`8`). -/
 abbrev argU : Fin rHash := 8
 /-- Input value register `v` (`9`). -/
 abbrev argV : Fin rHash := 9
-/-- Output register (`10`: `0` = `none`, `v + 1` = `some v` on `get`). -/
+/-- Output register (`10`: `0` = `none`, `v + 1` = `some v` on `query`). -/
 abbrev outReg : Fin rHash := 10
 /-- Constant `0` scratch register (`11`, also `zeroReg` for `zeroFillCode`). -/
 abbrev zero : Fin rHash := 11
@@ -372,8 +373,9 @@ def findInChainBody : Code .exact rHash := ram_exact[
 def findInChain : Code .exact rHash := ram_exact[
   while zero < cur do [ ⟪findInChainBody⟫ ] ]
 
-/-- Complete `get u` after `findInChain`: return `val[matchIdx] + 1` on a hit, or `0` on a miss. -/
-def finishGet : Code .exact rHash := ram_exact[
+/-- Complete `query u` after `findInChain`: return `val[matchIdx] + 1` on a hit, or `0` on a
+miss. -/
+def finishQuery : Code .exact rHash := ram_exact[
   if zero < found then [
     addr ← valBaseReg + matchIdx;
     regT1 ← *addr;
@@ -411,11 +413,12 @@ def finishInsertMiss : Code .exact rHash := ram_exact[
 def finishInsert : Code .exact rHash := ram_exact[
   if zero < found then [ ⟪finishInsertHit⟫ ] else [ ⟪finishInsertMiss⟫ ] ]
 
-/-- Dispatch post-traversal completion between `get` (`tagReg = 0`) and `insert` (`tagReg ≠ 0`). -/
+/-- Dispatch post-traversal completion between `query` (`tagReg = 0`) and `insert`
+(`tagReg ≠ 0`). -/
 def finishOp : Code .exact rHash := ram_exact[
-  if tagReg = zero then [ ⟪finishGet⟫ ] else [ ⟪finishInsert⟫ ] ]
+  if tagReg = zero then [ ⟪finishQuery⟫ ] else [ ⟪finishInsert⟫ ] ]
 
-/-- Unified operation dispatcher for `get` and `insert`. -/
+/-- Unified operation dispatcher for `query` and `insert`. -/
 def opCode (U n_max : ℕ) : Code .exact rHash :=
   .seq (evalBucket U n_max) (.seq findInChain finishOp)
 
@@ -436,20 +439,21 @@ def subroutineCode (U n_max : ℕ) : SubroutineCode .exact rHash 0 where
 
 /-- Standalone register encoding for `Dictionary.Op U`. -/
 def encode {U : ℕ} : Dictionary.Op U → Fin rHash → ℕ
-  | .get u => fun i => if i = tagReg then 0 else if i = argU then u.val else 0
+  | .query u => fun i => if i = tagReg then 0 else if i = argU then u.val else 0
   | .insert u v => fun i =>
       if i = tagReg then 1 else if i = argU then u.val else if i = argV then v else 0
 
 /-- Partial argument-matching predicate for inline dictionary calls. -/
 def argMatch {U : ℕ} : Dictionary.Op U → (Fin rHash → ℕ) → Prop
-  | .get u => fun regs => regs tagReg = 0 ∧ regs argU = u.val
+  | .query u => fun regs => regs tagReg = 0 ∧ regs argU = u.val
   | .insert u v => fun regs => regs tagReg ≠ 0 ∧ regs argU = u.val ∧ regs argV = v
 
-/-- Output decoder for `Dictionary.spec U V n_max` (`0` = `none`, `v + 1` = `some v` on `get`). -/
+/-- Output decoder for `Dictionary.spec U V n_max` (`0` = `none`, `v + 1` = `some v` on
+`query`). -/
 def decode {U V n_max : ℕ} :
     (o : (Dictionary.spec U V n_max).Op) → (Fin rHash → ℕ) →
       Option ((Dictionary.spec U V n_max).Result o)
-  | .get _, regs =>
+  | .query _, regs =>
       if regs outReg = 0 then some none else some (some (regs outReg - 1))
   | .insert _ _, _ => some ()
 
@@ -467,7 +471,7 @@ theorem arguments_fit {U V n_max w base : ℕ}
       Nat.pow_le_pow_right two_pos (by omega)
     exact (u.isLt.trans_le (le_two_pow_hashBits U n_max)).trans_le hpow
   cases o with
-  | get u =>
+  | query u =>
     simp only [encode]
     split_ifs
     · exact h0
@@ -617,19 +621,6 @@ theorem BucketInv.eq_of_mem_eq {U n_max base : ℕ} {b : Fin (2 ^ (hashBits U n_
   subst hbk
   exact ⟨rfl, hb₁.chain.unique hb₂.chain⟩
 
-private theorem idx_eq_of_nodup_map {α β : Type*} {f : α → β} {L : List α}
-    (hnd : (L.map f).Nodup) {x y : α} (hx : x ∈ L) (hy : y ∈ L) (hxy : f x = f y) :
-    x = y := by
-  induction L with
-  | nil => cases hx
-  | cons a rest ih =>
-    obtain ⟨hna, hnd'⟩ := List.nodup_cons.mp hnd
-    rcases List.mem_cons.mp hx with rfl | hx' <;> rcases List.mem_cons.mp hy with rfl | hy'
-    · rfl
-    · exact absurd (hxy ▸ List.mem_map_of_mem hy') hna
-    · exact absurd (hxy.symm ▸ List.mem_map_of_mem hx') hna
-    · exact ih hnd' hx' hy'
-
 /-- Within a single bucket `bk`, two slots `idx₁, idx₂ ∈ L` have the same stored key if and only if
 `idx₁ = idx₂`. -/
 theorem BucketInv.idx_eq_of_key_eq {U n_max base : ℕ} {b : Fin (2 ^ (hashBits U n_max - 1))}
@@ -638,7 +629,7 @@ theorem BucketInv.idx_eq_of_key_eq {U n_max base : ℕ} {b : Fin (2 ^ (hashBits 
     (h₁ : idx₁ ∈ L) (h₂ : idx₂ ∈ L)
     (hk : mem (keyBase base n_max + idx₁) = mem (keyBase base n_max + idx₂)) :
     idx₁ = idx₂ :=
-  idx_eq_of_nodup_map hb.nodup h₁ h₂ hk
+  List.inj_on_of_nodup_map hb.nodup h₁ h₂ hk
 
 /-- **Chain length bound**: for any query key `u : Fin U`, the length of the chain `L` in bucket
 `bk = multiplyShift w₀ M b (encodeKey u)` is at most `1` plus the number of other keys
@@ -1260,7 +1251,7 @@ private theorem Rep.of_mem_eq {U V n_max w base : ℕ} {b : Fin (2 ^ (hashBits U
   subst this
   exact hbase.trans hr.reg_base.symm
 
-private theorem finishGet_spec {U V n_max w base : ℕ}
+private theorem finishQuery_spec {U V n_max w base : ℕ}
     (hS : Fits w (base + space n_max)) (hV : Fits w V)
     {b : Fin (2 ^ (hashBits U n_max - 1))} {s : Dictionary.State U} {x y : Data rHash}
     (hr : Rep U V n_max w base b s x)
@@ -1276,7 +1267,7 @@ private theorem finishGet_spec {U V n_max w base : ℕ}
       ((∀ i ∈ L, x.mem (keyBase base n_max + i) ≠ u.val) ∧ y.regs found = 0)) :
     ∃ z, ExecWithin w finishOp y z 20 ∧
       Rep U V n_max w base b s z ∧
-      @decode U V n_max (.get u) z.regs = some (s u) ∧
+      @decode U V n_max (.query u) z.regs = some (s u) ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem z.mem := by
   have hsp : 4 + numBuckets n_max + 3 * n_max = space n_max := rfl
   have hsz_le : (Dictionary.dom s).card ≤ n_max := hr.card_le
@@ -1297,7 +1288,7 @@ private theorem finishGet_spec {U V n_max w base : ℕ}
           z.regs baseReg = base ∧ z.regs outReg = y.mem (valBase base n_max + i) + 1 := by
       refine ⟨?_, ?e, ?_, ?_, ?_⟩
       case e =>
-        ram_exact_eval [finishOp, finishGet, htag, hz, ho, hyf, hvb, hym, fvaddr, fv, fv1]
+        ram_exact_eval [finishOp, finishQuery, htag, hz, ho, hyf, hvb, hym, fvaddr, fv, fv1]
       · rfl
       · simp +decide [hbase]
       · simp +decide
@@ -1317,7 +1308,7 @@ private theorem finishGet_spec {U V n_max w base : ℕ}
           z.regs baseReg = base ∧ z.regs outReg = 0 := by
       refine ⟨?_, ?e, ?_, ?_, ?_⟩
       case e =>
-        ram_exact_eval [finishOp, finishGet, htag, hz, hyf]
+        ram_exact_eval [finishOp, finishQuery, htag, hz, hyf]
       · rfl
       · simp +decide [hbase]
       · simp +decide
@@ -1661,7 +1652,7 @@ def collCount {U : ℕ} (n_max : ℕ) (s : Dictionary.State U) (u : Fin U)
 
 /-- Key queried or inserted by a dictionary operation `o : Dictionary.Op U`. -/
 def opKey {U : ℕ} : Dictionary.Op U → Fin U
-  | .get u => u
+  | .query u => u
   | .insert u _ => u
 
 /-- Deterministic execution of `opCode U n_max` for a fixed seed `b`: executes in at most
@@ -1680,7 +1671,7 @@ theorem opCode_spec {U V n_max w base : ℕ}
   let u := opKey o
   have hu_reg : x.regs argU = u.val := by
     cases o with
-    | get u => exact harg.2
+    | query u => exact harg.2
     | insert u v => exact harg.2.1
   let bk := multiplyShift (hashBits U n_max) (bucketBits n_max) b (encodeKey u)
   have hbk_lt : bk < numBuckets n_max := multiplyShift_lt_numBuckets b u
@@ -1699,11 +1690,11 @@ theorem opCode_spec {U V n_max w base : ℕ}
     · exact Or.inl hhit
     · exact Or.inr ⟨hmiss, hyf.trans hfnd1⟩
   cases o with
-  | get u₀ =>
+  | query u₀ =>
     have hu_eq : u = u₀ := rfl
     have htag_y : y.regs tagReg = 0 := htag2.trans (htag1.trans harg.1)
     obtain ⟨z, he3, hrep_z, hdec_z, hmod_z⟩ :=
-      finishGet_spec hS hV hr hbL hy_bdd hmy (hbase2.trans hbase1) htag_y hz2 ho2
+      finishQuery_spec hS hV hr hbL hy_bdd hmy (hbase2.trans hbase1) htag_y hz2 ho2
         (hvb2.trans hvb1) hres'
     have he_tot : ExecWithin w (opCode U n_max) x z (24 + (9 * L.length + 2 + 20)) :=
       he1.within.seq (he2.seq he3)
@@ -1830,7 +1821,7 @@ def charge (U V n_max : ℕ) :
 /-- **Chained hash table `Randomized.StateTransitionImpl` certificate over `Basis.exact`.**
 Realizes `Dictionary.spec U V n_max` in `space n_max = 4 + 2 ^ M + 3 * n_max = O(n_max)` words of
 memory, `O(1)` (`16`-instruction) initialization on zeroed memory (`O(n_max)` via `initClear` on
-dirty memory), and `chargeVal = 73 = O(1)` worst-case expected instructions per `get` or `insert`
+dirty memory), and `chargeVal = 73 = O(1)` worst-case expected instructions per `query` or `insert`
 operation with zero potential (`potential = 0`). -/
 noncomputable def impl (U V n_max w base : ℕ)
     (hw : 2 * hashBits U n_max ≤ w)

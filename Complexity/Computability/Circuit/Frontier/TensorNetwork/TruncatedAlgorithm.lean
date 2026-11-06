@@ -8,13 +8,14 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedResources
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModulusGrowth
 import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionPolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 
 /-!
-# Theorem D.1 at truncation order `ℓ`, from a contraction over `A_P`
+# Polynomial truncation order from a contraction over `A_P`
 
 Theorem D.1 of [OpenAI2026ETH] (p. 53) contracts networks whose entries lie in
 `B_{P,ℓ} = (ℤ / 2 ^ P)[V] / (V ^ ℓ)`. This file states its interface for described networks
@@ -25,8 +26,9 @@ Theorem D.1 of [OpenAI2026ETH] (p. 53) contracts networks whose entries lie in
 
 **The interface.** One native certificate computes the truncated contraction
 (`DescribedNetwork.truncContraction`) from `(P, ℓ, r, G)`, with `P` and `ℓ` in unary. For all
-constants `C` and `D` there is `K` such that, on every network admissible at a size `s ≥ 2` with
-constant `C`, and every `1 ≤ P, ℓ ≤ D s`, it takes time at most
+constants `C`, `D` and `d` there is `K` such that, on every network admissible at a size `s ≥ 2`
+with constant `C`, precision `1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)` and truncation order
+`1 ≤ ℓ ≤ D (s + 1) ^ d`, it takes time at most
 `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space at most `K (n + 1) ^ K`, for the encoded length `n`
 of the input. This is the shape of `Cslib.Complexity.CountingSimulation.ContractionAlgorithm`.
 
@@ -37,9 +39,15 @@ of the input. This is the shape of `Cslib.Complexity.CountingSimulation.Contract
   (`Cslib.Circuits.Frontier.fastTruncCertificate`);
 * otherwise it sums directly (`truncDirectCertificate`).
 
-On admissible inputs with `k ≤ C s` vertices, `s ≤ m` and `ℓ ≤ D s`, the first branch is taken once
-`s ≥ 4 (C D + 1)` (`Cslib.Circuits.Frontier.truncGuard_of_le`), since `deg f ≥ 4 ⌊log₂ m⌋`. Below
-that size, direct summation costs a constant factor.
+On admissible inputs with at most `C s` vertices, at least `s` edges and polynomial `ℓ`, the first
+branch is eventually taken. The modulus already has degree
+`2 * 3 ^ ⌊log₂ (4 ⌊log₂ m⌋ + 2)⌋`, which eventually exceeds every fixed multiple of `log₂ m`.
+The explicit sufficient threshold is `max (C D) (2 ^ (2 ^ (d + 2)))`
+(`Cslib.Circuits.Frontier.truncGuard_of_polynomial_le`). Below it, direct summation costs a
+constant factor. The older and smaller linear-order threshold is also retained.
+
+The logarithmic factor in precision and the polynomial truncation range strengthen the stated
+range of Theorem D.1. These extensions are proved here; they are not attributed to its statement.
 
 **The hypotheses on the contraction over `A_P`** are those of the interface planned in #1538 for
 milestone E1: it is correct on every network at the modulus of its number of edges, and meets the
@@ -78,8 +86,9 @@ variable {T : Type} {encT : T ↪ List Bool}
 
 /-- **The interface of Theorem D.1 at truncation order `ℓ`** for described networks. One native
 certificate computes the truncated contraction from `(P, ℓ, r, G)`, with `P` and `ℓ` in unary. For
-all constants `C` and `D` there is `K` such that, on every network admissible at a size `s ≥ 2`
-with constant `C`, and every `1 ≤ P, ℓ ≤ D s`, the certificate's time is at most
+all constants `C`, `D`, `d` there is `K` such that, on every network admissible at a size `s ≥ 2`
+with constant `C`, precision `1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)` and order `1 ≤ ℓ ≤ D (s + 1) ^ d`, its
+time is at most
 `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and its space at most `K (n + 1) ^ K`, where `n` is the
 encoded length of the input. Outside admissible inputs the certificate need only be correct. -/
 structure TruncatedContractionAlgorithm (encT : T ↪ List Bool) (entry : T → List Bool → List ℕ)
@@ -88,12 +97,29 @@ structure TruncatedContractionAlgorithm (encT : T ↪ List Bool) (entry : T → 
   certificate : NativeCertificate
     (fun ((P, ℓ, _, G) : ℕ × ℕ × ℕ × DescribedNetwork T) => G.truncContraction entry P ℓ)
     (encTrunc encT) (encList encNat)
-  /-- Its time and space on admissible inputs. -/
-  bound : ∀ C D : ℕ, ∃ K : ℕ, ∀ (s P ℓ r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P →
-    P ≤ D * s → 1 ≤ ℓ → ℓ ≤ D * s → Admissible C s (r, G) →
+  /-- Its time and space for logarithmically larger precision and any fixed polynomial
+  truncation order. All constants are chosen before the instance. -/
+  bound_polynomial : ∀ C D d : ℕ, ∃ K : ℕ, ∀ (s P ℓ r : ℕ) (G : DescribedNetwork T),
+    2 ≤ s → 1 ≤ P → P ≤ D * s * (Nat.log 2 s + 1) →
+    1 ≤ ℓ → ℓ ≤ D * (s + 1) ^ d → Admissible C s (r, G) →
       certificate.time (P, ℓ, r, G) ≤ K * ((encTrunc encT (P, ℓ, r, G)).length + 1) ^ K *
           2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) ∧
         certificate.space (P, ℓ, r, G) ≤ K * ((encTrunc encT (P, ℓ, r, G)).length + 1) ^ K
+
+/-- The linear precision and truncation range of Theorem D.1 is a special case of the enlarged
+range. -/
+theorem TruncatedContractionAlgorithm.bound {entry : T → List Bool → List ℕ}
+    {Admissible : ℕ → ℕ → ℕ × DescribedNetwork T → Prop}
+    (A : TruncatedContractionAlgorithm encT entry Admissible) (C D : ℕ) :
+    ∃ K : ℕ, ∀ (s P ℓ r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P → P ≤ D * s →
+      1 ≤ ℓ → ℓ ≤ D * s → Admissible C s (r, G) →
+        A.certificate.time (P, ℓ, r, G) ≤ K * ((encTrunc encT (P, ℓ, r, G)).length + 1) ^ K *
+          2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) ∧
+        A.certificate.space (P, ℓ, r, G) ≤ K * ((encTrunc encT (P, ℓ, r, G)).length + 1) ^ K := by
+  obtain ⟨K, hK⟩ := A.bound_polynomial C D 1
+  refine ⟨K, fun s P ℓ r G hs hP hPD hℓ hℓD hA => hK s P ℓ r G hs hP ?_ hℓ ?_ hA⟩
+  · exact hPD.trans (Nat.le_mul_of_pos_right _ (by omega))
+  · simpa only [pow_one] using hℓD.trans (Nat.mul_le_mul_left D (Nat.le_succ s))
 
 /-! ### The guard -/
 
@@ -161,6 +187,29 @@ theorem truncGuard_of_le {C D s P ℓ r : ℕ} {G : DescribedNetwork T} (hs : 4 
     nlinarith
   omega
 
+/-- Every fixed polynomial truncation order eventually passes the same interpolation guard.
+The threshold is independent of the network, its precision and its encoding length. -/
+theorem truncGuard_of_polynomial_le {C D d s P ℓ r : ℕ} {G : DescribedNetwork T}
+    (hs : max (C * D) (2 ^ (2 ^ (d + 2))) ≤ s)
+    (hℓ : ℓ ≤ D * (s + 1) ^ d) (hk : G.vertices.length ≤ C * s) (hm : s ≤ G.numEdges) :
+    truncGuard (P, ℓ, r, G) = true := by
+  simp only [truncGuard, decide_eq_true_eq]
+  have hCD : C * D ≤ s := (le_max_left _ _).trans hs
+  have hpow : 1 ≤ (s + 1) ^ (d + 1) := Nat.one_le_pow _ _ (by omega)
+  have hprod : (ℓ - 1) * G.vertices.length ≤ C * D * (s + 1) ^ (d + 1) := by
+    calc (ℓ - 1) * G.vertices.length ≤ (D * (s + 1) ^ d) * (C * (s + 1)) :=
+          Nat.mul_le_mul (by omega) (hk.trans (Nat.mul_le_mul_left C (Nat.le_succ s)))
+      _ = C * D * (s + 1) ^ (d + 1) := by rw [pow_succ]; ring
+  calc DescribedNetwork.pointCount ℓ G
+      ≤ (C * D + 1) * (s + 1) ^ (d + 1) := by
+        simp only [DescribedNetwork.pointCount]
+        nlinarith
+    _ ≤ (s + 1) * (s + 1) ^ (d + 1) := Nat.mul_le_mul_right _ (by omega)
+    _ = (s + 1) ^ (d + 2) := by rw [show d + 2 = (d + 1) + 1 by omega, pow_succ]; ring
+    _ ≤ (G.numEdges + 1) ^ (d + 2) := Nat.pow_le_pow_left (by omega) _
+    _ ≤ 2 ^ (FastContraction.modulus G.numEdges).length :=
+      FastContraction.pow_le_card_modulus (((le_max_right _ _).trans hs).trans hm)
+
 /-! ### The fast branch -/
 
 /-- The input of the reduction at the modulus of the network. -/
@@ -225,14 +274,15 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
         G'.contraction fun d bs =>
           val P (FastContraction.modulus G'.numEdges) (specEntry entry d bs))
     (hcore : ∀ C D : ℕ, ∃ K : ℕ, ∀ (s P r : ℕ) (G' : DescribedNetwork (SpecDesc T)), 2 ≤ s →
-      1 ≤ P → P ≤ D * s → CoreAdm C s (r, G') →
+      1 ≤ P → P ≤ D * s * (Nat.log 2 s + 1) → CoreAdm C s (r, G') →
         cc.time (P, FastContraction.modulus G'.numEdges, r, G') ≤
             K * ((encCore encT (P, FastContraction.modulus G'.numEdges, r, G')).length + 1) ^ K *
               2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) ∧
           cc.space (P, FastContraction.modulus G'.numEdges, r, G') ≤
             K * ((encCore encT (P, FastContraction.modulus G'.numEdges, r, G')).length + 1) ^ K)
-    (htransfer : ∀ C D : ℕ, ∃ C' : ℕ, ∀ (s P ℓ r k : ℕ) (G : DescribedNetwork T), 2 ≤ s →
-      1 ≤ P → P ≤ D * s → 1 ≤ ℓ → ℓ ≤ D * s → Adm C s (r, G) →
+    (htransfer : ∀ C D d : ℕ, ∃ C' : ℕ, ∀ (s P ℓ r k : ℕ) (G : DescribedNetwork T), 2 ≤ s →
+      1 ≤ P → P ≤ D * s * (Nat.log 2 s + 1) →
+      1 ≤ ℓ → ℓ ≤ D * (s + 1) ^ d → Adm C s (r, G) →
         CoreAdm C' s (r, DescribedNetwork.specNet P ℓ (FastContraction.modulus G.numEdges)
           (FastContraction.digits (FastContraction.modulus G.numEdges).length k) G))
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
@@ -251,8 +301,8 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
         split
         · next h => exact fastTruncCertificate_correct hval P ℓ r G h
         · rfl
-  bound C D := by
-    obtain ⟨C', hC'⟩ := htransfer C D
+  bound_polynomial C D dℓ := by
+    obtain ⟨C', hC'⟩ := htransfer C D dℓ
     obtain ⟨K₀, hK₀⟩ := hcore C' D
     obtain ⟨Ke, hKe⟩ := hentry C
     obtain ⟨Kd, hKd⟩ := truncDirectCertificate_le entry ce
@@ -261,7 +311,7 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
     obtain ⟨pg, hpg, mg, bg⟩ := exists_mono_poly_cert (truncGuard_polyTime (encT := encT))
     obtain ⟨pM, hpM, mM, bM⟩ := exists_mono_poly_cert (modulusEdges_polyTime (encT := encT))
     obtain ⟨cY, dY, hY⟩ := (modulusEdges_polyTime (encT := encT)).polyBounded_length.exists_le
-    set s₀ := 4 * (C * D + 1) with hs₀
+    set s₀ := max (C * D) (2 ^ (2 ^ (dℓ + 2))) with hs₀
     -- The overheads, as polynomials in the length `n` of the input.
     let Yf : ℕ → ℕ := fun n => cY * (n + 1) ^ dY
     let Qf : ℕ → ℕ := fun n => K₀ * (9 * (Yf n + 1) ^ 2 + 1) ^ K₀
@@ -385,7 +435,8 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
       intro hg
       have hss : s < s₀ := by
         by_contra h
-        have := truncGuard_of_le (P := P) (r := r) (show 4 * (C * D + 1) ≤ s by omega) hℓD hkC hsm
+        have := truncGuard_of_polynomial_le (P := P) (r := r)
+          (show max (C * D) (2 ^ (2 ^ (dℓ + 2))) ≤ s by omega) hℓD hkC hsm
         rw [this] at hg
         exact Bool.noConfusion hg
       have hL : (DescribedNetwork.encDescribed encT G).length ≤ n := by

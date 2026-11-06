@@ -4,20 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Algorithms.Lean.FusionTree.Capacity
-import Complexity.Algorithms.Lean.FusionTree.XorCorrection
-import Complexity.Algorithms.WordRAM.FusionTree.Boundary
-import Complexity.Algorithms.WordRAM.FusionTree.Binary
-import Complexity.Algorithms.WordRAM.FusionTree.Compress
-import Complexity.Algorithms.WordRAM.FusionTree.LowerRank
-import Complexity.Algorithms.WordRAM.FusionTree.MSB
-import Complexity.Algorithms.WordRAM.FusionTree.Neighbors
+import Complexity.DataStructure.FusionTree.Capacity
+import Complexity.DataStructure.FusionTree.XorCorrection
+import Complexity.DataStructure.FusionTree.WordRAM.Boundary
+import Complexity.DataStructure.FusionTree.WordRAM.Binary
+import Complexity.DataStructure.FusionTree.WordRAM.Compress
+import Complexity.DataStructure.FusionTree.WordRAM.LowerRank
+import Complexity.DataStructure.FusionTree.WordRAM.MSB
+import Complexity.DataStructure.FusionTree.WordRAM.Neighbors
 
 /-! Regression clients for the checked RAM fragments and pure MSB arithmetic. These do not
 assert the complete fusion-node or data-structure execution endpoint. -/
 
 open Cslib.WordRAM
-open Cslib.Algorithms.WordRAM.FusionTree
+open Cslib.DataStructure.FusionTree.WordRAM
 
 namespace FusionTreeRAMTests
 
@@ -109,9 +109,9 @@ example :
       (fun (y, t) => (y.regs 14, y.regs 15, y.regs 16, t)) = some (6, 1, 1, 17) ∧
     (NeighborProgram.code.eval 4 0 (neighborInput 15 3)).map
       (fun (y, t) => (y.regs 14, y.regs 15, y.regs 16, t)) = some (9, 6, 2, 18) ∧
-    Cslib.Algorithms.Lean.FusionTree.xorCorrectedRank 4 ![0, 2, 12, 15] 5 = 2 ∧
-    (Cslib.Algorithms.Lean.FusionTree.branching 511 = 2 ∧
-      Cslib.Algorithms.Lean.FusionTree.branching 512 = 2) ∧
+    Cslib.DataStructure.FusionTree.xorCorrectedRank 4 ![0, 2, 12, 15] 5 = 2 ∧
+    (Cslib.DataStructure.FusionTree.branching 511 = 2 ∧
+      Cslib.DataStructure.FusionTree.branching 512 = 2) ∧
     (BinaryNodeProgram.code.eval 6 0 (binaryInput 1)).map
       (fun (y, t) => (y.regs 2, t)) = some (0, 8) ∧
     (BinaryNodeProgram.code.eval 6 0 (binaryInput 2)).map
@@ -121,12 +121,12 @@ example :
   refine ⟨by decide, by decide, ?_, fun _ hx => MSB.widthMSB_eq_log2 hx,
     by decide, by decide, by decide, ?_, by decide, by decide, by decide, by decide⟩
   · refine ⟨?_, ?_, ?_, ?_⟩ <;> rw [MSB.widthMSB_eq_log2 (by decide)] <;> decide
-  · rw [Cslib.Algorithms.Lean.FusionTree.xorCorrectedRank_eq_upperRank
+  · rw [Cslib.DataStructure.FusionTree.xorCorrectedRank_eq_upperRank
       (by decide) (by decide) (by decide)]
-    unfold Cslib.Algorithms.Lean.FusionTree.upperRank
+    unfold Cslib.DataStructure.FusionTree.upperRank
     decide
 
-/-- info: 'Cslib.Algorithms.WordRAM.FusionTree.BinaryNodeProgram.exec' depends on axioms:
+/-- info: 'Cslib.DataStructure.FusionTree.WordRAM.BinaryNodeProgram.exec' depends on axioms:
 [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms BinaryNodeProgram.exec

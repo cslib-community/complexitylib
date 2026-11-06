@@ -20,7 +20,7 @@ import Complexity.Probability.PMF.Expect
 # Self-Contained Open-Addressed Permutation-Probing Dictionary on the Word-RAM
 
 This file implements a self-contained open-addressed permutation-probing dictionary realizing
-`Cslib.DataStructure.Dictionary.spec U V n_max` (`get` and `insert` up to `n_max` distinct keys)
+`Cslib.DataStructure.Dictionary.spec U V n_max` (`query` and `insert` up to `n_max` distinct keys)
 on the Word-RAM (`Cslib.WordRAM.Basis.exact` and `Cslib.WordRAM.Basis.standard`), combining the
 power-of-two odd-stride double-hashing construction of
 [Cormen, Leiserson, Rivest, and Stein, *Introduction to Algorithms*, third edition (MIT Press,
@@ -97,8 +97,8 @@ words of memory.
   `space c_exp n_max ≤ spaceFactor c_exp * (n_max + 1) = O_{c_exp}(n_max + 1)` across all `n_max`.
 * `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.setup_exec_spec`: randomized seed and table
   initialization in `setupSteps c_exp n_max = O_{c_exp}(n_max + 1)` instructions.
-* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.opCode_execWithin`: every `get` or `insert`
-  operation on key `u` executes in at most
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.opCode_execWithin`: every `query` or
+  `insert` operation on key `u` executes in at most
   `opPathSteps c_exp θ T u = 13 * probeCount T u (probePerm θ u) + hashEvalSteps c_exp + 8`
   instructions.
 * `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.seq_expected_amortized`: assumption-free
@@ -545,7 +545,7 @@ abbrev regM : Fin 16 := 7
 /-- Register `8`: constant `0` during probing / general scratch. -/
 abbrev regZero : Fin 16 := 8
 
-/-- Register `12` (`output`): operation tag (`0` for `get`, `1` for `insert`) on input; decoded
+/-- Register `12` (`output`): operation tag (`0` for `query`, `1` for `insert`) on input; decoded
 return value (`0` for `none`/`()`, `v + 1` for `some v`) on output. -/
 abbrev regOp : Fin 16 := 12
 
@@ -1504,10 +1504,10 @@ theorem opEvalHashesCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
     by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_u],
     by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_v]⟩
 
-/-- Lookup completion program `finishGetCode` (`≤ 9` instructions): inspects `used[regSlot]`;
+/-- Lookup completion program `finishQueryCode` (`≤ 9` instructions): inspects `used[regSlot]`;
 if `0`, writes `0` (`none`) into `regOp`, and if `1`, loads `val[regSlot]` and writes
 `val[regSlot] + 1` (`some v`) into `regOp`. -/
-def finishGetCode : Code .exact 16 :=
+def finishQueryCode : Code .exact 16 :=
   .seq (.op (.exactBin .add regAddr regSlotBase regSlot))
   (.seq (.op (.load regCond regAddr))
         (.branch (.eq regCond regZero)
@@ -1518,7 +1518,7 @@ def finishGetCode : Code .exact 16 :=
           (.seq (.op (.const regCond 1))
                 (.op (.exactBin .add regOp regOp regCond))))))))
 
-theorem finishGetCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
+theorem finishQueryCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
     {s : Dictionary.State U} {x d : Data 16}
     (hS : Fits w (base + space c_exp n_max)) (hV : Fits w V)
     (hrep : Rep w base c_exp U V n_max θ s x)
@@ -1532,7 +1532,7 @@ theorem finishGetCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp
     (hm : d.regs regM = numBuckets n_max)
     (hzero : d.regs regZero = 0) :
     ∃ y : Data 16,
-      ExecWithin w finishGetCode d y 9 ∧
+      ExecWithin w finishQueryCode d y 9 ∧
       y.mem = x.mem ∧
       y.regs regBase = base ∧
       y.regs regOp = (match s u with | none => 0 | some v => v + 1) := by
@@ -1794,12 +1794,12 @@ theorem finishInsertCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
     by simp +decide [s8],
     hprim, hstr, hwf, htrep, hdom_le, hvals, hmod⟩
 
-/-- Complete operation body `opCode c_exp n_max` for both `get` and `insert`. -/
+/-- Complete operation body `opCode c_exp n_max` for both `query` and `insert`. -/
 def opCode (c_exp n_max : ℕ) : Code .exact 16 :=
   .seq (opEvalHashesCode c_exp n_max)
   (.seq probeCheckCode
   (.seq probeLoop
-        (.branch (.eq regOp regZero) finishGetCode finishInsertCode)))
+        (.branch (.eq regOp regZero) finishQueryCode finishInsertCode)))
 
 /-- Exact pathwise instruction budget
 `13 * probeCount T u (probePerm θ u) + hashEvalSteps c_exp + 8` for `opCode c_exp n_max` on table
@@ -1823,17 +1823,17 @@ theorem opPathSteps_le_opSteps {c_exp U n_max : ℕ} (θ : Seed c_exp n_max)
 
 /-- Key extracted from a `Dictionary.Op U`. -/
 def opKey {U : ℕ} : Dictionary.Op U → Fin U
-  | .get u => u
+  | .query u => u
   | .insert u _ => u
 
-/-- Operation tag (`0` for `get`, `1` for `insert`). -/
+/-- Operation tag (`0` for `query`, `1` for `insert`). -/
 def opTag {U : ℕ} : Dictionary.Op U → ℕ
-  | .get _ => 0
+  | .query _ => 0
   | .insert _ _ => 1
 
 /-- Encoded output word in `regOp` after executing `op` from state `s`. -/
 def opOutWord {U : ℕ} (s : Dictionary.State U) : Dictionary.Op U → ℕ
-  | .get u => match s u with | none => 0 | some v => v + 1
+  | .query u => match s u with | none => 0 | some v => v + 1
   | .insert _ _ => 0
 
 /-- **Pathwise correctness and complexity of `opCode c_exp n_max`**: for any seed `θ`, dictionary
@@ -1912,12 +1912,13 @@ theorem opCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
     rw [hd3_regs regV (by decide) (by decide) (by decide),
       hd2_regs regV (by decide) (by decide), hd1_v]
   cases op with
-  | get u₀ =>
+  | query u₀ =>
     have hc : (Cond.eq regOp regZero).Holds d3 := by
       simp [Cond.Holds, hd3_op, hd3_zero, opTag]
     obtain ⟨y, eFin, hy_mem, hy_base, hy_op⟩ :=
-      finishGetCode_execWithin hS hV hrep u₀ hO hd3_mem hd3_base hd3_sbase hd3_slot hd3_m hd3_zero
-    have eBr : ExecWithin w (.branch (.eq regOp regZero) finishGetCode finishInsertCode) d3 y 10 :=
+      finishQueryCode_execWithin hS hV hrep u₀ hO hd3_mem hd3_base hd3_sbase hd3_slot hd3_m hd3_zero
+    have eBr :
+        ExecWithin w (.branch (.eq regOp regZero) finishQueryCode finishInsertCode) d3 y 10 :=
       ExecWithin.branch_pos hc eFin
     have eTot : ExecWithin w (opCode c_exp n_max) x y
         (opPathSteps c_exp U n_max θ (extractSlots base c_exp U n_max x.mem) u₀) := by
@@ -1938,7 +1939,8 @@ theorem opCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
     obtain ⟨y, eFin, hy_base, hy_op, hy_prim, hy_str, hy_wf, hy_trep, hy_dom, hy_vals, hy_mod⟩ :=
       finishInsertCode_execWithin hS hrep u₀ v₀ hvalid hO
         hd3_mem hd3_base hd3_sbase hd3_slot hd3_m hd3_u hd3_v₀
-    have eBr : ExecWithin w (.branch (.eq regOp regZero) finishGetCode finishInsertCode) d3 y 10 :=
+    have eBr :
+        ExecWithin w (.branch (.eq regOp regZero) finishQueryCode finishInsertCode) d3 y 10 :=
       ExecWithin.branch_neg hc eFin
     have eTot : ExecWithin w (opCode c_exp n_max) x y
         (opPathSteps c_exp U n_max θ (extractSlots base c_exp U n_max x.mem) u₀) := by
@@ -1970,7 +1972,7 @@ def subroutineCode (c_exp n_max : ℕ) : SubroutineCode .exact 16 0 where
 
 /-- Standalone argument encoder for `Dictionary.Op U` on `16` registers. -/
 def encodeOp {U : ℕ} : Dictionary.Op U → Fin 16 → ℕ
-  | .get u, i =>
+  | .query u, i =>
       if i = regOp then 0
       else if i = regU then u.val
       else 0
@@ -1989,14 +1991,14 @@ def argMatch {U : ℕ} (op : Dictionary.Op U) (regs : Fin 16 → ℕ) : Prop :=
 /-- Output decoder reading typed operation observations from final registers. -/
 def decodeOp {U V n_max : ℕ} : (op : Dictionary.Op U) → (Fin 16 → ℕ) →
     Option ((Dictionary.spec U V n_max).Result op)
-  | .get _, regs => some (if regs regOp = 0 then none else some (regs regOp - 1))
+  | .query _, regs => some (if regs regOp = 0 then none else some (regs regOp - 1))
   | .insert _ _, _ => some ()
 
 theorem encode_matches {c_exp U n_max : ℕ} (op : Dictionary.Op U) (regs : Fin 16 → ℕ) :
     argMatch op
       (fun i => if (subroutineCode c_exp n_max).input i then encodeOp op i else regs i) := by
   cases op with
-  | get u =>
+  | query u =>
     refine ⟨rfl, ?_, fun _ _ h => by nomatch h⟩
     simp +decide [subroutineCode, encodeOp, opKey]
   | insert u v =>
@@ -2016,7 +2018,7 @@ theorem arguments_fit {w base c_exp U V n_max : ℕ}
   have hfit0 : Fits w 0 := fits_zero w
   have hfit1 : Fits w 1 := (fits_of_space hS).2.2.2.2.2.2.2.2
   cases op with
-  | get u =>
+  | query u =>
     dsimp only [encodeOp]
     split_ifs
     · exact hfit0
@@ -2036,7 +2038,7 @@ theorem decodeOp_eq_step {U V n_max : ℕ} {s : Dictionary.State U}
     decodeOp (V := V) (n_max := n_max) op regs =
       some ((Dictionary.spec U V n_max).stepFn s op).2 := by
   cases op with
-  | get u =>
+  | query u =>
     dsimp only [decodeOp, Dictionary.spec, Dictionary.step, StateTransitionSpec.stepFn,
       opOutWord] at h ⊢
     rw [h]
@@ -2047,8 +2049,8 @@ theorem decodeOp_eq_step {U V n_max : ℕ} {s : Dictionary.State U}
     rfl
 
 /-- Expected per-operation instruction charge
-`13 * doubleTabThreshold c_exp + hashEvalSteps c_exp + 8 = O_{c_exp}(1)` for both `get` and `insert`
-(independent of `n_max` and `U`). -/
+`13 * doubleTabThreshold c_exp + hashEvalSteps c_exp + 8 = O_{c_exp}(1)` for both `query` and
+`insert` (independent of `n_max` and `U`). -/
 def expectedOpCharge (c_exp : ℕ) : ℕ :=
   13 * doubleTabThreshold c_exp + hashEvalSteps c_exp + 8
 

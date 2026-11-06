@@ -298,12 +298,6 @@ theorem modulus_polyTime : ComputableInPolyTime modulus encUnary (encList encNat
   exact ComputableInPolyTime.mapWithInput
     (f := fun m i => if i = 0 ∨ i = 3 ^ modulusExp m then 1 else 0) hrange hbody
 
-/-- The number of edges of a capped input, in unary. -/
-private theorem edges_polyTime :
-    ComputableInPolyTime (fun q : ℕ × ℕ × ExplicitTensorNetwork ℕ => q.2.2.numEdges)
-      ExplicitTensorNetwork.encContractionInput encUnary :=
-  ExplicitTensorNetwork.numEdges_polyTime
-
 /-- The network of a capped input. -/
 private theorem network_polyTime :
     ComputableInPolyTime (fun q : ℕ × ℕ × ExplicitTensorNetwork ℕ => q.2.2)
@@ -343,16 +337,17 @@ theorem root_polyTime : ComputableInPolyTime root ExplicitTensorNetwork.encContr
     ExplicitTensorNetwork.encExplicitNetwork)
   have hr := (ComputableInPolyTime.fst encNat ExplicitTensorNetwork.encExplicitNetwork).comp
     (ComputableInPolyTime.snd encUnary (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
-  exact (edges_polyTime.prod ((ComputableInPolyTime.const 0).prod
-    ((ComputableInPolyTime.unary_add' edges_polyTime (ComputableInPolyTime.const 1)).prod
-      (hp.prod ((modulus_polyTime.comp edges_polyTime).prod hr))))).prod
+  exact (ExplicitTensorNetwork.numEdges_polyTime.prod ((ComputableInPolyTime.const 0).prod
+    ((ComputableInPolyTime.unary_add' ExplicitTensorNetwork.numEdges_polyTime
+        (ComputableInPolyTime.const 1)).prod
+      (hp.prod ((modulus_polyTime.comp ExplicitTensorNetwork.numEdges_polyTime).prod hr))))).prod
     ((rootNet_polyTime (encList encNat)).comp network_polyTime)
 
 /-- **The clock is polynomial-time**, from a capped input. -/
 theorem fuel_polyTime : ComputableInPolyTime fuel ExplicitTensorNetwork.encContractionInput
     encNat :=
   (ComputableInPolyTime.unary_two_pow_div_sqrt_log_two fuelConst).comp
-    (ComputableInPolyTime.unary_add' edges_polyTime
+    (ComputableInPolyTime.unary_add' ExplicitTensorNetwork.numEdges_polyTime
       (ComputableInPolyTime.fst encUnary (encPair encNat
         ExplicitTensorNetwork.encExplicitNetwork)))
 

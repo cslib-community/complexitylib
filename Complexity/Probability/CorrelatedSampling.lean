@@ -288,10 +288,10 @@ abbrev Cell := Σ s : S, {v // v ∈ values P s}
 noncomputable instance : DecidableEq (Cell P) := Classical.decEq _
 
 /-- The length of the interval of a cell. -/
-noncomputable def weight (c : Cell P) : ℝ≥0 := c.2.1 - predIn (values P c.1) c.2.1
+noncomputable def weight (c : Cell P) : ℝ≥0 := c.2.val - predIn (values P c.1) c.2.val
 
 /-- The cells under the graph of `t`. -/
-noncomputable def under (t : S → ℝ≥0) : Finset (Cell P) := univ.filter fun c => c.2.1 ≤ t c.1
+noncomputable def under (t : S → ℝ≥0) : Finset (Cell P) := univ.filter fun c => c.2.val ≤ t c.1
 
 /-- The cells under the graph of `P i`. -/
 noncomputable def region (i : I) : Finset (Cell P) := under P fun s => (P i s).toNNReal

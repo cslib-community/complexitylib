@@ -336,12 +336,12 @@ space. The abstract clock is used only to prove all-branches halting. Neither an
 a clock, nor a choice history is stored in native finite control. -/
 theorem exists_decidesInSpace {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ List Bool}
     (M : NondeterministicQueryMachine σ)
-    (hquery : ComputableTidilyInSpace M.query encS encNat fun s => (encS s).length)
-    (hnext : ComputableTidilyInSpace M.next
+    (hquery : ComputableInSpace M.query encS encNat fun s => (encS s).length)
+    (hnext : ComputableInSpace M.next
       (encPair encS (encPair (encOption encBool) encBool)) encS
       fun p => (encPair encS (encPair (encOption encBool) encBool) p).length)
-    (hhalted : ComputableTidilyInSpace M.halted encS encBool fun s => (encS s).length)
-    (haccept : ComputableTidilyInSpace M.accept encS encBool fun s => (encS s).length)
+    (hhalted : ComputableInSpace M.halted encS encBool fun s => (encS s).length)
+    (haccept : ComputableInSpace M.accept encS encBool fun s => (encS s).length)
     (time : α → ℕ) (hhalt : ∀ a, M.HaltsWithin (enc a) (time a))
     {A : Set α} (hcorrect : ∀ a, a ∈ A ↔ M.Accepts (enc a))
     (S : α → ℕ) (hlog : ∀ a, Nat.log2 (enc a).length + 1 ≤ S a)

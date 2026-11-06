@@ -7,13 +7,13 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
+public import Complexity.DataStructure.PrefixSums.WordRAM.Dynamic
 
 /-! Nonvacuity, boundary queries, persistence and actual interpreter checks for prefix sums. -/
 
 @[expose] public section
 
-open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM.PrefixSums
+open Cslib Cslib.WordRAM Cslib.DataStructure.PrefixSums.WordRAM
 
 namespace WordRAMPrefixSumsTests
 
@@ -74,7 +74,7 @@ example :
   ⟨by simp, by simp [fits_iff], by decide⟩
 
 /--
-info: 'Cslib.Algorithms.WordRAM.PrefixSums.Tree.prefixSum_eq_sum_take' depends on axioms:
+info: 'Cslib.DataStructure.PrefixSums.WordRAM.Tree.prefixSum_eq_sum_take' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in

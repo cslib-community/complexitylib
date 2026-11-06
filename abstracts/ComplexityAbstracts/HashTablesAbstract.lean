@@ -41,8 +41,8 @@ polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4` where requ
 
 ## Scope, program parameterization, and cost accounting
 
-- **Insert-only bounded capacity:** All four tables implement `DictOp U` (`get` and `insert` with
-  overwrite) up to `n_max` distinct keys (`ValidDictHistory V n_max`). Key deletion (`erase`) is
+- **Insert-only bounded capacity:** All four tables implement `DictOp U` (`query` and `insert` with
+  overwrite) up to `n_max` distinct keys (`ValidDictHistory V n_max`). Key deletion (`delete`) is
   not supported, unlike the dynamic dictionaries in `[PaghPaghRuzic2009]` and `[PaghRodler2004]`.
 - **Program dependence:** In each headline theorem, the existential over the initializer and
   operation programs `∃ (p_init p_op : List (Instr r))` is placed outside the universal quantifiers
@@ -214,26 +214,26 @@ def dictDom {U : ℕ} (s : DictState U) : Finset (Fin U) :=
   Finset.univ.filter fun u => (s u).isSome
 
 /-- Operations on a dictionary over key universe `Fin U`:
-- `get u`: look up key `u : Fin U`;
+- `query u`: look up key `u : Fin U`;
 - `insert u v`: insert or overwrite key `u : Fin U` with value `v : ℕ`. -/
 inductive DictOp (U : ℕ) : Type where
-  | get (u : Fin U) : DictOp U
+  | query (u : Fin U) : DictOp U
   | insert (u : Fin U) (v : ℕ) : DictOp U
 
 /-- Apply one dictionary operation `o : DictOp U` to abstract state `s : DictState U`:
-- `get u` leaves `s` unchanged;
+- `query u` leaves `s` unchanged;
 - `insert u v` updates `s` at `u` to `some v`. -/
 def stepDict {U : ℕ} (s : DictState U) : DictOp U → DictState U
-  | .get _ => s
+  | .query _ => s
   | .insert u v => Function.update s u (some v)
 
 /-- Admissibility of a single dictionary operation `o : DictOp U` on state `s` under value bound `V`
 and capacity `n_max`:
-- `get u` is always admissible;
+- `query u` is always admissible;
 - `insert u v` requires `v < V` and either `(dictDom s).card < n_max` (room for a new key) or
   `(s u).isSome` (overwriting an existing key). -/
 def validDictOp {U : ℕ} (V n_max : ℕ) (s : DictState U) : DictOp U → Prop
-  | .get _ => True
+  | .query _ => True
   | .insert u v => ((dictDom s).card < n_max ∨ (s u).isSome) ∧ v < V
 
 /-- Admissibility of an oblivious operation sequence `ops : List (DictOp U)` starting from state `s`
@@ -288,24 +288,24 @@ def ExecProgramDist {r : ℕ} (w : ℕ) (p : Program r) (outReg : Fin r)
 /-- Calling-convention register assignment for a dictionary operation `o : DictOp U` on an
 `r`-register Word-RAM with scratch-clearing flag `clearScratch`, base-address register `baseReg`,
 operation-tag register `tagReg`, key register `keyReg`, and value register `valReg`:
-- `tagReg` receives `0` for `get u` and `1` for `insert u v`;
+- `tagReg` receives `0` for `query u` and `1` for `insert u v`;
 - `keyReg` receives `u.val`;
-- `valReg` receives `v` for `insert u v` (and `0` for `get u`);
+- `valReg` receives `v` for `insert u v` (and `0` for `query u`);
 - every other register `i` is zeroed when `clearScratch && decide (i ≠ baseReg)` and preserved
   (`reg i`) otherwise. -/
 def prepareDictRegs {r U : ℕ} (clearScratch : Bool) (baseReg tagReg keyReg valReg : Fin r)
     (o : DictOp U) (reg : Fin r → ℕ) (i : Fin r) : ℕ :=
   if i = tagReg then
     match o with
-    | .get _ => 0
+    | .query _ => 0
     | .insert _ _ => 1
   else if i = keyReg then
     match o with
-    | .get u => u.val
+    | .query u => u.val
     | .insert u _ => u.val
   else if i = valReg then
     match o with
-    | .get _ => 0
+    | .query _ => 0
     | .insert _ v => v
   else if clearScratch && decide (i ≠ baseReg) then
     0
@@ -319,12 +319,12 @@ def decodeLookup (w_out : ℕ) : Option ℕ :=
 
 /-- Output correctness of a post-operation register bank `reg` for operation `o : DictOp U`
 against pre-operation dictionary state `s : DictState U` with output register `outReg`:
-- for `get u`, `decodeLookup (reg outReg) = s u`;
+- for `query u`, `decodeLookup (reg outReg) = s u`;
 - for `insert u v`, the unit return needs no output-register check (`True`). -/
 def OpOutputCorrect {r U : ℕ} (outReg : Fin r) (s : DictState U)
     (o : DictOp U) (reg : Fin r → ℕ) : Prop :=
   match o with
-  | .get u => decodeLookup (reg outReg) = s u
+  | .query u => decodeLookup (reg outReg) = s u
   | .insert _ _ => True
 
 /-- Sequential multi-operation execution of a history `ops : List (DictOp U)` by the Word-RAM
@@ -408,7 +408,7 @@ before any operation sequence `ops`) such that:
   `stepDict` and `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies
   `16 + T_ops ≤ 16 + 73 * ops.length` (`O(1)` initialization and `73 = O(1)` expected executed
-  instructions per `get` or `insert`, excluding caller argument preparation and dispatch; no bound
+  instructions per `query` or `insert`, excluding caller argument preparation and dispatch; no bound
   is stated on static code length).
 
 References: `[CLRS2009]` (3rd ed., Sections 11.2 and 11.3.3, Theorem 11.3 and Corollary 11.4);
@@ -453,7 +453,7 @@ theorem chainedHashing :
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
         ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
-    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+    ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
       CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
@@ -630,7 +630,7 @@ theorem linearProbing :
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
         ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
-    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+    ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
       CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
@@ -735,7 +735,7 @@ memory in `[base, base + upSpace n_max)`, there exists an initial coupled distri
   `stepDict` and `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies
   `upInitSteps n_max + T_ops ≤ upInitSteps n_max + ops.length * upOpCharge`
-  (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected executed instructions per `get` or
+  (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected executed instructions per `query` or
   `insert`, independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no
   bound is stated on static code length).
 
@@ -785,7 +785,7 @@ theorem uniformProbing :
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
         ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
-    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+    ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
       CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
@@ -881,14 +881,14 @@ def cuckooEvalHashBound : ℕ :=
   max (((11 * 100 + 12) * 100 + 30) * cuckooKBound + 19) (doubleTabEvalSteps 8 64) + 4
 
 /-- Worst-case deterministic instruction bound `2 * (cuckooEvalHashBound + 36) + 31 = 854252184109`
-for the two-probe `get` subprogram at `c_exp = 4`. -/
-def cuckooGetStepsBound : ℕ :=
+for the two-probe `query` subprogram at `c_exp = 4`. -/
+def cuckooQueryStepsBound : ℕ :=
   2 * (cuckooEvalHashBound + 36) + 31
 
-/-- Worst-case deterministic instruction bound `cuckooGetStepsBound + 2 = 854252184111` for a
-`get` operation via `p_op` at `c_exp = 4`. -/
-def cuckooGetCharge : ℕ :=
-  cuckooGetStepsBound + 2
+/-- Worst-case deterministic instruction bound `cuckooQueryStepsBound + 2 = 854252184111` for a
+`query` operation via `p_op` at `c_exp = 4`. -/
+def cuckooQueryCharge : ℕ :=
+  cuckooQueryStepsBound + 2
 
 /-- Worst-case deterministic instruction bound `2 * (cuckooEvalHashBound + 54) + 59 = 854252184173`
 for a single two-table cuckoo displacement round at `c_exp = 4`. -/
@@ -920,18 +920,18 @@ def cuckooInsertCharge : ℕ :=
   2 * (cuckooInsertBaseBound + 3 + 3 * cuckooEvictIterBound + 4 * cuckooRehashAmortizedBound)
 
 /-- Per-operation expected instruction charge for cuckoo hashing at `c_exp = 4`:
-`cuckooGetCharge` (`854252184111`) for `get` and `cuckooInsertCharge` (`27336684332552`) for
+`cuckooQueryCharge` (`854252184111`) for `query` and `cuckooInsertCharge` (`27336684332552`) for
 `insert`, both independent of `n_max` and `U`. -/
 def cuckooOpCharge {U : ℕ} : DictOp U → ℕ
-  | .get _ => cuckooGetCharge
+  | .query _ => cuckooQueryCharge
   | .insert _ _ => cuckooInsertCharge
 
 /-- For every dictionary operation `o : DictOp U`, `cuckooOpCharge o ≤ cuckooInsertCharge`. -/
 theorem cuckooOpCharge_le {U : ℕ} (o : DictOp U) :
     cuckooOpCharge o ≤ cuckooInsertCharge :=
   ComplexityAbstracts.HashTablesBridge.cuckooOpCharge_le
-    DictOp @DictOp.get @DictOp.insert @DictOp.rec
-    cuckooEvalHashBound cuckooGetStepsBound cuckooGetCharge
+    DictOp @DictOp.query @DictOp.insert @DictOp.rec
+    cuckooEvalHashBound cuckooQueryStepsBound cuckooQueryCharge
     cuckooEvictIterBound cuckooInsertBaseBound cuckooRehashAmortizedBound
     cuckooInsertCharge
     rfl rfl rfl rfl
@@ -956,7 +956,8 @@ that:
   `stepDict` and `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies both the operation-sensitive bound
   `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + (ops.map cuckooOpCharge).sum`
-  (`cuckooGetCharge = 854252184111` per `get`, `cuckooInsertCharge = 27336684332552` per `insert`)
+  (`cuckooQueryCharge = 854252184111` per `query`,
+  `cuckooInsertCharge = 27336684332552` per `insert`)
   and the uniform per-operation bound
   `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + ops.length * cuckooInsertCharge`
   (independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no bound is
@@ -1016,7 +1017,7 @@ theorem cuckooHashing :
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
         ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
-    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+    ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
       CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
@@ -1036,7 +1037,7 @@ theorem cuckooHashing :
     cuckooMaxEvictions cuckooK cuckooKBound
     cuckooSingleHashSpace cuckooHashPairSpace cuckooSpace cuckooSpaceFactor
     cuckooResampleSingleSteps cuckooInitSteps
-    cuckooEvalHashBound cuckooGetStepsBound cuckooGetCharge
+    cuckooEvalHashBound cuckooQueryStepsBound cuckooQueryCharge
     cuckooEvictIterBound cuckooInsertBaseBound cuckooResampleAtBaseFactor
     cuckooRehashAmortizedBound cuckooInsertCharge
     rfl (fun _ => rfl) (fun _ => rfl) (fun _ => rfl)

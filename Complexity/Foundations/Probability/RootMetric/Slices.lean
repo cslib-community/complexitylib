@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.RootMetric
+import Complexity.Foundations.Data.Finset.Expect
 import Mathlib.Algebra.Order.BigOperators.Expect
 
 /-!
@@ -26,6 +27,8 @@ construct the recursive estimator or prove that its samples vary every required 
 
 ## Main results
 
+* `Cslib.vertexNormPow_one_eq_sum_dens`: unit vertex moment from actual source densities.
+* `Cslib.rowNormPow_mono_terminal`: restriction to a narrower terminal domain.
 * `Cslib.rowNormPow_eq_sum_dens_mul_expect`: exact conditional decomposition.
 * `Cslib.rowNormPow_le_of_conditional_expect_le`: uniform slice estimates integrate directly.
 * `Cslib.rowNormPow_le_sum_conditional_budgets`: nonuniform slice budgets retain their densities.
@@ -41,6 +44,32 @@ open scoped BigOperators
 variable {Ω V : Type*} [Fintype Ω] [Fintype V]
   {p : ℕ} {N u : ℝ} {X Y : Ω → V → Prop}
   [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+
+/-- The unit vertex moment counts actual source retention densities. No relation between
+retention and any other random data is needed, and empty sources contribute zero. -/
+theorem vertexNormPow_one_eq_sum_dens :
+    vertexNormPow p N u X (fun _ _ => 1) =
+      (N * u)⁻¹ * ∑ x, (({σ | X σ x} : Finset Ω).dens : ℝ) := by
+  classical
+  unfold vertexNormPow
+  simp only [abs_one, one_pow, sum_filter]
+  rw [expect_sum_comm]
+  congr 1
+  apply sum_congr rfl
+  intro x _
+  exact Fintype.expect_boole (fun σ => X σ x)
+
+/-- Restricting the retained terminal set cannot increase an integrated row moment.
+This lets a child's bound on its own endpoint domain pay for a parent's narrower usage domain. -/
+theorem rowNormPow_mono_terminal (hNu : 0 ≤ N * u) {Y' : Ω → V → Prop}
+    [∀ σ y, Decidable (Y' σ y)] (hsub : ∀ σ y, Y σ y → Y' σ y)
+    (H : Ω → V → V → ℝ) : rowNormPow p N u X Y H ≤ rowNormPow p N u X Y' H := by
+  unfold rowNormPow
+  refine mul_le_mul_of_nonneg_left (expect_le_expect fun σ _ => ?_) (inv_nonneg.mpr hNu)
+  refine sum_le_sum fun x _ => sum_le_sum_of_subset_of_nonneg ?_ (fun y _ _ => ?_)
+  · intro y hy
+    exact mem_filter.mpr ⟨mem_univ _, hsub σ y (mem_filter.mp hy).2⟩
+  · exact pow_nonneg (abs_nonneg _) _
 
 /-- Exchange the finite expectation with the source and endpoint sums, preserving their
 actual joint mask. The two masks and the table may depend on the same draw. -/

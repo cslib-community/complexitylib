@@ -350,7 +350,7 @@ theorem exists_computableInO_stream {half : CNF ℕ → List ℕ}
     (hwrap.comp computableInPolyTime_clauseVector).exists_degree
   obtain ⟨tE, sE, ⟨cE, htE⟩, ⟨cE', hsE⟩, hE⟩ := Internal.NormalForm.degree hE_deg
   obtain ⟨cF, hF⟩ := Internal.NormalForm.linear
-    (ComputableInLinearTimeAndSpace.const (encIn := encStreamState) (encMid := encBits) fin)
+    (ComputableInDegree.const (encIn := encStreamState) (encMid := encBits) fin)
   set D := dN + dE + 1
   set B : StreamState × ℕ → ℕ := fun x =>
     2 * (encPair encCNF (encList encNat) x.1.1).length + 1 + (encNat (x.1.2 + x.2)).length

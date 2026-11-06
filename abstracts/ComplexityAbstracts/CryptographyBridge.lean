@@ -75,7 +75,7 @@ theorem strictPPT_iff {α β : Type} {a : α ↪ List Bool} {b : β ↪ List Boo
         using (hlaw x).symm
   · rintro ⟨program, hp, hlaw⟩
     obtain ⟨c, d, evaluate, hevaluate, heq⟩ := hp.exists_seeded_evaluator
-    exact ⟨c, d, evaluate, polyTime_iff.mpr hevaluate,
+    exact ⟨c, d, evaluate, hevaluate,
       fun x => (hlaw x).symm.trans (heq x)⟩
 
 theorem indistinguishable_iff {X Y : ℕ → PMF (List Bool)} :
@@ -169,7 +169,7 @@ theorem execute_eq {State β : Type} (program : OracleProgram β)
     (oracle : Unit × List Bool → StateT State PMF (List Bool)) (s : State) :
     execute program oracle s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           program).run s := rfl
 
 def OraclePPT (program : ℕ → List Bool → OracleProgram Bool) : Prop :=
@@ -202,16 +202,17 @@ noncomputable def evaluateOracle {β : Type} (program : OracleProgram β)
 theorem evaluateOracle_eq {β : Type} (program : OracleProgram β)
     (oracle : List Bool → List Bool) :
     evaluateOracle program oracle = OracleComp.interpret
-      (ProbOracleComp.handler ProbComp.unifOracle (fun request => PMF.pure (oracle request.2)))
+      (OracleComp.sumHandler ProbComp.unifOracle (fun request => PMF.pure (oracle request.2)))
         program := by
-  have hlift : ProbOracleComp.handler (fun n => StateT.lift (σ := Unit) (ProbComp.unifOracle n))
+  have hlift : OracleComp.sumHandler (fun n => StateT.lift (σ := Unit) (ProbComp.unifOracle n))
       (fun request : Unit × List Bool => StateT.lift (PMF.pure (oracle request.2))) =
       (fun q => StateT.lift
-        (ProbOracleComp.handler ProbComp.unifOracle (fun request => PMF.pure (oracle request.2))
+        (OracleComp.sumHandler ProbComp.unifOracle (fun request => PMF.pure (oracle request.2))
           q)) := by
     funext q
     cases q <;> rfl
-  simp only [evaluateOracle, ProbOracleComp.runWith, hlift, OracleComp.run_interpret_lift]
+  simp only [evaluateOracle, ProbOracleComp.runWith, OracleComp.runWith, hlift,
+    OracleComp.run_interpret_lift]
   simp only [PMF.monad_map_eq_map, PMF.map_comp]
   exact PMF.map_id _
 

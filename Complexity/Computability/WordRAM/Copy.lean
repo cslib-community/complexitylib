@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.WordRAM.Allocation
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Copying arrays on the word RAM
 
@@ -104,15 +106,14 @@ theorem exec_of_separated_or_eq {w : ℕ} (x : Data 7) (h1 : Fits w 1)
     ∃ y, ExecWithin w program x y (7 * x.regs len + 4) ∧
       y.mem = copyPrefix x.mem (x.regs src) (x.regs dst) (x.regs len) ∧
       y.regs src = x.regs src ∧ y.regs dst = x.regs dst ∧ y.regs len = x.regs len := by
-  let I (y : Data 7) : Prop :=
+  let P (j : ℕ) (y : Data 7) : Prop :=
     y.regs src = x.regs src ∧ y.regs dst = x.regs dst ∧ y.regs len = x.regs len ∧
-    y.regs one = 1 ∧ y.regs idx ≤ x.regs len ∧
-    y.mem = copyPrefix x.mem (x.regs src) (x.regs dst) (y.regs idx)
-  have hbody (y : Data 7) (hy : I y) (hc : (Cond.lt idx len).Holds y) :
-      ∃ z, ExecWithin w body y z 5 ∧ I z ∧
-        x.regs len - z.regs idx < x.regs len - y.regs idx := by
-    obtain ⟨hys, hyd, hyl, hyo, hyi, hym⟩ := hy
-    have hi : y.regs idx < x.regs len := by simpa [hyl] using hc
+    y.regs one = 1 ∧
+    y.mem = copyPrefix x.mem (x.regs src) (x.regs dst) j
+  have hbody (y : Data 7) (hy : P (y.regs idx) y) (hi : y.regs idx < x.regs len) :
+      ∃ z, ExecWithin w body y z 5 ∧ P (y.regs idx + 1) z ∧
+        z.regs idx = y.regs idx + 1 := by
+    obtain ⟨hys, hyd, hyl, hyo, hym⟩ := hy
     have hsrc : Fits w (y.regs src + y.regs idx) := by
       rw [hys]; exact hs.of_le (by omega)
     have hdst : Fits w (y.regs dst + y.regs idx) := by
@@ -122,28 +123,22 @@ theorem exec_of_separated_or_eq {w : ℕ} (x : Data 7) (h1 : Fits w 1)
       rw [hym, hys]
       apply copyPrefix_outside
       rcases hdisj with h | h | h <;> omega
-    refine ⟨?z, ?run, ?inv, ?decrease⟩
+    refine ⟨?z, ?run, ?inv, ?increment⟩
     case run => ram_eval [body, hsrc, hdst, hinc, hyo]
     case inv =>
-      refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
       · simpa +decide [Function.update_apply] using hys
       · simpa +decide [Function.update_apply] using hyd
       · simpa +decide [Function.update_apply] using hyl
       · simpa +decide [Function.update_apply] using hyo
-      · simpa [hyo] using (Nat.succ_le_of_lt hi)
-      · simp only [Data.set_mem, Data.write_mem, Data.set_regs, Function.update_apply]
+      · simp only [Data.set_mem, Data.write_mem]
         rw [hread, hym, hyd, ← copyPrefix_succ]
-        rfl
-    case decrease => simp only [Data.set_regs, Function.update_self]; omega
+    case increment => rfl
   let x₀ := (x.set idx 0).set one 1
-  have hx₀ : I x₀ := by simp +decide [I, x₀]
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => x.regs len - y.regs idx) hbody hx₀
-  obtain ⟨hys, hyd, hyl, hyo, hyi, hym⟩ := hy
-  have hend : y.regs idx = x.regs len := by
-    simp only [Cond.holds_lt, hyl] at hc
-    omega
-  refine ⟨y, ?_, ?_, hys, hyd, hyl⟩
+  have hx₀ : P (x₀.regs idx) x₀ := by simp +decide [P, x₀]
+  obtain ⟨y, he, ⟨hys, hyd, hyl, hyo, hym⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => hy.2.2.1) hbody (by simp +decide [x₀, idx, one]) hx₀
+  refine ⟨y, ?_, hym, hys, hyd, hyl⟩
   · have hinit := (ExecWithin.const (d := idx) (x := x) (fits_zero w)).seq
       ((ExecWithin.const (d := one) h1).seq he)
     convert hinit using 1
@@ -151,7 +146,6 @@ theorem exec_of_separated_or_eq {w : ℕ} (x : Data 7) (h1 : Fits w 1)
     · simp +decide only [x₀, Data.set_regs, Function.update_apply, ↓reduceIte,
         Nat.sub_zero]
       omega
-  · simpa [hend] using hym
 
 /-- Forward copying between disjoint arrays, retaining the original calling convention. -/
 theorem exec {w : ℕ} (x : Data 7) (h1 : Fits w 1)

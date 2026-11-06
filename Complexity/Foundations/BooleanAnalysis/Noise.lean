@@ -34,8 +34,9 @@ probability that `f x ≠ f y` when `y` flips each bit of a uniform `x` independ
 probability `δ`. Reading `f` as the function `F = (-1) ^ f` with values `±1`, it is
 `NS_δ[f] = 1 / 2 - 1 / 2 Stab_{1 - 2 δ}[F]` (`BitString.noiseSensitivity_eq_noiseStability`),
 hence `NS_δ[f] = ∑_S (1 - (1 - 2 δ) ^ |S|) / 2 F̂(S) ^ 2` (`BitString.noiseSensitivity_eq_sum`)
-and `NS_δ[f] ≤ δ I[F]`, at most `δ` times the total influence
-(`BitString.noiseSensitivity_le_mul_totalInfluence`) [O'Donnell, Section 2.4][ODonnell2014].
+[O'Donnell, Section 2.4][ODonnell2014], and `NS_δ[f] ≤ δ I[F]`, at most `δ` times the total
+influence (`BitString.noiseSensitivity_le_mul_totalInfluence`)
+[O'Donnell, Exercise 2.42][ODonnell2014].
 
 The noised string is `x + P`, the coordinatewise exclusive or of `x` with a random mask `P` of
 `BitString.bernoulliAverage`, bit strings adding in Mathlib's Boolean ring structure on

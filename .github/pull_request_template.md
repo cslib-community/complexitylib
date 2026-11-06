@@ -7,10 +7,19 @@ For mathematical changes, state the claim and important assumptions. Where relev
 the source-to-Lean mapping or why existing definitions could not be reused.
 If selected abstracts are affected, describe their updates and link the relevant review. -->
 
+## Manual impact
+
+<!-- Required for every change: assess both the Operator's Manual and Agent Operator's Manual.
+Link updated sections and checked examples, or give a concrete reason no edit is needed for
+one or both manuals. Coordinators must ensure independent review of this assessment against
+the final revision. See CONTRIBUTING.md#maintaining-the-manuals. -->
+
 ## Validation
 
 <!-- Give checks and outcomes, or link existing CI/review evidence. State material limitations.
 If abstracts or rendering changed, include the affected PDF/page and declaration-link checks.
+For manual changes, include relevant excerpt/link checks, Lean example checks and rendered-page
+inspection. Record the manual review with the code review rather than duplicating it here.
 Omit items that do not apply; do not claim review that has not happened. -->
 
 ## AI assistance

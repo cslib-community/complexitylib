@@ -37,7 +37,7 @@ Both run in linear time and in work space linear in the first operand.
 * `Turing.MultiTapeTM.computableInTimeAndSpace_natLe`,
   `Turing.MultiTapeTM.computableInTimeAndSpace_natEq`: non-strict comparison and equality
   within the same bounds.
-* `Turing.MultiTapeTM.ComputableInLinearTimeAndSpace.natLt`, `.natLe`, `.natEq`: their linear
+* `Turing.MultiTapeTM.ComputableInDegree.natLt`, `.natLe`, `.natEq`: their linear
   forms.
 * `ComputableInO.natLt`: strict comparison with the bounds of `ComputableInO.natSub`.
 -/
@@ -100,10 +100,10 @@ public theorem computableInTimeAndSpace_natLt :
   (ltZip false).computableInTimeAndSpace encBool_natLt
 
 /-- Binary comparison in linear time and work space, from `computableInTimeAndSpace_natLt`. -/
-public theorem ComputableInLinearTimeAndSpace.natLt :
-    ComputableInLinearTimeAndSpace (fun p : ℕ × ℕ => decide (p.1 < p.2))
-      (encPair encNat encNat) encBool :=
-  (ltZip false).computableInLinearTimeAndSpace encBool_natLt
+public theorem ComputableInDegree.natLt :
+    ComputableInDegree (fun p : ℕ × ℕ => decide (p.1 < p.2))
+      (encPair encNat encNat) encBool 1 1 :=
+  (ltZip false).computableInDegree encBool_natLt
 
 /-- **Non-strict binary comparison in linear time.** One zip transducer decides `a ≤ b` from
 `encPair encNat encNat (a, b)` within `3 * (encPair encNat encNat p).length + 1` steps and
@@ -115,10 +115,10 @@ public theorem computableInTimeAndSpace_natLe :
 
 /-- Non-strict binary comparison in linear time and work space, from
 `computableInTimeAndSpace_natLe`. -/
-public theorem ComputableInLinearTimeAndSpace.natLe :
-    ComputableInLinearTimeAndSpace (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
-      (encPair encNat encNat) encBool :=
-  (ltZip true).computableInLinearTimeAndSpace encBool_natLe
+public theorem ComputableInDegree.natLe :
+    ComputableInDegree (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
+      (encPair encNat encNat) encBool 1 1 :=
+  (ltZip true).computableInDegree encBool_natLe
 
 /-- Equality as a zip transducer; the state records whether all digits read so far agree. -/
 private def eqZip : ZipTransducer Bool where
@@ -160,10 +160,10 @@ public theorem computableInTimeAndSpace_natEq :
   eqZip.computableInTimeAndSpace encBool_natEq
 
 /-- Binary equality in linear time and work space, from `computableInTimeAndSpace_natEq`. -/
-public theorem ComputableInLinearTimeAndSpace.natEq :
-    ComputableInLinearTimeAndSpace (fun p : ℕ × ℕ => decide (p.1 = p.2))
-      (encPair encNat encNat) encBool :=
-  eqZip.computableInLinearTimeAndSpace encBool_natEq
+public theorem ComputableInDegree.natEq :
+    ComputableInDegree (fun p : ℕ × ℕ => decide (p.1 = p.2))
+      (encPair encNat encNat) encBool 1 1 :=
+  eqZip.computableInDegree encBool_natEq
 
 end Turing.MultiTapeTM
 
@@ -266,7 +266,7 @@ public theorem natLt :
     ComputableInO (fun p : ℕ × ℕ => decide (p.1 < p.2)) (encPair encNat encNat) encBool
       (fun p => ((encPair encNat encNat p).length + 1) ^ 2)
       fun p => (encPair encNat encNat p).length + 1 :=
-  (of_linear ComputableInLinearTimeAndSpace.natLt).mono 1
+  (of_linear ComputableInDegree.natLt).mono 1
     (fun p => by have := Nat.le_self_pow two_ne_zero ((encPair encNat encNat p).length + 1); omega)
     (fun _ => by omega)
 

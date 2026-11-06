@@ -10,8 +10,8 @@ module
 public import Complexity.Crypto.Computational.CollisionResistant
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # The Merkle–Damgård transform
@@ -109,13 +109,19 @@ theorem padOrTake_eq_self {n : ℕ} {w : List Bool} (hw : w.length = n) :
   subst hw
   simp [padOrTake]
 
+private theorem computableTidilyInPolyTime_padOrTake
+    {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ} {w : γ → List Bool}
+    (hn : ComputableTidilyInPolyTime n encIn encUnary)
+    (hw : ComputableTidilyInPolyTime w encIn encBits) :
+    ComputableTidilyInPolyTime (fun a => padOrTake (n a) (w a)) encIn encBits :=
+  (hw.bitsAppend ((ComputableTidilyInPolyTime.bitsReplicate false).comp hn)).bitsTakeWithInput hn
+
 /-- Normalizing a word to unary length `n` is computable in plain polynomial time. -/
 @[program_certificate]
 theorem computableInPolyTime_padOrTake :
     ComputableInPolyTime (fun p : ℕ × List Bool => padOrTake p.1 p.2)
-      (encPair encUnary encBits) encBits := by
-  unfold padOrTake
-  polytime
+      (encPair encUnary encBits) encBits :=
+  .of_tidy (computableTidilyInPolyTime_padOrTake (.fst _ _) (.snd _ _))
 
 /-! ### Block-level Merkle–Damgård chain and collision extraction -/
 
@@ -230,7 +236,6 @@ private theorem snd_chainTrace_concat_of_length {h : List Bool → List Bool →
   simp only [chainTraceStep, fst_chainTrace_eq_merkleDamgardChain hlen hiv hblocks,
     padOrTake_eq_self hchainLen, padOrTake_eq_self hb]
 
-@[local fun_prop]
 private theorem computableTidilyInPolyTime_chainTrace
     {h : List Bool → List Bool → List Bool}
     (hh : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => h p.1 p.2)
@@ -243,31 +248,18 @@ private theorem computableTidilyInPolyTime_chainTrace
     (hbs : ComputableTidilyInPolyTime bs encIn (encList encBits)) :
     ComputableTidilyInPolyTime (fun a => chainTrace h (k a) (iv a) (bs a))
       encIn (encPair encBits (encList encBits)) := by
+  let h1 := ComputableTidilyInPolyTime.fst
+    (encPair encBits (encPair encBits (encList encBits))) encBits
+  let hk_p := h1.fst'
+  let hkl := ComputableTidilyInPolyTime.length_bits_comp hk_p
+  let hx_p := (computableTidilyInPolyTime_padOrTake hkl h1.snd'.fst').bitsAppend
+    (computableTidilyInPolyTime_padOrTake hkl (ComputableTidilyInPolyTime.snd _ _))
   have hstep : ComputableTidilyInPolyTime
       (fun p : (List Bool × (List Bool × List (List Bool))) × List Bool =>
         chainTraceStep h p.1.1 p.1.2 p.2)
       (encPair (encPair encBits (encPair encBits (encList encBits))) encBits)
-      (encPair encBits (encList encBits)) := by
-    have hk_p : ComputableTidilyInPolyTime
-        (fun p : (List Bool × (List Bool × List (List Bool))) × List Bool => p.1.1)
-        (encPair (encPair encBits (encPair encBits (encList encBits))) encBits) encBits := by
-      fun_prop
-    have hx_p : ComputableTidilyInPolyTime
-        (fun p : (List Bool × (List Bool × List (List Bool))) × List Bool =>
-          padOrTake p.1.1.length p.1.2.1 ++ padOrTake p.1.1.length p.2)
-        (encPair (encPair encBits (encPair encBits (encList encBits))) encBits) encBits := by
-      polytime
-    have hhx : ComputableTidilyInPolyTime
-        (fun p : (List Bool × (List Bool × List (List Bool))) × List Bool =>
-          h p.1.1 (padOrTake p.1.1.length p.1.2.1 ++ padOrTake p.1.1.length p.2))
-        (encPair (encPair encBits (encPair encBits (encList encBits))) encBits) encBits :=
-      hh.comp (hk_p.prod hx_p)
-    have htail_p : ComputableTidilyInPolyTime
-        (fun p : (List Bool × (List Bool × List (List Bool))) × List Bool => p.1.2.2)
-        (encPair (encPair encBits (encPair encBits (encList encBits))) encBits)
-        (encList encBits) := by
-      fun_prop
-    exact hhx.prod (hx_p.cons' htail_p)
+      (encPair encBits (encList encBits)) :=
+    (hh.comp (hk_p.prod hx_p)).prod (hx_p.cons' h1.snd'.snd')
   apply ComputableTidilyInPolyTime.foldlWith_of_bounded_growth
     (encA := encBits) (encL := encList encBits)
     (encP := encBits) (encB := encPair encBits (encList encBits))
@@ -299,8 +291,8 @@ theorem computableInPolyTime_chainTrace
         chainTrace h p.1 p.2.1 p.2.2)
       (encPair encBits (encPair encBits (encList encBits)))
       (encPair encBits (encList encBits)) :=
-  .of_tidy (computableTidilyInPolyTime_chainTrace hh.tidy hlen
-    (by fun_prop) (by fun_prop) (by fun_prop))
+  let h2 := ComputableTidilyInPolyTime.snd encBits (encPair encBits (encList encBits))
+  .of_tidy (computableTidilyInPolyTime_chainTrace hh.tidy hlen (.fst _ _) h2.fst' h2.snd')
 
 /-- Extract a candidate `2n`-bit collision `(x₁, x₂)` for `h k` from two block chains `bs₁` and
 `bs₂` by scanning their compression inputs backward from the final step and returning the first
@@ -310,7 +302,6 @@ def extractChainCollision (h : List Bool → List Bool → List Bool)
   (((chainTrace h k iv bs₁).2.zip (chainTrace h k iv bs₂).2).find?
     (fun p => p.1 != p.2)).getD ([], [])
 
-@[local fun_prop]
 private theorem computableTidilyInPolyTime_extractChainCollision
     {h : List Bool → List Bool → List Bool}
     (hh : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => h p.1 p.2)
@@ -331,11 +322,13 @@ private theorem computableTidilyInPolyTime_extractChainCollision
       (fun a => (chainTrace h (k a) (iv a) (bs₁ a)).2.zip (chainTrace h (k a) (iv a) (bs₂ a)).2)
       encIn (encList (encPair encBits encBits)) :=
     (ComputableTidilyInPolyTime.zip encBits encBits).comp (ht₁.prod ht₂)
+  let hp := ComputableTidilyInPolyTime.snd encIn (encPair encBits encBits)
   have hfind : ComputableTidilyInPolyTime
       (fun a => ((chainTrace h (k a) (iv a) (bs₁ a)).2.zip
         (chainTrace h (k a) (iv a) (bs₂ a)).2).find? (fun p => p.1 != p.2))
       encIn (encOption (encPair encBits encBits)) :=
-    ComputableTidilyInPolyTime.findWithInput (test := fun _ p => p.1 != p.2) hzip (by polytime)
+    ComputableTidilyInPolyTime.findWithInput (test := fun _ p => p.1 != p.2) hzip
+      (ComputableTidilyInPolyTime.bool_not.comp (hp.fst'.beq hp.snd'))
   exact ComputableTidilyInPolyTime.optionGetDWithInput hfind (.const ([], []))
 
 /-- Extracting a compression collision from two block chains is computable in plain polynomial
@@ -351,8 +344,10 @@ theorem computableInPolyTime_extractChainCollision
         extractChainCollision h p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encBits (encPair encBits (encPair (encList encBits) (encList encBits))))
       (encPair encBits encBits) :=
+  let h2 := ComputableTidilyInPolyTime.snd encBits
+    (encPair encBits (encPair (encList encBits) (encList encBits)))
   .of_tidy (computableTidilyInPolyTime_extractChainCollision hh.tidy hlen
-    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop))
+    (.fst _ _) h2.fst' h2.snd'.fst' h2.snd'.snd')
 
 /-- Stepping `extractChainCollision` from the right on two non-empty valid chains: if the final
 compression inputs `x₁` and `x₂` differ, return `(x₁, x₂)`; otherwise peel the final blocks and
@@ -471,20 +466,12 @@ theorem isCollision_extractChainCollision_of_length_eq
       (extractChainCollision h k iv bs₁ bs₂).1
       (extractChainCollision h k iv bs₁ bs₂).2 = true := by
   apply isCollision_extractChainCollision_of_not_suffix hlen hiv hbs₁ hbs₂ hchain
-  · rintro ⟨p, hp⟩
-    have hplen : p.length = 0 := by
-      have := congrArg List.length hp
-      rw [List.length_append] at this
-      omega
-    rw [List.eq_nil_of_length_eq_zero hplen, List.nil_append] at hp
-    exact hne hp
-  · rintro ⟨p, hp⟩
-    have hplen : p.length = 0 := by
-      have := congrArg List.length hp
-      rw [List.length_append] at this
-      omega
-    rw [List.eq_nil_of_length_eq_zero hplen, List.nil_append] at hp
-    exact hne hp.symm
+  · rintro ⟨p, rfl⟩
+    have hp : p.length = 0 := by simpa using hblen.symm
+    exact hne (by rw [List.eq_nil_of_length_eq_zero hp, List.nil_append])
+  · rintro ⟨p, rfl⟩
+    have hp : p.length = 0 := by simpa using hblen
+    exact hne (by rw [List.eq_nil_of_length_eq_zero hp, List.nil_append])
 
 /-- **General suffix-free block-encoding Merkle–Damgård reduction**:
 for any polynomial-time block encoder `encode : ℕ → List Bool → List (List Bool)` that maps valid
@@ -508,25 +495,18 @@ theorem CompressionFamily.collisionResistantOn_merkleDamgardChain
       valid := by
   let extract (n : ℕ) (k m₁ m₂ : List Bool) : List Bool × List Bool :=
     extractChainCollision h k (List.replicate n false) (encode n m₁) (encode n m₂)
+  let hn := ComputableTidilyInPolyTime.fst encUnary
+    (encPair encBits (encPair encBits encBits))
+  let h2 := ComputableTidilyInPolyTime.snd encUnary
+    (encPair encBits (encPair encBits encBits))
   have hextract : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool × List Bool => extract p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair encBits (encPair encBits encBits)))
-      (encPair encBits encBits) := by
-    apply ComputableInPolyTime.of_tidy
-    have henc₁ : ComputableTidilyInPolyTime
-        (fun p : ℕ × List Bool × List Bool × List Bool => encode p.1 p.2.2.1)
-        (encPair encUnary (encPair encBits (encPair encBits encBits)))
-        (encList encBits) :=
-      hencode.tidy.comp ((ComputableTidilyInPolyTime.fst _ _).prod
-        ((ComputableTidilyInPolyTime.snd _ _).snd'.fst'))
-    have henc₂ : ComputableTidilyInPolyTime
-        (fun p : ℕ × List Bool × List Bool × List Bool => encode p.1 p.2.2.2)
-        (encPair encUnary (encPair encBits (encPair encBits encBits)))
-        (encList encBits) :=
-      hencode.tidy.comp ((ComputableTidilyInPolyTime.fst _ _).prod
-        ((ComputableTidilyInPolyTime.snd _ _).snd'.snd'))
-    exact computableTidilyInPolyTime_extractChainCollision hh.polyTime.tidy hh.length_eq
-      (by fun_prop) (by polytime) henc₁ henc₂
+      (encPair encBits encBits) :=
+    .of_tidy (computableTidilyInPolyTime_extractChainCollision hh.polyTime.tidy hh.length_eq
+      h2.fst' ((ComputableTidilyInPolyTime.bitsReplicate false).comp hn)
+      (hencode.tidy.comp (hn.prod h2.snd'.fst'))
+      (hencode.tidy.comp (hn.prod h2.snd'.snd')))
   refine hh.collisionResistant.of_extract extract hextract ?_
   filter_upwards [hblocks, hsuffix] with n hblk hsuf k hklen m₁ m₂ hcol
   rw [isCollision_eq_true_iff] at hcol
@@ -617,39 +597,32 @@ private theorem not_suffix_mdBlocks {n : ℕ} (hn : 2 ≤ n) {m₁ m₂ : List B
     ¬ (mdBlocks n m₁ <:+ mdBlocks n m₂) :=
   mt (mdBlocks_suffix_iff hn).mp hne
 
-@[local fun_prop]
 private theorem computableTidilyInPolyTime_mdEndBlock
     {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ}
     (hn : ComputableTidilyInPolyTime n encIn encUnary) :
-    ComputableTidilyInPolyTime (fun a => mdEndBlock (n a)) encIn encBits := by
-  unfold mdEndBlock
-  polytime
+    ComputableTidilyInPolyTime (fun a => mdEndBlock (n a)) encIn encBits :=
+  (ComputableTidilyInPolyTime.bitsReplicate false).comp hn
 
-@[local fun_prop]
 private theorem computableTidilyInPolyTime_mdDataBlock
     {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ} {b : γ → Bool}
     (hn : ComputableTidilyInPolyTime n encIn encUnary)
     (hb : ComputableTidilyInPolyTime b encIn encBool) :
-    ComputableTidilyInPolyTime (fun a => mdDataBlock (n a) (b a)) encIn encBits := by
-  unfold mdDataBlock
-  polytime
+    ComputableTidilyInPolyTime (fun a => mdDataBlock (n a) (b a)) encIn encBits :=
+  ((ComputableTidilyInPolyTime.const true).bitsCons
+    (hb.bitsCons ((ComputableTidilyInPolyTime.bitsReplicate false).comp
+      (ComputableTidilyInPolyTime.unary_sub.comp (hn.prod (.const 2)))))).bitsTakeWithInput hn
 
-@[local fun_prop]
 private theorem computableTidilyInPolyTime_mdBlocks
     {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ} {msg : γ → List Bool}
     (hn : ComputableTidilyInPolyTime n encIn encUnary)
     (hmsg : ComputableTidilyInPolyTime msg encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => mdBlocks (n a) (msg a)) encIn (encList encBits) := by
-  have hhead : ComputableTidilyInPolyTime (fun a => mdEndBlock (n a)) encIn encBits :=
-    computableTidilyInPolyTime_mdEndBlock hn
-  have htail : ComputableTidilyInPolyTime
-      (fun a => (msg a).map (mdDataBlock (n a))) encIn (encList encBits) :=
-    ComputableTidilyInPolyTime.mapWithInput
+    ComputableTidilyInPolyTime (fun a => mdBlocks (n a) (msg a)) encIn (encList encBits) :=
+  (computableTidilyInPolyTime_mdEndBlock hn).cons'
+    (ComputableTidilyInPolyTime.mapWithInput
       (ComputableTidilyInPolyTime.bitsToList.comp hmsg)
       (computableTidilyInPolyTime_mdDataBlock
         (hn.comp (ComputableTidilyInPolyTime.fst _ _))
-        (ComputableTidilyInPolyTime.snd _ _))
-  exact hhead.cons' htail
+        (ComputableTidilyInPolyTime.snd _ _)))
 
 /-- Encoding a bit string into `n`-bit Merkle–Damgård blocks is computable in plain polynomial
 time. -/
@@ -657,7 +630,7 @@ time. -/
 theorem computableInPolyTime_mdBlocks :
     ComputableInPolyTime (fun p : ℕ × List Bool => mdBlocks p.1 p.2)
       (encPair encUnary encBits) (encList encBits) :=
-  .of_tidy (computableTidilyInPolyTime_mdBlocks (by fun_prop) (by fun_prop))
+  .of_tidy (computableTidilyInPolyTime_mdBlocks (.fst _ _) (.snd _ _))
 
 /-- **The Merkle–Damgård hash family (`merkleDamgard`)**: hash an arbitrary-length bit string
 `msg : List Bool` under key `k : List Bool` by iterating the `2n → n` compression function `h k`
@@ -684,7 +657,6 @@ private theorem merkleDamgard_eq_fst_chainTrace {h : List Bool → List Bool →
   (fst_chainTrace_eq_merkleDamgardChain hlen List.length_replicate
     (fun _ hb => length_of_mem_mdBlocks hb)).symm
 
-@[local fun_prop]
 private theorem computableTidilyInPolyTime_merkleDamgard
     {h : List Bool → List Bool → List Bool}
     (hh : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => h p.1 p.2)
@@ -696,12 +668,13 @@ private theorem computableTidilyInPolyTime_merkleDamgard
     ComputableTidilyInPolyTime (fun a => merkleDamgard h (k a) (msg a)) encIn encBits := by
   have heq : (fun a => merkleDamgard h (k a) (msg a)) =
       fun a => (chainTrace h (k a) (List.replicate (k a).length false)
-        (mdBlocks (k a).length (msg a))).1 := by
-    funext a
-    exact merkleDamgard_eq_fst_chainTrace (hlen (k a))
+        (mdBlocks (k a).length (msg a))).1 :=
+    funext fun a => merkleDamgard_eq_fst_chainTrace (hlen (k a))
   rw [heq]
-  exact (computableTidilyInPolyTime_chainTrace hh hlen hk (by polytime)
-    (computableTidilyInPolyTime_mdBlocks (by polytime) hmsg)).fst'
+  have hkl := ComputableTidilyInPolyTime.length_bits_comp hk
+  exact (computableTidilyInPolyTime_chainTrace hh hlen hk
+    ((ComputableTidilyInPolyTime.bitsReplicate false).comp hkl)
+    (computableTidilyInPolyTime_mdBlocks hkl hmsg)).fst'
 
 /-- Evaluating `merkleDamgard h` is computable in plain polynomial time whenever `h` is computable
 in polynomial time and compresses `2n`-bit inputs to `n`-bit digests. -/
@@ -713,7 +686,7 @@ theorem computableInPolyTime_merkleDamgard
     (hlen : ∀ k x, x.length = 2 * k.length → (h k x).length = k.length) :
     ComputableInPolyTime (fun p : List Bool × List Bool => merkleDamgard h p.1 p.2)
       (encPair encBits encBits) encBits :=
-  .of_tidy (computableTidilyInPolyTime_merkleDamgard hh.tidy hlen (by fun_prop) (by fun_prop))
+  .of_tidy (computableTidilyInPolyTime_merkleDamgard hh.tidy hlen (.fst _ _) (.snd _ _))
 
 /-- Deterministically extract a `2 * k.length`-bit compression collision for `h k` from two
 messages `m₁, m₂ : List Bool` that collide under `merkleDamgard h k`. -/
@@ -734,12 +707,14 @@ theorem computableInPolyTime_extractMerkleDamgardCollision
       (fun p : List Bool × List Bool × List Bool =>
         extractMerkleDamgardCollision h p.1 p.2.1 p.2.2)
       (encPair encBits (encPair encBits encBits))
-      (encPair encBits encBits) := by
-  apply ComputableInPolyTime.of_tidy
-  exact computableTidilyInPolyTime_extractChainCollision hh.tidy hlen
-    (by fun_prop) (by polytime)
-    (computableTidilyInPolyTime_mdBlocks (by polytime) (by fun_prop))
-    (computableTidilyInPolyTime_mdBlocks (by polytime) (by fun_prop))
+      (encPair encBits encBits) :=
+  let hk := ComputableTidilyInPolyTime.fst encBits (encPair encBits encBits)
+  let hkl := ComputableTidilyInPolyTime.length_bits_comp hk
+  let h2 := ComputableTidilyInPolyTime.snd encBits (encPair encBits encBits)
+  .of_tidy (computableTidilyInPolyTime_extractChainCollision hh.tidy hlen
+    hk ((ComputableTidilyInPolyTime.bitsReplicate false).comp hkl)
+    (computableTidilyInPolyTime_mdBlocks hkl h2.fst')
+    (computableTidilyInPolyTime_mdBlocks hkl h2.snd'))
 
 /-- **Deterministic Merkle–Damgård collision extraction ([BonehShoup2023], Theorem 8.3)**:
 for any key `k` of length `≥ 2` and any two distinct messages `m₁ ≠ m₂` with

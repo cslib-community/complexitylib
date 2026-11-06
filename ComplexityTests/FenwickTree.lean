@@ -8,7 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.FenwickTree.Stateful
+public import Complexity.DataStructure.FenwickTree.Impl
 import Mathlib.Algebra.Group.ULift
 
 /-!
@@ -33,7 +33,7 @@ public section
 
 namespace ComplexityTests.FenwickTree
 
-open Cslib.Algorithms.Lean Cslib.Algorithms.Lean.FenwickTree Cslib.DataStructure
+open Cslib.DataStructure Cslib.DataStructure.FenwickTree
 
 /-! ## 1. `lowbit`, chain, and child-interval checks -/
 

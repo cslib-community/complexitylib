@@ -192,7 +192,7 @@ variable {ιP ιV : Type} {oP : OracleSpec ιP} {oV : OracleSpec ιV}
 
 /-- Lift a prover computation into the joint oracles. -/
 def liftProver {α : Type} : ProbOracleComp oP α → ProbOracleComp (oP ⊕ₒ oV) α :=
-  OracleComp.interpret (ProbOracleComp.handler
+  OracleComp.interpret (OracleComp.sumHandler
     (fun n => OracleComp.query (spec := probOracleSpec (oP ⊕ₒ oV)) (.inl n))
     (fun q => ProbOracleComp.query (spec := oP ⊕ₒ oV) (.inl q)))
 

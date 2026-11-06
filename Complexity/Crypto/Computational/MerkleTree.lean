@@ -119,13 +119,16 @@ def merkleSibling (p : ℕ) : ℕ :=
 level and position. -/
 def merklePathStep (state : List (List Bool) × ℕ × List (List Bool)) :
     List (List Bool) × ℕ × List (List Bool) :=
-  (merkleParents H k state.1, state.2.1 / 2,
-    state.2.2 ++ [state.1.getD (merkleSibling state.2.1) []])
+  let (level, pos, path) := state
+  (merkleParents H k level, pos / 2,
+    path ++ [level.getD (merkleSibling pos) []])
 
 /-- The authentication path of position `i`: the sibling of each node on the way from leaf `i` up
 to the root, starting at the leaves ([BonehShoup2023], Figure 8.12). -/
 def merklePath (leaves : List (List Bool)) (i : ℕ) : List (List Bool) :=
-  ((merklePathStep H k)^[Nat.clog 2 leaves.length] (merkleLeafLevel H k leaves, i, [])).2.2
+  let (_, _, path) :=
+    (merklePathStep H k)^[Nat.clog 2 leaves.length] (merkleLeafLevel H k leaves, i, [])
+  path
 
 /-! ### Recomputing a root from an opening -/
 
@@ -241,7 +244,9 @@ private theorem merkleInputs_append (leaf : List Bool) (i : ℕ) (path : List (L
       merkleInputsStep H k (path.foldl (merkleInputsStep H k) ([leaf], i)) sibling :=
   List.foldl_concat _ _ _ _
 
-private theorem snd_foldl_merkleInputsStep (leaf : List Bool) (i : ℕ) (path : List (List Bool)) :
+/-- After folding `merkleInputsStep` along `path` from `(leaf, i)`, the position component is
+`i / 2 ^ path.length`. -/
+theorem snd_foldl_merkleInputsStep (leaf : List Bool) (i : ℕ) (path : List (List Bool)) :
     (path.foldl (merkleInputsStep H k) ([leaf], i)).2 = i / 2 ^ path.length := by
   induction path using List.reverseRecOn with
   | nil => simp

@@ -42,8 +42,9 @@ Negation outside a fixed-point binder and arbitrary nesting remain available.
 * [N. Immerman, *Relational Queries Computable in Polynomial Time*][Immerman1986],
   Section 1 (positive nested syntax) and Section 2, Fact 2.1 (the finite-stage bound).
 
-This implements the logic and finite-stage semantics. A native polynomial-time evaluator and
-the Immerman–Vardi capturing theorem require separate machine and encoding developments.
+This module implements the logic and finite-stage semantics. The native polynomial-time evaluator
+is in `Complexity.Computability.Complexity.Classes.P.FirstOrder`; the ordered characterization
+is in `Complexity.Computability.Complexity.ImmermanVardi`.
 -/
 
 public section

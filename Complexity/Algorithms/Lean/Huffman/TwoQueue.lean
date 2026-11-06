@@ -30,7 +30,7 @@ This module implements:
    `front = [] → back = []`, plus explicit potential-method reversal cost bounds
    (`enqueue_revCost_bound`, `dequeue?_revCost_bound`). Unlike `Std.Queue` (`Init.Data.Queue`,
    which does not maintain `dList = [] → eList = []`, so inspecting the head without committing a
-   dequeue would repeatedly reverse `eList`) and `Cslib.Algorithms.Lean.Queue` (an abstract
+   dequeue would repeatedly reverse `eList`) and `Cslib.DataStructure.Queue` (an abstract
    `Cslib.DataStructure` two-stack module without `peek?`), `FifoQueue` supports `O(1)` worst-case
    `peek?` needed when `popMinM` compares the heads of `q₁` and `q₂` and pops `q₁` while leaving
    `q₂` unchanged.

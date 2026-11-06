@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Fagin.Converse
-public import Complexity.Logics.FirstOrder.Ordered.Query
+public import Complexity.Logics.FirstOrder.Ordered.StrictOrder
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
 import Complexity.Computability.Complexity.Reduction
 
@@ -75,42 +75,6 @@ theorem Definable.encodedLanguage_mem_NP {L : Language} [L.IsRelational] (v : Vo
   have hK' : K = {M : Ordered.Structure L | φ.Realize M} := Set.ext hφ
   rw [hK', encodedLanguage_sentence]
   exact P_subset_NP (L_subset_P (queryLanguage_mem_L v φ))
-
-/-- The one-dimensional interpretation retaining the input relations and reading strict order
-from canonical non-strict order. -/
-private def strictOrderInterpretation (L : Language.{u, v}) :
-    FO.Interpretation (language L) (L.sum ESO.orderLanguage) Unit where
-  domain := ⊤
-  rel := fun {n} r => match r with
-    | .inl R => Relations.formula (L := language L) (Sum.inl R) fun i => .var (i, ())
-    | .inr r => by
-      rcases r with ⟨⟨⟩, h⟩
-      subst n
-      exact ∼(Relations.formula (L := language L) (Sum.inr NumericRelation.le)
-        fun i => .var (if i = 0 then 1 else 0, ()))
-
-/-- The canonical strict-order structure interpreted above is the original ordered universe. -/
-private def strictOrderEquiv {L : Language.{u, v}} [L.IsRelational] (M : Ordered.Structure L) :
-    letI := ESO.varLanguage.structure (arity := fun _ : Unit => 2)
-      (ESO.orderRelOfEquiv (Equiv.refl M));
-    (strictOrderInterpretation L).Model M ≃[L.sum ESO.orderLanguage] M := by
-  letI := ESO.varLanguage.structure (arity := fun _ : Unit => 2)
-    (ESO.orderRelOfEquiv (Equiv.refl M))
-  refine
-    { toFun := fun x => x.1 ()
-      invFun := fun x => ⟨fun _ => x, Formula.realize_top.2 trivial⟩
-      left_inv := fun _ => FO.Interpretation.Model.ext rfl
-      right_inv := fun _ => rfl
-      map_fun' := fun f => isEmptyElim f
-      map_rel' := ?_ }
-  intro n r x
-  cases r with
-  | inl R => exact Iff.rfl
-  | inr r =>
-    rcases r with ⟨⟨⟩, h⟩
-    subst n
-    change (x 0).1 () < (x 1).1 () ↔ ¬ (x 1).1 () ≤ (x 0).1 ()
-    exact not_le.symm
 
 /-- Pulling a strict-order ESO sentence into the public ordered language preserves its truth
 on the fixed canonical order. -/

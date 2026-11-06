@@ -66,9 +66,10 @@ False*][OpenAI2026ETH], pp. 45–47) to bound `(countingLeaves θ ψ).length`.
   `Cslib.Logic.PL.ClauseSet.Sparsification.modelCountOn_toCNF_nontautological`: removing
   tautological clauses preserves satisfying assignments and `CNF.modelCountOn`.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.countingLeaves_eq_map_walk_countingLeafWords`:
-  `countingLeaves θ ψ = (countingLeafWords θ ψ).map ((countingTreeRule θ).walk ψ)`.
+  `countingLeaves θ ψ = (countingLeafWords θ ψ).map ((countingTreeRule θ).tree.walk ψ)`.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.mem_countingLeafWords_iff_isLeafWord`:
-  under `∀ j, 1 ≤ j → 2 ≤ θ j`, `w ∈ countingLeafWords θ ψ ↔ (countingTreeRule θ).IsLeafWord ψ w`.
+  under `∀ j, 1 ≤ j → 2 ≤ θ j`,
+  `w ∈ countingLeafWords θ ψ ↔ (countingTreeRule θ).tree.IsLeafWord ψ w`.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.length_countingLeaves_pow_le`: binomial-sum leaf-count
   bound for `countingLeaves (M ^ ·) ψ`.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.length_countingLeaves_countingThresholdBase_le`:
@@ -257,7 +258,7 @@ private theorem countingLeafWords_of_not_sparse {θ : ℕ → ℕ} (hθ : ∀ j,
 `countingLeafWords θ ψ` reproduces `countingLeaves θ ψ` in exact list order, preserving
 multiplicity across equal or unsatisfiable leaf clause sets. -/
 theorem countingLeaves_eq_map_walk_countingLeafWords (θ : ℕ → ℕ) (ψ : ClauseSet V) :
-    countingLeaves θ ψ = (countingLeafWords θ ψ).map ((countingTreeRule θ).walk ψ) := by
+    countingLeaves θ ψ = (countingLeafWords θ ψ).map ((countingTreeRule θ).tree.walk ψ) := by
   induction hp : potential ψ using Nat.strong_induction_on generalizing ψ with
   | _ n ih =>
     rw [countingLeaves, countingLeafWords]
@@ -333,7 +334,7 @@ private theorem mem_countingLeafWords_cons_iff {θ : ℕ → ℕ} (hθ : ∀ j, 
 `countingTreeRule θ` starting from `ψ`. -/
 theorem mem_countingLeafWords_iff_isLeafWord {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ j → 2 ≤ θ j)
     (ψ : ClauseSet V) (w : List Bool) :
-    w ∈ countingLeafWords θ ψ ↔ (countingTreeRule θ).IsLeafWord ψ w := by
+    w ∈ countingLeafWords θ ψ ↔ (countingTreeRule θ).tree.IsLeafWord ψ w := by
   induction hp : potential ψ using Nat.strong_induction_on generalizing ψ w with
   | _ n ih =>
     by_cases hs : Sparse θ ψ
@@ -358,7 +359,7 @@ theorem mem_countingLeafWords_iff_isLeafWord {θ : ℕ → ℕ} (hθ : ∀ j, 1 
 `countingTreeRule θ` starting from `ψ`. -/
 theorem isLeafWord_of_mem_countingLeafWords {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ j → 2 ≤ θ j)
     {ψ : ClauseSet V} {w : List Bool} (hw : w ∈ countingLeafWords θ ψ) :
-    (countingTreeRule θ).IsLeafWord ψ w :=
+    (countingTreeRule θ).tree.IsLeafWord ψ w :=
   (mem_countingLeafWords_iff_isLeafWord hθ ψ w).mp hw
 
 /-! ### Leaf-count bounds for `countingLeaves` via `CountingBounds` -/

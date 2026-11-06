@@ -15,13 +15,14 @@ public meta import Lean.Elab.Tactic
 
 `fun_prop` cannot see through a `match`: its auxiliary matcher is a constant of the defining
 function, and it does not reduce on a stuck discriminant. Rules are therefore stated for
-`Option.elim`. `option_match_to_elim` rewrites every non-dependent two-way `match` on an option in
-the goal, under binders and nested, to `Option.elim`, so that a definition written with `match`
-needs no separate statement in terms of tests and defaults.
+`Option.elim`. The tactic `option_match_to_elim` rewrites every non-dependent two-way `match` on an
+option in the goal, under binders and nested, to `Option.elim`, so that a definition written with
+`match` needs no separate statement in terms of tests and defaults.
 
-## Main definitions
-
-* `option_match_to_elim`: rewrite option matches in the goal to `Option.elim`.
+`Option.map` and `Option.any` unfold to such a `match`, so `unfold Option.map` reaches them.
+`Option.bind` unfolds to a `match` on two discriminants, so the tactic rewrites `Option.bind`
+itself. An alternative that takes a pattern apart, such as `some (a, b)`, is left unchanged, since
+`Option.elim` has a single argument.
 -/
 
 public meta section
@@ -39,9 +40,14 @@ private def eqByCases (lhs rhs discr : Expr) : MetaM Expr := withDefault do
     subgoal.mvarId.refl
   instantiateMVars goal
 
-/-- The `Option.elim` form of a non-dependent two-way `match` on an option, with its proof. The
-alternatives may come in either order. -/
+/-- The `Option.elim` form of `Option.bind` or of a non-dependent two-way `match` on an option,
+with its proof. The alternatives may come in either order. -/
 private def optionMatch? (e : Expr) : MetaM (Option Simp.Result) := do
+  if e.isAppOfArity ``Option.bind 4 then
+    let #[_, β, discr, f] := e.getAppArgs | return none
+    let rhs ← mkAppOptM ``Option.elim
+      #[none, ← inferType e, discr, ← mkNone β, f]
+    return some { expr := rhs, proof? := some (← eqByCases e rhs discr) }
   let some m ← matchMatcherApp? e | return none
   unless m.discrs.size == 1 && m.alts.size == 2 && m.remaining.isEmpty do return none
   let discr := m.discrs[0]!
@@ -54,14 +60,15 @@ private def optionMatch? (e : Expr) : MetaM (Option Simp.Result) := do
     let alt := m.alts[noneIdx]!
     let .forallE _ dom _ _ ← whnf (← inferType alt) | continue
     unless ← isDefEq dom (mkConst ``Unit) do continue
-    let rhs ← mkAppOptM ``Option.elim
-      #[α, β, discr, alt.beta #[mkConst ``Unit.unit], m.alts[someIdx]!]
     try
+      let rhs ← mkAppOptM ``Option.elim
+        #[α, β, discr, alt.beta #[mkConst ``Unit.unit], m.alts[someIdx]!]
       return some { expr := rhs, proof? := some (← eqByCases e rhs discr) }
     catch _ => continue
   return none
 
-/-- Rewrite every non-dependent two-way `match` on an option in the goal to `Option.elim`. -/
+/-- Rewrite every `Option.bind` and non-dependent two-way `match` on an option in the goal to
+`Option.elim`. -/
 syntax (name := optionMatchToElim) "option_match_to_elim" : tactic
 
 @[inherit_doc optionMatchToElim]

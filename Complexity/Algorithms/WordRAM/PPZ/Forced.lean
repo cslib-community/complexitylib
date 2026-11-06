@@ -117,9 +117,6 @@ private theorem toNat_or (a b : Bool) : a.toNat ||| b.toNat = (a || b).toNat := 
 private theorem toNat_and (a b : Bool) : a.toNat &&& b.toNat = (a && b).toNat := by
   cases a <;> cases b <;> rfl
 
-private theorem toNat_le_one (a : Bool) : a.toNat ≤ 1 := by
-  cases a <;> decide
-
 private theorem toNat_xor_le_one (a b : Bool) : a.toNat ^^^ b.toNat ≤ 1 := by
   cases a <;> cases b <;> decide
 
@@ -247,7 +244,7 @@ theorem litBody_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (l : Li
   have hvar : litCode l >>> 1 = l.1.val := litCode_shiftRight l
   have hsgn : litCode l &&& 1 = l.2.toNat := litCode_and_one l
   have hfv : Fits w l.1.val := hf.fits.of_le (by omega)
-  have hfs : Fits w l.2.toNat := hf.fits.of_le (by have := toNat_le_one l.2; have := hf.pos; omega)
+  have hfs : Fits w l.2.toNat := hf.fits.of_le (by have := Bool.toNat_le l.2; have := hf.pos; omega)
   have hone := hf.one_eq
   have hzero := hf.zero_eq
   have hxr := hf.x_eq
@@ -257,9 +254,9 @@ theorem litBody_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (l : Li
       hf.fits.of_le (by have := toNat_xor_le_one l.2 b; have := hf.pos; omega)
     have hf2 : Fits w (1 - (l.2.toNat ^^^ b.toNat)) := hf.fits.of_le (by have := hf.pos; omega)
     have hf3 : Fits w (h.toNat ||| (1 - (l.2.toNat ^^^ b.toNat))) := hf.fits.of_le (by
-      rw [toNat_xor_eq, toNat_or]; have := toNat_le_one (h || (l.2 == b)); have := hf.pos; omega)
+      rw [toNat_xor_eq, toNat_or]; have := Bool.toNat_le (h || (l.2 == b)); have := hf.pos; omega)
     have hf4 : Fits w (o.toNat &&& (1 - (l.2.toNat ^^^ b.toNat))) := hf.fits.of_le (by
-      rw [toNat_xor_eq, toNat_and]; have := toNat_le_one (o && (l.2 == b)); have := hf.pos; omega)
+      rw [toNat_xor_eq, toNat_and]; have := Bool.toNat_le (o && (l.2 == b)); have := hf.pos; omega)
     refine ⟨((((((((y.set lit (litCode l)).set var l.1.val).set sgn l.2.toNat).set eq
       (l.2.toNat ^^^ b.toNat)).set eq (1 - (l.2.toNat ^^^ b.toNat))).set hasLit
       (h.toNat ||| (1 - (l.2.toNat ^^^ b.toNat)))).set ok
@@ -414,10 +411,10 @@ theorem clauseLoop_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (ψ 
     have hl₂' : z₂.regs lend = y.regs ptr + 1 + c.length := by rw [hl₂]; simp +decide [y₁]
     have hm₂' : z₂.mem = y.mem := by rw [hm₂]; rfl
     have hu : Fits w ((c.any (litHas x b)).toNat &&& (c.all (litOk τ x b)).toNat) :=
-      hf.fits.of_le (by rw [toNat_and]; have := toNat_le_one (c.any (litHas x b) &&
+      hf.fits.of_le (by rw [toNat_and]; have := Bool.toNat_le (c.any (litHas x b) &&
         c.all (litOk τ x b)); have := hf.pos; omega)
     have hu' : Fits w (f.toNat ||| ((c.any (litHas x b)).toNat &&& (c.all (litOk τ x b)).toNat)) :=
-      hf.fits.of_le (by rw [toNat_and, toNat_or]; have := toNat_le_one (f ||
+      hf.fits.of_le (by rw [toNat_and, toNat_or]; have := Bool.toNat_le (f ||
         (c.any (litHas x b) && c.all (litOk τ x b))); have := hf.pos; omega)
     let y₃ := ((z₂.set eq ((c.any (litHas x b)).toNat &&& (c.all (litOk τ x b)).toNat)).set fnd
       (f.toNat ||| ((c.any (litHas x b)).toNat &&& (c.all (litOk τ x b)).toNat))).set ptr

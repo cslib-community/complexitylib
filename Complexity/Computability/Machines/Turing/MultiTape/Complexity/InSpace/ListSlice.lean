@@ -29,10 +29,6 @@ public section
 
 namespace Turing.MultiTapeTM.ComputableInSpace
 
-private theorem length_encList_reverse {α : Type} (enc : α ↪ List Bool) (l : List α) :
-    (encList enc l.reverse).length = (encList enc l).length := by
-  simp only [length_encList, List.map_reverse, List.sum_reverse]
-
 /-- Reverse a framed list in native space linear in its actual encoded storage. -/
 theorem listReverse {α : Type} (enc : α ↪ List Bool) :
     ComputableInSpace List.reverse (encList enc) (encList enc)

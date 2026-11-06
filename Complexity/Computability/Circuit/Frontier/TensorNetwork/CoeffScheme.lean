@@ -24,6 +24,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFr
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 
 /-!
 # Coefficient extraction as a stack recursion
@@ -582,12 +583,6 @@ theorem length_encNode_le {x₀ : C} {rows₀ : List Rw} {γ₀ : List ℕ} {x :
   simp only [length_encPair]
   omega
 
-omit hS in
-private theorem length_encNat_lt {y P : ℕ} (h : y < 2 ^ P) : (encNat y).length ≤ P := by
-  have h' := Nat.size_le.mpr h
-  rw [← Nat.size_eq_bits_len] at h'
-  exact h'
-
 /-- **The resources of coefficient extraction.** There is `K` such that on a node of length `n`
 with `m` modes and `L` rows, if the reduced values of its precision are at most `Rv` bits long,
 then with `Z = n + m + Rv + 2` the time is at most `K (m + 2) ^ L Z ^ K` and the space at most
@@ -652,7 +647,7 @@ theorem valueCertificate_le :
       obtain ⟨hx, ha1, ha2⟩ := ha
       have h1 := hnode x hx
       have h2 : (encNat a.1).length ≤ m + 2 :=
-        length_encNat_lt (lt_of_le_of_lt (hm ▸ ha1) (by
+        Turing.MultiTapeTM.length_encNat_le_of_lt_two_pow (lt_of_le_of_lt (hm ▸ ha1) (by
           have := Nat.lt_two_pow_self (n := m + 2); omega))
       have h3 := hRv a.2 ha2
       have h4 : (encPair (encNode encC encRw) encAcc (x, a)).length =
@@ -673,7 +668,7 @@ theorem valueCertificate_le :
         _ < 2 ^ ((m + 2) * L + 1) := Nat.pow_lt_pow_right (by norm_num) (by omega)
     have h1 : S.fuel (x₀, (rows₀, γ₀)) < 2 ^ ((m + 2) * L + 2) := by
       rw [hfuel, pow_succ]; omega
-    have h2 := length_encNat_lt h1
+    have h2 := Turing.MultiTapeTM.length_encNat_le_of_lt_two_pow h1
     have h3 : (m + 2) * L ≤ Z * Z := Nat.mul_le_mul (by omega) (by omega)
     have h4 : 4 ≤ Z * Z := Nat.mul_le_mul hZ2 hZ2
     rw [sq]

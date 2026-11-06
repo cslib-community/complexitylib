@@ -59,13 +59,12 @@ Polynomial space uses only the plain predicate `Turing.MultiTapeTM.ComputableInP
 ## Main definitions
 
 * `Turing.MultiTapeTM.ComputableInO`: computability within time and space bounds up to constants.
-* `Turing.MultiTapeTM.ComputableInLinearTimeAndSpace`: linear time and work space in encoded
-  input length, with a single realizing machine.
+* `Turing.MultiTapeTM.ComputableInDegree`: independent time/workspace and encoded-output degrees
+  with a single realizing machine; degrees `1 1` give linear time and workspace.
 * `Turing.MultiTapeTM.ComputableInBigO`: independent uncharged time/workspace bounds up to
   constants; unlike `ComputableInO`, the workspace bound does not charge encoded output.
 * `Turing.MultiTapeTM.ComputableInSpace`: computability within a space bound up to constants.
 * `Turing.MultiTapeTM.ComputableInPolySpace`: computability within polynomial space.
-* `Turing.MultiTapeTM.ComputableInDegree`: independent time/workspace and output degrees.
 
 ## References
 
@@ -113,13 +112,6 @@ def ComputableInPolySpace (f : α → β) (encIn : α ↪ List Bool) (encOut : �
   ∃ (t : α → ℕ) (s : ℕ → ℕ), Cslib.PolynomiallyBounded s ∧
     ComputableInTimeAndSpace f encIn encOut t (fun a => s (encIn a).length) ∧
     ∀ a, (encOut (f a)).length ≤ s (encIn a).length
-
-/-- Linear-time and linear-work-space computability, with one existential constant and no
-clean-tape requirement. The encoded output length is bounded by the time of the computation. -/
-def ComputableInLinearTimeAndSpace (f : α → β) (encIn : α ↪ List Bool)
-    (encOut : β ↪ List Bool) : Prop :=
-  ∃ c, ComputableInTimeAndSpace f encIn encOut
-    (fun a => c * ((encIn a).length + 1)) (fun a => c * ((encIn a).length + 1))
 
 /-- `f` is computable within time `O(T a)` and space `O(S a)` on the input `a`. -/
 def ComputableInBigO {α β : Type*} (f : α → β) (encIn : α ↪ List Bool)

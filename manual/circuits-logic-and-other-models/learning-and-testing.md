@@ -1,0 +1,32 @@
+# Learning and property testing
+
+The learning development makes a useful distinction between statistical/sample complexity, membership-query complexity and native running time. Its main local algorithms prove the first two. They should not be described as computational PAC learners merely because their sample or query bounds are polynomial or quasi-polynomial. [complexitylib][complexitylib]
+
+## Upstream PAC and local uniform learning
+
+Upstream [ConceptClass](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/MachineLearning/PACLearning/Defs.lean#L121) defines a concept class as a set of functions and a learner as a function from an indexed labelled sample to a hypothesis. Success probabilities and excess error are measured over an explicit family of input/label distributions. It provides deterministic and internally randomized PAC notions and sample-complexity operators. The `R` in `IsRPACLearnerFor` denotes randomized, not realizable; realizability is imposed through the chosen distribution family. A learner is not required to be an encoded algorithm in this definition. [cslib][cslib]
+
+Local [uniformExamples](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/MachineLearning/UniformLearning/Basic.lean#L91) specializes to Boolean functions on a finite cube and independent uniform examples. `uniformError` is the fraction of cube inputs on which the hypothesis differs from the target. `Learns` bounds this error with failure probability delta after a prescribed number of labelled samples. Its bridge to upstream PAC instantiates the uniform realizable family; it does not establish distribution-free learning.
+
+The [low-degree Fourier learner](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/MachineLearning/UniformLearning/LowDegree.lean) estimates low-degree coefficients from examples and thresholds the resulting polynomial. With N retained coefficients, its sample condition is of the form `m >= (4N/epsilon) log(2N/delta)` together with a Fourier-tail assumption. The [AC0 learning theorem](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/MachineLearning/UniformLearning/AC0.lean) combines this learner with Linial–Mansour–Nisan concentration, giving quasi-polynomial sample bounds for the stated bounded-depth/size circuit class. The local exponent is the implementation's quantitative version, with its circuit-depth convention; native Fourier arithmetic and hypothesis-evaluation time are not part of this theorem.
+
+The upstream randomized variant, [IsRPACLearnerFor](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/MachineLearning/PACLearning/Defs.lean#L181), chooses a sample-to-hypothesis learner using an internal probability space and bounds the expected sample-failure probability, with the stated almost-everywhere measurability condition. This is a separate semantic randomization layer from random training examples.
+
+## Membership-query learners
+
+[QueryLearner](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/MachineLearning/UniformLearning/MembershipQuery.lean#L76) takes a random seed to a decision tree. A queried coordinate is itself an input point for the unknown target function, and a leaf is a hypothesis function. `QueriesAtMost` bounds tree depth for every seed. This represents adaptive membership queries directly, while nonadaptive point lists are a specialization.
+
+Uniform random examples can be simulated by querying independently sampled points, with exact distributional correctness. The [Kushilevitz–Mansour development](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/MachineLearning/UniformLearning/KushilevitzMansour.lean) reuses a nonadaptive sample set across stages, with the explicit query bound `m(2n+3)` and a sample schedule depending on spectral norm, error and confidence. Bounded-leaf decision trees supply a concrete learnable class through a spectral-norm bound. These statements charge oracle queries only; they do not bound the time or finite representation needed for all Fourier operations and output hypotheses.
+
+## Property testing as decision trees
+
+The existing BLR local test compiles to a decision tree through `PCP.LocalTest.decisionTree`. [depth_decisionTree_repeatAll_blrTest_le](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PropertyTesting/Linearity.lean#L52) proves that k independent repetitions use at most 3k queries, accept every parity with probability one and accept a function at uniform relative Hamming distance at least epsilon from every parity with probability at most `(1-epsilon)^k`.
+
+The corresponding [one-sided lower bound](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PropertyTesting/LinearityLowerBound.lean) shows that a tester of depth at most two that accepts every parity perfectly cannot reject the specified nonlinearity witness with value false at zero. This establishes the three-query boundary under those hypotheses. It is a lower bound for worst-case query depth, not expected queries, and it is formulated for arbitrary randomness support through the tested tree property.
+
+## Known Limitations
+
+The examples use semantic hypotheses and real probability/analysis. These results provide formal sample/query guarantees and formal bridges to PAC/query models. Claims of polynomial native training time or succinct executable output hypotheses require separate resource theorems. Keep these limitations in view when choosing a learning model: the notions of efficiency differ.
+
+[complexitylib]: ../sources.md#complexitylib
+[cslib]: ../sources.md#cslib

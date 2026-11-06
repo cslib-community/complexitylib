@@ -255,9 +255,6 @@ private theorem div_mul_add (v b j : ℕ) (hj : j < b) : (v * b + j) / b = v := 
   have hb : 0 < b := by omega
   rw [Nat.add_comm, Nat.add_mul_div_right _ _ hb, Nat.div_eq_of_lt hj, Nat.zero_add]
 
-private theorem mod_mul_add (v b j : ℕ) (hj : j < b) : (v * b + j) % b = j := by
-  rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hj]
-
 private theorem decodeAssign_encodeAssign (q N : ℕ) (hq : 0 < q)
     (τ : Finset.range N → Fin q) :
     decodeAssign q N hq (encodeAssign q N τ) = τ := by
@@ -280,7 +277,7 @@ private theorem decodeAssign_encodeAssign (q N : ℕ) (hq : 0 < q)
       simp only [hj_range, dite_true]
       dsimp only [encodeAssign]
       have hdiv : (v * b + j) / b = v := div_mul_add v b j hj1
-      have hmod : (v * b + j) % b = j := mod_mul_add v b j hj1
+      have hmod : (v * b + j) % b = j := Nat.mul_add_mod_of_lt hj1
       have hsub : (⟨(v * b + j) / b, Finset.mem_range.mpr (by rw [hdiv]; exact hv_lt)⟩ :
           Finset.range N) = ⟨v, hv⟩ := Subtype.ext hdiv
       rw [hsub, hmod]
@@ -311,7 +308,7 @@ private theorem map_extend_encodeAssign_bitScope (q N : ℕ) (τ : Finset.range 
       Finset.mem_range, hj_range, dite_true]
     dsimp only [encodeAssign]
     have hdiv : (v * b + j) / b = v := div_mul_add v b j hj1
-    have hmod : (v * b + j) % b = j := mod_mul_add v b j hj1
+    have hmod : (v * b + j) % b = j := Nat.mul_add_mod_of_lt hj1
     have hsub : (⟨(v * b + j) / b, Finset.mem_range.mpr (by rw [hdiv]; exact hv)⟩ :
         Finset.range N) = ⟨v, Finset.mem_range.mpr hv⟩ := Subtype.ext hdiv
     rw [hsub, hmod]

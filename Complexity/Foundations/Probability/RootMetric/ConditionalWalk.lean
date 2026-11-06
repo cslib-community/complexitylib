@@ -52,6 +52,14 @@ variable {Ω V D : Type*} [Fintype Ω]
 /-- The actual retained source/endpoint environment, possibly empty. -/
 abbrev RetainedPairSlice (x y : V) := ↥({σ | X σ x ∧ Y σ y} : Finset Ω)
 
+/-- Membership in the actual walk state retains its source coordinate. -/
+theorem retainedPairSlice_source {x y : V} (σ : RetainedPairSlice X Y x y) : X σ.val x :=
+  (Finset.mem_filter.mp σ.property).2.1
+
+/-- Membership in the actual walk state retains its terminal coordinate. -/
+theorem retainedPairSlice_terminal {x y : V} (σ : RetainedPairSlice X Y x y) : Y σ.val y :=
+  (Finset.mem_filter.mp σ.property).2.2
+
 /-- Uniform mean on the actual retained-pair slice, with zero mean on an empty slice. -/
 @[expose] noncomputable def rowSliceMean (F : Ω → V → V → ℝ) (x y : V) : ℝ :=
   𝔼 σ ∈ ({σ | X σ x ∧ Y σ y} : Finset Ω), F σ x y
@@ -64,6 +72,13 @@ that pair's retention event are zero and are ignored by the integrated row norm.
     (F : Ω → V → V → ℝ) (σ : Ω) (x y : V) : ℝ :=
   if h : σ ∈ ({σ | X σ x ∧ Y σ y} : Finset Ω) then
     ((G x y).walk ^ (2 * t x y)) (fun τ => F τ.val x y) ⟨σ, h⟩ else 0
+
+/-- Conditional completion preserves source rejection for every input and length. -/
+theorem conditionalWalk_eq_zero_of_not_source [Fintype D]
+    (G : ∀ x y, RotationMap (RetainedPairSlice X Y x y) D) (t : V → V → ℕ)
+    (F : Ω → V → V → ℝ) (σ : Ω) (x y : V) (hx : ¬ X σ x) :
+    conditionalWalk X Y G t F σ x y = 0 := by
+  simp [conditionalWalk, hx]
 
 /-- A retained environment is evaluated by its own pair's graph, without changing slices. -/
 theorem conditionalWalk_coe [Fintype D]

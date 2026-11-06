@@ -178,14 +178,9 @@ def emitCode : List Instr :=
 /-- A program emitting `w[i + o·k]` for `i` below the bound of its loop, where `o ∈ {0, 1}` is
 the initial value of register `3`, set by the instruction at label `4`. -/
 def shiftProgram (o : ℕ) (bound : Expr) : CounterProgram where
-  code := headerCode ++ [assign 3 (const o) 5] ++ forCode 5 2 bound 8 12 ++ emitCode ++
-    [halt []]
+  code := List.flatten
+    [headerCode, [assign 3 (const o) 5], forCode 5 2 bound 8 12, emitCode, [halt []]]
   registers := 4
-
-private theorem codeAt_header (o : ℕ) (bound : Expr) : (shiftProgram o bound).CodeAt 0 headerCode :=
-  codeAt_of_code_eq (pre := [])
-    (post := [assign 3 (const o) 5] ++ forCode 5 2 bound 8 12 ++ emitCode ++ [halt []])
-    (by simp [shiftProgram])
 
 private theorem reachesOut_emit {o : ℕ} {bound : Expr} {i : ℕ} (hB : 2 * w.length + 1 + k ≤ B)
     (hi : i ≤ B) (ho : o ≤ 1) :
@@ -217,12 +212,9 @@ private theorem reachesOut_shiftProgram {o N : ℕ} {bound : Expr} (ho : o ≤ 1
     ∃ regs, (shiftProgram o bound).ReachesOut (frame w ++ List.replicate k true)
       ((shiftProgram o bound).Active B) (shiftProgram o bound).init (12, regs)
       ((List.range N).flatMap fun i => w[i + o * k]?.toList) ∧ ∀ r ∈ regs, r ≤ B := by
-  have hfor : (shiftProgram o bound).CodeAt 5 (forCode 5 2 bound 8 12) := by
-    have h := codeAt_of_code_eq (P := shiftProgram o bound)
-      (pre := headerCode ++ [assign 3 (const o) 5]) (post := emitCode ++ [halt []])
-      (l := forCode 5 2 bound 8 12) (by simp [shiftProgram])
-    simpa [headerCode] using h
-  have hhead := reachesOut_header (codeAt_header o bound) hB (P := shiftProgram o bound)
+  have hfor : (shiftProgram o bound).CodeAt 5 (forCode 5 2 bound 8 12) :=
+    codeAt_of_prefix ⟨_, rfl⟩
+  have hhead := reachesOut_header (P := shiftProgram o bound) (codeAt_of_prefix ⟨_, rfl⟩) hB
   have hset : (shiftProgram o bound).ReachesOut (frame w ++ List.replicate k true)
       ((shiftProgram o bound).Active B) (4, [w.length, k, 0, 0]) (5, [w.length, k, 0, o]) [] :=
     ReachesOut.assign (show (shiftProgram o bound).instr 4 = _ from rfl)
@@ -267,11 +259,11 @@ open Instr Expr MultiTapeTM
 unary input into register `0`; the loop at `2` runs register `1` over the elements, and the inner
 loop at `5` writes the framed unary digits of each element with register `2`. -/
 def rangeProgram : CounterProgram where
-  code :=
+  code := List.flatten [
     [read (reg 0) 1 2 2,
-     assign 0 (add (reg 0) (const 1)) 0] ++
-    forCode 2 1 (reg 0) 5 11 ++ forCode 5 2 (reg 1) 8 10 ++
-    [emit true 9, emit true 7, emit false 4, halt []]
+     assign 0 (add (reg 0) (const 1)) 0],
+    forCode 2 1 (reg 0) 5 11, forCode 5 2 (reg 1) 8 10,
+    [emit true 9, emit true 7, emit false 4, halt []]]
   registers := 4
 
 /-- The bits written for the element `i`: its unary digits, framed. -/
@@ -309,19 +301,8 @@ private theorem reachesOut_rangeProgram (n : ℕ) :
       refine ReachesOut.assign (show rangeProgram.instr 1 = _ from rfl)
         (bounded4 (by omega) (by omega) (by omega) (by omega)) ?_
       simpa using ih (j + 1) (by omega) (by omega)
-  have hout : rangeProgram.CodeAt 2 (forCode 2 1 (reg 0) 5 11) := by
-    have h := codeAt_of_code_eq (P := rangeProgram) (l := forCode 2 1 (reg 0) 5 11)
-      (pre := [read (reg 0) 1 2 2, assign 0 (add (reg 0) (const 1)) 0])
-      (post := forCode 5 2 (reg 1) 8 10 ++ [emit true 9, emit true 7, emit false 4, halt []])
-      (by simp [rangeProgram])
-    simpa using h
-  have hin : rangeProgram.CodeAt 5 (forCode 5 2 (reg 1) 8 10) := by
-    have h := codeAt_of_code_eq (P := rangeProgram) (l := forCode 5 2 (reg 1) 8 10)
-      (pre := [read (reg 0) 1 2 2, assign 0 (add (reg 0) (const 1)) 0] ++
-        forCode 2 1 (reg 0) 5 11)
-      (post := [emit true 9, emit true 7, emit false 4, halt []])
-      (by simp [rangeProgram])
-    simpa [forCode] using h
+  have hout : rangeProgram.CodeAt 2 (forCode 2 1 (reg 0) 5 11) := codeAt_of_prefix ⟨_, rfl⟩
+  have hin : rangeProgram.CodeAt 5 (forCode 5 2 (reg 1) 8 10) := codeAt_of_prefix ⟨_, rfl⟩
   obtain ⟨regs, hloop, hinv⟩ := reachesOut_forCode (w := List.replicate n true) (B := B) hout
     (N := n)
     (fun i regs => ∃ m, regs = [n, i, m, 0] ∧ i ≤ n ∧ m ≤ n)
@@ -426,7 +407,8 @@ end Offsets
 register `2` as the position, guarded by `reg 2 < n`; if an element remains, the code at `11`
 writes `true` and copies the element's digits. -/
 def lookupProgram : CounterProgram where
-  code := headerCode ++ forCode 4 3 (reg 1) 7 11 ++
+  code := List.flatten [
+    headerCode, forCode 4 3 (reg 1) 7 11,
     [lt (reg 2) (reg 0) 8 6,
      read (add (mul (const 2) (reg 2)) (const 1)) 9 10 6,
      assign 2 (add (reg 2) (const 2)) 7,
@@ -439,7 +421,7 @@ def lookupProgram : CounterProgram where
      emit false 17,
      assign 2 (add (reg 2) (const 2)) 13,
      halt [],
-     halt []]
+     halt []]]
   registers := 4
 
 section Lookup
@@ -566,11 +548,8 @@ private theorem reachesOut_lookupProgram :
   set B := ((frame (encList enc l) ++ List.replicate k true).length + 1) ^ 1
   have hB : 2 * n + 1 + k ≤ B := by simp only [B, pow_one]; omega
   have hhead := reachesOut_header (P := lookupProgram) (w := encList enc l) (k := k)
-    (codeAt_of_code_eq (pre := []) (post := forCode 4 3 (reg 1) 7 11 ++ _) rfl) hB
-  have hfor : lookupProgram.CodeAt 4 (forCode 4 3 (reg 1) 7 11) := by
-    have h := codeAt_of_code_eq (P := lookupProgram) (pre := headerCode)
-      (l := forCode 4 3 (reg 1) 7 11) (post := _) rfl
-    simpa [headerCode] using h
+    (codeAt_of_prefix ⟨_, rfl⟩) hB
+  have hfor : lookupProgram.CodeAt 4 (forCode 4 3 (reg 1) 7 11) := codeAt_of_prefix ⟨_, rfl⟩
   obtain ⟨regs, hloop, hinv⟩ := reachesOut_forCode (w := X) (B := B) hfor (N := k)
     (fun t regs => regs = [n, k, off enc l t, t] ∧ t ≤ k) (fun _ => []) (by omega)
     (fun t regs h => by

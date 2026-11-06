@@ -9,6 +9,7 @@ module
 
 public import Complexity.Foundations.Combinatorics.Expander.Mixing
 public import Complexity.Probability.SmallBias
+import Complexity.Foundations.Data.BitString.Basic
 
 /-!
 # Cayley graphs of the Boolean cube
@@ -53,10 +54,6 @@ open scoped BigOperators
 
 variable {ι : Type*} {d : ℕ}
 
-/-- Every bit string is its own negative. -/
-private theorem add_self_bitString (x : ι → Bool) : x + x = 0 :=
-  funext fun i => by simp only [Pi.add_apply, Pi.zero_apply]; cases x i <;> rfl
-
 /-- The Cayley graph of the cube with generators `s j`: the `j`-th edge at `u` leads to `u + s j`,
 where it is also the `j`-th edge. -/
 def cubeCayley (s : Fin d → ι → Bool) : RotationMap (ι → Bool) (Fin d) where
@@ -64,7 +61,7 @@ def cubeCayley (s : Fin d → ι → Bool) : RotationMap (ι → Bool) (Fin d) w
   rot_involutive p := by
     ext1
     · change p.1 + s p.2 + s p.2 = p.1
-      rw [add_assoc, add_self_bitString, add_zero]
+      rw [add_assoc, Cslib.BitString.add_self, add_zero]
     · rfl
 
 /-- The `j`-th neighbor of `u` is `u + s j`. -/
@@ -87,7 +84,7 @@ theorem fourierCoeff_walk_cubeCayley [NeZero d] (s : Fin d → ι → Bool) (f :
   rw [Finset.expect_comm]
   refine Finset.expect_congr rfl fun j _ => ?_
   rw [Fintype.expect_equiv (Equiv.addRight (s j)) _ (fun k => f k * chi ℝ S (k + s j))
-    (fun i => by simp only [Equiv.coe_addRight, add_assoc, add_self_bitString, add_zero]),
+    (fun i => by simp only [Equiv.coe_addRight, add_assoc, Cslib.BitString.add_self, add_zero]),
     Finset.mul_expect]
   refine Finset.expect_congr rfl fun u _ => ?_
   rw [chi_add]

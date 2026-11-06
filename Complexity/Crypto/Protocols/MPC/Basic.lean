@@ -117,7 +117,7 @@ noncomputable def MultiOracleWorld.handler {spec : MultiOracleSpec}
     (W : MultiOracleWorld spec) :
     (q : ℕ ⊕ (Σ op : spec.Op, (s : Fin (spec.arity op)) → spec.Query op s)) →
       PMF (probOracleSpec spec.toOracleSpec q) :=
-  ProbOracleComp.handler (spec := spec.toOracleSpec) ProbComp.unifOracle
+  OracleComp.sumHandler (spec₂ := spec.toOracleSpec) ProbComp.unifOracle
     (fun q => ProbComp.eval (W q.1 q.2))
 
 /-- The empty multi-party oracle specification (plain point-to-point channel model). -/
@@ -367,7 +367,7 @@ noncomputable def Steps.evalWith {m : ℕ} {spec : MultiOracleSpec} {State Out :
         (next.evalWith W (fun i => (st i, Round.deliverOracle parties ans i))).map
           (fun r_tail i => (Round.deliverOracle parties ans i, r_tail i)) := by
   simp [Steps.evalWith, Steps.run, MultiOracleWorld.handler, ProbOracleComp.query,
-    ProbOracleComp.handler, bind_pure_comp]
+    OracleComp.sumHandler, bind_pure_comp]
 
 /-- Evaluate `proto.run x` against `W : MultiOracleWorld spec` via `OracleComp.evalWith`. -/
 noncomputable def Protocol.evalWith {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
@@ -485,8 +485,7 @@ theorem Protocol.evalWith_eq {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m
           let views : (i : Fin m) → PartyView In Coins sc i := fun i => ⟨x i, r i, recv i⟩
           (views, fun i => proto.outputOfView i (views i)) := by
   simp [Protocol.evalWith, Protocol.run, Steps.evalWith, MultiOracleWorld.handler,
-    ProbOracleComp.handler_eq_sumHandler, ProbOracleComp.sample_eq_liftLeft,
-    ProbComp.eval_eq_evalWith, bind_pure_comp]
+    ProbOracleComp.sample_eq_liftLeft, ProbComp.eval_eq_evalWith, bind_pure_comp]
 
 /-- Every supported outcome of `proto.evalWith W x` has outputs equal to `proto.outputOfView` of its
 views. -/

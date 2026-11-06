@@ -60,8 +60,7 @@ example : ([3, -2, 1] : List ℤ).sum.natAbs.size ≤ 2 + Nat.size 3 :=
 
 /-! ### Certificates and composed clients -/
 
--- The `intBin_*` arithmetic certificates are currently registered on `ComputableTidilyInPolyTime`,
--- so plain `ComputableInPolyTime` clients over `ℤ` route through `.of_tidy (by fun_prop)`.
+-- These remaining arithmetic operations still use the internal tidy certificates.
 example : ComputableInPolyTime (fun p : ℤ × ℤ => p.1 * p.2 - p.2)
     (encPair encIntBin encIntBin) encIntBin :=
   .of_tidy (by fun_prop)
@@ -71,8 +70,30 @@ example : ComputableInPolyTime (fun p : ℤ × ℤ => -(p.1 + p.2) * p.1)
   .of_tidy (by fun_prop)
 
 example : ComputableInPolyTime (fun p : ℤ × ℕ => (p.1 ^ p.2).natAbs)
-    (encPair encIntBin encUnary) encNat :=
-  .of_tidy (by fun_prop)
+    (encPair encIntBin encUnary) encNat := by
+  fun_prop
+
+-- The list product, power, magnitude and sign rules compose over plain certificates.
+example : ComputableInPolyTime (fun p : List ℤ × ℕ => (p.1.prod ^ p.2).natAbs)
+    (encPair (encList encIntBin) encUnary) encNat := by
+  fun_prop
+
+example : ComputableInPolyTime (fun l : List ℤ => decide (l.prod < 0))
+    (encList encIntBin) encBool := by
+  fun_prop
+
+-- Signed zero is normalized, and negative factors and odd/even powers retain their usual values.
+example : (if true then -(0 : ℤ) else 0) = 0 ∧
+    ([(-3 : ℤ), 2].prod ^ 3).natAbs = 216 ∧
+    ([(-3 : ℤ), 2].prod ^ 2).natAbs = 36 := by
+  decide +kernel
+
+-- Reuse the sign of one integer with a separately computed binary magnitude.
+example : ComputableInPolyTime
+    (fun p : ℤ × ℕ => if decide (p.1 < 0) then -(p.2 : ℤ) else p.2)
+    (encPair encIntBin encNat) encIntBin :=
+  ComputableInPolyTime.intBin_signMagnitude.comp
+    ((ComputableInPolyTime.intBin_isNeg.comp (.fst _ _)).prod (.snd _ _))
 
 example : ComputableInPolyTime (fun p : ℕ × ℕ => ((p.1 : ℤ) - p.2).natAbs)
     (encPair encNat encNat) encNat :=

@@ -79,26 +79,24 @@ theorem Program.ComputesInTime.computableInO_bits (hk : 1 ≤ k) {p : Program .a
     obtain ⟨X, hX⟩ : ∃ X, X = ((encIn a).length + T (encIn a).length + 1) ^ 4 *
         (k * (Nat.size (encIn a).length + 1) + 1) ^ 3 := ⟨_, rfl⟩
     rw [← hX]
-    have hw1 : 1 ≤ (k * (Nat.size (encIn a).length + 1) + 1) ^ 3 := Nat.one_le_pow _ _ (by omega)
     have hcube : (T (encIn a).length + 1) * (((encIn a).length + T (encIn a).length + 1) *
         (k * (Nat.size (encIn a).length + 1) + 1)) ^ 3 ≤ X := by
-      rw [hX, Nat.mul_pow, ← Nat.mul_assoc]
-      refine Nat.mul_le_mul_right _ ?_
-      calc (T (encIn a).length + 1) * ((encIn a).length + T (encIn a).length + 1) ^ 3
-          ≤ ((encIn a).length + T (encIn a).length + 1) *
-              ((encIn a).length + T (encIn a).length + 1) ^ 3 :=
-            Nat.mul_le_mul_right _ (by omega)
-        _ = ((encIn a).length + T (encIn a).length + 1) ^ 4 := by ring
+      rw [hX, Nat.mul_pow, ← Nat.mul_assoc,
+        show ((encIn a).length + T (encIn a).length + 1) ^ 4 =
+          ((encIn a).length + T (encIn a).length + 1) *
+            ((encIn a).length + T (encIn a).length + 1) ^ 3 from Nat.pow_succ']
+      exact Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (by omega))
     have hsq : ((encIn a).length + 1) ^ 2 ≤ X := by
       rw [hX]
-      calc ((encIn a).length + 1) ^ 2 ≤ ((encIn a).length + T (encIn a).length + 1) ^ 4 :=
-            (Nat.pow_le_pow_left (by omega) 2).trans (Nat.pow_le_pow_right (by omega) (by omega))
-        _ ≤ _ := Nat.le_mul_of_pos_right _ hw1
-    have hn : (encIn a).length ≤ ((encIn a).length + 1) ^ 2 := by nlinarith
-    have h0 := Nat.zero_le (c₁ * X)
-    have h1 := Nat.zero_le (c₂ * t (encIn a).length)
-    have h2 := Nat.zero_le (c₂ * X)
-    nlinarith
+      exact ((Nat.pow_le_pow_left (by omega) 2).trans
+        (Nat.pow_le_pow_right (by omega) (by omega))).trans
+        (Nat.le_mul_of_pos_right _ (Nat.one_le_pow _ _ (by omega)))
+    have hn : (encIn a).length ≤ ((encIn a).length + 1) ^ 2 :=
+      (Nat.le_succ _).trans (Nat.le_self_pow (by omega) _)
+    have hR : (c₁ + c₂ + 5) * (t (encIn a).length + X + 1) =
+        c₁ * t (encIn a).length + c₂ + 5 * X +
+          (c₁ * (X + 1) + c₂ * (t (encIn a).length + X) + 5 * t (encIn a).length + 5) := by ring
+    omega
   · simp only [List.length_map, NativeCertificate.ofTimeAndSpace]
     refine le_trans ?_ (Nat.le_mul_of_pos_left _ (by omega))
     omega
@@ -134,7 +132,7 @@ theorem Program.DecidesInTime.mem_DTIME (hk : 1 ≤ k) {p : Program .additive r}
   obtain ⟨S, hO⟩ := h.computesInTime.computableInO_bits hk hT
   have hone : Turing.MultiTapeTM.ComputableInO (fun v : ℕ => decide (v = 1)) encNat encBool
       (fun v => (encNat v).length) (fun v => (encNat v).length) :=
-    ((ComputableInDegree.of_linear ComputableInLinearTimeAndSpace.natEq).comp
+    ((ComputableInDegree.natEq).comp
       ((ComputableInDegree.of_eq (f := fun v : ℕ => v) (encIn := encNat) (encMid := encNat)
         fun _ => rfl).prod (ComputableInDegree.const 1))).mono (d' := 1) (e' := 1) |>.inO_one
   have h := setOf_mem_DTIME_of_computableInO (hone.comp_linear hO)

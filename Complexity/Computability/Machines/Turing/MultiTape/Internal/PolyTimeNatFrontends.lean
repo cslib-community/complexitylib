@@ -119,10 +119,8 @@ theorem bitsGetD (fallback : Bool) :
     ComputableInPolyTime (fun p : List Bool × ℕ => p.1.getD p.2 fallback)
       (encPair encBits encUnary) encBool := by
   have hhead : ComputableInPolyTime (fun l : List Bool => l.headD fallback) encBits encBool := by
-    obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.headD
-      (enc₁ := encBool) (enc := encBits) fallback
-    exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-      k, Q, hfin, tm, fun l => htm l⟩
+    exact (ListEncoding.headD
+      (enc₁ := encBool) (enc := encBits) fallback).computableInPolyTime
   simpa only [Function.comp_def, List.headD_eq_head?_getD, List.head?_drop,
     List.getD_eq_getElem?_getD] using hhead.comp bitsDropUnary
 

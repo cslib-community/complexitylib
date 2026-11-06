@@ -121,8 +121,9 @@ namespace Cslib.Circuits.Frontier.NativeRecovery
 
 open Cslib.GaloisRingArith Polynomial Finset
 
+set_option quotPrecheck false in
 /-- The subring `ℤ_(2)` of rationals with odd denominator. -/
-local notation "ℤ₍₂₎" => Valuation.integer (Rat.padicValuation 2)
+local macro "ℤ₍₂₎" : term => `(Valuation.integer (Rat.padicValuation 2))
 
 /-! ### Nodes -/
 
@@ -351,18 +352,14 @@ theorem val_slopeConst (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (Z
     have ho : (o : ℚ) ≠ 0 := by exact_mod_cast hodd.pos.ne'
     have h2v : (2 : ℚ) ^ (a + 1) = 2 ^ (a + 1 - v) * 2 ^ v := by
       rw [← pow_add, Nat.sub_add_cancel hva]
+    have h2vo : (2 : ℚ) ^ (a + 1) / (2 ^ v * o) * o = ((2 ^ (a + 1 - v) : ℕ) : ℚ) := by
+      rw [h2v, div_mul_eq_div_div, mul_div_cancel_right₀ _ (by positivity),
+        div_mul_cancel₀ _ ho, Nat.cast_pow, Nat.cast_ofNat]
     simp only [slope, c, Subring.coe_mul, Subring.coe_natCast, apply_ite Subtype.val,
-      Subring.coe_neg]
-    rw [hdiff]
+      Subring.coe_neg, hdiff]
     split_ifs
-    · push_cast
-      field_simp
-      rw [h2v]
-      ring
-    · push_cast
-      field_simp
-      rw [h2v]
-      ring
+    · rw [div_neg, neg_mul, h2vo]
+    · exact h2vo
   have hρ := congrArg ρ hc
   rw [map_mul, map_natCast] at hρ
   have hρc : ρ c = ρ (if k < k' then -((2 ^ (a + 1 - v) : ℕ) : ℤ₍₂₎)
@@ -390,6 +387,11 @@ theorem val_slopeConst' (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (
     (ρ : ℤ₍₂₎ →+* Ring N fl) {a k k' : ℕ} (hk : k < 2 ^ (a + 1)) (hk' : k' < 2 ^ (a + 1))
     (hne : k' ≠ k) : val N fl (slopeConst N fl a k k') = ρ (slope' a k k') := by
   rw [val_slopeConst hirr ρ hk hk' hne, slope', dite_eq_left_of_eq_true (eq_true ⟨hk, hk', hne⟩)]
+
+theorem coe_slope' {a k k' : ℕ} (hk : k < 2 ^ (a + 1)) (hk' : k' < 2 ^ (a + 1)) (hne : k' ≠ k) :
+    ((slope' a k k' : ℤ₍₂₎) : ℚ) = 2 ^ (a + 1) / ((node a k : ℚ) - node a k') := by
+  rw [slope', dite_eq_left_of_eq_true (eq_true ⟨hk, hk', hne⟩)]
+  rfl
 
 /-! ### Correctness of the reciprocal -/
 
@@ -476,28 +478,6 @@ theorem val_recip (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2
 
 /-! ### Products over the nodes -/
 
-/-- The other nodes, as integers, are the nonzero grid points other than `t`. -/
-@[to_additive /-- The other nodes, as integers, are the nonzero grid points other than `t`. -/]
-theorem prod_others {M : Type*} [CommMonoid M] (f : ℤ → M) {a k : ℕ} :
-    ((others a k).map fun k' => f (node a k')).prod =
-      ∏ q ∈ (recoveryNodes a).erase (node a k), f q := by
-  have hnd : ((others a k).map (node a)).Nodup :=
-    (List.nodup_range.filter _).map (node_injective a)
-  have hset : ((others a k).map (node a)).toFinset = (recoveryNodes a).erase (node a k) := by
-    ext q
-    simp only [List.mem_toFinset, List.mem_map, mem_others, recoveryNodes_eq, mem_erase, mem_Ico]
-    obtain ⟨L, hL⟩ : ∃ L : ℕ, 2 ^ a = L := ⟨_, rfl⟩
-    have hLz : (2 : ℤ) ^ a = (L : ℤ) := by rw [← hL]; push_cast; rfl
-    have hL2 : (2 : ℕ) ^ (a + 1) = 2 * L := by rw [← hL]; ring
-    simp only [node, hLz, hL, hL2]
-    constructor
-    · rintro ⟨k', ⟨hk'1, hk'2, hk'3⟩, rfl⟩
-      omega
-    · rintro ⟨hqk, hq0, hq1, hq2⟩
-      exact ⟨(q + L).toNat, ⟨by omega, by omega, by omega⟩, by omega⟩
-  rw [← hset, List.prod_toFinset _ hnd, List.map_map]
-  rfl
-
 /-- The nodes are the images of the indices `k < 2 ^ (a + 1)`, `k ≠ 2 ^ a`. -/
 theorem recoveryNodes_eq_image (a : ℕ) :
     recoveryNodes a = ((range (2 ^ (a + 1))).filter (· ≠ 2 ^ a)).image (node a) := by
@@ -507,11 +487,25 @@ theorem recoveryNodes_eq_image (a : ℕ) :
   have hLz : (2 : ℤ) ^ a = (L : ℤ) := by rw [← hL]; push_cast; rfl
   have hL2 : (2 : ℕ) ^ (a + 1) = 2 * L := by rw [← hL]; ring
   simp only [node, hLz, hL, hL2]
-  constructor
-  · rintro ⟨hq0, hq1, hq2⟩
-    exact ⟨(q + L).toNat, ⟨by omega, by omega⟩, by omega⟩
-  · rintro ⟨k', ⟨hk'1, hk'2⟩, rfl⟩
-    omega
+  exact ⟨fun ⟨hq0, hq1, hq2⟩ => ⟨(q + L).toNat, by omega⟩, by rintro ⟨k', ⟨hk'1, hk'2⟩, rfl⟩; omega⟩
+
+/-- The other nodes, as integers, are the nonzero grid points other than `t`. -/
+@[to_additive /-- The other nodes, as integers, are the nonzero grid points other than `t`. -/]
+theorem prod_others {M : Type*} [CommMonoid M] (f : ℤ → M) {a k : ℕ} :
+    ((others a k).map fun k' => f (node a k')).prod =
+      ∏ q ∈ (recoveryNodes a).erase (node a k), f q := by
+  have hnd : ((others a k).map (node a)).Nodup :=
+    (List.nodup_range.filter _).map (node_injective a)
+  have hset : ((others a k).map (node a)).toFinset = (recoveryNodes a).erase (node a k) := by
+    ext q
+    simp only [List.mem_toFinset, List.mem_map, mem_others, recoveryNodes_eq_image, mem_erase,
+      mem_image, mem_filter, mem_range]
+    exact ⟨fun ⟨k', ⟨h1, h2, h3⟩, hq⟩ =>
+        ⟨fun e => h3 (node_injective a (hq.trans e)), k', ⟨h1, h2⟩, hq⟩,
+      fun ⟨hne, k', ⟨h1, h2⟩, hq⟩ =>
+        ⟨k', ⟨h1, h2, fun e => hne (hq.symm.trans (congrArg (node a) e))⟩, hq⟩⟩
+  rw [← hset, List.prod_toFinset _ hnd, List.map_map]
+  rfl
 
 /-- A sum over the nodes is a sum over the node indices. -/
 theorem sum_recoveryNodes {M : Type*} [AddCommMonoid M] (f : ℤ → M) (a : ℕ) :
@@ -576,17 +570,13 @@ theorem coe_gamma {a u h Δ k j : ℕ} (hk : k < 2 ^ (a + 1))
         X k' ^ mult a u h k' / (2 ^ (a + 1)) ^ mult a u h k' := by
     intro k' hk'
     obtain ⟨hk'1, -, hk'3⟩ := mem_others.mp hk'
-    have hne : (node a k : ℚ) - node a k' ≠ 0 := by
-      rw [sub_ne_zero]; exact_mod_cast fun e => hk'3 (node_injective a e).symm
-    have hs : ((slope' a k k' : ℤ₍₂₎) : ℚ) = 2 ^ (a + 1) / ((node a k : ℚ) - node a k') := by
-      rw [slope', dite_eq_left_of_eq_true (eq_true ⟨hk, hk'1, hk'3⟩)]; rfl
+    have hs := coe_slope' hk hk'1 hk'3
     rw [← div_pow]
     congr 1
     simp only [X, Subring.coe_mul, hs, Subring.coe_intCast, _root_.Ring.inverse_eq_inv']
     have hq : ((Int.cast (((2 ^ a : ℕ) : ℤ) - (k' : ℤ))) : ℚ) = -(node a k' : ℚ) := by
       simp only [node]; push_cast; ring
-    rw [hq, zero_sub]
-    field_simp
+    rw [hq, zero_sub, mul_comm, mul_div_assoc, div_right_comm, div_self (by positivity), one_div]
   have hprod : ∀ l : List ℕ, (l.map fun k' => X k' ^ mult a u h k' /
       (2 ^ (a + 1) : ℚ) ^ mult a u h k').prod =
         (l.map fun k' => X k' ^ mult a u h k').prod /
@@ -605,14 +595,13 @@ theorem coe_gamma {a u h Δ k j : ℕ} (hk : k < 2 ^ (a + 1))
     rw [List.map_map]
     rfl
   rw [hlist, ← multSum]
-  have h2 : (2 : ℚ) ^ Δ = 2 ^ (Δ - (a + 1) * (multSum a u h k + j)) *
-      ((2 : ℚ) ^ (a + 1)) ^ (multSum a u h k + j) := by
-    rw [← pow_mul, ← pow_add, Nat.sub_add_cancel hΔ]
-  rw [h2, show (-(node a k : ℚ)) = ((Int.cast (((2 ^ a : ℕ) : ℤ) - (k : ℤ))) : ℚ) by
-    simp only [node]; push_cast; ring, div_pow, pow_add]
-  field_simp
-  push_cast
-  ring
+  have h2 : (2 : ℚ) ^ Δ = ((2 ^ (Δ - (a + 1) * (multSum a u h k + j)) : ℕ) : ℚ) *
+      (((2 : ℚ) ^ (a + 1)) ^ multSum a u h k * ((2 : ℚ) ^ (a + 1)) ^ j) := by
+    rw [Nat.cast_pow, Nat.cast_ofNat, ← pow_add, ← pow_mul, ← pow_add, Nat.sub_add_cancel hΔ]
+  have hnk : -(node a k : ℚ) = ((Int.cast (((2 ^ a : ℕ) : ℤ) - (k : ℤ))) : ℚ) := by
+    simp only [node]; push_cast; ring
+  rw [h2, hnk, div_pow, mul_assoc _ (_ / _), mul_assoc _ (_ * _), mul_mul_mul_comm,
+    mul_div_cancel₀ _ (by positivity), mul_div_cancel₀ _ (by positivity), ← mul_assoc]
 
 /-! ### Precision -/
 
@@ -658,16 +647,15 @@ theorem gamma_mul_two_pow_eq_zero (ρ : ℤ₍₂₎ →+* Ring N fl) {a u h Δ 
   have hv : (e : ℤ) ≤ padicValRat 2 ((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) := by
     rw [hγ, padicValRat.mul (mul_ne_zero (by positivity) hE0) (pow_ne_zero _ hx0),
       padicValRat.mul (by positivity) hE0, padicValRat.pow, padicValRat.pow, h2]
-    have hjv : (j : ℤ) * padicValRat 2 (-(node a k : ℚ) / 2 ^ (a + 1)) ≥
-        -((mult a u h k : ℤ) * ((a : ℤ) + 1)) := by
-      have : (j : ℤ) ≤ mult a u h k := by exact_mod_cast hj.le
-      nlinarith
+    have hjv1 := mul_le_mul_of_nonneg_left hvx (Nat.cast_nonneg j)
+    have hjv2 := mul_le_mul_of_nonneg_right (Nat.cast_le.mpr hj.le) (by omega : (0 : ℤ) ≤ a + 1)
     have hpt' : (p : ℤ) + 6 * h * 2 ^ (a - padicValInt 2 (node a k)) +
         (mult a u h k : ℤ) * (a + 1) ≤ pt := by exact_mod_cast hpt
     have he : (e : ℤ) = N - pt := by omega
+    rw [mul_neg] at hjv1
     rw [he, hN]
     push_cast
-    linarith
+    linarith only [hvE, hjv1, hjv2, hpt']
   -- So `γ = 2 ^ e γ'` with `γ' ∈ ℤ_(2)`.
   have hmem : ((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) / 2 ^ e ∈ ℤ₍₂₎ := by
     have hne : ((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) / 2 ^ e ≠ 0 := div_ne_zero hγ0 (by positivity)
@@ -683,7 +671,7 @@ theorem gamma_mul_two_pow_eq_zero (ρ : ℤ₍₂₎ →+* Ring N fl) {a u h Δ 
     apply Subtype.val_injective
     simp only [Subring.coe_mul, Subring.coe_natCast]
     push_cast
-    field_simp
+    exact (mul_div_cancel₀ _ (by positivity)).symm
   rw [hsplit, map_mul, map_natCast, mul_comm, ← mul_assoc,
     show (2 : Ring N fl) ^ pt = ((2 ^ pt : ℕ) : Ring N fl) by push_cast; rfl, ← Nat.cast_mul,
     ← pow_add, show pt + e = N by omega, natCast_two_pow, zero_mul]
@@ -774,11 +762,6 @@ theorem map_geomSeries {R S : Type*} [CommRing R] [CommRing S] (f : R →+* S) (
     PowerSeries.map f (geomSeries c) = geomSeries (f c) := by
   ext n
   simp [geomSeries, PowerSeries.coeff_map]
-
-theorem coe_slope' {a k k' : ℕ} (hk : k < 2 ^ (a + 1)) (hk' : k' < 2 ^ (a + 1)) (hne : k' ≠ k) :
-    ((slope' a k k' : ℤ₍₂₎) : ℚ) = 2 ^ (a + 1) / ((node a k : ℚ) - node a k') := by
-  rw [slope', dite_eq_left_of_eq_true (eq_true ⟨hk, hk', hne⟩)]
-  rfl
 
 /-- Over `ℚ`, `E_t(t + α z)` times the reciprocal series is one. -/
 theorem coe_hermiteBasis_comp_mul_recipSeries {a k : ℕ} (u h : ℕ) (hk : k < 2 ^ (a + 1)) :
@@ -930,14 +913,15 @@ theorem val_nodeTerm (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMo
   obtain ⟨g, hg⟩ := exists_pval_interp_eq_add hirr π ζ hζ ζl hlen hζl r w pt (hw hpos)
   set ρ := π.comp (integerHom B hB)
   set P := Lagrange.ringInterpolate univ ζ r
+  have hcoef (l : ℕ) :
+      val N fl ((interp N fl ζl w).getD l []) = π (P.coeff l) + 2 ^ pt * g.coeff l := by
+    rw [← coeff_pval, hg, coeff_add, coeff_map, coeff_C_mul]
   rw [nodeTerm, val_foldl_range _ (fun j => val N fl (coeffMult N fl a u h Δ k j) *
       val N fl ((tmul N fl (mult a u h k) (interp N fl ζl w)
         (recip N fl a u h k (mult a u h k))).getD j []))
       (fun S j => by rw [val_add, val_mul]), val_zero, zero_add, nodeSum, map_sum]
   refine sum_congr rfl fun j hj => ?_
   have hj' := mem_range.mp hj
-  have hcoef : ∀ l, val N fl ((interp N fl ζl w).getD l []) = π (P.coeff l) + 2 ^ pt * g.coeff l :=
-    fun l => by rw [← coeff_pval, hg, coeff_add, coeff_map, coeff_C_mul]
   have hconv : π (PowerSeries.coeff j ((P : PowerSeries B) *
       PowerSeries.map (integerHom B hB) (recipSeries a u h k))) =
         ∑ l ∈ range (j + 1),
@@ -948,11 +932,16 @@ theorem val_nodeTerm (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMo
     refine sum_congr rfl fun l _ => ?_
     rw [Polynomial.coeff_coe, PowerSeries.coeff_map, map_mul]
     rfl
+  have htsum : ∑ l ∈ range (j + 1), val N fl ((interp N fl ζl w).getD l []) *
+        val N fl ((recip N fl a u h k (mult a u h k)).getD (j - l) []) =
+      ∑ l ∈ range (j + 1), (π (P.coeff l) + 2 ^ pt * g.coeff l) *
+        ρ (PowerSeries.coeff (j - l) (recipSeries a u h k)) :=
+    sum_congr rfl fun l hl => by
+      have := mem_range.mp hl
+      rw [hcoef l, val_recip hirr ρ hk (by omega)]
   have hkill : ρ (gamma a u h Δ k j) * 2 ^ pt = 0 :=
     gamma_mul_two_pow_eq_zero ρ hk hkL hj' (le_of_lt_mult hk hkL hj' hΔ) (hpt hpos) hN
-  rw [val_coeffMult hirr ρ hk j, val_tmul _ _ hj', map_mul, hconv,
-    sum_congr rfl fun l hl => by
-      rw [hcoef l, val_recip hirr ρ hk (show j - l < mult a u h k by omega)]]
+  rw [val_coeffMult hirr ρ hk j, val_tmul _ _ hj', htsum, map_mul, hconv]
   simp only [add_mul, sum_add_distrib, mul_add, mul_assoc]
   rw [← mul_sum, ← mul_assoc, hkill, zero_mul, add_zero]
   rfl
@@ -1015,10 +1004,11 @@ theorem val_recover_of_eq_add
       val (p + Δ) fl ((W.getD k []).getD i []) = π (v (node a k) i) + 2 ^ pt (node a k) * c)
     (x : B) {b : K} (hb : b ∈ B) (hx : recoverFromValues B a u h ζ v = (x : K) + 2 ^ p * b) :
     val p fl (recover p Δ fl a u h ζl W) = reduce (Nat.le_add_right p Δ) fl (π x) := by
-  rw [val_recover hirr B hB π hΔ pt hpt ζ hζ ζl hlen hζl v W hW (R := x + 2 ^ p * ⟨b, hb⟩)
-    (by rw [hx]; rfl), map_add, map_add, map_mul, map_mul, map_pow, map_pow, map_ofNat,
-    map_ofNat, show (2 : Ring p fl) ^ p = ((2 ^ p : ℕ) : Ring p fl) by push_cast; rfl,
-    natCast_two_pow, zero_mul, add_zero]
+  have hR : recoverFromValues B a u h ζ v = ((x + 2 ^ p * ⟨b, hb⟩ : B) : K) := by
+    rw [hx]; push_cast; rfl
+  have h2p : (2 : Ring p fl) ^ p = ((2 ^ p : ℕ) : Ring p fl) := by push_cast; rfl
+  rw [val_recover hirr B hB π hΔ pt hpt ζ hζ ζl hlen hζl v W hW hR]
+  simp only [map_add, map_mul, map_pow, map_ofNat, h2p, natCast_two_pow, zero_mul, add_zero]
 
 end Hermite
 
@@ -1027,6 +1017,8 @@ end Hermite
 section PolyTime
 
 open Turing.MultiTapeTM
+
+attribute [local irreducible] ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
@@ -1052,10 +1044,6 @@ private theorem singletonPolyTime' {c : α → List ℕ}
     ComputableInPolyTime (fun x => [c x]) encIn (encList (encList encNat)) :=
   ComputableInPolyTime.cons' hc (ComputableInPolyTime.const [])
 
-private theorem polyBounded_unary {n : α → ℕ} (hn : ComputableInPolyTime n encIn encUnary) :
-    PolyBounded (fun x => (encIn x).length) n := by
-  simpa using ComputableInPolyTime.polyBounded_length hn
-
 /-- The length of a polynomial with `J` small coefficients is polynomially bounded. -/
 private theorem polyBounded_polyLength {p J : α → ℕ} {fl : α → List ℕ}
     (hp : ComputableInPolyTime p encIn encUnary)
@@ -1063,11 +1051,12 @@ private theorem polyBounded_polyLength {p J : α → ℕ} {fl : α → List ℕ}
     (hJ : ComputableInPolyTime J encIn encUnary) :
     PolyBounded (fun x => (encIn x).length)
       (fun x => J x * (2 * ((fl x).length * (2 * (p x + 1) + 1)) + 1)) := by
-  have hpl := polyBounded_unary hp
+  have hpl := ComputableInPolyTime.polyBounded hp
   have hfll : PolyBounded (fun x => (encIn x).length) fun x => (fl x).length :=
     (lengthPolyTime hfl).polyBounded_length.mono fun x => by simp
-  exact (polyBounded_unary hJ).mul (((PolyBounded.const 2).mul (hfll.mul (((PolyBounded.const 2).mul
-    (hpl.add (PolyBounded.const 1))).add (PolyBounded.const 1)))).add (PolyBounded.const 1))
+  exact (ComputableInPolyTime.polyBounded hJ).mul (((PolyBounded.const 2).mul
+    (hfll.mul (((PolyBounded.const 2).mul (hpl.add (PolyBounded.const 1))).add
+      (PolyBounded.const 1)))).add (PolyBounded.const 1))
 
 private theorem length_encList_mul_le (N : ℕ) (fl c d : List ℕ) :
     (encList encNat (mul N fl c d)).length ≤ fl.length * (2 * N + 1) :=
@@ -1151,7 +1140,8 @@ theorem computableInPolyTime_multSum {a u h k : α → ℕ}
     ⟨computableInPolyTime_others hL hk, ComputableInPolyTime.unary_add' hs
       (computableInPolyTime_mult (ha.comp hx) (hL.comp hx) (hu.comp hx) (hh.comp hx) hk'),
       inferInstance, inferInstance⟩
-    ⟨(polyBounded_unary hh).mul (polyBounded_unary hu), fun x s k' _ => by
+    ⟨(ComputableInPolyTime.polyBounded hh).mul (ComputableInPolyTime.polyBounded hu),
+      fun x s k' _ => by
       have : mult (a x) (u x) (h x) k' ≤ h x * u x :=
         Nat.mul_le_mul_left _ (Nat.sub_le _ _)
       simp only [encUnary_apply, List.length_replicate]

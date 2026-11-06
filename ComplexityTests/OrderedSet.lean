@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Foundations.Data.OrderedSet.ExtractMin
+public import Complexity.DataStructure.OrderedSet.ExtractMin
 
 /-!
 # Representation-independent ordered-set clients
@@ -20,7 +20,7 @@ implementation or any cost theorem.
 
 @[expose] public section
 
-namespace Cslib.OrderedSet
+namespace Cslib.DataStructure.OrderedSet
 
 open Cslib.DataStructure
 
@@ -58,11 +58,11 @@ theorem firstTwo_run (s : Finset α) :
   simp only [firstTwo, StateTransitionSpec.runClient_liftBind, spec]
   cases least s <;> rfl
 
-end Cslib.OrderedSet
+end Cslib.DataStructure.OrderedSet
 
 namespace ComplexityTests.OrderedSet
 
-open Cslib.OrderedSet Cslib.DataStructure
+open Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
 -- The absence contract is complete, including exhaustion above the largest key.
 example : LeastResult (∅ : Finset (Fin 3)) none := rfl
@@ -74,13 +74,13 @@ example : (spec (Fin 3)).stepFn {0, 2} (.successor 1) = ({0, 2}, some 2) := by d
 example : (spec (Fin 3)).stepFn {0, 2} (.successor 2) = ({0, 2}, none) := by decide
 
 -- Deletion is total: present, absent, and empty-set cases have the same typed interface.
-example : (spec (Fin 3)).stepFn {0, 2} (.erase 0) = ({2}, ()) := by decide
-example : (spec (Fin 3)).stepFn {0, 2} (.erase 1) = ({0, 2}, ()) := by decide
-example : (spec (Fin 3)).stepFn ∅ (.erase 0) = (∅, ()) := by decide
+example : (spec (Fin 3)).stepFn {0, 2} (.delete 0) = ({2}, ()) := by decide
+example : (spec (Fin 3)).stepFn {0, 2} (.delete 1) = ({0, 2}, ()) := by decide
+example : (spec (Fin 3)).stepFn ∅ (.delete 0) = (∅, ()) := by decide
 
--- The erased key comes from the minimum answer; an empty query performs no deletion.
+-- The deleted key comes from the minimum answer; an empty query performs no deletion.
 example : (spec (Fin 3)).runClient {0, 2} extractMin =
-    (some 0, {2}, [.minimum, .erase 0]) := by decide
+    (some 0, {2}, [.minimum, .delete 0]) := by decide
 example : (spec (Fin 3)).runClient ∅ extractMin = (none, ∅, [.minimum]) := by decide
 
 private def extractThree :
@@ -92,7 +92,7 @@ private def extractThree :
 
 -- Sequential composition sees the updated set, including exhaustion after the last key.
 example : (spec (Fin 3)).runClient {0, 2} extractThree =
-    ((some 0, some 2, none), ∅, [.minimum, .erase 0, .minimum, .erase 2, .minimum]) := by decide
+    ((some 0, some 2, none), ∅, [.minimum, .delete 0, .minimum, .delete 2, .minimum]) := by decide
 
 -- The same adaptive client can be interpreted without choosing a data structure.
 example : (spec (Fin 3)).runClient ∅ firstTwo = ((none, none), ∅, [.minimum]) := by decide
@@ -121,7 +121,7 @@ abbrev bounded (bound : Nat) : StateTransitionSpec :=
 example : ¬ (bounded 4).valid ∅ (.insert 4) := by decide
 example : (bounded 4).valid ∅ (.contains 99) := trivial
 example : (bounded 4).valid ∅ (.successor 99) := trivial
-example : (bounded 4).valid ∅ (.erase 99) := trivial
+example : (bounded 4).valid ∅ (.delete 99) := trivial
 example : (spec Nat).valid ∅ (.insert 99) := trivial
 
 end ComplexityTests.OrderedSet

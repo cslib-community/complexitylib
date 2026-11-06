@@ -130,9 +130,15 @@ theorem inO {f : α → β} {T S : α → ℕ}
   exact ⟨C, hC, fun a => (hl a).trans (Nat.mul_le_mul_right _ hle)⟩
 
 /-- Linear certificates normalize at a common linear bound without changing the encoding. -/
-theorem linear {f : α → β} (h : ComputableInLinearTimeAndSpace f encIn encMid) :
+theorem linear {f : α → β} {e : ℕ} (h : ComputableInDegree f encIn encMid 1 e) :
     ∃ c, ∃ (k : ℕ) (State : Type) (_ : Finite State) (tm : MultiTapeTM k Bool State),
       ∀ a, tm.ComputesTidilyInTimeAndSpace (encIn a) (encMid (f a))
-        (c * ((encIn a).length + 1)) (c * ((encIn a).length + 1)) := bigO h
+        (c * ((encIn a).length + 1)) (c * ((encIn a).length + 1)) := by
+  obtain ⟨t, s, ⟨ct, ht⟩, ⟨cs, hs⟩, k, Q, hfin, tm, htm⟩ := degree h
+  refine ⟨ct + cs, k, Q, hfin, tm, fun a => (htm a).mono ?_ ?_⟩
+  · simpa only [pow_one] using (ht a).trans
+      (Nat.mul_le_mul_right _ (Nat.le_add_right ct cs))
+  · simpa only [pow_one] using (hs a).trans
+      (Nat.mul_le_mul_right _ (Nat.le_add_left cs ct))
 
 end Turing.MultiTapeTM.Internal.NormalForm

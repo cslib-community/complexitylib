@@ -69,6 +69,16 @@ theorem partialConvolution_natAbs_le {p r k A B : ℕ} {u v : ℕ → ℤ}
       exact Nat.mul_le_mul (hu i hip) (hv _ (subIndex_lt hr hip))
     _ = k * (A * B) := by simp
 
+/-- A cyclic coefficient depends only on the two original coefficient blocks. -/
+theorem convolution_congr {p r : ℕ} (hr : r < p) {u v u' v' : ℕ → ℤ}
+    (hu : ∀ i < p, u i = u' i) (hv : ∀ i < p, v i = v' i) :
+    convolution p u v r = convolution p u' v' r := by
+  unfold convolution partialConvolution
+  apply Finset.sum_congr rfl
+  intro i hi
+  have hip := Finset.mem_range.mp hi
+  rw [hu i hip, hv _ (subIndex_lt hr hip)]
+
 variable {p : ℕ}
 
 /-- Quotient representatives have no coefficients at degrees at least p. -/

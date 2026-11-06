@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.DisjointSet.UnionFind
+public import Complexity.DataStructure.DisjointSet.UnionFind
 public import Cslib.Algorithms.Lean.Sort.Merge
 public import Cslib.Algorithms.Lean.TimeM
 public import Mathlib.Algebra.BigOperators.Group.List.Defs
@@ -30,7 +30,7 @@ and `TimeM` comparison and disjoint-set step bounds.
 An input multigraph on `n` vertices is represented as a finite list `es : List (WeightedEdge n W)`
 of undirected weighted edges `(u, v, weight)` with `u v : Fin n` (allowing parallel edges,
 self-loops, disconnected graphs, and negative or duplicate weights). Connectivity is tracked via
-`Cslib.Algorithms.Lean.DisjointSet.Partition n`:
+`Cslib.DataStructure.DisjointSet.Partition n`:
 
 * `edgePartitionFrom p es` folds `Partition.merge` across `es` starting from `p`, and
   `edgePartition es := edgePartitionFrom (Partition.discrete n) es` is the induced
@@ -72,7 +72,7 @@ Primary-source correspondence:
   performed by `List.mergeSortM`, bounded by `m * Nat.clog 2 m` (`m = es.length`) via
   `Cslib.Algorithms.Lean.TimeM.time_mergeSortM_le`.
 * `Cost.ufSteps`: exact number of disjoint-set forest steps (`find` parent-pointer inspections plus
-  `union` root links) recorded by `Cslib.Algorithms.Lean.DisjointSet.UnionFind.run` on
+  `union` root links) recorded by `Cslib.DataStructure.DisjointSet.UnionFind.run` on
   `kruskalClient`, bounded by `m * (2 * Nat.log 2 n + 3)` via `DisjointSet.UnionFind.run_correct`
   (worst-case `O(log n)` per operation from union by rank, rather than Tarjan's amortized
   `O(α(n))` inverse-Ackermann bound).
@@ -131,7 +131,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.Kruskal
 
-open Cslib.DataStructure Cslib.Algorithms.Lean.DisjointSet
+open Cslib.DataStructure Cslib.DataStructure.DisjointSet
 
 /-! ### Weighted edges and edge-induced partitions -/
 

@@ -95,8 +95,9 @@ def MildlyHardOnAverage (f : List Bool → ℕ) : Prop :=
   ∃ p : Polynomial ℕ, (∀ n, 0 < p.eval n) ∧
     ∀ H : List Bool → ProbComp ℕ, IsPPTOn encBits encNat H →
       ∀ᶠ n in atTop,
-        (((BitString.uniformList n).bind fun x =>
-          (ProbComp.eval (H x)).map fun v => decide (v = f x)) true).toReal ≤
+        ((do
+          let x ← BitString.uniformList n
+          (ProbComp.eval (H x)).map fun v => decide (v = f x) : PMF Bool) true).toReal ≤
           1 - 1 / ((p.eval n : ℕ) : ℝ)
 
 /-- **[Liu and Pass, Definition 2.5, §2.3, p. 8 of arXiv:2009.11514v1][LiuPass2020]:
@@ -112,9 +113,10 @@ def MildlyHardOnAverageToApprox (g : ℕ → ℕ) (f : List Bool → ℕ) : Prop
   ∃ p : Polynomial ℕ, (∀ n, 0 < p.eval n) ∧
     ∀ H : List Bool → ProbComp ℕ, IsPPTOn encBits encNat H →
       ∀ᶠ n in atTop,
-        (((BitString.uniformList n).bind fun x =>
+        ((do
+          let x ← BitString.uniformList n
           (ProbComp.eval (H x)).map fun v =>
-            decide (Nat.dist v (f x) ≤ g n)) true).toReal ≤
+            decide (Nat.dist v (f x) ≤ g n) : PMF Bool) true).toReal ≤
           1 - 1 / ((p.eval n : ℕ) : ℝ)
 
 /-- **Library helper (`MildlyHardOnAverageToOneSidedApprox`):** one-sided underestimation
@@ -130,9 +132,10 @@ def MildlyHardOnAverageToOneSidedApprox (g : ℕ → ℕ) (f : List Bool → ℕ
   ∃ p : Polynomial ℕ, (∀ n, 0 < p.eval n) ∧
     ∀ H : List Bool → ProbComp ℕ, IsPPTOn encBits encNat H →
       ∀ᶠ n in atTop,
-        (((BitString.uniformList n).bind fun x =>
+        ((do
+          let x ← BitString.uniformList n
           (ProbComp.eval (H x)).map fun v =>
-            decide (f x - g n ≤ v ∧ v ≤ f x)) true).toReal ≤
+            decide (f x - g n ≤ v ∧ v ≤ f x) : PMF Bool) true).toReal ≤
           1 - 1 / ((p.eval n : ℕ) : ℝ)
 
 /-- **Library specialization (`MildlyHardOnAverageDet`):** deterministic polynomial-time heuristic
@@ -199,8 +202,10 @@ def MildlyHardOnAverageENat (f : List Bool → ℕ∞) : Prop :=
   ∃ p : Polynomial ℕ, (∀ n, 0 < p.eval n) ∧
     ∀ H : List Bool → ProbComp ℕ, IsPPTOn encBits encNat H →
       ∀ᶠ n in atTop,
-        (((BitString.uniformList n).bind fun x =>
-          (ProbComp.eval (H x)).map fun v : ℕ => decide ((v : ℕ∞) = f x)) true).toReal ≤
+        ((do
+          let x ← BitString.uniformList n
+          (ProbComp.eval (H x)).map fun v : ℕ => decide ((v : ℕ∞) = f x) : PMF Bool)
+          true).toReal ≤
           1 - 1 / ((p.eval n : ℕ) : ℝ)
 
 /-- **Library companion (`MildlyHardOnAverageIOENat`):** `ℕ∞`-valued companion to

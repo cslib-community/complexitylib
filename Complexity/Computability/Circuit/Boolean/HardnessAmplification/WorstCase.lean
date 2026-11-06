@@ -290,7 +290,7 @@ def reconstructionCost (w b m D K L s q M : ℕ) : ℕ :=
 
 /-- The number of errors left by the line stage, bounded in terms of the agreement margin. -/
 private theorem lineErrors_le {q Q a ε D δ : ℝ} (hq : 1 < q) (hQ : 1 ≤ Q) (ha : 0 < a)
-    (hε : 0 < ε) {K : ℕ} (hgl : ε * Q ≤ 2 ^ (K + 2) * a) (hD : 0 ≤ D)
+    (hε : 0 < ε) {K : ℕ} (hgl : ε * Q ≤ 2 ^ (K + 2) * a) (_hD : 0 ≤ D)
     (hmargin : 2 ^ (K + 3) * D ≤ q * ε) (hδ : 0 ≤ δ) (hδD : δ ≤ D) :
     1 + (q * a * (Q - 1) / (q * a / Q - D) ^ 2 + Q * (Q - 1) * δ / (q - 1)) / Q ≤
       Q * (1 / Q + 2 ^ (K + 4) / (q * ε) + D / (q - 1)) := by
@@ -301,8 +301,8 @@ private theorem lineErrors_le {q Q a ε D δ : ℝ} (hq : 1 < q) (hQ : 1 ≤ Q) 
   have hμpos : 0 < μ := by positivity
   -- the mean is at least twice `D`
   have hμ : 2 * D ≤ μ := by
-    have h1 : q * ε * Q ≤ 2 ^ (K + 2) * (q * a) := by nlinarith
-    have h2 : 2 ^ (K + 3) * D * Q ≤ 2 ^ (K + 2) * (q * a) := by nlinarith
+    have h1 : q * ε * Q ≤ 2 ^ (K + 2) * (q * a) := by nlinarith only [hgl, hq0]
+    have h2 : 2 ^ (K + 3) * D * Q ≤ 2 ^ (K + 2) * (q * a) := by nlinarith only [h1, hmargin, hQ]
     have h3 : 2 ^ (K + 3) * D * Q = 2 ^ (K + 2) * (2 * D * Q) := by ring
     rw [h3] at h2
     have h4 : 2 * D * Q ≤ q * a := le_of_mul_le_mul_left h2 (by positivity)
@@ -310,7 +310,7 @@ private theorem lineErrors_le {q Q a ε D δ : ℝ} (hq : 1 < q) (hQ : 1 ≤ Q) 
     rw [le_div_iff₀ hQpos]
     linarith
   have hμD : μ / 2 ≤ μ - D := by linarith
-  have hsq : μ ^ 2 / 4 ≤ (μ - D) ^ 2 := by nlinarith
+  have hsq : μ ^ 2 / 4 ≤ (μ - D) ^ 2 := by nlinarith only [hμD, hμpos]
   -- the first term
   have hterm1 : q * a * (Q - 1) / (μ - D) ^ 2 / Q ≤ Q * (2 ^ (K + 4) / (q * ε)) := by
     have hμD' : 0 < μ - D := by linarith
@@ -318,13 +318,13 @@ private theorem lineErrors_le {q Q a ε D δ : ℝ} (hq : 1 < q) (hQ : 1 ≤ Q) 
     have hμsq : μ ^ 2 * Q ^ 2 = (q * a) ^ 2 := by
       simp only [μ]
       field_simp
-    have key : q * a * (Q - 1) ≤ q * a * Q := by nlinarith
+    have key : q * a * (Q - 1) ≤ q * a * Q := by nlinarith only [ha, hq0, hQ]
     have hstep : q * a * Q * 4 ≤ Q * (2 ^ (K + 4) / (q * ε)) * (μ ^ 2 * Q) := by
       rw [show Q * (2 ^ (K + 4) / (q * ε)) * (μ ^ 2 * Q) = 2 ^ (K + 4) * (μ ^ 2 * Q ^ 2) /
         (q * ε) by field_simp, hμsq, le_div_iff₀ (by positivity)]
       have : (2 : ℝ) ^ (K + 4) = 4 * 2 ^ (K + 2) := by ring
       rw [this]
-      nlinarith
+      nlinarith only [hgl, hq0, ha, hε, hQ]
     calc q * a * (Q - 1) ≤ q * a * Q := key
       _ = q * a * Q * 4 / 4 := by ring
       _ ≤ Q * (2 ^ (K + 4) / (q * ε)) * (μ ^ 2 * Q) / 4 := by gcongr
@@ -334,8 +334,8 @@ private theorem lineErrors_le {q Q a ε D δ : ℝ} (hq : 1 < q) (hQ : 1 ≤ Q) 
   have hterm2 : Q * (Q - 1) * δ / (q - 1) / Q ≤ Q * (D / (q - 1)) := by
     rw [div_div, div_le_iff₀ (by positivity)]
     have : Q * (Q - 1) * δ ≤ Q * Q * D := by
-      have : (Q - 1) * δ ≤ Q * D := by nlinarith
-      nlinarith
+      have : (Q - 1) * δ ≤ Q * D := by nlinarith only [hδD, hQ, hδ]
+      nlinarith only [this, hQ]
     calc Q * (Q - 1) * δ ≤ Q * Q * D := this
       _ = Q * (D / (q - 1)) * ((q - 1) * Q) := by field_simp
   rw [add_div]
@@ -462,12 +462,14 @@ theorem complexity_le_of_agree_hardnessEncode (enc : F ≃ BitString w) (h : Bit
     exact pos_of_mul_pos_right h2 (by positivity)
   -- the line stage
   have hμ : (D : ℝ) < q * #{y | G y = p y} / q ^ m := by
-    have h2D : 2 ^ (K + 3) * (D : ℝ) * Q ≤ 2 ^ (K + 2) * (q * a) := by nlinarith
+    have h2D : 2 ^ (K + 3) * (D : ℝ) * Q ≤ 2 ^ (K + 2) * (q * a) := by
+      have h1 : q * ε * Q ≤ 2 ^ (K + 2) * (q * a) := by nlinarith only [ha, hq1]
+      nlinarith only [h1, hmargin, hQ1]
     rw [show 2 ^ (K + 3) * (D : ℝ) * Q = 2 ^ (K + 2) * (2 * D * Q) by ring] at h2D
     have h4 : 2 * (D : ℝ) * Q ≤ q * a := le_of_mul_le_mul_left h2D (by positivity)
     rw [lt_div_iff₀ (by positivity)]
     have hD1' : (1 : ℝ) ≤ D := by exact_mod_cast hD1
-    nlinarith
+    nlinarith only [h4, hD1', hQ1, ha, hq1]
   obtain ⟨z, hz⟩ := exists_card_lineListDecode_ne_le hd hn hDq hp G hμ
   set C1 := lineListDecode G d D z (p z)
   have herrC1 : ((d : ℝ) + 1) * #{x | C1 x ≠ p x} ≤ Q / 6 := by
@@ -554,13 +556,13 @@ section Bound
 
 variable {w q M ℓ d K s : ℕ}
 
-private theorem bitBlastCost_le (hq : q = 2 ^ w) (hw : 1 ≤ w) :
+private theorem bitBlastCost_le (hq : q = 2 ^ w) (_hw : 1 ≤ w) :
     bitBlastCost w ≤ 7 * w ^ 2 * q ^ 2 := by
   have h2 : 2 ^ (2 * w) = q ^ 2 := by rw [hq, ← pow_mul, mul_comm]
   have hq1 : 1 ≤ q ^ 2 := Nat.one_le_pow _ _ (by rw [hq]; positivity)
   unfold bitBlastCost
   rw [h2]
-  have hw2 : w ≤ w ^ 2 := by nlinarith
+  have hw2 : w ≤ w ^ 2 := Nat.le_self_pow (by decide : 2 ≠ 0) w
   have h1 : w * q ^ 2 ≤ w ^ 2 * q ^ 2 := Nat.mul_le_mul_right _ hw2
   have h3 : w ≤ w ^ 2 * q ^ 2 := hw2.trans (Nat.le_mul_of_pos_right _ hq1)
   nlinarith only [h1, h3]
@@ -569,7 +571,7 @@ private theorem kernelVecCost_le (hM : M ≤ q ^ 2) (hq : 1 ≤ q) :
     kernelVecCost q M ≤ 64 * q ^ 5 := by
   unfold kernelVecCost
   have h1 : q + 1 ≤ 2 * q := by omega
-  have h2 : M + 1 ≤ 2 * q ^ 2 := by nlinarith
+  have h2 : M + 1 ≤ 2 * q ^ 2 := by nlinarith only [hM, hq]
   calc 8 * (q + 1) * (M + 1) ^ 2 ≤ 8 * (2 * q) * (2 * q ^ 2) ^ 2 := by gcongr
     _ = 64 * q ^ 5 := by ring
 
@@ -681,7 +683,7 @@ theorem reconstructionCost_le {w b m D K L s q M : ℕ} (hq : q = 2 ^ w) (hw : 1
       _ ≤ 2000 * P * m * w ^ 2 * q ^ 9 * E * (s + 1) := by
           have hq9 : q ^ 3 ≤ q ^ 9 := Nat.pow_le_pow_right hq1 (by norm_num)
           have hq9' : q ^ 2 ≤ q ^ 9 := Nat.pow_le_pow_right hq1 (by norm_num)
-          have hw1 : w ≤ w ^ 2 := by nlinarith
+          have hw1 : w ≤ w ^ 2 := Nat.le_self_pow (by decide : 2 ≠ 0) w
           have hs : 1 ≤ s + 1 := by omega
           have hA : (6 * (P * m * q)) * (7 * w ^ 2 * q ^ 2) ≤
               42 * P * m * w ^ 2 * q ^ 9 * E * (s + 1) := by
@@ -711,7 +713,7 @@ theorem reconstructionCost_le {w b m D K L s q M : ℕ} (hq : q = 2 ^ w) (hw : 1
   have hout : 2 ^ w * (2 * w + 2) + 1 ≤ 5 * P * m * w ^ 2 * q ^ 9 * E * (s + 1) := by
     rw [← hq]
     have : q * (2 * w + 2) + 1 ≤ 5 * w ^ 2 * q := by
-      have hw2 : w ≤ w ^ 2 := by nlinarith
+      have hw2 : w ≤ w ^ 2 := Nat.le_self_pow (by decide : 2 ≠ 0) w
       have h1 : w * q ≤ w ^ 2 * q := Nat.mul_le_mul_right _ hw2
       have h2 : q ≤ w ^ 2 * q := Nat.le_mul_of_pos_left _ (by positivity)
       have h3 : 1 ≤ w ^ 2 * q := Nat.one_le_iff_ne_zero.2 (by positivity)

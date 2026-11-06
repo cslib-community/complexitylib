@@ -16,10 +16,9 @@ import Mathlib.Algebra.BigOperators.Fin
 
 This file reads the input words `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.encode` of an
 adjacency-list instance back from the initial memory of a word RAM: `n`, the source, the offsets
-of the adjacency lists and the targets and weights of the edges each sit at the address that
-`Cslib.Algorithms.WordRAM.Dijkstra.dijkstraCode` (and its binary-heap instantiation
-`Cslib.Algorithms.WordRAM.Dijkstra.heapDijkstra`) reads them from, and memory past the input is
-`0`.
+of the adjacency lists and the targets and weights of the edges each sit at the address used by
+the original linked memory client and the retained word-RAM priority-queue interface. Memory past
+the input is `0`.
 
 It also defines the effect of scanning the edges out of a vertex on one distance word
 (`Cslib.Algorithms.WordRAM.Dijkstra.edgesWord`), and shows that it is the relaxation of the
@@ -196,6 +195,29 @@ theorem toInstance_maxWeight_le : G.toInstance.maxWeight ≤ G.maxWeight := by
   cases h : G.lightest uv.1 uv.2 with
   | none => simp
   | some c => exact G.le_maxWeight ((G.lightest_eq_some_iff.mp h).1)
+
+/-- The original adjacency-list input fits whenever the advertised Dijkstra word envelope fits. -/
+theorem inputFits_encode (G : ListInstance) {w : ℕ}
+    (hw_in : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))) :
+    InputFits w G.encode := by
+  refine ⟨?_, ?_⟩
+  · rw [G.encode_length]
+    exact hw_in.of_le (by nlinarith)
+  · intro x hx
+    simp only [ListInstance.encode, List.mem_cons, List.mem_append, List.mem_map, List.mem_range,
+      List.mem_flatMap, List.mem_finRange, true_and] at hx
+    rcases hx with rfl | rfl | ⟨⟨i, hi, rfl⟩ | ⟨u, ⟨v, c⟩, he, hx⟩⟩
+    · exact hw_in.of_le (by nlinarith)
+    · have := G.source.isLt
+      exact hw_in.of_le (by nlinarith)
+    · have hle : G.offset i ≤ G.m := G.offset_n ▸ G.offset_mono (by omega)
+      exact hw_in.of_le (by nlinarith)
+    · simp only [List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | rfl
+      · have := v.isLt
+        exact hw_in.of_le (by nlinarith)
+      · have hc := G.le_maxWeight he
+        exact hw_in.of_le (by nlinarith)
 
 end ListInstance
 

@@ -1,20 +1,23 @@
 /-
-Copyright (c) 2026 Renfei Zhou. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Renfei Zhou
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.Algorithms.WordRAM.Karger.Contract
 public import Complexity.Algorithms.WordRAM.Karger.FastCut
+public import Complexity.Algorithms.WordRAM.Karger.OutputLaw
 public import Complexity.Computability.WordRAM.Copy
-public import Complexity.Computability.WordRAM.Randomized.LoopSegment
+public import Complexity.Computability.WordRAM.Randomized.LoopSegmentLaw
+public import Complexity.Algorithms.Lean.Karger.FastCut
 public import Complexity.Computability.WordRAM.Time
-import Complexity.Languages.Probabilistic.Event
+import Complexity.Probability.PMF.Map
 
 /-!
 # Karger–Stein's recursive `FastCut` algorithm on the word RAM
@@ -52,6 +55,18 @@ endpoints on `n :: flattenMatrix W`:
    non-trivial cut weight `≥ minCut W`, and misses `minCut W` with probability at most
    `1 / (2 * n)` (hence at most `1 / n`) whenever `0 < minCut W` (excluded only for proof
    convenience).
+
+The probability argument is proved once for the oracle client
+`Cslib.Algorithms.Lean.Karger.fastCut`. Native segments observe exactly that client's answer law
+(`fastCutNode_law`, `fastCutTree_law`), and the outer loop observes the existing independent
+`minRuns` client (`fastCutAmpLoop_law`, `fastCutHighProbCode_law`). Their certificates keep the
+original supported-path instruction and random-call bounds and memory frames. They do not
+replace those bounds with expected costs.
+
+`baseCaseAndPop_spec`, `branchContractAndPush_spec`, `fastCutTree_spec` and
+`fastCutAmpBody_spec` remain law-derived compatibility statements for the existing exact-basis
+bridge. Its still-used `ChildMinCutSurvives` proposition and `KSAmpInv.best_cut` field are retained
+for that bridge; the native recursive and amplification stages consume laws directly.
 
 ## Main definitions
 
@@ -295,16 +310,14 @@ theorem ksCopyCode_exec {w sb db k : ℕ} {W : Fin k → Fin k → ℕ} {x : Dat
     change x.regs uReg + x.regs rem ≤ x.regs wBase
     rw [hsb, hlen, hdb]
     exact hdisj
-  obtain ⟨y₀, hy₀_exec, hy₀_mem, _, _, _⟩ :=
-    ArrayCopy.exec (x.comap ksCopyRegMap) h1 hs_fit hd_fit hdisj'
+  obtain ⟨y, hy₀_exec, ⟨hy₀_mem, _, _, _⟩, -⟩ := ExecWithin.rename_post ksCopyRegMap_injective
+    (ArrayCopy.exec (x.comap ksCopyRegMap) h1 hs_fit hd_fit hdisj')
   have hsrc_c : (x.comap ksCopyRegMap).regs ArrayCopy.src = sb := hsb
   have hdst_c : (x.comap ksCopyRegMap).regs ArrayCopy.dst = db := hdb
   have hlen_c : (x.comap ksCopyRegMap).regs ArrayCopy.len = k * k := hlen
   rw [hlen_c] at hy₀_exec
   rw [hsrc_c, hdst_c, hlen_c] at hy₀_mem
-  let y := y₀.extend ksCopyRegMap x
-  have hex : ExecWithin w ksCopyCode x y (7 * (k * k) + 4) :=
-    hy₀_exec.rename ksCopyRegMap_injective
+  have hex : ExecWithin w ksCopyCode x y (7 * (k * k) + 4) := hy₀_exec
   have hym : y.mem = ArrayCopy.copyPrefix x.mem sb db (k * k) := hy₀_mem
   have ⟨_, _, he⟩ := hex
   have hpres : ∀ j : Fin 24, ksCopyCode.Preserves j → y.regs j = x.regs j :=
@@ -1233,7 +1246,19 @@ theorem combineAndPop_exec {w fp parentFp b k v1 r2 : ℕ} {x : Data 24}
   unfold combineAndPop
   exact (e1.seq (e2.seq (e3.seq (e4.seq e5)))).mono (by omega)
 
-theorem baseCaseAndPop_spec {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
+/-- The graph held by a recursive frame at its explicit invariant size. This is a view of the
+existing native memory layout, with no additional graph representation. -/
+def frameGraph (fp k : ℕ) (x : Data 24) : Lean.Karger.Graph :=
+  ⟨k, fun i j => x.mem (fp + 2 + i.val * k + j.val)⟩
+
+/-- The frame observation equals a typed graph exactly when its existing matrix invariant holds. -/
+theorem frameGraph_eq_iff {fp k : ℕ} {x : Data 24} {W : Fin k → Fin k → ℕ} :
+    frameGraph fp k x = ⟨k, W⟩ ↔ HoldsMatrix x.mem (fp + 2) k W := by
+  simp only [frameGraph, Lean.Karger.Graph.mk.injEq, heq_eq_eq, true_and]
+  exact ⟨fun h i j => congrFun (congrFun h i) j, fun h => funext₂ h⟩
+
+/-- The base-case output has exactly the existing contraction-trial answer law. -/
+theorem baseCaseAndPop_law {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
     {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
     (hk2 : 2 ≤ k) (hk6 : k ≤ 6)
     (hk_reg : x.regs activeK = k) (hrem_reg : x.regs rem = k * k)
@@ -1243,21 +1268,10 @@ theorem baseCaseAndPop_spec {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n 
     (hC : IsContractionOf W₀ part W_k)
     (hfit : Fits w (fp + frameSize k)) (hsp_fit : Fits w b)
     (htot : Fits w (totalDoubledWeight W₀)) :
-    ∃ m : ProbComp (Data 24 × ℕ),
-      ExecRand w baseCaseAndPop x m ∧
-      m.IsQueryBounded (k - 2) ∧
-      (∀ z ∈ m.support,
-        z.2 ≤ 2000 ∧
-        Modifies (Finset.Ico (fp + 2 + k * k) (fp + frameSize k)) x.mem z.1.mem ∧
-        z.1.regs zero = 0 ∧
-        z.1.regs fpReg = parentFp ∧
-        z.1.regs spReg = b ∧
-        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs retVal = cutWeight W₀ C) ∧
-      (∀ B : Finset (Fin k),
-        0 < minCut W₀ → IsNonTrivialCut B →
-        cutWeight W₀ (pullbackCut part B) = minCut W₀ →
-        (2 : ℝ≥0∞) / (30 : ℝ≥0∞) ≤
-          m.eval.toOuterMeasure {z | z.1.regs retVal = minCut W₀}) := by
+    ExecRandLaw w baseCaseAndPop x
+      (fun y => Modifies (Finset.Ico (fp + 2 + k * k) (fp + frameSize k)) x.mem y.mem ∧
+        y.regs zero = 0 ∧ y.regs fpReg = parentFp ∧ y.regs spReg = b)
+      2000 (k - 2) (fun y => y.regs retVal) (Lean.Karger.answerLaw ⟨k, W_k⟩) := by
   let wb := fp + 4 + k * k
   let db := fp + 4 + 2 * (k * k)
   have hfs_eq : fp + frameSize k = db + k := by
@@ -1353,8 +1367,8 @@ theorem baseCaseAndPop_spec {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n 
     workspace := hws_deg
   }
   -- Step 4: `contractDownToAt hr24`
-  obtain ⟨m_c, hm_c, hq_c, hsup_c, hsurv_c⟩ :=
-    contractDownToAt_spec hr24 (by decide : 2 ≤ 2) hk2 hC hst_deg
+  obtain ⟨m_c, hm_c, hq_c, hsup_c, hlaw_c⟩ :=
+    contractDownToAt_law hr24 (by decide : 2 ≤ 2) hk2 hC.multigraph hst_deg
   -- Step 5: `basePost` on every supported output of `m_c`
   have hpost : ∀ z ∈ m_c.support, ∃ y : Data 24,
       ExecWithin w basePost z.1 y 6 ∧
@@ -1364,7 +1378,7 @@ theorem baseCaseAndPop_spec {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n 
       y.regs spReg = b ∧
       y.regs retVal = z.1.mem (wb + 1) := by
     intro z hz
-    rcases hsup_c z hz with ⟨_, hmod_c, hhi_c, _, _, _, hst_c⟩
+    rcases hsup_c z hz with ⟨⟨hmod_c, hhi_c, _, _, hst_c⟩, _⟩
     have hz_wb : z.1.regs wBase = wb := hst_c.regs_wBase
     have hz_fp : z.1.regs fpReg = fp := (hhi_c fpReg (by decide)).trans hfp_deg
     have hz_sp : z.1.regs spReg = b + 1 := (hhi_c spReg (by decide)).trans hsp_deg
@@ -1437,11 +1451,9 @@ theorem baseCaseAndPop_spec {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n 
     exact hq_c
   · intro z hz
     obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    rcases hsup_c z₀ hz₀ with ⟨ht_c, hmod_c, _, W', part', hC', hst_c⟩
+    rcases hsup_c z₀ hz₀ with ⟨⟨hmod_c, _, W', hW', hst_c⟩, ht_c⟩
     rcases hg z₀ hz₀ with ⟨ht_post, _, hmem_post, hz0, hzfp, hzsp, hzret⟩
-    refine ⟨?_, ?_, hz0, hzfp, hzsp, ?_⟩
-    · have hk2_le : k ^ 2 ≤ 36 := by simpa [sq] using hkk_le
-      omega
+    refine ⟨⟨?_, hz0, hzfp, hzsp⟩, ?_⟩
     · rw [hmem_post]
       have hsub1 : Finset.Ico wb (wb + k * k) ⊆ Finset.Ico (fp + 2 + k * k) (fp + frameSize k) := by
         intro a ha; rw [Finset.mem_Ico] at ha ⊢; rw [hfs_eq]; dsimp only [wb, db] at ha ⊢; omega
@@ -1452,24 +1464,56 @@ theorem baseCaseAndPop_spec {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n 
         Finset.union_subset hsub1 hsub2
       exact modifies_trans_subset
         (modifies_trans_subset hmod_cp hmod_deg hsub1 hsub2) hmod_c Finset.Subset.rfl hsub3
-    · rcases two_vertex_contraction_output hC' with ⟨hnt_out, hcw_out, _⟩
-      refine ⟨pullbackCut part' ({0} : Finset (Fin 2)), hnt_out, ?_⟩
-      have hcell : z₀.1.mem (wb + 1) = W' 0 1 := by simpa using hst_c.workspace.1 0 1
-      rw [hzret, hcell, hcw_out]
-  · intro B hmin_pos hB_nt hB_min
-    have hprob := hsurv_c B hmin_pos hB_nt hB_min
-    have h2_eq : (((2 * (2 - 1) : ℕ) : ℝ≥0∞) / ((k * (k - 1) : ℕ) : ℝ≥0∞)) =
-        (2 : ℝ≥0∞) / ((k * (k - 1) : ℕ) : ℝ≥0∞) := by norm_num
-    rw [h2_eq] at hprob
-    have hbase := base_survival_ge hk2 hk6
-    have hC_nt : IsNonTrivialCut (pullbackCut part B) :=
-      isNonTrivialCut_pullbackCut hC.surj hB_nt
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    refine (hbase.trans hprob).trans (toOuterMeasure_mono_support m_c fun z₀ hsup hz₀ => ?_)
-    rcases hg z₀ hsup with ⟨_, _, _, _, _, _, hzret⟩
-    change (g z₀.1).1.regs retVal = minCut W₀
-    rw [hzret]
-    exact survivalPost_two_mem_eq hC_nt hB_min hz₀
+    · have hk2_le : k ^ 2 ≤ 36 := by simpa [sq] using hkk_le
+      omega
+  · rw [Lean.Karger.answerLaw_eq, ← hlaw_c]
+    simp only [m_out, Functor.map_map, ProbComp.eval_map, PMF.map_comp]
+    refine Probability.PMF.map_congr_on_support _ _ _ fun z hz => ?_
+    rw [ProbComp.support_eval] at hz
+    rcases hsup_c z hz with ⟨⟨_, _, W', hW', hst_c⟩, _⟩
+    rw [(hg z hz).2.2.2.2.2.2]
+    exact hst_c.mem_add_one hW'
+
+theorem baseCaseAndPop_spec {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
+    {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
+    (hk2 : 2 ≤ k) (hk6 : k ≤ 6)
+    (hk_reg : x.regs activeK = k) (hrem_reg : x.regs rem = k * k)
+    (ha1_reg : x.regs addr1 = fp + 2) (ha2_reg : x.regs addr2 = fp + 2 + k * k)
+    (hfp : x.regs fpReg = fp) (hsp : x.regs spReg = b + 1)
+    (hmem_p : x.mem fp = parentFp) (hmat : HoldsMatrix x.mem (fp + 2) k W_k)
+    (hC : IsContractionOf W₀ part W_k)
+    (hfit : Fits w (fp + frameSize k)) (hsp_fit : Fits w b)
+    (htot : Fits w (totalDoubledWeight W₀)) :
+    ∃ m : ProbComp (Data 24 × ℕ),
+      ExecRand w baseCaseAndPop x m ∧
+      m.IsQueryBounded (k - 2) ∧
+      (∀ z ∈ m.support,
+        z.2 ≤ 2000 ∧
+        Modifies (Finset.Ico (fp + 2 + k * k) (fp + frameSize k)) x.mem z.1.mem ∧
+        z.1.regs zero = 0 ∧
+        z.1.regs fpReg = parentFp ∧
+        z.1.regs spReg = b ∧
+        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs retVal = cutWeight W₀ C) ∧
+      (∀ B : Finset (Fin k),
+        0 < minCut W₀ → IsNonTrivialCut B →
+        cutWeight W₀ (pullbackCut part B) = minCut W₀ →
+        (2 : ℝ≥0∞) / (30 : ℝ≥0∞) ≤
+          m.eval.toOuterMeasure {z | z.1.regs retVal = minCut W₀}) := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := baseCaseAndPop_law hk2 hk6 hk_reg hrem_reg ha1_reg ha2_reg
+    hfp hsp hmem_p hmat hC hfit hsp_fit htot
+  refine ⟨m, hm, hq, ?_, ?_⟩
+  · intro z hz
+    rcases hsup z hz with ⟨⟨hmod, hz0, hzfp, hzsp⟩, ht⟩
+    have hv : z.1.regs retVal ∈ (Lean.Karger.answerLaw ⟨k, W_k⟩).support := by
+      rw [← hlaw, ProbComp.eval_map, PMF.mem_support_map_iff]
+      exact ⟨z, (ProbComp.support_eval m) ▸ hz, rfl⟩
+    have hcut := Lean.Karger.exists_cut_of_mem_support_fastCutLaw hk2 hC
+      (by rwa [Lean.Karger.fastCutLaw_leaf (by omega)])
+    exact ⟨ht, hmod, hz0, hzfp, hzsp, hcut⟩
+  · intro B hmin hB hBmin
+    have hprob := Lean.Karger.answerLaw_hit_prob_ge hk2 hmin hC hB hBmin
+    rw [← hlaw, ProbComp.eval_map, PMF.toOuterMeasure_map_apply] at hprob
+    exact (base_survival_ge hk2 hk6).trans hprob
 
 theorem frameSize_le_fastCutScratch (m : ℕ) :
     frameSize m ≤ fastCutScratch m := by
@@ -1708,7 +1752,8 @@ theorem branchTail_exec {w fp b k t : ℕ} {x : Data 24}
       Function.update_of_ne (by omega)]
     exact hmat_sub i j
 
-theorem branchContractAndPush_spec {n w fp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
+/-- Branch setup observes exactly one canonical contraction reply in the child frame. -/
+theorem branchContractAndPush_law {n w fp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
     {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
     (hk7 : 7 ≤ k)
     (hk_reg : x.regs activeK = k)
@@ -1721,26 +1766,15 @@ theorem branchContractAndPush_spec {n w fp b k : ℕ} {W₀ : Fin n → Fin n �
     (htot : Fits w (totalDoubledWeight W₀)) :
     let t := fastCutThreshold k
     let childFp := fp + frameSize k
-    ∃ m : ProbComp (Data 24 × ℕ),
-      ExecRand w branchContractAndPush x m ∧
-      m.IsQueryBounded (k - t) ∧
-      (∀ z ∈ m.support,
-        z.2 ≤ 80 * (k * k) ∧
-        Modifies (Finset.Ico (fp + 4 + k * k) (fp + fastCutScratch k)) x.mem z.1.mem ∧
-        z.1.regs zero = 0 ∧
-        z.1.regs fpReg = childFp ∧
-        z.1.regs spReg = b + 2 ∧
-        z.1.mem childFp = fp ∧
-        z.1.mem (childFp + 1) = t ∧
-        z.1.mem (childFp + 2 + t * t) = 0 ∧
+    ExecRandLaw w branchContractAndPush x
+      (fun y => Modifies (Finset.Ico (fp + 4 + k * k) (fp + fastCutScratch k)) x.mem y.mem ∧
+        y.regs zero = 0 ∧ y.regs fpReg = childFp ∧ y.regs spReg = b + 2 ∧
+        y.mem childFp = fp ∧ y.mem (childFp + 1) = t ∧
+        y.mem (childFp + 2 + t * t) = 0 ∧
         ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
-          IsContractionOf W₀ part' W' ∧
-          HoldsMatrix z.1.mem (childFp + 2) t W') ∧
-      (∀ B : Finset (Fin k),
-        0 < minCut W₀ → IsNonTrivialCut B →
-        cutWeight W₀ (pullbackCut part B) = minCut W₀ →
-        (1 : ℝ≥0∞) / 2 ≤
-          m.eval.toOuterMeasure {z | ChildMinCutSurvives W₀ childFp t z.1}) := by
+          IsContractionOf W₀ part' W' ∧ HoldsMatrix y.mem (childFp + 2) t W')
+      (80 * (k * k)) (k - t) (frameGraph childFp t)
+      (Lean.Karger.contractLaw (⟨k, W_k⟩, t)) := by
   intro t childFp
   let wb := fp + 4 + k * k
   let db := fp + 4 + 2 * (k * k)
@@ -1876,8 +1910,28 @@ theorem branchContractAndPush_spec {n w fp b k : ℕ} {W₀ : Fin n → Fin n �
     workspace := hws_deg
   }
   -- Step 5: `contractDownToAt hr24`
-  obtain ⟨m_c, hm_c, hq_c, hsup_c, hsurv_c⟩ :=
-    contractDownToAt_spec hr24 (by omega : 2 ≤ t) htk.le hC hst_deg
+  obtain ⟨m_c, hm_c, hq_c, hsup_raw, hlaw_c⟩ :=
+    contractDownToAt_law hr24 (by omega : 2 ≤ t) htk.le hC.multigraph hst_deg
+  have hsup_c : ∀ z ∈ m_c.support,
+      z.2 ≤ 36 * (k ^ 2 - t ^ 2) + 4 ∧
+      Modifies (workspaceFootprint wb db k k) x_deg.mem z.1.mem ∧
+      (∀ j : Fin 24, 16 ≤ j.val → z.1.regs j = x_deg.regs j) ∧
+      ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
+        IsContractionOf W₀ part' W' ∧
+        ContractState w wb db k t t W' (z.1.comap (Fin.castLE hr24)) := by
+    intro z hz
+    rcases hsup_raw z hz with ⟨⟨hmod, hhi, W', hW', hst⟩, ht⟩
+    have hobs : heldGraph wb k (z.1.comap (Fin.castLE hr24)) ∈
+        (Lean.Karger.contractLaw (⟨k, W_k⟩, t)).support := by
+      change _ ∈ ((Lean.Karger.spec.toRandomized.withCoins.run
+        (Lean.Karger.contractTimes (k - t)) ⟨k, W_k⟩).map Prod.snd).support
+      rw [← hlaw_c, ProbComp.eval_map, PMF.mem_support_map_iff]
+      exact ⟨z, (ProbComp.support_eval m_c) ▸ hz, rfl⟩
+    obtain ⟨W₁, part₁, hgraph, hC₁⟩ := Lean.Karger.isContractionOf_of_mem_support_contractLaw
+      (by omega) htk.le hC hobs
+    have heq := hst.heldGraph_eq.symm.trans hgraph
+    simp only [Lean.Karger.Graph.mk.injEq, heq_eq_eq, true_and] at heq
+    exact ⟨ht, hmod, hhi, W', part₁, heq ▸ hC₁, hst⟩
   -- Step 6: `branchTail` on every supported output of `m_c`
   have htail : ∀ z ∈ m_c.support, ∃ y : Data 24,
       ExecWithin w branchTail z.1 y (7 * t ^ 2 + 8 * t + 21) ∧
@@ -1909,10 +1963,15 @@ theorem branchContractAndPush_spec {n w fp b k : ℕ} {W₀ : Fin n → Fin n �
     unfold branchContractAndPush
     convert hfull_raw using 1
     simp only [m_out, Functor.map_map]
-  refine ⟨m_out, hfull, ?_, ?_, ?_⟩
-  · simp only [m_out, OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_c
-  · intro z hz
+  have hsup_out : ∀ z ∈ m_out.support,
+      z.2 ≤ 80 * (k * k) ∧
+        (Modifies (Finset.Ico (fp + 4 + k * k) (fp + fastCutScratch k)) x.mem z.1.mem ∧
+        z.1.regs zero = 0 ∧ z.1.regs fpReg = childFp ∧ z.1.regs spReg = b + 2 ∧
+        z.1.mem childFp = fp ∧ z.1.mem (childFp + 1) = t ∧
+        z.1.mem (childFp + 2 + t * t) = 0 ∧
+        ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
+          IsContractionOf W₀ part' W' ∧ HoldsMatrix z.1.mem (childFp + 2) t W') := by
+    intro z hz
     obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
     rcases hsup_c z₀ hz₀ with ⟨ht_c, hmod_c, _, W', part', hC', hst_c⟩
     rcases hg z₀ hz₀ with
@@ -1946,163 +2005,40 @@ theorem branchContractAndPush_spec {n w fp b k : ℕ} {W₀ : Fin n → Fin n �
     · intro i j
       rw [hm_sub i j]
       exact hst_c.workspace.1 i j
-  · intro B hmin_pos hB_nt hB_min
-    have hprob := hsurv_c B hmin_pos hB_nt hB_min
-    have hhalf := half_le_threshold_survival hk7
-    have hC_nt : IsNonTrivialCut (pullbackCut part B) :=
-      isNonTrivialCut_pullbackCut hC.surj hB_nt
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    refine (hhalf.trans hprob).trans (toOuterMeasure_mono_support m_c fun z₀ hsup hz₀ => ?_)
-    rcases hg z₀ hsup with ⟨_, _, _, _, _, _, _, _, _, hm_sub⟩
-    rcases hz₀ with ⟨W₁, part₁, B₁, hC₁, hws₁, _, hpb₁⟩
-    refine ⟨W₁, part₁, B₁, hC₁, fun i j => (hm_sub i j).trans (hws₁.1 i j),
-      isNonTrivialCut_of_pullbackCut part₁ (hpb₁ ▸ hC_nt), hpb₁ ▸ hB_min⟩
+  refine ⟨m_out, hfull,
+    (OracleComp.isCostBounded_map_iff _ _ _).mpr hq_c,
+    fun z hz => ⟨(hsup_out z hz).2, (hsup_out z hz).1⟩, ?_⟩
+  change ((fun z => frameGraph childFp t z.1) <$> m_out).eval =
+    ((Lean.Karger.spec.toRandomized.withCoins.run (Lean.Karger.contractTimes (k - t))
+      ⟨k, W_k⟩).map Prod.snd)
+  rw [← hlaw_c]
+  simp only [m_out, Functor.map_map, ProbComp.eval_map]
+  refine Probability.PMF.map_congr_on_support _ _ _ fun z hz => ?_
+  rw [ProbComp.support_eval] at hz
+  rcases hsup_c z hz with ⟨_, _, _, W', part', hC', hst⟩
+  have hmat' : HoldsMatrix (g z.1).1.mem (childFp + 2) t W' := fun i j =>
+    ((hg z hz).2.2.2.2.2.2.2.2.2 i j).trans (hst.workspace.1 i j)
+  exact (frameGraph_eq_iff.mpr hmat').trans hst.heldGraph_eq.symm
 
-private theorem probComp_seq_hit_ge {r : ℕ} (m₁ : ProbComp (Data r × ℕ))
-    (m₂ : Data r → ProbComp (Data r × ℕ)) (pre : Data r → Prop) (post : Data r → Prop)
-    {s₁ s₂ : ℝ≥0∞}
-    (hp : s₁ ≤ m₁.eval.toOuterMeasure {z | pre z.1})
-    (hstep : ∀ z ∈ m₁.support, pre z.1 →
-      s₂ ≤ (m₂ z.1).eval.toOuterMeasure {z' | post z'.1}) :
-    s₁ * s₂ ≤ (do
-      let z₁ ← m₁
-      let z₂ ← m₂ z₁.1
-      pure (z₂.1, z₁.2 + z₂.2)).eval.toOuterMeasure {z | post z.1} := by
-  have heval : (do
-      let z₁ ← m₁
-      let z₂ ← m₂ z₁.1
-      pure (z₂.1, z₁.2 + z₂.2)).eval =
-      m₁.eval.bind (fun z₁ => (m₂ z₁.1).eval.map (fun z₂ => (z₂.1, z₁.2 + z₂.2))) := by
-    rw [ProbComp.eval_bind]
-    refine congrArg (m₁.eval.bind ·) (funext fun z₁ => ?_)
-    rw [bind_pure_comp, ProbComp.eval_map]
-  rw [heval]
-  refine toOuterMeasure_bind_ge_mul_ennreal _ _
-    {z : Data r × ℕ | pre z.1} {z : Data r × ℕ | post z.1} hp fun z₁ hz₁ hpre => ?_
-  rw [PMF.toOuterMeasure_map_apply]
-  exact hstep z₁ ((ProbComp.support_eval m₁) ▸ hz₁) hpre
-
-private theorem isQueryBounded_seq {r q₁ q₂ : ℕ} {m₁ : ProbComp (Data r × ℕ)}
-    {m₂ : Data r → ProbComp (Data r × ℕ)}
-    (hq₁ : m₁.IsQueryBounded q₁)
-    (hq₂ : ∀ z ∈ m₁.support, (m₂ z.1).IsQueryBounded q₂) :
-    (do
-      let z₁ ← m₁
-      let z₂ ← m₂ z₁.1
-      pure (z₂.1, z₁.2 + z₂.2)).IsQueryBounded (q₁ + q₂) := by
-  refine OracleComp.IsCostBounded.bind_on_support hq₁ fun z₁ hz₁ => ?_
-  simpa only [Nat.add_zero] using (hq₂ z₁ hz₁).bind fun _ => .pure _ 0
-
-theorem fastCutStep_base_seg {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
-    {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
-    (hk2 : 2 ≤ k) (hk6 : k ≤ 6)
-    (h0 : x.regs zero = 0) (hfp : x.regs fpReg = fp) (hsp : x.regs spReg = b + 1)
-    (hmem_p : x.mem fp = parentFp) (hmem_k : x.mem (fp + 1) = k)
-    (hmat : HoldsMatrix x.mem (fp + 2) k W_k) (hC : IsContractionOf W₀ part W_k)
-    (hfit : Fits w (fp + frameSize k)) (hsp_fit : Fits w b)
-    (htot : Fits w (totalDoubledWeight W₀)) :
-    ∃ m : ProbComp (Data 24 × ℕ),
-      LoopSegment w (Cond.lt zero spReg) fastCutStep x m ∧
-      m.IsQueryBounded (k - 2) ∧
-      (∀ z ∈ m.support,
-        z.2 ≤ 2400 ∧
-        Modifies (Finset.Ico (fp + 2 + k * k) (fp + frameSize k)) x.mem z.1.mem ∧
-        z.1.regs zero = 0 ∧
-        z.1.regs fpReg = parentFp ∧
-        z.1.regs spReg = b ∧
-        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs retVal = cutWeight W₀ C) ∧
-      (∀ B : Finset (Fin k),
-        0 < minCut W₀ → IsNonTrivialCut B →
-        cutWeight W₀ (pullbackCut part B) = minCut W₀ →
-        (2 : ℝ≥0∞) / (30 : ℝ≥0∞) ≤
-          m.eval.toOuterMeasure {z | z.1.regs retVal = minCut W₀}) := by
-  have hc_loop : (Cond.lt zero spReg).Holds x := by simp [Cond.holds_lt, h0, hsp]
-  obtain ⟨y_h, hex_hdr, hm_h, _, _, hk_h, hrem_h, ha1_h, ha2_h, _, hv1_h, hhi_h⟩ :=
-    stepHeader_exec hk2 hfp hmem_k rfl hfit
-  have hfp_h : y_h.regs fpReg = fp := (hhi_h fpReg (by decide)).trans hfp
-  have hsp_h : y_h.regs spReg = b + 1 := (hhi_h spReg (by decide)).trans hsp
-  have hc_lt : (Cond.lt activeK val1).Holds y_h := by
-    simp only [Cond.holds_lt, hk_h, hv1_h]
-    omega
-  obtain ⟨m_b, hm_b, hq_b, hsup_b, hsurv_b⟩ :=
-    baseCaseAndPop_spec hk2 hk6 hk_h hrem_h ha1_h ha2_h hfp_h hsp_h
-      (hm_h ▸ hmem_p) (hm_h ▸ hmat) hC hfit hsp_fit htot
-  have hstep : ExecRand w fastCutStep x
-      ((fun z => (z.1, 9 + (z.2 + 1))) <$> m_b) := by
-    unfold fastCutStep
-    convert hex_hdr.seqRand (ExecRand.branch_pos hc_lt hm_b) using 1
-    simp only [Functor.map_map]
-  have hseg_raw := LoopSegment.single hc_loop hstep
-  let m_out : ProbComp (Data 24 × ℕ) := (fun z => (z.1, 9 + (z.2 + 1) + 2)) <$> m_b
-  have hseg : LoopSegment w (Cond.lt zero spReg) fastCutStep x m_out := by
-    convert hseg_raw using 1
-    simp only [m_out, Functor.map_map]
-  refine ⟨m_out, hseg, ?_, ?_, ?_⟩
-  · simp only [m_out, OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_b
-  · intro z hz
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    rcases hsup_b z₀ hz₀ with ⟨ht₀, hmod₀, hz0, hzfp, hzsp, hcut⟩
-    exact ⟨by omega, hm_h ▸ hmod₀, hz0, hzfp, hzsp, hcut⟩
-  · intro B hmin_pos hB_nt hB_min
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    exact hsurv_b B hmin_pos hB_nt hB_min
-
-theorem fastCutNode_base {n w d fp parentFp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
-    {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
-    (hk2 : 2 ≤ k) (hk6 : k ≤ 6)
-    (h0 : x.regs zero = 0) (hfp : x.regs fpReg = fp) (hsp : x.regs spReg = b + 1)
-    (hmem_p : x.mem fp = parentFp) (hmem_k : x.mem (fp + 1) = k)
-    (hmat : HoldsMatrix x.mem (fp + 2) k W_k) (hC : IsContractionOf W₀ part W_k)
-    (hfit : Fits w (fp + fastCutScratch k)) (hsp_fit : Fits w (b + 1 + d))
-    (htot : Fits w (totalDoubledWeight W₀)) :
-    ∃ m : ProbComp (Data 24 × ℕ),
-      LoopSegment w (Cond.lt zero spReg) fastCutStep x m ∧
-      m.IsQueryBounded (fastCutNodeQueries k) ∧
-      (∀ z ∈ m.support,
-        z.2 ≤ fastCutNodeTime k ∧
-        Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) x.mem z.1.mem ∧
-        z.1.regs zero = 0 ∧
-        z.1.regs fpReg = parentFp ∧
-        z.1.regs spReg = b ∧
-        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs retVal = cutWeight W₀ C) ∧
-      (∀ B : Finset (Fin k),
-        0 < minCut W₀ → IsNonTrivialCut B →
-        cutWeight W₀ (pullbackCut part B) = minCut W₀ →
-        (2 : ℝ≥0∞) / ((d + 30 : ℕ) : ℝ≥0∞) ≤
-          m.eval.toOuterMeasure {z | z.1.regs retVal = minCut W₀}) := by
-  have hlt7 : k < 7 := by omega
-  have hscr : fastCutScratch k = frameSize k := fastCutScratch_of_lt_seven hlt7
-  have hq_eq : fastCutNodeQueries k = k - 2 := fastCutNodeQueries_of_lt_seven hlt7
-  have ht_eq : fastCutNodeTime k = 2400 := fastCutNodeTime_of_lt_seven hlt7
-  obtain ⟨m, hm, hq, hsup, hsurv⟩ :=
-    fastCutStep_base_seg hk2 hk6 h0 hfp hsp hmem_p hmem_k hmat hC
-      (hscr ▸ hfit) (hsp_fit.of_le (by omega)) htot
-  refine ⟨m, hm, hq_eq ▸ hq, ?_, ?_⟩
-  · intro z hz
-    rcases hsup z hz with ⟨ht, hmod, rest⟩
-    exact ⟨ht_eq ▸ ht, hscr.symm ▸ hmod, rest⟩
-  · intro B hmin_pos hB_nt hB_min
-    refine (ENNReal.div_le_div_left ?_ (2 : ℝ≥0∞)).trans (hsurv B hmin_pos hB_nt hB_min)
-    exact_mod_cast (by omega : 30 ≤ d + 30)
-
-theorem fastCutStep_stage0_seg {n w fp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
+theorem branchContractAndPush_spec {n w fp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
     {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
     (hk7 : 7 ≤ k)
-    (h0 : x.regs zero = 0) (hfp : x.regs fpReg = fp) (hsp : x.regs spReg = b + 1)
-    (hmem_k : x.mem (fp + 1) = k) (hmem_stg : x.mem (fp + 2 + k * k) = 0)
-    (hmat : HoldsMatrix x.mem (fp + 2) k W_k) (hC : IsContractionOf W₀ part W_k)
-    (hfit : Fits w (fp + fastCutScratch k)) (hsp_fit : Fits w (b + 2))
+    (hk_reg : x.regs activeK = k)
+    (hfp : x.regs fpReg = fp)
+    (hsp : x.regs spReg = b + 1)
+    (hmat : HoldsMatrix x.mem (fp + 2) k W_k)
+    (hC : IsContractionOf W₀ part W_k)
+    (hfit : Fits w (fp + fastCutScratch k))
+    (hsp_fit : Fits w (b + 2))
     (htot : Fits w (totalDoubledWeight W₀)) :
     let t := fastCutThreshold k
     let childFp := fp + frameSize k
     ∃ m : ProbComp (Data 24 × ℕ),
-      LoopSegment w (Cond.lt zero spReg) fastCutStep x m ∧
+      ExecRand w branchContractAndPush x m ∧
       m.IsQueryBounded (k - t) ∧
       (∀ z ∈ m.support,
-        z.2 ≤ 80 * (k * k) + 15 ∧
-        Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) x.mem z.1.mem ∧
-        z.1.mem (fp + 2 + k * k) = 1 ∧
+        z.2 ≤ 80 * (k * k) ∧
+        Modifies (Finset.Ico (fp + 4 + k * k) (fp + fastCutScratch k)) x.mem z.1.mem ∧
         z.1.regs zero = 0 ∧
         z.1.regs fpReg = childFp ∧
         z.1.regs spReg = b + 2 ∧
@@ -2117,6 +2053,46 @@ theorem fastCutStep_stage0_seg {n w fp b k : ℕ} {W₀ : Fin n → Fin n → �
         cutWeight W₀ (pullbackCut part B) = minCut W₀ →
         (1 : ℝ≥0∞) / 2 ≤
           m.eval.toOuterMeasure {z | ChildMinCutSurvives W₀ childFp t z.1}) := by
+  intro t childFp
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := branchContractAndPush_law hk7 hk_reg hfp hsp hmat hC
+    hfit hsp_fit htot
+  refine ⟨m, hm, hq, fun z hz => ⟨(hsup z hz).2, (hsup z hz).1⟩, ?_⟩
+  intro B hmin hB hBmin
+  have hprob := (half_le_threshold_survival hk7).trans
+    (Lean.Karger.survives_contractLaw (fastCutThreshold_ge_two (by omega))
+      (Nat.le_of_lt (fastCutThreshold_lt (by omega))) hmin hC hB hBmin)
+  rw [← hlaw, ProbComp.eval_map, PMF.toOuterMeasure_map_apply] at hprob
+  refine hprob.trans (toOuterMeasure_mono_support m fun z _ hz => ?_)
+  obtain ⟨W', part', B', hgraph, hC', hpb⟩ := hz
+  exact ⟨W', part', B', hC', frameGraph_eq_iff.mp hgraph,
+    isNonTrivialCut_of_pullbackCut part' (hpb ▸ isNonTrivialCut_pullbackCut hC.surj hB),
+    hpb ▸ hBmin⟩
+
+/-- Stage 0 observes one canonical contraction reply in the child frame. -/
+theorem fastCutStep_stage0_law {n w fp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
+    {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
+    (hk7 : 7 ≤ k)
+    (h0 : x.regs zero = 0) (hfp : x.regs fpReg = fp) (hsp : x.regs spReg = b + 1)
+    (hmem_k : x.mem (fp + 1) = k) (hmem_stg : x.mem (fp + 2 + k * k) = 0)
+    (hmat : HoldsMatrix x.mem (fp + 2) k W_k) (hC : IsContractionOf W₀ part W_k)
+    (hfit : Fits w (fp + fastCutScratch k)) (hsp_fit : Fits w (b + 2))
+    (htot : Fits w (totalDoubledWeight W₀)) :
+    let t := fastCutThreshold k
+    let childFp := fp + frameSize k
+    LoopSegmentLaw w (Cond.lt zero spReg) fastCutStep x
+      (fun y => Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) x.mem y.mem ∧
+        y.mem (fp + 2 + k * k) = 1 ∧
+        y.regs zero = 0 ∧
+        y.regs fpReg = childFp ∧
+        y.regs spReg = b + 2 ∧
+        y.mem childFp = fp ∧
+        y.mem (childFp + 1) = t ∧
+        y.mem (childFp + 2 + t * t) = 0 ∧
+        ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
+          IsContractionOf W₀ part' W' ∧
+          HoldsMatrix y.mem (childFp + 2) t W')
+      (80 * (k * k) + 15) (k - t) (frameGraph childFp t)
+      (Lean.Karger.contractLaw (⟨k, W_k⟩, t)) := by
   intro t childFp
   have hc_loop : (Cond.lt zero spReg).Holds x := by simp [Cond.holds_lt, h0, hsp]
   have hfs_le : frameSize k ≤ fastCutScratch k := frameSize_le_fastCutScratch k
@@ -2140,8 +2116,9 @@ theorem fastCutStep_stage0_seg {n w fp b k : ℕ} {W₀ : Fin n → Fin n → �
     change Function.update y_h.mem (fp + 2 + k * k) 1 (fp + 2 + i.val * k + j.val) = W_k i j
     rw [Function.update_of_ne (by omega), hm_h]
     exact hmat i j
-  obtain ⟨m_c, hm_c, hq_c, hsup_c, hsurv_c⟩ :=
-    branchContractAndPush_spec (x := y_s) hk7 hk_h hfp_h hsp_h hmat_s hC hfit hsp_fit htot
+  obtain ⟨m_c, hm_c, hq_c, hsup_raw, hlaw_c⟩ :=
+    branchContractAndPush_law (x := y_s) hk7 hk_h hfp_h hsp_h hmat_s hC hfit hsp_fit htot
+  have hsup_c := fun z hz => (hsup_raw z hz).symm
   have hbr0 : ExecRand w
       ram[if val2 = zero then [ ⟪stageZeroSet⟫; ⟪branchContractAndPush⟫ ] else [
         if val2 = one then [ ⟪stageOneSaveAndSet⟫; ⟪branchContractAndPush⟫ ] else [
@@ -2160,10 +2137,20 @@ theorem fastCutStep_stage0_seg {n w fp b k : ℕ} {W₀ : Fin n → Fin n → �
   have hseg : LoopSegment w (Cond.lt zero spReg) fastCutStep x m_out := by
     convert hseg_raw using 1
     simp only [m_out, Functor.map_map]
-  refine ⟨m_out, hseg, ?_, ?_, ?_⟩
-  · simp only [m_out, OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_c
-  · intro z hz
+  have hsup_out : ∀ z ∈ m_out.support, z.2 ≤ 80 * (k * k) + 15 ∧
+      (Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k))
+        x.mem z.1.mem ∧
+        z.1.mem (fp + 2 + k * k) = 1 ∧
+        z.1.regs zero = 0 ∧
+        z.1.regs fpReg = childFp ∧
+        z.1.regs spReg = b + 2 ∧
+        z.1.mem childFp = fp ∧
+        z.1.mem (childFp + 1) = t ∧
+        z.1.mem (childFp + 2 + t * t) = 0 ∧
+        ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
+          IsContractionOf W₀ part' W' ∧
+          HoldsMatrix z.1.mem (childFp + 2) t W') := by
+    intro z hz
     obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
     rcases hsup_c z₀ hz₀ with ⟨ht₀, hmod₀, rest⟩
     have hstg_in : fp + 2 + k * k ∈ Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k) := by
@@ -2182,11 +2169,13 @@ theorem fastCutStep_stage0_seg {n w fp b k : ℕ} {W₀ : Fin n → Fin n → �
       rw [hmod₀ _ (by rw [Finset.mem_Ico]; omega)]
       exact Function.update_self _ _ _
     exact ⟨by omega, modifies_trans_subset hmod_s hmod₀ Finset.Subset.rfl hsub, hstg_val, rest⟩
-  · intro B hmin_pos hB_nt hB_min
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    exact hsurv_c B hmin_pos hB_nt hB_min
+  refine ⟨m_out, hseg,
+    (OracleComp.isCostBounded_map_iff _ _ _).mpr hq_c,
+    fun z hz => ⟨(hsup_out z hz).2, (hsup_out z hz).1⟩, ?_⟩
+  simpa only [m_out, Functor.map_map] using hlaw_c
 
-theorem fastCutStep_stage1_seg {n w fp b k v1 : ℕ} {W₀ : Fin n → Fin n → ℕ}
+/-- Stage 1 observes one canonical contraction reply in the child frame. -/
+theorem fastCutStep_stage1_law {n w fp b k v1 : ℕ} {W₀ : Fin n → Fin n → ℕ}
     {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
     (hk7 : 7 ≤ k)
     (h0 : x.regs zero = 0) (hfp : x.regs fpReg = fp) (hsp : x.regs spReg = b + 1)
@@ -2197,28 +2186,21 @@ theorem fastCutStep_stage1_seg {n w fp b k v1 : ℕ} {W₀ : Fin n → Fin n →
     (htot : Fits w (totalDoubledWeight W₀)) :
     let t := fastCutThreshold k
     let childFp := fp + frameSize k
-    ∃ m : ProbComp (Data 24 × ℕ),
-      LoopSegment w (Cond.lt zero spReg) fastCutStep x m ∧
-      m.IsQueryBounded (k - t) ∧
-      (∀ z ∈ m.support,
-        z.2 ≤ 80 * (k * k) + 20 ∧
-        Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) x.mem z.1.mem ∧
-        z.1.mem (fp + 2 + k * k) = 2 ∧
-        z.1.mem (fp + 3 + k * k) = v1 ∧
-        z.1.regs zero = 0 ∧
-        z.1.regs fpReg = childFp ∧
-        z.1.regs spReg = b + 2 ∧
-        z.1.mem childFp = fp ∧
-        z.1.mem (childFp + 1) = t ∧
-        z.1.mem (childFp + 2 + t * t) = 0 ∧
+    LoopSegmentLaw w (Cond.lt zero spReg) fastCutStep x
+      (fun y => Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) x.mem y.mem ∧
+        y.mem (fp + 2 + k * k) = 2 ∧
+        y.mem (fp + 3 + k * k) = v1 ∧
+        y.regs zero = 0 ∧
+        y.regs fpReg = childFp ∧
+        y.regs spReg = b + 2 ∧
+        y.mem childFp = fp ∧
+        y.mem (childFp + 1) = t ∧
+        y.mem (childFp + 2 + t * t) = 0 ∧
         ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
           IsContractionOf W₀ part' W' ∧
-          HoldsMatrix z.1.mem (childFp + 2) t W') ∧
-      (∀ B : Finset (Fin k),
-        0 < minCut W₀ → IsNonTrivialCut B →
-        cutWeight W₀ (pullbackCut part B) = minCut W₀ →
-        (1 : ℝ≥0∞) / 2 ≤
-          m.eval.toOuterMeasure {z | ChildMinCutSurvives W₀ childFp t z.1}) := by
+          HoldsMatrix y.mem (childFp + 2) t W')
+      (80 * (k * k) + 20) (k - t) (frameGraph childFp t)
+      (Lean.Karger.contractLaw (⟨k, W_k⟩, t)) := by
   intro t childFp
   have hc_loop : (Cond.lt zero spReg).Holds x := by simp [Cond.holds_lt, h0, hsp]
   have hfs_le : frameSize k ≤ fastCutScratch k := frameSize_le_fastCutScratch k
@@ -2280,8 +2262,9 @@ theorem fastCutStep_stage1_seg {n w fp b k v1 : ℕ} {W₀ : Fin n → Fin n →
     simpa +decide [y_s, q₃, q₂, q₁, Function.update_apply] using hfp_h
   have hsp_s : y_s.regs spReg = b + 1 := by
     simpa +decide [y_s, q₃, q₂, q₁, Function.update_apply] using hsp_h
-  obtain ⟨m_c, hm_c, hq_c, hsup_c, hsurv_c⟩ :=
-    branchContractAndPush_spec (x := y_s) hk7 hk_s hfp_s hsp_s hmat_s hC hfit hsp_fit htot
+  obtain ⟨m_c, hm_c, hq_c, hsup_raw, hlaw_c⟩ :=
+    branchContractAndPush_law (x := y_s) hk7 hk_s hfp_s hsp_s hmat_s hC hfit hsp_fit htot
+  have hsup_c := fun z hz => (hsup_raw z hz).symm
   have hbr1 : ExecRand w
       ram[if val2 = one then [ ⟪stageOneSaveAndSet⟫; ⟪branchContractAndPush⟫ ] else [
         ⟪combineAndPop⟫ ]]
@@ -2306,10 +2289,21 @@ theorem fastCutStep_stage1_seg {n w fp b k v1 : ℕ} {W₀ : Fin n → Fin n →
   have hseg : LoopSegment w (Cond.lt zero spReg) fastCutStep x m_out := by
     convert hseg_raw using 1
     simp only [m_out, Functor.map_map]
-  refine ⟨m_out, hseg, ?_, ?_, ?_⟩
-  · simp only [m_out, OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_c
-  · intro z hz
+  have hsup_out : ∀ z ∈ m_out.support, z.2 ≤ 80 * (k * k) + 20 ∧
+      (Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k))
+        x.mem z.1.mem ∧
+        z.1.mem (fp + 2 + k * k) = 2 ∧
+        z.1.mem (fp + 3 + k * k) = v1 ∧
+        z.1.regs zero = 0 ∧
+        z.1.regs fpReg = childFp ∧
+        z.1.regs spReg = b + 2 ∧
+        z.1.mem childFp = fp ∧
+        z.1.mem (childFp + 1) = t ∧
+        z.1.mem (childFp + 2 + t * t) = 0 ∧
+        ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
+          IsContractionOf W₀ part' W' ∧
+          HoldsMatrix z.1.mem (childFp + 2) t W') := by
+    intro z hz
     obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
     rcases hsup_c z₀ hz₀ with ⟨ht₀, hmod₀, rest⟩
     have hstg_in : fp + 2 + k * k ∈ Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k) := by
@@ -2333,9 +2327,10 @@ theorem fastCutStep_stage1_seg {n w fp b k v1 : ℕ} {W₀ : Fin n → Fin n →
       rw [hmod₀ _ (by rw [Finset.mem_Ico]; omega), hys_mem, Function.update_self]
     exact ⟨by omega, modifies_trans_subset hmod_s hmod₀ Finset.Subset.rfl hsub,
       hstg_val, hv1_val, rest⟩
-  · intro B hmin_pos hB_nt hB_min
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    exact hsurv_c B hmin_pos hB_nt hB_min
+  refine ⟨m_out, hseg,
+    (OracleComp.isCostBounded_map_iff _ _ _).mpr hq_c,
+    fun z hz => ⟨(hsup_out z hz).2, (hsup_out z hz).1⟩, ?_⟩
+  simpa only [m_out, Functor.map_map] using hlaw_c
 
 theorem fastCutStep_stage2_seg {w fp parentFp b k v1 r2 : ℕ} {x : Data 24}
     (hk7 : 7 ≤ k)
@@ -2373,34 +2368,76 @@ theorem fastCutStep_stage2_seg {w fp parentFp b k v1 r2 : ℕ} {x : Data 24}
   exact ⟨y_f, 9 + (((n_c + 2) + 2) + 2) + 2, by omega,
     LoopSegment.detSingle hc_loop hstep, hm_f.trans hm_h, h0_f, hfp_f, hsp_f, hret_f⟩
 
-private theorem composeBranchWithChild {n w d' fp b k T_s : ℕ} {W₀ : Fin n → Fin n → ℕ}
-    {part : Fin n → Fin k} {P_frame : (ℕ → ℕ) → Prop} {d₀ : Data 24}
-    {m_s : ProbComp (Data 24 × ℕ)}
+/-- A leaf loop segment has the exact recursive answer law and its original pathwise budgets. -/
+theorem fastCutStep_base_law {n w fp parentFp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
+    {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
+    (hk2 : 2 ≤ k) (hk6 : k ≤ 6)
+    (h0 : x.regs zero = 0) (hfp : x.regs fpReg = fp) (hsp : x.regs spReg = b + 1)
+    (hmem_p : x.mem fp = parentFp) (hmem_k : x.mem (fp + 1) = k)
+    (hmat : HoldsMatrix x.mem (fp + 2) k W_k) (hC : IsContractionOf W₀ part W_k)
+    (hfit : Fits w (fp + frameSize k)) (hsp_fit : Fits w b)
+    (htot : Fits w (totalDoubledWeight W₀)) :
+    LoopSegmentLaw w (Cond.lt zero spReg) fastCutStep x
+      (fun y => Modifies (Finset.Ico (fp + 2 + k * k) (fp + frameSize k)) x.mem y.mem ∧
+        y.regs zero = 0 ∧ y.regs fpReg = parentFp ∧ y.regs spReg = b)
+      2400 (k - 2) (fun y => y.regs retVal) (Lean.Karger.fastCutLaw k ⟨k, W_k⟩) := by
+  have hc_loop : (Cond.lt zero spReg).Holds x := by simp [Cond.holds_lt, h0, hsp]
+  obtain ⟨y_h, hex_hdr, hm_h, _, _, hk_h, hrem_h, ha1_h, ha2_h, _, hv1_h, hhi_h⟩ :=
+    stepHeader_exec hk2 hfp hmem_k rfl hfit
+  have hfp_h : y_h.regs fpReg = fp := (hhi_h fpReg (by decide)).trans hfp
+  have hsp_h : y_h.regs spReg = b + 1 := (hhi_h spReg (by decide)).trans hsp
+  have hc_lt : (Cond.lt activeK val1).Holds y_h := by
+    simp only [Cond.holds_lt, hk_h, hv1_h]
+    omega
+  have hbase := baseCaseAndPop_law hk2 hk6 hk_h hrem_h ha1_h ha2_h hfp_h hsp_h
+    (hm_h ▸ hmem_p) (hm_h ▸ hmat) hC hfit hsp_fit htot
+  have hstep : ExecRandLaw w fastCutStep x
+      (fun y => Modifies (Finset.Ico (fp + 2 + k * k) (fp + frameSize k)) x.mem y.mem ∧
+        y.regs zero = 0 ∧ y.regs fpReg = parentFp ∧ y.regs spReg = b)
+      2010 (k - 2) (fun y => y.regs retVal) (Lean.Karger.answerLaw ⟨k, W_k⟩) := by
+    unfold fastCutStep
+    exact (ExecRandLaw.seq_det hex_hdr.within (ExecRandLaw.branch_pos hc_lt hbase)).mono
+      (fun y ⟨hmod, hz0, hzfp, hzsp⟩ => ⟨hm_h ▸ hmod, hz0, hzfp, hzsp⟩) (by omega) le_rfl
+  exact ((LoopSegmentLaw.single hc_loop hstep).congr_law
+    (Lean.Karger.fastCutLaw_leaf (by omega) _).symm).mono (fun _ h => h) (by omega) le_rfl
+
+/-- A nonrecursive node uses the same law, instruction bound and random-call bound as its leaf. -/
+theorem fastCutNode_base_law {n w d fp parentFp b k : ℕ} {W₀ : Fin n → Fin n → ℕ}
+    {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 24}
+    (hk2 : 2 ≤ k) (hk6 : k ≤ 6)
+    (h0 : x.regs zero = 0) (hfp : x.regs fpReg = fp) (hsp : x.regs spReg = b + 1)
+    (hmem_p : x.mem fp = parentFp) (hmem_k : x.mem (fp + 1) = k)
+    (hmat : HoldsMatrix x.mem (fp + 2) k W_k) (hC : IsContractionOf W₀ part W_k)
+    (hfit : Fits w (fp + fastCutScratch k)) (hsp_fit : Fits w (b + 1 + d))
+    (htot : Fits w (totalDoubledWeight W₀)) :
+    LoopSegmentLaw w (Cond.lt zero spReg) fastCutStep x
+      (fun y => Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) x.mem y.mem ∧
+        y.regs zero = 0 ∧ y.regs fpReg = parentFp ∧ y.regs spReg = b)
+      (fastCutNodeTime k) (fastCutNodeQueries k) (fun y => y.regs retVal)
+      (Lean.Karger.fastCutLaw k ⟨k, W_k⟩) := by
+  have hk7 : k < 7 := by omega
+  have hscr := fastCutScratch_of_lt_seven hk7
+  rw [fastCutNodeTime_of_lt_seven hk7, fastCutNodeQueries_of_lt_seven hk7, hscr]
+  exact fastCutStep_base_law hk2 hk6 h0 hfp hsp hmem_p hmem_k hmat hC (hscr ▸ hfit)
+    (hsp_fit.of_le (by omega)) htot
+
+private theorem composeBranchWithChild_law {n w d' fp b k T_s : ℕ}
+    {W₀ : Fin n → Fin n → ℕ} {W_k : Fin k → Fin k → ℕ}
+    {P_frame : (ℕ → ℕ) → Prop} {d₀ : Data 24}
     (hk7 : 7 ≤ k) (hd' : fastCutDepth (fastCutThreshold k) ≤ d')
     (hfit : Fits w (fp + fastCutScratch k)) (hsp_fit : Fits w (b + 1 + (d' + 1)))
-    (hm_s : LoopSegment w (Cond.lt zero spReg) fastCutStep d₀ m_s)
-    (hq_s : m_s.IsQueryBounded (k - fastCutThreshold k))
-    (hsup_s : ∀ z ∈ m_s.support,
-      let t := fastCutThreshold k
-      let childFp := fp + frameSize k
-      z.2 ≤ T_s ∧
-      Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) d₀.mem z.1.mem ∧
-      P_frame z.1.mem ∧
-      z.1.regs zero = 0 ∧
-      z.1.regs fpReg = childFp ∧
-      z.1.regs spReg = b + 2 ∧
-      z.1.mem childFp = fp ∧
-      z.1.mem (childFp + 1) = t ∧
-      z.1.mem (childFp + 2 + t * t) = 0 ∧
-      ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
-        IsContractionOf W₀ part' W' ∧
-        HoldsMatrix z.1.mem (childFp + 2) t W')
-    (hsurv_s : ∀ B : Finset (Fin k),
-      0 < minCut W₀ → IsNonTrivialCut B →
-      cutWeight W₀ (pullbackCut part B) = minCut W₀ →
-      (1 : ℝ≥0∞) / 2 ≤
-        m_s.eval.toOuterMeasure
-          {z | ChildMinCutSurvives W₀ (fp + frameSize k) (fastCutThreshold k) z.1})
+    (hs : LoopSegmentLaw w (Cond.lt zero spReg) fastCutStep d₀
+      (fun y =>
+        let t := fastCutThreshold k
+        let childFp := fp + frameSize k
+        Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) d₀.mem y.mem ∧
+        P_frame y.mem ∧ y.regs zero = 0 ∧ y.regs fpReg = childFp ∧ y.regs spReg = b + 2 ∧
+        y.mem childFp = fp ∧ y.mem (childFp + 1) = t ∧
+        y.mem (childFp + 2 + t * t) = 0 ∧
+        ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
+          IsContractionOf W₀ part' W' ∧ HoldsMatrix y.mem (childFp + 2) t W')
+      T_s (k - fastCutThreshold k) (frameGraph (fp + frameSize k) (fastCutThreshold k))
+      (Lean.Karger.contractLaw (⟨k, W_k⟩, fastCutThreshold k)))
     (hP_pres : ∀ m₁ m₂ : ℕ → ℕ,
       let t := fastCutThreshold k
       let childFp := fp + frameSize k
@@ -2415,98 +2452,154 @@ private theorem composeBranchWithChild {n w d' fp b k T_s : ℕ} {W₀ : Fin n �
       x_c.mem childFp = fp → x_c.mem (childFp + 1) = t → x_c.mem (childFp + 2 + t * t) = 0 →
       HoldsMatrix x_c.mem (childFp + 2) t W_t → IsContractionOf W₀ part_t W_t →
       Fits w (childFp + fastCutScratch t) → Fits w ((b + 1) + 1 + d') →
-      ∃ mc : ProbComp (Data 24 × ℕ),
-        LoopSegment w (Cond.lt zero spReg) fastCutStep x_c mc ∧
-        mc.IsQueryBounded (fastCutNodeQueries t) ∧
-        (∀ zc ∈ mc.support,
-          zc.2 ≤ fastCutNodeTime t ∧
-          Modifies (Finset.Ico (childFp + 2 + t * t) (childFp + fastCutScratch t))
-            x_c.mem zc.1.mem ∧
-          zc.1.regs zero = 0 ∧
-          zc.1.regs fpReg = fp ∧
-          zc.1.regs spReg = b + 1 ∧
-          ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ zc.1.regs retVal = cutWeight W₀ C) ∧
-        (∀ B : Finset (Fin t),
-          0 < minCut W₀ → IsNonTrivialCut B →
-          cutWeight W₀ (pullbackCut part_t B) = minCut W₀ →
-          (2 : ℝ≥0∞) / ((d' + 30 : ℕ) : ℝ≥0∞) ≤
-            mc.eval.toOuterMeasure {zc | zc.1.regs retVal = minCut W₀})) :
+      LoopSegmentLaw w (Cond.lt zero spReg) fastCutStep x_c
+        (fun y => Modifies (Finset.Ico (childFp + 2 + t * t) (childFp + fastCutScratch t))
+          x_c.mem y.mem ∧ y.regs zero = 0 ∧ y.regs fpReg = fp ∧ y.regs spReg = b + 1)
+        (fastCutNodeTime t) (fastCutNodeQueries t) (fun y => y.regs retVal)
+        (Lean.Karger.fastCutLaw t ⟨t, W_t⟩)) :
     let t := fastCutThreshold k
-    ∃ m_br : ProbComp (Data 24 × ℕ),
-      LoopSegment w (Cond.lt zero spReg) fastCutStep d₀ m_br ∧
-      m_br.IsQueryBounded ((k - t) + fastCutNodeQueries t) ∧
-      (∀ z ∈ m_br.support,
-        z.2 ≤ T_s + fastCutNodeTime t ∧
-        Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) d₀.mem z.1.mem ∧
-        P_frame z.1.mem ∧
-        z.1.regs zero = 0 ∧
-        z.1.regs fpReg = fp ∧
-        z.1.regs spReg = b + 1 ∧
-        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs retVal = cutWeight W₀ C) ∧
-      (∀ B : Finset (Fin k),
-        0 < minCut W₀ → IsNonTrivialCut B →
-        cutWeight W₀ (pullbackCut part B) = minCut W₀ →
-        (1 : ℝ≥0∞) / ((d' + 30 : ℕ) : ℝ≥0∞) ≤
-          m_br.eval.toOuterMeasure {z | z.1.regs retVal = minCut W₀}) := by
+    LoopSegmentLaw w (Cond.lt zero spReg) fastCutStep d₀
+      (fun y => Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) d₀.mem y.mem ∧
+        P_frame y.mem ∧ y.regs zero = 0 ∧ y.regs fpReg = fp ∧ y.regs spReg = b + 1)
+      (T_s + fastCutNodeTime t) ((k - t) + fastCutNodeQueries t) (fun y => y.regs retVal)
+      ((Lean.Karger.contractLaw (⟨k, W_k⟩, t)).bind
+        fun child => Lean.Karger.fastCutLaw t child) := by
   intro t
   let childFp := fp + frameSize k
-  have ht2 : 2 ≤ t := fastCutThreshold_ge_two (by omega)
+  have ht : 2 ≤ t := fastCutThreshold_ge_two (by omega)
   have hscr_eq : fp + fastCutScratch k = childFp + fastCutScratch t := by
     dsimp only [childFp, t]
     rw [fastCutScratch_of_ge_seven hk7]
     omega
-  have hfit_c : Fits w (childFp + fastCutScratch t) := hscr_eq ▸ hfit
-  have hsp_c : Fits w ((b + 1) + 1 + d') := hsp_fit.of_le (by omega)
-  let Q_c (dc : Data 24) (mc : ProbComp (Data 24 × ℕ)) : Prop :=
-    mc.IsQueryBounded (fastCutNodeQueries t) ∧
-    (∀ zc ∈ mc.support,
-      zc.2 ≤ fastCutNodeTime t ∧
-      Modifies (Finset.Ico (childFp + 2 + t * t) (childFp + fastCutScratch t))
-        dc.mem zc.1.mem ∧
-      zc.1.regs zero = 0 ∧
-      zc.1.regs fpReg = fp ∧
-      zc.1.regs spReg = b + 1 ∧
-      ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ zc.1.regs retVal = cutWeight W₀ C) ∧
-    (0 < minCut W₀ → ChildMinCutSurvives W₀ childFp t dc →
-      (2 : ℝ≥0∞) / ((d' + 30 : ℕ) : ℝ≥0∞) ≤
-        mc.eval.toOuterMeasure {zc | zc.1.regs retVal = minCut W₀})
-  have hchild_ex : ∀ z₀ ∈ m_s.support,
-      ∃ mc, LoopSegment w (Cond.lt zero spReg) fastCutStep z₀.1 mc ∧ Q_c z₀.1 mc := by
-    intro z₀ hz₀
-    rcases hsup_s z₀ hz₀ with
-      ⟨_, _, _, hz0, hzfp, hzsp, hm_cfp, hm_cfp1, hm_stg, W', part', hC', hmat'⟩
-    by_cases hgood : 0 < minCut W₀ ∧ ChildMinCutSurvives W₀ childFp t z₀.1
-    · rcases hgood with ⟨hmin_pos, W₁, part₁, B₁, hC₁, hmat₁, hB₁_nt, hB₁_min⟩
-      obtain ⟨mc, hseg_c, hq_c, hsup_c, hsurv_c⟩ :=
-        hih ht2 hd' hz0 hzfp hzsp hm_cfp hm_cfp1 hm_stg hmat₁ hC₁ hfit_c hsp_c
-      exact ⟨mc, hseg_c, hq_c, hsup_c, fun _ _ => hsurv_c B₁ hmin_pos hB₁_nt hB₁_min⟩
-    · obtain ⟨mc, hseg_c, hq_c, hsup_c, _⟩ :=
-        hih ht2 hd' hz0 hzfp hzsp hm_cfp hm_cfp1 hm_stg hmat' hC' hfit_c hsp_c
-      exact ⟨mc, hseg_c, hq_c, hsup_c, fun hp hs => absurd ⟨hp, hs⟩ hgood⟩
-  obtain ⟨mc_fn, hseg_br, hmc_fn⟩ := hm_s.trans_exists hchild_ex
-  let m_br := do let z₀ ← m_s; let zc ← mc_fn z₀.1; pure (zc.1, z₀.2 + zc.2)
-  refine ⟨m_br, hseg_br,
-    isQueryBounded_seq hq_s (fun z₀ hz₀ => (hmc_fn z₀ hz₀).2.1), ?_, ?_⟩
-  · intro z hz
-    obtain ⟨z₀, hz₀, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨zc, hzc, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hpure
-    rcases hsup_s z₀ hz₀ with ⟨ht₀, hmod₀, hP₀, _⟩
-    rcases (hmc_fn z₀ hz₀).2.2.1 zc hzc with ⟨ht_c, hmod_c, hz0, hzfp, hzsp, hcut⟩
-    have hsub_c : Finset.Ico (childFp + 2 + t * t) (childFp + fastCutScratch t) ⊆
-        Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k) := by
-      intro a ha
-      rw [Finset.mem_Ico] at ha ⊢
-      rw [hscr_eq]; dsimp only [childFp] at *; unfold frameSize at *; omega
-    exact ⟨by omega, modifies_trans_subset hmod₀ hmod_c Finset.Subset.rfl hsub_c,
-      hP_pres z₀.1.mem zc.1.mem hmod_c hP₀, hz0, hzfp, hzsp, hcut⟩
-  · intro B hmin_pos hB_nt hB_min
-    have h1 := hsurv_s B hmin_pos hB_nt hB_min
-    have hprod := probComp_seq_hit_ge m_s mc_fn
-      (ChildMinCutSurvives W₀ childFp t)
-      (fun d => d.regs retVal = minCut W₀) h1
-      fun z₀ hz₀ hs => (hmc_fn z₀ hz₀).2.2.2 hmin_pos hs
-    rwa [half_mul_two_div_eq (by omega : 1 ≤ d' + 30)] at hprod
+  refine hs.trans (κ := Lean.Karger.fastCutLaw t) fun y hy => ?_
+  rcases hy with ⟨hmod, hP, hz0, hzfp, hzsp, hm_p, hm_k, hm_stg, W', part', hC', hmat⟩
+  have hc := hih ht hd' hz0 hzfp hzsp hm_p hm_k hm_stg hmat hC'
+    (hscr_eq ▸ hfit) (hsp_fit.of_le (by omega))
+  refine (hc.congr_law (by rw [frameGraph_eq_iff.mpr hmat])).mono ?_ le_rfl le_rfl
+  intro z ⟨hmod_c, hz0_c, hzfp_c, hzsp_c⟩
+  have hsub_c : Finset.Ico (childFp + 2 + t * t) (childFp + fastCutScratch t) ⊆
+      Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k) := by
+    intro a ha
+    rw [Finset.mem_Ico] at ha ⊢
+    rw [hscr_eq]
+    dsimp only [childFp] at *
+    unfold frameSize at *
+    omega
+  exact ⟨modifies_trans_subset hmod hmod_c Finset.Subset.rfl hsub_c,
+    hP_pres y.mem z.mem hmod_c hP, hz0_c, hzfp_c, hzsp_c⟩
+
+/-- Every native recursive node has exactly the specification's answer law, with the existing
+supported-path instruction, random-call and memory-frame bounds. -/
+theorem fastCutNode_law {n w : ℕ} {W₀ : Fin n → Fin n → ℕ}
+    (htot : Fits w (totalDoubledWeight W₀)) :
+    ∀ (d : ℕ) {fp parentFp b k : ℕ} {W_k : Fin k → Fin k → ℕ} {part : Fin n → Fin k}
+      {x : Data 24},
+      2 ≤ k → fastCutDepth k ≤ d →
+      x.regs zero = 0 → x.regs fpReg = fp → x.regs spReg = b + 1 →
+      x.mem fp = parentFp → x.mem (fp + 1) = k → x.mem (fp + 2 + k * k) = 0 →
+      HoldsMatrix x.mem (fp + 2) k W_k → IsContractionOf W₀ part W_k →
+      Fits w (fp + fastCutScratch k) → Fits w (b + 1 + d) →
+      LoopSegmentLaw w (Cond.lt zero spReg) fastCutStep x
+        (fun y => Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) x.mem y.mem ∧
+          y.regs zero = 0 ∧ y.regs fpReg = parentFp ∧ y.regs spReg = b)
+        (fastCutNodeTime k) (fastCutNodeQueries k) (fun y => y.regs retVal)
+        (Lean.Karger.fastCutLaw k ⟨k, W_k⟩) := by
+  intro d
+  induction d with
+  | zero =>
+    intro fp parentFp b k W_k part x hk hd h0 hfp hsp hm_p hm_k _ hmat hC hfit hsp_fit
+    have hk6 : k ≤ 6 := by
+      by_contra h
+      rw [fastCutDepth_of_ge_seven (by omega)] at hd
+      omega
+    exact fastCutNode_base_law hk hk6 h0 hfp hsp hm_p hm_k hmat hC hfit hsp_fit htot
+  | succ d' ih =>
+    intro fp parentFp b k W_k part x hk hd h0 hfp hsp hm_p hm_k hm_stg hmat hC hfit hsp_fit
+    by_cases hk7 : 7 ≤ k
+    · let t := fastCutThreshold k
+      have hd' : fastCutDepth t ≤ d' := by
+        dsimp only [t]
+        rw [fastCutDepth_of_ge_seven hk7] at hd
+        omega
+      have hkk49 : 49 ≤ k * k := Nat.mul_le_mul hk7 hk7
+      have hfs_le := frameSize_le_fastCutScratch k
+      have hsp_b2 : Fits w (b + 2) := hsp_fit.of_le (by omega)
+      have hs0 := fastCutStep_stage0_law hk7 h0 hfp hsp hm_k hm_stg hmat hC hfit hsp_b2 htot
+      have hfirst := composeBranchWithChild_law
+        (P_frame := fun mem => mem (fp + 2 + k * k) = 1)
+        hk7 hd' hfit hsp_fit hs0
+        (fun m₁ m₂ hmod h1 => by
+          rw [hmod _ (by rw [Finset.mem_Ico]; unfold frameSize; omega)]
+          exact h1)
+        (fun ht hd hz0 hzfp hzsp hmp hmk hms hmc hcc hfc hsc =>
+          ih ht hd hz0 hzfp hzsp hmp hmk hms hmc hcc hfc hsc)
+      let branch := (Lean.Karger.contractLaw (⟨k, W_k⟩, t)).bind
+        fun child => Lean.Karger.fastCutLaw t child
+      have hsecond : ∀ y,
+          (Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) x.mem y.mem ∧
+            y.mem (fp + 2 + k * k) = 1 ∧
+            y.regs zero = 0 ∧ y.regs fpReg = fp ∧ y.regs spReg = b + 1) →
+          LoopSegmentLaw w (Cond.lt zero spReg) fastCutStep y
+            (fun z => Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k))
+              x.mem z.mem ∧ z.regs zero = 0 ∧ z.regs fpReg = parentFp ∧ z.regs spReg = b)
+            (80 * (k * k) + 44 + fastCutNodeTime t) ((k - t) + fastCutNodeQueries t)
+            (fun z => z.regs retVal) (branch.map (min (y.regs retVal))) := by
+        intro y ⟨hmod₁, hstg₁, hy0, hyfp, hysp⟩
+        let v₁ := y.regs retVal
+        have hm1_p : y.mem fp = parentFp := by
+          rw [hmod₁ _ (by rw [Finset.mem_Ico]; omega), hm_p]
+        have hm1_k : y.mem (fp + 1) = k := by
+          rw [hmod₁ _ (by rw [Finset.mem_Ico]; omega), hm_k]
+        have hm1_mat : HoldsMatrix y.mem (fp + 2) k W_k := by
+          intro i j
+          have hlt := matAddr_lt_end (wb := fp + 2) (le_refl k) i j
+          rw [hmod₁ _ (by rw [Finset.mem_Ico]; omega)]
+          exact hmat i j
+        have hs1 := fastCutStep_stage1_law (v1 := v₁) hk7 hy0 hyfp hysp rfl hm1_k hstg₁
+          hm1_mat hC hfit hsp_b2 htot
+        have hbranch₂ := composeBranchWithChild_law
+          (P_frame := fun mem => mem (fp + 2 + k * k) = 2 ∧ mem (fp + 3 + k * k) = v₁)
+          hk7 hd' hfit hsp_fit
+          (hs1.mono (fun z ⟨hmod, hstg, hv, rest⟩ => ⟨hmod, ⟨hstg, hv⟩, rest⟩) le_rfl le_rfl)
+          (fun m₁ m₂ hmod ⟨hs, hv⟩ => by
+            constructor
+            · rw [hmod _ (by rw [Finset.mem_Ico]; unfold frameSize; omega)]
+              exact hs
+            · rw [hmod _ (by rw [Finset.mem_Ico]; unfold frameSize; omega)]
+              exact hv)
+          (fun ht hd hz0 hzfp hzsp hmp hmk hms hmc hcc hfc hsc =>
+            ih ht hd hz0 hzfp hzsp hmp hmk hms hmc hcc hfc hsc)
+        have hfinal := hbranch₂.trans
+          (Q := fun z => Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k))
+            x.mem z.mem ∧ z.regs zero = 0 ∧ z.regs fpReg = parentFp ∧ z.regs spReg = b)
+          (f := fun z => z.regs retVal) (κ := fun r₂ => PMF.pure (min v₁ r₂))
+          (T₂ := 24) (R₂ := 0) fun z ⟨hmod₂, ⟨hstg₂, hv₁⟩, hz0, hzfp, hzsp⟩ => by
+            have hm2_p : z.mem fp = parentFp := by
+              rw [hmod₂ _ (by rw [Finset.mem_Ico]; omega), hm1_p]
+            have hm2_k : z.mem (fp + 1) = k := by
+              rw [hmod₂ _ (by rw [Finset.mem_Ico]; omega), hm1_k]
+            obtain ⟨zf, nf, hnf, hseg, hmem, hf0, hffp, hfsp, hret⟩ :=
+              fastCutStep_stage2_seg hk7 hz0 hzfp hzsp rfl hm2_p hm2_k hstg₂ hv₁
+                (hfit.of_le (by omega)) (hsp_fit.of_le (by omega))
+            refine ⟨pure (zf, nf), hseg, .pure _ 0, ?_, ?_⟩
+            · intro out hout
+              cases OracleComp.eq_of_mem_supportWith_pure hout
+              refine ⟨⟨?_, hf0, hffp, hfsp⟩, hnf⟩
+              rw [hmem]
+              exact modifies_trans_subset hmod₁ hmod₂ Finset.Subset.rfl Finset.Subset.rfl
+            · simpa only [map_pure, ProbComp.eval_pure] using congrArg PMF.pure hret
+        exact (hfinal.congr_law (PMF.bind_pure_comp _ _)).mono (fun _ h => h)
+          (by dsimp only [t]; omega) (by dsimp only [t]; omega)
+      have htotal := hfirst.trans (κ := fun a => branch.map (min a)) hsecond
+      refine (htotal.congr_law (Lean.Karger.fastCutLaw_node hk7 _).symm).mono
+        (fun _ h => h) ?_ ?_
+      · rw [fastCutNodeTime_of_ge_seven hk7]
+        dsimp only [t]
+        omega
+      · rw [fastCutNodeQueries_of_ge_seven hk7]
+        dsimp only [t]
+        omega
+    · exact fastCutNode_base_law hk (by omega) h0 hfp hsp hm_p hm_k hmat hC hfit hsp_fit htot
 
 /-- **Structural `LoopSegment` specification of recursive `FastCut` over depth budget `d`.** -/
 theorem fastCutNode_spec {n w : ℕ} {W₀ : Fin n → Fin n → ℕ}
@@ -2540,206 +2633,20 @@ theorem fastCutNode_spec {n w : ℕ} {W₀ : Fin n → Fin n → ℕ}
           cutWeight W₀ (pullbackCut part B) = minCut W₀ →
           (2 : ℝ≥0∞) / ((d + 30 : ℕ) : ℝ≥0∞) ≤
             m.eval.toOuterMeasure {z | z.1.regs retVal = minCut W₀}) := by
-  intro d
-  induction d with
-  | zero =>
-    intro fp parentFp b k W_k part x hk2 hd0 h0 hfp hsp hmem_p hmem_k _ hmat hC hfit hsp_fit
-    have hk6 : k ≤ 6 := by
-      by_contra hlt
-      have hk7 : 7 ≤ k := by omega
-      rw [fastCutDepth_of_ge_seven hk7] at hd0
-      omega
-    exact fastCutNode_base hk2 hk6 h0 hfp hsp hmem_p hmem_k hmat hC hfit hsp_fit htot
-  | succ d' ih =>
-    intro fp parentFp b k W_k part x hk2 hd h0 hfp hsp hmem_p hmem_k hmem_stg hmat hC hfit hsp_fit
-    by_cases hk7 : 7 ≤ k
-    · let t := fastCutThreshold k
-      let childFp := fp + frameSize k
-      have hd' : fastCutDepth t ≤ d' := by
-        dsimp only [t]
-        rw [fastCutDepth_of_ge_seven hk7] at hd
-        omega
-      have hkk49 : 49 ≤ k * k := Nat.mul_le_mul hk7 hk7
-      have hfs_le : frameSize k ≤ fastCutScratch k := frameSize_le_fastCutScratch k
-      have hsp_b2 : Fits w (b + 2) := hsp_fit.of_le (by omega)
-      -- Branch 1: Stage 0 + Child 1
-      obtain ⟨m_s0, hm_s0, hq_s0, hsup_s0, hsurv_s0⟩ :=
-        fastCutStep_stage0_seg hk7 h0 hfp hsp hmem_k hmem_stg hmat hC hfit hsp_b2 htot
-      obtain ⟨m_b1, hseg_b1, hq_b1, hsup_b1, hsurv_b1⟩ :=
-        composeBranchWithChild (P_frame := fun mem => mem (fp + 2 + k * k) = 1)
-          hk7 hd' hfit hsp_fit hm_s0 hq_s0 hsup_s0 hsurv_s0
-          (fun m₁ m₂ hmod h1 => by
-            rw [hmod _ (by rw [Finset.mem_Ico]; unfold frameSize; omega)]
-            exact h1)
-          (fun ht2 hd_c hz0 hzfp hzsp hm_cfp hm_cfp1 hm_stg hmat_c hC_c hfit_c hsp_c =>
-            ih ht2 hd_c hz0 hzfp hzsp hm_cfp hm_cfp1 hm_stg hmat_c hC_c hfit_c hsp_c)
-      -- Branch 2 + Stage 2 from every supported state `z₁ ∈ m_b1.support`
-      let Q_b2 (d₁ : Data 24) (m₂ : ProbComp (Data 24 × ℕ)) : Prop :=
-        m₂.IsQueryBounded ((k - t) + fastCutNodeQueries t) ∧
-        (∀ zf ∈ m₂.support,
-          zf.2 ≤ 80 * (k * k) + 44 + fastCutNodeTime t ∧
-          Modifies (Finset.Ico (fp + 2 + k * k) (fp + fastCutScratch k)) d₁.mem zf.1.mem ∧
-          zf.1.regs zero = 0 ∧
-          zf.1.regs fpReg = parentFp ∧
-          zf.1.regs spReg = b ∧
-          (∃ C : Finset (Fin n), IsNonTrivialCut C ∧ zf.1.regs retVal = cutWeight W₀ C) ∧
-          (d₁.regs retVal = minCut W₀ → zf.1.regs retVal = minCut W₀)) ∧
-        (∀ B : Finset (Fin k),
-          0 < minCut W₀ → IsNonTrivialCut B →
-          cutWeight W₀ (pullbackCut part B) = minCut W₀ →
-          (1 : ℝ≥0∞) / ((d' + 30 : ℕ) : ℝ≥0∞) ≤
-            m₂.eval.toOuterMeasure {zf | zf.1.regs retVal = minCut W₀})
-      have hb2_ex : ∀ z₁ ∈ m_b1.support,
-          ∃ m₂, LoopSegment w (Cond.lt zero spReg) fastCutStep z₁.1 m₂ ∧ Q_b2 z₁.1 m₂ := by
-        intro z₁ hz₁
-        rcases hsup_b1 z₁ hz₁ with ⟨_, hmod₁, hstg₁, hz1_0, hz1_fp, hz1_sp, C₁, hC₁_nt, hret₁⟩
-        let v₁ := z₁.1.regs retVal
-        have hm1_p : z₁.1.mem fp = parentFp := by
-          rw [hmod₁ _ (by rw [Finset.mem_Ico]; omega)]; exact hmem_p
-        have hm1_k : z₁.1.mem (fp + 1) = k := by
-          rw [hmod₁ _ (by rw [Finset.mem_Ico]; omega)]; exact hmem_k
-        have hm1_mat : HoldsMatrix z₁.1.mem (fp + 2) k W_k := by
-          intro i j
-          have hlt : fp + 2 + i.val * k + j.val < fp + 2 + k * k :=
-            matAddr_lt_end (le_refl k) i j
-          rw [hmod₁ _ (by rw [Finset.mem_Ico]; omega)]
-          exact hmat i j
-        obtain ⟨m_s1, hm_s1, hq_s1, hsup_s1, hsurv_s1⟩ :=
-          fastCutStep_stage1_seg (v1 := v₁) hk7 hz1_0 hz1_fp hz1_sp rfl hm1_k hstg₁ hm1_mat
-            hC hfit hsp_b2 htot
-        obtain ⟨m_b2_pre, hseg_pre, hq_pre, hsup_pre, hsurv_pre⟩ :=
-          composeBranchWithChild
-            (P_frame := fun mem => mem (fp + 2 + k * k) = 2 ∧ mem (fp + 3 + k * k) = v₁)
-            hk7 hd' hfit hsp_fit hm_s1 hq_s1
-            (fun z hz => by
-              rcases hsup_s1 z hz with ⟨ht, hmod, hs2, hv, rest⟩
-              exact ⟨ht, hmod, ⟨hs2, hv⟩, rest⟩)
-            hsurv_s1
-            (fun m₁ m₂ hmod ⟨hs2, hv⟩ => ⟨by
-              rw [hmod _ (by rw [Finset.mem_Ico]; unfold frameSize; omega)]; exact hs2, by
-              rw [hmod _ (by rw [Finset.mem_Ico]; unfold frameSize; omega)]; exact hv⟩)
-            (fun ht2 hd_c hz0 hzfp hzsp hm_cfp hm_cfp1 hm_stg hmat_c hC_c hfit_c hsp_c =>
-              ih ht2 hd_c hz0 hzfp hzsp hm_cfp hm_cfp1 hm_stg hmat_c hC_c hfit_c hsp_c)
-        -- Append deterministic Stage 2 (`combineAndPop`)
-        let Q_s2 (d₂ : Data 24) (ms2 : ProbComp (Data 24 × ℕ)) : Prop :=
-          ms2.IsQueryBounded 0 ∧
-          ∀ zf ∈ ms2.support,
-            zf.2 ≤ 24 ∧
-            zf.1.mem = d₂.mem ∧
-            zf.1.regs zero = 0 ∧
-            zf.1.regs fpReg = parentFp ∧
-            zf.1.regs spReg = b ∧
-            zf.1.regs retVal = min v₁ (d₂.regs retVal)
-        have hs2_ex : ∀ z₂ ∈ m_b2_pre.support,
-            ∃ ms2, LoopSegment w (Cond.lt zero spReg) fastCutStep z₂.1 ms2 ∧ Q_s2 z₂.1 ms2 := by
-          intro z₂ hz₂
-          rcases hsup_pre z₂ hz₂ with ⟨_, hmod₂, ⟨hstg₂, hv1_₂⟩, hz2_0, hz2_fp, hz2_sp, _⟩
-          have hm2_p : z₂.1.mem fp = parentFp := by
-            rw [hmod₂ _ (by rw [Finset.mem_Ico]; omega)]; exact hm1_p
-          have hm2_k : z₂.1.mem (fp + 1) = k := by
-            rw [hmod₂ _ (by rw [Finset.mem_Ico]; omega)]; exact hm1_k
-          obtain ⟨y_f, n_s2, hn_s2, hseg_f, hm_f, h0_f, hfp_f, hsp_f, hret_f⟩ :=
-            fastCutStep_stage2_seg hk7 hz2_0 hz2_fp hz2_sp rfl hm2_p hm2_k hstg₂ hv1_₂
-              (hfit.of_le (by omega)) (hsp_fit.of_le (by omega))
-          refine ⟨pure (y_f, n_s2), hseg_f, .pure _ 0, fun zf hzf => ?_⟩
-          cases OracleComp.eq_of_mem_supportWith_pure hzf
-          exact ⟨hn_s2, hm_f, h0_f, hfp_f, hsp_f, hret_f⟩
-        obtain ⟨ms2_fn, hseg_b2, hms2_fn⟩ := hseg_pre.trans_exists hs2_ex
-        let m₂ := do let z₂ ← m_b2_pre; let zf ← ms2_fn z₂.1; pure (zf.1, z₂.2 + zf.2)
-        have hq_m₂ : m₂.IsQueryBounded ((k - t) + fastCutNodeQueries t) := by
-          simpa only [Nat.add_zero] using
-            isQueryBounded_seq hq_pre (fun z₂ hz₂ => (hms2_fn z₂ hz₂).2.1)
-        refine ⟨m₂, hseg_b2, hq_m₂, ?_, ?_⟩
-        · intro zf hzf
-          obtain ⟨z₂, hz₂, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hzf
-          obtain ⟨zs, hzs, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-          cases OracleComp.eq_of_mem_supportWith_pure hpure
-          rcases hsup_pre z₂ hz₂ with ⟨ht₂, hmod₂, _, _, _, _, C₂, hC₂_nt, hret₂⟩
-          rcases (hms2_fn z₂ hz₂).2.2 zs hzs with ⟨ht_s, hm_s, h0_s, hfp_s, hsp_s, hret_s⟩
-          have hv1_ge : minCut W₀ ≤ v₁ := by
-            dsimp only [v₁]
-            rw [hret₁]
-            exact minCut_le_cutWeight W₀ hC₁_nt
-          have hv2_ge : minCut W₀ ≤ z₂.1.regs retVal := by
-            rw [hret₂]
-            exact minCut_le_cutWeight W₀ hC₂_nt
-          refine ⟨by dsimp only [t] at ht₂ ⊢; omega, hm_s ▸ hmod₂, h0_s, hfp_s, hsp_s, ?_, ?_⟩
-          · rw [hret_s]
-            by_cases hle : v₁ ≤ z₂.1.regs retVal
-            · exact ⟨C₁, hC₁_nt, by rw [min_eq_left hle]; exact hret₁⟩
-            · exact ⟨C₂, hC₂_nt, by rw [min_eq_right (by omega)]; exact hret₂⟩
-          · intro hv1_eq
-            rw [hret_s]
-            have hv1_eq' : v₁ = minCut W₀ := hv1_eq
-            rw [hv1_eq']
-            exact min_eq_left hv2_ge
-        · intro B hmin_pos hB_nt hB_min
-          have hp_pre := hsurv_pre B hmin_pos hB_nt hB_min
-          have hprod := probComp_seq_hit_ge m_b2_pre ms2_fn
-            (fun d₂ => d₂.regs retVal = minCut W₀)
-            (fun df => df.regs retVal = minCut W₀) hp_pre
-            fun z₂ hz₂ hr₂_min => by
-              have hv1_ge : minCut W₀ ≤ v₁ := by
-                dsimp only [v₁]; rw [hret₁]; exact minCut_le_cutWeight W₀ hC₁_nt
-              suffices h1 : (1 : ℝ≥0∞) ≤
-                  (ms2_fn z₂.1).eval.toOuterMeasure
-                    {zs | zs.1.regs retVal = minCut W₀} from h1
-              have hcompl0 : (ms2_fn z₂.1).eval.toOuterMeasure
-                  {zs | zs.1.regs retVal = minCut W₀}ᶜ = 0 := by
-                rw [PMF.toOuterMeasure_apply]
-                refine tsum_eq_zero_iff.mpr fun zs => ?_
-                by_cases hzs_ev : zs ∈ (ms2_fn z₂.1).eval.support
-                · have hzs : zs ∈ (ms2_fn z₂.1).support :=
-                    (ProbComp.support_eval (ms2_fn z₂.1)) ▸ hzs_ev
-                  rcases (hms2_fn z₂ hz₂).2.2 zs hzs with ⟨_, _, _, _, _, hret_s⟩
-                  have hhit_zs : zs.1.regs retVal = minCut W₀ := by
-                    rw [hret_s, hr₂_min]
-                    exact min_eq_right hv1_ge
-                  have hnot : zs ∉ ({zs : Data 24 × ℕ | zs.1.regs retVal = minCut W₀}ᶜ) := by
-                    simp [hhit_zs]
-                  exact Set.indicator_of_notMem hnot _
-                · have hp0 : (ms2_fn z₂.1).eval zs = 0 := by
-                    simpa only [PMF.mem_support_iff, not_not] using hzs_ev
-                  simp [hp0]
-              have hsum := toOuterMeasure_add_compl_ennreal (ms2_fn z₂.1).eval
-                {zs | zs.1.regs retVal = minCut W₀}
-              rw [hcompl0, add_zero] at hsum
-              exact hsum.ge
-          simpa only [mul_one] using hprod
-      obtain ⟨m₂_fn, hseg_tot, hm₂_fn⟩ := hseg_b1.trans_exists hb2_ex
-      let m_tot := do let z₁ ← m_b1; let z₂ ← m₂_fn z₁.1; pure (z₂.1, z₁.2 + z₂.2)
-      refine ⟨m_tot, hseg_tot, ?_, ?_, ?_⟩
-      · have hq_tot := isQueryBounded_seq hq_b1 (fun z₁ hz₁ => (hm₂_fn z₁ hz₁).2.1)
-        refine hq_tot.mono ?_
-        rw [fastCutNodeQueries_of_ge_seven hk7]
-        dsimp only [t]
-        omega
-      · intro z hz
-        obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-        obtain ⟨z₂, hz₂, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-        cases OracleComp.eq_of_mem_supportWith_pure hpure
-        rcases hsup_b1 z₁ hz₁ with ⟨ht₁, hmod₁, _⟩
-        rcases (hm₂_fn z₁ hz₁).2.2.1 z₂ hz₂ with
-          ⟨ht₂, hmod₂, hz0, hzfp, hzsp, hcut, _⟩
-        refine ⟨?_, modifies_trans_subset hmod₁ hmod₂ Finset.Subset.rfl Finset.Subset.rfl,
-          hz0, hzfp, hzsp, hcut⟩
-        rw [fastCutNodeTime_of_ge_seven hk7]
-        dsimp only [t] at ht₁ ht₂
-        omega
-      · intro B hmin_pos hB_nt hB_min
-        have hrec := ProbComp.two_branch_hit_prob_ge m_b1 (fun z₁ => m₂_fn z₁.1)
-          (fun z₁ z₂ => (z₂.1, z₁.2 + z₂.2))
-          {z₁ | z₁.1.regs retVal = minCut W₀}
-          {z | z.1.regs retVal = minCut W₀}
-          (s := d' + 30) (by omega)
-          (hsurv_b1 B hmin_pos hB_nt hB_min)
-          (fun z₁ hz₁ hhit₁ z₂ hz₂ => ((hm₂_fn z₁ hz₁).2.2.1 z₂ hz₂).2.2.2.2.2.2 hhit₁)
-          (fun z₁ hz₁ _ => by
-            rw [PMF.toOuterMeasure_map_apply]
-            exact (hm₂_fn z₁ hz₁).2.2.2 B hmin_pos hB_nt hB_min)
-        have heq_s : (d' + 30) + 1 = d' + 1 + 30 := by omega
-        rwa [heq_s] at hrec
-    · exact fastCutNode_base hk2 (by omega) h0 hfp hsp hmem_p hmem_k hmat hC hfit hsp_fit htot
+  intro d fp parentFp b k W_k part x hk hd h0 hfp hsp hm_p hm_k hm_stg hmat hC hfit hsp_fit
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ :=
+    fastCutNode_law htot d hk hd h0 hfp hsp hm_p hm_k hm_stg hmat hC hfit hsp_fit
+  refine ⟨m, hm, hq, ?_, ?_⟩
+  · intro z hz
+    rcases hsup z hz with ⟨⟨hmod, hz0, hzfp, hzsp⟩, ht⟩
+    have hv : z.1.regs retVal ∈ (Lean.Karger.fastCutLaw k ⟨k, W_k⟩).support := by
+      rw [← hlaw, ProbComp.eval_map, PMF.mem_support_map_iff]
+      exact ⟨z, (ProbComp.support_eval m) ▸ hz, rfl⟩
+    exact ⟨ht, hmod, hz0, hzfp, hzsp, Lean.Karger.exists_cut_of_mem_support_fastCutLaw hk hC hv⟩
+  · intro B hmin hB hBmin
+    have hprob := Lean.Karger.fastCutLaw_hit_prob_ge hmin d hk hd hC B hB hBmin
+    rw [← hlaw, ProbComp.eval_map, PMF.toOuterMeasure_map_apply] at hprob
+    exact hprob
 
 /-- Root-frame setup before copying the input matrix `W` from `srcBase` into `fp₀ + 2`. -/
 def fastCutRootSetup : Code .standard 24 := ram[
@@ -2773,28 +2680,23 @@ def fastCutTree : Code .standard 24 := ram[
   ⟪fastCutLoop⟫
 ]
 
-theorem fastCutTree_spec {n w sb : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 24}
+/-- A complete native tree has exactly the recursive specification answer law. -/
+theorem fastCutTree_law {n w sb : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 24}
     (hn : 2 ≤ n) (hW : IsMultigraph W)
     (hsb : x.regs srcBase = sb) (hnOrig : x.regs nOrig = n)
     (hmat : HoldsMatrix x.mem sb n W)
     (hws_fit : Fits w (sb + 27 * (n * n)))
     (hsp_fit : Fits w (2 * Nat.log 2 n + 1))
     (htot : Fits w (totalDoubledWeight W)) :
-    ∃ m : ProbComp (Data 24 × ℕ),
-      ExecRand w fastCutTree x m ∧
-      m.IsQueryBounded (fastCutNodeQueries n) ∧
-      (∀ z ∈ m.support,
-        z.2 ≤ fastCutNodeTime n + 7 * (n * n) + 21 ∧
-        Modifies (Finset.Ico (sb + n * n) (sb + 27 * (n * n))) x.mem z.1.mem ∧
-        z.1.regs srcBase = sb ∧
-        z.1.regs nOrig = n ∧
-        z.1.regs numTrials = x.regs numTrials ∧
-        z.1.regs trialIdx = x.regs trialIdx ∧
-        z.1.regs bestVal = x.regs bestVal ∧
-        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs retVal = cutWeight W C) ∧
-      (0 < minCut W →
-        (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞) ≤
-          m.eval.toOuterMeasure {z | z.1.regs retVal = minCut W}) := by
+    ExecRandLaw w fastCutTree x
+      (fun y => Modifies (Finset.Ico (sb + n * n) (sb + 27 * (n * n))) x.mem y.mem ∧
+        y.regs srcBase = sb ∧
+        y.regs nOrig = n ∧
+        y.regs numTrials = x.regs numTrials ∧
+        y.regs trialIdx = x.regs trialIdx ∧
+        y.regs bestVal = x.regs bestVal)
+      (fastCutNodeTime n + 7 * (n * n) + 21) (fastCutNodeQueries n)
+      (fun y => y.regs retVal) (Lean.Karger.fastCutLaw n ⟨n, W⟩) := by
   let fp₀ := sb + n * n
   have hscr_le : fastCutScratch n ≤ 26 * (n * n) := fastCutScratch_le hn
   have hfs_le : frameSize n ≤ fastCutScratch n := frameSize_le_fastCutScratch n
@@ -2927,18 +2829,19 @@ theorem fastCutTree_spec {n w sb : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 
     have hlt : fp₀ + 2 + i.val * n + j.val < fp₀ + 2 + n * n := matAddr_lt_end (le_refl n) i j
     rw [hx₃_mem, Function.update_of_ne (by omega)]
     exact hmat_cp i j
-  -- Step 4: `fastCutLoop` via `fastCutNode_spec` + `LoopSegment.finish`
-  obtain ⟨m_seg, hseg, hq_seg, hsup_seg, hsurv_seg⟩ :=
-    fastCutNode_spec htot (2 * Nat.log 2 n) (b := 0) (parentFp := 0)
+  -- Step 4: `fastCutLoop` via `fastCutNode_law` + `LoopSegment.finish`
+  obtain ⟨m_seg, hseg, hq_seg, hsup_raw, hlaw_seg⟩ :=
+    fastCutNode_law htot (2 * Nat.log 2 n) (b := 0) (parentFp := 0)
       hn (fastCutDepth_le_two_mul_log n)
       (by simp +decide [x₃, q₅, q₄, q₃, q₂, q₁])
       (by simpa +decide [x₃, q₅, q₄, q₃, q₂, q₁, Function.update_apply] using hfp_x₂)
       (by simp [x₃])
       hx₃_p hx₃_k hx₃_stg hx₃_mat (isContractionOf_id hW) hfit_scr
       (by simpa only [Nat.zero_add, Nat.add_comm 1] using hsp_fit)
+  have hsup_seg := fun z hz => (hsup_raw z hz).symm
   have hex_loop : ExecRand w fastCutLoop x₃ ((fun z => (z.1, z.2 + 2)) <$> m_seg) :=
     hseg.finish fun z hz => by
-      rcases hsup_seg z hz with ⟨_, _, hz0, _, hzsp, _⟩
+      rcases hsup_seg z hz with ⟨_, _, hz0, _, hzsp⟩
       simp [Cond.holds_lt, hz0, hzsp]
   have htree_raw := hex_rset.seqRand (hex_cp.seqRand (hex_rfin.seqRand hex_loop))
   let m_out : ProbComp (Data 24 × ℕ) :=
@@ -2947,18 +2850,23 @@ theorem fastCutTree_spec {n w sb : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 
     unfold fastCutTree
     convert htree_raw using 1
     simp only [m_out, Functor.map_map]
-  refine ⟨m_out, htree, ?_, ?_, ?_⟩
-  · simp only [m_out, OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_seg
-  · intro z hz
+  have hsup_out : ∀ z ∈ m_out.support,
+      z.2 ≤ fastCutNodeTime n + 7 * (n * n) + 21 ∧
+      (Modifies (Finset.Ico (sb + n * n) (sb + 27 * (n * n))) x.mem z.1.mem ∧
+        z.1.regs srcBase = sb ∧
+        z.1.regs nOrig = n ∧
+        z.1.regs numTrials = x.regs numTrials ∧
+        z.1.regs trialIdx = x.regs trialIdx ∧
+        z.1.regs bestVal = x.regs bestVal) := by
+    intro z hz
     have hsb_z : z.1.regs srcBase = sb := (htree.regs_eq (by decide) hz).trans hsb
     have hn_z : z.1.regs nOrig = n := (htree.regs_eq (by decide) hz).trans hnOrig
     have hnt_z : z.1.regs numTrials = x.regs numTrials := htree.regs_eq (by decide) hz
     have hti_z : z.1.regs trialIdx = x.regs trialIdx := htree.regs_eq (by decide) hz
     have hbv_z : z.1.regs bestVal = x.regs bestVal := htree.regs_eq (by decide) hz
     obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    rcases hsup_seg z₀ hz₀ with ⟨ht₀, hmod₀, _, _, _, hcut⟩
-    refine ⟨by omega, ?_, hsb_z, hn_z, hnt_z, hti_z, hbv_z, hcut⟩
+    rcases hsup_seg z₀ hz₀ with ⟨ht₀, hmod₀, _, _, _⟩
+    refine ⟨by omega, ?_, hsb_z, hn_z, hnt_z, hti_z, hbv_z⟩
     let S_all := Finset.Ico fp₀ (sb + 27 * (n * n))
     have hfp_in : fp₀ ∈ S_all := by rw [Finset.mem_Ico]; dsimp only [fp₀]; omega
     have hfp1_in : fp₀ + 1 ∈ S_all := by rw [Finset.mem_Ico]; dsimp only [fp₀]; omega
@@ -2981,13 +2889,45 @@ theorem fastCutTree_spec {n w sb : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 
         (modifies_trans_subset hmod_x₁ hmod_cp Finset.Subset.rfl hsub_cp)
         hmod_x₃ Finset.Subset.rfl Finset.Subset.rfl)
       hmod₀ Finset.Subset.rfl hsub_seg
-  · intro hmin_pos
-    obtain ⟨C_star, hC_nt, hC_min⟩ := exists_minCut_achiever (by rwa [Fintype.card_fin]) W
-    have hpb : pullbackCut (id : Fin n → Fin n) C_star = C_star := by
-      ext u; simp [pullbackCut]
-    have hprob := hsurv_seg C_star hmin_pos hC_nt (by rw [hpb, hC_min])
-    rw [root_hit_prob_eq n] at hprob
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
+  refine ⟨m_out, htree,
+    (OracleComp.isCostBounded_map_iff _ _ _).mpr hq_seg,
+    fun z hz => ⟨(hsup_out z hz).2, (hsup_out z hz).1⟩, ?_⟩
+  simpa only [m_out, Functor.map_map] using hlaw_seg
+
+theorem fastCutTree_spec {n w sb : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 24}
+    (hn : 2 ≤ n) (hW : IsMultigraph W)
+    (hsb : x.regs srcBase = sb) (hnOrig : x.regs nOrig = n)
+    (hmat : HoldsMatrix x.mem sb n W)
+    (hws_fit : Fits w (sb + 27 * (n * n)))
+    (hsp_fit : Fits w (2 * Nat.log 2 n + 1))
+    (htot : Fits w (totalDoubledWeight W)) :
+    ∃ m : ProbComp (Data 24 × ℕ),
+      ExecRand w fastCutTree x m ∧
+      m.IsQueryBounded (fastCutNodeQueries n) ∧
+      (∀ z ∈ m.support,
+        z.2 ≤ fastCutNodeTime n + 7 * (n * n) + 21 ∧
+        Modifies (Finset.Ico (sb + n * n) (sb + 27 * (n * n))) x.mem z.1.mem ∧
+        z.1.regs srcBase = sb ∧
+        z.1.regs nOrig = n ∧
+        z.1.regs numTrials = x.regs numTrials ∧
+        z.1.regs trialIdx = x.regs trialIdx ∧
+        z.1.regs bestVal = x.regs bestVal ∧
+        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs retVal = cutWeight W C) ∧
+      (0 < minCut W →
+        (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞) ≤
+          m.eval.toOuterMeasure {z | z.1.regs retVal = minCut W}) := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := fastCutTree_law hn hW hsb hnOrig hmat hws_fit hsp_fit htot
+  refine ⟨m, hm, hq, ?_, ?_⟩
+  · intro z hz
+    rcases hsup z hz with ⟨⟨hmod, hzsb, hzn, hznt, hzti, hzbv⟩, ht⟩
+    have hv : z.1.regs retVal ∈ (Lean.Karger.fastCutLaw n ⟨n, W⟩).support := by
+      rw [← hlaw, ProbComp.eval_map, PMF.mem_support_map_iff]
+      exact ⟨z, (ProbComp.support_eval m) ▸ hz, rfl⟩
+    exact ⟨ht, hmod, hzsb, hzn, hznt, hzti, hzbv,
+      Lean.Karger.exists_cut_of_mem_support_fastCutLaw hn (isContractionOf_id hW) hv⟩
+  · intro hmin
+    have hprob := Lean.Karger.fastCutLaw_root_hit_prob_ge hn hW hmin
+    rw [← hlaw, ProbComp.eval_map, PMF.toOuterMeasure_map_apply] at hprob
     exact hprob
 
 end FrameMachine
@@ -3059,6 +2999,23 @@ theorem fastCutSetup_exec {w n : ℕ} {W : Fin n → Fin n → ℕ}
   have e3 : Exec (B := .standard) w ram[srcBase ← #2] s₂ s₃ 1 := Exec.const h2
   exact ⟨s₃, e1.seq (e2.seq e3), rfl, by simp [s₃], by simp +decide [s₃, s₂]⟩
 
+/-- The single-tree code observes the recursive answer law, including the charged input setup. -/
+theorem fastCutCode_law {n w : ℕ} {W : Fin n → Fin n → ℕ}
+    (hn : 2 ≤ n) (hW : IsMultigraph W)
+    (hw : logWidth 4 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
+    ExecRandLaw w fastCutCode (Data.init (n :: flattenMatrix W))
+      (fun y => Modifies (Finset.Ico (2 + n * n) (2 + 27 * (n * n)))
+        (Data.init (r := 24) (n :: flattenMatrix W)).mem y.mem)
+      (3 + (fastCutNodeTime n + 7 * (n * n) + 21)) (fastCutNodeQueries n)
+      (fun y => y.regs retVal) (Lean.Karger.fastCutLaw n ⟨n, W⟩) := by
+  have hws := fits_fastCutWorkspace_of_logWidth_four hn hw
+  have hsp := fits_sp_of_ws hn hws
+  obtain ⟨y_s, e_s, hm_s, hsb_s, hn_s⟩ := fastCutSetup_exec (W := W) hn hw
+  have htree := fastCutTree_law hn hW hsb_s hn_s
+    (hm_s ▸ holdsMatrix_init_fastCut W) hws hsp htot
+  exact (ExecRandLaw.seq_det e_s.within htree).mono
+    (fun _ h => hm_s ▸ h.1) le_rfl le_rfl
+
 /-- Structured `ProbComp` specification of `fastCutCode`. -/
 theorem fastCutCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hn : 2 ≤ n) (hW : IsMultigraph W)
@@ -3074,22 +3031,19 @@ theorem fastCutCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
       (0 < minCut W →
         (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞) ≤
           m.eval.toOuterMeasure {z | z.1.regs retVal = minCut W}) := by
-  have hws := fits_fastCutWorkspace_of_logWidth_four hn hw
-  have hsp := fits_sp_of_ws hn hws
-  obtain ⟨y_s, e_s, hm_s, hsb_s, hn_s⟩ := fastCutSetup_exec (W := W) hn hw
-  obtain ⟨m_t, hm_t, hq_t, hsup_t, hsurv_t⟩ :=
-    fastCutTree_spec hn hW hsb_s hn_s (hm_s ▸ holdsMatrix_init_fastCut W) hws hsp htot
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := fastCutCode_law hn hW hw htot
   have hbound := fastCutTime_bound hn
-  refine ⟨_, e_s.seqRand hm_t, ?_, ?_, ?_⟩
-  · simp only [OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_t
+  refine ⟨m, hm, hq, ?_, ?_⟩
   · intro z hz
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    rcases hsup_t z₀ hz₀ with ⟨ht₀, hmod₀, _, _, _, _, _, hcut₀⟩
-    exact ⟨by omega, hm_s ▸ hmod₀, hcut₀⟩
-  · intro hmin_pos
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    exact hsurv_t hmin_pos
+    have hv : z.1.regs retVal ∈ (Lean.Karger.fastCutLaw n ⟨n, W⟩).support := by
+      rw [← hlaw, ProbComp.eval_map, PMF.mem_support_map_iff]
+      exact ⟨z, (ProbComp.support_eval m) ▸ hz, rfl⟩
+    exact ⟨by have := (hsup z hz).2; omega, (hsup z hz).1,
+      Lean.Karger.exists_cut_of_mem_support_fastCutLaw hn (isContractionOf_id hW) hv⟩
+  · intro hmin
+    have hprob := Lean.Karger.fastCutLaw_root_hit_prob_ge hn hW hmin
+    rw [← hlaw, ProbComp.eval_map, PMF.toOuterMeasure_map_apply] at hprob
+    exact hprob
 
 /-- **Single-tree Karger–Stein `FastCut` specification (`fastCutProgram`, `[KargerStein1996]`,
 Section 4, Figure 6 and Lemmas 4.1–4.3; paraphrase).**
@@ -3119,29 +3073,12 @@ theorem fastCutProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
         (evalRand w fastCutProgram (fastCutTime n) (.init input)).toOuterMeasure
           {cfg | ∃ y, cfg = .halted (minCut W) y}) := by
   intro input
-  have hfit_in : InputFits w input := inputFits_fastCut hn hw htot
-  obtain ⟨m, hm, hq, hsup, hsurv⟩ := fastCutCode_spec hn hW hw htot
-  have hrun : runRand w fastCutProgram (fastCutTime n) (.running (.init input)) =
-      (fun z : Data 24 × ℕ => RandCfg.halted (z.1.regs retVal) z.1) <$> m :=
-    hm.runRand_program retVal fun z hz => (hsup z hz).1
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · intro cfg hcfg
-    rw [hrun] at hcfg
-    obtain ⟨z, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    exact ⟨z.1.regs retVal, z.1, rfl⟩
-  · rw [RandCallsBounded, hrun]
-    exact (OracleComp.isCostBounded_map_iff _ _ _).mpr hq
-  · intro cfg hcfg
-    have hbnd := runRand_bounded_init hfit_in hcfg
-    rw [hrun] at hcfg
-    obtain ⟨z, hz, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    rcases hsup z hz with ⟨_, hmod, C, hC_nt, hrv⟩
-    exact ⟨z.1, C, by rw [hrv], hbnd.2, hC_nt, minCut_le_cutWeight W hC_nt, hmod⟩
-  · intro hmin_pos
-    rw [evalRand, hrun, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    refine (hsurv hmin_pos).trans (PMF.toOuterMeasure_mono _ ?_)
-    intro z hz
-    exact ⟨z.1, congrArg (fun v => RandCfg.halted v z.1) hz.1⟩
+  obtain ⟨hhalt, hcalls, hpost, hhit, -⟩ :=
+    program_of_law (fastCutCode_law hn hW hw htot) (fastCutTime_bound hn)
+      (inputFits_fastCut hn hw htot) fun _ hv =>
+        Lean.Karger.exists_cut_of_mem_support_fastCutLaw hn (isContractionOf_id hW) hv
+  exact ⟨hhalt, hcalls, hpost, fun hmin =>
+    (Lean.Karger.fastCutLaw_root_hit_prob_ge hn hW hmin).trans hhit⟩
 
 end FastCutSingle
 
@@ -3486,24 +3423,35 @@ private theorem ksAmpTrial_step_bound {n t_tree n_p : ℕ} (hn : 2 ≤ n)
   have hov : 7 * n ^ 2 + 31 ≤ 100 * n ^ 2 * (Nat.log 2 n + 2) := by nlinarith
   linarith
 
-theorem fastCutAmpBody_spec {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ → ℕ} {x : Data 24}
+/-- One native amplification trial observes a fresh recursive answer and updates the minimum. -/
+theorem fastCutAmpBody_law {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ → ℕ} {x : Data 24}
     (hn : 2 ≤ n) (hW : IsMultigraph W) (hiR : i < R)
     (h1 : Fits w 1) (hws_fit : Fits w (sb + 27 * (n * n)))
     (hsp_fit : Fits w (2 * Nat.log 2 n + 1))
     (hR_fit : Fits w R) (htot : Fits w (totalDoubledWeight W))
     (hinv : KSAmpInv sb n R i W mem₀ x) :
-    ∃ m : ProbComp (Data 24 × ℕ),
-      ExecRand w fastCutAmpBody x m ∧
-      m.IsQueryBounded (6 * (n * n)) ∧
-      (∀ z ∈ m.support,
-        z.2 + 2 ≤ 2500 * n ^ 2 * (Nat.log 2 n + 2) ∧
-        KSAmpInv sb n R (i + 1) W mem₀ z.1 ∧
-        (0 < i → x.regs bestVal = minCut W → z.1.regs bestVal = minCut W)) ∧
-      (0 < minCut W →
-        m.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
-          (1 : ℝ≥0∞) - (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞)) := by
-  obtain ⟨m_t, hm_t, hq_t, hsup_t, hsurv_t⟩ :=
-    fastCutTree_spec hn hW hinv.regs_srcBase hinv.regs_nOrig hinv.src_matrix hws_fit hsp_fit htot
+    ExecRandLaw w fastCutAmpBody x (KSAmpInv sb n R (i + 1) W mem₀)
+      (fastCutNodeTime n + 7 * (n * n) + 21 + 8) (6 * (n * n))
+      (fun y => y.regs bestVal)
+      ((Lean.Karger.fastCutLaw n ⟨n, W⟩).map
+        fun v => if i = 0 then v else min v (x.regs bestVal)) := by
+  obtain ⟨m_t, hm_t, hq_t, hsup_raw, hlaw_t⟩ :=
+    fastCutTree_law hn hW hinv.regs_srcBase hinv.regs_nOrig hinv.src_matrix hws_fit hsp_fit htot
+  have hsup_t : ∀ z ∈ m_t.support,
+      z.2 ≤ fastCutNodeTime n + 7 * (n * n) + 21 ∧
+      Modifies (Finset.Ico (sb + n * n) (sb + 27 * (n * n))) x.mem z.1.mem ∧
+      z.1.regs srcBase = sb ∧ z.1.regs nOrig = n ∧
+      z.1.regs numTrials = x.regs numTrials ∧ z.1.regs trialIdx = x.regs trialIdx ∧
+      z.1.regs bestVal = x.regs bestVal ∧
+      ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs retVal = cutWeight W C := by
+    intro z hz
+    have hv : z.1.regs retVal ∈ (Lean.Karger.fastCutLaw n ⟨n, W⟩).support := by
+      rw [← hlaw_t, ProbComp.eval_map, PMF.mem_support_map_iff]
+      exact ⟨z, (ProbComp.support_eval m_t) ▸ hz, rfl⟩
+    exact ⟨(hsup_raw z hz).2, (hsup_raw z hz).1.1, (hsup_raw z hz).1.2.1,
+      (hsup_raw z hz).1.2.2.1, (hsup_raw z hz).1.2.2.2.1, (hsup_raw z hz).1.2.2.2.2.1,
+      (hsup_raw z hz).1.2.2.2.2.2,
+      Lean.Karger.exists_cut_of_mem_support_fastCutLaw hn (isContractionOf_id hW) hv⟩
   let Qpost (d y : Data 24) : Prop :=
     y.mem = d.mem ∧
     y.regs srcBase = d.regs srcBase ∧
@@ -3525,174 +3473,111 @@ theorem fastCutAmpBody_spec {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {me
     obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
     rcases hsup_t z₀ hz₀ with ⟨ht₀, hmod₀, hsb₀, hn₀, hnt₀, _, hbv₀, C_new, hC_nt, hrv₀⟩
     rcases hg z₀ hz₀ with ⟨ht_g, _, hym_g, hsb_g, hn_g, hnt_g, hti_g, hbv_g⟩
-    refine ⟨ksAmpTrial_step_bound hn ht₀ ht_g, ?_, ?_⟩
-    · refine ⟨hsb_g.trans hsb₀, hn_g.trans hn₀,
-        hnt_g.trans (hnt₀.trans hinv.regs_numTrials), hti_g, ?_, ?_, ?_⟩
-      · intro u v
-        have hlt : sb + u.val * n + v.val < sb + n * n := matAddr_lt_end (le_refl n) u v
-        rw [hym_g, hmod₀ _ (by rw [Finset.mem_Ico]; omega)]
-        exact hinv.src_matrix u v
-      · rw [hym_g]
-        exact modifies_trans_subset hinv.modifies_ws hmod₀ Finset.Subset.rfl Finset.Subset.rfl
-      · intro _
-        by_cases hi0 : i = 0
-        · exact ⟨C_new, hC_nt, by simp [hbv_g, hi0, hrv₀]⟩
-        · obtain ⟨C_old, hC_old_nt, hbv_old⟩ := hinv.best_cut (Nat.pos_of_ne_zero hi0)
-          simp only [hbv_g, hi0, ↓reduceIte, hrv₀, hbv₀, hbv_old]
-          rcases min_cases (cutWeight W C_new) (cutWeight W C_old) with ⟨hmin, _⟩ | ⟨hmin, _⟩
-          · exact ⟨C_new, hC_nt, hmin⟩
-          · exact ⟨C_old, hC_old_nt, hmin⟩
-    · intro hi_pos hbv_min
-      have hge : minCut W ≤ cutWeight W C_new := minCut_le_cutWeight W hC_nt
-      have hne0 : i ≠ 0 := by omega
-      simp only [hbv_g, hne0, ↓reduceIte, hrv₀, hbv₀, hbv_min, min_eq_right hge]
-  · intro hmin_pos
-    have hhit_ge : (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞) ≤
-        m_out.eval.toOuterMeasure {z | z.1.regs bestVal = minCut W} := by
-      dsimp only [m_out]
-      rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-      refine (hsurv_t hmin_pos).trans (toOuterMeasure_mono_support m_t fun z₀ hz₀ hrv_eq => ?_)
-      rcases hsup_t z₀ hz₀ with ⟨_, _, _, _, _, _, hbv₀, _⟩
-      rcases hg z₀ hz₀ with ⟨_, _, _, _, _, _, _, hbv_g⟩
-      change (g z₀.1).1.regs bestVal = minCut W
-      change z₀.1.regs retVal = minCut W at hrv_eq
+    refine ⟨?_, by omega⟩
+    refine ⟨hsb_g.trans hsb₀, hn_g.trans hn₀,
+      hnt_g.trans (hnt₀.trans hinv.regs_numTrials), hti_g, ?_, ?_, ?_⟩
+    · intro u v
+      have hlt : sb + u.val * n + v.val < sb + n * n := matAddr_lt_end (le_refl n) u v
+      rw [hym_g, hmod₀ _ (by rw [Finset.mem_Ico]; omega)]
+      exact hinv.src_matrix u v
+    · rw [hym_g]
+      exact modifies_trans_subset hinv.modifies_ws hmod₀ Finset.Subset.rfl Finset.Subset.rfl
+    · intro _
       by_cases hi0 : i = 0
-      · simp [hbv_g, hi0, hrv_eq]
+      · exact ⟨C_new, hC_nt, by simp [hbv_g, hi0, hrv₀]⟩
       · obtain ⟨C_old, hC_old_nt, hbv_old⟩ := hinv.best_cut (Nat.pos_of_ne_zero hi0)
-        have hge : minCut W ≤ cutWeight W C_old := minCut_le_cutWeight W hC_old_nt
-        simp [hbv_g, hi0, hrv_eq, hbv₀, hbv_old, min_eq_left hge]
-    have hcompl : {z : Data 24 × ℕ | z.1.regs bestVal ≠ minCut W} =
-        {z : Data 24 × ℕ | z.1.regs bestVal = minCut W}ᶜ := by
-      ext z
-      simp
-    rw [hcompl]
-    exact toOuterMeasure_compl_le_one_sub m_out.eval _ hhit_ge
+        simp only [hbv_g, hi0, ↓reduceIte, hrv₀, hbv₀, hbv_old]
+        rcases min_cases (cutWeight W C_new) (cutWeight W C_old) with ⟨hmin, _⟩ | ⟨hmin, _⟩
+        · exact ⟨C_new, hC_nt, hmin⟩
+        · exact ⟨C_old, hC_old_nt, hmin⟩
+  · rw [← hlaw_t]
+    simp only [m_out, Functor.map_map, ProbComp.eval_map, PMF.map_comp]
+    refine Probability.PMF.map_congr_on_support _ _ _ fun z hz => ?_
+    rw [ProbComp.support_eval] at hz
+    rw [(hg z hz).2.2.2.2.2.2.2, (hsup_t z hz).2.2.2.2.2.2.1]
+    rfl
 
-theorem fastCutAmpLoop_spec {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ → ℕ}
-    (hn : 2 ≤ n) (hW : IsMultigraph W)
+theorem fastCutAmpBody_spec {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ → ℕ} {x : Data 24}
+    (hn : 2 ≤ n) (hW : IsMultigraph W) (hiR : i < R)
+    (h1 : Fits w 1) (hws_fit : Fits w (sb + 27 * (n * n)))
+    (hsp_fit : Fits w (2 * Nat.log 2 n + 1))
+    (hR_fit : Fits w R) (htot : Fits w (totalDoubledWeight W))
+    (hinv : KSAmpInv sb n R i W mem₀ x) :
+    ∃ m : ProbComp (Data 24 × ℕ),
+      ExecRand w fastCutAmpBody x m ∧
+      m.IsQueryBounded (6 * (n * n)) ∧
+      (∀ z ∈ m.support,
+        z.2 + 2 ≤ 2500 * n ^ 2 * (Nat.log 2 n + 2) ∧
+        KSAmpInv sb n R (i + 1) W mem₀ z.1 ∧
+        (0 < i → x.regs bestVal = minCut W → z.1.regs bestVal = minCut W)) ∧
+      (0 < minCut W →
+        m.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
+          (1 : ℝ≥0∞) - (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞)) := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ :=
+    fastCutAmpBody_law hn hW hiR h1 hws_fit hsp_fit hR_fit htot hinv
+  have hbound := ksAmpTrial_step_bound hn le_rfl le_rfl
+  refine ⟨m, hm, hq, ?_, ?_⟩
+  · intro z hz
+    refine ⟨by have := (hsup z hz).2; omega, (hsup z hz).1, ?_⟩
+    intro hi hb
+    have hv : z.1.regs bestVal ∈ ((Lean.Karger.fastCutLaw n ⟨n, W⟩).map
+        fun v => if i = 0 then v else min v (x.regs bestVal)).support := by
+      rw [← hlaw, ProbComp.eval_map, PMF.mem_support_map_iff]
+      exact ⟨z, (ProbComp.support_eval m) ▸ hz, rfl⟩
+    obtain ⟨v, hv, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hv
+    rw [← heq]
+    simp only [show i ≠ 0 by omega, ↓reduceIte, hb,
+      min_eq_right (Lean.Karger.minCut_le_of_mem_support_fastCutLaw hn (isContractionOf_id hW) hv)]
+  · intro hmin
+    have hprob := Lean.Karger.fastCutLaw_update_failure_le hn hW hmin i (x.regs bestVal)
+      (fun hi => by
+        obtain ⟨C, hC, heq⟩ := hinv.best_cut hi
+        rw [heq]
+        exact minCut_le_cutWeight W hC)
+    rw [← hlaw, ProbComp.eval_map, PMF.toOuterMeasure_map_apply] at hprob
+    exact hprob
+
+/-- The native loop has the law of independent trials of the existing amplification client.
+The positive total trial count excludes the empty-client convention at an arbitrary initial word. -/
+theorem fastCutAmpLoop_law {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ → ℕ}
+    (hR : 1 ≤ R) (hn : 2 ≤ n) (hW : IsMultigraph W)
     (h1 : Fits w 1) (hws_fit : Fits w (sb + 27 * (n * n)))
     (hsp_fit : Fits w (2 * Nat.log 2 n + 1))
     (hR_fit : Fits w R) (htot : Fits w (totalDoubledWeight W)) :
-    ∀ (rem i : ℕ) (x : Data 24),
-      i + rem = R →
-      KSAmpInv sb n R i W mem₀ x →
-      ∃ m : ProbComp (Data 24 × ℕ),
-        ExecRand w fastCutAmpLoop x m ∧
-        m.IsQueryBounded (rem * (6 * (n * n))) ∧
-        (∀ z ∈ m.support,
-          z.2 ≤ rem * (2500 * n ^ 2 * (Nat.log 2 n + 2)) + 2 ∧
-          KSAmpInv sb n R R W mem₀ z.1 ∧
-          (0 < i → x.regs bestVal = minCut W → z.1.regs bestVal = minCut W)) ∧
-        (0 < minCut W →
-          m.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
-            ((1 : ℝ≥0∞) - (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞)) ^ rem) := by
-  intro rem
-  induction rem with
+    ∀ (remaining i : ℕ) (x : Data 24), i + remaining = R → KSAmpInv sb n R i W mem₀ x →
+      ExecRandLaw w fastCutAmpLoop x (KSAmpInv sb n R R W mem₀)
+        (remaining * (2500 * n ^ 2 * (Nat.log 2 n + 2)) + 2)
+        (remaining * (6 * (n * n))) (fun y => y.regs bestVal)
+        (OracleComp.evalWith (fun _ => Lean.Karger.fastCutLaw n ⟨n, W⟩)
+          (if i = 0 then Lean.Karger.minRuns remaining
+            else OracleComp.iterate remaining Lean.Karger.minStep (x.regs bestVal))) := by
+  intro remaining
+  induction remaining with
   | zero =>
     intro i x hiR hinv
-    have hi_eq : i = R := by omega
-    subst hi_eq
+    obtain rfl : i = R := by omega
     have hc : ¬(Cond.lt trialIdx numTrials).Holds x := by
       simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
-    refine ⟨pure (x, 2), .loop_exit hc, .pure _ _, ?_, ?_⟩
-    · intro z hz
-      cases OracleComp.eq_of_mem_supportWith_pure hz
-      exact ⟨by simp, hinv, fun _ hbv => hbv⟩
-    · intro _
-      simp only [pow_zero]
-      exact Cslib.Probability.PMF.toOuterMeasure_le_one _ _
-  | succ rem ih =>
+    rw [ite_eq_right (by omega)]
+    exact (ExecRandLaw.loop_exit hc hinv).mono (fun _ h => h) (by omega) (Nat.zero_le _)
+  | succ remaining ih =>
     intro i x hiR hinv
-    have hi_lt : i < R := by omega
     have hc : (Cond.lt trialIdx numTrials).Holds x := by
-      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials, hi_lt]
-    obtain ⟨m_b, hm_b, hq_b, hsup_b, hfail_b⟩ :=
-      fastCutAmpBody_spec hn hW hi_lt h1 hws_fit hsp_fit hR_fit htot hinv
-    have hnext : ∀ z₁ ∈ m_b.support,
-        ∃ m_r : ProbComp (Data 24 × ℕ),
-          ExecRand w fastCutAmpLoop z₁.1 m_r ∧
-          m_r.IsQueryBounded (rem * (6 * (n * n))) ∧
-          (∀ z₂ ∈ m_r.support,
-            z₂.2 ≤ rem * (2500 * n ^ 2 * (Nat.log 2 n + 2)) + 2 ∧
-            KSAmpInv sb n R R W mem₀ z₂.1 ∧
-            (0 < i + 1 → z₁.1.regs bestVal = minCut W → z₂.1.regs bestVal = minCut W)) ∧
-          (0 < minCut W →
-            m_r.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
-              ((1 : ℝ≥0∞) - (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞)) ^ rem) := by
-      intro z₁ hz₁
-      exact ih (i + 1) z₁.1 (by omega) (hsup_b z₁ hz₁).2.1
-    obtain ⟨ml, hml_def⟩ :
-        ∃ ml : Data 24 → ProbComp (Data 24 × ℕ),
-          ∀ d, ml d = codeComp w fastCutAmpLoop d := ⟨_, fun _ => rfl⟩
-    have hml_exec : ∀ z₁ ∈ m_b.support, ExecRand w fastCutAmpLoop z₁.1 (ml z₁.1) := by
-      intro z₁ hz₁
-      obtain ⟨m_r, hm_r, _⟩ := hnext z₁ hz₁
-      rw [hml_def]
-      simpa only [hm_r.codeComp_eq] using hm_r
-    have hm_iter : ExecRand w fastCutAmpLoop x
-        (do let z₁ ← m_b; let z₂ ← ml z₁.1; pure (z₂.1, z₁.2 + z₂.2 + 2)) :=
-      ExecRand.loop_iter hc hm_b hml_exec
-    let m_total := (do let z₁ ← m_b; let z₂ ← ml z₁.1; pure (z₂.1, z₁.2 + z₂.2 + 2))
-    refine ⟨m_total, hm_iter, ?_, ?_, ?_⟩
-    · have hq_each : ∀ z₁ ∈ m_b.support,
-          (ml z₁.1 >>= fun z₂ => pure (z₂.1, z₁.2 + z₂.2 + 2)).IsQueryBounded
-            (rem * (6 * (n * n))) := by
-        intro z₁ hz₁
-        obtain ⟨m_r, hm_r, hq_r, _⟩ := hnext z₁ hz₁
-        rw [hml_def, hm_r.codeComp_eq]
-        simpa only [Nat.add_zero] using hq_r.bind fun _ => .pure _ 0
-      have hq_tot := OracleComp.IsCostBounded.bind_on_support hq_b hq_each
-      exact hq_tot.mono (le_of_eq (by ring))
-    · intro z hz
-      obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-      obtain ⟨m_r, hm_r, _, hsup_r, _⟩ := hnext z₁ hz₁
-      rw [hml_def, hm_r.codeComp_eq] at hrest
-      obtain ⟨z₂, hz₂, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-      cases OracleComp.eq_of_mem_supportWith_pure hpure
-      rcases hsup_b z₁ hz₁ with ⟨ht₁, _, hstick₁⟩
-      rcases hsup_r z₂ hz₂ with ⟨ht₂, hinv₂, hstick₂⟩
-      refine ⟨?_, hinv₂, ?_⟩
-      · rw [Nat.succ_mul]
-        omega
-      · intro hi_pos hbv_x
-        exact hstick₂ (Nat.succ_pos i) (hstick₁ hi_pos hbv_x)
-    · intro hmin_pos
-      have hm_eval : m_total.eval =
-          m_b.eval.bind fun z₁ =>
-            ((ml z₁.1).eval.map fun z₂ => (z₂.1, z₁.2 + z₂.2 + 2)) := by
-        dsimp only [m_total]
-        rw [ProbComp.eval_bind]
-        refine congrArg (m_b.eval.bind ·) (funext fun z₁ => ?_)
-        rw [bind_pure_comp, ProbComp.eval_map]
-      rw [hm_eval, pow_succ']
-      refine toOuterMeasure_bind_le_mul_ennreal (α := Data 24 × ℕ) (β := Data 24 × ℕ) m_b.eval
-        (fun z₁ => (ml z₁.1).eval.map fun z₂ => (z₂.1, z₁.2 + z₂.2 + 2))
-        {z₁ | z₁.1.regs bestVal ≠ minCut W}
-        {z | z.1.regs bestVal ≠ minCut W}
-        (q₁ := (1 : ℝ≥0∞) - (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞))
-        (q₂ := ((1 : ℝ≥0∞) - (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞)) ^ rem)
-        (hfail_b hmin_pos) ?_ ?_
-      · intro z₁ hz₁_eval _
-        have hz₁ : z₁ ∈ m_b.support := (ProbComp.support_eval m_b) ▸ hz₁_eval
-        obtain ⟨m_r, hm_r, _, _, hfail_r⟩ := hnext z₁ hz₁
-        rw [hml_def, hm_r.codeComp_eq, PMF.toOuterMeasure_map_apply]
-        exact hfail_r hmin_pos
-      · intro z₁ hz₁_eval hhit
-        have hz₁ : z₁ ∈ m_b.support := (ProbComp.support_eval m_b) ▸ hz₁_eval
-        have hbv₁ : z₁.1.regs bestVal = minCut W := not_not.mp hhit
-        obtain ⟨m_r, hm_r, _, hsup_r, _⟩ := hnext z₁ hz₁
-        rw [hml_def, hm_r.codeComp_eq, PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply]
-        refine tsum_eq_zero_iff.mpr fun z₂ => ?_
-        by_cases hz₂_eval : z₂ ∈ m_r.eval.support
-        · have hz₂ : z₂ ∈ m_r.support := (ProbComp.support_eval m_r) ▸ hz₂_eval
-          have hbv₂ : z₂.1.regs bestVal = minCut W :=
-            (hsup_r z₂ hz₂).2.2 (Nat.succ_pos i) hbv₁
-          have hnot : z₂ ∉ ((fun z : Data 24 × ℕ => (z.1, z₁.2 + z.2 + 2)) ⁻¹'
-              {z : Data 24 × ℕ | z.1.regs bestVal ≠ minCut W}) := by
-            simp [hbv₂]
-          exact Set.indicator_of_notMem hnot _
-        · have hp0 : m_r.eval z₂ = 0 := by simpa only [PMF.mem_support_iff, not_not] using hz₂_eval
-          simp [hp0]
+      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
+      omega
+    have hstep := ksAmpTrial_step_bound hn le_rfl le_rfl
+    refine ((ExecRandLaw.loop_iter hc
+      (fastCutAmpBody_law hn hW (by omega) h1 hws_fit hsp_fit hR_fit htot hinv)
+      (κ := fun b => OracleComp.evalWith (fun _ => Lean.Karger.fastCutLaw n ⟨n, W⟩)
+        (OracleComp.iterate remaining Lean.Karger.minStep b)) fun y hy => by
+          have h := ih (i + 1) y (by omega) hy
+          rw [ite_eq_right (Nat.succ_ne_zero i)] at h
+          exact h).congr_law ?_).mono (fun _ h => h) (by rw [add_one_mul]; omega)
+      (by rw [add_one_mul]; omega)
+    by_cases hi : i = 0
+    · simp [hi, Lean.Karger.minRuns, Function.comp_def]
+    · simp [hi, OracleComp.iterate_succ_bind, Lean.Karger.minStep, Function.comp_def]
+
 
 private theorem fastCutHighProbTime_bound {n : ℕ} (hn : 2 ≤ n) :
     (4 * Nat.log 2 n + 14) +
@@ -3713,6 +3598,34 @@ private theorem fastCutHighProbTime_bound {n : ℕ} (hn : 2 ≤ n) :
       2500 * n ^ 2 * (L + 15) * (L + 2) ^ 2 := by ring
   linarith
 
+/-- The full native high-probability code observes the existing independent-trial law, paying for
+the original setup, every loop-control instruction and the same random-call budget. -/
+theorem fastCutHighProbCode_law {n w : ℕ} {W : Fin n → Fin n → ℕ}
+    (hn : 2 ≤ n) (hW : IsMultigraph W)
+    (hw : logWidth 4 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
+    ExecRandLaw w fastCutHighProbCode (Data.init (n :: flattenMatrix W))
+      (fun y => Modifies (Finset.Ico (2 + n * n) (2 + 27 * (n * n)))
+        (Data.init (r := 24) (n :: flattenMatrix W)).mem y.mem)
+      ((4 * Nat.log 2 n + 14) +
+        (fastCutTrials n * (2500 * n ^ 2 * (Nat.log 2 n + 2)) + 2))
+      (fastCutTrials n * (6 * (n * n))) (fun y => y.regs bestVal)
+      (Lean.Karger.fastCutHighProbLaw n ⟨n, W⟩) := by
+  have hws := fits_fastCutWorkspace_of_logWidth_four hn hw
+  have hsp := fits_sp_of_ws hn hws
+  have h1 : Fits w 1 := hws.of_le (by omega)
+  have hhp_fit := fits_fastCutTrials_of_logWidth_four hn hw
+  obtain ⟨y_s, ⟨n_s, hn_s, e_s⟩, hm_s, hsb_s, hn_s_r, hnt_s, hti_s, _⟩ :=
+    fastCutHighProbSetup_exec (W := W) hn hw
+  have hinv₀ : KSAmpInv 2 n (fastCutTrials n) 0 W
+      (Data.init (r := 24) (n :: flattenMatrix W)).mem y_s :=
+    ⟨hsb_s, hn_s_r, hnt_s, hti_s, hm_s ▸ holdsMatrix_init_fastCut W,
+      hm_s ▸ Modifies.refl _ _, fun h0 => absurd h0 (by omega)⟩
+  have hloop := fastCutAmpLoop_law (fastCutTrials_pos n) hn hW h1 hws hsp hhp_fit htot
+    (fastCutTrials n) 0 y_s (Nat.zero_add _) hinv₀
+  rw [ite_eq_left rfl] at hloop
+  exact (ExecRandLaw.seq_det ⟨n_s, hn_s, e_s⟩ hloop).mono
+    (fun _ h => h.modifies_ws) le_rfl le_rfl
+
 /-- Structured `ProbComp` specification of `fastCutHighProbCode`. -/
 theorem fastCutHighProbCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hn : 2 ≤ n) (hW : IsMultigraph W)
@@ -3728,30 +3641,19 @@ theorem fastCutHighProbCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
       (0 < minCut W →
         m.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
           (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞)) := by
-  have hws := fits_fastCutWorkspace_of_logWidth_four hn hw
-  have hsp := fits_sp_of_ws hn hws
-  have h1 : Fits w 1 := hws.of_le (by omega)
-  have hhp_fit := fits_fastCutTrials_of_logWidth_four hn hw
-  obtain ⟨y_s, ⟨n_s, hn_s, e_s⟩, hm_s, hsb_s, hn_s_r, hnt_s, hti_s, _⟩ :=
-    fastCutHighProbSetup_exec (W := W) hn hw
-  have hinv₀ : KSAmpInv 2 n (fastCutTrials n) 0 W
-      (Data.init (r := 24) (n :: flattenMatrix W)).mem y_s :=
-    ⟨hsb_s, hn_s_r, hnt_s, hti_s, hm_s ▸ holdsMatrix_init_fastCut W,
-      hm_s ▸ Modifies.refl _ _, fun h0 => absurd h0 (by omega)⟩
-  obtain ⟨m_l, hm_l, hq_l, hsup_l, hfail_l⟩ :=
-    fastCutAmpLoop_spec hn hW h1 hws hsp hhp_fit htot (fastCutTrials n) 0 y_s
-      (Nat.zero_add _) hinv₀
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := fastCutHighProbCode_law hn hW hw htot
   have hbound := fastCutHighProbTime_bound hn
-  refine ⟨_, e_s.seqRand hm_l, ?_, ?_, ?_⟩
-  · simp only [OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_l
+  refine ⟨m, hm, hq, ?_, ?_⟩
   · intro z hz
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    rcases hsup_l z₀ hz₀ with ⟨ht₀, hinv_f, _⟩
-    exact ⟨by omega, hinv_f.modifies_ws, hinv_f.best_cut (fastCutTrials_pos n)⟩
-  · intro hmin_pos
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    exact (hfail_l hmin_pos).trans (fastCutHighProb_failure_le n)
+    have hv : z.1.regs bestVal ∈ (Lean.Karger.fastCutHighProbLaw n ⟨n, W⟩).support := by
+      rw [← hlaw, ProbComp.eval_map, PMF.mem_support_map_iff]
+      exact ⟨z, (ProbComp.support_eval m) ▸ hz, rfl⟩
+    exact ⟨by have := (hsup z hz).2; omega, (hsup z hz).1,
+      Lean.Karger.exists_cut_of_mem_support_fastCutHighProbLaw hn hW hv⟩
+  · intro hmin
+    have hprob := Lean.Karger.fastCutHighProbLaw_failure_le hn hW hmin
+    rw [← hlaw, ProbComp.eval_map, PMF.toOuterMeasure_map_apply] at hprob
+    exact hprob
 
 /-- **Amplified `O(n ^ 2 log ^ 3 n)` high-probability Karger–Stein (`fastCutHighProbProgram`,
 the minimum-cut-value part of `[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase).**
@@ -3784,29 +3686,12 @@ theorem fastCutHighProbProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
           {cfg | ∀ y, cfg ≠ .halted (minCut W) y} ≤
         (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞)) := by
   intro input
-  have hfit_in : InputFits w input := inputFits_fastCut hn hw htot
-  obtain ⟨m, hm, hq, hsup, hfail⟩ := fastCutHighProbCode_spec hn hW hw htot
-  have hrun : runRand w fastCutHighProbProgram (fastCutHighProbTime n) (.running (.init input)) =
-      (fun z : Data 24 × ℕ => RandCfg.halted (z.1.regs bestVal) z.1) <$> m :=
-    hm.runRand_program bestVal fun z hz => (hsup z hz).1
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · intro cfg hcfg
-    rw [hrun] at hcfg
-    obtain ⟨z, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    exact ⟨z.1.regs bestVal, z.1, rfl⟩
-  · rw [RandCallsBounded, hrun]
-    exact (OracleComp.isCostBounded_map_iff _ _ _).mpr hq
-  · intro cfg hcfg
-    have hbnd := runRand_bounded_init hfit_in hcfg
-    rw [hrun] at hcfg
-    obtain ⟨z, hz, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    rcases hsup z hz with ⟨_, hmod, C, hC_nt, hbv⟩
-    exact ⟨z.1, C, by rw [hbv], hbnd.2, hC_nt, minCut_le_cutWeight W hC_nt, hmod⟩
-  · intro hmin_pos
-    rw [evalRand, hrun, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    refine (PMF.toOuterMeasure_mono _ ?_).trans (hfail hmin_pos)
-    intro z hz heq
-    exact hz.1 z.1 (congrArg (fun v => RandCfg.halted v z.1) heq)
+  obtain ⟨hhalt, hcalls, hpost, -, hmiss⟩ :=
+    program_of_law (fastCutHighProbCode_law hn hW hw htot) (fastCutHighProbTime_bound hn)
+      (inputFits_fastCut hn hw htot) fun _ hv =>
+        Lean.Karger.exists_cut_of_mem_support_fastCutHighProbLaw hn hW hv
+  exact ⟨hhalt, hcalls, hpost, fun hmin =>
+    hmiss.trans (Lean.Karger.fastCutHighProbLaw_failure_le hn hW hmin)⟩
 
 /-- Corollary of `fastCutHighProbProgram_spec`: when `0 < minCut W`, `fastCutHighProbProgram`
 misses `minCut W` with probability at most `1 / n`. -/

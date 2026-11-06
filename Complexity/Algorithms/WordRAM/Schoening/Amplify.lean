@@ -7,11 +7,15 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.MemoryView
+
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Schoening.Trial
 public import Complexity.Algorithms.WordRAM.Schoening.TrialCount
 public import Mathlib.Analysis.Complex.Exponential
 import Complexity.Probability.PMF.Event
+
+import Complexity.Computability.WordRAM.CountingLoop
 
 /-!
 # Schöning's algorithm on the randomized word RAM
@@ -95,7 +99,9 @@ variable {n : ℕ}
 success: `true` if some trial found a satisfying assignment. -/
 noncomputable def repeatTrial (φ : CNF (Fin n)) : ℕ → PMF Bool
   | 0 => PMF.pure false
-  | R + 1 => (trial φ).bind fun σ => if φ.eval σ then PMF.pure true else repeatTrial φ R
+  | R + 1 => do
+    let σ ← trial φ
+    if φ.eval σ then pure true else repeatTrial φ R
 
 /-- **All `R` trials fail** with probability `(1 - p) ^ R`, where `p` is the success probability of
 one trial. -/
@@ -117,7 +123,8 @@ theorem repeatTrial_false_toReal (φ : CNF (Fin n)) (R : ℕ) :
         exact Finset.sum_congr rfl fun σ _ => by by_cases hσ : φ.eval σ = true <;> simp [hσ]
       rw [hcongr, succeedProb]
       linarith
-    rw [repeatTrial, h, pow_succ]
+    rw [repeatTrial, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
+      h, pow_succ]
     calc ∑ σ, ((trial φ) σ).toReal *
           ((if φ.eval σ = true then PMF.pure true else repeatTrial φ R) false).toReal
         = ∑ σ, ((trial φ) σ).toReal * (if φ.eval σ = true then 0 else 1) *
@@ -390,29 +397,22 @@ private theorem SetupState.repeatCode {φ : CNF (Fin n)} {k c A w Tb j : ℕ} {l
   have hz := hx.frame.zero_eq
   have h₀ : ExecWithin w (ram[ outer ← zero ] : Code .standard 24) x (x.set outer 0) 1 := by
     ram_eval [hz]
-  obtain ⟨y, hy, ⟨i, hij, hyo, hyl, hyI⟩, hc⟩ := ExecWithin.loop_invariant (w := w)
-    (x := x.set outer 0)
-    (cond := .lt outer lim) (body := ram[ ⟪body⟫; outer ← outer + one ]) (T := Tb + 1)
-    (fun x => ∃ i ≤ j, x.regs outer = i ∧ x.regs lim = j ∧ SetupState φ k c A (F^[i] ds) x)
-    (fun x => j - x.regs outer)
-    (fun x ⟨i, hij, hxo, hxl, hxI⟩ hcx => by
-      have hi : i < j := by simpa [Cond.holds_lt, hxo, hxl] using hcx
+  let P (i : ℕ) (x : Data 24) := x.regs lim = j ∧ SetupState φ k c A (F^[i] ds) x
+  obtain ⟨y, hy, ⟨_, hyI⟩, _⟩ := ExecWithin.loop_count (w := w)
+    (x := x.set outer 0) (index := outer) (limit := lim)
+    (body := ram[ ⟪body⟫; outer ← outer + one ]) (T := Tb + 1) P
+    (fun _ h => h.1)
+    (fun x ⟨hxl, hxI⟩ hi => by
+      let i := x.regs outer
       obtain ⟨y, hy, hyI⟩ := hbody i hi x hxI
-      have hyo : y.regs outer = i := (hy.regs_eq hbo).trans hxo
+      have hyo : y.regs outer = i := hy.regs_eq hbo
       have hyl : y.regs lim = j := (hy.regs_eq hbl).trans hxl
       have hinc : ExecWithin w (ram[ outer ← outer + one ] : Code .standard 24) y
           (y.set outer (i + 1)) 1 := by
         ram_eval [hyo, hyI.frame.one_eq, hfit.of_le (show i + 1 ≤ j by omega)]
-      refine ⟨_, hy.seq hinc, ⟨i + 1, hi, by simp, ?_, hyI.set (by decide) _⟩, ?_⟩
-      · rw [Data.set_regs, Function.update_of_ne hlim, hyl]
-      · simp only [Data.set_regs, Function.update_self, hxo]
-        omega)
-    ⟨0, Nat.zero_le _, by simp, by simp [Function.update_of_ne hlim, hl], by
-      simpa using hx.set (by decide) 0⟩
-  have hij' : i = j := by
-    simp only [Cond.holds_lt, not_lt, hyo, hyl] at hc
-    omega
-  subst hij'
+      refine ⟨_, hy.seq hinc, ⟨?_, hyI.set (by decide) _⟩, by simp [i]⟩
+      rw [Data.set_regs, Function.update_of_ne hlim, hyl]) (by simp)
+    ⟨by simp [Function.update_of_ne hlim, hl], by simpa using hx.set (by decide) 0⟩
   refine ⟨y, (h₀.seq hy).mono ?_, hyI⟩
   simp only [Data.set_regs, Function.update_self, Nat.sub_zero,
     show Tb + 1 + 2 = Tb + 3 by omega]
@@ -735,7 +735,7 @@ private theorem ampLoop_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3
       hc hbody fun y ⟨hy, hyb, hyl, hyo, hyf⟩ => by
         have hmy : ∀ a, A + n ≤ a → y.mem a = y₁.mem a := hy.rest
         have hdy : HoldsList (A + n) (decDigits ds) y.mem :=
-          hh₁.frame fun a ha _ => hmy a ha
+          by ram_keep hh₁ using hmy
         by_cases he : φ.eval (assignmentAt y.mem A n) = true
         · simp only [he, ↓reduceIte] at hyo hyf
           have hcy : ¬(Cond.lt zero flag).Holds y := by simp [Cond.holds_lt, hyf]

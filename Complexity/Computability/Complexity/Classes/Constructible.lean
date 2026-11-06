@@ -11,7 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Spac
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
-import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 
 /-!
@@ -41,6 +41,7 @@ length is supplied by the quantitative API (`Turing.MultiTapeTM.ComputableInO.le
 * `Cslib.Complexity.timeConstructible_two_pow`,
   `Cslib.Complexity.timeConstructible_two_pow_two_pow`,
   `Cslib.Complexity.timeConstructible_succ_pow`,
+  `Cslib.Complexity.TimeConstructible.succ`,
   `Cslib.Complexity.TimeConstructible.succ_mul`: time-constructible bounds.
 * `Cslib.Complexity.spaceConstructible_const`, `Cslib.Complexity.spaceConstructible_id`,
   `Cslib.Complexity.spaceConstructible_succ`, `Cslib.Complexity.spaceConstructible_succ_pow`,
@@ -100,6 +101,16 @@ theorem TimeConstructible.of_computableInO {t : ℕ → ℕ} {T S : List Bool �
     omega
   · simp only [encBits_apply]
     exact Nat.mul_le_mul_left k (Nat.add_le_add_right (hS x) 1)
+
+/-- Adding one to a time-constructible bound preserves time constructibility. -/
+theorem TimeConstructible.succ {t : ℕ → ℕ} (ht : TimeConstructible t) :
+    TimeConstructible fun n => t n + 1 := by
+  have h := ComputableInDegree.natSucc.inO_one.comp
+    ht.computableInO
+  refine TimeConstructible.of_computableInO (s := fun n => t n + (encNat (t n)).length) 2 h
+    (fun x => ?_) fun _ => le_rfl
+  have hlen := length_encNat_le (t x.length)
+  omega
 
 /-- `2 ^ n` is time-constructible: its binary digits are `n` zeros followed by a one. -/
 theorem timeConstructible_two_pow : TimeConstructible (2 ^ ·) :=

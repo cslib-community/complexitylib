@@ -212,13 +212,13 @@ def body : Code .standard 128 :=
       (.branch (.eq n₂ zero) skip (.seq visit pushChildren)))))
 
 /-- The actual pending-word stack, including zero-fuel and empty entries, controls the loop. -/
-def loop : Code .standard 128 := .loop (.lt zero (registers Stack.len)) body
+def loop : Code .standard 128 := .loop (.lt zero (registers WordStack.len)) body
 
 /-- The complete finite native controller for one supplied root. It appends to the caller's
 output table, retaining the accumulated count and advancing the fresh allocation base. -/
 def oneRoot : Code .standard 128 :=
-  let ptr := registers Stack.ptr
-  let len := registers Stack.len
+  let ptr := registers WordStack.ptr
+  let len := registers WordStack.len
   .seq (ram[ zero ← #0; one ← #1; ptr ← stackBase; len ← #0 ])
     (.seq pushFrame loop)
 

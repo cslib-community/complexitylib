@@ -16,11 +16,16 @@ mathematics. See [Contributing](CONTRIBUTING.md) to propose, implement, or revie
 
 ## Start here
 
-The [guide](https://www.cslib.io/complexitylib/guide/) introduces the library through checked Lean
-examples. For setup or a particular task, start below.
+The [Operator's Manual](manual/README.md) covers using the codebase by hand or with an agent:
+setup, worked examples, tactics, models, design patterns and troubleshooting. The short
+[Agent Operator's Manual](manual/AGENT_OPERATORS.md) explains how humans direct agents, choose
+roles and manage review and handoffs. The [guide](https://www.cslib.io/complexitylib/guide/)
+provides checked Lean tutorials. For a particular task, start below.
 
 | I want to… | Start with… |
 | --- | --- |
+| Learn to use the library from the beginning | [Operator's Manual](manual/README.md) |
+| Direct agents working in the library | [Agent Operator's Manual](manual/AGENT_OPERATORS.md) |
 | Use Complexitylib in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
 | Build or edit this repository | [Build a checkout](#build-a-checkout) |
 | Compare selected proofs with independently stated contracts | [Comparator suites](comparator/README.md) |
@@ -28,9 +33,10 @@ examples. For setup or a particular task, start below.
 | State P/NP membership or prove a problem NP-complete | [Checked plain examples](ComplexityTests/NPCompleteness.lean), then [Clique](Complexity/Computability/Complexity/Problems/Clique.lean) |
 | Construct circuits for polynomial-time function families | [Uniform circuit examples](ComplexityTests/UniformCircuits.lean) |
 | Define queries using least fixed points or tuple closure | [FO(LFP), FO(TC), and synthesis examples](ComplexityTests/FOOperators.lean) |
+| Move between ordered FO(LFP) queries and native polynomial time | [Immerman–Vardi characterization](Complexity/Computability/Complexity/ImmermanVardi.lean) |
 | State deterministic function-time or exact path-counting bounds | [FTIME and SharpTIME examples](ComplexityTests/TimeClasses.lean) |
 | Write probabilistic programs or oracle reductions | [PPT examples](ComplexityTests/PPTTactic.lean), [oracle examples](ComplexityTests/OraclePPT.lean) |
-| Estimate frequencies in a stream | [Count-Min examples](ComplexityTests/CountMin.lean), then [fixed-query accuracy](Complexity/Algorithms/Streaming/CountMin/Probability.lean) |
+| Estimate frequencies in a stream | [Count-Min examples](ComplexityTests/CountMin.lean), then [fixed-query accuracy](Complexity/DataStructure/CountMin/Probability.lean) |
 | Find a computational model or mathematical tool | [Search the API documentation](https://www.cslib.io/complexitylib/search.html), rebuilt nightly from `main`; [Complexity.lean](Complexity.lean) lists every module, and each documents its definitions, results, and references |
 | Contribute a result or improve an API | [Contributing](CONTRIBUTING.md) |
 
@@ -71,9 +77,9 @@ the selection is not an exhaustive API reference.
 * [Håstad and Razborov–Smolensky: parity resists shallow circuits](abstracts/ComplexityAbstracts/ConstantDepthAbstract.lean): At fixed depth, parity requires more than polynomially many gates, including over an odd-prime modular basis.
 * [Braverman: polylogarithmic independence fools AC⁰](abstracts/ComplexityAbstracts/BravermanAbstract.lean): k-wise independence with k = (log(m/ε))^O(d²) fools every depth-d circuit of NOT and unbounded fan-in AND/OR gates with size and fan-in at most m, to within error ε.
 * [Formula lower bounds: parity and Andreev](abstracts/ComplexityAbstracts/FormulaBoundsAbstract.lean): Tree-shaped computation pays for repeated work: parity requires quadratic leaf size, and Andreev gives a stronger explicit bound.
+* [Depth-two threshold circuits for Andreev's function: quadratic upper bound and tight average-case bounds](abstracts/ComplexityAbstracts/AndreevThresholdAbstract.lean): Alternating-linear polarization gives an exact quadratic depth-two threshold circuit (`4·4^b + b m 2^b + 1` gates) and windowed average-case upper bounds for Andreev's function, while fixed-weight threshold-shift counting and Cauchy–Schwarz yield improved quadratic-in-`ε` gate and wire lower bounds.
 * [Limaye–Srinivasan–Tavenas over any field (after Forbes): constant-depth algebraic circuits for IMM need superpolynomial size](abstracts/ComplexityAbstracts/ConstantDepthArithmeticAbstract.lean): Over every field, constant product-depth simple algebraic circuits computing iterated matrix multiplication of ⌊log₂ ⌊log₂ n⌋⌋ generic n × n matrices need more than n^c gates for every c and all large n.
 * [One-way functions yield pseudorandom generators and adaptive functions](abstracts/ComplexityAbstracts/CryptographyAbstract.lean): One-wayness yields pseudorandomness, from an extra output bit to functions secure against adaptive oracle queries.
-* [Gentry and GSW: fully homomorphic encryption from LWE](abstracts/ComplexityAbstracts/GSWFHEAbstract.lean): Bootstrapping the GSW scheme gives leveled fully homomorphic encryption from decision LWE, and fully homomorphic encryption under an additional circular-security assumption.
 * [Haken: pigeonhole formulas require long resolution proofs](abstracts/ComplexityAbstracts/ResolutionAbstract.lean): The pigeonhole principle has short CNF statements but requires exponentially many resolution lines.
 * [Communication: disjointness and inner product resist randomness](abstracts/ComplexityAbstracts/CommunicationAbstract.lean): Both problems require linearly many communicated bits even with shared randomness and bounded error.
 * [Sipser–Gács–Lautemann: BPP lies in the second polynomial level](abstracts/ComplexityAbstracts/SipserLautemannAbstract.lean): Bounded-error polynomial time admits both existential–universal and universal–existential polynomial descriptions.

@@ -9,29 +9,42 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeUnaryPrimitives
 
 /-!
-# `fun_prop` rules for linear list, option and number operations
+# `fun_prop` rules for list, option, number and test operations
 
-The linear primitives of `Turing.MultiTapeTM.ComputableInDegree`, as `fun_prop` rules for
-`Turing.MultiTapeTM.ComputableInO`, so that a program over these operations is assembled by
-`fun_prop` and its bounds are checked once with `Turing.MultiTapeTM.ComputableInO.mono`. Each
-rule is linear in its encoded argument, and `Turing.MultiTapeTM.ComputableInO.comp'` composes
-them.
+These rules assemble `Turing.MultiTapeTM.ComputableInO` certificates with explicit time and
+charged-space bounds. `fun_prop` composes the primitives through
+`Turing.MultiTapeTM.ComputableInO.comp'`; `Turing.MultiTapeTM.ComputableInO.mono` then compares
+the assembled bounds with the client's target bounds.
+
+The list, option and unary-number primitives are linear in their encoded arguments. The
+registered binary `natSucc` and `natPred` certificates instead have quadratic time and linear
+charged space. General equality `eq'` adds its explicit product-of-lengths time charge and
+encoded-pair space charge; clients enable it locally. Tests against a fixed value of a finite
+type and binary zero retain the tested computation's bounds, whereas `isEmpty'` adds the
+computed list's encoded length to both time and space. A test takes that computation as a
+premise, since its Boolean result does not determine the tested value's encoding.
 
 ## Main results
 
 * `Turing.MultiTapeTM.ComputableInO.take'`, `.drop'`: prefixes and suffixes, with a unary count.
+* `Turing.MultiTapeTM.ComputableInO.not'`, `.and'`, `.or'`: Boolean connectives.
+* `Turing.MultiTapeTM.ComputableInO.decideEq'`, `.natIsZero'`: tests against a constant.
+* `Turing.MultiTapeTM.ComputableInO.eq'`: equality of computed values, enabled locally by a client.
+* `Turing.MultiTapeTM.ComputableInO.iteDecide`: case distinction on a decidable proposition.
 -/
 
 @[expose] public section
 
 namespace Turing.MultiTapeTM.ComputableInO
 
-variable {α γ : Type} {enc : α ↪ List Bool} {encIn : γ ↪ List Bool} {T₁ S₁ T₂ S₂ : γ → ℕ}
+variable {α γ : Type} {enc : α ↪ List Bool} {encIn : γ ↪ List Bool}
+  {T S T₁ S₁ T₂ S₂ T₃ S₃ : γ → ℕ}
 
 /-- The linear primitive `h` as a `fun_prop` rule. -/
 local macro "linear_rule " n:ident " : " f:term " from " e₁:term " to " e₂:term " := " h:term :
@@ -95,5 +108,74 @@ theorem drop' {l : γ → List α} {n : γ → ℕ} (hl : ComputableInO l encIn 
       fun x => S₁ x + S₂ x + (encPair (encList enc) encUnary (l x, n x)).length :=
   ComputableInO.comp' (f := fun p : List α × ℕ => p.1.drop p.2)
     (ComputableInDegree.dropUnary enc).inO_one (hl.prod hn)
+
+attribute [fun_prop] natSucc natPred
+
+/-- The negation of a computed Boolean. -/
+@[fun_prop]
+theorem not' {b : γ → Bool} (hb : ComputableInO b encIn encBool T S) :
+    ComputableInO (fun x => !b x) encIn encBool T S :=
+  (ComputableInDegree.of_finite (encIn := encBool) (encMid := encBool) not).inO_one.comp_linear hb
+
+/-- The conjunction of two computed Booleans. -/
+@[fun_prop]
+theorem and' {a b : γ → Bool} (ha : ComputableInO a encIn encBool T₁ S₁)
+    (hb : ComputableInO b encIn encBool T₂ S₂) :
+    ComputableInO (fun x => a x && b x) encIn encBool (fun x => T₁ x + T₂ x)
+      fun x => S₁ x + S₂ x :=
+  (ComputableInDegree.of_finite (encIn := encPair encBool encBool) (encMid := encBool)
+    fun q : Bool × Bool => q.1 && q.2).inO_one.comp_linear (ha.prod hb)
+
+/-- The disjunction of two computed Booleans. -/
+@[fun_prop]
+theorem or' {a b : γ → Bool} (ha : ComputableInO a encIn encBool T₁ S₁)
+    (hb : ComputableInO b encIn encBool T₂ S₂) :
+    ComputableInO (fun x => a x || b x) encIn encBool (fun x => T₁ x + T₂ x)
+      fun x => S₁ x + S₂ x :=
+  (ComputableInDegree.of_finite (encIn := encPair encBool encBool) (encMid := encBool)
+    fun q : Bool × Bool => q.1 || q.2).inO_one.comp_linear (ha.prod hb)
+
+/-- Whether two computed values agree. This is not a global `fun_prop` rule, since it would also
+apply to tests against a constant, which have cheaper rules; a client enables it locally. -/
+theorem eq' [DecidableEq α] {a b : γ → α} (ha : ComputableInO a encIn enc T₁ S₁)
+    (hb : ComputableInO b encIn enc T₂ S₂) :
+    ComputableInO (fun x => decide (a x = b x)) encIn encBool
+      (fun x => T₁ x + T₂ x +
+        ((enc (a x)).length + 1) * ((enc (a x)).length + (enc (b x)).length + 1))
+      fun x => S₁ x + S₂ x + (encPair enc enc (a x, b x)).length :=
+  (eq enc).comp' (ha.prod hb)
+
+/-- Whether a computed option is empty, within the bounds of the option. -/
+@[fun_prop]
+theorem optionIsNone {o : γ → Option α} (h : ComputableInO o encIn (encOption enc) T S) :
+    ComputableInO (fun x => (o x).isNone) encIn encBool T S :=
+  (not' h.optionIsSome).of_enc_eq fun x => by cases o x <;> rfl
+
+/-- Whether a computed value of a finite type equals a fixed value. -/
+@[fun_prop]
+theorem decideEq' [Finite α] [DecidableEq α] (c : α) {v : γ → α}
+    (hv : ComputableInO v encIn enc T S) :
+    ComputableInO (fun x => decide (v x = c)) encIn encBool T S :=
+  (ComputableInDegree.of_finite (encIn := enc) (encMid := encBool)
+    fun a => decide (a = c)).inO_one.comp_linear hv
+
+/-- Whether a computed binary number is zero. -/
+@[fun_prop]
+theorem natIsZero' {n : γ → ℕ} (hn : ComputableInO n encIn encNat T S) :
+    ComputableInO (fun x => decide (n x = 0)) encIn encBool T S :=
+  natIsZero.comp_linear hn
+
+/-- Case distinction on a decidable proposition, through its computed `decide`. -/
+@[fun_prop]
+theorem iteDecide {β : Type} {encOut : β ↪ List Bool} {c : γ → Prop} [DecidablePred c]
+    {f g : γ → β} (hc : ComputableInO (fun x => decide (c x)) encIn encBool T₁ S₁)
+    (hf : ComputableInO f encIn encOut T₂ S₂) (hg : ComputableInO g encIn encOut T₃ S₃) :
+    ComputableInO (fun x => if c x then f x else g x) encIn encOut
+      (fun x => T₁ x + if decide (c x) then T₂ x else T₃ x)
+      fun x => S₁ x + if decide (c x) then S₂ x else S₃ x :=
+  (hc.ite hf hg).of_enc_eq fun x => by simp only [decide_eq_true_eq]
+
+-- Registered again so that a Boolean condition is tried here before `iteDecide`.
+attribute [fun_prop] ite
 
 end Turing.MultiTapeTM.ComputableInO

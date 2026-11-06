@@ -9,7 +9,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelAppend
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.ConditionalMachine
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Capabilities
 
 /-!
 # Direct closure of independent degree bounds
@@ -63,15 +63,6 @@ theorem pair {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
   have hl : (enc (f a, g a)).length ≤ c * (t₁ a + t₂ a + 1) :=
     (h a).length_output_le
   omega
-
-/-- Framed pairing retains the independent encoded-output degrees. -/
-theorem prod {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
-    {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool}
-    {f : α → β₁} {g : α → β₂} (hf : ComputableInDegree f encIn enc₁ d₁ e₁)
-    (hg : ComputableInDegree g encIn enc₂ d₂ e₂) :
-    ComputableInDegree (fun x => (f x, g x)) encIn (encPair enc₁ enc₂) (max d₁ d₂)
-      (max e₁ e₂) :=
-  ⟨(hf.pair hg).1, (((hf.2.smul 2).add_const 1).add_max hg.2).mono fun x => by simp⟩
 
 /-- Case distinction retains independent branch output degrees, including zero. -/
 theorem ite {encC : Bool ↪ List Bool} {c : α → Bool} {f g : α → β} {dc ec : ℕ}

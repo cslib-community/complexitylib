@@ -7,7 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.AKS.Congruence
+
+import Complexity.Computability.WordRAM.CountingLoop
 
 /-!
 # Step 5 of the AKS algorithm on the word RAM
@@ -96,13 +99,10 @@ private theorem cong_exec {w : ℕ} (x : Data 29) {a b t r n v : ℕ} (ha : x.re
     (hfn : Fits w (n * n + n)) (hfv : Fits w v) :
     ∃ y, ExecWithin w cong x y (Congruence.time r n) ∧ y.regs flag ≤ 1 ∧
       (y.regs flag = 1 ↔ Congruence n r v) ∧ ∀ j, Keep j → y.regs j = x.regs j := by
-  obtain ⟨y, hy, hle, hiff, -⟩ := Congruence.exec (x.comap congMap) ha hb ht hr hn hv hr0 hn0 hab
-    hta htb hfa hfb hft hf2 hfn hfv
-  have hy' := hy.rename congMap_injective
-  have hfl : (y.extend congMap x).regs flag = y.regs Congruence.flag :=
-    congMap_injective.extend_apply _ _ Congruence.flag
-  exact ⟨_, hy', by rw [hfl]; exact hle, by rw [hfl]; exact hiff,
-    fun j hj => hy'.regs_eq (cong_preserves j hj)⟩
+  obtain ⟨y, hy, ⟨hle, hiff, -⟩, -⟩ :=
+    ExecWithin.rename_post congMap_injective (Congruence.exec (x.comap congMap) ha hb ht hr hn
+      hv hr0 hn0 hab hta htb hfa hfb hft hf2 hfn hfv)
+  exact ⟨y, hy, hle, hiff, fun j hj => hy.regs_eq (cong_preserves j hj)⟩
 
 /-- **Step 5.** For `r ≥ 1` and `n ≥ 1`, with the three blocks pairwise disjoint and the word size
 holding the block ends, `2 r`, `n² + n` and `A + 1`, the program leaves `1` in `ok` exactly when
@@ -118,16 +118,15 @@ theorem exec {w : ℕ} (x : Data 29) {a b t r n A₀ : ℕ} (ha : x.regs R = a) 
       y.regs R = a ∧ y.regs B = b ∧ y.regs T = t ∧ y.regs rr = r ∧ y.regs nn = n := by
   classical
   have h1 : Fits w 1 := hfA.of_le (by omega)
-  let I (y : Data 29) : Prop := y.regs R = a ∧ y.regs B = b ∧ y.regs T = t ∧ y.regs rr = r ∧
-    y.regs nn = n ∧ y.regs lim = A₀ + 1 ∧ y.regs c1 = 1 ∧ 1 ≤ y.regs av ∧
-    y.regs av ≤ A₀ + 1 ∧ y.regs ok ≤ 1 ∧
-    (y.regs ok = 1 ↔ ∀ v, 1 ≤ v → v < y.regs av → Congruence n r v)
-  have hstep (y : Data 29) (hy : I y) (hc : (Cond.lt av lim).Holds y) :
-      ∃ z, ExecWithin w body y z (Congruence.time r n + 4) ∧ I z ∧
-        A₀ + 1 - z.regs av < A₀ + 1 - y.regs av := by
-    obtain ⟨hyR, hyB, hyT, hyr, hyn, hyl, hy1, hv1, hvA, hyok, hyiff⟩ := hy
+  let P (j : ℕ) (y : Data 29) : Prop := y.regs R = a ∧ y.regs B = b ∧ y.regs T = t ∧ y.regs rr = r ∧
+    y.regs nn = n ∧ y.regs lim = A₀ + 1 ∧ y.regs c1 = 1 ∧ 1 ≤ j ∧ y.regs ok ≤ 1 ∧
+    (y.regs ok = 1 ↔ ∀ v, 1 ≤ v → v < j → Congruence n r v)
+  have hstep (y : Data 29) (hy : P (y.regs av) y) (hc : y.regs av < A₀ + 1) :
+      ∃ z, ExecWithin w body y z (Congruence.time r n + 4) ∧
+        P (y.regs av + 1) z ∧ z.regs av = y.regs av + 1 := by
+    obtain ⟨hyR, hyB, hyT, hyr, hyn, hyl, hy1, hv1, hyok, hyiff⟩ := hy
     obtain ⟨V, hV⟩ : ∃ V, y.regs av = V := ⟨_, rfl⟩
-    have hVA : V ≤ A₀ := by simp only [Cond.holds_lt, hV, hyl] at hc; omega
+    have hVA : V ≤ A₀ := by rw [hV] at hc; omega
     rw [hV] at hv1 hyiff
     obtain ⟨y₁, hrun₁, hle, hiff, hkeep⟩ := cong_exec (w := w) y hyR hyB hyT hyr hyn hV hr0 hn0
       hab hta htb hfa hfb hft hf2 hfn (hfA.of_le (by omega))
@@ -151,7 +150,7 @@ theorem exec {w : ℕ} (x : Data 29) {a b t r n A₀ : ℕ} (ha : x.regs R = a) 
       exact hk j hj
     have hzv : z.regs av = V + 1 := by simp [z]
     have hzo : z.regs ok = o := by simp +decide [z]
-    refine ⟨z, hrun₁.seq hrun₂, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+    refine ⟨z, hrun₁.seq hrun₂, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
     · rw [hz R (by simp [Keep]) (by decide) (by decide), hyR]
     · rw [hz B (by simp [Keep]) (by decide) (by decide), hyB]
     · rw [hz T (by simp [Keep]) (by decide) (by decide), hyT]
@@ -159,10 +158,9 @@ theorem exec {w : ℕ} (x : Data 29) {a b t r n A₀ : ℕ} (ha : x.regs R = a) 
     · rw [hz nn (by simp [Keep]) (by decide) (by decide), hyn]
     · rw [hz lim (by simp [Keep]) (by decide) (by decide), hyl]
     · rw [hz c1 (by simp [Keep]) (by decide) (by decide), hy1]
-    · rw [hzv]; omega
-    · rw [hzv]; omega
+    · omega
     · rw [hzo]; simp only [o]; split_ifs <;> omega
-    · rw [hzo, hzv]
+    · rw [hzo, hV]
       simp only [o]
       constructor
       · intro h v hv1' hv
@@ -174,29 +172,29 @@ theorem exec {w : ℕ} (x : Data 29) {a b t r n A₀ : ℕ} (ha : x.regs R = a) 
         have hC : Congruence n r V := h V hv1 (by omega)
         simp only [hC, ↓reduceIte]
         exact hyiff.mpr fun v hv1' hv => h v hv1' (by omega)
-    · rw [hzv, hV]; omega
+    · simp only [hzv, hV]
   let x₀ := (((x.set c1 1).set lim (A₀ + 1)).set av 1).set ok 1
   have hrun₀ : ExecWithin (B := .standard) w (ram[ c1 ← #1; lim ← A + c1; av ← c1; ok ← #1 ])
       x x₀ 4 := by
     ram_eval [x₀, hA, h1, hfA]
-  have hx₀ : I x₀ := by
+  have hx₀ : P (x₀.regs av) x₀ := by
     refine ⟨by simp +decide [x₀, ha], by simp +decide [x₀, hb], by simp +decide [x₀, ht],
       by simp +decide [x₀, hr], by simp +decide [x₀, hn], by simp +decide [x₀],
-      by simp +decide [x₀], by simp +decide [x₀], by simp +decide [x₀], by simp +decide [x₀], ?_⟩
+      by simp +decide [x₀], by simp +decide [x₀], by simp +decide [x₀], ?_⟩
     have hv : x₀.regs av = 1 := by simp +decide [x₀]
     have ho : x₀.regs ok = 1 := by simp +decide [x₀]
     rw [hv, ho]
     exact ⟨fun _ v hv1 hv => by omega, fun _ => rfl⟩
-  obtain ⟨y, hrun, hy, hc⟩ := ExecWithin.loop_invariant I (fun y => A₀ + 1 - y.regs av) hstep hx₀
-  obtain ⟨hyR, hyB, hyT, hyr, hyn, hyl, -, -, hvA, hyok, hyiff⟩ := hy
-  have hend : y.regs av = A₀ + 1 := by simp only [Cond.holds_lt, hyl] at hc; omega
+  obtain ⟨y, hrun, ⟨hyR, hyB, hyT, hyr, hyn, _, _, _, hyok, hyiff⟩, _⟩ :=
+    ExecWithin.loop_count P (fun _ ⟨_, _, _, _, _, hlim, _⟩ => hlim) hstep
+      (by simp +decide [x₀, av, ok]) hx₀
   refine ⟨y, (hrun₀.seq hrun).mono ?_, hyok, ?_, hyR, hyB, hyT, hyr, hyn⟩
   · have hv : x₀.regs av = 1 := by simp +decide [x₀]
     rw [hv, show A₀ + 1 - 1 = A₀ by omega, show Congruence.time r n + 4 + 2 =
       Congruence.time r n + 6 by ring]
     unfold time
     omega
-  · rw [hyiff, hend]
+  · rw [hyiff]
     exact ⟨fun h v hv1 hv => h v hv1 (by omega), fun h v hv1 hv => h v hv1 (by omega)⟩
 
 end Cslib.Algorithms.WordRAM.AKS.CongruenceLoop

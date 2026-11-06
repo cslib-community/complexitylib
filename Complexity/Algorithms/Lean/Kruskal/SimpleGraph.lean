@@ -73,7 +73,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.Kruskal
 
-open Cslib.Algorithms.Lean.DisjointSet
+open Cslib.DataStructure.DisjointSet
 open Cslib.Algorithms.Lean
 
 /-! ### Edge-list projection to `SimpleGraph (Fin n)` -/

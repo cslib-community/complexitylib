@@ -124,19 +124,13 @@ private theorem computableInPolyTime_verifier {f : α × List Bool → CNF ℕ}
     (hf : ComputableInPolyTime f (encPair enc encBits) encCNF) (S W P : Polynomial ℕ) :
     ComputableInPolyTime (verifier enc f S W P) (encPair enc encBits) encBool := by
   have hn : ComputableInPolyTime (fun x : α × List Bool => (enc x.1).length)
-      (encPair enc encBits) encUnary :=
-    (encoding_length enc).comp (fst _ _)
+      (encPair enc encBits) encUnary := by fun_prop
   have hφ : ComputableInPolyTime (fun x : α × List Bool =>
-      f (x.1, x.2.drop (P.eval (enc x.1).length))) (encPair enc encBits) encCNF :=
-    hf.comp ((fst _ _).prod (bitsDropWithInput (snd _ _) ((unary_eval P).comp hn)))
+      f (x.1, x.2.drop (P.eval (enc x.1).length))) (encPair enc encBits) encCNF := by fun_prop
   have hD : ComputableInPolyTime (fun p : (α × List Bool) × CNF ℕ =>
       evalAdvice (S.eval (enc p.1.1).length) (W.eval (enc p.1.1).length)
         (p.1.2.take (P.eval (enc p.1.1).length)) (encCNF p.2))
-      (encPair (encPair enc encBits) encCNF) encBool := by
-    have hn' := hn.comp (fst (encPair enc encBits) encCNF)
-    exact computableInPolyTime_evalAdvice_eval S W hn'
-      (bitsTakeWithInput ((snd _ _).comp (fst _ _)) ((unary_eval P).comp hn'))
-      ((of_eq (f := encCNF) (encOut := encBits) fun _ => rfl).comp (snd _ _))
+      (encPair (encPair enc encBits) encCNF) encBool := by fun_prop
   exact SAT.computableInPolyTime_verifier.comp (hφ.prod (SAT.computableInPolyTime_search hD hφ))
 
 end KarpLipton
@@ -238,9 +232,7 @@ theorem PolyTimeReducible.mem_PPolyOn {β : Type} {encB : β ↪ List Bool} {A :
     simp [N]
   let g : List Bool × α → Bool := fun x =>
     evalAdvice (S.eval (enc x.2).length) (W.eval (enc x.2).length) x.1 (encB (f x.2))
-  have hg : ComputableInPolyTime g (encPair encBits enc) encBool :=
-    computableInPolyTime_evalAdvice_eval S W ((encoding_length enc).comp (snd _ _)) (fst _ _)
-      ((of_eq (f := encB) (encOut := encBits) fun _ => rfl).comp (hf.comp (snd _ _)))
+  have hg : ComputableInPolyTime g (encPair encBits enc) encBool := by fun_prop
   obtain ⟨M, hM, hgM⟩ := PPoly.exists_of_polyTime hg
   let L : Language Bool := {x : List Bool | frame (α_adv x.length) ++ x ∈ M}
   refine ⟨L, PPoly.of_advice hM α_adv hα (fun _ => Iff.rfl), fun a => ?_⟩
@@ -268,21 +260,7 @@ theorem mem_PPoly_of_exists_frame_append
   let V : List Bool × List Bool → Bool := fun z =>
     evalAdvice (S.eval (dropFrame z.1).length) (W.eval (dropFrame z.1).length) (unframe z.1)
       (frame (dropFrame z.1) ++ z.2.take (p.eval (dropFrame z.1).length))
-  have hV : ComputableInPolyTime V (encPair encBits encBits) encBool := by
-    have hx : ComputableInPolyTime (fun z : List Bool × List Bool => dropFrame z.1)
-        (encPair encBits encBits) encBits :=
-      dropFrame.comp (fst _ _)
-    have hu : ComputableInPolyTime (fun z : List Bool × List Bool => unframe z.1)
-        (encPair encBits encBits) encBits :=
-      unframe.comp (fst _ _)
-    have hn : ComputableInPolyTime (fun z : List Bool × List Bool => (dropFrame z.1).length)
-        (encPair encBits encBits) encUnary := length_bits.comp hx
-    have hw : ComputableInPolyTime
-        (fun z : List Bool × List Bool => z.2.take (p.eval (dropFrame z.1).length))
-        (encPair encBits encBits) encBits :=
-      bitsTakeWithInput (snd _ _) ((unary_eval p).comp hn)
-    exact computableInPolyTime_evalAdvice_eval S W hn hu
-      (bitsAppend ((bitsFrame encBits).comp hx) hw)
+  have hV : ComputableInPolyTime V (encPair encBits encBits) encBool := by fun_prop
   let D : Language Bool := {z : List Bool | ∃ w : List Bool, w.length = p.eval z.length ∧
     V (z, w) = true}
   have hD : D ∈ PPoly := mem_PPolyOn_encBits_iff.1 (hNP ⟨p, V, hV, fun _ => Iff.rfl⟩)
@@ -378,8 +356,7 @@ theorem SigmaP_subset_PPolyOn_of_NP_subset_PPoly
     obtain ⟨p, B, hB, hAB⟩ := exists_mem_PiP_of_mem_SigmaP_succ hA
     have hB_PPoly : B ∈ PPolyOn (encPair enc encBits) := by
       simpa using PPolyOn.compl (ih (compl_mem_SigmaP_of_mem_PiP hB))
-    have hN : ComputableInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary :=
-      (unary_eval p).comp (encoding_length enc)
+    have hN : ComputableInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary := by fun_prop
     have hA_eq : A = {a : α | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ (a, w) ∈ B} :=
       Set.ext hAB
     rw [hA_eq]

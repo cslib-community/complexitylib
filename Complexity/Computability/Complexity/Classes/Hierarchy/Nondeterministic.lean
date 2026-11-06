@@ -88,10 +88,9 @@ theorem not_NEXP_subset_NP : ¬ (NEXP encBits ⊆ NP encBits) := by
   have hB₁ : h₁ ⁻¹' ntm.padded c ∈ NP encBits :=
     hSub (preimage_append_two_pow_mem_NEXP (ntm.padded_mem_NP c))
   have hf_add : ComputableInPolyTime (fun n : ℕ => n + 4) encUnary encUnary :=
-    (ComputableInPolyTime.unary_add.comp
-      (ComputableInPolyTime.id'.prod (ComputableInPolyTime.const 4)))
-  have hB₂ : g₂ ⁻¹' (h₁ ⁻¹' ntm.padded c) ∈ NEXP encBits :=
-    preimage_pad_mem_NEXP hB₁ hf_add fun n => Nat.le_add_right n 4
+    ComputableInPolyTime.unary_add.comp (.prod .id' (.const 4))
+  have hB₂ := preimage_pad_mem_NEXP (enc := encBits) (f := fun n => n + 4) hB₁ hf_add
+    fun n => Nat.le_add_right n 4
   have hL_eq : L = g₂ ⁻¹' (h₁ ⁻¹' ntm.padded c) := by
     ext x
     change x ∈ L ↔ h₁ (g₂ x) ∈ ntm.padded c
@@ -105,30 +104,20 @@ theorem not_NEXP_subset_NP : ¬ (NEXP encBits ⊆ NP encBits) := by
       c * (frame x ++ (List.replicate (2 ^ (x.length + 4)) true ++
         List.replicate (2 ^ (g₂ x).length) true)).length
     have hM : 2 ^ (x.length + 4) ≤ (g₂ x).length := by
-      simp only [g₂, List.length_append, length_frame, List.length_replicate]
-      omega
+      simp only [g₂, List.length_append, length_frame, List.length_replicate]; omega
     have hpow_le : 2 ^ (2 ^ (x.length + 4)) ≤ 2 ^ (g₂ x).length :=
       Nat.pow_le_pow_right (by norm_num) hM
     have hlen_ge : 2 ^ (2 ^ (x.length + 4)) + 1 ≤
         (frame x ++ (List.replicate (2 ^ (x.length + 4)) true ++
           List.replicate (2 ^ (g₂ x).length) true)).length := by
-      simp only [List.length_append, length_frame, List.length_replicate]
-      calc 2 ^ (2 ^ (x.length + 4)) + 1
-          ≤ 2 ^ (g₂ x).length + 1 := Nat.add_le_add_right hpow_le 1
-        _ ≤ 2 * x.length + 1 + (2 ^ (x.length + 4) + 2 ^ (g₂ x).length) := by
-            have := Nat.zero_le (2 ^ (x.length + 4))
-            omega
+      have := Nat.zero_le (2 ^ (x.length + 4))
+      simp only [List.length_append, length_frame, List.length_replicate]; omega
     have hmul : c₁ * 2 ^ (2 ^ (x.length + 4)) + c₂ ≤
         (c₁ + c₂) * (frame x ++ (List.replicate (2 ^ (x.length + 4)) true ++
-          List.replicate (2 ^ (g₂ x).length) true)).length := by
-      calc c₁ * 2 ^ (2 ^ (x.length + 4)) + c₂
-          ≤ c₁ * (2 ^ (2 ^ (x.length + 4)) + 1) + c₂ * (2 ^ (2 ^ (x.length + 4)) + 1) :=
-            Nat.add_le_add (Nat.mul_le_mul_left c₁ (Nat.le_succ _))
-              (Nat.le_mul_of_pos_right c₂ (Nat.succ_pos _))
-        _ = (c₁ + c₂) * (2 ^ (2 ^ (x.length + 4)) + 1) := (Nat.add_mul _ _ _).symm
-        _ ≤ (c₁ + c₂) * (frame x ++ (List.replicate (2 ^ (x.length + 4)) true ++
-            List.replicate (2 ^ (g₂ x).length) true)).length :=
-            Nat.mul_le_mul_left _ hlen_ge
+          List.replicate (2 ^ (g₂ x).length) true)).length :=
+      (Nat.add_le_add (Nat.mul_le_mul_left c₁ (Nat.le_succ _))
+        (Nat.le_mul_of_pos_right c₂ (Nat.succ_pos _))).trans
+        ((Nat.add_mul _ _ _).symm ▸ Nat.mul_le_mul_left _ hlen_ge)
     rw [Nat.mul_assoc]
     exact Nat.mul_le_mul_left _ hmul
   have hL_EXP : L ∈ EXP encBits := hL_eq ▸ NP_subset_EXP (hSub hB₂)
@@ -138,11 +127,10 @@ theorem not_NEXP_subset_NP : ¬ (NEXP encBits ⊆ NP encBits) := by
   filter_upwards [hpoly.eventually_lt_two_pow, eventually_ge_atTop (C + 1)] with n hn hC
   have h₁ : 2 * C ≤ 2 ^ (n + 1) := by
     have : n + 1 ≤ 2 ^ n := Nat.lt_two_pow_self
-    rw [pow_succ']
-    omega
-  have h₂ : 1 ≤ 2 ^ n ^ d := Nat.one_le_two_pow
+    rw [pow_succ']; omega
+  have h₂ : C ≤ C * 2 ^ n ^ d := Nat.le_mul_of_pos_right C Nat.one_le_two_pow
   calc C * 2 ^ n ^ d + C
-      ≤ 2 * C * 2 ^ n ^ d := by nlinarith
+      ≤ 2 * C * 2 ^ n ^ d := by rw [two_mul, add_mul]; omega
     _ ≤ 2 ^ (n + 1) * 2 ^ n ^ d := Nat.mul_le_mul_right _ h₁
     _ = 2 ^ (n ^ d + n + 1) := by rw [← Nat.pow_add]; ring_nf
     _ ≤ 2 ^ (2 ^ n) := Nat.pow_le_pow_right (by norm_num) hn.le

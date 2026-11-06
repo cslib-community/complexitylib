@@ -121,4 +121,22 @@ example : ∃ C K : ℕ, EntryAdmissible tableEntryCertificate C 2 (1, twoEdges)
   obtain ⟨K, hK⟩ := tableAlgorithm.bound C 1
   exact ⟨C, K, hC, hK 2 1 1 twoEdges le_rfl le_rfl (by norm_num) hC⟩
 
+/-! ### Logarithmic root precision -/
+
+-- The clock charges one unit per block of logarithmically many precision bits.
+example : normalizedPrecision 1024 11264 = 1024 := by decide
+
+-- Precision four exceeds the linear allowance D*s at D=1 and s=2, but lies within
+-- D*s*(log₂ s+1). The same concrete machine satisfies the subexponential resource bounds.
+example : ∃ C K : ℕ, EntryAdmissible tableEntryCertificate C 2 (1, twoEdges) ∧
+    tableAlgorithm.certificate.time (4, FastContraction.modulus 2, 1, twoEdges) ≤
+        K * ((encInput (encList encNat) (4, FastContraction.modulus 2, 1, twoEdges)).length +
+          1) ^ K * 2 ^ (K * 2 / Nat.sqrt (Nat.log 2 2)) ∧
+      tableAlgorithm.certificate.space (4, FastContraction.modulus 2, 1, twoEdges) ≤
+        K * ((encInput (encList encNat) (4, FastContraction.modulus 2, 1, twoEdges)).length +
+          1) ^ K := by
+  obtain ⟨C, hC⟩ := exists_entryAdmissible_twoEdges
+  obtain ⟨K, hK⟩ := tableAlgorithm.bound_logPrecision C 1
+  exact ⟨C, K, hC, hK 2 4 1 twoEdges le_rfl (by norm_num) (by decide) hC⟩
+
 end ComplexityTests.TensorNetworkEntryAnalysis

@@ -28,7 +28,7 @@ is deterministic. Its resource bound is expressed by exact realization on a cloc
 machine; the same interaction interface also supports randomized programs.
 
 The definitions and theorem statement below specify the claim. Lean checks the bridge, and
-besides the shared foundations the audit permits only the following eight foundational program and
+besides the shared foundations the audit permits only the following nine foundational program and
 machine modules, with no complexity-class or Toda-theorem allowance:
 * under `Computability.Machines.Turing.MultiTape`: `Machine` (machines whose oracle channels
   have a write-only query buffer and a read-only reply tape), `Machine.Program` (a clocked run as
@@ -36,8 +36,8 @@ machine modules, with no complexity-class or Toda-theorem allowance:
   `Probabilistic.Oracle` (fair-coin runs with external oracle calls);
 * under `Languages.Probabilistic`: `Basic` (terminating programs with typed calls, whose only
   randomness is uniform choice from a finite range), `Oracle` (private coins beside external
-  calls), `Sum` (sums of oracle interfaces) and `Oracle.Interaction` (runs against a stateful
-  randomized oracle).
+  calls), `Sum` (sums of oracle interfaces), `Semantics` (the generic run of a program against a
+  stateful randomized oracle) and `Oracle.Interaction` (its instance with private coins).
 
 ## References
 
@@ -169,6 +169,7 @@ info: abstract audit passed for `ComplexityTests.Abstracts.TodaAbstract`:
   Complexity.Languages.Probabilistic.Basic,
   Complexity.Languages.Probabilistic.Oracle,
   Complexity.Languages.Probabilistic.Sum,
+  Complexity.Languages.Probabilistic.Semantics,
   Complexity.Languages.Probabilistic.Oracle.Interaction
 ]
 

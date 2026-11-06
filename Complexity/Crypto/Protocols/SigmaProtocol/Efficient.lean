@@ -47,8 +47,15 @@ every theorem about `SpecialSoundness` and `SpecialHVZK` applies to them. The re
 an efficient simulator is `δ i`-close to honest transcripts
 (`SimulatorRealizedBy.closeTo_transcript`) and outputs an accepting conversation except with
 probability `δ i` (`SimulatorRealizedBy.one_sub_le_accepts`), which relaxes Definition 19.5 (i).
-Computational special HVZK ([BonehShoup2023], Definition 20.6) is a further relaxation that is not
-defined here.
+Note that `δ` in `EfficientSpecialHVZK` is an unconstrained parameter of the predicate rather than
+a bundled `Negligible` condition: at `δ i ≥ 1` (since event probabilities are at most `1`),
+`SimulatorRealizedBy` holds trivially for every strict PPT program, reducing `EfficientSpecialHVZK`
+to the unbounded `SpecialHVZK` field (`not_efficientSpecialHVZK_sendWitness` in
+`ComplexityTests.EfficientSimulators` requires `δ i ≤ 1 / 2`). Computational special HVZK
+([BonehShoup2023], Definition 20.6) is defined in
+`Complexity.Crypto.Protocols.SigmaProtocol.Computational`
+(`SigmaProtocol.ComputationalSpecialHVZK`); when `δ` is bounded along the setup distribution by a
+negligible function, `EfficientSpecialHVZK.exists_computationalSpecialHVZK` derives it.
 
 ## Main definitions
 

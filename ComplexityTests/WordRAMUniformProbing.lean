@@ -14,7 +14,7 @@ public import Complexity.DataStructure.Dictionary.WordRAM.UniformProbing
 # Tests for Uniform Probing (`Lean.UniformProbing` and `WordRAM.Dictionary.UniformProbing`)
 
 This test file verifies:
-1. Concrete open-addressed probing behavior (`tableGet`, `tableInsert`, `runTable`, `probeCount`)
+1. Concrete open-addressed probing behavior (`tableQuery`, `tableInsert`, `runTable`, `probeCount`)
    under primary-slot collisions and in-place updates, together with the textbook expected-probe
    bounds (`≤ m / (m - n) ≤ 2` for unsuccessful lookups by [CLRS2009], third edition, Theorem 11.6
    and Corollary 11.7, pp. 274–276, and for fixed-key successful lookups via the insertion-cost
@@ -49,7 +49,7 @@ def testPermFamily : Fin 4 → Equiv.Perm (Fin 4)
   | ⟨1, _⟩ => Equiv.swap (1 : Fin 4) (3 : Fin 4)
   | _ => Equiv.refl (Fin 4)
 
-/-- Concrete trace of `tableInsert`, `tableGet`, and `probeCount` under a primary-slot collision
+/-- Concrete trace of `tableInsert`, `tableQuery`, and `probeCount` under a primary-slot collision
 and an in-place overwrite at full capacity `n_max = 2`. -/
 theorem test_pure_collision_and_overwrite :
     let hm : 0 < 4 := by decide
@@ -61,7 +61,7 @@ theorem test_pure_collision_and_overwrite :
     let T₂ := tableInsert hm testPermFamily T₁ u₁ 20
     let T₃ := tableInsert hm testPermFamily T₂ u₁ 99
     -- Initial empty table lookup misses in 1 probe:
-    tableGet hm testPermFamily T₀ u₀ = none ∧
+    tableQuery hm testPermFamily T₀ u₀ = none ∧
     probeCount T₀ u₀ (testPermFamily u₀) = 1 ∧
     -- First insertion lands at primary slot 0 in 1 probe:
     T₁ ⟨0, by decide⟩ = some (u₀, 10) ∧
@@ -69,12 +69,12 @@ theorem test_pure_collision_and_overwrite :
     -- Colliding key u₁ probes slot 0 (occupied by u₀) and lands at testPermFamily u₁ 1 = 3:
     probeCount T₁ u₁ (testPermFamily u₁) = 2 ∧
     T₂ ⟨3, by decide⟩ = some (u₁, 20) ∧
-    tableGet hm testPermFamily T₂ u₀ = some 10 ∧
-    tableGet hm testPermFamily T₂ u₁ = some 20 ∧
-    tableGet hm testPermFamily T₂ u₂ = none ∧
+    tableQuery hm testPermFamily T₂ u₀ = some 10 ∧
+    tableQuery hm testPermFamily T₂ u₁ = some 20 ∧
+    tableQuery hm testPermFamily T₂ u₂ = none ∧
     -- In-place overwrite of u₁ updates slot 3 to 99 and preserves probeCount = 2:
     T₃ ⟨3, by decide⟩ = some (u₁, 99) ∧
-    tableGet hm testPermFamily T₃ u₁ = some 99 ∧
+    tableQuery hm testPermFamily T₃ u₁ = some 99 ∧
     probeCount T₃ u₁ (testPermFamily u₁) = 2 := by
   decide
 
@@ -147,9 +147,9 @@ def testOps : List (Dictionary.Op 16) :=
   [ .insert ⟨3, by decide⟩ 42,
     .insert ⟨11, by decide⟩ 77,
     .insert ⟨3, by decide⟩ 88,
-    .get ⟨3, by decide⟩,
-    .get ⟨11, by decide⟩,
-    .get ⟨5, by decide⟩ ]
+    .query ⟨3, by decide⟩,
+    .query ⟨11, by decide⟩,
+    .query ⟨5, by decide⟩ ]
 
 theorem testOps_validHistory :
     (Dictionary.spec 16 100 2).ValidHistory (Dictionary.empty 16) testOps := by

@@ -111,9 +111,21 @@ noncomputable def hierarchy : ∀ l, Matrix (V l) (V l) ℝ
 noncomputable def hierarchyCorrection (l : ℕ) : Matrix (V l) (V l) ℝ :=
   P.correction (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l)
 
+omit [∀ l, LinearOrder (V l)] in
+theorem hierarchyCorrection_eq (l : ℕ) : hierarchyCorrection P e X Y S l =
+    P.correction (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l) := by rfl
+
 /-- The weighted projection `P_r` from stage `l + 1` to stage `l`. -/
 noncomputable def hierarchyProj (l : ℕ) : Matrix (V (l + 1)) (V l) ℝ :=
   (P.proj (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l)).submatrix (e l) id
+
+/-- A hierarchy projection reads the parent coordinate and applies its actual copy weight. -/
+theorem hierarchyProj_mulVec (l : ℕ) (v : V l → ℝ) (a : V (l + 1)) :
+    (hierarchyProj P e X Y S l *ᵥ v) a =
+      P.weight (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l)
+        (ofLex (e l a)).2 (ofLex (e l a)).1 * v (ofLex (e l a)).1 := by
+  change (P.proj (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l) *ᵥ v) (e l a) = _
+  exact P.proj_mulVec _ _ _ _ _ _
 
 /-- The **all-primary copy** `x̄_l` of a base vertex `x`: every copy symbol is `0`. -/
 def primaryCopy (x : V 0) : ∀ l, V l

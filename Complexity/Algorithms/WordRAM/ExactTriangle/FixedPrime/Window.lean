@@ -1,0 +1,32 @@
+/-
+Copyright (c) 2026 Erik Demaine. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Erik Demaine
+-/
+
+module
+-- upstream: candidate
+
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Width
+
+/-!
+# Monotonicity of the shared record workspace reservation
+
+This numerical fact supports both materialized and one-slot fixed-prime traversals without
+importing either execution proof. It concerns a reserved address envelope, not a clearing loop.
+-/
+
+public section
+
+namespace Cslib.Algorithms.WordRAM.ExactTriangle.FixedPrime
+
+open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
+
+/-- The existing callable scratch window grows monotonically with the query occurrence count. -/
+theorem window_mono {n Q : ℕ} (hQ : Q ≤ n * n) :
+    CallableProduct.windowSize n Q ≤ CallableProduct.windowSize n (n * n) := by
+  unfold CallableProduct.windowSize CallableProduct.sourceWidth
+  exact Nat.pow_le_pow_right (by decide)
+    (Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega)))
+
+end Cslib.Algorithms.WordRAM.ExactTriangle.FixedPrime

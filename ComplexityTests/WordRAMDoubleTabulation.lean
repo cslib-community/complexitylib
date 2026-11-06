@@ -31,7 +31,7 @@ open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation
 open Cslib.Probability Cslib.WordRAM
-open Cslib.Algorithms.WordRAM.ExactLog
+open Cslib.WordRAM.ExactLog
 open Cslib.DataStructure Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open scoped ENNReal

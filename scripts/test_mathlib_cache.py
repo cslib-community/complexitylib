@@ -7,8 +7,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 REPO = Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location("get_mathlib", REPO / "scripts/cache/get_mathlib.py")
@@ -16,7 +17,7 @@ cache = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cache)
 
 FAKE_LAKE = r'''#!/usr/bin/env python3
-import json, os, pathlib, sys, time
+import json, os, pathlib, signal, subprocess, sys, time
 args = sys.argv[1:]
 artifacts = pathlib.Path(os.environ["MATHLIB_TEST_CACHE"])
 artifacts.mkdir(exist_ok=True)
@@ -33,6 +34,29 @@ if args == ["exe", "cache", "get"]:
         (artifacts / "second.ltar").write_text("completed second archive")
     elif mode == "fail":
         sys.exit(17)
+    elif mode in ("cleanup", "stubborn", "early-exit"):
+        lock = artifacts / "owned.lock"
+        if (artifacts / "cleaned").exists():
+            assert not lock.exists(), "retry overlapped descendant cleanup"
+            sys.exit(0)
+        child = subprocess.Popen([sys.executable, "-c", r"""
+import os, pathlib, signal, sys, time
+root = pathlib.Path(sys.argv[1])
+def cleanup(*_):
+    time.sleep(.2)
+    (root / 'owned.lock').unlink()
+    (root / 'cleaned').touch()
+    sys.exit(0)
+signal.signal(signal.SIGTERM, cleanup if sys.argv[2] != 'stubborn' else signal.SIG_IGN)
+(root / 'owned.lock').touch()
+(root / 'ready').touch()
+while True:
+    (root / "heartbeat").write_text(str(time.monotonic()))
+    time.sleep(.02)
+""", str(artifacts), mode])
+        # Keep the parent alive to reap the child; group shutdown must wait for both.
+        signal.signal(signal.SIGTERM, signal.SIG_DFL if mode == "early-exit" else signal.SIG_IGN)
+        child.wait()
     elif mode == "hang":
         time.sleep(30)
 elif args[:1] == ["build"]:
@@ -123,6 +147,68 @@ class MathlibCacheTests(unittest.TestCase):
         self.assertEqual(len(created), 3)
         self.assertTrue(all(p.poll() is not None for p in created))
 
+    def test_wait_errors_and_cancellation_always_stop_the_attempt(self):
+        original = subprocess.Popen
+        for error in (KeyboardInterrupt(), OSError("wait failed"), ValueError("unexpected wait failure")):
+            with self.subTest(error=type(error).__name__):
+                created = []
+                def start(*args, **kwargs):
+                    process = original(*args, **kwargs)
+                    process.wait = Mock(side_effect=error)
+                    created.append(process)
+                    return process
+                with patch.object(cache, "ATTEMPTS", 1), \
+                        patch.object(cache.subprocess, "Popen", side_effect=start), \
+                        patch.object(cache, "stop_attempt", wraps=cache.stop_attempt) as stop:
+                    if isinstance(error, OSError):
+                        self.assertFalse(self.restore(MATHLIB_TEST_MODE="hang"))
+                    else:
+                        with self.assertRaises(type(error)):
+                            self.restore(MATHLIB_TEST_MODE="hang")
+                self.assertEqual(len(created), 1)
+                stop.assert_called_once_with(created[0])
+                self.assertIsNotNone(created[0].poll())
+
+    def test_wait_error_does_not_retry_if_shutdown_is_unconfirmed(self):
+        process = Mock()
+        process.wait.side_effect = OSError("wait failed")
+        with patch.object(cache.subprocess, "Popen", return_value=process) as start, \
+                patch.object(cache, "stop_attempt", return_value=False) as stop:
+            self.assertFalse(self.restore())
+        start.assert_called_once()
+        stop.assert_called_once_with(process)
+
+    def test_descendant_cleanup_finishes_before_retry(self):
+        with patch.object(cache, "ATTEMPT_SECONDS", .5), \
+                patch.object(cache, "SHUTDOWN_SECONDS", 1):
+            self.assertTrue(self.restore(MATHLIB_TEST_MODE="cleanup"))
+        self.assertEqual(len(self.events()), 2)
+        self.assertTrue((self.artifacts / "cleaned").exists())
+        self.assertFalse((self.artifacts / "owned.lock").exists())
+
+    def test_parent_exit_does_not_skip_descendant_cleanup(self):
+        with patch.object(cache, "ATTEMPT_SECONDS", .5), \
+                patch.object(cache, "SHUTDOWN_SECONDS", .5):
+            result = self.restore(MATHLIB_TEST_MODE="early-exit")
+        self.assertTrue((self.artifacts / "cleaned").exists())
+        self.assertFalse((self.artifacts / "owned.lock").exists())
+        # Hosts that do not promptly reap orphan zombies conservatively stop retries.
+        self.assertEqual(len(self.events()), 2 if result else 1)
+
+    def test_unresponsive_descendants_are_forced_with_bounded_wait(self):
+        started = time.monotonic()
+        with patch.object(cache, "ATTEMPT_SECONDS", .5), \
+                patch.object(cache, "SHUTDOWN_SECONDS", .3):
+            self.assertFalse(self.restore(MATHLIB_TEST_MODE="stubborn"))
+        self.assertLess(time.monotonic() - started, 5)
+        self.assertTrue((self.artifacts / "ready").exists())
+        # SIGKILL cannot run cleanup. The helper must not delete even its fixture lock.
+        self.assertTrue((self.artifacts / "owned.lock").exists())
+        self.assertFalse((self.artifacts / "cleaned").exists())
+        heartbeat = (self.artifacts / "heartbeat").read_text()
+        time.sleep(.1)
+        self.assertEqual((self.artifacts / "heartbeat").read_text(), heartbeat)
+
     @unittest.skipUnless(shutil.which("git"), "git is required for the real build wrapper")
     def test_cache_failure_still_runs_and_preserves_the_strict_build_failure(self):
         for name in ("scripts/build.sh", "scripts/cache/ensure.sh", "scripts/cache/get.sh",
@@ -143,6 +229,17 @@ class MathlibCacheTests(unittest.TestCase):
         self.assertIn("will compile missing outputs", result.stderr)
         self.assertEqual([e["args"] for e in self.events()],
                          [["exe", "cache", "get"]] * 3 + [["build", "--wfail", "--iofail"]])
+
+
+class ShutdownFallbackTests(unittest.TestCase):
+    def test_non_posix_terminate_then_bounded_kill(self):
+        process = Mock(returncode=None)
+        process.poll.side_effect = lambda: process.returncode
+        process.kill.side_effect = lambda: setattr(process, "returncode", -9)
+        with patch.object(cache.os, "name", "nt"), patch.object(cache, "SHUTDOWN_SECONDS", .01):
+            self.assertTrue(cache.stop_attempt(process))
+        process.terminate.assert_called_once_with()
+        process.kill.assert_called_once_with()
 
 
 class WorkflowWiringTests(unittest.TestCase):

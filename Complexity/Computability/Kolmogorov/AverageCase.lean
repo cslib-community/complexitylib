@@ -260,15 +260,9 @@ theorem sum_uniform_timeBoundedNat_lt_le {t : ℕ → ℕ} {n : ℕ} (ht : n + 1
     simp only [hnk, Nat.not_lt_zero, ↓reduceIte, mul_zero, Finset.sum_const_zero]
     positivity
 
-private theorem pmf_bool_true_add_false_toReal (μ : PMF Bool) :
-    (μ true).toReal + (μ false).toReal = 1 := by
-  have h : μ true + μ false = 1 := by simpa [tsum_bool] using μ.tsum_coe
-  have h' := congrArg ENNReal.toReal h
-  rwa [ENNReal.toReal_add (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _), ENNReal.toReal_one] at h'
-
 private theorem pmf_bool_true_toReal_le_one (μ : PMF Bool) :
     (μ true).toReal ≤ 1 := by
-  have h := pmf_bool_true_add_false_toReal μ
+  have h := Cslib.Probability.PMF.toReal_true_add_toReal_false μ
   have h0 : 0 ≤ (μ false).toReal := ENNReal.toReal_nonneg
   linarith
 
@@ -284,7 +278,7 @@ private theorem pmf_map_true_le_one_sub_of_imp_false {α : Type*} (q : PMF α) (
     · simp [hp]
   have hle' : ((q.map P) true).toReal ≤ ((q.map Q) false).toReal :=
     ENNReal.toReal_mono (PMF.apply_ne_top _ _) hle
-  have hsum := pmf_bool_true_add_false_toReal (q.map Q)
+  have hsum := Cslib.Probability.PMF.toReal_true_add_toReal_false (q.map Q)
   linarith
 
 private theorem pmf_map_true_le_of_imp_true {α : Type*} (q : PMF α) (P Q : α → Bool)

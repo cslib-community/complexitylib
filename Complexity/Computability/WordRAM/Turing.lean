@@ -11,6 +11,7 @@ public import Complexity.Computability.WordRAM.Native
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -305,14 +306,6 @@ theorem run {p : GenericRAM.Program B.genericModel r} (h : WordBounded w s)
         subst hv
         exact h.step_halt hs
 
-private theorem listMax_le {α : Type*} {f : α → ℕ} {l : List α} {m : ℕ}
-    (h : ∀ a ∈ l, f a ≤ m) : listMax f l ≤ m := by
-  induction l with
-  | nil => simp [listMax]
-  | cons a l ih =>
-    simp only [listMax, List.map_cons, List.foldr_cons] at ih ⊢
-    exact max_le (h a (List.mem_cons_self ..)) (ih fun b hb => h b (List.mem_cons_of_mem _ hb))
-
 /-- Encoded outcomes along a clocked run from a word-bounded state are bounded by `stateBound`,
 with at most one new stored cell per step. -/
 theorem length_resultEncoding_run_le {p : GenericRAM.Program B.genericModel r}
@@ -504,8 +497,8 @@ theorem exists_unary_majorant {u : α → ℕ}
     ∃ g : α → ℕ, Turing.MultiTapeTM.ComputableInPolyTime g encIn encUnary ∧ ∀ a, u a ≤ g a := by
   obtain ⟨c, d, h⟩ := h.exists_le
   refine ⟨fun a => (Polynomial.C c * (Polynomial.X + 1) ^ d).eval (encIn a).length,
-    (Turing.MultiTapeTM.ComputableInPolyTime.unary_eval _).comp
-      (Turing.MultiTapeTM.ComputableInPolyTime.encoding_length encIn),
+    (ComputableInPolyTime.unary_eval _).comp
+      (ComputableInPolyTime.encoding_length encIn),
     fun a => ?_⟩
   simpa only [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_add,
     Polynomial.eval_X, Polynomial.eval_one] using h a
@@ -535,7 +528,7 @@ theorem Program.ComputesInTime.turingComputableInPolyTime_of_width
   -- The step budget: a polynomial of the input length, computed in unary.
   obtain ⟨steps, hstepsU, hsteps⟩ := exists_unary_majorant htime
   have hstepsT : Turing.MultiTapeTM.ComputableInPolyTime steps encIn encNat :=
-    Turing.MultiTapeTM.ComputableInPolyTime.unary_to_binary.comp hstepsU
+    ComputableInPolyTime.unary_to_binary.comp hstepsU
   have hExec (a : α) :
       ∃ m ≤ steps a, Executes (width a) p (State.init (encode (width a) a)) (f a) m := by
     obtain ⟨m, hm, hle⟩ := h a (width a) (hallowed a) (hfits a)
@@ -559,9 +552,8 @@ theorem Program.ComputesInTime.turingComputableInPolyTime_of_width
       ((hencode.polyBounded_length.mono fun a =>
         length_le_length_encList encNat (encode (width a) a)).add (.const 1)).add
           hstepsU.polyBounded
-    exact (((((PolyBounded.const _).add ((PolyBounded.const (2 * r)).mul
-      (((PolyBounded.const 2).mul hw).add (.const 1)))).add ((PolyBounded.const 2).mul hw)).add
-      (hE.mul (((PolyBounded.const 6).mul hw).add (.const 3)))).add hw).add (.const 5)
+    dsimp only [bound, stateBound]
+    growth_poly
   have hOutLen (a : α) (j : ℕ) (hj : j ≤ steps a) :
       (FiniteState.resultEncoding B.encoding (FiniteState.run (width a) p.toGeneric j
         (initState B r (encode (width a) a)))).length ≤ bound a := by
@@ -601,9 +593,9 @@ theorem Program.ComputesInTime.turingComputableInPolyTime
     (h : p.ComputesInTime (fun _ => encode) (fun a _ => T (size a))
       (fun a w => logWidth k (size a) ≤ w) f) :
     Turing.MultiTapeTM.ComputableInPolyTime f encIn encNat := by
-  have hlog : PolyBounded (fun a => (encIn a).length) (fun a => logWidth k (size a)) :=
-    ((PolyBounded.const k).mul (hsize.add (.const 1))).mono fun a =>
-      Nat.mul_le_mul_left k (Nat.add_le_add_right (Nat.log_le_self 2 (size a)) 1)
+  have hlog : PolyBounded (fun a => (encIn a).length) (fun a => logWidth k (size a)) := by
+    unfold logWidth
+    growth_poly
   obtain ⟨width, hwidth, hge⟩ := exists_unary_majorant
     (hlog.add (hencode.polyBounded_length (encMid := encList encNat)))
   exact h.turingComputableInPolyTime_of_width hop hwidth (fun a => by have := hge a; omega)

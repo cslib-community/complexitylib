@@ -41,7 +41,7 @@ networks with boundedly many edges. -/
 noncomputable def boundedAlgorithm :
     TruncatedContractionAlgorithm (encList encNat) constEntry BoundedEdges where
   certificate := truncDirectCertificate constEntry constCert
-  bound C _ := by
+  bound_polynomial C _ _ := by
     obtain ⟨K, hK⟩ := truncDirectCertificate_le (encT := encList encNat) constEntry constCert
     obtain ⟨p, hp, hm, hb⟩ := exists_mono_poly_cert
       (ComputableInPolyTime.fst (encList encNat) encBits)
@@ -104,5 +104,16 @@ example {C D s P ℓ r : ℕ} {G : DescribedNetwork (List ℕ)} (hs : 4 * (C * D
     (hℓ : ℓ ≤ D * s) (hk : G.vertices.length ≤ C * s) (hm : s ≤ G.numEdges) :
     truncGuard (P, ℓ, r, G) = true :=
   truncGuard_of_le hs hℓ hk hm
+
+-- The larger truncation range has constants fixed before the network.
+example {C D d s P ℓ r : ℕ} {G : DescribedNetwork (List ℕ)}
+    (hs : max (C * D) (2 ^ (2 ^ (d + 2))) ≤ s) (hℓ : ℓ ≤ D * (s + 1) ^ d)
+    (hk : G.vertices.length ≤ C * s) (hm : s ≤ G.numEdges) :
+    truncGuard (P, ℓ, r, G) = true :=
+  truncGuard_of_polynomial_le hs hℓ hk hm
+
+-- The fixed modulus has enough points for a fourth power beyond an explicit threshold.
+example : (65536 + 1) ^ 4 ≤ 2 ^ (FastContraction.modulus 65536).length :=
+  FastContraction.pow_le_card_modulus (by norm_num)
 
 end ComplexityTests.TensorNetworkTruncatedAlgorithm

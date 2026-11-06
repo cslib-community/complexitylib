@@ -7,200 +7,191 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.WordRAM.Stack.Controller
+public import ComplexityTests.WordRAMDynamic
+public import Complexity.DataStructure.Stack.Controller
+public import Complexity.Tactic.WordRAM
 
 /-!
-# Controller certificates on concrete stack code
+# Controller certificates on concrete code
 
-The adaptive size/push client passes an observed size into a subsequent operation using one
+An adaptive client of the exchange cell passes the first answer into a second exchange with one
 fixed continuation fragment. Additional tests exercise charged branching and initialization,
-both exact execution paths, the smallest admissible word width, and rejection of a false budget.
+both exact execution paths, the smallest admissible word width, rejection of a false budget, and
+the polynomial-time automation on the compiled stack controller.
 -/
 
 @[expose] public section
 
 namespace ComplexityTests.WordRAMController
 
-open Cslib Cslib.WordRAM Cslib.WordRAM.Stack
+open Cslib Cslib.WordRAM WordRAMDynamicTests
 
-private def sizePrep : Code .standard 9 := ram[tag ← #2; arg ← #0]
-private def pushPrep : Code .standard 9 := ram[arg ← out; tag ← #0]
+private def firstPrep (v : ℕ) : Code .standard 3 := .op (.const 1 v)
+private def secondPrep : Code .standard 3 := .op (.copy 1 2)
 
-private def entry (w : ℕ) (s : List ℕ) (x : Data 9) : Prop :=
-  Rep w 2 2 s x ∧ s.length < 2
+private def entry (w : ℕ) (s : ℕ) (x : Data 3) : Prop := (exchangeCertificate w).rep s x
 
-private def mid (w a : ℕ) (s : List ℕ) (x : Data 9) : Prop :=
-  entry w s x ∧ x.regs out = a ∧ a = s.length
+private def mid (w a : ℕ) (s : ℕ) (x : Data 3) : Prop := entry w s x ∧ x.regs 2 = a
 
-private theorem size_refines {w : ℕ} (h4 : Fits w 4) :
-    Refines w (entry w) (D := spec w 2) (.liftBind .size fun a => .pure a)
-      (mid w) (fun _ _ => 9) (.seq sizePrep program) := by
-  have h2 : Fits w 2 := h4.of_le (by decide)
-  have hcall := Refines.call (certificate h2 h4) .size
-    (pre := entry w) (prep := sizePrep) (setup := fun _ _ => 2) (body := fun _ _ => 7)
-    (fun _ _ h => ⟨h.1, trivial⟩)
+private theorem exchange_exec (w : ℕ) (x : Data 3) : ∃ y, Exec w (exchangeProgram w).code x y 3 :=
+  ⟨_, (Exec.const (fits_zero w)).seq (Exec.load.seq Exec.store)⟩
+
+private theorem first_refines {w v : ℕ} (hv : Fits w v) :
+    Refines w (entry w) (D := exchangeSpec w) (.liftBind v fun a => .pure a)
+      (mid w) (fun _ _ => 4) (.seq (firstPrep v) (exchangeProgram w).code) := by
+  have hcall := Refines.call (exchangeCertificate w) v
+    (pre := entry w) (prep := firstPrep v) (setup := fun _ _ => 1) (body := fun _ _ => 3)
+    (fun _ _ h => ⟨h, hv⟩)
     (by
       intro s x _
-      have he : (implementation w 2).prepare .size x = (x.set tag 2).set arg 0 := by
+      have he : (exchangeProgram w).prepare v x = x.set 1 v := by
         ext i
-        · fin_cases i <;> simp +decide [implementation, DynamicProgram.prepare, Data.set, tag, arg]
+        · fin_cases i <;> simp [exchangeProgram, DynamicProgram.prepare, Data.set]
         · rfl
       rw [he]
-      exact (Exec.seq (Exec.const h2) (Exec.const (fits_zero w))).within)
+      exact (Exec.const hv).within)
     (by
-      intro s x hx y n he
-      obtain ⟨z, hz, _, _, _⟩ := Stack.execute h2 h4 hx.1 .size trivial
+      intro s x _ y n he
+      obtain ⟨z, hz⟩ := exchange_exec w ((exchangeProgram w).prepare v x)
       obtain ⟨_, rfl⟩ := he.unique hz
       exact le_rfl)
-  have hs : (spec w 2).Hoare (fun s => s.length < 2)
-      (.liftBind .size fun a => .pure a) (fun a s => a = s.length ∧ s.length < 2) :=
-    DataStructure.StateTransitionSpec.Hoare.call_ofFn _ _ _ (fun _ h => ⟨trivial, rfl, h⟩)
-  exact (hcall.hoare hs (fun _ _ h => h.2)).consequence
-    (fun _ _ h => h)
-    (fun a s x h => ⟨⟨h.1.1, h.2.2⟩, Option.some.inj h.1.2, h.2.1⟩)
+  exact hcall.consequence (fun _ _ h => h)
+    (fun a s x h => ⟨h.1, Option.some.inj (h.2 : some (x.regs 2) = some a)⟩)
     (fun _ _ _ => le_rfl)
 
-private theorem push_refines {w a : ℕ} (h4 : Fits w 4) :
-    Refines w (mid w a) (D := spec w 2) (.liftBind (.push a) fun b => .pure b)
-      (fun _ s y => Rep w 2 2 s y) (fun _ _ => 9) (.seq pushPrep program) := by
-  have h2 : Fits w 2 := h4.of_le (by decide)
-  have hv : ∀ s x, mid w a s x → (spec w 2).valid s (.push a) := by
-    intro s x hx
-    exact ⟨hx.1.2, hx.2.1 ▸ hx.1.1.bounded.1 out⟩
-  have hcall := Refines.call (certificate h2 h4) (.push a)
-    (pre := mid w a) (prep := pushPrep) (setup := fun _ _ => 2) (body := fun _ _ => 7)
-    (fun s x h => ⟨h.1.1, hv s x h⟩)
+private theorem second_refines {w a : ℕ} :
+    Refines w (mid w a) (D := exchangeSpec w) (.liftBind a fun b => .pure b)
+      (mid w) (fun _ _ => 4) (.seq secondPrep (exchangeProgram w).code) := by
+  have hv : ∀ s x, mid w a s x → (exchangeSpec w).valid s a := fun s x hx =>
+    hx.2 ▸ hx.1.1.1 2
+  have hcall := Refines.call (exchangeCertificate w) a
+    (pre := mid w a) (prep := secondPrep) (setup := fun _ _ => 1) (body := fun _ _ => 3)
+    (fun s x h => ⟨h.1, hv s x h⟩)
     (by
       intro s x hx
-      have he : (implementation w 2).prepare (.push a) x =
-          (x.set arg (x.regs out)).set tag 0 := by
+      have he : (exchangeProgram w).prepare a x = x.set 1 (x.regs 2) := by
         ext i
-        · fin_cases i <;> simp_all +decide [implementation, DynamicProgram.prepare,
-            Data.set, tag, arg, mid]
+        · fin_cases i <;> simp_all [exchangeProgram, DynamicProgram.prepare, Data.set, mid]
         · rfl
       rw [he]
-      exact (Exec.seq Exec.copy (Exec.const (fits_zero w))).within)
+      exact Exec.copy.within)
     (by
-      intro s x hx y n he
-      obtain ⟨z, hz, _, _, _⟩ := Stack.execute h2 h4 hx.1.1 (.push a) (hv s x hx)
+      intro s x _ y n he
+      obtain ⟨z, hz⟩ := exchange_exec w ((exchangeProgram w).prepare a x)
       obtain ⟨_, rfl⟩ := he.unique hz
       exact le_rfl)
-  exact hcall.consequence (fun _ _ h => h) (fun _ _ _ h => h.1)
+  exact hcall.consequence (fun _ _ h => h)
+    (fun b s x h => ⟨h.1, Option.some.inj (h.2 : some (x.regs 2) = some b)⟩)
     (fun _ _ _ => le_rfl)
 
-/-- The second operation's argument is the first observation, with fixed code for every answer. -/
-private theorem adaptive_refines {w : ℕ} (h4 : Fits w 4) :
-    Refines w (entry w) (D := spec w 2)
-      (((.liftBind .size fun a => .pure a) : (spec w 2).Client ℕ).bind fun a =>
-        .liftBind (.push a) fun b => .pure b)
-      (fun _ s y => Rep w 2 2 s y) (fun _ _ => 18)
-      (.seq (.seq sizePrep program) (.seq pushPrep program)) :=
-  Refines.bind_ofFn (size_refines h4) (fun _ => push_refines h4) (fun _ _ _ _ _ _ _ => le_rfl)
+/-- Exchange `v` in, then put the old contents back: the second argument is the first answer, with
+fixed code for every answer. -/
+private def swapBack (w v : ℕ) : (exchangeSpec w).Client ℕ := do
+  let a ← (exchangeSpec w).call v
+  (exchangeSpec w).call a
+
+private def swapCode (v : ℕ) : Code .standard 3 :=
+  .seq (.seq (firstPrep v) (exchangeProgram 0).code) (.seq secondPrep (exchangeProgram 0).code)
+
+/-- The second operation's argument is the first observation. -/
+private theorem adaptive_refines {w v : ℕ} (hv : Fits w v) :
+    Refines w (entry w) (swapBack w v) (mid w) (fun _ _ => 8) (swapCode v) :=
+  Refines.bind_ofFn (first_refines hv) (fun _ => second_refines) (fun _ _ _ _ _ _ _ => le_rfl)
 
 /-- Initialization is an actual register write, followed by the composed adaptive certificate. -/
-private theorem initialized_adaptive :
-    ∃ y, ExecWithin 3 (.seq (.op (.const ptr 2))
-        (.seq (.seq sizePrep program) (.seq pushPrep program))) (Data.init []) y 19 ∧
-      Rep 3 2 2 [0] y := by
-  have h4 : Fits 3 4 := by decide
-  have hinit : ∀ s x, s = ([] : List ℕ) ∧ x = (Data.init [] : Data 9) →
-      ∃ y, ExecWithin (B := .standard) 3 (.op (.const ptr 2)) x y 1 ∧ entry 3 s y := by
-    rintro s x ⟨rfl, rfl⟩
-    refine ⟨initial 2, ?_, initial_rep h4, by decide⟩
-    have hi : (Data.init ([] : List ℕ) : Data 9).set ptr 2 = initial 2 := by
-      ext i <;> simp [Data.init, Data.set, initial, Function.update_apply]
-    simpa only [hi] using (Exec.const (B := Basis.standard) (x := Data.init [])
-      (d := ptr) (show Fits 3 2 by decide)).within
-  have h := Refines.prepend (budget' := fun _ _ => 19) hinit (adaptive_refines h4)
+@[program_certificate]
+private theorem initialized_refines {w v : ℕ} (hv : Fits w v) :
+    Refines w (D := exchangeSpec w) (fun s x => s = 0 ∧ x = Data.init []) (swapBack w v) (mid w)
+      (fun _ _ => 9)
+      (.seq (.op (.const 2 0)) (swapCode v)) := by
+  refine Refines.prepend (setup := fun _ _ => 1) ?_ (adaptive_refines hv)
     (fun _ _ _ _ _ => le_rfl)
-  obtain ⟨_, y, he, hr⟩ := h.toOfFn ⟨rfl, rfl⟩
-  exact ⟨y, he, hr⟩
+  rintro s x ⟨rfl, rfl⟩
+  refine ⟨(Data.init [] : Data 3).set 2 0, (Exec.const (fits_zero w)).within, ?_⟩
+  exact ⟨((Data.Bounded.init (by simp [InputFits, fits_zero])).set (fits_zero w)), rfl⟩
 
-/-- A different observation drives the same continuation code to push one rather than zero. -/
-private theorem populated_adaptive :
-    ∃ x y, Rep 3 2 2 [5] x ∧
-      ExecWithin 3 (.seq (.seq sizePrep program) (.seq pushPrep program)) x y 18 ∧
-      Rep 3 2 2 [1, 5] y := by
-  let x := ((initial 2).set len 1).write 2 5
-  have h4 : Fits 3 4 := by decide
-  have hr : Rep 3 2 2 [5] x := by
-    refine ⟨((initial_rep (capacity := 2) h4).bounded.set (show Fits 3 1 by decide)).write
-      (show Fits 3 5 by decide), ?_, ?_, by decide, ?_⟩
-    · simp +decide [x, Data.set, Data.write, initial, len, ptr]
-    · simp [x, Data.set, Data.write]
-    · intro i
-      fin_cases i
-      simp [x, Data.set, Data.write]
-  obtain ⟨_, y, he, hy⟩ := (adaptive_refines h4).toOfFn ⟨hr, by decide⟩
-  exact ⟨x, y, hr, he, hy⟩
+/-- The same continuation code restores a different observed cell. -/
+example : ∃ y, ExecWithin 3 (swapCode 6) ⟨fun _ => 0, fun _ => 5⟩ y 8 ∧
+    y.mem 0 = 5 ∧ y.regs 2 = 6 := by
+  have hr : entry 3 5 ⟨fun _ => 0, fun _ => 5⟩ :=
+    ⟨⟨fun _ => fits_zero 3, fun _ => show Fits 3 5 by decide⟩, rfl⟩
+  obtain ⟨_, y, he, ⟨hent, hy⟩⟩ :=
+    (adaptive_refines (w := 3) (show Fits 3 6 by decide)).toOfFn hr
+  exact ⟨y, he, hent.2, hy⟩
 
 private theorem branch_refines {w n : ℕ} (h2 : Fits w 2) :
-    Refines (D := spec w 2) (B := .standard) w
-      (fun s x => s = [] ∧ x.regs out = n ∧ x.regs len = 0)
+    Refines (D := exchangeSpec w) (B := .standard) w
+      (fun s (x : Data 3) => s = 0 ∧ x.regs 2 = n ∧ x.regs 0 = 0)
       (if n = 0 then .pure 1 else .pure 2)
-      (fun (a : ℕ) _ y => y.regs out = a) (fun _ _ => 3)
-      (.branch (.eq out len) (.op (.const out 1)) (.op (.const out 2))) := by
+      (fun (a : ℕ) _ y => y.regs 2 = a) (fun _ _ => 3)
+      (.branch (.eq 2 0) (.op (.const 2 1)) (.op (.const 2 2))) := by
   apply Refines.branch (n = 0)
   · intro s x hx
-    change x.regs out = x.regs len ↔ n = 0
+    change x.regs 2 = x.regs 0 ↔ n = 0
     rw [hx.2.1, hx.2.2]
   · apply Refines.pure
     intro s x _
-    exact ⟨x.set out 1, (Exec.const (h2.of_le (by decide))).within, by simp [Data.set]⟩
+    exact ⟨x.set 2 1, (Exec.const (h2.of_le (by decide))).within, by simp [Data.set]⟩
   · apply Refines.pure
     intro s x _
-    exact ⟨x.set out 2, (Exec.const h2).within, by simp [Data.set]⟩
+    exact ⟨x.set 2 2, (Exec.const h2).within, by simp [Data.set]⟩
+
+private theorem swap_executes :
+    Executes 2 ((exchangeProgram 2).code.program (2 : Fin 3)) (State.init [0]) 1 4 := by
+  obtain ⟨y, he⟩ := exchange_exec 2 (Data.init [0])
+  have hy : y.regs 2 = 1 := by
+    obtain ⟨rfl, -⟩ := he.unique ((Exec.const (fits_zero 2)).seq (Exec.load.seq Exec.store))
+    simp [Data.set, Data.write, Data.init]
+  simpa only [hy, State.init] using he.executes 2
 
 example :
     (∃ y, ExecWithin (B := .standard) 2
-      (.branch (.eq out len) (.op (.const out 1)) (.op (.const out 2)))
-      (Data.init []) y 3 ∧ y.regs out = 1) ∧
+      (.branch (.eq 2 0) (.op (.const 2 1)) (.op (.const 2 2)))
+      (Data.init [] : Data 3) y 3 ∧ y.regs 2 = 1) ∧
     (∃ y, ExecWithin (B := .standard) 2
-      (.branch (.eq out len) (.op (.const out 1)) (.op (.const out 2)))
-      ((Data.init []).set out 1) y 3 ∧ y.regs out = 2) ∧
-    Executes 2 (Stack.Controller.code.program out) (State.init [0]) 1 49 ∧
-    Executes 2 (Stack.Controller.code.program out) (State.init [3]) 3 29 := by
+      (.branch (.eq 2 0) (.op (.const 2 1)) (.op (.const 2 2)))
+      ((Data.init [] : Data 3).set 2 1) y 3 ∧ y.regs 2 = 2) ∧
+    Executes 2 ((exchangeProgram 2).code.program (2 : Fin 3)) (State.init [0]) 1 4 := by
   obtain ⟨_, y₀, he₀, hr₀⟩ := (branch_refines (n := 0) (show Fits 2 2 by decide)).toOfFn
     (x := Data.init []) ⟨rfl, rfl, rfl⟩
   obtain ⟨_, y₁, he₁, hr₁⟩ := (branch_refines (n := 1) (show Fits 2 2 by decide)).toOfFn
-    (x := (Data.init []).set out 1) ⟨rfl, by simp [Data.set], by decide⟩
-  exact ⟨⟨y₀, he₀, hr₀⟩, ⟨y₁, he₁, hr₁⟩,
-    Stack.Controller.executes (by decide) (by decide),
-    Stack.Controller.executes (by decide) (by decide)⟩
+    (x := (Data.init []).set 2 1) ⟨rfl, by simp [Data.set], by decide⟩
+  exact ⟨⟨y₀, he₀, hr₀⟩, ⟨y₁, he₁, hr₁⟩, swap_executes⟩
 
-/-- The actual zero-input execution refutes a forty-eight-step whole-program budget. -/
+/-- The actual execution refutes a three-step whole-program budget. -/
 theorem rejects_short_budget :
-    ¬∃ t ≤ 48, Executes 2 (Stack.Controller.code.program out) (State.init [0]) 1 t := by
+    ¬∃ t ≤ 3, Executes 2 ((exchangeProgram 2).code.program (2 : Fin 3)) (State.init [0]) 1 t := by
   rintro ⟨t, ht, he⟩
-  have hx := Stack.Controller.executes (w := 2) (n := 0) (by decide) (by decide)
-  have hn : t = 49 := (he.unique hx).2
+  have hn : t = 4 := (he.unique swap_executes).2
   omega
 
 -- A second matching certificate must not hide the usable one or force its false premise.
 @[program_certificate]
-private theorem unusable_controller {w n : ℕ} (impossible : False) :
-    Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Stack.Controller.client w n)
-      (fun a s y => Rep w 2 1 s y ∧ y.regs out = a)
-      (fun _ _ => if n = 0 then 48 else 28) Stack.Controller.code := impossible.elim
+private theorem unusable_refines {w v : ℕ} (impossible : False) :
+    Refines w (D := exchangeSpec w) (fun s x => s = 0 ∧ x = Data.init []) (swapBack w v) (mid w)
+      (fun _ _ => 9)
+      (.seq (.op (.const 2 0)) (swapCode v)) := impossible.elim
 
-example {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
-    Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Stack.Controller.client w n)
-      (fun a s y => Rep w 2 1 s y ∧ y.regs out = a)
-      (fun _ _ => if n = 0 then 48 else 28) Stack.Controller.code := by
+example {w v : ℕ} (hv : Fits w v) :
+    Refines w (D := exchangeSpec w) (fun s x => s = 0 ∧ x = Data.init []) (swapBack w v) (mid w)
+      (fun _ _ => 9)
+      (.seq (.op (.const 2 0)) (swapCode v)) := by
   stateful
 
 @[program_certificate]
 private theorem nonuniform_positive_polytime :
-    ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id :=
-  Stack.Controller.positive_polytime.computableInPolyTime
+    ComputableInPolyTime .standard DataStructure.Stack.Controller.positive (fun _ n => [n]) id :=
+  DataStructure.Stack.Controller.positive_polytime.computableInPolyTime
 
 attribute [local fun_prop] nonuniform_positive_polytime
 
 example :
-    UniformComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧
-    UniformComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧
-    ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧
-    ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id :=
+    UniformComputableInPolyTime .standard DataStructure.Stack.Controller.positive
+      (fun _ n => [n]) id ∧
+    UniformComputableInPolyTime .standard DataStructure.Stack.Controller.positive
+      (fun _ n => [n]) id ∧
+    ComputableInPolyTime .standard DataStructure.Stack.Controller.positive (fun _ n => [n]) id ∧
+    ComputableInPolyTime .standard DataStructure.Stack.Controller.positive (fun _ n => [n]) id :=
   ⟨by polytime, by fun_prop, by polytime, by fun_prop⟩
 
 /-- The family puts its width in the instruction's literal, rather than reading it at runtime. -/
@@ -371,9 +362,9 @@ private theorem choose_refines :
 
 /-- A caller whose continuation is admissible after *both* permitted answers (`true` and `false`) of
 `choose`. -/
-def validAfterBothClient : choiceSpec.Client Unit :=
-  ((.liftBind .choose fun b => .pure b) : choiceSpec.Client Bool).bind fun b =>
-    if b then .pure () else .pure ()
+def validAfterBothClient : choiceSpec.Client Unit := do
+  let b ← choiceSpec.call .choose
+  if b then .pure () else .pure ()
 
 /-- `Refines.bind` certifies `validAfterBothClient` on the relational specification `choiceSpec`. -/
 example :
@@ -393,9 +384,9 @@ example :
 
 /-- A caller that issues `bad` (`valid := False`) when `choose` returns `false`, while succeeding
 when `choose` returns `true`. -/
-def badAfterFalseClient : choiceSpec.Client Unit :=
-  ((.liftBind .choose fun b => .pure b) : choiceSpec.Client Bool).bind fun b =>
-    if b then .pure () else .liftBind .bad fun u => .pure u
+def badAfterFalseClient : choiceSpec.Client Unit := do
+  let b ← choiceSpec.call .choose
+  if b then .pure () else choiceSpec.call .bad
 
 /-- Choosing `true` produces a valid `ClientRun` of `badAfterFalseClient`. -/
 example : choiceSpec.ClientRun () badAfterFalseClient () () [⟨ChoiceOp.choose, true, ()⟩] :=

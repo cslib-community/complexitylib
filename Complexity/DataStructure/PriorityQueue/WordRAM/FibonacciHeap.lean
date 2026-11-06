@@ -48,8 +48,8 @@ Over capacity `n` (`n_max`) with concrete integer potential
 * `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.pkg`, `pkgStd`: `PQPackage` bundles over
   `Basis.exact` and `Basis.standard` for plug-and-play graph algorithms (such as Dijkstra).
 * `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.impl`,
-  `MinPQ.dynamicProgram`, `MinPQ.certificate`, `MinPQ.run_ops_exact_fresh`,
-  `MinPQ.run_ops_exact_reusable`: `StateTransitionImpl` and flat-program implementations of the
+  `MinPQ.dynamicProgram`, `MinPQ.certificate`, `MinPQ.run_client_exact_fresh`,
+  `MinPQ.run_client_exact_reusable`: `StateTransitionImpl` and flat-program implementations of the
   key–value
   Fibonacci heap with handles (`Cslib.DataStructure.PriorityQueue.minPQSpec`).
 * `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.initFreshProg`, `initClearProg`,
@@ -95,7 +95,7 @@ theorem dispatchCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x :
       FibInv n K_max w base ((indexedMinPQSpec n K_max).stepFn s o).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
       m + potential y ≤ charge n s o + potential x := by
-  have hz0 : x.regs zeroP = 0 := hinv.2.1.2.2.2.2.2.2.2.2.2.2.2.1
+  have hz0 : x.regs zeroP = 0 := hinv.2.1.regs_zeroP
   cases o with
   | isEmpty =>
     obtain ⟨ht2, ht1, ht0⟩ := harg

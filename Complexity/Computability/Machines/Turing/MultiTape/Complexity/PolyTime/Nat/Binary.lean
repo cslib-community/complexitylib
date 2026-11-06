@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -31,12 +30,11 @@ import Mathlib.Data.Nat.Bitwise
 Polynomial-time certificates for arithmetic on the binary encoding `Turing.MultiTapeTM.encNat`
 (digits least significant first), the binary counterparts of the unary certificates in
 `Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat.lean`. Addition and
-multiplication are Christian Reitwiessner's degree-bounded
-machines (`Turing.MultiTapeTM.computableTidilyInDegree_add`,
-`Turing.MultiTapeTM.computableTidilyInDegree_mul`). A list is summed by a left fold whose
-accumulator grows by at most one digit more than the length of the element added. Powers of two are
-computed from a unary exponent by repeated doubling. Comparisons are the linear-time zip
-transducers of `Turing.MultiTapeTM.computableInTimeAndSpace_natLt` and
+multiplication reuse Christian Reitwiessner's plain schoolbook certificates
+`Turing.MultiTapeTM.ComputableInO.natAdd` and `Turing.MultiTapeTM.ComputableInO.natMul`. A list is
+summed by a left fold whose accumulator grows by at most one digit more than the length of the
+element added. Powers of two are computed from a unary exponent by repeated doubling. Comparisons
+are the linear-time zip transducers of `Turing.MultiTapeTM.computableInTimeAndSpace_natLt` and
 `Turing.MultiTapeTM.computableInTimeAndSpace_natLe`; bitwise OR is that of
 `Turing.MultiTapeTM.computableInTimeAndSpace_natOr`. The verifiers and reductions
 of the number problems (`Cslib.Complexity.SubsetSum` and its relatives) are built from these.
@@ -193,7 +191,8 @@ theorem binary_add : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + p.2
 @[fun_prop]
 theorem binary_mul : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 * p.2)
     (encPair encNat encNat) encNat :=
-  computableTidilyInDegree_mul.computableTidilyInPolyTime
+  (ComputableInPolyTime.binary_mul' (ComputableInPolyTime.fst encNat encNat)
+    (ComputableInPolyTime.snd encNat encNat)).tidy
 
 /-- Add computed binary values, fixing their intermediate encodings for proof search. -/
 @[fun_prop]
@@ -420,7 +419,7 @@ theorem binary_and : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 &&& p.2)
 @[fun_prop, program_certificate]
 theorem binary_or : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 ||| p.2)
     (encPair encNat encNat) encNat :=
-  (ComputableInO.of_linear ComputableInLinearTimeAndSpace.natOr).computableInPolyTime
+  (ComputableInO.of_linear ComputableInDegree.natOr).computableInPolyTime
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
 

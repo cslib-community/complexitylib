@@ -24,24 +24,43 @@ private def live : Host.Callee 17 := Host.Slow.callee
 -- Small-input execution is intentional and does not erase preprocessing instance lists.
 /-- info: true -/
 #guard_msgs in
-#eval decide ((run 4 (Decision.flatProgram 1 live) 10 (State.init ([] : List ℕ))) = some (0, 7))
+#eval decide ((run 4 (Decision.flatProgram 1 live.code) 10
+  (State.init ([] : List ℕ))) = some (0, 7))
 
 /-- info: true -/
 #guard_msgs in
-#eval decide ((run 4 (Decision.flatProgram 1 live) 10 (State.init [Signed.encode 0])) = some (0, 7))
+#eval decide ((run 4 (Decision.flatProgram 1 live.code) 10
+  (State.init [Signed.encode 0])) = some (0, 7))
 
 /-- info: true -/
 #guard_msgs in
-#eval decide ((run 4 (Decision.flatProgram 1 live) 10
+#eval decide ((run 4 (Decision.flatProgram 1 live.code) 10
   (State.init [Signed.encode 0, Signed.encode 0])) = some (0, 7))
+
+-- Every call reads the current packed pointer and heap frontier from actual traversal state.
+-- The deliberately different value envelope stays a separate host argument.
+private def layoutInput : Data (Decision.registerCount 0) :=
+  (Data.init []).set (Decision.preprocessingRegisters 0 ChanHe.Traversal.heap) 575
+    |>.set (Decision.preprocessingRegisters 0 ChanHe.Traversal.packed) 300
+    |>.set (Decision.preprocessingRegisters 0 ChanHe.Preprocessing.packedLength) 12
+    |>.set (Decision.controllerRegisters 0 Decision.envelope) 100000
+
+/-- info: true -/
+#guard_msgs in
+#eval decide ((Code.eval 32 20 (Decision.Visitor.prepareHost (r := 0)) layoutInput).map (fun yn =>
+  [yn.1.regs (Decision.hostRegisters 0 (Host.hostRegisters Host.matAB)),
+    yn.1.regs (Decision.hostRegisters 0 (Host.hostRegisters Host.upper)),
+    yn.1.regs (Decision.hostRegisters 0 (Host.hostRegisters Host.base)),
+    yn.1.regs (Decision.hostRegisters 0 (Host.hostRegisters Host.len)), yn.2]) =
+      some [575, 100000, 300, 12, 4])
 
 -- Repeated values are allowed; only positions must be different.
 example : ∃ (y : Data (Decision.registerCount 17)) (steps : ℕ),
-    Executes (Decision.width 1 live.widthCoefficient 3) (Decision.flatProgram 1 live)
+    Executes (Decision.width 1 live.widthCoefficient 3) (Decision.flatProgram 1 live.code)
       (State.init (([-2, 1, 1] : List ℤ).map Signed.encode)) 1 steps ∧
-    Runs (Decision.width 1 live.widthCoefficient 3) (Decision.flatProgram 1 live)
+    Runs (Decision.width 1 live.widthCoefficient 3) (Decision.flatProgram 1 live.code)
       (State.init (([-2, 1, 1] : List ℤ).map Signed.encode))
-      ⟨(Decision.program 1 live).size, y⟩ (steps - 1) ∧ steps ≤ Decision.cost 1 live 3 := by
+      ⟨(Decision.program 1 live.code).size, y⟩ (steps - 1) ∧ steps ≤ Decision.cost 1 live 3 := by
   obtain ⟨y, steps, he, hr, ht, _, hans, _⟩ := Decision.runs_input (κ := 1)
     [-2, 1, 1] live le_rfl (by
       intro z hz
@@ -53,7 +72,7 @@ example : ∃ (y : Data (Decision.registerCount 17)) (steps : ℕ),
   exact ⟨y, steps, he, hr, ht⟩
 
 example : ∃ steps, Executes (Decision.width 1 live.widthCoefficient 3)
-    (Decision.flatProgram 1 live)
+    (Decision.flatProgram 1 live.code)
     (State.init (([1, 1, 1] : List ℤ).map Signed.encode)) 0 steps ∧
     steps ≤ Decision.cost 1 live 3 := by
   obtain ⟨y, steps, he, _, ht, hb, hans, _⟩ := Decision.runs_input (κ := 1)

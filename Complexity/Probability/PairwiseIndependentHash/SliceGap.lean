@@ -231,7 +231,7 @@ theorem affineMove_inl {r : ℕ} (p : {p : Fin H × Fin H // p.1 ≠ p.2})
     (q : Frame P H r × (Fin H → ZMod L)) :
     affineMove P H L r (.inl p) q =
       (Frame.mapSL (SpecialLinearGroup.transvection p.2 1) q.1,
-        update q.2 p.1.1 (q.2 p.1.1 + q.2 p.1.2)) := by
+        update q.2 p.val.1 (q.2 p.val.1 + q.2 p.val.2)) := by
   simp only [affineMove, affineGenerator, coordMove, Sum.elim_inl, Equiv.prodCongr_apply,
     Prod.map, affineSL_apply, SpecialLinearGroup.map_transvection,
     SpecialLinearGroup.transvection_mulVec, map_one, one_mul]

@@ -129,9 +129,6 @@ private theorem toNat_eq_iff_beq (a b : Bool) : 1 - (a.toNat ^^^ b.toNat) = (a =
 private theorem toNat_or (a b : Bool) : a.toNat ||| b.toNat = (a || b).toNat := by
   cases a <;> cases b <;> rfl
 
-private theorem toNat_le_one (a : Bool) : a.toNat ≤ 1 := by
-  cases a <;> decide
-
 private theorem toNat_xor_le_one (a b : Bool) : a.toNat ^^^ b.toNat ≤ 1 := by
   cases a <;> cases b <;> decide
 
@@ -270,13 +267,13 @@ theorem litLoop_spec (σ : Fin n → Bool) (ls : Clause (Fin n)) (x : Data 24) (
       simpa using this.2
     have hval : x.mem (x.regs aBase + l.1.val) = (σ l.1).toNat := hσ l.1
     have hf1 : Fits w l.1.val := hw.of_le (by omega)
-    have hf2 : Fits w l.2.toNat := hw.of_le (by have := toNat_le_one l.2; omega)
+    have hf2 : Fits w l.2.toNat := hw.of_le (by have := Bool.toNat_le l.2; omega)
     have hf3 : Fits w (x.regs aBase + l.1.val) := hw.of_le (by omega)
     have hf4 : Fits w ((σ l.1).toNat ^^^ l.2.toNat) := hw.of_le (by
       have := toNat_xor_le_one (σ l.1) l.2; omega)
     have hf5 : Fits w (1 - ((σ l.1).toNat ^^^ l.2.toNat)) := hw.of_le (by omega)
     have hf6 : Fits w (s.toNat ||| (1 - ((σ l.1).toNat ^^^ l.2.toNat))) := hw.of_le (by
-      rw [toNat_eq_iff_beq, toNat_or]; have := toNat_le_one (s || (σ l.1 == l.2)); omega)
+      rw [toNat_eq_iff_beq, toNat_or]; have := Bool.toNat_le (s || (σ l.1 == l.2)); omega)
     have hf7 : Fits w (x.regs lptr + 1) := hw.of_le (by simp only [List.length_cons] at hend; omega)
     obtain ⟨y, hy, hym, hys, hyp, hya, hyo⟩ := ih (((((((((x.set lit (litCode l)).set var
         l.1.val).set sgn l.2.toNat).set addr (x.regs aBase + l.1.val)).set val

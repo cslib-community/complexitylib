@@ -20,6 +20,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayIn
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.PPT.Clock
 import Complexity.Computability.Probabilistic.Sampling
+import Complexity.Foundations.Analysis.ENNRealFraction
 import Complexity.Probability.PMF.Map
 import Mathlib.Data.Set.Finite.List
 
@@ -370,25 +371,6 @@ theorem mem_NP_iff_exists_mem_NTIME {α : Type} {enc : α ↪ List Bool} {A : Se
 open Cslib.Probability
 open scoped ENNReal
 
-/-- A probability of at least `2 / 3` is a fraction of at least two thirds. -/
-private theorem two_thirds_le_div_iff {c n : ℕ} :
-    (2 / 3 : ℝ≥0∞) ≤ c / 2 ^ n ↔ 2 * 2 ^ n ≤ 3 * c := by
-  rw [ENNReal.le_div_iff_mul_le (Or.inl (pow_ne_zero _ two_ne_zero))
-    (Or.inl (ENNReal.pow_ne_top ENNReal.ofNat_ne_top)), div_eq_mul_inv, mul_right_comm,
-    ← div_eq_mul_inv, ENNReal.div_le_iff (by norm_num) (by norm_num)]
-  constructor
-  · intro h
-    have : ((2 * 2 ^ n : ℕ) : ℝ≥0∞) ≤ ((3 * c : ℕ) : ℝ≥0∞) := by
-      push_cast
-      rw [mul_comm (3 : ℝ≥0∞)]
-      exact h
-    exact_mod_cast this
-  · intro h
-    have : ((2 * 2 ^ n : ℕ) : ℝ≥0∞) ≤ ((3 * c : ℕ) : ℝ≥0∞) := by exact_mod_cast h
-    push_cast at this
-    rw [mul_comm (c : ℝ≥0∞)]
-    exact this
-
 /-- An injective map keeps the probability of the image of a value. -/
 private theorem map_apply_of_injective {β γ : Type} {p : PMF β} {f : β → γ}
     (hf : Function.Injective f) (b : β) : p.map f (f b) = p b := by
@@ -428,7 +410,7 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
       map_apply_of_injective encBool.injective]
     simp only [program, ProbComp.eval_map, BitString.eval_sampleList]
     rw [BitString.uniformList_map_apply]
-    exact two_thirds_le_div_iff.mpr (hA.two_mul_le a)
+    exact ENNReal.two_div_three_le_natCast_div_two_pow_iff.mpr (hA.two_mul_le a)
   · rintro ⟨d, c₁, c₂, k, State, hfinite, machine, hA⟩
     -- replay the coins
     refine ⟨Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂,
@@ -444,7 +426,7 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
       simp
     have hprob := (hA a).2
     rw [MultiTapePTM.eval_runClosed_eq_map_coins, BitString.uniformList_map_apply,
-      two_thirds_le_div_iff] at hprob
+      ENNReal.two_div_three_le_natCast_div_two_pow_iff] at hprob
     dsimp only [DecidesWithBoundedError, PromiseProblem.SolvesWithBoundedError, BoundedErrorAt]
     rw [heval]
     constructor

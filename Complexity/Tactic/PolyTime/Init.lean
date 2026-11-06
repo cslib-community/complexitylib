@@ -241,7 +241,7 @@ metavariable assignments until the surrounding proof search has also succeeded. 
 def applyCertificates (predicate : Name) : Aesop.RuleTac := fun input => input.goal.withContext do
   let target := (← instantiateMVars (← input.goal.getType)).consumeMData
   unless target.isAppOf predicate do throwError "expected an efficiency goal for {predicate}"
-  let key ← efficiencyKey target
+  let key@(_, head, _) ← efficiencyKey target
   let initial ← saveState
   let mut applications := #[]
   for (certificate, eager) in (certificateExt.getState (← getEnv)).getD key #[] do
@@ -260,7 +260,7 @@ def applyCertificates (predicate : Name) : Aesop.RuleTac := fun input => input.g
         successProbability? := none }
     catch _ => pure ()
     finally initial.restore
-  if applications.isEmpty then throwError "no certificate for `{key.2.1}` applies"
+  if applications.isEmpty then throwError "no certificate for `{head}` applies"
   return ⟨applications⟩
 
 /-- Apply a rule with known arguments, leaving all remaining hypotheses as goals. -/

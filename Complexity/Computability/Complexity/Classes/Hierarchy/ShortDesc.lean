@@ -14,6 +14,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
 import Mathlib.Data.Nat.Size
+import Complexity.Foundations.Data.Nat.RecursionTree
 
 /-!
 # Short descriptions
@@ -117,17 +118,6 @@ private lemma iterate_div_two (n i : ℕ) : (· / 2)^[i] n = n / 2 ^ i := by
   | succ i ih =>
     rw [Function.iterate_succ_apply', ih, pow_succ, Nat.div_div_eq_div_mul]
 
-private lemma sum_div_two_pow_le (n L : ℕ) : ∑ i ∈ Finset.range L, n / 2 ^ i ≤ 2 * n := by
-  induction L generalizing n with
-  | zero => simp
-  | succ L ih =>
-    rw [Finset.sum_range_succ']
-    have h (i : ℕ) : n / 2 ^ (i + 1) = n / 2 / 2 ^ i := by
-      rw [pow_succ', Nat.div_div_eq_div_mul]
-    simp only [h, pow_zero, Nat.div_one]
-    have := ih (n / 2)
-    omega
-
 /-- Comparing `2 ^ L` with `n`, both in unary, in linear time: `n` is halved `L` times, which costs
 `n + n / 2 + ⋯`, and the result is tested for positivity. -/
 private theorem computableTidilyInO_two_pow_le :
@@ -163,7 +153,7 @@ private theorem computableTidilyInO_two_pow_le :
   · simp only [encBool_apply, encBits_apply, iterate_div_two, List.map_const',
       List.flatten_replicate_nil, List.nil_append, List.cons.injEq, and_true]
     exact decide_eq_decide.mpr (Nat.div_pos_iff.trans (and_iff_right (by positivity))).symm
-  · have hs := sum_div_two_pow_le p.1 p.2
+  · have hs := Nat.sum_div_two_pow_le p.1 p.2
     have hq : p.1 / 2 ^ p.2 ≤ p.1 := Nat.div_le_self _ _
     simp only [encUnary_apply, List.length_replicate, iterate_div_two, length_encPair,
       Finset.sum_add_distrib, ← Finset.mul_sum, Finset.sum_const, Finset.card_range,

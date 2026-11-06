@@ -140,21 +140,6 @@ theorem computableInPolyTime_desc_mk {tapes q₀ : γ → ℕ} {table : γ → L
     (encIn := encPair encUnary (encPair encUnary (encList (encPair eKey eAct))))
     (encOut := eDesc) fun _ => rfl).comp (htapes.prod (hq₀.prod htable))
 
-/-! ### Helpers -/
-
-/-- Mapping a computed option. -/
-@[fun_prop]
-theorem computableInPolyTime_option_map {α β : Type} {encA : α ↪ List Bool}
-    {encB : β ↪ List Bool} {value : γ → Option α} {f : γ → α → β}
-    (hvalue : ComputableInPolyTime value encIn (encOption encA))
-    (hf : ComputableInPolyTime (fun p : γ × α => f p.1 p.2) (encPair encIn encA) encB) :
-    ComputableInPolyTime (fun x => (value x).map (f x)) encIn (encOption encB) := by
-  have hb : ComputableInPolyTime (fun p : γ × α => some (f p.1 p.2)) (encPair encIn encA)
-      (encOption encB) := (optionSome encB).comp hf
-  convert optionElimWithInput (body := fun x a => some (f x a)) hvalue (const none) hb using 1
-  funext x
-  cases value x <;> rfl
-
 namespace Hardwire
 
 open Redirect

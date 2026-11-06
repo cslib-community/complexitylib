@@ -87,10 +87,10 @@ def IsOracleExpTimeOn {Operation α β : Type} [DecidableEq Operation]
     (machine : Turing.MultiTapePTM k Bool Control Operation) (c d : ℕ),
     ∀ a (State : Type) (oracle : Operation × List Bool → StateT State PMF (List Bool)) s,
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (output <$> program a)).run s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (machine.runOracle (c * 2 ^ (d * (input a).length)) (input a))).run s
 
 namespace IsOracleExpTimeOn

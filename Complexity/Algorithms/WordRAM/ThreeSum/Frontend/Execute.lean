@@ -8,6 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Arrays
+import Complexity.Computability.WordRAM.MemoryView
+
+import Complexity.Computability.WordRAM.CountingLoop
 
 /-!
 # Complete descriptor-table execution
@@ -161,22 +164,20 @@ theorem loop_exec {w U : ℕ} (l : Layout) (rs : List (ℕ × ℕ)) (x : Data 48
   have hN : 1 + 4 * l.n ≤ l.endpoint := by
     dsimp only [Layout.endpoint, Layout.pointer, Layout.payloads, Layout.descriptors]
     omega
-  let I (y : Data 48) : Prop :=
-    Registers l U rs.length y ∧ y.regs current ≤ l.arrays ∧
-    y.regs heap = l.pointer (y.regs current) ∧
-    (∀ i < y.regs current,
+  let P (j : ℕ) (y : Data 48) : Prop :=
+    Registers l U rs.length y ∧
+    y.regs heap = l.pointer j ∧
+    (∀ i < j,
       y.mem (l.descriptors + 2 * i) = (Math.array U l.digits rs i).length ∧
       y.mem (l.descriptors + 2 * i + 1) = l.pointer i ∧
       Block.HoldsList (l.pointer i) (Math.array U l.digits rs i) y.mem) ∧
     Block.HoldsList (1 + 2 * l.n) (rs.map Prod.fst) y.mem ∧
     Block.HoldsList (1 + 3 * l.n) (rs.map Prod.snd) y.mem ∧
     Modifies (Block.mk l.descriptors (l.endpoint - l.descriptors)).footprint x.mem y.mem
-  have hbody (y : Data 48) (hy : I y) (ht : (Cond.lt current arrays).Holds y) :
-      ∃ z, ExecWithin w body y z (43 * rs.length + 30) ∧ I z ∧
-        l.arrays - z.regs current < l.arrays - y.regs current := by
-    obtain ⟨hyr, hyidx, hyheap, hyout, hykeys, hycounts, hyframe⟩ := hy
-    have hj : y.regs current < l.arrays := by
-      simpa only [Cond.holds_lt, hyr.arrays] using ht
+  have hbody (y : Data 48) (hy : P (y.regs current) y) (hj : y.regs current < l.arrays) :
+      ∃ z, ExecWithin w body y z (43 * rs.length + 30) ∧ P (y.regs current + 1) z ∧
+        z.regs current = y.regs current + 1 := by
+    obtain ⟨hyr, hyheap, hyout, hykeys, hycounts, hyframe⟩ := hy
     have hnext : l.pointer (y.regs current + 1) ≤ l.endpoint :=
       l.pointer_mono (by omega)
     have hcur : l.pointer (y.regs current) ≤ l.endpoint := l.pointer_mono (by omega)
@@ -231,9 +232,14 @@ theorem loop_exec {w U : ℕ} (l : Layout) (rs : List (ℕ × ℕ)) (x : Data 48
         (hb1 : b ≠ l.descriptors + 2 * y.regs current + 1) : z.mem b = y.mem b := by
       apply hzf b _ hb0 hb1
       simpa only [Layout.pointer_succ] using houtside
-    refine ⟨z, hz, ?_, by omega⟩
-    refine ⟨hyr.transfer (fun i hi => hz.regs_eq hi), by omega, ?_, ?_, ?_, ?_, ?_⟩
-    · rw [hzi, Layout.pointer_succ]
+    have hview : Set.EqOn z.mem y.mem {b | (b < l.pointer (y.regs current) ∨
+        l.pointer (y.regs current + 1) ≤ b) ∧ b ≠ l.descriptors + 2 * y.regs current ∧
+        b ≠ l.descriptors + 2 * y.regs current + 1} :=
+      fun {_} hb => hf _ hb.1 hb.2.1 hb.2.2
+    have hdescbase : l.descriptors = 1 + 4 * l.n := rfl
+    refine ⟨z, hz, ?_, hzi⟩
+    refine ⟨hyr.transfer (fun i hi => hz.regs_eq hi), ?_, ?_, ?_, ?_, ?_⟩
+    · rw [Layout.pointer_succ]
       exact hzh
     · intro i hi
       by_cases hij : i = y.regs current
@@ -244,24 +250,14 @@ theorem loop_exec {w U : ℕ} (l : Layout) (rs : List (ℕ × ℕ)) (x : Data 48
         have hbefore := l.descriptor_before (hi'.trans hj) (y.regs current)
         refine ⟨(hf _ (.inl (by omega)) (by omega) (by omega)).trans h0,
           (hf _ (.inl (by omega)) (by omega) (by omega)).trans h1, ?_⟩
-        apply hp.frame
-        intro b hlo hhi
         have hlen' := (Math.length_array_le U l.digits rs i).trans
           (show rs.length + 1 ≤ l.capacity by dsimp [Layout.capacity]; omega)
         have hptr := l.pointer_mono (show i + 1 ≤ y.regs current by omega)
         rw [Layout.pointer_succ] at hptr
         have htable := l.descriptor_before hj i
-        exact hf b (.inl (by omega)) (by omega) (by omega)
-    · apply hykeys.frame
-      intro b hlo hhi
-      simp only [List.length_map] at hhi
-      exact hf b (.inl (by omega)) (by dsimp [Layout.descriptors]; omega)
-        (by dsimp [Layout.descriptors]; omega)
-    · apply hycounts.frame
-      intro b hlo hhi
-      simp only [List.length_map] at hhi
-      exact hf b (.inl (by omega)) (by dsimp [Layout.descriptors]; omega)
-        (by dsimp [Layout.descriptors]; omega)
+        ram_keep hp using hview
+    · ram_keep hykeys using hview
+    · ram_keep hycounts using hview
     · intro b hnot
       have hb : b < l.descriptors ∨ l.endpoint ≤ b := by
         rw [Block.mem_footprint] at hnot
@@ -272,23 +268,19 @@ theorem loop_exec {w U : ℕ} (l : Layout) (rs : List (ℕ × ℕ)) (x : Data 48
       have hb0 : b ≠ l.descriptors + 2 * y.regs current := by omega
       have hb1 : b ≠ l.descriptors + 2 * y.regs current + 1 := by omega
       exact (hf b (by rcases hb with hb | hb <;> omega) hb0 hb1).trans (hyframe b hnot)
-  have hx : I x := by
-    refine ⟨hr, by rw [hidx]; omega, by simpa only [hidx] using hheap, ?_, hk, hc,
+  have hx : P (x.regs current) x := by
+    refine ⟨hr, by simpa only [hidx] using hheap, ?_, hk, hc,
       Modifies.refl _ _⟩
     intro i hi
     rw [hidx] at hi
     omega
-  obtain ⟨y, hy, hI, ht⟩ := ExecWithin.loop_invariant I
-    (fun y => l.arrays - y.regs current) hbody hx
-  obtain ⟨hyr, hyidx, hyheap, hyout, hykeys, hycounts, hyframe⟩ := hI
-  have hend : y.regs current = l.arrays := by
-    simp only [Cond.holds_lt, hyr.arrays] at ht
-    omega
+  obtain ⟨y, hy, ⟨hyr, hyheap, hyout, hykeys, hycounts, hyframe⟩, hend⟩ :=
+    ExecWithin.loop_count P (fun y hy => hy.1.arrays) hbody (by rw [hidx]; omega) hx
   refine ⟨y, ?_, ?_, hend, ?_, hyr, hykeys, hycounts, hyframe⟩
   · simpa only [hidx, Nat.sub_zero, Nat.mul_comm] using hy
   · intro j hj
     exact hyout j (by omega)
-  · simpa only [hend, Layout.endpoint] using hyheap
+  · simpa only [Layout.endpoint] using hyheap
 
 /-- Complete array/descriptor construction, including all native constant and layout setup. -/
 theorem exec {w U : ℕ} (l : Layout) (rs : List (ℕ × ℕ)) (x : Data 48)

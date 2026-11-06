@@ -69,7 +69,7 @@ theorem step_eq_run_interpret (machine : MultiTapePTM k Bool Control Operation)
     (pair : FiniteConfig k Bool Control Operation × State) :
     step machine handler a pair =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
           (handler a))
         (machine.finiteStep
           (fun choices => choices <$> ProbOracleComp.sample (ProbComp.uniform Bool))
@@ -110,7 +110,8 @@ theorem isPPTOn_step [Fintype Operation] {input : α ↪ List Bool}
     {handler : α → Operation × List Bool → State → ProbComp (List Bool × State)}
     (hhandler : IsPPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2)) :
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state)) :
     IsPPTOn (encPair input (encPair encFiniteConfig stateEncoding))
       (encPair encFiniteConfig stateEncoding)
       (fun pair => step machine handler pair.1 pair.2) :=
@@ -129,7 +130,8 @@ theorem isPPTOn_run [Finite Operation] {input : α ↪ List Bool}
     (hcount : ComputableInPolyTime count input encUnary)
     (hhandler : IsPPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : α → State → Prop) (hinit : ∀ a, invariant a (initial a))
     {resources : ℕ → ℕ} (hresources : PolynomiallyBounded resources)
@@ -141,7 +143,7 @@ theorem isPPTOn_run [Finite Operation] {input : α ↪ List Bool}
           resources ((input a).length + request.2.length)) :
     IsPPTOn input (encPair encBits stateEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
           (handler a)) (machine.runOracle (count a) (word a))).run (initial a)) := by
   refine ((OpenOracleSimulation.isOraclePPTOn_run (External := Empty)
     (handler := fun a request state => ProbOracleComp.sample (handler a request state)) machine

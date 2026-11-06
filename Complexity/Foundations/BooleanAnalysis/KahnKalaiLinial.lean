@@ -18,11 +18,12 @@ inequality the influences of `F` on its `n` coordinates average at least `Var[F]
 **Kahn–Kalai–Linial theorem** says that some coordinate has influence at least
 `c · Var[F] · log n / n`, for an absolute constant `c > 0` [KahnKalaiLinial1988]. We prove it
 with `c = 1 / 12` (`BitString.exists_expect_sub_expect_sq_mul_log_card_div_le_influence`),
-through its edge-isoperimetric form in O'Donnell's exposition: if every coordinate has influence
-at most `δ`, then the total influence is at least `1 / 6 · Var[F] · log (1 / δ)`
-(`BitString.expect_sub_expect_sq_mul_log_inv_le_six_mul_totalInfluence`)
-[O'Donnell, Section 9.6][ODonnell2014]. Here `Var[F]` is written
-`𝔼 x, (F x - 𝔼 y, F y) ^ 2`, the Fourier weight of `F` on the nonempty sets.
+through an edge-isoperimetric form: if every coordinate has influence at most `δ`, then the total
+influence is at least `1 / 6 · Var[F] · log (1 / δ)`
+(`BitString.expect_sub_expect_sq_mul_log_inv_le_six_mul_totalInfluence`). This is a weaker form
+of the KKL Edge-Isoperimetric Theorem in O'Donnell's exposition, proved by the same use of
+hypercontractivity on the derivatives [O'Donnell, Section 9.6][ODonnell2014]. Here `Var[F]` is
+written `𝔼 x, (F x - 𝔼 y, F y) ^ 2`, the Fourier weight of `F` on the nonempty sets.
 
 The same argument, run separately on each coordinate, proves **Talagrand's inequality**
 `Var[F] ≤ 6 ∑ᵢ Infᵢ[F] / log (1 / Infᵢ[F])`, for functions whose influences are all less than
@@ -82,7 +83,7 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 /-- **Hypercontractivity bounds the low-degree weight on the sets containing a coordinate**: for a
 Boolean function read as signs, `∑_{S ∋ i} 3 ^ (-|S|) F̂(S) ^ 2 ≤ 1/3 · Infᵢ[F] ^ (3/2)`, by the
 `(4/3, 2)`-Hypercontractivity Theorem applied to the derivative in `i`
-[O'Donnell, Section 9.6][ODonnell2014]. -/
+[O'Donnell, Corollary 9.12][ODonnell2014]. -/
 theorem sum_filter_mem_one_third_pow_mul_fourierCoeff_sq_le (f : (ι → Bool) → Bool) (i : ι) :
     ∑ S with i ∈ S, (1 / 3 : ℝ) ^ #S * fourierCoeff (fun x => signVal (f x)) S ^ 2 ≤
       influence i (fun x => signVal (f x)) * √(influence i fun x => signVal (f x)) / 3 := by
@@ -252,8 +253,8 @@ private theorem sum_filter_mem_fourierCoeff_sq_div_card_mul_log_le (f : (ι → 
 /-- **The Kahn–Kalai–Linial theorem, edge-isoperimetric form**: if every coordinate has influence
 at most `δ` on a Boolean function read as signs `F`, then `Var[F] · log (1 / δ) ≤ 6 I[F]`, that
 is, the total influence is at least `1/6 · Var[F] · log (1 / δ)` [KahnKalaiLinial1988]
-[Talagrand1994] [O'Donnell, Section 9.6][ODonnell2014]. For `δ ≥ 1` the left side is at most
-zero. -/
+[Talagrand1994]. This is a weaker form of the KKL Edge-Isoperimetric Theorem of
+[O'Donnell, Section 9.6][ODonnell2014]. For `δ ≥ 1` the left side is at most zero. -/
 theorem expect_sub_expect_sq_mul_log_inv_le_six_mul_totalInfluence (f : (ι → Bool) → Bool) {δ : ℝ}
     (hδ : ∀ i, influence i (fun x => signVal (f x)) ≤ δ) :
     (𝔼 x, (signVal (f x) - 𝔼 y, signVal (f y)) ^ 2) * log δ⁻¹ ≤

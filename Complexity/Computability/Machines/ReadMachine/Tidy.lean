@@ -88,11 +88,11 @@ theorem budget_finite {f : γ → β} [Finite β] (g : β → δ)
 length. -/
 theorem pairFalse_inSpace {α : Type} {enc : α ↪ List Bool} {B : α × Bool → ℕ}
     (hB : ∀ x, (encPair enc encBool (x, false)).length ≤ B (x, false)) :
-    ComputableTidilyInSpace (fun x : α => (x, false)) enc (encPair enc encBool)
+    ComputableInSpace (fun x : α => (x, false)) enc (encPair enc encBool)
       fun x => B (x, false) :=
-  (ComputableTidilyInSpace.budget_prod
-    (ComputableTidilyInSpace.of_inO (.of_linear (.of_eq (f := id) fun _ => rfl)))
-    (ComputableTidilyInSpace.budget_const (encB := encBool) false (.refl _))).weaken
+  (ComputableInSpace.budget_prod
+    (ComputableInSpace.of_inO (.of_linear (.of_eq (f := id) fun _ => rfl)))
+    (ComputableInSpace.budget_const (encB := encBool) false (.refl _))).weaken
       (.of_le fun x => by
         have := hB x
         simp only [length_encPair] at this ⊢
@@ -102,9 +102,9 @@ theorem pairFalse_inSpace {α : Type} {enc : α ↪ List Bool} {B : α × Bool �
 step. -/
 theorem comp_pairFalse_inSpace {α : Type} {enc : α ↪ List Bool} {B : α × Bool → ℕ}
     (hB : ∀ x, (encPair enc encBool (x, false)).length ≤ B (x, false)) {f : α × Bool → β}
-    (h : ComputableTidilyInSpace f (encPair enc encBool) encB B) :
-    ComputableTidilyInSpace (fun x : α => f (x, false)) enc encB fun x => B (x, false) :=
-  ComputableTidilyInSpace.budget_comp h (pairFalse_inSpace hB) (.refl _)
+    (h : ComputableInSpace f (encPair enc encBool) encB B) :
+    ComputableInSpace (fun x : α => f (x, false)) enc encB fun x => B (x, false) :=
+  ComputableInSpace.budget_comp h (pairFalse_inSpace hB) (.refl _)
 
 end Budget
 

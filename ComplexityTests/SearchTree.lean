@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.Lean.SearchTree.Stateful
+public import Complexity.DataStructure.SearchTree.Impl
 public import ComplexityTests.OrderedSet
 
 /-!
@@ -26,7 +26,7 @@ the kernel, with no `native_decide`.
 
 namespace ComplexityTests.SearchTree
 
-open Cslib.Algorithms.Lean.SearchTree Cslib.OrderedSet Cslib.DataStructure
+open Cslib.DataStructure.SearchTree Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
 def build (xs : List Nat) : BinaryTree Nat := (run .nil (insertAll xs)).2.1
 
@@ -91,25 +91,25 @@ example :
 -- The shared deletion operation uses successor splicing at a root with two children and retains
 -- the exact charge, including for missing keys and an empty initial tree.
 example :
-    run medianFirst (.liftBind (.erase 4) .pure) = ((), erase 4 medianFirst, [3]) ∧
-      run sortedFirst (.liftBind (.erase 4) .pure) = ((), erase 4 sortedFirst, [5]) ∧
-      run medianFirst (.liftBind (.erase 8) .pure) = ((), medianFirst, [3]) ∧
-      run (.nil : BinaryTree Nat) (.liftBind (.erase 0) .pure) = ((), .nil, [0]) :=
+    run medianFirst (.liftBind (.delete 4) .pure) = ((), erase 4 medianFirst, [3]) ∧
+      run sortedFirst (.liftBind (.delete 4) .pure) = ((), erase 4 sortedFirst, [5]) ∧
+      run medianFirst (.liftBind (.delete 8) .pure) = ((), medianFirst, [3]) ∧
+      run (.nil : BinaryTree Nat) (.liftBind (.delete 0) .pure) = ((), .nil, [0]) :=
   ⟨rfl, rfl, rfl, rfl⟩
 
-private def eraseTwiceAndCheck (x : Nat) : (spec Nat).Client Bool := do
-  PFunctor.FreeM.lift (P := (spec Nat).signature) (.erase x)
-  PFunctor.FreeM.lift (P := (spec Nat).signature) (.erase x)
+private def deleteTwiceAndCheck (x : Nat) : (spec Nat).Client Bool := do
+  PFunctor.FreeM.lift (P := (spec Nat).signature) (.delete x)
+  PFunctor.FreeM.lift (P := (spec Nat).signature) (.delete x)
   PFunctor.FreeM.lift (P := (spec Nat).signature) (.contains x)
 
 -- A repeated deletion is still charged for its unsuccessful search, and later queries see the
 -- updated state through the same interpreter and representation-independent correctness theorem.
 example :
-    (run medianFirst (eraseTwiceAndCheck 4)).1 = false ∧
-      (run medianFirst (eraseTwiceAndCheck 4)).2.1 = erase 4 medianFirst ∧
-      (run medianFirst (eraseTwiceAndCheck 4)).2.2 = [3, 3, 3] ∧
-      (run medianFirst (eraseTwiceAndCheck 4)).1 =
-        ((spec Nat).runClient (elements medianFirst) (eraseTwiceAndCheck 4)).1 :=
+    (run medianFirst (deleteTwiceAndCheck 4)).1 = false ∧
+      (run medianFirst (deleteTwiceAndCheck 4)).2.1 = erase 4 medianFirst ∧
+      (run medianFirst (deleteTwiceAndCheck 4)).2.2 = [3, 3, 3] ∧
+      (run medianFirst (deleteTwiceAndCheck 4)).1 =
+        ((spec Nat).runClient (elements medianFirst) (deleteTwiceAndCheck 4)).1 :=
   ⟨rfl, rfl, rfl, (run_correct _ ⟨ordered_build _, rfl⟩).1⟩
 
 -- Minimum extraction charges the query and the answer-dependent deletion separately. Their

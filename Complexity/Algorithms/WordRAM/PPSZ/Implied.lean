@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.MemoryView
+
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPSZ.Clauses
 import Complexity.Computability.WordRAM.Sequence
@@ -170,7 +172,9 @@ theorem ImpFrame.congr {y z : Data 32} (h : ImpFrame w φ τ x b C Tb s Db y)
   s_eq := (hr sReg (by decide)).trans h.s_eq
   dBase_eq := (hr dBase (by decide)).trans h.dBase_eq
   eBase_eq := (hr eBase (by decide)).trans h.eBase_eq
-  clauses := h.clauses.frame fun a _ ha => hm a (by have := h.clauses_le; omega)
+  clauses := by
+    have hs := h.clauses_le
+    ram_keep h.clauses using hm
   stored := fun v => (hm _ (by have := h.stored_le; omega)).trans (h.stored v)
   clauses_le := h.clauses_le
   stored_le := h.stored_le
@@ -351,7 +355,7 @@ theorem incDLoop_spec : ∀ (u : List ℕ) (y : Data 32), ImpFrame w φ τ x b C
         simp only [y₁, Data.set_mem, Data.write_mem]; rw [Function.update_of_ne ha']
       obtain ⟨z, hz, hzf, hzm, hzs, hzn⟩ := incDLoop_spec u y₁ hy₁ (by rw [hj₁]; omega)
         (fun a' h => hA a' (by simp [h]))
-        (by rw [hj₁]; exact hlu.frame fun a' h1 h2 => hy₁m a' (by omega))
+        (by rw [hj₁]; ram_keep hlu using hy₁m)
       rw [hj₁] at hzm hzs
       have hzj : z.mem (Db + j) = C := by
         rw [hzm _ (by omega)]; simp [y₁]
@@ -388,8 +392,8 @@ theorem incDLoop_spec : ∀ (u : List ℕ) (y : Data 32), ImpFrame w φ τ x b C
           Option.some.injEq] at h
         subst h
         refine ⟨by simp [y₁], holdsList_cons_iff.mpr ⟨by simp [y₁], ?_⟩⟩
-        exact hlu.frame fun a' h1 h2 => by
-          simp only [y₁, Data.set_mem, Data.write_mem]; rw [Function.update_of_ne (by omega)]
+        simp only [y₁, Data.set_mem, Data.write_mem]
+        ram_keep hlu
       · intro h
         simp only [List.length_cons, List.replicate_succ, nextSection, hsucc, hend, ↓reduceIte,
           reduceCtorEq] at h
@@ -520,7 +524,7 @@ theorem initELoop_spec : ∀ (u : List ℕ) (f : Bool) (y : Data 32),
       simp +decide [y₁]
     obtain ⟨z, hz, hzf, hzm, hze, hzd, hzs⟩ := initELoop_spec u (f && len != 0) y₁ hy₁
       (by rw [hj₁]; omega) (fun a' h => hA a' (by simp [h]))
-      (by rw [hj₁]; exact hlu.frame fun a' h1 h2 => hy₁m a' (by omega)) hs₁
+      (by rw [hj₁]; ram_keep hlu using hy₁m) hs₁
     rw [hj₁] at hzm hze hzd
     refine ⟨z, (ExecWithin.loop_iter hc hrun hz).mono (by simp only [List.length_cons]; omega),
       hzf, fun a' ha' => by rw [hzm a' (by omega), hy₁m a' (by omega)], ?_, ?_, ?_⟩
@@ -617,8 +621,8 @@ theorem incELoop_spec : ∀ (du eu : List ℕ) (y : Data 32), ImpFrame w φ τ x
         simp only [y₁, Data.set_mem, Data.write_mem]; rw [Function.update_of_ne ha']
       obtain ⟨z, hz, hzf, hzm, hzs, hzn⟩ := incELoop_spec du eu₀ y₁ hy₁ (by rw [hj₁]; omega)
         (fun a' h => hA a' (by simp [h]))
-        (by rw [hj₁]; exact hlu.frame fun a' h1 h2 => hy₁m a' (by omega))
-        (by rw [hj₁]; exact hleu.frame fun a' h1 h2 => hy₁m a' (by omega)) he₀
+        (by rw [hj₁]; ram_keep hlu using hy₁m)
+        (by rw [hj₁]; ram_keep hleu using hy₁m) he₀
       rw [hj₁] at hzm hzs
       have hzj : z.mem (Db + s + j) = a + 1 := by
         rw [hzm _ (by omega)]; simp [y₁]
@@ -655,8 +659,8 @@ theorem incELoop_spec : ∀ (du eu : List ℕ) (y : Data 32), ImpFrame w φ τ x
         simp only [List.map_cons, nextSection, hsucc, hend, ↓reduceIte, Option.some.injEq] at h
         subst h
         refine ⟨by simp [y₁], holdsList_cons_iff.mpr ⟨by simp [y₁], ?_⟩⟩
-        exact hleu.frame fun a' h1 h2 => by
-          simp only [y₁, Data.set_mem, Data.write_mem]; rw [Function.update_of_ne (by omega)]
+        simp only [y₁, Data.set_mem, Data.write_mem]
+        ram_keep hleu
       · intro h
         simp only [List.map_cons, nextSection, hsucc, hend, ↓reduceIte, reduceCtorEq] at h
 
@@ -1156,8 +1160,9 @@ theorem innerLoop_spec (t : List ℕ) (ht : t ∈ (List.replicate s (clauseAddrs
         (by rw [hz₁m]; exact ht') (by rw [hz₁m]; exact he) he'
       have hn : nextSection (t.map (litAddrs C φ)) e = some e' := by simpa using hen.head
       obtain ⟨hc₂, he₂⟩ := hz₂s e' hn
-      have ht₂ : HoldsList Db t z₂.mem :=
-        ht'.frame fun a _ ha => by rw [hz₂m a (by rw [htlen] at ha; omega), hz₁m]
+      have ht₂ : HoldsList Db t z₂.mem := by
+        have hkeep : HoldsList Db t z₁.mem := by simpa only [hz₁m] using ht'
+        ram_keep hkeep using hz₂m
       obtain ⟨z₃, hz₃, hz₃f, hz₃m, hz₃s⟩ := ih e' z₂ hz₂f ht₂ he₂ hc₂ hen.tail
         fun e'' h => hmem e'' (List.mem_cons_of_mem _ h)
       have hm₃ : ∀ a < Db, z₂.mem a = y.mem a := fun a ha => by rw [hz₂m a (by omega), hz₁m]
@@ -1277,7 +1282,7 @@ theorem innerSearch_spec (t : List ℕ) (ht : t ∈ (List.replicate s (clauseAdd
         exact litAddrs_nodup C φ a
     obtain ⟨z, hz, hzf, hzm, hzs⟩ := innerLoop_spec t ht xs (t.map (· + 1)) (z₁.set contI 1)
       (hz₁f.set (by decide) 1)
-      (by simpa using hl.frame fun a _ ha => hz₁m a (Or.inl (by rw [htlen] at ha; omega)))
+      (by ram_keep hl using hz₁m)
       (by simpa using hz₁e) (by simp) hen (by rw [← hxs]; exact fun _ h => h)
     have hlen' : xs.length + 1 ≤ (encodeClauses φ).length ^ s := by
       have := congrArg List.length hxs
@@ -1359,8 +1364,8 @@ theorem outerLoop_spec : ∀ (xs : List (List ℕ)) (t : List ℕ) (y : Data 32)
       simp +decide [hz₁s, hok]
     · have hc₁ : ¬(Cond.eq sat zero).Holds z₁ := by
         simp [Cond.holds_eq, hz₁s, hok, hz₁f.zero_eq]
-      have hl₁ : HoldsList Db t z₁.mem := hl.frame fun a _ ha => hz₁m a (by
-        rw [(mem_sections_replicate.mp ht).1] at ha; omega)
+      have htlen := (mem_sections_replicate.mp ht).1
+      have hl₁ : HoldsList Db t z₁.mem := by ram_keep hl using hz₁m
       obtain ⟨z₂, hz₂, hz₂f, hz₂m, -, hz₂n⟩ := incD_spec t z₁ hz₁f ht hl₁
       have hn : nextSection (List.replicate s (clauseAddrs C φ)) t = none := by
         simpa using hen.head
@@ -1396,8 +1401,8 @@ theorem outerLoop_spec : ∀ (xs : List (List ℕ)) (t : List ℕ) (y : Data 32)
       simp +decide [hz₁s, hok]
     · have hc₁ : ¬(Cond.eq sat zero).Holds z₁ := by
         simp [Cond.holds_eq, hz₁s, hok, hz₁f.zero_eq]
-      have hl₁ : HoldsList Db t z₁.mem := hl.frame fun a _ ha => hz₁m a (by
-        rw [(mem_sections_replicate.mp ht).1] at ha; omega)
+      have htlen := (mem_sections_replicate.mp ht).1
+      have hl₁ : HoldsList Db t z₁.mem := by ram_keep hl using hz₁m
       obtain ⟨z₂, hz₂, hz₂f, hz₂m, hz₂s, -⟩ := incD_spec t z₁ hz₁f ht hl₁
       have hn : nextSection (List.replicate s (clauseAddrs C φ)) t = some t' := by
         simpa using hen.head

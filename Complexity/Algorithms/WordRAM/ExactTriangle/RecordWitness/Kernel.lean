@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Spec
 import Complexity.Computability.WordRAM.RegisterFrame
 
+import Complexity.Computability.WordRAM.Call
+
 /-!
 # Real coordinate delivery, verifier calls and witness returns
 
@@ -77,23 +79,14 @@ theorem exec_scan {w U n first length out queries count a b : ℕ}
   let A : WitnessScan.Args := ⟨5, 5 + n * n, 5 + n * n + n * n, n, a, b, first, length⟩
   have hargs : A.InRegisters (x.comap scanBank) :=
     ⟨hx.ab, hx.bc, hx.ac, hx.scanSize, hargA, hargB, hx.scanFirst, hx.scanLength⟩
-  obtain ⟨s, hs, sa, sm, sf, si, sw⟩ := WitnessScan.exec A AB BC AC (x.comap scanBank)
-    hargs ha hb hc hmem hmag hU (hfit.of_le (by
-      dsimp only [A, WitnessScan.Args.addressBound]; omega))
-  let y := s.extend scanBank x
-  have he : ExecWithin (w + 2) scan x y (42 * length + 17) := hs.rename scanBank_injective
-  have yr (i : Fin 32) : y.regs (scanBank i) = s.regs i :=
-    scanBank_injective.extend_apply _ _ i
+  obtain ⟨y, he, ⟨sa, sm, sf, si, sw⟩, _⟩ :=
+    ExecWithin.rename_post scanBank_injective (WitnessScan.exec A AB BC AC (x.comap scanBank)
+      hargs ha hb hc hmem hmag hU (hfit.of_le (by
+        dsimp only [A, WitnessScan.Args.addressBound]; omega)))
   have frame (i : Fin 400) (hi : i.val < 336 ∨ 368 ≤ i.val) : y.regs i = x.regs i := by
-    apply he.regs_eq
-    apply Code.preserves_rename_of_forall_ne
-    intro j hj
-    have hv := congrArg Fin.val hj
-    change 336 + j.val = i.val at hv
-    have hj := j.isLt
-    omega
+    exact he.regs_eq (Code.preserves_rename_of_offset _ _ (fun _ => rfl) i hi)
   obtain ⟨sab, sbc, sac, sn, sa', sb', sfirst, slength⟩ := sa
-  refine ⟨y, he, ?_, sm, (yr _).trans sa', (yr _).trans sb', ?_, ?_, ?_, frame⟩
+  refine ⟨y, he, ?_, sm, sa', sb', ?_, ?_, ?_, frame⟩
   · exact
       { output := (frame _ (by decide)).trans hx.output
         queries := (frame _ (by decide)).trans hx.queries
@@ -103,15 +96,15 @@ theorem exec_scan {w U n first length out queries count a b : ℕ}
         length := (frame _ (by decide)).trans hx.length
         one := (frame _ (by decide)).trans hx.one
         zero := (frame _ (by decide)).trans hx.zero
-        ab := (yr _).trans sab
-        bc := (yr _).trans sbc
-        ac := (yr _).trans sac
-        scanSize := (yr _).trans sn
-        scanFirst := (yr _).trans sfirst
-        scanLength := (yr _).trans slength }
-  · simpa only [yr] using sf
-  · simpa only [yr] using si
-  · simpa only [yr] using sw
+        ab := sab
+        bc := sbc
+        ac := sac
+        scanSize := sn
+        scanFirst := sfirst
+        scanLength := slength }
+  · exact sf
+  · exact si
+  · exact sw
 
 /-- Load the actual query occurrence into the verifier arguments and increment the native
 scan count. No query enumeration or pair supplied as an algorithm argument replaces the loads. -/

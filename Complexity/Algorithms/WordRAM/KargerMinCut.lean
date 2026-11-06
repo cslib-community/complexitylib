@@ -7,9 +7,11 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.Algorithms.WordRAM.Karger.Contract
+public import Complexity.Algorithms.WordRAM.Karger.OutputLaw
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.Time
 
@@ -38,6 +40,19 @@ three complete machine-level endpoints built on the workspace-relocatable subrou
    `33 * n ^ 4 * (Nat.log 2 n + 2)` steps with a genuine non-trivial cut weight `≥ minCut W`, and
    misses `minCut W` with probability at most `1 / (2 * n)` (hence at most `1 / n`) whenever
    `0 < minCut W`, via an elementary Bernoulli power bound without `Real.exp`.
+
+No probability is proved on machine states. Each program simulates a client of
+`Cslib.Algorithms.Lean.Karger`: the word it outputs has the law of the answer of
+`Cslib.Algorithms.Lean.Karger.karger` (`singleCode_law`), or of the amplification client
+`Cslib.Algorithms.Lean.Karger.minRuns` run against independent runs of `karger`
+(`amplifiedCode_law`, `highProbCode_law`). Each trial contracts as the client does
+(`contractDownTo_law`) and reads half the total weight of the two supervertices left
+(`ContractState.mem_add_one`), and the loop of trials keeps the least answer as `minRuns` does
+(`ampTrialBody_law`, `ampLoop_law`). The success and failure bounds and the cut realization are the
+specification's (`Cslib.Algorithms.Lean.Karger.two_div_le_toOuterMeasure_karger`,
+`Cslib.Algorithms.Lean.Karger.minRuns_ne_minCut_le`,
+`Cslib.Algorithms.Lean.Karger.exists_cut_of_mem_support_answerLaw`,
+`Cslib.Algorithms.Lean.Karger.mem_support_minRuns`), carried through those laws.
 
 ## Source statements and notation mapping
 
@@ -88,6 +103,13 @@ three complete machine-level endpoints built on the workspace-relocatable subrou
 
 ## Main results
 
+* `Cslib.Algorithms.WordRAM.Karger.singleCode_law`,
+  `Cslib.Algorithms.WordRAM.Karger.amplifiedCode_law`,
+  `Cslib.Algorithms.WordRAM.Karger.highProbCode_law`: each program's output has the law of the
+  output of `karger` or of amplified `karger`, within its instruction and `rand`-call bounds.
+* `Cslib.Algorithms.WordRAM.Karger.ampTrialBody_law`, `Cslib.Algorithms.WordRAM.Karger.ampLoop_law`,
+  `Cslib.Algorithms.WordRAM.Karger.ampCore_law`: one trial, the loop of trials and the
+  amplification core.
 * `Cslib.Algorithms.WordRAM.Karger.singleProgram_spec`: worst-case `O(n ^ 2)` step bound, `n - 2`
   `rand`-call bound, pathwise non-trivial cut realization, `Modifies` frame, and
   `2 / (n * (n - 1))` success probability lower bound for `singleProgram`.
@@ -314,21 +336,20 @@ theorem singlePost_exec {w wb : ℕ} {x : Data 16} (hwBase : x.regs wBase = wb)
       Exec.load (B := .standard) (w := w) (d := val1) (a := addr1) (x := s₂)
   exact ⟨s₃, e1.seq (e2.seq e3), rfl, by simp [s₃]⟩
 
-/-- Structured `ProbComp` specification of `singleCode`. -/
-theorem singleCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
+/-- **A single trial runs `karger`.** At word size `w ≥ logWidth 3 n` with
+`totalDoubledWeight W < 2 ^ w`, `singleCode` on `n :: flattenMatrix W` runs within
+`singleTime n - 1` instructions and `n - 2` `rand` calls and writes only `[2, 2 + n * n + n)`. The
+weight it leaves in `val1` has the law of the answer of `Lean.Karger.karger` on `⟨n, W⟩`:
+`contractDownTo` contracts as the client does (`contractDownTo_law`), and `singlePost` reads the
+weight between the last two supervertices, half their total weight. -/
+theorem singleCode_law {n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hn : 2 ≤ n) (hW : IsMultigraph W)
     (hw : logWidth 3 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
-    ∃ m : ProbComp (Data 16 × ℕ),
-      ExecRand w singleCode (Data.init (n :: flattenMatrix W)) m ∧
-      m.IsQueryBounded (n - 2) ∧
-      (∀ z ∈ m.support,
-        z.2 + 1 ≤ singleTime n ∧
-        Modifies (Finset.Ico 2 (2 + n * n + n))
-          (Data.init (r := 16) (n :: flattenMatrix W)).mem z.1.mem ∧
-        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs val1 = cutWeight W C) ∧
-      (0 < minCut W →
-        (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞) ≤
-          m.eval.toOuterMeasure {z | z.1.regs val1 = minCut W}) := by
+    ExecRandLaw w singleCode (Data.init (n :: flattenMatrix W))
+      (fun y => Modifies (Finset.Ico 2 (2 + n * n + n))
+        (Data.init (r := 16) (n :: flattenMatrix W)).mem y.mem)
+      (42 * n ^ 2 + 12 * n + 20) (n - 2) (fun y => y.regs val1)
+      (Lean.Karger.answerLaw ⟨n, W⟩) := by
   have hws_fit := fits_workspace_of_logWidth_three hn hw
   have h1 : Fits w 1 := hws_fit.of_le (by omega)
   have hwEnd : Fits w (2 + n * n) := hws_fit.of_le (by omega)
@@ -336,8 +357,7 @@ theorem singleCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
   have hwb1 : Fits w (2 + 1) := hws_fit.of_le (by omega)
   obtain ⟨y_setup, e_setup, hmem_setup, hwb_s, hdb_s, hstr_s, hk_s, ht_s⟩ :=
     singleSetup_exec (W := W) hn hw
-  obtain ⟨y_deg, ⟨n_deg, hn_deg, e_deg⟩, hws_deg, hmod_deg, _, _,
-      hwb_d, hdb_d, hstr_d, hk_d, ht_d, htot_d⟩ :=
+  obtain ⟨y_deg, e_deg, hws_deg, hmod_deg, _, _, hwb_d, hdb_d, hstr_d, hk_d, ht_d, htot_d⟩ :=
     computeDegreesAndTotal_exec (w := w) (W := W) (x := y_setup)
       hwb_s hdb_s hstr_s hk_s (le_refl n) (Or.inl (le_refl _)) h1 hwEnd hdEnd htot
       (hmem_setup ▸ holdsMatrix_init_single W)
@@ -345,106 +365,27 @@ theorem singleCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
   have hst_deg : ContractState w 2 (2 + n * n) n n 2 W y_deg :=
     ⟨hwb_d, hdb_d, hstr_d, hk_d, ht_d, htot_d, le_refl n, Or.inl (le_refl _),
       hwEnd, hdEnd, htot, hws_deg⟩
-  obtain ⟨m_c, hm_c, hq_c, hsup_c, hsurv_c⟩ :=
-    contractDownTo_spec (le_refl 2) hn (isContractionOf_id hW) hst_deg
-  have hpost_all : ∀ z ∈ m_c.support,
-      ∃ y_p : Data 16, Exec w singlePost z.1 y_p 3 ∧
-        y_p.mem = z.1.mem ∧ y_p.regs val1 = z.1.mem 3 := by
-    intro z hz
-    rcases hsup_c z hz with ⟨_, _, W', part', _, hst'⟩
-    exact singlePost_exec hst'.regs_wBase h1 hwb1
-  obtain ⟨m_post, hm_post_def⟩ :
-      ∃ m_post : Data 16 → ProbComp (Data 16 × ℕ),
-        ∀ d, m_post d = codeComp w singlePost d := ⟨_, fun _ => rfl⟩
-  have hm_post : ∀ z ∈ m_c.support, ExecRand w singlePost z.1 (m_post z.1) := by
-    intro z hz
-    obtain ⟨y_p, e_p, _, _⟩ := hpost_all z hz
-    have hr := e_p.execRand
-    rw [hm_post_def]
-    simpa only [hr.codeComp_eq] using hr
-  have hm_c_post : ExecRand w (ram[⟪contractDownTo⟫; ⟪singlePost⟫]) y_deg
-      (do let z₁ ← m_c; let z₂ ← m_post z₁.1; pure (z₂.1, z₁.2 + z₂.2)) :=
-    ExecRand.seq hm_c hm_post
-  have hm_deg_rest := e_deg.seqRand hm_c_post
-  have hm_full := e_setup.seqRand hm_deg_rest
-  let m_total := (fun z => (z.1, 7 + z.2)) <$>
-    ((fun z => (z.1, n_deg + z.2)) <$>
-      (do let z₁ ← m_c; let z₂ ← m_post z₁.1; pure (z₂.1, z₁.2 + z₂.2)))
+  have hsub : workspaceFootprint 2 (2 + n * n) n n ⊆ Finset.Ico 2 (2 + n * n + n) := by
+    intro a ha
+    simp only [workspaceFootprint, Finset.mem_union, Finset.mem_Ico] at ha ⊢
+    omega
+  have hrun := ExecRandLaw.seq (contractDownTo_law (le_refl 2) hn hW hst_deg)
+    (κ := fun G => PMF.pure (totalDoubledWeight G.weight / 2)) fun y ⟨hmod_c, W', hW', hst'⟩ => by
+      obtain ⟨y_p, e_p, hmem_p, hv_p⟩ := singlePost_exec hst'.regs_wBase h1 hwb1
+      have hmod : Modifies (Finset.Ico 2 (2 + n * n + n))
+          (Data.init (r := 16) (n :: flattenMatrix W)).mem y_p.mem := by
+        rw [hmem_p]
+        exact modifies_trans_subset (hmem_setup ▸ hmod_deg) hmod_c
+          (Finset.Ico_subset_Ico (by omega) le_rfl) hsub
+      exact (ExecRandLaw.of_execWithin (f := fun y => y.regs val1) e_p.within hmod).congr_law
+        (by rw [hv_p, hst'.mem_add_one hW'])
   have hcode_eq : singleCode =
       .seq singleSetup (.seq computeDegreesAndTotal (.seq contractDownTo singlePost)) := rfl
   rw [hcode_eq]
-  refine ⟨m_total, hm_full, ?_, ?_, ?_⟩
-  · simp only [m_total, OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    have hq_post : ∀ z₁ ∈ m_c.support,
-        (m_post z₁.1 >>= fun z₂ => pure (z₂.1, z₁.2 + z₂.2)).IsQueryBounded 0 := by
-      intro z₁ hz₁
-      obtain ⟨y_p, e_p, _, _⟩ := hpost_all z₁ hz₁
-      rw [hm_post_def, e_p.execRand.codeComp_eq, pure_bind]
-      exact .pure _ 0
-    simpa only [Nat.add_zero] using OracleComp.IsCostBounded.bind_on_support hq_c hq_post
-  · intro z hz
-    simp only [m_total, Functor.map_map] at hz
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz₀
-    obtain ⟨y_p, e_p, hmem_p, hv1_p⟩ := hpost_all z₁ hz₁
-    rw [hm_post_def, e_p.execRand.codeComp_eq] at hrest
-    obtain ⟨z₂, hz₂, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hz₂
-    cases OracleComp.eq_of_mem_supportWith_pure hpure
-    rcases hsup_c z₁ hz₁ with ⟨ht_c, hmod_c, W', part', hC', hst'⟩
-    refine ⟨?_, ?_, ?_⟩
-    · simp only [singleTime]
-      omega
-    · rw [hmem_p]
-      have hsub1 : Finset.Ico (2 + n * n) (2 + n * n + n) ⊆ Finset.Ico 2 (2 + n * n + n) :=
-        Finset.Ico_subset_Ico (by omega) (le_refl _)
-      have hsub2 : workspaceFootprint 2 (2 + n * n) n n ⊆ Finset.Ico 2 (2 + n * n + n) := by
-        intro a ha
-        simp only [workspaceFootprint, Finset.mem_union, Finset.mem_Ico] at ha ⊢
-        omega
-      exact modifies_trans_subset (hmem_setup ▸ hmod_deg) hmod_c hsub1 hsub2
-    · refine ⟨pullbackCut part' {0},
-        isNonTrivialCut_pullbackCut hC'.surj (isNonTrivialCut_singleton (by simp) 0), ?_⟩
-      rw [hv1_p, cutWeight_pullbackCut hC', cutWeight_two_singleton_zero hC'.multigraph]
-      simpa using hst'.workspace.1 0 1
-  · intro hmin_pos
-    obtain ⟨C_star, hC_nt, hC_min⟩ := exists_minCut_achiever (by rwa [Fintype.card_fin]) W
-    have hpb_id : pullbackCut (id : Fin n → Fin n) C_star = C_star := by
-      ext u
-      simp [pullbackCut]
-    have hsurv := hsurv_c C_star hmin_pos hC_nt (by rw [hpb_id, hC_min])
-    rw [hpb_id] at hsurv
-    have h2 : (((2 * (2 - 1) : ℕ) : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) =
-        (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞) := by norm_num
-    rw [h2] at hsurv
-    refine hsurv.trans ?_
-    have hm_eval : m_total.eval =
-        m_c.eval.bind fun z₁ =>
-          ((m_post z₁.1).eval.map fun z₂ => (z₂.1, 7 + (n_deg + (z₁.2 + z₂.2)))) := by
-      have hm_eq : m_total = (do
-          let z₁ ← m_c
-          let z₂ ← m_post z₁.1
-          pure (z₂.1, 7 + (n_deg + (z₁.2 + z₂.2)))) := by
-        simp only [m_total, ← bind_pure_comp, bind_assoc, pure_bind]
-      rw [hm_eq, ProbComp.eval_bind]
-      refine congrArg (m_c.eval.bind ·) (funext fun z₁ => ?_)
-      rw [bind_pure_comp, ProbComp.eval_map]
-    rw [hm_eval]
-    have hstep := toOuterMeasure_bind_ge_mul_ennreal m_c.eval
-      (fun z₁ => (m_post z₁.1).eval.map fun z₂ => (z₂.1, 7 + (n_deg + (z₁.2 + z₂.2))))
-      {z | SurvivalPost W 2 (2 + n * n) n 2 C_star z.1}
-      {z | z.1.regs val1 = minCut W}
-      (s₁ := m_c.eval.toOuterMeasure {z | SurvivalPost W 2 (2 + n * n) n 2 C_star z.1})
-      (s₂ := 1) le_rfl ?_
-    · simpa using hstep
-    · intro z₁ hz₁_eval hsurv₁
-      have hz₁ : z₁ ∈ m_c.support := (ProbComp.support_eval m_c) ▸ hz₁_eval
-      obtain ⟨y_p, e_p, _, hv1_p⟩ := hpost_all z₁ hz₁
-      rw [hm_post_def, e_p.execRand.codeComp_eq, ProbComp.eval_pure,
-        PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_pure_apply]
-      have hmem3 : z₁.1.mem 3 = minCut W := survivalPost_two_mem_eq hC_nt hC_min hsurv₁
-      have hhit : y_p.regs val1 = minCut W := hv1_p.trans hmem3
-      simp [hhit]
+  refine ((ExecRandLaw.seq_det e_setup.within (ExecRandLaw.seq_det e_deg hrun)).congr_law ?_).mono
+    (fun _ h => h) (by omega) (by omega)
+  rw [Lean.Karger.answerLaw_eq]
+  exact PMF.bind_pure_comp _ _
 
 /-- **Single-trial Basic Karger specification (`singleProgram`).**
 At word size `w ≥ logWidth 3 n` when `totalDoubledWeight W < 2 ^ w`:
@@ -473,29 +414,12 @@ theorem singleProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
         (evalRand w singleProgram (singleTime n) (.init input)).toOuterMeasure
           {cfg | ∃ y, cfg = .halted (minCut W) y}) := by
   intro input
-  have hfit_in : InputFits w input := inputFits_single hn hw htot
-  obtain ⟨m, hm, hq, hsup, hsurv⟩ := singleCode_spec hn hW hw htot
-  have hrun : runRand w singleProgram (singleTime n) (.running (.init input)) =
-      (fun z : Data 16 × ℕ => RandCfg.halted (z.1.regs val1) z.1) <$> m :=
-    hm.runRand_program val1 fun z hz => (hsup z hz).1
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · intro cfg hcfg
-    rw [hrun] at hcfg
-    obtain ⟨z, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    exact ⟨z.1.regs val1, z.1, rfl⟩
-  · rw [RandCallsBounded, hrun]
-    exact (OracleComp.isCostBounded_map_iff _ _ _).mpr hq
-  · intro cfg hcfg
-    have hbnd := (runRand_bounded_init hfit_in hcfg)
-    rw [hrun] at hcfg
-    obtain ⟨z, hz, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    rcases hsup z hz with ⟨_, hmod, C, hC_nt, hv1⟩
-    exact ⟨z.1, C, by rw [hv1], hbnd.2, hC_nt, minCut_le_cutWeight W hC_nt, hmod⟩
-  · intro hmin_pos
-    rw [evalRand, hrun, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    refine (hsurv hmin_pos).trans (PMF.toOuterMeasure_mono _ ?_)
-    intro z hz
-    exact ⟨z.1, congrArg (fun v => RandCfg.halted v z.1) hz.1⟩
+  obtain ⟨hhalt, hcalls, hpost, hhit, -⟩ := program_of_law (T' := singleTime n)
+    (singleCode_law hn hW hw htot) (by unfold singleTime; omega) (inputFits_single hn hw htot)
+    fun _ hv => Lean.Karger.exists_cut_of_mem_support_answerLaw hn hW hv
+  refine ⟨hhalt, hcalls, hpost, fun hmin => le_trans ?_ hhit⟩
+  rw [Lean.Karger.answerLaw, PMF.toOuterMeasure_map_apply]
+  exact Lean.Karger.two_div_le_toOuterMeasure_karger hn hW hmin
 
 end SingleTrial
 
@@ -592,20 +516,18 @@ theorem copyMatrixCode_exec {w sb wb n : ℕ} {W : Fin n → Fin n → ℕ} {x :
     change x.regs srcBase + x.regs matLen ≤ x.regs wBase
     rw [hsb, hlen, hwb]
     exact hdisj
-  obtain ⟨y₀, hy₀_exec, hy₀_mem, hy₀_src, hy₀_dst, hy₀_len⟩ :=
-    ArrayCopy.exec (x.comap copyRegMap) h1 hs_fit hd_fit hdisj'
+  obtain ⟨y, hy_exec, ⟨hy_mem, hy_src, hy_dst, hy_len⟩, hnot_in⟩ :=
+    ExecWithin.rename_post copyRegMap_injective
+      (ArrayCopy.exec (x.comap copyRegMap) h1 hs_fit hd_fit hdisj')
   have ht_eq : 7 * (x.comap copyRegMap).regs ArrayCopy.len + 4 = 7 * (n * n) + 4 := by
     change 7 * x.regs matLen + 4 = 7 * (n * n) + 4
     rw [hlen]
-  rw [ht_eq] at hy₀_exec
-  let y := y₀.extend copyRegMap x
+  rw [ht_eq] at hy_exec
   have hymem : y.mem = ArrayCopy.copyPrefix x.mem sb wb (n * n) := by
-    have h₀ : y₀.mem = ArrayCopy.copyPrefix x.mem (x.regs srcBase) (x.regs wBase)
-        (x.regs matLen) := hy₀_mem
+    have h₀ : y.mem = ArrayCopy.copyPrefix x.mem (x.regs srcBase) (x.regs wBase)
+        (x.regs matLen) := hy_mem
     rwa [hsb, hwb, hlen] at h₀
-  have hnot_in : ∀ (r : Fin 22), (∀ i : Fin 7, copyRegMap i ≠ r) → y.regs r = x.regs r :=
-    fun r hne => Function.extend_apply' y₀.regs x.regs r (by rintro ⟨i, rfl⟩; exact hne i rfl)
-  refine ⟨y, hy₀_exec.rename copyRegMap_injective, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨y, hy_exec, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro i j
     rw [hymem]
     have hj_lt : i.val * n + j.val < n * n := by nlinarith [i.isLt, j.isLt]
@@ -617,17 +539,11 @@ theorem copyMatrixCode_exec {w sb wb n : ℕ} {W : Fin n → Fin n → ℕ} {x :
   · intro a ha
     rw [hymem, ArrayCopy.copyPrefix_outside]
     rwa [Finset.mem_Ico] at ha
-  · change Function.extend copyRegMap y₀.regs x.regs (copyRegMap ArrayCopy.dst) = wb
-    rw [copyRegMap_injective.extend_apply]
-    exact hy₀_dst.trans hwb
+  · exact hy_dst.trans hwb
   · exact hnot_in dBase (by decide)
-  · change Function.extend copyRegMap y₀.regs x.regs (copyRegMap ArrayCopy.src) = sb
-    rw [copyRegMap_injective.extend_apply]
-    exact hy₀_src.trans hsb
+  · exact hy_src.trans hsb
   · exact hnot_in nOrig (by decide)
-  · change Function.extend copyRegMap y₀.regs x.regs (copyRegMap ArrayCopy.len) = n * n
-    rw [copyRegMap_injective.extend_apply]
-    exact hy₀_len.trans hlen
+  · exact hy_len.trans hlen
   · exact hnot_in numTrials (by decide)
   · exact hnot_in trialIdx (by decide)
   · exact hnot_in bestVal (by decide)
@@ -692,7 +608,6 @@ structure AmpInv (w sb n R i : ℕ) (W : Fin n → Fin n → ℕ) (mem₀ : ℕ 
   regs_trialIdx : x.regs trialIdx = i
   src_matrix : HoldsMatrix x.mem sb n W
   modifies_ws : Modifies (Finset.Ico (sb + n * n) (sb + 2 * (n * n) + n)) mem₀ x.mem
-  best_cut : 0 < i → ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ x.regs bestVal = cutWeight W C
 
 theorem ampTrialPost_exec {w wb i R : ℕ} {x : Data 22}
     (hwb : x.regs wBase = wb) (hti : x.regs trialIdx = i) (hiR : i < R)
@@ -821,37 +736,27 @@ theorem ampTrialPost_exec {w wb i R : ℕ} {x : Data 22}
   exact ((e1.within).seq ((e2.within).seq ((e3.within).seq
     ((e4.within).seq (e_br.seq e_inc))))).mono (by omega)
 
-private theorem ampTrial_step_bound {n n_cp n_deg t_c n_p : ℕ}
-    (hcp : n_cp ≤ 7 * (n * n) + 4)
-    (hdeg : n_deg ≤ 6 * n ^ 2 + 12 * n + 6)
-    (hc : t_c ≤ 36 * (n ^ 2 - 2 ^ 2) + 4)
-    (hp : n_p ≤ 10) :
-    (n_cp + (3 + n_deg)) + (t_c + n_p) ≤ 49 * n ^ 2 + 12 * n + 27 := by
-  have hnn : n * n = n ^ 2 := (sq n).symm
-  omega
-
-/-- Specification of a single trial `ampTrialBody` from `AmpInv`. -/
-theorem ampTrialBody_spec {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ → ℕ} {x : Data 22}
+/-- **One trial runs `karger`.** From `AmpInv` at trial `i < R`, `ampTrialBody` runs within
+`49 n² + 12 n + 27` instructions and `n - 2` `rand` calls and keeps the invariant at trial `i + 1`.
+Its new `bestVal` has the law of the answer `v` of `Lean.Karger.karger` on `⟨n, W⟩`, taken as is on
+the first trial and as `min v bestVal` after: `contractDownToAt` contracts the fresh copy of `W` as
+the client does (`contractDownToAt_law`), and `ampTrialPost` reads the weight between the last two
+supervertices, half their total weight. -/
+theorem ampTrialBody_law {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ → ℕ} {x : Data 22}
     (hn : 2 ≤ n) (hW : IsMultigraph W) (hiR : i < R)
     (h1 : Fits w 1) (hdEnd : Fits w (sb + 2 * (n * n) + n))
     (hR_fit : Fits w R) (htot : Fits w (totalDoubledWeight W))
     (hinv : AmpInv w sb n R i W mem₀ x) :
-    ∃ m : ProbComp (Data 22 × ℕ),
-      ExecRand w ampTrialBody x m ∧
-      m.IsQueryBounded (n - 2) ∧
-      (∀ z ∈ m.support,
-        z.2 ≤ 49 * n ^ 2 + 12 * n + 27 ∧
-        AmpInv w sb n R (i + 1) W mem₀ z.1 ∧
-        (0 < i → x.regs bestVal = minCut W → z.1.regs bestVal = minCut W)) ∧
-      (0 < minCut W →
-        m.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
-          (1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) := by
+    ExecRandLaw w ampTrialBody x (AmpInv w sb n R (i + 1) W mem₀) (49 * n ^ 2 + 12 * n + 27)
+      (n - 2) (fun y => y.regs bestVal)
+      ((Lean.Karger.answerLaw ⟨n, W⟩).map fun v =>
+        if i = 0 then v else min v (x.regs bestVal)) := by
   let wb := sb + n * n
   let db := sb + 2 * (n * n)
   have hwEnd : Fits w (wb + n * n) := hdEnd.of_le (by omega)
   have h2_fit : Fits w 2 := hdEnd.of_le (by omega)
   have hwb1_fit : Fits w (wb + 1) := hdEnd.of_le (by omega)
-  obtain ⟨y_cp, ⟨n_cp, hn_cp, e_cp⟩, hmat_cp, hmod_cp,
+  obtain ⟨y_cp, e_cp, hmat_cp, hmod_cp,
       hwb_cp, hdb_cp, hsb_cp, hn_cp_reg, hml_cp, hnt_cp, hti_cp, hbv_cp⟩ :=
     copyMatrixCode_exec hinv.regs_srcBase hinv.regs_wBase hinv.regs_matLen
       (le_refl _) h1 hwEnd hinv.src_matrix
@@ -872,7 +777,7 @@ theorem ampTrialBody_spec {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {mem�
   have ec3 : Exec (B := .standard) w ram[targetT ← #2]
       ((y_cp.set activeK n).set stride n) y_cfg 1 :=
     Exec.const h2_fit
-  obtain ⟨y_deg, ⟨n_deg, hn_deg, e_deg⟩, hws_deg, hmod_deg,
+  obtain ⟨y_deg, e_deg, hws_deg, hmod_deg,
       hwb_d, hdb_d, hstr_d, hk_d, ht_d, htot_d, hhi_d⟩ :=
     computeDegreesAndTotalAt_exec (w := w) (W := W) (x := y_cfg) hr22
       (by change y_cfg.regs wBase = wb; simpa +decide [y_cfg, Function.update_apply] using hwb_cp)
@@ -887,8 +792,6 @@ theorem ampTrialBody_spec {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {mem�
   have hst_deg : ContractState w wb db n n 2 W (y_deg.comap (Fin.castLE hr22)) :=
     ⟨hwb_d, hdb_d, hstr_d, hk_d, ht_d', htot_d, le_refl n, Or.inl (by omega),
       hwEnd, hdEnd, htot, hws_deg⟩
-  obtain ⟨m_c, hm_c, hq_c, hsup_c, hsurv_c⟩ :=
-    contractDownToAt_spec hr22 (le_refl 2) hn (isContractionOf_id hW) hst_deg
   have hy_deg_hi : y_deg.regs srcBase = sb ∧ y_deg.regs nOrig = n ∧
       y_deg.regs matLen = n * n ∧ y_deg.regs numTrials = R ∧
       y_deg.regs trialIdx = i ∧ y_deg.regs bestVal = x.regs bestVal := by
@@ -899,321 +802,106 @@ theorem ampTrialBody_spec {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ} {mem�
     · rw [hhi_d numTrials (by decide)]; simpa +decide [y_cfg, Function.update_apply] using hnt_cp
     · rw [hhi_d trialIdx (by decide)]; simpa +decide [y_cfg, Function.update_apply] using hti_cp
     · rw [hhi_d bestVal (by decide)]; simpa +decide [y_cfg, Function.update_apply] using hbv_cp
-  have hpost_all : ∀ z ∈ m_c.support,
-      ∃ (y_p : Data 22) (n_p : ℕ), n_p ≤ 10 ∧ Exec w ampTrialPost z.1 y_p n_p ∧
-        y_p.mem = z.1.mem ∧
-        y_p.regs srcBase = sb ∧ y_p.regs wBase = wb ∧ y_p.regs dBase = db ∧
-        y_p.regs nOrig = n ∧ y_p.regs matLen = n * n ∧ y_p.regs numTrials = R ∧
-        y_p.regs trialIdx = i + 1 ∧
-        y_p.regs bestVal =
-          (if i = 0 then z.1.mem (wb + 1) else min (z.1.mem (wb + 1)) (x.regs bestVal)) := by
-    intro z hz
-    rcases hsup_c z hz with ⟨_, _, hz_hi, W', part', _, hst'⟩
-    have hz_wb : z.1.regs wBase = wb := hst'.regs_wBase
-    have hz_db : z.1.regs dBase = db := hst'.regs_dBase
-    have hz_sb : z.1.regs srcBase = sb := (hz_hi srcBase (by decide)).trans hy_deg_hi.1
-    have hz_n : z.1.regs nOrig = n := (hz_hi nOrig (by decide)).trans hy_deg_hi.2.1
-    have hz_ml : z.1.regs matLen = n * n := (hz_hi matLen (by decide)).trans hy_deg_hi.2.2.1
-    have hz_nt : z.1.regs numTrials = R := (hz_hi numTrials (by decide)).trans hy_deg_hi.2.2.2.1
-    have hz_ti : z.1.regs trialIdx = i := (hz_hi trialIdx (by decide)).trans hy_deg_hi.2.2.2.2.1
-    have hz_bv : z.1.regs bestVal = x.regs bestVal :=
-      (hz_hi bestVal (by decide)).trans hy_deg_hi.2.2.2.2.2
-    obtain ⟨y_p, ⟨n_p, hn_p, e_p⟩, hm_p, hsb_p, hwb_p, hdb_p, hn_p_r, hml_p, hnt_p, hti_p, hbv_p⟩ :=
-      ampTrialPost_exec hz_wb hz_ti hiR h1 hwb1_fit hR_fit
-    exact ⟨y_p, n_p, hn_p, e_p, hm_p, hsb_p.trans hz_sb, hwb_p, hdb_p.trans hz_db,
-      hn_p_r.trans hz_n, hml_p.trans hz_ml, hnt_p.trans hz_nt, hti_p,
-      by simpa only [hz_bv] using hbv_p⟩
-  obtain ⟨m_post, hm_post_def⟩ :
-      ∃ m_post : Data 22 → ProbComp (Data 22 × ℕ),
-        ∀ d, m_post d = codeComp w ampTrialPost d := ⟨_, fun _ => rfl⟩
-  have hm_post : ∀ z ∈ m_c.support, ExecRand w ampTrialPost z.1 (m_post z.1) := by
-    intro z hz
-    obtain ⟨y_p, n_p, _, e_p, _⟩ := hpost_all z hz
-    have hr := e_p.execRand
-    rw [hm_post_def]
-    simpa only [hr.codeComp_eq] using hr
-  have hm_c_post := ExecRand.seq hm_c hm_post
-  have hm_body : ExecRand w ampTrialBody x
-      ((fun z => (z.1, (n_cp + (3 + n_deg)) + z.2)) <$>
-        (do let z₁ ← m_c; let z₂ ← m_post z₁.1; pure (z₂.1, z₁.2 + z₂.2))) := by
-    have hbody_eq : ampTrialBody = .seq copyMatrixCode
-        (.seq ram[activeK ← nOrig] (.seq ram[stride ← nOrig]
-          (.seq ram[targetT ← #2] (.seq (computeDegreesAndTotalAt hr22)
-            (.seq (contractDownToAt hr22) ampTrialPost))))) := rfl
-    rw [hbody_eq]
-    have r4 := e_deg.seqRand hm_c_post
-    have r3 := ec3.seqRand r4
-    have r2 := ec2.seqRand r3
-    have r1 := ec1.seqRand r2
-    have r0 := e_cp.seqRand r1
-    have h111 : ∀ k, 1 + (1 + (1 + k)) = 3 + k := fun _ => by omega
-    simpa only [Functor.map_map, Nat.add_assoc, h111] using r0
-  let m_total := (fun z => (z.1, (n_cp + (3 + n_deg)) + z.2)) <$>
-    (do let z₁ ← m_c; let z₂ ← m_post z₁.1; pure (z₂.1, z₁.2 + z₂.2))
-  refine ⟨m_total, hm_body, ?_, ?_, ?_⟩
-  · simp only [m_total, OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    have hq_post : ∀ z₁ ∈ m_c.support,
-        (m_post z₁.1 >>= fun z₂ => pure (z₂.1, z₁.2 + z₂.2)).IsQueryBounded 0 := by
-      intro z₁ hz₁
-      obtain ⟨y_p, n_p, _, e_p, _⟩ := hpost_all z₁ hz₁
-      rw [hm_post_def, e_p.execRand.codeComp_eq, pure_bind]
-      exact .pure _ 0
-    simpa only [Nat.add_zero] using OracleComp.IsCostBounded.bind_on_support hq_c hq_post
-  · intro z hz
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz₀
-    obtain ⟨y_p, n_p, hn_p, e_p, hm_p, hsb_p, hwb_p, hdb_p, hn_p_r, hml_p, hnt_p, hti_p, hbv_p⟩ :=
-      hpost_all z₁ hz₁
-    rw [hm_post_def, e_p.execRand.codeComp_eq] at hrest
-    obtain ⟨z₂, hz₂, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hz₂
-    cases OracleComp.eq_of_mem_supportWith_pure hpure
-    rcases hsup_c z₁ hz₁ with ⟨ht_c, hmod_c, _, W', part', hC', hst'⟩
-    have hmod_ws_all : Modifies (Finset.Ico wb (db + n)) x.mem y_p.mem := by
-      rw [hm_p]
-      have hs_cp : Finset.Ico wb (wb + n * n) ⊆ Finset.Ico wb (db + n) :=
-        Finset.Ico_subset_Ico (le_refl _) (by omega)
-      have hs_deg : Finset.Ico db (db + n) ⊆ Finset.Ico wb (db + n) :=
-        Finset.Ico_subset_Ico (by omega) (le_refl _)
-      have hs_c : workspaceFootprint wb db n n ⊆ Finset.Ico wb (db + n) := by
-        intro a ha
-        simp only [workspaceFootprint, Finset.mem_union, Finset.mem_Ico] at ha ⊢
-        omega
-      have hm12 := modifies_trans_subset hmod_cp hmod_deg hs_cp hs_deg
-      exact modifies_trans_subset hm12 hmod_c Finset.Subset.rfl hs_c
-    have hsrc_preserved : HoldsMatrix y_p.mem sb n W := by
-      intro a b
-      have hlt : sb + a.val * n + b.val < wb := by
-        have := matAddr_lt_end (wb := sb) (le_refl n) a b
-        omega
-      rw [hmod_ws_all _ (by rw [Finset.mem_Ico]; omega)]
-      exact hinv.src_matrix a b
-    have hnew_cut : z₁.1.mem (wb + 1) = cutWeight W (pullbackCut part' {0}) := by
-      rw [cutWeight_pullbackCut hC', cutWeight_two_singleton_zero hC'.multigraph]
-      simpa using hst'.workspace.1 0 1
-    have hnew_nt : IsNonTrivialCut (pullbackCut part' {0}) :=
-      isNonTrivialCut_pullbackCut hC'.surj (isNonTrivialCut_singleton (by simp) 0)
-    refine ⟨ampTrial_step_bound hn_cp hn_deg ht_c hn_p, ?_, ?_⟩
-    · refine ⟨hsb_p, hwb_p, hdb_p, hn_p_r, hml_p, hnt_p, hti_p, hsrc_preserved,
-        modifies_trans_subset hinv.modifies_ws hmod_ws_all Finset.Subset.rfl Finset.Subset.rfl,
-        fun _ => ?_⟩
-      by_cases hi0 : i = 0
-      · exact ⟨pullbackCut part' {0}, hnew_nt, by simp [hbv_p, hi0, hnew_cut]⟩
-      · obtain ⟨C_old, hC_old_nt, hbv_old⟩ := hinv.best_cut (Nat.pos_of_ne_zero hi0)
-        simp only [hbv_p, hi0, ↓reduceIte]
-        by_cases hle : z₁.1.mem (wb + 1) ≤ x.regs bestVal
-        · exact ⟨pullbackCut part' {0}, hnew_nt, by rw [Nat.min_eq_left hle, hnew_cut]⟩
-        · exact ⟨C_old, hC_old_nt, by rw [Nat.min_eq_right (Nat.le_of_not_le hle), hbv_old]⟩
-    · intro hi_pos hbv_min
-      have hi0 : i ≠ 0 := Nat.ne_of_gt hi_pos
-      have hge : minCut W ≤ z₁.1.mem (wb + 1) := by
-        rw [hnew_cut]
-        exact minCut_le_cutWeight W hnew_nt
-      simp only [hbv_p, hi0, ↓reduceIte, hbv_min]
-      exact Nat.min_eq_right hge
-  · intro hmin_pos
-    obtain ⟨C_star, hC_nt, hC_min⟩ := exists_minCut_achiever (by rwa [Fintype.card_fin]) W
-    have hpb_id : pullbackCut (id : Fin n → Fin n) C_star = C_star := by
-      ext u
-      simp [pullbackCut]
-    have hsurv := hsurv_c C_star hmin_pos hC_nt (by rw [hpb_id, hC_min])
-    rw [hpb_id] at hsurv
-    have h2 : (((2 * (2 - 1) : ℕ) : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) =
-        (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞) := by norm_num
-    rw [h2] at hsurv
-    have hhit_ge : (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞) ≤
-        m_total.eval.toOuterMeasure {z | z.1.regs bestVal = minCut W} := by
-      refine hsurv.trans ?_
-      have hm_eval : m_total.eval =
-          m_c.eval.bind fun z₁ =>
-            ((m_post z₁.1).eval.map fun z₂ =>
-              (z₂.1, (n_cp + (3 + n_deg)) + (z₁.2 + z₂.2))) := by
-        have hm_eq : m_total = (do
-            let z₁ ← m_c
-            let z₂ ← m_post z₁.1
-            pure (z₂.1, (n_cp + (3 + n_deg)) + (z₁.2 + z₂.2))) := by
-          simp only [m_total, ← bind_pure_comp, bind_assoc, pure_bind]
-        rw [hm_eq, ProbComp.eval_bind]
-        refine congrArg (m_c.eval.bind ·) (funext fun z₁ => ?_)
-        rw [bind_pure_comp, ProbComp.eval_map]
-      rw [hm_eval]
-      have hstep := toOuterMeasure_bind_ge_mul_ennreal m_c.eval
-        (fun z₁ => (m_post z₁.1).eval.map fun z₂ =>
-          (z₂.1, (n_cp + (3 + n_deg)) + (z₁.2 + z₂.2)))
-        {z | SurvivalPost W wb db n 2 C_star (z.1.comap (Fin.castLE hr22))}
-        {z | z.1.regs bestVal = minCut W}
-        (s₁ := m_c.eval.toOuterMeasure
-          {z | SurvivalPost W wb db n 2 C_star (z.1.comap (Fin.castLE hr22))})
-        (s₂ := 1) le_rfl ?_
-      · simpa using hstep
-      · intro z₁ hz₁_eval hsurv₁
-        have hz₁ : z₁ ∈ m_c.support := (ProbComp.support_eval m_c) ▸ hz₁_eval
-        obtain ⟨y_p, n_p, _, e_p, _, _, _, _, _, _, _, _, hbv_p⟩ := hpost_all z₁ hz₁
-        rw [hm_post_def, e_p.execRand.codeComp_eq, ProbComp.eval_pure,
-          PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_pure_apply]
-        have hmem_wb1 : z₁.1.mem (wb + 1) = minCut W :=
-          survivalPost_two_mem_eq hC_nt hC_min hsurv₁
-        have hbv_hit : y_p.regs bestVal = minCut W := by
-          rw [hbv_p, hmem_wb1]
-          by_cases hi0 : i = 0
-          · simp [hi0]
-          · obtain ⟨C_old, hC_old_nt, hbv_old⟩ := hinv.best_cut (Nat.pos_of_ne_zero hi0)
-            simp only [hi0, ↓reduceIte, hbv_old]
-            exact Nat.min_eq_left (minCut_le_cutWeight W hC_old_nt)
-        simp [hbv_hit]
-    have hcompl : {z : Data 22 × ℕ | z.1.regs bestVal ≠ minCut W} =
-        {z : Data 22 × ℕ | z.1.regs bestVal = minCut W}ᶜ := by
-      ext z
-      simp
-    rw [hcompl]
-    exact toOuterMeasure_compl_le_one_sub m_total.eval _ hhit_ge
+  have hmod_deg' : Modifies (Finset.Ico wb (db + n)) x.mem y_deg.mem :=
+    modifies_trans_subset hmod_cp hmod_deg (Finset.Ico_subset_Ico (le_refl _) (by omega))
+      (Finset.Ico_subset_Ico (by omega) (le_refl _))
+  have hs_c : workspaceFootprint wb db n n ⊆ Finset.Ico wb (db + n) := by
+    intro a ha
+    simp only [workspaceFootprint, Finset.mem_union, Finset.mem_Ico] at ha ⊢
+    omega
+  -- The contraction runs `karger` on the copy, then `ampTrialPost` updates `bestVal`.
+  have hrun := ExecRandLaw.seq (contractDownToAt_law hr22 (le_refl 2) hn hW hst_deg)
+    (κ := fun G => PMF.pure (if i = 0 then totalDoubledWeight G.weight / 2
+      else min (totalDoubledWeight G.weight / 2) (x.regs bestVal)))
+    fun y ⟨hmod_c, hy_hi, W', hW', hst'⟩ => by
+      have hz_db : y.regs dBase = db := hst'.regs_dBase
+      have hz_ti : y.regs trialIdx = i := (hy_hi trialIdx (by decide)).trans hy_deg_hi.2.2.2.2.1
+      have hv : y.mem (wb + 1) = _ := hst'.mem_add_one hW'
+      obtain ⟨y_p, e_p, hm_p, hsb_p, hwb_p, hdb_p, hn_p, hml_p, hnt_p, hti_p, hbv_p⟩ :=
+        ampTrialPost_exec hst'.regs_wBase hz_ti hiR h1 hwb1_fit hR_fit
+      have hmod : Modifies (Finset.Ico wb (db + n)) x.mem y_p.mem := by
+        rw [hm_p]
+        exact modifies_trans_subset hmod_deg' hmod_c Finset.Subset.rfl hs_c
+      refine (ExecRandLaw.of_execWithin (P := AmpInv w sb n R (i + 1) W mem₀)
+        (f := fun y => y.regs bestVal) e_p ⟨?_, hwb_p, hdb_p.trans hz_db, ?_, ?_, ?_, hti_p,
+        fun a b => ?_, modifies_trans_subset hinv.modifies_ws hmod Finset.Subset.rfl
+          Finset.Subset.rfl⟩).congr_law ?_
+      · exact hsb_p.trans ((hy_hi srcBase (by decide)).trans hy_deg_hi.1)
+      · exact hn_p.trans ((hy_hi nOrig (by decide)).trans hy_deg_hi.2.1)
+      · exact hml_p.trans ((hy_hi matLen (by decide)).trans hy_deg_hi.2.2.1)
+      · exact hnt_p.trans ((hy_hi numTrials (by decide)).trans hy_deg_hi.2.2.2.1)
+      · have hlt := matAddr_lt_end (wb := sb) (le_refl n) a b
+        rw [hmod _ (by rw [Finset.mem_Ico]; omega)]
+        exact hinv.src_matrix a b
+      · rw [hbv_p, (hy_hi bestVal (by decide)).trans hy_deg_hi.2.2.2.2.2, hv]
+  have hbody_eq : ampTrialBody = .seq copyMatrixCode
+      (.seq ram[activeK ← nOrig] (.seq ram[stride ← nOrig]
+        (.seq ram[targetT ← #2] (.seq (computeDegreesAndTotalAt hr22)
+          (.seq (contractDownToAt hr22) ampTrialPost))))) := rfl
+  rw [hbody_eq]
+  refine ((ExecRandLaw.seq_det e_cp (ExecRandLaw.seq_det ec1.within
+    (ExecRandLaw.seq_det ec2.within (ExecRandLaw.seq_det ec3.within
+      (ExecRandLaw.seq_det e_deg hrun))))).congr_law ?_).mono (fun _ h => h) ?_ (by omega)
+  · rw [Lean.Karger.answerLaw_eq, PMF.map_comp]
+    exact PMF.bind_pure_comp _ _
+  · have hnn : n * n = n ^ 2 := (sq n).symm
+    omega
 
-/-- Specification of `ampLoop` over `rem = R - i` remaining trials. -/
-theorem ampLoop_spec {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ → ℕ}
-    (hn : 2 ≤ n) (hW : IsMultigraph W)
+/-- **The loop of trials runs amplified Karger.** From `AmpInv` at trial `i`, with `rem = R - i`
+trials left, `ampLoop` runs within `rem (50 n² + 12 n + 30) + 2` instructions and `rem (n - 2)`
+`rand` calls and ends at trial `R`. Its `bestVal` has the law of the amplification client run
+against independent runs of `Lean.Karger.karger` on `⟨n, W⟩`: of `Lean.Karger.minRuns rem` on the
+first trial, and of `rem` more `Lean.Karger.minStep`s from `bestVal` after. -/
+theorem ampLoop_law {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ → ℕ}
+    (hR : 1 ≤ R) (hn : 2 ≤ n) (hW : IsMultigraph W)
     (h1 : Fits w 1) (hdEnd : Fits w (sb + 2 * (n * n) + n))
     (hR_fit : Fits w R) (htot : Fits w (totalDoubledWeight W)) :
-    ∀ (rem i : ℕ) (x : Data 22),
-      i + rem = R →
-      AmpInv w sb n R i W mem₀ x →
-      ∃ m : ProbComp (Data 22 × ℕ),
-        ExecRand w ampLoop x m ∧
-        m.IsQueryBounded (rem * (n - 2)) ∧
-        (∀ z ∈ m.support,
-          z.2 ≤ rem * (50 * n ^ 2 + 12 * n + 30) + 2 ∧
-          AmpInv w sb n R R W mem₀ z.1 ∧
-          (0 < i → x.regs bestVal = minCut W → z.1.regs bestVal = minCut W)) ∧
-        (0 < minCut W →
-          m.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
-            ((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ rem) := by
+    ∀ (rem i : ℕ) (x : Data 22), i + rem = R → AmpInv w sb n R i W mem₀ x →
+      ExecRandLaw w ampLoop x (AmpInv w sb n R R W mem₀)
+        (rem * (50 * n ^ 2 + 12 * n + 30) + 2) (rem * (n - 2)) (fun y => y.regs bestVal)
+        (OracleComp.evalWith (fun _ => Lean.Karger.answerLaw ⟨n, W⟩)
+          (if i = 0 then Lean.Karger.minRuns rem
+            else OracleComp.iterate rem Lean.Karger.minStep (x.regs bestVal))) := by
   intro rem
   induction rem with
   | zero =>
     intro i x hiR hinv
-    have hi_eq : i = R := by omega
-    subst hi_eq
+    obtain rfl : i = R := by omega
     have hc : ¬(Cond.lt trialIdx numTrials).Holds x := by
       simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
-    refine ⟨pure (x, 2), .loop_exit hc, .pure _ _, ?_, ?_⟩
-    · intro z hz
-      cases OracleComp.eq_of_mem_supportWith_pure hz
-      exact ⟨by simp, hinv, fun _ hbv => hbv⟩
-    · intro _
-      simp only [pow_zero]
-      exact Cslib.Probability.PMF.toOuterMeasure_le_one _ _
+    rw [ite_eq_right (by omega)]
+    exact (ExecRandLaw.loop_exit hc hinv).mono (fun _ h => h) (by omega) (Nat.zero_le _)
   | succ rem ih =>
     intro i x hiR hinv
-    have hi_lt : i < R := by omega
     have hc : (Cond.lt trialIdx numTrials).Holds x := by
-      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials, hi_lt]
-    obtain ⟨m_b, hm_b, hq_b, hsup_b, hfail_b⟩ :=
-      ampTrialBody_spec hn hW hi_lt h1 hdEnd hR_fit htot hinv
-    have hnext : ∀ z₁ ∈ m_b.support,
-        ∃ m_r : ProbComp (Data 22 × ℕ),
-          ExecRand w ampLoop z₁.1 m_r ∧
-          m_r.IsQueryBounded (rem * (n - 2)) ∧
-          (∀ z₂ ∈ m_r.support,
-            z₂.2 ≤ rem * (50 * n ^ 2 + 12 * n + 30) + 2 ∧
-            AmpInv w sb n R R W mem₀ z₂.1 ∧
-            (0 < i + 1 → z₁.1.regs bestVal = minCut W → z₂.1.regs bestVal = minCut W)) ∧
-          (0 < minCut W →
-            m_r.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
-              ((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ rem) := by
-      intro z₁ hz₁
-      exact ih (i + 1) z₁.1 (by omega) (hsup_b z₁ hz₁).2.1
-    obtain ⟨ml, hml_def⟩ :
-        ∃ ml : Data 22 → ProbComp (Data 22 × ℕ),
-          ∀ d, ml d = codeComp w ampLoop d := ⟨_, fun _ => rfl⟩
-    have hml_exec : ∀ z₁ ∈ m_b.support, ExecRand w ampLoop z₁.1 (ml z₁.1) := by
-      intro z₁ hz₁
-      obtain ⟨m_r, hm_r, _⟩ := hnext z₁ hz₁
-      rw [hml_def]
-      simpa only [hm_r.codeComp_eq] using hm_r
-    have hm_iter : ExecRand w ampLoop x
-        (do let z₁ ← m_b; let z₂ ← ml z₁.1; pure (z₂.1, z₁.2 + z₂.2 + 2)) :=
-      ExecRand.loop_iter hc hm_b hml_exec
-    let m_total := (do let z₁ ← m_b; let z₂ ← ml z₁.1; pure (z₂.1, z₁.2 + z₂.2 + 2))
-    refine ⟨m_total, hm_iter, ?_, ?_, ?_⟩
-    · have hq_each : ∀ z₁ ∈ m_b.support,
-          (ml z₁.1 >>= fun z₂ => pure (z₂.1, z₁.2 + z₂.2 + 2)).IsQueryBounded
-            (rem * (n - 2)) := by
-        intro z₁ hz₁
-        obtain ⟨m_r, hm_r, hq_r, _⟩ := hnext z₁ hz₁
-        rw [hml_def, hm_r.codeComp_eq]
-        simpa only [Nat.add_zero] using hq_r.bind fun _ => .pure _ 0
-      have hq_tot := OracleComp.IsCostBounded.bind_on_support hq_b hq_each
-      exact hq_tot.mono (by rw [Nat.succ_mul, Nat.add_comm])
-    · intro z hz
-      obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-      obtain ⟨m_r, hm_r, _, hsup_r, _⟩ := hnext z₁ hz₁
-      rw [hml_def, hm_r.codeComp_eq] at hrest
-      obtain ⟨z₂, hz₂, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-      cases OracleComp.eq_of_mem_supportWith_pure hpure
-      rcases hsup_b z₁ hz₁ with ⟨ht₁, _, hstick₁⟩
-      rcases hsup_r z₂ hz₂ with ⟨ht₂, hinv₂, hstick₂⟩
-      refine ⟨?_, hinv₂, ?_⟩
-      · rw [Nat.succ_mul]
-        omega
-      · intro hi_pos hbv_x
-        exact hstick₂ (Nat.succ_pos i) (hstick₁ hi_pos hbv_x)
-    · intro hmin_pos
-      have hm_eval : m_total.eval =
-          m_b.eval.bind fun z₁ =>
-            ((ml z₁.1).eval.map fun z₂ => (z₂.1, z₁.2 + z₂.2 + 2)) := by
-        dsimp only [m_total]
-        rw [ProbComp.eval_bind]
-        refine congrArg (m_b.eval.bind ·) (funext fun z₁ => ?_)
-        rw [bind_pure_comp, ProbComp.eval_map]
-      rw [hm_eval, pow_succ']
-      refine toOuterMeasure_bind_le_mul_ennreal m_b.eval
-        (fun z₁ => (ml z₁.1).eval.map fun z₂ => (z₂.1, z₁.2 + z₂.2 + 2))
-        {z₁ | z₁.1.regs bestVal ≠ minCut W}
-        {z | z.1.regs bestVal ≠ minCut W}
-        (q₁ := (1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞))
-        (q₂ := ((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ rem)
-        (hfail_b hmin_pos) ?_ ?_
-      · intro z₁ hz₁_eval _
-        have hz₁ : z₁ ∈ m_b.support := (ProbComp.support_eval m_b) ▸ hz₁_eval
-        obtain ⟨m_r, hm_r, _, _, hfail_r⟩ := hnext z₁ hz₁
-        rw [hml_def, hm_r.codeComp_eq, PMF.toOuterMeasure_map_apply]
-        exact hfail_r hmin_pos
-      · intro z₁ hz₁_eval hhit
-        have hz₁ : z₁ ∈ m_b.support := (ProbComp.support_eval m_b) ▸ hz₁_eval
-        have hbv₁ : z₁.1.regs bestVal = minCut W := not_not.mp hhit
-        obtain ⟨m_r, hm_r, _, hsup_r, _⟩ := hnext z₁ hz₁
-        rw [hml_def, hm_r.codeComp_eq, PMF.toOuterMeasure_map_apply,
-          PMF.toOuterMeasure_apply]
-        refine tsum_eq_zero_iff.mpr ?_
-        intro z₂
-        by_cases hz₂_eval : z₂ ∈ m_r.eval.support
-        · have hz₂ : z₂ ∈ m_r.support := (ProbComp.support_eval m_r) ▸ hz₂_eval
-          have hbv₂ : z₂.1.regs bestVal = minCut W :=
-            (hsup_r z₂ hz₂).2.2 (Nat.succ_pos i) hbv₁
-          have hnot : z₂ ∉ ((fun z : Data 22 × ℕ => (z.1, z₁.2 + z.2 + 2)) ⁻¹'
-              {z : Data 22 × ℕ | z.1.regs bestVal ≠ minCut W}) := by
-            simp [hbv₂]
-          exact Set.indicator_of_notMem hnot _
-        · have hp0 : m_r.eval z₂ = 0 := by simpa only [PMF.mem_support_iff, not_not] using hz₂_eval
-          simp [hp0]
+      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
+      omega
+    refine ((ExecRandLaw.loop_iter hc (ampTrialBody_law hn hW (by omega) h1 hdEnd hR_fit htot hinv)
+      (κ := fun b => OracleComp.evalWith (fun _ => Lean.Karger.answerLaw ⟨n, W⟩)
+        (OracleComp.iterate rem Lean.Karger.minStep b)) fun y hy => by
+          have h := ih (i + 1) y (by omega) hy
+          rw [ite_eq_right (Nat.succ_ne_zero i)] at h
+          exact h).congr_law ?_).mono (fun _ h => h) (by rw [add_one_mul]; omega)
+      (by rw [add_one_mul]; omega)
+    by_cases hi : i = 0
+    · simp [hi, Lean.Karger.minRuns, Function.comp_def]
+    · simp [hi, OracleComp.iterate_succ_bind, Lean.Karger.minStep, Function.comp_def]
 
-/-- Specification of `ampCore` for `1 ≤ R` trials from any state with `srcBase = sb`,
-`nOrig = n`, `numTrials = R`, and `HoldsMatrix x.mem sb n W`. -/
-theorem ampCore_spec {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 22}
+/-- **The amplification core runs amplified Karger.** For `1 ≤ R` trials, from a state with
+`srcBase = sb`, `nOrig = n`, `numTrials = R` and `HoldsMatrix x.mem sb n W`, `ampCore` runs within
+`R (50 n² + 12 n + 30) + 8` instructions and `R (n - 2)` `rand` calls and writes only the
+workspace. Its `bestVal` has the law of `Lean.Karger.minRuns R` against independent runs of
+`Lean.Karger.karger` on `⟨n, W⟩`. -/
+theorem ampCore_law {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 22}
     (hR : 1 ≤ R) (hn : 2 ≤ n) (hW : IsMultigraph W)
     (hsb : x.regs srcBase = sb) (hnOrig : x.regs nOrig = n) (hnumT : x.regs numTrials = R)
     (h1 : Fits w 1) (hdEnd : Fits w (sb + 2 * (n * n) + n))
     (hR_fit : Fits w R) (htot : Fits w (totalDoubledWeight W))
     (hsrc_mat : HoldsMatrix x.mem sb n W) :
-    ∃ m : ProbComp (Data 22 × ℕ),
-      ExecRand w ampCore x m ∧
-      m.IsQueryBounded (R * (n - 2)) ∧
-      (∀ z ∈ m.support,
-        z.2 ≤ R * (50 * n ^ 2 + 12 * n + 30) + 8 ∧
-        Modifies (Finset.Ico (sb + n * n) (sb + 2 * (n * n) + n)) x.mem z.1.mem ∧
-        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs bestVal = cutWeight W C) ∧
-      (0 < minCut W →
-        m.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
-          ((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ R) := by
+    ExecRandLaw w ampCore x
+      (fun y => Modifies (Finset.Ico (sb + n * n) (sb + 2 * (n * n) + n)) x.mem y.mem)
+      (R * (50 * n ^ 2 + 12 * n + 30) + 8) (R * (n - 2)) (fun y => y.regs bestVal)
+      (OracleComp.evalWith (fun _ => Lean.Karger.answerLaw ⟨n, W⟩) (Lean.Karger.minRuns R)) := by
   have hnn_fit : Fits w (n * n) := hdEnd.of_le (by omega)
   have hwb_fit : Fits w (sb + n * n) := hdEnd.of_le (by omega)
   have hdb_fit : Fits w (sb + 2 * (n * n)) := hdEnd.of_le (by omega)
@@ -1246,7 +934,7 @@ theorem ampCore_spec {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 22
   have e5 : Exec (B := .standard) w ram[trialIdx ← #0] s₄ s₅ 1 := Exec.const (fits_zero w)
   have e6 : Exec (B := .standard) w ram[bestVal ← #0] s₅ s₆ 1 := Exec.const (fits_zero w)
   have hinv₀ : AmpInv w sb n R 0 W x.mem s₆ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, hsrc_mat, Modifies.refl _ _, fun h0 => absurd h0 (by omega)⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, hsrc_mat, Modifies.refl _ _⟩
     · simpa +decide [s₆, s₅, s₄, s₃, s₂, s₁, Function.update_apply] using hsb
     · simp +decide [s₆, s₅, s₄, s₃]
     · simp +decide [s₆, s₅, s₄]
@@ -1254,25 +942,17 @@ theorem ampCore_spec {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 22
     · simp +decide [s₆, s₅, s₄, s₃, s₂]
     · simpa +decide [s₆, s₅, s₄, s₃, s₂, s₁, Function.update_apply] using hnumT
     · simp +decide [s₆, s₅]
-  obtain ⟨m_l, hm_l, hq_l, hsup_l, hfail_l⟩ :=
-    ampLoop_spec (mem₀ := x.mem) hn hW h1 hdEnd hR_fit htot R 0 s₆ (Nat.zero_add R) hinv₀
+  have hloop := ampLoop_law (mem₀ := x.mem) hR hn hW h1 hdEnd hR_fit htot R 0 s₆
+    (Nat.zero_add R) hinv₀
+  rw [ite_eq_left rfl] at hloop
   have hcore_eq : ampCore = .seq ram[val1 ← nOrig * nOrig]
       (.seq ram[matLen ← val1] (.seq ram[wBase ← srcBase + matLen]
         (.seq ram[dBase ← wBase + matLen] (.seq ram[trialIdx ← #0]
           (.seq ram[bestVal ← #0] ampLoop))))) := rfl
   rw [hcore_eq]
-  have hm_full := e1.seqRand (e2.seqRand (e3.seqRand (e4.seqRand (e5.seqRand (e6.seqRand hm_l)))))
-  refine ⟨_, hm_full, ?_, ?_, ?_⟩
-  · simp only [Functor.map_map, OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_l
-  · intro z hz
-    simp only [Functor.map_map] at hz
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    rcases hsup_l z₀ hz₀ with ⟨ht₀, hinv_f, _⟩
-    exact ⟨by omega, hinv_f.modifies_ws, hinv_f.best_cut hR⟩
-  · intro hmin_pos
-    simp only [Functor.map_map, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    exact hfail_l hmin_pos
+  exact (ExecRandLaw.seq_det e1.within (ExecRandLaw.seq_det e2.within
+    (ExecRandLaw.seq_det e3.within (ExecRandLaw.seq_det e4.within (ExecRandLaw.seq_det e5.within
+      (ExecRandLaw.seq_det e6.within hloop)))))).mono (fun _ h => h.modifies_ws) (by omega) le_rfl
 
 end AmplificationEngine
 
@@ -1337,37 +1017,24 @@ theorem amplifiedSetup_exec {w R n : ℕ} {W : Fin n → Fin n → ℕ}
   exact ⟨s₅, e1.seq (e2.seq (e3.seq (e4.seq e5))), rfl,
     by simp [s₅], by simp +decide [s₅, s₄], by simp +decide [s₅, s₄, s₃, s₂]⟩
 
-/-- Structured `ProbComp` specification of `amplifiedCode`. -/
-theorem amplifiedCode_spec {R n w : ℕ} {W : Fin n → Fin n → ℕ}
+/-- **`amplifiedCode` runs amplified Karger.** At word size `w ≥ logWidth 3 n` with `1 ≤ R`,
+`R < 2 ^ w` and `totalDoubledWeight W < 2 ^ w`, `amplifiedCode` on `R :: n :: flattenMatrix W` runs
+within `amplifiedTime R n - 1` instructions and `R (n - 2)` `rand` calls and writes only
+`[3 + n * n, 3 + 2 * (n * n) + n)`. Its `bestVal` has the law of `Lean.Karger.minRuns R` against
+independent runs of `Lean.Karger.karger` on `⟨n, W⟩`. -/
+theorem amplifiedCode_law {R n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hR : 1 ≤ R) (hn : 2 ≤ n) (hW : IsMultigraph W)
     (hw : logWidth 3 n ≤ w) (hR_fit : Fits w R) (htot : Fits w (totalDoubledWeight W)) :
-    ∃ m : ProbComp (Data 22 × ℕ),
-      ExecRand w amplifiedCode (Data.init (R :: n :: flattenMatrix W)) m ∧
-      m.IsQueryBounded (R * (n - 2)) ∧
-      (∀ z ∈ m.support,
-        z.2 + 1 ≤ amplifiedTime R n ∧
-        Modifies (Finset.Ico (3 + n * n) (3 + 2 * (n * n) + n))
-          (Data.init (r := 22) (R :: n :: flattenMatrix W)).mem z.1.mem ∧
-        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs bestVal = cutWeight W C) ∧
-      (0 < minCut W →
-        m.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
-          ((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ R) := by
+    ExecRandLaw w amplifiedCode (Data.init (R :: n :: flattenMatrix W))
+      (fun y => Modifies (Finset.Ico (3 + n * n) (3 + 2 * (n * n) + n))
+        (Data.init (r := 22) (R :: n :: flattenMatrix W)).mem y.mem)
+      (R * (50 * n ^ 2 + 12 * n + 30) + 15) (R * (n - 2)) (fun y => y.regs bestVal)
+      (OracleComp.evalWith (fun _ => Lean.Karger.answerLaw ⟨n, W⟩) (Lean.Karger.minRuns R)) := by
   have hws := fits_workspace_of_logWidth_three hn hw
-  have h1 : Fits w 1 := hws.of_le (by omega)
   obtain ⟨y_s, e_s, hm_s, hsb_s, hn_s, hnt_s⟩ := amplifiedSetup_exec (R := R) (W := W) hn hw
-  obtain ⟨m_c, hm_c, hq_c, hsup_c, hfail_c⟩ :=
-    ampCore_spec hR hn hW hsb_s hn_s hnt_s h1 hws hR_fit htot
-      (hm_s ▸ holdsMatrix_init_amplified W)
-  refine ⟨_, e_s.seqRand hm_c, ?_, ?_, ?_⟩
-  · simp only [OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_c
-  · intro z hz
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    rcases hsup_c z₀ hz₀ with ⟨ht₀, hmod₀, hcut₀⟩
-    exact ⟨by simp only [amplifiedTime]; omega, hm_s ▸ hmod₀, hcut₀⟩
-  · intro hmin_pos
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    exact hfail_c hmin_pos
+  exact (ExecRandLaw.seq_det e_s.within (ampCore_law hR hn hW hsb_s hn_s hnt_s
+    (hws.of_le (by omega)) hws hR_fit htot (hm_s ▸ holdsMatrix_init_amplified W))).mono
+    (fun _ h => hm_s ▸ h) (by omega) le_rfl
 
 /-- **`R`-trial amplified Karger specification (`amplifiedProgram`).**
 At word size `w ≥ logWidth 3 n` when `1 ≤ R`, `R < 2 ^ w`, and `totalDoubledWeight W < 2 ^ w`:
@@ -1397,29 +1064,14 @@ theorem amplifiedProgram_spec {R n w : ℕ} {W : Fin n → Fin n → ℕ}
           {cfg | ∀ y, cfg ≠ .halted (minCut W) y} ≤
         ((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ R) := by
   intro input
-  have hfit_in : InputFits w input := inputFits_amplified hn hw hR_fit htot
-  obtain ⟨m, hm, hq, hsup, hfail⟩ := amplifiedCode_spec hR hn hW hw hR_fit htot
-  have hrun : runRand w amplifiedProgram (amplifiedTime R n) (.running (.init input)) =
-      (fun z : Data 22 × ℕ => RandCfg.halted (z.1.regs bestVal) z.1) <$> m :=
-    hm.runRand_program bestVal fun z hz => (hsup z hz).1
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · intro cfg hcfg
-    rw [hrun] at hcfg
-    obtain ⟨z, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    exact ⟨z.1.regs bestVal, z.1, rfl⟩
-  · rw [RandCallsBounded, hrun]
-    exact (OracleComp.isCostBounded_map_iff _ _ _).mpr hq
-  · intro cfg hcfg
-    have hbnd := runRand_bounded_init hfit_in hcfg
-    rw [hrun] at hcfg
-    obtain ⟨z, hz, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    rcases hsup z hz with ⟨_, hmod, C, hC_nt, hbv⟩
-    exact ⟨z.1, C, by rw [hbv], hbnd.2, hC_nt, minCut_le_cutWeight W hC_nt, hmod⟩
-  · intro hmin_pos
-    rw [evalRand, hrun, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    refine (PMF.toOuterMeasure_mono _ ?_).trans (hfail hmin_pos)
-    intro z hz heq
-    exact hz.1 z.1 (congrArg (fun v => RandCfg.halted v z.1) heq)
+  obtain ⟨hhalt, hcalls, hpost, -, hmiss⟩ :=
+    program_of_law (T' := amplifiedTime R n) (amplifiedCode_law hR hn hW hw hR_fit htot)
+      (by unfold amplifiedTime; omega)
+      (inputFits_amplified hn hw hR_fit htot)
+      fun _ hv => Lean.Karger.exists_cut_of_mem_support_answerLaw hn hW
+        (Lean.Karger.mem_support_minRuns (by omega) hv)
+  exact ⟨hhalt, hcalls, hpost, fun hmin =>
+    hmiss.trans (Lean.Karger.minRuns_ne_minCut_le hn hW hmin R)⟩
 
 end Amplified
 
@@ -1624,9 +1276,10 @@ theorem highProbSetup_exec {w n : ℕ} {W : Fin n → Fin n → ℕ}
     (e_loop.seq ((p1.within).seq ((p2.within).seq ((p3.within).seq
       ((p4.within).seq ((p5.within).seq ((p6.within).seq p7.within))))))))))).mono (by omega)
 
-private theorem highProbTime_bound {n : ℕ} (hn : 2 ≤ n) :
-    (4 * Nat.log 2 n + 13) + (highProbTrials n * (50 * n ^ 2 + 12 * n + 30) + 8) + 1 ≤
-      highProbTime n := by
+/-- The setup's `4 log₂ n + 13` instructions, the `highProbTrials n` trials'
+`highProbTrials n (50 n² + 12 n + 30) + 8` and the final halt fit in `highProbTime n`. -/
+theorem highProbTime_bound {n : ℕ} (hn : 2 ≤ n) :
+    4 * Nat.log 2 n + highProbTrials n * (50 * n ^ 2 + 12 * n + 30) + 22 ≤ highProbTime n := by
   unfold highProbTime highProbTrials
   obtain ⟨d, rfl⟩ : ∃ d, n = d + 2 := ⟨n - 2, by omega⟩
   have h1 : 50 * (d + 2) ^ 2 + 12 * (d + 2) + 30 ≤ 64 * (d + 2) ^ 2 := by nlinarith
@@ -1650,9 +1303,9 @@ private theorem highProbTime_bound {n : ℕ} (hn : 2 ≤ n) :
     have hpow4 : 16 ≤ (d + 2) ^ 4 := by nlinarith
     nlinarith
   calc
-    (4 * Nat.log 2 (d + 2) + 13) +
-        (((d + 2) * (d + 2 - 1) / 2 * (Nat.log 2 (d + 2) + 2)) *
-          (50 * (d + 2) ^ 2 + 12 * (d + 2) + 30) + 8) + 1
+    4 * Nat.log 2 (d + 2) +
+        ((d + 2) * (d + 2 - 1) / 2 * (Nat.log 2 (d + 2) + 2)) *
+          (50 * (d + 2) ^ 2 + 12 * (d + 2) + 30) + 22
       = (4 * Nat.log 2 (d + 2) + 22) +
           (((d + 2) * (d + 2 - 1) / 2 * (Nat.log 2 (d + 2) + 2)) *
             (50 * (d + 2) ^ 2 + 12 * (d + 2) + 30)) := by ring
@@ -1660,41 +1313,27 @@ private theorem highProbTime_bound {n : ℕ} (hn : 2 ≤ n) :
           32 * (d + 2) ^ 4 * (Nat.log 2 (d + 2) + 2) := Nat.add_le_add hoverhead htrial
     _ = 33 * (d + 2) ^ 4 * (Nat.log 2 (d + 2) + 2) := by ring
 
-/-- Structured `ProbComp` specification of `highProbCode`. -/
-theorem highProbCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
+/-- **`highProbCode` runs amplified Karger.** At word size `w ≥ logWidth 3 n` with
+`totalDoubledWeight W < 2 ^ w`, `highProbCode` on `n :: flattenMatrix W` runs within
+`4 log₂ n + highProbTrials n (50 n² + 12 n + 30) + 21` instructions and
+`highProbTrials n (n - 2)` `rand` calls and writes only `[2 + n * n, 2 + 2 * (n * n) + n)`. Its
+`bestVal` has the law of `Lean.Karger.minRuns (highProbTrials n)` against independent runs of
+`Lean.Karger.karger` on `⟨n, W⟩`. -/
+theorem highProbCode_law {n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hn : 2 ≤ n) (hW : IsMultigraph W)
     (hw : logWidth 3 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
-    ∃ m : ProbComp (Data 22 × ℕ),
-      ExecRand w highProbCode (Data.init (n :: flattenMatrix W)) m ∧
-      m.IsQueryBounded (highProbTrials n * (n - 2)) ∧
-      (∀ z ∈ m.support,
-        z.2 + 1 ≤ highProbTime n ∧
-        Modifies (Finset.Ico (2 + n * n) (2 + 2 * (n * n) + n))
-          (Data.init (r := 22) (n :: flattenMatrix W)).mem z.1.mem ∧
-        ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ z.1.regs bestVal = cutWeight W C) ∧
-      (0 < minCut W →
-        m.eval.toOuterMeasure {z | z.1.regs bestVal ≠ minCut W} ≤
-          (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞)) := by
+    ExecRandLaw w highProbCode (Data.init (n :: flattenMatrix W))
+      (fun y => Modifies (Finset.Ico (2 + n * n) (2 + 2 * (n * n) + n))
+        (Data.init (r := 22) (n :: flattenMatrix W)).mem y.mem)
+      (4 * Nat.log 2 n + highProbTrials n * (50 * n ^ 2 + 12 * n + 30) + 21)
+      (highProbTrials n * (n - 2)) (fun y => y.regs bestVal)
+      (OracleComp.evalWith (fun _ => Lean.Karger.answerLaw ⟨n, W⟩)
+        (Lean.Karger.minRuns (highProbTrials n))) := by
   have hws := fits_workspace_of_logWidth_three hn hw
-  have h1 : Fits w 1 := hws.of_le (by omega)
-  have hdEnd : Fits w (2 + 2 * (n * n) + n) := hws.of_le (by omega)
-  have hhp_fit := fits_highProbTrials_of_logWidth_three hn hw
-  obtain ⟨y_s, ⟨n_s, hn_s, e_s⟩, hm_s, hsb_s, hn_s_r, hnt_s⟩ :=
-    highProbSetup_exec (W := W) hn hw
-  obtain ⟨m_c, hm_c, hq_c, hsup_c, hfail_c⟩ :=
-    ampCore_spec (highProbTrials_pos hn) hn hW hsb_s hn_s_r hnt_s h1 hdEnd hhp_fit htot
-      (hm_s ▸ holdsMatrix_init_single W)
-  have hbound := highProbTime_bound hn
-  refine ⟨_, e_s.seqRand hm_c, ?_, ?_, ?_⟩
-  · simp only [OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_c
-  · intro z hz
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    rcases hsup_c z₀ hz₀ with ⟨ht₀, hmod₀, hcut₀⟩
-    exact ⟨by omega, hm_s ▸ hmod₀, hcut₀⟩
-  · intro hmin_pos
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    exact (hfail_c hmin_pos).trans (highProb_failure_le hn)
+  obtain ⟨y_s, e_s, hm_s, hsb_s, hn_s, hnt_s⟩ := highProbSetup_exec (W := W) hn hw
+  exact (ExecRandLaw.seq_det e_s (ampCore_law (highProbTrials_pos hn) hn hW hsb_s hn_s hnt_s
+    (hws.of_le (by omega)) (hws.of_le (by omega)) (fits_highProbTrials_of_logWidth_three hn hw)
+    htot (hm_s ▸ holdsMatrix_init_single W))).mono (fun _ h => hm_s ▸ h) (by omega) le_rfl
 
 /-- **Explicit `O(n ^ 4 log n)` high-probability global minimum cut (`highProbProgram`).**
 At word size `w ≥ logWidth 3 n` when `2 ≤ n` and `totalDoubledWeight W < 2 ^ w`:
@@ -1724,29 +1363,13 @@ theorem highProbProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
           {cfg | ∀ y, cfg ≠ .halted (minCut W) y} ≤
         (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞)) := by
   intro input
-  have hfit_in : InputFits w input := inputFits_single hn hw htot
-  obtain ⟨m, hm, hq, hsup, hfail⟩ := highProbCode_spec hn hW hw htot
-  have hrun : runRand w highProbProgram (highProbTime n) (.running (.init input)) =
-      (fun z : Data 22 × ℕ => RandCfg.halted (z.1.regs bestVal) z.1) <$> m :=
-    hm.runRand_program bestVal fun z hz => (hsup z hz).1
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · intro cfg hcfg
-    rw [hrun] at hcfg
-    obtain ⟨z, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    exact ⟨z.1.regs bestVal, z.1, rfl⟩
-  · rw [RandCallsBounded, hrun]
-    exact (OracleComp.isCostBounded_map_iff _ _ _).mpr hq
-  · intro cfg hcfg
-    have hbnd := runRand_bounded_init hfit_in hcfg
-    rw [hrun] at hcfg
-    obtain ⟨z, hz, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hcfg
-    rcases hsup z hz with ⟨_, hmod, C, hC_nt, hbv⟩
-    exact ⟨z.1, C, by rw [hbv], hbnd.2, hC_nt, minCut_le_cutWeight W hC_nt, hmod⟩
-  · intro hmin_pos
-    rw [evalRand, hrun, ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    refine (PMF.toOuterMeasure_mono _ ?_).trans (hfail hmin_pos)
-    intro z hz heq
-    exact hz.1 z.1 (congrArg (fun v => RandCfg.halted v z.1) heq)
+  obtain ⟨hhalt, hcalls, hpost, -, hmiss⟩ :=
+    program_of_law (highProbCode_law hn hW hw htot) (highProbTime_bound hn)
+      (inputFits_single hn hw htot) fun _ hv =>
+        Lean.Karger.exists_cut_of_mem_support_answerLaw hn hW
+          (Lean.Karger.mem_support_minRuns (Nat.one_le_iff_ne_zero.mp (highProbTrials_pos hn)) hv)
+  exact ⟨hhalt, hcalls, hpost, fun hmin =>
+    (hmiss.trans (Lean.Karger.minRuns_ne_minCut_le hn hW hmin _)).trans (highProb_failure_le hn)⟩
 
 /-- Corollary of `highProbProgram_spec`: when `0 < minCut W`, `highProbProgram` misses `minCut W`
 with probability at most `1 / n`. -/

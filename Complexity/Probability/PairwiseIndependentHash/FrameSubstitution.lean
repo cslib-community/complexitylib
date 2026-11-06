@@ -132,8 +132,8 @@ variable {α : ZMod P} (β : ZMod P) (hα : α ≠ 0)
 /-- The channel obtained by **substituting `α y + β`** into `A`, for `α ≠ 0`: its value at `y` is
 the value of `A` at `α y + β` (`eval_affineSubst`). -/
 def affineSubst (A : FrameChannel P H r) : FrameChannel P H r :=
-  (A.1 + ∑ j, β ^ (j.val + 1) • A.2.1 j,
-    ⟨substColumns α β A.2.1, linearIndependent_substColumns β hα A.2.2⟩)
+  (A.1 + ∑ j, β ^ (j.val + 1) • A.2.val j,
+    ⟨substColumns α β A.2.val, linearIndependent_substColumns β hα A.2.property⟩)
 
 /-- **Substitution**: the substituted channel evaluates `y` as the original channel evaluates
 `α y + β`. -/
