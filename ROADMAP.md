@@ -51,7 +51,8 @@ not staffing or calendar estimates.
 
 - **Babai: graph isomorphism in quasipolynomial time — optional, very large.** Prove a
   deterministic `exp((log n)^O(1))` decision bound for the existing encoded graph-isomorphism
-  problem, following the [corrected manuscript](https://arxiv.org/abs/1512.03547).
+  problem, following the [manuscript](https://arxiv.org/abs/1512.03547v2) together with the
+  [January 2017 correction](https://people.cs.uchicago.edu/~laci/upcc-fix.pdf).
   Reuse the graph encoding, indexed-permutation characterization and native verification API.
   Develop encoded permutation groups with certified orbit/stabilizer and membership algorithms;
   the Luks string-isomorphism/coset framework; canonical partition, Johnson-configuration and
