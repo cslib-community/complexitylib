@@ -17,6 +17,7 @@ public import Complexity.Crypto.Game
 public import Complexity.Languages.Probabilistic.BitString
 public import Cslib.Foundations.Data.BitString
 import Complexity.Crypto.Negligible.Basic
+import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Probability.PMF
 import Complexity.Tactic.PPT
 import Mathlib.Data.ZMod.Basic
@@ -48,10 +49,31 @@ assumption `RabinOneWay`, and the polynomial-time equivalence `RabinOneWay gen �
   factoring is hard for `gen`.
 * `Cslib.Crypto.rabinOneWay_iff_factoringHard`: `RabinOneWay gen ↔ FactoringHard gen`.
 
+## Implementation notes
+
+To execute natively inside `ProbComp` without an exact uniform sampler over `(ZMod N)ˣ` or
+modular rejection-sampling error, `rabinInversionGame` and `rabinToFactor` use an original
+dyadic all-residue sampling variant: they draw a uniform `2 * N.bits.length`-bit word `r`
+(`x = ofBits r < 2^(2 * bits(N))` with `N^2 ≤ 2^(2 * bits(N))`) and evaluate
+`rabinEval N x = x^2 % N`. In `rabinToFactor`, if `1 < gcd(x, N) < N` the reduction factors
+`N` immediately; otherwise it queries the Rabin inverter `A` on `(N, x^2 % N)` and returns
+`(gcd(x + x', N), N / gcd(x + x', N))`. Partitioning `Fin (2^L)` into nontrivial-gcd draws,
+multiples of `N`, and 4-to-1 unit fibers (where at least `2k` of the at most `4(k + 1)`
+preimages in `Fin (2^L)` fall in the two CRT classes with `x + x' ≢ 0 [MOD p]` and
+`x - x' ≢ 0 [MOD q]` for `k = 2^L / N ≥ N ≥ 21`) yields the concrete factor-`3` reduction
+bound `succProbability_rabinInversionGame_le`:
+`Game.succProbability (rabinInversionGame gen A n) ≤`
+`3 * Game.succProbability (factoringGame gen (rabinToFactor A) n)`.
+Both `FactoringHard` and `RabinOneWay` are parameterized by an arbitrary generator family
+`gen : BlumGen := ℕ → PMF BlumDesc` (without bundling efficient Blum-modulus sampling or
+bit-length bounds in `n`) and quantify over uniform native strict-PPT algorithms (`IsPPTOn`)
+charging the full binary-encoded inputs and sampled/callback outputs uniformly before `n`.
+
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020],
-  Section 13.4.2 (Theorem 13.12).
+  Section 9.2.3 (The Factoring Assumption) and Sections 15.5.1–15.5.2 (Computing Modular Square
+  Roots; A Trapdoor Permutation Based on Factoring).
 -/
 
 @[expose] public section
@@ -547,79 +569,13 @@ theorem factoringHard_of_rabinOneWay {gen : BlumGen} (h : RabinOneWay gen) :
     (fun _ => by simp)
     (fun n => mul_le_mul_of_nonneg_left (succProbability_factoringGame_le gen F n) (by simp))
 
-private theorem ofBits_lt_two_pow : ∀ l : List Bool, ofBits l < 2 ^ l.length
-  | [] => by unfold ofBits; simp
-  | b :: bs => by
-    have ih := ofBits_lt_two_pow bs
-    unfold ofBits at ih ⊢
-    simp only [List.foldr_cons, List.length_cons, pow_succ']
-    cases b <;> simp [Nat.bit_val] <;> omega
-
-private theorem ofBits_ofFn_testBit (L : ℕ) :
-    ∀ x : ℕ, x < 2 ^ L → ofBits (List.ofFn (fun i : Fin L => x.testBit i)) = x := by
-  induction L with
-  | zero =>
-    intro x hx
-    simp only [pow_zero] at hx
-    obtain rfl : x = 0 := by omega
-    unfold ofBits
-    rfl
-  | succ L ih =>
-    intro x hx
-    rw [List.ofFn_succ]
-    unfold ofBits
-    rw [List.foldr_cons]
-    have hx2 : x / 2 < 2 ^ L := by
-      rw [pow_succ'] at hx
-      omega
-    have hdiv : (fun i : Fin L => x.testBit i.succ) = (fun i : Fin L => (x / 2).testBit i) := by
-      ext i
-      simp [Nat.testBit_succ]
-    have ih' := ih (x / 2) hx2
-    unfold ofBits at ih'
-    rw [hdiv, ih', Nat.bit_val, Fin.val_zero, Nat.testBit_zero]
-    cases hmod : x % 2 == 1 <;> simp_all <;> omega
-
-private theorem ofFn_testBit_ofBits (L : ℕ) :
-    ∀ f : Fin L → Bool, (fun i : Fin L => (ofBits (List.ofFn f)).testBit i) = f := by
-  induction L with
-  | zero =>
-    intro f
-    ext i
-    exact Fin.elim0 i
-  | succ L ih =>
-    intro f
-    ext i
-    refine Fin.cases ?_ ?_ i
-    · rw [List.ofFn_succ]
-      unfold ofBits
-      rw [List.foldr_cons, Nat.bit_val]
-      simp only [Fin.val_zero, Nat.testBit_zero]
-      cases f 0 <;> simp
-    · intro j
-      rw [List.ofFn_succ]
-      unfold ofBits
-      rw [List.foldr_cons, Nat.bit_val]
-      simp only [Fin.val_succ, Nat.testBit_succ]
-      have hdiv : ((f 0).toNat +
-          2 * List.foldr Nat.bit 0 (List.ofFn fun k : Fin L => f k.succ)) / 2 =
-          List.foldr Nat.bit 0 (List.ofFn fun k : Fin L => f k.succ) := by
-        (cases f 0 <;> simp); omega
-      rw [add_comm (2 * List.foldr Nat.bit 0 (List.ofFn fun k : Fin L => f k.succ)) (f 0).toNat,
-        hdiv]
-      have ih' := congrFun (ih (fun k => f k.succ)) j
-      unfold ofBits at ih'
-      exact ih'
-
-private def finTwoPowEquiv (L : ℕ) : (Fin L → Bool) ≃ Fin (2 ^ L) where
-  toFun f := ⟨ofBits (List.ofFn f), by simpa using ofBits_lt_two_pow (List.ofFn f)⟩
-  invFun x := fun i => x.1.testBit i
-  left_inv f := ofFn_testBit_ofBits L f
-  right_inv x := Fin.ext (ofBits_ofFn_testBit L x.1 x.2)
+private theorem ofBits_ofFn_equivFin_symm (L : ℕ) (x : Fin (2 ^ L)) :
+    ofBits (List.ofFn ((BitString.equivFin L).symm x)) = x.1 := by
+  rw [ofBits, ← BitString.lsbValue_eq_foldr_bit, BitString.lsbValue_ofFn, Equiv.apply_symm_apply]
 
 private theorem tsum_uniformList_mul (L : ℕ) (g : List Bool → ℝ≥0∞) :
     (∑' r : List Bool, BitString.uniformList L r * g r) =
-      (2 ^ L : ℝ≥0∞)⁻¹ * ∑ x : Fin (2 ^ L), g (List.ofFn (fun i : Fin L => x.1.testBit i)) := by
+      (2 ^ L : ℝ≥0∞)⁻¹ * ∑ x : Fin (2 ^ L), g (List.ofFn ((BitString.equivFin L).symm x)) := by
   simp only [BitString.uniformList, PMF.map_apply, PMF.uniformOfFintype_apply,
     Fintype.card_fun, Fintype.card_fin, Fintype.card_bool]
   have hcomm : (∑' r : List Bool,
@@ -633,13 +589,10 @@ private theorem tsum_uniformList_mul (L : ℕ) (g : List Bool → ℝ≥0∞) :
   rw [hcomm, tsum_fintype, ← Finset.mul_sum]
   congr 1
   · simp
-  exact Fintype.sum_equiv (finTwoPowEquiv L)
+  exact Fintype.sum_equiv (BitString.equivFin L)
     (fun f => g (List.ofFn f))
-    (fun x => g (List.ofFn fun i : Fin L => x.1.testBit i))
-    (fun f => by
-      simp only [finTwoPowEquiv, Equiv.coe_fn_mk]
-      congr 2
-      exact (ofFn_testBit_ofBits L f).symm)
+    (fun x => g (List.ofFn ((BitString.equivFin L).symm x)))
+    (fun f => by simp)
 
 private theorem lt_two_pow_bits_length : ∀ n : ℕ, n < 2 ^ n.bits.length := by
   intro n
@@ -1122,7 +1075,7 @@ theorem succProbability_rabinInversionGame_le (gen : BlumGen)
   change _ ≤ (3 : ℝ≥0∞) * (inv2L * _)
   rw [← mul_assoc, mul_comm (3 : ℝ≥0∞) inv2L, mul_assoc]
   refine mul_le_mul_of_nonneg_left ?_ (by simp)
-  simp_rw [ofBits_ofFn_testBit L _ (Fin.isLt _)]
+  simp_rw [ofBits_ofFn_equivFin_symm L]
   -- Partition `Finset.univ` into `S_nontriv`, `S_zero`, `S_unit`
   let S_nontriv : Finset (Fin (2 ^ L)) :=
     Finset.univ.filter (fun x => 1 < Nat.gcd x.1 N ∧ Nat.gcd x.1 N < N)

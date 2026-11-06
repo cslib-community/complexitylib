@@ -27,6 +27,13 @@ example : rabinEval 21 5 = 4 := by decide
 
 example : rabinFactorPair (2 + 5) 21 = (7, 3) := by decide
 
+example : crtSqrt (rabinEval 21 5) 3 7 ^ 2 % 21 = rabinEval 21 5 := by decide
+
+noncomputable example (gen : BlumGen) (F : ℕ → ℕ → _) (n : ℕ) :
+    Game.succProbability (factoringGame gen F n) ≤
+      Game.succProbability (rabinInversionGame gen (factorToRabin F) n) :=
+  succProbability_factoringGame_le gen F n
+
 /-- info: 'Cslib.Crypto.factoringHard_of_rabinOneWay' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Cslib.Crypto.factoringHard_of_rabinOneWay

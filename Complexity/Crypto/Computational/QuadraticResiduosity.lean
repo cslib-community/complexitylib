@@ -10,7 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Probabilistic.Parameter
 public import Complexity.Crypto.Game
-public import Mathlib.Algebra.Group.Subgroup.Basic
+public import Mathlib.Algebra.Group.Subgroup.Even
 public import Mathlib.Data.ZMod.Units
 public import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
 import Complexity.Crypto.Negligible.Basic
@@ -22,14 +22,13 @@ import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
 /-!
 # Quadratic residuosity, Jacobi symbols, and Blum integers
 
-Quadratic residues in multiplicative groups, the composite Jacobi symbol `J_N(x) = (x / p)(x / q)`
-for distinct odd primes `p ≠ q`, the sign sets `J_N^{+1}`, `J_N^{-1}`, and `QNR_N^{+1}`, Blum
-integers (`p ≡ q ≡ 3 (mod 4)`), and the computational quadratic residuosity assumption.
+Quadratic residues in `(ZMod (p * q))ˣ` (building on Mathlib's `IsSquare` and `Subgroup.square`),
+the composite Jacobi symbol `J_N(x) = (x / p)(x / q)` for distinct odd primes `p ≠ q`, the sign
+sets `J_N^{+1}`, `J_N^{-1}`, and `QNR_N^{+1}`, Blum integers (`p ≡ q ≡ 3 (mod 4)`), and the
+computational quadratic residuosity assumption.
 
 ## Main definitions
 
-* `Cslib.Crypto.IsQuadraticResidue`, `Cslib.Crypto.quadraticResidueSubgroup`: quadratic residues
-  in a monoid and their subgroup in a commutative group.
 * `Cslib.Crypto.jacobiSymbol`: the composite Jacobi symbol on `(ZMod (p * q))ˣ`.
 * `Cslib.Crypto.jacobiPosSet`, `Cslib.Crypto.jacobiNegSet`, `Cslib.Crypto.quadResidueSet`,
   `Cslib.Crypto.positiveNonresidues`: the Jacobi sign sets, quadratic residues, and
@@ -49,10 +48,21 @@ integers (`p ≡ q ≡ 3 (mod 4)`), and the computational quadratic residuosity 
 * `Cslib.Crypto.blumSqrt_sq`, `Cslib.Crypto.sq_bijOn_quadResidueSet`: squaring is a bijection
   on `QR_N` for any Blum modulus, with inverse `blumSqrt p q`.
 
+## Implementation notes
+
+Quadratic residues and their subgroup in a commutative group use Mathlib's `IsSquare` and
+`Subgroup.square` (`Subgroup.mem_square`). The computational games `qrRealGame` and `qrIdealGame`
+and assumption `QuadraticResiduosityHard` are parameterized by an arbitrary generator family
+`setup : ℕ → PMF ModulusDesc` over pairs of distinct odd primes `(p, q)` (efficient sampling of
+`(p, q)` and bit-length bounds in `n` are not bundled in `ModulusDesc`), and quantify over
+uniform native strict-PPT distinguishers (`IsPPTOn`) taking `(1^n, (N, y))` with binary `encNat`
+encodings.
+
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020],
-  Section 13.4 and Section 15.4.
+  Section 15.4 (Sections 15.4.1–15.4.3: quadratic residues modulo a prime and a composite, and
+  the quadratic residuosity assumption).
 -/
 
 @[expose] public section
@@ -60,27 +70,6 @@ integers (`p ≡ q ≡ 3 (mod 4)`), and the computational quadratic residuosity 
 namespace Cslib.Crypto
 
 open Probability Turing.MultiTapeTM
-
-/-! ### Quadratic residues in groups -/
-
-/-- An element `y` of a monoid is a quadratic residue if it is a square `x * x`. -/
-def IsQuadraticResidue {G : Type*} [Monoid G] (y : G) : Prop := IsSquare y
-
-/-- The subgroup of quadratic residues in a commutative group. -/
-def quadraticResidueSubgroup (G : Type*) [CommGroup G] : Subgroup G where
-  carrier := {y : G | IsSquare y}
-  one_mem' := ⟨1, (one_mul 1).symm⟩
-  mul_mem' := by
-    rintro a b ⟨x, rfl⟩ ⟨y, rfl⟩
-    exact ⟨x * y, mul_mul_mul_comm x x y y⟩
-  inv_mem' := by
-    rintro a ⟨x, rfl⟩
-    exact ⟨x⁻¹, by group⟩
-
-/-- Membership in `quadraticResidueSubgroup G` is `IsSquare`. -/
-@[simp]
-theorem mem_quadraticResidueSubgroup {G : Type*} [CommGroup G] (y : G) :
-    y ∈ quadraticResidueSubgroup G ↔ IsSquare y := Iff.rfl
 
 /-! ### Composite Jacobi symbol and sign sets -/
 

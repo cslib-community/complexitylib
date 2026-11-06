@@ -44,10 +44,22 @@ and the computational RSA inversion game and assumption.
 * `Cslib.Crypto.computableInPolyTime_rsaEval`, `Cslib.Crypto.computableInPolyTime_rsaInvert`:
   both evaluation and trapdoor inversion are computable in polynomial time.
 
+## Implementation notes
+
+The evaluation and trapdoor-inversion functions `rsaEval` and `rsaInvert` are defined on
+arbitrary natural numbers and proved mutually inverse on all residues `x < N`
+(`rsaInvert_rsaEval`, `rsaEval_rsaInvert`), inducing bijections both on `Fin N`
+(`rsaEval_bijective_fin`, including nonunits) and on the multiplicative unit group `(ZMod N)ˣ`
+(`rsaEval_bijective_units`). The inversion experiment `rsaInversionGame` samples `x` uniformly
+from `Fin desc.modulus` under an arbitrary generator family `RSAGen := ℕ → PMF RSADesc`
+(efficient key generation and bit-length bounds in `n` are not bundled), and `RSAOneWay`
+quantifies over uniform native strict-PPT inverters (`IsPPTOn`) receiving `(1^n, ((N, e), y))`
+with binary `encNat` encodings.
+
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020],
-  Section 9.2.2 and Section 13.3.
+  Section 9.2.4 (The RSA Assumption) and Section 15.1.1 (Trapdoor Permutations).
 -/
 
 @[expose] public section

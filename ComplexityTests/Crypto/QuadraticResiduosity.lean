@@ -28,6 +28,11 @@ def d15 : ModulusDesc where
 example : d15.p * d15.q = 15 := rfl
 
 example :
+    (ZMod.unitOfCoprime 4 (by decide) : (ZMod 15)ˣ) ∈ Subgroup.square (ZMod 15)ˣ := by
+  rw [Subgroup.mem_square]
+  exact ⟨ZMod.unitOfCoprime 2 (by decide), by decide⟩
+
+example :
     letI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
     letI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
     jacobiSymbol 3 5 (ZMod.unitOfCoprime 4 (by decide)) = 1 := by
