@@ -57,7 +57,7 @@ structure PPGadget (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
   correct : ∀ a, a ∈ R ↔ ∃ b, body.eval sem (Sum.elim a b) = true
 
 /-- A relation separates its coordinates if its tuple table has distinct columns. -/
-def SeparatesCoordinates (R : Set (Fin n → Bool)) : Prop :=
+@[expose] def SeparatesCoordinates (R : Set (Fin n → Bool)) : Prop :=
   ∀ i j, i ≠ j → ∃ a ∈ R, a i ≠ a j
 
 namespace CanonicalPP
