@@ -151,8 +151,57 @@ $2(C+1)n^{(c+1)d^3}$. The external solver and its cost are explicit assumptions;
 the adapter assumes neither a fractional optimum nor an integral bracket.
 The cited endpoint is a threshold decision procedure. This API computes the
 integer bracket without claiming to return an arbitrary exact real value of
-fractional stability. General affine targets need a separate solver/reduction;
-the execution theorem itself already handles those targets.
+fractional stability.
+
+For a general affine target $e^\top\beta\le\theta$, import
+[`AffinePreprocessing`](../../Complexity/Statistics/LeastSquares/AffinePreprocessing.lean)
+and open `Cslib.LeastSquares.AffineTarget`. `solve` selects a nonzero target
+coordinate, materializes all transformed rows and responses in original order,
+and calls your external zero-coefficient solver on that actual table.
+`solve_correct` returns the ceiling of the original fractional stability;
+`solve_integral_bracket` returns its dimension-many integral bracket. Supply
+`NormalOracle` correctness for your solver on the transformed observations,
+GP, a feasible input of mass at least $2d$, and strict full-data target violation.
+The last two conditions exclude $e=0$; the program returns `none` for that case.
+
+[`AffineTarget`](../../Complexity/Statistics/LeastSquares/AffineTarget.lean)
+proves the change $\beta=b_0+B\gamma$ with $e^\top\beta-\theta=\gamma_j$.
+Residuals and singular-inclusive normal equations agree, and the weighted Grams
+are related by $G'=B^\top G B$. GP, positive definiteness, inequality feasibility,
+fractional stability and integral stability are preserved. The weights and
+original row indices do not change. This needs no intercept column and permits
+negative and nonfirst pivots. `weightedEstimate_eq_of_normal` in
+[`Sparsification`](../../Complexity/Statistics/LeastSquares/Sparsification.lean)
+identifies any normal-equation solution with the inverse fit under positive
+definiteness alone; use it instead of reconstructing a GP/mass argument when
+positive definiteness is already known.
+
+`preprocess_real_ret` links actual list output to the semantic change.
+`preprocessing_linear` bounds pivot selection and full table materialization
+by $12nd$ operations for positive $n,d$. The model charges each scalar arithmetic
+operation and zero comparison once, and charges list cons/termination; vector
+reads and finite-index views are free. Rational programs execute with the same
+counters, but these are exact-real arithmetic bounds, not rational bit time or
+Lean compiler runtime. `solve_time` includes this preprocessing cost and the
+existing external scan bound $2(C+1)n^{(c+1)d^3}$.
+
+From the repository root, run
+`scripts/build.sh ComplexityTests.PaperEndpoints.AffineTarget1326`
+to check the [complete affine client](../../ComplexityTests/PaperEndpoints/AffineTarget1326.lean).
+It checks a negative nonfirst pivot, a materialized two-row rational table and
+its exact counter, zero-target rejection, singular normal-equation feasibility,
+and a concrete inhabited external oracle with nonzero affine threshold.
+
+The exact optimum-output clause remains separate. MR23 arXiv v2 Theorem 1.2
+(PDF p. 3) and Theorem A.4 (pp. 13–14) state threshold decisions; its real model
+is specified in footnote 3 (p. 7). Integer queries determine a ceiling, and
+finite bisection does not produce an arbitrary real boundary exactly. For
+rational or algebraic data, an exact-output extension needs a representation
+such as a defining polynomial with isolating interval or Thom data, parameterized
+elimination/optimization, and an output-cost theorem. For arbitrary real data,
+it must specify representation relative to the input field or stronger
+real-algebraic primitives. These are remaining proof obligations; the adapter
+does not assume an exact optimum or assert that exact output is impossible.
 
 From the repository root, run
 `scripts/build.sh ComplexityTests.PaperEndpoints.RoundingExecution`

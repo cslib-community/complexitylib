@@ -84,14 +84,7 @@ theorem estimate_eq_of_normal (x : ι → d → ℝ) (hgp : GeneralPosition x)
     (hmass : (Fintype.card d : ℝ) - 1 < ∑ i, w i)
     (hn : (∑ i, w i • ((y i - x i ⬝ᵥ b) • x i)) = 0) :
     weightedEstimate 0 0 Finset.univ x y w = b := by
-  have hG := hgp.weightedGram_posDef x w hw hmass
-  apply hG.mulVec_injective
-  rw [weightedEstimate, mulVec_mulVec,
-    mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hG.isUnit), one_mulVec]
-  have heq : (∑ i, (w i * y i) • x i) = ∑ i, w i • ((x i ⬝ᵥ b) • x i) := by
-    simpa only [sub_smul, smul_sub, mul_smul, Finset.sum_sub_distrib, sub_eq_zero] using hn
-  simpa only [weightedResponse, weightedGram, zero_add, sum_mulVec,
-    smul_mulVec, vecMulVec_mulVec, op_smul_eq_smul] using heq
+  exact weightedEstimate_eq_of_normal x y w b (hgp.weightedGram_posDef x w hw hmass) hn
 
 /-- The external equality-normal-equation decision and local fractional threshold
 agree when the queried mass remains above the singular regime. Attainment is

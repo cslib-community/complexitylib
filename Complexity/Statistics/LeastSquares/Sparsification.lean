@@ -98,6 +98,20 @@ theorem weightedEstimate_normal (x : ι → d → ℝ) (y w : ι → ℝ)
   simp only [sub_smul, smul_sub, ← mul_smul, Finset.sum_sub_distrib]
   exact sub_eq_zero.mpr h.symm
 
+/-- Positive definiteness makes every normal-equation solution the actual
+inverse-matrix fit. No general-position or retained-mass hypothesis is needed. -/
+theorem weightedEstimate_eq_of_normal (x : ι → d → ℝ) (y w : ι → ℝ) (b : d → ℝ)
+    (hG : (weightedGram 0 Finset.univ x w).PosDef)
+    (hn : (∑ i, w i • ((y i - x i ⬝ᵥ b) • x i)) = 0) :
+    weightedEstimate 0 0 Finset.univ x y w = b := by
+  apply hG.mulVec_injective
+  rw [weightedEstimate, mulVec_mulVec,
+    mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hG.isUnit), one_mulVec]
+  have heq : (∑ i, (w i * y i) • x i) = ∑ i, w i • ((x i ⬝ᵥ b) • x i) := by
+    simpa only [sub_smul, smul_sub, mul_smul, Finset.sum_sub_distrib, sub_eq_zero] using hn
+  simpa only [weightedResponse, weightedGram, zero_add, sum_mulVec,
+    smul_mulVec, vecMulVec_mulVec, op_smul_eq_smul] using heq
+
 /-- Lemma 3.2: arbitrary feasible box weights can be replaced by weights of at least
 as much mass, with exactly the same fitted coefficient vector and at most `d`
 fractional coordinates. Feasibility for every linear target is thus preserved. -/

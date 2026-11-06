@@ -4301,6 +4301,8 @@ public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
+public import Complexity.Statistics.LeastSquares.AffinePreprocessing
+public import Complexity.Statistics.LeastSquares.AffineTarget
 public import Complexity.Statistics.LeastSquares.Backbone
 public import Complexity.Statistics.LeastSquares.EqualityTarget
 public import Complexity.Statistics.LeastSquares.ExternalSolver
