@@ -16,7 +16,8 @@ Opposite-side bucket hits are recovered by the full backward quarter kernel
 and scanned against the retained full-state dictionary until the first hit.
 The returned words are a presence tag and a retained witness; no output array is
 allocated. This is a component for [WangLvShenZhang2027], Theorem 7,
-PDF p. 22; the all-class iterator and original-input decision endpoint remain open.
+PDF p. 22. The composed class consumer is executable, but its general
+termination/witness theorem and original-input decision endpoint remain open.
 Reversed full-width operands and an existing dictionary remain prerequisites.
 The sparse WordRAM model does not supply the source's multitape bit-time bound.
 -/
@@ -200,5 +201,53 @@ theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
             simpa +decide [n, operand, link] using hit
           refine ⟨fun _ => ⟨(s, u), List.mem_cons_self, ?_⟩, fun _ => hnTag⟩
           rwa [ztag] at hit
+
+/-- Reversed full-width operand base, preserved while filtering projected states. -/
+abbrev fullBase : Fin 32 := 24
+/-- Forward-order projected operand base. -/
+abbrev projectedBase : Fin 32 := 29
+/-- Projected state modulus. -/
+abbrev projectedModulus : Fin 32 := 30
+/-- Full state modulus. -/
+abbrev fullModulus : Fin 32 := 31
+
+/-- One opposite-class iteration. Exchanging forward/backward in Lemma 8
+means applying the projected second quarter *forward* from the class value
+`initial`, then reading that bucket of backward first-quarter records.
+The full inverse is evaluated only on those records. `count` is common to the
+projected and full arrays; the projected array is forward-order and the full
+array is reversed. -/
+@[expose] def probeClassBody : Code .standard 32 :=
+  .seq (ram[ base ← projectedBase; modulus ← projectedModulus; state ← initial ])
+    (.seq evaluate
+      (.seq (ram[ address ← heads + state; link ← *address;
+        base ← fullBase; modulus ← fullModulus; operand ← #0 ])
+        (.seq probeScan (.branch (.eq operand zero)
+          (ram[ operators ← operators + one ]) (ram[ stop ← operators ])))))
+
+/-- Stream the entire opposite class, retaining no output array. On success
+`operators` and `firstOperators` identify the current opposite-side quarters;
+`operand` and `bits` hold the retained side's encoded witnesses. On exhaustion
+`operand` is zero. `stop` initially holds the number of packed quarter words;
+a hit lowers it to the current index to exit without destroying that witness.
+Prepared buckets, projected/reversed arrays and retained dictionary are inputs,
+so this is not yet an original-input decision or a global resource theorem. -/
+@[expose] def probeClass : Code .standard 32 :=
+  .seq (ram[ operators ← #0; operand ← #0; zero ← #0; one ← #1 ])
+    (.loop (.lt operators stop) probeClassBody)
+
+/-- Streaming across all packed indices performs no stores, including on early
+exit. This is a syntactic property of the complete composed consumer. -/
+theorem probeClass_no_store (a v : Fin 32) :
+    Instr.op (Op.store a v) ∉ probeClass.program state := by
+  simp [Code.program, Code.assemble, probeClass, probeClassBody, probeScan,
+    probeScanBody, probeBody, backwardEvaluate, reverseOperators, reverseBody,
+    evaluate, body, operation, Dictionary.get, Op.bin]
+
+/-- Every continuing prefix of the class consumer preserves memory, rather
+than merely restoring it at termination. Thus it allocates no opposite list. -/
+theorem probeClass_prefix_memory {W k : ℕ} (x : Data 32) (u : State 32)
+    (h : Runs W (probeClass.program state) ⟨0, x⟩ u k) : u.data.mem = x.mem :=
+  h.mem_eq_of_no_store probeClass_no_store
 
 end Cslib.Cryptanalysis.AddXNOR.Native.Quarter

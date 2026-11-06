@@ -88,3 +88,43 @@ example : (probeScan.eval 8 16
 example : (probeScan.eval 8 16
     { input 0 with regs := fun r => if r = link then 0 else (input 0).regs r }).map
       (fun r => (r.1.regs operand, r.1.regs link)) = some (0, 0) := by decide +kernel
+
+/-- A complete two-index class: index zero scans a miss; index one hits.
+The projected array is forward-order, the full inverse array reversed. -/
+private def classInput (present : Bool) : Data 32 :=
+  { regs := fun r => if r = count then 1 else if r = stop then 2
+      else if r = fullBase then 5 else if r = projectedBase then 6
+      else if r = fullModulus then 4 else if r = projectedModulus then 2
+      else if r = heads then 20 else if r = table then 40 else 0
+    mem := fun a => if a = 5 ∨ a = 6 then 1 else if a = 20 then 14
+      else if a = 21 then 10 else if a = 12 then 3
+      else if a = 15 then 2 else if a = 16 then 7
+      else if a = 40 ∧ present then 1 else 0 }
+
+/-- Full-class success preserves the actual opposite quarter indices and
+recognizes retained zero witnesses. -/
+example : (probeClass.eval 8 64 (classInput true)).map (fun r =>
+    (r.1.regs operand, r.1.regs bits, r.1.regs firstOperators,
+      r.1.regs operators, r.1.regs stop)) = some (1, 0, 7, 1, 1) := by decide +kernel
+
+/-- Exhaustion visits both packed words and returns an absent tag. -/
+example : (probeClass.eval 8 64 (classInput false)).map (fun r =>
+    (r.1.regs operand, r.1.regs operators, r.1.regs stop)) =
+      some (0, 2, 2) := by decide +kernel
+
+/-- An empty opposite bucket for every packed word terminates normally. -/
+example : (probeClass.eval 8 64 { classInput false with
+    mem := fun a => if a = 20 ∨ a = 21 then 0 else (classInput false).mem a }).map
+      (fun r => (r.1.regs operand, r.1.regs operators)) = some (0, 2) := by decide +kernel
+
+/-- A zero-length packed-index range does not touch operands or buckets. -/
+example : (probeClass.eval 8 8 { classInput true with
+    regs := fun r => if r = stop then 0 else (classInput true).regs r }).map
+      (fun r => (r.1.regs operand, r.1.regs operators)) = some (0, 0) := by decide +kernel
+
+/-- Success at index zero skips a deliberately invalid later bucket pointer. -/
+example : (probeClass.eval 8 64 { classInput false with
+    mem := fun a => if a = 49 then 1 else if a = 20 then 255
+      else (classInput false).mem a }).map
+      (fun r => (r.1.regs operand, r.1.regs operators, r.1.regs stop)) =
+        some (1, 0, 0) := by decide +kernel

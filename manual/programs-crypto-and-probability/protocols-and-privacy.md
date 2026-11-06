@@ -800,3 +800,26 @@ composition before its tag can be interpreted as an Add/XNOR solution.
 The same complete client checks a miss followed by a zero-witness hit, all
 misses, an empty bucket, and early exit before an invalid successor. This scan
 is not the second-quarter/class iterator or a global computed-balance bound.
+
+
+To execute the complete opposite-class consumer, use `Quarter.probeClass`
+from the same import and root-context client above. Set `count` to the second
+quarter length and `stop` to $2^{\text{count}}$; supply `initial` as the projected
+class value, `heads` as the backward first-quarter bucket table, and
+`Dictionary.table` as the retained dictionary base. `projectedBase` addresses
+forward-order projected operands, while `fullBase` addresses reversed full-width
+operands; set `projectedModulus` and `fullModulus` to their respective powers of
+two. The code computes the projected forward image of the class value for each
+packed index, loads exactly that bucket, and calls the early-exit backward scan.
+It resets its own packed index, tag, zero and one registers. A hit sets `stop`
+to the current index, preserving `operators`, `firstOperators`, `operand` and
+`bits` as the opposite and retained witness words. Decode the retained first
+index as `operand - 1` only when its tag is nonzero.
+
+The checked client executes later-index success, full exhaustion, empty buckets,
+an empty index range and success before an invalid later bucket. The
+`probeClass_prefix_memory` theorem proves memory preservation at every execution
+prefix. General class termination/time and semantic returned-witness correctness
+are still unproved; these concrete runs do not supply those theorems. Neither
+counter-selected orientation nor original-input/global computed-balance resources
+are established. The source sorted-list bit-operation model remains distinct.
