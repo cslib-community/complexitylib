@@ -2800,6 +2800,7 @@ public import Complexity.Computability.WordRAM.Compile
 public import Complexity.Computability.WordRAM.Controller
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.CopySum
+public import Complexity.Computability.WordRAM.CountingLoop
 public import Complexity.Computability.WordRAM.Defs
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.ExactLog

@@ -12,6 +12,8 @@ public import Complexity.Algorithms.WordRAM.NatLog
 public import Complexity.Algorithms.WordRAM.NatNthRoot
 public import Complexity.Foundations.NumberTheory.AKS.PerfectPower
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Perfect-power detection on the word RAM
 
@@ -118,16 +120,17 @@ theorem exec {w : ℕ} (x : Data 14) (hn : 2 ≤ x.regs n)
   have h2 : Fits w 2 := hfit.of_le (by nlinarith)
   have h1 : Fits w 1 := hfit.of_le (by nlinarith)
   let Good (b : ℕ) : Prop := ∃ c, 2 ≤ c ∧ c < b ∧ Nat.nthRoot c N ^ c = N
-  let I (y : Data 14) : Prop := y.regs n = N ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
-    y.regs lim = L + 1 ∧ 2 ≤ y.regs k ∧ y.regs k ≤ L + 1 ∧
-    y.regs flag = (if Good (y.regs k) then 1 else 0) ∧ y.mem = x.mem
+  let P (j : ℕ) (y : Data 14) : Prop := y.regs n = N ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
+    y.regs lim = L + 1 ∧ 2 ≤ j ∧
+    y.regs flag = (if Good j then 1 else 0) ∧ y.mem = x.mem
   set T₀ := Nat.clog 2 (N + 1) * (6 * L + 13) + 6 * L + 18 with hT₀
-  have hbody (y : Data 14) (hy : I y) (hc : (Cond.lt k lim).Holds y) :
-      ∃ z, ExecWithin w body y z T₀ ∧ I z ∧ L + 1 - z.regs k < L + 1 - y.regs k := by
-    obtain ⟨hyn, hyo, hyt, hyl, hk2, hkL, hyf, hym⟩ := hy
-    have hkL' : y.regs k ≤ L := by simp only [Cond.holds_lt, hyl] at hc; omega
+  have hbody (y : Data 14) (hy : P (y.regs k) y) (hc : y.regs k < L + 1) :
+      ∃ z, ExecWithin w body y z T₀ ∧
+        P (y.regs k + 1) z ∧ z.regs k = y.regs k + 1 := by
+    obtain ⟨hyn, hyo, hyt, hyl, hk2, hyf, hym⟩ := hy
+    have hkL' : y.regs k ≤ L := by omega
     obtain ⟨b, hb⟩ : ∃ b, y.regs k = b := ⟨_, rfl⟩
-    rw [hb] at hk2 hkL hkL' hyf
+    rw [hb] at hk2 hkL' hyf
     have hbfit : Fits w b := hfitN.of_le (by omega)
     -- The root search.
     have hrn : rootMap NatNthRoot.n = n := rfl
@@ -201,22 +204,21 @@ theorem exec {w : ℕ} (x : Data 14) (hn : 2 ≤ x.regs n)
       have : Nat.clog 2 (N + 1) * (6 * b + 13) ≤ Nat.clog 2 (N + 1) * (6 * L + 13) :=
         Nat.mul_le_mul_left _ (by omega)
       omega
-    · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, hy₂m.trans (hy₁m.trans hym)⟩
+    · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, hy₂m.trans (hy₁m.trans hym)⟩
       · simp +decide [z, hy₂n]
       · simp +decide [z, hy₂o']
       · have := (hpres₂ two (by decide)).trans hy₁t
         simp +decide [z, this]
       · have := (hpres₂ lim (by decide)).trans ((hpres₁ lim (by decide)).trans hyl)
         simp +decide [z, this]
-      · simp +decide [z]; omega
-      · simp +decide [z]; omega
-      · simp only [z, v, Data.set_regs, Function.update_self]
+      · omega
+      · simp only [z, v, Data.set_regs, hb]
         rw [Function.update_of_ne (by decide), Function.update_self, hyf]
         by_cases heq : a ^ b = N
         · simp [heq, hgood]
         · have : Good (b + 1) ↔ Good b := by simp [hgood, heq]
           simp [heq, this]
-    · simp [z, hb]; omega
+    · simp only [z, Data.set_regs, Function.update_self, hb]
   -- The logarithm and the initialization.
   have hlarg : Fits w N := hfitN
   let x₁ := x.set larg N
@@ -244,20 +246,19 @@ theorem exec {w : ℕ} (x : Data 14) (hn : 2 ≤ x.regs n)
   have hrun₂ : ExecWithin (B := .standard) w (ram[ lim ← lres + one; flag ← #0; k ← #2 ])
       y₁ x₂ 3 := by
     ram_eval [x₂, hy₁r, hy₁o, hL1, h2]
-  have hx₂ : I x₂ := by
+  have hx₂ : P (x₂.regs k) x₂ := by
     have hgood : ¬Good 2 := fun ⟨c, hc2, hc, _⟩ => by omega
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, hy₁m⟩ <;>
-      simp +decide [x₂, hy₁n, hy₁o, hy₁t, hLpos, hgood]
-  obtain ⟨y, hrun₃, hy, hc⟩ := ExecWithin.loop_invariant I (fun y => L + 1 - y.regs k) hbody hx₂
-  obtain ⟨hyn, -, -, hyl, hk2, hkL, hyf, hym⟩ := hy
-  have hkend : L + 1 ≤ y.regs k := by simp only [Cond.holds_lt, hyl] at hc; omega
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, hy₁m⟩ <;>
+      simp +decide [x₂, hy₁n, hy₁o, hy₁t, hgood]
+  obtain ⟨y, hrun₃, ⟨hyn, _, _, _, _, hyf, hym⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ ⟨_, _, _, hlim, _⟩ => hlim) hbody (by simp [x₂]; omega) hx₂
   refine ⟨y, ?_, ?_, hyn, hym⟩
   · refine (hrun₀.seq (hrun₁.seq (hrun₂.seq hrun₃))).mono ?_
     have hx₂k : L + 1 - x₂.regs k ≤ L + 1 := by omega
     have := Nat.mul_le_mul_right (T₀ + 2) hx₂k
     simp only [time, hL, hT₀] at this ⊢
     nlinarith
-  · have hiff : Good (y.regs k) ↔ Cslib.AKS.IsPerfectPower N := by
+  · have hiff : Good (L + 1) ↔ Cslib.AKS.IsPerfectPower N := by
       rw [Cslib.AKS.isPerfectPower_iff_nthRoot hn]
       constructor
       · rintro ⟨c, hc2, hck, hc⟩; exact ⟨c, by omega, hc2, hc⟩

@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.ScanInsert
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Complete charged native query scans
 
@@ -65,26 +67,25 @@ theorem exec_scan {w N capacity : ℕ} (child : Bool) (x : Data registers) (inpu
   have hE : Fits w E := hwidth.of_le (by dsimp [E]; omega)
   have hsetup : ExecWithin w scanSetup x x0 3 := by
     ram_eval [scanSetup, x0, E, h1, hE, h0]
-  let I (y : Data registers) : Prop :=
-    y.regs index ≤ N ∧
-    y.regs childCount = (scanSet child (x.regs term) input (y.regs index)).card ∧
+  let P (j : ℕ) (y : Data registers) : Prop :=
+    y.regs childCount = (scanSet child (x.regs term) input j).card ∧
     ScanMemory y.mem (x.regs childList) (x.regs stamps) E capacity
-      (scanSet child (x.regs term) input (y.regs index)) ∧
+      (scanSet child (x.regs term) input j) ∧
     (∀ i < N, y.mem (x.regs listBase + i) = input i) ∧
     (∀ a, ¬(Block.mk (x.regs childList) capacity).Owns a →
       ¬(Block.mk (x.regs stamps) capacity).Owns a → y.mem a = x.mem a) ∧
     (∀ i, ¬ScanStepLocal i → y.regs i = x0.regs i)
-  have hinit : I x0 := by
-    refine ⟨by simp [x0], by simp +decide [x0, childCount, index], ?_, hinput, ?_,
+  have hinit : P (x0.regs index) x0 := by
+    refine ⟨by simp +decide [x0, childCount, index], ?_, hinput, ?_,
       fun _ _ => rfl⟩
     · simpa only [x0, Data.set_mem, Data.set_regs, Function.update_self, scanSet_zero] using
         (ScanMemory.empty (out := x.regs childList) (epoch := E)
           (fun q hq => Nat.lt_succ_of_le (hmarks q hq)))
     · exact fun _ _ _ => rfl
-  have hstep (y : Data registers) (hy : I y) (hc : (Cond.lt index count).Holds y) :
-      ∃ z, ExecWithin w (scanStep child) y z 18 ∧ I z ∧
-        N - z.regs index < N - y.regs index := by
-    obtain ⟨hle, hcount, htable, hread, hframe, hfrozen⟩ := hy
+  have hstep (y : Data registers) (hy : P (y.regs index) y) (hk : y.regs index < N) :
+      ∃ z, ExecWithin w (scanStep child) y z 18 ∧ P (y.regs index + 1) z ∧
+        z.regs index = y.regs index + 1 := by
+    obtain ⟨hcount, htable, hread, hframe, hfrozen⟩ := hy
     have hfixed (i : Fin registers) (hi : ¬ScanStepLocal i) (he : i ≠ epoch) :
         y.regs i = x.regs i := by
       rw [hfrozen i hi]
@@ -99,11 +100,9 @@ theorem exec_scan {w N capacity : ℕ} (child : Bool) (x : Data registers) (inpu
     have hyo := hfixed childList (by decide) (by decide)
     have hys := hfixed stamps (by decide) (by decide)
     have hyt := hfixed term (by decide) (by decide)
-    have hyn := (hfixed count (by decide) (by decide)).trans hN
     have hy1 := (hfixed one (by decide) (by decide)).trans h1
     have hy10 := (hfixed ten (by decide) (by decide)).trans h10
     have hy9 := (hfixed nine (by decide) (by decide)).trans h9
-    have hk : y.regs index < N := by simpa only [Cond.holds_lt, hyn] using hc
     have hq := hcodes (y.regs index) hk
     have hcap := htable.card_le
     have hw10 : Fits w 10 := hwidth.of_le (by omega)
@@ -133,34 +132,28 @@ theorem exec_scan {w N capacity : ℕ} (child : Bool) (x : Data registers) (inpu
         change ¬(x.regs stamps ≤ x.regs listBase + i ∧
           x.regs listBase + i < x.regs stamps + capacity)
         rcases hsrcStamp with h | h <;> omega
-    refine ⟨z, hz, ?_, by omega⟩
-    refine ⟨by omega, ?_, ?_, hsource, ?_, ?_⟩
-    · simpa only [hyt, hidx, ← scanSet_succ] using hcz
-    · simpa only [hyo, hys, hye, hyt, hidx, ← scanSet_succ] using htz
+    refine ⟨z, hz, ?_, hidx⟩
+    refine ⟨?_, ?_, hsource, ?_, ?_⟩
+    · simpa only [hyt, ← scanSet_succ] using hcz
+    · simpa only [hyo, hys, hye, hyt, ← scanSet_succ] using htz
     · intro a hao has
       rw [hmf a (by simpa only [hyo] using hao) (by simpa only [hys] using has)]
       exact hframe a hao has
     · exact fun i hi => (hrf i hi).trans (hfrozen i hi)
-  obtain ⟨y, hy, hIy, hstop⟩ := ExecWithin.loop_invariant I (fun y => N - y.regs index)
-    hstep hinit
-  obtain ⟨hle, hcount, htable, hread, hframe, hfrozen⟩ := hIy
-  have hyn : y.regs count = N := by
-    have := hfrozen count (by decide)
-    simpa +decide [x0, count, epoch, childCount, index] using this.trans (by
+  have hlimit (y : Data registers) (hy : P (y.regs index) y) : y.regs count = N := by
+    obtain ⟨_, _, _, _, hf⟩ := hy
+    simpa +decide [x0, count, epoch, childCount, index] using (hf count (by decide)).trans (by
       simpa +decide [x0, count, epoch, childCount, index] using hN)
-  have hindex : y.regs index = N := by
-    simp only [Cond.holds_lt, hyn, not_lt] at hstop
-    omega
+  obtain ⟨y, hy, ⟨hcount, htable, hread, hframe, hfrozen⟩, hindex⟩ :=
+    ExecWithin.loop_count P hlimit hstep (by simp [x0]) hinit
   have he : ExecWithin w (scan child) x y (20 * N + 5) := by
     have hloop : ExecWithin w (Code.loop (.lt index count) (scanStep child)) x0 y
         (20 * N + 2) := by
       simpa only [x0, Data.set_regs, Function.update_self, Nat.sub_zero,
         Nat.mul_comm] using hy
     exact (hsetup.seq hloop).mono (by omega)
-  refine ⟨y, he, hindex, ?_, ?_, ?_, hread, hframe,
+  refine ⟨y, he, hindex, ?_, hcount, htable, hread, hframe,
     fun i hi => he.regs_eq (scan_preserves child i hi)⟩
   · simpa +decide [x0, E, epoch, childCount, index] using hfrozen epoch (by decide)
-  · simpa only [hindex] using hcount
-  · simpa only [hindex] using htable
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
