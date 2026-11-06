@@ -1770,6 +1770,7 @@ public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
 public import Complexity.Computability.Complexity.Problems.Clique
 public import Complexity.Computability.Complexity.Problems.Coloring
 public import Complexity.Computability.Complexity.Problems.CountingSAT
+public import Complexity.Computability.Complexity.Problems.EUThreeSAT
 public import Complexity.Computability.Complexity.Problems.ElementDistinctness
 public import Complexity.Computability.Complexity.Problems.ExactThreeSAT
 public import Complexity.Computability.Complexity.Problems.GeneralizedGeography
@@ -1795,6 +1796,7 @@ public import Complexity.Computability.Complexity.Problems.IntegerProgramming
 public import Complexity.Computability.Complexity.Problems.Knapsack
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness
+public import Complexity.Computability.Complexity.Problems.NAEThreeSAT
 public import Complexity.Computability.Complexity.Problems.OneInThreeSAT
 public import Complexity.Computability.Complexity.Problems.OneInThreeSAT.Reduction
 public import Complexity.Computability.Complexity.Problems.Partition
@@ -4332,7 +4334,10 @@ public import Complexity.Logics.Propositional.CNF.ExactOne.Gadgets
 public import Complexity.Logics.Propositional.CNF.ExactOne.ModelCount
 public import Complexity.Logics.Propositional.CNF.ExactOne.PolyTime
 public import Complexity.Logics.Propositional.CNF.ExactOne.Positive
+public import Complexity.Logics.Propositional.CNF.ExactOne.ThreeEncoding
 public import Complexity.Logics.Propositional.CNF.ExactTests
+public import Complexity.Logics.Propositional.CNF.ExactThree
+public import Complexity.Logics.Propositional.CNF.ExactThree.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.Gadgets
 public import Complexity.Logics.Propositional.CNF.ImplicationChain
@@ -4341,6 +4346,8 @@ public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 public import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel
 public import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
+public import Complexity.Logics.Propositional.CNF.NotAllEqual
+public import Complexity.Logics.Propositional.CNF.NotAllEqual.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.Occurrence
 public import Complexity.Logics.Propositional.CNF.Parity
 public import Complexity.Logics.Propositional.CNF.ParityTests
