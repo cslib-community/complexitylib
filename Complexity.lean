@@ -1051,6 +1051,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activat
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ActivityBounds
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevApproxMajority
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
@@ -3662,6 +3663,7 @@ public import Complexity.Foundations.Combinatorics.AffineDisperser.Bits
 public import Complexity.Foundations.Combinatorics.AffineDisperser.Explicit
 public import Complexity.Foundations.Combinatorics.AffineDisperser.IndependentSources
 public import Complexity.Foundations.Combinatorics.AffineDisperser.Threshold
+public import Complexity.Foundations.Combinatorics.ApproximateMajority
 public import Complexity.Foundations.Combinatorics.BalancedSchedules
 public import Complexity.Foundations.Combinatorics.BinomialTail
 public import Complexity.Foundations.Combinatorics.BudgetTuples
