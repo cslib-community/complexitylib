@@ -552,11 +552,41 @@ actual two-round attack with real success `1/2` versus ideal abort, and a separa
 doubling update excluded by the growth premise. They instantiate one uniform machine at `k = 2n`
 with empty initial history; an arbitrary initial distribution needs its own efficient sampler.
 
-Together the two native results give efficient simulations under their callback and growth
-restrictions. A reusable realization theorem for all globally PPT adversaries still needs a common
-honest protocol execution, role-local corruption adapters, and one uniform observation, phase and
-input contract connecting both real experiments. The additive-growth restrictions, arbitrary
-scheduling, mid-commit abort, composition/UC and full malicious MPC remain separate obligations.
+For a complete corrupted sender without callback growth assumptions, import
+`OTCommitment.CompleteSender.PolyTime`. Supply one
+`program : (ℕ × Input) → WordOracleComp SenderOperation Output` and its global
+`IsOraclePPTOn (encPair encUnary input) output program` certificate. The actual input charges the
+round count. `SenderOperation` provides fixed four-bit tables, seal, open-bit and abort; the opening
+word contains all first pair components followed by all second components and must have length
+`2 * k`. Sender replies are always empty. This is a typed command interface, not a general
+network-message parser.
+
+`completeSenderReal` executes every accepted row through the existing ideal OT world.
+`completeSenderIdeal` commits the extracted bit through the phased handler at seal, before the
+complete adversary continues. Sealing requires exactly `k` tables; premature sealing or an excess
+pre-seal table aborts. Early opening is ignored, as are tables and repeated seals after sealing.
+The first post-seal opening attempt is terminal even when malformed or rejected, so there is no
+verification retry. Explicit abort is terminal. Never-sealed execution retains the distinction
+between idle and abort. Both laws return whether a receipt occurred, the final receiver
+observation, and the complete adversary output; hidden choices and functionality storage are
+not observations.
+
+`completeSender_coupled` bounds disagreement of those actual joint laws by `2^-ceil(k/2)`;
+`completeSender_coupled_two_mul` gives `2^-n` at `k = 2n`, to which geometric negligibility applies.
+`completeSender_isPPT` certifies both closed executions from the single global adversary
+certificate. Only handler storage needs a local growth proof. Existing
+`IsOraclePPTOn.query_bounds` supplies query-count and payload-length budgets. The
+[complete-program clients](../../ComplexityTests/Crypto/OTCommitmentCompleteSender.lean) include a
+sender growing its private buffer by `k` bits in each of `k` rounds: it is globally polynomial
+and executes correctly, although no fixed additive per-round state bound holds. They also check
+phase and retry rejection, zero rounds, retained private randomness, and the sharp two-round
+real acceptance probability `1/2` versus ideal abort.
+
+This removes the sender callback restriction for the stated single-session command interface.
+A global receiver-program adapter and a common honest protocol execution with role-local
+corruption adapters and uniform observation, phase and input contracts still need to connect both
+real experiments. Arbitrary two-sided scheduling, composition/UC and full malicious MPC remain
+separate obligations.
 
 ## Upstream perfect secrecy and sharing
 

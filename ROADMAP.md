@@ -75,10 +75,14 @@ transporting key-generation error, and realizing the efficient forking reduction
   the unary count, initial state and all list outputs are charged.
   `OTCommitment/SenderProgram/PolyTime` gives the corrupted-sender counterpart under combined
   supported round-growth bounds, with actual-world coupling and negligible error at `k = 2n`.
-  These are two restricted efficient simulations, not universal realization for all globally PPT
-  adversaries. A common honest protocol execution with role-local corruption adapters and uniform
-  observation/phase/input contracts is still needed to connect both real experiments. Removing
-  the growth restrictions, arbitrary scheduling and composition also remain open.
+  `OTCommitment/CompleteSender/PolyTime` removes callback growth assumptions for one complete
+  globally oracle-PPT sender over an explicit single-session command interface. Its input charges
+  unary `k`; actual OT rows, seal-time ideal commitment, terminal first opening attempts and abort
+  retain the same majority-extraction coupling, including `2^-n` at `k = 2n`. A globally polynomial
+  private-buffer client lies outside the old constant-growth premise. This does not supply a
+  universal two-sided realization: a global receiver-program adapter and common honest execution
+  with role-local corruption adapters and uniform observation/phase/input contracts still need
+  to connect both real experiments. Arbitrary two-sided scheduling and composition remain open.
 - **Regev's worst-case to average-case reduction.** For suitable `q` and Gaussian noise rate
   `α` with `αq > 2√n`, an efficient search-LWE algorithm yields a quantum polynomial-time
   algorithm for worst-case GapSVP and SIVP within `Õ(n/α)`. The noise distribution, modulus

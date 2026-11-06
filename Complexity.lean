@@ -3196,6 +3196,8 @@ public import Complexity.Crypto.Protocols.MPC.Basic
 public import Complexity.Crypto.Protocols.MPC.CircuitEval
 public import Complexity.Crypto.Protocols.MPC.Composition
 public import Complexity.Crypto.Protocols.MPC.OTCommitment
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.CompleteSender
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.CompleteSender.PolyTime
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Equivocation
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Extraction
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Opening
