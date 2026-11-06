@@ -4075,6 +4075,7 @@ public import Complexity.Foundations.Probability.Gaussian.Measure
 public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.Periodization
 public import Complexity.Foundations.Probability.Gaussian.Poisson
+public import Complexity.Foundations.Probability.Gaussian.Projection
 public import Complexity.Foundations.Probability.Gaussian.Quotient
 public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
