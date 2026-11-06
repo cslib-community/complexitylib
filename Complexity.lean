@@ -4300,9 +4300,13 @@ public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
 public import Complexity.Statistics.LeastSquares.Backbone
 public import Complexity.Statistics.LeastSquares.FixedEffects
+public import Complexity.Statistics.LeastSquares.FixedEffects.Matrix
+public import Complexity.Statistics.LeastSquares.FixedEffects.MatrixBridge
 public import Complexity.Statistics.LeastSquares.FixedEffects.Resources
+public import Complexity.Statistics.LeastSquares.FractionalGeometry
 public import Complexity.Statistics.LeastSquares.Monotone
 public import Complexity.Statistics.LeastSquares.NonRange
+public import Complexity.Statistics.LeastSquares.RadonGeometry
 public import Complexity.Statistics.LeastSquares.RangeAudit
 public import Complexity.Statistics.LeastSquares.Rational
 public import Complexity.Statistics.LeastSquares.SharpGap

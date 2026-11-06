@@ -192,6 +192,82 @@ A real matrix-design uniqueness bridge, the generic `integralStability`
 connection, general geometry and the other outstanding paper endpoints remain
 separate; this resource endpoint does not complete the paper.
 
+## Real matrix semantics and general geometry
+
+Import [`FixedEffects.MatrixBridge`](../../Complexity/Statistics/LeastSquares/FixedEffects/MatrixBridge.lean)
+for the matrix interpretation of the computed fixed-effects plan. `Active plan`
+indexes the nonempty retained groups and `Rows plan g` indexes their actual
+observations. The real design has one regressor column (`none`) and one dummy
+column (`some g`) per active group. `real_gram_posDef_iff` derives positive
+definiteness exactly from the algorithm's positive denominator;
+`real_inverse_slope` identifies the actual inverse-matrix coefficient with the
+computed rational slope. `matrix_feasible_iff` includes both nonsingularity and
+the sign target. These are proved from the matrix normal equations, rather than
+assuming the within-estimator formula or full rank.
+
+`Resources.run_matrix_optimal` connects the executed pipeline to
+`refittedIntegralStability` and its $300(n2^T+nK)$ arithmetic-operation bound.
+This stability infimum permits vanished groups and removes their dummies, as the
+paper requires. It is a separate model from the fixed-column
+`LeastSquares.integralStability`: retaining a vanished group's zero dummy makes
+the latter Gram matrix singular. `MatrixModel.not_posDef_of_empty_group` proves
+that obstruction. No unconditional equality of these two stability notions is
+claimed. The matrix model accepts arbitrary real observations; the executed
+pipeline and cast bridge take rational observations. Empty feasibility has
+natural infimum zero, so use the optimality theorem, which supplies feasibility,
+instead of interpreting the infimum alone.
+
+Import [`FractionalGeometry`](../../Complexity/Statistics/LeastSquares/FractionalGeometry.lean)
+and open `Cslib.LeastSquares.Simple` for Proposition 5.3's optimizer geometry.
+`MassOptimal x y w` means a global maximum of retained mass among all feasible
+real box weights, with positive mass and regressor scatter. Given positive
+full-data cross-scatter, `MassOptimal.self_centered` proves zero cross-scatter
+and a threshold for `(x_i - mean_x)(y_i - mean_y)` at the optimizer's own
+centroid. Fractional coordinates lie on that threshold.
+`MassOptimal.fractional_pair` proves the weak anti-monotone inequality for any
+two fractional coordinates. These conclusions hold for every attained optimizer;
+this module does not itself construct the sparse optimizer or establish
+attainment. Use the separate sparsification/attainment APIs described above for
+those steps.
+
+From the repository root, check the
+[complete matrix and fractional client](../../ComplexityTests/PaperEndpoints/LeastSquaresGeometry1326.lean)
+with `scripts/build.sh ComplexityTests.PaperEndpoints.LeastSquaresGeometry1326`.
+It proves global optimality of a nonintegral three-point weighting, checks the
+vanished-group design's inverse slope $-1$, and applies the matrix resource
+theorem to an actually executed audit.
+
+Import [`RadonGeometry`](../../Complexity/Statistics/LeastSquares/RadonGeometry.lean)
+and open `Cslib.LeastSquares.Geometry` for Theorem 5.7. `UniqueMinimum` compares
+actual subsets of the same cardinality, without a sign assumption.
+`LiftedGeneralPosition` requires independence of each at-most-four homogeneous
+saddle lifts `(xy,x,y,1)`; `liftedGeneralPosition_iff_four` reduces this to
+four-element subsets when there are at least four observations.
+`isRange_iff_sublevel` equates strict separation with the source's strict conic
+sublevel convention, including omitted boundary points. All plane coefficients
+are real.
+
+`UniqueMinimum.local_witness` returns a `FiveWitness` with five distinct original
+indices and normalized positive weights on both sides of a Radon partition.
+Exactly two or three witness observations are omitted, and whichever side has
+two points is strictly anti-monotone. It also returns those omitted observations
+as a set `D`: the optimum stays unique among all same-size subsets of `S ∪ D`
+and no real plane selects it there. `UniqueMinimum.witness_exclusion` is the
+averaged-swap argument forcing negative cross-scatter in the common convex
+combination. The proof extracts the witness using Mathlib separation and
+Carathéodory, rather than assuming colored nonseparation or a supplied witness.
+
+Check the [complete Radon client](../../ComplexityTests/PaperEndpoints/LeastSquaresRadon1326.lean)
+with `scripts/build.sh ComplexityTests.PaperEndpoints.LeastSquaresRadon1326`.
+It transfers the exact six-point construction to the general real definitions,
+checks all 57 subsets of size at most four for homogeneous independence, applies
+the localization theorem, and checks its explicit omitted pair's product
+$-961/625$. Theorem 5.7 is a general statement; that finite test only demonstrates
+its hypotheses on a concrete instance.
+
+Proposition 5.2's general lower-face/edge classification for the fixed-size
+relaxation remains unproved. These modules do not supply it.
+
 ## Exact least-squares stability gaps
 
 For exact simple regression, import
@@ -218,9 +294,9 @@ integral stability two and best lifted-plane-range stability three. General
 position and lifted general position are checked exactly. The nonseparation
 argument covers every real plane; an explicit integer-coefficient plane witnesses
 the feasible three-deletion range. `feasible_iff_real` connects the exact scatter
-test with nonsingular real OLS. These endpoints leave the general geometry,
-equality-target hardness, fixed-effects algorithm and empirical certificates
-unproved; see [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
+test with nonsingular real OLS. Proposition 5.2, equality-target hardness,
+certified rounding execution/resources, the external fractional-solver consequence,
+and the full empirical certificate inventory remain unproved; see [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
 
 ## Known Limitations
 
