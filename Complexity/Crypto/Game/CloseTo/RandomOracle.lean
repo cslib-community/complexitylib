@@ -185,49 +185,6 @@ theorem closeTo_run_interpret_memoize_cons (distribution : Query → PMF Value)
   rw [← hl, ← hr, ← he] at h
   exact h
 
-/-- Pointwise error bounds on mixtures under `CloseTo`. -/
-theorem closeTo_bind_of_le {β γ : Type} (μ : PMF β) (f g : β → PMF γ) (err : β → Game)
-    (h : ∀ a ∈ μ.support, ∀ test : γ → Bool,
-      ((f a).map test) true ≤ ((g a).map test) true + err a true ∧
-      ((g a).map test) true ≤ ((f a).map test) true + err a true) :
-    CloseTo (μ.bind f) (μ.bind g) ((μ.bind err) true) := by
-  classical
-  let g' : β → PMF γ := fun a => if a ∈ μ.support then g a else f a
-  have hg : μ.bind g' = μ.bind g := Probability.PMF.bind_congr_on_support μ _ _
-    (fun a ha => by simp only [g', ha, ↓reduceIte])
-  rw [← hg]
-  apply Game.closeTo_of_coe_advantage_decide_le
-  intro event
-  let test : γ → Bool := fun b => decide (b ∈ event)
-  have he (a : β) :
-      ((f a).map test) true ≤ ((g' a).map test) true + err a true ∧
-      ((g' a).map test) true ≤ ((f a).map test) true + err a true := by
-    by_cases ha : a ∈ μ.support
-    · simpa only [g', ha, ↓reduceIte] using h a ha test
-    · simp only [g', ha, ↓reduceIte]
-      exact ⟨le_add_of_nonneg_right zero_le,
-        le_add_of_nonneg_right zero_le⟩
-  have hadv := Game.advantage_bind_le_succProbability_bind μ
-    (fun a => (f a).map test) (fun a => (g' a).map test) err he
-  have hc := ENNReal.coe_le_coe.mpr hadv
-  rw [Game.succProbability, ENNReal.coe_toNNReal (PMF.apply_ne_top _ _)] at hc
-  simpa only [PMF.map_bind] using hc
-
-/-- Any `CloseTo` relation bounds all test functions symmetrically. -/
-theorem closeTo_map_test_le {γ : Type} {μ ν : PMF γ} {ε : ℝ≥0∞} (h : CloseTo μ ν ε)
-    (test : γ → Bool) :
-    ((μ.map test) true : ℝ≥0∞) ≤ ((ν.map test) true : ℝ≥0∞) + ε ∧
-    ((ν.map test) true : ℝ≥0∞) ≤ ((μ.map test) true : ℝ≥0∞) + ε := by
-  have h1 : μ.toOuterMeasure {x | test x = true} ≤ ν.toOuterMeasure {x | test x = true} + ε :=
-    h {x | test x = true}
-  have h2 : ν.toOuterMeasure {x | test x = true} ≤ μ.toOuterMeasure {x | test x = true} + ε :=
-    h.symm {x | test x = true}
-  have ht (ρ : PMF γ) : (ρ.map test) true = ρ.toOuterMeasure {x | test x = true} := by
-    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
-    congr 1
-  rw [ht μ, ht ν]
-  exact ⟨h1, h2⟩
-
 /-- Transcript query membership agrees with key lookup on the pair projection. -/
 theorem entry_mem_iff_lookup_isSome {Query Value : Type} [DecidableEq Query]
     (tr : List (Σ _ : Query, Value)) (target : Query) :

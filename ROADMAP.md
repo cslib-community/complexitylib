@@ -257,9 +257,12 @@ families and full-input native runtime.
   ([#2712](https://github.com/cslib-community/complexitylib/issues/2712)), for ideal uniform
   prime-modulus matrices and histories sampled before fresh masks. The one-attempt visible
   simulation milestone ([#2788](https://github.com/cslib-community/complexitylib/issues/2788))
-  bounds the statistical distance between real signing with attempted-query programming and
-  simulated signing with accepted-transcript caching under any query-bounded visible continuation
-  by `R / q^n + sqrt(q^n / (2γ + 1)^m) / 2`. An efficient secret-free simulator, full
+  bounds the statistical distance between the one-attempt programmed signing hybrid (which prepends
+  a fresh challenge even on an abort) and simulated signing with accepted-transcript caching under
+  any query-bounded visible continuation by `R / q^n + sqrt(q^n / (2γ + 1)^m) / 2`, with exact
+  visible equality for zero-read continuations. Full executions retaining the final cache verify
+  the 0 vs 24/49 empty-cache divergence on the canonical q=17 counterexample. The transport from
+  honest memoizing signing (`Sign → Prog`), an efficient secret-free simulator, full
   multiple-attempt visible simulation transport, paired same-coins fork equality, native
   shared-oracle reduction and a security parameter family remain open. Other endpoints include
   identification security under SIS and Dilithium-style
