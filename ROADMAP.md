@@ -36,9 +36,12 @@ and declared unused bits (`CNF/ExactOneCounting`). `CNF/VCOne` now derives
 the VC-dimension-one table representation, its greedy signed separators and
 the sharp equation deficit from the actual table and Mathlib VC/Sauer–Shelah
 semantics. `CNF/VCOneTables` aligns arbitrarily overlapping scopes and proves
-the all-cases global two-query budget on declared bits. Polynomial 2-SAT prefix
-listing of the binary closure, polynomial-bit-time rank preprocessing/branch
-assembly, bounded-demand/graph applications and the advertised sharper counting
+the all-cases global two-query budget on declared bits. Its equation enumeration
+now uses a constructive pair-compatible prefix listing, with at most $w+1$
+retained rows per stage and $2w(w+1)$ attempted extensions, rather than enumerating
+the cube. Finite lookup aligns scope signs. Polynomial-bit-time rank
+preprocessing/branch assembly (including coefficient growth), bounded-demand/graph
+applications and the advertised sharper counting
 runtime remain open under
 [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
 This does not complete the paper's algorithmic main results.

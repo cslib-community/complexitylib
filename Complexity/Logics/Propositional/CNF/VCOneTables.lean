@@ -17,7 +17,9 @@ PDF pp. 20–21. Scope embeddings are injective within each table; different sco
 may overlap arbitrarily. Local tuples are restricted from one global assignment.
 Separators are derived from each actual table and aligned in the same global
 columns before row selection. No independence/disjointness of scopes is assumed.
-This is a finite mathematical construction, without a polynomial-bit-time program.
+Equation enumeration uses the executable polynomial-size prefix listing, and
+scope polarities use finite lookup. Global row selection and direct-branch
+assembly remain mathematical existence results, without a polynomial-bit-time program.
 -/
 
 public section
@@ -124,8 +126,8 @@ open scoped Classical in
 /-- One common index for all locally derived separating equations. -/
 @[expose] def EquationIndex := (i : I) × ↥(closure (R i) \ R i)
 
-open scoped Classical in
 instance : Fintype (EquationIndex w R) :=
+  letI (i : I) : Fintype ↥(closure (R i) \ R i) := listedDifferenceFintype (R i)
   inferInstanceAs (Fintype ((i : I) × ↥(closure (R i) \ R i)))
 
 open scoped Classical in
@@ -149,9 +151,32 @@ open scoped Classical in
 
 /-- Polarity at an embedded coordinate is the complement of the unwanted local tuple. -/
 @[expose] def tablePolarity (j : EquationIndex w R) : V → Bool :=
-  Function.extend (scope j.1) (fun k => !(j.2.val k)) (fun _ => false)
+  fun v => (((List.finRange (w j.1)).find? fun k => scope j.1 k = v).map
+    (fun k => !(j.2.val k))).getD false
 
-omit [Fintype V] [LinearOrder V] in
+omit [Fintype V] [Fintype I] in
+/-- Finite scope lookup implements the semantic extension, including coordinates
+outside the scope. Shared columns retain the correct local sign. -/
+theorem tablePolarity_eq (j : EquationIndex w R) :
+    tablePolarity w scope R j =
+      Function.extend (scope j.1) (fun k => !(j.2.val k)) (fun _ => false) := by
+  funext v
+  unfold tablePolarity
+  cases hf : (List.finRange (w j.1)).find? (fun k => scope j.1 k = v) with
+  | none =>
+    have hn : ¬ ∃ k, scope j.1 k = v := by
+      rintro ⟨k, hk⟩
+      have hn := List.find?_eq_none.mp hf k (List.mem_finRange k)
+      exact hn (by simpa only [decide_eq_true_eq] using hk)
+    rw [Function.extend_apply' _ _ _ hn]
+    rfl
+  | some k =>
+    have htest := List.find?_some hf
+    have hk : scope j.1 k = v := of_decide_eq_true htest
+    rw [← hk, (scope j.1).injective.extend_apply]
+    rfl
+
+omit [Fintype V] in
 /-- Exact pointwise compilation across arbitrarily overlapping scopes.
 No auxiliary assignments are introduced by the local representations. -/
 theorem tables_iff (hR : ∀ i, DimensionOne (R i)) (x : V → Bool) :
@@ -168,10 +193,14 @@ theorem tables_iff (hR : ∀ i, DimensionOne (R i)) (x : V → Bool) :
   · intro hx
     have h (i : I) := (representation_iff (R i) (hR i) (x ∘ scope i)).mp (hx i)
     exact ⟨fun i => (h i).1, fun j =>
-      (ExactOne.holds_map (scope j.1) _ _ x).mpr ((h j.1).2 j.2)⟩
+      (by rw [tablePolarity_eq]; exact
+        (ExactOne.holds_map (scope j.1) _ _ x).mpr ((h j.1).2 j.2))⟩
   · rintro ⟨hb, he⟩ i
     apply (representation_iff (R i) (hR i) (x ∘ scope i)).mpr
-    exact ⟨hb i, fun y => (ExactOne.holds_map (scope i) _ _ x).mp (he ⟨i, y⟩)⟩
+    exact ⟨hb i, fun y => (ExactOne.holds_map (scope i) _ _ x).mp (by
+      have hh := he ⟨i, y⟩
+      rw [tablePolarity_eq w scope R ⟨i, y⟩] at hh
+      exact hh)⟩
 
 open scoped Classical in
 omit [Fintype I] in
@@ -207,7 +236,7 @@ open scoped Classical in
 omit [Fintype I] in
 /-- Theorem 6.3's mathematical query budget, with every direct branch included.
 The only hypotheses concern the actual tables and the declared variable count.
-Classical table enumeration/row choice here does not certify polynomial bit time. -/
+The constructive local listing does not yet supply polynomial-bit-time global row choice. -/
 theorem tables_queries [Finite I] (hR : ∀ i, DimensionOne (R i)) (hr : 2 ≤ Fintype.card V) :
     ∃ k : ℕ, ∃ Q : Bool → CNF (V ⊕ Fin k),
       Fintype.card {x : V → Bool // Satisfies w scope R x} =

@@ -163,7 +163,22 @@ distinct coordinates. This excludes the full two-bit cube.
 its models with `closure R`, the tuples whose projections onto at most two
 coordinates occur in the table. `dimensionOne_closure` preserves the VC bound;
 `card_le` specializes Mathlib's Sauer–Shelah theorem to obtain at most $w+1$
-closure tuples. The side formula has at most $1+2w+4w^2$ clauses, each of width
+closure tuples. For executable enumeration, use `listedClosure R`.
+`listedClosure_eq` identifies it with this semantic closure. It starts with one
+zero-padded empty prefix (or none for an empty table), extends one coordinate by
+both bit values, and retains only prefixes whose unary/binary projections occur
+in the input rows. Unprocessed coordinates stay zero. `mem_prefixes` proves the
+exact invariant; `prefixes_card` bounds every retained frontier by $w+1$ under
+the VC promise. `prefixCandidates_le` bounds attempted extensions by
+$2\ell(w+1)$ for a list of $\ell$ distinct coordinates, hence $2w(w+1)$ for the
+complete traversal. Each extension checks at most $w^2$ coordinate pairs by
+scanning the explicit table; comparisons for deduplication inspect the $w$
+declared bits. The recursive result is shared between the two bit extensions.
+No cube enumeration or feasibility oracle is used. This original variant of the
+manuscript's 2-SAT prefix method tests pair compatibility rather than
+extendibility. The VC bound controls its frontier, and the final rows are
+exactly the closure.
+The side formula has at most $1+2w+4w^2$ clauses, each of width
 at most two. The empty clause handles an empty table.
 
 For each unwanted closure tuple `y`, `greedyScope R y` visits the declared
@@ -185,7 +200,12 @@ For several tables, give `w : I → ℕ`, embeddings
 Injectivity excludes repeated coordinates within a scope; scopes of different
 tables can overlap arbitrarily, in any order. `tables_iff` aligns all local
 separator literals in the shared global columns and proves pointwise equivalence
-to the original table conjunction. `tables_queries`, for $r=|V| \ge 2$, then derives
+to the original table conjunction. Its `EquationIndex` enumeration uses
+`listedDifferenceFintype`, an explicit map from the listed unwanted tuples;
+it does not enumerate the semantic closure's finite cube. `tablePolarity` uses
+finite scope lookup, with `tablePolarity_eq` proving equality to the semantic
+extension, including the false default outside the scope. For $r=|V| \ge 2$,
+`tables_queries` then derives
 two ordinary 3-CNFs with at most $2r-2$ declared variables and $13r^2$ clauses
 each, whose exact count difference is the original global count. It includes
 empty equation families, inconsistent systems and unique-candidate direct
@@ -199,7 +219,11 @@ starts from a three-row table whose closure adds exactly one unwanted tuple.
 It checks the greedy separator and a global instance with opposite signs on
 overlapping scopes and one unused bit, giving four source assignments. It
 also checks empty and zero-width tables, duplicate rows, constant coordinates,
-and a failed VC promise. Run
+and a failed VC promise. Guarded runtime checks execute the 32-coordinate,
+two-row listing (two outputs and 126 attempted extensions), zero-width cases,
+global equation enumeration, derived scopes, and opposite signs on overlapping
+columns. These runtime checks supplement the kernel-checked general proofs;
+they do not prove correctness by executing a solver. Run
 `scripts/build.sh ComplexityTests.PaperEndpoints.VCOne` from the repository root.
 If a scope cannot be embedded injectively or the missing-pattern proof fails,
 check distinctness of its coordinates and its actual four pair patterns before
@@ -207,10 +231,11 @@ applying the theorem.
 
 These results establish the mathematical representation and global query-budget
 claims of [ChenJiangZhu2027], Theorems 1.3/6.3 (PDF pp. 18–21). They do not yet
-certify a polynomial-bit-time reduction: the binary closure is currently defined
-by finite cube enumeration, rather than the paper's polynomial 2-SAT prefix
-listing, and global row selection/direct-branch choice is classical. The greedy
-separator is supplied explicitly, but no machine-level running-time certificate
+certify a polynomial-bit-time reduction: global row selection/direct-branch
+choice is still classical, and no coefficient-growth/bit-cost proof for exact
+elimination has been supplied. The semantic `closure` remains a finite-cube
+specification; the compiler's equation enumeration uses `listedClosure` instead.
+The greedy separator is supplied explicitly, but no machine-level running-time certificate
 is asserted. The sharper counting runtime and bounded-demand/graph applications
 remain open. The broad issue is not complete and no curated abstract is added.
 

@@ -8,6 +8,11 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CNF.VCOneTables
+meta import Complexity.Logics.Propositional.CNF.VCOneTables
+meta import Complexity.Logics.Propositional.CNF.VCOne
+meta import Mathlib.Data.Fintype.Basic
+meta import Mathlib.Data.Fintype.Card
+meta import Mathlib.Data.Finset.Empty
 import Mathlib.Tactic.FinCases
 
 /-! Actual table inputs, greedy separators, overlapping scopes and degenerate tables. -/
@@ -144,5 +149,66 @@ example (w : Fin 0 → ℕ) (scope : (i : Fin 0) → Fin (w i) ↪ Fin 0)
     directCount w scope R = Fintype.card {x : Fin 0 → Bool // Satisfies w scope R x} ∧
       directCount w scope R ≤ 2 :=
   ⟨directCount_correct w scope R, directCount_small w scope R (by decide)⟩
+
+-- Runtime regression checks intentionally execute the listing and compiler;
+-- they supplement the kernel-checked correctness and frontier-size theorems.
+set_option linter.hashCommand false
+
+/-- A 32-coordinate input with only two listed rows. This exercises the listing
+without even constructing the set of all `2^32` tuples. -/
+@[expose] def wideTwoRows : Finset (Fin 32 → Bool) := {fun _ => false, fun _ => true}
+
+/- Executed listing retains the two constant rows. -/
+/-- info: 2 -/
+#guard_msgs in
+#eval (listedClosure wideTwoRows).card
+
+/- The traversal really attempts 126 one-bit extensions on this input. -/
+/-- info: 126 -/
+#guard_msgs in
+#eval prefixCandidates wideTwoRows (List.finRange 32)
+
+/-- The table's missing pair patterns establish its VC promise. -/
+theorem wideTwoRows_dimension : DimensionOne wideTwoRows := by
+  apply dimensionOne_of_missing
+  intro i j _
+  refine ⟨false, true, fun x hx he => ?_⟩
+  rcases Finset.mem_insert.mp hx with rfl | hx
+  · simp at he
+  · have hx := Finset.mem_singleton.mp hx
+    subst x
+    simp at he
+
+/-- The proved traversal bound applies to a 32-coordinate input. -/
+example : prefixCandidates wideTwoRows (List.finRange 32) ≤ 2 * 32 * 33 := by
+  simpa using prefixCandidates_le wideTwoRows wideTwoRows_dimension
+    (List.finRange 32) (List.nodup_finRange 32)
+
+/-- The same executable listing agrees with the semantic closure. -/
+example : listedClosure (oneTable true) = closure (oneTable true) := listedClosure_eq _
+
+/- Empty and nonempty zero-width inputs keep their distinct meanings. -/
+/-- info: (0, 1) -/
+#guard_msgs in
+#eval ((listedClosure (∅ : Finset (Fin 0 → Bool))).card,
+  (listedClosure ({fun _ => false} : Finset (Fin 0 → Bool))).card)
+
+/- Enumeration of the actual global equation index uses the listed closure. -/
+/-- info: 1 -/
+#guard_msgs in
+#eval Fintype.card (EquationIndex (fun _ : Fin 1 => 3) (fun _ => oneTable true))
+
+/- The executed overlapping compilation derives scopes, not supplied equations. -/
+/-- info: {3} -/
+#guard_msgs in
+#eval (Finset.univ : Finset (EquationIndex (fun _ : Fin 2 => 3) overlapTable)).image
+  fun j => (tableScope (fun _ => 3) overlapScope overlapTable j).card
+
+/- Opposite local signs survive the shared-column lookup; unused bits default false. -/
+/-- info: {(true, false), (false, false)} -/
+#guard_msgs in
+#eval (Finset.univ : Finset (EquationIndex (fun _ : Fin 2 => 3) overlapTable)).image
+  fun j => (tablePolarity (fun _ => 3) overlapScope overlapTable j 1,
+    tablePolarity (fun _ => 3) overlapScope overlapTable j 4)
 
 end

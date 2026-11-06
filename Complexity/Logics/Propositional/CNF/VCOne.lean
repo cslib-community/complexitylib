@@ -18,7 +18,10 @@ The table representation of [ChenJiangZhu2027], Theorem 1.3 and Section 6
 (PDF pp. 18–21). Tables are finite sets of Boolean tuples, so repeated input rows
 are identified. Every coordinate, including constant coordinates, remains declared.
 The VC promise uses Mathlib's finite set-family dimension via positive supports.
-No polynomial-time machine implementation or sharper counting runtime is asserted.
+`listedClosure` incrementally generates only pair-compatible prefixes, with a
+proved quadratic bound on attempted extensions under the VC promise. The global
+compiler uses that listing to enumerate equations. No polynomial-bit-time rank
+implementation or sharper counting runtime is asserted.
 -/
 
 public section
@@ -170,6 +173,196 @@ private theorem no_pair (R : Finset (V → Bool)) (hR : DimensionOne R)
   have hd : 2 ≤ (family R).vcDim := by simpa [hij] using hh
   unfold DimensionOne at hR
   omega
+
+section Listing
+
+variable [DecidableEq V]
+
+/-- Test only listed unary/binary projections on the processed coordinates.
+The nonempty test handles a zero-coordinate empty table. -/
+@[expose] def PairCompatible (R : Finset (V → Bool)) (s : Finset V) (y : V → Bool) : Prop :=
+  R.Nonempty ∧ ∀ i ∈ s, ∀ j ∈ s, ∃ x ∈ R, x i = y i ∧ x j = y j
+
+instance (R : Finset (V → Bool)) (s : Finset V) (y : V → Bool) :
+    Decidable (PairCompatible R s y) :=
+  inferInstanceAs (Decidable (R.Nonempty ∧
+    ∀ i ∈ s, ∀ j ∈ s, ∃ x ∈ R, x i = y i ∧ x j = y j))
+
+/-- Original pair-compatible-prefix variant of the listing in Lemma 6.1.
+Extend retained prefixes by one bit, then scan the table projections.
+Unprocessed coordinates are zero placeholders, not additional branching choices.
+No Boolean cube or set of coordinate subsets is enumerated. -/
+@[expose] def prefixes (R : Finset (V → Bool)) : List V → Finset (V → Bool)
+  | [] => if R.Nonempty then {fun _ => false} else ∅
+  | i :: todo =>
+      let previous := prefixes R todo
+      ((previous.image (fun x => Function.update x i false)) ∪
+        (previous.image (fun x => Function.update x i true))).filter
+          (PairCompatible R (i :: todo).toFinset)
+
+/-- The retained rows are exactly the pair-compatible prefixes, with zero padding. -/
+theorem mem_prefixes (R : Finset (V → Bool)) (todo : List V) (hn : todo.Nodup)
+    (y : V → Bool) :
+    y ∈ prefixes R todo ↔ PairCompatible R todo.toFinset y ∧
+      ∀ i, i ∉ todo → y i = false := by
+  induction todo generalizing y with
+  | nil =>
+    simp only [prefixes, List.toFinset_nil, PairCompatible, Finset.notMem_empty,
+      false_implies, implies_true, forall_const, and_true, List.not_mem_nil, not_false_eq_true]
+    split_ifs with h
+    · simp only [Finset.mem_singleton, h, true_and]
+      exact ⟨fun e i => congrFun e i, fun h => funext h⟩
+    · simp [h]
+  | cons i todo ih =>
+    have hi : i ∉ todo := (List.nodup_cons.mp hn).1
+    have ht := (List.nodup_cons.mp hn).2
+    simp only [prefixes, Finset.mem_filter]
+    constructor
+    · rintro ⟨hm, hp⟩
+      refine ⟨hp, ?_⟩
+      rcases Finset.mem_union.mp hm with hm | hm <;>
+        obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hm <;>
+        intro j hj <;>
+        rw [Function.update_of_ne (fun h => hj (List.mem_cons.mpr (Or.inl h)))] <;>
+        exact (ih ht x).mp hx |>.2 j (fun h => hj (List.mem_cons.mpr (Or.inr h)))
+    · rintro ⟨hp, hz⟩
+      let x := Function.update y i false
+      have hx : x ∈ prefixes R todo := by
+        apply (ih ht x).mpr
+        refine ⟨⟨hp.1, ?_⟩, ?_⟩
+        · intro j hj k hk
+          obtain ⟨z, hzr, hzj, hzk⟩ := hp.2 j (by simp [hj]) k (by simp [hk])
+          refine ⟨z, hzr, ?_, ?_⟩
+          · have hji : j ≠ i := fun h => hi (h ▸ List.mem_toFinset.mp hj)
+            simpa [x, Function.update_of_ne hji] using hzj
+          · have hki : k ≠ i := fun h => hi (h ▸ List.mem_toFinset.mp hk)
+            simpa [x, Function.update_of_ne hki] using hzk
+        · intro j hj
+          by_cases he : j = i
+          · simp [x, he]
+          · change Function.update y i false j = false
+            rw [Function.update_of_ne he]
+            exact hz j (by simp [he, hj])
+      have he : Function.update x i (y i) = y := by
+        funext j
+        by_cases hj : j = i <;> simp [x, hj]
+      refine ⟨Finset.mem_union.mpr ?_, hp⟩
+      cases hb : y i
+      · exact Or.inl (Finset.mem_image.mpr ⟨x, hx, hb ▸ he⟩)
+      · exact Or.inr (Finset.mem_image.mpr ⟨x, hx, hb ▸ he⟩)
+
+omit [DecidableEq V] in
+/-- Pair tests are equivalent to the semantic closure, including empty scopes. -/
+theorem pairCompatible_univ (R : Finset (V → Bool)) (y : V → Bool) :
+    PairCompatible R Finset.univ y ↔ y ∈ closure R := by
+  classical
+  rw [mem_closure]
+  constructor
+  · rintro ⟨hne, hp⟩ s hs
+    rcases s.eq_empty_or_nonempty with rfl | hneS
+    · obtain ⟨x, hx⟩ := hne
+      exact ⟨x, hx, fun _ h => False.elim (Finset.notMem_empty _ h)⟩
+    obtain ⟨i, hi⟩ := hneS
+    by_cases hsingle : s = {i}
+    · obtain ⟨x, hx, hxi, _⟩ := hp i (Finset.mem_univ _) i (Finset.mem_univ _)
+      exact ⟨x, hx, fun j hj => (Finset.mem_singleton.mp (hsingle ▸ hj)) ▸ hxi⟩
+    have htwo : 1 < s.card := by
+      by_contra h
+      have he := Finset.card_le_one.mp (show s.card ≤ 1 by omega) i hi
+      apply hsingle
+      ext j
+      simp only [Finset.mem_singleton]
+      exact ⟨fun hj => (he j hj).symm, fun h => h ▸ hi⟩
+    obtain ⟨j, hj, hji⟩ := Finset.exists_mem_ne (s := s) htwo i
+    have he : s = {i, j} := by
+      symm
+      apply Finset.eq_of_subset_of_card_le (by simp [Finset.insert_subset_iff, hi, hj])
+      simpa [Ne.symm hji] using hs
+    obtain ⟨x, hx, hxi, hxj⟩ := hp i (Finset.mem_univ _) j (Finset.mem_univ _)
+    refine ⟨x, hx, fun k hk => ?_⟩
+    rcases Finset.mem_insert.mp (he ▸ hk) with rfl | hk
+    · exact hxi
+    · exact (Finset.mem_singleton.mp hk) ▸ hxj
+  · intro h
+    obtain ⟨x, hx, _⟩ := h ∅ (by simp)
+    refine ⟨⟨x, hx⟩, fun i _ j _ => ?_⟩
+    obtain ⟨x, hx, he⟩ := h {i, j} (by
+      simpa only [Finset.card_singleton] using Finset.card_insert_le i {j})
+    exact ⟨x, hx, he (by simp), he (by simp)⟩
+
+/-- Executable closure listing in coordinate order. -/
+@[expose] def listedClosure [LinearOrder V] (R : Finset (V → Bool)) : Finset (V → Bool) :=
+  prefixes R (Finset.univ.sort (· ≤ ·))
+
+/-- The executable listing and the semantic closure have exactly the same rows. -/
+theorem listedClosure_eq [LinearOrder V] (R : Finset (V → Bool)) :
+    listedClosure R = closure R := by
+  ext y
+  rw [listedClosure, mem_prefixes _ _ (Finset.sort_nodup _ _)]
+  simpa only [Finset.sort_toFinset, Finset.mem_sort, Finset.mem_univ, not_true_eq_false,
+    false_implies, implies_true, forall_const, and_true] using pairCompatible_univ R y
+
+/-- Every intermediate frontier has at most `w + 1` rows, not `2^w`.
+Each extension therefore tests at most `2 * (w + 1)` candidates. -/
+theorem prefixes_card (R : Finset (V → Bool)) (hR : DimensionOne R)
+    (todo : List V) (hn : todo.Nodup) :
+    (prefixes R todo).card ≤ Fintype.card V + 1 := by
+  classical
+  apply card_le
+  apply dimensionOne_of_missing
+  intro i j hij
+  by_cases hi : i ∈ todo
+  · by_cases hj : j ∈ todo
+    · have hm : ∃ a b : Bool, ∀ x ∈ R, ¬ (x i = a ∧ x j = b) := by
+        by_contra h
+        push Not at h
+        exact no_pair R hR hij h
+      obtain ⟨a, b, hab⟩ := hm
+      refine ⟨a, b, fun y hy he => ?_⟩
+      obtain ⟨x, hx, hxi, hxj⟩ := ((mem_prefixes R todo hn y).mp hy).1.2
+        i (List.mem_toFinset.mpr hi) j (List.mem_toFinset.mpr hj)
+      exact hab x hx ⟨hxi.trans he.1, hxj.trans he.2⟩
+    · exact ⟨false, true, fun y hy he => by
+        have hz := ((mem_prefixes R todo hn y).mp hy).2 j hj
+        simp_all⟩
+  · exact ⟨true, false, fun y hy he => by
+      have hz := ((mem_prefixes R todo hn y).mp hy).2 i hi
+      simp_all⟩
+
+/-- Number of one-bit extensions attempted by the actual recursion, before
+merging duplicates or testing projections. This counts both bit choices. -/
+@[expose] def prefixCandidates (R : Finset (V → Bool)) : List V → ℕ
+  | [] => 0
+  | _ :: todo => prefixCandidates R todo + 2 * (prefixes R todo).card
+
+/-- The complete traversal attempts only quadratically many extensions.
+Each projection test scans at most `|todo|²` pairs and the explicit table;
+function comparison for deduplication examines only the declared coordinates. -/
+theorem prefixCandidates_le (R : Finset (V → Bool)) (hR : DimensionOne R)
+    (todo : List V) (hn : todo.Nodup) :
+    prefixCandidates R todo ≤ 2 * todo.length * (Fintype.card V + 1) := by
+  induction todo with
+  | nil => simp [prefixCandidates]
+  | cons i todo ih =>
+    have ht := (List.nodup_cons.mp hn).2
+    have hb := prefixes_card R hR todo ht
+    have hi := ih ht
+    simp only [prefixCandidates, List.length_cons]
+    nlinarith
+
+/-- Enumerate the unwanted closure tuples using the constructive listing.
+The semantic subtype's proof does not trigger enumeration of the Boolean cube. -/
+@[instance_reducible] def listedDifferenceFintype [LinearOrder V] (R : Finset (V → Bool)) :
+    Fintype ↥(closure R \ R) where
+  elems := (listedClosure R \ R).attach.map
+    { toFun := fun y : ↥(listedClosure R \ R) =>
+        ⟨y.val, by simpa only [listedClosure_eq] using y.property⟩
+      inj' := fun _ _ h => Subtype.ext
+        (congrArg (fun y : ↥(closure R \ R) => y.val) h) }
+  complete := fun y => Finset.mem_map.mpr
+    ⟨⟨y.val, by simpa only [listedClosure_eq] using y.property⟩, Finset.mem_attach _ _, rfl⟩
+
+end Listing
 
 section Greedy
 
