@@ -7,16 +7,15 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Flat
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Width
 import Complexity.Foundations.Data.Nat.Log
 
 /-!
-# Original-input bounds for every fixed-prime native prefix
+# Numerical word envelope for fixed-prime native prefixes
 
 The admission remains logarithmic for polynomial original weights and bounded scalar headers.
-The actual minimum-width halting run controls all wider prefixes, including dirty loads and
-all reused-workspace calls. The support envelope is independent of the physical width, and
-does not instruct the machine to clear or snapshot that range.
+The envelope is independent of the physical width and does not instruct the machine to clear
+or snapshot that range. Execution-specific prefix certificates belong to the one-slot solver.
 -/
 
 public section
@@ -29,7 +28,7 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 /-- A fixed original-input bound for all prefix words and memory support. -/
 @[expose] def wordBound (n D g p A : ℕ) : ℕ := 2 ^ admissionWidth n D g p A
 
-/-- The all-record controller retains an explicit polynomial envelope for each weight exponent. -/
+/-- The fixed-prime solver retains an explicit polynomial envelope for each weight exponent. -/
 theorem wordBound_le_pow {n D g p A κ : ℕ} (hn : 1 ≤ n)
     (hD : D ≤ n) (hg : g ≤ n) (hp : p ≤ n) (hA : A ≤ (n + 2) ^ κ) :
     wordBound n D g p A ≤ (n + 2) ^ (514 * κ + 11818) := by
@@ -47,21 +46,5 @@ theorem wordBound_le_pow {n D g p A κ : ℕ} (hn : 1 ≤ n)
     _ = b ^ (514 * κ + 11818) := by
       rw [← Nat.pow_mul]
       exact congrArg (fun j : ℕ => b ^ j) (by omega : 2 * (257 * κ + 5909) = 514 * κ + 11818)
-
-/-- Every actually reached state at every admitted wider width has the same original-input
-polynomial word/support envelope. The concrete minimum-width run, not an assumed execution
-certificate, supplies the comparison run. -/
-theorem bounded_reachable_original {W m n g p A k : ℕ} (values : List ℤ)
-    (hlen : values.length = 3 * (n * n)) (hD : 16 ≤ D m)
-    (hg : 1 ≤ g) (hp : p ∈ Nat.sqrtPrimeWindow (D m)) (hN : D m ^ 18 ≤ n)
-    (hv : ∀ z ∈ values, z.natAbs ≤ A) (hW : admissionWidth n (D m) g p A ≤ W)
-    {s : State 416} (hr : Runs W (program.program Reg.found)
-      (State.init (PreparationInput.input n (D m) g p values)) s k) :
-    (∀ i, s.data.regs i < wordBound n (D m) g p A) ∧
-      (∀ a, s.data.mem a < wordBound n (D m) g p A) ∧
-      ∀ a, wordBound n (D m) g p A ≤ a → s.data.mem a = 0 := by
-  obtain ⟨hi, a, ha, hout, y, t, ht, hpref, he, -⟩ :=
-    runs_input values hlen hD hg hp hN hv le_rfl
-  exact hr.prefix_bounds_init program_fixed.2 hW hi he le_rfl
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.FixedPrime

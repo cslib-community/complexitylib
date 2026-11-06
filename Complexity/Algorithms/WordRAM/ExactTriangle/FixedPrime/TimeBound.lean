@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Flat
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Accounting
 import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Bounds
 import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationBounds
 import Mathlib.Tactic.Positivity
@@ -29,6 +29,19 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.FixedPrime
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
+
+/-- Conservative complete envelope: standalone preparation, all logical record charges, one
+global failed-scan budget and controller/loop/halt work. The one-slot solver fits this envelope
+without executing the standalone all-record preparation. No workspace clearing is charged. -/
+@[expose] noncomputable def timeBound {m n : ℕ} (hn : 0 < n) (g p : ℕ)
+    (values : List ℤ) (mem : ℕ → ℕ) : ℕ :=
+  let V := fun q => values.getD q 0
+  let wAB := fun u v : Fin n => V (pairIndex (u, v))
+  let wBC := fun b c : Fin n => V (n * n + pairIndex (b, c))
+  let wAC := fun u c : Fin n => V (2 * (n * n) + pairIndex (u, c))
+  RecordProduct.preparationTime n (D m) g p values +
+    (∑ idx ∈ instanceIndices wAB (D m) g p, recordBase (m := m) hn V mem idx) +
+    (42 * pieceSize (D m) g + 28) * (falsePositiveCount wAB wBC wAC p + 1) + 7
 
 /-- The existing finite family bounds the sum of actual queried-product charges, including a
 standalone halt for each term as a conservative upper bound. Every occurrence bound is derived

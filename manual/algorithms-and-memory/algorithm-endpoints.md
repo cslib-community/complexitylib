@@ -133,7 +133,7 @@ The source tree also contains native integer arithmetic, multiword circuit evalu
 
 There is one executable pipeline: `DyadicParameters` computes geometry,
 `ParameterSelecting` selects the prime and dispatches, and `CallableFixedPrime` calls the
-box-backed `FixedPrime` controller. Both ordinary 3SUM endpoint theorems use that pipeline.
+box-backed `StreamingFixedPrime` controller. Both ordinary 3SUM endpoint theorems use that pipeline.
 The former `Box`-prefixed module families are retired; import the canonical modules named
 below. Existing `RecordBoxProduct` and `BoxTable` names still describe the underlying
 mathematics and are not alternate end-to-end solvers.
@@ -203,6 +203,14 @@ occurrence. The concrete original and box endpoints discharge this premise inter
 their public statements do not acquire a solver assumption. Keep their `19*m` and `21*m`
 geometry, threshold instructions and admission proofs separate.
 
+For a reused slot, use `RecordWitness.exec_after_record_product` from
+`RecordWitness.AfterRecordProduct`, or the concrete box specialization
+`BoxRecordWitness.exec_at_record` from `BoxRecordWitness.Record`. Supply the actual physical
+descriptor, query span, matrix pair and protected original arrays. Its physical ordinal is
+independent of the logical chunk/piece index; an all-record `Instances.Output` is neither
+required nor asserted for that slot. The old `exec_after_product` specializes this boundary
+for genuine standalone producer outputs.
+
 The [pure readback client](../../ComplexityTests/WordRAMExactTriangleRecordReadback.lean)
 checks duplicate occurrence order with dirty unused memory. The
 [consumer client](../../ComplexityTests/WordRAMExactTriangleRecordWitness.lean) checks
@@ -212,11 +220,15 @@ product and witness clients remain available alongside the box clients.
 ## Box-backed fixed-prime Exact Triangle
 
 To decide whether three signed integer matrices contain a zero-weight triangle, import
-`Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime` and use
-`FixedPrime.runs_input`. The complete
-[initialized client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMExactTriangleBoxFixedPrime.lean)
-includes imports, admission proofs, successful witness recovery and negative exhaustion.
-Use the client on the canonical pipeline revision before adapting it.
+`Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime` and use
+`StreamingFixedPrime.runs_input`. The complete initialized client is
+[the streaming test module](../../ComplexityTests/WordRAMExactTriangleStreamingFixedPrime.lean):
+it discharges admission, recovers a successful witness, and checks negative exhaustion. The
+[general-threshold client](../../ComplexityTests/WordRAMExactTriangleFixedPrimeInput.lean)
+checks the same canonical solver at `m=2`, including prime-three false positives. The old
+materialized fixed-prime program and its execution certificates have been retired;
+`Instances` remains an independent all-record producer, and standalone record products and
+witness consumers remain available. `FixedPrime` now holds numerical and controller support.
 
 Provide `3*n²` signed weights in row-major AB, BC, AC order, with every absolute value at most
 `A`. `PreparationInput.input n (D m) g p values` supplies the scalar headers and canonical
@@ -228,15 +240,24 @@ geometric premises are `D m = 4^m >= 16`, `(D m)^18 <= n`, `g >= 1` and
 weight bound, prime-window inequalities and width against the complete client; the theorem
 does not select an admissible prime or geometry for you.
 
-The fixed 416-register program executes the producer once, then reuses dirty workspace for
-actual box-product calls and verifies candidates against the original signed weights. Its
-same-state prefix and charged halt return one exactly for an original zero triangle; on
-success, the returned state contains original vertex coordinates. The stated outer memory
-frame and producer registers are preserved. Raw input placement is an initial-state convention;
-the executed producer, controller and final halt are charged.
+The fixed 416-register streaming program computes the catalogue, then constructs the next
+logical chunk/piece in one fixed slot. It runs the complete box product and original-weight
+verifier at physical ordinal zero, consumes the answer immediately, and resets the heap by a
+charged copy. Logical progress follows the original chunk-major/piece-major order and stops
+at the first original witness. Original signed weights, queries and catalogue remain below
+the slot; dirty solver scratch may be overwritten without clearing it. The same-state prefix
+and charged halt return one exactly for an original zero triangle, with original coordinates.
+The executed catalogue, construction, argument copies, guards, solver calls, reset and halt
+are charged; original input placement is an initial-state convention.
 
-For `m=9k`, apply `FixedPrime.timeBound_le` to the actual producer memory returned by
-`runs_input`. Its complete finite bound retains preparation, aggregate box charges,
+For at least one logical record, the retained record region is `6+2*n*D` words instead of
+`M*(6+2*n*D)`. With no records, the guard performs no construction. The existing solver reserve
+was already reused; its size and the coarse admission/word/support bounds remain unchanged.
+This is a smaller record region, with no claim of an asymptotic total-space improvement.
+
+For `m=9k`, apply `FixedPrime.timeBound_le` to the derived genuine standalone reference returned by
+`runs_input`. `StreamingFixedPrime.time_le_old` places every streaming charge, including halt,
+within this old conservative envelope; that reference is never asserted for a reused slot. Its complete finite bound retains preparation, aggregate box charges,
 root/query/controller overhead and **one global** `F(p)+1` original-weight scan reserve.
 The product term is `125829120(189k+1)^2(9k+1)D^(-8/125)n³g`; that saving alone is not an
 unconditional total exponent. The zero-weight and constant-257 negative clients are checked

@@ -397,7 +397,7 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   for that stronger conclusion. Unused old words do not restrict semantic correctness; their
   raw P remains explicit in caller prefix-resource theorems. Initialized logarithmic admission
   and polynomial every-wide words/support are derived from original inputs.
-  The canonical `FixedPrime` and `CallableFixedPrime` are the actual box-backed implementations;
+  The canonical `StreamingFixedPrime` and `CallableFixedPrime` are the actual box-backed implementations;
   retired `Box`-prefixed families and their conservative alternatives are removed. The complete
   ordinary 1.9992 composition is described above. The native ET2.99835 bound does not claim the
   sharper source ET2.9983 exponent or its separate Light/signed-modular machine predicate.
@@ -492,7 +492,7 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `L=189k`, `m=9k`, `t=k`. Under `D^18≤N` and `Q*2^m≤N²`, the complete actual ledger has
   finite `D^(-8/125)` saving with polynomial depth factors explicit. Here `Q` counts occurrences,
   strengthening distinct-set sparsity when inputs repeat. Exact integer comparisons replace
-  analytic numerical approximations. Canonical `FixedPrime`, `CallableFixedPrime` and
+  analytic numerical approximations. Canonical `StreamingFixedPrime`, `CallableFixedPrime` and
   `ParameterSelecting` compose the actual ET and ordinary 1.9992 endpoint described above.
   No curated abstract or rendering changes.
 * **Callable box products and actual ET records.**
@@ -506,7 +506,7 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   Its initialized client runs the genuine original-weight producer and selects an occupied record;
   readbacks and occurrence sparsity are conclusions of that execution. General correctness uses
   `L=21*m` and `t=m/9`; the quantitative specialization requires `m=9k`. The complete per-record
-  finite saving charges adapter and halt, with producer work separate. Canonical `FixedPrime`
+  finite saving charges adapter and halt, with producer work separate. Canonical `StreamingFixedPrime`
   performs the complete record traversal, and `ParameterSelecting` supplies actual parameters
   and prime selection for the 1.9992 ordinary composition. Curated abstracts are unchanged.
 * **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
@@ -615,10 +615,12 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   this verification component changes no curated abstract.
   The bounded fixed-prime continuation developed in
   [#1662](https://github.com/cslib-community/complexitylib/issues/1662) is now the canonical
-  box-backed `FixedPrime` controller ([#2341](https://github.com/cslib-community/complexitylib/issues/2341)).
-  It runs the producer once, traverses every occupied ordinal and reuses dirty workspace in a
-  fixed416-register program. Protected readback uses `Instances.Output.reframe` against the
-  reached state rather than asserting preservation of the old external frame. Distinct
+  box-backed `StreamingFixedPrime` controller ([#2341](https://github.com/cslib-community/complexitylib/issues/2341),
+  [#2498](https://github.com/cslib-community/complexitylib/pull/2498)). It computes the catalogue
+  once and constructs/consumes each logical record in one reused physical slot in a fixed
+  416-register program. The materialized fixed-prime execution API is retired; the independent
+  `Instances` producer and record product/witness APIs remain. A derived standalone output
+  indexes mathematical accounting, without claiming producer execution for the stream. Distinct
   record/query occurrences inject into global `failedScans`; actual total scans satisfy
   `S≤F(p)+returnedFlag`, with only one successful-return flag. At `m=9k`, aggregate box work is
   at most `125829120*(189k+1)^2*(9k+1)*D^(-8/125)*n³*g`. One-time `690n²Dg` preparation,

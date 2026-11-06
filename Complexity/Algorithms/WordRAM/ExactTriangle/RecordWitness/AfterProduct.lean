@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Consume
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.AfterRecordProduct
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Readback
 
 /-!
@@ -26,10 +26,6 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.RecordWitness
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
-
-private theorem productBank_injective : Function.Injective productBank := by
-  intro i j h
-  exact Fin.ext (congrArg (fun k : Fin 400 => k.val) h)
 
 /-- Compose a proved product execution with the real consumer. The actual result offset,
 exact signed answers, outside-window frame and producer registers are the only product
@@ -112,100 +108,13 @@ theorem exec_after_product {w U m n g p : ℕ} (values : ℕ → ℤ)
       (∀ u, u < x.regs (productBank 42) ∨
         x.regs (productBank 42) + CallableProduct.windowSize n Q ≤ u → y.mem u = x.mem u) ∧
       (∀ j : Fin 320, j.val < 65 → y.regs (productBank j) = x.regs (productBank j)) := by
-  let x' := x.comap productBank
-  let produced := x'.comap RecordProduct.producerBank
-  let heap := x.regs (productBank 42)
-  let q := RecordProduct.recordQueries n (D m) p idx
-  let Q := RecordProduct.recordQueryCount n (D m) p values idx
-  let ord := RecordProduct.recordOrdinal n (D m) g p values idx
-  let base := x.regs (productBank (RecordProduct.producerBank Instances.output)) +
-    ord * (6 + 2 * (n * D m))
-  let out := heap + offset
-  change Fits (w + 2) (4 * heap + 4 * CallableProduct.windowSize n Q +
-    offset + 4 * Q + 4 * D m +
-    2 * (n * D m) + 9 * (n * n) + 4 * n + g + 4096) at hfit
-  have hDn : D m ≤ n := (Nat.le_self_pow (by decide : 18 ≠ 0) (D m)).trans hN
-  have hn : 0 < n := lt_of_lt_of_le (by omega) hDn
-  let qs := RecordProduct.decodedQueries hn x.mem q Q
   obtain ⟨hinputEnd, hrec, hq, hfirst, hv, hcoords, hprefix⟩ :=
-    record_view values initial produced h hD hDn hg hp idx hidx
-  change 5 + 3 * (n * n) ≤ heap at hinputEnd
-  change base + 6 ≤ heap at hrec
-  change q + 2 * Q ≤ heap at hq
-  change ∀ j : Fin 6, x.mem (base + j.val) =
-    ![idx.1.val, idx.2.2, q, Q, base + 6, base + 6 + n * D m] j at hv
-  change ∀ j < Q, x.mem (q + 2 * j) < n ∧ x.mem (q + 2 * j + 1) < n at hcoords
-  change ∀ j < 5 + 3 * (n * n), x.mem j = initial.mem j at hprefix
-  obtain ⟨r, hr, rr, rvalues, rmem, rregs⟩ := hproduct
-  let s := r.extend productBank x
-  have hs : ExecWithin (w + 2) (product.rename productBank) x s
-      T := hr.rename productBank_injective
-  have sr (j : Fin 320) : s.regs (productBank j) = r.regs j :=
-    productBank_injective.extend_apply _ _ j
-  have sm (u : ℕ) (hu : u < heap) : s.mem u = x.mem u := rmem u (Or.inl hu)
-  have snative (j : Fin 320) (hj : j.val < 65) :
-      s.regs (productBank j) = x.regs (productBank j) := (sr j).trans (rregs j hj)
-  have sout : s.regs (productBank RecordProduct.Reg.result) = out := by
-    exact (sr RecordProduct.Reg.result).trans rr
-  let v : Fin 6 → ℕ := ![idx.1.val, idx.2.2, q, Q, base + 6, base + 6 + n * D m]
-  have hread (j : Fin 6) : s.mem (base + j.val) = v j :=
-    (sm _ (by have := j.isLt; omega)).trans (hv j)
-  have hquery : ∀ j < Q, s.mem (q + 2 * j) = x.mem (q + 2 * j) ∧
-      s.mem (q + 2 * j + 1) = x.mem (q + 2 * j + 1) ∧
-      x.mem (q + 2 * j) < n ∧ x.mem (q + 2 * j + 1) < n := by
-    intro j hj
-    exact ⟨sm _ (by omega), sm _ (by omega), hcoords j hj⟩
-  have smem : ∀ a < n, ∀ b < n,
-      s.mem (5 + (a * n + b)) = Signed.encode (AB a b) ∧
-      s.mem (5 + n * n + (a * n + b)) = Signed.encode (BC a b) ∧
-      s.mem (5 + n * n + n * n + (a * n + b)) = Signed.encode (AC a b) := by
-    intro a ha b hb
-    have hn := Nat.mul_le_mul_right n (Nat.succ_le_of_lt ha)
-    rw [Nat.succ_mul] at hn
-    simpa only [sm _ (by omega : 5 + (a * n + b) < heap),
-      sm _ (by omega : 5 + n * n + (a * n + b) < heap),
-      sm _ (by omega : 5 + n * n + n * n + (a * n + b) < heap)] using hmem a ha b hb
-  obtain ⟨y, S, he, ym, ys, hS, yf, yiff, yw, frame⟩ := exec_consume AB BC AC
-    (fun j => x.mem (q + 2 * j)) (fun j => x.mem (q + 2 * j + 1)) s v
-    ((sm 1 (by omega)).trans ((hprefix 1 (by omega)).trans hheaderD))
-    ((sm 2 (by omega)).trans ((hprefix 2 (by omega)).trans hheaderG))
-    ((sm 3 (by omega)).trans ((hprefix 3 (by omega)).trans hheaderN))
-    ((snative _ (by decide)).trans hi) (snative _ (by decide)) sout hrec hread hfirst
-    hquery smem hmag hU (hfit.of_le (by
-      change heap + out + q + 4 * Q + 4 * D m + 2 * (n * D m) +
-        9 * (n * n) + 4 * n + g + 2048 ≤ _
-      dsimp only [out]
-      omega))
-  change ExecWithin (w + 2) consume s y
-    (5 * Nat.sqrt (D m) + 8 * Q +
-      (42 * min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g) + 28) * S + 52) at he
-  change S ≤ Nat.count (fun j => s.mem (out + j) ≠ 0 ∧
-    ∀ c : Fin (min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g)),
-      AB (x.mem (q + 2 * j)) (x.mem (q + 2 * j + 1)) +
-        BC (x.mem (q + 2 * j + 1)) (idx.2.2 * pieceSize (D m) g + c.val) +
-        AC (x.mem (q + 2 * j)) (idx.2.2 * pieceSize (D m) g + c.val) ≠ 0) Q + y.regs Reg.found at hS
-  simp_rw [show v 1 = idx.2.2 from rfl, show v 3 = Q from rfl] at yiff
-  have hexe : ExecWithin (w + 2) (.seq (product.rename productBank) consume) x y
-      (T + 5 * Nat.sqrt (D m) + 8 * Q +
-        (42 * min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g) + 28) * S + 52) :=
-    (hs.seq he).mono (by omega)
-  refine ⟨y, S, hexe, ys, yf, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · simpa only [ym, frame (productBank RecordProduct.Reg.result) (by decide), sout] using hS
-  · simpa only [ym, frame (productBank RecordProduct.Reg.result) (by decide), sout] using yiff
-  · intro j
-    have hv := rvalues j
-    rw [frame _ (by decide), sout, ym]
-    change r.mem (out + j.val) = _
-    exact hv
-  · intro hy
-    obtain ⟨j, hj, -, hwa, hwb, hlo, hhi, hz⟩ := yw hy
-    obtain ⟨ha, hb⟩ := hcoords j hj
-    exact ⟨by simpa only [hwa] using ha, by simpa only [hwb] using hb,
-      hlo, hhi, by simpa only [hwa, hwb] using hz, j, hj, hwa, hwb⟩
-  · intro u hu
-    rw [ym]
-    exact rmem u hu
-  · intro j hj
-    exact (frame _ (by change j.val < 320; omega)).trans (snative j hj)
+    record_view values initial _ h hD
+      ((Nat.le_self_pow (by decide : 18 ≠ 0) (D m)).trans hN) hg hp idx hidx
+  exact exec_after_record_product values AB BC AC x hD hN
+    ((hprefix 1 (by omega)).trans hheaderD)
+    ((hprefix 2 (by omega)).trans hheaderG)
+    ((hprefix 3 (by omega)).trans hheaderN) idx hi
+    ⟨hinputEnd, hrec, hq, hfirst, hv, hcoords⟩ hmem hmag hU product T offset hproduct hfit
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordWitness

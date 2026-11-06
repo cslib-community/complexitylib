@@ -179,7 +179,8 @@ theorem wordBound_le_pow {n D g p A κ : ℕ} (hn : 1 ≤ n)
       Nat.mul_le_mul hc (envelope_le_pow hn hD hg hp hA)
     _ = (n + 2) ^ (κ + 19) := by rw [← Nat.pow_add]; congr 1; omega
 
-private theorem fits_at_width (n D g p A : ℕ) :
+/-- Original numeric admission covers signed residues and the complete native producer budget. -/
+theorem fits_at_width (n D g p A : ℕ) :
     GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) ((A + p + 1 : ℕ) : ℤ) ∧
       Fits (width n D g p A) (Instances.budget n D g p) := by
   let V := envelope n D g p A
