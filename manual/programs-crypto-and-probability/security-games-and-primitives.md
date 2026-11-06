@@ -78,10 +78,9 @@ nor positive dimension is needed. At `q = 0`, the total operation instead trunca
 signed result at zero, with no canonical-residue interpretation claimed.
 The [checked clients](../../ComplexityTests/Crypto/NegacyclicNative.lean) include `X² = -1`
 modulo six, modulus one, empty and irregular inputs, a 128-bit modulus, and the actual
-rank-one `moduleLWEKeyGen` coefficient computation. Full key generation, encryption and
-decryption still need variable-rank traversal and canonical key/ciphertext packing and parsing.
-This arithmetic certificate does not remove the existing restrictions on exact native samplers
-or imply small-secret security.
+rank-one `moduleLWEKeyGen` coefficient computation. Full native encryption, seed codecs and
+small-secret security still remain separate obligations. This arithmetic certificate does not
+remove the existing restrictions on exact native samplers or imply small-secret security.
 
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. The LWE interface exposes only the serialized public matrix `[B*t+e | B]`, with independent errors and one shared uniform secret; in [`SIS/Module.lean`](../../Complexity/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`ComplexityTests/Crypto/ModuleSIS.lean`](../../ComplexityTests/Crypto/ModuleSIS.lean)), and [`SIS/ModuleEncryption.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) builds dual-Regev public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`ComplexityTests/Crypto/ModuleEncryption.lean`](../../ComplexityTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
@@ -100,8 +99,25 @@ there is no assertion that malformed words are rejected. [Checked clients](../..
 use the same certified function for rank two, degree two, composite modulus six, signed wraps,
 modulus one, zero dimensions and a 129-bit modulus. The structured matrix sampler below supplies
 its public matrix input; full randomized key generation must still compose the actual secret and
-error samplers. Full native encryption/decryption, seed compression and security remain separate
+error samplers. Full native encryption, seed compression and security remain separate
 obligations.
+
+For deterministic native decryption, `exists_computableInPolyTime_moduleLWEDecrypt` in
+[`ModuleEncryption/Native.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption/Native.lean)
+supplies one total word function with a plain polynomial-time certificate and exact agreement with
+`List.ofFn (moduleLWEDecrypt …)`. Unary rank `k`, unary degree `n`, and binary modulus `q` are
+runtime inputs; secret coordinates use `ModuleSIS.encodeVec` over signed integers, and the ciphertext
+uses `GeneralSIS.encodeMatrix (extendCiphertext ct)`. Decryption evaluates each secret polynomial's
+canonical residues modulo `q`, performs negacyclic multiplication against each ciphertext polynomial
+using the certified integer negacyclic engine, sums polynomial columns, and applies centered threshold
+decoding `decodePolyMsg` on canonical natural coefficients. The private implementation pads missing
+coefficients and rows with zero, ignores excess entries while charging their input length, and at
+modulus zero or on incomplete framing remains total without asserting quotient-ring semantics.
+In-source checks and [checked clients](../../ComplexityTests/Crypto/ModuleEncryptionNative.lean) verify
+honest Ring-LWE and Module-LWE encryption/decryption, rank zero, degree zero, modulus zero, modulus
+one, incomplete framing, and threshold edge cases where residue differences of `q / 4` and `q / 4 + 1`
+decode to `false` and `true`. Full native encryption, seed codecs, and security reductions under native
+sampling remain separate obligations.
 
 The structured matrix input itself now has a native constructor and exact sampler in
 [`SIS/Module/MatrixSampling.lean`](../../Complexity/Crypto/Computational/SIS/Module/MatrixSampling.lean).
