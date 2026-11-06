@@ -188,9 +188,9 @@ the advertised $n$-only bound excludes them: reading arbitrary empty groups
 requires a group-count term. Empty input has ten counted initialization/scan
 operations. The subset preprocessing uses $O(n_g2^{n_g})$ work per group, which
 sums to $O(n2^T)$; the sharper per-group Gray-code claim is not asserted.
-A real matrix-design uniqueness bridge, the generic `integralStability`
-connection, general geometry and the other outstanding paper endpoints remain
-separate; this resource endpoint does not complete the paper.
+The scalar-attainment and group-preserving fixed-column adapters, Proposition 5.2,
+and the other outstanding paper endpoints remain separate; this resource endpoint
+does not complete the paper.
 
 ## Real matrix semantics and general geometry
 
