@@ -67,7 +67,7 @@ theorem polyTimeReducible_TwoSAT_of_templates [Finite Rel] (encRel : Rel ↪ Lis
     (hw : ∀ R c, c ∈ template R → c.length ≤ 2) :
     PolyTimeReducible (encCSP encRel encNat) encCNF (CSPSAT arity sem) TwoSAT := by
   have hp : ComputableInPolyTime (toTwoSAT arity template) (encCSP encRel encNat) encCNF :=
-    (computableInPolyTime_validArity encRel arity).ite
+    (CSP.computableInPolyTime_validArity encRel arity).ite
       (CSP.computableInPolyTime_instantiateCNF encRel template)
       (ComputableInPolyTime.const [[]])
   refine ⟨toTwoSAT arity template, hp, fun F => ?_⟩

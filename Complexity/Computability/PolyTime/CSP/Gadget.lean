@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive
-public import Complexity.Computability.PolyTime.CSP.ToCNF
+public import Complexity.Computability.PolyTime.CSP.Boolean
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -274,14 +274,6 @@ theorem computableInPolyTime_replaceGadgets [Finite Src]
   apply flatMapWithInput hz
   exact hi.comp (g := fun p : CSP Src ℕ × (Constraint Src ℕ × ℕ) =>
     ((p.2.2, p.2.1.2), templates p.2.1.1)) (by fun_prop)
-
-/-- Exact scope-length validation is native polynomial time for a fixed finite alphabet. -/
-theorem computableInPolyTime_validArity [Finite Src] (encSrc : Src ↪ List Bool)
-    (srcArity : Src → ℕ) :
-    ComputableInPolyTime (validArity srcArity) (encCSP encSrc encNat) encBool := by
-  have ha : ComputableInPolyTime srcArity encSrc encUnary := of_finite _
-  unfold validArity
-  fun_prop
 
 /-- A total native polynomial-time compiler with an explicit malformed-input reject target. -/
 theorem computableInPolyTime_replaceGadgetsGuarded [Finite Src]

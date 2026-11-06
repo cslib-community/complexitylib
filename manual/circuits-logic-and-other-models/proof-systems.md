@@ -84,6 +84,9 @@ auxiliary names and even original names, retaining binary variable labels. It ch
 arities and substitutes an explicit rejecting instance on malformed inputs.
 [Checked examples](../../ComplexityTests/CSPGadget.lean) exercise freshness, repeated ports,
 existential witnesses, empty/nullary instances and malformed rejection.
+The shared exact-arity certificate is
+`Cslib.Complexity.CSP.computableInPolyTime_validArity` in
+`Complexity.Computability.PolyTime.CSP.Boolean`; both satisfiability and gadget compilers reuse it.
 
 The hard branch is available from `Complexity.Computability.Complexity.Problems.CSP.Hardness`:
 `CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` proves native NP-completeness whenever the

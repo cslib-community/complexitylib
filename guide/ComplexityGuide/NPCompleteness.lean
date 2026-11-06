@@ -388,6 +388,9 @@ primitive-positive gadgets for nonempty target relations with separating columns
 fixed-gadget replacement with binary labels, fresh auxiliaries and exact-arity
 rejection. The hardness application must discharge nonemptiness, separation and
 polymorphism invariance; general equality elimination is outside this gadget API.
+The shared guard certificate is
+{name}`Cslib.Complexity.CSP.computableInPolyTime_validArity` in
+{module}`Complexity.Computability.PolyTime.CSP.Boolean`.
 
 The hard branch is native and unconditional:
 {name}`CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` proves NP-completeness
