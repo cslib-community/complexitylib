@@ -1265,4 +1265,37 @@ from the repository root to check them.
 Halfspaces are stated with `a ⬝ᵥ z` on `ι → ℝ`, which has no inner-product instance, and the
 open form uses `sgn 0 = -1`. Stability is defined for every `f`. The Bochner integral is `0`
 when `f z * f z'` is not integrable, so prove integrability before reading a value off a
-non-`L²` function. The noise operator `U_ρ` and the Hermite basis are not part of this module.
+non-`L²` function. For the noise operator `U_ρ`, see
+[Apply the Gaussian noise operator](#apply-the-gaussian-noise-operator).
+
+## Apply the Gaussian noise operator
+
+Import
+[`Complexity.Foundations.Probability.Gaussian.NoiseOperator`](../../Complexity/Foundations/Probability/Gaussian/NoiseOperator.lean)
+and open the `ProbabilityTheory` namespace. Write `γ` for the product measure
+`Measure.pi fun _ : ι => gaussianReal 0 1` on `ι → ℝ`. Then
+`gaussianNoiseOp ρ f z = ∫ g, f (fun i => ρ * z i + √(1 - ρ ^ 2) * g i) ∂γ` is O'Donnell's
+`U_ρ f` (Definition 11.12). It is defined for every `ρ` and `f`, and theorems that need the book's
+range assume `|ρ| ≤ 1`.
+
+- `measurePreserving_gaussianNoise hρ`: the noisy point `ρ z + √(1 - ρ²) g` is again distributed
+  as `γ` when `z` and `g` are independent.
+- `eLpNorm_gaussianNoiseOp_le hρ hp hf`: `U_ρ` is a contraction on every `L^p`, `1 ≤ p ≤ ∞`,
+  with only `AEStronglyMeasurable f γ` assumed. For `hf : MemLp f p γ`, the dot-notation form
+  `hf.gaussianNoiseOp hρ hp` (`MeasureTheory.MemLp.gaussianNoiseOp`) gives membership.
+- `gaussianNoiseStability_eq_integral_mul_gaussianNoiseOp hρ hf` rewrites `Stab_ρ[f]` as
+  `∫ z, f z * gaussianNoiseOp ρ f z ∂γ` for `f ∈ L²(γ)`. `integral_mul_gaussianNoiseOp_comm` is
+  self-adjointness, and `integral_gaussianNoiseOp` is mean preservation for integrable `f`.
+- `gaussianNoiseOp_dotProduct ρ a z` computes `U_ρ (a ⬝ᵥ ·) z = ρ * (a ⬝ᵥ z)` exactly, the
+  linear case of Fact 11.13.
+
+The checked [`GaussianNoiseOperator.lean` clients](../../ComplexityTests/GaussianNoiseOperator.lean)
+cover coordinate and linear inputs, `U_0` and `U_1`, the stability of a constant and of a
+coordinate, a self-adjointness and an additivity instance, `L²` and `L^∞` contraction, and mean
+preservation. Run `scripts/build.sh ComplexityTests.GaussianNoiseOperator` from the repository
+root to check them.
+
+Additivity, `gaussianNoiseOp_add`, holds only `γ`-almost everywhere, because the Bochner integral
+is `0` off the integrable functions; scaling by a constant holds everywhere. General multilinear
+polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and Hermite expansions are not part of this
+module.
