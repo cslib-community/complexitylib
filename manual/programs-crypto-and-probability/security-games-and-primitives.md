@@ -269,6 +269,32 @@ additionally checks support of the postprocessed real key. Tests expose the fail
 KEM premise, and show that a perfect zero-width KEM with the insecure echo DEM remains insecure.
 Arbitrary message-space extension and stronger KEM query schedules remain separate.
 
+For multi-block symmetric modes of operation over `BitString n`, import
+[`BlockCipher/Modes.lean`](../../Complexity/Crypto/Primitives/BlockCipher/Modes.lean)
+(Katz–Lindell 3rd ed., §3.6.2–§3.6.4 and Exercises 3.21, 3.24, 3.25, 3.29, 3.30, 3.32, 3.33).
+It defines CBC (`cbcEncryptBlocks`, `cbcDecryptBlocks`), OFB (`ofbChain`, `ofbEncryptBlocks`,
+`ofbDecryptBlocks`), counter mode (`ctrMaskBlocks`, `ctrEncryptBlocks`, `ctrDecryptBlocks`), and
+self-synchronizing CFB (`cfbEncryptBlocks`, `cfbDecryptBlocks`, included alongside KL's modes) with
+round-trip inversion theorems and the identity `ofbChain_eq_cbcEncryptBlocks_replicate_zero`
+equating the OFB keystream chain with CBC encryption of all-zero plaintext blocks. Under an ideal
+random function `PMF.uniformOfFintype (BitString n → BitString n)`,
+`map_evalPoints_uniformOfFintype`, `map_xorEvalPoints_uniformOfFintype`, and
+`advantage_xorEvalPoints_eq_zero` prove keystream and ciphertext uniformity on fixed (non-adaptive)
+injective point schedules (such as CTR counters), while `toOuterMeasure_addRight_mem_finset_eq`,
+`toOuterMeasure_addRight_mem_list_le`, and `toOuterMeasure_badChain_le` provide the lazy-sampling
+collision probability lemmas (`S.card / 2^n`, `ks.length / 2^n`, and
+`bs.length * (ks.length + bs.length) / 2^n`) used when analyzing random-IV chaining. The module
+also proves mode separations and counterexamples for same-IV reuse (`advantage_streamIVReuseGame_eq`,
+`cfbSameIVRecover_cfbEncryptBlocks`), overlapping counter/stream nonces
+(`ctrEncryptBlocks_overlapping_nonce`, `advantage_overlappingStreamGame_eq`), predictable-IV CBC
+chosen-plaintext attacks (`advantage_cbcPredictableIVGame_eq_one`), linear XOR and modular/group
+additive-IV modes (`xorFunctionCipherRecover_correct`, `additiveModeDistinguisher_spec`), and
+single-bit/dropped-block error-propagation laws (`maskBlockDecrypt_flipBit`,
+`cbcBlockDecrypt_flipBit`, `cfbBlockDecrypt_flipBit`, `cbcBlockDecrypt_dropBlock`,
+`cfbBlockDecrypt_dropBlock`, `maskBlockDecrypt_dropBlock`). Concrete `BitString 4` and
+`ZMod (2 ^ 4)` checks are in
+[`ComplexityTests/Crypto/BlockCipherModes.lean`](../../ComplexityTests/Crypto/BlockCipherModes.lean).
+
 ## Authentication, signatures, and state
 
 [SignatureScheme](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Signature.lean#L87) bundles efficient key generation, signing, verification and correctness. The base message space is exactly `n` bits. Its oracle forger chooses signing requests adaptively; ordinary EUF-CMA rejects any message previously signed. [exists_oneWay_iff_exists_oneTimeSignature](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/OneWayToSignature.lean#L882) is the OWF/one-time-signature equivalence via Lamport's construction. Stateless many-time `EUFCMA` `SignatureScheme`s on `n`-bit messages are constructed from any `OneWayPermutation` in [`TCRSignature.lean`](../../Complexity/Crypto/Computational/TCRSignature.lean) (`OneWayPermutation.exists_eufCMA`) and from any general `OneWay` function in [`Rompel.lean`](../../Complexity/Crypto/Computational/Rompel.lean) (`OneWay.exists_eufCMA`, `exists_oneWay_iff_exists_signature`, `exists_oneTimeSignature_iff_exists_signature` [rompel90][rompel90]). For unrestricted bit-string messages (`msg : List Bool`), [`WordSignatureScheme`](../../Complexity/Crypto/Computational/WordSignature.lean) removes the `n`-bit message-length filter from signing, verification and `eufCmaGame` (`WordSignatureScheme.EUFCMA`, strictly stronger than `toSignatureScheme.EUFCMA`), [`TCRSignature.wordScheme`](../../Complexity/Crypto/Computational/TCRSignature/ManyTime.lean) lifts any `SignatureScheme.EUFCMA` scheme via per-signature fresh-key target collision-resistant hash-and-sign (`SignatureScheme.EUFCMA.eufCMA_wordScheme`, `OneWayPermutation.exists_wordEUFCMA`; Boneh–Shoup §13.2.1, construction `(13.2)` on p. 533 and Theorem 13.2 on p. 534 [bs23][bs23]), and [`Rompel.lean`](../../Complexity/Crypto/Computational/Rompel.lean) closes the unrestricted-message equivalence from any uniform `OneWay` function (`OneWay.exists_wordEUFCMA`, `exists_oneWay_iff_exists_wordSignature`, `exists_oneTimeSignature_iff_exists_wordSignature` [rompel90][rompel90]).
