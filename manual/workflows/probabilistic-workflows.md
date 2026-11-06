@@ -19,9 +19,9 @@ no density, injectivity or probability normalization is required.
 The [checked clients](../../ComplexityTests/TotalVariationMap.lean) include identity,
 strict coarsening from distance `2` to `0`, unequal masses, and the canonical measurable
 map from `ℝ` to `UnitAddCircle`. Run `scripts/build.sh ComplexityTests.TotalVariationMap`.
-The theorem transports an existing bound; it does not identify the output laws. In particular,
-the Gaussian projection and mod-one distribution identities remain the separate consumer
-[issue #2734](https://github.com/cslib-community/complexitylib/issues/2734).
+The theorem transports an existing bound; it does not identify the output laws. The Gaussian
+projection and mod-one bounds of
+[issue #2734](https://github.com/cslib-community/complexitylib/issues/2734) apply it to actual laws.
 
 ## Combine component and mixture-weight errors
 
@@ -60,7 +60,7 @@ as `gaussianReal 0 (((s * ‖z‖)^2 / (2 * Real.pi)).toNNReal)`. The theorem in
 [checked clients](../../ComplexityTests/GaussianStandard.lean) recover the standard law
 at width `√(2π)` and compute variance `32/π` at width `4` with scalar projection `2`.
 These are analytic measure identities. Projection of a discrete-coset Gaussian convolution
-and its mod-one error bound remain [#2734](https://github.com/cslib-community/complexitylib/issues/2734);
+and its mod-one error bound are proved in [#2734](https://github.com/cslib-community/complexitylib/issues/2734);
 no sampler or runtime certificate follows from this identification.
 
 ## Describe a discrete Gaussian law
@@ -348,8 +348,39 @@ distance at most `4/7`. They also prove equality of the actual measures in dimen
 Run `scripts/build.sh ComplexityTests.DiscreteGaussianConvolution` to check them.
 
 This proves the bounded analytic Claim 3.9 consequence with an explicit sufficient width
-criterion. The minimum smoothing parameter, projected/mod-one law, search-LWE experiment,
-efficient finite-precision sampling and quantum implementation remain separate.
+criterion. The scalar and mod-one laws are handled below; the minimum smoothing parameter,
+search-LWE experiment, efficient finite-precision sampling and quantum implementation remain
+separate.
+
+## Project the coset experiment and reduce modulo one
+
+Import [Gaussian/Projection.lean](../../Complexity/Foundations/Probability/Gaussian/Projection.lean)
+for the actual experiment `⟪z, v⟫ + e`, where `v` is drawn from the discrete Gaussian on
+`L + u` and `e` is an independent scalar `gaussianReal` of variance `α²/(2π)`.
+The coset draw is the existing `discreteGaussian L r hr (-u)`, mapped by `v ↦ v + u`.
+For `r, α > 0`, the comparison Gaussian has variance `((r * ‖z‖)² + α²)/(2π)`.
+
+`tvDist_conv_map_inner_discreteGaussian_le_of_dual_mass_le` bounds their full-L1 distance
+by `4ε`, for `0 ≤ ε < 1/2`, when the actual nonzero dual mass at reciprocal width
+`√(1/r² + (‖z‖/α)²)` is at most `ε`. The `_of_gap` theorem discharges that mass bound
+from a positive dual gap `a` and
+`2^dim * exp(-3π h² a²/4) ≤ ε/(1+ε)`, where
+`h = 1/√(1/r² + (‖z‖/α)²)` and `ε > 0`. Projection at `z = 0` is exactly the scalar
+noise law, without a smoothing premise; dimension zero is included.
+
+Use `tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_gap` for the same bound
+after mapping both measures by the canonical `ℝ → UnitAddCircle` coercion. This compares
+actual probability measures, with no density-series assumption.
+The [checked clients](../../ComplexityTests/DiscreteGaussianProjection.lean) use `2ℤ`,
+off-lattice shift `1/2`, `r = 3`, `α = 8` and projection vector `2`. They prove the dual gap
+`1/2` and numerical criterion at `ε = 1/7`, yielding distance at most `4/7` on both the
+real line and the circle. The input scalar noise has variance `32/π`, and the comparison
+has variance `50/π`.
+
+The convention is Regev's full-L1 distance from printed page 13, with range `[0,2]`.
+The source's mod-one Gaussian sampling law is represented by its actual measure pushforward;
+its periodic-density series, the joint LWE sample law in Lemma 3.11, efficient sampling,
+finite precision and the quantum reduction remain separate work.
 
 ## Certify a closed randomized routine
 
@@ -475,6 +506,13 @@ selected KEM component to that key in both phases. Challenge messages must each 
 `OneTimeINDCCA.indistinguishable_hybridDEMGame` supplies the loss-one security conclusion.
 The native reduction certificate charges both adaptive phases and bounds every external reply read;
 `isPPTOn_hybridDEMGame` also certifies the closed experiment.
+For ciphertext reply bounds, `SymmetricCipher.exists_ciphertext_length_bound` returns a native
+unary cap `ctBound n ℓ`, uniform over keys actually sampled by `E.keyGen n` and all messages
+of length `ℓ`. Its runtime guarantee also covers messages outside the cipher's correctness
+and security domain. The current `n`-bit reductions use `ctBound n n`; this bound does not
+extend their security claims to arbitrary words. The
+[authenticated-encryption clients](../../ComplexityTests/Crypto/AuthenticatedEncryption.lean)
+check independent lengths and show why an all-message bound cannot depend only on `n`.
 
 The [checked clients](../../ComplexityTests/Crypto/HybridDEMCCA.lean) apply the result to the
 existing PRF Encrypt-then-MAC cipher, expose an insecure echo cipher, and run a zero-width

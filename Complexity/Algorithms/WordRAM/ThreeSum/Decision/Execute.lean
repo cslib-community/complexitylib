@@ -7,78 +7,85 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Loop
-public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Initialize
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Boundary
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorInitialize
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorForest
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorCost
+import Complexity.Computability.WordRAM.Call
+import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Registers
 
 /-!
-# Composing actual preprocessing with every Convolution call
+# Composing initialized ordinary 3SUM with the native visitor
 
-The original initialized preprocessing execution supplies its actual pointer table, count and
-common packed length and live allocation frontier. Its layout theorem separates all live cells
-from matrix workspace; its polynomial word theorem bounds signed values and arithmetic width.
-The charged native controller then runs the complete caller-safe host on every stored payload.
+The actual frontend supplies compact native arrays, multiplicity counts and descriptors. Shared
+preparation computes the prime bitmap, conservative arena and value envelope before the forest.
+Each node's actual packed block enters the certified Convolution host before its dead packed tail
+is released and children are pushed. The forest consumes exactly the finite node preorder,
+including repeated occurrences, and folds all answers without early exit.
 
-## Main definitions
+Each call receives the current allocation endpoint as workspace. Its lower-prefix return frame
+retains pending heavy arrays and source data despite arbitrary higher scratch writes. Persistent
+heavy-buffer capacities and count cells remain allocated while one charged copy releases each
+consumed packed/residue/histogram tail for reuse. The old table gap remains reserved; there is no
+ordinary packed-pointer publication or later table readback. The finite Chan–He correctness
+theorem gives the same distinct-position 3SUM verdict, and the charged ledger is covered by the
+unchanged `Decision.cost` envelope.
 
-* `instanceLength`, `instanceBound`: existing finite reduction length and count bound.
-* `cost`: complete host bound with the actual packed length and concrete callee time.
+`Visitor.live_transition` gives the actual live body's final committed heap as its initial heap
+plus three count cells and the sum of current input-column lengths. Skipped bodies leave the heap
+unchanged. The emission witness describes the state before release; release lemmas describe the
+smaller frontier and retained children. No improved total-space or arbitrary-callee high-water
+bound is asserted.
+
+`exec_large` assumes the complete initial register file is physically bounded. The initialized
+ordinary endpoint derives this premise from `Data.init` and its actual saved-header prefix; it
+adds no hypothesis to that endpoint's magnitude and width contract.
 
 ## Main results
 
-* `exec_large`: exact existing distinct-position verdict from the actual preprocessing bank.
+* `exec_large`: actual large-input visitor execution, raw Boolean and exact 3SUM verdict.
 
-This native composition is original and reuses the finite Chan–He reduction correctness theorem.
-A fast Exact Triangle backend and the final 1.9992 endpoint remain separate obligations.
+This native composition is original and reuses the existing finite reduction.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 
 open Cslib.WordRAM
+open Visitor
 open Cslib.Algorithms.ThreeSum (HasSolution Convolution)
 
-/-- The exact common packed length already produced by native preprocessing. -/
-def instanceLength (κ n : ℕ) : ℕ :=
-  8 * Cslib.Algorithms.ThreeSum.ChanHe.mPar n (2 * (n + 2) ^ κ) ^ 2
-
-/-- The existing finite count bound, with the same original-input magnitude. -/
-def instanceBound (κ n : ℕ) : ℕ :=
-  (2 * Cslib.Algorithms.ThreeSum.labelBits (2 * (n + 2) ^ κ) ^ 2 + 2) *
-    (2 * Nat.log 2 n + 2) ^ 5
-
-/-- Every preprocessing, pointer, matrix, callee and control instruction, including halt.
-The callee is charged at the packed side and coarse polynomial filler actually passed to it. -/
-def cost {r : ℕ} (κ : ℕ) (c : Host.Callee r) (n : ℕ) : ℕ :=
-  ChanHe.Preprocessing.cost κ n + 4 * envelopeExponent κ + 32 +
-    instanceBound κ n * (Host.callerTime (instanceLength κ n)
-      (c.time (Host.sideLength (instanceLength κ n)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 12)
-
-/-- Complete ordinary execution after the saved-header prefix, with no solver oracle. -/
+/-- Execute the actual visitor after the saved-header prefix at every admitted physical width. -/
 theorem exec_large {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     (x : Data (registerCount r))
-    (hw : width κ c.widthCoefficient input.length ≤ w) (hn : 3 ≤ input.length)
+    (hw : width κ c.widthCoefficient input.length ≤ w) (hx : x.Bounded w)
+    (hn : 3 ≤ input.length)
     (hvalues : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ))
     (hinit : x.comap (preprocessingRegisters r) = Data.init (input.map Signed.encode))
     (hlen : x.regs (controllerRegisters r inputLength) = input.length)
     (hans : x.regs (controllerRegisters r answer) = 0) :
-    ∃ y, ExecWithin w (large κ c.code) x y (cost κ c input.length - 7) ∧
+    ∃ y, ExecWithin w (large κ c.code) x y (Decision.cost κ c input.length - 7) ∧
       y.regs (controllerRegisters r answer) ≤ 1 ∧
       (y.regs (controllerRegisters r answer) = 1 ↔
         HasSolution (fun i : Fin input.length => input[i])) := by
   let n := input.length
   let U := (n + 2) ^ κ
+  let l := Frontend.layout κ n
   let m := Cslib.Algorithms.ThreeSum.ChanHe.mPar n (2 * U)
-  let V := (n + 2) ^ envelopeExponent κ
+  let F := Cslib.Algorithms.ThreeSum.ChanHe.fuel n
+  let S := 13 + (2 + ((m + 1) * (7 * m + 15) + 8)) + 19 +
+    (4 * (F + 1) + 5) + (4 * envelopeExponent κ + 8)
   have hppw := (preprocessing_width_le κ c.widthCoefficient n).trans hw
-  obtain ⟨out, p, hp, hout, hstored, hnum, htab, hN, hlayout⟩ :=
-    ChanHe.Preprocessing.exec_input input hppw hvalues
-  have hpoly : (∀ i, p.regs i < V) ∧ ∀ a, p.mem a < V := by
-    obtain ⟨steps, _, he⟩ := hp
-    have hr := he.runs (pc := 0) (p := ChanHe.Preprocessing.flatProgram κ)
-      (Program.Contains.self _).append_left
-    exact ChanHe.Preprocessing.intermediates_polynomial input hppw hvalues hr
+  have hfrontw := (ChanHe.Preprocessing.frontend_width_le κ n).trans hppw
+  have hw2 : w - 2 + 2 = w := by
+    have := (four_le_width κ c.widthCoefficient n).trans hw
+    omega
+  obtain ⟨p, rs, hp, ho, hbase, hcount, hend, hnd, _, hkeys, hcounts, _, _, hparams, _⟩ :=
+    Frontend.exec_input input hfrontw hvalues
+  have hcard : rs.length ≤ n := by
+    have ht := hnd.length_le_of_subset (fun k hk => (hkeys k).mp hk)
+    simpa only [List.length_map] using ht
   obtain ⟨q, hq, hqp, hframe⟩ := ExecWithin.rename_post (x := x) (Q := fun q => q = p)
     (preprocessing_injective r) ⟨p, by simpa only [hinit] using hp, rfl⟩
   have hqr (i : Fin 128) : q.regs (preprocessingRegisters r i) = p.regs i :=
@@ -86,61 +93,87 @@ theorem exec_large {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
   have hqm : q.mem = p.mem := congrArg Data.mem hqp
   have hqc (i : Fin 16) : q.regs (controllerRegisters r i) = x.regs (controllerRegisters r i) :=
     hframe _ (fun j => (controller_ne_preprocessing i j).symm)
-  obtain ⟨a, ha, hac, hak, hab, ham⟩ := exec_initialize q hw ((hqc _).trans hlen)
-    ((hqr _).trans htab) ((hqr _).trans hnum) ((hqr _).trans hN) (hqr _)
-  have hNV : 4 * (2 * m ^ 2) < V := by
-    have h := hpoly.1 ChanHe.Preprocessing.packedLength
-    rw [hN] at h
-    change 8 * m ^ 2 < V at h
+  obtain ⟨b, hb, hi⟩ := initialize_forest (w := w - 2) rs q
+    (by simpa only [hw2] using hw) (by simpa only [hw2] using hq.bounded hx)
+    ((hqc _).trans hlen) ((hqc _).trans hans)
+    (by simpa only [hqm] using ho) (by simpa only [hqp] using hparams)
+    ((hqr _).trans hbase) ((hqr _).trans hcount) ((hqr _).trans hend) hcard
+  rw [hw2] at hb
+  let a := ChanHe.Preprocessing.arena κ n b.mem
+  have hresources := arena_resources κ n b.mem
+  obtain ⟨s, y, he, hy, _, hout⟩ := forest_exec (w := w - 2) c
+    (by simpa only [hw2] using hw) (ChanHe.Preprocessing.arena_separated κ n b.mem)
+    ⟨hresources.1.le, hresources.2⟩ (ChanHe.Preprocessing.arena_ready hppw b.mem)
+    hi rfl rfl rfl (ChanHe.Preprocessing.arena_frontend_before κ n b.mem)
+    hkeys hnd hcard hvalues
+  rw [hw2] at he
+  have hnodes := ChanHe.Preprocessing.entries_output hkeys (fun p hp => (hcounts p hp).2) hvalues
+  have hnodesA : ChanHe.Traversal.Math.output (Nat.primesLE a.m) a.Λ
+      ((ChanHe.Preprocessing.entries l U rs).map ChanHe.Traversal.Entry.task) =
+      Cslib.Algorithms.ThreeSum.ChanHe.allNodes n U (fun i : Fin n => input[i]) := hnodes
+  have hout' : s.nodes = Cslib.Algorithms.ThreeSum.ChanHe.allNodes n U
+      (fun i : Fin n => input[i]) := hout.trans hnodes
+  have hN : 4 * a.N = instanceLength κ n := by
+    dsimp only [a, ChanHe.Preprocessing.arena, instanceLength, U]
     omega
-  have haN : Controls (ChanHe.Preprocessing.arena κ n p.mem).table out.length
-      (4 * (2 * m ^ 2)) V (p.regs ChanHe.Traversal.heap) a := by
-    convert hac using 1
-    dsimp only [m, U, n]
-    omega
-  have ham' : a.mem = p.mem := ham.trans hqm
-  have haStored : ChanHe.Traversal.StoredNodes (2 * U) (2 * m ^ 2)
-      (ChanHe.Preprocessing.arena κ n p.mem).table out a.mem := by
-    rw [ham']
-    exact hstored
-  obtain ⟨y, hy, hyb, hya, _⟩ := exec_calls c out a hw hNV (hpoly.1 ChanHe.Traversal.heap).le
-    (fun a' => (congrFun ham' a') ▸ hpoly.2 a') haStored hlayout haN hak
-    (hab.trans ((hqc _).trans hans))
-  have heq : 4 * (2 * m ^ 2) = instanceLength κ n := by
-    dsimp only [instanceLength, m, U]
-    omega
-  rw [heq] at hy hya
-  have hcount : out.length ≤ instanceBound κ n := by
-    have hh := congrArg List.length hout
-    simp only [List.length_map] at hh
-    rw [hh]
-    exact Cslib.Algorithms.ThreeSum.ChanHe.length_instances_le n U _
-  refine ⟨y, ?_, hyb, ?_⟩
-  · unfold large
-    apply (hq.seq (ha.seq hy)).mono
-    have hprod := Nat.mul_le_mul_right (Host.callerTime (instanceLength κ n)
-      (c.time (Host.sideLength (instanceLength κ n)) (2 * V + 1)) + 12) hcount
-    have hpos : 0 < ChanHe.Preprocessing.cost κ n := by
-      dsimp only [ChanHe.Preprocessing.cost]
+  refine ⟨y, ?_, hy.boolean, ?_⟩
+  · change ExecWithin w (forest c.code) b y
+      ((ForestCursor.mk 0 []).credit a l U rs
+        (Host.callerTime (4 * a.N)
+          (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8) + 2)
+      at he
+    rw [hN] at he
+    change ExecWithin w (forest c.code) b y
+      ((ForestCursor.mk 0 []).credit a l U rs (callbackTime κ c n) + 2) at he
+    have hcredit : (ForestCursor.mk 0 []).credit a l U rs (callbackTime κ c n) =
+        l.count * (ChanHe.Traversal.rootTime F (n + 1) m (2 * m ^ 2) + 17) +
+          (Cslib.Algorithms.ThreeSum.ChanHe.allNodes n U
+            (fun i : Fin n => input[i])).length * callbackTime κ c n := by
+      change l.count * (ChanHe.Traversal.rootTime a.fuel a.n a.m a.N + 17) +
+        (ChanHe.Traversal.Math.output (Nat.primesLE a.m) a.Λ
+          ((ChanHe.Preprocessing.entries l U rs).map ChanHe.Traversal.Entry.task)).length *
+            callbackTime κ c n = _
+      rw [hnodesA]
+      rfl
+    rw [hcredit] at he
+    have hbudget : (Frontend.cost κ n - 1) + S +
+        (l.count * (ChanHe.Traversal.rootTime F (n + 1) m (2 * m ^ 2) + 17) +
+          (Cslib.Algorithms.ThreeSum.ChanHe.allNodes n U
+            (fun i : Fin n => input[i])).length * callbackTime κ c n + 2) =
+        largeCost κ c n (Cslib.Algorithms.ThreeSum.ChanHe.allNodes n U
+          (fun i : Fin n => input[i])).length := by
+      dsimp only [largeCost, forestCost, S, l, m, F, U]
       omega
-    dsimp only [cost, V, n] at hprod hpos ⊢
-    omega
-  · rw [hya]
+    have hcost := allNodes_cost_le κ c n (fun i : Fin n => input[i])
+    obtain ⟨tf, htf, hfe⟩ := hq
+    obtain ⟨ts, hts, hse⟩ := hb
+    obtain ⟨tl, htl, hle⟩ := he
+    have hts' : ts ≤ S := hts
+    cases hse with
+    | seq hprepare hrest =>
+      cases hrest with
+      | seq henvelope hpower =>
+        exact (hfe.seq (hprepare.seq (henvelope.seq (hpower.seq hle)))).within.mono (by
+          dsimp only [n, U, m, F, S, l] at htf hts hts' htl hbudget hcost ⊢
+          omega)
+  · have hv : y.regs (controllerRegisters r answer) = 1 ↔
+        ∃ node ∈ s.nodes, Convolution (instanceLength κ n) (node.oneArray (2 * U)) := by
+      have hv := hy.verdict
+      change y.regs (controllerRegisters r answer) = 1 ↔
+        ∃ node ∈ s.nodes, Convolution (4 * a.N) (node.oneArray a.U) at hv
+      rw [hN] at hv
+      exact hv
+    rw [hv, hout']
     have hcorrect := Cslib.Algorithms.ThreeSum.ChanHe.instances_correct n U (by omega)
       (fun i : Fin n => input[i]) (fun i => hvalues _ (List.getElem_mem i.isLt))
-    rw [← hout] at hcorrect
     constructor
-    · rintro ⟨i, hi⟩
+    · rintro ⟨node, hnode, hconv⟩
       apply hcorrect.mpr
-      refine ⟨out[i.val].2.oneArray (2 * U), List.mem_map.mpr ⟨out[i.val],
-        List.getElem_mem i.isLt, rfl⟩, ?_⟩
-      simpa only [instanceLength, U, m, n] using hi
-    · intro h
-      obtain ⟨μ, hμ, hs⟩ := hcorrect.mp h
-      obtain ⟨p', hp', rfl⟩ := List.mem_map.mp hμ
-      obtain ⟨i, hi, heq⟩ := List.mem_iff_getElem.mp hp'
-      refine ⟨⟨i, hi⟩, ?_⟩
-      rw [heq]
-      simpa only [instanceLength, U, m, n] using hs
+      refine ⟨node.oneArray (2 * U), List.mem_map.mpr ⟨node, hnode, rfl⟩, ?_⟩
+      simpa only [instanceLength, U] using hconv
+    · intro hsol
+      obtain ⟨μ, hμ, hs⟩ := hcorrect.mp hsol
+      obtain ⟨node, hnode, rfl⟩ := List.mem_map.mp hμ
+      exact ⟨node, hnode, by simpa only [instanceLength, U] using hs⟩
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Decision
