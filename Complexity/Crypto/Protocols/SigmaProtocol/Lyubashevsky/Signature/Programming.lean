@@ -47,7 +47,8 @@ private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
         let h ← H A
         let coin ← (lyubashevsky n m k q γ β).commit (S h) (A, T A h)
         let out ← (interpret (oracle (BitString k))
-          ((fiatShamir (lyubashevsky n m k q γ β) (lyubashevskyKeyGen n m k q η)).sign
+          ((fiatShamir (Function.Embedding.refl _) (lyubashevsky n m k q γ β)
+            (lyubashevskyKeyGen n m k q η)).sign
             (S h, (A, T A h)) (msg h) coin)).run (cache h)
         return (A, h, out))
       (do
@@ -73,7 +74,8 @@ private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
   let real := fun a : Matrix (Fin n) (Fin m) (ZMod q) × Ω ×
       ((Fin n → ZMod q) × (Fin m → ℤ)) =>
     ((interpret (oracle (BitString k))
-      ((fiatShamir (lyubashevsky n m k q γ β) (lyubashevskyKeyGen n m k q η)).sign
+      ((fiatShamir (Function.Embedding.refl _) (lyubashevsky n m k q γ β)
+        (lyubashevskyKeyGen n m k q η)).sign
         (S a.2.1, (a.1, T a.1 a.2.1)) (msg a.2.1) a.2.2)).run (cache a.2.1)).map
         (fun out => (a.1, a.2.1, out))
   let programmed := fun a : Matrix (Fin n) (Fin m) (ZMod q) × Ω ×
@@ -90,8 +92,8 @@ private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
       | some c => exact False.elim (hgood (by
           simp only [Set.mem_ofPred_eq, hit, hq, Option.isSome_some]))
     dsimp only [real, programmed]
-    simp only [fiatShamir, interpret_map, interpret_query, StateT.run_map,
-      PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
+    simp only [fiatShamir, Function.Embedding.refl_apply, interpret_map, interpret_query,
+      StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
     change ((oracle (BitString k) (msg a.2.1, a.2.2.1) (cache a.2.1)).map _) = _
     rw [oracle, memoize_of_none _ _ _ hlookup]
     simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
@@ -185,8 +187,8 @@ theorem closeTo_lyubashevskySign_program {Ω M : Type} [DecidableEq M]
     simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
       fiatShamirAbortSign_run_succ, PMF.bind_bind, PMF.pure_bind,
       PMF.map, Function.comp_def]
-    simp only [fiatShamir, interpret_map, interpret_query, StateT.run_map,
-      PMF.monad_map_eq_map, PMF.map, PMF.bind_bind, PMF.pure_bind,
+    simp only [fiatShamir, Function.Embedding.refl_apply, interpret_map, interpret_query,
+      StateT.run_map, PMF.monad_map_eq_map, PMF.map, PMF.bind_bind, PMF.pure_bind,
       Function.comp_def, combine] at hboth ⊢
     simp only [StateT.run, PMF.bind_bind, PMF.pure_bind] at hboth ⊢
     simpa only [Finset.sum_range_succ', Nat.add_zero, add_assoc,
