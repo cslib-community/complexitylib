@@ -23,6 +23,7 @@ import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
 import Complexity.Computability.Complexity.Problems.CSP.Constant
 import Complexity.Computability.Complexity.Problems.CSP.Majority
+import Complexity.Logics.Polymorphism.BooleanClone
 import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Tactic.PolyTime
 
