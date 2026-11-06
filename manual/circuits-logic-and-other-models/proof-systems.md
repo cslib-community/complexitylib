@@ -14,113 +14,76 @@ Support-based CNF model counting counts assignments to variables that occur. Dec
 
 [QBF](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/QBF.lean#L76) uses named-variable Boolean quantifiers. Evaluating an existential or universal binder updates the assignment with both possible values and ORs or ANDs the results. Arithmetization and native/interactive-proof completeness clients live in their corresponding sections. This formula syntax does not by itself assert a resource bound for evaluation.
 
-## Majority preservation and Boolean constraint languages
+## Boolean Schaefer dichotomy
 
-A polymorphism combines satisfying tuples coordinatewise and preserves the relation. Import
-[`Complexity.Logics.Polymorphism`](../../Complexity/Logics/Polymorphism.lean) for
-`Cslib.Logic.IsPolymorphism`. Its preservation rules cover conjunction, substitution (including
-repeated variables), existential projection, projections and composition. The operation's index
-type may be empty: a nullary constant preserves a relation exactly when its constant tuple belongs
-to that relation. This differs from vacuous preservation of an empty relation by an operation
-with positive arity.
+Import `Complexity.Computability.Complexity.Problems.CSP.Schaefer` for the full Boolean
+classification. `Cslib.Complexity.CSPSAT.schaefer_dichotomy` proves native P membership when a
+common unary constant, AND, OR, ternary majority or ternary parity preserves the language, and
+native NP-completeness otherwise. `CSPSAT.mem_P_or_npComplete` gives the unconditional
+alternative. No assumption that P differs from NP is used.
 
-Import [`Complexity.Logics.Propositional.CNF.Majority`](../../Complexity/Logics/Propositional/CNF/Majority.lean)
-for `Cslib.Logic.PL.isPolymorphism_majority_iff_exists_twoCNF`. For any finite coordinate type
-`V`, a relation `R : Set (V → Bool)` is preserved by `Cslib.majority 3` exactly when some
-`CNF V` defines it using clauses of width at most two. The definition has no auxiliary variables
-and agrees on every assignment. Empty relations and nullary relations are included: an empty
-clause defines falsity and the empty CNF defines truth. The proof uses the existing coordinatewise
-median `Cslib.BitString.median`.
+`CSPSAT arity sem` uses the existing CSP lists. The relation alphabet is finite and fixed; each
+symbol has an arbitrary fixed arity and Boolean list semantics. Every scope must have exactly
+its declared length. The encoding is `encCSP encRel encNat`, with framed lists/pairs and binary
+variable labels. Repeated variables, empty relations, nullary relations and empty alphabets are
+allowed; malformed scopes are rejected even when their list semantics would accept them.
+Constants in `CSP.HasSchaeferPolymorphism` are standard unary operations. An empty relation is
+preserved vacuously, so the constant decider explicitly rejects constraints using empty relations.
+`CSPSAT.mem_P_of_constant` supplies native P in either constant case.
 
-The [checked examples](../../ComplexityTests/MajorityCNF.lean) give a signed 2CNF definition of
-equality, an existential projection, a ternary-disjunction counterexample and the nullary edge
-cases. This is the bijunctive structural equivalence used in Schaefer's Boolean dichotomy.
-The structural theorem alone makes no complexity claim. The full Boolean theorem is tracked in
-[#2822](https://github.com/cslib-community/complexitylib/issues/2822); symmetric and larger-domain
-dichotomies are outside that task.
+The other native tractable endpoints are `CSPSAT.mem_P_of_and`, `mem_P_of_or`,
+`mem_P_of_majority` and `mem_P_of_parity`. Each endpoint selects its fixed local
+normal forms internally and invokes a certified compiler and solver. There is no solver or
+template hypothesis. Bounds apply to each fixed language; no uniform bound on preprocessing a
+supplied language or truth table is asserted. Local positions use unary lookup indices; original
+variable names remain binary throughout. The shared arity-check certificate is
+`Cslib.Complexity.CSP.computableInPolyTime_validArity` in `PolyTime.CSP.Boolean`.
 
-For native complexity statements, import
-[`Problems.CSP.Basic`](../../Complexity/Computability/Complexity/Problems/CSP/Basic.lean).
-`Cslib.Complexity.CSPSAT arity sem` uses the existing CSP lists, requires every scope length to
-equal its symbol's declared arity, and asks for one Boolean assignment satisfying all constraints.
-The alphabet, arities and semantics are fixed independently of the input. For a finite alphabet,
-`CSPSAT.mem_NP` proves native NP membership under `encCSP encRel encNat`, with framed lists/pairs
-and binary variable labels. Repeated scope variables, empty relations and nullary relations are
-allowed; malformed arities are rejected. The
-[checked syntax and model examples](../../ComplexityTests/BooleanCSP.lean) include sparse large
-labels, inconsistent unary pins, repeated variables and nullary truth/falsity.
+[The full checked client](../../ComplexityTests/Schaefer.lean) exercises every tractable arm,
+a concrete NAE hard language, arbitrary fixed arities, sparse labels and an empty alphabet.
+[Horn/dual-Horn clients](../../ComplexityTests/CSPHorn.lean) give AND-only and OR-only languages
+and malformed/repeated-scope examples. [Affine clients](../../ComplexityTests/CSPAffine.lean)
+cover cancellation, sparse labels, empty/nullary relations and actual compiler/solver runs.
+[The initial contract examples](../../ComplexityTests/BooleanCSP.lean) and
+[constant/majority clients](../../ComplexityTests/CSPTractability.lean) remain useful entry points.
 
-[`Problems.CSP.Constant`](../../Complexity/Computability/Complexity/Problems/CSP/Constant.lean)
-and [`Problems.CSP.Majority`](../../Complexity/Computability/Complexity/Problems/CSP/Majority.lean)
-prove native P membership from a common unary constant (`CSPSAT.mem_P_of_constant`) or a common
-majority operation (`CSPSAT.mem_P_of_majority`). The constant decider first rejects constraints
-using empty relations. In the majority case, fixed local 2CNF templates are instantiated by a
-certified polynomial-time compiler and sent to native 2SAT. Local positions use unary indices
-for list lookup; original variable labels retain their binary encoding. These bounds are for
-each fixed language, with no uniform bound on preprocessing a supplied language or its truth
-tables. The shared six-case criterion is `Cslib.Logic.PL.CSP.HasSchaeferPolymorphism`; this layer
-establishes its two constant cases and majority case, with the remaining cases tracked in #2822.
+For the structural APIs, `Cslib.Logic.IsPolymorphism` combines satisfying tuples coordinatewise.
+It is preserved by conjunction, substitution (including repeated variables), existential projection
+and composition. Its operation index may be empty; this general nullary notion is distinct from
+the unary constants in the criterion. For every finite coordinate type, majority preservation is equivalent to a
+2CNF definition (`PL.isPolymorphism_majority_iff_exists_twoCNF`), AND/OR preservation to a
+Horn/dual-Horn definition (`PL.isPolymorphism_and_iff_exists_hornCNF`,
+`PL.isPolymorphism_or_iff_exists_dualHornCNF`), and ternary parity preservation to an affine
+system (`PL.isPolymorphism_parity_iff_exists_affineSystem`). These definitions need no auxiliary
+variables and include empty/nullary relations. See the [majority examples](../../ComplexityTests/MajorityCNF.lean).
 
-Import `Complexity.Logics.Polymorphism.BooleanClone` for the full positive-arity Boolean clone
-classification (`Cslib.Logic.BooleanClone.classification`). A clone contains every projection
-and is closed under superposition. Either every operation is essentially unary, or it contains
-AND, OR, ternary majority or ternary parity. The arbitrary-arity step uses a finite-partition
-argument; only the binary and ternary cases use truth-table enumeration. Constants in the shared
-Schaefer criterion are unary. For a language lacking all six operations,
-`CSP.projection_or_negation_of_not_hasSchaeferPolymorphism` identifies every positive-arity
-polymorphism as a projection or negated projection. Consequently every self-dual relation is
-preserved. [Checked examples](../../ComplexityTests/BooleanClone.lean) include a NAE relation
-with none of the six operations and with negation as a polymorphism. The hardness application
-below uses this algebraic classification.
+The ordinary solvers are also reusable: `HornSAT.mem_P`, `DualHornSAT.mem_P` and
+`XORSAT.satisfiable_mem_P`. Horn syntax counts positive occurrences, so two copies of a positive
+literal violate the syntax condition; repeated negatives and opposite-polarity tautologies are
+supported. Forward chaining reaches the least-model candidate in `numVars + 1` passes, storing
+filtered occurrences rather than an array indexed by the largest name. Affine equations are
+variable lists paired with Boolean right-hand sides; repeated variables cancel in the Boolean
+ring. Dense Gaussian elimination preserves row count and weakly decreases its complete framed
+state encoding at each column. See the [Horn solver tests](../../ComplexityTests/HornSAT.lean)
+and [XOR solver tests](../../ComplexityTests/XORSAT.lean).
 
-For fixed-language reductions, import `Complexity.Logics.Propositional.CSP.PrimitivePositive`
-and `Complexity.Computability.PolyTime.CSP.Gadget`. A `CSP.PPGadget` is a well-formed conjunction
-with free ports and existential auxiliary ports. `CSP.exists_ppGadget_of_polymorphisms` proves
-the canonical finite construction when the target relation is nonempty, separates its coordinate
-columns, and is preserved by every positive-arity common polymorphism. This restricted
-equality-free form does not assert general equality elimination. The native
-`CSP.computableInPolyTime_replaceGadgetsGuarded` compiler uses fixed gadget lookup, fresh odd
-auxiliary names and even original names, retaining binary variable labels. It checks exact source
-arities and substitutes an explicit rejecting instance on malformed inputs.
-[Checked examples](../../ComplexityTests/CSPGadget.lean) exercise freshness, repeated ports,
-existential witnesses, empty/nullary instances and malformed rejection.
-The shared exact-arity certificate is
-`Cslib.Complexity.CSP.computableInPolyTime_validArity` in
-`Complexity.Computability.PolyTime.CSP.Boolean`; both satisfiability and gadget compilers reuse it.
+The hard branch `CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` imports all its mathematical
+and reduction ingredients. The positive-arity Boolean clone classification
+(`Cslib.Logic.BooleanClone.classification`) covers every arity: absent the six operations, every
+polymorphism is a projection or negated projection and preserves all self-dual relations.
+`SelfDualThreeSAT.npComplete` gives a hard source by lifting signed ternary clauses with a shared
+reference bit. XOR with that bit normalizes any model of the reduction's output to an ordinary
+clause model. The eight lifted relations are proved self-dual, nonempty and column-separating.
 
-The hard branch is available from `Complexity.Computability.Complexity.Problems.CSP.Hardness`:
-`CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` proves native NP-completeness whenever the
-fixed finite language has none of the six operations. It assumes no solver, clone classification
-or pp-definability theorem: all are proved in its imports. `SelfDualThreeSAT.npComplete` supplies
-the hard source by adjoining a shared reference bit to signed three-literal clauses. XOR with
-that bit normalizes any model to an ordinary clause model. The eight lifted relations are
-self-dual, nonempty and separate all coordinate columns, discharging the restricted gadget
-construction's hypotheses. The reduction checks exact arity and retains binary labels, including
-sparse labels. [Checked hardness examples](../../ComplexityTests/SchaeferHardness.lean) give
-a concrete NAE language and cover contradictory clauses, repeated variables and malformed scopes.
-The tractable branches must still be assembled to complete #2822.
+`CSP.exists_ppGadget_of_polymorphisms` constructs their actual finite primitive-positive gadgets,
+and `CSP.computableInPolyTime_replaceGadgetsGuarded` certifies replacement with even original
+names, fresh odd auxiliary names and malformed-input rejection. The gadget API requires nonempty
+targets with separating columns; this application discharges those hypotheses and makes no claim
+of general equality elimination. See [clone examples](../../ComplexityTests/BooleanClone.lean),
+[gadget examples](../../ComplexityTests/CSPGadget.lean) and
+[hardness examples](../../ComplexityTests/SchaeferHardness.lean).
 
-Import `Complexity.Logics.Propositional.CNF.Horn` and
-`Complexity.Computability.Complexity.Problems.HornSAT` for AND/Horn and OR/dual-Horn
-correspondence (`isPolymorphism_and_iff_exists_hornCNF`,
-`isPolymorphism_or_iff_exists_dualHornCNF`) and native `HornSAT.mem_P`/`DualHornSAT.mem_P`.
-These solvers support all clause widths under binary `encCNF`. Horn syntax counts positive
-occurrences: repeated negative literals and opposite-polarity tautologies are supported, while
-two copies of a positive literal violate the syntax condition. Forward chaining computes the
-least-model candidate in `numVars + 1` passes, storing filtered occurrences rather than a table
-indexed by the largest label. [Checked Horn examples](../../ComplexityTests/HornSAT.lean)
-include sparse labels, empty clauses and the repeated-positive convention.
-
-`Complexity.Logics.Propositional.CSP.Affine` proves
-`isPolymorphism_parity_iff_exists_affineSystem`: ternary parity preservation is equivalent to
-definition by affine parity equations without auxiliaries, including empty/nullary relations.
-`Complexity.Computability.Complexity.Problems.XORSAT` gives actual dense Gaussian elimination,
-a certified sparse binary-label compiler and `XORSAT.satisfiable_mem_P` for ordinary systems.
-An equation is a variable list paired with a Boolean right-hand side; repeated variables cancel
-in the Boolean ring. The dense algorithm preserves row count and weakly decreases its complete
-framed state encoding at each column. [Checked XOR examples](../../ComplexityTests/XORSAT.lean)
-cover cancellation, inconsistency, dependent equations and malformed dense widths.
-The fixed-language CSP applications of these solvers remain to be connected in #2822.
+The result is the Boolean dichotomy; symmetric and larger-domain dichotomies are outside its scope.
 
 ## Three resolution representations
 

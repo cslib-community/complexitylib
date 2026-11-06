@@ -432,12 +432,11 @@ index links to canonical definitions rather than keeping a second set.
 ### Structure, time and space
 
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
-  native polynomial-time tractability for the six common-polymorphism cases and NP-completeness
-  outside them, for each fixed finite Boolean constraint language. Structural majority/2CNF,
-  native NP membership, unary-constant/majority P membership, and the positive-arity Boolean
-  clone classification and native NP-completeness outside the six cases are proved in the stack.
-  The remaining solver applications and six-case assembly do not yet complete the complexity
-  classification.
+  the stack proves native polynomial-time tractability for all six common-polymorphism cases
+  and native NP-completeness outside them, for each fixed finite Boolean constraint language
+  of arbitrary fixed arities. `CSPSAT.schaefer_dichotomy` assembles the actual solvers, fixed
+  compilers, clone classification and gadgets under binary labels and exact-arity rejection,
+  including empty/nullary relations. Final review and integration of the stack remain open.
   Symmetric and larger-domain dichotomies are outside the current scope.
 
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
