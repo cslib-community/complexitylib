@@ -149,9 +149,54 @@ in [the bibliography](../../references.bib). The checked clients are in
   measurable deterministic policy that is not almost surely constant. The checked
   client uses a Gaussian/binary product context, so the API is exercised beyond
   finite context types. Logged propensities, as deterministic functions of context,
-  cannot distinguish the equal log laws. The median-of-means sample guarantees,
-  minimax lower bound and episodic auditor of Theorems 5.3–5.5 remain separate work;
-  neither impossibility nor information bounds establish those statistical claims.
+  cannot distinguish the equal log laws.
+- [AdaptivePolicy.ContextualAudit](../../Complexity/Probability/AdaptivePolicy/ContextualAudit.lean)
+  supplies Theorem 5.3 (PDF p. 5). Start with a probability law on a measurable
+  context and a bounded potential-cost vector. The action probabilities depend only
+  on context. `banditObservation` retains the context, propensities, selected action
+  and its loss; `banditScore` reads only that record. `contextual_auditor_finite_divergence`
+  derives overlap and square integrability from finite `averagePearson`, the extended
+  average conditional chi-squared divergence. The context-marginal bridge proves that
+  this parameter and the target frequencies do not depend on the potential costs.
+  `contextual_auditor_ceiling` uses exactly $m=\lceil4\bar\chi^2/\delta^2\rceil$
+  samples in each of $k=\lceil8\log(1/\eta)\rceil$ independent blocks for positive
+  divergence, $\delta>0$ and $0<\eta<1$. The failure event is $|\widehat\Delta-\Delta|\ge\delta$.
+  At zero divergence, `contextual_gap_eq_zero` makes output zero exact with no samples;
+  the library explicitly totalizes empty block means to zero. Target marginal
+  frequencies are known, as in Remark 5.1; estimating them is not part of the guarantee.
+- [AdaptivePolicy.AuditLowerBound](../../Complexity/Probability/AdaptivePolicy/AuditLowerBound.lean)
+  supplies Theorem 5.4 (PDF p. 5). `auditing_lower_bound` constructs a binary policy
+  with exactly the prescribed $\Gamma\ge1/3$ and two actual bounded Bernoulli-cost
+  instances. Their complete logged-data laws are `hardLaw`, with independent repeated
+  samples. `hardMass_observation` verifies the potential-cost experiment and conditional
+  independence before action selection. Every randomized auditor is a Markov kernel
+  from all observed logs to a real estimate. Accuracy on both instances forces
+  $T\ge9(\Gamma+1)\log(1/(4\eta))/(2048\delta^2)$ for $0<\delta\le1/32$ and
+  $0<\eta\le1/8$. Logged propensities are deterministic functions of the retained
+  context. The proof derives single-log KL, product additivity and the testing bound;
+  no lower-bound or concentration premise is bundled into an instance.
+- [AdaptivePolicy.EpisodicAudit](../../Complexity/Probability/AdaptivePolicy/EpisodicAudit.lean)
+  supplies Theorem 5.5 (PDF pp. 5–6). `episodeLaw` follows the actual finite MDP
+  transitions. `episodeLoss_integral` connects its total trajectory cost to `totalCost`;
+  `episodeLaw_change` proves cancellation of transition factors in the likelihood
+  ratio. Overlap is needed only at times below the horizon and behavior-supported
+  states. Costs are in $[0,1]$ only during that horizon. `episodic_auditor_moments`
+  proves unbiasedness and the $H^2\chi^2$ variance bound.
+  `trajectoryChiSquared_product_bound` bounds $1+\chi^2$ by the product of
+  $1+\texttt{maxStepChi}$ over times, taking each maximum only over supported states.
+  `episodic_observed_auditor` applies to the actual observable episode records;
+  the extra terminal state in the proof representation is discarded, and the score
+  uses only recorded costs and propensities. `episodic_auditor_ceiling` gives the exact
+  episode count with $H^2\chi^2$ in place of $\bar\chi^2$; `episodic_gap_eq_zero`
+  handles the zero parameter, including horizon zero. Episodes are independent;
+  successive time steps within an episode need not be independent.
+  [AdaptivePolicyAuditing.lean](../../ComplexityTests/AdaptivePolicyAuditing.lean)
+  checks outliers, even and empty blocks, a positive-divergence integer-sample
+  auditor, a Gaussian context, binary hard-instance endpoints and actual two-step
+  trajectories. The shared concentration, importance-sampling and testing proofs
+  live in `Probability/MedianOfMeans`, `ImportanceSampling`, `Testing` and
+  `ProductDivergence`. These are sample-complexity guarantees for mathematical
+  estimators, with no certified machine runtime or empirical numerical claim.
 - [AdaptivePolicy.SignReversal](../../Complexity/Probability/AdaptivePolicy/SignReversal.lean)
   realizes Aldridge's Proposition 3.8 (PDF p. 4) with Boolean states and actions. The
   initial state is uniform, investment costs $a(1+s)$, the transition is $s'=s\land a$,

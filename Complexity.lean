@@ -4198,7 +4198,10 @@ public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
 public import Complexity.MachineLearning.UniformLearning.LowDegree
 public import Complexity.MachineLearning.UniformLearning.LowDegreeClasses
 public import Complexity.MachineLearning.UniformLearning.MembershipQuery
+public import Complexity.Probability.AdaptivePolicy.AuditLowerBound
+public import Complexity.Probability.AdaptivePolicy.ContextualAudit
 public import Complexity.Probability.AdaptivePolicy.Covariance
+public import Complexity.Probability.AdaptivePolicy.EpisodicAudit
 public import Complexity.Probability.AdaptivePolicy.Information
 public import Complexity.Probability.AdaptivePolicy.MeasurableNonidentifiability
 public import Complexity.Probability.AdaptivePolicy.Nonidentifiability
@@ -4206,6 +4209,7 @@ public import Complexity.Probability.AdaptivePolicy.Pathwise
 public import Complexity.Probability.AdaptivePolicy.Regret
 public import Complexity.Probability.AdaptivePolicy.Sharpness
 public import Complexity.Probability.AdaptivePolicy.SignReversal
+public import Complexity.Probability.AdaptivePolicy.StatisticalAudit
 public import Complexity.Probability.AdaptiveWeights
 public import Complexity.Probability.ApproximateCounting
 public import Complexity.Probability.ApproximateCounting.Relative
@@ -4281,6 +4285,7 @@ public import Complexity.Probability.HashFamily.Polynomial
 public import Complexity.Probability.HashFamily.Uniform
 public import Complexity.Probability.HashIsolation
 public import Complexity.Probability.IID
+public import Complexity.Probability.ImportanceSampling
 public import Complexity.Probability.Isolation
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.KWiseIndependent.Coupling
@@ -4292,6 +4297,7 @@ public import Complexity.Probability.KWiseIndependent.Restriction
 public import Complexity.Probability.KWiseIndependent.Trinomial
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
+public import Complexity.Probability.MedianOfMeans
 public import Complexity.Probability.MinEntropy
 public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
@@ -4331,6 +4337,7 @@ public import Complexity.Probability.Pinsker
 public import Complexity.Probability.Product
 public import Complexity.Probability.ProductConditioning
 public import Complexity.Probability.ProductConditioning.SideInformation
+public import Complexity.Probability.ProductDivergence
 public import Complexity.Probability.Quantile
 public import Complexity.Probability.RankDecoder
 public import Complexity.Probability.RankDecoder.Native
@@ -4346,6 +4353,7 @@ public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
+public import Complexity.Probability.Testing
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
