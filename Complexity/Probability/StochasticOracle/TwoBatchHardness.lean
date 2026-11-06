@@ -41,6 +41,19 @@ open Finset Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInPolyTime
 open Cslib.Complexity TwoBatchPartition
 open scoped List
 
+/-- Success probability in an encoded oracle call. -/
+@[expose] def callProbability (call : ℚ × ℚ × ℚ) : ℚ := call.1
+
+/-- Cost in an encoded oracle call. -/
+@[expose] def callCost (call : ℚ × ℚ × ℚ) : ℚ :=
+  let (_, cost, _) := call
+  cost
+
+/-- Cutoff in an encoded oracle call. -/
+@[expose] def callCutoff (call : ℚ × ℚ × ℚ) : ℚ :=
+  let (_, _, cutoff) := call
+  cutoff
+
 /-- A binary decision input, with a proof that each oracle has valid parameters.
 Proofs are absent from the encoding. The list order distinguishes repeated calls. -/
 structure Input where
@@ -51,7 +64,8 @@ structure Input where
   /-- Expected-cost decision threshold. -/
   threshold : ℚ
   /-- The paper excludes zero/certain success and nonpositive costs or cutoffs. -/
-  valid : ∀ t ∈ calls, 0 < t.1 ∧ t.1 < 1 ∧ 0 < t.2.1 ∧ 0 < t.2.2
+  valid : ∀ t ∈ calls, 0 < callProbability t ∧ callProbability t < 1 ∧
+    0 < callCost t ∧ 0 < callCutoff t
 
 /-- Canonical binary encoding of every numerical parameter, with list/pair framing. -/
 @[expose] def encInput : Input ↪ List Bool :=
@@ -62,12 +76,12 @@ structure Input where
 
 /-- Decode the indexed oracle instance from the input list. -/
 @[expose] def Input.instance (x : Input) : FullCoverInstance (Fin x.calls.length) ℚ where
-  success i := (x.calls.get i).1
+  success i := callProbability (x.calls.get i)
   success_pos i := (x.valid _ (List.get_mem x.calls i)).1
   success_lt_one i := (x.valid _ (List.get_mem x.calls i)).2.1
-  cost i := (x.calls.get i).2.1
+  cost i := callCost (x.calls.get i)
   cost_pos i := (x.valid _ (List.get_mem x.calls i)).2.2.1
-  cutoff i := (x.calls.get i).2.2
+  cutoff i := callCutoff (x.calls.get i)
   cutoff_pos i := (x.valid _ (List.get_mem x.calls i)).2.2.2
 
 /-- Actual randomized-policy decision language for two-turn maximum-success selection. -/
@@ -147,7 +161,7 @@ private theorem weights_nonempty (x : List ℕ × ℕ) : 0 < (weights x).length 
     change (weights x).get i / denominator (halfTotal x) < 1 at hp'
     rw [hi] at hp hp'
     exact ⟨hp,hp',by change 0 < (n : ℚ); exact_mod_cast weights_pos x n hn,
-      by norm_num⟩
+      by norm_num [callCutoff]⟩
 
 /-- Soundness and completeness of the binary reduction for the actual policy objective. -/
 theorem reduction_mem_iff (x : List ℕ × ℕ) : reduction x ∈ Decision ↔ x ∈ SubsetSum := by
@@ -166,7 +180,8 @@ theorem reduction_mem_iff (x : List ℕ × ℕ) : reduction x ∈ Decision ↔ x
     simpa only [List.toFinset_finRange,weights_total] using h
   have ha : ∀ i, 0 < a i := fun _ => weights_pos x _ (List.get_mem ..)
   have hI : (reduction x).instance = instanceOf a (halfTotal x) (halfTotal_pos x) ha htotal := by
-    apply FullCoverInstance.ext <;> intro i <;> simp [Input.instance, reduction, instanceOf, a]
+    apply FullCoverInstance.ext <;> intro i <;>
+      simp [Input.instance, reduction, instanceOf, a, callProbability, callCost, callCutoff]
   let : Nonempty (Fin (reduction x).calls.length) :=
     ⟨⟨0,by simpa only [reduction,List.length_map] using weights_nonempty x⟩⟩
   have hpolicy := policy_threshold_iff (halfTotal_pos x) ha htotal
@@ -241,12 +256,12 @@ theorem computable_reduction : ComputableInPolyTime reduction
 
 /-- Restrict to unit cutoffs and a common probability/cost ratio, as in Theorem 3(1). -/
 @[expose] def RestrictedDecision : Set Input := {x | x ∈ Decision ∧
-  ∃ r : ℚ, ∀ t ∈ x.calls, t.2.2 = 1 ∧ t.1 / t.2.1 = r}
+  ∃ r : ℚ, ∀ t ∈ x.calls, callCutoff t = 1 ∧ callProbability t / callCost t = r}
 
 /-- The reduction already has the equal-cutoff/equal-ratio restrictions. -/
 theorem reduction_parameters (x : List ℕ × ℕ) :
     ∀ t ∈ (reduction x).calls,
-      t.2.2 = 1 ∧ t.1 / t.2.1 = (denominator (halfTotal x))⁻¹ := by
+      callCutoff t = 1 ∧ callProbability t / callCost t = (denominator (halfTotal x))⁻¹ := by
   intro t ht
   obtain ⟨n,hn,rfl⟩ := List.mem_map.mp ht
   refine ⟨rfl,?_⟩
