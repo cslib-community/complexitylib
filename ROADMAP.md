@@ -55,7 +55,8 @@ response-bill expectation is bounded by `c*r/p`. Noncompletion probabilities and
 nonnegative marginal expected bills are summable. An infinite full-history response law and its conditional next-response kernels are
 constructed in `AdaptivePath` using Ionescu–Tulcea. Its finite cylinder expectations
 are now identified with the finite accounting recursion by `integral_responseHistory`,
-including a correlated actual-bill client. The a.s. termination/total-cost
+including a correlated actual-bill client. Almost-sure eventual retained completion is proved via cylinder expectations and
+Borel–Cantelli under the stronger all-history productivity envelope. The total-cost
 integrability bridge remains unproved.
 Selected-batch disintegration, joint latency/certification and universal policy/resource
 composition remain open; Theorem 6 needs the actual dual-certified residual

@@ -9,6 +9,7 @@ module
 
 public import Complexity.Probability.StochasticOracle.AdaptiveSelection
 public import Mathlib.Probability.Kernel.IonescuTulcea.Traj
+import Mathlib.MeasureTheory.OuterMeasure.BorelCantelli
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 import Mathlib.Probability.Kernel.Composition.IntegralCompProd
 
@@ -25,7 +26,9 @@ they are not independent progress indicators.
 all preceding responses. It is an almost-everywhere statement on the actual prefix
 law, including zero-probability histories without conditioning on null events.
 `integral_responseHistory` identifies every finite cylinder expectation with
-the finite accounting recursion. Termination and total-cost integrability remain open.
+the finite accounting recursion. `ae_eventually_complete` transfers the summable
+reach bounds to almost-sure eventual retained completion under the all-history
+productivity envelope. Construction and integrability of the total bill remain open.
 -/
 
 public section
@@ -182,5 +185,63 @@ theorem integral_responseHistory
     rw [integral_responseHistory_succ,
       ih (fun h => (law h).mean (fun y => f (y :: h)))]
     exact (historyExpectation_succ_right law f (n + 1) []).symm
+
+omit [Fintype Ω] in
+/-- Finite-history observables are measurable cylinders, even when their table on
+all lists has no regularity assumption. -/
+theorem measurable_responseHistory [Finite Ω] (n : ℕ) (f : List Ω → ℝ) :
+    Measurable (fun ω : ℕ → Ω => f (responseHistory ω n)) := by
+  have hm : Measurable (fun ω : ℕ → Ω => fun i : Fin n => ω i) := by fun_prop
+  exact (measurable_of_finite (fun x : Fin n → Ω =>
+    f (List.ofFn x).reverse)).comp hm
+
+/-- Under the positive all-history productivity envelope, the actual infinite
+retained-set execution is eventually complete almost surely. This transfers the
+finite reach series through the cylinder law and Borel--Cantelli; it assumes no
+termination or total-cost integrability premise. The all-history envelope is
+stronger than the reachable selected-history condition in [Wang2027], Appendix A.5. -/
+theorem ae_eventually_complete {Ω : Type} [Fintype Ω]
+    [MeasurableSpace Ω] [MeasurableSingletonClass Ω] {E J : Type*} [DecidableEq E] [DecidableEq J]
+    (I : PartialCover.Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J))
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (a r : ℕ) (hr : I.ground.card ≤ a * r) (p : Set.Icc (0 : ℝ) 1)
+    (hp0 : 0 < (p : ℝ))
+    (hp : ∀ h, (p : ℝ) ≤ (law h).mean
+      (fun x => if productive I ρ proposal a h x then 1 else 0)) :
+    ∀ᵐ ω ∂responseMeasure law, ∀ᶠ n in Filter.atTop,
+      I.covered (selected I ρ proposal (responseHistory ω n)) = I.ground := by
+  classical
+  let s : ℕ → Set (ℕ → Ω) := fun n =>
+    {ω | I.covered (selected I ρ proposal (responseHistory ω n)) ≠ I.ground}
+  have he (n : ℕ) : responseMeasure law (s n) = ENNReal.ofReal
+      (historyExpectation law
+        (fun h => if I.covered (selected I ρ proposal h) = I.ground then 0 else 1) n []) := by
+    have hm := measurable_responseHistory n
+      (fun h => if I.covered (selected I ρ proposal h) = I.ground then 0 else 1)
+    have hs : MeasurableSet (s n) := by
+      have : s n = (fun ω => (if I.covered (selected I ρ proposal
+          (responseHistory ω n)) = I.ground then (0 : ℝ) else 1)) ⁻¹' {1} := by
+        ext ω
+        simp only [s, Set.mem_ofPred_eq, Set.mem_preimage, Set.mem_singleton_iff]
+        split_ifs <;> simp_all
+      rw [this]
+      exact hm (measurableSet_singleton 1)
+    have hi := integral_indicator_one (μ := responseMeasure law) hs
+    have hid : (s n).indicator (1 : (ℕ → Ω) → ℝ) =
+        (fun ω => if I.covered (selected I ρ proposal (responseHistory ω n)) =
+          I.ground then 0 else 1) := by
+      funext ω
+      simp [s, Set.indicator]
+    rw [hid] at hi
+    change (∫ ω, (fun h => if I.covered (selected I ρ proposal h) = I.ground
+      then (0 : ℝ) else 1) (responseHistory ω n) ∂responseMeasure law) = _ at hi
+    rw [integral_responseHistory law
+      (fun h => if I.covered (selected I ρ proposal h) = I.ground then 0 else 1) n] at hi
+    rw [hi, measureReal_def, ENNReal.ofReal_toReal (measure_ne_top _ _)]
+  have hs := (summable_noncompletion I ρ proposal law a r hr p hp0 hp).tsum_ofReal_ne_top
+  simp only [← he] at hs
+  filter_upwards [ae_eventually_notMem hs] with ω hω
+  simpa only [s, Set.mem_ofPred_eq, not_not] using hω
 
 end Cslib.Probability.StochasticOracle.AdaptiveSelection

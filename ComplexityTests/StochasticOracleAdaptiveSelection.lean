@@ -169,6 +169,19 @@ theorem actual_bill_bound (n : ℕ) :
   norm_num at h ⊢
   exact h
 
+/-- The correlated actual response law eventually retains the singleton cover. -/
+theorem actual_ae_completion :
+    ∀ᵐ ω ∂responseMeasure StochasticOracleAdaptiveComparisonTests.law,
+      ∀ᶠ n in Filter.atTop,
+        toy.covered (selected toy 1 proposals (responseHistory ω n)) = toy.ground := by
+  apply ae_eventually_complete toy 1 proposals
+    StochasticOracleAdaptiveComparisonTests.law 1 1 (by norm_num [toy])
+    ⟨1 / 4, by norm_num, by norm_num⟩ (by norm_num)
+  intro h
+  by_cases hh : true ∈ h <;>
+    simp [productive_eq, StochasticOracleAdaptiveComparisonTests.law, hh,
+      Cslib.Optimization.OneConstraint.pair_mean]; norm_num
+
 end StochasticOracleAdaptiveSelectionTests
 
 -- Chronology and a genuine infinite probability law, including full-history conditioning.
