@@ -52,8 +52,10 @@ lower-cost accounting theorem. Actual retained-completion reach bounds and the f
 bill sum are proved. Response-dependent accrued bills are connected by the finite tower identity.
 The binomial survival series now has derived sum `r/p` for `p>0`; every finite actual
 response-bill expectation is bounded by `c*r/p`. Noncompletion probabilities and
-nonnegative marginal expected bills are summable. An infinite path-space stopping-time
-construction and its a.s. termination/integrability bridge remain unproved.
+nonnegative marginal expected bills are summable. An infinite full-history response law and its conditional next-response kernels are
+constructed in `AdaptivePath` using Ionescu–Tulcea. Identification of its cylinder
+expectations with the finite accounting recursion, and the a.s. termination/total-cost
+integrability bridge, remain unproved.
 Selected-batch disintegration, joint latency/certification and universal policy/resource
 composition remain open; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main

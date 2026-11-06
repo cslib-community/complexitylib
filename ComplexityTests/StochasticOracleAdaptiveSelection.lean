@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Probability.StochasticOracle.AdaptiveSelection
+public import Complexity.Probability.StochasticOracle.AdaptivePath
 public import ComplexityTests.StochasticOracleAdaptiveComparison
 import Mathlib.Tactic
 
@@ -170,3 +170,17 @@ theorem actual_bill_bound (n : ℕ) :
   exact h
 
 end StochasticOracleAdaptiveSelectionTests
+
+-- Chronology and a genuine infinite probability law, including full-history conditioning.
+example (ω : ℕ → Bool) : responseHistory ω 2 = [ω 1, ω 0] := by
+  simp [responseHistory, List.ofFn_succ]
+
+example : MeasureTheory.IsProbabilityMeasure
+    (responseMeasure (fun _ =>
+      Cslib.Optimization.OneConstraint.Distribution.pure true)) := inferInstance
+
+example (law : List Bool → Cslib.Optimization.OneConstraint.Distribution Bool ℝ) (n : ℕ) :
+    ProbabilityTheory.condDistrib (fun ω : ℕ → Bool => ω (n + 1))
+        (Preorder.frestrictLe n) (responseMeasure law)
+      =ᵐ[(responseMeasure law).map (Preorder.frestrictLe n)] responseKernel law n :=
+  responseMeasure_condDistrib law n

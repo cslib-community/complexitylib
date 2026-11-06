@@ -662,9 +662,25 @@ probabilities, hence convergence to zero via `Summable.tendsto_atTop_zero`.
 For nonnegative response bills, `expectedBills_summable_le` proves summability of
 the marginal expected charges and bounds their series by $cr/p$. Its partial
 sums equal finite accrued-bill expectations by the tower identity and converge by
-`Summable.hasSum`. These results establish a finite expected-charge series, but
-do not construct an infinite path-space law or identify its total-bill random
-variable. Almost-sure termination and integrability on that space remain open.
+`Summable.hasSum`. These results establish a finite expected-charge series.
+
+`Complexity.Probability.StochasticOracle.AdaptivePath` constructs an infinite
+response law `responseMeasure` using Mathlib's Ionescu–Tulcea theorem. The initial
+response has table `law []`; `responseKernel` then reads every preceding response
+in newest-first order, including auxiliary response data. The alphabet is finite
+and has measurable singletons. `responseMeasure_prefix_joint` identifies each
+prefix/next-response joint law as a measure-kernel product, and
+`responseMeasure_condDistrib` identifies the conditional next-response law almost
+surely under the actual prefix distribution. The latter uses a standard Borel
+nonempty alphabet. The complete selection client above checks the Boolean
+instance and chronological decoding. This constructor imposes no productivity or
+cost envelope; existing finite comparison theorems still require their stronger
+all-history envelopes. The source's almost-sure reachable-history conditions are
+not yet sufficient inputs to those finite theorems.
+
+Identification of these cylinder integrals with `historyExpectation`, followed by
+almost-sure retained completion and total-bill integrability, remains open. The
+constructed infinite law alone does not establish those conclusions.
 Selected-batch disintegration, physical latency, deadline/certification composition
 and the universal selection-only policy theorem remain open. The
 pathwise dual certificate is proved, but its joint stopped resource event is not.
