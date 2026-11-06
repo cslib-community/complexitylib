@@ -34,9 +34,12 @@ jointly Gaussian law on the plane with means `0`, variances `1` and correlation 
 An *`n`-dimensional* `ρ`-correlated pair (Definition 11.10) has mutually independent
 `ρ`-correlated coordinate pairs (`correlatedGaussianPi`); equivalently `z` is a standard Gaussian
 vector and `z' = ρ z + √(1 - ρ²) g` for an independent standard Gaussian vector `g`
-(`correlatedGaussianPi_eq_map`). The projections `a ⬝ᵥ z`, `a ⬝ᵥ z'` form a `ρ`-correlated pair
-scaled by `√(a ⬝ᵥ a)` (`correlatedGaussianPi_map_dotProduct`). The *Gaussian noise stability*
-`Stab_ρ[f] = E[f z f z']` (`gaussianNoiseStability`, Definition 11.18) of a halfspace through
+(`correlatedGaussianPi_eq_map`). The first vector is a standard Gaussian vector
+(`correlatedGaussianPi_map_fst`); for `|ρ| ≤ 1` so is the second, and the law is invariant under
+swapping the two (`correlatedGaussianPi_map_snd`, `correlatedGaussianPi_map_swap`). The
+projections `a ⬝ᵥ z`, `a ⬝ᵥ z'` form a `ρ`-correlated pair scaled by `√(a ⬝ᵥ a)`
+(`correlatedGaussianPi_map_dotProduct`). The *Gaussian noise stability* `Stab_ρ[f] = E[f z f z']`
+(`gaussianNoiseStability`, Definition 11.18) of a halfspace through
 the origin is `1 - (2 / π) arccos ρ` (Corollary 11.20), and that of the indicator of `(-∞, 0]` in
 one coordinate is `1 / 2 - arccos ρ / (2π)` (Example 11.19); both rest on Sheppard's formula.
 
@@ -63,6 +66,11 @@ one coordinate is `1 / 2 - arccos ρ / (2π)` (Example 11.19); both rest on Shep
   line.
 * `ProbabilityTheory.correlatedGaussianPi_eq_map`,
   `ProbabilityTheory.correlatedGaussianPi_map_eval`,
+  `ProbabilityTheory.correlatedGaussianPi_map_fst`,
+  `ProbabilityTheory.correlatedGaussianPi_map_snd`,
+  `ProbabilityTheory.correlatedGaussianPi_map_swap`,
+  `ProbabilityTheory.measurePreserving_fst_correlatedGaussianPi`,
+  `ProbabilityTheory.measurePreserving_snd_correlatedGaussianPi`,
   `ProbabilityTheory.correlatedGaussianPi_map_dotProduct`: the `n`-dimensional pair.
 * `ProbabilityTheory.gaussianNoiseStability_comp_eval`,
   `ProbabilityTheory.gaussianNoiseStability_comp_dotProduct`: reduction to the line.
@@ -436,6 +444,44 @@ theorem correlatedGaussianPi_map_eval (ρ : ℝ) (i : ι) :
   rw [correlatedGaussianPi, Measure.map_map (by fun_prop) (by fun_prop)]
   exact (measurePreserving_eval _ i).map_eq
 
+/-- The first vector of a `ρ`-correlated pair is a standard Gaussian vector. -/
+theorem correlatedGaussianPi_map_fst (ρ : ℝ) :
+    (correlatedGaussianPi ι ρ).map Prod.fst = Measure.pi fun _ : ι => gaussianReal 0 1 := by
+  rw [correlatedGaussianPi, Measure.map_map measurable_fst (by fun_prop)]
+  refine (Measure.pi_map_pi (f := fun _ => Prod.fst) fun _ => measurable_fst.aemeasurable).trans ?_
+  simp only [correlatedGaussian_map_fst]
+
+/-- The second vector of a `ρ`-correlated pair is a standard Gaussian vector when `|ρ| ≤ 1`. -/
+theorem correlatedGaussianPi_map_snd {ρ : ℝ} (hρ : |ρ| ≤ 1) :
+    (correlatedGaussianPi ι ρ).map Prod.snd = Measure.pi fun _ : ι => gaussianReal 0 1 := by
+  rw [correlatedGaussianPi, Measure.map_map measurable_snd (by fun_prop)]
+  refine (Measure.pi_map_pi (f := fun _ => Prod.snd) fun _ => measurable_snd.aemeasurable).trans ?_
+  simp only [correlatedGaussian_map_snd hρ]
+
+/-- The first projection carries `ρ`-correlated vectors to a standard Gaussian vector. -/
+theorem measurePreserving_fst_correlatedGaussianPi (ρ : ℝ) :
+    MeasurePreserving Prod.fst (correlatedGaussianPi ι ρ)
+      (Measure.pi fun _ : ι => gaussianReal 0 1) :=
+  ⟨measurable_fst, correlatedGaussianPi_map_fst ι ρ⟩
+
+/-- The second projection carries `ρ`-correlated vectors to a standard Gaussian vector when
+`|ρ| ≤ 1`. -/
+theorem measurePreserving_snd_correlatedGaussianPi {ρ : ℝ} (hρ : |ρ| ≤ 1) :
+    MeasurePreserving Prod.snd (correlatedGaussianPi ι ρ)
+      (Measure.pi fun _ : ι => gaussianReal 0 1) :=
+  ⟨measurable_snd, correlatedGaussianPi_map_snd ι hρ⟩
+
+/-- `ρ`-correlated vectors are symmetric: `(z', z)` has the same law as `(z, z')` when
+`|ρ| ≤ 1`. -/
+theorem correlatedGaussianPi_map_swap {ρ : ℝ} (hρ : |ρ| ≤ 1) :
+    (correlatedGaussianPi ι ρ).map Prod.swap = correlatedGaussianPi ι ρ := by
+  have h := Measure.pi_map_pi (μ := fun _ : ι => correlatedGaussian ρ) (f := fun _ => Prod.swap)
+    fun _ => measurable_swap.aemeasurable
+  simp only [correlatedGaussian_map_swap hρ] at h
+  rw [correlatedGaussianPi, Measure.map_map measurable_swap (by fun_prop)]
+  conv_rhs => rw [← h, Measure.map_map (by fun_prop) (by fun_prop)]
+  rfl
+
 variable {ι} in
 /-- The Euclidean norm of `a`, as the square root of `a ⬝ᵥ a`. -/
 private theorem sqrt_dotProduct_self (a : ι → ℝ) :
@@ -478,7 +524,7 @@ variable {ι}
 `ρ`-correlated `n`-dimensional Gaussians `z`, `z'` [O'Donnell, Definition 11.18][ODonnell2014].
 The book assumes `f ∈ L²(γ)` and `ρ ∈ [-1, 1]`; here `f` and `ρ` are arbitrary, and the Bochner
 integral is `0` when `f z f z'` is not integrable. -/
-noncomputable def gaussianNoiseStability (ρ : ℝ) (f : (ι → ℝ) → ℝ) : ℝ :=
+@[expose] noncomputable def gaussianNoiseStability (ρ : ℝ) (f : (ι → ℝ) → ℝ) : ℝ :=
   ∫ p, f p.1 * f p.2 ∂correlatedGaussianPi ι ρ
 
 /-- The noise stability of a function of one coordinate is that of the function on the line. -/
