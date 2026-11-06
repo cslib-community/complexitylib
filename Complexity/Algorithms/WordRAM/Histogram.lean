@@ -13,6 +13,8 @@ public import Mathlib.Data.Finset.Prod
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Charged word-RAM histograms
 
@@ -198,22 +200,20 @@ private theorem exec_clear {w : ℕ} (x : Data 11) (h1 : Fits w 1)
     ∃ y, ExecWithin w clear x y (5 * x.regs bins + 5) ∧
       y.mem = Cslib.WordRAM.clear x.mem (x.regs dst) (x.regs bins) ∧
       (∀ i, i.val < 4 → y.regs i = x.regs i) ∧ y.regs one = 1 := by
-  let I (y : Data 11) : Prop :=
+  let P (j : ℕ) (y : Data 11) : Prop :=
     (∀ i, i.val < 4 → y.regs i = x.regs i) ∧ y.regs one = 1 ∧ y.regs zero = 0 ∧
-      y.regs idx ≤ x.regs bins ∧ y.mem = Cslib.WordRAM.clear x.mem (x.regs dst) (y.regs idx)
-  have hbody (y : Data 11) (hy : I y) (hc : (Cond.lt idx bins).Holds y) :
-      ∃ z, ExecWithin w clearBody y z 3 ∧ I z ∧
-        x.regs bins - z.regs idx < x.regs bins - y.regs idx := by
-    obtain ⟨hr, ho, hz, hi, hm⟩ := hy
-    have hb := hr bins (by decide)
+      y.mem = Cslib.WordRAM.clear x.mem (x.regs dst) j
+  have hbody (y : Data 11) (hy : P (y.regs idx) y) (hlt : y.regs idx < x.regs bins) :
+      ∃ z, ExecWithin w clearBody y z 3 ∧ P (y.regs idx + 1) z ∧
+        z.regs idx = y.regs idx + 1 := by
+    obtain ⟨hr, ho, hz, hm⟩ := hy
     have hdst := hr dst (by decide)
-    have hlt : y.regs idx < x.regs bins := by simpa only [Cond.holds_lt, hb] using hc
     have ha : Fits w (y.regs dst + y.regs idx) := hd.of_le (by rw [hdst]; omega)
     have hn : Fits w (y.regs idx + 1) := hd.of_le (by omega)
-    refine ⟨?z, ?run, ?inv, ?decrease⟩
+    refine ⟨?z, ?run, ?inv, ?increment⟩
     case run => ram_eval [clearBody, ha, hn, ho]
     case inv =>
-      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      refine ⟨?_, ?_, ?_, ?_⟩
       · intro i hi
         have hia : i ≠ addr := by intro h; subst i; norm_num [addr] at hi
         have hii : i ≠ idx := by intro h; subst i; norm_num [idx] at hi
@@ -221,14 +221,12 @@ private theorem exec_clear {w : ℕ} (x : Data 11) (h1 : Fits w 1)
           Function.update_of_ne hii] using hr i hi
       · simpa +decide [Function.update_apply] using ho
       · simpa +decide [Function.update_apply] using hz
-      · simpa [ho] using Nat.succ_le_of_lt hlt
-      · simp only [Data.set_mem, Data.write_mem, Data.set_regs, Function.update_apply]
+      · simp only [Data.set_mem, Data.write_mem]
         rw [hz, hm, hdst, ← Cslib.WordRAM.clear_succ]
-        rfl
-    case decrease => simp only [Data.set_regs, Function.update_self]; omega
+    case increment => rfl
   let x₀ := ((x.set idx 0).set one 1).set zero 0
-  have hx₀ : I x₀ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  have hx₀ : P (x₀.regs idx) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_⟩
     · intro i hi
       have hiz : i ≠ zero := by intro h; subst i; norm_num [zero] at hi
       have hio : i ≠ one := by intro h; subst i; norm_num [one] at hi
@@ -237,16 +235,10 @@ private theorem exec_clear {w : ℕ} (x : Data 11) (h1 : Fits w 1)
         Function.update_of_ne hii]
     · simp +decide [x₀, one, zero, idx]
     · simp [x₀]
-    · simp +decide [x₀, one, zero, idx]
     · simp +decide [x₀, one, zero, idx, Cslib.WordRAM.clear_zero]
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => x.regs bins - y.regs idx) hbody hx₀
-  obtain ⟨hr, ho, hz, hi, hm⟩ := hy
-  have hb := hr bins (by decide)
-  have hend : y.regs idx = x.regs bins := by
-    simp only [Cond.holds_lt, hb] at hc
-    omega
-  refine ⟨y, ?_, by simpa only [hend] using hm, hr, ho⟩
+  obtain ⟨y, he, ⟨hr, ho, hz, hm⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => hy.1 bins (by decide)) hbody (by simp +decide [x₀, idx, one, zero]) hx₀
+  refine ⟨y, ?_, hm, hr, ho⟩
   have hinit : ExecWithin (B := .standard) w (ram[ idx ← #0; one ← #1; zero ← #0 ]) x x₀ 3 := by
     ram_eval [x₀, h1]
   convert hinit.seq he using 1
@@ -268,18 +260,16 @@ private theorem exec_insert {w : ℕ} (x : Data 11) (keys : ℕ → ℕ)
       y.mem = memory x.mem keys (x.regs dst) (x.regs bins) (x.regs len) ∧
       y.regs total = pairs keys (x.regs len) ∧
       (∀ i, i.val < 4 → y.regs i = x.regs i) ∧ y.regs one = 1 := by
-  let I (y : Data 11) : Prop :=
+  let P (j : ℕ) (y : Data 11) : Prop :=
     (∀ i, i.val < 4 → y.regs i = x.regs i) ∧ y.regs one = 1 ∧
-      y.regs idx ≤ x.regs len ∧ y.regs total = pairs keys (y.regs idx) ∧
-      y.mem = memory x.mem keys (x.regs dst) (x.regs bins) (y.regs idx)
-  have hbody (y : Data 11) (hy : I y) (hc : (Cond.lt idx len).Holds y) :
-      ∃ z, ExecWithin w body y z 9 ∧ I z ∧
-        x.regs len - z.regs idx < x.regs len - y.regs idx := by
-    obtain ⟨hr, ho, hi, hp, hm⟩ := hy
-    have hl := hr len (by decide)
+      y.regs total = pairs keys j ∧
+      y.mem = memory x.mem keys (x.regs dst) (x.regs bins) j
+  have hbody (y : Data 11) (hy : P (y.regs idx) y) (hlt : y.regs idx < x.regs len) :
+      ∃ z, ExecWithin w body y z 9 ∧ P (y.regs idx + 1) z ∧
+        z.regs idx = y.regs idx + 1 := by
+    obtain ⟨hr, ho, hp, hm⟩ := hy
     have hsrc := hr src (by decide)
     have hdst := hr dst (by decide)
-    have hlt : y.regs idx < x.regs len := by simpa only [Cond.holds_lt, hl] using hc
     have hkey := hkeys _ hlt
     have hread : y.mem (y.regs src + y.regs idx) = keys (y.regs idx) := by
       rw [hm, hsrc, memory_outside]
@@ -303,10 +293,10 @@ private theorem exec_insert {w : ℕ} (x : Data 11) (keys : ℕ → ℕ)
       ht₂.of_le (by omega)
     have hcount : Fits w (count keys (y.regs idx) (keys (y.regs idx)) + 1) :=
       ht.of_le (by omega)
-    refine ⟨?z, ?run, ?inv, ?decrease⟩
+    refine ⟨?z, ?run, ?inv, ?increment⟩
     case run => ram_eval [body, ha, hb, hn, ho, hread, hbucket, hp, ht₁, ht₂, hcount]
     case inv =>
-      refine ⟨?_, ?_, ?_, ?_, ?_⟩
+      refine ⟨?_, ?_, ?_, ?_⟩
       · intro i hi
         have hia : i ≠ addr := by intro h; subst i; norm_num [addr] at hi
         have hik : i ≠ key := by intro h; subst i; norm_num [key] at hi
@@ -317,7 +307,6 @@ private theorem exec_insert {w : ℕ} (x : Data 11) (keys : ℕ → ℕ)
           Function.update_of_ne hik, Function.update_of_ne hic, Function.update_of_ne hit,
           Function.update_of_ne hii] using hr i hi
       · simpa +decide [Function.update_apply] using ho
-      · simpa [ho] using Nat.succ_le_of_lt hlt
       · change pairs keys (y.regs idx) + count keys (y.regs idx) (keys (y.regs idx)) +
           count keys (y.regs idx) (keys (y.regs idx)) = pairs keys (y.regs idx + 1)
         simp only [pairs, two_mul, Nat.add_assoc]
@@ -325,16 +314,15 @@ private theorem exec_insert {w : ℕ} (x : Data 11) (keys : ℕ → ℕ)
           (count keys (y.regs idx) (keys (y.regs idx)) + 1) =
             memory x.mem keys (x.regs dst) (x.regs bins) (y.regs idx + 1)
         rw [hm, hdst, ← memory_succ _ _ _ _ _ hkey]
-    case decrease => simp only [Data.set_regs, Function.update_self]; omega
+    case increment => rfl
   let x₀ := (x.set idx 0).set total 0
-  have hx₀ : I x₀ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  have hx₀ : P (x₀.regs idx) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_⟩
     · intro i hi
       have hit : i ≠ total := by intro h; subst i; norm_num [total] at hi
       have hii : i ≠ idx := by intro h; subst i; norm_num [idx] at hi
       simp only [x₀, Data.set_regs, Function.update_of_ne hit, Function.update_of_ne hii]
     · simpa +decide [x₀, one, total, idx] using ho
-    · simp +decide [x₀, total, idx]
     · simp +decide [x₀, total, idx, pairs]
     · change x.mem = memory x.mem keys (x.regs dst) (x.regs bins) 0
       funext a
@@ -342,14 +330,9 @@ private theorem exec_insert {w : ℕ} (x : Data 11) (keys : ℕ → ℕ)
       · have ha : x.regs dst + (a - x.regs dst) = a := by omega
         simpa [memory, h, ha] using hzero (a - x.regs dst) (by omega)
       · simp only [memory, h, ↓reduceIte]
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => x.regs len - y.regs idx) hbody hx₀
-  obtain ⟨hr, ho, hi, hp, hm⟩ := hy
-  have hl := hr len (by decide)
-  have hend : y.regs idx = x.regs len := by
-    simp only [Cond.holds_lt, hl] at hc
-    omega
-  refine ⟨y, ?_, by simpa only [hend] using hm, by simpa only [hend] using hp, hr, ho⟩
+  obtain ⟨y, he, ⟨hr, ho, hp, hm⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => hy.1 len (by decide)) hbody (by simp +decide [x₀, total, idx]) hx₀
+  refine ⟨y, ?_, hm, hp, hr, ho⟩
   have hinit : ExecWithin (B := .standard) w (ram[ idx ← #0; total ← #0 ]) x x₀ 2 := by
     ram_eval [x₀]
   convert hinit.seq he using 1

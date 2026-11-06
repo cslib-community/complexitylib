@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Cell
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Charged shared-coordinate array loop
 
@@ -53,22 +55,20 @@ theorem exec_cells {w : ℕ} (hw : 0 < w) (side : Bool) (x : Data 32)
       (∀ a, ¬(d ≤ a ∧ a < d + 10 * P * n) → y.mem a = x.mem a) ∧
       (∀ a, 9 ≤ a.val → ¬CellLocal a → y.regs a = x.regs a) := by
   let N := 10 * P * n
-  let I (y : Data 32) : Prop :=
-    (∀ a, 9 ≤ a.val → ¬CellLocal a → y.regs a = x.regs a) ∧ y.regs cell ≤ N ∧
-      (∀ i < y.regs cell, y.mem (d + i) = encode (stageResult side n v i)) ∧
-      (∀ a, ¬(d ≤ a ∧ a < d + y.regs cell) → y.mem a = x.mem a)
-  have hbody (y : Data 32) (hy : I y) (hc : (Cond.lt cell stageSize).Holds y) :
-      ∃ z, ExecWithin (w + 2) (cellBody side) y z 205 ∧ I z ∧
-        N - z.regs cell < N - y.regs cell := by
-    obtain ⟨hr, hiN, hm, hf⟩ := hy
+  let Inv (j : ℕ) (y : Data 32) : Prop :=
+    (∀ a, 9 ≤ a.val → ¬CellLocal a → y.regs a = x.regs a) ∧
+      (∀ i < j, y.mem (d + i) = encode (stageResult side n v i)) ∧
+      (∀ a, ¬(d ≤ a ∧ a < d + j) → y.mem a = x.mem a)
+  have hbody (y : Data 32) (hy : Inv (y.regs cell) y) (hi : y.regs cell < N) :
+      ∃ z, ExecWithin (w + 2) (cellBody side) y z 205 ∧ Inv (y.regs cell + 1) z ∧
+        z.regs cell = y.regs cell + 1 := by
+    obtain ⟨hr, hm, hf⟩ := hy
     have hys : y.regs src = s := (hr src (by decide) (by decide)).trans hsrc
     have hyd : y.regs dst = d := (hr dst (by decide) (by decide)).trans hdst
     have hyn : y.regs stride = n := (hr stride (by decide) (by decide)).trans hn
     have hy7 : y.regs seven = 7 := (hr seven (by decide) (by decide)).trans hseven
     have hy10 : y.regs ten = 10 := (hr ten (by decide) (by decide)).trans hten
     have hy1 : y.regs one = 1 := (hr one (by decide) (by decide)).trans hone
-    have hysz : y.regs stageSize = N := (hr stageSize (by decide) (by decide)).trans hsize
-    have hi : y.regs cell < N := by simpa only [Cond.holds_lt, hysz] using hc
     have hyinput (a : Fin 7) :
         y.mem (s + (y.regs cell / (10 * n) * 7 + a.val) * n + y.regs cell % n) =
           encode (v (y.regs cell) a) := by
@@ -84,14 +84,13 @@ theorem exec_cells {w : ℕ} (hw : 0 < w) (side : Bool) (x : Data 32)
       rw [Nat.mul_comm P 7] at hoff
       rw [hf _ ?_]
       · exact hmem _ hi a
-      · rcases hdisj with h | h <;> dsimp only [N] at hiN <;> omega
+      · rcases hdisj with h | h <;> dsimp only [N] at hi <;> omega
     obtain ⟨z, he, hzmem, hzcell, hzreg⟩ := exec_cell hw side y P n s d (y.regs cell)
       hP hnpos hi hys hyd rfl hyn hy7 hy10 hy1 (v (y.regs cell)) B hB (hv _ hi)
       hyinput hval haddr
-    refine ⟨z, he, ?_, by rw [hzcell]; omega⟩
-    refine ⟨fun a ha hl => (hzreg a ha hl).trans (hr a ha hl), by omega, ?_, ?_⟩
+    refine ⟨z, he, ?_, hzcell⟩
+    refine ⟨fun a ha hl => (hzreg a ha hl).trans (hr a ha hl), ?_, ?_⟩
     · intro i hzi
-      rw [hzcell] at hzi
       by_cases hic : i = y.regs cell
       · subst i
         simp only [hzmem, Function.update_self, stageResult]
@@ -99,25 +98,19 @@ theorem exec_cells {w : ℕ} (hw : 0 < w) (side : Bool) (x : Data 32)
         rw [hzmem, Function.update_of_ne (by omega : d + i ≠ d + y.regs cell)]
         exact hm i hin
     · intro a ha
-      rw [hzcell] at ha
       have hne : a ≠ d + y.regs cell := by omega
       rw [hzmem, Function.update_of_ne hne]
       exact hf a (by omega)
-  have hx : I x := by
-    refine ⟨fun _ _ _ => rfl, by simp [hcell, N], ?_, ?_⟩
+  have hx : Inv (x.regs cell) x := by
+    refine ⟨fun _ _ _ => rfl, ?_, ?_⟩
     · simp only [hcell, Nat.not_lt_zero, false_implies, implies_true]
     · intro a _
       rfl
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I (fun y => N - y.regs cell) hbody hx
-  obtain ⟨hr, hi, hm, hf⟩ := hy
-  have hysz : y.regs stageSize = N := (hr stageSize (by decide) (by decide)).trans hsize
-  have hend : y.regs cell = N := by
-    simp only [Cond.holds_lt, hysz] at hc
-    omega
-  refine ⟨y, ?_, ?_, ?_, hr⟩
-  · simpa only [hcell, N, Nat.sub_zero, Nat.add_comm, Nat.mul_comm] using he
-  · simpa only [hend] using hm
-  · simpa only [hend] using hf
+  obtain ⟨y, he, ⟨hr, hm, hf⟩, _⟩ := ExecWithin.loop_count Inv
+    (fun _ hy => (hy.1 stageSize (by decide) (by decide)).trans hsize) hbody
+    (by simp [hcell]) hx
+  refine ⟨y, ?_, hm, hf, hr⟩
+  simpa only [hcell, N, Nat.sub_zero, Nat.add_comm, Nat.mul_comm] using he
 
 /-- Registers changed by the stage controller or its cell loop. -/
 def StageLocal (i : Fin 32) : Prop :=

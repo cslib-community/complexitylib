@@ -41,6 +41,57 @@ Priorities live in this list and in the tiers of [#897].
 6. [MIP = NEXP](#interactive-proofs) ([#892])
 7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
 
+### Optional landmark projects
+
+These are optional coverage targets, outside the priority queue above. Each requires substantial
+new proof infrastructure; a useful prerequisite milestone does not complete the landmark.
+Choose a source version and proof route before implementation, and reassess scope against
+existing library and upstream developments. The size labels describe prerequisite breadth,
+not staffing or calendar estimates.
+
+- **Babai: graph isomorphism in quasipolynomial time — optional, very large.** Prove a
+  deterministic `exp((log n)^O(1))` decision bound for the existing encoded graph-isomorphism
+  problem, following the [manuscript](https://arxiv.org/abs/1512.03547v2) together with the
+  [January 2017 correction](https://people.cs.uchicago.edu/~laci/upcc-fix.pdf).
+  Reuse the graph encoding, indexed-permutation characterization and native verification API.
+  Develop encoded permutation groups with certified orbit/stabilizer and membership algorithms;
+  the Luks string-isomorphism/coset framework; canonical partition, Johnson-configuration and
+  local-certificate arguments; then the full recursion, termination and native quasipolynomial
+  runtime. Those four stages are independently reviewable projects; an NP verifier is not the
+  required decision algorithm.
+- **Bulatov–Zhuk: the finite-domain CSP dichotomy — optional, very large.** For every fixed
+  finite constraint language, prove its CSP is in P or NP-complete, following either
+  [Bulatov](https://arxiv.org/abs/1703.03021) or
+  [Zhuk](https://arxiv.org/abs/1704.01914v11). Choose one tractability proof route rather than
+  formalizing both. Bridge fixed-arity finite templates to the existing CSP semantics and
+  CNF-compilation APIs; develop polymorphisms and primitive-positive reductions; prove the
+  core/idempotent reductions and algebraic hardness criterion; then the chosen tractability
+  algorithm and its native polynomial bound. Keep template-dependent constants separate from
+  instance size. Special cases and reductions are useful milestones, not the full dichotomy.
+- **QIP = PSPACE — optional, large.** Following
+  [Jain–Ji–Upadhyay–Watrous](https://cs.uwaterloo.ca/~watrous/Papers/QIPequalsPSPACE.pdf),
+  characterize polynomial-time quantum interactive proofs using a uniform verifier, unrestricted
+  prover strategies and explicit completeness/soundness gaps. Reuse quantum circuit and
+  measurement foundations and the classical IP/PSPACE development where their models agree.
+  Supply mixed-state/channel and interactive-strategy semantics, the protocol normal form,
+  the semidefinite optimization and matrix multiplicative-weights argument, and a polynomial-space
+  implementation with controlled precision; prove both inclusions through model bridges.
+  Quantum circuit simulation alone does not provide the interactive upper bound.
+- **MIP* = RE — optional, large integration project; exceptional if rebuilt from scratch.**
+  Target the entangled-multiprover characterization of recursively enumerable languages in
+  [Ji–Natarajan–Vidick–Wright–Yuen, v4](https://arxiv.org/abs/2001.04383v4). Start with an audit
+  and reuse assessment of the Apache-2.0
+  [MIPRE formalization](https://github.com/vidick/MIPRE-formalization), including its low-degree-test
+  dependency, rather than duplicating the compression proof. Pin its source and dependencies;
+  check theorem assumptions, entangled-value semantics, toolchain compatibility and the bridge
+  from its verifier-cost model to this library's native resource conventions. Then integrate
+  compatible operator/game foundations, transfer the halting-to-game reduction and RE upper
+  bound, and establish the native class equality. Preserve finite-dimensional tensor-product
+  strategies, their supremum over unbounded finite dimensions and a uniform polynomial-time
+  verifier; distinguish classical MIP and commuting-operator models. If reuse fails, rigidity,
+  low-degree testing and recursive compression are separate major projects to scope before
+  attempting the endpoint.
+
 ## Cryptography
 
 Shared statistical infrastructure now propagates all-state, joint reply/state replacement
@@ -80,9 +131,13 @@ transporting key-generation error, and realizing the efficient forking reduction
   unary `k`; actual OT rows, seal-time ideal commitment, terminal first opening attempts and abort
   retain the same majority-extraction coupling, including `2^-n` at `k = 2n`. A globally polynomial
   private-buffer client lies outside the old constant-growth premise. This does not supply a
-  universal two-sided realization: a global receiver-program adapter and common honest execution
-  with role-local corruption adapters and uniform observation/phase/input contracts still need
-  to connect both real experiments. Arbitrary two-sided scheduling and composition remain open.
+  universal two-sided realization. `OTCommitment/Serial` supplies a common role-local OT world:
+  one pending row is consumed once, and the first terminal attempt freezes further selections.
+  Its explicit honest-party schedulers reproduce both existing real experiments, retaining the
+  receiver's raw opening as well as transcript, state and continuation. This connects those
+  executions under their stated serial schedules; a global receiver-program adapter, uniform
+  native contracts for the common execution, arbitrary two-sided scheduling and composition
+  remain open.
 - **Regev's worst-case to average-case reduction.** For suitable `q` and Gaussian noise rate
   `α` with `αq > 2√n`, an efficient search-LWE algorithm yields a quantum polynomial-time
   algorithm for worst-case GapSVP and SIVP within `Õ(n/α)`. The noise distribution, modulus
@@ -815,9 +870,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `Circuit/Arithmetic/EvaluationTime.lean` certifies the full existing code trace uniformly in the
   runtime circuit and input over any fixed finite semiring, with binary indices and an F4 client.
   The public circuit-bound VOLE session (#2688) consumes F4 and gives single-copy error 5/8.
-  Growing extension-field arithmetic, complete native circuit-bound VOLE execution (#2765; #643;
-  prerequisite #2738), raw-bit adversarial transport (#2744) and fresh-session amplification
-  remain separate endpoints.
+  The shared `Circuit/Encoding/Check.lean` validates the existing gate-code predicate with
+  certified binary arity, including arithmetic codes and malformed huge indices/arity (#2770).
+  Output/count validation and complete native circuit-bound VOLE execution (#2765; #643;
+  prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
+  and fresh-session amplification remain separate endpoints.
 - **Markov-chain sampling:** finite kernels, stationarity, reversibility and total-variation
   mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
   Metropolis sampling for encoded rational target weights, charging initialization, arithmetic

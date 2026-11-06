@@ -63,6 +63,19 @@ does not reconstruct the product tree. The
 similarly supplies named parameter access and certificates with the original unary/binary
 choices. Use these boundaries when changing a client, and retain its encoded-length bounds.
 
+For a computed optional value, import
+`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option`.
+The shared `ComputableInPolyTime.optionMapWithInput` rule certifies
+`fun x => (value x).map (f x)` from certificates for `value` and the joint callback
+`fun p => f p.1 p.2`. The callback is charged against both the original input and
+the present value; input and output value encodings may differ.
+The [public-import client](../../ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeOptionPublicImport.lean)
+checks a captured parameter and an encoding change.
+[Boolean measurement search](../../Complexity/Computability/PolyTime/LinearAlgebra/BooleanMeasurements.lean)
+uses this rule for its optional-result codec, and
+[hybrid CCA composition](../../Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
+uses it to postprocess successful decapsulation while preserving rejection.
+
 ## Walk two lists with a collecting fold
 
 Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold`

@@ -244,15 +244,17 @@ theorem labelStep_toWords (hK : r ^ a ≤ m)
           (fun e => (colOf e, rowOf e)) (Function.update assigned.1 v (some word)) assigned.2) =
           some (wordToSchedule hr a (decodeLabelWord r a jStar)) := by
         rw [labelCandidates_eq hr]
-        have hiff (i j : ℕ) := cast_le_lt_iff hc
-          (s₁ := candidateSlotScore 0 a r 1 edges (toWords assigned) (false, v) i)
-          (s₂ := candidateSlotScore 0 a r 1 edges (toWords assigned) (false, v) j)
-          (by simp only [candidateSlotScore, toWords, updateSlotSchedules, Bool.false_eq_true,
-                ↓reduceIte, hset i assigned.1 v]
-              exact clearedJointScore_zero_one hr hm _ _ _)
-          (by simp only [candidateSlotScore, toWords, updateSlotSchedules, Bool.false_eq_true,
-                ↓reduceIte, hset j assigned.1 v]
-              exact clearedJointScore_zero_one hr hm _ _ _)
+        have hscore (k : ℕ) :
+            (candidateSlotScore 0 a r 1 edges (toWords assigned) (false, v) k : ℚ) =
+              ((r : ℚ) * ((r ^ a : ℕ) : ℚ) ^ 2) *
+                partialIncidencePotential (fun e => (colOf e, rowOf e))
+                  (Function.update assigned.1 v
+                    (some (wordToSchedule hr a (decodeLabelWord r a k))))
+                  assigned.2 := by
+          simp only [candidateSlotScore, toWords, updateSlotSchedules, Bool.false_eq_true,
+            ↓reduceIte, hset k assigned.1 v]
+          exact clearedJointScore_zero_one hr hm _ _ _
+        have hiff (i j : ℕ) := cast_le_lt_iff hc (hscore i) (hscore j)
         exact argmin_map_range _ _ (fun j hj' => (hiff jStar j).1.mp (hle j hj'))
           (fun j hj' => (hiff jStar j).2.mp (hlt j hj')) hj
       simp only [slotPair] at hw
@@ -271,15 +273,16 @@ theorem labelStep_toWords (hK : r ^ a ≤ m)
           (fun e => (colOf e, rowOf e)) assigned.1 (Function.update assigned.2 w (some word))) =
           some (wordToSchedule hr a (decodeLabelWord r a jStar)) := by
         rw [labelCandidates_eq hr]
-        have hiff (i j : ℕ) := cast_le_lt_iff hc
-          (s₁ := candidateSlotScore 0 a r 1 edges (toWords assigned) (true, w) i)
-          (s₂ := candidateSlotScore 0 a r 1 edges (toWords assigned) (true, w) j)
-          (by simp only [candidateSlotScore, toWords, updateSlotSchedules, ↓reduceIte,
-                hset i assigned.2 w]
-              exact clearedJointScore_zero_one hr hm _ _ _)
-          (by simp only [candidateSlotScore, toWords, updateSlotSchedules, ↓reduceIte,
-                hset j assigned.2 w]
-              exact clearedJointScore_zero_one hr hm _ _ _)
+        have hscore (k : ℕ) :
+            (candidateSlotScore 0 a r 1 edges (toWords assigned) (true, w) k : ℚ) =
+              ((r : ℚ) * ((r ^ a : ℕ) : ℚ) ^ 2) *
+                partialIncidencePotential (fun e => (colOf e, rowOf e)) assigned.1
+                  (Function.update assigned.2 w
+                    (some (wordToSchedule hr a (decodeLabelWord r a k)))) := by
+          simp only [candidateSlotScore, toWords, updateSlotSchedules, ↓reduceIte,
+            hset k assigned.2 w]
+          exact clearedJointScore_zero_one hr hm _ _ _
+        have hiff (i j : ℕ) := cast_le_lt_iff hc (hscore i) (hscore j)
         exact argmin_map_range _ _ (fun j hj' => (hiff jStar j).1.mp (hle j hj'))
           (fun j hj' => (hiff jStar j).2.mp (hlt j hj')) hj
       simp only [slotPair] at hw
@@ -342,6 +345,8 @@ abbrev PackingInput : Type := (ℕ × ℕ × ℕ) × ℕ × List (ℕ × ℕ)
 @[expose] def encPackingInput : PackingInput ↪ List Bool :=
   encPair (encPair encUnary (encPair encUnary encUnary)) (encPair encNat (encList (encPair encNat
     encNat)))
+
+attribute [local irreducible] ComputableInPolyTime
 
 /-- The capped label length, in unary. -/
 private theorem computableInPolyTime_cappedLength :
@@ -513,17 +518,15 @@ theorem computableInPolyTime_labelPass :
   · obtain ⟨h1, h2, hw1, hw2⟩ := h
     refine (length_encPartialSchedules_le h1 h2 hw1 hw2).trans ?_
     obtain ⟨⟨nR, nC, a⟩, r, edges⟩ := x
+    set L := (encPackingInput ((nR, nC, a), r, edges)).length
     have hcap : cappedLength a r (edges.map Prod.swap).length ≤ a := by
       unfold cappedLength; split_ifs <;> omega
-    have hr : (encNat r).length ≤ (encPackingInput ((nR, nC, a), r, edges)).length := by
-      simp only [encPackingInput, length_encPair]; omega
-    have hn : nR + nC ≤ 2 * (encPackingInput ((nR, nC, a), r, edges)).length := by
-      simp only [encPackingInput, length_encPair, encUnary_apply, List.length_replicate]; omega
-    have ha : a ≤ (encPackingInput ((nR, nC, a), r, edges)).length := by
-      simp only [encPackingInput, length_encPair, encUnary_apply, List.length_replicate]; omega
-    dsimp only [bound]
-    gcongr
-    · exact hcap.trans ha
+    have ⟨hr, hn, ha⟩ : (encNat r).length ≤ L ∧ nR + nC ≤ 2 * L ∧ a ≤ L := by
+      simp only [L, encPackingInput, length_encPair, encUnary_apply, List.length_replicate]
+      omega
+    exact Nat.add_le_add_right (Nat.mul_le_mul (Nat.mul_le_mul_left 2 hn)
+      (Nat.add_le_add_right (Nat.mul_le_mul (Nat.mul_le_mul_left 2 (hcap.trans ha))
+        (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hr) 1)) 3)) 1
 
 /-- **The row and column words are polynomial-time.** -/
 theorem computableInPolyTime_labelWords :
@@ -846,27 +849,6 @@ private theorem computableInPolyTime_packetOf :
       (ComputableInPolyTime.mapWithInput (by fun_prop)
         (ComputableInPolyTime.binary_mul' hterm hpow))) hblock
 
-private theorem computableInPolyTime_slotOf' {γ : Type} {encIn : γ ↪ List Bool}
-    {a c : γ → ℕ} {ρ κ : γ → List ℕ} (ha : ComputableInPolyTime a encIn encUnary)
-    (hρ : ComputableInPolyTime ρ encIn (encList encNat))
-    (hκ : ComputableInPolyTime κ encIn (encList encNat))
-    (hc : ComputableInPolyTime c encIn encUnary) :
-    ComputableInPolyTime (fun x => slotOf (a x) (ρ x) (κ x) (c x)) encIn encNat := by
-  have h := computableInPolyTime_slotOf.comp
-    (((ha.prod (ComputableInPolyTime.const (encIn := encIn) (encOut := encNat) 0)).prod
-      (hρ.prod hκ)).prod hc)
-  exact h
-
-private theorem computableInPolyTime_packetOf' {γ : Type} {encIn : γ ↪ List Bool}
-    {a r c : γ → ℕ} {ρ κ : γ → List ℕ} (ha : ComputableInPolyTime a encIn encUnary)
-    (hr : ComputableInPolyTime r encIn encNat)
-    (hρ : ComputableInPolyTime ρ encIn (encList encNat))
-    (hκ : ComputableInPolyTime κ encIn (encList encNat))
-    (hc : ComputableInPolyTime c encIn encUnary) :
-    ComputableInPolyTime (fun x => packetOf (a x) (r x) (ρ x) (κ x) (c x)) encIn encNat := by
-  have h := computableInPolyTime_packetOf.comp (((ha.prod hr).prod (hρ.prod hκ)).prod hc)
-  exact h
-
 /-- A class number is below the number of edges. -/
 private theorem mem_classIndices_lt {pairs : List (List ℕ × List ℕ)} {c : ℕ}
     (hc : c ∈ classIndices pairs) : c < pairs.length := by
@@ -962,18 +944,10 @@ theorem computableInPolyTime_packingOfWords :
   have hcs := computableInPolyTime_classIndices.comp hpairs
   have hzip := (ComputableInPolyTime.zip _ _).comp (hpairs.prod hcs)
   let encQ := encPair encWordsInput (encPair (encPair (encList encNat) (encList encNat)) encUnary)
-  have ha : ComputableInPolyTime (fun p : WordsInput × ((List ℕ × List ℕ) × ℕ) => p.1.1.1.1)
-      encQ encUnary := by unfold encQ encWordsInput; fun_prop
-  have hr : ComputableInPolyTime (fun p : WordsInput × ((List ℕ × List ℕ) × ℕ) => p.1.1.1.2)
-      encQ encNat := by unfold encQ encWordsInput; fun_prop
-  have hρ : ComputableInPolyTime (fun p : WordsInput × ((List ℕ × List ℕ) × ℕ) => p.2.1.1)
-      encQ (encList encNat) := by unfold encQ; fun_prop
-  have hκ : ComputableInPolyTime (fun p : WordsInput × ((List ℕ × List ℕ) × ℕ) => p.2.1.2)
-      encQ (encList encNat) := by unfold encQ; fun_prop
-  have hc : ComputableInPolyTime (fun p : WordsInput × ((List ℕ × List ℕ) × ℕ) => p.2.2)
-      encQ encUnary := by unfold encQ; fun_prop
-  have hstep := (computableInPolyTime_packetOf' ha hr hρ hκ hc).prod
-    (computableInPolyTime_slotOf' ha hρ hκ hc)
+  have hin : ComputableInPolyTime
+      (fun p : WordsInput × ((List ℕ × List ℕ) × ℕ) => ((p.1.1.1, p.2.1), p.2.2))
+      encQ encEdgeIn := by unfold encQ encWordsInput encEdgeIn; fun_prop
+  have hstep := (computableInPolyTime_packetOf.prod computableInPolyTime_slotOf).comp hin
   have hmap := ComputableInPolyTime.mapWithInput
     (f := fun (y : WordsInput) (q : (List ℕ × List ℕ) × ℕ) =>
       (packetOf y.1.1.1 y.1.1.2 q.1.1 q.1.2 q.2, slotOf y.1.1.1 q.1.1 q.1.2 q.2)) hzip hstep

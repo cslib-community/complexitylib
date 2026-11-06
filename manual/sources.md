@@ -134,6 +134,11 @@ Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal 
 
 Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circuits: Derandomizing the XOR Lemma*. Proceedings of the 29th Annual ACM Symposium on Theory of Computing, 220–229, 1997. DOI: [10.1145/258533.258590](https://doi.org/10.1145/258533.258590). ACM metadata checked by the coordinated source pass on 2026-11-02; no complete literature proof audit is asserted.
 
+<a id="katzlindell20"></a>
+## katzlindell20
+
+Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edition. CRC Press, 2020. Authors' 3rd-edition table of contents and preface inspected: https://www.cs.umd.edu/~jkatz/imc/toc-preface-3rd.pdf (Section 9.2.3 on the factoring assumption, Section 9.2.4 on the RSA assumption, Section 15.1.1 on trapdoor permutations, Sections 15.4.1–15.4.3 on quadratic residues and the quadratic residuosity assumption, and Sections 15.5.1–15.5.2 on modular square roots and the Rabin trapdoor permutation based on factoring). The full textbook body was not independently audited; the Lean modules adapt the parameter generators and Rabin sampling distribution as documented in the chapter text.
+
 <a id="lean-validation"></a>
 ## lean-validation
 
