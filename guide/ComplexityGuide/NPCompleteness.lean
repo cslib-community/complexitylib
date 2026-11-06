@@ -377,6 +377,14 @@ identifies every polymorphism as a projection or negated projection. This suppli
 the algebraic ingredient for hardness; the native hardness application remains
 part of the full objective.
 
+For reductions between fixed Boolean languages,
+{name}`Cslib.Logic.PL.CSP.exists_ppGadget_of_polymorphisms` constructs equality-free
+primitive-positive gadgets for nonempty target relations with separating columns.
+{name}`Cslib.Complexity.CSP.computableInPolyTime_replaceGadgetsGuarded` certifies
+fixed-gadget replacement with binary labels, fresh auxiliaries and exact-arity
+rejection. The hardness application must discharge nonemptiness, separation and
+polymorphism invariance; general equality elimination is outside this gadget API.
+
 # Proving a Problem NP-Complete
 %%%
 tag := "clique-walkthrough"
