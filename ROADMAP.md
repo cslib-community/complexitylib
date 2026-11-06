@@ -170,8 +170,11 @@ modular-game time/space assembly and prepared-metadata accounting remain
    permits explicit small-secret laws, with a native centered-binomial instance.
    `SIS/ModuleEncryption/Native` realizes the existing deterministic key-generation/sample codec
    uniformly with unary rank/degree and binary modulus/coefficients, given the expanded structured
-   matrix word. Native construction of that matrix from polynomial samples, encryption/decryption
-   and seed codecs remain open; independent uniform scalar entries do not give the module law.
+   matrix word. `SIS/Module/MatrixSampling` natively constructs the existing rectangular rotation
+   blocks and exactly samples their encoded law from independent power-of-two polynomial
+   coefficients, uniformly in unary dimensions/width. Independent uniform scalar entries do not
+   give this law. Full CBD randomized key generation, encryption/decryption and seed codecs
+   remain open.
    `SIS/ModulusSwitch/Failure` bounds randomized switched-decryption failure by the actual noise
    tail under explicit secret-support and decoding margins; small-secret security remains open.
    Nearest-integer coefficient conversion and the Module-LWE phase-error bound are available in
