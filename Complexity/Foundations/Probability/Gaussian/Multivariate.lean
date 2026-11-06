@@ -34,7 +34,8 @@ with probability at most `‖u‖ ^ 2 / c ^ 2` (`stdGaussian_le_abs_inner_le`).
 The standard Gaussian vector of `EuclideanSpace ℝ ι` is a vector of independent standard Gaussian
 coordinates (`measurePreserving_toLp_pi_gaussianReal`), which transfers these facts to the
 product measure `Measure.pi fun _ : ι => gaussianReal 0 1` on `ι → ℝ`; for instance `a ⬝ᵥ ·` is
-a centered Gaussian of variance `‖a‖ ^ 2` there (`pi_gaussianReal_map_dotProduct`).
+a centered Gaussian of variance `‖WithLp.toLp 2 a‖ ^ 2`, the squared Euclidean norm, there
+(`pi_gaussianReal_map_dotProduct`).
 
 ## Main results
 
@@ -123,7 +124,8 @@ theorem measurePreserving_toLp_pi_gaussianReal (ι : Type*) [Fintype ι] :
   ⟨by fun_prop, map_pi_eq_stdGaussian⟩
 
 /-- Under independent standard Gaussian coordinates, the projection `a ⬝ᵥ ·` is a centered
-Gaussian of variance `‖a‖ ^ 2`, the squared Euclidean norm of `a`. -/
+Gaussian of variance `‖WithLp.toLp 2 a‖ ^ 2`, the squared Euclidean norm of `a` (the plain
+`‖a‖` on `ι → ℝ` is the sup norm). -/
 theorem pi_gaussianReal_map_dotProduct {ι : Type*} [Fintype ι] (a : ι → ℝ) :
     (Measure.pi fun _ : ι => gaussianReal 0 1).map (a ⬝ᵥ ·) =
       gaussianReal 0 (‖WithLp.toLp 2 a‖₊ ^ 2) := by
