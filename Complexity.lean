@@ -1559,6 +1559,7 @@ public import Complexity.Computability.Complexity.Classes.SharpP.GapMachine
 public import Complexity.Computability.Complexity.Classes.SharpP.Lowness
 public import Complexity.Computability.Complexity.Classes.SharpP.Machine
 public import Complexity.Computability.Complexity.Classes.SharpP.Oracle
+public import Complexity.Computability.Complexity.Classes.SharpP.OracleReplay
 public import Complexity.Computability.Complexity.Classes.SharpP.PaddedCount
 public import Complexity.Computability.Complexity.Classes.SharpP.PolyTime
 public import Complexity.Computability.Complexity.Classes.SharpP.Power
@@ -2192,6 +2193,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.DPi
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Families
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int
@@ -2273,6 +2275,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decod
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Lookup
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length

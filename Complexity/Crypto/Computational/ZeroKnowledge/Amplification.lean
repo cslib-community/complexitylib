@@ -11,6 +11,7 @@ public import Complexity.Crypto.Computational.ZeroKnowledge.Soundness
 public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
 public import Complexity.Crypto.Computational.GMW.Sequential.Simulator
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Families
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -60,21 +61,6 @@ namespace Cslib.Crypto
 
 open Probability Complexity Logic.PL Turing.MultiTapeTM
 open scoped NNReal ENNReal
-
-/-- A family of witnesses mapped by a polynomial-time function stays polynomially bounded when the
-instance and witness families are. -/
-private theorem polynomiallyBounded_length_map {α β : Type} {enc : α ↪ List Bool}
-    {encB : β ↪ List Bool} {g : α × List Bool → β}
-    (hg : ComputableInPolyTime g (encPair enc encBits) encB)
-    {a : ℕ → α} {w : ℕ → List Bool} (ha : PolynomiallyBounded fun n => (enc (a n)).length)
-    (hw : PolynomiallyBounded fun n => (w n).length) :
-    PolynomiallyBounded fun n => (encB (g (a n, w n))).length := by
-  have hin : PolyBounded id fun n => (encPair enc encBits (a n, w n)).length := by
-    refine (((PolyBounded.const 2).mul (PolyBounded.of_polynomiallyBounded id ha)).add
-      (PolyBounded.const 1) |>.add (PolyBounded.of_polynomiallyBounded id hw)).mono fun n => ?_
-    simp only [length_encPair, encBits_apply, id]
-    lia
-  exact ((ComputableInPolyTime.polyBounded_length hg).comp hin).polynomiallyBounded
 
 /-- **Sequentially amplified GMW zero-knowledge proof system via a Karp reduction to `ThreeSAT`.**
 Given a pseudorandom generator with stretch at least `3 * m + 1`, a polynomial-time reduction
@@ -267,7 +253,8 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_levinZKProof
     GMW.isPPTOn_gmwSeqSimulator hG.polyTime hG.length_eq r.computableInPolyTime_toFun hk hV,
     fun _ _ _ _ ha hw hz hz' hsat _ hadv =>
       hAdv.gmwSeqView_negligible r.computableInPolyTime_toFun hk hV hadv ha
-        (by simpa using polynomiallyBounded_length_map r.computableInPolyTime_forwardWitness ha hw)
+        (by simpa using
+          r.computableInPolyTime_forwardWitness.polynomiallyBounded_length_prod ha hw)
         hz hz' fun n => (r.isWitness_forwardWitness _ _ (of_decide_eq_true (hsat n))).2⟩
 
 /-- **Soundness-amplified GMW theorem (from a pseudorandom generator).** Given a pseudorandom
