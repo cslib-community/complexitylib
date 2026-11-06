@@ -843,6 +843,24 @@ operations are self-inverse for these operands, and only retained second-quarter
 index zero is visited. They do not supply a general inverse construction or prove
 the outstanding universal construction-to-witness endpoint.
 
+For general fourth-quarter preparation, import
+`Complexity.Cryptanalysis.AddXNORNativeBackward` and use
+`Quarter.Backward.prepare_linked_exec`. Supply the target in `initial`, the
+full-width modulus in `modulus`, and the reversed fourth-quarter operand array
+at `base`, with `count` equal to its length. `heads` addresses $2^p$ writable
+head cells; `frontier` starts a positive, disjoint three-cell-per-index record
+region. Operands must avoid both writable regions. The theorem derives the
+linked records of actual inverse states, preserving original packed indices
+and outside memory, after native zero-fill and enumeration. It includes physical
+address/index fit premises. The complete
+[backward preparation client](../../ComplexityTests/AddXNORNativeBackward.lean)
+checks non-self-inverse addition, collisions, dirty memory, and an empty
+zero-width quarter. From the repository root, check it with
+`lake env lean ComplexityTests/AddXNORNativeBackward.lean` after building its
+import. This API supplies backward bucket semantics; connecting both prepared
+sides through actual dictionary retention and projected queries to
+`probeScan_original_exec` remains open.
+
 To execute the complete opposite-class consumer, use `Quarter.probeClass`
 from the same import and root-context client above. Set `count` to the second
 quarter length and `stop` to $2^{\text{count}}$; supply `initial` as the projected

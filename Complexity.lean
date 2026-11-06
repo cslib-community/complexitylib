@@ -2883,6 +2883,7 @@ public import Complexity.Cryptanalysis.AddXNORGuard
 public import Complexity.Cryptanalysis.AddXNORGuardedChain
 public import Complexity.Cryptanalysis.AddXNORNPComplete
 public import Complexity.Cryptanalysis.AddXNORNative
+public import Complexity.Cryptanalysis.AddXNORNativeBackward
 public import Complexity.Cryptanalysis.AddXNORNativeBalance
 public import Complexity.Cryptanalysis.AddXNORNativeBuckets
 public import Complexity.Cryptanalysis.AddXNORNativeCounters

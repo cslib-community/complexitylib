@@ -91,6 +91,10 @@ preparations, retention, streaming hits and returned-register reconstruction, in
 positive projection width, zero width and collisions. They use one-word quarters
 with self-inverse fourth-quarter operations and one retained second-quarter index;
 these restrictions do not establish the general construction premises.
+General native backward preparation now derives full inverse-state bucket records
+and original packed indices for arbitrary operand lists and widths, including
+non-self-inverse additions. Its consecutive connection through projected queries
+and retained dictionary memory to original-chain scan soundness remains open.
 General whole-class termination/time and unconditional original-input returned-witness
 correctness remain unproved. This is a sparse WordRAM
 implementation, not the source's sorted lists or a compact arena. The general correctness/resource certificates for the
