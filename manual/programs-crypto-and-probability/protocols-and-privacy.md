@@ -256,7 +256,7 @@ runtime, or zero-knowledge simulation.
 
 [Complexity/Crypto/Protocols/Signature/RandomOracle.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Signature/RandomOracle.lean) defines a typed random-oracle signature experiment. Signer, verifier and forger share one lazy hash cache. The forger's coins are drawn explicitly before deterministic oracle interaction, enabling replay. Signing and hash queries have separate bounds. Key generation can be an arbitrary PMF, so this finite experiment is not identical to the native `SignatureScheme` interface.
 
-[Complexity/Crypto/Protocols/SigmaProtocol/FiatShamir.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/SigmaProtocol/FiatShamir.lean) hashes `(message, commitment)` to the challenge and proves correctness and a quantitative EUF-CMA bound using special soundness, special HVZK, commitment unpredictability and the generic forking lemma. The bound includes signing/programming collisions, challenge guessing and the square-root forking term. It is a finite exact-security reduction; an asymptotic machine claim additionally needs the encoded efficiency bridges. The module cites Bellare–Neven and Boneh–Shoup and labels its comparison with their constants [bs23][bs23]. Over a `PrimeOrderGroupFamily`,
+[Complexity/Crypto/Protocols/SigmaProtocol/FiatShamir.lean](../../Complexity/Crypto/Protocols/SigmaProtocol/FiatShamir.lean) hashes `(message, commitment)` to the challenge and proves correctness and a quantitative EUF-CMA bound using special soundness, special HVZK, commitment unpredictability and the generic forking lemma. The bound includes signing/programming collisions, challenge guessing and the square-root forking term. It is a finite exact-security reduction; an asymptotic machine claim additionally needs the encoded efficiency bridges. The module cites Bellare–Neven and Boneh–Shoup and labels its comparison with their constants [bs23][bs23]. Over a `PrimeOrderGroupFamily`,
 [`Complexity/Crypto/Computational/SchnorrSignature.lean`](../../Complexity/Crypto/Computational/SchnorrSignature.lean)
 provides bit-encoded key generation, commitment, response, signing from supplied coins and challenge,
 verification and commitment recovery, with polynomial-time certificates. The supplied challenge
@@ -280,6 +280,13 @@ message and commitment at a successful fork; it requires no image-membership tes
 This representation generalization ([#2684](https://github.com/cslib-community/complexitylib/issues/2684))
 preserves the quantitative bound. It does not certify a native implementation of `hashPoint` or
 complete the concrete word Schnorr reduction and its key-generation/signing approximation hops.
+
+`FiatShamir.reduction` now takes an explicit `fallback` output for a failed fork. The existing
+quantitative theorem holds for every such value, with no requirement that it satisfy the witness
+relation. The Schnorr reduction wrappers use zero. This removes the hidden choice of the failure
+output ([#2774](https://github.com/cslib-community/complexitylib/issues/2774)); it does not certify
+the reduction's native runtime or its ideal scalar sampling. Replacing the transcript and answer
+defaults in a native implementation still requires a bounded-execution nonexhaustion proof.
 
 [`SchnorrSignature/WordROM.lean`](../../Complexity/Crypto/Computational/SchnorrSignature/WordROM.lean)
 instantiates that theorem with the actual native word verifier. `schnorrWordSigma` keeps statements

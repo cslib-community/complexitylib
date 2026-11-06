@@ -505,7 +505,7 @@ theorem schnorrScalarROMScheme_correct {M : Type} [DecidableEq M] (d : F.Desc) :
     mem_support_schnorrKeyGen h
 
 /-- The Fiat–Shamir / Bellare–Neven forking discrete-logarithm reduction for
-`schnorrFamilyROMScheme`. -/
+`schnorrFamilyROMScheme`, returning zero on a failed fork. -/
 noncomputable def schnorrFamilyROMSchemeReduction {M : Type} [DecidableEq M] (d : F.Desc) {m : ℕ}
     (hm : 2 ^ m ≤ F.order d)
     (A : Forger (F.Carrier d) M (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d) (BitString m))
@@ -513,10 +513,10 @@ noncomputable def schnorrFamilyROMSchemeReduction {M : Type} [DecidableEq M] (d 
   FiatShamir.reduction (Function.Embedding.refl _) (F.schnorrBitSigma d hm)
     (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod (F.order d))
       (F.Carrier d) (F.generator d)) id (F.challengeEmbedding d hm))
-    (linearExtract (F.challengeEmbedding d hm)) A Qs Qro
+    (linearExtract (F.challengeEmbedding d hm)) 0 A Qs Qro
 
 /-- The Fiat–Shamir / Bellare–Neven forking discrete-logarithm reduction for
-`schnorrScalarROMScheme`. -/
+`schnorrScalarROMScheme`, returning zero on a failed fork. -/
 noncomputable def schnorrScalarROMSchemeReduction {M : Type} [DecidableEq M] (d : F.Desc)
     (A : Forger (F.Carrier d) M (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d)
       (ZMod (F.order d)))
@@ -525,7 +525,7 @@ noncomputable def schnorrScalarROMSchemeReduction {M : Type} [DecidableEq M] (d 
     (F.generator d))
     (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod (F.order d))
       (F.Carrier d) (F.generator d)) id (Function.Embedding.refl _))
-    (linearExtract (Function.Embedding.refl _)) A Qs Qro
+    (linearExtract (Function.Embedding.refl _)) 0 A Qs Qro
 
 /-- In `F.Carrier d`, the one-way game for `schnorrKeyGen (F.generator d)` is the exact
 discrete-logarithm experiment: draw `α ← PMF.uniformOfFintype (ZMod (F.order d))`, run `B (α • g)`,
