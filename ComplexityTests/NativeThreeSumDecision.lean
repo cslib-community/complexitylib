@@ -37,24 +37,22 @@ private def live : Host.Callee 17 := Host.Slow.callee
 #eval decide ((run 4 (Decision.flatProgram 1 live.code) 10
   (State.init [Signed.encode 0, Signed.encode 0])) = some (0, 7))
 
--- Native setup reads the live heap frontier instead of deriving it from the value bound.
--- The subsequent host call keeps these deliberately different arguments separate.
+-- Every call reads the current packed pointer and heap frontier from actual traversal state.
+-- The deliberately different value envelope stays a separate host argument.
 private def layoutInput : Data (Decision.registerCount 0) :=
   (Data.init []).set (Decision.preprocessingRegisters 0 ChanHe.Traversal.heap) 575
+    |>.set (Decision.preprocessingRegisters 0 ChanHe.Traversal.packed) 300
+    |>.set (Decision.preprocessingRegisters 0 ChanHe.Preprocessing.packedLength) 12
+    |>.set (Decision.controllerRegisters 0 Decision.envelope) 100000
 
 /-- info: true -/
 #guard_msgs in
-#eval decide ((Code.eval 32 20 (Decision.setup (r := 0) 0) layoutInput).map (fun yn =>
-  [yn.1.regs (Decision.controllerRegisters 0 Decision.workspace),
-    yn.1.regs (Decision.controllerRegisters 0 Decision.envelope)]) = some [575, 1])
-
-/-- info: true -/
-#guard_msgs in
-#eval decide ((Code.eval 32 20 (Decision.callSetup (r := 0))
-    ((Data.init []).set (Decision.controllerRegisters 0 Decision.workspace) 575
-      |>.set (Decision.controllerRegisters 0 Decision.envelope) 100000)).map (fun yn =>
+#eval decide ((Code.eval 32 20 (Decision.Visitor.prepareHost (r := 0)) layoutInput).map (fun yn =>
   [yn.1.regs (Decision.hostRegisters 0 (Host.hostRegisters Host.matAB)),
-    yn.1.regs (Decision.hostRegisters 0 (Host.hostRegisters Host.upper))]) = some [575, 100000])
+    yn.1.regs (Decision.hostRegisters 0 (Host.hostRegisters Host.upper)),
+    yn.1.regs (Decision.hostRegisters 0 (Host.hostRegisters Host.base)),
+    yn.1.regs (Decision.hostRegisters 0 (Host.hostRegisters Host.len)), yn.2]) =
+      some [575, 100000, 300, 12, 4])
 
 -- Repeated values are allowed; only positions must be different.
 example : ∃ (y : Data (Decision.registerCount 17)) (steps : ℕ),
