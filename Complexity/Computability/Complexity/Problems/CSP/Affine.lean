@@ -21,7 +21,7 @@ All fixed arities, empty/nullary relations and repeated scope variables are supp
 
 This proves the parity case of [Chen2006CSP], Theorem 3.20 (arXiv v1, p. 12), using Theorem 4.3
 and the ensuing Gaussian-elimination argument, pp. 15–16. The affine characterization is also
-[Bodirsky2026], Definition 26.14 and Lemma 26.15 (arXiv v3, Section 26.3).
+[Bodirsky2026], Definition 26.14 and Lemma 26.15 (arXiv v3 HTML, Section 26.3).
 The formal input uses framed lists and
 binary variable labels. The relation alphabet, encoding and templates are fixed; no uniform bound
 in the size of a supplied language or truth table is asserted.
