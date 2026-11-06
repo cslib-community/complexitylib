@@ -41,14 +41,17 @@ Over capacity `n_max` in a contiguous memory block `[base, base + 11 * n_max + 1
   `extractMin` in the current number of stored elements `n = MinPQ.size s`).
 * `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.impl`:
   `StateTransitionImpl` certificate over `Basis.exact`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.RunsClient`:
+  sequential `Basis.exact` flat-program execution predicate for adaptive `Client`s.
 
 ## Main results
 
 * `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.amortized`,
   `run_client_amortized`: standalone `Amortized` certificate and adaptive-client bound
   over `Basis.standard`.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.run_ops_exact_fresh`,
-  `run_ops_exact_reusable`: standalone `Basis.exact` flat-program execution theorems.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.run_client_exact_fresh`,
+  `run_client_exact_reusable`: standalone `Basis.exact` flat-program adaptive-client execution
+  theorems.
 
 ## References
 
@@ -1711,7 +1714,7 @@ theorem run_client_amortized {n_max U V w base : ℕ}
           (fun st o => charge n_max st o + 1) s tr + potential x :=
   (impl hS hU hV).toStandard.run_client_demonic_amortized p hr hv
 
-/-! ## Standalone end-to-end `Basis.exact` flat-program operation-sequence theorems -/
+/-! ## Standalone end-to-end `Basis.exact` flat-program adaptive-client theorems -/
 
 /-- Compiled flat `Program .exact rMinPQ` for `O(1)` fresh zeroed-memory initialization. -/
 def initFreshProg : Program .exact rMinPQ := subroutineCode.initFreshProg
@@ -1793,25 +1796,61 @@ theorem extractLogSum_le_numExtractMins {n_max U V : ℕ} :
         Nat.zero_add]
       omega
 
-/-- Sequential flat-program execution of `ops` by repeated calls to `opProg`: each call prepares
-input registers via `prepareRegs`, runs `opProg` from `pc = 0` to `halt`, decodes a valid
-`minPQSpec` transition `(s₁, a)`, modifies memory only within `[base, base + space n_max)`,
-records the resulting transcript `tr`, and accumulates total instructions executed (including
-each trailing `halt`). -/
-inductive RunsOps {n_max U V : ℕ} (w base : ℕ) :
+/-- Sequential flat-program execution of an adaptive client `p : (minPQSpec n_max U V).Client α`
+by repeated calls to `opProg`: each `.liftBind o k` call prepares input registers via
+`prepareRegs`, runs `opProg` from `pc = 0` to `halt`, decodes a valid `minPQSpec` transition
+`(s₁, a)`, modifies memory only within `[base, base + space n_max)`, continues with `k a`,
+records the resulting return value `v` and transcript `tr`, and accumulates total instructions
+executed (including each trailing `halt`). -/
+inductive RunsClient {n_max U V : ℕ} {α : Type*} (w base : ℕ) :
     PriorityQueue.MinPQ.State n_max → Data rMinPQ →
-      List (PriorityQueue.MinPQ.Op n_max) →
+      (minPQSpec n_max U V).Client α → α →
       (minPQSpec n_max U V).Transcript →
       PriorityQueue.MinPQ.State n_max → Data rMinPQ → ℕ → Prop
-  | nil {s x} : RunsOps w base s x [] [] s x 0
-  | cons {s s₁ s₂ x o a ops tr pc y z steps rest} :
+  | pure {s x a} : RunsClient w base s x (.pure a) a [] s x 0
+  | liftBind {s s₁ s₂ x o k a v tr pc y z steps rest} :
       Runs w opProg ⟨0, ⟨prepareRegs o x.regs, x.mem⟩⟩ ⟨pc, y⟩ steps →
       (∃ out, step w opProg ⟨pc, y⟩ = .halt out) →
       (minPQSpec n_max U V).step s o s₁ a →
       decode (n_max := n_max) (U := U) (V := V) o y.regs = some a →
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem →
-      RunsOps w base s₁ y ops tr s₂ z rest →
-      RunsOps w base s x (o :: ops) (⟨o, a, s₁⟩ :: tr) s₂ z ((steps + 1) + rest)
+      RunsClient w base s₁ y (k a) v tr s₂ z rest →
+      RunsClient w base s x (.liftBind o k) v (⟨o, a, s₁⟩ :: tr) s₂ z ((steps + 1) + rest)
+
+theorem RunsClient.pure_iff {n_max U V : ℕ} {α : Type*} {w base : ℕ}
+    {s s' : PriorityQueue.MinPQ.State n_max} {x z : Data rMinPQ}
+    {a v : α} {tr : (minPQSpec n_max U V).Transcript} {total : ℕ} :
+    RunsClient (U := U) (V := V) w base s x (.pure a) v tr s' z total ↔
+      v = a ∧ tr = [] ∧ s' = s ∧ z = x ∧ total = 0 := by
+  constructor
+  · intro h
+    cases h
+    exact ⟨rfl, rfl, rfl, rfl, rfl⟩
+  · rintro ⟨rfl, rfl, rfl, rfl, rfl⟩
+    exact .pure
+
+theorem RunsClient.liftBind_iff {n_max U V : ℕ} {α : Type*} {w base : ℕ}
+    {s s₂ : PriorityQueue.MinPQ.State n_max} {x z : Data rMinPQ}
+    {o : PriorityQueue.MinPQ.Op n_max}
+    {k : (minPQSpec n_max U V).Result o → (minPQSpec n_max U V).Client α}
+    {v : α} {tr : (minPQSpec n_max U V).Transcript} {total : ℕ} :
+    RunsClient (U := U) (V := V) w base s x (.liftBind o k) v tr s₂ z total ↔
+      ∃ s₁ a tr_rest pc y steps rest,
+        tr = ⟨o, a, s₁⟩ :: tr_rest ∧
+        total = (steps + 1) + rest ∧
+        Runs w opProg ⟨0, ⟨prepareRegs o x.regs, x.mem⟩⟩ ⟨pc, y⟩ steps ∧
+        (∃ out, step w opProg ⟨pc, y⟩ = .halt out) ∧
+        (minPQSpec n_max U V).step s o s₁ a ∧
+        decode (n_max := n_max) (U := U) (V := V) o y.regs = some a ∧
+        Modifies (Block.mk base (space n_max)).footprint x.mem y.mem ∧
+        RunsClient (U := U) (V := V) w base s₁ y (k a) v tr_rest s₂ z rest := by
+  constructor
+  · intro h
+    cases h with
+    | liftBind hr hh hstep hdec hmod hrest =>
+      exact ⟨_, _, _, _, _, _, _, rfl, rfl, hr, hh, hstep, hdec, hmod, hrest⟩
+  · rintro ⟨_, _, _, _, _, _, _, rfl, rfl, hr, hh, hstep, hdec, hmod, hrest⟩
+    exact .liftBind hr hh hstep hdec hmod hrest
 
 private theorem step_program_halt {w : ℕ} (c : Code .exact rMinPQ) (out : Fin rMinPQ)
     (y : Data rMinPQ) : step w (c.program out) ⟨0 + c.size, y⟩ = .halt (y.regs out) :=
@@ -1820,24 +1859,28 @@ private theorem step_program_halt {w : ℕ} (c : Code .exact rMinPQ) (out : Fin 
       List.getElem?_append_right (Code.length_assemble c 0).le,
       Code.length_assemble, Nat.sub_self, List.getElem?_cons_zero])
 
-private theorem seq_runsOps {n_max U V w base : ℕ}
-    (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    ∀ (ops : List (PriorityQueue.MinPQ.Op n_max))
-      {s : PriorityQueue.MinPQ.State n_max} {x : Data rMinPQ},
-      Rep n_max U V w base s x →
-      (minPQSpec n_max U V).ValidOpSeq s ops →
-      ∃ tr s_fin z total,
-        RunsOps (U := U) (V := V) w base s x ops tr s_fin z total ∧
-        tr.ops = ops ∧
-        (minPQSpec n_max U V).ValidTranscript s tr s_fin ∧
-        Rep n_max U V w base s_fin z ∧
-        total + potential z ≤
-          421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
-            extractLogSum s tr) + potential x
-  | [], s, x, hr, _ =>
-    ⟨[], s, x, 0, .nil, rfl, .nil (D := minPQSpec n_max U V) s, hr,
-      by simp only [numQueries, numInserts, numDecreaseKeys, extractLogSum]; omega⟩
-  | o :: ops, s, x, hr, ⟨hv_o, hv_rest⟩ => by
+private theorem seq_runsClient {n_max U V w base : ℕ}
+    (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V)
+    {α : Type*} (p : (minPQSpec n_max U V).Client α)
+    {s : PriorityQueue.MinPQ.State n_max} {x : Data rMinPQ}
+    (hr : Rep n_max U V w base s x)
+    (hv : (minPQSpec n_max U V).DemonicValid s p) :
+    ∃ v tr s_fin z total,
+      RunsClient (U := U) (V := V) w base s x p v tr s_fin z total ∧
+      (minPQSpec n_max U V).ClientRun s p v s_fin tr ∧
+      Rep n_max U V w base s_fin z ∧
+      total + potential z ≤
+        421 * (numQueries tr.ops + numInserts tr.ops + numDecreaseKeys tr.ops +
+          extractLogSum s tr) + potential x := by
+  induction p generalizing s x with
+  | pure a =>
+    exact ⟨a, [], s, x, 0, .pure, .pure (D := minPQSpec n_max U V) s a, hr, by
+      simp only [StateTransitionSpec.Transcript.ops_nil,
+        numQueries, numInserts, numDecreaseKeys, extractLogSum]
+      omega⟩
+  | liftBind o k ih =>
+    obtain ⟨hv_o, hv_rest⟩ :=
+      ((minPQSpec n_max U V).demonicValid_liftBind_iff s o k).mp hv
     let x' : Data rMinPQ := ⟨prepareRegs o x.regs, x.mem⟩
     have hbx : x.Bounded w := hr.choose_spec.2.1
     have henc_eq : encode U o = rawEncode o := encode_eq_rawEncode_of_rep hr hv_o
@@ -1868,13 +1911,13 @@ private theorem seq_runsOps {n_max U V w base : ℕ}
       he_op.runs (pc := 0) (p := opProg) (Program.Contains.self _).append_left
     have hhalt : step w opProg ⟨0 + dispatchCode.size, y⟩ = .halt (y.regs outFlag) :=
       step_program_halt dispatchCode outFlag y
-    obtain ⟨tr, s_fin, z, rest, hrest, hops, htr, hr_z, hpot_rest⟩ :=
-      seq_runsOps hS hU hV ops hr_y (hv_rest s₁ a hstep)
-    refine ⟨⟨o, a, s₁⟩ :: tr, s_fin, z, (m + 1) + rest,
-      .cons hruns ⟨_, hhalt⟩ hstep hdec hmod hrest,
-      congrArg (o :: ·) hops, .cons ⟨o, a, s₁⟩ hv_o hstep htr, hr_z, ?_⟩
+    obtain ⟨v, tr, s_fin, z, rest, hrest, hrun_rest, hr_z, hpot_rest⟩ :=
+      ih a hr_y (hv_rest s₁ a hstep)
+    refine ⟨v, ⟨o, a, s₁⟩ :: tr, s_fin, z, (m + 1) + rest,
+      .liftBind hruns ⟨_, hhalt⟩ hstep hdec hmod hrest,
+      .liftBind (D := minPQSpec n_max U V) o k a hv_o hstep hrun_rest, hr_z, ?_⟩
     cases o <;>
-      simp only [charge, tEmpty, tGet, tIns, tDec, tExt,
+      simp only [StateTransitionSpec.Transcript.ops_cons, charge, tEmpty, tGet, tIns, tDec, tExt,
         numQueries, numInserts, numDecreaseKeys, extractLogSum] at hpot_m ⊢ <;>
       omega
 
@@ -1888,32 +1931,31 @@ private theorem initRegs_bounded {n_max base w : ℕ} (hS : Fits w (base + space
   · exact hS.of_le (Nat.le_add_right base _)
   · exact hS.of_le (Nat.zero_le _)
 
-/-- Standalone `Basis.exact` operation-sequence theorem with `O(1)` fresh initialization on zeroed
+/-- Standalone `Basis.exact` adaptive-client theorem with `O(1)` fresh initialization on zeroed
 `[base, base + 11 * n_max + 1)` and per-extraction `O(log n + 1)` amortized cost in the current
 number of stored elements `n = MinPQ.size s`. -/
-theorem run_ops_exact_fresh {n_max U V w base : ℕ}
+theorem run_client_exact_fresh {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V)
     {mem₀ : ℕ → ℕ} (hmem : ∀ a, Fits w (mem₀ a))
     (hzero : ∀ a ∈ (Block.mk base (space n_max)).footprint, mem₀ a = 0)
-    (ops : List (PriorityQueue.MinPQ.Op n_max))
-    (hv : (minPQSpec n_max U V).ValidOpSeq
-      (PriorityQueue.MinPQ.empty n_max) ops) :
-    ∃ pc₀ x₀ t_init tr s_fin z t_ops,
+    {α : Type*} (p : (minPQSpec n_max U V).Client α)
+    (hv : (minPQSpec n_max U V).DemonicValid
+      (PriorityQueue.MinPQ.empty n_max) p) :
+    ∃ pc₀ x₀ t_init v tr s_fin z t_ops,
       Runs w initFreshProg ⟨0, ⟨initRegs n_max base, mem₀⟩⟩ ⟨pc₀, x₀⟩ t_init ∧
       (∃ out, step w initFreshProg ⟨pc₀, x₀⟩ = .halt out) ∧
       Modifies (Block.mk base (space n_max)).footprint mem₀ x₀.mem ∧
-      RunsOps (U := U) (V := V) w base (PriorityQueue.MinPQ.empty n_max) x₀ ops tr
+      RunsClient (U := U) (V := V) w base (PriorityQueue.MinPQ.empty n_max) x₀ p v tr
         s_fin z t_ops ∧
-      tr.ops = ops ∧
-      (minPQSpec n_max U V).ValidTranscript
-        (PriorityQueue.MinPQ.empty n_max) tr s_fin ∧
+      (minPQSpec n_max U V).ClientRun
+        (PriorityQueue.MinPQ.empty n_max) p v s_fin tr ∧
       t_init + 1 ≤ 421 ∧
       t_ops ≤
-        421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
+        421 * (numQueries tr.ops + numInserts tr.ops + numDecreaseKeys tr.ops +
           extractLogSum (PriorityQueue.MinPQ.empty n_max) tr) ∧
       t_ops ≤
-        421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
-          numExtractMins ops * (Nat.log 2 n_max + 1)) := by
+        421 * (numQueries tr.ops + numInserts tr.ops + numDecreaseKeys tr.ops +
+          numExtractMins tr.ops * (Nat.log 2 n_max + 1)) := by
   let d₀ : Data rMinPQ := ⟨initRegs n_max base, mem₀⟩
   have hfr_eq : d₀.regs outerFrontierReg = base := by
     simp only [d₀, initRegs, show outerFrontierReg ≠ nReg by decide, ↓reduceIte]
@@ -1927,12 +1969,11 @@ theorem run_ops_exact_fresh {n_max U V w base : ℕ}
   have hhalt₀ : step w initFreshProg ⟨0 + subroutineCode.initFresh.size, x₀⟩ =
       .halt (x₀.regs outFlag) :=
     step_program_halt subroutineCode.initFresh outFlag x₀
-  obtain ⟨tr, s_fin, z, t_ops, hruns_ops, hops, htr, _, hbound⟩ :=
-    seq_runsOps hS hU hV ops hr₀ hv
+  obtain ⟨v, tr, s_fin, z, t_ops, hruns_ops, hrun, _, hbound⟩ :=
+    seq_runsClient hS hU hV p hr₀ hv
   have hlog_le := extractLogSum_le_numExtractMins tr (PriorityQueue.MinPQ.empty n_max)
-  rw [hops] at hlog_le
-  refine ⟨_, x₀, t_init, tr, s_fin, z, t_ops, hruns₀, ⟨_, hhalt₀⟩, hmod₀, hruns_ops,
-    hops, htr, ?_, ?_, ?_⟩
+  refine ⟨_, x₀, t_init, v, tr, s_fin, z, t_ops, hruns₀, ⟨_, hhalt₀⟩, hmod₀, hruns_ops,
+    hrun, ?_, ?_, ?_⟩
   · change t_init ≤ 33 at ht_init
     omega
   · change potential x₀ ≤ 0 at hpot₀
@@ -1940,31 +1981,30 @@ theorem run_ops_exact_fresh {n_max U V w base : ℕ}
   · change potential x₀ ≤ 0 at hpot₀
     omega
 
-/-- Standalone `Basis.exact` operation-sequence theorem with `O(n_max)` reusable initialization on
+/-- Standalone `Basis.exact` adaptive-client theorem with `O(n_max)` reusable initialization on
 arbitrary `w`-bounded memory `mem₀` and per-extraction `O(log n + 1)` amortized cost in the current
 number of stored elements `n = MinPQ.size s`. -/
-theorem run_ops_exact_reusable {n_max U V w base : ℕ}
+theorem run_client_exact_reusable {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V)
     {mem₀ : ℕ → ℕ} (hmem : ∀ a, Fits w (mem₀ a))
-    (ops : List (PriorityQueue.MinPQ.Op n_max))
-    (hv : (minPQSpec n_max U V).ValidOpSeq
-      (PriorityQueue.MinPQ.empty n_max) ops) :
-    ∃ pc₀ x₀ t_init tr s_fin z t_ops,
+    {α : Type*} (p : (minPQSpec n_max U V).Client α)
+    (hv : (minPQSpec n_max U V).DemonicValid
+      (PriorityQueue.MinPQ.empty n_max) p) :
+    ∃ pc₀ x₀ t_init v tr s_fin z t_ops,
       Runs w initClearProg ⟨0, ⟨initRegs n_max base, mem₀⟩⟩ ⟨pc₀, x₀⟩ t_init ∧
       (∃ out, step w initClearProg ⟨pc₀, x₀⟩ = .halt out) ∧
       Modifies (Block.mk base (space n_max)).footprint mem₀ x₀.mem ∧
-      RunsOps (U := U) (V := V) w base (PriorityQueue.MinPQ.empty n_max) x₀ ops tr
+      RunsClient (U := U) (V := V) w base (PriorityQueue.MinPQ.empty n_max) x₀ p v tr
         s_fin z t_ops ∧
-      tr.ops = ops ∧
-      (minPQSpec n_max U V).ValidTranscript
-        (PriorityQueue.MinPQ.empty n_max) tr s_fin ∧
+      (minPQSpec n_max U V).ClientRun
+        (PriorityQueue.MinPQ.empty n_max) p v s_fin tr ∧
       t_init + 1 ≤ 421 * (n_max + 1) ∧
       t_ops ≤
-        421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
+        421 * (numQueries tr.ops + numInserts tr.ops + numDecreaseKeys tr.ops +
           extractLogSum (PriorityQueue.MinPQ.empty n_max) tr) ∧
       t_ops ≤
-        421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
-          numExtractMins ops * (Nat.log 2 n_max + 1)) := by
+        421 * (numQueries tr.ops + numInserts tr.ops + numDecreaseKeys tr.ops +
+          numExtractMins tr.ops * (Nat.log 2 n_max + 1)) := by
   let d₀ : Data rMinPQ := ⟨initRegs n_max base, mem₀⟩
   have hfr_eq : d₀.regs outerFrontierReg = base := by
     simp only [d₀, initRegs, show outerFrontierReg ≠ nReg by decide, ↓reduceIte]
@@ -1978,12 +2018,11 @@ theorem run_ops_exact_reusable {n_max U V w base : ℕ}
   have hhalt₀ : step w initClearProg ⟨0 + subroutineCode.initClear.size, x₀⟩ =
       .halt (x₀.regs outFlag) :=
     step_program_halt subroutineCode.initClear outFlag x₀
-  obtain ⟨tr, s_fin, z, t_ops, hruns_ops, hops, htr, _, hbound⟩ :=
-    seq_runsOps hS hU hV ops hr₀ hv
+  obtain ⟨v, tr, s_fin, z, t_ops, hruns_ops, hrun, _, hbound⟩ :=
+    seq_runsClient hS hU hV p hr₀ hv
   have hlog_le := extractLogSum_le_numExtractMins tr (PriorityQueue.MinPQ.empty n_max)
-  rw [hops] at hlog_le
-  refine ⟨_, x₀, t_init, tr, s_fin, z, t_ops, hruns₀, ⟨_, hhalt₀⟩, hmod₀, hruns_ops,
-    hops, htr, ?_, ?_, ?_⟩
+  refine ⟨_, x₀, t_init, v, tr, s_fin, z, t_ops, hruns₀, ⟨_, hhalt₀⟩, hmod₀, hruns_ops,
+    hrun, ?_, ?_, ?_⟩
   · change t_init ≤ 33 + 4 * (11 * n_max + 1) + 6 at ht_init
     omega
   · change potential x₀ ≤ 0 at hpot₀
