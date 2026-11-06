@@ -861,6 +861,20 @@ import. This API supplies backward bucket semantics; connecting both prepared
 sides through actual dictionary retention and projected queries to
 `probeScan_original_exec` remains open.
 
+For consecutive backward preparation and native forward retention, import
+`Complexity.Cryptanalysis.AddXNORNativeBackwardRetain` and apply
+`Quarter.Backward.prepareRetain_exec`. In addition to the preparation layout,
+supply a separate forward operand array below the dictionary, disjoint from
+heads and records, and zero dictionary memory. The program loads the selected
+head and transfers registers itself. Its conclusion derives the exact dictionary
+insertion stream and originating-record payloads, including collisions and zero
+indices, while framing other memory and preserved registers. The complete
+[composition client](../../ComplexityTests/AddXNORNativeBackwardRetain.lean)
+can be checked with `lake env lean ComplexityTests/AddXNORNativeBackwardRetain.lean`
+after building its import. This forward consumer of inverse records is a bounded
+component; it does not implement the source's full backward-half enumeration or
+the projected-query/probe/global pipeline.
+
 To execute the complete opposite-class consumer, use `Quarter.probeClass`
 from the same import and root-context client above. Set `count` to the second
 quarter length and `stop` to $2^{\text{count}}$; supply `initial` as the projected
