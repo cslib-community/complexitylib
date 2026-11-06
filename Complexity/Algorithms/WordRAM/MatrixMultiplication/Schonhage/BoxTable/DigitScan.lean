@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.Program
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.Digits
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Execution of the box-geometry digit scan
 
@@ -143,26 +145,25 @@ theorem exec_inspect {w L s : ℕ} (x : Data registers)
     ram_eval [start, e, c, hslot, hT, hfe, hfc, hf1,
       Reg.stars, Reg.slot, Reg.span, Reg.completion, Reg.suffix, Reg.level,
       Reg.population, Reg.power, Reg.starPower, Fin.mk.injEq]
-  let I (y : Data registers) : Prop :=
-    y.regs Reg.level ≤ L ∧
-      y.regs Reg.suffix = c / 10 ^ y.regs Reg.level ∧
-      y.regs Reg.population = population c (y.regs Reg.level) ∧
-      y.regs Reg.power = 10 ^ y.regs Reg.level ∧
-      y.regs Reg.starPower = starStride c e (y.regs Reg.level) ∧
+  let P (j : ℕ) (y : Data registers) : Prop :=
+    y.regs Reg.suffix = c / 10 ^ j ∧
+      y.regs Reg.population = population c j ∧
+      y.regs Reg.power = 10 ^ j ∧
+      y.regs Reg.starPower = starStride c e j ∧
       y.mem = x.mem ∧ (∀ i, ¬DigitLocal i → y.regs i = start.regs i)
-  have hi : I start := by
-    simp [I, start, Reg.level, Reg.starPower, Reg.power, Reg.population, Reg.suffix,
+  have hi : P (start.regs Reg.level) start := by
+    simp [P, start, Reg.level, Reg.starPower, Reg.power, Reg.population, Reg.suffix,
       Reg.completion, Reg.stars, population_zero, starStride]
-  have hb (y : Data registers) (hy : I y) (hg : (Cond.lt Reg.level Reg.levels).Holds y) :
-      ∃ z, ExecWithin w countDigit y z 9 ∧ I z ∧
-        L - z.regs Reg.level < L - y.regs Reg.level := by
-    obtain ⟨hle, hq, hp, hpow, hstar, hm, hframe⟩ := hy
-    have hlevels : y.regs Reg.levels = L := by
-      simpa [start, Reg.levels, Reg.stars, Reg.completion, Reg.suffix, Reg.level,
-        Reg.population, Reg.power, Reg.starPower] using
-        (hframe Reg.levels (by decide)).trans (by
-          simpa [start, Reg.levels, Reg.stars, Reg.completion, Reg.suffix, Reg.level,
-            Reg.population, Reg.power, Reg.starPower] using hL)
+  have hlimit (y : Data registers) (hy : P (y.regs Reg.level) y) :
+      y.regs Reg.levels = L := by
+    obtain ⟨_, _, _, _, _, hframe⟩ := hy
+    rw [hframe Reg.levels (by decide)]
+    simpa [start, Reg.levels, Reg.stars, Reg.completion, Reg.suffix, Reg.level,
+      Reg.population, Reg.power, Reg.starPower] using hL
+  have hb (y : Data registers) (hy : P (y.regs Reg.level) y) (hk : y.regs Reg.level < L) :
+      ∃ z, ExecWithin w countDigit y z 9 ∧ P (y.regs Reg.level + 1) z ∧
+        z.regs Reg.level = y.regs Reg.level + 1 := by
+    obtain ⟨hq, hp, hpow, hstar, hm, hframe⟩ := hy
     have hconst1 : y.regs Reg.one = 1 := by
       simpa [start, Reg.one, Reg.stars, Reg.completion, Reg.suffix, Reg.level,
         Reg.population, Reg.power, Reg.starPower] using
@@ -184,39 +185,25 @@ theorem exec_inspect {w L s : ℕ} (x : Data registers)
     have hstars : y.regs Reg.stars = e := by
       simpa [start, Reg.stars, Reg.completion, Reg.suffix, Reg.level,
         Reg.population, Reg.power, Reg.starPower] using hframe Reg.stars (by decide)
-    have hk : y.regs Reg.level < L := by simpa only [Cond.holds_lt, hlevels] using hg
     obtain ⟨z, hz, hzl, hzq, hzp, hzpow, hzs, hzm, hzf⟩ :=
       exec_countDigit y hk hconst10 hconst9 hconst1 hstars rfl hq hp hpow hstar hfitc
-    refine ⟨z, hz, ⟨by omega, ?_, ?_, ?_, ?_, hzm.trans hm,
-      fun i h => (hzf i h).trans (hframe i h)⟩, by omega⟩
-    · simpa only [hzl] using hzq
-    · simpa only [hzl] using hzp
-    · simpa only [hzl] using hzpow
-    · simpa only [hzl] using hzs
-  obtain ⟨y, hloop, hy, hstop⟩ := ExecWithin.loop_invariant I
-    (fun y => L - y.regs Reg.level) hb hi
-  have hlevels : y.regs Reg.levels = L := by
-    simpa [start, Reg.levels, Reg.stars, Reg.completion, Reg.suffix, Reg.level,
-      Reg.population, Reg.power, Reg.starPower] using
-      (hy.2.2.2.2.2.2 Reg.levels (by decide)).trans (by
-        simpa [start, Reg.levels, Reg.stars, Reg.completion, Reg.suffix, Reg.level,
-          Reg.population, Reg.power, Reg.starPower] using hL)
-  have hdone : y.regs Reg.level = L := by
-    simp only [Cond.holds_lt, hlevels, not_lt] at hstop
-    exact Nat.le_antisymm hy.1 hstop
+    refine ⟨z, hz, ⟨hzq, hzp, hzpow, hzs, hzm.trans hm,
+      fun i h => (hzf i h).trans (hframe i h)⟩, hzl⟩
+  obtain ⟨y, hloop, ⟨_, hpop, _, hstar, hm, hframe⟩, _⟩ := ExecWithin.loop_count P hlimit hb
+    (by simp [start, Reg.level, Reg.starPower, Reg.power, Reg.population]) hi
   have hwhole : ExecWithin w inspect x y (11 * L + 9) := by
     apply (hs.seq hloop).mono
     simp only [start, Data.set_regs, Reg.level, Reg.population, Reg.power, Reg.starPower,
       Function.update_apply, Fin.reduceEq, ↓reduceIte, Nat.sub_zero]
     omega
-  refine ⟨y, hwhole, ?_, ?_, ?_, ?_, hy.2.2.2.2.2.1,
+  refine ⟨y, hwhole, ?_, ?_, ?_, ?_, hm,
     fun i hi => hwhole.regs_eq (inspect_preserves i hi)⟩
   · simpa [start, Reg.stars, Reg.completion, Reg.suffix, Reg.level,
-      Reg.population, Reg.power, Reg.starPower] using hy.2.2.2.2.2.2 Reg.stars (by decide)
+      Reg.population, Reg.power, Reg.starPower] using hframe Reg.stars (by decide)
   · simpa [start, Reg.stars, Reg.completion, Reg.suffix, Reg.level,
       Reg.population, Reg.power, Reg.starPower] using
-      hy.2.2.2.2.2.2 Reg.completion (by decide)
-  · simpa only [hdone] using hy.2.2.1
-  · simpa only [hdone] using hy.2.2.2.2.1
+      hframe Reg.completion (by decide)
+  · exact hpop
+  · exact hstar
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable
