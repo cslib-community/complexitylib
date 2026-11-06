@@ -3152,6 +3152,7 @@ public import Complexity.Crypto.Computational.Signature
 public import Complexity.Crypto.Computational.Signature.RandomOracle
 public import Complexity.Crypto.Computational.Signature.WordRandomOracle
 public import Complexity.Crypto.Computational.Stretch
+public import Complexity.Crypto.Computational.Stretch.Prefix
 public import Complexity.Crypto.Computational.Stretch.Quantitative
 public import Complexity.Crypto.Computational.TCRSignature
 public import Complexity.Crypto.Computational.TCRSignature.ManyTime
