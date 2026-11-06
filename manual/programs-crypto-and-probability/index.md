@@ -204,13 +204,53 @@ in [the bibliography](../../references.bib). The checked clients are in
   actual policy-minus-open-loop cost $(1-m)/4<0$ for every real $m>1$. The second
   action has no effect. Retaining only $s\land a$ preserves the two-state claim;
   the paper's stored pair contains redundant information.
+- [StochasticOracle.FullCover](../../Complexity/Probability/StochasticOracle/FullCover.lean)
+  implements Wang's Theorem 1 (PDF pp. 6–7) for failure-oblivious full-cover
+  selection. `FullCoverInstance` has finitely many labeled call opportunities,
+  strictly positive probabilities below one, positive expected token costs and
+  positive cutoffs. Failures reveal only that no accepted cover was obtained;
+  future batch laws are failure invariant, with independent call successes.
+  A `Policy` can randomize before or after failed batches and remember its private
+  choices. `execution` records the actual stopped trace, while `scheduleLaw`
+  simulates the all-failure choices without querying an oracle.
+  `cost_success_frontier` equates both coordinates with the finite LP;
+  `target_feasible_iff_schedule` includes infeasibility, and `optimal_two_schedules`
+  constructs an attained optimum with at most two positive schedule weights.
+  `maximum_success_support` characterizes maximum success by using every call,
+  and `deterministic_max_success` rules out an improvement from randomization at
+  that endpoint. `one_batch_values` and `two_batch_values` give the exact costs.
+  `Plan` has a parametric number of padded slots: empty batches issue no calls;
+  erase them to obtain the paper's nonempty batch sequences. `Plan.Feasible`
+  requires no reuse and bounds the sum of maximum batch cutoffs, excluding local
+  computation. [ExecutionFeasibility](../../Complexity/Probability/StochasticOracle/ExecutionFeasibility.lean)
+  proves this contract for every supported stopped execution.
+  [RationalFullCover](../../Complexity/Probability/StochasticOracle/RationalFullCover.lean)
+  supplies `optimal_rational_program`: all numerical inputs are rational but
+  competitors may randomize with arbitrary real probabilities. The optimum has
+  an exact finite-uniform `ProbComp` sampler and `ProbOracleComp` execution whose
+  law is proved in [Programs](../../Complexity/Probability/StochasticOracle/Programs.lean).
+  This certifies exact sampling, without a strict worst-case fair-coin time bound.
+  [RandomCost](../../Complexity/Probability/StochasticOracle/RandomCost.lean)'s
+  `billed_cost_eq` covers arbitrary probability spaces and integrable random bills,
+  including correlation with the current batch's success. Its assumptions are the
+  stopped-trace law and conditional expected costs per selected batch and slot;
+  it derives the total expected cost. Import `RationalFullCover`,
+  `ExecutionFeasibility` and `RandomCost`, and check the complete
+  [StochasticOracleFullCover.lean](../../ComplexityTests/StochasticOracleFullCover.lean)
+  client: heterogeneous deadlines, internal randomization after failure, a mixed
+  optimum, exact non-dyadic sampling, zero/one endpoints, zero turns and
+  success-correlated bills. The rational optimizer uses the generic
+  [one-constraint LP](../../Complexity/Foundations/Optimization/OneConstraint.lean)
+  support reduction and finite vertex enumeration; its schedule set can be
+  exponential. The binary-input FPTAS, hardness, partial-cover and adaptive
+  endpoints remain open under [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
 - [Submodular.OracleSavings](../../Complexity/Algorithms/Lean/Submodular/OracleSavings.lean)
   proves Wang's Theorem 2(1) (PDF p. 7). A finite type indexes all oracles;
   `savings p c A` is exactly $(1-\prod_{i\in A}(1-p_i))\sum_{i\notin A}c_i$.
   Use `savings_nonneg` and `savings_isSubmodular` with pointwise $0\le p_i\le1$
   and $c_i\ge0$. Submodularity reuses the library's `IsSubmodular`; savings need
   not be monotone (the test has singleton saving one and full-set saving zero).
-  The scheduling theorem and FPTAS are outside this endpoint.
+  The scheduling theorem is supplied by `StochasticOracle`; the FPTAS remains open.
 - [PeerPrediction.Quadratic](../../Complexity/Probability/PeerPrediction/Quadratic.lean)
   implements Kong's equation (8), Lemma 7.2 and Theorem 7.3 (PDF pp. 18–19).
   `IsJoint` means a nonnegative finite probability table of total mass one;
