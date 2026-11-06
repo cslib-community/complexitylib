@@ -495,15 +495,18 @@ index links to canonical definitions rather than keeping a second set.
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
-- **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): implicit Tree Evaluation with the
-  fan-in-`d` space bound and the native block-tree evaluator are developed in the stacked
-  work tracked by the issue. The full `DTIME_subset_DSPACE_sqrt` inclusion is proved in
-  `Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean` for arbitrary
-  injective input encodings and every `t(n) ≥ n`, without time constructibility. Its fixed
-  driver scans the original input, searches schedules and increases balanced time guesses.
-  The stacked development still needs final CI and integration; the broad issue remains
-  open until it lands. For Cook–Mertz itself: malformed-input handling
-  and the refined `O(ℓ + H log(ℓ + 2))` parameter bound.
+- **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): the native implicit
+  Tree Evaluation/block-tree evaluator, complete HPV driver and final
+  [`DTIME_subset_DSPACE_sqrt`](Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean)
+  inclusion have landed, together with the [checked registry entry](ComplexityResults/Entries.lean)
+  ([#2142](https://github.com/cslib-community/complexitylib/pull/2142),
+  [#2143](https://github.com/cslib-community/complexitylib/pull/2143)). The inclusion covers
+  arbitrary injective input encodings and every `t(n) ≥ n`, without time constructibility;
+  its fixed driver scans the original input, searches schedules and increases balanced time
+  guesses. M4's separation corollaries and curated abstract with independent review remain
+  open in [#888]; landing the inclusion and registry does not complete that broader scope.
+  For Cook–Mertz itself: malformed-input handling and the refined
+  `O(ℓ + H log(ℓ + 2))` parameter bound remain open.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
