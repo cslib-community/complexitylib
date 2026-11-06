@@ -9,7 +9,7 @@ module
 
 public import Complexity.Foundations.LinearAlgebra.Tensor.Basic
 public import Mathlib.Algebra.Polynomial.Coeff
-public import Mathlib.LinearAlgebra.Lagrange
+import Mathlib.LinearAlgebra.Lagrange
 
 /-!
 # The polynomial multiplication tensors

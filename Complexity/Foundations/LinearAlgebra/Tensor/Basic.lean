@@ -12,6 +12,7 @@ public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.Data.Matrix.Basic
 public import Mathlib.LinearAlgebra.Matrix.Kronecker
 public import Mathlib.Logic.Equiv.Fin.Basic
+import Mathlib.Algebra.BigOperators.Fin
 
 /-!
 # Finite tensors, restrictions and rank
@@ -65,8 +66,9 @@ Matrix multiplication of `p × q` by `q × r` matrices is the tensor `Tensor.mm 
   `Cslib.Tensor.dsum_dsum`, `Cslib.Tensor.swap12_dsum`, `Cslib.Tensor.tprod_tprod_tprod_comm`:
   rearrangements, as equalities up to reindexing ([Pass][Pass2026], Lemma 2.10).
 * `Cslib.Tensor.swap12_mm`, `Cslib.Tensor.swap13_mm`, `Cslib.Tensor.tprod_mm_mm`,
-  `Cslib.Tensor.isRestriction_mm_tprod_swaps`: role exchanges and products of matrix
-  multiplication.
+  `Cslib.Tensor.isRestriction_mm_tprod_swaps`, `Cslib.Tensor.isRestriction_mm_of_le`,
+  `Cslib.Tensor.isRestriction_mm_pow_tpow`: role exchanges, products, padding and powers of
+  matrix multiplication.
 * `Cslib.Tensor.Rank.tprod`, `Cslib.Tensor.Rank.dsum`, `Cslib.Tensor.rank_mm`: rank bounds.
 
 ## References
@@ -954,6 +956,39 @@ theorem isRestriction_tprod_swaps_mm (k : ℕ) :
     ite_zero_mul_ite_zero, mul_one]
   exact if_congr ⟨fun ⟨h₁, h₂, h₃⟩ => ⟨h₃, h₁, h₂.symm⟩, fun ⟨h₁, h₂, h₃⟩ => ⟨h₂, h₃.symm, h₁⟩⟩
     rfl rfl
+
+/-- Matrix multiplication tensors with equal dimensions restrict to each other. -/
+theorem isRestriction_mm_of_eq {p q r p' q' r' : ℕ} (hp : p = p') (hq : q = q') (hr : r = r') :
+    IsRestriction (mm p q r : Tensor R _ _ _) (mm p' q' r') := by
+  subst hp hq hr
+  exact IsRestriction.refl _
+
+/-- Zero padding of matrices: `mm n n n` is a restriction of `mm n' n' n'` for `n ≤ n'`. -/
+theorem isRestriction_mm_of_le {n n' : ℕ} (h : n ≤ n') :
+    IsRestriction (mm n n n : Tensor R _ _ _) (mm n' n' n') := by
+  refine ⟨incl (Prod.map (Fin.castLE h) (Fin.castLE h)),
+    incl (Prod.map (Fin.castLE h) (Fin.castLE h)), (incl (Prod.map (Fin.castLE h) (Fin.castLE h)))ᵀ,
+    ?_⟩
+  rw [restrict_incl]
+  ext ⟨a₁, a₂⟩ ⟨b₁, b₂⟩ ⟨c₁, c₂⟩
+  simp [Fin.castLE_inj]
+
+/-- Tensor powers of matrix multiplication are matrix multiplication of the power. -/
+theorem isRestriction_mm_pow_tpow (v m : ℕ) :
+    IsRestriction (mm (v ^ m) (v ^ m) (v ^ m) : Tensor R _ _ _) (tpow m (mm v v v)) := by
+  let e : (Fin m → Fin v × Fin v) ≃ Fin (v ^ m) × Fin (v ^ m) :=
+    (Equiv.arrowProdEquivProdArrow (Fin m) (fun _ => Fin v) (fun _ => Fin v)).trans
+      (Equiv.prodCongr finFunctionFinEquiv finFunctionFinEquiv)
+  have he : ∀ p : Fin (v ^ m) × Fin (v ^ m),
+      e.symm p = fun i => (finFunctionFinEquiv.symm p.1 i, finFunctionFinEquiv.symm p.2 i) :=
+    fun _ => rfl
+  suffices h : (mm (v ^ m) (v ^ m) (v ^ m) : Tensor R _ _ _) = reindex e e e (tpow m (mm v v v)) by
+    rw [h]
+    exact isRestriction_reindex _ _ _ _
+  funext a b c
+  simp only [reindex_apply, he, tpow_apply, mm_apply, Fintype.prod_ite_zero,
+    Finset.prod_const_one]
+  exact if_congr (by simp only [forall_and, ← funext_iff, EmbeddingLike.apply_eq_iff_eq]) rfl rfl
 
 /-- `mm 1 1 1` is the unit tensor `unit 1`, up to reindexing. -/
 theorem mm_one_one_one :

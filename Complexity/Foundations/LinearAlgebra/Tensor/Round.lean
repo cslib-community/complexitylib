@@ -5,7 +5,7 @@ Authors: Aviv Bar Natan
 -/
 
 module
--- upstream: candidate (Mathlib, bilinear complexity: Pass's finite identity for ω ≤ 9/4)
+-- upstream: candidate
 
 public import Complexity.Foundations.LinearAlgebra.Tensor.Amplify
 public import Complexity.Foundations.LinearAlgebra.Tensor.Primal
@@ -140,33 +140,6 @@ theorem isRestriction_mm_tprod_Q_one (d p q r : ℕ) :
   funext a b c
   simp [hQ]
 
-/-- Zero padding of matrices: `mm n n n` is a restriction of `mm n' n' n'` for `n ≤ n'`. -/
-theorem isRestriction_mm_of_le {n n' : ℕ} (h : n ≤ n') :
-    IsRestriction (mm n n n : Tensor K _ _ _) (mm n' n' n') := by
-  refine ⟨incl (Prod.map (Fin.castLE h) (Fin.castLE h)),
-    incl (Prod.map (Fin.castLE h) (Fin.castLE h)), (incl (Prod.map (Fin.castLE h) (Fin.castLE h)))ᵀ,
-    ?_⟩
-  rw [restrict_incl]
-  ext ⟨a₁, a₂⟩ ⟨b₁, b₂⟩ ⟨c₁, c₂⟩
-  simp [Fin.castLE_inj]
-
-/-- Tensor powers of matrix multiplication are matrix multiplication of the power. -/
-theorem isRestriction_mm_pow_tpow (v m : ℕ) :
-    IsRestriction (mm (v ^ m) (v ^ m) (v ^ m) : Tensor K _ _ _) (tpow m (mm v v v)) := by
-  let e : (Fin m → Fin v × Fin v) ≃ Fin (v ^ m) × Fin (v ^ m) :=
-    (Equiv.arrowProdEquivProdArrow (Fin m) (fun _ => Fin v) (fun _ => Fin v)).trans
-      (Equiv.prodCongr finFunctionFinEquiv finFunctionFinEquiv)
-  have he : ∀ p : Fin (v ^ m) × Fin (v ^ m),
-      e.symm p = fun i => (finFunctionFinEquiv.symm p.1 i, finFunctionFinEquiv.symm p.2 i) :=
-    fun _ => rfl
-  suffices h : (mm (v ^ m) (v ^ m) (v ^ m) : Tensor K _ _ _) = reindex e e e (tpow m (mm v v v)) by
-    rw [h]
-    exact isRestriction_reindex _ _ _ _
-  funext a b c
-  simp only [reindex_apply, he, tpow_apply, mm_apply, Fintype.prod_ite_zero,
-    Finset.prod_const_one]
-  exact if_congr (by simp only [forall_and, ← funext_iff, EmbeddingLike.apply_eq_iff_eq]) rfl rfl
-
 /-! ### Column packings and the round -/
 
 /-- A **column packing** with parameters `w, u, H`: `w` copies of `canonical d a b ⊗ mm 1 1 w`
@@ -202,12 +175,6 @@ private theorem tprod_dsum_cube {ι : Type*} [DecidableEq ι]
   simp only [tprod_apply, dsum_apply, reindex_apply, cubeEquiv, Equiv.coe_fn_symm_mk,
     Prod.mk.injEq, ite_zero_mul_ite_zero]
   exact if_congr (by tauto) (by ring) rfl
-
-/-- Matrix multiplication tensors with equal dimensions restrict to each other. -/
-private theorem isRestriction_mm_of_eq {p q r p' q' r' : ℕ} (hp : p = p') (hq : q = q')
-    (hr : r = r') : IsRestriction (mm p q r : Tensor K _ _ _) (mm p' q' r') := by
-  subst hp hq hr
-  exact IsRestriction.refl _
 
 /-- `T ⊗ mm (k p) …` is a restriction of
 `(T ⊗ (mm 1 1 k ⊗ mm 1 1 k^{12} ⊗ mm 1 1 k^{13})) ⊗ mm p p p`. -/
@@ -319,8 +286,9 @@ theorem rank_Q (d a b : ℕ) : Rank ((a + b - 1) ^ (6 * d)) (Q d a b : Tensor K 
   ring
 
 /-- **From the primal packing to a column packing** ([Pass][Pass2026], Theorem 3.1, Lemma 3.2
-and Lemma 3.4): for `a, b, t ≥ 1`, `c t ≥ a + 2 b - 1` and any `h ≤ d`, with `w₀` the number of
-words `Fin d → Fin (c + 2)` whose number of letters equal to the middle letter `c + 1` is `h`,
+and Lemma 3.4): for `a, b, t ≥ 1`, `c t ≥ a + 2 b - 1` and any `h` (only `h ≤ d` gives a
+nonempty packing), with `w₀` the number of words `Fin d → Fin (c + 2)` whose number of letters
+equal to the middle letter `c + 1` is `h`,
 there is a column packing from length `b + t` to length `b` with `w = w₀ ^ 2` and
 `u = c ^ (2 d)`. -/
 theorem columnPacking_of_count {a b c t d h : ℕ} (ha : 1 ≤ a) (hb : 1 ≤ b) (ht : 1 ≤ t)

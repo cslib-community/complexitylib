@@ -8,12 +8,12 @@ module
 -- upstream: candidate (Mathlib, bilinear complexity: degenerations and border rank)
 
 public import Complexity.Foundations.LinearAlgebra.Tensor.Basic
-public import Mathlib.Algebra.Polynomial.BigOperators
 public import Mathlib.Algebra.Polynomial.Degree.Operations
 public import Mathlib.Algebra.Polynomial.Eval.Coeff
-public import Mathlib.Algebra.Polynomial.Expand
-public import Mathlib.Algebra.Polynomial.Inductions
-public import Mathlib.LinearAlgebra.Lagrange
+import Mathlib.Algebra.Polynomial.BigOperators
+import Mathlib.Algebra.Polynomial.Expand
+import Mathlib.Algebra.Polynomial.Inductions
+import Mathlib.LinearAlgebra.Lagrange
 
 /-!
 # Degenerations of tensors and Bini's conversion

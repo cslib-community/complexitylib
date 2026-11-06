@@ -5,11 +5,12 @@ Authors: Aviv Bar Natan
 -/
 
 module
--- upstream: candidate (Mathlib, bilinear complexity: from shared-left to independent packings)
+-- upstream: candidate
 
 public import Complexity.Foundations.LinearAlgebra.Tensor.Degeneration
-public import Mathlib.Algebra.Polynomial.Expand
-public import Mathlib.Algebra.Polynomial.Roots
+import Mathlib.Algebra.Polynomial.Expand
+import Mathlib.Algebra.Polynomial.Roots
+import Mathlib.LinearAlgebra.Lagrange
 
 /-!
 # From shared-left packings to packings with independent left inputs

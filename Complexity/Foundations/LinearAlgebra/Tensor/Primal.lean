@@ -5,7 +5,7 @@ Authors: Aviv Bar Natan
 -/
 
 module
--- upstream: candidate (Mathlib, bilinear complexity: Pass's primal polynomial packing)
+-- upstream: candidate
 
 public import Complexity.Foundations.LinearAlgebra.Tensor.Degeneration
 public import Complexity.Foundations.LinearAlgebra.Tensor.Polynomial

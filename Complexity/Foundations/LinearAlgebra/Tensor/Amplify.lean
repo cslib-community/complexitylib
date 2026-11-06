@@ -5,7 +5,7 @@ Authors: Aviv Bar Natan
 -/
 
 module
--- upstream: candidate (Mathlib, bilinear complexity: amplification of shared-left packings)
+-- upstream: candidate
 
 public import Complexity.Foundations.LinearAlgebra.Tensor.Degeneration
 public import Complexity.Foundations.LinearAlgebra.Tensor.Polynomial
@@ -30,6 +30,11 @@ the words with exactly `h` middle letters, `h = 0, …, d`, partition the `m ^ d
 `h` has at least `m ^ d / (d + 1)` of them (`exists_card_filter_count_ge`); squaring gives the
 `m ^ (2 d) / (d + 1) ^ 2` retained pairs, which loses only a factor polynomial in `d` compared
 with the Cauchy–Schwarz count of the source.
+
+## Main definitions
+
+* `Cslib.Tensor.canonical`: the balanced tensor `tpow d (full a b) ⊗ tpow d (mid a b)`.
+* `Cslib.Tensor.fullOrMid`: the full-or-middle targets, by the set of middle positions.
 
 ## Main results
 

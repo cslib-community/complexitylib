@@ -469,9 +469,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `O(n ^ τ)` by block recursion and `omega K ≤ 9/4`
   (`Circuit/Arithmetic/MatrixMultiplication/NineQuarters.lean`). The tensor framework
   (`Foundations/LinearAlgebra/Tensor/`: restrictions, degenerations over `K[ε]`, Bini's
-  conversion, rank) is general. Open: every field (Navot's descent through the algebraic
-  closure), the rectangular and dual exponents, explicit sizes and constants (the algorithm is
-  galactic), and the lower bound `omega K ≥ 2` only as the trivial output count.
+  conversion, rank) is general. Open: every field (the interpolation nodes are the integers of
+  characteristic zero), the rectangular and dual exponents, explicit sizes and constants (the
+  algorithm is galactic), and the lower bound `omega K ≥ 2` only as the trivial output count.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
