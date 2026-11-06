@@ -15,13 +15,15 @@ public import Mathlib.Order.Interval.Finset.Fin
 import Mathlib.Data.List.FinRange
 
 /-!
-# Finite-array permutations and ranks
+# Finite-array operations, permutations and ranks
 
 Use ordinary `List.Perm` on `List.ofFn` to transport predicates and their multiplicities.
 If an entry has a unique key, its sorted position is the number of strictly smaller keys;
 other keys may repeat. The key order need only be a partial order.
 
 ## Main results
+
+* `List.zipWith_ofFn`: pointwise combination agrees with zipping equal-length finite arrays.
 
 * `List.Perm.exists_ofFn_iff`, `List.Perm.existsUnique_ofFn_iff`: predicate transport.
 * `List.Perm.card_filter_ofFn_eq`: preservation of predicate counts.
@@ -44,6 +46,14 @@ other keys may repeat. The key order need only be a partial order.
 @[expose] public section
 
 open Finset
+
+/-- Zipping equal-length finite arrays applies the function pointwise. -/
+theorem List.zipWith_ofFn {α β γ : Type*} {n : ℕ} (f : α → β → γ)
+    (a : Fin n → α) (b : Fin n → β) :
+    List.zipWith f (List.ofFn a) (List.ofFn b) = List.ofFn (fun i => f (a i) (b i)) := by
+  apply List.ext_getElem (by simp)
+  intro i hi hi'
+  simp only [List.getElem_zipWith, List.getElem_ofFn]
 
 /-- Permuting a finite array preserves whether any entry satisfies a predicate. -/
 theorem List.Perm.exists_ofFn_iff {α : Type*} {m n : ℕ} {f : Fin m → α} {g : Fin n → α}

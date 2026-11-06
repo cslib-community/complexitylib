@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Protocols.VOLE.NativeCircuit.Layout
 public import Complexity.Crypto.Protocols.VOLE.CircuitPrivacy
+import Complexity.Foundations.Data.List.OfFn
 
 /-!
 # Agreement of native and typed circuit kernels
@@ -39,13 +40,6 @@ variable {F : Type} {p k m : ℕ} [CommRing F]
 def rowsToList {g : ℕ} (rows : (Fin p ⊕ Fin g ⊕ Fin m) → F) : List F :=
   List.ofFn (fun i => rows (.inl i)) ++ List.ofFn (fun i => rows (.inr (.inl i))) ++
     List.ofFn (fun i => rows (.inr (.inr i)))
-
-private theorem zipWith_ofFn {α β γ : Type*} {n : ℕ} (f : α → β → γ)
-    (a : Fin n → α) (b : Fin n → β) :
-    List.zipWith f (List.ofFn a) (List.ofFn b) = List.ofFn (fun i => f (a i) (b i)) := by
-  apply List.ext_getElem (by simp)
-  intro i hi hi'
-  simp only [List.getElem_zipWith, List.getElem_ofFn]
 
 /-- Runtime native evaluation is the existing typed trace, with no true-output hypothesis. -/
 theorem trace_inputOfCircuit (C : Circuit (arithSignature F) (p + k) m)
@@ -185,7 +179,7 @@ theorem publicFirst_inputOfCircuit (C : Circuit (arithSignature F) (p + k) m)
     (targets (inputOfCircuit C x y z)) = _
   rw [adjusted_inputOfCircuit, targets_inputOfCircuit]
   rw [linearValues_eq C x y z (voleAdjustReceiver (Fin.init q) d delta) _ (fun i => by simp)]
-  simp [firstToLists, circuitPublicFirst, rowsToList, List.zipWith_append, zipWith_ofFn]
+  simp [firstToLists, circuitPublicFirst, rowsToList, List.zipWith_append, List.zipWith_ofFn]
 
 /-- The native reply implements the existing affine-mask reply, with weights in code order.
 This identity holds for every assignment, including false multiplication claims. -/
@@ -208,7 +202,7 @@ theorem senderReply_inputOfCircuit (C : Circuit (arithSignature F) (p + k) m)
       Nat.lt_succ_self, ↓reduceDIte, Option.getD_some]
     rfl
   simp only [senderReply, layout_inputOfCircuit, Native.inputOfMaps, List.length_ofFn,
-    Native.weights_ofFn, List.zip_eq_zipWith, zipWith_ofFn, List.map_ofFn, List.sum_ofFn,
+    Native.weights_ofFn, List.zip_eq_zipWith, List.zipWith_ofFn, List.map_ofFn, List.sum_ofFn,
     wireCount_inputOfCircuit, Function.comp_apply, ha, hv, hlast, maskedMulCheckReply]
   apply Prod.ext
   · dsimp only
@@ -246,12 +240,12 @@ private theorem rowsToList_all_iff {g : ℕ}
     (((rowsToList a).zip (rowsToList b)).zip (rowsToList c)).all
       (fun (row, mask) => decide (row.1 = row.2 * delta + mask)) = true ↔
         ∀ i, a i = b i * delta + c i := by
-  simp [rowsToList, List.zipWith_append, List.zip_eq_zipWith, zipWith_ofFn,
+  simp [rowsToList, List.zipWith_append, List.zip_eq_zipWith, List.zipWith_ofFn,
     List.all_eq_true, Sum.forall]
 
 /-- The native receiver checks the exact existing verifier, including its public linear rows,
 for every well-formed typed transcript; no satisfying-witness premise is needed. -/
-theorem verify_inputOfCircuit [Fintype F] (C : Circuit (arithSignature F) (p + k) m)
+theorem verify_inputOfCircuit [Finite F] (C : Circuit (arithSignature F) (p + k) m)
     (x : Fin p → F) (y : Fin m → F) (z : List Bool) (delta : F)
     (q : Fin (p + k + C.size + 1) → F)
     (first : (Fin (p + k + C.size) → F) × ((Fin p ⊕ Fin C.size ⊕ Fin m) → F))
@@ -259,6 +253,7 @@ theorem verify_inputOfCircuit [Fintype F] (C : Circuit (arithSignature F) (p + k
     verify (inputOfCircuit C x y z) (delta, List.ofFn q) (firstToLists C first)
       (List.ofFn (r ∘ mulIndexEquiv C)) reply =
         circuitVerify C (x, y) (delta, q) first r reply := by
+  let _ := Fintype.ofFinite F
   have hrows : (rowsToList first.2).length = p + C.size + m := by simp [rowsToList, Nat.add_assoc]
   have hgates : (layout (inputOfCircuit C x y z)).2.1.length = (mulIndices C).length := by
     rw [layout_inputOfCircuit]
