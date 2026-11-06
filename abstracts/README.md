@@ -58,6 +58,8 @@ former paper/TeX index is retired; Git history retains its sources.
 | [Ilango: Partial MCSP is hard under the Exponential Time Hypothesis](ComplexityAbstracts/PartialMCSPAbstract.lean) · [PDF](https://www.cslib.io/complexitylib/abstracts/partial-mcsp.pdf) | Explicit 3SAT and PartialMCSP encodings (unary and binary thresholds), De Morgan all-gates and binary-gate costs, and deterministic multi-tape lower bounds 2^o(m log m) = N^o(log log N) plus NP membership. *Note (October 2026):* the native formalization now [proves ETH false](ComplexityAbstracts/SubexponentialSATAbstract.lean). This conditional entry is retained and its theorem remains valid, but its premise is false. |
 | [McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P from NP](ComplexityAbstracts/MagnificationAbstract.lean) · [PDF](https://www.cslib.io/complexitylib/abstracts/magnification.pdf) | Plain De Morgan circuits counting all operation gates, decision MCSP[n^k] on N = 2^n-bit truth tables in standard binary order, and native multi-tape P and NP; conditional magnification from a size lower bound at some arity per exponent. |
 
+| [Matrix multiplication: exponent at most 9/4](ComplexityAbstracts/MatrixMultiplicationAbstract.lean) · [PDF](https://www.cslib.io/complexitylib/abstracts/matrix-multiplication.pdf) | Every characteristic-zero field; exact nonuniform circuits, total gate count O(n^(9/4 + γ)) for every γ > 0; no uniform generator, explicit constants or bit-cost claim. |
+
 ## Generate and review PDFs
 
 With Python 3.11+, `latexmk`, Poppler utilities and a TeX distribution containing Libertine,

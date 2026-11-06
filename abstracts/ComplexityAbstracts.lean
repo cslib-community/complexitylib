@@ -75,3 +75,5 @@ import ComplexityAbstracts.USTCONAbstract
 import ComplexityAbstracts.USTCONBridge
 import ComplexityAbstracts.WordRAMAbstract
 import ComplexityAbstracts.WordRAMBridge
+import ComplexityAbstracts.MatrixMultiplicationAbstract
+import ComplexityAbstracts.MatrixMultiplicationBridge

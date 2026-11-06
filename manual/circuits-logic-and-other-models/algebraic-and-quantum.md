@@ -37,6 +37,15 @@ lake build Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.Nine
 
 **Not certified here.** The paper's Theorem 1.1 is an integer algorithm with bit cost `O(n^(9/4+γ) M(B + log n))` on `B`-bit entries ([§4.3](https://arxiv.org/pdf/2610.28627v2#page=20)); the formalization proves the field-circuit statement only and says nothing about integer arithmetic, division by the cleared denominators or bit complexity. The paper's "computable" side `v` and count `r` are obtained here as existentials (`Tensor.exists_rank_mm_lt_rpow`), with no extraction procedure and no explicit constants; the parameters are galactic. Degenerations compose at the order `(h + 1) (k + 1) - 1` rather than the paper's additive bookkeeping, the gap parameter is `⌊w₀ / c ^ d⌋ ^ 4` rather than `⌊w / u⌋ ^ 2`, and the lengths of the rounds are bounded explicitly rather than by a limit argument; none of this changes the exponent. Positive characteristic, the rectangular and dual exponents and any lower bound beyond `2 ≤ omega K` are open; see [ROADMAP.md](../../ROADMAP.md).
 
+The selected [matrix multiplication abstract](../../abstracts/ComplexityAbstracts/MatrixMultiplicationAbstract.lean)
+restates the exact circuit bound and infimum with visible quantifiers. Its
+[regression client](../../ComplexityTests/Abstracts/MatrixMultiplicationTests.lean) checks the
+characteristic-zero rational instance and rejects an incorrect projection circuit. Build it with:
+
+```bash
+lake build --wfail --iofail ComplexityAbstracts.MatrixMultiplicationAbstract ComplexityTests.Abstracts.MatrixMultiplicationTests
+```
+
 ## Rational formulas and hitting lists
 
 [RatOp](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Rational/Defs.lean#L69) uses rational constants, addition, multiplication and inverse. Evaluation is a relation: an inverse node is defined only when both products with the proposed inverse are one. This supports noncommutative matrix substitution without silently assigning a value at poles. A formula is admissible if some positive-dimensional rational matrix substitution makes it defined, and nonzero if some defined value is nonzero.
