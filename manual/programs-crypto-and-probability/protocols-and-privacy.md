@@ -349,6 +349,50 @@ key generation and witness storage still require that bridge. No desired runtime
 is assigned as an annotation. The complete [search client](../../ComplexityTests/AddXNORSearch.lean)
 checks successful and unsuccessful inputs, empty cuts, width zero and duplicate states.
 
+Import [AddXNORReachability.lean](../../Complexity/Cryptanalysis/AddXNORReachability.lean)
+for the actual reachable-state decision program. Supply width-$m$ words as lists
+of $m$ bits, low bit first, to `WordTable.decide`. `decide_correct` identifies
+its answer with unrestricted `Solvable`; the complete
+[resource client](../../ComplexityTests/AddXNORResources.lean) shows the imports,
+bit order, successful and unsuccessful inputs, modular wrap and zero width.
+The implementation pulls a binary truth table back through addition using a
+ripple carry and through XOR by branch exchanges, then unions the two images.
+It avoids full-word arithmetic primitives and exponential witness enumeration.
+
+`decide_time_le` is derived from the actual recursive calls: for $q$ operands its
+bound is $(m+1)(m+4)+q(29\cdot2^m+3m+3)+3m+2$. The `TimeM` annotations count
+Boolean operation groups, list/table inspections and constructors in an immutable
+pointer model. Constant-time allocation and projections, pointer sharing and
+uncharged garbage collection are part of that model; the instrumentation counter
+is uncharged. The annotations have not been compiled to native machine steps.
+Pointers are not single bits. This is therefore an executable source-level cost
+bound, not Observation 1's multitape bit-runtime or a peak-space certificate.
+`decide_linear_table_work` derives the simpler $40(q+1)(m+1)2^m$ bound
+in the same source model.
+Do not use it as the missing native exact-algorithm endpoint.
+
+Import [AddXNORClasses.lean](../../Complexity/Cryptanalysis/AddXNORClasses.lean)
+for forward/backward low-bit class counts and the exact `classBalance` maximum.
+`WordTable.classCounters` and `WordTable.backwardCounters` compute all counts
+by dynamic programming on the projected instance, preserving every indexed
+operator string even when states coincide. `projected_classCounters` and
+`projected_backwardCounters` connect those executable tables to the literal
+classes; `computed_balance` verifies the max/min traversal that computes the
+balance before full-width class lists are generated. The complete resource client
+checks both projections, counter multiplicity and a concentrated balance example.
+The recursive work bounds count natural additions/comparisons as arithmetic
+operations; `classCounters_size_le` and `backwardCounters_size_le` prove that
+the counters need at most $q+1$ bits. These facts do not supply a native bit-cost
+or streaming dissection implementation.
+
+`mean_forwardClassCount` and `mean_backwardClassCount` give exactly $2^q/2^p$
+for each fixed low-bit class at projection width $p\le m$. The former averages
+the initial word, conditional on every operand; the latter averages the first
+operand of a **nonempty** suffix, conditional on the remaining operands and
+fixed target. Their uniform counterparts sample all those operands independently.
+An empty suffix has no random operand and is excluded from the backward mean.
+No independence between class sizes or bound on expected maximum balance follows.
+
 Import [AddXNORCounting.lean](../../Complexity/Cryptanalysis/AddXNORCounting.lean)
 for Propositions 1–2. `steps` uses all `Fin q → Bool` operator strings on the
 actual operands. `uniform_mean_solutionCount` gives $2^q/2^m$ under independent
@@ -373,8 +417,13 @@ The complete [counting/difference client](../../ComplexityTests/AddXNORCounting.
 checks mean/planting contracts, degenerate-width exclusions, parity bounds and
 mixed low/MSB differences. It also shows why Proposition 3's parenthetical
 $2^{-w}$ must count non-MSB activity: an MSB-only difference has weight one
-but preservation probability one. The proposition's expected-flip-weight formula
-is still unproved here.
+but preservation probability one. Import [AddXNORFlipWeight.lean](../../Complexity/Cryptanalysis/AddXNORFlipWeight.lean)
+for `expected_operator_flip_weight`, which proves the proposition's exact
+$(m+2)/2-2^{-m}$ mean by deriving the two carry-in recurrences from actual
+addition. The independent uniform words are the running state and current
+operand. The result is the weight immediately after the flip; a common suffix
+preserves nonvanishing but need not preserve weight. Width zero is included.
+This proof does not use the erroneous total-weight parenthetical.
 
 The [search client](../../ComplexityTests/AddXNORSearch.lean) also gives a checked
 obstruction to the literal `Real` simulator in Lemma 10 (PDF pp. 25–26).
@@ -391,7 +440,7 @@ and proving the adversary-quantified lower bound remain open.
 
 The full-paper objective remains open. Remaining endpoints are the sparsification
 resource refinement, exact reduction multiplicity, reachable-state/small-operand
-and meet-in-the-middle bit-runtime certificates, all dissection resources and
-class-size expectations, expected operator-flip weight, and repaired ideal-model
+and meet-in-the-middle native bit-runtime/space certificates, streaming class
+enumeration and full dissection time/space certificates, and repaired ideal-model
 search/decision lower bounds. The positional-cut result is not a universal
 algorithmic barrier, and experimental CDCL exponents remain finite observations.

@@ -41,9 +41,13 @@ objective remains open. The actual guard-based polynomial-time NP-completeness
 reduction, every positive rational width restriction, and the direct linear-width
 3-SAT map are implemented, with explicit encoding-length bounds. Theorem 2's
 sparsification/disjunction resource refinement, exact reduction multiplicity,
-certified bit-runtime/working-space bounds and uniform dissection class-size
-expectations, expected operator-flip weight and ideal-chain search/decision lower
-bounds still need proofs. Exact witness search with concrete word-step/trie
+native bit-runtime/working-space certificates, small-operand bounds, streaming
+class enumeration and full dissection time/space certificates, and ideal-chain
+search/decision lower bounds still need proofs. Executable bit-table reachability
+with recursive pointer/Boolean cost bounds, exact forward/backward class-counter
+DP and computed balance, both uniform per-class means, and the exact expected
+operator-flip weight are implemented. The pointer/Boolean and counter-operation
+models do not replace native bit-runtime or peak-space certificates. Exact witness search with concrete word-step/trie
 operation counts, uniform solution counts and planted size bias, parity/Hamming
 geometry, and all of Lemma 7's difference propagation are implemented. Lemma 10's
 literal lazy simulator has a checked injectivity obstruction; this invalidates
