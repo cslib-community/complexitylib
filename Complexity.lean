@@ -3406,6 +3406,7 @@ public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Consolidation
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.DecreaseKey
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.ExtractMin
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.MinPQ
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Backend
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Cascade
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Consolidate

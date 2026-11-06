@@ -173,7 +173,7 @@ theorem inv_input (G : ListInstance) {w K V : ℕ}
       Memory.inputGraph, Finset.mem_union] at ha hb
     omega
   · refine ⟨?_, hfit⟩
-    simp only [Memory.Framed.prod_footprint, FibonacciHeap.framed, Memory.Framed.ofStatic,
+    simp only [Memory.Framed.prod_footprint, FibonacciHeap.framed_footprint,
       Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
     rw [Finset.disjoint_left]
     intro a ha hb
