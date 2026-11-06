@@ -2728,6 +2728,10 @@ public import Complexity.Computability.RAM.Defs
 public import Complexity.Computability.RAM.Input
 public import Complexity.Computability.RAM.Squaring
 public import Complexity.Computability.Reduction.ManyOne
+public import Complexity.Computability.StreamArithmetic.EstimatorRecipes
+public import Complexity.Computability.StreamArithmetic.Interface
+public import Complexity.Computability.StreamArithmetic.Primitives
+public import Complexity.Computability.StreamArithmetic.QueryTree
 public import Complexity.Computability.TreeEval.Ary.Basic
 public import Complexity.Computability.TreeEval.Ary.CookMertz
 public import Complexity.Computability.TreeEval.Ary.Descending
@@ -3501,6 +3505,10 @@ public import Complexity.Foundations.Analysis.RowCompression.Sentinel
 public import Complexity.Foundations.Analysis.RowCompression.SentinelIteration
 public import Complexity.Foundations.Analysis.RowCompression.SentinelRelative
 public import Complexity.Foundations.Analysis.RowCompression.Stationary
+public import Complexity.Foundations.Analysis.SignedDigitStream.Basic
+public import Complexity.Foundations.Analysis.SignedDigitStream.Elementary
+public import Complexity.Foundations.Analysis.SignedDigitStream.Multiplication
+public import Complexity.Foundations.Analysis.SignedDigitStream.Reciprocal
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
 public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
