@@ -109,12 +109,70 @@ The [complete checked client](../../ComplexityTests/PaperEndpoints/FullRounding1
 has six nonzero scalar rows, four half weights and a violated full-data target;
 it exercises sparsification, subset rounding and the dimension-one equality.
 
-These are the mathematical statements of STOC submission1326, Lemmas 3.1–3.2,
-Theorem 3.3 and Corollary 3.4 (PDF pp. 6–7). The formalization proves existence,
-including the LP extreme-point argument. It does not certify an executable LP
-solver, a maintained-inverse rounding implementation or the advertised
-one-LP/one-inversion/$O(d)$-update cost. Corollary 3.4(iii)'s fractional solver
-and $n^{O(d^3)}$ running time are an external ingredient, not established locally.
+These are the mathematical statements of Lemmas 3.1–3.2, Theorem 3.3 and
+Corollary 3.4 (PDF pp. 6–7). For execution, import
+[`RoundingExecution`](../../Complexity/Statistics/LeastSquares/RoundingExecution.lean)
+and open `Cslib.LeastSquares.RoundingExecution`. `execute lp x y w e` starts
+with the actual input weights; `VertexLP lp` requires a vertex-returning optimum
+of a box-constrained linear program. It does **not** assume sparse weights, a
+preserved fit or a rounding conclusion. `sparsify_correct` derives these facts.
+`execute_correct` and `execute_retained` certify the computed integral weights,
+actual retained subset, feasibility, strict loss below $d$, and final inverse and
+response caches, under GP, input feasibility and retained mass at least $2d$.
+The scalar field is polymorphic, so the arithmetic code executes over rationals;
+the correctness statements use the real inverse-matrix semantics.
+
+The operation contract counts one initial Cramer solve, one external LP call,
+one determinant/adjugate inverse initialization, at most $d$ processed
+coordinates and at most $2d$ signed rank-one calls. `execute_calls`,
+`run_coordinates` and `run_rankChanges` derive the counts from the stages and
+executed branches. The initial solve computes $\beta(w)$ before constructing the
+LP and is charged separately. The generic matrix kernels live in
+[`Matrix.RankOne`](../../Complexity/Foundations/LinearAlgebra/Matrix/RankOne.lean).
+This is a coarse operation contract: scalar arithmetic, comparisons, allocation,
+finite enumeration and retained-set materialization are outside that counter.
+Determinant-based inversion has no cubic-time certificate. Supply a standard LP
+implementation with vertex recovery; an arbitrary interior optimizer does not
+satisfy the contract. No rational bit-complexity or Lean compiler-speed bound
+follows from these primitive counts.
+
+For Corollary 3.4(iii), import
+[`ExternalSolver`](../../Complexity/Statistics/LeastSquares/ExternalSolver.lean)
+and open `Cslib.LeastSquares.ExternalSolver`. `NormalOracle` is the external
+Moitra–Rohatgi equality-target normal-equation decision contract, allowing
+singular solutions, for a zero target in a specified coefficient.
+[`EqualityTarget`](../../Complexity/Statistics/LeastSquares/EqualityTarget.lean)
+proves that these decisions coincide with the local nonsingular inequality
+thresholds in the queried regime; strict full-data target violation is required
+here. `bracket_start` proves that the executed `search` returns the ceiling of
+fractional stability, and `integral_bracket` gives the $d$ consecutive candidate
+integers. `bracket_time` composes an external $C n^{c d^3}$ decision bound into
+$2(C+1)n^{(c+1)d^3}$. The external solver and its cost are explicit assumptions;
+the adapter assumes neither a fractional optimum nor an integral bracket.
+The cited endpoint is a threshold decision procedure. This API computes the
+integer bracket without claiming to return an arbitrary exact real value of
+fractional stability. General affine targets need a separate solver/reduction;
+the execution theorem itself already handles those targets.
+
+From the repository root, run
+`scripts/build.sh ComplexityTests.PaperEndpoints.RoundingExecution`
+to check the [complete client](../../ComplexityTests/PaperEndpoints/RoundingExecution.lean).
+It checks an input with more fractional coordinates than the dimension, the
+constructed residual equations, both actual rational rounding branches, inverse
+and response caches, exact counters, and threshold-search boundary cases.
+
+The full empirical certificate inventory in Section 6 remains open. A fresh
+release-PDF inspection on 2026-11-06 found no embedded attachments, despite
+Appendix B's attachment claim; the release exposes only the PDF for this paper.
+The named `certlib.py`, `fe_cert.py`, drivers and `grid.jsonl`, `fe.jsonl`,
+`scale.jsonl`, `small.jsonl` were therefore unavailable. Reproduction needs the
+archive, exact source data and preprocessing, per-regression identities, exact
+LP dual interval bounds or groupwise lower-envelope certificates, retained row
+identifiers and exact successful cross-scatter/positive-scatter checks for all
+640 cross-sections and 44 panels. The third-party CFPS and housing files are not
+redistributed according to Appendix B. Numerical summaries alone cannot supply
+these certificates or repair Table 1's missing nondegeneracy evidence. See
+[issue 2527](https://github.com/cslib-community/complexitylib/issues/2527) for scope.
 
 ## Exact fixed-effects first crossings
 
@@ -189,9 +247,9 @@ requires a group-count term. Empty input has ten counted initialization/scan
 operations. The subset preprocessing uses $O(n_g2^{n_g})$ work per group, which
 sums to $O(n2^T)$; the sharper per-group Gray-code claim is not asserted.
 The scalar and fixed-column adapters and fixed-size relaxation are described
-below. General rounding execution/resources, the external fractional
-solver and complete empirical certificates remain separate; this resource
-endpoint does not complete the paper.
+below. The rounding execution and conditional external-solver adapter above
+use different models; complete empirical certificates remain open. This
+fixed-effects resource endpoint does not complete the paper.
 
 ## Real matrix semantics and general geometry
 
@@ -372,9 +430,9 @@ to check the [complete hardness client](../../ComplexityTests/PaperEndpoints/Reg
 It includes positive and negative instances, duplicate values, zero entries,
 zero/positive targets on empty lists and a singular remainder. This is weak
 NP-hardness for binary magnitudes, not a strong-hardness or general-position
-claim. The certified general rounding LP/inversion/update execution, the
-external fractional solver consequence and the full empirical certificates
-remain unproved; these new endpoints do not complete the paper.
+claim. The rounding execution and conditional external-solver adapter are
+described above. Full empirical certificates remain open; these endpoints
+do not complete the paper.
 
 ## Exact least-squares stability gaps
 
@@ -402,9 +460,10 @@ integral stability two and best lifted-plane-range stability three. General
 position and lifted general position are checked exactly. The nonseparation
 argument covers every real plane; an explicit integer-coefficient plane witnesses
 the feasible three-deletion range. `feasible_iff_real` connects the exact scatter
-test with nonsingular real OLS. Proposition 5.2, equality-target hardness,
-certified rounding execution/resources, the external fractional-solver consequence,
-and the full empirical certificate inventory remain unproved; see [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
+test with nonsingular real OLS. The general geometry, equality-target hardness,
+rounding execution and conditional external-solver adapter are described above.
+The full empirical certificate inventory remains open; see
+[issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
 
 ## Known Limitations
 
