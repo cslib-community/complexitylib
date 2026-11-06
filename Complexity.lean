@@ -3788,6 +3788,7 @@ public import Complexity.Foundations.GroupTheory.Perm.Last
 public import Complexity.Foundations.LinearAlgebra.Box
 public import Complexity.Foundations.LinearAlgebra.CubeSum
 public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
+public import Complexity.Foundations.LinearAlgebra.Hypersimplex
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
@@ -4300,9 +4301,11 @@ public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
 public import Complexity.Statistics.LeastSquares.Backbone
 public import Complexity.Statistics.LeastSquares.FixedEffects
+public import Complexity.Statistics.LeastSquares.FixedEffects.FixedColumns
 public import Complexity.Statistics.LeastSquares.FixedEffects.Matrix
 public import Complexity.Statistics.LeastSquares.FixedEffects.MatrixBridge
 public import Complexity.Statistics.LeastSquares.FixedEffects.Resources
+public import Complexity.Statistics.LeastSquares.FixedSize
 public import Complexity.Statistics.LeastSquares.FractionalGeometry
 public import Complexity.Statistics.LeastSquares.Monotone
 public import Complexity.Statistics.LeastSquares.NonRange
@@ -4311,6 +4314,7 @@ public import Complexity.Statistics.LeastSquares.RangeAudit
 public import Complexity.Statistics.LeastSquares.Rational
 public import Complexity.Statistics.LeastSquares.SharpGap
 public import Complexity.Statistics.LeastSquares.Simple
+public import Complexity.Statistics.LeastSquares.SimpleMatrix
 public import Complexity.Statistics.LeastSquares.Sparsification
 public import Complexity.Statistics.LeastSquares.Stability
 public import Complexity.Tactic.FOOperator

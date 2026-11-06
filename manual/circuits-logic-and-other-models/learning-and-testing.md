@@ -188,9 +188,10 @@ the advertised $n$-only bound excludes them: reading arbitrary empty groups
 requires a group-count term. Empty input has ten counted initialization/scan
 operations. The subset preprocessing uses $O(n_g2^{n_g})$ work per group, which
 sums to $O(n2^T)$; the sharper per-group Gray-code claim is not asserted.
-The scalar-attainment and group-preserving fixed-column adapters, Proposition 5.2,
-and the other outstanding paper endpoints remain separate; this resource endpoint
-does not complete the paper.
+The scalar and fixed-column adapters and fixed-size relaxation are described
+below. The hardness, general rounding execution/resources, external fractional
+solver and complete empirical certificates remain separate; this resource
+endpoint does not complete the paper.
 
 ## Real matrix semantics and general geometry
 
@@ -226,9 +227,20 @@ and a threshold for `(x_i - mean_x)(y_i - mean_y)` at the optimizer's own
 centroid. Fractional coordinates lie on that threshold.
 `MassOptimal.fractional_pair` proves the weak anti-monotone inequality for any
 two fractional coordinates. These conclusions hold for every attained optimizer;
-this module does not itself construct the sparse optimizer or establish
-attainment. Use the separate sparsification/attainment APIs described above for
-those steps.
+this module separates their geometry from existence. Import
+[`SimpleMatrix`](../../Complexity/Statistics/LeastSquares/SimpleMatrix.lean)
+to discharge existence: `design x` is the actual two-column design in
+slope/intercept order, `signFeasible_iff` identifies scalar and generic
+inverse-matrix feasibility, and `design_generalPosition` derives the design-row
+hypothesis from distinct regressor values. `exists_sparse_massOptimal` starts
+from any feasible scalar weights of mass greater than one and returns a global
+optimizer with at most two fractional coordinates and the attained generic
+fractional-stability value. `exists_sparse_self_centered` combines this with
+Proposition 5.3 when the input mass is at least four and the full-data
+cross-scatter is positive. `exists_round_sign_subset` starts from arbitrary
+feasible scalar weights of mass at least four and returns a nonsingular subset
+with mass loss strictly below two. These are mathematical existence results;
+they do not certify execution or a running time for an LP solver.
 
 From the repository root, check the
 [complete matrix and fractional client](../../ComplexityTests/PaperEndpoints/LeastSquaresGeometry1326.lean)
@@ -265,8 +277,47 @@ the localization theorem, and checks its explicit omitted pair's product
 $-961/625$. Theorem 5.7 is a general statement; that finite test only demonstrates
 its hypotheses on a concrete instance.
 
-Proposition 5.2's general lower-face/edge classification for the fixed-size
-relaxation remains unproved. These modules do not supply it.
+Import [`FixedSize`](../../Complexity/Statistics/LeastSquares/FixedSize.lean)
+for Proposition 5.2. `setPolytope p m` is the actual convex hull of the saddle
+sums of original subsets of size $m$, and `setPolytope_eq_image` proves it equals
+the image of all box weights of mass $m$. `PolytopeMinimum` compares every point
+of that convex hull. For $2\le m<n$, `fixedSize_relaxation` derives attainment
+and the full dichotomy under lifted general position: a lower hyperbolic-range
+subset attains the relaxation, or every minimizer is an interior interpolation
+of two distinct lower subset sums differing by one strictly anti-monotone swap.
+`IsLowerSwap` supplies the actual supporting-plane coefficients: its common
+retained observations are strictly below the plane, its exchanged pair is on
+it, and every other observation is strictly above it. Thus its exposed face
+is the swap segment. `IsLowerRange` has saddle coefficient one and is equivalent
+to a strict axis-parallel hyperbolic sublevel set by `isLowerRange_iff`.
+This relaxation deliberately includes singular designs and imposes no sign
+condition; do not use its minima as feasible slope reversals without checking
+positive regressor scatter separately.
+
+For fixed columns, import
+[`FixedEffects.FixedColumns`](../../Complexity/Statistics/LeastSquares/FixedEffects/FixedColumns.lean)
+and open `Cslib.LeastSquares.FixedEffects.MatrixModel`. A retained subset of
+`Sigma I` records original row positions, including repeated data. `Kept s g`
+restricts each original group to its surviving rows. `feasible_iff_preservesGroups`
+characterizes generic fixed-column feasibility by group preservation, positive
+pooled within-scatter and nonpositive pooled cross-scatter. Group preservation
+is derived from positive definiteness, and `preservesGroups_of_deletions_lt`
+derives it whenever fewer rows are deleted than any group contains.
+`subsetStability` allows groups to vanish and counts deletions by original row
+positions. Given nonempty scalar feasibility,
+`integralStability_eq_subsetStability` identifies it with fixed-column stability
+when this refitted optimum is smaller than every original group size. This
+condition excludes the zero-dummy obstruction; no general equality is claimed.
+
+From the repository root, run
+`scripts/build.sh ComplexityTests.PaperEndpoints.LeastSquaresRelaxation`
+to check the [complete client](../../ComplexityTests/PaperEndpoints/LeastSquaresRelaxation.lean).
+It derives sparse scalar attainment and rounding on the strict-gap instance,
+rejects a constant regressor, forces the fractional-edge branch on the exact
+six-point non-range instance, and checks both a feasible grouped inverse fit
+and failure after erasing an entire group. The existing matrix/Radon clients
+above retain the checked source-instance construction and executed resource
+bounds.
 
 ## Exact least-squares stability gaps
 
