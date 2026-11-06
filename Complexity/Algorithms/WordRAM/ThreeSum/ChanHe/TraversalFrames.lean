@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalModel
+import Complexity.Computability.WordRAM.MemoryView
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalChildren
 public import Mathlib.Data.List.Nodup
 
@@ -125,9 +126,9 @@ theorem Entry.Stored.congr {e : Entry} {before after : ℕ → ℕ} (h : e.Store
 theorem Entry.Stored.of_prefix {e : Entry} {before after : ℕ → ℕ} (h : e.Stored before)
     {frontier : ℕ} (hsrc : ∀ j, e.source j + (e.data j).length ≤ frontier)
     (hf : ∀ a < frontier, after a = before a) : e.Stored after := by
-  apply h.congr
-  intro j i hi
-  exact hf _ (by have := hsrc j; omega)
+  intro j
+  have hs := hsrc j
+  ram_keep (h j) using hf
 
 /-- The seven actual register words match the exact work-stack serialization. -/
 theorem Entry.loaded_words {e : Entry} {x : Data 128} (h : e.Loaded x) :

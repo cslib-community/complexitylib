@@ -777,12 +777,10 @@ theorem length_encOuterState_run_le (p : ScheduleParams) {s : ℕ}
   let eIn := encPair (encPair encUnary encUnary) encNat
   have hsCap : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => min (p.1.1 + p.1.2) p.2)
       eIn encUnary := by unfold eIn; fun_prop
-  have hnBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1) eIn encNat :=
-    ComputableInPolyTime.unary_to_binary.comp (by unfold eIn; fun_prop)
+  have hnBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1) eIn encNat := by fun_prop
   have hnmBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1 + p.1.2) eIn encNat :=
     ComputableInPolyTime.unary_to_binary.comp (by unfold eIn; fun_prop)
-  have hsBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2) eIn encNat := by
-    unfold eIn; fun_prop
+  have hsBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2) eIn encNat := by fun_prop
   have hlt1 := ComputableInPolyTime.binary_lt' hsBin hnBin
   have hlt2 := ComputableInPolyTime.binary_lt' hsBin hnmBin
   have hb1 : ComputableInPolyTime
@@ -822,11 +820,7 @@ private theorem computableInPolyTime_pendingSlotOfState :
   refine ComputableInPolyTime.optionElimWithInput hsl (.const none) ?_
   have his : ComputableInPolyTime
       (fun q : OuterSt × (Bool × ℕ) => (readSlotSchedule q.2 q.1.2.2).isSome)
-      (encPair encOuterSt (encPair encBool encUnary)) encBool :=
-    ComputableInPolyTime.optionIsSome (computableInPolyTime_readSlotSchedule.comp
-      (show ComputableInPolyTime (fun q : OuterSt × (Bool × ℕ) => (q.2, q.1.2.2))
-        (encPair encOuterSt (encPair encBool encUnary)) _ by
-        unfold encOuterSt encOuterAcc; fun_prop))
+      (encPair encOuterSt (encPair encBool encUnary)) encBool := by fun_prop
   exact his.ite' (.const none) (by fun_prop)
 
 private def streamSlotInOfOuter (q : OuterSt × (Bool × ℕ)) : StreamSlotIn :=
@@ -912,24 +906,7 @@ private theorem computableInPolyTime_finalizeBalancedSchedules :
           if q.1.2.2.any (fun e => decide (e.1 = f)) then
             (q.2.2.map fun o => o.getD (List.replicate q.1.1.2.2 0)).getD f []
           else List.replicate q.1.1.2.2 0)
-      eIn (encList (encList encNat)) := by
-    refine ComputableInPolyTime.mapWithInput
-      (ComputableInPolyTime.range.comp
-        ((ComputableInPolyTime.length_list (encList encNat)).comp hraw2)) ?_
-    have hany : ComputableInPolyTime
-        (fun r : OuterAcc × ℕ => r.1.1.2.2.any fun e => decide (e.1 = r.2))
-        (encPair eIn encUnary) encBool :=
-      ComputableInPolyTime.anyWithInput (by fun_prop)
-        (ComputableInPolyTime.decide_eq' (by fun_prop)
-          (ComputableInPolyTime.unary_to_binary.comp (by fun_prop)))
-    have hthen : ComputableInPolyTime
-        (fun r : OuterAcc × ℕ =>
-          (r.1.2.2.map fun o => o.getD (List.replicate r.1.1.1.2.2 0)).getD r.2 [])
-        (encPair eIn encUnary) (encList encNat) :=
-      (ComputableInPolyTime.listGetD []).comp
-        ((hraw2.comp (ComputableInPolyTime.fst _ _)).prod
-          (ComputableInPolyTime.snd _ _))
-    exact hany.ite' hthen (by fun_prop)
+      eIn (encList (encList encNat)) := by fun_prop
   exact hvar.prod hfac
 
 private noncomputable def mkOuterAccCert

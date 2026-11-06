@@ -45,8 +45,8 @@ open Cslib.DataStructure.Queue
 
 /-- One fixed family contains both method bodies. Runtime arguments select no new code. -/
 noncomputable abbrev family : Bool → Certificate .standard
-  | false => ⟨realizes_enqueue_standard⟩
-  | true => ⟨realizes_dequeue_standard⟩
+  | false => Certificate.ofRealizes realizes_enqueue_standard
+  | true => Certificate.ofRealizes realizes_dequeue_standard
 
 /-- One finite register file for both bodies and the dispatcher. -/
 noncomputable abbrev registers := Backend.registers family

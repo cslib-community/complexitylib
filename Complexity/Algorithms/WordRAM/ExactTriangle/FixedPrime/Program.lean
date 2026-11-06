@@ -8,12 +8,13 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness
+public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Width
 
 /-!
 # Native traversal of the occupied ExactTriangle catalogue
 
 The producer runs once. The controller visits actual occupied ordinals and invokes the complete
-400-register record-product/witness code. A success closes the loop immediately; no later
+400-register box-product/witness code. A success closes the loop immediately; no later
 product or original-weight scan is called. Five disjoint controller registers are used,
 and no catalogue/window snapshot or clearing operation is introduced.
 
@@ -63,7 +64,7 @@ open Reg in
   .op (.copy (recordBank (RecordWitness.productBank RecordProduct.Reg.ordinal)) index)
 
 /-- Actual product computation, descriptor reading and original signed-weight verification. -/
-@[expose] def record : Code .standard 416 := RecordWitness.program.rename recordBank
+@[expose] def record : Code .standard 416 := BoxRecordWitness.program.rename recordBank
 
 open Reg in
 /-- Accumulate the actual scan counter and close the loop exactly on a successful return. -/
@@ -87,11 +88,11 @@ open Reg in
 by actual memory-window compilation as well as by the flat initialized client. -/
 theorem program_not_readsWidth : ¬program.ReadsWidth := by
   simp only [program, produce, traverse, setup, step, select, record, receive,
-    RecordWitness.produce, RecordProduct.produce, RecordWitness.program,
+    RecordWitness.produce, RecordProduct.produce, BoxRecordWitness.program,
     Code.ReadsWidth, Code.readsWidth_rename, Op.ReadsWidth, Op.bin, reduceCtorEq,
     false_or, or_false]
   exact not_or.mpr ⟨Instances.program_fixed.2,
-    not_or.mpr ⟨RecordProduct.program_fixed.2, RecordWitness.consume_fixed.2⟩⟩
+    not_or.mpr ⟨RecordBoxProduct.program_fixed.2, RecordWitness.consume_fixed.2⟩⟩
 
 /-- The whole fixed-prime controller is one standard-native program, with a fixed register
 bank and at most 133152 flat slots including halt. It never reads the physical word width. -/
@@ -100,10 +101,10 @@ theorem program_fixed : (program.program Reg.found).length ≤ 133152 ∧
   constructor
   · simp only [Code.program, List.length_append, Code.length_assemble,
       List.length_singleton, program, produce, traverse, setup, step, select, record,
-      receive, RecordWitness.produce, RecordProduct.produce, RecordWitness.program,
+      receive, RecordWitness.produce, RecordProduct.produce, BoxRecordWitness.program,
       Code.size, Code.size_rename]
     have hp := Instances.program_fixed.1
-    have hr := RecordProduct.program_fixed.1
+    have hr := RecordBoxProduct.program_fixed.1
     have hc := RecordWitness.consume_fixed.1
     omega
   · exact Code.not_readsWidth_program program_not_readsWidth _

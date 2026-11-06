@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
@@ -493,23 +494,10 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
     K₂ * (2 * Z + 1 + cS * (Z + Uf Z + 1) + Z * (2 * Z + 3) + 1) ^ K₂
   let Tf : ℕ → ℕ := fun Z => pS Z + (Z + 2) * (Bf Z + 2 * Uf Z) + (Z + 2) * 2
   let Sf : ℕ → ℕ := fun Z => pS Z + Bf Z + (Z + Uf Z)
-  have hAp : PolyBounded id Af :=
-    ((((PolyBounded.const 3).mul PolyBounded.self).add (PolyBounded.const 1)).add
-      ((PolyBounded.const cE).mul (PolyBounded.self.add (PolyBounded.const 1)))).add
-      (PolyBounded.const 1)
-  have hUp : PolyBounded id Uf := (PolyBounded.const K₃).mul (hAp.pow K₃)
-  have hBp : PolyBounded id Bf :=
-    (PolyBounded.const K₂).mul ((((((PolyBounded.const 2).mul PolyBounded.self).add
-      (PolyBounded.const 1)).add ((PolyBounded.const cS).mul ((PolyBounded.self.add hUp).add
-        (PolyBounded.const 1)))).add (PolyBounded.self.mul (((PolyBounded.const 2).mul
-          PolyBounded.self).add (PolyBounded.const 3)))).add (PolyBounded.const 1) |>.pow K₂)
   have qS := PolyBounded.of_polynomiallyBounded id hpS
-  have hTSp : PolyBounded id fun Z => Tf Z + Sf Z :=
-    ((((qS.comp PolyBounded.self).add
-      ((PolyBounded.self.add (PolyBounded.const 2)).mul
-        (hBp.add ((PolyBounded.const 2).mul hUp)))).add
-      ((PolyBounded.self.add (PolyBounded.const 2)).mul (PolyBounded.const 2)))).add
-      (((qS.comp PolyBounded.self).add hBp).add (PolyBounded.self.add hUp))
+  have hTSp : PolyBounded id fun Z => Tf Z + Sf Z := by
+    dsimp only [Tf, Sf, Bf, Uf, Af]
+    growth_poly
   obtain ⟨a, d, had⟩ := hTSp.exists_le
   refine ⟨a + d, fun P ℓ r fl ζ G E ES hE => ?_⟩
   set G' := DescribedNetwork.specNet P ℓ fl ζ G with hG'
@@ -644,19 +632,10 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
   let Engf : ℕ → ℕ := fun W => K₁ * (Yf W + cD * (Rf W + 1) + 1) ^ K₁
   let Tf : ℕ → ℕ := fun W => pM W + (Yf W * Yf W + 2) * (Engf W + Rf W)
   let Sf : ℕ → ℕ := fun W => pM W + (Engf W + Rf W)
-  have hYp : PolyBounded id Yf :=
-    (PolyBounded.const cY).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow dY)
-  have hRp : PolyBounded id Rf :=
-    (PolyBounded.const KA).mul (((((PolyBounded.const 9).mul ((hYp.add
-      (PolyBounded.const 1)).pow 2)).add PolyBounded.self).add (PolyBounded.const 1)).pow KA)
-  have hEngp : PolyBounded id Engf :=
-    (PolyBounded.const K₁).mul (((hYp.add ((PolyBounded.const cD).mul
-      (hRp.add (PolyBounded.const 1)))).add (PolyBounded.const 1)).pow K₁)
   have qM := PolyBounded.of_polynomiallyBounded id hpM
-  have hTSp : PolyBounded id fun W => Tf W + Sf W :=
-    ((qM.comp PolyBounded.self).add
-      (((hYp.mul hYp).add (PolyBounded.const 2)).mul (hEngp.add hRp))).add
-      ((qM.comp PolyBounded.self).add (hEngp.add hRp))
+  have hTSp : PolyBounded id fun W => Tf W + Sf W := by
+    dsimp only [Tf, Sf, Engf, Rf, Yf]
+    growth_poly
   obtain ⟨a, d, had⟩ := hTSp.exists_le
   refine ⟨a + d, fun P ℓ r G E ES hE => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length with hn

@@ -7,10 +7,10 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingLoop
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingPrimes
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingFinish
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingEntries
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingWidth
+import all Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingLoop
+import all Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingSetup
 
 /-!
 # Composing every computed native preprocessing root
@@ -59,7 +59,9 @@ theorem afterFrontend_exec {κ w : ℕ} (input : List ℤ) (rs : List (ℕ × �
       Traversal.StoredNodes (2 * U) (2 * m ^ 2) (arena κ n x.mem).table out y.mem ∧
       y.regs Traversal.outputCount = out.length ∧
       y.regs Traversal.outputs = (arena κ n x.mem).table ∧
-      y.regs packedLength = 8 * m ^ 2 := by
+      y.regs packedLength = 8 * m ^ 2 ∧
+      Traversal.OutputLayout (2 * m ^ 2) (arena κ n x.mem).table
+        (y.regs Traversal.heap) out := by
   let n := input.length
   let l := Frontend.layout κ n
   let U := (n + 2) ^ κ
@@ -116,7 +118,7 @@ theorem afterFrontend_exec {κ w : ℕ} (input : List ℤ) (rs : List (ℕ × �
     simpa only [Nat.add_sub_cancel] using hh
   obtain ⟨s, y, he, hy, _, hout⟩ := forest_exec (arena_separated κ n q.mem) hready hi
     rfl rfl rfl (arena_frontend_before κ n q.mem) hkeys hnd hcard hvalues
-  refine ⟨s.nodes, y, ?_, hout, hy.output, hy.count, hy.controls.2.2.2.2.2.2.1, ?_⟩
+  refine ⟨s.nodes, y, ?_, hout, hy.output, hy.count, hy.controls.2.2.2.2.2.2.1, ?_, ?_⟩
   · have htotal := hp.within.seq (hq.seq (hr.within.seq (hb.seq he)))
     exact htotal.mono (by
       dsimp only [n, l, U, m, F, a, arena] at *
@@ -125,5 +127,12 @@ theorem afterFrontend_exec {κ w : ℕ} (input : List ℤ) (rs : List (ℕ × �
   · have hpersist : forest.Preserves packedLength := body_preserves _ (by decide)
       (by decide) (by decide)
     exact (he.regs_eq hpersist).trans bs.length
+  · constructor
+    · have ht : s.nodes.length ≤ a.outputCapacity := (Nat.le_add_right ..).trans hy.tableBudget
+      have hf : a.floor ≤ y.regs Traversal.heap := hy.floor
+      have hfloor : a.table + a.outputCapacity = a.floor := rfl
+      change a.table + s.nodes.length ≤ y.regs Traversal.heap
+      omega
+    · exact fun i => (hy.outputBounds i).2
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing

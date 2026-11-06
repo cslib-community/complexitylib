@@ -14,12 +14,18 @@ public import Complexity.Languages.Probabilistic.Repeat
 public import Complexity.Languages.Probabilistic.UniformNat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Probabilistic.Oracle.Memoize
 import Complexity.Computability.Probabilistic.Oracle.Substitution
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.QueryBounds
 import Complexity.Computability.Probabilistic.Repeat
+import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Crypto.Computational.MerkleSignature.Security
 import Complexity.Crypto.Computational.OneWayToPRF
@@ -32,8 +38,6 @@ import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 import Complexity.Languages.Probabilistic.UntilBad
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
 
 /-!
 # Security of stateless tree signatures
@@ -108,6 +112,77 @@ open scoped NNReal ENNReal
 
 namespace TreeSignature
 
+attribute [local fun_prop]
+  ComputableInPolyTime.bool_and'
+  ComputableInPolyTime.unary_dyadicSize
+  IsPPTOn.replicate
+
+@[local fun_prop]
+private theorem headD_list_fp {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+    {l : α → List β} (hl : ComputableInPolyTime l encA (encList encB)) (d : β) :
+    ComputableInPolyTime (fun a => (l a).headD d) encA encB :=
+  (ComputableInPolyTime.headD (encA := encB) (encL := encList encB) d).comp hl
+
+@[local fun_prop]
+private theorem getLastD_fp {α : Type} {encA : α ↪ List Bool} {l : α → List Bool} (d : Bool)
+    (hl : ComputableInPolyTime l encA encBits) :
+    ComputableInPolyTime (fun a => (l a).getLastD d) encA encBool := by
+  have heq : (fun a => (l a).getLastD d) = fun a => (l a).getD ((l a).length - 1) d := by
+    funext a
+    rw [List.getLastD_eq_getLast?, List.getLast?_eq_getElem?, List.getD_eq_getElem?_getD]
+  rw [heq]; fun_prop
+
+@[local fun_prop]
+private theorem contains_fp {α β : Type} [BEq β] [LawfulBEq β] {encA : α ↪ List Bool}
+    {encB : β ↪ List Bool} {l : α → List β} {x : α → β}
+    (hl : ComputableInPolyTime l encA (encList encB))
+    (hx : ComputableInPolyTime x encA encB) :
+    ComputableInPolyTime (fun a => (l a).contains (x a)) encA encBool := by
+  have heq : (fun a => (l a).contains (x a)) = fun a => (l a).any (fun b => b == x a) := by
+    funext a
+    rw [Bool.eq_iff_iff, List.contains_iff_mem, List.any_eq_true]
+    simp only [beq_iff_eq, exists_eq_right]
+  rw [heq]
+  exact ComputableInPolyTime.anyWithInput hl
+    ((ComputableInPolyTime.snd encA encB).beq (hx.comp (ComputableInPolyTime.fst encA encB)))
+
+@[local fun_prop]
+private theorem encodeSignature_funProp {α : Type} {encA : α ↪ List Bool}
+    {leaf : α → List Bool} {certs : α → List (List Bool × List Bool)} {last : α → List Bool}
+    (hl : ComputableInPolyTime leaf encA encBits)
+    (hc : ComputableInPolyTime certs encA (encList (encPair encBits encBits)))
+    (hs : ComputableInPolyTime last encA encBits) :
+    ComputableInPolyTime (fun a => encodeSignature (leaf a) (certs a) (last a)) encA encBits := by
+  unfold encodeSignature; fun_prop
+
+@[local fun_prop]
+private theorem signatureDecoder_funProp {α : Type} {encA : α ↪ List Bool} {s : α → List Bool}
+    (hs : ComputableInPolyTime s encA encBits) :
+    ComputableInPolyTime (fun a => signatureDecoder.decode (s a)) encA
+      (encPair encBits (encPair (encList (encPair encBits encBits)) encBits)) :=
+  signatureDecoder.computableInPolyTime.comp hs
+
+private theorem exists_signInput_length_bound (S : IndexedSignatureScheme) :
+    ∃ pkB : ℕ → ℕ,
+      ComputableInPolyTime pkB encUnary encUnary ∧
+      ∀ n, ∀ keys ∈ (ProbComp.eval (S.keyGen n)).support, ∀ u ≤ 1, ∀ msg,
+        (msg.length = n ∨ ∃ keys' ∈ (ProbComp.eval (S.keyGen n)).support, msg = keys'.1) →
+        (encPair encBits (encPair encUnary encBits) (keys.2, u, msg)).length + 1 ≤
+          3 * pkB n + n + 5 := by
+  obtain ⟨ck, dk, hkgLen⟩ := S.keyGen_ppt.length_le
+  simp only [encUnary_apply, List.length_replicate] at hkgLen
+  refine ⟨fun n => ck * (n + 1) ^ dk, by fun_prop, fun n keys hkeys u hu msg hmsg => ?_⟩
+  have hskLen : keys.2.length ≤ ck * (n + 1) ^ dk :=
+    (length_le_encPair_right encBits encBits keys).trans (hkgLen n keys hkeys)
+  have hmsgLen : msg.length ≤ ck * (n + 1) ^ dk + n := by
+    rcases hmsg with rfl | ⟨keys', hkeys', rfl⟩
+    · omega
+    · have hk' := (length_le_encPair_left encBits encBits keys').trans (hkgLen n keys' hkeys')
+      simp only [encBits_apply] at hk'
+      omega
+  simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
+  omega
+
 /-! ### Request lengths, injectivity, and coin budgets -/
 
 section Requests
@@ -173,36 +248,18 @@ theorem exists_treeCoinBudget (S : IndexedSignatureScheme) (T : S.Seeded) {depth
       ∀ n, ∀ keys ∈ (ProbComp.eval (S.keyGen n)).support, ∀ u ≤ 1, ∀ msg,
         (msg.length = n ∨ ∃ keys' ∈ (ProbComp.eval (S.keyGen n)).support, msg = keys'.1) →
         T.signBudget keys.2 u msg ≤ budget n := by
-  obtain ⟨ck, dk, hkgLen⟩ := S.keyGen_ppt.length_le
+  obtain ⟨pkB, hpkB, hlenB⟩ := exists_signInput_length_bound S
   obtain ⟨cb, db, hkb⟩ := T.keyGenBudget_polyTime.polyBounded_length.exists_le
   obtain ⟨cB, dB, hsb⟩ := T.signBudget_polyTime.polyBounded_length.exists_le
-  simp only [encUnary_apply, List.length_replicate] at hkgLen hkb hsb
-  let pkB (n : ℕ) : ℕ := ck * (n + 1) ^ dk
+  simp only [encUnary_apply, List.length_replicate] at hkb hsb
   let budget (n : ℕ) : ℕ :=
     2 * depth n + 4 + cb * (n + 1) ^ db + cB * (3 * pkB n + n + 5) ^ dB
-  have hbudgetPoly : ComputableInPolyTime budget encUnary encUnary := by
-    dsimp only [budget, pkB]
-    polytime
-  refine ⟨budget, hbudgetPoly, fun n => by dsimp only [budget]; omega,
-    fun n => by have := hkb n; dsimp only [budget]; omega, ?_⟩
-  intro n keys hkeys u hu msg hmsg
-  have hkeysLen := hkgLen n keys hkeys
-  have hskLen : keys.2.length ≤ pkB n :=
-    (length_le_encPair_right encBits encBits keys).trans hkeysLen
-  have hmsgLen : msg.length ≤ pkB n + n := by
-    rcases hmsg with hlen | ⟨keys', hkeys', rfl⟩
-    · omega
-    · have hk' := (length_le_encPair_left encBits encBits keys').trans (hkgLen n keys' hkeys')
-      simp only [encBits_apply] at hk'
-      dsimp only [pkB]
-      omega
-  have hsb' := hsb (keys.2, u, msg)
-  simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hsb'
-  have hle : cB * (2 * keys.2.length + 1 + (2 * u + 1 + msg.length) + 1) ^ dB ≤
-      cB * (3 * pkB n + n + 5) ^ dB :=
-    Nat.mul_le_mul_left cB (Nat.pow_le_pow_left (by omega) dB)
-  have := hsb'.trans hle
-  dsimp only [budget]
+  refine ⟨budget, by dsimp only [budget]; fun_prop, fun n => by dsimp only [budget]; omega,
+    fun n => by have := hkb n; dsimp only [budget]; omega,
+    fun n keys hkeys u hu msg hmsg => ?_⟩
+  have hle := (hsb (keys.2, u, msg)).trans
+    (Nat.mul_le_mul_left cB (Nat.pow_le_pow_left (hlenB n keys hkeys u hu msg hmsg) dB))
+  dsimp only [budget] at hle ⊢
   omega
 
 end Requests
@@ -443,50 +500,9 @@ private theorem isPPTOn_plantNodeKeys (S : IndexedSignatureScheme) {slotBound : 
     (hslot : ComputableInPolyTime slotBound encUnary encUnary) :
     IsPPTOn (encPair (encPair encUnary encBits) encUnary) encKeys
       (fun c : (ℕ × List Bool) × ℕ => plantNodeKeys S slotBound c.1.1 c.2 c.1.2) := by
-  let encIn := encPair (encPair encUnary encBits) encUnary
-  have hc := ComputableInPolyTime.id' (encIn := encIn)
-  have hn := hc.fst'.fst'
-  have htarget := hc.snd'
-  have hkg : IsPPTOn encIn (encPair encBits encBits)
-      (fun c : (ℕ × List Bool) × ℕ => S.keyGen c.1.1) :=
-    S.keyGen_ppt.preprocess hn
-  have htotal : ComputableInPolyTime
-      (fun c : (ℕ × List Bool) × ℕ => dyadicSize (slotBound c.1.1)) encIn encUnary :=
-    ComputableInPolyTime.unary_dyadicSize.comp (hslot.comp hn)
-  have hidx : ComputableInPolyTime
-      (fun c : (ℕ × List Bool) × ℕ => min c.2 (dyadicSize (slotBound c.1.1) - 1))
-      encIn encUnary := by
-    have heq : (fun c : (ℕ × List Bool) × ℕ => min c.2 (dyadicSize (slotBound c.1.1) - 1)) =
-        fun c => c.2 - (c.2 - (dyadicSize (slotBound c.1.1) - 1)) := by
-      funext c; omega
-    rw [heq]
-    exact htarget.unary_sub' (htarget.unary_sub' (htotal.unary_sub' (.const 1)))
-  have hq1 := ComputableInPolyTime.fst encIn encKeys
-  have hrem : ComputableInPolyTime
-      (fun q : ((ℕ × List Bool) × ℕ) × List (List Bool × List Bool) =>
-        dyadicSize (slotBound q.1.1.1) - min q.1.2 (dyadicSize (slotBound q.1.1.1) - 1) - 1)
-      (encPair encIn encKeys) encUnary :=
-    ((htotal.comp hq1).unary_sub' (hidx.comp hq1)).unary_sub' (.const 1)
-  have hfront := hkg.replicate hidx
-  have hback := (hkg.preprocess hq1).replicate hrem
-  have hr1 := ComputableInPolyTime.fst (encPair encIn encKeys) encKeys
-  have hr2 := ComputableInPolyTime.snd (encPair encIn encKeys) encKeys
-  have hpost : ComputableInPolyTime
-      (fun r : (((ℕ × List Bool) × ℕ) × List (List Bool × List Bool)) ×
-          List (List Bool × List Bool) =>
-        r.1.2 ++ (r.1.1.1.2, ([] : List Bool)) :: r.2)
-      (encPair (encPair encIn encKeys) encKeys) encKeys :=
-    hr1.snd'.listAppend' ((hr1.fst'.fst'.snd'.prod (.const [])).cons' hr2)
-  exact hfront.bind_with
-    (second := fun (c : (ℕ × List Bool) × ℕ) (front : List (List Bool × List Bool)) =>
-      OracleComp.replicate
-        (dyadicSize (slotBound c.1.1) - min c.2 (dyadicSize (slotBound c.1.1) - 1) - 1)
-        (S.keyGen c.1.1) >>= fun back => pure (front ++ (c.1.2, []) :: back))
-    (hback.bind_with
-      (second := fun (q : ((ℕ × List Bool) × ℕ) × List (List Bool × List Bool))
-          (back : List (List Bool × List Bool)) =>
-        (pure (q.2 ++ (q.1.1.2, []) :: back) : ProbComp (List (List Bool × List Bool))))
-      hpost.isPPTOn)
+  have _ := S.keyGen_ppt
+  dsimp only [plantNodeKeys]
+  fun_prop
 
 private theorem isOraclePPTOn_visitNodeM {γ : Type} {enc : γ ↪ List Bool}
     {cap : γ → ℕ} {path : γ → List Bool} {visited : γ → NodeSlotCache}
@@ -494,16 +510,9 @@ private theorem isOraclePPTOn_visitNodeM {γ : Type} {enc : γ ↪ List Bool}
     (hpath : ComputableInPolyTime path enc encBits)
     (hvisited : ComputableInPolyTime visited enc encNodeCache) :
     IsOraclePPTOn enc (encPair encUnary encNodeCache)
-      (fun a => visitNodeM (cap a) (path a) (visited a)) := by
-  have hnext : ComputableInPolyTime
-      (fun a : γ => min (visited a).length (cap a)) enc encUnary := by
-    have heq : (fun a : γ => min (visited a).length (cap a)) =
-        fun a => (visited a).length - ((visited a).length - cap a) := by
-      funext a; omega
-    rw [heq]
-    polytime
-  exact IsOraclePPTOn.memoize (compute := fun a _ => pure (min (visited a).length (cap a)))
-    hnext.isOraclePPTOn hpath hvisited
+      (fun a => visitNodeM (cap a) (path a) (visited a)) :=
+  IsOraclePPTOn.memoize (compute := fun a _ => pure (min (visited a).length (cap a)))
+    (ComputableInPolyTime.isOraclePPTOn (by fun_prop)) hpath hvisited
 
 private theorem isOraclePPTOn_signEdgeM (S : IndexedSignatureScheme) {γ : Type}
     {enc : γ ↪ List Bool} {keys : γ → List (List Bool × List Bool)}
@@ -522,18 +531,12 @@ private theorem isOraclePPTOn_signEdgeM (S : IndexedSignatureScheme) {γ : Type}
   have hraw : IsOraclePPTOn enc encBits
       (fun a => signEdgeRaw S (keys a) (target a) (sigCap a) (idx a) (u a) (msg a)) := by
     unfold signEdgeRaw
-    refine IsOraclePPTOn.ite' (condition := fun a => idx a = target a) (by polytime)
-      (IsOraclePPTOn.query_take' () (by polytime) hsigCap) ?_
-    have hsk : ComputableInPolyTime
-        (fun a => ((keys a).getD (idx a) ([], [])).2) enc encBits :=
-      (ComputableInPolyTime.listGetDWithInput hkeys hidx ([], [])).snd'
-    have hlocal : IsPPTOn enc encBits
-        (fun a => S.sign ((keys a).getD (idx a) ([], [])).2 (u a) (msg a)) :=
-      S.sign_ppt.preprocess (hsk.prod (hu.prod hmsg))
-    exact (hlocal.isOraclePPTOn (Operation := Unit)).map_with'
-      (f := fun a σ => σ.take (sigCap a))
-      (ComputableInPolyTime.bitsTakeWithInput (ComputableInPolyTime.snd enc encBits)
-        (hsigCap.comp (ComputableInPolyTime.fst enc encBits)))
+    exact IsOraclePPTOn.ite' (condition := fun a => idx a = target a) (by fun_prop)
+      (IsOraclePPTOn.query_take' () (by fun_prop) hsigCap)
+      (((S.sign_ppt.preprocess
+        (prepare := fun a => (((keys a).getD (idx a) ([], [])).2, u a, msg a))
+        (by fun_prop)).isOraclePPTOn (Operation := Unit)).map_with'
+        (f := fun a σ => σ.take (sigCap a)) (by fun_prop))
   exact IsOraclePPTOn.memoize
     (compute := fun a _ => signEdgeRaw S (keys a) (target a) (sigCap a) (idx a) (u a) (msg a))
     hraw (hpath.prod hu) hedges
@@ -553,104 +556,84 @@ private theorem length_le_of_mem_support_signEdgeRaw (S : IndexedSignatureScheme
 private abbrev CertLoopIn :=
   (List (List Bool × List Bool) × (ℕ × ℕ) × (ℕ × List Bool)) × (NodeSlotCache × EdgeSigCache)
 
+private abbrev CertLoopIn.keys (a : CertLoopIn) := a.1.1
+private abbrev CertLoopIn.target (a : CertLoopIn) := a.1.2.1.1
+private abbrev CertLoopIn.sigCap (a : CertLoopIn) := a.1.2.1.2
+private abbrev CertLoopIn.parameter (a : CertLoopIn) := a.1.2.2.1
+private abbrev CertLoopIn.leaf (a : CertLoopIn) := a.1.2.2.2
+private abbrev CertLoopIn.visited (a : CertLoopIn) := a.2.1
+private abbrev CertLoopIn.edges (a : CertLoopIn) := a.2.2
+
+/-- Fixed step parameters paired with the current certification state. -/
+private abbrev CertStepIn :=
+  (List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState
+/-- A step input together with the newly visited child slot and cache. -/
+private abbrev CertVisitIn := CertStepIn × (ℕ × NodeSlotCache)
+/-- A visited step input together with the edge signature and cache. -/
+private abbrev CertSignIn := CertVisitIn × (List Bool × EdgeSigCache)
+
 private theorem isOraclePPTOn_certifyStepPlanted (S : IndexedSignatureScheme) :
     IsOraclePPTOn
       (encPair (encPair encKeys (encPair (encPair encUnary encUnary) encBits)) encPlantedCert)
       encPlantedCert
-      (fun q : (List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState =>
+      (fun q : CertStepIn =>
         certifyStepPlanted S q.1.1 q.1.2.1.1 q.1.2.1.2 q.1.2.2 q.2) := by
-  have htoNat : ComputableInPolyTime Bool.toNat encBool encUnary :=
-    ComputableInPolyTime.of_finite Bool.toNat
-  let encP := encPair encKeys (encPair (encPair encUnary encUnary) encBits)
-  let encIn := encPair encP encPlantedCert
-  have hq := ComputableInPolyTime.id' (encIn := encIn)
-  have hqKeys := hq.fst'.fst'
-  have hqLeaf := hq.fst'.snd'.snd'
-  have hqNode := hq.snd'.fst'.fst'
-  have hqBit := ComputableInPolyTime.bitsGetDWithInput hqLeaf hqNode.length_bits_comp false
-  have hqChildPath := hqNode.bitsAppend (hqBit.bitsCons (.const []))
-  have hvisit := isOraclePPTOn_visitNodeM (enc := encIn)
-    (cap := fun q : (List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState =>
-      q.1.1.length)
-    (path := fun q => q.2.1.1 ++ [q.1.2.2.getD q.2.1.1.length false])
-    (visited := fun q => q.2.2.1)
-    ((ComputableInPolyTime.length_list (encPair encBits encBits)).comp hqKeys)
-    hqChildPath
-    hq.snd'.snd'.fst'
+  let encIn := encPair (encPair encKeys (encPair (encPair encUnary encUnary) encBits))
+    encPlantedCert
   let encMid := encPair encIn (encPair encUnary encNodeCache)
-  have hr1 := ComputableInPolyTime.fst encIn (encPair encUnary encNodeCache)
-  have hr2 := ComputableInPolyTime.snd encIn (encPair encUnary encNodeCache)
-  have hrKeys := hqKeys.comp hr1
-  have hrChildIdx := hr2.fst'
-  have hrChildPk := (ComputableInPolyTime.listGetDWithInput hrKeys hrChildIdx ([], [])).fst'
-  have hsign := isOraclePPTOn_signEdgeM S (enc := encMid)
-    (keys := fun r : ((List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState) ×
-        (ℕ × NodeSlotCache) => r.1.1.1)
-    (target := fun r => r.1.1.2.1.1)
-    (sigCap := fun r => r.1.1.2.1.2)
-    (path := fun r => r.1.2.1.1)
-    (idx := fun r => r.1.2.1.2.1)
-    (u := fun r => (r.1.1.2.2.getD r.1.2.1.1.length false).toNat)
-    (msg := fun r => (r.1.1.1.getD r.2.1 ([], [])).1)
-    (edges := fun r => r.1.2.2.2)
-    hrKeys
-    (hq.fst'.snd'.fst'.fst'.comp hr1)
-    (hq.fst'.snd'.fst'.snd'.comp hr1)
-    (hqNode.comp hr1)
-    (hq.snd'.fst'.snd'.fst'.comp hr1)
-    (htoNat.comp (hqBit.comp hr1))
-    hrChildPk
-    (hq.snd'.snd'.snd'.comp hr1)
   let encEnd := encPair encMid (encPair encBits encEdgeCache)
-  have hs1 := ComputableInPolyTime.fst encMid (encPair encBits encEdgeCache)
-  have hs2 := ComputableInPolyTime.snd encMid (encPair encBits encEdgeCache)
-  have hsIn := hr1.comp hs1
-  have hsCerts := hq.snd'.fst'.snd'.snd'.comp hsIn
-  have hsNewCert := ((hrChildPk.comp hs1).prod hs2.fst').cons' (.const [])
+  have hvisit := isOraclePPTOn_visitNodeM (enc := encIn)
+    (cap := fun (((keys, _, _), _) : CertStepIn) => keys.length)
+    (path := fun ((_, _, leaf), ((node, _, _), _)) => node ++ [leaf.getD node.length false])
+    (visited := fun (_, (_, (visited, _))) => visited) (by fun_prop) (by fun_prop) (by fun_prop)
+  have hsign := isOraclePPTOn_signEdgeM S (enc := encMid)
+    (keys := fun ((((keys, _, _), _), _) : CertVisitIn) => keys)
+    (target := fun (((_, (target, _), _), _), _) => target)
+    (sigCap := fun (((_, (_, sigCap), _), _), _) => sigCap)
+    (path := fun ((_, ((node, _, _), _)), _) => node)
+    (idx := fun ((_, ((_, idx, _), _)), _) => idx)
+    (u := fun (((_, _, leaf), ((node, _, _), _)), _) => (leaf.getD node.length false).toNat)
+    (msg := fun (((keys, _, _), _), (childIdx, _)) => (keys.getD childIdx ([], [])).1)
+    (edges := fun ((_, (_, (_, edges))), _) => edges)
+    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
   have hpost : ComputableInPolyTime
-      (fun s : (((List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState) ×
-          (ℕ × NodeSlotCache)) × (List Bool × EdgeSigCache) =>
-        ((s.1.1.2.1.1 ++ [s.1.1.1.2.2.getD s.1.1.2.1.1.length false],
-          s.1.2.1,
-          s.1.1.2.1.2.2 ++ [((s.1.1.1.1.getD s.1.2.1 ([], [])).1, s.2.1)]),
-         (s.1.2.2, s.2.2)))
-      encEnd encPlantedCert :=
-    (((hqChildPath.comp hsIn).prod
-        ((hrChildIdx.comp hs1).prod (hsCerts.listAppend' hsNewCert))).prod
-      ((hr2.snd'.comp hs1).prod hs2.snd'))
+      (fun (((((keys, _, leaf), ((node, _, certs), _)), (childIdx, visited)), (σ, edges)) :
+          CertSignIn) =>
+        ((node ++ [leaf.getD node.length false], childIdx,
+          certs ++ [((keys.getD childIdx ([], [])).1, σ)]), (visited, edges)))
+      encEnd encPlantedCert := by fun_prop
   exact hvisit.bind_with
-    (second := fun (q : (List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState)
-        (v : ℕ × NodeSlotCache) =>
-      signEdgeM S q.1.1 q.1.2.1.1 q.1.2.1.2 q.2.1.1 q.2.1.2.1
-        (q.1.2.2.getD q.2.1.1.length false).toNat (q.1.1.getD v.1 ([], [])).1 q.2.2.2 >>=
-        fun e => pure ((q.2.1.1 ++ [q.1.2.2.getD q.2.1.1.length false], v.1,
-          q.2.1.2.2 ++ [((q.1.1.getD v.1 ([], [])).1, e.1)]), (v.2, e.2)))
+    (second := fun ((keys, (target, sigCap), leaf), ((node, idx, certs), (_, edges)))
+        (childIdx, visited) => do
+      let childPk := (keys.getD childIdx ([], [])).1
+      let bit := leaf.getD node.length false
+      let (σ, edges') ← signEdgeM S keys target sigCap node idx bit.toNat childPk edges
+      return ((node ++ [bit], childIdx, certs ++ [(childPk, σ)]), (visited, edges')))
     (hsign.bind_with
-      (second := fun (r : ((List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) ×
-          PlantedCertState) × (ℕ × NodeSlotCache)) (e : List Bool × EdgeSigCache) =>
-        (pure ((r.1.2.1.1 ++ [r.1.1.2.2.getD r.1.2.1.1.length false], r.2.1,
-          r.1.2.1.2.2 ++ [((r.1.1.1.getD r.2.1 ([], [])).1, e.1)]), (r.2.2, e.2)) :
+      (second := fun (((keys, _, leaf), ((node, _, certs), _)), (childIdx, visited)) (σ, edges) =>
+        (pure ((node ++ [leaf.getD node.length false], childIdx,
+          certs ++ [((keys.getD childIdx ([], [])).1, σ)]), (visited, edges)) :
           WordOracleComp Unit PlantedCertState))
       hpost.isOraclePPTOn)
 
 private def plantedLoopInv (Mv Me : ℕ) (a : CertLoopIn) (i : ℕ)
     (state : PlantedCertState) : Prop :=
-  state.1.1.length = i ∧
-  state.1.2.1 ≤ Mv ∧
-  state.1.2.2.length = i ∧
-  (∀ c ∈ state.1.2.2, c.1.length ≤ (encKeys a.1.1).length ∧ c.2.length ≤ Me) ∧
-  (∀ e ∈ state.2.1, e.2 ≤ Mv) ∧
-  (∀ e ∈ state.2.2, e.2.length ≤ Me) ∧
-  (encNodeCache state.2.1).length ≤
-    (encNodeCache a.2.1).length + i * (4 * (i + 1) + 2 * Mv + 3) ∧
-  (encEdgeCache state.2.2).length ≤
-    (encEdgeCache a.2.2).length + i * (8 * i + 2 * Me + 11)
+  let ((keys, _, _), (visited₀, edges₀)) := a
+  let ((node, idx, certs), (visited, edges)) := state
+  node.length = i ∧ idx ≤ Mv ∧ certs.length = i ∧
+  (∀ c ∈ certs, c.1.length ≤ (encKeys keys).length ∧ c.2.length ≤ Me) ∧
+  (∀ e ∈ visited, e.2 ≤ Mv) ∧ (∀ e ∈ edges, e.2.length ≤ Me) ∧
+  (encNodeCache visited).length ≤
+    (encNodeCache visited₀).length + i * (4 * (i + 1) + 2 * Mv + 3) ∧
+  (encEdgeCache edges).length ≤
+    (encEdgeCache edges₀).length + i * (8 * i + 2 * Me + 11)
 
 private theorem plantedLoopInv_step (S : IndexedSignatureScheme) {Mv Me : ℕ} (a : CertLoopIn)
-    (hMv : a.1.1.length ≤ Mv) (hMe : a.1.2.1.2 ≤ Me) (i : ℕ) (state : PlantedCertState)
+    (hMv : a.keys.length ≤ Mv) (hMe : a.sigCap ≤ Me) (i : ℕ) (state : PlantedCertState)
     (hinv : plantedLoopInv Mv Me a i state) (next : PlantedCertState)
     (hnext : next ∈ OracleComp.support
-      (certifyStepPlanted S a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.2 state)) :
+      (certifyStepPlanted S a.keys a.target a.sigCap a.leaf state)) :
     plantedLoopInv Mv Me a (i + 1) next := by
   rcases a with ⟨⟨keys, ⟨target, sigCap⟩, ⟨n, leaf⟩⟩, ⟨visited₀, edges₀⟩⟩
   rcases state with ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩
@@ -704,13 +687,13 @@ private theorem plantedLoopInv_step (S : IndexedSignatureScheme) {Mv Me : ℕ} (
 
 private theorem certifyPlanted_support_inv (S : IndexedSignatureScheme) (depth : ℕ → ℕ)
     {Mv Me : ℕ} (a : CertLoopIn)
-    (hMv : a.1.1.length ≤ Mv) (hMe : a.1.2.1.2 ≤ Me)
-    (hv₀ : ∀ e ∈ a.2.1, e.2 ≤ Mv) (he₀ : ∀ e ∈ a.2.2, e.2.length ≤ Me) :
+    (hMv : a.keys.length ≤ Mv) (hMe : a.sigCap ≤ Me)
+    (hv₀ : ∀ e ∈ a.visited, e.2 ≤ Mv) (he₀ : ∀ e ∈ a.edges, e.2.length ≤ Me) :
     ∀ state ∈ OracleComp.support
-      (certifyPlanted S depth a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.1 a.1.2.2.2 a.2),
-      plantedLoopInv Mv Me a (depth a.1.2.2.1 - 1) state := by
+      (certifyPlanted S depth a.keys a.target a.sigCap a.parameter a.leaf a.2),
+      plantedLoopInv Mv Me a (depth a.parameter - 1) state := by
   have hiter : ∀ k, ∀ state ∈ OracleComp.support
-      (OracleComp.iterate k (certifyStepPlanted S a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.2)
+      (OracleComp.iterate k (certifyStepPlanted S a.keys a.target a.sigCap a.leaf)
         (([], 0, []), a.2)),
       plantedLoopInv Mv Me a k state := by
     intro k
@@ -725,7 +708,7 @@ private theorem certifyPlanted_support_inv (S : IndexedSignatureScheme) (depth :
       rw [OracleComp.iterate_succ] at hstate
       obtain ⟨prev, hprev, hstep⟩ := OracleComp.mem_supportWith_bind_iff.mp hstate
       exact plantedLoopInv_step S a hMv hMe k prev (ih prev hprev) state hstep
-  exact hiter (depth a.1.2.2.1 - 1)
+  exact hiter (depth a.parameter - 1)
 
 private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth : ℕ → ℕ}
     (hdepth : ComputableInPolyTime depth encUnary encUnary) :
@@ -734,28 +717,31 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
         (encPair encNodeCache encEdgeCache))
       encPlantedCert
       (fun a : CertLoopIn =>
-        certifyPlanted S depth a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.1 a.1.2.2.2 a.2) := by
+        certifyPlanted S depth a.keys a.target a.sigCap a.parameter a.leaf a.2) := by
   let encLoopIn :=
     encPair (encPair encKeys (encPair (encPair encUnary encUnary) (encPair encUnary encBits)))
       (encPair encNodeCache encEdgeCache)
   obtain ⟨cd, dd, hdd⟩ := hdepth.polyBounded_length.exists_le
   simp only [encUnary_apply, List.length_replicate] at hdd
   have hleIn (a : CertLoopIn) :
-      a.1.1.length ≤ (encLoopIn a).length ∧
-      (encKeys a.1.1).length ≤ (encLoopIn a).length ∧
-      a.1.2.1.2 ≤ (encLoopIn a).length ∧
-      a.1.2.2.1 ≤ (encLoopIn a).length ∧
-      (encNodeCache a.2.1).length ≤ (encLoopIn a).length ∧
-      (encEdgeCache a.2.2).length ≤ (encLoopIn a).length := by
-    have hk := length_le_length_encList (encPair encBits encBits) a.1.1
-    simp only [encLoopIn, length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+      a.keys.length ≤ (encLoopIn a).length ∧
+      (encKeys a.keys).length ≤ (encLoopIn a).length ∧
+      a.sigCap ≤ (encLoopIn a).length ∧
+      a.parameter ≤ (encLoopIn a).length ∧
+      (encNodeCache a.visited).length ≤ (encLoopIn a).length ∧
+      (encEdgeCache a.edges).length ≤ (encLoopIn a).length := by
+    rcases a with ⟨⟨keys, targetCap, ⟨n, leaf⟩⟩, ⟨visited, edges⟩⟩
+    have hk := length_le_length_encList (encPair encBits encBits) keys
+    simp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter, CertLoopIn.visited,
+      CertLoopIn.edges, encLoopIn, length_encPair, encUnary_apply, List.length_replicate,
+      encBits_apply]
     omega
   have hd : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-      (fun a => depth a.1.2.2.1) :=
-    PolyBounded.of_forall_le cd dd fun a => (hdd a.1.2.2.1).trans
+      (fun a => depth a.parameter) :=
+    PolyBounded.of_forall_le cd dd fun a => (hdd a.parameter).trans
       (Nat.mul_le_mul_left cd (Nat.pow_le_pow_left (Nat.add_le_add_right (hleIn a).2.2.2.1 1) dd))
-  let Mv (a : CertLoopIn) : ℕ := a.1.1.length + (encNodeCache a.2.1).length
-  let Me (a : CertLoopIn) : ℕ := a.1.2.1.2 + (encEdgeCache a.2.2).length
+  let Mv (a : CertLoopIn) : ℕ := a.keys.length + (encNodeCache a.visited).length
+  let Me (a : CertLoopIn) : ℕ := a.sigCap + (encEdgeCache a.edges).length
   have hMvPoly : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length) Mv :=
     (PolyBounded.self.mono fun a => (hleIn a).1).add
       (PolyBounded.self.mono fun a => (hleIn a).2.2.2.2.1)
@@ -763,28 +749,28 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
     (PolyBounded.self.mono fun a => (hleIn a).2.2.1).add
       (PolyBounded.self.mono fun a => (hleIn a).2.2.2.2.2)
   have hKPoly : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-      (fun a => (encKeys a.1.1).length) :=
+      (fun a => (encKeys a.keys).length) :=
     PolyBounded.self.mono fun a => (hleIn a).2.1
   have hN0Poly : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-      (fun a => (encNodeCache a.2.1).length) :=
+      (fun a => (encNodeCache a.visited).length) :=
     PolyBounded.self.mono fun a => (hleIn a).2.2.2.2.1
   have hE0Poly : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-      (fun a => (encEdgeCache a.2.2).length) :=
+      (fun a => (encEdgeCache a.edges).length) :=
     PolyBounded.self.mono fun a => (hleIn a).2.2.2.2.2
   have hloopId := ComputableInPolyTime.id' (encIn := encLoopIn)
   have hpair1 := ComputableInPolyTime.fst encLoopIn encPlantedCert
   have hpair2 := ComputableInPolyTime.snd encLoopIn encPlantedCert
   refine (IsOraclePPTOn.iterateWith_spec' (input := encLoopIn) (stateEncoding := encPlantedCert)
-    (count := fun a => depth a.1.2.2.1 - 1)
+    (count := fun a : CertLoopIn => depth a.parameter - 1)
     (initial := fun a => ((([], 0, []), a.2) : PlantedCertState))
-    (step := fun a state =>
-      certifyStepPlanted S a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.2 state)
+    (step := fun (a : CertLoopIn) state =>
+      certifyStepPlanted S a.keys a.target a.sigCap a.leaf state)
     ((hdepth.comp hloopId.fst'.snd'.snd'.fst').unary_sub' (.const 1))
     (((ComputableInPolyTime.const []).prod ((ComputableInPolyTime.const 0).prod (.const []))).prod
       hloopId.snd')
     ((isOraclePPTOn_certifyStepPlanted S).preprocess'
       (prepare := fun pair : CertLoopIn × PlantedCertState =>
-        ((pair.1.1.1, pair.1.1.2.1, pair.1.1.2.2.2), pair.2))
+        ((pair.1.keys, (pair.1.target, pair.1.sigCap), pair.1.leaf), pair.2))
       (((hpair1.fst'.fst'.prod (hpair1.fst'.snd'.fst'.prod hpair1.fst'.snd'.snd'.snd')).prod
         hpair2)))
     (fun a i state => plantedLoopInv (Mv a) (Me a) a i state)
@@ -803,43 +789,44 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
     (fun a i state _ hinv next hnext =>
       plantedLoopInv_step S a (Nat.le_add_right _ _) (Nat.le_add_right _ _) i state hinv next
         hnext)
-    (size := fun a =>
-      let d := depth a.1.2.2.1
-      let certB := d * (2 * (2 * (encKeys a.1.1).length + 1 + Me a) + 1)
-      let vB := (encNodeCache a.2.1).length + d * (4 * (d + 1) + 2 * Mv a + 3)
-      let eB := (encEdgeCache a.2.2).length + d * (8 * d + 2 * Me a + 11)
+    (size := fun a : CertLoopIn =>
+      let d := depth a.parameter
+      let certB := d * (2 * (2 * (encKeys a.keys).length + 1 + Me a) + 1)
+      let vB := (encNodeCache a.visited).length + d * (4 * (d + 1) + 2 * Mv a + 3)
+      let eB := (encEdgeCache a.edges).length + d * (8 * d + 2 * Me a + 11)
       2 * (2 * d + 1 + (2 * Mv a + 1 + certB)) + 1 + (2 * vB + 1 + eB))
     ?_ ?_).1
   · have hcertB : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => depth a.1.2.2.1 * (2 * (2 * (encKeys a.1.1).length + 1 + Me a) + 1)) :=
+        (fun a => depth a.parameter * (2 * (2 * (encKeys a.keys).length + 1 + Me a) + 1)) :=
       hd.mul (((PolyBounded.const 2).mul
         ((((PolyBounded.const 2).mul hKPoly).add (.const 1)).add hMePoly)).add (.const 1))
     have hvB : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => (encNodeCache a.2.1).length +
-          depth a.1.2.2.1 * (4 * (depth a.1.2.2.1 + 1) + 2 * Mv a + 3)) :=
+        (fun a => (encNodeCache a.visited).length +
+          depth a.parameter * (4 * (depth a.parameter + 1) + 2 * Mv a + 3)) :=
       hN0Poly.add (hd.mul (((((PolyBounded.const 4).mul (hd.add (.const 1))).add
         ((PolyBounded.const 2).mul hMvPoly))).add (.const 3)))
     have heB : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => (encEdgeCache a.2.2).length +
-          depth a.1.2.2.1 * (8 * depth a.1.2.2.1 + 2 * Me a + 11)) :=
+        (fun a => (encEdgeCache a.edges).length +
+          depth a.parameter * (8 * depth a.parameter + 2 * Me a + 11)) :=
       hE0Poly.add (hd.mul (((((PolyBounded.const 8).mul hd).add
         ((PolyBounded.const 2).mul hMePoly))).add (.const 11)))
     have hleft : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => 2 * depth a.1.2.2.1 + 1 + (2 * Mv a + 1 +
-          depth a.1.2.2.1 * (2 * (2 * (encKeys a.1.1).length + 1 + Me a) + 1))) :=
+        (fun a => 2 * depth a.parameter + 1 + (2 * Mv a + 1 +
+          depth a.parameter * (2 * (2 * (encKeys a.keys).length + 1 + Me a) + 1))) :=
       (((PolyBounded.const 2).mul hd).add (.const 1)).add
         ((((PolyBounded.const 2).mul hMvPoly).add (.const 1)).add hcertB)
     have hright : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => 2 * ((encNodeCache a.2.1).length +
-            depth a.1.2.2.1 * (4 * (depth a.1.2.2.1 + 1) + 2 * Mv a + 3)) + 1 +
-          ((encEdgeCache a.2.2).length +
-            depth a.1.2.2.1 * (8 * depth a.1.2.2.1 + 2 * Me a + 11))) :=
+        (fun a => 2 * ((encNodeCache a.visited).length +
+            depth a.parameter * (4 * (depth a.parameter + 1) + 2 * Mv a + 3)) + 1 +
+          ((encEdgeCache a.edges).length +
+            depth a.parameter * (8 * depth a.parameter + 2 * Me a + 11))) :=
       (((PolyBounded.const 2).mul hvB).add (.const 1)).add heB
     exact (((PolyBounded.const 2).mul hleft).add (.const 1)).add hright
   · rintro ⟨⟨keys, ⟨target, sigCap⟩, ⟨n, leaf⟩⟩, ⟨visited₀, edges₀⟩⟩ i
       ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩ hi
       ⟨hnode, hidx, hcertsLen, hcerts, -, -, hvisLen, hedgLen⟩
-    dsimp only at hi hnode hidx hcertsLen hcerts hvisLen hedgLen ⊢
+    dsimp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter,
+      CertLoopIn.visited, CertLoopIn.edges] at hi hnode hidx hcertsLen hcerts hvisLen hedgLen ⊢
     have hiLe : i ≤ depth n := hi.trans (Nat.sub_le _ _)
     have hcertsList : (encKeys certs).length ≤
         certs.length * (2 * (2 * (encKeys keys).length + 1 + Me
@@ -883,108 +870,49 @@ private theorem isOraclePPTOn_plantedTreeHandler (S : IndexedSignatureScheme)
           pair.2.1 pair.2.2) := by
   intro encCaller
   let encH := encPair encCaller (encPair (encPair (encFinEnum Unit) encBits) encPlantedState)
-  have htoNat : ComputableInPolyTime Bool.toNat encBool encUnary :=
-    ComputableInPolyTime.of_finite Bool.toNat
-  have hcert := isOraclePPTOn_certifyPlanted S hdepth
-  have hp := ComputableInPolyTime.id' (encIn := encH)
-  have hpN := hp.fst'.fst'.fst'.fst'
-  have hpTarget := hp.fst'.fst'.snd'
-  have hpKeys := hp.fst'.snd'
-  have hpMsg := hp.snd'.fst'.snd'
-  have hpState := hp.snd'.snd'
-  have hpVis := hpState.fst'.fst'
-  have hpEdg := hpState.fst'.snd'
-  have hpQueried := hpState.snd'.fst'
-  have hpSeen := hpState.snd'.snd'.fst'
-  have hpBad := hpState.snd'.snd'.snd'
-  have hpQCons := hpMsg.cons' hpQueried
+  let encHL := encPair encH encBits
+  let encHLC := encPair encHL encPlantedCert
+  let encHLCS := encPair encHLC (encPair encBits encEdgeCache)
   have hbadBr : ComputableInPolyTime
       (fun p : ForgerCaller × ((Unit × List Bool) × PlantedState) =>
         (([] : List Bool),
           ((p.2.2.1.1, p.2.2.1.2), (p.2.1.2 :: p.2.2.2.1, p.2.2.2.2.1, true))))
-      encH (encPair encBits encPlantedState) :=
-    (ComputableInPolyTime.const []).prod
-      ((hpVis.prod hpEdg).prod (hpQCons.prod (hpSeen.prod (.const true))))
+      encH (encPair encBits encPlantedState) := by fun_prop
   have hnoMsgBr : ComputableInPolyTime
       (fun p : ForgerCaller × ((Unit × List Bool) × PlantedState) =>
         (([] : List Bool),
           ((p.2.2.1.1, p.2.2.1.2), (p.2.1.2 :: p.2.2.2.1, p.2.2.2.2.1, p.2.2.2.2.2))))
-      encH (encPair encBits encPlantedState) :=
-    (ComputableInPolyTime.const []).prod
-      ((hpVis.prod hpEdg).prod (hpQCons.prod (hpSeen.prod hpBad)))
+      encH (encPair encBits encPlantedState) := by fun_prop
   have hleaf : IsOraclePPTOn (Operation := Unit) encH encBits
       (fun p : ForgerCaller × ((Unit × List Bool) × PlantedState) =>
         ProbOracleComp.sample (BitString.sampleList (depth p.1.1.1.1))) :=
-    ((hdepth.comp hpN).sampleList).isOraclePPTOn
-  let encHL := encPair encH encBits
-  have hq1 := ComputableInPolyTime.fst encH encBits
-  have hqLeaf := ComputableInPolyTime.snd encH encBits
+    ((by fun_prop : ComputableInPolyTime
+      (fun p : ForgerCaller × ((Unit × List Bool) × PlantedState) => depth p.1.1.1.1)
+      encH encUnary).sampleList).isOraclePPTOn
   have hcollBr : ComputableInPolyTime
       (fun q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool =>
         (([] : List Bool),
           ((q.1.2.2.1.1, q.1.2.2.1.2), (q.1.2.1.2 :: q.1.2.2.2.1, q.1.2.2.2.2.1, true))))
       encHL (encPair encBits encPlantedState) :=
-    hbadBr.comp hq1
-  have hcertPrep := hcert.preprocess' (input := encHL)
+    hbadBr.comp (ComputableInPolyTime.fst encH encBits)
+  have hcertPrep := (isOraclePPTOn_certifyPlanted S hdepth).preprocess' (input := encHL)
     (prepare := fun q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool =>
       (((q.1.1.2, (q.1.1.1.2, sigCap q.1.1.1.1.1), (q.1.1.1.1.1, q.2)),
-        (q.1.2.2.1.1, q.1.2.2.1.2)) : CertLoopIn))
-    ((((hpKeys.comp hq1).prod
-        (((hpTarget.comp hq1).prod (hsigCap.comp (hpN.comp hq1))).prod
-          ((hpN.comp hq1).prod hqLeaf))).prod
-      ((hpVis.comp hq1).prod (hpEdg.comp hq1))))
-  let encHLC := encPair encHL encPlantedCert
-  have hr1 := ComputableInPolyTime.fst encHL encPlantedCert
-  have hr2 := ComputableInPolyTime.snd encHL encPlantedCert
-  have hrH := hq1.comp hr1
-  have hrLeaf := hqLeaf.comp hr1
-  have huLast : ComputableInPolyTime
-      (fun r : ((ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool) ×
-          PlantedCertState => (r.1.2.getLastD false).toNat)
-      encHLC encUnary := by
-    have heq : (fun r : ((ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool) ×
-          PlantedCertState => (r.1.2.getLastD false).toNat) =
-        fun r => (r.1.2.getD (r.1.2.length - 1) false).toNat := by
-      funext r
-      rw [List.getLastD_eq_getLast?, List.getLast?_eq_getElem?, List.getD_eq_getElem?_getD]
-    rw [heq]
-    exact htoNat.comp (ComputableInPolyTime.bitsGetDWithInput hrLeaf
-      (hrLeaf.length_bits_comp.unary_sub' (.const 1)) false)
+        (q.1.2.2.1.1, q.1.2.2.1.2)) : CertLoopIn)) (by fun_prop)
   have hsignLast := isOraclePPTOn_signEdgeM S (enc := encHLC)
-    (keys := fun r => r.1.1.1.2)
-    (target := fun r => r.1.1.1.1.2)
-    (sigCap := fun r => sigCap r.1.1.1.1.1.1)
-    (path := fun r => r.2.1.1)
-    (idx := fun r => r.2.1.2.1)
-    (u := fun r => (r.1.2.getLastD false).toNat)
-    (msg := fun r => r.1.1.2.1.2)
-    (edges := fun r => r.2.2.2)
-    (hpKeys.comp hrH)
-    (hpTarget.comp hrH)
-    (hsigCap.comp (hpN.comp hrH))
-    hr2.fst'.fst'
-    hr2.fst'.snd'.fst'
-    huLast
-    (hpMsg.comp hrH)
-    hr2.snd'.snd'
-  let encHLCS := encPair encHLC (encPair encBits encEdgeCache)
-  have hs1 := ComputableInPolyTime.fst encHLC (encPair encBits encEdgeCache)
-  have hs2 := ComputableInPolyTime.snd encHLC (encPair encBits encEdgeCache)
-  have hsH := hrH.comp hs1
-  have hsLeaf := hrLeaf.comp hs1
-  have hsCert := hr2.comp hs1
-  have hsSig := ComputableInPolyTime.encoding_comp
-    (output := encPair encBits (encPair (encList (encPair encBits encBits)) encBits))
-    (hsLeaf.prod (hsCert.fst'.snd'.snd'.prod hs2.fst'))
+    (keys := fun r => r.1.1.1.2) (target := fun r => r.1.1.1.1.2)
+    (sigCap := fun r => sigCap r.1.1.1.1.1.1) (path := fun r => r.2.1.1)
+    (idx := fun r => r.2.1.2.1) (u := fun r => (r.1.2.getLastD false).toNat)
+    (msg := fun r => r.1.1.2.1.2) (edges := fun r => r.2.2.2)
+    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
   have hpostGood : ComputableInPolyTime
       (fun s : (((ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool) ×
           PlantedCertState) × (List Bool × EdgeSigCache) =>
         (encodeSignature s.1.1.2 s.1.2.1.2.2 s.2.1,
           ((s.1.2.2.1, s.2.2),
             (s.1.1.1.2.1.2 :: s.1.1.1.2.2.2.1, s.1.1.2 :: s.1.1.1.2.2.2.2.1, false))))
-      encHLCS (encPair encBits encPlantedState) :=
-    hsSig.prod ((hsCert.snd'.fst'.prod hs2.snd').prod
-      ((hpQCons.comp hsH).prod ((hsLeaf.cons' (hpSeen.comp hsH)).prod (.const false))))
+      encHLCS (encPair encBits encPlantedState) := by fun_prop
   have hgoodLeaf := hcertPrep.bind_with
     (second := fun (q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool)
         (c : PlantedCertState) =>
@@ -999,15 +927,6 @@ private theorem isOraclePPTOn_plantedTreeHandler (S : IndexedSignatureScheme)
           ((r.2.2.1, e.2), (r.1.1.2.1.2 :: r.1.1.2.2.2.1, r.1.2 :: r.1.1.2.2.2.2.1, false))) :
           WordOracleComp Unit (List Bool × PlantedState)))
       hpostGood.isOraclePPTOn)
-  have hcontains : ComputableInPolyTime
-      (fun q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool =>
-        q.1.2.2.2.2.1.contains q.2) encHL encBool := by
-    have heq : (fun q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool =>
-        q.1.2.2.2.2.1.contains q.2) = fun q => decide (q.2 ∈ q.1.2.2.2.2.1) := by
-      funext q
-      rw [Bool.eq_iff_iff, List.contains_iff_mem, decide_eq_true_eq]
-    rw [heq]
-    exact ComputableInPolyTime.decide_mem (hpSeen.comp hq1) hqLeaf
   have hafterLeaf : IsOraclePPTOn encHL (encPair encBits encPlantedState)
       (fun q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool =>
         if q.1.2.2.2.2.1.contains q.2 then
@@ -1021,7 +940,8 @@ private theorem isOraclePPTOn_plantedTreeHandler (S : IndexedSignatureScheme)
                   pure (encodeSignature q.2 c.1.2.2 e.1,
                     ((c.2.1, e.2),
                       (q.1.2.1.2 :: q.1.2.2.2.1, q.2 :: q.1.2.2.2.2.1, false)))) :=
-    IsOraclePPTOn.cond' hcontains hcollBr.isOraclePPTOn hgoodLeaf
+    IsOraclePPTOn.cond' (condition := fun q => q.1.2.2.2.2.1.contains q.2) (by fun_prop)
+      hcollBr.isOraclePPTOn hgoodLeaf
   have hnotBad := hleaf.bind_with
     (second := fun (p : ForgerCaller × ((Unit × List Bool) × PlantedState)) (leaf : List Bool) =>
       if p.2.2.2.2.1.contains leaf then
@@ -1035,16 +955,11 @@ private theorem isOraclePPTOn_plantedTreeHandler (S : IndexedSignatureScheme)
                   ((c.2.1, e.2),
                     (p.2.1.2 :: p.2.2.2.1, leaf :: p.2.2.2.2.1, false))))
     hafterLeaf
-  have hlenEq := IsOraclePPTOn.cond' hpBad hbadBr.isOraclePPTOn hnotBad
-  have hmsgCond : ComputableInPolyTime
-      (fun p : ForgerCaller × ((Unit × List Bool) × PlantedState) =>
-        decide (p.2.1.2.length = p.1.1.1.1)) encH encBool := by
-    have heq : (fun p : ForgerCaller × ((Unit × List Bool) × PlantedState) =>
-        decide (p.2.1.2.length = p.1.1.1.1)) = fun p => p.2.1.2.length == p.1.1.1.1 := rfl
-    rw [heq]
-    exact hpMsg.length_bits_comp.beq hpN
+  have hlenEq := IsOraclePPTOn.cond' (condition := fun p => p.2.2.2.2.2) (by fun_prop)
+    hbadBr.isOraclePPTOn hnotBad
   simpa only [plantedTreeHandler, StateT.run] using
-    IsOraclePPTOn.ite' hmsgCond hlenEq hnoMsgBr.isOraclePPTOn
+    IsOraclePPTOn.ite' (condition := fun p => p.2.1.2.length = p.1.1.1.1) (by fun_prop)
+      hlenEq hnoMsgBr.isOraclePPTOn
 
 private def plantedResourceAllowance (depth sigCap : ℕ → ℕ) (c : ForgerCaller)
     (w : List Bool) : ℕ :=
@@ -1117,7 +1032,8 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
       have hloop := certifyPlanted_support_inv S depth
         ((c.2, (c.1.2, sigCap c.1.1.1), (c.1.1.1, leaf)), (visited, edges))
         le_rfl le_rfl hvis hedg _ hcert
-      dsimp only [plantedLoopInv] at hloop
+      dsimp only [plantedLoopInv, CertLoopIn.keys, CertLoopIn.sigCap,
+        CertLoopIn.parameter] at hloop
       obtain ⟨hnode, hidx, hcertsLen, hcerts, hvis', hedg', hvisGrow, hedgGrow⟩ := hloop
       have heLast := ProbOracleComp.memoize_call_size_le (encPair encBits encUnary) encBits
         (fun _ => signEdgeRaw S c.2 c.1.2 (sigCap c.1.1.1) idx
@@ -1184,61 +1100,51 @@ theorem isOraclePPT_indexedForger (S : IndexedSignatureScheme) {depth slotBound 
     {adversary : Forger} (hA : IsOraclePPT (encPair encBits encBits) adversary) :
     IsOraclePPT (encPair encUnary (encPair encBits encBits))
       (indexedForger S depth slotBound sigCap adversary) := by
-  have htoNat : ComputableInPolyTime Bool.toNat encBool encUnary :=
-    ComputableInPolyTime.of_finite Bool.toNat
-  have hsigDec := signatureDecoder.computableInPolyTime
   let encStage := encPair (encPair encUnary encBits) encUnary
   let encCaller := encPair encStage encKeys
+  let encRunOut := encPair (encPair encBits encBits) encPlantedState
   have htarget : IsOraclePPTOn (Operation := Unit) (encPair encUnary encBits) encUnary
       (fun p : ℕ × List Bool =>
         ProbOracleComp.sample (ProbComp.sampleDyadicIndex (slotBound p.1))) :=
-    (isPPTOn_sampleDyadicIndex
-      (hslot.comp (ComputableInPolyTime.fst encUnary encBits))).isOraclePPTOn
+    (isPPTOn_sampleDyadicIndex (by fun_prop)).isOraclePPTOn
   have hkeys : IsOraclePPTOn (Operation := Unit) encStage encKeys
       (fun c : (ℕ × List Bool) × ℕ =>
         ProbOracleComp.sample (plantNodeKeys S slotBound c.1.1 c.2 c.1.2)) :=
     (isPPTOn_plantNodeKeys S hslot).isOraclePPTOn
-  have hcId := ComputableInPolyTime.id' (encIn := encCaller)
-  have hprepCaller : ComputableInPolyTime
-      (fun c : ForgerCaller =>
-        (c.1.1.1, encPair encUnary encBits (c.1.1.1, (c.2.getD 0 ([], [])).1)))
-      encCaller (encPair encUnary encBits) := by
-    have hn := hcId.fst'.fst'.fst'
-    have hpk0 := (ComputableInPolyTime.listGetDWithInput hcId.snd' (.const 0) ([], [])).fst'
-    exact hn.prod (ComputableInPolyTime.encoding_comp (output := encPair encUnary encBits)
-      (hn.prod hpk0))
   have hres : ComputableInPolyTime
       (fun pair : ForgerCaller × List Bool =>
         plantedResourceAllowance depth sigCap pair.1 pair.2)
       (encPair encCaller encBits) encUnary := by
+    let encFive := encPair (encPair encUnary encUnary)
+      (encPair encUnary (encPair encUnary encUnary))
     have hp1 := ComputableInPolyTime.fst encCaller encBits
-    have hp2 := ComputableInPolyTime.snd encCaller encBits
-    have hn := hcId.fst'.fst'.fst'.comp hp1
-    have hd := hdepth.comp hn
-    have hsc := hsigCap.comp hn
-    have hkeysL := hcId.snd'.comp hp1
-    have hkLen := (ComputableInPolyTime.length_list (encPair encBits encBits)).comp hkeysL
-    have hkEnc := (ComputableInPolyTime.encoding_length encKeys).comp hkeysL
-    have hwLen := hp2.length_bits_comp
-    have hcertElem := ((ComputableInPolyTime.const 2).unary_mul'
-      ((((ComputableInPolyTime.const 2).unary_mul' hkEnc).unary_add' (.const 1)).unary_add'
-        hsc)).unary_add' (.const 1)
-    have hreplyB :=
-      (((ComputableInPolyTime.const 2).unary_mul' hd).unary_add' (.const 1)).unary_add'
-        ((((ComputableInPolyTime.const 2).unary_mul' (hd.unary_mul' hcertElem)).unary_add'
-          (.const 1)).unary_add' hsc)
-    have hvGrow := hd.unary_mul'
-      (((((ComputableInPolyTime.const 4).unary_mul' (hd.unary_add' (.const 1))).unary_add'
-        ((ComputableInPolyTime.const 2).unary_mul' hkLen))).unary_add' (.const 3))
-    have heGrow := (hd.unary_add' (.const 1)).unary_mul'
-      (((((ComputableInPolyTime.const 8).unary_mul' hd).unary_add'
-        ((ComputableInPolyTime.const 2).unary_mul' hsc))).unary_add' (.const 11))
-    have hqGrow := ((ComputableInPolyTime.const 2).unary_mul' hwLen).unary_add' (.const 2)
-    have hslGrow := ((ComputableInPolyTime.const 2).unary_mul' hd).unary_add' (.const 2)
-    exact (((hreplyB.unary_add' ((ComputableInPolyTime.const 4).unary_mul' hvGrow)).unary_add'
-      ((ComputableInPolyTime.const 2).unary_mul' heGrow)).unary_add'
-        ((ComputableInPolyTime.const 2).unary_mul' hqGrow)).unary_add'
-          ((ComputableInPolyTime.const 2).unary_mul' hslGrow)
+    have hn := (ComputableInPolyTime.id' (encIn := encCaller)).fst'.fst'.fst'.comp hp1
+    have hkeysL := (ComputableInPolyTime.id' (encIn := encCaller)).snd'.comp hp1
+    have hinputs : ComputableInPolyTime
+        (fun pair : ForgerCaller × List Bool =>
+          ((depth pair.1.1.1.1, sigCap pair.1.1.1.1),
+            (pair.1.2.length, (encKeys pair.1.2).length, pair.2.length)))
+        (encPair encCaller encBits) encFive :=
+      ((hdepth.comp hn).prod (hsigCap.comp hn)).prod
+        (((ComputableInPolyTime.length_list (encPair encBits encBits)).comp hkeysL).prod
+          (((ComputableInPolyTime.encoding_length encKeys).comp hkeysL).prod
+            (ComputableInPolyTime.snd encCaller encBits).length_bits_comp))
+    have hformula : ComputableInPolyTime
+        (fun q : (ℕ × ℕ) × (ℕ × ℕ × ℕ) =>
+          let d := q.1.1; let sc := q.1.2; let kLen := q.2.1
+          let kEncLen := q.2.2.1; let wLen := q.2.2.2
+          2 * d + 1 + (2 * (d * (2 * (2 * kEncLen + 1 + sc) + 1)) + 1 + sc) +
+            4 * (d * (4 * (d + 1) + 2 * kLen + 3)) +
+            2 * ((d + 1) * (8 * d + 2 * sc + 11)) +
+            2 * (2 * wLen + 2) + 2 * (2 * d + 2))
+        encFive encUnary := by fun_prop
+    exact Eq.mp (congrArg (ComputableInPolyTime · (encPair encCaller encBits) encUnary)
+      (funext fun pair => by simp only [Function.comp_apply, plantedResourceAllowance]))
+      (hformula.comp hinputs)
+  have hprepCaller : ComputableInPolyTime
+      (fun c : ForgerCaller =>
+        (c.1.1.1, encPair encUnary encBits (c.1.1.1, (c.2.getD 0 ([], [])).1)))
+      encCaller (encPair encUnary encBits) := by fun_prop
   have hrun := hA.run_interpret_preprocess_open' (External := Unit)
     (handler := fun c : ForgerCaller =>
       plantedTreeHandler S depth c.2 c.1.2 (sigCap c.1.1.1) c.1.1.1)
@@ -1258,70 +1164,32 @@ theorem isOraclePPT_indexedForger (S : IndexedSignatureScheme) {depth slotBound 
       exact Nat.zero_le _)
     hres
     (plantedTreeHandler_preserve S depth sigCap)
-  let encRunOut := encPair (encPair encBits encBits) encPlantedState
   have hextract : ComputableInPolyTime
       (fun pair : ForgerCaller × ((List Bool × List Bool) × PlantedState) =>
         extractForgery (depth pair.1.1.1.1) pair.1.1.2 pair.2.2.1.1 pair.2.1.1 pair.2.1.2)
       (encPair encCaller encRunOut)
       (encPair encUnary (encPair encBits encBits)) := by
     let encEx := encPair encCaller encRunOut
-    have hx1 := ComputableInPolyTime.fst encCaller encRunOut
-    have hx2 := ComputableInPolyTime.snd encCaller encRunOut
-    have hxN := hcId.fst'.fst'.fst'.comp hx1
-    have hxTarget := hcId.fst'.snd'.comp hx1
-    have hxMsg := hx2.fst'.fst'
-    have hxSig := hx2.fst'.snd'
-    have hxVis := hx2.snd'.fst'.fst'
-    have hxDec := hsigDec.comp hxSig
-    have hxLeaf := hxDec.fst'
-    have hxCerts := hxDec.snd'.fst'
-    have hxLast := hxDec.snd'.snd'
-    have hfilt := ComputableInPolyTime.filterWithInput (test := fun pair e => e.2 == pair.1.1.2)
-      hxVis ((ComputableInPolyTime.snd encEx (encPair encBits encUnary)).snd'.beq
-        (hxTarget.comp (ComputableInPolyTime.fst encEx (encPair encBits encUnary))))
-    have hxPath := ((ComputableInPolyTime.headD
-      (encA := encPair encBits encUnary) (encL := encNodeCache) ([], 0)).comp hfilt).fst'
-    have hxJ := hxPath.length_bits_comp
-    have hxU := htoNat.comp (ComputableInPolyTime.bitsGetDWithInput hxLeaf hxJ false)
-    have hxCertJ := ComputableInPolyTime.listGetDWithInput hxCerts hxJ ([], [])
-    have hxCond : ComputableInPolyTime
+    let encMid := encPair encEx
+      (encPair (encPair encBits (encPair encKeys encBits)) encUnary)
+    have hmid : ComputableInPolyTime
         (fun pair : ForgerCaller × ((List Bool × List Bool) × PlantedState) =>
-          depth pair.1.1.1.1 -
-            ((((pair.2.2.1.1.filter fun e => e.2 == pair.1.1.2).headD ([], 0)).1).length + 1) == 0)
-        encEx encBool :=
-      ((hdepth.comp hxN).unary_sub' (hxJ.unary_add' (.const 1))).beq (.const 0)
-    have heq : (fun pair : ForgerCaller × ((List Bool × List Bool) × PlantedState) =>
-          extractForgery (depth pair.1.1.1.1) pair.1.1.2 pair.2.2.1.1 pair.2.1.1 pair.2.1.2) =
-        fun pair =>
-          let dec := signatureDecoder.decode pair.2.1.2
-          let path := ((pair.2.2.1.1.filter fun e => e.2 == pair.1.1.2).headD ([], 0)).1
-          let j := path.length
-          let u := (dec.1.getD j false).toNat
-          if depth pair.1.1.1.1 - (j + 1) == 0 then
-            (u, pair.2.1.1, dec.2.2)
+          (pair, signatureDecoder.decode pair.2.1.2,
+            ((pair.2.2.1.1.filter fun e => e.2 == pair.1.1.2).headD ([], 0)).1.length))
+        encEx encMid := by fun_prop
+    have hstep : ComputableInPolyTime
+        (fun t : (ForgerCaller × ((List Bool × List Bool) × PlantedState)) ×
+            (List Bool × List (List Bool × List Bool) × List Bool) × ℕ =>
+          if t.2.2 + 1 < depth t.1.1.1.1.1 then
+            ((t.2.1.1.getD t.2.2 false).toNat, (t.2.1.2.1.getD t.2.2 ([], [])).1,
+              (t.2.1.2.1.getD t.2.2 ([], [])).2)
           else
-            (u, (dec.2.1.getD j ([], [])).1, (dec.2.1.getD j ([], [])).2) := by
-      funext pair
-      dsimp only [extractForgery]
-      by_cases hlt :
-          (((pair.2.2.1.1.filter fun e => e.2 == pair.1.1.2).headD ([], 0)).1).length + 1 <
-            depth pair.1.1.1.1
-      · have hsub : depth pair.1.1.1.1 -
-            ((((pair.2.2.1.1.filter fun e => e.2 == pair.1.1.2).headD ([], 0)).1).length + 1) ≠
-            0 := by omega
-        have hbeq : (depth pair.1.1.1.1 -
-            ((((pair.2.2.1.1.filter fun e => e.2 == pair.1.1.2).headD ([], 0)).1).length + 1) ==
-            0) = false := beq_false_of_ne hsub
-        simp only [hlt, ↓reduceIte, hbeq, Bool.false_eq_true]
-      · have hsub : depth pair.1.1.1.1 -
-            ((((pair.2.2.1.1.filter fun e => e.2 == pair.1.1.2).headD ([], 0)).1).length + 1) =
-            0 := by omega
-        have hbeq : (depth pair.1.1.1.1 -
-            ((((pair.2.2.1.1.filter fun e => e.2 == pair.1.1.2).headD ([], 0)).1).length + 1) ==
-            0) = true := beq_iff_eq.mpr hsub
-        simp only [hlt, ↓reduceIte, hbeq]
-    rw [heq]
-    exact hxCond.ite' (hxU.prod (hxMsg.prod hxLast)) (hxU.prod (hxCertJ.fst'.prod hxCertJ.snd'))
+            ((t.2.1.1.getD t.2.2 false).toNat, t.1.2.1.1, t.2.1.2.2))
+        encMid (encPair encUnary (encPair encBits encBits)) := by fun_prop
+    exact Eq.mp
+      (congrArg (ComputableInPolyTime · encEx (encPair encUnary (encPair encBits encBits)))
+        (funext fun pair => by dsimp only [Function.comp_apply, extractForgery]))
+      (hstep.comp hmid)
   have hforgerAt : IsOraclePPTOn encStage (encPair encUnary (encPair encBits encBits))
       (fun c : (ℕ × List Bool) × ℕ =>
         indexedForgerAt S depth slotBound sigCap adversary c.2 c.1.1 c.1.2) :=
@@ -1465,12 +1333,12 @@ private noncomputable def unguardedCoinHandler (S : IndexedSignatureScheme) (T :
     StateT GuardedCoinState PMF (List Bool) := fun state =>
   let msg := request.2
   let (cc, (queried, seenLeaves, bad)) := state
-  if msg.length = n then
-    (BitString.uniformList (depth n)).bind fun leaf =>
-      let bad' := bad || seenLeaves.contains leaf
-      let seen' := if bad' then seenLeaves else leaf :: seenLeaves
-      (coinSignBody S T depth M n leaf msg cc).map fun out =>
-        (out.1, (out.2, (msg :: queried, seen', bad')))
+  if msg.length = n then do
+    let leaf ← BitString.uniformList (depth n)
+    let bad' := bad || seenLeaves.contains leaf
+    let seen' := if bad' then seenLeaves else leaf :: seenLeaves
+    (coinSignBody S T depth M n leaf msg cc).map fun out =>
+      (out.1, (out.2, (msg :: queried, seen', bad')))
   else
     PMF.pure ([], (cc, (msg :: queried, seenLeaves, bad)))
 
@@ -1482,13 +1350,13 @@ private noncomputable def guardedCoinHandler (S : IndexedSignatureScheme) (T : S
   if msg.length = n then
     if bad then
       PMF.pure ([], (cc, (msg :: queried, seenLeaves, true)))
-    else
-      (BitString.uniformList (depth n)).bind fun leaf =>
-        if seenLeaves.contains leaf then
-          PMF.pure ([], (cc, (msg :: queried, seenLeaves, true)))
-        else
-          (coinSignBody S T depth M n leaf msg cc).map fun out =>
-            (out.1, (out.2, (msg :: queried, leaf :: seenLeaves, false)))
+    else do
+      let leaf ← BitString.uniformList (depth n)
+      if seenLeaves.contains leaf then
+        pure ([], (cc, (msg :: queried, seenLeaves, true)))
+      else
+        (coinSignBody S T depth M n leaf msg cc).map fun out =>
+          (out.1, (out.2, (msg :: queried, leaf :: seenLeaves, false)))
   else
     PMF.pure ([], (cc, (msg :: queried, seenLeaves, bad)))
 
@@ -1509,8 +1377,8 @@ private theorem identicalUntilBad_coinHandlers (S : IndexedSignatureScheme) (T :
       subst hbad
       change unguardedCoinHandler S T depth M n req (cc, queried, seenLeaves, false) (a, s') =
         guardedCoinHandler S T depth M n req (cc, queried, seenLeaves, false) (a, s')
-      simp only [unguardedCoinHandler, guardedCoinHandler, Bool.false_or, Bool.false_eq_true,
-        ↓reduceIte]
+      simp only [unguardedCoinHandler, guardedCoinHandler, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, Bool.false_or, Bool.false_eq_true, ↓reduceIte]
       split_ifs with hmsg
       · simp only [PMF.bind_apply]
         refine tsum_congr fun leaf => ?_
@@ -1543,7 +1411,7 @@ private theorem identicalUntilBad_coinHandlers (S : IndexedSignatureScheme) (T :
       subst hs
       change x ∈ (unguardedCoinHandler S T depth M n req (cc, queried, seenLeaves, true)).support
         at hx
-      simp only [unguardedCoinHandler, Bool.true_or, ↓reduceIte] at hx
+      simp only [unguardedCoinHandler, PMF.monad_bind_eq_bind, Bool.true_or, ↓reduceIte] at hx
       split_ifs at hx with hmsg
       · obtain ⟨leaf, -, hx⟩ := (PMF.mem_support_bind_iff _ _ _).mp hx
         obtain ⟨out, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
@@ -1675,7 +1543,8 @@ private theorem step_bad_guardedCoinHandler (S : IndexedSignatureScheme) (T : S.
   obtain ⟨cc, queried, seenLeaves, bad⟩ := s
   have hbad : bad = false := Bool.eq_false_iff.mpr hs
   subst hbad
-  simp only [guardedCoinHandler, Bool.false_eq_true, ↓reduceIte]
+  simp only [guardedCoinHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    Bool.false_eq_true, ↓reduceIte]
   split_ifs with hmsg
   · classical
     rw [PMF.toOuterMeasure_bind_apply]
@@ -1739,7 +1608,8 @@ private theorem grow_seen_guardedCoinHandler (S : IndexedSignatureScheme) (T : S
   obtain ⟨cc, queried, seenLeaves, bad⟩ := s
   have hbad : bad = false := Bool.eq_false_iff.mpr hs
   subst hbad
-  simp only [guardedCoinHandler, Bool.false_eq_true, ↓reduceIte] at hx
+  simp only [guardedCoinHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    Bool.false_eq_true, ↓reduceIte] at hx
   split_ifs at hx with hmsg
   · obtain ⟨leaf, -, hx⟩ := (PMF.mem_support_bind_iff _ _ _).mp hx
     split_ifs at hx with hmem
@@ -1773,20 +1643,20 @@ private noncomputable def jointSignAt (S : IndexedSignatureScheme) (T : S.Seeded
     (σ, (out.2, edges'))
 
 private noncomputable def jointCertifyStep (S : IndexedSignatureScheme) (T : S.Seeded) (M n : ℕ)
-    (leaf : List Bool) (st : CoinCache × LazyCertState) : PMF (CoinCache × LazyCertState) :=
+    (leaf : List Bool) (st : CoinCache × LazyCertState) : PMF (CoinCache × LazyCertState) := do
   let (cc, ((node, (_, sk), certs), (nodes, edges))) := st
   let bit := leaf.getD node.length false
   let childPath := node ++ [bit]
-  (jointNodeKey S T M n childPath (cc, nodes)).bind fun (child, (cc', nodes')) =>
-    (jointSignAt S T M node sk bit.toNat child.1 (cc', edges)).map fun (σ, (cc'', edges')) =>
-      (cc'', ((childPath, child, certs ++ [(child.1, σ)]), (nodes', edges')))
+  let (child, (cc', nodes')) ← jointNodeKey S T M n childPath (cc, nodes)
+  (jointSignAt S T M node sk bit.toNat child.1 (cc', edges)).map fun (σ, (cc'', edges')) =>
+    (cc'', ((childPath, child, certs ++ [(child.1, σ)]), (nodes', edges')))
 
 private noncomputable def jointCertify (S : IndexedSignatureScheme) (T : S.Seeded)
     (depth : ℕ → ℕ) (M n : ℕ) (leaf : List Bool)
-    (st : CoinCache × (NodeKeyCache × EdgeSigCache)) : PMF (CoinCache × LazyCertState) :=
-  (jointNodeKey S T M n [] (st.1, st.2.1)).bind fun (root, (cc₀, nodes₀)) =>
-    Nat.iterate (fun m => m.bind (jointCertifyStep S T M n leaf)) (depth n - 1)
-      (PMF.pure (cc₀, (([], root, []), (nodes₀, st.2.2))))
+    (st : CoinCache × (NodeKeyCache × EdgeSigCache)) : PMF (CoinCache × LazyCertState) := do
+  let (root, (cc₀, nodes₀)) ← jointNodeKey S T M n [] (st.1, st.2.1)
+  Nat.iterate (fun m => m.bind (jointCertifyStep S T M n leaf)) (depth n - 1)
+    (PMF.pure (cc₀, (([], root, []), (nodes₀, st.2.2))))
 
 private noncomputable def jointCoinHandler (S : IndexedSignatureScheme) (T : S.Seeded)
     (depth : ℕ → ℕ) (M n : ℕ) (request : Unit × List Bool) :
@@ -1796,17 +1666,17 @@ private noncomputable def jointCoinHandler (S : IndexedSignatureScheme) (T : S.S
   if msg.length = n then
     if bad then
       PMF.pure ([], (cc, ((nodes, edges), (msg :: queried, seenLeaves, true))))
-    else
-      (BitString.uniformList (depth n)).bind fun leaf =>
-        if seenLeaves.contains leaf then
-          PMF.pure ([], (cc, ((nodes, edges), (msg :: queried, seenLeaves, true))))
-        else
-          (jointCertify S T depth M n leaf (cc, (nodes, edges))).bind
-            fun (cc', ((node, (_, sk), certs), (nodes', edges'))) =>
-              (jointSignAt S T M node sk (leaf.getLastD false).toNat msg (cc', edges')).map
-                fun (σ, (cc'', edges'')) =>
-                  (encodeSignature leaf certs σ,
-                    (cc'', ((nodes', edges''), (msg :: queried, leaf :: seenLeaves, false))))
+    else do
+      let leaf ← BitString.uniformList (depth n)
+      if seenLeaves.contains leaf then
+        pure ([], (cc, ((nodes, edges), (msg :: queried, seenLeaves, true))))
+      else
+        let (cc', ((node, (_, sk), certs), (nodes', edges'))) ←
+          jointCertify S T depth M n leaf (cc, (nodes, edges))
+        (jointSignAt S T M node sk (leaf.getLastD false).toNat msg (cc', edges')).map
+          fun (σ, (cc'', edges'')) =>
+            (encodeSignature leaf certs σ,
+              (cc'', ((nodes', edges''), (msg :: queried, leaf :: seenLeaves, false))))
   else
     PMF.pure ([], (cc, ((nodes, edges), (msg :: queried, seenLeaves, bad))))
 
@@ -1837,6 +1707,23 @@ private theorem eval_iterate_probComp {σ : Type}
   | succ m ih =>
     rw [OracleComp.iterate_succ, ProbComp.eval_bind, ih, Function.iterate_succ_apply']
 
+private theorem map_dropCaches_jointSignAt (S : IndexedSignatureScheme) (T : S.Seeded)
+    (M : ℕ) (path sk : List Bool) (u : ℕ) (msg : List Bool) (c : CoinCache)
+    (es : EdgeSigCache) :
+    (jointSignAt S T M path sk u msg (c, es)).map (fun out => (out.1, out.2.1)) =
+      (OracleComp.interpret
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
+          (lazyCoinHandler M))
+        (signAtO S T path sk u msg)).run c := by
+  simp only [jointSignAt, signAtO, coinRequest, OracleComp.interpret_map,
+    ProbOracleComp.interpret_query, StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp,
+    Function.comp_def]
+  change (lazyCoinRequest M (signInput path u) (T.signBudget sk u msg) c).map _ =
+    (lazyCoinHandler M ((), encPair encBits encUnary (signInput path u, T.signBudget sk u msg))
+      c).map _
+  simp only [lazyCoinHandler, coinRequestDecoder.decode_enc, lazyCoinRequest, PMF.map_comp,
+    Function.comp_def, List.take_take, Nat.min_self]
+
 private theorem map_dropCaches_jointCertify (S : IndexedSignatureScheme) (T : S.Seeded)
     (depth : ℕ → ℕ) (M n : ℕ) (leaf : List Bool) (cc : CoinCache)
     (caches : NodeKeyCache × EdgeSigCache) :
@@ -1856,20 +1743,6 @@ private theorem map_dropCaches_jointCertify (S : IndexedSignatureScheme) (T : S.
       Function.comp_def]
     change (lazyCoinRequest M (keyInput path) (T.keyGenBudget n) c).map _ =
       (lazyCoinHandler M ((), encPair encBits encUnary (keyInput path, T.keyGenBudget n)) c).map _
-    simp only [lazyCoinHandler, coinRequestDecoder.decode_enc, lazyCoinRequest, PMF.map_comp,
-      Function.comp_def, List.take_take, Nat.min_self]
-  have hsa (path sk : List Bool) (u : ℕ) (msg : List Bool) (c : CoinCache) (es : EdgeSigCache) :
-      (jointSignAt S T M path sk u msg (c, es)).map (fun out => (out.1, out.2.1)) =
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-            (lazyCoinHandler M))
-          (signAtO S T path sk u msg)).run c := by
-    simp only [jointSignAt, signAtO, coinRequest, OracleComp.interpret_map,
-      ProbOracleComp.interpret_query, StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp,
-      Function.comp_def]
-    change (lazyCoinRequest M (signInput path u) (T.signBudget sk u msg) c).map _ =
-      (lazyCoinHandler M ((), encPair encBits encUnary (signInput path u, T.signBudget sk u msg))
-        c).map _
     simp only [lazyCoinHandler, coinRequestDecoder.decode_enc, lazyCoinRequest, PMF.map_comp,
       Function.comp_def, List.take_take, Nat.min_self]
   simp only [jointCertify, certifyO, OracleComp.run_interpret_bind,
@@ -1902,7 +1775,8 @@ private theorem map_dropCaches_jointCertify (S : IndexedSignatureScheme) (T : S.
       Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.map_comp, Function.comp_def,
       ← hnk (node ++ [leaf.getD node.length false]) c ns, PMF.bind_map]
     refine PMF.bind_congr_on_support _ _ _ fun ⟨child, c', ns'⟩ _ => ?_
-    rw [← hsa node sk (leaf.getD node.length false).toNat child.1 c' es, PMF.bind_map]
+    rw [← map_dropCaches_jointSignAt S T M node sk (leaf.getD node.length false).toNat child.1 c'
+      es, PMF.bind_map]
     simp only [PMF.map, Function.comp_def]
 
 private theorem map_dropCaches_jointCoinHandler (S : IndexedSignatureScheme) (T : S.Seeded)
@@ -1910,7 +1784,7 @@ private theorem map_dropCaches_jointCoinHandler (S : IndexedSignatureScheme) (T 
     (jointCoinHandler S T depth M n req s).map (fun (a, s') => (a, (s'.1, s'.2.2))) =
       guardedCoinHandler S T depth M n req (s.1, s.2.2) := by
   obtain ⟨cc, ⟨nodes, edges⟩, queried, seenLeaves, bad⟩ := s
-  simp only [jointCoinHandler, guardedCoinHandler]
+  simp only [jointCoinHandler, guardedCoinHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · simp only [PMF.pure_map]
   · simp only [PMF.map_bind]
@@ -1924,24 +1798,8 @@ private theorem map_dropCaches_jointCoinHandler (S : IndexedSignatureScheme) (T 
       refine PMF.bind_congr_on_support _ _ _
         fun ⟨cc', ⟨node, ⟨pk, sk⟩, certs⟩, nodes', edges'⟩ _ => ?_
       dsimp only [Function.comp_def]
-      have hsa : ((OracleComp.interpret
-            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (lazyCoinHandler M))
-            (signAtO S T node sk (leaf.getLastD false).toNat req.2)).run cc') =
-          (jointSignAt S T M node sk (leaf.getLastD false).toNat req.2 (cc', edges')).map
-            (fun out => (out.1, out.2.1)) := by
-        simp only [jointSignAt, signAtO, coinRequest, OracleComp.interpret_map,
-          ProbOracleComp.interpret_query, StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp,
-          Function.comp_def]
-        change (lazyCoinHandler M
-            ((), encPair encBits encUnary
-              (signInput node (leaf.getLastD false).toNat,
-                T.signBudget sk (leaf.getLastD false).toNat req.2)) cc').map _ =
-          (lazyCoinRequest M (signInput node (leaf.getLastD false).toNat)
-            (T.signBudget sk (leaf.getLastD false).toNat req.2) cc').map _
-        simp only [lazyCoinHandler, coinRequestDecoder.decode_enc, lazyCoinRequest, PMF.map_comp,
-          Function.comp_def, List.take_take, Nat.min_self]
-      rw [hsa, PMF.bind_map]
+      rw [← map_dropCaches_jointSignAt S T M node sk (leaf.getLastD false).toNat req.2 cc' edges',
+        PMF.bind_map]
       simp only [PMF.map, PMF.pure_bind, Function.comp_def]
   · simp only [PMF.pure_map]
 
@@ -2055,6 +1913,65 @@ private theorem jointNodeKey_spec (S : IndexedSignatureScheme) (T : S.Seeded) {M
         rw [List.lookup_cons, beq_false_of_ne hne]
         exact hqv
 
+private theorem jointLazyInv_insert_sign (S : IndexedSignatureScheme) (T : S.Seeded)
+    {M d n : ℕ} (hwidth : 2 * d + 4 ≤ M) {root : List Bool × List Bool}
+    {c' : CoinCache} {ns' : NodeKeyCache} {es' : EdgeSigCache}
+    {queried₀ seenLeaves₀ : List (List Bool)} {bad₀ : Bool}
+    (queried₁ : List (List Bool)) {seenLeaves₁ : List (List Bool)} (bad₁ : Bool)
+    (hinv : jointLazyInv S T M d n root (c', ((ns', es'), (queried₀, seenLeaves₀, bad₀))))
+    (hsub : ∀ l ∈ seenLeaves₀, l ∈ seenLeaves₁)
+    {node : List Bool} {u : ℕ} (hnode_lt : node.length < d) (hu : u ≤ 1)
+    (w σ : List Bool)
+    (hleaf_head : node.length = d - 1 →
+      ∃ l ∈ seenLeaves₁, l.length = d ∧ node = l.take (d - 1) ∧ u = (l.getLastD false).toNat)
+    (hinternal : ∀ b : Bool, b.toNat = u → node.length + 1 < d →
+      ∃ kp kc, ns'.lookup node = some kp ∧ ns'.lookup (node ++ [b]) = some kc ∧
+        σ = T.signWith kp.2 b.toNat kc.1 (w.take (T.signBudget kp.2 b.toNat kc.1))) :
+    jointLazyInv S T M d n root
+      ((padRequest M (signInput node u), w) :: c',
+        ((ns', ((node, u), σ) :: es'), (queried₁, seenLeaves₁, bad₁))) := by
+  obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hinv
+  refine ⟨h1, h2, ?_, ?_, ?_, ?_⟩
+  · intro p hp
+    rw [List.lookup_cons,
+      beq_false_of_ne (padRequest_keyInput_ne_signInput hwidth hp hnode_lt hu)]
+    exact h3 p hp
+  · intro q v σ' hmem_e
+    rcases List.mem_cons.mp hmem_e with hhead | htail
+    · obtain ⟨hqv, _⟩ := Prod.mk.inj hhead
+      obtain ⟨rfl, rfl⟩ := Prod.mk.inj hqv
+      exact ⟨hnode_lt, hu, hleaf_head⟩
+    · obtain ⟨hq_lt, hv_le, hleaf_ex⟩ := h4 q v σ' htail
+      exact ⟨hq_lt, hv_le, fun hq_len =>
+        let ⟨l, hl, h1', h2', h3'⟩ := hleaf_ex hq_len
+        ⟨l, hsub l hl, h1', h2', h3'⟩⟩
+  · intro p u' hp hu' he_none
+    have hne_pu : (p, u') ≠ (node, u) := fun h => by
+      rw [h, List.lookup_cons, beq_self_eq_true] at he_none; cases he_none
+    have hpadNe : padRequest M (signInput p u') ≠ padRequest M (signInput node u) :=
+      fun h => hne_pu (Prod.ext_iff.mpr
+        (padRequest_signInput_injective hwidth hp hnode_lt hu' hu h))
+    rw [List.lookup_cons, beq_false_of_ne hne_pu] at he_none
+    rw [List.lookup_cons, beq_false_of_ne hpadNe]
+    exact h5 p u' hp hu' he_none
+  · intro p b σ' hp he_some
+    by_cases hpb : (p, b.toNat) = (node, u)
+    · obtain ⟨rfl, rfl⟩ := Prod.mk.inj hpb
+      rw [List.lookup_cons, beq_self_eq_true] at he_some
+      obtain rfl := Option.some.inj he_some.symm
+      obtain ⟨kp, kc, hkp, hkc, hσ⟩ := hinternal b rfl hp
+      exact ⟨kp, kc, w, hkp, hkc, by simp only [List.lookup_cons, beq_self_eq_true], hσ⟩
+    · have hbu' : b.toNat ≤ 1 := by cases b <;> simp
+      have hp_lt : p.length < d := Nat.lt_of_succ_lt hp
+      have hpadNe : padRequest M (signInput p b.toNat) ≠ padRequest M (signInput node u) :=
+        fun h => hpb (Prod.ext_iff.mpr
+          (padRequest_signInput_injective hwidth hp_lt hnode_lt hbu' hu h))
+      rw [List.lookup_cons, beq_false_of_ne hpb] at he_some
+      obtain ⟨kp, kc, w', hkp, hkc, hw', hσ'⟩ := h6 p b σ' hp he_some
+      refine ⟨kp, kc, w', hkp, hkc, ?_, hσ'⟩
+      rw [List.lookup_cons, beq_false_of_ne hpadNe]
+      exact hw'
+
 private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (depth : ℕ → ℕ)
     {M n : ℕ} (hdepth_pos : 1 ≤ depth n) (hwidth : 2 * depth n + 4 ≤ M)
     (hkgBudget : T.keyGenBudget n ≤ M)
@@ -2086,7 +2003,8 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
       have hw : T.keyGenWith n (w.take (T.keyGenBudget n)) = root := Option.some.inj hrel.symm
       simp only [jointNodeKey, lazyCoinRequest, memoize, hcc, hrootSome,
         Probability.PMF.monad_pure_eq_pure, PMF.pure_map, hw]
-  simp only [jointCertify, hnk0_pure, PMF.pure_bind, certifyLazy, eval_iterate_probComp]
+  simp only [jointCertify, PMF.monad_bind_eq_bind, hnk0_pure, PMF.pure_bind, certifyLazy,
+    eval_iterate_probComp]
   let stepInv (m : ℕ) (out : CoinCache × LazyCertState) : Prop :=
     jointLazyInv S T M (depth n) n root (out.1, (out.2.2, (queried, seenLeaves, bad))) ∧
     out.2.1.1 = leaf.take m ∧
@@ -2177,53 +2095,15 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
             obtain ⟨w, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_sa
             obtain ⟨rfl, h2⟩ := Prod.mk.inj heq.symm
             obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-            obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hinv_c'
-            refine ⟨h1, h2, ?_, ?_, ?_, ?_⟩
-            · intro p hp
-              have hpadNe : padRequest M (keyInput p) ≠ padRequest M (signInput node bit.toNat) :=
-                padRequest_keyInput_ne_signInput hwidth hp hnode_lt hbu
-              rw [List.lookup_cons, beq_false_of_ne hpadNe]
-              exact h3 p hp
-            · intro q v σ' hmem_e
-              rcases List.mem_cons.mp hmem_e with hhead | htail
-              · obtain ⟨hqv, _⟩ := Prod.mk.inj hhead
-                obtain ⟨rfl, rfl⟩ := Prod.mk.inj hqv
-                exact ⟨hnode_lt, hbu, fun hlen => by omega⟩
-              · exact h4 q v σ' htail
-            · intro p u hp hu he_none
-              have hne_pu : (p, u) ≠ (node, bit.toNat) := fun h => by
-                rw [h, List.lookup_cons, beq_self_eq_true] at he_none; cases he_none
-              have hpadNe : padRequest M (signInput p u) ≠
-                  padRequest M (signInput node bit.toNat) :=
-                fun h => hne_pu (Prod.ext_iff.mpr
-                  (padRequest_signInput_injective hwidth hp hnode_lt hu hbu h))
-              rw [List.lookup_cons, beq_false_of_ne hne_pu] at he_none
-              rw [List.lookup_cons, beq_false_of_ne hpadNe]
-              exact h5 p u hp hu he_none
-            · intro p b σ' hp he_some
-              by_cases hpb : (p, b.toNat) = (node, bit.toNat)
-              · obtain ⟨rfl, hb_eq⟩ := Prod.mk.inj hpb
-                have hb' : b = bit :=
-                  Bool.eq_iff_iff.mpr (by rw [← b.toNat_eq_one, ← bit.toNat_eq_one, hb_eq])
-                subst hb'
-                rw [List.lookup_cons, beq_self_eq_true] at he_some
-                obtain rfl := Option.some.inj he_some.symm
-                refine ⟨(pk, sk), child, w, hns'_node, hns'_child, ?_, rfl⟩
-                simp only [List.lookup_cons, beq_self_eq_true]
-              · have hbu' : b.toNat ≤ 1 := by cases b <;> simp
-                have hp_lt : p.length < depth n := Nat.lt_of_succ_lt hp
-                have hpadNe : padRequest M (signInput p b.toNat) ≠
-                    padRequest M (signInput node bit.toNat) :=
-                  fun h => hpb (Prod.ext_iff.mpr
-                    (padRequest_signInput_injective hwidth hp_lt hnode_lt hbu' hbu h))
-                rw [List.lookup_cons, beq_false_of_ne hpb] at he_some
-                obtain ⟨kp, kc, w', hkp, hkc, hw', hσ'⟩ := h6 p b σ' hp he_some
-                refine ⟨kp, kc, w', hkp, hkc, ?_, hσ'⟩
-                rw [List.lookup_cons, beq_false_of_ne hpadNe]
-                exact hw'
+            refine jointLazyInv_insert_sign S T hwidth queried bad hinv_c' (fun _ h => h)
+              hnode_lt hbu w _ (fun _ => by omega) fun b hb_eq _ => ?_
+            have hb' : b = bit :=
+              Bool.eq_iff_iff.mpr (by rw [← b.toNat_eq_one, ← bit.toNat_eq_one, hb_eq])
+            subst hb'
+            exact ⟨(pk, sk), child, hns'_node, hns'_child, rfl⟩
       refine ⟨?_, ?_⟩
       · simp only [jointCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
-          PMF.map_bind, PMF.map_comp, Function.comp_def]
+          PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp, Function.comp_def]
         rw [← hnk_eq, PMF.bind_map]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨child, c', ns'⟩ hmem_nk => ?_
         dsimp only [Function.comp_def, bit]
@@ -2231,7 +2111,8 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
         rw [← hsa_eq, PMF.bind_map]
         simp only [PMF.map, Function.comp_def, bit]
       · intro out' hout'
-        simp only [jointCertifyStep, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hout'
+        simp only [jointCertifyStep, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+          PMF.mem_support_map_iff] at hout'
         obtain ⟨⟨child, c', ns'⟩, hmem_nk, ⟨σ, c'', es'⟩, hmem_sa, rfl⟩ := hout'
         obtain ⟨_, hns'_child, hchild_supp, -⟩ := hnk_inv child c' ns' hmem_nk
         obtain ⟨-, hsa_inv⟩ := hsign_step child c' ns' hmem_nk
@@ -2261,7 +2142,7 @@ private theorem jointCoinHandler_step_lazy (S : IndexedSignatureScheme) (T : S.S
     ∀ a s', (a, s') ∈ (jointCoinHandler S T depth M n req s).support →
       jointLazyInv S T M (depth n) n root s' := by
   obtain ⟨cc, ⟨nodes, edges⟩, queried, seenLeaves, bad⟩ := s
-  simp only [jointCoinHandler, lazySignHandler]
+  simp only [jointCoinHandler, lazySignHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · refine ⟨by simp only [PMF.pure_map, ProbComp.eval_pure], fun a s' hm => ?_⟩
     obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
@@ -2369,49 +2250,10 @@ private theorem jointCoinHandler_step_lazy (S : IndexedSignatureScheme) (T : S.S
           · intro a s' hm_last
             obtain ⟨w, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_last
             obtain ⟨_, rfl⟩ := Prod.mk.inj heq.symm
-            obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hinv_c'
-            refine ⟨h1, h2, ?_, ?_, ?_, ?_⟩
-            · intro p hp
-              have hpadNe : padRequest M (keyInput p) ≠ padRequest M (signInput node uLast) :=
-                padRequest_keyInput_ne_signInput hwidth hp hnode_lt huLast
-              rw [List.lookup_cons, beq_false_of_ne hpadNe]
-              exact h3 p hp
-            · intro q v σ' hmem_e
-              rcases List.mem_cons.mp hmem_e with hhead | htail
-              · obtain ⟨hqv, _⟩ := Prod.mk.inj hhead
-                obtain ⟨rfl, rfl⟩ := Prod.mk.inj hqv
-                exact ⟨hnode_lt, huLast, fun _ =>
-                  ⟨leaf, List.mem_cons_self, hleaf_len, hnode_eq, rfl⟩⟩
-              · obtain ⟨hq_lt, hv_le, hleaf_ex⟩ := h4 q v σ' htail
-                exact ⟨hq_lt, hv_le, fun hq_len =>
-                  let ⟨l, hl, h1', h2', h3'⟩ := hleaf_ex hq_len
-                  ⟨l, List.mem_cons_of_mem _ hl, h1', h2', h3'⟩⟩
-            · intro p u hp hu he_none
-              have hne_pu : (p, u) ≠ (node, uLast) := fun h => by
-                rw [h, List.lookup_cons, beq_self_eq_true] at he_none; cases he_none
-              have hpadNe : padRequest M (signInput p u) ≠
-                  padRequest M (signInput node uLast) :=
-                fun h => hne_pu (Prod.ext_iff.mpr
-                  (padRequest_signInput_injective hwidth hp hnode_lt hu huLast h))
-              rw [List.lookup_cons, beq_false_of_ne hne_pu] at he_none
-              rw [List.lookup_cons, beq_false_of_ne hpadNe]
-              exact h5 p u hp hu he_none
-            · intro p b σ' hp he_some
-              have hne_pb : (p, b.toNat) ≠ (node, uLast) := fun h => by
-                have hlen_eq : p.length = node.length := congrArg (fun x => x.1.length) h
-                rw [hnode_len] at hlen_eq
-                omega
-              have hbu' : b.toNat ≤ 1 := by cases b <;> simp
-              have hp_lt : p.length < depth n := Nat.lt_of_succ_lt hp
-              have hpadNe : padRequest M (signInput p b.toNat) ≠
-                  padRequest M (signInput node uLast) :=
-                fun h => hne_pb (Prod.ext_iff.mpr
-                  (padRequest_signInput_injective hwidth hp_lt hnode_lt hbu' huLast h))
-              rw [List.lookup_cons, beq_false_of_ne hne_pb] at he_some
-              obtain ⟨kp, kc, w', hkp, hkc, hw', hσ'⟩ := h6 p b σ' hp he_some
-              refine ⟨kp, kc, w', hkp, hkc, ?_, hσ'⟩
-              rw [List.lookup_cons, beq_false_of_ne hpadNe]
-              exact hw'
+            exact jointLazyInv_insert_sign S T hwidth (req.2 :: queried) false hinv_c'
+              (fun _ h => List.mem_cons_of_mem _ h) hnode_lt huLast w _
+              (fun _ => ⟨leaf, List.mem_cons_self, hleaf_len, hnode_eq, rfl⟩)
+              (fun _ _ hp => by omega)
         refine ⟨?_, ?_⟩
         · simp only [ProbComp.eval_bind, PMF.map_bind, ← hcert_eq, PMF.bind_map,
             Function.comp_def]
@@ -2441,7 +2283,7 @@ private theorem run_interpret_signHandler (S : IndexedSignatureScheme) (T : S.Se
       (signHandler S T depth n req queried)).run cc)).map (fun ⟨⟨a, b⟩, c⟩ => (a, b, c)) =
       (unguardedCoinHandler S T depth M n req (cc, (queried, [], false))).map
         (fun (a, s') => (a, (s'.2.1, s'.1))) := by
-  simp only [signHandler, unguardedCoinHandler, signO]
+  simp only [signHandler, unguardedCoinHandler, signO, PMF.monad_bind_eq_bind]
   split_ifs with hmsg
   · rw [bind_assoc, OracleComp.run_interpret_bind, ProbOracleComp.run_interpret_sample,
       BitString.eval_sampleList, Probability.PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind,
@@ -2520,7 +2362,7 @@ theorem succProbability_treeIdealGame_le_lazy (S : IndexedSignatureScheme) (T : 
       (fun req s => by
         obtain ⟨cc, queried, seenLeaves, bad⟩ := s
         rw [run_interpret_signHandler S T depth M n req queried cc]
-        simp only [unguardedCoinHandler]
+        simp only [unguardedCoinHandler, PMF.monad_bind_eq_bind]
         split_ifs with hmsg
         · simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
         · simp only [PMF.pure_map])
@@ -2707,18 +2549,6 @@ private theorem run_interpret_visitNodeM {External : Type}
   cases visited.lookup path <;>
     simp only [pure_bind, OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure]
 
-private theorem lookup_map_val {α β γ : Type} [BEq α] (l : List (α × β)) (f : β → γ)
-    (a : α) :
-    (l.map fun e => (e.1, f e.2)).lookup a = (l.lookup a).map f := by
-  induction l with
-  | nil => rfl
-  | cons hd tl ih =>
-    obtain ⟨k, v⟩ := hd
-    simp only [List.map_cons, List.lookup_cons]
-    cases a == k
-    · exact ih
-    · rfl
-
 private theorem filter_headD_of_mem_unique (visited : NodeSlotCache) {p : List Bool}
     {idx : ℕ} (hmem : (p, idx) ∈ visited)
     (huniq : ∀ e₁ ∈ visited, ∀ e₂ ∈ visited, e₁.2 = e₂.2 → e₁ = e₂) :
@@ -2797,18 +2627,17 @@ private noncomputable def localTreeHandler (S : IndexedSignatureScheme) (depth :
   if msg.length = n then
     if bad then
       PMF.pure ([], (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned))
-    else
-      (BitString.uniformList (depth n)).bind fun leaf =>
-        if seenLeaves.contains leaf then
-          PMF.pure ([], (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned))
-        else
-          (localCertify S depth keys sigCap n leaf (visited, edges, allSigned)).bind
-            fun ((node, idx, certs), (visited', edges', allSigned')) =>
-              (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat msg
-                (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
-                  (encodeSignature leaf certs σ,
-                    (((visited', edges''), (msg :: queried, leaf :: seenLeaves, false)),
-                      allSigned''))
+    else do
+      let leaf ← BitString.uniformList (depth n)
+      if seenLeaves.contains leaf then
+        pure ([], (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned))
+      else
+        let ((node, idx, certs), (visited', edges', allSigned')) ←
+          localCertify S depth keys sigCap n leaf (visited, edges, allSigned)
+        (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat msg
+          (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
+            (encodeSignature leaf certs σ,
+              (((visited', edges''), (msg :: queried, leaf :: seenLeaves, false)), allSigned''))
   else
     PMF.pure ([], (((visited, edges), (msg :: queried, seenLeaves, bad)), allSigned))
 
@@ -2816,13 +2645,13 @@ private noncomputable def localTreeHandler (S : IndexedSignatureScheme) (depth :
 `adversary` against `localTreeHandler`. -/
 private noncomputable def presampledExp (S : IndexedSignatureScheme)
     (depth slotBound sigCap : ℕ → ℕ) (adversary : Forger) (n : ℕ) :
-    PMF (List (List Bool × List Bool) × (List Bool × List Bool) × PresampledState) :=
-  (ProbComp.eval (OracleComp.replicate (dyadicSize (slotBound n)) (S.keyGen n))).bind fun keys =>
-    let pk := encPair encUnary encBits (n, (keys.getD 0 ([], [])).1)
-    ((OracleComp.interpret
-      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-        (localTreeHandler S depth keys (sigCap n) n))
-      (adversary n pk)).run initPresampledState).map fun (msig, st) => (keys, msig, st)
+    PMF (List (List Bool × List Bool) × (List Bool × List Bool) × PresampledState) := do
+  let keys ← ProbComp.eval (OracleComp.replicate (dyadicSize (slotBound n)) (S.keyGen n))
+  let pk := encPair encUnary encBits (n, (keys.getD 0 ([], [])).1)
+  ((OracleComp.interpret
+    (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
+      (localTreeHandler S depth keys (sigCap n) n))
+    (adversary n pk)).run initPresampledState).map fun (msig, st) => (keys, msig, st)
 
 /-- Whether `indexedForgerAt` at `target` wins on a pre-sampled outcome. -/
 private def plantedWin (S : IndexedSignatureScheme) (depth : ℕ → ℕ) (n target : ℕ)
@@ -3120,7 +2949,7 @@ private theorem localTreeHandler_planted_step (S : IndexedSignatureScheme) (dept
       ((visited, edges), (queried, seenLeaves, bad)) =
       plantedTreeHandler S depth keys' target sigCap n req
         ((visited, edges), (queried, seenLeaves, bad)) from rfl]
-  simp only [localTreeHandler, plantedTreeHandler]
+  simp only [localTreeHandler, plantedTreeHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · refine ⟨?_, fun ans st' hm => ?_⟩
     · simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
@@ -3249,8 +3078,8 @@ private theorem map_plantedWin_presampledExp (S : IndexedSignatureScheme)
   set K := dyadicSize (slotBound n) with hK_def
   have hmin : min target (K - 1) = target := Nat.min_eq_left (by omega)
   have hsplit : K = target + ((K - target - 1) + 1) := by omega
-  simp only [presampledExp, IndexedSignatureScheme.indexedEufCmaGame, indexedForgerAt,
-    plantNodeKeys, ← hK_def, hmin]
+  simp only [presampledExp, PMF.monad_bind_eq_bind, IndexedSignatureScheme.indexedEufCmaGame,
+    indexedForgerAt, plantNodeKeys, ← hK_def, hmin]
   conv_lhs => rw [hsplit, ← ProbComp.eval_replicate_splice]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret,
     OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
@@ -3327,16 +3156,16 @@ private abbrev JointKeysCertState :=
   List (List Bool × List Bool) × LocalCertState
 
 private noncomputable def jointKeysCertifyStep (S : IndexedSignatureScheme) (sigCap n : ℕ)
-    (leaf : List Bool) (st : JointKeysCertState) : PMF JointKeysCertState :=
+    (leaf : List Bool) (st : JointKeysCertState) : PMF JointKeysCertState := do
   let (usedKeys, ((node, idx, certs), (visited, edges, allSigned))) := st
   let bit := leaf.getD node.length false
   let childPath := node ++ [bit]
-  (jointVisitKey S n childPath (usedKeys, visited)).bind fun (childIdx, (usedKeys', visited')) =>
-    let childPk := (usedKeys'.getD childIdx ([], [])).1
-    (localSignEdge S usedKeys' sigCap node idx bit.toNat childPk (edges, allSigned)).map
-      fun (σ, (edges', allSigned')) =>
-        (usedKeys', ((childPath, childIdx, certs ++ [(childPk, σ)]),
-          (visited', edges', allSigned')))
+  let (childIdx, (usedKeys', visited')) ← jointVisitKey S n childPath (usedKeys, visited)
+  let childPk := (usedKeys'.getD childIdx ([], [])).1
+  (localSignEdge S usedKeys' sigCap node idx bit.toNat childPk (edges, allSigned)).map
+    fun (σ, (edges', allSigned')) =>
+      (usedKeys', ((childPath, childIdx, certs ++ [(childPk, σ)]),
+        (visited', edges', allSigned')))
 
 private noncomputable def jointKeysCertify (S : IndexedSignatureScheme) (depth : ℕ → ℕ)
     (sigCap n : ℕ) (leaf : List Bool)
@@ -3353,19 +3182,18 @@ private noncomputable def jointKeysHandler (S : IndexedSignatureScheme) (depth :
   if msg.length = n then
     if bad then
       PMF.pure ([], (usedKeys, (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned)))
-    else
-      (BitString.uniformList (depth n)).bind fun leaf =>
-        if seenLeaves.contains leaf then
-          PMF.pure ([],
-            (usedKeys, (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned)))
-        else
-          (jointKeysCertify S depth sigCap n leaf (usedKeys, (visited, edges, allSigned))).bind
-            fun (usedKeys', ((node, idx, certs), (visited', edges', allSigned'))) =>
-              (localSignEdge S usedKeys' sigCap node idx (leaf.getLastD false).toNat msg
-                (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
-                  (encodeSignature leaf certs σ,
-                    (usedKeys', (((visited', edges''),
-                      (msg :: queried, leaf :: seenLeaves, false)), allSigned'')))
+    else do
+      let leaf ← BitString.uniformList (depth n)
+      if seenLeaves.contains leaf then
+        pure ([], (usedKeys, (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned)))
+      else
+        let (usedKeys', ((node, idx, certs), (visited', edges', allSigned'))) ←
+          jointKeysCertify S depth sigCap n leaf (usedKeys, (visited, edges, allSigned))
+        (localSignEdge S usedKeys' sigCap node idx (leaf.getLastD false).toNat msg
+          (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
+            (encodeSignature leaf certs σ,
+              (usedKeys', (((visited', edges''),
+                (msg :: queried, leaf :: seenLeaves, false)), allSigned'')))
   else
     PMF.pure ([], (usedKeys, (((visited, edges), (msg :: queried, seenLeaves, bad)), allSigned)))
 
@@ -3416,7 +3244,7 @@ private theorem jointVisitKey_lazy_spec (S : IndexedSignatureScheme) (n : ℕ)
   simp only [jointVisitKey, memoize]
   have hlkMap : (nodesOf usedKeys visited).lookup path =
       (visited.lookup path).map (fun i => usedKeys.getD i ([], [])) :=
-    lookup_map_val visited (fun i => usedKeys.getD i ([], [])) path
+    List.lookup_map_snd visited (fun i => usedKeys.getD i ([], [])) path
   cases hlk : visited.lookup path with
   | some idx =>
     rw [hlk, Option.map_some] at hlkMap
@@ -3560,7 +3388,7 @@ private theorem jointKeysCertify_lazy_spec (S : IndexedSignatureScheme) (depth :
       have hbu : bit.toNat ≤ 1 := Bool.toNat_le bit
       refine ⟨?_, ?_⟩
       · simp only [jointKeysCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
-          PMF.map_bind, PMF.map_comp, Function.comp_def]
+          PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp, Function.comp_def]
         rw [← hvis_eq, PMF.bind_map]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨childIdx, uk', vis'⟩ hm_v => ?_
         dsimp only [Function.comp_def, bit]
@@ -3576,7 +3404,8 @@ private theorem jointKeysCertify_lazy_spec (S : IndexedSignatureScheme) (depth :
         rw [← hse, PMF.bind_map]
         simp only [PMF.map, Function.comp_def, bit]
       · intro out' hout'
-        simp only [jointKeysCertifyStep, PMF.mem_support_bind_iff, PMF.mem_support_map_iff]
+        simp only [jointKeysCertifyStep, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+          PMF.mem_support_map_iff]
           at hout'
         obtain ⟨⟨childIdx, uk', vis'⟩, hm_v, ⟨σ, edg', all'⟩, -, rfl⟩ := hout'
         obtain ⟨hlen', hrv', hrk', hsp', hv', hcLt, -, -, -⟩ := hvis_inv childIdx uk' vis' hm_v
@@ -3606,7 +3435,7 @@ private theorem jointKeysHandler_lazy_step (S : IndexedSignatureScheme) (depth :
       jointKeysInv S n root st' := by
   obtain ⟨uk, ⟨⟨vis, edg⟩, queried, seenLeaves, bad⟩, allSigned⟩ := st
   dsimp only [lazyStateOfJoint]
-  simp only [jointKeysHandler, lazySignHandler]
+  simp only [jointKeysHandler, lazySignHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · refine ⟨by simp only [PMF.pure_map, ProbComp.eval_pure], fun ans st' hm => ?_⟩
     obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
@@ -3817,7 +3646,7 @@ private theorem jointKeysCertify_expandKeys (S : IndexedSignatureScheme) (depth 
           · have := hvis_m e htail
             omega
       refine ⟨?_, ?_⟩
-      · simp only [jointKeysCertifyStep, PMF.bind_bind]
+      · simp only [jointKeysCertifyStep, PMF.monad_bind_eq_bind, PMF.bind_bind]
         have h1 : (jointVisitKey S n childPath (uk_m, vis_m)).bind
             (fun (childIdx, (uk', vis')) =>
               let childPk := (uk'.getD childIdx ([], [])).1
@@ -3859,7 +3688,8 @@ private theorem jointKeysCertify_expandKeys (S : IndexedSignatureScheme) (depth 
         rw [h2]
         simp only [localCertifyStep, PMF.map_comp, Function.comp_def, bit, childPath]
       · intro uk' cs' hm_step
-        simp only [jointKeysCertifyStep, PMF.mem_support_bind_iff, PMF.mem_support_map_iff]
+        simp only [jointKeysCertifyStep, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+          PMF.mem_support_map_iff]
           at hm_step
         obtain ⟨⟨childIdx, uk₁, vis₁⟩, hmv, ⟨σ, edg', all'⟩, -, heq⟩ := hm_step
         obtain ⟨hl1, hp1, hv1, hcLt, -, hg1⟩ := hvkInv childIdx uk₁ vis₁ hmv
@@ -3914,7 +3744,7 @@ private theorem jointKeysHandler_expandKeys (S : IndexedSignatureScheme) (depth 
   obtain ⟨uk, ⟨⟨vis, edg⟩, queried, seenLeaves, bad⟩, allSigned⟩ := st
   obtain ⟨hlen, hpos, hvis, hbound⟩ := hinv
   dsimp only at hlen hpos hvis hbound ⊢
-  simp only [jointKeysHandler, localTreeHandler]
+  simp only [jointKeysHandler, localTreeHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · refine ⟨?_, ?_⟩
     · simp only [PMF.pure_bind, PMF.map, Function.comp_def]
@@ -4219,7 +4049,7 @@ private theorem eval_lazyTreeGame_eq_presampled (S : IndexedSignatureScheme)
     conv_lhs => rw [hKeq, OracleComp.replicate_succ]
     simp only [expandKeys, ProbComp.eval_bind, ProbComp.eval_map, List.length_singleton,
       List.singleton_append]
-  simp only [presampledExp, ← hK_def, PMF.map_bind]
+  simp only [presampledExp, PMF.monad_bind_eq_bind, ← hK_def, PMF.map_bind]
   rw [hrep, PMF.bind_bind]
   refine PMF.bind_congr_on_support _ _ _ fun root hroot => ?_
   set pk := encPair encUnary encBits (n, root.1)
@@ -4403,28 +4233,28 @@ private theorem localTreeHandler_bounded_inv (S : IndexedSignatureScheme) (depth
   obtain ⟨hroot, hbound, hvis, huniq, hall⟩ := hinv
   have hmul : (rem + 1) * (depth n - 1) = rem * (depth n - 1) + (depth n - 1) :=
     Nat.succ_mul rem (depth n - 1)
-  have liftQueried (m' : List Bool) :
-      ∀ p idx u m, (p, idx, u, m) ∈ allSigned →
-        (p, idx) ∈ visited ∧
+  have liftQ {v : NodeSlotCache} {a : List (List Bool × ℕ × ℕ × List Bool)}
+      (ha : ∀ p idx u m, (p, idx, u, m) ∈ a →
+        (p, idx) ∈ v ∧
         ((p.length + 1 < depth n ∧ ∃ (b : Bool) (childIdx : ℕ),
-            b.toNat = u ∧ (p ++ [b], childIdx) ∈ visited ∧
-              m = (keys.getD childIdx ([], [])).1) ∨
-          (p.length + 1 = depth n ∧ m ∈ m' :: queried)) := by
-    intro p idx u m hma
-    obtain ⟨hpv, hdisj⟩ := hall p idx u m hma
-    refine ⟨hpv, ?_⟩
-    rcases hdisj with hin | ⟨hl, hmq⟩
-    · exact Or.inl hin
-    · exact Or.inr ⟨hl, List.mem_cons_of_mem _ hmq⟩
+            b.toNat = u ∧ (p ++ [b], childIdx) ∈ v ∧ m = (keys.getD childIdx ([], [])).1) ∨
+          (p.length + 1 = depth n ∧ m ∈ queried)))
+      (m' : List Bool) (p : List Bool) (idx u : ℕ) (m : List Bool) (hma : (p, idx, u, m) ∈ a) :
+      (p, idx) ∈ v ∧
+      ((p.length + 1 < depth n ∧ ∃ (b : Bool) (childIdx : ℕ),
+          b.toNat = u ∧ (p ++ [b], childIdx) ∈ v ∧ m = (keys.getD childIdx ([], [])).1) ∨
+        (p.length + 1 = depth n ∧ m ∈ m' :: queried)) :=
+    let ⟨hpv, hdisj⟩ := ha p idx u m hma
+    ⟨hpv, hdisj.imp id fun ⟨hl, hmq⟩ => ⟨hl, List.mem_cons_of_mem _ hmq⟩⟩
   intro ans st' hm
-  simp only [localTreeHandler] at hm
+  simp only [localTreeHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hm
   split_ifs at hm with hmsg hbad
   · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-    exact ⟨hroot, by omega, hvis, huniq, liftQueried req.2⟩
+    exact ⟨hroot, by omega, hvis, huniq, liftQ hall req.2⟩
   · obtain ⟨leaf, -, hm_in⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
     split_ifs at hm_in with hseen
     · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm_in)
-      exact ⟨hroot, by omega, hvis, huniq, liftQueried req.2⟩
+      exact ⟨hroot, by omega, hvis, huniq, liftQ hall req.2⟩
     · obtain ⟨⟨⟨node, idx, certs⟩, v', e', a'⟩, hm_cert, hm_se⟩ :=
         (PMF.mem_support_bind_iff _ _ _).mp hm_in
       obtain ⟨⟨σ, e'', a''⟩, hm_edge, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
@@ -4435,26 +4265,13 @@ private theorem localTreeHandler_bounded_inv (S : IndexedSignatureScheme) (depth
           node idx certs v' e' a' hm_cert
       refine ⟨hroot_v', by omega, hvis_v', huniq_v', ?_⟩
       intro p idx₀ u m hm_a''
-      have liftA' : ∀ (p₀ : List Bool) (idx₁ u₁ : ℕ) (m₁ : List Bool),
-          (p₀, idx₁, u₁, m₁) ∈ a' →
-          (p₀, idx₁) ∈ v' ∧
-          ((p₀.length + 1 < depth n ∧ ∃ (b : Bool) (childIdx : ℕ),
-              b.toNat = u₁ ∧ (p₀ ++ [b], childIdx) ∈ v' ∧
-                m₁ = (keys.getD childIdx ([], [])).1) ∨
-            (p₀.length + 1 = depth n ∧ m₁ ∈ req.2 :: queried)) := by
-        intro p₀ idx₁ u₁ m₁ hma'
-        obtain ⟨hpv, hdisj⟩ := hall_v' p₀ idx₁ u₁ m₁ hma'
-        refine ⟨hpv, ?_⟩
-        rcases hdisj with hin | ⟨hl, hmq⟩
-        · exact Or.inl hin
-        · exact Or.inr ⟨hl, List.mem_cons_of_mem _ hmq⟩
       simp only [localSignEdge] at hm_edge
       cases hes : e'.lookup (node, (leaf.getLastD false).toNat) with
       | some σ₀ =>
         rw [hes] at hm_edge
         obtain ⟨_, h2⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm_edge)
         obtain ⟨_, rfl⟩ := Prod.mk.inj h2
-        exact liftA' p idx₀ u m hm_a''
+        exact liftQ hall_v' req.2 p idx₀ u m hm_a''
       | none =>
         rw [hes] at hm_edge
         obtain ⟨raw, -, heq'⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_edge
@@ -4465,9 +4282,9 @@ private theorem localTreeHandler_bounded_inv (S : IndexedSignatureScheme) (depth
           obtain ⟨rfl, h3'⟩ := Prod.mk.inj h2'
           obtain ⟨rfl, rfl⟩ := Prod.mk.inj h3'
           exact ⟨hnode_v', Or.inr ⟨hnLen, List.mem_cons_self⟩⟩
-        · exact liftA' p idx₀ u m htail
+        · exact liftQ hall_v' req.2 p idx₀ u m htail
   · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-    exact ⟨hroot, by omega, hvis, huniq, liftQueried req.2⟩
+    exact ⟨hroot, by omega, hvis, huniq, liftQ hall req.2⟩
 
 private theorem run_interpret_localTreeHandler_bounded_inv {α : Type}
     (S : IndexedSignatureScheme) (depth : ℕ → ℕ) (keys : List (List Bool × List Bool))
@@ -4730,7 +4547,8 @@ theorem succProbability_lazyTreeGame_le (S : IndexedSignatureScheme)
   have hsupp : ∀ out ∈ X.support,
       out.1.length = K ∧ presampledBoundedInv (depth n) out.1 0 out.2.2 := by
     intro out hout
-    simp only [X, presampledExp, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hout
+    simp only [X, presampledExp, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+      PMF.mem_support_map_iff] at hout
     obtain ⟨keys, hkeys, ⟨msig, st⟩, hrun, rfl⟩ := hout
     obtain ⟨hkLen, hkSupp⟩ := (ProbComp.mem_support_replicate_iff _ _ _).mp hkeys
     have hpos : 0 < keys.length := by
@@ -4882,31 +4700,12 @@ private theorem exists_sigCap_polyTime (S : IndexedSignatureScheme) :
       ∀ n, ∀ keys ∈ (ProbComp.eval (S.keyGen n)).support, ∀ u ≤ 1, ∀ msg,
         (msg.length = n ∨ ∃ keys' ∈ (ProbComp.eval (S.keyGen n)).support, msg = keys'.1) →
         ∀ σ ∈ (ProbComp.eval (S.sign keys.2 u msg)).support, σ.length ≤ sigCap n := by
-  obtain ⟨ck, dk, hkgLen⟩ := S.keyGen_ppt.length_le
+  obtain ⟨pkB, hpkB, hlenB⟩ := exists_signInput_length_bound S
   obtain ⟨cs, ds, hsgLen⟩ := S.sign_ppt.length_le
-  simp only [encUnary_apply, List.length_replicate] at hkgLen
-  let pkB (n : ℕ) : ℕ := ck * (n + 1) ^ dk
-  let sigCap (n : ℕ) : ℕ := cs * (3 * pkB n + n + 5) ^ ds
-  have hsigCapPoly : ComputableInPolyTime sigCap encUnary encUnary := by
-    dsimp only [sigCap, pkB]
-    polytime
-  refine ⟨sigCap, hsigCapPoly, fun n keys hkeys u hu msg hmsg σ hσ => ?_⟩
-  have hkeysLen := hkgLen n keys hkeys
-  have hskLen : keys.2.length ≤ pkB n :=
-    (length_le_encPair_right encBits encBits keys).trans hkeysLen
-  have hmsgLen : msg.length ≤ pkB n + n := by
-    rcases hmsg with hlen | ⟨keys', hkeys', rfl⟩
-    · omega
-    · have hk' := (length_le_encPair_left encBits encBits keys').trans (hkgLen n keys' hkeys')
-      simp only [encBits_apply] at hk'
-      dsimp only [pkB]
-      omega
-  have hσLen := hsgLen (keys.2, u, msg) σ hσ
-  simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hσLen
-  have hle : cs * (2 * keys.2.length + 1 + (2 * u + 1 + msg.length) + 1) ^ ds ≤
-      cs * (3 * pkB n + n + 5) ^ ds :=
-    Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by omega) ds)
-  exact hσLen.trans hle
+  exact ⟨fun n => cs * (3 * pkB n + n + 5) ^ ds, by fun_prop,
+    fun n keys hkeys u hu msg hmsg σ hσ =>
+      (hsgLen (keys.2, u, msg) σ hσ).trans
+        (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (hlenB n keys hkeys u hu msg hmsg) ds))⟩
 
 /-- **Stateless EUF-CMA security of `TreeSignature.scheme` with an explicit left inverse**
 ([BonehShoup2023], Section 14.6.3, Theorem 14.6): if `S` is indexed EUF-CMA secure with capacity
@@ -4942,7 +4741,7 @@ theorem eufCMA_scheme_of_inv (S : IndexedSignatureScheme) (hS : S.IndexedEUFCMA)
   let Q (n : ℕ) : ℕ := cq * (3 * n + ck * (n + 1) ^ dk + 3) ^ dq
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by
     dsimp only [Q]
-    polytime
+    fun_prop
   have hQPB : PolynomiallyBounded Q := by
     dsimp only [Q]
     fun_prop

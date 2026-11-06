@@ -33,13 +33,13 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open ParameterChoice
 
 -- Only the existing fixed fast-threshold numeral is normalized during proof transport.
-set_option exponentiation.threshold 1296 in
+set_option exponentiation.threshold 2394 in
 /-- Actual initialized computation, not a supplied run law. The positive coefficient and
 threshold are chosen before every original input, prime and width. Selected-prime membership
 is a performance hypothesis on runtime p; no layout, clock or execution certificate is supplied.
 The allowance conservatively includes parameter/selector work not executed by this subroutine. -/
 theorem exists_dyadic_runs_threshold {κ : ℕ} (hκ : 1 ≤ κ) :
-    ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, 2 ^ 1296 ≤ N ∧
+    ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, 2 ^ 2394 ≤ N ∧
       ∀ n ≥ N, ∀ (F : ℕ) (values : List ℤ) (p W : ℕ),
         values.length = 3 * (n * n) → (∀ z ∈ values, z.natAbs ≤ F) → F ≤ (n + 2) ^ κ →
         IsSelectedPrime
@@ -56,7 +56,7 @@ theorem exists_dyadic_runs_threshold {κ : ℕ} (hκ : 1 ≤ κ) :
               (State.init (PreparationInput.input n (window n) (groups n) p values))
               (y.regs Reg.found) (t + 1) ∧
             t + 1 ≤ dyadicTime n F ∧
-            (dyadicTime n F : ℝ) ≤ C * (n : ℝ) ^ (3 - 1 / 1296 : ℝ) ∧
+            (dyadicTime n F : ℝ) ≤ C * (n : ℝ) ^ (3 - 33 / 20000 : ℝ) ∧
             y.Bounded W ∧ (y.regs Reg.found = 0 ∨ y.regs Reg.found = 1) ∧
             (y.regs Reg.found = 1 ↔ HasZeroTriangle
               (fun u v : Fin n => values.getD (pairIndex (u, v)) 0)
@@ -74,7 +74,7 @@ theorem exists_dyadic_runs_threshold {κ : ℕ} (hκ : 1 ≤ κ) :
   obtain ⟨C, hC, N, hN, hc⟩ := exists_dyadicTime_subcubic_bound hκ
   refine ⟨C, hC, N, hN, ?_⟩
   intro n hnN F values p W hlen hv hF hp hW
-  have hn : 0 < n := (Nat.two_pow_pos 1296).trans_le (hN.trans hnN)
+  have hn : 0 < n := (Nat.two_pow_pos 2394).trans_le (hN.trans hnN)
   have hf := (blocks_pos_iff n).mpr (hN.trans hnN)
   have hd := window_le hn
   have hg := (groups_le_window n).trans hd

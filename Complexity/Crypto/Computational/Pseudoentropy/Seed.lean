@@ -12,7 +12,9 @@ public import Complexity.Crypto.Computational.Pseudoentropy.Basic
 public import Complexity.Languages.Probabilistic.BitString
 public import Complexity.Probability.EntropyConcentration
 import Complexity.Computability.Probabilistic.CoinTape
-import Complexity.Tactic.PPT
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.Sampling
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Uniform seeds for samplable pseudoentropy pairs
@@ -70,12 +72,10 @@ theorem exists_observationBound (pair : SamplablePair) :
     ∃ bound : ℕ → ℕ, ComputableInPolyTime bound encUnary encUnary ∧
       ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
         (pair.encode n observation).length ≤ bound n := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
-  have hsample : IsPPTOn encUnary encBits (fun n => Prod.fst <$> pair.sample n) := by
-    have hefficient := pair.efficient
-    ppt
-  obtain ⟨c, d, hbound⟩ := hsample.length_le
-  refine ⟨fun n => c * (n + 1) ^ d, by polytime, ?_⟩
+  obtain ⟨c, d, hbound⟩ := (pair.efficient.map (.fst encBits encBool)).length_le
+  refine ⟨fun n => c * (n + 1) ^ d,
+    (ComputableInPolyTime.const c).unary_mul'
+      (ComputableInPolyTime.unary_succ.trans (.unary_pow d)), ?_⟩
   intro n observation hobservation
   have hsupported : pair.encode n observation ∈ (ProbComp.eval
       (Prod.fst <$> pair.sample n)).support := by
@@ -105,7 +105,8 @@ computability or sampling assumption. -/
 theorem exists_seedRealization (pair : SamplablePair) : Nonempty (SeedRealization pair) := by
   obtain ⟨c, d, evaluate, hefficient, hrealize⟩ := pair.efficient.exists_seeded_evaluator
   refine ⟨{ length := fun n => c * (n + 1) ^ d
-            length_isPolyTime := by polytime
+            length_isPolyTime := (ComputableInPolyTime.const c).unary_mul'
+              (ComputableInPolyTime.unary_succ.trans (.unary_pow d))
             evaluate := evaluate
             efficient := hefficient
             distribution := ?_ }⟩
@@ -203,11 +204,8 @@ noncomputable def sampleWithSeed (n : ℕ) : ProbComp ((List Bool × Bool) × Li
 /-- Retaining the seed preserves strict PPT; no conditional sampling is performed. -/
 @[program_certificate]
 theorem isPPTOn_sampleWithSeed : IsPPTOn encUnary
-    (encPair (encPair encBits encBool) encBits) seed.sampleWithSeed := by
-  have hlength := seed.length_isPolyTime
-  have hevaluate := seed.efficient
-  unfold sampleWithSeed
-  ppt
+    (encPair (encPair encBits encBool) encBits) seed.sampleWithSeed :=
+  seed.length_isPolyTime.sampleList.bind_with (seed.efficient.prod (.snd encUnary encBits)).isPPTOn
 
 /-- The efficient program exactly realizes the finite joint experiment with its retained seed. -/
 theorem eval_sampleWithSeed (n : ℕ) : ProbComp.eval (seed.sampleWithSeed n) =

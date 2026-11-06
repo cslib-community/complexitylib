@@ -18,7 +18,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Probability.PMF.Uniform
-import Complexity.Tactic.PPT
 
 /-!
 # Gap amplification and candidate grid for 1-bit shrinking collision resistance
@@ -47,8 +46,10 @@ formalizes STEPS 1–3 of `[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1 (pp
    $j^*(n) = q^*(n) \Delta(n)$ strictly inside $[t a_0 + 2 \Delta, t k_0 - 3 \Delta]$, making
    candidate $q^*(n)$ collision-resistant on random inputs against all uniform strict-PPT
    adversaries (note that neither `shrunkHashEscapeInverter` nor `repEscapeInverter` reads $q^*$).
-   Target shifts, chain domain extension, and $\kappa(n)$-way concatenation for full target
-   collision resistance and Rompel's signature theorem remain downstream work in `#1001`.
+   Target shifts, length-increasing cascades, and $\kappa(n)$-way concatenation for target
+   collision resistance and Rompel's signature theorem build on `ShrinkingCollisionGrid` in
+   `Complexity.Crypto.Computational.InaccessibleEntropy.TargetCollision` and
+   `Complexity.Crypto.Computational.Rompel`.
 
 ## Main definitions
 
@@ -288,136 +289,130 @@ private theorem two_rpow_neg_le_half_pow (n : ℕ) {x : ℝ} (hx : x ≤ -(n : �
 
 /-! ### Main grid theorem: STEPS 1–3 of Theorem 5.1 -/
 
-/-- **`[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1, STEPS 1–3 (pp. 30–31)**: every
-`InaccessibleEntropyFamily` yields a uniform polynomial-time `ShrinkingCollisionGrid` of strictly
-`1`-bit shrinking hash candidates containing a sequence `goodIdx` that is collision-resistant on
-random inputs against all uniform strict-PPT adversaries. -/
-theorem InaccessibleEntropyFamily.exists_shrinkingCollisionGrid (F : InaccessibleEntropyFamily) :
-    Nonempty ShrinkingCollisionGrid := by
-  let inLenGrid (n : ℕ) : ℕ := shrunkHashInLen (ampRepInLen F n) (ampRepOutLen F n)
-  let outLenGrid (n : ℕ) : ℕ := shrunkHashOutLen (ampRepInLen F n) (ampRepOutLen F n)
-  let evalGrid (n q : ℕ) (raw : List Bool) : List Bool :=
-    shrunkHashEvalWord (ampRepInLen F n) (ampRepOutLen F n)
-      (ampRepEvalWord F n) (q * ampSlack F n) raw
-  have hpoly_inLen : ComputableInPolyTime inLenGrid encUnary encUnary := by
-    unfold inLenGrid shrunkHashInLen inputHashInLen inputHashOutLen outHashLen
-    have hn₁ := computableInPolyTime_ampRepInLen F
-    have hm₁ := computableInPolyTime_ampRepOutLen F
-    have hsq := ComputableInPolyTime.unary_mul' hn₁ hn₁
-    have hin₂ := ComputableInPolyTime.unary_add' hn₁ hsq
-    have hout₂ := ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_add' hm₁ hsq) hn₁
-    have houtH := ComputableInPolyTime.unary_sub' hin₂ (ComputableInPolyTime.const 1)
-    exact ComputableInPolyTime.unary_add' hin₂ (ComputableInPolyTime.unary_mul' houtH hout₂)
-  have hpoly_outLen : ComputableInPolyTime outLenGrid encUnary encUnary := by
-    unfold outLenGrid shrunkHashOutLen outHashLen inputHashInLen inputHashOutLen
-    have hn₁ := computableInPolyTime_ampRepInLen F
-    have hm₁ := computableInPolyTime_ampRepOutLen F
-    have hsq := ComputableInPolyTime.unary_mul' hn₁ hn₁
-    have hin₂ := ComputableInPolyTime.unary_add' hn₁ hsq
-    have hout₂ := ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_add' hm₁ hsq) hn₁
-    have houtH := ComputableInPolyTime.unary_sub' hin₂ (ComputableInPolyTime.const 1)
-    exact ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_mul' houtH hout₂) houtH
-  have hpoly_evalGrid : ComputableInPolyTime
-      (fun ⟨n, q, raw⟩ => evalGrid n q raw)
+private theorem computableInPolyTime_shrunkHashInLen_amp (F : InaccessibleEntropyFamily) :
+    ComputableInPolyTime
+      (fun n => shrunkHashInLen (ampRepInLen F n) (ampRepOutLen F n)) encUnary encUnary := by
+  unfold shrunkHashInLen inputHashInLen inputHashOutLen outHashLen
+  have hn₁ := computableInPolyTime_ampRepInLen F
+  have hm₁ := computableInPolyTime_ampRepOutLen F
+  have hsq := ComputableInPolyTime.unary_mul' hn₁ hn₁
+  have hin₂ := ComputableInPolyTime.unary_add' hn₁ hsq
+  have hout₂ := ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_add' hm₁ hsq) hn₁
+  have houtH := ComputableInPolyTime.unary_sub' hin₂ (ComputableInPolyTime.const 1)
+  exact ComputableInPolyTime.unary_add' hin₂ (ComputableInPolyTime.unary_mul' houtH hout₂)
+
+private theorem computableInPolyTime_shrunkHashOutLen_amp (F : InaccessibleEntropyFamily) :
+    ComputableInPolyTime
+      (fun n => shrunkHashOutLen (ampRepInLen F n) (ampRepOutLen F n)) encUnary encUnary := by
+  unfold shrunkHashOutLen outHashLen inputHashInLen inputHashOutLen
+  have hn₁ := computableInPolyTime_ampRepInLen F
+  have hm₁ := computableInPolyTime_ampRepOutLen F
+  have hsq := ComputableInPolyTime.unary_mul' hn₁ hn₁
+  have hin₂ := ComputableInPolyTime.unary_add' hn₁ hsq
+  have hout₂ := ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_add' hm₁ hsq) hn₁
+  have houtH := ComputableInPolyTime.unary_sub' hin₂ (ComputableInPolyTime.const 1)
+  exact ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_mul' houtH hout₂) houtH
+
+private theorem computableInPolyTime_shrunkHashEvalWord_amp (F : InaccessibleEntropyFamily) :
+    ComputableInPolyTime
+      (fun ⟨n, q, raw⟩ => shrunkHashEvalWord (ampRepInLen F n) (ampRepOutLen F n)
+        (ampRepEvalWord F n) (q * ampSlack F n) raw)
       (encPair encUnary (encPair encUnary encBits)) encBits := by
-    change ComputableInPolyTime (fun p : ℕ × ℕ × List Bool => evalGrid p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encUnary encBits)) encBits
-    have hn := ComputableInPolyTime.fst encUnary (encPair encUnary encBits)
-    have hrest := ComputableInPolyTime.snd encUnary (encPair encUnary encBits)
-    have hq := (ComputableInPolyTime.fst encUnary encBits).comp hrest
-    have hraw := (ComputableInPolyTime.snd encUnary encBits).comp hrest
-    exact computableInPolyTime_shrunkHashEvalWord
-      ((computableInPolyTime_ampRepInLen F).comp hn)
-      ((computableInPolyTime_ampRepOutLen F).comp hn)
-      hn
-      (ComputableInPolyTime.unary_mul' hq ((computableInPolyTime_ampSlack F).comp hn))
-      (computableInPolyTime_ampRepEvalWord F)
-      hraw
-  obtain ⟨N₀, hN₀⟩ := F.eventually_entropy_gap
-  classical
-  let goodIdx (n : ℕ) : ℕ :=
-    if n < N₀ then 0
-    else Nat.floor
-      (((ampReps F n : ℝ) * accessibleSetExpectation (F.accSet n)) / (ampSlack F n : ℝ)) + 3
-  have hgood_lt (n : ℕ) : goodIdx n < ampGridCount F n := by
-    dsimp only [goodIdx]
-    split_ifs with hlt
-    · unfold ampGridCount
-      omega
-    · have ha_le : accessibleSetExpectation (F.accSet n) ≤ (F.inLen n : ℝ) := by
-        have hgap := hN₀ n (not_lt.mp hlt)
-        have hk_le := conditionalEntropy_le_inLen
-          (wordToFinMap (F.inLen n) (F.outLen n) (F.evalWord n))
-        have hd_pos : (0 : ℝ) ≤ 1 / (F.denom n : ℝ) := by positivity
-        linarith
-      have hΔ_pos : (0 : ℝ) < ampSlack F n := by
-        have h := le_ampSlack F n
-        exact_mod_cast (show 0 < ampSlack F n by omega)
-      have hdiv_le : ((ampReps F n : ℝ) * accessibleSetExpectation (F.accSet n)) /
-          (ampSlack F n : ℝ) ≤ ((6 * F.denom n * F.inLen n : ℕ) : ℝ) := by
-        have ht_eq : (ampReps F n : ℝ) = 6 * (F.denom n : ℝ) * (ampSlack F n : ℝ) := by
-          simp only [ampReps, Nat.cast_mul, Nat.cast_ofNat]
-        rw [ht_eq, mul_assoc, mul_comm ((ampSlack F n : ℝ)), ← mul_assoc,
-          mul_div_cancel_right₀ _ hΔ_pos.ne', Nat.cast_mul, Nat.cast_mul, Nat.cast_ofNat]
-        gcongr
-      have hfl : Nat.floor
-          (((ampReps F n : ℝ) * accessibleSetExpectation (F.accSet n)) / (ampSlack F n : ℝ)) ≤
-          6 * F.denom n * F.inLen n :=
-        Nat.floor_le_of_le hdiv_le
-      have hd : 1 ≤ F.denom n := F.denom_pos n
-      unfold ampGridCount
-      nlinarith
-  refine ⟨{
-    inLen := inLenGrid
-    outLen := outLenGrid
-    gridCount := ampGridCount F
-    evalGrid := evalGrid
-    polyTime_inLen := hpoly_inLen
-    polyTime_outLen := hpoly_outLen
-    polyTime_gridCount := computableInPolyTime_ampGridCount F
-    polyTime_evalGrid := hpoly_evalGrid
-    gridCount_pos := fun n => by unfold ampGridCount; omega
-    le_outLen := fun n => by
-      have hn₁ : n + 2 ≤ ampRepInLen F n := le_ampRepInLen F n
-      have houtH : n + 1 ≤ outHashLen (ampRepInLen F n) := by
-        unfold outHashLen inputHashInLen
-        omega
-      unfold outLenGrid shrunkHashOutLen
-      omega
-    outLen_add_one := fun n => by
-      have hn₁ : 1 ≤ ampRepInLen F n := by
-        have := le_ampRepInLen F n; omega
-      exact shrunkHashOutLen_add_one hn₁ (ampRepOutLen F n)
-    length_evalGrid := fun n q raw => length_shrunkHashEvalWord _ _ _ _ _
-    exists_good_candidate := ⟨goodIdx, hgood_lt, fun B hB => ?_⟩
-  }⟩
-  -- Build the uniform strict-PPT composed reduction `B_esc` (never reads `goodIdx`):
-  let n₁True (k : ℕ) : ℕ := ampReps F k * F.inLen k
-  let m₁True (k : ℕ) : ℕ := ampReps F k * F.outLen k
-  have hn₁True_poly : ComputableInPolyTime n₁True encUnary encUnary :=
-    ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_inLen
-  have hm₁True_poly : ComputableInPolyTime m₁True encUnary encUnary :=
-    ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_outLen
-  let B₁ := shrunkHashEscapeInverter n₁True m₁True B
-  let B₀ := repEscapeInverter (ampReps F) F.inLen B₁
-  have hB₁_ppt : IsPPT encBits B₁ :=
-    isPPT_shrunkHashEscapeInverter hn₁True_poly hm₁True_poly hB
-  have hB₀_ppt : IsPPT encBits B₀ :=
-    isPPT_repEscapeInverter (computableInPolyTime_ampReps F) F.polyTime_inLen hB₁_ppt
-  have hesc_neg := F.escape_negligible B₀ hB₀_ppt
-  have hdyad_pb : Cslib.PolynomiallyBounded (fun n => dyadicSize (ampReps F n)) :=
-    dyadicSize_polynomiallyBounded.comp (computableInPolyTime_ampReps F).polynomiallyBounded
-  have hgeom_neg : Negligible (fun n => (6 : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n) :=
-    (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).const_mul 6
-  have hbound_neg : Negligible (fun n =>
+  have hn := ComputableInPolyTime.fst encUnary (encPair encUnary encBits)
+  have hrest := ComputableInPolyTime.snd encUnary (encPair encUnary encBits)
+  have hq := (ComputableInPolyTime.fst encUnary encBits).comp hrest
+  have hraw := (ComputableInPolyTime.snd encUnary encBits).comp hrest
+  exact computableInPolyTime_shrunkHashEvalWord
+    ((computableInPolyTime_ampRepInLen F).comp hn)
+    ((computableInPolyTime_ampRepOutLen F).comp hn)
+    hn
+    (ComputableInPolyTime.unary_mul' hq ((computableInPolyTime_ampSlack F).comp hn))
+    (computableInPolyTime_ampRepEvalWord F)
+    hraw
+
+private noncomputable def ampGoodIdx (F : InaccessibleEntropyFamily) (N₀ n : ℕ) : ℕ :=
+  if n < N₀ then 0
+  else Nat.floor
+    (((ampReps F n : ℝ) * accessibleSetExpectation (F.accSet n)) / (ampSlack F n : ℝ)) + 3
+
+private theorem ampGoodIdx_lt_ampGridCount (F : InaccessibleEntropyFamily) {N₀ : ℕ}
+    (hN₀ : ∀ n ≥ N₀, accessibleSetExpectation (F.accSet n) ≤
+      PMF.conditionalEntropy ((PMF.uniformOfFintype (BitString (F.inLen n))).map fun z =>
+        (wordToFinMap (F.inLen n) (F.outLen n) (F.evalWord n) z, z)) - 1 / (F.denom n : ℝ))
+    (n : ℕ) : ampGoodIdx F N₀ n < ampGridCount F n := by
+  dsimp only [ampGoodIdx]
+  split_ifs with hlt
+  · unfold ampGridCount; omega
+  · have ha_le : accessibleSetExpectation (F.accSet n) ≤ (F.inLen n : ℝ) := by
+      have hgap := hN₀ n (not_lt.mp hlt)
+      have hk_le := conditionalEntropy_le_inLen
+        (wordToFinMap (F.inLen n) (F.outLen n) (F.evalWord n))
+      have hd_pos : (0 : ℝ) ≤ 1 / (F.denom n : ℝ) := by positivity
+      linarith
+    have hΔ_pos : (0 : ℝ) < ampSlack F n := by
+      have h := le_ampSlack F n
+      exact_mod_cast (show 0 < ampSlack F n by omega)
+    have hdiv_le : ((ampReps F n : ℝ) * accessibleSetExpectation (F.accSet n)) /
+        (ampSlack F n : ℝ) ≤ ((6 * F.denom n * F.inLen n : ℕ) : ℝ) := by
+      have ht_eq : (ampReps F n : ℝ) = 6 * (F.denom n : ℝ) * (ampSlack F n : ℝ) := by
+        simp only [ampReps, Nat.cast_mul, Nat.cast_ofNat]
+      rw [ht_eq, mul_assoc, mul_comm ((ampSlack F n : ℝ)), ← mul_assoc,
+        mul_div_cancel_right₀ _ hΔ_pos.ne', Nat.cast_mul, Nat.cast_mul, Nat.cast_ofNat]
+      gcongr
+    have hfl := Nat.floor_le_of_le hdiv_le
+    have hd : 1 ≤ F.denom n := F.denom_pos n
+    unfold ampGridCount
+    nlinarith
+
+private theorem amp_hoeffding_exponent_le (F : InaccessibleEntropyFamily) {n : ℕ}
+    (hw₀_pos : 1 ≤ F.inLen n) :
+    -2 * (ampSlack F n : ℝ) ^ 2 / ((ampReps F n : ℝ) * (F.inLen n : ℝ) ^ 2) ≤ -(n : ℝ) := by
+  let w₀ := F.inLen n
+  let D := F.denom n
+  let t := ampReps F n
+  let Δ := ampSlack F n
+  have hD_pos : (0 : ℝ) < D := by exact_mod_cast F.denom_pos n
+  have hΔ_ge : (3 * (n + 2) : ℝ) ≤ (Δ : ℝ) := by exact_mod_cast le_ampSlack F n
+  have hΔ_pos : (0 : ℝ) < Δ := by linarith
+  have ht_real : (t : ℝ) = 6 * (D : ℝ) * (Δ : ℝ) := by
+    dsimp only [t, ampReps]; push_cast; ring
+  have hw₀_pos_r : (0 : ℝ) < w₀ := by exact_mod_cast hw₀_pos
+  have ht_pos_r : (0 : ℝ) < t := by rw [ht_real]; positivity
+  rw [div_le_iff₀ (mul_pos ht_pos_r (pow_pos hw₀_pos_r 2))]
+  have hΔ_def : (Δ : ℝ) = 3 * ((n : ℝ) + 2) * (D : ℝ) * ((w₀ : ℝ) + 1) ^ 2 := by
+    dsimp only [Δ, ampSlack]; push_cast; ring
+  have hsq_le : (w₀ : ℝ) ^ 2 ≤ ((w₀ : ℝ) + 1) ^ 2 := by nlinarith
+  have hkey : (n : ℝ) * ((t : ℝ) * (w₀ : ℝ) ^ 2) ≤ 2 * (Δ : ℝ) ^ 2 := by
+    calc
+      (n : ℝ) * ((t : ℝ) * (w₀ : ℝ) ^ 2)
+        ≤ ((n : ℝ) + 2) * ((6 * (D : ℝ) * (Δ : ℝ)) * ((w₀ : ℝ) + 1) ^ 2) := by
+          rw [← ht_real]; gcongr; linarith
+      _ = 2 * (Δ : ℝ) * (3 * ((n : ℝ) + 2) * (D : ℝ) * ((w₀ : ℝ) + 1) ^ 2) := by ring
+      _ = 2 * (Δ : ℝ) ^ 2 := by rw [← hΔ_def]; ring
+  linarith
+
+private theorem amp_randomCollisionGame_succProbability_le
+    (F : InaccessibleEntropyFamily) {N₀ : ℕ}
+    (hN₀ : ∀ n ≥ N₀, accessibleSetExpectation (F.accSet n) ≤
+      PMF.conditionalEntropy ((PMF.uniformOfFintype (BitString (F.inLen n))).map fun z =>
+        (wordToFinMap (F.inLen n) (F.outLen n) (F.evalWord n) z, z)) - 1 / (F.denom n : ℝ))
+    (B : ℕ → List Bool → ProbComp (List Bool)) {n : ℕ} (hn : N₀ ≤ n) :
+    Game.succProbability (ProbComp.eval
+      (randomCollisionGame
+        (fun k => shrunkHashEvalWord (ampRepInLen F k) (ampRepOutLen F k)
+          (ampRepEvalWord F k) (ampGoodIdx F N₀ k * ampSlack F k))
+        (fun k => shrunkHashInLen (ampRepInLen F k) (ampRepOutLen F k)) B n)) ≤
       (dyadicSize (ampReps F n) : ℝ≥0) *
         Game.succProbability (ProbComp.eval
-          (accessibleEscapeGame F.evalWord F.inLen F.accSet B₀ n)) +
-      (6 : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n) :=
-    (hesc_neg.polynomiallyBounded_mul hdyad_pb).add hgeom_neg
-  refine negligible_of_eventually_le hbound_neg ?_
-  filter_upwards [Filter.eventually_ge_atTop N₀] with n hn
-  -- At `n ≥ N₀`, the `1 / D` entropy gap forces `F.inLen n ≠ 0`:
+          (accessibleEscapeGame F.evalWord F.inLen F.accSet
+            (repEscapeInverter (ampReps F) F.inLen
+              (shrunkHashEscapeInverter
+                (fun k => ampReps F k * F.inLen k)
+                (fun k => ampReps F k * F.outLen k) B)) n)) +
+      (6 : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n := by
+  let n₁True (k : ℕ) : ℕ := ampReps F k * F.inLen k
+  let m₁True (k : ℕ) : ℕ := ampReps F k * F.outLen k
+  let B₁ := shrunkHashEscapeInverter n₁True m₁True B
   let w₀ := F.inLen n
   let m₀ := F.outLen n
   let D := F.denom n
@@ -437,132 +432,129 @@ theorem InaccessibleEntropyFamily.exists_shrinkingCollisionGrid (F : Inaccessibl
     have hw0_real : (w₀ : ℝ) = 0 := by exact_mod_cast h0
     linarith
   have hw₀_pos : 1 ≤ w₀ := Nat.pos_of_ne_zero hw₀_ne_zero
-  -- Hence `ampRepInLen`, `ampRepOutLen`, `ampRepEvalWord` agree with the unbranched `t`-repetition:
   have hn₁_eq : ampRepInLen F n = n₁True n := by
     simp only [ampRepInLen, n₁True, hw₀_ne_zero, ↓reduceIte, w₀]
   have hm₁_eq : ampRepOutLen F n = m₁True n := by
     simp only [ampRepOutLen, m₁True, hw₀_ne_zero, ↓reduceIte, w₀]
   have heval₁_eq : ampRepEvalWord F n = repEvalWord t w₀ (F.evalWord n) := by
-    funext u
-    simp only [ampRepEvalWord, hw₀_ne_zero, ↓reduceIte, t, w₀]
+    funext u; simp only [ampRepEvalWord, hw₀_ne_zero, ↓reduceIte, t, w₀]
   have hgame_eq :
-      randomCollisionGame (fun k => evalGrid k (goodIdx k)) inLenGrid B n =
+      randomCollisionGame
+        (fun k => shrunkHashEvalWord (ampRepInLen F k) (ampRepOutLen F k)
+          (ampRepEvalWord F k) (ampGoodIdx F N₀ k * ampSlack F k))
+        (fun k => shrunkHashInLen (ampRepInLen F k) (ampRepOutLen F k)) B n =
       randomCollisionGame
         (fun k => shrunkHashEvalWord (n₁True k) (m₁True k)
-          (repEvalWord (ampReps F k) (F.inLen k) (F.evalWord k)) (goodIdx k * ampSlack F k))
+          (repEvalWord (ampReps F k) (F.inLen k) (F.evalWord k))
+          (ampGoodIdx F N₀ k * ampSlack F k))
         (fun k => shrunkHashInLen (n₁True k) (m₁True k)) B n := by
-    simp only [randomCollisionGame, inLenGrid, evalGrid, hn₁_eq, hm₁_eq, heval₁_eq, t, w₀]
-  -- Apply `shrunkHash_randomCollision_le` and `repEscape_le_dyadicSize_mul_escape`:
+    simp only [randomCollisionGame, hn₁_eq, hm₁_eq, heval₁_eq, t, w₀]
   let A_max : ℝ := (t : ℝ) * a₀ + (Δ : ℝ)
   let K_min : ℝ := (t : ℝ) * k₀ - (Δ : ℝ)
   have hn₁True_pos : 1 ≤ n₁True n := by
     have ht_pos : 1 ≤ t := by
       have hslack := le_ampSlack F n
       have hd := F.denom_pos n
-      dsimp only [t, ampReps]
-      nlinarith
+      dsimp only [t, ampReps]; nlinarith
     exact Nat.mul_le_mul ht_pos hw₀_pos
   have hlen_rep (u : List Bool) (_ : u.length = n₁True n) :
       (repEvalWord t w₀ (F.evalWord n) u).length = m₁True n :=
     length_repEvalWord (F.length_evalWord n) u
   have hcoll := shrunkHash_randomCollision_le n₁True m₁True
-    (fun k => goodIdx k * ampSlack F k)
+    (fun k => ampGoodIdx F N₀ k * ampSlack F k)
     (fun k => repEvalWord (ampReps F k) (F.inLen k) (F.evalWord k))
     (fun k => repBitAccessibleSet (ampReps F k) (F.inLen k) (F.accSet k))
     B n hn₁True_pos hlen_rep A_max K_min
   have hrep_esc := repEscape_le_dyadicSize_mul_escape (ampReps F) F.inLen F.outLen F.evalWord
     F.accSet B₁ n (F.length_evalWord n)
-  -- Bound the four statistical error terms by `6 * (1 / 2) ^ n`:
   have hΔ_ge : (3 * (n + 2) : ℝ) ≤ (Δ : ℝ) := by exact_mod_cast le_ampSlack F n
   have hΔ_pos : (0 : ℝ) < Δ := by linarith
   have ht_real : (t : ℝ) = 6 * (D : ℝ) * (Δ : ℝ) := by
-    dsimp only [t, ampReps]
-    push_cast
-    ring
+    dsimp only [t, ampReps]; push_cast; ring
   have hgap_scaled : 6 * (Δ : ℝ) ≤ (t : ℝ) * k₀ - (t : ℝ) * a₀ := by
-    have h1 : 1 / (D : ℝ) ≤ k₀ - a₀ := by linarith
     have hmul : (t : ℝ) * (1 / (D : ℝ)) ≤ (t : ℝ) * (k₀ - a₀) :=
-      mul_le_mul_of_nonneg_left h1 (by positivity)
+      mul_le_mul_of_nonneg_left (by linarith) (by positivity)
     have hcancel : (t : ℝ) * (1 / (D : ℝ)) = 6 * (Δ : ℝ) := by
-      rw [ht_real]
-      field_simp [hD_pos.ne']
+      rw [ht_real]; field_simp [hD_pos.ne']
     linarith
-  have hgood_eq : goodIdx n = Nat.floor (((t : ℝ) * a₀) / (Δ : ℝ)) + 3 := by
-    simp only [goodIdx, not_lt.mpr hn, ↓reduceIte, t, a₀, Δ]
+  have hgood_eq : ampGoodIdx F N₀ n = Nat.floor (((t : ℝ) * a₀) / (Δ : ℝ)) + 3 := by
+    simp only [ampGoodIdx, not_lt.mpr hn, ↓reduceIte, t, a₀, Δ]
   let qFloor := Nat.floor (((t : ℝ) * a₀) / (Δ : ℝ))
-  have hfloor_le : (qFloor : ℝ) * (Δ : ℝ) ≤ (t : ℝ) * a₀ := by
-    have h : (qFloor : ℝ) ≤ ((t : ℝ) * a₀) / (Δ : ℝ) :=
-      Nat.floor_le (div_nonneg (mul_nonneg (Nat.cast_nonneg t) ha₀_nonneg) hΔ_pos.le)
-    exact (le_div_iff₀ hΔ_pos).mp h
+  have hfloor_le : (qFloor : ℝ) * (Δ : ℝ) ≤ (t : ℝ) * a₀ :=
+    (le_div_iff₀ hΔ_pos).mp
+      (Nat.floor_le (div_nonneg (mul_nonneg (Nat.cast_nonneg t) ha₀_nonneg) hΔ_pos.le))
   have hlt_floor_succ : (t : ℝ) * a₀ < ((qFloor : ℝ) + 1) * (Δ : ℝ) :=
     (div_lt_iff₀ hΔ_pos).mp (Nat.lt_floor_add_one _)
-  let j₀ : ℕ := goodIdx n * Δ
+  let j₀ : ℕ := ampGoodIdx F N₀ n * Δ
   have hj₀_real : (j₀ : ℝ) = ((qFloor : ℝ) + 3) * (Δ : ℝ) := by
-    dsimp only [j₀]
-    rw [hgood_eq]
-    push_cast
-    ring
+    dsimp only [j₀]; rw [hgood_eq]; push_cast; ring
   have hj₀_le_n₁ : j₀ ≤ n₁True n := by
-    have hreal : (j₀ : ℝ) ≤ (n₁True n : ℝ) := by
-      have htw : (t : ℝ) * k₀ ≤ (n₁True n : ℝ) := by
-        dsimp only [n₁True]
-        rw [Nat.cast_mul]
-        exact mul_le_mul_of_nonneg_left hk₀_le (by positivity)
-      linarith
-    exact_mod_cast hreal
+    have htw : (t : ℝ) * k₀ ≤ (n₁True n : ℝ) := by
+      dsimp only [n₁True]; rw [Nat.cast_mul]
+      exact mul_le_mul_of_nonneg_left hk₀_le (by positivity)
+    exact_mod_cast (show (j₀ : ℝ) ≤ (n₁True n : ℝ) by linarith)
   have hmin_eq : (min j₀ (n₁True n) : ℝ) = (j₀ : ℝ) := by
     rw [← Nat.cast_min, Nat.min_eq_left hj₀_le_n₁]
-  -- Hoeffding exponent bound `-2 * Δ^2 / (t * w₀^2) ≤ -(n : ℝ)`:
-  have hhoeff_exp : -2 * (Δ : ℝ) ^ 2 / ((t : ℝ) * (w₀ : ℝ) ^ 2) ≤ -(n : ℝ) := by
-    have hw₀_pos_r : (0 : ℝ) < w₀ := by exact_mod_cast hw₀_pos
-    have ht_pos_r : (0 : ℝ) < t := by rw [ht_real]; positivity
-    have hdenom_pos : (0 : ℝ) < (t : ℝ) * (w₀ : ℝ) ^ 2 := mul_pos ht_pos_r (pow_pos hw₀_pos_r 2)
-    rw [div_le_iff₀ hdenom_pos]
-    have hΔ_def : (Δ : ℝ) = 3 * ((n : ℝ) + 2) * (D : ℝ) * ((w₀ : ℝ) + 1) ^ 2 := by
-      dsimp only [Δ, ampSlack]
-      push_cast
-      ring
-    have hsq_le : (w₀ : ℝ) ^ 2 ≤ ((w₀ : ℝ) + 1) ^ 2 := by nlinarith
-    have hkey : (n : ℝ) * ((t : ℝ) * (w₀ : ℝ) ^ 2) ≤ 2 * (Δ : ℝ) ^ 2 := by
-      calc
-        (n : ℝ) * ((t : ℝ) * (w₀ : ℝ) ^ 2)
-          ≤ ((n : ℝ) + 2) * ((6 * (D : ℝ) * (Δ : ℝ)) * ((w₀ : ℝ) + 1) ^ 2) := by
-            rw [← ht_real]
-            gcongr
-            linarith
-        _ = 2 * (Δ : ℝ) * (3 * ((n : ℝ) + 2) * (D : ℝ) * ((w₀ : ℝ) + 1) ^ 2) := by ring
-        _ = 2 * (Δ : ℝ) ^ 2 := by rw [← hΔ_def]; ring
-    linarith
-  have htail_acc :
-      ((PMF.uniformOfFintype (BitString (n₁True n))).toOuterMeasure
-        {z | A_max ≤ Real.logb 2 #(repBitAccessibleSet t w₀ (F.accSet n) z)}).toReal ≤
-      (1 / 2 : ℝ) ^ n :=
+  have hhoeff_exp := amp_hoeffding_exponent_le F hw₀_pos
+  have htail_acc :=
     (repBitAccessibleSet_logb_card_ge_prob t w₀ (F.accSet n) (F.self_mem_accSet n)
       hΔ_pos.le).trans (exp_neg_le_half_pow n hhoeff_exp)
-  have htail_ent :
-      ((PMF.uniformOfFintype (BitString (n₁True n))).toOuterMeasure
-        {z | realSampleEntropy
-          (wordToFinMap (n₁True n) (m₁True n)
-            (repEvalWord t w₀ (F.evalWord n))) z ≤ K_min}).toReal ≤
-      (1 / 2 : ℝ) ^ n :=
+  have htail_ent :=
     (repEvalWord_realSampleEntropy_le_prob (F.length_evalWord n) hΔ_pos.le).trans
       (exp_neg_le_half_pow n hhoeff_exp)
-  have hpow_in : (2 : ℝ) ^ (A_max - (min j₀ (n₁True n) : ℝ)) ≤ (1 / 2 : ℝ) ^ n := by
-    apply two_rpow_neg_le_half_pow n
-    rw [hmin_eq]
-    dsimp only [A_max]
-    linarith
-  have hpow_out : (2 : ℝ) ^ ((min j₀ (n₁True n) : ℝ) - K_min) ≤ (1 / 2 : ℝ) ^ n := by
-    apply two_rpow_neg_le_half_pow n
-    rw [hmin_eq]
-    dsimp only [K_min]
-    linarith
-  -- Assemble the `ℝ≥0` inequality via real coercion:
+  have hpow_in : (2 : ℝ) ^ (A_max - (min j₀ (n₁True n) : ℝ)) ≤ (1 / 2 : ℝ) ^ n :=
+    two_rpow_neg_le_half_pow n (by rw [hmin_eq]; dsimp only [A_max]; linarith)
+  have hpow_out : (2 : ℝ) ^ ((min j₀ (n₁True n) : ℝ) - K_min) ≤ (1 / 2 : ℝ) ^ n :=
+    two_rpow_neg_le_half_pow n (by rw [hmin_eq]; dsimp only [K_min]; linarith)
   rw [hgame_eq, ← NNReal.coe_le_coe]
-  dsimp only [n₁True, m₁True, B₁, B₀, t, w₀, m₀, j₀, Δ]
+  dsimp only [n₁True, m₁True, B₁, t, w₀, m₀, j₀, Δ]
     at hcoll hrep_esc htail_acc htail_ent hpow_in hpow_out ⊢
   push_cast at hcoll hrep_esc hpow_in hpow_out ⊢
   linarith [hcoll, hrep_esc, htail_acc, htail_ent, hpow_in, hpow_out]
+
+/-- **`[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1, STEPS 1–3 (pp. 30–31)**: every
+`InaccessibleEntropyFamily` yields a uniform polynomial-time `ShrinkingCollisionGrid` of strictly
+`1`-bit shrinking hash candidates containing a sequence `goodIdx` that is collision-resistant on
+random inputs against all uniform strict-PPT adversaries. -/
+theorem InaccessibleEntropyFamily.exists_shrinkingCollisionGrid (F : InaccessibleEntropyFamily) :
+    Nonempty ShrinkingCollisionGrid := by
+  obtain ⟨N₀, hN₀⟩ := F.eventually_entropy_gap
+  refine ⟨{
+    inLen := fun n => shrunkHashInLen (ampRepInLen F n) (ampRepOutLen F n)
+    outLen := fun n => shrunkHashOutLen (ampRepInLen F n) (ampRepOutLen F n)
+    gridCount := ampGridCount F
+    evalGrid := fun n q raw =>
+      shrunkHashEvalWord (ampRepInLen F n) (ampRepOutLen F n)
+        (ampRepEvalWord F n) (q * ampSlack F n) raw
+    polyTime_inLen := computableInPolyTime_shrunkHashInLen_amp F
+    polyTime_outLen := computableInPolyTime_shrunkHashOutLen_amp F
+    polyTime_gridCount := computableInPolyTime_ampGridCount F
+    polyTime_evalGrid := computableInPolyTime_shrunkHashEvalWord_amp F
+    gridCount_pos := fun n => by unfold ampGridCount; omega
+    le_outLen := fun n => by
+      have hn₁ : n + 2 ≤ ampRepInLen F n := le_ampRepInLen F n
+      have houtH : n + 1 ≤ outHashLen (ampRepInLen F n) := by
+        unfold outHashLen inputHashInLen; omega
+      unfold shrunkHashOutLen; omega
+    outLen_add_one := fun n =>
+      shrunkHashOutLen_add_one (by have := le_ampRepInLen F n; omega) (ampRepOutLen F n)
+    length_evalGrid := fun n q raw => length_shrunkHashEvalWord _ _ _ _ _
+    exists_good_candidate := ⟨ampGoodIdx F N₀, ampGoodIdx_lt_ampGridCount F hN₀, fun B hB => ?_⟩
+  }⟩
+  have hn₁True_poly : ComputableInPolyTime (fun k => ampReps F k * F.inLen k) encUnary encUnary :=
+    ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_inLen
+  have hm₁True_poly : ComputableInPolyTime (fun k => ampReps F k * F.outLen k) encUnary encUnary :=
+    ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_outLen
+  have hB₁_ppt := isPPT_shrunkHashEscapeInverter hn₁True_poly hm₁True_poly hB
+  have hB₀_ppt := isPPT_repEscapeInverter (computableInPolyTime_ampReps F) F.polyTime_inLen hB₁_ppt
+  have hesc_neg := F.escape_negligible _ hB₀_ppt
+  have hdyad_pb : Cslib.PolynomiallyBounded (fun n => dyadicSize (ampReps F n)) :=
+    dyadicSize_polynomiallyBounded.comp (computableInPolyTime_ampReps F).polynomiallyBounded
+  have hgeom_neg : Negligible (fun n => (6 : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n) :=
+    (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).const_mul 6
+  refine negligible_of_eventually_le ((hesc_neg.polynomiallyBounded_mul hdyad_pb).add hgeom_neg) ?_
+  filter_upwards [Filter.eventually_ge_atTop N₀] with n hn
+  exact amp_randomCollisionGame_succProbability_le F hN₀ B hn
 
 /-- **Constant-threshold adaptation of `[HHRVW2020]`, Section 4.2, Theorem 4.5 (p. 21) composed
 with Section 5.1.5, Theorem 5.1, STEPS 1–3 (pp. 30–31)**: every uniform `OneWay` function yields a

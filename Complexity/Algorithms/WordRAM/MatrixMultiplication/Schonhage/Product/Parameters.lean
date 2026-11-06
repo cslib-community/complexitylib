@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Copy
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandParameters
 
@@ -51,17 +52,14 @@ public theorem exec_parameters {w L m N Q : ℕ} (hm : m ≤ L) (x : Data 160)
   obtain ⟨h, hh, hp, hm⟩ := BandPreparation.exec_header hm (x.comap bank) hL hmemory hN
     (producer_fits hfit).1
   obtain ⟨c, hc, cp, cm⟩ := BandPreparation.exec_countCode h hp (producer_fits hfit).1
-  have he := (hh.seq hc).rename bank_injective
-  change ExecWithin w parameters x (c.extend bank x)
-    ((16 * L + 49) + ((6 * L + 16) * 2 ^ L + 16)) at he
-  refine ⟨c.extend bank x, he, ?_, cm.trans hm, ?_⟩
-  · simpa only [Data.comap_extend bank_injective] using cp
-  · intro i hi
-    have hnot : ¬∃ j, bank j = i := by
-      rintro ⟨j, hj⟩
-      have hv := congrArg (fun r : Fin 160 => r.val) hj
-      change j.val = i.val at hv
-      omega
-    exact Function.extend_apply' _ _ _ hnot
+  obtain ⟨y, hy, ⟨hp, hm⟩, hframe⟩ :=
+    ExecWithin.rename_post (x := x)
+      (Q := fun y => BandPreparation.BandParameters L m N y ∧ y.mem = x.mem)
+      bank_injective ⟨c, hh.seq hc, cp, cm.trans hm⟩
+  refine ⟨y, hy, hp, hm, fun i hi => hframe i ?_⟩
+  intro j hj
+  have hv := congrArg (fun r : Fin 160 => r.val) hj
+  change j.val = i.val at hv
+  omega
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct

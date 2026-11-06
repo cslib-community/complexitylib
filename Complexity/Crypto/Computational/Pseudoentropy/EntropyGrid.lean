@@ -89,27 +89,19 @@ def numerator (bound index : ℕ) : ℕ := index % dyadicSize bound + 4
 theorem isPolyTime_size {α : Type} {input : α ↪ List Bool} {sourceBits bound : α → ℕ}
     (hsource : ComputableInPolyTime sourceBits input encUnary)
     (hbound : ComputableInPolyTime bound input encUnary) :
-    ComputableInPolyTime (fun a => size (sourceBits a) (bound a)) input encUnary := by
-  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
-  unfold size
-  exact ComputableInPolyTime.unary_mul'
-    (ComputableInPolyTime.unary_add'
-      (ComputableInPolyTime.unary_mul' hdyadic hsource)
-      (ComputableInPolyTime.const 1))
-    hdyadic
+    ComputableInPolyTime (fun a => size (sourceBits a) (bound a)) input encUnary :=
+  let hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
+  ((hdyadic.unary_mul' hsource).unary_add' (.const 1)).unary_mul' hdyadic
 
 /-- The common slack unit is uniformly efficient. -/
 theorem isPolyTime_scale {α : Type} {input : α ↪ List Bool} {n sourceBits bound : α → ℕ}
     (hn : ComputableInPolyTime n input encUnary)
     (hsource : ComputableInPolyTime sourceBits input encUnary)
     (hbound : ComputableInPolyTime bound input encUnary) :
-    ComputableInPolyTime (fun a => scale (n a) (sourceBits a) (bound a)) input encUnary := by
-  unfold scale
-  exact ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+    ComputableInPolyTime (fun a => scale (n a) (sourceBits a) (bound a)) input encUnary :=
+  (ComputableInPolyTime.const 2).unary_mul'
     (ExtractionSchedule.isPolyTime_slack hn hsource
-      (ComputableInPolyTime.unary_sub'
-        (ComputableInPolyTime.unary_dyadicSize.comp hbound)
-        (ComputableInPolyTime.const 1)))
+      ((ComputableInPolyTime.unary_dyadicSize.comp hbound).unary_sub' (.const 1)))
 
 attribute [program_certificate] isPolyTime_size isPolyTime_scale
 
@@ -121,14 +113,11 @@ theorem isPolyTime_observationBits {α : Type} {input : α ↪ List Bool}
     (hbound : ComputableInPolyTime bound input encUnary)
     (hindex : ComputableInPolyTime index input encUnary) :
     ComputableInPolyTime
-      (fun a => observationBits (n a) (sourceBits a) (bound a) (index a)) input encUnary := by
-  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
-  unfold observationBits
-  exact ComputableInPolyTime.unary_mul' (isPolyTime_scale hn hsource hbound)
-    (ComputableInPolyTime.unary_sub'
-      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
-        (ComputableInPolyTime.unary_div.comp (hindex.prod hdyadic)))
-      (ComputableInPolyTime.const 1))
+      (fun a => observationBits (n a) (sourceBits a) (bound a) (index a)) input encUnary :=
+  let hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
+  (isPolyTime_scale hn hsource hbound).unary_mul'
+    (((ComputableInPolyTime.const 2).unary_mul'
+      (ComputableInPolyTime.unary_div.comp (hindex.prod hdyadic))).unary_sub' (.const 1))
 
 /-- The label digest length is uniformly efficient in the candidate index. -/
 theorem isPolyTime_labelBits {α : Type} {input : α ↪ List Bool}
@@ -138,14 +127,11 @@ theorem isPolyTime_labelBits {α : Type} {input : α ↪ List Bool}
     (hbound : ComputableInPolyTime bound input encUnary)
     (hindex : ComputableInPolyTime index input encUnary) :
     ComputableInPolyTime
-      (fun a => labelBits (n a) (sourceBits a) (bound a) (index a)) input encUnary := by
-  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
-  unfold labelBits
-  exact ComputableInPolyTime.unary_mul' (isPolyTime_scale hn hsource hbound)
-    (ComputableInPolyTime.unary_add'
-      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
-        (ComputableInPolyTime.unary_mod.comp (hindex.prod hdyadic)))
-      (ComputableInPolyTime.const 7))
+      (fun a => labelBits (n a) (sourceBits a) (bound a) (index a)) input encUnary :=
+  let hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
+  (isPolyTime_scale hn hsource hbound).unary_mul'
+    (((ComputableInPolyTime.const 2).unary_mul'
+      (ComputableInPolyTime.unary_mod.comp (hindex.prod hdyadic))).unary_add' (.const 7))
 
 /-- The retained-seed digest length is uniformly efficient in the candidate index. -/
 theorem isPolyTime_remainingBits {α : Type} {input : α ↪ List Bool}
@@ -155,31 +141,22 @@ theorem isPolyTime_remainingBits {α : Type} {input : α ↪ List Bool}
     (hbound : ComputableInPolyTime bound input encUnary)
     (hindex : ComputableInPolyTime index input encUnary) :
     ComputableInPolyTime
-      (fun a => remainingBits (n a) (sourceBits a) (bound a) (index a)) input encUnary := by
-  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
-  have hq := ComputableInPolyTime.unary_div.comp (hindex.prod hdyadic)
-  have hr := ComputableInPolyTime.unary_mod.comp (hindex.prod hdyadic)
-  unfold remainingBits
-  exact ComputableInPolyTime.unary_mul' (isPolyTime_scale hn hsource hbound)
-    (ComputableInPolyTime.unary_sub'
-      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
-        (ComputableInPolyTime.unary_sub'
-          (ComputableInPolyTime.unary_mul' hdyadic hsource)
-          (ComputableInPolyTime.unary_add'
-            (ComputableInPolyTime.unary_add' hq hr)
-            (ComputableInPolyTime.const 2))))
-      (ComputableInPolyTime.const 1))
+      (fun a => remainingBits (n a) (sourceBits a) (bound a) (index a)) input encUnary :=
+  let hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
+  let hq := ComputableInPolyTime.unary_div.comp (hindex.prod hdyadic)
+  let hr := ComputableInPolyTime.unary_mod.comp (hindex.prod hdyadic)
+  (isPolyTime_scale hn hsource hbound).unary_mul'
+    (((ComputableInPolyTime.const 2).unary_mul'
+      ((hdyadic.unary_mul' hsource).unary_sub'
+        ((hq.unary_add' hr).unary_add' (.const 2)))).unary_sub' (.const 1))
 
 /-- The requested density is uniformly efficient in the candidate index. -/
 theorem isPolyTime_numerator {α : Type} {input : α ↪ List Bool} {bound index : α → ℕ}
     (hbound : ComputableInPolyTime bound input encUnary)
     (hindex : ComputableInPolyTime index input encUnary) :
-    ComputableInPolyTime (fun a => numerator (bound a) (index a)) input encUnary := by
-  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
-  unfold numerator
-  exact ComputableInPolyTime.unary_add'
-    (ComputableInPolyTime.unary_mod.comp (hindex.prod hdyadic))
-    (ComputableInPolyTime.const 4)
+    ComputableInPolyTime (fun a => numerator (bound a) (index a)) input encUnary :=
+  let hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
+  (ComputableInPolyTime.unary_mod.comp (hindex.prod hdyadic)).unary_add' (.const 4)
 
 attribute [program_certificate]
   isPolyTime_observationBits isPolyTime_labelBits isPolyTime_remainingBits isPolyTime_numerator
@@ -214,9 +191,8 @@ theorem expands (n sourceBits bound index : ℕ) :
   have h := Nat.mul_lt_mul_of_pos_left
     (hround (dyadicSize bound * sourceBits) (index / dyadicSize bound)
       (index % dyadicSize bound)) (scale_pos n sourceBits bound)
-  rw [count_eq]
-  unfold observationBits labelBits remainingBits
-  nlinarith only [h]
+  simpa only [count_eq, observationBits, labelBits, remainingBits, ← Nat.mul_add, Nat.mul_assoc,
+    Nat.mul_left_comm] using h
 
 /-- The label budget holds exactly for every candidate, independent of entropy assumptions. -/
 theorem label_budget (n sourceBits bound index : ℕ) :
@@ -255,11 +231,12 @@ private theorem rounded_budget (unit guess : ℕ) {entropy : ℝ}
     unit * (2 * guess - 1) = 0 ∨
       ((unit * (2 * guess - 1) : ℕ) : ℝ) + unit ≤ 2 * unit * entropy := by
   by_cases hzero : guess = 0
-  · simp [hzero]
+  · simp only [hzero, Nat.mul_zero, Nat.zero_sub, true_or]
   · right
-    rw [Nat.cast_mul, Nat.cast_sub (by lia : 1 ≤ 2 * guess)]
-    push_cast
-    nlinarith [mul_le_mul_of_nonneg_left hguess (Nat.cast_nonneg unit)]
+    rw [Nat.cast_mul, Nat.cast_sub (by lia : 1 ≤ 2 * guess), Nat.cast_mul, Nat.cast_ofNat,
+      Nat.cast_one]
+    have h := mul_le_mul_of_nonneg_left hguess (Nat.cast_nonneg unit)
+    linarith
 
 /-- Rounding both true entropies down supplies a valid candidate. Four grid steps of
 pseudoentropy suffice; no algorithm for computing either entropy is assumed. -/
@@ -283,22 +260,24 @@ theorem exists_valid (n sourceBits bound : ℕ) {observationEntropy labelEntropy
       (show observationEntropy ≤ (sourceBits : ℝ) by linarith) hDr.le)
   have hgap' : (4 : ℝ) ≤ gap * D := (div_le_iff₀ hDr).mp hgap
   have hsecond_le : second + 4 ≤ D := by
-    have h := mul_le_mul_of_nonneg_left hone hDr.le
-    exact_mod_cast (show (second : ℝ) + 4 ≤ D by nlinarith)
+    have h : (D : ℝ) * labelEntropy + gap * D ≤ D := by
+      simpa only [add_mul, mul_comm (D : ℝ), one_mul] using
+        mul_le_mul_of_nonneg_right hone hDr.le
+    exact_mod_cast (show (second : ℝ) + 4 ≤ D by linarith only [hsecond, hgap', h])
   have hsecond_mod : second < D := by lia
   have hquot : (first * D + second) / D = first := by
     rw [Nat.mul_comm first D, Nat.mul_add_div hD, Nat.div_eq_of_lt hsecond_mod, Nat.add_zero]
-  have hrem : (first * D + second) % D = second := by simp [Nat.mod_eq_of_lt hsecond_mod]
+  have hrem : (first * D + second) % D = second := by simp only [Nat.mul_add_mod',
+    Nat.mod_eq_of_lt hsecond_mod]
   refine ⟨first * D + second, ?_⟩
   constructor
-  · unfold size
-    change first * D + second < (D * sourceBits + 1) * D
-    nlinarith [Nat.mul_le_mul_right D hfirst_le]
+  · simpa only [size, Nat.add_mul, Nat.one_mul] using
+      Nat.add_lt_add_of_le_of_lt (Nat.mul_le_mul_right D hfirst_le) hsecond_mod
   · simpa only [numerator, ← show D = dyadicSize bound from rfl, hrem] using hsecond_le
   · simp only [numerator, ← show D = dyadicSize bound from rfl, hrem, Nat.cast_add,
       Nat.cast_ofNat]
-    apply (div_le_iff₀ hDr).mpr
-    nlinarith
+    rw [div_le_iff₀ hDr, add_mul, mul_comm labelEntropy]
+    exact add_le_add hsecond hgap'
   · rw [count_eq]
     simp only [observationBits, ← show D = dyadicSize bound from rfl, hquot]
     simpa only [Nat.cast_mul, Nat.cast_ofNat, mul_assoc] using
@@ -308,9 +287,9 @@ theorem exists_valid (n sourceBits bound : ℕ) {observationEntropy labelEntropy
     have hremaining : ((D * sourceBits - (first + second + 2) : ℕ) : ℝ) ≤
         D * (sourceBits - observationEntropy - labelEntropy) := by
       by_cases hsmall : first + second + 2 ≤ D * sourceBits
-      · rw [Nat.cast_sub hsmall]
+      · rw [Nat.cast_sub hsmall, mul_sub, mul_sub]
         push_cast
-        nlinarith
+        linarith only [hfirst_lt, hsecond_lt]
       · rw [Nat.sub_eq_zero_of_le (by lia)]
         push_cast
         exact mul_nonneg hDr.le (by linarith)

@@ -176,8 +176,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   blocks in either address order or identical blocks. `Encoding.setup` and `Encoding.powerBody`
   retain their simultaneous `7^L`/`10^L` loop sharing the `stage` counter (`5*L+18` setup
   instructions) rather than running two sequential `WordRAM.Power.program` loops.
-  This is the encoder component only; band/tile preparation and full native composition remain
-  in [#1394](https://github.com/cslib-community/complexitylib/issues/1394).
+  This encoder is reused by the shared-band, routed-product and complete native composition
+  described below; its standalone contract does not assert the complete 3SUM exponent.
 * **Native shared-band preparation.** The native shared-band preparation component
   ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)) computes a deterministic
   `Layout` and both subset tables by native mask/popcount scans, computes the square-root block
@@ -213,10 +213,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   theorem connects the actual pre-halt state to the Convolution-3SUM answer and preserves the input.
   The host's source-width threshold is `(20κ+125)clog₂(N+2)`; signed kernels use target width `w+2`.
   This host module remains parametric in a concrete solver's execution/correctness/frame theorem;
-  the actual solver and conservative ordinary-host composition are described below. The improved
-  Section 4 route needed for the published exponent 1.9992 remains in
-  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright and attribution
-  are retained; the native proofs and representation choices are local.
+  the actual canonical solver and complete 1.9992 ordinary-host composition are described below.
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394) tracks maintainer integration.
+  Anthropic's copyright and attribution are retained; native proofs and representation choices
+  are local.
   Native numeric parameter computation, signed-residue/histogram counting, trial-division prime
   tables, collision-tested least-prime scans and complete two-prime modulus selection also use
   the existing `WordRAM.Code`/`ExecWithin` APIs. Their explicit local fit, frame and charged-cost
@@ -233,37 +233,53 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   preprocessing milestone is #1446. `Algorithms/WordRAM/ThreeSum/Decision.lean` composes that
   actual initialized output with the Convolution host (#1559): raw registers 78/79/116 supply the
   actual pointer table, count and common packed length. The caller-owned host reads each signed
-  payload directly and reserves matrices above twice the preprocessing polynomial word bound,
-  preserving every future instance. One finite program per fixed exponent and certified finite
+  payload directly and places matrices at the final preprocessing heap frontier, preserving
+  every future instance on return. One finite program per fixed exponent and certified finite
   Exact Triangle block returns the existing distinct-position verdict, with derived positive
   logarithmic physical width, polynomial words/space at every admitted-width prefix, and a fully
   charged compositional bound at the actual packed size. `Host.Callee` requires actual finite-code
   execution, matrix correctness, logarithmic width and a protected-prefix frame on arbitrary old
   scratch memory; `Host.Slow.callee` is a proved exhaustive native instance.
-  `ExactTriangle/ParameterSelecting.callee` now provides the actual fast/small-branch solver.
-  Its `Asymptotics` module proves the concrete time field is `Oκ(n^(3−1/1296))` at polynomial
-  original magnitudes, without a selected-prime or running-time hypothesis.
-  `ThreeSum/Decision/Subquadratic.exists_subquadratic_runs` composes that exact callee with the
-  actual ordinary host: one fixed 848-register standard program per magnitude exponent, complete
-  initialized same-state prefix/halt, original distinct-position verdict, logarithmic width,
-  polynomial prefix words/support and charged `Oκ(n^(2−1/5184))` time. Correctness covers every
-  length and repeated values. The theorem concerns polynomially bounded integer inputs and
-  charged Word-RAM instructions, not arbitrary-real or bit/Turing time. No new abstract is
-  selected. The improved Section 4/tuned1.9992 endpoint remains #1394. The native glue and these
-  conservative quantitative estimates are original; existing finite reductions and builder
-  retain their Anthropic credit. `ChanHe/ConvolutionSizes` transfers original magnitudes to the
-  actual packed side; the existing finite and native count proofs share `shifted_count_bound_le`.
-  The small `Foundations/Data/Nat/LogRpow` topic is general mathematics intended for Mathlib:
-  it transports Mathlib's real log little-o theorem to shifted natural logs and is consumed by
-  all three side/count/preprocessing estimates, without adding to a widely imported hub.
+  The canonical `ExactTriangle/ParameterSelecting.callee` computes actual integer parameters,
+  selects a genuine minimum-count prime and runs the box-backed controller or exhaustive small
+  branch. Its actual time field is uniformly `Oκ(n^(3−33/20000))` for polynomial original
+  magnitudes, with no selected-prime or runtime-law hypothesis. `ThreeSum/Decision/One9992`
+  proves the complete ordinary integer endpoint: one fixed computable 848-register standard
+  program per magnitude exponent, all-length distinct-position verdict, initialized same-state
+  prefix/halt, logarithmic admission, polynomial every-wide words/support and charged
+  `Oκ(n^1.9992)` steps. Equal values at different positions are permitted. Unit Word-RAM time,
+  canonical signed encoding and polynomially bounded integers are explicit; this is not
+  arbitrary-real or bit/Turing time, or the source machine's `SolvedInTime` predicate.
+  No selected abstract is changed. Native tuning and representation choices are original;
+  the finite reductions, builder, tensor identities and box mathematics retain their source
+  credit. `ChanHe/ConvolutionSizes` transfers original magnitudes to the actual packed side;
+  finite and native count bounds share `shifted_count_bound_le`.
+  `ThreeSum/Decision/Runtime` factors the charged analysis independently of any concrete callee:
+  every uniform ET saving `0 < δ ≤ 1` gives every ordinary exponent `a > 2-δ/2`. `Transfer`
+  derives the same initialized verdict and every-wide word/support contract. The weaker
+  `Subquadratic` endpoint now specializes this same canonical tuned pipeline at `2-1/5184`;
+  there is no second conservative implementation or duplicate fixed-exponent proof.
+  `Foundations/Data/Nat/LogRpow` remains general mathematics intended for Mathlib, transporting
+  real log little-o to shifted natural logs for side/count/preprocessing estimates without
+  expanding a widely imported hub.
+  The follow-up #2380 extracts `Computability/WordRAM/Call` with migrated ordinary-host and
+  traversal clients. Fixed-bank record transfers (`Traversal.WordStack.pushRecord`/`popRecord`)
+  stay in `ChanHe/TraversalStack`, beside the word dispatcher that #2272 made traversal-local.
+  `Traversal.OutputLayout` exports live table/payload endpoints; matrix workspace now copies
+  the final preprocessing heap, independently of the polynomial value envelope. Callee framing
+  preserves this live prefix on return. `Decision.program` takes finite solver code directly,
+  replacing the duplicate `Decision.Code` assembly; `Decision.Initialize` replaces `Reserve`.
+  `One9992` adds admissibility/input fitting and standard uniform decision/time corollaries
+  while retaining the complete initialized-run theorem. The Operator Manual companion documents
+  these APIs and the quantitative account; no selected abstract or agent workflow changes.
 
-  Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
-  `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,
-  `PreprocessingInvariant`, `PreprocessingStep` and `PreprocessingLoop` with their controller
-  consumer `PreprocessingExecute`, or use `import all` to make their proof plumbing private.
-  This includes `Saved`, `ForestCursor`, `snapshot_exec`, `primes_exec`, `setupTraversal_exec`,
-  `finish_exec`, `execute_next_root` and `forest_body_exec`; keep the initialized-input, readback,
-  width and resource endpoints available through `Preprocessing`. Separately, move
+  The preprocessing stage proofs are private implementation details: `PreprocessingSetup`
+  contains snapshot, prime-table and reservation setup; `PreprocessingLoop` contains the forest
+  invariant and loop proof. `PreprocessingExecute` uses `import all` for these two companions.
+  Initialized-input, readback, width and resource endpoints remain available through
+  `Preprocessing`.
+
+  Bounded API follow-ups from the traversal/preprocessing reviews: move
   `modulus_bounds_of_candidates` from `SelectorBounds` beside `Collisions`' `modulus_bounds` and
   derive or cross-reference the stronger bound, migrating `TraversalCall` and selector tests.
   Derive `Structured`'s `ExecWithin.loop_invariant` as the `Data`-state case of
@@ -330,40 +346,37 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `(κ+30)*clog₂(n+2)` suffices, and all wider prefixes have words/support below
   `(n+2)^(2κ+60)`. The general initialized theorem permits `D>n` and empty matrices with
   `D≥16`; the logarithmic source-regime simplification is separate. The source prime-list
-  producer and Light execution are not imported. The original conservative parameter family
-  in `Algorithms/ExactTriangle/ParameterChoice.lean` (#2127) uses `t=floor(log₂(n)/1296)`,
-  `m=36t`, `D=4^m`, `g=4^t`, `L=19m`, with `g^36=D` and `D^18≤n` for positive n.
-  `Algorithms/WordRAM/ExactTriangle/DyadicParameters/` computes it using the actual logarithm and
-  two power routines, with a fast/small flag, same-state prefix/halt, complete logarithmic
-  charge and width-independent polynomial prefixes. `Power/Rename.lean` exposes the existing
-  power execution on an arbitrary injective bank, reused by both calls without repeated
-  comap/extend proofs. These coarse parameters are not attributed to Anthropic's tuned choice.
-  The original arithmetic bridge in `ParameterChoice/CostGeometry.lean` and native
-  `ExactTriangle/DyadicCost.lean` (#2145) simplifies actual preparation/product/query charges
-  to `n³/g`, absorbs the actual counter-based selector cost using `g^648≤n`, and applies the
-  existing selected-prime failed-scan estimate once globally. Its combined component allowance
-  has an explicit logarithmic factor and a `3-1/648` real-power scale.
-  `DyadicCost/Asymptotics.lean` absorbs that factor via Mathlib's existing logarithm-growth
-  theorem: beyond a threshold depending only on the weight exponent, all actual component
-  allowances are at most `4*n^(3-1/1296)`, uniformly over matrices, selected primes and memories.
-  This existential asymptotic threshold is not an algorithm input. Neither result asserts
-  a composed execution theorem or the source's tuned exponent.
-  `Algorithms/WordRAM/ExactTriangle/ParameterSelecting/` (#2146) composes actual parameter
-  preparation, the counter-based selector and the complete callable solver in one640-register
-  program. Its computed flag dispatches to the existing exhaustive solver in the small regime.
-  The actual host0–6 ABI restores0–5 and returns a raw Boolean in6; initialized input is raw
-  n,F followed by three canonical-signed arrays with computed pointers. The new
-  `ThreeSum.Host.Slow.exec_at` reuses the private exhaustive proof for individual span bounds,
-  retaining the old callee and code. `CallableFixedPrime.exec_at` separates semantic execution
-  from final-data boundedness; old `exec` keeps its statement and derives boundedness from
-  its original premise. Arbitrary unused old words do not restrict the host correctness law;
-  raw P remains explicit in caller prefix-resource theorems. `ParameterSelecting.callee`
-  discharges the existing host interface with a natural time function of n,F only, using the
-  proved selected-prime allowance plus actual copying/control work. Initialized source
-  admission is logarithmic and every wider prefix has polynomial words/new address support
-  independently of physical width. This native assembly is original glue; it does not import
-  Light execution or assert the tuned source exponent. Outer host, final asymptotic composition
-  and #1394 remain open.
+  producer and Light execution are not imported. The canonical integer parameter family in
+  `Algorithms/ExactTriangle/ParameterChoice.lean` uses `b=floor(log₂(n)/2394)`, `m=63b`,
+  `D=4^m`, `g=4^(2b)` and `L=21m`. It reserves `D^19≤n` on positive inputs and has raw saving
+  `2/1197`. `Algorithms/WordRAM/ExactTriangle/DyadicParameters/` computes these values with the
+  actual logarithm and two power routines, complete charge, same-state prefix/halt and an exact
+  fast/small flag. The first fast size is `2^2394`; this replaces the former 1296-bit/36b/19m
+  finite regime, so old finite parameter and branch bounds are not retained by renaming alone.
+  `Power/Rename.lean` exposes actual power execution on an arbitrary injective bank, reused by
+  both calls. These integer parameters and their native realization are original adaptations,
+  not Anthropic's fractional-root computation.
+  `ParameterChoice/CostGeometry.lean` and native `ExactTriangle/DyadicCost.lean` simplify the
+  actual preparation, box products, root/query/controller and genuine selector charges to a
+  common `n³/g` scale. The degree-three tensor-depth coefficient and one global selected-prime
+  failed-scan reserve are retained. `DyadicCost/Asymptotics.lean` absorbs the complete logarithmic
+  factor, and `CallableFixedPrime/DyadicCost.lean` includes the real parameter, selector, copy,
+  translated-controller and header/halt budgets in an original-scalar natural allowance.
+  One coefficient and threshold per fixed original magnitude exponent give actual
+  `Oκ(n^(3−33/20000))` time uniformly over matrices, selected primes, reference memories and
+  physical widths. The allowance ceiling is proof metadata, not a runtime instruction or oracle.
+  `Algorithms/WordRAM/ExactTriangle/ParameterSelecting/` supplies one640-register actual
+  fast/small program. The host0–6 ABI restores0–5 and returns Boolean6; input is raw n,F and
+  three canonical-signed arrays with computed pointers. `ThreeSum.Host.Slow.exec_at` reuses
+  the exhaustive code under individual span bounds. `CallableFixedPrime.exec_at` separates
+  semantic execution from final-data boundedness; `exec` retains its initial boundedness premise
+  for that stronger conclusion. Unused old words do not restrict semantic correctness; their
+  raw P remains explicit in caller prefix-resource theorems. Initialized logarithmic admission
+  and polynomial every-wide words/support are derived from original inputs.
+  The canonical `FixedPrime` and `CallableFixedPrime` are the actual box-backed implementations;
+  retired `Box`-prefixed families and their conservative alternatives are removed. The complete
+  ordinary 1.9992 composition is described above. The native ET2.99835 bound does not claim the
+  sharper source ET2.9983 exponent or its separate Light/signed-modular machine predicate.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
@@ -380,8 +393,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `(n+2)^κ`, sufficient width is at most `(κ+18)clog₂(n+2)`, and every prefix's words and address
   support are bounded by `(n+2)^(κ+19)`. The generic width and signed-fit topic modules are reused
   unchanged from #1537 and #1552. These are actual execution and fit proofs, without supplied
-  layout, execution or solver contracts. Product composition #1581 and the full #1394 endpoint
-  remain separate.
+  layout, execution or solver contracts. This preparation contract is consumed by the product
+  and complete native endpoint described below; it does not itself select the prime or solve ET.
   `Algorithms/MatrixMultiplication/Schonhage/` adapts the tensor-recursion core from the same pin's
   `Sec2/{Lemma6,Recursion,Lemma7_8,Lemma10}.lean`: the ten-term polynomial identity with explicit
   error, full evaluation, shared encodings, pruned values, visited leaves and passed-set totals.
@@ -396,12 +409,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   both a level set and its complement, and `Finset.piecewise` restricts answers. No source machine,
   problem-statement universe or solver/time hypothesis is imported.
   The existing signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
-  The conditional ordinary host and its exhaustive reference callee are complete. Native
-  pruned/sparse-query backend composition, a concrete fast Exact Triangle solver and the
-  unconditional fast input/time/width/asymptotic bound remain in
-  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
-  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
-  are retained; the native proofs and representation choices are local.
+  The ordinary host retains its parametric `Host.Callee` interface and exhaustive reference
+  instance. The canonical automatic ET callee and complete native 1.9992 composition are proved
+  as described above, with integration tracked in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright and
+  attribution are retained; native proofs and representation choices are local.
 * **Finite Section 4 boxes.** The cube/box prerequisite ([#2160](https://github.com/cslib-community/complexitylib/issues/2160))
   adapts `Sec4/{Boxes,Lemma27_28,BoxesFromLeaves,Lemma29}` at the same formal-math pin,
   preserving Anthropic's credit and reusing the existing terms, encodings, signed leaf order
@@ -412,8 +424,67 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   Its count bound needs only `m ≤ L` and `t ≤ m`, weakening the source's `10*m ≤ L` premise.
   The reusable initial-subset argument is generalized to arbitrary linear orders in the small
   Mathlib-intended `Foundations/Data/Finset/Lowest` topic module, used by the canonical boxes.
-  Native box enumeration/trie construction/query costs and the tuned 1.9992 route remain #1394.
-  No curated abstract or rendering changes are needed for this finite prerequisite.
+  The native compact-table, query and complete 1.9992 pipeline below consume these finite facts;
+  this prerequisite alone is not a runtime theorem. No curated abstract changes are needed.
+* **Native shared box tables.** The original native representation in
+  [#2176](https://github.com/cslib-community/complexitylib/issues/2176) reuses the finite boxes
+  and value recurrence above. A one-time directory over `(m-t+1)*10^L` slots computes compact
+  ranks and three-word descriptors. Per-tile code writes one signed value per box, reading
+  only earlier child ranks; lookup reads those stored words. This replaces the primary
+  source's per-tile relative-pointer trie, not its mathematical box notion. Native level zero
+  remains least significant, matching the existing encoders; the source's Horner numbering
+  must not be substituted silently. Shared setup is at most `64*(L+1)^2*10^L` for `m ≤ L`,
+  each tile costs at most `328*B+8`, and valid lookup at most `18*L+32`, with the actual box
+  count `B`. The routed native composition below charges setup, resident geometry and retained
+  tile storage explicitly; this table component alone does not establish the complete endpoint.
+  `Foundations/Data/{Finset/LowestMax,Nat/RadixUpdate}` hold the small general ordered-subset
+  and radix-update facts used by these concrete clients. No curated abstract or rendering
+  changes are needed for this native data-structure prerequisite.
+* **Native sparse box query.** [#2203](https://github.com/cslib-community/complexitylib/issues/2203)
+  reuses the finite `starBelow` partition and actual compact table above. A five-word native
+  task stack enumerates only prefixes of contributing leaves with order at most `t`.
+  Full leaves below the threshold multiply the original signed words; threshold leaves
+  compute the canonical box key and load its stored signed value. Finite frontier mass
+  and potential proofs charge actual expansion, stack traffic, dispatch and signed sums:
+  the reusable query costs at most `258*(L+1)*Σ(d≤t) alpha(m,d)+28` instructions.
+  This prefix traversal is an original alternative to `Sec4/Theorem30`'s bounded-nine-string
+  successor and per-tile trie at the same pinned formal-math source. It preserves the
+  existing bilinear expression, not the source trace or time contract. Level zero remains
+  least significant and the inner `P0` digit is nine. Actual initialized preparation,
+  same-witness prefix/halt and outside frame are proved; a logarithm of original magnitudes
+  and addresses admits all wider machines, with an independent-width polynomial envelope
+  for every prefix. Shared table setup and retained storage remain explicit. The following
+  routed-product component supplies all-tile reuse and actual routing; the complete ordinary
+  composition is described above. This query milestone changes no curated abstract or rendering.
+* **Routed native box product.** [#2314](https://github.com/cslib-community/complexitylib/issues/2314)
+  reuses the existing actual raw-coordinate router, shared band producer and original-order
+  reconstruction. One native geometry construction serves all tiles; each actual retained-value
+  table and sparse query batch is charged, including temporary-result copies and every repeated
+  request occurrence. An appended ordinary threshold is read before low-memory reuse and restored
+  with all original input words. No computed layout, routing, encoding, table, run or time oracle
+  is supplied. The original native controller preserves the existing source terms and numbering.
+  The finite `BoxTradeoff` modules adapt the Section 4 geometric-tail and weighted-binomial
+  estimates at the same formal-math pin, with an original algebraic block specialization
+  `L=189k`, `m=9k`, `t=k`. Under `D^18≤N` and `Q*2^m≤N²`, the complete actual ledger has
+  finite `D^(-8/125)` saving with polynomial depth factors explicit. Here `Q` counts occurrences,
+  strengthening distinct-set sparsity when inputs repeat. Exact integer comparisons replace
+  analytic numerical approximations. Canonical `FixedPrime`, `CallableFixedPrime` and
+  `ParameterSelecting` compose the actual ET and ordinary 1.9992 endpoint described above.
+  No curated abstract or rendering changes.
+* **Callable box products and actual ET records.**
+  [#2335](https://github.com/cslib-community/complexitylib/issues/2335) translates the full routed
+  box product with the existing native memory-window compiler. Original dimensions derive a
+  polynomial virtual window and logarithmic physical admission; no bounded-scratch or source-fit
+  oracle is supplied. Two real instructions extend final normalization to the appended threshold.
+  Actual setup, translations, input/answer normalization and halt retain the finite `D^(-8/125)`
+  bound with explicit depth factors. The new record consumer reuses actual decoding/copies,
+  executes sixteen changed level/length/threshold instructions, and calls that compiled product.
+  Its initialized client runs the genuine original-weight producer and selects an occupied record;
+  readbacks and occurrence sparsity are conclusions of that execution. General correctness uses
+  `L=21*m` and `t=m/9`; the quantitative specialization requires `m=9k`. The complete per-record
+  finite saving charges adapter and halt, with producer work separate. Canonical `FixedPrime`
+  performs the complete record traversal, and `ParameterSelecting` supplies actual parameters
+  and prime selection for the 1.9992 ordinary composition. Curated abstracts are unchanged.
 * **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
   is original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing
@@ -456,9 +527,9 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   occurrence charge instead. The sufficient physical width is `128*clog₂(N+Q+A+2)`; its
   magnitude/address budget and allocation have explicit polynomial envelopes in the original
   dimensions, request count and entry bound. These are original native execution/resource
-  proofs, not a transfer of the source Light semantics or instruction constants. Exact Triangle
-  parameter/instance preparation and outer solving, full ordinary-3SUM composition, and the
-  improved Section 4 route to exponent 1.9992 remain separate work under #1394.
+  proofs, not a transfer of source Light semantics or instruction constants. This reusable
+  pruned product does not itself compose the full ET/3SUM algorithm; the canonical improved
+  box-backed 1.9992 pipeline is described above.
   Caller-safe queried products ([#1618](https://github.com/cslib-community/complexitylib/issues/1618))
   rebase actual memory accesses above a runtime caller base. The generic `WordRAM.MemoryWindow`
   compiler charges an addition/load/remainder for each load and an addition/store for each
@@ -499,8 +570,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   product plus `4096*(nD+Q+1)`, or `34603008*(19m+1)*n²/D^(1/18)` under the admitted geometry.
   The original producer word bound supplies caller `P` and heap placement; the complete wider
   initialized prefixes have a positive logarithmic width threshold and polynomial words/support
-  independent of the physical width. Outer parameter/prime selection and instance iteration,
-  aggregate solving/witness reconstruction and the whole #1394 endpoint remain separate.
+  independent of physical width. The canonical fixed-prime controller, automatic selection
+  and ordinary composition above supply the complete native endpoint beyond this record API.
   The original-weight consumer in
   [#1639](https://github.com/cslib-community/complexitylib/issues/1639) composes actual producer,
   product and verification code in 400 registers. It reads original interleaved pairs, computes
@@ -515,28 +586,28 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   original-weight soundness agree. The existing decoded queries now expose chunk membership,
   nonrepetition and rank order, with an actual initialized client. The general raw writer bound
   is placed at `WriteMatrices.entry_le_one`, and shared finite piece coordinates are in the
-  narrow `ExactTriangle.PieceBounds` module, reused by preparation and recovery. Parameter/prime
-  choice, the outer ET loop, aggregate savings and the full #1394 endpoint remain open; no curated
-  abstract changes.
-  The bounded fixed-prime continuation
-  [#1662](https://github.com/cslib-community/complexitylib/issues/1662) runs the producer once
-  and traverses every actual occupied ordinal using the full 400-register callee in a fixed
-  416-register program. Its initialized verdict decides original ET across all records;
-  protected readback survives dirty scratch via `Instances.Output.reframe`, which reframes
-  against the current state without asserting preservation of the old external frame.
-  Distinct record/query occurrences inject into the existing global `failedScans`; actual
-  total scans satisfy `S≤F(p)+returnedFlag`, with only one possible successful-return flag.
-  Native preparation, products, root/query/controller/loop/halt and original verification
-  costs are charged. Aggregate product work is bounded by
-  `138412032*(19m+1)*n³*g/D^(1/18)` under the unchanged positive thin geometry and prime window;
-  one-time `690n²Dg`, explicit query/root/controller work and one global failed-scan term remain
-  separate. The actual program has original-input logarithmic admission and polynomial
-  all-prefix words/support independently of every larger physical width. Validation and
-  integration are tracked in #1662; this is not a parameter/prime-selection host or a completed
-  aggregate source exponent. The source's Light host uses piece-major rounds and
-  per-round matrix construction; the native producer prepares the chunk-major catalogue once
-  and later products stop after success. No source-trace equivalence or Light simulation is
-  assumed. The full ordinary-3SUM 1.9992 objective remains open under #1394; no abstract changes.
+  narrow `ExactTriangle.PieceBounds` module, reused by preparation and recovery. The canonical
+  ET controller and parameter selector supply the complete native endpoint described above;
+  this verification component changes no curated abstract.
+  The bounded fixed-prime continuation developed in
+  [#1662](https://github.com/cslib-community/complexitylib/issues/1662) is now the canonical
+  box-backed `FixedPrime` controller ([#2341](https://github.com/cslib-community/complexitylib/issues/2341)).
+  It runs the producer once, traverses every occupied ordinal and reuses dirty workspace in a
+  fixed416-register program. Protected readback uses `Instances.Output.reframe` against the
+  reached state rather than asserting preservation of the old external frame. Distinct
+  record/query occurrences inject into global `failedScans`; actual total scans satisfy
+  `S≤F(p)+returnedFlag`, with only one successful-return flag. At `m=9k`, aggregate box work is
+  at most `125829120*(189k+1)^2*(9k+1)*D^(-8/125)*n³*g`. One-time `690n²Dg` preparation,
+  root/query/controller work, one global failed-scan reserve and halt remain explicit.
+  `CallableFixedPrime` adds actual original-array copy/sum, computed-width setup, memory-window
+  translation and return copies while preserving the selector bank and caller frame
+  ([#2355](https://github.com/cslib-community/complexitylib/issues/2355)). Original-input
+  logarithmic admission and polynomial every-wide prefix words/support cover this actual code.
+  The source Light host uses piece-major rounds and per-round matrix construction; the native
+  producer prepares a chunk-major catalogue once and later products stop after success.
+  No source-trace equivalence or Light simulation is assumed. Canonical parameter/prime
+  selection and the ordinary 1.9992 composition are proved as described above; integration
+  remains tracked under #1394. No selected abstract is changed.
   Stage `exec_*` lemmas are internal implementation APIs exported across proof modules;
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
   `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies
@@ -673,7 +744,17 @@ agreement during upstream review.
 | `Foundations/Data/BitString/{Agree,Block}` | Add to CSLib's `Foundations/Data/BitString`. |
 | `Foundations/Data/List/{Fold,Lookup,Counting,Append}` | Fold invariants, lookup and register-file bounds, predicate counts, and append identities including unary headers; `Basic` reexports these topics. Consider Mathlib's `Data/List/GetD` and `Data/List/Basic`. |
 | `Foundations/Relation/RelatesWithinSteps` | Bounded reachability helpers; consider Mathlib's `Logic/Relation`. |
+| `Foundations/MeasureTheory/Measure/TotalVariation/Map` | Mathlib candidate beside `Measure/TotalVariation/Defs`: measurable-map contraction for the existing full-L1 distance of finite measures, including unequal masses. Derived from vector-measure variation; no new distance definition. |
+| `Foundations/MeasureTheory/Measure/TotalVariation/Mixture` | Mathlib candidate beside `Measure/TotalVariation/Defs`: finite-sum bounds and exact nonnegative scaling for canonical full-L1 distance, combined into a component-and-weight mixture bound for arbitrary finite measures. Uses signed-measure variation without new distance or mixture definitions. |
 | `Foundations/BooleanAnalysis/Fourier` | Consider Mathlib beside `Analysis/Fourier/FiniteAbelian`. |
+| `Foundations/Algebra/Module/ZLattice/CoefficientFiber`, `Foundations/Probability/Gaussian/CoefficientFiber` | General mathematics intended for Mathlib: basis-coordinate reduction and its exact scalar-lattice fibers, followed by discrete-Gaussian mass and conditioning identities. Reuses the existing pointwise submodule action, basis equivalence, `PMF.filter` and normalization; positive composite moduli and lower-rank lattices are supported. |
+| `Foundations/MeasureTheory/Group/ConvolutionDensity` | Mathlib candidate beside `Measure/WithDensity`: a convolution density formula with arbitrary s-finite first measure, including singular inputs, derived measurability and multiplicative/additive versions. Reuses existing convolution, product and density constructions; no finite-mass or integrability premise. |
+| `Foundations/Analysis/Lattice/Fourier` | General mathematics intended for Mathlib beside `Analysis/Fourier/PoissonSummation`: dual-frequency character invariance and the unnormalized coefficient identity, reusing fundamental-domain unfolding. No new lattice or periodization definition. |
+| `Foundations/Analysis/Lattice/{Covolume,Dual,Poisson}`, `Foundations/Probability/Gaussian/{Fourier,Poisson}` | General mathematics intended for Mathlib: basis-coordinate integrals and dual discreteness extend the existing Z-lattice APIs; arbitrary full-rank lattice Poisson reconstruction extends `Analysis/Fourier/PoissonSummation`, with Schwartz and positive-width Gaussian clients. Reuses the existing covolume, dual submodule, automorphize and torus Fourier series. |
+| `Foundations/MeasureTheory/Group/QuotientDensity` | Mathlib candidate beside `MeasureTheory/Measure/Haar/Quotient`: measurable nonnegative automorphization and exact quotient-density folding, using the canonical quotient measurable space and existing fundamental-domain unfolding. No topology, integrability or finite-mass assumption. |
+| `Foundations/Probability/Gaussian/{MassBounds,CenteredTail}` | Centered lattice Gaussian mass scaling and strict-radius concentration; intended for Mathlib beside the lattice Gaussian Poisson API. Reuses the existing weights, normalizers and PMF, with positive-width, full-rank and center-zero hypotheses explicit. |
+| `Foundations/Probability/Gaussian/{ShiftBounds,Smoothing}` | Uniform shifted Gaussian mass control and a satisfiable quantitative dual-tail width criterion; intended for Mathlib beside lattice Gaussian Poisson and concentration. Reuses the actual dual submodule, nonzero Gaussian sum and existing normalizer. Does not define a minimum smoothing parameter. |
+| `Foundations/Analysis/Lattice/QuotientMeasure`, `Foundations/Probability/Gaussian/{Measure,Quotient}` | Mathlib candidates: actual Gaussian probability normalization, covolume-normalized fundamental quotient probability and invariance, and the Gaussian quotient density/full-L1 bound. Reuses canonical `Measure.withDensity`, `Measure.map`, `automorphize`, dual mass and `tvDist`; no parallel measure definitions or minimum smoothing parameter. |
 | `Foundations/BooleanAnalysis/{Bernoulli,CoordinateSampling,Fibers,HarmonicTransform,LightPatterns,MirrorSets}`, `Foundations/Analysis/HarmonicMean` | Consider Mathlib probability APIs; generic finite-type `harmonicMean` is split into `Foundations/Analysis/HarmonicMean` (#317). |
 | `Foundations/BooleanAnalysis/HadamardTester` | Consider the PCP hierarchy. |
 | `Foundations/Combinatorics/CentralBinomial` | Consider Mathlib's `Data/Nat/Choose/Central` (`Nat.centralBinom_sq_mul_le`) and `Combinatorics/Choose`. |

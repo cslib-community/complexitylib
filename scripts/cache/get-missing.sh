@@ -9,7 +9,7 @@
 # `git rev-list HEAD` that `main` CI has uploaded (deepening a shallow clone first). It then
 # drops the entries of that commit's mapping whose input hash already matches a trace in
 # `.lake/build`: Lake replays those modules from `.lake`, and a fresh CI runner would otherwise
-# download a complete set (about 75 MB) on every run. Lake uses a downloaded output only where a
+# download a complete set (about 200 MB) on every run. Lake uses a downloaded output only where a
 # module's input hash matches it. Failures are not errors: `lake build` compiles whatever is
 # missing. See scripts/cache/README.md.
 set -u

@@ -660,10 +660,7 @@ private theorem rdb_two_mul_unary :
     (rdb_canonicalScopeVars (hn.comp (fst encIn encUnary))
       ((listGetD []).comp ((hscopes.comp (fst encIn encUnary)).prod (snd encIn encUnary))))
   have hrep : ComputableInPolyTime (fun p : Input × ℕ => List.replicate (Q p.1) (0 : ℕ))
-      (encPair encIn encUnary) (encList encNat) := by
-    simpa only [Function.comp_def, List.map_const', List.length_range] using
-      mapWithInput (f := fun (_ : Input × ℕ) (_ : ℕ) => (0 : ℕ))
-        (range.comp (hQ.comp (fst encIn encUnary))) (const 0)
+      (encPair encIn encUnary) (encList encNat) := by fun_prop
   exact mapWithInput (range.comp ((length_list (encList encNat)).comp hscopes)) <|
     hempty.ite' hrep
       (rdb_normalizeScheduleWord (hQ.comp (fst encIn encUnary))
@@ -780,8 +777,7 @@ private theorem proj_poly {Out : Type} {encOut : Out ↪ List Bool}
   have hvs := computableInPolyTime_normalizeVarSchedules hn hQ hr_bin hschedVar
   have hfs := computableInPolyTime_normalizeScopeSchedules hn hQ hr_bin hscopes hschedScope
   have hincs := computableInPolyTime_scopeIncidencesList hn hscopes
-  have hincVars : ComputableInPolyTime incVarsFn encIn (encList encNat) :=
-    mapWithInput hincs ((snd encNat encNat).comp (snd encIn (encPair encNat encNat)))
+  have hincVars : ComputableInPolyTime incVarsFn encIn (encList encNat) := by fun_prop
   have hlabels :=
     computableInPolyTime_incidenceLabelsList hn hQ hr_bin hscopes hschedVar hschedScope
   have hh_unary : ComputableInPolyTime hFn encIn encUnary := by
@@ -795,37 +791,18 @@ private theorem proj_poly {Out : Type} {encOut : Out ↪ List Bool}
       funext fun _ => Nat.min_eq_right (Nat.div_le_self _ _)
     rwa [heq] at hmin
   have hh_bin : ComputableInPolyTime hFn encIn encNat := unary_to_binary.comp hh_unary
-  have hpls : ComputableInPolyTime plsFn encIn (encList (encPair encNat encNat)) :=
-    (zip encNat encNat).comp
-      ((computableInPolyTime_fiberRanksWithInput hlabels).prod hlabels)
+  have hpls : ComputableInPolyTime plsFn encIn (encList (encPair encNat encNat)) := by fun_prop
   have hbMeas := computableInPolyTime_auxMeasurementRowsBounded hD hQ hr hA₀ hR
   have hbRepl := computableInPolyTime_auxReplacementTableBounded hD hQ hr hA₀ hR
   have hmeasMat :=
     computableInPolyTime_pullbackMeasurementMatrixWithInput hn hh_unary hpls hincVars hbMeas
   have hvGroups : ComputableInPolyTime vGroupsFn encIn
-      (encList (encList (encList encNat))) := by
-    refine mapWithInput (range.comp hQ)
-      (mapWithInput (range.comp (hr.comp (fst encIn encUnary))) ?_)
-    have hxin : ComputableInPolyTime (fun p : (Input × ℕ) × ℕ => p.1.1)
-        (encPair (encPair encIn encUnary) encUnary) encIn :=
-      (fst encIn encUnary).comp (fst _ _)
-    exact computableInPolyTime_varGroupListWithInput (hvs.comp hxin)
-      (unary_to_binary.comp ((snd encIn encUnary).comp (fst _ _)))
-      (unary_to_binary.comp (snd _ _))
+      (encList (encList (encList encNat))) := by fun_prop
   have hgrpMeas : ComputableInPolyTime grpMeasFn encIn
-      (encList (encList (encList (encList encIntBin)))) :=
-    mapWithInput hvGroups (mapWithInput (snd encIn (encList (encList encNat))) <|
-      computableInPolyTime_restrictGroupColumnsWithInput (snd _ _)
-        (hmeasMat.comp ((fst encIn (encList (encList encNat))).comp (fst _ _))))
+      (encList (encList (encList (encList encIntBin)))) := by fun_prop
   have hdenom := computableInPolyTime_commonDenom_int hQ hR
   have hreplRows : ComputableInPolyTime replRowsFn encIn
-      (encList (encList (encList encIntBin))) := by
-    refine mapWithInput (range.comp ((length_list (encPair encNat encNat)).comp hincs)) ?_
-    have hxin : ComputableInPolyTime (fun p : Input × ℕ => p.1) (encPair encIn encUnary) encIn :=
-      fst encIn encUnary
-    exact computableInPolyTime_pullbackReplacementRowWithInput (hn.comp hxin) (hR.comp hxin)
-      (hpls.comp hxin) (hincVars.comp hxin) (unary_to_binary.comp (snd encIn encUnary))
-      (hbRepl.comp hxin)
+      (encList (encList (encList encIntBin))) := by fun_prop
   have htuple : ComputableInPolyTime
       (fun x => ReplacementDesignData.equivTuple
         (buildReplacementDesignData (n_free x) (D_cap x) (Q x) (r x) (A₀ x) (R x)

@@ -16,6 +16,7 @@ public import Complexity.Computability.WordRAM.Structured
 
 * `Code.preserves_rename_of_forall_ne`: registers outside an embedded register bank are
   preserved without unfolding the subroutine's instruction graph.
+* `Code.preserves_rename_of_offset`: a contiguous bank preserves registers outside its interval.
 -/
 
 public section
@@ -35,5 +36,18 @@ theorem Code.preserves_rename_of_forall_ne {B : Basis} {r r' : ℕ}
   | branch cond pos neg ihp ihn => exact ⟨ihp, ihn⟩
   | loop cond body ih => exact ih
   | rand dst src => simpa only [Code.rename, Code.Preserves] using hi dst
+
+/-- A subroutine placed at a fixed register offset preserves every register outside its bank.
+The value equation also covers enumerated embeddings once their offset is checked. -/
+theorem Code.preserves_rename_of_offset {B : Basis} {r s offset : ℕ}
+    (c : Code B r) (f : Fin r → Fin s) (hf : ∀ j, (f j).val = offset + j.val)
+    (i : Fin s) (hi : i.val < offset ∨ offset + r ≤ i.val) :
+    (c.rename f).Preserves i := by
+  apply c.preserves_rename_of_forall_ne
+  intro j he
+  have hv := congrArg Fin.val he
+  rw [hf] at hv
+  have hj := j.isLt
+  omega
 
 end Cslib.WordRAM

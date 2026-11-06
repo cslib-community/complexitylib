@@ -114,15 +114,6 @@ lemma iterate_second_zero_off {ι : Type*} (S : Finset ι) (n K : ℕ → ℕ) (
     exact le_antisymm hh.2 hh.1
 
 open Classical in
-/-- A retained endpoint's magnitude is bounded by the full row maximum, including zero. -/
-lemma abs_le_rowMax {ι : Type*} (S : Finset ι) (b : ι → ℝ) (y : ι) (hy : y ∈ S) :
-    |b y| ≤ kthLargest 1 S (fun z => |b z|) := by
-  by_cases hz : b y = 0
-  · simpa only [hz, abs_zero] using (kthLargest_nonneg (k := 1) (s := S) (h := fun z => |b z|))
-  · exact (le_kthLargest_iff (by norm_num : 0 < 1) (abs_pos.mpr hz)).mpr
-      (card_pos.mpr ⟨y, mem_filter.mpr ⟨hy, le_rfl⟩⟩)
-
-open Classical in
 /-- Four scope-correct maxima bound the actual full-rank clipped error. The second
 coordinate vanishes off usage; no independence is imposed on the maximizing endpoint. -/
 lemma full_rank_four_max {ι : Type*} (Ya Yt : Finset ι) (e b₀ b₁ z₀ z₁ : ι → ℝ)
@@ -134,15 +125,15 @@ lemma full_rank_four_max {ι : Type*} (Ya Yt : Finset ι) (e b₀ b₁ z₀ z₁
   apply kthLargest_le (add_nonneg (add_nonneg (add_nonneg kthLargest_nonneg kthLargest_nonneg)
     kthLargest_nonneg) kthLargest_nonneg)
   intro y hy
-  have h0 := abs_le_rowMax Ya b₀ y hy
-  have h1 := abs_le_rowMax Ya z₀ y hy
+  have h0 := abs_le_kthLargest_one Ya b₀ y hy
+  have h1 := abs_le_kthLargest_one Ya z₀ y hy
   have h2 : (if y ∈ Yt then |b₁ y| else 0) ≤ kthLargest 1 Yt (fun y => |b₁ y|) := by
     split_ifs with ht
-    · exact abs_le_rowMax Yt b₁ y ht
+    · exact abs_le_kthLargest_one Yt b₁ y ht
     · exact kthLargest_nonneg
   have h3 : (if y ∈ Yt then |z₁ y| else 0) ≤ kthLargest 1 Yt (fun y => |z₁ y|) := by
     split_ifs with ht
-    · exact abs_le_rowMax Yt z₁ y ht
+    · exact abs_le_kthLargest_one Yt z₁ y ht
     · exact kthLargest_nonneg
   linarith [h y hy]
 

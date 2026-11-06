@@ -24,7 +24,7 @@ open Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
 open ParameterChoice
 
-private def family (k : ℕ) : ℕ := 2 ^ (1296 * (k + 1))
+private def family (k : ℕ) : ℕ := 2 ^ (2394 * (k + 1))
 private def zeros (n : ℕ) : List ℤ := List.replicate (3 * (n * n)) 0
 
 private theorem blocks_family (k : ℕ) : blocks (family k) = k + 1 := by
@@ -36,10 +36,20 @@ private theorem family_fast (k : ℕ) : 0 < blocks (family k) := by rw [blocks_f
 private theorem zero_read (n q : ℕ) : (zeros n).getD q 0 = 0 :=
   List.getElem?_getD_replicate_default_eq _ _ _
 
--- Every member has exact nontrivial fast geometry; no giant constant power is evaluated.
-example (k : ℕ) : groups (family k) ^ 36 = window (family k) ∧
-    16 ≤ window (family k) ∧ window (family k) ^ 18 ≤ family k :=
-  ⟨groups_pow _, window_ge_sixteen (family_fast k), geometry (pos_of_blocks_pos (family_fast k))⟩
+private theorem group_balance (n : ℕ) : groups n ^ 63 = window n ^ 2 := by
+  simp only [groups, window, level, ← pow_mul]
+  congr 1
+  omega
+
+-- Every member has exact nontrivial fast geometry and the actual finite product saving.
+-- The old equality g^36=D is replaced by the tuned integer relation g^63=D^2.
+example (k : ℕ) : groups (family k) ^ 63 = window (family k) ^ 2 ∧
+    16 ≤ window (family k) ∧ window (family k) ^ 19 ≤ family k ∧
+    window (family k) ^ 18 ≤ family k ∧
+    (groups (family k) : ℝ) ^ 2 ≤ (window (family k) : ℝ) ^ (8 / 125 : ℝ) :=
+  ⟨group_balance _, window_ge_sixteen (family_fast k),
+    geometry_nineteen (pos_of_blocks_pos (family_fast k)),
+    geometry (pos_of_blocks_pos (family_fast k)), groups_sq_le_window_rpow _⟩
 
 -- The full selector charge, including the actual native counter calls, has the saving.
 example (k : ℕ) :
@@ -52,12 +62,13 @@ example (k : ℕ) :
 example (k : ℕ) :
     ∃ p, IsSelectedPrime (fun _ _ : Fin (family k) => (0 : ℤ))
       (fun _ _ => 0) (fun _ _ => 0) (window (family k)) p ∧
-      ((12 * Nat.log 2 (family k) + 36 +
+      ((16 * Nat.log 2 (family k) + 36 +
           (PrimeSelection.timeBound (family k) (window (family k)) + 16) +
           FixedPrime.timeBound (m := level (family k)) (pos_of_blocks_pos (family_fast k))
             (groups (family k)) p (zeros (family k)) (fun _ => 0) : ℕ) : ℝ) ≤
-        (238169 + 12 * (Nat.log 2 (family k) : ℝ) +
-          138412032 * ((19 * level (family k) + 1 : ℕ) : ℝ) +
+        (238169 + 16 * (Nat.log 2 (family k) : ℝ) +
+          125829120 * ((21 * level (family k) + 1 : ℕ) : ℝ) ^ 2 *
+            ((level (family k) + 1 : ℕ) : ℝ) +
           (140 * falsePositiveConst + 140) * (1 : ℝ) * Real.log (family k)) *
             ((family k : ℝ) ^ 3 / groups (family k)) := by
   obtain ⟨p, hp⟩ := exists_isSelectedPrime (fun _ _ : Fin (family k) => (0 : ℤ))
@@ -79,7 +90,7 @@ example (k : ℕ) :
 
 -- The real-power gain is explicit, but logarithmic factors are still outside that exponent.
 example (k : ℕ) : (family k : ℝ) ^ 3 / groups (family k) ≤
-    4 * (family k : ℝ) ^ (3 - 1 / 648 : ℝ) :=
+    16 * (family k : ℝ) ^ (3 - 2 / 1197 : ℝ) :=
   cubic_div_groups_le (pos_of_blocks_pos (family_fast k))
 
 end ComplexityTests.WordRAMExactTriangleDyadicCost

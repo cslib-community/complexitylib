@@ -7,37 +7,26 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Callee
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Asymptotics
 
 /-!
-# Complete parameter-selecting native ExactTriangle execution
+# Automatic native box-backed Exact Triangle
 
-One fixed 640-register standard program consumes original raw n,F and canonical-signed matrix
-pointers, computes dyadic parameters, selects the attained minimum modular-count prime and
-calls the complete caller-safe fixed-prime solver. Its actual computed small flag instead
-executes the existing exhaustive solver below the fast regime. All six original arguments
-are restored and raw Boolean6 decides the original `ExactTriangle.HasZeroTriangle`.
+The complete fixed 640-register program computes its integer parameters and a genuine
+minimum-count prime, calls the actual box solver, and uses the actual exhaustive branch on
+small inputs. Its initialized and matrix-function clients prove both directions of the
+original signed-weight verdict while retaining original inputs and the caller frame.
+`callee` supplies the existing 633-scratch native host interface with logarithmic admission
+coefficient 123357. Its time is uniformly `Oκ(n^(3-33/20000))` for polynomial original weights;
+coefficients and thresholds precede all original inputs, selected primes and physical widths.
 
-## Main results
-
-* `callee`: actual `ThreeSum.Host.Callee 633`, including a content/layout-independent natural
-  time function, positive logarithmic admission and caller-prefix frame. Unused old words
-  are arbitrary; physical prefix bounds additionally require their original raw bound.
-* `runs_input_uniform`: actual initialized prefix and charged halt in the same final state,
-  with original input fit, both verdict directions, restored arguments and complete frame.
-* `inputWidth_le_log`: weights bounded by `(n+2)^κ` admit every width at least
-  `(12332*(κ+9)+40)*clog₂(n+2)`, including zero and small dimensions.
-* `bounded_reachable_polynomial`: all such wider initialized prefixes have words and new
-  address support below `(n+2)^(12332*(κ+9)+41)`, independently of physical width.
-
-The initialized input is exactly raw n,F followed by three row-major canonical-signed arrays;
-the program computes their pointers. No parameter, prime, layout, run, solver or time
-certificate is supplied. The initialized program has at most 434015 slots including halt
-and never reads physical width. Every save/copy/call/control/return instruction is charged.
-
-This composes the original conservative parameter family and concrete native suppliers.
-It does not assert the tuned source exponent, final ordinary-3SUM composition or #1394's
-1.9992 endpoint. The selected-prime natural allowance is proved separately from this execution
-composition. Original native glue and resource proofs use the existing WordRAM semantics;
-no Anthropic Light execution, ring-operation charge or simulation axiom is imported.
+The canonical scalar/argument/result register names are `ParameterSelecting.Reg`; parameter
+fields use `DyadicParameters.Reg`. The fixed-prime controller and its callable wrapper are
+`FixedPrime` and `CallableFixedPrime`; no second conservative pipeline is maintained.
+Source-modulus width, dirty-memory clipping and original-word prefix bounds are proved for
+this actual program. Native integer parameter tuning and the complete charged composition
+are original; the lower-level reductions and box mathematics retain their source credit.
+The ordinary composition is `ThreeSum.Decision.exists_one9992_runs`. Its supplier-independent
+runtime transfer is in `ThreeSum.Decision.Runtime` and `ThreeSum.Decision.Transfer`: every
+actual uniform ET saving `0 < δ ≤ 1` gives every ordinary exponent `a > 2-δ/2`.
 -/

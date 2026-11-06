@@ -7,10 +7,10 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Program
 
 /-!
-# Complete fixed-prime execution with dirty source memory
+# Complete box-backed fixed-prime execution with dirty source memory
 
 The unchanged producer runs on arbitrary old registers and dirty remaining memory. Its actual
 prepared prefix supplies the all-record controller. A proof-only reference state frames that

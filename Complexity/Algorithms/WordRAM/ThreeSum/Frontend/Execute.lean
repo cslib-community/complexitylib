@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Arrays
+import Complexity.Computability.WordRAM.MemoryView
 
 /-!
 # Complete descriptor-table execution
@@ -231,6 +232,11 @@ theorem loop_exec {w U : ℕ} (l : Layout) (rs : List (ℕ × ℕ)) (x : Data 48
         (hb1 : b ≠ l.descriptors + 2 * y.regs current + 1) : z.mem b = y.mem b := by
       apply hzf b _ hb0 hb1
       simpa only [Layout.pointer_succ] using houtside
+    have hview : Set.EqOn z.mem y.mem {b | (b < l.pointer (y.regs current) ∨
+        l.pointer (y.regs current + 1) ≤ b) ∧ b ≠ l.descriptors + 2 * y.regs current ∧
+        b ≠ l.descriptors + 2 * y.regs current + 1} :=
+      fun {_} hb => hf _ hb.1 hb.2.1 hb.2.2
+    have hdescbase : l.descriptors = 1 + 4 * l.n := rfl
     refine ⟨z, hz, ?_, by omega⟩
     refine ⟨hyr.transfer (fun i hi => hz.regs_eq hi), by omega, ?_, ?_, ?_, ?_, ?_⟩
     · rw [hzi, Layout.pointer_succ]
@@ -244,24 +250,14 @@ theorem loop_exec {w U : ℕ} (l : Layout) (rs : List (ℕ × ℕ)) (x : Data 48
         have hbefore := l.descriptor_before (hi'.trans hj) (y.regs current)
         refine ⟨(hf _ (.inl (by omega)) (by omega) (by omega)).trans h0,
           (hf _ (.inl (by omega)) (by omega) (by omega)).trans h1, ?_⟩
-        apply hp.frame
-        intro b hlo hhi
         have hlen' := (Math.length_array_le U l.digits rs i).trans
           (show rs.length + 1 ≤ l.capacity by dsimp [Layout.capacity]; omega)
         have hptr := l.pointer_mono (show i + 1 ≤ y.regs current by omega)
         rw [Layout.pointer_succ] at hptr
         have htable := l.descriptor_before hj i
-        exact hf b (.inl (by omega)) (by omega) (by omega)
-    · apply hykeys.frame
-      intro b hlo hhi
-      simp only [List.length_map] at hhi
-      exact hf b (.inl (by omega)) (by dsimp [Layout.descriptors]; omega)
-        (by dsimp [Layout.descriptors]; omega)
-    · apply hycounts.frame
-      intro b hlo hhi
-      simp only [List.length_map] at hhi
-      exact hf b (.inl (by omega)) (by dsimp [Layout.descriptors]; omega)
-        (by dsimp [Layout.descriptors]; omega)
+        ram_keep hp using hview
+    · ram_keep hykeys using hview
+    · ram_keep hycounts using hview
     · intro b hnot
       have hb : b < l.descriptors ∨ l.endpoint ≤ b := by
         rw [Block.mem_footprint] at hnot

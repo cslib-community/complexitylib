@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Program
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Exec
 
@@ -57,18 +58,12 @@ theorem exec_count {w n p scratch a b c A : ℕ} (x : Data 160) (u v z : ℕ →
     ram_eval [args, hn, hp, hAB, hBC, hAC, hs, Reg.countSide, Reg.countPrime,
       Reg.countAB, Reg.countBC, Reg.countAC, Reg.countScratch, Reg.side, Reg.cursor,
       Reg.inputAB, Reg.inputBC, Reg.inputAC, Reg.scratch, Fin.mk.injEq]
-  obtain ⟨q, hq, _, hresult, frame⟩ := CountPrime.exec (args.comap counterRegisters) u v z
-    hp0 (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) ha hb hc hu hv hz
-    hinU hinV hinZ hmag hw
   have hinj : Function.Injective counterRegisters := by
     intro i j h
     exact Fin.ext (congrArg (fun i : Fin 160 => i.val) h)
-  let y := q.extend counterRegisters args
-  have hyresult : y.regs Reg.countResult = q.regs CountPrime.Reg.result := by
-    change Function.extend counterRegisters q.regs args.regs
-      (counterRegisters CountPrime.Reg.result) = _
-    exact hinj.extend_apply _ _ _
-  refine ⟨y, ?_, hyresult.trans hresult, frame⟩
-  exact (deliver.seq (hq.rename hinj)).mono (by omega)
+  obtain ⟨y, hy, ⟨_, hresult, frame⟩, -⟩ := ExecWithin.rename_post hinj
+    (CountPrime.exec (args.comap counterRegisters) u v z hp0 (by rfl) (by rfl) (by rfl)
+      (by rfl) (by rfl) (by rfl) ha hb hc hu hv hz hinU hinV hinZ hmag hw)
+  exact ⟨y, (deliver.seq hy).mono (by omega), hresult, frame⟩
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.PrimeSelection

@@ -59,12 +59,8 @@ theorem bounded_reachable_caller {W m n g p b P k : ℕ} (values : List ℤ)
   obtain ⟨a, hout, y, he, -⟩ := exec values hlen hD hg hp hN
     x xn xD xg xp xb hab hbc hac vab vbc vac hx fit
   obtain ⟨t, ht, hex⟩ := he
-  have hlow := Runs.prefix_at_smaller_width program_fixed.2 hW hr
-    (hex.executes Reg.found)
-  have hs := hlow.bounded hx
-  have hpow := pow_admissionWidth_le n (D m) g p (rawTotal n values) b P
-  refine ⟨fun i => (hs.1 i).trans_le hpow, fun q => (hs.2 q).trans_le hpow, ?_⟩
-  exact fun q hq => hlow.mem_above hx (hpow.trans hq)
+  exact hr.prefix_bounds program_fixed.2 hW hx (hex.executes Reg.found)
+    (pow_admissionWidth_le n (D m) g p (rawTotal n values) b P)
 
 /-- Numerical envelope for initialized prefix words and newly written addresses. -/
 @[expose] def prefixBound (n d g p : ℕ) (values : List ℤ) : ℕ :=
@@ -83,24 +79,8 @@ theorem bounded_reachable_input {W m n g p k : ℕ} (values : List ℤ)
       ∀ q, prefixBound n (D m) g p values ≤ q → s.data.mem q = 0 := by
   obtain ⟨hi, a, hout, y, t, ht, hpref, he, -⟩ :=
     runs_input values hlen hD hg hp hN le_rfl
-  have hlow := Runs.prefix_at_smaller_width entryProgram_fixed.2 hW hr he
-  have hx := Data.Bounded.init (r := 640) hi
-  have hs := hlow.bounded hx
-  have hpow := pow_admissionWidth_le n (D m) g p (rawTotal n values) (workspaceBase n)
-    (inputWordBound n (D m) g p values)
-  refine ⟨fun i => (hs.1 i).trans_le hpow, fun q => (hs.2 q).trans_le hpow, ?_⟩
-  intro q hq
-  have hq' : 2 ^ inputWidth n (D m) g p values ≤ q := hpow.trans hq
-  rw [hlow.mem_above hx hq']
-  cases q with
-  | zero =>
-    have := Nat.two_pow_pos (inputWidth n (D m) g p values)
-    omega
-  | succ q =>
-    change (PreparationInput.input n (D m) g p values).getD q 0 = 0
-    apply List.getD_eq_default
-    have hlen := hi.1
-    dsimp only [Fits] at hlen
-    omega
+  exact hr.prefix_bounds_init entryProgram_fixed.2 hW hi he
+    (pow_admissionWidth_le n (D m) g p (rawTotal n values) (workspaceBase n)
+      (inputWordBound n (D m) g p values))
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime

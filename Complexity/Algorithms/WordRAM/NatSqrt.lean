@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.Notation
 public import Mathlib.Data.Nat.Sqrt
 import Mathlib.Tactic.Linarith
@@ -120,10 +121,7 @@ theorem exec_rename {r w : ℕ} (f : Fin 6 → Fin r) (hf : f.Injective) (x : Da
     ∃ y, ExecWithin w (program.rename f) x y (5 * Nat.sqrt (x.regs (f arg)) + 7) ∧
       y.regs (f root) = Nat.sqrt (x.regs (f arg)) ∧
       y.regs (f arg) = x.regs (f arg) ∧ y.mem = x.mem ∧ y.regs (f one) = 1 := by
-  obtain ⟨a, ha, hr, hn, hm, ho⟩ := exec (x.comap f) hfit
-  refine ⟨a.extend f x, ha.rename hf, ?_, ?_, hm, ?_⟩
-  · exact (hf.extend_apply _ _ root).trans hr
-  · exact (hf.extend_apply _ _ arg).trans hn
-  · exact (hf.extend_apply _ _ one).trans ho
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post hf (exec (x.comap f) hfit)
+  exact ⟨y, hy, hpost⟩
 
 end Cslib.Algorithms.WordRAM.NatSqrt

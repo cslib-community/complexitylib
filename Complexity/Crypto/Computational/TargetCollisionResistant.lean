@@ -17,8 +17,12 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.PPT.Composition
+import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Crypto.Game.Hybrid
 import Complexity.Crypto.Negligible.Basic
@@ -27,8 +31,6 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
 
 /-!
 # Target collision resistance and universal one-way hash families
@@ -143,6 +145,16 @@ open scoped NNReal
 
 /-! ### Two-stage target collision resistance ([NaorYung1989], Section 2) -/
 
+private theorem tidy_congr {α β : Type*} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
+    {f g : α → β} (h : ComputableTidilyInPolyTime f encIn encOut) (heq : ∀ a, f a = g a) :
+    ComputableTidilyInPolyTime g encIn encOut :=
+  funext heq ▸ h
+
+private theorem of_tidy_congr {α β : Type*} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
+    {f g : α → β} (h : ComputableTidilyInPolyTime f encIn encOut) (heq : ∀ a, f a = g a) :
+    ComputableInPolyTime g encIn encOut :=
+  .of_tidy (tidy_congr h heq)
+
 /-- A two-stage target-collision adversary ([NaorYung1989], Section 2; [BonehShoup2023],
 Section 8.11.2, Attack Game 8.5 and Definition 8.7; [Goldreich2004], Section 6.4.3): `choose`
 selects a target message and saved state from `1^n` before the hash key is sampled, and `find`
@@ -165,7 +177,7 @@ structure TargetCollisionFinder.IsPPT (adversary : TargetCollisionFinder) : Prop
 /-- The two-stage target-collision experiment ([NaorYung1989], Section 2; [BonehShoup2023],
 Section 8.11.2, Attack Game 8.5): run `adversary.choose n` to obtain `(m₀, state)`, sample a
 uniform `keyLen n`-bit key `k`, run `adversary.find n state k` to obtain `m₁`, and accept iff
-`isCollision (H n) valid n k m₀ m₁` holds. -/
+`isCollision (H n) valid n k choice.1 m₁` holds. -/
 @[expose]
 noncomputable def targetCollisionGame
     (keyLen : ℕ → ℕ) (H : ℕ → List Bool → List Bool → List Bool)
@@ -188,10 +200,26 @@ theorem isPPTOn_targetCollisionGame
       (encPair encUnary encBits) encBool)
     (ha : adversary.IsPPT) :
     IsPPTOn encUnary encBool (targetCollisionGame keyLen H valid adversary) := by
-  have hchoose := ha.choose
-  have hfind := ha.find
-  unfold targetCollisionGame isCollision
-  ppt
+  let E2 := encPair (encPair encUnary (encPair encBits encBits)) encBits
+  let E3 := encPair E2 encBits
+  have hq := ComputableTidilyInPolyTime.id' (encIn := E2)
+  have hr := ComputableTidilyInPolyTime.id' (encIn := E3)
+  have hn := hr.fst'.fst'.fst'; have hm₀ := hr.fst'.fst'.snd'.fst'
+  have hk := hr.fst'.snd'; have hm₁ := hr.snd'
+  have hcol : ComputableTidilyInPolyTime
+      (fun r : ((ℕ × (List Bool × List Bool)) × List Bool) × List Bool =>
+        isCollision (H r.1.1.1) valid r.1.1.1 r.1.2 r.1.1.2.1 r.2) E3 encBool :=
+    tidy_congr ((((hvalid.tidy.comp (hn.prod hm₀)).bool_and'
+      (hvalid.tidy.comp (hn.prod hm₁))).bool_and'
+      (ComputableTidilyInPolyTime.bool_not.comp (hm₀.beq hm₁))).bool_and'
+      (ComputableTidilyInPolyTime.beq
+        (hH.tidy.comp (hn.prod (hk.prod hm₀))) (hH.tidy.comp (hn.prod (hk.prod hm₁)))))
+      fun _ => rfl
+  have hfind := ha.find.preprocess
+    (of_tidy_congr (hq.fst'.fst'.prod (hq.fst'.snd'.snd'.prod hq.snd')) fun _ => rfl)
+  exact ha.choose.bind_with
+    ((isPPTOn_sampleList.preprocess (hkeyLen.comp' (ComputableInPolyTime.fst _ _))).bind_with
+      (hfind.bind_with hcol.isPPTOn))
 
 /-- The target-collision experiment is uniformly strict PPT, independently of unused auxiliary
 input. -/
@@ -265,19 +293,13 @@ theorem TargetCollisionResistantOn.mono
   unfold Game.succProbability
   apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
   simp only [targetCollisionGame, ProbComp.eval_bind, ProbComp.eval_pure]
-  apply PMF.bind_apply_mono_on_support
-  intro choice _
-  apply PMF.bind_apply_mono_on_support
-  intro k _
-  apply PMF.bind_apply_mono_on_support
-  intro m₁ _
+  apply PMF.bind_apply_mono_on_support; intro choice _
+  apply PMF.bind_apply_mono_on_support; intro k _
+  apply PMF.bind_apply_mono_on_support; intro m₁ _
   cases hcol : isCollision (H n) valid₁ n k choice.1 m₁
-  · simp
-  · rw [isCollision_eq_true_iff] at hcol
-    have hcol₂ : isCollision (H n) valid₂ n k choice.1 m₁ = true := by
-      rw [isCollision_eq_true_iff]
-      exact ⟨hn choice.1 hcol.1, hn m₁ hcol.2.1, hcol.2.2.1, hcol.2.2.2⟩
-    rw [hcol₂]
+  · simp only [PMF.pure_apply, Bool.true_eq_false, ↓reduceIte, zero_le]
+  · obtain ⟨h1, h2, hne, hh⟩ := isCollision_eq_true_iff.mp hcol
+    rw [isCollision_eq_true_iff.mpr ⟨hn choice.1 h1, hn m₁ h2, hne, hh⟩]
 
 /-- **Finding target collisions with probability bounded away from zero refutes
 `TargetCollisionResistantOn`**: a strict PPT adversary whose success probability is at least a fixed
@@ -305,16 +327,16 @@ theorem CollisionResistantOn.targetCollisionResistantOn
     let m₁ ← adversary.find n choice.2 k
     return (choice.1, m₁)
   have hcolPPT : IsPPT (encPair encBits encBits) colFinder := by
-    have hchoose := hadversary.choose
-    have hfind := hadversary.find
-    change IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
-      (fun p => colFinder p.1 p.2)
-    dsimp only [colFinder]
-    ppt
-  have heq : ∀ n,
+    let E1 := encPair (encPair encUnary encBits) (encPair encBits encBits)
+    have hq := ComputableTidilyInPolyTime.id' (encIn := E1)
+    have hr := ComputableTidilyInPolyTime.id' (encIn := encPair E1 encBits)
+    exact (hadversary.choose.preprocess (ComputableInPolyTime.fst _ _)).bind_with
+      ((hadversary.find.preprocess
+        (of_tidy_congr (hq.fst'.fst'.prod (hq.snd'.snd'.prod hq.fst'.snd')) fun _ => rfl)).bind_with
+        (tidy_congr (hr.fst'.snd'.fst'.prod hr.snd') fun _ => rfl).isPPTOn)
+  have heq (n : ℕ) :
       ProbComp.eval (targetCollisionGame id (fun _ k msg => H k msg) valid adversary n) =
         ProbComp.eval (collisionGame H valid colFinder n) := by
-    intro n
     simp only [targetCollisionGame, collisionGame, colFinder, id_eq, ProbComp.eval_bind,
       ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
     exact PMF.bind_comm _ _ _
@@ -366,9 +388,12 @@ theorem validInput_eq_true_iff (C : KeyedCompressionFamily) {n : ℕ} {x : List 
 theorem computableInPolyTime_validInput (C : KeyedCompressionFamily) :
     ComputableInPolyTime (fun ⟨n, x⟩ => C.validInput n x)
       (encPair encUnary encBits) encBool := by
-  have hblock := C.blockLen_polyTime
-  unfold validInput
-  polytime
+  have hp := ComputableTidilyInPolyTime.id' (encIn := encPair encUnary encBits)
+  exact of_tidy_congr (ComputableTidilyInPolyTime.unary_beq
+    (ComputableTidilyInPolyTime.length_bits.comp hp.snd')
+    (ComputableTidilyInPolyTime.unary_mul.comp
+      ((ComputableTidilyInPolyTime.const 2).prod (C.blockLen_polyTime.tidy.comp hp.fst'))))
+    fun _ => rfl
 
 /-- Target collision resistance (UOWHF compression security) of `C` on `2 * C.blockLen n`-bit
 inputs. -/
@@ -424,10 +449,7 @@ def CompressionFamily.toKeyedCompressionFamily
   blockLen_polyTime := ComputableInPolyTime.id'
   polyTime := hh.polyTime.comp (ComputableInPolyTime.snd _ _)
   le_blockLen := fun _ => le_rfl
-  length_eq := fun _ k x hk hx => by
-    rw [id_eq] at hk hx ⊢
-    rw [← hk]
-    exact hh.length_eq k x (by omega)
+  length_eq := fun _ k x hk hx => (hh.length_eq k x (by rw [id_eq] at hk hx; omega)).trans hk
 
 /-- Every `CompressionFamily` is target collision-resistant on `2n`-bit inputs. -/
 theorem CompressionFamily.targetCollisionResistant_toKeyedCompressionFamily
@@ -467,86 +489,63 @@ def uowhfLeaves (M : ℕ) (msg : List Bool) : List (List Bool) :=
 
 theorem uowhfLeaves_ne_nil (M : ℕ) (msg : List Bool) : uowhfLeaves M msg ≠ [] := by
   unfold uowhfLeaves
-  cases msg <;> simp
+  cases msg <;> simp only [List.isEmpty_nil, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte,
+    ne_eq, List.cons_ne_self, not_false_eq_true, List.map_eq_nil_iff, List.range_eq_nil,
+    List.length_cons, Nat.add_one_ne_zero]
 
 theorem length_uowhfLeaves (M : ℕ) (msg : List Bool) :
     (uowhfLeaves M msg).length = max 1 msg.length := by
   unfold uowhfLeaves
-  cases msg <;> simp
+  cases msg <;> simp only [List.isEmpty_nil, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte,
+    List.length_cons, List.length_nil, List.length_map, List.length_range] <;> omega
 
 theorem length_mem_uowhfLeaves {M : ℕ} {msg : List Bool} {w : List Bool}
     (hw : w ∈ uowhfLeaves M msg) : w.length = M := by
   unfold uowhfLeaves at hw
-  split_ifs at hw with hemp
-  · simp only [List.mem_singleton] at hw
-    subst hw
-    exact List.length_replicate
-  · obtain ⟨i, _, rfl⟩ := List.mem_map.mp hw
-    exact length_padOrTake M _
+  split_ifs at hw
+  · rw [List.mem_singleton.mp hw]; exact List.length_replicate
+  · obtain ⟨_, _, rfl⟩ := List.mem_map.mp hw; exact length_padOrTake M _
 
 theorem uowhfLeaves_injective_of_length_eq {M : ℕ} (hM : 1 ≤ M) {m₀ m₁ : List Bool}
     (hlen : m₀.length = m₁.length) (heq : uowhfLeaves M m₀ = uowhfLeaves M m₁) :
     m₀ = m₁ := by
   cases m₀ with
-  | nil =>
-    exact (List.length_eq_zero_iff.mp hlen.symm).symm
+  | nil => exact (List.length_eq_zero_iff.mp hlen.symm).symm
   | cons b₀ bs₀ =>
     cases m₁ with
-    | nil => simp at hlen
+    | nil => cases hlen
     | cons b₁ bs₁ =>
-      apply List.ext_getElem hlen
-      intro idx h₀ h₁
+      refine List.ext_getElem hlen fun idx h₀ h₁ => ?_
       simp only [uowhfLeaves, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte, hlen] at heq
       have hr : idx < (List.range (b₁ :: bs₁).length).length := by
         simpa only [List.length_range] using h₁
       have hcell : padOrTake M [(b₀ :: bs₀).getD idx false] =
           padOrTake M [(b₁ :: bs₁).getD idx false] := by
-        have hget := congrArg (fun l => l[idx]?) heq
         simpa only [List.getElem?_map, List.getElem?_eq_getElem hr, List.getElem_range,
-          Option.map_some, Option.some.injEq] using hget
+          Option.map_some, Option.some.injEq] using congrArg (fun l => l[idx]?) heq
       obtain ⟨M', rfl⟩ : ∃ M', M = M' + 1 := ⟨M - 1, by omega⟩
-      have hhead := congrArg (fun w => w.headD false) hcell
       simpa only [padOrTake, List.singleton_append, List.take_succ_cons, List.headD_cons,
         List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h₀,
-        List.getElem?_eq_getElem h₁, Option.getD_some] using hhead
-
-@[local fun_prop]
-private theorem computableInPolyTime_length_list_comp
-    {α β : Type} {input : α ↪ List Bool} {enc : β ↪ List Bool}
-    {list : α → List β} (hlist : ComputableInPolyTime list input (encList enc)) :
-    ComputableInPolyTime (fun a => (list a).length) input encUnary :=
-  (ComputableInPolyTime.length_list enc).comp hlist
-
-@[local fun_prop]
-private theorem computableInPolyTime_headD_list_comp
-    {α β : Type} {input : α ↪ List Bool} {enc : β ↪ List Bool}
-    {list : α → List β} (hlist : ComputableInPolyTime list input (encList enc))
-    (fallback : β) :
-    ComputableInPolyTime (fun a => (list a).headD fallback) input enc :=
-  (ComputableInPolyTime.headD (encA := enc) (encL := encList enc) fallback).comp hlist
-
-@[local fun_prop]
-private theorem computableInPolyTime_padOrTake_comp
-    {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ} {xs : γ → List Bool}
-    (hn : ComputableInPolyTime n encIn encUnary)
-    (hxs : ComputableInPolyTime xs encIn encBits) :
-    ComputableInPolyTime (fun a => padOrTake (n a) (xs a)) encIn encBits :=
-  computableInPolyTime_padOrTake.comp (hn.prod hxs)
+        List.getElem?_eq_getElem h₁, Option.getD_some] using
+        congrArg (fun w => w.headD false) hcell
 
 @[program_certificate]
 theorem computableInPolyTime_uowhfLeaves :
     ComputableInPolyTime (fun ⟨M, msg⟩ => uowhfLeaves M msg)
       (encPair encUnary encBits) (encList encBits) := by
-  unfold uowhfLeaves
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_uowhfLeaves_comp
-    {γ : Type} {encIn : γ ↪ List Bool} {M : γ → ℕ} {msg : γ → List Bool}
-    (hM : ComputableInPolyTime M encIn encUnary)
-    (hmsg : ComputableInPolyTime msg encIn encBits) :
-    ComputableInPolyTime (fun a => uowhfLeaves (M a) (msg a)) encIn (encList encBits) :=
-  computableInPolyTime_uowhfLeaves.comp (hM.prod hmsg)
+  have hM := ComputableTidilyInPolyTime.fst encUnary encBits
+  have hmsg := ComputableTidilyInPolyTime.snd encUnary encBits
+  have hp := ComputableTidilyInPolyTime.id' (encIn := encPair (encPair encUnary encBits) encUnary)
+  have hbit := ComputableTidilyInPolyTime.bitsGetDWithInput (hmsg.comp hp.fst') hp.snd' false
+  have hcell := computableInPolyTime_padOrTake.tidy.comp
+    ((hM.comp hp.fst').prod (ComputableTidilyInPolyTime.bitsCons hbit (.const [])))
+  exact of_tidy_congr (ComputableTidilyInPolyTime.ite'
+    (ComputableTidilyInPolyTime.bitsIsEmpty.comp hmsg)
+    (ComputableTidilyInPolyTime.cons'
+      ((ComputableTidilyInPolyTime.bitsReplicate false).comp hM) (.const []))
+    (ComputableTidilyInPolyTime.mapWithInput
+      (ComputableTidilyInPolyTime.range.comp (ComputableTidilyInPolyTime.length_bits.comp hmsg))
+      hcell)) fun _ => rfl
 
 /-- Concatenate the `2 * j`-th and `(2 * j + 1)`-st blocks of `level`, normalizing each to exact
 width `M` via `padOrTake M` (defaulting missing odd-tail blocks to `0^M`). -/
@@ -557,8 +556,7 @@ def uowhfPairInput (M : ℕ) (level : List (List Bool)) (j : ℕ) : List Bool :=
 @[simp]
 theorem length_uowhfPairInput (M : ℕ) (level : List (List Bool)) (j : ℕ) :
     (uowhfPairInput M level j).length = 2 * M := by
-  simp only [uowhfPairInput, List.length_append, length_padOrTake]
-  omega
+  simp only [uowhfPairInput, List.length_append, length_padOrTake]; omega
 
 @[program_certificate, fun_prop]
 theorem computableInPolyTime_uowhfPairInput
@@ -568,8 +566,14 @@ theorem computableInPolyTime_uowhfPairInput
     (hlevel : ComputableInPolyTime level encIn (encList encBits))
     (hj : ComputableInPolyTime j encIn encUnary) :
     ComputableInPolyTime (fun a => uowhfPairInput (M a) (level a) (j a)) encIn encBits := by
-  unfold uowhfPairInput
-  polytime
+  have hpad := computableInPolyTime_padOrTake.tidy
+  have hget := ComputableTidilyInPolyTime.listGetD (encA := encBits) (encL := encList encBits) []
+  have h2j := ComputableTidilyInPolyTime.unary_mul.comp
+    ((ComputableTidilyInPolyTime.const 2).prod hj.tidy)
+  have h2j1 := ComputableTidilyInPolyTime.unary_add.comp (h2j.prod (.const 1))
+  exact of_tidy_congr (ComputableTidilyInPolyTime.bitsAppend
+    (hpad.comp (hM.tidy.prod (hget.comp (hlevel.tidy.prod h2j))))
+    (hpad.comp (hM.tidy.prod (hget.comp (hlevel.tidy.prod h2j1))))) fun _ => rfl
 
 /-- Compress one level of the binary hash tree under subkey `k`: keep `level` unchanged if it has at
 most one block, and otherwise compress each adjacent pair into an `M`-bit block. -/
@@ -584,21 +588,18 @@ theorem length_uowhfTreeStep (h : ℕ → List Bool → List Bool → List Bool)
     (n κ M : ℕ) (k : List Bool) (level : List (List Bool)) :
     (uowhfTreeStep h n κ M k level).length =
       if level.length ≤ 1 then level.length else (level.length + 1) / 2 := by
-  unfold uowhfTreeStep
-  split_ifs <;> simp
+  unfold uowhfTreeStep; split_ifs <;> simp only [List.length_map, List.length_range]
 
 private theorem length_uowhfTreeStep_le (h : ℕ → List Bool → List Bool → List Bool)
     (n κ M : ℕ) (k : List Bool) (level : List (List Bool)) :
     (uowhfTreeStep h n κ M k level).length ≤ level.length := by
-  rw [length_uowhfTreeStep]
-  split_ifs <;> omega
+  rw [length_uowhfTreeStep]; split_ifs <;> omega
 
 private theorem uowhfTreeStep_ne_nil (h : ℕ → List Bool → List Bool → List Bool)
     (n κ M : ℕ) (k : List Bool) {level : List (List Bool)} (hne : level ≠ []) :
     uowhfTreeStep h n κ M k level ≠ [] := by
   have hpos : 1 ≤ level.length := List.length_pos_iff.mpr hne
-  rw [← List.length_pos_iff, length_uowhfTreeStep]
-  split_ifs <;> omega
+  rw [← List.length_pos_iff, length_uowhfTreeStep]; split_ifs <;> omega
 
 private theorem length_mem_uowhfTreeStep {h : ℕ → List Bool → List Bool → List Bool}
     {n κ M : ℕ} {k : List Bool} {level : List (List Bool)}
@@ -607,8 +608,7 @@ private theorem length_mem_uowhfTreeStep {h : ℕ → List Bool → List Bool �
   unfold uowhfTreeStep at hw
   split_ifs at hw
   · exact hblocks w hw
-  · obtain ⟨j, _, rfl⟩ := List.mem_map.mp hw
-    exact length_padOrTake M _
+  · obtain ⟨_, _, rfl⟩ := List.mem_map.mp hw; exact length_padOrTake M _
 
 private theorem length_mem_uowhfTreeStep_le {h : ℕ → List Bool → List Bool → List Bool}
     {n κ M B : ℕ} (hM : M ≤ B) {k : List Bool} {level : List (List Bool)}
@@ -617,9 +617,7 @@ private theorem length_mem_uowhfTreeStep_le {h : ℕ → List Bool → List Bool
   unfold uowhfTreeStep at hw
   split_ifs at hw
   · exact hblocks w hw
-  · obtain ⟨j, _, rfl⟩ := List.mem_map.mp hw
-    rw [length_padOrTake]
-    exact hM
+  · obtain ⟨_, _, rfl⟩ := List.mem_map.mp hw; rw [length_padOrTake]; exact hM
 
 /-- Fold `uowhfTreeStep` across a list of level subkeys `keys`. -/
 @[expose]
@@ -652,8 +650,7 @@ private theorem length_mem_uowhfTreeLevels {h : ℕ → List Bool → List Bool 
     (hw : w ∈ uowhfTreeLevels h n κ M keys init) : w.length = M := by
   induction keys generalizing init with
   | nil => exact hinit w hw
-  | cons k ks ih =>
-    exact ih (fun u hu => length_mem_uowhfTreeStep hinit hu) hw
+  | cons k ks ih => exact ih (fun _ => length_mem_uowhfTreeStep hinit) hw
 
 private theorem length_mem_uowhfTreeLevels_le {h : ℕ → List Bool → List Bool → List Bool}
     {n κ M B : ℕ} (hM : M ≤ B) (keys : List (List Bool)) {init : List (List Bool)}
@@ -661,8 +658,7 @@ private theorem length_mem_uowhfTreeLevels_le {h : ℕ → List Bool → List Bo
     (hw : w ∈ uowhfTreeLevels h n κ M keys init) : w.length ≤ B := by
   induction keys generalizing init with
   | nil => exact hinit w hw
-  | cons k ks ih =>
-    exact ih (fun u hu => length_mem_uowhfTreeStep_le hM hinit hu) hw
+  | cons k ks ih => exact ih (fun _ => length_mem_uowhfTreeStep_le hM hinit) hw
 
 private theorem length_uowhfTreeLevels_eq_of_length_eq (h : ℕ → List Bool → List Bool → List Bool)
     (n κ M : ℕ) (keys : List (List Bool)) {init₀ init₁ : List (List Bool)}
@@ -671,9 +667,7 @@ private theorem length_uowhfTreeLevels_eq_of_length_eq (h : ℕ → List Bool �
       (uowhfTreeLevels h n κ M keys init₁).length := by
   induction keys generalizing init₀ init₁ with
   | nil => exact hlen
-  | cons k ks ih =>
-    apply ih
-    rw [length_uowhfTreeStep, length_uowhfTreeStep, hlen]
+  | cons k ks ih => exact ih (by rw [length_uowhfTreeStep, length_uowhfTreeStep, hlen])
 
 /-- After `keys.length` tree-compression levels, any nonempty leaf list of length at most
 `2 ^ keys.length` collapses to a single root block. -/
@@ -683,11 +677,10 @@ theorem length_uowhfTreeLevels_eq_one (h : ℕ → List Bool → List Bool → L
     (uowhfTreeLevels h n κ M keys init).length = 1 := by
   induction keys generalizing init with
   | nil =>
-    have hpos : 1 ≤ init.length := List.length_pos_iff.mpr hne
     simp only [List.length_nil, Nat.pow_zero] at hle
-    exact le_antisymm hle hpos
+    exact le_antisymm hle (List.length_pos_iff.mpr hne)
   | cons k ks ih =>
-    apply ih (uowhfTreeStep_ne_nil h n κ M k hne)
+    refine ih (uowhfTreeStep_ne_nil h n κ M k hne) ?_
     simp only [List.length_cons, Nat.pow_succ] at hle
     rw [length_uowhfTreeStep]
     split_ifs with hle1
@@ -711,39 +704,48 @@ theorem computableInPolyTime_uowhfTreeLevels
     ComputableInPolyTime
       (fun a => uowhfTreeLevels h (n a) (κ a) (M a) (keys a) (init a))
       encIn (encList encBits) := by
-  have hstep : ComputableInPolyTime
-      (fun p : ((ℕ × ℕ × ℕ) × List (List Bool)) × List Bool =>
-        uowhfTreeStep h p.1.1.1 p.1.1.2.1 p.1.1.2.2 p.2 p.1.2)
-      (encPair (encPair (encPair encUnary (encPair encUnary encUnary)) (encList encBits)) encBits)
-      (encList encBits) := by
-    unfold uowhfTreeStep
-    polytime
+  let EPar := encPair encUnary (encPair encUnary encUnary)
+  let EStep := encPair (encPair EPar (encList encBits)) encBits
+  have hp := ComputableTidilyInPolyTime.id' (encIn := EStep)
+  have hlev := hp.fst'.snd'
+  have hlen := (ComputableTidilyInPolyTime.length_list encBits).comp hlev
+  have hhalf := ComputableTidilyInPolyTime.unary_div.comp
+    ((ComputableTidilyInPolyTime.unary_add.comp (hlen.prod (.const 1))).prod (.const 2))
+  have hq := ComputableTidilyInPolyTime.id' (encIn := encPair EStep encUnary)
+  have hpad := computableInPolyTime_padOrTake.tidy
+  have hk_pad := hpad.comp ((hp.fst'.fst'.snd'.fst'.comp hq.fst').prod (hp.snd'.comp hq.fst'))
+  have hpair := (computableInPolyTime_uowhfPairInput
+    (.of_tidy (hp.fst'.fst'.snd'.snd'.comp hq.fst'))
+    (.of_tidy (hlev.comp hq.fst')) (.of_tidy hq.snd')).tidy
+  have hcell := hpad.comp ((hp.fst'.fst'.snd'.snd'.comp hq.fst').prod
+    (hh.tidy.comp ((hp.fst'.fst'.fst'.comp hq.fst').prod (hk_pad.prod hpair))))
+  have hstep : ComputableTidilyInPolyTime
+      (fun q : ((ℕ × ℕ × ℕ) × List (List Bool)) × List Bool =>
+        uowhfTreeStep h q.1.1.1 q.1.1.2.1 q.1.1.2.2 q.2 q.1.2)
+      EStep (encList encBits) :=
+    tidy_congr (ComputableTidilyInPolyTime.ite_decide (hlen.unary_le' (.const 1)) hlev
+      (ComputableTidilyInPolyTime.mapWithInput
+        (ComputableTidilyInPolyTime.range.comp hhalf) hcell)) fun _ => rfl
   let initLen (a : γ) : ℕ := (encList encBits (init a)).length
   let elemCap (a : γ) : ℕ := M a + initLen a
-  let stateCap (a : γ) : ℕ := initLen a * (2 * elemCap a + 1)
-  have hpoly : PolyBounded (fun a => (encIn a).length) stateCap :=
-    hinit.polyBounded_length.mul
-      (((PolyBounded.const 2).mul (hM.polyBounded.add hinit.polyBounded_length)).add (.const 1))
-  apply ComputableInPolyTime.foldlWith
-    (encA := encBits) (encL := encList encBits)
-    (encP := encPair encUnary (encPair encUnary encUnary)) (encB := encList encBits)
+  have hM_pb : PolyBounded (fun a => (encIn a).length) M := by
+    simpa only [encUnary_apply, List.length_replicate] using hM.tidy.polyBounded_length
+  have hpoly : PolyBounded (fun a => (encIn a).length) (fun a => initLen a * (2 * elemCap a + 1)) :=
+    hinit.tidy.polyBounded_length.mul
+      (((PolyBounded.const 2).mul (hM_pb.add hinit.tidy.polyBounded_length)).add (.const 1))
+  refine .of_tidy (ComputableTidilyInPolyTime.foldlWith
+    (encA := encBits) (encL := encList encBits) (encP := EPar) (encB := encList encBits)
     (par := fun a => (n a, κ a, M a))
     (step := fun par level k => uowhfTreeStep h par.1 par.2.1 par.2.2 k level)
-    (hn.prod (hκ.prod hM)) hkeys hinit hstep hpoly
-  intro a i _
+    (hn.tidy.prod (hκ.tidy.prod hM.tidy)) hkeys.tidy hinit.tidy hstep hpoly fun a i _ => ?_)
   let state := uowhfTreeLevels h (n a) (κ a) (M a) ((keys a).take i) (init a)
-  change (encList encBits state).length ≤ stateCap a
-  have hstate_len : state.length ≤ initLen a :=
-    (length_uowhfTreeLevels_le h (n a) (κ a) (M a) ((keys a).take i) (init a)).trans
-      (SizedListEncoding.length_le (encA := encBits) (encL := encList encBits) (init a))
-  have hstate_elem : ∀ w ∈ state, w.length ≤ elemCap a := by
-    intro w hw
-    refine length_mem_uowhfTreeLevels_le (Nat.le_add_right (M a) (initLen a))
-      ((keys a).take i) (fun u hu => ?_) hw
-    exact (SizedListEncoding.length_elem_le (encA := encBits) (encL := encList encBits)
-      (init a) u hu).trans (Nat.le_add_left (initLen a) (M a))
-  exact (length_encList_le encBits state hstate_elem).trans
-    (Nat.mul_le_mul_right (2 * elemCap a + 1) hstate_len)
+  refine (length_encList_le encBits state fun w hw =>
+    length_mem_uowhfTreeLevels_le (Nat.le_add_right (M a) (initLen a)) ((keys a).take i)
+      (fun u hu => (SizedListEncoding.length_elem_le (encA := encBits) (encL := encList encBits)
+        (init a) u hu).trans (Nat.le_add_left (initLen a) (M a))) hw).trans
+    (Nat.mul_le_mul_right (2 * elemCap a + 1)
+      ((length_uowhfTreeLevels_le h (n a) (κ a) (M a) ((keys a).take i) (init a)).trans
+        (SizedListEncoding.length_le (encA := encBits) (encL := encList encBits) (init a))))
 
 /-- **Level-keyed binary-tree + length-block hash**: total fixed-depth adaptation of level-keyed
 tree hashing ([NaorYung1989], 1995 revision, Section 2.3; [Goldreich2004], Section 6.4.3.2, June
@@ -784,8 +786,21 @@ theorem computableInPolyTime_uowhfTreeHash
     ComputableInPolyTime
       (fun ⟨n, K, msg⟩ => uowhfTreeHash h keyLen blockLen n K msg)
       (encPair encUnary (encPair encBits encBits)) encBits := by
-  unfold uowhfTreeHash
-  polytime
+  have hp := ComputableTidilyInPolyTime.id' (encIn := encPair encUnary (encPair encBits encBits))
+  have hn := hp.fst'; have hK := hp.snd'.fst'; have hmsg := hp.snd'.snd'
+  have hκ := hkeyLen.tidy.comp hn; have hM := hblockLen.tidy.comp hn
+  have hpad := computableInPolyTime_padOrTake.tidy
+  have htop := (computableInPolyTime_uowhfTreeLevels hh (.of_tidy hn) (.of_tidy hκ) (.of_tidy hM)
+    (.of_tidy (ComputableTidilyInPolyTime.bitsRowsWithInput hn hκ hK))
+    (computableInPolyTime_uowhfLeaves.comp (.of_tidy (hM.prod hmsg)))).tidy
+  have hroot := hpad.comp (hM.prod
+    ((ComputableTidilyInPolyTime.headD (encA := encBits) (encL := encList encBits) []).comp htop))
+  have hlow := ComputableTidilyInPolyTime.bitsLow hM
+    (ComputableTidilyInPolyTime.unary_to_binary.comp
+      (ComputableTidilyInPolyTime.length_bits.comp hmsg))
+  exact of_tidy_congr (hpad.comp (hM.prod (hh.tidy.comp
+    (hn.prod ((ComputableTidilyInPolyTime.bitsRowWithInput hκ hn hK).prod
+      (ComputableTidilyInPolyTime.bitsAppend hroot hlow)))))) fun _ => rfl
 
 /-- Candidate `2 * M`-bit compression input fed to subkey `i` (`0 ≤ i ≤ n`) at pair index `j`
 during evaluation of `uowhfTreeHash` on `msg`, using only the prefix `front` containing subkeys
@@ -807,8 +822,7 @@ theorem length_uowhfCandidateInput (h : ℕ → List Bool → List Bool → List
   unfold uowhfCandidateInput
   split_ifs
   · exact length_uowhfPairInput M _ j
-  · simp only [List.length_append, length_padOrTake, BitString.length_lowBits]
-    omega
+  · simp only [List.length_append, length_padOrTake, BitString.length_lowBits]; omega
 
 @[program_certificate, fun_prop]
 theorem computableInPolyTime_uowhfCandidateInput
@@ -827,20 +841,20 @@ theorem computableInPolyTime_uowhfCandidateInput
     ComputableInPolyTime
       (fun a => uowhfCandidateInput h (n a) (κ a) (M a) (i a) (j a) (front a) (msg a))
       encIn encBits := by
-  have htree_i : ComputableInPolyTime
-      (fun a => uowhfTreeLevels h (n a) (κ a) (M a)
-        (BitString.listRows (i a) (κ a) (front a)) (uowhfLeaves (M a) (msg a)))
-      encIn (encList encBits) :=
-    computableInPolyTime_uowhfTreeLevels hh hn hκ hM (by polytime) (by polytime)
-  have htree_n : ComputableInPolyTime
-      (fun a => uowhfTreeLevels h (n a) (κ a) (M a)
-        (BitString.listRows (n a) (κ a) (front a)) (uowhfLeaves (M a) (msg a)))
-      encIn (encList encBits) :=
-    computableInPolyTime_uowhfTreeLevels hh hn hκ hM (by polytime) (by polytime)
-  exact ComputableInPolyTime.ite_decide
-    (ComputableInPolyTime.unary_lt' hi hn)
-    (computableInPolyTime_uowhfPairInput hM htree_i hj)
-    (by polytime)
+  have hleaves := computableInPolyTime_uowhfLeaves.comp (hM.prod hmsg)
+  have hlev := computableInPolyTime_uowhfTreeLevels hh hn hκ hM
+    (.of_tidy (ComputableTidilyInPolyTime.bitsRowsWithInput hi.tidy hκ.tidy hfront.tidy)) hleaves
+  have htop := (computableInPolyTime_uowhfTreeLevels hh hn hκ hM
+    (.of_tidy (ComputableTidilyInPolyTime.bitsRowsWithInput hn.tidy hκ.tidy hfront.tidy))
+    hleaves).tidy
+  have hroot := computableInPolyTime_padOrTake.tidy.comp (hM.tidy.prod
+    ((ComputableTidilyInPolyTime.headD (encA := encBits) (encL := encList encBits) []).comp htop))
+  have hlow := ComputableTidilyInPolyTime.bitsLow hM.tidy
+    (ComputableTidilyInPolyTime.unary_to_binary.comp
+      (ComputableTidilyInPolyTime.length_bits.comp hmsg.tidy))
+  exact of_tidy_congr (ComputableTidilyInPolyTime.ite_decide (hi.tidy.unary_lt' hn.tidy)
+    (computableInPolyTime_uowhfPairInput hM hlev hj).tidy
+    (ComputableTidilyInPolyTime.bitsAppend hroot hlow)) fun _ => rfl
 
 /-! ### Deterministic tree collision witness -/
 
@@ -861,25 +875,20 @@ private theorem listRows_succ_eq_snoc (r κ : ℕ) (K : List Bool) :
 
 private theorem listRows_take_mul_eq (i κ : ℕ) (K : List Bool) :
     BitString.listRows i κ (K.take (i * κ)) = BitString.listRows i κ K := by
-  unfold BitString.listRows
-  refine List.map_congr_left fun r hr => ?_
-  have hr_lt : r < i := List.mem_range.mp hr
-  have hmul : (r + 1) * κ ≤ i * κ := Nat.mul_le_mul_right κ (by omega)
-  apply List.ext_getElem (by simp)
-  intro c hc _
+  refine List.map_congr_left fun r hr =>
+    List.ext_getElem (by simp only [BitString.length_listRow]) fun c hc _ => ?_
   simp only [BitString.length_listRow] at hc
-  rw [BitString.getElem_listRow hc, BitString.getElem_listRow hc]
-  have hidx : r * κ + c < i * κ := by
-    calc
-      r * κ + c < r * κ + κ := by omega
+  have hr_lt : r < i := List.mem_range.mp hr
+  have hidx : r * κ + c < i * κ :=
+    calc r * κ + c < r * κ + κ := by omega
       _ = (r + 1) * κ := by ring
-      _ ≤ i * κ := hmul
+      _ ≤ i * κ := Nat.mul_le_mul_right κ (by omega)
+  rw [BitString.getElem_listRow hc, BitString.getElem_listRow hc]
   rcases lt_or_ge (r * κ + c) K.length with hK | hK
-  · simp [List.getD_eq_getElem?_getD, List.getElem?_take_of_lt hidx, List.getElem?_eq_getElem hK]
-  · have htake_len : (K.take (i * κ)).length ≤ r * κ + c := by
-      rw [List.length_take]
-      exact (Nat.min_le_right _ _).trans hK
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_none htake_len,
+  · simp only [List.getD_eq_getElem?_getD, List.getElem?_take_of_lt hidx,
+      List.getElem?_eq_getElem hK]
+  · simp only [List.getD_eq_getElem?_getD,
+      List.getElem?_eq_none ((List.length_take .. ▸ Nat.min_le_right _ _).trans hK),
       List.getElem?_eq_none hK]
 
 private theorem uowhfCandidateInput_take_eq (h : ℕ → List Bool → List Bool → List Bool)
@@ -889,8 +898,7 @@ private theorem uowhfCandidateInput_take_eq (h : ℕ → List Bool → List Bool
   unfold uowhfCandidateInput
   split_ifs with hlt
   · rw [listRows_take_mul_eq]
-  · have hi_eq : i = n := le_antisymm hi (Nat.not_lt.mp hlt)
-    subst hi_eq
+  · obtain rfl : i = n := le_antisymm hi (Nat.not_lt.mp hlt)
     rw [listRows_take_mul_eq]
 
 /-- **Deterministic node-collision extraction for `uowhfTreeHash`**: whenever two distinct messages
@@ -912,226 +920,116 @@ theorem exists_uowhfCandidateInput_collision
       x₀ ≠ x₁ ∧
         h n (BitString.listRow (keyLen n) i K) x₀ =
           h n (BitString.listRow (keyLen n) i K) x₁ := by
-  let κ := keyLen n
-  let M := blockLen n
+  let κ := keyLen n; let M := blockLen n
   have hM_pos : 1 ≤ M := hn.trans hM_ge
-  let xFinal₀ := uowhfCandidateInput h n κ M n 0 K m₀
-  let xFinal₁ := uowhfCandidateInput h n κ M n 0 K m₁
-  have hxFinal₀_def : xFinal₀ =
+  let xFinal (m : List Bool) := uowhfCandidateInput h n κ M n 0 K m
+  have hxFinal_def (m : List Bool) : xFinal m =
       padOrTake M ((uowhfTreeLevels h n κ M (BitString.listRows n κ K)
-        (uowhfLeaves M m₀)).headD []) ++ BitString.lowBits M m₀.length := by
-    simp [xFinal₀, uowhfCandidateInput]
-  have hxFinal₁_def : xFinal₁ =
-      padOrTake M ((uowhfTreeLevels h n κ M (BitString.listRows n κ K)
-        (uowhfLeaves M m₁)).headD []) ++ BitString.lowBits M m₁.length := by
-    simp [xFinal₁, uowhfCandidateInput]
-  have hfinal_col : h n (BitString.listRow κ n K) xFinal₀ =
-      h n (BitString.listRow κ n K) xFinal₁ := by
-    have h₀ : uowhfTreeHash h keyLen blockLen n K m₀ = h n (BitString.listRow κ n K) xFinal₀ := by
-      simp only [uowhfTreeHash, ← hxFinal₀_def, κ, M]
-      exact padOrTake_eq_self (hlen_h _ _ (BitString.length_listRow κ n K)
-        (length_uowhfCandidateInput h n κ M n 0 K m₀))
-    have h₁ : uowhfTreeHash h keyLen blockLen n K m₁ = h n (BitString.listRow κ n K) xFinal₁ := by
-      simp only [uowhfTreeHash, ← hxFinal₁_def, κ, M]
-      exact padOrTake_eq_self (hlen_h _ _ (BitString.length_listRow κ n K)
-        (length_uowhfCandidateInput h n κ M n 0 K m₁))
-    exact h₀.symm.trans (hcol.trans h₁)
-  by_cases hfinal_ne : xFinal₀ ≠ xFinal₁
+        (uowhfLeaves M m)).headD []) ++ BitString.lowBits M m.length := by
+    simp only [xFinal, uowhfCandidateInput, lt_self_iff_false, ↓reduceIte]
+  have hhash_final (m : List Bool) :
+      uowhfTreeHash h keyLen blockLen n K m = h n (BitString.listRow κ n K) (xFinal m) := by
+    simp only [uowhfTreeHash, ← hxFinal_def m, κ, M]
+    exact padOrTake_eq_self (hlen_h _ _ (BitString.length_listRow κ n K)
+      (length_uowhfCandidateInput h n κ M n 0 K m))
+  have hfinal_col : h n (BitString.listRow κ n K) (xFinal m₀) =
+      h n (BitString.listRow κ n K) (xFinal m₁) :=
+    (hhash_final m₀).symm.trans (hcol.trans (hhash_final m₁))
+  by_cases hfinal_ne : xFinal m₀ ≠ xFinal m₁
   · exact ⟨n, le_rfl, 0, hB, hfinal_ne, hfinal_col⟩
   · push Not at hfinal_ne
-    rw [hxFinal₀_def, hxFinal₁_def] at hfinal_ne
-    obtain ⟨hroot_eq, hlow_eq⟩ := List.append_inj hfinal_ne (by simp)
+    rw [hxFinal_def m₀, hxFinal_def m₁] at hfinal_ne
+    obtain ⟨hroot_eq, hlow_eq⟩ := List.append_inj hfinal_ne (by simp only [length_padOrTake])
     have hpow_le : 2 ^ n ≤ 2 ^ M := Nat.pow_le_pow_right (by omega) hM_ge
     have hlen_eq : m₀.length = m₁.length := by
       have hlsb := congrArg BitString.lsbValue hlow_eq
       rwa [BitString.lsbValue_lowBits (hm₀_pow.trans_le hpow_le),
         BitString.lsbValue_lowBits (hm₁_pow.trans_le hpow_le)] at hlsb
-    let L₀ (r : ℕ) := uowhfTreeLevels h n κ M (BitString.listRows r κ K) (uowhfLeaves M m₀)
-    let L₁ (r : ℕ) := uowhfTreeLevels h n κ M (BitString.listRows r κ K) (uowhfLeaves M m₁)
-    have hL0_ne : L₀ 0 ≠ L₁ 0 := by
-      simp only [L₀, L₁, BitString.listRows, List.range_zero, List.map_nil, uowhfTreeLevels_nil]
-      intro heq
-      exact hne (uowhfLeaves_injective_of_length_eq hM_pos hlen_eq heq)
-    have hLn_eq : L₀ n = L₁ n := by
-      have hlen₀ : (L₀ n).length = 1 := by
-        apply length_uowhfTreeLevels_eq_one h n κ M _ (uowhfLeaves_ne_nil M m₀)
-        rw [BitString.length_listRows, length_uowhfLeaves]
-        exact max_le Nat.one_le_two_pow (Nat.le_of_lt hm₀_pow)
-      have hlen₁ : (L₁ n).length = 1 := by
-        apply length_uowhfTreeLevels_eq_one h n κ M _ (uowhfLeaves_ne_nil M m₁)
-        rw [BitString.length_listRows, length_uowhfLeaves]
-        exact max_le Nat.one_le_two_pow (Nat.le_of_lt hm₁_pow)
-      obtain ⟨w₀, hw₀⟩ := List.length_eq_one_iff.mp hlen₀
-      obtain ⟨w₁, hw₁⟩ := List.length_eq_one_iff.mp hlen₁
-      have hw₀_len : w₀.length = M :=
-        length_mem_uowhfTreeLevels _ (fun _ hu => length_mem_uowhfLeaves hu)
-          (hw₀ ▸ List.mem_singleton_self w₀)
-      have hw₁_len : w₁.length = M :=
-        length_mem_uowhfTreeLevels _ (fun _ hu => length_mem_uowhfLeaves hu)
-          (hw₁ ▸ List.mem_singleton_self w₁)
+    let L (m : List Bool) (r : ℕ) :=
+      uowhfTreeLevels h n κ M (BitString.listRows r κ K) (uowhfLeaves M m)
+    have hL0_ne : L m₀ 0 ≠ L m₁ 0 := by
+      simp only [L, BitString.listRows, List.range_zero, List.map_nil, uowhfTreeLevels_nil]
+      exact fun heq => hne (uowhfLeaves_injective_of_length_eq hM_pos hlen_eq heq)
+    have htop_singleton {m : List Bool} (hm : m.length < 2 ^ n) :
+        ∃ w, L m n = [w] ∧ w.length = M := by
+      obtain ⟨w, hw⟩ := List.length_eq_one_iff.mp
+        (length_uowhfTreeLevels_eq_one h n κ M (BitString.listRows n κ K) (uowhfLeaves_ne_nil M m)
+          (by rw [BitString.length_listRows, length_uowhfLeaves]
+              exact max_le Nat.one_le_two_pow hm.le))
+      exact ⟨w, hw, length_mem_uowhfTreeLevels _ (fun _ => length_mem_uowhfLeaves)
+        (hw ▸ List.mem_singleton_self w)⟩
+    have hLn_eq : L m₀ n = L m₁ n := by
+      obtain ⟨w₀, hw₀, hw₀_len⟩ := htop_singleton hm₀_pow
+      obtain ⟨w₁, hw₁, hw₁_len⟩ := htop_singleton hm₁_pow
       have hpad_eq : w₀ = w₁ := by
-        simpa only [L₀, L₁, hw₀, hw₁, List.headD_cons, padOrTake_eq_self hw₀_len,
+        dsimp only [L] at hw₀ hw₁
+        simpa only [hw₀, hw₁, List.headD_cons, padOrTake_eq_self hw₀_len,
           padOrTake_eq_self hw₁_len] using hroot_eq
       rw [hw₀, hw₁, hpad_eq]
-    obtain ⟨i, hi_lt, hLi_ne, hLi_succ⟩ := exists_step_eq_of_ne L₀ L₁ hL0_ne hLn_eq
-    have hstep_i₀ : L₀ (i + 1) = uowhfTreeStep h n κ M (BitString.listRow κ i K) (L₀ i) := by
-      simp only [L₀, listRows_succ_eq_snoc, uowhfTreeLevels_append]
-      rfl
-    have hstep_i₁ : L₁ (i + 1) = uowhfTreeStep h n κ M (BitString.listRow κ i K) (L₁ i) := by
-      simp only [L₁, listRows_succ_eq_snoc, uowhfTreeLevels_append]
-      rfl
-    rw [hstep_i₀, hstep_i₁] at hLi_succ
-    have hLi_len_eq : (L₀ i).length = (L₁ i).length := by
-      apply length_uowhfTreeLevels_eq_of_length_eq
-      rw [length_uowhfLeaves, length_uowhfLeaves, hlen_eq]
-    have hLi_len_le_B : (L₀ i).length ≤ B := by
-      calc
-        (L₀ i).length ≤ (uowhfLeaves M m₀).length :=
-          length_uowhfTreeLevels_le h n κ M _ _
-        _ = max 1 m₀.length := length_uowhfLeaves M m₀
-        _ ≤ B := max_le hB hm₀_B
-    have hgt1 : ¬ (L₀ i).length ≤ 1 := by
-      intro hle1
-      have hle1' : (L₁ i).length ≤ 1 := hLi_len_eq ▸ hle1
+    obtain ⟨i, hi_lt, hLi_ne, hLi_succ⟩ := exists_step_eq_of_ne (L m₀) (L m₁) hL0_ne hLn_eq
+    have hstep_i (m : List Bool) :
+        L m (i + 1) = uowhfTreeStep h n κ M (BitString.listRow κ i K) (L m i) := by
+      simp only [L, listRows_succ_eq_snoc, uowhfTreeLevels_append]; rfl
+    rw [hstep_i m₀, hstep_i m₁] at hLi_succ
+    have hLi_len_eq : (L m₀ i).length = (L m₁ i).length :=
+      length_uowhfTreeLevels_eq_of_length_eq h n κ M _ (by simp only [length_uowhfLeaves, hlen_eq])
+    have hLi_len_le_B : (L m₀ i).length ≤ B :=
+      (length_uowhfTreeLevels_le h n κ M _ _).trans
+        ((length_uowhfLeaves M m₀).le.trans (max_le hB hm₀_B))
+    have hgt1 : ¬ (L m₀ i).length ≤ 1 := fun hle1 => by
+      have hle1' : (L m₁ i).length ≤ 1 := hLi_len_eq ▸ hle1
       simp only [uowhfTreeStep, hle1, hle1', ↓reduceIte] at hLi_succ
       exact hLi_ne hLi_succ
-    have hmem₀ : ∀ w ∈ L₀ i, w.length = M :=
-      fun _ hu => length_mem_uowhfTreeLevels _ (fun _ hv => length_mem_uowhfLeaves hv) hu
-    have hmem₁ : ∀ w ∈ L₁ i, w.length = M :=
-      fun _ hu => length_mem_uowhfTreeLevels _ (fun _ hv => length_mem_uowhfLeaves hv) hu
-    obtain ⟨idx, hidx_lt, hidx_ne⟩ : ∃ idx : ℕ, ∃ h₀ : idx < (L₀ i).length,
-        (L₀ i)[idx]'h₀ ≠ (L₁ i)[idx]'(hLi_len_eq ▸ h₀) := by
+    have hmem (m : List Bool) : ∀ w ∈ L m i, w.length = M :=
+      fun _ => length_mem_uowhfTreeLevels _ (fun _ => length_mem_uowhfLeaves)
+    obtain ⟨idx, hidx_lt, hidx_ne⟩ : ∃ idx : ℕ, ∃ h₀ : idx < (L m₀ i).length,
+        (L m₀ i)[idx]'h₀ ≠ (L m₁ i)[idx]'(hLi_len_eq ▸ h₀) := by
       by_contra! hall
       exact hLi_ne (List.ext_getElem hLi_len_eq fun idx h₀ _ => hall idx h₀)
     let j := idx / 2
-    have hj_half : j < ((L₀ i).length + 1) / 2 := by omega
-    have hj_B : j < B := by omega
-    refine ⟨i, Nat.le_of_lt hi_lt, j, hj_B, ?_, ?_⟩
+    have hj_half : j < ((L m₀ i).length + 1) / 2 := by omega
+    refine ⟨i, Nat.le_of_lt hi_lt, j, by omega, ?_, ?_⟩
     · simp only [uowhfCandidateInput, uowhfPairInput, hi_lt, ↓reduceIte]
       intro hpair_eq
       obtain ⟨heven, hodd⟩ := List.append_inj hpair_eq (by simp only [length_padOrTake])
-      have hmod := Nat.div_add_mod idx 2
-      rcases (show idx % 2 = 0 ∨ idx % 2 = 1 by omega) with hm | hm
-      · have h2j : 2 * j = idx := by omega
-        rw [h2j] at heven
-        have h₀' : (L₀ i).getD idx [] = (L₀ i)[idx]'hidx_lt := by
-          simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hidx_lt]
-        have h₁' : (L₁ i).getD idx [] = (L₁ i)[idx]'(hLi_len_eq ▸ hidx_lt) := by
-          simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (hLi_len_eq ▸ hidx_lt)]
-        rw [h₀', h₁', padOrTake_eq_self (hmem₀ _ (List.getElem_mem hidx_lt)),
-          padOrTake_eq_self (hmem₁ _ (List.getElem_mem (hLi_len_eq ▸ hidx_lt)))] at heven
-        exact hidx_ne heven
-      · have h2j1 : 2 * j + 1 = idx := by omega
-        rw [h2j1] at hodd
-        have h₀' : (L₀ i).getD idx [] = (L₀ i)[idx]'hidx_lt := by
-          simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hidx_lt]
-        have h₁' : (L₁ i).getD idx [] = (L₁ i)[idx]'(hLi_len_eq ▸ hidx_lt) := by
-          simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (hLi_len_eq ▸ hidx_lt)]
-        rw [h₀', h₁', padOrTake_eq_self (hmem₀ _ (List.getElem_mem hidx_lt)),
-          padOrTake_eq_self (hmem₁ _ (List.getElem_mem (hLi_len_eq ▸ hidx_lt)))] at hodd
-        exact hidx_ne hodd
+      have hrefute {k : ℕ} (hk : k = idx)
+          (heq : padOrTake M ((L m₀ i).getD k []) = padOrTake M ((L m₁ i).getD k [])) : False := by
+        subst hk
+        simp only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hidx_lt,
+          List.getElem?_eq_getElem (hLi_len_eq ▸ hidx_lt), Option.getD_some,
+          padOrTake_eq_self (hmem m₀ _ (List.getElem_mem hidx_lt)),
+          padOrTake_eq_self (hmem m₁ _ (List.getElem_mem (hLi_len_eq ▸ hidx_lt)))] at heq
+        exact hidx_ne heq
+      rcases (show 2 * j = idx ∨ 2 * j + 1 = idx by omega) with hk | hk
+      · exact hrefute hk heven
+      · exact hrefute hk hodd
     · simp only [uowhfCandidateInput, hi_lt, ↓reduceIte]
-      have hgt1' : ¬ (L₁ i).length ≤ 1 := hLi_len_eq ▸ hgt1
+      have hgt1' : ¬ (L m₁ i).length ≤ 1 := hLi_len_eq ▸ hgt1
       simp only [uowhfTreeStep, hgt1, hgt1', ↓reduceIte] at hLi_succ
-      have hr₀ : j < (List.range (((L₀ i).length + 1) / 2)).length := by
+      have hr₀ : j < (List.range (((L m₀ i).length + 1) / 2)).length := by
         simpa only [List.length_range] using hj_half
-      have hr₁ : j < (List.range (((L₁ i).length + 1) / 2)).length := by
+      have hr₁ : j < (List.range (((L m₁ i).length + 1) / 2)).length := by
         simpa only [List.length_range, ← hLi_len_eq] using hj_half
-      have hj_entry :
-          padOrTake M (h n (padOrTake κ (BitString.listRow κ i K)) (uowhfPairInput M (L₀ i) j)) =
-            padOrTake M
-              (h n (padOrTake κ (BitString.listRow κ i K)) (uowhfPairInput M (L₁ i) j)) := by
-        have hget := congrArg (fun l => l[j]?) hLi_succ
-        simpa only [List.getElem?_map, List.getElem?_eq_getElem hr₀,
-          List.getElem?_eq_getElem hr₁, List.getElem_range, Option.map_some,
-          Option.some.injEq] using hget
-      rw [padOrTake_eq_self (BitString.length_listRow κ i K)] at hj_entry
+      have hj_entry := congrArg (fun l => l[j]?) hLi_succ
+      simp only [List.getElem?_map, List.getElem?_eq_getElem hr₀,
+        List.getElem?_eq_getElem hr₁, List.getElem_range, Option.map_some,
+        Option.some.injEq, padOrTake_eq_self (BitString.length_listRow κ i K)] at hj_entry
       rwa [padOrTake_eq_self (hlen_h _ _ (BitString.length_listRow κ i K)
-          (length_uowhfPairInput M (L₀ i) j)),
+          (length_uowhfPairInput M (L m₀ i) j)),
         padOrTake_eq_self (hlen_h _ _ (BitString.length_listRow κ i K)
-          (length_uowhfPairInput M (L₁ i) j))] at hj_entry
+          (length_uowhfPairInput M (L m₁ i) j))] at hj_entry
 
 /-! ### Two-stage planted-subkey reduction for `uowhfTreeHash` -/
 
-private structure TreeReductionState where
-  active : Bool
-  levelIdx : ℕ
-  pairIdx : ℕ
-  front : List Bool
-  innerState : List Bool
+private abbrev TreeState := Bool × ℕ × ℕ × List Bool × List Bool
 
-private def encodeTreeState (s : TreeReductionState) : List Bool :=
+private abbrev encTreeState : TreeState ↪ List Bool :=
   encPair encBool (encPair encUnary (encPair encUnary (encPair encBits encBits)))
-    (s.active, s.levelIdx, s.pairIdx, s.front, s.innerState)
 
-private def decodeTreeState (code : List Bool) : TreeReductionState where
-  active := (unframe code).headD false
-  levelIdx := (unframe (dropFrame code)).length
-  pairIdx := (unframe (dropFrame (dropFrame code))).length
-  front := unframe (dropFrame (dropFrame (dropFrame code)))
-  innerState := dropFrame (dropFrame (dropFrame (dropFrame code)))
-
-private theorem decodeTreeState_encodeTreeState (s : TreeReductionState) :
-    decodeTreeState (encodeTreeState s) = s := by
-  cases s
-  simp only [decodeTreeState, encodeTreeState, encPair_apply, unframe_frame_append,
-    dropFrame_frame_append, encBool_apply, List.headD_cons, encUnary_apply, List.length_replicate,
-    encBits, Function.Embedding.refl_apply]
-
-@[local fun_prop]
-private theorem computableInPolyTime_encodeTreeState
-    {γ : Type} {encIn : γ ↪ List Bool}
-    {active : γ → Bool} {levelIdx pairIdx : γ → ℕ} {front innerState : γ → List Bool}
-    (hactive : ComputableInPolyTime active encIn encBool)
-    (hlevel : ComputableInPolyTime levelIdx encIn encUnary)
-    (hpair : ComputableInPolyTime pairIdx encIn encUnary)
-    (hfront : ComputableInPolyTime front encIn encBits)
-    (hinner : ComputableInPolyTime innerState encIn encBits) :
-    ComputableInPolyTime
-      (fun a => encodeTreeState ⟨active a, levelIdx a, pairIdx a, front a, innerState a⟩)
-      encIn encBits := by
-  unfold encodeTreeState
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_decodeTreeState_active
-    {γ : Type} {encIn : γ ↪ List Bool} {code : γ → List Bool}
-    (hcode : ComputableInPolyTime code encIn encBits) :
-    ComputableInPolyTime (fun a => (decodeTreeState (code a)).active) encIn encBool := by
-  unfold decodeTreeState
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_decodeTreeState_levelIdx
-    {γ : Type} {encIn : γ ↪ List Bool} {code : γ → List Bool}
-    (hcode : ComputableInPolyTime code encIn encBits) :
-    ComputableInPolyTime (fun a => (decodeTreeState (code a)).levelIdx) encIn encUnary := by
-  unfold decodeTreeState
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_decodeTreeState_pairIdx
-    {γ : Type} {encIn : γ ↪ List Bool} {code : γ → List Bool}
-    (hcode : ComputableInPolyTime code encIn encBits) :
-    ComputableInPolyTime (fun a => (decodeTreeState (code a)).pairIdx) encIn encUnary := by
-  unfold decodeTreeState
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_decodeTreeState_front
-    {γ : Type} {encIn : γ ↪ List Bool} {code : γ → List Bool}
-    (hcode : ComputableInPolyTime code encIn encBits) :
-    ComputableInPolyTime (fun a => (decodeTreeState (code a)).front) encIn encBits := by
-  unfold decodeTreeState
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_decodeTreeState_innerState
-    {γ : Type} {encIn : γ ↪ List Bool} {code : γ → List Bool}
-    (hcode : ComputableInPolyTime code encIn encBits) :
-    ComputableInPolyTime (fun a => (decodeTreeState (code a)).innerState) encIn encBits := by
-  unfold decodeTreeState
-  polytime
+private def treeStateDecoder : Decoder encTreeState :=
+  Decoder.pair Decoder.bool
+    (Decoder.pair Decoder.unary
+      (Decoder.pair Decoder.unary (Decoder.pair Decoder.bits Decoder.bits)))
 
 /-- Two-stage target-collision reduction from `uowhfTreeHash` to the underlying compression family
 `h`: Stage 1 samples a dyadic slot `slot < (n + 1) * maxBlocks n` encoding `(i, j)` (`i ≤ n`,
@@ -1151,14 +1049,14 @@ noncomputable def uowhfTreeAdversary
     let j := if active then slot % maxBlocks n else 0
     let front ← BitString.sampleList (i * keyLen n)
     let x₀ := uowhfCandidateInput h n (keyLen n) (blockLen n) i j front choice.1
-    return (x₀, encodeTreeState ⟨active, i, j, front, choice.2⟩)
+    return (x₀, encTreeState (active, i, j, front, choice.2))
   find n savedState kStar := do
-    let s := decodeTreeState savedState
-    let i := min n s.levelIdx
+    let s := treeStateDecoder.decode savedState
+    let i := min n s.2.1
     let back ← BitString.sampleList ((n - i) * keyLen n)
-    let m₁ ← adversary.find n s.innerState (s.front ++ kStar ++ back)
-    return if s.active then
-      uowhfCandidateInput h n (keyLen n) (blockLen n) i s.pairIdx s.front m₁
+    let m₁ ← adversary.find n s.2.2.2.2 (s.2.2.2.1 ++ kStar ++ back)
+    return if s.1 then
+      uowhfCandidateInput h n (keyLen n) (blockLen n) i s.2.2.1 s.2.2.2.1 m₁
     else []
 
 /-- `uowhfTreeAdversary` is a uniform strict PPT `TargetCollisionFinder` whenever `h`, `keyLen`,
@@ -1173,13 +1071,56 @@ theorem isPPT_uowhfTreeAdversary
     (hmaxBlocks : ComputableInPolyTime maxBlocks encUnary encUnary)
     (ha : adversary.IsPPT) :
     (uowhfTreeAdversary h keyLen blockLen maxBlocks adversary).IsPPT := by
-  have hchoose := ha.choose
-  have hfind := ha.find
+  have hkt := hkeyLen.tidy; have hbt := hblockLen.tidy; have hmt := hmaxBlocks.tidy
+  have hdec := treeStateDecoder.computableInPolyTime.tidy
+  have hbound : ComputableTidilyInPolyTime (fun n => (n + 1) * maxBlocks n) encUnary encUnary :=
+    tidy_congr (ComputableTidilyInPolyTime.unary_mul.comp
+      ((ComputableTidilyInPolyTime.unary_add.comp
+        (ComputableTidilyInPolyTime.id'.prod (.const 1))).prod hmt)) fun _ => rfl
   constructor
-  · dsimp only [uowhfTreeAdversary]
-    ppt
-  · dsimp only [uowhfTreeAdversary]
-    ppt
+  · let E2 := encPair (encPair encUnary encUnary) (encPair encBits encBits)
+    have hq := ComputableTidilyInPolyTime.id' (encIn := E2)
+    have hn2 := hq.fst'.fst'; have hslot2 := hq.fst'.snd'
+    have hact2 := hslot2.unary_lt' (hbound.comp hn2); have hB2 := hmt.comp hn2
+    have hi2 := ComputableTidilyInPolyTime.ite' hact2
+      (ComputableTidilyInPolyTime.unary_div.comp (hslot2.prod hB2)) (.const 0)
+    have hj2 := ComputableTidilyInPolyTime.ite' hact2
+      (ComputableTidilyInPolyTime.unary_mod.comp (hslot2.prod hB2)) (.const 0)
+    have hflen := ComputableTidilyInPolyTime.unary_mul.comp (hi2.prod (hkt.comp hn2))
+    have hr := ComputableTidilyInPolyTime.id' (encIn := encPair E2 encBits)
+    have hn3 := hn2.comp hr.fst'; have hi3 := hi2.comp hr.fst'; have hj3 := hj2.comp hr.fst'
+    have hx₀ := (computableInPolyTime_uowhfCandidateInput hh
+      (.of_tidy hn3) (.of_tidy (hkt.comp hn3)) (.of_tidy (hbt.comp hn3))
+      (.of_tidy hi3) (.of_tidy hj3) (.of_tidy hr.snd') (.of_tidy hr.fst'.snd'.fst')).tidy
+    have hst := ((hact2.comp hr.fst').prod
+      (hi3.prod (hj3.prod (hr.snd'.prod hr.fst'.snd'.snd')))).encoded
+    exact (isPPTOn_sampleDyadicIndex (.of_tidy hbound)).bind_with
+      ((ha.choose.preprocess (ComputableInPolyTime.fst encUnary encUnary)).bind_with
+        ((isPPTOn_sampleList.preprocess (of_tidy_congr hflen fun _ => rfl)).bind_with
+          (tidy_congr (hx₀.prod hst) fun _ => rfl).isPPTOn))
+  · let EF0 := encPair encUnary (encPair encBits encBits)
+    let EF1 := encPair EF0 encBits
+    have hp := ComputableTidilyInPolyTime.id' (encIn := EF0)
+    have hs0 := hdec.comp hp.snd'.fst'
+    have hi0 := ComputableTidilyInPolyTime.unary_min.comp (hp.fst'.prod hs0.snd'.fst')
+    have hblen := ComputableTidilyInPolyTime.unary_mul.comp
+      ((ComputableTidilyInPolyTime.unary_sub.comp (hp.fst'.prod hi0)).prod (hkt.comp hp.fst'))
+    have hq := ComputableTidilyInPolyTime.id' (encIn := EF1)
+    have hK1 := ComputableTidilyInPolyTime.bitsAppend
+      (ComputableTidilyInPolyTime.bitsAppend (hs0.snd'.snd'.snd'.fst'.comp hq.fst')
+        hq.fst'.snd'.snd') hq.snd'
+    have hfin := hq.fst'.fst'.prod ((hs0.snd'.snd'.snd'.snd'.comp hq.fst').prod hK1)
+    have hr := ComputableTidilyInPolyTime.id' (encIn := encPair EF1 encBits)
+    have hr0 := hr.fst'.fst'; have hn3 := hr0.fst'
+    have hret := ComputableTidilyInPolyTime.ite' (hs0.fst'.comp hr0)
+      (computableInPolyTime_uowhfCandidateInput hh (.of_tidy hn3)
+        (.of_tidy (hkt.comp hn3)) (.of_tidy (hbt.comp hn3))
+        (.of_tidy (hi0.comp hr0)) (.of_tidy (hs0.snd'.snd'.fst'.comp hr0))
+        (.of_tidy (hs0.snd'.snd'.snd'.fst'.comp hr0)) (.of_tidy hr.snd')).tidy
+      (.const [])
+    exact (isPPTOn_sampleList.preprocess (of_tidy_congr hblen fun _ => rfl)).bind_with
+      ((ha.find.preprocess (of_tidy_congr hfin fun _ => rfl)).bind_with
+        (tidy_congr hret fun _ => rfl).isPPTOn)
 
 private theorem uniformList_bind_three_split {α : Type*} (a b c : ℕ)
     (Φ : List Bool → List Bool → List Bool → PMF α) :
@@ -1191,18 +1132,13 @@ private theorem uniformList_bind_three_split {α : Type*} (a b c : ℕ)
         Φ (K.take a) ((K.drop a).take b) K) := by
   rw [Nat.add_assoc, BitString.uniformList_add a (b + c), BitString.uniformList_add b c]
   simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
-  apply PMF.bind_congr_on_support
-  intro front hfront
+  refine PMF.bind_congr_on_support _ _ _ fun front hfront =>
+    PMF.bind_congr_on_support _ _ _ fun mid hmid =>
+      PMF.bind_congr_on_support _ _ _ fun back _ => ?_
   have hfront_len : front.length = a := BitString.length_of_mem_support_uniformList hfront
-  apply PMF.bind_congr_on_support
-  intro mid hmid
   have hmid_len : mid.length = b := BitString.length_of_mem_support_uniformList hmid
-  apply PMF.bind_congr_on_support
-  intro back _
-  have htake : (front ++ (mid ++ back)).take a = front := List.take_left' hfront_len
-  have hdrop : (front ++ (mid ++ back)).drop a = mid ++ back := List.drop_left' hfront_len
-  have hmid_take : (mid ++ back).take b = mid := List.take_left' hmid_len
-  simp only [List.append_assoc, htake, hdrop, hmid_take]
+  simp only [List.append_assoc, List.take_left' hfront_len, List.drop_left' hfront_len,
+    List.take_left' hmid_len]
 
 private theorem listRow_eq_drop_take_of_le {κ n i : ℕ} (hi : i ≤ n) {K : List Bool}
     (hK : K.length = (n + 1) * κ) :
@@ -1212,8 +1148,7 @@ private theorem listRow_eq_drop_take_of_le {κ n i : ℕ} (hi : i ≤ n) {K : Li
     have : (i + 1) * κ ≤ (n + 1) * κ := Nat.mul_le_mul_right κ (by omega)
     have : i * κ + κ = (i + 1) * κ := by ring
     omega
-  unfold BitString.listRow
-  rw [List.take_append_of_le_length hrem]
+  unfold BitString.listRow; rw [List.take_append_of_le_length hrem]
 
 private theorem pmf_map_true_le_sum {α : Type*} (μ : PMF α) (D : ℕ)
     (W : α → Bool) (Wi : Fin D → α → Bool)
@@ -1229,8 +1164,7 @@ private theorem pmf_map_true_le_sum {α : Type*} (μ : PMF α) (D : ℕ)
   refine Finset.sum_le_sum fun j hj => ?_
   have hj_lt : j < D := Finset.mem_range.mp hj
   have hF : F j = Wi ⟨j, hj_lt⟩ := funext fun a => by simp only [F, hj_lt, ↓reduceDIte]
-  simp only [hj_lt, ↓reduceDIte, hF]
-  exact le_rfl
+  simp only [hj_lt, ↓reduceDIte, hF, le_rfl]
 
 /-- **Concrete security bound for `uowhfTreeHash`**: at any security parameter `n ≥ 1` with
 `n ≤ blockLen n`, `1 ≤ maxBlocks n`, and every supported message pair `(m₀, m₁)` of `adversary`
@@ -1259,10 +1193,7 @@ theorem succProbability_targetCollisionGame_uowhfTreeHash_le
           (ProbComp.eval
             (targetCollisionGame keyLen h (fun m x => x.length == 2 * blockLen m)
               (uowhfTreeAdversary h keyLen blockLen maxBlocks adversary) n)) := by
-  let κ := keyLen n
-  let M := blockLen n
-  let B := maxBlocks n
-  let bound := (n + 1) * B
+  let κ := keyLen n; let M := blockLen n; let B := maxBlocks n; let bound := (n + 1) * B
   let validComp (m : ℕ) (x : List Bool) : Bool := x.length == 2 * blockLen m
   let μ : PMF ((List Bool × List Bool) × List Bool × List Bool) :=
     (ProbComp.eval (adversary.choose n)).bind fun choice =>
@@ -1270,29 +1201,27 @@ theorem succProbability_targetCollisionGame_uowhfTreeHash_le
         (ProbComp.eval (adversary.find n choice.2 K)).map fun m₁ => (choice, K, m₁)
   let W (t : (List Bool × List Bool) × List Bool × List Bool) : Bool :=
     isCollision (uowhfTreeHash h keyLen blockLen n) (fun _ _ => true) n t.2.1 t.1.1 t.2.2
-  let slotTrial (slot : ℕ) : Game := do
-    let choice ← ProbComp.eval (adversary.choose n)
+  let slotTrial (slot : ℕ) : Game :=
     let active := decide (slot < bound)
     let i := if active then slot / B else 0
     let j := if active then slot % B else 0
-    let front ← BitString.uniformList (i * κ)
-    let x₀ := uowhfCandidateInput h n κ M i j front choice.1
-    let s := decodeTreeState (encodeTreeState ⟨active, i, j, front, choice.2⟩)
-    let i' := min n s.levelIdx
-    let kStar ← BitString.uniformList κ
-    let back ← BitString.uniformList ((n - i') * κ)
-    let m₁ ← ProbComp.eval (adversary.find n s.innerState (s.front ++ kStar ++ back))
-    let x₁ := if s.active then uowhfCandidateInput h n κ M i' s.pairIdx s.front m₁ else []
-    return isCollision (h n) validComp n kStar x₀ x₁
+    (ProbComp.eval (adversary.choose n)).bind fun choice =>
+      (BitString.uniformList (i * κ)).bind fun front =>
+        (BitString.uniformList κ).bind fun kStar =>
+          (BitString.uniformList ((n - min n i) * κ)).bind fun back =>
+            (ProbComp.eval (adversary.find n choice.2 (front ++ kStar ++ back))).bind fun m₁ =>
+              PMF.pure (isCollision (h n) validComp n kStar
+                (uowhfCandidateInput h n κ M i j front choice.1)
+                (if active then uowhfCandidateInput h n κ M (min n i) j front m₁ else []))
   have hred_eq :
       ProbComp.eval
         (targetCollisionGame keyLen h validComp
           (uowhfTreeAdversary h keyLen blockLen maxBlocks adversary) n) =
         (PMF.uniformOfFintype (Fin (dyadicSize bound))).bind (fun s => slotTrial s.val) := by
-    simp only [targetCollisionGame, uowhfTreeAdversary, slotTrial, ProbComp.eval_bind,
-      ProbComp.eval_pure, eval_sampleDyadicIndex, BitString.eval_sampleList,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-      PMF.bind_map, Function.comp_def, κ, M, B, bound]
+    dsimp only [targetCollisionGame, uowhfTreeAdversary, slotTrial, κ, M, B, bound]
+    simp only [ProbComp.eval_bind, ProbComp.eval_pure, eval_sampleDyadicIndex,
+      BitString.eval_sampleList, treeStateDecoder.decode_enc, PMF.bind_bind, PMF.pure_bind,
+      PMF.bind_map, Function.comp_def]
   have htree_eq :
       ProbComp.eval
         (targetCollisionGame (fun m => (m + 1) * keyLen m)
@@ -1309,21 +1238,18 @@ theorem succProbability_targetCollisionGame_uowhfTreeHash_le
         (uowhfCandidateInput h n κ M i j t.2.1 t.1.1)
         (uowhfCandidateInput h n κ M i j t.2.1 t.2.2)
     else false
-  have hslot_eq : ∀ s : Fin (dyadicSize bound), s.val < bound →
+  have hslot_eq (s : Fin (dyadicSize bound)) (hs : s.val < bound) :
       slotTrial s.val = μ.map (Wi s) := by
-    intro s hs
-    have hi_lt : s.val / B < n + 1 := Nat.div_lt_of_lt_mul (by simpa [bound, Nat.mul_comm] using hs)
-    have hi_le : s.val / B ≤ n := by omega
+    have hi_le : s.val / B ≤ n := Nat.le_of_lt_succ
+      (Nat.div_lt_of_lt_mul (by simpa only [B, bound, Nat.mul_comm] using hs))
     have hlen_sum : s.val / B * κ + κ + (n - s.val / B) * κ = (n + 1) * κ := by
-      calc
-        s.val / B * κ + κ + (n - s.val / B) * κ
-          = (s.val / B + 1 + (n - s.val / B)) * κ := by ring
-        _ = (n + 1) * κ := by rw [show s.val / B + 1 + (n - s.val / B) = n + 1 by omega]
-    simp only [slotTrial, Wi, μ, hs, decide_true, ↓reduceIte, decodeTreeState_encodeTreeState,
-      Nat.min_eq_right hi_le, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      rw [show s.val / B * κ + κ + (n - s.val / B) * κ =
+          (s.val / B + 1 + (n - s.val / B)) * κ by ring,
+        show s.val / B + 1 + (n - s.val / B) = n + 1 by omega]
+    dsimp only [slotTrial, μ, Wi]
+    simp only [hs, decide_true, ↓reduceIte, Nat.min_eq_right hi_le,
       PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
-    apply PMF.bind_congr_on_support
-    intro choice _
+    refine PMF.bind_congr_on_support _ _ _ fun choice _ => ?_
     let Φ (front kStar full : List Bool) : PMF Bool :=
       (ProbComp.eval (adversary.find n choice.2 full)).bind fun m₁ =>
         PMF.pure
@@ -1332,57 +1258,47 @@ theorem succProbability_targetCollisionGame_uowhfTreeHash_le
             (uowhfCandidateInput h n κ M (s.val / B) (s.val % B) front m₁))
     exact (uniformList_bind_three_split (s.val / B * κ) κ ((n - s.val / B) * κ) Φ).trans <| by
       rw [hlen_sum]
-      apply PMF.bind_congr_on_support
-      intro K hK
+      refine PMF.bind_congr_on_support _ _ _ fun K hK => ?_
       have hK_len : K.length = (n + 1) * κ := BitString.length_of_mem_support_uniformList hK
       dsimp only [Φ]
       rw [listRow_eq_drop_take_of_le hi_le hK_len,
         uowhfCandidateInput_take_eq h hi_le K choice.1]
-      apply PMF.bind_congr_on_support
-      intro m₁ _
+      refine PMF.bind_congr_on_support _ _ _ fun m₁ _ => ?_
       rw [uowhfCandidateInput_take_eq h hi_le K m₁]
   have hcover : ∀ t ∈ μ.support, W t = true → ∃ s : Fin (dyadicSize bound), Wi s t = true := by
     rintro ⟨choice, K, m₁⟩ ht hW
     simp only [μ, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at ht
     obtain ⟨choice', hchoice, K', hK, ⟨m₁', hm₁, htuple⟩⟩ := ht
-    injection htuple with h1 h23
-    injection h23 with h2 h3
-    subst h1 h2 h3
-    rw [isCollision_eq_true_iff] at hW
-    obtain ⟨_, _, hne, hcol⟩ := hW
+    injection htuple with h1 h23; injection h23 with h2 h3; subst h1 h2 h3
+    obtain ⟨_, _, hne, hcol⟩ := isCollision_eq_true_iff.mp hW
     obtain ⟨hm₀_B, hm₀_pow⟩ := hm₀_bound choice' hchoice
-    have hm₁_pow := hm₁_bound choice' hchoice K' hK m₁' hm₁
     obtain ⟨i, hi_le, j, hj_lt, hx_ne, hx_col⟩ :=
-      exists_uowhfCandidateInput_collision hn hM_ge hB hm₀_B hm₀_pow hm₁_pow hlen_h hne hcol
+      exists_uowhfCandidateInput_collision hn hM_ge hB hm₀_B hm₀_pow
+        (hm₁_bound choice' hchoice K' hK m₁' hm₁) hlen_h hne hcol
     let slot := i * B + j
-    have hslot_lt : slot < bound := by
-      calc
-        i * B + j < i * B + B := by omega
-        _ = (i + 1) * B := by ring
-        _ ≤ (n + 1) * B := Nat.mul_le_mul_right B (by omega)
-    have hB_pos : 0 < B := by omega
+    have hslot_lt : slot < bound :=
+      (Nat.add_lt_add_left hj_lt _).trans_le
+        (by rw [show i * B + B = (i + 1) * B by ring]; exact Nat.mul_le_mul_right B (by omega))
     have hdiv : slot / B = i := by
       dsimp only [slot]
-      rw [Nat.mul_comm i B, Nat.mul_add_div hB_pos, Nat.div_eq_of_lt hj_lt, Nat.add_zero]
+      rw [Nat.mul_comm i B, Nat.mul_add_div (by omega), Nat.div_eq_of_lt hj_lt, Nat.add_zero]
     have hmod : slot % B = j := by
-      dsimp only [slot]
-      rw [Nat.mul_comm i B, Nat.mul_add_mod, Nat.mod_eq_of_lt hj_lt]
+      dsimp only [slot]; rw [Nat.mul_comm i B, Nat.mul_add_mod, Nat.mod_eq_of_lt hj_lt]
     refine ⟨⟨slot, hslot_lt.trans (lt_dyadicSize bound)⟩, ?_⟩
     simp only [Wi, hslot_lt, ↓reduceIte, hdiv, hmod, isCollision_eq_true_iff, validComp,
       beq_iff_eq, length_uowhfCandidateInput, true_and, M]
     exact ⟨hx_ne, hx_col⟩
   have hsum_le : (μ.map W) true ≤ ∑ s : Fin (dyadicSize bound), (slotTrial s.val) true := by
-    refine (pmf_map_true_le_sum μ (dyadicSize bound) W Wi hcover).trans ?_
-    refine Finset.sum_le_sum fun s _ => ?_
+    refine (pmf_map_true_le_sum μ (dyadicSize bound) W Wi hcover).trans
+      (Finset.sum_le_sum fun s _ => ?_)
     by_cases hs : s.val < bound
     · rw [hslot_eq s hs]
-    · simp [Wi, hs]
+    · simp only [Wi, hs, ↓reduceIte, PMF.map_apply, Bool.true_eq_false, tsum_zero, zero_le]
   have hpos : (0 : ℝ≥0) < dyadicSize bound := by exact_mod_cast dyadicSize_pos bound
   rw [htree_eq, hred_eq, Game.succProbability_uniform, Fintype.card_fin,
     mul_div_cancel₀ _ hpos.ne']
-  have hsum_ne_top : (∑ s : Fin (dyadicSize bound), (slotTrial s.val) true) ≠ ⊤ :=
-    ne_of_lt (ENNReal.sum_lt_top.mpr fun s _ => (PMF.apply_ne_top _ _).lt_top)
-  have hmono := ENNReal.toNNReal_mono hsum_ne_top hsum_le
+  have hmono := ENNReal.toNNReal_mono
+    (ne_of_lt (ENNReal.sum_lt_top.mpr fun s _ => (PMF.apply_ne_top _ _).lt_top)) hsum_le
   rwa [ENNReal.toNNReal_sum fun s _ => PMF.apply_ne_top _ _] at hmono
 
 /-- Extend any `KeyedCompressionFamily` `C` (`2 * C.blockLen n → C.blockLen n` under
@@ -1397,8 +1313,10 @@ def KeyedCompressionFamily.treeHash (C : KeyedCompressionFamily) : KeyedHashFami
   digestLen := C.blockLen
   eval := uowhfTreeHash C.eval C.keyLen C.blockLen
   keyLen_polyTime := by
-    have hkey := C.keyLen_polyTime
-    polytime
+    exact (ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.unary_mul.comp
+      ((ComputableTidilyInPolyTime.unary_add.comp
+        (ComputableTidilyInPolyTime.id'.prod (.const 1))).prod C.keyLen_polyTime.tidy))).of_enc_eq
+      fun _ => rfl
   digestLen_polyTime := C.blockLen_polyTime
   polyTime := computableInPolyTime_uowhfTreeHash C.polyTime C.keyLen_polyTime C.blockLen_polyTime
   le_digestLen := C.le_blockLen
@@ -1419,57 +1337,57 @@ theorem KeyedCompressionFamily.targetCollisionResistant_treeHash
   obtain ⟨c₁, d₁, hlen₁⟩ := hadversary.choose.length_le
   obtain ⟨c₂, d₂, hlen₂⟩ := hadversary.find.length_le
   let maxBlocks (n : ℕ) : ℕ := c₁ * (n + 1) ^ d₁ + 1
-  have hmaxBlocks_polyTime : ComputableInPolyTime maxBlocks encUnary encUnary := by
-    dsimp only [maxBlocks]
-    polytime
+  have hn1 := ComputableTidilyInPolyTime.unary_add.comp
+    (ComputableTidilyInPolyTime.id'.prod (.const 1))
+  have hmaxBlocks_polyTime : ComputableInPolyTime maxBlocks encUnary encUnary :=
+    of_tidy_congr (ComputableTidilyInPolyTime.unary_add.comp
+      ((ComputableTidilyInPolyTime.unary_mul.comp
+        ((ComputableTidilyInPolyTime.const c₁).prod
+          ((ComputableTidilyInPolyTime.unary_pow d₁).comp hn1))).prod (.const 1))) fun _ => rfl
   let redAdversary := uowhfTreeAdversary C.eval C.keyLen C.blockLen maxBlocks adversary
   have hredPPT : redAdversary.IsPPT :=
     isPPT_uowhfTreeAdversary C.polyTime C.keyLen_polyTime C.blockLen_polyTime
       hmaxBlocks_polyTime hadversary
   have hkeyLen_pb : PolynomiallyBounded C.keyLen := C.keyLen_polyTime.polynomiallyBounded
-  have hmaxBlocks_pb : PolynomiallyBounded maxBlocks := hmaxBlocks_polyTime.polynomiallyBounded
-  let findCap (n : ℕ) : ℕ :=
-    c₂ * (2 * n + 2 * maxBlocks n + (n + 1) * C.keyLen n + 4) ^ d₂
-  have hfindCap_pb : PolynomiallyBounded findCap := by
-    dsimp only [findCap]
-    fun_prop
-  let loss (n : ℕ) : ℕ := dyadicSize ((n + 1) * maxBlocks n)
-  have hloss_pb : PolynomiallyBounded loss := by
-    dsimp only [loss]
-    fun_prop
+  have hmaxBlocks_pb : PolynomiallyBounded maxBlocks :=
+    ((PolynomiallyBounded.const c₁).mul ((PolynomiallyBounded.id.add (.const 1)).pow d₁)).add
+      (.const 1)
+  have hfindCap_pb : PolynomiallyBounded
+      (fun n => c₂ * (2 * n + 2 * maxBlocks n + (n + 1) * C.keyLen n + 4) ^ d₂) :=
+    (PolynomiallyBounded.const c₂).mul
+      ((((((PolynomiallyBounded.const 2).mul .id).add
+        ((PolynomiallyBounded.const 2).mul hmaxBlocks_pb)).add
+          ((PolynomiallyBounded.id.add (.const 1)).mul hkeyLen_pb)).add (.const 4)).pow d₂)
+  have hloss_pb : PolynomiallyBounded (fun n => dyadicSize ((n + 1) * maxBlocks n)) :=
+    PolynomiallyBounded.comp dyadicSize_polynomiallyBounded
+      ((PolynomiallyBounded.id.add (.const 1)).mul hmaxBlocks_pb)
   refine negligible_of_eventually_le
     ((hC.negligible redAdversary hredPPT).polynomiallyBounded_mul hloss_pb) ?_
   filter_upwards [Filter.eventually_ge_atTop 1,
       hmaxBlocks_pb.eventually_lt_two_pow,
       hfindCap_pb.eventually_lt_two_pow] with n hn hm₀_exp hm₁_exp
-  refine succProbability_targetCollisionGame_uowhfTreeHash_le adversary n hn (C.le_blockLen n)
-    (Nat.le_add_left 1 _) (C.length_eq n) ?_ ?_
-  · intro choice hchoice
+  have hchoice_le {choice} (hchoice : choice ∈ (ProbComp.eval (adversary.choose n)).support) :
+      choice.1.length ≤ maxBlocks n ∧ choice.2.length ≤ maxBlocks n := by
     have henc := hlen₁ n choice hchoice
     simp only [length_encPair, encBits, Function.Embedding.refl_apply, encUnary_apply,
-      List.length_replicate] at henc
-    have hm₀_le : choice.1.length ≤ maxBlocks n := by
-      dsimp only [maxBlocks]
-      omega
-    exact ⟨hm₀_le, hm₀_le.trans_lt hm₀_exp⟩
-  · intro choice hchoice K hK m₁ hm₁
-    have henc₁ := hlen₁ n choice hchoice
-    simp only [length_encPair, encBits, Function.Embedding.refl_apply, encUnary_apply,
-      List.length_replicate] at henc₁
-    have hst_le : choice.2.length ≤ maxBlocks n := by
-      dsimp only [maxBlocks]
-      omega
-    have hK_len : K.length = (n + 1) * C.keyLen n :=
-      BitString.length_of_mem_support_uniformList hK
-    have henc₂ := hlen₂ (n, choice.2, K) m₁ hm₁
-    simp only [length_encPair, encBits, Function.Embedding.refl_apply, encUnary_apply,
-      List.length_replicate, hK_len] at henc₂
-    have hinput_le :
-        2 * n + 1 + (2 * choice.2.length + 1 + (n + 1) * C.keyLen n) + 1 ≤
-          2 * n + 2 * maxBlocks n + (n + 1) * C.keyLen n + 4 := by
-      omega
-    have hm₁_le : m₁.length ≤ findCap n :=
-      henc₂.trans (Nat.mul_le_mul_left c₂ (Nat.pow_le_pow_left hinput_le d₂))
-    exact hm₁_le.trans_lt hm₁_exp
+      List.length_replicate, maxBlocks] at henc ⊢
+    omega
+  unfold KeyedCompressionFamily.treeHash KeyedCompressionFamily.validInput
+  dsimp only [redAdversary]
+  refine succProbability_targetCollisionGame_uowhfTreeHash_le
+    (h := C.eval) (keyLen := C.keyLen) (blockLen := C.blockLen) (maxBlocks := maxBlocks)
+    adversary n hn (C.le_blockLen n)
+    (Nat.le_add_left 1 _) (C.length_eq n)
+    (fun choice hchoice => ⟨(hchoice_le hchoice).1, (hchoice_le hchoice).1.trans_lt hm₀_exp⟩) ?_
+  intro choice hchoice K hK m₁ hm₁
+  have hst_le := (hchoice_le hchoice).2
+  have hK_len : K.length = (n + 1) * C.keyLen n := BitString.length_of_mem_support_uniformList hK
+  have henc₂ := hlen₂ (n, choice.2, K) m₁ hm₁
+  simp only [length_encPair, encBits, Function.Embedding.refl_apply, encUnary_apply,
+    List.length_replicate, hK_len] at henc₂
+  have hinput_le :
+      2 * n + 1 + (2 * choice.2.length + 1 + (n + 1) * C.keyLen n) + 1 ≤
+        2 * n + 2 * maxBlocks n + (n + 1) * C.keyLen n + 4 := by omega
+  exact (henc₂.trans (Nat.mul_le_mul_left c₂ (Nat.pow_le_pow_left hinput_le d₂))).trans_lt hm₁_exp
 
 end Cslib.Crypto

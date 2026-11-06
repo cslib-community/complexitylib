@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Fast
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Slow
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Parameters
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-input admission for the assembled solver
@@ -52,17 +53,17 @@ theorem executionWidth_pos (n F b ap bp cp : ℕ) (values : List ℤ) :
 /-- Every larger physical width contains the entire original-input numerical envelope. -/
 theorem envelope_fits {W n F b ap bp cp : ℕ} (values : List ℤ)
     (hW : executionWidth n F b ap bp cp values ≤ W) : Fits W (envelope n F b ap bp cp values) := by
-  have hpow := Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) (envelope n F b ap bp cp values)
-  exact hpow.trans_lt (Nat.pow_lt_pow_right (by decide : 1 < (2 : ℕ))
-    (by unfold executionWidth at hW; omega))
+  exact fits_of_clog_lt (by unfold executionWidth at hW; omega)
 
 /-- Existing signed counter arithmetic fits from the original-input envelope alone. -/
 theorem counter_magnitude_fits {n F b ap bp cp : ℕ} (values : List ℤ) :
     GenericRAM.Signed.Fits (Nat.clog 2 (envelope n F b ap bp cp values) + 1)
-      (CountPrime.magnitudeBudget (Nat.sqrt (ParameterChoice.window n)) (Nat.clog 2 n) F : ℤ) := by
+      (CountPrime.magnitudeBudget (Nat.sqrt (ParameterChoice.window n))
+        (Nat.clog 2 n) F : ℤ) := by
   have hle : CountPrime.magnitudeBudget (Nat.sqrt (ParameterChoice.window n)) (Nat.clog 2 n) F <
       envelope n F b ap bp cp values := by dsimp only [envelope]; omega
-  have hp := hle.trans_le (Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) _)
+  have hp : _ < 2 ^ Nat.clog 2 (envelope n F b ap bp cp values) :=
+    fits_of_lt_clog_le hle (le_refl _)
   refine ⟨by omega, ?_, ?_⟩
   · simp only [Nat.add_sub_cancel]
     exact (neg_nonpos.mpr (by positivity)).trans (Int.natCast_nonneg _)

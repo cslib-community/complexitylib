@@ -10,7 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Loop
 
 /-!
-# Initialized fixed-prime ExactTriangle computation
+# Initialized box-backed fixed-prime ExactTriangle computation
 
 The original input alone supplies scalar headers and canonical signed weights. The producer
 runs once, its actual heap and occupied records feed the complete native traversal, and the

@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandMemory
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandHeader
 
@@ -46,17 +47,16 @@ theorem exec_copyKernel {w : ℕ} (x : Data 96) (h1 : Fits w 1)
     ∃ y, ExecWithin w (ArrayCopy.program.rename copyRegisters) x y (7 * x.regs copyLen + 4) ∧
       y.mem = ArrayCopy.copyPrefix x.mem (x.regs copySrc) (x.regs copyDst) (x.regs copyLen) ∧
       (∀ i, 7 ≤ i.val → y.regs i = x.regs i) := by
-  obtain ⟨z, hz, hm, _, _, _⟩ := ArrayCopy.exec_of_separated_or_eq (x.comap copyRegisters)
-    h1 hs hd hsep
-  have he := hz.rename copyRegisters_injective
-  refine ⟨z.extend copyRegisters x, he, hm, ?_⟩
+  obtain ⟨y, he, ⟨hm, _, _, _⟩, frame⟩ := ExecWithin.rename_post copyRegisters_injective
+    (ArrayCopy.exec_of_separated_or_eq (x.comap copyRegisters) h1 hs hd hsep)
+  refine ⟨y, he, hm, ?_⟩
   intro i hi
-  apply he.regs_eq
-  have hf : ∀ i : Fin 96, 7 ≤ i.val → (ArrayCopy.program.rename copyRegisters).Preserves i := by
-    simp only [ArrayCopy.program, ArrayCopy.body, Code.rename, Code.Preserves,
-      Op.rename, Op.bin, Op.dest, copyRegisters]
-    decide
-  exact hf i hi
+  exact frame i (by
+    intro j hj
+    have hv := congrArg Fin.val hj
+    have := j.isLt
+    change j.val = i.val at hv
+    omega)
 
 private theorem lowSetup_regs (x : Data 96) (s d n : ℕ) (i : Fin 96) (hi : 7 ≤ i.val) :
     (((x.set copySrc s).set copyDst d).set copyLen n).regs i = x.regs i := by

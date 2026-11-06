@@ -62,7 +62,8 @@ theorem realizes_allocLayout : Realizes .exact Stack.Memory.allocLayout
   all_goals exact h.of_le (by omega)
 
 /-- The allocation's body. -/
-noncomputable def allocCertificate : Unit → Certificate .exact := fun _ => ⟨realizes_allocLayout⟩
+noncomputable def allocCertificate : Unit → Certificate .exact :=
+  fun _ => Certificate.ofRealizes realizes_allocLayout
 
 /-- The stack's bodies and the allocation's. -/
 noncomputable abbrev withAlloc : Tag ⊕ Unit → Certificate .exact :=
@@ -216,7 +217,8 @@ theorem realizes_allocTwo : Realizes .exact allocTwo (Equiv.funUnique (Fin 1) �
   all_goals exact h.of_le (by omega)
 
 /-- The body allocating both stacks. -/
-noncomputable def pairAllocCertificate : Unit → Certificate .exact := fun _ => ⟨realizes_allocTwo⟩
+noncomputable def pairAllocCertificate : Unit → Certificate .exact :=
+  fun _ => Certificate.ofRealizes realizes_allocTwo
 
 /-- The pair's bodies and the allocation's. -/
 noncomputable abbrev pairWithAlloc : (Tag ⊕ Tag) ⊕ Unit → Certificate .exact :=

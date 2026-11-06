@@ -505,7 +505,8 @@ private theorem interpolationScale_le_two_mul_of_le_two_mul {n' N : ℕ}
   have hX_le_4 : Real.log ((N : ℝ) + 16) ≤ (2 : ℝ) ^ 2 * Real.log ((n' : ℝ) + 16) := by
     have hN_sq : (N : ℝ) + 16 ≤ ((n' : ℝ) + 16) ^ 2 := by
       have : (N : ℝ) ≤ 2 * (n' : ℝ) := by exact_mod_cast hN_le
-      nlinarith [sq_nonneg (n' : ℝ)]
+      have hn' : (0 : ℝ) ≤ n' := by positivity
+      nlinarith only [this, hn', sq_nonneg (n' : ℝ)]
     have hlog := Real.log_le_log (by positivity) hN_sq
     rw [Real.log_pow, Nat.cast_ofNat] at hlog; linarith
   have hsqrt_le : Real.sqrt (Real.log ((N : ℝ) + 16)) ≤
@@ -571,7 +572,7 @@ private theorem compiled_system_incidence_bounds (k C_B β_B : ℕ) :
     refine ⟨Nat.mul_pos (by dsimp only [C_inc]; omega) hpow1, fun w hw => ?_⟩
     obtain ⟨eq, heq, rfl⟩ := List.mem_map.mp hw
     have h1 := (hsc_all eq heq).trans (hT_le.trans (Nat.mul_le_mul_left _ hpow_step))
-    dsimp only [C_inc]; nlinarith
+    dsimp only [C_inc]; nlinarith only [h1, hpow1]
   have hsum_le : (sys.map (scopeWidthOn N)).sum ≤ (6 * T) * N := by
     calc (sys.map (scopeWidthOn N)).sum
         ≤ (sys.map fun _ => T).sum := List.sum_le_sum fun eq heq => hsc_all eq heq
@@ -580,7 +581,8 @@ private theorem compiled_system_incidence_bounds (k C_B β_B : ℕ) :
   set M := branchAugmentedIncidence N sys
   have hdiv_M : (M + N - 1) / N ≤ 6 * T + 2 :=
     Nat.div_le_of_le_mul ((Nat.sub_le (M + N) 1).trans
-      (by change (sys.map (scopeWidthOn N)).sum + N + N ≤ N * (6 * T + 2); nlinarith))
+      (by change (sys.map (scopeWidthOn N)).sum + N + N ≤ N * (6 * T + 2)
+          nlinarith only [hsum_le]))
   have hcut_le : ParameterCheck.heavyIncidenceCutoff M N ≤ (6 * T + 2) * lam := by
     unfold ParameterCheck.heavyIncidenceCutoff; simp only [hcz, ↓reduceIte]
     have hsq : (Nat.clog 2 N - 1).sqrt + 1 ≤ lam := by
@@ -591,11 +593,12 @@ private theorem compiled_system_incidence_bounds (k C_B β_B : ℕ) :
     have hp3 : 1 ≤ lam ^ (2 * β_B + 3) := Nat.one_le_pow _ lam hlam1
     have h6T : (6 * T + 2) * lam ≤ (6 * k * 2 ^ k * K_W + 2) * lam ^ (2 * β_B + 4) :=
       (Nat.mul_le_mul_right lam
-        (show 6 * T + 2 ≤ (6 * (k * 2 ^ k * K_W) + 2) * lam ^ (2 * β_B + 3) by nlinarith)).trans_eq
+        (show 6 * T + 2 ≤ (6 * (k * 2 ^ k * K_W) + 2) * lam ^ (2 * β_B + 3) by
+          nlinarith only [hT_le, hp3])).trans_eq
         (by rw [pow_succ]; ring)
     have h1 : max 1 (ParameterCheck.heavyIncidenceCutoff M N) + 1 ≤ (6 * T + 2) * lam + 1 :=
-      Nat.add_le_add_right (max_le (show 1 ≤ (6 * T + 2) * lam by nlinarith) hcut_le) 1
-    dsimp only [C_inc]; nlinarith
+      Nat.add_le_add_right (max_le (show 1 ≤ (6 * T + 2) * lam by nlinarith only [hlam1]) hcut_le) 1
+    dsimp only [C_inc]; nlinarith only [h1, h6T, hpow1]
   exact ⟨hb0_le, hw_le⟩
 
 private theorem nat_poly_le_subexp {t C L d d_max : ℕ} {A X : ℝ}
@@ -689,18 +692,19 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
     rw [hs_eq]; by_contra hgt
     have h1 : ((lam - 1).sqrt + 2) * ((lam - 1).sqrt + 2) ≤ lam := Nat.le_sqrt.mp (by omega)
     have h2 := Nat.lt_succ_sqrt (lam - 1); simp only [Nat.succ_eq_add_one] at h2
-    nlinarith [show lam = (lam - 1) + 1 by omega]
+    have hlam_eq : lam = (lam - 1) + 1 := by omega
+    nlinarith only [h1, h2, hlam_eq]
   have hS_le_sqrt : (HeavyBranchFold.heavyVarList N inp.2.1.2.2 sys).length ≤ N / lam.sqrt :=
     (checkTopFeasible_eq_true_iff.mp htop).2.2.2.2.2.trans
       (Nat.div_le_div_left hsqrt_le_s (Nat.sqrt_pos.mpr (by omega)))
   set Ly := (encPair encUnary encSys (N, sys)).length
   have hinp_len : (encSparseSystemInput inp).length + 1 ≤ (C_ml + 1) * (Ly + 1) ^ d_ml := by
     have h := hMkLen (N, sys); have hp := Nat.one_le_pow d_ml (Ly + 1) (Nat.succ_pos Ly)
-    dsimp only [inp]; nlinarith
+    dsimp only [inp]; nlinarith only [h, hp]
   have hbr_in_len : (HeavyBranchFold.encBranchInput (toBranchInput inp)).length + 1 ≤
       (C_bl + 1) * (Ly + 1) ^ d_bl := by
     have h := hBrLen (N, sys); have hp := Nat.one_le_pow d_bl (Ly + 1) (Nat.succ_pos Ly)
-    dsimp only [inp]; nlinarith
+    dsimp only [inp]; nlinarith only [h, hp]
   have hrho_nn : 0 ≤ interpolationScale N := interpolationScale_nonneg N
   set R_branch : ℕ := ⌈((C_p2 : ℕ) : ℝ) * (Ly + 1 : ℝ) ^ (d_bl * d_br_all) *
     (2 : ℝ) ^ ((2 * (A_br : ℝ)) * interpolationScale N)⌉₊
@@ -749,7 +753,8 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
         (2 : ℝ) ^ ((2 * (A_br : ℝ)) * interpolationScale N) :=
       Real.rpow_le_rpow_of_exponent_le one_le_two (by
         have hsc := interpolationScale_le_two_mul_of_le_two_mul hn'_le_N hN_2n'
-        nlinarith [(Nat.cast_nonneg A_br : (0 : ℝ) ≤ A_br)])
+        have hA : (0 : ℝ) ≤ A_br := Nat.cast_nonneg A_br
+        nlinarith only [hsc, hA])
     have ht2_nat : C_g * ((encPair encUnary encSys (n', sys')).length + 1) ^ d_g ≤
         (C_g * (C_bl + 1) ^ d_br_all) * (Ly + 1) ^ (d_bl * d_br_all) :=
       (Nat.mul_le_mul_left C_g ((Nat.pow_le_pow_right (Nat.succ_pos _)

@@ -23,15 +23,16 @@ open Cslib.Algorithms.WordRAM.ExactTriangle
 open ParameterSelecting
 
 example :
-    let W := inputWidth 0 0 []
+    let W := ParameterSelecting.inputWidth 0 0 []
     ∃ (y : Data 640) (t : ℕ), t + 1 ≤ 82 ∧
-      Runs W (entryProgram.program Reg.result) (State.init (CountPrime.inputWords 0 0 []))
-        ⟨entryProgram.size, y⟩ t ∧
-      Executes W (entryProgram.program Reg.result)
+      Runs W (ParameterSelecting.entryProgram.program Reg.result)
+        (State.init (CountPrime.inputWords 0 0 []))
+        ⟨ParameterSelecting.entryProgram.size, y⟩ t ∧
+      Executes W (ParameterSelecting.entryProgram.program Reg.result)
         (State.init (CountPrime.inputWords 0 0 [])) 0 (t + 1) ∧
       y.regs Reg.result = 0 := by
   obtain ⟨hi, p, mem, y, t, ht, hr, he, hb, hf, hiff, rest⟩ :=
-    runs_input (n := 0) (F := 0) [] (by decide) (by decide) le_rfl
+    ParameterSelecting.runs_input (n := 0) (F := 0) [] (by decide) (by decide) le_rfl
   have negative : ¬HasZeroTriangle
       (fun i j : Fin 0 => ([] : List ℤ).getD (pairIndex (i, j)) 0)
       (fun i j => ([] : List ℤ).getD (0 * 0 + pairIndex (i, j)) 0)
@@ -40,22 +41,25 @@ example :
     exact Fin.elim0 a
   have result : y.regs Reg.result = 0 := hf.resolve_right (fun h => negative (hiff.mp h))
   refine ⟨y, t, ?_, hr, ?_, result⟩
-  · simpa only [timeBound, stageBudget, DyadicParameters.timeBound, ParameterChoice.blocks,
+  · simpa only [ParameterSelecting.timeBound, ParameterSelecting.stageBudget,
+      DyadicParameters.timeBound, ParameterChoice.blocks,
       ParameterChoice.level, Nat.log_zero_right, Nat.zero_div, Nat.mul_zero, Nat.add_zero,
       Nat.zero_mul, lt_self_iff_false, dite_false, Nat.reduceAdd, Nat.reduceMul] using ht
   · simpa only [result] using he
 
 example :
     let values : List ℤ := [-1, -1, 2]
-    let W := inputWidth 1 2 values
+    let W := ParameterSelecting.inputWidth 1 2 values
     ∃ (y : Data 640) (t : ℕ), t + 1 ≤ 121 ∧
-      Runs W (entryProgram.program Reg.result) (State.init (CountPrime.inputWords 1 2 values))
-        ⟨entryProgram.size, y⟩ t ∧
-      Executes W (entryProgram.program Reg.result)
+      Runs W (ParameterSelecting.entryProgram.program Reg.result)
+        (State.init (CountPrime.inputWords 1 2 values))
+        ⟨ParameterSelecting.entryProgram.size, y⟩ t ∧
+      Executes W (ParameterSelecting.entryProgram.program Reg.result)
         (State.init (CountPrime.inputWords 1 2 values)) 1 (t + 1) ∧
       y.regs Reg.result = 1 := by
   obtain ⟨hi, p, y, t, ht, hr, he, hb, hf, hiff, hp, hz, rest⟩ :=
-    runs_input_uniform (n := 1) (F := 2) [-1, -1, 2] (by decide) (by decide) le_rfl
+    ParameterSelecting.runs_input_uniform (n := 1) (F := 2)
+      [-1, -1, 2] (by decide) (by decide) le_rfl
   have solution : HasZeroTriangle
       (fun i j : Fin 1 => ([-1, -1, 2] : List ℤ).getD (pairIndex (i, j)) 0)
       (fun i j => ([-1, -1, 2] : List ℤ).getD (1 * 1 + pairIndex (i, j)) 0)
@@ -63,22 +67,24 @@ example :
     exact ⟨0, 0, 0, by norm_num [pairIndex]⟩
   have result := hiff.mpr solution
   refine ⟨y, t, ?_, hr, ?_, result⟩
-  · simpa only [callerTime, DyadicParameters.timeBound, ParameterChoice.blocks,
+  · simpa only [ParameterSelecting.callerTime, DyadicParameters.timeBound,
+      ParameterChoice.blocks,
       ParameterChoice.level, Nat.log_one_right, Nat.zero_div, Nat.mul_zero, Nat.add_zero,
       Nat.zero_mul, lt_self_iff_false, ite_false, Nat.reduceAdd, Nat.reduceMul] using ht
   · simpa only [result] using he
 
 example :
     let values : List ℤ := [-1, -1, 1]
-    let W := inputWidth 1 1 values
+    let W := ParameterSelecting.inputWidth 1 1 values
     ∃ (y : Data 640) (t : ℕ),
-      Runs W (entryProgram.program Reg.result) (State.init (CountPrime.inputWords 1 1 values))
-        ⟨entryProgram.size, y⟩ t ∧
-      Executes W (entryProgram.program Reg.result)
+      Runs W (ParameterSelecting.entryProgram.program Reg.result)
+        (State.init (CountPrime.inputWords 1 1 values))
+        ⟨ParameterSelecting.entryProgram.size, y⟩ t ∧
+      Executes W (ParameterSelecting.entryProgram.program Reg.result)
         (State.init (CountPrime.inputWords 1 1 values)) 0 (t + 1) ∧
       y.regs Reg.result = 0 := by
   obtain ⟨hi, p, mem, y, t, ht, hr, he, hb, hf, hiff, rest⟩ :=
-    runs_input (n := 1) (F := 1) [-1, -1, 1] (by decide) (by decide) le_rfl
+    ParameterSelecting.runs_input (n := 1) (F := 1) [-1, -1, 1] (by decide) (by decide) le_rfl
   have negative : ¬HasZeroTriangle
       (fun i j : Fin 1 => ([-1, -1, 1] : List ℤ).getD (pairIndex (i, j)) 0)
       (fun i j => ([-1, -1, 1] : List ℤ).getD (1 * 1 + pairIndex (i, j)) 0)
@@ -91,19 +97,19 @@ example :
   have result : y.regs Reg.result = 0 := hf.resolve_right (fun h => negative (hiff.mp h))
   exact ⟨y, t, hr, by simpa only [result] using he, result⟩
 
--- This client intentionally names the source's exact constant threshold 2^1296.
-set_option exponentiation.threshold 1300 in
+-- This client intentionally names the exact native constant threshold 2^2394.
+set_option exponentiation.threshold 2400 in
 /-- Every dimension in the actual nontrivial parameter regime has an admitted complete run.
 The selected prime conclusion is discharged from computed geometry, not an extra premise. -/
-example (n : ℕ) (z : ℤ) (hn : 2 ^ 1296 ≤ n) :
+example (n : ℕ) (z : ℤ) (hn : 2 ^ 2394 ≤ n) :
     let values : List ℤ := List.replicate (3 * (n * n)) z
-    let W := inputWidth n z.natAbs values
+    let W := ParameterSelecting.inputWidth n z.natAbs values
     ∃ (p : ℕ) (y : Data 640) (t : ℕ),
-      t + 1 ≤ callerTime n z.natAbs ∧
-      Runs W (entryProgram.program Reg.result)
+      t + 1 ≤ ParameterSelecting.callerTime n z.natAbs ∧
+      Runs W (ParameterSelecting.entryProgram.program Reg.result)
         (State.init (CountPrime.inputWords n z.natAbs values))
-        ⟨entryProgram.size, y⟩ t ∧
-      Executes W (entryProgram.program Reg.result)
+        ⟨ParameterSelecting.entryProgram.size, y⟩ t ∧
+      Executes W (ParameterSelecting.entryProgram.program Reg.result)
         (State.init (CountPrime.inputWords n z.natAbs values)) (y.regs Reg.result) (t + 1) ∧
       (y.regs Reg.result = 1 ↔ z = 0) ∧
       IsSelectedPrime
@@ -114,9 +120,10 @@ example (n : ℕ) (z : ℤ) (hn : 2 ^ 1296 ≤ n) :
   have hfast : 0 < ParameterChoice.blocks n := by
     rw [ParameterChoice.blocks_pos_iff]
     exact hn
-  have hpos : 0 < n := (Nat.two_pow_pos 1296).trans_le hn
+  have hpos : 0 < n := (Nat.two_pow_pos 2394).trans_le hn
   obtain ⟨hi, p, y, t, ht, hr, he, hb, hf, hiff, hp, rest⟩ :=
-    runs_input_uniform (n := n) (F := z.natAbs) (List.replicate (3 * (n * n)) z) (by simp)
+    ParameterSelecting.runs_input_uniform (n := n) (F := z.natAbs)
+      (List.replicate (3 * (n * n)) z) (by simp)
       (by simp) le_rfl
   have cell (i j : Fin n) : pairIndex (i, j) < n * n := by
     simpa only [pairIndex, Fin.coe_mkDivMod, Nat.mul_comm] using (Fin.mkDivMod i j).isLt

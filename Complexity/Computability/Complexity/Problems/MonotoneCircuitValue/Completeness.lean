@@ -216,16 +216,42 @@ variable {α : Type} {encIn : α ↪ List Bool} {Bs : α → ℕ}
   (hin : (fun x => (encIn x).length) ≼ Bs)
 include hin
 
+private theorem dualChunkGates_inSpace {g : α → Boolean.Op × List ℕ}
+    (hg : ComputableInSpace g encIn encGate Bs) :
+    ComputableInSpace (fun x =>
+      doubled (doubled (frame (encGate (dualGateDM true (g x))))) ++
+        doubled (doubled (frame (encGate (dualGateDM false (g x)))))) encIn encBits Bs := by
+  have hrail (b : Bool) := budget_comp_linear doubled_inSpace
+    (budget_comp_linear doubled_inSpace
+      (budget_comp_linear (ComputableInSpace.frame encGate) (dualGateDM_inSpace b hg hin)))
+  refine ((hrail true).append (hrail false)
+    (g := fun x => doubled (doubled (frame (encGate (dualGateDM true (g x))))) ++
+      doubled (doubled (frame (encGate (dualGateDM false (g x))))))
+    (encD := encBits) ?_).weaken (.add (.refl _) (.refl _))
+  intro x
+  dsimp only [encBits_apply]
+
 private theorem dualChunk_inSpace {n j : α → ℕ}
     (hn : ComputableInSpace n encIn encNat Bs)
     (hj : ComputableInSpace j encIn encNat Bs) :
     ComputableInSpace (fun x => dualChunk tm C d (n x) (j x)) encIn encBits Bs := by
   have hg := Tableau.gateCode_inSpace tm hn (timeBound_inSpace C d hin hn) hin hj
-  have hrail (b : Bool) := budget_comp_linear doubled_inSpace
-    (budget_comp_linear doubled_inSpace
-      (budget_comp_linear (ComputableInSpace.frame encGate) (dualGateDM_inSpace b hg hin)))
-  exact ((hrail true).append (hrail false) (g := fun x => dualChunk tm C d (n x) (j x))
-    (encD := encBits) fun _ => rfl).weaken (.add (.refl _) (.refl _))
+  exact dualChunkGates_inSpace hin hg
+
+private theorem dualTrailerWire_inSpace {w : α → ℕ}
+    (hw : ComputableInSpace w encIn encNat Bs) :
+    ComputableInSpace (fun x => [true, false] ++
+      doubled (Turing.MultiTapeTM.frame (encNat (w x))) ++ [false, true]) encIn encBits Bs := by
+  have hmid := budget_comp_linear doubled_inSpace
+    (budget_comp_linear (ComputableInSpace.frame encNat) hw)
+  have h₁ := (budget_const (encB := encBits) [true, false] hin).append hmid
+    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (w x))))
+    (encD := encBits) (fun _ => by dsimp only [encBits_apply])
+  exact ((h₁.weaken (.add (.refl _) (.refl _))).append
+    (budget_const (encB := encBits) [false, true] hin)
+    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (w x))) ++
+      [false, true]) (encD := encBits)
+    (fun _ => by dsimp only [encBits_apply])).weaken (.add (.refl _) (.refl _))
 
 private theorem dualTrailer_inSpace {n : α → ℕ}
     (hn : ComputableInSpace n encIn encNat Bs) :
@@ -240,16 +266,7 @@ private theorem dualTrailer_inSpace {n : α → ℕ}
   have hr : ComputableInSpace (fun x => Monotone.railWire true
       (Tableau.outWire k State (n x) (timeBound C d (n x)))) encIn encNat Bs :=
     budget_natAdd (budget_natMul (budget_const 2 hin) ho) (budget_const 1 hin)
-  have hmid := budget_comp_linear doubled_inSpace
-    (budget_comp_linear (ComputableInSpace.frame encNat) hr)
-  have h₁ := (budget_const (encB := encBits) [true, false] hin).append hmid
-    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat
-      (Monotone.railWire true (Tableau.outWire k State (n x) (timeBound C d (n x)))))))
-    (encD := encBits) fun _ => rfl
-  exact ((h₁.weaken (.add (.refl _) (.refl _))).append
-    (budget_const (encB := encBits) [false, true] hin)
-    (g := fun x => (dualSpec tm C d).trailer (n x)) (encD := encBits)
-    fun _ => rfl).weaken (.add (.refl _) (.refl _))
+  exact dualTrailerWire_inSpace hin hr
 
 end Space
 

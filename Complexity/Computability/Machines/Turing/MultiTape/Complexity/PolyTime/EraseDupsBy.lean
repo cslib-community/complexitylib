@@ -26,6 +26,9 @@ polynomial-time comparison, which may capture the original input, makes it polyn
 
 * `Turing.MultiTapeTM.ComputableInPolyTime.eraseDupsByWithInput`: erasing duplicates of a
   computed framed list with a computed comparison.
+* `Turing.MultiTapeTM.ComputableInPolyTime.decide_nodup`,
+  `Turing.MultiTapeTM.ComputableInPolyTime.decide_nodup_bits`: deciding `List.Nodup` on a
+  computed framed list (and its `fun_prop` specialization to bit strings).
 -/
 
 @[expose] public section
@@ -65,5 +68,37 @@ theorem eraseDupsByWithInput {γ α : Type} {encIn : γ ↪ List Bool} {encA : �
             List.length_append, length_frame]
           omega⟩
   simpa only [← List.eraseDupsBy_eq_foldl] using hfold
+
+private theorem eraseDupsBy_decide_eq_self {α : Type} [DecidableEq α] {l : List α} :
+    l.eraseDupsBy (fun a b => decide (a = b)) = l ↔ l.Nodup := by
+  refine ⟨fun h => h ▸ List.nodup_eraseDupsBy_eq l, fun h => ?_⟩
+  induction l with
+  | nil => rfl
+  | cons a as ih =>
+    rw [List.nodup_cons] at h
+    rw [List.eraseDupsBy_cons, List.filter_eq_self.2 (fun b hb => by
+      rw [decide_eq_true_eq, decide_eq_false_iff_not]
+      rintro rfl
+      exact h.1 hb), ih h.2]
+
+/-- Decide whether a computed framed list has no duplicate entries by comparing it with the result
+of erasing duplicates by equality (`eraseDupsByWithInput`). -/
+theorem decide_nodup {γ α : Type} [DecidableEq α] {encIn : γ ↪ List Bool} {encA : α ↪ List Bool}
+    {list : γ → List α} (hlist : ComputableInPolyTime list encIn (encList encA)) :
+    ComputableInPolyTime (fun x => decide (list x).Nodup) encIn encBool := by
+  have herase : ComputableInPolyTime
+      (fun x => (list x).eraseDupsBy fun a b => decide (a = b)) encIn (encList encA) :=
+    eraseDupsByWithInput hlist (decide_eq' (fst _ _).snd' (snd _ _))
+  exact (herase.decide_eq' hlist).of_enc_eq fun x => by
+    simp only [encBool_apply, eraseDupsBy_decide_eq_self]
+
+/-- Decide whether a computed framed list of bit strings has no duplicate entries. Fixing the
+element encoding to `encBits` avoids an ambiguous `List Bool` encoding metavariable during
+`fun_prop` search. -/
+@[fun_prop]
+theorem decide_nodup_bits {γ : Type} {encIn : γ ↪ List Bool} {list : γ → List (List Bool)}
+    (hlist : ComputableInPolyTime list encIn (encList encBits)) :
+    ComputableInPolyTime (fun x => decide (list x).Nodup) encIn encBool :=
+  decide_nodup hlist
 
 end Turing.MultiTapeTM.ComputableInPolyTime

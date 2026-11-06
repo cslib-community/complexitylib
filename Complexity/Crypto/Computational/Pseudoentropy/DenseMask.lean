@@ -9,10 +9,10 @@ module
 
 public import Complexity.Crypto.Computational.Pseudoentropy.Basic
 public import Complexity.Crypto.Computational.Pseudoentropy.Masking
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Languages.Probabilistic.Notation
 import Complexity.Crypto.Computational.Pseudoentropy.Selection
 import Complexity.Crypto.Computational.Pseudoentropy.SequenceLearner
-import Complexity.Tactic.PPT
 
 /-!
 # Dense masks against uniform sequence tests
@@ -53,11 +53,6 @@ namespace Cslib.Crypto.Pseudoentropy.SamplablePair
 
 open ProbComp Probability Probability.PMF BitString Boosting Filter Turing.MultiTapeTM
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_dyadicSize :
-    ComputableTidilyInPolyTime dyadicSize encUnary encUnary :=
-  ComputableInPolyTime.unary_dyadicSize.tidy
-
 /-- All advised tests in a uniformly efficient polynomial-size family eventually admit dense soft
 masks with small distinguishing gap whenever their density is valid. The common eventual threshold
 allows arbitrary choices of index in the proof without supplying that choice to the program. -/
@@ -91,11 +86,6 @@ theorem HasGapWithAdvice.eventually_exists_indexed_mask {pair : SamplablePair} {
           (ProbComp.eval (OracleComp.replicate (count n) (maskedSample (pair.latentSample n)
             (fun value => pair.encode n value.1) Prod.snd mask) >>= test (n, advice n) i)) : ℝ) <
               (dyadicSize (count n) : ℝ) / inverseGap n := by
-  have hcandidates := hcandidates.tidy
-  have hcount := hcount.tidy
-  have hnumerator := hnumerator.tidy
-  have hdensity := hdensity.tidy
-  have hinverseGap := hinverseGap.tidy
   classical
   let source : ℕ → ProbComp (List Bool × Bool) := fun n => (fun value : pair.Observation n × Bool =>
     (pair.encode n value.1, value.2)) <$> pair.latentSample n
@@ -105,9 +95,9 @@ theorem HasGapWithAdvice.eventually_exists_indexed_mask {pair : SamplablePair} {
     simp only [source, pair.eval_sample, ProbComp.eval_map, pair.eval_latentSample]
   obtain ⟨sizeCoeff, sizeDegree, hsize⟩ := hsource.length_le
   let width := fun n => sizeCoeff * (n + 1) ^ sizeDegree
-  have hwidth : ComputableTidilyInPolyTime width encUnary encUnary := by
-    unfold width
-    polytime
+  have hwidth : ComputableInPolyTime width encUnary encUnary :=
+    (ComputableInPolyTime.const sizeCoeff).unary_mul'
+      ((ComputableInPolyTime.id'.unary_add' (.const 1)).trans (.unary_pow sizeDegree))
   have hsize' (n : ℕ) (value : pair.Observation n × Bool)
       (hvalue : value ∈ (pair.joint n).support) : (pair.encode n value.1).length ≤ width n := by
     have h := hsize n (pair.encode n value.1, value.2)
@@ -125,39 +115,43 @@ theorem HasGapWithAdvice.eventually_exists_indexed_mask {pair : SamplablePair} {
   let params := fun (a : ℕ × List Bool) (i : ℕ) =>
     SequenceLearner.parameters a.1 (numerator a.1 i) (densityBound a.1) (inverseGap a.1)
       (SavedPrediction.codeBound (base (a, i)).length (count a.1) c d (width a.1) + 1)
-  have hparams : ComputableTidilyInPolyTime (fun input : (ℕ × List Bool) × ℕ =>
-      params input.1 input.2) base Parameters.encoding := by
-    dsimp only [params, base]
-    apply ComputableInPolyTime.tidy
-    apply SequenceLearner.isPolyTime_parameters
-    · exact .of_tidy (by fun_prop)
-    · exact .of_tidy (by fun_prop)
-    · exact .of_tidy (by fun_prop)
-    · exact .of_tidy (by fun_prop)
-    · fun_prop
-  have hrate : ComputableTidilyInPolyTime (fun n => (params (n, []) 0).rateBound)
-      encUnary encUnary := by
-    dsimp only [params, SequenceLearner.parameters]
-    fun_prop
+  have hn_base := (ComputableInPolyTime.fst (encPair encUnary encBits) encUnary).fst'
+  have hparams : ComputableInPolyTime (fun input : (ℕ × List Bool) × ℕ =>
+      params input.1 input.2) base Parameters.encoding :=
+    SequenceLearner.isPolyTime_parameters hn_base
+      ((hn_base.prod (.snd _ _)).trans hnumerator)
+      (hn_base.trans hdensity)
+      (hn_base.trans hinverseGap)
+      ((SavedPrediction.isPolyTime_codeBound c d
+        (ComputableInPolyTime.encoding_length base)
+        (hn_base.trans hcount) (hn_base.trans hwidth)).unary_add' (.const 1))
+  have hrate : ComputableInPolyTime (fun n => (params (n, []) 0).rateBound)
+      encUnary encUnary :=
+    ((ComputableInPolyTime.const 2).unary_mul' hinverseGap).unary_mul'
+      (hdensity.trans .unary_dyadicSize)
   let adversary := fun (a : ℕ × List Bool) (i : ℕ) (observation : List Bool) =>
     SequenceLearner.predict evaluate (source a.1) (base (a, i)) (count a.1) c d (width a.1)
       (inverseGap a.1) (params a i) observation
+  have h1 := ComputableInPolyTime.fst base encBits
+  have hn_adv := h1.fst'.fst'
   have hadversary : IsPPTOn (encPair base encBits) encBool
-      (fun input => adversary input.1.1 input.1.2 input.2) := by
-    dsimp only [adversary]
-    fun_prop
-  have htolerance : ComputableTidilyInPolyTime
-      (fun n => 4 * (params (n, []) 0).predictionInverseTolerance) encUnary encUnary := by
-    unfold Parameters.predictionInverseTolerance Parameters.inverseRate Parameters.denominator
-    dsimp only [params, SequenceLearner.parameters]
-    fun_prop
-  have hhard := hpair.eventually_indexed_error_ge adversary hadversary (.of_tidy hcandidates)
-    (.of_tidy htolerance)
+      (fun input => adversary input.1.1 input.1.2 input.2) :=
+    SequenceLearner.isPPTOn_predict c d hevaluate (hsource.preprocess hn_adv)
+      (h1.trans (.of_eq fun _ => rfl)) (.snd base encBits) (hn_adv.trans hcount)
+      (hn_adv.trans hwidth) (hn_adv.trans hinverseGap) (h1.trans hparams)
+  have htolerance : ComputableInPolyTime
+      (fun n => 4 * (params (n, []) 0).predictionInverseTolerance) encUnary encUnary :=
+    (ComputableInPolyTime.const 4).unary_mul'
+      (((ComputableInPolyTime.const 128).unary_mul'
+        (hrate.trans .unary_dyadicSize)).unary_mul'
+        ((hdensity.trans .unary_dyadicSize).trans (.unary_pow 2)))
+  have hhard := hpair.eventually_indexed_error_ge adversary hadversary hcandidates
+    htolerance
     (fun n => Nat.mul_pos (by decide) (params (n, []) 0).predictionInverseTolerance_pos)
   have hsmall := SequenceLearner.failureBound_eventually_le (params := fun n => params (n, []) 0)
     (inverseGap := inverseGap) (by change PolynomiallyBounded id; exact .id)
-    hdensity.polynomiallyBounded hrate.polynomiallyBounded hinverseGap.polynomiallyBounded
-    (fun _ => le_rfl)
+    hdensity.tidy.polynomiallyBounded hrate.tidy.polynomiallyBounded
+    hinverseGap.tidy.polynomiallyBounded (fun _ => le_rfl)
   filter_upwards [hsmall, hhard] with n hsmall hhard
   intro i hi hnum hnumBound hthreshold
   specialize hhard i hi
@@ -274,16 +268,11 @@ theorem HasGap.eventually_exists_indexed_mask {pair : SamplablePair} {gap : ℕ 
           (ProbComp.eval (OracleComp.replicate (count n) (maskedSample (pair.latentSample n)
             (fun value => pair.encode n value.1) Prod.snd mask) >>= test n i)) : ℝ) <
               (dyadicSize (count n) : ℝ) / inverseGap n := by
-  have hprepare : ComputableInPolyTime
-      (fun (((n, _), i), samples) => ((n, i), samples) :
-        ((ℕ × List Bool) × ℕ) × List (List Bool × Bool) →
-          (ℕ × ℕ) × List (List Bool × Bool))
-      (encPair (encPair (encPair encUnary encBits) encUnary)
-        (encList (encPair encBits encBool)))
-      (encPair (encPair encUnary encUnary)
-        (encList (encPair encBits encBool))) := by fun_prop
+  have hp1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary)
+    (encList (encPair encBits encBool))
+  have htest' := htest.preprocess ((hp1.fst'.fst'.prod hp1.snd').prod (.snd _ _))
   exact (hasGap_iff_hasGapWithAdvice_nil.mp hpair).eventually_exists_indexed_mask
-    (fun (n, _) i samples => test n i samples) (htest.preprocess hprepare)
+    (fun a => test a.1) htest'
     hcandidates hcount hnumerator hdensity hinverseGap hgap
 
 /-- Every advised sequence test eventually admits a dense soft mask with small distinguishing gap.
@@ -316,9 +305,13 @@ theorem HasGapWithAdvice.eventually_exists_mask {pair : SamplablePair} {gap : �
           (ProbComp.eval (OracleComp.replicate (count n) (maskedSample (pair.latentSample n)
             (fun value => pair.encode n value.1) Prod.snd mask) >>= test (n, advice n))) : ℝ) <
               (dyadicSize (count n) : ℝ) / inverseGap n := by
-  have h := hpair.eventually_exists_indexed_mask (fun a _ => test a) (by ppt)
+  have hp1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary)
+    (encList (encPair encBits encBool))
+  have htest' := htest.preprocess (hp1.fst'.prod (.snd _ _))
+  have hnum' := (ComputableInPolyTime.fst encUnary encUnary).trans hnumerator
+  have h := hpair.eventually_exists_indexed_mask (fun a _ => test a) htest'
     (candidates := fun _ => 1) (numerator := fun n _ => numerator n)
-    (by polytime) hcount (by polytime) hdensity hinverseGap hgap
+    (.const 1) hcount hnum' hdensity hinverseGap hgap
   filter_upwards [h] with n hn
   exact hn 0 (by decide)
 
@@ -349,13 +342,11 @@ theorem HasGap.eventually_exists_mask {pair : SamplablePair} {gap : ℕ → ℝ}
           (ProbComp.eval (OracleComp.replicate (count n) (maskedSample (pair.latentSample n)
             (fun value => pair.encode n value.1) Prod.snd mask) >>= test n)) : ℝ) <
               (dyadicSize (count n) : ℝ) / inverseGap n := by
-  have hprepare : ComputableInPolyTime
-      (fun ((n, _), samples) => (n, samples) :
-        (ℕ × List Bool) × List (List Bool × Bool) → ℕ × List (List Bool × Bool))
-      (encPair (encPair encUnary encBits) (encList (encPair encBits encBool)))
-      (encPair encUnary (encList (encPair encBits encBool))) := by fun_prop
+  have hp1 := ComputableInPolyTime.fst (encPair encUnary encBits)
+    (encList (encPair encBits encBool))
+  have htest' := htest.preprocess (hp1.fst'.prod (.snd _ _))
   exact (hasGap_iff_hasGapWithAdvice_nil.mp hpair).eventually_exists_mask
-    (fun (n, _) samples => test n samples) (htest.preprocess hprepare)
+    (fun a => test a.1) htest'
     hcount hnumerator hdensity hinverseGap hgap
 
 end Cslib.Crypto.Pseudoentropy.SamplablePair

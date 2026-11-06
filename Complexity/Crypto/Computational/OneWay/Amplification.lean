@@ -9,17 +9,18 @@ module
 
 public import Complexity.Crypto.Computational.OneWay.Weak
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import Complexity.Computability.Probabilistic.CoinTape
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Analysis.BernoulliInequality
 import Complexity.Foundations.Data.Finset.Sampling
-import Complexity.Languages.Probabilistic.BitString
+import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Probability.BitString.List.All
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
-import Complexity.Probability.Product
-import Complexity.Probability.Uniform
-import Complexity.Tactic.PPT
 
 /-!
 # Yao's Weak-to-Strong One-Way Function Hardness Amplification
@@ -83,7 +84,7 @@ function (`OneWay`).
   Section 2.3, Theorem 2.3.2.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 
@@ -94,39 +95,83 @@ namespace OneWayAmplification
 
 /-! ### Geometric amplification bounds -/
 
+private theorem inv_two_mul_le_one {m : ℕ} (hm : 0 < m) : 1 / (2 * (m : ℝ)) ≤ 1 := by
+  have hm1 : (1 : ℝ) ≤ m := by exact_mod_cast hm
+  exact div_le_one_of_le₀ (by linarith) (by positivity)
+
 private theorem pow_one_sub_inv_two_mul_le {q : ℕ} (hq : 0 < q) (r : ℕ) :
     (1 - 1 / (2 * (q : ℝ))) ^ (2 * q * r) ≤ (1 / 2 : ℝ) ^ r := by
   have hqR : (0 : ℝ) < q := Nat.cast_pos.mpr hq
-  have hα1 : 1 / (2 * (q : ℝ)) ≤ 1 := by
-    rw [div_le_iff₀ (by positivity)]
-    have : (1 : ℝ) ≤ q := by exact_mod_cast hq
-    linarith
+  have hα1 : 1 / (2 * (q : ℝ)) ≤ 1 := inv_two_mul_le_one hq
   have hbase : (1 - 1 / (2 * (q : ℝ))) ^ (2 * q) ≤ 1 / 2 :=
     one_sub_pow_le_half (by positivity) hα1 (by push_cast; field_simp; rfl)
   rw [pow_mul]
-  exact pow_le_pow_left₀ (pow_nonneg (by linarith) _) hbase r
+  exact pow_le_pow_left₀ (pow_nonneg (sub_nonneg.mpr hα1) _) hbase r
 
 private theorem pow_one_sub_le_inv_two_mul {q m : ℕ} (hq : 0 < q) (hm : 0 < m) :
     (1 - 1 / (2 * (m : ℝ))) ^ (4 * q * m) ≤ 1 / (2 * (q : ℝ)) := by
   have hqR : (0 : ℝ) < q := Nat.cast_pos.mpr hq
   have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
-  have hα1 : 1 / (2 * (m : ℝ)) ≤ 1 := by
-    rw [div_le_iff₀ (by positivity)]
-    have : (1 : ℝ) ≤ m := by exact_mod_cast hm
-    linarith
-  have h := Real.one_sub_pow_le_one_div_one_add_mul (by positivity) hα1 (4 * q * m)
+  have h := Real.one_sub_pow_le_one_div_one_add_mul (by positivity) (inv_two_mul_le_one hm)
+    (4 * q * m)
   have hmul : ((4 * q * m : ℕ) : ℝ) * (1 / (2 * (m : ℝ))) = 2 * (q : ℝ) := by
     push_cast
     field_simp
     ring
   rw [hmul] at h
-  exact h.trans (one_div_le_one_div_of_le (by positivity) (by linarith))
+  exact h.trans (one_div_le_one_div_of_le (by positivity) (le_add_of_nonneg_left zero_le_one))
+
+private theorem amplification_real_bound {n q p : ℕ} (hq : 0 < q) (hp : 0 < p)
+    {famProb invProb gProb : ENNReal} (hinv_top : invProb ≠ ⊤) (hg_top : gProb ≠ ⊤)
+    (hpar : famProb ≤ gProb ^ (2 * q * (n + 1)) +
+      (2 * q * (n + 1) : ℕ) * ENNReal.ofReal (1 / (2 * ((2 * q * (n + 1) * p : ℕ) : ℝ))))
+    (hgood : gProb ≤ invProb +
+      (1 - ENNReal.ofReal (1 / (2 * ((2 * q * (n + 1) * p : ℕ) : ℝ)))) ^
+        (4 * q * (2 * q * (n + 1) * p)))
+    (hweak : invProb.toReal < 1 - 1 / (q : ℝ))
+    (hgeom : ((1 / 2 : ℝ≥0) ^ n : ℝ) ≤ 1 / (p : ℝ)) :
+    famProb.toReal ≤ 1 / (p : ℝ) := by
+  let k : ℕ := 2 * q * (n + 1)
+  let m_np : ℕ := k * p
+  have hk_pos : 0 < k := Nat.mul_pos (Nat.mul_pos (by decide) hq) (Nat.succ_pos n)
+  have hm_pos : 0 < m_np := Nat.mul_pos hk_pos hp
+  let θ : ℝ := 1 / (2 * (m_np : ℝ))
+  have hθ_nonneg : 0 ≤ θ := by dsimp [θ]; positivity
+  have hθ_le_one : θ ≤ 1 := inv_two_mul_le_one hm_pos
+  let c : ENNReal := ENNReal.ofReal θ
+  have h1mc_top : (1 - c) ^ (4 * q * m_np) ≠ ⊤ :=
+    ENNReal.pow_ne_top (tsub_le_self.trans_lt ENNReal.one_lt_top).ne
+  have hgood_real : gProb.toReal ≤ invProb.toReal + (1 - θ) ^ (4 * q * m_np) := by
+    have hle := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hinv_top, h1mc_top⟩) hgood
+    rwa [ENNReal.toReal_add hinv_top h1mc_top, ENNReal.toReal_pow, ← ENNReal.ofReal_one,
+      ← ENNReal.ofReal_sub 1 hθ_nonneg, ENNReal.toReal_ofReal (sub_nonneg.mpr hθ_le_one)] at hle
+  have ht_pow : (1 - θ) ^ (4 * q * m_np) ≤ 1 / (2 * (q : ℝ)) :=
+    pow_one_sub_le_inv_two_mul hq hm_pos
+  have hgood_lt : gProb.toReal ≤ 1 - 1 / (2 * (q : ℝ)) :=
+    hgood_real.trans ((add_le_add hweak.le ht_pow).trans_eq (by ring))
+  have hgood_pow_le : gProb.toReal ^ k ≤ (1 / 2 : ℝ) ^ (n + 1) :=
+    (pow_le_pow_left₀ ENNReal.toReal_nonneg hgood_lt k).trans
+      (pow_one_sub_inv_two_mul_le hq (n + 1))
+  have hk_top : (k : ENNReal) * c ≠ ⊤ :=
+    ENNReal.mul_ne_top (ENNReal.natCast_ne_top k) ENNReal.ofReal_ne_top
+  have hg_pow_top : gProb ^ k ≠ ⊤ := ENNReal.pow_ne_top hg_top
+  have hpar_real : famProb.toReal ≤ gProb.toReal ^ k + (k : ℝ) * θ := by
+    have hle := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hg_pow_top, hk_top⟩) hpar
+    rwa [ENNReal.toReal_add hg_pow_top hk_top, ENNReal.toReal_pow,
+      ENNReal.toReal_mul, ENNReal.toReal_natCast, ENNReal.toReal_ofReal hθ_nonneg] at hle
+  have hk_θ : (k : ℝ) * θ = 1 / (2 * (p : ℝ)) := by
+    have hkR : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hk_pos.ne'
+    dsimp [θ, m_np]; push_cast; field_simp
+  have hgeom_w : (1 / 2 : ℝ) ^ (n + 1) ≤ 1 / (2 * (p : ℝ)) := by
+    rw [pow_succ']
+    exact (mul_le_mul_of_nonneg_left (by exact_mod_cast hgeom) (by norm_num)).trans_eq (by ring)
+  exact hpar_real.trans ((add_le_add (hgood_pow_le.trans hgeom_w) hk_θ.le).trans_eq (by ring))
 
 /-! ### Parallel evaluation and planted challenges -/
 
 /-- Evaluate `f` in parallel on `k n` blocks of width `w n` extracted from `X` via
 `BitString.listRow`, concatenating the resulting bit strings. -/
-def parallelCore (k w : ℕ → ℕ) (f : List Bool → List Bool) (n : ℕ) (X : List Bool) :
+@[expose] def parallelCore (k w : ℕ → ℕ) (f : List Bool → List Bool) (n : ℕ) (X : List Bool) :
     List Bool :=
   (List.range (k n)).flatMap (fun j => f (BitString.listRow (w n) j X))
 
@@ -177,7 +222,7 @@ theorem parallelCore_take (k w : ℕ → ℕ) (f : List Bool → List Bool) (n :
 
 /-- Construct the `k n`-block output of `parallelCore` with a challenge `y` planted in slot `j`
 and the remaining slots filled by `f (BitString.listRow (w n) i Z)`. -/
-def plantedImage (k w : ℕ → ℕ) (f : List Bool → List Bool) (n j : ℕ)
+@[expose] def plantedImage (k w : ℕ → ℕ) (f : List Bool → List Bool) (n j : ℕ)
     (y Z : List Bool) : List Bool :=
   (List.range (k n)).flatMap (fun i =>
     if i = j then y else f (BitString.listRow (w n) i Z))
@@ -268,6 +313,18 @@ private theorem runTrials_fail_imp_all_fail {k w t seedLen : ℕ → ℕ} {f : L
   · exact Bool.eq_false_iff.mpr h
 
 /-! ### Polynomial-time certificates for the reduction -/
+
+private theorem uAdd {f g : ℕ → ℕ}
+    (hf : ComputableTidilyInPolyTime f encUnary encUnary)
+    (hg : ComputableTidilyInPolyTime g encUnary encUnary) :
+    ComputableTidilyInPolyTime (fun a => f a + g a) encUnary encUnary :=
+  ComputableTidilyInPolyTime.unary_add.comp (hf.prod hg)
+
+private theorem uMul {f g : ℕ → ℕ}
+    (hf : ComputableTidilyInPolyTime f encUnary encUnary)
+    (hg : ComputableTidilyInPolyTime g encUnary encUnary) :
+    ComputableTidilyInPolyTime (fun a => f a * g a) encUnary encUnary :=
+  ComputableTidilyInPolyTime.unary_mul.comp (hf.prod hg)
 
 private theorem computableTidily_pickPreimage {α : Type} {input : α ↪ List Bool}
     {f : List Bool → List Bool} {y : α → List Bool} {cands : α → List (List Bool)}
@@ -408,18 +465,26 @@ private theorem slot_event_eq_planted {k w : ℕ → ℕ} {f : List Bool → Lis
   simp only [BitString.listRow_replaceRow hx_len _ hj, ↓reduceIte,
     parallelCore_replaceRow f n j hx_len, slotCand]
 
+open Classical in
+private noncomputable def goodInput (k w : ℕ → ℕ) (f : List Bool → List Bool)
+    (evalA : (ℕ × List Bool) → List Bool → List Bool)
+    (n seedLen : ℕ) (c : ENNReal) (x : List Bool) : Bool :=
+  decide (∃ j < k n, c ≤
+    ((BitString.uniformList seedLen).map (fun seed =>
+      f (slotCand k w f evalA n (f x) seed j) == f x)) true)
+
+open Classical in
 private theorem parallelCore_inversion_le {k w outLen : ℕ → ℕ} {f : List Bool → List Bool}
     (hlen : ∀ x, (f x).length = outLen x.length)
     {evalA : (ℕ × List Bool) → List Bool → List Bool}
-    (n B : ℕ) (good : List Bool → Bool) {c : ENNReal}
-    (hc : ∀ j < k n, ∀ x, x.length = w n → good x = false →
-      (((BitString.uniformList (k n * w n + B)).map (fun seed =>
-        f (slotCand k w f evalA n (f x) seed j) == f x)) true) ≤ c) :
+    (n B : ℕ) (c : ENNReal) :
+    let good := goodInput k w f evalA n (k n * w n + B) c
     (((BitString.uniformList (k n * w n)).bind (fun X =>
       (BitString.uniformList B).map (fun coins =>
         parallelCore k w f n (evalA (n, parallelCore k w f n X) coins) ==
           parallelCore k w f n X))) true) ≤
       (((BitString.uniformList (w n)).map good) true) ^ (k n) + (k n : ENNReal) * c := by
+  intro good
   let joint : PMF (List Bool × List Bool) :=
     (BitString.uniformList (k n * w n)).bind (fun X =>
       (BitString.uniformList B).map (fun coins => (X, coins)))
@@ -443,10 +508,7 @@ private theorem parallelCore_inversion_le {k w outLen : ℕ → ℕ} {f : List B
     by_cases h0 : E₀ (X, coins) = true
     · exact Or.inl h0
     · right
-      have h0_false :
-          ((List.range (k n)).all (fun j => good (BitString.listRow (w n) j X))) = false :=
-        Bool.eq_false_iff.mpr h0
-      obtain ⟨j, hj_mem, hj_bad⟩ := List.all_eq_false.mp h0_false
+      obtain ⟨j, hj_mem, hj_bad⟩ := List.all_eq_false.mp (Bool.eq_false_iff.mpr h0)
       rw [List.any_eq_true]
       refine ⟨j, hj_mem, ?_⟩
       have hrow_eq := parallelCore_eq_imp_row_eq hlen (beq_iff_eq.mp hE)
@@ -469,30 +531,28 @@ private theorem parallelCore_inversion_le {k w outLen : ℕ → ℕ} {f : List B
     intro j hj
     have hj_lt : j < k n := Finset.mem_range.mp hj
     rw [hjoint_map (F j), slot_event_eq_planted n B good hj_lt]
-    refine PMF.bind_apply_le_on_support _ fun x hx => ?_
-    have hx_len : x.length = w n := BitString.length_of_mem_support_uniformList hx
+    refine PMF.bind_apply_le_on_support _ fun x _ => ?_
     by_cases hgx : good x = true
     · simp [hgx]
     · have hgf : good x = false := Bool.eq_false_iff.mpr hgx
-      simpa [hgf] using hc j hj_lt x hx_len hgf
+      simpa [hgf] using le_of_not_ge fun hlt =>
+        decide_eq_false_iff_not.mp hgf ⟨j, hj_lt, hlt⟩
   have hsum_le : ∑ j ∈ Finset.range (k n), (joint.map (F j)) true ≤ (k n : ENNReal) * c := by
-    calc ∑ j ∈ Finset.range (k n), (joint.map (F j)) true
-      _ ≤ ∑ _ ∈ Finset.range (k n), c := Finset.sum_le_sum hF_le
-      _ = (k n : ENNReal) * c := by simp
+    simpa using Finset.sum_le_sum hF_le
   rw [← hjoint_map E]
   exact hle1.trans (by rw [hE0_eq]; exact add_le_add_right hsum_le _)
 
+open Classical in
 private theorem good_prob_le_runTrials {k w t seedLen : ℕ → ℕ} {f : List Bool → List Bool}
     {evalA : (ℕ × List Bool) → List Bool → List Bool}
-    (n : ℕ) (good : List Bool → Bool) {c : ENNReal}
-    (hc : ∀ x, x.length = w n → good x = true → ∃ j < k n,
-      c ≤ ((BitString.uniformList (seedLen n)).map (fun seed =>
-        f (slotCand k w f evalA n (f x) seed j) == f x)) true) :
+    (n : ℕ) (c : ENNReal) :
+    let good := goodInput k w f evalA n (seedLen n) c
     (((BitString.uniformList (w n)).map good) true) ≤
       (((BitString.uniformList (w n)).bind (fun x =>
         (BitString.uniformList (t n * seedLen n)).map (fun allSeeds =>
           f (runTrials k w t seedLen f evalA n (f x) allSeeds) == f x))) true) +
         (1 - c) ^ (t n) := by
+  intro good
   let joint : PMF (List Bool × List Bool) :=
     (BitString.uniformList (w n)).bind (fun x =>
       (BitString.uniformList (t n * seedLen n)).map (fun allSeeds => (x, allSeeds)))
@@ -511,18 +571,15 @@ private theorem good_prob_le_runTrials {k w t seedLen : ℕ → ℕ} {f : List B
     rintro ⟨x, allSeeds⟩ _ hG
     by_cases hS : S (x, allSeeds) = true
     · exact Or.inl hS
-    · right
-      dsimp [G, R, S] at hG hS ⊢
-      simp [hG, Bool.eq_false_iff.mpr hS]
+    · exact Or.inr (by simp [G, R, S, hG, Bool.eq_false_iff.mpr hS])
   have hG_eq : (joint.map G) true = ((BitString.uniformList (w n)).map good) true := by
     rw [hjoint_map G]
     simp only [G, PMF.map, Function.comp_def, PMF.bind_const]
   have hR_le : (joint.map R) true ≤ (1 - c) ^ (t n) := by
     rw [hjoint_map R]
-    refine PMF.bind_apply_le_on_support _ fun x hx => ?_
-    have hx_len : x.length = w n := BitString.length_of_mem_support_uniformList hx
+    refine PMF.bind_apply_le_on_support _ fun x _ => ?_
     by_cases hgx : good x = true
-    · obtain ⟨j, hj_lt, hj_c⟩ := hc x hx_len hgx
+    · obtain ⟨j, hj_lt, hj_c⟩ := of_decide_eq_true hgx
       let succSeed (seed : List Bool) : Bool :=
         f (megaTrial k w f evalA n (f x) seed) == f x
       let failSeed (seed : List Bool) : Bool := !succSeed seed
@@ -542,11 +599,24 @@ private theorem good_prob_le_runTrials {k w t seedLen : ℕ → ℕ} {f : List B
           beq_iff_eq.mpr (eval_megaTrial_of_slotCand hj_lt (beq_iff_eq.mp hs)))
       rw [show failSeed = fun seed => !succSeed seed from rfl, PMF.map_not_true]
       exact tsub_le_tsub_left hsucc_ge 1
-    · have hgf : good x = false := Bool.eq_false_iff.mpr hgx
-      simp [R, hgf]
+    · simp [R, Bool.eq_false_iff.mpr hgx]
   have h1 := PMF.map_true_le_add joint hsplit
   rw [hG_eq, hjoint_map S] at h1
   exact h1.trans (add_le_add_right hR_le _)
+
+private theorem negligible_of_eventually_le_inv_pow {ε : ℕ → ℝ≥0}
+    (h : ∀ deg : ℕ, ∀ᶠ n in atTop, (ε n : ℝ) ≤ 1 / (((n + 1) ^ (deg + 1) : ℕ) : ℝ)) :
+    Negligible ε := by
+  apply negligible_iff_coe.mpr fun deg => ?_
+  have hzero : Tendsto (fun n : ℕ => 1 / ((n : ℝ) + 1)) atTop (nhds 0) := by
+    simpa [Function.comp_def, Nat.cast_add, Nat.cast_one] using
+      (tendsto_const_div_atTop_nhds_zero_nat (1 : ℝ)).comp (Filter.tendsto_add_atTop_nat 1)
+  refine squeeze_zero' (Eventually.of_forall fun _ => by positivity) ?_ hzero
+  filter_upwards [h deg] with n hn
+  have h1 : (n : ℝ) ^ deg ≤ ((n + 1 : ℕ) : ℝ) ^ deg := by gcongr; exact_mod_cast Nat.le_succ n
+  refine (mul_le_mul h1 hn (by positivity) (by positivity)).trans_eq ?_
+  have : ((n : ℝ) + 1) ≠ 0 := by positivity
+  push_cast; rw [pow_succ]; field_simp
 
 /-- Any uniform strict PPT adversary has negligible inversion probability against `parallelCore`
 on schedule `m n = (2 * q.eval (n + 1) * (n + 1)) * (n + 1)` when `f` has fixed output length
@@ -565,18 +635,9 @@ theorem familyInversionGame_parallelCore_negligible {f : List Bool → List Bool
   classical
   let w : ℕ → ℕ := fun n => n + 1
   let k : ℕ → ℕ := fun n => 2 * q.eval (w n) * w n
-  change Negligible (fun n =>
-    Game.succProbability (ProbComp.eval
-      (OneWayReindex.familyInversionGame (fun n => k n * w n)
-        (parallelCore k w f) A n)))
-  apply negligible_iff_coe.mpr
-  intro deg
+  refine negligible_of_eventually_le_inv_pow fun deg => ?_
   let p : ℕ → ℕ := fun n => (n + 1) ^ (deg + 1)
   have hp_pos : ∀ n, 0 < p n := fun n => by dsimp [p]; positivity
-  have hk_pos : ∀ n, 0 < k n := fun n => by
-    have := hq_pos (w n)
-    dsimp [k, w]
-    positivity
   obtain ⟨cA, dA, evalA, hevalA, _, hlawA⟩ := hA.on.exists_total_seeded_evaluator
   let B : ℕ → ℕ := fun n => cA * (2 * n + k n * outLen (w n) + 2) ^ dA
   let seedLen : ℕ → ℕ := fun n => k n * w n + B n
@@ -585,27 +646,29 @@ theorem familyInversionGame_parallelCore_negligible {f : List Bool → List Bool
     runTrials k w t seedLen f evalA (N - 1) y <$>
       BitString.sampleList (t (N - 1) * seedLen (N - 1))
   have hB_ppt : IsPPT encBits B_inv := by
+    open ComputableTidilyInPolyTime in
     apply IsPPTOn.isPPT
-    have hfst := ComputableTidilyInPolyTime.fst encUnary encBits
-    have hsnd := ComputableTidilyInPolyTime.snd encUnary encBits
-    have hw : ComputableTidilyInPolyTime w encUnary encUnary := by dsimp [w]; fun_prop
-    have hq : ComputableTidilyInPolyTime (fun N => q.eval N) encUnary encUnary :=
-      ComputableTidilyInPolyTime.unary_eval q
-    have hk : ComputableTidilyInPolyTime k encUnary encUnary := by dsimp [k]; fun_prop
-    have hp : ComputableTidilyInPolyTime p encUnary encUnary := by dsimp [p]; fun_prop
-    have ht : ComputableTidilyInPolyTime t encUnary encUnary := by dsimp [t]; fun_prop
-    have hout_tidy := houtLen.tidy
-    have hB : ComputableTidilyInPolyTime B encUnary encUnary := by dsimp [B]; fun_prop
-    have hseedLen : ComputableTidilyInPolyTime seedLen encUnary encUnary := by
-      dsimp [seedLen]; fun_prop
+    have hsnd := snd encUnary encBits
+    have hw : ComputableTidilyInPolyTime w encUnary encUnary := uAdd id' (const 1)
+    have hq : ComputableTidilyInPolyTime (fun N => q.eval N) encUnary encUnary := unary_eval q
+    have hk : ComputableTidilyInPolyTime k encUnary encUnary :=
+      uMul (uMul (const 2) (hq.comp hw)) hw
+    have hp : ComputableTidilyInPolyTime p encUnary encUnary := (unary_pow (deg + 1)).comp hw
+    have ht : ComputableTidilyInPolyTime t encUnary encUnary :=
+      uMul (uMul (const 4) (hq.comp hw)) (uMul hk hp)
+    have hB : ComputableTidilyInPolyTime B encUnary encUnary :=
+      uMul (const cA) ((unary_pow dA).comp
+        (uAdd (uAdd (uMul (const 2) id') (uMul hk (houtLen.tidy.comp hw))) (const 2)))
+    have hseedLen : ComputableTidilyInPolyTime seedLen encUnary encUnary := uAdd (uMul hk hw) hB
     have hn : ComputableTidilyInPolyTime (fun pair : ℕ × List Bool => pair.1 - 1)
-        (encPair encUnary encBits) encUnary := by fun_prop
+        (encPair encUnary encBits) encUnary :=
+      unary_sub.comp ((fst encUnary encBits).prod (const 1))
     have hsample_len : ComputableTidilyInPolyTime
         (fun pair : ℕ × List Bool => t (pair.1 - 1) * seedLen (pair.1 - 1))
         (encPair encUnary encBits) encUnary :=
-      ComputableTidilyInPolyTime.unary_mul.comp ((ht.comp hn).prod (hseedLen.comp hn))
-    have hfst2 := ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encBits
-    have hsnd2 := ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encBits
+      (uMul ht hseedLen).comp hn
+    have hfst2 := fst (encPair encUnary encBits) encBits
+    have hsnd2 := snd (encPair encUnary encBits) encBits
     have hrun := computableTidily_runTrials hk hw ht hseedLen hweak.polyTime.tidy hevalA.tidy
       (hn.comp hfst2) (hsnd.comp hfst2) hsnd2
     exact IsPPTOn.map_with (ComputableInPolyTime.of_tidy hsample_len).sampleList (.of_tidy hrun)
@@ -615,154 +678,44 @@ theorem familyInversionGame_parallelCore_negligible {f : List Bool → List Bool
     (Filter.tendsto_add_atTop_nat 1).eventually (hweak.weak B_inv hB_ppt)
   have hgeom : ∀ᶠ n in atTop, ((1 / 2 : ℝ≥0) ^ n : ℝ) ≤ 1 / (p n : ℝ) :=
     (negligible_geometric (by norm_num : (1 / 2 : ℝ≥0) < 1)).eventually_le_inv_polynomial
-      (by dsimp [p]; fun_prop) hp_pos
-  have hbound : ∀ᶠ n in atTop,
-      (Game.succProbability (ProbComp.eval
-        (OneWayReindex.familyInversionGame (fun n => k n * w n)
-          (parallelCore k w f) A n)) : ℝ) ≤ 1 / (p n : ℝ) := by
-    filter_upwards [hweak_w, hgeom] with n hn_weak hn_geom
-    let m_np : ℕ := k n * p n
-    have hm_pos : 0 < m_np := Nat.mul_pos (hk_pos n) (hp_pos n)
-    let θ : ℝ := 1 / (2 * (m_np : ℝ))
-    have hθ_nonneg : 0 ≤ θ := by dsimp [θ]; positivity
-    have hθ_le_one : θ ≤ 1 := by
-      dsimp [θ]
-      rw [div_le_iff₀ (by positivity)]
-      have : (1 : ℝ) ≤ m_np := by exact_mod_cast hm_pos
-      linarith
-    let c : ENNReal := ENNReal.ofReal θ
-    let good (x : List Bool) : Bool :=
-      decide (∃ j < k n, c ≤
-        ((BitString.uniformList (seedLen n)).map (fun seed =>
-          f (slotCand k w f evalA n (f x) seed j) == f x)) true)
-    have hfam_eq :
-        (ProbComp.eval (OneWayReindex.familyInversionGame (fun n => k n * w n)
-          (parallelCore k w f) A n)) true =
-          (((BitString.uniformList (k n * w n)).bind (fun X =>
-            (BitString.uniformList (B n)).map (fun coins =>
-              parallelCore k w f n (evalA (n, parallelCore k w f n X) coins) ==
-                parallelCore k w f n X))) true) := by
-      unfold OneWayReindex.familyInversionGame
-      simp only [ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure]
-      congr 1
-      apply PMF.bind_congr_on_support
-      intro X _
-      have hbudget :
-          cA * ((encPair encUnary encBits (n, parallelCore k w f n X)).length + 1) ^ dA ≤ B n := by
-        rw [length_encPair]
-        simp only [encUnary_apply, List.length_replicate, encBits_apply, length_parallelCore hlen,
-          B]
-        have heq : 2 * n + 1 + k n * outLen (w n) + 1 = 2 * n + k n * outLen (w n) + 2 := by omega
-        rw [heq]
-      rw [hlawA (n, parallelCore k w f n X) (B n) hbudget, PMF.bind_map]
-      simp only [PMF.map, Function.comp_def, parallelCore_take]
-    have hinv_eq :
-        (ProbComp.eval (inversionGame f B_inv (w n))) true =
-          (((BitString.uniformList (w n)).bind (fun x =>
-            (BitString.uniformList (t n * seedLen n)).map (fun allSeeds =>
-              f (runTrials k w t seedLen f evalA n (f x) allSeeds) == f x))) true) := by
-      simp [inversionGame, B_inv, w, PMF.map]
-    have hc_bad : ∀ j < k n, ∀ x, x.length = w n → good x = false →
-        (((BitString.uniformList (k n * w n + B n)).map (fun seed =>
-          f (slotCand k w f evalA n (f x) seed j) == f x)) true) ≤ c := by
-      intro j hj x _ hgf
-      have hnot : ¬ ∃ i < k n, c ≤
-          ((BitString.uniformList (seedLen n)).map (fun seed =>
-            f (slotCand k w f evalA n (f x) seed i) == f x)) true :=
-        decide_eq_false_iff_not.mp hgf
-      by_contra hlt
-      exact hnot ⟨j, hj, le_of_not_ge hlt⟩
-    have hc_good : ∀ x, x.length = w n → good x = true → ∃ j < k n,
-        c ≤ ((BitString.uniformList (seedLen n)).map (fun seed =>
-          f (slotCand k w f evalA n (f x) seed j) == f x)) true := by
-      intro x _ hgt
-      exact of_decide_eq_true hgt
-    have hpar_le := parallelCore_inversion_le hlen n (B n) good hc_bad
-    have hgood_le := good_prob_le_runTrials (t := t) n good hc_good
-    rw [← hfam_eq] at hpar_le
-    rw [← hinv_eq] at hgood_le
-    have h1mc_ne_top : (1 - c) ^ (t n) ≠ ⊤ :=
-      ENNReal.pow_ne_top ((tsub_le_self.trans_lt ENNReal.one_lt_top).ne)
-    have hgood_real :
-        (((BitString.uniformList (w n)).map good) true).toReal ≤
-          (Game.succProbability (ProbComp.eval (inversionGame f B_inv (w n))) : ℝ) +
-            (1 - θ) ^ (t n) := by
-      have hle := ENNReal.toReal_mono
-        (ENNReal.add_ne_top.mpr ⟨((PMF.coe_le_one _ _).trans_lt ENNReal.one_lt_top).ne,
-          h1mc_ne_top⟩) hgood_le
-      rw [ENNReal.toReal_add ((PMF.coe_le_one _ _).trans_lt ENNReal.one_lt_top).ne h1mc_ne_top,
-        ENNReal.toReal_pow, ← ENNReal.ofReal_one,
-        ← ENNReal.ofReal_sub 1 hθ_nonneg,
-        ENNReal.toReal_ofReal (by linarith)] at hle
-      exact hle
-    have ht_pow : (1 - θ) ^ (t n) ≤ 1 / (2 * ((q.eval (w n) : ℕ) : ℝ)) :=
-      pow_one_sub_le_inv_two_mul (hq_pos (w n)) hm_pos
-    have hgood_lt :
-        (((BitString.uniformList (w n)).map good) true).toReal ≤
-          1 - 1 / (2 * ((q.eval (w n) : ℕ) : ℝ)) := by
-      have hhalf :
-          1 - 1 / ((q.eval (w n) : ℕ) : ℝ) + 1 / (2 * ((q.eval (w n) : ℕ) : ℝ)) =
-            1 - 1 / (2 * ((q.eval (w n) : ℕ) : ℝ)) := by ring
-      linarith
-    have hgood_pow_le :
-        ((((BitString.uniformList (w n)).map good) true).toReal) ^ (k n) ≤
-          (1 / 2 : ℝ) ^ (w n) := by
-      have hpow1 :
-          ((((BitString.uniformList (w n)).map good) true).toReal) ^ (k n) ≤
-            (1 - 1 / (2 * ((q.eval (w n) : ℕ) : ℝ))) ^ (k n) :=
-        pow_le_pow_left₀ ENNReal.toReal_nonneg hgood_lt (k n)
-      exact hpow1.trans (pow_one_sub_inv_two_mul_le (hq_pos (w n)) (w n))
-    have hk_ne_top : (k n : ENNReal) * c ≠ ⊤ :=
-      ENNReal.mul_ne_top (ENNReal.natCast_ne_top (k n)) ENNReal.ofReal_ne_top
-    have hpar_real :
-        (Game.succProbability (ProbComp.eval
-          (OneWayReindex.familyInversionGame (fun n => k n * w n)
-            (parallelCore k w f) A n)) : ℝ) ≤
-          ((((BitString.uniformList (w n)).map good) true).toReal) ^ (k n) +
-            (k n : ℝ) * θ := by
-      have hg_pow_ne_top : (((BitString.uniformList (w n)).map good) true) ^ (k n) ≠ ⊤ :=
-        ENNReal.pow_ne_top ((PMF.coe_le_one _ _).trans_lt ENNReal.one_lt_top).ne
-      have hle := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hg_pow_ne_top, hk_ne_top⟩) hpar_le
-      rw [ENNReal.toReal_add hg_pow_ne_top hk_ne_top, ENNReal.toReal_pow,
-        ENNReal.toReal_mul, ENNReal.toReal_natCast, ENNReal.toReal_ofReal hθ_nonneg] at hle
-      exact hle
-    have hk_θ : (k n : ℝ) * θ = 1 / (2 * (p n : ℝ)) := by
-      dsimp [θ, m_np]
-      have hkR : (k n : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (hk_pos n).ne'
-      have hpR : (p n : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (hp_pos n).ne'
-      push_cast
-      field_simp
-    have hgeom_w : (1 / 2 : ℝ) ^ (w n) ≤ 1 / (2 * (p n : ℝ)) := by
-      have h1 : ((1 / 2 : ℝ≥0) ^ n : ℝ) = (1 / 2 : ℝ) ^ n := by push_cast; rfl
-      rw [h1] at hn_geom
-      have h2 : (1 / 2 : ℝ) ^ (w n) = (1 / 2 : ℝ) * (1 / 2 : ℝ) ^ n := by
-        dsimp [w]
-        rw [pow_succ']
-      rw [h2]
-      have h3 : (1 / 2 : ℝ) * (1 / (p n : ℝ)) = 1 / (2 * (p n : ℝ)) := by ring
-      linarith
-    have hhalf2 : 1 / (2 * (p n : ℝ)) + 1 / (2 * (p n : ℝ)) = 1 / (p n : ℝ) := by ring
-    linarith
-  have hzero : Tendsto (fun n : ℕ => 1 / ((n : ℝ) + 1)) atTop (nhds 0) := by
-    simpa [Function.comp_def, Nat.cast_add, Nat.cast_one] using
-      (tendsto_const_div_atTop_nhds_zero_nat (1 : ℝ)).comp (Filter.tendsto_add_atTop_nat 1)
-  refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ hzero
-  filter_upwards [hbound] with n hn
-  have h1 : (n : ℝ) ^ deg ≤ ((n + 1 : ℕ) : ℝ) ^ deg := by
-    gcongr
-    exact_mod_cast Nat.le_succ n
-  calc (n : ℝ) ^ deg *
-        (Game.succProbability (ProbComp.eval
-          (OneWayReindex.familyInversionGame (fun n => k n * w n)
-            (parallelCore k w f) A n)) : ℝ)
-    _ ≤ ((n + 1 : ℕ) : ℝ) ^ deg * (1 / (p n : ℝ)) :=
-        mul_le_mul h1 hn (by positivity) (by positivity)
-    _ = 1 / ((n : ℝ) + 1) := by
-        dsimp [p]
-        have hn1 : ((n : ℝ) + 1) ≠ 0 := by positivity
-        push_cast
-        rw [pow_succ]
-        field_simp
+      ((PolynomiallyBounded.id.add (.const 1)).pow (deg + 1)) hp_pos
+  filter_upwards [hweak_w, hgeom] with n hn_weak hn_geom
+  let c : ENNReal := ENNReal.ofReal (1 / (2 * ((k n * p n : ℕ) : ℝ)))
+  have hfam_eq :
+      (ProbComp.eval (OneWayReindex.familyInversionGame (fun n => k n * w n)
+        (parallelCore k w f) A n)) true =
+        (((BitString.uniformList (k n * w n)).bind (fun X =>
+          (BitString.uniformList (B n)).map (fun coins =>
+            parallelCore k w f n (evalA (n, parallelCore k w f n X) coins) ==
+              parallelCore k w f n X))) true) := by
+    unfold OneWayReindex.familyInversionGame
+    simp only [ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure]
+    congr 1
+    apply PMF.bind_congr_on_support
+    intro X _
+    have hbudget :
+        cA * ((encPair encUnary encBits (n, parallelCore k w f n X)).length + 1) ^ dA ≤ B n := by
+      rw [length_encPair]
+      simp only [encUnary_apply, List.length_replicate, encBits_apply, length_parallelCore hlen, B]
+      have heq : 2 * n + 1 + k n * outLen (w n) + 1 = 2 * n + k n * outLen (w n) + 2 := by omega
+      rw [heq]
+    rw [hlawA (n, parallelCore k w f n X) (B n) hbudget, PMF.bind_map]
+    simp only [PMF.map, Function.comp_def, parallelCore_take]
+  have hinv_eq :
+      (ProbComp.eval (inversionGame f B_inv (w n))) true =
+        (((BitString.uniformList (w n)).bind (fun x =>
+          (BitString.uniformList (t n * seedLen n)).map (fun allSeeds =>
+            f (runTrials k w t seedLen f evalA n (f x) allSeeds) == f x))) true) := by
+    simp [inversionGame, B_inv, w, PMF.map]
+  have hpar_le := parallelCore_inversion_le (k := k) (w := w) (evalA := evalA) hlen n (B n) c
+  have hgood_le := good_prob_le_runTrials (k := k) (w := w) (t := t) (seedLen := seedLen)
+    (f := f) (evalA := evalA) n c
+  rw [← hfam_eq] at hpar_le
+  rw [← hinv_eq] at hgood_le
+  exact amplification_real_bound (hq_pos (w n)) (hp_pos n)
+    ((PMF.coe_le_one _ _).trans_lt ENNReal.one_lt_top).ne
+    ((PMF.coe_le_one _ _).trans_lt ENNReal.one_lt_top).ne
+    hpar_le hgood_le hn_weak hn_geom
 
 end OneWayAmplification
 
@@ -778,22 +731,17 @@ theorem WeakOneWay.exists_oneWay {f : List Bool → List Bool} (hf : WeakOneWay 
   let w : ℕ → ℕ := fun n => n + 1
   let k : ℕ → ℕ := fun n => 2 * q.eval (w n) * w n
   let m : ℕ → ℕ := fun n => k n * w n
-  have hm_ge : ∀ n, n + 1 ≤ m n := fun n => by
-    have hk1 : 1 ≤ k n := by
-      have hq1 : 1 ≤ q.eval (w n) := hq_pos (w n)
-      have hw1 : 1 ≤ w n := by dsimp [w]; omega
-      dsimp [k]
-      nlinarith
-    calc n + 1 = 1 * w n := by dsimp [w]; omega
-      _ ≤ k n * w n := Nat.mul_le_mul_right (w n) hk1
-  have hw_comp : ComputableTidilyInPolyTime w encUnary encUnary := by dsimp [w]; fun_prop
+  have hm_ge : ∀ n, n + 1 ≤ m n := fun n =>
+    Nat.le_mul_of_pos_left (w n)
+      (Nat.mul_pos (Nat.mul_pos (by decide) (hq_pos (w n))) (Nat.succ_pos n))
+  have hw_comp : ComputableTidilyInPolyTime w encUnary encUnary :=
+    OneWayAmplification.uAdd .id' (.const 1)
   have hq_comp : ComputableTidilyInPolyTime (fun N => q.eval N) encUnary encUnary :=
     ComputableTidilyInPolyTime.unary_eval q
-  have hk_comp : ComputableTidilyInPolyTime k encUnary encUnary := by dsimp [k]; fun_prop
-  have hm_comp : ComputableInPolyTime m encUnary encUnary := by
-    apply ComputableInPolyTime.of_tidy
-    dsimp [m]
-    fun_prop
+  have hk_comp : ComputableTidilyInPolyTime k encUnary encUnary :=
+    OneWayAmplification.uMul (OneWayAmplification.uMul (.const 2) (hq_comp.comp hw_comp)) hw_comp
+  have hm_comp : ComputableInPolyTime m encUnary encUnary :=
+    .of_tidy (OneWayAmplification.uMul hk_comp hw_comp)
   have hcore_comp : ComputableInPolyTime
       (fun p : ℕ × List Bool => OneWayAmplification.parallelCore k w g p.1 p.2)
       (encPair encUnary encBits) encBits := by

@@ -10,17 +10,17 @@ module
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Program
 
 /-!
-# Charged polynomial workspace reservation
+# Charged polynomial value bound
 
 The outer controller computes its preprocessing word envelope by actual multiplication and
 decrement instructions. The exponent is fixed with the input-magnitude parameter, not supplied
-by an oracle. All other controls and every memory cell are preserved by the reservation loop.
+by an oracle. All other controls and every memory cell are preserved by the value-bound loop.
 
 ## Main results
 
 * `exec_power`: the complete native exponentiation loop and its charged frame.
 
-These finite native reservation proofs are original.
+These finite native arithmetic proofs are original.
 -/
 
 @[expose] public section

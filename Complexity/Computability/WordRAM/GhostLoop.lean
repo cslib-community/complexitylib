@@ -25,6 +25,7 @@ representation from the native data alone.
 
 * `ExecWithin.loop_invariant_state`: the native loop rule with explicit proof state and a natural
   decreasing measure, including all loop-control instructions in the bound.
+* `ExecWithin.loop_invariant_state_additive`: same-code bounds with additive control overhead.
 * `ExecWithin.loop_invariant_state_charged`: bounded native loops carrying explicit semantic proof
   state and charging state-dependent body work plus one control unit per iteration.
 
@@ -57,7 +58,7 @@ theorem ExecWithin.loop_invariant_state {B : Basis} {r w T : ℕ} {σ : Type*}
         obtain ⟨s₂, z, hz, hIz, hexit⟩ := ih (μ s₁) (by omega) s₁ y le_rfl hIy
         refine ⟨s₂, z, (ExecWithin.loop_iter hc hy hz).mono ?_, hIz, hexit⟩
         have hm := Nat.mul_le_mul_right (T + 2) (show μ s₁ + 1 ≤ n by omega)
-        rw [Nat.add_mul, Nat.one_mul] at hm
+        rw [Nat.add_mul] at hm
         omega
       · exact ⟨s, x, (ExecWithin.loop_exit hc).mono (by omega), hI, hc⟩
   exact aux (μ s) s x le_rfl hx
@@ -66,6 +67,31 @@ theorem ExecWithin.loop_invariant_state {B : Basis} {r w T : ℕ} {σ : Type*}
 def iterationSum {σ : Type*} (next : σ → σ) (charge : σ → ℕ) : ℕ → σ → ℕ
   | 0, _ => 0
   | n + 1, s => charge s + iterationSum next charge n (next s)
+
+/-- Charge each body at its actual proof state and pay native loop control additively.
+The code, register bank and exchange constants are fixed before fuel; no query is required. -/
+theorem ExecWithin.loop_invariant_state_additive {σ : Type*} {B : Basis} {r : ℕ}
+    {cond : Cond r} {code : Code B r} {w C D : ℕ}
+    (I : ℕ → σ → Data r → Prop) (next : σ → σ) (charge : σ → ℕ)
+    (hexit : ∀ s x, I 0 s x → ¬cond.Holds x)
+    (hbody : ∀ n s x, I (n + 1) s x →
+      cond.Holds x ∧ ∃ y, ExecWithin w code x y (C * (charge s + 1) + D) ∧
+        I n (next s) y)
+    {n : ℕ} {s : σ} {x : Data r} (hx : I n s x) :
+    ∃ y, ExecWithin w (.loop cond code) x y
+        (C * iterationSum next charge n s + (C + D + 2) * n + 2) ∧
+      I 0 ((next^[n]) s) y := by
+  induction n generalizing s x with
+  | zero =>
+    refine ⟨x, (ExecWithin.loop_exit (hexit s x hx)).mono ?_, hx⟩
+    simp [iterationSum]
+  | succ n ih =>
+    obtain ⟨hc, a, ha, hI⟩ := hbody n s x hx
+    obtain ⟨y, hy, hIy⟩ := ih hI
+    refine ⟨y, (ExecWithin.loop_iter hc ha hy).mono ?_, ?_⟩
+    · simp only [iterationSum, Nat.mul_add, Nat.add_mul, Nat.mul_one]
+      omega
+    · simpa only [Function.iterate_succ_apply] using hIy
 
 /-- A bounded native loop may charge variable body work and one unit per iteration without
 issuing a memory query. Its body, register bank and exchange constants are fixed before fuel.
@@ -81,29 +107,10 @@ theorem ExecWithin.loop_invariant_state_charged {σ : Type*} {B : Basis} {r : �
     ∃ y, ExecWithin w (.loop cond code) x y
         ((C + D + 2) * (iterationSum next charge n s + n + 1)) ∧
       I 0 ((next^[n]) s) y := by
-  induction n generalizing s x with
-  | zero =>
-    refine ⟨x, (ExecWithin.loop_exit (hexit s x hx)).mono ?_, hx⟩
-    simp only [iterationSum, Nat.zero_add, Nat.mul_one]
-    omega
-  | succ n ih =>
-    obtain ⟨hc, a, ha, hI⟩ := hbody n s x hx
-    obtain ⟨y, hy, hIy⟩ := ih hI
-    refine ⟨y, (ExecWithin.loop_iter hc ha hy).mono ?_, ?_⟩
-    · simp only [iterationSum]
-      have hpos : D + 2 ≤ (D + 2) * (charge s + 1) := by
-        simpa only [Nat.mul_one] using Nat.mul_le_mul_left (D + 2) (show 1 ≤ charge s + 1 by omega)
-      have hsplit : (C + D + 2) * (charge s + iterationSum next charge n (next s) + (n + 1) + 1) =
-          C * (charge s + 1) + (D + 2) * (charge s + 1) +
-            (C + D + 2) * (iterationSum next charge n (next s) + n + 1) := by
-        calc (C + D + 2) * (charge s + iterationSum next charge n (next s) + (n + 1) + 1)
-            = (C + (D + 2)) * ((charge s + 1) + (iterationSum next charge n (next s) + n + 1)) := by
-              congr 1; omega
-          _ = C * (charge s + 1) + (D + 2) * (charge s + 1) +
-                (C + D + 2) * (iterationSum next charge n (next s) + n + 1) := by
-              rw [Nat.mul_add, Nat.add_mul, ← Nat.add_assoc]
-      omega
-    · simpa only [Function.iterate_succ_apply] using hIy
+  obtain ⟨y, hy, hIy⟩ := ExecWithin.loop_invariant_state_additive I next charge hexit hbody hx
+  refine ⟨y, hy.mono ?_, hIy⟩
+  simp only [Nat.mul_add, Nat.add_mul, Nat.mul_one]
+  omega
 
 end Cslib.WordRAM
 

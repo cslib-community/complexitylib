@@ -133,12 +133,8 @@ theorem consequence_valid {safe' : ℕ → δ → Memory.State → Prop}
     (h : Realizes B p input output safe work)
     (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
       (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p d)) →
-      safe' w d s → safe w d s) : Realizes B p input output safe' work := by
-  obtain ⟨n, C, emit, he⟩ := h
-  refine ⟨n, C, emit, fun frontier src tmp hi hd hf hs => ?_⟩
-  obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
-  refine ⟨hnw, fun w d x hx hin hsafe' hv => hrun w d x hx hin ?_ hv⟩
-  exact hsafe w d _ (fun i => congrFun hin i ▸ hx.1 (src i)) (wellFormed_memoryState hx) hv hsafe'
+      safe' w d s → safe w d s) : Realizes B p input output safe' work :=
+  ((Witness.ofRealizes h).consequenceValid hsafe).toRealizes
 
 variable {q : δ × α → Memory.Prog β} {answer : α ↪ (Fin l → ℕ)} {output' : β ↪ (Fin m → ℕ)}
   {safeP : ℕ → δ → Memory.State → Prop} {safeQ : ℕ → δ × α → Memory.State → Prop}

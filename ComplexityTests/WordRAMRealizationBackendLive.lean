@@ -42,8 +42,8 @@ private theorem pure_answer : Realizes .exact
 
 /-- A fixed finite family; the second tag has a larger output bank. -/
 noncomputable def certificates : Bool → Certificate .exact
-  | false => ⟨pure_counts⟩
-  | true => ⟨pure_answer⟩
+  | false => Certificate.ofRealizes pure_counts
+  | true => Certificate.ofRealizes pure_answer
 
 -- Constructor tags use the same resident count/layout coordinates.
 example (i : Fin 5) : Backend.src certificates false i = Backend.src certificates true i :=
@@ -112,12 +112,17 @@ example {w : ℕ} {x : Data (Backend.registers certificates)} (hx : x.Bounded w)
   let y := x.set zeroSlot 0
   have he : Exec (B := .exact) w (.op (.const zeroSlot 0)) x y 1 := Exec.const (fits_zero w)
   refine ⟨y, he, he.bounded hx, ?_, ?_, ?_⟩
-  · exact Function.update_of_ne tag_ne_zero _ _
+  · exact Function.update_of_ne tag_ne_zero 0 x.regs
   · intro j
-    exact Function.update_of_ne (Backend.src_ne_tmp certificates false true j _) _ _
+    change Function.update x.regs zeroSlot 0 _ = _
+    apply Function.update_of_ne
+    exact Backend.src_ne_tmp certificates false true j _
   · apply Memory.State.ext
     · exact Data.set_mem x zeroSlot 0
-    · exact Function.update_of_ne (Backend.tmp_ne_frontier certificates true _).symm _ _
+    · have hf : Backend.frontier certificates ≠ zeroSlot := by
+        unfold zeroSlot
+        exact (Backend.tmp_ne_frontier certificates true _).symm
+      simpa only [memoryState, y, Data.set] using Function.update_of_ne hf 0 x.regs
 
 -- The identity is conditional on the supplied words actually occupying the input bank.
 example (x : Data (Backend.registers certificates)) (d : Input)
@@ -198,7 +203,7 @@ example {w : ℕ} (d : Input) {x : Data (Backend.registers certificates)} (hx : 
 
 /-- A genuine memory-reading provider, as used by raw-entry layout/counter consumers. -/
 noncomputable def sizeCertificate (_ : Unit) : Certificate .exact :=
-  ⟨MemoryStack.realizes_size⟩
+  Certificate.ofRealizes MemoryStack.realizes_size
 
 -- The live rule also runs a real query and retains all resident layout words.
 example {w : ℕ} (L : Stack.Memory.Layout)

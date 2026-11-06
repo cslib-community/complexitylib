@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Time
 public import Complexity.Foundations.Data.BitString.Enumeration
+import Complexity.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 import Complexity.Computability.Complexity.Classes.Time.BoundedExists
 import Complexity.Computability.Complexity.Classes.Time.Verifier
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
@@ -152,17 +153,15 @@ def expLazyDiagonal (k : ℕ) : Set (List Bool) :=
 private theorem exists_le_certLen (k c : ℕ) :
     ∃ M, ∀ m, M ≤ m → c * 2 ^ (k * m) + c ≤ certLen k m := by
   refine ⟨c, fun m hm => ?_⟩
-  have hX : 1 ≤ 2 ^ (k * m) := Nat.one_le_two_pow
   have hc : 2 * c ≤ 2 ^ (m + 1) := by
     have := Nat.lt_two_pow_self (n := m)
-    rw [pow_succ]
-    omega
+    rw [pow_succ]; omega
   have e : certLen k m = 2 ^ (k * m) * 2 ^ k * 2 ^ (m + 1) := by
-    simp only [certLen, ← pow_add]
-    congr 1
-    ring
+    simp only [certLen, ← pow_add]; congr 1; ring
   rw [e]
-  calc c * 2 ^ (k * m) + c ≤ 2 * c * 2 ^ (k * m) := by nlinarith
+  calc c * 2 ^ (k * m) + c ≤ 2 * c * 2 ^ (k * m) := by
+        rw [two_mul, add_mul]
+        exact Nat.add_le_add_left (Nat.le_mul_of_pos_right _ Nat.one_le_two_pow) _
     _ ≤ 2 ^ (m + 1) * 2 ^ (k * m) := Nat.mul_le_mul_right _ hc
     _ ≤ 2 ^ (k * m) * 2 ^ k * 2 ^ (m + 1) := by
       rw [mul_comm (2 ^ (m + 1)), mul_assoc]
@@ -188,8 +187,7 @@ theorem expLazyDiagonal_notMem_NTIME (k : ℕ) :
   have hsim (y v : List Bool) (hy : M ≤ y.length) : accepts code y v = V (y, v) := by
     have hclock : c₂ * ((encPair encBits encBits (y, v)).length + 1) ≤
         ((frame y ++ v).length + 1) ^ 2 := by
-      simp only [encPair_apply, encBits_apply, List.length_append, length_frame]
-      rw [sq]
+      simp only [encPair_apply, encBits_apply, List.length_append, length_frame, sq]
       exact Nat.mul_le_mul_right _ (by omega)
     obtain ⟨hhalt, hout⟩ := (htm (y, v)).runFrom_of_le hclock
     simp only [encPair_apply, encBits_apply, encBool_apply] at hhalt hout
@@ -209,19 +207,13 @@ theorem expLazyDiagonal_notMem_NTIME (k : ℕ) :
   set P := 2 * w.length + 1 with hP
   set E := horizon k P with hE
   set x : ℕ → List Bool := fun m => frame w ++ List.replicate (m - P) false with hx
-  have hwlen : w.length = 2 * code.length + 1 + (2 ^ code.length + M) := by
-    simp [w]
+  have hwlen : w.length = 2 * code.length + 1 + (2 ^ code.length + M) := by simp [w]
   have hMP : M ≤ P := by
-    have := hwlen
-    generalize 2 ^ code.length = e at this
-    omega
+    have := hwlen; generalize 2 ^ code.length = e at this; omega
   have hxlen (m : ℕ) (hm : P ≤ m) : (x m).length = m := by
-    simp only [x, List.length_append, length_frame, List.length_replicate]
-    omega
+    simp only [x, List.length_append, length_frame, List.length_replicate]; omega
   have hshort : Diagonal.shortDesc w = true := by
-    have hc : unframe w = code := unframe_frame_append _ _
-    rw [Diagonal.shortDesc, decide_eq_true_eq, hc, hwlen]
-    omega
+    rw [Diagonal.shortDesc, decide_eq_true_eq, unframe_frame_append, hwlen]; omega
   have hverifier (m : ℕ) (hm : P ≤ m) (v : List Bool) : verifier k (x m, v) =
       if Nat.size (m + 1) ≤ E then accepts code (x m ++ [false]) v
       else if Nat.size m ≤ E then
@@ -232,8 +224,8 @@ theorem expLazyDiagonal_notMem_NTIME (k : ℕ) :
     simp only [verifier, hu, hc, hshort, hxlen m hm, ← hP, ← hE, ↓reduceIte]
   have hPE : P + 1 < 2 ^ E := by
     have : P + 1 ≤ E :=
-      calc P + 1 ≤ 2 ^ (P + 1) := Nat.lt_two_pow_self.le
-        _ ≤ E := Nat.pow_le_pow_right (by norm_num) (Nat.le_mul_of_pos_left _ (by omega))
+      Nat.lt_two_pow_self.le.trans
+        (Nat.pow_le_pow_right Nat.one_lt_two.le (Nat.le_mul_of_pos_left _ (Nat.succ_pos _)))
     exact this.trans_lt Nat.lt_two_pow_self
   set U := 2 ^ E - 1 with hU
   -- each word below the end of the interval is in the language exactly when the next one is
@@ -241,9 +233,7 @@ theorem expLazyDiagonal_notMem_NTIME (k : ℕ) :
       x m ∈ expLazyDiagonal k ↔ x (m + 1) ∈ expLazyDiagonal k := by
     have hsize : Nat.size (m + 1) ≤ E := Nat.size_le.mpr (by omega)
     have hnext : x m ++ [false] = x (m + 1) := by
-      simp only [x, List.append_assoc, ← List.replicate_succ']
-      congr 2
-      omega
+      simp only [x, List.append_assoc, ← List.replicate_succ', show m - P + 1 = m + 1 - P by omega]
     rw [hiff (x (m + 1)) (by rw [hxlen _ (by omega)]; omega), expLazyDiagonal, Set.mem_ofPred_eq,
       hxlen (m + 1) (by omega), hxlen m hm]
     refine exists_congr fun v => and_congr_right fun _ => ?_
@@ -252,28 +242,23 @@ theorem expLazyDiagonal_notMem_NTIME (k : ℕ) :
   have hend : x U ∈ expLazyDiagonal k ↔ x P ∉ expLazyDiagonal k := by
     have hUP : P ≤ U := by omega
     have hsize₁ : ¬Nat.size (U + 1) ≤ E := by
-      rw [Nat.size_le, hU, Nat.sub_add_cancel Nat.one_le_two_pow]
-      exact lt_irrefl _
+      rw [Nat.size_le, hU, Nat.sub_add_cancel Nat.one_le_two_pow]; exact lt_irrefl _
     have hsize₂ : Nat.size U ≤ E := Nat.size_le.mpr (by omega)
     have hbase : x P = frame w := by simp [x]
     rw [hiff (x P) (by rw [hxlen P le_rfl]; omega), hxlen P le_rfl, hbase, expLazyDiagonal,
       Set.mem_ofPred_eq]
     simp only [hverifier U hUP, hsize₁, hsize₂, ↓reduceIte, Bool.not_eq_true',
       List.any_eq_false, Cslib.BitString.mem_enumList, not_exists, not_and, Bool.not_eq_true]
-    constructor
-    · rintro ⟨-, -, h⟩ v hv
-      exact h v hv
-    · intro h
-      exact ⟨List.replicate _ false, List.length_replicate .., h⟩
+    exact ⟨fun ⟨_, _, h⟩ v hv => h v hv,
+      fun h => ⟨List.replicate _ false, List.length_replicate .., h⟩⟩
   -- the chain from the start of the interval to its end
   have hchain (j : ℕ) (hj : j ≤ U - P) :
       x (U - j) ∈ expLazyDiagonal k ↔ x U ∈ expLazyDiagonal k := by
     induction j with
     | zero => rfl
     | succ j ih =>
-      rw [← ih (by omega), hstep (U - (j + 1)) (by omega) (by omega)]
-      congr! 2
-      omega
+      have heq : U - j = U - (j + 1) + 1 := by omega
+      rw [← ih (by omega), heq, ← hstep (U - (j + 1)) (by omega) (by omega)]
   have h := hchain (U - P) le_rfl
   rw [Nat.sub_sub_self (by omega), hend] at h
   exact iff_not_self h
@@ -290,80 +275,6 @@ private def accBound (D : ℕ) (q : List Bool × List Bool × List Bool) : ℕ :
 private theorem length_encNat_sq_le (W : ℕ) : (encNat ((W + 1) ^ 2)).length ≤ 2 * (W + 1) := by
   rw [encNat_apply, Nat.size_eq_bits_len, Nat.size_le, mul_comm, pow_mul]
   exact Nat.pow_lt_pow_left Nat.lt_two_pow_self (by omega)
-
-/-- The numeric core of the resources of the simulation: for an encoded input of length `N`, a
-decoding time `A`, a word `W = frame y ++ v`, a decoded description of encoded length `Dl`, encoded
-symbols of length `Nl`, a clock `Y` of `Ll` binary digits and a result of encoded length `E`,
-everything is within `K * X ^ 4 * Y ^ 2`. -/
-private theorem accBound_aux (d cD cO : ℕ) : ∃ K, ∀ {N A W Dl Nl Ll X Y E : ℕ},
-    N ≤ 2 * X → A ≤ X → W ≤ 2 * X → Dl ≤ cD * (N + A + 1) → Nl ≤ 3 * W →
-    Ll ≤ (d + 4) * X → 1 ≤ X → 1 ≤ Y →
-    E ≤ cO * (N + A + (N + W + (N + Y)) + (2 * Dl + 1 + (2 * Nl + 1 + Ll) + 1) ^ 2 * (Y + 1) + 1) →
-    N + A + (N + W + (N + Y)) + (2 * Dl + 1 + (2 * Nl + 1 + Ll) + 1) ^ 4 * (Y + 1) ^ 2 +
-        (E + 1) ^ 2 + 1 ≤ K * (X ^ 4 * Y ^ 2) ∧
-      N + A + (N + W + (N + Y)) + (2 * Dl + 1 + (2 * Nl + 1 + Ll) + 1) ^ 2 * (Y + 1) + E + 1 ≤
-        K * (X ^ 4 * Y ^ 2) := by
-  set C₁ := 8 * cD + d + 19
-  set C₂ := 11 + 2 * C₁ ^ 2
-  refine ⟨10 + 4 * C₁ ^ 4 + (cO * C₂ + 1) ^ 2 + 1 + C₂ * (cO + 1),
-    fun {N A W Dl Nl Ll X Y E} hN hA hW hD hNl hLl hX hY hE => ?_⟩
-  have hIn : 2 * Dl + 1 + (2 * Nl + 1 + Ll) + 1 ≤ C₁ * X := by
-    have h₁ : cD * (N + A + 1) ≤ cD * (4 * X) := Nat.mul_le_mul_left _ (by omega)
-    have h₂ : (d + 4) * X = d * X + 4 * X := by ring
-    have h₃ : d * X ≤ d * X := le_rfl
-    have e : C₁ * X = 8 * (cD * X) + d * X + 19 * X := by simp only [C₁]; ring
-    have e' : cD * (4 * X) = 4 * (cD * X) := by ring
-    omega
-  have hXY : X * Y ≤ X ^ 2 * Y := Nat.mul_le_mul_right _ (Nat.le_self_pow (by norm_num) _)
-  have hX2Y : X ^ 2 * Y ≤ X ^ 4 * Y ^ 2 :=
-    Nat.mul_le_mul (Nat.pow_le_pow_right hX (by norm_num)) (Nat.le_self_pow (by norm_num) _)
-  have hpre : N + A + (N + W + (N + Y)) ≤ 10 * (X * Y) := by
-    have h₁ : X ≤ X * Y := Nat.le_mul_of_pos_right _ hY
-    have h₂ : Y ≤ X * Y := Nat.le_mul_of_pos_left _ hX
-    omega
-  have hY1 : Y + 1 ≤ 2 * Y := by omega
-  have hU₂ : (2 * Dl + 1 + (2 * Nl + 1 + Ll) + 1) ^ 2 * (Y + 1) ≤ 2 * C₁ ^ 2 * (X ^ 2 * Y) :=
-    calc _ ≤ (C₁ * X) ^ 2 * (2 * Y) := Nat.mul_le_mul (Nat.pow_le_pow_left hIn 2) hY1
-      _ = 2 * C₁ ^ 2 * (X ^ 2 * Y) := by ring
-  have hU₄ : (2 * Dl + 1 + (2 * Nl + 1 + Ll) + 1) ^ 4 * (Y + 1) ^ 2 ≤
-      4 * C₁ ^ 4 * (X ^ 4 * Y ^ 2) :=
-    calc _ ≤ (C₁ * X) ^ 4 * (2 * Y) ^ 2 :=
-          Nat.mul_le_mul (Nat.pow_le_pow_left hIn 4) (Nat.pow_le_pow_left hY1 2)
-      _ = 4 * C₁ ^ 4 * (X ^ 4 * Y ^ 2) := by ring
-  have hS : N + A + (N + W + (N + Y)) + (2 * Dl + 1 + (2 * Nl + 1 + Ll) + 1) ^ 2 * (Y + 1) + 1 ≤
-      C₂ * (X ^ 2 * Y) := by
-    have h₁ : 1 ≤ X ^ 2 * Y := Nat.mul_pos (Nat.pow_pos hX) hY
-    have e : C₂ * (X ^ 2 * Y) = 11 * (X ^ 2 * Y) + 2 * C₁ ^ 2 * (X ^ 2 * Y) := by
-      simp only [C₂]; ring
-    omega
-  have hE' : E ≤ cO * C₂ * (X ^ 2 * Y) :=
-    hE.trans ((Nat.mul_le_mul_left cO hS).trans_eq (by ring))
-  have hE2 : (E + 1) ^ 2 ≤ (cO * C₂ + 1) ^ 2 * (X ^ 4 * Y ^ 2) := by
-    have h₁ : 1 ≤ X ^ 2 * Y := Nat.mul_pos (Nat.pow_pos hX) hY
-    have h₂ : E + 1 ≤ (cO * C₂ + 1) * (X ^ 2 * Y) := by
-      have e : (cO * C₂ + 1) * (X ^ 2 * Y) = cO * C₂ * (X ^ 2 * Y) + X ^ 2 * Y := by ring
-      omega
-    calc (E + 1) ^ 2 ≤ ((cO * C₂ + 1) * (X ^ 2 * Y)) ^ 2 := Nat.pow_le_pow_left h₂ 2
-      _ = (cO * C₂ + 1) ^ 2 * (X ^ 4 * Y ^ 2) := by ring
-  have h1 : 1 ≤ X ^ 4 * Y ^ 2 := Nat.mul_pos (Nat.pow_pos hX) (Nat.pow_pos hY)
-  have hXYW : X * Y ≤ X ^ 4 * Y ^ 2 := hXY.trans hX2Y
-  have hU₂' := hU₂.trans (Nat.mul_le_mul_left (2 * C₁ ^ 2) hX2Y)
-  constructor
-  · have e : (10 + 4 * C₁ ^ 4 + (cO * C₂ + 1) ^ 2 + 1 + C₂ * (cO + 1)) * (X ^ 4 * Y ^ 2) =
-        10 * (X ^ 4 * Y ^ 2) + 4 * C₁ ^ 4 * (X ^ 4 * Y ^ 2) +
-          (cO * C₂ + 1) ^ 2 * (X ^ 4 * Y ^ 2) + X ^ 4 * Y ^ 2 +
-            C₂ * (cO + 1) * (X ^ 4 * Y ^ 2) := by
-      ring
-    have := Nat.mul_le_mul_left 10 hXYW
-    omega
-  · have e : (10 + 4 * C₁ ^ 4 + (cO * C₂ + 1) ^ 2 + 1 + C₂ * (cO + 1)) * (X ^ 4 * Y ^ 2) =
-        10 * (X ^ 4 * Y ^ 2) + 4 * C₁ ^ 4 * (X ^ 4 * Y ^ 2) +
-          (cO * C₂ + 1) ^ 2 * (X ^ 4 * Y ^ 2) + X ^ 4 * Y ^ 2 +
-            (C₂ * (X ^ 4 * Y ^ 2) + cO * C₂ * (X ^ 4 * Y ^ 2)) := by
-      ring
-    have h₁ := Nat.mul_le_mul_left C₂ hX2Y
-    have h₂ := Nat.mul_le_mul_left (cO * C₂) hX2Y
-    omega
 
 /-- The simulation runs within time polynomial in the description, the input and the
 certificate. -/
@@ -384,46 +295,37 @@ private theorem exists_computableInO_accepts : ∃ D, ComputableInO
     (fun b : Bool => !b)).inO_one.comp hv
   obtain ⟨cD, hcD⟩ := hdesc.length_le
   obtain ⟨cO, hcO⟩ := hU.length_le
-  obtain ⟨K, hK⟩ := accBound_aux 0 cD cO
+  obtain ⟨K, hK⟩ := LazyDiagonal.accBound_aux 0 cD cO
   have hbounds (q : List Bool × List Bool × List Bool) := by
     have hD := hcD q
     have hE := hcO q
     have hNl : (encList encUnary ((frame q.2.1 ++ q.2.2).map eBit)).length ≤
         3 * (frame q.2.1 ++ q.2.2).length :=
       (length_encList_le encUnary _ (b := 1) fun s hs => by
-        obtain ⟨b, -, rfl⟩ := List.mem_map.mp hs
-        cases b
-        · exact Nat.zero_le _
-        · exact le_rfl).trans (by rw [List.length_map]; omega)
+        obtain ⟨(_ | _), -, rfl⟩ := List.mem_map.mp hs <;> decide).trans (by
+        rw [List.length_map]; omega)
     have hc : q.1.length + 1 ≤ (q.1.length + 1) ^ (dd + 1) :=
-      Nat.le_self_pow (by omega) _
+      Nat.le_self_pow (Nat.succ_ne_zero _) _
     have hA : (q.1.length + 1) ^ dd ≤ (q.1.length + 1) ^ (dd + 1) :=
-      Nat.pow_le_pow_right (by omega) (by omega)
+      Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ _)
     have hL := length_encNat_sq_le (frame q.2.1 ++ q.2.2).length
     simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
       length_frame] at hD hE hNl hL ⊢
-    refine hK (X := (q.1.length + 1) ^ (dd + 1) + q.2.1.length + q.2.2.length + 1)
-      (by omega) (by omega) (by omega) hD hNl (by omega) (by omega) (Nat.one_le_pow _ _ (by omega))
-      hE
+    exact hK (X := (q.1.length + 1) ^ (dd + 1) + q.2.1.length + q.2.2.length + 1)
+      (by omega) (by omega) (by omega) hD hNl (by omega) (by omega)
+      (Nat.one_le_pow _ _ (Nat.succ_pos _)) hE
   have e (q : List Bool × List Bool × List Bool) : accBound (dd + 1) q =
       ((q.1.length + 1) ^ (dd + 1) + q.2.1.length + q.2.2.length + 1) ^ 4 *
         (((frame q.2.1 ++ q.2.2).length + 1) ^ 2) ^ 2 := by
     rw [accBound, ← pow_mul]
   have hb (b : Bool) : (encBool b).length = 1 := rfl
   refine ⟨dd + 1, (hnot.mono K (fun q => ?_) fun q => ?_).of_enc_eq fun q => rfl⟩
-  · refine le_trans ?_ (Nat.mul_le_mul_left K (Nat.le_succ _))
+  all_goals
+    refine le_trans ?_ (Nat.mul_le_mul_left K (Nat.le_succ _))
     rw [e]
-    have h := (hbounds q).1
+    have ⟨h₁, h₂⟩ := hbounds q
     simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
-      length_frame] at ⊢
-    simp only [hb] at h ⊢
-    omega
-  · refine le_trans ?_ (Nat.mul_le_mul_left K (Nat.le_succ _))
-    rw [e]
-    have h := (hbounds q).2
-    simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
-      length_frame] at ⊢
-    simp only [hb] at h ⊢
+      length_frame, hb] at h₁ h₂ ⊢
     omega
 
 /-- The numeric facts behind the bound of the brute force: the encoded pair of length `N`, the
@@ -432,15 +334,21 @@ private theorem brute_bound_aux (C K₀ N c : ℕ) (hc : 1 ≤ c) :
     N + (C * 2 ^ N + c * c) + 2 ^ (K₀ * (2 * N + 1 + c + c)) ≤
       (C + 3) * (2 ^ ((3 * K₀ + 4) * (N + c)) + 1) := by
   set B := 2 ^ ((3 * K₀ + 4) * (N + c))
-  have hN : 2 ^ N ≤ B := Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+  have hN : 2 ^ N ≤ B :=
+    Nat.pow_le_pow_right Nat.one_lt_two.le
+      ((Nat.le_add_right N c).trans (Nat.le_mul_of_pos_left _ (by omega)))
   have hN' : N < 2 ^ N := Nat.lt_two_pow_self
   have hcc : c * c ≤ B := by
-    have h₁ : c * c ≤ 2 ^ c * 2 ^ c :=
-      Nat.mul_le_mul Nat.lt_two_pow_self.le Nat.lt_two_pow_self.le
-    rw [← pow_add] at h₁
-    exact h₁.trans (Nat.pow_le_pow_right (by norm_num) (by nlinarith))
+    have h₁ : c * c ≤ 2 ^ (c + c) := by
+      rw [pow_add]
+      exact Nat.mul_le_mul Nat.lt_two_pow_self.le Nat.lt_two_pow_self.le
+    exact h₁.trans (Nat.pow_le_pow_right Nat.one_lt_two.le
+      ((by omega : c + c ≤ 4 * (N + c)).trans (Nat.mul_le_mul_right _ (by omega))))
   have hs : 2 ^ (K₀ * (2 * N + 1 + c + c)) ≤ B :=
-    Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+    Nat.pow_le_pow_right Nat.one_lt_two.le
+      ((Nat.mul_le_mul_left K₀ (by omega : 2 * N + 1 + c + c ≤ 3 * (N + c))).trans
+        ((le_of_eq (by ring : K₀ * (3 * (N + c)) = 3 * K₀ * (N + c))).trans
+          (Nat.mul_le_mul_right _ (by omega))))
   have hC : C * 2 ^ N ≤ C * B := Nat.mul_le_mul_left _ hN
   have e : (C + 3) * (B + 1) = C * B + 3 * B + (C + 3) := by ring
   omega
@@ -520,25 +428,6 @@ bound `4 ^ ((k + 2) * (n + 1))` on the horizon, which the tests write in unary. 
 private def cheap (k : ℕ) (p : List Bool × List Bool) : ℕ :=
   ((encPair encBits encBits p).length + 1) ^ 2 * (4 ^ ((k + 2) * (p.1.length + 1))) ^ 2
 
-/-- The numeric facts behind `cheap`, for an encoded input of length `N`, an input of length `n`
-and a horizon `Z` of at most `G * Y`. -/
-private theorem cheap_aux (G : ℕ) {N n Z Y : ℕ} (hn : n ≤ N) (hY : 1 ≤ Y) (hZ : Z ≤ G * Y) :
-    N + 1 ≤ (N + 1) ^ 2 * Y ^ 2 ∧ (Z + 1) ^ 2 ≤ (G + 4) ^ 2 * ((N + 1) ^ 2 * Y ^ 2) ∧
-      (2 * N + 4 + Z) ^ 2 ≤ (G + 4) ^ 2 * ((N + 1) ^ 2 * Y ^ 2) := by
-  have hY2 : 1 ≤ Y ^ 2 := Nat.one_le_pow _ _ hY
-  have hN2 : N + 1 ≤ (N + 1) ^ 2 := Nat.le_self_pow (by norm_num) _
-  have hsq : (2 * N + 4 + Z) ^ 2 ≤ (G + 4) ^ 2 * ((N + 1) ^ 2 * Y ^ 2) :=
-    calc (2 * N + 4 + Z) ^ 2 ≤ ((G + 4) * ((N + 1) * Y)) ^ 2 := by
-          apply Nat.pow_le_pow_left
-          have h₁ : N + 1 ≤ (N + 1) * Y := Nat.le_mul_of_pos_right _ hY
-          have h₂ : Y ≤ (N + 1) * Y := Nat.le_mul_of_pos_left _ (by omega)
-          have e : (G + 4) * ((N + 1) * Y) = G * ((N + 1) * Y) + 4 * ((N + 1) * Y) := by ring
-          have := Nat.mul_le_mul_left G h₂
-          omega
-      _ = (G + 4) ^ 2 * ((N + 1) ^ 2 * Y ^ 2) := by ring
-  refine ⟨hN2.trans (Nat.le_mul_of_pos_right _ hY2),
-    (Nat.pow_le_pow_left (by omega) 2).trans hsq, hsq⟩
-
 /-- The horizon of the interval of `unframe x` is at most `4 ^ ((k + 2) * (x.length + 1))`, and the
 cost of writing it in unary is at most twice that bound plus its square. -/
 private theorem horizon_le (k C : ℕ) (x : List Bool) :
@@ -547,16 +436,21 @@ private theorem horizon_le (k C : ℕ) (x : List Bool) :
         2 * C * 4 ^ ((k + 2) * (x.length + 1)) + (4 ^ ((k + 2) * (x.length + 1))) ^ 2 := by
   have hu := length_unframe_le x
   have h4 (a : ℕ) : (4 : ℕ) ^ a = 2 ^ (2 * a) := by rw [pow_mul]; norm_num
+  have hk : (k + 2) * (2 * (unframe x).length + 1 + 1) ≤ 2 * ((k + 2) * (x.length + 1)) :=
+    (Nat.mul_le_mul_left (k + 2)
+      (by omega : 2 * (unframe x).length + 1 + 1 ≤ 2 * (x.length + 1))).trans_eq (by ring)
   refine ⟨?_, ?_⟩
   · rw [horizon, h4]
-    exact Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+    exact Nat.pow_le_pow_right Nat.one_lt_two.le hk
   · have h₁ : 2 ^ (2 * (unframe x).length + 1) ≤ 2 * 4 ^ ((k + 2) * (x.length + 1)) := by
       rw [h4, pow_succ, mul_comm]
-      exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) (by nlinarith))
+      exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_right Nat.one_lt_two.le
+        ((by omega : 2 * (unframe x).length ≤ 2 * (x.length + 1)).trans
+          (Nat.mul_le_mul_left 2 (Nat.le_mul_of_pos_left _ (Nat.succ_pos _)))))
     have h₂ : 4 ^ ((k + 2) * (2 * (unframe x).length + 1 + 1)) ≤
         (4 ^ ((k + 2) * (x.length + 1))) ^ 2 := by
-      rw [← pow_mul]
-      exact Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+      rw [← pow_mul, mul_comm ((k + 2) * _)]
+      exact Nat.pow_le_pow_right (by norm_num) hk
     have := Nat.mul_le_mul_left C h₁
     have e : C * (2 * 4 ^ ((k + 2) * (x.length + 1))) = 2 * C * 4 ^ ((k + 2) * (x.length + 1)) := by
       ring
@@ -613,18 +507,16 @@ private theorem exists_computableInO_verifier (k : ℕ) :
         4 ^ ((k + 2) * (2 * (unframe p.1).length + 1 + 1)) ≤ (2 * CE + 1) * cheap k p := by
     have hu := length_unframe_le p.1
     have hn : p.1.length ≤ (encPair encBits encBits p).length := by
-      simp only [length_encPair, encBits_apply]
-      omega
+      simp only [length_encPair, encBits_apply]; omega
     obtain ⟨hZ, hE'⟩ := horizon_le k CE p.1
     set Y := 4 ^ ((k + 2) * (p.1.length + 1))
     have hY : 1 ≤ Y := Nat.one_le_pow _ _ (by norm_num)
-    obtain ⟨h₁, h₂, h₃⟩ := cheap_aux 1 hn hY
+    obtain ⟨h₁, h₂, h₃⟩ := LazyDiagonal.cheap_aux 1 hn hY
       (Z := horizon k (2 * (unframe p.1).length + 1)) (by omega)
     have hc : cheap k p = ((encPair encBits encBits p).length + 1) ^ 2 * Y ^ 2 := rfl
-    have hY₁ : Y ≤ Y ^ 2 := Nat.le_self_pow (by norm_num) _
+    have hY₁ : Y ≤ Y ^ 2 := Nat.le_self_pow two_ne_zero _
     have hY₂ : Y ^ 2 ≤ cheap k p := by
-      rw [hc]
-      exact Nat.le_mul_of_pos_left _ (Nat.pow_pos (by omega))
+      rw [hc]; exact Nat.le_mul_of_pos_left _ (Nat.pow_pos (Nat.succ_pos _))
     have e : (2 * CE + 1) * cheap k p = 2 * CE * cheap k p + cheap k p := by ring
     have := Nat.mul_le_mul_left (2 * CE) (hY₁.trans hY₂)
     norm_num only at h₂ h₃
@@ -639,9 +531,8 @@ private theorem exists_computableInO_verifier (k : ℕ) :
     have : ((unframe p.1).length + 1) ^ 2 ≤ (2 * (encPair encBits encBits p).length + 4 +
         horizon k (2 * (unframe p.1).length + 1)) ^ 2 := Nat.pow_le_pow_left (by omega) 2
     simp only [Function.comp_apply] at ⊢
-    have := e p
-    omega
-  have hc₁ := ComputableInO.mono_time (ComputableInO.unaryLe.comp ((hsz.comp hsnoc).prod hE))
+    have := e p; omega
+  have hc₁ := (ComputableInO.mono_time (ComputableInO.unaryLe.comp ((hsz.comp hsnoc).prod hE))
       (T' := cheap k) A fun p => by
     obtain ⟨hu, hn, h₁, h₂, h₃, h₄⟩ := hfacts p
     have hs := Nat.size_le.mpr (Nat.lt_two_pow_self (n := p.1.length + 1))
@@ -650,15 +541,17 @@ private theorem exists_computableInO_verifier (k : ℕ) :
         horizon k (2 * (unframe p.1).length + 1)) ^ 2 := Nat.pow_le_pow_left (by omega) 2
     have hsq' : (2 * Nat.size (p.1.length + 1) + 1 + horizon k (2 * (unframe p.1).length + 1)
         + 1) ^ 2 ≤ (2 * (encPair encBits encBits p).length + 4 +
-          horizon k (2 * (unframe p.1).length + 1)) ^ 2 :=
-      Nat.pow_le_pow_left (by omega) 2
+          horizon k (2 * (unframe p.1).length + 1)) ^ 2 := Nat.pow_le_pow_left (by omega) 2
     simp only [Function.comp_apply, length_encPair (enc₁ := encUnary) (enc₂ := encUnary),
       encUnary_apply, List.length_replicate, List.length_append, List.length_singleton,
       length_frame, encBits_apply] at ⊢
     simp only [horizon] at hsq hsq' h₂ h₃
-    have := e p
-    omega
-  have hc₂ := ComputableInO.mono_time (ComputableInO.unaryLe.comp ((hsz.comp hx).prod hE))
+    have := e p; omega).of_enc_eq (encC := encBool) (g := fun p : List Bool × List Bool =>
+      decide (Nat.size (p.1.length + 1) ≤ horizon k (2 * (unframe p.1).length + 1))) fun p => by
+    simp only [Function.comp_apply, horizon, length_frame, List.length_append,
+      List.length_singleton]
+    rfl
+  have hc₂ := (ComputableInO.mono_time (ComputableInO.unaryLe.comp ((hsz.comp hx).prod hE))
       (T' := cheap k) A fun p => by
     obtain ⟨hu, hn, h₁, h₂, h₃, h₄⟩ := hfacts p
     have hs := Nat.size_le.mpr (Nat.lt_two_pow_self (n := p.1.length))
@@ -667,19 +560,11 @@ private theorem exists_computableInO_verifier (k : ℕ) :
         horizon k (2 * (unframe p.1).length + 1)) ^ 2 := Nat.pow_le_pow_left (by omega) 2
     have hsq' : (2 * Nat.size p.1.length + 1 + horizon k (2 * (unframe p.1).length + 1)
         + 1) ^ 2 ≤ (2 * (encPair encBits encBits p).length + 4 +
-          horizon k (2 * (unframe p.1).length + 1)) ^ 2 :=
-      Nat.pow_le_pow_left (by omega) 2
+          horizon k (2 * (unframe p.1).length + 1)) ^ 2 := Nat.pow_le_pow_left (by omega) 2
     simp only [Function.comp_apply, length_encPair (enc₁ := encUnary) (enc₂ := encUnary),
       encUnary_apply, List.length_replicate, length_frame, encBits_apply] at ⊢
     simp only [horizon] at hsq hsq' h₂ h₃
-    have := e p
-    omega
-  have hc₁' := hc₁.of_enc_eq (encC := encBool) (g := fun p : List Bool × List Bool =>
-      decide (Nat.size (p.1.length + 1) ≤ horizon k (2 * (unframe p.1).length + 1))) fun p => by
-    simp only [Function.comp_apply, horizon, length_frame, List.length_append,
-      List.length_singleton]
-    rfl
-  have hc₂' := hc₂.of_enc_eq (encC := encBool) (g := fun p : List Bool × List Bool =>
+    have := e p; omega).of_enc_eq (encC := encBool) (g := fun p : List Bool × List Bool =>
       decide (Nat.size p.1.length ≤ horizon k (2 * (unframe p.1).length + 1))) fun p => by
     simp only [Function.comp_apply, horizon, length_frame]
     rfl
@@ -709,9 +594,8 @@ private theorem exists_computableInO_verifier (k : ℕ) :
     omega
   have hfalse := ComputableInO.mono_time (ComputableInO.const (encIn := encPair encBits encBits)
     (encMid := encBool) false) (T' := cheap k) 1 fun p => by
-    obtain ⟨hu, hn, h₁, -⟩ := hfacts p
-    omega
-  have h := hc₀.ite (hc₁'.ite hf₁ (hc₂'.ite hf₂ hfalse)) hfalse
+    obtain ⟨hu, hn, h₁, -⟩ := hfacts p; omega
+  have h := hc₀.ite (hc₁.ite hf₁ (hc₂.ite hf₂ hfalse)) hfalse
   refine ⟨D, K, _, (h.of_enc_eq fun p => ?_).mono_le (fun p => le_of_eq ?_) fun p => le_rfl⟩
   · congr 1
     simp only [verifier, Function.comp_apply, decide_eq_true_eq, length_frame]
@@ -720,7 +604,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
 /-- `2 ^ a ≤ 2 ^ b * 2 ^ c` whenever `a ≤ c + b`. -/
 private theorem two_pow_le_two_pow_mul {a b c : ℕ} (h : a ≤ c + b) : 2 ^ a ≤ 2 ^ b * 2 ^ c := by
   rw [← pow_add]
-  exact Nat.pow_le_pow_right (by norm_num) (by omega)
+  exact Nat.pow_le_pow_right Nat.one_lt_two.le (by omega)
 
 /-- **The exponential lazy diagonal is decidable in nondeterministic time
 `O(2 ^ ((8 * k + 16) * n))`.** Guess a certificate of length `2 ^ ((k + 1) * (n + 2))` and run the
@@ -740,32 +624,37 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
     (g := fun x : List Bool => certLen k (x.length + 1)) fun x => rfl
   obtain ⟨CD, hCD⟩ := PolynomiallyBounded.exists_le_mul_two_pow (p := fun m => (m + 1) ^ D)
     (by fun_prop)
-  set B₀ := 3 * K * 2 ^ ((k + 1) * (3 * K))
-  set A₁ := 2 ^ (8 * k + 14)
-  set A₂ := 81 * (CD + 3) ^ 4 * 2 ^ (16 * k + 16)
-  set A₃ := Cℓ + 2 ^ (4 * k + 4)
+  set B₀ := 3 * K * 2 ^ ((k + 1) * (3 * K)) with hB₀
+  set A₁ := 2 ^ (8 * k + 14) with hA₁
+  set A₂ := 81 * (CD + 3) ^ 4 * 2 ^ (16 * k + 16) with hA₂
+  set A₃ := Cℓ + 2 ^ (4 * k + 4) with hA₃
   refine setOf_exists_mem_NTIME hℓ hV (C := 2 + A₃ + 4 * A₁ + A₂ + 2 ^ B₀) fun x v hv => ?_
+  clear hL hℓ₀ hℓ hV
   simp only [encBits_apply]
   set n := x.length with hn
   set V := 2 ^ ((k + 1) * (n + 2)) with hVdef
-  have hv' : v.length = V := by
-    rw [hv]
-    rfl
-  set M := 2 ^ ((8 * k + 16) * n)
+  have hv' : v.length = V := hv
+  set M := 2 ^ ((8 * k + 16) * n) with hM
   have hnV : 4 * n + 4 ≤ V :=
     calc 4 * n + 4 ≤ 2 ^ (n + 2) := by
           have := Nat.lt_two_pow_self (n := n)
-          rw [pow_succ, pow_succ]
-          omega
-      _ ≤ V := Nat.pow_le_pow_right (by norm_num) (Nat.le_mul_of_pos_left _ (by omega))
-  have hnM : n + 1 ≤ M := by
-    calc n + 1 ≤ 2 ^ n := Nat.lt_two_pow_self
-      _ ≤ M := Nat.pow_le_pow_right (by norm_num) (Nat.le_mul_of_pos_left _ (by omega))
+          rw [pow_succ, pow_succ]; omega
+      _ ≤ V := Nat.pow_le_pow_right Nat.one_lt_two.le (Nat.le_mul_of_pos_left _ (Nat.succ_pos _))
+  have h₁ : 2 ^ n ≤ M :=
+    Nat.pow_le_pow_right Nat.one_lt_two.le (Nat.le_mul_of_pos_left _ (Nat.succ_pos _))
+  have hnM : n + 1 ≤ M := Nat.lt_two_pow_self.trans_le h₁
+  -- the certificate length
+  have hTℓ : Cℓ * 2 ^ n + 4 ^ ((k + 1) * (n + 2)) ≤ A₃ * M := by
+    have h₂ : 4 ^ ((k + 1) * (n + 2)) ≤ 2 ^ (4 * k + 4) * M := by
+      rw [show (4 : ℕ) = 2 ^ 2 by rfl, ← pow_mul]
+      exact two_pow_le_two_pow_mul (by ring_nf; omega)
+    have e : A₃ * M = Cℓ * M + 2 ^ (4 * k + 4) * M := by ring
+    have := Nat.mul_le_mul_left Cℓ h₁
+    omega
   -- the tests
   have hcheap : cheap k (x, v) ≤ A₁ * M := by
     have hN : (encPair encBits encBits (x, v)).length + 1 ≤ 2 * V := by
-      simp only [length_encPair, encBits_apply, hv', ← hn]
-      omega
+      simp only [length_encPair, encBits_apply, hv', ← hn]; omega
     calc cheap k (x, v) = ((encPair encBits encBits (x, v)).length + 1) ^ 2 *
           (4 ^ ((k + 2) * (n + 1))) ^ 2 := rfl
       _ ≤ (2 * V) ^ 2 * (4 ^ ((k + 2) * (n + 1))) ^ 2 :=
@@ -774,7 +663,7 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
           rw [hVdef, show (4 : ℕ) = 2 ^ 2 by rfl]
           simp only [mul_pow, ← pow_mul, ← pow_add]
           ring_nf
-      _ ≤ A₁ * M := two_pow_le_two_pow_mul (by ring_nf; nlinarith [Nat.zero_le (k * n)])
+      _ ≤ A₁ * M := two_pow_le_two_pow_mul (by ring_nf; omega)
   -- the simulation, when the description is short
   have hacc (h₀ : Diagonal.shortDesc (unframe x) = true) :
       accBound D (unframe (unframe x), x ++ [false], v) ≤ A₂ * M := by
@@ -787,8 +676,7 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
       have e : (CD + 3) * V = CD * V + 3 * V := by ring
       omega
     have hw : (frame (x ++ [false]) ++ v).length + 1 ≤ 3 * V := by
-      simp only [List.length_append, length_frame, List.length_singleton, hv', ← hn]
-      omega
+      simp only [List.length_append, length_frame, List.length_singleton, hv', ← hn]; omega
     calc accBound D (unframe (unframe x), x ++ [false], v) =
           (((unframe (unframe x)).length + 1) ^ D + (n + 1) + V + 1) ^ 4 *
             ((frame (x ++ [false]) ++ v).length + 1) ^ 4 := by
@@ -800,8 +688,9 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
           simp only [mul_pow, ← pow_mul]
           ring
       _ ≤ 81 * (CD + 3) ^ 4 * (2 ^ (16 * k + 16) * M) :=
-          Nat.mul_le_mul_left _ (two_pow_le_two_pow_mul (by ring_nf; nlinarith))
+          Nat.mul_le_mul_left _ (two_pow_le_two_pow_mul (by ring_nf; omega))
       _ = A₂ * M := by ring
+  clear_value B₀ A₁ A₂ A₃ M V
   -- the brute force, at the end of an interval
   have hbrute (h₁ : ¬Nat.size (n + 1) ≤ horizon k (2 * (unframe x).length + 1)) :
       2 ^ (K * ((encPair encBits encBits (unframe (unframe x), frame (unframe x))).length +
@@ -812,12 +701,11 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
       exact h₁
     have hc := length_unframe_le (unframe x)
     have hPc : P + 1 ≤ certLen k P :=
-      calc P + 1 ≤ 2 ^ (P + 1) := Nat.lt_two_pow_self.le
-        _ ≤ certLen k P := Nat.pow_le_pow_right (by norm_num) (Nat.le_mul_of_pos_left _ (by omega))
+      Nat.lt_two_pow_self.le.trans
+        (Nat.pow_le_pow_right Nat.one_lt_two.le (Nat.le_mul_of_pos_left _ (Nat.succ_pos _)))
     have hlen : (encPair encBits encBits (unframe (unframe x), frame (unframe x))).length +
         certLen k P ≤ 3 * certLen k P := by
-      simp only [length_encPair, encBits_apply, length_frame]
-      omega
+      simp only [length_encPair, encBits_apply, length_frame]; omega
     rcases le_or_gt (3 * K) (2 ^ (P + 1)) with hK | hK
     · have hle : K * ((encPair encBits encBits (unframe (unframe x), frame (unframe x))).length +
           certLen k P) ≤ horizon k P :=
@@ -825,32 +713,23 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
           _ = 3 * K * certLen k P := by ring
           _ ≤ 2 ^ (P + 1) * certLen k P := Nat.mul_le_mul_right _ hK
           _ = horizon k P := by
-              rw [certLen, horizon, ← pow_add]
-              congr 1
-              ring
-      exact ((Nat.pow_le_pow_right (by norm_num) hle).trans hE).trans (Nat.le_add_right _ _)
+              rw [certLen, horizon, ← pow_add]; congr 1; ring
+      exact ((Nat.pow_le_pow_right Nat.one_lt_two.le hle).trans hE).trans (Nat.le_add_right _ _)
     · have hP3 : P + 1 ≤ 3 * K := (Nat.lt_two_pow_self.trans hK).le
       have hle : K * ((encPair encBits encBits (unframe (unframe x), frame (unframe x))).length +
           certLen k P) ≤ B₀ :=
         calc _ ≤ K * (3 * certLen k P) := Nat.mul_le_mul_left _ hlen
           _ = 3 * K * certLen k P := by ring
-          _ ≤ 3 * K * 2 ^ ((k + 1) * (3 * K)) :=
-              Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num)
+          _ ≤ B₀ := by
+              rw [hB₀]
+              exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_right Nat.one_lt_two.le
                 (Nat.mul_le_mul_left _ hP3))
-      exact (Nat.pow_le_pow_right (by norm_num) hle).trans (Nat.le_add_left _ _)
-  -- the certificate length
-  have hTℓ : Cℓ * 2 ^ n + 4 ^ ((k + 1) * (n + 2)) ≤ A₃ * M := by
-    have h₁ : 2 ^ n ≤ M := Nat.pow_le_pow_right (by norm_num) (Nat.le_mul_of_pos_left _ (by omega))
-    have h₂ : 4 ^ ((k + 1) * (n + 2)) ≤ 2 ^ (4 * k + 4) * M := by
-      rw [show (4 : ℕ) = 2 ^ 2 by rfl, ← pow_mul]
-      exact two_pow_le_two_pow_mul (by ring_nf; nlinarith)
-    have e : A₃ * M = Cℓ * M + 2 ^ (4 * k + 4) * M := by ring
-    have := Nat.mul_le_mul_left Cℓ h₁
-    omega
+      exact (Nat.pow_le_pow_right Nat.one_lt_two.le hle).trans (Nat.le_add_left _ _)
+  clear hB₀ hA₁ hA₂ hA₃ hM hVdef hCD
   have e : (2 + A₃ + 4 * A₁ + A₂ + 2 ^ B₀) * M =
       2 * M + A₃ * M + 4 * (A₁ * M) + A₂ * M + 2 ^ B₀ * M := by ring
-  have hB : 2 ^ B₀ ≤ 2 ^ B₀ * M := Nat.le_mul_of_pos_right _ (by omega)
-  clear_value M A₁ A₂ A₃ B₀
+  have hB : 2 ^ B₀ ≤ 2 ^ B₀ * M :=
+    Nat.le_mul_of_pos_right _ (Nat.lt_of_lt_of_le (Nat.succ_pos _) hnM)
   generalize 2 + A₃ + 4 * A₁ + A₂ + 2 ^ B₀ = C at *
   generalize 2 ^ B₀ = Q at *
   split_ifs with h₀ h₁ h₂

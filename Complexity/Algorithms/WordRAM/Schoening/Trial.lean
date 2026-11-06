@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.MemoryView
+
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Schoening.Scan
 public import Complexity.Computability.WordRAM.Randomized.Law
@@ -142,7 +144,9 @@ theorem Frame.congr {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x y : Data
   cBeg_eq := hc.trans h.cBeg_eq
   aBase_eq := ha.trans h.aBase_eq
   nReg_eq := hn.trans h.nReg_eq
-  clauses := h.clauses.frame fun a _ ha' => hmem a (Or.inl (h.span ▸ ha'))
+  clauses := by
+    have hs := h.span
+    ram_keep h.clauses using hmem
   span := h.span
   rest a ha := (hmem a (Or.inr ha)).trans (h.rest a ha)
 
@@ -163,7 +167,9 @@ theorem Frame.of_mem_lt {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x y : 
   cBeg_eq := hc.trans h.cBeg_eq
   aBase_eq := ha.trans h.aBase_eq
   nReg_eq := hn.trans h.nReg_eq
-  clauses := h.clauses.frame fun a _ ha' => hmem a (h.span ▸ ha')
+  clauses := by
+    have hs := h.span
+    ram_keep h.clauses using hmem
   span := h.span
   rest _ _ := rfl
 

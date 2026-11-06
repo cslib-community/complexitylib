@@ -30,6 +30,39 @@ Prove certificates for opaque subroutines, then let `fun_prop` compose registere
 
 The [automation reference](../design-and-assurance/automation.md) explains registration and [troubleshooting](troubleshooting.md) handles failures.
 
+For binary sign-magnitude integers, import
+`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary`.
+The plain `ComputableInPolyTime.intBin_natAbs`, `intBin_isNeg`, `intBin_signMagnitude`,
+`intBin_prod` and `intBin_pow` rules compose through `fun_prop`; `intBin_pow'` accepts computed
+base and unary exponent certificates. The complete
+[IntBinary client](../../ComplexityTests/RationalHitting/IntBinary.lean) checks composed products, powers,
+magnitudes and signs. A binary exponent has a different output-size obligation: do not replace
+the unary exponent encoding merely to make a goal match.
+
+For a padded integer dot product, import
+[PolyTime/Int/DotProduct.lean](../../Complexity/Computability/PolyTime/Int/DotProduct.lean)
+and use `ComputableInPolyTime.listDotProduct`. It certifies the existing pure public
+`Mathlib.Tactic.Matrix.ListMatrix.dotProduct`: the cutoff is unary, coefficients are signed
+binary, missing entries are zero, and entries beyond the cutoff are ignored. Runtime still
+charges both complete framed input lists. The operation lives in a Mathlib tactic-support
+file but is ordinary term-level arithmetic, not a meta program.
+The pure [list identities](../../Complexity/Foundations/Data/List/DotProduct.lean) and
+[residue-matrix bridge](../../Complexity/Foundations/Data/ZMod/DotProduct.lean) require neither
+crypto nor native imports. The former local Lyubashevsky `listDot` duplicate has been removed;
+its verifier, extractor and signer use the same upstream operation. The
+[checked clients](../../ComplexityTests/ListDotProduct.lean) cover padding, truncation, signed
+large coefficients and unchanged verifier outcomes and commitment bytes. This API
+consolidation adds no cryptographic security claim.
+
+Keep a record's encoded tuple layout at its construction boundary. For example,
+[`NativePacket.PacketCtx.mk_polyTime`](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
+composes certificates for named fields while preserving the existing encoded words; its
+[packet-construction client](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/NativeChildPolyTime.lean)
+does not reconstruct the product tree. The
+[`BranchEvalInput` interface](../../Complexity/Computability/PolyTime/BooleanAnalysis/SparsePolyCounter.lean)
+similarly supplies named parameter access and certificates with the original unary/binary
+choices. Use these boundaries when changing a client, and retain its encoded-length bounds.
+
 ## Walk two lists with a collecting fold
 
 Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold`
