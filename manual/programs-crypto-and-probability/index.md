@@ -678,9 +678,14 @@ cost envelope; existing finite comparison theorems still require their stronger
 all-history envelopes. The source's almost-sure reachable-history conditions are
 not yet sufficient inputs to those finite theorems.
 
-Identification of these cylinder integrals with `historyExpectation`, followed by
-almost-sure retained completion and total-bill integrability, remains open. The
-constructed infinite law alone does not establish those conclusions.
+`integral_responseMeasure_step` gives the real-valued cylinder tower identity,
+including observables of both the full prefix and next response.
+`integral_responseHistory` identifies every finite-history observable with
+`historyExpectation`; the correlated client checks that the finite accrued-bill
+bound therefore holds under the actual infinite law. No productivity or cost
+hypotheses are needed for this exact identification. Almost-sure retained
+completion and total-bill integrability remain open; finite uniform bounds alone
+are not yet connected to a constructed total bill.
 Selected-batch disintegration, physical latency, deadline/certification composition
 and the universal selection-only policy theorem remain open. The
 pathwise dual certificate is proved, but its joint stopped resource event is not.

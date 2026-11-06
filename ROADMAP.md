@@ -53,9 +53,10 @@ bill sum are proved. Response-dependent accrued bills are connected by the finit
 The binomial survival series now has derived sum `r/p` for `p>0`; every finite actual
 response-bill expectation is bounded by `c*r/p`. Noncompletion probabilities and
 nonnegative marginal expected bills are summable. An infinite full-history response law and its conditional next-response kernels are
-constructed in `AdaptivePath` using Ionescu–Tulcea. Identification of its cylinder
-expectations with the finite accounting recursion, and the a.s. termination/total-cost
-integrability bridge, remain unproved.
+constructed in `AdaptivePath` using Ionescu–Tulcea. Its finite cylinder expectations
+are now identified with the finite accounting recursion by `integral_responseHistory`,
+including a correlated actual-bill client. The a.s. termination/total-cost
+integrability bridge remains unproved.
 Selected-batch disintegration, joint latency/certification and universal policy/resource
 composition remain open; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main

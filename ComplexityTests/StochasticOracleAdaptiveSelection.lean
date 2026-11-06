@@ -184,3 +184,15 @@ example (law : List Bool → Cslib.Optimization.OneConstraint.Distribution Bool 
         (Preorder.frestrictLe n) (responseMeasure law)
       =ᵐ[(responseMeasure law).map (Preorder.frestrictLe n)] responseKernel law n :=
   responseMeasure_condDistrib law n
+
+/-- The actual infinite correlated process inherits the checked finite bill bound. -/
+example (n : ℕ) :
+    (∫ ω, accruedBill (fun h _ =>
+      if StochasticOracleAdaptiveSelectionTests.toy.covered
+        (selected StochasticOracleAdaptiveSelectionTests.toy 1
+          StochasticOracleAdaptiveSelectionTests.proposals h) =
+          StochasticOracleAdaptiveSelectionTests.toy.ground then 0 else 1)
+        (responseHistory ω n)
+      ∂responseMeasure StochasticOracleAdaptiveComparisonTests.law) ≤ (4 : ℝ) := by
+  rw [integral_responseHistory]
+  exact StochasticOracleAdaptiveSelectionTests.actual_bill_bound n

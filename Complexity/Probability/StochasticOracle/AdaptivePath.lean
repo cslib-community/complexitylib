@@ -9,6 +9,8 @@ module
 
 public import Complexity.Probability.StochasticOracle.AdaptiveSelection
 public import Mathlib.Probability.Kernel.IonescuTulcea.Traj
+import Mathlib.Probability.ProbabilityMassFunction.Integrals
+import Mathlib.Probability.Kernel.Composition.IntegralCompProd
 
 /-!
 # Infinite response law for adaptive selection
@@ -22,7 +24,8 @@ they are not independent progress indicators.
 `responseMeasure_condDistrib` identifies the conditional next-response law given
 all preceding responses. It is an almost-everywhere statement on the actual prefix
 law, including zero-probability histories without conditioning on null events.
-This construction alone does not establish termination or total-cost integrability.
+`integral_responseHistory` identifies every finite cylinder expectation with
+the finite accounting recursion. Termination and total-cost integrability remain open.
 -/
 
 public section
@@ -97,5 +100,87 @@ theorem responseMeasure_condDistrib [StandardBorelSpace Ω] [Nonempty Ω]
         (responseMeasure law) =ᵐ[(responseMeasure law).map (frestrictLe n)]
       responseKernel law n :=
   Kernel.condDistrib_trajMeasure
+
+/-- Cylinder tower identity for the actual response process. The observable may
+use every previous response and the next response, including its billed cost. -/
+theorem integral_responseMeasure_step
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (n : ℕ) (f : ((i : Finset.Iic n) → Ω) → Ω → ℝ) :
+    (∫ ω, f (frestrictLe n ω) (ω (n + 1)) ∂responseMeasure law) =
+      ∫ x, (law (prefixHistory n x)).mean (f x)
+        ∂(responseMeasure law).map (frestrictLe n) := by
+  have hf : Integrable (Function.uncurry f)
+      ((responseMeasure law).map (frestrictLe n) ⊗ₘ responseKernel law n) :=
+    Integrable.of_finite
+  change (∫ ω, Function.uncurry f (frestrictLe n ω, ω (n + 1))
+    ∂responseMeasure law) = _
+  rw [← MeasureTheory.integral_map (φ := fun ω : ℕ → Ω =>
+      (frestrictLe n ω, ω (n + 1))) (by fun_prop)
+    (measurable_of_finite (Function.uncurry f)).aestronglyMeasurable,
+    ← responseMeasure_prefix_joint law n, Measure.integral_compProd hf]
+  congr 1
+  funext x
+  change (∫ y, f x y ∂(law (prefixHistory n x)).toPMF.toMeasure) = _
+  rw [PMF.integral_eq_sum]
+  simp only [Cslib.Optimization.OneConstraint.Distribution.toPMF_real,
+    smul_eq_mul, Cslib.Optimization.OneConstraint.Distribution.mean]
+
+/-- Tower identity in the newest-first history convention used by the finite
+execution, for arbitrary finite-history observables. -/
+theorem integral_responseHistory_succ
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (n : ℕ) (f : List Ω → ℝ) :
+    (∫ ω, f (responseHistory ω (n + 2)) ∂responseMeasure law) =
+      ∫ ω, (law (responseHistory ω (n + 1))).mean
+        (fun y => f (y :: responseHistory ω (n + 1))) ∂responseMeasure law := by
+  have ht := integral_responseMeasure_step law n
+    (fun x y => f (y :: prefixHistory n x))
+  rw [MeasureTheory.integral_map (by fun_prop)
+    (measurable_of_finite _).aestronglyMeasurable] at ht
+  simpa only [prefixHistory_restrict, responseHistory_succ] using ht
+
+private theorem responseMeasure_prefix_zero
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ) :
+    (responseMeasure law).map (frestrictLe 0) =
+      (law []).toPMF.toMeasure.map (MeasurableEquiv.piUnique _).symm := by
+  rw [responseMeasure, Kernel.trajMeasure, Measure.map_comp _ _ (by fun_prop),
+    Kernel.traj_map_frestrictLe, Kernel.partialTraj_self, Measure.id_comp]
+
+omit [MeasurableSpace Ω] [MeasurableSingletonClass Ω] in
+private theorem historyExpectation_succ_right
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (f : List Ω → ℝ) (n : ℕ) (h : List Ω) :
+    historyExpectation law f (n + 1) h =
+      historyExpectation law (fun h => (law h).mean (fun y => f (y :: h))) n h := by
+  induction n generalizing h with
+  | zero => rfl
+  | succ n ih =>
+    change ((law h).mean fun x => historyExpectation law f (n + 1) (x :: h)) = _
+    simp only [ih]
+    rfl
+
+/-- Every finite-history real observable under the constructed infinite process
+has exactly the finite conditional-table expectation. No bound on bills or
+productivity, and no independence assumption, is needed for this identity. -/
+theorem integral_responseHistory
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (f : List Ω → ℝ) (n : ℕ) :
+    (∫ ω, f (responseHistory ω n) ∂responseMeasure law) =
+      historyExpectation law f n [] := by
+  induction n using Nat.twoStepInduction generalizing f with
+  | zero => simp [responseHistory, historyExpectation]
+  | one =>
+    have he := responseMeasure_prefix_zero law
+    have hm := MeasureTheory.integral_map (μ := responseMeasure law)
+      (φ := frestrictLe 0) (f := fun x => f (prefixHistory 0 x))
+      (by fun_prop) (measurable_of_finite _).aestronglyMeasurable
+    rw [he, MeasureTheory.integral_map (by fun_prop)
+      (measurable_of_finite _).aestronglyMeasurable, PMF.integral_eq_sum] at hm
+    simpa [prefixHistory, responseHistory, historyExpectation,
+      Cslib.Optimization.OneConstraint.Distribution.mean] using hm.symm
+  | more n _ ih =>
+    rw [integral_responseHistory_succ,
+      ih (fun h => (law h).mean (fun y => f (y :: h)))]
+    exact (historyExpectation_succ_right law f (n + 1) []).symm
 
 end Cslib.Probability.StochasticOracle.AdaptiveSelection
