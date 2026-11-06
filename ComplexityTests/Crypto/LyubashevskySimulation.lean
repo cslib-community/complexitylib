@@ -8,6 +8,7 @@ module
 
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Simulation
 public import ComplexityTests.Crypto.LyubashevskyRandomOracle
+import Complexity.Probability.PMF.Bind
 
 @[expose] public section
 
@@ -201,11 +202,6 @@ theorem trans_cache_length_zero_on_abort (c : Digest) :
      | some (t, _) => [(((), t), c)]
      | none => ([] : Cache)).length = 0 := rfl
 
-theorem pmf_bind_apply_const {α β : Type} (μ : PMF α) (f : α → PMF β) (b : β) (c : ℝ≥0∞)
-    (h : ∀ a, f a b = c) : (μ.bind f) b = c := by
-  simp only [PMF.bind_apply, h]
-  rw [ENNReal.tsum_mul_right, μ.tsum_coe, one_mul]
-
 noncomputable def progExp :=
   lyubashevskySignFullProg 1 2 1 17 3 1 H_fixed (fun _ => 0) (fun _ _ => key.2)
     (fun _ => ()) (fun _ => [])
@@ -257,8 +253,8 @@ theorem simExp_empty_cache_eq_abort_mass :
   dsimp only [simExp, lyubashevskySignFullSim]
   simp only [H_fixed, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
     PMF.map_bind, PMF.pure_map, PMF.pure_bind]
-  refine pmf_bind_apply_const _ _ _ _ fun A => ?_
-  refine pmf_bind_apply_const _ _ _ _ fun c => ?_
+  refine bind_apply_of_forall _ fun A => ?_
+  refine bind_apply_of_forall _ fun c => ?_
   exact simulate_abort_prob A c
 
 /-- Projection link: The visible programmed experiment is the marginal projection of the
