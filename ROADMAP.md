@@ -33,13 +33,15 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 STOC submission 191 remains incomplete: Theorem 4 still needs native binary algorithm/resource
 certificates,
-joint response-law/resource composition, asymptotic approximation consequences and the stated
+general response/resource execution, asymptotic approximation consequences and the stated
 Set Cover approximation-hardness transfer; the executable rational-cost greedy batch and its
 harmonic/logarithmic comparison with every risk-feasible competitor are proved.
 Exact rational-power threshold evaluation agrees with the real-log convention, but its
 native binary resources remain unproved. The emitted rational batch now has pathwise
 total token-bill and parallel deadline bounds derived from individual call caps; this
-is not a native machine or a joint response/resource execution certificate.
+now composes with the actual response law through a finite conditional resource table,
+with one event for certified success, bill cap and parallel deadline. This is not a native
+machine or an unrestricted response/resource execution certificate.
 Theorem 5 needs history-conditional binomial domination, stopped costs
 and universal latency/progress lower bounds; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main

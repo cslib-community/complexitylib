@@ -303,7 +303,14 @@ in [the bibliography](../../references.bib). The checked clients are in
   outcome subtype gives the almost-sure interpretation. All calls start together,
   and local computation is excluded from this deadline. The client checks
   correlated outcome-dependent bills and latencies on a three-call batch.
-  Native binary time/space, response-law/resource composition, asymptotic approximation
+  `rationalBatch_joint_execution` composes the actual greedy response law with a
+  finite conditional resource table depending on the retained output. Its single
+  event includes certified success, total token cap and every call’s deadline,
+  with probability at least `1-δ`. The complete threshold client checks this
+  joint law with random correlated bills and latencies. This finite-table model
+  assumes individual caps at every resource outcome; it does not construct a
+  native sampler or charge local computation.
+  Native binary time/space and asymptotic approximation
   consequences and hardness transfer remain open, as do Theorems 5–6.
   From a configured checkout, check the complete
   [StochasticOracleMulticoverGreedy](../../ComplexityTests/StochasticOracleMulticoverGreedy.lean)

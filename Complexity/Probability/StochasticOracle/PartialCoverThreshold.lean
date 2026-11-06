@@ -24,6 +24,7 @@ The search is executable; no binary time or space bound is claimed.
 * `rationalRepetitions_eq`: exact agreement with the real-log ceiling convention.
 * `pow_le_iff_rationalRepetitions_le`: minimality of the computed threshold.
 * `rationalBatch_execution`: emitted-call pathwise billing and parallel deadline.
+* `rationalBatch_joint_execution`: certified success and resource caps in one finite law.
 -/
 
 public section
@@ -125,5 +126,81 @@ theorem rationalBatch_execution {E Ω : Type} [DecidableEq E] [Fintype E]
       _ = _ := by rw [rationalBatch_eq]
   · intro i
     exact (hlatency i ω).trans (hdeadline _ (hsub _ (List.get_mem _ _)))
+
+open Cslib.Probability.StochasticOracle
+open Cslib.Optimization.OneConstraint
+
+/-- Joint finite response/resource execution for the computed greedy batch.
+The resource kernel may depend on the retained output, so no independence is
+assumed. All calls start together and are billed even on failure; local
+computation is outside `D`. The finite resource alphabet is an explicit model
+restriction, not a native sampler or a binary runtime certificate. -/
+theorem rationalBatch_joint_execution {E J R : Type}
+    [DecidableEq E] [Fintype E] [DecidableEq J] [Fintype J] [Fintype R]
+    (I : PartialCover.Instance E J) (hground : I.ground = Finset.univ)
+    (hU : I.ground.Nonempty) (as : List (Oracle E))
+    (hcover : ∀ e : E, ∃ a ∈ as, e ∈ a.eligible)
+    (q δ : ℚ) (hq : 0 < q) (hqone : q < 1) (hδ : 0 < δ)
+    (ρ D : ℝ) (K : ResponseKernel J)
+    (L : Finset J → Distribution R ℝ)
+    (tokens latency : Fin (rationalBatch as q (δ / Fintype.card E) hq hqone
+      (div_pos hδ (by
+          have hc := hU.card_pos
+          rw [hground, Finset.card_univ] at hc
+          exact_mod_cast hc))).length → Finset J → R → ℝ)
+    (cutoff : Oracle E → ℝ)
+    (htokens : ∀ i P r, tokens i P r ≤
+      ((rationalBatch as q (δ / Fintype.card E) hq hqone
+        (div_pos hδ (by
+          have hc := hU.card_pos
+          rw [hground, Finset.card_univ] at hc
+          exact_mod_cast hc))).get i).cost)
+    (hlatency : ∀ i P r, latency i P r ≤ cutoff
+      ((rationalBatch as q (δ / Fintype.card E) hq hqone
+        (div_pos hδ (by
+          have hc := hU.card_pos
+          rw [hground, Finset.card_univ] at hc
+          exact_mod_cast hc))).get i))
+    (hdeadline : ∀ a ∈ as, cutoff a ≤ D)
+    (had : I.Admissible ρ (1-(q : ℝ)) K [] ∅
+      ((batch as (repetitions (q : ℝ) ((δ : ℝ) / Fintype.card E))).map Oracle.eligible)) :
+    let calls := batch as (repetitions (q : ℝ) ((δ : ℝ) / Fintype.card E))
+    let joint := (I.law ρ K [] ∅ (calls.map Oracle.eligible)).bind
+      (fun P => (L P).map (fun r => (P, r)))
+    1 - (δ : ℝ) ≤ joint.mean (fun x => if
+      I.covered x.1 = I.ground ∧ I.cost x.1 ≤ ρ * ∑ e ∈ I.ground, I.dual e ∧
+      (∑ i, tokens i x.1 x.2) ≤ (bill calls : ℝ) ∧
+      (∀ i, latency i x.1 x.2 ≤ D) then 1 else 0) := by
+  classical
+  have hn : (0 : ℚ) < Fintype.card E := by
+    have hc := hU.card_pos
+    rw [hground, Finset.card_univ] at hc
+    exact_mod_cast hc
+  have hcaps := rationalBatch_execution as q (δ / Fintype.card E) hq hqone
+    (div_pos hδ hn) D (fun i (x : Finset J × R) => tokens i x.1 x.2)
+    (fun i (x : Finset J × R) => latency i x.1 x.2) cutoff
+    (fun i x => htokens i x.1 x.2) (fun i x => hlatency i x.1 x.2) hdeadline
+  have hcast : ((δ / Fintype.card E : ℚ) : ℝ) = (δ : ℝ) / Fintype.card E := by
+    push_cast
+    rfl
+  simp only [hcast] at hcaps
+  dsimp only
+  rw [Distribution.mean_bind]
+  simp only [Distribution.mean_map, Function.comp_def]
+  simp_rw [show ∀ P r, (∑ i, tokens i P r) ≤
+    (bill (batch as (repetitions (q : ℝ) ((δ : ℝ) / Fintype.card E))) : ℝ) from
+      fun P r => (hcaps (P, r)).1]
+  simp_rw [show ∀ P r, (∀ i, latency i P r ≤ D) from fun P r => (hcaps (P, r)).2]
+  simp only [implies_true, and_true, Distribution.mean_const]
+  have hs := greedy_certified_completion I hground hU as hcover
+    (ρ := ρ) (p := 1-(q : ℝ)) (δ := (δ : ℝ))
+    (sub_pos.mpr (by exact_mod_cast hqone))
+    (sub_lt_self 1 (by exact_mod_cast hq))
+    (by exact_mod_cast hδ) K
+  simp only [sub_sub_cancel] at hs
+  convert hs had using 1
+  congr 1
+  funext P
+  split_ifs <;> rfl
 
 end Cslib.Algorithms.Lean.Multicover
