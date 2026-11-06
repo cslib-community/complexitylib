@@ -30,6 +30,16 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
 | STOC manuscript headline formalizations, including quantitative bounds and source obstructions | [#2527](https://github.com/cslib-community/complexitylib/issues/2527) |
 
+For submission 733 in [#2527](https://github.com/cslib-community/complexitylib/issues/2527),
+the fixed-operator run/cosine product, uniform bit-1 average, arbitrary-width
+forward/backward projection, exact common-power stripping, carry decomposition,
+forced solution parity, unique positional cut, and adjacent swap collision with
+arbitrary common context are implemented. The all-main-results objective remains
+open: all-bit spectrum/extremality, NP-completeness with rational-width and linear
+3-SAT reductions, certified algorithm/resource bounds and uniform class-size
+expectations, and ideal-chain search/decision lower bounds still need proofs.
+Empirical CDCL and solution-count observations are not asymptotic theorems.
+
 ### Landmark theorems, in priority order
 
 Priorities live in this list and in the tiers of [#897].

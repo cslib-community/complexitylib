@@ -199,6 +199,50 @@ $(1/\sqrt2)^z\cos(z\pi/4)$ over the runs. `abs_runFactor_le` gives the per-run
 decay bound and `runFactor_eq_zero_iff` characterizes zero factors by
 $z\equiv2\pmod4$. The checked client includes a vanishing run and a negative
 signed correlation. These results cover arbitrary strings and run lengths;
-they do not prove NP-completeness, the general-bit spectrum or transposition
-differential, the dissection runtime/space bounds, or the ideal-model adversarial
-lower bound advertised elsewhere in the paper.
+they do not prove NP-completeness or the general-bit spectrum.
+
+Import [AddXNORChain.lean](../../Complexity/Cryptanalysis/AddXNORChain.lean) for
+arbitrary-width forward and backward evaluation. `eval` consumes a list of
+operator/operand pairs from an initial word; `backward` recovers the initial
+word from a target. `eval_append_eq_iff` is the exact meeting criterion at any
+cut. `eval_project` and `backward_project` commute with reduction to any lower
+width, including width zero. `eval_eq_xor_parity_carries` expresses the output
+as the XOR of all operands, the all-ones word for odd XNOR parity, and the
+accumulated carries. `carryWord_bit` identifies each carry bit with Lean's
+ripple-carry recurrence. For positive width, `solution_parity` forces the XNOR
+parity of every zero solution. `unique_cut` proves uniqueness of the positional
+prefix/suffix split; this is a property of this formulation, not an impossibility
+result for other representations.
+
+Import [AddXNORStripping.lean](../../Complexity/Cryptanalysis/AddXNORStripping.lean)
+for the common-power-of-two reduction (Lemma 4, PDF p. 7). `scaled s xs`
+appends $s$ zero bits to each noninitial operand. `eval_scaled` factors the full
+state into the stripped high chain and the initial low field, complemented
+exactly at odd XNOR parity. `solvable_scaled_iff` quantifies over every free
+operator string: zero is reachable precisely when the initial low field is zero
+and the stripped instance has an even-parity zero solution, or the field is all
+ones and the stripped instance has an odd-parity zero solution.
+`eval_strip_eq_zero_iff` works directly from arbitrary words satisfying actual
+divisibility by $2^s$, using extracted high and low fields. No carry or parity
+invariant is assumed as a premise.
+
+Import [AddXNORSwap.lean](../../Complexity/Cryptanalysis/AddXNORSwap.lean) for
+Theorem 6 (PDF pp. 19–20). `swap_collision n` proves that the equality
+$(T+A)\mathbin{\mathrm{XNOR}}B=(T\mathbin{\mathrm{XNOR}}A)+B$, evaluated
+on actual words of width $n+1$, has probability
+$2(5/8)^n-(1/2)^n$ for independent uniform $T,A,B$.
+`swap_collision_context` allows any common prefix and suffix. Operands outside
+the window are fixed arbitrarily; bijectivity makes the statement true
+conditionally on each such choice, and hence also under independent uniform
+sampling of those operands. The proof derives the carry transition weights from
+the three independent low bits and then solves the recurrence. Width one has
+probability one; width two has 48 colliding triples out of 64.
+The complete [client](../../ComplexityTests/AddXNOR.lean) checks these counts,
+a noncollision, arbitrary context, backward projection, actual carries, both
+stripping parity branches and an impossible low field.
+
+The full general-bit spectrum and bit-1 extremality, NP-completeness and its
+rational-width/linear-3-SAT refinements, certified decision/witness algorithms
+(including dissection's time, balance computation, space and class-size
+expectations), and the ideal-model adversarial search/decision bounds remain
+unproved here. These finite structural theorems do not establish those headlines.
