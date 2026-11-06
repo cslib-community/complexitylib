@@ -126,7 +126,7 @@ def tableFunction (m : ℕ) (T : List Bool) : BooleanFunction m :=
 circuit code with a valid output wire. -/
 def validCertificate (m S : ℕ) (w : List Bool) : Bool :=
   let c := readCertificate m S w
-  codeCheck m c.1 && decide (c.2 < m + c.1.length)
+  codeCheck signature m c.1 && decide (c.2 < m + c.1.length)
 
 /-- Evaluate the certificate `w` (for `m` inputs and gate budget `S`) on input `y`. -/
 def evalCertificate (m S : ℕ) (w y : List Bool) : Bool :=

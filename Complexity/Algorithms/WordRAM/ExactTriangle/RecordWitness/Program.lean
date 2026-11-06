@@ -7,7 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Program
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QueryValues
 public import Complexity.Algorithms.WordRAM.ExactTriangle.WitnessScan.Exec
 public import Complexity.Algorithms.WordRAM.NatSqrt

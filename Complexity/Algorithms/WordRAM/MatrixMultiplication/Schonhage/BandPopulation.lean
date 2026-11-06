@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandProgram
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.MaskTable
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Charged native binary-mask population scans
 
@@ -38,20 +40,19 @@ theorem exec_population {w : ℕ} (L a : ℕ) (x : Data 96)
         y.regs i = x.regs i) := by
   have hzero : Fits w 0 := hfit.of_le (by omega)
   let start := ((x.set residue a).set population 0).set counter 0
-  let I (y : Data 96) : Prop :=
+  let P (j : ℕ) (y : Data 96) : Prop :=
     y.mem = x.mem ∧ y.regs levels = L ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
-      y.regs counter ≤ L ∧ y.regs residue ≤ a ∧
-      y.regs population + MaskTable.population (L - y.regs counter) (y.regs residue) =
+      y.regs residue ≤ a ∧
+      y.regs population + MaskTable.population (L - j) (y.regs residue) =
         MaskTable.population L a
-  have hi : I start := by
-    simp [I, start, hl, ho, ht, counter, residue, population, levels, one, two]
-  have hb (y : Data 96) (hy : I y) (hc : (Cond.lt counter levels).Holds y) :
+  have hi : P (start.regs counter) start := by
+    simp [P, start, hl, ho, ht, counter, residue, population, levels, one, two]
+  have hb (y : Data 96) (hy : P (y.regs counter) y) (hjL : y.regs counter < L) :
       ∃ z, ExecWithin w (ram[
           digit ← residue % two; population ← population + digit;
           residue ← residue / two; counter ← counter + one ]) y z 4 ∧
-        I z ∧ L - z.regs counter < L - y.regs counter := by
-    obtain ⟨hm, hL, h1, h2, hj, hr, hp⟩ := hy
-    have hjL : y.regs counter < L := by simpa only [Cond.holds_lt, hL] using hc
+        P (y.regs counter + 1) z ∧ z.regs counter = y.regs counter + 1 := by
+    obtain ⟨hm, hL, h1, h2, hr, hp⟩ := hy
     have hrec : MaskTable.population (L - y.regs counter) (y.regs residue) =
         y.regs residue % 2 +
           MaskTable.population (L - (y.regs counter + 1)) (y.regs residue / 2) := by
@@ -72,26 +73,20 @@ theorem exec_population {w : ℕ} (L a : ℕ) (x : Data 96)
         residue ← residue / two; counter ← counter + one ]) y z 4 := by
       ram_eval [z, hfpop, hfmod, hfdiv, hfnext, h1, h2,
         digit, residue, population, counter, one, two, Fin.mk.injEq]
-    refine ⟨z, he, ?_, ?_⟩
+    refine ⟨z, he, ?_, by simp [z]⟩
     · have hsum : (y.regs population + y.regs residue % 2) +
           MaskTable.population (L - (y.regs counter + 1)) (y.regs residue / 2) =
             MaskTable.population L a := by omega
-      simpa +decide [I, z, levels, one, two, residue, population, counter, digit,
+      simpa +decide [P, z, levels, one, two, residue, population, counter, digit,
         Function.update_apply] using
         (show y.mem = x.mem ∧ y.regs levels = L ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
-          y.regs counter + 1 ≤ L ∧ y.regs residue / 2 ≤ a ∧
+          y.regs residue / 2 ≤ a ∧
           (y.regs population + y.regs residue % 2) +
             MaskTable.population (L - (y.regs counter + 1)) (y.regs residue / 2) =
               MaskTable.population L a from
-          ⟨hm, hL, h1, h2, by omega, (Nat.div_le_self _ _).trans hr, hsum⟩)
-    · simp only [z, Data.set_regs, Function.update_self]
-      omega
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => L - y.regs counter) hb hi
-  have hj : y.regs counter = L := by
-    simp only [Cond.holds_lt, hy.2.1] at hc
-    have := hy.2.2.2.2.1
-    omega
+          ⟨hm, hL, h1, h2, (Nat.div_le_self _ _).trans hr, hsum⟩)
+  obtain ⟨y, he, ⟨hymem, _, _, _, _, hypop⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => hy.2.1) hb (by simp [start]) hi
   have hwhole : ExecWithin w populationCode x y (6 * L + 5) := by
     have hs : ExecWithin (B := .standard) w (.op (.copy residue mask))
         x (x.set residue a) 1 := by
@@ -102,9 +97,8 @@ theorem exec_population {w : ℕ} (L a : ℕ) (x : Data 96)
     apply hwhole.mono
     simp only [start, Data.set_regs, Function.update_self, Nat.sub_zero]
     omega
-  refine ⟨y, hwhole, ?_, hy.1, ?_⟩
-  · have h := hy.2.2.2.2.2.2
-    simpa only [hj, Nat.sub_self, population_zero, Nat.add_zero] using h
+  refine ⟨y, hwhole, ?_, hymem, ?_⟩
+  · simpa only [Nat.sub_self, population_zero, Nat.add_zero] using hypop
   · intro i hr hp hc hd
     apply hwhole.regs_eq
     have hframe : ∀ i : Fin 96, i ≠ residue → i ≠ population → i ≠ counter → i ≠ digit →
