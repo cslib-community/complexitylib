@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Bounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Flat
 
 /-!
 # Actual prepared Exact Triangle records using native box products

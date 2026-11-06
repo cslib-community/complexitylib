@@ -7,7 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Program
 public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Width
 
 /-!

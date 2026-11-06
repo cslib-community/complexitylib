@@ -148,6 +148,32 @@ The [parameter client](https://github.com/cslib-community/complexitylib/blob/4b5
 evaluates actual code at zero, just below the new threshold and at the threshold. The headline
 1.9992 exponent, distinct-position meaning and native resource guarantees below are unchanged.
 
+## Maintaining the per-record product and witness clients
+
+For a prepared record, use `RecordProduct.exec_of_output` or
+`RecordBoxProduct.exec_of_output` with the genuine `Instances.Output`. Both concrete
+programs derive their source spans through `RecordProduct.producer_readback` in
+`Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Readback`; that pure module
+also exposes the record data and ordered query decoder. It needs no initialized product run.
+Use `RecordProduct.NumericBounds` and `RecordWitness.NumericBounds` for numerical width
+and word estimates. The actual all-prefix execution theorems remain in `RecordProduct.SourceBounds` and
+`RecordWitness.SourceBounds`, each following from its real `runs_input` theorem.
+
+When composing another proved record product with the existing verifier, use
+`RecordWitness.exec_after_product` from `RecordWitness.AfterProduct`. Supply its actual
+execution, actual output offset, exact signed matrix-product answers, outside-window memory
+frame and all producer registers below 65, including ordinal register 64. The theorem invokes
+`exec_consume` and retains its scan-dependent charge, original-coordinate witness and query
+occurrence. The concrete original and box endpoints discharge this premise internally;
+their public statements do not acquire a solver assumption. Keep their `19*m` and `21*m`
+geometry, threshold instructions and admission proofs separate.
+
+The [pure readback client](../../ComplexityTests/WordRAMExactTriangleRecordReadback.lean)
+checks duplicate occurrence order with dirty unused memory. The
+[consumer client](../../ComplexityTests/WordRAMExactTriangleRecordWitness.lean) checks
+success, failure, zero answers and repeated failed candidates. The standalone original
+product and witness clients remain available alongside the box clients.
+
 ## Box-backed fixed-prime Exact Triangle
 
 To decide whether three signed integer matrices contain a zero-weight triangle, import
