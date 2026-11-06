@@ -59,8 +59,14 @@ Matrix multiplication of `p × q` by `q × r` matrices is the tensor `Tensor.mm 
   `Cslib.Tensor.IsRestriction.dsum`, `Cslib.Tensor.IsRestriction.swap12`,
   `Cslib.Tensor.IsRestriction.swap23`, `Cslib.Tensor.IsRestriction.swap13`,
   `Cslib.Tensor.isRestriction_reindex`: closure of restriction.
-* `Cslib.Tensor.isRestriction_dsum_comp`, `Cslib.Tensor.isRestriction_slSum_comp`: deleting and
-  reordering summands.
+* `Cslib.Tensor.isRestriction_dsum_comp`, `Cslib.Tensor.isRestriction_slSum_comp`,
+  `Cslib.Tensor.isRestriction_dsum_const_of_card_le`: deleting, reordering and adding summands.
+* `Cslib.Tensor.tprod_comm`, `Cslib.Tensor.tprod_assoc`, `Cslib.Tensor.tprod_dsum`,
+  `Cslib.Tensor.dsum_dsum`, `Cslib.Tensor.swap12_dsum`, `Cslib.Tensor.tprod_tprod_tprod_comm`:
+  rearrangements, as equalities up to reindexing ([Pass][Pass2026], Lemma 2.10).
+* `Cslib.Tensor.swap12_mm`, `Cslib.Tensor.swap13_mm`, `Cslib.Tensor.tprod_mm_mm`,
+  `Cslib.Tensor.isRestriction_mm_tprod_swaps`: role exchanges and products of matrix
+  multiplication.
 * `Cslib.Tensor.Rank.tprod`, `Cslib.Tensor.Rank.dsum`, `Cslib.Tensor.rank_mm`: rank bounds.
 
 ## References

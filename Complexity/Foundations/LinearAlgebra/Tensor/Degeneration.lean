@@ -50,7 +50,8 @@ each a restriction of `unit r`, combine into a restriction of `unit ((D + 1) r)`
   `Cslib.Tensor.IsDegen.mono`: restrictions are degenerations of order `0`; composition.
 * `Cslib.Tensor.IsDegen.tprod`, `Cslib.Tensor.IsDegen.tprodPi`, `Cslib.Tensor.IsDegen.dsum`,
   `Cslib.Tensor.IsDegen.swap12`, `Cslib.Tensor.IsDegen.swap23`, `Cslib.Tensor.IsDegen.swap13`,
-  `Cslib.Tensor.IsDegen.reindex_target`, `Cslib.Tensor.IsDegen.reindex_source`: closure.
+  `Cslib.Tensor.IsDegen.reindex_target`, `Cslib.Tensor.IsDegen.reindex_source`,
+  `Cslib.Tensor.IsDegen.of_reindex_target`, `Cslib.Tensor.IsDegen.of_reindex_source`: closure.
 * `Cslib.Tensor.IsSLDegen.trans`, `Cslib.Tensor.IsSLDegen.swap23`,
   `Cslib.Tensor.IsSLDegen.tprod`, `Cslib.Tensor.IsSLDegen.tprodPi`,
   `Cslib.Tensor.IsSLDegen.slSum_comp`, `Cslib.Tensor.IsSLDegen.slSum_source_comp`,
@@ -371,6 +372,21 @@ theorem IsDegen.reindex_source [Fintype X'] [Fintype Y'] [Fintype Z'] [Fintype X
     (e₂ : Y' ≃ Y'') (e₃ : Z' ≃ Z'')
     (hT : IsDegen h T S) : IsDegen h T (reindex e₁ e₂ e₃ S) :=
   hT.trans_isRestriction (isRestriction_of_reindex e₁ e₂ e₃ S)
+
+/-- Removing a reindexing of the target of a degeneration. -/
+theorem IsDegen.of_reindex_target [Fintype X'] [Fintype Y'] [Fintype Z'] {h : ℕ}
+    {T : Tensor K X Y Z} {S : Tensor K X' Y' Z'} {e₁ : X ≃ X''} {e₂ : Y ≃ Y''} {e₃ : Z ≃ Z''}
+    (hT : IsDegen h (reindex e₁ e₂ e₃ T) S) : IsDegen h T S := by
+  have := hT.reindex_target e₁.symm e₂.symm e₃.symm
+  rwa [reindex_symm_reindex] at this
+
+/-- Removing a reindexing of the source of a degeneration. -/
+theorem IsDegen.of_reindex_source [Fintype X'] [Fintype Y'] [Fintype Z'] [Fintype X'']
+    [Fintype Y''] [Fintype Z''] {h : ℕ} {T : Tensor K X Y Z} {S : Tensor K X' Y' Z'}
+    {e₁ : X' ≃ X''} {e₂ : Y' ≃ Y''} {e₃ : Z' ≃ Z''} (hT : IsDegen h T (reindex e₁ e₂ e₃ S)) :
+    IsDegen h T S := by
+  have := hT.reindex_source e₁.symm e₂.symm e₃.symm
+  rwa [reindex_symm_reindex] at this
 
 /-- Reindexing the target of a shared-left degeneration composes the injection with the left
 equivalence. -/
