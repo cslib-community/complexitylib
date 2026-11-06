@@ -823,21 +823,22 @@ private theorem bi_equationVars :
     PolyT equationVars (encList (encList encNat)) (encList encNat) :=
   bi_sortDedup.comp (bi_flatten encNat)
 
-private def branchQ_u (inp : BranchEvalInput) : ℕ := min inp.1.1 inp.2.2.1.2.1
-private def branchR_u (inp : BranchEvalInput) : ℕ := min inp.1.1 inp.2.2.1.2.2.1
-private def branchr_u (inp : BranchEvalInput) : ℕ := min inp.1.1 inp.2.2.1.1
-private def branchA₀_u (inp : BranchEvalInput) : ℕ := min (inp.1.1 + 1) inp.2.2.1.2.2.2
+private def branchQ_u (inp : BranchEvalInput) : ℕ := min inp.numVars inp.numNodes
+private def branchR_u (inp : BranchEvalInput) : ℕ := min inp.numVars inp.rowBound
+private def branchr_u (inp : BranchEvalInput) : ℕ := min inp.numVars inp.numGroups
+private def branchA₀_u (inp : BranchEvalInput) : ℕ := min (inp.numVars + 1) inp.intervalStart
 private def branchD_cap (inp : BranchEvalInput) : ℕ :=
-  min inp.1.1 (branchr_u inp ^ (2 * branchQ_u inp))
+  min inp.numVars (branchr_u inp ^ (2 * branchQ_u inp))
 private def branchTruncQ (inp : BranchEvalInput) : ℕ :=
-  (inp.1.2 * (branchR_u inp - 1)) * (inp.2.2.2.length + 2 * inp.1.1) / max 1 (branchQ_u inp)
+  (inp.maxDegree * (branchR_u inp - 1)) * (inp.equations.length + 2 * inp.numVars) /
+    max 1 (branchQ_u inp)
 private def branchAugScopes (inp : BranchEvalInput) : List (List ℕ) :=
-  withNeutralScopesList (inp.2.2.2.map equationVars) inp.1.1
+  withNeutralScopesList (inp.equations.map equationVars) inp.numVars
 
 private theorem computableInPolyTime_branchClamped :
-    PolyT (fun inp : BranchEvalInput => inp.1.1) encBranchEvalInput encUnary ∧
-    PolyT (fun inp : BranchEvalInput => inp.1.2) encBranchEvalInput encUnary ∧
-    PolyT (fun inp : BranchEvalInput => inp.2.2.2) encBranchEvalInput encSys ∧
+    PolyT BranchEvalInput.numVars encBranchEvalInput encUnary ∧
+    PolyT BranchEvalInput.maxDegree encBranchEvalInput encUnary ∧
+    PolyT BranchEvalInput.equations encBranchEvalInput encSys ∧
     PolyT branchQ_u encBranchEvalInput encUnary ∧
     PolyT branchR_u encBranchEvalInput encUnary ∧
     PolyT branchr_u encBranchEvalInput encUnary ∧
@@ -845,16 +846,13 @@ private theorem computableInPolyTime_branchClamped :
     PolyT branchD_cap encBranchEvalInput encUnary ∧
     PolyT branchTruncQ encBranchEvalInput encUnary ∧
     PolyT branchAugScopes encBranchEvalInput (encList (encList encNat)) := by
-  let encQuad := encPair encNat (encPair encNat (encPair encNat encNat))
-  let eR := encPair encQuad (encPair encQuad encSys)
-  have hp1 : PolyT Prod.fst encBranchEvalInput (encPair encUnary encUnary) := by
-    unfold encBranchEvalInput; exact fst (encPair encUnary encUnary) eR
-  have hp2 : PolyT Prod.snd encBranchEvalInput eR := by
-    unfold encBranchEvalInput; exact snd (encPair encUnary encUnary) eR
-  have hn' := hp1.fst'; have hk' := hp1.snd'
-  have hsched := hp2.snd'.fst'; have heqs := hp2.snd'.snd'
-  have hr := hsched.fst'; have hQ := hsched.snd'.fst'
-  have hR := hsched.snd'.snd'.fst'; have hA₀ := hsched.snd'.snd'.snd'
+  have hn' := BranchEvalInput.computableInPolyTime_numVars
+  have hk' := BranchEvalInput.computableInPolyTime_maxDegree
+  have heqs := BranchEvalInput.computableInPolyTime_equations
+  have hr := BranchEvalInput.computableInPolyTime_numGroups
+  have hQ := BranchEvalInput.computableInPolyTime_numNodes
+  have hR := BranchEvalInput.computableInPolyTime_rowBound
+  have hA₀ := BranchEvalInput.computableInPolyTime_intervalStart
   have hQu : PolyT branchQ_u encBranchEvalInput encUnary := binary_min_unary' hn' hQ
   have hRu : PolyT branchR_u encBranchEvalInput encUnary := binary_min_unary' hn' hR
   have hru : PolyT branchr_u encBranchEvalInput encUnary := binary_min_unary' hn' hr
@@ -876,7 +874,7 @@ private theorem computableInPolyTime_branchClamped :
   have hq : PolyT branchTruncQ encBranchEvalInput encUnary := by
     refine (binary_min_unary' hnum hdiv).of_enc_eq fun inp => congrArg encUnary ?_
     dsimp only [Function.comp_apply, branchTruncQ]
-    rw [show inp.1.1 + inp.1.1 = 2 * inp.1.1 by omega]
+    rw [show inp.numVars + inp.numVars = 2 * inp.numVars by omega]
     exact (Nat.min_eq_right (Nat.div_le_self _ _)).symm
   exact ⟨hn', hk', heqs, hQu, hRu, hru, hA₀u, hDcap, hq,
     computableInPolyTime_withNeutralScopesListWithInput
@@ -885,8 +883,8 @@ private theorem computableInPolyTime_branchClamped :
 
 private def prepScheduleParams (inp : BranchEvalInput) : BalancedSchedules.ScheduleParams :=
   let aug := branchAugScopes inp
-  ((inp.1.1, aug.length, branchQ_u inp), (branchr_u inp, inp.2.1.1 + inp.2.1.2.1),
-    scopeIncidencesList inp.1.1 aug)
+  ((inp.numVars, aug.length, branchQ_u inp), (branchr_u inp, inp.factorIncidence + inp.factorWidth),
+    scopeIncidencesList inp.numVars aug)
 
 private def mkDesignFromScheds (p : BranchEvalInput × (List (List ℕ) × List (List ℕ))) :
     BranchEvalInput × ReplacementDesignData :=
@@ -904,15 +902,13 @@ private theorem exists_computableInO_mkDesignPair :
         (encPair encBranchEvalInput encReplacementDesignData)
         (fun inp => (branchr_u inp ^ branchQ_u inp + 1) * P inp) P := by
   obtain ⟨hn', _, _, hQu, hRu, hru, hA₀u, hDcap, _, haug⟩ := computableInPolyTime_branchClamped
-  let encQuad := encPair encNat (encPair encNat (encPair encNat encNat))
-  let eR := encPair encQuad (encPair encQuad encSys)
-  have hp2 : PolyT Prod.snd encBranchEvalInput eR := by
-    unfold encBranchEvalInput; exact snd (encPair encUnary encUnary) eR
   have hprep : PolyT prepScheduleParams encBranchEvalInput
       BalancedSchedules.encScheduleParams := by
     unfold BalancedSchedules.encScheduleParams prepScheduleParams
     exact (hn'.prod (((length_list (encList encNat)).comp haug).prod hQu)).prod
-      (((unary_to_binary.comp hru).prod (bi_binary_add' hp2.fst'.fst' hp2.fst'.snd'.fst')).prod
+      (((unary_to_binary.comp hru).prod
+        (bi_binary_add' BranchEvalInput.computableInPolyTime_factorIncidence
+          BranchEvalInput.computableInPolyTime_factorWidth)).prod
         (computableInPolyTime_scopeIncidencesList hn' haug))
   let eSchOut := encPair (encList (encList encNat)) (encList (encList encNat))
   have hbuild : PolyT mkDesignFromScheds (encPair encBranchEvalInput eSchOut)
@@ -966,7 +962,7 @@ private theorem exists_computableInO_mkDesignPair :
 private def mkNodeSubIn (p : ((BranchEvalInput × ReplacementDesignData) ×
     List (List (List (List ℤ)))) × ℕ) : ℕ × SubsetStepCtx :=
   let inp := p.1.1.1; let data := p.1.1.2; let eqRowTables := p.1.2; let t := p.2
-  let n' := inp.1.1; let k' := inp.1.2; let eqs' := inp.2.2.2
+  let n' := inp.numVars; let k' := inp.maxDegree; let eqs' := inp.equations
   let r_u := branchr_u inp; let D_cap := branchD_cap inp; let q := branchTruncQ inp
   let m_rows := data.measurementMatrix.length
   let c_meas := min (4 * (n' + 1) * (eqs'.length * n' + n' + 1)) (r_u * m_rows)
@@ -977,15 +973,15 @@ private def mkNodeSubIn (p : ((BranchEvalInput × ReplacementDesignData) ×
 
 private def finalizeDesignStage
     (p : (BranchEvalInput × ReplacementDesignData) × List JetRows) : ℕ :=
-  let inp := p.1.1; let data := p.1.2; let n' := inp.1.1; let ℓ := n' + 1
+  let inp := p.1.1; let data := p.1.2; let n' := inp.numVars; let ℓ := n' + 1
   let nodes : List ℤ := (List.range (branchQ_u inp)).map fun (t : ℕ) => ((t : ℤ) + 1)
-  let Ω : ℤ := ((data.denom ^ inp.1.2) ^ (2 * ℓ - 1)) ^ inp.2.2.2.length
+  let Ω : ℤ := ((data.denom ^ inp.maxDegree) ^ (2 * ℓ - 1)) ^ inp.equations.length
   let recCount :=
     CommonCountingAccum.recoverOuterJetSumModPowTwo nodes (branchTruncQ inp + 1) ℓ Ω p.2
   min (2 ^ n') recCount.toNat
 
 private def evalDesignStageCore (idPair : BranchEvalInput × ReplacementDesignData) : ℕ :=
-  let eqRowTables := buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2
+  let eqRowTables := buildEqRowTables idPair.1.numVars idPair.1.equations idPair.2
   let nodeJets := (List.range (branchQ_u idPair.1)).map fun t =>
     let qs := mkNodeSubIn ((idPair, eqRowTables), t)
     (SubsetPairFold.run subsetPairStepBody qs.2.numVars qs.1
@@ -993,7 +989,7 @@ private def evalDesignStageCore (idPair : BranchEvalInput × ReplacementDesignDa
   finalizeDesignStage (idPair, nodeJets)
 
 private def evalDesignStage (idPair : BranchEvalInput × ReplacementDesignData) : ℕ :=
-  if validDesignShape idPair.1.1.1 (branchr_u idPair.1) idPair.1.2.2.2.length idPair.2 then
+  if validDesignShape idPair.1.numVars (branchr_u idPair.1) idPair.1.equations.length idPair.2 then
     evalDesignStageCore idPair
   else 0
 
@@ -1002,10 +998,10 @@ private theorem exists_boundedIncidenceBranch_cert :
       PolyBounded (fun x => (encBranchEvalInput x).length) c.space ∧
       ∃ P : BranchEvalInput → ℕ, PolyBounded (fun x => (encBranchEvalInput x).length) P ∧
         ∀ inp : BranchEvalInput,
-          let n' := inp.1.1; let Q_u := branchQ_u inp; let r_u := branchr_u inp
+          let n' := inp.numVars; let Q_u := branchQ_u inp; let r_u := branchr_u inp
           let D_cap := branchD_cap inp; let q := branchTruncQ inp
           let data := (mkDesignPair inp).2; let m_rows := data.measurementMatrix.length
-          let c_meas := min (4 * (n' + 1) * (inp.2.2.2.length * n' + n' + 1)) (r_u * m_rows)
+          let c_meas := min (4 * (n' + 1) * (inp.equations.length * n' + n' + 1)) (r_u * m_rows)
           let d_max := maxAllGroupDim n' Q_u r_u data.varGroups
           c.time inp ≤ ((r_u ^ Q_u + 1) + (Q_u + 1) * (SubsetPairFold.subsetPairCount n' q + 1) *
             ((2 * D_cap + 1) ^ c_meas + 1) * (r_u * (2 ^ d_max + 1) + 1)) * P inp := by
@@ -1017,7 +1013,7 @@ private theorem exists_boundedIncidenceBranch_cert :
   have hid_data : PolyT Prod.snd eID encReplacementDesignData :=
     snd encBranchEvalInput encReplacementDesignData
   have hctx_build : PolyT (fun idPair : BranchEvalInput × ReplacementDesignData =>
-      (idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2)) eID eCtx :=
+      (idPair, buildEqRowTables idPair.1.numVars idPair.1.equations idPair.2)) eID eCtx :=
     id'.prod (computableInPolyTime_buildEqRowTables (hn'.comp hid_inp) (heqs.comp hid_inp) hid_data)
   have hmkNode : PolyT mkNodeSubIn (encPair eCtx encUnary)
       (encPair encUnary encSubsetStepCtx) := by
@@ -1043,7 +1039,7 @@ private theorem exists_boundedIncidenceBranch_cert :
     have hp0 := fst eIn encUnary
     let grpEqAtFn (x : ((BranchEvalInput × ReplacementDesignData) ×
         List (List (List (List ℤ)))) × ℕ) (g : ℕ) :=
-      groupEquationsAt x.1.1.1.2.2.2 x.1.1.2.factorGroups x.1.2 x.2 g
+      groupEquationsAt x.1.1.1.equations x.1.1.2.factorGroups x.1.2 x.2 g
     have hge : PolyT (fun q => grpEqAtFn q.1 q.2)
         (encPair eIn encUnary) (encList encGroupEqEntry) :=
       computableInPolyTime_groupEquationsAt (heqs_p.comp hp0)
@@ -1093,14 +1089,15 @@ private theorem exists_boundedIncidenceBranch_cert :
   obtain ⟨cn1, dn1, hn1_le⟩ := (hcMkNode.1.add (hPnj_pb.comp hmkNode.polyBounded_length)).exists_le
   let hQu_id := hQu.comp hid_inp
   let Pn_iter (idPair : BranchEvalInput × ReplacementDesignData) : ℕ :=
-    cn1 * (2 * (eCtx (idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2)).length +
+    cn1 * (2 * (eCtx (idPair,
+      buildEqRowTables idPair.1.numVars idPair.1.equations idPair.2)).length +
       2 * branchQ_u idPair.1 + 1 + 1) ^ dn1
   have hPn_iter_pb := NativeCertificate.polyBounded_pow_of_polyBounded
     ((((PolyBounded.const 2).mul hctx_build.polyBounded_length).add
       ((PolyBounded.const 2).mul hQu_id.polyBounded)).add (.const 1)) cn1 dn1
   let K_inner (idPair : BranchEvalInput × ReplacementDesignData) : ℕ :=
-    let n' := idPair.1.1.1; let Q_u := branchQ_u idPair.1; let r_u := branchr_u idPair.1
-    let c_meas := min (4 * (n' + 1) * (idPair.1.2.2.2.length * n' + n' + 1))
+    let n' := idPair.1.numVars; let Q_u := branchQ_u idPair.1; let r_u := branchr_u idPair.1
+    let c_meas := min (4 * (n' + 1) * (idPair.1.equations.length * n' + n' + 1))
       (r_u * idPair.2.measurementMatrix.length)
     (SubsetPairFold.subsetPairCount n' (branchTruncQ idPair.1) + 1) *
       ((2 * branchD_cap idPair.1 + 1) ^ c_meas + 1) *
@@ -1110,22 +1107,23 @@ private theorem exists_boundedIncidenceBranch_cert :
     fun idPair t ht => by
       have ht' : t < branchQ_u idPair.1 := ht
       have hlen : (encPair eCtx encUnary
-          ((idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2), t)).length ≤
-          2 * (eCtx (idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2)).length +
+          ((idPair, buildEqRowTables idPair.1.numVars idPair.1.equations idPair.2), t)).length ≤
+          2 * (eCtx (idPair,
+            buildEqRowTables idPair.1.numVars idPair.1.equations idPair.2)).length +
             2 * branchQ_u idPair.1 + 1 := by
         simp only [length_encPair, encUnary_apply, List.length_replicate]; omega
       have hov :=
-        (hn1_le ((idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2), t)).trans
+        (hn1_le ((idPair, buildEqRowTables idPair.1.numVars idPair.1.equations idPair.2), t)).trans
         (Nat.mul_le_mul_left cn1 (Nat.pow_le_pow_left (Nat.add_le_add_right hlen 1) dn1))
       have hpow_le := Nat.pow_le_pow_right Nat.zero_lt_two (maxGroupDim_le_maxAllGroupDim
-        (n' := idPair.1.1.1) (r_u := branchr_u idPair.1) (varGroups := idPair.2.varGroups) ht')
+        (n' := idPair.1.numVars) (r_u := branchr_u idPair.1) (varGroups := idPair.2.varGroups) ht')
       have hK_pos : 1 ≤ K_inner idPair :=
         Nat.mul_pos (Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _)) (Nat.succ_pos _)
-      set K_t := (SubsetPairFold.subsetPairCount idPair.1.1.1 (branchTruncQ idPair.1) + 1) *
-        ((2 * branchD_cap idPair.1 + 1) ^ min (4 * (idPair.1.1.1 + 1) *
-          (idPair.1.2.2.2.length * idPair.1.1.1 + idPair.1.1.1 + 1))
+      set K_t := (SubsetPairFold.subsetPairCount idPair.1.numVars (branchTruncQ idPair.1) + 1) *
+        ((2 * branchD_cap idPair.1 + 1) ^ min (4 * (idPair.1.numVars + 1) *
+          (idPair.1.equations.length * idPair.1.numVars + idPair.1.numVars + 1))
           (branchr_u idPair.1 * idPair.2.measurementMatrix.length) + 1) *
-        (branchr_u idPair.1 * (2 ^ maxGroupDim idPair.1.1.1 (branchr_u idPair.1)
+        (branchr_u idPair.1 * (2 ^ maxGroupDim idPair.1.numVars (branchr_u idPair.1)
           (idPair.2.varGroups.getD t []) + 1) + 1)
       have hKt_le : K_t ≤ K_inner idPair := Nat.mul_le_mul_left _
         (Nat.succ_le_succ (Nat.mul_le_mul_left _ (Nat.succ_le_succ hpow_le)))
@@ -1157,7 +1155,8 @@ private theorem exists_boundedIncidenceBranch_cert :
     simp only [NativeCertificate.branch_space, NativeCertificate.const_space]; split_ifs <;> omega
   let fnOut (idPair : BranchEvalInput × ReplacementDesignData) :=
     (idPair, (List.range (branchQ_u idPair.1)).map fun t =>
-      let qs := mkNodeSubIn ((idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2), t)
+      let qs := mkNodeSubIn
+        ((idPair, buildEqRowTables idPair.1.numVars idPair.1.equations idPair.2), t)
       (SubsetPairFold.run subsetPairStepBody qs.2.numVars qs.1
         (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2)
   let P_stg2 (idPair : BranchEvalInput × ReplacementDesignData) : ℕ :=

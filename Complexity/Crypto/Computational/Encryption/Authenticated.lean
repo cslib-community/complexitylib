@@ -274,7 +274,8 @@ private theorem computableTidilyInPolyTime_contains_bits {α : Type} {enc : α �
   funext a
   rw [Bool.eq_iff_iff, List.contains_iff_mem, decide_eq_true_eq]
 
-private theorem exists_ciphertext_length_bound (E : SymmetricCipher) :
+/-- A unary polynomial-time bound on ciphertext length for supported keys and `n`-bit messages. -/
+theorem exists_ciphertext_length_bound (E : SymmetricCipher) :
     ∃ ctBound : ℕ → ℕ, ComputableInPolyTime ctBound encUnary encUnary ∧
       ∀ (n : ℕ) (k : List Bool), k ∈ (ProbComp.eval (E.keyGen n)).support →
         ∀ (msg : List Bool), msg.length = n →
@@ -289,6 +290,29 @@ private theorem exists_ciphertext_length_bound (E : SymmetricCipher) :
   simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
     hmsg] at hctLen
   exact hctLen.trans (Nat.mul_le_mul_left ce (Nat.pow_le_pow_left (by lia) de))
+
+/-- A polynomial-time bound on encoded decryption replies, uniform over the actual key sampler.
+It bounds rejection and successful empty messages without identifying their encodings. -/
+theorem exists_decryption_length_bound (E : SymmetricCipher) :
+    ∃ decBound : ℕ → List Bool → ℕ,
+      ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+        (encPair encUnary encBits) encUnary ∧
+      ∀ n k, k ∈ (ProbComp.eval (E.keyGen n)).support →
+        ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct := by
+  obtain ⟨ck, dk, hlenKey⟩ := E.keyGen_ppt.length_le
+  obtain ⟨cd, dd, hlenDec⟩ := E.decrypt_polyTime.tidy.polyBounded_length.exists_le
+  let decBound : ℕ → List Bool → ℕ :=
+    fun n ct => cd * (2 * n + 2 * (ck * (n + 1) ^ dk) + ct.length + 4) ^ dd
+  have hdecBoundPoly : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
+      (encPair encUnary encBits) encUnary := by
+    dsimp only [decBound]; fun_prop
+  refine ⟨decBound, hdecBoundPoly, ?_⟩
+  intro n k hk ct
+  have hkLen := hlenKey n k hk
+  have hdecLen := hlenDec (n, k, ct)
+  simp only [encUnary_apply, List.length_replicate, encBits_apply] at hkLen
+  simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply] at hdecLen
+  exact hdecLen.trans (Nat.mul_le_mul_left cd (Nat.pow_le_pow_left (by lia) dd))
 
 /-- Running an oracle-PPT distinguisher against `cpaEncryptionOracle` is uniformly strict PPT in
 `(n, k)` for each challenge bit `bit`. -/
@@ -2084,21 +2108,7 @@ theorem INDCCA.oneTimeINDCCA {E : SymmetricCipher} (hcca : E.INDCCA) :
     E.OneTimeINDCCA := by
   intro adversary hadversary
   obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E.exists_ciphertext_length_bound
-  obtain ⟨ck, dk, hlenKey⟩ := E.keyGen_ppt.length_le
-  obtain ⟨cd, dd, hlenDec⟩ := E.decrypt_polyTime.tidy.polyBounded_length.exists_le
-  let decBound : ℕ → List Bool → ℕ :=
-    fun n ct => cd * (2 * n + 2 * (ck * (n + 1) ^ dk) + ct.length + 4) ^ dd
-  have hdecBoundPoly : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
-      (encPair encUnary encBits) encUnary := by
-    dsimp only [decBound]; fun_prop
-  have hdecBound (n : ℕ) (k : List Bool) (hk : k ∈ (ProbComp.eval (E.keyGen n)).support)
-      (ct : List Bool) :
-      (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct := by
-    have hkLen := hlenKey n k hk
-    have hdecLen := hlenDec (n, k, ct)
-    simp only [encUnary_apply, List.length_replicate, encBits_apply] at hkLen
-    simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply] at hdecLen
-    exact hdecLen.trans (Nat.mul_le_mul_left cd (Nat.pow_le_pow_left (by lia) dd))
+  obtain ⟨decBound, hdecBoundPoly, hdecBound⟩ := E.exists_decryption_length_bound
   have hneg := hcca (ccaLimitToOneEncryptionQuery ctBound decBound adversary)
     (isOraclePPT_ccaLimitToOneEncryptionQuery hctBoundPoly hdecBoundPoly hadversary)
   refine hneg.congr fun n => ?_
