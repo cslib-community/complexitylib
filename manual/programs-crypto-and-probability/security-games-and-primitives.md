@@ -121,6 +121,31 @@ for runtime dimensions/width and complete supplied signed secret/error words, an
 conditional law agrees with the existing key generator. Full CBD randomized key generation,
 native encryption/decryption and security remain separate tasks.
 
+For arbitrary positive binary moduli, including primes, import
+[`Module/ApproximateSampling.lean`](../../Complexity/Crypto/Computational/SIS/Module/ApproximateSampling.lean).
+`exists_isPPTOn_approximateEncodedModuleMatrix` gives one strict-PPT program using the existing
+`sampleModNat width q` independently on each polynomial coefficient, then the same native
+rotation-block expansion. Its exact law is the nested product of those actual residue laws
+followed by `ModuleSIS.encodeMatrix`. Its all-event `CloseTo` error against the ideal structured
+uniform law is at most `d*k*n*q/2^width`. The count is the number of independent polynomial
+coefficients; expanded scalar entries remain correlated. The modulus is binary, dimensions and
+width unary, and the program is total even at modulus zero, outside the positive-modulus law.
+`exists_isPPTOn_sampleEncodedModuleMatrixWithPrecision` computes width `q.size + precision`
+natively and gives error at most `d*k*n/2^precision`, with unary precision and binary modulus.
+Neither theorem asserts exact uniform sampling for arbitrary moduli.
+
+[Checked clients](../../ComplexityTests/Crypto/ModuleMatrixApproximation.lean) show that four fair
+bits reduced modulo three give the encoded zero two-coefficient block mass `9/64`, whereas the
+ideal structured law gives `1/9`. The bound is `3/8`. The same obtained sampler and native keygen
+function compose uniformly on runtime dimensions, binary modulus and complete supplied secret
+and error words; deterministic keygen postprocessing preserves that error against the existing
+ideal conditional key law. Other clients cover width zero, modulus one, empty dimensions and a
+129-bit modulus. Full random secret/error composition, encryption and security remain open.
+The scalar all-event bridge `Probability.closeTo_uniform_sampleModNat` now lives in
+[`Game/CloseTo/UniformNat.lean`](../../Complexity/Crypto/Game/CloseTo/UniformNat.lean), publicly
+reexported by its original Lyubashevsky consumer, so this construction does not import a
+signature protocol to obtain a generic sampler bound.
+
 The Module-LWE sampling APIs now accept explicit distributions: `moduleLWEPublicKeyLaw` has an
 optional `secretLaw`, `encryptionViewOfKeyLaw` an optional `ephemeralLaw`, and `realEncryptionView`
 accepts both. Their defaults remain uniform, and the existing security reductions concern those
