@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Cor
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.InputSpec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Setup
 import Complexity.Foundations.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-parameter caller admission
@@ -45,11 +46,7 @@ theorem admissionWidth_pos (n D g p total b P : ℕ) : 0 < admissionWidth n D g 
 theorem admission_fits {W n D g p total b P : ℕ}
     (hW : admissionWidth n D g p total b P ≤ W) :
     Fits W (b + 4 * windowSize n D g p total + P + 1024) := by
-  have hw : Nat.clog 2 (b + 4 * windowSize n D g p total + P + 1024) < W := by
-    unfold admissionWidth at hW
-    omega
-  exact (Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) _).trans_lt
-    (Nat.pow_lt_pow_right (by decide : 1 < (2 : ℕ)) hw)
+  exact fits_of_clog_lt (by unfold admissionWidth at hW; omega)
 
 /-- The real copied input span fits the computed source window before the solver begins. -/
 theorem inputEnd_le_window {m n g p : ℕ} (values : List ℤ)

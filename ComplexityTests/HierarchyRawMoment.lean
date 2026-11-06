@@ -150,7 +150,8 @@ theorem actual_residual_one (HP : FourthRootHierarchyParams 16 1 16 32 8)
   have hs : side 5 0 = 5 := by norm_num [side]
   have ht : HierarchyTask.correctionAtomTask (k := 1) 0 false (Fin.last 1) =
       .row 0 (.normalized 0) := rfl
-  simp only [rawIncomingNormalized, HierarchyTask.rawSample, HierarchyTask.rawRequests, ht]
+  simp only [rawIncomingNormalized, HierarchyTask.rawSample, HierarchyTask.rawPositiveSample,
+    HierarchyTask.rawNegativeSample, HierarchyTask.rawRequests, ht]
   dsimp only [threeRoles]
   simp only [gridChannel, min_self]
   have hd := actual_dense_child HP 0 2 (by decide) [1] [3] σ

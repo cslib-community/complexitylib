@@ -374,9 +374,7 @@ theorem computableInPolyTime_localOutput_evalLocal :
       (encPair encLocalOutput (encList encBool)) encBool := by
   have h : ComputableInPolyTime
       (fun p : LocalOutput × List Bool => p.1.2.any fun β => β == p.2)
-      (encPair encLocalOutput (encList encBool)) encBool := by
-    unfold encLocalOutput
-    fun_prop
+      (encPair encLocalOutput (encList encBool)) encBool := by fun_prop
   exact h.of_enc_eq fun p => by simp only [LocalOutput.evalLocal, list_contains_eq_any]
 
 /-- `LocalMap.cspSem` is computable in polynomial time. -/
@@ -391,14 +389,11 @@ theorem computableInPolyTime_cspSem :
     (bits_encList_polyTime encBool).1.comp (snd LocalMap.encCSPRel encBits)
   have hcontains : ComputableInPolyTime
       (fun p : (List (List Bool) × Bool) × List Bool => p.1.1.any fun β => β == p.2)
-      (encPair LocalMap.encCSPRel encBits) encBool := by
-    apply anyWithInput (by unfold LocalMap.encCSPRel; fun_prop)
-    exact beq (snd _ _) (hbits.comp (fst _ _))
+      (encPair LocalMap.encCSPRel encBits) encBool := by fun_prop
   have hrel : ComputableInPolyTime
       (fun p : (List (List Bool) × Bool) × List Bool =>
         (p.1.1.any fun β => β == p.2) == p.1.2)
-      (encPair LocalMap.encCSPRel encBits) encBool :=
-    beq hcontains ((snd (encList (encList encBool)) encBool).comp (fst LocalMap.encCSPRel encBits))
+      (encPair LocalMap.encCSPRel encBits) encBool := by fun_prop
   exact hrel.of_enc_eq fun p => by simp only [LocalMap.cspSem, list_contains_eq_any]
 
 /-- `LocalOutput.Valid k` is computable in polynomial time. -/
@@ -407,16 +402,13 @@ theorem computableInPolyTime_localOutput_valid (k : ℕ) :
     ComputableInPolyTime (fun p : ℕ × LocalOutput => p.2.Valid k p.1)
       (encPair encUnary encLocalOutput) encBool := by
   have hN : ComputableInPolyTime (fun p : ℕ × LocalOutput => p.1)
-      (encPair encUnary encLocalOutput) encNat :=
-    unary_to_binary.comp (fst encUnary encLocalOutput)
+      (encPair encUnary encLocalOutput) encNat := by fun_prop
   have hlt : ComputableInPolyTime
       (fun q : (ℕ × LocalOutput) × ℕ => decide (q.2 < q.1.1))
-      (encPair (encPair encUnary encLocalOutput) encNat) encBool :=
-    binary_lt.comp ((snd _ _).prod (hN.comp (fst _ _)))
+      (encPair (encPair encUnary encLocalOutput) encNat) encBool := by fun_prop
   have hall : ComputableInPolyTime
       (fun p : ℕ × LocalOutput => p.2.1.all fun v => decide (v < p.1))
-      (encPair encUnary encLocalOutput) encBool :=
-    allWithInput (by unfold encLocalOutput; fun_prop) hlt
+      (encPair encUnary encLocalOutput) encBool := by fun_prop
   unfold LocalOutput.Valid encLocalOutput
   fun_prop
 
@@ -433,19 +425,15 @@ theorem computableInPolyTime_localMap_toCSP :
     ComputableInPolyTime (fun q : LocalMap × List Bool => q.1.toCSP q.2)
       encLocalMapQuery (encCSP LocalMap.encCSPRel encNat) := by
   have hout : ComputableInPolyTime (fun q : LocalMap × List Bool => q.1.2)
-      encLocalMapQuery (encList encLocalOutput) :=
-    (snd encUnary (encList encLocalOutput)).comp (fst encLocalMap encBits)
+      encLocalMapQuery (encList encLocalOutput) := by fun_prop
   have hbits : ComputableInPolyTime (fun q : LocalMap × List Bool => q.2)
       encLocalMapQuery (encList encBool) :=
     (bits_encList_polyTime encBool).1.comp (snd encLocalMap encBits)
   have hzip : ComputableInPolyTime (fun q : LocalMap × List Bool => q.1.2.zip q.2)
-      encLocalMapQuery (encList (encPair encLocalOutput encBool)) :=
-    (computableInPolyTime_zip encLocalOutput encBool).comp (hout.prod hbits)
+      encLocalMapQuery (encList (encPair encLocalOutput encBool)) := by fun_prop
   have hentry : ComputableInPolyTime
       (fun p : LocalOutput × Bool => ((p.1.2, p.2), p.1.1))
-      (encPair encLocalOutput encBool) (encConstraint LocalMap.encCSPRel encNat) := by
-    unfold encLocalOutput encConstraint LocalMap.encCSPRel
-    fun_prop
+      (encPair encLocalOutput encBool) (encConstraint LocalMap.encCSPRel encNat) := by fun_prop
   exact (map hentry).comp hzip
 
 /-- `LocalMap.evalBits` is computable in polynomial time. -/
@@ -495,11 +483,9 @@ open ComputableInPolyTime in
 theorem computableInPolyTime_validQuery (k : ℕ) :
     ComputableInPolyTime (ValidQuery k) encLocalMapQuery encBool := by
   have hval : ComputableInPolyTime (fun q : LocalMap × List Bool => q.1.Valid k)
-      encLocalMapQuery encBool :=
-    (computableInPolyTime_localMap_valid k).comp (fst encLocalMap encBits)
+      encLocalMapQuery encBool := by fun_prop
   have hout : ComputableInPolyTime (fun q : LocalMap × List Bool => q.1.2)
-      encLocalMapQuery (encList encLocalOutput) :=
-    (snd encUnary (encList encLocalOutput)).comp (fst encLocalMap encBits)
+      encLocalMapQuery (encList encLocalOutput) := by fun_prop
   have hlen : ComputableInPolyTime
       (fun q : LocalMap × List Bool => decide (q.2.length = q.1.numOutputs))
       encLocalMapQuery encBool :=
@@ -578,18 +564,14 @@ open ComputableInPolyTime in
 theorem computableInPolyTime_toDeclaredCNF (k : ℕ) :
     ComputableInPolyTime (toDeclaredCNF k) encLocalMapQuery (encPair encUnary encCNF) := by
   have hn : ComputableInPolyTime (fun q : LocalMap × List Bool => q.1.numVars)
-      encLocalMapQuery encUnary :=
-    (fst encUnary (encList encLocalOutput)).comp (fst encLocalMap encBits)
+      encLocalMapQuery encUnary := by fun_prop
   have hcompile : ComputableInPolyTime
       (fun q : LocalMap × List Bool => (q.1.toCSP q.2).toCNFBounded k LocalMap.cspSem)
-      encLocalMapQuery encCNF :=
-    (CSP.computableInPolyTime_toCNFBounded LocalMap.encCSPRel encNat k LocalMap.cspSem
-      computableInPolyTime_cspSem).comp computableInPolyTime_localMap_toCSP
+      encLocalMapQuery encCNF := by fun_prop
   have hcnf : ComputableInPolyTime
       (fun q : LocalMap × List Bool =>
         if ValidQuery k q then (q.1.toCSP q.2).toCNFBounded k LocalMap.cspSem else [[]])
-      encLocalMapQuery encCNF :=
-    (computableInPolyTime_validQuery k).ite hcompile (const [[]])
+      encLocalMapQuery encCNF := by fun_prop
   exact hn.prod hcnf
 
 /-- Polynomial-time reduction from `LocalMapHasPreimage k` to `KSAT k`. -/
@@ -689,8 +671,7 @@ public theorem exists_localMapPreimageCounter_declared (k : ℕ) :
           (((encLocalMapQuery q).length : ℝ) + 1) ^ e) + c) ∧
       (∀ q : LocalMap × List Bool, S q ≤ a * ((encLocalMapQuery q).length + 1) ^ b) := by
   have hvalid : ComputableInPolyTime (fun q : LocalMap × List Bool => q.1.Valid k)
-      encLocalMapQuery encBool :=
-    (computableInPolyTime_localMap_valid k).comp (ComputableInPolyTime.fst encLocalMap encBits)
+      encLocalMapQuery encBool := by fun_prop
   obtain ⟨count, T, S, A, c, e, a, b, hcount, hspec, hT, hS⟩ :=
     exists_counter_of_polyTime_toDeclared k (LocalMap.computableInPolyTime_toDeclaredCNF k) hvalid
       (fun q _ => LocalMap.validDeclaredInput_toDeclaredCNF (le_rfl : k ≤ k) q)
@@ -1003,18 +984,14 @@ open ComputableInPolyTime
 private theorem computableInPolyTime_prefixUnits :
     ComputableInPolyTime prefixUnits encBits encCNF := by
   have hrange : ComputableInPolyTime (fun u : List Bool => List.range u.length)
-      encBits (encList encUnary) :=
-    range.comp length_bits
+      encBits (encList encUnary) := by fun_prop
   have hj : ComputableInPolyTime (fun p : List Bool × ℕ => p.2)
-      (encPair encBits encUnary) encNat :=
-    unary_to_binary.comp (snd encBits encUnary)
+      (encPair encBits encUnary) encNat := by fun_prop
   have hbit : ComputableInPolyTime (fun p : List Bool × ℕ => p.1.getD p.2 false)
-      (encPair encBits encUnary) encBool :=
-    bitsGetD false
+      (encPair encBits encUnary) encBool := by fun_prop
   have hcl : ComputableInPolyTime
       (fun p : List Bool × ℕ => [(p.2, p.1.getD p.2 false)])
-      (encPair encBits encUnary) (encList (encPair encNat encBool)) :=
-    cons' (hj.prod hbit) (const [])
+      (encPair encBits encUnary) (encList (encPair encNat encBool)) := by fun_prop
   exact mapWithInput hrange hcl
 
 private theorem computableInPolyTime_makePreimageQuery :
@@ -1030,8 +1007,7 @@ private theorem computableInPolyTime_makePreimageQuery :
     computableInPolyTime_prefixUnits.comp hu0
   have hphi : ComputableInPolyTime
       (fun st : PreimageSearchState => st.1.2 ++ prefixUnits (st.2 ++ [false]))
-      encPreimageSearchState encCNF :=
-    listAppend' ((snd encUnary encCNF).comp hst1) hunits
+      encPreimageSearchState encCNF := by fun_prop
   exact ((fst encUnary encCNF).comp hst1).prod hphi
 
 private theorem computableInPolyTime_finishPreimageSearch :
@@ -1067,8 +1043,7 @@ private theorem computableInPolyTime_finishPreimageSearch :
       (encPair encPreimageSearchState (encList (encPair encNat encBool))) encBool :=
     anyWithInput (snd _ _) hget
   have hphi : ComputableInPolyTime
-      (fun st : PreimageSearchState => st.1.2) encPreimageSearchState encCNF :=
-    (snd encUnary encCNF).comp (fst _ _)
+      (fun st : PreimageSearchState => st.1.2) encPreimageSearchState encCNF := by fun_prop
   have heval : ComputableInPolyTime
       (fun st : PreimageSearchState =>
         st.1.2.all fun cl => cl.any fun l => (st.2.getD l.1 false) == l.2)
@@ -1110,8 +1085,7 @@ public theorem exists_localMapPreimageFinder_declared (k : ℕ) :
     simp [hspec p, hp, canonicalDeclaredCount]
   -- Step 1: n(q) = q.1.numVars in binary
   have hn_polytime : ComputableInPolyTime (fun q : LocalMap × List Bool => q.1.numVars)
-      encLocalMapQuery encNat :=
-    unary_to_binary.comp ((fst encUnary (encList encLocalOutput)).comp (fst encLocalMap encBits))
+      encLocalMapQuery encNat := by fun_prop
   obtain ⟨dn, _, hdn⟩ := hn_polytime.exists_degree
   have hn : ComputableInO (fun q : LocalMap × List Bool => q.1.numVars)
       encLocalMapQuery encNat
@@ -1121,8 +1095,7 @@ public theorem exists_localMapPreimageFinder_declared (k : ℕ) :
   -- Step 2: init(q) = (toDeclaredCNF k q, [])
   have hinit_polytime : ComputableInPolyTime
       (fun q : LocalMap × List Bool => (toDeclaredCNF k q, ([] : List Bool)))
-      encLocalMapQuery encPreimageSearchState :=
-    (computableInPolyTime_toDeclaredCNF k).prod (const [])
+      encLocalMapQuery encPreimageSearchState := by fun_prop
   obtain ⟨di, _, hdi⟩ := hinit_polytime.exists_degree
   have hinit : ComputableInO
       (fun q : LocalMap × List Bool => (toDeclaredCNF k q, ([] : List Bool)))

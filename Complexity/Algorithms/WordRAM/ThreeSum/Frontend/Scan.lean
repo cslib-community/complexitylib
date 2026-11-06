@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Select
+import Complexity.Computability.WordRAM.MemoryView
 
 /-!
 # Compact native frontend scans
@@ -216,16 +217,8 @@ theorem exec {w : ℕ} (rs : List (ℕ × ℕ)) (x : Data 48)
       exact (he.regs_eq hj).trans (hr j hj)
     · rw [hzi, hsuc, List.length_append, hzo, hout]
       cases k <;> simp
-    · apply hkeys.frame
-      intro a hlo hhi
-      apply hf
-      simp only [List.length_map] at hhi
-      omega
-    · apply hcounts.frame
-      intro a hlo hhi
-      apply hf
-      simp only [List.length_map] at hhi
-      omega
+    · ram_keep hkeys using hf
+    · ram_keep hcounts using hf
     · rw [hzi, hsuc]
       by_cases htake : k = true
       · rw [ite_eq_left htake]

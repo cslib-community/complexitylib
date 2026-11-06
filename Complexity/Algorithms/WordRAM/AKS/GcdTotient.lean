@@ -87,10 +87,8 @@ def time (r : ℕ) : ℕ := (r + 1) * (10 * r + 21) + 7
 /-- The gcd changes only `ga`, `gb` and its scratch registers. -/
 private theorem gcd_regs {w T : ℕ} {x y : Data 11} (h : ExecWithin w gcd x y T) (j : Fin 11)
     (hj : j.val < 7) : y.regs j = x.regs j := by
-  refine h.regs_eq (Code.preserves_rename_of_forall_ne _ _ _ ?_)
-  intro b hb
-  subst hb
-  fin_cases b <;> simp [gcdMap] at hj
+  exact h.regs_eq (Code.preserves_rename_of_offset _ _
+    (by intro i; fin_cases i <;> rfl) j (Or.inl hj))
 
 private theorem gcd_exec {w : ℕ} (x : Data 11) {u v : ℕ} (hu : x.regs ga = u) (hv : x.regs gb = v)
     (hfu : Fits w u) (hfv : Fits w v) :

@@ -16,12 +16,12 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Search
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Probabilistic.CoinTape
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
 import Complexity.Probability.UniformNat
-import Complexity.Tactic.PPT
-import Complexity.Tactic.PolyTime
 
 /-!
 # Converse of Liu–Pass: Average-Case Hardness of $K^t$ Implies One-Way Functions
@@ -200,22 +200,20 @@ theorem liuPassCore_eq_targetImage_iff {t : ℕ → ℕ} {n i : ℕ} {x y : List
 /-! ### Polynomial-time computability of schedule and core -/
 
 private theorem computableTidily_maxComplexity :
-    ComputableTidilyInPolyTime maxComplexity encUnary encUnary := by
-  unfold maxComplexity
-  fun_prop
+    ComputableTidilyInPolyTime maxComplexity encUnary encUnary :=
+  ComputableTidilyInPolyTime.unary_add.comp
+    (ComputableTidilyInPolyTime.id'.prod (ComputableTidilyInPolyTime.const _))
 
 private theorem computableTidily_lenWidth :
-    ComputableTidilyInPolyTime lenWidth encUnary encUnary := by
-  unfold lenWidth
-  have hmax := computableTidily_maxComplexity
-  fun_prop
+    ComputableTidilyInPolyTime lenWidth encUnary encUnary :=
+  ComputableTidilyInPolyTime.unary_add.comp
+    ((ComputableTidilyInPolyTime.unary_log_two.comp computableTidily_maxComplexity).prod
+      (ComputableTidilyInPolyTime.const 1))
 
 private theorem computableTidily_inputSchedule :
-    ComputableTidilyInPolyTime inputSchedule encUnary encUnary := by
-  unfold inputSchedule
-  have hlen := computableTidily_lenWidth
-  have hmax := computableTidily_maxComplexity
-  fun_prop
+    ComputableTidilyInPolyTime inputSchedule encUnary encUnary :=
+  ComputableTidilyInPolyTime.unary_add.comp
+    (computableTidily_lenWidth.prod computableTidily_maxComplexity)
 
 theorem computableInPolyTime_inputSchedule :
     ComputableInPolyTime inputSchedule encUnary encUnary :=
@@ -279,6 +277,18 @@ theorem timeBoundedNat_le_of_liuPassCore_eq_targetImage {t : ℕ → ℕ} {n i :
   refine ⟨decodeProg n x, (length_decodeProg_le n x).trans hdec.le, ?_⟩
   rw [hy, DescriptionMethod.universalTM_runFor, Option.mem_def, hrun]
 
+private theorem timeBoundedNat_le_maxComplexity {t : ℕ → ℕ} {n : ℕ} {y : List Bool}
+    (hy : y.length = n) (ht : n + 1 ≤ t n) :
+    timeBoundedNat t y ≤ maxComplexity n := by
+  have hty : y.length + 1 ≤ t y.length := hy ▸ ht
+  simpa [maxComplexity, hy] using timeBoundedNat_le_length_add hty
+
+private theorem length_binaryWord_timeBoundedNat {t : ℕ → ℕ} {n : ℕ} {y : List Bool}
+    (hy : y.length = n) (ht : n + 1 ≤ t n) :
+    (BitString.binaryWord (lenWidth n) (timeBoundedNat t y)).length = lenWidth n :=
+  BitString.length_binaryWord
+    (lt_of_le_of_lt (timeBoundedNat_le_maxComplexity hy ht) (maxComplexity_lt_two_pow_lenWidth n))
+
 private noncomputable def plant (t : ℕ → ℕ) (ht : ∀ n, n + 1 ≤ t n) (n : ℕ)
     (y : List Bool) : List Bool :=
   if hy : y.length = n then
@@ -292,20 +302,12 @@ private theorem length_plant {t : ℕ → ℕ} (ht : ∀ n, n + 1 ≤ t n) {n : 
     (hy : y.length = n) :
     (plant t ht n y).length = inputSchedule n := by
   subst hy
-  simp only [plant, ↓reduceDIte]
-  have ht_y : y.length + 1 ≤ t y.length := ht y.length
-  have hi_le : timeBoundedNat t y ≤ maxComplexity y.length := by
-    simpa [maxComplexity] using timeBoundedNat_le_length_add ht_y
-  have hi_lt : timeBoundedNat t y < 2 ^ lenWidth y.length :=
-    lt_of_le_of_lt hi_le (maxComplexity_lt_two_pow_lenWidth y.length)
-  have hbw_len :
-      (BitString.binaryWord (lenWidth y.length) (timeBoundedNat t y)).length = lenWidth y.length :=
-    BitString.length_binaryWord hi_lt
-  have hprog_len :
-      (exists_length_eq_timeBoundedNat (timeBounded_ne_top ht_y)).choose.length =
-        timeBoundedNat t y :=
-    (exists_length_eq_timeBoundedNat (timeBounded_ne_top ht_y)).choose_spec.2
-  simp only [List.length_append, hbw_len, hprog_len, List.length_replicate, inputSchedule]
+  have hi_le := timeBoundedNat_le_maxComplexity rfl (ht y.length)
+  have hbw_len := length_binaryWord_timeBoundedNat rfl (ht y.length)
+  have hprog_len :=
+    (exists_length_eq_timeBoundedNat (timeBounded_ne_top (ht y.length))).choose_spec.2
+  simp only [plant, ↓reduceDIte, List.length_append, hbw_len, hprog_len, List.length_replicate,
+    inputSchedule]
   omega
 
 private theorem liuPassCore_plant {t : ℕ → ℕ} (ht : ∀ n, n + 1 ≤ t n) {n : ℕ} {y : List Bool}
@@ -313,16 +315,13 @@ private theorem liuPassCore_plant {t : ℕ → ℕ} (ht : ∀ n, n + 1 ≤ t n) 
     liuPassCore t n (plant t ht n y) = targetImage (timeBoundedNat t y) y := by
   subst hy
   rw [liuPassCore_eq_targetImage_iff]
-  have ht_y : y.length + 1 ≤ t y.length := ht y.length
   set i := timeBoundedNat t y
-  set prog := (exists_length_eq_timeBoundedNat (timeBounded_ne_top ht_y)).choose
-  have hprog_spec := (exists_length_eq_timeBoundedNat (timeBounded_ne_top ht_y)).choose_spec
-  have hi_le : i ≤ maxComplexity y.length := by
-    simpa [i, maxComplexity] using timeBoundedNat_le_length_add ht_y
-  have hi_lt : i < 2 ^ lenWidth y.length :=
-    lt_of_le_of_lt hi_le (maxComplexity_lt_two_pow_lenWidth y.length)
+  set prog := (exists_length_eq_timeBoundedNat (timeBounded_ne_top (ht y.length))).choose
+  have hprog_spec :=
+    (exists_length_eq_timeBoundedNat (timeBounded_ne_top (ht y.length))).choose_spec
+  have hi_le : i ≤ maxComplexity y.length := timeBoundedNat_le_maxComplexity rfl (ht y.length)
   have hbw_len : (BitString.binaryWord (lenWidth y.length) i).length = lenWidth y.length :=
-    BitString.length_binaryWord hi_lt
+    length_binaryWord_timeBoundedNat rfl (ht y.length)
   have hplant_eq : plant t ht y.length y =
       BitString.binaryWord (lenWidth y.length) i ++
         (prog ++ List.replicate (maxComplexity y.length - i) false) := by
@@ -347,25 +346,18 @@ theorem exists_liuPassCore_eq_targetImage_timeBoundedNat {t : ℕ → ℕ} (ht :
 
 private theorem plant_injective (t : ℕ → ℕ) (ht : ∀ n, n + 1 ≤ t n) (n : ℕ) :
     Function.Injective (plant t ht n) := by
+  have hlen_iff (y : List Bool) : (plant t ht n y).length = inputSchedule n ↔ y.length = n :=
+    ⟨fun h => by by_contra hne; simp only [plant, hne, ↓reduceDIte, List.length_append,
+      List.length_replicate] at h; omega, length_plant ht⟩
   intro y₁ y₂ h
+  have hiff : y₁.length = n ↔ y₂.length = n := by rw [← hlen_iff, ← hlen_iff, h]
   by_cases hy₁ : y₁.length = n
-  · by_cases hy₂ : y₂.length = n
-    · have hcore := congrArg (liuPassCore t n) h
-      rw [liuPassCore_plant ht hy₁, liuPassCore_plant ht hy₂, targetImage_inj] at hcore
-      exact hcore.2
-    · exfalso
-      have hlen := congrArg List.length h
-      rw [length_plant ht hy₁] at hlen
-      simp only [plant, hy₂, ↓reduceDIte, List.length_append, List.length_replicate] at hlen
-      omega
-  · by_cases hy₂ : y₂.length = n
-    · exfalso
-      have hlen := congrArg List.length h
-      rw [length_plant ht hy₂] at hlen
-      simp only [plant, hy₁, ↓reduceDIte, List.length_append, List.length_replicate] at hlen
-      omega
-    · simp only [plant, hy₁, hy₂, ↓reduceDIte, List.append_cancel_left_eq] at h
-      exact h
+  · have hy₂ : y₂.length = n := hiff.mp hy₁
+    have hcore := congrArg (liuPassCore t n) h
+    rw [liuPassCore_plant ht hy₁, liuPassCore_plant ht hy₂, targetImage_inj] at hcore
+    exact hcore.2
+  · have hy₂ : y₂.length ≠ n := mt hiff.mpr hy₁
+    simpa only [plant, hy₁, hy₂, ↓reduceDIte, List.append_cancel_left_eq] using h
 
 /-! ### Deterministic heuristic search and PPT reduction -/
 
@@ -392,9 +384,7 @@ private theorem heuristicCand_eq_of_tryComplexity {t : ℕ → ℕ}
     (hy : y.length = n) (ht : n + 1 ≤ t n)
     (htry : tryComplexity t evalA n y coins (timeBoundedNat t y) = true) :
     heuristicCand t evalA y coins = timeBoundedNat t y := by
-  have ht_y : y.length + 1 ≤ t y.length := hy ▸ ht
-  have hi_le : timeBoundedNat t y ≤ maxComplexity n := by
-    simpa [maxComplexity, hy] using timeBoundedNat_le_length_add ht_y
+  have hi_le : timeBoundedNat t y ≤ maxComplexity n := timeBoundedNat_le_maxComplexity hy ht
   set k₀ := maxComplexity n - timeBoundedNat t y
   have hk₀_le : k₀ ≤ maxComplexity n := Nat.sub_le _ _
   have hsub_k₀ : maxComplexity n - k₀ = timeBoundedNat t y := Nat.sub_sub_self hi_le
@@ -449,10 +439,17 @@ private theorem isPPTOn_heuristic {t : ℕ → ℕ}
   have hmax_y : ComputableTidilyInPolyTime
       (fun y : List Bool => maxComplexity y.length) encBits encUnary :=
     computableTidily_maxComplexity.comp hlen_y
-  have hbudget : ComputableTidilyInPolyTime
-      (fun y : List Bool => coinBudget cA dA y.length) encBits encUnary := by
-    unfold coinBudget
-    fun_prop
+  have hlen_c := hlen_y.computableInPolyTime
+  have hmax_c := hmax_y.computableInPolyTime
+  have hbudget : ComputableInPolyTime
+      (fun y : List Bool => coinBudget cA dA y.length) encBits encUnary :=
+    ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const cA)
+      ((ComputableInPolyTime.unary_pow dA).comp
+        (ComputableInPolyTime.unary_add'
+          (ComputableInPolyTime.unary_add'
+            (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 3) hlen_c)
+            (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2) hmax_c))
+          (ComputableInPolyTime.const 5)))
   have hsched := computableTidily_inputSchedule
   have hmax := computableTidily_maxComplexity
   have htry : ComputableTidilyInPolyTime
@@ -507,7 +504,7 @@ private theorem isPPTOn_heuristic {t : ℕ → ℕ}
       (fun p : List Bool × List Bool => heuristicCand t evalA p.1 p.2)
       E2 encNat :=
     ComputableTidilyInPolyTime.unary_to_binary.comp hcand_unary
-  exact IsPPTOn.map_with (ComputableInPolyTime.of_tidy hbudget).sampleList (.of_tidy hcand)
+  exact IsPPTOn.map_with (ComputableInPolyTime.sampleList hbudget) (.of_tidy hcand)
 
 /-! ### Uniform distribution and failure probability bounds -/
 
@@ -541,6 +538,12 @@ private theorem heuristic_fail_mul_le_family_fail {t : ℕ → ℕ} (ht : ∀ n,
     have h1 := congrArg List.ofFn h
     rw [hplantBS_ofFn, hplantBS_ofFn] at h1
     exact List.ofFn_inj.mp (plant_injective t ht n h1)
+  have hunif_bind_apply {α : Type} (m : ℕ) (P : List Bool → PMF α) (a : α) :
+      ((BitString.uniformList m).bind P) a =
+        ∑ x : BitString m, (2 ^ m : ENNReal)⁻¹ * P (List.ofFn x) a := by
+    simp only [BitString.uniformList, PMF.bind_map, PMF.bind_apply, tsum_fintype,
+      PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
+      Nat.cast_pow, Nat.cast_ofNat, Function.comp_def]
   have hgame :
       (ProbComp.eval
         (OneWayReindex.familyInversionGame inputSchedule (liuPassCore t) A n)) false =
@@ -555,19 +558,8 @@ private theorem heuristic_fail_mul_le_family_fail {t : ℕ → ℕ} (ht : ∀ n,
       unfold OneWayReindex.familyInversionGame
       simp only [ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure, PMF.map,
         Function.comp_def]
-    rw [h1]
-    simp only [BitString.uniformList, PMF.bind_map, PMF.bind_apply, tsum_fintype,
-      PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
-      Nat.cast_pow, Nat.cast_ofNat, Function.comp_def, failA]
-  have hH_sum :
-      (((BitString.uniformList n).bind fun y =>
-        (BitString.uniformList B).map fun coins =>
-          decide (heuristicCand t evalA y coins = timeBoundedNat t y)) false) =
-        ∑ y : BitString n, (2 ^ n : ENNReal)⁻¹ * failH (List.ofFn y) := by
-    simp only [BitString.uniformList, PMF.bind_map, PMF.bind_apply, tsum_fintype,
-      PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
-      Nat.cast_pow, Nat.cast_ofNat, Function.comp_def, failH]
-  rw [hgame, hH_sum, Finset.mul_sum]
+    rw [h1, hunif_bind_apply]
+  rw [hgame, hunif_bind_apply, Finset.mul_sum]
   have hsched_eq : inputSchedule n = (lenWidth n + Kolmogorov.copyOverhead) + n := by
     dsimp [inputSchedule, maxComplexity]
     omega
@@ -584,10 +576,8 @@ private theorem heuristic_fail_mul_le_family_fail {t : ℕ → ℕ} (ht : ∀ n,
     rw [← mul_assoc, hpow_inv]
     gcongr
     have hy : (List.ofFn y).length = n := List.length_ofFn
-    have ht_y : (List.ofFn y).length + 1 ≤ t (List.ofFn y).length := by
-      simpa [hy] using ht n
-    have hi_le : timeBoundedNat t (List.ofFn y) ≤ maxComplexity n := by
-      simpa [maxComplexity, hy] using timeBoundedNat_le_length_add ht_y
+    have hi_le : timeBoundedNat t (List.ofFn y) ≤ maxComplexity n :=
+      timeBoundedNat_le_maxComplexity hy (ht n)
     have hcore_p :
         liuPassCore t n (List.ofFn (plantBS y)) =
           targetImage (timeBoundedNat t (List.ofFn y)) (List.ofFn y) := by
@@ -693,7 +683,7 @@ theorem weakOneWay_reindex_liuPassCore
     intro y hy
     have hlen : y.length = n := BitString.length_of_mem_support_uniformList hy
     simp [hlen, B, PMF.map, Function.comp_def]
-  rw [hdistH_eq] at hn_H
+  rw [PMF.monad_bind_eq_bind, hdistH_eq] at hn_H
   have hsumH := PMF.toReal_true_add_toReal_false distH
   have hsumA := PMF.toReal_true_add_toReal_false distA
   have hfailH_ge : 1 / ((p.eval n : ℕ) : ℝ) ≤ (distH false).toReal := by linarith
@@ -809,9 +799,9 @@ on average against uniform strict PPT heuristics, then there exists a strong one
 theorem exists_oneWay_of_exists_mildlyHardOnAverage_timeBoundedNat
     (h : ∃ t : Polynomial ℕ, (∀ n, n + 1 ≤ t.eval n) ∧
       MildlyHardOnAverage (timeBoundedNat (fun n => t.eval n))) :
-    ∃ F : List Bool → List Bool, OneWay F := by
-  obtain ⟨t, ht, hK⟩ := h
-  exact exists_oneWay_of_mildlyHardOnAverage_timeBoundedNat
+    ∃ F : List Bool → List Bool, OneWay F :=
+  let ⟨t, ht, hK⟩ := h
+  exists_oneWay_of_mildlyHardOnAverage_timeBoundedNat
     (.of_tidy (ComputableTidilyInPolyTime.unary_eval t)) ht hK
 
 /-- **`ℕ∞`-valued `Kolmogorov.timeBounded` existential form of Theorem 3.1 (b) $\Rightarrow$
@@ -819,9 +809,9 @@ theorem exists_oneWay_of_exists_mildlyHardOnAverage_timeBoundedNat
 theorem exists_oneWay_of_exists_mildlyHardOnAverageENat_timeBounded
     (h : ∃ t : Polynomial ℕ, (∀ n, n + 1 ≤ t.eval n) ∧
       MildlyHardOnAverageENat (timeBounded (fun n => t.eval n))) :
-    ∃ F : List Bool → List Bool, OneWay F := by
-  obtain ⟨t, ht, hK⟩ := h
-  exact exists_oneWay_of_mildlyHardOnAverageENat_timeBounded
+    ∃ F : List Bool → List Bool, OneWay F :=
+  let ⟨t, ht, hK⟩ := h
+  exists_oneWay_of_mildlyHardOnAverageENat_timeBounded
     (.of_tidy (ComputableTidilyInPolyTime.unary_eval t)) ht hK
 
 end Cslib.Crypto

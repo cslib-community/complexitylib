@@ -8,14 +8,17 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.IndexedSignature
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Probabilistic.Oracle.Substitution
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Languages.Probabilistic.Oracle.Support
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Counter-stateful signatures from indexed signatures
@@ -142,6 +145,31 @@ theorem counterVerify_of_mem_support_counterSigningOracle (n : ℕ) (keys : List
 
 /-! ### Efficiency of the game -/
 
+private theorem computableInPolyTime_capacity_comp {γ : Type} {encIn : γ ↪ List Bool}
+    {n : γ → ℕ} (hn : ComputableInPolyTime n encIn encUnary) :
+    ComputableInPolyTime (fun a => S.capacity (n a)) encIn encUnary :=
+  S.capacity_polyTime.comp hn
+
+private theorem computableInPolyTime_verify_comp {γ : Type} {encIn : γ ↪ List Bool}
+    {pk : γ → List Bool} {u : γ → ℕ} {msg sig : γ → List Bool}
+    (hpk : ComputableInPolyTime pk encIn encBits)
+    (hu : ComputableInPolyTime u encIn encUnary)
+    (hmsg : ComputableInPolyTime msg encIn encBits)
+    (hsig : ComputableInPolyTime sig encIn encBits) :
+    ComputableInPolyTime (fun a => S.verify (pk a) (u a) (msg a) (sig a)) encIn encBool :=
+  S.verify_polyTime.comp (hpk.prod (hu.prod (hmsg.prod hsig)))
+
+private theorem computableInPolyTime_decode_requestDecoder {γ : Type} {encIn : γ ↪ List Bool}
+    {w : γ → List Bool} (hw : ComputableInPolyTime w encIn encBits) :
+    ComputableInPolyTime (fun a => requestDecoder.decode (w a))
+      encIn (encPair encUnary encBits) :=
+  requestDecoder.computableInPolyTime.comp hw
+
+attribute [local fun_prop]
+  computableInPolyTime_capacity_comp
+  computableInPolyTime_verify_comp
+  computableInPolyTime_decode_requestDecoder
+
 /-- Running an oracle-PPT forger against `counterSigningOracle` is uniformly strict PPT in the
 unary security parameter, the public key and the secret key. -/
 @[program_certificate]
@@ -155,7 +183,6 @@ theorem isPPTOn_run_counterSigningOracle {adversary : Forger}
             (S.counterSigningOracle caller.1 caller.2.2)) (adversary caller.1 caller.2.1)).run
           (0, [])) := by
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
-  have hcap := S.capacity_polyTime
   have hhandler : IsPPTOn
       (encPair (encPair encUnary (encPair encBits encBits))
         (encPair (encPair (encFinEnum Unit) encBits) (encPair encUnary (encList encBits))))
@@ -164,29 +191,20 @@ theorem isPPTOn_run_counterSigningOracle {adversary : Forger}
           ((Unit × List Bool) × (ℕ × List (List Bool))) =>
         S.counterSigningOracle pair.1.1 pair.1.2.2 pair.2.1 pair.2.2) := by
     unfold counterSigningOracle
-    apply IsPPTOn.ite
-    · polytime
-    · refine (S.sign_ppt.preprocess (prepare := fun pair :
+    refine IsPPTOn.ite' (by fun_prop)
+      ((S.sign_ppt.preprocess (prepare := fun pair :
           (ℕ × (List Bool × List Bool)) × ((Unit × List Bool) × (ℕ × List (List Bool))) =>
-          (pair.1.2.2, pair.2.2.1, pair.2.1.2)) ?_).bind_with ?_
-      · polytime
-      · apply ComputableInPolyTime.isPPTOn
-        polytime
-    · ppt
-  have hresources : ComputableInPolyTime
-      (fun pair : (ℕ × (List Bool × List Bool)) × List Bool =>
-        c * (2 * pair.1.2.2.length + 2 * S.capacity pair.1.1 + pair.2.length + 3) ^ d +
-          2 * S.capacity pair.1.1 + 2 * pair.2.length + 4)
-      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary := by
-    polytime
+          (pair.1.2.2, pair.2.2.1, pair.2.1.2)) (by fun_prop)).bind_with
+        (ComputableInPolyTime.isPPTOn (by fun_prop)))
+      (ComputableInPolyTime.isPPTOn (by fun_prop))
   apply hadversary.run_interpret_preprocess
     (prepare := fun caller : ℕ × (List Bool × List Bool) => (caller.1, caller.2.1))
     (initial := fun _ => ((0, []) : ℕ × List (List Bool)))
     (resources := fun caller query =>
       c * (2 * caller.2.2.length + 2 * S.capacity caller.1 + query.length + 3) ^ d +
         2 * S.capacity caller.1 + 2 * query.length + 4)
-    (by fun_prop) hhandler (by fun_prop)
-    (fun _ _ => True) (fun _ => trivial) hresources.tidy
+    (ComputableInPolyTime.tidy (by fun_prop)) hhandler (ComputableTidilyInPolyTime.const (0, []))
+    (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.tidy (by fun_prop))
   intro caller request state _ result hresult
   obtain ⟨j, signed⟩ := state
   unfold counterSigningOracle at hresult
@@ -215,19 +233,12 @@ for every oracle-PPT forger. -/
 @[program_certificate]
 theorem isPPTOn_counterEufCmaGame {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    IsPPTOn encUnary encBool (S.counterEufCmaGame adversary) := by
-  have hrun := S.isPPTOn_run_counterSigningOracle hadversary
-  have hverify := S.verify_polyTime
-  have hdecode := requestDecoder.computableInPolyTime
-  have hpost : ComputableInPolyTime
-      (fun pair : (ℕ × (List Bool × List Bool)) ×
-          ((List Bool × List Bool) × (ℕ × List (List Bool))) =>
-        !pair.2.2.2.contains pair.2.1.1 && S.counterVerify pair.1.2.1 pair.2.1.1 pair.2.1.2)
-      (encPair (encPair encUnary (encPair encBits encBits))
-        (encPair (encPair encBits encBits) (encPair encUnary (encList encBits)))) encBool := by
-    unfold counterVerify
-    polytime
-  exact S.keyGen_ppt.bind_with (hrun.bind_with hpost.isPPTOn)
+    IsPPTOn encUnary encBool (S.counterEufCmaGame adversary) :=
+  S.keyGen_ppt.bind_with ((S.isPPTOn_run_counterSigningOracle hadversary).bind_with
+    (ComputableInPolyTime.isPPTOn (by
+      unfold counterVerify
+      simp only [List.contains_eq_mem]
+      fun_prop)))
 
 /-! ### The security predicate -/
 
@@ -434,6 +445,16 @@ theorem succProbability_counterEufCmaGame_le {bound : ℕ → ℕ → ℕ} {n : 
 
 /-! ### Efficiency of the reduction -/
 
+/-- Compose a two-argument unary polynomial-time bound with two unary selectors. -/
+private theorem computableInPolyTime_bound_comp {γ : Type} {encIn : γ ↪ List Bool}
+    {bound : ℕ → ℕ → ℕ} {u v : γ → ℕ}
+    (hbound : ComputableInPolyTime (fun p : ℕ × ℕ => bound p.1 p.2)
+      (encPair encUnary encUnary) encUnary)
+    (hu : ComputableInPolyTime u encIn encUnary)
+    (hv : ComputableInPolyTime v encIn encUnary) :
+    ComputableInPolyTime (fun x => bound (u x) (v x)) encIn encUnary :=
+  hbound.comp (hu.prod hv)
+
 /-- `counterHandler` is strict oracle PPT in the caller `(n, pk)`, the request and the counter,
 for every polynomial-time bound. -/
 private theorem isOraclePPTOn_counterHandler {bound : ℕ → ℕ → ℕ}
@@ -444,28 +465,12 @@ private theorem isOraclePPTOn_counterHandler {bound : ℕ → ℕ → ℕ}
       (encPair encBits encUnary)
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × ℕ) =>
         S.counterHandler pair.1.1 bound pair.2.1 pair.2.2) := by
-  have hcap := S.capacity_polyTime
-  have hb : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × ℕ) => bound pair.1.1 pair.2.1.2.length)
-      (encPair (encPair encUnary encBits) (encPair (encPair (encFinEnum Unit) encBits) encUnary))
-      encUnary :=
-    hboundPoly.comp (g := fun pair : (ℕ × List Bool) × ((Unit × List Bool) × ℕ) =>
-      (pair.1.1, pair.2.1.2.length)) (by polytime)
-  have heq : (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × ℕ) =>
-      S.counterHandler pair.1.1 bound pair.2.1 pair.2.2) =
-    fun pair => if pair.2.2 < S.capacity pair.1.1 then
-      (fun sig => (encPair encUnary encBits (pair.2.2, sig), pair.2.2 + 1)) <$>
-        (List.take (bound pair.1.1 pair.2.1.2.length) <$>
-          ProbOracleComp.query ((), encPair encUnary encBits (pair.2.2, pair.2.1.2)))
-    else
-      pure ([], pair.2.2) := rfl
-  rw [heq]
-  refine IsOraclePPTOn.ite' ?_ ?_ ?_
-  · polytime
-  · refine (IsOraclePPTOn.query_take' () ?_ hb).map_with' ?_
-    · polytime
-    · polytime
-  · exact ComputableInPolyTime.isOraclePPTOn (by polytime)
+  unfold counterHandler
+  exact IsOraclePPTOn.ite' (by fun_prop)
+    ((IsOraclePPTOn.query_take' () (by fun_prop)
+      (computableInPolyTime_bound_comp hboundPoly (by fun_prop) (by fun_prop))).map_with'
+      (by fun_prop))
+    (ComputableInPolyTime.isOraclePPTOn (by fun_prop))
 
 /-- The counter handler's reply and counter growth are bounded by the truncation bound and the
 capacity, whatever the external oracle answers. -/
@@ -494,42 +499,18 @@ theorem isOraclePPT_counterForger {bound : ℕ → ℕ → ℕ}
       (encPair encUnary encUnary) encUnary)
     {adversary : Forger} (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsOraclePPT (encPair encUnary (encPair encBits encBits)) (S.counterForger bound adversary) := by
-  have hcap := S.capacity_polyTime
-  have hb : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool) × List Bool => bound pair.1.1 pair.2.length)
-      (encPair (encPair encUnary encBits) encBits) encUnary :=
-    hboundPoly.comp (g := fun pair : (ℕ × List Bool) × List Bool => (pair.1.1, pair.2.length))
-      (by polytime)
-  have hresources : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool) × List Bool =>
-        bound pair.1.1 pair.2.length + 2 * S.capacity pair.1.1 + 1)
-      (encPair (encPair encUnary encBits) encBits) encUnary := by
-    polytime
-  have hrun : IsOraclePPTOn (encPair encUnary encBits)
-      (encPair (encPair encBits encBits) encUnary)
-      (fun c : ℕ × List Bool =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler
-            (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
-            (S.counterHandler c.1 bound)) (adversary c.1 c.2)).run 0) :=
-    hadversary.run_interpret_preprocess_open' (prepare := fun c => c)
+  have hb := computableInPolyTime_bound_comp
+    (encIn := encPair (encPair encUnary encBits) encBits)
+    (u := fun pair => pair.1.1) (v := fun pair => pair.2.length)
+    hboundPoly (by fun_prop) (by fun_prop)
+  refine ((hadversary.run_interpret_preprocess_open' (prepare := fun c => c)
       (initial := fun _ => (0 : ℕ))
       (resources := fun c w => bound c.1 w.length + 2 * S.capacity c.1 + 1)
       ComputableInPolyTime.id' (isOraclePPTOn_counterHandler hboundPoly)
-      (ComputableInPolyTime.const 0) (fun _ _ => True) (fun _ => trivial) hresources
-      (fun c request j _ result hresult => ⟨trivial, counterHandler_bound c request j hresult⟩)
-  have hdecode := requestDecoder.computableInPolyTime
-  have hpost : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × ℕ) =>
-        ((requestDecoder.decode pair.2.1.2).1, pair.2.1.1, (requestDecoder.decode pair.2.1.2).2))
-      (encPair (encPair encUnary encBits) (encPair (encPair encBits encBits) encUnary))
-      (encPair encUnary (encPair encBits encBits)) := by
-    polytime
-  exact hrun.bind_with
-    (second := fun (_ : ℕ × List Bool) (out : (List Bool × List Bool) × ℕ) =>
-      (pure ((requestDecoder.decode out.1.2).1, out.1.1, (requestDecoder.decode out.1.2).2) :
-        WordOracleComp Unit (ℕ × List Bool × List Bool)))
-    (hpost.isOraclePPTOn (Operation := Unit))
+      (ComputableInPolyTime.const 0) (fun _ _ => True) (fun _ => trivial) (by fun_prop)
+      (fun c request j _ result hresult =>
+        ⟨trivial, counterHandler_bound c request j hresult⟩)).bind
+    ((ComputableInPolyTime.isOraclePPTOn (Operation := Unit)) (by fun_prop))).isOraclePPT
 
 /-! ### Security -/
 
@@ -540,13 +521,12 @@ counter. The reduction is `counterForger`, with loss `1`
 theorem IndexedEUFCMA.counterEUFCMA (h : S.IndexedEUFCMA) : S.CounterEUFCMA := by
   obtain ⟨ck, dk, hlenk⟩ := S.keyGen_ppt.length_le
   obtain ⟨cs, ds, hlens⟩ := S.sign_ppt.length_le
-  have hcap := S.capacity_polyTime
   obtain ⟨bound, hboundPoly, hbound⟩ : ∃ bound : ℕ → ℕ → ℕ,
       ComputableInPolyTime (fun p : ℕ × ℕ => bound p.1 p.2) (encPair encUnary encUnary) encUnary ∧
       ∀ n, ∀ x ∈ (ProbComp.eval (S.keyGen n)).support, ∀ j < S.capacity n, ∀ msg,
         ∀ σ ∈ (ProbComp.eval (S.sign x.2 j msg)).support, σ.length ≤ bound n msg.length := by
     refine ⟨fun n L => cs * (2 * (ck * (n + 1) ^ dk) + 2 * S.capacity n + L + 3) ^ ds,
-      by polytime, fun n x hx j hj msg σ hσ => ?_⟩
+      by fun_prop, fun n x hx j hj msg σ hσ => ?_⟩
     have hkeyLen := hlenk n x hx
     simp only [encUnary_apply, List.length_replicate, length_encPair, encBits_apply] at hkeyLen
     have hσLen := hlens (x.2, j, msg) σ hσ

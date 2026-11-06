@@ -33,17 +33,18 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.ParameterSelecting
 open Cslib.Algorithms.ExactTriangle
 
 -- Normalize only the existing fixed fast-threshold numeral while transporting its bound.
-set_option exponentiation.threshold 1296 in
+set_option exponentiation.threshold 2394 in
 /-- A single coefficient and dimension threshold per weight exponent bound the actual
 Host.Callee time field, uniformly before every admitted original magnitude. -/
 theorem exists_time_subcubic_bound {κ : ℕ} (hκ : 1 ≤ κ) :
-    ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, 2 ^ 1296 ≤ N ∧
+    ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, 2 ^ 2394 ≤ N ∧
       ∀ n ≥ N, ∀ F ≤ (n + 2) ^ κ,
-        (callee.time n F : ℝ) ≤ C * (n : ℝ) ^ (3 - 1 / 1296 : ℝ) := by
+        (callee.time n F : ℝ) ≤ C * (n : ℝ) ^ (3 - 33 / 20000 : ℝ) := by
   obtain ⟨C, hC, N, hN, ht⟩ := CallableFixedPrime.exists_dyadicTime_subcubic_bound hκ
   refine ⟨C, hC, N, hN, ?_⟩
   intro n hn F hF
-  rw [callee_time, callerTime, ite_eq_left ((ParameterChoice.blocks_pos_iff n).mpr (hN.trans hn))]
+  have hfast := (ParameterChoice.blocks_pos_iff n).mpr (hN.trans hn)
+  rw [callee_time, callerTime, ite_eq_left hfast]
   exact ht n hn F hF
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.ParameterSelecting

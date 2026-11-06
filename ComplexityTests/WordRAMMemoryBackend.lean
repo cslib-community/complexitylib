@@ -18,6 +18,18 @@ namespace ComplexityTests.WordRAMMemoryBackend
 
 open MemoryBackend
 
+-- These equalities compute from the supplied data through the generic backend. They could not
+-- follow from the classically selected witness of an otherwise identical existential proof.
+example : Backend.registers certificates = 7 := registers_eq
+
+example : Backend.factor certificates = 4 := factor_eq
+
+example (a : ℕ) : body (.read a) =
+    .op (.load ⟨3, by rw [registers_eq]; decide⟩ ⟨1, by rw [registers_eq]; decide⟩) := rfl
+
+example (a v : ℕ) : body (.write a v) =
+    .op (.store ⟨1, by rw [registers_eq]; decide⟩ ⟨2, by rw [registers_eq]; decide⟩) := rfl
+
 -- The backend plugs into the existing semantic module projection without changing that API.
 noncomputable example {D : StateTransitionSpec} (w : ℕ)
     (M : DataStructure.Module D (Memory.spec w)) :
@@ -58,7 +70,7 @@ private theorem initial_valid :
 -- cells as well as the frontier, and exposes the actual three native instruction-count traces.
 example : ∃ y ts, DataStructure.Executes (exec 4) client initial 7 y ts ∧
     (memoryState frontier y).frontier = 5 ∧ y.mem 3 = 7 ∧ y.mem 10 = 9 ∧
-    DataStructure.total id ts ≤ factor * 8 := by
+    DataStructure.total id ts ≤ 32 := by
   have hr := (rep_iff 4 _ initial).mpr ⟨rfl, initial_bounded⟩
   obtain ⟨y, ts, he, hy⟩ := (implementation 4).exists_executes client hr initial_valid
   have hb := DataStructure.Bound.client (instruction_bound 4) hr initial_valid he
@@ -71,6 +83,7 @@ example : ∃ y ts, DataStructure.Executes (exec 4) client initial 7 y ts ∧
     simpa [StateTransitionSpec.clientState, StateTransitionSpec.runClient, client,
       Memory.step, memoryState, initial, clear, Block.Owns] using hc
   · change DataStructure.total id ts ≤ factor * 4 + (factor * 2 + (factor * 2 + 0)) at hb
+    rw [factor_eq] at hb
     omega
 
 private noncomputable def zeroState : Data registers := ⟨fun _ => 0, fun _ => 0⟩

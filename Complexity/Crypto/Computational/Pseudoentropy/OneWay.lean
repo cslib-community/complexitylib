@@ -59,8 +59,8 @@ theorem precision_three_ge {n : ℕ} (hn : 8 ≤ n) :
   have hcount := hashCount_le n
   have hsquare : 9 ^ 2 ≤ (n + 1) ^ 2 := Nat.pow_le_pow_left (by lia) 2
   have hcube := Nat.mul_le_mul_right (n + 1) hsquare
-  simp only [precision, pow_succ] at *
-  nlinarith
+  simp only [precision, pow_succ, pow_zero, one_mul] at hcube ⊢
+  omega
 
 /-- A polynomially bounded advice family costs only a polynomial factor in the clock: a budget
 polynomial in the advice-carrying encoding is dominated by one polynomial in the encoding of the
@@ -74,17 +74,16 @@ private theorem exists_advice_budget_le {advice : ℕ → List Bool}
   refine ⟨c * (2 * C + 4) ^ d, (D + 1) * d, fun n word => ?_⟩
   simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
   set L := 2 * n + 1 + word.length + 1 with hL
-  have hL1 : 1 ≤ L := by omega
-  have hnL : n + 1 ≤ L := by omega
-  have hpow : (n + 1) ^ D ≤ L ^ D := Nat.pow_le_pow_left hnL D
-  have hLD : L ≤ L ^ (D + 1) := by
-    calc L = L ^ 1 := (pow_one L).symm
-      _ ≤ L ^ (D + 1) := Nat.pow_le_pow_right hL1 (by omega)
-  have hLD' : L ^ D ≤ L ^ (D + 1) := Nat.pow_le_pow_right hL1 (by omega)
+  have hLD : L ≤ L ^ (D + 1) := Nat.le_self_pow (Nat.succ_ne_zero D) L
+  have hCL : C * (n + 1) ^ D ≤ C * L ^ (D + 1) :=
+    Nat.mul_le_mul_left C
+      ((Nat.pow_le_pow_left (by omega) D).trans (Nat.pow_le_pow_right (by omega) (Nat.le_succ D)))
+  have hC1 : C ≤ C * L ^ (D + 1) := Nat.le_mul_of_pos_right C (by omega)
   have hbase : 2 * (2 * n + 1 + (advice n).length) + 1 + word.length + 1 ≤
       (2 * C + 4) * L ^ (D + 1) := by
     have := hC n
-    nlinarith
+    rw [add_mul, mul_assoc]
+    omega
   calc c * (2 * (2 * n + 1 + (advice n).length) + 1 + word.length + 1) ^ d
       ≤ c * ((2 * C + 4) * L ^ (D + 1)) ^ d := Nat.mul_le_mul_left c (Nat.pow_le_pow_left hbase d)
     _ = c * (2 * C + 4) ^ d * L ^ ((D + 1) * d) := by rw [mul_pow, ← pow_mul, mul_assoc]
@@ -113,16 +112,12 @@ theorem eventually_prediction_entropy_le_withAdvice {f : List Bool → List Bool
   -- The inverter captures the advice word from its own input.
   let advisedEvaluate : (ℕ × List Bool) × List Bool → (ℕ × List Bool) → List Bool → Bool :=
     fun ((_, word), _) (m, observation) coins => evaluate ((m, word), observation) coins
-  have hevaluate : ComputableInPolyTime
-      (fun ((a, observation), tape) => advisedEvaluate a observation tape)
-      (encPair (encPair (encPair (encPair encUnary encBits) encBits) (encPair encUnary encBits))
-        encBits) encBool :=
-    hefficient.comp (show ComputableInPolyTime
-      (fun ((((_, word), _), (m, observation)), tape) => (((m, word), observation), tape) :
-        (((ℕ × List Bool) × List Bool) × (ℕ × List Bool)) × List Bool →
-          ((ℕ × List Bool) × List Bool) × List Bool)
-      (encPair (encPair (encPair (encPair encUnary encBits) encBits) (encPair encUnary encBits))
-        encBits) (encPair (encPair (encPair encUnary encBits) encBits) encBits) by fun_prop)
+  have hevaluate := hefficient.comp (show ComputableInPolyTime
+    (fun ((((_, word), _), (m, observation)), tape) => (((m, word), observation), tape) :
+      (((ℕ × List Bool) × List Bool) × (ℕ × List Bool)) × List Bool →
+        ((ℕ × List Bool) × List Bool) × List Bool)
+    (encPair (encPair (encPair (encPair encUnary encBits) encBits) (encPair encUnary encBits))
+      encBits) (encPair (encPair (encPair encUnary encBits) encBits) encBits) by fun_prop)
   have hinverter := isPPTOn_wordInverter (evaluate := advisedEvaluate)
     (parameter := fun ((n, _), _) => n) (image := fun ((_, _), image) => image) hf hevaluate
     (by fun_prop) (by fun_prop) c' d' 3
@@ -144,14 +139,12 @@ theorem eventually_prediction_entropy_le_withAdvice {f : List Bool → List Bool
     (fun (m, word) coins => evaluate ((m, advice m), word) coins) c' d'
     (fun m word budget hle => hrealize ((m, advice m), word) budget ((hbudget m word).trans hle))
     3 (precision_three_ge hn)
-  have htwo : (2 : ℝ) / hashCount n = 2 * (1 / (hashCount n : ℝ)) := by ring
-  rw [htwo] at h
   have hsame : Pr[inversionGame f (wordInverter f
       (fun (m, word) coins => evaluate ((m, advice m), word) coins) c' d' 3) n] =
       Pr[inversionGame f (fun n image =>
         wordInverter f (advisedEvaluate ((n, advice n), image)) c' d' 3 n image) n] := rfl
-  rw [hsame] at h
-  linarith
+  rw [div_eq_mul_one_div (2 : ℝ), hsame] at h
+  linarith only [h, hsmall]
 
 /-- The finite entropy threshold holds eventually against every uniform PPT word predictor.
 The image may have any fixed width at each parameter; it need not be a permutation or regular.
@@ -166,12 +159,17 @@ theorem eventually_prediction_entropy_le {f : List Bool → List Bool} (hf : One
       1 - PMF.conditionalEntropy (joint (count := hashCount n) (finiteFunction n)) -
         1 / (hashCount n : ℝ) := by
   obtain ⟨hpoly, hhard⟩ := oneWay_iff_inversionHardWithAdvice_nil.mp hf
-  have hprepare : ComputableInPolyTime
-      (fun ((n, _), word) => (n, word) : (ℕ × List Bool) × List Bool → ℕ × List Bool)
-      (encPair (encPair encUnary encBits) encBits) (encPair encUnary encBits) := by fun_prop
-  exact eventually_prediction_entropy_le_withAdvice hpoly hhard (PolynomiallyBounded.const 0)
-    finiteFunction encodeImage hencode imageLength hlength
-    (fun ((n, _), word) => adversary n word) (hPPT.on.preprocess hprepare)
+  have h := eventually_prediction_entropy_le_withAdvice hpoly hhard
+    (PolynomiallyBounded.const 0) finiteFunction encodeImage hencode imageLength hlength
+    (fun a => adversary a.1.1 a.2)
+    (hPPT.on.preprocess
+      ((ComputableInPolyTime.fst (encPair encUnary encBits) encBits).fst'.prod (.snd _ _)))
+  have hsame (n : ℕ) :
+      predictionGame (sample f)
+        (fun n word => (fun a : (ℕ × List Bool) × List Bool => adversary a.1.1 a.2)
+          ((n, ([] : List Bool)), word)) n =
+      predictionGame (sample f) adversary n := rfl
+  simpa only [hsame] using h
 
 /-- A function whose inversion is hard with a polynomially bounded advice family, and which has a
 fixed image width at each parameter, gives a samplable pair whose gap holds against predictors with
@@ -218,8 +216,8 @@ private theorem exists_pseudoentropyPair_of_fixedOutputLength {g : List Bool →
   let encodeImage (n : ℕ) : BitString (length n) ↪ List Bool :=
     ⟨List.ofFn, fun _ _ h => List.ofFn_inj.mp h⟩
   have hencode (n : ℕ) (x : BitString n) :
-      g (List.ofFn x) = encodeImage n (finiteFunction n x) := by
-    exact (ofFn_ofList (by simp [hlength])).symm
+      g (List.ofFn x) = encodeImage n (finiteFunction n x) :=
+    (ofFn_ofList (by simp [hlength])).symm
   refine ⟨HashPair.pair g hg finiteFunction encodeImage hencode, fun advice hhard hadvice =>
     (HashPair.pair_hasGapWithAdvice hg hhard hadvice finiteFunction encodeImage hencode length
       (fun _ _ => List.length_ofFn)).mono (fun n => ?_)⟩

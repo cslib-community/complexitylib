@@ -439,13 +439,7 @@ theorem computableInPolyTime_peval {p : α → ℕ} {fl z : α → List ℕ} {P 
   have hstep : ComputableInPolyTime
       (fun q : (α × List ℕ) × List ℕ => add (p q.1.1) (fl q.1.1) q.2 (mul (p q.1.1) (fl q.1.1)
         (z q.1.1) q.1.2)) (encPair (encPair encIn (encList encNat)) (encList encNat))
-      (encList encNat) := by
-    have hq := ComputableInPolyTime.fst (encPair encIn (encList encNat)) (encList encNat)
-    have ha := (ComputableInPolyTime.fst encIn (encList encNat)).comp hq
-    have hacc := (ComputableInPolyTime.snd encIn (encList encNat)).comp hq
-    have hc := ComputableInPolyTime.snd (encPair encIn (encList encNat)) (encList encNat)
-    exact computableInPolyTime_add (hp.comp ha) (hfl.comp ha) hc
-      (computableInPolyTime_mul (hp.comp ha) (hfl.comp ha) (hz.comp ha) hacc)
+      (encList encNat) := by fun_prop
   have hzero : ComputableInPolyTime (fun x => zero (fl x)) encIn (encList encNat) :=
     computableInPolyTime_tabulate (g := fun _ _ => 0) (lengthPolyTime hfl)
       (ComputableInPolyTime.const 0)
@@ -472,15 +466,7 @@ theorem computableInPolyTime_basisNum {p : α → ℕ} {fl : α → List ℕ} {v
   have hstep : ComputableInPolyTime
       (fun q : (α × List (List ℕ)) × ℕ => if q.2 = i q.1.1 then q.1.2
         else pmulLinear (p q.1.1) (fl q.1.1) ((v q.1.1).getD q.2 []) q.1.2)
-      (encPair (encPair encIn encS) encUnary) encS := by
-    have hq := ComputableInPolyTime.fst (encPair encIn encS) encUnary
-    have ha := (ComputableInPolyTime.fst encIn encS).comp hq
-    have hP := (ComputableInPolyTime.snd encIn encS).comp hq
-    have hj := ComputableInPolyTime.snd (encPair encIn encS) encUnary
-    refine (ComputableInPolyTime.ite (ComputableInPolyTime.beq hj (hi.comp ha)) hP
-      (computableInPolyTime_pmulLinear (hp.comp ha) (hfl.comp ha) (getDPolyTime (hv.comp ha) hj)
-        hP)).of_enc_eq fun q => ?_
-    by_cases h : q.2 = i q.1.1 <;> simp [h]
+      (encPair (encPair encIn encS) encUnary) encS := by fun_prop
   have hfold := ComputableInPolyTime.foldlWith_spec (encA := encUnary)
     (encL := encList encUnary) (par := fun x => x)
     (step := fun x P j => if j = i x then P else pmulLinear (p x) (fl x) ((v x).getD j []) P)
@@ -518,17 +504,7 @@ theorem computableInPolyTime_basisDen {p : α → ℕ} {fl : α → List ℕ} {v
       (fun q : (α × List ℕ) × ℕ => if q.2 = i q.1.1 then q.1.2
         else mul (p q.1.1) (fl q.1.1) q.1.2 (sub (p q.1.1) (fl q.1.1) ((v q.1.1).getD (i q.1.1) [])
           ((v q.1.1).getD q.2 [])))
-      (encPair (encPair encIn (encList encNat)) encUnary) (encList encNat) := by
-    have hq := ComputableInPolyTime.fst (encPair encIn (encList encNat)) encUnary
-    have ha := (ComputableInPolyTime.fst encIn (encList encNat)).comp hq
-    have hd := (ComputableInPolyTime.snd encIn (encList encNat)).comp hq
-    have hj := ComputableInPolyTime.snd (encPair encIn (encList encNat)) encUnary
-    refine (ComputableInPolyTime.ite (ComputableInPolyTime.beq hj (hi.comp ha)) hd
-      (computableInPolyTime_mul (hp.comp ha) (hfl.comp ha) hd
-        (computableInPolyTime_sub (hp.comp ha) (hfl.comp ha)
-          (getDPolyTime (hv.comp ha) (hi.comp ha)) (getDPolyTime (hv.comp ha) hj)))).of_enc_eq
-      fun q => ?_
-    by_cases h : q.2 = i q.1.1 <;> simp [h]
+      (encPair (encPair encIn (encList encNat)) encUnary) (encList encNat) := by fun_prop
   exact ComputableInPolyTime.foldlWithInput_of_bounded_growth
     (encA := encUnary) (encL := encList encUnary)
     (step := fun x d j => if j = i x then d
@@ -558,18 +534,7 @@ theorem computableInPolyTime_interp {p : α → ℕ} {fl : α → List ℕ} {v y
         (psmul (p q.1.1) (fl q.1.1) (mul (p q.1.1) (fl q.1.1) ((y q.1.1).getD q.2 [])
           (inv (p q.1.1) (fl q.1.1) (basisDen (p q.1.1) (fl q.1.1) (v q.1.1) q.2)))
           (basisNum (p q.1.1) (fl q.1.1) (v q.1.1) q.2)))
-      (encPair (encPair encIn encS) encUnary) encS := by
-    have hq := ComputableInPolyTime.fst (encPair encIn encS) encUnary
-    have ha := (ComputableInPolyTime.fst encIn encS).comp hq
-    have hP := (ComputableInPolyTime.snd encIn encS).comp hq
-    have hj := ComputableInPolyTime.snd (encPair encIn encS) encUnary
-    have hp' := hp.comp ha
-    have hfl' := hfl.comp ha
-    exact computableInPolyTime_padd hp' hfl' hP (computableInPolyTime_psmul hp' hfl'
-      (computableInPolyTime_mul hp' hfl' (getDPolyTime (hy.comp ha) hj)
-        (computableInPolyTime_inv hp' hfl'
-          (computableInPolyTime_basisDen hp' hfl' (hv.comp ha) hj)))
-      (computableInPolyTime_basisNum hp' hfl' (hv.comp ha) hj))
+      (encPair (encPair encIn encS) encUnary) encS := by fun_prop
   have hfold := ComputableInPolyTime.foldlWith_spec (encA := encUnary)
     (encL := encList encUnary) (par := fun x => x)
     (step := fun x P i => padd (p x) (fl x) P

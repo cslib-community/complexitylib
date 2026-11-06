@@ -55,7 +55,8 @@ private theorem identityLoop_realizes :
       (fun d s => iterationWork identityBody (fun _ _ => 1) d.1.1 d.2 d.1.2 s) :=
   Realizes.iterateRuntime unitInput wordOutput identityBody_realizes
 
-private theorem identity_iterate (n a : ℕ) : iterate identityBody () n a = pure a := by
+/-- Iterating the existing query-free identity source retains its value. -/
+theorem identity_iterate (n a : ℕ) : iterate identityBody () n a = pure a := by
   induction n with
   | zero => rfl
   | succ n ih => simpa only [iterate, identityBody, pure_bind] using ih

@@ -12,7 +12,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Par
 public import Complexity.Computability.WordRAM.MemoryWindow
 
 /-!
-# Actual translated fixed-prime solver execution
+# Actual translated box-backed fixed-prime solver execution
 
 This internal stage composes the proved original-input source execution with the existing
 memory-window compiler. The caller's real setup supplies normalized source registers and the

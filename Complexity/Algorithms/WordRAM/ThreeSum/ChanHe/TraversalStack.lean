@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.WordRAM.Allocation
 public import Complexity.Computability.WordRAM.Heap
+import Complexity.Computability.WordRAM.Call
+import Mathlib.Data.List.OfFn
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -28,22 +30,27 @@ from a nonempty stack, are proved instruction by instruction. The library's boun
 hand-stepped traversal and goes with it. Argument delivery and result copies here are actual
 native instructions and are charged.
 
+Fixed-length records are transferred through the same dispatcher. Pushing visits a register bank
+in reverse order; popping visits it in forward order, restoring the same record order. A final
+self-copy on `idle` supplies the empty-bank case. The reserved stack memory may be dirty outside
+its live prefix, and popped cells are not cleared.
+
 ## Main definitions
 
 * `WordStack.program`, `WordStack.prepare`: the dispatcher and its argument delivery.
 * `WordStack.Rep`, `WordStack.footprint`: the top-first list representation and the reserved
   memory block.
+* `WordStack.pushRecord`, `WordStack.popRecord`: native transfers of a finite register bank.
 * `slot`: the seven persistent traversal-record registers.
 * `registers`: the nine-register stack dispatcher inside the 128-register controller.
-* `pushSlot`: native argument delivery followed by the complete bounded-stack dispatcher.
-* `popSlot`: native dispatch and result delivery to one traversal-record register.
+* `pushFrame`, `popFrame`: the seven-word traversal-record transfers.
 
 ## Main results
 
 * `WordStack.exec_push`, `WordStack.exec_pop`: a push in seven instructions and a nonempty pop in
   eleven.
-* `pushSlot_exec`: a nine-instruction push, with the exact stack, memory and register frames.
-* `popSlot_exec`: a fourteen-instruction nonempty pop with the same exact frames.
+* `WordStack.pushRecord_exec`, `WordStack.popRecord_exec`: push `n` words in `9 * n + 1`
+  instructions and pop them in `14 * n + 1`, with exact stack, memory and register frames.
 * `pushFrame_exec`, `popFrame_exec`: complete seven-word record transfers in 64 and 99 instructions.
 
 The native controller and its composition proofs are original.
@@ -171,6 +178,156 @@ theorem exec_pop {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base + 
     have h := hr.contents ⟨i.val, hi⟩
     simpa [y, Data.set, prepare, List.reverse_cons, List.getElem_append, i.isLt] using h
 
+section Record
+
+variable {r n : ℕ}
+
+/-- Push a register bank in reverse order, leaving its words in forward order at the stack top.
+The terminal self-copy preserves the entire state, including for a zero-length record. -/
+def pushRecord (reg : Fin 9 → Fin r) :
+    {n : ℕ} → (Fin n → Fin r) → Fin r → Code .standard r
+  | 0, _, idle => .op (.copy idle idle)
+  | n + 1, src, idle =>
+    let tagReg := reg tag
+    let argReg := reg arg
+    let word := src (Fin.last n)
+    .seq (.seq (ram[ tagReg ← #0; argReg ← word ]) (program.rename reg))
+      (pushRecord reg (fun i : Fin n => src i.castSucc) idle)
+
+/-- Pop into successive record registers, charging dispatch and delivery for every word.
+The terminal self-copy supplies the zero-length case. -/
+def popRecord (reg : Fin 9 → Fin r) :
+    {n : ℕ} → (Fin n → Fin r) → Fin r → Code .standard r
+  | 0, _, idle => .op (.copy idle idle)
+  | n + 1, dst, idle =>
+    let tagReg := reg tag
+    let argReg := reg arg
+    .seq (.seq (ram[ tagReg ← #1; argReg ← #0 ])
+      (.seq (program.rename reg) (.op (.copy (dst 0) (reg out)))))
+      (popRecord reg (fun i : Fin n => dst i.succ) idle)
+
+/-- Pushing a fixed record does not inspect the physical word width. -/
+theorem pushRecord_not_readsWidth (reg : Fin 9 → Fin r) (src : Fin n → Fin r) (idle : Fin r) :
+    ¬(pushRecord reg src idle).ReadsWidth := by
+  induction n <;>
+    simp_all [pushRecord, Code.ReadsWidth, Op.ReadsWidth, program, Code.rename, Op.rename,
+      writeAt, readAt, Op.bin]
+
+/-- Popping a fixed record does not inspect the physical word width. -/
+theorem popRecord_not_readsWidth (reg : Fin 9 → Fin r) (dst : Fin n → Fin r) (idle : Fin r) :
+    ¬(popRecord reg dst idle).ReadsWidth := by
+  induction n <;>
+    simp_all [popRecord, Code.ReadsWidth, Op.ReadsWidth, program, Code.rename, Op.rename,
+      writeAt, readAt, Op.bin]
+
+/-- Push all record words with exact instruction cost, preserving caller registers and memory
+outside the reserved stack. Repeated source registers are permitted. -/
+theorem pushRecord_exec (reg : Fin 9 → Fin r) (hi : Function.Injective reg)
+    (src : Fin n → Fin r) (idle : Fin r) (hd : ∀ i j, src i ≠ reg j)
+    {w base capacity : ℕ} (x : Data r) (vs : List ℕ)
+    (h2 : Fits w 2) (hcap : Fits w (base + capacity))
+    (hr : Rep w base capacity vs (x.comap reg))
+    (hw : ∀ i, Fits w (x.regs (src i))) (hv : n + vs.length ≤ capacity) :
+    ∃ y, Exec w (pushRecord reg src idle) x y (9 * n + 1) ∧
+      Rep w base capacity (List.ofFn (fun i => x.regs (src i)) ++ vs) (y.comap reg) ∧
+      Modifies (footprint base capacity) x.mem y.mem ∧
+      ∀ j, (∀ i, j ≠ reg i) → y.regs j = x.regs j := by
+  induction n generalizing x vs with
+  | zero =>
+    have he : Exec (B := .standard) w (.op (.copy idle idle)) x x 1 := by
+      simpa [Data.set] using (Exec.copy (B := Basis.standard) (w := w) (x := x)
+        (d := idle) (s := idle))
+    exact ⟨x, he, hr, fun _ _ => rfl, fun _ _ => rfl⟩
+  | succ n ih =>
+    let q := (x.set (reg tag) 0).set (reg arg) (x.regs (src (Fin.last n)))
+    have hp : Exec (B := .standard) w
+        (.seq (.op (.const (reg tag) 0)) (.op (.copy (reg arg) (src (Fin.last n))))) x q 2 := by
+      ram_eval [q, hd (Fin.last n) tag]
+    have hq : q.comap reg = prepare 0 (x.regs (src (Fin.last n))) (x.comap reg) := by
+      simp only [q, prepare, Data.comap_set hi]
+    obtain ⟨b, hb, hrb, hfb⟩ := exec_push h2 hcap hr (by omega) (hw (Fin.last n))
+    have hcall : Exec w program (q.comap reg) b 7 := hq ▸ hb
+    obtain ⟨z, hz, ⟨hrz, hfz⟩, hpz⟩ := Exec.rename_post hi
+      (Q := fun b => Rep w base capacity (x.regs (src (Fin.last n)) :: vs) b ∧
+        Modifies (footprint base capacity) x.mem b.mem) ⟨b, hcall, hrb, hfb⟩
+    have hframe (j) (hj : ∀ i, j ≠ reg i) : z.regs j = x.regs j := by
+      rw [hpz j (fun i => (hj i).symm)]
+      simp only [q, Data.set_regs, Function.update_of_ne (hj arg), Function.update_of_ne (hj tag)]
+    obtain ⟨y, hy, hry, hfy, hpy⟩ := ih (fun i : Fin n => src i.castSucc)
+      (fun i => hd i.castSucc) z (x.regs (src (Fin.last n)) :: vs) hrz
+      (fun i => by rw [hframe _ (hd i.castSucc)]; exact hw i.castSucc)
+      (by simp only [List.length_cons]; omega)
+    refine ⟨y, ?_, ?_, ?_, fun j hj => (hpy j hj).trans (hframe j hj)⟩
+    · simpa [pushRecord, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        (hp.seq hz).seq hy
+    · have hslots : (fun i : Fin n => z.regs (src i.castSucc)) =
+          fun i : Fin n => x.regs (src i.castSucc) := funext fun i => hframe _ (hd i.castSucc)
+      simpa only [hslots, List.ofFn_succ', List.concat_eq_append, List.append_assoc,
+        List.singleton_append] using hry
+    · intro a ha
+      exact (hfy a ha).trans (hfz a ha)
+
+/-- Pop a complete record into distinct registers with exact cost. Memory outside the reserved
+stack and registers outside the dispatcher and destination bank are preserved. -/
+theorem popRecord_exec (reg : Fin 9 → Fin r) (hi : Function.Injective reg)
+    (dst : Fin n → Fin r) (idle : Fin r) (hinj : Function.Injective dst)
+    (hd : ∀ i j, dst i ≠ reg j) {w base capacity : ℕ}
+    (x : Data r) (vs : List ℕ) (a : Fin n → ℕ) (h2 : Fits w 2)
+    (hcap : Fits w (base + capacity))
+    (hr : Rep w base capacity (List.ofFn a ++ vs) (x.comap reg)) :
+    ∃ y, Exec w (popRecord reg dst idle) x y (14 * n + 1) ∧
+      Rep w base capacity vs (y.comap reg) ∧ (∀ i, y.regs (dst i) = a i) ∧
+      Modifies (footprint base capacity) x.mem y.mem ∧
+      ∀ j, (∀ i, j ≠ reg i) → (∀ i, j ≠ dst i) → y.regs j = x.regs j := by
+  induction n generalizing x with
+  | zero =>
+    have he : Exec (B := .standard) w (.op (.copy idle idle)) x x 1 := by
+      simpa [Data.set] using (Exec.copy (B := Basis.standard) (w := w) (x := x)
+        (d := idle) (s := idle))
+    exact ⟨x, he, hr, fun i => Fin.elim0 i, fun _ _ => rfl, fun _ _ _ => rfl⟩
+  | succ n ih =>
+    rw [List.ofFn_succ, List.cons_append] at hr
+    let q := (x.set (reg tag) 1).set (reg arg) 0
+    have h1 : Fits w 1 := h2.of_le (by decide)
+    have hp : Exec (B := .standard) w
+        (.seq (.op (.const (reg tag) 1)) (.op (.const (reg arg) 0))) x q 2 := by
+      ram_eval [q, h1]
+    have hq : q.comap reg = prepare 1 0 (x.comap reg) := by
+      simp only [q, prepare, Data.comap_set hi]
+    obtain ⟨b, hb, hout, hrb, hfb⟩ := exec_pop h2 hcap hr
+    have hcall : Exec w program (q.comap reg) b 11 := hq ▸ hb
+    obtain ⟨z, hz, ⟨hrz, hout, hfz⟩, hpz⟩ :=
+      Exec.rename_post hi
+        (Q := fun b => Rep w base capacity (List.ofFn (fun i : Fin n => a i.succ) ++ vs) b ∧
+          b.regs out = a 0 ∧ Modifies (footprint base capacity) x.mem b.mem)
+        ⟨b, hcall, hrb, hout, hfb⟩
+    change z.regs (reg out) = a 0 at hout
+    let copied := z.set (dst 0) (a 0)
+    have hcopy : Exec (B := .standard) w (.op (.copy (dst 0) (reg out))) z copied 1 := by
+      simpa only [copied, hout] using (Exec.copy (B := Basis.standard) (w := w) (x := z)
+        (d := dst 0) (s := reg out))
+    have hcopied : copied.comap reg = z.comap reg :=
+      Data.comap_set_of_forall_ne z (dst 0) (a 0) (fun j => (hd 0 j).symm)
+    obtain ⟨y, hy, hry, hya, hfy, hpy⟩ := ih (fun i : Fin n => dst i.succ)
+      (fun i j h => Fin.succ_injective _ (hinj h)) (fun i => hd i.succ)
+      copied (fun i => a i.succ) (by simpa only [hcopied, List.tail_cons] using hrz)
+    refine ⟨y, ?_, hry, ?_, ?_, ?_⟩
+    · simpa [popRecord, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        (hp.seq (hz.seq hcopy)).seq hy
+    · intro i
+      refine Fin.cases ?_ (fun j => hya j) i
+      rw [hpy (dst 0) (hd 0) (fun j h => Fin.succ_ne_zero j (hinj h).symm)]
+      exact Function.update_self ..
+    · intro a ha
+      exact (hfy a ha).trans (hfz a ha)
+    · intro j hj hdst
+      rw [hpy j hj (fun i => hdst i.succ)]
+      change Function.update z.regs (dst 0) (a 0) j = x.regs j
+      rw [Function.update_of_ne (hdst 0), hpz j (fun i => (hj i).symm)]
+      simp only [q, Data.set_regs, Function.update_of_ne (hj arg), Function.update_of_ne (hj tag)]
+
+end Record
+
 end WordStack
 
 /-- Fuel and the three base/length pairs, retained across both 64-register native kernels. -/
@@ -185,12 +342,8 @@ def arrayLength (j : Fin 3) : Fin 128 := slot ⟨2 + 2 * j.val, by omega⟩
 /-- The existing stack's workspace lies above every 64-register node-kernel register. -/
 def registers (i : Fin 9) : Fin 128 := ⟨96 + i.val, by omega⟩
 
-private theorem registers_injective : Function.Injective registers := by
-  intro i j h
-  apply Fin.ext
-  have := congrArg Fin.val h
-  dsimp [registers] at this
-  omega
+private theorem registers_injective : Function.Injective registers :=
+  fun _ _ h => Fin.ext (Nat.add_left_cancel (congrArg Fin.val h))
 
 /-- Caller-owned registers outside the stack dispatcher. -/
 abbrev Outside (i : Fin 128) : Prop := i.val < 96 ∨ 105 ≤ i.val
@@ -202,97 +355,11 @@ private theorem outside_ne (i : Fin 128) (hi : Outside i) (j : Fin 9) :
   dsimp [registers, Outside] at *
   omega
 
-private theorem extend_outside (a : Data 9) (x : Data 128) (i : Fin 128) (hi : Outside i) :
-    (a.extend registers x).regs i = x.regs i := by
-  change Function.extend registers a.regs x.regs i = x.regs i
-  apply Function.extend_apply'
-  rintro ⟨j, hj⟩
-  exact outside_ne i hi j hj.symm
+private theorem slot_ne_registers (i : Fin 7) (j : Fin 9) : slot i ≠ registers j :=
+  outside_ne _ (Or.inl (by dsimp [slot]; omega)) j
 
-/-- Deliver the push tag and actual record word, then execute the existing stack program. -/
-def pushSlot (i : Fin 7) : Code .standard 128 :=
-  let tag := registers WordStack.tag
-  let arg := registers WordStack.arg
-  let src := slot i
-  .seq (ram[ tag ← #0; arg ← src ]) (WordStack.program.rename registers)
-
-/-- Each native push includes both argument instructions, not a host-level stack operation.
-Every register outside 96–104 and every memory cell outside the reserved stack is preserved. -/
-theorem pushSlot_exec {w base capacity : ℕ} (i : Fin 7) (x : Data 128) (vs : List ℕ)
-    (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : WordStack.Rep w base capacity vs (x.comap registers))
-    (hw : Fits w (x.regs (slot i))) (hv : vs.length < capacity) :
-    ∃ y, Exec w (pushSlot i) x y 9 ∧
-      WordStack.Rep w base capacity (x.regs (slot i) :: vs) (y.comap registers) ∧
-      Modifies (WordStack.footprint base capacity) x.mem y.mem ∧
-      ∀ j, Outside j → y.regs j = x.regs j := by
-  let q :=
-    (x.set (registers WordStack.tag) 0).set (registers WordStack.arg) (x.regs (slot i))
-  have hs : slot i ≠ registers WordStack.tag := outside_ne _ (Or.inl (by dsimp [slot]; omega)) _
-  have hp : Exec (B := .standard) w
-      (.seq (.op (.const (registers WordStack.tag) 0))
-        (.op (.copy (registers WordStack.arg) (slot i)))) x q 2 := by
-    ram_eval [q, hs]
-  have hq : q.comap registers = WordStack.prepare 0 (x.regs (slot i)) (x.comap registers) := by
-    ext j
-    · fin_cases j <;>
-        simp +decide [q, Data.comap, Data.set, registers, WordStack.prepare, WordStack.tag,
-          WordStack.arg]
-    · rfl
-  obtain ⟨a, ha, hra, hframe⟩ := WordStack.exec_push h2 hcap hr hv hw
-  have hcall : Exec w WordStack.program (q.comap registers) a 7 := by
-    simpa only [hq] using ha
-  let y := a.extend registers q
-  refine ⟨y, ?_, ?_, hframe, ?_⟩
-  · exact hp.seq (hcall.rename registers_injective)
-  · simpa only [y, Data.comap_extend registers_injective] using hra
-  · intro j hj
-    rw [extend_outside a q j hj]
-    simp only [q, Data.set_regs, Function.update_of_ne (outside_ne j hj WordStack.arg),
-      Function.update_of_ne (outside_ne j hj WordStack.tag)]
-
-private def pushSlots : List (Fin 7) → Code .standard 128
-  | [] => .op (.copy (slot 0) (slot 0))
-  | i :: is => .seq (pushSlot i) (pushSlots is)
-
-private theorem pushSlots_exec {w base capacity : ℕ} (is : List (Fin 7)) (x : Data 128)
-    (vs : List ℕ) (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : WordStack.Rep w base capacity vs (x.comap registers))
-    (hw : ∀ i, Fits w (x.regs (slot i))) (hv : is.length + vs.length ≤ capacity) :
-    ∃ y, Exec w (pushSlots is) x y (9 * is.length + 1) ∧
-      WordStack.Rep w base capacity (is.reverse.map (fun i => x.regs (slot i)) ++ vs)
-        (y.comap registers) ∧
-      Modifies (WordStack.footprint base capacity) x.mem y.mem ∧
-      ∀ j, Outside j → y.regs j = x.regs j := by
-  induction is generalizing x vs with
-  | nil =>
-    have he : Exec (B := .standard) w (.op (.copy (slot 0) (slot 0))) x x 1 := by
-      convert (Exec.copy (B := Basis.standard) (w := w) (x := x)
-        (d := slot 0) (s := slot 0)) using 1
-      ext j <;> simp [Data.set]
-    exact ⟨x, he, hr, fun _ _ => rfl, fun _ _ => rfl⟩
-  | cons i is ih =>
-    have hv' : vs.length < capacity := by simp only [List.length_cons] at hv; omega
-    obtain ⟨z, hz, hrz, hfz, hpz⟩ := pushSlot_exec i x vs h2 hcap hr (hw i) hv'
-    have hslots : (fun i => z.regs (slot i)) = fun i => x.regs (slot i) := by
-      funext i
-      exact hpz _ (Or.inl (by dsimp [slot]; omega))
-    obtain ⟨y, hy, hry, hfy, hpy⟩ := ih z (x.regs (slot i) :: vs) hrz
-      (by intro j; rw [hpz _ (Or.inl (by dsimp [slot]; omega))]; exact hw j)
-      (by simp only [List.length_cons] at hv ⊢; omega)
-    refine ⟨y, ?_, ?_, ?_, fun j hj => (hpy j hj).trans (hpz j hj)⟩
-    · simpa only [pushSlots, List.length_cons, Nat.mul_add, Nat.mul_one,
-        Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hz.seq hy
-    · simpa only [hslots, List.reverse_cons, List.map_append, List.map_singleton,
-        List.append_assoc, List.singleton_append] using hry
-    · intro a ha
-      exact (hfy a ha).trans (hfz a ha)
-
-/-- Push all seven words in reverse order, so the next seven pops recover the record in order.
-The trailing self-copy gives the fixed empty suffix an ordinary native instruction. -/
-def pushFrame : Code .standard 128 :=
-  .seq (pushSlot 6) (.seq (pushSlot 5) (.seq (pushSlot 4) (.seq (pushSlot 3)
-    (.seq (pushSlot 2) (.seq (pushSlot 1) (.seq (pushSlot 0) (.op (.copy (slot 0) (slot 0)))))))))
+/-- Push all seven record words in reverse order through the record transfers. -/
+def pushFrame : Code .standard 128 := WordStack.pushRecord registers slot (slot 0)
 
 /-- The complete native frame push charges all seven dispatches and argument delivery.
 There is no host-level record write, and the exact seven-word sequence is at the stack top. -/
@@ -306,130 +373,14 @@ theorem pushFrame_exec {w base capacity : ℕ} (x : Data 128) (vs : List ℕ)
           x.regs (slot 4), x.regs (slot 5), x.regs (slot 6)] ++ vs) (y.comap registers) ∧
       Modifies (WordStack.footprint base capacity) x.mem y.mem ∧
       ∀ j, Outside j → y.regs j = x.regs j := by
-  simpa only [pushFrame, pushSlots, List.length_cons, List.length_nil, List.reverse_cons,
-    List.reverse_nil, List.nil_append, List.cons_append, List.append_assoc, List.singleton_append,
-    List.map_cons, List.map_nil, List.map_append, List.map_singleton, Nat.reduceAdd,
-    Nat.reduceMul] using pushSlots_exec [6, 5, 4, 3, 2, 1, 0] x vs h2 hcap hr hw hv
+  obtain ⟨y, hy, hry, hfy, hpy⟩ :=
+    WordStack.pushRecord_exec registers registers_injective slot (slot 0)
+      slot_ne_registers x vs h2 hcap hr hw hv
+  refine ⟨y, hy, ?_, hfy, fun j hj => hpy j (outside_ne j hj)⟩
+  simpa [List.ofFn_succ, Fin.succ] using hry
 
-private theorem comap_set_slot (x : Data 128) (i : Fin 7) (v : ℕ) :
-    (x.set (slot i) v).comap registers = x.comap registers := by
-  ext j
-  · change Function.update x.regs (slot i) v (registers j) = x.regs (registers j)
-    apply Function.update_of_ne
-    exact (outside_ne _ (Or.inl (by dsimp [slot]; omega)) j).symm
-  · rfl
-
-/-- Deliver the pop tag, execute the complete dispatcher, and copy its answer to the record. -/
-def popSlot (i : Fin 7) : Code .standard 128 :=
-  let tag := registers WordStack.tag
-  let arg := registers WordStack.arg
-  .seq (ram[ tag ← #1; arg ← #0 ])
-    (.seq (WordStack.program.rename registers)
-      (.op (.copy (slot i) (registers WordStack.out))))
-
-/-- A nonempty native pop includes both argument instructions and the actual result copy.
-Only the selected record register, stack workspace and reserved stack memory may change. -/
-theorem popSlot_exec {w base capacity : ℕ} (i : Fin 7) (x : Data 128) (v : ℕ) (vs : List ℕ)
-    (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : WordStack.Rep w base capacity (v :: vs) (x.comap registers)) :
-    ∃ y, Exec w (popSlot i) x y 14 ∧
-      WordStack.Rep w base capacity vs (y.comap registers) ∧ y.regs (slot i) = v ∧
-      Modifies (WordStack.footprint base capacity) x.mem y.mem ∧
-      ∀ j, Outside j → j ≠ slot i → y.regs j = x.regs j := by
-  let q := (x.set (registers WordStack.tag) 1).set (registers WordStack.arg) 0
-  have h1 : Fits w 1 := h2.of_le (by decide)
-  have hp : Exec (B := .standard) w
-      (.seq (.op (.const (registers WordStack.tag) 1))
-        (.op (.const (registers WordStack.arg) 0))) x q 2 := by
-    ram_eval [q, h1]
-  have hq : q.comap registers = WordStack.prepare 1 0 (x.comap registers) := by
-    ext j
-    · fin_cases j <;>
-        simp +decide [q, Data.comap, Data.set, registers, WordStack.prepare, WordStack.tag,
-          WordStack.arg]
-    · rfl
-  obtain ⟨a, ha, hout, hra, hframe⟩ := WordStack.exec_pop h2 hcap hr
-  have hcall : Exec w WordStack.program (q.comap registers) a 11 := by
-    simpa only [hq] using ha
-  have hread : (a.extend registers q).regs (registers WordStack.out) = v := by
-    change Function.extend registers a.regs q.regs (registers WordStack.out) = v
-    rw [registers_injective.extend_apply, hout]
-  let y := (a.extend registers q).set (slot i) v
-  have hcopy : Exec (B := .standard) w
-      (.op (.copy (slot i) (registers WordStack.out))) (a.extend registers q) y 1 := by
-    simpa only [y, hread] using
-      (Exec.copy (B := Basis.standard) (w := w) (x := a.extend registers q)
-        (d := slot i) (s := registers WordStack.out))
-  refine ⟨y, hp.seq ((hcall.rename registers_injective).seq hcopy), ?_, ?_, hframe, ?_⟩
-  · simpa only [y, comap_set_slot, Data.comap_extend registers_injective, List.tail_cons] using hra
-  · exact Function.update_self ..
-  · intro j hj hji
-    change Function.update (a.extend registers q).regs (slot i) v j = x.regs j
-    rw [Function.update_of_ne hji, extend_outside a q j hj]
-    simp only [q, Data.set_regs, Function.update_of_ne (outside_ne j hj WordStack.arg),
-      Function.update_of_ne (outside_ne j hj WordStack.tag)]
-
-private def popSlots : List (Fin 7) → Code .standard 128
-  | [] => .op (.copy (slot 0) (slot 0))
-  | i :: is => .seq (popSlot i) (popSlots is)
-
-private def restore : List (Fin 7) → List ℕ → (Fin 128 → ℕ) → Fin 128 → ℕ
-  | i :: is, v :: vs, rs => restore is vs (Function.update rs (slot i) v)
-  | _, _, rs => rs
-
-private theorem restore_congr_at (is : List (Fin 7)) (vs : List ℕ)
-    (rs ss : Fin 128 → ℕ) (j : Fin 128) (h : rs j = ss j) :
-    restore is vs rs j = restore is vs ss j := by
-  induction is generalizing vs rs ss with
-  | nil => exact h
-  | cons i is ih =>
-    cases vs with
-    | nil => exact h
-    | cons v vs =>
-      apply ih
-      by_cases he : j = slot i
-      · simp [he]
-      · simpa only [Function.update_of_ne he] using h
-
-private theorem popSlots_exec {w base capacity : ℕ} (is : List (Fin 7)) (ws : List ℕ)
-    (x : Data 128) (vs : List ℕ) (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : WordStack.Rep w base capacity (ws ++ vs) (x.comap registers))
-    (hlen : ws.length = is.length) :
-    ∃ y, Exec w (popSlots is) x y (14 * is.length + 1) ∧
-      WordStack.Rep w base capacity vs (y.comap registers) ∧
-      Modifies (WordStack.footprint base capacity) x.mem y.mem ∧
-      ∀ j, Outside j → y.regs j = restore is ws x.regs j := by
-  induction is generalizing ws x with
-  | nil =>
-    have hws : ws = [] := List.length_eq_zero_iff.mp hlen
-    subst ws
-    have he : Exec (B := .standard) w (.op (.copy (slot 0) (slot 0))) x x 1 := by
-      convert (Exec.copy (B := Basis.standard) (w := w) (x := x)
-        (d := slot 0) (s := slot 0)) using 1
-      ext j <;> simp [Data.set]
-    exact ⟨x, he, hr, fun _ _ => rfl, fun _ _ => rfl⟩
-  | cons i is ih =>
-    cases ws with
-    | nil => simp at hlen
-    | cons v ws =>
-      obtain ⟨z, hz, hrz, hout, hfz, hpz⟩ := popSlot_exec i x v (ws ++ vs) h2 hcap hr
-      obtain ⟨y, hy, hry, hfy, hpy⟩ := ih ws z hrz (by simpa using hlen)
-      refine ⟨y, ?_, hry, ?_, ?_⟩
-      · simpa only [popSlots, List.length_cons, Nat.mul_add, Nat.mul_one,
-          Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hz.seq hy
-      · intro a ha
-        exact (hfy a ha).trans (hfz a ha)
-      · intro j hj
-        rw [hpy j hj]
-        apply restore_congr_at
-        by_cases he : j = slot i
-        · simpa only [he, Function.update_self] using hout
-        · simpa only [Function.update_of_ne he] using hpz j hj he
-
-/-- Pop all seven words into the record, in forward order, using the native dispatcher. -/
-def popFrame : Code .standard 128 :=
-  .seq (popSlot 0) (.seq (popSlot 1) (.seq (popSlot 2) (.seq (popSlot 3)
-    (.seq (popSlot 4) (.seq (popSlot 5) (.seq (popSlot 6) (.op (.copy (slot 0) (slot 0)))))))))
+/-- Pop all seven record words in forward order through the record transfers. -/
+def popFrame : Code .standard 128 := WordStack.popRecord registers slot (slot 0)
 
 /-- The complete record pop charges every argument, dispatch and result-copy instruction.
 The seven restored words have their original order; other caller registers are preserved. -/
@@ -441,25 +392,23 @@ theorem popFrame_exec {w base capacity : ℕ} (x : Data 128) (vs : List ℕ) (a 
       (∀ i, y.regs (slot i) = a i) ∧
       Modifies (WordStack.footprint base capacity) x.mem y.mem ∧
       ∀ j, Outside j → (j.val < 64 ∨ 71 ≤ j.val) → y.regs j = x.regs j := by
-  obtain ⟨y, hy, hry, hfy, hpy⟩ :=
-    popSlots_exec [0, 1, 2, 3, 4, 5, 6] [a 0, a 1, a 2, a 3, a 4, a 5, a 6]
-      x vs h2 hcap hr rfl
-  refine ⟨y, hy, hry, ?_, hfy, ?_⟩
-  · intro i
-    have h := hpy (slot i) (Or.inl (by dsimp [slot]; omega))
-    fin_cases i <;> simpa +decide [restore, slot] using h
-  · intro j hj hj'
-    have hne (i : Fin 7) : j ≠ slot i := by
-      intro h
-      have := congrArg Fin.val h
-      dsimp [slot] at this
-      omega
-    simpa only [restore, Function.update_of_ne (hne 0), Function.update_of_ne (hne 1),
-      Function.update_of_ne (hne 2), Function.update_of_ne (hne 3),
-      Function.update_of_ne (hne 4), Function.update_of_ne (hne 5),
-      Function.update_of_ne (hne 6)] using hpy j hj
+  have hr' : WordStack.Rep w base capacity (List.ofFn a ++ vs) (x.comap registers) := by
+    simpa [List.ofFn_succ, Fin.succ] using hr
+  obtain ⟨y, hy, hry, hya, hfy, hpy⟩ :=
+    WordStack.popRecord_exec registers registers_injective slot (slot 0)
+      (fun _ _ h => Fin.ext (Nat.add_left_cancel (congrArg Fin.val h)))
+      slot_ne_registers x vs a h2 hcap hr'
+  refine ⟨y, hy, hry, hya, hfy, ?_⟩
+  intro j hj hj'
+  apply hpy j (outside_ne j hj)
+  intro i h
+  have := congrArg Fin.val h
+  dsimp [slot] at this
+  omega
 
 /-- Record transfers do not inspect the physical word width. -/
-theorem not_readsWidth : ¬pushFrame.ReadsWidth ∧ ¬popFrame.ReadsWidth := by decide
+theorem not_readsWidth : ¬pushFrame.ReadsWidth ∧ ¬popFrame.ReadsWidth :=
+  ⟨WordStack.pushRecord_not_readsWidth registers slot (slot 0),
+    WordStack.popRecord_not_readsWidth registers slot (slot 0)⟩
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal

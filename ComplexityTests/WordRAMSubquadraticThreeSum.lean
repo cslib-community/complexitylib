@@ -42,11 +42,11 @@ private def TimedConstant (z : ℤ) (answer : ℕ) : Prop :=
   ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, 3 ≤ N ∧ ∀ n ≥ N,
     ∃ (y : Data 848) (steps : ℕ),
       InputFits (W n) ((values n z).map Signed.encode) ∧
-      Executes (W n) (flatProgram 1 ParameterSelecting.callee)
+      Executes (W n) (flatProgram 1 ParameterSelecting.program)
         (State.init ((values n z).map Signed.encode)) answer steps ∧
-      Runs (W n) (flatProgram 1 ParameterSelecting.callee)
+      Runs (W n) (flatProgram 1 ParameterSelecting.program)
         (State.init ((values n z).map Signed.encode))
-        ⟨(program 1 ParameterSelecting.callee).size, y⟩ (steps - 1) ∧
+        ⟨(program 1 ParameterSelecting.program).size, y⟩ (steps - 1) ∧
       (steps : ℝ) ≤ C * (n : ℝ) ^ (2 - 1 / 5184 : ℝ) ∧
       y.regs (controllerRegisters 633 Cslib.Algorithms.WordRAM.ThreeSum.Decision.answer) = answer
 
@@ -87,11 +87,11 @@ example : TimedConstant 1 0 := by simpa using timed_constant 1 (by decide)
 example : TimedConstant (-1) 0 := by simpa using timed_constant (-1) (by decide)
 
 example : ∃ (y : Data 848) (steps : ℕ),
-    Executes (W 2) (flatProgram 1 ParameterSelecting.callee)
+    Executes (W 2) (flatProgram 1 ParameterSelecting.program)
       (State.init ([0, 0].map Signed.encode)) 0 steps ∧
-    Runs (W 2) (flatProgram 1 ParameterSelecting.callee)
+    Runs (W 2) (flatProgram 1 ParameterSelecting.program)
       (State.init ([0, 0].map Signed.encode))
-      ⟨(program 1 ParameterSelecting.callee).size, y⟩ (steps - 1) := by
+      ⟨(program 1 ParameterSelecting.program).size, y⟩ (steps - 1) := by
   obtain ⟨_, _, _, _, hrun⟩ := exists_subquadratic_runs 1
   obtain ⟨_, y, steps, he, hr, _, _, hb, hiff, _, _⟩ :=
     hrun [0, 0] (W 2) (by decide) (by simp)

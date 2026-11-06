@@ -68,6 +68,8 @@ Complexitylib deliberately has both output-uncharged and output-charged APIs:
 
 The definitions and the documented reason for the output charge are in [ResourceBounds.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/ResourceBounds.lean#L88). The charge supports composition when returned values must subsequently occupy work tapes. It matters below linear space: copying an arbitrary input is a logarithmic-workspace transduction but cannot satisfy `ComputableInSpace` with a logarithmic output charge. For decision problems, one output bit makes the distinction asymptotically immaterial. The intended public direction uses plain computability; tidy cleanup and head rewinding remain in machine-level construction proofs and some transitional interfaces at this snapshot.
 
+[Degree.BitString](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/Degree/BitString.lean) certifies linear conversion between raw words (`encBits`) and the existing framed Boolean-list encoding (`encList encBool`). Its [Cut module](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/Degree/BitString/Cut.lean) composes those streaming conversions with the existing unary list cutters. `ComputableInDegree.bitsTake` and `bitsDrop` charge the complete raw word and unary count, including empty words and counts beyond their length. Existing plain polynomial wrappers now reuse these stronger certificates. The [adaptive-game tape client](../../ComplexityTests/Crypto/LeveledTapePartition.lean) certifies its actual choose/encrypt/guess partition in time and output-charged workspace `O(tape.length + chooseCoins + encCoins + 1)`; callback execution and the complete reduction clock remain separate obligations.
+
 `FTIME` is the corresponding function-time class with explicit input and output encodings and affine time `c₁ t(n) + c₂`; its workspace has an arbitrary length-dependent bound. It adds no output charge beyond the time required to write the output. [FTIME](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/FunctionTime.lean#L46) `DTIME`, `NTIME`, `BPTIME`, `DSPACE` and `NSPACE` attach affine bounds to the relevant machine predicates; `P`, `NP`, `BPP`, `L`, `NL`, `PSPACE`, `NPSPACE`, `E`, `NE`, `EXP` and `NEXP` derive familiar bound families.
 
 ## Fair-coin efficiency
@@ -78,9 +80,37 @@ Coin-tape theorems compile a strict PPT computation into a deterministic native 
 
 Randomized logarithmic space is defined directly over PTMs. Workspace is bounded on all prefixes of the nondeterministic projection, with a fresh one-way random bit at each live step. `RL` has acceptance at least one half on yes instances and zero on no instances; `BPL` uses two thirds and one third. Their definitions require all branches to terminate but initially do not prescribe a clock. Finite configuration counting derives a polynomial clock, and matrix/counting simulations yield `RL ⊆ P` and `BPL ⊆ P`. This is a particular all-branches-halting model; an expected-time randomized-space model is not silently substituted. [Randomized logspace](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/LogSpace/Randomized.lean#L15) [Polynomial-time containment](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/LogSpace/Randomized/PolyTime.lean#L246)
 
+[Buffered probabilistic composition](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Composition/Space.lean) also has an explicit all-prefix workspace bound for the existing `second.comp first mark` compiler. If the source uses at most `s₀` cells, every supported completed output has length at most `L`, and the consumer uses at most `s₁` cells on those outputs, the combined machine uses at most `(k₁+k₀+2) * (2 * max (max s₀ s₁) (L+2) + 1)` cells. The source must halt by its supplied clock; the consumer need not halt. Source scratch remains allocated, and two extra work tapes hold the intermediate word and its boundary marker. The proof bounds every head on every path prefix, independently of elapsed time. [Checked clients](../../ComplexityTests/ProbabilisticCompositionSpace.lean) compose the actual framed sampler with the native copying machine, rule out a zero-space certificate for the resulting two-tape machine, and also cover an endless zero-workspace consumer. This compiler theorem does not establish the complete FHE game clock or its source-relative runtime comparison ([#2722](https://github.com/cslib-community/complexitylib/issues/2722), [#2585](https://github.com/cslib-community/complexitylib/issues/2585)).
+
 ## Representative semantic tests
 
 The source of [MachinePrograms.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/MachinePrograms.lean#L24) distinguishes two nondeterministic successors, a stuck state, and a halted self-loop; it also checks channel isolation and fair-coin semantics. [CountingMachine.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/CountingMachine.lean#L25) contains repeated equal accepting actions and checks three accepting versus one rejecting branch, first-halt padding stability, and malformed certificates. [Alternation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Alternation.lean#L1) uses the same two choices with existential and universal polarity and obtains different acceptance outcomes. These are inspected regression witnesses, not test executions performed during the initial source review.
+
+## Composing polynomial resource envelopes
+
+Import
+[`ResourceBounds.Polynomial.Automation`](../../Complexity/Computability/Machines/Turing/MultiTape/ResourceBounds/Polynomial/Automation.lean)
+and use `growth_poly` for `Turing.MultiTapeTM.PolyBounded size cost`. Local certificates supply
+the leaves; constants, the original size, sums, products, fixed powers, natural logarithms and
+square roots compose. Existing `Cslib.PolynomiallyBounded` goals use their `fun_prop` rules.
+For substitution, apply `PolyBounded.comp` with the outer certificate and run `growth_poly`
+on the inner size expression. This keeps the intermediate measure explicit.
+
+The tactic closes a polynomial-growth goal or fails. Exponentials, variable exponents and
+factorials need independent bounds and are rejected by the
+[ordinary-import examples](../../ComplexityTests/PolynomialGrowth.lean). Exact instruction
+allowances, encoded-output bounds and physical word fits remain separate obligations; a coarse
+polynomial envelope does not certify a particular word width or a fixed degree.
+
+When a final statement uses one constant as both coefficient and degree, import
+[`ResourceBounds.Polynomial.Envelope`](../../Complexity/Computability/Machines/Turing/MultiTape/ResourceBounds/Polynomial/Envelope.lean)
+and apply `PolyBounded.exists_le_self_pow` after composing the polynomial overhead. It supplies
+`u a ≤ K * size a ^ K` at every positive size; size zero is excluded, so add a constant to the
+chosen size when the contract includes empty inputs. Keep any exponential time factor outside
+this polynomial envelope. The
+[native packet resource proofs](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
+combine polynomial preprocessing/postprocessing this way while retaining their separate
+exponential time and polynomial space conclusions.
 
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib

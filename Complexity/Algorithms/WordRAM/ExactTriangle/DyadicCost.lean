@@ -15,25 +15,18 @@ import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
-# Aggregate charges at the computed dyadic parameters
+# Aggregate finite charges at the integer box parameters
 
-These original estimates apply to the existing proved native instruction budgets. The selected
-prime's false positives are bounded using the existing hashing theorem, with one global scan
-reserve. They do not yet compose parameter/prime selection and callable solving into one
-program, dispatch small inputs or establish the source's tuned 3SUM exponent.
-
-## Main results
-
-* `fixedPrime_timeBound_le`: complete selected-prime native charge at the computed geometry.
-* `selection_timeBound_le`: actual enumeration and concrete counters fit the same saving.
-* `components_timeBound_le`: add these budgets and the real parameter-preparation allowance.
+Original estimates combine actual box-controller budgets with genuine selected-prime failure
+accounting and native counter/selection costs. Products retain their degree-three depth factor;
+one global failed-scan reserve is charged. The native host supplies the actual selected prime.
 -/
 
 public section
 
 namespace Cslib.Algorithms.WordRAM.ExactTriangle.DyadicCost
 
-open Cslib.Matrix
+open Filter Cslib.Matrix
 open Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open ParameterChoice
@@ -55,14 +48,16 @@ theorem controller_le {n : ℕ} (hn : 0 < n) :
   push_cast
   nlinarith only [hr, hq, hg]
 
-/-- The aggregate product term simplifies exactly at the computed balance. -/
-theorem product_eq (n : ℕ) :
-    138412032 * ((19 * level n + 1 : ℕ) : ℝ) * (n : ℝ) ^ 3 * groups n /
-        (window n : ℝ) ^ (1 / 18 : ℝ) =
-      138412032 * ((19 * level n + 1 : ℕ) : ℝ) * ((n : ℝ) ^ 3 / groups n) := by
-  rw [rpow_window]
-  have hg : (groups n : ℝ) ≠ 0 := by exact_mod_cast (groups_pos n).ne'
-  field_simp
+/-- The actual finite box-product coefficient retains its degree-three depth factor. -/
+theorem product_le {n : ℕ} (hn : 0 < n) :
+    125829120 * ((21 * level n + 1 : ℕ) : ℝ) ^ 2 * ((level n + 1 : ℕ) : ℝ) *
+        (window n : ℝ) ^ (-(8 / 125 : ℝ)) * (n : ℝ) ^ 3 * groups n ≤
+      (125829120 * ((21 * level n + 1 : ℕ) : ℝ) ^ 2 * ((level n + 1 : ℕ) : ℝ)) *
+        ((n : ℝ) ^ 3 / groups n) := by
+  calc
+    _ = (125829120 * ((21 * level n + 1 : ℕ) : ℝ) ^ 2 * ((level n + 1 : ℕ) : ℝ)) *
+        ((n : ℝ) ^ 3 * groups n * (window n : ℝ) ^ (-(8 / 125 : ℝ))) := by ring
+    _ ≤ _ := mul_le_mul_of_nonneg_left (product_work_le hn) (by positivity)
 
 /-- The actual global scan charge, including its constant overhead per executed scan. -/
 theorem scans_le {n p : ℕ} {κ : ℝ} (hf : 0 < blocks n) (hκ : 1 ≤ κ)
@@ -112,27 +107,32 @@ theorem fixedPrime_timeBound_le {n p : ℕ} {κ : ℝ} (hf : 0 < blocks n) (hκ 
       (fun u v => values.getD (n * n + pairIndex (u, v)) 0)
       (fun u v => values.getD (2 * (n * n) + pairIndex (u, v)) 0) (window n) p) :
     (FixedPrime.timeBound (m := level n) (pos_of_blocks_pos hf) (groups n) p values mem : ℝ) ≤
-      (993 + 138412032 * ((19 * level n + 1 : ℕ) : ℝ) +
+      (993 + 125829120 * ((21 * level n + 1 : ℕ) : ℝ) ^ 2 * ((level n + 1 : ℕ) : ℝ) +
         (140 * falsePositiveConst + 140) * κ * Real.log n) *
           ((n : ℝ) ^ 3 / groups n) := by
   have hn := pos_of_blocks_pos hf
-  have h := FixedPrime.timeBound_le (m := level n) hn values mem (window_ge_sixteen hf)
-    (one_le_groups n) hp.1 (geometry hn)
+  have hlevel : 9 * (7 * blocks n) = level n := by unfold level; omega
+  have hdepth : 189 * (7 * blocks n) = 21 * level n := by unfold level; omega
+  have h := FixedPrime.timeBound_le (k := 7 * blocks n) hn values mem
+    (by simpa only [hlevel, D, window] using window_ge_sixteen hf)
+    (one_le_groups n) (by simpa only [hlevel, D, window] using hp.1)
+    (by simpa only [hlevel, D, window] using geometry hn)
+  rw [hlevel, hdepth] at h
   have hs := scans_le hf hκ _ _ _ hv hp
   have hc := controller_le hn
   have hprep := mul_le_mul_of_nonneg_left (preparation_le hn) (by norm_num : (0 : ℝ) ≤ 690)
   have hseven := mul_le_mul_of_nonneg_left (one_le_scale hn) (by norm_num : (0 : ℝ) ≤ 7)
   dsimp only at h
   change (_ : ℝ) ≤ 690 * (n : ℝ) ^ 2 * window n * groups n +
-    138412032 * ((19 * level n + 1 : ℕ) : ℝ) * (n : ℝ) ^ 3 * groups n /
-      (window n : ℝ) ^ (1 / 18 : ℝ) +
+    125829120 * ((21 * level n + 1 : ℕ) : ℝ) ^ 2 * ((level n + 1 : ℕ) : ℝ) *
+      (window n : ℝ) ^ (-(8 / 125 : ℝ)) * (n : ℝ) ^ 3 * groups n +
     (4 * (n : ℝ) * groups n) *
       ((5 * Nat.sqrt (window n) + 8 * queryCap n (window n) + 61 : ℕ) : ℝ) +
     (((42 * pieceSize (window n) (groups n) + 28) *
       (falsePositiveCount _ _ _ p + 1) + 7 : ℕ) : ℝ) at h
-  rw [product_eq] at h
-  push_cast at h hs hc ⊢
-  nlinarith only [h, hs, hc, hprep, hseven]
+  have hproduct := product_le hn
+  push_cast at h hs hc hproduct ⊢
+  nlinarith only [h, hs, hc, hprep, hseven, hproduct]
 
 private theorem padded_dimension_le {n : ℕ} (hn : 0 < n) :
     (n + 1 : ℝ) ^ (281 / 100 : ℝ) ≤ 8 * (n : ℝ) ^ (281 / 100 : ℝ) := by
@@ -153,25 +153,36 @@ private theorem selector_kernel_le {n : ℕ} (hn : 0 < n) :
       64 * ((n : ℝ) ^ 3 / groups n) := by
   have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
   have hg0 : (0 : ℝ) < groups n := by exact_mod_cast groups_pos n
-  have hg1 : (1 : ℝ) ≤ groups n := by exact_mod_cast one_le_groups n
-  have hs : (Nat.sqrt (window n) + 1 : ℝ) ≤ 2 * (groups n : ℝ) ^ 18 := by
-    rw [sqrt_window, Nat.cast_pow]
-    have hpow : (1 : ℝ) ≤ (groups n : ℝ) ^ 18 := one_le_pow₀ hg1
-    linarith
-  have hc : (Nat.sqrt (window n) + 1 : ℝ) ^ 3 ≤ 8 * (groups n : ℝ) ^ 54 := by
+  have hgN : groups n ≤ Nat.sqrt (window n) := by
+    apply Nat.le_sqrt'.mpr
+    simp only [groups, window, level, ← pow_mul]
+    apply Nat.pow_le_pow_right (by decide)
+    omega
+  have hsN : 1 ≤ Nat.sqrt (window n) := Nat.sqrt_pos.mpr (window_pos n)
+  have hs2 := Nat.sqrt_le' (window n)
+  have hroot : (Nat.sqrt (window n) + 1) ^ 3 * groups n ≤ 8 * window n ^ 2 := by
     calc
-      _ ≤ (2 * (groups n : ℝ) ^ 18) ^ 3 := by gcongr
-      _ = _ := by ring
-  have hg : (groups n : ℝ) ^ 55 ≤ (n : ℝ) ^ (19 / 100 : ℝ) :=
-    (groups_pow_le_rpow hn 55).trans
-      (Real.rpow_le_rpow_of_exponent_le hn1 (by norm_num))
-  have htotal : (groups n : ℝ) ^ 55 * (n : ℝ) ^ (281 / 100 : ℝ) ≤ (n : ℝ) ^ 3 := by
+      _ ≤ (2 * Nat.sqrt (window n)) ^ 3 * Nat.sqrt (window n) :=
+        Nat.mul_le_mul (Nat.pow_le_pow_left (by omega) 3) hgN
+      _ = 8 * (Nat.sqrt (window n) ^ 2) ^ 2 := by ring
+      _ ≤ _ := Nat.mul_le_mul_left 8 (Nat.pow_le_pow_left hs2 2)
+  have hrootR := (Nat.cast_le (α := ℝ)).mpr hroot
+  push_cast at hrootR
+  have hd : (window n : ℝ) ^ 2 ≤ (n : ℝ) ^ (19 / 100 : ℝ) := by
+    have hh := window_rpow_le_rpow hn (show (0 : ℝ) ≤ 2 by norm_num)
+    rw [Real.rpow_two] at hh
+    exact hh.trans (Real.rpow_le_rpow_of_exponent_le hn1 (by norm_num))
+  have htotal : ((Nat.sqrt (window n) + 1 : ℝ) ^ 3 * groups n) *
+      (n : ℝ) ^ (281 / 100 : ℝ) ≤ 8 * (n : ℝ) ^ 3 := by
     calc
-      _ ≤ (n : ℝ) ^ (19 / 100 : ℝ) * (n : ℝ) ^ (281 / 100 : ℝ) := by gcongr
-      _ = _ := by rw [← Real.rpow_add (by positivity)]; norm_num
+      _ ≤ (8 * (n : ℝ) ^ (19 / 100 : ℝ)) * (n : ℝ) ^ (281 / 100 : ℝ) := by
+        exact mul_le_mul_of_nonneg_right
+          (hrootR.trans (mul_le_mul_of_nonneg_left hd (by norm_num))) (by positivity)
+      _ = _ := by rw [mul_assoc, ← Real.rpow_add (by positivity)]; norm_num
   calc
-    _ ≤ (8 * (groups n : ℝ) ^ 54) * (8 * (n : ℝ) ^ (281 / 100 : ℝ)) := by
-      exact mul_le_mul hc (padded_dimension_le hn) (by positivity) (by positivity)
+    _ ≤ (Nat.sqrt (window n) + 1 : ℝ) ^ 3 *
+        (8 * (n : ℝ) ^ (281 / 100 : ℝ)) :=
+      mul_le_mul_of_nonneg_left (padded_dimension_le hn) (by positivity)
     _ ≤ 64 * ((n : ℝ) ^ 3 / groups n) := by
       rw [← mul_div_assoc]
       apply (le_div_iff₀ hg0).mpr
@@ -205,18 +216,18 @@ theorem components_timeBound_le {n p : ℕ} {κ : ℝ} (hf : 0 < blocks n) (hκ 
       (fun u v : Fin n => values.getD (pairIndex (u, v)) 0)
       (fun u v => values.getD (n * n + pairIndex (u, v)) 0)
       (fun u v => values.getD (2 * (n * n) + pairIndex (u, v)) 0) (window n) p) :
-    ((12 * Nat.log 2 n + 36 + (PrimeSelection.timeBound n (window n) + 16) +
+    ((16 * Nat.log 2 n + 36 + (PrimeSelection.timeBound n (window n) + 16) +
         FixedPrime.timeBound (m := level n) (pos_of_blocks_pos hf)
           (groups n) p values mem : ℕ) : ℝ) ≤
-      (238169 + 12 * (Nat.log 2 n : ℝ) +
-        138412032 * ((19 * level n + 1 : ℕ) : ℝ) +
+      (238169 + 16 * (Nat.log 2 n : ℝ) +
+        125829120 * ((21 * level n + 1 : ℕ) : ℝ) ^ 2 * ((level n + 1 : ℕ) : ℝ) +
         (140 * falsePositiveConst + 140) * κ * Real.log n) *
           ((n : ℝ) ^ 3 / groups n) := by
   have hn := pos_of_blocks_pos hf
   have hfixed := fixedPrime_timeBound_le hf hκ values mem hv hp
   have hselect := selection_timeBound_le hn
   have hparam := le_mul_of_one_le_right
-    (show (0 : ℝ) ≤ (12 * Nat.log 2 n + 36 : ℕ) by positivity) (one_le_scale hn)
+    (show (0 : ℝ) ≤ (16 * Nat.log 2 n + 36 : ℕ) by positivity) (one_le_scale hn)
   push_cast at hparam hfixed hselect ⊢
   nlinarith only [hfixed, hselect, hparam]
 

@@ -59,7 +59,7 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
     let Q := RecordProduct.recordQueryCount n (D m) p V idx
     let qs := RecordProduct.decodedQueries hn a.mem (RecordProduct.recordQueries n (D m) p idx) Q
     ∃ y S, ExecWithin (w + 2) record x y
-        (RecordProduct.timeBound (m := m) qs + 5 * Nat.sqrt (D m) + 8 * Q +
+        (RecordBoxProduct.timeBound (m := m) qs + 5 * Nat.sqrt (D m) + 8 * Q +
           (42 * pieceSize (D m) g + 28) * S + 52) ∧
       y.regs (recordBank RecordWitness.Reg.scans) = S ∧
       (y.regs (recordBank RecordWitness.Reg.found) = 0 ∨
@@ -141,12 +141,12 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
     decodedQueries_eq_of_eqOn hn z.mem a.mem hmem hspan
   have admitted := record_admitted hW
   obtain ⟨r, S, he, rs, rf, hS, riff, answers, rwit, rframe, rregs⟩ :=
-    RecordWitness.exec_of_output V AB BC AC z₀ z hcurrent hD hg hp0 hN
+    BoxRecordWitness.exec_of_output V AB BC AC z₀ z hcurrent hD hg hp0 hN
       ((header 1 (by omega)).trans rfl) ((header 2 (by omega)).trans rfl)
       ((header 3 (by omega)).trans rfl) idx hidx hi hmatrix hmag
       (RecordWitness.signed_fits admitted) (by
         rw [zheap]
-        exact RecordWitness.physical_fits hheap hQ hN admitted)
+        exact BoxRecordWitness.physical_fits hheap hQ hN admitted)
   dsimp only [q, Q] at hqs
   rw [hqs] at he answers
   have hcoordinate (i : Fin qs.length) :
@@ -174,7 +174,7 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
   have yr (j : Fin 400) : y.regs (recordBank j) = r.regs j :=
     recordBank_injective.extend_apply _ _ j
   have hex : ExecWithin (w + 2) record x y
-      (RecordProduct.timeBound (m := m) qs + 5 * Nat.sqrt (D m) + 8 * Q +
+      (RecordBoxProduct.timeBound (m := m) qs + 5 * Nat.sqrt (D m) + 8 * Q +
         (42 * pieceSize (D m) g + 28) * S + 52) := by
     apply (he.rename recordBank_injective).mono
     have ht := Nat.mul_le_mul_right S (show
@@ -209,11 +209,7 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
   · intro j
     exact (yr _).trans ((rregs _ (by change j.val < 65; omega)).trans (hbank j))
   · intro j hj
-    apply hex.regs_eq
-    apply Code.preserves_rename_of_forall_ne
-    intro i hij
-    have hv := congrArg (fun k : Fin 416 => k.val) hij
-    change i.val = j.val at hv
-    omega
+    exact hex.regs_eq (BoxRecordWitness.program.preserves_rename_of_offset
+      (offset := 0) recordBank (fun j => (Nat.zero_add j.val).symm) j (Or.inr hj))
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.FixedPrime

@@ -219,11 +219,11 @@ theorem exec {w : ℕ} (x : Data 13) {N L₀ r₀ : ℕ} (hn : x.regs n = N) (hL
     have hgcd : y₃.regs ga = Nat.gcd N R := by
       rw [show ga = gcdMap NatGcd.a from rfl, hg]; simp +decide [y₂, gcdMap]
     have hy₃ (j : Fin 13) (hj : j.val < 9) : y₃.regs j = y₁.regs j := by
-      rw [hrun₃.regs_eq (Code.preserves_rename_of_forall_ne _ _ _ ?_)]
-      · have h9 : j ≠ ga ∧ j ≠ gb := by
-          constructor <;> (intro h; subst h; simp at hj)
-        simp [y₂, h9.1, h9.2]
-      · intro a h; subst h; fin_cases a <;> simp [gcdMap] at hj
+      rw [hrun₃.regs_eq (Code.preserves_rename_of_offset _ _
+        (by intro i; fin_cases i <;> rfl) j (Or.inl hj))]
+      have h9 : j ≠ ga ∧ j ≠ gb := by
+        constructor <;> (intro h; subst h; simp at hj)
+      simp [y₂, h9.1, h9.2]
     have hy₃1 : y₃.regs one = 1 := by rw [hy₃ one (by simp), hy₁ one (by simp), hy1]
     have hy₃r : y₃.regs r = R := by rw [hy₃ r (by simp), hy₁r]
     have hy₃ok : y₃.regs ok = y₁.regs ok := hy₃ ok (by simp)

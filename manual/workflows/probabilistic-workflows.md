@@ -2,6 +2,302 @@
 
 Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [complexitylib][complexitylib]
 
+## Transport a distribution bound through a map
+
+Import [TotalVariation/Map.lean](../../Complexity/Foundations/MeasureTheory/Measure/TotalVariation/Map.lean).
+For finite measures `μ` and `ν` and a measurable function `f`, apply
+`MeasureTheory.tvDist_map_le μ ν hf` to bound the distance of their pushforwards by
+`tvDist μ ν`. The measures may have different total masses. The extended-valued theorem
+`etvDist_map_le` has the same hypotheses and avoids conversion to real numbers.
+
+This is Mathlib's full-L1 convention: distinct probability atoms have distance `2`,
+and the distance of `2 • dirac x` from the zero measure is `2` as well. The finite-measure
+instances matter because real `tvDist` is defined as zero if its extended value is infinite.
+A previously proved bound transports with `(tvDist_map_le μ ν hf).trans h`;
+no density, injectivity or probability normalization is required.
+
+The [checked clients](../../ComplexityTests/TotalVariationMap.lean) include identity,
+strict coarsening from distance `2` to `0`, unequal masses, and the canonical measurable
+map from `ℝ` to `UnitAddCircle`. Run `scripts/build.sh ComplexityTests.TotalVariationMap`.
+The theorem transports an existing bound; it does not identify the output laws. In particular,
+the Gaussian projection and mod-one distribution identities remain the separate consumer
+[issue #2734](https://github.com/cslib-community/complexitylib/issues/2734).
+
+## Combine component and mixture-weight errors
+
+Import [TotalVariation/Mixture.lean](../../Complexity/Foundations/MeasureTheory/Measure/TotalVariation/Mixture.lean).
+For a finite index set `s`, finite measures `μ i`, `ν i`, and weights `a i`, `b i : ℝ≥0`,
+`MeasureTheory.tvDist_finsetSum_smul_le s a b μ ν` bounds the distance between their actual
+weighted sums by the sum of
+`a i * tvDist (μ i) (ν i) + |a i - b i| * (ν i).real Set.univ`.
+The weights need not sum to one, and the component measures need not be probabilities.
+The actual total mass in the second term is necessary for arbitrary finite measures.
+
+For common weights use `tvDist_nnreal_smul`; for a fixed component with changed weights use
+`tvDist_nnreal_smul_same`. The latter is an equality, including zero weights and the zero
+measure. `tvDist_finsetSum_le` handles finite sums directly. All statements keep the full-L1
+convention: distinct probability atoms have distance two.
+
+The [checked clients](../../ComplexityTests/TotalVariationMixture.lean) include sharp unequal-mass
+examples and a tagged mixture on `Fin 6 × ℝ`. In that client, actual finite-PMF weights sum
+to one; component errors bounded by `4 * ε` and a weight discrepancy bounded by `δ` give a
+joint error of `4 * ε + δ`. The tags are actual measurable pushforwards, so map contraction
+supplies their component bounds. Run `scripts/build.sh ComplexityTests.TotalVariationMixture`.
+The [Regev joint experiment](https://github.com/cslib-community/complexitylib/issues/2767) still
+has to discharge those bounds for its actual Gaussian laws and residue marginal.
+
+## Describe a discrete Gaussian law
+
+Import [Gaussian/Discrete.lean](../../Complexity/Foundations/Probability/Gaussian/Discrete.lean)
+for `ZLattice.discreteGaussian L s hs c`, a PMF on a discrete `ℤ`-submodule `L` of a
+finite-dimensional real normed space. Supply `hs : 0 < s`; the center `c` is any ambient
+point. `summable_gaussianWeight` proves convergence of the infinite lattice sum, and
+`gaussianMass_pos` proves its strict positivity. `discreteGaussian_apply` gives each
+probability as `exp (-π * ‖z - c‖² / s²)` divided by that total mass. No full-rank assumption
+is needed.
+
+Use `map_add_discreteGaussian` to move the law along a lattice translation, and
+`support_discreteGaussian` to discharge point-support obligations. The
+[checked examples](../../ComplexityTests/DiscreteGaussian.lean) use the infinite integer
+lattice at the off-lattice center `1/2`, distinguish its law from a point mass, and check the
+zero lattice. This is a mathematical distribution, with no efficient sampler or smoothing
+bound. Regev's quantum worst-case/average-case reduction remains open in
+[issue #1213](https://github.com/cslib-community/complexitylib/issues/1213).
+
+For a quantitative radius estimate, import
+[Gaussian/DiscreteTail.lean](../../Complexity/Foundations/Probability/Gaussian/DiscreteTail.lean).
+Choose a second width `t > s` and a radius `R ≥ 0`.
+`summable_discreteGaussian_mul_exp` proves that the exponential norm-square moment is finite;
+`tsum_toReal_discreteGaussian_mul_exp` identifies it with `gaussianMass L t c / gaussianMass L s c`.
+Writing `κ = π * (1 / s² - 1 / t²) > 0`, `discreteGaussian_norm_ge_le` bounds the probability
+of `R ≤ ‖z - c‖` by `exp (-κ * R²)` times that same ratio. The checked integer-lattice
+client uses `s = 1`, `t = 2`, center `1/2` and radius `2`, giving the decay factor `exp (-3π)`.
+The ratio remains explicit for arbitrary centers. For a full-rank lattice centered at zero,
+the [centered bounds below](#bound-a-centered-discrete-gaussian) control this ratio using
+Poisson summation. These distributional estimates supply no sampling algorithm.
+
+To vary the center continuously, import
+[Gaussian/Periodization.lean](../../Complexity/Foundations/Probability/Gaussian/Periodization.lean).
+`ZLattice.continuous_gaussianMass L s hs` proves continuity of the normalizer for `hs : 0 < s`.
+The proof establishes summable sup norms of the lattice translates on every compact set, so
+the continuous sum comes from local uniform convergence.
+
+For other decaying functions, import
+[Lattice/Periodization.lean](../../Complexity/Foundations/Analysis/Lattice/Periodization.lean).
+Supply a bundled continuous map `f : C(E, F)` into a complete normed additive group, a real exponent
+`b > Module.finrank ℤ L`, and `f =O[cocompact E] (fun x ↦ ‖x‖ ^ (-b))`.
+`ZLattice.continuous_tsum_translate` proves continuity of `x ↦ ∑' z : L, f (x + z)`;
+`continuous_automorphize` proves continuity of Mathlib's existing `QuotientAddGroup.automorphize`
+on the quotient of `E` by `L.toAddSubgroup`. For a Schwartz function, import
+[Lattice/Schwartz.lean](../../Complexity/Foundations/Analysis/Lattice/Schwartz.lean) and use
+`SchwartzMap.continuous_automorphize` directly. The
+[checked clients](../../ComplexityTests/LatticePeriodization.lean) include a nonzero Schwartz
+bump, an infinite integer lattice, a skew two-dimensional basis, and a rank-zero lattice on
+an off-center compact interval. For Fourier coefficient identification, see
+[the quotient-integral workflow below](#unfold-a-lattice-fourier-coefficient). For the full
+formula, use the Poisson API below.
+
+## Apply lattice Poisson summation
+
+Import [Lattice/Poisson.lean](../../Complexity/Foundations/Analysis/Lattice/Poisson.lean).
+Here `E` is a finite-dimensional real inner-product space with its canonical volume. Supply a
+discrete `L : Submodule ℤ E` and `[IsZLattice ℝ L]`, which requires the lattice to span `E`.
+For a Schwartz function `f`, `SchwartzMap.tsum_eq_tsum_fourier_lattice f L x` identifies the
+sum of `f (x + z)` with the dual-lattice Fourier sum, divided by `ZLattice.covolume L`.
+The dual is Mathlib's existing `LinearMap.BilinForm.dualSubmodule (innerₗ E) L`; the character
+at dual frequency `w` is `exp(2πi * inner x w)`. Convergence of both sums is proved from
+Schwartz decay. The generic `ZLattice.tsum_eq_tsum_fourier_of_rpow_decay` accepts explicit
+polynomial decay, integrability and summability of the actual Fourier samples when a function
+is not supplied as a Schwartz map.
+
+For Gaussian mass, import
+[Gaussian/Poisson.lean](../../Complexity/Foundations/Probability/Gaussian/Poisson.lean) and apply
+`ZLattice.gaussianMass_eq_tsum_dual L s hs c` with `hs : 0 < s` and any center `c`.
+This is an equality in `ℂ`: the real mass equals `s^dim / covolume L` times the dual sum of
+`gaussianWeight (1 / s) w` multiplied by `exp(-2πi * inner c w)`.
+The negative phase comes from evaluating the periodization at `-c`. The theorem includes
+dimension zero and arbitrary full-rank bases, including skew bases. It proves the required
+Gaussian integrability and Fourier summability; it does not assume a Poisson identity.
+
+The complete [LatticePoisson.lean examples](../../ComplexityTests/LatticePoisson.lean) apply
+both endpoints to a skew basis of covolume `2`, check opposite character signs at a nonzero
+frequency, and check the dimension-zero covolume and mass of `1`. From the repository root,
+run `scripts/build.sh ComplexityTests.LatticePoisson` to check these clients. If the
+full-rank instance is missing, start from the basis-spanned lattice in these examples;
+continuity alone also applies to lower-rank lattices, but this Poisson formula needs full rank.
+For centered truncation and uniform shifted-mass control, use the bounds below.
+Quotient-distribution consequences, efficient sampling and Regev's quantum reduction remain open.
+
+## Bound a centered discrete Gaussian
+
+Import [Gaussian/CenteredTail.lean](../../Complexity/Foundations/Probability/Gaussian/CenteredTail.lean).
+Use a finite-dimensional real inner-product space, a discrete full-rank lattice
+`L : Submodule ℤ E`, and center `0`. Write `n = Module.finrank ℝ E`.
+For `0 < s ≤ t`, `ZLattice.gaussianMass_zero_div_le L s hs t hst` bounds
+`gaussianMass L t 0 / gaussianMass L s 0` by `(t / s)^n`. The estimate is uniform over these
+lattices and follows from the proved Poisson identity and positive dual Gaussian weights.
+Equal widths and dimension zero are included.
+
+`ZLattice.discreteGaussian_zero_norm_ge_le L s hs R hR` bounds the probability of
+`R ≤ ‖z‖`, for `R ≥ 0`, by `2^n * exp(-3π R² / (4s²))`. For the source-radius endpoint,
+use `discreteGaussian_zero_norm_gt_sqrt_lt L s hs`: the probability of
+`s * sqrt n < ‖z‖` is strictly less than `(1 / 4)^n`. Both the event and the inequality are
+strict, as in Regev's Lemma 2.5. In dimension zero the event is empty and the bound is `1`.
+These results control the probability discarded by centered finite-radius truncation;
+uniform shifted-mass control is described next, while an efficient sampler remains separate.
+
+The [complete checked clients](../../ComplexityTests/DiscreteGaussianCenteredTail.lean)
+use the infinite lattice generated by `2` in the real line. They instantiate mass scaling,
+equal widths, and width `2` with radius `2`; the lattice point exactly at that radius is
+excluded by the strict event. They also check the dimension-zero empty-event probability.
+Run `scripts/build.sh ComplexityTests.DiscreteGaussianCenteredTail` from the repository root.
+A missing full-rank instance can be supplied by the basis-spanned construction in that file.
+For a nonzero center, the earlier tail bound retains its explicit normalizer ratio.
+
+## Control Gaussian mass uniformly over centers
+
+Import [Gaussian/Smoothing.lean](../../Complexity/Foundations/Probability/Gaussian/Smoothing.lean).
+For a discrete full-rank lattice `L` in a finite-dimensional real inner-product space,
+write `D = LinearMap.BilinForm.dualSubmodule (innerₗ E) L`, `n = Module.finrank ℝ E`,
+and take `s > 0`. The error `δ = gaussianMass D (1 / s) 0 - 1` is the actual convergent
+Gaussian sum over nonzero dual lattice points, by `gaussianMass_zero_sub_one_eq_tsum`.
+It is nonnegative; it is not an extra comparison assumption.
+
+`ZLattice.abs_gaussianMass_normalized_sub_one_le L s hs c` proves, for every center `c`,
+`abs(covolume L / s^n * gaussianMass L s c - 1) ≤ δ`.
+Given `δ ≤ ε`, `gaussianMass_mem_Icc_of_dual_mass_le` gives the mass interval
+`(s^n / covolume L) * (1 ± ε)`. This is the dual-tail form of Regev's Claim 3.8;
+the source's translate `L + c` corresponds to center `-c` in the library.
+
+To obtain the small error, supply a positive lower bound `a` for the norm of every nonzero
+point of `D`. The sufficient numerical condition is
+`2^n * exp(-3πs²a² / 4) ≤ ε / (1 + ε)`, with `ε > 0`.
+`gaussianMass_dual_sub_one_le_of_gap` proves `δ ≤ ε` from this condition using the
+centered Gaussian tail. `eventually_gaussianMass_dual_sub_one_le` proves that the bound
+holds for all sufficiently large widths for every such lattice and every positive error.
+It obtains a genuine positive dual gap from the dual lattice’s discrete topology.
+
+The [checked clients](../../ComplexityTests/DiscreteGaussianShiftBounds.lean) use `2ℤ`,
+its dual gap `1/2`, width `2`, error `1/2`, and center `1`, which is outside the lattice.
+They also check the empty nonzero dual sum and exact normalized mass in dimension zero.
+Run `scripts/build.sh ComplexityTests.DiscreteGaussianShiftBounds` from the repository root.
+A width too small to satisfy the sufficient condition can still use the unconditional
+actual-dual-error bound. The quotient probability consequence is described below; a minimum
+smoothing parameter, convolution theorem and efficient sampler remain separate.
+
+## Condition a discrete Gaussian on coefficient residues
+
+Import [Gaussian/CoefficientFiber.lean](../../Complexity/Foundations/Probability/Gaussian/CoefficientFiber.lean).
+Give an integer basis `b` of the discrete lattice, a positive modulus `p`, a width `r > 0`,
+and an arbitrary center `c`. `ZLattice.coefficientMod L b p` reduces the basis coordinates
+into `ι → ZMod p`; `coefficientLift` supplies their least-nonnegative-coordinate representative
+`u`. With `open scoped Pointwise`, the canonical submodule `(p : ℝ) • L` is the image of
+multiplication by `p`.
+
+`map_coefficientMod_discreteGaussian_apply` identifies each residue probability as
+`gaussianMass (p • L) r (c - u) / gaussianMass L r c`, in `ENNReal` form.
+`map_coefficientMod_discreteGaussian_pos` proves every event has positive probability.
+`filter_coefficientMod_discreteGaussian` then identifies the actual `PMF.filter` with a draw
+from `discreteGaussian (p • L) r hr (c - u)` followed by translation by `u`.
+There is no index or covolume factor in this conditional law.
+
+`map_coefficientMod_pair_discreteGaussian` reconstructs the tagged sample by drawing its
+actual residue marginal and then the corresponding coset Gaussian. These weights are not
+assumed uniform. The [checked clients](../../ComplexityTests/DiscreteGaussianCoefficientFiber.lean)
+use the infinite lattice `2ℤ`, composite modulus `6`, residue `1`, and center `1/2`:
+the representative is `2`, the scalar lattice contains `12`, and the conditional center is
+`-3/2`. Rank-zero and dimension-zero cases are also checked. Run
+`scripts/build.sh ComplexityTests.DiscreteGaussianCoefficientFiber` to check the clients.
+
+This is the exact conditioning step used in Regev's Lemma 3.11, not its joint LWE sample
+bound or an efficient sampling procedure. The [joint experiment](https://github.com/cslib-community/complexitylib/issues/2767)
+and the [full reduction](https://github.com/cslib-community/complexitylib/issues/1213) remain separate.
+
+## Fold a density onto a quotient
+
+Import [QuotientDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/QuotientDensity.lean)
+to push a nonnegative density through a countable additive-subgroup quotient. Given a measurable
+`f : G → ℝ≥0∞`, measurable subgroup translations, an invariant ambient measure `μ`, and
+`hF : IsAddFundamentalDomain Γ.op F μ`, apply
+`QuotientAddGroup.map_withDensity_eq_withDensity_automorphize hF hf`. It identifies the image of
+`μ.withDensity f` with the density `QuotientAddGroup.automorphize f` relative to the image of
+`μ.restrict F`. At the coset of `x`, that density sums `f (x + γ)` over subgroup elements.
+
+The theorem derives measurability on the canonical quotient measurable space and allows infinite
+values and infinite total mass. It does not require a measurable fundamental domain beyond the
+null-measurability already in `hF`. The [checked clients](../../ComplexityTests/QuotientDensity.lean)
+cover bottom and top subgroups, a two-element group, infinite densities on a null measure, and
+the Borel measurable space of a discrete lattice quotient. The following Gaussian consumer
+proves the required probability normalizations before applying a distance formula.
+
+## Compare an actual Gaussian quotient distribution with uniform measure
+
+Import [Gaussian/Quotient.lean](../../Complexity/Foundations/Probability/Gaussian/Quotient.lean).
+Let `L` be a discrete full-rank lattice in a finite-dimensional real inner-product space `E`,
+let `n = Module.finrank ℝ E`, and take `s > 0`. Use `q = QuotientAddGroup.mk`, the
+canonical map to the quotient by `L.toAddSubgroup`, and an actual fundamental domain
+`hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume`. The measures are ordinary
+`Measure.withDensity`, `Measure.map` and scalar multiplication:
+
+- The ambient Gaussian is `volume.withDensity (fun x => ENNReal.ofReal
+  (gaussianWeight s x / s^n))`. Its probability normalization is
+  `ProbabilityTheory.isProbabilityMeasure_gaussianWeight s hs`.
+- The uniform reference is `(ENNReal.ofReal (ZLattice.covolume L))⁻¹ •
+  Measure.map q (volume.restrict F)`.
+  `ZLattice.isProbabilityMeasure_normalized_quotient L volume hF` proves it is a probability;
+  `normalized_quotient_eq` and `isAddLeftInvariant_normalized_quotient` prove independence
+  from the fundamental domain and translation invariance.
+
+`ZLattice.map_gaussianWeight_eq_withDensity L s hs hF` identifies the actual Gaussian
+pushforward's density relative to this reference. At `q x`, the real density is
+`covolume L / s^n * gaussianMass L s (-x)`; the opposite center comes from summing
+`gaussianWeight s (x + z)`. The representative identity is available as
+`automorphize_gaussianWeight_coe`.
+
+`ZLattice.tvDist_gaussian_quotient_le L s hs hF` bounds the distance between these actual
+probability measures by `gaussianMass D (1 / s) 0 - 1`, where `D` is the existing dual
+submodule. Compose it with `gaussianMass_dual_sub_one_le_of_gap` for a numerical sufficient
+width condition. `eventually_tvDist_gaussian_quotient_le L hF ε hε` proves that every positive
+error is achieved at all sufficiently large positive widths. The bound does not assume a
+small dual mass or a conclusion about the quotient distribution.
+
+Here `tvDist` is full L1, matching Regev's printed page 13 convention with range `[0, 2]`;
+there is no extra factor of one half in the stated bound. This is a precise quotient
+consequence of Claim 3.8, not a uniform probability on all of real space or the convolution
+statement of Claim 3.9. Efficient sampling and the quantum reduction remain open.
+
+The [checked clients](../../ComplexityTests/DiscreteGaussianShiftBounds.lean) reuse `2ℤ`
+with covolume `2`, width `2`, and its proved dual gap `1/2`. They check both probability
+normalizations, the actual density at the off-lattice representative `1`, full-L1 distance
+at most `1/2`, and eventual small error. In dimension zero, the two actual measures are
+proved equal and their distance is zero. Run
+`scripts/build.sh ComplexityTests.DiscreteGaussianShiftBounds` from the repository root.
+
+## Convolve a singular law with a density
+
+Import [ConvolutionDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/ConvolutionDensity.lean).
+For a measurable group with measurable multiplication and inversion, let `σ` and `μ` be
+s-finite measures, let `μ` be left invariant, and supply `hf : Measurable f` for
+`f : G → ℝ≥0∞`. Apply
+`MeasureTheory.mconv_withDensity_eq_withDensity_lintegral hf` to identify
+`Measure.mconv σ (μ.withDensity f)` with a density relative to `μ`: at `x`, integrate
+`f (y⁻¹ * x)` against `σ`. The theorem derives measurability of that density.
+
+For additive groups, use `conv_withDensity_eq_withDensity_lintegral`; the translated density
+is `f (-y + x)`. The first measure can be singular, such as a discrete distribution.
+The existing two-density convolution theorem requires both input laws to have densities with
+respect to the same reference measure. This theorem needs only the second one to have a density.
+It allows infinite total mass and infinite density values, and assumes no integrability or
+probability normalization.
+
+The [checked clients](../../ComplexityTests/ConvolutionDensity.lean) translate an actual
+Gaussian by an atom and recover the variance-two Gaussian from two variance-one inputs.
+A noncommutative permutation-group example checks the order of translation; infinite-density
+and zero-input cases check the absence of hidden finiteness premises. Run
+`scripts/build.sh ComplexityTests.ConvolutionDensity` from the repository root.
+The later [lattice Gaussian convolution bound](https://github.com/cslib-community/complexitylib/issues/2707)
+still needs its actual discrete weights, completion of the square and quantitative error proof.
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.
@@ -44,6 +340,22 @@ example (test : List Bool × Bool × ℕ → Bool)
 
 Also check the sampler itself. `ProbComp.uniform (Fin 3)` has exact uniform semantics, but a strictly bounded fair-coin machine cannot give each outcome probability one third. The client deliberately tests that `ppt` does not certify it for free. Use an applicable dyadic sampler or the library's approximate-sampling results, carrying the approximation error into the later probability proof.
 
+## Bound a centered-binomial sampler tail
+
+[CenteredBinomial/Concentration.lean](../../Complexity/Languages/Probabilistic/CenteredBinomial/Concentration.lean)
+bounds the law of the existing `sampleCenteredBinomial η` program. For `η > 0` and real
+`B ≥ 0`, `sampleCenteredBinomial_tail_le` gives
+`Pr[B ≤ |z|] ≤ 4 exp(-B²/(2η))`; `sampleCenteredBinomial_strict_tail_le` gives the same
+bound for `B < |z|`. This original two-count union bound is not optimal. Width zero remains
+`pure 0`, so its strict and non-strict zero cutoffs differ.
+
+The [checked clients](../../ComplexityTests/CenteredBinomialConcentration.lean) show positive
+mass at both width-eight endpoints, an empty strict tail above eight, and a non-strict tail
+bound below one. They also certify the actual growing program with `η = 8(l+1)` as
+`IsPPTOn encUnary encIntBin` and bound its strict tail above `4(l+1)` by `4 exp(-(l+1))`.
+The native certificate charges unary width and signed binary output; this scalar result
+supplies neither encryption correctness nor a security reduction.
+
 ## Certify an adaptive oracle client
 
 For native oracle efficiency, start with `WordOracleComp Operation α`: finite operation names and word payloads/replies.
@@ -82,6 +394,77 @@ Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on externa
 <!-- /worked-example -->
 
 When replacing the external handler with an implementation, open [Oracle/Substitution.lean](../../Complexity/Computability/Probabilistic/Oracle/Substitution.lean). The plain-certificate variant `IsOraclePPTOn.run_interpret_preprocess_open'` requires efficient preparation, initialization and handling, plus an invariant and bounds on reply length and added encoded state. Its `hresources` premise also certifies a uniform unary computation of the resource allowance from the original caller and request; an abstract polynomial bound alone does not supply this certificate. Repeated state doubling explains why “each call is polynomial time” is insufficient.
+
+## Derive adaptive decapsulation security
+
+Import [`KEMFromPKE/CCA.lean`](../../Complexity/Crypto/Computational/Encryption/KEMFromPKE/CCA.lean) when the starting assumption is `WordINDCCA2 keyGen encrypt decrypt`. Apply `WordINDCCA2.indistinguishable_encryptKeyEncaps` with the unary polynomial-time certificate for `keyLen`. It proves security of the actual `encryptKeyEncaps` constructor against adaptive postchallenge queries, with exact loss one. The [complete checked client](../../ComplexityTests/Crypto/KEMFromPKECCA.lean) uses `keyLen n = 2 * n` and keeps `n` as the security parameter.
+
+For a runtime conclusion, use `isPPTOn_kemCCAGames_encryptKeyEncaps` with native key generation, encryption, decryption and adversary certificates. For correctness, apply `decrypt_encryptKeyEncaps_some` to a supported encapsulation and the original encryptor's supported-output correctness. These are separate contracts. The same test file checks a correct empty-key instance and distinguishes `none` from `some []`.
+
+Check freshness against raw ciphertext words. The test's native `adaptiveTagDistinguisher` first observes rejection of the exact challenge, then flips a redundant tag and queries again. Because the malformed scheme ignores that tag, the distinct word reveals the key. Its exact advantage is `1 - 2^(-keyLen n)`; the comparison uses a bounded reply prefix, so its strict oracle runtime certificate holds even for arbitrarily long external replies.
+
+For hybrid ciphertexts, use [`hybridDecrypt`](../../Complexity/Crypto/Computational/Encryption/Hybrid.lean)
+with Option-valued decapsulation and symmetric decryption. It first checks that re-encoding
+`(unframe ct, dropFrame ct)` gives exactly `ct`, then propagates either component's `none` result.
+Apply `hybridDecrypt_hybridEncrypt` with component correctness returning `some k` and `some msg`;
+`computableInPolyTime_hybridDecrypt` takes the corresponding certificates with `encOption` outputs.
+The [hybrid clients](../../ComplexityTests/Crypto/HybridEncryption.lean) show why the framing check
+matters: `[true, true]` and `[true, true, false]` have the same projections, but only the latter
+is a canonical pair. They also check accepted empty plaintext (`[true]` as an oracle reply),
+rejection (`[]`), and exact challenge-word rejection.
+
+For the symmetric leg of CCA composition, import
+[`Hybrid/DEMCCA.lean`](../../Complexity/Crypto/Computational/Encryption/Hybrid/DEMCCA.lean).
+`hybridDEMGame` uses the existing two-phase `cca2GameOn`: it retains the original joint KEM key
+and encapsulation distribution, samples the hidden key from `E.keyGen n`, and redirects the
+selected KEM component to that key in both phases. Challenge messages must each have length `n`.
+`eval_hybridDEMGame` proves exact equality with the existing symmetric `ccaOneTimeGame`, and
+`OneTimeINDCCA.indistinguishable_hybridDEMGame` supplies the loss-one security conclusion.
+The native reduction certificate charges both adaptive phases and bounds every external reply read;
+`isPPTOn_hybridDEMGame` also certifies the closed experiment.
+
+The [checked clients](../../ComplexityTests/Crypto/HybridDEMCCA.lean) apply the result to the
+existing PRF Encrypt-then-MAC cipher, expose an insecure echo cipher, and run a zero-width
+prechallenge/challenge/postchallenge trace. They distinguish an empty encryption reply from an
+encoded successful empty plaintext.
+
+For the complete `n`-bit-message composition, import
+[`Hybrid/CompositionCCA.lean`](../../Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
+and apply `hybrid_indcca2On`. Supply the existing KEM CCA indistinguishability assumption,
+`E.OneTimeINDCCA`, native algorithms, supported KEM correctness, and a native postprocessor
+`F` satisfying `(uniformList (keyLen n)).map (F n) = eval (E.keyGen n)` for every `n`.
+Postprocess every successful decapsulation with `Option.map (F n)` too. The conclusion uses
+`INDCCA2On` with both challenge lengths equal to `n`, not unrestricted `WordINDCCA2`.
+`exists_hybridCCA_reductions` returns native KEM and symmetric adversaries and the exact
+`2 * KEM advantage + symmetric advantage` bound. Reply caps are derived from supported
+secret-key lengths and the native decryptor; external replies need no assumed length bound.
+
+The [complete composition clients](../../ComplexityTests/Crypto/HybridCompositionCCA.lean)
+use `IsPPTOn.exists_total_seeded_evaluator` for arbitrary actual key generators and split `3*n`
+uniform bits into the PRF Encrypt-then-MAC cipher's actual framed keys. Those keys have encoded
+length `4*n+1` and are not uniform words of that length. For perfect correctness, apply
+`hybridDecrypt_postprocessed_hybridEncrypt` with a supported-real-key premise: the total evaluator
+provides it for every seed, while the simple split map needs real keys of length `3*n`.
+The clients also distinguish failed decapsulation from accepted empty keys, detect omitted
+postprocessing on forwarded replies, and exhibit a failed real hop without KEM correctness.
+
+## Certify a list accumulator
+
+Import `Complexity.Computability.Probabilistic.Fold` for
+`IsPPTOn.foldlM_of_bounded_growth` and `IsOraclePPTOn.foldlM_of_bounded_growth`.
+They certify ordinary `List.foldlM` with the accumulator as the step's first argument.
+Supply plain polynomial-time certificates for the input list and initial accumulator, a joint
+step certificate, and a constant bound on the encoded accumulator's growth at every supported
+result. For an oracle fold that bound covers arbitrary external replies; truncate replies or
+prove a suitable support bound before applying it.
+
+The complete [ProbabilisticFold client](../../ComplexityTests/ProbabilisticFold.lean) checks a
+noncommutative accumulator, an oracle fold's ordered calls and final external
+counter, and an empty fold that makes no calls. From the configured repository root, run
+`scripts/build.sh --wfail --iofail ComplexityTests.ProbabilisticFold`. The fallback argument
+only totalizes the internal iteration step; it is never used on an empty list. If the growth
+premise fails, check the output encoding and reply cap rather than assuming that efficient
+individual steps make an arbitrarily growing accumulator efficient.
 
 ## Connect a randomized RAM loop to its answer law
 
@@ -180,6 +563,68 @@ preserves the true cutoff. `CorrectionSampling.withSource` changes only the samp
 pair law, preserving the true input, final pilot, gates and incoming budget. The common
 `correctionRequest_eq_split` avoids rebuilding the split transport for each choice of children.
 
+To compare genuine targets across request roles and copy suffixes, import
+[HierarchyCanonicalTargets](../../Complexity/Foundations/Probability/HierarchyCanonicalTargets.lean).
+Use `stage_correctionIter_eq_of_terminal_rate` to identify the left and negative correction
+targets at a common stage rate. `source_request_mean_canonical` combines this transport with
+the actual narrower-source correction mean, retaining its literal usage-density divisor.
+The proof integrates source spectators and permutes each padded frame seed; it does not
+identify samples at an unchanged environment. The
+[regression client](../../ComplexityTests/HierarchyCanonicalTargets.lean) checks actual residual
+requests with different terminal roles and radix-two suffixes, a positive target and an
+unequal-rate complete correction mean.
+
+For a genuine source-reset dense child, import
+[HierarchyDenseChildren](../../Complexity/Foundations/Probability/HierarchyDenseChildren.lean).
+Build `denseChild` from the deterministic hierarchy base, bin cutoff and genuine
+`densePreparation`. `dense_normalizer` integrates the actual joint source/usage mean;
+`denseChild_terminal` then removes source and spectator dependence pointwise. For a
+left correction sharing the midpoint with that reset source, use
+[HierarchySharedMidpoint](../../Complexity/Foundations/Probability/HierarchySharedMidpoint.lean).
+`sourceChild_mul_denseChild_mean` conditions the single full environment on the old
+source and terminal events. Supply three distinct roles, the complete right-source reset,
+the finite horizon and narrower-source hypotheses, and the dense support/gate bounds.
+The left midpoint hit and literal midpoint-density divisor remain in the sample.
+The [checked client](../../ComplexityTests/HierarchySharedMidpoint.lean) evaluates a positive
+product with unequal rates, nonempty suffixes and a free fourth role.
+
+For signed assembly import
+[HierarchySignedMean](../../Complexity/Foundations/Probability/HierarchySignedMean.lean).
+`canonicalRequestChild` matches normalized index j and evaluates `sourceChild` at j.val;
+`correctionAtomTask_last_succ` proves the final structural dispatch. Request size stays
+`HP.k` as statistical precision varies. `sourceChild_mean_on_terminal_event` derives the
+negative mean from genuine correction normalization and zero off usage, with no target-mean
+premise. The actual negative request has rank rate f and usage min(parent terminal, f).
+`canonical_rawSample_mean` proves the literal one-bin mean `C_bin + E*C_bin - E` on
+one full environment. `canonical_residual_bins_mean` sums `rawPositiveSample` over the
+existing routed-bin partition with route one, then subtracts `rawNegativeSample` once.
+Its exact finite cover and narrower-source horizon are explicit; summing unchanged signed
+rawSample bins would subtract E repeatedly. The
+[checked signed client](../../ComplexityTests/HierarchySignedMean.lean) keeps nonempty
+suffixes, unequal rates and a free spectator, checks two statistical walk precisions,
+positive genuine final correction/product terms, a nonconstant product and two-bin assembly.
+
+For finite absolute estimated-child propagation import
+[HierarchyEstimatedMean](../../Complexity/Foundations/Probability/HierarchyEstimatedMean.lean).
+`estimated_residual_bins_mean_error` compares actual bounded `incomingChildren` at fixed
+`Request HP.k` with `canonicalRequestChild`. Supply the genuine C/top-rate cap, monotone
+bin scales with adjacent ratio at most 16, and the same cover/horizon and dense-gate contracts.
+`boundedRoutedBinCutoff_div_eq` proves true-input agreement before the bounded evaluator is
+used. The product splits as estimatedLeft*(estimatedRight-canonicalRight) +
+(estimatedLeft-canonicalLeft)*canonicalRight. Actual correction range `2*Q(atomCap)` and
+genuine dense range `2*max cap 16` pay the two errors. Importance and midpoint densities
+stay literal; positive-bin errors are summed and the negative error occurs once.
+The [checked error client](../../ComplexityTests/HierarchyChildError.lean) instantiates the
+actual two-bin cap and exact adjacent ratio on the shared spectator/suffix fixture.
+
+[FirstMeanError](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstMeanError.lean)
+then proves `actualEstimatedResidual_first_mean_le`: the completed full-terminal raw walk
+preserves this input mean and the actual first prefix has bound
+`min 1 (absoluteError / (rate kt + genuineResidual x y))`. The genuine residual is nonnegative.
+This direction does not convert clipped relative error into absolute error. Preparation still
+uses the full-rank maximum in `preparationError`. Recursive root/relative budgets, copy-stage
+routing, numerical reserves, parameter/workspace bounds and native RL=L remain open.
+
 The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
 16/625, 81/625 and 1/625, different nonempty copy suffixes, and a free spectator role.
 It proves a positive complete actual request mean with the genuine final pilot. Usage
@@ -207,11 +652,233 @@ noise certificate. Zero correction remains literal; the moment/noise bridge here
 positive iterations. Pilot/copy paths, quantitative lower-child budgets, summation and
 recursive/native correctness remain open.
 
+For the first compression signal, import
+[FirstSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstSignal.lean)
+and apply `actualFirstSignal_noise_le_lower`. Its precision-indexed inputs are genuine
+`rawIncomingNormalized` samples on one fixed positive structural `Request q`.
+For a genuine hierarchy use `q = HP.k` and `HP.k_pos`; precision j changes child
+estimates and walk lengths, not the request type or final correction index. `firstSignalIncrement` takes successive conditional-walk
+differences from zero; `actualPrefix_firstSignalIncrement` identifies prefix i with walk
+i+1 divided by `rate k`. Stationarity on the full terminal slice, including empty slices,
+then identifies `actualNoiseEntry` with centered walk noise divided by
+`rate k * (1 + G / rate k)`.
+
+The endpoint row moment is bounded directly by `rate k` to the inverse fourth power,
+times `32 * lambda^(2*steps(i+1))`, times the explicit lower-child
+`incomingMomentBudget` at budget i+1. No maximum-entry conversion, hidden width constant,
+or independence assumption is used. The
+[regressions](../../ComplexityTests/ActualFirstSignal.lean) check nonzero nonconstant
+telescoping prefixes, zero inputs, empty slices and a nonconstant random mean/moment.
+For a numerical payment, import
+[FirstPayment](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstPayment.lean).
+Supply CB≥0 and a proved [0,CB] range for the actual bin cutoff.
+`normalizedRequest_mem_Icc` gives direct/right range 2CB; correction range remains
+CA=2Q(atomCap). `incomingMomentBudget_le_payment` pays all three child norms on the
+same full environment. For N=P and u=rate(ks), with ks and km in the declared horizon,
+each bounded row pays at most 16P times its fourth-power bound. This deliberately retains
+the full endpoint width P; it does not infer sparse support for an arbitrary bounded cutoff.
+The correction product still uses its existing proved K/Kc support bounds.
+
+`firstSignalPayment` evaluates both actual usage ratios as exact grid frame-mass ratios,
+with usage exponent max(k,kb) or max(k,km). The right factor keeps rate(km) divided by
+its actual midpoint density. The resulting finite payment retains P, the rounded frame
+masses, and rate(km)/rate(ks); none is hidden in a universal constant.
+`actualFirstSignal_noise_le_payment` keeps rate(k)^(-4), and
+`actualFirstSignal_noise_le_dyadic` uses the shared `spectralWalkLength` at child budget i+1
+to pay the dyadic fourth-power noise contract for ε>0. The
+[actual-bin regressions](../../ComplexityTests/ActualFirstPayment.lean) use
+`boundedRoutedBinCutoff` with a genuine polynomial switch, top cap HP.k+2, adjacent-scale
+ratio 16 and explicit CB=max(HP.k+2,16). They check a nonzero complete residual, negative-input
+clipping, a chosen actual i=2 noise client, exact logarithmic steps and zero/empty edges.
+
+For the preparatory second signal, import
+[SecondSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondSignal.lean).
+`selectedPreparation` applies the selected preparation cutoff and full terminal-rank
+gate to a supplied **completed raw child in matrix units**. `completedRawChild` names the
+actual conditional H4 walk of `rawIncomingNormalized` used by FirstSignal and FirstPayment.
+Apply preparation after this raw walk, then average preparation on source × usage.
+`hierarchyTaskRecipe_residualPreparation` checks the existing hierarchy evaluator reads
+that completed child before the nonlinear recipe. All source, midpoint, terminal, usage
+and copy data remain on the same environment. `rawSamplePreparation` is the optional
+unaveraged finite client; it does not identify the recursive preparation evaluator. `actualSelectedSecondSignal_noise` bounds
+its endpoint row noise by `ζ^4 * 32 * lambda^(2*steps(i+1)) * rowNormPow(T_(i+1))`
+on source × usage. Stationarity identifies the actual second noise with
+`|ζ| * |walk_(i+1) - rowSliceMean(T_(i+1))|`. The initial second signal is literally zero,
+and `firstSignalIncrement` retains its existing full-rank first prefix.
+
+The preparation is in [0,1] and has fewer than K nonzero retained rank entries per row.
+For usage exponent kt≥k, `selectedPreparation_support_moment` applies the generic
+sparse-row bound **before walk averaging**. Its payment is
+`K * (N*u)^(-1) * sum_x density(sourceRetains x)`, without independence of the input,
+support or source. `source_density_sum` evaluates the sum as `P * (side(P,ks)/P)^4`,
+including nonempty copy suffixes and D=0. With N=P, u=rate(ks), and ks in the declared
+horizon, `selectedPreparation_moment_le` gives 16K. No sparsity of the averaged
+walk is claimed.
+
+`actualSelectedSecondSignal_noise_le` feeds that input payment into the actual second
+prefix: its noise moment is at most `ζ^4 * 32 * lambda^(2*steps(i+1)) * 16K`.
+For ε>0, the shared `spectralWalkLength` takes lambda and coefficient ζ^4*512K
+and gives an explicit natural ceiling of a base-lambda logarithm;
+`actualSelectedSecondSignal_noise_le_dyadic` accepts this length or any larger one and
+pays `(ε * 64^(-dyadicSlack(m,i)))^4`. The length uses input budget i+1. The extra 1 in
+its logarithm denominator also handles zero scaling and capacity. ε=0 is excluded from
+this finite-length guarantee: a positive spectral upper bound never vanishes in finitely
+many steps.
+
+The [regressions](../../ComplexityTests/ActualSecondSignal.lean) check positive, nonconstant
+selected preparation, the actual H4 second-prefix client with the
+chosen steps, D=0 with a nonempty suffix, two-signal prefixes, zero children, and empty
+usage through compression. Mixing controls noise around the selected input's own mean.
+
+For deterministic preparation bias, import
+[MeanBias](../../Complexity/Foundations/Probability/NormalizedAtomRows/MeanBias.lean).
+`preparation_stability_constants` uses polynomial entry-cutoff regularity and the actual
+hierarchy rho fourth-root regularity. `preparation_sub_genuinePrep_le` compares signed
+residual A to G on the same full terminal rank slice: its bound is
+`(Lh * |A σ x y - G x y| + Lρ * rank₁(fullRank, |A σ x · - G x ·|)) / rate k`.
+`preparationError_le` accepts explicit absolute entry and full-rank envelopes; it needs
+no target-size bound. `preparation_mean_bias_le` averages this error over the actual joint
+source × usage slice against `genuinePrep(G)` and `genuineMean`, including empty slices.
+`actualSelectedSecondSignal_mean_bias_le` accepts any completed raw child.
+`actualCompletedSecondSignal_mean_bias_le` keeps that same structural q at every precision
+and instantiates it with the actual raw H4 walk
+and the ζ-scaled preparation prefix at input budget i+1. `firstSignal_raw_error` and
+`preparationError_eq_firstPrefix` identify its absolute errors with the actual first-prefix
+errors, retaining rate(k) and the full-rank maximum. The first prefix is F_j/rate(k);
+`atomPrep` itself divides by rate(k), so preparing that prefix directly would divide twice. The clipped
+second deterministic discrepancy is at most `min 1 (|ζ| * jointMean(preparationError))`.
+All source/copy suffixes, rates, role data and correlations remain present. The first
+coordinate is unchanged. The regressions evaluate a positive nonconstant genuine target,
+a perturbed-residual bias of one, exact-zero perturbation and empty usage. The ordering
+regression has raw values 0 and 2: preparation of their average is 1, while the average
+of their preparations is 1/2. A seven-step actual H4 completed child retains a positive
+preparation and a zero endpoint.
+
+For quantitative second deterministic envelopes, import
+[SecondEnvelope](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondEnvelope.lean).
+`secondMeanEnvelope` is the actual B1: `min 1 (|ζ| * jointMean(preparationError))`.
+`actualSelectedSecondSignal_mean_le_envelope` and
+`actualCompletedSecondSignal_mean_le_envelope` bound the actual clipped second mean by B1.
+For usage contained in full terminal rank, `secondMeanEnvelope_moment` pays its fourth row
+moment by `P * (|ζ| * (Lh + Lρ) / rate k)^4` times the completed raw absolute error moment.
+Conditional Jensen cancels the joint densities; repeating the full-rank maximum over usage
+endpoints costs the visible width P. No independence or target-size cap is used.
+
+`actualCompletedRaw_absolute_moment_le_payment` splits `A-G = (A-μ)+(μ-G)` at the actual
+full-rank input mean μ, paying `8 * (32 * λ^(2*steps) * firstSignalPayment + ROW(error))`.
+The centered noise is in RAW matrix units; relative `actualNoiseEntry` cannot be substituted
+without restoring its rate and target factors. `actualCompletedSecondSignal_envelope_payment`
+then pays B1 with the same explicit width and inverse rate. Its mean-error hypothesis is
+absolute, before clipping. For actual finite bins,
+`actualEstimatedResidual_second_envelope_moment` discharges that mean-error step with
+`estimated_residual_bins_mean_error`: positive costs sum and the negative cost is charged once.
+The shared [estimated input](../../Complexity/Foundations/Probability/HierarchyEstimatedInput.lean)
+names exactly that positive-bin sum minus one negative request, with fixed `Request HP.k`
+and independent precision. Its pointwise range uses the actual left support at most K,
+zero extension off midpoint usage, and dense ranges `2 * CB_i`: the product costs
+`K * CA * 2 * CB_i`, rather than ambient width P. Here `CA = 2 * Q(atomCap)`,
+`CB_0 = cap` and `CB_i = 16` for fine bounded routed bins. The finite scale sum retains
+all rates, exact rounded-grid importance ratios and the midpoint marginal divisor.
+`estimatedResidualInput_moment_le` pays `16 * P * bound^4` at `N=P, u=rate ks`;
+the second-envelope client uses this payment without a retained raw-input-moment premise.
+The canonical residual remains at km, with full rank and normalization at kt, finite
+coverage, narrower-source horizon, all suffixes and one shared environment.
+
+`actualEstimatedFirstSignal_noise_le_dyadic` pays actual first-prefix row noise using the
+same input and the inverse parent-rate fourth power. For scaled centered RAW noise,
+`estimatedResidualInput_scaled_noise_le_dyadic` feeds `spectralWalkLength` the coefficient
+`amplification * 32 * 16 * P * bound^4`. For B1 the amplification is
+`P * (|ζ| * (Lh + Lρ) / rate kt)^4`; this retains RAW matrix units.
+Positive tolerance is required. The [finite input tests](../../ComplexityTests/HierarchyEstimatedInput.lean)
+include a positive nonconstant two-bin input, exact once-negative arithmetic, independent
+precisions, separate top/fine caps, support versus width, chosen amplified steps and zero/empty edges.
+The [regressions](../../ComplexityTests/SecondEnvelope.lean) check a positive nonconstant
+spectator raw child and B1, exact-zero/empty edges, actual clipped-mean comparison and an exact
+two-endpoint counterexample to dropping width.
+
+[ReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/ReserveOutput.lean)
+assembles the actual finite output from explicit lower-child conditional-error-cost fourth
+moments. `actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
+matrices by finite maxima of the actual first/B1 envelopes divided by `2^dyadicSlack`.
+The first payment uses absolute mean error over `rate kt + G`; the second retains
+`A = P * (|ζ| * (Lh + Lρ) / rate kt)^4`. At horizon m its uniform child-cost reserve is
+`tolerance^4 / (1 + rate kt^(-4) + A)`, where `tolerance = ε / (2 * (m + 1))`.
+This finite allocation pays both common-B moments without claiming growth independent of m.
+RAW steps are the maximum of the actual first-noise requirement and the fully amplified
+`(1 + A)` RAW requirement. Preparation steps use the existing 16K payment. The target is
+`genuineNormalizedRecipe` at the canonical residual, identified with `normalizedRequest`
+by `genuineNormalizedRecipe_eq_request`; capacities are actually `(K+1)*2^(64*slack)`.
+The theorem derives nonnegativity, row mass and zero extension, with finite cover,
+narrower-source horizon, gate/cutoff/cap and routing agreements still explicit.
+The [new regressions](../../ComplexityTests/ReserveOutput.lean) evaluate a positive,
+nonconstant full-matrix input with a free spectator, show the once-negative arithmetic,
+compute nonzero common B and check the actual completed prefix at index zero.
+The bounded fixture does not assert the canonical routed-bin mean or recursive reserves.
+A separate actual lower-child conditional-cost client proves that the finite reserve is
+satisfiable at some positive tolerance; it does not claim that tolerance is small.
+
+[ChildRootReserve](../../Complexity/Foundations/Probability/NormalizedAtomRows/ChildRootReserve.lean)
+now pays that cost reserve from actual normalized lower-child rooted moments.
+[RootReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/RootReserveOutput.lean)
+reuses the same output assembly. Its target is still the genuine canonical residual.
+The cost API retains only the union of actual estimated/canonical left supports. Both left
+children vanish off midpoint usage, so right errors are charged only at their reset source z.
+Left errors use the old source and midpoint terminal. Each lower budget uses its own full
+terminal rank; min-rate usage is proved to lie in that rank, with every suffix unchanged.
+
+The sufficient allocation is deliberately conservative. Put `CA = 2 Q(atomCap)`,
+`CB = 2 max(cap,16)`, `B = max(CA,CB)` and let `A` be `residualCostCoefficient`.
+Its literal formula is `8 ((n+1)^4 sum_i 8 (D_i + 8 P^4 (CA^4+CB^4) T_i) + N)`,
+where `D_i`, `T_i`, and `N` are endpoint sums of the fourth powers of the direct,
+importance-times-midpoint, and once-negative coefficients. Their rounded grid densities
+remain literal. Set `scale = P^2 / (P rate ks) * A` and
+`delta = tolerance^4 / (1 + rate kt^(-4) + amplification)`.
+For each called request r, a rooted row moment at most
+`delta / (1+scale) / (1 + (4 B^(3/4))^4 P r.source.rate) / (1 + #calls)`
+pays the desired reserve, where `calls = residualErrorCalls` contains the direct/left/right
+requests per positive bin and the special negative request once. In particular
+`#calls ≤ 3(n+1)+1`; it counts requests, not environment atoms. The proof keeps a sum
+of child ordinary errors on their own source/usage domains for each environment, applies
+conditional Jensen to the actual cost, and swaps finite sums with expectation. Bounded
+root-to-ordinary conversion then pays each integrated child moment. Repeating this sum
+over parent pairs costs the explicit `P²`; child source normalization costs `P r.source.rate`.
+There is no environment-cardinality or inverse minimum-atom-probability factor, and no
+independence assumption on children. Exact midpoint density and importance factors remain
+in `A`. This finite transport does not establish useful recursive parameter growth.
+The ordinary-error conversion applies only to bounded normalized estimated and canonical
+outputs, never to the signed raw target divided by a rate. The
+[domain regressions](../../ComplexityTests/ChildRootReserve.lean) check an off-source error
+ignored by the actual product, full-rank masks, two-bin/once-negative coefficients,
+canonical-zero and positive nonconstant normalized outputs. A sparse, mask-sensitive
+normalized-child regression also checks an integrated budget that permits a unit error at
+a retained atom; the corresponding per-atom allowance would be strictly less than one.
+
+Deriving small numerical errors from recursive lower-child relative estimates, numerical
+reserves, recursive budget induction, copy routing, parameter/workspace bounds and native RL=L
+remain open. Row mass does not provide a uniform target bound, and clipped relative error
+alone does not provide an absolute residual error.
+
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
 inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
 lower-child budget induction, native realization and RL=L remain in
 [issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
+
+## Extract an emitted pseudorandom prefix
+
+Import [Stretch/Prefix.lean](../../Complexity/Crypto/Computational/Stretch/Prefix.lean).
+Use `PRGStretch.length_take_forwardIterate` and `take_forwardIterate_prefix` with the global
+one-bit length promise. The latter compares `ℓ ≤ L` rounds only after discarding the final
+seed: take `ℓ` bits from either run. Do not apply it to the complete retained-seed output.
+
+`polyTime_take_forwardIterate` certifies the map from a complete seed and unary round count
+to the emitted prefix. Compose its round count with the plaintext length to obtain a native
+XOR pad computation; the [checked PRGStretch client](../../ComplexityTests/PRGStretch.lean)
+proves actual encryption/recovery and distinguishes emission order from its reversal.
+For security, apply `indistinguishable_take_forwardIterate` to the existing one-bit
+`PseudorandomGenerator` assumption and a native unary length schedule `L`. The seed law stays
+`uniformList n`; the output law is compared with `uniformList (L n)`. This covers `L n = 0`
+and seed width zero, but does not yet supply adaptive-message cipher security.
 
 ## Carry the certificate into a security proof
 
@@ -220,3 +887,232 @@ Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.l
 Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model.
 
 [complexitylib]: ../sources.md#complexitylib
+
+The two reserve-output theorems choose their output constant after the fixed hierarchy,
+ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
+and raw/preparation/maximum families. Select this constant before allocating recursive
+child accuracies. Uniformity of that coefficient does not remove any displayed finite
+allocation or walk-length losses and supplies no recursive accuracy theorem.
+
+[HierarchyCorrectionStability](../../Complexity/Foundations/Probability/HierarchyCorrectionStability.lean)
+factors the actual correction request into its unit-pilot coefficient and `γ(maximum y)`.
+The coefficient lies in `[0, 2 Q(atomCap)]`, even for signed raw/preparation estimates.
+If `Lγ` is the hierarchy's fourth-root Lipschitz constant for γ, the fourth-root output
+change is at most `(2 Q(atomCap))^(1/4) Lγ |maximum y - maximum' y|`. The integrated theorem
+keeps both children on the same full environment and the original source/full-terminal
+masks; its loss is `((2 Q(atomCap))^(1/4) Lγ)^4`. It does not silently transport a vertex
+error to a different source or remove any width/rate coefficient from that transport.
+
+For all three changing child classes, use
+[HierarchyCorrectionRawStability](../../Complexity/Foundations/Probability/HierarchyCorrectionRawStability.lean).
+Its selected preparation theorem and normalized recipe bound retain the actual HP row
+and pilot gates, auxiliary incoming scores, both ranks, and signed unbounded raw entries.
+The bounded atom cutoff and denominator root regularity control outputs globally; no
+raw target cap is assumed. Preparation errors pass through the actual same-environment
+joint source/usage mean, followed by `max (1/2) (min 1 mean)`.
+
+The pointwise actual-request theorem keeps the entry, full terminal-row, source-column
+and full source×terminal maxima. Its integrated contract retains the original source and
+full terminal masks: RAW absolute row error costs `64 (Cr / terminalRate)^4 width^2`,
+PREP source/usage row error costs `64 Cp^4`, and ordinary maximum error on the same
+source/full-terminal pairs costs `64 Cm^4`. The three constants depend only on HP.
+Usage inclusion in rank and zero extension allow conditional Jensen on PREP without
+charging full-environment atom costs. Every child can depend on the same full environment.
+The [regressions](../../ComplexityTests/HierarchyCorrectionRawStability.lean) include nonzero
+separate/joint perturbations and row/incoming rank sensitivity; the dyadic maximum
+regression above remains in place.
+
+For the actual pilot score, detector and running maximum recipes, use
+[PilotRowStability](../../Complexity/Foundations/Probability/PilotRowStability.lean).
+The score contract keeps the signed raw inputs in the original K-rank and pays ordinary
+fourth-moment row error with `width * ((Lϕ + Lρ) / rate)^4`. Its constants come from the
+fixed HP cutoffs before domains, rates or child tables. The detector first takes its actual
+source mean and terminal-conditioned mean: Jensen pays the source-rank maximum by the
+sum of fourth powers on that same finite source slice. The literal-payment theorem retains those means and the finite source sum.
+[PilotDetectorTransport](../../Complexity/Foundations/Probability/PilotDetectorTransport.lean)
+reinserts the terminal conditioning by finite Fubini: its integrated score payment is
+`width * childSourceRate / (parentSourceRate * terminalDensityLowerBound)` times the
+child row moment. All outer coordinates and both actual integration variables remain in
+that moment. A positive terminal-density lower bound is explicit; empty conditioning
+still gives zero in the underlying detector contract.
+The clipped running maximum pays the sum of its previous-maximum and current-detector
+fourth moments, on the original pair masks.
+
+[HierarchyPilotStability](../../Complexity/Foundations/Probability/HierarchyPilotStability.lean)
+also transports this payment through `terminalSplit` to actual full H4 rank environments.
+The child source resets to the terminal stage rate with its role and suffix unchanged;
+the terminal frame keeps its own role and suffix. Composing with the actual score contract
+pays raw errors with an additional `width * (C / terminalRate)^4`, where `C` is selected
+at fixed HP before the prime, request or children. The score can depend on every outer
+coordinate and its terminal frame. This is the literal detector recipe, whose score argument
+has no dependence on the internally averaged source seed. No independent recursive child
+realization is inferred from the product used by finite Fubini. The same module
+provides `correctionRequest_stageDetector_root_moment`, combining the transported current
+score/detector payment, previous maximum, and changing RAW/PREP correction children, retaining
+its RAW width²/rate⁴ and PREP source/usage payments. It requires no assumed final-maximum
+error. The [checked pilot client](../../ComplexityTests/PilotRowStability.lean) changes the raw
+K-rank from zero to the gate cutoff while fixing the inspected entry, and checks changes to
+the actual score, detector and maximum, a correlated nonzero moment, and empty/zero cases.
+The shared [rank API](../../Complexity/Foundations/Data/Finset/KthLargest/Stability.lean)
+also removes repeated normalization proofs in dense and correction preparation.
+
+For a computed initial-pilot fragment, use
+[InitialPilotScore](../../Complexity/Foundations/Probability/InitialPilotScore.lean).
+It evaluates the dense bin from the stage-zero base matrix and its actual preparation,
+uses the literal zero correction of the first pilot input, walks that RAW sample on
+all H4 coordinates, and passes the completed matrix to the actual score recipe on the
+same environment. Both requests strictly decrease the existing constructor rank;
+statistical accuracy does not change `HP.k`.
+
+The fixed-HP score constant is chosen before the prime, roles, rates or base matrix.
+The finite budget is `width * (L / terminalRate)^4 * 32 * inputFourthMoment`, where the
+input moment is the literal finite sum of the computed dense sample. The step count is
+`max 1 (spectralWalkLength gap budget tolerance 0)`, so positive tolerance gives an actual
+positive-length call even at zero budget. This is a mathematical finite allocation,
+not a certified efficient procedure for choosing the budget or executing the walk.
+The general payment targets the score of the bin's conditional mean. At equal parent/bin
+terminal rates, dense normalization proves that mean is the matrix-unit bin. For a
+nonnegative substochastic base covered by a single bin,
+`initialPilotScore_allocated_of_single_bin` therefore bounds error against the actual
+initial score of that base without a supplied child-error or desired-mean certificate.
+
+The [computed regression](../../ComplexityTests/InitialPilotScore.lean) uses a bounded routed
+top bin with a smooth scalar switch, the identity base over `ZMod 5`, source exponent one,
+full terminal rate, distinct roles and nonempty suffixes. Its computed lower RAW walk and
+upper score are both one or both zero according to the same original source frame, at
+positive allocated lengths. The two environments agree on every other role, including
+the terminal frame. This is a nonconstant correlated exact-on-slice case; it does
+not establish nonzero mixing error or later recursive closure.
+
+The [source-aware detector](../../Complexity/Foundations/Probability/InitialPilotDetector.lean)
+now consumes that completed score through the literal source/terminal split. The score request
+resets the source rate to the terminal stage rate while preserving roles and suffixes.
+`environmentDetector` reconstructs the child environment from all source spectators and the
+terminal frame; these are integration variables, not fresh independent seeds for child calls.
+Conditional Jensen and finite Fubini pay the score moment by
+`width * stageRate / (parentSourceRate * terminalDensity)`. The actual padded terminal marginal
+is proved separately. The old terminal-only detector and transport theorems specialize the
+shared proof when their child ignores the source argument.
+
+`initialPilotDetector_allocated` composes that payment with the actual dense RAW allocation
+and score theorem, under the same nonnegative substochastic, equal-rate, covering single-bin
+hypotheses. `initialPilotDetector_accuracy` calibrates the lower tolerance before either call
+to obtain detector error at most `ε^4`. The reference is proved equal to the original canonical
+column detector, retaining its cutoffs and rank. The constant is fixed at HP before field,
+request or children. Allocation uses the finite computed input moment; no efficient allocation
+procedure is claimed.
+
+The regression proves that no terminal-only function represents the actual allocated score.
+A two-environment source-aware kernel evaluates that score to `1/2` using replicated rank
+entries; this tests the new argument dependence, not an injective hierarchy instance.
+The full-frame initial detector has a checked concrete payment `80 * ε^4`. The small-field
+RAW/score fixture remains exact on retained slices and does not show nonzero finite-walk
+mixing error. In particular, a large padded detector rank can erase its score variation.
+
+The [first positive direct pilot constructor](../../Complexity/Foundations/Probability/InitialPilotCorrection.lean)
+now consumes the actual completed RAW table and the initial clipped maximum of zero and that
+source-aware detector. Its fixed-HP root constants precede the field and requests. The RAW
+length uses the computed dense input moment; the detector uses the existing source-aware
+allocation. Both positive tolerances are calibrated before the calls, and the resulting direct
+constructor has root error at most `ε^4` under the same covering-single-bin and finite-horizon
+hypotheses. On nonnegative inputs bounded by the stage rate, its reference is the canonical
+first `pilotCorrection`, with the original Q, rate and gamma multiplier.
+
+The direct constructor in `hierarchyTaskEval` differs from the stochastic normalized child.
+The latter is also constructed here: preparation is recomputed from the completed RAW table,
+then averaged by the actual conditional H4 walk. `initialPilotNormalized` consumes that walk,
+the unmodified RAW ranks and the completed maximum through the original source/usage
+normalizer. Same-slice stationarity proves that the preparatory walk preserves this
+literal normalizer exactly; pointwise PREP need not converge to pointwise true preparation.
+The decoder's reusable stability API therefore accepts the normalizer difference directly.
+The former pointwise PREP moment estimate is retained as an optional coarse bound, not the
+allocation route.
+
+The actual pre-walk incoming preparation responds to RAW perturbations through the original
+row, incoming-column and source-by-terminal ranks. Conditional Jensen and the full rectangle
+maximum pay this response with explicit width squared and inverse terminal-rate fourth power,
+without an environment-cardinality or atom penalty. `initialPilotNormalized_accuracy` chooses
+RAW and detector tolerances before either call, uses preparation parameter one (two graph steps),
+and proves root error at most `ε^4` against the original true normalized request. It retains
+the original clipped denominator and actual source-aware detector/maximum. HP.k stays fixed;
+constants precede fields, requests and child tables. The same covering single-bin, equal-rate,
+finite-horizon and dense-mean hypotheses remain explicit. No true-PREP oracle is used.
+
+The [completed stochastic first pilot correction](../../Complexity/Foundations/Probability/InitialPilotCompleted.lean)
+now averages that actual normalized child on the original source/usage H4 slice.
+`initialTrueNormalized_mean` specializes the existing pilot sampling law through the
+literal terminal split, deriving incoming margins from the canonical detector and frame
+channels. Its target is the genuine first `pilotCorrection`, not a clipped replacement.
+This specialization requires **common source, terminal-rank and usage rates** `f = rate k`,
+nonnegative substochastic `C` with entries at most `f`, a finite horizon, nonzero padding,
+and the fixed injective identifier `id`, with the original copy suffixes. On the joint retained slice,
+the matrix-unit importance factor is **`f`**: `f * mean(trueNormalized) = pilotCorrection 1`.
+The source-only convention instead uses `f / π_usage`; applying that factor to an already
+usage-conditioned mean would introduce an erroneous inverse density.
+
+`initialPilotCompleted` performs the outer walk of the computed normalized child, then
+multiplies by `f`. It keeps all original source, usage and terminal masks and varies the
+full shared environment. Centered walk noise and mean bias are paid separately. The
+normalized range is `B = 2 * HP.Q HP.atomCap`, giving the explicit input-moment bound
+`P^2 / (P * rate ks) * B^4`. Conditional Jensen and root-to-ordinary error conversion pay
+the mean bias by `Kroot * rootDistPow`, where `Kroot = (4 * B^(3/4))^4`. Neither payment
+extracts environment atoms or supplies the desired mean/error as a hypothesis.
+
+`initialPilotCompleted_accuracy` proves **ordinary fourth-moment error at most `ε^4` in
+parent matrix units** under the common-rate and covering-dense-single-bin hypotheses.
+It fixes `payment = 8 * f^4 * (1 + Kroot)` and positive `δ = ε / (1 + payment)`, then chooses
+the positive outer length from the known range, before completing lower calls. The existing
+normalized allocator then fixes positive RAW/detector tolerances before their calls;
+preparation uses parameter one. Its regularity constants are selected at fixed HP before
+the prime, requests or child tables. No pointwise PREP accuracy or independent recursive
+reseeding is used. Finite input-moment allocations carry no effective/native resource claim.
+This completes the bounded first stochastic pilot fragment, while #1721/#1444 remain open.
+
+The checked small-field client computes a positive upper correction `Q(1)` and an actual
+preparatory walk equal to one on the retained diagonal. The normalized child and its
+completed outer walk also compute
+`Q(1)`, with the literal conditional denominator derived as one and a positive allocated
+outer length. A separate full-channel identity-base client discharges every hypothesis of
+the completed canonical accuracy theorem. A nonunit-rate joint-mean regression retains
+the factor `rate 1`, so it cannot silently be replaced by one. Changing only the source frame makes
+both zero; a zero base also gives a zero upper correction at positive RAW allocation
+and stays zero after the completed outer walk. The
+actual hierarchy hypotheses imply that its detector rank exceeds five, so its full detector
+is zero. This is an injective small-field, exact-on-slice limit with a nonzero correction;
+it does not supply nonzero detector variation or finite-walk mixing error.
+
+Full well-founded approximate evaluation remains open: later pilot/correction iterations,
+general finite bin sums, recursive closure and growth, copy routing, native workspace and
+RL=L are not supplied by this single-bin first-pilot fragment. This partial construction is not
+a selected headline abstract.
+
+The regressions additionally check a correlated detector moment of
+`1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank
+densities `16/625` and `81/625`.
+
+## Unfold a lattice Fourier coefficient
+
+Import [`Complexity.Foundations.Analysis.Lattice.Fourier`](../../Complexity/Foundations/Analysis/Lattice/Fourier.lean)
+to integrate a periodized function at a dual frequency. For a countable `L : Submodule ℤ E`
+in a finite-dimensional real inner-product space, supply `IsAddFundamentalDomain L s volume`,
+`Integrable f` for `f : E → ℂ`, and membership of `w` in
+`LinearMap.BilinForm.dualSubmodule (innerₗ E) L`. Then
+`ZLattice.integral_fourierChar_tsum_translate` identifies the integral over `s` of
+`(Real.fourierChar (-⟪x,w⟫) : ℂ) * ∑' z : L, f (x + z)` with the Fourier transform of `f`
+evaluated at `w`.
+The character is `exp(-2πi⟪x,w⟫)`. The domain integral uses ambient volume without a
+covolume divisor; it is not the coefficient for probability-normalized quotient measure.
+
+For a real basis `b`, `ZSpan.isAddFundamentalDomain b volume` supplies the domain
+`ZSpan.fundamentalDomain b` of `Submodule.span ℤ (Set.range b)`. The basis may be sheared.
+For a Schwartz function, use `f.integrable`; for a Gaussian, the checked
+[`LatticeFourier.lean` clients](../../ComplexityTests/LatticeFourier.lean) derive integrability
+and evaluate the Fourier coefficient using Mathlib's Gaussian transform. They include the basis
+`(1,0), (1/2,1)` with nonzero dual frequency `(2,0)`, its Gaussian coefficient `exp(-4π)`,
+and the zero-frequency mass identity. Run `scripts/build.sh ComplexityTests.LatticeFourier`
+from the repository root to check these complete examples.
+
+Integrability supplies the almost-everywhere convergence needed for exchanging the sum and
+integral. No pointwise convergence or uniform convergence assumption is hidden in this theorem.
+The [Poisson API](#apply-lattice-poisson-summation) supplies continuity, reconstruction and
+covolume normalization for the stated analytic hypotheses. Smoothing estimates remain separate.

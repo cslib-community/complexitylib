@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Control
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Exec
 
@@ -69,30 +70,25 @@ theorem exec_leaf {w p A B : ℕ} (x : Data 64) (u v : ℕ → ℤ)
   have hzo : (z.comap f).regs CyclicConvolution.Reg.output = x.regs Reg.output := by
     simp +decide [z, f, Data.comap, Reg.operandA, Reg.operandB, Reg.target, Reg.length,
       CyclicConvolution.Reg.output]
-  obtain ⟨t, ht, values, frame, _⟩ := CyclicConvolution.exec (z.comap f) u v
-    (by simp [z, f, Data.comap, Reg.length, CyclicConvolution.Reg.length]) hbound hu hv
-    (by simpa only [Data.comap_mem, hzm, hza] using hA)
-    (by simpa only [Data.comap_mem, hzm, hzb] using hB) h2p
-    (by simpa only [hza] using ha) (by simpa only [hzb] using hb)
-    (by simpa only [hzo] using hout) (by simpa only [hza, hzo] using hdisjA)
-    (by simpa only [hzb, hzo] using hdisjB)
-  let s := t.extend f z
-  have hkernel : ExecWithin (w + 2)
-      (CyclicConvolution.program.rename f) z s (42 * p * p + 9 * p + 4) :=
-    ht.rename (Fin.castLE_injective _)
+  obtain ⟨s, hkernel, ⟨values, frame, _⟩, hframe⟩ :=
+    ExecWithin.rename_post (Fin.castLE_injective _) (CyclicConvolution.exec (z.comap f) u v
+      (by simp [z, f, Data.comap, Reg.length, CyclicConvolution.Reg.length]) hbound hu hv
+      (by simpa only [Data.comap_mem, hzm, hza] using hA)
+      (by simpa only [Data.comap_mem, hzm, hzb] using hB) h2p
+      (by simpa only [hza] using ha) (by simpa only [hzb] using hb)
+      (by simpa only [hzo] using hout) (by simpa only [hza, hzo] using hdisjA)
+      (by simpa only [hzb, hzo] using hdisjB))
   have hs (i : Fin 64) (hi : 32 ≤ i.val) : s.regs i = x.regs i := by
-    have hn : ¬∃ j, f j = i := by
-      rintro ⟨j, hj⟩
-      have he := congrArg Fin.val hj
-      change j.val = i.val at he
+    refine (hframe i ?_).trans ?_
+    · intro j hj
+      have hv := congrArg Fin.val hj
+      change j.val = i.val at hv
       omega
-    have he : s.regs i = z.regs i := Function.extend_apply' _ _ _ hn
-    apply he.trans
-    simp only [z, Data.set,
-      Function.update_of_ne (show i ≠ Reg.length by intro h; subst i; contradiction),
-      Function.update_of_ne (show i ≠ Reg.target by intro h; subst i; contradiction),
-      Function.update_of_ne (show i ≠ Reg.operandB by intro h; subst i; contradiction),
-      Function.update_of_ne (show i ≠ Reg.operandA by intro h; subst i; contradiction)]
+    · simp only [z, Data.set,
+        Function.update_of_ne (show i ≠ Reg.length by intro h; subst i; contradiction),
+        Function.update_of_ne (show i ≠ Reg.target by intro h; subst i; contradiction),
+        Function.update_of_ne (show i ≠ Reg.operandB by intro h; subst i; contradiction),
+        Function.update_of_ne (show i ≠ Reg.operandA by intro h; subst i; contradiction)]
   obtain ⟨y, hy, hym, hyf, hya, hyr⟩ := exec_pop s
     ((hs Reg.frameWidth (by decide)).trans h7)
     (by simpa only [hs Reg.frame (by decide)] using hf)
@@ -101,10 +97,10 @@ theorem exec_leaf {w p A B : ℕ} (x : Data 64) (u v : ℕ → ℤ)
   refine ⟨y, he, ?_, ?_, ?_, ?_, ?_⟩
   · intro r hr
     rw [hym]
-    simpa only [s, Data.extend, Data.comap_mem, hzo] using values r hr
+    simpa only [Data.comap_mem, hzo] using values r hr
   · intro a ha'
     rw [hym]
-    simpa only [s, Data.extend, Data.comap_mem, hzm] using frame a (by simpa only [hzo] using ha')
+    simpa only [Data.comap_mem, hzm] using frame a (by simpa only [hzo] using ha')
   · simpa only [hs Reg.frame (by decide), hs Reg.frames (by decide)] using hyf
   · simpa only [hs Reg.frame (by decide), hs Reg.frames (by decide),
       hs Reg.active (by decide)] using hya

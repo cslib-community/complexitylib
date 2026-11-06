@@ -15,7 +15,10 @@ public import Complexity.Probability.Entropy
 public import Complexity.Probability.UniversalHash
 import Complexity.Probability.EntropyExtraction
 import Complexity.Crypto.Game.Statistical
-import Complexity.Tactic.PPT
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Repeated extraction with public side information
@@ -132,9 +135,13 @@ theorem isPPTOn_extractLabels {Param Observation Seed Output : Type} {input : Pa
       (encPair (encPair input key) encBits) output)
     (hsamples : ComputableInPolyTime samples input (encList (encPair observation encBool))) :
     IsPPTOn input (encPair (encList observation) (encPair key output))
-      (fun a => extractLabels (seed a) (hash a) (samples a)) := by
-  unfold extractLabels
-  ppt
+      (fun a => extractLabels (seed a) (hash a) (samples a)) :=
+  let p0 := ComputableInPolyTime.fst input key; let p1 := ComputableInPolyTime.snd input key
+  let hs := p0.trans hsamples
+  let hobs := hs.mapWithInput ((ComputableInPolyTime.snd _ _).trans (.fst observation encBool))
+  let hlbl := hs.mapWithInput ((ComputableInPolyTime.snd _ _).trans (.snd observation encBool))
+  hseed.bind_with
+    (hobs.prod (p1.prod (((p0.prod p1).prod (hlbl.trans .listToBits)).trans hhash))).isPPTOn
 
 /-- Arbitrary encoded labels use the same extractor, with list encoding charged to the hash. -/
 theorem isPPTOn_extractLabels_list {Param Observation Label Seed Output : Type}
@@ -147,9 +154,12 @@ theorem isPPTOn_extractLabels_list {Param Observation Label Seed Output : Type}
       (encPair (encPair input key) (encList label)) output)
     (hsamples : ComputableInPolyTime samples input (encList (encPair observation label))) :
     IsPPTOn input (encPair (encList observation) (encPair key output))
-      (fun a => extractLabels (seed a) (hash a) (samples a)) := by
-  unfold extractLabels
-  ppt
+      (fun a => extractLabels (seed a) (hash a) (samples a)) :=
+  let p0 := ComputableInPolyTime.fst input key; let p1 := ComputableInPolyTime.snd input key
+  let hs := p0.trans hsamples
+  let hobs := hs.mapWithInput ((ComputableInPolyTime.snd _ _).trans (.fst observation label))
+  let hlbl := hs.mapWithInput ((ComputableInPolyTime.snd _ _).trans (.snd observation label))
+  hseed.bind_with (hobs.prod (p1.prod (((p0.prod p1).prod hlbl).trans hhash))).isPPTOn
 
 attribute [program_certificate hseed hsamples] isPPTOn_extractLabels isPPTOn_extractLabels_list
 
@@ -184,18 +194,15 @@ theorem extractLabels_sequence_gap {Observation Label Seed Output : Type}
       (Game.advantage (ProbComp.eval (OracleComp.replicate count original >>= reduced))
         (ProbComp.eval (OracleComp.replicate count comparison >>= reduced)) : ℝ) := by
   dsimp only
-  have htriangle := Game.advantage_triangle
-    (ProbComp.eval (do
-      let samples ← OracleComp.replicate count original
-      let result ← extractLabels seed hash samples
-      test result))
+  have hreal := NNReal.coe_le_coe.mpr (Game.advantage_triangle
+    (ProbComp.eval (OracleComp.replicate count original >>=
+      fun samples => extractLabels seed hash samples >>= test))
     ((ProbComp.eval (OracleComp.replicate count comparison >>= extractLabels seed hash)).bind
       (fun output => ProbComp.eval (test output)))
-    (ideal.bind (fun output => ProbComp.eval (test output)))
-  have hreal := NNReal.coe_le_coe.mpr htriangle
-  simp only [NNReal.coe_add] at hreal
-  have h := sub_le_iff_le_add.mpr (hreal.trans (add_le_add le_rfl hclose))
-  simpa only [ProbComp.eval_bind, PMF.bind_bind] using h
+    (ideal.bind (fun output => ProbComp.eval (test output))))
+  rw [NNReal.coe_add] at hreal
+  simpa only [ProbComp.eval_bind, PMF.bind_bind] using
+    sub_le_iff_le_add.mpr (hreal.trans (add_le_add le_rfl hclose))
 
 /-- The list-based extractor inherits the conditional Shannon-entropy bound for repeated
 samples against every randomized finite-output test. The test receives all observations and
@@ -224,12 +231,9 @@ theorem extractLabels_dist_bind_le {Observation Label Seed Output : Type}
     (fun result : (Fin count → Observation) × Seed × Output =>
       test (List.ofFn result.1, result.2))).trans h
   simp only [extractLabelsIdeal, eval_replicate_extractLabels, ProbComp.eval_replicate,
-    ProbComp.eval_map] at hmap ⊢
-  simp only [monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp,
+    ProbComp.eval_map, monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp,
     Function.comp_def] at hmap ⊢
-  refine hmap.trans ?_
-  gcongr
-  norm_num
+  exact hmap.trans (by gcongr; norm_num)
 
 /-- Extracting into a singleton is exactly ideal, including its public observations and seed.
 This handles a zero-bit component without requiring a positive entropy budget. -/
@@ -246,13 +250,10 @@ theorem eval_extractLabels_of_subsingleton {Observation Label Seed Output : Type
     simp [PMF.uniformOfFintype_apply, PMF.pure_apply, Fintype.card_unique,
       Subsingleton.elim result value]
   simp only [extractLabelsIdeal, OracleComp.replicate_map, ProbComp.eval_map,
-    ProbComp.eval_bind, extractLabels, bind_pure_comp]
-  simp only [monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
-  congr 1
-  funext samples
-  rw [PMF.map]
-  congr 1
-  funext key
+    ProbComp.eval_bind, extractLabels, bind_pure_comp, monad_bind_eq_bind, PMF.bind_map,
+    PMF.map_bind, PMF.map_comp, Function.comp_def]
+  congr 1; funext samples; rw [PMF.map]
+  congr 1; funext key
   rw [huniform (hash key (samples.map Prod.snd)), PMF.pure_map]
   rfl
 
@@ -294,10 +295,10 @@ theorem extractLabels_indistinguishable {Observation Label Seed : ℕ → Type}
     exact (ExtractionSchedule.error n).coe_nonneg
   · have hmass' (value) (hvalue : value ∈ (ProbComp.eval (source n)).support) :
         (2 : ℝ) ^ (-((sourceBits n + n + 2 : ℕ) : ℝ)) ≤
-          (ProbComp.eval (source n) value).toReal := by
-      apply le_trans _ (hmass n value hvalue)
-      apply Real.rpow_le_rpow_of_exponent_le (by norm_num)
-      exact neg_le_neg (by exact_mod_cast (by lia : sourceBits n ≤ sourceBits n + n + 2))
+          (ProbComp.eval (source n) value).toReal :=
+      (Real.rpow_le_rpow_of_exponent_le (by norm_num)
+        (neg_le_neg (by exact_mod_cast (by lia : sourceBits n ≤ sourceBits n + n + 2)))).trans
+          (hmass n value hvalue)
     have h := extractLabels_dist_bind_le (source n)
       (ExtractionSchedule.count n (sourceBits n) (inverseSlack n)) (sourceBits n + n + 2)
       hmass' (seed n) (hash n) (hhash n) le_rfl
@@ -344,10 +345,8 @@ theorem seededHash_replicate_indistinguishable {Label Seed : ℕ → Type}
       exact (hmass n label hlabel).trans (ENNReal.toReal_mono (PMF.apply_ne_top _ _)
         (le_map_apply (ProbComp.eval (source n)) ((), ·) label))) seed hash hhash
     (by simpa only [ProbComp.eval_map, conditionalEntropy_map_const] using hbudget)
-  have htest := h (fun n result => test n result.2) trivial
-  apply htest.congr'
-  apply Filter.Eventually.of_forall
-  intro n
+  refine (h (fun n result => test n result.2) trivial).congr'
+    (Filter.Eventually.of_forall fun n => ?_)
   dsimp only
   have hideal := congrArg (fun law => law.bind (test n))
     (extractLabelsIdeal_map_snd (Output := BitString (outputBits n))
@@ -355,10 +354,9 @@ theorem seededHash_replicate_indistinguishable {Label Seed : ℕ → Type}
       (ExtractionSchedule.count n (sourceBits n) (inverseSlack n)) (seed n))
   simp only [PMF.bind_map, Function.comp_def] at hideal
   rw [hideal]
-  congr 1
-  · simp only [OracleComp.replicate_map, ProbComp.eval_bind, ProbComp.eval_map,
-      extractLabels, bind_pure_comp, PMF.bind_map, PMF.bind_bind,
-      Function.comp_def, List.map_map, List.map_id_fun', id_eq, seededHash_eq_bind]
-  · simp only [monad_bind_eq_bind, PMF.bind_bind]
+  refine congrArg₂ Game.advantage ?_ (by simp only [monad_bind_eq_bind, PMF.bind_bind])
+  simp only [OracleComp.replicate_map, ProbComp.eval_bind, ProbComp.eval_map,
+    extractLabels, bind_pure_comp, PMF.bind_map, PMF.bind_bind,
+    Function.comp_def, List.map_map, List.map_id_fun', id_eq, seededHash_eq_bind]
 
 end Cslib.Crypto.Pseudoentropy

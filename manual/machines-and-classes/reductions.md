@@ -40,6 +40,12 @@ The [logspace family](https://github.com/cslib-community/complexitylib/blob/13e6
 
 The proven [bounded-query closure in L](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/LogSpaceTruthTable.lean#L469) and [fixed-bound composition](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/LogSpaceTruthTable.lean#L480) preserve this model. All six notions have polynomial-time counterparts. This source does not provide an unrestricted-logspace-truth-table `mem_L` theorem, so the bounded closure result must retain its bounded-query hypothesis.
 
+For a fixed bound with an OR or AND evaluator, import
+[`LogSpaceBoundedTruthTable`](../../Complexity/Computability/Complexity/Reduction/LogSpaceBoundedTruthTable.lean).
+`LogSpaceKDTTReducible k` and `LogSpaceKCTTReducible k` retain the same unary count and indexed
+query generator and require that count to be at most `k` on every input. Their
+`logSpaceKTruthTableReducible` lemmas preserve that bound when introducing an explicit evaluator.
+
 ## Adaptive word-oracle access
 
 [`PolyTimeTuringReducible`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Turing.lean#L120) defines `A ≤T B` by membership in `PWithOracle (encB '' B) encA`. The underlying algorithm is a deterministic adaptive `WordQueryComp` with a native `IsOraclePPTOn` realization. Its polynomial clock charges query-symbol writes and bounds both query lengths and query count; the oracle evaluation itself is one step. The machine realization is efficient for arbitrary admissible handlers, while correctness of the reduction is stated for the designated language oracle.
@@ -52,9 +58,107 @@ The oracle recognizes the **encoded image** of `B`: a word outside the image of 
 
 An autoreduction is a reduction to the same language that avoids asking its original instance. [Polynomial-time](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L83) and [logspace](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L101) many-one versions require a fixed-point-free map. The polynomial-time truth-table variants—`k`-bounded, bounded, disjunctive, conjunctive, and unrestricted—require `q(a,i) ≠ a` only for indices actually used, `i < r(a)`. The same resource and answer semantics described above apply.
 
+To turn a bounded disjunctive or conjunctive reduction from `Aᶜ` to `A` into an autoreduction,
+import [`LogSpaceBoundedAutoreducibility`](../../Complexity/Computability/Complexity/Reduction/LogSpaceBoundedAutoreducibility.lean)
+and apply `LogSpaceKDTTReducible.autoreducible_of_compl` or
+`LogSpaceKCTTReducible.autoreducible_of_compl`. The result is
+`LogSpaceKTruthTableAutoreducible k encA A`, with the same at-most-`k` bound. An active self-query
+forces rejection for OR and acceptance for AND; the construction then asks zero queries.
+Otherwise it negates the aggregate oracle answer. The test for self-queries uses certified
+logspace equality of encoded instances and ignores unused indices.
+
+The [complete checked client](../../ComplexityTests/LogSpaceBoundedAutoreducibility.lean), including
+imports, exercises both membership branches, active and inactive self-queries, and the zero-query
+full-language OR and empty-language AND witnesses. Its `L`-complete Boolean singleton examples
+also show how to apply the complement-closed-class completeness corollaries. These establish
+Proposition 2.7(2,3) of the expanded ECCC TR13-047 version; the theorem module maps the exact
+source and conventions. The remaining full-paper objective stays on [issue #2468](https://github.com/cslib-community/complexitylib/issues/2468).
+
 [`PolyTimeTuringAutoreducible`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/TuringAutoreducible.lean#L80) has a more specific execution quantifier: no encoded self-query occurs along the run with the language's actual oracle, measured by `OracleComp.queriesWith`. It does not demand absence of self-queries along every counterfactual oracle-response path. Its native efficiency certificate still applies across handlers. [Every P language](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/TuringAutoreducible.lean#L135) has such an autoreduction, using zero queries. In contrast, [singletons](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L379) and their complements fail fixed-point-free many-one autoreducibility.
 
 [`MitoticWith`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L595) asks for an efficient separator `S` such that `A` is mutually reducible with each of `A ∩ S` and `A \ S`. The module specializes this to polynomial-time and logspace many-one reductions, and to polynomial-time `k`-bounded, bounded, disjunctive and unrestricted truth tables. For a fixed `k`, it requires equivalence of each part with `A`; it does not additionally require a direct `k`-query equivalence between the two parts, because composition can square the bound. [Fixed-query mitoticity implies autoreducibility](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L881), with analogous bounded, disjunctive, and unrestricted results. The many-one implication has an explicit [co-singleton boundary](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L1059).
+
+## Local logspace self-reducibility
+
+Import `Complexity.Computability.Complexity.Reduction.LocalSelfReducibility` for
+`LocalSelfReductionQuery` and the indexed tt, disjunctive and conjunctive self-reducibility
+predicates. The query word has the same encoded length, is strictly lexicographically smaller,
+and agrees before the last ceiling-logarithm-many symbols. Only active query indices are
+restricted. OR/AND self-reductions allow either Boolean answer when the count is zero.
+They embed into tt self-reductions, which give query-avoiding tt autoreductions of the same
+language. The count, generator and evaluator retain their native logspace certificates.
+The [checked client](../../ComplexityTests/LocalSelfReducibility.lean) includes a nonzero-query
+word instance and a zero-query singleton, as well as invalid-query edge cases.
+
+The source is the expanded ECCC TR13-047 version (18 March 2013), Definitions 3.1–3.2,
+printed page 6. The predicates cover the unbounded indexed tt/OR/AND clauses; bounded-query
+and many-one specializations are not added here. The indexed tagged-base presentation is
+explicit; equivalence to serialized source transducer output is not proved. Word reconstruction,
+suffix length and well-founded descent are semantic results. Likewise the unary dependency
+and id/negation invariant from Lemma 3.3(1) have no oracle resource certificate.
+Import `Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.VirtualWord` for
+native one-bit access to a fixed original prefix and an already stored suffix.
+`LocalSelfReductionQuery.access_output` connects the actual machine output to the query word;
+`access_state_bound` charges only two binary counters, the literal suffix and a halting bit.
+The [accessor](../../Complexity/Computability/Machines/ReadMachine/VirtualWord.lean) certifies
+all five query-machine components in space linear in that state and compiles each fixed-data
+accessor to a native multi-tape machine. With a suffix of at most $\lceil\log_2 n\rceil$ bits
+and an address at most $n$, the encoded state has length at most $16(\log_2 n+1)$.
+The prefix remains read-only input; no reconstructed query is placed in workspace.
+[Checked clients](../../ComplexityTests/VirtualWord.lean) execute empty, length-one,
+non-power-of-two, prefix/suffix boundary and default reads and instantiate native certificates.
+For runtime parameters, import
+`Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeAccess`.
+The [runtime accessor](../../Complexity/Computability/Machines/ReadMachine/VirtualWord/Runtime.lean)
+is one fixed query machine with a fixed initial state. Its input encoding is a framed binary
+cut/suffix/address header followed by the literal original word. It loads only that header,
+then reads one bit of the original-word tail.
+`Turing.VirtualWord.Runtime.access_inSpace` compiles the whole operation with constants shared by all runtime parameters and explicitly charges the actual
+header length plus a logarithmic input-position counter. Binary addresses never allocate a
+word or unary counter of the indicated length.
+
+`Turing.VirtualWord.Runtime.access_inOriginalLogSpace` measures workspace against the original
+length $n$ when cut and address are at most $n$ and the suffix has at most $\lceil\log_2 n\rceil$ bits.
+The physical query-machine states have length at most $272(\log_2 n+1)$; compilation adds a
+fixed multiplicative constant. `LocalSelfReductionQuery.runtime_output` consumes exact query
+reconstruction, including out-of-range false defaults; `runtime_admissible` checks the size
+conditions for this compiler domain. All natural parameters have total behavior. With an
+invalid cut beyond the original length, the operation still uses that declared cut as the
+suffix offset and reads false in the intervening gap; virtual-word reconstruction is asserted
+only for valid cuts. Large parameters retain the general charged-header bound.
+[Runtime clients](../../ComplexityTests/VirtualWordRuntime.lean) check a nonconstant parameter
+family, native certificates, boundaries and invalid data. These results initialize and execute
+an individual read. For a whole-word consumer, import
+`Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeEvaluator`.
+`Turing.VirtualWord.Evaluator.machine δ` loads the same supplied header, then scans all
+`cut + suffix.length` virtual positions twice with a saved Boolean transition state. Its counter
+is binary, each read goes back to the original input, and it never stores the reconstructed
+word. A zero-length virtual word halts after initialization. For valid cuts,
+`value_word` identifies every transition with the corresponding virtual bit and
+`evaluate_word` gives the ordinary finite-state fold of two copies of the virtual word;
+`LocalSelfReductionQuery.runtime_evaluate` identifies actual output with the fold of two complete
+passes over the exact reconstructed query.
+
+`Evaluator.evaluate_inSpace` supplies a native program with shared constants and charges the
+actual header plus a logarithmic encoded-input counter. `evaluate_inOriginalLogSpace` uses the
+same admissibility conditions as the accessor; physical consumer states have length at most
+$816(\log_2 n+1)$ against the original length $n$, before a fixed compiler factor.
+The header's address field is used only by initialization's discarded read; the evaluator
+computes its own addresses. Invalid cuts retain the accessor's declared-offset/false-gap
+behavior and general charged-header bound. The
+[complete checked client](../../ComplexityTests/VirtualWordEvaluator.lean) runs nonconstant OR
+and NAND-state consumers, changing runtime families, empty and length-one words, non-power-of-two
+lengths, oversized suffixes and invalid cuts. `family_terminates` certifies the read loop for
+unbounded lengths, rather than only those finite executions.
+
+This consumer is restricted to two passes and one Boolean of saved state. General native
+logspace predicate substitution, generating the supplied header from a query generator and
+regenerating an answer word remain open.
+
+**The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
+evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
+assumed as a substitute. Complete NL/P instances, Theorem 3.5, and Sections 4–5 remain under
+[issue #2468](https://github.com/cslib-community/complexitylib/issues/2468).
 
 ## Parameter-sensitive transfer rules
 

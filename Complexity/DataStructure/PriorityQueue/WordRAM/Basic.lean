@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.PriorityQueue.Spec
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.DataStructure.WordRAM.StateTransition
@@ -283,13 +284,6 @@ def callDecreaseKey (P : PQCode B r_pq) (f : Fin r_pq → Fin r_caller)
              (.op (.copy (f P.argK) kReg_c)))
        (P.code.rename f)
 
-private theorem comap_set_of_injective {r₁ r₂ : ℕ} {f : Fin r₁ → Fin r₂} (hf : f.Injective)
-    (x : Data r₂) (d : Fin r₁) (v : ℕ) :
-    (x.set (f d) v).comap f = (x.comap f).set d v := by
-  ext i
-  · simp only [Data.comap, Data.set_regs, Function.comp_apply, Function.update_apply, hf.eq_iff]
-  · rfl
-
 private theorem copy_from_val {B : Basis} {r w : ℕ} {x : Data r} {dst src : Fin r} {v : ℕ}
     (h : x.regs src = v) :
     ExecWithin (B := B) w (.op (.copy dst src)) x (x.set dst v) 1 := by
@@ -329,7 +323,7 @@ theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   have hx_bnd := C.bounded hr
   have hfit0 : Fits w 0 := (hx_bnd.1 P.baseReg).of_le (Nat.zero_le _)
   have hcomap : x₃.comap f = (((x.comap f).set P.tag2 0).set P.tag1 0).set P.tag0 0 := by
-    simp only [x₃, x₂, x₁, comap_set_of_injective hf]
+    simp only [x₃, x₂, x₁, Data.comap_set hf]
   have hb3 : (x₃.comap f).Bounded w := by
     rw [hcomap]
     exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set hx_bnd hfit0) hfit0) hfit0
@@ -384,7 +378,7 @@ theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     copy_from_val ho1
   have hx_bnd := C.bounded hr
   have hfit1 : Fits w 1 := hS.of_le (by omega)
-  have hcomap : x₁.comap f = (x.comap f).set P.tag2 1 := comap_set_of_injective hf x P.tag2 1
+  have hcomap : x₁.comap f = (x.comap f).set P.tag2 1 := Data.comap_set hf x P.tag2 1
   have hb1 : (x₁.comap f).Bounded w := by
     rw [hcomap]
     exact Data.Bounded.set hx_bnd hfit1
@@ -453,7 +447,7 @@ theorem callInsert_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   have hx_bnd := C.bounded hr
   have hcomap : x₅.comap f =
       (((((x.comap f).set P.tag2 0).set P.tag1 1).set P.tag0 0).set P.argV v.val).set P.argK k := by
-    simp only [x₅, x₄, x₃, x₂, x₁, comap_set_of_injective hf]
+    simp only [x₅, x₄, x₃, x₂, x₁, Data.comap_set hf]
   have hb5 : (x₅.comap f).Bounded w := by
     rw [hcomap]
     exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set (Data.Bounded.set
@@ -535,7 +529,7 @@ theorem callDecreaseKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   have hx_bnd := C.bounded hr
   have hcomap : x₅.comap f =
       (((((x.comap f).set P.tag2 0).set P.tag1 1).set P.tag0 1).set P.argV v.val).set P.argK k := by
-    simp only [x₅, x₄, x₃, x₂, x₁, comap_set_of_injective hf]
+    simp only [x₅, x₄, x₃, x₂, x₁, Data.comap_set hf]
   have hb5 : (x₅.comap f).Bounded w := by
     rw [hcomap]
     exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set (Data.Bounded.set
@@ -610,7 +604,7 @@ theorem callGetKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   have hx_bnd := C.bounded hr
   have hcomap : x₄.comap f =
       ((((x.comap f).set P.tag2 0).set P.tag1 0).set P.tag0 1).set P.argV v.val := by
-    simp only [x₄, x₃, x₂, x₁, comap_set_of_injective hf]
+    simp only [x₄, x₃, x₂, x₁, Data.comap_set hf]
   have hb4 : (x₄.comap f).Bounded w := by
     rw [hcomap]
     exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set

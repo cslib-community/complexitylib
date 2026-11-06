@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.MemoryView
+
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Schoening.Trial
 public import Complexity.Algorithms.WordRAM.Schoening.TrialCount
@@ -95,7 +97,9 @@ variable {n : ℕ}
 success: `true` if some trial found a satisfying assignment. -/
 noncomputable def repeatTrial (φ : CNF (Fin n)) : ℕ → PMF Bool
   | 0 => PMF.pure false
-  | R + 1 => (trial φ).bind fun σ => if φ.eval σ then PMF.pure true else repeatTrial φ R
+  | R + 1 => do
+    let σ ← trial φ
+    if φ.eval σ then pure true else repeatTrial φ R
 
 /-- **All `R` trials fail** with probability `(1 - p) ^ R`, where `p` is the success probability of
 one trial. -/
@@ -117,7 +121,8 @@ theorem repeatTrial_false_toReal (φ : CNF (Fin n)) (R : ℕ) :
         exact Finset.sum_congr rfl fun σ _ => by by_cases hσ : φ.eval σ = true <;> simp [hσ]
       rw [hcongr, succeedProb]
       linarith
-    rw [repeatTrial, h, pow_succ]
+    rw [repeatTrial, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
+      h, pow_succ]
     calc ∑ σ, ((trial φ) σ).toReal *
           ((if φ.eval σ = true then PMF.pure true else repeatTrial φ R) false).toReal
         = ∑ σ, ((trial φ) σ).toReal * (if φ.eval σ = true then 0 else 1) *
@@ -735,7 +740,7 @@ private theorem ampLoop_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3
       hc hbody fun y ⟨hy, hyb, hyl, hyo, hyf⟩ => by
         have hmy : ∀ a, A + n ≤ a → y.mem a = y₁.mem a := hy.rest
         have hdy : HoldsList (A + n) (decDigits ds) y.mem :=
-          hh₁.frame fun a ha _ => hmy a ha
+          by ram_keep hh₁ using hmy
         by_cases he : φ.eval (assignmentAt y.mem A n) = true
         · simp only [he, ↓reduceIte] at hyo hyf
           have hcy : ¬(Cond.lt zero flag).Holds y := by simp [Cond.holds_lt, hyf]

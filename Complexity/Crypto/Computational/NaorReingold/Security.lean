@@ -544,8 +544,8 @@ private theorem isPPTOn_naorReingoldFrontierOracle (F : PrimeOrderGroupFamily)
     have hq_t := (hquery.comp hp1).tidy
     have hk_t := (hk.comp hp1).tidy
     have hk1_t : ComputableTidilyInPolyTime
-        (fun p : α × (List Bool × List Bool) × NaorReingoldCache => k p.1 + 1) EP encUnary := by
-      polytime
+        (fun p : α × (List Bool × List Bool) × NaorReingoldCache => k p.1 + 1) EP encUnary :=
+      ComputableTidilyInPolyTime.unary_add.comp (hk_t.prod (ComputableTidilyInPolyTime.const 1))
     have hv1 : ComputableTidilyInPolyTime
         (fun p : α × (List Bool × List Bool) × NaorReingoldCache => p.2.1.1) EP encBits := by
       fun_prop
@@ -572,9 +572,7 @@ private theorem isPPTOn_naorReingoldFrontierOracle (F : PrimeOrderGroupFamily)
     exact hsuf.prod hc2
   have hbranch : ComputableTidilyInPolyTime
       (fun a => decide ((query a).length = m a)) input encBool := by
-    have hq_t := hquery.tidy
-    have hm_t := hm.tidy
-    polytime
+    have := hquery.tidy; have := hm.tidy; fun_prop
   have hnil : IsPPTOn input (encPair encBits naorReingoldCacheEncoding)
       (fun a => pure ([], cache a)) := by
     refine ComputableInPolyTime.isPPTOn ?_
@@ -621,9 +619,10 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
     F.computableInPolyTime_ddhFixedUWordRerandomize.tidy.polyBounded_length.exists_le
   obtain ⟨cS, eS, hS⟩ :=
     F.computableInPolyTime_naorReingoldWordSuffix.tidy.polyBounded_length.exists_le
+  obtain ⟨polyB, hpolyB_def⟩ : ∃ polyB : ℕ → ℕ,
+      polyB = fun L => cR * (16 * L + 16 * (cO * (L + 1) ^ eO) + 16) ^ eR := ⟨_, rfl⟩
   let pairBound : DDHCaller F → ℕ := fun caller =>
-    let L := (ddhCallerEncoding F caller).length
-    cR * (16 * L + 16 * (cO * (L + 1) ^ eO) + 16) ^ eR
+    polyB (ddhCallerEncoding F caller).length
   have hpair_support :
       ∀ (caller : DDHCaller F) (vw : List Bool × List Bool),
         vw ∈ (ProbComp.eval (F.sampleNaorReingoldPair caller.1.1.1 caller.1.1.2.1
@@ -664,12 +663,18 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
         lia
       simp only [length_encPair, encBits_apply]
       lia
+    dsimp only [pairBound]
+    rw [hpolyB_def]
     exact (hR (d, caller.1.1.2.2.1, caller.1.1.2.2.2.1, caller.1.1.2.2.2.2, σ, τ)).trans
       (Nat.mul_le_mul_left cR (Nat.pow_le_pow_left hinput_le eR))
+  obtain ⟨polyRes, hpolyRes_def⟩ : ∃ polyRes : ℕ × ℕ → ℕ, ∀ L Q,
+      polyRes (L, Q) =
+        (4 * Q + 2 * polyB L + 3) + cS * (8 * L + 8 * polyB L + 8 * Q + 16) ^ eS :=
+    ⟨fun lq =>
+      (4 * lq.2 + 2 * polyB lq.1 + 3) + cS * (8 * lq.1 + 8 * polyB lq.1 + 8 * lq.2 + 16) ^ eS,
+      fun _ _ => rfl⟩
   let resources : DDHCaller F → List Bool → ℕ := fun caller query =>
-    let B := pairBound caller
-    let L := (ddhCallerEncoding F caller).length
-    (4 * query.length + 2 * B + 3) + cS * (8 * L + 8 * B + 8 * query.length + 16) ^ eS
+    polyRes ((ddhCallerEncoding F caller).length, query.length)
   have hresources : ComputableTidilyInPolyTime
       (fun pair : DDHCaller F × List Bool => resources pair.1 pair.2)
       (encPair (ddhCallerEncoding F) encBits) encUnary := by
@@ -682,9 +687,8 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
     have hQ : ComputableTidilyInPolyTime
         (fun pair : DDHCaller F × List Bool => pair.2.length)
         (encPair (ddhCallerEncoding F) encBits) encUnary := by fun_prop
-    have hpolyB : ComputableTidilyInPolyTime
-        (fun L : ℕ => cR * (16 * L + 16 * (cO * (L + 1) ^ eO) + 16) ^ eR)
-        encUnary encUnary := by
+    have hpolyB : ComputableTidilyInPolyTime polyB encUnary encUnary := by
+      rw [hpolyB_def]
       have hpO : ComputableTidilyInPolyTime (fun L : ℕ => (L + 1) ^ eO) encUnary encUnary :=
         (ComputableTidilyInPolyTime.unary_pow eO).comp (by fun_prop)
       have hbaseR : ComputableTidilyInPolyTime
@@ -694,28 +698,23 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
           (fun L : ℕ => (16 * L + 16 * (cO * (L + 1) ^ eO) + 16) ^ eR) encUnary encUnary :=
         (ComputableTidilyInPolyTime.unary_pow eR).comp hbaseR
       fun_prop
-    have hpolyRes : ComputableTidilyInPolyTime
-        (fun lq : ℕ × ℕ =>
-          let B := cR * (16 * lq.1 + 16 * (cO * (lq.1 + 1) ^ eO) + 16) ^ eR
-          (4 * lq.2 + 2 * B + 3) + cS * (8 * lq.1 + 8 * B + 8 * lq.2 + 16) ^ eS)
+    have hpolyRes : ComputableTidilyInPolyTime polyRes
         (encPair encUnary encUnary) encUnary := by
-      have hB1 : ComputableTidilyInPolyTime
-          (fun lq : ℕ × ℕ => cR * (16 * lq.1 + 16 * (cO * (lq.1 + 1) ^ eO) + 16) ^ eR)
-          (encPair encUnary encUnary) encUnary := hpolyB.comp (by fun_prop)
+      change ComputableTidilyInPolyTime (fun lq : ℕ × ℕ => polyRes (lq.1, lq.2))
+        (encPair encUnary encUnary) encUnary
+      simp only [hpolyRes_def]
+      have hB : ComputableTidilyInPolyTime (fun lq : ℕ × ℕ => polyB lq.1)
+          (encPair encUnary encUnary) encUnary :=
+        hpolyB.comp (ComputableTidilyInPolyTime.fst encUnary encUnary)
       have hbaseS : ComputableTidilyInPolyTime
-          (fun lq : ℕ × ℕ =>
-            8 * lq.1 + 8 * (cR * (16 * lq.1 + 16 * (cO * (lq.1 + 1) ^ eO) + 16) ^ eR) +
-              8 * lq.2 + 16)
+          (fun lq : ℕ × ℕ => 8 * lq.1 + 8 * polyB lq.1 + 8 * lq.2 + 16)
           (encPair encUnary encUnary) encUnary := by fun_prop
       have hpS : ComputableTidilyInPolyTime
-          (fun lq : ℕ × ℕ =>
-            (8 * lq.1 + 8 * (cR * (16 * lq.1 + 16 * (cO * (lq.1 + 1) ^ eO) + 16) ^ eR) +
-              8 * lq.2 + 16) ^ eS)
+          (fun lq : ℕ × ℕ => (8 * lq.1 + 8 * polyB lq.1 + 8 * lq.2 + 16) ^ eS)
           (encPair encUnary encUnary) encUnary :=
         (ComputableTidilyInPolyTime.unary_pow eS).comp hbaseS
-      dsimp only
       fun_prop
-    exact hpolyRes.comp (hL.prod hQ)
+    exact hpolyRes.comp' (hL.prod hQ)
   have hprepare : ComputableTidilyInPolyTime
       (fun caller : DDHCaller F => (caller.1.1.1, caller.1.1.2.1))
       (ddhCallerEncoding F) (encPair encUnary F.encDesc) := by
@@ -745,7 +744,7 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
       hprepare hhandler (by fun_prop)
       (fun caller cache => ∀ entry ∈ cache, (encPair encBits encBits entry.2).length ≤
         pairBound caller)
-      (by simp) hresources ?_
+      (fun _ _ h => by cases h) hresources ?_
     intro caller request cache hcache result hresult
     by_cases hq : request.2.length = inLen caller.1.1.1
     · simp only [naorReingoldFrontierOracle, hq, ↓reduceIte, ProbComp.eval_bind,
@@ -779,8 +778,7 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
             8 * (ddhCallerEncoding F caller).length := by
           simp only [ddhCallerEncoding, ddhLevelInputEncoding, ddhInputEncoding, length_encPair]
           lia
-        have hdrop_le : (request.2.drop (caller.1.2 + 1)).length ≤ request.2.length := by simp
-        simp only [encBits_apply, length_encPair]
+        simp only [encBits_apply, length_encPair, List.length_drop]
         lia
       have hgrowth' :
           (naorReingoldCacheEncoding cache').length ≤
@@ -789,17 +787,16 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
         change (naorReingoldCacheEncoding cache').length ≤
           (naorReingoldCacheEncoding cache).length +
             4 * (request.2.take caller.1.2).length + 2 * pairBound caller + 3 at hgrowth
-        have htake_le : (request.2.take caller.1.2).length ≤ request.2.length := by simp
+        rw [List.length_take] at hgrowth
         lia
-      refine ⟨hcache', ?_, ?_⟩
-      · dsimp only [resources]
-        lia
-      · dsimp only [resources]
-        lia
+      dsimp only [resources]
+      rw [hpolyRes_def]
+      exact ⟨hcache', hsuf_le.trans (Nat.le_add_left _ _),
+        hgrowth'.trans (Nat.add_le_add_left (Nat.le_add_right _ _) _)⟩
     · simp only [naorReingoldFrontierOracle, hq, ↓reduceIte, ProbComp.eval_pure,
         PMF.mem_support_pure_iff] at hresult
       subst result
-      exact ⟨hcache, by simp, by lia⟩
+      exact ⟨hcache, Nat.zero_le _, Nat.le_add_right _ _⟩
   have hrun_fst : IsPPTOn (ddhCallerEncoding F) encBool
       (fun caller : DDHCaller F => Prod.fst <$> (OracleComp.interpret
         (OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifFin r))
@@ -808,20 +805,24 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
             caller.2 request.2))
         (adv caller.1.1.1 caller.1.1.2.1)).run []) :=
     hrun.map (ComputableInPolyTime.fst _ _)
+  have hm_t : ComputableTidilyInPolyTime (fun p : DDHLevelInput F => inLen p.1.1)
+      (ddhLevelInputEncoding F) encUnary := by
+    unfold ddhLevelInputEncoding ddhInputEncoding
+    exact (hinLen.comp (by fun_prop)).tidy
+  have hk_t : ComputableTidilyInPolyTime (fun p : DDHLevelInput F => p.2)
+      (ddhLevelInputEncoding F) encUnary := by
+    unfold ddhLevelInputEncoding ddhInputEncoding; fun_prop
   have hrep : IsPPTOn (ddhLevelInputEncoding F) (encList encNat)
       (fun p : DDHLevelInput F =>
         OracleComp.replicate (inLen p.1.1 - (p.2 + 1))
           (F.sampleNaorReingoldExp p.1.1 p.1.2.1)) := by
-    unfold ddhLevelInputEncoding ddhInputEncoding
-    refine (F.isPPTOn_sampleNaorReingoldExp (by fun_prop) (by fun_prop)).replicate ?_
-    have hm_t := (hinLen.comp (by fun_prop : ComputableInPolyTime
-      (fun p : DDHLevelInput F => p.1.1)
-      (encPair (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-        encUnary) encUnary)).tidy
-    have hk_t : ComputableTidilyInPolyTime (fun p : DDHLevelInput F => p.2)
-      (encPair (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-        encUnary) encUnary := by fun_prop
-    exact .of_tidy (by polytime)
+    have hexp : IsPPTOn (ddhLevelInputEncoding F) encNat
+        (fun p : DDHLevelInput F => F.sampleNaorReingoldExp p.1.1 p.1.2.1) := by
+      unfold ddhLevelInputEncoding ddhInputEncoding
+      exact F.isPPTOn_sampleNaorReingoldExp (by fun_prop) (by fun_prop)
+    exact hexp.replicate (.of_tidy (ComputableTidilyInPolyTime.unary_sub.comp (hm_t.prod
+      (ComputableTidilyInPolyTime.unary_add.comp
+        (hk_t.prod (ComputableTidilyInPolyTime.const 1))))))
   have hvalidK : IsPPTOn (ddhLevelInputEncoding F) encBool
       (fun p : DDHLevelInput F => do
         let αs ← OracleComp.replicate (inLen p.1.1 - (p.2 + 1))
@@ -838,16 +839,8 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
     exact isPPTOn_sampleDyadicIndex (hinLen.comp (by fun_prop))
   have hguard : ComputableTidilyInPolyTime
       (fun p : DDHLevelInput F => decide (p.2 < inLen p.1.1))
-      (ddhLevelInputEncoding F) encBool := by
-    unfold ddhLevelInputEncoding ddhInputEncoding
-    have hm_t := (hinLen.comp (by fun_prop : ComputableInPolyTime
-      (fun p : DDHLevelInput F => p.1.1)
-      (encPair (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-        encUnary) encUnary)).tidy
-    have hk_t : ComputableTidilyInPolyTime (fun p : DDHLevelInput F => p.2)
-      (encPair (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-        encUnary) encUnary := by fun_prop
-    exact ComputableTidilyInPolyTime.unary_lt.comp (hk_t.prod hm_t)
+      (ddhLevelInputEncoding F) encBool :=
+    ComputableTidilyInPolyTime.unary_lt.comp (hk_t.prod hm_t)
   have hbody : IsPPTOn (ddhLevelInputEncoding F) encBool
       (fun p : DDHLevelInput F =>
         if p.2 < inLen p.1.1 then
@@ -1095,7 +1088,6 @@ private theorem dist_frontierLevelWithExpLaw_le (F : PrimeOrderGroupFamily) (d :
       hswap (PMF.iid μ₂ r) (PMF.iid (PMF.iid μ₂ 2) Q)]
     exact (dist_bind_le _ _ _).trans hdist_q
   have hr_le : (r : ℝ) ≤ m := by exact_mod_cast Nat.sub_le m (k + 1)
-  have hnonneg : 0 ≤ dist μ₁ μ₂ := dist_nonneg
   calc dist (((PMF.iid μ₁ r).bind fun s => (PMF.iid (PMF.iid μ₁ 2) Q).map (s, ·)).bind detKernel)
         (((PMF.iid μ₂ r).bind fun s => (PMF.iid (PMF.iid μ₂ 2) Q).map (s, ·)).bind detKernel)
       ≤ dist ((PMF.iid μ₁ r).bind fun s => (PMF.iid (PMF.iid μ₁ 2) Q).map (s, ·))
@@ -1108,7 +1100,8 @@ private theorem dist_frontierLevelWithExpLaw_le (F : PrimeOrderGroupFamily) (d :
         dist_triangle _ _ _
     _ ≤ r * dist μ₁ μ₂ + (2 * Q : ℝ) * dist μ₁ μ₂ := add_le_add hj1 hj2
     _ = (r + 2 * Q : ℝ) * dist μ₁ μ₂ := by ring
-    _ ≤ (m + 2 * Q : ℝ) * dist μ₁ μ₂ := by nlinarith
+    _ ≤ (m + 2 * Q : ℝ) * dist μ₁ μ₂ :=
+        mul_le_mul_of_nonneg_right (add_le_add_left hr_le _) dist_nonneg
 
 private theorem ofFn_zeroExtend_ofList {m k : ℕ} (hk : k ≤ m) {xs : List Bool}
     (hxs : xs.length = m) :
@@ -1320,6 +1313,21 @@ private theorem eval_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupFami
     exact eval_frontierLevel_eq_withExpLaw F n (inLen n) i.val d (adv n d) u v w
   · simp [hk]
 
+private theorem apply_true_le_of_advantage_le {g₁ g₂ : Game} {c : ℝ≥0}
+    (h : Game.advantage g₁ g₂ ≤ c) :
+    g₁ true ≤ g₂ true + (c : ℝ≥0∞) ∧ g₂ true ≤ g₁ true + (c : ℝ≥0∞) := by
+  have hadv : |(g₁ true).toReal - (g₂ true).toReal| ≤ (c : ℝ) := by
+    simpa only [Game.coe_advantage, Game.coe_succProbability, Real.dist_eq] using
+      NNReal.coe_le_coe.mpr h
+  have hle {a b : Game} (hab : (a true).toReal ≤ (b true).toReal + (c : ℝ)) :
+      a true ≤ b true + (c : ℝ≥0∞) := by
+    rw [← ENNReal.ofReal_toReal (PMF.apply_ne_top a true),
+      ← ENNReal.ofReal_toReal
+        (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top b true, ENNReal.coe_ne_top⟩),
+      ENNReal.toReal_add (PMF.apply_ne_top b true) ENNReal.coe_ne_top, ENNReal.coe_toReal]
+    exact ENNReal.ofReal_le_ofReal hab
+  exact ⟨hle (by linarith [(abs_le.mp hadv).2]), hle (by linarith [(abs_le.mp hadv).1])⟩
+
 private theorem advantage_exactDDHIdeal_le (F : PrimeOrderGroupFamily)
     (setup : ℕ → PMF F.Desc) (m : ℕ) (adv : F.Desc → WordOracleComp Unit Bool) (n : ℕ) :
     Game.advantage
@@ -1470,32 +1478,9 @@ private theorem advantage_exactDDHIdeal_le (F : PrimeOrderGroupFamily)
             (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))
           (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_ideal d (BitString i.val) hγ])
     · simp [hk]
-  have hadv_real :
-      |(g1 true).toReal - (g2 true).toReal| ≤ (F.order d : ℝ)⁻¹ := by
-    have h := NNReal.coe_le_coe.mpr hadv_d
-    simpa only [Game.coe_advantage, Game.coe_succProbability, Real.dist_eq, NNReal.coe_inv,
-      NNReal.coe_natCast] using h
-  have h1_real : (g1 true).toReal ≤ (g2 true).toReal + (F.order d : ℝ)⁻¹ := by
-    linarith [(abs_le.mp hadv_real).2]
-  have h2_real : (g2 true).toReal ≤ (g1 true).toReal + (F.order d : ℝ)⁻¹ := by
-    linarith [(abs_le.mp hadv_real).1]
-  have hinv_eq : (errPMF d true).toReal = (F.order d : ℝ)⁻¹ := by
-    rw [herr_true, ENNReal.toReal_inv, ENNReal.toReal_natCast]
-  have h1_enn : g1 true ≤ g2 true + errPMF d true := by
-    rw [← ENNReal.ofReal_toReal (PMF.apply_ne_top g1 true),
-      ← ENNReal.ofReal_toReal (ENNReal.add_ne_top.mpr
-        ⟨PMF.apply_ne_top g2 true, PMF.apply_ne_top (errPMF d) true⟩),
-      ENNReal.toReal_add (PMF.apply_ne_top g2 true) (PMF.apply_ne_top (errPMF d) true),
-      hinv_eq]
-    exact ENNReal.ofReal_le_ofReal h1_real
-  have h2_enn : g2 true ≤ g1 true + errPMF d true := by
-    rw [← ENNReal.ofReal_toReal (PMF.apply_ne_top g2 true),
-      ← ENNReal.ofReal_toReal (ENNReal.add_ne_top.mpr
-        ⟨PMF.apply_ne_top g1 true, PMF.apply_ne_top (errPMF d) true⟩),
-      ENNReal.toReal_add (PMF.apply_ne_top g1 true) (PMF.apply_ne_top (errPMF d) true),
-      hinv_eq]
-    exact ENNReal.ofReal_le_ofReal h2_real
-  exact ⟨h1_enn, h2_enn⟩
+  rw [herr_true, ← ENNReal.coe_natCast,
+    ← ENNReal.coe_inv (by exact_mod_cast (F.prime_order d).ne_zero)]
+  exact apply_true_le_of_advantage_le hadv_d
 
 private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
     (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
@@ -1892,8 +1877,10 @@ private theorem DDH.negligible_naorReingoldDescGame {F : PrimeOrderGroupFamily}
     let L := (F.encDesc d).length
     have hlen : (encPair encUnary F.encDesc (n, d)).length + 1 ≤ (2 * n + 6) * (L + 1) := by
       simp only [length_encPair, encUnary_apply, List.length_replicate]
-      dsimp only [L]
-      nlinarith
+      have : 2 * n ≤ 2 * n * (L + 1) := Nat.le_mul_of_pos_right _ (Nat.succ_pos L)
+      rw [Nat.add_mul]
+      dsimp only [L] at *
+      omega
     have hQd_le : Q n d ≤ cQ * C * (2 * n + 6) ^ eQ * 2 ^ L := by
       calc Q n d
           ≤ cQ * ((2 * n + 6) * (L + 1)) ^ eQ :=
@@ -1904,7 +1891,9 @@ private theorem DDH.negligible_naorReingoldDescGame {F : PrimeOrderGroupFamily}
         _ = cQ * C * (2 * n + 6) ^ eQ * 2 ^ L := by ring
     have hnum_le : inLen n + 2 * Q n d ≤ (inLen n + 2 * cQ * C * (2 * n + 6) ^ eQ) * 2 ^ L := by
       have h1 : inLen n ≤ inLen n * 2 ^ L := Nat.le_mul_of_pos_right _ (by positivity)
-      nlinarith
+      rw [Nat.add_mul, Nat.mul_assoc (2 * cQ * C), Nat.mul_assoc (2 * cQ), Nat.mul_assoc 2]
+      rw [Nat.mul_assoc (cQ * C), Nat.mul_assoc cQ] at hQd_le
+      omega
     have hcast :
         (((inLen n + 2 * Q n d : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ (n + L)) ≤
           (((inLen n + 2 * cQ * C * (2 * n + 6) ^ eQ : ℕ) * (2 : ℝ≥0) ^ L) /
@@ -2622,6 +2611,82 @@ private theorem naorReingoldWordRun_hashedAdvGroup (F : PrimeOrderGroupFamily)
         List.take_of_length_le (hbound _)]
     · simp [hq, PMF.monad_pure_eq_pure]
 
+private theorem advantage_naorReingoldHashedReal_groupIdeal_eq (F : PrimeOrderGroupFamily)
+    (setup : ℕ → PMF F.Desc) (inLen outLen : ℕ → ℕ) (bound : F.Desc → ℕ)
+    (adversary : OracleDistinguisher) (n : ℕ)
+    (hbound : ∀ d ∈ (setup n).support, ∀ x : F.Carrier d, (F.encode d x).length ≤ bound d) :
+    Game.advantage
+      (F.naorReingoldHashedRealGame setup inLen outLen bound adversary n)
+      (naorReingoldHashedGroupIdealGame F setup inLen outLen bound adversary n) =
+    Game.advantage
+      (naorReingoldDescRealGame F.withSeed
+        (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
+        (hashedAdvGroup F inLen outLen bound adversary) n)
+      (naorReingoldDescIdealGame F.withSeed
+        (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
+        (hashedAdvGroup F inLen outLen bound adversary) n) := by
+  have hreal_eq :
+      F.naorReingoldHashedRealGame setup inLen outLen bound adversary n =
+      naorReingoldDescRealGame F.withSeed
+        (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
+        (hashedAdvGroup F inLen outLen bound adversary) n := by
+    simp only [naorReingoldHashedRealGame, naorReingoldDescRealGame, PMF.monad_bind_eq_bind]
+    refine bind_congr_on_support _ _ _ fun ds hds => ?_
+    simp only [seededSetup, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hds
+    obtain ⟨d, hd, _, _, rfl⟩ := hds
+    congr 1; funext α₀; congr 1; funext α
+    exact (naorReingoldWordRun_hashedAdvGroup F inLen outLen bound adversary n (d, _)
+      (hbound d hd) (F.naorReingoldEval d α₀ α)).symm
+  have hideal_eq :
+      naorReingoldHashedGroupIdealGame F setup inLen outLen bound adversary n =
+      naorReingoldDescIdealGame F.withSeed
+        (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
+        (hashedAdvGroup F inLen outLen bound adversary) n := by
+    simp only [naorReingoldHashedGroupIdealGame, naorReingoldDescIdealGame,
+      PMF.monad_bind_eq_bind]
+    refine bind_congr_on_support _ _ _ fun ds hds => ?_
+    simp only [seededSetup, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hds
+    obtain ⟨d, hd, _, _, rfl⟩ := hds
+    congr 1; funext B
+    exact (naorReingoldWordRun_hashedAdvGroup F inLen outLen bound adversary n (d, _)
+      (hbound d hd) (fun x => B x • F.generator d)).symm
+  rw [hreal_eq, hideal_eq]
+
+private theorem exists_queryBound_hashedAdvGroup {F : PrimeOrderGroupFamily}
+    {setup : ℕ → PMF F.Desc} {outLen : ℕ → ℕ} {bound : F.Desc → ℕ} {descBound : ℕ → ℕ}
+    (houtLen : ComputableInPolyTime outLen encUnary encUnary)
+    (hbound_poly : ComputableInPolyTime bound F.encDesc encUnary)
+    (hdesc_poly : PolynomiallyBounded descBound)
+    (hdesc : ∀ n, ∀ d ∈ (setup n).support, (F.encDesc d).length ≤ descBound n)
+    {adversary : OracleDistinguisher} (hadversary : IsOraclePPT encBool adversary) :
+    ∃ Q : ℕ → ℕ, PolynomiallyBounded Q ∧
+      ∀ n, ∀ d ∈ (setup n).support, ∀ seed : BitString (outLen n * (2 * bound d + 1)),
+        (adversary n (F.withSeed.encDesc (d, List.ofFn seed))).IsQueryBounded (Q n) := by
+  obtain ⟨cA, eA, hQb⟩ := hadversary.query_bounds
+  obtain ⟨cB, eB, hBb⟩ := hbound_poly.tidy.polyBounded_length.exists_le
+  have hout_poly : PolynomiallyBounded outLen := houtLen.tidy.polynomiallyBounded
+  refine ⟨fun n =>
+    cA * (n + (2 * descBound n + 2 + outLen n * (2 * (cB * (descBound n + 1) ^ eB) + 1)) + 2) ^ eA,
+    by fun_prop, fun n d hd seed => ?_⟩
+  have hbd : bound d ≤ cB * (descBound n + 1) ^ eB := by
+    have h1 := hBb d
+    simp only [encUnary_apply, List.length_replicate] at h1
+    exact h1.trans (Nat.mul_le_mul_left cB (Nat.pow_le_pow_left
+      (Nat.add_le_add_right (hdesc n d hd) 1) eB))
+  have hlen :
+      (F.withSeed.encDesc (d, List.ofFn seed)).length ≤
+        2 * descBound n + 2 + outLen n * (2 * (cB * (descBound n + 1) ^ eB) + 1) := by
+    simp only [length_encPair, encBits_apply, List.length_ofFn]
+    have hd_len := hdesc n d hd
+    have hmul : outLen n * (2 * bound d + 1) ≤
+        outLen n * (2 * (cB * (descBound n + 1) ^ eB) + 1) :=
+      Nat.mul_le_mul_left (outLen n) (by lia)
+    lia
+  exact (hQb n (F.withSeed.encDesc (d, List.ofFn seed))).1.mono
+    (Nat.mul_le_mul_left cA (Nat.pow_le_pow_left (by lia) eA))
+
 /-- **Asymptotic DDH security of the universal-hash Naor–Reingold bit-string PRF** (paraphrase of
 [NaorReingold2004], Section 4.1, Construction 4.2, Theorem 4.3, and Remark 4.2): under
 `F.DDH setup`, when group descriptions on `(setup n).support` have polynomially bounded bit-length,
@@ -2649,72 +2714,11 @@ theorem DDH.negligible_naorReingoldHashedGame {F : PrimeOrderGroupFamily}
     hDDH.withSeed (F.computableInPolyTime_linearHashSeedLen houtLen hbound_poly)
   have hstep1_neg := hDDH_seed.negligible_naorReingoldDescGame hinLen
     (isOraclePPTOn_hashedAdvGroup F hinLen houtLen hbound_poly hadversary)
-  have hstep1_eq (n : ℕ) :
-      Game.advantage
-        (F.naorReingoldHashedRealGame setup inLen outLen bound adversary n)
-        (naorReingoldHashedGroupIdealGame F setup inLen outLen bound adversary n) =
-      Game.advantage
-        (naorReingoldDescRealGame F.withSeed
-          (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
-          (hashedAdvGroup F inLen outLen bound adversary) n)
-        (naorReingoldDescIdealGame F.withSeed
-          (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
-          (hashedAdvGroup F inLen outLen bound adversary) n) := by
-    have hreal_eq :
-        F.naorReingoldHashedRealGame setup inLen outLen bound adversary n =
-        naorReingoldDescRealGame F.withSeed
-          (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
-          (hashedAdvGroup F inLen outLen bound adversary) n := by
-      simp only [naorReingoldHashedRealGame, naorReingoldDescRealGame, PMF.monad_bind_eq_bind]
-      refine bind_congr_on_support _ _ _ fun ds hds => ?_
-      simp only [seededSetup, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hds
-      obtain ⟨d, hd, _, _, rfl⟩ := hds
-      congr 1; funext α₀; congr 1; funext α
-      exact (naorReingoldWordRun_hashedAdvGroup F inLen outLen bound adversary n (d, _)
-        (hbound n d hd) (F.naorReingoldEval d α₀ α)).symm
-    have hideal_eq :
-        naorReingoldHashedGroupIdealGame F setup inLen outLen bound adversary n =
-        naorReingoldDescIdealGame F.withSeed
-          (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
-          (hashedAdvGroup F inLen outLen bound adversary) n := by
-      simp only [naorReingoldHashedGroupIdealGame, naorReingoldDescIdealGame,
-        PMF.monad_bind_eq_bind]
-      refine bind_congr_on_support _ _ _ fun ds hds => ?_
-      simp only [seededSetup, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hds
-      obtain ⟨d, hd, _, _, rfl⟩ := hds
-      congr 1; funext B
-      exact (naorReingoldWordRun_hashedAdvGroup F inLen outLen bound adversary n (d, _)
-        (hbound n d hd) (fun x => B x • F.generator d)).symm
-    rw [hreal_eq, hideal_eq]
-  obtain ⟨cA, eA, hQb⟩ := hadversary.query_bounds
-  obtain ⟨cB, eB, hBb⟩ := hbound_poly.tidy.polyBounded_length.exists_le
-  have hout_poly : PolynomiallyBounded outLen := houtLen.tidy.polynomiallyBounded
-  let Q : ℕ → ℕ := fun n =>
-    cA * (n + (2 * descBound n + 2 + outLen n * (2 * (cB * (descBound n + 1) ^ eB) + 1)) + 2) ^ eA
-  have hQ_poly : PolynomiallyBounded Q := by
-    dsimp only [Q]
-    fun_prop
-  have hQ_supp (n : ℕ) (d : F.Desc) (hd : d ∈ (setup n).support)
-      (seed : BitString (outLen n * (2 * bound d + 1))) :
-      (adversary n (F.withSeed.encDesc (d, List.ofFn seed))).IsQueryBounded (Q n) := by
-    have hbd : bound d ≤ cB * (descBound n + 1) ^ eB := by
-      have h1 := hBb d
-      simp only [encUnary_apply, List.length_replicate] at h1
-      exact h1.trans (Nat.mul_le_mul_left cB (Nat.pow_le_pow_left
-        (Nat.add_le_add_right (hdesc n d hd) 1) eB))
-    have hlen :
-        (F.withSeed.encDesc (d, List.ofFn seed)).length ≤
-          2 * descBound n + 2 + outLen n * (2 * (cB * (descBound n + 1) ^ eB) + 1) := by
-      simp only [length_encPair, encBits_apply, List.length_ofFn]
-      have hd_len := hdesc n d hd
-      have hmul : outLen n * (2 * bound d + 1) ≤
-          outLen n * (2 * (cB * (descBound n + 1) ^ eB) + 1) :=
-        Nat.mul_le_mul_left (outLen n) (by lia)
-      lia
-    exact (hQb n (F.withSeed.encDesc (d, List.ofFn seed))).1.mono
-      (Nat.mul_le_mul_left cA (Nat.pow_le_pow_left (by lia) eA))
+  have hstep1_eq (n : ℕ) :=
+    advantage_naorReingoldHashedReal_groupIdeal_eq F setup inLen outLen bound adversary n
+      (hbound n)
+  obtain ⟨Q, hQ_poly, hQ_supp⟩ :=
+    exists_queryBound_hashedAdvGroup houtLen hbound_poly hdesc_poly hdesc hadversary
   have hstep2_neg : Negligible fun n =>
       (Q n : ℝ≥0) * (NNReal.sqrt ((2 : ℝ≥0) ^ (outLen n) / (qMin n : ℝ≥0)) / 2) := by
     have hsqrt : Negligible fun n =>
@@ -2904,70 +2908,11 @@ theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
     hDDH.withSeed (F.computableInPolyTime_linearHashSeedLen houtLen hbound_poly)
   have hstep1_neg := hDDH_seed.negligible_naorReingoldDescGame hinLen
     (isOraclePPTOn_hashedAdvGroup F hinLen houtLen hbound_poly hadversary)
-  have hstep1_eq (n : ℕ) :
-      Game.advantage
-        (F.naorReingoldHashedRealGame setup inLen (fun _ => c) bound adversary n)
-        (naorReingoldHashedGroupIdealGame F setup inLen (fun _ => c) bound adversary n) =
-      Game.advantage
-        (naorReingoldDescRealGame F.withSeed
-          (F.seededSetup setup (F.linearHashSeedLen (fun _ => c) bound)) inLen
-          (hashedAdvGroup F inLen (fun _ => c) bound adversary) n)
-        (naorReingoldDescIdealGame F.withSeed
-          (F.seededSetup setup (F.linearHashSeedLen (fun _ => c) bound)) inLen
-          (hashedAdvGroup F inLen (fun _ => c) bound adversary) n) := by
-    have hreal_eq :
-        F.naorReingoldHashedRealGame setup inLen (fun _ => c) bound adversary n =
-        naorReingoldDescRealGame F.withSeed
-          (F.seededSetup setup (F.linearHashSeedLen (fun _ => c) bound)) inLen
-          (hashedAdvGroup F inLen (fun _ => c) bound adversary) n := by
-      simp only [naorReingoldHashedRealGame, naorReingoldDescRealGame, PMF.monad_bind_eq_bind]
-      refine bind_congr_on_support _ _ _ fun ds hds => ?_
-      simp only [seededSetup, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hds
-      obtain ⟨d, hd, _, _, rfl⟩ := hds
-      congr 1; funext α₀; congr 1; funext α
-      exact (naorReingoldWordRun_hashedAdvGroup F inLen (fun _ => c) bound adversary n (d, _)
-        (hbound n d hd) (F.naorReingoldEval d α₀ α)).symm
-    have hideal_eq :
-        naorReingoldHashedGroupIdealGame F setup inLen (fun _ => c) bound adversary n =
-        naorReingoldDescIdealGame F.withSeed
-          (F.seededSetup setup (F.linearHashSeedLen (fun _ => c) bound)) inLen
-          (hashedAdvGroup F inLen (fun _ => c) bound adversary) n := by
-      simp only [naorReingoldHashedGroupIdealGame, naorReingoldDescIdealGame,
-        PMF.monad_bind_eq_bind]
-      refine bind_congr_on_support _ _ _ fun ds hds => ?_
-      simp only [seededSetup, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hds
-      obtain ⟨d, hd, _, _, rfl⟩ := hds
-      congr 1; funext B
-      exact (naorReingoldWordRun_hashedAdvGroup F inLen (fun _ => c) bound adversary n (d, _)
-        (hbound n d hd) (fun x => B x • F.generator d)).symm
-    rw [hreal_eq, hideal_eq]
-  obtain ⟨cA, eA, hQb⟩ := hadversary.query_bounds
-  obtain ⟨cB, eB, hBb⟩ := hbound_poly.tidy.polyBounded_length.exists_le
-  let Q : ℕ → ℕ := fun n =>
-    cA * (n + (2 * descBound n + 2 + c * (2 * (cB * (descBound n + 1) ^ eB) + 1)) + 2) ^ eA
-  have hQ_poly : PolynomiallyBounded Q := by
-    dsimp only [Q]
-    fun_prop
-  have hQ_supp (n : ℕ) (d : F.Desc) (hd : d ∈ (setup n).support)
-      (seed : BitString (c * (2 * bound d + 1))) :
-      (adversary n (F.withSeed.encDesc (d, List.ofFn seed))).IsQueryBounded (Q n) := by
-    have hbd : bound d ≤ cB * (descBound n + 1) ^ eB := by
-      have h1 := hBb d
-      simp only [encUnary_apply, List.length_replicate] at h1
-      exact h1.trans (Nat.mul_le_mul_left cB (Nat.pow_le_pow_left
-        (Nat.add_le_add_right (hdesc n d hd) 1) eB))
-    have hlen :
-        (F.withSeed.encDesc (d, List.ofFn seed)).length ≤
-          2 * descBound n + 2 + c * (2 * (cB * (descBound n + 1) ^ eB) + 1) := by
-      simp only [length_encPair, encBits_apply, List.length_ofFn]
-      have hd_len := hdesc n d hd
-      have hmul : c * (2 * bound d + 1) ≤ c * (2 * (cB * (descBound n + 1) ^ eB) + 1) :=
-        Nat.mul_le_mul_left c (by lia)
-      lia
-    exact (hQb n (F.withSeed.encDesc (d, List.ofFn seed))).1.mono
-      (Nat.mul_le_mul_left cA (Nat.pow_le_pow_left (by lia) eA))
+  have hstep1_eq (n : ℕ) :=
+    advantage_naorReingoldHashedReal_groupIdeal_eq F setup inLen (fun _ => c) bound adversary n
+      (hbound n)
+  obtain ⟨Q, hQ_poly, hQ_supp⟩ :=
+    exists_queryBound_hashedAdvGroup houtLen hbound_poly hdesc_poly hdesc hadversary
   let ε : ℕ → ℝ≥0 := fun n => (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal
   have hε_neg : Negligible ε := hDDH.negligible_expected_inv_order
   let lhlBound : ℕ → ℝ≥0 := fun n =>
@@ -3099,32 +3044,9 @@ theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
           (by positivity)
       · have hz : setup n d = 0 := by simpa [PMF.mem_support_iff] using hd
         simp [hz]
-    have hfg1 (d : F.Desc) (_ : d ∈ (setup n).support) :
-        g1 d true ≤ g2 d true + ((Game.advantage (g1 d) (g2 d) : ℝ≥0) : ℝ≥0∞) := by
-      have hadv : (g1 d true).toReal ≤ (g2 d true).toReal + (Game.advantage (g1 d) (g2 d) : ℝ) := by
-        have h := le_abs_self ((g1 d true).toReal - (g2 d true).toReal)
-        have hc : |(g1 d true).toReal - (g2 d true).toReal| =
-            (Game.advantage (g1 d) (g2 d) : ℝ) := by
-          simp only [Game.coe_advantage, Game.coe_succProbability]
-        linarith
-      rw [← ENNReal.ofReal_toReal (PMF.apply_ne_top (g1 d) true),
-        ← ENNReal.ofReal_toReal (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top (g2 d) true, by simp⟩),
-        ENNReal.toReal_add (PMF.apply_ne_top (g2 d) true) (by simp), ENNReal.coe_toReal]
-      exact ENNReal.ofReal_le_ofReal hadv
-    have hfg2 (d : F.Desc) (_ : d ∈ (setup n).support) :
-        g2 d true ≤ g1 d true + ((Game.advantage (g1 d) (g2 d) : ℝ≥0) : ℝ≥0∞) := by
-      have hadv : (g2 d true).toReal ≤ (g1 d true).toReal + (Game.advantage (g1 d) (g2 d) : ℝ) := by
-        have h := neg_le_abs ((g1 d true).toReal - (g2 d true).toReal)
-        have hc : |(g1 d true).toReal - (g2 d true).toReal| =
-            (Game.advantage (g1 d) (g2 d) : ℝ) := by
-          simp only [Game.coe_advantage, Game.coe_succProbability]
-        linarith
-      rw [← ENNReal.ofReal_toReal (PMF.apply_ne_top (g2 d) true),
-        ← ENNReal.ofReal_toReal (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top (g1 d) true, by simp⟩),
-        ENNReal.toReal_add (PMF.apply_ne_top (g1 d) true) (by simp), ENNReal.coe_toReal]
-      exact ENNReal.ofReal_le_ofReal hadv
     have hadv_fin := Game.advantage_le_of_apply_le (by simp : ((lhlBound n : ℝ≥0) : ℝ≥0∞) ≠ ⊤)
-      (hle_apply g1 g2 hfg1) (hle_apply g2 g1 hfg2)
+      (hle_apply g1 g2 fun d _ => (apply_true_le_of_advantage_le le_rfl).1)
+      (hle_apply g2 g1 fun d _ => (apply_true_le_of_advantage_le le_rfl).2)
     rw [ENNReal.coe_toReal] at hadv_fin
     exact NNReal.coe_le_coe.mp hadv_fin
   refine negligible_of_le (hstep1_neg.add hlhl_neg) fun n => ?_

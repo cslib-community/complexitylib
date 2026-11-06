@@ -37,6 +37,55 @@ The native allocation library [Complexity/Computability/WordRAM/Allocation.lean]
 
 [Realizes](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Realization/Basic.lean#L95) is a graded realization interface. It chooses scratch registers, a constant and a uniform code emitter **before** arguments, width and memory. It requires faithful register encodings, a whole-memory/frontier abstraction, register framing and explicit safety/work bounds. Its instruction allowance is proportional to `memoryCost + work + 1`. The `work` term is necessary because pure/control code can take time without making memory queries. `Realizes.exists_refines` connects it to the native controller layer. Primitive, bind and branch modules provide a compositional foundation, not a compiler for every arbitrary Lean function.
 
+### Retain resources through a dependent bind
+
+Import `Complexity.Computability.WordRAM.Realization.Bind` and use
+`Realizes.Witness.bind` when a continuation consumes a runtime answer and you need to
+retain concrete code and resources. It keeps the predecessor’s answer live while sharing its
+dead auxiliary registers with the continuation. With `l` answer words and component scratch
+sizes `n₁`, `n₂`, its scratch size is `l + max n₁ n₂`; the factor remains the maximum
+component factor. The original safe-domain and valid-history obligations still apply at the
+actual intermediate state. `Witness.bind_execWithin` can tighten the two component execution
+budgets on that same code and add them, retaining the full memory, output and register frame.
+
+The complete checked [dependent-read client](../../ComplexityTests/WordRAMRealizationBindScratch.lean)
+reads a pointer and then its target using one supplied emitter. Its generic Backend has five
+registers, compared with six for the former disjoint-bank layout, and executes two loads;
+argument installation and halt are separate. The client checks a maximum fitting payload,
+a zero pointer, aliased input registers and an unallocated second address that fails the
+original history condition. For probabilistic clients, use the joint-law data route below.
+For supplying its data to a Backend, follow
+[Retain concrete realization resources](wordram-and-bridges.md#retain-concrete-realization-resources).
+
+### Retain a randomized joint law
+
+Import `Complexity.Computability.WordRAM.Realization.Random` and retain a
+`RealizesRand.Witness` when you need the supplied scratch, factor and code for a client with
+private coins. Its `code_spec` is the same `RealizesRand.Spec` used by the existential
+`RealizesRand` judgment: every supported path obeys the time and draw budgets, and the result
+words together with the entire memory/frontier have the specified joint law. Erasure by
+`Witness.toRealizesRand` supplies the existing judgment but does not identify a later
+classically selected emitter with your supplied one.
+
+Compose `RealizesRand.coinWitness`, deterministic `Realizes.Witness.toRand` and
+`RealizesRand.Witness.bind`. Deterministic entry retains the same code/resources with zero
+draws; a coin uses the existing unit-cost inclusive native `rand` on `[0, upper]`,
+including one charged draw when `upper = 0`. This is not a fair-bit sampler.
+Bind retains the shared bank described above. Its continuation domain and time/draw ceilings
+must hold for **every supported answer and memory state**, and its native contract must handle
+every bounded scratch state. Correlation with predecessor scratch is not a new independence
+premise. Use `code_spec` on the chosen layout to retain its concrete resource evidence.
+
+The complete [supplied randomized client](../../ComplexityTests/WordRAMRealizationRandomWitness.lean)
+samples a word, writes it to a runtime address and reads it back. One six-register emitter
+replaces the disjoint layout's seven registers; its certified body bound is six instructions
+and at most one `rand` call. A four-outcome distribution checks that the returned word and
+written cell are correlated, with the rest of memory/frontier framed. Zero upper bound,
+aliased inputs and invalid continuation history are also checked. Input delivery/installation
+and halt remain separate. The existing existential flat-program export is available for its
+own admitted inputs; this supplier adds no randomized Backend and proves no fixed Karger
+register count or numerical clock.
+
 ### Export a canonical initialized flat program
 
 Import `Complexity.Computability.WordRAM.Realization.Program.Standard` when you have a
@@ -87,6 +136,92 @@ different graphs, reads their first header word and preserves the entire input m
 This client is a header-read demonstration, not a Dijkstra execution or shortest-path bound.
 
 ## Footprints, traces, and memory windows
+
+### Call fixed code in a disjoint register bank
+
+Import `Complexity.Computability.WordRAM.Call` when the callee already has a native execution
+proof and the caller must prepare arguments and consume the result. `ExecWithin.call` takes
+an injective register embedding, a charged preparation, the callee's execution and
+postcondition, and a charged continuation. The continuation sees the callee postcondition
+on its register bank and equality of every register outside that bank. Memory assertions
+refer to the actual returned memory. The total allowance is `tPrep+tCall+tCont`; register
+renaming emits no instructions.
+
+The complete [fixed-call client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMCall.lean)
+delivers an argument, calls a routine that increments it and writes memory, then retrieves the
+result in five charged instructions. It proves that an unrelated register and other memory
+cells survive, even when unused old words exceed the physical word bound. This rule does not
+add a whole-state boundedness or finite-footprint premise to the supplied callee theorem.
+If a call proof fails, check the embedding's injectivity, the callee's actual preconditions,
+and the registers the continuation needs to preserve. A memory frame belongs in the callee's
+postcondition; register disjointness alone says nothing about its writes.
+
+From a checkout containing this API, check the client with
+`scripts/build.sh --wfail --iofail ComplexityTests.WordRAMCall`.
+The [ordinary 3SUM call proof](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ThreeSum/Decision/Body.lean)
+uses the same rule for its Convolution host and retained controller registers.
+For a renamed execution without a surrounding preparation and continuation, use
+`Exec.rename_post` or `ExecWithin.rename_post`. They return the postcondition on the callee
+bank and the unchanged outside registers; the first retains an exact instruction count.
+
+The Chan–He traversal's record helpers are another `Exec.rename_post` client.
+[`Traversal.WordStack.pushRecord_exec` and `popRecord_exec`](https://github.com/cslib-community/complexitylib/blob/8609e5ae206693e3c35a920ba2cf24ef76135d26/Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalStack.lean#L225)
+move a fixed register bank through the traversal's own nine-register word stack in exactly
+`9*n+1` and `14*n+1` instructions. They are local to the hand-stepped traversal, not a library
+stack API; the library's bounded stack is `Stack.Memory`, run natively by `Stack.Native`.
+
+### Reuse routine postconditions and register frames
+
+For a proved native routine, keep its whole postcondition when calling
+`ExecWithin.rename_post`; consume only the named fields needed by the continuation.
+For example, [`ArrayCopySum.Post`](../../Complexity/Computability/WordRAM/CopySum.lean)
+records the resulting memory, retained source/destination/length and accumulated sum.
+Its memory and sum facts refer to the original input state, so a caller can use `post.memory`
+and `post.total` without reconstructing register extensions or a positional tuple.
+The actual source/destination separation and numerical fit premises still belong to the
+routine. This is the same charged execution; the postcondition emits no instructions.
+
+[`WordRAMProcedureContracts`](../../ComplexityTests/WordRAMProcedureContracts.lean) is a
+complete ordinary-import client. From the repository root, run
+`scripts/build.sh --wfail --iofail ComplexityTests.WordRAMProcedureContracts`.
+It checks the real copy routine, including dirty destination words and its frame;
+use its full imports and premises when adapting a call. If transport fails, check the bank's
+injectivity and distinguish facts about the source view from protected caller registers.
+
+For a contiguous bank, import
+[`Complexity.Computability.WordRAM.RegisterFrame`](../../Complexity/Computability/WordRAM/RegisterFrame.lean)
+and use `Code.preserves_rename_of_offset`. Supply the equation
+`(bank j).val = offset + j.val` and the outside interval premise
+`i.val < offset ∨ offset + sourceRegisters ≤ i.val`.
+`Exec.regs_eq` or `ExecWithin.regs_eq` then gives the protected register equality for the actual
+execution. This works with arbitrary basis and register counts; an enumerated map can supply
+its offset equation once. Sparse maps and protection inside a bank still use the more general
+`preserves_rename_of_forall_ne` or the routine's own preservation contract.
+
+The complete [register-frame client](../../ComplexityTests/WordRAMRegisterFrames.lean)
+copies inside an interior bank in one instruction and retains dirty registers on both sides
+and arbitrary memory. Its negative control checks that an owned destination can change.
+Run `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMRegisterFrames`.
+
+### Derive word admission from a numerical envelope
+
+Import [`Complexity.Computability.WordRAM.Admission`](../../Complexity/Computability/WordRAM/Admission.lean)
+for the scalar bridge from binary ceiling logarithms to `Fits W v`, meaning `v < 2^W`:
+`fits_of_clog_lt` admits an envelope `B` when `Nat.clog 2 B < W`;
+`fits_of_lt_clog_le` admits `v < B` when `Nat.clog 2 B ≤ W`.
+Prove the algorithm-specific envelope bound once, then use `Fits.of_le` for smaller values and
+`Fits.mono` for larger widths. These sufficient rules do not infer memory separation,
+old-word bounds, or workspace geometry.
+
+The strict endpoint matters: width three holds seven but not eight, even though
+`Nat.clog 2 8 = 3`. For the envelope itself retain a spare bit. The complete
+[admission client](../../ComplexityTests/WordRAMAdmission.lean) checks these boundaries with
+actual native constant instructions and includes width zero.
+Run `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMAdmission`.
+If admission fails, check whether the intended value is strictly below the envelope or is the
+envelope, then check the original value bound; do not replace a strict premise by a non-strict one.
+
+### Use an explicit memory frame
 
 [HeapAssertion](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Heap.lean#L62) records a finite support and a predicate on total memory. Separating conjunction uses disjoint supports; `Modifies` records agreement outside an allowed write set. This is an explicit-footprint frame calculus inspired by separation logic, not a replacement semantics in which inaccessible cells disappear [reynolds02][reynolds02].
 

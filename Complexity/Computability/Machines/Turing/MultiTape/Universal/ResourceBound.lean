@@ -9,7 +9,6 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
 import Mathlib.Tactic.GCongr
-import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
 /-!
@@ -49,55 +48,52 @@ requires a different tape representation. -/
 theorem universal_bounds_le {D N J B L : ℕ} (hD : D ≤ B) (hN : N ≤ B) (hL : L ≤ B) (hJ : 1 ≤ J) :
     (J + 1) * (stepBound D N J + runBound D N J + (L + 1) ^ 2) ≤ 100000 * (B + 1) ^ 4 * J ^ 2 ∧
       runBound D N J ≤ 200 * (B + 1) ^ 2 * J := by
-  set M := B + 1 with hM
+  set M := B + 1
   have hM1 : 1 ≤ M := by omega
   have hDM : D + 1 ≤ M := by omega
   have hNM : N + 1 ≤ M := by omega
-  have hMJ : M ≤ M * J := Nat.le_mul_of_pos_right _ hJ
-  have hM2 : M ≤ M ^ 2 := Nat.le_self_pow two_ne_zero _
-  have hM2J : M ^ 2 ≤ M ^ 2 * J := Nat.le_mul_of_pos_right _ hJ
-  have htape : tapeBound D J ≤ 36 * M * J := by
-    unfold tapeBound
-    nlinarith
-  have hcfg : cfgBound D N J ≤ 80 * M ^ 2 * J := by
-    unfold cfgBound
-    have : D * (2 * tapeBound D J + 1) ≤ M * (72 * M * J + 1) :=
-      Nat.mul_le_mul (by omega) (by linarith)
-    nlinarith
-  have hctx : ctxBound D N J ≤ 89 * M ^ 2 * J := by
-    unfold ctxBound
-    nlinarith
+  have hJM := Nat.le_mul_of_pos_left J hM1; have hMJ := Nat.le_mul_of_pos_right M hJ
+  have hM2 := Nat.le_self_pow two_ne_zero M; have hM2J := Nat.le_mul_of_pos_right (M ^ 2) hJ
+  have hMJM2J := Nat.mul_le_mul_right J hM2
+  have htape : tapeBound D J ≤ 36 * (M * J) := by
+    have := (Nat.mul_le_mul_left (3 * (2 * J)) (show 2 * D + 3 ≤ 5 * M by omega)).trans
+      (le_of_eq (show 3 * (2 * J) * (5 * M) = 30 * (M * J) by ring))
+    unfold tapeBound; omega
+  have hcfg : cfgBound D N J ≤ 80 * (M ^ 2 * J) := by
+    have := (Nat.mul_le_mul (by omega : D ≤ M)
+      (show 2 * tapeBound D J + 1 ≤ 74 * (M * J) by omega)).trans
+      (le_of_eq (show M * (74 * (M * J)) = 74 * (M ^ 2 * J) by ring))
+    unfold cfgBound; omega
+  have hctx : ctxBound D N J ≤ 89 * (M ^ 2 * J) := by unfold ctxBound; omega
   have hrun : runBound D N J ≤ 200 * M ^ 2 * J := by
-    unfold runBound
-    have : J * (2 * D + 1) ≤ J * (2 * M) := Nat.mul_le_mul_left _ (by omega)
-    nlinarith
+    have := (Nat.mul_le_mul_left J (show 2 * D + 1 ≤ 2 * M by omega)).trans
+      (le_of_eq (show J * (2 * M) = 2 * (M * J) by ring))
+    have : 200 * (M ^ 2 * J) = 200 * M ^ 2 * J := by ring
+    unfold runBound; omega
   refine ⟨?_, hrun⟩
-  have hM34 : M ^ 3 ≤ M ^ 4 * J :=
-    (Nat.pow_le_pow_right hM1 (by omega)).trans (Nat.le_mul_of_pos_right _ hJ)
-  have hstep : stepBound D N J ≤ 190 * M ^ 4 * J := by
+  have hM34 := (Nat.pow_le_pow_right hM1 (by omega : 3 ≤ 4)).trans (Nat.le_mul_of_pos_right _ hJ)
+  have hM4 := Nat.mul_le_mul_right J (Nat.pow_le_pow_right hM1 (by omega : 2 ≤ 4))
+  have hstep : stepBound D N J ≤ 190 * (M ^ 4 * J) := by
     unfold stepBound
-    have hfirst : (2 * D + 1) * (D + 1) * (ctxBound D N J + 1) ≤ 180 * M ^ 4 * J := by
-      calc _ ≤ (2 * M) * M * (90 * M ^ 2 * J) :=
-            Nat.mul_le_mul (Nat.mul_le_mul (by omega) hDM) (by nlinarith)
-        _ = _ := by ring
+    have hfirst : (2 * D + 1) * (D + 1) * (ctxBound D N J + 1) ≤ 180 * (M ^ 4 * J) :=
+      (Nat.mul_le_mul (Nat.mul_le_mul (show 2 * D + 1 ≤ 2 * M by omega) hDM)
+        (show ctxBound D N J + 1 ≤ 90 * (M ^ 2 * J) by omega)).trans (le_of_eq (by ring))
     have hbits := length_encNat_le (N + 1)
-    have hdigits : ((encNat (N + 1)).length + 1) ^ 2 ≤ (2 * M) ^ 2 :=
-      Nat.pow_le_pow_left (by omega) 2
-    have hlookup : (N + 1) * ((encNat (N + 1)).length + 1) ^ 2 ≤
-        4 * M ^ 3 := by
-      calc _ ≤ M * (4 * M ^ 2) :=
-            Nat.mul_le_mul hNM (by nlinarith)
-        _ = _ := by ring
-    nlinarith
-  have hM4 : M ^ 2 * J ≤ M ^ 4 * J :=
-    Nat.mul_le_mul_right _ (Nat.pow_le_pow_right hM1 (by omega))
-  have hL2 : (L + 1) ^ 2 ≤ M ^ 4 * J :=
-    (Nat.pow_le_pow_left (by omega) 2).trans (hM2J.trans hM4)
-  have hsum : stepBound D N J + runBound D N J + (L + 1) ^ 2 ≤ 391 * M ^ 4 * J := by
-    nlinarith
+    have hdigits : ((encNat (N + 1)).length + 1) ^ 2 ≤ 4 * M ^ 2 :=
+      (Nat.pow_le_pow_left (show (encNat (N + 1)).length + 1 ≤ 2 * M by omega) 2).trans
+        (le_of_eq (by ring))
+    have hlookup : (N + 1) * ((encNat (N + 1)).length + 1) ^ 2 ≤ 4 * M ^ 3 :=
+      (Nat.mul_le_mul hNM hdigits).trans (le_of_eq (by ring))
+    omega
+  have hL2 : (L + 1) ^ 2 ≤ M ^ 4 * J := (Nat.pow_le_pow_left (by omega) 2).trans (hM2J.trans hM4)
+  have hsum : stepBound D N J + runBound D N J + (L + 1) ^ 2 ≤ 391 * (M ^ 4 * J) := by
+    have : 200 * M ^ 2 * J = 200 * (M ^ 2 * J) := by ring
+    omega
   calc (J + 1) * (stepBound D N J + runBound D N J + (L + 1) ^ 2)
-      ≤ (2 * J) * (391 * M ^ 4 * J) := Nat.mul_le_mul (by omega) hsum
-    _ ≤ 100000 * M ^ 4 * J ^ 2 := by nlinarith [Nat.zero_le (M ^ 4 * J ^ 2)]
+      ≤ (2 * J) * (391 * (M ^ 4 * J)) := Nat.mul_le_mul (by omega) hsum
+    _ = 782 * (M ^ 4 * J ^ 2) := by ring
+    _ ≤ 100000 * (M ^ 4 * J ^ 2) := by omega
+    _ = 100000 * M ^ 4 * J ^ 2 := by ring
 
 
 /-- A plain native machine computes the clocked universal function within a quartic factor in
@@ -108,32 +104,33 @@ theorem computableInO_universal :
     ComputableInO universal eIn eOut
       (fun i => ((eIn i).length + 1) ^ 4 * (i.2.2 + 1) ^ 2)
       (fun i => ((eIn i).length + 1) ^ 2 * (i.2.2 + 1)) := by
+  have hbounds (i : Desc × List ℕ × ℕ) :=
+    universal_bounds_le (D := descLen i.1) (N := (encList encUnary i.2.1).length)
+      (L := (encNat i.2.2).length) (B := (eIn i).length) (J := i.2.2 + 1)
+      (length_le_encPair_left _ _ i)
+      ((length_le_encPair_left _ _ i.2).trans (length_le_encPair_right _ _ i))
+      ((length_le_encPair_right _ _ i.2).trans (length_le_encPair_right _ _ i))
+      (Nat.le_add_left 1 i.2.2)
   refine computableTidilyInO_universal.computableInO.mono 100001 (fun i => ?_) (fun i => ?_)
-  all_goals
-    have hD : descLen i.1 ≤ (eIn i).length := length_le_encPair_left _ _ i
-    have hN : (encList encUnary i.2.1).length ≤ (eIn i).length :=
-      (length_le_encPair_left _ _ i.2).trans (length_le_encPair_right _ _ i)
-    have hL : (encNat i.2.2).length ≤ (eIn i).length :=
-      (length_le_encPair_right _ _ i.2).trans (length_le_encPair_right _ _ i)
-    obtain ⟨ht, hs⟩ := universal_bounds_le (J := i.2.2 + 1) hD hN hL (by omega)
-    have hstep := stepBound_mono (D := descLen i.1) (N := (encList encUnary i.2.1).length)
+  · have hstep := stepBound_mono (D := descLen i.1) (N := (encList encUnary i.2.1).length)
       le_rfl le_rfl (Nat.le_add_right i.2.2 1)
     have hrun := runBound_mono (D := descLen i.1) (N := (encList encUnary i.2.1).length)
       (Nat.le_add_right i.2.2 1)
-  · have htime : (i.2.2 + 1) * (stepBound (descLen i.1) (encList encUnary i.2.1).length i.2.2 +
-        runBound (descLen i.1) (encList encUnary i.2.1).length i.2.2 +
-        ((encNat i.2.2).length + 1) ^ 2) ≤
-        100000 * ((eIn i).length + 1) ^ 4 * (i.2.2 + 1) ^ 2 :=
-      (Nat.mul_le_mul (show i.2.2 + 1 ≤ i.2.2 + 1 + 1 by omega)
-        (Nat.add_le_add_right (Nat.add_le_add hstep hrun) _)).trans ht
-    have hinput : ((eIn i).length + 1) ^ 2 ≤
-        ((eIn i).length + 1) ^ 4 * (i.2.2 + 1) ^ 2 :=
-      (Nat.pow_le_pow_right (by omega) (show 2 ≤ 4 by omega)).trans
+    have htime := (Nat.mul_le_mul (show i.2.2 + 1 ≤ i.2.2 + 1 + 1 by omega)
+      (Nat.add_le_add_right (Nat.add_le_add hstep hrun) _)).trans (hbounds i).1
+    have hinput : ((eIn i).length + 1) ^ 2 ≤ ((eIn i).length + 1) ^ 4 * (i.2.2 + 1) ^ 2 :=
+      (Nat.pow_le_pow_right (by omega) (by omega : 2 ≤ 4)).trans
         (Nat.le_mul_of_pos_right _ (by positivity))
-    nlinarith
-  · have hinput : (eIn i).length ≤ ((eIn i).length + 1) ^ 2 * (i.2.2 + 1) :=
+    have : 100000 * ((eIn i).length + 1) ^ 4 * (i.2.2 + 1) ^ 2 =
+      100000 * (((eIn i).length + 1) ^ 4 * (i.2.2 + 1) ^ 2) := by ring
+    omega
+  · have hrun := (runBound_mono (D := descLen i.1) (N := (encList encUnary i.2.1).length)
+      (Nat.le_add_right i.2.2 1)).trans (hbounds i).2
+    have hinput : (eIn i).length ≤ ((eIn i).length + 1) ^ 2 * (i.2.2 + 1) :=
       (Nat.le_succ _).trans ((Nat.le_self_pow two_ne_zero _).trans
         (Nat.le_mul_of_pos_right _ (by omega)))
-    nlinarith
+    have : 200 * ((eIn i).length + 1) ^ 2 * (i.2.2 + 1) =
+      200 * (((eIn i).length + 1) ^ 2 * (i.2.2 + 1)) := by ring
+    omega
 
 end Turing.MultiTapeTM.Universal

@@ -29,11 +29,8 @@ open Cslib.WordRAM
 theorem count_preserves (counter : Code .standard 128) (i : Fin 160) (hi : 128 ≤ i.val) :
     (count counter).Preserves i := by
   have hc : (counter.rename counterRegisters).Preserves i :=
-    counter.preserves_rename_of_forall_ne counterRegisters i (by
-      intro j hj
-      have hv := congrArg (fun i : Fin 160 => i.val) hj
-      dsimp only [counterRegisters] at hv
-      omega)
+    counter.preserves_rename_of_offset (offset := 0) counterRegisters
+      (fun j => (Nat.zero_add j.val).symm) i (Or.inr (by omega))
   simp only [count, Code.Preserves, hc, Op.dest, ne_eq, Option.some.injEq,
     Reg.countSide, Reg.countPrime, Reg.countAB, Reg.countBC, Reg.countAC, Reg.countScratch,
     Fin.ext_iff]
@@ -45,17 +42,11 @@ theorem preserves_input (counter : Code .standard 128) (i : Fin 160)
     (hi : (131 ≤ i.val ∧ i.val ≤ 136) ∨ 143 ≤ i.val) :
     (program counter).Preserves i := by
   have hc : (counter.rename counterRegisters).Preserves i :=
-    counter.preserves_rename_of_forall_ne counterRegisters i (by
-      intro j hj
-      have hv := congrArg (fun i : Fin 160 => i.val) hj
-      dsimp only [counterRegisters] at hv
-      omega)
+    counter.preserves_rename_of_offset (offset := 0) counterRegisters
+      (fun j => (Nat.zero_add j.val).symm) i (Or.inr (by omega))
   have ht : (PrimeTrial.program.rename trialRegisters).Preserves i :=
-    PrimeTrial.program.preserves_rename_of_forall_ne trialRegisters i (by
-      intro j hj
-      have hv := congrArg (fun i : Fin 160 => i.val) hj
-      dsimp only [trialRegisters] at hv
-      omega)
+    PrimeTrial.program.preserves_rename_of_offset (offset := 0) trialRegisters
+      (fun j => (Nat.zero_add j.val).symm) i (Or.inr (by omega))
   simp only [program, setup, body, advance, candidate, trial, count, keep, nop,
     Code.Preserves, hc, ht,
     Op.dest, Op.bin, ne_eq, Option.some.injEq, Reg.best, Reg.bestCount, Reg.found, Reg.cursor,

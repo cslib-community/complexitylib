@@ -47,6 +47,10 @@ False*][OpenAI2026ETH], parameterized over a Proposition 5.3 branch evaluator (`
   `ExhaustiveCountFallback.countSystemExhaustive`, evaluating indices `≥ n` (resp. `≥ n'`) as
   `false` and matching `HeavyBranchFold.rootCount` unconditionally on all inputs.
 
+`BranchEvalInput` keeps its original raw tuple encoding. Its named accessors and polynomial-time
+projection certificates let clients read the parameters without reconstructing that encoding;
+the variable and degree bounds remain unary, and the remaining parameters remain binary.
+
 ## Main definitions
 
 * `checkVarsLt`, `checkCanonicalMonomial`, `checkCanonicalEquation`, `checkCanonicalSystem`,
@@ -139,10 +143,118 @@ def branchAugmentedIncidence (n' : ℕ) (eqs' : List (List (List ℕ))) : ℕ :=
 /-- Input bundle `((n', k'), (b, w, M', β), (r, Q, R, A₀), eqs')` for Proposition 5.3 (§5.4–5.5). -/
 abbrev BranchEvalInput := (ℕ × ℕ) × (ℕ × ℕ × ℕ × ℕ) × (ℕ × ℕ × ℕ × ℕ) × List (List (List ℕ))
 
+namespace BranchEvalInput
+
+/-- The number `n'` of variables, stored in unary. -/
+abbrev numVars : BranchEvalInput → ℕ | ((n, _), _, _, _) => n
+/-- The degree bound `k'`, stored in unary. -/
+abbrev maxDegree : BranchEvalInput → ℕ | ((_, k), _, _, _) => k
+/-- The neutral-augmented factor incidence `b`. -/
+abbrev factorIncidence : BranchEvalInput → ℕ | (_, (b, _, _, _), _, _) => b
+/-- The neutral-augmented factor scope width `w`. -/
+abbrev factorWidth : BranchEvalInput → ℕ | (_, (_, w, _, _), _, _) => w
+/-- The total neutral-augmented incidence `M'`. -/
+abbrev augmentedIncidence : BranchEvalInput → ℕ | (_, (_, _, M, _), _, _) => M
+/-- The polylogarithmic incidence exponent `β`. -/
+abbrev incidenceExponent : BranchEvalInput → ℕ | (_, (_, _, _, β), _, _) => β
+/-- The number `r` of variable groups. -/
+abbrev numGroups : BranchEvalInput → ℕ | (_, _, (r, _, _, _), _) => r
+/-- The number `Q` of interpolation nodes. -/
+abbrev numNodes : BranchEvalInput → ℕ | (_, _, (_, Q, _, _), _) => Q
+/-- The row bound `R`. -/
+abbrev rowBound : BranchEvalInput → ℕ | (_, _, (_, _, R, _), _) => R
+/-- The interval start `A₀`. -/
+abbrev intervalStart : BranchEvalInput → ℕ | (_, _, (_, _, _, A₀), _) => A₀
+/-- The polynomial system, as lists of equations, monomials and variable indices. -/
+abbrev equations : BranchEvalInput → List (List (List ℕ)) | (_, _, _, eqs) => eqs
+
+end BranchEvalInput
+
 /-- Native encoding of `BranchEvalInput` (`(n', k')` unary, parameter quadruples binary). -/
 def encBranchEvalInput : BranchEvalInput ↪ List Bool :=
   let encQuad := encPair encNat (encPair encNat (encPair encNat encNat))
   encPair (encPair encUnary encUnary) (encPair encQuad (encPair encQuad encSys))
+
+namespace BranchEvalInput
+
+/-- Read the unary variable count without decoding the parameter tuple in a client. -/
+@[fun_prop]
+theorem computableInPolyTime_numVars :
+    ComputableInPolyTime numVars encBranchEvalInput encUnary := by
+  unfold numVars encBranchEvalInput
+  fun_prop
+
+/-- Read the unary degree bound. -/
+@[fun_prop]
+theorem computableInPolyTime_maxDegree :
+    ComputableInPolyTime maxDegree encBranchEvalInput encUnary := by
+  unfold maxDegree encBranchEvalInput
+  fun_prop
+
+/-- Read the binary neutral-augmented factor incidence. -/
+@[fun_prop]
+theorem computableInPolyTime_factorIncidence :
+    ComputableInPolyTime factorIncidence encBranchEvalInput encNat := by
+  unfold factorIncidence encBranchEvalInput
+  fun_prop
+
+/-- Read the binary neutral-augmented factor scope width. -/
+@[fun_prop]
+theorem computableInPolyTime_factorWidth :
+    ComputableInPolyTime factorWidth encBranchEvalInput encNat := by
+  unfold factorWidth encBranchEvalInput
+  fun_prop
+
+/-- Read the binary total neutral-augmented incidence. -/
+@[fun_prop]
+theorem computableInPolyTime_augmentedIncidence :
+    ComputableInPolyTime augmentedIncidence encBranchEvalInput encNat := by
+  unfold augmentedIncidence encBranchEvalInput
+  fun_prop
+
+/-- Read the binary polylogarithmic incidence exponent. -/
+@[fun_prop]
+theorem computableInPolyTime_incidenceExponent :
+    ComputableInPolyTime incidenceExponent encBranchEvalInput encNat := by
+  unfold incidenceExponent encBranchEvalInput
+  fun_prop
+
+/-- Read the binary group count. -/
+@[fun_prop]
+theorem computableInPolyTime_numGroups :
+    ComputableInPolyTime numGroups encBranchEvalInput encNat := by
+  unfold numGroups encBranchEvalInput
+  fun_prop
+
+/-- Read the binary interpolation-node count. -/
+@[fun_prop]
+theorem computableInPolyTime_numNodes :
+    ComputableInPolyTime numNodes encBranchEvalInput encNat := by
+  unfold numNodes encBranchEvalInput
+  fun_prop
+
+/-- Read the binary row bound. -/
+@[fun_prop]
+theorem computableInPolyTime_rowBound :
+    ComputableInPolyTime rowBound encBranchEvalInput encNat := by
+  unfold rowBound encBranchEvalInput
+  fun_prop
+
+/-- Read the binary interval start. -/
+@[fun_prop]
+theorem computableInPolyTime_intervalStart :
+    ComputableInPolyTime intervalStart encBranchEvalInput encNat := by
+  unfold intervalStart encBranchEvalInput
+  fun_prop
+
+/-- Read the polynomial system with the existing binary variable encoding. -/
+@[fun_prop]
+theorem computableInPolyTime_equations :
+    ComputableInPolyTime equations encBranchEvalInput encSys := by
+  unfold equations encBranchEvalInput
+  fun_prop
+
+end BranchEvalInput
 
 /-- Assemble the Proposition 5.3 branch input from a reduced system `(n', eqs')` (§5.5). -/
 def prepareBranchEvalInput (p : ℕ × List (List (List ℕ))) : BranchEvalInput :=
@@ -1006,9 +1118,7 @@ private theorem polyBounded_maxReducedCost_space (N₀_branch : ℕ)
 private theorem computableInPolyTime_exhaustProj :
     ComputableInPolyTime (fun inp : SparseSystemInput => (inp.1, inp.2.2))
       encSparseSystemInput (encPair encUnary encSys) := by
-  unfold encSparseSystemInput
-  exact (ComputableInPolyTime.fst _ _).prod
-    ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _))
+  fun_prop
 
 /-- **Full native certificate for `countSparsePolySystem N₀_top N₀_branch branchEval`** (§5.5). -/
 noncomputable def sparsePolyCounterCertificate (N₀_top N₀_branch : ℕ)

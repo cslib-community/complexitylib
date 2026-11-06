@@ -40,12 +40,15 @@ its bound on every path, respects the `rand` budget and has the law of the clien
 
 ## Main definitions
 
+* `RealizesRand.Spec`, `RealizesRand.Witness`: the canonical contract and supplied data.
 * `RealizesRand`: uniform native realization of a memory client with private coins, with its
   law, a worst-case instruction bound and a worst-case `rand` budget.
 
 ## Main results
 
 * `Realizes.toRand`: deterministic certificates are randomized ones with no `rand` call.
+* `Realizes.Witness.toRand`, `RealizesRand.coinWitness`, `RealizesRand.Witness.bind`: supplied
+  deterministic entry, coin and shared-bank sequential data.
 * `RealizesRand.coin`: a uniform draw from `[0, n]`, for a live word `n`.
 * `RealizesRand.bind`, `RealizesRand.branch`: sequencing and branching.
 * `RealizesRand.consequence`, `RealizesRand.congr`: weakening and transport along equal clients.
@@ -65,6 +68,30 @@ open Cslib.DataStructure
 
 variable {B : Basis} {δ α β : Type} {k l m : ℕ}
 
+/-- The existing pathwise execution, joint-law and register-frame contract for specified
+resource parameters and a specified emitter. Both existential and supplied witnesses use it. -/
+def RealizesRand.Spec (B : Basis) (p : δ → ProbOracleComp Memory.Op.Result α)
+    (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+    (safe : ℕ → δ → Memory.State → Prop) (time calls : δ → Memory.State → ℕ) (n C : ℕ)
+    (emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (l + n + 1) → Fin r) → Code B r) : Prop :=
+  ∀ {r : ℕ} (frontier : Fin r) (src : Fin k → Fin r)
+    (tmp : Fin (l + n + 1) → Fin r),
+    Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
+    (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
+    ¬(emit frontier src tmp).ReadsWidth ∧
+    ∀ (w : ℕ) (d : δ) (x : Data r), x.Bounded w → x.regs ∘ src = input d →
+      safe w d (memoryState frontier x) →
+      (Memory.spec w).toRandomized.withCoins.toSpec.DemonicValid (memoryState frontier x)
+        (p d) →
+      ExecRandLaw w (emit frontier src tmp) x
+        (fun y => ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i)
+        (C * (time d (memoryState frontier x) + 1)) (calls d (memoryState frontier x))
+        (fun y => (fun i : Fin l => y.regs (tmp (Fin.castAdd (n + 1) i)),
+          memoryState frontier y))
+        (((Memory.spec w).toRandomized.withCoins.run (p d) (memoryState frontier x)).map
+          fun (a, s) => (output a, s))
+
 /-- Uniform native realization of a family of memory clients with private coins. The emitter,
 scratch size and exchange constant precede every runtime argument, word width and initial
 memory, and the register conventions are those of `Realizes`. From admissible entry data, the
@@ -74,25 +101,31 @@ together with the memory state have the law of the client's run, read through `o
 def RealizesRand (B : Basis) (p : δ → ProbOracleComp Memory.Op.Result α)
     (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
     (safe : ℕ → δ → Memory.State → Prop) (time calls : δ → Memory.State → ℕ) : Prop :=
-  ∃ n C : ℕ,
-    ∃ emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
-        (Fin (l + n + 1) → Fin r) → Code B r,
-      ∀ {r : ℕ} (frontier : Fin r) (src : Fin k → Fin r)
-        (tmp : Fin (l + n + 1) → Fin r),
-        Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
-        (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
-        ¬(emit frontier src tmp).ReadsWidth ∧
-        ∀ (w : ℕ) (d : δ) (x : Data r), x.Bounded w → x.regs ∘ src = input d →
-          safe w d (memoryState frontier x) →
-          (Memory.spec w).toRandomized.withCoins.toSpec.DemonicValid (memoryState frontier x)
-            (p d) →
-          ExecRandLaw w (emit frontier src tmp) x
-            (fun y => ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i)
-            (C * (time d (memoryState frontier x) + 1)) (calls d (memoryState frontier x))
-            (fun y => (fun i : Fin l => y.regs (tmp (Fin.castAdd (n + 1) i)),
-              memoryState frontier y))
-            (((Memory.spec w).toRandomized.withCoins.run (p d) (memoryState frontier x)).map
-              fun (a, s) => (output a, s))
+  ∃ n C : ℕ, ∃ emit, RealizesRand.Spec B p input output safe time calls n C emit
+
+/-- Retain specified randomized realization data with the same existing law contract.
+It changes neither the oracle model nor the observation or supported-path semantics. -/
+structure RealizesRand.Witness (B : Basis) (p : δ → ProbOracleComp Memory.Op.Result α)
+    (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+    (safe : ℕ → δ → Memory.State → Prop) (time calls : δ → Memory.State → ℕ) where
+  /-- Auxiliary registers, excluding results and the reserved extra slot. -/
+  scratchSize : ℕ
+  /-- Exchange factor for the original visible time grade. -/
+  factor : ℕ
+  /-- One emitter, fixed before layout, width, memory and random outcomes. -/
+  code : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+    (Fin (l + scratchSize + 1) → Fin r) → Code B r
+  /-- The canonical original execution and law contract. -/
+  code_spec : RealizesRand.Spec B p input output safe time calls scratchSize factor code
+
+/-- Forget supplied resources and code while retaining the original randomized judgment. -/
+theorem RealizesRand.Witness.toRealizesRand
+    {p : δ → ProbOracleComp Memory.Op.Result α} {input : δ ↪ (Fin k → ℕ)}
+    {output : α ↪ (Fin l → ℕ)} {safe : ℕ → δ → Memory.State → Prop}
+    {time calls : δ → Memory.State → ℕ}
+    (h : RealizesRand.Witness B p input output safe time calls) :
+    RealizesRand B p input output safe time calls :=
+  ⟨h.scratchSize, h.factor, h.code, h.code_spec⟩
 
 namespace Realizes
 
@@ -102,20 +135,30 @@ variable {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)} {output : 
 /-- **Deterministic parts.** A deterministic certificate, for instance one built by `realize`,
 realizes the same client with coins available and unused: its law is the point mass at the
 deterministic run, its time is the memory charge plus local work, and it makes no `rand` call. -/
+def Witness.toRand (h : Witness B p input output safe work) :
+    RealizesRand.Witness B (fun d => OracleComp.liftRight (p d)) input output safe
+      (fun d s => memoryCost (p d) s + work d s) (fun _ _ => 0) where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := h.code
+  code_spec := by
+    intro r frontier src tmp hi hd hf hs
+    obtain ⟨hnw, hrun⟩ := h.code_spec frontier src tmp hi hd hf hs
+    refine ⟨hnw, fun w d x hx hin hsafe hv => ?_⟩
+    have hv' := ((Memory.spec w).demonicValid_iff_validHistory_runClient _ (p d)).mp
+      (StateTransitionSpec.toRandomized_demonicValid_iff.mp
+        (RandomizedSpec.demonicValid_liftRight_iff.mp hv))
+    obtain ⟨y, hy, hm, hout, hframe⟩ := hrun w d x hx hin hsafe hv'
+    refine (ExecRandLaw.of_execWithin hy hframe).congr_law ?_
+    rw [RandomizedSpec.withCoins_run_liftRight, StateTransitionSpec.run_toRandomized, PMF.pure_map]
+    exact congrArg PMF.pure (Prod.ext (funext hout) hm)
+
+/-- The existential randomized entry supplied by the deterministic witness construction. -/
 theorem toRand (h : Realizes B p input output safe work) :
     RealizesRand B (fun d => OracleComp.liftRight (p d)) input output safe
       (fun d s => memoryCost (p d) s + work d s) (fun _ _ => 0) := by
   obtain ⟨n, C, emit, he⟩ := h
-  refine ⟨n, C, emit, fun frontier src tmp hi hd hf hs => ?_⟩
-  obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
-  refine ⟨hnw, fun w d x hx hin hsafe hv => ?_⟩
-  have hv' := ((Memory.spec w).demonicValid_iff_validHistory_runClient _ (p d)).mp
-    (StateTransitionSpec.toRandomized_demonicValid_iff.mp
-      (RandomizedSpec.demonicValid_liftRight_iff.mp hv))
-  obtain ⟨y, hy, hm, hout, hframe⟩ := hrun w d x hx hin hsafe hv'
-  refine (ExecRandLaw.of_execWithin hy hframe).congr_law ?_
-  rw [RandomizedSpec.withCoins_run_liftRight, StateTransitionSpec.run_toRandomized, PMF.pure_map]
-  exact congrArg PMF.pure (Prod.ext (funext hout) hm)
+  exact (Witness.toRand ⟨n, C, emit, he⟩).toRealizesRand
 
 end Realizes
 
@@ -149,27 +192,38 @@ theorem congr {p' : δ → ProbOracleComp Memory.Op.Result α}
 
 /-- **A coin.** Drawing uniformly from `[0, n]`, for a live word `n`, is one `rand` instruction
 into the result slot. -/
+def coinWitness (input : δ ↪ (Fin k → ℕ)) (i : Fin k) :
+    Witness B (fun d => Fin.val <$> ProbOracleComp.sample (ProbComp.unifFin (input d i)))
+      input (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun _ _ _ => True)
+      (fun _ _ => 1) (fun _ _ => 1) where
+  scratchSize := 0
+  factor := 1
+  code := fun _ src tmp => .rand (tmp 0) (src i)
+  code_spec := by
+    intro r frontier src tmp _ _ hf _
+    refine ⟨fun h => h, fun w d x hx hin _ _ => ?_⟩
+    have h := ExecRandLaw.rand (B := B) (w := w) (x := x) (dst := tmp 0) (src := src i)
+      (P := fun y => ∀ j, j ≠ frontier → (∀ t, tmp t ≠ j) → y.regs j = x.regs j)
+      (f := fun y => (fun j : Fin 1 => y.regs (tmp (Fin.castAdd (0 + 1) j)),
+        memoryState frontier y))
+      (hx.1 (src i)) fun c j _ hj => Function.update_of_ne (hj 0).symm _ _
+    refine (h.mono (fun _ h => h) (by omega) le_rfl).congr_law ?_
+    have hsrc : x.regs (src i) = input d i := congrFun hin i
+    rw [RandomizedSpec.run_map, RandomizedSpec.withCoins_run_sample, ProbComp.eval_unifFin,
+      PMF.map_comp, PMF.map_comp, ← hsrc]
+    congr 1
+    funext c
+    refine Prod.ext (funext fun j => ?_) ?_
+    · rw [Fin.fin_one_eq_zero j]
+      simp [Data.set]
+    · exact Memory.State.ext rfl (Function.update_of_ne (hf 0).symm _ _)
+
+/-- The existential coin realization supplied by `coinWitness`. -/
 theorem coin (input : δ ↪ (Fin k → ℕ)) (i : Fin k) :
     RealizesRand B (fun d => Fin.val <$> ProbOracleComp.sample (ProbComp.unifFin (input d i)))
       input (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun _ _ _ => True)
-      (fun _ _ => 1) (fun _ _ => 1) := by
-  refine ⟨0, 1, fun _ src tmp => .rand (tmp 0) (src i), fun frontier src tmp _ _ hf _ => ?_⟩
-  refine ⟨fun h => h, fun w d x hx hin _ _ => ?_⟩
-  have h := ExecRandLaw.rand (B := B) (w := w) (x := x) (dst := tmp 0) (src := src i)
-    (P := fun y => ∀ j, j ≠ frontier → (∀ t, tmp t ≠ j) → y.regs j = x.regs j)
-    (f := fun y => (fun j : Fin 1 => y.regs (tmp (Fin.castAdd (0 + 1) j)),
-      memoryState frontier y))
-    (hx.1 (src i)) fun c j _ hj => Function.update_of_ne (hj 0).symm _ _
-  refine (h.mono (fun _ h => h) (by omega) le_rfl).congr_law ?_
-  have hsrc : x.regs (src i) = input d i := congrFun hin i
-  rw [RandomizedSpec.run_map, RandomizedSpec.withCoins_run_sample, ProbComp.eval_unifFin,
-    PMF.map_comp, PMF.map_comp, ← hsrc]
-  congr 1
-  funext c
-  refine Prod.ext (funext fun j => ?_) ?_
-  · rw [Fin.fin_one_eq_zero j]
-    simp [Data.set]
-  · exact Memory.State.ext rfl (Function.update_of_ne (hf 0).symm _ _)
+      (fun _ _ => 1) (fun _ _ => 1) :=
+  (coinWitness input i).toRealizesRand
 
 section Bind
 
@@ -182,6 +236,127 @@ variable {q : δ × α → ProbOracleComp Memory.Op.Result β} {answer : α ↪ 
 first computation's answer. Its domain and budgets must hold at every supported intermediate
 answer and state, within the uniform budgets `T` and `R`; these obligations join the visible
 domain. The laws compose by `PMF.bind`, the times and `rand` budgets add. -/
+def Witness.bind (hP : Witness B p input answer safeP timeP callsP)
+    (hQ : Witness B q (appendWords input answer) output safeQ timeQ callsQ)
+    (T R : δ → Memory.State → ℕ) :
+    Witness B (fun d => p d >>= fun a => q (d, a)) input output
+      (fun w d s => safeP w d s ∧ ∀ a s',
+        (a, s') ∈ ((Memory.spec w).toRandomized.withCoins.run (p d) s).support →
+          safeQ w (d, a) s' ∧ timeQ (d, a) s' ≤ T d s ∧ callsQ (d, a) s' ≤ R d s)
+      (fun d s => timeP d s + T d s + 1) (fun d s => callsP d s + R d s) :=
+  let n₁ := hP.scratchSize
+  let n₂ := hQ.scratchSize
+  let C₁ := hP.factor
+  let C₂ := hQ.factor
+  let N := l + max n₁ n₂
+  let left : Fin (m + n₂ + 1) → Fin (m + N + 1) := bindSharedLeft
+  let right : Fin (l + n₁ + 1) → Fin (m + N + 1) := bindSharedRight
+  let emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (m + N + 1) → Fin r) → Code B r := fun frontier src tmp =>
+    .seq (hP.code frontier src (tmp ∘ right))
+      (hQ.code frontier
+        (Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))) (tmp ∘ left))
+  ⟨N, max C₁ C₂, emit, by
+    intro r frontier src tmp hi hd hf hs
+    have hleft : Function.Injective (tmp ∘ left) := by
+      intro a b hab
+      apply Fin.ext
+      have h := congrArg Fin.val (hi hab)
+      exact h
+    have hright : Function.Injective (tmp ∘ right) := by
+      intro a b hab
+      apply Fin.ext
+      have h := congrArg Fin.val (hi hab)
+      have hm₁ := Nat.le_max_left n₁ n₂
+      have ha := a.isLt
+      have hb := b.isLt
+      dsimp only [right, bindSharedRight] at h
+      split_ifs at h <;> dsimp only at h <;> omega
+    have hdisjoint (a : Fin l) (b : Fin (m + n₂ + 1)) :
+        tmp (right (Fin.castAdd (n₁ + 1) a)) ≠ tmp (left b) := by
+      intro hab
+      have h := congrArg Fin.val (hi hab)
+      have hm₂ := Nat.le_max_right n₁ n₂
+      have hb := b.isLt
+      simp only [right, bindSharedRight, Fin.val_castAdd, dite_eq_left a.isLt, left,
+        bindSharedLeft] at h
+      omega
+    let nextSrc : Fin (k + l) → Fin r :=
+      Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))
+    have hnextDisjoint (i : Fin (k + l)) (j : Fin (m + n₂ + 1)) :
+        nextSrc i ≠ (tmp ∘ left) j := by
+      refine Fin.addCases (fun a => ?_) (fun b => ?_) i
+      · simpa only [nextSrc, Fin.append_left, Function.comp_apply] using hd a (left j)
+      · simpa only [nextSrc, Fin.append_right, Function.comp_apply] using
+          hdisjoint b j
+    have hnextFrontier (i : Fin (k + l)) : nextSrc i ≠ frontier := by
+      refine Fin.addCases (fun a => ?_) (fun b => ?_) i
+      · simpa only [nextSrc, Fin.append_left] using hs a
+      · simpa only [nextSrc, Fin.append_right] using hf (right (Fin.castAdd (n₁ + 1) b))
+    obtain ⟨hnwP, hrunP⟩ := hP.code_spec frontier src (tmp ∘ right) hright
+      (fun i j => hd i (right j)) (fun j => hf (right j)) hs
+    obtain ⟨hnwQ, hrunQ⟩ := hQ.code_spec frontier nextSrc (tmp ∘ left) hleft hnextDisjoint
+      (fun j => hf (left j)) hnextFrontier
+    refine ⟨fun h => h.elim hnwP hnwQ, fun w d x hx hin hsafe hv => ?_⟩
+    let s := memoryState frontier x
+    let D := (Memory.spec w).toRandomized.withCoins
+    have hv' : D.toSpec.DemonicValid s ((p d).bind fun a => q (d, a)) := hv
+    obtain ⟨hvP, hvQ⟩ := StateTransitionSpec.DemonicValid.of_bind hv'
+    obtain ⟨⟨a₀, -⟩, -⟩ := (D.run (p d) s).support_nonempty
+    have : Nonempty α := ⟨a₀⟩
+    have hdecode : ∀ a, Function.invFun answer (answer a) = a :=
+      Function.leftInverse_invFun answer.injective
+    let κ : (Fin l → ℕ) × Memory.State → PMF ((Fin m → ℕ) × Memory.State) := fun (v, s') =>
+      (D.run (q (d, Function.invFun answer v)) s').map fun (b, s'') => (output b, s'')
+    have h₁ := ((hrunP w d x hx hin hsafe.1 hvP).withBounded hx).withSupport
+    have h := ExecRandLaw.seq (κ := κ)
+      (Q := fun y => ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i)
+      (T₂ := C₂ * (T d s + 1)) (R₂ := R d s)
+      (f := fun y => (fun i : Fin m => y.regs (tmp (Fin.castAdd (N + 1) i)),
+        memoryState frontier y)) h₁ fun z ⟨⟨hframe, hzb⟩, hzsup⟩ => by
+      obtain ⟨⟨a, s'⟩, hmem, hz⟩ := (PMF.mem_support_map_iff _ _ _).mp hzsup
+      have hzout : (fun i : Fin l => z.regs ((tmp ∘ right) (Fin.castAdd (n₁ + 1) i))) = answer a :=
+        (congrArg Prod.fst hz).symm
+      have hzs : memoryState frontier z = s' := (congrArg Prod.snd hz).symm
+      have hinQ : z.regs ∘ nextSrc = (appendWords input answer) (d, a) := by
+        funext i
+        refine Fin.addCases (fun j => ?_) (fun j => ?_) i
+        · change z.regs (nextSrc (Fin.castAdd l j)) =
+            Fin.append (input d) (answer a) (Fin.castAdd l j)
+          simp only [nextSrc, Fin.append_left]
+          exact (hframe (src j) (hs j) (fun t => (hd j (right t)).symm)).trans (congrFun hin j)
+        · change z.regs (nextSrc (Fin.natAdd k j)) =
+            Fin.append (input d) (answer a) (Fin.natAdd k j)
+          simp only [nextSrc, Fin.append_right]
+          exact congrFun hzout j
+      obtain ⟨hsafeQ, htime, hcalls⟩ := hsafe.2 a s' hmem
+      obtain ⟨tr, hrun⟩ := D.exists_clientRun_of_mem_support hvP hmem
+      have hQ := hrunQ w (d, a) z hzb hinQ (hzs ▸ hsafeQ) (hzs ▸ hvQ a s' tr hrun)
+      rw [hzs] at hQ
+      have hκ : κ (answer a, s') = (D.run (q (d, a)) s').map fun (b, s'') => (output b, s'') := by
+        simp only [κ, hdecode]
+      change ExecRandLaw w _ z _ _ _ _
+        (κ ((fun i : Fin l => z.regs ((tmp ∘ right) (Fin.castAdd (n₁ + 1) i))),
+          memoryState frontier z))
+      rw [hzout, hzs, hκ]
+      exact hQ.mono (fun y hy i hif htmp => (hy i hif fun j => htmp (left j)).trans
+        (hframe i hif fun j => htmp (right j)))
+        (Nat.mul_le_mul_left C₂ (Nat.add_le_add_right htime 1)) hcalls
+    refine (h.mono (fun _ h => h) ?_ le_rfl).congr_law ?_
+    · change C₁ * (timeP d s + 1) + C₂ * (T d s + 1) ≤ max C₁ C₂ * (timeP d s + T d s + 1 + 1)
+      calc
+        _ ≤ max C₁ C₂ * (timeP d s + 1) + max C₁ C₂ * (T d s + 1) :=
+          Nat.add_le_add (Nat.mul_le_mul_right _ (Nat.le_max_left _ _))
+            (Nat.mul_le_mul_right _ (Nat.le_max_right _ _))
+        _ = _ := by ring
+    · change ((D.run (p d) s).map fun (a, s') => (answer a, s')).bind κ =
+        (D.run (p d >>= fun a => q (d, a)) s).map fun (b, s'') => (output b, s'')
+      rw [PMF.bind_map, RandomizedSpec.run_bind, PMF.map_bind]
+      congr 1
+      funext ⟨a, s'⟩
+      simp only [Function.comp_apply, κ, hdecode]⟩
+
+/-- The existential sequential realization supplied by the shared-bank constructor. -/
 theorem bind (hP : RealizesRand B p input answer safeP timeP callsP)
     (hQ : RealizesRand B q (appendWords input answer) output safeQ timeQ callsQ)
     (T R : δ → Memory.State → ℕ) :
@@ -192,104 +367,7 @@ theorem bind (hP : RealizesRand B p input answer safeP timeP callsP)
       (fun d s => timeP d s + T d s + 1) (fun d s => callsP d s + R d s) := by
   obtain ⟨n₁, C₁, emitP, heP⟩ := hP
   obtain ⟨n₂, C₂, emitQ, heQ⟩ := hQ
-  let N := n₂ + l + n₁ + 1
-  let left : Fin (m + n₂ + 1) → Fin (m + N + 1) := bindLeft
-  let right : Fin (l + n₁ + 1) → Fin (m + N + 1) := bindRight
-  refine ⟨N, max C₁ C₂, fun frontier src tmp => .seq (emitP frontier src (tmp ∘ right))
-    (emitQ frontier (Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i))))
-      (tmp ∘ left)), ?_⟩
-  intro r frontier src tmp hi hd hf hs
-  have hleft : Function.Injective (tmp ∘ left) := by
-    intro a b hab
-    apply Fin.ext
-    have h := congrArg Fin.val (hi hab)
-    exact h
-  have hright : Function.Injective (tmp ∘ right) := by
-    intro a b hab
-    apply Fin.ext
-    have := congrArg Fin.val (hi hab)
-    change m + n₂ + 1 + a.val = m + n₂ + 1 + b.val at this
-    omega
-  have hdisjoint (a : Fin (l + n₁ + 1)) (b : Fin (m + n₂ + 1)) :
-      tmp (right a) ≠ tmp (left b) := by
-    intro hab
-    have := congrArg Fin.val (hi hab)
-    change m + n₂ + 1 + a.val = b.val at this
-    omega
-  let nextSrc : Fin (k + l) → Fin r :=
-    Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))
-  have hnextDisjoint (i : Fin (k + l)) (j : Fin (m + n₂ + 1)) :
-      nextSrc i ≠ (tmp ∘ left) j := by
-    refine Fin.addCases (fun a => ?_) (fun b => ?_) i
-    · simpa only [nextSrc, Fin.append_left, Function.comp_apply] using hd a (left j)
-    · simpa only [nextSrc, Fin.append_right, Function.comp_apply] using
-        hdisjoint (Fin.castAdd (n₁ + 1) b) j
-  have hnextFrontier (i : Fin (k + l)) : nextSrc i ≠ frontier := by
-    refine Fin.addCases (fun a => ?_) (fun b => ?_) i
-    · simpa only [nextSrc, Fin.append_left] using hs a
-    · simpa only [nextSrc, Fin.append_right] using hf (right (Fin.castAdd (n₁ + 1) b))
-  obtain ⟨hnwP, hrunP⟩ := heP frontier src (tmp ∘ right) hright
-    (fun i j => hd i (right j)) (fun j => hf (right j)) hs
-  obtain ⟨hnwQ, hrunQ⟩ := heQ frontier nextSrc (tmp ∘ left) hleft hnextDisjoint
-    (fun j => hf (left j)) hnextFrontier
-  refine ⟨fun h => h.elim hnwP hnwQ, fun w d x hx hin hsafe hv => ?_⟩
-  let s := memoryState frontier x
-  let D := (Memory.spec w).toRandomized.withCoins
-  have hv' : D.toSpec.DemonicValid s ((p d).bind fun a => q (d, a)) := hv
-  obtain ⟨hvP, hvQ⟩ := StateTransitionSpec.DemonicValid.of_bind hv'
-  obtain ⟨⟨a₀, -⟩, -⟩ := (D.run (p d) s).support_nonempty
-  have : Nonempty α := ⟨a₀⟩
-  have hdecode : ∀ a, Function.invFun answer (answer a) = a :=
-    Function.leftInverse_invFun answer.injective
-  let κ : (Fin l → ℕ) × Memory.State → PMF ((Fin m → ℕ) × Memory.State) := fun (v, s') =>
-    (D.run (q (d, Function.invFun answer v)) s').map fun (b, s'') => (output b, s'')
-  have h₁ := ((hrunP w d x hx hin hsafe.1 hvP).withBounded hx).withSupport
-  have h := ExecRandLaw.seq (κ := κ)
-    (Q := fun y => ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i)
-    (T₂ := C₂ * (T d s + 1)) (R₂ := R d s)
-    (f := fun y => (fun i : Fin m => y.regs (tmp (Fin.castAdd (N + 1) i)),
-      memoryState frontier y)) h₁ fun z ⟨⟨hframe, hzb⟩, hzsup⟩ => by
-    obtain ⟨⟨a, s'⟩, hmem, hz⟩ := (PMF.mem_support_map_iff _ _ _).mp hzsup
-    have hzout : (fun i : Fin l => z.regs ((tmp ∘ right) (Fin.castAdd (n₁ + 1) i))) = answer a :=
-      (congrArg Prod.fst hz).symm
-    have hzs : memoryState frontier z = s' := (congrArg Prod.snd hz).symm
-    have hinQ : z.regs ∘ nextSrc = (appendWords input answer) (d, a) := by
-      funext i
-      refine Fin.addCases (fun j => ?_) (fun j => ?_) i
-      · change z.regs (nextSrc (Fin.castAdd l j)) =
-          Fin.append (input d) (answer a) (Fin.castAdd l j)
-        simp only [nextSrc, Fin.append_left]
-        exact (hframe (src j) (hs j) (fun t => (hd j (right t)).symm)).trans (congrFun hin j)
-      · change z.regs (nextSrc (Fin.natAdd k j)) =
-          Fin.append (input d) (answer a) (Fin.natAdd k j)
-        simp only [nextSrc, Fin.append_right]
-        exact congrFun hzout j
-    obtain ⟨hsafeQ, htime, hcalls⟩ := hsafe.2 a s' hmem
-    obtain ⟨tr, hrun⟩ := D.exists_clientRun_of_mem_support hvP hmem
-    have hQ := hrunQ w (d, a) z hzb hinQ (hzs ▸ hsafeQ) (hzs ▸ hvQ a s' tr hrun)
-    rw [hzs] at hQ
-    have hκ : κ (answer a, s') = (D.run (q (d, a)) s').map fun (b, s'') => (output b, s'') := by
-      simp only [κ, hdecode]
-    change ExecRandLaw w _ z _ _ _ _
-      (κ ((fun i : Fin l => z.regs ((tmp ∘ right) (Fin.castAdd (n₁ + 1) i))),
-        memoryState frontier z))
-    rw [hzout, hzs, hκ]
-    exact hQ.mono (fun y hy i hif htmp => (hy i hif fun j => htmp (left j)).trans
-      (hframe i hif fun j => htmp (right j)))
-      (Nat.mul_le_mul_left C₂ (Nat.add_le_add_right htime 1)) hcalls
-  refine (h.mono (fun _ h => h) ?_ le_rfl).congr_law ?_
-  · change C₁ * (timeP d s + 1) + C₂ * (T d s + 1) ≤ max C₁ C₂ * (timeP d s + T d s + 1 + 1)
-    calc
-      _ ≤ max C₁ C₂ * (timeP d s + 1) + max C₁ C₂ * (T d s + 1) :=
-        Nat.add_le_add (Nat.mul_le_mul_right _ (Nat.le_max_left _ _))
-          (Nat.mul_le_mul_right _ (Nat.le_max_right _ _))
-      _ = _ := by ring
-  · change ((D.run (p d) s).map fun (a, s') => (answer a, s')).bind κ =
-      (D.run (p d >>= fun a => q (d, a)) s).map fun (b, s'') => (output b, s'')
-    rw [PMF.bind_map, RandomizedSpec.run_bind, PMF.map_bind]
-    congr 1
-    funext ⟨a, s'⟩
-    simp only [Function.comp_apply, κ, hdecode]
+  exact (Witness.bind ⟨n₁, C₁, emitP, heP⟩ ⟨n₂, C₂, emitQ, heQ⟩ T R).toRealizesRand
 
 end Bind
 

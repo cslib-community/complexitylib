@@ -44,9 +44,10 @@ namespace Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 
 /-- The bank and factor are fixed before all runtime heap arguments. -/
-@[expose] def certificates : Fin 5 → Certificate .exact :=
-  ![⟨realizes_isEmpty⟩, ⟨realizes_getKey⟩, ⟨realizes_insert⟩,
-    ⟨realizes_decreaseKey⟩, ⟨realizes_extractRaw⟩]
+@[expose] noncomputable def certificates : Fin 5 → Certificate .exact :=
+  ![Certificate.ofRealizes realizes_isEmpty, Certificate.ofRealizes realizes_getKey,
+    Certificate.ofRealizes realizes_insert,
+    Certificate.ofRealizes realizes_decreaseKey, Certificate.ofRealizes realizes_extractRaw]
 
 /-- Constructor selection and runtime arguments for the existing indexed queue. Typed result
 observation is proof-only: the partial inverse is applied only to actual erased source results. -/

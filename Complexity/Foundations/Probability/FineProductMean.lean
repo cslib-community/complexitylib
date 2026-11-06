@@ -118,7 +118,8 @@ theorem rowNormPow_const_eq_dens_sum (s : ℕ) (N u : ℝ) (X Y : Ω → V → P
   simpa only [mem_filter, mem_univ, true_and] using
     expect_mask_const ({σ | X σ x ∧ Y σ y} : Finset Ω) (|v x y| ^ s)
 
-private theorem rowNormPow_mul {s : ℕ} {N u c : ℝ} (hc : 0 ≤ c)
+/-- A nonnegative constant scales the integrated row moment by its power. -/
+theorem rowNormPow_mul {s : ℕ} {N u c : ℝ} (hc : 0 ≤ c)
     (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
     (D : Ω → V → V → ℝ) :
     rowNormPow s N u X Y (fun σ x y => c * D σ x y) = c ^ s * rowNormPow s N u X Y D := by

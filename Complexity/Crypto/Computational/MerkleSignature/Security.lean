@@ -13,10 +13,15 @@ public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Crypto.Computational.OneWay
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Probabilistic.Oracle.Tidy
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Repeat
+import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Crypto.Computational.OneWayToSignature
 import Complexity.Crypto.Game.Hybrid
 import Complexity.Crypto.Negligible.Basic
@@ -25,8 +30,6 @@ import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.UniformNat
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
 
 /-!
 # Security of Merkle signatures
@@ -342,10 +345,10 @@ private noncomputable def realExp
     (hcap : ComputableInPolyTime (fun n => 2 ^ depth n) encUnary encUnary)
     (adversary : IndexedForger) (n : ℕ) :
     PMF (List Bool × List (List Bool × List Bool) ×
-      ((ℕ × List Bool × List Bool) × List (ℕ × List Bool))) :=
-  (BitString.uniformList n).bind fun k =>
-    (ProbComp.eval (OracleComp.replicate (2 ^ depth n) (S.keyGen n))).bind fun keys =>
-      (realRun S H depth hH hlen hcap adversary n k keys).map fun r => (k, keys, r)
+      ((ℕ × List Bool × List Bool) × List (ℕ × List Bool))) := do
+  let k ← BitString.uniformList n
+  let keys ← ProbComp.eval (OracleComp.replicate (2 ^ depth n) (S.keyGen n))
+  (realRun S H depth hH hlen hcap adversary n k keys).map fun r => (k, keys, r)
 
 variable {S H depth} in
 private theorem map_otsWin_realExp
@@ -363,8 +366,8 @@ private theorem map_otsWin_realExp
   rw [eval_eufOneTimeGame_oneTimeForgerAt hH hlen hcap hbound adversary i, realExp]
   have hsplit : 2 ^ depth n = i + ((2 ^ depth n - i - 1) + 1) := by omega
   rw [hsplit, ← ProbComp.eval_replicate_splice, ← hsplit]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, PMF.bind_bind, PMF.pure_bind,
-    PMF.map_comp, Function.comp_def]
+  simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind,
+    PMF.bind_bind, PMF.pure_bind, PMF.map_comp, Function.comp_def]
   rw [PMF.bind_comm]
 
 variable {S H depth} in
@@ -379,8 +382,8 @@ private theorem eval_indexedEufCmaGame_eq
         !t.2.2.2.contains (t.2.2.1.1, t.2.2.1.2.1) &&
           verify S H depth (publicKey H t.1 t.2.1) t.2.2.1.1 t.2.2.1.2.1 t.2.2.1.2.2 := by
   simp only [IndexedSignatureScheme.indexedEufCmaGame, scheme, keyGen, realExp, realRun,
-    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.map_bind,
-    PMF.bind_bind, PMF.pure_bind, PMF.map_comp, Function.comp_def]
+    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.monad_bind_eq_bind,
+    PMF.map_bind, PMF.bind_bind, PMF.pure_bind, PMF.map_comp, Function.comp_def]
   rfl
 
 variable {S H depth} in
@@ -396,8 +399,8 @@ private theorem eval_collisionGame_eq
         isCollision H (fun _ _ => true) n t.1 (collisionOf H t.1 t.2.1 t.2.2).1
           (collisionOf H t.1 t.2.1 t.2.2).2 := by
   simp only [collisionGame, collisionFinder, realExp, realRun, ProbComp.eval_bind,
-    ProbComp.eval_pure, BitString.eval_sampleList, PMF.map_bind, PMF.bind_bind, PMF.pure_bind,
-    PMF.map_comp, Function.comp_def]
+    ProbComp.eval_pure, BitString.eval_sampleList, PMF.monad_bind_eq_bind, PMF.map_bind,
+    PMF.bind_bind, PMF.pure_bind, PMF.map_comp, Function.comp_def]
   rfl
 
 variable {S H depth} in
@@ -514,7 +517,8 @@ theorem succProbability_indexedEufCmaGame_le
   set X := realExp S H depth hH hlen hcap adversary n with hX
   have hsupp : ∀ t ∈ X.support, t.1.length = n ∧ t.2.1.length = 2 ^ depth n := by
     intro t ht
-    simp only [X, realExp, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at ht
+    simp only [X, realExp, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+      PMF.mem_support_map_iff] at ht
     obtain ⟨k, hk, keys, hkeys, r, _, rfl⟩ := ht
     exact ⟨BitString.length_of_mem_support_uniformList hk,
       ((ProbComp.mem_support_replicate_iff _ _ _).mp hkeys).1⟩
@@ -583,23 +587,19 @@ private theorem computableTidilyInPolyTime_collisionOf :
   have hsnd₁ := ComputableTidilyInPolyTime.snd
     (encPair (encPair encUnary encBits) (encList (encPair encBits encBits)))
     (encPair (encPair encUnary (encPair encBits encBits)) (encList (encPair encUnary encBits)))
-  have hk := (ComputableTidilyInPolyTime.snd _ _).comp
-    ((ComputableTidilyInPolyTime.fst _ _).comp hfst₁)
-  have hkeys := (ComputableTidilyInPolyTime.snd _ _).comp hfst₁
-  have hforgery := (ComputableTidilyInPolyTime.fst _ _).comp hsnd₁
-  have hlog := (ComputableTidilyInPolyTime.snd _ _).comp hsnd₁
-  have hu := (ComputableTidilyInPolyTime.fst _ _).comp hforgery
-  have hm := (ComputableTidilyInPolyTime.fst _ _).comp
-    ((ComputableTidilyInPolyTime.snd _ _).comp hforgery)
-  have hsig := (ComputableTidilyInPolyTime.snd _ _).comp
-    ((ComputableTidilyInPolyTime.snd _ _).comp hforgery)
+  have hk := hfst₁.fst'.snd'
+  have hkeys := hfst₁.snd'
+  have hforgery := hsnd₁.fst'
+  have hlog := hsnd₁.snd'
+  have hu := hforgery.fst'
+  have hm := hforgery.snd'.fst'
+  have hsig := hforgery.snd'.snd'
   have hvks := (ComputableTidilyInPolyTime.map
     (ComputableTidilyInPolyTime.fst encBits encBits)).comp hkeys
   have hvku := (ComputableTidilyInPolyTime.listGetD (encA := encBits) []).comp (hvks.prod hu)
   have hdec := signatureDecoder.computableInPolyTime.tidy.comp hsig
-  have hvk := (ComputableTidilyInPolyTime.fst _ _).comp hdec
-  have hpath' := (ComputableTidilyInPolyTime.snd _ _).comp
-    ((ComputableTidilyInPolyTime.snd _ _).comp hdec)
+  have hvk := hdec.fst'
+  have hpath' := hdec.snd'.snd'
   have hcond := ComputableTidilyInPolyTime.beq hvk hvku
   have htest : ComputableTidilyInPolyTime
       (fun p : (((ℕ × List Bool) × List (List Bool × List Bool)) ×
@@ -609,14 +609,14 @@ private theorem computableTidilyInPolyTime_collisionOf :
     have hq := ComputableTidilyInPolyTime.fst E (encPair encUnary encBits)
     have he := ComputableTidilyInPolyTime.snd E (encPair encUnary encBits)
     exact ComputableTidilyInPolyTime.bool_and'
-      (ComputableTidilyInPolyTime.beq ((ComputableTidilyInPolyTime.fst _ _).comp he) (hu.comp hq))
+      (ComputableTidilyInPolyTime.beq he.fst' (hu.comp hq))
       (ComputableTidilyInPolyTime.beq
-        (hH.tidy.comp ((hk.comp hq).prod ((ComputableTidilyInPolyTime.snd _ _).comp he)))
+        (hH.tidy.comp ((hk.comp hq).prod he.snd'))
         (hH.tidy.comp ((hk.comp hq).prod (hm.comp hq))))
   have hfind := ComputableTidilyInPolyTime.findWithInput
     (test := fun q e => e.1 == q.2.1.1 && H q.1.1.2 e.2 == H q.1.1.2 q.2.1.2.1) hlog htest
   have hprev := ComputableTidilyInPolyTime.optionElimWithInput (body := fun _ e => e.2) hfind
-    (ComputableTidilyInPolyTime.const []) (ComputableTidilyInPolyTime.snd _ _ |>.snd')
+    (ComputableTidilyInPolyTime.const []) (ComputableTidilyInPolyTime.snd _ _).snd'
   have hpath := (computableInPolyTime_merklePath hH hlen).tidy.comp (hk.prod (hvks.prod hu))
   have hextract := (computableInPolyTime_extractMerkleCollision hH hlen).tidy.comp
     (hk.prod ((hvk.prod hvku).prod (hu.prod (hpath'.prod hpath))))
@@ -640,28 +640,21 @@ theorem isPPT_collisionFinder {adversary : IndexedForger}
       (fun q : (ℕ × List Bool) × List (List Bool × List Bool) => (q.1.2, q.2))
       (encPair (encPair encUnary encBits) (encList (encPair encBits encBits)))
       (encPair encBits (encList (encPair encBits encBits))) :=
-    ((ComputableTidilyInPolyTime.snd _ _).comp hfst).prod (ComputableTidilyInPolyTime.snd _ _)
+    hfst.snd'.prod (ComputableTidilyInPolyTime.snd _ _)
   have hprep : ComputableTidilyInPolyTime
       (fun q : (ℕ × List Bool) × List (List Bool × List Bool) =>
         (q.1.1, publicKey H q.1.2 q.2, secretKey q.1.2 q.2))
       (encPair (encPair encUnary encBits) (encList (encPair encBits encBits)))
       (encPair encUnary (encPair encBits encBits)) :=
-    ((ComputableTidilyInPolyTime.fst _ _).comp hfst).prod
+    hfst.fst'.prod
       (((computableInPolyTime_publicKey hH hlen).tidy.comp hkk).prod
         ((ComputableTidilyInPolyTime.encode
           (encPair encBits (encList (encPair encBits encBits)))).comp hkk))
   have hrun₀ := (scheme S H depth hH hlen hcap).isPPTOn_run_indexedSigningOracle hadversary
-  have hrun : IsPPTOn (encPair (encPair encUnary encBits) (encList (encPair encBits encBits)))
-      (encPair (encPair encUnary (encPair encBits encBits)) (encList (encPair encUnary encBits)))
-      (fun q : (ℕ × List Bool) × List (List Bool × List Bool) =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifFin j))
-            ((scheme S H depth hH hlen hcap).indexedSigningOracle q.1.1 (secretKey q.1.2 q.2)))
-          (adversary q.1.1 (publicKey H q.1.2 q.2))).run []) :=
-    hrun₀.preprocess (prepare := fun q : (ℕ × List Bool) × List (List Bool × List Bool) =>
+  have hrun := hrun₀.preprocess
+    (prepare := fun q : (ℕ × List Bool) × List (List Bool × List Bool) =>
       (q.1.1, publicKey H q.1.2 q.2, secretKey q.1.2 q.2)) (.of_tidy hprep)
-  have hpost := computableTidilyInPolyTime_collisionOf hH hlen
-  exact hkeys.bind_with (hrun.bind_with hpost.isPPTOn)
+  exact hkeys.bind_with (hrun.bind_with (computableTidilyInPolyTime_collisionOf hH hlen).isPPTOn)
 
 include hcap in
 /-- Sampling a uniform leaf is uniformly strict PPT. -/
@@ -680,7 +673,7 @@ private theorem isPPTOn_plantKeys :
   let E1 := encPair (encPair encUnary encBits) encUnary
   let EK := encList (encPair encBits encBits)
   have hn : ComputableTidilyInPolyTime (fun c : (ℕ × List Bool) × ℕ => c.1.1) E1 encUnary :=
-    (ComputableTidilyInPolyTime.fst _ _).comp (ComputableTidilyInPolyTime.fst _ _)
+    (ComputableTidilyInPolyTime.fst _ _).fst'
   have hk : IsPPTOn E1 encBits (fun c : (ℕ × List Bool) × ℕ => BitString.sampleList c.1.1) :=
     ComputableInPolyTime.sampleList (.of_tidy hn)
   have hn2 := hn.comp (ComputableTidilyInPolyTime.fst E1 encBits)
@@ -688,8 +681,7 @@ private theorem isPPTOn_plantKeys :
       (fun q : ((ℕ × List Bool) × ℕ) × List Bool =>
         OracleComp.replicate q.1.2 (S.keyGen q.1.1.1)) :=
     (S.isPPTOn_keyGen_comp (.of_tidy hn2)).replicate
-      (.of_tidy ((ComputableTidilyInPolyTime.snd _ _).comp
-        (ComputableTidilyInPolyTime.fst E1 encBits)))
+      (.of_tidy (ComputableTidilyInPolyTime.fst E1 encBits).snd')
   have hn3 := hn2.comp (ComputableTidilyInPolyTime.fst (encPair E1 encBits) EK)
   have hback : IsPPTOn (encPair (encPair E1 encBits) EK) EK
       (fun q : (((ℕ × List Bool) × ℕ) × List Bool) × List (List Bool × List Bool) =>
@@ -697,8 +689,7 @@ private theorem isPPTOn_plantKeys :
     have hi : ComputableTidilyInPolyTime
         (fun q : (((ℕ × List Bool) × ℕ) × List Bool) × List (List Bool × List Bool) => q.1.1.2)
         (encPair (encPair E1 encBits) EK) encUnary :=
-      (ComputableTidilyInPolyTime.snd _ _).comp
-        ((ComputableTidilyInPolyTime.fst _ _).comp (ComputableTidilyInPolyTime.fst _ _))
+      (ComputableTidilyInPolyTime.fst _ _).fst'.snd'
     have hcount := ComputableTidilyInPolyTime.unary_sub.comp
       ((ComputableTidilyInPolyTime.unary_sub.comp ((hcap.tidy.comp hn3).prod hi)).prod
         (ComputableTidilyInPolyTime.const 1))
@@ -708,23 +699,12 @@ private theorem isPPTOn_plantKeys :
           List (List Bool × List Bool) =>
         (r.1.1.2, r.1.2 ++ (r.1.1.1.1.2, []) :: r.2))
       (encPair (encPair (encPair E1 encBits) EK) EK) (encPair encBits EK) := by
-    have hkr : ComputableTidilyInPolyTime
-        (fun r : ((((ℕ × List Bool) × ℕ) × List Bool) × List (List Bool × List Bool)) ×
-          List (List Bool × List Bool) => r.1.1.2) (encPair (encPair (encPair E1 encBits) EK) EK)
-        encBits :=
-      (ComputableTidilyInPolyTime.snd _ _).comp
-        ((ComputableTidilyInPolyTime.fst _ _).comp (ComputableTidilyInPolyTime.fst _ _))
-    have hvk : ComputableTidilyInPolyTime
-        (fun r : ((((ℕ × List Bool) × ℕ) × List Bool) × List (List Bool × List Bool)) ×
-          List (List Bool × List Bool) => r.1.1.1.1.2)
-        (encPair (encPair (encPair E1 encBits) EK) EK) encBits :=
-      (ComputableTidilyInPolyTime.snd _ _).comp ((ComputableTidilyInPolyTime.fst _ _).comp
-        ((ComputableTidilyInPolyTime.fst _ _).comp
-          ((ComputableTidilyInPolyTime.fst _ _).comp (ComputableTidilyInPolyTime.fst _ _))))
+    have hfst := ComputableTidilyInPolyTime.fst (encPair (encPair E1 encBits) EK) EK
+    have hkr := hfst.fst'.snd'
+    have hvk := hfst.fst'.fst'.fst'.snd'
     have hplanted :=
       hvk.prod (ComputableTidilyInPolyTime.const (encMid := encBits) ([] : List Bool))
-    exact hkr.prod (ComputableTidilyInPolyTime.listAppend'
-      ((ComputableTidilyInPolyTime.snd _ _).comp (ComputableTidilyInPolyTime.fst _ _))
+    exact hkr.prod (ComputableTidilyInPolyTime.listAppend' hfst.snd'
       (ComputableTidilyInPolyTime.cons' hplanted (ComputableTidilyInPolyTime.snd _ _)))
   unfold plantKeys
   exact hk.bind_with (hfront.bind_with (hback.bind_with hret.isPPTOn))
@@ -755,20 +735,15 @@ private theorem isOraclePPTOn_plantedHandler {bound : ℕ → ℕ}
     (encPair (encPair (encFinEnum Unit) encBits) (encList (encPair encUnary encBits)))
   have hrest := ComputableTidilyInPolyTime.snd encCaller
     (encPair (encPair (encFinEnum Unit) encBits) (encList (encPair encUnary encBits)))
-  have hn := (ComputableTidilyInPolyTime.fst _ _).comp ((ComputableTidilyInPolyTime.fst _ _).comp
-    ((ComputableTidilyInPolyTime.fst _ _).comp hc))
-  have hi := (ComputableTidilyInPolyTime.snd _ _).comp
-    ((ComputableTidilyInPolyTime.fst _ _).comp hc)
-  have hk := (ComputableTidilyInPolyTime.fst _ _).comp
-    ((ComputableTidilyInPolyTime.snd _ _).comp hc)
-  have hkeys := (ComputableTidilyInPolyTime.snd _ _).comp
-    ((ComputableTidilyInPolyTime.snd _ _).comp hc)
-  have hw := (ComputableTidilyInPolyTime.snd _ _).comp
-    ((ComputableTidilyInPolyTime.fst _ _).comp hrest)
-  have hsigned := (ComputableTidilyInPolyTime.snd _ _).comp hrest
+  have hn := hc.fst'.fst'.fst'
+  have hi := hc.fst'.snd'
+  have hk := hc.snd'.fst'
+  have hkeys := hc.snd'.snd'
+  have hw := hrest.fst'.snd'
+  have hsigned := hrest.snd'
   have hr := IndexedSignatureScheme.requestDecoder.computableInPolyTime.tidy.comp hw
-  have hu := (ComputableTidilyInPolyTime.fst _ _).comp hr
-  have hm := (ComputableTidilyInPolyTime.snd _ _).comp hr
+  have hu := hr.fst'
+  have hm := hr.snd'
   have hcapn := hcap.tidy.comp hn
   have hbn := hboundPoly.tidy.comp hn
   have hlog := ComputableTidilyInPolyTime.cons' hr hsigned
@@ -776,23 +751,16 @@ private theorem isOraclePPTOn_plantedHandler {bound : ℕ → ℕ}
     (ComputableTidilyInPolyTime.fst encBits encBits)).comp hkeys
   have hdigest := hH.tidy.comp (hk.prod hm)
   -- the condition
-  have hcond : ComputableTidilyInPolyTime
-      (fun p : (((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool))) ×
-          ((Unit × List Bool) × List (ℕ × List Bool)) =>
-        decide ((IndexedSignatureScheme.requestDecoder.decode p.2.1.2).1 < 2 ^ depth p.1.1.1.1 ∧
-          (IndexedSignatureScheme.requestDecoder.decode p.2.1.2).1 ∉ p.2.2.map Prod.fst))
-      encHandlerInput encBool := by
-    polytime
-  have hcondi : ComputableTidilyInPolyTime
-      (fun p : (((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool))) ×
-          ((Unit × List Bool) × List (ℕ × List Bool)) =>
-        decide ((IndexedSignatureScheme.requestDecoder.decode p.2.1.2).1 = p.1.1.2))
-      encHandlerInput encBool := by
-    polytime
+  have hcond := ComputableTidilyInPolyTime.decide_and
+    (ComputableTidilyInPolyTime.unary_lt' hu hcapn)
+    (ComputableTidilyInPolyTime.decide_not (ComputableTidilyInPolyTime.decide_mem
+      ((ComputableTidilyInPolyTime.map (ComputableTidilyInPolyTime.fst encUnary encBits)).comp
+        hsigned) hu))
+  have hcondi := ComputableTidilyInPolyTime.decide_eq' hu hi
   have hq := IsOraclePPTOn.query_take (input := encHandlerInput) () hdigest hbn
-  have hvki := (ComputableTidilyInPolyTime.fst _ _).comp
+  have hvki :=
     ((ComputableTidilyInPolyTime.listGetD (encA := encPair encBits encBits) ([], [])).comp
-      (hkeys.prod hi))
+      (hkeys.prod hi)).fst'
   have hpathi := (computableInPolyTime_merklePath hH hlen).tidy.comp (hk.prod (hvks.prod hi))
   have hfst := ComputableTidilyInPolyTime.fst encHandlerInput encBits
   have hqpost := ((ComputableTidilyInPolyTime.encode
@@ -808,12 +776,11 @@ private theorem isOraclePPTOn_plantedHandler {bound : ℕ → ℕ}
   have hkeyu :=
     (ComputableTidilyInPolyTime.listGetD (encA := encPair encBits encBits) ([], [])).comp
       (hkeys.prod hu)
-  have hots := S.isPPTOn_sign_comp
-    (.of_tidy ((ComputableTidilyInPolyTime.snd _ _).comp hkeyu)) (.of_tidy hdigest)
+  have hots := S.isPPTOn_sign_comp (.of_tidy hkeyu.snd') (.of_tidy hdigest)
   have hpathu := (computableInPolyTime_merklePath hH hlen).tidy.comp (hk.prod (hvks.prod hu))
   have hsignPost := (ComputableTidilyInPolyTime.encode
     (encPair encBits (encPair encBits (encList encBits)))).comp
-      ((((ComputableTidilyInPolyTime.fst _ _).comp hkeyu).comp hfst).prod
+      ((hkeyu.fst'.comp hfst).prod
         ((ComputableTidilyInPolyTime.snd encHandlerInput encBits).prod (hpathu.comp hfst)))
   have hsign := hots.bind_with
     (second := fun (p : (((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool))) ×
@@ -839,6 +806,40 @@ private def handlerBound (cs ds : ℕ) (bound : ℕ → ℕ)
   2 * bound c.1.1.1 + 2 * (cs * (3 * (encCaller c).length + 2) ^ ds) +
     2 * ((2 * (encCaller c).length + 1) * (2 * (encCaller c).length + 1)) +
       4 * (encCaller c).length + 6 * w.length + 8
+
+private theorem computableTidilyInPolyTime_handlerBound
+    {α β γ : Type} {enc : ((ℕ × α) × β) × γ ↪ List Bool}
+    (cs ds : ℕ) {bound : ℕ → ℕ}
+    (hbound : ComputableTidilyInPolyTime (fun c : ((ℕ × α) × β) × γ => bound c.1.1.1)
+      enc encUnary) :
+    ComputableTidilyInPolyTime
+      (fun pair : (((ℕ × α) × β) × γ) × List Bool =>
+        2 * bound pair.1.1.1.1 + 2 * (cs * (3 * (enc pair.1).length + 2) ^ ds) +
+          2 * ((2 * (enc pair.1).length + 1) * (2 * (enc pair.1).length + 1)) +
+            4 * (enc pair.1).length + 6 * pair.2.length + 8)
+      (encPair enc encBits) encUnary := by
+  have hfst := ComputableTidilyInPolyTime.fst enc encBits
+  have hL := hfst.encoded.trans (ComputableTidilyInPolyTime.length encBool)
+  have hW := (ComputableTidilyInPolyTime.snd enc encBits).trans
+    (ComputableTidilyInPolyTime.length encBool)
+  have hb := hfst.trans hbound
+  have add {f g} (hf : ComputableTidilyInPolyTime f (encPair enc encBits) encUnary)
+      (hg : ComputableTidilyInPolyTime g (encPair enc encBits) encUnary) :
+      ComputableTidilyInPolyTime (fun x => f x + g x) (encPair enc encBits) encUnary :=
+    ComputableTidilyInPolyTime.unary_add.comp (hf.prod hg)
+  have mul {f g} (hf : ComputableTidilyInPolyTime f (encPair enc encBits) encUnary)
+      (hg : ComputableTidilyInPolyTime g (encPair enc encBits) encUnary) :
+      ComputableTidilyInPolyTime (fun x => f x * g x) (encPair enc encBits) encUnary :=
+    ComputableTidilyInPolyTime.unary_mul.comp (hf.prod hg)
+  have pow (d : ℕ) {f} (hf : ComputableTidilyInPolyTime f (encPair enc encBits) encUnary) :
+      ComputableTidilyInPolyTime (fun x => f x ^ d) (encPair enc encBits) encUnary :=
+    (ComputableTidilyInPolyTime.unary_pow d).comp hf
+  have cst (k : ℕ) : ComputableTidilyInPolyTime (fun _ => k) (encPair enc encBits) encUnary :=
+    ComputableTidilyInPolyTime.const k
+  have h2L1 := add (mul (cst 2) hL) (cst 1)
+  exact add (add (add (add (add (mul (cst 2) hb)
+    (mul (cst 2) (mul (cst cs) (pow ds (add (mul (cst 3) hL) (cst 2))))))
+    (mul (cst 2) (mul h2L1 h2L1))) (mul (cst 4) hL)) (mul (cst 6) hW)) (cst 8)
 
 private theorem length_encList_merklePath_le (hlen : ∀ k m, (H k m).length = k.length)
     {k : List Bool} {vks : List (List Bool)} {u L : ℕ} (hk : k.length ≤ L)
@@ -894,26 +895,30 @@ private theorem plantedHandler_bound (hlen : ∀ k m, (H k m).length = k.length)
   have hm := length_dropFrame_le w
   have hdecode :
       IndexedSignatureScheme.requestDecoder.decode w = ((unframe w).length, dropFrame w) := rfl
-  have hlog : (encList (encPair encUnary encBits)
-      (IndexedSignatureScheme.requestDecoder.decode w :: signed)).length ≤
-      (encList (encPair encUnary encBits) signed).length + 6 * w.length + 3 := by
-    simp only [hdecode, encList_cons, encPair_apply, encUnary_apply,
-      encBits_apply, List.length_append, length_frame, List.length_replicate]
-    omega
-  unfold plantedHandler at hres
-  dsimp only at hres
-  split_ifs at hres with hguard hi
-  · obtain ⟨ots, hots, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hres
-    obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hots
-    have htake := List.length_take_le (bound n) raw
-    have hvk := (hkeyLen i).1
-    have hp := hpath i
+  have hpair (u : ℕ) (ots : List Bool) (hots : ots.length ≤ bound n + cs * (3 * L + 2) ^ ds) :
+      (encodeSignature (keys.getD u ([], [])).1 ots
+        (merklePath H k (keys.map Prod.fst) u)).length ≤
+          2 * bound n + 2 * (cs * (3 * L + 2) ^ ds) + 2 * ((2 * L + 1) * (2 * L + 1)) +
+            4 * L + 6 * w.length + 8 ∧
+        (encList (encPair encUnary encBits)
+          (IndexedSignatureScheme.requestDecoder.decode w :: signed)).length ≤
+          (encList (encPair encUnary encBits) signed).length +
+            (2 * bound n + 2 * (cs * (3 * L + 2) ^ ds) + 2 * ((2 * L + 1) * (2 * L + 1)) +
+              4 * L + 6 * w.length + 8) := by
+    have hvk := (hkeyLen u).1
+    have hp := hpath u
     refine ⟨?_, ?_⟩
     · simp only [encodeSignature, encPair_apply, encBits_apply, List.length_append, length_frame]
       omega
     · simp only [hdecode, encList_cons, encPair_apply, encUnary_apply,
         encBits_apply, List.length_append, length_frame, List.length_replicate]
       omega
+  unfold plantedHandler at hres
+  dsimp only at hres
+  split_ifs at hres with hguard hi
+  · obtain ⟨ots, hots, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hres
+    obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hots
+    exact hpair i _ ((List.length_take_le (bound n) raw).trans (Nat.le_add_right _ _))
   · obtain ⟨sig, hsig, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hres
     simp only [ProbOracleComp.support_sample, signWith, ProbComp.eval_bind, ProbComp.eval_pure,
       PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hsig
@@ -921,18 +926,10 @@ private theorem plantedHandler_bound (hlen : ∀ k m, (H k m).length = k.length)
     have hotsLen := hsignLen (_, _) ots hots
     simp only [encBits_apply, encPair_apply, List.length_append, length_frame, hlen] at hotsLen
     set u := (IndexedSignatureScheme.requestDecoder.decode w).1
-    have hvk := hkeyLen u
-    have hp := hpath u
+    have hvk := (hkeyLen u).2
     have hpow : cs * (2 * (keys.getD u ([], [])).2.length + 1 + k.length + 1) ^ ds ≤
         cs * (3 * L + 2) ^ ds := Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by omega) ds)
-    have hots' : ots.length ≤ cs * (3 * L + 2) ^ ds := hotsLen.trans hpow
-    clear hotsLen hpow
-    refine ⟨?_, ?_⟩
-    · simp only [encodeSignature, encPair_apply, encBits_apply, List.length_append, length_frame]
-      omega
-    · simp only [hdecode, encList_cons, encPair_apply, encUnary_apply,
-        encBits_apply, List.length_append, length_frame, List.length_replicate]
-      omega
+    exact hpair u ots ((hotsLen.trans hpow).trans (Nat.le_add_left _ _))
   · have h := OracleComp.eq_of_mem_supportWith_pure hres
     subst h
     exact ⟨by simp, Nat.le_add_right _ _⟩
@@ -952,34 +949,18 @@ theorem isOraclePPT_oneTimeForger {bound : ℕ → ℕ}
       (encPair encBits (encList (encPair encBits encBits)))
       (fun c : (ℕ × List Bool) × ℕ => ProbOracleComp.sample (plantKeys S depth c.1.1 c.2 c.1.2)) :=
     (isPPTOn_plantKeys hcap).isOraclePPTOn
+  have hfst := ComputableTidilyInPolyTime.fst
+    (encPair (encPair encUnary encBits) encUnary)
+    (encPair encBits (encList (encPair encBits encBits)))
   have hprep : ComputableTidilyInPolyTime
       (fun c : ((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool)) =>
         (c.1.1.1, publicKey H c.2.1 c.2.2)) encCaller (encPair encUnary encBits) :=
-    ((ComputableTidilyInPolyTime.fst _ _).comp ((ComputableTidilyInPolyTime.fst _ _).comp
-      (ComputableTidilyInPolyTime.fst _ _))).prod
-      ((computableInPolyTime_publicKey hH hlen).tidy.comp (ComputableTidilyInPolyTime.snd _ _))
-  have hres : ComputableTidilyInPolyTime
-      (fun pair : (((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool))) ×
-          List Bool => handlerBound cs ds bound pair.1 pair.2)
-      (encPair encCaller encBits) encUnary := by
-    have hL := (ComputableTidilyInPolyTime.length encBool).comp
-      ((ComputableTidilyInPolyTime.encode encCaller).comp
-        (ComputableTidilyInPolyTime.fst encCaller encBits))
-    have hW := (ComputableTidilyInPolyTime.length encBool).comp
-      (ComputableTidilyInPolyTime.snd encCaller encBits)
-    have hb := hboundPoly.tidy.comp ((ComputableTidilyInPolyTime.fst _ _).comp
-      ((ComputableTidilyInPolyTime.fst _ _).comp ((ComputableTidilyInPolyTime.fst _ _).comp
-        (ComputableTidilyInPolyTime.fst encCaller encBits))))
-    unfold handlerBound
-    polytime
-  have hrun : IsOraclePPTOn encCaller
-      (encPair (encPair encUnary (encPair encBits encBits)) (encList (encPair encUnary encBits)))
-      (fun c : ((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool)) =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler
-            (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
-            (plantedHandler S H depth c.1.1.1 c.2.1 c.2.2 c.1.2 (bound c.1.1.1)))
-          (adversary c.1.1.1 (publicKey H c.2.1 c.2.2))).run []) :=
+    hfst.fst'.fst'.prod ((ComputableTidilyInPolyTime.snd
+      (encPair (encPair encUnary encBits) encUnary)
+      (encPair encBits (encList (encPair encBits encBits)))).trans
+        (computableInPolyTime_publicKey hH hlen).tidy)
+  have hres := computableTidilyInPolyTime_handlerBound cs ds (hfst.fst'.fst'.trans hboundPoly.tidy)
+  have hrun :=
     hadversary.run_interpret_preprocess_open
       (prepare := fun c => (c.1.1.1, publicKey H c.2.1 c.2.2))
       (initial := fun _ => ([] : List (ℕ × List Bool)))
@@ -988,51 +969,15 @@ theorem isOraclePPT_oneTimeForger {bound : ℕ → ℕ}
       (fun _ _ => True) (fun _ => trivial) hres
       (fun c request state _ result hresult =>
         ⟨trivial, plantedHandler_bound hlen hsignLen c request state result hresult⟩)
-  have hfinal : ComputableTidilyInPolyTime
-      (fun pair : (((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool))) ×
-          ((ℕ × List Bool × List Bool) × List (ℕ × List Bool)) =>
-        (H pair.1.2.1 pair.2.1.2.1, (signatureDecoder.decode pair.2.1.2.2).2.1))
-      (encPair encCaller
-        (encPair (encPair encUnary (encPair encBits encBits)) (encList (encPair encUnary encBits))))
-      (encPair encBits encBits) := by
-    let EO := encPair (encPair encUnary (encPair encBits encBits))
-      (encList (encPair encUnary encBits))
-    have hfst := ComputableTidilyInPolyTime.fst encCaller EO
-    have hsnd := ComputableTidilyInPolyTime.snd encCaller EO
-    have hk := (ComputableTidilyInPolyTime.fst encBits (encList (encPair encBits encBits))).comp
-      ((ComputableTidilyInPolyTime.snd (encPair (encPair encUnary encBits) encUnary)
-        (encPair encBits (encList (encPair encBits encBits)))).comp hfst)
-    have hout := (ComputableTidilyInPolyTime.fst (encPair encUnary (encPair encBits encBits))
-      (encList (encPair encUnary encBits))).comp hsnd
-    have hms := (ComputableTidilyInPolyTime.snd encUnary (encPair encBits encBits)).comp hout
-    have hm := (ComputableTidilyInPolyTime.fst encBits encBits).comp hms
-    have hsig := (ComputableTidilyInPolyTime.snd encBits encBits).comp hms
-    exact (hH.tidy.comp (hk.prod hm)).prod ((ComputableTidilyInPolyTime.fst _ _).comp
-      ((ComputableTidilyInPolyTime.snd _ _).comp
-        (signatureDecoder.computableInPolyTime.tidy.comp hsig)))
-  have hstage : IsOraclePPTOn (encPair (encPair encUnary encBits) encUnary)
-      (encPair encBits encBits)
-      (fun c : (ℕ × List Bool) × ℕ =>
-        oneTimeForgerAt S H depth bound adversary c.2 c.1.1 c.1.2) :=
-    hsetup.bind_with
-      (second := fun (c : (ℕ × List Bool) × ℕ)
-          (setup : List Bool × List (List Bool × List Bool)) => do
-        let out ← (OracleComp.interpret
-          (OracleComp.sumHandler
-            (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
-            (plantedHandler S H depth c.1.1 setup.1 setup.2 c.2 (bound c.1.1)))
-          (adversary c.1.1 (publicKey H setup.1 setup.2))).run []
-        return (H setup.1 out.1.2.1, (signatureDecoder.decode out.1.2.2).2.1))
-      (hrun.bind_with
-        (second := fun (c : ((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool)))
-          (out : (ℕ × List Bool × List Bool) × List (ℕ × List Bool)) =>
-            (pure (H c.2.1 out.1.2.1, (signatureDecoder.decode out.1.2.2).2.1) :
-              WordOracleComp Unit (List Bool × List Bool)))
-        (hfinal.isOraclePPTOn (Operation := Unit)))
+  let EO := encPair (encPair encUnary (encPair encBits encBits))
+    (encList (encPair encUnary encBits))
+  have hk := (ComputableTidilyInPolyTime.fst encCaller EO).snd'.fst'
+  have hms := (ComputableTidilyInPolyTime.snd encCaller EO).fst'.snd'
+  have hfinal := ((hk.prod hms.fst').trans hH.tidy).prod
+    (hms.snd'.trans signatureDecoder.computableInPolyTime.tidy).snd'.fst'
+  unfold oneTimeForger oneTimeForgerAt
   exact hleaf.bind_with
-    (second := fun (p : ℕ × List Bool) (i : ℕ) =>
-      oneTimeForgerAt S H depth bound adversary i p.1 p.2)
-    hstage
+    (hsetup.bind_with (hrun.bind_with (hfinal.isOraclePPTOn (Operation := Unit))))
 
 end Efficiency
 
@@ -1055,9 +1000,18 @@ theorem _root_.Cslib.Crypto.SignatureScheme.OneTimeEUFCMA.indexedEUFCMA_merkle
   obtain ⟨cs, ds, hlens⟩ := S.sign_ppt.length_le
   let bound (n : ℕ) : ℕ := cs * (2 * (ck * (n + 1) ^ dk) + n + 2) ^ ds
   have hboundPoly : ComputableInPolyTime bound encUnary encUnary := by
-    apply ComputableInPolyTime.of_tidy
-    dsimp only [bound]
-    polytime
+    let hn := ComputableInPolyTime.id' (encIn := encUnary)
+    let cst (k : ℕ) := ComputableInPolyTime.const (encIn := encUnary) (encOut := encUnary) k
+    exact ComputableInPolyTime.unary_mul' (cst cs)
+      ((ComputableInPolyTime.unary_pow ds).comp
+        (ComputableInPolyTime.unary_add'
+          (ComputableInPolyTime.unary_add'
+            (ComputableInPolyTime.unary_mul' (cst 2)
+              (ComputableInPolyTime.unary_mul' (cst ck)
+                ((ComputableInPolyTime.unary_pow dk).comp
+                  (ComputableInPolyTime.unary_add' hn (cst 1)))))
+            hn)
+          (cst 2)))
   have hbound (n : ℕ) : ∀ x ∈ (ProbComp.eval (S.keyGen n)).support, ∀ msg, msg.length = n →
       ∀ σ ∈ (ProbComp.eval (S.sign x.2 msg)).support, σ.length ≤ bound n := by
     intro x hx msg hmsg σ hσ

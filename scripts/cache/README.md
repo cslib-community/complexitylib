@@ -16,8 +16,8 @@ downloads them for the nearest cached ancestor of your `HEAD`:
 scripts/build.sh --wfail --iofail   # restore caches, then build changed or missing modules
 ```
 
-A complete set of library and test outputs is about 75 MB compressed. Outputs are platform
-independent (`platformIndependent = true`), so Linux CI builds serve macOS checkouts.
+A complete set of library and test outputs is about 200 MB compressed (November 2026). Outputs
+are platform independent (`platformIndependent = true`), so Linux CI builds serve macOS checkouts.
 `COMPLEXITYLIB_CACHE_URL` overrides the location; set it to an empty string to skip the
 Complexitylib download.
 
@@ -42,8 +42,9 @@ with `--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACH
 `https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
 explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
 their existing client-default/environment behavior. API docs also use the existing missing-only
-Complexitylib restore before generation. Cache failures remain optional; installation and
-validation failures remain strict.
+Complexitylib restore before generation. The Guide workflow restores Lean CI's `.lake` entry from
+the Actions cache and then uses the same missing-only restore. Cache failures remain optional;
+installation and validation failures remain strict.
 
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
 about 600 MB) from the Actions cache before `leanprover/lean-action` runs, so that the action does
@@ -228,11 +229,12 @@ CI skips the upload until the repository variable `LAKE_CACHE_BUCKET` is set.
 
 **Costs.** Storage is small: each `main` push uploads only modules whose outputs changed. CI
 downloads only what its restored `.lake` lacks: nothing when the Actions cache is current, about
-12 MB when it is a few hundred modules behind, and a complete set (about 75 MB) when it misses.
+12 MB when it is a few hundred modules behind, and a complete set (about 200 MB) when it misses.
 Cloud Storage's free tier covers 5 GB of storage and 100 GB of egress per month in `us-east1`;
 at 150–200 CI runs a day, a complete download on every run would exceed that several times over
-and soon reach the budget. The budget alerts and the kill switch bound abuse of the public
-bucket.
+and soon reach the budget. Workflows that read the bucket therefore restore `.lake` from the
+Actions cache first and download only what it lacks. The budget alerts and the kill switch bound
+abuse of the public bucket.
 
 **After the kill switch fires.** Downloads fail and builds fall back to compiling. Check the egress
 graph and the function's log, then restore public read:

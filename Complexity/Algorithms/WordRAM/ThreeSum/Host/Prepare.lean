@@ -7,6 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
 public import Complexity.Computability.WordRAM.RegisterFrame
@@ -200,14 +201,10 @@ theorem exec_prepare {w : ℕ} (κ : ℕ) (x : Data 64)
       y.regs inst = 0 ∧ y.regs found = 0 ∧ y.mem = x.mem := by
   let N := x.mem 0
   let U := (N + 2) ^ κ
-  obtain ⟨p, hp, hout, hm⟩ := ChanHe.Parameters.exec κ (x.comap parameterRegisters) hbudget
-  let a := p.extend parameterRegisters x
-  have ha := hp.rename parameter_injective
-  have han : a.regs parameterLen = N :=
-    (parameter_injective.extend_apply _ _ ChanHe.Parameters.len).trans hout.len
-  have hau : a.regs parameterUpper = U :=
-    (parameter_injective.extend_apply _ _ ChanHe.Parameters.magnitude).trans hout.magnitude
-  have ham : a.mem = x.mem := hm
+  obtain ⟨a, ha, ⟨hout, ham⟩, -⟩ := ExecWithin.rename_post parameter_injective
+    (ChanHe.Parameters.exec κ (x.comap parameterRegisters) hbudget)
+  have han : a.regs parameterLen = N := hout.len
+  have hau : a.regs parameterUpper = U := hout.magnitude
   have h1 : Fits w 1 := hfill.of_le (by omega)
   let b := a.set len N |>.set upper U |>.set base 1 |>.set one 1
     |>.set sqrtArg N
@@ -222,13 +219,7 @@ theorem exec_prepare {w : ℕ} (κ : ℕ) (x : Data 64)
     omega)
   obtain ⟨c, hc, hcr, -, hcm, -⟩ := NatSqrt.exec_rename sqrtRegisters sqrt_injective b hsqrt
   have hpres (i : Fin 64) (hi : 34 ≤ i.val) : c.regs i = b.regs i := by
-    apply hc.regs_eq
-    apply Code.preserves_rename_of_forall_ne
-    intro j he
-    have hv := congrArg Fin.val he
-    dsimp only [sqrtRegisters] at hv
-    have := j.isLt
-    omega
+    exact hc.regs_eq (Code.preserves_rename_of_offset _ _ (fun _ => rfl) i (Or.inr hi))
   have hcr' : c.regs sqrtRoot = Nat.sqrt N := by
     change c.regs sqrtRoot = Nat.sqrt (b.regs sqrtArg) at hcr
     simpa only [hbn] using hcr

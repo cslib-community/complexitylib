@@ -7,8 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.SourceBounds
-public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.TimeBound
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost.Asymptotics
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Exec
 import Mathlib.Analysis.SpecialFunctions.Log.Base
@@ -17,23 +16,13 @@ import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
-# A content-independent natural allowance for callable dyadic solving
+# Uniform native Exact Triangle allowance with saving33/20000
 
-The natural function depends only on original dimension n and original weight bound F. A
-selected-prime logarithmic estimate and the actual wrapper charges bound the real parameter,
-selector and callable ledger, including header/halt reserve. This is a mathematical time bound;
-the program does not compute it or receive a time certificate. Small-branch execution and
-actual program assembly remain separate.
-
-## Main definitions
-
-* `dyadicTime`: natural allowance for the complete fast ledger, independent of input contents,
-  reference memory, layout and physical width.
-
-## Main results
-
-* `timeBound_le_dyadicTime`: the actual charged fast ledger is bounded at every selected prime.
-* `exists_dyadicTime_subcubic_bound`: uniform strict-subcubic growth for polynomial original F.
+An original-scalar natural allowance bounds the actual parameter program, prime selection,
+translated box controller, input copies and all call/header/halt reserves. For each fixed
+polynomial original weight exponent, one coefficient and threshold precede input contents,
+chosen prime, reference memory and physical width. Every finite instruction budget comes from
+the actual proved programs; the natural ceiling is proof metadata, not an algorithm oracle.
 -/
 
 public section
@@ -126,7 +115,8 @@ theorem timeBound_le_dyadicTime {n F p : ℕ} (hf : 0 < blocks n) (values : List
       ((n : ℝ) ^ weightExponent n F) :=
     ⟨fun _ _ => (hab _ _).trans hexp, fun _ _ => (hbc _ _).trans hexp,
       fun _ _ => (hac _ _).trans hexp⟩
-  have hc := DyadicCost.components_timeBound_le hf (one_le_weightExponent hn2 F) values mem hv' hp
+  have hc := DyadicCost.components_timeBound_le hf (one_le_weightExponent hn2 F)
+    values mem hv' hp
   change (_ : ℝ) ≤ DyadicCost.costCoefficient (weightExponent n F) n *
     ((n : ℝ) ^ 3 / groups n) at hc
   have hraw := rawTotal_le values hlen hv
@@ -135,7 +125,7 @@ theorem timeBound_le_dyadicTime {n F p : ℕ} (hf : 0 < blocks n) (values : List
   have hparam := DyadicParameters.timeBound_le n
   have hnat : DyadicParameters.timeBound n + PrimeSelection.timeBound n (window n) +
       timeBound (m := level n) hn (groups n) p values mem + 42 ≤
-    3 * (12 * Nat.log 2 n + 36 + (PrimeSelection.timeBound n (window n) + 16) +
+    3 * (16 * Nat.log 2 n + 36 + (PrimeSelection.timeBound n (window n) + 16) +
       FixedPrime.timeBound (m := level n) hn (groups n) p values mem) +
         24 * (n * n) + 24669 * setupLog n F + 497 + 16 := by
     unfold timeBound
@@ -208,34 +198,34 @@ private theorem upperTime_nonneg {n : ℕ} (hn : 2 ≤ n) (F : ℕ) : 0 ≤ uppe
   positivity
 
 -- Only the original fixed fast-threshold numeral is normalized during filter transport.
-set_option exponentiation.threshold 1296 in
+set_option exponentiation.threshold 2394 in
 /-- One positive coefficient and threshold per weight exponent control the natural time
 function uniformly over all original bounds F≤(n+2)^κ. This is an estimate of the bound
 function itself, usable by the actual Callee contract. No contents/layout/width occurs in it. -/
 theorem exists_dyadicTime_subcubic_bound {κ : ℕ} (hκ : 1 ≤ κ) :
-    ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, 2 ^ 1296 ≤ N ∧
+    ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, 2 ^ 2394 ≤ N ∧
       ∀ n ≥ N, ∀ F ≤ (n + 2) ^ κ,
-        (dyadicTime n F : ℝ) ≤ C * (n : ℝ) ^ (3 - 1 / 1296 : ℝ) := by
-  let C : ℝ := (49338 * (κ + 7) + 550 : ℕ)
+        (dyadicTime n F : ℝ) ≤ C * (n : ℝ) ^ (3 - 33 / 20000 : ℝ) := by
+  let C : ℝ := (49338 * (κ + 7) + 586 : ℕ)
   have hcκ : (1 : ℝ) ≤ (2 * κ + 2 : ℕ) := by exact_mod_cast (by omega : 1 ≤ 2 * κ + 2)
   have hevent := DyadicCost.costCoefficient_eventually_le_rpow hcκ
-    (by norm_num : (0 : ℝ) < 1 / 1296)
+    (by norm_num : (0 : ℝ) < 2 / 1197 - 33 / 20000)
   have hfinal : ∀ᶠ n : ℕ in atTop, ∀ F ≤ (n + 2) ^ κ,
-      (dyadicTime n F : ℝ) ≤ C * (n : ℝ) ^ (3 - 1 / 1296 : ℝ) := by
+      (dyadicTime n F : ℝ) ≤ C * (n : ℝ) ^ (3 - 33 / 20000 : ℝ) := by
     filter_upwards [hevent, eventually_ge_atTop (16 : ℕ)] with n hc hn
     intro F hF
     have hn2 : 2 ≤ n := by omega
     have hn1 : 1 ≤ n := by omega
     have hcoeff := (DyadicCost.costCoefficient_mono hn1 (weightExponent_le hn2 hF)).trans hc
     have hmain : 3 * DyadicCost.costCoefficient (weightExponent n F) n *
-        ((n : ℝ) ^ 3 / groups n) ≤ 12 * (n : ℝ) ^ (3 - 1 / 1296 : ℝ) := by
+        ((n : ℝ) ^ 3 / groups n) ≤ 48 * (n : ℝ) ^ (3 - 33 / 20000 : ℝ) := by
       calc
-        _ ≤ 3 * (n : ℝ) ^ (1 / 1296 : ℝ) * ((n : ℝ) ^ 3 / groups n) := by gcongr
-        _ ≤ 3 * (n : ℝ) ^ (1 / 1296 : ℝ) *
-            (4 * (n : ℝ) ^ (3 - 1 / 648 : ℝ)) := by
+        _ ≤ 3 * (n : ℝ) ^ (2 / 1197 - 33 / 20000 : ℝ) * ((n : ℝ) ^ 3 / groups n) := by gcongr
+        _ ≤ 3 * (n : ℝ) ^ (2 / 1197 - 33 / 20000 : ℝ) *
+            (16 * (n : ℝ) ^ (3 - 2 / 1197 : ℝ)) := by
           exact mul_le_mul_of_nonneg_left (cubic_div_groups_le (by omega)) (by positivity)
         _ = _ := by
-          rw [mul_assoc, mul_left_comm ((n : ℝ) ^ (1 / 1296 : ℝ)) 4,
+          rw [mul_assoc, mul_left_comm ((n : ℝ) ^ (2 / 1197 - 33 / 20000 : ℝ)) 16,
             ← mul_assoc, ← Real.rpow_add (by exact_mod_cast (by omega : 0 < n))]
           norm_num
     have hlog := setupLog_le_log hF
@@ -248,7 +238,7 @@ theorem exists_dyadicTime_subcubic_bound {κ : ℕ} (hκ : 1 ≤ κ) :
       have hunit : 1 ≤ n * n := by nlinarith
       nlinarith only [hsetup, hunit]
     have hsmallR := (Nat.cast_le (α := ℝ)).mpr hsmallNat
-    have hpow : (n : ℝ) ^ 2 ≤ (n : ℝ) ^ (3 - 1 / 1296 : ℝ) := by
+    have hpow : (n : ℝ) ^ 2 ≤ (n : ℝ) ^ (3 - 33 / 20000 : ℝ) := by
       rw [← Real.rpow_natCast]
       exact Real.rpow_le_rpow_of_exponent_le (by exact_mod_cast hn1) (by norm_num)
     have hscaled := mul_le_mul_of_nonneg_left hpow
@@ -259,7 +249,7 @@ theorem exists_dyadicTime_subcubic_bound {κ : ℕ} (hκ : 1 ≤ κ) :
     unfold upperTime at hceil ⊢
     nlinarith only [hmain, hsmallR, hscaled, hceil]
   obtain ⟨N, hN⟩ := eventually_atTop.mp hfinal
-  refine ⟨C, by dsimp only [C]; positivity, max N (2 ^ 1296), le_max_right _ _, ?_⟩
+  refine ⟨C, by dsimp only [C]; positivity, max N (2 ^ 2394), le_max_right _ _, ?_⟩
   intro n hn
   exact hN n ((le_max_left _ _).trans hn)
 

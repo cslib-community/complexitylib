@@ -8,6 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.PseudorandomFunction
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import Complexity.Computability.Probabilistic.Memoize
 import Complexity.Computability.Probabilistic.Oracle.Substitution
@@ -18,8 +21,6 @@ import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.Product
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
 
 /-!
 # Several independent keys of a pseudorandom function
@@ -79,7 +80,8 @@ open scoped NNReal
 /-- Blocks of a word of `t` blocks have exactly `n` bits. -/
 theorem length_keyBlock {n t i : ℕ} {key : List Bool} (hkey : key.length = t * n) (hi : i < t) :
     (keyBlock n i key).length = n := by
-  have : i * n + n ≤ t * n := by nlinarith
+  have := Nat.mul_le_mul_right n (Nat.succ_le_of_lt hi)
+  rw [Nat.succ_mul] at this
   simp only [keyBlock, List.length_take, List.length_drop, hkey]
   omega
 
@@ -158,63 +160,56 @@ private theorem computableInPolyTime_take_ite {α : Type} {input : α ↪ List B
     (hquery : ComputableInPolyTime query input encBits)
     (hvalue : ComputableInPolyTime value input encBits) :
     ComputableInPolyTime (fun a => (if (query a).length = n a then value a else []).take (n a))
-      input encBits := by
-  polytime
+      input encBits :=
+  ((hquery.length_bits_comp.unary_eq' hn).ite_decide hvalue (.const [])).bitsTakeWithInput hn
 
 /-- One handler call is oracle PPT in the caller `((n, aux), key)`, the request and the cache. -/
 private theorem isOraclePPTOn_prfMultiHandler (hfamily : PseudorandomFunction family) (t j : ℕ) :
     IsOraclePPTOn (handlerInputEncoding t) (encPair encBits (cacheEncoding t))
       (fun x : HandlerInput t => prfMultiHandler family t j x.1.1.1 x.1.2 x.2.1 x.2.2) := by
+  let h1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encBits)
+    (encPair (encPair (encFinEnum (Fin t)) encBits) (cacheEncoding t))
+  let h2 := ComputableInPolyTime.snd (encPair (encPair encUnary encBits) encBits)
+    (encPair (encPair (encFinEnum (Fin t)) encBits) (cacheEncoding t))
+  let hn := h1.fst'.fst'
+  let hquery := h2.fst'.snd'
+  let hcache := h2.snd'
   refine IsOraclePPTOn.finite_cases' (tagEncoding := encFinEnum (Fin t))
     (tag := fun x : HandlerInput t => x.2.1.1)
     (branch := fun i x => prfMultiHandler family t j x.1.1.1 x.1.2 (i, x.2.1.2) x.2.2)
-    (by polytime) fun i => ?_
-  have hn : ComputableInPolyTime (fun x : HandlerInput t => x.1.1.1) (handlerInputEncoding t)
-      encUnary := by polytime
-  have hquery : ComputableInPolyTime (fun x : HandlerInput t => x.2.1.2)
-      (handlerInputEncoding t) encBits := by polytime
-  have hcache : ComputableInPolyTime (fun x : HandlerInput t => x.2.2)
-      (handlerInputEncoding t) (cacheEncoding t) := by polytime
+    h2.fst'.fst' fun i => ?_
   by_cases hlt : i.val < j
   · simp only [prfMultiHandler, hlt, ↓reduceIte]
-    have hcondition : ComputableInPolyTime
-        (fun x : HandlerInput t => decide (x.2.1.2.length = x.1.1.1))
-        (handlerInputEncoding t) encBool := by
-      polytime
-    refine IsOraclePPTOn.ite' hcondition ?_ ?_
-    · have hkey : ComputableInPolyTime (fun x : HandlerInput t => (i, x.2.1.2))
-          (handlerInputEncoding t) (encPair (encFinEnum (Fin t)) encBits) :=
-        (ComputableInPolyTime.const i).prod hquery
-      exact (IsPPTOn.memoize (input := handlerInputEncoding t)
+    refine IsOraclePPTOn.ite' (hquery.length_bits_comp.unary_eq' hn) ?_ ?_
+    · exact (IsPPTOn.memoize (input := handlerInputEncoding t)
         (keyEncoding := encPair (encFinEnum (Fin t)) encBits) (valueEncoding := encBits)
         (compute := fun (x : HandlerInput t) (_ : Fin t × List Bool) =>
           BitString.sampleList x.1.1.1)
         (query := fun x : HandlerInput t => (i, x.2.1.2)) (cache := fun x => x.2.2)
-        hn.sampleList hkey hcache).isOraclePPTOn
+        hn.sampleList ((ComputableInPolyTime.const i).prod hquery) hcache).isOraclePPTOn
     · exact (ComputableInPolyTime.isPPTOn
         (((ComputableInPolyTime.const ([] : List Bool)).prod hcache))).isOraclePPTOn
   by_cases heq : i.val = j
   · simp only [prfMultiHandler, heq, ↓reduceIte, lt_irrefl]
     exact (IsOraclePPTOn.query_take' () hquery hn).map_with'
-      (f := fun (x : HandlerInput t) reply => (reply, x.2.2)) (by polytime)
+      (f := fun (x : HandlerInput t) reply => (reply, x.2.2))
+      ((ComputableInPolyTime.snd _ _).prod (hcache.comp (ComputableInPolyTime.fst _ _)))
   · simp only [prfMultiHandler, hlt, heq, ↓reduceIte]
-    have hblock : ComputableInPolyTime (fun x : HandlerInput t => keyBlock x.1.1.1 i x.1.2)
-        (handlerInputEncoding t) encBits := by
-      unfold keyBlock
-      polytime
-    have hvalue : ComputableInPolyTime
-        (fun x : HandlerInput t => family (keyBlock x.1.1.1 i x.1.2) x.2.1.2)
-        (handlerInputEncoding t) encBits := hfamily.polyTime.comp (hblock.prod hquery)
-    have hreply : ComputableInPolyTime
-        (fun x : HandlerInput t => (prfOracle family x.1.1.1 (keyBlock x.1.1.1 i x.1.2)
-          x.2.1.2).take x.1.1.1) (handlerInputEncoding t) encBits :=
-      computableInPolyTime_take_ite hn hquery hvalue
+    let hblock := (h1.snd'.bitsDropWithInput
+      (ComputableInPolyTime.unary_mul' (.const i.val) hn)).bitsTakeWithInput hn
+    have hreply := computableInPolyTime_take_ite hn hquery
+      (hfamily.polyTime.comp (hblock.prod hquery))
     exact (ComputableInPolyTime.isPPTOn (hreply.prod hcache)).isOraclePPTOn
 
 /-- The hybrid reduction is oracle PPT whenever the multi-key adversary is. -/
 theorem isOraclePPT_prfMultiReduction (hfamily : PseudorandomFunction family) (t j : ℕ)
     {adversary : MultiKeyDistinguisher t} (hadversary : IsOraclePPT encBool adversary) :
     IsOraclePPT encBool (prfMultiReduction family t j adversary) := by
+  let hcaller := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encBits) encBits
+  let hq := ComputableInPolyTime.snd (encPair (encPair encUnary encBits) encBits) encBits
+  let hres := (((ComputableInPolyTime.const (8 * t)).unary_add'
+    (ComputableInPolyTime.unary_mul' (.const 4) hq.length_bits_comp)).unary_add'
+    (ComputableInPolyTime.unary_mul' (.const 2) hcaller.fst'.fst')).unary_add' (.const 8)
   have hrun := hadversary.run_interpret_preprocess_open' (External := Unit)
     (State := MultiKeyCache t) (input := encPair (encPair encUnary encBits) encBits)
     (operationEncoding := encFinEnum (Fin t)) (stateEncoding := cacheEncoding t)
@@ -222,15 +217,13 @@ theorem isOraclePPT_prfMultiReduction (hfamily : PseudorandomFunction family) (t
       prfMultiHandler family t j caller.1.1 caller.2 request cache)
     (prepare := fun caller => caller.1) (initial := fun _ => [])
     (resources := fun caller query => 8 * t + 4 * query.length + 2 * caller.1.1 + 8)
-    (by polytime) (isOraclePPTOn_prfMultiHandler hfamily t j) (by polytime)
+    (ComputableInPolyTime.fst _ _) (isOraclePPTOn_prfMultiHandler hfamily t j) (.const [])
     (fun caller cache => ∀ entry ∈ cache, entry.2.length ≤ caller.1.1) (fun _ => by simp)
-    (by polytime) ?_
-  · have hcount : ComputableInPolyTime (fun p : ℕ × List Bool => t * p.1)
-        (encPair encUnary encBits) encUnary := by polytime
-    exact (hcount.sampleList.isOraclePPTOn.bind_with
+    hres ?_
+  · exact (((ComputableInPolyTime.const t).unary_mul'
+      (.fst _ _)).sampleList.isOraclePPTOn.bind_with
       (hrun.map' (ComputableInPolyTime.fst _ _))).isOraclePPT
-  intro caller request cache hcache result hresult
-  obtain ⟨i, query⟩ := request
+  intro caller ⟨i, query⟩ cache hcache result hresult
   dsimp only [cacheEncoding]
   have hkeyLength : (encPair (encFinEnum (Fin t)) encBits (i, query)).length ≤
       2 * t + 1 + query.length := by
@@ -248,28 +241,22 @@ theorem isOraclePPT_prfMultiReduction (hfamily : PseudorandomFunction family) (t
       (by simpa only [encBits_apply] using hcache) (fun value hvalue => by
         rw [BitString.eval_sampleList] at hvalue
         exact (BitString.length_of_mem_support_uniformList hvalue).le) result hresult
-    refine ⟨by simpa only [encBits_apply] using hcache', ?_, ?_⟩
-    · simp only [encBits_apply] at hreply
-      omega
-    · omega
+    exact ⟨by simpa only [encBits_apply] using hcache',
+      by simp only [encBits_apply] at hreply; omega, by omega⟩
   · simp only [OracleComp.support, OracleComp.supportWith_pure, Set.mem_singleton_iff]
       at hresult
     subst hresult
     exact ⟨hcache, by simp, by dsimp only; omega⟩
   · simp only [OracleComp.mem_supportWith_map_iff] at hresult
     obtain ⟨reply, ⟨raw, _, rfl⟩, rfl⟩ := hresult
-    refine ⟨hcache, ?_, by dsimp only; omega⟩
-    dsimp only
     have := List.length_take_le caller.1.1 raw
-    omega
+    exact ⟨hcache, by dsimp only; omega, by dsimp only; omega⟩
   · simp only [OracleComp.support, OracleComp.supportWith_pure, Set.mem_singleton_iff]
       at hresult
     subst hresult
-    refine ⟨hcache, ?_, by dsimp only; omega⟩
-    dsimp only
     have := List.length_take_le caller.1.1
       (prfOracle family caller.1.1 (keyBlock caller.1.1 i caller.2) query)
-    omega
+    exact ⟨hcache, by dsimp only; omega, by dsimp only; omega⟩
 
 end Efficiency
 
@@ -421,8 +408,8 @@ private theorem uniformList_bind_keyBlock {β : Type} (t n : ℕ) (f : (Fin t �
   funext i
   apply List.ext_getElem
   · simp only [keyBlock, List.length_take, List.length_drop, List.length_ofFn]
-    have := i.isLt
-    have : i.val * n + n ≤ t * n := by nlinarith
+    have := Nat.mul_le_mul_right n (Nat.succ_le_of_lt i.isLt)
+    rw [Nat.succ_mul] at this
     omega
   · intro r h₁ h₂
     have hr : r < n := by simpa only [List.length_ofFn] using h₂
@@ -470,12 +457,12 @@ private def hybridOracle (family : List Bool → List Bool → List Bool) (t j n
 
 /-- The `j`-th hybrid experiment, with eager keys and tables. -/
 private noncomputable def hybridGame (family : List Bool → List Bool → List Bool) (t j : ℕ)
-    (adversary : MultiKeyDistinguisher t) (n : ℕ) : PMF Bool :=
-  (PMF.uniformOfFintype (Fin t → BitString n)).bind fun keys =>
-    (PMF.uniformOfFintype (Fin t → BitString n → BitString n)).bind fun tables =>
-      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
-        PMF.pure (hybridOracle family t j n (fun i => List.ofFn (keys i)) tables request)))
-        (adversary n [])
+    (adversary : MultiKeyDistinguisher t) (n : ℕ) : PMF Bool := do
+  let keys ← PMF.uniformOfFintype (Fin t → BitString n)
+  let tables ← PMF.uniformOfFintype (Fin t → BitString n → BitString n)
+  OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
+    PMF.pure (hybridOracle family t j n (fun i => List.ofFn (keys i)) tables request)))
+    (adversary n [])
 
 private theorem eval_prfMultiRealGame (family : List Bool → List Bool → List Bool)
     (adversary : MultiKeyDistinguisher t) (n : ℕ) :
@@ -483,14 +470,17 @@ private theorem eval_prfMultiRealGame (family : List Bool → List Bool → List
   simp only [prfMultiRealGame, ProbComp.eval_bind, BitString.eval_sampleList,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure]
   refine (uniformList_bind_keyBlock t n (fun blocks =>
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
-      PMF.pure (prfOracle family n (blocks request.1) request.2))) (adversary n []))).trans ?_
-  simp only [hybridGame, hybridOracle, Nat.not_lt_zero, ↓reduceIte, PMF.bind_const]
+    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+      (fun request : Fin t × List Bool =>
+        PMF.pure (prfOracle family n (blocks request.1) request.2))) (adversary n []))).trans ?_
+  simp only [hybridGame, PMF.monad_bind_eq_bind, hybridOracle, Nat.not_lt_zero, ↓reduceIte,
+    PMF.bind_const]
 
 private theorem eval_prfMultiIdealGame (family : List Bool → List Bool → List Bool)
     (adversary : MultiKeyDistinguisher t) (n : ℕ) :
     ProbComp.eval (prfMultiIdealGame t adversary n) = hybridGame family t t adversary n := by
-  simp only [prfMultiIdealGame, hybridGame, hybridOracle, Fin.is_lt, ↓reduceIte, PMF.bind_const,
+  simp only [prfMultiIdealGame, hybridGame, PMF.monad_bind_eq_bind, hybridOracle, Fin.is_lt,
+    ↓reduceIte, PMF.bind_const,
     ProbComp.eval_bind, ProbComp.eval_uniform, ProbOracleComp.eval_interpret, ProbComp.eval_pure]
 
 /-- Against the real PRF game, the `j`-th reduction is the `j`-th hybrid. -/
@@ -502,21 +492,17 @@ private theorem eval_prfRealGame_prfMultiReduction (hfamily : PseudorandomFuncti
   simp only [prfRealGame, ProbComp.eval_bind, BitString.eval_sampleList,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_prfMultiReduction,
     run_semanticHandler]
-  rw [hybridGame, bind_uniformOfFintype_update ⟨j, hj⟩, BitString.uniformList, PMF.bind_map]
+  simp only [hybridGame, PMF.monad_bind_eq_bind]
+  rw [bind_uniformOfFintype_update ⟨j, hj⟩, BitString.uniformList, PMF.bind_map]
   congr 1
   funext value
   refine (uniformList_bind_keyBlock t n (fun blocks =>
     (PMF.uniformOfFintype (Fin t → BitString n → BitString n)).bind fun tables =>
-      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
-        PMF.pure (eagerOracle family t j n blocks (prfOracle family n (List.ofFn value)) tables
-          request))) (adversary n []))).trans ?_
-  congr 1
-  funext keys
-  congr 1
-  funext tables
-  congr 2
-  funext request
-  obtain ⟨i, query⟩ := request
+      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+        (fun request : Fin t × List Bool =>
+          PMF.pure (eagerOracle family t j n blocks (prfOracle family n (List.ofFn value)) tables
+            request))) (adversary n []))).trans ?_
+  congr 1; funext keys; congr 1; funext tables; congr 2; funext req; obtain ⟨i, query⟩ := req
   simp only [eagerOracle, hybridOracle]
   split_ifs with hlt heq
   · rfl
@@ -537,7 +523,7 @@ private theorem eval_prfIdealGame_prfMultiReduction (hfamily : PseudorandomFunct
   simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_prfMultiReduction,
     run_semanticHandler]
-  rw [hybridGame]
+  simp only [hybridGame, PMF.monad_bind_eq_bind]
   conv_rhs =>
     arg 2
     ext keys
@@ -547,16 +533,11 @@ private theorem eval_prfIdealGame_prfMultiReduction (hfamily : PseudorandomFunct
   funext table
   refine (uniformList_bind_keyBlock t n (fun blocks =>
     (PMF.uniformOfFintype (Fin t → BitString n → BitString n)).bind fun tables =>
-      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
-        PMF.pure (eagerOracle family t j n blocks (randomFunctionOracle n table) tables
-          request))) (adversary n []))).trans ?_
-  congr 1
-  funext keys
-  congr 1
-  funext tables
-  congr 2
-  funext request
-  obtain ⟨i, query⟩ := request
+      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+        (fun request : Fin t × List Bool =>
+          PMF.pure (eagerOracle family t j n blocks (randomFunctionOracle n table) tables
+            request))) (adversary n []))).trans ?_
+  congr 1; funext keys; congr 1; funext tables; congr 2; funext req; obtain ⟨i, query⟩ := req
   simp only [eagerOracle, hybridOracle]
   by_cases hlt : i.val < j
   · have hi : i ≠ ⟨j, hj⟩ := fun h => by

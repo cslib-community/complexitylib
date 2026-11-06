@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Properties
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Exec
 
@@ -39,15 +40,10 @@ theorem exec_parameters {W n : ℕ} (x : Data 640)
         (if 0 < ParameterChoice.blocks n then 1 else 0) ∧
       y.mem = x.mem ∧
       ∀ j : Fin 640, j.val < 144 ∨ 160 ≤ j.val → y.regs j = x.regs j := by
-  obtain ⟨z, hz, zn, zb, zl, zd, zg, zL, zf, zm⟩ :=
-    DyadicParameters.exec (x.comap parameterBank) hn hfit
-  let y := z.extend parameterBank x
-  have hy : ExecWithin W parameters x y (DyadicParameters.timeBound n) :=
-    hz.rename parameterBank_injective
-  have reg (i : Fin 16) : y.regs (parameterBank i) = z.regs i :=
-    parameterBank_injective.extend_apply _ _ _
-  exact ⟨y, hy, (reg _).trans zn, (reg _).trans zb, (reg _).trans zl, (reg _).trans zd,
-    (reg _).trans zg, (reg _).trans zL, (reg _).trans zf, zm,
+  obtain ⟨y, hy, ⟨yn, yb, yl, yd, yg, yL, yf, ym⟩, -⟩ :=
+    ExecWithin.rename_post parameterBank_injective
+      (DyadicParameters.exec (x.comap parameterBank) hn hfit)
+  exact ⟨y, hy, yn, yb, yl, yd, yg, yL, yf, ym,
     fun j hj => hy.regs_eq (parameters_preserves j hj)⟩
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.ParameterSelecting
