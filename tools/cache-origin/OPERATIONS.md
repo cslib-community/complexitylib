@@ -66,6 +66,8 @@ Install the reviewed files as follows (root-owned, non-writable by other account
 | `cache-origin-alert@.service`, `cache-origin-health.service`, `cache-origin-health.timer` | `/etc/systemd/system/` |
 | `nginx-cache-origin.conf` | `/etc/systemd/system/nginx.service.d/cache-origin.conf` |
 | `cache-origin-journald.conf` | `/etc/systemd/journald.conf.d/zz-cache-origin.conf` (after vendor `syslog.conf`) |
+| `cache-origin-usage-journald.conf` | `/etc/systemd/journald@cache-origin-usage.conf.d/zz-cache-origin-usage.conf` |
+| `cache-origin-usage-service.conf` | `/etc/systemd/system/systemd-journald@cache-origin-usage.service.d/cache-origin.conf` |
 | `cache-origin-fail2ban.conf` | `/etc/fail2ban/jail.d/cache-origin.local` |
 
 nginx's upload request/connection limits apply before expensive password verification; rejected
@@ -95,10 +97,10 @@ The dedicated-host journal policy caps persistent logs at 64 MiB and runtime log
 retaining at most seven days. Do not leave an additional unbounded nginx/rsyslog file sink.
 Replace the existing main-context nginx `error_log /var/log/...` with the reviewed syslog sink
 too; the dedicated-host HTTP fragment disables global access logging and supplies a bounded
-error sink, including HTTP 80/ACME. The HTTPS server overrides access logging selectively.
+error sink, including HTTP 80/ACME. HTTPS adds selective error records and a separate usage sink.
 Check the **complete** `nginx -T` output for other file sinks, not just the new HTTPS fragment.
-nginx logs authentication failures and server errors, omitting successful anonymous downloads
-and routine throttling rejections. Check journal suppression notices: dropped authentication
+The default journal records authentication failures and server errors, omitting successful
+downloads and routine throttling rejections. Check suppression notices: dropped authentication
 records weaken Fail2ban detection. The supplied jail bans three failed authentications within
 ten minutes for one hour. Ban/unban events are recorded in the journal without email;
 email to `edemaine@mit.edu` is reserved for service failures and capacity trouble.
@@ -111,13 +113,81 @@ The hourly health timer checks mount presence and 80% byte/inode use on both dat
 filesystems. Publisher, GC, nginx, egress and health failures invoke the alert service. nginx's
 service drop-in also bounds its memory and task count; the Go services retain their own limits.
 
+## Usage statistics
+
+The second nginx access sink writes one JSON record per completed HTTPS request into the
+**separate** `cache-origin-usage` journal namespace. It includes timestamp, method, object path,
+HTTP status, response-body bytes and request duration. It records successful downloads, HEADs,
+missing objects, publications and throttled requests without filling the security/error journal.
+Only valid cache/publication paths are retained; other paths become `/other`, and methods
+outside GET/HEAD/PUT become `OTHER`. This bounds untrusted fields below the syslog message limit.
+Authorization, passwords, client IPs, query strings and bodies are omitted. Numeric values are
+JSON strings; convert them when aggregating. Duration includes response pacing and client speed;
+byte counts exclude HTTP/TLS overhead. HEAD contributes zero body bytes.
+
+This uses systemd's existing namespace service/socket templates, with no new package or network
+listener. Install both usage drop-ins above and keep nginx's `LogNamespace` unset: moving all
+nginx logging into this namespace would break the default-journal Fail2ban source. Before
+reloading nginx, check the effective namespace configuration and start its socket/service:
+
+```bash
+sudo systemd-analyze cat-config systemd/journald@cache-origin-usage.conf
+sudo systemctl daemon-reload
+sudo systemctl start systemd-journald@cache-origin-usage.socket systemd-journald@cache-origin-usage.service
+sudo nginx -t
+sudo systemctl reload nginx
+sudo journalctl --namespace=cache-origin-usage --identifier=cache_usage --since '1 hour ago' --output=cat
+sudo journalctl --namespace=cache-origin-usage --disk-usage
+```
+
+nginx's service drop-in pulls in the socket on subsequent boots. The namespace service has a
+64 MiB memory limit and sends the existing operational alert if it fails. Usage events do not
+send email. The namespace has its own **64 MiB persistent / 16 MiB runtime retention budget**,
+8/4 MiB files, daily file rotation and a seven-day age policy. It uses OS-disk space in addition
+to the default journal's budget. These are journal rotation policies, not filesystem quotas or
+an exact deletion deadline: active files can exceed the target and age cleanup uses whole files.
+Busy traffic shortens the available history. Rate suppression and forwarding are disabled for
+this namespace; no successful-download records are copied into the default journal.
+
+For a small daily summary, stream the retained records through Python (constant memory):
+
+```bash
+sudo journalctl --namespace=cache-origin-usage --identifier=cache_usage --since '24 hours ago' --output=cat |
+python3 -c '
+from collections import Counter
+import json, sys
+totals = Counter()
+for line in sys.stdin:
+    record = json.loads(line)
+    status = int(record["status"])
+    totals["requests"] += 1
+    totals["body_bytes"] += int(record["bytes"])
+    totals["successful_gets"] += record["method"] == "GET" and status in (200, 206)
+    totals["mapping_gets"] += record["method"] == "GET" and record["uri"].startswith("/r0/") and status == 200
+    totals["not_found"] += status == 404
+    totals["throttled"] += status == 429
+    totals["server_errors"] += status >= 500
+print(json.dumps(dict(totals), indent=2))
+'
+```
+
+These are retained request statistics, not counts of people or complete builds. Retries and
+partial restores create multiple requests; a client with local artifacts may make very few.
+Nonblocking syslog can lose records under pressure or a collector outage, and rotation removes
+older data, so use this for operational usage estimates rather than exact accounting. To keep
+long-term trends, export summaries before the underlying records rotate away.
+
 ## Validate, activate and roll back
 
 Back up the existing binary/configuration privately before applying a reviewed update. Install
 the binary and root-owned examples, run `systemd-analyze verify` and `nginx -t`, reload systemd,
 restart the publisher/nginx where group membership changed, and enable the GC, egress and
 health timers/services. Apply the journald policy and start/reload Fail2ban only after its
-filter matches an actual nginx failure record with the expected journal identifier.
+filter matches an actual nginx failure record with the expected journal identifier. Start the
+usage namespace before nginx and verify a real GET, HEAD and missing-object request produce
+valid records with matching bytes/status, without credentials or query strings. Inspect both
+journals to confirm isolation and the effective usage limits; rotate/restart only this namespace
+when testing persistence, preserving the security journal.
 
 Test trusted TLS, socket/hash-file permissions, missing/incorrect authentication, valid PUT and
 identical retry, conflicting mapping/artifact rejection, matching GET/HEAD, `no-store`, rejected
@@ -138,3 +208,5 @@ publication and the opt-in MIT-first/GCS-second mirror list during testing.
 References: [nginx request limits](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html),
 [connection limits](https://nginx.org/en/docs/http/ngx_http_limit_conn_module.html),
 [bcrypt/stdin options](https://httpd.apache.org/docs/2.4/programs/htpasswd.html).
+Usage fields and namespaces follow [nginx access logging](https://nginx.org/en/docs/http/ngx_http_log_module.html)
+and [systemd journal namespaces](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html).

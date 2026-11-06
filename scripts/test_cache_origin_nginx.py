@@ -5,6 +5,7 @@ No Lean, external listener, production credential or root access is required.
 """
 
 import base64
+from datetime import datetime
 import hashlib
 import io
 import json
@@ -74,6 +75,10 @@ class RealNginxCacheTests(unittest.TestCase):
         self.syslog.bind(("127.0.0.1", 0))
         self.syslog.settimeout(0.1)
         self.addCleanup(self.syslog.close)
+        self.usage_syslog = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.usage_syslog.bind(("127.0.0.1", 0))
+        self.usage_syslog.settimeout(0.1)
+        self.addCleanup(self.usage_syslog.close)
         self.start([self.origin_bin, "serve", "--root", str(self.store), "--socket", str(self.socket)], "origin")
         self.wait_for(lambda: self.socket.exists(), "origin socket")
 
@@ -93,6 +98,8 @@ class RealNginxCacheTests(unittest.TestCase):
             # avoids needing a system journal while exercising nginx's parser.
             "syslog:server=unix:/dev/log":
                 f"syslog:server=127.0.0.1:{self.syslog.getsockname()[1]}",
+            "syslog:server=unix:/run/systemd/journal.cache-origin-usage/dev-log":
+                f"syslog:server=127.0.0.1:{self.usage_syslog.getsockname()[1]}",
         }
         for old, new in replacements.items():
             self.assertIn(old, fragment)
@@ -211,6 +218,53 @@ class RealNginxCacheTests(unittest.TestCase):
         else:
             self.fail("No matching auth syslog message: " + repr(messages))
 
+    def usage_records(self):
+        records = []
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            try:
+                message = self.usage_syslog.recv(65535).decode()
+            except socket.timeout:
+                if records:
+                    break
+                continue
+            self.assertIn(" cache_usage: ", message)
+            records.append(json.loads(message.split(" cache_usage: ", 1)[1]))
+        self.assertTrue(records, "no usage records received")
+        for record in records:
+            self.assertEqual(set(record), {"time", "method", "uri", "status", "bytes", "seconds"})
+            datetime.fromisoformat(record["time"])
+            self.assertGreaterEqual(int(record["bytes"]), 0)
+            self.assertGreaterEqual(float(record["seconds"]), 0)
+        return records
+
+    def test_usage_logs_downloads_misses_and_bytes_without_secrets_or_oversized_records(self):
+        contents = b"usage fixture\n"
+        directory, _, mapping, mapping_bytes = self.publication("e" * 40, {1: contents})
+        self.publish(directory)
+        artifact = f"/a0/{SCOPE}/{1:016x}.art"
+        missing = f"/a0/{SCOPE}/{2:016x}.art"
+        credentials = self.user + ":" + self.password
+        self.assertEqual(self.request("GET", artifact + "?secret-query=omit", credentials=credentials)[0], 200)
+        self.assertEqual(self.request("HEAD", artifact)[0], 200)
+        self.assertEqual(self.request("GET", "/" + mapping)[0], 200)
+        self.assertEqual(self.request("GET", missing)[0], 404)
+        self.assertEqual(self.request("GET", "/usage-%22-%5C?secret-query=omit")[0], 404)
+        self.assertEqual(self.request("GET", "/private-path-" + "x" * 3000)[0], 404)
+        records = self.usage_records()
+        get = next(r for r in records if r["uri"] == artifact and r["method"] == "GET")
+        head = next(r for r in records if r["uri"] == artifact and r["method"] == "HEAD")
+        self.assertEqual((get["status"], int(get["bytes"])), ("200", len(contents)))
+        self.assertEqual((head["status"], int(head["bytes"])), ("200", 0))
+        mapped = next(r for r in records if r["uri"] == "/" + mapping)
+        self.assertEqual(int(mapped["bytes"]), len(mapping_bytes))
+        self.assertTrue(any(r["uri"] == missing and r["status"] == "404" for r in records))
+        self.assertGreaterEqual(sum(r["uri"] == "/other" and r["status"] == "404" for r in records), 2)
+        serialized = json.dumps(records)
+        for private in ("secret-query", self.user, self.password, "Authorization", "private-path", "usage-"):
+            self.assertNotIn(private, serialized)
+        self.assertTrue(all(len(json.dumps(record)) < 1024 for record in records))
+
     def test_publication_downloads_and_immediate_gc(self):
         revision_a, revision_b = "a" * 40, "b" * 40
         stage_a, body_a, map_a, map_a_bytes = self.publication(revision_a, {1: b"shared", 2: b"old unique"})
@@ -283,6 +337,9 @@ class RealNginxCacheTests(unittest.TestCase):
         self.assertIn(" 401 PUT ", lines)
         self.assertNotIn(" 429 ", lines)
         self.assertNotIn(self.password, lines)
+        # Usage still counts rejected requests without flooding the error sink.
+        records = self.usage_records()
+        self.assertTrue(any(r["status"] == "429" and r["method"] == "PUT" for r in records))
 
     def test_simultaneous_upload_connection_limit(self):
         tls = ssl.create_default_context(cafile=str(self.cert))

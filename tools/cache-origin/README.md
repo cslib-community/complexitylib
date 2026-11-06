@@ -18,6 +18,8 @@ applies while a key is present; GC does not retain a permanent ledger, and an au
 can republish a collected key. There is no claim of safety against a malicious writer or origin.
 See the [security contract, incident recovery and milestone scope](SECURITY.md) before activation.
 The [operator runbook](OPERATIONS.md) covers identities, credentials, limits, email alerts and updates.
+It also covers [usage statistics](OPERATIONS.md#usage-statistics): a separate bounded journal of
+downloads, misses, response bytes and durations, with commands to inspect and summarize requests.
 
 ## MIT deployment status
 
