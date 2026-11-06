@@ -248,7 +248,7 @@ theorem computableInPolyTime_intervalStart :
 /-- Read the polynomial system with the existing binary variable encoding. -/
 @[fun_prop]
 theorem computableInPolyTime_equations :
-    ComputableInPolyTime equations encBranchEvalInput encSys := by
+    ComputableInPolyTime equations encBranchEvalInput (encList (encList (encList encNat))) := by
   unfold equations encBranchEvalInput
   fun_prop
 
