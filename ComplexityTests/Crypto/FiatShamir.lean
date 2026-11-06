@@ -102,7 +102,7 @@ example : (81 / 242 : ℝ) ≤ Game.succProbability (oneWayGame (schnorrKeyGen (
     (fun α u => α • (2 : ZMod 11) = u)
     (FiatShamir.reduction (Function.Embedding.refl _) (schnorr ι (2 : ZMod 11))
       (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2) id ι)
-      (linearExtract ι) knower 0 1)) := by
+      (linearExtract ι) 0 knower 0 1)) := by
   have h := schnorr_succProbability_eufCmaGame_le (ι := ι) (g := (2 : ZMod 11)) (by decide)
     knower knower_callBounded
   have hknower : Game.succProbability (eufCmaGame (fiatShamir (M := Bool)
@@ -113,7 +113,7 @@ example : (81 / 242 : ℝ) ≤ Game.succProbability (oneWayGame (schnorrKeyGen (
     (fun α u => α • (2 : ZMod 11) = u)
     (FiatShamir.reduction (Function.Embedding.refl _) (schnorr ι (2 : ZMod 11))
       (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2) id ι)
-      (linearExtract ι) knower 0 1)) : ℝ) with hε
+      (linearExtract ι) 0 knower 0 1)) : ℝ) with hε
   have hε0 : 0 ≤ ε := NNReal.coe_nonneg _
   simp only [Nat.cast_zero, zero_mul, zero_div, zero_add, Nat.cast_one,
     show (1 : ℝ) + 1 = 2 by norm_num] at h
@@ -187,7 +187,7 @@ example :
           (oneWayGame (schnorrKeyGen (2 : ZMod 11)) (fun α u => α • (2 : ZMod 11) = u)
             (FiatShamir.reduction extendedHashPoint (schnorr ι (2 : ZMod 11))
               (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2)
-                id ι) (linearExtract ι) extendedForger 0 4))) := by
+                id ι) (linearExtract ι) 0 extendedForger 0 4))) := by
   have hcommit : ∀ key ∈ (schnorrKeyGen (2 : ZMod 11)).support, ∀ t,
       ((schnorr ι (2 : ZMod 11)).commit key.1 key.2).map Prod.fst t ≤ (11 : ℝ≥0)⁻¹ := by
     intro key _ t
@@ -196,7 +196,39 @@ example :
   have h := succProbability_eufCmaGame_le extendedHashPoint
     (fun _ h => mem_support_schnorrKeyGen h)
     (schnorr_specialSoundness.specialSoundOn (schnorrKeyGen 2)) schnorr_specialHVZK
-    hcommit extendedForger extendedForger_bound
+    hcommit 0 extendedForger extendedForger_bound
   simpa only [Nat.cast_zero, Nat.cast_ofNat] using h
+
+-- An intentionally rejecting protocol forces the fork to fail. The supplied result is returned
+-- literally, with no witness-relation premise and no hidden choice of a different value.
+private noncomputable def rejecting : SigmaProtocol ℕ Unit Unit Bool Unit where
+  State := Unit
+  commit _ _ := PMF.pure ((), ())
+  respond _ _ _ _ := ()
+  verify _ _ _ _ := false
+
+private noncomputable def emptyForger : Forger Unit Unit (Unit × Unit) (Unit × Unit) Bool where
+  Coins := Unit
+  coins := PMF.pure ()
+  forge _ _ := pure ((), (), ())
+
+private theorem reduction_rejecting (fallback : ℕ) :
+    FiatShamir.reduction (Function.Embedding.refl _) rejecting
+      (fun _ _ => PMF.pure ((), ())) (fun _ _ _ _ _ _ => 0) fallback emptyForger 0 0 () =
+      PMF.pure fallback := by
+  simp [FiatShamir.reduction, FiatShamir.coins, Forking.fork, OracleComp.forkingAlgorithm,
+    FiatShamir.forkingProgram, FiatShamir.finish, FiatShamir.verdict, emptyForger,
+    rejecting, OracleComp.validIndex, OracleComp.forkNamedPosition,
+    OracleComp.runWithAnswersOutput, PMF.iid]
+
+example :
+    FiatShamir.reduction (Function.Embedding.refl _) rejecting
+      (fun _ _ => PMF.pure ((), ())) (fun _ _ _ _ _ _ => 0) 2 emptyForger 0 0 () ≠
+    FiatShamir.reduction (Function.Embedding.refl _) rejecting
+      (fun _ _ => PMF.pure ((), ())) (fun _ _ _ _ _ _ => 0) 7 emptyForger 0 0 () := by
+  simp only [reduction_rejecting]
+  intro h
+  have hprob := congrArg (fun law : PMF ℕ => law 2) h
+  norm_num [PMF.pure_apply] at hprob
 
 end ComplexityTests.Crypto.FiatShamir
