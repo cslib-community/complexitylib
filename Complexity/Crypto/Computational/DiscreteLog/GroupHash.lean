@@ -28,7 +28,7 @@ import Complexity.Tactic.PolyTime
 # Discrete-logarithm collision-resistant hash families
 
 Over a `PrimeOrderGroupFamily`, Katz and Lindell's fixed-length discrete-logarithm compression
-function ([KatzLindell2020], Section 9.4.2, Construction 9.78 and Theorem 9.79, pp. 340–342;
+function ([KatzLindell2020], Section 9.4.2, Construction 9.78 and Theorem 9.79, pp. 357–359;
 [BonehShoup2023], Section 8.5.1) samples a group description `d ← setup n` and a uniform group
 element `h = α • g` (`groupHashSetup`), and hashes a `2 * blockLen d`-bit input `x` by splitting
 `x` into two `blockLen d`-bit halves `(x₁, x₂)` (read as natural numbers in little-endian binary via
@@ -43,8 +43,8 @@ This yields an exact zero-loss reduction
 (`succProbability_collisionGameFor_groupHash_le_discreteLogGame`) showing that `F.DiscreteLog setup`
 implies `CollisionResistantForOn` for `groupHash` (`DiscreteLog.collisionResistantForOn_groupHash`).
 
-We also formalize the multi-generator vector generalization ([KatzLindell2020], Construction 9.81
-and Exercise 9.28, pp. 342, 362), `multiGeneratorHash d hs xs = ∑ i, xs i • hs i`, together with
+We also formalize the algebraic core of the multi-generator generalization ([KatzLindell2020],
+Exercise 9.28, Construction 9.81, p. 363), `multiGeneratorHash d hs xs = ∑ i, xs i • hs i`, with
 its linear homomorphisms and coordinate-wise discrete-logarithm extraction identity
 (`multiGeneratorHash_extract_of_eq`).
 
@@ -59,7 +59,7 @@ its linear homomorphisms and coordinate-wise discrete-logarithm extraction ident
 * `Cslib.Crypto.PrimeOrderGroupFamily.groupHashToDLAdversary`: discrete-logarithm reduction from a
   `groupHash` collision finder via `pedersenExtractNat`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash`: multi-generator vector hash
-  `∑ i, xs i • hs i` ([KatzLindell2020], Construction 9.81).
+  `∑ i, xs i • hs i` (algebraic core of [KatzLindell2020], Construction 9.81).
 
 ## Main results
 
@@ -71,22 +71,23 @@ its linear homomorphisms and coordinate-wise discrete-logarithm extraction ident
   of the domain test and compression function when `blockLen` is polynomial-time in unary.
 * `Cslib.Crypto.PrimeOrderGroupFamily.pedersenExtractNat_eq_of_isCollisionFor_groupHash`: any valid
   `groupHash` collision under `h = α • g` when `2 ^ blockLen d ≤ F.order d` recovers `α`.
-* `PrimeOrderGroupFamily.succProbability_collisionGameFor_groupHash_le_discreteLogGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_groupHashToDLAdversary`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.DiscreteLog.collisionResistantForOn_groupHash`: exact
-  zero-loss reduction and collision resistance under the discrete-logarithm assumption
+* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_groupHashToDLAdversary`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.DiscreteLog.collisionResistantForOn_groupHash`, and
+  `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_collisionGameFor_groupHash_le_discreteLogGame`
+  — exact zero-loss reduction and collision resistance under the discrete-logarithm assumption
   ([KatzLindell2020], Theorem 9.79).
 * `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash_add`,
   `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash_smul`,
   `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash_smul_generator_eq_iff`,
   `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash_extract_of_eq`: algebraic laws and
   coordinate discrete-logarithm extraction for `multiGeneratorHash`
-  ([KatzLindell2020], Exercise 9.28).
+  (ingredients of the proof of [KatzLindell2020], Exercise 9.28(a); not proved here).
 
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*, 3rd ed.][KatzLindell2020],
-  Section 9.4.2 (Constructions 9.78 and 9.81, Theorem 9.79, and Exercise 9.28, pp. 340–342, 362).
+  Section 9.4.2 (Construction 9.78 and Theorem 9.79, pp. 357–359) and Exercise 9.28
+  (Construction 9.81, p. 363).
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
   Version 0.6][BonehShoup2023], Section 8.5.1.
 -/
@@ -103,7 +104,7 @@ variable (F : PrimeOrderGroupFamily)
 /-! ### Fixed-length discrete-logarithm compression family (Construction 9.78 & Theorem 9.79) -/
 
 /-- Setup distribution for the discrete-logarithm hash family ([KatzLindell2020],
-Construction 9.78, p. 340): draw `d ← setup n` and a uniform exponent
+Construction 9.78, p. 358): draw `d ← setup n` and a uniform exponent
 `α ← PMF.uniformOfFintype (ZMod (F.order d))`, and output the public parameter
 `(d, F.encode d (α • F.generator d))`. -/
 noncomputable def groupHashSetup (setup : ℕ → PMF F.Desc) (n : ℕ) :
@@ -124,7 +125,7 @@ theorem validGroupHashInput_eq_true_iff (blockLen : F.Desc → ℕ) (n : ℕ)
     F.validGroupHashInput blockLen n pk x = true ↔ x.length = 2 * blockLen pk.1 :=
   beq_iff_eq
 
-/-- Fixed-length discrete-logarithm hash function ([KatzLindell2020], Construction 9.78, p. 340):
+/-- Fixed-length discrete-logarithm hash function ([KatzLindell2020], Construction 9.78, p. 358):
 given public parameter `pk = (d, h)` and input `x : List Bool`, split `x` at `w = blockLen d` into
 `(x.take w, x.drop w)` and evaluate
 `F.encodePedersenCommit (d, h, ofBits (x.take w), ofBits (x.drop w))`. -/
@@ -182,9 +183,10 @@ private theorem ofBits_injective_of_length_eq {u v : List Bool} (hlen : u.length
   apply Cslib.BitString.lsbValue_injective hlen
   simpa only [ofBits, ← Cslib.BitString.lsbValue_eq_foldr_bit] using heq
 
-/-- **Collision extraction for `groupHash`** ([KatzLindell2020], Theorem 9.79, p. 341): if
-`2 ^ blockLen d ≤ F.order d`, any valid collision `(x, y)` for `groupHash blockLen` under
-`(d, F.encode d (α • F.generator d))` recovers `α` via `pedersenExtractNat`. -/
+/-- **Collision extraction for `groupHash`** (step 2 of the proof of [KatzLindell2020],
+Theorem 9.79, pp. 358–359): if `2 ^ blockLen d ≤ F.order d`, any valid collision `(x, y)` for
+`groupHash blockLen` under `(d, F.encode d (α • F.generator d))` recovers `α` via
+`pedersenExtractNat`. -/
 theorem pedersenExtractNat_eq_of_isCollisionFor_groupHash (blockLen : F.Desc → ℕ)
     (n : ℕ) (d : F.Desc) (α : ZMod (F.order d)) {x y : List Bool}
     (hsize : 2 ^ blockLen d ≤ F.order d)
@@ -244,7 +246,7 @@ theorem pedersenExtractNat_eq_of_isCollisionFor_groupHash (blockLen : F.Desc →
 
 /-- Turn a `groupHash` collision finder into a discrete-logarithm adversary by splitting the two
 candidate colliding words at `blockLen d` and extracting `pedersenExtractNat` in binary
-([KatzLindell2020], Theorem 9.79, pp. 341–342). -/
+([KatzLindell2020], Theorem 9.79, pp. 358–359). -/
 def groupHashToDLAdversary (blockLen : F.Desc → ℕ)
     (adversary : CollisionFinderFor (F.Desc × List Bool))
     (n : ℕ) (pk : F.Desc × List Bool) : ProbComp (List Bool) := do
@@ -255,7 +257,7 @@ def groupHashToDLAdversary (blockLen : F.Desc → ℕ)
     (ofBits (pair.2.take w)) (ofBits (pair.2.drop w))).bits
 
 /-- **Exact collision-to-discrete-logarithm reduction** ([KatzLindell2020], Theorem 9.79,
-pp. 341–342): whenever every group `d` in the support of `setup n` satisfies
+pp. 358–359): whenever every group `d` in the support of `setup n` satisfies
 `2 ^ blockLen d ≤ F.order d`, the collision-finding success probability of `adversary` in
 `collisionGameFor (F.groupHashSetup setup) (F.groupHash blockLen) (F.validGroupHashInput blockLen)`
 is at most the discrete-logarithm success probability of
@@ -347,7 +349,7 @@ theorem isPPTOn_groupHashToDLAdversary {blockLen : F.Desc → ℕ}
   exact hextract.isPPTOn
 
 /-- **Collision resistance of the discrete-logarithm hash family under the discrete-logarithm
-assumption** ([KatzLindell2020], Section 9.4.2, Theorem 9.79, pp. 341–342): if
+assumption** ([KatzLindell2020], Section 9.4.2, Theorem 9.79, pp. 358–359): if
 `F.DiscreteLog setup` holds, `blockLen` is computable in polynomial time in unary, and
 `2 ^ blockLen d ≤ F.order d` for every supported group `d ∈ (setup n).support` at all sufficiently
 large `n`, then `F.groupHash blockLen` is collision-resistant on `F.validGroupHashInput blockLen`
@@ -367,11 +369,13 @@ theorem DiscreteLog.collisionResistantForOn_groupHash {F : PrimeOrderGroupFamily
   exact F.succProbability_collisionGameFor_groupHash_le_discreteLogGame
     setup blockLen adversary n hn
 
-/-! ### Multi-generator discrete-logarithm vector hash (Construction 9.81 & Exercise 9.28) -/
+/-! ### Algebraic core of the multi-generator hash (Construction 9.81, Exercise 9.28) -/
 
-/-- Algebraic multi-generator discrete-logarithm vector hash ([KatzLindell2020], Section 9.4.2,
-Construction 9.81 and Exercise 9.28, pp. 342, 362): given generators `hs : ι → F.Carrier d` and a
-scalar vector `xs : ι → ZMod (F.order d)`, compute `∑ i, xs i • hs i`. -/
+/-- Algebraic multi-generator discrete-logarithm vector hash ([KatzLindell2020], Exercise 9.28,
+Construction 9.81, p. 363; algebraic core only: `hs` is arbitrary, whereas KL's `Gen` fixes
+`h₁ = g` and samples the other `hᵢ` uniformly, and no key generation or game is defined here):
+given generators `hs : ι → F.Carrier d` and a scalar vector `xs : ι → ZMod (F.order d)`, compute
+`∑ i, xs i • hs i`. -/
 def multiGeneratorHash {ι : Type*} [Fintype ι] (d : F.Desc)
     (hs : ι → F.Carrier d) (xs : ι → ZMod (F.order d)) : F.Carrier d :=
   ∑ i, xs i • hs i
@@ -389,6 +393,7 @@ theorem multiGeneratorHash_add {ι : Type*} [Fintype ι] (d : F.Desc)
       F.multiGeneratorHash d hs xs + F.multiGeneratorHash d hs ys := by
   simp only [multiGeneratorHash, Pi.add_apply, add_smul, Finset.sum_add_distrib]
 
+/-- **Subtractive homomorphism of `multiGeneratorHash`**. -/
 theorem multiGeneratorHash_sub {ι : Type*} [Fintype ι] (d : F.Desc)
     (hs : ι → F.Carrier d) (xs ys : ι → ZMod (F.order d)) :
     F.multiGeneratorHash d hs (xs - ys) =
@@ -420,9 +425,9 @@ theorem multiGeneratorHash_smul_generator_eq_iff {ι : Type*} [Fintype ι] (d : 
   exact (F.smul_generator_injective d).eq_iff
 
 /-- **Coordinate discrete-logarithm extraction from a `multiGeneratorHash` collision**
-([KatzLindell2020], Exercise 9.28, p. 362): if `xs` and `ys` collide under
-`hs i = αs i • F.generator d` and differ at coordinate `j` (`ys j ≠ xs j`), then the discrete
-logarithm `αs j` is given by
+(ingredient of the proof of [KatzLindell2020], Exercise 9.28(a), p. 363): if `xs` and `ys`
+collide under `hs i = αs i • F.generator d` and differ at coordinate `j` (`ys j ≠ xs j`), then the
+discrete logarithm `αs j` is given by
 `(ys j - xs j)⁻¹ * ∑ i ∈ Finset.univ.erase j, (xs i - ys i) * αs i`. -/
 theorem multiGeneratorHash_extract_of_eq {ι : Type*} [Fintype ι] [DecidableEq ι]
     (d : F.Desc) (αs xs ys : ι → ZMod (F.order d)) {j : ι} (hj : ys j ≠ xs j)

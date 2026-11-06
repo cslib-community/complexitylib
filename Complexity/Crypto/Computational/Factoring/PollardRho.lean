@@ -7,12 +7,10 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
-public import Complexity.Crypto.Computational.DiscreteLog
+public import Cslib.Init
 public import Mathlib.Data.Int.GCD
 public import Mathlib.Data.Nat.ModEq
 public import Mathlib.Data.ZMod.Basic
-import Complexity.Probability.PMF
-import Complexity.Probability.PMF.Uniform
 import Mathlib.Algebra.Order.Ring.Nat
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Tactic.Ring
@@ -43,6 +41,9 @@ whether $d = \gcd(|x_t - y_t|, N)$ is a nontrivial divisor $1 < d < N$:
    at indices $i < j$ implies a tortoise-and-hare collision
    $F^{[t]}(x) \equiv F^{[2t]}(x) \pmod p$ at some step $1 \le t \le j$.
 
+The birthday-bound analysis (via [KatzLindell2020], Lemma A.15) and the heuristic
+$O(N^{1/4} \cdot \mathrm{polylog}(N))$ running time are not formalised here.
+
 ## Main definitions
 
 * `Cslib.Crypto.rhoGcd`: candidate GCD `(((a : ZMod N).val : ℤ) - (b : ZMod N).val).natAbs.gcd N`
@@ -50,8 +51,6 @@ whether $d = \gcd(|x_t - y_t|, N)$ is a nontrivial divisor $1 < d < N$:
 * `Cslib.Crypto.IsNontrivialFactor`: predicate `d ∣ N ∧ 1 < d ∧ d < N`.
 * `Cslib.Crypto.rhoFactorLoop`: `B`-step Floyd tortoise-and-hare loop of Pollard's rho algorithm
   ([KatzLindell2020], Algorithm 10.2, p. 369).
-* `Cslib.Crypto.pollardRhoDist`: output distribution of Pollard's rho algorithm starting from a
-  uniform initial unit `x₀ ← PMF.uniformOfFintype (ZMod N)ˣ`.
 
 ## Main results
 
@@ -65,20 +64,17 @@ whether $d = \gcd(|x_t - y_t|, N)$ is a nontrivial divisor $1 < d < N$:
   congruent modulo a proper factor `p ∣ N` yields a nontrivial divisor via `rhoGcd`.
 * `Cslib.Crypto.floyd_cycle_modEq`: Floyd's tortoise-and-hare cycle-detection theorem for
   congruence-compatible walks modulo `p`.
-* `Cslib.Crypto.pollardRho_spec`: combined soundness, failure characterization, modulo-`p` GCD
-  extraction, and Floyd cycle-detection theorem.
 
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*, 3rd ed.][KatzLindell2020],
-  Section 10.1.2 (Pollard's Rho Algorithm, Algorithm 10.2, pp. 368–369).
+  Section 10.1.2 (Pollard's Rho Algorithm, Algorithm 10.2, pp. 368–369) and Section 6.4.2
+  (Algorithm 6.9, p. 180, the small-space cycle-finding technique credited to Floyd).
 -/
 
 @[expose] public section
 
 namespace Cslib.Crypto
-
-open Probability
 
 /-- Candidate divisor `gcd(|a - b|, N)` computed at each step of Pollard's rho algorithm
 ([KatzLindell2020], Algorithm 10.2, p. 369). -/
@@ -103,13 +99,6 @@ def rhoFactorLoop (N : ℕ) (F : (ZMod N)ˣ → (ZMod N)ˣ) :
     let y' := F (F y)
     let d := rhoGcd N x' y'
     if 1 < d ∧ d < N then some d else rhoFactorLoop N F B x' y'
-
-/-- Output distribution of Pollard's rho algorithm ([KatzLindell2020], Algorithm 10.2, p. 369):
-sample a uniform starting unit `x₀ ← PMF.uniformOfFintype (ZMod N)ˣ` and run
-`rhoFactorLoop N F B x₀ x₀`. -/
-noncomputable def pollardRhoDist (N : ℕ) [NeZero N] (F : (ZMod N)ˣ → (ZMod N)ˣ) (B : ℕ) :
-    PMF (Option ℕ) :=
-  (PMF.uniformOfFintype (ZMod N)ˣ).map fun x₀ => rhoFactorLoop N F B x₀ x₀
 
 /-! ### Soundness and exact failure characterization -/
 
@@ -239,7 +228,8 @@ theorem isNontrivialFactor_rhoGcd_of_modEq {N p : ℕ} (hpN : p ∣ N) (hp1 : 1 
 
 /-! ### Floyd's tortoise-and-hare cycle-detection theorem -/
 
-/-- **Floyd's cycle-detection persistence theorem** ([KatzLindell2020], Section 10.1.2, p. 369):
+/-- **Floyd's cycle-detection persistence theorem** (the technique of [KatzLindell2020],
+Section 6.4.2, Algorithm 6.9, p. 180, as used for Pollard's rho in Section 10.1.2, p. 369):
 if `F` is congruence-compatible modulo `p`, then any collision
 `(F^[i] x : ZMod N).val ≡ (F^[j] x : ZMod N).val [MOD p]` at indices `i < j` implies that there
 exists a step `1 ≤ t ≤ j` at which the tortoise `F^[t] x` and hare `F^[2 * t] x` collide
@@ -287,40 +277,5 @@ theorem floyd_cycle_modEq {N p : ℕ} {F : (ZMod N)ˣ → (ZMod N)ˣ}
     rw [Nat.mul_succ]; omega
   rw [e1, e2] at h
   exact h
-
-/-- **Combined specification of Pollard's rho factoring algorithm** ([KatzLindell2020],
-Section 10.1.2, Algorithm 10.2, pp. 368–369): for a semiprime `N = p * q` (`p, q` prime),
-1. Every factor `d` returned by `rhoFactorLoop N F B x₀ x₀` is a nontrivial divisor of `N` and
-   satisfies `d = p ∨ d = q`.
-2. `rhoFactorLoop N F B x₀ x₀ = none` iff no step `1 ≤ t ≤ B` produces a nontrivial GCD between
-   `F^[t] x₀` and `F^[2 * t] x₀`.
-3. Any distinct pair `a ≠ b` in `(ZMod N)ˣ` with `a ≡ b (mod p)` yields a nontrivial divisor via
-   `rhoGcd N a b`.
-4. For any congruence-compatible step map `F` modulo `p`, a collision modulo `p` at `i < j` forces
-   a tortoise-and-hare collision modulo `p` at some `1 ≤ t ≤ j`. -/
-theorem pollardRho_spec {N p q : ℕ} (hp : p.Prime) (hq : q.Prime) (hN : N = p * q)
-    (F : (ZMod N)ˣ → (ZMod N)ˣ) (B : ℕ) :
-    (∀ x₀ d, rhoFactorLoop N F B x₀ x₀ = some d →
-      IsNontrivialFactor N d ∧ (d = p ∨ d = q)) ∧
-    (∀ x₀, rhoFactorLoop N F B x₀ x₀ = none ↔
-      ∀ t, 1 ≤ t → t ≤ B →
-        ¬ IsNontrivialFactor N (rhoGcd N (F^[t] x₀) (F^[2 * t] x₀))) ∧
-    (∀ a b : (ZMod N)ˣ, a ≠ b → (a : ZMod N).val ≡ (b : ZMod N).val [MOD p] →
-      IsNontrivialFactor N (rhoGcd N a b)) ∧
-    ((∀ u v : (ZMod N)ˣ,
-        (u : ZMod N).val ≡ (v : ZMod N).val [MOD p] →
-          (F u : ZMod N).val ≡ (F v : ZMod N).val [MOD p]) →
-      ∀ x₀ i j, i < j →
-        (F^[i] x₀ : ZMod N).val ≡ (F^[j] x₀ : ZMod N).val [MOD p] →
-        ∃ t, 1 ≤ t ∧ t ≤ j ∧
-          (F^[t] x₀ : ZMod N).val ≡ (F^[2 * t] x₀ : ZMod N).val [MOD p]) := by
-  subst hN
-  have : NeZero (p * q) := ⟨Nat.mul_ne_zero hp.ne_zero hq.ne_zero⟩
-  refine ⟨fun x₀ d h => ⟨isNontrivialFactor_of_rhoFactorLoop_eq_some h,
-      eq_prime_of_rhoFactorLoop_eq_some hp hq h⟩,
-    rhoFactorLoop_start_eq_none_iff (p * q) F B,
-    fun a b hne hmod =>
-      isNontrivialFactor_rhoGcd_of_modEq (dvd_mul_right p q) hp.one_lt hne hmod,
-    fun hF x₀ i j hij hcoll => floyd_cycle_modEq hF hij hcoll⟩
 
 end Cslib.Crypto
