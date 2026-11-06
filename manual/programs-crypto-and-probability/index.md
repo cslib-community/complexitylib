@@ -570,7 +570,7 @@ these obligations; the accounting lemma below does **not** complete the theorem.
   Expected cost is at most
   $c_+\sum_{t=0}^{u-1}\Pr[\mathrm{Bin}(t,p_-)<r_a]$
   and hence at most $c_+\min(u,r_a/p_-)$. Reached-turn probabilities, stopping,
-  and the negative-binomial mean bound must be derived.
+  and the infinite-execution stopping-time interpretation remains to be derived.
 - Universal lower assumptions quantify over every selection-only policy's reached
   histories and selected batches. Revealed progress means growth of the union of
   **all valid proposed sets**, including unretained proposals. Its conditional
@@ -648,9 +648,25 @@ These results cover finite response alphabets and finite horizons. `accruedBill`
 `historyExpectation_accruedBill` identifies their expectation with the recursion
 using conditional mean bills. `accruedBill_le_binomial_sum` applies the same
 bound directly to these actual accumulated bills, allowing response/cost
-correlation. Selected-batch disintegration and physical latency remain open. The negative-binomial mean,
-deadline/certification composition and universal selection-only policy theorem
-remain open. The
+correlation. `binomialFailure` is a survival observable of the existing Mathlib
+binomial law. For $p>0$, `sum_binomialFailure_le` bounds every finite tail sum by
+$r/p$, and `tsum_binomialFailure` proves that the infinite series equals $r/p$.
+Summability is proved first; no mean, limit or integrability target is assumed.
+The endpoint $p=1$ and zero required successes are included; $p=0$ is excluded.
+`accruedBill_le_mean` consequently bounds every finite actual response-bill
+expectation by $cr/p$. The complete client above checks certain productivity,
+a nontrivial two-success mean, and the correlated execution's bound for every horizon.
+
+`summable_noncompletion` derives summability of actual finite-horizon failure
+probabilities, hence convergence to zero via `Summable.tendsto_atTop_zero`.
+For nonnegative response bills, `expectedBills_summable_le` proves summability of
+the marginal expected charges and bounds their series by $cr/p$. Its partial
+sums equal finite accrued-bill expectations by the tower identity and converge by
+`Summable.hasSum`. These results establish a finite expected-charge series, but
+do not construct an infinite path-space law or identify its total-bill random
+variable. Almost-sure termination and integrability on that space remain open.
+Selected-batch disintegration, physical latency, deadline/certification composition
+and the universal selection-only policy theorem remain open. The
 pathwise dual certificate is proved, but its joint stopped resource event is not.
 
 The remaining Theorem 5 obligations above, including stopped execution and universal

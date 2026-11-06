@@ -50,8 +50,11 @@ family carries the local dual certificate. The universal revealed-cover observab
 is not yet composed with a universal selection-only machine/output model or the
 lower-cost accounting theorem. Actual retained-completion reach bounds and the finite stopped conditional-mean
 bill sum are proved. Response-dependent accrued bills are connected by the finite tower identity.
-Selected-batch disintegration, negative-binomial
-mean, joint latency/certification and universal policy/resource
+The binomial survival series now has derived sum `r/p` for `p>0`; every finite actual
+response-bill expectation is bounded by `c*r/p`. Noncompletion probabilities and
+nonnegative marginal expected bills are summable. An infinite path-space stopping-time
+construction and its a.s. termination/integrability bridge remain unproved.
+Selected-batch disintegration, joint latency/certification and universal policy/resource
 composition remain open; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
 claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.

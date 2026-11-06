@@ -139,4 +139,34 @@ theorem actual_stopped_unit_cost :
   simpa only [Cslib.Optimization.OneConstraint.Distribution.mean_const]
     using stopped_unit_cost
 
+/-- Certain productivity has exactly the deterministic waiting time, including zero. -/
+example (r : ℕ) : ∑' t, binomialFailure 1 r t = r := by
+  simpa using tsum_binomialFailure ⟨1, by norm_num, by norm_num⟩ (by norm_num) r
+
+/-- Positive but imperfect productivity: two required successes take eight turns in mean. -/
+example : ∑' t, binomialFailure (1 / 4) 2 t = (8 : ℝ) := by
+  have h := tsum_binomialFailure ⟨1 / 4, by norm_num, by norm_num⟩ (by norm_num) 2
+  norm_num at h ⊢
+  exact h
+
+/-- The actual correlated response execution satisfies the horizon-uniform bill bound. -/
+theorem actual_bill_bound (n : ℕ) :
+    historyExpectation StochasticOracleAdaptiveComparisonTests.law
+      (accruedBill (fun h _ =>
+        if toy.covered (selected toy 1 proposals h) = toy.ground then 0 else 1))
+      n [] ≤ (4 : ℝ) := by
+  have h := accruedBill_le_mean toy 1 proposals
+    StochasticOracleAdaptiveComparisonTests.law 1 1 n (by norm_num [toy])
+    ⟨1 / 4, by norm_num, by norm_num⟩ (by norm_num) (by
+      intro h
+      by_cases hh : true ∈ h <;>
+        simp [productive_eq, StochasticOracleAdaptiveComparisonTests.law, hh,
+          Cslib.Optimization.OneConstraint.pair_mean]; norm_num)
+    (fun h _ => if toy.covered (selected toy 1 proposals h) = toy.ground then 0 else 1)
+    1 (by norm_num) (by
+      intro h
+      simp only [Cslib.Optimization.OneConstraint.Distribution.mean_const, one_mul, le_refl])
+  norm_num at h ⊢
+  exact h
+
 end StochasticOracleAdaptiveSelectionTests

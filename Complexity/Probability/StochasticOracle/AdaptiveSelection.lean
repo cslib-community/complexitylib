@@ -27,6 +27,8 @@ assumed. This is a finite semantic execution, without machine resource certifica
 * `reach_le_binomial_complement`: retained-completion stopping bounds reached turns.
 * `historyExpectation_accruedBill`: finite tower identity for response-dependent bills.
 * `accruedBill_le_binomial_sum`: the finite stopped expected token-cost sum.
+* `accruedBill_le_mean`: its horizon-uniform `c * r / p` bound for positive `p`.
+* `expectedBills_summable_le`: derived finiteness of the marginal expected-bill series.
 
 The cost and reach results formalize the finite-sum step of Appendix A.5.
 They do not establish the negative-binomial mean or any infinite-horizon limit.
@@ -382,7 +384,7 @@ theorem reach_le_binomial_complement {Ω : Type} [Fintype Ω]
 open scoped Classical in
 /-- The finite stopped token-cost bound of Appendix A.5, derived from actual
 retained-set reach probabilities and conditional mean bills. No expected-total-cost
-bound is a premise. This does not yet bound the tail sum by the untruncated mean. -/
+bound is a premise. See `accruedBill_le_mean` for the derived untruncated-mean bound. -/
 theorem stoppedCost_le_binomial_sum {Ω : Type} [Fintype Ω]
     (I : Instance E J) (ρ : ℝ)
     (proposal : List Ω → Ω → List (Finset J))
@@ -421,5 +423,83 @@ theorem accruedBill_le_binomial_sum {Ω : Type} [Fintype Ω]
         (1 - ∫ i, (if r ≤ i then (1 : ℝ) else 0) ∂ProbabilityTheory.binomial t p) := by
   rw [historyExpectation_accruedBill, accruedBill, zero_add]
   exact stoppedCost_le_binomial_sum I ρ proposal law a r n hr p hp _ c hc hb
+
+open scoped Classical in
+/-- The actual response-bill expectation is bounded by `c * r / p`, uniformly
+in the finite horizon, under the source's conditional productivity/cost bounds. -/
+theorem accruedBill_le_mean {Ω : Type} [Fintype Ω]
+    (I : Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J))
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (a r n : ℕ) (hr : I.ground.card ≤ a * r) (p : Set.Icc (0 : ℝ) 1)
+    (hp0 : 0 < (p : ℝ))
+    (hp : ∀ h, (p : ℝ) ≤ (law h).mean
+      (fun x => if productive I ρ proposal a h x then 1 else 0))
+    (bill : List Ω → Ω → ℝ) (c : ℝ) (hc : 0 ≤ c)
+    (hb : ∀ h, (law h).mean (bill h) ≤ c *
+      (if I.covered (selected I ρ proposal h) = I.ground then 0 else 1)) :
+    historyExpectation law (accruedBill bill) n [] ≤ c * ((r : ℝ) / p) := by
+  apply (accruedBill_le_binomial_sum I ρ proposal law a r n hr p hp bill c hc hb).trans
+  simp only [← binomialFailure_eq_complement, ← Finset.mul_sum]
+  exact mul_le_mul_of_nonneg_left (sum_binomialFailure_le p hp0 n r) hc
+
+open scoped Classical in
+/-- Actual noncompletion probabilities are summable, derived from the productivity
+condition. Consequently their limit is zero. This is a statement about consistent
+finite-horizon laws; it does not construct an infinite path-space measure. -/
+theorem summable_noncompletion {Ω : Type} [Fintype Ω]
+    (I : Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J))
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (a r : ℕ) (hr : I.ground.card ≤ a * r) (p : Set.Icc (0 : ℝ) 1)
+    (hp0 : 0 < (p : ℝ))
+    (hp : ∀ h, (p : ℝ) ≤ (law h).mean
+      (fun x => if productive I ρ proposal a h x then 1 else 0)) :
+    Summable (fun t => historyExpectation law
+      (fun h => if I.covered (selected I ρ proposal h) = I.ground then 0 else 1) t []) := by
+  apply (summable_binomialFailure p hp0 r).of_nonneg_of_le
+  · intro t
+    have hm := historyExpectation_mono law (fun _ => 0)
+      (fun h => if I.covered (selected I ρ proposal h) = I.ground then 0 else 1)
+      (fun h => by split_ifs <;> norm_num) t []
+    simpa only [historyExpectation_const] using hm
+  · intro t
+    rw [binomialFailure_eq_complement]
+    exact reach_le_binomial_complement I ρ proposal law a r t hr p hp
+
+open scoped Classical in
+/-- Nonnegative actual bills have a summable series of marginal expected charges,
+with total at most `c * r / p`. This derives finiteness before any limit passage.
+The finite tower identity identifies its partial sums with actual accrued-bill
+expectations. No infinite path-space random variable is asserted here. -/
+theorem expectedBills_summable_le {Ω : Type} [Fintype Ω]
+    (I : Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J))
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (a r : ℕ) (hr : I.ground.card ≤ a * r) (p : Set.Icc (0 : ℝ) 1)
+    (hp0 : 0 < (p : ℝ))
+    (hp : ∀ h, (p : ℝ) ≤ (law h).mean
+      (fun x => if productive I ρ proposal a h x then 1 else 0))
+    (bill : List Ω → Ω → ℝ) (c : ℝ) (hc : 0 ≤ c)
+    (hbn : ∀ h x, 0 ≤ bill h x)
+    (hb : ∀ h, (law h).mean (bill h) ≤ c *
+      (if I.covered (selected I ρ proposal h) = I.ground then 0 else 1)) :
+    Summable (fun t => historyExpectation law (fun h => (law h).mean (bill h)) t []) ∧
+    (∑' t, historyExpectation law (fun h => (law h).mean (bill h)) t []) ≤
+      c * ((r : ℝ) / p) := by
+  let f := fun t => historyExpectation law (fun h => (law h).mean (bill h)) t []
+  have hn : ∀ t, 0 ≤ f t := by
+    intro t
+    have hm : ∀ h, 0 ≤ (law h).mean (bill h) := by
+      intro h
+      exact Finset.sum_nonneg fun x _ => mul_nonneg ((law h).nonneg x) (hbn h x)
+    have hh := historyExpectation_mono law (fun _ => 0) _ hm t []
+    simpa only [historyExpectation_const] using hh
+  have hsum : ∀ n, ∑ t ∈ Finset.range n, f t ≤ c * ((r : ℝ) / p) := by
+    intro n
+    rw [← executionCost_eq_sum]
+    have ht := accruedBill_le_mean I ρ proposal law a r n hr p hp0 hp bill c hc hb
+    simpa only [historyExpectation_accruedBill, accruedBill, zero_add] using ht
+  exact ⟨summable_of_sum_range_le hn hsum, Real.tsum_le_of_sum_range_le hn hsum⟩
 
 end Cslib.Probability.StochasticOracle.AdaptiveSelection
