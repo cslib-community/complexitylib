@@ -27,12 +27,13 @@ import Complexity.Tactic.PolyTime
 /-!
 # Discrete-logarithm collision-resistant hash families
 
-Over a `PrimeOrderGroupFamily`, Katz and Lindell's fixed-length discrete-logarithm compression
-function ([KatzLindell2020], Section 9.4.2, Construction 9.78 and Theorem 9.79, pp. 357–359;
-[BonehShoup2023], Section 8.5.1) samples a group description `d ← setup n` and a uniform group
-element `h = α • g` (`groupHashSetup`), and hashes a `2 * blockLen d`-bit input `x` by splitting
-`x` into two `blockLen d`-bit halves `(x₁, x₂)` (read as natural numbers in little-endian binary via
-`ofBits`) and evaluating `encode (x₁ • g + x₂ • h)` (`groupHash`).
+Over a `PrimeOrderGroupFamily`, this module formalizes the encoded collision-resistance endpoint of
+Katz and Lindell's discrete-logarithm hash ([KatzLindell2020], Section 9.4.2, Construction 9.78 and
+Theorem 9.79, pp. 357–359; [BonehShoup2023], Section 8.5.1). The family samples a group description
+`d ← setup n` and a uniform group element `h = α • g` (`groupHashSetup`), and hashes a
+`2 * blockLen d`-bit input `x` by splitting `x` into two `blockLen d`-bit halves `(x₁, x₂)` (read
+as natural numbers in little-endian binary via `ofBits`) and evaluating
+`encode (x₁ • g + x₂ • h)` (`groupHash`).
 
 When `2 ^ blockLen d ≤ F.order d`, the two `blockLen d`-bit halves represent elements strictly
 below the prime order `q = F.order d`. Any collision `x ≠ y` of length `2 * blockLen d` with
@@ -42,6 +43,19 @@ recovers the discrete logarithm `α = (y₂ - x₂)⁻¹ * (x₁ - y₁)` in det
 This yields an exact zero-loss reduction
 (`succProbability_collisionGameFor_groupHash_le_discreteLogGame`) showing that `F.DiscreteLog setup`
 implies `CollisionResistantForOn` for `groupHash` (`DiscreteLog.collisionResistantForOn_groupHash`).
+
+This is the collision-resistance reduction of Theorem 9.79 for the encoded outputs. It does not
+establish the packaging conditions discussed with Construction 9.78 ([KatzLindell2020],
+pp. 357–358), which remain separate obligations for a client that needs a fixed-length compression
+function:
+
+* **Fixed digest width.** `PrimeOrderGroupFamily.encode` may produce variable-length or padded
+  encodings, so no fixed output length is asserted; the source pads outputs to a fixed length.
+* **Compression.** `2 ^ blockLen d ≤ F.order d` bounds only the input scalars. The source notes that
+  the construction compresses only when group elements are represented in fewer bits than the
+  input; no such representation-length bound is assumed here.
+* **Efficient setup.** `setup` is an arbitrary distribution with no efficient-generation
+  certificate, whereas the source's key generation runs a polynomial-time group generator.
 
 We also formalize the algebraic core of the multi-generator generalization ([KatzLindell2020],
 Exercise 9.28, Construction 9.81, p. 363), `multiGeneratorHash d hs xs = ∑ i, xs i • hs i`, with
@@ -54,8 +68,9 @@ its linear homomorphisms and coordinate-wise discrete-logarithm extraction ident
   `d ← setup n` and `α ← ZMod (F.order d)` and returning `(d, F.encode d (α • F.generator d))`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.validGroupHashInput`: domain predicate testing whether an
   input word has length `2 * blockLen pk.1`.
-* `Cslib.Crypto.PrimeOrderGroupFamily.groupHash`: fixed-length discrete-logarithm compression
-  function splitting `x` at `blockLen pk.1` and evaluating `F.encodePedersenCommit`.
+* `Cslib.Crypto.PrimeOrderGroupFamily.groupHash`: discrete-logarithm hash on
+  `2 * blockLen pk.1`-bit inputs, splitting `x` at `blockLen pk.1` and evaluating
+  `F.encodePedersenCommit` (encoded output; no fixed output width or compression is asserted).
 * `Cslib.Crypto.PrimeOrderGroupFamily.groupHashToDLAdversary`: discrete-logarithm reduction from a
   `groupHash` collision finder via `pedersenExtractNat`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash`: multi-generator vector hash
@@ -68,14 +83,15 @@ its linear homomorphisms and coordinate-wise discrete-logarithm extraction ident
   `groupHash` via `pedersenCommit`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_validGroupHashInput`,
   `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_groupHash`: polynomial-time evaluation
-  of the domain test and compression function when `blockLen` is polynomial-time in unary.
+  of the domain test and hash function when `blockLen` is polynomial-time in unary.
 * `Cslib.Crypto.PrimeOrderGroupFamily.pedersenExtractNat_eq_of_isCollisionFor_groupHash`: any valid
   `groupHash` collision under `h = α • g` when `2 ^ blockLen d ≤ F.order d` recovers `α`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_groupHashToDLAdversary`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DiscreteLog.collisionResistantForOn_groupHash`, and
   `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_collisionGameFor_groupHash_le_discreteLogGame`
-  — exact zero-loss reduction and collision resistance under the discrete-logarithm assumption
-  ([KatzLindell2020], Theorem 9.79).
+  — exact zero-loss reduction and encoded collision resistance under the discrete-logarithm
+  assumption (the reduction of [KatzLindell2020], Theorem 9.79, without the output-padding,
+  compression and efficient-setup conditions above).
 * `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash_add`,
   `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash_smul`,
   `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash_smul_generator_eq_iff`,
@@ -101,7 +117,7 @@ open scoped ENNReal NNReal BigOperators
 
 variable (F : PrimeOrderGroupFamily)
 
-/-! ### Fixed-length discrete-logarithm compression family (Construction 9.78 & Theorem 9.79) -/
+/-! ### Discrete-logarithm hash family (Construction 9.78 & Theorem 9.79) -/
 
 /-- Setup distribution for the discrete-logarithm hash family ([KatzLindell2020],
 Construction 9.78, p. 358): draw `d ← setup n` and a uniform exponent
@@ -125,8 +141,9 @@ theorem validGroupHashInput_eq_true_iff (blockLen : F.Desc → ℕ) (n : ℕ)
     F.validGroupHashInput blockLen n pk x = true ↔ x.length = 2 * blockLen pk.1 :=
   beq_iff_eq
 
-/-- Fixed-length discrete-logarithm hash function ([KatzLindell2020], Construction 9.78, p. 358):
-given public parameter `pk = (d, h)` and input `x : List Bool`, split `x` at `w = blockLen d` into
+/-- Discrete-logarithm hash function ([KatzLindell2020], Construction 9.78, p. 358), with the
+source's fixed input length `2 * blockLen d` and an encoded group element as output: given public
+parameter `pk = (d, h)` and input `x : List Bool`, split `x` at `w = blockLen d` into
 `(x.take w, x.drop w)` and evaluate
 `F.encodePedersenCommit (d, h, ofBits (x.take w), ofBits (x.drop w))`. -/
 def groupHash (blockLen : F.Desc → ℕ) (pk : F.Desc × List Bool) (x : List Bool) : List Bool :=
@@ -295,31 +312,6 @@ theorem succProbability_collisionGameFor_groupHash_le_discreteLogGame
     simp [hcoll, hbits]
   · simp [Bool.eq_false_iff.mpr hcoll]
 
-private theorem computableTidilyInPolyTime_pedersenExtractNat' {α : Type} {input : α ↪ List Bool}
-    {d : α → F.Desc} {m₀ r₀ m₁ r₁ : α → ℕ}
-    (hd : ComputableTidilyInPolyTime d input F.encDesc)
-    (hm₀ : ComputableTidilyInPolyTime m₀ input encNat)
-    (hr₀ : ComputableTidilyInPolyTime r₀ input encNat)
-    (hm₁ : ComputableTidilyInPolyTime m₁ input encNat)
-    (hr₁ : ComputableTidilyInPolyTime r₁ input encNat) :
-    ComputableTidilyInPolyTime
-      (fun a => pedersenExtractNat (F.order (d a)) (m₀ a) (r₀ a) (m₁ a) (r₁ a))
-      input encNat := by
-  have hq : ComputableTidilyInPolyTime (fun a => F.order (d a)) input encNat :=
-    F.computableInPolyTime_order.tidy.comp hd
-  have hdiff {x y : α → ℕ} (hx : ComputableTidilyInPolyTime x input encNat)
-      (hy : ComputableTidilyInPolyTime y input encNat) :
-      ComputableTidilyInPolyTime
-        (fun a => (x a % F.order (d a) + F.order (d a) - y a % F.order (d a)) % F.order (d a))
-        input encNat :=
-    .binary_mod' (.binary_sub' (.binary_add' (.binary_mod' hx hq) hq) (.binary_mod' hy hq)) hq
-  have hpow := (ComputableInPolyTime.binary_powMod (ComputableInPolyTime.of_tidy (hdiff hr₁ hr₀))
-    (ComputableInPolyTime.of_tidy (.binary_sub' hq (.const 2)))
-    (ComputableInPolyTime.of_tidy hq) fun a => (F.prime_order (d a)).pos).tidy
-  exact .binary_mod' (.binary_mul' hpow (hdiff hm₀ hm₁)) hq
-
-attribute [local fun_prop] computableTidilyInPolyTime_pedersenExtractNat'
-
 /-- `groupHashToDLAdversary` is uniform strict PPT whenever `blockLen` is computable in polynomial
 time in unary and `adversary` is uniform strict PPT. -/
 theorem isPPTOn_groupHashToDLAdversary {blockLen : F.Desc → ℕ}
@@ -345,6 +337,12 @@ theorem isPPTOn_groupHashToDLAdversary {blockLen : F.Desc → ℕ}
           (ofBits (p.2.1.take (blockLen p.1.2.1))) (ofBits (p.2.1.drop (blockLen p.1.2.1)))
           (ofBits (p.2.2.take (blockLen p.1.2.1))) (ofBits (p.2.2.drop (blockLen p.1.2.1)))))
       _ encBits
+    have hpe := F.computableInPolyTime_pedersenExtractNat.tidy.comp'
+      (g := fun p : (ℕ × (F.Desc × List Bool)) × (List Bool × List Bool) =>
+        (p.1.2.1, (ofBits (p.2.1.take (blockLen p.1.2.1)), ofBits (p.2.1.drop (blockLen p.1.2.1))),
+          (ofBits (p.2.2.take (blockLen p.1.2.1)), ofBits (p.2.2.drop (blockLen p.1.2.1)))))
+      (encIn := encPair (encPair encUnary (encPair F.encDesc encBits)) (encPair encBits encBits))
+      (by fun_prop)
     exact ComputableTidilyInPolyTime.id'.comp (by fun_prop)
   exact hextract.isPPTOn
 
@@ -353,7 +351,8 @@ assumption** ([KatzLindell2020], Section 9.4.2, Theorem 9.79, pp. 358–359): if
 `F.DiscreteLog setup` holds, `blockLen` is computable in polynomial time in unary, and
 `2 ^ blockLen d ≤ F.order d` for every supported group `d ∈ (setup n).support` at all sufficiently
 large `n`, then `F.groupHash blockLen` is collision-resistant on `F.validGroupHashInput blockLen`
-under `F.groupHashSetup setup`. -/
+under `F.groupHashSetup setup`. This is the encoded collision-resistance endpoint: a fixed digest
+width, compression and an efficient `setup` are not established (see the module docstring). -/
 theorem DiscreteLog.collisionResistantForOn_groupHash {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
     {blockLen : F.Desc → ℕ} (hblock : ComputableInPolyTime blockLen F.encDesc encUnary)

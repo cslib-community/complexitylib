@@ -21,7 +21,7 @@ Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib
 | One-way functions | [Complexity/Crypto/Computational/OneWay.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/OneWay.lean) | Deterministic native polynomial evaluation; uniform seed-length sampling; strict-PPT inverter gets unary length and image; any preimage may win |
 | Pseudorandom generator | [Complexity/Crypto/Computational/PseudorandomGenerator.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/PseudorandomGenerator.lean) | Length schedule, expansion, native deterministic evaluation and indistinguishability |
 | Adaptive pseudorandom function | [Complexity/Crypto/Computational/PseudorandomFunction.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/PseudorandomFunction.lean) | Oracle-PPT access, consistent ideal random function, explicit input/output widths and malformed-query convention |
-| Collision resistance | [Complexity/Crypto/Computational/CollisionResistant.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/CollisionResistant.lean) | Public setup distribution/encoding and input-validity predicate; keyed word specialization; setup need not be efficiently sampleable in the general interface; [DiscreteLog/GroupHash.lean](../../Complexity/Crypto/Computational/DiscreteLog/GroupHash.lean) instantiates it with the Katz–Lindell discrete-logarithm hash (`DiscreteLog.collisionResistantForOn_groupHash`, exact zero-loss reduction) |
+| Collision resistance | [Complexity/Crypto/Computational/CollisionResistant.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/CollisionResistant.lean) | Public setup distribution/encoding and input-validity predicate; keyed word specialization; setup need not be efficiently sampleable in the general interface; [DiscreteLog/GroupHash.lean](../../Complexity/Crypto/Computational/DiscreteLog/GroupHash.lean) instantiates it with the Katz–Lindell discrete-logarithm hash (`DiscreteLog.collisionResistantForOn_groupHash`, exact zero-loss reduction for the encoded outputs; fixed digest width, compression and efficient setup are not established) |
 | Target collision resistance | [Complexity/Crypto/Computational/TargetCollisionResistant.lean](../../Complexity/Crypto/Computational/TargetCollisionResistant.lean), [Complexity/Crypto/Computational/NaorYung.lean](../../Complexity/Crypto/Computational/NaorYung.lean), [Complexity/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../Complexity/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Two-stage pre-key target choice and post-key second-preimage search; polynomial key/block schedules, fixed-depth `2^n`-capacity tree extension, Naor–Yung UOWHFs from `OneWayPermutation`, and Rompel–HHRVW UOWHFs from `OneWay` |
 | Inaccessible entropy and shrinking collision grids | [Complexity/Crypto/Computational/InaccessibleEntropy/Basic.lean](../../Complexity/Crypto/Computational/InaccessibleEntropy/Basic.lean), [Complexity/Crypto/Computational/InaccessibleEntropy/Amplify.lean](../../Complexity/Crypto/Computational/InaccessibleEntropy/Amplify.lean), [Complexity/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../Complexity/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Fixed-width native polynomial evaluation, accessible preimage subsets with eventual `1 / denom n` entropy gap, polynomial-size grids of `1`-bit shrinking candidates with an existential random-collision-resistant sequence (`exists_good_candidate`), and uniform `gridCount n`-way cascade concatenation |
 | Discrete logarithm and DDH | [Complexity/Crypto/Computational/DiscreteLog.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiscreteLog.lean), [Complexity/Crypto/Computational/DiffieHellman.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiffieHellman.lean) | Encoded prime-order group families, exact ideal group laws; public operations and samplers require separate certificates |
@@ -230,6 +230,26 @@ actual failure at `t=1`: `q=64`, `p=32`, errors all eight and supported secrets 
 and decode a true message incorrectly. The displayed bound is below one at `t=10`.
 This is correctness for explicit laws, not a small-secret security reduction. Complete native
 key generation, encryption and decryption certificates remain separate.
+
+Discrete-logarithm and factoring cryptanalysis lives in two algebra-level modules. Import
+[`DiscreteLog/PohligHellman.lean`](../../Complexity/Crypto/Computational/DiscreteLog/PohligHellman.lean)
+for the Pohlig–Hellman subgroup reduction and CRT uniqueness (`pohligHellman_subgroup_modEq`,
+`pohligHellman_crt_modEq`), the prime-power digit step (`pohligHellman_step`), the smooth/rough
+trial-division split (`smoothDivisorSeq`, `coprime_smoothDivisorSeq_div`) and composite-order CRT
+extraction from two Schnorr transcripts (`extractModRough`, `crtCombine`,
+`crtCombine_extractModRough_eq`). These are correctness identities under explicit positivity,
+divisor, inverse and range hypotheses; there is no executable Pohlig–Hellman solver, subgroup
+discrete-log solver or running-time bound. Import
+[`Factoring/PollardRho.lean`](../../Complexity/Crypto/Computational/Factoring/PollardRho.lean) for
+`rhoFactorLoop N F B x y`, a `B`-step Floyd loop over a caller-supplied walk on `(ZMod N)ˣ`. Every
+`some d` output is a nontrivial factor (`isNontrivialFactor_of_rhoFactorLoop_eq_some`), `none` is
+characterized exactly (`rhoFactorLoop_start_eq_none_iff`), and `floyd_cycle_modEq` turns a
+modulo-`p` collision into a tortoise-and-hare meeting modulo `p`. That meeting need not give a
+distinct pair modulo `N`; the heuristic success probability and `O(N^{1/4})` running time are not
+formalised, and the bounded loop has no native cost certificate. The
+[checked examples](../../ComplexityTests/Crypto/GroupCryptanalysis.lean) run Katz–Lindell's
+Example 10.5 in `(ZMod 31)ˣ`, CRT recombination for `12 = 4 * 3`, and
+`rhoFactorLoop 15 walk15 4 1 1 = some 3`.
 
 ## Encryption and chosen-message attacks
 

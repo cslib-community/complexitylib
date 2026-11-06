@@ -173,15 +173,6 @@ theorem rhoFactorLoop_eq_none_iff (N : ℕ) (F : (ZMod N)ˣ → (ZMod N)ˣ) :
         rwa [Function.iterate_succ_apply, Function.iterate_succ_apply, Function.comp_apply]
           at this
 
-private theorem iterate_sq {α : Type*} (F : α → α) (t : ℕ) (x : α) :
-    (F ∘ F)^[t] x = F^[2 * t] x := by
-  induction t with
-  | zero => simp
-  | succ t ih =>
-    rw [Function.iterate_succ_apply', Function.comp_apply, ih,
-      show 2 * (t + 1) = 2 * t + 1 + 1 by ring,
-      Function.iterate_succ_apply', Function.iterate_succ_apply']
-
 /-- **Exact failure characterization from a common start state `x₀`**:
 `rhoFactorLoop N F B x₀ x₀ = none` if and only if no step `1 ≤ t ≤ B` produces a nontrivial GCD
 between `F^[t] x₀` and `F^[2 * t] x₀`. -/
@@ -190,7 +181,7 @@ theorem rhoFactorLoop_start_eq_none_iff (N : ℕ) (F : (ZMod N)ˣ → (ZMod N)ˣ
     rhoFactorLoop N F B x₀ x₀ = none ↔
       ∀ t, 1 ≤ t → t ≤ B →
         ¬ IsNontrivialFactor N (rhoGcd N (F^[t] x₀) (F^[2 * t] x₀)) := by
-  simp_rw [rhoFactorLoop_eq_none_iff, iterate_sq]
+  simp_rw [rhoFactorLoop_eq_none_iff, Function.iterate_mul F 2, show F^[2] = F ∘ F from rfl]
 
 /-! ### Nontrivial GCD from a modulo-`p` collision -/
 
