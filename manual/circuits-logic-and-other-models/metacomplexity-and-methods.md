@@ -525,7 +525,7 @@ negative and overlarge targets, zero demand and deletion of a constant row. From
 the repository root, run `scripts/build.sh ComplexityTests.WeightedNormalization`.
 This normalization has no encoded runtime certificate. Subsequent rank selection
 must use its **capped** affine system; the original coefficient matrix can have a
-different rank. The all-cases plan and composed runtime/space remain unproved.
+different rank. The all-cases mathematical plan is available below; composed runtime/space remain unproved.
 
 Import `Complexity.Logics.Propositional.CNF.WeightedGlobal` to deduplicate the
 upper clauses across every retained row. `upperKeys` identifies clauses by finite
@@ -558,3 +558,21 @@ weights and signs, an unused variable, rejection, and the empty zero equation.
 From the repository root run `scripts/build.sh ComplexityTests.WeightedAffine`.
 This bridge does not assemble all direct branches or certify the full reduction's
 runtime, space or graph endpoints.
+
+
+Import `Complexity.Logics.Propositional.CNF.WeightedCounting` for the all-cases
+mathematical assembler. `originalCountingPlan R hd` takes actual occurrence rows
+and bounds on their computed normalized demands, normalizes them, and returns a
+`CountingPlan` with exact count recovery on every declared variable. No rank,
+basis or consistency advice is required. `countingPlan` also accepts an already
+normalized list. It enumerates dimension at most one directly, returns zero on
+rejection or inconsistency, returns `2^n` for empty or consistent rank-zero
+systems, and tests the unique rational candidate for Booleanity at full rank.
+Only positive deficient rank produces two ordinary CNFs, using actual selected
+capped rows. Each query has at most `2*n-2` variables, width `d+2`, and at most
+`countingBudget n d` clauses, a degree `d+1` polynomial for fixed `d`.
+This is a noncomputable mathematical plan, with no composed encoded runtime or
+space guarantee. Theorem 7.1 and the graph endpoints remain incomplete.
+The [counting client](../../ComplexityTests/WeightedCounting.lean) exercises the
+original-input entry point and the direct and query interfaces. From the
+repository root run `scripts/build.sh ComplexityTests.WeightedCounting`.

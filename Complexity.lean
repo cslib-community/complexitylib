@@ -4125,6 +4125,7 @@ public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoBoundary
 public import Complexity.Logics.Propositional.CNF.WeightedAffine
+public import Complexity.Logics.Propositional.CNF.WeightedCounting
 public import Complexity.Logics.Propositional.CNF.WeightedGlobal
 public import Complexity.Logics.Propositional.CNF.WeightedNormalization
 public import Complexity.Logics.Propositional.CNF.WeightedRow

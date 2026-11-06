@@ -909,21 +909,23 @@ assignment semantics for positive capped signed rows, per-row binomial counts,
 and an existing-TwoBoundary count/width wrapper. Nontrivial weighted clients cover
 both polarities, zero demand and unattainable demand. This does not complete the
 bounded-demand endpoint: executable subset enumeration (the present listing is
-noncomputable), direct-case
-assembly and composed runtime/space remain
+noncomputable) and composed runtime/space remain
 open, as do graph endpoints.
 
 Global weighted upper clauses now deduplicate across all retained rows as finite
 sets of signed literals. Exact evaluation/count preservation, query width and an
 explicit degree-d+1 base bound are proved; the attainment term alone carries the
-row factor. This does not complete Theorem 7.1: all-direct-case
-assembly, executable listing and composed runtime/space remain open.
+row factor. This does not complete Theorem 7.1: executable listing and composed
+runtime/space remain open.
 
 
 The capped weighted-row affine bridge now materializes signed integer coefficients
 and shifted right hand sides, preserving every Boolean assignment and keeping
 rejection separate from deleted true rows. Computed original-row selection is
 connected back to actual capped rows under the computed consistency test.
-The all-cases/global-query assembler, direct branches, executable subset listing,
-composed runtime/space and graph endpoints remain open; Theorem 7.1 and ALL-main
-are not completed by this bridge.
+The all-cases mathematical assembler now normalizes the original occurrence input,
+dispatches direct branches using computed tests, and composes selected actual capped
+rows with global queries in positive deficient rank. Exact full-input count recovery,
+the 2r-2 variable cap, width d+2 and a global polynomial clause budget are certified.
+Executable subset listing, composed encoded runtime/space and graph endpoints remain
+open; Theorem 7.1 and ALL-main are not completed by this mathematical plan.
