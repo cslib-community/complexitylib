@@ -48,8 +48,10 @@ both productive-count bridges and conditional-history binomial coverage bounds;
 the comparison recurrence is identified with Mathlib's binomial law. The retained
 family carries the local dual certificate. The universal revealed-cover observable
 is not yet composed with a universal selection-only machine/output model or the
-lower-cost accounting theorem. Stopped reach probabilities, expected-cost sums,
-negative-binomial mean, joint latency/certification and universal policy/resource
+lower-cost accounting theorem. Actual retained-completion reach bounds and the finite stopped conditional-mean
+bill sum are proved. Response-dependent accrued bills are connected by the finite tower identity.
+Selected-batch disintegration, negative-binomial
+mean, joint latency/certification and universal policy/resource
 composition remain open; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
 claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.

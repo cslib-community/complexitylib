@@ -24,6 +24,12 @@ assumed. This is a finite semantic execution, without machine resource certifica
 ## Main results
 
 * `count_completes`: sufficiently many productive turns force actual coverage.
+* `reach_le_binomial_complement`: retained-completion stopping bounds reached turns.
+* `historyExpectation_accruedBill`: finite tower identity for response-dependent bills.
+* `accruedBill_le_binomial_sum`: the finite stopped expected token-cost sum.
+
+The cost and reach results formalize the finite-sum step of Appendix A.5.
+They do not establish the negative-binomial mean or any infinite-horizon limit.
 -/
 
 public section
@@ -246,5 +252,174 @@ theorem revealed_completion_le_binomial {Ω : Type} [Fintype Ω]
   rw [historyExpectation_count law (reveals I proposal)
     (fun k => if r ≤ k then 1 else 0) n []] at hm
   exact hm.trans (progress_tail_le law (reveals I proposal) p hp n r)
+
+/-- Constant transcript observables retain their value. -/
+theorem historyExpectation_const {Ω : Type} [Fintype Ω]
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (c : ℝ) (n : ℕ) (h : List Ω) :
+    historyExpectation law (fun _ => c) n h = c := by
+  induction n generalizing h with
+  | zero => rfl
+  | succ n ih => simp only [historyExpectation, ih,
+      Cslib.Optimization.OneConstraint.Distribution.mean_const]
+
+/-- Transcript expectation is additive, including history-dependent observables. -/
+theorem historyExpectation_add {Ω : Type} [Fintype Ω]
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (f g : List Ω → ℝ) (n : ℕ) (h : List Ω) :
+    historyExpectation law (fun h => f h + g h) n h =
+      historyExpectation law f n h + historyExpectation law g n h := by
+  induction n generalizing h with
+  | zero => rfl
+  | succ n ih => simp only [historyExpectation, ih,
+      Cslib.Optimization.OneConstraint.Distribution.mean_add]
+
+/-- Constant factors can be taken outside transcript expectation. -/
+theorem historyExpectation_mul {Ω : Type} [Fintype Ω]
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (c : ℝ) (f : List Ω → ℝ) (n : ℕ) (h : List Ω) :
+    historyExpectation law (fun h => c * f h) n h =
+      c * historyExpectation law f n h := by
+  induction n generalizing h with
+  | zero => rfl
+  | succ n ih => simp only [historyExpectation, ih,
+      Cslib.Optimization.OneConstraint.Distribution.mean_mul]
+
+/-- Expected accumulated bill over a finite execution. The bill is charged before
+sampling the next response; use the conditional mean bill at that history. -/
+@[expose] def executionCost {Ω : Type} [Fintype Ω]
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (bill : List Ω → ℝ) : ℕ → List Ω → ℝ
+  | 0, _ => 0
+  | n + 1, h => bill h + (law h).mean (fun x => executionCost law bill n (x :: h))
+
+/-- Finite tower-property accounting: cost is the sum of marginal expected bills.
+No independence between bills, responses or stopping decisions is required. -/
+theorem executionCost_eq_sum {Ω : Type} [Fintype Ω]
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (bill : List Ω → ℝ) (n : ℕ) (h : List Ω) :
+    executionCost law bill n h =
+      ∑ t ∈ Finset.range n, historyExpectation law bill t h := by
+  induction n generalizing h with
+  | zero => simp [executionCost]
+  | succ n ih =>
+    simp only [executionCost, ih,
+      Cslib.Optimization.OneConstraint.Distribution.mean]
+    simp only [Finset.mul_sum]
+    rw [Finset.sum_comm]
+    rw [Finset.sum_range_succ']
+    simp only [historyExpectation, Cslib.Optimization.OneConstraint.Distribution.mean,
+      add_comm]
+
+/-- Actual accumulated response-dependent bills along a newest-first transcript.
+Stopping is represented by setting the bill to zero after retained completion. -/
+@[expose] def accruedBill (bill : List Ω → Ω → ℝ) : List Ω → ℝ
+  | [] => 0
+  | x :: h => accruedBill bill h + bill h x
+
+/-- The finite expected-cost recursion equals expectation of actual accumulated
+response-dependent bills, using their conditional means under the execution law.
+This is the tower-property bridge, allowing arbitrary bill/response correlation. -/
+theorem historyExpectation_accruedBill {Ω : Type} [Fintype Ω]
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (bill : List Ω → Ω → ℝ) (n : ℕ) (h : List Ω) :
+    historyExpectation law (accruedBill bill) n h = accruedBill bill h +
+      executionCost law (fun h => (law h).mean (bill h)) n h := by
+  induction n generalizing h with
+  | zero => simp [historyExpectation, executionCost]
+  | succ n ih =>
+    simp only [historyExpectation, ih, accruedBill, executionCost,
+      Cslib.Optimization.OneConstraint.Distribution.mean_add,
+      Cslib.Optimization.OneConstraint.Distribution.mean_const]
+    ring
+
+open scoped Classical in
+/-- A conditional upper bill bound on each reached turn gives the stopped-cost
+sum in Appendix A.5. Completion is tested on the actual retained family. Bills
+are zero after completion; the law may continue sampling auxiliary responses.
+The horizon is finite, and no untruncated stopping-time claim is made. -/
+theorem stoppedCost_le_reach_sum {Ω : Type} [Fintype Ω]
+    (I : Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J))
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (bill : List Ω → ℝ) (c : ℝ)
+    (hb : ∀ h, bill h ≤ c *
+      (if I.covered (selected I ρ proposal h) = I.ground then 0 else 1)) (n : ℕ) :
+    executionCost law bill n [] ≤
+      ∑ t ∈ Finset.range n, historyExpectation law
+        (fun h => c * (if I.covered (selected I ρ proposal h) = I.ground
+          then 0 else 1)) t [] := by
+  rw [executionCost_eq_sum]
+  exact Finset.sum_le_sum fun t _ => historyExpectation_mono law _ _ hb t []
+
+open scoped Classical in
+/-- Probability that the next turn is reached when stopping at actual retained
+completion. This is at most the complementary binomial tail from Appendix A.5,
+with index `t` counting turns already sampled (the reached turn is `t+1`). -/
+theorem reach_le_binomial_complement {Ω : Type} [Fintype Ω]
+    (I : Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J))
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (a r t : ℕ) (hr : I.ground.card ≤ a * r) (p : Set.Icc (0 : ℝ) 1)
+    (hp : ∀ h, (p : ℝ) ≤ (law h).mean
+      (fun x => if productive I ρ proposal a h x then 1 else 0)) :
+    historyExpectation law
+      (fun h => if I.covered (selected I ρ proposal h) = I.ground then 0 else 1) t [] ≤
+      1 - ∫ i, (if r ≤ i then (1 : ℝ) else 0) ∂ProbabilityTheory.binomial t p := by
+  have hb := binomial_le_completion I ρ proposal law a r t hr p hp
+  have he : (fun h =>
+      (if I.covered (selected I ρ proposal h) = I.ground then (0 : ℝ) else 1) +
+      (if I.covered (selected I ρ proposal h) = I.ground then (1 : ℝ) else 0)) =
+      (fun _ => 1) := by
+    funext h
+    split_ifs <;> norm_num
+  have hs := historyExpectation_add law
+    (fun h => if I.covered (selected I ρ proposal h) = I.ground then 0 else 1)
+    (fun h => if I.covered (selected I ρ proposal h) = I.ground then 1 else 0) t []
+  rw [he, historyExpectation_const] at hs
+  linarith
+
+open scoped Classical in
+/-- The finite stopped token-cost bound of Appendix A.5, derived from actual
+retained-set reach probabilities and conditional mean bills. No expected-total-cost
+bound is a premise. This does not yet bound the tail sum by the untruncated mean. -/
+theorem stoppedCost_le_binomial_sum {Ω : Type} [Fintype Ω]
+    (I : Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J))
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (a r n : ℕ) (hr : I.ground.card ≤ a * r) (p : Set.Icc (0 : ℝ) 1)
+    (hp : ∀ h, (p : ℝ) ≤ (law h).mean
+      (fun x => if productive I ρ proposal a h x then 1 else 0))
+    (bill : List Ω → ℝ) (c : ℝ) (hc : 0 ≤ c)
+    (hb : ∀ h, bill h ≤ c *
+      (if I.covered (selected I ρ proposal h) = I.ground then 0 else 1)) :
+    executionCost law bill n [] ≤
+      ∑ t ∈ Finset.range n, c *
+        (1 - ∫ i, (if r ≤ i then (1 : ℝ) else 0) ∂ProbabilityTheory.binomial t p) := by
+  apply (stoppedCost_le_reach_sum I ρ proposal law bill c hb n).trans
+  apply Finset.sum_le_sum
+  intro t _
+  rw [historyExpectation_mul]
+  exact mul_le_mul_of_nonneg_left
+    (reach_le_binomial_complement I ρ proposal law a r t hr p hp) hc
+
+open scoped Classical in
+/-- The stopped-cost sum for actual response-dependent bills. The only cost
+premise is the one-turn conditional upper bound, zero after actual completion. -/
+theorem accruedBill_le_binomial_sum {Ω : Type} [Fintype Ω]
+    (I : Instance E J) (ρ : ℝ)
+    (proposal : List Ω → Ω → List (Finset J))
+    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
+    (a r n : ℕ) (hr : I.ground.card ≤ a * r) (p : Set.Icc (0 : ℝ) 1)
+    (hp : ∀ h, (p : ℝ) ≤ (law h).mean
+      (fun x => if productive I ρ proposal a h x then 1 else 0))
+    (bill : List Ω → Ω → ℝ) (c : ℝ) (hc : 0 ≤ c)
+    (hb : ∀ h, (law h).mean (bill h) ≤ c *
+      (if I.covered (selected I ρ proposal h) = I.ground then 0 else 1)) :
+    historyExpectation law (accruedBill bill) n [] ≤
+      ∑ t ∈ Finset.range n, c *
+        (1 - ∫ i, (if r ≤ i then (1 : ℝ) else 0) ∂ProbabilityTheory.binomial t p) := by
+  rw [historyExpectation_accruedBill, accruedBill, zero_add]
+  exact stoppedCost_le_binomial_sum I ρ proposal law a r n hr p hp _ c hc hb
 
 end Cslib.Probability.StochasticOracle.AdaptiveSelection

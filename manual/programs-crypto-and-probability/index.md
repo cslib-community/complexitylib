@@ -635,10 +635,22 @@ and its returned output remains a separate obligation. The client instantiates
 both directions with a nonempty positive-cost system and the correlated response
 law above, computing actual retained completion probability $7/16$.
 
-These results cover finite response alphabets and finite horizons. They do not
-implement stopping, resource billing or physical latency. The stopped reach
-probabilities, expected-cost sum, negative-binomial mean, deadline/certification
-composition and universal selection-only policy theorem remain open. The
+`reach_le_binomial_complement` bounds the probability of issuing turn $t+1$
+by the complementary binomial tail after $t$ responses, when stopping at actual
+retained completion. `executionCost` sums conditional mean bills recursively;
+`executionCost_eq_sum` proves its finite tower-property expansion.
+`stoppedCost_le_binomial_sum` derives the source's finite stopped-cost sum from
+a per-history upper bill bound, zero after actual completion. It assumes neither
+independent bills nor the desired expected total. The client computes stopped
+unit cost $7/4$ for two turns of the same correlated execution.
+
+These results cover finite response alphabets and finite horizons. `accruedBill` records actual response-dependent bills;
+`historyExpectation_accruedBill` identifies their expectation with the recursion
+using conditional mean bills. `accruedBill_le_binomial_sum` applies the same
+bound directly to these actual accumulated bills, allowing response/cost
+correlation. Selected-batch disintegration and physical latency remain open. The negative-binomial mean,
+deadline/certification composition and universal selection-only policy theorem
+remain open. The
 pathwise dual certificate is proved, but its joint stopped resource event is not.
 
 The remaining Theorem 5 obligations above, including stopped execution and universal

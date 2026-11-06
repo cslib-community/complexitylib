@@ -114,4 +114,29 @@ theorem universal_bound :
       norm_num [StochasticOracleAdaptiveComparisonTests.law, hh,
         Cslib.Optimization.OneConstraint.pair_mean]
 
+/-- Actual stopped unit billing on the correlated execution: the first turn is
+issued surely and the second only after the first failure, of probability 3/4. -/
+theorem stopped_unit_cost :
+    executionCost StochasticOracleAdaptiveComparisonTests.law
+      (fun h => if toy.covered (selected toy 1 proposals h) = toy.ground
+        then 0 else 1) 2 [] = (7 / 4 : ℝ) := by
+  have he (h : List Bool) :
+      (if toy.covered (selected toy 1 proposals h) = toy.ground then (0 : ℝ) else 1) =
+        if true ∈ h then 0 else 1 := by
+    rw [selected_eq]
+    by_cases hh : true ∈ h <;> simp [hh, Instance.covered, toy]
+  simp_rw [executionCost, he]
+  norm_num [StochasticOracleAdaptiveComparisonTests.law,
+    Cslib.Optimization.OneConstraint.pair_mean]
+
+/-- Response-level stopped billing agrees with the recursive cost calculation. -/
+theorem actual_stopped_unit_cost :
+    historyExpectation StochasticOracleAdaptiveComparisonTests.law
+      (accruedBill (fun h _ =>
+        if toy.covered (selected toy 1 proposals h) = toy.ground then 0 else 1))
+      2 [] = (7 / 4 : ℝ) := by
+  rw [historyExpectation_accruedBill, accruedBill, zero_add]
+  simpa only [Cslib.Optimization.OneConstraint.Distribution.mean_const]
+    using stopped_unit_cost
+
 end StochasticOracleAdaptiveSelectionTests
