@@ -29,9 +29,10 @@ variable labels. Repeated variables, empty relations, nullary relations and empt
 allowed; malformed scopes are rejected even when their list semantics would accept them.
 Constants in `CSP.HasSchaeferPolymorphism` are standard unary operations. An empty relation is
 preserved vacuously, so the constant decider explicitly rejects constraints using empty relations.
+`CSPSAT.mem_P_of_constant` supplies native P in either constant case.
 
-The native tractable endpoints are `CSPSAT.mem_P_of_constant` (false or true), `mem_P_of_and`,
-`mem_P_of_or`, `mem_P_of_majority` and `mem_P_of_parity`. Each endpoint selects its fixed local
+The other native tractable endpoints are `CSPSAT.mem_P_of_and`, `mem_P_of_or`,
+`mem_P_of_majority` and `mem_P_of_parity`. Each endpoint selects its fixed local
 normal forms internally and invokes a certified compiler and solver. There is no solver or
 template hypothesis. Bounds apply to each fixed language; no uniform bound on preprocessing a
 supplied language or truth table is asserted. Local positions use unary lookup indices; original
