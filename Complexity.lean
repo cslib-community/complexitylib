@@ -1748,6 +1748,7 @@ public import Complexity.Computability.Complexity.Problems.Partition
 public import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 public import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
 public import Complexity.Computability.Complexity.Problems.Primes
+public import Complexity.Computability.Complexity.Problems.RegressionEquality
 public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.Drawing
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.DrawingAssembly
@@ -4302,6 +4303,7 @@ public import Complexity.Probability.UniversalHash
 public import Complexity.Statistics.LeastSquares.Backbone
 public import Complexity.Statistics.LeastSquares.FixedEffects
 public import Complexity.Statistics.LeastSquares.FixedEffects.FixedColumns
+public import Complexity.Statistics.LeastSquares.FixedEffects.Indexed
 public import Complexity.Statistics.LeastSquares.FixedEffects.Matrix
 public import Complexity.Statistics.LeastSquares.FixedEffects.MatrixBridge
 public import Complexity.Statistics.LeastSquares.FixedEffects.Resources

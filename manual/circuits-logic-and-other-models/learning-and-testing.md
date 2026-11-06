@@ -189,7 +189,7 @@ requires a group-count term. Empty input has ten counted initialization/scan
 operations. The subset preprocessing uses $O(n_g2^{n_g})$ work per group, which
 sums to $O(n2^T)$; the sharper per-group Gray-code claim is not asserted.
 The scalar and fixed-column adapters and fixed-size relaxation are described
-below. The hardness, general rounding execution/resources, external fractional
+below. General rounding execution/resources, the external fractional
 solver and complete empirical certificates remain separate; this resource
 endpoint does not complete the paper.
 
@@ -212,8 +212,9 @@ This stability infimum permits vanished groups and removes their dummies, as the
 paper requires. It is a separate model from the fixed-column
 `LeastSquares.integralStability`: retaining a vanished group's zero dummy makes
 the latter Gram matrix singular. `MatrixModel.not_posDef_of_empty_group` proves
-that obstruction. No unconditional equality of these two stability notions is
-claimed. The matrix model accepts arbitrary real observations; the executed
+that obstruction. The original-index adapter below derives equality of optimum
+values when every input group is nonempty and a feasible plan exists; individual
+feasible subsets can still differ. The matrix model accepts arbitrary real observations; the executed
 pipeline and cast bridge take rational observations. Empty feasibility has
 natural infimum zero, so use the optimality theorem, which supplies feasibility,
 instead of interpreting the infimum alone.
@@ -304,10 +305,35 @@ pooled within-scatter and nonpositive pooled cross-scatter. Group preservation
 is derived from positive definiteness, and `preservesGroups_of_deletions_lt`
 derives it whenever fewer rows are deleted than any group contains.
 `subsetStability` allows groups to vanish and counts deletions by original row
-positions. Given nonempty scalar feasibility,
-`integralStability_eq_subsetStability` identifies it with fixed-column stability
-when this refitted optimum is smaller than every original group size. This
-condition excludes the zero-dummy obstruction; no general equality is claimed.
+positions. The earlier `integralStability_eq_subsetStability` gives a sufficient
+small-deletion criterion for arbitrary indexed real data.
+
+For the actual grouped rational input and computed output, import
+[`FixedEffects.Indexed`](../../Complexity/Statistics/LeastSquares/FixedEffects/Indexed.lean)
+and use `Cslib.LeastSquares.FixedEffects.Indexed`. `Corresponds gs plan s`
+identifies retained occurrences with distinct original row positions, even when
+values repeat. `subset_of_valid` and `plan_of_subset` prove both directions;
+`Corresponds.deletions`, `.cross`, `.scatter` and `.feasible_iff` preserve cost and
+regression semantics. `refittedIntegralStability_eq_subsetStability` identifies
+the two refitted infima, including their zero convention when infeasible.
+
+An optimal feasible plan cannot erase an originally nonempty group: retaining
+one observation in that group changes neither within-group scatter and saves a
+deletion. `Corresponds.preservesGroups_of_optimal` proves this fact.
+`integralStability_eq_refittedIntegralStability` therefore needs nonempty input
+groups and an existing feasible plan, but no comparison with group sizes.
+`run_indexed_optimal` links the actual returned observations to an original-index
+subset, proves fixed-column inverse feasibility and optimality, and retains the
+$300(n2^T+nK)$ arithmetic-RAM bound for the executed pipeline. The positional
+witness is a mathematical refinement; this theorem does not charge a separate
+algorithm for materializing row identifiers.
+
+From the repository root, run
+`scripts/build.sh ComplexityTests.PaperEndpoints.FixedEffectsIndexed`
+to check the [complete indexed client](../../ComplexityTests/PaperEndpoints/FixedEffectsIndexed.lean).
+Its computed optimum deletes one row while preserving a singleton group, so
+the earlier strict group-size bound cannot prove this instance. It also checks
+duplicate observations and refitted equality with an empty original group.
 
 From the repository root, run
 `scripts/build.sh ComplexityTests.PaperEndpoints.LeastSquaresRelaxation`
@@ -318,6 +344,37 @@ six-point non-range instance, and checks both a feasible grouped inverse fit
 and failure after erasing an entire group. The existing matrix/Radon clients
 above retain the checked source-instance construction and executed resource
 bounds.
+
+## Exact equality-target regression hardness
+
+Import
+[`RegressionEquality`](../../Complexity/Computability/Complexity/Problems/RegressionEquality.lean)
+and open `Cslib.LeastSquares.EqualityDeletion`. `BinaryProblem` asks whether an
+actual sublist of explicitly supplied binary-regressor/integer-response rows
+has a nonsingular two-column OLS design and an exactly-zero inverse-matrix
+slope, within an at-most deletion budget. `binaryEncoding` uses a regressor bit,
+a signed binary response and a binary nonnegative budget. `binary_npHard` is
+Theorem 3.7; general position is deliberately absent.
+
+`expand (fromSubsetSum a)` is the actual polynomial-time many-one map from the
+existing binary `SubsetSum`: one $(0,0)$ row, positive responses at regressor
+one, a negative target and a zero response. Zero source entries are filtered;
+a zero target uses a fixed yes instance. `computableInPolyTime_reduction` and
+`reduction_mem_iff` prove resources and both correctness directions without
+assuming a desired map or hardness conclusion. `ExactFit` uses the actual real
+matrix inverse, while `exactFit_iff` derives its scalar characterization.
+The only regressor-zero row must survive because an all-one regressor is
+singular. A negative slope is rejected unless it is exactly zero.
+
+From the repository root, run
+`scripts/build.sh ComplexityTests.PaperEndpoints.RegressionEquality`
+to check the [complete hardness client](../../ComplexityTests/PaperEndpoints/RegressionEquality.lean).
+It includes positive and negative instances, duplicate values, zero entries,
+zero/positive targets on empty lists and a singular remainder. This is weak
+NP-hardness for binary magnitudes, not a strong-hardness or general-position
+claim. The certified general rounding LP/inversion/update execution, the
+external fractional solver consequence and the full empirical certificates
+remain unproved; these new endpoints do not complete the paper.
 
 ## Exact least-squares stability gaps
 
