@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
+import Mathlib.Tactic.FinCases
 
 /-!
 # The Fibonacci heap over memory, on a concrete client
