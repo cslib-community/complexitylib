@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.BitString.ZModTwo
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
@@ -212,9 +213,7 @@ private theorem length_prefix_accumulator_le (pred : P → List Bool → Bool) (
     (encPair (encPair encUnary encP) encNat
       (BooleanFold.runPrefix (countStep pred) x.1 j (x, 0)).2.2).length ≤
       3 * (encPair encUnary encP x).length + 2 := by
-  have hx_le : x.1 ≤ (encPair encUnary encP x).length := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate]
-    omega
+  have hx_le : x.1 ≤ (encPair encUnary encP x).length := by enc_len
   have hz_le : (BooleanFold.runPrefix (countStep pred) x.1 j (x, 0)).2.2.2 ≤ 2 ^ x.1 :=
     (prefix_count_le_index pred x j).trans hj
   have hlen_z :
@@ -224,8 +223,7 @@ private theorem length_prefix_accumulator_le (pred : P → List Bool → Bool) (
       simpa [Nat.size_eq_bits_len] using Nat.size_le_size hz_le
     rw [BooleanFold.length_clock] at hm
     exact hm
-  rw [length_encPair, prefix_payload_eq]
-  omega
+  enc_len [prefix_payload_eq]
 
 private theorem countPredicateCertificate_bounds {pred : P → List Bool → Bool}
     (hpred : ComputableInPolyTime (fun q : P × List Bool => pred q.1 q.2) (encPair encP encBits)

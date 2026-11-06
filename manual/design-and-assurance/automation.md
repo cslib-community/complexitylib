@@ -129,6 +129,30 @@ This contract answers a recurrent concern in the transcript: removing proof book
 
 [`FOOperator.lean`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/FOOperator.lean#L14) similarly synthesizes a single uniform formula for a family through `fo_definable`, with `fo_wf` handling supported well-formedness/positivity obligations. This does not mean a different formula may be selected separately for each structure. Fixed-point operators, positivity and interpretation legality remain mathematical constraints. The [logic survey](../circuits-logic-and-other-models/index.md) records the distinction between interpretation, quantifier-free reduction and projection.
 
+## Close encoded-length arithmetic
+
+Import `Complexity.Tactic.EncLen` and use `enc_len` to expand standard encoded lengths with
+a fixed `simp only` list, then close the resulting arithmetic with `omega`. The complete
+[checked clients](../../ComplexityTests/EncLenTactic.lean) cover nested and variable pairs,
+leaf encodings, local encodings, locations, scaling facts and diagnostics. This proves encoding
+arithmetic; it does not construct a computation or resource certificate.
+
+By default only the current goal is expanded. Supply a local encoding lemma explicitly with
+`enc_len [eFoo_apply]`. Use `enc_len at h ⊢` to expand one hypothesis and the goal, or `enc_len at *`
+when expansion of every hypothesis is useful. Each call handles its original goal: if expansion
+closes it, unrelated sibling goals remain for the caller. The checked multi-goal client exercises
+that case without bullets or `<;>`.
+
+Variable products remain atoms for `omega`. Supply a scaling fact, such as
+`Nat.mul_le_mul_left k h`, before the final call; expanding a product's factors does not prove
+its monotonicity. Prefer the selective location form when hypotheses already state bounds in
+the encoding's original form.
+
+If nothing expands, the diagnostic recommends plain `omega`. If the expanded goal remains,
+inspect its bounds, supply missing arithmetic facts or name a local encoding lemma. An unknown
+lemma reports the underlying name-resolution error; check its spelling, namespace and import.
+The tactic neither invents a growth bound nor searches for an encoding definition to unfold.
+
 ## Proof style as interface maintenance
 
 The project asks for nonterminal `simp only` where later steps depend on the resulting normal form, forbids global simplification attributes on machine transitions, and requires comments and reviewed allowlisting for unusually large heartbeat bounds. These policies address predictable search explosions and fragile proofs. They complement semantic lemmas and named certificates; they do not prove maintainability by themselves. [Proof hygiene](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/AGENTS.md#proof-hygiene)

@@ -29,6 +29,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.S
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Foundations.Data.List.Counting
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
+import Complexity.Tactic.EncLen
 import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
@@ -279,8 +280,7 @@ theorem language_mem_NP (hS : S ∈ NP encBits) (hsparse : S ∈ SPARSE encBits)
         4 * m.eval n + 2 * pS.eval (m.eval n) + 3 := by
     obtain ⟨hlenS, hc, -⟩ := hpairs sc hsc
     have hpS : pS.eval sc.1.length ≤ pS.eval (m.eval n) := pS.eval_mono hlenS
-    rw [length_encPair, encBits_apply, encBits_apply, hc]
-    omega
+    enc_len [hc]
   have hlist : (encList (encPair encBits encBits) pairs).length ≤
       c * (m.eval n + 1) ^ d * (4 * m.eval n + 2 * pS.eval (m.eval n) + 3) := by
     rw [length_encList]
@@ -469,9 +469,7 @@ theorem isOraclePPTOn_program {enc : α ↪ List Bool} {req fin : α × ℕ → 
       · simp only [h, ↓reduceIte, OracleComp.interpret_pure] at hnext
         rw [OracleComp.eq_of_mem_supportWith_pure hnext]
         exact hinv)
-    hsize (fun a i st _ hinv => by
-      simp only [length_encPair, encUnary_apply, List.length_replicate]
-      omega)
+    hsize (fun a i st _ hinv => by enc_len)
   have hfinal : IsOraclePPTOn (encPair enc (encPair encUnary encUnary)) encBool
       (fun pair : α × ℕ × ℕ => OracleComp.interpret ProbOracleComp.query
         (queryBit (fin (pair.1, pair.2.1)))) :=
