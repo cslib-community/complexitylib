@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Notation
+import Complexity.Computability.WordRAM.CountingLoop
 public import Mathlib.Data.Nat.Prime.Defs
 
 /-!
@@ -76,13 +77,13 @@ theorem exec {w : ℕ} (x : Data 6) (hp : 2 ≤ x.regs arg)
       y.regs arg = x.regs arg ∧ y.mem = x.mem := by
   classical
   let p := x.regs arg
-  let I (y : Data 6) : Prop := y.regs arg = p ∧ y.regs one = 1 ∧ y.regs zero = 0 ∧
-    2 ≤ y.regs divisor ∧ y.regs divisor ≤ p ∧
-    y.regs flag = (if Good p (y.regs divisor) then 1 else 0) ∧ y.mem = x.mem
-  have hbody (y : Data 6) (hy : I y) (hc : (Cond.lt divisor arg).Holds y) :
-      ∃ z, ExecWithin w body y z 5 ∧ I z ∧ p - z.regs divisor < p - y.regs divisor := by
-    obtain ⟨ha, ho, hz, hd, hdp, hf, hm⟩ := hy
-    have hlt : y.regs divisor < p := by simpa only [Cond.holds_lt, ha] using hc
+  let P (j : ℕ) (y : Data 6) : Prop := y.regs arg = p ∧ y.regs one = 1 ∧
+    y.regs zero = 0 ∧ 2 ≤ j ∧
+    y.regs flag = (if Good p j then 1 else 0) ∧ y.mem = x.mem
+  have hbody (y : Data 6) (hy : P (y.regs divisor) y) (hlt : y.regs divisor < p) :
+      ∃ z, ExecWithin w body y z 5 ∧ P (y.regs divisor + 1) z ∧
+        z.regs divisor = y.regs divisor + 1 := by
+    obtain ⟨ha, ho, hz, hd, hf, hm⟩ := hy
     have hmod : Fits w (p % y.regs divisor) := hfit.of_le (by
       have := Nat.mod_le p (y.regs divisor)
       change p % y.regs divisor ≤ p + 2
@@ -103,25 +104,18 @@ theorem exec {w : ℕ} (x : Data 6) (hp : 2 ≤ x.regs arg)
         simp only [hrem, hg', ↓reduceIte]
       · have hg' : Good p (y.regs divisor + 1) ↔ Good p (y.regs divisor) := by tauto
         simp only [hrem, hg', ↓reduceIte]
-    refine ⟨z, he, ?_, ?_⟩
-    · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨z, he, ?_, by simp [z]⟩
+    · refine ⟨?_, ?_, ?_, by omega, ?_, hm⟩
       · simpa +decide [z, Function.update_apply, arg, divisor, flag, remainder] using ha
       · simpa +decide [z, Function.update_apply, one, divisor, flag, remainder] using ho
       · simpa +decide [z, Function.update_apply, zero, divisor, flag, remainder] using hz
-      · simpa +decide [z, Function.update_apply, divisor] using
-          (show 2 ≤ y.regs divisor + 1 by omega)
-      · simpa +decide [z, Function.update_apply, divisor] using Nat.succ_le_of_lt hlt
       · simpa +decide [z, Function.update_apply, divisor, flag, remainder] using hflag
-      · exact hm
-    · change p - (y.regs divisor + 1) < p - y.regs divisor
-      omega
   let x₀ := (((x.set divisor 2).set flag 1).set one 1).set zero 0
-  have hx₀ : I x₀ := by
+  have hx₀ : P (x₀.regs divisor) x₀ := by
     have hgood : Good p 2 := by intro d hd hlt; omega
-    simp +decide [I, x₀, p, arg, divisor, flag, one, zero, hgood, hp]
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I (fun y => p - y.regs divisor) hbody hx₀
-  obtain ⟨ha, ho, hz, hd, hdp, hf, hm⟩ := hy
-  have hend : y.regs divisor = p := by simp only [Cond.holds_lt, ha] at hc; omega
+    simp +decide [P, x₀, p, arg, divisor, flag, one, zero, hgood]
+  obtain ⟨y, he, ⟨ha, _, _, _, hf, hm⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.1) hbody (by simpa +decide [x₀, p, divisor, flag, one, zero] using hp) hx₀
   have hprime : Good p p ↔ p.Prime := by
     rw [Nat.prime_def_lt']
     constructor
@@ -135,7 +129,7 @@ theorem exec {w : ℕ} (x : Data 6) (hp : 2 ≤ x.regs arg)
   have hinit : ExecWithin (B := .standard) w
       (ram[ divisor ← #2; flag ← #1; one ← #1; zero ← #0 ]) x x₀ 4 := by
     ram_eval [x₀, h1, h2]
-  refine ⟨y, ?_, by simpa only [hend, hprime] using hf, ha, hm⟩
+  refine ⟨y, ?_, by simpa only [hprime] using hf, ha, hm⟩
   have hd₀ : x₀.regs divisor = 2 := rfl
   exact (hinit.seq he).mono (by rw [hd₀]; dsimp only [p]; omega)
 

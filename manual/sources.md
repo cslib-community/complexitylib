@@ -19,6 +19,11 @@ Eli Ben-Sasson, Alessandro Chiesa and Nicholas Spooner. *Interactive Oracle Proo
 
 Dan Boneh and Victor Shoup. *A Graduate Course in Applied Cryptography*, version 0.6, January 2023. https://crypto.stanford.edu/~dabo/cryptobook/BonehShoup_0_6.pdf . Title, authors and edition verified from the primary PDF during independent source review on 2026-11-02. Detailed textbook locator claims remain attributed to the Lean source docstrings; no complete textbook correspondence audit was performed.
 
+<a id="canetti20"></a>
+## canetti20
+
+Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Article 28, 2020; full version Cryptology ePrint Archive 2000/067. https://doi.org/10.1145/3402457 .
+
 <a id="complexitylib"></a>
 ## complexitylib
 
@@ -128,6 +133,11 @@ Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal 
 ## impagliazzowigderson97
 
 Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circuits: Derandomizing the XOR Lemma*. Proceedings of the 29th Annual ACM Symposium on Theory of Computing, 220–229, 1997. DOI: [10.1145/258533.258590](https://doi.org/10.1145/258533.258590). ACM metadata checked by the coordinated source pass on 2026-11-02; no complete literature proof audit is asserted.
+
+<a id="katzlindell20"></a>
+## katzlindell20
+
+Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edition. CRC Press, 2020. Authors' 3rd-edition table of contents and preface inspected: https://www.cs.umd.edu/~jkatz/imc/toc-preface-3rd.pdf (Section 9.2.3 on the factoring assumption, Section 9.2.4 on the RSA assumption, Section 15.1.1 on trapdoor permutations, Sections 15.4.1–15.4.3 on quadratic residues and the quadratic residuosity assumption, and Sections 15.5.1–15.5.2 on modular square roots and the Rabin trapdoor permutation based on factoring). The full textbook body was not independently audited; the Lean modules adapt the parameter generators and Rabin sampling distribution as documented in the chapter text.
 
 <a id="lean-validation"></a>
 ## lean-validation
