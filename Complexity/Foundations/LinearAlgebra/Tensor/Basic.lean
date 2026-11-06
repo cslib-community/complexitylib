@@ -767,7 +767,7 @@ def Rank (r : ℕ) (T : Tensor R X Y Z) : Prop :=
   IsRestriction T (unit r)
 
 /-- A restriction of the unit tensor is a sum of `r` rank-one tensors. -/
-private theorem restrict_unit {n : ℕ} (α : Matrix (Fin n) X R) (β : Matrix (Fin n) Y R)
+theorem restrict_unit {n : ℕ} (α : Matrix (Fin n) X R) (β : Matrix (Fin n) Y R)
     (γ : Matrix Z (Fin n) R) (x : X) (y : Y) (z : Z) :
     restrict α β γ (unit n) x y z = ∑ k, α k x * β k y * γ z k := by
   simp [restrict, ite_and, mul_ite]

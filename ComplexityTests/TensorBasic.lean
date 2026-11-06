@@ -18,7 +18,8 @@ namespace ComplexityTests.TensorBasic
 open Cslib.Tensor
 
 /-- `unit 2` is the diagonal tensor. -/
-example : (unit 2 : Cslib.Tensor ℚ _ _ _) 0 0 0 = 1 ∧ (unit 2 : Cslib.Tensor ℚ _ _ _) 0 1 0 = 0 := by
+example :
+    (unit 2 : Cslib.Tensor ℚ _ _ _) 0 0 0 = 1 ∧ (unit 2 : Cslib.Tensor ℚ _ _ _) 0 1 0 = 0 := by
   simp [unit]
 
 /-- The entry `(0, 1)` of a `2 × 2` matrix product, through `bil_mm`:

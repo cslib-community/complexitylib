@@ -113,13 +113,6 @@ theorem full_one_one [Zero K] [One K] : (full 1 1 : Tensor K _ _ _) = unit 1 := 
   simp only [full_apply, unit_apply, Fin.ext_iff]
   exact if_congr (by omega) rfl rfl
 
-/-- A restriction of the unit tensor `unit r` is the sum of the `r` rank-one tensors
-`α t ⊗ β t ⊗ γ t`. -/
-private theorem restrict_unit_apply [CommSemiring K] {X Y Z : Type*} (r : ℕ)
-    (α : Matrix (Fin r) X K) (β : Matrix (Fin r) Y K) (γ : Matrix Z (Fin r) K) (x : X) (y : Y)
-    (z : Z) : restrict α β γ (unit r) x y z = ∑ t, α t x * β t y * γ z t := by
-  simp [restrict, unit_apply, ite_and, mul_ite, Finset.sum_ite_eq]
-
 /-- **Interpolation bound** ([Pass][Pass2026], Lemma 2.3): `Full_{a,b}` has rank at most
 `a + b - 1` over a field of characteristic zero. Evaluate both inputs at the integer points
 `0, …, a + b - 2`, multiply the values, and recover the coefficients of the product by Lagrange
@@ -133,7 +126,7 @@ theorem rank_full [Field K] [CharZero K] (a b : ℕ) :
     Matrix.of fun t j => if j.val < b then v t ^ j.val else 0,
     Matrix.of fun k t => (Lagrange.basis univ v t).coeff k.val, ?_⟩
   funext i j k
-  rw [restrict_unit_apply, full_apply]
+  rw [restrict_unit, full_apply]
   simp only [Matrix.of_apply]
   by_cases hi : i.val < a
   · by_cases hj : j.val < b
