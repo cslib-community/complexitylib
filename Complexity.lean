@@ -4199,7 +4199,12 @@ public import Complexity.MachineLearning.UniformLearning.LowDegree
 public import Complexity.MachineLearning.UniformLearning.LowDegreeClasses
 public import Complexity.MachineLearning.UniformLearning.MembershipQuery
 public import Complexity.Probability.AdaptivePolicy.Covariance
+public import Complexity.Probability.AdaptivePolicy.Information
+public import Complexity.Probability.AdaptivePolicy.MeasurableNonidentifiability
 public import Complexity.Probability.AdaptivePolicy.Nonidentifiability
+public import Complexity.Probability.AdaptivePolicy.Pathwise
+public import Complexity.Probability.AdaptivePolicy.Regret
+public import Complexity.Probability.AdaptivePolicy.Sharpness
 public import Complexity.Probability.AdaptivePolicy.SignReversal
 public import Complexity.Probability.AdaptiveWeights
 public import Complexity.Probability.ApproximateCounting

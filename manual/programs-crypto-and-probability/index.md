@@ -90,6 +90,44 @@ in [the bibliography](../../references.bib). The checked clients are in
   [AdaptivePolicyCovariance.lean](../../ComplexityTests/AdaptivePolicyCovariance.lean)
   constructs the actual two-step investment MDP, independently calculates both
   trajectory costs and recovers their difference using the general theorem.
+- [AdaptivePolicy.Information](../../Complexity/Probability/AdaptivePolicy/Information.lean)
+  proves STOC submission 587, Theorem 4.2 (PDF p. 4). `jointLaw` is the actual
+  state/action law and `productLaw` uses its original marginals. `mutualInformation`
+  is their finite KL sum in **nats**, with support inclusion proved from the policy.
+  `actionSpan` is the largest supported within-state action range: state-only offsets
+  and impossible actions do not enlarge it. `information_bound` works for arbitrary
+  real costs and endogenous transitions. For score bounds, use `actionSpan_le`;
+  `sub_le_actionSpan` supplies the reverse inequality from a supported witness.
+  The proof reuses the library's Pinsker inequality and bounded-score change-of-law API.
+- [AdaptivePolicy.Sharpness](../../Complexity/Probability/AdaptivePolicy/Sharpness.lean)
+  proves Proposition 4.3 (PDF p. 4). `sharpness_family` constructs the uniform binary
+  mismatch-cost experiment with matching probability $(1+\epsilon)/2$, for every
+  $0<\epsilon<1$. Its supported span is one, its absolute adaptivity cost is
+  $\epsilon/2$, and its actual mutual information is `information ε`.
+  `information_tendsto_zero` and `sharp_ratio` prove the vanishing-information and
+  limiting-ratio claims by differentiation. This establishes optimality of the
+  $1/\sqrt2$ coefficient in nats, rather than merely checking selected parameters.
+- [AdaptivePolicy.Regret](../../Complexity/Probability/AdaptivePolicy/Regret.lean)
+  proves Corollaries 3.6–3.7 and 4.4–4.5 (PDF pp. 3–4). `IsOptimal` compares actual
+  total costs against every Markov policy; `IsOptimalOpenLoop` compares against every
+  state-independent randomized policy. The three-part regret decomposition has
+  nonnegative static allocation and adaptivity-gap terms. `optimal_gap_le_information`
+  applies in particular to every optimizer, and `optimal_gap_eq_zero` uses its
+  optimality to prove equality. Under unit costs, `rate_value_tradeoff` accepts
+  individual information budgets; `constant_rate_value_tradeoff` gives exactly
+  $H(H+1)\sqrt{R/2}/2$. These theorems quantify over optimizers; they do not construct
+  an optimal-policy algorithm. `exogenous_covariance_characterization` justifies
+  immediate-cost auditing when the supplied transitions are action independent.
+- [AdaptivePolicy.Pathwise](../../Complexity/Probability/AdaptivePolicy/Pathwise.lean)
+  proves Theorem 3.1 and Corollary 3.2 (PDF p. 3). The path index is any nonempty
+  finite type, costs are arbitrary real vectors, and actions lie in a compact convex
+  feasible set. `pathwise_decomposition` constructs an attained best fixed comparator,
+  with the unnormalized sample covariance and nonnegative static gap.
+  `pathwise_covariance_le_regret` gives the inequality and characterizes equality by
+  global optimality of the empirical mean action. No stochastic model is assumed.
+  [AdaptivePolicyInformation.lean](../../ComplexityTests/AdaptivePolicyInformation.lean)
+  checks a negative-regret path, zero and nonzero information channels, and a supported
+  span that ignores an impossible action with cost one million.
 - [AdaptivePolicy.Nonidentifiability](../../Complexity/Probability/AdaptivePolicy/Nonidentifiability.lean)
   proves the finite-context case of STOC submission 587, Proposition 5.2 (PDF p. 5).
   `finite_nonidentifiability` takes a context set of positive initial probability and
@@ -99,7 +137,21 @@ in [the bibliography](../../references.bib). The checked clients are in
   `logLaw` is nonnegative and normalized; `sampleLaw` is the i.i.d. product, including
   the empty log. Logged propensities are functions of the recorded context, so adding
   them does not distinguish the instances. The checked client exhibits a gap change
-  of $-1/4$. This result does not cover arbitrary measurable context spaces.
+  of $-1/4$. For arbitrary measurable context spaces, use the following module.
+- [AdaptivePolicy.MeasurableNonidentifiability](../../Complexity/Probability/AdaptivePolicy/MeasurableNonidentifiability.lean)
+  proves Proposition 5.2 (PDF p. 5) for arbitrary measurable contexts. Start with a
+  probability context law `D` and Markov kernel `π`; `kernel_nonidentifiability`
+  assumes a measurable positive-mass context set on which a positive-marginal action
+  has probability zero. It constructs two measurable binary loss functions, proves
+  equality of complete i.i.d. log laws for every sample count, and computes their
+  nonzero adaptivity-cost difference. `measurableGap_eq_integral` identifies that gap
+  with expected costs. `deterministic_nonidentifiability` covers every finite-action
+  measurable deterministic policy that is not almost surely constant. The checked
+  client uses a Gaussian/binary product context, so the API is exercised beyond
+  finite context types. Logged propensities, as deterministic functions of context,
+  cannot distinguish the equal log laws. The median-of-means sample guarantees,
+  minimax lower bound and episodic auditor of Theorems 5.3–5.5 remain separate work;
+  neither impossibility nor information bounds establish those statistical claims.
 - [AdaptivePolicy.SignReversal](../../Complexity/Probability/AdaptivePolicy/SignReversal.lean)
   realizes Aldridge's Proposition 3.8 (PDF p. 4) with Boolean states and actions. The
   initial state is uniform, investment costs $a(1+s)$, the transition is $s'=s\land a$,
