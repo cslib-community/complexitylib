@@ -3194,6 +3194,7 @@ public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
 public import Complexity.Crypto.Computational.ZeroKnowledge.Soundness
 public import Complexity.Crypto.Game
 public import Complexity.Crypto.Game.CloseTo
+public import Complexity.Crypto.Game.CloseTo.RandomOracle
 public import Complexity.Crypto.Game.CloseTo.Statistical
 public import Complexity.Crypto.Game.CloseTo.UntilBad
 public import Complexity.Crypto.Game.Hybrid
@@ -3263,6 +3264,7 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.E
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Failure
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Parameters
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.RandomOracle
+public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Simulation
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.View
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature

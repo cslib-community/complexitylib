@@ -213,4 +213,36 @@ theorem closeTo_bind_of_le {β γ : Type} (μ : PMF β) (f g : β → PMF γ) (e
   rw [Game.succProbability, ENNReal.coe_toNNReal (PMF.apply_ne_top _ _)] at hc
   simpa only [PMF.map_bind] using hc
 
+/-- Any `CloseTo` relation bounds all test functions symmetrically. -/
+theorem closeTo_map_test_le {γ : Type} {μ ν : PMF γ} {ε : ℝ≥0∞} (h : CloseTo μ ν ε)
+    (test : γ → Bool) :
+    ((μ.map test) true : ℝ≥0∞) ≤ ((ν.map test) true : ℝ≥0∞) + ε ∧
+    ((ν.map test) true : ℝ≥0∞) ≤ ((μ.map test) true : ℝ≥0∞) + ε := by
+  have h1 : μ.toOuterMeasure {x | test x = true} ≤ ν.toOuterMeasure {x | test x = true} + ε :=
+    h {x | test x = true}
+  have h2 : ν.toOuterMeasure {x | test x = true} ≤ μ.toOuterMeasure {x | test x = true} + ε :=
+    h.symm {x | test x = true}
+  have ht (ρ : PMF γ) : (ρ.map test) true = ρ.toOuterMeasure {x | test x = true} := by
+    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
+    congr 1
+  rw [ht μ, ht ν]
+  exact ⟨h1, h2⟩
+
+/-- Transcript query membership agrees with key lookup on the pair projection. -/
+theorem entry_mem_iff_lookup_isSome {Query Value : Type} [DecidableEq Query]
+    (tr : List (Σ _ : Query, Value)) (target : Query) :
+    (∃ entry ∈ tr, entry.1 = target) ↔
+      ((tr.map fun entry : (Σ _ : Query, Value) => (entry.1, entry.2)).lookup target).isSome := by
+  constructor
+  · rintro ⟨entry, hmem, rfl⟩
+    have hp : (entry.1, entry.2) ∈ tr.map (fun entry => (entry.1, entry.2)) :=
+      List.mem_map.mpr ⟨entry, hmem, rfl⟩
+    exact List.lookup_isSome_iff.mpr ⟨(entry.1, entry.2), hp, beq_self_eq_true entry.1⟩
+  · intro h
+    obtain ⟨p, hp, he⟩ := List.lookup_isSome_iff.mp h
+    have heq : target = p.1 := eq_of_beq he
+    obtain ⟨entry, hmem, rfl⟩ := List.mem_map.mp hp
+    subst heq
+    exact ⟨entry, hmem, rfl⟩
+
 end Cslib.RandomOracle
