@@ -903,3 +903,12 @@ not planned, not as proved.
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
 [#2290]: https://github.com/cslib-community/complexitylib/issues/2290
 [#2423]: https://github.com/cslib-community/complexitylib/issues/2423
+
+The STOC1575 weighted-row module now proves Theorem 7.1 equations (24)–(25)
+assignment semantics for positive capped signed rows, per-row binomial counts,
+and an existing-TwoBoundary count/width wrapper. Nontrivial weighted clients cover
+both polarities, zero demand and unattainable demand. This does not complete the
+bounded-demand endpoint: executable subset enumeration (the present listing is
+noncomputable), normalization/capping preservation, capped rank/direct-case
+assembly, global clause deduplication/counting and composed runtime/space remain
+open, as do graph endpoints.

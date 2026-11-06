@@ -478,3 +478,32 @@ The conditional statements, truth-table scales and source-specific quantitative 
 [impagliazzowigderson97]: ../sources.md#impagliazzowigderson97
 [nisanwigderson94]: ../sources.md#nisanwigderson94
 [sudantrevisanvadhan01]: ../sources.md#sudantrevisanvadhan01
+
+### Weighted signed row semantics
+
+Import `Complexity.Logics.Propositional.CNF.WeightedRow` and open
+`Cslib.Logic.PL.WeightedRow`. `Row V d` represents distinct variables with fixed
+polarities, positive natural weights, demand at most `d`, and weights capped at
+`demand + 1`. `Row.value` sums the weights of true row literals. For equations
+(24)–(25) of Theorem 7.1 (submission 1575, PDF pp. 23–24), `Row.upper` constructs
+negated-literal clauses for small overweight subsets and `Row.attainment`
+constructs exact-weight terms. `upper_eval`, `attainment_eval` and `row_eval`
+provide their assignment semantics. Zero demand includes the empty true term;
+an unattainable demand produces an empty false DNF.
+
+`upper_width`, `attainment_width`, `upper_length` and `attainment_length` give
+per-row width and binomial size bounds. `query`, `counting_identity` and
+`query_width` reuse the existing two-boundary construction for a nonempty indexed
+family of rows, obtaining exact counts and width at most `d + 2`.
+[The complete checked client](../../ComplexityTests/WeightedRow.lean) exercises
+weights 2 and 1, both polarities, overweight rejection, zero demand, unattainable
+demand and the counting wrapper. It can be checked from the repository root with
+`scripts/build.sh ComplexityTests.WeightedRow` after the usual setup.
+
+This is row-local progress, not the full Theorem 7.1 reduction. Subset listing
+uses noncomputable `Finset.toList`; no executable enumeration or runtime theorem
+is supplied. The wrapper concatenates upper bounds without global deduplication.
+Normalization of repeated opposite-signed occurrences, assignment-preserving
+capping, the capped affine-system/rank bridge, all direct branches, global signed
+clause counting, and full construction/counting time and space remain open.
+Graph endpoints are unaffected.
