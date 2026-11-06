@@ -1169,3 +1169,28 @@ Integrability supplies the almost-everywhere convergence needed for exchanging t
 integral. No pointwise convergence or uniform convergence assumption is hidden in this theorem.
 The [Poisson API](#apply-lattice-poisson-summation) supplies continuity, reconstruction and
 covolume normalization for the stated analytic hypotheses. Smoothing estimates remain separate.
+
+## Compute a Gaussian sign-disagreement probability
+
+Import
+[`Complexity.Foundations.Probability.Gaussian.Sheppard`](../../Complexity/Foundations/Probability/Gaussian/Sheppard.lean)
+and open the `ProbabilityTheory` namespace to use Sheppard's formula. The space `E` is any
+finite-dimensional real inner-product space with its Borel σ-algebra, and `stdGaussian E` is
+Mathlib's standard Gaussian measure on it. The event is
+`{x | (0 : ℝ) ∈ Ι ⟪u, x⟫ ⟪v, x⟫}`: zero lies in the half-open interval between the two
+projections, so they have opposite signs, up to the null event that a projection is zero.
+
+- For nonzero `u` and `v`, `measureReal_stdGaussian_zero_mem_uIoc_eq_angle hu hv` gives
+  probability `InnerProductGeometry.angle u v / π`. The norms need not be equal.
+- For unit vectors, `measureReal_stdGaussian_zero_mem_uIoc_eq_arccos hu hv` gives
+  `arccos ⟪u, v⟫ / π`, the ρ-correlated form of O'Donnell's Example 11.19 with `ρ = ⟪u, v⟫`.
+
+The checked [`GaussianSheppard.lean` clients](../../ComplexityTests/GaussianSheppard.lean)
+evaluate both forms in `EuclideanSpace ℝ (Fin 2)` and `EuclideanSpace ℝ (Fin 3)`: angle `π/4`
+with unequal norms gives `1/4`, orthogonal unit vectors give `1/2`, opposite vectors give `1`,
+and the events for `v` and `-v` have probabilities summing to `1`. Run
+`scripts/build.sh ComplexityTests.GaussianSheppard` from the repository root to check them.
+
+If a proof needs only an upper bound, or the vectors may be zero, the older
+`measureReal_stdGaussian_mem_uIoc_le_angle` (equal norms, any threshold `t`) still applies. Gaussian
+noise stability and its halfspace formula are not part of this module.
