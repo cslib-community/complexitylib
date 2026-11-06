@@ -276,14 +276,21 @@ It defines CBC (`cbcEncryptBlocks`, `cbcDecryptBlocks`), OFB (`ofbChain`, `ofbEn
 `ofbDecryptBlocks`), counter mode (`ctrMaskBlocks`, `ctrEncryptBlocks`, `ctrDecryptBlocks`), and
 self-synchronizing CFB (`cfbEncryptBlocks`, `cfbDecryptBlocks`, included alongside KL's modes) with
 round-trip inversion theorems and the identity `ofbChain_eq_cbcEncryptBlocks_replicate_zero`
-equating the OFB keystream chain with CBC encryption of all-zero plaintext blocks. Under an ideal
-random function `PMF.uniformOfFintype (BitString n → BitString n)`,
-`map_evalPoints_uniformOfFintype`, `map_xorEvalPoints_uniformOfFintype`, and
-`advantage_xorEvalPoints_eq_zero` prove keystream and ciphertext uniformity on fixed (non-adaptive)
-injective point schedules (such as CTR counters), while `toOuterMeasure_addRight_mem_finset_eq`,
-`toOuterMeasure_addRight_mem_list_le`, and `toOuterMeasure_badChain_le` provide the lazy-sampling
-collision probability lemmas (`S.card / 2^n`, `ks.length / 2^n`, and
-`bs.length * (ks.length + bs.length) / 2^n`) used when analyzing random-IV chaining. The module
+equating the OFB keystream chain with CBC encryption of all-zero plaintext blocks. The generic
+sampling facts live in
+[`Probability/BitString/Collision.lean`](../../Complexity/Probability/BitString/Collision.lean):
+under an ideal random function `PMF.uniformOfFintype (BitString n → BitString n)`,
+`BitString.map_evalPoints_uniformOfFintype` and `BitString.map_xorEvalPoints_uniformOfFintype` give
+keystream and ciphertext uniformity on fixed (non-adaptive) injective point schedules (such as CTR
+counters), and `BitString.toOuterMeasure_addRight_mem_finset_eq` and
+`BitString.toOuterMeasure_addRight_mem_list_le` give the shifted-block collision probabilities
+`S.card / 2^n` and at most `ks.length / 2^n`. The modes module builds on them with
+`advantage_xorEvalPoints_eq_zero` and the chain collision bound `toOuterMeasure_badChain_le`
+(`bs.length * (ks.length + bs.length) / 2^n`, over `uniformBlocks`, the `PMF.iid` uniform blocks read
+as a list) used when analyzing random-IV chaining. The indexed OFB and CTR masks decrypt the
+list-mode ciphertexts (`maskBlockDecrypt_ofbBlockMask_ofbEncryptBlocks`,
+`maskBlockDecrypt_ctrBlockMask_ctrEncryptBlocks`); indexed block `j ≥ 1` of `ctrBlockMask` uses
+counter value `j - 1`, matching list block `j - 1` of `ctrMaskBlocks`. The module
 also proves mode separations and counterexamples for same-IV reuse (`advantage_streamIVReuseGame_eq`,
 `cfbSameIVRecover_cfbEncryptBlocks`), overlapping counter/stream nonces
 (`ctrEncryptBlocks_overlapping_nonce`, `advantage_overlappingStreamGame_eq`), predictable-IV CBC
@@ -292,8 +299,11 @@ additive-IV modes (`xorFunctionCipherRecover_correct`, `additiveModeDistinguishe
 single-bit/dropped-block error-propagation laws (`maskBlockDecrypt_flipBit`,
 `cbcBlockDecrypt_flipBit`, `cfbBlockDecrypt_flipBit`, `cbcBlockDecrypt_dropBlock`,
 `cfbBlockDecrypt_dropBlock`, `maskBlockDecrypt_dropBlock`). Concrete `BitString 4` and
-`ZMod (2 ^ 4)` checks are in
-[`ComplexityTests/Crypto/BlockCipherModes.lean`](../../ComplexityTests/Crypto/BlockCipherModes.lean).
+`ZMod (2 ^ 4)` checks, including indexed CTR decryption of list CTR ciphertexts under a
+nonconstant counter schedule, are in
+[`ComplexityTests/Crypto/BlockCipherModes.lean`](../../ComplexityTests/Crypto/BlockCipherModes.lean),
+and direct checks of the sampling lemmas are in
+[`ComplexityTests/BitStringCollision.lean`](../../ComplexityTests/BitStringCollision.lean).
 
 ## Authentication, signatures, and state
 

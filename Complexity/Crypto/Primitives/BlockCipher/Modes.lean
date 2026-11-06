@@ -7,7 +7,8 @@ module
 -- upstream: candidate
 public import Complexity.Crypto.Game
 public import Complexity.Foundations.Data.BitString.Basic
-public import Complexity.Probability.Uniform
+public import Complexity.Probability.BitString.Collision
+public import Complexity.Probability.IID
 public import Mathlib.Data.Fintype.Perm
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
@@ -56,19 +57,22 @@ standard self-synchronizing feedback mode (not covered in [KatzLindell2020]).
 * `cbcDecryptBlocks_cbcEncryptBlocks`, `ofbDecryptBlocks_ofbEncryptBlocks`,
   `cfbDecryptBlocks_cfbEncryptBlocks`, `ctrDecryptBlocks_ctrEncryptBlocks`: round-trip inversion
   identities, plus `ofbChain_eq_cbcEncryptBlocks_replicate_zero`.
-* `map_evalPoints_uniformOfFintype`, `map_xorEvalPoints_uniformOfFintype`,
-  `advantage_xorEvalPoints_eq_zero`: evaluating a uniform random function on any fixed
+* `advantage_xorEvalPoints_eq_zero`: masking with a uniform random function on any fixed
   (non-adaptive) injective point schedule `pts : ι → BitString n` (such as non-overlapping CTR
-  counters) yields an independent uniform mask with zero distinguishing advantage.
-* `toOuterMeasure_addRight_mem_finset_eq`, `toOuterMeasure_addRight_mem_list_le`,
-  `toOuterMeasure_badChain_le`: lazy-sampling collision probability lemmas (`S.card / 2 ^ n` per
-  step and `bs.length * (ks.length + bs.length) / 2 ^ n` across a chain) used as proof ingredients
-  when analyzing random-IV chaining ([KatzLindell2020], Section 3.6.3).
+  counters) has zero distinguishing advantage, from the bit-string uniformity lemma
+  `BitString.map_xorEvalPoints_uniformOfFintype`.
+* `toOuterMeasure_badChain_le`: lazy-sampling chain collision bound
+  `bs.length * (ks.length + bs.length) / 2 ^ n`, built from the per-step bound
+  `BitString.toOuterMeasure_addRight_mem_list_le`, used as a proof ingredient when analyzing
+  random-IV chaining ([KatzLindell2020], Section 3.6.3).
 * `ofbEncryptBlocks_zipWith_add_same_iv`, `ctrEncryptBlocks_zipWith_add_same_iv`,
   `advantage_streamIVReuseGame_eq`, `ctrEncryptBlocks_overlapping_nonce`,
   `advantage_overlappingStreamGame_eq`, `advantage_cbcPredictableIVGame_eq_one`,
   `cfbSameIVRecover_cfbEncryptBlocks`, `xorFunctionCipherRecover_correct`,
   `additiveModeDistinguisher_spec`: mode counterexamples and IV/nonce misuse separations.
+* `maskBlockDecrypt_ofbBlockMask_ofbEncryptBlocks`,
+  `maskBlockDecrypt_ctrBlockMask_ctrEncryptBlocks`: the indexed OFB / CTR masks decrypt the
+  list-mode ciphertexts.
 * `maskBlockDecrypt_flipBit`, `cbcBlockDecrypt_flipBit`, `cfbBlockDecrypt_flipBit`,
   `cbcBlockDecrypt_dropBlock`, `cfbBlockDecrypt_dropBlock`, `maskBlockDecrypt_dropBlock`:
   single-bit flip and dropped-block error-propagation laws.
@@ -307,39 +311,7 @@ theorem ctrDecryptBlocks_ctrEncryptBlocks (f : BitString n → BitString n)
     min_self]
   exact zipWith_add_cancel_left (ctrMaskBlocks f counter iv ms.length) ms
     (length_ctrMaskBlocks f counter iv ms.length)
-/-! ### Random-function keystream uniformity and adaptive collision bounds -/
-/-- **Fixed-schedule distinct-point evaluation uniformity**: for any fixed (non-adaptive) injective
-  point schedule `pts : ι → BitString n` (such as non-overlapping CTR counter blocks), evaluating a
-  uniform random function `g ← PMF.uniformOfFintype (BitString n → BitString n)` at `pts` produces
-  a uniform random vector in `ι → BitString n`. -/
-theorem map_evalPoints_uniformOfFintype {ι : Type*} [Fintype ι] [DecidableEq ι]
-    {pts : ι → BitString n} (hpts : Function.Injective pts) :
-    (PMF.uniformOfFintype (BitString n → BitString n)).map (fun g i => g (pts i)) =
-      PMF.uniformOfFintype (ι → BitString n) := by
-  classical
-  let φ : (BitString n → BitString n) →+ (ι → BitString n) :=
-    { toFun := fun g i => g (pts i)
-      map_zero' := rfl
-      map_add' := fun _ _ => rfl }
-  apply PMF.uniformOfFintype_map_addHom φ
-  intro y
-  refine ⟨fun x => if h : ∃ i, pts i = x then y (Classical.choose h) else 0, ?_⟩
-  funext i
-  have hex : ∃ j, pts j = pts i := ⟨i, rfl⟩
-  simp only [φ, AddMonoidHom.coe_mk, ZeroHom.coe_mk, hex, ↓reduceDIte]
-  rw [hpts (Classical.choose_spec hex)]
-/-- **Distinct-point ciphertext uniformity**: when the block-function evaluation points `pts : ι
-  → BitString n` are pairwise distinct (`Function.Injective pts`), XORing `g (pts i)` with any
-  message `m : ι → BitString n` under a uniform random function `g ← PMF.uniformOfFintype
-  (BitString n → BitString n)` produces a uniformly distributed ciphertext vector
-  `PMF.uniformOfFintype (ι → BitString n)`, independent of `m`. -/
-theorem map_xorEvalPoints_uniformOfFintype {ι : Type*} [Fintype ι] [DecidableEq ι]
-    {pts : ι → BitString n} (hpts : Function.Injective pts) (m : ι → BitString n) :
-    (PMF.uniformOfFintype (BitString n → BitString n)).map (fun g i => g (pts i) + m i) =
-      PMF.uniformOfFintype (ι → BitString n) := by
-  rw [show (fun g : BitString n → BitString n => fun i => g (pts i) + m i) =
-      (Equiv.addRight m) ∘ (fun g i => g (pts i)) from rfl,
-    ← PMF.map_comp, map_evalPoints_uniformOfFintype hpts, PMF.uniformOfFintype_map_equiv]
+/-! ### Random-function keystream uniformity and lazy-sampling chain collisions -/
 /-- **Zero distinguishing advantage under distinct evaluation points**: for any injective point
   schedule `pts : ι → BitString n`, any two multi-block messages `m₀, m₁ : ι → BitString n`, and
   any distinguisher `D : (ι → BitString n) → Game`, the distinguishing advantage between
@@ -354,42 +326,9 @@ theorem advantage_xorEvalPoints_eq_zero {ι : Type*} [Finite ι]
         (fun g i => g (pts i) + m₁ i)).bind D) = 0 := by
   cases nonempty_fintype ι
   classical
-  rw [map_xorEvalPoints_uniformOfFintype hpts m₀, map_xorEvalPoints_uniformOfFintype hpts m₁,
+  rw [BitString.map_xorEvalPoints_uniformOfFintype hpts m₀,
+    BitString.map_xorEvalPoints_uniformOfFintype hpts m₁,
     Game.advantage_self]
-/-- **Single-step shifted-block collision probability**: for any finite set `S : Finset
-  (BitString n)` of previously queried block-function inputs and any block offset `b : BitString
-  n`, a uniform block `u ← PMF.uniformOfFintype (BitString n)` satisfies `u + b ∈ S` with exact
-  outer measure `S.card * (2 ^ n : ℝ≥0∞)⁻¹`. -/
-theorem toOuterMeasure_addRight_mem_finset_eq (S : Finset (BitString n)) (b : BitString n) :
-    (PMF.uniformOfFintype (BitString n)).toOuterMeasure {u | u + b ∈ S} =
-      (S.card : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ := by
-  classical
-  have hmap :
-      (PMF.uniformOfFintype (BitString n)).toOuterMeasure {u | u + b ∈ S} =
-        ((PMF.uniformOfFintype (BitString n)).map (Equiv.addRight b)).toOuterMeasure (S : Set _) :=
-    (PMF.toOuterMeasure_map_apply (Equiv.addRight b) (PMF.uniformOfFintype (BitString n))
-      (S : Set (BitString n))).symm
-  rw [hmap, PMF.uniformOfFintype_map_equiv, PMF.toOuterMeasure_uniformOfFintype]
-  simp
-/-- List-cache version of `toOuterMeasure_addRight_mem_finset_eq`: for any list `ks : List
-  (BitString n)` of seen inputs and block offset `b : BitString n`, a uniform block `u ←
-  PMF.uniformOfFintype (BitString n)` satisfies `u + b ∈ ks` with outer measure at most
-  `ks.length * (2 ^ n : ℝ≥0∞)⁻¹`. -/
-theorem toOuterMeasure_addRight_mem_list_le (ks : List (BitString n)) (b : BitString n) :
-    (PMF.uniformOfFintype (BitString n)).toOuterMeasure {u | u + b ∈ ks} ≤
-      (ks.length : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ := by
-  classical
-  have hsub : {u : BitString n | u + b ∈ ks} ⊆ {u | u + b ∈ ks.toFinset} := by
-    intro u hu
-    simpa using hu
-  calc (PMF.uniformOfFintype (BitString n)).toOuterMeasure {u | u + b ∈ ks}
-      ≤ (PMF.uniformOfFintype (BitString n)).toOuterMeasure {u | u + b ∈ ks.toFinset} :=
-        MeasureTheory.measure_mono hsub
-    _ = (ks.toFinset.card : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ :=
-        toOuterMeasure_addRight_mem_finset_eq ks.toFinset b
-    _ ≤ (ks.length : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ := by
-        gcongr
-        exact_mod_cast List.toFinset_card_le ks
 /-- **Good (collision-free) step invariant for lazy-sampled chains** (used in the style of the
   random-IV chaining analysis in [KatzLindell2020], Section 3.6.3): given a list
   `ks : List (BitString n)` of already-queried block-function inputs, current chaining block
@@ -400,13 +339,20 @@ def goodChain : List (BitString n) → BitString n → List (BitString n) → Li
   | _, _, [], _ => True
   | ks, c, b :: bs, u :: us => (c + b) ∉ ks ∧ goodChain ((c + b) :: ks) u bs us
   | ks, c, b :: bs, [] => (c + b) ∉ ks ∧ goodChain ((c + b) :: ks) 0 bs []
-/-- Distribution of `k` independent uniform `n`-bit blocks, used to lazily sample an idealized
-  chain of length `k`. -/
-noncomputable def uniformBlocks : ℕ → PMF (List (BitString n))
-  | 0 => PMF.pure []
-  | k + 1 =>
-    (PMF.uniformOfFintype (BitString n)).bind fun u =>
-      (uniformBlocks k).map (u :: ·)
+/-- Distribution of `k` independent uniform `n`-bit blocks as a list, used to lazily sample an
+  idealized chain of length `k`: the independent draws `PMF.iid` read off by `List.ofFn`. -/
+noncomputable def uniformBlocks (k : ℕ) : PMF (List (BitString n)) :=
+  (PMF.iid (PMF.uniformOfFintype (BitString n)) k).map List.ofFn
+/-- No uniform blocks: the empty list. -/
+@[simp]
+theorem uniformBlocks_zero : uniformBlocks (n := n) 0 = PMF.pure [] := by
+  simp [uniformBlocks, PMF.iid]
+/-- `k + 1` uniform blocks: a uniform head followed by `k` independent uniform blocks. -/
+theorem uniformBlocks_succ (k : ℕ) :
+    uniformBlocks (n := n) (k + 1) =
+      (PMF.uniformOfFintype (BitString n)).bind fun u => (uniformBlocks k).map (u :: ·) := by
+  simp only [uniformBlocks, PMF.iid, PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp,
+    Function.comp_def, List.ofFn_succ, Fin.cons_zero, Fin.cons_succ]
 /-- **Lazy-sampled multi-block chain collision lemma**: when the initial chaining block `iv` and
   the `bs.length` step outputs are drawn independently and uniformly from `BitString n`, the outer
   measure of the bad event `¬goodChain ks iv bs draws` (some step input `cᵢ₋₁ + bᵢ` collides with
@@ -432,7 +378,7 @@ theorem toOuterMeasure_badChain_le :
             {p : BitString n × List (BitString n) | ¬goodChain ks p.1 (b :: bs) p.2} ≤
         (PMF.uniformOfFintype (BitString n)) iv * (S0.indicator 1 iv + C) := by
       refine mul_le_mul_of_nonneg_left ?_ zero_le
-      rw [uniformBlocks, PMF.map_bind]
+      rw [uniformBlocks_succ, PMF.map_bind]
       by_cases hiv : iv ∈ S0
       · rw [Set.indicator_of_mem hiv, Pi.one_apply]
         exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
@@ -467,7 +413,7 @@ theorem toOuterMeasure_badChain_le :
           refine tsum_congr fun iv => ?_
           by_cases h : iv ∈ S0 <;> simp [h]
       _ ≤ (ks.length : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ + C :=
-          add_le_add (toOuterMeasure_addRight_mem_list_le ks b) le_rfl
+          add_le_add (BitString.toOuterMeasure_addRight_mem_list_le ks b) le_rfl
       _ ≤ ((bs.length + 1) * (ks.length + (bs.length + 1)) : ℕ) * ((2 : ℝ≥0∞) ^ n)⁻¹ := by
           simp only [C, ← add_mul]
           gcongr
@@ -630,9 +576,6 @@ theorem overlappingStreamRealGame_eq_pure_true (f step : BitString n → BitStri
   unfold overlappingStreamRealGame
   simp only [overlappingStreamTest_overlappingStreamBlocks]
   exact PMF.map_const ivDist true
-private theorem bitString_add_eq_zero_iff {x y : BitString n} : x + y = 0 ↔ x = y :=
-  ⟨fun h => by rw [← BitString.add_cancel_right x y, h, zero_add],
-    fun h => by rw [h, BitString.add_self]⟩
 /-- On four independent uniform `n`-bit blocks, `overlappingStreamTest` accepts with exact
   probability `(2 ^ n)⁻¹`. -/
 theorem overlappingStreamIdealGame_apply_true (n : ℕ) :
@@ -654,7 +597,7 @@ theorem overlappingStreamIdealGame_apply_true (n : ℕ) :
     rw [PMF.map_comp]
     congr 1
     funext out
-    simp [Function.comp_apply, bitString_add_eq_zero_iff]
+    simp [funext_iff, BooleanRing.add_eq_zero']
   rw [hfactor, hdiff, PMF.map_apply, tsum_fintype]
   simp [PMF.uniformOfFintype_apply, eq_comm (a := true)]
 /-- **Exact advantage for overlapping counter/stream nonces ([KatzLindell2020], Exercises 3.24 and
@@ -798,10 +741,48 @@ def maskBlockDecrypt (mask : BitString n → ℕ → BitString n) (iv : BitStrin
 /-- Indexed OFB block mask: `ofbBlockMask f iv j = f^[j] iv`. -/
 def ofbBlockMask (f : BitString n → BitString n) (iv : BitString n) (j : ℕ) : BitString n :=
   (f^[j]) iv
-/-- Indexed CTR block mask: `ctrBlockMask f counter iv j = f (counter iv j)`. -/
+/-- Indexed CTR block mask: `ctrBlockMask f counter iv j = f (counter iv (j - 1))`, so that
+  indexed block `j ≥ 1` uses the same counter value as list block `j - 1` of `ctrMaskBlocks`. -/
 def ctrBlockMask (f : BitString n → BitString n) (counter : BitString n → ℕ → BitString n)
     (iv : BitString n) (j : ℕ) : BitString n :=
-  f (counter iv j)
+  f (counter iv (j - 1))
+/-- Indexed OFB decryption agrees with list OFB encryption: if the indexed stream `c` carries the
+  list ciphertext `ofbEncryptBlocks f iv ms` at positions `1, …, ms.length`, then indexed block
+  `j + 1` decrypts to plaintext block `j`. -/
+theorem maskBlockDecrypt_ofbBlockMask_ofbEncryptBlocks (f : BitString n → BitString n)
+    (iv : BitString n) (ms : List (BitString n)) (c : ℕ → BitString n)
+    (hc : ∀ j (hj : j < ms.length), c (j + 1) = (ofbEncryptBlocks f iv ms)[j]'(by simpa)) :
+    ∀ j (hj : j < ms.length), maskBlockDecrypt (ofbBlockMask f) iv c (j + 1) = ms[j] := by
+  intro j hj
+  have hchain : ∀ (v : BitString n) (k i : ℕ) (hi : i < k),
+      (ofbChain f v k)[i]'(by simpa) = (f^[i + 1]) v := by
+    intro v k
+    induction k generalizing v with
+    | zero => intro i hi; omega
+    | succ k ih =>
+      intro i hi
+      cases i with
+      | zero => simp [ofbChain]
+      | succ i =>
+        simp only [ofbChain, List.getElem_cons_succ]
+        rw [ih (f v) i (by omega)]
+        simp only [Function.iterate_succ_apply]
+  rw [maskBlockDecrypt, ofbBlockMask, hc j hj]
+  simp only [ofbEncryptBlocks, List.getElem_zipWith]
+  rw [hchain iv ms.length j hj, ← add_assoc, BitString.add_self, zero_add]
+/-- Indexed CTR decryption agrees with list CTR encryption: if the indexed stream `c` carries the
+  list ciphertext `ctrEncryptBlocks f counter iv ms` at positions `1, …, ms.length`, then indexed
+  block `j + 1` decrypts to plaintext block `j`, for every counter schedule `counter`. -/
+theorem maskBlockDecrypt_ctrBlockMask_ctrEncryptBlocks (f : BitString n → BitString n)
+    (counter : BitString n → ℕ → BitString n) (iv : BitString n) (ms : List (BitString n))
+    (c : ℕ → BitString n)
+    (hc : ∀ j (hj : j < ms.length), c (j + 1) = (ctrEncryptBlocks f counter iv ms)[j]'(by simpa)) :
+    ∀ j (hj : j < ms.length), maskBlockDecrypt (ctrBlockMask f counter) iv c (j + 1) = ms[j] := by
+  intro j hj
+  rw [maskBlockDecrypt, ctrBlockMask, hc j hj]
+  simp only [ctrEncryptBlocks, ctrMaskBlocks, List.getElem_zipWith, List.getElem_map,
+    List.getElem_range, Nat.add_sub_cancel]
+  rw [← add_assoc, BitString.add_self, zero_add]
 /-- **OFB / CTR single-bit flip law ([KatzLindell2020], Exercise 3.29)**: flipping bit `i` of
   ciphertext block `b` flips only bit `i` of recovered plaintext block `b` and leaves every other
   block `j ≠ b` and every other bit `k ≠ i` unchanged. -/

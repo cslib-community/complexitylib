@@ -98,6 +98,38 @@ example :
       additiveModeDistinguisher
         (additiveModeCipher samplePerm4 sampleMask4 iv4 0 (-sampleMask4)) = true := by
   decide
+/-! ### Indexed OFB / CTR decryption against list-mode ciphertexts -/
+/-- Nonconstant one-bit counter schedule: counter value `i` is the bit `i % 2`. -/
+def parityCounter1 (_ : BitString 1) (i : ℕ) : BitString 1 := fun _ => decide (i % 2 = 1)
+/-- The indexed ciphertext stream of a list-mode ciphertext: position `0` holds the IV and
+  position `j + 1` holds list block `j`. -/
+def indexedStream {n : ℕ} (iv : BitString n) (cs : List (BitString n)) : ℕ → BitString n :=
+  fun j => if j = 0 then iv else cs.getD (j - 1) 0
+/-- One-bit plaintext with alternating blocks. -/
+def msgs1 : List (BitString 1) := [0, 0, 1, 1]
+/-- Indexed CTR decryption with the identity block function, the parity counter schedule and the
+  zero IV recovers every block of the actual list CTR ciphertext. -/
+example :
+    (List.range msgs1.length).map (fun j =>
+      maskBlockDecrypt (ctrBlockMask id parityCounter1) 0
+        (indexedStream 0 (ctrEncryptBlocks id parityCounter1 0 msgs1)) (j + 1)) = msgs1 := by
+  decide
+/-- The same agreement for OFB, with the nonlinear block function `samplePerm4`. -/
+example :
+    (List.range 3).map (fun j =>
+      maskBlockDecrypt (ofbBlockMask samplePerm4) iv4
+        (indexedStream iv4 (ofbEncryptBlocks samplePerm4 iv4 [msgA, msgB, msgC])) (j + 1)) =
+      [msgA, msgB, msgC] := by
+  decide
+/-- The general CTR agreement theorem applied to the parity counter schedule. -/
+example (j : ℕ) (hj : j < msgs1.length) :
+    maskBlockDecrypt (ctrBlockMask id parityCounter1) 0
+      (indexedStream 0 (ctrEncryptBlocks id parityCounter1 0 msgs1)) (j + 1) = msgs1[j] :=
+  maskBlockDecrypt_ctrBlockMask_ctrEncryptBlocks id parityCounter1 0 msgs1 _
+    (fun k hk => by
+      simp only [indexedStream, Nat.add_one_ne_zero, ↓reduceIte, Nat.add_sub_cancel]
+      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by simpa using hk),
+        Option.getD_some]) j hj
 /-! ### Concrete probabilistic and error-propagation instantiations -/
 example (D : (Fin 2 → BitString 4) → Game) (m₀ m₁ : Fin 2 → BitString 4) :
     Game.advantage
