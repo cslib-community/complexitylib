@@ -191,7 +191,8 @@ even if they have identical states. -/
 
 open Cslib.Algorithms.Lean
 
-private theorem indicators_read {m : ℕ} (table : WordTable Bool m) (s : BitVec m) :
+/-- Reading a lifted Boolean flag gives its zero/one counter. -/
+theorem indicators_read {m : ℕ} (table : WordTable Bool m) (s : BitVec m) :
     (indicators table).read s = if table.read s then 1 else 0 := by
   induction table with
   | leaf b => rfl
@@ -209,7 +210,8 @@ private theorem sumCounters_read {m : ℕ} (a b : WordTable ℕ m) (s : BitVec m
       obtain ⟨⟨s, b⟩, rfl⟩ := (concat_bijective n).2 s
       cases b <;> simp [sumCounters, read_node, ihl, ihr]
 
-private theorem countAdvance_read {m : ℕ} (table : WordTable ℕ m) (a t : BitVec m) :
+/-- A counting layer sums both inverse branches, retaining multiplicity. -/
+theorem countAdvance_read {m : ℕ} (table : WordTable ℕ m) (a t : BitVec m) :
     (countAdvance (stateKey a) table).ret.read t =
       table.read (unstep false t a) + table.read (unstep true t a) := by
   simp only [countAdvance, TimeM.ret_bind, complement_ret, complement_key, sumCounters_read,

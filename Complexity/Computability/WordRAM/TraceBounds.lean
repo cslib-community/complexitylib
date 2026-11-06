@@ -74,6 +74,30 @@ private theorem probe_footprint_subset {w : ℕ} (ts : List Probe)
       simpa only [Probe.reads, Probe.writes, Finset.union_assoc, Finset.union_left_comm] using
         Finset.union_subset (Finset.singleton_subset_iff.mpr ha) ht
 
+/-- A transcript accesses at most one new cell per recorded probe. -/
+theorem Probe.footprint_le_length (ts : List Probe) :
+    (Probe.reads ts ∪ Probe.writes ts).card ≤ ts.length := by
+  induction ts with
+  | nil => simp [Probe.reads, Probe.writes]
+  | cons p ts ih =>
+    cases p with
+    | read a v =>
+      simpa only [Probe.reads, Probe.writes, Finset.union_assoc, List.length_cons] using
+        (Finset.card_union_le ({a} : Finset ℕ) (Probe.reads ts ∪ Probe.writes ts)).trans
+          (by simp only [Finset.card_singleton]; omega)
+    | write a v =>
+      simpa only [Probe.reads, Probe.writes, Finset.union_assoc, Finset.union_left_comm,
+        List.length_cons] using
+        (Finset.card_union_le ({a} : Finset ℕ) (Probe.reads ts ∪ Probe.writes ts)).trans
+          (by simp only [Finset.card_singleton]; omega)
+
+/-- Actual structured execution bounds its complete accessed footprint by time,
+even when counter values require many more bits than memory addresses. -/
+theorem TraceExec.footprint_le {B : Basis} {r w n : ℕ} {c : Code B r}
+    {x y : Data r} {ts : List Probe} (h : TraceExec w c x y n ts) :
+    (Probe.reads ts ∪ Probe.writes ts).card ≤ n :=
+  (Probe.footprint_le_length ts).trans h.length_le
+
 /-- All accessed cells fit in the machine's finite address capacity. This bounds
 peak distinct cells even when cells are repeatedly overwritten. -/
 theorem TraceExec.address_footprint_le {B : Basis} {r w n : ℕ} {c : Code B r}

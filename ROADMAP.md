@@ -52,6 +52,12 @@ and the counter-directed dissection now have unrestricted decision/witness corre
 exact indexed multiplicities, output-sensitive chain-call counts and a retained dictionary
 node bound in terms of the actual maximum smaller-class size. Their native runtime,
 preprocessing/address-capacity and compiled peak-space bridges remain open.
+Native forward counter preprocessing now executes from standard encoded input
+through halt, preserving indexed multiplicities, with at most $43(q+1)2^p$
+instructions and a conservative full accessed-storage certificate that includes
+counter word widths and registers. Backward native preprocessing, projection
+from the original input and integration with native class streaming remain open;
+this forward certificate does not complete Lemma 8 or Theorem 7.
 The pointer/Boolean and counter-operation
 models do not replace native bit-runtime or peak-space certificates. The actual fixed
 WordRAM reachable-state array program now has an unrestricted standard-input-to-halt

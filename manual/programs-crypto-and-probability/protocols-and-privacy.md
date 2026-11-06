@@ -435,6 +435,37 @@ fixed target. Their uniform counterparts sample all those operands independently
 An empty suffix has no random operand and is excluded from the backward mean.
 No independence between class sizes or bound on expected maximum balance follows.
 
+Import [AddXNORNativeCounters.lean](../../Complexity/Cryptanalysis/AddXNORNativeCounters.lean)
+for native **forward** counter preprocessing. In namespace
+`Cslib.Cryptanalysis.AddXNOR.Native.Counters`, `encoded_resources as s t`
+starts with `Native.encodeInput (List.ofFn as) s t`, executes initialization and
+every counting layer, and halts with the final array pointer in `Native.source`.
+For every state $g$, the certified final memory cell contains `solutionCount as s g`.
+Coincident predecessors are added twice. The target header word is read but does
+not affect this all-states preprocessing. From the repository root after setup:
+
+```bash
+scripts/build.sh --wfail --iofail Complexity.Cryptanalysis.AddXNORNativeCounters
+lake env lean -DwarningAsError=true ComplexityTests/AddXNORNativeCounters.lean
+```
+
+The complete [counter client](../../ComplexityTests/AddXNORNativeCounters.lean)
+checks the generic certificate and actual kernel executions with repeated states,
+wraparound, empty chains and width zero. Width zero with three operands returns
+eight, illustrating why a Boolean reachable-state table is insufficient here.
+The native instruction bound, including halt, is $43(q+1)2^m$.
+The physical word width is
+$W=\lfloor\log_2(3\cdot2^m+2q+2\cdot2^q+12)\rfloor+1$;
+the counter value $2^q$ must fit even when $m=0$.
+The complete accessed footprint plus registers is bounded by
+$(43(q+1)2^m+18)W$ bits, using at most one accessed cell per charged
+instruction. This is conservative but bounds every execution prefix without
+allocating all $2^W$ possible addresses. Input memory is supplied under the
+existing `Data.init` convention; all program reads and initialization stores are
+charged. For a projected instance, this certificate begins with the already
+projected input. Native projection, backward preprocessing and integration with
+class streaming are still required for Lemma 8 and Theorem 7.
+
 Import [AddXNORDissection.lean](../../Complexity/Cryptanalysis/AddXNORDissection.lean)
 for the actual quarter-indexed streaming class search of Lemma 8 and Theorem 7.
 In `Cslib.Cryptanalysis.AddXNOR.Dissection`, call `solve p as s t` on the
@@ -476,8 +507,10 @@ the search may stop at an earlier successful class.
 For four quarters of length $k$ this sum is
 $4k2^{p+k}+2k2^{2k}$. Each quarter index has at most $(p+1)2^k$ trie nodes.
 These statements separate counted chain calls, inspected dictionary nodes and
-retained dictionary size. They leave native counter preprocessing, key/list
-construction, word-bit costs, address capacity, allocation and compiled peak
+retained dictionary size. The dictionary is now bound before its consumer fold.
+These results and the separate forward counter certificate leave backward
+preprocessing, native projection, key/list construction, word-bit costs,
+address capacity, allocation and compiled peak
 storage unproved. Thus the streaming implementation is functionally certified,
 while the paper's full runtime/space endpoint remains open. The existing
 per-class means still give no bound on expected maximum balance.

@@ -94,17 +94,20 @@ private theorem probeFold_sound {m : ℕ} (trie : BinaryTrie (BitVec m × List B
     · exact Or.inr ⟨l, v, List.mem_cons_of_mem r hv, hl, hx, hy⟩
 
 /-- Join a stored class with a streamed class. The two branch orientations are
-handled by the caller; the result orders stored operators before streamed ones. -/
+handled by the caller; the result orders stored operators before streamed ones.
+The dictionary is bound outside the consumer, before the streaming fold starts. -/
 @[expose] def scanForward {m p : ℕ} (stored : List (BitVec m × List Bool))
     (a b : List (BitVec m)) (s : BitVec m) (g : BitVec p) :
     Option (List Bool × List Bool) :=
-  foldClass (fun acc r => probe (recordTrie stored) acc (pair r)) a b s g none
+  let trie := recordTrie stored
+  foldClass (fun acc r => probe trie acc (pair r)) a b s g none
 
 /-- Stream the backward class against a stored dictionary. -/
 @[expose] def scanBackward {m p : ℕ} (stored : List (BitVec m × List Bool))
     (c d : List (BitVec m)) (t : BitVec m) (g : BitVec p) :
     Option (List Bool × List Bool) :=
-  foldBackClass (fun acc r => probe (recordTrie stored) acc (pair r)) c d t g none
+  let trie := recordTrie stored
+  foldBackClass (fun acc r => probe trie acc (pair r)) c d t g none
 
 private theorem scanForward_eq {m p : ℕ} (stored : List (BitVec m × List Bool))
     (a b : List (BitVec m)) (s : BitVec m) (g : BitVec p) :
