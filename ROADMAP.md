@@ -698,6 +698,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
+- **Depth-three threshold circuits for the Kane–Williams function** ([#2812]): for the function
+  `B_n` of arXiv:1511.07860v1, Definition 6.1, with `16 p` parity blocks and any
+  `2 ^ (-7 p)`-biased rows, `MAJ ∘ THR ∘ THR` circuits with top fan-in at most `n ^ 3 / 4` need
+  `Ω(n ^ (3 / 2) / log² n)` gates and `Ω(n ^ (5 / 2) / log ^ (5 / 2) n)` wires, and a depth-two
+  circuit with `s` gates agrees with `B_n` on at most a
+  `1 / 2 + O(s log² n / n ^ (3 / 2)) + n ^ (-3)` fraction of inputs
+  (`WeightedThreshold/KaneWilliamsB.lean`; Kane and Williams, Theorem 1.3, have `log³ n` and
+  `log ^ (7 / 2) n`). Still open: a certified polynomial-time construction of the rows, so that
+  `B_n` is in `P` as Kane and Williams state, and bounds that allow arbitrary top weights
+  (`THR ∘ THR ∘ THR`).
 - Formula lower bounds beyond Andreev's, following Jukna; Raz–Wigderson's monotone depth bound for
   matching on general graphs.
 - **Monotone circuits versus P:** Razborov's `n ^ Ω(log n)` monotone bound for bipartite perfect
@@ -1199,3 +1209,4 @@ not planned, not as proved.
 [#2652]: https://github.com/cslib-community/complexitylib/issues/2652
 
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
+[#2812]: https://github.com/cslib-community/complexitylib/issues/2812
