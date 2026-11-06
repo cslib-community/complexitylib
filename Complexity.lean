@@ -3706,6 +3706,7 @@ public import Complexity.Foundations.Data.BitString.Counter
 public import Complexity.Foundations.Data.BitString.CoverCoding
 public import Complexity.Foundations.Data.BitString.Enumeration
 public import Complexity.Foundations.Data.BitString.Flip
+public import Complexity.Foundations.Data.BitString.HalfSplit
 public import Complexity.Foundations.Data.BitString.Hamming
 public import Complexity.Foundations.Data.BitString.InitialTests
 public import Complexity.Foundations.Data.BitString.Isolation
@@ -4142,6 +4143,7 @@ public import Complexity.Languages.Probabilistic.QueryCount.Support
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 public import Complexity.Languages.Probabilistic.RandomPermutation
+public import Complexity.Languages.Probabilistic.RandomPermutation.ExtPermsCard
 public import Complexity.Languages.Probabilistic.Repeat
 public import Complexity.Languages.Probabilistic.Sampling.F4
 public import Complexity.Languages.Probabilistic.Selection

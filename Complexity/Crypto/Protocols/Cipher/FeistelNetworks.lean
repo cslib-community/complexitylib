@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
-public import Complexity.Languages.Probabilistic.RandomPermutation
-public import Mathlib.Data.Fintype.CardEmbedding
+public import Complexity.Foundations.Data.BitString.HalfSplit
+public import Complexity.Languages.Probabilistic.RandomPermutation.ExtPermsCard
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform
@@ -36,7 +36,8 @@ concrete-security results on block cipher networks from [KatzLindell2020] and or
    of [KatzLindell2020], Section 7.2.2, Proposition 7.4): alternating rounds on `A × B`
    (`unbalancedFeistelLeftEquiv`, `unbalancedFeistelRightEquiv`), 2- and 4-round networks
    (`unbalancedFeistel2`, `unbalancedFeistel4`), agreement with balanced Feistel (`feistel4`), and
-   lifting to `Equiv.Perm (BitString n)` for any block length `n` (`unbalancedFeistel4BitString`).
+   lifting to `Equiv.Perm (BitString n)` for any block length `n` (`unbalancedFeistel4BitString`,
+   through the split `BitString.halfSplitEquiv`).
 3. **Degenerate round-function periodicity** ([KatzLindell2020], Exercise 7.10(a),(b)): general
    periodicity reduction (`feistelNetwork_replicate_mod`), period-2 law for `0 : G → G`
    (`feistelNetwork_replicate_zero`), and period-3 law for `id : G → G` when `∀ a : G, -a = a`
@@ -44,8 +45,9 @@ concrete-security results on block cipher networks from [KatzLindell2020] and or
 4. **Explicit 1- and 2-round CPA, 3-round repeated-key CPA, and 3-round CCA distinguishers**
    (attacks from [KatzLindell2020], Section 8.6 and Exercises 8.16–8.18; concrete bounds are
    original):
-   - **Extension-cache falling-factorial bound** (`card_extPerms_ofFn_mul_descFactorial_le`,
-     original): `k`-point `RandomPermutation.extPerms` fiber bound `(|α|)! / (|α|).descFactorial k`.
+   - **Permutation-fiber counts**: the one-, two- and three-point bounds below specialize the
+     `k`-point falling-factorial bound `RandomPermutation.card_extPerms_ofFn_mul_descFactorial_le`
+     from `Complexity.Languages.Probabilistic.RandomPermutation.ExtPermsCard`.
    - **1-round CPA** (`feistel1CPAAttack`, [KatzLindell2020], Section 8.6): accepts
      `feistelRoundEquiv f` w.p. `1`, `randomFunctionGame` w.p. `|G|⁻¹`, and `idealPermGame` w.p.
      `≤ |G|⁻¹` (original advantage bound `≥ 1 - |G|⁻¹`).
@@ -362,13 +364,6 @@ theorem unbalancedFeistel4_symm_apply [AddGroup A] [AddGroup B]
 theorem unbalancedFeistel4_eq_feistel4 [AddGroup G] (f₁ f₂ f₃ f₄ : G → G) :
     unbalancedFeistel4 f₁ f₂ f₃ f₄ = feistel4 f₁ f₂ f₃ f₄ := rfl
 
-/-- Split an arbitrary `n`-bit string (`BitString n`) into its first `n / 2` bits and remaining
-`n - n / 2` bits, supporting both even and odd block lengths `n` (original). -/
-def bitStringHalfSplitEquiv (n : ℕ) :
-    BitString n ≃ BitString (n / 2) × BitString (n - n / 2) :=
-  (Equiv.arrowCongr (finCongr (Nat.add_sub_of_le (Nat.div_le_self n 2)).symm)
-    (Equiv.refl Bool)).trans (Fin.appendEquiv (n / 2) (n - n / 2)).symm
-
 /-- Four-round unbalanced Feistel permutation on `BitString n` for any (even or odd) block size `n`,
 constructed from half-block round functions `f₁, f₃ : BitString (n - n / 2) → BitString (n / 2)`
 and `f₂, f₄ : BitString (n / 2) → BitString (n - n / 2)` (original). -/
@@ -378,8 +373,8 @@ def unbalancedFeistel4BitString (n : ℕ)
     (f₃ : BitString (n - n / 2) → BitString (n / 2))
     (f₄ : BitString (n / 2) → BitString (n - n / 2)) :
     Equiv.Perm (BitString n) :=
-  (bitStringHalfSplitEquiv n).trans
-    ((unbalancedFeistel4 f₁ f₂ f₃ f₄).trans (bitStringHalfSplitEquiv n).symm)
+  (BitString.halfSplitEquiv n).trans
+    ((unbalancedFeistel4 f₁ f₂ f₃ f₄).trans (BitString.halfSplitEquiv n).symm)
 
 end UnbalancedFeistel
 
@@ -473,79 +468,14 @@ section Distinguishers
 
 variable {α : Type} [Fintype α] [DecidableEq α]
 
-private theorem extPerms_ofFn_eq {k : ℕ} (xs ys : Fin k → α) :
-    RandomPermutation.extPerms (List.ofFn fun i => (xs i, ys i)) =
-      Finset.univ.filter fun π : Equiv.Perm α => ∀ i, π (xs i) = ys i := by
-  ext π
-  simp [RandomPermutation.extPerms, RandomPermutation.AgreesWith]
-
-private theorem card_extPerms_ofFn_eq {k : ℕ} (xs : Fin k → α) (e e' : Fin k ↪ α) :
-    (RandomPermutation.extPerms (List.ofFn fun i => (xs i, e i))).card =
-      (RandomPermutation.extPerms (List.ofFn fun i => (xs i, e' i))).card := by
-  rw [extPerms_ofFn_eq, extPerms_ofFn_eq]
-  let E : {x // x ∈ Set.range e} ≃ {x // x ∈ Set.range e'} :=
-    (Equiv.ofInjective e e.injective).symm.trans (Equiv.ofInjective e' e'.injective)
-  let σ : Equiv.Perm α := E.extendSubtype
-  have hσ (i : Fin k) : σ (e i) = e' i := by
-    dsimp [σ]
-    rw [Equiv.extendSubtype_apply_of_mem E (e i) ⟨i, rfl⟩]
-    have hi : (Equiv.ofInjective e e.injective).symm ⟨e i, ⟨i, rfl⟩⟩ = i :=
-      e.injective (Equiv.apply_ofInjective_symm e.injective ⟨e i, ⟨i, rfl⟩⟩)
-    simp only [E, Equiv.trans_apply, hi, Equiv.ofInjective_apply]
-  refine Finset.card_bij (fun π _ => σ * π) ?_ ?_ ?_
-  · intro π hπ
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hπ ⊢
-    intro i; simp [hπ i, hσ]
-  · intro π _ ρ _ h; simpa using h
-  · intro ρ hρ
-    refine ⟨σ⁻¹ * ρ, ?_, by simp⟩
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hρ ⊢
-    intro i; rw [Equiv.Perm.mul_apply, hρ i, Equiv.Perm.inv_eq_iff_eq, hσ]
-
-private theorem sum_card_extPerms_ofFn {k : ℕ} (xs : Fin k ↪ α) :
-    ∑ e : Fin k ↪ α,
-      (RandomPermutation.extPerms (List.ofFn fun i => (xs i, e i))).card =
-        (Fintype.card α).factorial := by
-  rw [← Fintype.card_perm, ← Finset.card_univ,
-    Finset.card_eq_sum_card_fiberwise (f := fun π : Equiv.Perm α => xs.trans π.toEmbedding)
-      (t := Finset.univ) (by simp)]
-  refine Finset.sum_congr rfl fun e _ => ?_
-  rw [extPerms_ofFn_eq]
-  congr 1; ext π
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-  exact ⟨fun h => by ext i; simp [h i], fun h i => by rw [← h]; simp⟩
-
-/-- **Falling-factorial upper bound on `k`-point `RandomPermutation.extPerms` fibers** (original):
-for any `k` distinct domain points `xs : Fin k ↪ α` and any target values `ys : Fin k → α`,
-`#(RandomPermutation.extPerms (List.ofFn fun i => (xs i, ys i))) * (Fintype.card α).descFactorial k
-  ≤ (Fintype.card α).factorial`. -/
-theorem card_extPerms_ofFn_mul_descFactorial_le {k : ℕ} (xs : Fin k ↪ α) (ys : Fin k → α) :
-    (RandomPermutation.extPerms (List.ofFn fun i => (xs i, ys i))).card *
-      (Fintype.card α).descFactorial k ≤ (Fintype.card α).factorial := by
-  by_cases hys : Function.Injective ys
-  · have hall : ∀ e : Fin k ↪ α,
-        (RandomPermutation.extPerms (List.ofFn fun i => (xs i, e i))).card =
-          (RandomPermutation.extPerms (List.ofFn fun i => (xs i, ys i))).card :=
-      fun e => card_extPerms_ofFn_eq xs e ⟨ys, hys⟩
-    rw [← sum_card_extPerms_ofFn xs]
-    simp only [hall, Finset.sum_const, Finset.card_univ, smul_eq_mul,
-      Fintype.card_embedding_eq, Fintype.card_fin]
-    rw [mul_comm]
-  · have hempty : RandomPermutation.extPerms (List.ofFn fun i => (xs i, ys i)) = ∅ := by
-      rw [extPerms_ofFn_eq]
-      ext π
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.notMem_empty, iff_false]
-      exact fun h => hys fun i j hij => xs.injective (π.injective (by rw [h i, h j, hij]))
-    simp [hempty]
-
 private theorem card_filter_perm_one_mul_le (x a : α) :
     ((Finset.univ.filter fun π : Equiv.Perm α => π x = a).card : ℝ) * (Fintype.card α : ℝ) ≤
       (Fintype.card α).factorial := by
   let xs : Fin 1 ↪ α := ⟨![x], fun i j _ => Subsingleton.elim i j⟩
-  have h := card_extPerms_ofFn_mul_descFactorial_le xs ![a]
+  have h := RandomPermutation.card_extPerms_ofFn_mul_descFactorial_le xs ![a]
   have he : RandomPermutation.extPerms (List.ofFn fun i : Fin 1 => (xs i, ![a] i)) =
       Finset.univ.filter fun π : Equiv.Perm α => π x = a := by
-    rw [extPerms_ofFn_eq]; ext π; simp [xs]; rfl
+    rw [RandomPermutation.extPerms_ofFn_eq]; ext π; simp [xs]; rfl
   rw [he, Nat.descFactorial_one] at h
   exact_mod_cast h
 
@@ -555,10 +485,10 @@ private theorem card_filter_perm_two_mul_le {x y : α} (hxy : x ≠ y) (a b : α
   have hinj : Function.Injective ![x, y] := by
     intro i j h; fin_cases i <;> fin_cases j <;> simp_all [eq_comm]
   let xs : Fin 2 ↪ α := ⟨![x, y], hinj⟩
-  have h := card_extPerms_ofFn_mul_descFactorial_le xs ![a, b]
+  have h := RandomPermutation.card_extPerms_ofFn_mul_descFactorial_le xs ![a, b]
   have he : RandomPermutation.extPerms (List.ofFn fun i : Fin 2 => (xs i, ![a, b] i)) =
       Finset.univ.filter fun π : Equiv.Perm α => π x = a ∧ π y = b := by
-    rw [extPerms_ofFn_eq]; ext π; simp [xs, Fin.forall_fin_two]
+    rw [RandomPermutation.extPerms_ofFn_eq]; ext π; simp [xs, Fin.forall_fin_two]
   have h1 : 0 < Fintype.card α := Fintype.card_pos_iff.mpr ⟨x⟩
   rw [he, Nat.descFactorial_succ, Nat.descFactorial_one] at h
   have hsub : ((Fintype.card α - 1 : ℕ) : ℝ) = (Fintype.card α : ℝ) - 1 := by
@@ -576,10 +506,10 @@ private theorem card_filter_perm_three_mul_le {x y z : α}
   have hinj : Function.Injective ![x, y, z] := by
     intro i j h; fin_cases i <;> fin_cases j <;> simp_all [eq_comm]
   let xs : Fin 3 ↪ α := ⟨![x, y, z], hinj⟩
-  have h := card_extPerms_ofFn_mul_descFactorial_le xs ![a, b, c]
+  have h := RandomPermutation.card_extPerms_ofFn_mul_descFactorial_le xs ![a, b, c]
   have he : RandomPermutation.extPerms (List.ofFn fun i : Fin 3 => (xs i, ![a, b, c] i)) =
       Finset.univ.filter fun π : Equiv.Perm α => π x = a ∧ π y = b ∧ π z = c := by
-    rw [extPerms_ofFn_eq]; ext π; simp [xs, Fin.forall_fin_succ]
+    rw [RandomPermutation.extPerms_ofFn_eq]; ext π; simp [xs, Fin.forall_fin_succ]
   rw [he, Nat.descFactorial_succ, Nat.descFactorial_succ, Nat.descFactorial_one] at h
   have e1 : ((Fintype.card α - 1 : ℕ) : ℝ) = (Fintype.card α : ℝ) - 1 := by
     rw [Nat.cast_sub (by omega)]; simp
@@ -762,11 +692,6 @@ theorem isQueryBounded_feistel2CPAAttack (l₀ l₁ r₀ : G) :
     ((OracleComp.IsCostBounded.query (l₁, r₀)).bind fun vw₁ =>
       OracleComp.IsCostBounded.pure _ 0)).mono (by omega)
 
-omit [Fintype G] [DecidableEq G] in
-private theorem add_sub_add_right_cancel (a b c : G) : (a + c) - (b + c) = a - b := by
-  rw [sub_eq_add_neg, neg_add_rev, ← add_assoc, add_assoc a c (-c), add_neg_cancel, add_zero,
-    ← sub_eq_add_neg]
-
 omit [Fintype G] in
 /-- **Every 2-round Feistel network `feistelNetwork [f₁, f₂]` is accepted with probability `1` by
 `feistel2CPAAttack l₀ l₁ r₀`** ([KatzLindell2020], Exercise 8.16), for any round functions
@@ -778,7 +703,7 @@ theorem eval_feistel2_feistel2CPAAttack (f₁ f₂ : G → G) (l₀ l₁ r₀ : 
     feistelRoundEquiv_apply, feistelRound, Equiv.refl_apply,
     OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind,
-    add_sub_add_right_cancel, decide_true]
+    add_sub_add_right_eq_sub, decide_true]
 
 /-- Against `idealPermGame`, when `l₀ ≠ l₁` and `2 ≤ Fintype.card G`, `feistel2CPAAttack l₀ l₁ r₀`
 accepts with probability at most `|G| / (|G| ^ 2 - 1)` (original bound). -/
