@@ -13,7 +13,7 @@ public import Complexity.Foundations.Data.ZMod.DotProduct
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract
 public import Complexity.Crypto.Protocols.SigmaProtocol.Efficient
-public import Complexity.Crypto.Game.CloseTo.Statistical
+public import Complexity.Crypto.Game.CloseTo.UniformNat
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Computability.Probabilistic.Repeat
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.BinaryDiv
@@ -288,21 +288,6 @@ theorem eval_sampleIntBox_eq_map_zmod (B width : ℕ) :
   congr 1
   funext i
   simp only [Function.comp_apply, ZMod.val_natCast, Nat.mod_mod]
-
-/-- `sampleModNat width q` read in `ZMod q` is within `q / 2 ^ width` of uniform in `CloseTo`. -/
-theorem closeTo_uniform_sampleModNat (width q : ℕ) [NeZero q] :
-    CloseTo (PMF.uniformOfFintype (ZMod q))
-      ((ProbComp.eval (ProbComp.sampleModNat width q)).map (Nat.cast : ℕ → ZMod q))
-      ((q : ℝ≥0∞) / 2 ^ width) := by
-  have hd : dist (PMF.uniformOfFintype (ZMod q))
-      ((ProbComp.eval (ProbComp.sampleModNat width q)).map (Nat.cast : ℕ → ZMod q)) ≤
-      ((q : ℝ≥0) / 2 ^ width : ℝ≥0) := by
-    rw [dist_comm]
-    exact ProbComp.dist_map_natCast_eval_sampleModNat_le width q
-  have hc := closeTo_of_dist_le hd
-  refine hc.mono ?_
-  rw [ENNReal.coe_div (pow_ne_zero _ two_ne_zero), ENNReal.coe_natCast, ENNReal.coe_pow,
-    ENNReal.coe_ofNat]
 
 /-- **1D box sampler statistical distance.** `sampleIntBox B width` is within
 `(2 * B + 1) / 2 ^ width` of the exact uniform distribution `uniformBox1D B` on `[-B, B]`. -/

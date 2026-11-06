@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.ZeroKnowledge
 public import Complexity.Computability.Complexity.CookLevin.Levin
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Families
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -85,20 +86,6 @@ theorem _root_.Cslib.Complexity.NPRelation.computableInPolyTime_decide_isWitness
   simp only [heq]
   fun_prop
 
-/-- A family of witnesses mapped by a polynomial-time function stays polynomially bounded when the
-instance and witness families are. -/
-private theorem polynomiallyBounded_length_map {β : Type} {encB : β ↪ List Bool}
-    {g : α × List Bool → β} (hg : ComputableInPolyTime g (encPair enc encBits) encB)
-    {a : ℕ → α} {w : ℕ → List Bool} (ha : PolynomiallyBounded fun n => (enc (a n)).length)
-    (hw : PolynomiallyBounded fun n => (w n).length) :
-    PolynomiallyBounded fun n => (encB (g (a n, w n))).length := by
-  have hin : PolyBounded id fun n => (encPair enc encBits (a n, w n)).length := by
-    refine (((PolyBounded.const 2).mul (PolyBounded.of_polynomiallyBounded id ha)).add
-      (PolyBounded.const 1) |>.add (PolyBounded.of_polynomiallyBounded id hw)).mono fun n => ?_
-    simp only [length_encPair, encBits_apply, id]
-    lia
-  exact ((ComputableInPolyTime.polyBounded_length hg).comp hin).polynomiallyBounded
-
 /-- **GMW zero knowledge with the relation's own witnesses.** The Goldreich–Micali–Wigderson
 proof system for the language of the NP relation `R`, from a pseudorandom generator with stretch
 at least `3 * k + 1` and a Levin reduction `r` of `R` to the NP relation of 3SAT. The honest
@@ -163,7 +150,8 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_levinZeroKnowledgeProo
     GMW.isPPTOn_gmwSimulator hG.polyTime hG.length_eq r.computableInPolyTime_toFun hV,
     fun _ _ _ _ ha hw hz hz' hsat _ hadv =>
       hAdv.gmwView_negligible r.computableInPolyTime_toFun hV hadv ha
-        (by simpa using polynomiallyBounded_length_map r.computableInPolyTime_forwardWitness ha hw)
+        (by simpa using
+          r.computableInPolyTime_forwardWitness.polynomiallyBounded_length_prod ha hw)
         hz hz' fun n => (r.isWitness_forwardWitness _ _ (of_decide_eq_true (hsat n))).2⟩
 
 /-- **GMW for NP relations (from a pseudorandom generator).** Every NP relation has a
