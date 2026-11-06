@@ -43,14 +43,19 @@ the cube. Finite lookup aligns scope signs. `CNF/ExactOneElimination` and
 `CNF/VCOneElimination` now execute materialized rational elimination, original-row
 selection, direct cases and nonadaptive query assembly, including overlapping
 tables. A proved compiler rewrite scans explicit table rows for binary restrictions
-rather than all Boolean tuples. `PolyTime/Int/Cramer` now independently certifies binary square-system recovery
-using division-free determinants and explicit coefficient-width bounds. Connecting
-this component to rectangular row selection and the global pipeline remains open.
-Encoded polynomial-bit-time and peak-space certification for the full closure,
-separator, elimination and query assembly, bounded-demand/graph applications and the advertised sharper counting
-runtime remain open under
+rather than all Boolean tuples. `PolyTime/Int/Cramer` independently certifies binary
+square-system recovery. `PolyTime/Int/RowBasis` and `PolyTime/Int/Rectangular` now
+supply a division-free greedy original-row basis, computed rank identity, general
+rectangular consistency/candidate recovery and uniform binary polynomial runtime
+with explicit coefficient-width bounds. These components are not yet connected to
+the existing rational `preprocess`/`tablePlan` pipeline. That integration and uniform
+binary time/peak-space certification for the full closure, separator, equation,
+branch and two-query assembly remain open, along with bounded-demand/graph
+applications and the advertised sharper counting runtime, under
 [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
-This does not complete the paper's algorithmic main results.
+The existing rational elimination kernel's own coefficient-growth proof is also
+not supplied by the new algorithm. This does not complete the paper's algorithmic
+main results.
 
 ### Landmark theorems, in priority order
 

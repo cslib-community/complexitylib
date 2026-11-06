@@ -2583,6 +2583,8 @@ public import Complexity.Computability.PolyTime.GreedySlotScore
 public import Complexity.Computability.PolyTime.Int.Cramer
 public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Computability.PolyTime.Int.Jet
+public import Complexity.Computability.PolyTime.Int.Rectangular
+public import Complexity.Computability.PolyTime.Int.RowBasis
 public import Complexity.Computability.PolyTime.Int.Table
 public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Computability.PolyTime.LinearAlgebra.BooleanMeasurements

@@ -345,9 +345,63 @@ executes negative-denominator, non-Boolean, singular, dimension-zero, ragged and
 128-bit examples and compares all 1,296 signed two-variable/RHS inputs with direct
 Boolean testing whenever nonsingular. From the checkout root, run
 `LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.CramerBinary`.
-This component is not yet connected to `originalElimination` or `tablePlan`.
-It does not discharge rectangular original-row selection, closure/separator/query
-assembly resource bounds, or the paper's end-to-end preprocessing theorem.
+The rectangular API below reuses this square solver. Neither binary component
+replaces `originalElimination` or certifies the global `tablePlan` pipeline yet.
+
+### Binary rectangular row selection and consistency
+
+Import `Complexity.Computability.PolyTime.Int.Rectangular` for the general integer
+row-table component. Supply the declared column count `n`, a list of integer rows
+`A`, and a RHS list `b`. Width is explicit, so empty matrices and unused columns
+retain their intended dimension. Missing entries/RHS values read as zero; columns
+after `n` and RHS entries after `A.length` are ignored.
+
+`gramRowBasis n A` scans original row indices once. It retains a row precisely when
+the enlarged row Gram determinant is nonzero, using the existing binary Bird
+program. There is one determinant test per input row, with no enumeration of row
+subsets or minors. The output is in reverse acceptance order. Theorems
+`gramRowBasis_independent`, `gramRowBasis_span`, `gramRowBasis_length` and
+`gramRowBasis_rank` establish independence, exact row-span preservation, at most
+`n` selected rows, and equality of the computed length with rational row-space
+dimension. `gramRowBasis_selected_iff` preserves solutions on consistent systems.
+
+`rectangularCertificate n A b` solves the selected row Gram system with
+`cramerCertificate`, then multiplies by the transpose of the selected original
+matrix. It emits a nonzero denominator and exactly `n` integer numerators. Their
+quotients define `rectangularPoint`. `rectangularConsistent` checks every original
+scaled equation. `rectangularConsistent_correct` proves exact rational consistency
+for arbitrary rectangular inputs, including dependent and contradictory rows;
+`rectangularPoint_correct` proves that acceptance returns an actual solution.
+`rectangular_unique` proves uniqueness at full computed column rank.
+`rectangularBoolean_correct` then identifies the candidate's Booleanity test with
+Boolean feasibility at that full rank. At deficient rank this test is insufficient:
+for `x+y=1` the recovered point is `(1/2,1/2)`, although Boolean solutions exist.
+
+`gramRowBasis_polytime`, `rectangularCertificate_polytime` and
+`rectangularConsistent_polytime` give uniform multitape polynomial binary time,
+with unary declared width and framed binary integer lists. These certificates
+include basis selection, every determinant, transpose multiplication and the scan
+of all original equations. For original entry/RHS magnitudes below $2^\beta$, set
+$g=n+2\beta$ and $B=g+n(1+n+g)+2$. The denominator has at most $B$ sign-magnitude
+bits and each final numerator at most $n+\beta+B+1$ bits.
+`rowGram_partial_sum_natAbs_lt`, `rowGram_stage_bits_le` and
+`transposeNumerators_partial_sum_natAbs_lt` control the actual Gram sums, Bird
+stages and recovery sums; the determinant API additionally bounds stage products.
+
+The [complete checked client](../../ComplexityTests/PaperEndpoints/RectangularBinary.lean)
+executes tall, wide, dependent, contradictory, empty, zero-width, ragged and
+128-bit cases, a 40-column/80-row dependent input, and all 1,296 signed two-variable
+systems/RHS combinations against the existing rational elimination kernel.
+From the checkout root, run
+`LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.RectangularBinary`.
+
+This discharges a general rectangular component, rather than the requested full
+preprocessing algorithm. Its selected indices and candidate still need connecting
+to `preprocess`/`tablePlan`, with uniform resource proofs for closure listing,
+separator construction, equation materialization, direct branches and both emitted
+queries. The existing rational elimination kernel's own coefficient-growth theorem
+is not implied by these bounds. The sharper counting runtime, bounded-demand and
+graph endpoints also remain open.
 
 ## Known Limitations
 
