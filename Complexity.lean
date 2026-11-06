@@ -1311,6 +1311,7 @@ public import Complexity.Computability.Communication.Newman
 public import Complexity.Computability.Communication.Nondeterministic.Basic
 public import Complexity.Computability.Communication.Nondeterministic.Functions
 public import Complexity.Computability.Communication.Operations
+public import Complexity.Computability.Communication.PartitionJoin
 public import Complexity.Computability.Communication.Protocol
 public import Complexity.Computability.Communication.Randomized
 public import Complexity.Computability.Communication.Rank
@@ -3672,6 +3673,7 @@ public import Complexity.Foundations.Combinatorics.PartialLabelScores
 public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
+public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SmallSubsets
