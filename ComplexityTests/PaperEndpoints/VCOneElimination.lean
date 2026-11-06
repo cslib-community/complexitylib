@@ -82,3 +82,28 @@ example : (binaryTablePlan (fun _ : Fin 2 => 3) overlapScope overlapTable).value
 
 example : (binaryTablePlan (fun _ : Fin 2 => 3) overlapScope overlapTable).Budget 5 :=
   binaryTablePlan_budget _ _ _
+
+/-- info: (5, 2, 2) -/
+#guard_msgs in
+#eval ((tablePayload (fun _ : Fin 2 => 3) overlapScope overlapTable).1,
+  (tablePayload (fun _ : Fin 2 => 3) overlapScope overlapTable).2.length,
+  (equationPayload (fun _ : Fin 2 => 3) overlapScope overlapTable).length)
+
+/- The actual serialized plan declares five source and one auxiliary bit. -/
+/-- info: 6 -/
+#guard_msgs in
+#eval match binaryTablePayload (fun _ : Fin 2 => 3) overlapScope overlapTable with
+  | .inl _ => 0
+  | .inr (n, _, _) => n
+
+/-- Framing separates empty rows, empty tables, and differing declarations. -/
+example : encTablePayload (0, [(0, [[]], [])]) ≠
+    encTablePayload (0, [(0, [], [])]) := by decide
+
+example : encPlanPayload (Sum.inl 0) ≠ encPlanPayload (Sum.inr (0, [], [])) := by decide
+
+/-- Coordinate-volume bounds require the actual dimension promise. -/
+example {a : ℕ} (R : Finset (Fin a → Bool)) (hR : DimensionOne R) :
+    prefixCandidates R (List.finRange a) * (a + 1) * a ≤
+      2 * a * (a + 1) * (a + 1) * a :=
+  prefix_comparison_coordinates_le R hR

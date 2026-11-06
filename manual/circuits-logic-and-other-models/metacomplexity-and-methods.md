@@ -442,11 +442,21 @@ intermediate computation. A total polynomial-time wrapper must check the VC-one
 promise before listing (testing whether any coordinate pair realizes all four
 patterns suffices), or its resource theorem must explicitly restrict inputs.
 
-The remaining composition must specify a concrete encoding of table widths,
-listed Boolean rows and injective global scopes, and of direct answers versus
-both emitted CNFs. It must connect that encoding to `equationList`,
-`listedScopes`, `listedPolarity` and `binaryTablePlan`, rather than supplying
-those intermediate objects as advice. The existing rectangular certificate
+The same import provides `tablePayload w scope R`, which retains the global
+declaration count, local widths, lexicographically listed Boolean rows and
+injective scope column numbers. `encTablePayload` frames this data: declarations
+and widths use unary encoding (including unused coordinates), rows are literal
+bits and column numbers are binary. `equationPayload` materializes the actual
+signed equations as lists of global column/polarity pairs; its membership theorem
+connects every row to `equationList`. `planPayload` erases bounded column types,
+numbering auxiliaries after the original columns, and retains the declared count.
+`encPlanPayload` tags a binary direct answer or two framed CNFs;
+`binaryTableBits` applies it to the actual `binaryTablePlan`, without advice.
+The complete overlapping-table client above checks these constructors and framing
+edge cases. `frontier_coordinates_le` and `prefix_comparison_coordinates_le`
+bound stored coordinates and full-frontier comparison volume under `DimensionOne`.
+These are functional serialization and volume results. A promise-restricted
+polynomial binary-machine realization of the constructors is still required. The existing rectangular certificate
 covers only its integer-list input/output encoding. The missing machine proofs
 must account for prefix storage/comparison, separator deletion, equation
 materialization, candidate validation, query construction and output writing.

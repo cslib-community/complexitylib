@@ -9,6 +9,9 @@ module
 
 public import Complexity.Logics.Propositional.CNF.VCOneTables
 public import Complexity.Logics.Propositional.CNF.ExactOneBinary
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Sum
 
 /-!
 # Executable counting plans from overlapping VC-one tables
@@ -31,11 +34,16 @@ algorithmic resource theorem.
 
 * `equationList`: finite numbering of the actually listed missing closure tuples.
 * `tablePlan`: executable global table-to-counting-plan compilation.
+* `tablePayload`, `equationPayload`: explicit table and signed-equation data.
+* `encTablePayload`, `encPlanPayload`: framed bit encodings with unary declarations.
+* `binaryTableBits`: serialize the actual binary-backend plan.
 
 ## Main results
 
 * `tablePlan_correct`: original table solutions have exactly the plan's value.
 * `tablePlan_budget`: every emitted query meets the global syntax budgets.
+* `frontier_coordinates_le`, `prefix_comparison_coordinates_le`: promise-restricted
+  coordinate volume bounds, without a whole-machine execution claim.
 
 -/
 
@@ -161,5 +169,106 @@ theorem binaryTablePlan_budget {r : ℕ} (w : Fin m → ℕ)
   obtain ⟨i, _, hc⟩ := List.mem_flatMap.mp hc
   obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
   simpa only [Clause.relabel, List.length_map] using binary_width (R i) d hd
+
+/-- Explicit table payload: width, listed Boolean rows, and global column numbers.
+Rows are sorted lexicographically; no Boolean cube is enumerated. Width is retained
+also for an empty table, and the global declaration count is stored separately. -/
+@[expose] def tablePayload {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) :
+    ℕ × List (ℕ × List (List Bool) × List ℕ) :=
+  (r, (List.finRange m).map fun i =>
+    (w i, ((R i).image List.ofFn).sort (· ≤ ·),
+      (List.finRange (w i)).map fun j => (scope i j).val))
+
+/-- Signed equation payload constructed from the actual equation list. Each pair
+stores the original global column and its literal polarity. Equation order and
+table multiplicity are preserved. -/
+@[expose] def equationPayload {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) : List (List (ℕ × Bool)) :=
+  (equationList w R).map fun j =>
+    ((tableScope w scope R j).sort (· ≤ ·)).map fun v =>
+      (v.val, tablePolarity w scope R j v)
+
+/-- Erase bounded column types in an actual counting plan. The tag distinguishes
+an immediate answer from two queries. Query declarations include unused bits;
+auxiliary column `j` is numbered `r + j`. -/
+@[expose] def planPayload {r : ℕ} : ExactOne.CountPlan (Fin r) →
+    ℕ ⊕ (ℕ × CNF ℕ × CNF ℕ)
+  | .direct n => .inl n
+  | .queries k zero one => .inr (r + k,
+      zero.relabel (Sum.elim Fin.val (fun j => r + j.val)),
+      one.relabel (Sum.elim Fin.val (fun j => r + j.val)))
+
+/-- Actual table compiler followed by explicit output materialization. This is a
+functional constructor, not yet a binary-machine resource certificate. -/
+@[expose] def binaryTablePayload {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) :=
+  planPayload (binaryTablePlan w scope R)
+
+open Turing.MultiTapeTM
+
+/-- Framed input encoding. Declarations and widths are unary to charge storage
+for declared but unused coordinates; column numbers are binary and Boolean rows
+are literal bit strings. Nested lists and products use the library framing. -/
+@[expose] def encTablePayload :
+    (ℕ × List (ℕ × List (List Bool) × List ℕ)) ↪ List Bool :=
+  encPair encUnary (encList (encPair encUnary
+    (encPair (encList encBits) (encList encNat))))
+
+/-- Binary signed literals, framed clauses and framed CNFs. -/
+@[expose] def encSignedCNF : CNF ℕ ↪ List Bool :=
+  encList (encList (encPair encNat encBool))
+
+/-- Tagged direct/two-query output encoding. A direct answer is binary; query
+variable declarations are unary and every literal column is binary. -/
+@[expose] def encPlanPayload : (ℕ ⊕ (ℕ × CNF ℕ × CNF ℕ)) ↪ List Bool :=
+  encSum encNat (encPair encUnary (encPair encSignedCNF encSignedCNF))
+
+/-- Concrete bit output of the actual table compiler. Encoding is injective on
+payloads by construction, but a polynomial machine realizing this composition
+is a separate obligation. -/
+@[expose] def binaryTableBits {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) : List Bool :=
+  encPlanPayload (binaryTablePayload w scope R)
+
+/-- Every serialized literal is exactly an entry of the constructed signed
+system; no advice or independently supplied equation is accepted. -/
+theorem mem_equationPayload_iff {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) (e : List (ℕ × Bool)) :
+    e ∈ equationPayload w scope R ↔ ∃ j : EquationIndex w R,
+      e = ((tableScope w scope R j).sort (· ≤ ·)).map
+        (fun v => (v.val, tablePolarity w scope R j v)) := by
+  simp only [equationPayload, List.mem_map]
+  constructor
+  · rintro ⟨j, _, rfl⟩
+    exact ⟨j, rfl⟩
+  · rintro ⟨j, rfl⟩
+    exact ⟨j, mem_equationList w R j, rfl⟩
+
+/-- Stored Boolean coordinates in a frontier, using full width rows. This is a
+storage volume bound, not a bound on a particular machine configuration. -/
+theorem frontier_coordinates_le {a : ℕ} (R : Finset (Fin a → Bool))
+    (hR : DimensionOne R) (todo : List (Fin a)) (hn : todo.Nodup) :
+    (prefixes R todo).card * a ≤ (a + 1) * a := by
+  have h := prefixes_card R hR todo hn
+  simp only [Fintype.card_fin] at h
+  exact Nat.mul_le_mul_right a h
+
+/-- Even a linear scan of the entire previous frontier for every attempted
+extension compares only polynomially many coordinates on promised inputs.
+The factor `a` charges full-width equality; the factor `a+1` charges a frontier
+scan. Projection checks, separator deletion and machine overhead are separate. -/
+theorem prefix_comparison_coordinates_le {a : ℕ} (R : Finset (Fin a → Bool))
+    (hR : DimensionOne R) :
+    prefixCandidates R (List.finRange a) * (a + 1) * a ≤
+      2 * a * (a + 1) * (a + 1) * a := by
+  have h := prefixCandidates_le R hR (List.finRange a) (List.nodup_finRange a)
+  simp only [List.length_finRange, Fintype.card_fin] at h
+  exact Nat.mul_le_mul_right a (Nat.mul_le_mul_right (a + 1) h)
 
 end Cslib.Logic.PL.VCOne

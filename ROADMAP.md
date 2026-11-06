@@ -58,11 +58,15 @@ The existing rational elimination kernel's own coefficient-growth proof is also
 not supplied by the new algorithm. This does not complete the paper's algorithmic
 main results.
 The closure resource bound requires the VC-one promise: the zero/one/unit-vector
-table has only $w+2$ rows but a full $2^w$ closure. A total polynomial wrapper
-therefore needs a pre-listing promise check. The remaining binary composition
-also needs explicit table/scope and plan-output encodings, realization of the
-existing constructors under those encodings, and a space bound for the composed
-machine; the rectangular solver certificate alone supplies none of these.
+table has only $w+2$ rows but a full $2^w$ closure. The resource theorem must
+therefore restrict to promised inputs (as the source does), or validate them before listing. Explicit framed table/scope and tagged plan-output encodings now accompany
+`tablePayload`, `equationPayload` and `binaryTableBits`; declarations and widths
+are unary, rows literal bits and column numbers binary. Promise-restricted
+frontier coordinate storage and full-frontier comparison volume are bounded.
+These are functional serialization constructors, not a polynomial binary-machine
+realization. Separator/projection execution, branch/candidate checking, query
+writing and composed time/space remain open; the rectangular solver certificate
+alone does not supply them.
 
 ### Landmark theorems, in priority order
 
