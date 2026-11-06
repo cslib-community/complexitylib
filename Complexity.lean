@@ -3268,8 +3268,10 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
 public import Complexity.Crypto.Protocols.Signature.RandomOracle.Simulation
+public import Complexity.Crypto.Protocols.UC.DummyAdversary
 public import Complexity.Crypto.Protocols.UC.Emulation
 public import Complexity.Crypto.Protocols.UC.Execution
+public import Complexity.Crypto.Protocols.UC.Linking
 public import Complexity.Crypto.Protocols.UC.Machine
 public import Complexity.Crypto.Protocols.VOLE.AdaptiveMulCheck
 public import Complexity.Crypto.Protocols.VOLE.Basic
