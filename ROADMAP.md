@@ -31,19 +31,13 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
 
-STOC submission 191 remains incomplete: Proposition 1 and the exact cutoff-family reduction are
-proved; the executable rounded-product selector has global savings/cost approximation against
-all real-randomized maximum-success competitors, and exact deadline/success guarantees.
-Theorem 2(2) still needs the uniform native binary-runtime composition of the DP recurrence,
-preprocessing, family enumeration and final selection. Explicit binary input/operand and total
-candidate bounds, native rational arithmetic and native insertion/pruning are available; these
-do not by themselves establish the full selector runtime. Theorem 3 still needs the Partition hardness reduction and integer-cost
-pseudopolynomial endpoint; Theorem 4 needs local dual charging, history-conditional risk
+STOC submission 191 remains incomplete: Theorem 3 still needs the Partition hardness reduction
+and integer-cost pseudopolynomial endpoint; Theorem 4 needs local dual charging, history-conditional risk
 certification, the actual greedy multicover algorithm and logarithmic comparison (with its stated
 hardness dependency); Theorem 5 needs history-conditional binomial domination, stopped costs
 and universal latency/progress lower bounds; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
-claims, not supplied by the earlier policy LP or by the new DP tables.
+claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.
 
 ### Landmark theorems, in priority order
 

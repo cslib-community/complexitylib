@@ -11,6 +11,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.RatBi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Tactic.PolyTime
 import Mathlib.Algebra.Order.Floor.Semifield
 import Mathlib.Tactic
@@ -27,7 +29,8 @@ machines through the existing plain polynomial-time calculus.
 
 * `ratBin_mkRat`: normalization of an arbitrary signed numerator and natural denominator.
 * `ratBin_add`, `ratBin_mul`, `ratBin_sub`: exact normalized arithmetic.
-* `ratBin_le`: exact binary rational comparison.
+* `ratBin_le`, `ratBin_lt`: exact binary rational comparison.
+* `ratBin_sum`, `ratBin_prod`: runtime list folds with normalization and all list work charged.
 -/
 
 public section
@@ -172,5 +175,69 @@ theorem ratBin_floor : ComputableInPolyTime Nat.floor encRatBin encNat := by
     simpa only [Rat.num_divInt_den, Int.cast_natCast] using hh
   conv_lhs => rw [hq]
   rw [Nat.floor_div_natCast, ← Int.floor_toNat, Int.floor_intCast]
+
+private theorem ratBin_fold (op : ℚ → ℚ → ℚ) (neutral : ℚ)
+    (hop : ComputableInPolyTime (Function.uncurry op)
+      (encPair encRatBin encRatBin) encRatBin)
+    (hwidth : ∀ a b, (op a b).binaryWidth ≤ a.binaryWidth + b.binaryWidth + 1) :
+    ComputableInPolyTime (fun xs : List ℚ => xs.foldl op neutral)
+      (encList encRatBin) encRatBin := by
+  have hf := ComputableTidilyInPolyTime.foldl_spec
+    (encA := encRatBin) (encL := encList encRatBin) (encB := encRatBin)
+    (list := id) (init := fun _ => neutral) (step := op)
+    ComputableTidilyInPolyTime.id' (ComputableTidilyInPolyTime.const neutral) hop.tidy
+    (fun _ consumed acc => acc.binaryWidth ≤ neutral.binaryWidth +
+      (consumed.map (fun q => q.binaryWidth + 1)).sum)
+    (by intro _; simp) (by
+      intro xs consumed acc q _ ha
+      have hh := hwidth acc q
+      simp only [List.map_append, List.map_singleton, List.sum_append, List.sum_singleton]
+      omega)
+    (size := fun xs => 3 * (neutral.binaryWidth + 2 * (encList encRatBin xs).length) + 3)
+    (by exact ((PolyBounded.const 3).mul ((PolyBounded.const neutral.binaryWidth).add
+      ((PolyBounded.const 2).mul .self))).add (.const 3)) ?_
+  · exact of_tidy hf.1
+  · intro xs consumed acc hp ha
+    have hs := List.Sublist.sum_le_sum
+      (hp.sublist.map (fun q => q.binaryWidth + 1)) (by intro a _; exact Nat.zero_le a)
+    have hw : (xs.map (fun q => q.binaryWidth + 1)).sum ≤
+        2 * (encList encRatBin xs).length := by
+      have hh := List.sum_le_sum (fun q (_ : q ∈ xs) =>
+        Nat.add_le_add_right (binaryWidth_le_length_encRatBin q) 1)
+      have hl := sum_length_le_length_encList encRatBin xs
+      have hn := SizedListEncoding.length_le (encA := encRatBin)
+        (encL := encList encRatBin) xs
+      have hconst : (xs.map (fun _ => (1 : ℕ))).sum = xs.length := by simp
+      have hadd : (xs.map (fun q => (encRatBin q).length + 1)).sum =
+          (xs.map (fun q => (encRatBin q).length)).sum + xs.length := by
+        rw [List.sum_map_add, hconst]
+      exact hh.trans (by omega)
+    simp only [id_eq] at hs
+    exact (length_encRatBin_le acc).trans (by omega)
+
+/-- Sum an arbitrary runtime list of binary rationals, charging every traversal,
+addition and gcd normalization. Intermediate numerators and denominators have
+polynomial length even when the rational magnitudes are exponentially large. -/
+@[fun_prop, program_certificate]
+theorem ratBin_sum : ComputableInPolyTime (List.sum (α := ℚ))
+    (encList encRatBin) encRatBin := by
+  have h := ratBin_fold (· + ·) 0 ratBin_add Rat.binaryWidth_add_le
+  simpa only [← List.sum_eq_foldl] using h
+
+/-- Multiply an arbitrary runtime list of binary rationals, including zero and
+negative factors, with all exact reduction and list work charged. -/
+@[fun_prop, program_certificate]
+theorem ratBin_prod : ComputableInPolyTime (List.prod (α := ℚ))
+    (encList encRatBin) encRatBin := by
+  have h := ratBin_fold (· * ·) 1 ratBin_mul
+    (fun a b => (Rat.binaryWidth_mul_le a b).trans (Nat.le_succ _))
+  simpa only [← List.prod_eq_foldl] using h
+
+/-- Strict comparison on canonical binary rationals. -/
+@[fun_prop, program_certificate]
+theorem ratBin_lt : ComputableInPolyTime (fun p : ℚ × ℚ => decide (p.1 < p.2))
+    (encPair encRatBin encRatBin) encBool := by
+  have h := decide_not (ratBin_le.comp ((snd _ _).prod (fst _ _)))
+  simpa only [not_le] using h
 
 end Turing.MultiTapeTM.ComputableInPolyTime

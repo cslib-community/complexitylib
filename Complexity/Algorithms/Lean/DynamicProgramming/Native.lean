@@ -11,6 +11,7 @@ public import Complexity.Algorithms.Lean.DynamicProgramming.RoundedProduct
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Tactic.PolyTime
 import Mathlib.Tactic
 
@@ -26,6 +27,7 @@ comparisons and exact rational normalization through the multitape calculus.
 
 * `computable_insert`: actual early-exit insertion on binary-rational tables.
 * `computable_prune`: the original minimum-product pruning pass.
+* `computable_run`: uniform compilation of the complete recurrence with runtime field access.
 -/
 
 public section
@@ -45,15 +47,16 @@ variable {ι : Type} (enc : ι ↪ List Bool)
     simp_all⟩ : Entry ι ↪ ℕ × ℚ × List ι).trans
       (encPair encUnary (encPair encRatBin (encList enc)))
 
-private theorem entry_fields : ComputableInPolyTime
+/-- Read the three fields without converting their encodings. -/
+theorem computable_entry_fields : ComputableInPolyTime
     (fun e : Entry ι => (e.rounded,e.product,e.selected)) (encEntry enc)
     (encPair encUnary (encPair encRatBin (encList enc))) := .of_eq fun _ => rfl
 
 private theorem entry_rounded : ComputableInPolyTime (Entry.rounded (ι := ι))
-    (encEntry enc) encUnary := (entry_fields enc).fst'
+    (encEntry enc) encUnary := (computable_entry_fields enc).fst'
 
 private theorem entry_product : ComputableInPolyTime (Entry.product (ι := ι))
-    (encEntry enc) encRatBin := (entry_fields enc).snd'.fst'
+    (encEntry enc) encRatBin := (computable_entry_fields enc).snd'.fst'
 
 private def insertionStep (x y : Entry ι) (state : List (Entry ι) × List (Entry ι)) :=
   let (original,inserted) := state
@@ -206,5 +209,187 @@ theorem computable_prune : ComputableInPolyTime
           (encL := encList (encEntry enc)) xs e
           (hsub.subset (prune_sound Entry.rounded Entry.product he)))
     exact hb.trans (Nat.mul_le_mul_right _ (hn.trans hlen))
+
+/-- Construct an entry from its encoded key, product and witness. -/
+theorem computable_entry : ComputableInPolyTime
+    (fun p : ℕ × ℚ × List ι => let (z,q,selected) := p; (⟨z,q,selected⟩ : Entry ι))
+    (encPair encUnary (encPair encRatBin (encList enc))) (encEntry enc) :=
+  .of_eq fun _ => rfl
+
+private theorem computable_extend : ComputableInPolyTime
+    (fun p : ((ι × ℕ) × ℚ) × List (Entry ι) =>
+      let (((i,z),q),table) := p
+      extend i z q table)
+    (encPair (encPair (encPair enc encUnary) encRatBin) (encList (encEntry enc)))
+    (encList (encEntry enc)) := by
+  have hk := entry_rounded enc
+  have hp := entry_product enc
+  have hs := (computable_entry_fields enc).snd'.snd'
+  have hm := computable_entry enc
+  have hskip : ComputableInPolyTime
+      (fun p : ℚ × Entry ι => p.2.skip p.1)
+      (encPair encRatBin (encEntry enc)) (encEntry enc) := by
+    have h : ComputableInPolyTime
+        (fun p : ℚ × Entry ι => (p.2.rounded,p.1 * p.2.product,p.2.selected))
+        (encPair encRatBin (encEntry enc))
+        (encPair encUnary (encPair encRatBin (encList enc))) := by fun_prop
+    exact hm.comp h
+  have htake : ComputableInPolyTime
+      (fun p : (ι × ℕ) × Entry ι => p.2.take p.1.1 p.1.2)
+      (encPair (encPair enc encUnary) (encEntry enc)) (encEntry enc) := by
+    have h : ComputableInPolyTime
+        (fun p : (ι × ℕ) × Entry ι => (p.2.rounded + p.1.2,p.2.product,p.1.1 :: p.2.selected))
+        (encPair (encPair enc encUnary) (encEntry enc))
+        (encPair encUnary (encPair encRatBin (encList enc))) := by fun_prop
+    exact hm.comp h
+  have hl : ComputableInPolyTime
+      (fun p : ((ι × ℕ) × ℚ) × List (Entry ι) => p.2.map (Entry.skip p.1.2))
+      (encPair (encPair (encPair enc encUnary) encRatBin) (encList (encEntry enc)))
+      (encList (encEntry enc)) := by
+    apply ComputableInPolyTime.mapWithInput (snd _ _)
+    exact hskip.comp (((snd _ _).comp ((fst _ _).comp (fst _ _))).prod (snd _ _))
+  have hr : ComputableInPolyTime
+      (fun p : ((ι × ℕ) × ℚ) × List (Entry ι) => p.2.map (Entry.take p.1.1.1 p.1.1.2))
+      (encPair (encPair (encPair enc encUnary) encRatBin) (encList (encEntry enc)))
+      (encList (encEntry enc)) := by
+    apply ComputableInPolyTime.mapWithInput (snd _ _)
+    exact htake.comp (((fst _ _).comp ((fst _ _).comp (fst _ _))).prod (snd _ _))
+  exact hl.listAppend' hr
+
+/-- Compile the entire select/omit/prune recurrence, with the population,
+initial table witness, keys and probabilities all computed from the runtime
+input. Unary keys pay their numerical sizes; probabilities and products remain
+binary. The hypotheses are certificates for input preparation and individual
+field access, not a certificate or resource bound for the desired recurrence.
+All table traversals, witness copying and normalized rational operations are
+charged by the native fold/list compiler. -/
+theorem computable_run {γ : Type} {encIn : γ ↪ List Bool}
+    {items : γ → List ι} {initial : γ → Entry ι}
+    {z : γ → ι → ℕ} {q : γ → ι → ℚ}
+    (hitems : ComputableInPolyTime items encIn (encList enc))
+    (hinitial : ComputableInPolyTime initial encIn (encEntry enc))
+    (hz : ComputableInPolyTime (fun p : γ × ι => z p.1 p.2)
+      (encPair encIn enc) encUnary)
+    (hq : ComputableInPolyTime (fun p : γ × ι => q p.1 p.2)
+      (encPair encIn enc) encRatBin) :
+    ComputableInPolyTime (fun x => run (z x) (q x) (initial x) (items x))
+      encIn (encList (encEntry enc)) := by
+  have hzlist : ComputableTidilyInPolyTime (fun x => (items x).map (z x))
+      encIn (encList encUnary) :=
+    ComputableTidilyInPolyTime.mapWithInput hitems.tidy hz.tidy
+  have hqlist : ComputableTidilyInPolyTime (fun x => (items x).map (q x))
+      encIn (encList encRatBin) :=
+    ComputableTidilyInPolyTime.mapWithInput hitems.tidy hq.tidy
+  let S := fun x => (encEntry enc (initial x)).length + (encList enc (items x)).length +
+    (encList encUnary ((items x).map (z x))).length +
+    (encList encRatBin ((items x).map (q x))).length
+  have hS : PolyBounded (fun x => (encIn x).length) S :=
+    ((hinitial.tidy.polyBounded_length.add hitems.tidy.polyBounded_length).add
+      hzlist.polyBounded_length).add hqlist.polyBounded_length
+  have hstep : ComputableTidilyInPolyTime
+      (fun p : (γ × List (Entry ι)) × ι =>
+        let ((x,table),i) := p
+        prune Entry.rounded Entry.product (extend i (z x i) (q x i) table))
+      (encPair (encPair encIn (encList (encEntry enc))) enc)
+      (encList (encEntry enc)) := by
+    have he := computable_extend enc
+    have hp := computable_prune enc
+    have harg : ComputableInPolyTime
+        (fun p : (γ × List (Entry ι)) × ι => (((p.2,z p.1.1 p.2),q p.1.1 p.2),p.1.2))
+        (encPair (encPair encIn (encList (encEntry enc))) enc)
+        (encPair (encPair (encPair enc encUnary) encRatBin) (encList (encEntry enc))) := by
+      have hinput : ComputableInPolyTime
+          (fun p : (γ × List (Entry ι)) × ι => (p.1.1,p.2))
+          (encPair (encPair encIn (encList (encEntry enc))) enc) (encPair encIn enc) := by
+        fun_prop
+      have hz' := hz.comp hinput
+      have hq' := hq.comp hinput
+      fun_prop
+    exact (hp.comp (he.comp harg)).tidy
+  have hf := ComputableTidilyInPolyTime.foldlWith_spec
+    (encP := encIn) (encA := enc) (encL := encList enc)
+    (encB := encList (encEntry enc)) (encIn := encIn)
+    (par := id) (list := fun x => (items x).reverse) (init := fun x => [initial x])
+    (step := fun x table i =>
+      prune Entry.rounded Entry.product (extend i (z x i) (q x i) table))
+    ComputableTidilyInPolyTime.id'
+    ((ComputableTidilyInPolyTime.listReverse enc).comp hitems.tidy)
+    (hinitial.tidy.cons' (ComputableTidilyInPolyTime.const [])) hstep
+    (fun x consumed table => table = run (z x) (q x) (initial x) consumed.reverse)
+    (by intro x; rfl) (by
+      intro x consumed table i _ ht
+      subst table
+      simp only [List.reverse_append, List.reverse_singleton, List.singleton_append, run, id_eq])
+    (size := fun x => (S x + 1) * (16 * S x + 17))
+    ((hS.add (.const 1)).mul (((PolyBounded.const 16).mul hS).add (.const 17))) ?_
+  · refine of_tidy (hf.1.of_enc_eq ?_)
+    intro x
+    simp only [id_eq]
+    rw [← List.foldr_eq_foldl_reverse]
+    have hfold : ∀ xs : List ι,
+        xs.foldr (fun i table =>
+          prune Entry.rounded Entry.product (extend i (z x i) (q x i) table)) [initial x] =
+          run (z x) (q x) (initial x) xs := by
+      intro xs
+      induction xs with
+      | nil => rfl
+      | cons i xs ih => simp only [List.foldr_cons, ih, run]
+    rw [hfold]
+  · intro x consumed table hprefix ht
+    subst table
+    have hsub : consumed.reverse.Sublist (items x) := by
+      simpa only [List.reverse_reverse] using hprefix.sublist.reverse
+    have hzsum : ((items x).map (z x)).sum ≤
+        (encList encUnary ((items x).map (z x))).length := by
+      simpa only [encUnary_apply, List.length_replicate, List.map_map, Function.comp_def] using
+        sum_length_le_length_encList encUnary ((items x).map (z x))
+    have hqsum : ((items x).map (fun i => (q x i).binaryWidth)).sum ≤
+        (encList encRatBin ((items x).map (q x))).length := by
+      apply (List.sum_le_sum (fun i (_ : i ∈ items x) =>
+        binaryWidth_le_length_encRatBin (q x i))).trans
+      simpa only [List.map_map, Function.comp_def] using
+        sum_length_le_length_encList encRatBin ((items x).map (q x))
+    have hzsub := List.Sublist.sum_le_sum (hsub.map (z x))
+      (by intro a _; exact Nat.zero_le a)
+    have hqsub := List.Sublist.sum_le_sum (hsub.map (fun i => (q x i).binaryWidth))
+      (by intro a _; exact Nat.zero_le a)
+    have hfields :
+        (encEntry enc (initial x)).length =
+          2 * (initial x).rounded + 1 + 2 * (encRatBin (initial x).product).length + 1 +
+            (encList enc (initial x).selected).length := by
+      change (encPair encUnary (encPair encRatBin (encList enc))
+        ((initial x).rounded,(initial x).product,(initial x).selected)).length = _
+      simp only [length_encPair, encUnary_apply, List.length_replicate]
+      omega
+    have hiw := binaryWidth_le_length_encRatBin (initial x).product
+    have hlen := run_length_le (z x) (q x) (initial x) consumed.reverse
+    have hkey : (initial x).rounded + (consumed.reverse.map (z x)).sum ≤ S x := by
+      dsimp [S]
+      omega
+    have hbound (e : Entry ι)
+        (he : e ∈ run (z x) (q x) (initial x) consumed.reverse) :
+        (encEntry enc e).length ≤ 8 * S x + 8 := by
+      have hchoices := run_sound (z x) (q x) (initial x) consumed.reverse he
+      have hk := choices_rounded_le (z x) (q x) (initial x) consumed.reverse hchoices
+      have hp := run_product_binaryWidth_le (z x) (q x) (initial x) consumed.reverse he
+      have hs := choices_selected_sublist (z x) (q x) (initial x) consumed.reverse hchoices
+      have heSel := length_encList_sublist enc
+        (hs.trans (hsub.append (List.Sublist.refl (initial x).selected)))
+      have heProd := length_encRatBin_le e.product
+      have heLen : (encEntry enc e).length =
+          2 * e.rounded + 1 + 2 * (encRatBin e.product).length + 1 +
+            (encList enc e.selected).length := by
+        change (encPair encUnary (encPair encRatBin (encList enc))
+          (e.rounded,e.product,e.selected)).length = _
+        simp only [length_encPair, encUnary_apply, List.length_replicate]
+        omega
+      rw [encList_append, List.length_append] at heSel
+      dsimp [S] at ⊢
+      omega
+    have hb := length_encList_le (encEntry enc) _ hbound
+    apply hb.trans
+    convert Nat.mul_le_mul_right (16 * S x + 17)
+      (hlen.trans (Nat.add_le_add_right hkey 1)) using 1
+    ring
 
 end Cslib.Algorithms.Lean.DynamicProgramming.MinProduct

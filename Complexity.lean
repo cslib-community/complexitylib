@@ -4370,8 +4370,11 @@ public import Complexity.Probability.StochasticOracle.Programs
 public import Complexity.Probability.StochasticOracle.RandomCost
 public import Complexity.Probability.StochasticOracle.RationalFullCover
 public import Complexity.Probability.StochasticOracle.TwoBatchApproximation
+public import Complexity.Probability.StochasticOracle.TwoBatchBinary
 public import Complexity.Probability.StochasticOracle.TwoBatchGuarantees
 public import Complexity.Probability.StochasticOracle.TwoBatchMinimum
+public import Complexity.Probability.StochasticOracle.TwoBatchNative
+public import Complexity.Probability.StochasticOracle.TwoBatchNativeCorrectness
 public import Complexity.Probability.StochasticOracle.TwoBatchResources
 public import Complexity.Probability.Testing
 public import Complexity.Probability.Uniform

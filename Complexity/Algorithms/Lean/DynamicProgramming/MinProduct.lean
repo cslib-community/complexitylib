@@ -29,6 +29,7 @@ Theorem 2(2), PDF p. 8. The generic interface also permits witnesses to be retai
 * `run_sound`, `run_dominates`: the compressed select/omit recurrence is exact per key.
 * `run_length_le`, `runWork_le`: actual table-size and rational-operation bounds.
 * `choices_product`: reconstruction identifies the omitted-item product.
+* `run_map`: relabeling preserves the exact table, its order and reconstructed choices.
 -/
 
 public section
@@ -229,6 +230,50 @@ retains one witness per rounded sum; it never enumerates all subsets. -/
   | [] => [initial]
   | i :: is => prune Entry.rounded Entry.product (extend i (z i) (q i) (run z q initial is))
 
+/-- Relabel a reconstructed witness, preserving its key, product and order. -/
+@[expose] def Entry.map {κ ι : Type*} (f : ι → κ) (e : Entry ι) : Entry κ :=
+  ⟨e.rounded,e.product,e.selected.map f⟩
+
+private theorem insert_map {κ ι : Type*} (f : ι → κ) (x : Entry ι)
+    (xs : List (Entry ι)) :
+    (insert Entry.rounded Entry.product x xs).map (Entry.map f) =
+      insert Entry.rounded Entry.product (x.map f) (xs.map (Entry.map f)) := by
+  induction xs with
+  | nil => rfl
+  | cons y ys ih =>
+    simp only [insert, List.map_cons, Entry.map]
+    split_ifs <;> simp_all [Entry.map]
+
+private theorem prune_map {κ ι : Type*} (f : ι → κ) (xs : List (Entry ι)) :
+    (prune Entry.rounded Entry.product xs).map (Entry.map f) =
+      prune Entry.rounded Entry.product (xs.map (Entry.map f)) := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => rw [prune, insert_map, ih, List.map_cons, prune]
+
+private theorem extend_map {κ ι : Type*} (f : ι → κ) (i : ι) (z : ℕ) (q : ℚ)
+    (xs : List (Entry ι)) :
+    (extend i z q xs).map (Entry.map f) = extend (f i) z q (xs.map (Entry.map f)) := by
+  simp only [extend, List.map_append, List.map_map, Function.comp_def]
+  congr 1
+
+/-- Relabeling the runtime indices preserves the exact compressed table, including
+its order, ties and reconstructed choices. Field equality is needed only on the
+processed population, allowing bounded implementations outside that population. -/
+theorem run_map {κ ι : Type*} (f : ι → κ) (z : ι → ℕ) (q : ι → ℚ)
+    (z' : κ → ℕ) (q' : κ → ℚ) (initial : Entry ι) (items : List ι)
+    (hz : ∀ i ∈ items, z' (f i) = z i) (hq : ∀ i ∈ items, q' (f i) = q i) :
+    run z' q' (initial.map f) (items.map f) =
+      (run z q initial items).map (Entry.map f) := by
+  induction items with
+  | nil => rfl
+  | cons i is ih =>
+    have hi := hz i (List.mem_cons_self ..)
+    have hqi := hq i (List.mem_cons_self ..)
+    rw [List.map_cons, run, ih (fun j hj => hz j (List.mem_cons_of_mem _ hj))
+      (fun j hj => hq j (List.mem_cons_of_mem _ hj)), hi, hqi, run,
+      prune_map, extend_map]
+
 /-- Exhaustive choices, used only as a correctness specification. -/
 @[expose] def choices {ι : Type*} (z : ι → ℕ) (q : ι → ℚ)
     (initial : Entry ι) : List ι → List (Entry ι)
@@ -272,7 +317,8 @@ theorem run_dominates (hq : ∀ i, 0 ≤ q i) (items : List ι)
     obtain ⟨d,hd,hdk,hds⟩ := prune_dominates Entry.rounded Entry.product ha
     exact ⟨d,hd,hdk.trans hk,hds.trans hs⟩
 
-private theorem choices_rounded_le (items : List ι) {e : Entry ι}
+/-- Every exhaustive choice has key at most the initial key plus all item keys. -/
+theorem choices_rounded_le (items : List ι) {e : Entry ι}
     (he : e ∈ choices z q initial items) :
     e.rounded ≤ initial.rounded + (items.map z).sum := by
   induction items generalizing e with

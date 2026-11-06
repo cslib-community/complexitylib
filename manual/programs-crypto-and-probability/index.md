@@ -68,8 +68,9 @@ The work associated with STOC submissions 587, 191 and 152 includes the general
 finite-horizon covariance identity, information and auditing bounds, DPI rigidity
 results, and scheduling policy–LP frontier documented below. The expanded
 headline programme remains open in [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
-STOC submission 191’s FPTAS and remaining main results are still open. These imports
-do not establish completion of the expanded programme or a complete selector runtime. The source
+STOC submission 191’s binary-input two-batch FPTAS is proved; its hardness,
+integer-cost optimization and partial/adaptive-cover main results remain open. These imports
+do not establish completion of the expanded programme. The source
 versions and PDF digests are recorded under `Aldridge2027`, `Wang2027` and `Kong2027`
 in [the bibliography](../../references.bib). The checked clients are in
 [Stoc2027BatchC.lean](../../ComplexityTests/Stoc2027BatchC.lean).
@@ -300,20 +301,58 @@ in [the bibliography](../../references.bib). The checked clients are in
   supplies native multitape polynomial-time arithmetic, comparison, division and
   flooring under `encRatBin`, including binary gcd normalization and zero/negative
   cases. [DynamicProgramming.Native](../../Complexity/Algorithms/Lean/DynamicProgramming/Native.lean)
-  certifies the original insertion and pruning passes; table keys use unary because
-  the rounded key budget is polynomial, while all probabilities remain binary.
+  certifies insertion, pruning and the entire recurrence with runtime-computed
+  populations, keys and probability fields. Table keys use unary because the
+  rounded key budget is polynomial; probabilities and costs remain binary.
+  Rational list sums/products charge traversal, operand copying and normalization.
 
-  **Theorem 2(2) remains incomplete:** the DP recurrence, preprocessing, complete
-  family enumeration and final comparison must still be composed into one uniform
-  native binary-runtime certificate. The arithmetic/table certificates and operand
-  bounds above are ingredients, not a complete FPTAS runtime theorem.
+  For the complete Theorem 2(2) algorithm, import
+  [TwoBatchBinary](../../Complexity/Probability/StochasticOracle/TwoBatchBinary.lean)
+  and use `TwoBatchNative.runSchedule` on a `BinaryInput` to emit both batch index
+  lists; `run` returns its first batch. The input fields are only `epsilon`,
+  `deadline` and the ordered binary rational `calls` triples. `encBinaryInput`
+  is exactly the earlier `inputEncoding` on `BinaryInput.ofInstance`.
+  The algorithm computes `precision = floor (1 / epsilon) + 1` and writes it in
+  unary using the existing charged binary-to-unary routine. For positive tolerance,
+  `precision_bounds` proves $1\le εm$ and $m\le ε^{-1}+1$.
+  `run_runtime` derives a single native multitape implementation with time and
+  workspace polynomial in `runtimeSize`, the original input length plus this
+  computed budget. `runtimeSize_ofInstance` gives its bound by input bit length
+  plus inverse tolerance plus one. No unary budget, machine or runtime proof is
+  required from the caller.
+
+  [TwoBatchNative](../../Complexity/Probability/StochasticOracle/TwoBatchNative.lean)
+  implements all cutoff-family/maximum-member enumeration, input lookups, exact
+  arithmetic, DP/pruning, reconstructed index lists, membership scans and final
+  savings comparisons. `computable_schedule` also charges the final complement
+  scan and emits both batches; no batch reconstruction is deferred to an uncharged
+  output step. It saturates rounded keys on invalid data to keep the
+  internal compiler total and polynomial. The
+  [correctness bridge](../../Complexity/Probability/StochasticOracle/TwoBatchNativeCorrectness.lean)
+  proves that saturation is inactive on eligible valid-input items and that
+  `decode (run (BinaryInput.ofInstance I ε D))` equals the original selector,
+  including ordering and ties. `decode` interprets the emitted list of indices;
+  no finite-set sorting or normalization is an uncharged runtime instruction.
+
+  `TwoBatchNative.fptas` combines the derived uniform runtime with an attained
+  optimum over real-randomized competitors, exact selected-schedule deadline and
+  maximum success, and both source savings/cost inequalities. Its assumptions
+  remain a nonempty population, $0<ε<1$, a feasible concurrent full batch and the
+  original failure-oblivious/FICA model. Local selection time is excluded from
+  the prescribed-cutoff deadline. `selectedProgram` follows the returned batches
+  through actual concurrent-batch oracle calls; `selectedProgram_law` gives its
+  stopped execution law. The complete client above checks the external algorithm's
+  heterogeneous deadline, zero-saving fallback, rounding collision, derived budget,
+  exact success probability and total behavior on empty/invalid data.
 - [Submodular.OracleSavings](../../Complexity/Algorithms/Lean/Submodular/OracleSavings.lean)
   proves Wang's Theorem 2(1) (PDF p. 7). A finite type indexes all oracles;
   `savings p c A` is exactly $(1-\prod_{i\in A}(1-p_i))\sum_{i\notin A}c_i$.
   Use `savings_nonneg` and `savings_isSubmodular` with pointwise $0\le p_i\le1$
   and $c_i\ge0$. Submodularity reuses the library's `IsSubmodular`; savings need
   not be monotone (the test has singleton saving one and full-set saving zero).
-  The scheduling theorem is supplied by `StochasticOracle`; the FPTAS remains open.
+  The scheduling theorem and binary-input FPTAS are supplied by `StochasticOracle`.
+  Theorem 3's hardness/pseudopolynomial optimization and Theorems 4–6's partial
+  and adaptive-cover endpoints remain open.
 - [PeerPrediction.Quadratic](../../Complexity/Probability/PeerPrediction/Quadratic.lean)
   implements Kong's equation (8), Lemma 7.2 and Theorem 7.3 (PDF pp. 18–19).
   `IsJoint` means a nonnegative finite probability table of total mass one;

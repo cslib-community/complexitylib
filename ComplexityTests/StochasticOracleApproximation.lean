@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+import Complexity.Probability.StochasticOracle.TwoBatchBinary
 import Complexity.Probability.StochasticOracle.TwoBatchGuarantees
 import Complexity.Probability.StochasticOracle.TwoBatchResources
 import Complexity.Algorithms.Lean.DynamicProgramming.Native
@@ -17,8 +18,8 @@ import Mathlib.Tactic
 
 These clients exercise the actual algorithm, including zero-rounded-cost collisions,
 mandatory selections, heterogeneous deadlines, and zero-saving fallback. They do
-exercise the global approximation and native arithmetic/table APIs. The full
-selector machine-runtime composition remains a separate obligation.
+exercise the global approximation, native arithmetic/table APIs and complete
+binary-input selector, including its derived precision budget and invalid inputs.
 -/
 
 open Cslib.Probability.StochasticOracle
@@ -164,5 +165,39 @@ example : Turing.MultiTapeTM.ComputableInPolyTime
     (Turing.MultiTapeTM.encList (encEntry Turing.MultiTapeTM.encNat))
     (Turing.MultiTapeTM.encList (encEntry Turing.MultiTapeTM.encNat)) :=
   computable_prune Turing.MultiTapeTM.encNat
+
+/-- The complete external algorithm derives its precision budget and executes
+all cutoff, DP, reconstruction and comparison stages on the source example. -/
+example : TwoBatchNative.run (TwoBatchNative.BinaryInput.ofInstance input (1 / 2) 3) = [0] := by
+  decide +kernel
+
+example : TwoBatchNative.precision
+    (TwoBatchNative.BinaryInput.ofInstance input (1 / 2) 3) = 3 := by decide +kernel
+
+example : TwoBatchNative.run (TwoBatchNative.BinaryInput.ofInstance input (1 / 2) 2) = [0,1] := by
+  decide +kernel
+
+example : TwoBatchNative.run
+    (TwoBatchNative.BinaryInput.ofInstance collisionInput (3 / 4) 2) = [1,2] := by
+  decide +kernel
+
+example : TwoBatchNative.runSchedule
+    (TwoBatchNative.BinaryInput.ofInstance input (1 / 2) 3) = ([0],[1]) := by decide +kernel
+
+/-- There is one total algorithm even for empty, negative-tolerance or zero-cost data. -/
+example : TwoBatchNative.run ⟨0,0,[]⟩ = [] := by decide +kernel
+example : TwoBatchNative.run ⟨-1,2,[(1 / 2,0,1)]⟩ = [0] := by decide +kernel
+
+/-- The complete selector retains the source example's exact success probability. -/
+example : Plan.success input (TwoBatchNative.selectedPlan input (1 / 2) 3) = 9 / 10 := by
+  rw [TwoBatchNative.selectedPlan_eq input (by norm_num)]
+  rw [TwoBatchApproximation.choose_success]
+  norm_num [FullCoverInstance.batchFailure, input, Finset.univ_fin2]
+
+example : TwoBatchNative.runtimeSize (TwoBatchNative.BinaryInput.ofInstance input (1 / 2) 3) =
+    TwoBatchApproximation.inputSize input (1 / 2) 3 + 3 := by decide +kernel
+
+example : TwoBatchNative.runSchedule
+    (TwoBatchNative.BinaryInput.ofInstance input (1 / 2) 2) = ([0,1],[]) := by decide +kernel
 
 end ComplexityTests.StochasticOracleApproximation
