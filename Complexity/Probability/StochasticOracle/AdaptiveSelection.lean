@@ -31,7 +31,8 @@ assumed. This is a finite semantic execution, without machine resource certifica
 * `expectedBills_summable_le`: derived finiteness of the marginal expected-bill series.
 
 The cost and reach results formalize the finite-sum step of Appendix A.5.
-They do not establish the negative-binomial mean or any infinite-horizon limit.
+The binomial tail-series mean is proved in `AdaptiveBinomial`; these results do not
+establish an infinite-execution stopping-time bridge or an infinite-horizon limit.
 -/
 
 public section
