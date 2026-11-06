@@ -2870,11 +2870,17 @@ public import Complexity.Cryptanalysis.AddXNOR
 public import Complexity.Cryptanalysis.AddXNORBits
 public import Complexity.Cryptanalysis.AddXNORChain
 public import Complexity.Cryptanalysis.AddXNORDecay
+public import Complexity.Cryptanalysis.AddXNORDecision
+public import Complexity.Cryptanalysis.AddXNORGuard
+public import Complexity.Cryptanalysis.AddXNORGuardedChain
+public import Complexity.Cryptanalysis.AddXNORNPComplete
 public import Complexity.Cryptanalysis.AddXNORRuns
 public import Complexity.Cryptanalysis.AddXNORSpectrum
 public import Complexity.Cryptanalysis.AddXNORStripping
+public import Complexity.Cryptanalysis.AddXNORSubsetSum
 public import Complexity.Cryptanalysis.AddXNORSwap
 public import Complexity.Cryptanalysis.AddXNORTransfer
+public import Complexity.Cryptanalysis.AddXNORWidth
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
 public import Complexity.Crypto.Computational.Commitment

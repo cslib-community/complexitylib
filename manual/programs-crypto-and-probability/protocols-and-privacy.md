@@ -276,7 +276,67 @@ higher-bit runs, matrix orientation, zero runs, zero width and quantified bounds
 The full-word spectrum requires $j<m$; its decay inequality includes $j=0$,
 where $\rho_0=1$, while the uniform half-bit bound requires $j\ge1$.
 
-NP-completeness and its rational-width/linear-3-SAT refinements, certified
-decision/witness algorithms (including dissection's time, balance computation,
-space and class-size expectations), the remaining counting/difference claims,
-and the ideal-model adversarial search/decision bounds remain unproved here.
+## Add/XNOR hardness with an explicit encoding
+
+Import [AddXNORNPComplete.lean](../../Complexity/Cryptanalysis/AddXNORNPComplete.lean)
+for Theorem 1 (PDF pp. 9–11), and
+[AddXNORWidth.lean](../../Complexity/Cryptanalysis/AddXNORWidth.lean) for
+Corollary 2 (p. 12). `encInstance` encodes a unary width followed by framed
+binary operands; leading zeros are implicit. `Decision` requires at least two
+operands, with operand count equal to word width, and all operands fitting that
+width. Its semantic predicate is `Solvable` on actual `BitVec` words, with every
+operator free. The framed encoding and the source's fixed-width representation
+have polynomially related lengths on these valid inputs.
+
+`toAddXNOR` is a total map from binary Subset-Sum. It discards zero source
+numbers, retains indexed repeated entries, rejects targets above the total,
+and otherwise constructs the paper's $U_i=3\cdot2^{4i+2}$ and
+$V_i=s_i2^K-U_i$, with $K=4r+2$. `guard_forces_pattern` and
+`recover_guarded_chain` derive the forced gadget patterns from unrestricted
+actual evaluation. `final_control` rules out a final XNOR and odd padding parity;
+`subset_reduction_iff` then excludes modular aliasing and recovers a source
+sublist. The desired map, hardness or a resource certificate is never a premise.
+`toAddXNOR_mem_iff`, `toAddXNOR_polyTime` and `Decision_npComplete` connect
+that construction to the library's existing Subset-Sum and NP APIs.
+
+The width satisfies $n\le5L+3$ for source encoding length $L$;
+`toAddXNOR_encoding_length_le` bounds encoded output length by
+$2(5L+3)^2+3(5L+3)+1$. The reduction and verifier have actual native
+`ComputableInPolyTime` certificates. `natEval_polyTime` certifies a fold with
+at most $m$ binary bits of state after every step, and `natEval_toNat` connects
+it to actual word evaluation. These certificates assert polynomial time and
+space, without asserting the paper's sharper $O(n^2)$ verifier running time.
+
+For two independent parameters, `WordDecision` permits $N\ge2$ and $m\ge1$.
+`powerShape` checks $(m-1)^b<N^a\le m^b$ with integer arithmetic;
+`powerShape_iff` proves its ceiling interpretation. `toPowerAddXNOR` pads the
+same actual guard construction to $N=t^b$ and $m=t^a$. Its polynomial-time
+certificate treats $a,b$ as fixed positive integers. `rational_width_npComplete`
+quantifies over every rational $\delta>0$ and states NP-completeness with the
+literal restriction $m=\lceil N^\delta\rceil$.
+
+`threeSATToAddXNOR` composes the existing checked 3-SAT digit construction
+with this map. It uses base eight with two unit slack numbers and target three,
+rather than the manuscript's base ten, slack one/two and target four. Both
+constructions are carry-free; the reused library proof handles repeated literals
+and tautological clauses. `threeSATToAddXNOR_mem_iff` and
+`threeSATToAddXNOR_polyTime` prove actual correctness and polynomial time;
+`threeSATToAddXNOR_width_le` gives $n\le13(v+c)+3$, counting variables by
+distinct occurrence, independently of their binary labels. This proves the first
+conclusion of Theorem 2. Its sparsification/disjunction resource refinement is
+still unproved for this map.
+
+The complete [hardness client](../../ComplexityTests/AddXNORHardness.lean)
+checks actual operands and both gadget choices, mixed-pattern rejection,
+zero/repeated entries, empty input, out-of-range rejection, width one,
+a non-dense 3-SAT variable label and rational-width padding. Start with the two
+imports above; use the semantic equivalence to inspect a constructed instance,
+and the separate polynomial-time theorem for a complexity-class reduction.
+
+The full-paper objective remains open. Still unproved are the sparsification
+refinement, exact solution-multiplicity factor, certified exact decision/witness
+algorithms (including dissection's time, balance computation, space and class-size
+expectations), remaining solution-count/planted-bias/Hamming/difference claims,
+and ideal-model adversarial search/decision bounds. The positional-cut result
+is not a universal algorithmic barrier, and experimental CDCL exponents remain
+finite observations.

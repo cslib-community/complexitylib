@@ -37,10 +37,13 @@ forced solution parity, unique positional cut, and adjacent swap collision with
 arbitrary common context are implemented. The all-bit run factorization, actual
 transfer/distribution bridge, explicit diagonalization/spectral sum and quantitative
 decay/bit-one extremality (Theorem 5) are also implemented. The all-main-results
-objective remains open: NP-completeness with rational-width and linear
-3-SAT reductions, certified algorithm/resource bounds and uniform class-size
-expectations, ideal-chain search/decision lower bounds, and the remaining explicit
-solution-count/planted-bias and difference-propagation claims still need proofs.
+objective remains open. The actual guard-based polynomial-time NP-completeness
+reduction, every positive rational width restriction, and the direct linear-width
+3-SAT map are implemented, with explicit encoding-length bounds. Theorem 2's
+sparsification/disjunction resource refinement, exact reduction multiplicity,
+certified algorithm/resource bounds and uniform class-size expectations,
+ideal-chain search/decision lower bounds, and the remaining explicit
+solution-count/planted-bias/Hamming and difference-propagation claims still need proofs.
 Empirical CDCL and solution-count observations are not asymptotic theorems.
 
 ### Landmark theorems, in priority order
