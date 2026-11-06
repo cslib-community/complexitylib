@@ -3135,6 +3135,9 @@ public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
 public import Complexity.Crypto.Computational.PseudorandomGenerator
 public import Complexity.Crypto.Computational.PseudorandomPermutation
+public import Complexity.Crypto.Computational.QuadraticResiduosity
+public import Complexity.Crypto.Computational.RSATrapdoor
+public import Complexity.Crypto.Computational.RabinFactoring
 public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
 public import Complexity.Crypto.Computational.SIS.Module
