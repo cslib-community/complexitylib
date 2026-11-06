@@ -731,17 +731,7 @@ private theorem computableInPolyTime_postprocessed_decaps
       (encPair encUnary (encPair encBits encBits)) (encOption encBits)) :
     ComputableInPolyTime (fun ⟨n, sk, ct⟩ => (decaps n sk ct).map (F n))
       (encPair encUnary (encPair encBits encBits)) (encOption encBits) := by
-  let I := encPair encUnary (encPair encBits encBits)
-  have hp := ComputableInPolyTime.fst I encBits
-  have hk := ComputableInPolyTime.snd I encBits
-  have h := hdecaps.optionElimWithInput
-    (body := fun (p : ℕ × List Bool × List Bool) k => some (F p.1 k))
-    (ComputableInPolyTime.const none)
-    ((ComputableInPolyTime.optionSome encBits).comp (hF.comp (hp.fst'.prod hk)))
-  convert h using 1
-  funext ⟨n, sk, ct⟩
-  dsimp only
-  cases decaps n sk ct <;> rfl
+  fun_prop
 
 /-- **Adaptive CCA security of KEM–DEM encryption**, for the source symmetric cipher's
 `n`-bit message model ([BonehShoup2023], Exercise 12.5(a)). The same native postprocessor is
@@ -824,7 +814,11 @@ theorem exists_hybridCCA_reductions (E : SymmetricCipher)
           (ProbComp.eval (E.ccaOneTimeGame Bs true n)) := by
   dsimp only
   obtain ⟨decBound, hdecPoly, hdec⟩ := exists_decryption_length_bound hkeyGen hdecaps
-  obtain ⟨ctBound, hctPoly, hct⟩ := E.exists_ciphertext_length_bound
+  obtain ⟨bound, hbound, hct⟩ := E.exists_ciphertext_length_bound
+  let ctBound := fun n => bound n n
+  have hctPoly : ComputableInPolyTime ctBound encUnary encUnary :=
+    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')
+  have hct := fun n => hct n n
   obtain ⟨symBound, hsymPoly, hsym⟩ := E.exists_decryption_length_bound
   refine ⟨hybridToKEMCCAHiddenBit E F decBound adversary,
     hybridToOneTimeCCAAdversary E keyGen

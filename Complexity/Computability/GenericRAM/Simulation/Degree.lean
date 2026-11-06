@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.GenericRAM.Simulation.Run
 public import Complexity.Computability.GenericRAM.Native.Degree
+import Complexity.Tactic.EncLen
 
 /-!
 # Explicit-degree overhead of the finite-state RAM simulation
@@ -95,7 +96,7 @@ theorem readRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
     ⟨32, fun q => ?_⟩ (by omega)
   · have hq : (SparseMemory.queryEncoding enc.address enc.value q.1).length ≤
         (SparseMemory.readEncoding enc.address enc.value q).length := by
-      simp only [SparseMemory.readEncoding, length_encPair]; omega
+      enc_len [SparseMemory.readEncoding]
     have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
     have ht := SparseMemory.scanTime_le_cube enc.address enc.value q.1
     have he : (SparseMemory.readEncoding enc.address enc.value q).length ≤
@@ -104,9 +105,7 @@ theorem readRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
     unfold SparseMemory.readTime
     nlinarith
   · have hs := SparseMemory.scanSpace_le_linear enc.address enc.value q.1
-    simp only [SparseMemory.readSpace, SparseMemory.readEncoding,
-      length_encPair, pow_one] at hs ⊢
-    omega
+    enc_len [SparseMemory.readSpace, SparseMemory.readEncoding, pow_one] at hs ⊢
 
 /-- The raw sparse-memory update is cubic in time and linear in space. -/
 theorem writeRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
@@ -120,8 +119,7 @@ theorem writeRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
     ⟨33, fun q => ?_⟩ (by omega)
   · have hq : (SparseMemory.queryEncoding enc.address enc.value (q.1.1, q.2)).length ≤
         (SparseMemory.writeEncoding enc.address enc.value q).length := by
-      simp only [SparseMemory.queryEncoding, SparseMemory.writeEncoding, length_encPair]
-      omega
+      enc_len [SparseMemory.queryEncoding, SparseMemory.writeEncoding]
     have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
     have ht := SparseMemory.scanTime_le_cube enc.address enc.value (q.1.1, q.2)
     have he : (SparseMemory.writeEncoding enc.address enc.value q).length ≤

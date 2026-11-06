@@ -63,6 +63,46 @@ does not reconstruct the product tree. The
 similarly supplies named parameter access and certificates with the original unary/binary
 choices. Use these boundaries when changing a client, and retain its encoded-length bounds.
 
+For a computed optional value, import
+`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option`.
+The shared `ComputableInPolyTime.optionMapWithInput` rule certifies
+`fun x => (value x).map (f x)` from certificates for `value` and the joint callback
+`fun p => f p.1 p.2`. The callback is charged against both the original input and
+the present value; input and output value encodings may differ.
+The [public-import client](../../ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeOptionPublicImport.lean)
+checks a captured parameter and an encoding change.
+[Boolean measurement search](../../Complexity/Computability/PolyTime/LinearAlgebra/BooleanMeasurements.lean)
+uses this rule for its optional-result codec, and
+[hybrid CCA composition](../../Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
+uses it to postprocess successful decapsulation while preserving rejection.
+
+## Walk two lists with a collecting fold
+
+Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold`
+and open `Turing.MultiTapeTM`. Apply `ComputableInO.zipFold` or
+`ComputableInSpace.zipFold` explicitly. The complete [zipFold clients](../../ComplexityTests/ZipFold.lean)
+show padding, dropping and a time certificate; [subtractSums_inSpace](../../Complexity/Computability/TreeEval/Reader/Cert/Regs.lean)
+uses the space-only rule for register subtraction.
+
+`zipFold f p left right` takes one step for every element of `left`, consuming one
+position of `right` even when `f` returns `none` and drops that output. After `right`
+is exhausted, the callback receives `none`; it chooses whether to pad or drop.
+Unused elements of a longer `right` are ignored, and retained outputs keep their order.
+
+Supply one joint certificate for `(p, a, b?) ↦ f p a b?`, with the parameter, left element
+and optional right element encoded together. Both cost rules require `Inhabited` for the
+right-element and output types. They also require a bound on **every encoded output prefix**:
+the result of `zipFold f p (left.take i) right` for every `i`, not only the final list.
+Keep the parameter and element encodings explicit when applying the rule.
+
+Let `N` be the length of the joint encoding of `(p, left, right)`. A callback with linear
+time and charged space, and prefixes bounded by `k * (N + 1)` for one constant `k`, gives
+time `O((left.length + 1) * (N + 1))` and linear charged space. The space-only rule needs
+a linear-space callback and a prefix bound `B (p, left, right)`; it gives space
+`O(N + B (p, left, right) + 1)` and makes no time claim. Both space bounds include the
+encoded output. A callback certificate for each fixed parameter is insufficient: certify
+the joint function, and discharge the prefix bound separately.
+
 ## Certify a loop and its postcondition
 
 **Goal:** a plain computation certificate together with a final invariant. Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration`. The public import exposes [ComputableInPolyTime.iterate_spec](../../Complexity/Computability/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean); its current implementation lives in the machine layer.

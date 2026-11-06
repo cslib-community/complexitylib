@@ -502,7 +502,11 @@ theorem isPPTOn_hybridDEMGame (E : SymmetricCipher)
       decaps p.1 p.2.1 p.2.2) (encPair encUnary (encPair encBits encBits)) (encOption encBits))
     {adversary : WordCCA2Adversary} (hA : adversary.IsPPT) (bit : Bool) :
     IsPPTOn encUnary encBool (hybridDEMGame E keyGen encaps decaps adversary bit) := by
-  obtain ⟨ctBound, hctPoly, hct⟩ := E.exists_ciphertext_length_bound
+  obtain ⟨bound, hbound, hct⟩ := E.exists_ciphertext_length_bound
+  let ctBound := fun n => bound n n
+  have hctPoly : ComputableInPolyTime ctBound encUnary encUnary :=
+    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')
+  have hct := fun n => hct n n
   obtain ⟨decBound, hdecPoly, hdec⟩ := E.exists_decryption_length_bound
   have hrun := E.isPPTOn_ccaOneTimeGame
     (isOraclePPT_hybridToOneTimeCCAAdversary E hkeyGen hencaps hdecaps hctPoly hdecPoly hA) bit
@@ -528,7 +532,11 @@ theorem _root_.Cslib.Crypto.SymmetricCipher.OneTimeINDCCA.indistinguishable_hybr
       (fun A n => ProbComp.eval (hybridDEMGame E keyGen encaps decaps A true n))
       WordCCA2Adversary.IsPPT := by
   intro adversary hA
-  obtain ⟨ctBound, hctPoly, hct⟩ := E.exists_ciphertext_length_bound
+  obtain ⟨bound, hbound, hct⟩ := E.exists_ciphertext_length_bound
+  let ctBound := fun n => bound n n
+  have hctPoly : ComputableInPolyTime ctBound encUnary encUnary :=
+    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')
+  have hct := fun n => hct n n
   obtain ⟨decBound, hdecPoly, hdec⟩ := E.exists_decryption_length_bound
   have h := hsecure (hybridToOneTimeCCAAdversary E keyGen encaps decaps ctBound decBound adversary)
     (isOraclePPT_hybridToOneTimeCCAAdversary E hkeyGen hencaps hdecaps hctPoly hdecPoly hA)

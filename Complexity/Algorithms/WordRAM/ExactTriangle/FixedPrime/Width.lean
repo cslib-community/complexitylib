@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Indexing
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.SourceBounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.NumericBounds
 import Complexity.Computability.WordRAM.Admission
 
 /-!
