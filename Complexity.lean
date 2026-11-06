@@ -2508,6 +2508,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Windo
 public import Complexity.Computability.Machines.Turing.SingleTape.Partrec
 public import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
 public import Complexity.Computability.Machines.Turing.TM2.ConfigBound
+public import Complexity.Computability.Machines.Turing.TM2.Degree
 public import Complexity.Computability.Machines.Turing.TM2.Encoding
 public import Complexity.Computability.Machines.Turing.TM2.PolySpace
 public import Complexity.Computability.Machines.Turing.TM2.PolyTime
