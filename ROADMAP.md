@@ -319,10 +319,15 @@ families and full-input native runtime.
   bounds the statistical distance between the one-attempt programmed signing hybrid (which prepends
   a fresh challenge even on an abort) and simulated signing with accepted-transcript caching under
   any query-bounded visible continuation by `R / q^n + sqrt(q^n / (2γ + 1)^m) / 2`, with exact
-  visible equality for zero-read continuations. Full executions retaining the final cache verify
-  the 0 vs 24/49 empty-cache divergence on the canonical q=17 counterexample. The all-attempt visible
-  simulation milestone ([#2798](https://github.com/cslib-community/complexitylib/issues/2798))
-  extends visible simulation to all `K` attempts. Adaptive multiple-call replacement, an efficient
+  visible equality for zero-read continuations. Full executions retaining the final cache
+  verify the 0 vs 24/49 empty-cache divergence on the canonical q=17 counterexample.
+  The all-attempt visible simulation milestone
+  ([#2798](https://github.com/cslib-community/complexitylib/issues/2798)) establishes the
+  multi-attempt visible simulation framework (`lyubashevskySimAttempts`,
+  `lyubashevskySignAttemptsVisibleProg`, `lyubashevskySignAttemptsVisibleSim`), proves exact
+  visible distribution equality for zero attempts and pure continuations (`K ≤ 1`), and bounds the
+  visible simulation distance for `K ≤ 1` (`closeTo_lyubashevskySignAttempts_simulate_le_one`);
+  extending the induction to general `K ≥ 2`, adaptive multiple-call replacement, an efficient
   secret-free simulator, paired same-coins fork equality, native shared-oracle reduction and a
   security parameter family remain open. Other endpoints include
   identification security under SIS and Dilithium-style
