@@ -3221,6 +3221,10 @@ public import Complexity.Crypto.Protocols.MPC.OTCommitment.Program
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Program.PolyTime
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.SenderProgram
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.SenderProgram.PolyTime
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.Serial
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.Serial.CompleteSender
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.Serial.Receiver
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.Session
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul

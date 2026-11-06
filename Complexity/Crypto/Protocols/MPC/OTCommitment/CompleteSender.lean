@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Crypto.Protocols.MPC.OTCommitment.SenderProgram
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.Session
 public import Complexity.Computability.Probabilistic.Oracle
 public import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Probability.PMF.Event
@@ -31,8 +31,6 @@ or a bit, so this is a typed word interface, not a general network-message parse
 
 ## Main definitions
 
-* `SenderOperation`: finite command names for one complete adversary.
-* `Session.advance`: total phase processing independent of receiver choices.
 * `sessionProgram`: the complete adversary with constant replies and retained session state.
 
 ## Main results
@@ -50,105 +48,12 @@ namespace Cslib.Crypto.Protocols.MPC.OTCommitment
 
 open Probability Crypto.Protocols.Commitment MeasureTheory
 
-/-- Finite command names. Only an opening uses its accompanying word payload. -/
-inductive SenderOperation where
-  | table (values : Fin 4 → Bool)
-  | seal
-  | open (bit : Bool)
-  | abort
-  deriving DecidableEq, Fintype
-
-/-- Sender-visible command history summarized without any receiver choice or answer.
-The fields are internal execution state, not replies to the sender. -/
-structure Session where
-  /-- Tables in execution order, frozen once the session seals or stops. -/
-  tables : List (Fin 4 → Bool) := []
-  /-- Whether a successful seal has occurred. -/
-  sealed : Bool := false
-  /-- Whether an abort or the first post-seal opening attempt has occurred. -/
-  stopped : Bool := false
-  /-- The first opening attempt, if any. Invalid lengths are retained and rejected later. -/
-  submission : Option (Bool × List Bool) := none
-  deriving DecidableEq
-
-/-- Initial single-session state. -/
-def Session.initial : Session := {}
-
-/-- Total command processing. Stopping is independent of opening verification, so a rejected
-attempt cannot be followed by another try. -/
-def Session.advance (k : ℕ) (request : SenderOperation × List Bool) (s : Session) : Session :=
-  if s.stopped then s else
-  match request.1 with
-  | .table values =>
-      if s.sealed then s else
-      if s.tables.length < k then { s with tables := s.tables ++ [values] }
-      else { s with stopped := true, submission := none }
-  | .seal =>
-      if s.sealed then s else
-      if s.tables.length = k then { s with sealed := true }
-      else { s with stopped := true, submission := none }
-  | .open bit =>
-      if s.sealed then { s with stopped := true, submission := some (bit, request.2) } else s
-  | .abort => { s with stopped := true, submission := none }
-
 /-- Constant sender replies preserve the actual command sequence and adversary output. -/
 def sessionProgram {Output : Type} (k : ℕ)
     (program : WordOracleComp SenderOperation Output) : ProbComp (Output × Session) :=
   (OracleComp.interpret
     (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
       (fun request s => pure ([], s.advance k request))) program).run .initial
-
-/-- Once stopped, every command leaves the complete session unchanged. -/
-theorem Session.advance_stopped (k : ℕ) (request : SenderOperation × List Bool)
-    (s : Session) (h : s.stopped = true) : s.advance k request = s := by
-  simp [advance, h]
-
-/-- The committed tables are immutable, even after malformed opening attempts. -/
-theorem Session.advance_tables_of_sealed (k : ℕ) (request : SenderOperation × List Bool)
-    (s : Session) (h : s.sealed = true) : (s.advance k request).tables = s.tables := by
-  rcases request with ⟨op, word⟩
-  cases op <;> simp only [advance, h, ite_true]
-  all_goals split <;> rfl
-
-/-- The handler enforces its table budget and seals only an exact-length transcript. -/
-theorem Session.advance_length (k : ℕ) (request : SenderOperation × List Bool) (s : Session)
-    (h : s.tables.length ≤ k ∧ (s.sealed = true → s.tables.length = k)) :
-    (s.advance k request).tables.length ≤ k ∧
-      ((s.advance k request).sealed = true → (s.advance k request).tables.length = k) := by
-  rcases request with ⟨op, word⟩
-  cases hs : s.stopped <;> cases hc : s.sealed <;> cases op <;>
-    simp only [advance, hs, hc, Bool.false_eq_true, ite_false, ite_true]
-  all_goals first | simpa [hc] using h | (split <;> simp_all [List.length_append])
-
-/-- Opening payloads have two exact-length halves. There is no zip-truncation acceptance. -/
-def Session.opening (k : ℕ) (s : Session) : Option (Bool × List (Bool × Bool)) := do
-  let (bit, word) ← s.submission
-  if word.length = 2 * k then some (bit, (word.take k).zip (word.drop k)) else none
-
-/-- The receiver records whether a receipt was actually issued; pre-seal abort has no receipt. -/
-def Session.receipt (s : Session) : Phased.Observation :=
-  if s.sealed then .receipt else .idle
-
-/-- The extractor sees the corrupted sender's actual OT tables. -/
-def Session.extracted (s : Session) : Bool :=
-  extractPairs (s.tables.map fun t =>
-    (t (boolPairToFin4 (false, false)), t (boolPairToFin4 (false, true))))
-
-/-- Final receiver observation, computed from the answers actually delivered by OT. -/
-def Session.observation (k : ℕ) (choices received : List Bool) (s : Session) :
-    Phased.Observation :=
-  if s.stopped then
-    if s.sealed then (openPairs choices received (s.opening k)).elim .aborted .opened
-    else .aborted
-  else s.receipt
-
-/-- Ideal functionality state represented by the same phase history. The stored bit is fixed
-at the successful seal; later tables cannot change it. -/
-def Session.idealStore (k : ℕ) (choices received : List Bool) (s : Session) : Phased.Store :=
-  if s.stopped then
-    if s.sealed && (openPairs choices received (s.opening k) == some s.extracted)
-    then .opened s.extracted else .aborted
-  else if s.sealed then .committed s.extracted else .idle
 
 /-- Execute each accepted row against the existing OT world. Choices remain private, and only
 the sender's unit answer is discarded; the honest receiver keeps its selected bit. -/

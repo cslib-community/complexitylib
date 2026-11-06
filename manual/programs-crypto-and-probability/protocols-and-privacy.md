@@ -612,11 +612,30 @@ and executes correctly, although no fixed additive per-round state bound holds. 
 phase and retry rejection, zero rounds, retained private randomness, and the sharp two-round
 real acceptance probability `1/2` versus ideal abort.
 
-This removes the sender callback restriction for the stated single-session command interface.
-A global receiver-program adapter and a common honest protocol execution with role-local
-corruption adapters and uniform observation, phase and input contracts still need to connect both
-real experiments. Arbitrary two-sided scheduling, composition/UC and full malicious MPC remain
-separate obligations.
+For a common role-local execution, import `OTCommitment.Serial.CompleteSender` and
+`OTCommitment.Serial.Receiver`. `Serial.world k` has separate sender commands and receiver
+`select`, `poll` and `readOpening` operations. It executes the existing OT world when the receiver
+consumes the one pending row. A second pending table or a seal with an unanswered row aborts;
+a row cannot be overwritten or selected twice. Selection requires the pre-seal phase. The first
+post-seal opening attempt is terminal even if malformed or rejected; its raw payload stays readable,
+while explicit abort exposes none. Private tables, selections and retained answers are storage,
+not sender replies. `senderOnly_output` proves that sender-only programs receive constant replies.
+
+`Serial.eval_senderAdapter` routes a complete command program through this world, with an honest
+receiver consuming each table before the sender resumes, and recovers `completeSenderReal` exactly.
+`Serial.eval_receiverAdapter` uses the existing closed receiver callbacks: each choice is followed
+by a fresh mask, the honest table submission and the actual selection. Its release plan sees only
+the receiver's transcript and state. The equality to `receiverReal` retains the actual raw opening,
+both receipt and terminal observations, private state, randomized release data and continuation
+output. Internal masks used to produce the honest opening are absent from that receiver view.
+The [serial execution clients](../../ComplexityTests/Crypto/OTCommitmentSerial.lean) exercise
+adaptive duplicate slots, opening/answer correlation, zero rows, unanswered rows, rejected retries
+and why an opening must not permit a later selection.
+
+These are equalities for two explicit honest-party schedules in an original single-session serial
+world. They do not equate arbitrary interleavings or prove a new security notion. A global
+receiver-program adapter, uniform native execution contracts for this common world, two-sided
+realization, composition/UC and full malicious MPC remain separate obligations.
 
 ## Upstream perfect secrecy and sharing
 
