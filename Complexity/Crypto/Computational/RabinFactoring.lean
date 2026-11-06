@@ -59,8 +59,8 @@ dyadic all-residue sampling variant: they draw a uniform `2 * N.bits.length`-bit
 `N` immediately; otherwise it queries the Rabin inverter `A` on `(N, x^2 % N)` and returns
 `(gcd(x + x', N), N / gcd(x + x', N))`. Partitioning `Fin (2^L)` into nontrivial-gcd draws,
 multiples of `N`, and 4-to-1 unit fibers (where at least `2k` of the at most `4(k + 1)`
-preimages in `Fin (2^L)` fall in the two CRT classes with `x + x' ≢ 0 [MOD p]` and
-`x - x' ≢ 0 [MOD q]` for `k = 2^L / N ≥ N ≥ 21`) yields the concrete factor-`3` reduction
+preimages in `Fin (2^L)` fall in the two mixed-sign CRT classes, equal to `x'` modulo one prime
+and `-x'` modulo the other, for `k = 2^L / N ≥ N ≥ 21`) yields the concrete factor-`3` reduction
 bound `succProbability_rabinInversionGame_le`:
 `Game.succProbability (rabinInversionGame gen A n) ≤`
 `3 * Game.succProbability (factoringGame gen (rabinToFactor A) n)`.
@@ -72,7 +72,8 @@ charging the full binary-encoded inputs and sampled/callback outputs uniformly b
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020],
-  Section 9.2.3 (The Factoring Assumption) and Sections 15.5.1–15.5.2 (Computing Modular Square
+  Section 9.2.3, Definition 9.45 (The Factoring Assumption) and Sections 15.5.1–15.5.2,
+  Lemma 15.35, Theorem 15.36, Proposition 15.37, and Theorem 15.38 (Computing Modular Square
   Roots; A Trapdoor Permutation Based on Factoring).
 -/
 

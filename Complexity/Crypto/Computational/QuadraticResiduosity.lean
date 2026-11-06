@@ -61,8 +61,8 @@ encodings.
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020],
-  Section 15.4 (Sections 15.4.1–15.4.3: quadratic residues modulo a prime and a composite, and
-  the quadratic residuosity assumption).
+  Section 15.4 (Sections 15.4.1–15.4.3, Proposition 15.23 and Definition 15.27: quadratic
+  residues modulo a prime and a composite, and the quadratic residuosity assumption).
 -/
 
 @[expose] public section
@@ -149,6 +149,11 @@ open Classical in
 /-- Quadratic residues in `(ZMod (p * q))ˣ`. -/
 def quadResidueSet (p q : ℕ) [NeZero (p * q)] : Finset (ZMod (p * q))ˣ :=
   Finset.univ.filter fun x => IsSquare x
+
+/-- Membership in `quadResidueSet p q` is equivalent to membership in `Subgroup.square`. -/
+theorem mem_quadResidueSet_iff (p q : ℕ) [NeZero (p * q)] (x : (ZMod (p * q))ˣ) :
+    x ∈ quadResidueSet p q ↔ x ∈ Subgroup.square (ZMod (p * q))ˣ := by
+  simp [quadResidueSet, Subgroup.mem_square]
 
 open Classical in
 /-- Quadratic nonresidues in `(ZMod (p * q))ˣ` with Jacobi symbol `+1` (`QNR_N^{+1}`). -/
