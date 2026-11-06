@@ -51,6 +51,21 @@ proof. Open the complete ordinary-import
 [call examples](../../ComplexityTests/WordRAMCallAutomation.lean), including a dirty caller,
 its actual continuation, a variable allowance and rejected wrong-code/insufficient-time cases.
 
+When a continuation would otherwise rebuild many caller-register equalities, import
+[`SymbolicExec.CanonicalCall`](../../Complexity/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)
+and use `wram_call routine_spec canonical bank_injective with small post` at the same call
+boundary. The continuation's caller state is `small.extend bank oldCaller`. Run `wram_exec`
+or `wram_simp` with the callee's output facts: closed finite-bank reads normalize individually,
+and outside-bank reads return the original caller values. Inside-bank inputs still need actual
+callee preservation facts. Memory always comes from `small`, including its writes; a register
+frame supplies no memory frame. The raw equations are shared with the subroutine API in
+[`RegisterFrame`](../../Complexity/Computability/WordRAM/RegisterFrame.lean).
+For symbolic banks use `Data.extend_regs_of_eq` or
+`Data.extend_regs_of_forall_ne` explicitly. The complete
+[canonical-call examples](../../ComplexityTests/WordRAMCanonicalCall.lean) check a permuted bank,
+both callee and continuation stores, dirty outside registers, an empty bank and symbolic reads.
+Do not unfold `Function.extend`; these read rules keep nested caller states manageable.
+
 For memory readback, import
 [`MemoryView`](../../Complexity/Computability/WordRAM/MemoryView.lean).
 `ram_keep view using frame` preserves a block, list or finite-footprint assertion when its live
