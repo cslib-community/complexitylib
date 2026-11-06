@@ -23,6 +23,29 @@ The theorem transports an existing bound; it does not identify the output laws. 
 the Gaussian projection and mod-one distribution identities remain the separate consumer
 [issue #2734](https://github.com/cslib-community/complexitylib/issues/2734).
 
+## Combine component and mixture-weight errors
+
+Import [TotalVariation/Mixture.lean](../../Complexity/Foundations/MeasureTheory/Measure/TotalVariation/Mixture.lean).
+For a finite index set `s`, finite measures `μ i`, `ν i`, and weights `a i`, `b i : ℝ≥0`,
+`MeasureTheory.tvDist_finsetSum_smul_le s a b μ ν` bounds the distance between their actual
+weighted sums by the sum of
+`a i * tvDist (μ i) (ν i) + |a i - b i| * (ν i).real Set.univ`.
+The weights need not sum to one, and the component measures need not be probabilities.
+The actual total mass in the second term is necessary for arbitrary finite measures.
+
+For common weights use `tvDist_nnreal_smul`; for a fixed component with changed weights use
+`tvDist_nnreal_smul_same`. The latter is an equality, including zero weights and the zero
+measure. `tvDist_finsetSum_le` handles finite sums directly. All statements keep the full-L1
+convention: distinct probability atoms have distance two.
+
+The [checked clients](../../ComplexityTests/TotalVariationMixture.lean) include sharp unequal-mass
+examples and a tagged mixture on `Fin 6 × ℝ`. In that client, actual finite-PMF weights sum
+to one; component errors bounded by `4 * ε` and a weight discrepancy bounded by `δ` give a
+joint error of `4 * ε + δ`. The tags are actual measurable pushforwards, so map contraction
+supplies their component bounds. Run `scripts/build.sh ComplexityTests.TotalVariationMixture`.
+The [Regev joint experiment](https://github.com/cslib-community/complexitylib/issues/2767) still
+has to discharge those bounds for its actual Gaussian laws and residue marginal.
+
 ## Describe a discrete Gaussian law
 
 Import [Gaussian/Discrete.lean](../../Complexity/Foundations/Probability/Gaussian/Discrete.lean)
