@@ -46,6 +46,11 @@ As of November 5, 2026, the operator has deployed the origin at
 Deployment also verified the underscore syslog tags, `nohostname`, later journal drop-in and
 outbound Postfix transports documented in the operator examples.
 
+Usage logging was installed on November 6, 2026. All five isolated nginx tests passed on the VM;
+production GET/HEAD probes matched recorded status/body bytes and privacy rules. Namespace-only
+rotation and service restart preserved history and accepted new records. Services stayed healthy,
+with no new mail. The collector preserves the host's kernel audit policy.
+
 These checks used small synthetic packages. A real Lean build publication and cold restore,
 review of the deployment evidence, and integration approval remain before activation. The
 [migration checklist](../../scripts/cache/README.md#mit-origin-migration) gives the repository
