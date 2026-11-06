@@ -3197,6 +3197,7 @@ public import Complexity.Crypto.Computational.SIS.ModuleEncryption
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Native
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Sampling
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Sampling.Concentration
+public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Sampling.Native
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch.CenteredBinomial
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch.Correctness
