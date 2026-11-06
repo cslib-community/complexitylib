@@ -433,8 +433,10 @@ index links to canonical definitions rather than keeping a second set.
 
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
   native polynomial-time tractability for the six common-polymorphism cases and NP-completeness
-  outside them, for each fixed finite Boolean constraint language. The first milestone is the
-  majority/2CNF structural equivalence; it does not complete the complexity classification.
+  outside them, for each fixed finite Boolean constraint language. Structural majority/2CNF,
+  native NP membership, unary-constant/majority P membership, and the positive-arity Boolean
+  clone classification are proved in the stack. The remaining solvers, fixed-language
+  applications and hardness assembly do not yet complete the complexity classification.
   Symmetric and larger-domain dichotomies are outside the current scope.
 
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
