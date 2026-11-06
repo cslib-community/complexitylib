@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.Paillier
+import Complexity.Crypto.Game.FourHop
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -88,20 +89,12 @@ it runs the adversary on the public key `N` and answers its challenge with
 noncomputable def dcrDistinguisher (adversary : AdversaryOf ℕ) (bit : Bool) (n : ℕ)
     (input : ℕ × ℕ) : ProbComp Bool := do
   let choice ← adversary.choose n (encNat input.1)
-  if validMessages n (encNat input.1) choice.1.1 choice.1.2 then
-    let m := if bit then choice.1.2 else choice.1.1
-    adversary.guess n choice.2
+  if validMessages n (encNat input.1) (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) then
+    let m := if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice
+    adversary.guess n (ChoiceOut.state choice)
       (encNat (powMod (input.1 ^ 2) (1 + input.1) m * input.2 % input.1 ^ 2))
   else
     return false
-
-private theorem ofBits_encNat (x : ℕ) : ofBits (encNat x) = x := Nat.foldr_bit_bits x
-
-private theorem computableInPolyTime_sq {α : Type} {input : α ↪ List Bool} {N : α → ℕ}
-    (hN : ComputableInPolyTime N input encNat) :
-    ComputableInPolyTime (fun a => N a ^ 2) input encNat := by
-  simpa only [sq] using
-    (ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.binary_mul' hN.tidy hN.tidy))
 
 /-- The reduction distinguishers are uniform strict PPT. -/
 theorem isPPTOn_dcrDistinguisher {adversary : AdversaryOf ℕ} (hA : adversary.IsPPT encNat)
@@ -390,14 +383,6 @@ private theorem dcrIdealGame_dcrDistinguisher_false_eq_true (setup : ℕ → PMF
     rw [key, key]
   · simp only [hv, Bool.false_eq_true, ↓reduceIte]
 
-private theorem advantage_four_hop_le {G0 M0 M1 G1 : Game} {c : ℝ≥0}
-    (h0 : G0.advantage M0 ≤ c) (h1 : G1.advantage M1 ≤ c) :
-    G0.advantage G1 ≤ c + M0.advantage M1 + c := by
-  rw [Game.advantage_comm] at h1
-  rw [add_assoc]
-  exact (G0.advantage_triangle M0 G1).trans
-    (add_le_add h0 ((M0.advantage_triangle M1 G1).trans (add_le_add le_rfl h1)))
-
 /-- **Paillier encryption is IND-CPA secure under DCR** ([KatzLindell2020], Theorem 15.13): if
 the decisional composite residuosity problem is hard relative to the generator's law, then
 `(keyGen gen, encrypt)` satisfies `Encryption.INDCPAOn validMessages encNat`. The hypothesis
@@ -423,7 +408,7 @@ theorem DCR.indcpaOn_paillier {gen : ℕ → ProbComp Desc}
   have h5 : Negligible fun n => (5 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 5
   refine negligible_of_le ((h5.add hmid).add h5) fun n => ?_
   dsimp only [Pi.add_apply]
-  exact advantage_four_hop_le (advantage_gameOn_dcrRealGame_le hsize adversary false n)
+  exact Game.advantage_four_hop_le (advantage_gameOn_dcrRealGame_le hsize adversary false n)
     (advantage_gameOn_dcrRealGame_le hsize adversary true n)
 
 end Cslib.Crypto.Paillier

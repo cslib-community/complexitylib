@@ -83,7 +83,6 @@ theorem mem_support_keyGen_constGen (n : ℕ) :
     PMF.support_pure, Set.mem_singleton_iff]
   rfl
 
-private theorem ofBits_encNat_143 : ofBits (encNat 143) = 143 := Nat.foldr_bit_bits 143
 
 /-- Every encryption of `42` under `N = 143` decrypts to `42`. -/
 example (n : ℕ) {ct : List Bool}
@@ -91,7 +90,7 @@ example (n : ℕ) {ct : List Bool}
     decrypt (encPair encNat encNat (143, 120)) ct = encNat 42 :=
   decrypt_encrypt (gen := constGen) (keys := (encNat 143, encPair encNat encNat (143, 120)))
     (mem_support_keyGen_constGen n)
-    (show 42 < ofBits (encNat 143) by rw [ofBits_encNat_143]; norm_num) hct
+    (show 42 < ofBits (encNat 143) by rw [ofBits_encNat]; norm_num) hct
 
 /-- Combining encryptions of `100` and `50` under `N = 143` gives a ciphertext that decrypts to
 `7`. -/
@@ -104,7 +103,7 @@ example (n : ℕ) {ct₁ ct₂ : List Bool}
     (keys := (encNat 143, encPair encNat encNat (143, 120))) (mem_support_keyGen_constGen n)
     hct₁ hct₂
   dsimp only at h
-  rw [ofBits_encNat_143] at h
+  rw [ofBits_encNat] at h
   exact h.trans (by norm_num)
 
 /-! ### Decisional composite residuosity assumption client -/
@@ -126,11 +125,11 @@ example (setup : ℕ → PMF Desc) (h : DCR setup) :
 
 /-- Both challenge messages must be below the modulus. -/
 example : validMessages 0 (encNat 143) 5 142 = true := by
-  rw [validMessages, ofBits_encNat_143]
+  rw [validMessages, ofBits_encNat]
   decide
 
 example : validMessages 0 (encNat 143) 5 143 = false := by
-  rw [validMessages, ofBits_encNat_143]
+  rw [validMessages, ofBits_encNat]
   decide
 
 /-- The adversary that challenges with `0` and `1` and always guesses `true`. -/
