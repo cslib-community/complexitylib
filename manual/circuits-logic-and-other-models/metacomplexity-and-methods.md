@@ -314,6 +314,41 @@ From the checkout root, run
 The functional bridge does not discharge the coefficient-growth/encoded-runtime
 obligation described above or prove the whole-paper algorithmic endpoint.
 
+### Binary square-system recovery
+
+Import `Complexity.Computability.PolyTime.Int.Cramer` for an independently certified
+square-system component. `Cslib.LinearSystem.cramerCertificate A b` takes an integer
+row table `A` and RHS list `b`, returning a common denominator and numerator list.
+The dimension is `A.length`; missing entries read as zero and extra columns/RHS
+entries are ignored. The denominator is the determinant of that normalized square.
+Each numerator is computed with the existing division-free Bird program, avoiding
+rational intermediate coefficients. Negative denominators are allowed.
+
+`cramerCertificate_correct` proves the scaled integer equations and
+`cramerCertificate_unique` proves uniqueness when the denominator is nonzero.
+`cramerBoolean A b` tests that denominator and checks every numerator is either zero
+or the denominator. `cramerBoolean_correct` identifies this test with Boolean
+feasibility for nonsingular squares. A singular input is rejected even if it has
+Boolean solutions; use the existing general functional preprocessing for such inputs.
+
+`cramerCertificate_polytime` and `cramerBoolean_polytime` certify uniform multitape
+Turing-machine polynomial time under `encPair (encList (encList encIntBin))
+(encList encIntBin)`, with the dimension varying with the input. These certificates
+include binary arithmetic. For entries and RHS magnitudes below $2^\beta$,
+`cramerCertificate_bits_le` bounds each emitted integer's sign-magnitude code length
+by $\beta+n(1+n+\beta)+2$, where $n=A.length$.
+`cramerColumnRows_stage_bits_le` controls the actual numerator determinant stages;
+the reused determinant API also controls partial sums/products and table encodings.
+
+The [complete checked client](../../ComplexityTests/PaperEndpoints/CramerBinary.lean)
+executes negative-denominator, non-Boolean, singular, dimension-zero, ragged and
+128-bit examples and compares all 1,296 signed two-variable/RHS inputs with direct
+Boolean testing whenever nonsingular. From the checkout root, run
+`LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.CramerBinary`.
+This component is not yet connected to `originalElimination` or `tablePlan`.
+It does not discharge rectangular original-row selection, closure/separator/query
+assembly resource bounds, or the paper's end-to-end preprocessing theorem.
+
 ## Known Limitations
 
 The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.

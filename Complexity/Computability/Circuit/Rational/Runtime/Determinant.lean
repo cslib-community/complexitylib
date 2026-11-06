@@ -50,6 +50,7 @@ encoding, and, following the original development, for the stages of the dense t
 ## Main results
 
 * `Rational.intBits_step_le`: bit-length bound on values computed in one stage.
+* `Rational.detRows_bits_le`: polynomial bit-length bound on the emitted determinant.
 * `Rational.detRows_eq`: `detRows (rowsOf A) = A.det`.
 * `Rational.detRows_eq_det_ofRows`: on any list of rows, `detRows` is the determinant of the
   square matrix it denotes, of dimension the number of rows.
@@ -510,6 +511,23 @@ private lemma polyBounded_stageTableBound {α : Type} {size L k : α → ℕ}
   have hrow : PolyBounded size (fun x => stageRowBound (L x) (k x)) :=
     hL.mul (((PolyBounded.const 2).mul hentry).add (.const 1))
   exact hL.mul (((PolyBounded.const 2).mul hrow).add (.const 1))
+
+/-- A single determinant's emitted binary integer also has a polynomial width.
+This bound includes the dimension-zero determinant `1`. -/
+theorem detRows_bits_le (A : List (List ℤ)) (β : ℕ)
+    (hA : ∀ i j, (rowEntry A i j).natAbs < 2 ^ β) :
+    intBits (detRows A) ≤ β + A.length * (1 + A.length + β) + 2 := by
+  unfold detRows
+  split
+  · simp [intBits]
+  · rename_i k hk
+    have h := intBits_rowEntry_stagesRows_le (fun i j => (intBits_le_iff _ _).mpr (hA i j)) k 0 0
+    have he : ((-1 : ℤ) ^ k * rowEntry (stagesRows A k) 0 0).natAbs =
+        (rowEntry (stagesRows A k) 0 0).natAbs := by
+      simp [Int.natAbs_mul, Int.natAbs_pow]
+    simp only [intBits, he] at *
+    rw [hk] at *
+    nlinarith
 
 variable {α : Type} {encIn : α ↪ List Bool}
 

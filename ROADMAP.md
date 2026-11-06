@@ -43,9 +43,11 @@ the cube. Finite lookup aligns scope signs. `CNF/ExactOneElimination` and
 `CNF/VCOneElimination` now execute materialized rational elimination, original-row
 selection, direct cases and nonadaptive query assembly, including overlapping
 tables. A proved compiler rewrite scans explicit table rows for binary restrictions
-rather than all Boolean tuples. Encoded polynomial-bit-time and peak-space
-certification (including coefficient growth), bounded-demand/graph
-applications and the advertised sharper counting
+rather than all Boolean tuples. `PolyTime/Int/Cramer` now independently certifies binary square-system recovery
+using division-free determinants and explicit coefficient-width bounds. Connecting
+this component to rectangular row selection and the global pipeline remains open.
+Encoded polynomial-bit-time and peak-space certification for the full closure,
+separator, elimination and query assembly, bounded-demand/graph applications and the advertised sharper counting
 runtime remain open under
 [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
 This does not complete the paper's algorithmic main results.
