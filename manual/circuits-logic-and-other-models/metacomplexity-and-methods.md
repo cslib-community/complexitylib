@@ -85,11 +85,69 @@ inconsistent system that cannot supply the required witness.
 
 This is the algebraic row-selection step of STOC submission 1575, Lemma 3.1
 (PDF pp. 10–11). It is not an elimination implementation or a polynomial bit-time
-certificate. The complete exact-one-to-query construction, local VC-dimension-one
-table representation and advertised runtime remain open. In particular, the
+certificate. For the construction from selected signed rows to actual counting
+queries, use the next section. Polynomial-bit-time elimination, local
+VC-dimension-one table representation and advertised runtime remain open. In particular, the
 [native counting endpoint](../machines-and-classes/native-counting.md) currently
 has a weaker exponent with an additional $\log\log$ factor; it cannot establish
 the sharper quantitative bound by direct substitution.
+
+## Signed exact-one counting queries
+
+Import [`ExactOneCounting`](../../Complexity/Logics/Propositional/CNF/ExactOneCounting.lean)
+and open `Cslib.Logic.PL.ExactOne`. Use a finite ordered declared variable type
+(such as `Fin r`), scopes `S : I → Finset V` and polarities `p : I → V → Bool`.
+A variable occurs once per scope; `Holds (S i) (p i) x` says precisely one of its
+signed literals is true. `signedClause` uses the existing clause syntax, and
+`holds_iff_evalOne` identifies this presentation with `Clause.evalOne`. The older
+occurrence-sensitive API also permits repeated variables; this scope presentation
+enforces the manuscript's distinct-variable convention.
+
+For retained rows indexed by `Fin (k + 1)`, `query S p false` and `query S p true`
+construct ordinary CNFs over `V ⊕ Fin k`. `compilation_iff` verifies the actual
+coverage/exclusion construction, and `counting_identity` subtracts their model
+counts. `sideQuery B S p` adds arbitrary binary side clauses on the same columns,
+deduplicating them before compilation. `side_counting_identity` counts the
+intersection with those side constraints. `sideQuery_width` proves width three;
+`sideQuery_length` gives at most $13r^2$ clauses when $k+1<r$. Deduplication covers
+empty, unary and binary clauses, including repeated literals and contradictory
+empty clauses; the bound is independent of the original side-clause count.
+
+To derive the retained rows and queries from an original nonempty signed system,
+apply `exists_queries_of_two_rational_solutions` with two distinct rational solutions of
+its derived equations and the binary side CNF. The witnesses need not be Boolean or satisfy the side
+CNF. `equation_iff` derives the rational coefficients and right-hand sides from
+literal truth. The theorem selects original rows by rational rank and returns
+actual queries, with $h=k+1$ equal to that rank, $h<r$, exactly $r+h-1$ declared
+variables, and at most $2r-2$ declared variables. Each answer is bounded by
+$2^{2r-2}$, hence fits in at most $2r-1$ bits. No query or reduced subsystem
+is assumed. This is an existence theorem; extracting its classical row choice
+is not a certified elimination algorithm.
+
+For direct cases, `count_eq_zero_of_empty_scope` and
+`count_eq_zero_of_inconsistent` prove rejection. Given an actual rational
+solution and full column span, `fullRankCount_correct` proves that
+`fullRankCount B z` returns the count by testing whether every entry of `z` is
+zero or one and checking the side CNF on `candidateBits z`. `coverScopes` and
+`coverScopes_iff` transpose indexed Exact Cover without identifying equal
+candidate sets or dropping empty candidate-set variables.
+
+The [complete client](../../ComplexityTests/PaperEndpoints/ExactOne.lean) starts
+from repeated original signed rows, an unused bit and explicit different
+solutions. It checks the rank-derived bounds and the individual counts $8$ and
+$4$, whose difference is the source count $4$. Invalid extensions cancel;
+neither individual query is intended to count only source solutions. The client
+also checks side clauses, non-Boolean rational candidates, empty scopes, zero
+variables and equal/empty indexed cover candidates. From the repository root,
+run `scripts/build.sh ComplexityTests.PaperEndpoints.ExactOne` to elaborate it.
+
+This proves the actual rank-derived query existence/correctness portion of
+STOC submission 1575, Theorems 1.2/5.2 and Corollary 5.3, and the Exact Cover
+transposition of Corollary 5.4. It does not complete those algorithmic statements:
+polynomial-bit-time rank preprocessing, the VC-dimension-one relation-table
+representation, bounded-demand/graph extensions and the sharper counting
+runtime remain unproved. No curated headline abstract is added for this partial
+coverage.
 
 ## Known Limitations
 

@@ -30,6 +30,14 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
 
+STOC submission 1575 now has actual signed exact-one CNF compilation and
+rank-derived two-query existence/correctness, including binary side constraints
+and declared unused bits (`CNF/ExactOneCounting`). Polynomial-bit-time rank
+preprocessing, the VC-dimension-one representation, bounded-demand/graph
+applications and the advertised sharper counting runtime remain open under
+[issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
+This does not complete the paper's algorithmic main results.
+
 ### Landmark theorems, in priority order
 
 Priorities live in this list and in the tiers of [#897].

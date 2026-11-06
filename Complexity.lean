@@ -4087,6 +4087,7 @@ public import Complexity.Logics.Propositional.CNF.ExactOne.Gadgets
 public import Complexity.Logics.Propositional.CNF.ExactOne.ModelCount
 public import Complexity.Logics.Propositional.CNF.ExactOne.PolyTime
 public import Complexity.Logics.Propositional.CNF.ExactOne.Positive
+public import Complexity.Logics.Propositional.CNF.ExactOneCounting
 public import Complexity.Logics.Propositional.CNF.ExactTests
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.Gadgets
