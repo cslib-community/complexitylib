@@ -57,6 +57,12 @@ applications and the advertised sharper counting runtime, under
 The existing rational elimination kernel's own coefficient-growth proof is also
 not supplied by the new algorithm. This does not complete the paper's algorithmic
 main results.
+The closure resource bound requires the VC-one promise: the zero/one/unit-vector
+table has only $w+2$ rows but a full $2^w$ closure. A total polynomial wrapper
+therefore needs a pre-listing promise check. The remaining binary composition
+also needs explicit table/scope and plan-output encodings, realization of the
+existing constructors under those encodings, and a space bound for the composed
+machine; the rectangular solver certificate alone supplies none of these.
 
 ### Landmark theorems, in priority order
 

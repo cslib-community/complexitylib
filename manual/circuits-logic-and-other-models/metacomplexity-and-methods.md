@@ -432,6 +432,28 @@ received a binary runtime proof. Full-pipeline peak space, the sharper counting
 runtime, bounded-demand and graph endpoints remain open. The rational kernel's
 own coefficient-growth theorem is not implied by the binary backend.
 
+The listing resource bound is promise-restricted. Without `DimensionOne`, take
+one width-$w$ table containing the all-zero tuple, all-one tuple and all $w$
+unit vectors. For distinct coordinates these rows realize all four patterns;
+for a repeated coordinate both values occur. Consequently every tuple passes
+the pair tests and `listedClosure` contains $2^w$ tuples, although the input has
+at most $w+2$ rows. The unconditional query syntax budget does not bound this
+intermediate computation. A total polynomial-time wrapper must check the VC-one
+promise before listing (testing whether any coordinate pair realizes all four
+patterns suffices), or its resource theorem must explicitly restrict inputs.
+
+The remaining composition must specify a concrete encoding of table widths,
+listed Boolean rows and injective global scopes, and of direct answers versus
+both emitted CNFs. It must connect that encoding to `equationList`,
+`listedScopes`, `listedPolarity` and `binaryTablePlan`, rather than supplying
+those intermediate objects as advice. The existing rectangular certificate
+covers only its integer-list input/output encoding. The missing machine proofs
+must account for prefix storage/comparison, separator deletion, equation
+materialization, candidate validation, query construction and output writing.
+A polynomial space conclusion must concern that composed machine, not just the
+number of clauses in its final output. These are unfinished implementation and
+proof obligations, not an obstruction to the promised source theorem.
+
 ## Known Limitations
 
 The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.
