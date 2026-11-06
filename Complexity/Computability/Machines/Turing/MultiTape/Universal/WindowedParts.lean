@@ -10,6 +10,8 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedBound
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryPrimitives
@@ -39,31 +41,7 @@ public section
 
 namespace Turing.MultiTapeTM.Universal.Windowed
 
-open ComputableTidilyInO
-
-/-! ### Linear-time list primitives -/
-
-section Primitives
-
-variable {α : Type}
-
-/-- Taking the first `n` elements, with `n` in unary, in linear time. All uses of the primitive go
-through this lemma. -/
-private lemma takeU (enc : α ↪ List Bool) :
-    ComputableTidilyInO (fun p : List α × ℕ => p.1.take p.2) (encPair (encList enc) encUnary)
-      (encList enc) (fun p => (encPair (encList enc) encUnary p).length)
-      fun p => (encPair (encList enc) encUnary p).length :=
-  (ComputableInDegree.takeUnary enc).inO_one.tidy
-
-/-- Dropping the first `n` elements, with `n` in unary, in linear time. All uses of the primitive
-go through this lemma. -/
-private lemma dropU (enc : α ↪ List Bool) :
-    ComputableTidilyInO (fun p : List α × ℕ => p.1.drop p.2) (encPair (encList enc) encUnary)
-      (encList enc) (fun p => (encPair (encList enc) encUnary p).length)
-      fun p => (encPair (encList enc) encUnary p).length :=
-  (ComputableInDegree.dropUnary enc).inO_one.tidy
-
-end Primitives
+open ComputableInO
 
 /-! ### Sizes -/
 
@@ -124,38 +102,26 @@ private lemma length_encList_zipWith_le {α β γ : Type} {encA : α ↪ List Bo
 
 /-! ### Cutting and pasting a window -/
 
-private lemma tapeFields_inO : ComputableTidilyInO (fun t : Tape => (t.head, t.left, t.right))
-    eTape eTapeFields (fun t => (eTape t).length) fun t => (eTape t).length :=
-  of_linear (.of_eq fun _ => rfl)
-
 /-- Cutting a window, in linear time. -/
-private lemma cut_inO : ComputableTidilyInO (fun q : ℕ × Tape => cut q.1 q.2)
+private lemma cut_inO : ComputableInO (fun q : ℕ × Tape => cut q.1 q.2)
     (encPair encUnary eTape) eTape (fun q => (encPair encUnary eTape q).length)
     fun q => (encPair encUnary eTape q).length := by
-  have hr := fst encUnary eTape
-  have ht := tapeFields_inO.comp_linear (snd encUnary eTape)
-  have hl := (takeU eSym).comp_linear (ht.snd'.fst'.prod hr)
-  have hr' := (takeU eSym).comp_linear
-    (ht.snd'.snd'.prod (ComputableTidilyInDegree.unary_succ.inO_one.comp_linear hr))
-  exact (((const (encMid := encInt) (0 : ℤ)).prod (hl.prod hr')).of_enc_eq (encOut := eTape)
-    (g := fun q : ℕ × Tape => cut q.1 q.2) fun _ => rfl).mono 8 (fun q => by omega)
-    fun q => by omega
+  unfold cut
+  refine .mono (by fun_prop) 32 (fun q => ?_) fun q => ?_ <;>
+  · simp only [eTape_apply, length_encPair, encUnary_apply, List.length_replicate]
+    omega
 
 /-- Pasting a window back, in linear time. -/
-private lemma paste_inO : ComputableTidilyInO (fun q : ℕ × Tape × Tape => paste q.1 q.2.1 q.2.2)
+private lemma paste_inO : ComputableInO (fun q : ℕ × Tape × Tape => paste q.1 q.2.1 q.2.2)
     (encPair encUnary (encPair eTape eTape)) eTape
     (fun q => (encPair encUnary (encPair eTape eTape) q).length)
     fun q => (encPair encUnary (encPair eTape eTape) q).length := by
-  have hr := fst encUnary (encPair eTape eTape)
-  have ho := tapeFields_inO.comp_linear (snd encUnary (encPair eTape eTape)).fst'
-  have hi := tapeFields_inO.comp_linear (snd encUnary (encPair eTape eTape)).snd'
-  have happ := (ComputableTidilyInDegree.listAppend eSym).inO_one
-  have hl := happ.comp_linear (hi.snd'.fst'.prod ((dropU eSym).comp_linear (ho.snd'.fst'.prod hr)))
-  have hr' := happ.comp_linear (hi.snd'.snd'.prod ((dropU eSym).comp_linear
-    (ho.snd'.snd'.prod (ComputableTidilyInDegree.unary_succ.inO_one.comp_linear hr))))
-  exact (((const (encMid := encInt) (0 : ℤ)).prod (hl.prod hr')).of_enc_eq (encOut := eTape)
-    (g := fun q : ℕ × Tape × Tape => paste q.1 q.2.1 q.2.2) fun _ => rfl).mono 16
-    (fun q => by omega) fun q => by omega
+  unfold paste
+  refine .mono (by fun_prop) 64 (fun q => ?_) fun q => ?_ <;>
+  · have h₁ := length_encList_drop_le eSym q.2.1.left q.1
+    have h₂ := length_encList_drop_le eSym q.2.1.right (q.1 + 1)
+    simp only [eTape_apply, length_encPair, encUnary_apply, List.length_replicate] at *
+    omega
 
 /-! ### Cutting and pasting all windows -/
 
@@ -165,12 +131,10 @@ theorem extract_inO :
       (fun p => (p.2.2.length + 1) * ((encPair encUnary eWin p).length + 1))
       (fun p => (p.2.2.length + 1) * ((encPair encUnary eWin p).length + 1)) := by
   have hw := snd encUnary eWin
-  -- bridge for #862: tidy client of the plain `ComputableInO.mapWith`
-  have hmap := (ComputableInO.mapWith (encP := encUnary) (enc := eTape) (encB := eTape)
-    cut_inO.computableInO (fst encUnary eWin).computableInO hw.snd'.computableInO).tidy
-  refine (((hw.fst'.prod hmap).of_enc_eq (encOut := eWin)
-    (g := fun p : ℕ × Win => extract p.1 p.2) fun _ => rfl).mono 8 (fun p => ?_)
-    fun p => ?_).computableInO
+  have hmap := ComputableInO.mapWith (encP := encUnary) (enc := eTape) (encB := eTape) cut_inO
+    (fst encUnary eWin) hw.snd'
+  refine ((hw.fst'.prod hmap).of_enc_eq (encOut := eWin)
+    (g := fun p : ℕ × Win => extract p.1 p.2) fun _ => rfl).mono 8 (fun p => ?_) fun p => ?_
   all_goals
     obtain ⟨r, s, ts⟩ := p
     have h₁ := length_encList_map_le (length_eTape_cut_le r) ts
@@ -184,48 +148,36 @@ theorem extract_inO :
         2 * (encUnary r).length + 1 + (2 * (eSym s).length + 1 + (encList eTape ts).length) := by
       simp only [length_encPair]
     simp only [hN] at *
-    generalize (encUnary r).length = R at *
-    generalize (encList eTape ts).length = L at *
-    generalize (eSym s).length = S at *
     nlinarith
 
-/-- One round of pasting windows back: the remaining run windows, and the windows pasted so far. -/
-private def restoreStep (r : ℕ) (s : List Tape × List Tape) (t : Tape) : List Tape × List Tape :=
-  (s.1.tail, if s.1.isEmpty then s.2 else s.2 ++ [paste r t (s.1.headD default)])
+/-- Pasting a window back onto its outer window, if there is one. -/
+private def pasteOne (r : ℕ) (t : Tape) (b : Option Tape) : Option Tape := b.map (paste r t)
 
-private lemma foldl_restoreStep (r : ℕ) (outer rest acc : List Tape) :
-    outer.foldl (restoreStep r) (rest, acc) =
-      (rest.drop outer.length, acc ++ List.zipWith (paste r) outer rest) := by
-  induction outer generalizing rest acc with
-  | nil => simp
-  | cons t outer ih =>
-    rw [List.foldl_cons]
-    cases rest with
-    | nil => simp [restoreStep, ih]
-    | cons b rest => simp [restoreStep, ih]
+private lemma zipFold_pasteOne (r : ℕ) (outer rest : List Tape) :
+    zipFold pasteOne r outer rest = List.zipWith (paste r) outer rest := by
+  induction outer generalizing rest with
+  | nil => rfl
+  | cons t outer ih => cases rest <;> simp [zipFold, pasteOne, ih]
 
-/-- A round of pasting windows back, in linear time. -/
-private lemma restoreStep_inO : ComputableTidilyInO
-    (fun q : (ℕ × List Tape × List Tape) × Tape => restoreStep q.1.1 q.1.2 q.2)
-    (encPair (encPair encUnary (encPair (encList eTape) (encList eTape))) eTape)
-    (encPair (encList eTape) (encList eTape))
-    (fun q => (encPair (encPair encUnary (encPair (encList eTape) (encList eTape))) eTape q).length)
-    fun q =>
-      (encPair (encPair encUnary (encPair (encList eTape) (encList eTape))) eTape q).length := by
-  have hq := fst (encPair encUnary (encPair (encList eTape) (encList eTape))) eTape
-  have ht := snd (encPair encUnary (encPair (encList eTape) (encList eTape))) eTape
-  have hrest := hq.snd'.fst'
-  have hacc := hq.snd'.snd'
-  have htail := (ComputableTidilyInDegree.listTail eTape).inO_one.comp_linear hrest
-  have hempty := (ComputableTidilyInDegree.listIsEmpty eTape).inO_one.comp_linear hrest
-  have hhead := (ComputableTidilyInDegree.listHeadD eTape default).inO_one.comp_linear hrest
-  have hpaste := paste_inO.comp_linear (hq.fst'.prod (ht.prod hhead))
-  have hsnoc := (ComputableTidilyInDegree.snoc eTape).inO_one.comp_linear (hacc.prod hpaste)
-  refine ((htail.prod (hempty.ite hacc hsnoc)).of_enc_eq
-    (g := fun q : (ℕ × List Tape × List Tape) × Tape => restoreStep q.1.1 q.1.2 q.2)
-    fun _ => rfl).mono 16 (fun q => ?_) fun q => ?_ <;>
-  · simp only [Function.comp_apply]
-    split_ifs <;> omega
+attribute [local fun_prop] paste_inO in
+private lemma pasteOne_inO : ComputableInO (fun q : ℕ × Tape × Option Tape =>
+    pasteOne q.1 q.2.1 q.2.2) (encPair encUnary (encPair eTape (encOption eTape)))
+    (encOption eTape) (fun q => (encPair encUnary (encPair eTape (encOption eTape)) q).length)
+    fun q => (encPair encUnary (encPair eTape (encOption eTape)) q).length := by
+  have e : (fun q : ℕ × Tape × Option Tape => pasteOne q.1 q.2.1 q.2.2) = fun q =>
+      if q.2.2.isSome then some (paste q.1 q.2.1 (q.2.2.getD default)) else none := by
+    funext ⟨r, t, b⟩
+    cases b <;> rfl
+  rw [e]
+  refine .mono (by fun_prop) 1024 (fun q => ?_) fun q => ?_
+  all_goals
+    obtain ⟨r, t, _ | i⟩ := q
+    · simp only [Option.isSome_none, Bool.false_eq_true, ↓reduceIte, length_encPair]
+      omega
+    have hpaste := length_eTape_paste_le r t i
+    simp only [Option.isSome_some, ↓reduceIte, Option.getD_some, length_encPair, encOption_some,
+      List.length_cons] at *
+    omega
 
 /-- **Pasting windows back**, in time linear in the encoded windows for each window. -/
 theorem restore_inO :
@@ -233,55 +185,23 @@ theorem restore_inO :
       (encPair encUnary (encPair eWin eWin)) eWin
       (fun p => (p.2.1.2.length + 1) * ((encPair encUnary (encPair eWin eWin) p).length + 1))
       (fun p => (p.2.1.2.length + 1) * ((encPair encUnary (encPair eWin eWin) p).length + 1)) := by
+  have hzip := ComputableInO.zipFold pasteOne_inO 2 fun q i => by
+    obtain ⟨r, o, w⟩ := q
+    have h₁ := length_encList_zipWith_le (length_eTape_paste_le r) (o.take i) w
+    have h₂ := length_encList_take_le eTape o i
+    rw [zipFold_pasteOne]
+    simp only [length_encPair] at *
+    omega
   have hr := fst encUnary (encPair eWin eWin)
   have ho := (snd encUnary (encPair eWin eWin)).fst'
   have hi := (snd encUnary (encPair eWin eWin)).snd'
-  -- the states of the fold
-  have hst (p : ℕ × Win × Win) (i : ℕ) :
-      (encPair (encList eTape) (encList eTape) ((p.2.1.2.take i).foldl (restoreStep p.1)
-        (p.2.2.2, []))).length ≤ 3 * (encPair encUnary (encPair eWin eWin) p).length := by
-    obtain ⟨r, ⟨so, o⟩, ⟨si, w⟩⟩ := p
-    rw [foldl_restoreStep]
-    have h₁ := length_encList_drop_le eTape w (o.take i).length
-    have h₂ := length_encList_zipWith_le (length_eTape_paste_le r) (o.take i) w
-    have h₃ := length_encList_take_le eTape o i
-    simp only [length_encPair, List.nil_append] at *
-    omega
-  have hfold := foldlWith (encL := encList eTape) (encB := encPair (encList eTape) (encList eTape))
-    (list := fun p : ℕ × Win × Win => p.2.1.2) hr ho.snd' (hi.snd'.prod (const [])) restoreStep_inO
-    (R := fun p => 16 * (encPair encUnary (encPair eWin eWin) p).length + 8)
-    (Q := fun p => 16 * (encPair encUnary (encPair eWin eWin) p).length + 8)
-    (B := fun p => 3 * (encPair encUnary (encPair eWin eWin) p).length)
-    (fun p i hi => by
-      have h₁ := hst p i
-      have h₂ := length_le_encList_of_mem eTape (List.getElem_mem hi)
-      obtain ⟨r, ⟨so, o⟩, ⟨si, w⟩⟩ := p
-      simp only [length_encPair] at *
-      omega)
-    (fun p i hi => by
-      have h₁ := hst p i
-      have h₂ := length_le_encList_of_mem eTape (List.getElem_mem hi)
-      obtain ⟨r, ⟨so, o⟩, ⟨si, w⟩⟩ := p
-      simp only [length_encPair] at *
-      omega)
-    (fun p i _ => hst p i)
-  refine (((hi.fst'.prod hfold.snd').of_enc_eq (encOut := eWin)
-    (g := fun p : ℕ × Win × Win => restore p.1 p.2.1 p.2.2) fun ⟨r, o, i⟩ => ?_).mono 64
-    (fun p => ?_) fun p => ?_).computableInO
-  · simp only [restore, foldl_restoreStep, List.nil_append]
+  refine ((hi.fst'.prod (hzip.comp (hr.prod (ho.snd'.prod hi.snd')))).of_enc_eq (encOut := eWin)
+    (g := fun p : ℕ × Win × Win => restore p.1 p.2.1 p.2.2) fun ⟨r, o, i⟩ => ?_).mono 16
+    (fun p => ?_) fun p => ?_
+  · simp only [restore, Function.comp_apply, zipFold_pasteOne]
   all_goals
     obtain ⟨r, ⟨so, o⟩, ⟨si, w⟩⟩ := p
-    have hN : (encPair encUnary (encPair eWin eWin) (r, (so, o), (si, w))).length =
-        2 * (encUnary r).length + 1 + (2 * (2 * (eSym so).length + 1 +
-          (encList eTape o).length) + 1 + (2 * (eSym si).length + 1 +
-          (encList eTape w).length)) := by
-      simp only [length_encPair]
-    simp only [hN, length_encPair] at *
-    generalize (encUnary r).length = R at *
-    generalize (encList eTape o).length = L at *
-    generalize (encList eTape w).length = M at *
-    generalize (eSym so).length = S at *
-    generalize (eSym si).length = S' at *
+    simp only [length_encPair] at *
     nlinarith
 
 /-! ### Halving in unary -/
@@ -316,14 +236,14 @@ private lemma run_halfT (start : Bool) (n : ℕ) :
 theorem firstHalf_inO :
     ComputableInO firstHalf encUnary encUnary (fun n => (encUnary n).length)
       (fun n => (encUnary n).length) :=
-  (of_linear ((halfT false).computableTidilyInLinearTimeAndSpace fun n =>
+  (ComputableTidilyInO.of_linear ((halfT false).computableTidilyInLinearTimeAndSpace fun n =>
     (run_halfT false n).1.symm)).computableInO
 
 /-- Half a number of steps, rounded down, in unary, in linear time. -/
 theorem half_inO :
     ComputableInO (· / 2) encUnary encUnary (fun n => (encUnary n).length)
       (fun n => (encUnary n).length) :=
-  (of_linear ((halfT true).computableTidilyInLinearTimeAndSpace fun n =>
+  (ComputableTidilyInO.of_linear ((halfT true).computableTidilyInLinearTimeAndSpace fun n =>
     (run_halfT true n).2.symm)).computableInO
 
 /-! ### A windowed step -/
@@ -344,17 +264,17 @@ private lemma length_inSym_le (c : Option ℕ) : (eSym (inSym c)).length ≤ (eS
   rcases c with _ | _ | v <;> simp [inSym]
 
 /-- Whether a coded input cell is the left end, in quadratic time. -/
-private lemma isEnd_inO : ComputableTidilyInO (fun c : Option ℕ => decide (c = some 0)) eSym
+private lemma isEnd_inO : ComputableInO (fun c : Option ℕ => decide (c = some 0)) eSym
     encBool (fun c => ((eSym c).length + 1) ^ 2) fun c => (eSym c).length := by
-  refine ((ComputableInO.eq eSym).tidy.comp ((of_linear (.of_eq fun _ => rfl) :
-    ComputableTidilyInO (fun c : Option ℕ => c) eSym eSym _ _).prod
+  refine ((ComputableInO.eq eSym).comp ((of_linear (.of_eq fun _ => rfl) :
+    ComputableInO (fun c : Option ℕ => c) eSym eSym _ _).prod
       (const (some 0)))).mono 8 (fun c => ?_) fun c => ?_ <;>
   · simp only [length_encPair, encOption_some, encUnary_apply, List.length_cons,
       List.length_replicate]
     nlinarith
 
 /-- `Turing.MultiTapeTM.Universal.Windowed.inPos`, in quadratic time. -/
-private lemma inPos_inO : ComputableTidilyInO inPos eSym encNat
+private lemma inPos_inO : ComputableInO inPos eSym encNat
     (fun c => ((eSym c).length + 1) ^ 2) fun c => (eSym c).length := by
   refine ((isEnd_inO.ite (const 0) (const 1)).of_enc_eq (g := inPos)
     fun c => by rw [inPos_eq]).mono 4 (fun c => ?_) fun c => ?_ <;>
@@ -362,12 +282,12 @@ private lemma inPos_inO : ComputableTidilyInO inPos eSym encNat
     split_ifs <;> omega
 
 /-- `Turing.MultiTapeTM.Universal.Windowed.inSym`, in quadratic time. -/
-private lemma inSym_inO : ComputableTidilyInO inSym eSym eSym
+private lemma inSym_inO : ComputableInO inSym eSym eSym
     (fun c => ((eSym c).length + 1) ^ 2) fun c => (eSym c).length := by
-  have hsome := (ComputableTidilyInDegree.optionSome (enc₁ := encUnary) (enc := eSym)).inO_one
-    |>.comp_linear (ComputableTidilyInDegree.unary_pred.inO_one.comp_linear
-      (ComputableTidilyInDegree.getD (enc₁ := encUnary) (enc := eSym) 0).inO_one)
-  refine ((isEnd_inO.ite (const none) ((ComputableTidilyInDegree.isSome encUnary).inO_one.ite
+  have hsome := (ComputableInDegree.optionSome (enc₁ := encUnary) (enc := eSym)).inO_one
+    |>.comp_linear (ComputableInDegree.unary_pred.inO_one.comp_linear
+      (ComputableInDegree.getD (enc₁ := encUnary) (enc := eSym) 0).inO_one)
+  refine ((isEnd_inO.ite (const none) ((ComputableInDegree.isSome encUnary).inO_one.ite
     hsome (const none))).of_enc_eq (g := inSym) fun c => by rw [inSym_eq]; rfl).mono 4
     (fun c => ?_) fun c => ?_ <;>
   · have : (eSym c).length ≤ ((eSym c).length + 1) ^ 2 := by nlinarith
@@ -398,7 +318,7 @@ private lemma moveIn_eq (t : Tape) (p p' : ℕ) : moveIn t p p' =
   simp only [moveIn, decide_eq_true_eq]
 
 /-- Reassembling the windowed configuration after a step, in quadratic time. -/
-private lemma wFin_inO : ComputableTidilyInO wFin
+private lemma wFin_inO : ComputableInO wFin
     (encPair (encPair eTape encNat) (encPair eCfg eSym)) (encPair eWin eSym)
     (fun y => ((encPair (encPair eTape encNat) (encPair eCfg eSym) y).length + 1) ^ 2)
     fun y => (encPair (encPair eTape encNat) (encPair eCfg eSym) y).length := by
@@ -410,12 +330,12 @@ private lemma wFin_inO : ComputableTidilyInO wFin
     (g := fun y : (Tape × ℕ) × SCfg × Option ℕ => (y.2.1.state, y.2.1.inputPos, y.2.1.workTapes))
     fun _ => rfl
   have hp' := hf.snd'.fst'
-  have hsucc := ComputableInO.natSucc.tidy
-  have hc₁ := (ComputableInO.eq encNat).tidy.comp (hp'.prod (hsucc.comp hp))
-  have hc₂ := (ComputableInO.eq encNat).tidy.comp ((hsucc.comp hp').prod hp)
-  have hmv := hc₁.ite (Universal.movePos_deg.inO_one.tidy.comp_linear ht)
-    (hc₂.ite (Universal.moveNeg_deg.inO_one.tidy.comp_linear ht) ht)
-  have hlist := (ComputableTidilyInDegree.cons eTape).inO_one.comp_linear
+  have hsucc := ComputableInO.natSucc
+  have hc₁ := (ComputableInO.eq encNat).comp (hp'.prod (hsucc.comp hp))
+  have hc₂ := (ComputableInO.eq encNat).comp ((hsucc.comp hp').prod hp)
+  have hmv := hc₁.ite (Universal.movePos_deg.inO_one.comp_linear ht)
+    (hc₂.ite (Universal.moveNeg_deg.inO_one.comp_linear ht) ht)
+  have hlist := (ComputableInDegree.cons eTape).inO_one.comp_linear
     (hmv.prod hf.snd'.snd')
   refine (((hf.fst'.prod hlist).prod hy₂.snd').of_enc_eq (g := wFin) fun y => ?_).mono 64
     (fun y => ?_) fun y => ?_
@@ -423,17 +343,9 @@ private lemma wFin_inO : ComputableTidilyInO wFin
     rfl
   all_goals
     obtain ⟨⟨t, p⟩, ⟨s, p', ws⟩, o⟩ := y
-    have h₁ := length_encNat_add_le p 1
-    have h₂ := length_encNat_add_le p' 1
+    have h₁ := ComputableTidilyInO.length_encNat_add_le p 1
+    have h₂ := ComputableTidilyInO.length_encNat_add_le p' 1
     simp only [Function.comp_apply, length_encPair, eCfg_apply] at *
-    generalize (encNat (p + 1)).length = A at *
-    generalize (encNat (p' + 1)).length = A' at *
-    generalize (encNat p).length = P at *
-    generalize (encNat p').length = P' at *
-    generalize (eTape t).length = X at *
-    generalize (eSym s).length = S at *
-    generalize (encList eTape ws).length = L at *
-    generalize (eSym o).length = O at *
     split_ifs <;> nlinarith
 
 /-! #### Sizes -/
@@ -493,7 +405,6 @@ private lemma wTime_wCtx_le (x : Desc × Win) :
   generalize (encNat (wCtx x).1.2.inputPos).length = P at *
   have hA : (wCtx x).1.2.workTapes.length + (wCtx x).1.1.table.length + 1 ≤ 2 * (N + 1) := by
     omega
-  have hP : (P + 1) ^ 2 ≤ 4 := by nlinarith
   have h := Nat.mul_le_mul (Nat.mul_le_mul hA (show D + 1 ≤ N + 1 by omega))
     (show W + 1 ≤ 9 * (N + 1) by omega)
   have : 1 ≤ (N + 1) ^ 3 := Nat.one_le_pow _ _ (Nat.succ_pos _)
@@ -501,23 +412,22 @@ private lemma wTime_wCtx_le (x : Desc × Win) :
 
 /-- The arguments of the reassembly: the input window, its coded position and the result of the
 step, in cubic time and linear space. -/
-private lemma wArgs_inO : ComputableTidilyInO
+private lemma wArgs_inO : ComputableInO
     (fun x : Desc × Win => ((wHead x, inPos (wHead x).read),
       stepWith (wCtx x).1.1 (wCtx x).1.2 (wCtx x).2))
     (encPair eDesc eWin) (encPair (encPair eTape encNat) (encPair eCfg eSym))
     (fun x => ((encPair eDesc eWin x).length + 1) ^ 3) fun x => (encPair eDesc eWin x).length := by
   have hd := fst eDesc eWin
   have hw := snd eDesc eWin
-  have hhead := (ComputableTidilyInDegree.listHeadD eTape default).inO_one.comp_linear hw.snd'
-  have hread := Universal.read_deg.inO_one.tidy.comp_linear hhead
+  have hhead := (ComputableInDegree.listHeadD eTape default).inO_one.comp_linear hw.snd'
+  have hread := Universal.read_deg.inO_one.comp_linear hhead
   have hpos := inPos_inO.comp hread
   have hsym := inSym_inO.comp hread
-  have htail := (ComputableTidilyInDegree.listTail eTape).inO_one.comp_linear hw.snd'
+  have htail := (ComputableInDegree.listTail eTape).inO_one.comp_linear hw.snd'
   have hcfg := (hw.fst'.prod (hpos.prod htail)).of_enc_eq (encOut := eCfg)
     (g := fun x : Desc × Win => (⟨x.2.1, inPos (wHead x).read, x.2.2.tail⟩ : SCfg)) fun _ => rfl
   have hctx := ((hd.prod hcfg).prod hsym).of_enc_eq (encOut := eWCtx) (g := wCtx) fun _ => rfl
-  -- bridge for #862: tidy client of the plain `stepWith_inO`
-  have hstep := stepWith_inO.tidy.comp hctx
+  have hstep := stepWith_inO.comp hctx
   refine (((hhead.prod hpos).prod hstep).of_enc_eq (g := fun x : Desc × Win =>
     ((wHead x, inPos (wHead x).read), stepWith (wCtx x).1.1 (wCtx x).1.2 (wCtx x).2))
     fun _ => rfl).mono 128 (fun x => ?_) fun x => ?_
@@ -532,7 +442,6 @@ private lemma wArgs_inO : ComputableTidilyInO
     generalize (eSym (x.2.2.headD default).read).length = C at *
     generalize wTime (wCtx x) = Wt at *
     generalize (eWCtx (wCtx x)).length = W at *
-    have : 1 ≤ (N + 1) ^ 3 := Nat.one_le_pow _ _ (Nat.succ_pos _)
     have : (C + 1) ^ 2 ≤ (N + 1) ^ 3 := by
       calc (C + 1) ^ 2 ≤ (N + 1) ^ 2 := Nat.pow_le_pow_left (by omega) 2
         _ ≤ (N + 1) ^ 3 := Nat.pow_le_pow_right (Nat.succ_pos _) (by omega)
@@ -546,19 +455,17 @@ theorem wstep_inO :
       (fun p => ((encPair eDesc eWin p).length + 1) ^ 3) := by
   obtain ⟨c, hc⟩ := wArgs_inO.length_le
   have hw := snd eDesc eWin
-  have hempty := (ComputableTidilyInDegree.listIsEmpty eTape).inO_one.comp_linear hw.snd'
-  refine (((hempty.ite (hw.prod (const none)) (wFin_inO.comp wArgs_inO)).of_enc_eq
+  have hempty := (ComputableInDegree.listIsEmpty eTape).inO_one.comp_linear hw.snd'
+  refine ((hempty.ite (hw.prod (const none)) (wFin_inO.comp wArgs_inO)).of_enc_eq
     (g := fun x : Desc × Win => wstep x.1 x.2) fun x => by rw [wstep_eq]; rfl).mono
-    (4 * (c + 2) ^ 2) (fun x => ?_) fun x => ?_).computableInO
+    (4 * (c + 2) ^ 2) (fun x => ?_) fun x => ?_
   all_goals
     have h := hc x
-    simp only [Function.comp_apply] at *
     generalize (encPair eDesc eWin x).length = N at *
     generalize (encPair (encPair eTape encNat) (encPair eCfg eSym) _).length = G at *
     have hG : G + 1 ≤ (c + 1) * (N + 1) := by nlinarith
     have hG2 := Nat.mul_le_mul hG hG
     have h₁ : (N + 1) ^ 2 ≤ (N + 1) ^ 3 := Nat.pow_le_pow_right (Nat.succ_pos _) (by omega)
-    have h₂ : N + 1 ≤ (N + 1) ^ 3 := by nlinarith
     split_ifs <;> nlinarith
 
 end Turing.MultiTapeTM.Universal.Windowed
