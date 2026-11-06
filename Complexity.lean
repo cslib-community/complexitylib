@@ -4117,6 +4117,8 @@ public import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoBoundary
+public import Complexity.Logics.Propositional.CNF.VCOne
+public import Complexity.Logics.Propositional.CNF.VCOneTables
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CSP

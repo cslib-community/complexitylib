@@ -58,6 +58,28 @@ variable {V I : Type*} [Fintype V] [LinearOrder V]
 instance (S : Finset V) (p x : V → Bool) : Decidable (Holds S p x) :=
   inferInstanceAs (Decidable (∃ v ∈ S, x v = p v ∧ ∀ w ∈ S, x w = p w → w = v))
 
+omit [Fintype V] [LinearOrder V] in
+/-- Preserve a local signed equation under an injective scope embedding. -/
+theorem holds_map {W : Type*} (e : W ↪ V) (s : Finset W) (p : W → Bool) (x : V → Bool) :
+    Holds (s.map e) (Function.extend e p (fun _ => false)) x ↔
+      Holds s p (x ∘ e) := by
+  classical
+  simp only [Holds]
+  constructor
+  · rintro ⟨v, hv, hp, hu⟩
+    obtain ⟨i, hi, rfl⟩ := Finset.mem_map.mp hv
+    rw [e.injective.extend_apply] at hp
+    refine ⟨i, hi, hp, fun j hj hpj => e.injective (hu (e j) ?_ ?_)⟩
+    · exact Finset.mem_map.mpr ⟨j, hj, rfl⟩
+    · simpa only [e.injective.extend_apply, Function.comp_apply] using hpj
+  · rintro ⟨i, hi, hp, hu⟩
+    refine ⟨e i, Finset.mem_map.mpr ⟨i, hi, rfl⟩, ?_, ?_⟩
+    · simpa only [e.injective.extend_apply, Function.comp_apply] using hp
+    · intro v hv hpv
+      obtain ⟨j, hj, rfl⟩ := Finset.mem_map.mp hv
+      rw [e.injective.extend_apply] at hpv
+      exact congrArg e (hu j hj hpv)
+
 /-- A scope becomes a disjunction of singleton terms, with no auxiliary gates. -/
 @[expose] def coverage (S : Finset V) (p : V → Bool) : DNF V :=
   (S.sort (· ≤ ·)).map fun v => [(v, p v)]
@@ -208,7 +230,8 @@ private theorem literals_length : (literals (V := V)).length = 2 * Fintype.card 
   [[]] ++ (literals (V := V)).map (fun l => [l]) ++
     (literals (V := V)).flatMap fun l => (literals (V := V)).map fun m => [l, m]
 
-private theorem mem_binaryUniverse (c : Clause V) (hc : c.length ≤ 2) :
+/-- Every clause of width at most two occurs in the finite syntax universe. -/
+theorem mem_binaryUniverse (c : Clause V) (hc : c.length ≤ 2) :
     c ∈ binaryUniverse (V := V) := by
   cases c with
   | nil => simp [binaryUniverse]
@@ -226,6 +249,13 @@ private theorem binaryUniverse_length :
   simp [binaryUniverse, List.length_flatMap, List.map_const', literals_length,
     List.sum_replicate, pow_two, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
     Nat.add_comm, Nat.add_assoc]
+
+/-- The syntax universe contains only clauses of width at most two. -/
+theorem binaryUniverse_width (c : Clause V) (hc : c ∈ binaryUniverse (V := V)) :
+    c.length ≤ 2 := by
+  simp only [binaryUniverse, List.mem_append, List.mem_singleton, List.mem_map,
+    List.mem_flatMap] at hc
+  rcases hc with ((rfl | ⟨l, _, rfl⟩) | ⟨l, _, m, _, rfl⟩) <;> simp
 
 /-- Removing duplicate binary clauses gives a global quadratic budget, even for
 arbitrarily many input side constraints. Empty and repeated-literal clauses are retained. -/

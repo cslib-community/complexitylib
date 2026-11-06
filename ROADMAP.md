@@ -32,9 +32,14 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 STOC submission 1575 now has actual signed exact-one CNF compilation and
 rank-derived two-query existence/correctness, including binary side constraints
-and declared unused bits (`CNF/ExactOneCounting`). Polynomial-bit-time rank
-preprocessing, the VC-dimension-one representation, bounded-demand/graph
-applications and the advertised sharper counting runtime remain open under
+and declared unused bits (`CNF/ExactOneCounting`). `CNF/VCOne` now derives
+the VC-dimension-one table representation, its greedy signed separators and
+the sharp equation deficit from the actual table and Mathlib VC/Sauer–Shelah
+semantics. `CNF/VCOneTables` aligns arbitrarily overlapping scopes and proves
+the all-cases global two-query budget on declared bits. Polynomial 2-SAT prefix
+listing of the binary closure, polynomial-bit-time rank preprocessing/branch
+assembly, bounded-demand/graph applications and the advertised sharper counting
+runtime remain open under
 [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
 This does not complete the paper's algorithmic main results.
 

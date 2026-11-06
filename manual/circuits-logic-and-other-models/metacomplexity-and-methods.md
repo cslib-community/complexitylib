@@ -86,8 +86,8 @@ inconsistent system that cannot supply the required witness.
 This is the algebraic row-selection step of STOC submission 1575, Lemma 3.1
 (PDF pp. 10–11). It is not an elimination implementation or a polynomial bit-time
 certificate. For the construction from selected signed rows to actual counting
-queries, use the next section. Polynomial-bit-time elimination, local
-VC-dimension-one table representation and advertised runtime remain open. In particular, the
+queries, use the next sections, including the table representation below.
+Polynomial-bit-time elimination and the advertised runtime remain open. In particular, the
 [native counting endpoint](../machines-and-classes/native-counting.md) currently
 has a weaker exponent with an additional $\log\log$ factor; it cannot establish
 the sharper quantitative bound by direct substitution.
@@ -144,10 +144,75 @@ run `scripts/build.sh ComplexityTests.PaperEndpoints.ExactOne` to elaborate it.
 This proves the actual rank-derived query existence/correctness portion of
 STOC submission 1575, Theorems 1.2/5.2 and Corollary 5.3, and the Exact Cover
 transposition of Corollary 5.4. It does not complete those algorithmic statements:
-polynomial-bit-time rank preprocessing, the VC-dimension-one relation-table
-representation, bounded-demand/graph extensions and the sharper counting
-runtime remain unproved. No curated headline abstract is added for this partial
+polynomial-bit-time rank preprocessing, bounded-demand/graph extensions and
+the sharper counting runtime remain unproved. No curated headline abstract is added for this partial
 coverage.
+
+## Tables of VC dimension at most one
+
+From the repository root, import
+[`VCOneTables`](../../Complexity/Logics/Propositional/CNF/VCOneTables.lean)
+and open `Cslib.Logic.PL.VCOne`. A table is a `Finset (Fin w → Bool)`;
+repeated listed tuples are identified by `List.toFinset`. `DimensionOne R` is
+Mathlib's finite set-family VC dimension bound on `family R`, the positive
+supports of the actual tuples. To prove the promise, use
+`dimensionOne_of_missing`: supply one missing Boolean pattern for each pair of
+distinct coordinates. This excludes the full two-bit cube.
+
+`binary R` constructs the unary/binary side clauses, and `binary_eval` identifies
+its models with `closure R`, the tuples whose projections onto at most two
+coordinates occur in the table. `dimensionOne_closure` preserves the VC bound;
+`card_le` specializes Mathlib's Sauer–Shelah theorem to obtain at most $w+1$
+closure tuples. The side formula has at most $1+2w+4w^2$ clauses, each of width
+at most two. The empty clause handles an empty table.
+
+For each unwanted closure tuple `y`, `greedyScope R y` visits the declared
+coordinates and deletes a coordinate when the remaining projection still has
+no agreeing table row. Its tests scan the given table; it does not search
+subsets of coordinates. `greedy_separator` proves that its scope has at least
+three coordinates and that each allowed row disagrees with `y` at exactly one
+of them. `separatorScope` supplies this computed scope for a tuple indexed by
+`closure R \ R`. `representation_iff` proves exact membership using the binary
+CNF and these signed exact-one equations. `representation_bounds` derives at
+most $w+1-|R|$ equations from the table, without assuming a representation.
+There are no auxiliary bits in this step, so no extra satisfying extensions.
+Singletons retain their constant coordinates. On zero coordinates, the nonempty
+table contains the unique empty tuple and imposes no restriction; the empty
+table rejects every assignment.
+
+For several tables, give `w : I → ℕ`, embeddings
+`scope : (i : I) → Fin (w i) ↪ V`, and the actual tables `R i`.
+Injectivity excludes repeated coordinates within a scope; scopes of different
+tables can overlap arbitrarily, in any order. `tables_iff` aligns all local
+separator literals in the shared global columns and proves pointwise equivalence
+to the original table conjunction. `tables_queries`, for $r=|V| \ge 2$, then derives
+two ordinary 3-CNFs with at most $2r-2$ declared variables and $13r^2$ clauses
+each, whose exact count difference is the original global count. It includes
+empty equation families, inconsistent systems and unique-candidate direct
+branches. No rational witnesses or desired representation are required from
+the caller. `tables_queries_of_two_rational_solutions` exposes the rank-derived
+nonunique branch separately. `directCount_correct` and `directCount_small`
+cover direct enumeration when at most one global bit is declared.
+
+The [complete checked client](../../ComplexityTests/PaperEndpoints/VCOne.lean)
+starts from a three-row table whose closure adds exactly one unwanted tuple.
+It checks the greedy separator and a global instance with opposite signs on
+overlapping scopes and one unused bit, giving four source assignments. It
+also checks empty and zero-width tables, duplicate rows, constant coordinates,
+and a failed VC promise. Run
+`scripts/build.sh ComplexityTests.PaperEndpoints.VCOne` from the repository root.
+If a scope cannot be embedded injectively or the missing-pattern proof fails,
+check distinctness of its coordinates and its actual four pair patterns before
+applying the theorem.
+
+These results establish the mathematical representation and global query-budget
+claims of [ChenJiangZhu2027], Theorems 1.3/6.3 (PDF pp. 18–21). They do not yet
+certify a polynomial-bit-time reduction: the binary closure is currently defined
+by finite cube enumeration, rather than the paper's polynomial 2-SAT prefix
+listing, and global row selection/direct-branch choice is classical. The greedy
+separator is supplied explicitly, but no machine-level running-time certificate
+is asserted. The sharper counting runtime and bounded-demand/graph applications
+remain open. The broad issue is not complete and no curated abstract is added.
 
 ## Known Limitations
 
