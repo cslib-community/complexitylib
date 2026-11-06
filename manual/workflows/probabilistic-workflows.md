@@ -475,6 +475,13 @@ selected KEM component to that key in both phases. Challenge messages must each 
 `OneTimeINDCCA.indistinguishable_hybridDEMGame` supplies the loss-one security conclusion.
 The native reduction certificate charges both adaptive phases and bounds every external reply read;
 `isPPTOn_hybridDEMGame` also certifies the closed experiment.
+For ciphertext reply bounds, `SymmetricCipher.exists_ciphertext_length_bound` returns a native
+unary cap `ctBound n ℓ`, uniform over keys actually sampled by `E.keyGen n` and all messages
+of length `ℓ`. Its runtime guarantee also covers messages outside the cipher's correctness
+and security domain. The current `n`-bit reductions use `ctBound n n`; this bound does not
+extend their security claims to arbitrary words. The
+[authenticated-encryption clients](../../ComplexityTests/Crypto/AuthenticatedEncryption.lean)
+check independent lengths and show why an all-message bound cannot depend only on `n`.
 
 The [checked clients](../../ComplexityTests/Crypto/HybridDEMCCA.lean) apply the result to the
 existing PRF Encrypt-then-MAC cipher, expose an insecure echo cipher, and run a zero-width
