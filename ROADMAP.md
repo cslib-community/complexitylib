@@ -63,8 +63,10 @@ therefore restrict to promised inputs (as the source does), or validate them bef
 `tablePayload`, `equationPayload` and `binaryTableBits`; declarations and widths
 are unary, rows literal bits and column numbers binary. Promise-restricted
 frontier coordinate storage and full-frontier comparison volume are bounded.
-These are functional serialization constructors, not a polynomial binary-machine
-realization. Separator/projection execution, branch/candidate checking, query
+The signed equation-to-consistency stage now has actual polynomial binary
+execution (`payloadRows_polytime`, `payloadRhs_polytime`,
+`payloadConsistent_polytime`) and correspondence to the actual table equations.
+This is not a polynomial binary-machine realization of the full table compiler. Separator/projection execution, branch/candidate checking, query
 writing and composed time/space remain open; the rectangular solver certificate
 alone does not supply them.
 

@@ -37,11 +37,14 @@ algorithmic resource theorem.
 * `tablePayload`, `equationPayload`: explicit table and signed-equation data.
 * `encTablePayload`, `encPlanPayload`: framed bit encodings with unary declarations.
 * `binaryTableBits`: serialize the actual binary-backend plan.
+* `payloadRows`, `payloadRhs`, `payloadConsistent`: binary equation execution.
 
 ## Main results
 
 * `tablePlan_correct`: original table solutions have exactly the plan's value.
 * `tablePlan_budget`: every emitted query meets the global syntax budgets.
+* `payloadConsistent_polytime`: signed materialization composed with binary recovery.
+* `payloadConsistent_equationPayload`: correspondence with actual table equations.
 * `frontier_coordinates_le`, `prefix_comparison_coordinates_le`: promise-restricted
   coordinate volume bounds, without a whole-machine execution claim.
 
@@ -249,6 +252,157 @@ theorem mem_equationPayload_iff {r : ℕ} (w : Fin m → ℕ)
     exact ⟨j, rfl⟩
   · rintro ⟨j, rfl⟩
     exact ⟨j, mem_equationList w R j, rfl⟩
+
+/-- Materialize the common global columns from literal payloads. Both signs
+are tested explicitly; canonical equation rows contain each column at most once. -/
+@[expose] def payloadRows (r : ℕ) (es : List (List (ℕ × Bool))) : List (List ℤ) :=
+  es.map fun e => (List.range r).map fun c =>
+    if e.any (fun l => l.1 == c && l.2) then (1 : ℤ)
+    else if e.any (fun l => l.1 == c && !l.2) then -1 else 0
+
+/-- Move the constant of every negative literal to the right-hand side. -/
+@[expose] def payloadRhs (es : List (List (ℕ × Bool))) : List ℤ :=
+  es.map fun e => 1 - (e.map fun l => if l.2 then (0 : ℤ) else 1).sum
+
+/-- Actual binary execution of signed matrix materialization, including all
+zero columns. Width is unary and literal column numbers are binary. -/
+@[fun_prop] theorem payloadRows_polytime :
+    ComputableInPolyTime (fun p : ℕ × List (List (ℕ × Bool)) => payloadRows p.1 p.2)
+      (encPair encUnary encSignedCNF) (encList (encList encIntBin)) := by
+  unfold payloadRows encSignedCNF
+  apply ComputableInPolyTime.mapWithInput (by fun_prop)
+  apply ComputableInPolyTime.mapWithInput (by fun_prop)
+  fun_prop
+
+/-- Binary right-hand-side materialization includes scanning negative literals. -/
+@[fun_prop] theorem payloadRhs_polytime :
+    ComputableInPolyTime payloadRhs encSignedCNF (encList encIntBin) := by
+  unfold payloadRhs encSignedCNF
+  fun_prop
+
+/-- Canonical scoped rows have exactly the coefficients used by the existing
+signed-system backend. This includes negative signs and absent global columns. -/
+theorem payloadRows_scoped {r : ℕ} (S : Finset (Fin r)) (p : Fin r → Bool) :
+    payloadRows r [((S.sort (· ≤ ·)).map fun v => (v.val, p v))] =
+      [List.ofFn fun v : Fin r =>
+        if v ∈ S then if p v then (1 : ℤ) else -1 else 0] := by
+  simp only [payloadRows, List.map_singleton]
+  congr 1
+  apply List.ext_getElem
+  · simp
+  · intro i hi hj
+    simp only [List.length_map, List.length_range] at hi
+    have hm (b : Bool) :
+        (((S.sort (· ≤ ·)).map fun v => (v.val, p v)).any
+          (fun l => l.1 == i && (l.2 == b))) = true ↔
+        (⟨i, hi⟩ : Fin r) ∈ S ∧ p ⟨i, hi⟩ = b := by
+      simp only [List.any_eq_true, List.mem_map, Finset.mem_sort, Bool.and_eq_true,
+        beq_iff_eq]
+      constructor
+      · rintro ⟨_, ⟨v, hv, rfl⟩, he, hp⟩
+        have : v = ⟨i, hi⟩ := Fin.ext he
+        subst v
+        exact ⟨hv, hp⟩
+      · rintro ⟨hv, hp⟩
+        exact ⟨(i, p ⟨i, hi⟩), ⟨⟨i, hi⟩, hv, rfl⟩, rfl, hp⟩
+    simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn]
+    have ht := hm true
+    have hf := hm false
+    simp only [Bool.beq_comm, Bool.true_beq, Bool.false_beq] at ht hf
+    by_cases hs : (⟨i, hi⟩ : Fin r) ∈ S <;> cases hp : p ⟨i, hi⟩ <;>
+      simp_all <;> grind
+
+/-- Negative literal constants agree with the signed backend's exact RHS. -/
+theorem payloadRhs_scoped {r : ℕ} (S : Finset (Fin r)) (p : Fin r → Bool) :
+    payloadRhs [((S.sort (· ≤ ·)).map fun v => (v.val, p v))] =
+      [1 - ((S.filter fun v => p v = false).card : ℤ)] := by
+  simp only [payloadRhs, List.map_singleton, List.map_map]
+  change [1 - ((S.sort (· ≤ ·)).map (fun v => if p v then (0 : ℤ) else 1)).sum] = _
+  change [1 - (Multiset.map (fun v => if p v then (0 : ℤ) else 1)
+    (↑(S.sort (· ≤ ·)) : Multiset (Fin r))).sum] = _
+  rw [Finset.sort_eq]
+  change [1 - ∑ v ∈ S, (if p v then (0 : ℤ) else 1)] = _
+  congr 2
+  rw [← Finset.sum_boole]
+  apply Finset.sum_congr rfl
+  intro v _
+  cases p v <;> rfl
+
+/-- Materialization of canonical scoped equations is exactly the existing
+integer backend, rather than an independently supplied matrix. -/
+theorem payload_materialization {r q : ℕ} (S : Fin q → Finset (Fin r))
+    (p : Fin q → Fin r → Bool) :
+    let es := List.ofFn fun i => ((S i).sort (· ≤ ·)).map fun v => (v.val, p i v)
+    payloadRows r es = ExactOne.integerRows S p ∧
+      payloadRhs es = ExactOne.integerRhs S p := by
+  constructor
+  · simp only [payloadRows, List.map_ofFn, ExactOne.integerRows]
+    congr 1
+    funext i
+    have h := payloadRows_scoped (S i) (p i)
+    simpa only [payloadRows, List.map_singleton, List.singleton_inj, Function.comp_apply] using h
+  · simp only [payloadRhs, List.map_ofFn, ExactOne.integerRhs]
+    congr 1
+    funext i
+    have h := payloadRhs_scoped (S i) (p i)
+    simpa only [payloadRhs, List.map_singleton, List.singleton_inj, Function.comp_apply] using h
+
+/-- Execute matrix construction and rectangular consistency on framed equations.
+This stage accepts no basis, candidate or resource advice. -/
+@[expose] def payloadConsistent (r : ℕ) (es : List (List (ℕ × Bool))) : Bool :=
+  Cslib.LinearSystem.rectangularConsistent r (payloadRows r es) (payloadRhs es)
+
+/-- Uniform polynomial binary time for the composed equation-to-solver stage.
+The table-to-equation and solver-to-query stages remain separate obligations. -/
+theorem payloadConsistent_polytime :
+    ComputableInPolyTime (fun p : ℕ × List (List (ℕ × Bool)) =>
+      payloadConsistent p.1 p.2) (encPair encUnary encSignedCNF) encBool := by
+  unfold payloadConsistent
+  have hn : ComputableInPolyTime (fun p : ℕ × List (List (ℕ × Bool)) => p.1)
+      (encPair encUnary encSignedCNF) encUnary := by fun_prop
+  exact Cslib.LinearSystem.rectangularConsistent_polytime.comp
+    ((hn.prod payloadRows_polytime).prod
+      (payloadRhs_polytime.comp (by fun_prop)))
+
+/-- The framed equation compiler tests the original signed equations exactly,
+for arbitrary overlapping scopes and without a consistency premise. -/
+theorem payloadConsistent_scoped {r q : ℕ} (S : Fin q → Finset (Fin r))
+    (p : Fin q → Fin r → Bool) :
+    payloadConsistent r (List.ofFn fun i =>
+      ((S i).sort (· ≤ ·)).map fun v => (v.val, p i v)) = true ↔
+      ∃ z : Fin r → ℚ, ∀ i,
+        dotProduct (ExactOne.coefficients (S i) (p i)) z = ExactOne.rhs (S i) (p i) := by
+  obtain ⟨hA, hb⟩ := payload_materialization S p
+  unfold payloadConsistent
+  rw [hA, hb]
+  exact ExactOne.binaryConsistent_iff S p
+
+/-- The actual table equation payload agrees with the framed scoped input of
+the binary compiler, preserving each equation position. -/
+theorem equationPayload_scoped {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) :
+    equationPayload w scope R = List.ofFn fun t =>
+      ((listedScopes w scope R t).sort (· ≤ ·)).map fun v =>
+        (v.val, listedPolarity w scope R t v) := by
+  simp only [equationPayload, listedScopes, listedPolarity]
+  apply List.ext_getElem
+  · simp
+  · intro i hi hj
+    simp
+
+/-- Execute binary consistency on the actual table equations. Only the
+construction of those equations, not this composed stage, lacks a time proof. -/
+theorem payloadConsistent_equationPayload {r : ℕ} (w : Fin m → ℕ)
+    (scope : (i : Fin m) → Fin (w i) ↪ Fin r)
+    (R : (i : Fin m) → Finset (Fin (w i) → Bool)) :
+    payloadConsistent r (equationPayload w scope R) = true ↔
+      ∃ z : Fin r → ℚ, ∀ t,
+        dotProduct (ExactOne.coefficients (listedScopes w scope R t)
+          (listedPolarity w scope R t)) z =
+        ExactOne.rhs (listedScopes w scope R t) (listedPolarity w scope R t) := by
+  rw [equationPayload_scoped]
+  exact payloadConsistent_scoped _ _
 
 /-- Stored Boolean coordinates in a frontier, using full width rows. This is a
 storage volume bound, not a bound on a particular machine configuration. -/

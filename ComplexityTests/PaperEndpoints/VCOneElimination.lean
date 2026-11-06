@@ -107,3 +107,20 @@ example {a : ℕ} (R : Finset (Fin a → Bool)) (hR : DimensionOne R) :
     prefixCandidates R (List.finRange a) * (a + 1) * a ≤
       2 * a * (a + 1) * (a + 1) * a :=
   prefix_comparison_coordinates_le R hR
+
+/-- Shared columns keep their individual signs; the unused column is explicit. -/
+example : payloadRows 3 [[(0, true), (1, false)], [(0, false)]] =
+    [[1, -1, 0], [-1, 0, 0]] := by decide
+
+example : payloadRhs [[(0, true), (1, false)], [(0, false)]] = [0, 0] := by decide
+
+example : payloadConsistent 1 [[(0, true)], [(0, false)]] = false := by decide
+
+example : payloadConsistent 0 [[]] = false := by decide
+
+example : payloadConsistent 3 [] = true := by decide
+
+open Turing.MultiTapeTM in
+example : ComputableInPolyTime (fun p : ℕ × List (List (ℕ × Bool)) =>
+    payloadConsistent p.1 p.2) (encPair encUnary encSignedCNF) encBool :=
+  payloadConsistent_polytime

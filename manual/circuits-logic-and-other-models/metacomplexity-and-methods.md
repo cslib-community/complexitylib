@@ -455,11 +455,17 @@ numbering auxiliaries after the original columns, and retains the declared count
 The complete overlapping-table client above checks these constructors and framing
 edge cases. `frontier_coordinates_le` and `prefix_comparison_coordinates_le`
 bound stored coordinates and full-frontier comparison volume under `DimensionOne`.
-These are functional serialization and volume results. A promise-restricted
+`payloadRows` and `payloadRhs` now materialize the actual signed equation payload
+in uniform polynomial binary time; `payloadConsistent_polytime` composes them
+with the rectangular solver on unary declared width and framed binary literals.
+`payloadConsistent_equationPayload` identifies this executed stage with the
+original signed equations, retaining separate rows and shared signed columns.
+The complete client checks conflicting signs, empty equations, unused columns
+and the no-equation case. This certifies the equation-to-consistency stage.
+A promise-restricted
 polynomial binary-machine realization of the constructors is still required. The existing rectangular certificate
-covers only its integer-list input/output encoding. The missing machine proofs
-must account for prefix storage/comparison, separator deletion, equation
-materialization, candidate validation, query construction and output writing.
+is now composed with signed literal materialization. The missing machine proofs
+must account for prefix storage/comparison, separator deletion, candidate validation, query construction and output writing.
 A polynomial space conclusion must concern that composed machine, not just the
 number of clauses in its final output. These are unfinished implementation and
 proof obligations, not an obstruction to the promised source theorem.
