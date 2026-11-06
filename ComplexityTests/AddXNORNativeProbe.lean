@@ -35,7 +35,7 @@ The retained zero witnesses are present because their encoded tag is one. -/
 example : ∃ y, ExecWithin 8 probeBody (input 2) y 51 ∧
     y.mem = (input 2).mem ∧ y.regs state = 1 ∧
     y.regs firstOperators = 3 ∧ y.regs operators = 0 ∧ y.regs link = 0 ∧
-    y.regs operand = 1 ∧ y.regs bits = 0 := by
+    y.regs operand = 1 ∧ y.regs bits = 0 ∧ y.regs one = 1 := by
   exact probeBody_exec (W := 8) (m := 2) (b := 5) (ptr := 10)
     (D := 40) (s := 2) (u := 3) (v := 0) [1#2] (input 2)
     (by decide) (by decide) (by decide) (by decide) (by decide)
@@ -50,3 +50,41 @@ example : (probeBody.eval 8 8 (input 2)).map (fun r =>
 example : (probeBody.eval 8 8 (input 0)).map (fun r =>
     (r.1.regs state, r.1.regs operand, r.1.regs bits)) =
       some (3, 0, 0) := by decide +kernel
+
+private def scanInput (second : ℕ) : Data 32 :=
+  { regs := (input 0).regs
+    mem := fun a => if a = 10 then 14 else if a = 15 then second
+      else if a = 16 then 7 else (input 0).mem a }
+
+/-- The first node misses; the second hits with two retained zero witnesses. -/
+example : ∃ y, ExecWithin 8 probeScan (scanInput 2) y 116 ∧
+    y.mem = (scanInput 2).mem ∧ y.regs link = 0 ∧
+    (y.regs operand ≠ 0 ↔ ∃ r ∈ [(0, 3), (2, 7)],
+      (scanInput 2).mem (slot 40
+        (Cslib.Cryptanalysis.AddXNOR.backward
+          ((decode 1 0).zip [1#2]) (BitVec.ofNat 2 r.1)).toNat) ≠ 0) := by
+  exact probeScan_exec (W := 8) (m := 2) (b := 5) (boundary := 20)
+    (ptr := 10) (D := 40) (v := 0) [1#2] [(0, 3), (2, 7)] (scanInput 2)
+    (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide)
+    (.cons (by decide) (by decide) (by decide) (by decide)
+      (.cons (by decide) (by decide) (by decide) (by decide) .nil))
+    (by decide) (by decide) (by decide)
+
+example : (probeScan.eval 8 16 (scanInput 2)).map (fun r =>
+    (r.1.regs operand, r.1.regs bits, r.1.regs firstOperators,
+      r.1.regs operators, r.1.regs link, r.1.mem 30)) =
+      some (1, 0, 7, 0, 0, 17) := by decide +kernel
+
+/-- Both nodes miss, so the scan reaches the actual null pointer. -/
+example : (probeScan.eval 8 16 (scanInput 0)).map (fun r =>
+    (r.1.regs operand, r.1.regs link)) = some (0, 0) := by decide +kernel
+
+/-- A successful first node does not read its deliberately invalid successor. -/
+example : (probeScan.eval 8 16
+    { input 2 with mem := fun a => if a = 10 then 255 else (input 2).mem a }).map
+      (fun r => (r.1.regs operand, r.1.regs link)) = some (1, 0) := by decide +kernel
+
+example : (probeScan.eval 8 16
+    { input 0 with regs := fun r => if r = link then 0 else (input 0).regs r }).map
+      (fun r => (r.1.regs operand, r.1.regs link)) = some (0, 0) := by decide +kernel

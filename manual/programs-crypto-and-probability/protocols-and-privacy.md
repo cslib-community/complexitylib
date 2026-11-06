@@ -786,3 +786,17 @@ returned exactly, rather than assumed to encode a valid solution. This theorem
 does not yet iterate the opposite class, exit with a complete chain witness,
 select orientation from counters or join original-input preprocessing. It proves
 no global peak-space or source multitape bit-time bound.
+
+
+`Quarter.probeScan_exec` extends this operation to a complete linked bucket.
+Initialize `operand` and `zero` to zero and supply the actual `Linked` chain,
+bounded full states, reversed operands and word-fit premise. The returned tag
+is nonzero exactly when some node's computed full backward state has a nonzero
+dictionary tag. For $H$ nodes and $b$ operands, execution costs at most
+$H(18b+39)+2$ instructions. Every memory cell is preserved. The scan stops at
+the first present key; its witness registers are those of that probe. This
+physical membership contract still requires dictionary validity and original-chain
+composition before its tag can be interpreted as an Add/XNOR solution.
+The same complete client checks a miss followed by a zero-witness hit, all
+misses, an empty bucket, and early exit before an invalid successor. This scan
+is not the second-quarter/class iterator or a global computed-balance bound.
