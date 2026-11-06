@@ -295,8 +295,8 @@ Gaussian by an atom and recover the variance-two Gaussian from two variance-one 
 A noncommutative permutation-group example checks the order of translation; infinite-density
 and zero-input cases check the absence of hidden finiteness premises. Run
 `scripts/build.sh ComplexityTests.ConvolutionDensity` from the repository root.
-The later [lattice Gaussian convolution bound](https://github.com/cslib-community/complexitylib/issues/2707)
-still needs its actual discrete weights, completion of the square and quantitative error proof.
+The [lattice Gaussian convolution bound](https://github.com/cslib-community/complexitylib/issues/2707)
+below supplies its actual discrete weights, completion of the square and quantitative error proof.
 
 ## Add continuous Gaussian noise to a coset Gaussian
 

@@ -119,9 +119,9 @@ transporting key-generation error, and realizing the efficient forking reduction
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
   `Foundations/MeasureTheory/Group/ConvolutionDensity` proves the convolution density formula
   for an arbitrary s-finite first measure, including singular inputs. Its actual shifted
-  discrete-Gaussian convolution consumer is tracked separately in
+  discrete-Gaussian convolution consumer is the Claim 3.9 bound of
   [#2707](https://github.com/cslib-community/complexitylib/issues/2707); the shared measure
-  identity alone does not establish Claim 3.9 or a sampler.
+  identity alone does not establish a sampler.
   Exact coefficient-fiber disintegration is proved in
   [#2766](https://github.com/cslib-community/complexitylib/issues/2766): reducing integer basis
   coordinates modulo any positive integer, including composite moduli, gives actual positive
