@@ -23,7 +23,7 @@ The [operator runbook](OPERATIONS.md) covers identities, credentials, limits, em
 
 As of November 5, 2026, the operator has deployed the origin at
 **https://complexitycache.csail.mit.edu**, using the binary built from
-`51612952aaa6a5016d78568ae7478bfc1abe908d`.
+`9066223954493c21dc24c90f1be10d67d1a8f122`.
 
 - All 16 GiB of the separate data disk is ext4, mounted persistently at `/srv/cache-origin`.
 - The publisher and daily GC timer are enabled. Socket permissions, restart, remount and
@@ -36,6 +36,13 @@ As of November 5, 2026, the operator has deployed the origin at
   with existing bytes and timestamps unchanged, anonymous GET/HEAD matched, and private paths,
   listing and DELETE were rejected. Public-origin authentication also passed. Test fixtures were
   removed under the publication/GC lock, leaving the store empty.
+- The exclusive proxy group, request/connection limits, host egress shaping, bounded journal,
+  Fail2ban and queued email alerts are installed. Rate/concurrency, capacity and ACME renewal
+  tests passed. Fail2ban test email reached the operator's inbox; the reserved test IP was
+  unbanned. Service-failure mail reached MIT's MX; inbox receipt remains unconfirmed.
+
+Deployment also verified the underscore syslog tags, `nohostname`, later journal drop-in and
+outbound Postfix transports documented in the operator examples.
 
 These checks used small synthetic packages. A real Lean build publication and cold restore,
 review of the deployment evidence, and integration approval remain before activation. The

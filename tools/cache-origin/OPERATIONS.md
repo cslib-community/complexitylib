@@ -65,7 +65,7 @@ Install the reviewed files as follows (root-owned, non-writable by other account
 | `cache-origin-alert.py`, `cache-origin-health.py` | `/usr/local/libexec/` (mode `0644`) |
 | `cache-origin-alert@.service`, `cache-origin-health.service`, `cache-origin-health.timer` | `/etc/systemd/system/` |
 | `nginx-cache-origin.conf` | `/etc/systemd/system/nginx.service.d/cache-origin.conf` |
-| `cache-origin-journald.conf` | `/etc/systemd/journald.conf.d/cache-origin.conf` |
+| `cache-origin-journald.conf` | `/etc/systemd/journald.conf.d/zz-cache-origin.conf` (after vendor `syslog.conf`) |
 | `cache-origin-fail2ban.conf` | `/etc/fail2ban/jail.d/cache-origin.local` |
 
 nginx's upload request/connection limits apply before expensive password verification; rejected
@@ -101,6 +101,11 @@ nginx logs authentication failures and server errors, omitting successful anonym
 and routine throttling rejections. Check journal suppression notices: dropped authentication
 records weaken Fail2ban detection. The supplied jail bans three failed authentications within
 ten minutes for one hour and emails `edemaine@mit.edu`; the mailer is the local Postfix queue.
+Use underscore-only syslog tags and `nohostname` as in the example so journald records
+`SYSLOG_IDENTIFIER=cache_origin_error`, matching the jail. Check effective ordering with
+`systemd-analyze cat-config systemd/journald.conf`: a later vendor drop-in can otherwise undo
+`ForwardToSyslog=no`. Inspect rsyslog pulling inputs such as `imjournal` too; disabling journal
+forwarding alone does not stop them. The dedicated MIT host uses journald with rsyslog disabled.
 The hourly health timer checks mount presence and 80% byte/inode use on both data and OS
 filesystems. Publisher, GC, nginx, egress and health failures invoke the alert service. nginx's
 service drop-in also bounds its memory and task count; the Go services retain their own limits.

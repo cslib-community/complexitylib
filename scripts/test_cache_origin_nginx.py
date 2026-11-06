@@ -10,6 +10,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import secrets
 import signal
@@ -69,6 +70,10 @@ class RealNginxCacheTests(unittest.TestCase):
         self.http = build_opener(ProxyHandler({}), HTTPSHandler(context=tls))
         self.toolchain = (REPO / "lean-toolchain").read_text().strip().replace("/", "--").replace(":", "---")
         self.publications = 0
+        self.syslog = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.syslog.bind(("127.0.0.1", 0))
+        self.syslog.settimeout(0.1)
+        self.addCleanup(self.syslog.close)
         self.start([self.origin_bin, "serve", "--root", str(self.store), "--socket", str(self.socket)], "origin")
         self.wait_for(lambda: self.socket.exists(), "origin socket")
 
@@ -84,10 +89,10 @@ class RealNginxCacheTests(unittest.TestCase):
             "/srv/cache-origin/nginx-tmp": nginx_string(self.store / "nginx-tmp"),
             "/etc/nginx/cache-publish.htpasswd": nginx_string(password_file),
             "http://unix:/run/cache-origin/http.sock": nginx_string(f"http://unix:{self.socket}"),
-            "access_log syslog:server=unix:/dev/log,facility=local6,tag=cache-origin,severity=info cache_origin if=$cache_loggable;":
-                f"access_log {nginx_string(self.root / 'nginx-access.log')} cache_origin if=$cache_loggable;",
-            "error_log syslog:server=unix:/dev/log,facility=local6,tag=cache-origin-error warn;":
-                f"error_log {nginx_string(self.root / 'nginx-error.log')} warn;",
+            # Keep the real syslog options/tags. Changing only the transport
+            # avoids needing a system journal while exercising nginx's parser.
+            "syslog:server=unix:/dev/log":
+                f"syslog:server=127.0.0.1:{self.syslog.getsockname()[1]}",
         }
         for old, new in replacements.items():
             self.assertIn(old, fragment)
@@ -183,6 +188,29 @@ class RealNginxCacheTests(unittest.TestCase):
                                 capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_failed_auth_syslog_matches_the_jail_identifier_without_hostname(self):
+        jail = (REPO / "tools/cache-origin/examples/cache-origin-fail2ban.conf").read_text()
+        identifier = re.search(r"^journalmatch = SYSLOG_IDENTIFIER=(\w+)$", jail, re.MULTILINE).group(1)
+        self.assertEqual(self.request("PUT", "/publish/" + "a" * 40, b"invalid",
+                                      self.user + ":wrong")[0], 401)
+        messages = []
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            try:
+                message = self.syslog.recv(65535).decode()
+            except socket.timeout:
+                continue
+            messages.append(message)
+            if f" {identifier}: " in message:
+                # RFC3164 timestamp immediately followed by the identifier:
+                # no hostname that journald could mistake for the program tag.
+                self.assertRegex(message, rf"^<\d+>\w{{3}}\s+\d{{1,2}} \d{{2}}:\d{{2}}:\d{{2}} {re.escape(identifier)}: ")
+                self.assertIn("password mismatch", message)
+                self.assertNotIn(self.password, message)
+                break
+        else:
+            self.fail("No matching auth syslog message: " + repr(messages))
+
     def test_publication_downloads_and_immediate_gc(self):
         revision_a, revision_b = "a" * 40, "b" * 40
         stage_a, body_a, map_a, map_a_bytes = self.publication(revision_a, {1: b"shared", 2: b"old unique"})
@@ -243,8 +271,15 @@ class RealNginxCacheTests(unittest.TestCase):
         self.assertIn(429, statuses)
         # Access logs preserve failed-auth evidence but omit rate rejections,
         # avoiding a request flood turning into an unbounded log flood.
-        self.wait_for(lambda: (self.root / "nginx-access.log").exists(), "auth access log")
-        lines = (self.root / "nginx-access.log").read_text()
+        messages = []
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            try:
+                messages.append(self.syslog.recv(65535).decode())
+            except socket.timeout:
+                if any(" 401 PUT " in message for message in messages):
+                    break
+        lines = "\n".join(messages)
         self.assertIn(" 401 PUT ", lines)
         self.assertNotIn(" 429 ", lines)
         self.assertNotIn(self.password, lines)

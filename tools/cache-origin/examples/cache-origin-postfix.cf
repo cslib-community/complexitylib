@@ -8,6 +8,10 @@ myhostname = complexitycache.csail.mit.edu
 myorigin = $myhostname
 mydestination = localhost
 relayhost =
+# Override transports left by the installer's "Local only" preset so queued
+# alerts can reach the recipient's MX without enabling inbound SMTP.
+default_transport = smtp
+relay_transport = relay
 smtp_tls_security_level = may
 maximal_queue_lifetime = 1d
 bounce_queue_lifetime = 1d
