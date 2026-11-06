@@ -2817,6 +2817,7 @@ public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Randomized.LoopSegmentLaw
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Randomized.UniformLoopExit
+public import Complexity.Computability.WordRAM.ReadOnly
 public import Complexity.Computability.WordRAM.Realization.Absorb
 public import Complexity.Computability.WordRAM.Realization.Backend
 public import Complexity.Computability.WordRAM.Realization.BackendFrame
@@ -2882,6 +2883,7 @@ public import Complexity.Cryptanalysis.AddXNORGuard
 public import Complexity.Cryptanalysis.AddXNORGuardedChain
 public import Complexity.Cryptanalysis.AddXNORNPComplete
 public import Complexity.Cryptanalysis.AddXNORNative
+public import Complexity.Cryptanalysis.AddXNORNativeBalance
 public import Complexity.Cryptanalysis.AddXNORNativeCounters
 public import Complexity.Cryptanalysis.AddXNORNativeProjection
 public import Complexity.Cryptanalysis.AddXNORNativeResources

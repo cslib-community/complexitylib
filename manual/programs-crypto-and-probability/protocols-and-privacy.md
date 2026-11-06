@@ -508,6 +508,44 @@ buffer exchanges and halt are charged. This is the counter preprocessing part
 of Lemma 8. It does not certify native quarter enumeration, dictionary lifetimes,
 computed-balance traversal or the integrated Theorem 7 peak-space bound.
 
+Import [AddXNORNativeBalance.lean](../../Complexity/Cryptanalysis/AddXNORNativeBalance.lean)
+for the native balance traversal. In namespace
+`Cslib.Cryptanalysis.AddXNOR.Native.Balance`, `scan_classes_exec` consumes two
+already constructed arrays in one memory: `Native.source` points to the forward
+array, `Native.destination` to the complement-indexed backward array, and
+`Native.modulus` holds $2^p$. Its hypotheses identify every cell with the actual
+indexed class count. It returns the exact `classBalance` in `Native.answer`;
+no balance hypothesis or host maximum is supplied. It uses the backward array
+directly, without constructing an array of reversed counters or branch choices.
+
+From the repository root after setup:
+
+```bash
+scripts/build.sh --wfail --iofail Complexity.Cryptanalysis.AddXNORNativeBalance
+lake env lean -DwarningAsError=true ComplexityTests/AddXNORNativeBalance.lean
+```
+
+The complete [balance client](../../ComplexityTests/AddXNORNativeBalance.lean)
+supplies all hypotheses on actual nonuniform counts from a five-bit chain. Its
+kernel runs also distinguish complemented addressing from ordinary addressing,
+check ties with multiplicity eight, preserve dirty outside memory and handle an
+empty generic interval. `scan_classes_resources` charges at most
+$14\cdot2^p+7$ native instructions including halt. The physical word width is
+the caller's `W`; the address sum must fit, and bounded initial data ensure all
+intermediate words fit. For an initial finite support cover `S`, every continuing
+prefix has exact nonzero support `live` with stored-bit bound
+$(|\mathrm{live}|+18)W\le(|S|+18)W$. The scan contains no stores, so this
+includes unread input and adds no occupied memory cells. The reusable
+`Runs.mem_eq_of_no_store` lemma in
+[ReadOnly.lean](../../Complexity/Computability/WordRAM/ReadOnly.lean) proves
+memory preservation for every flat-program prefix.
+
+If applying the certificate fails, check the complemented backward addresses,
+the two buffer pointers, $2^p$ in the modulus register and the word-fit premise.
+This interface starts after counter construction. A single original-input
+execution joining both counters, native quarter streaming, dictionary allocation,
+lookup, reuse/freeing and witness output remains required for Theorem 7.
+
 Import [AddXNORDissection.lean](../../Complexity/Cryptanalysis/AddXNORDissection.lean)
 for the actual quarter-indexed streaming class search of Lemma 8 and Theorem 7.
 In `Cslib.Cryptanalysis.AddXNOR.Dissection`, call `solve p as s t` on the
@@ -550,10 +588,10 @@ For four quarters of length $k$ this sum is
 $4k2^{p+k}+2k2^{2k}$. Each quarter index has at most $(p+1)2^k$ trie nodes.
 These statements separate counted chain calls, inspected dictionary nodes and
 retained dictionary size. The dictionary is now bound before its consumer fold.
-These results and the separate forward counter certificate leave backward
-preprocessing, native projection, key/list construction, word-bit costs,
-address capacity, allocation and compiled peak
-storage unproved. Thus the streaming implementation is functionally certified,
+The separate native projection, both counter directions and balance traversal
+certificates do not yet compose with this streaming implementation. Native
+key/list construction, word-bit costs, address capacity, allocation and compiled
+peak storage remain unproved. Thus the streaming implementation is functionally certified,
 while the paper's full runtime/space endpoint remains open. The existing
 per-class means still give no bound on expected maximum balance.
 

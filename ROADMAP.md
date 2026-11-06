@@ -61,6 +61,13 @@ include input-fit, charged projection/initialization/halt and prefix memory-supp
 certificates. Native class streaming, dictionary allocation/reuse and the integrated
 dissection decision/witness time and simultaneous peak-space certificate remain
 open; neither preprocessing certificate completes Lemma 8 or Theorem 7.
+The native balance traversal now reads both actual counter arrays, including
+complemented backward addresses, and returns their exact maximum smaller-class
+size in at most $14\cdot2^p+7$ instructions including halt. Every continuing
+prefix preserves the entire memory, so the scan adds eighteen registers and no
+occupied memory cells. This certificate requires the already constructed arrays;
+their joint original-input execution with class streaming and dictionary storage
+is still missing. It does not complete the requested integrated endpoint.
 The pointer/Boolean and counter-operation
 models do not replace native bit-runtime or peak-space certificates. The actual fixed
 WordRAM reachable-state array program now has an unrestricted standard-input-to-halt
