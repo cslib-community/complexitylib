@@ -503,8 +503,9 @@ demand and the counting wrapper. It can be checked from the repository root with
 This is row-local progress, not the full Theorem 7.1 reduction. Subset listing
 uses noncomputable `Finset.toList`; no executable enumeration or runtime theorem
 is supplied. The wrapper concatenates upper bounds without global deduplication.
-The capped affine-system/rank bridge, all direct branches, global signed
-clause counting, and full construction/counting time and space remain open.
+The subsequent modules below supply normalization, capped affine row selection
+and global signed clause counting. All direct branches and full
+construction/counting time and space remain open.
 Graph endpoints are unaffected.
 
 Import `Complexity.Logics.Propositional.CNF.WeightedNormalization` for original
@@ -536,8 +537,24 @@ sets of signed literals, so literal order and source row do not affect identity.
 `2 * (h + 1) * (d + 1) * (n + 1)^d`, where `n` counts declared variables and
 `h + 1` counts rows. Thus at most `n` rows gives degree `d + 1`, without an
 extra row factor on the upper clauses. This is a noncomputable finite listing;
-it supplies neither capped-rank row selection nor encoded construction time.
+the affine module below supplies capped-rank row selection separately, while
+encoded construction time remains open.
 [The complete global client](../../ComplexityTests/WeightedGlobal.lean) checks
 cross-row duplicates, accepted/rejected assignments, count recovery and the
 normalization connection. From the repository root run
 `scripts/build.sh ComplexityTests.WeightedGlobal`.
+
+
+Import `Complexity.Logics.Propositional.CNF.WeightedAffine` for the actual capped
+integer affine conversion. `Row.coefficients` lists signed weights in declared
+variable order, with zero outside support; `Row.rhs` subtracts the negative-literal
+constant. `Row.affine_iff` preserves each Boolean assignment. `cappedRows` deletes
+true rows, while `cappedRows_iff` requires that no rejected row was present.
+`cappedMatrix` and `cappedRhs` materialize these rows for the existing rectangular
+solver. `selectedCappedRow_iff` pulls its computed indices back to actual capped
+rows under the computed rational consistency test. No basis is supplied by the caller.
+The [complete affine client](../../ComplexityTests/WeightedAffine.lean) checks mixed
+weights and signs, an unused variable, rejection, and the empty zero equation.
+From the repository root run `scripts/build.sh ComplexityTests.WeightedAffine`.
+This bridge does not assemble all direct branches or certify the full reduction's
+runtime, space or graph endpoints.
