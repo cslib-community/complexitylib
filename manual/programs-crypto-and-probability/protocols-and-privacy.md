@@ -463,8 +463,50 @@ instruction. This is conservative but bounds every execution prefix without
 allocating all $2^W$ possible addresses. Input memory is supplied under the
 existing `Data.init` convention; all program reads and initialization stores are
 charged. For a projected instance, this certificate begins with the already
-projected input. Native projection, backward preprocessing and integration with
-class streaming are still required for Lemma 8 and Theorem 7.
+projected input. For original-input projection and backward preprocessing, use
+the following interface; integration with native class streaming remains open.
+
+Import [AddXNORNativeProjection.lean](../../Complexity/Cryptanalysis/AddXNORNativeProjection.lean)
+for native projection and both counter directions from the original-width input.
+In namespace `Cslib.Cryptanalysis.AddXNOR.Native.Counters`, call
+`encoded_projected_resources back hp as s t`, where `hp : p ≤ m`.
+`encodeProjected p (List.ofFn as) s t` appends the projection width to the
+standard full-width encoding. The native program copies low bits into a separate
+operand interval. For `back = true`, it reverses the operands during that copy,
+seeds the unchanged forward kernel at the complemented projected target, and
+returns a table read at complemented addresses. For `back = false`, read the
+returned table at ordinary low-bit addresses. The theorem identifies these cells
+with `backwardClassCount` and `forwardClassCount`, respectively, including all
+indexed collisions. The original input words and appended width survive.
+
+From the repository root after the normal setup:
+
+```bash
+scripts/build.sh --wfail --iofail Complexity.Cryptanalysis.AddXNORNativeProjection
+lake env lean -DwarningAsError=true ComplexityTests/AddXNORNativeProjection.lean
+```
+
+The complete [projection client](../../ComplexityTests/AddXNORNativeProjection.lean)
+checks nonuniform forward/backward arrays from five-bit input projected to two
+bits, reversal and wraparound, repeated states, the empty chain, the original
+header/operand preservation, and width-zero multiplicity eight. No projected
+array is installed by the host. `encodeProjected_fits` verifies every original
+input word and the projection width against
+$W=\lfloor\log_2(3\cdot2^p+2\cdot2^q+4q+2^m+30)\rfloor+1$.
+`encoded_projected_resources` proves at most $77(q+1)2^p$ instructions,
+including halt, and at most $(77(q+1)2^p+18)W$ bits of accessed cells plus
+registers. Every execution prefix has bounded words and memory support covered
+by at most $(77(q+1)2^p+q+24)W$ bits including registers and the entire initial
+input, even cells never read. This support bound uses actual stores and initial
+support, not the largest representable address; the accessed-cell bound also
+charges zero-filled cells. Both bounds are deliberately conservative.
+
+These statements concern typed word input under `Data.init`: input installation,
+binary decoding and malformed-input checking are outside the program's cost.
+Native reads, projection, reversal, zero-fill initialization, counter additions,
+buffer exchanges and halt are charged. This is the counter preprocessing part
+of Lemma 8. It does not certify native quarter enumeration, dictionary lifetimes,
+computed-balance traversal or the integrated Theorem 7 peak-space bound.
 
 Import [AddXNORDissection.lean](../../Complexity/Cryptanalysis/AddXNORDissection.lean)
 for the actual quarter-indexed streaming class search of Lemma 8 and Theorem 7.

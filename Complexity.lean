@@ -2883,6 +2883,7 @@ public import Complexity.Cryptanalysis.AddXNORGuardedChain
 public import Complexity.Cryptanalysis.AddXNORNPComplete
 public import Complexity.Cryptanalysis.AddXNORNative
 public import Complexity.Cryptanalysis.AddXNORNativeCounters
+public import Complexity.Cryptanalysis.AddXNORNativeProjection
 public import Complexity.Cryptanalysis.AddXNORNativeResources
 public import Complexity.Cryptanalysis.AddXNORNativeRun
 public import Complexity.Cryptanalysis.AddXNORParity

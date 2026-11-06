@@ -106,4 +106,19 @@ theorem TraceExec.address_footprint_le {B : Basis} {r w n : ℕ} {c : Code B r}
   have hs := probe_footprint_subset ts (fun a v hp => (h.probe_bounded hx a v hp).1)
   exact (Finset.card_le_card hs).trans_eq (Finset.card_range _)
 
+/-- A run can create at most one newly nonzero memory cell per instruction.
+The initial support is included, even for input cells the program never reads.
+Applying this to each run prefix bounds simultaneous occupied memory, rather
+than merely the largest address representable by a word. -/
+theorem Runs.exists_memorySupport {B : Basis} {r w n : ℕ} {p : Program B r}
+    {s t : State r} (h : Runs w p s t n) (S : Finset ℕ)
+    (hS : ∀ a, s.data.mem a ≠ 0 → a ∈ S) :
+    ∃ T : Finset ℕ, T.card ≤ S.card + n ∧ ∀ a, t.data.mem a ≠ 0 → a ∈ T := by
+  obtain ⟨_, W, _, hW, hm, _⟩ := h.exists_footprints
+  refine ⟨S ∪ W, (Finset.card_union_le _ _).trans (Nat.add_le_add_left hW _), ?_⟩
+  intro a ha
+  by_cases hw : a ∈ W
+  · exact Finset.mem_union_right _ hw
+  · exact Finset.mem_union_left _ (hS a (by simpa only [hm a hw] using ha))
+
 end Cslib.WordRAM

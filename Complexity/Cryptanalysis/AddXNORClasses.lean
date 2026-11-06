@@ -393,6 +393,36 @@ theorem backwardCounters_read {m q : ℕ} (as : Fin q → BitVec m) (t s : BitVe
   intro bs _
   simp [eq_comm]
 
+private theorem countRun_append {m : ℕ} (xs ys : List (List Bool))
+    (table : WordTable ℕ m) :
+    (countRun (xs ++ ys) table).ret = (countRun ys (countRun xs table).ret).ret := by
+  induction xs generalizing table with
+  | nil => rfl
+  | cons x xs ih => simpa only [List.cons_append, countRun, TimeM.ret_bind,
+      TimeM.ret_pure] using ih (countAdvance x table).ret
+
+private theorem countRun_reverse_conjugate {m : ℕ} (as : List (BitVec m))
+    (f b : WordTable ℕ m) (h : ∀ s, f.read (~~~s) = b.read s) (s : BitVec m) :
+    (countRun (as.reverse.map stateKey) f).ret.read (~~~s) =
+      (countBackRun (as.map stateKey) b).ret.read s := by
+  induction as generalizing s with
+  | nil => exact h s
+  | cons a as ih =>
+    simp only [List.reverse_cons, List.map_append, List.map_cons, List.map_nil,
+      countRun_append, countRun, TimeM.ret_bind, TimeM.ret_pure, countBackRun,
+      countAdvance_read, countBackAdvance_read, unstep_not, ih]
+
+/-- Backward indexed counters are the forward counters of the reversed operand
+list, seeded at the complemented target and read at complemented addresses.
+Reversing operands or forming the projection is not charged by this semantic identity. -/
+theorem backwardCounters_conjugate {m : ℕ} (as : List (BitVec m)) (t s : BitVec m) :
+    (classCounters as.reverse (~~~t)).read (~~~s) = (backwardCounters as t).read s := by
+  apply countRun_reverse_conjugate
+  intro u
+  simp only [indicators_read, point_read]
+  have he : (~~~t = ~~~u) ↔ t = u := BitVec.not_inj
+  simp only [he]
+
 /-- Backward counters also fit in `q+1` bits, despite arbitrary coincident states. -/
 theorem backwardCounters_size_le {m q : ℕ} (as : Fin q → BitVec m) (t s : BitVec m) :
     Nat.size ((backwardCounters (List.ofFn as) t).read s) ≤ q + 1 := by

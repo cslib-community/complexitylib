@@ -55,9 +55,12 @@ preprocessing/address-capacity and compiled peak-space bridges remain open.
 Native forward counter preprocessing now executes from standard encoded input
 through halt, preserving indexed multiplicities, with at most $43(q+1)2^p$
 instructions and a conservative full accessed-storage certificate that includes
-counter word widths and registers. Backward native preprocessing, projection
-from the original input and integration with native class streaming remain open;
-this forward certificate does not complete Lemma 8 or Theorem 7.
+counter word widths and registers. Original-input native projection and backward preprocessing now reuse the same
+counter kernel through explicit operand reversal and complement conjugacy. They
+include input-fit, charged projection/initialization/halt and prefix memory-support
+certificates. Native class streaming, dictionary allocation/reuse and the integrated
+dissection decision/witness time and simultaneous peak-space certificate remain
+open; neither preprocessing certificate completes Lemma 8 or Theorem 7.
 The pointer/Boolean and counter-operation
 models do not replace native bit-runtime or peak-space certificates. The actual fixed
 WordRAM reachable-state array program now has an unrestricted standard-input-to-halt

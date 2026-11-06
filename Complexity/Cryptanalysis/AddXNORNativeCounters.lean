@@ -20,8 +20,9 @@ charges room for the sum of two bounded counters as well as addresses.
 
 The complete forward counter preprocessing for [WangLvShenZhang2027],
 Lemma 8, PDF pp. 21–22, is certified from encoded input through halt. Its
-transcript bounds accessed storage. Backward counters, native projection from
-full-width inputs, and the complete streaming dissection remain unproved.
+transcript bounds accessed storage. `AddXNORNativeProjection` reuses this kernel
+for original-input projection and both counter directions. The complete native
+streaming dissection remains unproved.
 -/
 
 public section
@@ -44,7 +45,8 @@ open Cslib.WordRAM
   .seq (ram[ index ← #0; one ← #1; mask ← modulus - one;
     negative ← modulus - operand ]) (.loop (.lt index modulus) body)
 
-/-- Mathematical specification of a partially filled destination array; not an executable primitive. -/
+/-- Mathematical specification of a partially filled destination array;
+not an executable primitive. -/
 def updatePrefix (mem : ℕ → ℕ) (b c N a k : ℕ) : ℕ → ℕ :=
   fun z => if c ≤ z ∧ z < c + k then
     mem (b + ((N - a + (z - c)) % N)) +
@@ -251,7 +253,8 @@ theorem layers_exec {W m b c p C : ℕ} (as : List (BitVec m)) (x : Data 18)
     (hdisjoint : b + 2 ^ m ≤ c ∨ c + 2 ^ m ≤ b)
     (hrep : Represents x.mem b table)
     (hcount : ∀ s, table.read s ≤ C)
-    (hfit : Fits W (b + c + 2 * 2 ^ m + 2 * C * 2 ^ as.length + 2)) (hinputfit : Fits W (p + as.length)) :
+    (hfit : Fits W (b + c + 2 * 2 ^ m + 2 * C * 2 ^ as.length + 2))
+    (hinputfit : Fits W (p + as.length)) :
     ∃ y, ExecWithin W layers x y (as.length * (14 * 2 ^ m + 14) + 2) ∧
       Represents y.mem (y.regs source) (WordTable.countRun (as.map stateKey) table).ret ∧
       ((y.regs source = b ∧ y.regs destination = c) ∨
@@ -516,7 +519,8 @@ theorem encoded_counts {m q : ℕ} (as : Fin q → BitVec m) (s t : BitVec m) :
     rw [encodeInput, List.getElem?_append_right (by change 4 ≤ j + 4; omega)]
     simp only [List.length_ofFn] at hj
     simp [hj]
-  obtain ⟨y, he, hr, _⟩ := entry_exec (List.ofFn as) s t (Data.init (encodeInput (List.ofFn as) s t))
+  obtain ⟨y, he, hr, _⟩ :=
+    entry_exec (List.ofFn as) s t (Data.init (encodeInput (List.ofFn as) s t))
     (by simp [Data.init_mem_succ, encodeInput, List.getD_eq_getElem?_getD])
     (by simp [Data.init_mem_succ, encodeInput, List.getD_eq_getElem?_getD])
     (by simp [Data.init_mem_succ, encodeInput, List.getD_eq_getElem?_getD])

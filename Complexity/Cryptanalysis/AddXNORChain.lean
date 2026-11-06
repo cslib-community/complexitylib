@@ -48,6 +48,16 @@ namespace Cslib.Cryptanalysis.AddXNOR
 @[expose] def unstep {m : ℕ} (b : Bool) (t a : BitVec m) : BitVec m :=
   if b then ~~~(t ^^^ a) else t - a
 
+/-- Complementing the state conjugates a forward step to its inverse. This
+allows backward preprocessing to reuse the forward counter kernel unchanged. -/
+theorem unstep_not {m : ℕ} (b : Bool) (s a : BitVec m) :
+    unstep b (~~~s) a = ~~~(step b s a) := by
+  cases b
+  · simp only [unstep, step, Bool.false_eq_true, ↓reduceIte,
+      BitVec.not_eq_neg_add, BitVec.sub_eq_add_neg, BitVec.neg_add]
+    ac_rfl
+  · simp [unstep, step, BitVec.not_xor_left]
+
 /-- Recover the initial word from a target, undoing the last step first. -/
 @[expose] def backward {m : ℕ} : List (Bool × BitVec m) → BitVec m → BitVec m
   | [], t => t
