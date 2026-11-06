@@ -28,6 +28,9 @@ the tagged guess. All support restrictions are discharged inside that original g
 
 ## Main results
 
+* `Cslib.Crypto.Homomorphic.Leveled.eval_modLeveledAdversary_choose_eq_map_full_coins`: the actual
+  modular choice law at the full padded budget, with the zero-link evaluator instantiated.
+
 * `Cslib.Crypto.Homomorphic.Leveled.eval_game_modLeveledAdversary_eq_map_coins`: exact original
   game distribution in either challenge world, deriving supports internally.
 * `Cslib.Crypto.Homomorphic.Leveled.computableInPolyTime_modLeveledGameCoins`: native complete
@@ -76,6 +79,49 @@ the same layout. -/
     (rest.take (encCoins n))
   modLeveledGuessCoins evaluateChoose evaluateEncrypt evaluateGuess n (capacity n)
     (encCoins n) (chooseCoins n) (guessCoins n) choice.2 challenge (rest.drop (encCoins n))
+
+/-- The actual modular choice law on the complete padded payload, including zero-link fallback.
+The bounded component laws are the same as for the complete game; no replay law for the whole
+choice procedure is assumed. -/
+theorem eval_modLeveledAdversary_choose_eq_map_full_coins (E : Scheme)
+    (adversary : Encryption.Adversary)
+    (evaluateKey : ℕ → List Bool → List Bool × List Bool)
+    (evaluateEncrypt : (ℕ × List Bool × Bool) → List Bool → List Bool)
+    (evaluateChoose : (ℕ × List Bool) → List Bool → (Bool × Bool) × List Bool)
+    (coins depth capacity keyCoins encCoins chooseCoins : ℕ → ℕ)
+    (n pkBound : ℕ)
+    (hkey : ProbComp.eval (E.keyGen n) =
+      (BitString.uniformList (keyCoins n)).map (evaluateKey n))
+    (hkeys : ∀ key ∈ (ProbComp.eval (E.keyGen n)).support,
+      key.1.length ≤ pkBound ∧ key.2.length ≤ capacity n)
+    (hencrypt : ∀ pk, pk.length ≤ pkBound → ∀ message,
+      ProbComp.eval (E.encrypt n pk message) =
+        (BitString.uniformList (encCoins n)).map (evaluateEncrypt (n, pk, message)) ∧
+      ∀ ciphertext ∈ (ProbComp.eval (E.encrypt n pk message)).support,
+        ciphertext.length ≤ encCoins n)
+    (hchoose : ∀ artifact, (encPublicKey artifact).length ≤
+        publicKeyLengthBound (depth n) (capacity n) pkBound (encCoins n) →
+      ProbComp.eval (adversary.choose n (encPublicKey artifact)) =
+        (BitString.uniformList (chooseCoins n)).map (evaluateChoose (n, encPublicKey artifact)) ∧
+      ∀ chosen ∈ (ProbComp.eval (adversary.choose n (encPublicKey artifact))).support,
+        chosen.2.length ≤ chooseCoins n)
+    (target : List Bool × List Bool)
+    (htarget : target ∈ (ProbComp.eval (E.keyGen n)).support) :
+    ProbComp.eval ((modLeveledAdversary E coins depth capacity adversary).choose n target.1) =
+      (BitString.uniformList (modLeveledChooseCoinBudget (coins n) (depth n) (capacity n)
+        (keyCoins n) (encCoins n) (chooseCoins n))).map
+        (modLeveledChooseCoins evaluateKey
+          (fun input seed => zeroLinkChooseCoins evaluateKey evaluateEncrypt evaluateChoose input.1
+            (depth input.1) (capacity input.1) (keyCoins input.1) (encCoins input.1) input.2 seed)
+          n (coins n) (depth n) (capacity n) (keyCoins n) target.1) := by
+  apply eval_modLeveledAdversary_choose_eq_map_coins E adversary coins depth capacity
+    evaluateKey _ n (keyCoins n)
+      (depth n * keyCoins n + (depth n * capacity n * encCoins n + chooseCoins n)) target.1 hkey
+  · exact eval_zeroLinkAdversary_choose_eq_map_coins E adversary depth evaluateKey evaluateEncrypt
+      evaluateChoose n (capacity n) pkBound (encCoins n) (keyCoins n) (chooseCoins n)
+        target.1 (hkeys target htarget).1 hkey hkeys hencrypt
+        (fun artifact hbound => (hchoose artifact hbound).1)
+  · omega
 
 /-- Component seed laws are restricted to bounded inputs. The target, saved choice and
 challenge supports needed by the guessing law are obtained from the original game's binds;
@@ -129,15 +175,10 @@ theorem eval_game_modLeveledAdversary_eq_map_coins (E : Scheme)
         (evaluateEncrypt (n, target.1, if bit then chosen.1.2 else chosen.1.1) encSeed) guessSeed
   have hchoiceReplay (target) (htarget : target ∈ (ProbComp.eval (E.keyGen n)).support) :
       ProbComp.eval ((modLeveledAdversary E coins depth capacity adversary).choose n target.1) =
-        (BitString.uniformList choiceBudget).map (chooseReplay target.1) := by
-    apply eval_modLeveledAdversary_choose_eq_map_coins E adversary coins depth capacity
-      evaluateKey evaluateZero n (keyCoins n)
-        (depth n * keyCoins n + (depth n * capacity n * encCoins n + chooseCoins n)) target.1 hkey
-    · exact eval_zeroLinkAdversary_choose_eq_map_coins E adversary depth evaluateKey evaluateEncrypt
-        evaluateChoose n (capacity n) pkBound (encCoins n) (keyCoins n) (chooseCoins n)
-          target.1 (hkeys target htarget).1 hkey hkeys hencrypt
-          (fun artifact hbound => (hchoose artifact hbound).1)
-    · omega
+        (BitString.uniformList choiceBudget).map (chooseReplay target.1) :=
+    eval_modLeveledAdversary_choose_eq_map_full_coins E adversary evaluateKey evaluateEncrypt
+      evaluateChoose coins depth capacity keyCoins encCoins chooseCoins n pkBound
+      hkey hkeys hencrypt hchoose target htarget
   simp only [Encryption.game, Encryption.gameOn, ↓reduceIte, ProbComp.eval_bind]
   trans (ProbComp.eval (E.keyGen n)).bind (fun target =>
     (BitString.uniformList choiceBudget).bind (fun choiceSeed =>
