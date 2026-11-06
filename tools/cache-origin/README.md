@@ -38,8 +38,8 @@ As of November 5, 2026, the operator has deployed the origin at
   removed under the publication/GC lock, leaving the store empty.
 - The exclusive proxy group, request/connection limits, host egress shaping, bounded journal,
   Fail2ban and queued email alerts are installed. Rate/concurrency, capacity and ACME renewal
-  tests passed. Fail2ban test email reached the operator's inbox; the reserved test IP was
-  unbanned. Service-failure mail reached MIT's MX; inbox receipt remains unconfirmed.
+  tests passed; the reserved test IP was unbanned. Service-failure email reached the operator's
+  inbox. Fail2ban bans remain enabled with journal logging; its email notifications are disabled.
 
 Deployment also verified the underscore syslog tags, `nohostname`, later journal drop-in and
 outbound Postfix transports documented in the operator examples.

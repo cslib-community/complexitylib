@@ -100,7 +100,8 @@ Check the **complete** `nginx -T` output for other file sinks, not just the new 
 nginx logs authentication failures and server errors, omitting successful anonymous downloads
 and routine throttling rejections. Check journal suppression notices: dropped authentication
 records weaken Fail2ban detection. The supplied jail bans three failed authentications within
-ten minutes for one hour and emails `edemaine@mit.edu`; the mailer is the local Postfix queue.
+ten minutes for one hour. Ban/unban events are recorded in the journal without email;
+email to `edemaine@mit.edu` is reserved for service failures and capacity trouble.
 Use underscore-only syslog tags and `nohostname` as in the example so journald records
 `SYSLOG_IDENTIFIER=cache_origin_error`, matching the jail. Check effective ordering with
 `systemd-analyze cat-config systemd/journald.conf`: a later vendor drop-in can otherwise undo
