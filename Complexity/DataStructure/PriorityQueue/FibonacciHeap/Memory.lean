@@ -28,8 +28,8 @@ The heap reads and writes only its `9 n + 5` cells (`footprint`). It is the reco
 structure (`Record.framed`) with the heap's programs on top (`Memory.Framed.comp`), so it joins
 products with other structures in one memory (`Memory.Framed.prod`), and its potential, read
 through the record, is local to its footprint (`potential_local`). `allocator` allocates the
-record in zeroed cells, which hold the empty queue, as a `Memory.Allocator`; its cost
-certificate is `amortized_allocator`.
+record in zeroed cells, which hold the empty queue (`framed_alloc`), as a `Memory.Allocator`;
+its cost certificate is `amortized_allocator`.
 
 ## Main definitions
 
@@ -46,7 +46,9 @@ certificate is `amortized_allocator`.
 * `wp_methods`: every operation meets its specification, invariant and amortized charge.
 * `amortized`, `mem_amortized`, `framed_amortized`: the amortized costs over the record and over
   memory.
+* `framed_footprint`, `framed_room`: the framed heap's footprint is `footprint`, with no room.
 * `potential_local`: the potential reads only the footprint.
+* `framed_alloc`: zeroed cells hold the empty heap.
 * `amortized_allocator`: the allocated heap's charges, with no potential once allocated.
 -/
 
@@ -167,6 +169,15 @@ theorem addr_mem_footprint {base : ℕ} {i : Cell} (hi : Cell.ok n i) :
     (layout n base).addr i ∈ footprint n base := by
   cases i <;> simp only [layout, footprint, Finset.mem_Ico, Cell.ok] at hi ⊢ <;> omega
 
+/-- The record stored in memory depends only on the footprint. -/
+theorem layout_abs_congr {base : ℕ} {s s' : Memory.State}
+    (h : ∀ a ∈ footprint n base, s'.mem a = s.mem a) :
+    (layout n base).abs s' = (layout n base).abs s := by
+  funext i
+  by_cases hi : Cell.ok n i
+  · simp [Record.Layout.abs, hi, h _ (addr_mem_footprint hi)]
+  · simp [Record.Layout.abs, hi]
+
 /-- The heap's record is allocated once its last cell, the count `sz`, is. -/
 theorem lt_frontier_of_inv {base : ℕ} {s : Memory.State} (hs : (layout n base).Inv s) {a : ℕ}
     (ha : a ∈ footprint n base) : a < s.frontier := by
@@ -187,6 +198,14 @@ def framed (hn : Fits w n) (hK : Fits w K) (base : ℕ) :
     Memory.Framed (indexedMinPQSpec n K) w :=
   Memory.Framed.comp (refinement hn hK) (recordFramed n w base)
 
+/-- The framed heap's footprint is its `9 n + 5` cells. -/
+theorem framed_footprint (hn : Fits w n) (hK : Fits w K) (base : ℕ) (s : Memory.State) :
+    (framed hn hK base).footprint s = footprint n base := rfl
+
+/-- The framed heap reserves no room beyond its footprint. -/
+theorem framed_room (hn : Fits w n) (hK : Fits w K) (base : ℕ) (s : Memory.State) :
+    (framed hn hK base).room s = 0 := rfl
+
 /-- The framed heap's potential reads only its footprint, as `Memory.Framed.amortized_prod`
 needs. -/
 theorem potential_local (hn : Fits w n) (hK : Fits w K) (base : ℕ) :
@@ -206,6 +225,33 @@ theorem framed_amortized (hn : Fits w n) (hK : Fits w K) (base : ℕ) :
 /-- The all-zero record is the empty heap. -/
 theorem fibRawInv_zero : FibRawInv n K (IndexedMinPQ.empty n) (view n fun _ => 0) :=
   FibRawInv.empty (fun _ => rfl) (fun _ _ => rfl) rfl rfl rfl rfl
+
+/-- **Allocation of an empty heap**: `9 n + 5` zeroed cells at the frontier, all arrays at once.
+The heap at the old frontier holds the empty queue. -/
+theorem framed_alloc (hn : Fits w n) (hK : Fits w K) (s : Memory.State) :
+    (framed hn hK s.frontier).inv
+        ⟨clear s.mem s.frontier (9 * n + 5), s.frontier + (9 * n + 5)⟩ ∧
+      (framed hn hK s.frontier).abs
+        ⟨clear s.mem s.frontier (9 * n + 5), s.frontier + (9 * n + 5)⟩ = IndexedMinPQ.empty n := by
+  set s' : Memory.State := ⟨clear s.mem s.frontier (9 * n + 5), s.frontier + (9 * n + 5)⟩
+  have hzero : (layout n s.frontier).abs s' = fun _ => 0 := by
+    funext i
+    by_cases hi : Cell.ok n i
+    · have hmem := addr_mem_footprint (base := s.frontier) hi
+      simp only [footprint, Finset.mem_Ico] at hmem
+      simp only [Record.Layout.abs, hi, ite_true, s']
+      exact clear_of_owns (show Block.Owns ⟨s.frontier, 9 * n + 5⟩ _ from
+        ⟨hmem.1, by dsimp only; omega⟩)
+    · simp [Record.Layout.abs, hi]
+  obtain ⟨hI, habs⟩ := inv_of_fibRawInv (K := K) fibRawInv_zero
+  refine ⟨⟨fun i hi => ?_, by
+    change Inv n K ((layout n s.frontier).abs s'); rw [hzero]; exact hI⟩, ?_⟩
+  · have hmem := addr_mem_footprint (base := s.frontier) hi
+    simp only [footprint, Finset.mem_Ico] at hmem
+    change _ < s.frontier + (9 * n + 5)
+    omega
+  · change abs n ((layout n s.frontier).abs s') = _
+    rw [hzero, habs]
 
 /-- Allocating the heap's record: `9 n + 5` zeroed cells at the frontier, the count `sz` last. -/
 def recordAllocator (n w : ℕ) : Memory.Allocator (Record.spec (Cell.ok n) w) w :=
