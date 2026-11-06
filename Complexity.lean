@@ -1708,6 +1708,7 @@ public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedu
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import Complexity.Computability.Complexity.FineGrained.WideClauseCounting
+public import Complexity.Computability.Complexity.FineGrained.WordRAM
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
 public import Complexity.Computability.Complexity.HardnessEncoding.Program
 public import Complexity.Computability.Complexity.ImmermanVardi
@@ -2845,6 +2846,7 @@ public import Complexity.Computability.WordRAM.Native
 public import Complexity.Computability.WordRAM.NativeDegree
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.OfTuring
+public import Complexity.Computability.WordRAM.OfTuring.Space
 public import Complexity.Computability.WordRAM.OutputLowerBound
 public import Complexity.Computability.WordRAM.PackedCount
 public import Complexity.Computability.WordRAM.Power
