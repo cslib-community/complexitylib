@@ -87,7 +87,7 @@ private theorem polyTime_selectedProduct {α : Type} {enc : α ↪ List Bool} {f
     ComputableInPolyTime (fun x : α × List Bool => selectedProduct (f x.1) x.2)
       (encPair enc encBits) encIntBin := by
   unfold selectedProduct
-  refine (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp ?_
+  refine ComputableInPolyTime.intBin_prod.comp ?_
   apply ComputableInPolyTime.mapWithInput
   · exact ComputableInPolyTime.range.comp
       ((ComputableInPolyTime.length_list encIntBin).comp (hf.comp (.fst enc encBits)))
@@ -120,7 +120,7 @@ private theorem targetWitness {α : Type} {enc : α ↪ List Bool} {A : Set α}
       ∀ a, a ∈ A ↔ G a = (f a).prod := by
   let F : α → ℤ := fun a => (f a).prod
   let P : α → ℤ := fun a => ((f a).map (fun z => z - g a)).prod
-  have hF := (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp hf
+  have hF := ComputableInPolyTime.intBin_prod.comp hf
   have hP := GapP.prod_sub_mem hf hg
   have hFn (a : α) : F a ≠ 0 := List.prod_ne_zero (hn a)
   have hyes (a : α) (ha : a ∈ A) : P a = 0 := by
@@ -150,7 +150,7 @@ theorem mem_WPP_of_polyTime_targets {α : Type} {enc : α ↪ List Bool} {A : Se
     (hy : ∀ a, a ∈ A → g a ∈ f a) (hno : ∀ a, a ∉ A → g a = 0) :
     A ∈ WPP enc := by
   obtain ⟨G, hG, hR, hA⟩ := targetWitness hg hf hn hy hno
-  exact ⟨G, hG, _, (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp hf,
+  exact ⟨G, hG, _, ComputableInPolyTime.intBin_prod.comp hf,
     fun a => List.prod_ne_zero (hn a), hR, hA⟩
 
 /-- **Polynomial-family robustness of LWPP.** The target list is uniformly computed from unary
@@ -164,7 +164,7 @@ theorem mem_LWPP_of_polyTime_targets {α : Type} {enc : α ↪ List Bool} {A : S
   obtain ⟨G, hG, hR, hA⟩ := targetWitness hg (hf.comp (.encoding_length enc))
     (fun a => hn (enc a).length) hy hno
   exact ⟨G, hG, fun n => (f n).prod,
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp hf,
+    ComputableInPolyTime.intBin_prod.comp hf,
     fun n => List.prod_ne_zero (hn n), hR, hA⟩
 
 /-- The list of targets `f (a, 0), ..., f (a, r a - 1)` for an indexed target family. -/

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Simulation
-public import Mathlib.Data.Fin.Tuple.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Machine.AuxiliaryTape
 
 /-!
 # An internal clock on a work tape
@@ -27,7 +27,7 @@ modify shared private state.
 ## Main definitions
 
 * `Turing.MultiTapeMachine.withClock`: consume a budget stored on a fresh work tape.
-* `Turing.MultiTapeMachine.Clock.config`: embed source data alongside the clock tape and head.
+* `Turing.MultiTapeMachine.AuxiliaryTape.config`: retain source data beside the clock tape.
 
 ## Main results
 
@@ -45,7 +45,7 @@ Adapted from MultiTape/Oracle/Clock.lean on the cslib `crypto` branch at
 
 namespace Turing.MultiTapeMachine
 
-open Cslib
+open Cslib AuxiliaryTape
 
 universe u v
 
@@ -56,42 +56,17 @@ namespace Clock
 /-- A phase bit and the source's optional control state. -/
 abbrev Control (State : Type) := Bool × Option State
 
-/-- Add a budget tape; a true phase bit means the next instruction advances its head. -/
-def config (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool) (position : ℤ)
-    (ticking : Bool) : Config (k + 1) Bool (Control State) Oracle input where
-  tapes :=
-    { state := some (ticking, cfg.tapes.state)
-      inputPos := cfg.tapes.inputPos
-      workTapes := Fin.lastCases tape cfg.tapes.workTapes
-      workTapePos := Fin.lastCases position cfg.tapes.workTapePos
-      output := cfg.tapes.output }
-  channels := cfg.channels
-
 /-- Leave all source tapes unchanged. -/
-def idle (next : Option (Control State)) : Turing.Action (k + 1) Bool (Control State) where
-  inputTape := 0
-  workTapes := fun _ => (none, 0)
-  output := none
-  state := next
+def idle (next : Option (Control State)) : Turing.Action (k + 1) Bool (Control State) :=
+  AuxiliaryTape.move next 0
 
 /-- Advance the budget head while leaving all source tapes unchanged. -/
-def tick (next : Option State) : Turing.Action (k + 1) Bool (Control State) where
-  inputTape := 0
-  workTapes := Fin.lastCases (none, 1) (fun _ => (none, 0))
-  output := none
-  state := some (false, next)
-
-/-- Perform one source tape action, then enter the clock-advance phase. -/
-def liftAction (action : Turing.Action k Bool State) :
-    Turing.Action (k + 1) Bool (Control State) where
-  inputTape := action.inputTape
-  workTapes := Fin.lastCases (none, 0) action.workTapes
-  output := action.output
-  state := some (true, action.state)
+def tick (next : Option State) : Turing.Action (k + 1) Bool (Control State) :=
+  AuxiliaryTape.move (some (false, next)) 1
 
 /-- Lift either a tape instruction or an oracle submission to the clock controller. -/
 def liftInstruction : Action k Bool State Oracle → Action (k + 1) Bool (Control State) Oracle
-  | .step action symbol move => .step (liftAction action) symbol move
+  | .step action symbol move => .step (AuxiliaryTape.liftAction true action) symbol move
   | .query oracle next => .query oracle (true, some next)
 
 end Clock
@@ -125,85 +100,17 @@ theorem withClock_tr [Applicative Choose] (machine : MultiTapeMachine k Bool Sta
 
 namespace Clock
 
-@[simp] theorem config_state (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool)
-    (position : ℤ) (ticking : Bool) :
-    (config cfg tape position ticking).tapes.state = some (ticking, cfg.tapes.state) := rfl
-
-@[simp] theorem config_inputSymbol (cfg : Config k Bool State Oracle input)
-    (tape : ℤ → Option Bool) (position : ℤ) (ticking : Bool) :
-    (config cfg tape position ticking).tapes.inputSymbol = cfg.tapes.inputSymbol := rfl
-
-@[simp] theorem config_workTapeSymbols_castSucc (cfg : Config k Bool State Oracle input)
-    (tape : ℤ → Option Bool) (position : ℤ) (ticking : Bool) (i : Fin k) :
-    (config cfg tape position ticking).tapes.workTapeSymbols i.castSucc =
-      cfg.tapes.workTapeSymbols i := by simp [config, Cfg.workTapeSymbols]
-
-@[simp] theorem config_workTapeSymbols_last (cfg : Config k Bool State Oracle input)
-    (tape : ℤ → Option Bool) (position : ℤ) (ticking : Bool) :
-    (config cfg tape position ticking).tapes.workTapeSymbols (Fin.last k) = tape position := by
-  simp [config, Cfg.workTapeSymbols]
-
-@[simp] theorem config_answerSymbols (cfg : Config k Bool State Oracle input)
-    (tape : ℤ → Option Bool) (position : ℤ) (ticking : Bool) :
-    (config cfg tape position ticking).answerSymbols = cfg.answerSymbols := rfl
-
-@[simp] theorem config_channels (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool)
-    (position : ℤ) (ticking : Bool) :
-    (config cfg tape position ticking).channels = cfg.channels := rfl
-
-@[simp] theorem config_output (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool)
-    (position : ℤ) (ticking : Bool) :
-    (config cfg tape position ticking).tapes.output = cfg.tapes.output := rfl
-
-theorem step_liftAction (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool)
-    (position : ℤ) (action : Turing.Action k Bool State) (symbol : Oracle → Option Bool)
-    (move : Oracle → SignType) :
-    (config cfg tape position false).step (liftAction action) symbol move =
-      config (cfg.step action symbol move) tape position true := by
-  refine Config.ext ?_ rfl
-  refine Cfg.ext rfl rfl ?_ ?_ rfl <;> funext i <;> induction i using Fin.lastCases <;>
-    simp [config, liftAction, Config.step, Turing.Action.apply]
-
-theorem receive_config [DecidableEq Oracle] (cfg : Config k Bool State Oracle input)
-    (tape : ℤ → Option Bool) (position : ℤ) (oracle : Oracle) (next : State) (answer : List Bool) :
-    (config cfg tape position false).receive oracle (true, some next) answer =
-      config (cfg.receive oracle next answer) tape position true := rfl
-
 theorem step_tick (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool)
     (position : ℤ) :
     (config cfg tape position true).step (tick cfg.tapes.state) (fun _ => none) (fun _ => 0) =
       config cfg tape (position + 1) false := by
-  refine Config.ext ?_ (by simp [Config.step, config])
-  refine Cfg.ext rfl (by simp [config, tick, Config.step, Turing.Action.apply]) ?_ ?_
-    (by simp [config, tick, Config.step, Turing.Action.apply]) <;>
-    funext i <;> induction i using Fin.lastCases <;>
-    simp [config, tick, Config.step, Turing.Action.apply]
-
-theorem step_idle (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool)
-    (position : ℤ) (ticking : Bool) (next : Option (Control State)) :
-    (config cfg tape position ticking).step (idle next) (fun _ => none) (fun _ => 0) =
-      { config cfg tape position ticking with tapes :=
-          (config cfg tape position ticking).tapes.withState next } := by
-  simp [config, idle, Config.step, Turing.Action.apply, Cfg.withState]
+  simpa [tick] using step_move cfg tape position true false 1
 
 theorem step_pause (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool)
     (position : ℤ) :
     (config cfg tape position false).step (idle (some (true, cfg.tapes.state)))
         (fun _ => none) (fun _ => 0) = config cfg tape position true := by
-  rw [step_idle]
-  rfl
-
-/-- Stop the controller, retaining the source tapes, channels, and exhausted budget tape. -/
-def stopped (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool) (position : ℤ) :
-    Config (k + 1) Bool (Control State) Oracle input :=
-  { config cfg tape position false with tapes :=
-      (config cfg tape position false).tapes.withState none }
-
-@[simp] theorem stopped_state (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool)
-    (position : ℤ) : (stopped cfg tape position).tapes.state = none := rfl
-
-@[simp] theorem stopped_output (cfg : Config k Bool State Oracle input) (tape : ℤ → Option Bool)
-    (position : ℤ) : (stopped cfg tape position).tapes.output = cfg.tapes.output := rfl
+  simpa [idle] using step_move cfg tape position false true 0
 
 end Clock
 
@@ -302,9 +209,8 @@ theorem run_interpret_stop (cfg : Config k Bool State Oracle input) (tape : ℤ 
       PMF.pure (stopped cfg tape position, s) := by
   simp only [runConfigFrom, config_state, withClock_tr, Bool.false_eq_true, ↓reduceIte,
     config_workTapeSymbols_last, hstop, OracleComp.interpret_bind, StateT.run_bind,
-    Probability.PMF.monad_bind_eq_bind, hpure, PMF.pure_bind, step_idle,
+    Probability.PMF.monad_bind_eq_bind, hpure, PMF.pure_bind, idle, step_stop,
     OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure]
-  rfl
 
 end Clock
 
@@ -319,9 +225,9 @@ theorem run_interpret_runConfigFrom_withClock (cfg : Config k Bool State Oracle 
     (hstop : tape (position + budget) ≠ some true) :
     (OracleComp.interpret oracle
       (machine.withClock.runConfigFrom choose query (2 * budget + 1)
-        (Clock.config cfg tape position false))).run s =
+        (AuxiliaryTape.config cfg tape position false))).run s =
       ((OracleComp.interpret oracle (machine.runConfigFrom choose query budget cfg)).run s).map
-        (fun (final, s') => (Clock.stopped final tape (position + budget), s')) := by
+        (fun (final, s') => (AuxiliaryTape.stopped final tape (position + budget), s')) := by
   rw [runConfigFrom_add, OracleComp.interpret_bind, StateT.run_bind,
     Probability.PMF.monad_bind_eq_bind,
     Clock.run_interpret_prefix machine choose hchoose query oracle hpure cfg tape position budget s
@@ -337,14 +243,15 @@ theorem run_interpret_runConfigFrom_withClock_add (cfg : Config k Bool State Ora
     (hstop : tape (position + budget) ≠ some true) :
     (OracleComp.interpret oracle
       (machine.withClock.runConfigFrom choose query (2 * budget + 1 + padding)
-        (Clock.config cfg tape position false))).run s =
+        (AuxiliaryTape.config cfg tape position false))).run s =
       ((OracleComp.interpret oracle (machine.runConfigFrom choose query budget cfg)).run s).map
-        (fun (final, s') => (Clock.stopped final tape (position + budget), s')) := by
+        (fun (final, s') => (AuxiliaryTape.stopped final tape (position + budget), s')) := by
   rw [runConfigFrom_add, OracleComp.interpret_bind, StateT.run_bind,
     Probability.PMF.monad_bind_eq_bind,
     run_interpret_runConfigFrom_withClock machine choose hchoose query oracle hpure cfg tape
       position budget s hbudget hstop, PMF.bind_map]
-  simp only [Function.comp_def, runConfigFrom_halted _ _ _ _ _ (Clock.stopped_state ..),
+  simp only [Function.comp_def, runConfigFrom_halted _ _ _ _ _
+    (AuxiliaryTape.stopped_state ..),
     OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure]
   rfl
 
@@ -355,7 +262,7 @@ theorem run_interpret_runFrom_withClock (cfg : Config k Bool State Oracle input)
     (hstop : tape (position + budget) ≠ some true) :
     (OracleComp.interpret oracle
       (machine.withClock.runFrom choose query (2 * budget + 1 + padding)
-        (Clock.config cfg tape position false))).run s =
+        (AuxiliaryTape.config cfg tape position false))).run s =
       (OracleComp.interpret oracle (machine.runFrom choose query budget cfg)).run s := by
   have h := congrArg (PMF.map (fun result => (result.1.tapes.output, result.2)))
     (run_interpret_runConfigFrom_withClock_add machine choose hchoose query oracle hpure cfg tape
@@ -370,7 +277,8 @@ theorem withClock_halted (cfg : Config k Bool State Oracle input) (tape : ℤ �
     (final : Config (k + 1) Bool (Clock.Control State) Oracle input) (s' : OracleState)
     (hfinal : (final, s') ∈ ((OracleComp.interpret oracle
       (machine.withClock.runConfigFrom choose query (2 * budget + 1 + padding)
-        (Clock.config cfg tape position false))).run s).support) : final.tapes.state = none := by
+        (AuxiliaryTape.config cfg tape position false))).run s).support) :
+    final.tapes.state = none := by
   rw [run_interpret_runConfigFrom_withClock_add machine choose hchoose query oracle hpure cfg tape
     position budget padding s hbudget hstop] at hfinal
   obtain ⟨⟨sourceFinal, sourceState⟩, _, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hfinal

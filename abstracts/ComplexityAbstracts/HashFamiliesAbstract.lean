@@ -278,17 +278,17 @@ noncomputable def idealTranscriptFrom {U m : ℕ} [NeZero m] (f : Fin U → Fin 
   | [] => PMF.pure []
   | .eval u :: ops =>
       (idealTranscriptFrom f ops).map fun rest => .eval u (f u) :: rest
-  | .resample :: ops =>
-      (Cslib.Probability.PMF.uniformOfFintype (Fin U → Fin m)).bind fun f' =>
-        (idealTranscriptFrom f' ops).map fun rest => .resample :: rest
+  | .resample :: ops => do
+    let f' ← Cslib.Probability.PMF.uniformOfFintype (Fin U → Fin m)
+    (idealTranscriptFrom f' ops).map fun rest => .resample :: rest
 
 /-- Ideal multi-epoch uniform random-function transcript distribution on `ops`: draws an initial
 uniform random function `f₀ ← PMF.uniformOfFintype (Fin U → Fin m)` and evaluates `ops` via
 `idealTranscriptFrom`. -/
 noncomputable def idealTranscriptPMF {U m : ℕ} [NeZero m] (ops : List (Op U)) :
-    PMF (List (Label U m)) :=
-  (Cslib.Probability.PMF.uniformOfFintype (Fin U → Fin m)).bind fun f₀ =>
-    idealTranscriptFrom f₀ ops
+    PMF (List (Label U m)) := do
+  let f₀ ← Cslib.Probability.PMF.uniformOfFintype (Fin U → Fin m)
+  idealTranscriptFrom f₀ ops
 
 /-- Every transcript entry in `tr` records the corresponding operation in `ops`. -/
 def TranscriptMatches {U m : ℕ} (ops : List (Op U)) (tr : List (Label U m)) : Prop :=
