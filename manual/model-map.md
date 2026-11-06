@@ -161,6 +161,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `vp` | [Valiant VP and polynomial families](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `vnp` | [Valiant VNP and p-projection completeness](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `waring` | [Waring sums of powers](circuits-logic-and-other-models/index.md) | algebraic-circuits |
+| `matrix-multiplication-exponent` | [Matrix multiplication exponent, tensor rank and degeneration](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `sum-of-terms` | [Dictionary sum-of-terms circuits](circuits-logic-and-other-models/index.md) | circuits |
 | `rational-formula` | [Noncommutative rational formulas with partial evaluation](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `decomposable-dag` | [Smooth decomposable set-of-assignments DAGs](circuits-logic-and-other-models/index.md) | networks |
