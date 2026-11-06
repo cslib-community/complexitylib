@@ -2862,6 +2862,7 @@ public import Complexity.Computability.WordRAM.SymbolicExec.Call
 public import Complexity.Computability.WordRAM.SymbolicExec.Init
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Computability.WordRAM.Trace
+public import Complexity.Computability.WordRAM.TraceBounds
 public import Complexity.Computability.WordRAM.Turing
 public import Complexity.Computability.WordRAM.Turing.ListOutput
 public import Complexity.Computability.WordRAM.Turing.Overhead
@@ -2878,6 +2879,9 @@ public import Complexity.Cryptanalysis.AddXNORFlipWeight
 public import Complexity.Cryptanalysis.AddXNORGuard
 public import Complexity.Cryptanalysis.AddXNORGuardedChain
 public import Complexity.Cryptanalysis.AddXNORNPComplete
+public import Complexity.Cryptanalysis.AddXNORNative
+public import Complexity.Cryptanalysis.AddXNORNativeResources
+public import Complexity.Cryptanalysis.AddXNORNativeRun
 public import Complexity.Cryptanalysis.AddXNORParity
 public import Complexity.Cryptanalysis.AddXNORReachability
 public import Complexity.Cryptanalysis.AddXNORRuns

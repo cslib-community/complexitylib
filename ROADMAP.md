@@ -41,13 +41,21 @@ objective remains open. The actual guard-based polynomial-time NP-completeness
 reduction, every positive rational width restriction, and the direct linear-width
 3-SAT map are implemented, with explicit encoding-length bounds. Theorem 2's
 sparsification/disjunction resource refinement, exact reduction multiplicity,
-native bit-runtime/working-space certificates, small-operand bounds, streaming
-class enumeration and full dissection time/space certificates, and ideal-chain
+multitape bit-runtime certificates, native meet-in-the-middle resources, small-operand
+bounds, streaming class enumeration and full dissection time/space certificates,
+and ideal-chain
 search/decision lower bounds still need proofs. Executable bit-table reachability
 with recursive pointer/Boolean cost bounds, exact forward/backward class-counter
 DP and computed balance, both uniform per-class means, and the exact expected
 operator-flip weight are implemented. The pointer/Boolean and counter-operation
-models do not replace native bit-runtime or peak-space certificates. Exact witness search with concrete word-step/trie
+models do not replace native bit-runtime or peak-space certificates. The actual fixed
+WordRAM reachable-state array program now has an unrestricted standard-input-to-halt
+correctness theorem, charged initialization and iteration, and a complete access-transcript
+storage bound: at most $45(q+1)2^m$ instructions and
+$(6\cdot2^m+4q+42)(\lfloor\log_2(3\cdot2^m+2q+12)\rfloor+1)$ stored bits including
+registers. This is a native WordRAM endpoint, not a multitape bit-time or sparse-list
+certificate; the broader missing inventory above remains open. Exact witness search
+with concrete word-step/trie
 operation counts, uniform solution counts and planted size bias, parity/Hamming
 geometry, and all of Lemma 7's difference propagation are implemented. Lemma 10's
 literal lazy simulator has a checked injectivity obstruction; this invalidates

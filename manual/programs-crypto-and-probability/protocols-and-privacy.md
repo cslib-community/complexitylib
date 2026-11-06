@@ -371,6 +371,48 @@ bound, not Observation 1's multitape bit-runtime or a peak-space certificate.
 in the same source model.
 Do not use it as the missing native exact-algorithm endpoint.
 
+For a native implementation, import
+[AddXNORNativeResources.lean](../../Complexity/Cryptanalysis/AddXNORNativeResources.lean)
+and use `Native.encoded_answers` or `Native.encoded_time_space` in the
+`Cslib.Cryptanalysis.AddXNOR` namespace. The complete
+[native client](../../ComplexityTests/AddXNORNative.lean) starts from ordinary
+`Data.init` input and proves actual flat-program halting, unrestricted
+solvability and a bound on the full memory-access transcript. From the repository
+root with the pinned Lean toolchain installed, first build its dependencies, then
+check the client:
+
+```bash
+scripts/build.sh --wfail --iofail Complexity.Cryptanalysis.AddXNORNativeResources
+lake env lean -DwarningAsError=true ComplexityTests/AddXNORNative.lean
+```
+
+The kernel evaluations should accept wraparound and XNOR cases, reject an
+unreachable target, and handle three buffer exchanges, empty chains and width
+zero. The generic examples cover arbitrary widths and operand lists.
+
+`Native.encodeInput as s t` consists of width, initial word, target, operand
+count and the actual operands. The standard input convention supplies the length
+in cell 0; the program reads the four header words in cells 1--4 and the operands
+starting at cell 5. Its 56 fixed instructions include the final halt. All header
+reads, modulus construction, zero filling, table updates, buffer exchanges and
+target lookup are charged. It retains two reusable Boolean arrays after the
+input, with 18 registers and physical word width
+$W=\lfloor\log_2(3\cdot2^m+2q+12)\rfloor+1$. The input-fit theorem is
+unconditional on typed instances; no initial table, desired answer or runtime
+bound is a premise. `encoded_time_space` derives at most $45(q+1)2^m$ native
+instructions and at most $(6\cdot2^m+4q+42)W$ bits for accessed cells plus
+registers. The storage proof bounds every cell ever accessed, including temporary
+writes, rather than just the final changed cells.
+
+These are standard-basis WordRAM instruction and word-storage bounds. A flag
+occupies one $W$-bit word; it is not packed into one bit. No multitape bit-time
+simulation, sorted-list output-sensitive bound, small-operand algorithm,
+meet-in-the-middle native certificate or streaming dissection follows from this
+array program. If using another input representation, provide the conversion
+and charge it separately; the complete client uses the checked representation
+above. The earlier pointer-table and class-counter interfaces retain their
+stated source-level resource contracts.
+
 Import [AddXNORClasses.lean](../../Complexity/Cryptanalysis/AddXNORClasses.lean)
 for forward/backward low-bit class counts and the exact `classBalance` maximum.
 `WordTable.classCounters` and `WordTable.backwardCounters` compute all counts
