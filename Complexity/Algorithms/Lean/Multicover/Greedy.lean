@@ -174,6 +174,22 @@ theorem gain_antitone {d d' : Demand E} (h : ∀ e, d e ≤ d' e) (a : Oracle E)
     | none => []
     | some a => a :: run as t (reduce d a)
 
+omit [Fintype E] in
+/-- Every emitted call is one of the listed input oracles. -/
+theorem mem_run (as : List (Oracle E)) (t : ℕ) (d : Demand E)
+    {a : Oracle E} (ha : a ∈ run as t d) : a ∈ as := by
+  induction t generalizing d with
+  | zero => simp [run] at ha
+  | succ t ih =>
+    simp only [run] at ha
+    cases hc : choose d as with
+    | none => simp [hc] at ha
+    | some b =>
+      simp only [hc, List.mem_cons] at ha
+      rcases ha with rfl | ha
+      · exact ((choose_spec d as).2 a hc).1
+      · exact ih _ ha
+
 /-- Apply a whole emitted batch to the residual requirements. -/
 @[expose] def residual : Demand E → List (Oracle E) → Demand E
   | d, [] => d

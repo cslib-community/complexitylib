@@ -297,7 +297,13 @@ in [the bibliography](../../references.bib). The checked clients are in
   [threshold client](../../ComplexityTests/StochasticOraclePartialCoverThreshold.lean)
   with `lake build ComplexityTests.StochasticOraclePartialCoverThreshold` for
   exact-power, between-power and zero-demand cases and compiled selector execution.
-  Native binary time/space, token-bill/deadline execution, asymptotic approximation
+  `rationalBatch_execution` derives the emitted calls’ total realized bill cap
+  and parallel completion by `D` from individual token caps and cutoffs at most `D`.
+  Bills and latencies may depend arbitrarily on outcomes; using a full-measure
+  outcome subtype gives the almost-sure interpretation. All calls start together,
+  and local computation is excluded from this deadline. The client checks
+  correlated outcome-dependent bills and latencies on a three-call batch.
+  Native binary time/space, response-law/resource composition, asymptotic approximation
   consequences and hardness transfer remain open, as do Theorems 5–6.
   From a configured checkout, check the complete
   [StochasticOracleMulticoverGreedy](../../ComplexityTests/StochasticOracleMulticoverGreedy.lean)

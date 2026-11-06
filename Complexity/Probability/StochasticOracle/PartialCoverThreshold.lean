@@ -23,6 +23,7 @@ The search is executable; no binary time or space bound is claimed.
 
 * `rationalRepetitions_eq`: exact agreement with the real-log ceiling convention.
 * `pow_le_iff_rationalRepetitions_le`: minimality of the computed threshold.
+* `rationalBatch_execution`: emitted-call pathwise billing and parallel deadline.
 -/
 
 public section
@@ -86,5 +87,43 @@ theorem rationalBatch_eq {E : Type} [DecidableEq E] [Fintype E]
     (as : List (Oracle E)) (q δ : ℚ) (hq : 0 < q) (hqone : q < 1) (hδ : 0 < δ) :
     rationalBatch as q δ hq hqone hδ = batch as (repetitions (q : ℝ) (δ : ℝ)) := by
   rw [rationalBatch, rationalRepetitions_eq]
+
+/-- Pathwise billing and parallel deadline for the actual rational-threshold output.
+All calls are issued together. `tokens` and `latency` may depend arbitrarily on
+an outcome, including the responses; only individual call caps are assumed.
+Taking `Ω` to be a full-measure subset gives the source's almost-sure statement.
+This does not charge local computation against the oracle deadline. -/
+theorem rationalBatch_execution {E Ω : Type} [DecidableEq E] [Fintype E]
+    (as : List (Oracle E)) (q δ : ℚ) (hq : 0 < q) (hqone : q < 1) (hδ : 0 < δ)
+    (D : ℝ)
+    (tokens latency : Fin (rationalBatch as q δ hq hqone hδ).length → Ω → ℝ)
+    (cutoff : Oracle E → ℝ)
+    (htokens : ∀ i ω, tokens i ω ≤
+      ((rationalBatch as q δ hq hqone hδ).get i).cost)
+    (hlatency : ∀ i ω, latency i ω ≤
+      cutoff ((rationalBatch as q δ hq hqone hδ).get i))
+    (hdeadline : ∀ a ∈ as, cutoff a ≤ D) :
+    ∀ ω, (∑ i, tokens i ω) ≤
+        (bill (batch as (repetitions (q : ℝ) (δ : ℝ))) : ℝ) ∧
+      ∀ i, latency i ω ≤ D := by
+  intro ω
+  have hsub : ∀ a ∈ rationalBatch as q δ hq hqone hδ, a ∈ as := by
+    intro a ha
+    exact mem_run as _ _ ha
+  constructor
+  · calc
+      (∑ i, tokens i ω) ≤ ∑ i,
+          (((rationalBatch as q δ hq hqone hδ).get i).cost : ℝ) :=
+        Finset.sum_le_sum fun i _ => htokens i ω
+      _ = (bill (rationalBatch as q δ hq hqone hδ) : ℝ) := by
+        rw [← List.sum_ofFn]
+        have h := List.ofFn_getElem_eq_map
+          (rationalBatch as q δ hq hqone hδ) (fun a : Oracle E => (a.cost : ℝ))
+        simpa only [List.get_eq_getElem, bill, Rat.cast_list_sum, List.map_map,
+          Function.comp_def] using
+          congrArg List.sum h
+      _ = _ := by rw [rationalBatch_eq]
+  · intro i
+    exact (hlatency i ω).trans (hdeadline _ (hsub _ (List.get_mem _ _)))
 
 end Cslib.Algorithms.Lean.Multicover
