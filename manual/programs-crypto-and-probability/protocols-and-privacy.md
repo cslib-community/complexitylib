@@ -508,6 +508,68 @@ buffer exchanges and halt are charged. This is the counter preprocessing part
 of Lemma 8. It does not certify native quarter enumeration, dictionary lifetimes,
 computed-balance traversal or the integrated Theorem 7 peak-space bound.
 
+The native quarter components are in
+[AddXNORNativeBuckets.lean](../../Complexity/Cryptanalysis/AddXNORNativeBuckets.lean),
+[AddXNORNativeQuery.lean](../../Complexity/Cryptanalysis/AddXNORNativeQuery.lean) and
+[AddXNORNativeEmit.lean](../../Complexity/Cryptanalysis/AddXNORNativeEmit.lean).
+Import the last module to use all three in namespace
+`Cslib.Cryptanalysis.AddXNOR.Native.Quarter`. From the repository root after
+[normal setup](../workflows/getting-started.md), check the complete
+[native quarter client](../../ComplexityTests/AddXNORNativeEnumeration.lean):
+
+```bash
+scripts/build.sh --wfail --iofail Complexity.Cryptanalysis.AddXNORNativeEmit
+lake env lean -DwarningAsError=true ComplexityTests/AddXNORNativeEnumeration.lean
+```
+
+`prepare_exec` takes original full-width quarter operands in memory and explicit
+layout registers. The operand interval must avoid the head and record regions.
+`prepare` clears $2^p$ head cells by native stores, computes the numeric iteration
+bound by a shift, and visits all $2^a$ packed operator indices. The least
+significant bit acts first; zero selects addition and one selects XNOR.
+Every record occupies three words: next bucket pointer, full state and original
+operator index. A positive record base and disjoint head/record regions give
+`preparedMemory_linked`, which derives the null-terminated bucket lists from
+those actual stores. Equal states retain distinct indexed witnesses. Dirty head
+and record memory is allowed. The complete preparation instruction bound is
+$4\cdot2^p+2^a(11a+22)+10$, with one further instruction for halt.
+
+`prepare_resources` chooses `preparationWidth`, fits addresses and packed indices,
+and certifies bounded words and exact nonzero support at every continuing prefix
+through halt. For an initial support cover $S$ and preparation bound $T$, its
+conservative stored-bit bound is $(|S|+T+32)W$. This is already
+$O^*(2^a+2^p)$ for quarter preparation, including dirty unread input and 32
+registers. It uses actual stores, rather than the address capacity as occupancy.
+A failed fit usually means the physical width fits states but not $2^a$, a
+pointer or an intermediate sum. Supply a sufficient width or use the proved
+`preparationWidth_fits`; verify `x.Bounded W` separately for all initial data.
+
+`queryBucket_exec` consumes the reversed projected second-quarter operands in a
+read-only interval. It charges native operator-bit reversal, inverse evaluation
+by complement conjugacy and one head-array load, within $18b+23$ instructions.
+Construction of that reversed projected array belongs to the native projection
+API above and is an explicit prerequisite here. `emitLoop_exec` follows only
+the returned linked records and evaluates the full second quarter for each hit.
+It writes the full resulting state and both packed quarter indices, advances an
+actual output pointer by three and terminates at zero, within
+$H(11b+20)+2$ instructions for $H$ hits. The bucket and full second-quarter
+operands must lie below a read-only boundary, and output must start above it;
+this prevents output from corrupting later pointer or operand reads.
+`emittedMemory_read` specifies all three physical output cells. The client
+executes preparation, an inverse query and hit recovery consecutively, checks
+collisions, empty quarters, width zero, leading zero operator bits, overflow
+rejection and an unread sentinel, and instantiates the generic resource and
+emission contracts.
+
+These are native quarter components with charged evaluation, filtering,
+pointer/list administration and output. The full second-quarter/class iterator,
+full-state dictionary construction and lookup, reusable per-class dictionary
+arena, joint counter/balance execution and one global decision/witness run are
+still unproved. In particular, the materializing hit emitter is for retained
+records; it does not justify retaining the opposite streamed class. These
+components do not complete Lemma 8 or Theorem 7, establish a global peak-space
+bound in terms of the computed $\mu_p$, or prove a multitape bit-operation bound.
+
 Import [AddXNORNativeBalance.lean](../../Complexity/Cryptanalysis/AddXNORNativeBalance.lean)
 for the native balance traversal. In namespace
 `Cslib.Cryptanalysis.AddXNOR.Native.Balance`, `scan_classes_exec` consumes two

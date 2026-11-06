@@ -68,6 +68,15 @@ prefix preserves the entire memory, so the scan adds eighteen registers and no
 occupied memory cells. This certificate requires the already constructed arrays;
 their joint original-input execution with class streaming and dictionary storage
 is still missing. It does not complete the requested integrated endpoint.
+Native first-quarter construction now clears actual low-key heads and stores
+all indexed full-state/witness records with charged instruction, halt, word-fit
+and prefix-support certificates. Native operator reversal, inverse head lookup
+and pointer-based full-state recovery on bucket hits are also proved and checked
+in a consecutive native pipeline. The full second-quarter/class iterator,
+full-state dictionary allocation/sorting/lookup, reusable class arena and the
+single global counter/balance/decision/witness execution remain unproved. These
+components do not close Lemma 8 or Theorem 7; their preparation-space certificate
+must not be applied to the materializing emitter across classes.
 The pointer/Boolean and counter-operation
 models do not replace native bit-runtime or peak-space certificates. The actual fixed
 WordRAM reachable-state array program now has an unrestricted standard-input-to-halt

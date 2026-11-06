@@ -100,6 +100,17 @@ theorem eval_append {m : ℕ} (xs ys : List (Bool × BitVec m)) (s : BitVec m) :
   | nil => rfl
   | cons x xs ih => rcases x with ⟨b, a⟩; simp only [List.cons_append, eval, ih]
 
+/-- Inverse evaluation is forward evaluation of reversed steps, conjugated by
+complementation. This applies to operator/operand pairs together. -/
+theorem backward_eq_not_eval_reverse {m : ℕ} (xs : List (Bool × BitVec m)) (t : BitVec m) :
+    backward xs t = ~~~(eval xs.reverse (~~~t)) := by
+  induction xs with
+  | nil => simp [backward, eval]
+  | cons x xs ih =>
+    obtain ⟨b, a⟩ := x
+    rw [backward, ih, List.reverse_cons, eval_append]
+    simpa only [eval] using unstep_not b (eval xs.reverse (~~~t)) a
+
 /-- Exact forward/backward meeting criterion at any cut. -/
 theorem eval_append_eq_iff {m : ℕ} (xs ys : List (Bool × BitVec m))
     (s t : BitVec m) : eval (xs ++ ys) s = t ↔ eval xs s = backward ys t := by
