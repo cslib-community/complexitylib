@@ -41,11 +41,11 @@ the quasi-polynomial size and polylogarithmic fan-in of [BeigelTarui1994, Theore
 The source states the collapse for one arbitrary modulus `m` per level, requiring each level
 polynomial to be `0` or `1` modulo `m`. Here each level has a prime modulus, and Fermat's little
 theorem normalizes arbitrary integer values, so no `0`/`1` promise is needed. Composite moduli
-reduce to prime moduli by the source's Lemma 2.1 and the Chinese remainder theorem. That
-reduction, and the passage from ACC⁰ circuits (`Circuits.Boolean.AC0Mod`) to modular polynomial
-layers ([BeigelTarui1994, Lemma 2.5]), are not formalized here. The collapsed circuit reads all
-slots of `T`; a circuit over the inputs alone also needs a restriction step that fixes the
-non-input slots to their initial value `false` and drops the AND gates meeting them.
+reduce to prime moduli through prime-power digits ([BeigelTarui1994, Lemma 2.1]). That reduction,
+and the passage from ACC⁰ circuits (`Circuits.Boolean.AC0Mod`) to towers of these layers, are in
+`Complexity.Computability.Circuit.Boolean.SymAnd.ACC0`. The collapsed circuit reads all slots of
+`T`; restricting the non-input slots to their initial value `false` and dropping the AND gates
+that meet them (`SymAnd.restrict`) gives a circuit over the inputs alone.
 
 ## Main definitions
 
@@ -99,6 +99,11 @@ variable {T : Type*}
 /-- Running `L :: Ls` applies `L` after `Ls`. -/
 @[simp] theorem run_cons (L : ModPolyLayer T) (Ls : List (ModPolyLayer T)) (v : T → Bool) :
     run (L :: Ls) v = L.step (run Ls v) := rfl
+
+/-- Running `Ls ++ Ls'` runs `Ls` after `Ls'`. -/
+theorem run_append (Ls Ls' : List (ModPolyLayer T)) (v : T → Bool) :
+    run (Ls ++ Ls') v = run Ls (run Ls' v) := by
+  simp only [run, List.foldr_append]
 
 end ModPolyLayer
 
