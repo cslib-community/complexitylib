@@ -38,7 +38,7 @@ for public-coin protocols (`Cslib.Communication.PublicCoin`). Its memory bound
 Since the update function of a drawn algorithm may depend on the random choices, the random bits
 are free: they are not charged to the memory. This is the convention under which communication
 lower bounds transfer. An algorithm that tosses fresh coins at each item becomes such a
-distribution only after it also counts the items it has read, which costs `⌈log₂ (m + 1)⌉`
+distribution, for example after it counts the items it has read, which costs `⌈log₂ (m + 1)⌉`
 more bits on streams of at most `m` items; so lower bounds of order `n` still apply to it, up to
 that additive term. `μ.Solves ε R m` says that on every stream of at most `m` items, the answer of
 a random algorithm drawn from `μ` is related to the stream by `R` except with probability at most

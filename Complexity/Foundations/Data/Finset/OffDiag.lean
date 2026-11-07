@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate (Mathlib, Mathlib.Algebra.BigOperators.Ring.Finset)
 
+public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.Data.Finset.Prod
 import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
