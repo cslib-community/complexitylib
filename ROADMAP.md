@@ -545,7 +545,8 @@ index links to canonical definitions rather than keeping a second set.
   and registry does not complete that broader scope.
   For Cook–Mertz itself: malformed-input handling and the refined
   `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
-- **Time–space lower bounds for nondeterministic linear time** ([#2896]): simultaneous
+- **Time–space lower bounds for nondeterministic linear time**
+  ([#2896](https://github.com/cslib-community/complexitylib/issues/2896)): simultaneous
   `TISP(t, s)`, two-quantifier alternating time `Σ₂TIME(t)` (bridged to `Σ₂ᵖ`) and the slowdown
   lemma `NTIME(n) ⊆ DTIME(t') ⇒ Σ₂TIME(t) ⊆ NTIME(t'(O(t)))` are in
   [`TimeSpace/Slowdown.lean`](Complexity/Computability/Complexity/Classes/TimeSpace/Slowdown.lean).
@@ -1278,4 +1279,3 @@ not planned, not as proved.
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
 [#2866]: https://github.com/cslib-community/complexitylib/issues/2866
-[#2896]: https://github.com/cslib-community/complexitylib/issues/2896

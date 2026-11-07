@@ -52,16 +52,17 @@ theorem oddOnes_mem_SigmaTwoTIME : {w | oddOnes w = true} ∈ SigmaTwoTIME encBi
 
 /-- The complement of parity is in `Σ₂TIME(n)`, through co-nondeterministic linear time. -/
 example : {w | oddOnes w = true}ᶜ ∈ SigmaTwoTIME encBits id :=
-  compl_mem_SigmaTwoTIME (DTIME_subset_NTIME (TISP_subset_DTIME oddOnes_mem_TISP))
+  compl_mem_SigmaTwoTIME_of_mem_NTIME
+    (DTIME_subset_NTIME (TISP_subset_DTIME oddOnes_mem_TISP))
 
 /-- Parity is in `Σ₂ᵖ`, through the bridge to the polynomial hierarchy. -/
 example : {w | oddOnes w = true} ∈ SigmaP 2 encBits :=
   mem_SigmaP_two_iff_exists_mem_SigmaTwoTIME.mpr
     ⟨1, SigmaTwoTIME_mono (fun n => by simp) oddOnes_mem_SigmaTwoTIME⟩
 
-/-- The slowdown lemma at the exponents of the Arora–Barak lower bound: if nondeterministic
-linear time is in `TISP((n + 1) ^ (6 / 5), s)`, written `t' m ^ 5 ≤ C * (m + 1) ^ 6`, then
-`Σ₂TIME((n + 1) ^ 40) ⊆ NTIME((n + 1) ^ 48)`. -/
+/-- The slowdown lemma at the Arora–Barak ratio `6 / 5`, scaled by 5 to natural exponents
+(`n ^ 8 → n ^ 40`, `n ^ 9.6 → n ^ 48`): if nondeterministic linear time is in `TISP(t', s)` with
+`t' m ^ 5 ≤ C * (m + 1) ^ 6`, then `Σ₂TIME((n + 1) ^ 40) ⊆ NTIME((n + 1) ^ 48)`. -/
 example {t' s : ℕ → ℕ} {C : ℕ} (hN : NTIME encBits id ⊆ TISP encBits t' s)
     (ht' : ∀ m, t' m ^ 5 ≤ C * (m + 1) ^ 6) :
     SigmaTwoTIME encBits (fun n => (n + 1) ^ 40) ⊆ NTIME encBits (fun n => (n + 1) ^ 48) :=

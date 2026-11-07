@@ -42,7 +42,7 @@ time-constructible. The proof does not pad instances explicitly. Instead, it app
 hypothesis `NTIME(n) ⊆ DTIME(t')` to the *universal block* `B'`: the set of words `z` such that
 some `v` of length `|dropFrame z|` makes `V (unframe z, (dropFrame z, v))` false. An instance of
 `B'` of the form `z = frame y ++ u` carries the existential certificate `u` itself, so its length
-`2 * n + 1 + L y` is at least `t n` and at most `O(n + t n)`. The verifier of `B'` runs `V` once
+`2 * n + 1 + L y` is at least `c * t n` and at most `O(n + t n)`. The verifier of `B'` runs `V` once
 and is linear in `|z|`, because the certificate `v` is not longer than `z`. Hence `B'` is in
 `NTIME(n)`, so in `DTIME(t')`, and a nondeterministic machine for the original problem guesses
 `u` of length `L y`, then decides `frame y ++ u ∉ B'` deterministically within
@@ -58,7 +58,8 @@ not only on the padded ones.
 * `Cslib.Complexity.SigmaTwoTIME_subset_NTIME`: `NTIME(n) ⊆ DTIME(t')` implies
   `Σ₂TIME(t) ⊆ NTIME(τ)` whenever `n + t n + t'(O(n + t n)) = O(τ n)`.
 * `Cslib.Complexity.SigmaTwoTIME_succ_pow_subset_NTIME_succ_pow`: the polynomial form, for
-  `t' m ^ q = O((m + 1) ^ p)`: `Σ₂TIME((n + 1) ^ a) ⊆ NTIME((n + 1) ^ b)` whenever `a * p ≤ b * q`.
+  `t' m ^ q = O((m + 1) ^ p)` with `q > 0`: `Σ₂TIME((n + 1) ^ a) ⊆ NTIME((n + 1) ^ b)` whenever
+  `2 ≤ a ≤ b` and `a * p ≤ b * q`.
 
 ## References
 
@@ -118,7 +119,7 @@ theorem SigmaTwoTIME_subset_NTIME {t t' τ : ℕ → ℕ} (ht : TimeConstructibl
   -- the certificate length, from the time-constructibility of `t`
   have hL : ComputableInO (fun y : List Bool => c * 2 ^ Nat.size (t y.length)) encBits encUnary
       (fun y => t y.length) fun y => t y.length :=
-    (ht.computableTidilyInO_unaryClock c).computableInO.of_enc_eq fun _ => rfl
+    (ht.computableInO_unaryClock c).of_enc_eq fun _ => rfl
   obtain ⟨D, hD⟩ := hτ (2 * c + 3)
   have hbound (n : ℕ) : c * t n + c ≤ c * 2 ^ Nat.size (t n) ∧
       c * 2 ^ Nat.size (t n) ≤ 2 * c * t n + c := by
@@ -152,8 +153,9 @@ theorem SigmaTwoTIME_subset_NTIME {t t' τ : ℕ → ℕ} (ht : TimeConstructibl
     not_not, hu]
 
 /-- **The slowdown lemma, polynomial form.** If nondeterministic linear time is in deterministic
-time `t'` with `t' m ^ q ≤ C * (m + 1) ^ p`, that is `t' m = O(m ^ (p / q))`, then
-`Σ₂TIME((n + 1) ^ a) ⊆ NTIME((n + 1) ^ b)` whenever `a * p ≤ b * q`. -/
+time `t'` with `t' m ^ q ≤ C * (m + 1) ^ p` for some `q > 0`, that is `t' m = O(m ^ (p / q))`, then
+`Σ₂TIME((n + 1) ^ a) ⊆ NTIME((n + 1) ^ b)` whenever `2 ≤ a ≤ b` and `a * p ≤ b * q`. The bound
+`2 ≤ a` makes `(n + 1) ^ a` time-constructible. -/
 theorem SigmaTwoTIME_succ_pow_subset_NTIME_succ_pow {t' : ℕ → ℕ} {p q a b C : ℕ}
     (hN : NTIME encBits id ⊆ DTIME encBits t') (ht' : ∀ m, t' m ^ q ≤ C * (m + 1) ^ p)
     (hq : 0 < q) (ha : 2 ≤ a) (hab : a ≤ b) (hpq : a * p ≤ b * q) :

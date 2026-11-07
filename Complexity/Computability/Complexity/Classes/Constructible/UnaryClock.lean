@@ -36,7 +36,7 @@ budget of `MultiTape.Plumbing.PrepareClock`.
 
 ## Main results
 
-* `Cslib.Complexity.TimeConstructible.computableTidilyInO_unaryClock`: the clock word of
+* `Cslib.Complexity.TimeConstructible.computableInO_unaryClock`: the clock word of
   `c * 2 ^ Nat.size (T n)` true bits within time and space `O(T n)`.
 * `Cslib.Complexity.TimeConstructible.exists_prepare_unaryClock`: a unary clock of
   `c * 2 ^ Nat.size (T n)` cells within `O(T n)` steps.
@@ -127,12 +127,10 @@ namespace Cslib.Complexity
 
 open Turing Turing.MultiTapeTM
 
-/-- **A unary clock within linear time.** For a time-constructible `T` and a constant `c`, the word
-of `c * 2 ^ Nat.size (T n)` true bits is computable tidily within time and space `O(T n)` on inputs
-of length `n`. It has between `c * (T n + 1)` and `c * (2 * T n + 1)` bits (`Nat.lt_size_self`,
-`Nat.two_pow_size_le`). -/
-theorem TimeConstructible.computableTidilyInO_unaryClock {T : ℕ → ℕ} (hT : TimeConstructible T)
-    (c : ℕ) :
+/-- The unary clock word of `c * 2 ^ Nat.size (T n)` true bits, tidily within time and space
+`O(T n)`. -/
+private theorem TimeConstructible.computableTidilyInO_unaryClock {T : ℕ → ℕ}
+    (hT : TimeConstructible T) (c : ℕ) :
     ComputableTidilyInO (fun x : List Bool => List.replicate (c * 2 ^ Nat.size (T x.length)) true)
       encBits encBits (fun x => T x.length) fun x => T x.length := by
   have hbits : ComputableTidilyInO (fun x : List Bool => encNat (T x.length)) encBits encBits
@@ -154,6 +152,16 @@ theorem TimeConstructible.computableTidilyInO_unaryClock {T : ℕ → ℕ} (hT :
     rw [e]
     omega
   exact hclock.mono (2 * c + 2) hlinear hlinear
+
+/-- **A unary clock word within linear time.** For a time-constructible `T` and a constant `c`, the
+word of `c * 2 ^ Nat.size (T n)` true bits is computable within time and space `O(T n)` on inputs
+of length `n`. It has between `c * (T n + 1)` and `c * (2 * T n + 1)` bits (`Nat.lt_size_self`,
+`Nat.two_pow_size_le`). -/
+theorem TimeConstructible.computableInO_unaryClock {T : ℕ → ℕ} (hT : TimeConstructible T)
+    (c : ℕ) :
+    ComputableInO (fun x : List Bool => List.replicate (c * 2 ^ Nat.size (T x.length)) true)
+      encBits encBits (fun x => T x.length) fun x => T x.length :=
+  (hT.computableTidilyInO_unaryClock c).computableInO
 
 /-- **A unary clock of linear length.** For a time-constructible `T` and a constant `c`, one
 deterministic machine with finitely many states writes `c * 2 ^ Nat.size (T n)` true cells on its

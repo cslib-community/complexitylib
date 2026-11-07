@@ -30,9 +30,11 @@ for every certificate length `L ≥ c * t n + c`, where `n` is the length of the
 `a ∈ A` exactly when some `u` of length `L` makes `V (a, (u, v))` true for every `v` of length `L`.
 This is the class `Σ₂TIME(t)` of [Arora and Barak, Section 5.4][AroraBarak09], in the verifier
 form of `Cslib.Complexity.exists_verifier_of_mem_NTIME`: the certificate blocks are as long as the
-alternating computation, and the verifier pays linearly for reading them. For time-constructible
-`t` this is the class of problems decided by alternating machines within time `O(t n)` that start
-existentially and alternate at most once.
+alternating computation, and the verifier pays linearly for reading them. Informally, for
+time-constructible `t` with `t n ≥ n`, this is the class of problems decided by alternating machines
+within time `O(t n)` that start existentially and alternate at most once; there is no Lean bridge to
+`Turing.MultiTapeATM`. Below linear time the classes differ, since the verifier always reads the
+instance: `Σ₂TIME(0)` contains linear deterministic time.
 
 Every certificate length above the threshold works, so that the class is monotone in `t` and so
 that a verifier is linear on every input, also on certificates too short to pay for the
@@ -55,8 +57,9 @@ The union over polynomial bounds is the second level `Σ₂ᵖ` of the polynomia
   are long enough suffices.
 * `Cslib.Complexity.SigmaTwoTIME_mono`, `Cslib.Complexity.SigmaTwoTIME_mono_of_le_mul_add`:
   monotonicity.
-* `Cslib.Complexity.NTIME_subset_SigmaTwoTIME`, `Cslib.Complexity.compl_mem_SigmaTwoTIME`:
-  nondeterministic and co-nondeterministic time are in `Σ₂TIME`.
+* `Cslib.Complexity.NTIME_subset_SigmaTwoTIME`,
+  `Cslib.Complexity.compl_mem_SigmaTwoTIME_of_mem_NTIME`: nondeterministic and
+  co-nondeterministic time are in `Σ₂TIME`.
 * `Cslib.Complexity.mem_SigmaP_two_iff_exists_mem_SigmaTwoTIME`: `Σ₂ᵖ = ⋃ₖ Σ₂TIME(n ^ k)`.
 
 ## References
@@ -159,7 +162,8 @@ theorem NTIME_subset_SigmaTwoTIME {t : ℕ → ℕ} : NTIME enc t ⊆ SigmaTwoTI
 
 /-- **Co-nondeterministic time is in `Σ₂TIME`**, with an existential block that the verifier
 ignores. -/
-theorem compl_mem_SigmaTwoTIME {t : ℕ → ℕ} {A : Set α} (hA : A ∈ NTIME enc t) :
+theorem compl_mem_SigmaTwoTIME_of_mem_NTIME {t : ℕ → ℕ} {A : Set α}
+    (hA : A ∈ NTIME enc t) :
     Aᶜ ∈ SigmaTwoTIME enc t := by
   obtain ⟨V, c, hV, hA⟩ := exists_verifier_of_mem_NTIME hA
   refine ⟨fun x => !V (x.1, x.2.2), c,
