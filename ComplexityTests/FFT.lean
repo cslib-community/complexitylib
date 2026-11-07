@@ -18,9 +18,10 @@ multiplication are evaluated concretely and agree with the DFT and with polynomi
 multiplication. The hypotheses of the correctness theorems hold at these parameters, so the
 theorems are not vacuous. Over `ZMod 15`, where `4 ^ 2 = 1 ≠ -1`, the program and the DFT
 differ, so the hypothesis `ω ^ (2 ^ k) = -1` of `eval_fft` cannot be dropped, and `4` is a root
-of unity there that is not principal. Over `ℂ`, `Complex.I` gives an instance of the
-primitive-root form of the theorem. The cost formulas are checked against counted queries,
-including under a dishonest oracle, and the `7 N log₂ N` bound is applied at a concrete length.
+of unity there that is not principal. In `ZMod 2`, `1` is principal but not primitive. Over
+`ℂ`, `Complex.I` gives an instance of the primitive-root form of the theorem. The cost formulas
+are checked against counted queries, including under a dishonest oracle, and the `7 N log₂ N`
+bound is applied at a concrete length.
 -/
 
 namespace ComplexityTests.FFT
@@ -91,6 +92,21 @@ example : (4 : ZMod 15) ^ 4 = 1 ∧ ¬IsPrincipalRoot (4 : ZMod 15) 4 := by
   have := h.geom_sum_eq_zero 2 (by norm_num) (by norm_num)
   revert this
   decide
+
+/-! ### Principal versus primitive -/
+
+/-- `4` is a primitive fourth root of unity modulo `17`, since it is principal and `4 ≠ 0`. -/
+example : IsPrimitiveRoot (4 : ZMod 17) (2 ^ (1 + 1)) :=
+  (IsPrincipalRoot.of_pow_two_pow_eq_neg_one (k := 1) (by decide)).isPrimitiveRoot (by decide)
+
+/-- In `ZMod 2`, `1` is a principal square root of unity (`1 = -1`) that is not primitive: the
+hypothesis `(n : R) ≠ 0` of `IsPrincipalRoot.isPrimitiveRoot` is needed. -/
+example :
+    IsPrincipalRoot (1 : ZMod 2) (2 ^ (0 + 1)) ∧ ¬IsPrimitiveRoot (1 : ZMod 2) (2 ^ (0 + 1)) :=
+  ⟨IsPrincipalRoot.of_pow_two_pow_eq_neg_one (by decide), fun h => by
+    have := h.eq_orderOf
+    rw [orderOf_one] at this
+    norm_num at this⟩
 
 /-! ### Complex numbers -/
 

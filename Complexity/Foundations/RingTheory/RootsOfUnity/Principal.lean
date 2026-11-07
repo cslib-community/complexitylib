@@ -18,9 +18,12 @@ import Mathlib.Data.Nat.Factorization.Basic
 An element `ω` of a commutative ring is a *principal* `n`-th root of unity when `ω ^ n = 1` and
 `∑ i < n, (ω ^ l) ^ i = 0` for every `0 < l < n`. This geometric-sum condition is what the
 inversion formula of the discrete Fourier transform needs (the summation lemma, [CLRS2009],
-Lemma 30.6). In an integral domain it is equivalent to `ω` being a primitive `n`-th root of unity,
-but in a general commutative ring it is stronger. For example `ω = 4` has multiplicative order
-`2` in `ZMod 15`, yet `1 + 4 = 5 ≠ 0`, so it is not a principal square root of unity.
+Lemma 30.6). In an integral domain every primitive `n`-th root of unity is principal
+(`IsPrimitiveRoot.isPrincipalRoot`). Conversely, a principal root is primitive whenever
+`(n : R) ≠ 0` (`IsPrincipalRoot.isPrimitiveRoot`), in any commutative ring. Neither notion
+implies the other in general. `ω = 4` is a primitive square root of unity in `ZMod 15`, yet
+`1 + 4 = 5 ≠ 0`, so it is not principal. `ω = 1` is a principal square root of unity in `ZMod 2`,
+since `1 + 1 = 0`, but it is not primitive.
 
 The radix-2 fast Fourier transform needs `ω ^ (2 ^ k) = -1`. This condition alone makes `ω` a
 principal `2 ^ (k + 1)`-th root of unity in every commutative ring
@@ -34,6 +37,7 @@ principal `2 ^ (k + 1)`-th root of unity in every commutative ring
 
 * `IsPrincipalRoot.geom_sum_pow`: `∑ i < n, (ω ^ l) ^ i` is `n` if `n ∣ l` and `0` otherwise.
 * `IsPrimitiveRoot.isPrincipalRoot`: in a domain, primitive roots are principal.
+* `IsPrincipalRoot.isPrimitiveRoot`: principal roots are primitive when `(n : R) ≠ 0`.
 * `IsPrincipalRoot.of_pow_two_pow_eq_neg_one`: `ω ^ (2 ^ k) = -1` makes `ω` a principal
   `2 ^ (k + 1)`-th root of unity.
 * `IsPrimitiveRoot.pow_two_pow_eq_neg_one`: in a domain, a primitive `2 ^ (k + 1)`-th root of
@@ -75,6 +79,15 @@ theorem geom_sum_pow (h : IsPrincipalRoot ω n) (l : ℕ) :
     have hmod : 0 < l % n := Nat.pos_of_ne_zero fun h0 => hl (Nat.dvd_of_mod_eq_zero h0)
     rw [← Nat.mod_add_div l n, pow_add, pow_mul, h.pow_eq_one, one_pow, mul_one]
     exact h.geom_sum_eq_zero _ hmod (Nat.mod_lt _ hn)
+
+/-- A principal `n`-th root of unity is primitive when `(n : R) ≠ 0`: if `ω ^ l = 1` with
+`0 < l < n`, the vanishing geometric sum of `ω ^ l` would be `n`. Without this hypothesis the
+implication fails: `1` is a principal, non-primitive square root of unity in `ZMod 2`. -/
+theorem isPrimitiveRoot (h : IsPrincipalRoot ω n) (hn : (n : R) ≠ 0) : IsPrimitiveRoot ω n := by
+  have hpos : 0 < n := Nat.pos_of_ne_zero fun h0 => hn (by rw [h0, Nat.cast_zero])
+  refine IsPrimitiveRoot.mk_of_lt ω hpos h.pow_eq_one fun l hl hln h1 => hn ?_
+  have hsum := h.geom_sum_eq_zero l hl hln
+  rwa [h1, one_geom_sum] at hsum
 
 /-- Doubling a geometric sum of length `2 ^ k`. -/
 private theorem geom_sum_two_pow_succ (x : R) (k : ℕ) :

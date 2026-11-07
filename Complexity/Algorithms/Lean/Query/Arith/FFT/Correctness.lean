@@ -159,9 +159,8 @@ theorem eval_ifft_dft {k : ℕ} {ω : α} {w : ℕ → α} (hw : ∀ j < 2 ^ k, 
     (ifft (k + 1) w nInv (dft ω a)).eval honest = a := by
   rw [eval_ifft hw hω]
   funext j
-  rw [dft_dft_neg (IsPrincipalRoot.of_pow_two_pow_eq_neg_one hω), ← mul_assoc]
-  push_cast
-  rw [hn, one_mul]
+  rw [dft_dft_neg (IsPrincipalRoot.of_pow_two_pow_eq_neg_one hω), ← mul_assoc, Nat.cast_pow,
+    Nat.cast_ofNat, hn, one_mul]
 
 /-- **FFT cyclic convolution is correct**: under the hypotheses of `eval_ifft_dft`, `cyclicMul`
 computes the cyclic convolution. -/

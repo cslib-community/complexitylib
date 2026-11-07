@@ -15,10 +15,10 @@ public import Mathlib.Data.Vector.Basic
 # The fast Fourier transform as an arithmetic query program
 
 This module defines the radix-2 Cooley–Tukey fast Fourier transform ([CooleyTukey1965];
-[CLRS2009], Section 30.2) and FFT-based cyclic convolution as programs in cslib's arithmetic query
-model `FreeM (ArithQuery α)`. Every ring addition, subtraction and multiplication is a query, and
-index arithmetic and reading the supplied tables are free. This is the convention of
-`Cslib.Query.complexMulNaive` and of Karatsuba multiplication.
+[CLRS2009], Sections 30.2–30.3) and FFT-based cyclic convolution as programs in cslib's
+arithmetic query model `FreeM (ArithQuery α)`. Every ring addition, subtraction and
+multiplication is a query, and index arithmetic and reading the supplied tables are free. This is
+the convention of `Cslib.Query.complexMulNaive` and of Karatsuba multiplication.
 
 The transform of length `2 ^ k` takes a twiddle table `w : ℕ → α`, which the correctness theorems
 assume satisfies `w j = ω ^ j` for `j < 2 ^ (k - 1)`. `Cslib.Query.fftMul` computes that table
@@ -42,7 +42,8 @@ itself, at a cost of `2 ^ k - 1` multiplications, so its cost covers all of its 
 
 * [Cooley and Tukey, *An Algorithm for the Machine Calculation of Complex Fourier
   Series*][CooleyTukey1965].
-* [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*][CLRS2009], Section 30.2.
+* [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*][CLRS2009], Sections 30.2
+  and 30.3.
 -/
 
 public section

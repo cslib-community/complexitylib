@@ -8,9 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Defs
-public import Complexity.Algorithms.Lean.Query.Arith.Lemmas
 public import Cslib.Algorithms.Lean.Query.Bounds
 public import Mathlib.Data.Nat.Log
+import Complexity.Algorithms.Lean.Query.Arith.Lemmas
 import Complexity.Algorithms.Lean.Query.FreeM.MOfFn
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.Ring
@@ -25,7 +25,7 @@ additions and subtractions weighted `c_add`:
 * the radix-2 transform of length `n = 2 ^ k` costs exactly
   `c_mul * ((n / 2) * log₂ n) + c_add * (n * log₂ n)` (`Cslib.Query.cost_fft`), the classical
   `(n / 2) log₂ n` multiplications and `n log₂ n` additive operations ([CooleyTukey1965];
-  [CLRS2009], Section 30.2);
+  [CLRS2009], Sections 30.2–30.3: one butterfly per output pair at each of the `log₂ n` levels);
 * FFT multiplication of length `N = 2 ^ (k + 1)`, including the computation of the twiddle table,
   makes `(3 / 2) N log₂ N + (5 / 2) N - 1` multiplications and `3 N log₂ N` additive operations
   (`Cslib.Query.cost_fftMul`), at most `7 N log₂ N` queries in total
@@ -45,7 +45,8 @@ additions and subtractions weighted `c_add`:
 
 * [Cooley and Tukey, *An Algorithm for the Machine Calculation of Complex Fourier
   Series*][CooleyTukey1965].
-* [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*][CLRS2009], Section 30.2.
+* [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*][CLRS2009], Sections 30.2
+  and 30.3.
 -/
 
 public section
@@ -155,7 +156,9 @@ theorem countQueries_fftMul_le [One α] (oracle : {ι : Type} → ArithQuery α 
   omega
 
 /-- **FFT multiplication makes `O(N log N)` queries**, as a cslib `UpperBound`: on inputs of
-length `N = 2 ^ (k + 1)` it makes at most `7 N log₂ N` queries under every oracle. -/
+length `N = 2 ^ (k + 1)` it makes at most `7 N log₂ N` queries under every oracle. The statement is
+for one fixed length: the input type is `Fin (2 ^ (k + 1)) → α`, so the size function is the
+constant `2 ^ (k + 1)`. A family over all lengths (with padding) is not provided. -/
 theorem fftMul_upperBound [One α] (k : ℕ) (ω nInv : α) :
     UpperBound (fun ab : (Fin (2 ^ (k + 1)) → α) × (Fin (2 ^ (k + 1)) → α) =>
         fftMul k ω nInv ab.1 ab.2)
