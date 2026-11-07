@@ -4290,6 +4290,9 @@ public import Complexity.Languages.Probabilistic.UntilBad
 public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 public import Complexity.Languages.Probabilistic.Vector
 public import Complexity.Logics.FirstOrder.Basic
+public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
+public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
+public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.LinearOrder
 public import Complexity.Logics.FirstOrder.Encoding
 public import Complexity.Logics.FirstOrder.Encoding.Layout
 public import Complexity.Logics.FirstOrder.Encoding.Sum
@@ -4360,6 +4363,7 @@ public import Complexity.Logics.FirstOrder.Projection
 public import Complexity.Logics.FirstOrder.Projection.Graph
 public import Complexity.Logics.FirstOrder.ProjectionFormula
 public import Complexity.Logics.FirstOrder.QuantifierFree
+public import Complexity.Logics.FirstOrder.QuantifierRank
 public import Complexity.Logics.FirstOrder.Reduction
 public import Complexity.Logics.FirstOrder.Reduction.Nontrivial
 public import Complexity.Logics.FirstOrder.Reduction.QuantifierFree
