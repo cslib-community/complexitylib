@@ -149,6 +149,11 @@ Arpita Ghosh, Tim Roughgarden and Mukund Sundararajan. *Universally Utility-Maxi
 
 Craig Gentry, Amit Sahai, Brent Waters. “Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based.” *CRYPTO 2013*, LNCS 8042, 75–92. https://doi.org/10.1007/978-3-642-40041-4_5 ; authors' full-version record https://eprint.iacr.org/2013/340 . Metadata/abstract checked; PDF fetch was blocked in this source pass.
 
+<a id="hartmanis1968"></a>
+## hartmanis1968
+
+Juris Hartmanis. "Computational Complexity of One-Tape Turing Machine Computations." *Journal of the ACM* 15(2), 325–339, 1968. https://doi.org/10.1145/321450.321464 . Bibliographic metadata checked through Crossref; the article body was not inspected in this pass. The manual cites it for the `n log n` lower bound on one-tape recognition of nonregular languages, as attributed in [Pighizzini 2009](#pighizzini2009), §1 and §4.
+
 <a id="hennie1965"></a>
 ## hennie1965
 
@@ -198,6 +203,11 @@ Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circui
 ## katzlindell20
 
 Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edition. CRC Press, 2020. Bibliographic metadata and section titles checked against the authors' 3rd-edition table of contents and preface: https://www.cs.umd.edu/~jkatz/imc/toc-preface-3rd.pdf (Sections 9.2.3–9.2.4 on the factoring and RSA assumptions; Section 15.1.1 on trapdoor permutations; Section 15.2 on Paillier encryption; Sections 15.4.1–15.4.3 on quadratic residues and the quadratic residuosity assumption; and Sections 15.5.1–15.5.2 on modular square roots and the Rabin trapdoor permutation). Detailed numbered locators (Definitions, Claims, Propositions, Lemmas, Constructions, Examples, Exercises, and Theorems) remain attributed to the Lean source docstrings, as the textbook body was not independently audited; the Lean modules adapt the parameter generators, RSA challenge domain, Rabin sampling distribution, and the Paillier encryption-randomness sampler (dyadic sampling with `unitOrOne` in place of uniform `ℤ_N^*`) as documented in their module docstrings and implementation notes.
+
+<a id="kobayashi1985"></a>
+## kobayashi1985
+
+Kojiro Kobayashi. "On proving time constructibility of functions." *Theoretical Computer Science* 35, 215–225, 1985. https://doi.org/10.1016/0304-3975(85)90015-5 . Bibliographic metadata checked through Crossref; the article body was not inspected in this pass. The manual cites it, as [Pighizzini 2009](#pighizzini2009) §4 does, as an independent proof of the `n log n` bound.
 
 <a id="lean-validation"></a>
 ## lean-validation
@@ -252,7 +262,7 @@ OpenAI. *The Exponential Time Hypothesis is False*. Manuscript dated 17 October 
 <a id="pighizzini2009"></a>
 ## pighizzini2009
 
-Giovanni Pighizzini. "Nondeterministic One-Tape Off-Line Turing Machines and Their Time Complexity." arXiv:0905.1271v1 [cs.FL], 2009. https://arxiv.org/abs/0905.1271v1 . The v1 text was read for §1, Theorem 1 (§3: crossing sequences of bounded length imply regularity, stated for nondeterministic machines under the weak measure), and the opening of §4 with Theorem 3 (attribution of the deterministic `n log n` bound to Trakhtenbrot, Hartmanis and Kobayashi).
+Giovanni Pighizzini. "Nondeterministic One-Tape Off-Line Turing Machines and Their Time Complexity." arXiv:0905.1271v1 [cs.FL], 2009. https://arxiv.org/abs/0905.1271v1 . The v1 text was read for §1, Theorem 1 (§3: crossing sequences of bounded length imply regularity, stated for nondeterministic machines under the weak measure), and the opening of §4 with Theorem 3 (attribution of the deterministic `n log n` bound to Trakhtenbrot, Hartmanis and Kobayashi). The arXiv record says the paper was to appear in the *Journal of Automata, Languages and Combinatorics*; secondary indexes place it in volume 14 (2009), pp. 107–124. The journal version was not inspected.
 
 <a id="reingold2008"></a>
 ## reingold2008
