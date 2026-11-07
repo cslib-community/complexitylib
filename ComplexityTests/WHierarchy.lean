@@ -10,7 +10,8 @@ import Complexity.Computability.Complexity.Parameterized.WHierarchy.IndependentS
 # Tests: the W-hierarchy, and Independent Set and Clique in `W[1]`
 
 Weft and depth of small circuits, evaluated by `decide`: a conjunction of three inputs is a large
-gate and has weft `1`, a disjunction of two has weft `0`. Weighted satisfiability of the
+gate and has weft `1`, a disjunction of two has weft `0`; two such conjunctions have weft `1` in
+parallel and `2` in series. Weighted satisfiability of the
 conjunction of three inputs holds for weight `3` and fails for weight `2`. The circuit of the
 triangle has a satisfying input of weight `1` and none of weight `2`, so the triangle has no
 independent set of two vertices; edges with an undeclared end and self-loops are ignored by the
@@ -37,7 +38,24 @@ example : and3.2.weft = 1 ∧ and3.2.depth = 1 := by decide
 
 example : or2.2.weft = 0 ∧ or2.2.depth = 1 := by decide
 
-example : trueCircuit.2.weft = 0 ∧ trueCircuit.2.depth = 1 := by decide
+example : WCS.trueCircuit.2.weft = 0 ∧ WCS.trueCircuit.2.depth = 1 := by decide
+
+/-- Two conjunctions of three inputs in parallel, under a disjunction of two. -/
+def parallelAnd3 : Σ n, Circuit Unbounded.signature n 1 :=
+  ⟨3, ⟨(((Program.empty : Program Unbounded.signature 3 0).gate
+    ⟨.and 3, fun i => .input i⟩).gate ⟨.and 3, fun i => .input i⟩).gate
+    ⟨.or 2, ![.gate 0, .gate 1]⟩, fun _ => .gate 2⟩⟩
+
+/-- Two conjunctions of three arguments in series: the second reads the first. -/
+def seriesAnd3 : Σ n, Circuit Unbounded.signature n 1 :=
+  ⟨3, ⟨((Program.empty : Program Unbounded.signature 3 0).gate
+    ⟨.and 3, fun i => .input i⟩).gate ⟨.and 3, ![.gate 0, .input 1, .input 2]⟩, fun _ => .gate 1⟩⟩
+
+-- The weft is the largest number of large gates on a path, not their number: two large gates in
+-- parallel give weft `1`, in series weft `2`.
+example : parallelAnd3.2.weft = 1 ∧ parallelAnd3.2.depth = 2 := by decide
+
+example : seriesAnd3.2.weft = 2 ∧ seriesAnd3.2.depth = 2 := by decide
 
 /-! ### Weighted circuit satisfiability -/
 
@@ -45,10 +63,14 @@ example : trueCircuit.2.weft = 0 ∧ trueCircuit.2.depth = 1 := by decide
 example : (and3, 3) ∈ WeightedCircuitSAT := ⟨fun _ => true, by decide, by decide⟩
 
 example : (and3, 2) ∉ WeightedCircuitSAT := by
-  change ¬∃ x : BitString 3, _ ∧ _
+  rintro ⟨x, hk, hx⟩
+  revert hk hx
+  revert x
+  unfold BitString.weight
   decide
 
-example : wcsYes 1 ∈ WCS 1 1 ∧ wcsNo 1 ∉ WCS 1 1 := ⟨wcsYes_mem 1, wcsNo_not_mem 1⟩
+example : WCS.yesInstance 1 ∈ WCS 1 1 ∧ WCS.noInstance 1 ∉ WCS 1 1 :=
+  ⟨WCS.yesInstance_mem 1, WCS.noInstance_not_mem 1⟩
 
 /-! ### The circuit of a graph -/
 

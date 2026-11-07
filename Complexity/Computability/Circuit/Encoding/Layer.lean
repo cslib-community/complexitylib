@@ -43,13 +43,10 @@ variable {σ : Signature.{v}} {U : Type u} {n m : ℕ}
 the `k` gates before the list, is a code from gate `k`. -/
 theorem Program.isCodeFrom_of_forall {n k : ℕ} {gates : List (σ.Op × List ℕ)}
     (h : ∀ g ∈ gates, g.2.length = σ.Arity g.1 ∧ ∀ i ∈ g.2, i < n + k) :
-    Program.IsCodeFrom σ n k gates := by
-  induction gates generalizing k with
-  | nil => trivial
-  | cons g gates ih =>
-    refine ⟨h g (List.mem_cons_self ..), ih fun g' hg' => ?_⟩
-    obtain ⟨h₁, h₂⟩ := h g' (List.mem_cons_of_mem _ hg')
-    exact ⟨h₁, fun i hi => (h₂ i hi).trans_le (by omega)⟩
+    Program.IsCodeFrom σ n k gates :=
+  Program.isCodeFrom_of_getElem fun _ hj =>
+    let ⟨h₁, h₂⟩ := h _ (List.getElem_mem hj)
+    ⟨h₁, fun i hi => (h₂ i hi).trans_le (Nat.le_add_right _ _)⟩
 
 /-- **Evaluating a layer.** When every gate of `gates` reads only wires below the length of `x`,
 evaluating `gates` from `x` appends the value of each gate on the wires of `x`. -/

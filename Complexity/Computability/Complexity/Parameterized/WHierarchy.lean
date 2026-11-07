@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Parameterized
 public import Complexity.Computability.Circuit.Boolean.Unbounded.Encoding
 public import Complexity.Computability.Circuit.Weft
+public import Complexity.Foundations.Data.BitString.Weight
 
 /-!
 # The W-hierarchy
@@ -27,6 +28,12 @@ it.
 The instances of `WCS t d` are restricted to the circuits of the class, as in the cited
 definition; a reduction to `WCS t d` must produce such circuits. The weight `k` is written in
 binary, and the input count of a circuit in unary.
+
+The circuits are straight-line programs rather than the source's DAGs. A gate's fan-in is its
+arity, counted with multiplicity, so a conjunction reading one wire three times is large. The
+basis also has the constants (the conjunction and disjunction of no arguments) and unary
+conjunctions and disjunctions. Neither difference changes the classes: merging repeated arguments
+only lowers the weft, and constants propagate without raising weft or depth.
 
 ## Main definitions
 
@@ -60,7 +67,7 @@ namespace Cslib.Circuits.Circuit
 /-- `c` has a satisfying input with exactly `k` ones under the interpretation `I`. -/
 def SatisfiableWithWeight {σ : Signature} (I : Interpretation σ Bool) {n : ℕ} (c : Circuit σ n 1)
     (k : ℕ) : Prop :=
-  ∃ x : BitString n, (Finset.univ.filter fun i => x i = true).card = k ∧ c.eval I x 0 = true
+  ∃ x : BitString n, BitString.weight x = k ∧ c.eval I x 0 = true
 
 end Cslib.Circuits.Circuit
 
@@ -92,6 +99,7 @@ circuits (`Unbounded.encCircuit`). -/
 def encWeftCircuit (t d : ℕ) : WeftCircuit t d ↪ List Bool :=
   (Function.Embedding.subtype _).trans (Unbounded.encCircuit 1)
 
+/-- A circuit of the class is encoded as a circuit. -/
 theorem encWeftCircuit_apply {t d : ℕ} (c : WeftCircuit t d) :
     encWeftCircuit t d c = Unbounded.encCircuit 1 c.1 :=
   rfl
@@ -154,6 +162,8 @@ theorem W_mono {t t' : ℕ} (h : t ≤ t') : W t encA κA ⊆ W t' encA κA := f
 
 /-! ### `FPT ⊆ W[t]` -/
 
+namespace WCS
+
 /-- The circuit with no inputs whose one gate is the conjunction of no arguments, `true`. -/
 def trueCircuit : Σ n, Circuit Unbounded.signature n 1 :=
   ⟨0, ⟨Program.empty.gate ⟨.and 0, Fin.elim0⟩, fun _ => .gate 0⟩⟩
@@ -163,26 +173,30 @@ def falseCircuit : Σ n, Circuit Unbounded.signature n 1 :=
   ⟨0, ⟨Program.empty.gate ⟨.or 0, Fin.elim0⟩, fun _ => .gate 0⟩⟩
 
 /-- A yes-instance of `WCS t 1`: `trueCircuit` with weight `0`. -/
-def wcsYes (t : ℕ) : WeftCircuit t 1 × ℕ :=
+def yesInstance (t : ℕ) : WeftCircuit t 1 × ℕ :=
   (⟨trueCircuit, (by decide : trueCircuit.2.weft = 0).trans_le (Nat.zero_le t), by decide⟩, 0)
 
 /-- A no-instance of `WCS t 1`: `falseCircuit` with weight `0`. -/
-def wcsNo (t : ℕ) : WeftCircuit t 1 × ℕ :=
+def noInstance (t : ℕ) : WeftCircuit t 1 × ℕ :=
   (⟨falseCircuit, (by decide : falseCircuit.2.weft = 0).trans_le (Nat.zero_le t), by decide⟩, 0)
 
-theorem wcsYes_mem (t : ℕ) : wcsYes t ∈ WCS t 1 :=
-  ⟨fun _ => false, by simp, rfl⟩
+/-- `yesInstance t` is a yes-instance: the empty input has weight `0` and satisfies `true`. -/
+theorem yesInstance_mem (t : ℕ) : yesInstance t ∈ WCS t 1 :=
+  ⟨fun _ => false, by simp [BitString.weight], rfl⟩
 
-theorem wcsNo_not_mem (t : ℕ) : wcsNo t ∉ WCS t 1 := by
+/-- `noInstance t` is a no-instance: no input satisfies `false`. -/
+theorem noInstance_not_mem (t : ℕ) : noInstance t ∉ WCS t 1 := by
   rintro ⟨x, -, hx⟩
   exact Bool.false_ne_true hx
+
+end WCS
 
 /-- **`FPT ⊆ W[t]`**: a problem decided in fpt time reduces to a fixed yes-instance or a fixed
 no-instance of `WCS t 1`. -/
 theorem FPT_subset_W (t : ℕ) : FPT encA κA ⊆ W t encA κA := by
   intro A hA
   obtain ⟨g, hg, hgA⟩ := mem_FPT_iff_computableInFPTTime.1 hA
-  refine ⟨1, fun a => if g a then wcsYes t else wcsNo t,
+  refine ⟨1, fun a => if g a then WCS.yesInstance t else WCS.noInstance t,
     ⟨hg.ite ((ComputableInPolyTime.const _).computableInFPTTime κA)
       ((ComputableInPolyTime.const _).computableInFPTTime κA), fun _ => 0, fun a => ?_⟩,
     fun a => ?_⟩
@@ -191,8 +205,8 @@ theorem FPT_subset_W (t : ℕ) : FPT encA κA ⊆ W t encA κA := by
   · rw [hgA a]
     dsimp only
     split
-    · exact iff_of_true (by assumption) (wcsYes_mem t)
-    · exact iff_of_false (by assumption) (wcsNo_not_mem t)
+    · exact iff_of_true (by assumption) (WCS.yesInstance_mem t)
+    · exact iff_of_false (by assumption) (WCS.noInstance_not_mem t)
 
 /-! ### Hardness -/
 
