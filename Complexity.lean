@@ -40,6 +40,7 @@ public import Complexity.Algorithms.Lean.MergeSort.Comparator
 public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Correctness
 public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Cost
 public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Defs
+public import Complexity.Algorithms.Lean.Query.Arith.Lemmas
 public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
 public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
@@ -4024,6 +4025,7 @@ public import Complexity.Foundations.Data.Nat.IntermediateValue
 public import Complexity.Foundations.Data.Nat.Log
 public import Complexity.Foundations.Data.Nat.LogRpow
 public import Complexity.Foundations.Data.Nat.LogStar
+public import Complexity.Foundations.Data.Nat.LogTwoRpow
 public import Complexity.Foundations.Data.Nat.Morton
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits

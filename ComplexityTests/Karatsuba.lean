@@ -16,8 +16,8 @@ lengths (padded with zeros, so the result can end in zeros), an odd length with 
 and empty operands. Over an arbitrary commutative ring, one level of the recursion is the
 three-multiplication formula. The exact counts are checked at small lengths, against the closed
 forms at powers of two and against the schoolbook count `n ^ 2`, which they meet only at `n = 1`.
-The query count is the same under a dishonest oracle, and the packaged query bound is applied at
-a concrete length.
+The query count is the same under a dishonest oracle, and the packaged query bounds are applied
+at a concrete length.
 -/
 
 namespace ComplexityTests.Karatsuba
@@ -109,5 +109,10 @@ example (o : {ι : Type} → ArithQuery ℤ ι → ι) (p q : List ℤ) (hp : p.
   have h4 : Nat.clog 2 4 = 2 := Nat.clog_pow 2 2 one_lt_two
   simp only [h4] at h
   exact h
+
+/-- The packaged lower bound (the exact count, attained at every length) never exceeds the packaged
+upper bound; at `n = 4` this is `9 + 28 ≤ 81`. -/
+example : mulCount 4 + addCount 4 ≤ 9 * 3 ^ Nat.clog 2 4 :=
+  LowerBound.le_upperBound (karatsuba_lowerBound (α := ℤ)) karatsuba_upperBound 4
 
 end ComplexityTests.Karatsuba

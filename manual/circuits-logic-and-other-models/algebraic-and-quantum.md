@@ -45,12 +45,12 @@ lake build Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.Nine
 
 - the closed forms `mulCount (2^k) = 3^k` and `2 addCount (2^k) + 16·2^k = 13·3^k + 3`;
 - the total `mulCount n + addCount n ≤ 9·3^⌈log₂ n⌉ ≤ 27 n^log₂ 3`, packaged as `karatsuba_upperBound` for `Cslib.Query.UpperBound`;
-- a lower bound `n^log₂ 3 ≤ 3 mulCount n`;
+- a lower bound `n^log₂ 3 ≤ 3 mulCount n`, with `karatsuba_lowerBound` recording for `Cslib.Query.LowerBound` that every length attains the exact count;
 - `mulCount n < n²` for `n ≥ 2`.
 
-The upper bounds come from a reusable halving-recurrence lemma, [HalvingRecurrence.lean](../../Complexity/Foundations/Data/Nat/HalvingRecurrence.lean) (`Nat.add_mul_two_pow_clog_le_of_halving`). It proves the recurrence by substitution with a subtracted linear term and needs no monotonicity.
+The upper bounds come from a reusable halving-recurrence lemma, [HalvingRecurrence.lean](../../Complexity/Foundations/Data/Nat/HalvingRecurrence.lean) (`Nat.add_mul_two_pow_clog_le_of_halving`). It proves the recurrence by substitution with a subtracted linear term and needs no monotonicity. [LogTwoRpow.lean](../../Complexity/Foundations/Data/Nat/LogTwoRpow.lean) converts `a^⌈log₂ n⌉` and `a^⌊log₂ n⌋` to `n^log₂ a`.
 
-These are operation counts, not bit complexity. The three products of one recursion level form the bilinear algorithm behind `Rank 3 (full 2 2)` in the tensor layer. The tensor rank counts only those products, while this program also counts every addition and subtraction of the recursion.
+These are operation counts, not bit complexity. One recursion level is a bilinear algorithm with three products, valid over any commutative ring. It gives the same bound as the tensor layer's `Rank 3 (full 2 2)`, which `Tensor.rank_full` proves differently, by interpolation over a field of characteristic zero; no bridge between the two is formalized. A tensor rank counts only products, while this program also counts every addition and subtraction of the recursion.
 
 Complete client: [Karatsuba.lean](../../ComplexityTests/Karatsuba.lean). It checks concrete integer products, including unequal lengths, an uneven split and empty operands, and the symbolic three-multiplication formula. It also checks exact counts against the closed forms, and that the count is strictly below `n²` except at `n = 1`. It confirms the same query count under a dishonest oracle and applies the packaged bound at a concrete length. Build it with
 

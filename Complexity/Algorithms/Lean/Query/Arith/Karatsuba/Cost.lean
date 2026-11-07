@@ -8,7 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Defs
+public import Complexity.Algorithms.Lean.Query.Arith.Lemmas
 public import Complexity.Foundations.Data.Nat.HalvingRecurrence
+public import Complexity.Foundations.Data.Nat.LogTwoRpow
 public import Cslib.Algorithms.Lean.Query.Bounds
 
 /-!
@@ -28,7 +30,8 @@ These counts satisfy
   of the schoolbook method.
 
 The upper bounds come from the halving recurrence `Nat.add_mul_two_pow_clog_le_of_halving`.
-The query bound is packaged as `Cslib.Query.karatsuba_upperBound`.
+The query bounds are packaged as `Cslib.Query.karatsuba_upperBound` and, since every input of
+length `n` attains the exact count, `Cslib.Query.karatsuba_lowerBound`.
 
 ## Main results
 
@@ -36,6 +39,8 @@ The query bound is packaged as `Cslib.Query.karatsuba_upperBound`.
 * `Cslib.Query.countQueries_karatsuba`: the exact query count under every oracle.
 * `Cslib.Query.cost_karatsuba_le`: weighted cost at most `(c_mul + 8 c_add) 3 ^ ⌈log₂ N⌉`.
 * `Cslib.Query.karatsuba_upperBound`: `UpperBound` with bound `9 · 3 ^ ⌈log₂ n⌉`.
+* `Cslib.Query.karatsuba_lowerBound`: `LowerBound` with the exact count
+  `mulCount n + addCount n`.
 * `Cslib.Query.Karatsuba.mulCount_two_pow`, `Cslib.Query.Karatsuba.addCount_two_pow`: closed
   forms at powers of two.
 * `Cslib.Query.Karatsuba.mulCount_le_rpow`, `Cslib.Query.Karatsuba.rpow_le_three_mul_mulCount`,
@@ -56,15 +61,6 @@ namespace Cslib.Query
 open ArithQuery
 
 variable {α : Type}
-
-/-- Counting queries is the arithmetic cost with unit weights. -/
-theorem ArithQuery.countQueries_eq_cost_weight_one {β : Type}
-    (o : {ι : Type} → ArithQuery α ι → ι) (prog : FreeM (ArithQuery α) β) :
-    prog.countQueries o = prog.cost o (weight 1 1) := by
-  have h : (fun {ι : Type} (_ : ArithQuery α ι) => (1 : ℕ)) = @weight α 1 1 := by
-    funext ι q
-    cases q <;> rfl
-  rw [FreeM.countQueries_eq_cost_one, h]
 
 namespace Karatsuba
 
@@ -354,5 +350,22 @@ theorem karatsuba_upperBound [Zero α] :
   · intro o pq
     rw [countQueries_karatsuba]
     exact Karatsuba.mulCount_add_addCount_le _
+
+/-- The exact count is attained: for every `n`, operands of length `n` make
+`mulCount n + addCount n` queries (under any oracle; the witness answers each query with its
+first operand). With `karatsuba_upperBound` and `Karatsuba.rpow_le_three_mul_mulCount`, the query
+complexity of Karatsuba multiplication is `Θ(n ^ log₂ 3)`. -/
+theorem karatsuba_lowerBound [Zero α] :
+    LowerBound (fun pq : List α × List α => karatsuba pq.1 pq.2)
+      (fun pq => max pq.1.length pq.2.length)
+      (fun n => Karatsuba.mulCount n + Karatsuba.addCount n) := by
+  intro n
+  refine ⟨(List.replicate n 0, List.replicate n 0), by simp, fun {ι} q => ?_, ?_⟩
+  · cases q with
+    | add a _ => exact a
+    | sub a _ => exact a
+    | mul a _ => exact a
+  · rw [countQueries_karatsuba]
+    simp
 
 end Cslib.Query
