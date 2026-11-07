@@ -703,9 +703,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   Cook–Levin.
 - **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
   vocabularies and the [nondefinability of connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean)
-  by interpretation from finite linear orders, add games for vocabularies with constants, pebble
-  games with their finite-variable equivalence theorems, Hanf and Gaifman locality, and further
-  nondefinability results such as acyclicity of finite graphs; then
+  by interpretation from finite linear orders, and on [Hanf and Gaifman locality](Complexity/Logics/FirstOrder/Locality/Hanf.lean)
+  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), add Gaifman's
+  normal form theorem, nondefinability applications of locality (Libkin's balanced binary trees
+  and transitive closure, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`), games
+  for vocabularies with constants, and pebble games with their finite-variable equivalence
+  theorems; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
