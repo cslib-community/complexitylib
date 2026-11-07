@@ -4536,6 +4536,9 @@ public import Complexity.Logics.SecondOrder.Grounding
 public import Complexity.Logics.SecondOrder.IndependentSet
 public import Complexity.Logics.SecondOrder.Projection
 public import Complexity.Logics.SecondOrder.Reduction
+public import Complexity.MachineLearning.StatisticalQuery.Basic
+public import Complexity.MachineLearning.StatisticalQuery.LowerBound
+public import Complexity.MachineLearning.StatisticalQuery.Parity
 public import Complexity.MachineLearning.UniformLearning.AC0
 public import Complexity.MachineLearning.UniformLearning.Basic
 public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
