@@ -864,6 +864,17 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
+- **Fast Fourier transform and FFT multiplication**
+  ([#2979](https://github.com/cslib-community/complexitylib/issues/2979)): the radix-2
+  Cooley–Tukey transform over any commutative ring with `ω ^ (2 ^ k) = -1`, with exactly
+  `(n / 2) log₂ n` multiplications and `n log₂ n` additions, its inverse, the convolution theorem
+  and `O(n log n)` polynomial multiplication, is in `Algorithms/Lean/Query/Arith/FFT` and
+  `Foundations/Algebra/DFT`. Open: arbitrary lengths on coefficient lists (zero padding to a power
+  of two) with a list-level `UpperBound`; the transform as an arithmetic circuit of size
+  `O(n log n)` and depth `O(log n)`; rings without suitable roots of unity (Schönhage–Strassen over
+  `R[x] / (x ^ m + 1)` and the `O(n log n log log n)` integer bound); mixed-radix and Bluestein
+  transforms; and lower bounds such as Morgenstern's `Ω(n log n)` for bounded-coefficient linear
+  circuits.
 
 ### Jukna coverage
 
