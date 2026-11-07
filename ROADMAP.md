@@ -601,8 +601,16 @@ index links to canonical definitions rather than keeping a second set.
   P = NP.
 - **Low and high hierarchies in NP** (Schöning): sparse NP sets lie in `Low₂` (Ko and Schöning), and
   so does graph isomorphism, via graph non-isomorphism in AM.
-- **Immunity:** immune and bi-immune sets, P-bi-immune sets in EXP (Balcázar and Schöning), and
-  almost-everywhere hardness.
+- **Immunity** ([#2899](https://github.com/cslib-community/complexitylib/issues/2899)): after
+  `IsImmune`/`IsBiImmune`, a `P`-bi-immune set in `E` (`Classes/Immune/Construction.lean`) and
+  Berman's theorem that `≤ᵖₘ`-complete sets for `E`/`EXP` are not `P`-immune
+  (`Classes/Immune/Complete.lean`): a constructed `≤ᵖₘ`-complete problem for `E` and `EXP` (such as
+  bounded halting), so that Berman's hypothesis has a library witness; a SAT-free home for the
+  machine enumeration of `Ladner/Basic.lean` shared by Ladner and the immunity modules;
+  `DTIME(t)`-bi-immune sets in larger time classes for general constructible `t`, the remaining
+  Balcázar–Schöning results, complexity cores (Lynch; Orponen and Schöning) and their sizes for
+  hard sets (Juedes and Lutz), almost-everywhere hardness, and measure strengthenings (almost every
+  set in `E` is `P`-bi-immune, Mayordomo).
 
 ### Average-case complexity
 
@@ -702,6 +710,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
+- **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
+  colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
+  colorings (a fixed `k`-set is colorful with probability `K.descFactorial k / K ^ k ≥ e ^ (-k)`)
+  and the one-sided-error randomized fpt algorithm for `LongPath`; derandomization by perfect hash
+  families; W[1] and the W[1]-hardness of `Clique`.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
@@ -1059,6 +1072,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
+- **Single-tape lower bounds**
+  ([#2884](https://github.com/cslib-community/complexitylib/issues/2884)): crossing sequences,
+  cut-and-paste for equal-length prefixes and the quadratic palindrome lower bound for cslib
+  `SingleTapeTM` deciders that halt in the canonical output form are proved. Remaining: the bound
+  for deciders that only leave the answer under the head; an explicit single-tape palindrome
+  decider in time `O(n²)`, which shows the bound is tight and gives a positive instance of
+  `DecidesPalindromesInTime`; a linear-time multi-tape palindrome decider, which gives the
+  one-tape/two-tape time separation; cut-and-paste across boundaries at different positions; and
+  the gap theorem that single-tape deciders running in time `o(n log n)` accept only regular
+  languages.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
