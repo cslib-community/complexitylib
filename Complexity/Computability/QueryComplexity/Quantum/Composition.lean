@@ -39,7 +39,9 @@ Parking does not change the probability of any query index.
 control bit (`Cslib.Quantum.hadCtrl`), one more query and another Hadamard gate write the queried
 bit `x_i` of the query index `i` into the control bit (`Cslib.Quantum.check`,
 `Cslib.Quantum.run_check`). The control bit is then `1` with the probability that measuring the
-query register gives an index `i` with `x_i = 1` (`Cslib.Quantum.measureProb_run_check`).
+query register gives an index `i` with `x_i = 1` (`Cslib.Quantum.measureProb_run_check`). On an
+arbitrary state the same three steps are the *bit oracle* `|i, b, w⟩ ↦ |i, b ⊕ x_i, w⟩`
+(`Cslib.Quantum.bitFlip`, `Cslib.Quantum.hadCtrl_phaseOracle_hadCtrl_eq_permute`).
 
 **Running twice.** `Cslib.Quantum.twice` runs an algorithm with `T` queries twice, on two copies of
 its registers: the second copy waits in the workspace during the first run, then the copies are
@@ -57,6 +59,7 @@ These constructions are standard; their formulation in this query model is origi
   isometry applying `V g` to the slice at `g`.
 * `Cslib.Quantum.permute`, `Cslib.Quantum.flipCtrl`, `Cslib.Quantum.hadCtrl`: a permutation of the
   basis, the flip of the control bit and the Hadamard gate on it.
+* `Cslib.Quantum.bitFlip`: the basis permutation of the bit oracle.
 * `Cslib.Quantum.park`: an algorithm stopped after `k` queries.
 * `Cslib.Quantum.check`: an algorithm followed by a check of its output.
 * `Cslib.Quantum.twice`, `Cslib.Quantum.twiceInit`: an algorithm run twice.
@@ -67,6 +70,8 @@ These constructions are standard; their formulation in this query model is origi
 * `Cslib.Quantum.measureProb_eq_sum_slice`: outcome probabilities add up over the slices.
 * `Cslib.Quantum.run_park`: a parked algorithm keeps its state after `k` queries.
 * `Cslib.Quantum.run_add`: a run splits into two runs.
+* `Cslib.Quantum.hadCtrl_phaseOracle_hadCtrl_eq_permute`: Hadamard gates around a query give the
+  bit oracle.
 * `Cslib.Quantum.run_check`, `Cslib.Quantum.measureProb_run_check`: the state and acceptance
   probability after a check.
 * `Cslib.Quantum.run_twice`, `Cslib.Quantum.measureProb_run_twice`: running twice gives two
@@ -211,6 +216,31 @@ noncomputable def permute (e : Equiv.Perm (Fin N × Bool × W)) : State N W ≃�
 @[simp] theorem permute_apply (e : Equiv.Perm (Fin N × Bool × W)) (ψ : State N W)
     (p : Fin N × Bool × W) : (permute e ψ).ofLp p = ψ.ofLp (e.symm p) := rfl
 
+theorem permute_mul (a b : Equiv.Perm (Fin N × Bool × W)) (ψ : State N W) :
+    permute (a * b) ψ = permute a (permute b ψ) := rfl
+
+theorem permute_ket [DecidableEq W] (e : Equiv.Perm (Fin N × Bool × W)) (q : Fin N × Bool × W) :
+    permute e (ket q) = ket (e q) := by
+  ext p
+  simp only [permute_apply, ket_apply, Equiv.symm_apply_eq]
+
+omit [Fintype W] in
+/-- The basis permutation of the **bit oracle** `|i, b, w⟩ ↦ |i, b ⊕ x_i, w⟩`, which adds the
+queried bit to the control bit. Hadamard gates around a query realize it
+(`Cslib.Quantum.hadCtrl_phaseOracle_hadCtrl_eq_permute`). -/
+def bitFlip (x : Fin N → Bool) : Equiv.Perm (Fin N × Bool × W) where
+  toFun p := (p.1, p.2.1 ^^ x p.1, p.2.2)
+  invFun p := (p.1, p.2.1 ^^ x p.1, p.2.2)
+  left_inv p := by simp
+  right_inv p := by simp
+
+omit [Fintype W] in
+@[simp] theorem bitFlip_apply (x : Fin N → Bool) (p : Fin N × Bool × W) :
+    bitFlip x p = (p.1, p.2.1 ^^ x p.1, p.2.2) := rfl
+
+omit [Fintype W] in
+@[simp] theorem bitFlip_symm (x : Fin N → Bool) : (bitFlip (W := W) x).symm = bitFlip x := rfl
+
 /-- The flip `|i, b, w⟩ ↦ |i, ¬b, w⟩` of the control bit. -/
 noncomputable def flipCtrl : State N W ≃ₗᵢ[ℂ] State N W :=
   permute
@@ -325,6 +355,23 @@ theorem hadCtrl_apply (ψ : State N W) (p : Fin N × Bool × W) :
       (ψ.ofLp (p.1, false, p.2.2) + (if p.2.1 then -1 else 1) * ψ.ofLp (p.1, true, p.2.2)) :=
   rfl
 
+/-- **Hadamard gates around a query give the bit oracle**: a Hadamard gate on the control bit, a
+query and another Hadamard gate permute the basis by `|i, b, w⟩ ↦ |i, b ⊕ x_i, w⟩`. -/
+theorem hadCtrl_phaseOracle_hadCtrl_eq_permute (x : Fin N → Bool) (ψ : State N W) :
+    hadCtrl (phaseOracle x (hadCtrl ψ)) = permute (bitFlip x) ψ := by
+  have h2 : (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) * (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) = 1 / 2 := by
+    rw [← Complex.ofReal_mul, ← mul_inv, Real.mul_self_sqrt zero_le_two]
+    push_cast
+    ring
+  ext ⟨i, b, w⟩
+  simp only [hadCtrl_apply, phaseOracle_apply, permute_apply, bitFlip_symm, bitFlip_apply]
+  generalize (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) = c at h2 ⊢
+  cases b <;> cases x i <;> simp
+  · linear_combination (2 * ψ.ofLp (i, false, w)) * h2
+  · linear_combination (2 * ψ.ofLp (i, true, w)) * h2
+  · linear_combination (2 * ψ.ofLp (i, true, w)) * h2
+  · linear_combination (2 * ψ.ofLp (i, false, w)) * h2
+
 /-- **Checking a parked output**: if `φ` has control bit `0`, then a Hadamard gate on the control
 bit, a query and another Hadamard gate write the queried bit into the control bit: the result has
 amplitude `φ(i, 0, w)` at `|i, x_i, w⟩` and `0` elsewhere. -/
@@ -332,14 +379,9 @@ theorem hadCtrl_phaseOracle_hadCtrl {x : Fin N → Bool} {φ : State N W}
     (hφ : ∀ i w, φ.ofLp (i, true, w) = 0) (p : Fin N × Bool × W) :
     (hadCtrl (phaseOracle x (hadCtrl φ))).ofLp p =
       if p.2.1 = x p.1 then φ.ofLp (p.1, false, p.2.2) else 0 := by
-  have h2 : (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) * (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) = 1 / 2 := by
-    rw [← Complex.ofReal_mul, ← mul_inv, Real.mul_self_sqrt zero_le_two]
-    push_cast
-    ring
   obtain ⟨i, b, w⟩ := p
-  simp only [hadCtrl_apply, phaseOracle_apply, hφ, mul_zero, add_zero]
-  generalize (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) = c at h2 ⊢
-  cases b <;> cases x i <;> simp <;> linear_combination (2 * φ.ofLp (i, false, w)) * h2
+  rw [hadCtrl_phaseOracle_hadCtrl_eq_permute, permute_apply, bitFlip_symm, bitFlip_apply]
+  cases b <;> cases x i <;> simp [hφ]
 
 /-- The algorithm `U` **followed by a check** of its output after `T` queries: a Hadamard gate on
 the control bit, one more query and another Hadamard gate, which write the queried bit `x_i` of
