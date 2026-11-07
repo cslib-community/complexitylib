@@ -485,7 +485,7 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    `enc_len`, `fun_prop`, instance search and the combinators' simp lemmas such as
    `length_encPair` see through the name, and clients that spell the body out still match.
 4. **Name domain encodings.** Encode a mathematical object (a formula, graph, circuit or problem
-   instance) by a named definition beside its type, not by a compound spelled out inside a larger
+   instance) by a named, documented definition, not by a compound spelled out inside a larger
    encoding, even where it occurs only once.
 5. **Declare structure encodings with `enc_structure`.** When a structure is encoded as the
    tuple of its fields in declaration order, declare the encoding with `enc_structure`, which
