@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.MachineLearning.PACLearning.DoubleSample
 import Complexity.MachineLearning.PACLearning.FiniteClass
 import Complexity.MachineLearning.PACLearning.GrowthFunction
 import Complexity.MachineLearning.PACLearning.VCUpperBound
@@ -14,7 +15,8 @@ risk minimization on concrete distributions and learners; the finite-class Occam
 explicit parameters, including a matching nonvacuity check that zero examples do not suffice; the
 growth function and VC dimension of threshold concepts on `ℕ` and of all Boolean concepts; and
 ε-nets and the VC upper bound for thresholds, with an explicit sample size and a matching check
-that zero examples do not suffice. -/
+that zero examples do not suffice; and the double-sample swap and ghost-sample bounds on concrete
+samples. -/
 
 namespace ComplexityTests.RealizablePAC
 
@@ -347,5 +349,37 @@ example (m : ℕ) : growthFunction (lossClass thresholds) m ≤ m + 1 :=
   (growthFunction_lossClass_le thresholds m).trans (by
     simpa using growthFunction_le_add_one_pow
       (fun W hW => card_le_one_of_setShatters_thresholds hW) m)
+
+/-! ### Double samples -/
+
+/-- Swapping the only coordinate exchanges the two samples; swapping none leaves them alone. -/
+example (z : (Fin 1 → Bool) × (Fin 1 → Bool)) :
+    swapSamples (fun _ => true) z = (z.2, z.1) ∧ swapSamples (fun _ => false) z = z := by
+  constructor <;> ext i <;> simp
+
+/-- Swap counting on a nontrivial event: if the two one-point samples must differ at `0` with the
+first equal to `true`, at most one of the two swaps of any double sample lands in the event, so
+the event has probability at most `1 / 2` under every product distribution. -/
+example (μ : Measure Bool) [IsProbabilityMeasure μ] :
+    (Measure.pi (fun _ : Fin 1 => μ)).prod (Measure.pi fun _ : Fin 1 => μ)
+      {z | z.1 0 = true ∧ z.2 0 = false} ≤ 1 / 2 := by
+  refine measure_prod_le_of_card_filter_swapSamples_mem_le μ _ _ fun z => ?_
+  refine le_trans (b := ((1 : ℕ) : ℝ≥0∞))
+    (Nat.cast_le.2 (Finset.card_le_one.2 fun σ hσ τ hτ => funext fun i => ?_)) ?_
+  · obtain rfl : i = 0 := Subsingleton.elim _ _
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Set.mem_ofPred_eq,
+      fst_swapSamples_apply, snd_swapSamples_apply] at hσ hτ
+    cases hσ0 : σ 0 <;> cases hτ0 : τ 0 <;> simp_all
+  · rw [Nat.cast_one, pow_one, ENNReal.mul_div_cancel two_ne_zero ENNReal.ofNat_ne_top]
+
+/-- The ghost-sample bound with a point-mass second sample: if every first sample in `B` pairs with
+the constant sample `true` inside `J`, then `ν B ≤ (ν × δ_true) J`. -/
+example (ν : Measure (Fin 1 → Bool)) (B : Set (Fin 1 → Bool))
+    (J : Set ((Fin 1 → Bool) × (Fin 1 → Bool))) (hBJ : ∀ S ∈ B, (S, fun _ => true) ∈ J) :
+    ν B ≤ ν.prod (Measure.dirac fun _ => true) J := by
+  have h := mul_measure_le_measure_prod ν (Measure.dirac fun _ => true) B J 1 fun S hS => by
+    exact (Measure.dirac_apply_of_mem (a := fun _ => true) (s := Prod.mk S ⁻¹' J)
+      (hBJ S hS)).ge
+  rwa [one_mul] at h
 
 end ComplexityTests.RealizablePAC

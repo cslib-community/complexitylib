@@ -4691,6 +4691,7 @@ public import Complexity.MachineLearning.OnlineLearning.MultiplicativeUpdate
 public import Complexity.MachineLearning.OnlineLearning.MultiplicativeWeights
 public import Complexity.MachineLearning.OnlineLearning.WeightedMajority
 public import Complexity.MachineLearning.OnlineLearning.ZeroSum
+public import Complexity.MachineLearning.PACLearning.DoubleSample
 public import Complexity.MachineLearning.PACLearning.ERM
 public import Complexity.MachineLearning.PACLearning.EpsilonNet
 public import Complexity.MachineLearning.PACLearning.FiniteClass
