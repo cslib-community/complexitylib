@@ -584,7 +584,7 @@ open Quantum Turing.MultiTapeTM
 variable {α : Type} {enc : α ↪ List Bool}
 
 /-- `(8 / 9) ^ (6 m) ≤ 2 ^ (-m)`, since `2 * 8 ^ 6 < 9 ^ 6`. -/
-private theorem eight_ninths_pow_le (m : ℕ) : ((8 : ℝ) / 9) ^ (6 * m) ≤ ((2 : ℝ) ^ m)⁻¹ := by
+theorem eight_ninths_pow_le (m : ℕ) : ((8 : ℝ) / 9) ^ (6 * m) ≤ ((2 : ℝ) ^ m)⁻¹ := by
   rw [pow_mul, ← inv_pow]
   exact pow_le_pow_left₀ (by positivity) (by norm_num) m
 
