@@ -12,6 +12,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
 import Complexity.Probability.PMF.Map
 import Complexity.Tactic.PolyTime
+import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
 # Distributional reductions
@@ -23,10 +24,14 @@ length map `m` and a polynomial `p`, every word `y` satisfies
 `Pr_{x ~ D_n}[f x = y] ≤ p(n) · D'_{m(n)}(y)`.
 
 The source imposes the domination inequality only on the support of `D'_{m(n)}`. Here it is
-required at every word, a deliberate strengthening: it implies that `f` maps the support of
-`D_n` into the support of `D'_{m(n)}` (`Cslib.Complexity.DistReduction.mem_support`), which the
-source's proof of closure (Lemma 18) uses when it applies the correctness of the target algorithm
-to `f x`. The bounded-halting reduction proving `DistNP`-completeness
+required at every word. By `Cslib.Complexity.DistReduction.forall_map_apply_le_mul_iff`, this is
+exactly the source's condition together with `f (Supp D_n) ⊆ Supp D'_{m(n)}`
+(`Cslib.Complexity.DistReduction.mem_support`). The source's proof of closure (Lemma 18) uses
+that inclusion when it applies the correctness of the target algorithm to `f x`, and without it
+the closure fails. For example, take `D'_n` to be the point mass at `0^n` and
+`L' = {x ++ [true] | x ∈ L}`. Then `f x = x ++ [true]` is correct for every `L` and satisfies the
+source's domination vacuously, while `(L', D')` is in `AvgP` (answer "no" on all inputs); so every
+`(L, D)` would be in `AvgP`. The bounded-halting reduction proving `DistNP`-completeness
 [Bogdanov and Trevisan, Theorem 19][BogdanovTrevisan2006] satisfies the strengthened condition:
 it is injective on the support of `D_n` and the source bounds `D_n(x)` by a polynomial multiple of
 the target probability of `f x` for every `x` in that support, so the image probability of every
@@ -49,6 +54,8 @@ parameter `p(n) · (k + 1)` composed with `f` is a scheme for the source with co
 ## Main results
 
 * `Cslib.Complexity.DistReduction.toOuterMeasure_preimage_le`: domination of events.
+* `Cslib.Complexity.DistReduction.forall_map_apply_le_mul_iff`: domination at every word is the
+  source's domination plus support preservation.
 * `Cslib.Complexity.DistReduction.mem_support`: reductions preserve supports.
 * `Cslib.Complexity.DistReduction.exists_m_le`: the length map is polynomially bounded.
 * `Cslib.Complexity.DistReduction.mem_AvgP`, `Cslib.Complexity.DistReduction.mem_HeurP`:
@@ -76,8 +83,9 @@ open Turing.MultiTapeTM
 /-- A **distributional reduction** from `L` to `L'`
 [Bogdanov and Trevisan, Definition 17][BogdanovTrevisan2006]: a polynomial-time map `f`, correct
 on the support of the source ensemble, whose image of `L.ens.dist n` is dominated by `p(n)` times
-`L'.ens.dist (m n)` at every word. Domination at every word, rather than on the target support
-only, is a deliberate strengthening of the source's condition; see the module documentation. -/
+`L'.ens.dist (m n)` at every word. Domination at every word is the source's condition plus support
+preservation (`Cslib.Complexity.DistReduction.forall_map_apply_le_mul_iff`), which closure under
+reductions needs; see the module documentation. -/
 structure DistReduction (L L' : DistProblem) where
   /-- The reduction map on instances. -/
   f : List Bool → List Bool
@@ -111,16 +119,34 @@ theorem toOuterMeasure_preimage_le (R : DistReduction L L') (n : ℕ) (S : Set (
     exact R.dominates n y
   · simp only [Set.indicator_of_notMem hy, mul_zero, le_refl]
 
+/-- Domination at every word is domination on the support of the target together with
+preservation of supports. -/
+theorem forall_map_apply_le_mul_iff {D D' : PMF (List Bool)} {f : List Bool → List Bool}
+    {c : ℝ≥0∞} :
+    (∀ y, D.map f y ≤ c * D' y) ↔
+      (∀ y ∈ D'.support, D.map f y ≤ c * D' y) ∧ ∀ x ∈ D.support, f x ∈ D'.support := by
+  constructor
+  · intro h
+    refine ⟨fun y _ => h y, fun x hx => ?_⟩
+    rw [PMF.mem_support_iff] at hx ⊢
+    intro h0
+    have h2 := h (f x)
+    rw [h0, mul_zero] at h2
+    exact hx (le_antisymm ((Probability.PMF.le_map_apply D f x).trans h2) zero_le)
+  · rintro ⟨h, hsupp⟩ y
+    by_cases hy : y ∈ D'.support
+    · exact h y hy
+    · have hmap : D.map f y = 0 := by
+        rw [PMF.apply_eq_zero_iff, PMF.support_map]
+        rintro ⟨x, hx, rfl⟩
+        exact hy (hsupp x hx)
+      rw [hmap]
+      exact zero_le
+
 /-- A reduction maps the support of the source ensemble into the support of the target. -/
 theorem mem_support (R : DistReduction L L') {n : ℕ} {x : List Bool}
-    (hx : x ∈ (L.ens.dist n).support) : R.f x ∈ (L'.ens.dist (R.m n)).support := by
-  have h1 : (L.ens.dist n) x ≤ (L.ens.dist n).map R.f (R.f x) :=
-    Probability.PMF.le_map_apply _ _ _
-  have h2 := R.dominates n (R.f x)
-  rw [PMF.mem_support_iff] at hx ⊢
-  intro h0
-  rw [h0, mul_zero] at h2
-  exact hx (le_antisymm (h1.trans h2) zero_le)
+    (hx : x ∈ (L.ens.dist n).support) : R.f x ∈ (L'.ens.dist (R.m n)).support :=
+  (forall_map_apply_le_mul_iff.mp (R.dominates n)).2 x hx
 
 /-- The length map of a reduction is polynomially bounded. -/
 theorem exists_m_le (R : DistReduction L L') : ∃ c d : ℕ, ∀ n, R.m n ≤ c * (n + 1) ^ d := by
@@ -214,10 +240,6 @@ theorem mem_HeurDeltaP (R : DistReduction L L') {δ : ℕ → ℝ≥0∞} (h : L
     exact (PMF.toOuterMeasure_mono _ hset).trans ((R.toOuterMeasure_preimage_le n _).trans
       (mul_le_mul' le_rfl (hA'.error_le _)))
 
-private theorem eval_mono (q : Polynomial ℕ) {a b : ℕ} (h : a ≤ b) : q.eval a ≤ q.eval b := by
-  rw [Polynomial.eval_eq_sum, Polynomial.eval_eq_sum]
-  exact Finset.sum_le_sum fun i _ => Nat.mul_le_mul_left _ (Nat.pow_le_pow_left h _)
-
 /-- The identity reduction. -/
 noncomputable def refl (L : DistProblem) : DistReduction L L where
   f := id
@@ -244,7 +266,7 @@ theorem exists_comp (R : DistReduction L L') (R' : DistReduction L' L'') :
   have hbound : R'.p.eval (R.m n) ≤
       (R'.p.comp (Polynomial.C c * (Polynomial.X + 1) ^ d)).eval n := by
     rw [Polynomial.eval_comp]
-    refine eval_mono _ ?_
+    refine R'.p.eval_mono ?_
     simpa using hm n
   calc (L.ens.dist n).toOuterMeasure (R.f ⁻¹' (R'.f ⁻¹' {y}))
       ≤ ((R.p.eval n : ℕ) : ℝ≥0∞) * (L'.ens.dist (R.m n)).toOuterMeasure (R'.f ⁻¹' {y}) :=

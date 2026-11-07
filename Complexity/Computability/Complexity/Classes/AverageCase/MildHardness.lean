@@ -31,9 +31,13 @@ most `1/(2 p(n) + 1) < 1/p(n)`, for every polynomial `p`.
 
 ## Main results
 
+* `Cslib.Complexity.exists_heuristic_of_mem_HeurP`: a heuristic scheme yields, for every positive
+  polynomial `p`, a deterministic polynomial-time heuristic succeeding with probability above
+  `1 - 1/p(n)` at every length.
 * `Cslib.Complexity.not_mildlyHardOnAverageDet_of_mem_HeurP`: if `({x | b x = true}, U) ∈ HeurP`,
   then `b` (as a `0/1`-valued function) is not mildly hard on average against deterministic
-  polynomial-time heuristics.
+  polynomial-time heuristics; `Cslib.Complexity.not_mildlyHardOnAverageIO_of_mem_HeurP` rules out
+  even infinitely-often hardness.
 * `Cslib.Complexity.not_mildlyHardOnAverage_of_mem_HeurP`: the same against strict PPT heuristics.
 
 ## References
@@ -49,17 +53,18 @@ namespace Cslib.Complexity
 open scoped ENNReal
 open Turing.MultiTapeTM
 
-/-- A Boolean function whose distributional problem under the uniform ensemble is in `HeurP` is not
-mildly hard on average against deterministic polynomial-time heuristics. -/
-theorem not_mildlyHardOnAverageDet_of_mem_HeurP (b : List Bool → Bool)
-    (h : (⟨{x | b x = true}, Ensemble.uniform⟩ : DistProblem) ∈ HeurP) :
-    ¬ MildlyHardOnAverageDet (fun x => (b x).toNat) := by
-  rintro ⟨p, hp, hhard⟩
+/-- If `({x | b x = true}, U) ∈ HeurP`, then for every positive polynomial `p` some deterministic
+polynomial-time heuristic computes `b` with success probability above `1 - 1/p(n)` at **every**
+length `n`. -/
+theorem exists_heuristic_of_mem_HeurP (b : List Bool → Bool)
+    (h : (⟨{x | b x = true}, Ensemble.uniform⟩ : DistProblem) ∈ HeurP) (p : Polynomial ℕ)
+    (hp : ∀ n, 0 < p.eval n) :
+    ∃ H : List Bool → ℕ, ComputableInPolyTime H encBits encNat ∧ ∀ n,
+      1 - 1 / ((p.eval n : ℕ) : ℝ) <
+        (((BitString.uniformList n).map fun x => decide (H x = (b x).toNat)) true).toReal := by
   obtain ⟨A, hA⟩ := h
   have hpt := hA.polyTime
-  have hH : ComputableInPolyTime (fun x : List Bool => (A (x, 2 * p.eval x.length)).toNat)
-      encBits encNat := by polytime
-  obtain ⟨n, hn⟩ := (hhard _ hH).exists
+  refine ⟨fun x => (A (x, 2 * p.eval x.length)).toNat, by polytime, fun n => ?_⟩
   have hfalse : ((BitString.uniformList n).map fun x =>
       decide ((A (x, 2 * p.eval x.length)).toNat = (b x).toNat)) false ≤
       ((2 * p.eval n + 1 : ℕ) : ℝ≥0∞)⁻¹ := by
@@ -74,7 +79,7 @@ theorem not_mildlyHardOnAverageDet_of_mem_HeurP (b : List Bool → Bool)
     cases hAx : A (x, 2 * p.eval n) <;> cases hbx : b x <;> simp_all
   have hreal := ENNReal.toReal_mono (by simp) hfalse
   rw [ENNReal.toReal_inv, ENNReal.toReal_natCast] at hreal
-  rw [Probability.PMF.toReal_true_eq_one_sub] at hn
+  rw [Probability.PMF.toReal_true_eq_one_sub]
   have hp0 : (0 : ℝ) < (p.eval n : ℕ) := by exact_mod_cast hp n
   have hlt : ((2 * p.eval n + 1 : ℕ) : ℝ)⁻¹ < 1 / ((p.eval n : ℕ) : ℝ) := by
     rw [← one_div]
@@ -82,6 +87,26 @@ theorem not_mildlyHardOnAverageDet_of_mem_HeurP (b : List Bool → Bool)
     push_cast
     linarith
   linarith
+
+/-- A Boolean function whose distributional problem under the uniform ensemble is in `HeurP` is not
+mildly hard on average against deterministic polynomial-time heuristics. -/
+theorem not_mildlyHardOnAverageDet_of_mem_HeurP (b : List Bool → Bool)
+    (h : (⟨{x | b x = true}, Ensemble.uniform⟩ : DistProblem) ∈ HeurP) :
+    ¬ MildlyHardOnAverageDet (fun x => (b x).toNat) := by
+  rintro ⟨p, hp, hhard⟩
+  obtain ⟨H, hH, hsucc⟩ := exists_heuristic_of_mem_HeurP b h p hp
+  obtain ⟨n, hn⟩ := (hhard H hH).exists
+  exact absurd hn (not_le.mpr (hsucc n))
+
+/-- A Boolean function whose distributional problem under the uniform ensemble is in `HeurP` is not
+even infinitely-often mildly hard on average against deterministic polynomial-time heuristics. -/
+theorem not_mildlyHardOnAverageIO_of_mem_HeurP (b : List Bool → Bool)
+    (h : (⟨{x | b x = true}, Ensemble.uniform⟩ : DistProblem) ∈ HeurP) :
+    ¬ MildlyHardOnAverageIO (fun x => (b x).toNat) := by
+  rintro ⟨p, hp, hhard⟩
+  obtain ⟨H, hH, hsucc⟩ := exists_heuristic_of_mem_HeurP b h p hp
+  obtain ⟨n, hn⟩ := (hhard H hH).exists
+  exact absurd hn (not_le.mpr (hsucc n))
 
 /-- A Boolean function whose distributional problem under the uniform ensemble is in `HeurP` is not
 mildly hard on average against strict PPT heuristics

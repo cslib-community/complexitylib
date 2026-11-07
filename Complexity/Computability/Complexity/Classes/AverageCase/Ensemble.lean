@@ -30,8 +30,9 @@ An ensemble `D : Cslib.Complexity.Ensemble` is a family of distributions `D.dist
 words, where `D.dist n` is supported on words of length exactly `n`. This is the ensemble notion of
 [Bogdanov and Trevisan, §2.1][BogdanovTrevisan2006] specialized to distributions on `{0,1}^n`, the
 setting of their uniform ensemble `U` and of the compression argument in their Claim 20; the
-length `n` is then available to algorithms as the length of the input. Ensembles over words of
-other polynomially related lengths can be padded to this form.
+length `n` is then available to algorithms as the length of the input. The source also allows
+`D_n` to be supported on words of several lengths; such ensembles are not modelled here, and no
+reindexing bridge is provided.
 
 Two efficiency classes of ensembles are defined.
 
@@ -40,7 +41,7 @@ Two efficiency classes of ensembles are defined.
   `Cslib.Complexity.Ensemble.cdf`, the probability of the words of length `|x|` that are at most
   `x`, is a ratio `num x / den x` of naturals computed in polynomial time in binary. On words of a
   fixed length the order used is the numeric order of `Cslib.BitString.binaryValue`, which is the
-  lexicographic order of the source (`Cslib.Complexity.Ensemble.binaryValue_le_iff_le`). Values
+  lexicographic order of the source (`Cslib.BitString.binaryValue_le_iff_le`). Values
   are represented exactly as rationals; the source leaves the output representation implicit.
 * `Cslib.Complexity.Ensemble.PSamp`, polynomial-time samplable ensembles
   [Bogdanov and Trevisan, Definition 1][BogdanovTrevisan2006]: a native strict-PPT program
@@ -57,8 +58,8 @@ The uniform ensemble `Cslib.Complexity.Ensemble.uniform` lies in both classes.
 
 ## Main results
 
-* `Cslib.Complexity.Ensemble.binaryValue_le_iff_le`: on words of equal length, the numeric order is
-  the lexicographic order.
+* `Cslib.BitString.binaryValue_le_iff_le`, `Cslib.BitString.binaryValue_lt_iff_lt`: on words of
+  equal length, the numeric order is the lexicographic order.
 * `Cslib.Complexity.Ensemble.uniform_apply`: a word has uniform probability `2^{-|x|}`.
 * `Cslib.Complexity.Ensemble.cdf_uniform`: the uniform cumulative distribution is
   `(binaryValue x + 1) / 2^{|x|}`.
@@ -70,6 +71,57 @@ The uniform ensemble `Cslib.Complexity.Ensemble.uniform` lies in both classes.
 -/
 
 public section
+
+namespace Cslib.BitString
+
+private theorem foldl_binaryValue (a : ℕ) (t : List Bool) :
+    t.foldl (fun value bit => 2 * value + bit.toNat) a =
+      a * 2 ^ t.length + binaryValue t := by
+  induction t generalizing a with
+  | nil => simp [binaryValue]
+  | cons b t ih =>
+    have h0 : binaryValue (b :: t) =
+        b.toNat * 2 ^ t.length + binaryValue t := by
+      change List.foldl _ 0 (b :: t) = _
+      rw [List.foldl_cons, ih]
+      ring
+    rw [List.foldl_cons, ih, h0, List.length_cons, pow_succ]
+    ring
+
+private theorem binaryValue_cons (b : Bool) (t : List Bool) :
+    binaryValue (b :: t) = b.toNat * 2 ^ t.length + binaryValue t := by
+  change List.foldl _ 0 (b :: t) = _
+  rw [List.foldl_cons, foldl_binaryValue]
+  ring
+
+/-- On words of equal length, the numeric order of `binaryValue` is the strict lexicographic order
+(with `false < true`). -/
+theorem binaryValue_lt_iff_lt {x y : List Bool} (h : x.length = y.length) :
+    binaryValue x < binaryValue y ↔ x < y := by
+  induction x generalizing y with
+  | nil =>
+    obtain rfl : y = [] := List.length_eq_zero_iff.mp h.symm
+    simp
+  | cons a s ih =>
+    obtain ⟨b, t, rfl⟩ := List.exists_cons_of_length_eq_add_one h.symm
+    simp only [List.length_cons, Nat.add_right_cancel_iff] at h
+    rw [binaryValue_cons, binaryValue_cons, List.cons_lt_cons_iff, ← ih h, h]
+    have hs := binaryValue_lt_two_pow s
+    have ht := binaryValue_lt_two_pow t
+    rw [h] at hs
+    cases a <;> cases b
+    all_goals simp only [Bool.toNat_false, Bool.toNat_true, zero_mul, one_mul, zero_add,
+      lt_self_iff_false, true_and, false_or, Bool.false_lt_true, Bool.false_eq_true,
+      Bool.true_eq_false, false_and, or_false, iff_true, gt_iff_lt, add_lt_add_iff_left]
+    all_goals first | omega | exact iff_of_false (by omega) (by decide)
+
+/-- On words of equal length, the numeric order of `binaryValue` is the lexicographic order (with
+`false < true`). -/
+theorem binaryValue_le_iff_le {x y : List Bool} (h : x.length = y.length) :
+    binaryValue x ≤ binaryValue y ↔ x ≤ y := by
+  rw [← not_lt, ← not_lt, binaryValue_lt_iff_lt h.symm]
+
+end Cslib.BitString
 
 namespace Cslib.Complexity
 
@@ -88,7 +140,7 @@ namespace Ensemble
 
 /-- The cumulative distribution `D_{|x|}({y : y ≤ x})` of an ensemble, ordering words of the same
 length by their binary value (equivalently, lexicographically:
-`Cslib.Complexity.Ensemble.binaryValue_le_iff_le`). -/
+`Cslib.BitString.binaryValue_le_iff_le`). -/
 @[expose] noncomputable def cdf (D : Ensemble) (x : List Bool) : ℝ≥0∞ :=
   (D.dist x.length).toOuterMeasure
     {y | BitString.binaryValue y ≤ BitString.binaryValue x}
@@ -114,52 +166,6 @@ noncomputable def uniform : Ensemble where
   length_eq _ _ h := BitString.length_of_mem_support_uniformList h
 
 @[simp] theorem uniform_dist (n : ℕ) : uniform.dist n = BitString.uniformList n := by rfl
-
-private theorem foldl_binaryValue (a : ℕ) (t : List Bool) :
-    t.foldl (fun value bit => 2 * value + bit.toNat) a =
-      a * 2 ^ t.length + BitString.binaryValue t := by
-  induction t generalizing a with
-  | nil => simp [BitString.binaryValue]
-  | cons b t ih =>
-    have h0 : BitString.binaryValue (b :: t) =
-        b.toNat * 2 ^ t.length + BitString.binaryValue t := by
-      change List.foldl _ 0 (b :: t) = _
-      rw [List.foldl_cons, ih]
-      ring
-    rw [List.foldl_cons, ih, h0, List.length_cons, pow_succ]
-    ring
-
-private theorem binaryValue_cons (b : Bool) (t : List Bool) :
-    BitString.binaryValue (b :: t) = b.toNat * 2 ^ t.length + BitString.binaryValue t := by
-  change List.foldl _ 0 (b :: t) = _
-  rw [List.foldl_cons, foldl_binaryValue]
-  ring
-
-/-- On words of equal length, numeric order is strict lexicographic order (with
-`false < true`). -/
-theorem binaryValue_lt_iff_lt {x y : List Bool} (h : x.length = y.length) :
-    BitString.binaryValue x < BitString.binaryValue y ↔ x < y := by
-  induction x generalizing y with
-  | nil =>
-    obtain rfl : y = [] := List.length_eq_zero_iff.mp h.symm
-    simp
-  | cons a s ih =>
-    obtain ⟨b, t, rfl⟩ := List.exists_cons_of_length_eq_add_one h.symm
-    simp only [List.length_cons, Nat.add_right_cancel_iff] at h
-    rw [binaryValue_cons, binaryValue_cons, List.cons_lt_cons_iff, ← ih h, h]
-    have hs := BitString.binaryValue_lt_two_pow s
-    have ht := BitString.binaryValue_lt_two_pow t
-    rw [h] at hs
-    cases a <;> cases b
-    all_goals simp only [Bool.toNat_false, Bool.toNat_true, zero_mul, one_mul, zero_add,
-      lt_self_iff_false, true_and, false_or, Bool.false_lt_true, Bool.false_eq_true,
-      Bool.true_eq_false, false_and, or_false, iff_true, gt_iff_lt, add_lt_add_iff_left]
-    all_goals first | omega | exact iff_of_false (by omega) (by decide)
-
-/-- On words of equal length, numeric order is lexicographic order (with `false < true`). -/
-theorem binaryValue_le_iff_le {x y : List Bool} (h : x.length = y.length) :
-    BitString.binaryValue x ≤ BitString.binaryValue y ↔ x ≤ y := by
-  rw [← not_lt, ← not_lt, binaryValue_lt_iff_lt h.symm]
 
 /-- A word has probability `2^{-|x|}` under the uniform ensemble. -/
 theorem uniform_apply (x : List Bool) : uniform.dist x.length x = (2 ^ x.length)⁻¹ := by

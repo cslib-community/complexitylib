@@ -51,7 +51,7 @@ example : Ensemble.uniform.cdf [true, false] = (3 : ℕ) / (4 : ℕ) := by
 
 /-- The numeric order on words of equal length is the lexicographic order. -/
 example : [false, true, true] < [true, false, false] :=
-  (Ensemble.binaryValue_lt_iff_lt (x := [false, true, true]) (y := [true, false, false]) rfl).mp
+  (BitString.binaryValue_lt_iff_lt (x := [false, true, true]) (y := [true, false, false]) rfl).mp
     (by decide)
 
 /-- Duplication `x ↦ x ++ x` is not dominated by the uniform ensemble: its image of `U_n` puts mass
@@ -209,5 +209,16 @@ not mildly hard on average. -/
 example : ¬ MildlyHardOnAverage (fun x => ((fun _ : List Bool => false) x).toNat) :=
   not_mildlyHardOnAverage_of_mem_HeurP _
     (AvgP_subset_HeurP (mem_AvgP_of_mem_P (by simpa using (empty_mem_P (enc := encBits)))))
+
+/-- The bridge rules out infinitely-often mild hardness too. -/
+example : ¬ MildlyHardOnAverageIO (fun x => ((fun _ : List Bool => false) x).toNat) :=
+  not_mildlyHardOnAverageIO_of_mem_HeurP _
+    (AvgP_subset_HeurP (mem_AvgP_of_mem_P (by simpa using (empty_mem_P (enc := encBits)))))
+
+/-- Domination at every word gives support preservation, here for bit complementation. -/
+example (L : Set (List Bool)) (n : ℕ) (x : List Bool)
+    (hx : x ∈ (Ensemble.uniform.dist n).support) :
+    x.map not ∈ (Ensemble.uniform.dist n).support :=
+  (flipReduction L).mem_support hx
 
 end Cslib.Complexity.AverageCaseDistributionalTests

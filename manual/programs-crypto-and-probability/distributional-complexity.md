@@ -4,7 +4,7 @@ This page covers the distributional average-case framework of Levin, in the form
 
 ## Ensembles and their efficiency classes
 
-[Ensemble](../../Complexity/Computability/Complexity/Classes/AverageCase/Ensemble.lean) is a family `dist : ℕ → PMF (List Bool)` with `dist n` supported on words of length exactly `n`. This is the setting of the source's uniform ensemble and of its compression argument (Claim 20). Algorithms read `n` as the length of their input. The source also allows ensembles over other polynomially related lengths; those are padded to this form rather than modelled directly.
+[Ensemble](../../Complexity/Computability/Complexity/Classes/AverageCase/Ensemble.lean) is a family `dist : ℕ → PMF (List Bool)` with `dist n` supported on words of length exactly `n`. This is the setting of the source's uniform ensemble and of its compression argument (Claim 20). Algorithms read `n` as the length of their input. The source also allows `D_n` to be supported on words of several lengths (§2.3). Such ensembles are not modelled, and no reindexing bridge is provided.
 
 | Declaration | Meaning | Source |
 |---|---|---|
@@ -13,7 +13,7 @@ This page covers the distributional average-case framework of Levin, in the form
 | `Ensemble.PSamp` | a native strict-PPT program (`IsPPTOn encUnary encBits`) whose output law on `n` is exactly `dist n` | Def. 1 |
 | `Ensemble.uniform` | `BitString.uniformList n` at each length; `uniform_pComp`, `uniform_pSamp` | §2.1 |
 
-The source does not fix how cdf values are represented. Here they are exact rationals. `Ensemble.binaryValue_le_iff_le` identifies the numeric order with the source's lexicographic order on words of equal length. Samplability is exact, with no statistical-distance slack.
+The source does not fix how cdf values are represented. Here they are exact rationals. `BitString.binaryValue_le_iff_le` identifies the numeric order with the source's lexicographic order on words of equal length. Samplability is exact, with no statistical-distance slack.
 
 ## Distributional classes
 
@@ -24,7 +24,7 @@ The source does not fix how cdf values are represented. Here they are exact rati
 | `IsErrorlessScheme`, `AvgP` | `List Bool × ℕ → Option Bool`, `k` unary | no wrong answer on the support; `Pr[none] ≤ 1/(k+1)` | Defs. 6, 8 |
 | `IsHeuristicScheme`, `HeurP` | `List Bool × ℕ → Bool`, `k` unary | `Pr[wrong] ≤ 1/(k+1)` | Def. 11 |
 | `IsErrorlessAlgorithm δ`, `AvgDeltaP δ` | `List Bool → Option Bool` | no wrong answer on the support; `Pr[none] ≤ δ n` | Def. 9 |
-| `IsHeuristicAlgorithm δ`, `HeurDeltaP δ` | `List Bool → Bool` | `Pr[wrong] ≤ δ n` | Def. 10 |
+| `IsHeuristicAlgorithm δ`, `HeurDeltaP δ` | `List Bool → Bool` | `Pr[wrong] ≤ δ n` | Defs. 10, 11 |
 | `DistNP`, `SampNP` | — | `lang ∈ NP encBits` with a `PComp`, respectively `PSamp`, ensemble | §2.1 |
 
 The source allows a scheme time polynomial in `n/δ`. With `δ = 1/(k+1)` and `k` in unary, "polynomial in `n` and `k`" is the same bound up to polynomial change. Runtime tails and wrong answers stay distinct: an errorless scheme may say `none` but never errs on the support. Proved inclusions are `mem_AvgP_of_mem_P`, `AvgP_subset_HeurP`, `AvgP_subset_AvgDeltaP q` (failure `1/(q(n)+1)`), `HeurP_subset_HeurDeltaP q` and `AvgDeltaP_subset_HeurDeltaP`.
@@ -39,7 +39,7 @@ Levin's original definition bounds a moment `E[t(x)^ε]` of the running time. It
 - correctness `x ∈ L.lang ↔ f x ∈ L'.lang` on the support of `L.ens.dist n`;
 - a length map `m : ℕ → ℕ` and a polynomial `p : Polynomial ℕ` with domination at **every** word `y`: `(L.ens.dist n).map f y ≤ p(n) · L'.ens.dist (m n) y`.
 
-Source Definition 17 asks for domination only on the target support. Requiring it at every word is a deliberate strengthening. It implies that `f` maps supports into supports (`DistReduction.mem_support`), and the source's Lemma 18 proof uses exactly that when it applies the target algorithm's correctness to `f x`. The bounded-halting reduction of Theorem 19 meets the strengthened condition. It is injective on the support of `D_n`, and the source bounds `D_n(x) ≤ poly(n) · U^BH(f x)` for every `x` in that support. The image probability of any word is therefore `D_n(x)` for its unique support preimage, or `0`. The target ensemble `U^BH_N` does not have full support, so this argument, not support size, carries the condition. The source takes `m` to be a polynomial. Here `m` is unconstrained, and `DistReduction.exists_m_le` derives `m n ≤ c (n+1)^d` from the running time of `f`.
+Source Definition 17 asks for domination only on the target support. `DistReduction.forall_map_apply_le_mul_iff` shows that domination at every word is exactly that condition plus support preservation, `f (Supp D_n) ⊆ Supp D'_{m(n)}` (`DistReduction.mem_support`). The source's Lemma 18 proof uses support preservation when it applies the target algorithm's correctness to `f x`, and the lemma fails without it. Counterexample: take `D'_n` to be the point mass at `0^n`, `L' = {x ++ [true] | x ∈ L}` and `f x = x ++ [true]`. The map `f` is correct and satisfies the literal domination vacuously, and "always no" decides `(L', D')` on its support, so every `(L, D)` would land in `AvgP`. The every-word condition is therefore the repair that Lemma 18 needs, not an optional strengthening. The bounded-halting reduction of Theorem 19 meets the strengthened condition. It is injective on the support of `D_n`, and the source bounds `D_n(x) ≤ poly(n) · U^BH(f x)` for every `x` in that support. The image probability of any word is therefore `D_n(x)` for its unique support preimage, or `0`. The target ensemble `U^BH_N` does not have full support, so this argument, not support size, carries the condition. The source takes `m` to be a polynomial. Here `m` is unconstrained, and `DistReduction.exists_m_le` derives `m n ≤ c (n+1)^d` from the running time of `f`.
 
 | Result | Statement |
 |---|---|
@@ -53,7 +53,7 @@ Source Definition 17 asks for domination only on the target support. Requiring i
 
 ## Bridge to mild hardness
 
-[not_mildlyHardOnAverageDet_of_mem_HeurP](../../Complexity/Computability/Complexity/Classes/AverageCase/MildHardness.lean) shows the following. If `({x | b x = true}, Ensemble.uniform) ∈ HeurP`, then `fun x => (b x).toNat` is not `MildlyHardOnAverageDet`. The proof runs the scheme with confidence `2 p(n)`, which errs with probability at most `1/(2p(n)+1) < 1/p(n)`. `not_mildlyHardOnAverage_of_mem_HeurP` gives the strict-PPT version through the existing PPT-to-deterministic specialization. Only Boolean targets under the uniform ensemble are bridged.
+[not_mildlyHardOnAverageDet_of_mem_HeurP](../../Complexity/Computability/Complexity/Classes/AverageCase/MildHardness.lean) shows the following. If `({x | b x = true}, Ensemble.uniform) ∈ HeurP`, then `fun x => (b x).toNat` is not `MildlyHardOnAverageDet`. The proof runs the scheme with confidence `2 p(n)`, which errs with probability at most `1/(2p(n)+1) < 1/p(n)`. Because the bound holds at every length (`exists_heuristic_of_mem_HeurP`), `not_mildlyHardOnAverageIO_of_mem_HeurP` also rules out infinitely-often hardness. `not_mildlyHardOnAverage_of_mem_HeurP` gives the strict-PPT version through the existing PPT-to-deterministic specialization. Only Boolean targets under the uniform ensemble are bridged.
 
 ## Checked examples
 

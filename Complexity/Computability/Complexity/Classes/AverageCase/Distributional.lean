@@ -34,7 +34,8 @@ This file defines the deterministic average-case classes of [Bogdanov and Trevis
 * For a failure bound `δ : ℕ → ℝ≥0∞`, `AvgDeltaP δ` and `HeurDeltaP δ` are the classes
   `Avg_δ P` and `Heur_δ P` of problems solved by a single polynomial-time errorless, respectively
   heuristic, algorithm with failure probability at most `δ n` on length `n`
-  [Bogdanov and Trevisan, Definitions 9 and 10][BogdanovTrevisan2006].
+  [Bogdanov and Trevisan, Definitions 9 and 11][BogdanovTrevisan2006]; heuristic algorithms are
+  [Bogdanov and Trevisan, Definition 10][BogdanovTrevisan2006].
 * `DistNP` pairs `NP` languages with polynomial-time computable ensembles and `SampNP` with
   polynomial-time samplable ensembles [Bogdanov and Trevisan, §2.1][BogdanovTrevisan2006].
 
@@ -153,7 +154,7 @@ failure probability `δ` [Bogdanov and Trevisan, Definition 9][BogdanovTrevisan2
   {L | ∃ A, L.IsErrorlessAlgorithm δ A}
 
 /-- **`Heur_δ P`**: distributional problems with a polynomial-time heuristic algorithm of error
-probability `δ` [Bogdanov and Trevisan, Definition 10][BogdanovTrevisan2006]. -/
+probability `δ` [Bogdanov and Trevisan, Definition 11][BogdanovTrevisan2006]. -/
 @[expose] def HeurDeltaP (δ : ℕ → ℝ≥0∞) : Set DistProblem :=
   {L | ∃ A, L.IsHeuristicAlgorithm δ A}
 
