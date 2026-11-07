@@ -4534,6 +4534,7 @@ public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
 public import Complexity.Logics.Propositional.CNF.Compact.ModelCount
 public import Complexity.Logics.Propositional.CNF.Compact.Relabel
+public import Complexity.Logics.Propositional.CNF.ExactDistinct
 public import Complexity.Logics.Propositional.CNF.ExactOne
 public import Complexity.Logics.Propositional.CNF.ExactOne.BlockBounds
 public import Complexity.Logics.Propositional.CNF.ExactOne.Blocks
@@ -4560,6 +4561,9 @@ public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 public import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel
 public import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
+public import Complexity.Logics.Propositional.CNF.Moser
+public import Complexity.Logics.Propositional.CNF.Moser.Compression
+public import Complexity.Logics.Propositional.CNF.Moser.Probability
 public import Complexity.Logics.Propositional.CNF.NotAllEqual
 public import Complexity.Logics.Propositional.CNF.NotAllEqual.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.Occurrence
@@ -4686,6 +4690,7 @@ public import Complexity.Probability.ApproximateCounting.Relative
 public import Complexity.Probability.BitString
 public import Complexity.Probability.BitString.AffineHash
 public import Complexity.Probability.BitString.AffineHash.ThreeWise
+public import Complexity.Probability.BitString.CoinFlips
 public import Complexity.Probability.BitString.Collision
 public import Complexity.Probability.BitString.LazyRandomWalk
 public import Complexity.Probability.BitString.LinearHash

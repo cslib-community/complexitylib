@@ -1128,9 +1128,12 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
 
 ### Constructive probabilistic methods
 
-- **Moser–Tardos resampling:** an actual resampling program, its correctness and expected
-  resampling bound, and native sampling and event-detection costs, building on the variable
-  form of the Local Lemma.
+- **Moser–Tardos resampling:** `Logics/Propositional/CNF/Moser*` runs Moser's `k`-SAT
+  resampling algorithm on an explicit tape and bounds its resamplings by entropy compression when
+  every clause shares a variable with fewer than `2 ^ (k - 3)` others
+  ([#2879](https://github.com/cslib-community/complexitylib/issues/2879)). Extend it to the
+  variable form of the Local Lemma under `e p (d + 1) ≤ 1` (witness trees, sharper expected
+  bounds), with native sampling and event-detection costs.
 - **Conditional expectations and pessimistic estimators:** algorithmic alteration, and coloring,
   MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
   (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting
