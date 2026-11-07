@@ -551,6 +551,14 @@ index links to canonical definitions rather than keeping a second set.
   ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): an alternating machine
   checks one cell of a deterministic tableau. It guesses the cell's predecessor window
   existentially and checks each predecessor cell universally.
+- **Pebble games and space lower bounds**
+  ([#2995](https://github.com/cslib-community/complexitylib/issues/2995)): the black pebble game
+  on a `Digraph`, the path-blocking lower-bound engine, and the exact prices `h + 2` of the
+  complete binary tree and the pyramid (Cook) are in `Complexity/Computability/Pebbling`. Next:
+  connect `s`-pebble black pebblings to `s`-register evaluation of `Cslib.Circuits.Program`
+  straight-line programs; black-white and reversible pebbling; the Hopcroft–Paul–Valiant
+  `O(n / log n)` pebbling of bounded-indegree DAGs and the matching Paul–Tarjan–Celoni
+  `Ω(n / log n)` family; Gilbert–Tarjan and Lengauer–Tarjan time–space trade-offs.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
