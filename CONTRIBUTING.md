@@ -207,8 +207,11 @@ candidate modules). After a build,
 listed in a module docstring's "Main …" sections must exist, and a new test file must do more
 than restate signatures with `example … := name`. CI runs both, and also
 `python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
-public statements ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)); its
-docstring gives the rule and `--update-baseline`. On pull requests CI also runs
+public statements ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)). It
+enforces its baseline only in the modules a pull request changes, and merge groups only report,
+so `main` can drift above the baseline; the next change to a drifted module names the encoding
+or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
+options. On pull requests CI also runs
 `python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another

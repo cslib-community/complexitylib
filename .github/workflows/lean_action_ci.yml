@@ -91,9 +91,23 @@ jobs:
         run: python3 -B scripts/check_hygiene.py --check-simp
       # A compound encoding that three or more public statements of a module spell out needs a
       # name (#1656). The existing ones are counted per module in
-      # scripts/encoding_readability_baseline.json, which only falls. Sources only: no Lean.
-      - name: "Encoding readability ratchet"
-        run: python3 -B scripts/check_encoding_readability.py
+      # scripts/encoding_readability_baseline.json, which only falls. Pull requests enforce it in
+      # the modules they change, against the first parent of the merge commit as in the
+      # changed-file lints below; merge groups and pushes only report, so that queued PRs written
+      # before an entry was lowered are not ejected. Sources only: no Lean.
+      - name: "Encoding readability ratchet (changed modules)"
+        if: github.event_name == 'pull_request'
+        env:
+          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -e
+          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
+          BASE=${BASE:-$RECORDED_BASE}
+          git fetch --no-tags --depth=1 origin "$BASE"
+          python3 -B scripts/check_encoding_readability.py --base "$BASE"
+      - name: "Encoding readability report"
+        if: github.event_name != 'pull_request'
+        run: python3 -B scripts/check_encoding_readability.py --report
       # The API documentation (docbuild/) and the guide (guide/) are separate Lake projects that
       # share the library's toolchain and `.lake/packages`, so their lockfiles must follow the root
       # pins. Checking here makes a root cslib or Mathlib bump without matching lockfile updates

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Name compound encodings that public statements repeat (#1656).
 
-Usage: python3 scripts/check_encoding_readability.py [--update-baseline [--allow-increase]]
-                                                     [--summary [N]] [--root DIR] [--baseline FILE]
+Usage: python3 scripts/check_encoding_readability.py [--base REF | --all | --report]
+           [--update-baseline [--allow-increase]] [--summary [N]] [--root DIR] [--baseline FILE]
 
 This checks rule 1 of "Encodings in statements" in AGENTS.md. A *compound encoding* is an
 application of one of the generic combinators `encPair`, `encList`, `encOption`, `encSum`,
@@ -40,14 +40,26 @@ of a longer violation, which is reported instead: naming the longer term fixes b
 the same pass or fail as counting every occurrence; only the numbers differ.
 
 `scripts/encoding_readability_baseline.json` records the violations that the #1656 sweep has yet
-to name, as `{module path: {term: number of declarations}}`, and every violation must match its
+to name, as `{module path: {term: number of declarations}}`. In a module that the change touches
+(adds, modifies or deletes, against the merge base of `--base`, default `origin/main`, and the
+working tree, as `scripts/check_changed_files.py` computes it), every violation must match its
 entry exactly. A violation without an entry, or with more declarations than its entry, fails. An
 entry that records more declarations than remain, or that no longer occurs, fails too until the
 baseline is lowered in the same change, so that a named encoding cannot be spelled out again later.
-`--update-baseline` rewrites the baseline with the current violations; it refuses to add or raise
-an entry unless `--allow-increase` is given, for instance when a module moves or a rename changes
-the spelling of recorded terms. `--summary` prints the totals, the counts per top-level directory
-of `Complexity/`, the modules with the most violations and the terms repeated in several modules.
+Differences in modules that the change does not touch are reported but do not fail: existing code
+is brought in line when it is next modified, and by the sweep. Pull requests run this mode.
+
+`--all` enforces the baseline in every module, for maintenance. `--report` prints every difference
+and always succeeds; merge groups and pushes to `main` run it, so that queued changes written before
+a baseline entry was lowered are not ejected. Merges can therefore leave `main` above the baseline
+in some module; the next change that touches that module names the encoding or, with
+`--update-baseline --allow-increase`, records it.
+
+`--update-baseline` rewrites the entries of the touched modules (with `--all`, of every module)
+with the current violations; it refuses to add or raise an entry unless `--allow-increase` is
+given, for instance when a module moves or a rename changes the spelling of recorded terms.
+`--summary` prints the totals, the counts per top-level directory of `Complexity/`, the modules
+with the most violations and the terms repeated in several modules.
 
 The check reads only the sources: it needs no build outputs.
 """
@@ -64,6 +76,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+import check_changed_files as ccf  # noqa: E402
 from proof_lengths import command_starts, masks, signature_end  # noqa: E402
 
 BASELINE = ROOT / "scripts/encoding_readability_baseline.json"
@@ -682,11 +695,36 @@ def summary(current: dict[str, dict[str, int]], top: int) -> str:
     return "\n".join(out)
 
 
+def touched_modules(root: Path, ref: str) -> set[str]:
+    """The modules under `Complexity/` that the change adds, modifies or deletes, against the
+    merge base of `ref` and `HEAD` (see `check_changed_files.changed_files`) and the working
+    tree."""
+    added, modified = ccf.changed_files(root, ref)
+    deleted = ccf.git(root, "diff", "--no-ext-diff", "--no-renames", "--name-only", "-z",
+                      "--diff-filter=D", ccf.comparison_base(root, ref), "--")
+    if deleted.returncode:
+        sys.exit(f"git diff failed: {deleted.stderr.strip()}")
+    return {path for path in [*added, *modified, *deleted.stdout.split("\0")]
+            if path.startswith("Complexity/") and path.endswith(".lean")}
+
+
+def under_report(under: list[Change]) -> str:
+    return "\n".join(f"  {path}: `{term}` in {count} public signature(s), baseline {entry}"
+                     for path, term, count, entry in under)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
+    scope = parser.add_mutually_exclusive_group()
+    scope.add_argument("--base", default="origin/main",
+                       help="enforce in the modules changed since the merge base with this "
+                            "revision (default origin/main)")
+    scope.add_argument("--all", action="store_true", help="enforce in every module")
+    scope.add_argument("--report", action="store_true",
+                       help="report every difference from the baseline and succeed")
     parser.add_argument("--update-baseline", action="store_true",
-                        help="rewrite the baseline with the current violations")
+                        help="rewrite the baseline entries of the enforced modules")
     parser.add_argument("--allow-increase", action="store_true",
                         help="with --update-baseline, allow adding and raising entries")
     parser.add_argument("--summary", nargs="?", type=int, const=15, metavar="N",
@@ -699,6 +737,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--allow-increase needs --update-baseline")
     if args.summary is not None and args.update_baseline:
         parser.error("--summary does not combine with --update-baseline")
+    if args.report and args.update_baseline:
+        parser.error("--report does not combine with --update-baseline")
     baseline_path = args.baseline or args.root / BASELINE.relative_to(ROOT)
     found = scan(args.root)
     current = counts(found)
@@ -709,26 +749,45 @@ def main(argv: list[str] | None = None) -> int:
     over, under = compare(current, baseline)
     status = (f"{sum(len(terms) for terms in current.values())} repeated compound encoding(s) "
               f"in {len(current)} module(s)")
+    touched = None if args.all or args.report else touched_modules(args.root, args.base)
+    enforced = (lambda path: True) if touched is None else touched.__contains__
+    if args.report:
+        if over:
+            print(over_report(over, found))
+        if under:
+            print(("\n" if over else "") + "Stale baseline entries:\n" + under_report(under))
+        print(("\n" if over or under else "") + f"{status}; report only, nothing is enforced.")
+        return 0
+    over_here = [change for change in over if enforced(change[0])]
+    under_here = [change for change in under if enforced(change[0])]
+    elsewhere = len(over) + len(under) - len(over_here) - len(under_here)
     if args.update_baseline:
-        if over and not args.allow_increase:
-            print(over_report(over, found), file=sys.stderr)
+        if over_here and not args.allow_increase:
+            print(over_report(over_here, found), file=sys.stderr)
             print("\nThe baseline only goes down; pass --allow-increase to raise it on purpose, "
                   "for instance for a moved module or a renamed encoding.", file=sys.stderr)
             return 1
-        baseline_path.write_text(baseline_text(current), encoding="utf-8")
-        print(f"Wrote {baseline_path}: {status}.")
+        kept = {path: terms for path, terms in baseline.items() if not enforced(path)}
+        kept |= {path: terms for path, terms in current.items() if enforced(path)}
+        baseline_path.write_text(baseline_text(kept), encoding="utf-8")
+        scope_text = "every module" if touched is None else f"{len(touched)} changed module(s)"
+        print(f"Wrote {baseline_path} for {scope_text}: {status}.")
         return 0
-    if over:
-        print(over_report(over, found), file=sys.stderr)
-    if under:
-        print(("\n" if over else "") + "Repeated encodings were named or removed, so the baseline "
-              f"is stale. Lower it with `{UPDATE}` and commit the result, so that they cannot "
-              "come back:", file=sys.stderr)
-        print("\n".join(f"  {path}: `{term}` in {count} public signature(s), baseline {entry}"
-                        for path, term, count, entry in under), file=sys.stderr)
-    if over or under:
+    if elsewhere:
+        print(f"Not enforced: {elsewhere} difference(s) from the baseline in modules this change "
+              "does not touch. The next change to those modules resolves them; run with --all "
+              "to list them.")
+    if over_here:
+        print(over_report(over_here, found), file=sys.stderr)
+    if under_here:
+        print(("\n" if over_here else "") + "Repeated encodings were named or removed, so the "
+              f"baseline is stale. Lower it with `{UPDATE}` and commit the result, so that they "
+              "cannot come back:\n" + under_report(under_here), file=sys.stderr)
+    if over_here or under_here:
         return 1
-    print(f"{status}, matching the baseline.")
+    checked = ("every module matches" if touched is None
+               else f"the {len(touched)} changed module(s) match")
+    print(f"{status}; {checked} the baseline.")
     return 0
 
 

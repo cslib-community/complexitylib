@@ -7,6 +7,7 @@ import io
 import json
 import pathlib
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -216,17 +217,20 @@ class RatchetTests(unittest.TestCase):
         self.module.write_text(HEADER + "".join(theorem(n) for n in names))
 
     def run_main(self, baseline: dict | None, *flags: str) -> tuple[int, str, str]:
+        """Run the check in the whole tree (`--all`) unless `flags` choose another scope."""
         if baseline is not None:
             self.baseline.write_text(json.dumps(baseline))
+        scope = [] if {"--base", "--report"} & set(flags) else ["--all"]
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = c.main(["--root", str(self.root), "--baseline", str(self.baseline), *flags])
+            code = c.main(["--root", str(self.root), "--baseline", str(self.baseline), *scope,
+                           *flags])
         return code, out.getvalue(), err.getvalue()
 
     def test_at_the_baseline_passes(self) -> None:
         code, out, _ = self.run_main({"Complexity/Area/A.lean": {TERM: 3}})
         self.assertEqual(code, 0)
-        self.assertIn("1 repeated compound encoding(s) in 1 module(s), matching", out)
+        self.assertIn("1 repeated compound encoding(s) in 1 module(s); every module matches", out)
 
     def test_a_new_violation_fails_with_its_declarations(self) -> None:
         code, _, err = self.run_main({})
@@ -281,6 +285,91 @@ class RatchetTests(unittest.TestCase):
         self.assertIn("Area\t1\t1", out)
         self.assertIn("1\t3\tComplexity/Area/A.lean", out)
 
+
+
+class ScopeTests(unittest.TestCase):
+    """A pull request enforces the baseline only in the modules it changes; merge groups and
+    pushes only report."""
+
+    OTHER = "encPair encUnary (encList encBool)"
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = pathlib.Path(tmp.name)
+        self.baseline = self.root / "baseline.json"
+        self.write("Complexity/Area/A.lean", "abc")
+        # `main` holds one more use in B than the baseline records: drift from a merge.
+        self.write("Complexity/Other/B.lean", "abcd")
+        self.entries = {"Complexity/Area/A.lean": {TERM: 3}, "Complexity/Other/B.lean": {TERM: 3}}
+        self.baseline.write_text(json.dumps(self.entries))
+        for args in (("init", "-q"), ("config", "user.name", "Fixture"),
+                     ("config", "user.email", "fixture@example.invalid"), ("add", "."),
+                     ("commit", "-qm", "base"), ("update-ref", "refs/remotes/origin/main", "HEAD")):
+            subprocess.run(["git", *args], cwd=self.root, check=True, capture_output=True)
+
+    def write(self, rel: str, names: str, term: str = TERM) -> None:
+        path = self.root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(HEADER + "".join(theorem(n, term) for n in names))
+
+    def run_main(self, *flags: str) -> tuple[int, str, str]:
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = c.main(["--root", str(self.root), "--baseline", str(self.baseline), *flags])
+        return code, out.getvalue(), err.getvalue()
+
+    def test_a_new_violation_in_a_changed_module_fails(self) -> None:
+        module = self.root / "Complexity/Area/A.lean"
+        module.write_text(module.read_text() + "".join(theorem(n, self.OTHER) for n in "xyz"))
+        code, _, err = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn(f"Complexity/Area/A.lean: `{self.OTHER}` in 3 public signatures:", err)
+        self.assertNotIn("B.lean", err)
+
+    def test_an_unchanged_module_above_the_baseline_is_only_reported(self) -> None:
+        self.write("Complexity/Area/C.lean", "a")  # a change that adds no violation
+        code, out, err = self.run_main()
+        self.assertEqual((code, err), (0, ""))
+        self.assertIn("Not enforced: 1 difference(s) from the baseline", out)
+        self.assertEqual(self.run_main("--all")[0], 1)
+
+    def test_a_stale_entry_in_a_changed_module_fails(self) -> None:
+        self.write("Complexity/Area/A.lean", "ab")
+        code, _, err = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("the baseline is stale", err)
+        self.assertIn(f"Complexity/Area/A.lean: `{TERM}` in 0 public signature(s), baseline 3",
+                      err)
+        # Deleting a module touches it too.
+        (self.root / "Complexity/Area/A.lean").unlink()
+        self.assertEqual(self.run_main()[0], 1)
+
+    def test_a_stale_entry_in_an_unchanged_module_is_only_reported(self) -> None:
+        self.entries["Complexity/Other/B.lean"] = {TERM: 5}
+        self.baseline.write_text(json.dumps(self.entries))
+        self.write("Complexity/Area/C.lean", "a")
+        code, out, _ = self.run_main()
+        self.assertEqual(code, 0)
+        self.assertIn("Not enforced: 1 difference(s)", out)
+
+    def test_report_mode_always_succeeds(self) -> None:
+        self.write("Complexity/Area/A.lean", "ab")
+        self.write("Complexity/Area/C.lean", "xyz", self.OTHER)
+        code, out, err = self.run_main("--report")
+        self.assertEqual((code, err), (0, ""))
+        self.assertIn(f"Complexity/Area/C.lean: `{self.OTHER}` in 3 public signatures:", out)
+        self.assertIn("Stale baseline entries:", out)
+        self.assertIn("report only, nothing is enforced", out)
+
+    def test_update_rewrites_only_the_changed_modules(self) -> None:
+        self.write("Complexity/Area/A.lean", "ab")
+        code, out, _ = self.run_main("--update-baseline")
+        self.assertEqual(code, 0)
+        self.assertIn("for 1 changed module(s)", out)
+        self.assertEqual(json.loads(self.baseline.read_text()),
+                         {"Complexity/Other/B.lean": {TERM: 3}})
+        self.assertEqual(self.run_main()[0], 0)
 
 if __name__ == "__main__":
     unittest.main()

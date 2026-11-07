@@ -122,6 +122,10 @@
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/PolyTime.lean": {
   "encPair eDesc (encPair (encList encUnary) encUnary)": 3
  },
+ "Complexity/Computability/PCP/Approximation/BinPacking.lean": {
+  "encList (encList encNat)": 3,
+  "encPair (encList encNat) encNat": 3
+ },
  "Complexity/Computability/PCP/Encoded/Composition.lean": {
   "encPair (encPi (encPi encBool)) (encPair ?1 ?2)": 3,
   "encPi (encPi encBool)": 3
