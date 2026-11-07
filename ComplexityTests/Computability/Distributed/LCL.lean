@@ -33,8 +33,8 @@ example : ∀ ℓ : ZMod 1 → Fin 3, ¬IsSolution threeCol ℓ := by decide
 
 -- Closed walks `0 → 1 → 0` and `0 → 1 → 2 → 0` make state `0` flexible with flexibility `2`.
 theorem threeCol_isFlexible : IsFlexible threeCol 0 2 :=
-  IsFlexible.of_two_three ⟨fun i => if i = 1 then 1 else 0, rfl, rfl, by decide⟩
-    ⟨fun i => if i = 1 then 1 else if i = 2 then 2 else 0, rfl, rfl, by decide⟩
+  IsFlexible.of_two_three (.tail _ 1 0 1 (.single (by decide)) (by decide))
+    (.tail _ 2 0 2 (.tail _ 1 2 1 (.single (by decide)) (by decide)) (by decide))
 
 -- Upper bound: for every `n ≥ 2`, `⌈log* n / 2⌉ + 9` rounds.
 example {n : ℕ} (hn : 2 ≤ n) : ∃ A : Algorithm ℕ (ℤ → ℕ) (Fin 3),
@@ -105,36 +105,40 @@ theorem misLCL_irrefl : ∀ a, ¬misLCL a a := by decide
 
 -- Closed walks of lengths `2` and `3` at `(true, false)`.
 theorem misLCL_isFlexible : IsFlexible misLCL (true, false) 2 :=
-  IsFlexible.of_two_three
-    ⟨fun i => if i = 1 then (false, true) else (true, false), rfl, rfl, by decide⟩
-    ⟨fun i => if i = 1 then (false, false) else if i = 2 then (false, true) else (true, false),
-      rfl, rfl, by decide⟩
+  IsFlexible.of_two_three (.tail _ (false, true) _ 1 (.single (by decide)) (by decide))
+    (.tail _ (false, true) _ 2 (.tail _ (false, false) _ 1 (.single (by decide)) (by decide))
+      (by decide))
 
--- `Θ(log* n)` for MIS from the classification.
-example {n : ℕ} (hn : 2 ≤ n) :=
-  misLCL_isFlexible.exists_solvesLCL_and_logStar_le misLCL_irrefl hn
+-- `Θ(log* n)` for MIS from the classification: `⌈log* n / 2⌉ + 9` rounds suffice for `n ≥ 2`, and
+-- every `t`-round algorithm has `log* n ≤ 2t + 2`.
+example {n : ℕ} (hn : 2 ≤ n) :
+    (∃ (S : Type) (A : Algorithm ℕ S (Bool × Bool)),
+      A.SolvesLCL misLCL n ((Nat.logStar n + 1) / 2 + 9)) ∧
+      ∀ {S : Type} (A : Algorithm ℕ S (Bool × Bool)) (t : ℕ), A.SolvesLCL misLCL n t →
+        Nat.logStar n ≤ 2 * t + 2 := by
+  obtain ⟨⟨S, A, hA⟩, hlow⟩ := misLCL_isFlexible.exists_solvesLCL_and_logStar_le misLCL_irrefl hn
+  have h4 : Nat.logStar (Fintype.card (Bool × Bool)) = 2 := by decide
+  refine ⟨⟨S, A, by simpa using hA⟩, fun A t hA => ?_⟩
+  have := hlow A t hA
+  omega
 
 /-! ### 2-colouring is not flexible -/
 
 /-- Proper 2-colouring as an LCL problem. -/
 abbrev twoCol : Bool → Bool → Prop := (· ≠ ·)
 
-theorem twoCol_walk {w : ℕ → Bool} {m : ℕ} (hw : ∀ i < m, twoCol (w i) (w (i + 1))) :
-    ∀ i ≤ m, w i = (w 0 ^^ decide (i % 2 = 1)) := by
-  intro i hi
-  induction i with
-  | zero => simp
-  | succ i ih =>
-    have h := hw i (by omega)
-    rw [ih (by omega)] at h
-    rcases Nat.mod_two_eq_zero_or_one i with h2 | h2 <;>
-      cases hw0 : w 0 <;> cases hwi : w (i + 1) <;> simp_all <;> omega
+/-- Walks in the 2-colouring digraph alternate. -/
+theorem twoCol_relatesInSteps {a b : Bool} {m : ℕ} (h : Relation.RelatesInSteps twoCol a b m) :
+    b = (a ^^ decide (m % 2 = 1)) := by
+  induction h with
+  | refl => simp
+  | tail b c m _ hbc ih =>
+    subst ih
+    rcases Nat.mod_two_eq_zero_or_one m with h2 | h2 <;> cases a <;> cases c <;> simp_all <;> omega
 
 theorem twoCol_not_isFlexible (q : Bool) (K : ℕ) : ¬IsFlexible twoCol q K := by
   intro h
-  obtain ⟨w, h0, hm, hw⟩ := h (2 * K + 1) (by omega)
-  have := twoCol_walk hw (2 * K + 1) le_rfl
-  rw [hm, h0] at this
+  have := twoCol_relatesInSteps (h (2 * K + 1) (by omega))
   cases q <;> simp at this
 
 -- 2-colouring has no loop either, so it still needs `Ω(log* n)` rounds.

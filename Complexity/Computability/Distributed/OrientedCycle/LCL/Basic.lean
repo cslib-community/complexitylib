@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Distributed.OrientedCycle.Linial
+public import Cslib.Foundations.Relation.RelatesInSteps
 
 /-!
 # Locally checkable labellings on oriented cycles
@@ -24,7 +25,8 @@ the relation `R` is the automaton `M_Π` of their §2.2 (`LCL.nodeEdge_iff`). Pr
 (`R := (· ≠ ·)` on `Fin k`) and maximal independent sets (`L := Bool × Bool`, see the tests) are
 examples. A loop of `M_Π` (their Def. 3.3) is a label `a` with `R a a`. A flexible state
 (their Def. 3.2, credited to [Brandt et al.][BrandtEtAl2017]) is a label `q` with closed walks
-`q ⇝ q` of every length `m ≥ K` (`LCL.IsFlexible`).
+`q ⇝ q` of every length `m ≥ K` (`LCL.IsFlexible`), stated with cslib's
+`Relation.RelatesInSteps`.
 
 This file proves the first gap of their classification on directed cycles (Table 1):
 
@@ -47,7 +49,6 @@ Flexible problems are solved in `O(log* n)` rounds in
 
 * `Cslib.Distributed.OrientedCycle.LCL.IsSolution`: `ℓ` solves `R` on the oriented `n`-cycle.
 * `Cslib.Distributed.OrientedCycle.LCL.nodeEdge`: node-edge-checkable problems as LCLs.
-* `Cslib.Distributed.OrientedCycle.LCL.HasClosedWalk`: a closed `R`-walk of length exactly `m`.
 * `Cslib.Distributed.OrientedCycle.LCL.IsFlexible`: `q` is a flexible state with flexibility `K`.
 * `Cslib.Distributed.OrientedCycle.Algorithm.SolvesLCL`: `A` solves `R` on every oriented
   `n`-cycle with identifiers `{0, …, n - 1}` in `t` rounds.
@@ -123,60 +124,28 @@ theorem nodeEdge_iff {Γ : Type*} {Cedge Cnode : Γ → Γ → Prop} {a b c d : 
     (hcd : Cedge c d) : nodeEdge Cedge Cnode (a, b) (c, d) ↔ Cnode b c :=
   ⟨fun h => h.2.1, fun h => ⟨hab, h, hcd⟩⟩
 
-/-! ### Closed walks and flexibility -/
-
-/-- There is a closed walk `q ⇝ q` of length exactly `m` in the digraph `R`. -/
-@[expose] def HasClosedWalk (R : L → L → Prop) (q : L) (m : ℕ) : Prop :=
-  ∃ w : ℕ → L, w 0 = q ∧ w m = q ∧ ∀ i < m, R (w i) (w (i + 1))
-
-theorem hasClosedWalk_zero (q : L) : HasClosedWalk R q 0 :=
-  ⟨fun _ => q, rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _)⟩
-
-theorem hasClosedWalk_one_iff {q : L} : HasClosedWalk R q 1 ↔ R q q := by
-  constructor
-  · rintro ⟨w, h0, h1, hw⟩
-    have := hw 0 Nat.one_pos
-    rwa [h0, zero_add, h1] at this
-  · intro h
-    exact ⟨fun _ => q, rfl, rfl, fun _ _ => h⟩
-
-/-- Closed walks at `q` concatenate. -/
-theorem HasClosedWalk.add {q : L} {a b : ℕ} (ha : HasClosedWalk R q a) (hb : HasClosedWalk R q b) :
-    HasClosedWalk R q (a + b) := by
-  obtain ⟨w, hw0, hwa, hw⟩ := ha
-  obtain ⟨w', hw'0, hw'b, hw'⟩ := hb
-  refine ⟨fun i => if i ≤ a then w i else w' (i - a), by simp [hw0], ?_, fun i hi => ?_⟩
-  · rcases Nat.eq_zero_or_pos b with rfl | hb
-    · simp [hwa]
-    · simp only [show ¬a + b ≤ a by omega, ite_false, Nat.add_sub_cancel_left, hw'b]
-  · by_cases h : i + 1 ≤ a
-    · simp only [show i ≤ a by omega, h, ite_true]
-      exact hw i (by omega)
-    · by_cases h' : i = a
-      · subst h'
-        simp only [le_refl, ite_true, h, ite_false, Nat.add_sub_cancel_left, hwa]
-        have := hw' 0 (by omega)
-        rwa [hw'0, zero_add] at this
-      · simp only [show ¬i ≤ a by omega, h, ite_false]
-        have := hw' (i - a) (by omega)
-        rwa [show i - a + 1 = i + 1 - a by omega] at this
+/-! ### Flexibility -/
 
 /-- The state `q` is *flexible* with flexibility `K` if there are closed walks `q ⇝ q` of every
 length `m ≥ K` ([Chang, Studený and Suomela][ChangStudenySuomela2023], Def. 3.2, credited to
-[Brandt et al.][BrandtEtAl2017]). -/
+[Brandt et al.][BrandtEtAl2017]). A walk of length exactly `m` is cslib's
+`Relation.RelatesInSteps R q q m`. -/
 @[expose] def IsFlexible (R : L → L → Prop) (q : L) (K : ℕ) : Prop :=
-  ∀ m, K ≤ m → HasClosedWalk R q m
+  ∀ m, K ≤ m → Relation.RelatesInSteps R q q m
 
 theorem IsFlexible.mono {q : L} {K K' : ℕ} (h : IsFlexible R q K) (hK : K ≤ K') :
     IsFlexible R q K' := fun m hm => h m (hK.trans hm)
 
 /-- A loop is flexible with flexibility `0`. -/
-theorem IsFlexible.of_loop {q : L} (h : R q q) : IsFlexible R q 0 := fun _ _ =>
-  ⟨fun _ => q, rfl, rfl, fun _ _ => h⟩
+theorem IsFlexible.of_loop {q : L} (h : R q q) : IsFlexible R q 0 := by
+  intro m _
+  induction m with
+  | zero => exact .refl q
+  | succ m ih => exact .tail _ q q m (ih (Nat.zero_le _)) h
 
 /-- Closed walks of lengths `2` and `3` make `q` flexible with flexibility `2`. -/
-theorem IsFlexible.of_two_three {q : L} (h2 : HasClosedWalk R q 2) (h3 : HasClosedWalk R q 3) :
-    IsFlexible R q 2 := by
+theorem IsFlexible.of_two_three {q : L} (h2 : Relation.RelatesInSteps R q q 2)
+    (h3 : Relation.RelatesInSteps R q q 3) : IsFlexible R q 2 := by
   intro m hm
   induction m using Nat.strong_induction_on with
   | _ m ih =>
@@ -184,7 +153,7 @@ theorem IsFlexible.of_two_three {q : L} (h2 : HasClosedWalk R q 2) (h3 : HasClos
     · obtain rfl | rfl : m = 2 ∨ m = 3 := by omega
       · exact h2
       · exact h3
-    · have := (ih (m - 2) (by omega) (by omega)).add h2
+    · have := (ih (m - 2) (by omega) (by omega)).trans h2
       rwa [Nat.sub_add_cancel (by omega)] at this
 
 end LCL
@@ -215,7 +184,9 @@ theorem le_iterate (hR : ∀ a, ¬R a a) (hA : A.SolvesLCL R n t) :
 /-- **Problems without a loop need `Ω(log* n)` rounds** ([Chang, Studený and
 Suomela][ChangStudenySuomela2023], Thm 6.1), via the lower bound of [Linial][Linial1992] in the
 form of [Laurinharju and Suomela][LaurinharjuSuomela2014]: a `t`-round algorithm solving `R` on
-the `n`-cycle has `log* n ≤ 2t + log* |L|`. -/
+the `n`-cycle has `log* n ≤ 2t + log* |L|`. The source also assumes a repeatable state, so that
+solvable instances of every size exist. This per-`n` form does not need it: if the `n`-cycle has
+no solution, then no algorithm solves `R` on it. -/
 theorem logStar_le (hR : ∀ a, ¬R a a) (hA : A.SolvesLCL R n t) :
     Nat.logStar n ≤ 2 * t + Nat.logStar (Fintype.card L) :=
   Nat.logStar_le_iff.2 ((hA.le_iterate hR).trans (Nat.iterate_two_pow_le_twoTower _ _))

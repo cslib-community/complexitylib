@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Distributed.OrientedCycle.ColeVishkin
 public import Complexity.Computability.Distributed.OrientedCycle.LCL.Basic
-public import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Linarith
@@ -28,14 +28,19 @@ to [Brandt et al.][BrandtEtAl2017]. With the lower bound of
 has round complexity `Θ(log* n)` (`LCL.IsFlexible.exists_solvesLCL_and_logStar_le`), the middle
 row of their Table 1 for directed cycles.
 
-The algorithm follows their outline. A distance-`K` anchoring (their Def. 3.8) splits the cycle
-into fragments of bounded length, the anchors are labelled `q`, and each fragment is filled with a
-closed walk `q ⇝ q` of the right length. Let `k = K - 1`.
+The algorithm follows their outline with a weaker anchoring. Let `k = K - 1`. The source uses a
+distance-`K` anchoring (their Def. 3.8), a *maximal* set of anchors splitting the cycle into
+fragments of length at least `K - 1`. Here the anchors are only a ruling set of the `k`-th power of
+the cycle. They are more than `k` apart, and consecutive anchors are at most `2k (3 ^ k - 1) + 1`
+apart. They need not be maximal: for `k = 1` on the 4-cycle with colouring `0, 1, 2, 1`, the only
+anchor is node `0`, and node `2` could be added. Filling needs only these two bounds. The anchors
+are labelled `q`, and each gap between consecutive anchors is filled with a closed walk `q ⇝ q` of
+its length.
 
 1. **Distance-`k` colouring** (`LCL.distColoring`). For each step `j + 1 ≤ k`, the nodes
    `u, u + (j + 1), u + 2 (j + 1), …` form a sequence with distinct identifiers, which the
    Cole–Vishkin algorithm of [Cole and Vishkin][ColeVishkin1986] 3-colours
-   (`LCL.threeColoringRule`). The `k` colours are combined as base-3 digits. Nodes at distance
+   (`fastThreeColoringRule`). The `k` colours are combined as base-3 digits. Nodes at distance
    `1, …, k` then get different colours below `3 ^ k`. This takes `k (s + 3)` rounds when
    `log* n ≤ 2s`.
 2. **Anchors** (`LCL.anchorRule`). A node is an anchor if its colour is smaller than all colours
@@ -45,11 +50,13 @@ closed walk `q ⇝ q` of the right length. Let `k = K - 1`.
    length `g ≥ k + 1` between consecutive anchors, outputs the `d`-th label of a fixed closed walk
    of length `g`. This takes `2k (3 ^ k - 1) + 1` rounds.
 
-The literature describes the anchoring through a maximal independent set in a power of the
-cycle. The local minima of a distance colouring used here give such a set directly.
+The source computes the anchoring as a maximal independent set in a power of the line graph. The
+strict local minima of a distance colouring used here are easier to formalize, and the longer gaps
+they allow only enlarge the additive term.
 
-The leading coefficient `(K - 1) / 2` of `log* n` is not tight. The lower bound has `½`, and
-closing the gap is left open.
+The leading coefficient `(K - 1) / 2` of `log* n` comes from running the `K - 1` Cole–Vishkin
+colourings of stage 1 one after another. It is not tight: the lower bound has `½`, and closing the
+gap is left open.
 
 ## Main definitions
 
@@ -85,38 +92,6 @@ namespace Cslib.Distributed.OrientedCycle.LCL
 
 /-! ### Distance colourings -/
 
-/-- The Cole–Vishkin algorithm `fastThreeColoring s` as a rule of radius `s + 3`. -/
-def threeColoringRule (s : ℕ) : LocalRule ℕ ℕ (s + 3) :=
-  (fastThreeColoring s).toLocalRule (s + 3)
-
-/-- On the infinite oriented path, `threeColoringRule s` 3-colours every proper colouring with
-colours below `N` when `log* N ≤ 2s`: node `0` and node `1` get different colours below `3`. -/
-theorem threeColoringRule_toFun {s N : ℕ} {y : ℤ → ℕ} (hy : ∀ i, y i ≠ y (i + 1))
-    (hN : ∀ i, y i < N) (hs : Nat.logStar N ≤ 2 * s) :
-    (threeColoringRule s).toFun y ≠ (threeColoringRule s).toFun (fun i => y (i + 1)) ∧
-      (threeColoringRule s).toFun y < 3 := by
-  have h := fastThreeColoring_run (n := 0) (x := y) hy hN hs le_rfl
-  have h0 : window (n := 0) y 0 = y := by
-    funext j
-    simp only [window]
-    rw [zero_add]
-    rfl
-  have h1 : window (n := 0) y 1 = fun i => y (i + 1) := by
-    funext j
-    simp only [window]
-    rw [add_comm]
-    rfl
-  have e0 := (fastThreeColoring s).run_eq_apply (n := 0) y (s + 3) 0
-  have e1 := (fastThreeColoring s).run_eq_apply (n := 0) y (s + 3) 1
-  simp only [LocalRule.apply, h0, h1] at e0 e1
-  refine ⟨?_, ?_⟩
-  · have := h.1 0
-    rw [e0, zero_add, e1] at this
-    exact this
-  · have := h.2 0
-    rw [e0] at this
-    exact this
-
 /-- A distance-`k` colouring from a rule `T`: the `j`-th base-3 digit of the colour of `u` is the
 colour `T` gives (capped at `2`) to the progression `u, u + (j + 1), u + 2 (j + 1), …`. -/
 def distColoring {r : ℕ} (T : LocalRule ℕ ℕ r) (k : ℕ) : LocalRule ℕ ℕ (k * r) where
@@ -139,13 +114,13 @@ theorem distColoring_lt {r : ℕ} (T : LocalRule ℕ ℕ r) (k : ℕ) {n : ℕ} 
   Fin.isLt _
 
 /-- **Distance-`k` colouring.** On a cycle with more than `k` nodes and distinct identifiers below
-`n`, `distColoring (threeColoringRule s) k` gives different colours to nodes at distance
+`n`, `distColoring (fastThreeColoringRule s) k` gives different colours to nodes at distance
 `1, …, k` when `log* n ≤ 2s`. -/
 theorem distColoring_ne {s k n : ℕ} (hkn : k < n) {x : ZMod n → ℕ} (hx : Function.Injective x)
     (hxn : ∀ v, x v < n) (hs : Nat.logStar n ≤ 2 * s) (u : ZMod n) {m : ℕ} (hm₁ : 1 ≤ m)
     (hm₂ : m ≤ k) :
-    (distColoring (threeColoringRule s) k).apply x u ≠
-      (distColoring (threeColoringRule s) k).apply x (u + m) := by
+    (distColoring (fastThreeColoringRule s) k).apply x u ≠
+      (distColoring (fastThreeColoringRule s) k).apply x (u + m) := by
   intro h
   obtain ⟨j, rfl⟩ : ∃ j, m = j + 1 := ⟨m - 1, by omega⟩
   have h' := finFunctionFinEquiv.injective (Fin.val_injective h)
@@ -162,8 +137,8 @@ theorem distColoring_ne {s k n : ℕ} (hkn : k < n) {x : ZMod n → ℕ} (hx : F
     push_cast at this ⊢
     linear_combination -this
   have hyN : ∀ i, y i < n := fun i => hxn _
-  have hT := threeColoringRule_toFun hyp hyN hs
-  have hT' := threeColoringRule_toFun (fun i => hyp (i + 1)) (fun i => hyN (i + 1)) hs
+  have hT := fastThreeColoringRule_toFun hyp hyN hs
+  have hT' := fastThreeColoringRule_toFun (fun i => hyp (i + 1)) (fun i => hyN (i + 1)) hs
   have e0 : (fun i => window x u (((j + 1 : ℕ) : ℤ) * i)) = y := by
     funext i
     simp only [window, hy]
@@ -468,7 +443,7 @@ theorem flexibleRadius_eq (k s : ℕ) : flexibleRadius k s = k * (s + 2 * 3 ^ k 
 /-- Distance-`k` colouring, anchors and filling with the closed walks `W`. -/
 def flexibleRule {L : Type*} (W : ℕ → ℕ → L) (k s : ℕ) : LocalRule ℕ L (flexibleRadius k s) :=
   (fillRule W (2 * (k * (3 ^ k - 1)))).comp
-    ((anchorRule k).comp (distColoring (threeColoringRule s) k))
+    ((anchorRule k).comp (distColoring (fastThreeColoringRule s) k))
 
 theorem flexibleRule_isSolution {L : Type*} {R : L → L → Prop} {q : L} {W : ℕ → ℕ → L}
     {k s n : ℕ} (hW0 : ∀ m, k + 1 ≤ m → W m 0 = q) (hWm : ∀ m, k + 1 ≤ m → W m m = q)
@@ -476,7 +451,7 @@ theorem flexibleRule_isSolution {L : Type*} {R : L → L → Prop} {q : L} {W : 
     (hs : Nat.logStar n ≤ 2 * s) {x : ZMod n → ℕ} (hx : Function.Injective x)
     (hxn : ∀ v, x v < n) : IsSolution R ((flexibleRule W k s).apply x) := by
   rw [flexibleRule, LocalRule.apply_comp, LocalRule.apply_comp]
-  set c := (distColoring (threeColoringRule s) k).apply x
+  set c := (distColoring (fastThreeColoringRule s) k).apply x
   have hc : ∀ u : ZMod n, ∀ m < k, c u ≠ c (u + (m + 1)) := fun u m hm => by
     have := distColoring_ne hkn hx hxn hs u (m := m + 1) (by omega) (by omega)
     push_cast at this
@@ -485,13 +460,31 @@ theorem flexibleRule_isSolution {L : Type*} {R : L → L → Prop} {q : L} {W : 
   exact fillRule_isSolution hW0 hWm hWR (fun u hu m hm => anchorRule_spacing c u hu hm)
     (anchorRule_exists_sub hc hC)
 
+/-- A walk of length `m` from `a` to `b`, as a sequence `w` with `w 0 = a` and `w m = b`. -/
+private theorem exists_seq_of_relatesInSteps {L : Type*} {R : L → L → Prop} {a b : L} {m : ℕ}
+    (h : Relation.RelatesInSteps R a b m) :
+    ∃ w : ℕ → L, w 0 = a ∧ w m = b ∧ ∀ i < m, R (w i) (w (i + 1)) := by
+  induction h with
+  | refl => exact ⟨fun _ => a, rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _)⟩
+  | tail b c m _ hbc ih =>
+    obtain ⟨w, h0, hm, hw⟩ := ih
+    refine ⟨fun i => if i ≤ m then w i else c, by simp only [Nat.zero_le, ite_true, h0],
+      by simp only [show ¬m + 1 ≤ m by omega, ite_false], fun i hi => ?_⟩
+    by_cases h : i + 1 ≤ m
+    · simp only [show i ≤ m by omega, h, ite_true]
+      exact hw i (by omega)
+    · obtain rfl : i = m := by omega
+      simp only [le_refl, ite_true, h, ite_false, hm]
+      exact hbc
+
 private theorem IsFlexible.exists_walks {L : Type*} {R : L → L → Prop} {q : L} {K : ℕ}
     (h : IsFlexible R q K) : ∃ W : ℕ → ℕ → L, ∀ m, K ≤ m →
       W m 0 = q ∧ W m m = q ∧ ∀ i < m, R (W m i) (W m (i + 1)) := by
   classical
-  refine ⟨fun m => if hm : K ≤ m then (h m hm).choose else fun _ => q, fun m hm => ?_⟩
+  refine ⟨fun m => if hm : K ≤ m then (exists_seq_of_relatesInSteps (h m hm)).choose
+    else fun _ => q, fun m hm => ?_⟩
   simp only [dite_eq_left hm]
-  exact (h m hm).choose_spec
+  exact (exists_seq_of_relatesInSteps (h m hm)).choose_spec
 
 /-- **Flexible problems in `O(log* n)` rounds** ([Chang, Studený and
 Suomela][ChangStudenySuomela2023], Thm 6.11; [Brandt et al.][BrandtEtAl2017]). If `q` is a flexible

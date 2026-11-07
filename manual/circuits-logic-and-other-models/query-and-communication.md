@@ -122,12 +122,15 @@ bijections onto `{0, …, n - 1}`, like `ColorsCycle`. With a loop `R a a`, `Alg
 solves `R` in `0` rounds (`Algorithm.solvesLCL_const`). Without a loop every solution is a proper
 colouring, so `Algorithm.SolvesLCL.logStar_le` gives `log* n ≤ 2t + log* |L|` from Linial's bound,
 and `Algorithm.SolvesLCL.exists_loop` is the resulting `ω(1)`/`o(log* n)` gap.
-`LCL.IsFlexible R q K` asks for closed walks `q ⇝ q` of every length `m ≥ K`;
-`IsFlexible.of_two_three` gives `K = 2` from walks of lengths `2` and `3`.
+`LCL.IsFlexible R q K` asks for closed walks `q ⇝ q` of every length `m ≥ K`, stated with cslib's
+`Relation.RelatesInSteps`; `IsFlexible.of_two_three` gives `K = 2` from walks of lengths `2` and
+`3`.
 `IsFlexible.exists_solvesLCL` solves such a problem for `n ≥ K` in
 `(K - 1) (s + 2 · 3 ^ (K - 1) + 2) + 1` rounds when `log* n ≤ 2s`. The algorithm builds a
-distance-`(K - 1)` colouring from `K - 1` dilated Cole–Vishkin runs, takes its local minima as
-anchors and fills each gap with a closed walk. `IsFlexible.exists_solvesLCL_and_logStar_le`
+distance-`(K - 1)` colouring from `K - 1` dilated runs of `fastThreeColoringRule` (the
+Cole–Vishkin algorithm as a `LocalRule`), takes its strict local minima as anchors and fills each
+gap with a closed walk. These anchors are spaced like a ruling set but need not form the source's
+maximal anchoring (Def. 3.8). `IsFlexible.exists_solvesLCL_and_logStar_le`
 packages the `Θ(log* n)` bounds for flexible problems without a loop. The leading coefficient
 `(K - 1) / 2` is not tight. These rules are compositions of `LocalRule`s (`LocalRule.comp`,
 `LocalRule.apply_comp` in `Basic.lean`), so run them with `LocalRule.toAlgorithm_run` instead of
