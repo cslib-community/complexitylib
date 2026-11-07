@@ -63,7 +63,7 @@ lake build Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Cost \
   Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Correctness ComplexityTests.Karatsuba
 ```
 
-**Not certified here.** Integer Karatsuba on binary numerals with a bit-operation bound, a native or word-RAM implementation, Toom–Cook and FFT-based multiplication, and lower bounds on the number of multiplications for polynomial products; see [ROADMAP.md](../../ROADMAP.md).
+**Not certified here.** Integer Karatsuba as Boolean circuits is a separate development, described in [Integer multiplication circuits](circuits-and-formulas.md#integer-multiplication-circuits). Also not certified here: a native or word-RAM implementation, Toom–Cook and FFT-based multiplication, and lower bounds on the number of multiplications for polynomial products; see [ROADMAP.md](../../ROADMAP.md).
 
 ## Rational formulas and hitting lists
 
