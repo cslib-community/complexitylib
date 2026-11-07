@@ -756,9 +756,11 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.LowerBound
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
 public import Complexity.Computability.BlumComplexity.Basic
+public import Complexity.Computability.BlumComplexity.Cancellation
 public import Complexity.Computability.BlumComplexity.Fuel
 public import Complexity.Computability.BlumComplexity.Gap
 public import Complexity.Computability.BlumComplexity.RecursiveRelatedness
+public import Complexity.Computability.BlumComplexity.Speedup
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
 public import Complexity.Computability.Catalytic.Comparison
@@ -3764,6 +3766,8 @@ public import Complexity.Foundations.BooleanAnalysis.SpectralSample
 public import Complexity.Foundations.BooleanAnalysis.StableInfluence
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
 public import Complexity.Foundations.BooleanAnalysis.Tribes
+public import Complexity.Foundations.BooleanAnalysis.TribesInfluence
+public import Complexity.Foundations.BooleanAnalysis.TribesJunta
 public import Complexity.Foundations.BooleanAnalysis.Variance
 public import Complexity.Foundations.Combinatorics.Additive.SumsetCover
 public import Complexity.Foundations.Combinatorics.AffineDisperser
@@ -3962,6 +3966,7 @@ public import Complexity.Foundations.Data.Fin.Order
 public import Complexity.Foundations.Data.Fin.Tuple
 public import Complexity.Foundations.Data.Finset.Average
 public import Complexity.Foundations.Data.Finset.Expect
+public import Complexity.Foundations.Data.Finset.ExpectPi
 public import Complexity.Foundations.Data.Finset.Finpartition
 public import Complexity.Foundations.Data.Finset.KthLargest
 public import Complexity.Foundations.Data.Finset.KthLargest.Moment
@@ -4046,6 +4051,7 @@ public import Complexity.Foundations.Data.Nat.CeilQuarter
 public import Complexity.Foundations.Data.Nat.Choose
 public import Complexity.Foundations.Data.Nat.Choose.Central
 public import Complexity.Foundations.Data.Nat.Choose.Real
+public import Complexity.Foundations.Data.Nat.Choose.Sum
 public import Complexity.Foundations.Data.Nat.Choose.Vandermonde
 public import Complexity.Foundations.Data.Nat.Div
 public import Complexity.Foundations.Data.Nat.Doubling
@@ -4389,6 +4395,7 @@ public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 public import Complexity.Languages.Probabilistic.Vector
 public import Complexity.Logics.FirstOrder.Basic
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
+public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
 public import Complexity.Logics.FirstOrder.Encoding
@@ -4606,10 +4613,12 @@ public import Complexity.MachineLearning.OnlineLearning.MultiplicativeWeights
 public import Complexity.MachineLearning.OnlineLearning.WeightedMajority
 public import Complexity.MachineLearning.OnlineLearning.ZeroSum
 public import Complexity.MachineLearning.PACLearning.ERM
+public import Complexity.MachineLearning.PACLearning.EpsilonNet
 public import Complexity.MachineLearning.PACLearning.FiniteClass
 public import Complexity.MachineLearning.PACLearning.GrowthFunction
 public import Complexity.MachineLearning.PACLearning.Realizable
 public import Complexity.MachineLearning.PACLearning.RealizableSample
+public import Complexity.MachineLearning.PACLearning.VCUpperBound
 public import Complexity.MachineLearning.UniformLearning.AC0
 public import Complexity.MachineLearning.UniformLearning.Basic
 public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour

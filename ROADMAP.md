@@ -465,10 +465,12 @@ index links to canonical definitions rather than keeping a second set.
   each reduction's resource bound.
 - **Abstract (Blum) complexity** ([#2866]): Blum complexity measures over Mathlib's
   `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
-  almost-everywhere classes and recursive relatedness, are in `Computability/BlumComplexity`.
-  Remaining: Blum's speedup theorem, the McCreight–Meyer union theorem, the compression theorem
-  and honesty, and Blum measures for native multitape time and space through a Gödel-numbering
-  bridge from native descriptions.
+  almost-everywhere classes (also with a two-argument stretch), recursive relatedness and Blum's
+  speedup theorem, are in `Computability/BlumComplexity`. Remaining: the McCreight–Meyer union
+  theorem, the compression theorem and honesty, effective forms of speedup such as Blum's
+  pseudo-speedup, which computes a faster program for a finite variant of `f` (M. Blum, *On
+  effective procedures for speeding up algorithms*, J. ACM 18(2), 1971), and Blum measures for
+  native multitape time and space through a Gödel-numbering bridge from native descriptions.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
@@ -687,9 +689,10 @@ universe size, not supplied as unverified input tables. In dependency order:
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
 - **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
-  vocabularies, add games for vocabularies with constants, pebble games with their
-  finite-variable equivalence theorems, Hanf and Gaifman locality, and further nondefinability
-  results such as connectivity and acyclicity of finite graphs; then
+  vocabularies and the [nondefinability of connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean)
+  by interpretation from finite linear orders, add games for vocabularies with constants, pebble
+  games with their finite-variable equivalence theorems, Hanf and Gaifman locality, and further
+  nondefinability results such as acyclicity of finite graphs; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
@@ -896,7 +899,11 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
   list-size/agreement guarantees and decoding runtime as separate obligations; concrete
   list-decodable codes for Nisan–Wigderson.
-- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications.
+- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications; coverage of
+  O'Donnell's *Analysis of Boolean Functions*
+  ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the book-form
+  statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta theorem
+  with its spectral concentration).
 - **Resource-bounded measure and dimension:** martingales and gales with explicit computation
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds
@@ -914,9 +921,9 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. For realizable
-  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), prove
-  the VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)`, first for countable domains and
-  then for general well-behaved classes. Give the
+  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), extend
+  the countable-domain VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)` to general
+  well-behaved classes over measurable domains. Give the
   computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
   costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
