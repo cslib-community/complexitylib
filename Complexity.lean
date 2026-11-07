@@ -54,6 +54,7 @@ public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
 public import Complexity.Algorithms.Lean.Sort.Bitonic.ZeroOne
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
+public import Complexity.Algorithms.Lean.TSP.HeldKarp
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BandBounds
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
@@ -1937,6 +1938,7 @@ public import Complexity.Computability.Complexity.Problems.SubsetSum.Mask
 public import Complexity.Computability.Complexity.Problems.TQBF
 public import Complexity.Computability.Complexity.Problems.TQBF.Closed
 public import Complexity.Computability.Complexity.Problems.TSP
+public import Complexity.Computability.Complexity.Problems.TSP.HeldKarp
 public import Complexity.Computability.Complexity.Problems.ThreeSAT
 public import Complexity.Computability.Complexity.Problems.ThreeSAT.Levin
 public import Complexity.Computability.Complexity.Problems.ThreeSATThree
