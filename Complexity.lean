@@ -4340,6 +4340,7 @@ public import Complexity.Logics.FirstOrder.Reduction.Nontrivial
 public import Complexity.Logics.FirstOrder.Reduction.QuantifierFree
 public import Complexity.Logics.FirstOrder.Subformula
 public import Complexity.Logics.FirstOrder.Tuple
+public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Propositional.CNF
 public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
@@ -4362,6 +4363,7 @@ public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.Gadgets
 public import Complexity.Logics.Propositional.CNF.ImplicationChain
 public import Complexity.Logics.Propositional.CNF.ImplicationCycle
+public import Complexity.Logics.Propositional.CNF.Majority
 public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 public import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel

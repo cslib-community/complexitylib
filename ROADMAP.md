@@ -431,6 +431,12 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Structure, time and space
 
+- **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
+  native polynomial-time tractability for the six common-polymorphism cases and NP-completeness
+  outside them, for each fixed finite Boolean constraint language. The first milestone is the
+  majority/2CNF structural equivalence; it does not complete the complexity classification.
+  Symmetric and larger-domain dichotomies are outside the current scope.
+
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
