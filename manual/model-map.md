@@ -1,6 +1,6 @@
 # Model map
 
-This maintained map contains **265 curated entries** from the November 2 survey across four areas. Entries include models, behavior-changing variants, resource predicates and semantic interfaces; they are not asserted to be mathematically independent models. Follow each entry to the chapter explaining its semantics, resources, declarations, results and limitations. The optional [index script](data/coverage.py) exports these table rows; it does not discover models or reconstruct semantic judgments.
+This maintained map contains **266 curated entries** from the November 2 survey across four areas. Entries include models, behavior-changing variants, resource predicates and semantic interfaces; they are not asserted to be mathematically independent models. Follow each entry to the chapter explaining its semantics, resources, declarations, results and limitations. The optional [index script](data/coverage.py) exports these table rows; it does not discover models or reconstruct semantic judgments.
 
 The [module census script](data/census.py) can enumerate every tracked Lean source file at the fixed snapshot. Its broad ownership assignment is an indexing aid, not a claim that every line was reviewed. Model-family completeness remains a semantic judgment; generated inventories are optional and untracked.
 
@@ -62,6 +62,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `sbp` | [SBP](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `bpppath` | [BPPpath](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `fpras` | [FPRAS approximate counting](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
+| `fpaus` | [FPAUS almost uniform sampling](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
 | `deterministic-oracle` | [Efficient deterministic oracle program](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `counting-oracle` | [#P function-bit oracle](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `ma` | [Merlin-Arthur verifier](machines-and-classes/verifiers-counting-interaction.md) | interactive |

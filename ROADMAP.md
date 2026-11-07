@@ -1128,10 +1128,11 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   canonical-path and spectral-gap arguments. Implement Metropolis sampling for encoded rational
   target weights, charging initialization, arithmetic and every transition, with support and
   mixing hypotheses explicit.
-- **FPRAS and almost-uniform sampling:** an almost-uniform sampling (FPAUS) interface with
-  explicit output-distribution error alongside the FPRAS interface, and sampling/counting
-  reductions for suitably self-reducible relations, with the sampling and counting oracle
-  costs included.
+- **FPRAS and almost-uniform sampling:** `Classes/FPRAS` and `Classes/FPAUS` give the two
+  interfaces, and `Classes/FPAUS/FPRAS` proves FPAUS ⇒ FPRAS for one-bit self-reducible
+  witness families (#3039). Prove the converse FPRAS ⇒ FPAUS with Jerrum–Valiant–Vazirani
+  rejection sampling, allow self-reductions fixing several symbols per step, and instantiate both
+  directions for concrete relations such as DNF assignments.
 - Extend to randomized approximate counting for matchings and permanents of nonnegative
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
   expander APIs and connect to the separate Stockmeyer oracle-counting track where their
