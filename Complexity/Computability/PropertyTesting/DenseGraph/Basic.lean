@@ -11,7 +11,7 @@ public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Oracle.QueryCount
 public import Complexity.Languages.Probabilistic.Semantics
 public import Mathlib.Combinatorics.SimpleGraph.DeleteEdges
-public import Mathlib.Combinatorics.SimpleGraph.Triangle.Removal
+public import Mathlib.Combinatorics.SimpleGraph.Triangle.Basic
 public import Mathlib.Order.SymmDiff
 import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 import Mathlib.Analysis.SpecialFunctions.Exp

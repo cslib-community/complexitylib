@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.PropertyTesting.DenseGraph.Basic
+public import Mathlib.Combinatorics.SimpleGraph.Triangle.Removal
 import Complexity.Probability.PMF
 
 /-!
@@ -29,8 +30,10 @@ triangle removal lemma `SimpleGraph.FarFromTriangleFree.le_card_cliqueFinset` it
 `6 · triangleRemovalBound ε`, and `k` trials with `1 ≤ 3 · triangleRemovalBound ε · k` form a
 one-sided tester with `3 k` queries (`isOneSidedTester_triangleTester`). The number of trials
 depends only on `ε`, so triangle-freeness is one-sided testable with a query bound independent of
-the number of vertices (`oneSidedTestable_cliqueFree_three`). This is the removal-lemma testing
-argument of [Alon, Fischer, Krivelevich and Szegedy][AlonFischerKrivelevichSzegedy2000]; see also
+the number of vertices (`oneSidedTestable_cliqueFree_three`). This removal-lemma argument for
+testing triangle-freeness goes back to
+[Alon, Duke, Lefmann, Rödl and Yuster][AlonDukeLefmannRodlYuster1994]; see also
+[Alon, Fischer, Krivelevich and Szegedy][AlonFischerKrivelevichSzegedy2000] and
 [Goldreich, Section 8.4.2][Goldreich2017] for subgraph-freeness testers in the dense graph model.
 
 The query bound inherits the constant of Mathlib's removal lemma, which comes from Szemerédi's
@@ -55,6 +58,8 @@ time.
 
 ## References
 
+* [N. Alon, R. A. Duke, H. Lefmann, V. Rödl, R. Yuster, *The algorithmic aspects of the regularity
+  lemma*][AlonDukeLefmannRodlYuster1994]
 * [N. Alon, E. Fischer, M. Krivelevich, M. Szegedy, *Efficient testing of large
   graphs*][AlonFischerKrivelevichSzegedy2000]
 * [O. Goldreich, *Introduction to Property Testing*][Goldreich2017]
