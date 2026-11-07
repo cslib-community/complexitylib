@@ -1060,12 +1060,14 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Compone
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.DepthTwo
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.InnerProduct
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.KaneWilliamsB
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.LTF
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Menus
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.PendingBias
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Potential
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SharedBottom
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBoundAsymptotics
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
@@ -3556,6 +3558,7 @@ public import Complexity.Foundations.Analysis.ENNRealTsum
 public import Complexity.Foundations.Analysis.Fourier.ZModProd
 public import Complexity.Foundations.Analysis.HarmonicMean
 public import Complexity.Foundations.Analysis.InnerProductSpace.Basic
+public import Complexity.Foundations.Analysis.InnerProductSpace.NearlyOrthogonal
 public import Complexity.Foundations.Analysis.Lattice.Covolume
 public import Complexity.Foundations.Analysis.Lattice.Dual
 public import Complexity.Foundations.Analysis.Lattice.Fourier
@@ -3782,6 +3785,7 @@ public import Complexity.Foundations.Data.BitString.Combination
 public import Complexity.Foundations.Data.BitString.Convolution
 public import Complexity.Foundations.Data.BitString.Counter
 public import Complexity.Foundations.Data.BitString.CoverCoding
+public import Complexity.Foundations.Data.BitString.Discriminator
 public import Complexity.Foundations.Data.BitString.Enumeration
 public import Complexity.Foundations.Data.BitString.Flip
 public import Complexity.Foundations.Data.BitString.Hamming
@@ -4537,6 +4541,7 @@ public import Complexity.Probability.Rewinding
 public import Complexity.Probability.Rewinding.Consistency
 public import Complexity.Probability.Shearer
 public import Complexity.Probability.SmallBias
+public import Complexity.Probability.SmallBias.Correlation
 public import Complexity.Probability.SmallBias.Powering
 public import Complexity.Probability.SmallBias.Random
 public import Complexity.Probability.StatisticalDistance
