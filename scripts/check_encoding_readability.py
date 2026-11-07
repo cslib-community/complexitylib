@@ -22,16 +22,17 @@ whitespace, comments and the names of local variables, which become `?1`, `?2`, 
 first appearance. Local variables are the binders of the declaration, the `variable`s in scope,
 for a field the structure's parameters and earlier fields, and the names bound inside the
 signature by `∀`, `∃`, `fun`, `λ`, the big operators, `let`, `have`, `(x : T) → …` and
-`{x | …}`, each scoped to the rest of its enclosing brackets; an inner binder shadows an outer one
-of the same name. So `encPair encS (encOption encBool)` and `encPair encT (encOption encBool)` are
-the same term `encPair ?1 (encOption encBool)` when `encS` and `encT` are local, and `enc.index`
-is `?1.index` when `enc` is. Everything else is compared verbatim: `Turing.encPair` differs from
-`encPair`. Occurrences inside larger terms count, such as the restated input encoding in
-`fun p => (encPair encS (encOption encBool) p).length`.
+`{x | …}`. Each of these is visible from the end of its binder (after the type in `(x : T)`, after
+the value in `let x := v`) to the end of its enclosing brackets, and an inner binder shadows an
+outer one of the same name. So `encPair encS (encOption encBool)` and
+`encPair encT (encOption encBool)` are the same term `encPair ?1 (encOption encBool)` when `encS`
+and `encT` are local, and `enc.index` is `?1.index` when `enc` is. Everything else is compared
+verbatim: `Turing.encPair` differs from `encPair`. Occurrences inside larger terms count, such as
+the restated input encoding in `fun p => (encPair encS (encOption encBool) p).length`.
 
 Only public declarations count: in a `module`, those inside a `public section` or marked `public`,
-and not `private` or `local`. Declarations in a namespace with an `Internal` component, and modules with an
-`Internal` path component, are not counted. Every module under `Complexity/` is checked; the
+and not `private` or `local`. Declarations in a namespace with an `Internal` component, and modules
+with an `Internal` path component, are not counted. Every module under `Complexity/` is checked; the
 abstracts and the tests are not.
 
 A declaration counts towards a term when it spells the term out other than inside an occurrence
@@ -327,21 +328,21 @@ def _is_colon(tokens: list[re.Match[str]], k: int) -> bool:
     return tokens[k][0] == ":" and not any(adjacent(k + d, t) for d in (-1, 1) for t in ":=")
 
 
-def _group_names(tokens: list[re.Match[str]], match: dict[int, int], open_: int) -> list[str]:
-    """The names a bracketed binder group binds: those before its top-level `:` (`(x y : T)`),
-    or, in a group without a type, every name (`{x y}`, a pattern `⟨a, b⟩`); none for an
-    anonymous instance binder `[C α]`."""
+def _group_names(tokens: list[re.Match[str]], match: dict[int, int], open_: int) -> list[int]:
+    """The indices of the names a bracketed binder group binds: those before its top-level `:`
+    (`(x y : T)`), or, in a group without a type, every name (`{x y}`, a pattern `⟨a, b⟩`); none
+    for an anonymous instance binder `[C α]`."""
     close, k, names = match[open_], open_ + 1, []
     while k < close:
         if _is_colon(tokens, k):
             return names
         if tokens[k].lastgroup == "open":
             if tokens[open_][0] in "(⟨":  # a nested pattern
-                names += [t[0] for t in tokens[k:match[k]] if _is_name(t)]
+                names += [j for j in range(k, match[k]) if _is_name(tokens[j])]
             k = match[k] + 1
             continue
         if _is_name(tokens[k]):
-            names.append(tokens[k][0])
+            names.append(k)
         k += 1
     return [] if tokens[open_][0] == "[" else names
 
@@ -352,20 +353,22 @@ def _is_name(token: re.Match[str]) -> bool:
 
 
 def _binders(tokens: list[re.Match[str]], match: dict[int, int], start: int, stop: int
-             ) -> list[str]:
-    """The names bound by the binders `tokens[start:stop]` of a quantifier or `fun`:
-    `x y`, `x : T`, `x ∈ s`, `(x : T) {y}`, `⟨a, b⟩`."""
+             ) -> list[tuple[int, int]]:
+    """The names bound by the binders `tokens[start:stop]` of a quantifier or `fun` (`x y`,
+    `x : T`, `x ∈ s`, `(x : T) {y}`, `⟨a, b⟩`), as `(index, index from which it is visible)`:
+    a group's names are visible after the group, so that later binder types can use them, and
+    the others from the separator at `stop`."""
     names, k, typed = [], start, False
     while k < stop:
         if tokens[k].lastgroup == "open":
             if not typed:
-                names += _group_names(tokens, match, k)
+                names += [(j, match[k] + 1) for j in _group_names(tokens, match, k)]
             k = match[k] + 1
             continue
         if _is_colon(tokens, k) or tokens[k][0] in BINDER_PREDICATES:
             typed = True
         elif not typed and _is_name(tokens[k]):
-            names.append(tokens[k][0])
+            names.append((k, stop))
         k += 1
     return names
 
@@ -388,38 +391,70 @@ def _separator(tokens: list[re.Match[str]], match: dict[int, int], start: int, s
     return stop
 
 
+def _let_body(text: str, tokens: list[re.Match[str]], match: dict[int, int], let: int,
+              stop: int) -> int:
+    """The index where the body of the `let` or `have` at `let` starts: after the `;` that ends
+    its value, or at the first line that does not continue the value (one that starts no further
+    right than the `let`)."""
+    def column(k: int) -> int:
+        return tokens[k].start() - text.rfind("\n", 0, tokens[k].start()) - 1
+
+    k, assigned = let + 1, False
+    while k < stop:
+        token = tokens[k]
+        if assigned and token[0] == ";":
+            return k + 1
+        if assigned and "\n" in text[tokens[k - 1].end():token.start()] and \
+                column(k) <= column(let):
+            return k
+        if token.lastgroup == "open":
+            k = match[k] + 1
+            continue
+        assigned |= token[0] == "=" and tokens[k - 1][0] == ":" and \
+            tokens[k - 1].end() == token.start()
+        k += 1
+    return stop
+
+
 def bound_names(signature: str, outer: frozenset[str] | set[str]) -> dict[int, object]:
     """For each name in `signature` that refers to a local variable, by offset, the variable it
     refers to. The variables are those of `outer` (binders and `variable`s), and those bound
     inside the signature by `∀`, `∃`, `fun`, `λ`, the big operators, `let`, `have`,
-    `(x : T) → …` and `{x | …}`, each scoped to the rest of its enclosing brackets. An inner
-    binder shadows an outer one with the same name."""
+    `(x : T) → …` and `{x | …}`. Each is visible from the end of its binder (after the type of
+    `(x : T)`, after the value of `let x := v`) to the end of the enclosing brackets, and an
+    inner binder shadows an outer one with the same name."""
     tokens = _tokens(signature)
     match = _matching(tokens)
-    scopes: list[tuple[int, dict[str, object]]] = []  # (end index, {name: variable})
+    pending: list[tuple[int, int, str, int]] = []  # (visible from, end, name, variable)
+    scopes: list[tuple[int, str, int]] = []  # (end, name, variable), innermost last
     closes: list[int] = []  # the closing brackets of the enclosing groups
     found: dict[int, object] = {}
-    fresh = 0
+    binding: set[int] = set()
 
-    def bind(names: list[str], end: int) -> None:
-        nonlocal fresh
-        scopes.append((end, {name: fresh + i for i, name in enumerate(names)}))
-        fresh += len(names)
+    def bind(names: list[tuple[int, int]], end: int) -> None:
+        for index, visible in names:
+            variable = len(binding)
+            binding.add(tokens[index].start())
+            found[tokens[index].start()] = variable
+            pending.append((visible, end, tokens[index][0], variable))
 
     for k, token in enumerate(tokens):
-        while scopes and scopes[-1][0] <= k:
-            scopes.pop()
+        scopes = [scope for scope in scopes if scope[0] > k]
+        scopes += [(end, name, variable) for visible, end, name, variable in pending
+                   if visible <= k < end]
+        pending = [entry for entry in pending if entry[0] > k]
         end = closes[-1] if closes else len(tokens)
         text = token[0]
         if token.lastgroup == "open":
             close = match[k]
             if close + 1 < len(tokens) and tokens[close + 1][0] == "→" and text in "({⦃[" and \
                     any(_is_colon(tokens, j) for j in range(k + 1, close)):
-                bind(_group_names(tokens, match, k), end)  # a dependent arrow `(x : T) → …`
+                # a dependent arrow `(x : T) → …`
+                bind([(j, close + 1) for j in _group_names(tokens, match, k)], end)
             elif text == "{":
                 bar = next((j for j in range(k + 1, close) if tokens[j][0] == "|"), None)
                 if bar is not None:  # a set-builder `{x | p x}`
-                    bind(_binders(tokens, match, k + 1, bar), close)
+                    bind([(j, bar) for j, _ in _binders(tokens, match, k + 1, bar)], close)
             closes.append(close)
         elif token.lastgroup == "close":
             if closes:
@@ -428,16 +463,19 @@ def bound_names(signature: str, outer: frozenset[str] | set[str]) -> dict[int, o
             stop = _separator(tokens, match, k + 1, end, text in ("fun", "λ"))
             bind(_binders(tokens, match, k + 1, stop), end)
         elif text in ("let", "have") and k + 1 < len(tokens):
-            following = tokens[k + 1]
-            if following.lastgroup == "open":
-                bind(_group_names(tokens, match, k + 1), end)
-            elif _is_name(following):
-                bind([following[0]], end)
-        if token.lastgroup == "ident":
+            recursive = tokens[k + 1][0] == "rec"  # `let rec` sees its own name
+            j = k + 1 + recursive
+            if j < len(tokens) and tokens[j].lastgroup == "open":
+                names = _group_names(tokens, match, j)
+            else:
+                names = [j] if j < len(tokens) and _is_name(tokens[j]) else []
+            visible = k if recursive else _let_body(signature, tokens, match, k, end)
+            bind([(index, visible) for index in names], end)
+        if token.lastgroup == "ident" and token.start() not in binding:
             head = text.partition(".")[0]
-            for _, names in reversed(scopes):
-                if head in names:
-                    found[token.start()] = names[head]
+            for _, name, variable in reversed(scopes):
+                if name == head:
+                    found[token.start()] = variable
                     break
             else:
                 if head in outer:

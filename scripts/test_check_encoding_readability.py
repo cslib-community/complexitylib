@@ -77,6 +77,32 @@ class RuleTests(unittest.TestCase):
                 self.assertEqual(violations(source),
                                  {"encPair ?1 (encOption encBool)": ["a", "b", "c"]})
 
+    def test_values_and_binder_types_see_the_outer_scope(self) -> None:
+        # In `let e := e; e` the value is the outer `e`; in `fun (e : T e) => e`, so is the type.
+        let = "".join(
+            f"theorem {n} ({o} : ℕ ↪ List Bool) :\n"
+            f"    encPair {o} (encList (let {i} := {o}; {i})) =\n"
+            f"      encPair {o} (encList (let {i} := {o}; {i})) := rfl\n\n"
+            for n, o, i in (("a", "e", "e"), ("b", "x", "y"), ("c", "z", "w")))
+        lam = "".join(
+            f"theorem {n} ({o} : ℕ ↪ List Bool) :\n"
+            f"    P (encPair {o} (encList (g fun ({i} : T {o}) => {i}))) := sorry\n\n"
+            for n, o, i in (("a", "e", "e"), ("b", "x", "y"), ("c", "z", "w")))
+        # A `let` on its own line binds from the next line at its column; a value continued on
+        # more indented lines does not see the name (here a constant `k`).
+        body = "".join(
+            f"theorem {n} :\n    let {k} := 0\n    P (encPair {k} (encOption encBool)) := sorry\n\n"
+            for n, k in (("a", "k"), ("b", "m"), ("c", "j")))
+        value = "".join(
+            f"theorem {n} :\n    let {k} :=\n      f (encPair k (encOption encBool))\n"
+            "    True := sorry\n\n" for n, k in (("a", "k"), ("b", "m"), ("c", "j")))
+        for source, term in ((let, "encPair ?1 (encList (let ?2 := ?1; ?2))"),
+                             (lam, "encPair ?1 (encList (g fun (?2 : T ?1) => ?2))"),
+                             (body, "encPair ?1 (encOption encBool)"),
+                             (value, "encPair k (encOption encBool)")):
+            with self.subTest(term=term):
+                self.assertEqual(violations(source), {term: ["a", "b", "c"]})
+
     def test_binder_scopes_end_with_their_brackets(self) -> None:
         # Outside `(∀ e, …)`, `e` is a constant again.
         scoped = (lambda n: f"theorem {n} : (∀ e : ℕ ↪ List Bool, True) ∧\n"
@@ -153,7 +179,8 @@ class RuleTests(unittest.TestCase):
 
     def test_an_outer_term_is_reported_instead_of_its_parts(self) -> None:
         outer = f"encPair encUnary ({TERM})"
-        self.assertEqual(violations("".join(theorem(n, outer) for n in "abc")), {outer: ["a", "b", "c"]})
+        self.assertEqual(violations("".join(theorem(n, outer) for n in "abc")),
+                         {outer: ["a", "b", "c"]})
         # The inner term is reported too when it is repeated on its own.
         both = "".join(theorem(n, outer) for n in "abc") + "".join(theorem(n) for n in "xyz")
         self.assertEqual(violations(both), {outer: ["a", "b", "c"], TERM: ["x", "y", "z"]})
