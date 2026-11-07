@@ -19,9 +19,11 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 /-!
 # Sequencing with deadlines and penalties
 
-`JobSequencing` is Karp's problem SEQUENCING [Karp1972]: given jobs `(time, deadline, penalty)`
-and a bound `k`, some order of the jobs, run one after another from time `0` without idle time,
-has total penalty at most `k`, where a job pays its penalty when it completes after its deadline.
+`JobSequencing` is Karp's problem JOB SEQUENCING [Karp1972], the problem SEQUENCING TO MINIMIZE
+TARDY TASK WEIGHT of [Garey and Johnson, Problem SS3][GareyJohnson1979]: given jobs
+`(time, deadline, penalty)` and a bound `k`, some order of the jobs, run one after another from
+time `0` without idle time, has total penalty at most `k`, where a job pays its penalty when it
+completes after its deadline.
 All numbers are natural numbers in binary (`encNat`); orders are permutations (`List.Perm`) of the
 list of jobs, so repeated jobs are scheduled with multiplicity.
 
@@ -56,6 +58,7 @@ total penalty in closed form from prefix sums.
 
 ## References
 
+* [M. R. Garey and D. S. Johnson, *Computers and Intractability*][GareyJohnson1979]
 * [R. M. Karp, *Reducibility among combinatorial problems*][Karp1972]
 -/
 

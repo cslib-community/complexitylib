@@ -21,10 +21,13 @@ import Mathlib.Data.List.GetD
 # Weighted maximum cut
 
 `MaxCut` is the set of pairs `(E, W)` of a list `E` of weighted edges `((u, v), w)` and a bound
-`W` such that some set `S` of vertices cuts edges of total weight at least `W` [Karp1972]: an
-edge crosses the cut when exactly one of its endpoints lies in `S`. Vertices, weights and the
-bound are natural numbers in binary (`encNat`). The edge list is a weighted multigraph: parallel
-edges add their weights and self-loops never cross a cut. Weights may be zero.
+`W` such that some set `S` of vertices cuts edges of total weight at least `W` [Karp1972]
+[Garey and Johnson, Problem ND16][GareyJohnson1979]: an edge crosses the cut when exactly one of
+its endpoints lies in `S`. Vertices, weights and the bound are natural numbers in binary
+(`encNat`). The edge list is a weighted multigraph: parallel edges add their weights and
+self-loops never cross a cut. Weights may be zero. `MaxCut.cutWeight` reads the weight of a cut
+from an encodable edge list, without a vertex type; `Cslib.WeightedCut.cutWeight` is the
+corresponding weight for a weight matrix on a `Fintype`.
 
 Karp's reduction from `Partition` takes the complete graph on the positions `0, …, n - 1` of the
 numbers `a`, with weight `a[i] * a[j]` on the edge between positions `i < j`
@@ -57,6 +60,7 @@ of two input numbers, so the reduction is polynomial in the binary encoding.
 
 ## References
 
+* [M. R. Garey and D. S. Johnson, *Computers and Intractability*][GareyJohnson1979]
 * [R. M. Karp, *Reducibility among combinatorial problems*][Karp1972]
 -/
 
@@ -187,6 +191,11 @@ theorem mem_NP : MaxCut ∈ NP encMaxCut :=
 
 end MaxCut
 
+/-- A list is read off from its positions. -/
+private theorem map_getD_range (a : List ℕ) : (List.range a.length).map (a.getD · 0) = a := by
+  refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
+  simp [List.getElem?_eq_getElem h₂]
+
 /-- A partition is a set of positions holding half of the total sum. -/
 theorem mem_Partition_iff_exists_side {a : List ℕ} :
     a ∈ Partition ↔ ∃ side : ℕ → Bool,
@@ -197,9 +206,6 @@ theorem mem_Partition_iff_exists_side {a : List ℕ} :
       refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
       simp [List.getElem?_eq_getElem (List.length_zipIdx ▸ h₁ : i < a.length)]
     simp only [maskSelect, hz, List.filter_map, List.map_map, Function.comp_def]
-  have hrange : (List.range a.length).map (a.getD · 0) = a := by
-    refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
-    simp [List.getElem?_eq_getElem h₂]
   rw [mem_Partition_iff_sublist]
   constructor
   · rintro ⟨s, hs, hsum⟩
@@ -207,7 +213,7 @@ theorem mem_Partition_iff_exists_side {a : List ℕ} :
     exact ⟨fun i => w.getD i false, by rwa [← hmask]⟩
   · rintro ⟨side, hside⟩
     refine ⟨_, ?_, hside⟩
-    conv_rhs => rw [← hrange]
+    conv_rhs => rw [← map_getD_range a]
     exact List.filter_sublist.map _
 
 namespace Partition
@@ -247,15 +253,6 @@ theorem cutWeight_productEdges (a : List ℕ) (side : ℕ → Bool) (n : ℕ) :
         List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, List.sum_map_mul_right]
       ring
 
-private theorem sum_filter_add_sum_filter_not (l : List ℕ) (side : ℕ → Bool) (f : ℕ → ℕ) :
-    ((l.filter side).map f).sum + ((l.filter fun i => !side i).map f).sum = (l.map f).sum := by
-  induction l with
-  | nil => rfl
-  | cons x l ih =>
-    cases h : side x <;>
-      simp only [List.filter_cons, h, Bool.not_false, Bool.not_true, Bool.false_eq_true, ite_true,
-        ite_false, List.map_cons, List.sum_cons] <;> omega
-
 /-- `A * B` reaches `⌈(A + B)² / 4⌉` only when `A = B`, since `(A + B)² = 4 * A * B + (A - B)²`. -/
 private theorem ceil_quarter_sq_le_mul_iff (A B : ℕ) :
     ((A + B) * (A + B) + 3) / 4 ≤ A * B ↔ A = B := by
@@ -283,12 +280,12 @@ private theorem ceil_quarter_sq_le_mul_iff (A B : ℕ) :
 /-- **Correctness of the reduction to `MaxCut`.** -/
 theorem toMaxCut_mem_iff (a : List ℕ) : toMaxCut a ∈ MaxCut ↔ a ∈ Partition := by
   classical
-  have hrange : (List.range a.length).map (a.getD · 0) = a := by
-    refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
-    simp [List.getElem?_eq_getElem h₂]
-  have hsplit (side : ℕ → Bool) := sum_filter_add_sum_filter_not (List.range a.length) side
-    (a.getD · 0)
-  rw [hrange] at hsplit
+  have hsplit (side : ℕ → Bool) :
+      (((List.range a.length).filter side).map (a.getD · 0)).sum +
+        (((List.range a.length).filter fun i => !side i).map (a.getD · 0)).sum = a.sum := by
+    conv_rhs => rw [← map_getD_range a]
+    simpa using List.sum_map_filter_add_sum_map_filter_not (fun i => side i = true) (a.getD · 0)
+      (List.range a.length)
   rw [mem_Partition_iff_exists_side]
   constructor
   · rintro ⟨S, hS⟩
