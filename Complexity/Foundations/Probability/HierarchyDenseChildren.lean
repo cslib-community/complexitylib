@@ -65,6 +65,14 @@ This is the existing request evaluator, rather than a child with a prescribed me
   normalizedRequest D ident r cutoff ρ K (fun _ => C)
     (densePreparation D ident r h ρ K C) σ
 
+/-- Dense normalization depends on the channel tuple, not the constructor label.
+Finite bin assembly can therefore reuse the same dense calculation at another bin label. -/
+theorem denseChild_congr_task (task : HierarchyTask n) (cutoff h ρ : ℝ → ℝ)
+    (K : ℕ) (C : Matrix V V ℝ) :
+    denseChild D ident { r with task := task } cutoff h ρ K C =
+      denseChild D ident r cutoff h ρ K C := by
+  rfl
+
 /-- Source release is pointwise after the genuine joint normalization is identified.
 The right child keeps exactly its terminal rank and usage predicates and suffix. -/
 theorem denseChild_eq (cutoff h ρ : ℝ → ℝ) (K : ℕ) (C : Matrix V V ℝ)

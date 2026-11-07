@@ -87,28 +87,29 @@ variable {P J : ℕ} [Fact P.Prime]
 open Classical in
 /-- The two-scope clipped mean/noise inputs give the full-rank raw-prefix moment.
 Second-coordinate inputs are charged only on usage, by actual zero extension. -/
-theorem raw_prefix_row_budget
+theorem raw_prefix_four_budget
     (HP : Matrix.FourthRootHierarchyParams 16 1 16 32 8)
     (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (sourceSuffix suffix : List (ZMod P))
     (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y) (ζ : ℝ)
     (Δ : Environment P J → ZMod P → ℕ → ZMod P → Fin 2 → ℝ)
     (raw : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
-    (m i : ℕ)
+    (i : ℕ)
     (hz : ∀ σ x y, ¬retainedMask t Lt D suffix σ y → actualPrefix Δ raw i σ x y 1 = 0)
     (hsub : ∀ σ y, retainedMask t Lt D suffix σ y → retainedMask t La D suffix σ y)
-    {N u e : ℝ} (hNu : 0 ≤ N * u) (he : 0 ≤ e)
+    {N u : ℝ} (hNu : 0 ≤ N * u) (a zbudget : Fin 2 → ℝ)
+    (ha : ∀ ν, 0 ≤ a ν) (hzbudget : ∀ ν, 0 ≤ zbudget ν)
     (hmean : ∀ ν, rowNormPow 4 N u (retainedMask s Ls D sourceSuffix)
       (retainedMask t (if ν = 0 then La else Lt) D suffix)
       (fun _ x y => actualClippedMean HP s t Ls La Lt D sourceSuffix suffix k G ζ Δ raw ν i x y) ≤
-      (e * 2 ^ dyadicSlack m i) ^ 4)
+      (a ν) ^ 4)
     (hnoise : ∀ ν, rowNormPow 4 N u (retainedMask s Ls D sourceSuffix)
       (retainedMask t (if ν = 0 then La else Lt) D suffix)
       (actualNoiseEntry s t Ls La Lt D sourceSuffix suffix k G Δ raw ν i) ≤
-      (e * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4) :
+      (zbudget ν) ^ 4) :
     rowNormPow 4 N u (retainedMask s Ls D sourceSuffix) (retainedMask t La D suffix)
       (fun σ x y => clippedError (G x y / rate k)
         (genuineTarget HP s t Ls Lt D sourceSuffix suffix k G ζ σ x y 1)
-        (actualPrefix Δ raw i σ x y)) ≤ (4 * e * 2 ^ dyadicSlack m i) ^ 4 := by
+        (actualPrefix Δ raw i σ x y)) ≤ ((a 0 + a 1) + (zbudget 0 + zbudget 1)) ^ 4 := by
   let X := retainedMask s Ls D sourceSuffix
   let Ya := retainedMask t La D suffix
   let Yt := retainedMask t Lt D suffix
@@ -120,24 +121,20 @@ theorem raw_prefix_row_budget
     raw ν i σ x y
     else if Yt σ y then actualNoiseEntry s t Ls La Lt D sourceSuffix suffix k G Δ raw ν i σ x y
       else 0
-  have hm (ν : Fin 2) : rowNormPow 4 N u X Ya (μ ν) ≤ (e * 2 ^ dyadicSlack m i) ^ 4 := by
+  have hm (ν : Fin 2) : rowNormPow 4 N u X Ya (μ ν) ≤ (a ν) ^ 4 := by
     fin_cases ν
-    · simpa [μ] using hmean 0
-    · simpa only [μ, Fin.reduceFinMk, Fin.isValue, one_ne_zero, ↓reduceIte, row_mask_subset X Ya Yt
-        hsub] using hmean 1
-  have hz' (ν : Fin 2) : rowNormPow 4 N u X Ya (z ν) ≤ (e * 2 ^ dyadicSlack m i) ^ 4 := by
-    have hn : e * (1 / 64 : ℝ) ^ dyadicSlack m i ≤ e * 2 ^ dyadicSlack m i :=
-      mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (by norm_num) (by norm_num : (1 / 64 : ℝ) ≤ 2)
-        _) he
-    have hb : rowNormPow 4 N u X Ya (z ν) ≤ (e * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4 := by
-      fin_cases ν
-      · simpa [z] using hnoise 0
-      · simpa only [z, Fin.reduceFinMk, Fin.isValue, one_ne_zero, ↓reduceIte,
-          row_mask_subset X Ya Yt hsub] using hnoise 1
-    exact hb.trans (pow_le_pow_left₀ (by positivity) hn 4)
-  have hsum := row_add_budget X Ya hNu (by positivity) (by positivity) _ _
-    (row_add_budget X Ya hNu (by positivity) (by positivity) _ _ (hm 0) (hm 1))
-    (row_add_budget X Ya hNu (by positivity) (by positivity) _ _ (hz' 0) (hz' 1))
+    · simpa only [μ, Fin.reduceFinMk, Fin.isValue, ↓reduceIte] using hmean 0
+    · simpa only [μ, Fin.reduceFinMk, Fin.isValue, one_ne_zero, ↓reduceIte,
+        row_mask_subset X Ya Yt hsub] using hmean 1
+  have hz' (ν : Fin 2) : rowNormPow 4 N u X Ya (z ν) ≤ (zbudget ν) ^ 4 := by
+    fin_cases ν
+    · simpa only [z, Fin.reduceFinMk, Fin.isValue, ↓reduceIte] using hnoise 0
+    · simpa only [z, Fin.reduceFinMk, Fin.isValue, one_ne_zero, ↓reduceIte,
+        row_mask_subset X Ya Yt hsub] using hnoise 1
+  have hsum := row_add_budget X Ya hNu (add_nonneg (ha 0) (ha 1))
+    (add_nonneg (hzbudget 0) (hzbudget 1)) _ _
+    (row_add_budget X Ya hNu (ha 0) (ha 1) _ _ (hm 0) (hm 1))
+    (row_add_budget X Ya hNu (hzbudget 0) (hzbudget 1) _ _ (hz' 0) (hz' 1))
   have hbound := row_mono_abs X Ya hNu
     (fun σ x y => clippedError (G x y / rate k)
       (genuineTarget HP s t Ls Lt D sourceSuffix suffix k G ζ σ x y 1) (actualPrefix Δ raw i σ x y))
@@ -163,10 +160,80 @@ theorem raw_prefix_row_budget
           ring
       rw [heq]
       exact hh.trans (le_abs_self _))
-  have heq : (e * 2 ^ dyadicSlack m i + e * 2 ^ dyadicSlack m i) + (e * 2 ^ dyadicSlack m i + e *
-    2 ^ dyadicSlack m i) = 4 * e * 2 ^ dyadicSlack m i := by ring
-  rw [heq] at hsum
   exact hbound.trans hsum
+
+open Classical in
+/-- Holder's inequality pays the literal raw prefix with its four scope-correct moments.
+There is no uniform common error budget and no final-output hypothesis. -/
+theorem raw_prefix_four_moments
+    (HP : Matrix.FourthRootHierarchyParams 16 1 16 32 8)
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (sourceSuffix suffix : List (ZMod P))
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y) (ζ : ℝ)
+    (Δ : Environment P J → ZMod P → ℕ → ZMod P → Fin 2 → ℝ)
+    (raw : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    (i : ℕ)
+    (hz : ∀ σ x y, ¬retainedMask t Lt D suffix σ y → actualPrefix Δ raw i σ x y 1 = 0)
+    (hsub : ∀ σ y, retainedMask t Lt D suffix σ y → retainedMask t La D suffix σ y)
+    {N u : ℝ} (hNu : 0 ≤ N * u) :
+    let X := retainedMask s Ls D sourceSuffix
+    let Y := fun ν : Fin 2 => retainedMask t (if ν = 0 then La else Lt) D suffix
+    let a := fun ν => rowNormPow 4 N u X (Y ν)
+      (fun _ x y => actualClippedMean HP s t Ls La Lt D sourceSuffix suffix k G ζ Δ raw ν i x y)
+    let z := fun ν => rowNormPow 4 N u X (Y ν)
+      (actualNoiseEntry s t Ls La Lt D sourceSuffix suffix k G Δ raw ν i)
+    rowNormPow 4 N u X (Y 0) (fun σ x y => clippedError (G x y / rate k)
+      (genuineTarget HP s t Ls Lt D sourceSuffix suffix k G ζ σ x y 1)
+      (actualPrefix Δ raw i σ x y)) ≤ 64 * ((a 0 + a 1) + (z 0 + z 1)) := by
+  extract_lets X Y a z
+  let ar := fun ν => (a ν) ^ (4⁻¹ : ℝ)
+  let zr := fun ν => (z ν) ^ (4⁻¹ : ℝ)
+  have ha (ν : Fin 2) : 0 ≤ ar ν := Real.rpow_nonneg (rowNormPow_nonneg hNu _) _
+  have hz' (ν : Fin 2) : 0 ≤ zr ν := Real.rpow_nonneg (rowNormPow_nonneg hNu _) _
+  have hap (ν : Fin 2) : (ar ν) ^ 4 = a ν :=
+    Real.rpow_inv_natCast_pow (rowNormPow_nonneg hNu _) (by decide)
+  have hzp (ν : Fin 2) : (zr ν) ^ 4 = z ν :=
+    Real.rpow_inv_natCast_pow (rowNormPow_nonneg hNu _) (by decide)
+  apply (raw_prefix_four_budget HP s t Ls La Lt D sourceSuffix suffix k G hG ζ Δ raw i
+    hz hsub hNu ar zr ha hz' (fun ν => (hap ν).ge) (fun ν => (hzp ν).ge)).trans
+  have h0 := add_pow_le (ha 0) (ha 1) 4
+  have h1 := add_pow_le (hz' 0) (hz' 1) 4
+  have h2 := add_pow_le (add_nonneg (ha 0) (ha 1)) (add_nonneg (hz' 0) (hz' 1)) 4
+  norm_num only [Nat.reduceSub, Nat.reducePow, hap, hzp] at h0 h1 h2
+  linarith
+
+open Classical in
+/-- The uniform scheduled raw-prefix budget specializes the four-budget split.
+First moments are on rank, second moments on usage, and noise stays unconditional. -/
+theorem raw_prefix_row_budget
+    (HP : Matrix.FourthRootHierarchyParams 16 1 16 32 8)
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (sourceSuffix suffix : List (ZMod P))
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y) (ζ : ℝ)
+    (Δ : Environment P J → ZMod P → ℕ → ZMod P → Fin 2 → ℝ)
+    (raw : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    (m i : ℕ)
+    (hz : ∀ σ x y, ¬retainedMask t Lt D suffix σ y → actualPrefix Δ raw i σ x y 1 = 0)
+    (hsub : ∀ σ y, retainedMask t Lt D suffix σ y → retainedMask t La D suffix σ y)
+    {N u e : ℝ} (hNu : 0 ≤ N * u) (he : 0 ≤ e)
+    (hmean : ∀ ν, rowNormPow 4 N u (retainedMask s Ls D sourceSuffix)
+      (retainedMask t (if ν = 0 then La else Lt) D suffix)
+      (fun _ x y => actualClippedMean HP s t Ls La Lt D sourceSuffix suffix k G ζ Δ raw ν i x y) ≤
+      (e * 2 ^ dyadicSlack m i) ^ 4)
+    (hnoise : ∀ ν, rowNormPow 4 N u (retainedMask s Ls D sourceSuffix)
+      (retainedMask t (if ν = 0 then La else Lt) D suffix)
+      (actualNoiseEntry s t Ls La Lt D sourceSuffix suffix k G Δ raw ν i) ≤
+      (e * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4) :
+    rowNormPow 4 N u (retainedMask s Ls D sourceSuffix) (retainedMask t La D suffix)
+      (fun σ x y => clippedError (G x y / rate k)
+        (genuineTarget HP s t Ls Lt D sourceSuffix suffix k G ζ σ x y 1)
+        (actualPrefix Δ raw i σ x y)) ≤ (4 * e * 2 ^ dyadicSlack m i) ^ 4 := by
+  have hb (ν : Fin 2) := (hnoise ν).trans (pow_le_pow_left₀ (by positivity)
+    (mul_le_mul_of_nonneg_left
+      (pow_le_pow_left₀ (by norm_num) (by norm_num : (1 / 64 : ℝ) ≤ 2) _) he) 4)
+  have h := raw_prefix_four_budget HP s t Ls La Lt D sourceSuffix suffix k G hG ζ Δ raw i
+    hz hsub hNu (fun _ => e * 2 ^ dyadicSlack m i)
+    (fun _ => e * 2 ^ dyadicSlack m i) (fun _ => by positivity)
+    (fun _ => by positivity) hmean hb
+  convert h using 1; ring
 end Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments
 namespace Matrix.FourthRootHierarchyParams.NormalizedRow
 open Finset Cslib Matrix Cslib.RowCompression Cslib.Probability
@@ -202,7 +269,8 @@ theorem uniform_moment_capacity {scale : ℝ} (hs : 0 < scale) (hmargin : scale 
         if IsFirstOverflow (S σ) n (fun _ => HP.K) (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ j ∧
           heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ then
           ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * e i σ x else 0) ≤ (T * ε) ^ 4) →
-      rowNormPow 4 N u X Y (fun σ x y => stateRootError (output HP ζ) (S σ) HP.K
+      rowNormPow 4 N u X Y (fun σ x y => stateRootError (output HP.toHierarchyParams.atomCutoff
+        HP.ρ ζ) (S σ) HP.K
         (iterate (S σ) n (fun _ => HP.K) (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ m)
         ⟨0, truth σ x⟩ y) ≤
       (128 * (HP.K : ℝ) * (A ^ 4 * (η / 511) ^ 4 + C ^ 4 * 2 ^ 4 + C ^ 4 * T ^ 4) + 64 * (HP.K :

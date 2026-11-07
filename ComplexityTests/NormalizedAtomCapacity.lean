@@ -36,7 +36,7 @@ theorem compatible_zero_start_nonzero_output (HP : FourthRootHierarchyParams 16 
     let w : Unit → Fin 2 → ℝ := fun _ ν => if ν = 0 then 1 else ζ * (3 / 4)
     let a := iterate univ (compatibleCapacity HP.K 1) (fun _ => HP.K) (fun _ => scale / 2)
       (fun _ => w) (⟨0, 0⟩ : State Unit) 1
-    0 < a.defaultValue ∧ 0 < output HP ζ (a.row () 0) (a.row () 1)
+    0 < a.defaultValue ∧ 0 < output HP.toHierarchyParams.atomCutoff HP.ρ ζ (a.row () 0) (a.row () 1)
       (firstRank univ HP.K a.defaultValue a.row) := by
   obtain ⟨scale, ζ, hs, hm, _hc, hζ, hζs, _hζθ⟩ := fixed_shape HP
   refine ⟨scale, ζ, hs, hm, hζ, hζs, ?_⟩
@@ -51,7 +51,8 @@ theorem compatible_zero_start_nonzero_output (HP : FourthRootHierarchyParams 16 
     rw [heq]
     change scale / 2 ≤ newDefault univ (compatibleCapacity HP.K 1 0) HP.K (scale / 2) 0 (w + 0)
     exact (le_max_left _ _).trans (le_max_right _ _) |>.trans (le_max_left _ _)
-  have href := reference_iterate_output_eq (H := output HP ζ) hs.le (rank_pos HP)
+  have href := reference_iterate_output_eq (H := output HP.toHierarchyParams.atomCutoff HP.ρ ζ)
+    hs.le (rank_pos HP)
     (s := (univ : Finset Unit)) (a := (⟨0, w⟩ : State Unit)) (n := compatibleCapacity HP.K 1) (ρ
         := fun _ => scale / 2)
     (fun y _ => by change -scale ≤ (1 : ℝ); linarith)
@@ -61,7 +62,8 @@ theorem compatible_zero_start_nonzero_output (HP : FourthRootHierarchyParams 16 
     (fun _ _ _ _ hq hq' => gate_flat HP (hq.2.trans hm) (hq'.2.trans hm)) 1
     (fun i _ => (compatibleCapacity_bounds HP.K 1 i).1) (fun _ _ => by linarith) () (mem_univ _)
   refine ⟨by change 0 < a.defaultValue; linarith, ?_⟩
-  change 0 < output HP ζ (a.row () 0) (a.row () 1) (firstRank univ HP.K a.defaultValue a.row)
+  change 0 < output HP.toHierarchyParams.atomCutoff HP.ρ ζ (a.row () 0) (a.row () 1) (firstRank
+    univ HP.K a.defaultValue a.row)
   rw [heq, href]
   simp only [w, Fin.isValue, ↓reduceIte, one_ne_zero, firstRank,
     unit_rank_zero HP, max_self, output, HP.ρ_one 0 HP.η_pos.le, mul_one]
@@ -96,7 +98,8 @@ theorem large_rank_regression : ∃ HP : FourthRootHierarchyParams 16 1 16 32 8,
       let w : Unit → Fin 2 → ℝ := fun _ ν => if ν = 0 then 1 else ζ * (3 / 4)
       let a := iterate Finset.univ (compatibleCapacity HP.K 1) (fun _ => HP.K) (fun _ => scale / 2)
         (fun _ => w) (⟨0, 0⟩ : State Unit) 1
-      0 < a.defaultValue ∧ 0 < Matrix.FourthRootHierarchyParams.NormalizedRow.output HP ζ
+      0 < a.defaultValue ∧ 0 < Matrix.FourthRootHierarchyParams.NormalizedRow.output
+      HP.toHierarchyParams.atomCutoff HP.ρ ζ
         (a.row () 0) (a.row () 1)
         (firstRank Finset.univ HP.K a.defaultValue a.row) := by
   obtain ⟨HP⟩ := FourthRootHierarchyParams.nonempty (by norm_num : (0 : ℝ)<16) (by norm_num : (0

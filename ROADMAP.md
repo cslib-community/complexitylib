@@ -491,8 +491,34 @@ index links to canonical definitions rather than keeping a second set.
   The residual-bin phase order is local; full global stochastic preparation/access enumeration,
   finite-accuracy ports, estimated copy/routing-fraction comparisons, and the complete scheduled
   mean-prefix bound remain open; range/true means do not establish root
-  regularity or the error recurrence. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
-  induction and native logarithmic workspace/class equality remain required.
+  regularity or the error recurrence. The initial computed estimator now carries normalized
+  child errors through actual conditional walks and correlated bin/prefix sums. One fixed
+  structural charge pays the complete initial first-noise cost uniformly over admissible
+  finite bin families and terminal exponents. Canonical budget-boundary support absorbs
+  the existing semantic noise as well as normalized transported noise. This is
+  conditional on lower-budget child accuracy and reset-right execution. Complete first-mean
+  and first-noise allocations are now paid together, including unconditional noise-tail
+  propagation. A true-mass first-mean payment also pays this combined reserve without
+  the extra field-width, half-depth and all-bins-active restrictions, retaining necessary
+  depth-versus-budget coverage and a common full-bin horizon.
+  Actual second-mean stability uses the two preparation supports and full-terminal-rank
+  clipped mean/noise inputs, without the old width factor. Its literal stationary,
+  final, tail and raw allocations now have a fixed-charge numerical payment. Sparse
+  second centered noise uses spare decay in the unchanged usage-walk allocation.
+  One common charge pays the actual initial four-statistic mixed-tail reserve on an
+  explicit covered-field/depth family, conditional on the lower-budget accuracy and
+  separate reset-right execution premises. Bounded finite residual products now have
+  canonical-reference mean identities and conditional executed own-request root payments;
+  their conservative scalar allowances are not allocated from the precision schedule.
+  A sharper coupled product-mean bound derives the actual left incoming and genuine right
+  row caps, avoiding width loss on the right child's own usage slice. Parent-terminal
+  conditioning, importance/density factors and finite signed schedule allocation remain open.
+  Active stage-zero later inputs and residuals now dispatch through the dyadic RAW program,
+  with literal zero samples for every raw task at budget zero and conditional grid execution.
+  Nonpositive-precision constructor availability and its coarse accuracy are still open.
+  General terminal-rank applications and request-scheduled correction-product allocations,
+  simultaneous recursive accuracy/availability and native logarithmic workspace/class
+  equality remain open.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): the native implicit

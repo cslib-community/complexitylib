@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 module
@@ -110,6 +110,17 @@ theorem iterate_zero : iterate s n K ρ Δ a 0 = a := rfl
 
 theorem iterate_succ (j : ℕ) : iterate s n K ρ Δ a (j + 1) =
     advance s (n j) (K j) (ρ j) (Δ j) (iterate s n K ρ Δ a j) := rfl
+
+/-- Only increments at executed indices affect a compressed iterate. In particular,
+finite computed prefix families need not agree with a reference beyond their horizon. -/
+theorem iterate_congr {Δ' : ℕ → ι → Fin 2 → ℝ} (j : ℕ)
+    (hΔ : ∀ i < j, Δ i = Δ' i) :
+    iterate s n K ρ Δ a j = iterate s n K ρ Δ' a j := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    rw [iterate_succ, iterate_succ, hΔ j (Nat.lt_succ_self j)]
+    rw [ih (fun i hi => hΔ i (Nat.lt_succ_of_lt hi))]
 
 @[simp]
 theorem uncompressedRow_zero {w : ι → Fin 2 → ℝ} : uncompressedRow Δ w 0 = w := by

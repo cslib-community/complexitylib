@@ -53,7 +53,8 @@ theorem normalizedRequest_sharp_noOverflow
       ∀ y ∈ s,
       let a := iterate s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, signals⟩ m
       |(if r.usage.retains (channels D) σ (ident y) then
-          output HP ζ (a.row y 0) (a.row y 1) (firstRank s HP.K a.defaultValue a.row)
+          output HP.toHierarchyParams.atomCutoff HP.ρ ζ (a.row y 0) (a.row y 1) (firstRank s HP.K
+            a.defaultValue a.row)
         else 0) ^ (4⁻¹ : ℝ) - normalizedRequest D ident r HP.toHierarchyParams.atomCutoff HP.ρ HP.K
           trueRaw truePrep σ x y ^ (4⁻¹ : ℝ)| ≤
         Cpre*∑ i ∈ range m, dyadicFloor δ m i * ε i + Cfinal * εfinal := by
@@ -66,7 +67,7 @@ theorem normalizedRequest_sharp_noOverflow
   intro k D ident r hr raw prep trueRaw truePrep σ x n Δ m s signals truth
     hno hd ε hε herr εf hεf herrf y hy
   have hh := hp s n Δ signals truth m hno hd ε hε herr εf hεf herrf y hy
-  rw [normalizedRequest_eq_output HP hζ D ident r hr]
+  rw [normalizedRequest_eq_output HP.toHierarchyParams.atomCutoff HP.ρ HP.K hζ D ident r hr]
   split_ifs
   · exact hh
   · simp only [Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0), sub_self, abs_zero]
@@ -132,7 +133,8 @@ theorem normalizedRequest_sharp_firstOverflow
       ∀ y ∈ s,
       let a := iterate s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, signals⟩ m
       |(if r.usage.retains (channels D) σ (ident y) then
-          output HP ζ (a.row y 0) (a.row y 1) (firstRank s HP.K a.defaultValue a.row)
+          output HP.toHierarchyParams.atomCutoff HP.ρ ζ (a.row y 0) (a.row y 1) (firstRank s HP.K
+            a.defaultValue a.row)
         else 0) ^ (4⁻¹ : ℝ) - normalizedRequest D ident r HP.toHierarchyParams.atomCutoff HP.ρ HP.K
           trueRaw truePrep σ x y ^ (4⁻¹ : ℝ)| ≤
         Cpre*∑ i ∈ range j, dyadicFloor δ m i * ε i + Ctail*∑ i ∈ Ico j m, 28^(m - i) * ε i := by
@@ -148,7 +150,7 @@ theorem normalizedRequest_sharp_firstOverflow
     (fun y _ => request_second_bound hζ hsmall D ident r trueRaw truePrep σ x y
       (request_mean_range D ident r truePrep hc x y))
     hn ε hε herrpre herrtail y hy
-  rw [normalizedRequest_eq_output HP hζ D ident r hr]
+  rw [normalizedRequest_eq_output HP.toHierarchyParams.atomCutoff HP.ρ HP.K hζ D ident r hr]
   split_ifs
   · exact hh
   · simp only [Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0), sub_self, abs_zero]

@@ -193,7 +193,8 @@ theorem polynomialWitnessCutoff4_eq_one (hθ : 0 < θ) (hv : 90 * θ / 1000 ≤ 
 
 /-! ## Joint fourth-root regularity -/
 
-private theorem exists_abs_switch_product_root_sub_le (α β γ δ : ℝ) :
+/-- Joint fourth-root regularity of a polynomial switch times a complementary switch. -/
+theorem exists_abs_switch_product_root_sub_le (α β γ δ : ℝ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ v r v' r',
       |(polynomialSwitch4 α β v * (1 - polynomialSwitch4 γ δ r)) ^ (4⁻¹ : ℝ) -
         (polynomialSwitch4 α β v' * (1 - polynomialSwitch4 γ δ r')) ^ (4⁻¹ : ℝ)| ≤
