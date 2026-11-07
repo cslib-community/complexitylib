@@ -1767,7 +1767,9 @@ public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
 public import Complexity.Computability.Complexity.Problems.CSP.Basic
 public import Complexity.Computability.Complexity.Problems.CSP.Constant
+public import Complexity.Computability.Complexity.Problems.CSP.Hardness
 public import Complexity.Computability.Complexity.Problems.CSP.Majority
+public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
 public import Complexity.Computability.Complexity.Problems.CircuitSAT
 public import Complexity.Computability.Complexity.Problems.CircuitValue
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Compilation

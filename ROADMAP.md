@@ -446,8 +446,9 @@ index links to canonical definitions rather than keeping a second set.
   native polynomial-time tractability for the six common-polymorphism cases and NP-completeness
   outside them, for each fixed finite Boolean constraint language. Structural majority/2CNF,
   native NP membership, unary-constant/majority P membership, and the positive-arity Boolean
-  clone classification are proved in the stack. The remaining solvers, fixed-language
-  applications and hardness assembly do not yet complete the complexity classification.
+  clone classification and native NP-completeness outside the six cases are proved in the stack.
+  The remaining solver applications and six-case assembly do not yet complete the complexity
+  classification.
   Symmetric and larger-domain dichotomies are outside the current scope.
 
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
