@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.SymAnd
 public import Complexity.Foundations.BooleanAnalysis.Mobius
-public import Mathlib.Algebra.BigOperators.ModEq
+import Mathlib.Algebra.BigOperators.ModEq
 
 /-!
 # The canonical `SYM ∘ AND` circuit of a low-degree function
@@ -26,9 +26,9 @@ it outputs `out (c x mod M)` (`SymAnd.eval_ofLowDegree`), with fan-in at most `D
 `M (|T| + 1) ^ D` AND gates.
 
 The circuit is determined by `D`, `M`, `out` and the values of `c` at the indicators of sets of at
-most `D` positions, with no choice. It is the explicit form of
-`SymAnd.exists_countP_modEq_of_mem_lowDegree`, and the step from which the collapse of modular
-towers (`Complexity.Computability.Circuit.Boolean.SymAnd.Collapse`) builds its circuits.
+most `D` positions, with no choice. Its gates give the existence form
+`SymAnd.exists_countP_modEq_of_mem_lowDegree`, and it is the step from which the collapse of
+modular towers (`Complexity.Computability.Circuit.Boolean.SymAnd.Collapse`) builds its circuits.
 
 ## Main definitions
 
@@ -43,6 +43,8 @@ towers (`Complexity.Computability.Circuit.Boolean.SymAnd.Collapse`) builds its c
 * `Cslib.Circuits.Boolean.SymAnd.fanIn_ofLowDegree_le`,
   `Cslib.Circuits.Boolean.SymAnd.size_ofLowDegree_le`: fan-in at most `D`, size at most
   `M (|T| + 1) ^ D`.
+* `Cslib.Circuits.Boolean.SymAnd.exists_countP_modEq_of_mem_lowDegree`: low-degree integer
+  functions are AND counts modulo `M`.
 
 ## References
 
@@ -56,6 +58,8 @@ namespace Cslib.Circuits.Boolean
 namespace SymAnd
 
 open Finset BitString
+
+section Canonical
 
 variable {T : Type*} [Fintype T] [DecidableEq T]
 
@@ -138,6 +142,23 @@ theorem fanIn_ofLowDegree_le (D M : ℕ) (c : (T → Bool) → ℤ) (out : ℕ �
 theorem size_ofLowDegree_le (D : ℕ) {M : ℕ} (hM : 0 < M) (c : (T → Bool) → ℤ)
     (out : ℕ → Bool) : (ofLowDegree D M c out).size ≤ M * (Fintype.card T + 1) ^ D :=
   card_mobiusGates_le D hM c
+
+end Canonical
+
+variable {T : Type*} [Fintype T]
+
+/-- **Low-degree integer functions are AND counts modulo `M`.** For `c` of degree at most `D` on
+the cube and `M > 0`, some multiset of at most `M * (|T| + 1) ^ D` sets of at most `D` positions
+has, at every point, a number of satisfied sets congruent to `c` modulo `M`; the gates of
+`ofLowDegree` are one. -/
+theorem exists_countP_modEq_of_mem_lowDegree {D : ℕ} {c : (T → Bool) → ℤ}
+    (hc : c ∈ lowDegree ℤ T D) {M : ℕ} (hM : 0 < M) :
+    ∃ G : Multiset (Finset T), (∀ S ∈ G, #S ≤ D) ∧
+      Multiset.card G ≤ M * (Fintype.card T + 1) ^ D ∧
+      ∀ x, ((G.countP fun S => ∀ i ∈ S, x i = true : ℕ) : ℤ) ≡ c x [ZMOD M] := by
+  classical
+  exact ⟨mobiusGates D M c, fun _ => card_le_of_mem_mobiusGates, card_mobiusGates_le D hM c,
+    natCast_count_ofLowDegree_modEq hc hM fun _ => false⟩
 
 end SymAnd
 

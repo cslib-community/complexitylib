@@ -27,11 +27,11 @@ single `SYM ∘ AND` circuit (`SymAnd.exists_eval_eq_eval_step`). With `M = p ^ 
 the top circuit, the modulus-amplified bits `h_t = 1 - p_k(q_t ^ (p - 1))` agree with the layer's
 outputs modulo `M` (`Polynomial.one_sub_parityAmplifier_eval_pow_modEq`). Hence
 `∑_{S ∈ gates} ∏_{t ∈ S} h_t` is a low-degree integer function congruent modulo `M` to the
-number of satisfied gates, which is below `M` (`SymAnd.ampCount_modEq`). The canonical circuit of
-that function modulo `M` (`SymAnd.ofLowDegree`, with AND multiplicities its subset Möbius
-coefficients) is the collapsed circuit (`SymAnd.collapseStep`), and its symmetric gate reads its
-argument modulo `M`. This is the inductive step of [BeigelTarui1994, Lemma 2.8] with their Fact 2.7
-(Section 2.4).
+number of satisfied gates, which is below `M` (`SymAnd.amplifiedCount_modEq`). The canonical
+circuit of that function modulo `M` (`SymAnd.ofLowDegree`, with AND multiplicities its subset
+Möbius coefficients) is the collapsed circuit (`SymAnd.collapseStep`), and its symmetric gate reads
+its argument modulo `M`. This is the inductive step of [BeigelTarui1994, Lemma 2.8] with their
+Fact 2.7 (Section 2.4).
 
 Iterating over `L` layers whose primes, slot-polynomial degrees and `log₂(|T| + 1)` are at most
 `B`, starting from a circuit of fan-in at most `B` and size at most `2 ^ B`, gives a
@@ -138,15 +138,15 @@ private theorem sum_prod_mem_lowDegree {G : Multiset (Finset T)} {F E : ℕ}
 
 /-- The modulus-amplified count of `C` after the layer `L`: the sum over the gates `S` of `C` of
 `∏_{t ∈ S} (1 - p_k(q_t ^ (p - 1)))`. Modulo `p ^ k` it is the number of gates of `C` satisfied
-after `L` (`SymAnd.ampCount_modEq`). -/
-noncomputable def ampCount (C : SymAnd T) (L : ModPolyLayer T) (k : ℕ) (v : T → Bool) : ℤ :=
+after `L` (`SymAnd.amplifiedCount_modEq`). -/
+noncomputable def amplifiedCount (C : SymAnd T) (L : ModPolyLayer T) (k : ℕ) (v : T → Bool) : ℤ :=
   (C.gates.map fun S => ∏ t ∈ S, (1 - (parityAmplifier k).eval (L.q t v ^ (L.p - 1)))).sum
 
 /-- The amplified count has degree at most `C.fanIn * (2k - 1)(p - 1)D` when the slot polynomials
 have degree at most `D`. -/
-theorem ampCount_mem_lowDegree (C : SymAnd T) (L : ModPolyLayer T) {D : ℕ}
+theorem amplifiedCount_mem_lowDegree (C : SymAnd T) (L : ModPolyLayer T) {D : ℕ}
     (hq : ∀ t, L.q t ∈ lowDegree ℤ T D) (k : ℕ) :
-    ampCount C L k ∈ lowDegree ℤ T (C.fanIn * ((2 * k - 1) * ((L.p - 1) * D))) := by
+    amplifiedCount C L k ∈ lowDegree ℤ T (C.fanIn * ((2 * k - 1) * ((L.p - 1) * D))) := by
   refine sum_prod_mem_lowDegree (fun S hS => card_le_fanIn hS) fun t => ?_
   have h1 : (fun v => L.q t v ^ (L.p - 1)) ∈ lowDegree ℤ T ((L.p - 1) * D) :=
     pow_mem_lowDegree (hq t) _
@@ -154,11 +154,12 @@ theorem ampCount_mem_lowDegree (C : SymAnd T) (L : ModPolyLayer T) {D : ℕ}
 
 /-- For a prime modulus, the amplified count is the number of gates of `C` satisfied after `L`,
 modulo `p ^ k` [BeigelTarui1994, Fact 2.7]. -/
-theorem ampCount_modEq (C : SymAnd T) (L : ModPolyLayer T) (hp : L.p.Prime) (k : ℕ)
-    (v : T → Bool) : ampCount C L k v ≡ C.count (L.step v) [ZMOD ((L.p ^ k : ℕ) : ℤ)] := by
+theorem amplifiedCount_modEq (C : SymAnd T) (L : ModPolyLayer T) (hp : L.p.Prime) (k : ℕ)
+    (v : T → Bool) :
+    amplifiedCount C L k v ≡ C.count (L.step v) [ZMOD ((L.p ^ k : ℕ) : ℤ)] := by
   rw [natCast_count_eq_sum, ← ZMod.intCast_eq_intCast_iff]
-  simp only [ampCount, Int.cast_multiset_sum, Multiset.map_map, Function.comp_def, Int.cast_prod,
-    BitString.monomial]
+  simp only [amplifiedCount, Int.cast_multiset_sum, Multiset.map_map, Function.comp_def,
+    Int.cast_prod, BitString.monomial]
   congr 1
   refine Multiset.map_congr rfl fun S _ => Finset.prod_congr rfl fun t _ => ?_
   refine (ZMod.intCast_eq_intCast_iff _ _ _).2 ?_
@@ -167,20 +168,20 @@ theorem ampCount_modEq (C : SymAnd T) (L : ModPolyLayer T) (hp : L.p.Prime) (k :
   exact this
 
 /-- **One explicit collapse step** [BeigelTarui1994, Lemma 2.8]: the canonical circuit
-(`SymAnd.ofLowDegree`) of the amplified count `ampCount C L k` modulo `p ^ k`, up to its degree
-bound `C.fanIn * (2k - 1)(p - 1)D`, below the symmetric gate of `C`. -/
+(`SymAnd.ofLowDegree`) of the amplified count `amplifiedCount C L k` modulo `p ^ k`, up to its
+degree bound `C.fanIn * (2k - 1)(p - 1)D`, below the symmetric gate of `C`. -/
 noncomputable def collapseStep [Fintype T] [DecidableEq T] (C : SymAnd T) (L : ModPolyLayer T)
     (k D : ℕ) : SymAnd T :=
-  ofLowDegree (C.fanIn * ((2 * k - 1) * ((L.p - 1) * D))) (L.p ^ k) (ampCount C L k) C.out
+  ofLowDegree (C.fanIn * ((2 * k - 1) * ((L.p - 1) * D))) (L.p ^ k) (amplifiedCount C L k) C.out
 
 /-- **What the collapse step computes**: `C` after `L`, when `p` is prime, the slot polynomials have
 degree at most `D` and `C.size < p ^ k`. -/
 theorem eval_collapseStep [Fintype T] [DecidableEq T] (C : SymAnd T) (L : ModPolyLayer T)
     (hp : L.p.Prime) {D : ℕ} (hq : ∀ t, L.q t ∈ lowDegree ℤ T D) {k : ℕ} (hk : C.size < L.p ^ k)
     (v : T → Bool) : (collapseStep C L k D).eval v = C.eval (L.step v) := by
-  rw [collapseStep, eval_ofLowDegree (ampCount_mem_lowDegree C L hq k) (pow_pos hp.pos k)]
-  have h1 : ampCount C L k v % ((L.p ^ k : ℕ) : ℤ) =
-      ((C.count (L.step v) : ℕ) : ℤ) % ((L.p ^ k : ℕ) : ℤ) := ampCount_modEq C L hp k v
+  rw [collapseStep, eval_ofLowDegree (amplifiedCount_mem_lowDegree C L hq k) (pow_pos hp.pos k)]
+  have h1 : amplifiedCount C L k v % ((L.p ^ k : ℕ) : ℤ) =
+      ((C.count (L.step v) : ℕ) : ℤ) % ((L.p ^ k : ℕ) : ℤ) := amplifiedCount_modEq C L hp k v
   rw [h1, ← Int.natCast_mod, Nat.mod_eq_of_lt ((C.count_le_size _).trans_lt hk),
     Int.toNat_natCast]
   rfl

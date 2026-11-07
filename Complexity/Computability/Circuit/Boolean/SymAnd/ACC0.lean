@@ -65,10 +65,12 @@ element of `𝔽_{2^κ}`, `κ = O(log (n + s))` bits, and every test has degree 
 here each `MOD_m` gate becomes `MOD_p` digit tests, so every layer of the tower has a prime modulus.
 The exponent `5 ^ (d (m + 2))` is not optimized.
 
-The circuit is explicit: `Circuit.toSymAnd C m` is built from `C` and `m` by the steps above, with
-no choice (`Circuit.eval_toSymAnd`, `Circuit.fanIn_toSymAnd_le`, `Circuit.size_toSymAnd_le`).
-Williams's algorithm also needs it to be constructed in time `2 ^ polylog(s)` [Williams2014]; that
-running time is not formalized here.
+The circuit is canonical: `Circuit.toSymAnd C m` is built from `C` and `m` by the steps above,
+with no witness taken from an existence proof (`Circuit.eval_toSymAnd`, `Circuit.fanIn_toSymAnd_le`,
+`Circuit.size_toSymAnd_le`): the seed field uses its least irreducible modulus and each collapse
+uses the canonical Möbius circuit. Equality in the seed field is decided classically, so the
+definition is not executable as a Lean term. Williams's algorithm needs the circuit to be
+constructed in time `2 ^ polylog(s)` [Williams2014]; that computation is not formalized here.
 
 ## Main definitions
 
@@ -737,7 +739,8 @@ end ACC0ToSymAnd
 open ACC0ToSymAnd in
 /-- **The explicit `SYM ∘ AND` circuit of an ACC⁰ circuit**: `compile` with seeds of
 `2 (⌊log₂ (n + s)⌋ + 1) + 2` bits and `d` rounds, where `s` is the size and `d` the depth of `C`.
--/
+It is specified only for `m > 0` (`Circuit.eval_toSymAnd`); for `m = 0` it is well-typed but no
+theorem describes it. -/
 noncomputable def _root_.Cslib.Circuits.Circuit.toSymAnd {n : ℕ}
     (C : Circuit Unbounded.extSignature n 1) (m : ℕ) : SymAnd (Fin n) :=
   compile C.program m (Nat.log 2 (n + C.size) + 1) C.depth (C.outputs 0)
