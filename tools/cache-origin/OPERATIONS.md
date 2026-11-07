@@ -21,6 +21,21 @@ with one hard link. Do not replace/unlink that lock. The service also validates 
 ancestors. `nginx-tmp/` is separately nginx-owned on the same bounded filesystem. Run GC via
 `sudo -u cache-origin /usr/local/bin/cache-origin gc --root /srv/cache-origin [--apply]`.
 
+## Storage and layout
+
+Keep the existing separate ext4 data filesystem. Its directory-index feature supports the
+flat hash-key artifact namespace; the current few thousand entries do not justify a storage
+schema change. Public objects and staging must remain on the same filesystem for atomic
+hard-link installation, and nginx's upload buffers belong on the data disk rather than the
+small OS disk. A 4 GiB upload can temporarily need space for both its nginx buffer and staged
+files in addition to retained objects. Monitor free bytes as well as the 100,000-entry budget.
+
+The host uses `relatime`, so reads already avoid an access-time update on every request.
+Changing to another filesystem, adding directory shards or using a RAM disk needs a measured
+bottleneck first. SSD backing can matter for cold reads, but a virtual disk's rotational flag
+does not establish its physical backing. Preserve ext4 and the current layout while measuring
+download behavior after removing bandwidth limits; do not drop system caches on the live host.
+
 ## Publication credential and rotation
 
 Install `apache2-utils` for `htpasswd`. Use [publisher-credential.py](examples/publisher-credential.py)
@@ -72,26 +87,31 @@ Install the reviewed files as follows (root-owned, non-writable by other account
 
 nginx's upload request/connection limits apply before expensive password verification; rejected
 requests return `429`. Read limits allow the native Lake curl client's parallel transfers.
-`limit_rate` paces each response, but is **not** a hard aggregate egress cap for short requests.
-Install the separate [tc egress unit](examples/cache-origin-egress.service) only after inspecting
-the actual default-route interface and its current queue discipline:
+Upload limits are per IP; there is no small shared upload bucket or connection pool that
+anonymous clients can consume instead of the legitimate publisher. Broader server-wide
+request/connection limits still protect the host, so this does not promise immunity to a
+large traffic flood. Bandwidth is uncapped: neither nginx `limit_rate` nor a cache-owned traffic
+shaper is installed. The upload-size bound is 4 GiB, buffered and staged on the data filesystem;
+allow space for both copies plus retained objects. Byte/count/memory limits remain independent.
+
+When updating an older installation that has the previous bandwidth cap, inspect its actual
+default-route interface and queue configuration before removing anything:
 
 ```bash
 ip route show default
 sudo tc -s qdisc show dev <primary-interface>
 ```
 
-Save that output privately for rollback. If the host has an existing custom shaper, do not
-overwrite it; integrate an equivalent bound with its owner. For a dedicated host with only its
-distro-default qdisc, set `CACHE_INTERFACE` in the unit to the inspected interface, install the
-unit under `/etc/systemd/system/`, and enable it. It uses a token bucket at **128 Mbit/s** with a
-256 KiB burst and bounded queue latency for the entire interface, including short requests.
-nginx requires this unit before starting. Check `tc -s qdisc show` after restart and measure
-long and short download bursts; record the rate, burst and drops rather than claiming an
-instantaneous byte-per-second ceiling. Stopping the unit leaves its cap in place. For rollback,
-inspect the current qdisc and explicitly restore the saved configuration; do not delete a
-replacement shaper installed by another operator. This shapes SSH/mail too, so retain an operator console during
-the initial change. No extra network listener is installed.
+Save that output and the old unit privately for rollback. Remove nginx's old
+`Requires`/`After=cache-origin-egress.service` dependency, reload systemd, and disable/stop the
+obsolete `cache-origin-egress.service`. Stopping that service alone leaves its queue in place.
+Only after confirming the root queue is the cache-owned TBF (128 Mbit/s, handle `1:`, 256 KB
+burst, 400 ms latency) and there is no unrelated policy, replace that specific queue with
+the recorded uncapped queue (or the kernel default when no prior policy was recorded).
+Remove the obsolete unit file and reload
+systemd again. Never delete or replace an unknown shaper; resolve ownership first. Keep SSH
+and an operator console available, and verify the live queue and nginx dependency list after
+the change. On fresh installations these migration steps are unnecessary.
 
 The dedicated-host journal policy caps persistent logs at 64 MiB and runtime logs at 16 MiB,
 retaining at most seven days. Do not leave an additional unbounded nginx/rsyslog file sink.
@@ -110,7 +130,7 @@ Use underscore-only syslog tags and `nohostname` as in the example so journald r
 `ForwardToSyslog=no`. Inspect rsyslog pulling inputs such as `imjournal` too; disabling journal
 forwarding alone does not stop them. The dedicated MIT host uses journald with rsyslog disabled.
 The hourly health timer checks mount presence and 80% byte/inode use on both data and OS
-filesystems. Publisher, GC, nginx, egress and health failures invoke the alert service. nginx's
+filesystems. Publisher, GC, nginx and health failures invoke the alert service. nginx's
 service drop-in also bounds its memory and task count; the Go services retain their own limits.
 
 ## Usage statistics
@@ -186,7 +206,7 @@ long-term trends, export summaries before the underlying records rotate away.
 
 Back up the existing binary/configuration privately before applying a reviewed update. Install
 the binary and root-owned examples, run `systemd-analyze verify` and `nginx -t`, reload systemd,
-restart the publisher/nginx where group membership changed, and enable the GC, egress and
+restart the publisher/nginx where group membership changed, and enable the GC and
 health timers/services. Apply the journald policy and start/reload Fail2ban only after its
 filter matches an actual nginx failure record with the expected journal identifier. Start the
 usage namespace before nginx and verify a real GET, HEAD and missing-object request produce
@@ -200,14 +220,15 @@ DELETE/private/listing paths, and `429` rate/connection responses. Use an isolat
 abuse/GC tests; do not ban the operator's SSH source or shorten production retention. Test a
 controlled service-failure notification through the installed alert unit and confirm inbox
 delivery; inspect the Postfix queue. Test byte/inode threshold behavior in a fixture without
-filling production disks. Verify actual egress shaping and bounded journal storage too.
+filling production disks. Verify bandwidth caps are absent and journal storage remains bounded.
 
 Rollback means restoring the saved binary/configuration and permissions, removing only these
-new unit drop-ins if necessary, explicitly restoring the saved qdisc after inspection, running `nginx -t` and restarting
+new unit drop-ins if necessary, inspecting any queue policy before restoring a saved one, running `nginx -t` and restarting
 the affected services. Keep the original mounted store intact; neither update nor rollback
 formats disks, deletes real build objects or replaces `state/lock`. Never roll back to exposed
-credentials. Before enabling CI publication or default MIT readers, obtain exact-head human
-review, complete a real-build cold restore and exercise the recovery procedure. Keep GCS
+credentials. For a new installation, obtain exact-head human review and complete host
+commissioning before enabling CI publication. Before selecting MIT as the default reader,
+complete a real-build cold restore, exercise recovery and obtain separate cutover approval. Keep GCS
 publication and the opt-in MIT-first/GCS-second mirror list during testing.
 
 References: [nginx request limits](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html),

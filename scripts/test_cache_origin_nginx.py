@@ -6,6 +6,7 @@ No Lean, external listener, production credential or root access is required.
 
 import base64
 from datetime import datetime
+from http.client import HTTPSConnection
 import hashlib
 import io
 import json
@@ -151,10 +152,19 @@ class RealNginxCacheTests(unittest.TestCase):
         except (URLError, OSError):
             return False
 
-    def request(self, method, path, body=None, credentials=None):
+    def request(self, method, path, body=None, credentials=None, source_ip=None):
         headers = {"Content-Type": "application/x-tar"} if body is not None else {}
         if credentials is not None:
             headers["Authorization"] = "Basic " + base64.b64encode(credentials.encode()).decode()
+        if source_ip is not None:
+            connection = HTTPSConnection("127.0.0.1", int(self.endpoint.rsplit(":", 1)[1]), timeout=5,
+                context=ssl.create_default_context(cafile=str(self.cert)), source_address=(source_ip, 0))
+            try:
+                connection.request(method, path, body=body, headers=headers)
+                response = connection.getresponse()
+                return response.status, response.read(), response.headers
+            finally:
+                connection.close()
         request = Request(self.endpoint + path, data=body, headers=headers, method=method)
         try:
             response = self.http.open(request, timeout=5)
@@ -341,9 +351,10 @@ class RealNginxCacheTests(unittest.TestCase):
         records = self.usage_records()
         self.assertTrue(any(r["status"] == "429" and r["method"] == "PUT" for r in records))
 
-    def test_simultaneous_upload_connection_limit(self):
+    def hold_upload(self, source_ip="127.0.0.1"):
         tls = ssl.create_default_context(cafile=str(self.cert))
-        raw = socket.create_connection(("127.0.0.1", int(self.endpoint.rsplit(":", 1)[1])), timeout=5)
+        raw = socket.create_connection(("127.0.0.1", int(self.endpoint.rsplit(":", 1)[1])), timeout=5,
+                                       source_address=(source_ip, 0))
         held = tls.wrap_socket(raw, server_hostname="127.0.0.1")
         self.addCleanup(held.close)
         authorization = base64.b64encode((self.user + ":" + self.password).encode()).decode()
@@ -355,7 +366,32 @@ class RealNginxCacheTests(unittest.TestCase):
                       "Content-Type: application/x-tar\r\nContent-Length: 100000\r\n"
                       "Expect: 100-continue\r\n\r\n").encode())
         self.assertIn(b"100 Continue", held.recv(4096))
+        return path
+
+    def test_simultaneous_upload_connection_limit(self):
+        path = self.hold_upload()
         self.assertEqual(self.request("PUT", path, b"small", self.user + ":" + self.password)[0], 429)
+
+    def test_anonymous_rate_exhaustion_does_not_starve_another_publisher(self):
+        path = "/publish/" + "c" * 40
+        # Several sources exhaust their own allowances. A shared 12/min bucket
+        # would let them exhaust CI's allowance too, without knowing a password.
+        for address in ("127.0.0.2", "127.0.0.3", "127.0.0.4"):
+            statuses = [self.request("PUT", path, b"invalid", source_ip=address)[0] for _ in range(12)]
+            self.assertIn(401, statuses)
+            self.assertIn(429, statuses)
+        _, package, _, _ = self.publication("f" * 40, {1: b"independent publisher"})
+        self.assertEqual(self.request("PUT", "/publish/" + "f" * 40, package,
+                                      self.user + ":" + self.password)[0], 201)
+
+    def test_other_sources_cannot_reserve_all_upload_connections(self):
+        # Pending bodies from two other IPs must not consume a special shared
+        # two-upload pool. They have not reached the Go publication lock yet.
+        self.hold_upload("127.0.0.2")
+        self.hold_upload("127.0.0.3")
+        _, package, _, _ = self.publication("f" * 40, {1: b"third source"})
+        self.assertEqual(self.request("PUT", "/publish/" + "f" * 40, package,
+                                      self.user + ":" + self.password)[0], 201)
 
 
 if __name__ == "__main__":
