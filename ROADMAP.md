@@ -547,6 +547,10 @@ index links to canonical definitions rather than keeping a second set.
   `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
+- **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`**
+  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): an alternating machine
+  checks one cell of a deterministic tableau. It guesses the cell's predecessor window
+  existentially and checks each predecessor cell universally.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
@@ -597,18 +601,29 @@ index links to canonical definitions rather than keeping a second set.
   P = NP.
 - **Low and high hierarchies in NP** (Schöning): sparse NP sets lie in `Low₂` (Ko and Schöning), and
   so does graph isomorphism, via graph non-isomorphism in AM.
-- **Immunity:** immune and bi-immune sets, P-bi-immune sets in EXP (Balcázar and Schöning), and
-  almost-everywhere hardness.
+- **Immunity** ([#2899](https://github.com/cslib-community/complexitylib/issues/2899)): after
+  `IsImmune`/`IsBiImmune`, a `P`-bi-immune set in `E` (`Classes/Immune/Construction.lean`) and
+  Berman's theorem that `≤ᵖₘ`-complete sets for `E`/`EXP` are not `P`-immune
+  (`Classes/Immune/Complete.lean`): a constructed `≤ᵖₘ`-complete problem for `E` and `EXP` (such as
+  bounded halting), so that Berman's hypothesis has a library witness; a SAT-free home for the
+  machine enumeration of `Ladner/Basic.lean` shared by Ladner and the immunity modules;
+  `DTIME(t)`-bi-immune sets in larger time classes for general constructible `t`, the remaining
+  Balcázar–Schöning results, complexity cores (Lynch; Orponen and Schöning) and their sizes for
+  hard sets (Juedes and Lutz), almost-everywhere hardness, and measure strengthenings (almost every
+  set in `E` is `P`-bi-immune, Mayordomo).
 
 ### Average-case complexity
 
-- Distribution ensembles with computability and samplability certificates; distributional
-  reductions with explicit domination and resource bounds; DistNP, errorless average-case
-  classes and heuristic classes, keeping runtime tails and permitted error distinct. Reuse the
-  specialized Liu–Pass hardness notions through proved bridges.
-- **Levin completeness:** a distributional bounded-halting problem complete for the chosen
-  polynomial-time computable-distribution class, followed by a separately scoped extension to
-  samplable distributions. Connect the framework to one-way functions, learning and the
+- **Distributional framework** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the length-indexed ensembles, `AvgP`/`HeurP`,
+  `DistNP` and dominating reductions with polynomial-time computable ensembles being samplable,
+  Levin's runtime-moment definition of average polynomial time and its relation to errorless
+  schemes (instances of probability zero obstruct a literal equivalence), randomized
+  average-case classes, and `(L, U) ∈ AvgP` implying `L ∈ E`-style consequences. Reuse the
+  specialized Liu–Pass hardness notions through further proved bridges.
+- **Levin completeness:** a distributional bounded-halting problem complete for `DistNP`
+  (Bogdanov–Trevisan Theorem 19, via the compression of Claim 20) under the existing dominating
+  reductions, followed by a separately scoped extension to samplable distributions
+  (Impagliazzo–Levin). Connect the framework to one-way functions, learning and the
   metacomplexity track ([#798]), preserving the distribution and reduction conventions.
 
 ### Counting and modular classes
@@ -635,8 +650,10 @@ index links to canonical definitions rather than keeping a second set.
 
 - **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- Private-to-public-coin transformations, `AM[k] = AM`, interactive-machine characterizations
-  of Arthur–Merlin classes, and statistical and perfect zero knowledge.
+- Private-to-public-coin transformations (Goldwasser–Sipser `IP[k] ⊆ AM[k + 2]`), the
+  Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that depend
+  on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
+  statistical and perfect zero knowledge.
 
 ### Descriptive complexity and first-order reductions
 
@@ -654,7 +671,9 @@ universe size, not supplied as unverified input tables. In dependency order:
   projections.
 - **Circuit Value P-complete under first-order reductions**, via `REACHa → MCVP → CVP` (Immerman,
   Theorem 3.26 and Exercise 3.28), with the alternating-logspace simulation of polynomial-time
-  machines and the translation to `encCircuitValue`.
+  machines (the machine-level `P ⊆ AL`, see
+  [#2873](https://github.com/cslib-community/complexitylib/issues/2873)) and the translation to
+  `encCircuitValue`.
 - Numeric certificates for further restricted-domain families; canonical BIT on a restricted
   domain need not be first-order definable.
 - Order-free: SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded
@@ -680,6 +699,10 @@ universe size, not supplied as unverified input tables. In dependency order:
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; and Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages.
+- **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
+  relational vocabularies, constant edge probabilities and unlabelled structures; construct the
+  countable random (Rado) graph; then the Kolaitis–Vardi laws for fixed-point and finite-variable
+  infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
@@ -698,6 +721,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
+- **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
+  colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
+  colorings (a fixed `k`-set is colorful with probability `K.descFactorial k / K ^ k ≥ e ^ (-k)`)
+  and the one-sided-error randomized fpt algorithm for `LongPath`; derandomization by perfect hash
+  families; W[1] and the W[1]-hardness of `Clique`.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
@@ -924,7 +952,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 - Dataset adjacency and `(ε, δ)`-differential privacy for probabilistic programs, with
   postprocessing and adaptive composition. Start with a finite or discrete mechanism proving
-  both privacy and utility, including sampling cost and finite-precision error.
+  both privacy and utility, including sampling cost and finite-precision error. The foundations
+  ([#2867](https://github.com/cslib-community/complexitylib/issues/2867)) leave the advanced
+  composition theorem, exact-sampling costs for discrete noise, and continuous Laplace/Gaussian
+  mechanisms with their finite-precision analysis.
 - The exponential mechanism, private query answering and private learning; privacy–accuracy
   and sample-complexity lower bounds; then adaptive data-analysis and generalization guarantees.
   Keep the adjacency relation, interaction model, privacy parameters and computational resources
@@ -960,6 +991,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
   cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
   concrete realizations.
+- **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)): beyond the greedy weighted set cover and its
+  `H d` bound in `Algorithms/Lean/SetCover`, the maximal-matching vertex-cover and double-tree
+  metric-TSP 2-approximations, machine-level polynomial-time certificates for these algorithms,
+  and stronger guarantees such as Christofides' `3/2` for metric TSP. LP-based and primal–dual
+  analyses of the same problems belong to the primal–dual approximation direction under
+  Optimization and duality.
 
 ### Online algorithms and competitive analysis
 
@@ -1046,6 +1083,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
+- **Single-tape lower bounds**
+  ([#2884](https://github.com/cslib-community/complexitylib/issues/2884)): crossing sequences,
+  cut-and-paste for equal-length prefixes and the quadratic palindrome lower bound for cslib
+  `SingleTapeTM` deciders that halt in the canonical output form are proved. Remaining: the bound
+  for deciders that only leave the answer under the head; an explicit single-tape palindrome
+  decider in time `O(n²)`, which shows the bound is tight and gives a positive instance of
+  `DecidesPalindromesInTime`; a linear-time multi-tape palindrome decider, which gives the
+  one-tape/two-tape time separation; cut-and-paste across boundaries at different positions; and
+  the gap theorem that single-tape deciders running in time `o(n log n)` accept only regular
+  languages.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
