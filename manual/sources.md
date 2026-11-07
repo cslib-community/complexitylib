@@ -7,7 +7,7 @@ The private-transcript sources are described in [the extraction methods](develop
 <a id="achlioptas03"></a>
 ## achlioptas03
 
-Dimitris Achlioptas. “Database-Friendly Random Projections: Johnson–Lindenstrauss with Binary Coins.” *Journal of Computer and System Sciences* 66(4), 671–687, 2003. https://doi.org/10.1016/S0022-0000(03)00025-4 . Bibliographic data and the statement of Theorem 1.1 (dimension `k₀ = (4 + 2β) log n / (ε²/2 - ε³/3)`, probability at least `1 - n^(-β)`) were taken from the DOI record and secondary summaries; the full text was not inspected in this pass.
+Dimitris Achlioptas. “Database-Friendly Random Projections: Johnson–Lindenstrauss with Binary Coins.” *Journal of Computer and System Sciences* 66(4), 671–687, 2003. https://doi.org/10.1016/S0022-0000(03)00025-4 . Author-hosted copy of the typeset journal version: https://cgi.di.uoa.gr/~optas/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 1.1 on p. 673 (squared distances within `1 ± ε` with probability at least `1 - n^(-β)` for `k ≥ k₀ = (4 + 2β) log n / (ε²/2 - ε³/3)`, stated for all `ε, β > 0`; the `±1` distribution is (1)). Also checked: Lemma 4.1 on p. 679 (Gaussian entries), Lemma 5.1 on p. 679 (the per-vector tails), and Lemma 5.2 on p. 680, eqs. (6)–(7) (the bounds on `𝔼 exp (h Q²)` and `𝔼 Q⁴`).
 
 <a id="alonmatiasszegedy99"></a>
 ## alonmatiasszegedy99
@@ -97,7 +97,7 @@ Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, M
 <a id="dasguptagupta03"></a>
 ## dasguptagupta03
 
-Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson and Lindenstrauss.” *Random Structures & Algorithms* 22(1), 60–65, 2003. https://doi.org/10.1002/rsa.10073 . Bibliographic data and the dimension bound `k ≥ 4 ln n / (ε²/2 - ε³/3)` of Theorem 2.1 were taken from the DOI record and secondary summaries; the full text was not inspected in this pass.
+Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson and Lindenstrauss.” *Random Structures & Algorithms* 22(1), 60–65, 2003. https://doi.org/10.1002/rsa.10073 . Author-hosted copy: https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 2.1 on p. 61 (`0 < ε < 1` and `k ≥ 4 (ε²/2 - ε³/3)⁻¹ ln n`), and Lemma 2.2 on p. 62 (tails for the projection of a random unit vector onto `k` coordinates, proved with `𝔼 exp (sX²) = (1 - 2s)^(-1/2)` for a standard Gaussian `X`).
 
 <a id="dinur2007"></a>
 ## dinur2007
@@ -153,6 +153,11 @@ Arpita Ghosh, Tim Roughgarden and Mukund Sundararajan. *Universally Utility-Maxi
 ## gsw13
 
 Craig Gentry, Amit Sahai, Brent Waters. “Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based.” *CRYPTO 2013*, LNCS 8042, 75–92. https://doi.org/10.1007/978-3-642-40041-4_5 ; authors' full-version record https://eprint.iacr.org/2013/340 . Metadata/abstract checked; PDF fetch was blocked in this source pass.
+
+<a id="gupta23"></a>
+## gupta23
+
+Anupam Gupta. “Dimension Reduction and the JL Lemma.” Chapter 11 of the lecture notes for CMU 15-850 *Advanced Algorithms*; PDF dated 2023-02-17. https://www.cs.cmu.edu/~15850/notes/lec12.pdf . Checked on 2026-11-07 UTC: §11.6.2, Lemma 11.9 bounds `𝔼 exp (tV²)` for a symmetric σ-sub-Gaussian `V` by the corresponding Gaussian moment generating function. The proof linearizes the square with an independent Gaussian, exchanges the averages and applies the sub-Gaussian bound. The notes apply the lemma to Rademacher projection matrices.
 
 <a id="hennie1965"></a>
 ## hennie1965

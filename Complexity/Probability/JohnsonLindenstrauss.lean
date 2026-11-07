@@ -30,10 +30,17 @@ Fix `n` points of a finite-dimensional Euclidean space `EuclideanSpace ℝ ι`. 
 `k × ι` matrix of independent signs `±1`, scaled by `1 / √k`, keeps every squared pairwise distance
 within a factor `1 ± ε`, with probability at least `1 - n^(-β)`, once
 `k ≥ (4 + 2β) / (ε² / 2 - ε³ / 3) · log n`. This is Achlioptas's theorem for the `±1` distribution
-[Achlioptas2003, Theorem 1.1]. With `β = 0` it gives the Johnson–Lindenstrauss lemma
-[JohnsonLindenstrauss1984] with the constant of Dasgupta and Gupta [DasguptaGupta2003]: `n` points
-embed into dimension `k ≥ 4 log n / (ε² / 2 - ε³ / 3)` with distortion `1 ± ε`. For `ε ≤ 1`,
-`k ≥ 24 log n / ε²` suffices.
+[Achlioptas2003, Theorem 1.1]. The union bound fails with probability at most
+`n (n - 1) exp (-(k / 2) (ε² / 2 - ε³ / 3))`, and `n (n - 1) < n²`, so the threshold for `β = 0`
+already gives a positive probability of success. This is the Johnson–Lindenstrauss lemma
+[JohnsonLindenstrauss1984] with the constant of Dasgupta and Gupta [DasguptaGupta2003, Theorem 2.1]:
+`n` points embed into dimension `k ≥ 4 log n / (ε² / 2 - ε³ / 3)` with distortion `1 ± ε`. For
+`ε ≤ 1`, `k ≥ 24 log n / ε²` suffices.
+
+Achlioptas states the theorem for every `ε > 0`. Here `ε < 3 / 2`, which makes `ε² / 2 - ε³ / 3`
+positive, and some restriction is needed. For `ε = 2`, `β = 10` and the two points `0` and
+`(1, 1, 1, 1)` the threshold is negative, so `k = 1` meets it. But the single row maps
+`(1, 1, 1, 1)` to the squared norm `16 > (1 + ε) · 4` with probability `1 / 8 > 2^(-10)`.
 
 The seed is `b : Fin k → ι → Bool`, drawn uniformly. `signProjection b` is the linear map with
 matrix `(1 / √k) signVal (b j i)`. Probabilities are densities of finsets of seeds.
@@ -57,9 +64,11 @@ For a fixed vector `x` with `S = ‖x‖²`, the rows give independent Rademache
 * **Union bound.** The `n (n - 1) / 2` pairs fail with probability at most `2 e` each, where
   `e = exp (-(k / 2) (ε² / 2 - ε³ / 3))`. The hypothesis on `k` gives `e ≤ n^(-(2 + β))`.
 
-Achlioptas compares the even moments of `Y_j` with those of a Gaussian. Here the comparison goes
-through the moment generating function: `Y_j` is sub-Gaussian, so `exp (t Y_j²)` is dominated by
-`exp (t S Z²)` for a standard Gaussian `Z`. Both arguments give the same per-vector bound.
+Achlioptas compares the even moments of `Y_j` with those of a Gaussian
+[Achlioptas2003, Lemma 5.2]. Here the comparison goes through the moment generating function:
+`Y_j` is sub-Gaussian, so `exp (t Y_j²)` is dominated by `exp (t S Z²)` for a standard Gaussian
+`Z`. This is the standard sub-Gaussian comparison [Gupta2023, Lemma 11.9]. Both arguments give the
+same per-vector bound [Achlioptas2003, Lemma 5.1].
 
 ## Main definitions
 
@@ -87,6 +96,7 @@ through the moment generating function: `Y_j` is sub-Gaussian, so `exp (t Y_j²)
   coins*][Achlioptas2003]
 * [S. Dasgupta, A. Gupta, *An elementary proof of a theorem of Johnson and
   Lindenstrauss*][DasguptaGupta2003]
+* [A. Gupta, *Dimension Reduction and the JL Lemma*, CMU 15-850 lecture notes][Gupta2023]
 * [W. B. Johnson, J. Lindenstrauss, *Extensions of Lipschitz mappings into a Hilbert
   space*][JohnsonLindenstrauss1984]
 -/
@@ -257,10 +267,9 @@ theorem dens_mul_lt_sum_sq_sum_mul_signVal_le (a : ι → ℝ) (k : ℕ) {ε : �
         congr 1
         ring
 
-omit [DecidableEq ι] in
 /-- For the lower tail: `𝔼 exp (-t Y²) ≤ 1 - t ∑ a² + 3 (t ∑ a²)² / 2` for a Rademacher sum `Y`
 and `0 ≤ t`, from `exp (-u) ≤ 1 - u + u² / 2`, `𝔼 Y² = ∑ a²` and `𝔼 Y⁴ ≤ 3 (∑ a²)²`. -/
-private theorem expect_exp_neg_mul_sq_sum_mul_signVal_le [DecidableEq ι] (a : ι → ℝ) {t : ℝ}
+private theorem expect_exp_neg_mul_sq_sum_mul_signVal_le (a : ι → ℝ) {t : ℝ}
     (ht : 0 ≤ t) :
     𝔼 x : ι → Bool, exp (-(t * (∑ i, a i * signVal (x i)) ^ 2)) ≤
       1 - t * ∑ i, a i ^ 2 + 3 / 2 * (t * ∑ i, a i ^ 2) ^ 2 := by

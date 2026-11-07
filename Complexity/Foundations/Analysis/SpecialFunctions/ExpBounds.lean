@@ -25,6 +25,9 @@ inequalities behind multiplicative Chernoff bounds and the Johnson–Lindenstrau
   Taylor polynomial `1 + v + v² / 2 + v³ / 6 + v⁴ / 24` is at most `exp v` and already dominates
   `1 + x`, by an explicit sum of nonnegative terms.
 
+`Complexity.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic` has the weaker
+`Real.exp_neg_le_one_sub_add_sq`, `exp (-y) ≤ 1 - y + y²`, valid for all `-1 ≤ y`.
+
 ## Main results
 
 * `Real.exp_neg_le_one_sub_add_sq_div_two`: `exp (-x) ≤ 1 - x + x² / 2` for `0 ≤ x`.

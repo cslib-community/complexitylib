@@ -36,10 +36,13 @@ moment-generating-function bounds used for random sign projections.
   Linearize the square with the Gaussian moment generating function,
   `exp (t y²) = 𝔼 exp (√(2t) y Z)`. Exchange the two averages and apply the sub-Gaussian bound to
   the inner one. What remains is the chi-squared moment generating function
-  (`ProbabilityTheory.integral_exp_mul_sq_gaussianReal`). Dasgupta and Gupta
-  [DasguptaGupta2003] analyze Gaussian projections, where `Y` is itself Gaussian, through this
-  moment generating function. Achlioptas [Achlioptas2003] compares the moments of `Y` with those of
-  a Gaussian instead.
+  (`ProbabilityTheory.integral_exp_mul_sq_gaussianReal`). This is the standard comparison of the
+  squares of sub-Gaussian and Gaussian variables; Gupta's lecture notes [Gupta2023, §11.6.2,
+  Lemma 11.9] apply it to Rademacher projection matrices. Achlioptas proves the same bound
+  [Achlioptas2003, Lemma 5.2] by comparing the even moments of `Y` with those of a Gaussian. For
+  Gaussian entries `Y` is itself Gaussian and the bound is an equality, the case of
+  [Achlioptas2003, Lemma 4.1]. Dasgupta and Gupta use the same chi-squared moment generating
+  function for projections onto a random subspace [DasguptaGupta2003, Lemma 2.2].
 
 ## Main results
 
@@ -55,6 +58,7 @@ moment-generating-function bounds used for random sign projections.
   coins*][Achlioptas2003]
 * [S. Dasgupta, A. Gupta, *An elementary proof of a theorem of Johnson and
   Lindenstrauss*][DasguptaGupta2003]
+* [A. Gupta, *Dimension Reduction and the JL Lemma*, CMU 15-850 lecture notes][Gupta2023]
 -/
 
 public section
