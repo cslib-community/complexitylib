@@ -76,6 +76,24 @@ A tree-like derivation yields a decision tree that finds a clause falsified by t
 
 Interpolation modules extract circuits separating the two sides of a refuted conjunction. Monotone extraction supports clique/coloring lower-bound applications, and a separate polynomial-time file addresses encoded extraction. The distinction between semantic existence of an interpolant and a native efficient extraction algorithm follows the same design pattern as circuits and finite-model logic. See [interpolation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation.lean), [monotone extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/MonotoneExtraction.lean) and [native extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/PolyTime.lean).
 
+## Exploring PV statements
+
+The checked [statement exploration](../../ComplexityTests/BoundedArithmetic/Statements.lean)
+compares named equation sides, an open Mathlib first-order equality, and its universal closure.
+It follows Oliver Korten's input in [issue #2736](https://github.com/cslib-community/complexitylib/issues/2736)
+and uses Cook's `TR(s₁(x)) = x` from [§2, p. 86](https://www.karlin.mff.cuni.cz/~krajicek/cookpv.pdf).
+The two symbols have their dyadic natural-number meanings. Examples check agreement of the
+three views, substitution into a larger variable context, and failure of a changed right side.
+The [import client](../../ComplexityTests/BoundedArithmetic/StatementsImport.lean) also checks
+that symbol, term and equation equality can be decided after importing the example.
+
+From a [prepared checkout](../workflows/getting-started.md), run
+`scripts/build.sh ComplexityTests.BoundedArithmetic.StatementsImport --wfail --iofail` at the repository
+root; success checks the whole example, including its counterexample. The source imports all
+needed definitions. These are syntax and interpretation experiments: the full PV signature,
+function admission, defining equations, induction and proof predicate remain open. In particular,
+a Lean proof that the example is true is not yet a certified PV proof.
+
 ## Known Limitations
 
 This section inventories resolution and its syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
