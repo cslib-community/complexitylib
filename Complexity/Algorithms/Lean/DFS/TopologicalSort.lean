@@ -15,8 +15,8 @@ public import Mathlib.Data.Fintype.EquivFin
 # Topological sort
 
 Topological sort of a directed graph given by adjacency lists: the vertices in reverse order of
-finishing time under depth-first search [Cormen et al., Section 22.4][CLRS2009]
-[Tarjan][Tarjan1972].
+finishing time under the depth-first search of `Complexity.Algorithms.Lean.DFS.Basic`, following
+[Cormen et al., Section 22.4][CLRS2009].
 
 ## Main definitions
 
@@ -40,7 +40,6 @@ finishing time under depth-first search [Cormen et al., Section 22.4][CLRS2009]
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
   Algorithms*][CLRS2009]
-* [R. E. Tarjan, *Depth-first search and linear graph algorithms*][Tarjan1972]
 -/
 
 @[expose] public section

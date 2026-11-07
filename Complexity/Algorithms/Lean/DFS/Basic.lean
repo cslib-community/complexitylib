@@ -41,8 +41,8 @@ state.
 * `Cslib.Algorithms.Lean.DFS.nodup_dfs_finished`: each vertex finishes at most once.
 * `Cslib.Algorithms.Lean.DFS.dfs_finished_order`: for every edge `u → v` out of a finished vertex,
   either `u` finishes after `v` or `v` reaches `u`, so that the edge closes a cycle. This is the
-  finishing-time form of the absence of back edges in acyclic graphs
-  [Cormen et al., Lemma 22.11][CLRS2009].
+  finishing-time argument in the proof of [Cormen et al., Theorem 22.12][CLRS2009], which rests on
+  the absence of back edges in acyclic graphs (Lemma 22.11 there).
 * `Cslib.Algorithms.Lean.DFS.time_dfsM`, `Cslib.Algorithms.Lean.DFS.time_dfsM_le`: the cost is one
   unit per root plus one per edge out of a finished vertex, so at most `|roots| + |E|`.
 
