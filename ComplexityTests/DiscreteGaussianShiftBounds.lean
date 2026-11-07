@@ -235,6 +235,12 @@ example (s : ℝ) (hs : 0 < s) :
       (basis_domain_op pointBasis)
   exact tvDist_eq_zero_iff.mp (point_tv_zero s hs)
 
+/-- A fundamental domain for the opposite subgroup action has ambient measure equal to the
+covolume. -/
+example : volume lineDomain = 2 := by
+  simpa [covolume_two] using
+    ZLattice.measure_eq_ofReal_covolume_of_op L volume (basis_domain_op twoBasis)
+
 /-- The reference probability does not depend on which actual fundamental domain is used. -/
 example {F : Set ℝ} (hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume) :
     lineUniform = (1 / 2 : ℝ≥0∞) •

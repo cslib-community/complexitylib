@@ -1,0 +1,27 @@
+[Unit]
+Description=Draft Complexitylib cache publisher
+RequiresMountsFor=/srv/cache-origin
+AssertPathIsMountPoint=/srv/cache-origin
+OnFailure=cache-origin-alert@%n.service
+
+[Service]
+User=cache-origin
+# Only nginx and cache-origin may belong to this exclusive socket group.
+# nginx must receive this supplementary group; a shared web-host group is unsafe.
+Group=cache-origin-proxy
+RuntimeDirectory=cache-origin
+RuntimeDirectoryMode=0750
+UMask=0022
+ExecStart=/usr/local/bin/cache-origin serve --root /srv/cache-origin --socket /run/cache-origin/http.sock
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/cache-origin
+MemoryMax=256M
+LimitFSIZE=256M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

@@ -53,8 +53,9 @@ count `p.cost Op.arity`.
   `Cslib.Circuits.Boolean.WeightedThreshold.wireCount_depthTwo_le`: evaluation, gate count, depth,
   and wire count of `depthTwo`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.altLinear_add_add_altLinear_sub`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.negOnePow_mul_altLinear_add_sub_altLinear`,
   `Cslib.Circuits.Boolean.WeightedThreshold.sum_sub_mul_decide_le`: alternating linear polarization
-  and integer interval telescoping into threshold indicators.
+  and shift identities, and integer interval telescoping into threshold indicators.
 
 ## References
 
@@ -241,6 +242,19 @@ theorem negOnePow_sum {α : Type*} (s : Finset α) (f : α → ℤ) :
 theorem altLinear_add_add_altLinear_sub (X t : ℤ) :
     altLinear (X + t) + altLinear (X - t) = 2 * (X.negOnePow : ℤ) * X * (t.negOnePow : ℤ) := by
   simp only [altLinear, Int.negOnePow_add, Int.negOnePow_sub, Units.val_mul]
+  ring
+
+/-- **Alternating linear shift identity**: for all integers `X` and `t`,
+`(-1) ^ X * φ(X + t) - φ(t) = X * (-1) ^ t`. For even `X` this is
+`φ(X + t) - φ(t) = X * (-1) ^ t`. -/
+theorem negOnePow_mul_altLinear_add_sub_altLinear (X t : ℤ) :
+    (X.negOnePow : ℤ) * altLinear (X + t) - altLinear t = X * (t.negOnePow : ℤ) := by
+  have hX : (X.negOnePow : ℤ) * X.negOnePow = 1 := by
+    rw [← Units.val_mul, Int.units_mul_self, Units.val_one]
+  simp only [altLinear, Int.negOnePow_add, Units.val_mul]
+  have hassoc : (X.negOnePow : ℤ) * ((X.negOnePow : ℤ) * t.negOnePow * (X + t)) =
+      ((X.negOnePow : ℤ) * X.negOnePow) * (t.negOnePow * (X + t)) := by ring
+  rw [hassoc, hX]
   ring
 
 /-- The discrete derivative of `altLinear` at `u` is `(-1) ^ (u + 1) * (2 * u + 1)`. -/

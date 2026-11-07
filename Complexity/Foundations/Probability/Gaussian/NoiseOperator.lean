@@ -9,7 +9,8 @@ module
 -- `NoiseOperator.lean`)
 
 public import Complexity.Foundations.Probability.Gaussian.Correlated
-import Complexity.Foundations.Probability.Gaussian.Multivariate
+import Complexity.Foundations.MeasureTheory.Integral.Pi
+import Mathlib.Probability.Distributions.Gaussian.Fernique
 
 /-!
 # The Gaussian noise operator
@@ -27,8 +28,8 @@ correlation `E[f z g z']` is `⟨f, U_ρ g⟩` (`integral_mul_gaussianNoiseOp`);
 Gaussian noise stability is `Stab_ρ[f] = ⟨f, U_ρ f⟩` (Definition 11.18), and `U_ρ` is
 self-adjoint since `(z', z)` has the law of `(z, z')`. The operator preserves the mean, fixes the
 constants, is the identity at `ρ = 1` and the expectation at `ρ = 0`, and is a contraction on
-every `Lᵖ(γⁿ)`, `1 ≤ p ≤ ∞` (Proposition 11.15). It multiplies linear functions by `ρ`
-(the linear case of Fact 11.13).
+every `Lᵖ(γⁿ)`, `1 ≤ p ≤ ∞` (Proposition 11.15). It multiplies a monomial `∏ i ∈ S, xᵢ` by
+`ρ ^ |S|`, so `U_ρ f z = f (ρ z)` for multilinear polynomials `f` (Fact 11.13).
 
 ## Main definitions
 
@@ -50,8 +51,9 @@ every `Lᵖ(γⁿ)`, `1 ≤ p ≤ ∞` (Proposition 11.15). It multiplies linear
   `ProbabilityTheory.gaussianNoiseOp_congr_ae`: linearity and almost-everywhere congruence.
 * `ProbabilityTheory.eLpNorm_gaussianNoiseOp_le`, `MeasureTheory.MemLp.gaussianNoiseOp`: `U_ρ` is
   a contraction on `Lᵖ(γⁿ)` (Proposition 11.15).
-* `ProbabilityTheory.gaussianNoiseOp_dotProduct`: `U_ρ` of a linear function (the linear case
-  of Fact 11.13).
+* `ProbabilityTheory.gaussianNoiseOp_prod`, `ProbabilityTheory.gaussianNoiseOp_sum_mul_prod`,
+  `ProbabilityTheory.gaussianNoiseOp_dotProduct`: `U_ρ` of monomials, multilinear polynomials and
+  linear functions (Fact 11.13).
 
 ## References
 
@@ -61,7 +63,7 @@ every `Lᵖ(γⁿ)`, `1 ≤ p ≤ ∞` (Proposition 11.15). It multiplies linear
 public section
 
 open MeasureTheory Real
-open scoped ENNReal
+open scoped ENNReal Finset
 
 namespace ProbabilityTheory
 
@@ -71,7 +73,7 @@ variable {ι : Type*} [Fintype ι]
 Gaussian vector `g` [O'Donnell, Definitions 11.9 and 11.12][ODonnell2014]. The book defines it
 for `ρ ∈ [-1, 1]` and `f ∈ L¹(γⁿ)`; here `ρ` and `f` are arbitrary, and the Bochner integral is
 `0` when `f (ρ z + √(1 - ρ²) ·)` is not integrable. -/
-noncomputable def gaussianNoiseOp (ρ : ℝ) (f : (ι → ℝ) → ℝ) (z : ι → ℝ) : ℝ :=
+@[expose] noncomputable def gaussianNoiseOp (ρ : ℝ) (f : (ι → ℝ) → ℝ) (z : ι → ℝ) : ℝ :=
   ∫ g, f (fun i => ρ * z i + √(1 - ρ ^ 2) * g i) ∂Measure.pi fun _ : ι => gaussianReal 0 1
 
 /-- **Gaussian noise is standard Gaussian** [O'Donnell, Remark 11.11][ODonnell2014]: for
@@ -252,26 +254,44 @@ theorem _root_.MeasureTheory.MemLp.gaussianNoiseOp {ρ : ℝ} (hρ : |ρ| ≤ 1)
   memLp_iff.2 ((eLpNorm_gaussianNoiseOp_le hρ hp hf.aestronglyMeasurable).trans_lt
     (memLp_iff.1 hf))
 
+/-- A noisy factor `c + √(1 - ρ²) t` of a monomial is integrable in the standard Gaussian `t`. -/
+private theorem integrable_noisyFactor (ρ c : ℝ) :
+    Integrable (fun t => c + √(1 - ρ ^ 2) * t) (gaussianReal 0 1) :=
+  (integrable_const _).add (IsGaussian.integrable_id.const_mul _)
+
+/-- **The noise operator on monomials**, the case of a single monomial in
+[O'Donnell, Fact 11.13][ODonnell2014] (Exercise 11.3): `U_ρ (∏ i ∈ S, xᵢ) z = ρ ^ |S| ∏ i ∈ S, zᵢ`,
+since the noise coordinates are independent with mean `0`. -/
+theorem gaussianNoiseOp_prod (ρ : ℝ) (S : Finset ι) (z : ι → ℝ) :
+    gaussianNoiseOp ρ (fun x => ∏ i ∈ S, x i) z = ρ ^ #S * ∏ i ∈ S, z i := by
+  rw [gaussianNoiseOp, integral_finset_prod_pi_eq_prod (fun i t => ρ * z i + √(1 - ρ ^ 2) * t),
+    Finset.pow_card_mul_prod]
+  refine Finset.prod_congr rfl fun i _ => ?_
+  rw [integral_add (integrable_const _) (IsGaussian.integrable_id.const_mul _), integral_const,
+    integral_const_mul, integral_id_gaussianReal]
+  simp only [probReal_univ, smul_eq_mul, one_mul, mul_zero, add_zero]
+
+/-- **The noise operator on multilinear polynomials** [O'Donnell, Fact 11.13][ODonnell2014]
+(Exercise 11.3): for a multilinear polynomial `f x = ∑ k ∈ s, c k ∏ i ∈ S k, xᵢ`,
+`U_ρ f z = ∑ k ∈ s, c k ρ ^ |S k| ∏ i ∈ S k, zᵢ`, that is, `U_ρ f z = f (ρ z)`. The book assumes
+`f ∈ L¹(γⁿ)` and `ρ ∈ [-1, 1]`; neither is needed here, as every monomial is integrable. -/
+theorem gaussianNoiseOp_sum_mul_prod {κ : Type*} (ρ : ℝ) (s : Finset κ) (c : κ → ℝ)
+    (S : κ → Finset ι) (z : ι → ℝ) :
+    gaussianNoiseOp ρ (fun x => ∑ k ∈ s, c k * ∏ i ∈ S k, x i) z =
+      ∑ k ∈ s, c k * ρ ^ #(S k) * ∏ i ∈ S k, z i := by
+  rw [gaussianNoiseOp, integral_finsetSum _ fun k _ => (Integrable.finset_prod_pi (S k)
+    fun i _ => integrable_noisyFactor ρ (ρ * z i)).const_mul (c k)]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [integral_const_mul, mul_assoc, ← gaussianNoiseOp_prod ρ (S k) z]
+  rfl
+
 /-- **The noise operator on linear functions**, the linear case of
-[O'Donnell, Fact 11.13][ODonnell2014] (Exercise 11.3): `U_ρ (a ⬝ᵥ ·) z = ρ (a ⬝ᵥ z)`, since the
-noise has mean `0`. -/
+[O'Donnell, Fact 11.13][ODonnell2014] (Exercise 11.3): `U_ρ (a ⬝ᵥ ·) z = ρ (a ⬝ᵥ z)`. -/
 theorem gaussianNoiseOp_dotProduct (ρ : ℝ) (a z : ι → ℝ) :
     gaussianNoiseOp ρ (fun x => a ⬝ᵥ x) z = ρ * (a ⬝ᵥ z) := by
-  set γ := Measure.pi fun _ : ι => gaussianReal 0 1
-  have hlaw := pi_gaussianReal_map_dotProduct a
-  have hD : Measurable fun x : ι → ℝ => a ⬝ᵥ x := by fun_prop
-  have hmean : ∫ x, a ⬝ᵥ x ∂γ = 0 := by
-    have h := integral_map (μ := γ) hD.aemeasurable (f := id) aestronglyMeasurable_id
-    rw [hlaw] at h
-    simp only [id_eq, integral_id_gaussianReal] at h
-    exact h.symm
-  have hexp (g : ι → ℝ) : a ⬝ᵥ (fun i => ρ * z i + √(1 - ρ ^ 2) * g i) =
-      ρ * (a ⬝ᵥ z) + √(1 - ρ ^ 2) * (a ⬝ᵥ g) := by
-    simp only [dotProduct, Finset.mul_sum, ← Finset.sum_add_distrib]
-    exact Finset.sum_congr rfl fun i _ => by ring
-  simp only [gaussianNoiseOp, hexp]
-  rw [integral_add (integrable_const _) ((integrable_dotProduct_pi_gaussianReal a).const_mul _),
-    integral_const, integral_const_mul, hmean, probReal_univ, smul_eq_mul, one_mul, mul_zero,
-    add_zero]
+  have h := gaussianNoiseOp_sum_mul_prod ρ Finset.univ a (fun i => {i}) z
+  simp only [Finset.prod_singleton, Finset.card_singleton, pow_one] at h
+  simp only [dotProduct, h, Finset.mul_sum]
+  exact Finset.sum_congr rfl fun i _ => by ring
 
 end ProbabilityTheory
