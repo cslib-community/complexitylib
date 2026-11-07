@@ -224,15 +224,16 @@ modular-game time/space assembly and prepared-metadata accounting remain
    over a nontrivial commutative coefficient ring. `SIS/Native` now bridges a certified list
    product to the existing negacyclic multiplication, uniformly over unary dimension and binary
    modulus/coefficients, with a rank-one key-generation client. Full native scheme execution
-   still needs matrix/vector traversal and canonical key/ciphertext packing and parsing.
+   still needs native encryption and seed codecs.
    Remaining: further certified polynomial-ring operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
    conversions, rounding and modulus-switching error bounds, and negacyclic NTTs implementing
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
    experiment separately; an ordinary-LWE reduction does not give them. Module-LWE sampling now
    permits explicit small-secret laws, with a native centered-binomial instance.
-   `SIS/ModuleEncryption/Native` realizes the existing deterministic key-generation/sample codec
-   uniformly with unary rank/degree and binary modulus/coefficients, given the expanded structured
-   matrix word. `SIS/Module/MatrixSampling` natively constructs the existing rectangular rotation
+   `SIS/ModuleEncryption/Native` realizes deterministic key generation in `ModuleLWE.encodeSample`
+   and deterministic decryption (`exists_computableInPolyTime_moduleLWEDecrypt`) uniformly with
+   unary rank/degree and binary modulus/coefficients, given the expanded structured matrix or
+   ciphertext word. `SIS/Module/MatrixSampling` natively constructs the existing rectangular rotation
    blocks and exactly samples their encoded law from independent power-of-two polynomial
    coefficients, uniformly in unary dimensions/width. `SIS/Module/ApproximateSampling` uses the
    existing bounded modular sampler for arbitrary positive binary moduli, with actual structured
@@ -240,7 +241,7 @@ modular-game time/space assembly and prepared-metadata accounting remain
    Independent uniform scalar entries do not give this law. `ModuleEncryption/Sampling/Native`
    composes exact CBD secret/error draws with the matrix sampler and existing keygen, returning
    the same signed secret and public key with ideal joint/public-law error `k*k*n/2^precision`.
-   Native encryption/decryption and seed codecs remain open.
+   Native encryption, seed codecs and small-secret security remain open.
    `SIS/ModulusSwitch/Failure` bounds randomized switched-decryption failure by the actual noise
    tail under explicit secret-support and decoding margins; small-secret security remains open.
    Nearest-integer coefficient conversion and the Module-LWE phase-error bound are available in
@@ -360,6 +361,14 @@ families and full-input native runtime.
   retaining the actual scalar-sampling law; replacing that law by ideal signing costs at most
   `2⁻ⁿ` per signature. The actual key-generation error is a separate `2⁻ⁿ` bound. Adaptive signing
   composition, native forger transport and efficient forking still belong to [#2568].
+- **Paillier encryption and composite residuosity:** `Crypto/Computational/Paillier` certifies
+  word key generation, dyadic-sampled encryption, decryption, perfect correctness and
+  plaintext-addition preservation under decryption over a supplied balanced-modulus generator,
+  alongside the Decisional Composite Residuosity assumption (`DCR`) in
+  `Crypto/Computational/CompositeResiduosity`. The IND-CPA security reduction under `DCR`
+  (Katz–Lindell Theorem 15.13, accounting for approximate unit sampling), the full
+  distributional additive-homomorphism condition (Definition 15.14), and native balanced-modulus
+  generation remain open.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.

@@ -128,14 +128,16 @@ while charging their input length, and uses the actual negative wrap of `rotMatr
 zero it remains total, without a canonical residue interpretation.
 `exists_isPPTOn_sampleEncodedModuleMatrix` samples independent polynomial coefficients using
 `sampleBinaryNat w`, then performs that certified expansion. Its exact law is uniform on the
-original polynomial matrix followed by `ModuleSIS.encodeMatrix`, for unary dimensions and bit
-width, including width zero. The expanded scalar entries are correlated. [Tests](../../ComplexityTests/Crypto/ModuleMatrixSampling.lean)
+original polynomial matrix over `ZMod (2 ^ w)` followed by `ModuleSIS.encodeMatrix`, for unary
+dimensions and bit width, including width zero. The expanded scalar entries are correlated. [Tests](../../ComplexityTests/Crypto/ModuleMatrixSampling.lean)
 check a rectangular modulus-six expansion, empty shapes, a 129-bit modulus, and a nonrotation
 matrix with zero structured-sampler mass but positive independent-scalar-uniform mass. They also
 compose the same obtained sampler with the native key generator: the composition is strict PPT
 for runtime dimensions/width and complete supplied signed secret/error words, and its concrete
 conditional law agrees with the existing key generator. The joint sampler below supplies the
-random secret and error; native encryption/decryption and security remain separate tasks.
+random secret and error, and deterministic native decryption is certified above by
+`exists_computableInPolyTime_moduleLWEDecrypt`; native encryption, seed codecs and security
+remain separate tasks.
 
 For arbitrary positive binary moduli, including primes, import
 [`Module/ApproximateSampling.lean`](../../Complexity/Crypto/Computational/SIS/Module/ApproximateSampling.lean).
@@ -158,10 +160,9 @@ and error words; deterministic keygen postprocessing preserves that error agains
 ideal conditional key law. Other clients cover width zero, modulus one, empty dimensions and a
 129-bit modulus. The joint sampler below completes secret/error composition; native encryption
 and security remain open.
-The scalar all-event bridge `Probability.closeTo_uniform_sampleModNat` now lives in
-[`Game/CloseTo/UniformNat.lean`](../../Complexity/Crypto/Game/CloseTo/UniformNat.lean), publicly
-reexported by its original Lyubashevsky consumer, so this construction does not import a
-signature protocol to obtain a generic sampler bound.
+The scalar all-event bridge `Probability.closeTo_uniform_sampleModNat` in
+[`Game/CloseTo/UniformNat.lean`](../../Complexity/Crypto/Game/CloseTo/UniformNat.lean) bounds each
+sampled residue against uniform `ZMod q` within `q / 2^width`.
 
 For full randomized key generation, import
 [`ModuleEncryption/Sampling/Native.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption/Sampling/Native.lean).
@@ -184,8 +185,9 @@ the matrix bound. The program is total, with semantic claims requiring only `q >
 for a prime-three event with secret `-1`, matrix coefficient `1` and public coefficient `0`,
 forcing nonzero error `1`. Its actual mass is `5/256` versus ideal `1/48`, a gap of `1/768`.
 The same witness covers zero widths, modulus one, both empty shapes and a rank-two/degree-two
-129-bit-modulus instance. These are sampling and execution statements; native encryption,
-decryption and small-secret security remain separate obligations.
+129-bit-modulus instance. These are key-sampling and execution statements (deterministic native
+decryption is certified by `exists_computableInPolyTime_moduleLWEDecrypt`); native encryption, seed
+codecs and small-secret security remain separate obligations.
 
 The Module-LWE sampling APIs now accept explicit distributions: `moduleLWEPublicKeyLaw` has an
 optional `secretLaw`, `encryptionViewOfKeyLaw` an optional `ephemeralLaw`, and `realEncryptionView`
@@ -295,8 +297,11 @@ certify growing native CBD rows and power-of-two uniform matrix-entry samples, w
 parameters and binary outputs, and check their semantic modular laws. They also prove positive
 actual failure at `t=1`: `q=64`, `p=32`, errors all eight and supported secrets produce phase 29
 and decode a true message incorrectly. The displayed bound is below one at `t=10`.
-This is correctness for explicit laws, not a small-secret security reduction. Complete native
-key generation, encryption and decryption certificates remain separate.
+This is correctness for explicit laws, not a small-secret security reduction. Deterministic native
+key generation and decryption (`exists_computableInPolyTime_moduleLWEKeyGen`,
+`exists_computableInPolyTime_moduleLWEDecrypt`) and randomized CBD key generation
+(`exists_isPPTOn_moduleLWEKeyGenJoint`) are certified above; native encryption and seed codecs
+remain separate.
 
 For composite-modulus number-theoretic hardness assumptions, import [`QuadraticResiduosity.lean`](../../Complexity/Crypto/Computational/QuadraticResiduosity.lean), [`RSATrapdoor.lean`](../../Complexity/Crypto/Computational/RSATrapdoor.lean), and [`RabinFactoring.lean`](../../Complexity/Crypto/Computational/RabinFactoring.lean) ([katzlindell20][katzlindell20], §§9.2.3–9.2.4, §15.1.1, §§15.4.1–15.4.3, and §§15.5.1–15.5.2; checked examples and reduction clients are in [`ComplexityTests/Crypto/QuadraticResiduosity.lean`](../../ComplexityTests/Crypto/QuadraticResiduosity.lean), [`ComplexityTests/Crypto/RSATrapdoor.lean`](../../ComplexityTests/Crypto/RSATrapdoor.lean), and [`ComplexityTests/Crypto/RabinFactoring.lean`](../../ComplexityTests/Crypto/RabinFactoring.lean)). In [`QuadraticResiduosity.lean`](../../Complexity/Crypto/Computational/QuadraticResiduosity.lean) ([katzlindell20][katzlindell20], Proposition 15.23 and Definition 15.27), quadratic residues reuse Mathlib's `IsSquare` and `Subgroup.square` (`Subgroup.mem_square`, `mem_quadResidueSet_iff`), `jacobiSymbol p q` multiplies the Legendre symbols on `(ZMod (p * q))ˣ`, `jacobiPosSet_eq_disjoint_union` and `card_quadResidueSet_eq_card_positiveNonresidues` partition `J_N^{+1}` into equal-sized `quadResidueSet` (`QR_N`) and `positiveNonresidues` (`QNR_N^{+1}`) for distinct odd primes `p ≠ q`, `blumSqrt p q` inverts squaring on `QR_N` for Blum moduli `IsBlumModulus p q` (`blumSqrt_sq`, `sq_bijOn_quadResidueSet`, `neg_one_mem_positiveNonresidues`), and `QuadraticResiduosityHard` compares `qrRealGame` against `qrIdealGame`. In [`RSATrapdoor.lean`](../../Complexity/Crypto/Computational/RSATrapdoor.lean) ([katzlindell20][katzlindell20], Definitions 9.46 and 15.1), `rsaEval N e x = x ^ e % N` and `rsaInvert N d y = y ^ d % N` are certified in polynomial time (`computableInPolyTime_rsaEval`, `computableInPolyTime_rsaInvert`) and proved mutually inverse across all residues `x < N` (`rsaInvert_rsaEval`, `rsaEval_rsaInvert`), inducing bijections both on `Fin N` (`rsaEval_bijective_fin`, including nonunits dividing `p` or `q`) and on `(ZMod N)ˣ` (`rsaEval_bijective_units`), with `rsaInversionGame` sampling `x` uniformly from `Fin desc.modulus` (`RSAOneWay`, whereas Definition 9.46 samples uniformly from `(ZMod N)ˣ`). In [`RabinFactoring.lean`](../../Complexity/Crypto/Computational/RabinFactoring.lean) ([katzlindell20][katzlindell20], Definition 9.45, Lemma 15.35, Theorem 15.36, Proposition 15.37, and Theorem 15.38), `rabinOneWay_iff_factoringHard` establishes `RabinOneWay gen ↔ FactoringHard gen` for Blum moduli via explicit certified PPT reductions `factorToRabin` (computing `crtSqrt y a b` from a nontrivial factorization `a * b = N`, with exact loss `1` in `succProbability_factoringGame_le`) and `rabinToFactor` (`rabinOneWay_of_factoringHard`, `factoringHard_of_rabinOneWay`). Across all three modules, generator families (`setup : ℕ → PMF ModulusDesc`, `RSAGen := ℕ → PMF RSADesc`, `BlumGen := ℕ → PMF BlumDesc`) are arbitrary `PMF` families over valid parameter tuples without bundled prime-generation algorithms or bit-length bounds in `n`, and adversaries/reductions use uniform native strict-PPT (`IsPPTOn`) on `(1^n, ...)` with binary `encNat` encodings (charging the full encoded input and sampled/callback output uniformly before `n`). Rather than assuming an exact uniform sampler on `(ZMod N)ˣ`, `rabinInversionGame` and `rabinToFactor` use an original dyadic all-residue sampling variant that draws a uniform `2 * N.bits.length`-bit list `r` (`x = ofBits r < 2^(2 * bits(N))` with `N^2 ≤ 2^(2 * bits(N))`) and squares `x` modulo `N`: `rabinToFactor` checks `1 < gcd(x, N) < N` first and otherwise queries the inverter on `x^2 % N` to return `rabinFactorPair (x + x') N`, yielding the concrete factor-`3` reduction bound `succProbability_rabinInversionGame_le` without modular rejection-sampling error.
 
