@@ -4229,6 +4229,7 @@ public import Complexity.Foundations.LinearAlgebra.Tensor.Polynomial
 public import Complexity.Foundations.LinearAlgebra.Tensor.Primal
 public import Complexity.Foundations.LinearAlgebra.Tensor.Round
 public import Complexity.Foundations.LinearAlgebra.Tensor.Separate
+public import Complexity.Foundations.LinearAlgebra.TracePower
 public import Complexity.Foundations.LinearAlgebra.VariableCopyPlacement
 public import Complexity.Foundations.Logic.Function.Iterate
 public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Order

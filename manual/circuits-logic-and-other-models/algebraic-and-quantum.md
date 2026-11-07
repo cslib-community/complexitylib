@@ -108,7 +108,11 @@ The [NP containment](../../Complexity/Computability/Complexity/Classes/QMA/NP.le
 
 Soundness must hold for witnesses entangled across the blocks. The [tensor-power bound](../../Complexity/Foundations/Quantum/TensorPower.lean) proves it by bounding, one copy at a time, the weight of the outcomes with many accepting copies.
 
-Error reduction from an inverse-polynomial gap, Marriott–Watrous strong error reduction that keeps the witness length, and `QMA ⊆ PP` are not formalized ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)). [Checked clients](../../ComplexityTests/QMA.lean) include a verifier whose answer depends on its witness, a language it places in `QMA` with perfect completeness and soundness zero, and the amplified verifier evaluated on basis witnesses. Build them with `lake build ComplexityTests.QMA`.
+The ingredients for `QMA ⊆ PP` ([#3028](https://github.com/cslib-community/complexitylib/issues/3028)) are in place, but the containment itself is not yet proved. A [trace-power bound](../../Complexity/Foundations/LinearAlgebra/TracePower.lean) handles a positive operator T. If its quadratic form reaches `c ≥ 0` on some unit vector, then `c^j ≤ tr(T^j)`. If the form is at most s on every unit vector, then `tr(T^j) ≤ dim · s^j`. The acceptance probability of a verifier on a witness state is the quadratic form `‖Bψ‖^2` of the positive operator `B†B`.
+
+In an orthonormal basis, `tr(T^j)` is a sum over closed paths of products of matrix entries (`LinearMap.trace_pow_eq_sum`). For Hadamard–Toffoli circuits these entries are overlaps of final states on the accepting outcomes. Each such overlap is a [projected pair gap](../../Complexity/Computability/Circuit/Quantum/PathSum.lean) divided by `2^h`. That gap counts signed pairs of paths from two input registers and is a `GapP` function of the instance (`onesPairGap_zero_mem_GapP`).
+
+Error reduction from an inverse-polynomial gap and Marriott–Watrous strong error reduction that keeps the witness length are not formalized ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)). [Checked clients](../../ComplexityTests/QMA.lean) include a verifier whose answer depends on its witness, a language it places in `QMA` with perfect completeness and soundness zero, and the amplified verifier evaluated on basis witnesses. Build them with `lake build ComplexityTests.QMA`.
 
 ## Quantum query algorithms
 
