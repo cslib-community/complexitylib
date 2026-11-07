@@ -390,4 +390,82 @@ example :
   rw [hp₀, Nat.add_zero] at hcost
   exact ⟨a, y₀, y, traces, s', tr, hr₀, hp₀, hex, hrun, hcost⟩
 
+/-- Non-vacuity of `MinPQ.run_client_exact_fresh` and `MinPQ.run_client_exact_reusable` for an
+adaptive handle-passing client on a non-full heap (`n_max = 4`) over `Basis.exact`. -/
+example :
+    (∃ pc₀ x₀ t_init v tr s_fin z t_ops,
+      Runs 10 MinPQ.initFreshProg ⟨0, ⟨MinPQ.initRegs 4 8, fun a => if a = 0 then 99 else 0⟩⟩
+        ⟨pc₀, x₀⟩ t_init ∧
+      (∃ out, step 10 MinPQ.initFreshProg ⟨pc₀, x₀⟩ = .halt out) ∧
+      MinPQ.RunsClient (U := 50) (V := 500) 10 8
+        (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) x₀ sampleMinPQClient v tr s_fin z t_ops ∧
+      x₀.mem 0 = 99 ∧
+      t_init + 1 ≤ 421 ∧
+      t_ops ≤ 421 * 5) ∧
+    (∃ pc₀ x₀ t_init v tr s_fin z t_ops,
+      Runs 10 MinPQ.initClearProg ⟨0, ⟨MinPQ.initRegs 4 8, fun _ => 77⟩⟩ ⟨pc₀, x₀⟩ t_init ∧
+      (∃ out, step 10 MinPQ.initClearProg ⟨pc₀, x₀⟩ = .halt out) ∧
+      MinPQ.RunsClient (U := 50) (V := 500) 10 8
+        (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) x₀ sampleMinPQClient v tr s_fin z t_ops ∧
+      x₀.mem 0 = 77 ∧
+      t_init + 1 ≤ 421 * 5 ∧
+      t_ops ≤ 421 * 5) := by
+  have hS : Fits 10 (8 + MinPQ.space 4) := by unfold MinPQ.space Fits; decide
+  have hU : Fits 10 50 := by decide
+  have hV : Fits 10 500 := by decide
+  have hv : (Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).DemonicValid
+      (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) sampleMinPQClient := by
+    refine .liftBind _ _ ⟨by decide, by decide, by decide⟩ ?_
+    rintro s₁ _ ⟨h, _, rfl, rfl⟩
+    refine .liftBind _ _ ⟨30, 300, by simp [Function.update], by decide⟩ ?_
+    rintro s₂ _ _
+    exact .liftBind _ _ trivial fun s₃ a _ => .pure s₃ a
+  have hlog : Nat.log 2 4 = 2 := Nat.log_eq_of_pow_le_of_lt_pow (by decide) (by decide)
+  have htrace_ops : ∀ {x₀ v s_fin z t_ops}
+      {tr : (Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).Transcript},
+      MinPQ.RunsClient (U := 50) (V := 500) 10 8
+        (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) x₀ sampleMinPQClient v tr s_fin z t_ops →
+      ∃ h, tr.ops = [.insert 30 300, .decreaseKey h 5, .extractMin] := by
+    intro x₀ v s_fin z t_ops tr hruns
+    obtain ⟨s₁, a₁, tr₁, _, y₁, _, _, rfl, _, _, _, hs₁, _, _, hr₁⟩ :=
+      MinPQ.RunsClient.liftBind_iff.mp hruns
+    rcases hs₁ with ⟨h, _, rfl, rfl⟩
+    obtain ⟨s₂, a₂, tr₂, _, y₂, _, _, rfl, _, _, _, _, _, _, hr₂⟩ :=
+      MinPQ.RunsClient.liftBind_iff.mp hr₁
+    obtain ⟨s₃, a₃, tr₃, _, y₃, _, _, rfl, _, _, _, _, _, _, hr₃⟩ :=
+      MinPQ.RunsClient.liftBind_iff.mp hr₂
+    obtain ⟨_, rfl, _, _, _⟩ := MinPQ.RunsClient.pure_iff.mp hr₃
+    exact ⟨h, rfl⟩
+  constructor
+  · have hmem : ∀ a, Fits 10 (if a = 0 then 99 else 0) := fun a => by split_ifs <;> decide
+    have hzero : ∀ a ∈ (Block.mk 8 (MinPQ.space 4)).footprint,
+        (if a = 0 then 99 else 0) = 0 := by
+      intro a ha
+      rw [Block.mem_footprint, Block.Owns] at ha
+      dsimp only at ha
+      have ha0 : a ≠ 0 := by omega
+      simp [ha0]
+    obtain ⟨pc₀, x₀, t_init, v, tr, s_fin, z, t_ops, hr₀, hh₀, hmod₀, hruns, _, ht_init, _,
+        ht_ops⟩ :=
+      MinPQ.run_client_exact_fresh hS hU hV hmem hzero sampleMinPQClient hv
+    obtain ⟨h, hops⟩ := htrace_ops hruns
+    have hm0 : x₀.mem 0 = 99 := by
+      have h0 := hmod₀ 0 (by rw [Block.mem_footprint, Block.Owns]; dsimp only [MinPQ.space]; omega)
+      simpa using h0
+    refine ⟨pc₀, x₀, t_init, v, tr, s_fin, z, t_ops, hr₀, hh₀, hruns, hm0, ht_init, ?_⟩
+    simp only [hops, MinPQ.numQueries, MinPQ.numInserts, MinPQ.numDecreaseKeys,
+      MinPQ.numExtractMins, hlog] at ht_ops
+    omega
+  · have hmem : ∀ _ : ℕ, Fits 10 77 := fun _ => by decide
+    obtain ⟨pc₀, x₀, t_init, v, tr, s_fin, z, t_ops, hr₀, hh₀, hmod₀, hruns, _, ht_init, _,
+        ht_ops⟩ :=
+      MinPQ.run_client_exact_reusable hS hU hV hmem sampleMinPQClient hv
+    obtain ⟨h, hops⟩ := htrace_ops hruns
+    have hm0 : x₀.mem 0 = 77 :=
+      hmod₀ 0 (by rw [Block.mem_footprint, Block.Owns]; dsimp only [MinPQ.space]; omega)
+    refine ⟨pc₀, x₀, t_init, v, tr, s_fin, z, t_ops, hr₀, hh₀, hruns, hm0, ht_init, ?_⟩
+    simp only [hops, MinPQ.numQueries, MinPQ.numInserts, MinPQ.numDecreaseKeys,
+      MinPQ.numExtractMins, hlog] at ht_ops
+    omega
+
 end WordRAMFibonacciHeapTests

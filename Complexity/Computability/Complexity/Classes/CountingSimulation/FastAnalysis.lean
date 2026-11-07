@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Fas
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSchedule
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSize
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Tactic.EncLen
 
 /-!
 # The resource analysis of the native recursion: the recursion tree and the sizes
@@ -299,9 +300,7 @@ theorem le_one_of_mem_modulus {m z : ℕ} (hz : z ∈ modulus m) : z ≤ 1 := by
 /-- The encoded network is at most the encoded input long. -/
 theorem length_encExplicitNetwork_le (P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ) :
     (ExplicitTensorNetwork.encExplicitNetwork G.2).length ≤
-      (FastContraction.encInput (P, G)).length := by
-  simp only [FastContraction.encInput, length_encPair]
-  omega
+      (FastContraction.encInput (P, G)).length := by enc_len [FastContraction.encInput]
 
 /-- The vertices of an explicit network, encoded, are at most the encoded network long. -/
 theorem length_vertices_le (G : ExplicitTensorNetwork ℕ) :
@@ -342,8 +341,7 @@ theorem fastSizes : FastSizes := by
   have hp₀ : x₀.prec ≤ n := (min_le_left _ _).trans hnet
   have hrows : (encNat x₀.rows).length ≤ n := by
     change (encNat G.1).length ≤ n
-    simp only [hn, FastContraction.encInput, length_encPair]
-    omega
+    enc_len [hn, FastContraction.encInput]
   have hV₀ : x₀.net.vertices.length ≤ n := by
     change (List.map _ G.2.vertices).length ≤ n
     rw [List.length_map]; omega

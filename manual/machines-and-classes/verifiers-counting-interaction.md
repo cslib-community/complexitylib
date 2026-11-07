@@ -50,6 +50,18 @@ Deterministic [WordQueryComp and PolyTimeOracleProgram](https://github.com/cslib
 
 Promise oracles likewise quantify over all valid completions on the promise, rather than selecting a favorable behavior off it. The randomized promise-oracle route is used by Valiant–Vazirani. [RPWithPromiseOracle](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/ValiantVazirani.lean#L107)
 
+For unsigned replay certificates, import
+[`Classes.SharpP.OracleReplay`](../../Complexity/Computability/Complexity/Classes/SharpP/OracleReplay.lean).
+`Cslib.Complexity.replayPathCount` multiplies the answer-certificate counts along an
+instruction-indexed transcript. Local and halted instructions require the canonical padding
+bit `false`. Its membership lemma preserves `#P` when the input map is polynomial time and
+both answer counts are in `#P`. When those counts recognize the oracle's yes and no answers
+by positivity, `replayPathCount_pos_iff` identifies exactly the canonical oracle transcript;
+when both counts are at most one, `replayPathCount_le_one` preserves unambiguity. The
+[decision](../../Complexity/Computability/Complexity/Classes/Oracle/Lowness.lean) and
+[counting](../../Complexity/Computability/Complexity/Classes/SharpP/Lowness.lean)
+lowness proofs share this API while retaining their different final sums.
+
 ## MA and AM
 
 The [Arthur–Merlin definitions](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/ArthurMerlin.lean#L98) are fixed polynomial-length classical verifier games. In MA the proof precedes the random seed: a yes instance has one proof accepted on at least two thirds of seeds, while every proof for a no instance is accepted on at most one third. In AM the random challenge precedes the proof: acceptance counts the seeds for which some reply makes the verifier accept. The existential reply may therefore depend on the challenge.

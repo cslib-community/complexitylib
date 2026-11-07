@@ -14,14 +14,8 @@ else
   cd "$(dirname "$0")/../.." || exit 1
 fi
 
-url="${COMPLEXITYLIB_CACHE_URL-https://storage.googleapis.com/complexitylib-lake-cache}"
-
-COMPLEXITYLIB_CACHE_CHECKOUT="$PWD" python3 "$script_dir/get_mathlib.py"
-if [ -z "$url" ]; then
-  echo "COMPLEXITYLIB_CACHE_URL is empty; skipping the Complexitylib cache." >&2
-  exit 0
-fi
-if ! LAKE_CACHE_ARTIFACT_ENDPOINT="$url/a0" LAKE_CACHE_REVISION_ENDPOINT="$url/r0" \
-    lake cache get --repo=cslib-community/complexitylib; then
-  echo "note: no cached Complexitylib outputs found for this history; lake build will compile them" >&2
-fi
+case "${DISABLE_CACHE_RESTORE:-}" in 1|true) exit 0 ;; esac
+COMPLEXITYLIB_CACHE_CHECKOUT="$PWD" python3 -B "$script_dir/get_mathlib.py"
+mathlib_status=$?
+case "$mathlib_status" in 124|125) exit "$mathlib_status" ;; esac
+exec python3 -B "$script_dir/restore.py" --checkout "$PWD"

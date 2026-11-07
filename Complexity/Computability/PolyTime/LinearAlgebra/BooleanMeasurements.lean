@@ -227,18 +227,13 @@ private theorem optionBits_polyTime :
       (encOption (encList encBool)) (encOption encBits) := by
   have hi : ComputableInPolyTime (id : Option (List Bool) → Option (List Bool))
       (encOption (encList encBool)) (encOption (encList encBool)) := .id'
-  have hs : ComputableInPolyTime
-      (fun p : Option (List Bool) × List Bool => some p.2)
-      (encPair (encOption (encList encBool)) (encList encBool)) (encOption encBits) :=
-    (ComputableInPolyTime.optionSome encBits).comp
-      (ComputableInPolyTime.listToBits.comp
-        (ComputableInPolyTime.snd (encOption (encList encBool)) (encList encBool)))
-  have hn : ComputableInPolyTime (fun _ : Option (List Bool) => (none : Option (List Bool)))
-      (encOption (encList encBool)) (encOption encBits) := ComputableInPolyTime.const none
-  have h := hi.optionElimWithInput (body := fun _ y => some y) hn hs
+  have h := hi.optionMapWithInput
+    (f := fun _ y => y)
+    (ComputableInPolyTime.listToBits.comp
+      (ComputableInPolyTime.snd (encOption (encList encBool)) (encList encBool)))
   convert h using 1
-  funext y
-  cases y <;> rfl
+  funext value
+  cases value <;> rfl
 
 /-- The fixed native representative search has traversal-proportional time and polynomial
 charged workspace in the full runtime context/width encoding, including both codec boundaries. -/

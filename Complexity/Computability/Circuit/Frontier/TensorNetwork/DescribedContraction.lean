@@ -290,9 +290,6 @@ theorem eval_assign (q : Q) (d : DescribedNetwork T) {word : List Bool}
     (fun c hc => eval_entry (q, d) hw hc)
     (fun c hc => ⟨hshape, (Nat.le_of_lt hc).trans (Nat.le_add_left _ _), hred c⟩)
     (fun _ _ => le_rfl)
-  have hstart : (sumScheme ops eval).start (1, ((q, d), (word, 0))) = acc 0 := by
-    simp [sumScheme, acc]
-  rw [← hstart] at hloop
   refine ⟨h + 1, by omega, ?_⟩
   have := Scheme.Eval.call (R := sumScheme ops eval) (I := sumInvariant ops eval (q, d))
     (x := (1, ((q, d), (word, 0)))) hshape rfl hloop (.inl (hred d.vertices.length))
@@ -315,8 +312,8 @@ theorem eval_sumRoot (q : Q) (d : DescribedNetwork T) :
   have hassign (c : ℕ) := eval_assign (ops := ops) (eval := eval) q d
     (length_lowBits d.numEdges c)
   choose hgt hhgt heval using hassign
-  have hshape : NodeShape (q, d) (sumRoot (q, d)) := ⟨rfl, by simp [sumRoot], by simp [sumRoot],
-    by simp [sumRoot]⟩
+  have hshape : NodeShape (q, d) (sumRoot (q, d)) :=
+    ⟨rfl, Nat.zero_le _, Nat.zero_le _, Nat.zero_le _⟩
   have hred (c : ℕ) : ops.Reduced q (acc c).2 :=
     ops.reduced_foldl q _ (ops.reduced_add q) _ _ (ops.reduced_zero q)
   obtain ⟨h, hh, hloop⟩ := Scheme.Loop.counted (R := sumScheme ops eval)
@@ -333,9 +330,6 @@ theorem eval_sumRoot (q : Q) (d : DescribedNetwork T) :
     (fun c _ => heval c)
     (fun c hc => ⟨hshape, by simp only [acc]; omega, hred c⟩)
     (fun c _ => hhgt c)
-  have hstart : (sumScheme ops eval).start (sumRoot (q, d)) = acc 0 := by
-    simp [sumScheme, sumRoot, acc]
-  rw [← hstart] at hloop
   refine ⟨h + 1, by omega, ?_⟩
   have := Scheme.Eval.call (R := sumScheme ops eval) (I := sumInvariant ops eval (q, d))
     (x := sumRoot (q, d)) hshape rfl hloop (.inl (hred (2 ^ d.numEdges)))
@@ -401,14 +395,10 @@ def _root_.Cslib.Circuits.Frontier.SumOps.galois : SumOps (ℕ × List ℕ) (Lis
   Reduced q c := c.length = q.2.length ∧ ∀ x ∈ c, x ≤ 2 ^ q.1
   reduced_zero q := ⟨GaloisRingArith.length_zero _, fun x hx => by
     simp only [GaloisRingArith.zero, List.mem_map] at hx
-    obtain ⟨_, -, rfl⟩ := hx
-    exact Nat.zero_le _⟩
+    rcases hx with ⟨_, -, rfl⟩; exact Nat.zero_le _⟩
   reduced_one q := ⟨by simp [GaloisRingArith.one], fun x hx => by
     simp only [GaloisRingArith.one, List.mem_map] at hx
-    obtain ⟨i, -, rfl⟩ := hx
-    split_ifs
-    · exact Nat.one_le_two_pow
-    · exact Nat.zero_le _⟩
+    rcases hx with ⟨i, -, rfl⟩; split_ifs <;> [exact Nat.one_le_two_pow; exact Nat.zero_le _]⟩
   reduced_add q _ _ := ⟨GaloisRingArith.length_add _ _ _ _,
     fun _ hx => (GaloisRingArith.lt_of_mem_add hx).le⟩
   reduced_mul q _ _ := ⟨GaloisRingArith.length_mul _ _ _ _,
@@ -464,6 +454,8 @@ abbrev encAcc : ℕ × Y ↪ List Bool := encPair encNat encY
 
 variable {encQ encY encT}
 
+attribute [local irreducible] ComputableInPolyTime
+
 /-- The number of edges of a described network, in unary. -/
 theorem numEdges_polyTime :
     ComputableInPolyTime (fun d : DescribedNetwork T => d.numEdges) (encDescribed encT)
@@ -517,7 +509,7 @@ theorem sumScheme_polyTime (hops : ops.PolyTime encQ encY) :
     exact (ComputableInPolyTime.ite (ComputableInPolyTime.beq kind_polyTime
       (ComputableInPolyTime.const 0)) (hops.zero.comp precision_polyTime)
       (hops.one.comp precision_polyTime)).of_enc_eq fun x => by
-        by_cases h : x.1 = 0 <;> simp [h]
+        simp only [Function.comp_apply, beq_iff_eq]
   next := by
     have hx := ComputableInPolyTime.fst (encNode encQ encT) (encAcc encY)
     have ha := ComputableInPolyTime.snd (encNode encQ encT) (encAcc encY)
@@ -537,7 +529,7 @@ theorem sumScheme_polyTime (hops : ops.PolyTime encQ encY) :
           (hq.prod ((BooleanFold.decoder_polyTime.comp (hm.prod hc)).prod
             (ComputableInPolyTime.const (encOut := encUnary) 0)))))
         (ComputableInPolyTime.const none)).of_enc_eq fun p => by
-          by_cases h : p.2.1 < 2 ^ p.1.2.1.2.numEdges <;> simp [h]
+          simp only [Function.comp_apply, decide_eq_true_eq]
     have hentry : ComputableInPolyTime (fun p : Node Q T × (ℕ × Y) =>
         (if p.2.1 < p.1.2.1.2.vertices.length then
           some ((2, (p.1.2.1, (p.1.2.2.1, min p.1.2.1.2.vertices.length p.2.1))) : Node Q T)
@@ -550,14 +542,15 @@ theorem sumScheme_polyTime (hops : ops.PolyTime encQ encY) :
           (hq.prod ((word_polyTime.comp hx).prod
             (ComputableInPolyTime.binary_min_unary' hlen hc)))))
         (ComputableInPolyTime.const none)).of_enc_eq fun p => by
-          by_cases h : p.2.1 < p.1.2.1.2.vertices.length <;> simp [h]
+          simp only [Function.comp_apply, decide_eq_true_eq]
     refine (ComputableInPolyTime.ite (ComputableInPolyTime.beq hk (ComputableInPolyTime.const 0))
       hassign (ComputableInPolyTime.ite (ComputableInPolyTime.beq hk
         (ComputableInPolyTime.const 1)) hentry (ComputableInPolyTime.const none))).of_enc_eq
       fun p => ?_
     by_cases h0 : p.1.1 = 0
-    · simp [sumScheme, h0]
-    · by_cases h1 : p.1.1 = 1 <;> simp [sumScheme, h0, h1]
+    · simp only [sumScheme, Function.comp_apply, h0, beq_self_eq_true, ↓reduceIte]
+    · by_cases h1 : p.1.1 = 1 <;>
+        simp only [sumScheme, Function.comp_apply, h0, h1, beq_iff_eq, ↓reduceIte]
   absorb := by
     have hx := (ComputableInPolyTime.fst (encNode encQ encT) (encAcc encY)).comp
       (ComputableInPolyTime.fst (encPair (encNode encQ encT) (encAcc encY)) encY)
@@ -572,7 +565,7 @@ theorem sumScheme_polyTime (hops : ops.PolyTime encQ encY) :
         (ComputableInPolyTime.const 0))
         (hops.add.comp (hP.prod (hr.prod hy)))
         (hops.mul.comp (hP.prod (hr.prod hy)))).of_enc_eq fun q => ?_)
-    by_cases h : q.1.1.1 = 0 <;> simp [h]
+    simp only [Function.comp_apply, beq_iff_eq]
   finish := (ComputableInPolyTime.snd encNat encY).comp (ComputableInPolyTime.snd _ _)
 
 /-- The descriptor of a vertex and the bits of the node's word on its ports. -/
@@ -771,6 +764,7 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
   obtain ⟨cf', df', hfs⟩ := hF.2.exists_le
   obtain ⟨cr, dr, hrt⟩ := hR.1.exists_le
   obtain ⟨cr', dr', hrs⟩ := hR.2.exists_le
+  clear hV hQ hZ hF hR
   obtain ⟨D, hD⟩ : ∃ D, D = K₀ + dv + dv' + dq + dq' + dz + dz' + df + df' + dr + dr' + 2 :=
     ⟨_, rfl⟩
   obtain ⟨G, hG⟩ : ∃ G, G = K₀ * 96 ^ K₀ +
@@ -873,6 +867,10 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
       · have := (hE v hv (wordBits w v.1) (by simp [wordBits])).2.2; omega)
     (P, d) _ _ _ he
   rw [← hn] at hres
+  change (contractionCertificate eval hops ev).time (P, d) ≤ _ ∧
+    (contractionCertificate eval hops ev).space (P, d) ≤ _ at hres
+  obtain ⟨htime, hspace⟩ := hres
+  clear hK₀ hvlen hnode hleaf he hE hRv hvt hvs hqt hqs hzt hzs
   -- The clock and the size of the fuel.
   have hfuel : fuel (P, d) < 2 ^ (d.numEdges + d.vertices.length + 2) := by
     have hk : d.vertices.length + 1 ≤ 2 ^ d.vertices.length := Nat.lt_two_pow_self
@@ -893,10 +891,15 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
     rw [hW]
     calc z + 1 = (z + 1) ^ 1 := (pow_one _).symm
       _ ≤ (z + 1) ^ D := Nat.pow_le_pow_right (Nat.succ_pos _) (by omega)
-  have hpoly {c e : ℕ} (he : e ≤ D) : c * (n + 1) ^ e ≤ c * W := by
-    rw [hW]
+  have hpoly {c e : ℕ} (he : e ≤ D) : c * ((encInput encQ encT (P, d)).length + 1) ^ e ≤ c * W := by
+    rw [← hn, hW]
     exact Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left (by omega) _).trans
       (Nat.pow_le_pow_right (Nat.succ_pos _) he))
+  have hcf := (hft (P, d)).trans (hpoly (c := cf) (show df ≤ D by omega))
+  have hcr := (hrt (P, d)).trans (hpoly (c := cr) (show dr ≤ D by omega))
+  have hcf' := (hfs (P, d)).trans (hpoly (c := cf') (show df' ≤ D by omega))
+  have hcr' := (hrs (P, d)).trans (hpoly (c := cr') (show dr' ≤ D by omega))
+  clear hft hrt hfs hrs hpoly
   have hterm {c a b e : ℕ} (he : e ≤ D) : c * (a * z + b) ^ e ≤ c * (a + b) ^ e * W := by
     rw [hW]; exact term_le he
   have hT1 : K₀ * ((h + 1) * (13 * z + 18 + 1)) ^ K₀ ≤ K₀ * 96 ^ K₀ * W := by
@@ -926,16 +929,6 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
           rw [hW]; exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (Nat.succ_pos _) (by omega))
   have hCD : C * W ≤ (C + D) * (z + 1) ^ (C + D) := by
     rw [hW]; exact Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (Nat.succ_pos _) (by omega))
-  obtain ⟨htime, hspace⟩ := hres
-  have hft' := hft (P, d)
-  have hrt' := hrt (P, d)
-  have hfs' := hfs (P, d)
-  have hrs' := hrs (P, d)
-  rw [← hn] at hft' hrt' hfs' hrs'
-  have hcf := hft'.trans (hpoly (c := cf) (show df ≤ D by omega))
-  have hcr := hrt'.trans (hpoly (c := cr) (show dr ≤ D by omega))
-  have hcf' := hfs'.trans (hpoly (c := cf') (show df' ≤ D by omega))
-  have hcr' := hrs'.trans (hpoly (c := cr') (show dr' ≤ D by omega))
   constructor
   · rw [hfuel1] at htime
     obtain ⟨S, hS⟩ : ∃ S, S = K₀ * ((h + 1) * (13 * z + 18 + 1)) ^ K₀ +
@@ -950,8 +943,7 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
       omega
     have hm := Nat.mul_le_mul_left (2 * B) hstep
     calc (contractionCertificate eval hops ev).time (P, d)
-        ≤ cf * W + cr * W + 2 * W + 2 * B * (G * W + E) := by
-          rw [contractionCertificate_time]; unfold sumCertificate; omega
+        ≤ cf * W + cr * W + 2 * W + 2 * B * (G * W + E) := by omega
       _ ≤ B * ((cf + cr + 2) * W) + B * (2 * G * W) + 2 * B * E := by
           have e2 : 2 * B * (G * W + E) = B * (2 * G * W) + 2 * B * E := by ring
           have e3 : cf * W + cr * W + 2 * W = (cf + cr + 2) * W := by ring
@@ -964,8 +956,6 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
       _ ≤ B * ((C + D) * (z + 1) ^ (C + D) + 2 * E) :=
           Nat.mul_le_mul_left _ (Nat.add_le_add_right hCD _)
   · have h1 : (contractionCertificate eval hops ev).space (P, d) ≤ C * W + ES := by
-      rw [contractionCertificate_space]
-      unfold sumCertificate
       have e : C * W = cf * W + cr * W + cf' * W + cr' * W + 2 * G * W + G' * W + 4 * W := by
         rw [hC]; ring
       have e' : G' * W = K₀ * 96 ^ K₀ * W +

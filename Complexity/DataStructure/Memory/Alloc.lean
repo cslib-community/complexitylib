@@ -161,7 +161,9 @@ section Run
 variable (A : Allocator D w)
 
 /-- Allocate the structure, then run a client of its specification through its methods. -/
-def run {β : Type} (p : D.Client β) : Prog β := A.alloc >>= fun h => link (A.methods h) p
+def run {β : Type} (p : D.Client β) : Prog β := do
+  let h ← A.alloc
+  link (A.methods h) p
 
 /-- The history of a run: the allocation's, then the linked client's. -/
 theorem clientHistory_run {β : Type} (p : D.Client β) (s : State) :
