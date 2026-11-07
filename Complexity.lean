@@ -37,6 +37,10 @@ public import Complexity.Algorithms.Lean.MaxFlow.Basic
 public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
 public import Complexity.Algorithms.Lean.MaxFlow.EdmondsKarp
 public import Complexity.Algorithms.Lean.MergeSort.Comparator
+public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Correctness
+public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Cost
+public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Defs
+public import Complexity.Algorithms.Lean.Query.Arith.Lemmas
 public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
 public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
@@ -4077,10 +4081,12 @@ public import Complexity.Foundations.Data.Nat.Div
 public import Complexity.Foundations.Data.Nat.Doubling
 public import Complexity.Foundations.Data.Nat.Factorial
 public import Complexity.Foundations.Data.Nat.Fields
+public import Complexity.Foundations.Data.Nat.HalvingRecurrence
 public import Complexity.Foundations.Data.Nat.IntermediateValue
 public import Complexity.Foundations.Data.Nat.Log
 public import Complexity.Foundations.Data.Nat.LogRpow
 public import Complexity.Foundations.Data.Nat.LogStar
+public import Complexity.Foundations.Data.Nat.LogTwoRpow
 public import Complexity.Foundations.Data.Nat.Morton
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits

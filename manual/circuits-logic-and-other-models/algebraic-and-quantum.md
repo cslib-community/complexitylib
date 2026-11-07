@@ -41,6 +41,30 @@ lake build Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.Nine
 
 **Not certified here.** The paper's Theorem 1.1 is an integer algorithm with bit cost `O(n^(9/4+γ) M(B + log n))` on `B`-bit entries ([§4.3](https://arxiv.org/pdf/2610.28627v2#page=20)); the formalization proves the field-circuit statement only and says nothing about integer arithmetic, division by the cleared denominators or bit complexity. The paper's "computable" side `v` and count `r` are obtained here as existentials (`Tensor.exists_rank_mm_lt_rpow`), with no extraction procedure and no explicit constants; the parameters are galactic. Degenerations compose at the order `(h + 1) (k + 1) - 1` rather than the paper's additive bookkeeping, the gap parameter is `⌊w₀ / c ^ d⌋ ^ 4` rather than `⌊w / u⌋ ^ 2`, and the lengths of the rounds are bounded explicitly rather than by a limit argument; none of this changes the exponent. Positive characteristic, the rectangular and dual exponents and any lower bound beyond `2 ≤ omega K` are open; see [ROADMAP.md](../../ROADMAP.md).
 
+## Karatsuba polynomial multiplication
+
+[Karatsuba/Defs.lean](../../Complexity/Algorithms/Lean/Query/Arith/Karatsuba/Defs.lean) writes `Cslib.Query.karatsuba` in cslib's arithmetic query model `FreeM (ArithQuery α)`. The model is a program, not a circuit: every coefficient addition, subtraction and multiplication is an oracle query, and list splitting, zero padding and concatenation are free. The program is generic in `α`, assuming only `[Zero α]` for padding, so it can compute on coefficients only through queries. Its branching depends only on lengths, so the cost theorems hold under **every** oracle. Correctness ([Correctness.lean](../../Complexity/Algorithms/Lean/Query/Arith/Karatsuba/Correctness.lean)) uses the honest oracle of a commutative ring: `ofCoeffList_eval_karatsuba` identifies the output, via `Polynomial.ofCoeffList`, with the product of the input polynomials. The output has `2 max(|p|, |q|) - 1` coefficients, so it can end in zeros.
+
+[Cost.lean](../../Complexity/Algorithms/Lean/Query/Arith/Karatsuba/Cost.lean) gives the exact cost (`cost_karatsuba`). With `N = max(|p|, |q|)`, there are `mulCount N` multiplications and `addCount N` additions and subtractions, given by `M(n) = M(⌊n/2⌋) + 2 M(⌈n/2⌉)` and `A(n) = A(⌊n/2⌋) + 2 A(⌈n/2⌉) + 4n - 3`. The proved bounds are:
+
+- the closed forms `mulCount (2^k) = 3^k` and `2 addCount (2^k) + 16·2^k = 13·3^k + 3`;
+- the total `mulCount n + addCount n ≤ 9·3^⌈log₂ n⌉ ≤ 27 n^log₂ 3`, packaged as `karatsuba_upperBound` for `Cslib.Query.UpperBound`;
+- a lower bound `n^log₂ 3 ≤ 3 mulCount n`, with `karatsuba_lowerBound` recording for `Cslib.Query.LowerBound` that every length attains the exact count;
+- `mulCount n < n²` for `n ≥ 2`.
+
+The upper bounds come from a reusable halving-recurrence lemma, [HalvingRecurrence.lean](../../Complexity/Foundations/Data/Nat/HalvingRecurrence.lean) (`Nat.add_mul_two_pow_clog_le_of_halving`). It proves the recurrence by substitution with a subtracted linear term and needs no monotonicity. [LogTwoRpow.lean](../../Complexity/Foundations/Data/Nat/LogTwoRpow.lean) converts `a^⌈log₂ n⌉` and `a^⌊log₂ n⌋` to `n^log₂ a`.
+
+These are operation counts, not bit complexity. One recursion level is a bilinear algorithm with three products, valid over any commutative ring. It gives the same bound as the tensor layer's `Rank 3 (full 2 2)`, which `Tensor.rank_full` proves differently, by interpolation over a field of characteristic zero; no bridge between the two is formalized. A tensor rank counts only products, while this program also counts every addition and subtraction of the recursion.
+
+Complete client: [Karatsuba.lean](../../ComplexityTests/Karatsuba.lean). It checks concrete integer products, including unequal lengths, an uneven split and empty operands, and the symbolic three-multiplication formula. It also checks exact counts against the closed forms, and that the count is strictly below `n²` except at `n = 1`. It confirms the same query count under a dishonest oracle and applies the packaged bound at a concrete length. Build it with
+
+```bash
+lake build Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Cost \
+  Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Correctness ComplexityTests.Karatsuba
+```
+
+**Not certified here.** Integer Karatsuba on binary numerals with a bit-operation bound, a native or word-RAM implementation, Toom–Cook and FFT-based multiplication, and lower bounds on the number of multiplications for polynomial products; see [ROADMAP.md](../../ROADMAP.md).
+
 ## Rational formulas and hitting lists
 
 [RatOp](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Rational/Defs.lean#L69) uses rational constants, addition, multiplication and inverse. Evaluation is a relation: an inverse node is defined only when both products with the proposed inverse are one. This supports noncommutative matrix substitution without silently assigning a value at poles. A formula is admissible if some positive-dimensional rational matrix substitution makes it defined, and nonzero if some defined value is nonzero.

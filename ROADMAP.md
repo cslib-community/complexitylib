@@ -869,6 +869,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   conversion, rank) is general. Open: every field (the interpolation nodes are the integers of
   characteristic zero), the rectangular and dual exponents, explicit sizes and constants (the
   algorithm is galactic), and the lower bound `omega K ≥ 2` only as the trivial output count.
+- **Fast integer and polynomial multiplication**
+  ([#2923](https://github.com/cslib-community/complexitylib/issues/2923)): Karatsuba on coefficient
+  lists in the arithmetic query model, with exact counts and `O(n ^ log₂ 3)` bounds, is in
+  `Algorithms/Lean/Query/Arith/Karatsuba`. Open: integer Karatsuba on binary numerals, correct
+  against `Nat.mul` with an `O(n ^ log₂ 3)` bit-operation bound and a native or word-RAM
+  realization; Toom–Cook (`O(n ^ log₃ 5)` for Toom-3) and FFT-based multiplication over rings with
+  suitable roots of unity; and lower bounds such as rank `3` for the two-term product tensor.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
