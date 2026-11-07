@@ -4526,6 +4526,13 @@ public import Complexity.Logics.SecondOrder.Grounding
 public import Complexity.Logics.SecondOrder.IndependentSet
 public import Complexity.Logics.SecondOrder.Projection
 public import Complexity.Logics.SecondOrder.Reduction
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Basic
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Halving
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Littlestone
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Perceptron
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.SOA
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Thresholds
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.VCDimension
 public import Complexity.MachineLearning.UniformLearning.AC0
 public import Complexity.MachineLearning.UniformLearning.Basic
 public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
