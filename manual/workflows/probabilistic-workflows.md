@@ -114,7 +114,8 @@ The [embedding clients](../../ComplexityTests/Embeddability.lean) compose two ex
 from `ULift.{2} Bool`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) extracts a
 strategy from the one-fold repetition with `C = ∅`, which bounds every strategy of `chsh.pow 1`
 by `chsh.value`. Run `scripts/build.sh ComplexityTests.Embeddability ComplexityTests.TwoProverGame`.
-The coordinate embedding of Lemma 6.4, which would supply the embedding premise, is not yet proved;
+The next three sections supply the embedding premise at each free coordinate, through the
+coordinate embedding of Lemma 6.4:
 [the next section](#model-the-coordinates-of-the-parallel-repetition-proof) sets up its random
 variables.
 
@@ -195,9 +196,45 @@ To use a single coordinate, pick `j` with `ε j` at most the average, by
 `27 / √2 · √((#C ln (|A| |B|) + ln (1 / Pr[W_C])) / #Cᶜ)`. The
 [embedding clients](../../ComplexityTests/RepetitionEmbedding.lean) do this, and check that with
 `C = ∅` every coordinate has the law of `G.questions` and the first stage is exact. Run
-`scripts/build.sh ComplexityTests.RepetitionEmbedding`. The library does not yet prove the second
-stage (6.17)–(6.19), which adds the remaining questions through Lemma 5.4, the full embedding of
-Lemma 6.4, or the parallel repetition bound
+`scripts/build.sh ComplexityTests.RepetitionEmbedding`.
+[The next section](#extend-the-coordinate-embedding-to-the-question-tuples) proves the second
+stage (6.17)–(6.19), which adds the remaining questions through Lemma 5.4, and composes the two
+stages.
+
+## Extend the coordinate embedding to the question tuples
+
+Import [ParallelRepetition/Factorization.lean](../../Complexity/Computability/PCP/ParallelRepetition/Factorization.lean)
+for the second stage of the proof of Holenstein's Lemma 6.4 [holenstein09][holenstein09], in the
+setting of the previous two sections. Write `S` for `shared ha hb j ω` and `(x, y)` for the question
+tuples `(Prod.fst ∘ ω.2, Prod.snd ∘ ω.2)`. Holenstein's first stage embeds the questions in
+`((x j, S), (y j, S))`; the second extends this to the whole tuples, and the parties then forget
+`S`.
+
+- `exists_map_condLaw_apply_eq_mul` is the product form (5.5) of the conditioned law. The mass of
+  `(((x j, S), (y j, S)), (x, y))` under `condLaw` factors as `c · f · g`, where `f` depends only
+  on Alice's view `(x j, S)` and her tuple `x`, and `g` only on Bob's view `(y j, S)` and `y`.
+  Holenstein reaches this form through the Markov chains (6.17)–(6.19) and his Claims 6.2 and 6.3;
+  the library computes the masses directly instead.
+- `isEmbeddable_map_condLaw_tuples` applies Lemma 5.4 in this form
+  (`isEmbeddable_map_fst_of_apply_eq_mul`): the law of `((x j, S), (y j, S))` embeds with error `0`
+  in the law of `(((x j, S), (y j, S)), (x, y))`. Its input is the first stage's law of
+  `((x j, y j), (S, S))` regrouped as `IsEmbeddable.trans` requires; after `rw [PMF.map_comp]` it is
+  the second premise of `IsEmbeddable.trans`.
+- `isEmbeddable_filter_questions_of_shared` composes the two stages and forgets `S`. Its premise is
+  an embedding of a law `P₀` in
+  `(condLaw G C ha hb hC).map fun ω => (ω.2 j, (shared ha hb j ω, shared ha hb j ω))`, which is
+  exactly the per-coordinate embedding of `exists_isEmbeddable_condLaw_shared` in the previous
+  section. Directly from Corollary 5.3, `isEmbeddable_diag_of_dist_le J P₀ h₁ h₂` gives such an
+  embedding after `rw [PMF.map_comp]`. The conclusion, with the same error, is the embedding premise
+  of `winProbOn_insert_le`.
+
+The [factorization clients](../../ComplexityTests/RepetitionFactorization.lean) pass the distance
+bounds of Corollary 5.3 for `J` through the second stage to `winProbOn_insert_le`. In the one-fold
+repetition with `C = ∅`, `S` is trivial and the first stage is exact, so they bound the probability
+of winning the coordinate by `G.value`. Run `scripts/build.sh ComplexityTests.RepetitionFactorization`.
+With the previous section, every free coordinate `j` thus supplies the premise of
+`winProbOn_insert_le` with error `ε j`. The library does not yet state Lemma 6.4 as one theorem,
+choose the coordinate of Lemma 6.5, or prove the parallel repetition bound
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
