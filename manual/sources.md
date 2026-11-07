@@ -119,6 +119,11 @@ Johan Håstad, Russell Impagliazzo, Leonid A. Levin, Michael Luby. “A Pseudora
 
 Thomas Holenstein. “Pseudorandom Generators from One-Way Functions: A Simple Construction for Any Hardness.” *TCC 2006*. Author PDF: https://crypto.ethz.ch/publications/files/Holens06.pdf . Definitions and construction overview consulted.
 
+<a id="holenstein09"></a>
+## holenstein09
+
+Thomas Holenstein. “Parallel Repetition: Simplifications and the No-Signaling Case.” *Theory of Computing* 5(8), 141–172, 2009. https://doi.org/10.4086/toc.2009.v005a008 . Journal PDF inspected (Definition 2.4, p. 146; Definition 5.1, p. 151; Lemma 5.4 and (5.5), p. 153; Lemma 6.5 and its proof, p. 157).
+
 <a id="immerman1988"></a>
 ## immerman1988
 

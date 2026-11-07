@@ -33,9 +33,15 @@ who holds `y`, can use shared randomness, but no communication, to produce `s` a
   `7 ε₁ + 2 ε₂`. Holenstein states the constant `3 ε₁ + 2 ε₂`; the proof here goes through the
   triangle inequality and the constant is this file's own.
 * **Lemma 5.4** (`isEmbeddable_bind_prod`): if `s` depends only on `x` and `t` only on `y`, the
-  embedding is exact, by private randomness simulated with shared randomness.
+  embedding is exact, by private randomness simulated with shared randomness. A law whose masses
+  factor as `c x y · f x s · g y t` has this form (`isEmbeddable_map_fst_of_apply_eq_mul`).
 * **Claim 6.1** (`dist_filter_le_two_mul`): conditioning two distributions on an event of
   probability `1 / 2` under both at most doubles their distance.
+
+Embeddings compose, adding their errors (`IsEmbeddable.trans`); the parties may post-process their
+outputs locally (`IsEmbeddable.map`); and the error may be weakened (`IsEmbeddable.mono`).
+Shared randomness from any type, in any universe, witnesses an embedding
+(`IsEmbeddable.of_dist_le`).
 
 ## Main definitions
 
@@ -45,7 +51,13 @@ who holds `y`, can use shared randomness, but no communication, to produce `s` a
 
 * `Cslib.Probability.CorrelatedSampling.isEmbeddable_diag`: Lemma 5.2.
 * `Cslib.Probability.CorrelatedSampling.isEmbeddable_diag_of_dist_le`: Corollary 5.3.
-* `Cslib.Probability.CorrelatedSampling.isEmbeddable_bind_prod`: Lemma 5.4.
+* `Cslib.Probability.CorrelatedSampling.isEmbeddable_bind_prod`,
+  `Cslib.Probability.CorrelatedSampling.isEmbeddable_map_fst_of_apply_eq_mul`: Lemma 5.4.
+* `Cslib.Probability.CorrelatedSampling.IsEmbeddable.of_dist_le`,
+  `Cslib.Probability.CorrelatedSampling.IsEmbeddable.mono`,
+  `Cslib.Probability.CorrelatedSampling.IsEmbeddable.map`,
+  `Cslib.Probability.CorrelatedSampling.IsEmbeddable.trans`: introduction, weakening, local
+  post-processing and composition.
 * `Cslib.Probability.CorrelatedSampling.dist_filter_le_two_mul`: Claim 6.1.
 
 ## References
@@ -61,14 +73,83 @@ open Finset
 open Cslib.Probability.PMF (conditionalSnd bind_conditionalSnd dist_bind_le dist_map_le)
 open scoped Cslib.Probability.PMF
 
-variable {X Y S T : Type} [Fintype X] [Fintype Y] [Fintype S] [Fintype T]
+universe u₁ u₂ u₃ u₄
+
+variable {X : Type u₁} {Y : Type u₂} {S : Type u₃} {T : Type u₄}
+  [Fintype X] [Fintype Y] [Fintype S] [Fintype T]
 
 /-- **Local embeddability** [Holenstein, Definition 5.1][Holenstein2009]: from `(x, y)` drawn from
 `P₀`, Alice and Bob produce `s = fA x r` and `t = fB y r` from shared randomness `r ~ ρ` so that
-`((x, y), (s, t))` is within statistical distance `ε` of `P₁`. -/
+`((x, y), (s, t))` is within statistical distance `ε` of `P₁`. The randomness ranges over a type in
+the universe of `X`, `Y`, `S` and `T`; `IsEmbeddable.of_dist_le` accepts randomness from any
+type. -/
 def IsEmbeddable (P₀ : PMF (X × Y)) (P₁ : PMF ((X × Y) × (S × T))) (ε : ℝ) : Prop :=
-  ∃ (R : Type) (ρ : PMF R) (fA : X → R → S) (fB : Y → R → T),
+  ∃ (R : Type (max u₁ u₂ u₃ u₄)) (ρ : PMF R) (fA : X → R → S) (fB : Y → R → T),
     dist (P₀.bind fun xy => ρ.map fun r => (xy, (fA xy.1 r, fB xy.2 r))) P₁ ≤ ε
+
+/-- Shared randomness from any type, in any universe, witnesses local embeddability: it can be
+replaced by the pair of strategies `(fA · r, fB · r)` that it selects. -/
+theorem IsEmbeddable.of_dist_le {R : Type*} {P₀ : PMF (X × Y)} {P₁ : PMF ((X × Y) × (S × T))}
+    {ε : ℝ} (ρ : PMF R) (fA : X → R → S) (fB : Y → R → T)
+    (h : dist (P₀.bind fun xy => ρ.map fun r => (xy, (fA xy.1 r, fB xy.2 r))) P₁ ≤ ε) :
+    IsEmbeddable P₀ P₁ ε := by
+  refine ⟨(X → S) × (Y → T), ρ.map fun r => (fun x => fA x r, fun y => fB y r),
+    fun x g => g.1 x, fun y g => g.2 y, ?_⟩
+  simpa only [PMF.map_comp, Function.comp_def] using h
+
+/-- Local embeddability is monotone in the error. -/
+theorem IsEmbeddable.mono {P₀ : PMF (X × Y)} {P₁ : PMF ((X × Y) × (S × T))} {ε ε' : ℝ}
+    (h : IsEmbeddable P₀ P₁ ε) (hε : ε ≤ ε') : IsEmbeddable P₀ P₁ ε' := by
+  obtain ⟨R, ρ, fA, fB, hd⟩ := h
+  exact ⟨R, ρ, fA, fB, hd.trans hε⟩
+
+/-- **Local post-processing.** If `P₀` embeds in `P₁`, Alice and Bob can apply local maps `gA` and
+`gB` to their outputs, for instance to forget part of them, with the same error. -/
+theorem IsEmbeddable.map {S' T' : Type*} [Fintype S'] [Fintype T'] {P₀ : PMF (X × Y)}
+    {P₁ : PMF ((X × Y) × (S × T))} {ε : ℝ} (h : IsEmbeddable P₀ P₁ ε) (gA : X → S → S')
+    (gB : Y → T → T') :
+    IsEmbeddable P₀ (P₁.map fun ((x, y), (s, t)) => ((x, y), (gA x s, gB y t))) ε := by
+  obtain ⟨R, ρ, fA, fB, hd⟩ := h
+  refine IsEmbeddable.of_dist_le ρ (fun x r => gA x (fA x r)) (fun y r => gB y (fB y r))
+    (le_trans (le_of_eq ?_) ((dist_map_le _ P₁ fun ((x, y), (s, t)) =>
+      ((x, y), (gA x s, gB y t))).trans hd))
+  congr 1
+  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
+
+/-- **Composition of local embeddings.** Suppose `P₀` embeds in a law `P₁` of `((x, y), (s, t))`
+with error `ε₁`, and the law of `((x, s), (y, t))` under `P₁` embeds in `P₂` with error `ε₂`. Then
+`P₀` embeds in `P₂`, regrouped as `((x, y), ((s, u), (t, v)))`, with error `ε₁ + ε₂`: Alice runs
+both protocols on her side, and the shared randomness is a pair of independent strings. -/
+theorem IsEmbeddable.trans {U V : Type*} [Fintype U] [Fintype V] {P₀ : PMF (X × Y)}
+    {P₁ : PMF ((X × Y) × (S × T))} {P₂ : PMF (((X × S) × (Y × T)) × (U × V))} {ε₁ ε₂ : ℝ}
+    (h₁ : IsEmbeddable P₀ P₁ ε₁)
+    (h₂ : IsEmbeddable (P₁.map fun ((x, y), (s, t)) => ((x, s), (y, t))) P₂ ε₂) :
+    IsEmbeddable P₀ (P₂.map fun (((x, s), (y, t)), (u, v)) => ((x, y), ((s, u), (t, v))))
+      (ε₁ + ε₂) := by
+  obtain ⟨R₁, ρ₁, fA, fB, hd₁⟩ := h₁
+  obtain ⟨R₂, ρ₂, gA, gB, hd₂⟩ := h₂
+  -- The second protocol, run on an output of the first.
+  let Φ : (X × Y) × (S × T) → PMF (((X × S) × (Y × T)) × (U × V)) := fun z =>
+    ρ₂.map fun r => (((z.1.1, z.2.1), (z.1.2, z.2.2)),
+      (gA (z.1.1, z.2.1) r, gB (z.1.2, z.2.2) r))
+  let M₁ := P₀.bind fun xy => ρ₁.map fun r => (xy, (fA xy.1 r, fB xy.2 r))
+  have hM₂ : ((P₁.map fun ((x, y), (s, t)) => ((x, s), (y, t))).bind fun w =>
+      ρ₂.map fun r => (w, (gA w.1 r, gB w.2 r))) = P₁.bind Φ := by
+    rw [PMF.bind_map]
+    rfl
+  -- Independent shared strings for the two protocols; each party runs both.
+  let ρ := ρ₁.bind fun r₁ => ρ₂.map (r₁, ·)
+  let hA : X → R₁ × R₂ → S × U := fun x r => (fA x r.1, gA (x, fA x r.1) r.2)
+  let hB : Y → R₁ × R₂ → T × V := fun y r => (fB y r.1, gB (y, fB y r.1) r.2)
+  refine IsEmbeddable.of_dist_le ρ hA hB ?_
+  have hO : (P₀.bind fun xy => ρ.map fun r => (xy, (hA xy.1 r, hB xy.2 r))) =
+      (M₁.bind Φ).map fun (((x, s), (y, t)), (u, v)) => ((x, y), ((s, u), (t, v))) := by
+    simp only [ρ, hA, hB, M₁, Φ, PMF.map_bind, PMF.bind_bind, PMF.bind_map, PMF.map_comp,
+      Function.comp_def]
+  rw [hO]
+  calc _ ≤ dist (M₁.bind Φ) P₂ := dist_map_le _ _ _
+    _ ≤ dist (M₁.bind Φ) (P₁.bind Φ) + dist (P₁.bind Φ) P₂ := dist_triangle _ _ _
+    _ ≤ ε₁ + ε₂ := add_le_add ((dist_bind_le _ _ _).trans hd₁) (hM₂ ▸ hd₂)
 
 /-- The conditional law of `s` given `x` under a joint law `J` of `((x, y), s)`. -/
 noncomputable def condX (J : PMF ((X × Y) × S)) : X → PMF S :=
@@ -106,8 +187,9 @@ theorem isEmbeddable_withKernel (P₀ : PMF (X × Y)) (KX : X → PMF S) (KY : Y
     IsEmbeddable P₀ (P₀.bind fun xy => ((K xy).map fun s => (s, s)).map (xy, ·))
       (2 * dist (withKernel P₀ fun xy => KX xy.1) (withKernel P₀ K) +
         2 * dist (withKernel P₀ fun xy => KY xy.2) (withKernel P₀ K)) := by
-  refine ⟨_, shared (embedFamily KX KY K), fun x => sample (embedFamily KX KY K) (.inl x),
-    fun y => sample (embedFamily KX KY K) (.inr (.inl y)), ?_⟩
+  refine IsEmbeddable.of_dist_le (shared (embedFamily KX KY K))
+    (fun x => sample (embedFamily KX KY K) (.inl x))
+    (fun y => sample (embedFamily KX KY K) (.inr (.inl y))) ?_
   rw [← localSample_eq]
   exact dist_embed_le P₀ KX KY K
 
@@ -176,6 +258,66 @@ theorem isEmbeddable_bind_prod (P₀ : PMF (X × Y)) (KS : X → PMF S) (KT : Y 
   rw [← Cslib.Probability.PMF.pi_map_eval KS xy.1, PMF.bind_map,
     ← Cslib.Probability.PMF.pi_map_eval KT xy.2]
   simp only [PMF.map_comp, Function.comp_def]
+
+omit [Fintype X] [Fintype Y] [Fintype S] [Fintype T] in
+/-- The mass of the factorized law of Lemma 5.4. -/
+private theorem bind_prod_apply (P₀ : PMF (X × Y)) (KS : X → PMF S) (KT : Y → PMF T) (x : X)
+    (y : Y) (s : S) (t : T) :
+    (P₀.bind fun xy => (KS xy.1).bind fun s => (KT xy.2).map fun t => (xy, (s, t)))
+      ((x, y), (s, t)) = P₀ (x, y) * (KS x s * KT y t) := by
+  have h : (fun xy : X × Y => (KS xy.1).bind fun s => (KT xy.2).map fun t => (xy, (s, t))) =
+      fun xy => ((KS xy.1).bind fun s => (KT xy.2).map (s, ·)).map (xy, ·) := by
+    funext xy
+    simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
+  rw [h, Cslib.Probability.PMF.bind_map_prodMk_apply, Cslib.Probability.PMF.bind_map_prodMk_apply]
+
+open scoped ENNReal in
+/-- **Holenstein's Lemma 5.4** [Holenstein, Lemma 5.4][Holenstein2009] for a law `J` of
+`((x, y), (s, t))` whose masses factor as `c x y · f x s · g y t`. Such a law has the form (5.5)
+of the proof of Lemma 5.4, `P_{XY} P_{S | X} P_{T | Y}`, so its input marginal embeds in it
+exactly. -/
+theorem isEmbeddable_map_fst_of_apply_eq_mul (J : PMF ((X × Y) × (S × T)))
+    (c : X → Y → ℝ≥0∞) (f : X → S → ℝ≥0∞) (g : Y → T → ℝ≥0∞) (hf : ∀ x s, f x s ≠ ∞)
+    (hg : ∀ y t, g y t ≠ ∞) (hJ : ∀ x y s t, J ((x, y), (s, t)) = c x y * f x s * g y t) :
+    IsEmbeddable (J.map Prod.fst) J 0 := by
+  classical
+  have hF (x : X) : ∑' s, f x s ≠ ∞ := by
+    rw [tsum_fintype]
+    exact ENNReal.sum_ne_top.mpr fun s _ => hf x s
+  have hG (y : Y) : ∑' t, g y t ≠ ∞ := by
+    rw [tsum_fintype]
+    exact ENNReal.sum_ne_top.mpr fun t _ => hg y t
+  -- Normalize `f x` and `g y`. Where a normalizer vanishes, `J` has no mass and any law works.
+  let KS : X → PMF S := fun x =>
+    if h : ∑' s, f x s = 0 then J.map fun z => z.2.1 else PMF.normalize (f x) h (hF x)
+  let KT : Y → PMF T := fun y =>
+    if h : ∑' t, g y t = 0 then J.map fun z => z.2.2 else PMF.normalize (g y) h (hG y)
+  have hmarg (x : X) (y : Y) :
+      (J.map Prod.fst) (x, y) = c x y * (∑' s, f x s) * ∑' t, g y t := by
+    rw [Cslib.Probability.PMF.map_fst_apply, tsum_fintype, tsum_fintype, tsum_fintype,
+      Fintype.sum_prod_type]
+    simp only [hJ, Finset.mul_sum, Finset.sum_mul]
+    exact Finset.sum_comm
+  have hfactor : (J.map Prod.fst).bind (fun xy =>
+      (KS xy.1).bind fun s => (KT xy.2).map fun t => (xy, (s, t))) = J := by
+    ext ⟨⟨x, y⟩, s, t⟩
+    rw [bind_prod_apply, hmarg, hJ]
+    by_cases hF0 : ∑' s, f x s = 0
+    · rw [tsum_eq_zero_iff.mp hF0 s, hF0]
+      simp only [mul_zero, zero_mul]
+    by_cases hG0 : ∑' t, g y t = 0
+    · rw [tsum_eq_zero_iff.mp hG0 t, hG0]
+      simp only [mul_zero, zero_mul]
+    simp only [KS, KT, dite_eq_right hF0, dite_eq_right hG0, PMF.normalize_apply]
+    calc c x y * (∑' s, f x s) * (∑' t, g y t) *
+          (f x s * (∑' s, f x s)⁻¹ * (g y t * (∑' t, g y t)⁻¹))
+        = c x y * f x s * g y t * ((∑' s, f x s) * (∑' s, f x s)⁻¹) *
+          ((∑' t, g y t) * (∑' t, g y t)⁻¹) := by ring
+      _ = c x y * f x s * g y t := by
+        rw [ENNReal.mul_inv_cancel hF0 (hF x), ENNReal.mul_inv_cancel hG0 (hG y), mul_one,
+          mul_one]
+  have h := isEmbeddable_bind_prod (J.map Prod.fst) KS KT
+  rwa [hfactor] at h
 
 /-- **Holenstein's Claim 6.1** [Holenstein, Claim 6.1][Holenstein2009]: conditioning two
 distributions on an event of probability `1 / 2` under both at most doubles their statistical
