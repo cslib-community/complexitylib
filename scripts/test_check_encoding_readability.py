@@ -61,6 +61,52 @@ class RuleTests(unittest.TestCase):
         # Without binders the names are constants, which differ.
         self.assertEqual(violations(source.replace("(encS : σ ↪ List Bool) ", "")), {})
 
+    def test_names_bound_inside_the_type_are_local(self) -> None:
+        forall = "".join(
+            f"theorem {n} : ∀ ({e} : ℕ ↪ List Bool),\n"
+            f"    encPair {e} (encOption encBool) = encPair {e} (encOption encBool) := by\n"
+            "  intro; rfl\n\n" for n, e in (("a", "ea"), ("b", "eb"), ("c", "ec")))
+        lam = "".join(
+            f"theorem {n} : P (fun ({e} : ℕ ↪ List Bool) => encPair {e} (encOption encBool)) :=\n"
+            "  sorry\n\n" for n, e in (("a", "ea"), ("b", "eb"), ("c", "ec")))
+        arrow = "".join(
+            f"theorem {n} : ({e} : ℕ ↪ List Bool) → P (encPair {e} (encOption encBool)) :=\n"
+            "  sorry\n\n" for n, e in (("a", "ea"), ("b", "eb"), ("c", "ec")))
+        for source in (forall, lam, arrow):
+            with self.subTest(source=source.split(":=")[0]):
+                self.assertEqual(violations(source),
+                                 {"encPair ?1 (encOption encBool)": ["a", "b", "c"]})
+
+    def test_binder_scopes_end_with_their_brackets(self) -> None:
+        # Outside `(∀ e, …)`, `e` is a constant again.
+        scoped = (lambda n: f"theorem {n} : (∀ e : ℕ ↪ List Bool, True) ∧\n"
+                  "    P (encPair e (encOption encBool)) := sorry\n\n")
+        bound = ("theorem c : ∀ e : ℕ ↪ List Bool, P (encPair e (encOption encBool)) :=\n"
+                 "  sorry\n\n")
+        self.assertEqual(violations(scoped("a") + scoped("b") + bound), {})
+        self.assertEqual(violations(scoped("a") + scoped("b") + scoped("c")),
+                         {"encPair e (encOption encBool)": ["a", "b", "c"]})
+
+    def test_inner_binders_shadow_outer_ones(self) -> None:
+        def decl(n: str, outer: str, inner: str, use: str) -> str:
+            return (f"theorem {n} ({outer} : ℕ ↪ List Bool) :\n"
+                    f"    P (encPair {outer} (encList (g fun {inner} => {use}))) := sorry\n\n")
+        # `fun e => e` binds a new `e`, so a, b and d spell the same term; c uses the outer one.
+        source = (decl("a", "e", "e", "e") + decl("b", "x", "y", "y")
+                  + decl("c", "e", "y", "e") + decl("d", "e", "z", "z"))
+        self.assertEqual(violations(source),
+                         {"encPair ?1 (encList (g fun ?2 => ?2))": ["a", "b", "d"]})
+
+    def test_bound_names_that_are_not_encodings(self) -> None:
+        term = lambda k: f"encPair (encFinite (Fin {k})) (encList encBool)"  # noqa: E731
+        source = "".join(f"theorem {n} : ∀ {k} : ℕ, P ({term(k)}) := sorry\n\n"
+                         for n, k in (("a", "k"), ("b", "m"), ("c", "j")))
+        self.assertEqual(violations(source),
+                         {"encPair (encFinite (Fin ?1)) (encList encBool)": ["a", "b", "c"]})
+        # The same name, used freely (a constant `k`), is a different term.
+        free = f"theorem d : P ({term('k')}) := sorry\n\n"
+        self.assertEqual(violations(source.split("theorem c")[0] + free), {})
+
     def test_section_variables_are_local(self) -> None:
         source = ("variable {σ : Type} (encS : σ ↪ List Bool)\n\n"
                   + "".join(theorem(n, "encPair encS (encOption encBool)") for n in "abc"))

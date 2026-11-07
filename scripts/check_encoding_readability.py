@@ -18,13 +18,16 @@ A signature runs from the declaration's name to the first top-level `:=`, `where
 clause `| … =>` (for `structure`, `class` and `inductive`, the first top-level `|`), so proofs and
 bodies do not count, nor does the body of the `abbrev` that names an encoding. Each field of a
 structure or class is a declaration too, whose signature is its type. Terms are compared up to
-whitespace, comments and the names of local variables: the binders of the declaration, the
-`variable`s in scope and, for a field, the structure's parameters and earlier fields become `?1`,
-`?2`, … in order of first appearance. So `encPair encS (encOption encBool)` and
-`encPair encT (encOption encBool)` are the same term `encPair ?1 (encOption encBool)` when `encS`
-and `encT` are local, and `enc.index` is `?1.index` when `enc` is. Everything else is compared
-verbatim: `Turing.encPair` differs from `encPair`. Occurrences inside larger terms count, such as
-the restated input encoding in `fun p => (encPair encS (encOption encBool) p).length`.
+whitespace, comments and the names of local variables, which become `?1`, `?2`, … in order of
+first appearance. Local variables are the binders of the declaration, the `variable`s in scope,
+for a field the structure's parameters and earlier fields, and the names bound inside the
+signature by `∀`, `∃`, `fun`, `λ`, the big operators, `let`, `have`, `(x : T) → …` and
+`{x | …}`, each scoped to the rest of its enclosing brackets; an inner binder shadows an outer one
+of the same name. So `encPair encS (encOption encBool)` and `encPair encT (encOption encBool)` are
+the same term `encPair ?1 (encOption encBool)` when `encS` and `encT` are local, and `enc.index`
+is `?1.index` when `enc` is. Everything else is compared verbatim: `Turing.encPair` differs from
+`encPair`. Occurrences inside larger terms count, such as the restated input encoding in
+`fun p => (encPair encS (encOption encBool) p).length`.
 
 Only public declarations count: in a `module`, those inside a `public section` or marked `public`,
 and not `private` or `local`. Declarations in a namespace with an `Internal` component, and modules with an
@@ -88,6 +91,9 @@ TOKEN = re.compile(
 # Words that end an application instead of supplying an argument.
 KEYWORDS = {"fun", "by", "do", "then", "else", "with", "at", "in", "from", "if", "match", "let",
             "have", "show", "calc", "where", "deriving", "forall", "exists", "using", "λ"}
+# Binders of a term: quantifiers and big operators take `x y : T,`, `x ∈ s,` or `(x : T),`.
+QUANTIFIERS = frozenset("∀∃ΠΣ∑∏⨆⨅⋃⋂∫")
+BINDER_PREDICATES = frozenset("∈∉<≤>≥⊆⊂≠") | {"in"}
 TYPE_END = re.compile(r"(?P<open>[(\[{⟨⦃])|(?P<close>[)\]}⟩⦄])|:=|\|"
                       r"|(?<![\w'.!?])(?:where|deriving)(?![\w'!?])")
 FIELD_END = re.compile(r"(?P<open>[(\[{⟨⦃])|(?P<close>[)\]}⟩⦄])|:=")
@@ -100,7 +106,7 @@ class Declaration:
     name: str
     line: int
     signature: str  # masked source
-    locals: frozenset[str]  # binder and `variable` names in scope
+    locals: frozenset[str]  # the binders and `variable`s in scope outside the signature
 
 
 @dataclass
@@ -298,24 +304,167 @@ def _normalize(term: str) -> str:
     return re.sub(r" ([)\]}⟩⦄])", r"\1", term)
 
 
-def canonical(term: str, local_names: frozenset[str] | set[str]) -> str:
-    """`term` with whitespace normalized and its local variables, also as the head of a dotted
-    name (`F` in `F.encDesc`), replaced by `?1`, `?2`, … in order of first appearance."""
-    numbers: dict[str, int] = {}
+def _tokens(text: str) -> list[re.Match[str]]:
+    return [m for m in TOKEN.finditer(text) if m.lastgroup != "space"]
+
+
+def _matching(tokens: list[re.Match[str]]) -> dict[int, int]:
+    """The index of the bracket that closes each opening bracket (`len(tokens)` if none)."""
+    match, stack = {}, []
+    for k, token in enumerate(tokens):
+        if token.lastgroup == "open":
+            stack.append(k)
+        elif token.lastgroup == "close" and stack:
+            match[stack.pop()] = k
+    return match | {k: len(tokens) for k in stack}
+
+
+def _is_colon(tokens: list[re.Match[str]], k: int) -> bool:
+    """Whether `tokens[k]` is a type ascription `:`, not part of `:=` or `::`."""
+    def adjacent(j: int, text: str) -> bool:
+        return 0 <= j < len(tokens) and tokens[j][0] == text and \
+            (tokens[j].end() == tokens[k].start() or tokens[j].start() == tokens[k].end())
+    return tokens[k][0] == ":" and not any(adjacent(k + d, t) for d in (-1, 1) for t in ":=")
+
+
+def _group_names(tokens: list[re.Match[str]], match: dict[int, int], open_: int) -> list[str]:
+    """The names a bracketed binder group binds: those before its top-level `:` (`(x y : T)`),
+    or, in a group without a type, every name (`{x y}`, a pattern `⟨a, b⟩`); none for an
+    anonymous instance binder `[C α]`."""
+    close, k, names = match[open_], open_ + 1, []
+    while k < close:
+        if _is_colon(tokens, k):
+            return names
+        if tokens[k].lastgroup == "open":
+            if tokens[open_][0] in "(⟨":  # a nested pattern
+                names += [t[0] for t in tokens[k:match[k]] if _is_name(t)]
+            k = match[k] + 1
+            continue
+        if _is_name(tokens[k]):
+            names.append(tokens[k][0])
+        k += 1
+    return [] if tokens[open_][0] == "[" else names
+
+
+def _is_name(token: re.Match[str]) -> bool:
+    return token.lastgroup == "ident" and token[0] not in KEYWORDS and token[0] != "_" and \
+        "." not in token[0]
+
+
+def _binders(tokens: list[re.Match[str]], match: dict[int, int], start: int, stop: int
+             ) -> list[str]:
+    """The names bound by the binders `tokens[start:stop]` of a quantifier or `fun`:
+    `x y`, `x : T`, `x ∈ s`, `(x : T) {y}`, `⟨a, b⟩`."""
+    names, k, typed = [], start, False
+    while k < stop:
+        if tokens[k].lastgroup == "open":
+            if not typed:
+                names += _group_names(tokens, match, k)
+            k = match[k] + 1
+            continue
+        if _is_colon(tokens, k) or tokens[k][0] in BINDER_PREDICATES:
+            typed = True
+        elif not typed and _is_name(tokens[k]):
+            names.append(tokens[k][0])
+        k += 1
+    return names
+
+
+def _separator(tokens: list[re.Match[str]], match: dict[int, int], start: int, stop: int,
+               lambda_: bool) -> int:
+    """The index of the `,` (or, for `fun`, `=>` or `↦`) that ends the binders from `start`."""
+    k = start
+    while k < stop:
+        token = tokens[k]
+        if token.lastgroup == "open":
+            k = match[k] + 1
+            continue
+        if not lambda_ and token[0] == ",":
+            return k
+        if lambda_ and (token[0] == "↦" or token[0] == "=" and k + 1 < stop and
+                        tokens[k + 1][0] == ">" and tokens[k + 1].start() == token.end()):
+            return k
+        k += 1
+    return stop
+
+
+def bound_names(signature: str, outer: frozenset[str] | set[str]) -> dict[int, object]:
+    """For each name in `signature` that refers to a local variable, by offset, the variable it
+    refers to. The variables are those of `outer` (binders and `variable`s), and those bound
+    inside the signature by `∀`, `∃`, `fun`, `λ`, the big operators, `let`, `have`,
+    `(x : T) → …` and `{x | …}`, each scoped to the rest of its enclosing brackets. An inner
+    binder shadows an outer one with the same name."""
+    tokens = _tokens(signature)
+    match = _matching(tokens)
+    scopes: list[tuple[int, dict[str, object]]] = []  # (end index, {name: variable})
+    closes: list[int] = []  # the closing brackets of the enclosing groups
+    found: dict[int, object] = {}
+    fresh = 0
+
+    def bind(names: list[str], end: int) -> None:
+        nonlocal fresh
+        scopes.append((end, {name: fresh + i for i, name in enumerate(names)}))
+        fresh += len(names)
+
+    for k, token in enumerate(tokens):
+        while scopes and scopes[-1][0] <= k:
+            scopes.pop()
+        end = closes[-1] if closes else len(tokens)
+        text = token[0]
+        if token.lastgroup == "open":
+            close = match[k]
+            if close + 1 < len(tokens) and tokens[close + 1][0] == "→" and text in "({⦃[" and \
+                    any(_is_colon(tokens, j) for j in range(k + 1, close)):
+                bind(_group_names(tokens, match, k), end)  # a dependent arrow `(x : T) → …`
+            elif text == "{":
+                bar = next((j for j in range(k + 1, close) if tokens[j][0] == "|"), None)
+                if bar is not None:  # a set-builder `{x | p x}`
+                    bind(_binders(tokens, match, k + 1, bar), close)
+            closes.append(close)
+        elif token.lastgroup == "close":
+            if closes:
+                closes.pop()
+        elif text in QUANTIFIERS or text in ("fun", "λ"):
+            stop = _separator(tokens, match, k + 1, end, text in ("fun", "λ"))
+            bind(_binders(tokens, match, k + 1, stop), end)
+        elif text in ("let", "have") and k + 1 < len(tokens):
+            following = tokens[k + 1]
+            if following.lastgroup == "open":
+                bind(_group_names(tokens, match, k + 1), end)
+            elif _is_name(following):
+                bind([following[0]], end)
+        if token.lastgroup == "ident":
+            head = text.partition(".")[0]
+            for _, names in reversed(scopes):
+                if head in names:
+                    found[token.start()] = names[head]
+                    break
+            else:
+                if head in outer:
+                    found[token.start()] = head
+    return found
+
+
+def canonical(signature: str, start: int, end: int, bound: dict[int, object]) -> str:
+    """The term `signature[start:end]` with whitespace normalized and its local variables (by
+    `bound_names`), also as the head of a dotted name (`F` in `F.encDesc`), replaced by `?1`,
+    `?2`, … in order of first appearance."""
+    numbers: dict[object, int] = {}
     out = []
-    for token in TOKEN.finditer(_normalize(term)):
-        head, dot, tail = token[0].partition(".")
-        if token.lastgroup == "ident" and head in local_names:
-            out.append(f"?{numbers.setdefault(head, len(numbers) + 1)}{dot}{tail}")
+    for token in TOKEN.finditer(signature, start, end):
+        if token.lastgroup == "ident" and token.start() in bound:
+            number = numbers.setdefault(bound[token.start()], len(numbers) + 1)
+            head, dot, tail = token[0].partition(".")
+            out.append(f"?{number}{dot}{tail}")
         else:
             out.append(token[0])
-    return "".join(out)
+    return _normalize("".join(out))
 
 
 def encoding_terms(signature: str) -> list[tuple[int, int, int, bool]]:
     """Every application of an encoding combinator in `signature`, as `(start, end, number of
     combinator applications it contains, whether it is compound)`."""
-    tokens = [m for m in TOKEN.finditer(signature) if m.lastgroup != "space"]
+    tokens = _tokens(signature)
     heads = []
     for i, token in enumerate(tokens):
         if token.lastgroup != "ident" or token[0].rsplit(".", 1)[-1] not in COMBINATORS:
@@ -363,12 +512,13 @@ def module_violations(declarations: list[Declaration]) -> list[Violation]:
     occurrences: dict[str, list[tuple[int, int, int, str]]] = defaultdict(list)
     size: dict[str, int] = {}
     for index, declaration in enumerate(declarations):
-        for start, end, count, compound in encoding_terms(declaration.signature):
-            if compound:
-                spelling = declaration.signature[start:end]
-                term = canonical(spelling, declaration.locals)
-                occurrences[term].append((index, start, end, _normalize(spelling)))
-                size[term] = count
+        signature = declaration.signature
+        terms = [term for term in encoding_terms(signature) if term[3]]
+        bound = bound_names(signature, declaration.locals) if terms else {}
+        for start, end, count, _ in terms:
+            term = canonical(signature, start, end, bound)
+            occurrences[term].append((index, start, end, _normalize(signature[start:end])))
+            size[term] = count
     reported: dict[int, list[tuple[int, int]]] = defaultdict(list)
     violations = []
     # A proper subterm has fewer combinator applications, so outer terms come first.
