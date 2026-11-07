@@ -12,7 +12,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Marking
 
 A one-state machine that emits its move and halts decides `Set.univ` (existential) and `∅`
 (universal) within space `0`, so both are in `AL`, `APSPACE`, `P` and `EXP` through the explicit
-machines and the inclusions. A one-state machine whose move `false` loops and whose move `true`
+machines and the inclusions. A variant with one work tape, which writes a cell before halting,
+exercises a nonzero space bound. A one-state machine whose move `false` loops and whose move `true`
 halts with output `[true]` separates the least fixed point from the greatest. Existential, it
 accepts every input. Universal, every finite strategy fails, because the move `false` never halts,
 so it accepts no input: it recognizes `∅` within space `0` but decides nothing, since it has an
@@ -94,6 +95,43 @@ example :
 example : (Set.univ : Set (List Bool)) ∈ APSPACE encBits :=
   AP_subset_APSPACE ⟨_, PolyBounded.const 1, 0, Unit, inferInstance, emitMove false,
     decidesInTime_univ⟩
+
+/-! ### A machine with one work tape -/
+
+/-- The existential machine with one state and one work tape that writes `true` on its work tape,
+moves its work head right, emits its move and halts. -/
+private def writeEmit : MultiTapeATM 1 Bool Unit where
+  toPTM :=
+    { initial := ()
+      tr := fun _ _ _ _ b =>
+        .step ⟨0, fun _ => (some (some true), 1), some b, none⟩ Empty.elim Empty.elim }
+  universal _ := false
+
+/-- The move `b` halts with output `[b]`. -/
+private theorem next_writeEmit (b : Bool) (input : List Bool) :
+    (writeEmit.next b (writeEmit.toPTM.toNTM.initCfg input)).state = none ∧
+      (writeEmit.next b (writeEmit.toPTM.toNTM.initCfg input)).output = [b] := by
+  rw [MultiTapeATM.next_of_state _ (q := ()) rfl]
+  exact ⟨rfl, rfl⟩
+
+/-- The machine decides `Set.univ` within one step. -/
+private theorem decidesInTime_writeEmit :
+    writeEmit.DecidesInTime encBits Set.univ fun _ => 1 := fun a => by
+  refine ⟨MultiTapeATM.runsInTime_iff_stepCoins.mpr fun coins hlen => ?_, iff_of_true trivial
+    ⟨1, (writeEmit.acceptsWithin_succ_of_existential (q := ()) rfl rfl).mpr
+      ⟨true, (next_writeEmit true a).1, (next_writeEmit true a).2⟩⟩⟩
+  obtain ⟨b, rfl⟩ := List.length_eq_one_iff.mp hlen
+  exact (next_writeEmit b a).1
+
+/-- With one work tape the space bound is not trivial: one step gives space `1 * (1 + 1)`, which is
+within `2 * (log₂ n + 1)`, so `Set.univ ∈ AL` through this machine, and in `APSPACE` through the
+constant bound. -/
+example : (Set.univ : Set (List Bool)) ∈ AL encBits ∧
+    (Set.univ : Set (List Bool)) ∈ APSPACE encBits :=
+  ⟨⟨1, Unit, inferInstance, writeEmit, 2,
+      decidesInTime_writeEmit.decidesInSpace.mono fun _ => by omega⟩,
+    ⟨1, Unit, inferInstance, writeEmit, _, PolyBounded.const _,
+      decidesInTime_writeEmit.decidesInSpace⟩⟩
 
 /-! ### A machine whose move `false` loops -/
 

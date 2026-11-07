@@ -10,7 +10,9 @@ module
 public import Complexity.Computability.Complexity.Classes.Alternation
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Space
+import Complexity.Computability.Complexity.Classes.EXP.Padding
 import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Marking
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -91,13 +93,6 @@ def AL (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ (k : ℕ) (State : Type) (_ : Finite State) (atm : MultiTapeATM k Bool State) (c : ℕ),
     atm.DecidesInSpace enc A fun a => c * (Nat.log2 (enc a).length + 1)}
 
-/-- A logarithmic space bound is polynomially bounded. -/
-private theorem polyBounded_log (c : ℕ) :
-    PolyBounded (fun a => (enc a).length) fun a => c * (Nat.log2 (enc a).length + 1) :=
-  .of_forall_le (c + 1) 1 fun a => by
-    have := Nat.log2_le_self (enc a).length
-    nlinarith
-
 /-- **Alternating polynomial time is within alternating polynomial space**: a decider within time
 `t` decides within space `k * (t + 1)`. -/
 theorem AP_subset_APSPACE : AP enc ⊆ APSPACE enc := by
@@ -108,7 +103,7 @@ theorem AP_subset_APSPACE : AP enc ⊆ APSPACE enc := by
 /-- **Alternating logarithmic space is within alternating polynomial space.** -/
 theorem AL_subset_APSPACE : AL enc ⊆ APSPACE enc := by
   rintro A ⟨k, State, _, atm, c, h⟩
-  exact ⟨k, State, inferInstance, atm, _, polyBounded_log c, h⟩
+  exact ⟨k, State, inferInstance, atm, _, polyBounded_log (fun a => (enc a).length) c, h⟩
 
 end Cslib.Complexity
 
@@ -122,7 +117,9 @@ variable {α : Type} {enc : α ↪ List Bool} {k : ℕ} {State : Type} [Finite S
 /-- **Alternating logspace recognizers are within polynomial time**
 [Chandra, Kozen and Stockmeyer, Section 3][ChandraKozenStockmeyer1981]: a problem recognized by
 an alternating machine within logarithmic space, whose branches need not halt, is in `P`, by
-marking the polynomially many reachable views. -/
+marking the polynomially many reachable views. This is the alternating analogue of
+`Cslib.Complexity.mem_P_of_recognizesInSpace`. The bound must have the shape
+`c * (Nat.log2 n + 1)`; a smaller bound is first raised with `RecognizesInSpace.mono`. -/
 theorem RecognizesInSpace.mem_P {c : ℕ}
     (h : atm.RecognizesInSpace enc A fun a => c * (Nat.log2 (enc a).length + 1)) :
     A ∈ P enc := by
@@ -132,8 +129,8 @@ theorem RecognizesInSpace.mem_P {c : ℕ}
   have hN : ComputableInPolyTime N enc encUnary := by
     simp only [N]
     fun_prop
-  have hΨ := (computableInPolyTime_boundedAccepts (fun a => (h a).1) (polyBounded_log c)).comp
-    (ComputableInPolyTime.id'.prod hN)
+  have hΨ := (computableInPolyTime_boundedAccepts (fun a => (h a).1)
+    (polyBounded_log (fun a => (enc a).length) c)).comp (ComputableInPolyTime.id'.prod hN)
   refine ⟨_, hΨ, fun a => (h a).2.trans ?_⟩
   exact (boundedAccepts_iff (h a).1
     (MultiTapeNTM.two_pow_coreLengthBound_log_le k State c _)).symm
