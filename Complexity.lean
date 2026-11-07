@@ -2645,6 +2645,7 @@ public import Complexity.Computability.PCP.GenericComposition
 public import Complexity.Computability.PCP.LocalTest
 public import Complexity.Computability.PCP.LocalTest.DecisionTree
 public import Complexity.Computability.PCP.LocalTest.Repetition
+public import Complexity.Computability.PCP.ParallelRepetition
 public import Complexity.Computability.PCP.ParallelRepetition.CoordinateModel
 public import Complexity.Computability.PCP.ParallelRepetition.Embedding
 public import Complexity.Computability.PCP.ParallelRepetition.Factorization

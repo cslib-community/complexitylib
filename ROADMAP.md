@@ -693,8 +693,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Håstad's optimal MAX-E3SAT hardness** ([#886]): for `0 < ε < 1/8`, NP-hardness of
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
-  `7/8 + ε` of the clauses. This needs Raz–Holenstein parallel repetition for small-soundness
-  Label Cover and Håstad's separate perfect-completeness construction for MAX-E3SAT.
+  `7/8 + ε` of the clauses. Holenstein's parallel repetition theorem for two-prover games is
+  proved (`TwoProverGame.value_pow_le`). What remains is small-soundness Label Cover through
+  parallel repetition and Håstad's separate perfect-completeness construction for MAX-E3SAT.
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
