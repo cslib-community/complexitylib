@@ -43,6 +43,7 @@ public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
 public import Complexity.Algorithms.Lean.Query.Submodular.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.ValueQuery
+public import Complexity.Algorithms.Lean.SetCover.Greedy
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Basic
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Correctness
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
@@ -1395,13 +1396,21 @@ public import Complexity.Computability.Complexity.Classes.Alternation.Game
 public import Complexity.Computability.Complexity.Classes.Alternation.GuessVerify
 public import Complexity.Computability.Complexity.Classes.Alternation.NP
 public import Complexity.Computability.Complexity.Classes.Alternation.Savitch
+public import Complexity.Computability.Complexity.Classes.Alternation.Space
 public import Complexity.Computability.Complexity.Classes.Alternation.TQBF
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Collapse
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Games
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Games.Repetition
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.GraphNonIsomorphism
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.PH
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound
+public import Complexity.Computability.Complexity.Classes.AverageCase.Distributional
+public import Complexity.Computability.Complexity.Classes.AverageCase.Ensemble
+public import Complexity.Computability.Complexity.Classes.AverageCase.MildHardness
+public import Complexity.Computability.Complexity.Classes.AverageCase.Reduction
 public import Complexity.Computability.Complexity.Classes.BPP
 public import Complexity.Computability.Complexity.Classes.BPP.Amplification
 public import Complexity.Computability.Complexity.Classes.BPP.Collapse
@@ -1455,6 +1464,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Tru
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedSum
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
+public import Complexity.Computability.Complexity.Classes.EXP.Padding
 public import Complexity.Computability.Complexity.Classes.FewP
 public import Complexity.Computability.Complexity.Classes.FewP.Machine
 public import Complexity.Computability.Complexity.Classes.FunctionTime
@@ -2052,6 +2062,9 @@ public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Simulati
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
+public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Marking
+public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Space
+public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Views
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.BalancedParameters
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluator
@@ -2205,6 +2218,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSp
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.BoundedSearch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.Recompute
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.SmallSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph
@@ -4569,6 +4583,11 @@ public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
 public import Complexity.MachineLearning.UniformLearning.LowDegree
 public import Complexity.MachineLearning.UniformLearning.LowDegreeClasses
 public import Complexity.MachineLearning.UniformLearning.MembershipQuery
+public import Complexity.Privacy.DifferentialPrivacy.Basic
+public import Complexity.Privacy.DifferentialPrivacy.Composition
+public import Complexity.Privacy.DifferentialPrivacy.DiscreteLaplace
+public import Complexity.Privacy.DifferentialPrivacy.Hamming
+public import Complexity.Privacy.DifferentialPrivacy.RandomizedResponse
 public import Complexity.Probability.AdaptiveWeights
 public import Complexity.Probability.ApproximateCounting
 public import Complexity.Probability.ApproximateCounting.Relative
