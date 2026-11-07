@@ -65,8 +65,13 @@ Import [StatisticalDistance/Event.lean](../../Complexity/Probability/Statistical
 to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
 over a finite type, active after `open scoped Cslib.Probability.PMF`. It uses the half-L1
 convention: distinct point masses have distance `1`, half of Mathlib's `tvDist` above.
-`abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`, and
-`dist_map_of_injective` keeps the distance unchanged under an injective relabeling. Import
+`abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`;
+`abs_bind_apply_toReal_sub_le_dist p q T b` does the same for the probability that a randomized
+distinguisher `T` outputs `b`. `dist_map_of_injective` keeps the distance unchanged under an
+injective relabeling. For a second-moment tail bound on a finite PMF without measure-theoretic side
+conditions, import [PMF/Chebyshev.lean](../../Complexity/Probability/PMF/Chebyshev.lean): by
+`sum_mul_ite_le_sum_mul_sq_div`, the mass where `|f a − m| ≥ c` is at most
+`∑ a, p(a) (f a − m)² / c²`. Import
 [Product/Split.lean](../../Complexity/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
 satisfying `P` and the remaining coordinates form two independent products.
@@ -74,6 +79,45 @@ satisfying `P` and the remaining coordinates form two independent products.
 The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two fair bits on
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
+
+## Bound the mixing time of a finite Markov chain
+
+Import [MarkovChain/Coupling.lean](../../Complexity/Probability/MarkovChain/Coupling.lean). A chain
+`P : Cslib.Probability.MarkovChain S` is a transition kernel `S → PMF S`, and `P ^ t` is its
+`t`-step kernel, so `pow_add_apply` is Chapman–Kolmogorov. Prove a stationary law with
+`IsStationary P π` (`π.bind P = π`), or more easily with detailed balance
+`IsReversible P π` and `IsReversible.isStationary`. To get a chain with a given target,
+[MarkovChain/Metropolis.lean](../../Complexity/Probability/MarkovChain/Metropolis.lean) builds
+`metropolis Ψ π` from any proposal chain `Ψ`, and `isReversible_metropolis` holds without
+positivity or symmetry hypotheses. With `[Fintype S]`,
+[MarkovChain/Mixing.lean](../../Complexity/Probability/MarkovChain/Mixing.lean) defines
+`distToStationary P π t` (`d(t)`, a maximum over starting states of cslib's half-L1 `dist`),
+`distPair P t` (`d̄(t)`) and `mixingTime P π ε : ℕ∞`, which is `⊤` when the chain never comes
+within `ε`. Nothing assumes irreducibility or aperiodicity: the periodic flip on `Bool` has
+`t_mix(ε) = ⊤` for every `ε < 1/2`. For stationary `π`, `IsStationary.mixingTime_le_iff` turns a
+mixing-time goal into `d(t) ≤ ε`, and `IsStationary.mixingTime_le_ceil_logb_mul` amplifies
+`t_mix(1/4)` to `t_mix(ε)`.
+
+To bound `d(t)`, build a chain `Q` on `S × S` and prove `IsMarkovianCoupling P Q`, i.e. that both
+coordinates of `Q z` have the laws `P z.1` and `P z.2`. Then
+`distToStationary_le_of_coupling hπ (fun _ _ => Q) (fun _ _ => hQ) hε` bounds `d(t)` by any `ε`
+that bounds `(((Q ^ t) (x, y)).toOuterMeasure {w | w.1 ≠ w.2}).toReal` for all starting pairs.
+The bounded event is "the copies differ at time `t`", not the source's coupling-time tail, and is
+never larger. The theorem covers time-homogeneous Markovian couplings only, but needs no
+stickiness. To bound the event, `PMF.toOuterMeasure_bind_le_mul_ennreal` from
+[PMF/Event.lean](../../Complexity/Probability/PMF/Event.lean) gives a step-by-step induction. The
+worked client is [BitString/LazyRandomWalk.lean](../../Complexity/Probability/BitString/LazyRandomWalk.lean):
+for the lazy hypercube walk `Cslib.BitString.lazyRandomWalk ι`, `mixingTime_lazyRandomWalk_le`
+proves `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉`. The ceiling is necessary, as the `n = 1`, `ε = 2/5`
+check shows.
+
+The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
+`t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip
+chain never mixes, compute a Metropolis acceptance probability, and give the hypercube instance
+with `n = 1`. Run
+`scripts/build.sh ComplexityTests.MarkovChain`. A goal of the form `t_mix(ε) = k` needs both
+directions: `mixingTime_le_of_distToStationary_le` for `≤`, and
+`(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
 ## Compose local embeddings and extract a strategy
 
@@ -115,9 +159,10 @@ from `ULift.{2} Bool`. The [CHSH client](../../ComplexityTests/TwoProverGame.lea
 strategy from the one-fold repetition with `C = ∅`, which bounds every strategy of `chsh.pow 1`
 by `chsh.value`. Run `scripts/build.sh ComplexityTests.Embeddability ComplexityTests.TwoProverGame`.
 The next three sections supply the embedding premise at each free coordinate, through the
-coordinate embedding of Lemma 6.4:
+coordinate embedding of Lemma 6.4;
 [the next section](#model-the-coordinates-of-the-parallel-repetition-proof) sets up its random
-variables.
+variables. [Bound the value of a parallel repetition](#bound-the-value-of-a-parallel-repetition)
+states Lemma 6.4 as one theorem and proves the parallel repetition theorem.
 
 ## Model the coordinates of the parallel repetition proof
 
@@ -233,8 +278,51 @@ bounds of Corollary 5.3 for `J` through the second stage to `winProbOn_insert_le
 repetition with `C = ∅`, `S` is trivial and the first stage is exact, so they bound the probability
 of winning the coordinate by `G.value`. Run `scripts/build.sh ComplexityTests.RepetitionFactorization`.
 With the previous section, every free coordinate `j` thus supplies the premise of
-`winProbOn_insert_le` with error `ε j`. The library does not yet state Lemma 6.4 as one theorem,
-choose the coordinate of Lemma 6.5, or prove the parallel repetition bound
+`winProbOn_insert_le` with error `ε j`. [The next section](#bound-the-value-of-a-parallel-repetition)
+states Lemma 6.4 as one theorem, chooses the coordinate of Lemma 6.5 and proves the parallel
+repetition theorem.
+
+## Bound the value of a parallel repetition
+
+Import [ParallelRepetition.lean](../../Complexity/Computability/PCP/ParallelRepetition.lean) for
+Holenstein's parallel repetition theorem, his Theorem 2.5 [holenstein09][holenstein09]. Fix a game
+`G : TwoProverGame X Y A B` with `[Finite X] [Finite Y] [Fintype A] [Fintype B]` and a proof
+`hAB : 2 ≤ Fintype.card A * Fintype.card B`. Holenstein's Lemma 7.1 needs `log (|A| |B|) ≥ 1`;
+the hypothesis also makes both answer types nonempty. The strategies of `G.pow n` are arbitrary
+maps of question tuples to answer tuples, as in `TwoProverGame.pow` and `TwoProverGame.value`.
+
+- `G.value_pow_le hAB n` is Theorem 2.5:
+  `(G.pow n).value ≤ (1 - (1 - G.value) ^ 3 / 6000) ^ ((n : ℝ) / Real.logb 2 (Fintype.card A * Fintype.card B))`.
+- `G.value_pow_le_of_value_le hAB hv n` takes `hv : G.value ≤ 1 - ε` and gives the same bound with
+  `ε ^ 3` in place of `(1 - G.value) ^ 3`. Any real `ε` is allowed; for `ε ≤ 0` the bound is at
+  least `1`.
+- `G.winProb_pow_le hAB ha hb` is the bound for one pair of strategies `ha` and `hb`.
+- `G.exists_isEmbeddable_filter_questions ha hb hC` is Lemma 6.4, the composition of the two
+  stages of the previous sections. At every free coordinate `j : {i // i ∉ C}`, `G.questions` embeds
+  with error `ε j` in the law of `((x j, y j), (x, y))` under
+  `(G.pow n).questions.filter (G.winsOn ha hb C) hC`, the premise of `winProbOn_insert_le`, and
+  `∑ j, ε j ≤ 27 / √2 · √(#Cᶜ (#C ln (|A| |B|) + ln (1 / Pr[W_C])))`.
+- `G.exists_winProbOn_insert_le ha hb hCu` is Lemma 6.5, multiplied out. For `hCu : C ≠ univ`, it
+  gives `j ∉ C` with
+  `Pr[W_{insert j C}] ≤ Pr[W_C] (v(G) + 27 / √2 · √((#C ln (|A| |B|) + ln (1 / Pr[W_C])) / (n - #C)))`.
+  It needs no support witness: if `Pr[W_C] = 0`, any free coordinate works. It picks a coordinate
+  with at most the average error of Lemma 6.4, by `Finset.exists_le_of_sum_le`.
+
+The proof of Theorem 2.5 adds the coordinates of Lemma 6.5 one at a time, starting from `∅`, so
+that `p_m = Pr[W_{C_m}]` satisfies the recursion of `ParallelRepetition.le_rpow_of_step`, Holenstein's
+(7.6). The step has the constant `27 / √2 ≈ 19.09` and natural logarithms, where Holenstein's has
+`15` and bits; `ln x ≤ log₂ x` for `x ≥ 1` passes to `L = log₂ (|A| |B|)`, and the sharpened
+recursion accepts any constant up to `21`. The final bound has Holenstein's constant `6000`.
+
+To use the bound for concrete answer types, compute the exponent: rewrite the product of the
+cardinalities as a power of two and apply `Real.logb_rpow`. For CHSH, `|A| |B| = 4` and the
+exponent is `n / 2`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) proves that
+CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
+derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
+repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
+conditioned, which gives a coordinate won with probability at most `G.value`. Run
+`scripts/build.sh ComplexityTests.ParallelRepetition`. The library does not yet use
+the theorem for small-soundness Label Cover
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
