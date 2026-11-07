@@ -40,6 +40,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `partrec-description` | [Partrec universal description method](machines-and-classes/computability-and-description.md) | description |
 | `tm-description` | [Described-machine-clock Kolmogorov model](machines-and-classes/computability-and-description.md) | description |
 | `conditional-description` | [Conditional description and composition](machines-and-classes/computability-and-description.md) | description |
+| `blum-measure` | [Blum complexity measures over Mathlib partial-recursive codes](machines-and-classes/computability-and-description.md) | computability |
 | `np-verifier` | [Exact-length NP witness verifier](machines-and-classes/verifiers-counting-interaction.md) | verifier |
 | `alternating-verifier` | [PH witness blocks and alternating games](machines-and-classes/verifiers-counting-interaction.md) | verifier |
 | `bpp-verifier` | [BPP uniform-seed verifier](machines-and-classes/verifiers-counting-interaction.md) | verifier |
