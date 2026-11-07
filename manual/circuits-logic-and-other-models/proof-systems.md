@@ -76,6 +76,18 @@ each fixed language, with no uniform bound on preprocessing a supplied language 
 tables. The shared six-case criterion is `Cslib.Logic.PL.CSP.HasSchaeferPolymorphism`; this layer
 establishes its two constant cases and majority case, with the remaining cases tracked in #2822.
 
+Import `Complexity.Logics.Polymorphism.BooleanClone` for the full positive-arity Boolean clone
+classification (`Cslib.Logic.BooleanClone.classification`). A clone contains every projection
+and is closed under superposition. Either every operation is essentially unary, or it contains
+AND, OR, ternary majority or ternary parity. The arbitrary-arity step uses a finite-partition
+argument; only the binary and ternary cases use truth-table enumeration. Constants in the shared
+Schaefer criterion are unary. For a language lacking all six operations,
+`CSP.projection_or_negation_of_not_hasSchaeferPolymorphism` identifies every positive-arity
+polymorphism as a projection or negated projection. Consequently every self-dual relation is
+preserved. [Checked examples](../../ComplexityTests/BooleanClone.lean) include a NAE relation
+with none of the six operations and with negation as a polymorphism. This is the algebraic
+classification; its hardness application remains part of #2822.
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |

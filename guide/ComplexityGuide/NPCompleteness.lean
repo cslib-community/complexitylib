@@ -24,6 +24,7 @@ import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
 import Complexity.Computability.Complexity.Problems.CSP.Constant
 import Complexity.Computability.Complexity.Problems.CSP.Majority
+import Complexity.Logics.Polymorphism.BooleanClone
 import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Tactic.PolyTime
 
@@ -382,6 +383,15 @@ example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
 The language is fixed: template lookup is finite preprocessing. The reduction
 instantiates its local clauses in native polynomial time and uses the existing
 native 2SAT theorem; no solver hypothesis is needed.
+
+The positive-arity Boolean clone classification is proved in
+{module}`Complexity.Logics.Polymorphism.BooleanClone`:
+{name}`Cslib.Logic.BooleanClone.classification` covers every positive arity.
+For a language lacking the six common operations,
+{name}`Cslib.Logic.PL.CSP.projection_or_negation_of_not_hasSchaeferPolymorphism`
+identifies every polymorphism as a projection or negated projection. This supplies
+the algebraic ingredient for hardness; the native hardness application remains
+part of the full objective.
 
 # Proving a Problem NP-Complete
 %%%
