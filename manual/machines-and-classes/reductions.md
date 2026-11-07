@@ -214,6 +214,44 @@ evaluator and the adaptive-to-tt conversion still need proofs. No desired autore
 assumed as a substitute. Complete NL/P instances, Theorem 3.5, and Sections 4–5 remain under
 [issue #2468](https://github.com/cslib-community/complexitylib/issues/2468).
 
+## Selectivity
+
+A P-selector for `A : Set α` is a function `f : α → α → α` that is polynomial-time on pairs encoded
+with `encPair enc enc`, returns one of its two arguments, and returns a member of `A` whenever
+either argument is one. Import
+[`Classes.Selective`](../../Complexity/Computability/Complexity/Classes/Selective.lean) for
+`IsSelector` and `PSel enc`. `mem_PSel_iff_bool` converts to a Boolean selector
+`g : α × α → Bool` that names the argument to pick; prove closure results in that form. `PSel`
+contains `P` (`P_subset_PSel`) and is closed under complement (`compl_mem_PSel`). It is closed
+downward under polynomial-time many-one reductions (`PolyTimeReducible.mem_PSel`). Every lower
+set of a linear order compared in polynomial time is P-selective (`mem_PSel_of_isLowerSet`).
+
+[`Selective.Selman`](../../Complexity/Computability/Complexity/Classes/Selective/Selman.lean)
+proves Selman's theorem: `NPHard.P_eq_NP_of_mem_PSel` turns an `NP`-hard P-selective set into
+`P enc = NP enc` for every encoding. `NPComplete.mem_PSel_iff` gives the converse for complete
+sets. The proof reduces `SAT` to the given set. It then decides `SAT` with the generalized
+self-reduction lemma `SAT.verifier_search_of_step`, which needs only that each answer keeps the
+formula satisfiable, not that the answers are correct; the verifier checks the result.
+[`Selective.Ko`](../../Complexity/Computability/Complexity/Classes/Selective/Ko.lean) proves
+`PSel_subset_PPolyOn`. The advice at length `n` is a list of at most `n + 1` members of length `n`,
+using at most `(n + 1)(2n + 1)` bits (`PSel.exists_advice_polyTime`), in the `PPoly.of_advice`
+convention. Its combinatorial core is the finite tournament lemma
+`Finset.exists_dominating_subset_of_card_lt_two_pow` in
+[`Foundations/Data/Finset/Tournament`](../../Complexity/Foundations/Data/Finset/Tournament.lean).
+
+[`Selective.LeftCut`](../../Complexity/Computability/Complexity/Classes/Selective/LeftCut.lean)
+gives the standard nonvacuity family. `leftCut r` holds the bit strings that are lexicographically
+at most the prefix of `r : ℕ → Bool` of the same length. It is P-selective for every `r`
+(`leftCut_mem_PSel`), and the comparison uses `ComputableInPolyTime.bits_lex_le` on `encBits`.
+`leftCut_injective` and `not_countable_PSel` show that there are uncountably many P-selective
+sets. The [checked client](../../ComplexityTests/Selective.lean) covers concrete members and
+non-members of a left cut, a non-selector, right cuts, Ko's theorem applied to left cuts, and
+`P ≠ NP` ruling out a selector for `SAT`.
+
+Undecidability of some left cut is not formalized, because no count of machines is proved. Also
+open: self-reducible P-selective sets lie in `P`, and P-selective sets are not truth-table-hard for
+`NP` unless `P = NP`.
+
 ## Parameter-sensitive transfer rules
 
 [FPT reductions and kernels](parameterized-complexity.md) separately bound the target parameter by a function of the source parameter. Fine-grained transfer uses more quantitative contracts without defining a new reduction datatype. [`DecidableInExpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L117) takes a native polynomial-time membership-preserving map with `μB(f(a)) ≤ c μA(a)+c`. A target time rate `2^(δ μB)` yields source rate `2^(cδ μA)`, up to encoded-length polynomial factors, for `δ ≥ 0`. [`DecidableInSubexpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L181) transfers the predicate that permits a decider for each positive rate.

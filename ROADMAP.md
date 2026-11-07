@@ -586,9 +586,8 @@ index links to canonical definitions rather than keeping a second set.
   separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
   application needs a native path-counting class and complement closure.
 - **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
-- **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE.
-  P-selective sets (Selman): a P-selective NP-complete set gives `P = NP`, P-selective sets lie in
-  `P/poly` (Ko), and self-reducible P-selective sets lie in P.
+- **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE, and
+  self-reducible P-selective sets lie in P.
 - **Low and high hierarchies in NP** (Schöning): sparse NP sets lie in `Low₂` (Ko and Schöning), and
   so does graph isomorphism, via graph non-isomorphism in AM.
 - **Immunity:** immune and bi-immune sets, P-bi-immune sets in EXP (Balcázar and Schöning), and
