@@ -9,7 +9,8 @@ module
 
 public import Complexity.Init
 public import Complexity.Foundations.Data.BiTape
-public import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
+public import Cslib.Computability.Machines.Turing.SingleTape.Deterministic
+import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
 
 /-!
 # Crossing sequences of single-tape Turing machines
@@ -95,21 +96,9 @@ theorem agrees_init (l : List Symbol) : Agrees (tm.initCfg l) (tm.absInit l) := 
   refine ⟨rfl, fun i => ?_⟩
   simp [absInit, initCfg]
 
-/-- Signed displacement of an optional head movement, as a `SignType`. -/
-private def moveSign : Option _root_.Turing.Dir → SignType
-  | none => 0
-  | some .left => -1
-  | some .right => 1
-
 omit [Inhabited Symbol] [Fintype Symbol] in
-private lemma moveSign_cast (d : Option _root_.Turing.Dir) :
-    ((moveSign d : SignType) : ℤ) = moveShift d := by
-  rcases d with _ | _ | _ <;> rfl
-
-omit [Inhabited Symbol] [Fintype Symbol] in
-private lemma optionMove_write_eq_step (t : BiTape Symbol) (w : Option Symbol)
-    (d : Option _root_.Turing.Dir) :
-    (t.write w).optionMove d = t.step (some w, moveSign d) := by
+private lemma dirToSign_cast (d : Option _root_.Turing.Dir) :
+    ((dirToSign d : SignType) : ℤ) = moveShift d := by
   rcases d with _ | _ | _ <;> rfl
 
 theorem Agrees.step {c c' : tm.Cfg} {a : tm.AbsCfg} (h : Agrees c a)
@@ -130,7 +119,7 @@ theorem Agrees.step {c c' : tm.Cfg} {a : tm.AbsCfg} (h : Agrees c a)
       rfl
     rw [hnext, hhead]
     refine ⟨rfl, ?_⟩
-    rw [optionMove_write_eq_step, ← moveSign_cast]
+    rw [← biTape_step_dirToSign, ← dirToSign_cast]
     exact hrep.step _
 
 lemma AbsCfg.next_of_none {a : tm.AbsCfg} (h : a.state = none) : a.next = a := by
@@ -148,16 +137,16 @@ lemma AbsCfg.run_of_none {a : tm.AbsCfg} (h : a.state = none) (t : ℕ) : a.run 
   Function.iterate_fixed (next_of_none h) t
 
 /-- Cell `p` lies to the left of the boundary between cells `k - 1` and `k`. -/
-@[expose] def IsLeft (k p : ℤ) : Prop := p < k
+@[expose] def IsLeftOf (k p : ℤ) : Prop := p < k
 
-instance (k p : ℤ) : Decidable (IsLeft k p) := Int.decLt _ _
+instance (k p : ℤ) : Decidable (IsLeftOf k p) := Int.decLt _ _
 
 /-- The crossing sequence at the boundary between cells `k - 1` and `k` during the first `t`
 steps: the states entered by the steps that move the head across that boundary. -/
 @[expose] def AbsCfg.crossings (k : ℤ) : tm.AbsCfg → ℕ → List (Option tm.State)
   | _, 0 => []
   | a, t + 1 =>
-    if IsLeft k a.pos ↔ IsLeft k a.next.pos then a.next.crossings k t
+    if IsLeftOf k a.pos ↔ IsLeftOf k a.next.pos then a.next.crossings k t
     else a.next.state :: a.next.crossings k t
 
 omit [Inhabited Symbol] [Fintype Symbol] in
@@ -174,11 +163,11 @@ private lemma AbsCfg.next_pos_bounds (a : tm.AbsCfg) :
 
 /-- One step crosses at most one boundary. -/
 private lemma AbsCfg.card_filter_cross_le (a : tm.AbsCfg) (K : Finset ℤ) :
-    (K.filter fun k => ¬(IsLeft k a.pos ↔ IsLeft k a.next.pos)).card ≤ 1 := by
+    (K.filter fun k => ¬(IsLeftOf k a.pos ↔ IsLeftOf k a.next.pos)).card ≤ 1 := by
   rw [Finset.card_le_one]
   intro i hi j hj
   rw [Finset.mem_filter] at hi hj
-  unfold IsLeft at hi hj
+  unfold IsLeftOf at hi hj
   have h := a.next_pos_bounds
   by_cases h1 : a.pos < i <;> by_cases h2 : a.next.pos < i <;>
     by_cases h3 : a.pos < j <;> by_cases h4 : a.next.pos < j <;>
@@ -187,7 +176,8 @@ private lemma AbsCfg.card_filter_cross_le (a : tm.AbsCfg) (K : Finset ℤ) :
 
 lemma AbsCfg.length_crossings_succ (a : tm.AbsCfg) (k : ℤ) (t : ℕ) :
     (a.crossings k (t + 1)).length =
-      (if IsLeft k a.pos ↔ IsLeft k a.next.pos then 0 else 1) + (a.next.crossings k t).length := by
+      (if IsLeftOf k a.pos ↔ IsLeftOf k a.next.pos then 0 else 1) +
+        (a.next.crossings k t).length := by
   simp only [crossings]
   split_ifs <;> simp [Nat.add_comm]
 
@@ -199,7 +189,7 @@ theorem AbsCfg.sum_length_crossings_le (K : Finset ℤ) (a : tm.AbsCfg) (t : ℕ
   | zero => simp [crossings]
   | succ t ih =>
     simp only [length_crossings_succ, Finset.sum_add_distrib]
-    have h1 : (∑ k ∈ K, if IsLeft k a.pos ↔ IsLeft k a.next.pos then 0 else 1) ≤ 1 := by
+    have h1 : (∑ k ∈ K, if IsLeftOf k a.pos ↔ IsLeftOf k a.next.pos then 0 else 1) ≤ 1 := by
       rw [Finset.sum_ite, Finset.sum_const_zero, zero_add, Finset.sum_const, smul_eq_mul,
         mul_one]
       exact a.card_filter_cross_le K
@@ -220,8 +210,8 @@ private lemma AbsCfg.next_cells_of_ne (a : tm.AbsCfg) {p : ℤ} (hp : p ≠ a.po
 
 lemma AbsCfg.run_of_crossings_nil {k : ℤ} {t : ℕ} :
     ∀ {a : tm.AbsCfg}, a.crossings k t = [] →
-      (IsLeft k (a.run t).pos ↔ IsLeft k a.pos) ∧
-        ∀ p, (IsLeft k p ↔ ¬ IsLeft k a.pos) → (a.run t).cells p = a.cells p := by
+      (IsLeftOf k (a.run t).pos ↔ IsLeftOf k a.pos) ∧
+        ∀ p, (IsLeftOf k p ↔ ¬ IsLeftOf k a.pos) → (a.run t).cells p = a.cells p := by
   induction t with
   | zero => intro a _; exact ⟨Iff.rfl, fun _ _ => rfl⟩
   | succ t ih =>
@@ -252,7 +242,7 @@ private lemma AbsCfg.exists_first_crossing {k : ℤ} {s : Option tm.State}
     {σ : List (Option tm.State)} :
     ∀ {T : ℕ} {a : tm.AbsCfg}, a.crossings k T = s :: σ →
       ∃ j, j < T ∧ a.crossings k j = [] ∧
-        ¬(IsLeft k (a.run j).pos ↔ IsLeft k (a.run j).next.pos) ∧
+        ¬(IsLeftOf k (a.run j).pos ↔ IsLeftOf k (a.run j).next.pos) ∧
         (a.run j).next.state = s ∧ (a.run j).next.crossings k (T - j - 1) = σ := by
   intro T
   induction T with
@@ -276,11 +266,11 @@ private lemma AbsCfg.exists_first_crossing {k : ℤ} {s : Option tm.State}
 cells come from `L` left of the boundary and from `R` right of it, all three heads are on the
 same side, and `C` follows whichever of `L`, `R` owns that side. -/
 private structure Splice (k : ℤ) (L R C : tm.AbsCfg) : Prop where
-  cells : ∀ p, C.cells p = if IsLeft k p then L.cells p else R.cells p
-  left_side : IsLeft k L.pos ↔ IsLeft k C.pos
-  right_side : IsLeft k R.pos ↔ IsLeft k C.pos
-  follow_left : IsLeft k C.pos → C.state = L.state ∧ C.pos = L.pos
-  follow_right : ¬ IsLeft k C.pos → C.state = R.state ∧ C.pos = R.pos
+  cells : ∀ p, C.cells p = if IsLeftOf k p then L.cells p else R.cells p
+  left_side : IsLeftOf k L.pos ↔ IsLeftOf k C.pos
+  right_side : IsLeftOf k R.pos ↔ IsLeftOf k C.pos
+  follow_left : IsLeftOf k C.pos → C.state = L.state ∧ C.pos = L.pos
+  follow_right : ¬ IsLeftOf k C.pos → C.state = R.state ∧ C.pos = R.pos
 
 /-- Two configurations with the same state, head and scanned symbol take the same step. -/
 private lemma AbsCfg.next_agree {A C : tm.AbsCfg} (hs : C.state = A.state) (hp : C.pos = A.pos)
@@ -298,8 +288,8 @@ private lemma AbsCfg.next_agree {A C : tm.AbsCfg} (hs : C.state = A.state) (hp :
 
 /-- A step of the left run that stays left is mirrored by the splice. -/
 private lemma Splice.next_left {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C)
-    (hC : IsLeft k C.pos)
-    (hn : IsLeft k L.next.pos) : Splice k L.next R C.next := by
+    (hC : IsLeftOf k C.pos)
+    (hn : IsLeftOf k L.next.pos) : Splice k L.next R C.next := by
   obtain ⟨hs, hp⟩ := h.follow_left hC
   have hcell : C.cells C.pos = L.cells L.pos := by rw [h.cells, ite_eq_left hC, hp]
   obtain ⟨hs', hp', hc'⟩ := AbsCfg.next_agree hs hp hcell
@@ -316,7 +306,7 @@ private lemma Splice.next_left {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C
 
 /-- A step of the right run that stays right is mirrored by the splice. -/
 private lemma Splice.next_right {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C)
-    (hC : ¬ IsLeft k C.pos) (hn : ¬ IsLeft k R.next.pos) : Splice k L R.next C.next := by
+    (hC : ¬ IsLeftOf k C.pos) (hn : ¬ IsLeftOf k R.next.pos) : Splice k L R.next C.next := by
   obtain ⟨hs, hp⟩ := h.follow_right hC
   have hcell : C.cells C.pos = R.cells R.pos := by rw [h.cells, ite_eq_right hC, hp]
   obtain ⟨hs', hp', hc'⟩ := AbsCfg.next_agree hs hp hcell
@@ -332,32 +322,32 @@ private lemma Splice.next_right {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R 
     exact ⟨fun h' => (hC (h.left_side.mp h')).elim, fun h' => (hn h').elim⟩
 
 /-- A step crossing the boundary rightward goes from cell `k - 1` to cell `k`. -/
-private lemma AbsCfg.cross_right {k : ℤ} {a : tm.AbsCfg} (h1 : IsLeft k a.pos)
-    (h2 : ¬ IsLeft k a.next.pos) : a.pos = k - 1 ∧ a.next.pos = k := by
+private lemma AbsCfg.cross_right {k : ℤ} {a : tm.AbsCfg} (h1 : IsLeftOf k a.pos)
+    (h2 : ¬ IsLeftOf k a.next.pos) : a.pos = k - 1 ∧ a.next.pos = k := by
   have h := a.next_pos_bounds
-  unfold IsLeft at h1 h2
+  unfold IsLeftOf at h1 h2
   omega
 
 /-- A step crossing the boundary leftward goes from cell `k` to cell `k - 1`. -/
-private lemma AbsCfg.cross_left {k : ℤ} {a : tm.AbsCfg} (h1 : ¬ IsLeft k a.pos)
-    (h2 : IsLeft k a.next.pos) : a.pos = k ∧ a.next.pos = k - 1 := by
+private lemma AbsCfg.cross_left {k : ℤ} {a : tm.AbsCfg} (h1 : ¬ IsLeftOf k a.pos)
+    (h2 : IsLeftOf k a.next.pos) : a.pos = k ∧ a.next.pos = k - 1 := by
   have h := a.next_pos_bounds
-  unfold IsLeft at h1 h2
+  unfold IsLeftOf at h1 h2
   omega
 
 /-- Hand-off to the right: when the left run crosses rightward, the splice continues with the
 right run advanced through its matching crossing. -/
 private lemma Splice.next_cross_right {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C)
-    (hC : IsLeft k C.pos) (hn : ¬ IsLeft k L.next.pos) {j : ℕ} (h0 : R.crossings k j = [])
-    (hx : ¬(IsLeft k (R.run j).pos ↔ IsLeft k (R.run j).next.pos))
+    (hC : IsLeftOf k C.pos) (hn : ¬ IsLeftOf k L.next.pos) {j : ℕ} (h0 : R.crossings k j = [])
+    (hx : ¬(IsLeftOf k (R.run j).pos ↔ IsLeftOf k (R.run j).next.pos))
     (hst : (R.run j).next.state = L.next.state) : Splice k L.next (R.run j).next C.next := by
   obtain ⟨hs, hp⟩ := h.follow_left hC
   have hcell : C.cells C.pos = L.cells L.pos := by rw [h.cells, ite_eq_left hC, hp]
   obtain ⟨hs', hp', hc'⟩ := AbsCfg.next_agree hs hp hcell
-  have hL : IsLeft k L.pos := h.left_side.mpr hC
+  have hL : IsLeftOf k L.pos := h.left_side.mpr hC
   obtain ⟨-, hLk⟩ := AbsCfg.cross_right hL hn
   obtain ⟨hRside, hRcells⟩ := AbsCfg.run_of_crossings_nil h0
-  have hR' : IsLeft k (R.run j).pos := hRside.mpr (h.right_side.mpr hC)
+  have hR' : IsLeftOf k (R.run j).pos := hRside.mpr (h.right_side.mpr hC)
   obtain ⟨hR'k, hR'nk⟩ := AbsCfg.cross_right hR' (fun h' => hx ⟨fun _ => h', fun _ => hR'⟩)
   refine ⟨fun p => ?_, by rw [hp'], by rw [hR'nk, hp', hLk], fun h' => (hn (hp' ▸ h')).elim,
     fun _ => ⟨hs'.trans hst.symm, hp'.trans (hLk.trans hR'nk.symm)⟩⟩
@@ -365,7 +355,7 @@ private lemma Splice.next_cross_right {k : ℤ} {L R C : tm.AbsCfg} (h : Splice 
   · subst hpc
     rw [ite_eq_left hC, hc', hp]
   · rw [AbsCfg.next_cells_of_ne _ hpc, h.cells]
-    by_cases hpl : IsLeft k p
+    by_cases hpl : IsLeftOf k p
     · rw [ite_eq_left hpl, ite_eq_left hpl, AbsCfg.next_cells_of_ne _ (hp ▸ hpc)]
     · have hne : p ≠ (R.run j).pos := by
         rintro rfl
@@ -376,18 +366,18 @@ private lemma Splice.next_cross_right {k : ℤ} {L R C : tm.AbsCfg} (h : Splice 
 /-- Hand-off to the left: when the right run crosses leftward, the splice continues with the
 left run advanced through its matching crossing. -/
 private lemma Splice.next_cross_left {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C)
-    (hC : ¬ IsLeft k C.pos) (hn : IsLeft k R.next.pos) {j : ℕ} (h0 : L.crossings k j = [])
-    (hx : ¬(IsLeft k (L.run j).pos ↔ IsLeft k (L.run j).next.pos))
+    (hC : ¬ IsLeftOf k C.pos) (hn : IsLeftOf k R.next.pos) {j : ℕ} (h0 : L.crossings k j = [])
+    (hx : ¬(IsLeftOf k (L.run j).pos ↔ IsLeftOf k (L.run j).next.pos))
     (hst : (L.run j).next.state = R.next.state) : Splice k (L.run j).next R.next C.next := by
   obtain ⟨hs, hp⟩ := h.follow_right hC
   have hcell : C.cells C.pos = R.cells R.pos := by rw [h.cells, ite_eq_right hC, hp]
   obtain ⟨hs', hp', hc'⟩ := AbsCfg.next_agree hs hp hcell
-  have hR : ¬ IsLeft k R.pos := fun h' => hC (h.right_side.mp h')
+  have hR : ¬ IsLeftOf k R.pos := fun h' => hC (h.right_side.mp h')
   obtain ⟨-, hRk⟩ := AbsCfg.cross_left hR hn
   obtain ⟨hLside, hLcells⟩ := AbsCfg.run_of_crossings_nil h0
-  have hL : ¬ IsLeft k L.pos := fun h' => hC (h.left_side.mp h')
-  have hL' : ¬ IsLeft k (L.run j).pos := fun h' => hL (hLside.mp h')
-  have hL'n : IsLeft k (L.run j).next.pos := by
+  have hL : ¬ IsLeftOf k L.pos := fun h' => hC (h.left_side.mp h')
+  have hL' : ¬ IsLeftOf k (L.run j).pos := fun h' => hL (hLside.mp h')
+  have hL'n : IsLeftOf k (L.run j).next.pos := by
     by_contra h'
     exact hx ⟨fun h'' => (hL' h'').elim, fun h'' => (h' h'').elim⟩
   obtain ⟨-, hL'nk⟩ := AbsCfg.cross_left hL' hL'n
@@ -398,7 +388,7 @@ private lemma Splice.next_cross_left {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k
   · subst hpc
     rw [ite_eq_right hC, hc', hp]
   · rw [AbsCfg.next_cells_of_ne _ hpc, h.cells]
-    by_cases hpl : IsLeft k p
+    by_cases hpl : IsLeftOf k p
     · have hne : p ≠ (L.run j).pos := by
         rintro rfl
         exact hL' hpl
@@ -414,25 +404,25 @@ private lemma AbsCfg.run_split (a : tm.AbsCfg) {j T : ℕ} (hj : j < T) :
 
 /-- Advancing the parked right run through steps without crossings preserves the splice. -/
 private lemma Splice.run_right_of_nil {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C)
-    (hC : IsLeft k C.pos) {t : ℕ} (h0 : R.crossings k t = []) : Splice k L (R.run t) C := by
+    (hC : IsLeftOf k C.pos) {t : ℕ} (h0 : R.crossings k t = []) : Splice k L (R.run t) C := by
   obtain ⟨hside, hcells⟩ := AbsCfg.run_of_crossings_nil h0
-  have hR : IsLeft k R.pos := h.right_side.mpr hC
+  have hR : IsLeftOf k R.pos := h.right_side.mpr hC
   refine ⟨fun p => ?_, h.left_side, ⟨fun _ => hC, fun _ => hside.mpr hR⟩, h.follow_left,
     fun h' => (h' hC).elim⟩
   rw [h.cells]
-  by_cases hp : IsLeft k p
+  by_cases hp : IsLeftOf k p
   · rw [ite_eq_left hp, ite_eq_left hp]
   · rw [ite_eq_right hp, ite_eq_right hp, hcells p ⟨fun h' => (hp h').elim, fun h' => (h' hR).elim⟩]
 
 /-- Advancing the parked left run through steps without crossings preserves the splice. -/
 private lemma Splice.run_left_of_nil {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C)
-    (hC : ¬ IsLeft k C.pos) {t : ℕ} (h0 : L.crossings k t = []) : Splice k (L.run t) R C := by
+    (hC : ¬ IsLeftOf k C.pos) {t : ℕ} (h0 : L.crossings k t = []) : Splice k (L.run t) R C := by
   obtain ⟨hside, hcells⟩ := AbsCfg.run_of_crossings_nil h0
-  have hL : ¬ IsLeft k L.pos := fun h' => hC (h.left_side.mp h')
+  have hL : ¬ IsLeftOf k L.pos := fun h' => hC (h.left_side.mp h')
   refine ⟨fun p => ?_, ⟨fun h' => (hL (hside.mp h')).elim, fun h' => (hC h').elim⟩,
     h.right_side, fun h' => (hC h').elim, h.follow_right⟩
   rw [h.cells]
-  by_cases hp : IsLeft k p
+  by_cases hp : IsLeftOf k p
   · rw [ite_eq_left hp, ite_eq_left hp, hcells p ⟨fun _ => hL, fun _ => hp⟩]
   · rw [ite_eq_right hp, ite_eq_right hp]
 
@@ -451,12 +441,12 @@ private theorem Splice.run_halts {k : ℤ} :
     intro L R C T₁ T₂ hT h hL hR _
     obtain ⟨rfl, rfl⟩ : T₁ = 0 ∧ T₂ = 0 := by omega
     refine ⟨0, le_rfl, ?_, rfl, h⟩
-    by_cases hC : IsLeft k C.pos
+    by_cases hC : IsLeftOf k C.pos
     · rw [AbsCfg.run_zero, (h.follow_left hC).1]; exact hL
     · rw [AbsCfg.run_zero, (h.follow_right hC).1]; exact hR
   | succ n ih =>
     intro L R C T₁ T₂ hT h hL hR hx
-    by_cases hC : IsLeft k C.pos
+    by_cases hC : IsLeftOf k C.pos
     · obtain ⟨hsL, hpL⟩ := h.follow_left hC
       by_cases hL0 : L.state = none
       · have hnil : L.crossings k T₁ = [] := AbsCfg.crossings_of_none hL0 k T₁
@@ -470,13 +460,13 @@ private theorem Splice.run_halts {k : ℤ} :
           · exact (hL0 hL).elim
           · exact ⟨m, rfl⟩
         rw [AbsCfg.run_succ] at hL
-        have hLside : IsLeft k L.pos := h.left_side.mpr hC
-        by_cases hs : IsLeft k L.pos ↔ IsLeft k L.next.pos
+        have hLside : IsLeftOf k L.pos := h.left_side.mpr hC
+        by_cases hs : IsLeftOf k L.pos ↔ IsLeftOf k L.next.pos
         · have hcr : L.crossings k (T₁ + 1) = L.next.crossings k T₁ := by
             simp only [AbsCfg.crossings, hs, ite_true]
           obtain ⟨T, hT', hhalt, hcs, hsp⟩ :=
             ih (by omega) (h.next_left hC (hs.mp hLside)) hL hR (hcr ▸ hx)
-          have hC' : IsLeft k C.next.pos :=
+          have hC' : IsLeftOf k C.next.pos :=
             (h.next_left hC (hs.mp hLside)).left_side.mp (hs.mp hLside)
           refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, ?_, ?_⟩
           · simp only [AbsCfg.crossings, iff_of_true hC hC', ite_true]
@@ -486,14 +476,14 @@ private theorem Splice.run_halts {k : ℤ} :
         · have hcr : L.crossings k (T₁ + 1) = L.next.state :: L.next.crossings k T₁ := by
             simp only [AbsCfg.crossings, hs, ite_false]
           obtain ⟨j, hj, h0, hxj, hstj, hrest⟩ := AbsCfg.exists_first_crossing (hcr ▸ hx).symm
-          have hn : ¬ IsLeft k L.next.pos := fun h' => hs ⟨fun _ => h', fun _ => hLside⟩
+          have hn : ¬ IsLeftOf k L.next.pos := fun h' => hs ⟨fun _ => h', fun _ => hLside⟩
           have hsp1 := h.next_cross_right hC hn h0 hxj hstj
           rw [AbsCfg.run_split R hj] at hR ⊢
           obtain ⟨T, hT', hhalt, hcs, hsp⟩ := ih (by omega) hsp1 hL hR hrest.symm
           refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, ?_, ?_⟩
-          · have hCn : ¬ IsLeft k C.next.pos := fun h' => hn (hsp1.left_side.mpr h')
+          · have hCn : ¬ IsLeftOf k C.next.pos := fun h' => hn (hsp1.left_side.mpr h')
             have hsC : C.next.state = L.next.state := (hsp1.follow_right hCn).1.trans hstj
-            have hne : ¬(IsLeft k C.pos ↔ IsLeft k C.next.pos) := fun h' => hCn (h'.mp hC)
+            have hne : ¬(IsLeftOf k C.pos ↔ IsLeftOf k C.next.pos) := fun h' => hCn (h'.mp hC)
             simp only [AbsCfg.crossings, hne, ite_false]
             rw [hcs, hsC]
             exact hcr.symm
@@ -512,14 +502,15 @@ private theorem Splice.run_halts {k : ℤ} :
           · exact (hR0 hR).elim
           · exact ⟨m, rfl⟩
         rw [AbsCfg.run_succ] at hR
-        have hRside : ¬ IsLeft k R.pos := fun h' => hC (h.right_side.mp h')
-        by_cases hs : IsLeft k R.pos ↔ IsLeft k R.next.pos
+        have hRside : ¬ IsLeftOf k R.pos := fun h' => hC (h.right_side.mp h')
+        by_cases hs : IsLeftOf k R.pos ↔ IsLeftOf k R.next.pos
         · have hcr : R.crossings k (T₂ + 1) = R.next.crossings k T₂ := by
             simp only [AbsCfg.crossings, hs, ite_true]
-          have hn : ¬ IsLeft k R.next.pos := fun h' => hRside (hs.mpr h')
+          have hn : ¬ IsLeftOf k R.next.pos := fun h' => hRside (hs.mpr h')
           obtain ⟨T, hT', hhalt, hcs, hsp⟩ :=
             ih (by omega) (h.next_right hC hn) hL hR (hcr ▸ hx)
-          have hC' : ¬ IsLeft k C.next.pos := fun h' => hn ((h.next_right hC hn).right_side.mpr h')
+          have hC' : ¬ IsLeftOf k C.next.pos := fun h' =>
+            hn ((h.next_right hC hn).right_side.mpr h')
           refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, ?_, ?_⟩
           · simp only [AbsCfg.crossings, iff_of_false hC hC', ite_true]
             rw [hcs, hx]
@@ -528,16 +519,16 @@ private theorem Splice.run_halts {k : ℤ} :
         · have hcr : R.crossings k (T₂ + 1) = R.next.state :: R.next.crossings k T₂ := by
             simp only [AbsCfg.crossings, hs, ite_false]
           obtain ⟨j, hj, h0, hxj, hstj, hrest⟩ := AbsCfg.exists_first_crossing (hx.trans hcr)
-          have hn : IsLeft k R.next.pos := by
+          have hn : IsLeftOf k R.next.pos := by
             by_contra h'
             exact hs ⟨fun h'' => (hRside h'').elim, fun h'' => (h' h'').elim⟩
           have hsp1 := h.next_cross_left hC hn h0 hxj hstj
           rw [AbsCfg.run_split L hj] at hL ⊢
           obtain ⟨T, hT', hhalt, hcs, hsp⟩ := ih (by omega) hsp1 hL hR hrest
           refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, ?_, ?_⟩
-          · have hCn : IsLeft k C.next.pos := hsp1.right_side.mp hn
+          · have hCn : IsLeftOf k C.next.pos := hsp1.right_side.mp hn
             have hsC : C.next.state = R.next.state := (hsp1.follow_left hCn).1.trans hstj
-            have hne : ¬(IsLeft k C.pos ↔ IsLeft k C.next.pos) := fun h' => hC (h'.mpr hCn)
+            have hne : ¬(IsLeftOf k C.pos ↔ IsLeftOf k C.next.pos) := fun h' => hC (h'.mpr hCn)
             simp only [AbsCfg.crossings, hne, ite_false]
             rw [hcs, hsC, hrest]
             exact hcr.symm
@@ -617,7 +608,7 @@ lemma AbsCfg.run_eq_of_halted (a : tm.AbsCfg) {s t : ℕ} (hs : (a.run s).state 
 of the final configuration of the run owning that side. -/
 private lemma Splice.head_cell {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C) :
     C.cells C.pos = L.cells L.pos ∨ C.cells C.pos = R.cells R.pos := by
-  by_cases hC : IsLeft k C.pos
+  by_cases hC : IsLeftOf k C.pos
   · left
     rw [h.cells, ite_eq_left hC, (h.follow_left hC).2]
   · right

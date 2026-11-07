@@ -33,7 +33,9 @@ needs time proportional to `r · m / log |Q|`.
 
 * `Cslib.Turing.SingleTapeTM.DecidesPalindromesInTime tm a b yes T`: on every word over the
   letters `a, b`, `tm` halts within `T n` steps and its output begins with `yes` exactly when
-  the input is a palindrome.
+  the input is a palindrome. Halting goes through `OutputsWithinTime`, so the final tape holds
+  only the output, with the head on its first cell; deciders that leave other symbols behind are
+  not covered.
 * `Cslib.Turing.SingleTapeTM.palWord a b r x`: the hard inputs.
 
 ## Main results
@@ -78,7 +80,12 @@ variable (tm) in
 /-- `tm` decides palindromes over the letters `a, b` within time `T`: on every word over
 `{a, b}` of length `n` it halts within `T n` steps, and its output begins with `yes` exactly
 when the word is a palindrome. Symbols other than `a` and `b` may occur in the alphabet and on
-the tape; inputs containing them are unconstrained. -/
+the tape; inputs containing them are unconstrained.
+
+The output is in cslib's canonical form: `OutputsWithinTime w o` requires reaching
+`haltCfg o`, so the machine must erase everything except `o` and halt with the head on the first
+cell of `o`. This is narrower than acceptance by state; a decider that halts with other symbols
+left on the tape is not covered. -/
 @[expose] def DecidesPalindromesInTime (a b yes : Symbol) (T : ℕ → ℕ) : Prop :=
   ∀ w : List Symbol, (∀ x ∈ w, x = a ∨ x = b) →
     ∃ o, tm.OutputsWithinTime w o (T w.length) ∧ (o.head? = some yes ↔ w.Palindrome)
@@ -251,9 +258,10 @@ theorem crossing_bound {a b yes : Symbol} (hab : a ≠ b) {T : ℕ → ℕ}
     _ ≤ 2 * (2 ^ m * t) := Nat.mul_le_mul_left _ key
     _ = 2 ^ m * (2 * t) := by ring
 
-/-- **Hennie's quadratic lower bound for palindromes.** Let `d = ⌈log₂ (|Q| + 2)⌉` where `Q` is
-the state set. If a single-tape machine decides palindromes over two letters `a ≠ b` within
-time `T`, then `n ^ 2 ≤ 64 d T(n)` for every `n ≥ 8 d`. -/
+/-- **Quadratic lower bound for palindromes** (via Hennie's crossing sequences). Let
+`d = ⌈log₂ (|Q| + 2)⌉` where `Q` is the state set. If a single-tape machine decides palindromes
+over two letters `a ≠ b` within time `T`, halting in the canonical output form of
+`DecidesPalindromesInTime`, then `n ^ 2 ≤ 64 d T(n)` for every `n ≥ 8 d`. -/
 theorem palindrome_lower_bound {a b yes : Symbol} (hab : a ≠ b) {T : ℕ → ℕ}
     (hdec : DecidesPalindromesInTime tm a b yes T) {n : ℕ}
     (hn : 8 * Nat.clog 2 (Fintype.card tm.State + 2) ≤ n) :
