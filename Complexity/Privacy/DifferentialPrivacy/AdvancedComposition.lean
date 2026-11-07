@@ -401,7 +401,6 @@ theorem DifferentiallyPrivate.advancedComposition {Adj : D → D → Prop}
   gcongr
   exact Real.tanh_div_two_le_exp_sub_one hε
 
-
 /-- **Advanced composition against an adaptive adversary** [DworkRoth2014, Definition 3.7 and
 Theorem 3.20]. In round `i` the adversary, knowing its coins `ω` and the outputs `history` of
 the previous rounds, chooses two adjacent inputs `data ω history false`, `data ω history true`
