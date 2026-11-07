@@ -1827,12 +1827,14 @@ public import Complexity.Computability.Complexity.Problems.CSP.Horn
 public import Complexity.Computability.Complexity.Problems.CSP.Majority
 public import Complexity.Computability.Complexity.Problems.CSP.Schaefer
 public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
+public import Complexity.Computability.Complexity.Problems.ChromaticNumber
 public import Complexity.Computability.Complexity.Problems.CircuitSAT
 public import Complexity.Computability.Complexity.Problems.CircuitValue
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Compilation
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
 public import Complexity.Computability.Complexity.Problems.Clique
+public import Complexity.Computability.Complexity.Problems.CliqueCover
 public import Complexity.Computability.Complexity.Problems.Coloring
 public import Complexity.Computability.Complexity.Problems.CountingSAT
 public import Complexity.Computability.Complexity.Problems.EUThreeSAT
@@ -1847,6 +1849,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalPath
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
 public import Complexity.Computability.Complexity.Problems.Graph.Ports
+public import Complexity.Computability.Complexity.Problems.Graph.VertexColors
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
 public import Complexity.Computability.Complexity.Problems.Hamiltonian
 public import Complexity.Computability.Complexity.Problems.Hamiltonian.Diamond
@@ -2686,6 +2689,7 @@ public import Complexity.Computability.PCP.Approximation.LabelCover.Incidence
 public import Complexity.Computability.PCP.Approximation.MaxCSP
 public import Complexity.Computability.PCP.Approximation.MaxExactThreeSAT
 public import Complexity.Computability.PCP.Approximation.MaxThreeSAT
+public import Complexity.Computability.PCP.Approximation.ParitySearch
 public import Complexity.Computability.PCP.Approximation.ThreeXOR
 public import Complexity.Computability.PCP.AssignmentTester
 public import Complexity.Computability.PCP.AssignmentTester.Selection
@@ -3924,6 +3928,7 @@ public import Complexity.Foundations.Combinatorics.SetPartition.Basic
 public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
+public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
@@ -4576,6 +4581,8 @@ public import Complexity.Logics.Propositional.CNF.ImplicationChain
 public import Complexity.Logics.Propositional.CNF.ImplicationCycle
 public import Complexity.Logics.Propositional.CNF.Johnson
 public import Complexity.Logics.Propositional.CNF.Johnson.PolyTime
+public import Complexity.Logics.Propositional.CNF.KWiseIndependent
+public import Complexity.Logics.Propositional.CNF.KWiseIndependent.Trinomial
 public import Complexity.Logics.Propositional.CNF.Majority
 public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
@@ -4588,6 +4595,8 @@ public import Complexity.Logics.Propositional.CNF.NotAllEqual
 public import Complexity.Logics.Propositional.CNF.NotAllEqual.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.Occurrence
 public import Complexity.Logics.Propositional.CNF.Parity
+public import Complexity.Logics.Propositional.CNF.ParitySearch
+public import Complexity.Logics.Propositional.CNF.ParitySearch.PolyTime
 public import Complexity.Logics.Propositional.CNF.ParityTests
 public import Complexity.Logics.Propositional.CNF.Planar.Crossover
 public import Complexity.Logics.Propositional.CNF.Planar.CrossoverCounting
@@ -4685,6 +4694,13 @@ public import Complexity.Logics.SecondOrder.WordMSO.Basic
 public import Complexity.Logics.SecondOrder.WordMSO.OfRegular
 public import Complexity.Logics.SecondOrder.WordMSO.ToRegular
 public import Complexity.MachineLearning.OnlineLearning.Hedge
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Basic
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Halving
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Littlestone
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Perceptron
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.SOA
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Thresholds
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.VCDimension
 public import Complexity.MachineLearning.OnlineLearning.MultiplicativeUpdate
 public import Complexity.MachineLearning.OnlineLearning.MultiplicativeWeights
 public import Complexity.MachineLearning.OnlineLearning.WeightedMajority
