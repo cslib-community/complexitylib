@@ -1020,9 +1020,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 - Dataset adjacency and `(ε, δ)`-differential privacy for probabilistic programs, with
   postprocessing and adaptive composition. Start with a finite or discrete mechanism proving
   both privacy and utility, including sampling cost and finite-precision error. The foundations
-  ([#2867](https://github.com/cslib-community/complexitylib/issues/2867)) leave the advanced
-  composition theorem, exact-sampling costs for discrete noise, and continuous Laplace/Gaussian
-  mechanisms with their finite-precision analysis.
+  ([#2867](https://github.com/cslib-community/complexitylib/issues/2867)) and advanced
+  composition ([#2977](https://github.com/cslib-community/complexitylib/issues/2977)) leave
+  exact-sampling costs for discrete noise, continuous Laplace/Gaussian mechanisms with their
+  finite-precision analysis, and Rényi or concentrated privacy accounting.
 - The exponential mechanism, private query answering and private learning; privacy–accuracy
   and sample-complexity lower bounds; then adaptive data-analysis and generalization guarantees.
   Keep the adjacency relation, interaction model, privacy parameters and computational resources
