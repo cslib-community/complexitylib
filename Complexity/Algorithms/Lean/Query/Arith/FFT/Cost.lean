@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Defs
+public import Complexity.Algorithms.Lean.Query.Arith.Lemmas
 public import Cslib.Algorithms.Lean.Query.Bounds
 public import Mathlib.Data.Nat.Log
 import Complexity.Algorithms.Lean.Query.FreeM.MOfFn
@@ -133,21 +134,12 @@ theorem cost_fftMul [One α] (oracle : {ι : Type} → ArithQuery α ι → ι) 
   rw [h1, cost_powersFrom, ← h1, pow_succ 2 k, Nat.mul_div_cancel _ two_pos]
   ring
 
-/-- Counting queries is the arithmetic cost with unit weights. -/
-private theorem countQueries_eq_cost_weight_one {β : Type}
-    (o : {ι : Type} → ArithQuery α ι → ι) (prog : FreeM (ArithQuery α) β) :
-    prog.countQueries o = prog.cost o (weight 1 1) := by
-  have h : (fun {ι : Type} (_ : ArithQuery α ι) => (1 : ℕ)) = @weight α 1 1 := by
-    funext ι q
-    cases q <;> rfl
-  rw [FreeM.countQueries_eq_cost_one, h]
-
 /-- The exact number of queries of FFT multiplication of length `2 ^ (k + 1)`. -/
 theorem countQueries_fftMul [One α] (oracle : {ι : Type} → ArithQuery α ι → ι) (k : ℕ)
     (ω nInv : α) (a b : Fin (2 ^ (k + 1)) → α) :
     (fftMul k ω nInv a b).countQueries oracle =
       3 * (2 ^ k * (k + 1)) + 4 * 2 ^ k + (2 ^ k - 1) + 3 * (2 ^ (k + 1) * (k + 1)) := by
-  rw [countQueries_eq_cost_weight_one, cost_fftMul, one_mul, one_mul]
+  rw [ArithQuery.countQueries_eq_cost_weight_one, cost_fftMul, one_mul, one_mul]
 
 /-- **FFT multiplication makes `O(N log N)` queries**: for `N = 2 ^ (k + 1)`, at most
 `7 N log₂ N`. -/

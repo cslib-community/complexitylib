@@ -874,11 +874,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   lists in the arithmetic query model, with exact counts and `O(n ^ log₂ 3)` bounds, is in
   `Algorithms/Lean/Query/Arith/Karatsuba`. Open: integer Karatsuba on binary numerals, correct
   against `Nat.mul` with an `O(n ^ log₂ 3)` bit-operation bound and a native or word-RAM
-  realization; Toom–Cook (`O(n ^ log₃ 5)` for Toom-3) and FFT-based multiplication over rings with
-  suitable roots of unity; and lower bounds such as rank `3` for the two-term product tensor.
-- **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
-  evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
-  [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
+  realization; Toom–Cook (`O(n ^ log₃ 5)` for Toom-3); and lower bounds such as rank `3` for the
+  two-term product tensor.
 - **Fast Fourier transform and FFT multiplication**
   ([#2979](https://github.com/cslib-community/complexitylib/issues/2979)): the radix-2
   Cooley–Tukey transform over any commutative ring with `ω ^ (2 ^ k) = -1`, with exactly
@@ -890,6 +887,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `R[x] / (x ^ m + 1)` and the `O(n log n log log n)` integer bound); mixed-radix and Bluestein
   transforms; and lower bounds such as Morgenstern's `Ω(n log n)` for bounded-coefficient linear
   circuits.
+- **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
+  evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
+  [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
 
 ### Jukna coverage
 

@@ -40,11 +40,11 @@ public import Complexity.Algorithms.Lean.MergeSort.Comparator
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Correctness
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Cost
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Defs
-public import Complexity.Algorithms.Lean.Query.FreeM.MOfFn
 public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Correctness
 public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Cost
 public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Defs
 public import Complexity.Algorithms.Lean.Query.Arith.Lemmas
+public import Complexity.Algorithms.Lean.Query.FreeM.MOfFn
 public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
 public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
