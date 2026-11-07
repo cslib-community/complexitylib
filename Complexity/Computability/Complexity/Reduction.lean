@@ -69,6 +69,8 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | Fixed `k`-colorability, `3 ≤ k` | `KColoring_npComplete` |
 | Chromatic number, `k` in the input | `ChromaticNumber_npComplete` |
 | Clique cover | `CliqueCover_npComplete` |
+| Directed feedback vertex set (Karp's feedback node set) | `FeedbackVertexSet_npComplete` |
+| Feedback arc set | `FeedbackArcSet_npComplete` |
 | Directed Hamiltonian path, specified endpoints | `DirHamPath_npComplete` |
 | Directed Hamiltonian cycle | `DirHamCycle_npComplete` |
 | Undirected Hamiltonian path, specified endpoints | `HamPath_npComplete` |
@@ -88,6 +90,8 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | IndependentSet → Clique | `polyTimeReducible_IndependentSet_Clique` |
 | Clique → IndependentSet | `polyTimeReducible_Clique_IndependentSet` |
 | IndependentSet → VertexCover | `polyTimeReducible_IndependentSet_VertexCover` |
+| VertexCover → FeedbackVertexSet | `polyTimeReducible_VertexCover_FeedbackVertexSet` |
+| FeedbackVertexSet → FeedbackArcSet | `polyTimeReducible_FeedbackVertexSet_FeedbackArcSet` |
 | SAT → ThreeColoring | `polyTimeReducible_SAT_ThreeColoring` |
 | ThreeSAT → ThreeColoring | `polyTimeReducible_ThreeSAT_ThreeColoring` |
 | SAT → KColoring `k`, for `3 ≤ k` | `polyTimeReducible_SAT_KColoring` |
