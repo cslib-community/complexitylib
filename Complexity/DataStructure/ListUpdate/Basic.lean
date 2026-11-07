@@ -35,9 +35,11 @@ to `s'` while serving `r` in that model. Doing the paid exchanges first and then
 costs exactly `stepCost s r s'`. Conversely, any implementation that pays for `X` exchanges,
 accesses `r` at position `i` and then moves it forward `F` places satisfies
 `X + i ≥ stepCost s r s'`: each adjacent exchange changes the inversion count by one, and moving
-`r` forward `F` places creates `F` inversions. Every online strategy and every offline schedule
-therefore costs at least as much in the Sleator–Tarjan model as in this one, and move-to-front
-costs the same in both (`moveToFront`, in `Complexity.DataStructure.ListUpdate.MoveToFront`).
+`r` forward `F` places creates `F` inversions. Paid exchanges made after an access can be counted
+as made before the next access (and dropped after the last one), so this form of a step is no
+restriction. Every online strategy and every offline schedule therefore costs at least as much in
+the Sleator–Tarjan model as in this one, and move-to-front costs the same in both (`moveToFront`,
+in `Complexity.DataStructure.ListUpdate.MoveToFront`).
 This justification is informal and is not formalized here.
 
 ## Main definitions
