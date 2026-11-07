@@ -8,8 +8,9 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/LinearAlgebra/Matrix/Determinant/CauchyBinet.lean`)
 
 public import Complexity.Init
-public import Mathlib.LinearAlgebra.ExteriorPower.Basis
 public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+public import Mathlib.Order.Hom.PowersetCard
+import Mathlib.LinearAlgebra.ExteriorPower.Basis
 
 /-!
 # The Cauchy–Binet formula
@@ -28,9 +29,11 @@ so the determinant vanishes, when `ι` has fewer than `n` elements.
 The proof writes `det (A * B)` as the canonical pairing `exteriorPower.pairingDual` of the
 `n`-fold exterior products of the rows of `B`, viewed as linear forms, and of the rows of `A`.
 It then expands the second argument in the basis `Module.Basis.exteriorPower` of the exterior
-power of `ι → R`. This route follows a proof proposed in the closed Mathlib pull request
-mathlib4#44757. That pull request and the earlier closed pull requests mathlib4#40473 and
-mathlib4#44209 are not part of Mathlib at the pinned revision.
+power of `ι → R`. The statement, the declaration names and this proof route are taken from
+Michel Hua's (@mycaule) closed Mathlib pull request mathlib4#44757; that pull request credits the
+exterior-power route to the review of mathlib4#40473 and of its own square case. The proof script
+here is rewritten. Neither that pull request nor the earlier closed pull requests mathlib4#40473
+and mathlib4#44209 is part of Mathlib at the pinned revision.
 
 ## Main results
 

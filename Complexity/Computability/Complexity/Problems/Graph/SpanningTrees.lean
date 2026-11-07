@@ -166,17 +166,15 @@ theorem spanningTreeCount_eq_natCard (G : Graph) :
     · have hne : rest[i.1] ≠ rest[j.1] := fun h => hij (Fin.ext ((hnd.2.getElem_inj_iff).1 h))
       have hne' : (⟨rest[i.1], hmem (List.getElem_mem _)⟩ : {v // v ∈ G.1}) ≠
           ⟨rest[j.1], hmem (List.getElem_mem _)⟩ := fun h => hne (congrArg Subtype.val h)
-      by_cases hadj : G.toSimpleGraph.Adj rest[i.1] rest[j.1]
-      · simp [hne, hne', hadj]
-      · simp [hne, hne', hadj]
+      by_cases hadj : G.toSimpleGraph.Adj rest[i.1] rest[j.1] <;> simp [hne, hne', hadj]
 
 /-! ### Polynomial time -/
 
 /-- Dropping the first distinct vertex is polynomial-time. -/
 private theorem computableInPolyTime_tail_distinctVertices :
-    ComputableInPolyTime (fun G : Graph => G.distinctVertices.tail) encGraph (encList encNat) :=
-  .of_tidy ((ComputableTidilyInPolyTime.listTail encNat).comp
-    computableInPolyTime_distinctVertices.tidy)
+    ComputableInPolyTime (fun G : Graph => G.distinctVertices.tail) encGraph (encList encNat) := by
+  simpa only [Function.comp_def, List.drop_one] using
+    (dropUnary (encA := encNat)).comp (computableInPolyTime_distinctVertices.prod (const 1))
 
 /-- Tabulating a Laplacian entry is polynomial-time. -/
 private theorem computableInPolyTime_laplacianEntry :

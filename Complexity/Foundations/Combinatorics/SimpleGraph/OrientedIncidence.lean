@@ -19,7 +19,7 @@ The orientation of each edge is the arbitrary but fixed one given by the represe
 `Quot.out e` of `e : Sym2 V`. No order on `V` is needed. Mathlib's `SimpleGraph.incMatrix` is the
 unoriented incidence matrix.
 
-Every orientation gives the same Gram matrix: `N * Nᵀ` is the Laplacian `G.lapMatrix ℤ`
+The Gram matrix of this orientation is the Laplacian: `N * Nᵀ = G.lapMatrix ℤ`
 (`SimpleGraph.orientedIncMatrix_mul_transpose`). Each column of `N` sums to zero, and pairing a
 column with a vertex function `f` gives the difference of the values of `f` at the two endpoints
 (`SimpleGraph.sum_mul_orientedIncMatrix`).
@@ -58,14 +58,15 @@ variable [DecidableEq V]
 
 /-- The **oriented incidence matrix** of `G`: the column of an edge `e` is `1` at the endpoint
 `(Quot.out e).1`, `-1` at the endpoint `(Quot.out e).2`, and `0` elsewhere. -/
-@[expose] noncomputable def orientedIncMatrix : Matrix V G.edgeSet ℤ := Matrix.of fun v e =>
+noncomputable def orientedIncMatrix : Matrix V G.edgeSet ℤ := Matrix.of fun v e =>
   (if v = (e : Sym2 V).out.1 then 1 else 0) - (if v = (e : Sym2 V).out.2 then 1 else 0)
 
 variable {G}
 
+/-- The entries of the oriented incidence matrix. -/
 theorem orientedIncMatrix_apply (v : V) (e : G.edgeSet) : G.orientedIncMatrix v e =
-    (if v = (e : Sym2 V).out.1 then 1 else 0) - (if v = (e : Sym2 V).out.2 then 1 else 0) :=
-  rfl
+    (if v = (e : Sym2 V).out.1 then 1 else 0) - (if v = (e : Sym2 V).out.2 then 1 else 0) := by
+  rw [orientedIncMatrix, Matrix.of_apply]
 
 /-- Pairing a vertex function with a column of the oriented incidence matrix gives the difference
 of its values at the two endpoints. In particular every column sums to zero. -/

@@ -9,9 +9,9 @@ module
 
 public import Complexity.Foundations.Combinatorics.SimpleGraph.OrientedIncidence
 public import Mathlib.Combinatorics.SimpleGraph.Acyclic
-public import Mathlib.Combinatorics.SimpleGraph.Metric
-public import Mathlib.Data.Set.PowersetCard
 import Complexity.Foundations.LinearAlgebra.Matrix.CauchyBinet
+import Mathlib.Combinatorics.SimpleGraph.Metric
+import Mathlib.Data.Set.PowersetCard
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 
@@ -20,16 +20,17 @@ import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 
 For a finite simple graph `G` and a vertex `r`, the determinant of the reduced Laplacian, the
 submatrix of `G.lapMatrix ℤ` on the rows and columns of the vertices other than `r`, is the number
-of spanning trees of `G` (`SimpleGraph.det_lapMatrix_submatrix_eq_natCard_isTree`)
-[Kirchhoff1847]. A spanning tree is a subgraph `T ≤ G` on all of `V` with `T.IsTree`. The same
-holds over any commutative ring (`SimpleGraph.det_lapMatrix_submatrix_eq_natCard_isTree'`).
+of spanning trees of `G` (`SimpleGraph.det_lapMatrix_submatrix_eq_natCard_isTree`); this is
+Kirchhoff's theorem [Kirchhoff1847] in its modern determinant form. A spanning tree is a subgraph
+`T ≤ G` on all of `V` with `T.IsTree`. The same holds over any commutative ring
+(`SimpleGraph.det_lapMatrix_submatrix_eq_natCard_isTree'`).
 
 The proof is the standard one by the Cauchy–Binet formula. Write `N'` for the oriented incidence
 matrix `SimpleGraph.orientedIncMatrix G` with the row of `r` deleted. Then the reduced Laplacian
 is `N' * N'ᵀ` (`SimpleGraph.lapMatrix_submatrix_eq_mul_transpose`), and its determinant is the
 sum over the sets `S` of `|V| - 1` edges of `det (N'_S) ^ 2`, by
-`Matrix.det_mul_eq_sum_powersetCard_of_equiv`. For any choice `g` of one edge per vertex other
-than `r`:
+`Matrix.det_mul_eq_sum_powersetCard_of_equiv`. For any family `g` of edges indexed by the vertices
+other than `r` (an edge `g v` need not be incident to `v`):
 
 * if the edges chosen by `g` do not connect a vertex `w` to `r`, the indicator vector of the
   vertices reachable from `w` is a nonzero left kernel vector of `N'_g`, so `det N'_g = 0`
@@ -63,7 +64,8 @@ Laplacian is `n • 1` minus the all-ones matrix of size `n - 1`, whose determin
 * [G. Kirchhoff, *Ueber die Auflösung der Gleichungen, auf welche man bei der Untersuchung der
   linearen Vertheilung galvanischer Ströme geführt wird*][Kirchhoff1847]
 * [A. Cayley, *A theorem on trees*][Cayley1889]
-* [C. Godsil, G. Royle, *Algebraic Graph Theory*][GodsilRoyle2001]
+* [C. Godsil, G. Royle, *Algebraic Graph Theory*][GodsilRoyle2001], §13.2, Theorem 13.2.1, proved
+  there by deletion and contraction (locator from secondary sources, unverified)
 -/
 
 public section
@@ -104,8 +106,8 @@ private theorem exists_adj_dist_add_one {H : SimpleGraph V} (hH : H.Connected) {
 
 variable [Fintype V] [DecidableEq V]
 
-/-- If the edges chosen by `g`, one per vertex other than `r`, do not connect `w` to `r`, then the
-minor of the oriented incidence matrix on the rows `v ≠ r` and the columns `g` vanishes. -/
+/-- If the edges of a family `g` indexed by the vertices other than `r` do not connect `w` to `r`,
+then the minor of the oriented incidence matrix on the rows `v ≠ r` and the columns `g` vanishes. -/
 theorem det_orientedIncMatrix_submatrix_eq_zero {r w : V} (g : {v // v ≠ r} → G.edgeSet)
     (hw : ¬ (fromEdgeSet (Set.range fun k => (g k : Sym2 V))).Reachable r w) :
     (G.orientedIncMatrix.submatrix Subtype.val g).det = 0 := by
@@ -156,9 +158,9 @@ private theorem det_eq_prod_diag_of_weight {κ : Type*} [Fintype κ] [DecidableE
     omega
   · simp
 
-/-- If the edges chosen by `g`, one per vertex other than `r`, form a connected spanning subgraph,
-then the square of the minor of the oriented incidence matrix on the rows `v ≠ r` and the columns
-`g` is `1`. -/
+/-- If the edges of a family `g` indexed by the vertices other than `r` form a connected spanning
+subgraph, then the square of the minor of the oriented incidence matrix on the rows `v ≠ r` and
+the columns `g` is `1`. -/
 theorem det_orientedIncMatrix_submatrix_sq_eq_one {r : V} (g : {v // v ≠ r} → G.edgeSet)
     (hc : (fromEdgeSet (Set.range fun k => (g k : Sym2 V))).Connected) :
     (G.orientedIncMatrix.submatrix Subtype.val g).det ^ 2 = 1 := by
@@ -240,9 +242,11 @@ theorem lapMatrix_submatrix_eq_mul_transpose (r : V) :
   rw [← orientedIncMatrix_mul_transpose, submatrix_mul _ _ _ _ _ Function.bijective_id]
   rfl
 
-/-- **Kirchhoff's matrix-tree theorem** [Kirchhoff1847]. For every vertex `r` of a finite simple
-graph `G`, the determinant of the reduced Laplacian, the submatrix of `G.lapMatrix ℤ` on the
-vertices other than `r`, is the number of spanning trees `T ≤ G` of `G`. -/
+/-- **Kirchhoff's matrix-tree theorem** [Kirchhoff1847], in its modern determinant form
+([GodsilRoyle2001], §13.2, Theorem 13.2.1; locator from secondary sources, unverified). For
+every vertex `r` of a finite simple graph `G`, the determinant of the reduced Laplacian, the
+submatrix of `G.lapMatrix ℤ` on the vertices other than `r`, is the number of spanning trees
+`T ≤ G` of `G`. -/
 theorem det_lapMatrix_submatrix_eq_natCard_isTree (r : V) :
     ((G.lapMatrix ℤ).submatrix (Subtype.val : {v // v ≠ r} → V) Subtype.val).det =
       Nat.card {T : SimpleGraph V // T ≤ G ∧ T.IsTree} := by

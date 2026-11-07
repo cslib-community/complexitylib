@@ -648,11 +648,12 @@ index links to canonical definitions rather than keeping a second set.
 - Counting reductions and further oracle results preserving exact multiplicities; permanent
   #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's
   approximate counting.
-- **Exact counting by determinants:** spanning trees are counted in polynomial time through
-  Kirchhoff's matrix-tree theorem ([#2985](https://github.com/cslib-community/complexitylib/issues/2985)).
-  Extend to the weighted and directed (arborescence) matrix-tree theorems, the BEST theorem for
-  Eulerian circuits, and Kasteleyn's Pfaffian method for perfect matchings of planar graphs,
-  in contrast with permanent #P-completeness.
+- **Exact counting by determinants**
+  ([#3081](https://github.com/cslib-community/complexitylib/issues/3081)): beyond polynomial-time
+  spanning-tree counting through Kirchhoff's matrix-tree theorem, the weighted and directed
+  (arborescence) matrix-tree theorems, the BEST theorem for Eulerian circuits, and Kasteleyn's
+  Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
+  #P-completeness.
 - For composite moduli: the prime-power collapse `Mod_{p^e}P = Mod_pP` and union closure.
   Complement closure for moduli that are not prime powers is open, and relativizing proofs
   cannot give it (Barrington–Beigel–Rudich), so it is not a library direction.
