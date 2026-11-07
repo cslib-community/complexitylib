@@ -854,6 +854,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
   list-size/agreement guarantees and decoding runtime as separate obligations; concrete
   list-decodable codes for Nisan–Wigderson.
+- **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)):
+  query-bounded decoders, the Hadamard code, Katz–Trevisan smoothing for oblivious-read decoders
+  and the one-query bound are in place. Remaining: the adaptive-to-non-adaptive reduction (so that
+  smoothing covers every adaptive decoder), the matching/XOR normal form and the Katz–Trevisan bound
+  `n ≥ Ω(k^{q/(q-1)})` with explicit `(δ, ε, q)` dependence, and the Goldreich–Karloff–Schulman–
+  Trevisan and Kerenidis–de Wolf exponential bounds for two-query codes.
 - **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications.
 - **Resource-bounded measure and dimension:** martingales and gales with explicit computation
   budgets, their success sets, and measure and dimension within complexity classes; connect
