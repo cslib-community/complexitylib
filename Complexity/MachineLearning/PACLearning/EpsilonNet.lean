@@ -400,7 +400,7 @@ private theorem measure_doubleSampleEvent_mul_two_pow_le (μ : Measure Z)
   have hsum : (2 : ℝ≥0∞) ^ m * ρ J =
       ∫⁻ z, ((Finset.univ.filter fun σ : Fin m → Bool => swapSamples σ z ∈ J).card : ℝ≥0∞)
         ∂ρ :=
-    (lintegral_card_filter_swapSamples_mem μ J).symm
+    (lintegral_card_filter_swapSamples_mem μ .of_discrete).symm
   have hpt : ∀ z, ((Finset.univ.filter fun σ : Fin m → Bool => swapSamples σ z ∈ J).card :
       ℝ≥0∞) * 2 ^ k ≤ growthFunction G (m + m) * 2 ^ m := fun z => by
     exact_mod_cast card_filter_swapSamples_mem_mul_two_pow_le G k z
@@ -447,7 +447,7 @@ theorem measure_pi_not_isEpsNet_mul_two_pow_le (μ : Measure Z) [IsProbabilityMe
     exact h1
   have hJB : ν B ≤
       2 * ((Measure.pi fun _ : Fin m => μ).prod (Measure.pi fun _ : Fin m => μ) J) :=
-    measure_le_two_mul_measure_prod ν ν B J hfib
+    measure_le_two_mul_measure_prod ν ν B .of_discrete hfib
   have hρJ := measure_doubleSampleEvent_mul_two_pow_le μ G m k
   calc ν B * 2 ^ k
       ≤ 2 * ((Measure.pi fun _ : Fin m => μ).prod (Measure.pi fun _ : Fin m => μ) J) *

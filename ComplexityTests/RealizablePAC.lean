@@ -352,6 +352,14 @@ example (m : ℕ) : growthFunction (lossClass thresholds) m ≤ m + 1 :=
 
 /-! ### Double samples -/
 
+/-- Swapping preserves the product distribution on an uncountable domain as well: two i.i.d.
+Lebesgue samples of length `3` on `ℝ`. -/
+example (σ : Fin 3 → Bool) :
+    MeasurePreserving (swapSamples σ)
+      ((Measure.pi fun _ : Fin 3 => (volume : Measure ℝ)).prod (Measure.pi fun _ => volume))
+      ((Measure.pi fun _ : Fin 3 => (volume : Measure ℝ)).prod (Measure.pi fun _ => volume)) :=
+  measurePreserving_swapSamples volume σ
+
 /-- Swapping the only coordinate exchanges the two samples; swapping none leaves them alone. -/
 example (z : (Fin 1 → Bool) × (Fin 1 → Bool)) :
     swapSamples (fun _ => true) z = (z.2, z.1) ∧ swapSamples (fun _ => false) z = z := by
@@ -363,7 +371,7 @@ the event has probability at most `1 / 2` under every product distribution. -/
 example (μ : Measure Bool) [IsProbabilityMeasure μ] :
     (Measure.pi (fun _ : Fin 1 => μ)).prod (Measure.pi fun _ : Fin 1 => μ)
       {z | z.1 0 = true ∧ z.2 0 = false} ≤ 1 / 2 := by
-  refine measure_prod_le_of_card_filter_swapSamples_mem_le μ _ _ fun z => ?_
+  refine measure_prod_le_of_card_filter_swapSamples_mem_le μ .of_discrete _ fun z => ?_
   refine le_trans (b := ((1 : ℕ) : ℝ≥0∞))
     (Nat.cast_le.2 (Finset.card_le_one.2 fun σ hσ τ hτ => funext fun i => ?_)) ?_
   · obtain rfl : i = 0 := Subsingleton.elim _ _
@@ -377,8 +385,8 @@ the constant sample `true` inside `J`, then `ν B ≤ (ν × δ_true) J`. -/
 example (ν : Measure (Fin 1 → Bool)) (B : Set (Fin 1 → Bool))
     (J : Set ((Fin 1 → Bool) × (Fin 1 → Bool))) (hBJ : ∀ S ∈ B, (S, fun _ => true) ∈ J) :
     ν B ≤ ν.prod (Measure.dirac fun _ => true) J := by
-  have h := mul_measure_le_measure_prod ν (Measure.dirac fun _ => true) B J 1 fun S hS => by
-    exact (Measure.dirac_apply_of_mem (a := fun _ => true) (s := Prod.mk S ⁻¹' J)
+  have h := mul_measure_le_measure_prod ν (Measure.dirac fun _ => true) B .of_discrete 1
+    fun S hS => (Measure.dirac_apply_of_mem (a := fun _ => true) (s := Prod.mk S ⁻¹' J)
       (hBJ S hS)).ge
   rwa [one_mul] at h
 
