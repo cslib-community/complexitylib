@@ -15,7 +15,7 @@ public import Cslib.Algorithms.Lean.TimeM
 # Freivalds' Matrix-Product Verification
 
 Freivalds' algorithm (`[Freivalds1977]`, `[Freivalds1979]`; `[MitzenmacherUpfal2017]`, Section 1.3;
-`[MotwaniRaghavan1995]`, Section 7.1) checks a claimed product `A * B = C` without multiplying
+`[MotwaniRaghavan95]`, Section 7.1) checks a claimed product `A * B = C` without multiplying
 matrices. It draws random vectors `x` and accepts when `A *ᵥ (B *ᵥ x) = C *ᵥ x` for every
 drawn vector. Each check uses three matrix-vector products and one vector comparison.
 
@@ -76,7 +76,7 @@ and checks all `k` vectors, so each bound is an exact cost rather than a worst c
 * [R. Freivalds, *Probabilistic machines can use less running time*][Freivalds1977]
 * [R. Freivalds, *Fast probabilistic algorithms*][Freivalds1979]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
-* [R. Motwani and P. Raghavan, *Randomized Algorithms*][MotwaniRaghavan1995]
+* [R. Motwani and P. Raghavan, *Randomized Algorithms*][MotwaniRaghavan95]
 -/
 
 public section

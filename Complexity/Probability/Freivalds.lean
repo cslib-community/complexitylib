@@ -24,7 +24,7 @@ the vectors, and on `k` independent vectors simultaneously with probability at m
 The encoding hypothesis covers the two standard instances. `S = Bool` with `e = bit` works
 over every ring, giving the bound `1/2` of `[MitzenmacherUpfal2017]`, Theorem 1.4; Section 1.3
 there works with square matrices over the integers modulo `2` for convenience. Over a finite
-field, `e = id` gives `1/|F|`. `[MotwaniRaghavan1995]`, Section 7.1, presents this technique as
+field, `e = id` gives `1/|F|`. `[MotwaniRaghavan95]`, Section 7.1, presents this technique as
 fingerprinting.
 
 The proof fixes an entry `(i, j)` with `(M - N) i j ≠ 0`. Once the coordinates of `x` other
@@ -50,7 +50,7 @@ arbitrary encodings and an arbitrary non-unital ring.
 ## References
 
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
-* [R. Motwani and P. Raghavan, *Randomized Algorithms*][MotwaniRaghavan1995]
+* [R. Motwani and P. Raghavan, *Randomized Algorithms*][MotwaniRaghavan95]
 -/
 
 public section
