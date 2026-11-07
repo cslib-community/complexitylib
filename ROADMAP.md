@@ -1239,14 +1239,15 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
 - **Single-tape lower bounds**
   ([#2884](https://github.com/cslib-community/complexitylib/issues/2884)): crossing sequences,
   translation invariance, cut-and-paste across boundaries at different positions (with the
-  crossing sequences on the kept sides), and the quadratic palindrome lower bound for cslib
-  `SingleTapeTM` deciders that answer under the head are proved. Remaining: an explicit
+  crossing sequences on the kept sides), the quadratic palindrome lower bound for cslib
+  `SingleTapeTM` deciders that answer under the head, and the fact that bounded crossing sequences
+  at the input boundaries force `Language.IsRegular` are proved. Remaining: an explicit
   single-tape palindrome decider in time `O(n²)`, which shows the bound is tight and gives a
   positive instance of `DecidesPalindromesInTime`; a linear-time multi-tape palindrome decider,
   which gives the one-tape/two-tape time separation; and the gap theorem that single-tape deciders
   running in time `o(n log n)` accept only regular languages
-  ([#2965](https://github.com/cslib-community/complexitylib/issues/2965)), via bounded crossing
-  sequences and Myhill–Nerode.
+  ([#2965](https://github.com/cslib-community/complexitylib/issues/2965)), by bounding the
+  crossing sequences of a shortest counterexample.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
