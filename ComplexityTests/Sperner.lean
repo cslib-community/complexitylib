@@ -64,8 +64,9 @@ private def firstBit : CircuitCode := ([], [0])
 /-- On the `1 × 1` grid every point is a boundary point, and `start` is trichromatic. -/
 example : Sperner2D (0, firstBit) [false] := by decide
 
-/-- On the `2 × 2` grid the circuit colours the centre `(1, 1)` with colour `1`, giving the colouring
-`c2`: the code `[false, true, false]` of `⟨false, 1, 0⟩` is a solution and `start` is not. -/
+/-- On the `2 × 2` grid the circuit colours the centre `(1, 1)` with colour `1`, giving the
+colouring `c2`: the code `[false, true, false]` of `⟨false, 1, 0⟩` is a solution and `start` is
+not. -/
 example : Sperner2D (1, firstBit) [false, true, false] := by decide
 
 example : ¬Sperner2D (1, firstBit) [false, false, false] := by decide
