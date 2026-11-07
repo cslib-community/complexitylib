@@ -326,30 +326,30 @@ theorem validBranchEvalParams_prepare_of_feasible {N₀_branch n' : ℕ}
   have hcan_b : checkCanonicalSystem eqs' = true := hchk.1.2
   set β := ParameterCheck.chooseBeta (Nat.clog 2 n')
     (branchMaxFactorIncidence n' eqs') (branchMaxFactorWidth n' eqs')
-  have h20 : 20 ≤ n' := hF.twenty_le
-  have h1n : 1 ≤ n' := hF.one_le_n
-  have hr2 : 2 ≤ ReplacementParams.numGroups n' := hF.two_le_numGroups
+  set r := ReplacementParams.numGroups n'
+  set Q := ReplacementParams.numNodes n'
+  have hr2 : 2 ≤ r := hF.two_le_numGroups
   have hR1 : 1 ≤ ReplacementParams.rowBound β n' := hF.one_le_rowBound
-  have hRQ : ReplacementParams.rowBound β n' < ReplacementParams.numNodes n' :=
-    hF.rowBound_lt_numNodes
-  have hvb : 2 * ReplacementParams.numNodes n' * ReplacementParams.numGroups n' ^ 2 ≤ n' :=
-    hF.var_balance
-  have hQ1 : 1 ≤ ReplacementParams.numNodes n' := by omega
-  have hr_sq : 4 ≤ ReplacementParams.numGroups n' ^ 2 := by nlinarith
-  have hQn : ReplacementParams.numNodes n' ≤ n' := by nlinarith
-  have hrn : ReplacementParams.numGroups n' ≤ n' := by nlinarith
-  have hI : ReplacementParams.intervalStart β n' + (ReplacementParams.rowBound β n' - 1) ≤
-      ReplacementParams.numNodes n' :=
+  have hRQ : ReplacementParams.rowBound β n' < Q := hF.rowBound_lt_numNodes
+  have hvb : 2 * Q * r ^ 2 ≤ n' := hF.var_balance
+  have hQ1 : 1 ≤ Q := by omega
+  have hr_sq : 4 ≤ r ^ 2 := Nat.pow_le_pow_left hr2 2
+  have hQn : Q ≤ n' := (by omega : Q ≤ 2 * Q * 4).trans ((Nat.mul_le_mul_left _ hr_sq).trans hvb)
+  have hrn : r ≤ n' :=
+    (by omega : r ≤ 2 * 1 * (2 * r)).trans
+      ((Nat.mul_le_mul (Nat.mul_le_mul_left 2 hQ1)
+        (by rw [sq]; exact Nat.mul_le_mul_right r hr2)).trans hvb)
+  have hI : ReplacementParams.intervalStart β n' + (ReplacementParams.rowBound β n' - 1) ≤ Q :=
     hF.intervalStart_add_le_numNodes (by omega)
-  have hIR : ReplacementParams.intervalStart β n' + ReplacementParams.rowBound β n' ≤
-      ReplacementParams.numNodes n' + 1 := by omega
-  have haux : ReplacementParams.numGroups n' ^ (2 * ReplacementParams.numNodes n') ≤ n' :=
-    auxDim_le_of_twenty_le h20
+  have hIR : ReplacementParams.intervalStart β n' + ReplacementParams.rowBound β n' ≤ Q + 1 := by
+    omega
+  have haux : r ^ (2 * Q) ≤ n' := auxDim_le_of_twenty_le hF.twenty_le
   unfold validBranchEvalParams prepareBranchEvalInput ParameterCheck.computeScheduleParams
   dsimp only
   rw [Nat.min_eq_right hQn, Nat.min_eq_right hrn]
   simp only [Bool.and_eq_true, decide_eq_true_eq]
-  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1n, hr2⟩, hR1⟩, hRQ⟩, hQn⟩, hrn⟩, hIR⟩, haux⟩, hvars_b⟩, hcan_b⟩, le_rfl⟩
+  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hF.one_le_n, hr2⟩, hR1⟩, hRQ⟩, hQn⟩, hrn⟩, hIR⟩, haux⟩, hvars_b⟩, hcan_b⟩,
+    le_rfl⟩
 
 private theorem listScopeFamily_map_equationVars (n' : ℕ) (eqs' : List (List (List ℕ)))
     (f : Fin eqs'.length) :
@@ -630,10 +630,13 @@ theorem exists_refines_prepare_of_feasible {N₀_branch n' : ℕ} {eqs' : List (
   have hRQ : R < Q := hF.rowBound_lt_numNodes
   have hQ1 : 1 ≤ Q := by omega
   have hvb : 2 * Q * r ^ 2 ≤ n' := hF.var_balance
-  have hr_sq : 4 ≤ r ^ 2 := by nlinarith
-  have hQn : Q ≤ n' := by nlinarith
+  have hr_sq : 4 ≤ r ^ 2 := Nat.pow_le_pow_left hr2 2
+  have hQn : Q ≤ n' := (by omega : Q ≤ 2 * Q * 4).trans ((Nat.mul_le_mul_left _ hr_sq).trans hvb)
   have hRn : R ≤ n' := by omega
-  have hrn : r ≤ n' := by nlinarith
+  have hrn : r ≤ n' :=
+    (by omega : r ≤ 2 * 1 * (2 * r)).trans
+      ((Nat.mul_le_mul (Nat.mul_le_mul_left 2 hQ1)
+        (by rw [sq]; exact Nat.mul_le_mul_right r hr2)).trans hvb)
   have hI_top : A₀ + (R - 1) ≤ Q := hF.intervalStart_add_le_numNodes (by omega)
   have hA₀n : A₀ ≤ n' + 1 := by omega
   have haux : r ^ (2 * Q) ≤ n' := auxDim_le_of_twenty_le hF.twenty_le
@@ -676,39 +679,30 @@ theorem exists_refines_prepare_of_feasible {N₀_branch n' : ℕ} {eqs' : List (
       (isTableShape_auxMeasurementRows Q r A₀ R).1]
   have hrmeas_le : r * data0.measurementMatrix.length ≤ n' := by
     have hrat := D.total_measurement_rows_le
-    have htau_half := hF.tauRat_le_half
-    have hn_nonneg : (0 : ℚ) ≤ (n' : ℚ) := Nat.cast_nonneg n'
+    have htau_n := mul_le_mul_of_nonneg_right hF.tauRat_le_half (Nat.cast_nonneg n')
     have hrat_le : ((r * (D.h * #(measurementIndices Q r A₀ R)) : ℕ) : ℚ) ≤ (n' : ℚ) := by
-      nlinarith
+      linarith only [hrat, htau_n]
     rw [hmeas_len]
     exact_mod_cast hrat_le
   have hshape : validDesignShape n' r eqs'.length data0 = true := by
     unfold validDesignShape
     simp only [Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true]
-    refine ⟨?_, ?_⟩
-    · have h0 : 0 ≤ eqs'.length * n' := Nat.zero_le _
-      have hbound : n' ≤ 4 * (n' + 1) * (eqs'.length * n' + n' + 1) := by nlinarith
-      exact hrmeas_le.trans hbound
-    · intro gs hgs Vg hVg
-      dsimp only [data0, buildReplacementDesignData] at hgs
-      obtain ⟨t, _, rfl⟩ := List.mem_map.mp hgs
-      obtain ⟨g, _, rfl⟩ := List.mem_map.mp hVg
-      have hlen_vs : (normalizeVarSchedules n' Q r scheds.1).length = n' := by
-        simp only [normalizeVarSchedules, List.length_map, List.length_range]
-      have hlen_vg :
-          (CopyPlacement.varGroupList (normalizeVarSchedules n' Q r scheds.1) t g).length ≤ n' := by
-        unfold CopyPlacement.varGroupList
-        exact List.length_filter_le _ _ |>.trans_eq (List.length_range.trans hlen_vs)
-      omega
-  refine ⟨hQn, hRn, hrn, hA₀n, haux, ?_, D, ?_, ?_, ?_⟩
-  · simpa only [Nat.min_eq_right hQn, Nat.min_eq_right hRn, Nat.min_eq_right hrn,
-      Nat.min_eq_right hA₀n, Nat.min_eq_right haux] using hshape
-  · simpa only [Nat.min_eq_right hQn, Nat.min_eq_right hRn, Nat.min_eq_right hrn,
-      Nat.min_eq_right hA₀n, Nat.min_eq_right haux] using href
-  · simpa only [Nat.min_eq_right hQn, Nat.min_eq_right hRn, Nat.min_eq_right hrn,
-      Nat.min_eq_right hA₀n, Nat.min_eq_right haux] using hmeas_len
-  · simpa only [Nat.min_eq_right hQn, Nat.min_eq_right hRn, Nat.min_eq_right hrn,
-      Nat.min_eq_right hA₀n, Nat.min_eq_right haux] using hrmeas_le
+    refine ⟨hrmeas_le.trans ((by omega : n' ≤ 4 * (n' + 1) * 1).trans
+        (Nat.mul_le_mul_left _ (Nat.le_add_left 1 _))), ?_⟩
+    intro gs hgs Vg hVg
+    dsimp only [data0, buildReplacementDesignData] at hgs
+    obtain ⟨t, _, rfl⟩ := List.mem_map.mp hgs
+    obtain ⟨g, _, rfl⟩ := List.mem_map.mp hVg
+    have hlen_vs : (normalizeVarSchedules n' Q r scheds.1).length = n' := by
+      simp only [normalizeVarSchedules, List.length_map, List.length_range]
+    have hlen_vg :
+        (CopyPlacement.varGroupList (normalizeVarSchedules n' Q r scheds.1) t g).length ≤ n' := by
+      unfold CopyPlacement.varGroupList
+      exact List.length_filter_le _ _ |>.trans_eq (List.length_range.trans hlen_vs)
+    omega
+  simp only [Nat.min_eq_right hQn, Nat.min_eq_right hRn, Nat.min_eq_right hrn,
+    Nat.min_eq_right hA₀n, Nat.min_eq_right haux]
+  exact ⟨hQn, hRn, hrn, hA₀n, haux, hshape, D, href, hmeas_len, hrmeas_le⟩
 
 private theorem groupMeasurementMatrices_spec {n' D_cap Q r A₀ R : ℕ}
     (augScopes sv ss : List (List ℕ)) (hr : 1 ≤ r) (hD_cap : r ^ (2 * Q) ≤ D_cap)
@@ -785,13 +779,15 @@ section Stage2Local
 private theorem getD_applyGroupBits_mem {n' : ℕ} {Vg : List ℕ} (hnodup : Vg.Nodup)
     (hlt : ∀ w ∈ Vg, w < n') (ug base : List Bool) (j₀ : Fin Vg.length) :
     (applyGroupBits n' Vg ug base).getD Vg[j₀] false = ug.getD j₀.1 false := by
-  have hv_lt : Vg[j₀] < n' := hlt Vg[j₀] (List.getElem_mem j₀.2)
+  obtain ⟨j₀, hj₀⟩ := j₀
+  simp only [Fin.getElem_fin]
+  have hv_lt : Vg[j₀] < n' := hlt Vg[j₀] (List.getElem_mem hj₀)
   rw [applyGroupBits, List.getD_map_range _ false hv_lt]
   suffices ∀ k ≤ Vg.length,
       (List.range k).foldl (fun cur j => if Vg.getD j n' == Vg[j₀] then ug.getD j false else cur)
         (base.getD Vg[j₀] false) =
-      if j₀.1 < k then ug.getD j₀.1 false else base.getD Vg[j₀] false by
-    simpa only [j₀.2, ↓reduceIte] using this Vg.length le_rfl
+      if j₀ < k then ug.getD j₀ false else base.getD Vg[j₀] false by
+    simpa only [hj₀, ↓reduceIte] using this Vg.length le_rfl
   intro k hk
   induction k with
   | zero => simp only [List.range_zero, List.foldl_nil, Nat.not_lt_zero, ↓reduceIte]
@@ -799,13 +795,13 @@ private theorem getD_applyGroupBits_mem {n' : ℕ} {Vg : List ℕ} (hnodup : Vg.
     have hk_lt : k < Vg.length := by omega
     rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil, ih (by omega),
       List.getD_eq_getElem Vg n' hk_lt]
-    by_cases hkj : k = j₀.1
+    by_cases hkj : k = j₀
     · subst hkj
-      simp only [Fin.getElem_fin, beq_self_eq_true, ↓reduceIte, Nat.lt_succ_self]
+      simp only [beq_self_eq_true, ↓reduceIte, Nat.lt_succ_self]
     · have hne : Vg[k] ≠ Vg[j₀] := fun heq =>
-        hkj ((hnodup.getElem_inj_iff (hi := hk_lt) (hj := j₀.2)).mp heq)
+        hkj ((hnodup.getElem_inj_iff (hi := hk_lt) (hj := hj₀)).mp heq)
       have hbeq : (Vg[k] == Vg[j₀]) = false := beq_false_of_ne hne
-      have hiff : (j₀.1 < k + 1) ↔ (j₀.1 < k) := by omega
+      have hiff : (j₀ < k + 1) ↔ (j₀ < k) := by omega
       simp only [hbeq, Bool.false_eq_true, ↓reduceIte, hiff]
 
 private theorem getD_applyGroupBits_not_mem {n' v : ℕ} {Vg : List ℕ} (hv_lt : v < n')
@@ -874,9 +870,8 @@ private theorem getD_buildBaseAssignment {n' r : ℕ} {vGroups_t : List (List �
     (buildBaseAssignment n' r vGroups_t reps).getD v.1 false = localBitsEquiv hVG rep v := by
   let g₀ := varAssign v
   let j₀ := (groupIdxEquiv hVG g₀).symm ⟨v, rfl⟩
-  have hj₀_val : (vGroups_t.getD g₀.1 [])[j₀] = v.1 := by
-    have h := congrArg (fun x => (x.1 : ℕ)) ((groupIdxEquiv hVG g₀).apply_symm_apply ⟨v, rfl⟩)
-    exact h
+  have hj₀_val : (vGroups_t.getD g₀.1 [])[j₀] = v.1 :=
+    congrArg (fun x => (x.1 : ℕ)) ((groupIdxEquiv hVG g₀).apply_symm_apply ⟨v, rfl⟩)
   rw [localBitsEquiv_apply hVG rep v, buildBaseAssignment]
   suffices ∀ k ≤ r,
       ((List.range k).foldl
@@ -895,7 +890,6 @@ private theorem getD_buildBaseAssignment {n' r : ℕ} {vGroups_t : List (List �
     rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
     by_cases hkg : k = g₀.1
     · subst hkg
-      have hg_eq : (⟨g₀.1, hk_lt⟩ : Fin r) = g₀ := Fin.ext rfl
       rw [← hj₀_val, getD_applyGroupBits_mem (hVG g₀).1 (hVG g₀).2.1, hreps g₀]
       simp only [Nat.lt_succ_self, ↓reduceIte]
       rw [List.getD_eq_getElem _ false (by simp only [List.length_ofFn]; exact j₀.2),

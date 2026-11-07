@@ -14,16 +14,23 @@ import Complexity.Probability.Product
 /-!
 # List programs for masked VOLE receiver simulation
 
-The ring is fixed, while the wire count and gate list are runtime inputs. Receiver callbacks
-carry explicit state through initialization, challenge selection, reply processing and termination.
+The ring is fixed. A layout map extracts the wire count and gate list from the full runtime input.
+Receiver callbacks retain that input and explicit state through initialization, challenge selection,
+reply processing and termination. Their first-message carrier is supplied independently.
 `Receiver.strategy` adapts them to the existing strategy type, reading the same cached receiver
 share in each phase. This is a first-order subclass of receivers, not a representation of arbitrary
 higher-order strategy trees. The simulator samples one fresh affine mask per execution.
+
+`Receiver.mapFirst` can preprocess corrections using public input and the receiver's own share.
+The exact law retains the raw correction-based `View` and concerns the resulting receiver adapter.
+It does not assert that an arbitrary transformed message is sender-realizable. A protocol that
+sends a richer first message needs its own reconstruction law before expanding this raw view.
 
 ## Main definitions
 
 * `Native.Receiver`: the four stateful probabilistic callbacks.
 * `Native.Receiver.strategy`: their role-local interactive realization.
+* `Native.Receiver.mapFirst`: preprocessing the first-message callback without changing state flow.
 * `Native.simulate`: the witness-free list program.
 * `Native.checkValue`: total list implementation of the receiver's weighted equation.
 
@@ -50,22 +57,39 @@ abbrev Input := ℕ × List (ℕ × ℕ × ℕ) × List Bool
 /-- Receiver key and tags, including the final fresh-mask tag. -/
 abbrev Share (F : Type) := F × List F
 
-/-- Receiver share, complete public transcript and terminal private result. -/
+/-- Receiver share, raw corrections, normalized weights, affine reply and terminal private
+result. -/
 abbrev View (F Result : Type) := Share F × List F × List F × (F × F) × Result
 
-variable {F State Result : Type}
+variable {F I First State Result : Type}
 
 /-- Explicit-state receiver callbacks. Each phase receives the public input and its own private
 setup share. Private randomness may be saved in `State` for subsequent phases. -/
-structure Receiver (F State Result : Type) where
+structure Receiver (F I First State Result : Type) where
   /-- Initialization before receiving the corrections. -/
-  init : Input → Share F → ProbComp State
-  /-- Adaptive public weights and retained state after the corrections. -/
-  challenge : Input → Share F → State → List F → ProbComp (List F × State)
+  init : I → Share F → ProbComp State
+  /-- Adaptive public weights and retained state after the supplied first message. -/
+  challenge : I → Share F → State → First → ProbComp (List F × State)
   /-- Process the affine reply. -/
-  receive : Input → Share F → State → F × F → ProbComp State
+  receive : I → Share F → State → F × F → ProbComp State
   /-- Return the receiver's private result. -/
-  terminal : Input → Share F → State → ProbComp Result
+  terminal : I → Share F → State → ProbComp Result
+
+/-- Preprocess only the receiver's first-message callback. The map may use the receiver's own
+share; this operation alone makes no claim that a sender can produce the transformed message. -/
+def Receiver.mapFirst {Message : Type} (receiver : Receiver F I First State Result)
+    (first : I → Share F → Message → First) : Receiver F I Message State Result where
+  init := receiver.init
+  challenge input share state message :=
+    receiver.challenge input share state (first input share message)
+  receive := receiver.receive
+  terminal := receiver.terminal
+
+/-- Identity preprocessing leaves every callback and its captured state unchanged. -/
+@[simp] theorem Receiver.mapFirst_id (receiver : Receiver F I First State Result) :
+    receiver.mapFirst (fun _ _ message => message) = receiver := by
+  cases receiver
+  rfl
 
 variable [CommRing F]
 
@@ -82,38 +106,44 @@ def checkValue (input : Input) (share : Share F) (d r : List F) : F :=
       share.2.getD input.1 0
 
 /-- The supplied sampler is called independently for the key, each tag/correction, and the final
-uniform affine coefficient. Exactness and efficient realization are separate sampler hypotheses. -/
-def simulate (sample : ProbComp F) (receiver : Receiver F State Result) (input : Input) :
+affine coefficient. Exactness and efficient realization are separate sampler hypotheses. The first
+message map preprocesses only the receiver callback; the returned view retains raw corrections. -/
+def simulate (sample : ProbComp F) (receiver : Receiver F I First State Result)
+    (layout : I → Input) (first : I → Share F → List F → First) (input : I) :
     ProbComp (View F Result) := do
+  let shape := layout input
   let delta ← sample
-  let q ← OracleComp.replicate (input.1 + 1) sample
+  let q ← OracleComp.replicate (shape.1 + 1) sample
   let share := (delta, q)
   let s ← receiver.init input share
-  let d ← OracleComp.replicate input.1 sample
-  let (r, s) ← receiver.challenge input share s d
-  let r := weights input.2.1.length r
+  let d ← OracleComp.replicate shape.1 sample
+  let (r, s) ← receiver.challenge input share s (first input share d)
+  let r := weights shape.2.1.length r
   let a ← sample
-  let reply := (a, checkValue input share d r - a * delta)
+  let reply := (a, checkValue shape share d r - a * delta)
   let s ← receiver.receive input share s reply
   let result ← receiver.terminal input share s
   return (share, d, r, reply, result)
 
 /-- The adapter reads the actual cached share at every phase, rather than passing setup state
-through the prover interface. The returned strategies retain the sampled callback state. -/
-def Receiver.strategy (receiver : Receiver F State Result) (n m : ℕ) (input : Input) :
+through the prover interface. The returned strategies retain the sampled callback state. The
+first-message encoder and weight-index map specify the typed message carriers; this semantic
+adapter alone carries no runtime certificate for those maps. -/
+def Receiver.strategy {Message Index : Type} (receiver : Receiver F I First State Result)
+    (n : ℕ) (encodeFirst : Message → First) (index : Index → ℕ) (input : I) :
     ProbOracleComp (voleReceiverSpec F (n + 1))
       (VerifierStrategy (ProbOracleComp (voleReceiverSpec F (n + 1)))
-        (maskedMulCheckSpec F (Fin m) n) Result) := do
+        (Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec Message (Index → F) (F × F)) Result) := do
   let share ← ProbOracleComp.query ()
   let state ← ProbOracleComp.sample (receiver.init input (share.1, List.ofFn share.2))
-  return fun d => do
+  return fun message => do
     let share ← ProbOracleComp.query ()
     let (r, state) ← ProbOracleComp.sample
-      (receiver.challenge input (share.1, List.ofFn share.2) state (List.ofFn d))
+      (receiver.challenge input (share.1, List.ofFn share.2) state (encodeFirst message))
     return (show ProbOracleComp (voleReceiverSpec F (n + 1))
-      ((Fin m → F) × ((F × F) → ProbOracleComp (voleReceiverSpec F (n + 1))
+      ((Index → F) × ((F × F) → ProbOracleComp (voleReceiverSpec F (n + 1))
         (ProbOracleComp (voleReceiverSpec F (n + 1)) Result))) from
-      pure ((fun i : Fin m => r.getD i.val 0), fun reply => do
+      pure ((fun i => r.getD (index i) 0), fun reply => do
       let share ← ProbOracleComp.query ()
       let state ← ProbOracleComp.sample
         (receiver.receive input (share.1, List.ofFn share.2) state reply)
@@ -185,15 +215,18 @@ private theorem eval_replicate_sample (sample : ProbComp F)
 
 omit [DecidableEq F] in
 /-- The native program realizes the existing typed simulator, including all private callback
-state effects. The public input and vector dimensions are tied by `inputOfMaps`. -/
+state effects. The public input and vector dimensions are tied by the explicit layout equality. -/
 theorem eval_simulate {n m : ℕ} (left right output : Fin m → Fin n)
     (sample : ProbComp F) (hsample : ProbComp.eval sample = PMF.uniformOfFintype F)
-    (receiver : Receiver F State Result) (z : List Bool) :
-    ProbComp.eval (simulate sample receiver (inputOfMaps left right output z)) =
+    (receiver : Receiver F I First State Result) (layout : I → Input)
+    (first : I → Share F → List F → First) (input : I) (z : List Bool)
+    (hlayout : layout input = inputOfMaps left right output z) :
+    ProbComp.eval (simulate sample receiver layout first input) =
       (ProbComp.eval (maskedMulCheckReceiverSimulate left right output
-        (receiver.strategy n m) (inputOfMaps left right output z))).map viewToLists := by
-  simp only [simulate, maskedMulCheckReceiverSimulate, Receiver.strategy,
-    OracleComp.interpret_bind, OracleComp.interpret_pure, ProbOracleComp.query,
+        ((receiver.mapFirst first).strategy n List.ofFn (Fin.val (n := m))) input)).map
+          viewToLists := by
+  simp only [simulate, hlayout, maskedMulCheckReceiverSimulate, Receiver.strategy,
+    Receiver.mapFirst, OracleComp.interpret_bind, OracleComp.interpret_pure, ProbOracleComp.query,
     OracleComp.interpret_query, OracleComp.sumHandler, ProbOracleComp.interpret_sample,
     OracleComp.interpret_query_eq_self, pure_bind, bind_assoc, ProbComp.eval_bind,
     ProbComp.eval_pure,
@@ -205,16 +238,19 @@ theorem eval_simulate {n m : ℕ} (left right output : Fin m → Fin n)
   simp only [inputOfMaps] at hv
   simp only [hv]
 
-/-- Exact native full-view simulation for every satisfying witness and supplied receiver
-callbacks. The underlying execution is the existing cached World, not a replacement experiment. -/
+/-- Exact native full-view simulation for satisfying witnesses and supplied receiver callbacks.
+The actual cached World runs the receiver with first-message preprocessing. The returned view
+retains the raw corrections; a sender-realizable transformed transcript needs a separate law. -/
 theorem receiverView_eq_eval_simulate {n m : ℕ} (left right output : Fin m → Fin n)
     (sample : ProbComp F) (hsample : ProbComp.eval sample = PMF.uniformOfFintype F)
-    (receiver : Receiver F State Result) (z : List Bool) (w : Fin n → F)
+    (receiver : Receiver F I First State Result) (layout : I → Input)
+    (first : I → Share F → List F → First) (input : I) (z : List Bool)
+    (hlayout : layout input = inputOfMaps left right output z) (w : Fin n → F)
     (hw : ∀ i, w (left i) * w (right i) = w (output i)) :
-    (maskedMulCheckReceiverView left right output (receiver.strategy n m) w
-      (inputOfMaps left right output z)).map viewToLists =
-        ProbComp.eval (simulate sample receiver (inputOfMaps left right output z)) := by
+    (maskedMulCheckReceiverView left right output
+      ((receiver.mapFirst first).strategy n List.ofFn (Fin.val (n := m))) w input).map viewToLists =
+        ProbComp.eval (simulate sample receiver layout first input) := by
   rw [maskedMulCheckReceiverView_eq_simulate left right output _ w _ hw,
-    eval_simulate left right output sample hsample receiver z]
+    eval_simulate left right output sample hsample receiver layout first input z hlayout]
 
 end Cslib.Crypto.Protocols.VOLE.Native

@@ -15,6 +15,8 @@ public import Complexity.Algorithms.WordRAM.Schoening.TrialCount
 public import Mathlib.Analysis.Complex.Exponential
 import Complexity.Probability.PMF.Event
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Schöning's algorithm on the randomized word RAM
 
@@ -395,29 +397,22 @@ private theorem SetupState.repeatCode {φ : CNF (Fin n)} {k c A w Tb j : ℕ} {l
   have hz := hx.frame.zero_eq
   have h₀ : ExecWithin w (ram[ outer ← zero ] : Code .standard 24) x (x.set outer 0) 1 := by
     ram_eval [hz]
-  obtain ⟨y, hy, ⟨i, hij, hyo, hyl, hyI⟩, hc⟩ := ExecWithin.loop_invariant (w := w)
-    (x := x.set outer 0)
-    (cond := .lt outer lim) (body := ram[ ⟪body⟫; outer ← outer + one ]) (T := Tb + 1)
-    (fun x => ∃ i ≤ j, x.regs outer = i ∧ x.regs lim = j ∧ SetupState φ k c A (F^[i] ds) x)
-    (fun x => j - x.regs outer)
-    (fun x ⟨i, hij, hxo, hxl, hxI⟩ hcx => by
-      have hi : i < j := by simpa [Cond.holds_lt, hxo, hxl] using hcx
+  let P (i : ℕ) (x : Data 24) := x.regs lim = j ∧ SetupState φ k c A (F^[i] ds) x
+  obtain ⟨y, hy, ⟨_, hyI⟩, _⟩ := ExecWithin.loop_count (w := w)
+    (x := x.set outer 0) (index := outer) (limit := lim)
+    (body := ram[ ⟪body⟫; outer ← outer + one ]) (T := Tb + 1) P
+    (fun _ h => h.1)
+    (fun x ⟨hxl, hxI⟩ hi => by
+      let i := x.regs outer
       obtain ⟨y, hy, hyI⟩ := hbody i hi x hxI
-      have hyo : y.regs outer = i := (hy.regs_eq hbo).trans hxo
+      have hyo : y.regs outer = i := hy.regs_eq hbo
       have hyl : y.regs lim = j := (hy.regs_eq hbl).trans hxl
       have hinc : ExecWithin w (ram[ outer ← outer + one ] : Code .standard 24) y
           (y.set outer (i + 1)) 1 := by
         ram_eval [hyo, hyI.frame.one_eq, hfit.of_le (show i + 1 ≤ j by omega)]
-      refine ⟨_, hy.seq hinc, ⟨i + 1, hi, by simp, ?_, hyI.set (by decide) _⟩, ?_⟩
-      · rw [Data.set_regs, Function.update_of_ne hlim, hyl]
-      · simp only [Data.set_regs, Function.update_self, hxo]
-        omega)
-    ⟨0, Nat.zero_le _, by simp, by simp [Function.update_of_ne hlim, hl], by
-      simpa using hx.set (by decide) 0⟩
-  have hij' : i = j := by
-    simp only [Cond.holds_lt, not_lt, hyo, hyl] at hc
-    omega
-  subst hij'
+      refine ⟨_, hy.seq hinc, ⟨?_, hyI.set (by decide) _⟩, by simp [i]⟩
+      rw [Data.set_regs, Function.update_of_ne hlim, hyl]) (by simp)
+    ⟨by simp [Function.update_of_ne hlim, hl], by simpa using hx.set (by decide) 0⟩
   refine ⟨y, (h₀.seq hy).mono ?_, hyI⟩
   simp only [Data.set_regs, Function.update_self, Nat.sub_zero,
     show Tb + 1 + 2 = Tb + 3 by omega]

@@ -196,12 +196,13 @@ theorem schnorrWordROMScheme_correct : (F.schnorrWordROMScheme d hm).Correct :=
     fun _ h => mem_support_schnorrKeyGen h
 
 /-- The existing generic forking reduction instantiated with arbitrary word transcripts and hash
-queries. This is a distribution-level reduction, without a native efficiency certificate. -/
+queries, returning zero on a failed fork. This is a distribution-level reduction, without a
+native efficiency certificate. -/
 noncomputable def schnorrWordROMSchemeReduction
     (A : Forger (F.Carrier d) (List Bool) (List Bool × List Bool) (List Bool) (BitString m))
     (Qs Qro : ℕ) : F.Carrier d → PMF (ZMod (F.order d)) :=
   FiatShamir.reduction (encPair encBits encBits) (F.schnorrWordSigma d hm)
-    (F.schnorrWordSimulate d hm) (F.schnorrWordExtract d hm) A Qs Qro
+    (F.schnorrWordSimulate d hm) (F.schnorrWordExtract d hm) 0 A Qs Qro
 
 /-- The finite-query Schnorr bound for the actual word verifier. All hash words count, including
 those outside the pair-encoding image. The challenge term uses `2 ^ m` injectively embedded
@@ -223,7 +224,7 @@ theorem succProbability_eufCmaGame_schnorrWordROMScheme_le
     (F.schnorrWordSigma_specialHVZK d hm)
     (fun key _ t => by
       rw [ENNReal.coe_inv hq, ENNReal.coe_natCast]
-      exact F.schnorrWordSigma_commit_map_fst_le d hm key.1 key.2 t) A hA
+      exact F.schnorrWordSigma_commit_map_fst_le d hm key.1 key.2 t) 0 A hA
   simpa only [schnorrWordROMScheme, schnorrWordROMSchemeReduction, NNReal.coe_inv,
     NNReal.coe_natCast, ← div_eq_mul_inv, Fintype.card_fun, Fintype.card_bool,
     Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat] using h

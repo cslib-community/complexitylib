@@ -24,7 +24,7 @@ def stateEncoding : State ↪ List Bool :=
 
 def resultEncoding : Result ↪ List Bool := encPair stateEncoding (encShare encBool)
 
-noncomputable def receiver : Receiver Bool State Result where
+noncomputable def receiver : Receiver Bool Input (List Bool) State Result where
   init _ share := do
     let coin ← ProbComp.uniform Bool
     return (coin, share, [])
@@ -39,12 +39,15 @@ noncomputable def receiver : Receiver Bool State Result where
 -- One native certificate covers every wire count and every encoded (even malformed) layout.
 theorem receiver_simulator_ppt :
     IsPPTOn encInput (encView encBool resultEncoding)
-      (simulate (ProbComp.uniform Bool) receiver) := by
-  apply isPPTOn_simulate _ _ stateEncoding resultEncoding
+      (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d)) := by
+  apply isPPTOn_simulate _ _ id (fun _ _ d => d) encInput (encList encBool)
+    stateEncoding resultEncoding
   · exact isPPTOn_uniform_bool _
   · exact ComputableInPolyTime.of_finite _
   · exact ComputableInPolyTime.of_finite _
   · exact ComputableInPolyTime.of_finite _
+  · exact .id'
+  · fun_prop
   · unfold receiver stateEncoding encShare encInput
     ppt
   · unfold receiver stateEncoding encShare encInput
@@ -57,29 +60,35 @@ theorem receiver_simulator_ppt :
 -- The same program simulates every satisfying circuit, including noninjective wire maps.
 example {n m : ℕ} (left right output : Fin m → Fin n) (w : Fin n → Bool)
     (hw : ∀ i, w (left i) * w (right i) = w (output i)) (z : List Bool) :
-    (maskedMulCheckReceiverView left right output (receiver.strategy n m) w
+    (maskedMulCheckReceiverView left right output
+      (receiver.strategy n List.ofFn (Fin.val (n := m))) w
       (inputOfMaps left right output z)).map viewToLists =
-        ProbComp.eval (simulate (ProbComp.uniform Bool) receiver
-          (inputOfMaps left right output z)) :=
-  receiverView_eq_eval_simulate _ _ _ _ (ProbComp.eval_uniform _) _ _ _ hw
+        ProbComp.eval (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d)
+          (inputOfMaps left right output z)) := by
+  simpa only [Receiver.mapFirst_id] using receiverView_eq_eval_simulate left right output
+    (ProbComp.uniform Bool) (ProbComp.eval_uniform _) receiver id (fun _ _ d => d)
+    (inputOfMaps left right output z) z rfl w hw
 
 example (m : ℕ) (z : List Bool) :
     (maskedMulCheckReceiverView (fun _ : Fin m => (0 : Fin 1)) (fun _ => 0) (fun _ => 0)
-      (receiver.strategy 1 m) (fun _ => true)
+      (receiver.strategy 1 List.ofFn (Fin.val (n := m))) (fun _ => true)
       (inputOfMaps (fun _ : Fin m => (0 : Fin 1)) (fun _ => 0) (fun _ => 0) z)).map viewToLists =
-      ProbComp.eval (simulate (ProbComp.uniform Bool) receiver
+      ProbComp.eval (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d)
         (1, List.replicate m (0, 0, 0), z)) := by
   simpa [inputOfMaps] using receiverView_eq_eval_simulate
     (fun _ : Fin m => (0 : Fin 1)) (fun _ => 0) (fun _ => 0)
-    (ProbComp.uniform Bool) (ProbComp.eval_uniform _) receiver z (fun _ => true) (fun _ => rfl)
+    (ProbComp.uniform Bool) (ProbComp.eval_uniform _) receiver id (fun _ _ d => d) _ z rfl
+    (fun _ => true) (fun _ => rfl)
 
 example :
     (maskedMulCheckReceiverView (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0 Fin.elim0
-      (receiver.strategy 0 0) Fin.elim0 (0, [], [])).map viewToLists =
-      ProbComp.eval (simulate (ProbComp.uniform Bool) receiver (0, [], [])) := by
+      (receiver.strategy 0 List.ofFn (Fin.val (n := 0))) Fin.elim0 (0, [], [])).map viewToLists =
+      ProbComp.eval
+        (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d) (0, [], [])) := by
   simpa [inputOfMaps] using receiverView_eq_eval_simulate
     (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0 Fin.elim0 (ProbComp.uniform Bool)
-    (ProbComp.eval_uniform _) receiver [] Fin.elim0 (fun i => Fin.elim0 i)
+    (ProbComp.eval_uniform _) receiver id (fun _ _ d => d) _ [] rfl
+    Fin.elim0 (fun i => Fin.elim0 i)
 
 -- Both short and long callback replies are normalized into the actual transmitted vector.
 example : weights 3 [true] = [true, false, false] ∧
@@ -97,13 +106,14 @@ example :
 
 -- Every run retains the initial coin and share while the terminal phase reads the cache again.
 example (input : Input) (view : View Bool Result)
-    (hv : view ∈ (ProbComp.eval (simulate (ProbComp.uniform Bool) receiver input)).support) :
+    (hv : view ∈ (ProbComp.eval
+      (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d) input)).support) :
     view.2.2.2.2.1.2.1 = view.1 ∧ view.2.2.2.2.2 = view.1 ∧
       view.2.2.2.2.1.2.2 = [view.2.2.2.1.1, view.2.2.2.1.2, view.1.1] ++
         view.1.2 ++ view.2.1 ∧
       view.2.2.1 = List.replicate input.2.1.length
         (view.2.2.2.2.1.1 ^^ view.1.1 ^^ view.1.2.getD 0 false ^^ view.2.1.getD 0 false) := by
-  simp only [simulate, receiver, ProbComp.eval_bind, ProbComp.eval_pure,
+  simp only [simulate, id_eq, receiver, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hv
   rcases hv with ⟨delta, _, q, _, state, ⟨coin, _, rfl⟩, d, _, chosen, rfl,
     a, _, processed, rfl, result, rfl, rfl⟩
@@ -114,7 +124,7 @@ example (input : Input) (view : View Bool Result)
     simpa only [weights, List.length_map, List.length_range] using hi
   simp [weights, hi0]
 
-def constantReceiver : Receiver Bool Unit Unit where
+def constantReceiver : Receiver Bool Input (List Bool) Unit Unit where
   init _ _ := pure ()
   challenge _ _ _ _ := pure ([true], ())
   receive _ _ _ _ := pure ()
@@ -128,10 +138,11 @@ private def falseView :
   ((true, fun _ => false), (falseWitness, (fun _ => true), (false, false), ()), ())
 
 private theorem falseView_real : falseView ∈
-    (maskedMulCheckReceiverView leftWire leftWire outWire (constantReceiver.strategy 2 1)
+    (maskedMulCheckReceiverView leftWire leftWire outWire
+      (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1)))
       falseWitness (inputOfMaps leftWire leftWire outWire [])).support := by
   have hrun : maskedMulCheckReceiverView leftWire leftWire outWire
-      (constantReceiver.strategy 2 1) falseWitness
+      (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1))) falseWitness
       (inputOfMaps leftWire leftWire outWire []) = (voleIdealDist Bool 3).map (fun c =>
         (c.receiverView, (voleCommitWitness falseWitness (Fin.init c.u), (fun _ => true),
           maskedMulCheckReply leftWire leftWire outWire falseWitness c.u c.v (fun _ => true),
@@ -148,12 +159,15 @@ private theorem falseView_real : falseView ∈
 
 -- Encoding retains the distinguishing rejecting transcript of a false multiplication witness.
 example :
-    (maskedMulCheckReceiverView leftWire leftWire outWire (constantReceiver.strategy 2 1)
+    (maskedMulCheckReceiverView leftWire leftWire outWire
+      (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1)))
       falseWitness (inputOfMaps leftWire leftWire outWire [])).map viewToLists ≠
-      ProbComp.eval (simulate (ProbComp.uniform Bool) constantReceiver
+      ProbComp.eval (simulate (ProbComp.uniform Bool) constantReceiver id (fun _ _ d => d)
         (inputOfMaps leftWire leftWire outWire [])) := by
   intro heq
-  rw [eval_simulate _ _ _ _ (ProbComp.eval_uniform _)] at heq
+  rw [eval_simulate leftWire leftWire outWire (ProbComp.uniform Bool) (ProbComp.eval_uniform _)
+    constantReceiver id (fun _ _ d => d) (inputOfMaps leftWire leftWire outWire []) [] rfl,
+    Receiver.mapFirst_id] at heq
   have hinj : Function.Injective
       (viewToLists (F := Bool) (Result := Unit) (n := 2) (m := 1)) := by
     rintro ⟨⟨delta, q⟩, ⟨d, r, reply, ⟨⟩⟩, ⟨⟩⟩
@@ -162,10 +176,83 @@ example :
   have hv := falseView_real
   rw [PMF.map_injective hinj heq] at hv
   have hcheck := maskedMulCheckReceiverSimulate_accepts leftWire leftWire outWire
-    (constantReceiver.strategy 2 1) (inputOfMaps leftWire leftWire outWire []) hv
+    (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1)))
+    (inputOfMaps leftWire leftWire outWire []) hv
   have hfalse : ¬ (maskedMulCheckValue leftWire leftWire outWire falseView.1.1 falseView.1.2
       falseView.2.1.1 falseView.2.1.2.1 =
         falseView.2.1.2.2.1.1 * falseView.1.1 + falseView.2.1.2.2.1.2) := by decide
   exact hfalse hcheck
+
+
+-- Extra public data is runtime input, not a circuit-sized object hidden in a fixed callback.
+abbrev Context := Input × List Bool
+abbrev FirstMessage := List Bool × List Bool
+
+def contextEncoding : Context ↪ List Bool := encPair encInput (encList encBool)
+def firstEncoding : FirstMessage ↪ List Bool := encPair (encList encBool) (encList encBool)
+
+def contextFirst (input : Context) (share : Share Bool) (d : List Bool) : FirstMessage :=
+  (d, input.2 ++ [share.1])
+
+noncomputable def contextReceiver : Receiver Bool Context FirstMessage State Result where
+  init input share := receiver.init input.1 share
+  challenge input share state message :=
+    receiver.challenge input.1 share state (message.2 ++ message.1)
+  receive input share state reply := receiver.receive input.1 share state reply
+  terminal input share state := receiver.terminal input.1 share state
+
+-- All input/context lengths and both first-message components are included in the certificate.
+example : IsPPTOn contextEncoding (encView encBool resultEncoding)
+    (simulate (ProbComp.uniform Bool) contextReceiver Prod.fst contextFirst) := by
+  apply isPPTOn_simulate _ _ Prod.fst contextFirst contextEncoding firstEncoding
+    stateEncoding resultEncoding
+  · exact isPPTOn_uniform_bool _
+  · exact ComputableInPolyTime.of_finite _
+  · exact ComputableInPolyTime.of_finite _
+  · exact ComputableInPolyTime.of_finite _
+  · unfold contextEncoding
+    fun_prop
+  · unfold contextFirst contextEncoding firstEncoding encShare
+    polytime
+  · unfold contextReceiver receiver contextEncoding stateEncoding encShare encInput
+    ppt
+  · unfold contextReceiver receiver contextEncoding firstEncoding stateEncoding encShare encInput
+    ppt
+  · unfold contextReceiver receiver contextEncoding stateEncoding encShare encInput
+    ppt
+  · unfold contextReceiver receiver contextEncoding resultEncoding stateEncoding encShare encInput
+    ppt
+
+-- The actual cached-world law carries an arbitrary extra word through every callback.
+example {n m : ℕ} (left right output : Fin m → Fin n) (w : Fin n → Bool)
+    (hw : ∀ i, w (left i) * w (right i) = w (output i)) (z extra : List Bool) :
+    (maskedMulCheckReceiverView left right output
+      ((contextReceiver.mapFirst contextFirst).strategy n List.ofFn (Fin.val (n := m))) w
+      (inputOfMaps left right output z, extra)).map viewToLists =
+        ProbComp.eval (simulate (ProbComp.uniform Bool) contextReceiver Prod.fst contextFirst
+          (inputOfMaps left right output z, extra)) :=
+  receiverView_eq_eval_simulate left right output _ (ProbComp.eval_uniform _)
+    contextReceiver Prod.fst contextFirst _ z rfl w hw
+
+-- Equal layouts with different extra data really choose different weights.
+example :
+    (contextReceiver.mapFirst contextFirst).challenge ((1, [(0, 0, 0)], []), [false])
+      (false, []) (false, (false, []), []) [] ≠
+    (contextReceiver.mapFirst contextFirst).challenge ((1, [(0, 0, 0)], []), [true])
+      (false, []) (false, (false, []), []) [] := by
+  simp [Receiver.mapFirst, contextReceiver, contextFirst, receiver]
+
+-- The transformed first message, initial coin, and repeated cached shares survive processing.
+example (input : Context) (view : View Bool Result)
+    (hv : view ∈ (ProbComp.eval
+      (simulate (ProbComp.uniform Bool) contextReceiver Prod.fst contextFirst input)).support) :
+    view.2.2.2.2.1.2.1 = view.1 ∧ view.2.2.2.2.2 = view.1 ∧
+      view.2.2.2.2.1.2.2 = [view.2.2.2.1.1, view.2.2.2.1.2, view.1.1] ++
+        view.1.2 ++ (input.2 ++ [view.1.1]) ++ view.2.1 := by
+  simp only [simulate, contextReceiver, contextFirst, receiver, ProbComp.eval_bind,
+    ProbComp.eval_pure, PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hv
+  rcases hv with ⟨delta, _, q, _, state, ⟨coin, _, rfl⟩, d, _, chosen, rfl,
+    a, _, processed, rfl, result, rfl, rfl⟩
+  simp [List.append_assoc]
 
 end ComplexityTests.Crypto.VOLENative
