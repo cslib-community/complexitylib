@@ -962,6 +962,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Adaptive search trees:** working-set and dynamic-finger bounds for splay trees, and a BST
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
+- **Optimal stopping:** `Probability/OptimalStopping/*` covers the rank-based secretary problem
+  (exact cutoff-rule success, optimality among all rank-based rules, `1/e` bounds and limit) and
+  the single-threshold `½` prophet inequality for independent discrete (`PMF`) laws, with
+  tightness (#2913). Extend to the i.i.d. `1 - 1/e` and `≈0.745` bounds, prophet
+  secretary and random-order models, matroid and multiple-choice prophet inequalities, the
+  full-information secretary problem, existence of medians of the maximum, randomized rules as
+  mixtures, and the posted-price mechanism corollary.
 
 ### Structural graph algorithms
 
