@@ -2569,6 +2569,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Windo
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedComplexity
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedInit
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedParts
+public import Complexity.Computability.Machines.Turing.SingleTape.CrossingSequence
+public import Complexity.Computability.Machines.Turing.SingleTape.Palindrome
 public import Complexity.Computability.Machines.Turing.SingleTape.Partrec
 public import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
 public import Complexity.Computability.Machines.Turing.TM2.ConfigBound
