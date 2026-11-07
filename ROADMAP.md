@@ -923,8 +923,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. For realizable
   PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), extend
   the countable-domain VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)` to general
-  well-behaved classes over measurable domains. Give the
-  computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
+  well-behaved classes over measurable domains. Agnostic PAC learning of finite classes by ERM is
+  in place. For infinite classes
+  ([#3005](https://github.com/cslib-community/complexitylib/issues/3005)), prove uniform
+  convergence from the growth function by symmetrization, then agnostic learnability of finite
+  VC classes, first on countable domains, then at the sharp `O((d + log (1/δ))/ε²)` rate. Give
+  the computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
   costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
   comparisons where justified, distinguishing restricted-model bounds from unrestricted
