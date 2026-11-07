@@ -113,6 +113,92 @@ The result has two projections: polynomial-time computability of the iterated fu
 
 For a step capturing a parameter, use `iterateWith_spec` and certify the joint `(parameter, state)` operation. `iterateWith_of_bounded_growth` handles additive encoded-state growth bounded polynomially in the original input. A separate efficient procedure for each fixed parameter does not provide the required uniform joint certificate. A polynomial number of efficient steps also does not bound a state that doubles each time. The [plain loop regression client](../../ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean) exercises both positive contracts and a failed constant-state bound. When the size obligation fails, inspect the representation and growth argument before changing tactics.
 
+## Derandomize an averaging argument
+
+**Goal:** turn an averaging proof that some choice of bits is good into a deterministic
+algorithm with the same quantitative guarantee, then certify its running time. Import
+`Complexity.Foundations.Combinatorics.PessimisticEstimator` and open
+`Cslib.PessimisticEstimator`. Describe one round by a branch function
+`branch : R → Bool → S → S` and an estimate `Φ : S → M` of the final cost, for `M` such as `ℕ`
+or `ℝ`; `greedy branch Φ rounds s` takes, in each round, the branch with the smaller estimate,
+with ties going to `true`.
+
+Apply `greedy_spec` with an invariant `Inv : List R → S → Prop` indexed by the rounds still to
+come. Prove that it passes along both branches and that, wherever it holds, the smaller branch
+estimate is at most the current estimate. For an averaging argument, use
+`greedy_spec_of_add_le` and prove instead that the two branch estimates sum to at most twice the
+current estimate. The estimate need not be an exact conditional expectation; a pessimistic upper
+bound suffices. The conclusion returns the
+invariant for the final state together with `Φ final ≤ Φ initial`; use the final invariant to
+identify the final estimate with the cost of the constructed object. For exact conditional
+expectations of a real function on the cube, `BitString.expect_le_greedy_fixCoord` in
+`Complexity.Foundations.BooleanAnalysis.GreedyFixing` already does this.
+
+[Johnson.lean](../../Complexity/Logics/Propositional/CNF/Johnson.lean) is the satisfiability
+client. Its state is the partially set formula and the variables set to `true`; its estimate is
+the weight `Σ_c 2 ^ (L - |c|)`. It sets a variable with the resolution module's `CNF.restrict`. Its invariant records
+that the remaining variables are those still to be set and that the partial formula falsifies
+the same number of clauses as the original under any completion. [Johnson/PolyTime.lean](../../Complexity/Logics/Propositional/CNF/Johnson/PolyTime.lean)
+certifies the running time. Because `L` is read from the input formula, the rounds form a fold
+whose step reads the input, certified by `foldlWithInput_of_bounded_growth`. Its growth premise
+uses the fact that setting a variable does not lengthen the encoded formula. The complete
+[JohnsonMaxSAT client](../../ComplexityTests/JohnsonMaxSAT.lean) checks a tight `7 / 8`
+instance and a formula with an empty clause, where the `1 / 2` bound fails without its
+hypothesis. Build it with `scripts/build.sh ComplexityTests.JohnsonMaxSAT`.
+
+**When it fails:** if the round inequality holds only on reachable states, strengthen the
+invariant rather than the estimate. Clauses with complementary literals, for example, make
+Johnson's weight strictly pessimistic, but the inequality still holds for every partial
+formula without repeated literals. If the fold's growth premise fails, check that the step
+does not enlarge the encoded state by more than a polynomial in the input.
+
+## Round, solve exactly and certify a pseudo-polynomial table
+
+**Goal:** an approximation scheme that rounds numbers, solves the rounded instance exactly by
+dynamic programming, and runs in polynomial time. Import
+`Complexity.Algorithms.Lean.Knapsack.PolyTime` (it re-exports `ProfitDP` and `FPTAS`) and open
+`Cslib.Algorithms.Lean.Knapsack Turing.MultiTapeTM ComputableInPolyTime`.
+
+First prove the exact program correct. [Knapsack/ProfitDP.lean](../../Complexity/Algorithms/Lean/Knapsack/ProfitDP.lean)
+folds a table indexed by profit over the items. Its invariant `TableSpec` records the table
+length (total profit plus one), that each entry is a subsequence of the right profit, and that
+each entry weighs at most every subsequence of that profit. Prove the invariant for the initial
+table and for one step, then fold it (`TableSpec.foldl`). Then prove the rounding bound against
+the exact program on the rounded instance: [Knapsack/FPTAS.lean](../../Complexity/Algorithms/Lean/Knapsack/FPTAS.lean)
+rounds the values to at most `n * k`, and `sub_one_mul_value_le_fptas` gives
+`(k - 1) * OPT ≤ k * value`.
+
+Then certify the running time, as [Knapsack/PolyTime.lean](../../Complexity/Algorithms/Lean/Knapsack/PolyTime.lean)
+does. Certify one step of the table jointly in the table and the item, and pass it to `foldl'`.
+Discharge the fold's states bound at every prefix (`l.take i`) from the invariant: the table has
+total-profit-plus-one entries, each a subsequence of the items. That bound is polynomial only
+when profits are charged in unary, so read them in `encUnary`. The FPTAS computes its rounded
+values in unary from `k` in unary, while weights and the capacity stay in binary.
+[Knapsack/Unary.lean](../../Complexity/Computability/Complexity/Problems/Knapsack/Unary.lean)
+turns the exact program into `Knapsack ∈ P` for the unary-value encoding.
+
+For a hardness-of-approximation statement in this style, state the algorithm as a function with
+a plain `ComputableInPolyTime` hypothesis, a validity hypothesis and a ratio hypothesis. Derive
+`P = NP` from a known `NPComplete` problem through `NPComplete.P_eq_NP_of_mem_P`, as
+[PCP/Approximation/BinPacking.lean](../../Complexity/Computability/PCP/Approximation/BinPacking.lean)
+does from `Partition`.
+
+Check the clients with
+`scripts/build.sh ComplexityTests.KnapsackFPTAS ComplexityTests.BinPackingApprox`. The
+[KnapsackFPTAS client](../../ComplexityTests/KnapsackFPTAS.lean) checks an instance where the
+scheme is not optimal but meets its bound. The [BinPackingApprox client](../../ComplexityTests/BinPackingApprox.lean)
+shows that an exact, non-polynomial algorithm satisfies the hardness hypotheses other than
+running time, and that First Fit violates the ratio hypothesis.
+
+**When it fails:** if the `foldl'` states-bound premise fails, bound the encoded table through the
+invariant (its length and the subsequence property of every entry), not by the number of steps.
+Then check that the profits really are read in `encUnary`; with binary profits the table is
+exponential in the input and no bound exists. If `fun_prop` times out on `max` or on a map whose
+body mixes unary and binary arithmetic, build that certificate by hand. Use `ite` with the plain
+`ComputableInPolyTime.binary_le'` for `max`, and `mapWithInput` with
+`ComputableInPolyTime.unary_to_binary`, `binary_mul'` and `ComputableInPolyTime.binary_div` for
+the rounding map.
+
 ## Preserve independent workspace
 
 <!-- worked-example -->

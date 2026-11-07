@@ -151,6 +151,15 @@ theorem evalTimeBound_le (k : ℕ) : evalTimeBound k ≤ 111230 * k + 6862 := by
   dsimp only [evalTimeBound]
   omega
 
+/-- `k`-independent worst-case instruction budget for `.eval u` in the double-tabulation regime:
+`(12 * 8 + 11) * 64 + 10 = 6858` evaluation steps at `c = 8`, `d = 64`, plus subroutine dispatch and
+the final `halt` instruction. -/
+def doubleTabEvalTime : ℕ :=
+  (12 * 8 + 11) * 64 + 10 + 4
+
+theorem doubleTabEvalTime_eq : doubleTabEvalTime = evalSteps (provableC 4) (provableD 4) + 4 :=
+  rfl
+
 /-- General worst-case instruction budget for `.resample` parameterized by `c_exp`. -/
 def resampleTimeOf (c_exp k n_max : ℕ) : ℕ :=
   if n_max < doubleTabThreshold c_exp then
@@ -1333,8 +1342,6 @@ produces `ν_final` such that `P.RunsOps` holds on `ν.map P.seqStateOf` and
 private theorem provableImpl_runsOps_aux {S : Presentation} {P : HFPresentation S}
     (hS : Laws S) (hP : HFLaws S P)
     (c_exp k n_max U M : ℕ) {w base : ℕ}
-    (hU : U ≤ max n_max 4 ^ c_exp)
-    (hM : M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5)
     (hw : 2 * Cslib.Probability.trinomialDeg U M ≤ w)
     (hfit_space : Fits w (base + provableSpace c_exp k n_max))
     (hfit_n : Fits w (max n_max 2))
@@ -1349,9 +1356,10 @@ private theorem provableImpl_runsOps_aux {S : Presentation} {P : HFPresentation 
         H.tableRep t.data.mem ∧
         H.seedRep t.latent t.data.mem) →
       ∃ ν_final : PMF (SeqOutcome H.Seed (@HashFamily.Result U (2 ^ M)) 23),
-        P.RunsOps w p_op base (provableSpace c_exp k n_max)
-          (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
-          (remOps.map P.opOf) (ν.map P.seqStateOf) (ν_final.map P.seqStateOf) ∧
+        (∀ t_eval : ℕ, H.evalSteps + 4 ≤ t_eval →
+          P.RunsOps w p_op base (provableSpace c_exp k n_max)
+            t_eval (resampleTimeOf c_exp k n_max)
+            (remOps.map P.opOf) (ν.map P.seqStateOf) (ν_final.map P.seqStateOf)) ∧
         ν_final.map SeqOutcome.transcript =
           ν.bind (fun t =>
             (HashFamily.evalOpsFromSeed (PMF.uniformOfFintype H.Seed) H.eval t.latent
@@ -1359,16 +1367,12 @@ private theorem provableImpl_runsOps_aux {S : Presentation} {P : HFPresentation 
   intro H p_op remOps
   have hsp_eq : H.space = provableSpace c_exp k n_max :=
     provableImpl_space c_exp k n_max U M hw hfit_space hfit_n hfit_U
-  have heval_le : (H.evalSteps + 3) + 1 ≤ provableEvalBound c_exp k + 4 := by
-    have hle : H.evalSteps ≤ provableEvalBound c_exp k :=
-      provableImpl_evalSteps_le hU hM hw hfit_space hfit_n hfit_U
-    omega
   have hres_le : (H.resampleSteps + 2) + 1 ≤ resampleTimeOf c_exp k n_max := by
     rw [← provableImpl_resampleSteps_eq c_exp k n_max U M hw hfit_space hfit_n hfit_U]
   induction remOps with
   | nil =>
     intro ν _
-    refine ⟨ν, hP.runsOps_nil (ν.map P.seqStateOf), ?_⟩
+    refine ⟨ν, fun _ _ => hP.runsOps_nil (ν.map P.seqStateOf), ?_⟩
     ext tr
     simp [HashFamily.evalOpsFromSeed]
   | cons o os ih =>
@@ -1431,11 +1435,12 @@ private theorem provableImpl_runsOps_aux {S : Presentation} {P : HFPresentation 
         rw [hP.stepReg_mk, hP.stepMem_mk, hP.stepLabel_mk, hP.seqTranscript_mk, List.map_append]
         rfl
       rw [← hν₁_map] at hruns_rest
-      have hruns_cons :
+      have hruns_cons : ∀ t_eval : ℕ, H.evalSteps + 4 ≤ t_eval →
           P.RunsOps w p_op base (provableSpace c_exp k n_max)
-            (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
+            t_eval (resampleTimeOf c_exp k n_max)
             (P.resample :: os.map P.opOf) (ν.map P.seqStateOf) (ν_final.map P.seqStateOf) := by
-        refine hP.runsOps_cons μ_abs (fun t_abs ht_abs => ?_) hruns_rest
+        intro t_eval ht_eval
+        refine hP.runsOps_cons μ_abs (fun t_abs ht_abs => ?_) (hruns_rest t_eval ht_eval)
         rw [PMF.mem_support_map_iff] at ht_abs
         obtain ⟨t, ht, rfl⟩ := ht_abs
         have hreg_t : P.seqReg (P.seqStateOf t) = t.data.regs :=
@@ -1460,7 +1465,7 @@ private theorem provableImpl_runsOps_aux {S : Presentation} {P : HFPresentation 
                 .resample t.data).regs :=
           (prepare_eq_prepareRegs hP c_exp k n_max U M hw hfit_space hfit_n hfit_U
             .resample t.data).symm
-        have hbud : P.opBudget (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
+        have hbud : P.opBudget t_eval (resampleTimeOf c_exp k n_max)
             (P.resample (U := U)) = resampleTimeOf c_exp k n_max :=
           hP.opBudget_resample (U := U) _ _
         have hex_m : ExecRand w H.subroutineCode.code
@@ -1609,11 +1614,12 @@ private theorem provableImpl_runsOps_aux {S : Presentation} {P : HFPresentation 
           List.map_append, heval_θOf t ht]
         rfl
       rw [← hν₁_map] at hruns_rest
-      have hruns_cons :
+      have hruns_cons : ∀ t_eval : ℕ, H.evalSteps + 4 ≤ t_eval →
           P.RunsOps w p_op base (provableSpace c_exp k n_max)
-            (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
+            t_eval (resampleTimeOf c_exp k n_max)
             (P.eval u :: os.map P.opOf) (ν.map P.seqStateOf) (ν_final.map P.seqStateOf) := by
-        refine hP.runsOps_cons μ_abs (fun t_abs ht_abs => ?_) hruns_rest
+        intro t_eval ht_eval
+        refine hP.runsOps_cons μ_abs (fun t_abs ht_abs => ?_) (hruns_rest t_eval ht_eval)
         rw [PMF.mem_support_map_iff] at ht_abs
         obtain ⟨t, ht, rfl⟩ := ht_abs
         have hreg_t : P.seqReg (P.seqStateOf t) = t.data.regs :=
@@ -1644,15 +1650,14 @@ private theorem provableImpl_runsOps_aux {S : Presentation} {P : HFPresentation 
                 (.eval u) t.data).regs :=
           (prepare_eq_prepareRegs hP c_exp k n_max U M hw hfit_space hfit_n hfit_U
             (.eval u) t.data).symm
-        have hbud : P.opBudget (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
-            (P.eval u) = provableEvalBound c_exp k + 4 :=
+        have hbud : P.opBudget t_eval (resampleTimeOf c_exp k n_max) (P.eval u) = t_eval :=
           hP.opBudget_eval _ _ u
         have he_y : ExecWithin w H.subroutineCode.code
             ((H.subroutineCode.toDynamicProgram H.encode H.decode).prepare (.eval u) t.data)
             (yOf t.data) (H.evalSteps + 3) := by
           rw [hy_eq]
           exact hspec.1
-        have hcomp := compile_execWithin hS he_y heval_le
+        have hcomp := compile_execWithin hS he_y (by omega : (H.evalSteps + 3) + 1 ≤ t_eval)
         refine ⟨ht_inv.1, ?_, ?_, ?_, ?_⟩
         · rw [hprep_regs, hbud]
           exact hcomp.1
@@ -1776,6 +1781,10 @@ private theorem provableImpl_runsOps_from_initInv {S : Presentation} {P : HFPres
           P.RunsOps w p_op base (provableSpace c_exp k n_max)
             (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
             ops_abs (ν₀.map P.initSeqStateOf) ν_final ∧
+          (doubleTabThreshold c_exp ≤ n_max →
+            P.RunsOps w p_op base (provableSpace c_exp k n_max)
+              (evalSteps (provableC c_exp) (provableD c_exp) + 4) (resampleTimeOf c_exp k n_max)
+              ops_abs (ν₀.map P.initSeqStateOf) ν_final) ∧
           (P.BoundedEpochKeys k ops_abs →
             P.WhpKWiseContract δ ops_abs
               (ν_final.map P.seqTranscript)) := by
@@ -1792,7 +1801,7 @@ private theorem provableImpl_runsOps_from_initInv {S : Presentation} {P : HFPres
     obtain ⟨u, hu, rfl⟩ := ht
     exact hinv.2 u hu
   obtain ⟨ν_lib_final, hruns, htr⟩ :=
-    provableImpl_runsOps_aux hS hP c_exp k n_max U M hU hM hw hfit_space hfit_n hfit_U
+    provableImpl_runsOps_aux hS hP c_exp k n_max U M hw hfit_space hfit_n hfit_U
       ops (ν₀.map SeqOutcome.ofLatentState) hsupp_seq
   have hinit_map :
       (ν₀.map (SeqOutcome.ofLatentState (Result := @HashFamily.Result U (2 ^ M)))).map
@@ -1819,7 +1828,12 @@ private theorem provableImpl_runsOps_from_initInv {S : Presentation} {P : HFPres
       exact PMF.map_id _
     rw [hbind_eq, hinv.1]
     rfl
-  refine ⟨ν_lib_final.map P.seqStateOf, hruns, fun hbk_abs => ?_⟩
+  have hle : H.evalSteps ≤ provableEvalBound c_exp k :=
+    provableImpl_evalSteps_le hU hM hw hfit_space hfit_n hfit_U
+  refine ⟨ν_lib_final.map P.seqStateOf, hruns _ (Nat.add_le_add_right hle 4),
+    fun hge => hruns _ (Nat.add_le_add_right
+      (provableImpl_evalSteps_of_le hge hw hfit_space hfit_n hfit_U).le 4),
+    fun hbk_abs => ?_⟩
   have hbk_lib : HashFamily.BoundedEpochKeys k ops := by
     refine boundedEpochKeys_of_libEpochKeys ops fun E hE => ?_
     rw [← P.epochKeys_map_opOf hP] at hE
@@ -1923,6 +1937,10 @@ private theorem provableImpl_fresh_general (S : Presentation) (hS : Laws S)
                 P.RunsOps w p_op base (provableSpace c_exp k n_max)
                   (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
                   ops ν₀ ν_final ∧
+                (doubleTabThreshold c_exp ≤ n_max →
+                  P.RunsOps w p_op base (provableSpace c_exp k n_max)
+                    (evalSteps (provableC c_exp) (provableD c_exp) + 4)
+                    (resampleTimeOf c_exp k n_max) ops ν₀ ν_final) ∧
                 (P.BoundedEpochKeys k ops →
                   P.WhpKWiseContract δ ops
                     (ν_final.map P.seqTranscript)) := by
@@ -2059,11 +2077,15 @@ theorem highIndependenceHashFamily_fresh (S : Presentation) (hS : Laws S)
                 ∃ ν_final : PMF (P.SeqState U (2 ^ M)),
                   P.RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
                     ops ν₀ ν_final ∧
+                  (regimeThreshold ≤ n_max →
+                    P.RunsOps w p_op base (space k n_max) doubleTabEvalTime (resampleTime k n_max)
+                      ops ν₀ ν_final) ∧
                   (P.BoundedEpochKeys k ops →
                     P.WhpKWiseContract (failureProbBound k n_max) ops
                       (ν_final.map P.seqTranscript)) := by
   intro k n_max U M hU hM
-  rw [trinomialDeg_eq, space_eq, initFreshTime_eq, evalTimeBound_eq, resampleTime_eq]
+  rw [trinomialDeg_eq, space_eq, initFreshTime_eq, evalTimeBound_eq, resampleTime_eq,
+    doubleTabEvalTime_eq, regimeThreshold_eq]
   exact provableImpl_fresh_general S hS P hP 4 k n_max U M hU hM
     (provableFailureProb_le_failureProbBound k n_max)
 
@@ -2106,6 +2128,10 @@ private theorem provableImpl_clear_general (S : Presentation) (hS : Laws S)
                 P.RunsOps w p_op base (provableSpace c_exp k n_max)
                   (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
                   ops ν₀ ν_final ∧
+                (doubleTabThreshold c_exp ≤ n_max →
+                  P.RunsOps w p_op base (provableSpace c_exp k n_max)
+                    (evalSteps (provableC c_exp) (provableD c_exp) + 4)
+                    (resampleTimeOf c_exp k n_max) ops ν₀ ν_final) ∧
                 (P.BoundedEpochKeys k ops →
                   P.WhpKWiseContract δ ops
                     (ν_final.map P.seqTranscript)) := by
@@ -2247,11 +2273,15 @@ theorem highIndependenceHashFamily_clear (S : Presentation) (hS : Laws S)
                 ∃ ν_final : PMF (P.SeqState U (2 ^ M)),
                   P.RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
                     ops ν₀ ν_final ∧
+                  (regimeThreshold ≤ n_max →
+                    P.RunsOps w p_op base (space k n_max) doubleTabEvalTime (resampleTime k n_max)
+                      ops ν₀ ν_final) ∧
                   (P.BoundedEpochKeys k ops →
                     P.WhpKWiseContract (failureProbBound k n_max) ops
                       (ν_final.map P.seqTranscript)) := by
   intro k n_max U M hU hM
-  rw [trinomialDeg_eq, space_eq, initClearTime_eq, evalTimeBound_eq, resampleTime_eq]
+  rw [trinomialDeg_eq, space_eq, initClearTime_eq, evalTimeBound_eq, resampleTime_eq,
+    doubleTabEvalTime_eq, regimeThreshold_eq]
   exact provableImpl_clear_general S hS P hP 4 k n_max U M hU hM
     (provableFailureProb_le_failureProbBound k n_max)
 

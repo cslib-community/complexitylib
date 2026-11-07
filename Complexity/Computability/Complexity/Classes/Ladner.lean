@@ -103,31 +103,6 @@ theorem SAT_notMem_P {α : Type} {enc : α ↪ List Bool} (h : P enc ≠ NP enc)
 
 /-! ### A machine deciding Ladner's language bounds the exponent -/
 
-/-- A finite binary machine halting within time `t x` with output `[f x]`, simulated by the
-universal function on its description for at least `t x` steps, halts with output `[eBit (f x)]`.
--/
-theorem universal_desc_of_halted {k : ℕ} {State : Type} [Fintype State] (eS : State ↪ ℕ)
-    (tm : MultiTapeTM k Bool State) {f : List Bool → Bool} {t : List Bool → ℕ}
-    (h : ∀ x, (tm.runFrom (tm.initCfg x) (t x)).Halted ∧
-      (tm.runFrom (tm.initCfg x) (t x)).output = [f x])
-    {x : List Bool} {T : ℕ} (hT : t x ≤ T) :
-    universal (desc eS eBit tm, x.map eBit, T) = ([eBit (f x)], true) := by
-  obtain ⟨hhalt, hout⟩ := h x
-  simp only [Cfg.Halted] at hhalt
-  rw [universal_desc, MultiTapeTM.runFrom_eq_of_halt tm _ hT hhalt, hout, hhalt]
-  rfl
-
-/-- Every description is the description of machines with arbitrarily large indices. -/
-private theorem exists_index_ge (d : Desc) (B : ℕ) :
-    ∃ i, B ≤ i ∧ decodeDesc (unframe (word i)) = d := by
-  refine ⟨index (frame (eDesc d) ++ List.replicate B false), ?_, by
-    rw [word_index, decodeDesc_unframe_frame_append]⟩
-  have h₁ := two_pow_length_word_le (index (frame (eDesc d) ++ List.replicate B false))
-  rw [word_index, List.length_append, List.length_replicate] at h₁
-  have h₂ : B < 2 ^ ((frame (eDesc d)).length + B) :=
-    Nat.lt_two_pow_self.trans_le (Nat.pow_le_pow_right (by omega) (by omega))
-  omega
-
 /-- From some point on, the clock of the machine with index `i` on the words with indices below
 `n` is at most `n`. -/
 private theorem eventually_clock_le (i : ℕ) :

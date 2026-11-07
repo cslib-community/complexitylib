@@ -16,7 +16,7 @@ The [superquadratic sensitivity separation](https://github.com/cslib-community/c
 
 [distributionalComplexity](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Yao.lean#L74) instead fixes a distribution on inputs and minimizes deterministic depth subject to average error. Yao's theorem equates randomized complexity to the supremum of these distributional complexities on the finite domain and supplies an attaining hard distribution. The [Nisan relation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Randomized/Nisan.lean) gives `D <= 27 R_(1/3)^3`; approximate degree and block-sensitivity lower bounds are stated over the same cost convention.
 
-Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md).
+Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../Complexity/Computability/QueryComplexity/Simon.lean).
 
 ## Deterministic communication and its variants
 
@@ -41,6 +41,82 @@ The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boo
 The communication development includes public-coin equality protocols and linear lower bounds for disjointness and inner product at bounded error, using corruption and discrepancy methods. Its Newman theorem replaces public randomness by a finite seed selection at an additive communication/error cost; the finite statement keeps the input-domain cardinalities and error increment visible. See [communication abstract](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/CommunicationAbstract.lean) for the precise finite statements and their hypotheses.
 
 The deterministic lifting theorem composes a Boolean function with an index gadget. For the theorem's parameters m and tau, a protocol of cost c yields a decision tree of depth d with `(m/tau)^d <= 4^c`, assuming `4 <= tau`, `tau^2 <= m` and `320 n^2 (log2 m+1) <= tau`. Choosing tau around the square root of m gives a gadget on the order of `n^4 log^2 n`, rather than the smaller gadgets of more recent sharp lifting theorems. This is a documented quantitative scope choice. The source is [the lifting simulation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Communication/Lifting/Simulation.lean).
+
+## Distributed rounds in the LOCAL model
+
+Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity` or
+`Complexity.Computability.Distributed.OrientedCycle.MIS` (or one of the modules below them) for
+deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented cycles.
+The nodes of the oriented `n`-cycle are `ZMod n`: node `v` has predecessor `v - 1` and successor
+`v + 1`, and `n = 0` gives the infinite oriented path `ℤ`. An
+`Algorithm I S O` has an initial state from each node's input, a step function from the round
+number and the predecessor's, own and successor's states, and an output map. Messages and local
+computation are free, so exchanging whole states loses no generality. `MessageAlgorithm` with
+explicit messages reduces to it (`MessageAlgorithm.toAlgorithm_state`). The cost is the number of
+rounds. The round number is common knowledge. Algorithms are non-uniform: one may be chosen for
+each `n`. Identifiers are natural numbers, and `Algorithm.ColorsCycle A n t c` asks for a proper
+colouring with colours below `c` after `t` rounds for every bijection from the nodes onto
+`{0, …, n - 1}`. The usual identifiers `{1, …, n}` are the same up to a shift:
+`Algorithm.colorsCycle_comapInput_succ_iff` moves results between the two conventions through
+`Algorithm.comapInput`. For `n = 0` no identifier assignment qualifies, so `ColorsCycle 0 t c` is
+vacuous. Results for the infinite oriented path are stated for `Algorithm.run` directly, as in
+`threeColoring_run` and `fastThreeColoring_run`.
+
+The view formulation is proved rather than assumed. `Algorithm.state_eq_viewState` and
+`Algorithm.run_eq_apply` say that `r` rounds compute a `LocalRule` of radius `r`, a function of
+the input window at offsets `-r, …, r`. `LocalRule.toAlgorithm_run` gives the converse by flooding.
+Lower bounds are therefore proved for rules and transferred to algorithms, and
+`LocalRule.andThen` lets an algorithm first compute a rule and then continue.
+
+[ColeVishkin.lean](../../Complexity/Computability/Distributed/OrientedCycle/ColeVishkin.lean)
+proves the Cole–Vishkin upper bound. `cvColor a b = 2 i + aᵢ`, for the least bit `i` where `a`
+and `b` differ, turns colours below `M` into colours below `2 ⌈log₂ M⌉`. `threeColoring_run`
+3-colours in `log* N + 3` rounds from any proper colouring with colours below `N`, and
+`fastThreeColoring_run` in `s + 3` rounds when `log* N ≤ 2 s`, performing two reduction steps per
+round. [Linial.lean](../../Complexity/Computability/Distributed/OrientedCycle/Linial.lean) proves
+Linial's lower bound `Algorithm.ColorsCycle.logStar_le_of_three`, `log* n ≤ 2t + 2`, by the
+Laurinharju–Suomela speedup lemma on shift colourings (`Cslib.IsShiftColoring` in
+`Complexity.Foundations.Combinatorics.ShiftColoring`). The general form
+`Algorithm.ColorsCycle.logStar_le` allows `c` colours: `log* n ≤ 2t + log* c`.
+`exists_colorsCycle_three_and_logStar_le` packages both directions: `⌈(log* n) / 2⌉ + 3` rounds
+suffice for `n ≠ 1`, and any algorithm needs `log* n ≤ 2t + 2`, so the optimum is known up to an
+additive `4`. `Nat.logStar` and `Nat.twoTower` live in `Complexity.Foundations.Data.Nat.LogStar`;
+use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values. `Nat.twoTower` is a
+structurally recursive copy of Mathlib's `hyperoperation 4 2` (`Nat.twoTower_eq_hyperoperation`),
+kept because `decide` cannot evaluate the well-founded `hyperoperation`.
+[Graph.lean](../../Complexity/Computability/Distributed/OrientedCycle/Graph.lean) connects the
+model to Mathlib's graphs. `OrientedCycle.graph n` is the circulant graph on `ZMod n` with jump `1`,
+which is `SimpleGraph.cycleGraph (k + 1)` for `n = k + 1` (`graph_succ_eq_cycleGraph`). For
+`n ≠ 1`, `isProperColoring_iff_adj` identifies `IsProperColoring` with proper colourings of this
+graph. `IsProperColoring.toColoring` and `Algorithm.ColorsCycle.exists_coloring` produce
+`SimpleGraph.Coloring`s. The one-node cycle is excluded because its graph has no edges while its
+node is its own successor.
+
+[MIS.lean](../../Complexity/Computability/Distributed/OrientedCycle/MIS.lean) treats maximal
+independent sets. `IsMIS s` is the local description of a marked set `s : ZMod n → Bool`, and
+`isMIS_iff_maximal` matches it with Mathlib's `Maximal (graph n).IsIndepSet` for `n ≠ 1`.
+`misOfColoring_run` turns a proper colouring with colours below `k` into an MIS within `k - 1`
+rounds by greedy colour classes, on every oriented cycle and on the infinite path.
+`misAlgorithm s` runs `fastThreeColoring s` for `s + 3` rounds and then the greedy step, through
+the sequential composition `Algorithm.seq` of `Basic.lean` (`LocalRule.andThen` is `seq` after the
+flooding algorithm of a rule). `Algorithm.FindsMIS A n t` asks that `A` marks an MIS after `t`
+rounds for every bijection from the nodes onto `{0, …, n - 1}`. For `n ≠ 1`,
+`misAlgorithm_findsMIS` finds an MIS within `s + 5` rounds when `log* n ≤ 2 s`. Conversely,
+`colorOfMIS` turns an MIS into a proper 3-colouring in one round, so
+`Algorithm.FindsMIS.logStar_le` gives `log* n ≤ 2t + 4` for every `t`-round MIS algorithm.
+`exists_findsMIS_and_logStar_le` packages both directions for `n ≠ 1`. These reductions are
+standard consequences of the 3-colouring bounds. Compose algorithms with `Algorithm.seq`; do not
+convert an algorithm to a `LocalRule` with `Algorithm.toLocalRule` just to compose it, since
+flooding its whole window makes `decide` impractical.
+
+[Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
+algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no
+proper colouring and no MIS, and that two rounds of 3-colouring fail on the cycle of length
+`2 ↑↑ 6 + 1`. The 5-cycle examples include the greedy MIS steps and the full `misAlgorithm 2` run.
+
+Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
+`(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound and
+randomized LOCAL algorithms remain open; see `ROADMAP.md`.
 
 ## Known Limitations
 
