@@ -26,7 +26,9 @@ Variables are de Bruijn-style: `Formula α m n` has `m` free first-order and `n`
 variables, indexed by `Fin m` and `Fin n`. As for Mathlib's `FirstOrder.Language.BoundedFormula`,
 a quantifier binds the last index (`Fin.last`), so an assignment is extended with `Fin.snoc`. A
 sentence is a formula without free variables, and defines the language of the words whose
-structure satisfies it.
+structure satisfies it. The empty word is the empty structure, in which every existential
+quantifier is false and every universal quantifier is true; some sources restrict to nonempty words
+instead.
 
 Unlike the existential second-order sentences of `Cslib.Logic.ESO` (one block of existential
 relation quantifiers over a first-order matrix), MSO allows arbitrary nesting and alternation of

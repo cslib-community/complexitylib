@@ -76,10 +76,12 @@ namespace ExtLetter
 variable {m n : ℕ}
 
 /-- Forget the bit of the last first-order variable. -/
-def dropVar (e : ExtLetter α (m + 1) n) : ExtLetter α m n := ⟨e.letter, Fin.init e.vars, e.sets⟩
+private def dropVar (e : ExtLetter α (m + 1) n) : ExtLetter α m n :=
+  ⟨e.letter, Fin.init e.vars, e.sets⟩
 
 /-- Forget the bit of the last set variable. -/
-def dropSet (e : ExtLetter α m (n + 1)) : ExtLetter α m n := ⟨e.letter, e.vars, Fin.init e.sets⟩
+private def dropSet (e : ExtLetter α m (n + 1)) : ExtLetter α m n :=
+  ⟨e.letter, e.vars, Fin.init e.sets⟩
 
 end ExtLetter
 
