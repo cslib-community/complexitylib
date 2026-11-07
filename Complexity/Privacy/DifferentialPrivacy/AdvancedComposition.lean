@@ -453,9 +453,10 @@ theorem DifferentiallyPrivate.advancedComposition_experiment {D' : Type*} {Ω R 
 
 /-- The per-round privacy parameter of [DworkRoth2014, Corollary 3.21]: if every round is
 `(ε₀ / (2 √(2k ln (1/δ'))), δ)`-private, `k` adaptive rounds are `(ε₀, k δ + δ')`-private.
-The source assumes `0 < ε₀ < 1`, and its proof uses `ε (e^ε - 1) ≤ ε²` (valid for small `ε`) and
-needs `δ'` small compared with `ε₀`; here the hypothesis is `ε₀ ≤ 8 ln (1/δ')`, which holds
-whenever `ε₀ ≤ 1` and `δ' ≤ e^{-1/8}`. -/
+The source assumes `0 < ε₀ < 1`; its proof writes the linear term `k ε (e^ε - 1)` as `k ε²`, an
+approximation for small `ε`, and needs `δ'` small compared with `ε₀`. Here the linear term is
+`k ε tanh (ε / 2) ≤ k ε² / 2` (`DifferentiallyPrivate.advancedComposition_sqrt`), and the
+hypothesis is `ε₀ ≤ 8 ln (1/δ')`, which holds whenever `ε₀ ≤ 1` and `δ' ≤ e^{-1/8}`. -/
 theorem DifferentiallyPrivate.advancedComposition_of_target {Adj : D → D → Prop}
     (hAdj : ∀ ⦃x y⦄, Adj x y → Adj y x) {M : List R → D → PMF R} {ε₀ : ℝ} {δ : ℝ≥0∞} (k : ℕ)
     {δ' : ℝ} (hε₀ : 0 ≤ ε₀) (hδ' : 0 < δ') (hε₀δ' : ε₀ ≤ 8 * Real.log (1 / δ'))
