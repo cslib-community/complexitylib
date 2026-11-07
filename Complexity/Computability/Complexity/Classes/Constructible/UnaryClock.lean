@@ -36,6 +36,8 @@ budget of `MultiTape.Plumbing.PrepareClock`.
 
 ## Main results
 
+* `Cslib.Complexity.TimeConstructible.computableTidilyInO_unaryClock`: the clock word of
+  `c * 2 ^ Nat.size (T n)` true bits within time and space `O(T n)`.
 * `Cslib.Complexity.TimeConstructible.exists_prepare_unaryClock`: a unary clock of
   `c * 2 ^ Nat.size (T n)` cells within `O(T n)` steps.
 -/
@@ -125,18 +127,14 @@ namespace Cslib.Complexity
 
 open Turing Turing.MultiTapeTM
 
-/-- **A unary clock of linear length.** For a time-constructible `T` and a constant `c`, one
-deterministic machine with finitely many states writes `c * 2 ^ Nat.size (T n)` true cells on its
-last work tape within `C * T n + C` steps, on every input of length `n`. It halts with every other
-work tape blank, all heads at their starting cells and nothing emitted. The clock has between
-`c * (T n + 1)` and `c * (2 * T n + 1)` cells (`Nat.lt_size_self`, `Nat.two_pow_size_le`). -/
-theorem TimeConstructible.exists_prepare_unaryClock {T : ℕ → ℕ} (hT : TimeConstructible T)
+/-- **A unary clock within linear time.** For a time-constructible `T` and a constant `c`, the word
+of `c * 2 ^ Nat.size (T n)` true bits is computable tidily within time and space `O(T n)` on inputs
+of length `n`. It has between `c * (T n + 1)` and `c * (2 * T n + 1)` bits (`Nat.lt_size_self`,
+`Nat.two_pow_size_le`). -/
+theorem TimeConstructible.computableTidilyInO_unaryClock {T : ℕ → ℕ} (hT : TimeConstructible T)
     (c : ℕ) :
-    ∃ (r : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeTM (r + 1) Bool State)
-      (C : ℕ), ∀ input,
-      machine.runFrom (machine.initCfg input) (C * T input.length + C) =
-        wordsCfg input none (Function.update (fun _ => []) (Fin.last r)
-          (List.replicate (c * 2 ^ Nat.size (T input.length)) true)) [] := by
+    ComputableTidilyInO (fun x : List Bool => List.replicate (c * 2 ^ Nat.size (T x.length)) true)
+      encBits encBits (fun x => T x.length) fun x => T x.length := by
   have hbits : ComputableTidilyInO (fun x : List Bool => encNat (T x.length)) encBits encBits
       (fun x => T x.length) fun x => T x.length :=
     hT.computableInO.tidy.of_enc_eq fun _ => rfl
@@ -155,8 +153,21 @@ theorem TimeConstructible.exists_prepare_unaryClock {T : ℕ → ℕ} (hT : Time
         2 * (T x.length + 1) := by ring
     rw [e]
     omega
-  obtain ⟨c₁, ⟨r, State, hfinite, machine, hmachine⟩, -⟩ := hclock.mono (2 * c + 2)
-    (T' := fun x => T x.length) (S' := fun x => T x.length) hlinear hlinear
+  exact hclock.mono (2 * c + 2) hlinear hlinear
+
+/-- **A unary clock of linear length.** For a time-constructible `T` and a constant `c`, one
+deterministic machine with finitely many states writes `c * 2 ^ Nat.size (T n)` true cells on its
+last work tape within `C * T n + C` steps, on every input of length `n`. It halts with every other
+work tape blank, all heads at their starting cells and nothing emitted. The clock has between
+`c * (T n + 1)` and `c * (2 * T n + 1)` cells (`Nat.lt_size_self`, `Nat.two_pow_size_le`). -/
+theorem TimeConstructible.exists_prepare_unaryClock {T : ℕ → ℕ} (hT : TimeConstructible T)
+    (c : ℕ) :
+    ∃ (r : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeTM (r + 1) Bool State)
+      (C : ℕ), ∀ input,
+      machine.runFrom (machine.initCfg input) (C * T input.length + C) =
+        wordsCfg input none (Function.update (fun _ => []) (Fin.last r)
+          (List.replicate (c * 2 ^ Nat.size (T input.length)) true)) [] := by
+  obtain ⟨c₁, ⟨r, State, hfinite, machine, hmachine⟩, -⟩ := hT.computableTidilyInO_unaryClock c
   refine ⟨r, State ⊕ RewindWorkState, inferInstance, machine.outputToWord, c₁ + 2 * c + 2,
     fun input => ?_⟩
   have hbound : c₁ * (T input.length + 1) +

@@ -1658,8 +1658,11 @@ public import Complexity.Computability.Complexity.Classes.Time.AcceptCount
 public import Complexity.Computability.Complexity.Classes.Time.BoundedExists
 public import Complexity.Computability.Complexity.Classes.Time.Polynomial
 public import Complexity.Computability.Complexity.Classes.Time.SampleVerify
+public import Complexity.Computability.Complexity.Classes.Time.SigmaTwo
 public import Complexity.Computability.Complexity.Classes.Time.Verifier
 public import Complexity.Computability.Complexity.Classes.Time.WordRAM
+public import Complexity.Computability.Complexity.Classes.TimeSpace.Basic
+public import Complexity.Computability.Complexity.Classes.TimeSpace.Slowdown
 public import Complexity.Computability.Complexity.Classes.TimeSpace.Williams
 public import Complexity.Computability.Complexity.Classes.Toda
 public import Complexity.Computability.Complexity.Classes.Toda.Counting
@@ -2166,6 +2169,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.LinearClock
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ListHead
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.NatPolynomial
