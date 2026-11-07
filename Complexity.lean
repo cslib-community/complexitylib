@@ -43,6 +43,7 @@ public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
 public import Complexity.Algorithms.Lean.Query.Submodular.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.ValueQuery
+public import Complexity.Algorithms.Lean.SetCover.Greedy
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Basic
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Correctness
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
@@ -1400,8 +1401,11 @@ public import Complexity.Computability.Complexity.Classes.Alternation.TQBF
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Collapse
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Games
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Games.Repetition
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.GraphNonIsomorphism
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.PH
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound
 public import Complexity.Computability.Complexity.Classes.AverageCase.Distributional
 public import Complexity.Computability.Complexity.Classes.AverageCase.Ensemble
@@ -1496,6 +1500,9 @@ public import Complexity.Computability.Complexity.Classes.IP.TQBF.Protocol
 public import Complexity.Computability.Complexity.Classes.IP.TQBF.Tokens
 public import Complexity.Computability.Complexity.Classes.IP.TQBF.Verifier
 public import Complexity.Computability.Complexity.Classes.IP.TQBF.Words
+public import Complexity.Computability.Complexity.Classes.Immune
+public import Complexity.Computability.Complexity.Classes.Immune.Complete
+public import Complexity.Computability.Complexity.Classes.Immune.Construction
 public import Complexity.Computability.Complexity.Classes.Inclusions
 public import Complexity.Computability.Complexity.Classes.Ladner
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
@@ -1755,6 +1762,7 @@ public import Complexity.Computability.Complexity.FineGrained.PPSZ.Search
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Unique
 public import Complexity.Computability.Complexity.FineGrained.PPZ
 public import Complexity.Computability.Complexity.FineGrained.PPZ.LazyOrder
+public import Complexity.Computability.Complexity.FineGrained.Padding
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
@@ -1778,6 +1786,8 @@ public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.Definabi
 public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.FixedPoint
 public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.Step
 public import Complexity.Computability.Complexity.Parameterized
+public import Complexity.Computability.Complexity.Parameterized.Clique
+public import Complexity.Computability.Complexity.Parameterized.ColorCoding
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
@@ -1822,6 +1832,7 @@ public import Complexity.Computability.Complexity.Problems.IndependentSet
 public import Complexity.Computability.Complexity.Problems.IndependentSet.Sparse
 public import Complexity.Computability.Complexity.Problems.IntegerProgramming
 public import Complexity.Computability.Complexity.Problems.Knapsack
+public import Complexity.Computability.Complexity.Problems.LongPath
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness
 public import Complexity.Computability.Complexity.Problems.NAEThreeSAT
@@ -4359,8 +4370,8 @@ public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 public import Complexity.Languages.Probabilistic.Vector
 public import Complexity.Logics.FirstOrder.Basic
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
+public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
-public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.LinearOrder
 public import Complexity.Logics.FirstOrder.Encoding
 public import Complexity.Logics.FirstOrder.Encoding.Layout
 public import Complexity.Logics.FirstOrder.Encoding.Sum

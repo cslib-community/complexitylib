@@ -601,8 +601,16 @@ index links to canonical definitions rather than keeping a second set.
   P = NP.
 - **Low and high hierarchies in NP** (Schöning): sparse NP sets lie in `Low₂` (Ko and Schöning), and
   so does graph isomorphism, via graph non-isomorphism in AM.
-- **Immunity:** immune and bi-immune sets, P-bi-immune sets in EXP (Balcázar and Schöning), and
-  almost-everywhere hardness.
+- **Immunity** ([#2899](https://github.com/cslib-community/complexitylib/issues/2899)): after
+  `IsImmune`/`IsBiImmune`, a `P`-bi-immune set in `E` (`Classes/Immune/Construction.lean`) and
+  Berman's theorem that `≤ᵖₘ`-complete sets for `E`/`EXP` are not `P`-immune
+  (`Classes/Immune/Complete.lean`): a constructed `≤ᵖₘ`-complete problem for `E` and `EXP` (such as
+  bounded halting), so that Berman's hypothesis has a library witness; a SAT-free home for the
+  machine enumeration of `Ladner/Basic.lean` shared by Ladner and the immunity modules;
+  `DTIME(t)`-bi-immune sets in larger time classes for general constructible `t`, the remaining
+  Balcázar–Schöning results, complexity cores (Lynch; Orponen and Schöning) and their sizes for
+  hard sets (Juedes and Lutz), almost-everywhere hardness, and measure strengthenings (almost every
+  set in `E` is `P`-bi-immune, Mayordomo).
 
 ### Average-case complexity
 
@@ -642,8 +650,10 @@ index links to canonical definitions rather than keeping a second set.
 
 - **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- Private-to-public-coin transformations, `AM[k] = AM`, interactive-machine characterizations
-  of Arthur–Merlin classes, and statistical and perfect zero knowledge.
+- Private-to-public-coin transformations (Goldwasser–Sipser `IP[k] ⊆ AM[k + 2]`), the
+  Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that depend
+  on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
+  statistical and perfect zero knowledge.
 
 ### Descriptive complexity and first-order reductions
 
@@ -700,6 +710,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
+- **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
+  colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
+  colorings (a fixed `k`-set is colorful with probability `K.descFactorial k / K ^ k ≥ e ^ (-k)`)
+  and the one-sided-error randomized fpt algorithm for `LongPath`; derandomization by perfect hash
+  families; W[1] and the W[1]-hardness of `Clique`.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
@@ -972,6 +987,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
   cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
   concrete realizations.
+- **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)): beyond the greedy weighted set cover and its
+  `H d` bound in `Algorithms/Lean/SetCover`, the maximal-matching vertex-cover and double-tree
+  metric-TSP 2-approximations, machine-level polynomial-time certificates for these algorithms,
+  and stronger guarantees such as Christofides' `3/2` for metric TSP. LP-based and primal–dual
+  analyses of the same problems belong to the primal–dual approximation direction under
+  Optimization and duality.
 
 ### Online algorithms and competitive analysis
 
