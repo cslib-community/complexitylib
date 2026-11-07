@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
-public import Complexity.Computability.PolyTime.CSP.Gadget
+public import Complexity.Computability.PolyTime.CSP.Gadget.Size
 public import Complexity.Logics.Polymorphism.BooleanClone
 
 /-!
@@ -28,6 +28,9 @@ Empty/nullary language relations are permitted; input variable labels use binary
 
 * `Cslib.Complexity.CSPSAT.npComplete_of_not_hasSchaeferPolymorphism`: unconditional native
   NP-completeness outside the six cases, with no solver or classification hypothesis.
+* `Cslib.Complexity.CSPSAT.exists_linear_size_reduction_from_threeSAT`: a native reduction whose
+  distinct output variables plus constraints are bounded by a fixed constant times the number
+  of input clauses, hence also by that constant times input variables plus clauses.
 -/
 
 public section
@@ -38,13 +41,15 @@ open Cslib.Logic Cslib.Logic.PL Turing.MultiTapeTM
 
 variable {Rel : Type}
 
-/-- **The hard branch of Boolean Schaefer's dichotomy**, for arbitrary fixed relation arities.
-The language is fixed, so noncomputable finite gadget selection makes no uniform preprocessing
-claim. The instance reduction has a native polynomial-time certificate under binary labels. -/
-theorem npComplete_of_not_hasSchaeferPolymorphism [Finite Rel]
+/-- Fixed-gadget Schaefer hardness has linear combinatorial size. The constant depends on the
+fixed language and gadgets, not the input or its binary variable names. -/
+theorem exists_linear_size_reduction_from_selfDualThreeSAT [Finite Rel]
     (encRel : Rel ↪ List Bool) (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (h : ¬ CSP.HasSchaeferPolymorphism arity sem) :
-    NPComplete (encCSP encRel encNat) (CSPSAT arity sem) := by
+    ∃ (f : CSP SelfDualThreeSAT.SignPattern ℕ → CSP Rel ℕ) (C : ℕ),
+      ComputableInPolyTime f SelfDualThreeSAT.enc (encCSP encRel encNat) ∧
+      (∀ F, F ∈ SelfDualThreeSAT ↔ f F ∈ CSPSAT arity sem) ∧
+      (∀ F, (f F).numVars + (f F).length ≤ C * F.length) := by
   classical
   have hrel : ∃ r : Rel, True := by
     by_contra he
@@ -67,15 +72,50 @@ theorem npComplete_of_not_hasSchaeferPolymorphism [Finite Rel]
   let reject := CSP.malformedReject arity r
   have hr : ¬ (CSP.WellFormed arity reject ∧ reject.Satisfiable sem) :=
     fun hf => CSP.not_wellFormed_malformedReject arity r hf.1
-  have red : PolyTimeReducible SelfDualThreeSAT.enc (encCSP encRel encNat)
-      SelfDualThreeSAT (CSPSAT arity sem) := by
-    refine ⟨CSP.replaceGadgetsGuarded SelfDualThreeSAT.arity B
-      (fun s => (gadgets s).template) reject, ?_, ?_⟩
-    · exact CSP.computableInPolyTime_replaceGadgetsGuarded
-        SelfDualThreeSAT.encSign encRel SelfDualThreeSAT.arity B _ reject
-    · intro F
-      exact (CSP.wellFormed_satisfiable_replaceGadgetsGuarded_iff gadgets B hB
-        reject hr F).symm
-  exact ⟨mem_NP encRel arity sem, SelfDualThreeSAT.npComplete.2.trans red⟩
+  obtain ⟨C, hC⟩ := CSP.exists_linear_bound_replaceGadgetsGuarded
+    SelfDualThreeSAT.arity B (fun s => (gadgets s).template) reject
+  refine ⟨CSP.replaceGadgetsGuarded SelfDualThreeSAT.arity B
+    (fun s => (gadgets s).template) reject, C, ?_, ?_, hC⟩
+  · exact CSP.computableInPolyTime_replaceGadgetsGuarded
+      SelfDualThreeSAT.encSign encRel SelfDualThreeSAT.arity B _ reject
+  · intro F
+    exact (CSP.wellFormed_satisfiable_replaceGadgetsGuarded_iff gadgets B hB
+      reject hr F).symm
+
+/-- **Linear-size 3SAT hardness in the hard Schaefer cases.** The same witness is a native
+polynomial-time reduction under binary encodings and satisfies `n' + m' ≤ C * m`, stronger
+than `n' + m' ≤ C * (n + m)`. Counts mean distinct occurring variables and clauses/constraints,
+not encoded bit length. The bound and correctness hold for every raw CNF input. -/
+theorem exists_linear_size_reduction_from_threeSAT [Finite Rel]
+    (encRel : Rel ↪ List Bool) (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬ CSP.HasSchaeferPolymorphism arity sem) :
+    ∃ (f : CNF ℕ → CSP Rel ℕ) (C : ℕ),
+      ComputableInPolyTime f encCNF (encCSP encRel encNat) ∧
+      (∀ φ, φ ∈ ThreeSAT ↔ f φ ∈ CSPSAT arity sem) ∧
+      (∀ φ, (f φ).numVars + (f φ).length ≤ C * φ.length) := by
+  obtain ⟨g, C, hg, hm, hs⟩ :=
+    exists_linear_size_reduction_from_selfDualThreeSAT encRel arity sem h
+  refine ⟨fun φ => g (SelfDualThreeSAT.ofExactThreeSAT (toExactThreeSAT φ)), C,
+    hg.comp (SelfDualThreeSAT.computableInPolyTime_ofExactThreeSAT.comp
+      computableInPolyTime_toExactThreeSAT), ?_, ?_⟩
+  · intro φ
+    rw [← hm, SelfDualThreeSAT.ofExactThreeSAT_mem_iff,
+      mem_ExactThreeSAT_toExactThreeSAT_iff]
+  · intro φ
+    calc
+      _ ≤ C * (SelfDualThreeSAT.ofExactThreeSAT (toExactThreeSAT φ)).length := hs _
+      _ ≤ C * (toExactThreeSAT φ).length :=
+        Nat.mul_le_mul_left C (SelfDualThreeSAT.length_ofExactThreeSAT_le _)
+      _ = C * φ.length := by simp [toExactThreeSAT]
+
+/-- **The hard branch of Boolean Schaefer's dichotomy**, for arbitrary fixed relation arities.
+The language is fixed, so noncomputable finite gadget selection makes no uniform preprocessing
+claim. The actual native reduction from 3SAT has the linear combinatorial bound above. -/
+theorem npComplete_of_not_hasSchaeferPolymorphism [Finite Rel]
+    (encRel : Rel ↪ List Bool) (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬ CSP.HasSchaeferPolymorphism arity sem) :
+    NPComplete (encCSP encRel encNat) (CSPSAT arity sem) := by
+  obtain ⟨f, _, hp, hm, _⟩ := exists_linear_size_reduction_from_threeSAT encRel arity sem h
+  exact ⟨mem_NP encRel arity sem, ThreeSAT_npHard.trans ⟨f, hp, hm⟩⟩
 
 end Cslib.Complexity.CSPSAT
