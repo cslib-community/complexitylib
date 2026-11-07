@@ -433,7 +433,8 @@ noncomputable def tightLaws (k : ℕ) : List (PMF ℝ≥0) := [PMF.pure 1, longS
 theorem tightLaws_eq (k : ℕ) : tightLaws k = [PMF.pure 1, longShot k] := by
   unfold tightLaws; rfl
 
-private theorem tsum_pure_mul {α : Type*} (a : α) (f : α → ℝ≥0∞) :
+/-- The expectation under a point mass is the value at the point. -/
+theorem tsum_pure_mul {α : Type*} (a : α) (f : α → ℝ≥0∞) :
     ∑' x, PMF.pure a x * f x = f a := by
   rw [tsum_eq_single a fun b hb => by simp [PMF.pure_apply, hb]]
   simp

@@ -81,16 +81,13 @@ example : (jointLaw [PMF.pure (1 : ℝ≥0)]).toOuterMeasure {xs | listMax xs < 
     1 / 2 ≤ (jointLaw [PMF.pure (1 : ℝ≥0)]).toOuterMeasure {xs | listMax xs ≤ 1} := by
   simp [jointLaw_pure, PMF.toOuterMeasure_pure_apply, listMax]
 
-theorem toOuterMeasure_eq_tsum {α : Type*} (p : PMF α) (s : Set α) [DecidablePred (· ∈ s)] :
+/-- `PMF.toOuterMeasure_apply` with the indicator written as a factor, the form taken by
+`tsum_jointLaw_cons_mul`. -/
+private theorem toOuterMeasure_eq_tsum {α : Type*} (p : PMF α) (s : Set α) [DecidablePred (· ∈ s)] :
     p.toOuterMeasure s = ∑' x, p x * if x ∈ s then 1 else 0 := by
   rw [PMF.toOuterMeasure_apply]
   refine tsum_congr fun x => ?_
   by_cases hx : x ∈ s <;> simp [Set.indicator, hx]
-
-theorem tsum_pure_mul {α : Type*} (a : α) (f : α → ℝ≥0∞) :
-    ∑' x, PMF.pure a x * f x = f a := by
-  rw [tsum_eq_single a fun b hb => by simp [PMF.pure_apply, hb]]
-  simp
 
 /-- On the tight instance with `k = 1`, `max` is never below `1` and is at most `1` with
 probability `1/2`, so `1` is a median of `max` with an atom. -/
