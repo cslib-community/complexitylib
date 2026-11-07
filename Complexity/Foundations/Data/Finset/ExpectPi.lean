@@ -15,13 +15,15 @@ import Mathlib.Data.Fintype.BigOperators
 /-!
 # Products of uniform averages
 
-A product of uniform averages is the uniform average of the products over the whole function
-space (`Fintype.prod_expect`), the counterpart for `𝔼` of `Fintype.prod_sum`: the coordinates of a
-uniformly random function `κ → α` are independent and uniform.
+A product of uniform averages is the uniform average of the products over the whole (dependent)
+function space (`Fintype.prod_expect`), the counterpart for `𝔼` of `Fintype.prod_sum`: the
+coordinates of a uniformly random function `∀ j, α j` are independent and uniform. Its special
+case for a function of a single coordinate is `Finset.expect_pi_eval`
+(`Complexity.Foundations.Probability.CoordinateExpectation`).
 
 ## Main results
 
-- `Fintype.prod_expect`: `∏ j, 𝔼 a, g j a = 𝔼 y : κ → α, ∏ j, g j (y j)`.
+- `Fintype.prod_expect`: `∏ j, 𝔼 a, g j a = 𝔼 y : ∀ j, α j, ∏ j, g j (y j)`.
 -/
 
 public section
@@ -32,13 +34,13 @@ open scoped BigOperators
 namespace Fintype
 
 /-- **Independence of the coordinates of a uniform function**: a product of uniform averages is
-the uniform average of the products over the function space, the counterpart for `𝔼` of
+the uniform average of the products over the dependent function space, the counterpart for `𝔼` of
 `Fintype.prod_sum`. -/
-theorem prod_expect {κ α 𝕜 : Type*} [Fintype κ] [DecidableEq κ] [Fintype α] [Semifield 𝕜]
-    [CharZero 𝕜] (g : κ → α → 𝕜) :
-    ∏ j, 𝔼 a, g j a = 𝔼 y : κ → α, ∏ j, g j (y j) := by
-  simp only [Finset.expect_eq_sum_div_card, Finset.card_univ, Fintype.card_fun]
-  rw [Finset.prod_div_distrib, ← Fintype.prod_sum (fun j a => g j a)]
+theorem prod_expect {κ 𝕜 : Type*} {α : κ → Type*} [Fintype κ] [DecidableEq κ]
+    [∀ j, Fintype (α j)] [Semifield 𝕜] [CharZero 𝕜] (g : ∀ j, α j → 𝕜) :
+    ∏ j, 𝔼 a, g j a = 𝔼 y : (∀ j, α j), ∏ j, g j (y j) := by
+  simp only [Finset.expect_eq_sum_div_card, Finset.card_univ, Fintype.card_pi]
+  rw [Finset.prod_div_distrib, ← Fintype.prod_sum g]
   simp
 
 end Fintype

@@ -30,7 +30,8 @@ asymptotic statements, that then `2 ^ w = (n / ln n) (1 + o(1))` for `n = s w` w
 `1 / 2 - O(log n / n)` [O'Donnell, Proposition 4.12][ODonnell2014], are not formalized. The
 influences of Tribes [O'Donnell, Proposition 4.13][ODonnell2014] are computed exactly, and bounded
 by explicit multiples of `log n / n`, in `Complexity.Foundations.BooleanAnalysis.TribesInfluence`,
-from the independence of the tribes (`Cslib.BitString.expect_prod_tribe`).
+from the independence of the tribes (`Cslib.BitString.expect_prod_tribe`); the asymptotic form
+`(ln n / n) (1 ± o(1))` of that proposition is not formalized.
 
 A coalition `Q` leaves Tribes undetermined only if some tribe meets `Q` and is all `true` outside
 `Q`. A union bound over these tribes bounds the influence of `Q` by `2 ^ (|Q| - w)`
