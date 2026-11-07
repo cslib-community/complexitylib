@@ -1039,6 +1039,7 @@ public import Complexity.Computability.Circuit.Boolean.Substitution
 public import Complexity.Computability.Circuit.Boolean.SymAnd
 public import Complexity.Computability.Circuit.Boolean.SymAnd.ACC0
 public import Complexity.Computability.Circuit.Boolean.SymAnd.Collapse
+public import Complexity.Computability.Circuit.Boolean.SymAnd.Mobius
 public import Complexity.Computability.Circuit.Boolean.SymAnd.Restrict
 public import Complexity.Computability.Circuit.Boolean.Synthesis
 public import Complexity.Computability.Circuit.Boolean.TC0
