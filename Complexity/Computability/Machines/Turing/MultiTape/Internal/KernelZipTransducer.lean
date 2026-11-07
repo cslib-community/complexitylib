@@ -359,7 +359,7 @@ private lemma step_endFrame :
   rw [step_cfgAt]
   have hp : min (2 * u.length + 1) ((frame u ++ v).length + 1) = 2 * u.length + 1 := by omega
   have hx : inputAt (frame u ++ v) (2 * u.length + 1) = some false := by
-    simpa [inputAt] using (getElem?_frame_append_boundary u v 0).1
+    simpa [inputAt] using getElem?_frame_append_length u v
   simp only [hp, hx, tr, moveInputPosNat_one (by omega : 2 * u.length + 1 ≤ (frame u ++ v).length),
     SignType.coe_neg_one, List.append_nil, Option.toList_none]
   exact cfgAt_congr (by omega) (by omega)
@@ -475,7 +475,7 @@ private lemma seg_zip (q : Q) {r : ℕ} (hr : r ≤ max u.length v.length) (o : 
       rw [← getElem?_min_length]
       simpa [inputAt,
         (by omega : 2 * u.length + 2 + min r v.length - 1 = 2 * u.length + 1 + min r v.length)]
-        using (getElem?_frame_append_boundary u v (min r v.length)).2
+        using getElem?_frame_append_boundary u v (min r v.length)
     have hy : tapeOfList u ((min r u.length : ℕ) : ℤ) = (u.drop r).head? := by
       rw [tapeOfList_ofNat, getElem?_min_length]
     set x := (v.drop r).head? with hxdef

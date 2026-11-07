@@ -8,14 +8,15 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Game.CloseTo
-import Complexity.Probability.PMF.Bind
+import Complexity.Probability.PMF.Event
 
 /-!
 # Mixtures that agree outside a bad event
 
 Two randomized continuations that agree on supported inputs outside a bad event induce close
 mixtures, with error equal to the actual probability of that event. Neither type must be finite.
-The proof uses the existing Boolean-game mixture inequality and all-event variational bridge.
+The proof specializes the variable-error mixture bound `CloseTo.bind_right_tsum` to the indicator
+of `bad`.
 
 ## Main results
 
@@ -29,7 +30,7 @@ public section
 
 namespace Cslib.Interactive
 
-open Crypto Probability
+open Probability
 open scoped ENNReal
 
 /-- Mixtures of kernels that agree on supported inputs outside `bad` are close within the
@@ -38,36 +39,15 @@ theorem CloseTo.bind_of_eq_on {α β : Type} (μ : PMF α) (f g : α → PMF β)
     (h : ∀ a ∈ μ.support, a ∉ bad → f a = g a) :
     CloseTo (μ.bind f) (μ.bind g) (μ.toOuterMeasure bad) := by
   classical
-  let g' : α → PMF β := fun a => if a ∈ μ.support then g a else f a
-  have hg : μ.bind g' = μ.bind g := Probability.PMF.bind_congr_on_support μ _ _
-    (fun a ha => by simp only [g', ha, ↓reduceIte])
-  rw [← hg]
-  apply Game.closeTo_of_coe_advantage_decide_le
-  intro event
-  let test : β → Bool := fun b => decide (b ∈ event)
-  let err : α → Game := fun a => PMF.pure (decide (a ∈ bad))
-  have he (a : α) :
-      ((f a).map test) true ≤ ((g' a).map test) true + err a true ∧
-      ((g' a).map test) true ≤ ((f a).map test) true + err a true := by
-    by_cases ha : a ∈ bad
-    · simp only [err, ha, decide_true, PMF.pure_apply_self]
-      exact ⟨(PMF.coe_le_one _ _).trans le_add_self,
-        (PMF.coe_le_one _ _).trans le_add_self⟩
-    · have heq : f a = g' a := by
-        by_cases hs : a ∈ μ.support
-        · simpa only [g', hs, ↓reduceIte] using h a hs ha
-        · simp only [g', hs, ↓reduceIte]
-      simp [heq, err, ha]
-  have hadv := Game.advantage_bind_le_succProbability_bind μ
-    (fun a => (f a).map test) (fun a => (g' a).map test) err he
-  have herr : (μ.bind err) true = μ.toOuterMeasure bad := by
-    change (μ.map (fun a => decide (a ∈ bad))) true = _
-    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
-    congr 1
-    ext a
-    simp
-  have hc := ENNReal.coe_le_coe.mpr hadv
-  rw [Game.succProbability, ENNReal.coe_toNNReal (PMF.apply_ne_top _ _), herr] at hc
-  simpa only [PMF.map_bind] using hc
+  refine (CloseTo.bind_right_tsum (err := bad.indicator 1) μ fun a ha => ?_).mono ?_
+  · by_cases hbad : a ∈ bad
+    · intro event
+      simp only [Set.indicator_of_mem hbad, Pi.one_apply]
+      exact (PMF.toOuterMeasure_le_one (f a) event).trans le_add_self
+    · rw [h a ha hbad, Set.indicator_of_notMem hbad]
+      exact CloseTo.refl _
+  · rw [PMF.toOuterMeasure_apply]
+    refine le_of_eq (tsum_congr fun a => ?_)
+    by_cases hbad : a ∈ bad <;> simp [hbad]
 
 end Cslib.Interactive

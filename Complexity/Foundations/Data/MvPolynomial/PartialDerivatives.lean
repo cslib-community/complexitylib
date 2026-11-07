@@ -77,6 +77,16 @@ noncomputable def iteratedPDeriv : {k : ℕ} → (Fin k → σ) → Module.End R
 theorem iteratedPDeriv_succ_apply {k : ℕ} (α : Fin (k + 1) → σ) (p : MvPolynomial σ R) :
     iteratedPDeriv α p = pderiv (α 0) (iteratedPDeriv (Fin.tail α) p) := rfl
 
+/-- Injective variable renaming commutes with iterated partial differentiation. -/
+theorem iteratedPDeriv_rename {τ : Type*} {f : σ → τ} (hf : Function.Injective f) {k : ℕ}
+    (α : Fin k → σ) (p : MvPolynomial σ R) :
+    iteratedPDeriv (f ∘ α) (rename f p) = rename f (iteratedPDeriv α p) := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [iteratedPDeriv_succ_apply, iteratedPDeriv_succ_apply]
+    exact (congrArg (pderiv (f (α 0))) (ih (Fin.tail α))).trans (pderiv_rename hf _ _)
+
 section
 
 variable {K : Type*} [Field K]
@@ -130,16 +140,6 @@ private theorem iteratedPDeriv_prod_mem_span {d : ℕ} (ℓ : Fin d → MvPolyno
     refine ⟨insert i T', ?_, by dsimp only; rw [Finset.sdiff_insert]⟩
     rw [Finset.mem_coe, Finset.mem_powersetCard, Finset.card_insert_of_notMem hi.2, hT'.2]
     exact ⟨Finset.subset_univ _, by omega⟩
-
-/-- Injective variable renaming commutes with iterated partial differentiation. -/
-theorem iteratedPDeriv_rename {τ : Type v} {f : σ → τ} (hf : Function.Injective f) {k : ℕ}
-    (α : Fin k → σ) (p : MvPolynomial σ K) :
-    iteratedPDeriv (f ∘ α) (rename f p) = rename f (iteratedPDeriv α p) := by
-  induction k with
-  | zero => rfl
-  | succ k ih =>
-    rw [iteratedPDeriv_succ_apply, iteratedPDeriv_succ_apply]
-    exact (congrArg (pderiv (f (α 0))) (ih (Fin.tail α))).trans (pderiv_rename hf _ _)
 
 end
 

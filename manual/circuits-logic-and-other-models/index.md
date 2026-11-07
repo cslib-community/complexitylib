@@ -9,7 +9,7 @@ The curated [Model map](../model-map.md) contains **92 entries**, separating cha
 | Document | Main question |
 |---|---|
 | [Circuits and formulas](circuits-and-formulas.md) | What is a gate, what is free, and how do the Boolean bases and nonuniform classes differ? |
-| [Algebraic and quantum models](algebraic-and-quantum.md) | Which algebraic equalities, partial operations, encodings and quantum resources are formalized? |
+| [Algebraic and quantum models](algebraic-and-quantum.md) | Which algebraic equalities, partial operations, encodings, the matrix multiplication exponent and quantum resources are formalized? |
 | [Networks and finite dynamics](networks-and-iteration.md) | How do graph separators, tensor contractions, nondeterministic paths and function iteration connect? |
 | [Query and communication complexity](query-and-communication.md) | Which information-access costs are charged, and what lower-bound and simulation theorems use them? |
 | [Finite-model logic](finite-model-logic.md) | How do formulas, interpretations, encodings and native complexity classes meet? |

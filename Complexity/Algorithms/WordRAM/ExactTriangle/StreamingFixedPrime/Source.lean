@@ -166,7 +166,7 @@ theorem exec_source {w m n g p A : ℕ} (values : List ℤ)
   obtain ⟨y, hy, yf, ys, yiff, yw, frame, _⟩ := exec_traverse values hlen hD hg hp hN hv hW
     reference x reference_out cursor ((xr _).trans bz)
     (by rw [xr, xr]; exact bh) hmem heap
-  have domination := time_le_old
+  have domination := streamingCharge_le_timeBound
     (lt_of_lt_of_le (by omega : 0 < D m) hDn) values canonical reference
       (Nat.ne_of_gt hp0) reference_out
   refine ⟨reference, reference_out, y, (hx.seq hy).mono ?_, yf, ys, yiff, yw, ?_⟩

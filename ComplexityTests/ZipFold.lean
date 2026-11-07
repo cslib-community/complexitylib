@@ -24,6 +24,11 @@ example : zipFold (fun (_ : Unit) (a : ℕ) (b : Option ℕ) => some (a + b.getD
 example : zipFold (fun (_ : Unit) (a : ℕ) (b : Option ℕ) => b.map (a + ·)) ()
     [1, 2, 3] [10] = [11] := by decide
 
+-- A walk is `List.zipWithLeft` followed by `List.reduceOption`.
+example (f : Unit → ℕ → Option ℕ → Option ℕ) (l r : List ℕ) :
+    zipFold f () l r = (l.zipWithLeft (f ()) r).reduceOption :=
+  zipFold_eq_zipWithLeft f () l r
+
 -- A walk that keeps every element reads the second list by index.
 example : zipFold (fun (_ : Unit) (a : ℕ) (b : Option ℕ) => some (a + b.getD 0)) () [1, 2] [10] =
     [1, 2].mapIdx fun i a => a + ([10][i]?).getD 0 :=

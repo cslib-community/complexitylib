@@ -11,12 +11,13 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Flat
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.NumericBounds
 
 /-!
-# Original-size width and prefix bounds for candidate recovery
+# All-prefix word and support bounds for candidate recovery
 
-The complete initialized producer/product/verifier has one positive logarithmic physical-width
-threshold for polynomial original scalars and weights. Its words and memory support at every
-prefix have a polynomial bound independent of any larger physical width. These are consequences
-of the actual minimum-width halting run and existing native width transport.
+Every reachable prefix of the initialized producer/product/verifier at any admitted wider width
+satisfies the original-input word and memory-support bound `wordBound`, derived from the
+minimum-width halting run `runs_input` and width-independent prefix transport. The numerical
+logarithmic width and polynomial word estimates (`admissionWidth_le_log`, `wordBound_le_pow`) live
+in `RecordWitness.NumericBounds`.
 -/
 
 public section

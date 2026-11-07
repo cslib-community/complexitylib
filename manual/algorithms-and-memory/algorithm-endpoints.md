@@ -19,7 +19,7 @@ Quickselect receives the index followed by the array; an invalid index has an ex
 
 `dijkstra_logLinear` has `O((m+1)*(floorlog₂(n)+1))` instructions; `dijkstra_fibonacci` has `O(m+n*(floorlog₂(n)+1))`. The graph is already installed in the machine's initial memory. The first bound can omit a standalone scan over isolated vertices because untouched zero memory represents infinity. Treating graph construction or a mandatory full output traversal as charged work would be a different end-to-end contract.
 
-[abstracts/ComplexityAbstracts/FibonacciHeapAbstract.lean](../../abstracts/ComplexityAbstracts/FibonacciHeapAbstract.lean) specifies bounded-capacity handles, bounded key/value ranges, fresh-handle insertion and arbitrary minimum ties. Initializer/operation code is chosen before capacity/key/value/base/width parameters. The amortized total is constant per ordinary operation plus a sum of logarithms of current size for extract-min. Fresh zeroed memory permits constant-time initialization; the reusable-memory version explicitly clears the region and costs linear time. Both theorems execute demonically admissible adaptive clients (`Client`, whose continuations observe returned handles and extracted entries); external argument preparation, result decoding and pure host continuation choices between `p_op` calls are uncharged.
+[abstracts/ComplexityAbstracts/FibonacciHeapAbstract.lean](../../abstracts/ComplexityAbstracts/FibonacciHeapAbstract.lean) specifies bounded-capacity handles, bounded key/value ranges, fresh-handle insertion and arbitrary minimum ties. Initializer/operation code is chosen before capacity/key/value/base/width parameters. The amortized total is constant per ordinary operation plus a sum of logarithms of current size for extract-min; no per-call worst-case bound is stated, even for queries. The operation set has no non-removing find-min: extract-min is the only operation that locates a minimum entry, and it removes that entry. Fresh zeroed memory permits constant-time initialization; the reusable-memory version explicitly clears the region and costs linear time. Both theorems execute demonically admissible adaptive clients (`Client`, whose continuations observe returned handles and extracted entries); external argument preparation, result decoding and pure host continuation choices between `p_op` calls are uncharged.
 
 
 ### Native binary heap and Dijkstra
@@ -107,11 +107,17 @@ transfer remain open; the selected abstract statements are unchanged.
 
 [abstracts/ComplexityAbstracts/HashTablesAbstract.lean](../../abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `query` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
 
-The initializer and operation programs are independent of runtime word width and base address, but their dependence on capacity/universe differs by theorem. The abstract does not bound static program-list length. Executed steps exclude caller argument preparation/dispatch. Universe restrictions include the chosen exponent-four polynomial regime; load-factor assumptions and exact initialization costs are visible. These distinctions prohibit a blanket claim of fully dynamic adaptive constant-time dictionaries.
+The initializer and operation programs are independent of runtime word width and base address, but their dependence on capacity/universe differs by theorem. The abstract does not bound static program-list length. Executed steps exclude caller argument preparation/dispatch. Universe restrictions include the chosen exponent-four polynomial regime; load-factor assumptions and exact initialization costs are visible. These distinctions prohibit a blanket claim of fully dynamic adaptive constant-time dictionaries. The uniform-probing and cuckoo per-operation constants are derived from the capacity threshold `2^320000`: below it they only cap quantities that grow with capacity (the deterministic probe count for uniform probing, the polynomial-hash degree for cuckoo hashing). Their constant bounds are therefore asymptotic statements met trivially at realizable sizes: a linear scan of the stored keys meets the uniform-probing charge at every capacity below `2^320000` and the cuckoo charges (over `8*10^11` instructions per operation) up to about `10^10` keys.
 
-[abstracts/ComplexityAbstracts/HashFamiliesAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/HashFamiliesAbstract.lean) gives high-independence hashing with an explicit regime switch at capacity `2^320000`. Below it, finite-field polynomial hashing supplies exact k-wise independence; above it, fixed-parameter double tabulation has a high-probability transcript coupling, with an explicit condition under which the error bound becomes nontrivial. Queries per resampling epoch are restricted to at most `k` distinct keys. Programs may depend on `(k, capacity, universe, outputWidth)`; static code size is not bounded.
+[abstracts/ComplexityAbstracts/HashFamiliesAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/HashFamiliesAbstract.lean) gives high-independence hashing with an explicit regime switch at capacity `2^320000`. Below it, finite-field polynomial hashing supplies exact k-wise independence; above it, fixed-parameter double tabulation has a high-probability transcript coupling, with an explicit condition under which the error bound becomes nontrivial. Queries per resampling epoch are restricted to at most `k` distinct keys. Programs may depend on `(k, capacity, universe, outputWidth)`; static code size is not bounded. The stated evaluation bound grows linearly in `k` in both regimes; the abstract does not assert the `k`-independent evaluation time of double tabulation.
 
 Across capacities the stated space is at most `(k+9232)*(capacity+1)` words, evaluation at most `111230*k+6862` instructions, and resampling at most `(5*k+46096)*(capacity+1)`. These constants are theorem bounds, not measured runtime or a practical implementation recommendation. The large-regime construction adapts Thorup's double-tabulation work; its fixed-k error statement is explicitly different from the source's original growing-independence asymptotic formulation [thorup13][thorup13].
+
+### Fixed-capacity succinct dynamic dictionary
+
+[Complexity/DataStructure/Dictionary/WordRAM/Succinct.lean](../../Complexity/DataStructure/Dictionary/WordRAM/Succinct.lean) provides `Succinct.impl` (over the exact-instruction basis `Basis.exact`) and `Succinct.implStandard` (over the standard basis `Basis.standard`). [ComplexityTests/WordRAMSuccinctDictionary.lean](../../ComplexityTests/WordRAMSuccinctDictionary.lean) gives a checked client. [abstracts/ComplexityAbstracts/SuccinctDictionaryAbstract.lean](../../abstracts/ComplexityAbstracts/SuccinctDictionaryAbstract.lean) states the self-contained formal abstract.
+
+The specification `Dynamic.spec U V n_max` ([Complexity/DataStructure/Dictionary/Dynamic/Spec.lean](../../Complexity/DataStructure/Dictionary/Dynamic/Spec.lean)) supports `query u`, `insert u v` (for key `u : Fin U` and value `v < V`), and `delete u` while the active key set `Dictionary.dom s` has size `#(Dictionary.dom s) ≤ n_max`. For `n_max ≤ U`, initialization draws one hash seed, and every operation keeps that seed unchanged. The seed marginal stays exact (`seedSlack = 1`) against the uniform seed distribution. No persistent flag is kept to latch hash or overflow failures across operations. Each bucket's item count and expected extra collision or overflow probes (`probeExcess`) per operation depend only on the current active key set. The physical chain order and the division of a bucket's items between fixed-size full slabs and the shared tail pool under lazy promotion and demotion thresholds depend on operation history. The single memory block `[base, base + Succinct.space U V w n_max)` uses at most `Dynamic.succinctWords 81 213 U V w n_max` words (the information-theoretic baseline `OPT(U, V, n_max)` plus `81 * n_max * ⌈log₂ ⌈log₂ (max n_max 4)⌉⌉` bits, packed into `w`-bit words, plus `213` words) without requiring a polynomial bound on `U`. Initialization runs in `initTime ≤ Succinct.initSteps U n_max + 1 ≤ 31 * n_max + 1092` expected body instructions (`Succinct.initTime_impl_le`), where body instructions count executed instructions inside the subroutine excluding caller argument setup and the final `halt`. At the `Memory.Prog` level ([Complexity/DataStructure/Dictionary/WordRAM/SuccinctHash.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctHash.lean)), `queryWithHashProg_dict_spec`, `insertWithHashProg_dict_spec`, and `deleteWithHashProg_dict_spec` bound per-seed amortized `memoryCost` (the `Memory.Prog` instruction count) by `26 + 8 * probeExcess`, `184 + 8 * probeExcess`, and `270 + 8 * probeExcess` with potential `66 * slotPotential`, where `slotPotential` sums the per-bucket slab-hysteresis potentials. In turn, `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`. At the compiled Word-RAM level ([Complexity/DataStructure/Dictionary/WordRAM/SuccinctDispatch.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctDispatch.lean)), the five generic `Memory.Prog` subroutines (`extractQuotGenProg`, `queryWithHashGenProg`, `insertWithHashGenProg`, `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) do not depend on `(U, V, w, n_max)`. The full program `subroutineCode U V w n_max` depends on `(U, V, w, n_max)` only through the `space` constant in `allocSpan` (the bump-allocator step that advances the frontier register by `space`), the 36-instruction parameter-loading prefix `loadParamsCode`, and the hash code. It does not depend on `base`. Consequently, both the register budget `Succinct.rSuccinct` (`≥ 292`) and the per-operation charge `Succinct.chargeVal = 313 * Succinct.opFactor + 284725` (where `Succinct.opFactor` is the maximum of `1` and the five parameter-free subroutines' `Realizes.factor` instruction-per-memory-step constants) are universal `O(1)` constants independent of `(U, V, w, n_max)`, `base`, and `ops.length`. Theorem `Succinct.seq_expected_amortized` bounds expected total body instructions across any valid oblivious sequence `ops` (fixed before initialization) by `initTime + ops.length * Succinct.chargeVal`. No theorem bounds static code size. The hash (`ReducedKWise`) and bit-packed accessors (`BitPackedArray`) are hand-written `WordRAM.Code` primitives. The deterministic bucket, slab, tail, chain, and Feistel bit-extraction subroutines ([Complexity/DataStructure/Dictionary/WordRAM/SuccinctProg.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctProg.lean) to [Complexity/DataStructure/Dictionary/WordRAM/SuccinctHash.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctHash.lean)) are `Memory.Prog` programs lowered by `realize`. Because `ReducedKWise` has no `Realizes` certificate, the top-level dispatcher ([Complexity/DataStructure/Dictionary/WordRAM/SuccinctDispatch.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctDispatch.lean)) is hand-written `WordRAM.Code`. Before calling `Succinct.seq_expected_amortized`, verify `0 < w`, `n_max ≤ U`, `Fits w U` (`U < 2 ^ w`), `Fits w V` (`V < 2 ^ w`), `Fits w (base + Succinct.space U V w n_max)`, word-bounded initial machine state `x.Bounded w` (all initial registers and memory cells hold `< 2 ^ w`), `x.regs Succinct.frontierReg = base`, zeroed initial memory on `[base, base + Succinct.space U V w n_max)`, and `(Dynamic.spec U V n_max).ValidHistory (Dictionary.empty U) ops` for an oblivious sequence `ops` fixed before initialization.
 
 ## Approximate membership filters
 
@@ -159,7 +165,7 @@ Use `RecordProduct.NumericBounds` and `RecordWitness.NumericBounds` for numerica
 and word estimates. The actual all-prefix execution theorems remain in `RecordProduct.SourceBounds` and
 `RecordWitness.SourceBounds`, each following from its real `runs_input` theorem.
 
-`RecordBoxProduct.program` now uses the physical pointer front
+`RecordBoxProduct.program` uses the physical pointer front
 [`PointerBoxProduct.exec`](../../Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/CallableBox/Pointer/Exec.lean).
 For a separate caller, initialize its five scalar/header words and appended threshold, supply
 raw row-major X/Y pointers and the interleaved query pointer, and prove all three source ends
@@ -175,10 +181,11 @@ physical pointers above the virtual modulus. Returned answers are exact physical
 external sources and memory outside the window survive. Original routing, matrix doubling,
 restoration and both final normalization loops remain. The snapshot remains live until matrix
 adaptation and restoration finish. `RecordBoxProduct.gatherTimeBound_ledger` accounts for the
-actual gather and bridge instructions, and `gatherTimeBound_le_timeBound` preserves the previous
-advertised envelope. This compares certified allowances, not measured execution times; it changes
-neither the reserved window nor the 1.9992/2.99835 headline exponents. The original `RecordProduct`
-and contiguous-input `CallableBoxProduct` retain their own initialized/restoring clients.
+actual gather and bridge instructions, and `gatherTimeBound_le_timeBound` bounds `gatherTimeBound`
+by the conservative `RecordBoxProduct.timeBound` envelope. This compares certified allowances, not
+measured execution times; it changes neither the reserved window nor the 1.9992/2.99835 headline
+exponents. `RecordProduct` and contiguous-input `CallableBoxProduct` provide their own
+initialized/restoring clients.
 
 For a source-level continuation after a real gather, import
 `Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.Exec` and use
@@ -190,9 +197,8 @@ Both raw unsigned and canonical signed matrix inputs use this same charged suffi
 `BoxProduct.exec_frontFromSnapshot` prepares matrices and bands, and `exec_fromSnapshot`
 constructs geometry, evaluates tiles, reconstructs original occurrences and restores input.
 The contiguous `BoxProduct.exec` establishes the snapshot by its actual original copy, then
-uses the same suffix. Pointer-only routing/front/execution modules have been removed; use
-the shared source topics directly. The physical gather and native memory-window frames remain
-proved in `CallableBox.Pointer`; a canonical register view does not establish a memory frame.
+uses the same suffix. The physical gather and native memory-window frames are proved in
+`CallableBox.Pointer`; a canonical register view does not establish a memory frame.
 
 When composing another proved record product with the existing verifier, use
 `RecordWitness.exec_after_product` from `RecordWitness.AfterProduct`. Supply its actual
@@ -208,8 +214,8 @@ For a reused slot, use `RecordWitness.exec_after_record_product` from
 `BoxRecordWitness.exec_at_record` from `BoxRecordWitness.Record`. Supply the actual physical
 descriptor, query span, matrix pair and protected original arrays. Its physical ordinal is
 independent of the logical chunk/piece index; an all-record `Instances.Output` is neither
-required nor asserted for that slot. The old `exec_after_product` specializes this boundary
-for genuine standalone producer outputs.
+required nor asserted for that slot. `RecordWitness.exec_after_product` specializes this boundary
+for standalone producer outputs.
 
 The [pure readback client](../../ComplexityTests/WordRAMExactTriangleRecordReadback.lean)
 checks duplicate occurrence order with dirty unused memory. The
@@ -225,10 +231,9 @@ To decide whether three signed integer matrices contain a zero-weight triangle, 
 [the streaming test module](../../ComplexityTests/WordRAMExactTriangleStreamingFixedPrime.lean):
 it discharges admission, recovers a successful witness, and checks negative exhaustion. The
 [general-threshold client](../../ComplexityTests/WordRAMExactTriangleFixedPrimeInput.lean)
-checks the same canonical solver at `m=2`, including prime-three false positives. The old
-materialized fixed-prime program and its execution certificates have been retired;
-`Instances` remains an independent all-record producer, and standalone record products and
-witness consumers remain available. `FixedPrime` now holds numerical and controller support.
+checks the same canonical solver at `m=2`, including prime-three false positives. `Instances`
+provides an independent all-record producer, standalone record products and witness consumers are
+available separately, and `FixedPrime` holds numerical and controller support.
 
 Provide `3*n²` signed weights in row-major AB, BC, AC order, with every absolute value at most
 `A`. `PreparationInput.input n (D m) g p values` supplies the scalar headers and canonical
@@ -256,8 +261,8 @@ was already reused; its size and the coarse admission/word/support bounds remain
 This is a smaller record region, with no claim of an asymptotic total-space improvement.
 
 For `m=9k`, apply `FixedPrime.timeBound_le` to the derived genuine standalone reference returned by
-`runs_input`. `StreamingFixedPrime.time_le_old` places every streaming charge, including halt,
-within this old conservative envelope; that reference is never asserted for a reused slot. Its complete finite bound retains preparation, aggregate box charges,
+`runs_input`. `StreamingFixedPrime.streamingCharge_le_timeBound` places every streaming charge,
+including halt, within `FixedPrime.timeBound`; that reference is never asserted for a reused slot. Its complete finite bound retains preparation, aggregate box charges,
 root/query/controller overhead and **one global** `F(p)+1` original-weight scan reserve.
 The product term is `125829120(189k+1)^2(9k+1)D^(-8/125)n³g`; that saving alone is not an
 unconditional total exponent. The zero-weight and constant-257 negative clients are checked

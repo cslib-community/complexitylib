@@ -146,7 +146,7 @@ def CNF.vars (φ : CNF V) : List V := φ.flatten.map Prod.fst
 theorem CNF.length_vars (φ : CNF V) : φ.vars.length = (φ.map List.length).sum := by
   simp [CNF.vars, List.length_flatten, Function.comp_def]
 
-/-- A formula with `m` clauses of at most `k` literals has at most `k m` occurrences of
+/-- A formula with `m` clauses of at most `k` literals has at most `k * m` occurrences of
 variables. -/
 theorem CNF.length_vars_le_mul_length {k : ℕ} {φ : CNF V} (h : ∀ c ∈ φ, c.length ≤ k) :
     φ.vars.length ≤ k * φ.length := by

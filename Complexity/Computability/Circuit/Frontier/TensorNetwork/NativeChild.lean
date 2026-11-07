@@ -597,8 +597,8 @@ vertex, and the packet descriptor of a packet. -/
         (c.isLeft, slot (Sum.elim Subtype.val Subtype.val c)),
       betaSlice i pt β q)
 
-theorem map_filterMap_retainedPort {γ : Type*}
-    {group : Fin D.vertices.length → Fin 64} {g : Fin 64} (v : {v // group v = g})
+/-- Mapping over the retained ports of `v` reads each parent port through `retainedPort`. -/
+theorem map_filterMap_retainedPort {γ : Type*} (v : {v // group v = g})
     (y : ChildEdge (D.srcFin hD) (D.tgtFin hD) group g → γ) (d : γ) :
     ((D.vertices[(v.1 : ℕ)]'v.1.2).1.filterMap (retainedPort hD group g v)).map y =
       (D.vertices[(v.1 : ℕ)]'v.1.2).1.map fun j =>
@@ -626,8 +626,8 @@ theorem getD_map_retainedPort (v : {v // group v = g}) {j : ℕ}
       decide_eq_false hvr, Bool.false_eq_true, ite_false]
     split_ifs <;> rfl
 
-theorem map_numberedPorts_inl {group : Fin D.vertices.length → Fin 64}
-    {packet : Fin D.numEdges → Fin P} {g : Fin 64} (v : {v // group v = g})
+/-- Mapping a bit assignment over the numbered ports of a retained vertex reads each parent port. -/
+theorem map_numberedPorts_inl (v : {v // group v = g})
     (y : ChildEdge (D.srcFin hD) (D.tgtFin hD) group g → Bool) :
     (numberedPorts hD group packet g (.inl v)).map y =
       (D.vertices[(v.1 : ℕ)]'v.1.2).1.map fun j =>
@@ -636,7 +636,7 @@ theorem map_numberedPorts_inl {group : Fin D.vertices.length → Fin 64}
             if hg : group (D.srcFin hD j) = g then y (.inl ⟨j, hg⟩) else false
           else
             if hg : group (D.tgtFin hD j) = g then y (.inr ⟨j, hg⟩) else false).getD j false := by
-  rw [numberedPorts, Sum.elim_inl, map_filterMap_retainedPort hD v y false]
+  rw [numberedPorts, Sum.elim_inl, map_filterMap_retainedPort hD group g v y false]
   refine List.map_congr_left fun j hj => ?_
   rw [getD_map_retainedPort hD group g v hj y,
     List.getD_ofFn_of_lt _ (hD.1 _ (List.getElem_mem _) j hj)]
@@ -730,7 +730,7 @@ theorem nativeChild_eq (fl : List ℕ) (a i pt : ℕ) (t : ℤ) (ζ β : List �
     refine Prod.ext ?_ ?_
     · simp only [numberedPorts, Sum.elim_inl]
       rw [List.getD_eq_getElem _ _ ((members fun v => group v = g)[n]).2,
-        map_filterMap_retainedPort hD ⟨_, hmem⟩ _ 0]
+        map_filterMap_retainedPort hD group g ⟨_, hmem⟩ _ 0]
       refine List.map_congr_left fun j hj => ?_
       obtain ⟨c, hc, hce⟩ := retainedPort_spec hD group g ⟨_, hmem⟩ hj
       rw [hc]
@@ -925,8 +925,6 @@ section Child
 variable {a p u h : ℕ} (hK : 64 ^ a ≤ D.numEdges) (hua : u ≤ a) {t : ℤ}
   (ht : t ∈ recoveryNodes a) (hq : 0 < taperMult u h t) (ζ β : List ℕ) (g : Fin 64)
 
-set_option quotPrecheck false
-
 /-- The valuation of the node. -/
 local macro "iₜ" : term => `(padicValInt 2 t)
 /-- The precision of the node. -/
@@ -948,7 +946,7 @@ theorem entry_numbered_inl (v : {v // (S₀).group v = g})
           fl a iₜ ptₜ t ζ β (.inl v)).entry ev
           ((numberedPorts hD (S₀).group (S₀).packet g (.inl v)).map y))) =
       ((S₀).child β₀ g).tensor (.inl v) y := by
-  rw [map_numberedPorts_inl hD v y,
+  rw [map_numberedPorts_inl hD (S₀).group (S₀).packet g v y,
     TensorNetwork.ModeSplitting.child_tensor_inl_eq_tensor _ _ g v y,
     parentSplitting_side]
   exact (mk_liftO hirr _ _).symm
