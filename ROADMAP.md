@@ -664,6 +664,10 @@ universe size, not supplied as unverified input tables. In dependency order:
   equivalence theorems, locality and concrete nondefinability results; then counting and
   fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Reuse upstream
   model-theoretic foundations and connect the methods to the ordered capture theorems.
+- **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
+  relational vocabularies, constant edge probabilities and unlabelled structures; construct the
+  countable random (Rado) graph; then the Kolaitis–Vardi laws for fixed-point and finite-variable
+  infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
