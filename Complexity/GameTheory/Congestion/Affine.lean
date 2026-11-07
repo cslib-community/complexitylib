@@ -130,8 +130,8 @@ theorem socialCost_le_of_isPureNash (h : C.HasAffineLatencies) {s : ∀ i, S i}
     (hs : C.toCostGame.IsPureNash s) (s' : ∀ i, S i) :
     C.toCostGame.socialCost s ≤ 5 / 2 * C.toCostGame.socialCost s' := by
   have h' := (C.isSmooth_of_hasAffineLatencies h).socialCost_le_of_isPureNash (by norm_num) hs s'
-  norm_num at h'
-  exact h'
+  norm_num at h' ⊢
+  linarith
 
 /-- **The robust price of anarchy of affine congestion games is at most `5/2`**
 ([Roughgarden2015], Theorem 3.2 with Example 2.5): the expected social cost of every coarse
@@ -142,8 +142,8 @@ theorem expected_socialCost_le (h : C.HasAffineLatencies)
     σ.weights.sum (fun s w => w * C.toCostGame.socialCost s)
       ≤ 5 / 2 * C.toCostGame.socialCost s' := by
   have h' := (C.isSmooth_of_hasAffineLatencies h).expected_socialCost_le (by norm_num) hσ s'
-  norm_num at h'
-  exact h'
+  norm_num at h' ⊢
+  linarith
 
 end Cslib.GameTheory.CongestionGame
 

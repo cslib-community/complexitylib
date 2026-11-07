@@ -941,7 +941,7 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
 
-### Algorithmic game theory ([#2900])
+### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
 
 - **Computing equilibria:** PLS-completeness of finding a pure Nash equilibrium of a congestion
   game (Fabrikant–Papadimitriou–Talwar) through an explicit local-search problem interface and
@@ -1275,4 +1275,3 @@ not planned, not as proved.
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
-[#2900]: https://github.com/cslib-community/complexitylib/issues/2900

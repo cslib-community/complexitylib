@@ -19,8 +19,8 @@ module provides:
 - `Improves t s`: `t` is one strictly improving deviation away from `s`.
 - `socialCost s`: the sum of all players' costs.
 
-`isPureNash_iff_forall_not_improves` relates the first two. The mechanism-design modules build
-on this layer.
+`isPureNash_iff_forall_not_improves` relates the first two. The layer is intended as the base
+for the planned mechanism-design work.
 
 [Potential.lean](../../Complexity/GameTheory/Strategic/Potential.lean) defines exact, ordinal and
 generalized ordinal potentials. These are the notions of Monderer and Shapley
@@ -47,7 +47,8 @@ The finiteness hypotheses are stated as `Finite (∀ i, S i)` or `Finite ι`.
 `(λ, μ)`-smoothness `IsSmooth lam μ` [roughgarden15][roughgarden15]. The parameter is spelled
 `lam` because `λ` is a Lean keyword. Coarse correlated equilibria are finitely supported
 distributions `σ : Convexity.StdSimplex ℝ (∀ i, S i)`, and expectations are
-`σ.weights.sum (fun s w => w * …)`. This is the same representation as the minimax module.
+`σ.weights.sum (fun s w => w * …)`. This is the same representation as the
+[minimax module](../../Complexity/Probability/Minimax.lean).
 
 Assume `μ < 1`. `IsSmooth.socialCost_le_of_isPureNash` bounds the social cost of a pure Nash
 equilibrium by `λ / (1 - μ)` times that of any profile. `IsSmooth.expected_socialCost_le` gives
@@ -93,7 +94,8 @@ Flows are functions `f : P → ℝ`, and the definitions are:
 - `cost f`: the total latency `∑ p, f p * pathLatency f p`.
 - `IsWardrop f`: every flow-carrying path is a shortest path of its commodity. This is the
   source's Lemma 2.2 characterization, taken as the definition. It agrees with the source's
-  Definition 2.1 only for continuous nondecreasing latencies.
+  Definition 2.1 for continuous nondecreasing latencies (Lemma 2.2), in particular for the affine
+  latencies of the `4/3` theorem.
 
 The main results:
 

@@ -64,7 +64,8 @@ variable {ι : Type*} {S : ι → Type*} [DecidableEq ι] [Fintype ι] (G : Cost
 
 /-- `G` is **`(λ, μ)`-smooth** ([Roughgarden2015], Definition 2.1) with `λ = lam`: for all
 profiles `s` and `s'`, the total cost of the unilateral deviations from `s` to `s'` is at most
-`lam * socialCost s' + μ * socialCost s`. -/
+`lam * socialCost s' + μ * socialCost s`. Unlike the source, the definition imposes no sign
+conditions on `lam` and `μ`; the price-of-anarchy bounds below assume only `μ < 1`. -/
 @[expose] def IsSmooth (lam μ : ℝ) : Prop :=
   ∀ s s' : ∀ i, S i,
     ∑ i, G.cost i (Function.update s i (s' i)) ≤ lam * G.socialCost s' + μ * G.socialCost s
