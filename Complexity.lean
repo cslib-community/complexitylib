@@ -4333,6 +4333,7 @@ public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.TrueSampleMeans
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
+public import Complexity.Foundations.Relation.Acyclic
 public import Complexity.Foundations.Relation.InductiveCounting
 public import Complexity.Foundations.Relation.RelatesWithinSteps
 public import Complexity.Foundations.RingTheory.AdjoinRoot
