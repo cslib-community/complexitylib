@@ -27,17 +27,24 @@ variance identity is the equality chain in the proof of
 of arXiv:1611.03579v1), the basis of their sharp analysis.
 
 The proof inducts on the number of samples, peeling off the first draw (`sum_iid_succ_mul`), and
-tracks the joint moments of the collision count and the occurrence counts of single values.
+tracks the joint moments of the collision count and the occurrence counts of single values
+(`occurrenceCount`). These joint moments are public because the cross-collision count of two
+independent samples is a sum of products of occurrence counts.
 
 ## Main definitions
 
 * `Cslib.Probability.PMF.collisionCount`: the number of colliding pairs of sample positions.
+* `Cslib.Probability.PMF.occurrenceCount`: the number of sample positions holding a given value.
 
 ## Main results
 
 * `Cslib.Probability.PMF.sum_iid_succ_mul`: expectations under `k + 1` draws via the first draw.
 * `Cslib.Probability.PMF.sum_iid_mul_collisionCount`: the mean of the collision count.
 * `Cslib.Probability.PMF.sum_iid_mul_collisionCount_sub_sq`: the variance of the collision count.
+* `Cslib.Probability.PMF.sum_iid_mul_occurrenceCount`,
+  `sum_iid_mul_occurrenceCount_mul_occurrenceCount`,
+  `sum_iid_mul_collisionCount_mul_occurrenceCount`, `sum_iid_mul_collisionCount_sq`: the
+  supporting first and second moments.
 
 ## References
 
@@ -74,6 +81,21 @@ variable [DecidableEq α]
 
 /-- Number of samples equal to `b`. -/
 private def occ {k : ℕ} (x : Fin k → α) (b : α) : ℝ := ∑ i, if x i = b then 1 else 0
+
+omit [Fintype α] in
+/-- The number of sample positions `i` with `x i = b`. -/
+def occurrenceCount {k : ℕ} (x : Fin k → α) (b : α) : ℕ := #{i | x i = b}
+
+omit [Fintype α] in
+/-- The occurrence count is a sum of indicators. -/
+theorem occurrenceCount_eq_sum {k : ℕ} (x : Fin k → α) (b : α) :
+    (occurrenceCount x b : ℝ) = ∑ i, if x i = b then 1 else 0 := by
+  simp only [occurrenceCount, Finset.card_filter, Nat.cast_sum, Nat.cast_ite, Nat.cast_one,
+    Nat.cast_zero]
+
+omit [Fintype α] in
+private theorem occ_eq {k : ℕ} (x : Fin k → α) (b : α) : occ x b = occurrenceCount x b :=
+  (occurrenceCount_eq_sum x b).symm
 
 omit [Fintype α] in
 private theorem occ_cons {k : ℕ} (a : α) (x : Fin k → α) (b : α) :
@@ -288,6 +310,41 @@ theorem sum_iid_mul_collisionCount_sub_sq (k : ℕ) :
   rw [hfun, ex_add, ex_add, ex_const_mul, ex_const, ex_collisionCount_sq, ex_collisionCount,
     Nat.cast_choose_two, collisionProbability_eq_sum]
   ring
+
+/-- **Mean of an occurrence count**: among `k` independent draws from `μ`, the value `b` occurs
+`k μ(b)` times on average. -/
+theorem sum_iid_mul_occurrenceCount (b : α) (k : ℕ) :
+    ∑ x, (iid μ k x).toReal * occurrenceCount x b = k * (μ b).toReal := by
+  simp only [← occ_eq]
+  exact ex_occ μ b k
+
+/-- **Joint moment of two occurrence counts** among `k` independent draws from `μ`:
+`E[N_a N_b] = k (k - 1) μ(a) μ(b) + k [a = b] μ(a)`. -/
+theorem sum_iid_mul_occurrenceCount_mul_occurrenceCount (a b : α) (k : ℕ) :
+    ∑ x, (iid μ k x).toReal * ((occurrenceCount x a : ℝ) * occurrenceCount x b) =
+      k * (k - 1) * (μ a).toReal * (μ b).toReal + k * (if a = b then (μ a).toReal else 0) := by
+  simp only [← occ_eq]
+  exact ex_occ_mul_occ μ a b k
+
+/-- **Joint moment of the collision count and an occurrence count** among `k` independent draws
+from `μ`: `E[C N_b] = k (k - 1) (k - 2) ‖μ‖₂² μ(b) / 2 + k (k - 1) μ(b)²`. -/
+theorem sum_iid_mul_collisionCount_mul_occurrenceCount (b : α) (k : ℕ) :
+    ∑ x, (iid μ k x).toReal * ((collisionCount x : ℝ) * occurrenceCount x b) =
+      k * (k - 1) * (k - 2) / 2 * collisionProbability μ * (μ b).toReal +
+        k * (k - 1) * (μ b).toReal ^ 2 := by
+  rw [collisionProbability_eq_sum]
+  simp only [← occ_eq]
+  exact ex_collisionCount_mul_occ μ b k
+
+/-- **Second moment of the collision count** among `k` independent draws from `μ`, with
+`s = ‖μ‖₂²` and `t = ∑ a, μ(a)³`: `E[C²] = C(k, 2) s + k (k - 1) (k - 2) t +
+k (k - 1) (k - 2) (k - 3) s² / 4`. -/
+theorem sum_iid_mul_collisionCount_sq (k : ℕ) :
+    ∑ x, (iid μ k x).toReal * (collisionCount x : ℝ) ^ 2 =
+      k.choose 2 * collisionProbability μ + k * (k - 1) * (k - 2) * ∑ a, (μ a).toReal ^ 3 +
+        k * (k - 1) * (k - 2) * (k - 3) / 4 * collisionProbability μ ^ 2 := by
+  rw [Nat.cast_choose_two, collisionProbability_eq_sum]
+  exact ex_collisionCount_sq μ k
 
 end Moments
 

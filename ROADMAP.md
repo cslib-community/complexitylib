@@ -971,10 +971,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
   lower bound. Identity testing to any fixed distribution reduces to uniformity on `4n` points
   through Goldreich's kernel, which gives `O(√n / ε²)` samples
-  ([#2930](https://github.com/cslib-community/complexitylib/issues/2930)). Remaining: further access
-  models, the odd-domain lower bound, instance-optimal identity testing, closeness, tolerant and
-  structured-property distribution testing, canonical testers and further query and sample lower
-  bounds.
+  ([#2930](https://github.com/cslib-community/complexitylib/issues/2930)). Closeness testing has
+  the two-sample model and the collision-based tolerant `ℓ₂` tester with `O(√b / ε²)` samples
+  when both squared `ℓ₂` norms are at most `b`, hence `O(n / ε²)` samples in statistical distance
+  ([#3017](https://github.com/cslib-community/complexitylib/issues/3017)). Remaining: the optimal
+  `O(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness tester by flattening and its matching lower bound,
+  further access models, the odd-domain lower bound, instance-optimal identity testing, tolerant
+  and structured-property distribution testing, canonical testers and further query and sample
+  lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
