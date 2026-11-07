@@ -812,7 +812,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `n log d` multiplication lower bound for the power map), which through the proved Baur–Strassen
   transfer in [`Arithmetic/Gradient`](Complexity/Computability/Circuit/Arithmetic/Gradient.lean)
   ([#2906](https://github.com/cslib-community/complexitylib/issues/2906)) would give the
-  `Ω(n log d)` bound for the single power sum `∑ xᵢ^(d+1)`; and from the determinant through the adjugate circuits of
+  `Ω(n log d)` bound for the single power sum `∑ xᵢ^(d+1)`; and matrix inversion from the
+  determinant through the adjugate circuits of
   [`Arithmetic/Adjugate`](Complexity/Computability/Circuit/Arithmetic/Adjugate.lean), which needs
   a circuit model with division.
 - **The matrix multiplication exponent** (ω ≤ 9/4): Pass's constructive proof
