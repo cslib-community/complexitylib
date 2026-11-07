@@ -2763,10 +2763,13 @@ public import Complexity.Computability.QueryComplexity.Monotone
 public import Complexity.Computability.QueryComplexity.NisanSzegedy
 public import Complexity.Computability.QueryComplexity.OneSided
 public import Complexity.Computability.QueryComplexity.Quantum.Adversary
+public import Complexity.Computability.QueryComplexity.Quantum.BernsteinVazirani
+public import Complexity.Computability.QueryComplexity.Quantum.BitQuery
 public import Complexity.Computability.QueryComplexity.Quantum.Composition
 public import Complexity.Computability.QueryComplexity.Quantum.Grover
 public import Complexity.Computability.QueryComplexity.Quantum.Polynomial
 public import Complexity.Computability.QueryComplexity.Quantum.Search
+public import Complexity.Computability.QueryComplexity.Quantum.Simon
 public import Complexity.Computability.QueryComplexity.Quantum.UnknownSearch
 public import Complexity.Computability.QueryComplexity.Randomized
 public import Complexity.Computability.QueryComplexity.Randomized.Nisan
@@ -2817,6 +2820,7 @@ public import Complexity.Computability.QueryComplexity.SensitivitySeparation.Int
 public import Complexity.Computability.QueryComplexity.SensitivitySeparation.Internal.TournamentCyclic
 public import Complexity.Computability.QueryComplexity.SensitivitySeparation.Internal.Tower
 public import Complexity.Computability.QueryComplexity.SensitivitySeparation.Internal.TowerProfiles
+public import Complexity.Computability.QueryComplexity.Simon
 public import Complexity.Computability.QueryComplexity.SpectralSensitivity
 public import Complexity.Computability.QueryComplexity.Threshold
 public import Complexity.Computability.QueryComplexity.Yao
@@ -4282,6 +4286,7 @@ public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.SpectralPayment
 public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.TrueSampleMeans
+public import Complexity.Foundations.Quantum.HadamardTransform
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
 public import Complexity.Foundations.Relation.InductiveCounting
