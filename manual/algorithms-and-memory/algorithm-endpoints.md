@@ -636,6 +636,16 @@ the proved integer family; it is not a measured crossover, an optimized cutoff, 
 about practical performance. The asymptotic threshold can be larger still, and the
 existential false-positive constant in the proof does not supply a numerical benchmark.
 
+## Greedy weighted set cover
+
+Import `Complexity.Algorithms.Lean.SetCover.Greedy` ([Complexity/Algorithms/Lean/SetCover/Greedy.lean](../../Complexity/Algorithms/Lean/SetCover/Greedy.lean)). Unlike the endpoints above, this is a pure Lean function analyzed for solution quality, not a machine program with a step bound. `greedy S w J U` takes a ground set `U : Finset α`, sets `S : ι → Finset α`, weights `w : ι → 𝕜` in a linearly ordered field and a candidate list `J`. Each round it picks a candidate minimizing `w j / |S j ∩ R|` over the uncovered elements `R`, with ties going to the earliest candidate in `J`. It stops when no candidate meets `R` and returns the chosen candidates in order.
+
+- **Feasibility:** `greedy_covers` needs every element of `U` to lie in some candidate set; `ComplexityTests/SetCoverGreedy.lean` shows the loop stopping with an incomplete cover when that fails. `nodup_greedy` and `length_greedy_le` bound the output by `U.card` distinct candidates.
+- **Ratio, stated against any cover:** `sum_greedy_le_harmonic_mul` proves `cost ≤ H d · w(C)` for every cover `C` drawn from `J` whose sets meet `U` in at most `d` elements, given nonnegative candidate weights. Instantiating `C` with an optimal cover gives Chvátal's `H d` ratio. `sum_greedy_le_harmonic_card_mul` takes `d = |U|`, and `sum_greedy_le_one_add_log_mul` gives `(1 + log d) · w(C)` over `ℝ`.
+- **Fractional form:** `sum_greedy_le_harmonic_mul_fractional` compares with every nonnegative fractional cover `x` instead. This is Theorem 1.12 of [Williamson and Shmoys][williamsonshmoys11] without a linear-programming API: the dual-fitting step and weak duality are merged into one inequality. The library has no LP optimum to instantiate here, so the caller supplies the fractional cover.
+
+The [checked examples](../../ComplexityTests/SetCoverGreedy.lean) include an instance where greedy pays `11/6` against an optimum of `11/10`, inside the bound `121/60`. They also show a fractional cover strictly cheaper than every integral cover. Machine-level running time and the other classical approximation algorithms are open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -646,3 +656,4 @@ The numeric values above are transcriptions of checked source statements, not re
 
 [complexitylib]: ../sources.md#complexitylib
 [thorup13]: ../sources.md#thorup13
+[williamsonshmoys11]: ../sources.md#williamsonshmoys11
