@@ -596,13 +596,16 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Average-case complexity
 
-- Distribution ensembles with computability and samplability certificates; distributional
-  reductions with explicit domination and resource bounds; DistNP, errorless average-case
-  classes and heuristic classes, keeping runtime tails and permitted error distinct. Reuse the
-  specialized Liu–Pass hardness notions through proved bridges.
-- **Levin completeness:** a distributional bounded-halting problem complete for the chosen
-  polynomial-time computable-distribution class, followed by a separately scoped extension to
-  samplable distributions. Connect the framework to one-way functions, learning and the
+- **Distributional framework** ([#2865]): extend the length-indexed ensembles, `AvgP`/`HeurP`,
+  `DistNP` and dominating reductions with polynomial-time computable ensembles being samplable,
+  Levin's runtime-moment definition of average polynomial time and its relation to errorless
+  schemes (instances of probability zero obstruct a literal equivalence), randomized
+  average-case classes, and `(L, U) ∈ AvgP` implying `L ∈ E`-style consequences. Reuse the
+  specialized Liu–Pass hardness notions through further proved bridges.
+- **Levin completeness:** a distributional bounded-halting problem complete for `DistNP`
+  (Bogdanov–Trevisan Theorem 19, via the compression of Claim 20) under the existing dominating
+  reductions, followed by a separately scoped extension to samplable distributions
+  (Impagliazzo–Levin). Connect the framework to one-way functions, learning and the
   metacomplexity track ([#798]), preserving the distribution and reduction conventions.
 
 ### Counting and modular classes
@@ -1258,3 +1261,4 @@ not planned, not as proved.
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
+[#2865]: https://github.com/cslib-community/complexitylib/issues/2865
