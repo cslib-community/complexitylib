@@ -28,10 +28,11 @@ every `s`-subset `B` is zero (`Finset.eq_zero_of_sum_powersetCard_eq_zero`).
 The theorem is proved here over any field in which the integers `1, …, s` are nonzero, so in
 characteristic zero and in every characteristic larger than `s`. Gottlieb states the rational
 case. The proof here, by induction on `U`, divides only by integers between `2` and `s`, so this
-mild generalization costs nothing. The induction splits the subsets by an element `x`: double
-counting (`Finset.sum_sum_powersetCard_erase`) turns the hypothesis for `s`-subsets of `U` into the
-hypothesis for the `(s-1)`-subsets, with the factor `s - t`, and the subsets containing `x`
-(`Finset.sum_powersetCard_succ_insert`) reduce to a weighting of `U` with smaller parameters.
+mild generalization costs nothing. The induction splits the subsets by an element `x`
+(`Finset.sum_powersetCard_succ_insert`). Double counting (`Finset.sum_sum_powersetCard_erase`)
+gives the hypothesis for the weights `A ↦ a (insert x A)` of the `(t-1)`-subsets, up to the
+factor `s - t + 1`, which is the only division. Both halves then reduce to weightings of the
+smaller set with smaller parameters.
 Impagliazzo, Pudlák and Sgall use the theorem to bound polynomial-calculus degree
 [ImpagliazzoPudlakSgall1999].
 
