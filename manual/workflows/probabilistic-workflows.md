@@ -47,6 +47,73 @@ supplies their component bounds. Run `scripts/build.sh ComplexityTests.TotalVari
 The [Regev joint experiment](https://github.com/cslib-community/complexitylib/issues/2767) still
 has to discharge those bounds for its actual Gaussian laws and residue marginal.
 
+## Condition and compare finite PMFs
+
+Import [PMF/Filter.lean](../../Complexity/Probability/PMF/Filter.lean) to rewrite a conditioned
+law `p.filter s h`. Mathlib's `PMF.filter` takes a support witness `h : ∃ a ∈ s, a ∈ p.support`,
+so each lemma assumes such a witness for every conditioned law it mentions; an event of
+probability zero cannot be conditioned on. `toOuterMeasure_filter_mul_eq_inter` states
+`Pr_{p | s}[t] · Pr_p[s] = Pr_p[s ∩ t]` without dividing. `filter_filter`, `filter_map` (for a
+preimage event `f ⁻¹' s`) and `filter_eq_self_of_support_subset` move conditioning past a second
+condition, a relabeling and an almost sure event. For a two-stage law
+`μ.bind fun a => (K a).map (a, ·)`, `filter_bind_pair` conditions the first stage on an event about
+`a` and keeps the kernel. When the second draw is independent of the first,
+`filter_bind_pair_prod` conditions both factors on a rectangle `s ×ˢ t`, and
+`map_snd_filter_bind_pair_prod` shows that the condition on `a` does not affect the law of `b`.
+
+Import [StatisticalDistance/Event.lean](../../Complexity/Probability/StatisticalDistance/Event.lean)
+to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
+over a finite type, active after `open scoped Cslib.Probability.PMF`. It uses the half-L1
+convention: distinct point masses have distance `1`, half of Mathlib's `tvDist` above.
+`abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`, and
+`dist_map_of_injective` keeps the distance unchanged under an injective relabeling. Import
+[Product/Split.lean](../../Complexity/Probability/Product/Split.lean) to split an independent
+product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
+satisfying `P` and the remaining coordinates form two independent products.
+
+The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two fair bits on
+rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
+`scripts/build.sh ComplexityTests.PMFConditioning`.
+
+## Compose local embeddings and extract a strategy
+
+Import [CorrelatedSampling/Embeddability.lean](../../Complexity/Probability/CorrelatedSampling/Embeddability.lean)
+for `IsEmbeddable P₀ P₁ ε`, Holenstein's Definition 5.1 [holenstein09][holenstein09]. From
+`(x, y) ~ P₀`, Alice and Bob use shared randomness, but no communication, to produce `s` and `t`
+so that `((x, y), (s, t))` is within statistical distance `ε` of `P₁`. The types may live in any
+universes, and `IsEmbeddable.of_dist_le` accepts randomness from any type.
+
+- `IsEmbeddable.mono` weakens the error.
+- `IsEmbeddable.map` lets each party post-process its own output, for instance to forget part of
+  it.
+- `IsEmbeddable.trans` composes two embeddings and adds their errors. The second embedding's input
+  is the law of `((x, s), (y, t))` under `P₁`; the result is regrouped as
+  `((x, y), ((s, u), (t, v)))`.
+- `isEmbeddable_map_fst_of_apply_eq_mul` embeds exactly when the masses of a law of
+  `((x, y), (s, t))` factor as `c x y · f x s · g y t`, with `f` and `g` finite. The same file
+  proves Lemmas 5.2 and 5.4 and Corollary 5.3.
+
+Import [TwoProverGame.lean](../../Complexity/Computability/PCP/TwoProverGame.lean) to use an
+embedding against a game `G`. For tuple strategies `ha` and `hb` of `G.pow n`,
+`G.winsOn ha hb C` is the event that every coordinate in `C : Finset (Fin n)` is won, and
+`G.winProbOn ha hb C` is its probability. `winProbOn_insert_le` is the strategy extraction in the
+proof of Lemma 6.5, multiplied out so that it never divides by `Pr[W_C]`. Its premises are a
+support witness `hC` for `G.winsOn ha hb C` and an embedding of `G.questions`, with error `ε`, in
+the law of `((x j, y j), (x, y))` under `(G.pow n).questions.filter (G.winsOn ha hb C) hC`. It
+concludes `G.winProbOn ha hb (insert j C) ≤ G.winProbOn ha hb C * (G.value + ε)`. If
+`Pr[W_C] = 0`, the same inequality follows from `winProbOn_anti` without an embedding. The general
+step, `toOuterMeasure_accepts_le_value_add`, turns any embedding of the questions into a strategy
+with shared randomness and bounds its success by `G.value + ε`.
+
+The [embedding clients](../../ComplexityTests/Embeddability.lean) compose two exact embeddings
+(copy, negate, forget the copies), apply the product-form criterion, and draw shared randomness
+from `ULift.{2} Bool`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) extracts a
+strategy from the one-fold repetition with `C = ∅`, which bounds every strategy of `chsh.pow 1`
+by `chsh.value`. Run `scripts/build.sh ComplexityTests.Embeddability ComplexityTests.TwoProverGame`.
+The library does not yet prove the coordinate embedding of Lemma 6.4, which would supply the
+embedding premise, or the parallel repetition bound
+([#886](https://github.com/cslib-community/complexitylib/issues/886)).
+
 ## Project a continuous Gaussian density
 
 Import [Gaussian/Standard.lean](../../Complexity/Foundations/Probability/Gaussian/Standard.lean)
@@ -991,6 +1058,7 @@ Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.l
 Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model.
 
 [complexitylib]: ../sources.md#complexitylib
+[holenstein09]: ../sources.md#holenstein09
 
 The two reserve-output theorems choose their output constant after the fixed hierarchy,
 ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
