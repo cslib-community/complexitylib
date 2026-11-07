@@ -151,9 +151,34 @@ and NAND-state consumers, changing runtime families, empty and length-one words,
 lengths, oversized suffixes and invalid cuts. `family_terminates` certifies the read loop for
 unbounded lengths, rather than only those finite executions.
 
-This consumer is restricted to two passes and one Boolean of saved state. General native
-logspace predicate substitution, generating the supplied header from a query generator and
-regenerating an answer word remain open.
+For an arbitrary outer machine, import
+[`VirtualWord.Simulation`](../../Complexity/Computability/Machines/ReadMachine/VirtualWord/Simulation.lean).
+`Simulation.machine M` first loads the same supplied header, then redirects every query of `M`
+to the original tail and resumes its entire saved state. The virtual end produces `none`, even
+when the physical tail continues; a present false symbol stays `some false`. `resume` applies
+from any saved state, preserving the header and cursor. `run_loaded`, `first_halt` and `output`
+give exact state, halt and output correspondence, including step emissions and final output.
+The physical query still occurs for suffix and out-of-range addresses; the adapter ignores its
+result when appropriate. Invalid cuts retain a total declared-offset implementation, but the
+word-equivalence theorems require `cut ≤ original.length`.
+
+To obtain a native certificate, supply `Simulation.computableInSpace` with the outer machine's
+five native component certificates, its own first-halt clock/output proof and a bound $B(p)$ on
+the encoding of every saved outer state through that clock. The result uses one native program,
+with constants shared across runtime inputs and workspace
+$O(B(p)+|\mathrm{encData}(p)|+\log_2|\mathrm{encInput}(p)|+1)$.
+The header remains an explicit runtime input, and its full encoding is charged.
+[The complete checked copier client](../../ComplexityTests/VirtualWordSimulation.lean) carries
+an unbounded binary cursor and EOF flag, streams each virtual symbol, and appends its final
+binary address. `native_copier` instantiates the compiler for every valid runtime header and
+unbounded original length, with a logarithmic saved-counter budget. The finite checks cover
+suffix substitution, virtual EOF before physical EOF, present false bits, empty words,
+resumption from a noninitial cursor and an already halted state.
+
+This is substitution for component-certified `QueryMachine`s. A conversion extracting that
+interface and its state bound from an arbitrary existing native logspace predicate/transducer
+certificate is not provided. Generating the supplied header from a query generator and
+regenerating an answer word also remain open.
 
 **The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
 evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
