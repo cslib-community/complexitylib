@@ -215,6 +215,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `resolution-lines` | [Resolution proofs as ordered line lists](circuits-logic-and-other-models/index.md) | proof-systems |
 | `resolution-tree` | [Tree-like resolution derivations](circuits-logic-and-other-models/index.md) | proof-systems |
 | `cutting-planes-lines` | [Cutting planes proofs as ordered lists of integer inequalities](circuits-logic-and-other-models/index.md) | proof-systems |
+| `semantic-derivation` | [Semantic derivations: sequences of sets of assignments, each initial, everything, or containing the intersection of two earlier ones](circuits-logic-and-other-models/index.md) | proof-systems |
 | `pac` | [General deterministic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `randomized-pac` | [Randomized agnostic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `uniform-learning` | [Uniform-distribution Boolean sample learning](circuits-logic-and-other-models/index.md) | learning |

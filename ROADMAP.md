@@ -802,8 +802,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   coefficient-size measures; Buss–Clote cutting planes with division by 2 only; and the
   simulation of resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and
   translation time.
-- **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
-  lower bounds ([#2019]).
+- **Feasible interpolation** ([#1817]): further clients of Krajíček's interpolation theorem for
+  semantic derivations ([#2019]): resolution through Theorem 6.1, the linear equational calculus,
+  and the monotone case for the `ℬ` side. The cutting-planes client is under **Cutting planes**.
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
