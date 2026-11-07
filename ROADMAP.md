@@ -720,9 +720,9 @@ universe size, not supplied as unverified input tables. In dependency order:
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Undecidability in the finite:** Trakhtenbrot's theorem holds for raw relational sentences
-  over unboundedly many symbols of arity at most three. Next, sharpen it to a fixed vocabulary
-  and then to a single binary relation (Libkin, Theorem 9.2), and add a computable `Primcodable`
-  bridge from Mathlib `L.Sentence` that transfers the results to Mathlib syntax
+  over any vocabulary with a binary relation symbol (Libkin, Theorem 9.2,
+  [Binary](Complexity/Logics/FirstOrder/Trakhtenbrot/Binary.lean)). Next, add a computable
+  `Primcodable` bridge from Mathlib `L.Sentence` that transfers the results to Mathlib syntax
   ([#2886](https://github.com/cslib-community/complexitylib/issues/2886)).
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
   regular, [#2885](https://github.com/cslib-community/complexitylib/issues/2885)): the strict

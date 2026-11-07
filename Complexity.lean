@@ -4560,12 +4560,17 @@ public import Complexity.Logics.FirstOrder.QuantifierFree
 public import Complexity.Logics.FirstOrder.QuantifierRank
 public import Complexity.Logics.FirstOrder.Raw.Basic
 public import Complexity.Logics.FirstOrder.Raw.FinSat
+public import Complexity.Logics.FirstOrder.Raw.Graph
+public import Complexity.Logics.FirstOrder.Raw.Interpret
 public import Complexity.Logics.FirstOrder.Raw.Primrec
+public import Complexity.Logics.FirstOrder.Raw.Sentence
+public import Complexity.Logics.FirstOrder.Raw.Uniformize
 public import Complexity.Logics.FirstOrder.Reduction
 public import Complexity.Logics.FirstOrder.Reduction.Nontrivial
 public import Complexity.Logics.FirstOrder.Reduction.QuantifierFree
 public import Complexity.Logics.FirstOrder.Subformula
 public import Complexity.Logics.FirstOrder.Trakhtenbrot.Arithmetic
+public import Complexity.Logics.FirstOrder.Trakhtenbrot.Binary
 public import Complexity.Logics.FirstOrder.Trakhtenbrot.Evaln
 public import Complexity.Logics.FirstOrder.Trakhtenbrot.Undecidability
 public import Complexity.Logics.FirstOrder.Tuple
