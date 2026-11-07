@@ -23,8 +23,9 @@ Verifies non-vacuity and concrete behavior of:
    within one bit of optimal, and the randomized lower bound
    `Cslib.Streaming.le_of_solves_nodup_one_third` applies to it through
    `Cslib.Streaming.Randomized.solves_pure`;
-3. the AMS sketch: the hypotheses of `Cslib.Streaming.solves_ams` and `Cslib.Streaming.spaceLE_ams`
-   hold for the four-wise independent trinomial hash family with explicit parameters, while
+3. the AMS sketch: the hypotheses of `Cslib.Streaming.solves_ams`, `Cslib.Streaming.spaceLE_ams`
+   (seeds not charged) and `Cslib.Streaming.exists_injOn_iUnion_reachable_amsSketch` (seeds
+   stored) hold for the four-wise independent trinomial hash family with explicit parameters, while
    without independence (a constant sign) the sketch reports `F₁²` instead of `F₂`.
 -/
 
@@ -110,11 +111,22 @@ theorem solves_ams_trinomial (m : ℕ) :
   solves_ams (isKWiseIndependentHash_trinomialPolyHash (by norm_num) (by norm_num)) sq_sgnBit
     sum_sgnBit one_pos (by norm_num) (by norm_num) m
 
-/-- The same sketch uses `8400` bits of memory, seeds included, on streams of at most `1023`
-items. -/
+/-- Every sketch drawn uses `2640` bits of memory on streams of at most `1023` items: under the
+public-coin convention only its `240` counters in `[-1023, 1023]` are charged. -/
 theorem spaceLE_ams_trinomial :
-    (ams (trinomialPolyHash 1 4 64 1) sgnBit 20 6).SpaceLE 1023 8400 := by
+    (ams (trinomialPolyHash 1 4 64 1) sgnBit 20 6).SpaceLE 1023 2640 := by
   refine spaceLE_ams abs_sgnBit_le ?_
+  calc (2 * 1023 + 1) ^ (2 * 20 * 6) ≤ (2 ^ 11) ^ (2 * 20 * 6) :=
+        Nat.pow_le_pow_left (by norm_num) _
+    _ = 2 ^ 2640 := by rw [← pow_mul]
+
+/-- With its seeds stored as well, the sketch fits in `8400` bits on streams of at most `1023`
+items: one encoding works for the states reachable from all seeds. -/
+theorem exists_injOn_iUnion_reachable_amsSketch_trinomial :
+    ∃ enc : AMSState (Fin 4 → Fin (2 ^ (2 * 3 ^ 1))) 20 6 → BitString 8400,
+      Set.InjOn enc
+        (⋃ ω, (amsSketch (trinomialPolyHash 1 4 64 1) sgnBit 20 6 ω).reachable 1023) := by
+  refine exists_injOn_iUnion_reachable_amsSketch abs_sgnBit_le ?_
   have hc : Fintype.card (Fin 4 → Fin (2 ^ (2 * 3 ^ 1))) = 2 ^ 24 := by
     rw [Fintype.card_fun, Fintype.card_fin, Fintype.card_fin, ← pow_mul]
     norm_num

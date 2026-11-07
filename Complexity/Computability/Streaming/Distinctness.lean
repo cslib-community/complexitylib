@@ -9,11 +9,12 @@ module
 
 public import Complexity.Computability.Communication.Functions
 public import Complexity.Computability.Streaming.Basic
+public import Complexity.Computability.Streaming.Frequency
+public import Complexity.Foundations.Data.BitString.Positions
 import Complexity.Computability.Communication.Amplification
 import Complexity.Computability.Communication.Disjointness
 import Complexity.Computability.Streaming.Communication
 import Complexity.Probability.PMF.Event
-import Mathlib.Data.Finset.Lattice.Fold
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
 
@@ -21,7 +22,7 @@ import Mathlib.Tactic.NormNum
 # Streaming lower bounds for distinctness and the largest frequency
 
 Splitting the stream into the positions of Alice's ones followed by the positions of Bob's ones
-(`Cslib.Streaming.positions`), the items are distinct exactly when the two bit strings have
+(`Cslib.BitString.positions`), the items are distinct exactly when the two bit strings have
 disjoint supports (`Cslib.Streaming.nodup_positions_append`). A streaming algorithm deciding
 whether the items of a stream are distinct thus gives a one-way protocol for disjointness
 (`Cslib.Streaming.Randomized.ecomplexityFun_le_of_spaceLE`), and the `Ω(n)` lower bound for
@@ -44,13 +45,12 @@ memory.
   `n + 1` of disjointness. Storing the set of items seen and a flag shows that `n + 1` bits
   suffice.
 
-## Main definitions
-
-* `Cslib.Streaming.positions`: the positions of the ones of a bit string, as a stream.
-* `Cslib.Streaming.maxFreq`: the largest frequency `F∞` of a stream.
-
 ## Main results
 
+* `Cslib.Streaming.nodup_positions_append`: the positions of two bit strings are distinct exactly
+  when the bit strings are disjoint.
+* `Cslib.Streaming.decide_lt_four_thirds_eq`: an estimate of `F∞` within less than a third decides
+  distinctness.
 * `Cslib.Streaming.le_of_solves_nodup`, `Cslib.Streaming.le_of_solves_nodup_one_third`:
   randomized distinctness needs `Ω(n)` bits.
 * `Cslib.Streaming.le_of_solves_maxFreq`, `Cslib.Streaming.le_of_solves_maxFreq_one_third`:
@@ -75,22 +75,12 @@ open Communication
 
 /-! ### Detecting a repeated item -/
 
-/-- The positions where a bit string is `true`, in increasing order. -/
-def positions {n : ℕ} (x : BitString n) : List (Fin n) :=
-  (List.finRange n).filter fun i => x i
-
-theorem length_positions_le {n : ℕ} (x : BitString n) : (positions x).length ≤ n :=
-  (List.length_filter_le _ _).trans (List.length_finRange).le
-
 /-- The positions of the ones of `x` followed by those of `y` are distinct exactly when `x` and `y`
 have disjoint supports. -/
 theorem nodup_positions_append {n : ℕ} (x y : BitString n) :
-    (positions x ++ positions y).Nodup ↔ disjointness x y = true := by
-  have hx : (positions x).Nodup := (List.nodup_finRange n).filter _
-  have hy : (positions y).Nodup := (List.nodup_finRange n).filter _
+    (BitString.positions x ++ BitString.positions y).Nodup ↔ disjointness x y = true := by
   rw [List.nodup_append]
-  simp only [hx, hy, true_and]
-  simp only [positions, List.mem_filter, List.mem_finRange, true_and, disjointness,
+  simp only [BitString.nodup_positions, true_and, BitString.mem_positions, disjointness,
     decide_eq_true_eq, Bool.and_eq_false_iff]
   constructor
   · intro h i
@@ -109,18 +99,20 @@ theorem le_of_solves_nodup {σ : Type*} {n b r : ℕ} {ε : ℝ} (hε : ε ≤ 1
     (hr : (4 * ε * (1 - ε)) ^ r ≤ 1 / 64) (μ : Randomized σ (Fin n) Bool)
     (hμ : μ.Solves ε (fun s c => c = decide s.Nodup) (2 * n)) (hspace : μ.SpaceLE n b) :
     n ≤ 2 ^ 10 * r * (b + 1) + 2 ^ 12 := by
-  have hcc := μ.ecomplexityFun_le_of_spaceLE hspace positions positions length_positions_le id
+  have hcc := μ.ecomplexityFun_le_of_spaceLE hspace BitString.positions BitString.positions
+    BitString.length_positions_le id
     disjointness (ε := ε) fun x y => by
-      have hlen : (positions x ++ positions y).length ≤ 2 * n := by
+      have hlen : (BitString.positions x ++ BitString.positions y).length ≤ 2 * n := by
         rw [List.length_append]
-        have := length_positions_le x
-        have := length_positions_le y
+        have := BitString.length_positions_le x
+        have := BitString.length_positions_le y
         omega
       refine le_of_eq_of_le ?_ (hμ _ hlen)
       unfold Randomized.errorProb
       congr 2
       ext A
-      have hd : disjointness x y = decide (positions x ++ positions y).Nodup := by
+      have hd : disjointness x y =
+          decide (BitString.positions x ++ BitString.positions y).Nodup := by
         rw [Bool.eq_iff_iff, decide_eq_true_iff, nodup_positions_append]
       rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, id, hd]
   have h1 := PublicCoin.le_mul_ecomplexityFun_disjointness_add_of_le hr n
@@ -153,12 +145,13 @@ theorem Algorithm.le_of_run_eq_decide_nodup {σ : Type*} {n b : ℕ}
       A.run s = decide s.Nodup) (hspace : A.SpaceLE n b) : n ≤ b := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · exact Nat.zero_le _
-  have h := A.ecomplexityFun_le_of_spaceLE hspace positions positions length_positions_le id
+  have h := A.ecomplexityFun_le_of_spaceLE hspace BitString.positions BitString.positions
+    BitString.length_positions_le id
     disjointness fun x y => by
       rw [id, hA _ (by
         rw [List.length_append]
-        have := length_positions_le x
-        have := length_positions_le y
+        have := BitString.length_positions_le x
+        have := BitString.length_positions_le y
         omega)]
       rw [Bool.eq_iff_iff, decide_eq_true_iff, nodup_positions_append]
   have h2 := ecomplexity_disjointness hn
@@ -168,34 +161,6 @@ theorem Algorithm.le_of_run_eq_decide_nodup {σ : Type*} {n b : ℕ}
   omega
 
 /-! ### The largest frequency -/
-
-/-- The largest number of occurrences of an item in the stream `s` (`F∞`; zero for the empty
-stream). -/
-@[expose] def maxFreq {α : Type*} [DecidableEq α] (s : List α) : ℕ :=
-  s.toFinset.sup fun a => s.count a
-
-theorem maxFreq_le_one_of_nodup {α : Type*} [DecidableEq α] {s : List α} (hs : s.Nodup) :
-    maxFreq s ≤ 1 :=
-  Finset.sup_le fun a _ => List.nodup_iff_count_le_one.1 hs a
-
-theorem one_le_maxFreq {α : Type*} [DecidableEq α] {s : List α} (hs : s ≠ []) : 1 ≤ maxFreq s := by
-  obtain ⟨a, ha⟩ := List.exists_mem_of_ne_nil s hs
-  exact (List.count_pos_iff.2 ha).trans_le (Finset.le_sup (f := fun a => s.count a)
-    (List.mem_toFinset.2 ha))
-
-theorem two_le_maxFreq_of_not_nodup {α : Type*} [DecidableEq α] {s : List α} (hs : ¬s.Nodup) :
-    2 ≤ maxFreq s := by
-  rw [List.nodup_iff_count_le_one] at hs
-  push Not at hs
-  obtain ⟨a, ha⟩ := hs
-  have hmem : a ∈ s := List.count_pos_iff.1 (by omega)
-  exact ha.trans_le (Finset.le_sup (f := fun a => s.count a) (List.mem_toFinset.2 hmem))
-
-/-- The items of a stream are distinct exactly when no item occurs twice. -/
-theorem maxFreq_le_one_iff {α : Type*} [DecidableEq α] {s : List α} :
-    maxFreq s ≤ 1 ↔ s.Nodup :=
-  ⟨fun h => by_contra fun hs => absurd (two_le_maxFreq_of_not_nodup hs) (by omega),
-    maxFreq_le_one_of_nodup⟩
 
 /-- On a nonempty stream, an estimate within less than a third of `F∞` decides whether the items
 are distinct by comparing it with `4 / 3`. -/

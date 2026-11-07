@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Streaming.Basic
+public import Complexity.Computability.Streaming.Frequency
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.MedianOfMeans
 import Complexity.Foundations.Data.Finset.Expect
@@ -37,18 +38,21 @@ seeds (`Cslib.Streaming.dens_amsSketch_error_le`); so the randomized sketch with
 (`Cslib.Streaming.solves_ams`). Taking `k = ⌈6 / η²⌉` and `r = ⌈log (1 / δ) / log (9 / 8)⌉` uses
 `O(η⁻² log δ⁻¹)` counters.
 
-**Memory.** The seeds are part of the memory state, so they are charged to the space: on streams
-of at most `m` items each counter lies in `[-m, m]`, and a single `b`-bit encoding of the states
-reachable from all seeds exists as soon as `(|ι| (2 m + 1)) ^ (2 r k) ≤ 2 ^ b`
-(`Cslib.Streaming.exists_injOn_iUnion_reachable_amsSketch`, `Cslib.Streaming.spaceLE_ams`), that
-is `b = ⌈2 r k (log₂ |ι| + log₂ (2 m + 1))⌉` bits. With four-wise independent seeds of
-`O(log n)` bits for a universe of size `n`, for instance from
-`Cslib.Probability.trinomialPolyHash`, this is the `O(η⁻² log δ⁻¹ (log n + log m))` bound of
+**Memory.** On streams of at most `m` items each counter lies in `[-m, m]`. Under the public-coin
+convention of `Cslib.Streaming.Randomized` the seeds are drawn with the algorithm and are not
+charged, so every sketch drawn uses at most `b` bits as soon as `(2 m + 1) ^ (2 r k) ≤ 2 ^ b`
+(`Cslib.Streaming.spaceLE_ams`). Storing the seeds as well costs `2 r k log₂ |ι|` more bits. Only
+the initial memory of the sketch depends on the seeds (`Cslib.Streaming.update_amsSketch`,
+`Cslib.Streaming.output_amsSketch`), so the sketch is one algorithm with a random initial memory,
+and one `b`-bit encoding of the states reachable from all seeds exists as soon as
+`(|ι| (2 m + 1)) ^ (2 r k) ≤ 2 ^ b` (`Cslib.Streaming.exists_injOn_iUnion_reachable_amsSketch`),
+that is `b = ⌈2 r k (log₂ |ι| + log₂ (2 m + 1))⌉` bits. With four-wise independent seeds of
+`O(log n)` bits for a universe of size `n`, for instance from `Cslib.Probability.trinomialPolyHash`,
+this seed-inclusive count is the `O(η⁻² log δ⁻¹ (log n + log m))` bound of
 [AlonMatiasSzegedy1999, Theorem 2.2].
 
 ## Main definitions
 
-* `Cslib.Streaming.freqMoment`: the frequency moments `F_k` of a stream.
 * `Cslib.Streaming.amsSketch`: the AMS sketch with given seeds.
 * `Cslib.Streaming.ams`: the randomized AMS sketch with uniform seeds.
 
@@ -56,10 +60,12 @@ is `b = ⌈2 r k (log₂ |ι| + log₂ (2 m + 1))⌉` bits. With four-wise indep
 
 * `Cslib.Streaming.run_amsSketch`: the answer is the median of means of the squared tug-of-war
   sums.
+* `Cslib.Streaming.init_amsSketch`, `Cslib.Streaming.update_amsSketch`,
+  `Cslib.Streaming.output_amsSketch`: only the initial memory depends on the seeds.
 * `Cslib.Streaming.dens_amsSketch_error_le`, `Cslib.Streaming.solves_ams`: the AMS sketch
   estimates `F₂` within `η F₂` except with probability `(8 / 9) ^ r`.
-* `Cslib.Streaming.exists_injOn_iUnion_reachable_amsSketch`, `Cslib.Streaming.spaceLE_ams`: its
-  memory, seeds included.
+* `Cslib.Streaming.spaceLE_ams`: its memory under the public-coin convention, seeds not charged.
+* `Cslib.Streaming.exists_injOn_iUnion_reachable_amsSketch`: its memory with the seeds stored.
 
 ## References
 
@@ -73,10 +79,6 @@ namespace Cslib.Streaming
 
 open Finset Probability
 open scoped BigOperators
-
-/-- The `k`-th **frequency moment** `F_k = ∑ₐ (count a s) ^ k` of a stream. -/
-@[expose] def freqMoment {α : Type*} [DecidableEq α] (k : ℕ) (s : List α) : ℕ :=
-  ∑ a ∈ s.toFinset, s.count a ^ k
 
 /-- A sum of at most unit integers is bounded by the number of terms. -/
 private theorem abs_sum_map_le {α : Type*} {f : α → ℤ} (hf : ∀ a, |f a| ≤ 1) (s : List α) :
@@ -96,8 +98,9 @@ abbrev AMSState (ι : Type*) (r k : ℕ) : Type _ :=
 
 /-- The **AMS sketch** for `F₂` [AlonMatiasSzegedy1999, Theorem 2.2] with seeds `ω`: the counter
 with seed `θ` adds the sign `sgn (h θ a)` of each item `a`, and the answer is the median over the
-`2 r` groups of the average square of the `k` counters in the group. The seeds are part of the
-memory. -/
+`2 r` groups of the average square of the `k` counters in the group. The seeds are written in the
+initial memory and read back by the update, which does not otherwise depend on `ω`
+(`Cslib.Streaming.update_amsSketch`). -/
 noncomputable def amsSketch (h : ι → α → Y) (sgn : Y → ℤ) (r k : ℕ)
     (ω : Fin (2 * r) → Fin k → ι) : Algorithm (AMSState ι r k) α ℝ where
   init := (ω, 0)
@@ -110,6 +113,21 @@ noncomputable def ams [Fintype ι] [Nonempty ι] (h : ι → α → Y) (sgn : Y 
   (PMF.uniformOfFintype (Fin (2 * r) → Fin k → ι)).map (amsSketch h sgn r k)
 
 variable {h : ι → α → Y} {sgn : Y → ℤ} {r k : ℕ}
+
+/-- The AMS sketch starts with its seeds and zero counters. -/
+theorem init_amsSketch (ω : Fin (2 * r) → Fin k → ι) :
+    (amsSketch h sgn r k ω).init = (ω, 0) := by
+  simp only [amsSketch]
+
+/-- The update of the AMS sketch reads the seeds from the memory: it does not depend on `ω`. -/
+theorem update_amsSketch (ω : Fin (2 * r) → Fin k → ι) (q : AMSState ι r k) (a : α) :
+    (amsSketch h sgn r k ω).update q a = (q.1, fun i l => q.2 i l + sgn (h (q.1 i l) a)) := by
+  simp only [amsSketch]
+
+/-- The output of the AMS sketch does not depend on its seeds. -/
+theorem output_amsSketch (ω : Fin (2 * r) → Fin k → ι) (q : AMSState ι r k) :
+    (amsSketch h sgn r k ω).output q = median fun i => 𝔼 l, ((q.2 i l : ℤ) : ℝ) ^ 2 := by
+  simp only [amsSketch]
 
 theorem stateFrom_amsSketch (ω : Fin (2 * r) → Fin k → ι) (q : AMSState ι r k) (s : List α) :
     (amsSketch h sgn r k ω).stateFrom q s =
@@ -214,9 +232,48 @@ theorem solves_ams [Fintype ι] [Nonempty ι] [DecidableEq α] [Fintype Y] [Deci
   simp only [not_le]
   exact (dens_amsSketch_error_le hh hsq hsum hη hk s).trans hδ
 
-/-- **The memory of the AMS sketch** [AlonMatiasSzegedy1999, Theorem 2.2]: on streams of at most
-`m` items, the states reachable from all seeds together have a single injective encoding by `b`
-bits as soon as `(|ι| (2 m + 1)) ^ (2 r k) ≤ 2 ^ b`; the seeds are charged to the memory. -/
+/-- On streams of at most `m` items, every counter of the AMS sketch lies in `[-m, m]`. -/
+theorem mem_Icc_state_amsSketch_snd (hsgn : ∀ y, |sgn y| ≤ 1) (ω : Fin (2 * r) → Fin k → ι)
+    {m : ℕ} {s : List α} (hs : s.length ≤ m) (i : Fin (2 * r)) (l : Fin k) :
+    ((amsSketch h sgn r k ω).state s).2 i l ∈ Icc (-(m : ℤ)) m := by
+  rw [state_amsSketch, mem_Icc]
+  exact abs_le.1 ((abs_sum_map_le (fun a => hsgn (h (ω i l) a)) s).trans
+    (by exact_mod_cast hs : ((s.length : ℕ) : ℤ) ≤ m))
+
+/-- The number of values of `2 r k` counters in `[-m, m]`. -/
+private theorem card_piFinset_Icc (m : ℕ) :
+    (Fintype.piFinset fun _ : Fin (2 * r) => Fintype.piFinset fun _ : Fin k =>
+      Icc (-(m : ℤ)) m).card = (2 * m + 1) ^ (2 * r * k) := by
+  have : (↑m + 1 - -(m : ℤ)).toNat = 2 * m + 1 := by omega
+  simp only [Fintype.card_piFinset, Int.card_Icc, this, prod_const, card_univ, Fintype.card_fin]
+  rw [← pow_mul, mul_comm k]
+
+/-- **The memory of the randomized AMS sketch** [AlonMatiasSzegedy1999, Theorem 2.2]: every sketch
+it draws uses at most `b` bits of memory on streams of at most `m` items when
+`(2 m + 1) ^ (2 r k) ≤ 2 ^ b`. Under the public-coin convention of `Cslib.Streaming.Randomized`
+only the `2 r k` counters are charged; the seeds are not. For the count with the seeds stored see
+`Cslib.Streaming.exists_injOn_iUnion_reachable_amsSketch`. -/
+theorem spaceLE_ams [Fintype ι] [Nonempty ι] (hsgn : ∀ y, |sgn y| ≤ 1) {m b : ℕ}
+    (hb : (2 * m + 1) ^ (2 * r * k) ≤ 2 ^ b) :
+    (ams h sgn r k).SpaceLE m b := by
+  classical
+  intro A hA
+  rw [ams, PMF.support_map] at hA
+  obtain ⟨ω, -, rfl⟩ := hA
+  refine Algorithm.spaceLE_of_subset_finset (T := {ω} ×ˢ
+    Fintype.piFinset fun _ => Fintype.piFinset fun _ => Icc (-(m : ℤ)) m) ?_ ?_
+  · rintro _ ⟨s, hs, rfl⟩
+    rw [mem_coe, mem_product, Fintype.mem_piFinset]
+    refine ⟨?_, fun i => Fintype.mem_piFinset.2 fun l => mem_Icc_state_amsSketch_snd hsgn ω hs i l⟩
+    rw [state_amsSketch, mem_singleton]
+  · rwa [card_product, card_singleton, one_mul, card_piFinset_Icc]
+
+/-- **The memory of the AMS sketch with its seeds stored** [AlonMatiasSzegedy1999, Theorem 2.2]:
+on streams of at most `m` items, the states reachable from all seeds together have a single
+injective encoding by `b` bits as soon as `(|ι| (2 m + 1)) ^ (2 r k) ≤ 2 ^ b`. Since only the
+initial memory depends on the seeds (`Cslib.Streaming.update_amsSketch`,
+`Cslib.Streaming.output_amsSketch`), this is the memory of one algorithm whose initial memory is
+random, with the seeds charged. -/
 theorem exists_injOn_iUnion_reachable_amsSketch [Fintype ι] (hsgn : ∀ y, |sgn y| ≤ 1) {m b : ℕ}
     (hb : (Fintype.card ι * (2 * m + 1)) ^ (2 * r * k) ≤ 2 ^ b) :
     ∃ enc : AMSState ι r k → BitString b,
@@ -226,28 +283,12 @@ theorem exists_injOn_iUnion_reachable_amsSketch [Fintype ι] (hsgn : ∀ y, |sgn
     Fintype.piFinset fun _ => Fintype.piFinset fun _ => Icc (-(m : ℤ)) m
   refine Algorithm.exists_injOn_of_subset_finset (T := T) ?_ ?_
   · rintro _ ⟨_, ⟨ω, rfl⟩, s, hs, rfl⟩
-    rw [state_amsSketch]
-    simp only [T, coe_product, coe_univ, Set.mem_prod, Set.mem_univ, true_and, mem_coe,
-      Fintype.mem_piFinset, mem_Icc]
-    intro i l
-    have := (abs_sum_map_le (fun a => hsgn (h (ω i l) a)) s).trans
-      (by exact_mod_cast hs : ((s.length : ℕ) : ℤ) ≤ m)
-    exact abs_le.1 this
-  · simp only [T, card_product, card_univ, Fintype.card_pi, prod_const, Fintype.card_fin,
-      Fintype.card_piFinset, Int.card_Icc]
-    refine le_trans (le_of_eq ?_) hb
-    have : (↑m + 1 - -(m : ℤ)).toNat = 2 * m + 1 := by omega
-    rw [this, ← mul_pow, ← mul_pow, ← pow_mul, mul_comm k]
-
-/-- **The memory of the randomized AMS sketch**: every sketch it draws uses at most `b` bits of
-memory on streams of at most `m` items when `(|ι| (2 m + 1)) ^ (2 r k) ≤ 2 ^ b`. -/
-theorem spaceLE_ams [Fintype ι] [Nonempty ι] (hsgn : ∀ y, |sgn y| ≤ 1) {m b : ℕ}
-    (hb : (Fintype.card ι * (2 * m + 1)) ^ (2 * r * k) ≤ 2 ^ b) :
-    (ams h sgn r k).SpaceLE m b := by
-  intro A hA
-  rw [ams, PMF.support_map] at hA
-  obtain ⟨ω, -, rfl⟩ := hA
-  obtain ⟨enc, henc⟩ := exists_injOn_iUnion_reachable_amsSketch (h := h) hsgn hb
-  exact ⟨enc, henc.mono (Set.subset_iUnion (fun ω => (amsSketch h sgn r k ω).reachable m) ω)⟩
+    rw [mem_coe, mem_product, Fintype.mem_piFinset]
+    exact ⟨mem_univ _, fun i => Fintype.mem_piFinset.2 fun l =>
+      mem_Icc_state_amsSketch_snd hsgn ω hs i l⟩
+  · rw [card_product, card_piFinset_Icc, card_univ, Fintype.card_pi, prod_const, card_univ,
+      Fintype.card_fin, Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, ← pow_mul,
+      mul_comm k, ← mul_pow]
+    exact hb
 
 end Cslib.Streaming

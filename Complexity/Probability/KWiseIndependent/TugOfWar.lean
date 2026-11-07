@@ -9,6 +9,8 @@ module
 
 public import Complexity.Probability.KWiseIndependent
 public import Mathlib.Data.Finset.Prod
+import Complexity.Foundations.Data.Finset.OffDiag
+import Complexity.Probability.KWiseIndependent.SecondMoment
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Data.Fin.VecNotation
@@ -33,17 +35,14 @@ Matias and Szegedy [AlonMatiasSzegedy1999] estimates `∑ x ∈ S, f x ²`:
 
 These are the two moment computations in the proof of [AlonMatiasSzegedy1999, Theorem 2.2]. The
 first is an instance of the additivity of second moments under pairwise independence
-(`Cslib.Probability.IsKWiseIndependentHash.expect_sq_sum`), which also gives the variance of an
-average of independent samples.
+(`Cslib.Probability.IsKWiseIndependentHash.expect_sq_sum`, in
+`Complexity.Probability.KWiseIndependent.SecondMoment`); both expand squares of sums with
+`Finset.sq_sum_eq_sum_sq_add_sum_offDiag`.
 
 ## Main results
 
-* `Finset.sq_sum_eq_sum_sq_add_sum_offDiag`: the square of a sum is the sum of the squares plus the
-  sum over ordered pairs of distinct indices.
 * `Cslib.Probability.IsKWiseIndependentHash.expect_prod_sign`: averages of products of signs at
   at most `k` points.
-* `Cslib.Probability.IsKWiseIndependentHash.expect_sq_sum`: second moments of sums of centered
-  scores add under pairwise independence.
 * `Cslib.Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign`: the tug-of-war estimator is
   unbiased.
 * `Cslib.Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign_sub_sq`,
@@ -61,16 +60,6 @@ public section
 
 open Finset Fintype
 open scoped BigOperators
-
-/-- The square of a finite sum is the sum of the squares plus the products over the ordered pairs
-of distinct indices. -/
-theorem Finset.sq_sum_eq_sum_sq_add_sum_offDiag {α R : Type*} [CommSemiring R]
-    (s : Finset α) (g : α → R) :
-    (∑ x ∈ s, g x) ^ 2 = ∑ x ∈ s, g x ^ 2 + ∑ p ∈ s.offDiag, g p.1 * g p.2 := by
-  classical
-  rw [sq, Finset.sum_mul_sum, ← sum_product' (f := fun x y => g x * g y), ← diag_union_offDiag,
-    sum_union (disjoint_diag_offDiag s), sum_diag]
-  simp only [sq]
 
 namespace Cslib.Probability
 
@@ -138,24 +127,6 @@ theorem expect_sign_mul_sign_mul_sign_mul_sign [DecidableEq X] (hh : IsKWiseInde
     by_cases hdb : d = b <;>
     simp only [hca, hda, hcb, hdb, hab, hab.symm, hcd, hcd.symm, ite_true, ite_false,
       Nat.even_iff] <;> (try split_ifs) <;> simp_all
-
-/-- **Second moments add under pairwise independence**: for scores `Z x : Y → ℝ` of average zero at
-the points of a finite set `S`, the average square of `∑ x ∈ S, Z x (h i x)` is the sum of the
-average squares. -/
-theorem expect_sq_sum (hh : IsKWiseIndependentHash 2 h) (S : Finset X) (Z : X → Y → ℝ)
-    (hZ : ∀ x ∈ S, 𝔼 y, Z x y = 0) :
-    𝔼 i, (∑ x ∈ S, Z x (h i x)) ^ 2 = ∑ x ∈ S, 𝔼 y, Z x y ^ 2 := by
-  classical
-  simp only [sq_sum_eq_sum_sq_add_sum_offDiag, expect_add_distrib, expect_sum_comm]
-  have hdiag : ∀ x ∈ S, 𝔼 i, Z x (h i x) ^ 2 = 𝔼 y, Z x y ^ 2 := fun x _ => by
-    have := hh.expect_prod (T := {x}) (by simp) fun x y => Z x y ^ 2
-    simpa only [prod_singleton] using this
-  have hoff : ∀ p ∈ S.offDiag, 𝔼 i, Z p.1 (h i p.1) * Z p.2 (h i p.2) = 0 := fun p hp => by
-    obtain ⟨h1, -, hne⟩ := mem_offDiag.1 hp
-    have := hh.expect_prod (T := {p.1, p.2}) card_le_two fun x y => Z x y
-    simp only [prod_pair hne, hZ _ h1, zero_mul] at this
-    exact this
-  rw [sum_congr rfl hdiag, sum_congr rfl hoff, sum_const_zero, add_zero]
 
 /-- **The tug-of-war estimator is unbiased** [AlonMatiasSzegedy1999, Theorem 2.2]: for a pairwise
 independent family of signs `ε (h i x)` with mean zero and square one,

@@ -33,12 +33,16 @@ count states that no short stream reaches.
 
 **Randomness.** A randomized streaming algorithm (`Cslib.Streaming.Randomized σ α β`) is a
 distribution over deterministic ones: its random choices are drawn before the stream is read, as
-for public-coin protocols (`Cslib.Communication.PublicCoin`). Its memory bound must hold for every
-algorithm in the support. Charging only the memory makes lower bounds stronger: the random bits
-are free unless an algorithm stores them, and an algorithm that rereads a random seed, like the AMS
-sketch, must keep it in its memory states (`Cslib.Streaming.amsSketch`). `μ.Solves ε R m` says that
-on every stream of at most `m` items, the answer of a random algorithm drawn from `μ` is related to
-the stream by `R` except with probability at most `ε`.
+for public-coin protocols (`Cslib.Communication.PublicCoin`). Its memory bound
+(`Cslib.Streaming.Randomized.SpaceLE`) is checked separately for each algorithm in the support.
+Since the update function of a drawn algorithm may depend on the random choices, the random bits
+are free: they are not charged to the memory. This is the convention under which communication
+lower bounds transfer. An algorithm that tosses fresh coins at each item becomes such a
+distribution only after it also counts the items it has read, which costs `⌈log₂ (m + 1)⌉`
+more bits on streams of at most `m` items; so lower bounds of order `n` still apply to it, up to
+that additive term. `μ.Solves ε R m` says that on every stream of at most `m` items, the answer of
+a random algorithm drawn from `μ` is related to the stream by `R` except with probability at most
+`ε`.
 
 `Cslib.Streaming.Algorithm.reduce` prefixes fixed items to the stream, translates the items and
 post-processes the answer; it preserves memory bounds, which is how streaming lower bounds pass

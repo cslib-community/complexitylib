@@ -7,7 +7,7 @@ The private-transcript sources are described in [the extraction methods](develop
 <a id="alonmatiasszegedy99"></a>
 ## alonmatiasszegedy99
 
-Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating the Frequency Moments.” *Journal of Computer and System Sciences* 58(1), 137–147, 1999; preliminary version in STOC 1996. https://doi.org/10.1006/jcss.1997.1545 . The theorem locators (Theorem 2.2 for the `F₂` sketch, Proposition 3.1 for the `F∞` lower bound) and the bibliographic metadata were checked against secondary search summaries on 2026-11-07 UTC. The PDF was not inspected.
+Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating the Frequency Moments.” *Journal of Computer and System Sciences* 58(1), 137–147, 1999; preliminary version in STOC 1996. https://doi.org/10.1006/jcss.1997.1545 . Author-hosted copy of the journal version: https://www.tau.ac.il/~nogaa/PDFS/amsz4.pdf . An independent agent review checked the theorem locators and statements (Theorem 2.2 for the `F₂` sketch, Proposition 3.1 for the `F∞` lower bound) against that copy on 2026-11-07 UTC. The JCSS page numbers were taken from secondary search summaries and were not checked against the typeset journal PDF.
 
 <a id="barrett26"></a>
 ## barrett26

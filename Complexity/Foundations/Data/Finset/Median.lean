@@ -25,6 +25,11 @@ majorities: if more than half of the family lies weakly below `b`, so does the m
 (`Cslib.abs_median_sub_le`), the step that turns estimates that are good with probability above a
 half into one that is good with high probability [AlonMatiasSzegedy1999, Theorem 2.2].
 
+`Finset.exists_median` (`Complexity.Foundations.Data.Finset.Quantile`) only asserts that a median
+element exists; `Cslib.median` is a chosen value, so it can appear in an algorithm's output. It is
+unrelated to `Cslib.BitString.median`, the coordinatewise majority of three bit strings; under
+`open Cslib.BitString` write `Cslib.median` explicitly.
+
 ## Main definitions
 
 * `Cslib.median`: the lower median of a finite family of reals.

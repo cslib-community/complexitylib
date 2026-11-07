@@ -12,7 +12,7 @@ public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Data.Fintype.Pi
 import Complexity.Foundations.Combinatorics.MajorityVote
 import Complexity.Foundations.Data.Finset.Expect
-import Complexity.Probability.KWiseIndependent.TugOfWar
+import Complexity.Probability.KWiseIndependent.SecondMoment
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Tactic.FieldSimp
