@@ -1033,7 +1033,9 @@ public import Complexity.Computability.Circuit.Boolean.SparseSynthesisConstructi
 public import Complexity.Computability.Circuit.Boolean.Spira
 public import Complexity.Computability.Circuit.Boolean.Substitution
 public import Complexity.Computability.Circuit.Boolean.SymAnd
+public import Complexity.Computability.Circuit.Boolean.SymAnd.ACC0
 public import Complexity.Computability.Circuit.Boolean.SymAnd.Collapse
+public import Complexity.Computability.Circuit.Boolean.SymAnd.Restrict
 public import Complexity.Computability.Circuit.Boolean.Synthesis
 public import Complexity.Computability.Circuit.Boolean.TC0
 public import Complexity.Computability.Circuit.Boolean.Tableau.Basic
@@ -3733,7 +3735,9 @@ public import Complexity.Foundations.BooleanAnalysis.Linearity
 public import Complexity.Foundations.BooleanAnalysis.LongCode
 public import Complexity.Foundations.BooleanAnalysis.LowDegree
 public import Complexity.Foundations.BooleanAnalysis.LowDegree.Addition
+public import Complexity.Foundations.BooleanAnalysis.LowDegree.Choose
 public import Complexity.Foundations.BooleanAnalysis.LowDegree.Dimension
+public import Complexity.Foundations.BooleanAnalysis.LowDegree.OrTest
 public import Complexity.Foundations.BooleanAnalysis.LowDegree.Polynomial
 public import Complexity.Foundations.BooleanAnalysis.LowDegreeParity
 public import Complexity.Foundations.BooleanAnalysis.MaximalSupport
@@ -4038,6 +4042,7 @@ public import Complexity.Foundations.Data.Nat.CeilDiv
 public import Complexity.Foundations.Data.Nat.CeilQuarter
 public import Complexity.Foundations.Data.Nat.Choose
 public import Complexity.Foundations.Data.Nat.Choose.Central
+public import Complexity.Foundations.Data.Nat.Choose.PrimePowerDvd
 public import Complexity.Foundations.Data.Nat.Choose.Real
 public import Complexity.Foundations.Data.Nat.Choose.Vandermonde
 public import Complexity.Foundations.Data.Nat.Div
