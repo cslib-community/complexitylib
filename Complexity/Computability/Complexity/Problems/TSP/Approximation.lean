@@ -23,9 +23,10 @@ Section 2.4).
 The cities, distances and tour lengths are those of `Cslib.Complexity.TSP`: the cities are the
 row indices `0, …, D.length - 1`, distances are `TSP.dist D`, and `TSP.tourLength D p` is the
 length of the closed tour `p`. A matrix is metric (`TSP.IsMetric`) when the distances between
-cities are symmetric and satisfy the triangle inequality. Diagonal entries are unconstrained, and
-entries outside the city range are irrelevant. [WilliamsonShmoys2011] additionally assumes zero
-diagonal entries, which the bound does not need.
+cities are symmetric and satisfy the triangle inequality. The triangle inequality is required for
+all triples of cities, including those with `i = k`, so each diagonal entry is at most twice any
+distance from its city. Diagonal entries need not be zero, as [WilliamsonShmoys2011] assumes; the
+bound does not need that. Entries outside the city range are irrelevant.
 
 ## Main definitions
 
@@ -58,7 +59,8 @@ namespace Cslib.Complexity.TSP
 open Cslib.Algorithms.Lean.TSP
 
 /-- A distance matrix is **metric** when the distances between its cities are symmetric and satisfy
-the triangle inequality. Diagonal entries are unconstrained. -/
+the triangle inequality. The triangle inequality covers all triples, including `i = k`, so each
+diagonal entry is at most twice any distance from its city; diagonal entries need not be zero. -/
 structure IsMetric (D : List (List ℕ)) : Prop where
   /-- Distances between cities are symmetric. -/
   symm : ∀ i < D.length, ∀ j < D.length, dist D i j = dist D j i

@@ -9,7 +9,6 @@ module
 
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Mathlib.Data.List.Rotate
-import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Algebra.Order.Group.Nat
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.List.Zip
@@ -27,8 +26,9 @@ inserted immediately after it.
 
 Vertices are `Fin n` and `δ : Fin n → Fin n → ℕ` is an arbitrary cost function. The cost of a
 closed walk visiting the entries of a list in order is `cycleCost δ t`. The approximation bound
-assumes only that `δ` is symmetric and satisfies the triangle inequality; the diagonal is
-unconstrained, and costs are natural numbers, hence nonnegative.
+assumes only that `δ` is symmetric and satisfies the triangle inequality for all triples, including
+`i = k`, so each diagonal entry is at most twice any cost from its vertex; diagonal entries need not
+be zero. Costs are natural numbers, hence nonnegative.
 
 ## Source mapping
 
@@ -433,15 +433,6 @@ theorem cycleCost_mstTour_le_two_mul_totalWeight {δ : Fin n → Fin n → ℕ}
 
 /-! ### The lower bound -/
 
-/-- Kruskal's tree weighs at most its input. -/
-theorem totalWeight_kruskalEdges_le (es : List (WeightedEdge n ℕ)) :
-    totalWeight (kruskalEdges es) ≤ totalWeight es := by
-  unfold kruskalEdges totalWeight
-  calc ((kruskalScan (Partition.discrete n) (sortEdges es)).map WeightedEdge.weight).sum
-      ≤ ((sortEdges es).map WeightedEdge.weight).sum :=
-        ((kruskalScan_sublist _ _).map _).sum_le_sum fun _ _ => Nat.zero_le _
-    _ = (es.map WeightedEdge.weight).sum := ((sortEdges_perm es).map _).sum_eq
-
 private theorem eqvGen_getElem_zero {α : Type*} {R : α → α → Prop} {q : List α}
     (hR : ∀ i (h : i + 1 < q.length), R q[i] q[i + 1]) (h0 : 0 < q.length) (i : ℕ)
     (hi : i < q.length) : Relation.EqvGen R (q[0]'h0) (q[i]'hi) := by
@@ -493,7 +484,7 @@ theorem totalWeight_kruskalEdges_le_cycleCost (δ : Fin n → Fin n → ℕ) {q 
       (edgePartition_kruskalEdges H).trans hconn⟩
   calc totalWeight (kruskalEdges (completeEdges δ)) ≤ totalWeight (kruskalEdges H) :=
         (kruskalEdges_isMinSpanningForest _).2 _ hsf
-    _ ≤ totalWeight H := totalWeight_kruskalEdges_le H
+    _ ≤ totalWeight H := totalWeight_kruskalEdges_le H fun _ _ => Nat.zero_le _
     _ = cycleCost δ q := hHw
 
 /-! ### The factor 2 -/
