@@ -37,7 +37,7 @@ Priorities live in this list and in the tiers of [#897].
 1. [Completeness of oblivious transfer](#cryptographic-landmarks)
 2. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
 3. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
+4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity) ([#321])
 5. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
 6. [MIP = NEXP](#interactive-proofs) ([#892])
 7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
@@ -456,12 +456,19 @@ index links to canonical definitions rather than keeping a second set.
   and native NP-completeness outside them, for each fixed finite Boolean constraint language
   of arbitrary fixed arities. `CSPSAT.schaefer_dichotomy` assembles the actual solvers, fixed
   compilers, clone classification and gadgets under binary labels and exact-arity rejection,
-  including empty/nullary relations. Final review and integration of the stack remain open.
+  including empty/nullary relations. The hard branch has a native 3SAT reduction with
+  `output.numVars + output.length ≤ C * input.length`, for a language-dependent constant.
   Symmetric and larger-domain dichotomies are outside the current scope.
 
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
+- **Abstract (Blum) complexity** ([#2866]): Blum complexity measures over Mathlib's
+  `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
+  almost-everywhere classes and recursive relatedness, are in `Computability/BlumComplexity`.
+  Remaining: Blum's speedup theorem, the McCreight–Meyer union theorem, the compression theorem
+  and honesty, and Blum measures for native multitape time and space through a Gödel-numbering
+  bridge from native descriptions.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
@@ -540,9 +547,10 @@ index links to canonical definitions rather than keeping a second set.
   `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
-- **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`** ([#2873]): an alternating machine checks
-  one cell of a deterministic tableau. It guesses the cell's predecessor window existentially and
-  checks each predecessor cell universally.
+- **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`**
+  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): an alternating machine
+  checks one cell of a deterministic tableau. It guesses the cell's predecessor window
+  existentially and checks each predecessor cell universally.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
@@ -588,9 +596,9 @@ index links to canonical definitions rather than keeping a second set.
   separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
   application needs a native path-counting class and complement closure.
 - **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
-- **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE.
-  P-selective sets (Selman): a P-selective NP-complete set gives `P = NP`, P-selective sets lie in
-  `P/poly` (Ko), and self-reducible P-selective sets lie in P.
+- **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE,
+  self-reducible P-selective sets lie in P, and P-selective sets are not `≤ₜₜᵖ`-hard for NP unless
+  P = NP.
 - **Low and high hierarchies in NP** (Schöning): sparse NP sets lie in `Low₂` (Ko and Schöning), and
   so does graph isomorphism, via graph non-isomorphism in AM.
 - **Immunity:** immune and bi-immune sets, P-bi-immune sets in EXP (Balcázar and Schöning), and
@@ -650,7 +658,9 @@ universe size, not supplied as unverified input tables. In dependency order:
   projections.
 - **Circuit Value P-complete under first-order reductions**, via `REACHa → MCVP → CVP` (Immerman,
   Theorem 3.26 and Exercise 3.28), with the alternating-logspace simulation of polynomial-time
-  machines and the translation to `encCircuitValue`.
+  machines (the machine-level `P ⊆ AL`, see
+  [#2873](https://github.com/cslib-community/complexitylib/issues/2873)) and the translation to
+  `encCircuitValue`.
 - Numeric certificates for further restricted-domain families; canonical BIT on a restricted
   domain need not be first-order definable.
 - Order-free: SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded
@@ -695,8 +705,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Håstad's optimal MAX-E3SAT hardness** ([#886]): for `0 < ε < 1/8`, NP-hardness of
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
-  `7/8 + ε` of the clauses. This needs Raz–Holenstein parallel repetition for small-soundness
-  Label Cover and Håstad's separate perfect-completeness construction for MAX-E3SAT.
+  `7/8 + ε` of the clauses. Holenstein's parallel repetition theorem for two-prover games is
+  proved (`TwoProverGame.value_pow_le`). What remains is small-soundness Label Cover through
+  parallel repetition and Håstad's separate perfect-completeness construction for MAX-E3SAT.
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
@@ -720,7 +731,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Williams's NEXP ⊄ ACC⁰ and Murray–Williams's NQP ⊄ ACC⁰** ([#889]): no polynomial-size,
   constant-depth circuits over AND, OR, NOT and fixed-modulus counting gates for some language in
-  NEXP.
+  NEXP. `SymAnd/Collapse.lean` collapses towers of prime-modulus polynomial layers into `SYM ∘ AND`
+  (Beigel–Tarui, Lemma 2.8). Still open: compiling `AC0Mod` circuits into such towers (composite
+  moduli through prime-power digits, AND/OR through small-bias tests), the quasi-polynomial-time
+  construction, Williams's fast `SYM ∘ AND` evaluation and ACC-SAT algorithm, a fine
+  nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
   Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
@@ -779,8 +794,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
   Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
   has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
-  fields of characteristic other than two (membership now has an explicit Ryser witness over
-  every commutative ring; VNP-hardness remains open); formula and branching-program models,
+  fields of characteristic other than two ([#321]; membership has an explicit Ryser witness over
+  every commutative ring, and arithmetic formulas project to the permanent with dimension
+  `Formula.size + 1` over every commutative semiring; a selector occurring in one permanent entry
+  can be eliminated with one extra dimension when `2` is invertible; the conversion from VP
+  witnesses to formulas, the two-entry gadget and the general Boolean-sum elimination needed for
+  VNP-hardness remain open); formula and branching-program models,
   identity testing, hitting sets, and tensor and rank methods, including partial-derivative
   measures (the order-`k` measure and bounded-product-fan-in depth-three determinant and permanent
   lower bounds, covering homogeneous depth-three circuits, are proved in
@@ -1181,11 +1200,6 @@ and credited.
 These remain coverage targets but are deferred from the active queue; their issues were closed as
 not planned, not as proved.
 
-- The full VNP-completeness reduction for the permanent ([#321]). Arithmetic formulas now
-  project to the permanent with dimension `Formula.size + 1` over every commutative semiring;
-  a selector occurring in one permanent entry can be eliminated with one extra dimension when
-  `2` is invertible. The conversion from VP witnesses to formulas, the two-entry gadget and
-  general Boolean-sum elimination needed for VNP-hardness remain open.
 - General auxiliary-input zero knowledge ([#324]); the GMW protocol's auxiliary-input results and
   their limits are in [`GMW/Simulator.lean`](Complexity/Crypto/Computational/GMW/Simulator.lean).
 - Vollmer's generalized-quantifier survey ([#399]): ordered leaf words, explicit uniformity and
@@ -1260,4 +1274,4 @@ not planned, not as proved.
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
-[#2873]: https://github.com/cslib-community/complexitylib/issues/2873
+[#2866]: https://github.com/cslib-community/complexitylib/issues/2866
