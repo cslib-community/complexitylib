@@ -20,8 +20,10 @@ public import Mathlib.MeasureTheory.Group.AddCircle
 * `ZLattice.tvDist_conv_map_inner_discreteGaussian_le_of_dual_mass_le`: the actual scalar
   experiment is within `4ε` of its predicted centered Gaussian law.
 * `ZLattice.tvDist_conv_map_inner_discreteGaussian_le_of_gap`: a sufficient width criterion.
+* `ZLattice.tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_dual_mass_le`: the
+  corresponding bound for pushforwards to `UnitAddCircle` under the dual-mass premise.
 * `ZLattice.tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_gap`: the corresponding
-  bound for actual pushforwards to `UnitAddCircle`.
+  bound for actual pushforwards to `UnitAddCircle` under the gap criterion.
 
 ## References
 
@@ -47,7 +49,8 @@ variable [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
 variable (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
 
 /-- The source's scalar Gaussian experiment, with the actual nonzero dual mass premise.
-The zero projection is handled by exact equality, without using that premise. -/
+At `z = 0` the convolution simplifies directly to the scalar noise law without any smoothing
+hypothesis, whereas this unified bound still takes `hdual`. -/
 theorem tvDist_conv_map_inner_discreteGaussian_le_of_dual_mass_le
     (r α : ℝ) (hr : 0 < r) (hα : 0 < α) (u z : E)
     (ε : ℝ) (hε : 0 ≤ ε) (hεhalf : ε < 1 / 2)

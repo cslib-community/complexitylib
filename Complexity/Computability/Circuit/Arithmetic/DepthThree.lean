@@ -26,10 +26,10 @@ most `choose d k` (`MvPolynomial.rank_partialDerivatives_prod_le`), the order-`k
 have measure at least `choose n k ^ 2`, by the minors argument of
 [Kayal and Saptharishi, §5.2][KayalSaptharishi2014]
 (`Matrix.choose_sq_le_rank_partialDerivatives_det_mvPolynomialX`). So every such circuit computing
-either one has at least `choose n k ^ 2 / choose d k` product gates. For product fan-in at most
-`2 * n` on the `2n × 2n` determinant or permanent, the middle split gives more than `4 ^ n / n`
-product gates. This covers homogeneous circuits, whose product fan-in is at most the degree
-[Nisan and Wigderson, §3][NisanWigderson1996]. Exponential lower bounds for the determinant
+either one has at least `choose n k ^ 2 / choose d k` product gates. For `n ≥ 4` and product fan-in
+at most `2 * n` on the `2n × 2n` determinant or permanent, the middle split gives more than
+`4 ^ n / n` product gates. This covers homogeneous circuits, whose product fan-in is at most the
+degree [Nisan and Wigderson, §3][NisanWigderson1996]. Exponential lower bounds for the determinant
 against homogeneous depth-three circuits are due to Nisan [Nisan1991NonCommutative], as
 [Nisan and Wigderson, §2.2][NisanWigderson1996] record.
 
@@ -55,9 +55,9 @@ model, not for unrestricted arithmetic circuits.
   `choose_sq_le_mul_cost_permFamily` state them for `Cslib.Circuits.Arithmetic.detFamily` and
   `Cslib.Circuits.Arithmetic.permFamily`.
 * `Cslib.Circuits.DepthThree.four_pow_lt_mul_cost_det`,
-  `Cslib.Circuits.DepthThree.four_pow_lt_mul_cost_permanent`: depth-three circuits with product
-  fan-in at most `2 * n`, in particular homogeneous ones, for the `2n × 2n` determinant and
-  permanent need more than `4 ^ n / n` product gates.
+  `Cslib.Circuits.DepthThree.four_pow_lt_mul_cost_permanent`: for `n ≥ 4`, depth-three circuits
+  with product fan-in at most `2 * n`, in particular homogeneous ones, for the `2n × 2n`
+  determinant and permanent need more than `4 ^ n / n` product gates.
 
 ## References
 
@@ -174,8 +174,9 @@ private theorem four_pow_lt_mul_of_sq_le {s : ℕ} (hn : 4 ≤ n)
   exact (Nat.four_pow_lt_mul_centralBinom n hn).trans_le
     (Nat.mul_le_mul_left n (Nat.centralBinom_eq_two_mul_choose n ▸ hle))
 
-/-- Depth-three circuits with product fan-in at most `2 * n`, in particular homogeneous ones,
-computing the generic `2n × 2n` determinant need more than `4 ^ n / n` product gates. -/
+/-- For `n ≥ 4`, depth-three circuits with product fan-in at most `2 * n`, in particular
+homogeneous ones, computing the generic `2n × 2n` determinant need more than `4 ^ n / n` product
+gates. -/
 theorem four_pow_lt_mul_cost_det (hn : 4 ≤ n)
     (c : Circuit (SumOfTerms.signature (Term K (Fin (2 * n) × Fin (2 * n)) (2 * n))) 0 m)
     (j : Fin m)
@@ -184,8 +185,9 @@ theorem four_pow_lt_mul_cost_det (hn : 4 ≤ n)
     4 ^ n < n * c.program.cost SumOfTerms.termCost :=
   four_pow_lt_mul_of_sq_le hn (choose_sq_le_mul_cost_det c n j hcompute)
 
-/-- Depth-three circuits with product fan-in at most `2 * n`, in particular homogeneous ones,
-computing the generic `2n × 2n` permanent need more than `4 ^ n / n` product gates. -/
+/-- For `n ≥ 4`, depth-three circuits with product fan-in at most `2 * n`, in particular
+homogeneous ones, computing the generic `2n × 2n` permanent need more than `4 ^ n / n` product
+gates. -/
 theorem four_pow_lt_mul_cost_permanent (hn : 4 ≤ n)
     (c : Circuit (SumOfTerms.signature (Term K (Fin (2 * n) × Fin (2 * n)) (2 * n))) 0 m)
     (j : Fin m)
