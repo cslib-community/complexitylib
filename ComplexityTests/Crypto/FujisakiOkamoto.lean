@@ -11,12 +11,14 @@ public import Complexity.Crypto.Protocols.KEM.FujisakiOkamoto
 /-!
 # HHK17 Fujisaki–Okamoto KEM Transform Tests
 
-Exercises the HHK17 modular Fujisaki–Okamoto transforms (`T`, `FO^⊥`, `FO^⫫`), `δ`-correctness,
-`γ`-spreadness, and two-message `IND-CPA` advantage on concrete `ExplicitCoinPKE` schemes:
+Exercises the HHK17 modular Fujisaki–Okamoto transforms (`T`, `FO^⊥`, `FO-notbot`),
+`δ`-correctness, `γ`-spreadness, and two-message `IND-CPA` advantage on concrete
+`ExplicitCoinPKE` schemes:
 
 1. **Concrete `Fin 8` masked-shift `ExplicitCoinPKE`**: `0`-correctness via
    `ExplicitCoinPKE.deltaCorrect_zero_of_perfect`, honest decryption and decapsulation recovery
-   for `T`, `FO^⊥`, and `FO^⫫`, and rejection of a valid underlying PKE ciphertext encrypted under
+   for `T`, `FO^⊥`, and `FO-notbot`, and rejection of a valid underlying PKE ciphertext encrypted
+   under
    non-canonical coins (`c = (1, 6)` decrypts to `some 2` under PKE, yet `decapsBot` rejects with
    `none` and `decapsNotBot` returns the domain-separated fallback key `H(true, fallback, c)`).
 2. **Positive and negative witnesses for `DeltaCorrect` (including `δ > 0` tight and non-tight
@@ -68,7 +70,7 @@ def maskedShiftScheme : Scheme (Fin 8) (Fin 8) (Fin 8) (Fin 8) (Fin 8 × Fin 8) 
   sampleMsg := ProbComp.unifFin 7
   sampleKey := ProbComp.unifFin 15
 
-/-- Deterministic test functions `G` and `H` for `FO^⊥` and `FO^⫫` unit tests. -/
+/-- Deterministic test functions `G` and `H` for `FO^⊥` and `FO-notbot` unit tests. -/
 def testG : Fin 8 → Fin 8 := fun _ => 0
 
 /-- Domain-separated test hash returning `15` on fallback inputs (`true`) and casting `m` into
@@ -76,7 +78,8 @@ def testG : Fin 8 → Fin 8 := fun _ => 0
 def testH : Bool × Fin 8 × (Fin 8 × Fin 8) → Fin 16 :=
   fun x => if x.1 then 15 else x.2.1.castLE (by decide)
 
-/-- Honest `T`, `FO^⊥`, and `FO^⫫` recovery on `maskedShiftScheme` at `pk = sk = 3`, `m = 2`. -/
+/-- Honest `T`, `FO^⊥`, and `FO-notbot` recovery on `maskedShiftScheme` at `pk = sk = 3`,
+`m = 2`. -/
 example :
     decT maskedShiftPKE testG 3 3 (encT maskedShiftPKE testG 3 2) = some 2 ∧
     maskedShiftScheme.decapsBot testG testH 3 3 (encT maskedShiftPKE testG 3 2) =
@@ -88,8 +91,8 @@ example :
   · exact (maskedShiftScheme.decapsNotBot_encT_eq testG testH ⟨3, 3, 7⟩ 2 (by decide)).trans rfl
 
 /-- Ciphertext `(1, 6)` decrypts to `some 2` under `maskedShiftPKE` (`pk = sk = 3`, non-canonical
-coin `r = 1 ≠ testG 2 = 0`), yet `FO^⊥` rejects with `none` and `FO^⫫` outputs the fallback key
-`testH (true, 7, (1, 6)) = 15`. -/
+coin `r = 1 ≠ testG 2 = 0`), yet `FO^⊥` rejects with `none` and `FO-notbot` outputs the fallback
+key `testH (true, 7, (1, 6)) = 15`. -/
 example :
     maskedShiftPKE.dec 3 (1, 6) = some 2 ∧
     maskedShiftScheme.decapsBot testG testH 3 3 (1, 6) = none ∧
