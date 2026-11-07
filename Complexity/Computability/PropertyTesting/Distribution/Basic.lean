@@ -26,7 +26,9 @@ tester is a semantic Markov kernel: this file counts samples and does not bound 
 Le Cam's two-point method in mixture form (`one_third_le_dist_iid_bind`) turns a tester into a
 lower bound: the `k`-sample distribution of any `p ∈ P` is at statistical distance at least
 `1 / 3` from every mixture of `k`-sample distributions of distributions `ε`-far from `P`. Testers
-transport along bijections of the domain (`IsTester.map_equiv`).
+transport along bijections of the domain (`IsTester.map_equiv`) and, more generally, along any
+randomized map `F` of the samples that sends `P` into a property `P'` and far distributions to far
+distributions (`IsTester.bind_pi`): a tester for `P'` run on the mapped samples tests `P`.
 
 ## Main definitions
 
@@ -40,6 +42,8 @@ transport along bijections of the domain (`IsTester.map_equiv`).
   the statistical distance of the sample distributions.
 * `Cslib.DistributionTesting.one_third_le_dist_iid_bind`: Le Cam's method for testers.
 * `Cslib.DistributionTesting.IsTester.map_equiv`, `.comp_equiv_uniform`: relabelling the domain.
+* `Cslib.DistributionTesting.acceptProb_bind_pi`, `IsTester.bind_pi`: reductions along a
+  randomized map of the samples.
 
 ## References
 
@@ -139,6 +143,29 @@ theorem IsTester.map_equiv [Fintype α] [Fintype β] {k : ℕ} {T : (Fin k → �
     refine hT.reject _ fun q hq => ?_
     have h := hp (q.map e) ⟨q, hq, rfl⟩
     rwa [← dist_map_of_injective _ _ e.injective, PMF.map_comp, e.self_comp_symm, PMF.map_id]
+
+/-- Running a decision rule on samples passed independently through a randomized map `F` accepts
+`p` with the probability that the rule accepts `p.bind F`. -/
+theorem acceptProb_bind_pi [Finite α] [Finite β] {k : ℕ} (F : α → PMF β)
+    (T : (Fin k → β) → PMF Bool) (p : PMF α) :
+    acceptProb (fun x => (pi fun i => F (x i)).bind T) p = acceptProb T (p.bind F) := by
+  rw [acceptProb_eq, acceptProb_eq, iid_bind, PMF.bind_bind]
+
+/-- **Reduction along a randomized map.** If `F` sends every member of `P` into `P'` and every
+distribution `ε`-far from `P` to one `ε'`-far from `P'`, then a `k`-sample tester for `P'` with
+proximity `ε'`, run on the samples passed independently through `F`, is a `k`-sample tester for `P`
+with proximity `ε`. -/
+theorem IsTester.bind_pi [Fintype α] [Fintype β] {k : ℕ} {T : (Fin k → β) → PMF Bool}
+    {P' : Set (PMF β)} {ε' : ℝ} (hT : IsTester T P' ε') (F : α → PMF β) {P : Set (PMF α)}
+    {ε : ℝ} (hmem : ∀ q ∈ P, q.bind F ∈ P')
+    (hfar : ∀ p, (∀ q ∈ P, ε ≤ dist p q) → ∀ q' ∈ P', ε' ≤ dist (p.bind F) q') :
+    IsTester (fun x => (pi fun i => F (x i)).bind T) P ε where
+  accept q hq := by
+    rw [acceptProb_bind_pi]
+    exact hT.accept _ (hmem q hq)
+  reject p hp := by
+    rw [acceptProb_bind_pi]
+    exact hT.reject _ (hfar p hp)
 
 /-- A uniformity tester transports along any bijection of the domain. -/
 theorem IsTester.comp_equiv_uniform [Fintype α] [Fintype β] [Nonempty α] [Nonempty β] {k : ℕ}
