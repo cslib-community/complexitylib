@@ -115,6 +115,28 @@ sparse labels. [Checked hardness examples](../../ComplexityTests/SchaeferHardnes
 a concrete NAE language and cover contradictory clauses, repeated variables and malformed scopes.
 The tractable branches must still be assembled to complete #2822.
 
+Import `Complexity.Logics.Propositional.CNF.Horn` and
+`Complexity.Computability.Complexity.Problems.HornSAT` for AND/Horn and OR/dual-Horn
+correspondence (`isPolymorphism_and_iff_exists_hornCNF`,
+`isPolymorphism_or_iff_exists_dualHornCNF`) and native `HornSAT.mem_P`/`DualHornSAT.mem_P`.
+These solvers support all clause widths under binary `encCNF`. Horn syntax counts positive
+occurrences: repeated negative literals and opposite-polarity tautologies are supported, while
+two copies of a positive literal violate the syntax condition. Forward chaining computes the
+least-model candidate in `numVars + 1` passes, storing filtered occurrences rather than a table
+indexed by the largest label. [Checked Horn examples](../../ComplexityTests/HornSAT.lean)
+include sparse labels, empty clauses and the repeated-positive convention.
+
+`Complexity.Logics.Propositional.CSP.Affine` proves
+`isPolymorphism_parity_iff_exists_affineSystem`: ternary parity preservation is equivalent to
+definition by affine parity equations without auxiliaries, including empty/nullary relations.
+`Complexity.Computability.Complexity.Problems.XORSAT` gives actual dense Gaussian elimination,
+a certified sparse binary-label compiler and `XORSAT.satisfiable_mem_P` for ordinary systems.
+An equation is a variable list paired with a Boolean right-hand side; repeated variables cancel
+in the Boolean ring. The dense algorithm preserves row count and weakly decreases its complete
+framed state encoding at each column. [Checked XOR examples](../../ComplexityTests/XORSAT.lean)
+cover cancellation, inconsistency, dependent equations and malformed dense widths.
+The fixed-language CSP applications of these solvers remain to be connected in #2822.
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |

@@ -1798,6 +1798,7 @@ public import Complexity.Computability.Complexity.Problems.Hamiltonian.Diamond.S
 public import Complexity.Computability.Complexity.Problems.Hamiltonian.Directed
 public import Complexity.Computability.Complexity.Problems.Hamiltonian.Sparse
 public import Complexity.Computability.Complexity.Problems.Hamiltonian.Undirected
+public import Complexity.Computability.Complexity.Problems.HornSAT
 public import Complexity.Computability.Complexity.Problems.IndependentSet
 public import Complexity.Computability.Complexity.Problems.IndependentSet.Sparse
 public import Complexity.Computability.Complexity.Problems.IntegerProgramming
@@ -1902,6 +1903,8 @@ public import Complexity.Computability.Complexity.Problems.TwoSAT.Routines
 public import Complexity.Computability.Complexity.Problems.USAT
 public import Complexity.Computability.Complexity.Problems.USTCON
 public import Complexity.Computability.Complexity.Problems.VertexCover
+public import Complexity.Computability.Complexity.Problems.XORSAT
+public import Complexity.Computability.Complexity.Problems.XORSAT.Dense
 public import Complexity.Computability.Complexity.ProofSystem
 public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Complexity.Reduction.Autoreducibility
@@ -4383,6 +4386,7 @@ public import Complexity.Logics.Propositional.CNF.ExactThree
 public import Complexity.Logics.Propositional.CNF.ExactThree.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.Gadgets
+public import Complexity.Logics.Propositional.CNF.Horn
 public import Complexity.Logics.Propositional.CNF.ImplicationChain
 public import Complexity.Logics.Propositional.CNF.ImplicationCycle
 public import Complexity.Logics.Propositional.CNF.Majority
@@ -4414,6 +4418,7 @@ public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CSP
+public import Complexity.Logics.Propositional.CSP.Affine
 public import Complexity.Logics.Propositional.CSP.BinaryDigits
 public import Complexity.Logics.Propositional.CSP.Boolean
 public import Complexity.Logics.Propositional.CSP.CNFTemplate
