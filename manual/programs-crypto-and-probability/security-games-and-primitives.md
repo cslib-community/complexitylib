@@ -128,14 +128,16 @@ while charging their input length, and uses the actual negative wrap of `rotMatr
 zero it remains total, without a canonical residue interpretation.
 `exists_isPPTOn_sampleEncodedModuleMatrix` samples independent polynomial coefficients using
 `sampleBinaryNat w`, then performs that certified expansion. Its exact law is uniform on the
-original polynomial matrix followed by `ModuleSIS.encodeMatrix`, for unary dimensions and bit
-width, including width zero. The expanded scalar entries are correlated. [Tests](../../ComplexityTests/Crypto/ModuleMatrixSampling.lean)
+original polynomial matrix over `ZMod (2 ^ w)` followed by `ModuleSIS.encodeMatrix`, for unary
+dimensions and bit width, including width zero. The expanded scalar entries are correlated. [Tests](../../ComplexityTests/Crypto/ModuleMatrixSampling.lean)
 check a rectangular modulus-six expansion, empty shapes, a 129-bit modulus, and a nonrotation
 matrix with zero structured-sampler mass but positive independent-scalar-uniform mass. They also
 compose the same obtained sampler with the native key generator: the composition is strict PPT
 for runtime dimensions/width and complete supplied signed secret/error words, and its concrete
 conditional law agrees with the existing key generator. The joint sampler below supplies the
-random secret and error; native encryption/decryption and security remain separate tasks.
+random secret and error, and deterministic native decryption is certified above by
+`exists_computableInPolyTime_moduleLWEDecrypt`; native encryption, seed codecs and security
+remain separate tasks.
 
 For arbitrary positive binary moduli, including primes, import
 [`Module/ApproximateSampling.lean`](../../Complexity/Crypto/Computational/SIS/Module/ApproximateSampling.lean).
@@ -158,10 +160,9 @@ and error words; deterministic keygen postprocessing preserves that error agains
 ideal conditional key law. Other clients cover width zero, modulus one, empty dimensions and a
 129-bit modulus. The joint sampler below completes secret/error composition; native encryption
 and security remain open.
-The scalar all-event bridge `Probability.closeTo_uniform_sampleModNat` now lives in
-[`Game/CloseTo/UniformNat.lean`](../../Complexity/Crypto/Game/CloseTo/UniformNat.lean), publicly
-reexported by its original Lyubashevsky consumer, so this construction does not import a
-signature protocol to obtain a generic sampler bound.
+The scalar all-event bridge `Probability.closeTo_uniform_sampleModNat` in
+[`Game/CloseTo/UniformNat.lean`](../../Complexity/Crypto/Game/CloseTo/UniformNat.lean) bounds the
+sampled residue law against uniform `ZMod q` within `q / 2^width`.
 
 For full randomized key generation, import
 [`ModuleEncryption/Sampling/Native.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption/Sampling/Native.lean).
@@ -184,8 +185,9 @@ the matrix bound. The program is total, with semantic claims requiring only `q >
 for a prime-three event with secret `-1`, matrix coefficient `1` and public coefficient `0`,
 forcing nonzero error `1`. Its actual mass is `5/256` versus ideal `1/48`, a gap of `1/768`.
 The same witness covers zero widths, modulus one, both empty shapes and a rank-two/degree-two
-129-bit-modulus instance. These are sampling and execution statements; native encryption,
-decryption and small-secret security remain separate obligations.
+129-bit-modulus instance. These are key-sampling and execution statements (deterministic native
+decryption is certified by `exists_computableInPolyTime_moduleLWEDecrypt`); native encryption, seed
+codecs and small-secret security remain separate obligations.
 
 The Module-LWE sampling APIs now accept explicit distributions: `moduleLWEPublicKeyLaw` has an
 optional `secretLaw`, `encryptionViewOfKeyLaw` an optional `ephemeralLaw`, and `realEncryptionView`
@@ -295,8 +297,13 @@ certify growing native CBD rows and power-of-two uniform matrix-entry samples, w
 parameters and binary outputs, and check their semantic modular laws. They also prove positive
 actual failure at `t=1`: `q=64`, `p=32`, errors all eight and supported secrets produce phase 29
 and decode a true message incorrectly. The displayed bound is below one at `t=10`.
-This is correctness for explicit laws, not a small-secret security reduction. Complete native
-key generation, encryption and decryption certificates remain separate.
+This is correctness for explicit laws, not a small-secret security reduction. Deterministic
+unswitched native key generation and decryption (`exists_computableInPolyTime_moduleLWEKeyGen`,
+`exists_computableInPolyTime_moduleLWEDecrypt`), randomized CBD key generation
+(`exists_isPPTOn_moduleLWEKeyGenJoint`), and coefficient conversion in
+[`ModulusSwitch/Native.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch/Native.lean)
+are certified above; native encryption, switched-decryption assembly and seed codecs remain
+separate.
 
 Discrete-logarithm and factoring cryptanalysis lives in two algebra-level modules. Import
 [`DiscreteLog/PohligHellman.lean`](../../Complexity/Crypto/Computational/DiscreteLog/PohligHellman.lean)
