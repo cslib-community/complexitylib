@@ -36,7 +36,10 @@ directly, but that is not formalized here.
 promise input has depth `q` with `2 (2^n - 1) (1 - 2ε) ≤ (q² - q)(1 - ε)`
 (`Cslib.QueryComplexity.simon_randomized_lower_bound`); at `ε = 1/3` this gives `2^n ≤ q²`
 (`Cslib.QueryComplexity.simon_two_pow_le_depth_sq`), so `q ≥ 2^{n/2}`. In terms of the input
-length `N = n 2^n` this is `q ≥ (N / n)^{1/2} = N^{1/2 - o(1)}`.
+length `N = n 2^n` this is `q ≥ (N / n)^{1/2} = N^{1/2 - o(1)}`. The same bound holds for the search
+version, which asks for `s` itself: answering whether the output of a tree that finds `s` is
+nonzero decides Simon's problem with no further queries and no larger error
+(`Cslib.QueryComplexity.simon_search_two_pow_le_depth_sq`).
 
 The proof is the birthday argument of de Wolf §3.3.2, arranged as a coupling. The hard inputs are
 `f = π ∘ rep_s` for a permutation `π` of `{0,1}^n` and `rep_s(a)` the representative of the pair
@@ -70,6 +73,8 @@ gives the inequality.
 * `Cslib.QueryComplexity.simon_two_pow_le_depth_sq`: `2^n ≤ q²` at `ε = 1/3`, for `n ≥ 1`.
 * `Cslib.QueryComplexity.simon_two_pow_le_randomizedComplexity_sq`: `2^n ≤ R_{1/3}(F)²` for every
   total function `F` that answers Simon's problem on the promise inputs.
+* `Cslib.QueryComplexity.simon_search_two_pow_le_depth_sq`: `2^n ≤ q²` for the search version at
+  `ε = 1/3`, for `n ≥ 1`.
 
 ## References
 
@@ -571,6 +576,22 @@ theorem simon_two_pow_le_randomizedComplexity_sq (F : (Fin N → Bool) → Bool)
     exists_computes_depth_eq_randomizedComplexity (ε := 1 / 3) (by norm_num) F
   rw [← hd]
   exact simon_two_pow_le_depth_sq E μ F hF (fun X _ _ => hμ X) hn
+
+/-- **Exponential classical lower bound for the search version**: for `n ≥ 1`, a randomized
+decision tree that finds the hidden string with error `1/3` on every promise input (as the
+restriction to the promise inputs of a total function `S`) has depth `q` with `2^n ≤ q²`.
+Answering whether its output is nonzero decides Simon's problem with no further queries and no
+larger error (`Cslib.RandomizedDecisionTree.errorProb_mapOutput_le`). -/
+theorem simon_search_two_pow_le_depth_sq (μ : RandomizedDecisionTree (Fin N) (Fin n → Bool))
+    (S : (Fin N → Bool) → Fin n → Bool)
+    (hS : ∀ X s, SimonPromise (simonFun E X) s → S X = s)
+    (hμ : ∀ X s, SimonPromise (simonFun E X) s → μ.errorProb S X ≤ 1 / 3) (hn : 1 ≤ n) :
+    2 ^ n ≤ μ.depth ^ 2 := by
+  set g : (Fin n → Bool) → Bool := fun s => decide (s ≠ 0) with hg
+  have h := simon_two_pow_le_depth_sq E (RandomizedDecisionTree.mapOutput g μ) (g ∘ S)
+    (fun X s hX => by rw [Function.comp_apply, hS X s hX])
+    (fun X s hX => (RandomizedDecisionTree.errorProb_mapOutput_le g μ S X).trans (hμ X s hX)) hn
+  exact h.trans (Nat.pow_le_pow_left (RandomizedDecisionTree.depth_mapOutput_le g μ) 2)
 
 end QueryComplexity
 

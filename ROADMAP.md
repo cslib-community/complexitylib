@@ -1000,9 +1000,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 - **Quantum query separations**
   ([#2991](https://github.com/cslib-community/complexitylib/issues/2991)): beyond the decision
-  version of Simon's problem, prove the search version (sample rows orthogonal to `s` and recover
-  `s` by Gaussian elimination over `ZMod 2` with constant probability), the classical `n`-query
-  lower bound for Bernstein–Vazirani, and separations in the value-query model. The latter needs
+  and search versions of Simon's problem, give the search version polynomial-time
+  post-processing (Gaussian elimination over `ZMod 2` in place of the exhaustive `simonSolve`),
+  prove the classical `n`-query lower bound for Bernstein–Vazirani, and separations in the
+  value-query model. The latter needs
   quantum states over an arbitrary finite query index type rather than `Fin N`; generalizing
   `State N W` affects `Quantum/Search.lean`, `Quantum/Composition.lean`, `Quantum/Grover.lean`,
   `Quantum/UnknownSearch.lean`, `Quantum/Polynomial.lean` and `Quantum/Adversary.lean`. Natural
