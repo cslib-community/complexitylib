@@ -24,7 +24,8 @@ ordered field `K`, the primal linear program in inequality form maximizes `c ⬝
 `A *ᵥ x ≤ b`. Its dual minimizes `y ⬝ᵥ b` subject to `0 ≤ y` and `y ᵥ* A = c`. The proofs use
 Fourier–Motzkin elimination (`Matrix.FourierMotzkin.exists_projection`) and Farkas' lemma
 (`Matrix.not_exists_mulVec_le_iff`), so they hold over every linearly ordered field, including
-`ℚ`.
+`ℚ`. See also [DvorakKolmogorov2024] for an independent Lean 4 formalization of
+linear-programming duality over linearly ordered fields.
 
 ## Main results
 
@@ -45,6 +46,7 @@ Fourier–Motzkin elimination (`Matrix.FourierMotzkin.exists_projection`) and Fa
 
 ## References
 
+* [DvorakKolmogorov2024]
 * [MatousekGartner2007], Chapter 6
 * [Schrijver1986], Sections 7.4, 7.6 and 7.9
 -/
@@ -158,7 +160,7 @@ theorem exists_isGreatest_of_bddAbove [Finite ι] (A : Matrix ι κ K) (b : ι �
 
 /-- **Strong duality**: if the primal `max {c ⬝ᵥ x | A *ᵥ x ≤ b}` and the dual
 `min {y ⬝ᵥ b | 0 ≤ y, y ᵥ* A = c}` are both feasible, then both optima are attained and equal
-[Schrijver1986, Section 7.4]. -/
+[Schrijver1986, Corollary 7.1g]. -/
 theorem exists_isGreatest_isLeast_dotProduct (A : Matrix ι κ K) (b : ι → K) (c : κ → K)
     (hP : ∃ x, A *ᵥ x ≤ b) (hD : ∃ y, 0 ≤ y ∧ y ᵥ* A = c) :
     ∃ v, IsGreatest ((c ⬝ᵥ ·) '' {x | A *ᵥ x ≤ b}) v ∧
@@ -243,9 +245,9 @@ theorem dotProduct_eq_dotProduct_iff_of_mulVec_le {A : Matrix ι κ K} {b : ι �
 
 /-- **Affine Farkas lemma**: if the inequality `c ⬝ᵥ x ≤ δ` holds on a nonempty polyhedron
 `A *ᵥ x ≤ b`, then it is implied by a nonnegative combination of the constraints
-[Schrijver1986, Section 7.6]. -/
-theorem exists_dual_le_of_forall_le {A : Matrix ι κ K} {b : ι → K} (hP : ∃ x, A *ᵥ x ≤ b)
-    {c : κ → K} {δ : K} (h : ∀ x, A *ᵥ x ≤ b → c ⬝ᵥ x ≤ δ) :
+[Schrijver1986, Corollary 7.1h]. -/
+theorem exists_dual_le_of_forall_le (A : Matrix ι κ K) (b : ι → K) (c : κ → K) (δ : K)
+    (hP : ∃ x, A *ᵥ x ≤ b) (h : ∀ x, A *ᵥ x ≤ b → c ⬝ᵥ x ≤ δ) :
     ∃ y, 0 ≤ y ∧ y ᵥ* A = c ∧ y ⬝ᵥ b ≤ δ := by
   obtain ⟨x, y, hx, hy, hyA, hxy⟩ :=
     exists_dual_eq_of_bddAbove A b c hP ⟨δ, by rintro _ ⟨x, hx, rfl⟩; exact h x hx⟩

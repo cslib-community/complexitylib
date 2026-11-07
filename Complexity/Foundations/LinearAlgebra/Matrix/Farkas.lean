@@ -25,6 +25,9 @@ Mathlib proves a topological Farkas lemma for closed convex cones in real locall
 or Minkowski–Weyl theorem for finitely generated cones. The polyhedral statements below cover
 that gap for matrices over an arbitrary linearly ordered field.
 
+See also [DvorakKolmogorov2024], an independent Lean 4 formalization of Farkas-type theorems and
+linear-programming duality over linearly ordered fields, with extensions to infinite values.
+
 ## Main results
 
 * `Matrix.exists_mulVec_le_iff`: `A *ᵥ x ≤ b` is solvable iff `0 ≤ y ⬝ᵥ b` for every `y ≥ 0`
@@ -37,8 +40,9 @@ that gap for matrices over an arbitrary linearly ordered field.
 
 ## References
 
-* [MatousekGartner2007], Chapter 6
-* [Schrijver1986], Section 7.3
+* [DvorakKolmogorov2024]
+* [MatousekGartner2007], Sections 6.4 and 6.7
+* [Schrijver1986], Section 7.3, Corollaries 7.1d and 7.1e
 * [Ziegler1995], Section 1.4
 -/
 
@@ -53,7 +57,7 @@ variable {ι κ : Type*} [Fintype ι] [Fintype κ]
 
 /-- **Farkas' lemma** for systems of inequalities: `A *ᵥ x ≤ b` has a solution iff every
 nonnegative combination `y` of the rows with `y ᵥ* A = 0` satisfies `0 ≤ y ⬝ᵥ b`
-[Schrijver1986, Section 7.3]. -/
+[Schrijver1986, Corollary 7.1e]. -/
 theorem exists_mulVec_le_iff (A : Matrix ι κ K) (b : ι → K) :
     (∃ x, A *ᵥ x ≤ b) ↔ ∀ y, 0 ≤ y → y ᵥ* A = 0 → 0 ≤ y ⬝ᵥ b := by
   constructor
@@ -69,7 +73,7 @@ theorem exists_mulVec_le_iff (A : Matrix ι κ K) (b : ι → K) :
     exact ⟨x, by rwa [zero_mulVec, add_zero] at hx⟩
 
 /-- **Farkas' lemma**, certificate form: `A *ᵥ x ≤ b` is infeasible iff some `y ≥ 0` has
-`y ᵥ* A = 0` and `y ⬝ᵥ b < 0` [Schrijver1986, Section 7.3]. -/
+`y ᵥ* A = 0` and `y ⬝ᵥ b < 0` [Schrijver1986, Corollary 7.1e]. -/
 theorem not_exists_mulVec_le_iff (A : Matrix ι κ K) (b : ι → K) :
     (¬∃ x, A *ᵥ x ≤ b) ↔ ∃ y, 0 ≤ y ∧ y ᵥ* A = 0 ∧ y ⬝ᵥ b < 0 := by
   rw [exists_mulVec_le_iff]
@@ -77,7 +81,7 @@ theorem not_exists_mulVec_le_iff (A : Matrix ι κ K) (b : ι → K) :
   rfl
 
 /-- **Farkas' lemma**, equality form: `A *ᵥ x = b` has a solution `x ≥ 0` iff `0 ≤ y ⬝ᵥ b` for
-every `y` with `0 ≤ y ᵥ* A` [Schrijver1986, Section 7.3]. -/
+every `y` with `0 ≤ y ᵥ* A` [Schrijver1986, Corollary 7.1d]. -/
 theorem exists_nonneg_mulVec_eq_iff (A : Matrix ι κ K) (b : ι → K) :
     (∃ x, 0 ≤ x ∧ A *ᵥ x = b) ↔ ∀ y, 0 ≤ y ᵥ* A → 0 ≤ y ⬝ᵥ b := by
   classical
@@ -113,7 +117,7 @@ theorem exists_nonneg_mulVec_eq_iff (A : Matrix ι κ K) (b : ι → K) :
       exact this
 
 /-- **Farkas' lemma**, equality certificate form: `A *ᵥ x = b` has no solution `x ≥ 0` iff some
-`y` has `0 ≤ y ᵥ* A` and `y ⬝ᵥ b < 0` [Schrijver1986, Section 7.3]. -/
+`y` has `0 ≤ y ᵥ* A` and `y ⬝ᵥ b < 0` [Schrijver1986, Corollary 7.1d]. -/
 theorem not_exists_nonneg_mulVec_eq_iff (A : Matrix ι κ K) (b : ι → K) :
     (¬∃ x, 0 ≤ x ∧ A *ᵥ x = b) ↔ ∃ y, 0 ≤ y ᵥ* A ∧ y ⬝ᵥ b < 0 := by
   rw [exists_nonneg_mulVec_eq_iff]

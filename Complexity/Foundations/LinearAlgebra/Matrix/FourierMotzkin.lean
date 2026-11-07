@@ -49,6 +49,7 @@ linearly ordered field, in particular over `ℚ`.
 
 ## References
 
+* [MatousekGartner2007], Section 6.7
 * [Schrijver1986], Section 12.2
 * [Ziegler1995], Section 1.2
 -/

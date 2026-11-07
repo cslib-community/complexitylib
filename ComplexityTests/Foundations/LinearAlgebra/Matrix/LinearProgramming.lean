@@ -135,7 +135,7 @@ example :
 
 /-- Affine Farkas: `x ≤ 1` on `0 ≤ x ≤ 1` is implied by a nonnegative combination. -/
 example : ∃ y : Fin 2 → ℚ, 0 ≤ y ∧ y ᵥ* !![1; -1] = ![1] ∧ y ⬝ᵥ ![1, 0] ≤ 1 :=
-  exists_dual_le_of_forall_le ⟨0, fun i => by fin_cases i <;> simp⟩ fun x hx => by
+  exists_dual_le_of_forall_le _ _ _ _ ⟨0, fun i => by fin_cases i <;> simp⟩ fun x hx => by
     have := hx 0
     simpa [mulVec, dotProduct] using this
 
