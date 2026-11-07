@@ -41,6 +41,7 @@ public section
 namespace Turing.VirtualWord.Simulation
 
 open MultiTapeTM ComputableInSpace
+open QueryMachine (encStateRead)
 
 variable {σ : Type} (M : QueryMachine σ)
 
@@ -206,8 +207,8 @@ theorem width_inSpace (enc : σ ↪ List Bool) :
 theorem symbol_inSpace (enc : σ ↪ List Bool)
     (hq : ComputableInSpace M.query enc encNat (fun s => (enc s).length)) :
     ComputableInSpace (fun p : State σ × Option Bool => symbol M p.1 p.2)
-      (encPair (encState enc) (encOption encBool)) (encOption encBool)
-      (fun p => (encPair (encState enc) (encOption encBool) p).length) := by
+      (encStateRead (encState enc)) (encOption encBool)
+      (fun p => (encStateRead (encState enc) p).length) := by
   have hp := fst (encState enc) (encOption encBool)
   have hd := budget_comp_linear (data_inSpace enc) hp
   have hquery := budget_comp_linear hq hp.snd'
@@ -223,18 +224,18 @@ theorem symbol_inSpace (enc : σ ↪ List Bool)
 Only ordinary native outer component certificates are premises, never substitution certificates. -/
 theorem components_inSpace (enc : σ ↪ List Bool)
     (hq : ComputableInSpace M.query enc encNat (fun s => (enc s).length))
-    (hn : ComputableInSpace M.next (encPair enc (encOption encBool)) enc
-      (fun p => (encPair enc (encOption encBool) p).length))
-    (he : ComputableInSpace M.emit (encPair enc (encOption encBool)) encBits
-      (fun p => (encPair enc (encOption encBool) p).length))
+    (hn : ComputableInSpace M.next (encStateRead enc) enc
+      (fun p => (encStateRead enc p).length))
+    (he : ComputableInSpace M.emit (encStateRead enc) encBits
+      (fun p => (encStateRead enc p).length))
     (hh : ComputableInSpace M.halted enc encBool (fun s => (enc s).length))
     (hf : ComputableInSpace M.finish enc encBits (fun s => (enc s).length)) :
     ComputableInSpace (machine M).query (encState enc) encNat
       (fun s => (encState enc s).length) ∧
-    ComputableInSpace (machine M).next (encPair (encState enc) (encOption encBool))
-      (encState enc) (fun p => (encPair (encState enc) (encOption encBool) p).length) ∧
-    ComputableInSpace (machine M).emit (encPair (encState enc) (encOption encBool))
-      encBits (fun p => (encPair (encState enc) (encOption encBool) p).length) ∧
+    ComputableInSpace (machine M).next (encStateRead (encState enc))
+      (encState enc) (fun p => (encStateRead (encState enc) p).length) ∧
+    ComputableInSpace (machine M).emit (encStateRead (encState enc))
+      encBits (fun p => (encStateRead (encState enc) p).length) ∧
     ComputableInSpace (machine M).halted (encState enc) encBool
       (fun s => (encState enc s).length) ∧
     ComputableInSpace (machine M).finish (encState enc) encBits
@@ -359,10 +360,10 @@ shared across all runtime headers and original inputs. The only semantic premise
 machine's own termination/output and saved-state bound; no oracle or substitution is assumed. -/
 theorem computableInSpace (enc : σ ↪ List Bool)
     (hq : ComputableInSpace M.query enc encNat (fun s => (enc s).length))
-    (hn : ComputableInSpace M.next (encPair enc (encOption encBool)) enc
-      (fun p => (encPair enc (encOption encBool) p).length))
-    (he : ComputableInSpace M.emit (encPair enc (encOption encBool)) encBits
-      (fun p => (encPair enc (encOption encBool) p).length))
+    (hn : ComputableInSpace M.next (encStateRead enc) enc
+      (fun p => (encStateRead enc p).length))
+    (he : ComputableInSpace M.emit (encStateRead enc) encBits
+      (fun p => (encStateRead enc p).length))
     (hh : ComputableInSpace M.halted enc encBool (fun s => (enc s).length))
     (hf : ComputableInSpace M.finish enc encBits (fun s => (enc s).length))
     {β : Type} (encOut : β ↪ List Bool) (f : Input → β) (T B : Input → ℕ)
