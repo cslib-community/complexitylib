@@ -97,6 +97,17 @@ of general equality elimination. See [clone examples](../../ComplexityTests/Bool
 [gadget examples](../../ComplexityTests/CSPGadget.lean) and
 [hardness examples](../../ComplexityTests/SchaeferHardness.lean).
 
+`CSPSAT.exists_linear_size_reduction_from_threeSAT` supplies one reduction with native
+polynomial-time computation, correctness and the bound
+$n' + m' \le C_\Gamma m \le C_\Gamma(n + m)$. Here `numVars` counts distinct occurring
+variables, `length` counts clauses or constraints, and the constant depends only on the fixed
+target language. The bound holds for every raw CNF, including malformed and empty inputs.
+`CSP.length_replaceGadgets` and `CSP.vars_length_replaceGadgets` give exact sums of template
+constraint and occurrence counts; distinct variables are bounded by occurrences. The guarded
+compiler retains a uniform linear bound because an invalid input is nonempty. These are
+combinatorial size bounds; neither linear running time nor linear binary encoding length is
+asserted. See the [checked size clients](../../ComplexityTests/SchaeferSize.lean).
+
 The result is the Boolean dichotomy; symmetric and larger-domain dichotomies are outside its scope.
 
 ## Three resolution representations
@@ -120,6 +131,10 @@ A tree-like derivation yields a decision tree that finds a clause falsified by t
 [The Tseitin-expander result](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/TseitinExpander.lean) combines a graph-expansion width lower bound with that tradeoff. It gives a family of linear-variable, constant-width unsatisfiable CNFs requiring exponentially many proof lines. The expansion witnesses are obtained nonconstructively from counting, and the source explicitly says so: existence of a hard family is proved, while an efficient explicit expander/formula generator is not supplied by that endpoint.
 
 Interpolation modules extract circuits separating the two sides of a refuted conjunction. Monotone extraction supports clique/coloring lower-bound applications, and a separate polynomial-time file addresses encoded extraction. The distinction between semantic existence of an interpolant and a native efficient extraction algorithm follows the same design pattern as circuits and finite-model logic. See [interpolation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation.lean), [monotone extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/MonotoneExtraction.lean) and [native extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/PolyTime.lean).
+
+## Foundations for algebraic degree lower bounds
+
+Two Boolean-analysis lemmas from the subset-sum degree lower bound of Impagliazzo, Pudlák and Sgall (Theorem 5.1) are available before the algebraic proof systems themselves. Lemma 5.2 of that paper is [`BitString.totalDegree_affine_mul`](../../Complexity/Foundations/BooleanAnalysis/AffineDegree.lean). It concerns `L = m - ∑ c i * x i` with every `c i` nonzero and a nonzero function `r` on the cube with `2 * deg r < n`: the product `L * r` has multilinear degree exactly `deg r + 1`. The source proves it over `ℝ`; the formal statement needs only a field in which `n!` is nonzero. Its proof compares subset Möbius coefficients (`BitString.subsetMobius_bitVal_mul`) and applies Gottlieb's full-rank theorem for inclusion matrices ([`Finset.eq_zero_of_sum_powersetCard_eq_zero`](../../Complexity/Foundations/Combinatorics/InclusionMatrix.lean)), proved over any field in which `1, …, #U` are nonzero. The tests ([inclusion matrices](../../ComplexityTests/Foundations/Combinatorics/InclusionMatrix.lean), [affine degree](../../ComplexityTests/Foundations/BooleanAnalysis/AffineDegree.lean)) show that the field hypothesis, `t + s ≤ #U` and `2 * deg r < n` cannot be dropped.
 
 ## Known Limitations
 
