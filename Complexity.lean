@@ -1591,6 +1591,10 @@ public import Complexity.Computability.Complexity.Classes.SBP
 public import Complexity.Computability.Complexity.Classes.SBP.Amplification
 public import Complexity.Computability.Complexity.Classes.SPP
 public import Complexity.Computability.Complexity.Classes.SPP.FewP
+public import Complexity.Computability.Complexity.Classes.Selective
+public import Complexity.Computability.Complexity.Classes.Selective.Ko
+public import Complexity.Computability.Complexity.Classes.Selective.LeftCut
+public import Complexity.Computability.Complexity.Classes.Selective.Selman
 public import Complexity.Computability.Complexity.Classes.SharpP
 public import Complexity.Computability.Complexity.Classes.SharpP.Aggregation
 public import Complexity.Computability.Complexity.Classes.SharpP.Characterization
@@ -2261,6 +2265,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.BinaryDiv
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Lex
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Matrix.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
@@ -3919,6 +3924,7 @@ public import Complexity.Foundations.Data.Finset.Quotient
 public import Complexity.Foundations.Data.Finset.Sampling
 public import Complexity.Foundations.Data.Finset.SubsetSum
 public import Complexity.Foundations.Data.Finset.SymmDiff
+public import Complexity.Foundations.Data.Finset.Tournament
 public import Complexity.Foundations.Data.Finset.UniqueTail
 public import Complexity.Foundations.Data.Finset.Variance
 public import Complexity.Foundations.Data.Hamming
