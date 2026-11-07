@@ -61,10 +61,10 @@ namespace Cslib.Probability.CountSketch
 variable {ι κ X Y : Type*} [Fintype ι] [Nonempty ι] [Fintype κ] [Fintype Y] [DecidableEq Y]
   {w : ℕ} {h : ι → X → Fin w} {g : κ → X → Y} {ε : Y → ℝ}
 
-/-- **The Count-Sketch estimate is unbiased** [Chakrabarti2025, equations (5.1)–(5.2)]: with a
-two-universal bucket family `h`, an independent pairwise independent sign family `ε ∘ g` of mean
-zero, and `a ∈ S`, the bucket of `a` times the sign of `a` has mean `f a`. Only the pairwise
-independence of the signs is used. -/
+/-- **The Count-Sketch estimate is unbiased** [Chakrabarti2025, equations (5.1)–(5.2)]: for any
+bucket hash `h`, an independent pairwise independent sign family `ε ∘ g` of mean zero, and `a ∈ S`,
+the bucket of `a` times the sign of `a` has mean `f a`. Only the pairwise independence of the signs
+is used. -/
 theorem expect_sum_ite_mul_sign_mul_sign (hg : IsKWiseIndependentHash 2 g)
     (hε : ∀ y, ε y ^ 2 = 1) (hε₀ : 𝔼 y, ε y = 0) {S : Finset X} {a : X} (ha : a ∈ S)
     (f : X → ℝ) :

@@ -214,8 +214,8 @@ theorem mem_state_of_length_lt_mul_count {s : List α} {a : α}
   rw [h0, Nat.sub_zero] at this
   omega
 
-/-- **The majority vote** [MisraGries1982]: with one counter, an item occurring in more than half
-of the stream is the only item with a counter. -/
+/-- **The majority vote** [Chakrabarti2025, Section 1.1]: with one counter, an item occurring in
+more than half of the stream is the only item with a counter. -/
 theorem toFinset_state_one_eq {s : List α} {a : α} (h : s.length < 2 * s.count a) :
     ((misraGries 1).state s).toFinset = {a} := by
   have ha := Multiset.mem_toFinset.2 (mem_state_of_length_lt_mul_count (k := 1) h)
