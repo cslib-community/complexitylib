@@ -24,7 +24,10 @@ Split the variables into shared variables `X` and private variables `Y` and `Z`,
 `X ⊕ (Y ⊕ Z)` (`SemanticDerivation.leftCylinder`, `SemanticDerivation.rightCylinder`). Krajíček's
 interpolation theorem [Krajíček, Theorem 5.1][Krajicek1997] says that if a semantic derivation of
 `∅` from these cylinders has `k` lines, each of communication complexity at most `t`, then a circuit
-with `k · 2 ^ O(t)` gates separates the shared parts of the models of `𝒜` from those of `ℬ`. The
+with `(k + 2 n) · 2 ^ O(t)` gates, where `n` is the number of shared variables, separates the shared
+parts of the models of `𝒜` from those of `ℬ`; in the monotone case the bound is
+`(k + n) · 2 ^ O(t)`. The bound proved here, `(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)`, does not depend
+on `n` and so sharpens the source's (see the implementation notes). The
 two players, Alice holding a model `(u, q)` of `𝒜` and Bob a model `(v, r)` of `ℬ`, walk backwards
 through the derivation along lines falsified by the mixed assignment `(v, q, r)`, starting from `∅`.
 Such a walk cannot stop at a derived line, and it cannot reach a `ℬ`-cylinder, which `(v, r)`
@@ -55,7 +58,8 @@ Karchmer–Wigderson game (`Cslib.Communication.DagProtocol`), and such protocol
   **Krajíček's interpolation theorem for semantic derivations**
   [Krajíček, Theorem 5.1][Krajicek1997]. A refutation with `k` lines of communication complexity
   at most `t` gives a separating circuit with at most `(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)` gates,
-  and a monotone one under the monotonicity condition.
+  and a monotone one under the monotonicity condition. This sharpens the source's bounds
+  `(k + 2 n) · 2 ^ O(t)` and `(k + n) · 2 ^ O(t)`.
 * `Cslib.Logic.PL.IsSemanticRefutation.lt_of_forall_lt_size`: the transfer of monotone circuit
   lower bounds to lower bounds on the number of lines.
 
@@ -77,8 +81,9 @@ Karchmer–Wigderson game (`Cslib.Communication.DagProtocol`), and such protocol
   `(u', q, r)` outside the line, cannot occur at an `𝒜`-cylinder when the models of `𝒜` are
   upward closed, so task 4 too is needed only there.
 * The `2 n` nodes of the proof labelled `uᵢ = 1 ∧ vᵢ = 0` or `uᵢ = 0 ∧ vᵢ = 1` are answer leaves of
-  the dag-like protocol and are not counted, so the circuit bound counts only the `k` lines. The
-  constants are those of `DagProtocol.Solves.exists_circuit` for communication `2 t`.
+  the dag-like protocol and are not counted, so the circuit bound counts only the `k` lines. This is
+  why it has no `n` term, unlike the bound `(k + 2 n) · 2 ^ O(t)` of Theorem 5.1. The constants are
+  those of `DagProtocol.Solves.exists_circuit` for communication `2 t`.
 * Only the monotone case with respect to `U` (the `𝒜` side) is stated; Theorem 5.1 also has the
   dual case with respect to `V`.
 
@@ -477,9 +482,10 @@ end SemanticDerivation
 
 /-- **Krajíček's interpolation theorem for semantic derivations**
 [Krajíček, Theorem 5.1][Krajicek1997]. If a semantic refutation of the cylinders over `𝒜` and `ℬ`
-has `k` lines, each of communication complexity at most `t`, then a circuit with at most
-`(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)` gates is true on the shared part of every model of `𝒜` and
-false on the shared part of every model of `ℬ`. -/
+has `k` lines, each of communication complexity at most `t`, then (sharpening the bound
+`(k + 2 n) · 2 ^ O(t)` of Theorem 5.1) a circuit with at most `(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)`
+gates is true on the shared part of every model of `𝒜` and false on the shared part of every model
+of `ℬ`. -/
 theorem IsSemanticRefutation.exists_circuit_of_commComplexity_le {n : ℕ}
     {𝒜 : Set (Set (Fin n ⊕ Y → Bool))} {ℬ : Set (Set (Fin n ⊕ Z → Bool))}
     {D : Fin k → Set (Fin n ⊕ (Y ⊕ Z) → Bool)} (hD : IsSemanticRefutation (initSets 𝒜 ℬ) D)
@@ -491,8 +497,7 @@ theorem IsSemanticRefutation.exists_circuit_of_commComplexity_le {n : ℕ}
   refine hD.exists_circuit (fun j => ?_) fun j S hS hSD => ?_
   · exact (Protocol.ecomplexity_mono (Set.subset_univ _) (Set.subset_univ _)).trans
       ((ecomplexity_memRight_le_commComplexity _).trans (hcc j))
-  · obtain ⟨p, hp, hd⟩ := Protocol.ecomplexity_le_iff.1
-      (((le_max_right _ _).trans (hcc j) :) :)
+  · obtain ⟨p, hp, hd⟩ := Protocol.ecomplexity_le_iff.1 ((le_max_right _ _).trans (hcc j) :)
     have hs : (p.map some).Solves (Search S DiffersAt) (Models 𝒜) (Models ℬ) := by
       intro a _ b _ h₁ h₂
       refine ⟨p.run a b, by simp, hp a trivial b trivial fun h => ?_⟩
@@ -504,9 +509,9 @@ theorem IsSemanticRefutation.exists_circuit_of_commComplexity_le {n : ℕ}
 [Krajíček, Theorem 5.1][Krajicek1997]. Suppose that the models of `𝒜` are upward closed in the
 shared variables: if `(u, q)` is a model and `u ≤ u'`, then so is `(u', q)`. If a semantic
 refutation of the cylinders over `𝒜` and `ℬ` has `k` lines, each of monotone communication
-complexity `MCC_U` at most `t`, then a monotone circuit with at most
-`(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)` gates is true on the shared part of every model of `𝒜` and
-false on the shared part of every model of `ℬ`. -/
+complexity `MCC_U` at most `t`, then (sharpening the bound `(k + n) · 2 ^ O(t)` of Theorem 5.1) a
+monotone circuit with at most `(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)` gates is true on the shared
+part of every model of `𝒜` and false on the shared part of every model of `ℬ`. -/
 theorem IsSemanticRefutation.exists_monotone_circuit_of_monotoneCommComplexity_le {n : ℕ}
     {𝒜 : Set (Set (Fin n ⊕ Y → Bool))} {ℬ : Set (Set (Fin n ⊕ Z → Bool))}
     {D : Fin k → Set (Fin n ⊕ (Y ⊕ Z) → Bool)} (hD : IsSemanticRefutation (initSets 𝒜 ℬ) D)
