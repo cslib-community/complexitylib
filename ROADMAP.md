@@ -1335,6 +1335,12 @@ reuse is demonstrated.
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
 - Factor indicator-expectation identities from PCP's second-moment calculation, and recurring
   cardinality and logarithm conversions, once a second client benefits.
+- **Divide-and-conquer recurrences**
+  ([#3042](https://github.com/cslib-community/complexitylib/issues/3042)): the master theorem
+  for inequality recurrences over `ℕ`, with explicit constants for all three polynomial cases and
+  `IsBigO` forms, is in `Foundations/Data/Nat/MasterTheorem`. Open: matching lower bounds
+  (`Θ`) for equality recurrences; case 3 under the general regularity condition; and moving
+  the hand-solved recurrences (cslib merge sort, Karatsuba, Strassen, the halving lemma) onto it.
 
 ### OpenAI math results ([#1002])
 

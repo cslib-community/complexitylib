@@ -131,6 +131,39 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
 
+## Divide-and-conquer recurrences
+
+[MasterTheorem.lean](../../Complexity/Foundations/Data/Nat/MasterTheorem.lean) solves divide-and-conquer cost recurrences over `ℕ` with explicit constants. `Nat.DivideConquerBound T a b n₀ T₀ f` has two parts:
+
+- The base bound: `T n ≤ T₀` for `n ≤ n₀`.
+- The recursive step: for `n > n₀`, every `S` that bounds `T` on `[0, ⌈n/b⌉]` gives `T n ≤ a S + f n`.
+
+So a cost function with floor and ceiling splits, or several subproblems of size at most `⌈n/b⌉`, satisfies it directly. Monotonicity is not required and the recurrence need not be an equality.
+
+`DivideConquerBound.le_sum` unrolls the recursion for monotone `f`. For `f n = c n ^ d` the three cases follow:
+
+| Case | Lean statement | Bound |
+|---|---|---|
+| `a > b ^ d` | `sub_mul_le_pow_clog` | `(a - b ^ d) T n ≤ ((a - b ^ d) T₀ + c n₀ ^ d b ^ d) a ^ ⌈log_b n⌉` |
+| `a = b ^ d` | `le_mul_pow_mul_clog` | `T n ≤ (b n) ^ d (T₀ + c n₀ ^ d ⌈log_b n⌉)` for `n ≠ 0` |
+| `a < b ^ d` | `sub_mul_le_mul_pow` | `(b ^ d - a) T n ≤ ((b ^ d - a) T₀ + c n₀ ^ d b ^ d) (b n) ^ d` for `n ≠ 0` |
+
+[MasterTheoremAsymptotics.lean](../../Complexity/Foundations/Data/Nat/MasterTheoremAsymptotics.lean) turns these into `O(n ^ log_b a)`, `O(n ^ d log n)` and `O(n ^ d)` as Mathlib `IsBigO` statements (`isBigO_rpow`, `isBigO_pow_mul_log`, `isBigO_pow`). In case 1 it also gives an explicit real-power bound (`le_mul_rpow`). Mathlib's `Mathlib.Computability.AkraBazzi` proves the more general Akra–Bazzi `Θ` bound, but it needs an equality recurrence over `ℝ` with positive base values. The statements here give upper bounds only. Case 3 is proved for polynomial `f`, not under the general regularity condition. Applied to cslib's merge-sort count, case 2 gives `2 n ⌈log₂ n⌉`, which is weaker by the factor `b` than cslib's own `n ⌈log₂ n⌉`.
+
+The checked client [MasterTheorem.lean](../../ComplexityTests/MasterTheorem.lean) applies the theorem to:
+
+- cslib's `timeMergeSortRec`;
+- Karatsuba's `mulCount`, recovering `mulCount_le_pow_clog`;
+- a Strassen-shaped `7 T(⌈n/2⌉) + n²`, giving `O(n ^ log₂ 7)`;
+- a binary-search recurrence;
+- a base-`3` case-3 recurrence.
+
+It also refutes the hypothesis for `n²`. Build with
+
+```bash
+lake build Complexity.Foundations.Data.Nat.MasterTheoremAsymptotics ComplexityTests.MasterTheorem
+```
+
 ## Other clients and classification
 
 The source tree also contains native integer arithmetic, multiword circuit evaluation, matrix multiplication, primality/counting, predecessor structures, 3SUM/exact-triangle routines and randomized SAT algorithms. These broaden coverage of the machine library; they should be catalogued through the complete module census without counting each as a new model. In particular, a bounded frontend or a conditional transfer theorem should not be presented as completion of an unresolved fine-grained endpoint. The current `ROADMAP.md` and selected abstracts are better evidence of endpoint disposition than a directory name.
