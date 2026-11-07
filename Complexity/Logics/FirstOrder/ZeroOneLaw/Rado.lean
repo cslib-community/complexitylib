@@ -21,9 +21,9 @@ language holds almost surely in `G(n, 1/2)` exactly when it holds in the Rado gr
 almost never otherwise [Fagin1976] [Libkin2004, Section 12.3].
 
 The back-and-forth argument of `Cslib.Logic.FO.graph.aleph0_categorical_randomGraphTheory` also
-gives the classical structure theory of the Rado graph [Rado1964]: every countable graph with
-every extension property is isomorphic to it, every countable graph is an induced subgraph of it,
-and it is isomorphic to its complement.
+gives the classical structure theory of the Rado graph: every countable graph with every extension
+property is isomorphic to it [Libkin2004, Section 12.3], every countable graph is an induced
+subgraph of it [Rado1964], and it is isomorphic to its complement.
 
 ## Main results
 
@@ -174,7 +174,7 @@ private def embeddingOfEmbedding {V W : Type*} {G : SimpleGraph V} {H : SimpleGr
     exact f.map_rel adj ![a, b]
 
 /-- **Uniqueness of the Rado graph.** Every countable simple graph with every extension property
-is isomorphic to the Rado graph [Rado1964] [Libkin2004, Section 12.3]. -/
+is isomorphic to the Rado graph, by the back-and-forth argument [Libkin2004, Section 12.3]. -/
 theorem nonempty_iso_radoGraph {V : Type*} [Countable V] (G : SimpleGraph V)
     (hG : ∀ k s, Satisfies G (extensionAxiom k s)) : Nonempty (G ≃g SimpleGraph.radoGraph) := by
   let := G.structure
