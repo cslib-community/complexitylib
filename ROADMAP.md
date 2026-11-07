@@ -1278,9 +1278,15 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   reductions with corresponding algorithmic examples. The deterministic LOCAL model on oriented
   cycles, Cole–Vishkin and Linial's `log*` bound, the bridge to Mathlib's `cycleGraph` colourings
   and the `Θ(log* n)` bounds for maximal independent sets on cycles exist
-  (`Complexity/Computability/Distributed/OrientedCycle/`). Open: general graphs with port
-  numbering, Linial's `O(Δ²)` colouring and `(Δ + 1)`-colouring/MIS on bounded-degree graphs,
-  CONGEST message bounds, randomized LOCAL algorithms, and closing the additive gaps between the
+  (`Complexity/Computability/Distributed/OrientedCycle/`). For LCL problems without inputs on
+  directed cycles (Chang–Studený–Suomela, Table 1), the `O(1)`/`Ω(log* n)` gap and the
+  `Θ(log* n)` bound for problems with a flexible state exist (`OrientedCycle/LCL/`). Open: the
+  `Ω(n)` lower bound for problems without a flexible state
+  ([#3009](https://github.com/cslib-community/complexitylib/issues/3009)), a tight
+  `½ log* n + O_|L|(1)` upper bound for flexible problems, LCLs with inputs and on undirected
+  cycles and paths, general graphs with port numbering, Linial's `O(Δ²)` colouring and
+  `(Δ + 1)`-colouring/MIS on bounded-degree graphs, CONGEST message bounds, randomized LOCAL
+  algorithms such as Luby's MIS, and closing the additive gaps between the
   `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles and between
   `⌈(log* n) / 2⌉ + 5` and `(log* n) / 2 - 2` for MIS on cycles.
 

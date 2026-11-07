@@ -44,9 +44,11 @@ The deterministic lifting theorem composes a Boolean function with an index gadg
 
 ## Distributed rounds in the LOCAL model
 
-Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity` or
-`Complexity.Computability.Distributed.OrientedCycle.MIS` (or one of the modules below them) for
-deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented cycles.
+Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity`,
+`Complexity.Computability.Distributed.OrientedCycle.MIS` or
+`Complexity.Computability.Distributed.OrientedCycle.LCL.Flexible` (or one of the modules below
+them) for deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented
+cycles.
 The nodes of the oriented `n`-cycle are `ZMod n`: node `v` has predecessor `v - 1` and successor
 `v + 1`, and `n = 0` gives the infinite oriented path `ℤ`. An
 `Algorithm I S O` has an initial state from each node's input, a step function from the round
@@ -109,14 +111,41 @@ standard consequences of the 3-colouring bounds. Compose algorithms with `Algori
 convert an algorithm to a `LocalRule` with `Algorithm.toLocalRule` just to compose it, since
 flooding its whole window makes `decide` impractical.
 
+[LCL/Basic.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Basic.lean) and
+[LCL/Flexible.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Flexible.lean)
+cover part of the classification of LCL problems without inputs on directed cycles by Chang,
+Studený and Suomela (TCS 2023, Table 1). A problem is a relation `R : L → L → Prop`, and
+`LCL.IsSolution R ℓ` asks `R (ℓ v) (ℓ (v + 1))` at every node. Their node-edge-checkable problems
+are the instance `LCL.nodeEdge` (`isSolution_nodeEdge_iff`, `nodeEdge_iff`), and MIS is an example
+with `L = Bool × Bool` in the tests. `Algorithm.SolvesLCL A R n t` quantifies over identifier
+bijections onto `{0, …, n - 1}`, like `ColorsCycle`. With a loop `R a a`, `Algorithm.const a`
+solves `R` in `0` rounds (`Algorithm.solvesLCL_const`). Without a loop every solution is a proper
+colouring, so `Algorithm.SolvesLCL.logStar_le` gives `log* n ≤ 2t + log* |L|` from Linial's bound,
+and `Algorithm.SolvesLCL.exists_loop` is the resulting `ω(1)`/`o(log* n)` gap.
+`LCL.IsFlexible R q K` asks for closed walks `q ⇝ q` of every length `m ≥ K`;
+`IsFlexible.of_two_three` gives `K = 2` from walks of lengths `2` and `3`.
+`IsFlexible.exists_solvesLCL` solves such a problem for `n ≥ K` in
+`(K - 1) (s + 2 · 3 ^ (K - 1) + 2) + 1` rounds when `log* n ≤ 2s`. The algorithm builds a
+distance-`(K - 1)` colouring from `K - 1` dilated Cole–Vishkin runs, takes its local minima as
+anchors and fills each gap with a closed walk. `IsFlexible.exists_solvesLCL_and_logStar_le`
+packages the `Θ(log* n)` bounds for flexible problems without a loop. The leading coefficient
+`(K - 1) / 2` is not tight. These rules are compositions of `LocalRule`s (`LocalRule.comp`,
+`LocalRule.apply_comp` in `Basic.lean`), so run them with `LocalRule.toAlgorithm_run` instead of
+unfolding `Algorithm.run`. Problems with no flexible state (`Ω(n)` rounds, their Thm 6.5) are not
+covered yet.
+
 [Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
 algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no
 proper colouring and no MIS, and that two rounds of 3-colouring fail on the cycle of length
 `2 ↑↑ 6 + 1`. The 5-cycle examples include the greedy MIS steps and the full `misAlgorithm 2` run.
+[LCL examples](../../ComplexityTests/Computability/Distributed/LCL.lean) check that 3-colouring
+and MIS are flexible without a loop, that 2-colouring has no flexible state, and the anchors and
+filling on a 6-cycle.
 
 Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
-`(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound and
-randomized LOCAL algorithms remain open; see `ROADMAP.md`.
+`(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound,
+randomized LOCAL algorithms and the `Ω(n)` row of the LCL classification remain open; see
+`ROADMAP.md`.
 
 ## Known Limitations
 

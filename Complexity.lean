@@ -2013,6 +2013,8 @@ public import Complexity.Computability.DecisionTree.Symmetric
 public import Complexity.Computability.Distributed.OrientedCycle.Basic
 public import Complexity.Computability.Distributed.OrientedCycle.ColeVishkin
 public import Complexity.Computability.Distributed.OrientedCycle.Graph
+public import Complexity.Computability.Distributed.OrientedCycle.LCL.Basic
+public import Complexity.Computability.Distributed.OrientedCycle.LCL.Flexible
 public import Complexity.Computability.Distributed.OrientedCycle.Linial
 public import Complexity.Computability.Distributed.OrientedCycle.MIS
 public import Complexity.Computability.Distributed.OrientedCycle.RoundComplexity
