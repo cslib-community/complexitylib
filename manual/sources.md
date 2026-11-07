@@ -104,6 +104,11 @@ Craig Gentry, Amit Sahai, Brent Waters. “Homomorphic Encryption from Learning 
 
 Christopher Henson and Fabrizio Montesi. *Computer Science as Infrastructure: the Spine of the Lean Computer Science Library (CSLib)*. EPTCS 449 (LSFA 2026), pp. 141–148, 2026. https://doi.org/10.4204/EPTCS.449.9 . Version-of-record metadata verified through https://arxiv.org/abs/2602.15078v2 on 2026-11-02 UTC; DOI resolver was unavailable in this research environment.
 
+<a id="hhk17"></a>
+## hhk17
+
+Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 . Bibliographic metadata recorded in `references.bib` (`HofheinzHoevelmannsKiltz2017`); the Lean module formalizes the `T`, `FO^⊥`, and domain-separated `FO^⫫` transforms (`H : Bool × M × CT → K`) and their deterministic correctness/rigidity lemmas as documented in the chapter text.
+
 <a id="hhrvw20"></a>
 ## hhrvw20
 
