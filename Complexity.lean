@@ -4557,6 +4557,7 @@ public import Complexity.Probability.BitString
 public import Complexity.Probability.BitString.AffineHash
 public import Complexity.Probability.BitString.AffineHash.ThreeWise
 public import Complexity.Probability.BitString.Collision
+public import Complexity.Probability.BitString.LazyRandomWalk
 public import Complexity.Probability.BitString.LinearHash
 public import Complexity.Probability.BitString.LinearHash.Collisions
 public import Complexity.Probability.BitString.List
@@ -4606,6 +4607,10 @@ public import Complexity.Probability.KWiseIndependent.Trinomial
 public import Complexity.Probability.LinearCombination
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
+public import Complexity.Probability.MarkovChain.Basic
+public import Complexity.Probability.MarkovChain.Coupling
+public import Complexity.Probability.MarkovChain.Metropolis
+public import Complexity.Probability.MarkovChain.Mixing
 public import Complexity.Probability.MinEntropy
 public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
@@ -4663,8 +4668,10 @@ public import Complexity.Probability.SmallBias
 public import Complexity.Probability.SmallBias.Powering
 public import Complexity.Probability.SmallBias.Random
 public import Complexity.Probability.StatisticalDistance
+public import Complexity.Probability.StatisticalDistance.ClosedForm
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.Event
+public import Complexity.Probability.StatisticalDistance.OptimalCoupling
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.Uniform
