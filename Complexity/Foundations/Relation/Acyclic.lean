@@ -5,9 +5,10 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, Mathlib/Logic/Relation.lean)
+-- upstream: candidate
 
 public import Complexity.Init
+public import Cslib.Foundations.Relation.Defs
 public import Mathlib.Data.Finset.Card
 public import Mathlib.Data.List.Cycle
 public import Mathlib.Logic.Relation
@@ -16,18 +17,19 @@ import Mathlib.Data.List.Duplicate
 /-!
 # Acyclic relations: simple cycles and topological numberings
 
-A relation `r` is *acyclic* when no element is related to itself by its transitive closure, that
-is, when `r` has no closed walk. This file gives two equivalent forms of acyclicity:
+A relation `r` is *acyclic* (cslib's `Relation.Acyclic r`) when its transitive closure is
+irreflexive, that is, when `r` has no closed walk. This file gives two equivalent forms of
+acyclicity:
 
 * **Simple cycles.** A closed walk is a nonempty list whose consecutive elements, read cyclically
   (`Cycle.Chain`), are related. Every closed walk contains a simple one, without repeated
   elements: cut the walk at a repeated element and keep the closed walk between its two
   occurrences. So `r` is acyclic exactly when it has no simple cycle
-  (`Relation.forall_not_transGen_iff`), the form in which feedback vertex and arc sets are
-  stated.
+  (`Relation.acyclic_iff_forall_nodup_not_cycle_chain`), the form in which feedback vertex and arc
+  sets are stated.
 * **Topological numberings.** When the related elements lie in a finite set `V`, `r` is acyclic
   exactly when some numbering `f : α → ℕ` strictly increases along every step of `r`
-  (`Relation.forall_not_transGen_iff_exists_rank`). The numbering may be taken below the number of
+  (`Relation.acyclic_iff_exists_rank`). The numbering may be taken below the number of
   elements of `V`, which makes it a certificate of polynomial size: number each element by how many
   elements of `V` reach it.
 
@@ -36,13 +38,13 @@ is, when `r` has no closed walk. This file gives two equivalent forms of acyclic
 * `Relation.exists_nodup_of_cycle_chain`: a closed walk contains a simple cycle.
 * `Relation.exists_cycle_chain_of_transGen`, `Relation.transGen_of_cycle_chain`: closed walks are
   the transitive closure relating an element to itself.
-* `Relation.forall_not_transGen_iff`: acyclicity as the absence of simple cycles.
-* `Relation.exists_rank_of_forall_not_transGen`, `Relation.not_transGen_of_rank`,
-  `Relation.forall_not_transGen_iff_exists_rank`: acyclicity on a finite set as a topological
-  numbering bounded by the number of elements.
+* `Relation.acyclic_iff_forall_nodup_not_cycle_chain`: acyclicity as the absence of simple cycles.
+* `Relation.Acyclic.exists_rank`, `Relation.acyclic_of_rank`, `Relation.acyclic_iff_exists_rank`:
+  acyclicity on a finite set as a topological numbering bounded by the number of elements.
+* `Relation.not_transGen_of_rank`: a strictly increasing numbering excludes closed walks.
 -/
 
-@[expose] public section
+public section
 
 namespace Relation
 
@@ -80,12 +82,15 @@ theorem exists_nodup_of_cycle_chain {l : List α} (hne : l ≠ []) (hch : (l : C
     (List.cons_ne_nil _ _) (by rw [Cycle.chain_coe_cons]; simpa using hsub) rfl
   exact ⟨c, hcne, hcnd, fun y hy => by have := hcsub hy; simp at this ⊢; tauto, hcch⟩
 
-/-- A closed walk through `a` gives a nonempty closed chain. -/
+/-- A closed walk through `a` gives a closed chain containing `a`. -/
 theorem exists_cycle_chain_of_transGen {a : α} (h : TransGen r a a) :
-    ∃ c : List α, c ≠ [] ∧ (c : Cycle α).Chain r := by
+    ∃ c : List α, a ∈ c ∧ (c : Cycle α).Chain r := by
   obtain ⟨b, hab, hba⟩ := TransGen.head'_iff.1 h
   obtain ⟨l, hl, hlast⟩ := List.exists_isChain_cons_of_relationReflTransGen hba
-  refine ⟨b :: l, List.cons_ne_nil _ _, ?_⟩
+  have ha : a ∈ b :: l := by
+    rw [← hlast]
+    exact List.getLast_mem _
+  refine ⟨b :: l, ha, ?_⟩
   rw [Cycle.chain_coe_cons, ← List.cons_append, List.isChain_append]
   refine ⟨hl, .singleton _, fun x hx y hy => ?_⟩
   rw [List.getLast?_eq_some_getLast (List.cons_ne_nil _ _), hlast, Option.mem_some_iff] at hx
@@ -100,35 +105,37 @@ theorem transGen_of_cycle_chain {c : List α} (hch : (c : Cycle α).Chain r) {a 
 
 /-- **Acyclicity as the absence of simple cycles**: no element lies on a closed walk exactly when
 there is no nonempty closed chain without repetitions. -/
-theorem forall_not_transGen_iff :
-    (∀ a, ¬TransGen r a a) ↔ ∀ c : List α, c ≠ [] → c.Nodup → ¬(c : Cycle α).Chain r := by
+theorem acyclic_iff_forall_nodup_not_cycle_chain :
+    Acyclic r ↔ ∀ c : List α, c ≠ [] → c.Nodup → ¬(c : Cycle α).Chain r := by
   constructor
   · intro h c hne _ hch
     obtain ⟨a, ha⟩ := List.exists_mem_of_ne_nil c hne
-    exact h a (transGen_of_cycle_chain hch ha)
-  · intro h a ha
-    obtain ⟨l, hne, hch⟩ := exists_cycle_chain_of_transGen ha
-    obtain ⟨c, hcne, hcnd, -, hcch⟩ := exists_nodup_of_cycle_chain hne hch
+    exact h.irrefl a (transGen_of_cycle_chain hch ha)
+  · refine fun h => ⟨fun a ha => ?_⟩
+    obtain ⟨l, hal, hch⟩ := exists_cycle_chain_of_transGen ha
+    obtain ⟨c, hcne, hcnd, -, hcch⟩ := exists_nodup_of_cycle_chain (List.ne_nil_of_mem hal) hch
     exact h c hcne hcnd hcch
 
 /-! ### Topological numberings -/
 
 /-- **Topological numbering.** If every step of `r` is between elements of a finite set `V` and
-`r` has no closed walk, then numbering each element by the number of elements of `V` that reach it
-gives numbers below the number of elements of `V` that strictly increase along every step. -/
-theorem exists_rank_of_forall_not_transGen (V : Finset α) (hV : ∀ a b, r a b → a ∈ V ∧ b ∈ V)
-    (hr : ∀ a, ¬TransGen r a a) :
+`r` is acyclic, then numbering each element by the number of elements of `V` that reach it gives
+numbers below the number of elements of `V` that strictly increase along every step.
+
+The hypothesis `hV` says that `V` contains the *support* of `r`: both ends of every step. Elements
+outside `V` are related to nothing, so their numbers are unconstrained. -/
+theorem Acyclic.exists_rank (hr : Acyclic r) (V : Finset α) (hV : ∀ a b, r a b → a ∈ V ∧ b ∈ V) :
     ∃ f : α → ℕ, (∀ a ∈ V, f a < V.card) ∧ ∀ a b, r a b → f a < f b := by
   classical
   refine ⟨fun a => (V.filter fun u => TransGen r u a).card, fun a ha => ?_, fun a b hab => ?_⟩
-  · exact Finset.card_lt_card (Finset.filter_ssubset.2 ⟨a, ha, hr a⟩)
+  · exact Finset.card_lt_card (Finset.filter_ssubset.2 ⟨a, ha, hr.irrefl a⟩)
   · refine Finset.card_lt_card ((Finset.ssubset_iff_of_subset fun u hu => ?_).2 ⟨a, ?_, ?_⟩)
     · simp only [Finset.mem_filter] at hu ⊢
       exact ⟨hu.1, hu.2.tail hab⟩
     · simp only [Finset.mem_filter]
       exact ⟨(hV a b hab).1, TransGen.single hab⟩
     · simp only [Finset.mem_filter, not_and]
-      exact fun _ => hr a
+      exact fun _ => hr.irrefl a
 
 /-- A numbering that strictly increases along every step of `r` excludes closed walks. -/
 theorem not_transGen_of_rank {f : α → ℕ} (hf : ∀ a b, r a b → f a < f b) (a : α) :
@@ -139,12 +146,15 @@ theorem not_transGen_of_rank {f : α → ℕ} (hf : ∀ a b, r a b → f a < f b
   | single h => exact hf _ _ h
   | tail _ h ih => exact ih.trans (hf _ _ h)
 
+/-- A relation with a numbering that strictly increases along every step is acyclic. -/
+theorem acyclic_of_rank {f : α → ℕ} (hf : ∀ a b, r a b → f a < f b) : Acyclic r :=
+  ⟨not_transGen_of_rank hf⟩
+
 /-- **Acyclicity on a finite set as a topological numbering**: when every step of `r` is between
-elements of a finite set `V`, `r` has no closed walk exactly when some numbering below the number
-of elements of `V` strictly increases along every step. -/
-theorem forall_not_transGen_iff_exists_rank (V : Finset α) (hV : ∀ a b, r a b → a ∈ V ∧ b ∈ V) :
-    (∀ a, ¬TransGen r a a) ↔
-      ∃ f : α → ℕ, (∀ a ∈ V, f a < V.card) ∧ ∀ a b, r a b → f a < f b :=
-  ⟨exists_rank_of_forall_not_transGen V hV, fun ⟨_, _, hf⟩ => not_transGen_of_rank hf⟩
+elements of a finite set `V` (the hypothesis `hV`), `r` is acyclic exactly when some numbering
+below the number of elements of `V` strictly increases along every step. -/
+theorem acyclic_iff_exists_rank (V : Finset α) (hV : ∀ a b, r a b → a ∈ V ∧ b ∈ V) :
+    Acyclic r ↔ ∃ f : α → ℕ, (∀ a ∈ V, f a < V.card) ∧ ∀ a b, r a b → f a < f b :=
+  ⟨fun hr => hr.exists_rank V hV, fun ⟨_, _, hf⟩ => acyclic_of_rank hf⟩
 
 end Relation

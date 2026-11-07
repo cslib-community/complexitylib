@@ -31,12 +31,12 @@ private theorem step_support (a b : ℕ) (h : step a b) : a ∈ ({0, 1, 2} : Fin
 
 -- The path has a numbering below its three elements.
 example : ∃ f : ℕ → ℕ, (∀ a ∈ ({0, 1, 2} : Finset ℕ), f a < 3) ∧ ∀ a b, step a b → f a < f b := by
-  simpa using exists_rank_of_forall_not_transGen _ step_support
-    (not_transGen_of_rank (f := id) fun a b h => by rw [h.2]; exact Nat.lt_succ_self a)
+  simpa using (acyclic_of_rank (f := id) fun a b h => by rw [h.2]; exact Nat.lt_succ_self a :
+    Acyclic step).exists_rank _ step_support
 
 -- Through the equivalence, the identity numbering certifies acyclicity.
-example : ∀ a, ¬TransGen step a a :=
-  (forall_not_transGen_iff_exists_rank _ step_support).2
+example : Acyclic step :=
+  (acyclic_iff_exists_rank _ step_support).2
     ⟨id, fun a ha => by
       simp only [Finset.mem_insert, Finset.mem_singleton] at ha
       rcases ha with rfl | rfl | rfl <;> decide,
@@ -48,13 +48,22 @@ example : ¬∃ f : ℕ → ℕ, ∀ a b, rot a b → f a < f b := by
   have hc : (([0, 1, 2] : List ℕ) : Cycle ℕ).Chain rot := by
     rw [Cycle.chain_coe_cons]
     simp [rot]
-  exact forall_not_transGen_iff.1 (not_transGen_of_rank hf) _ (by simp) (by simp) hc
+  exact acyclic_iff_forall_nodup_not_cycle_chain.1 (acyclic_of_rank hf) _ (by simp) (by simp) hc
+
+-- An acyclic relation relates no element to itself by its transitive closure.
+example (h : Acyclic step) : ¬TransGen step 0 0 := h.irrefl 0
 
 -- A closed walk around the cycle twice contains a simple cycle among its elements.
 example : ∃ c : List ℕ, c ≠ [] ∧ c.Nodup ∧ c ⊆ [0, 1, 2, 0, 1, 2] ∧ (c : Cycle ℕ).Chain rot := by
   refine exists_nodup_of_cycle_chain (by simp) ?_
   rw [Cycle.chain_coe_cons]
   simp [rot]
+
+-- A closed walk `1 → 2 → 0 → 1` gives a closed chain through `1`.
+example : ∃ c : List ℕ, 1 ∈ c ∧ (c : Cycle ℕ).Chain rot :=
+  exists_cycle_chain_of_transGen
+    (((TransGen.single (show rot 1 2 by simp [rot])).tail (show rot 2 0 by simp [rot])).tail
+      (show rot 0 1 by simp [rot]))
 
 -- Closed walks are the transitive closure relating an element to itself.
 example : TransGen rot 1 1 :=
