@@ -12,6 +12,9 @@ public import Complexity.Algorithms.ExactTriangle.PieceBounds
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
+public import Complexity.Algorithms.Lean.BinPacking.Basic
+public import Complexity.Algorithms.Lean.BinPacking.FirstFit
+public import Complexity.Algorithms.Lean.BinPacking.NextFit
 public import Complexity.Algorithms.Lean.Dijkstra.Client
 public import Complexity.Algorithms.Lean.Dijkstra.Cost
 public import Complexity.Algorithms.Lean.Dijkstra.Memory
@@ -30,6 +33,9 @@ public import Complexity.Algorithms.Lean.KMP.Basic
 public import Complexity.Algorithms.Lean.KMP.Search
 public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Algorithms.Lean.Karger.FastCut
+public import Complexity.Algorithms.Lean.Knapsack.FPTAS
+public import Complexity.Algorithms.Lean.Knapsack.PolyTime
+public import Complexity.Algorithms.Lean.Knapsack.ProfitDP
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
 public import Complexity.Algorithms.Lean.Matroid.Greedy
@@ -1847,6 +1853,7 @@ public import Complexity.Computability.Complexity.Problems.IndependentSet.Sparse
 public import Complexity.Computability.Complexity.Problems.IntegerProgramming
 public import Complexity.Computability.Complexity.Problems.JobSequencing
 public import Complexity.Computability.Complexity.Problems.Knapsack
+public import Complexity.Computability.Complexity.Problems.Knapsack.Unary
 public import Complexity.Computability.Complexity.Problems.LongPath
 public import Complexity.Computability.Complexity.Problems.MaxCut
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue
@@ -2656,6 +2663,7 @@ public import Complexity.Computability.PCP.Amplification
 public import Complexity.Computability.PCP.Amplification.Arithmetic
 public import Complexity.Computability.PCP.Amplification.Family
 public import Complexity.Computability.PCP.Amplifier
+public import Complexity.Computability.PCP.Approximation.BinPacking
 public import Complexity.Computability.PCP.Approximation.Hastad
 public import Complexity.Computability.PCP.Approximation.Hastad.LinearTest
 public import Complexity.Computability.PCP.Approximation.IndependentSet
