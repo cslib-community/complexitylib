@@ -693,11 +693,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   [connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean),
   [bipartiteness and acyclicity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/GraphProperties.lean)
   by interpretation from finite linear orders, add Hanf and Gaifman locality
-  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), games for
-  vocabularies with constants, and pebble games with their finite-variable equivalence theorems;
-  then
-  counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
-  the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
+  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)) and use it for
+  further graph nondefinability results, such as planarity, Hamiltonicity and `k`-colorability
+  for `k ≥ 3`. Then add games for vocabularies with constants, pebble games with their
+  finite-variable equivalence theorems, and counting and fixed-point expressiveness, including
+  Cai–Fürer–Immerman-style separations. Connect the methods to the ordered capture theorems,
+  where FO(≤, BIT) defines EVEN.
 - **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
   relational vocabularies, constant edge probabilities and unlabelled structures; construct the
   countable random (Rado) graph; then the Kolaitis–Vardi laws for fixed-point and finite-variable
