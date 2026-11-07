@@ -9,6 +9,7 @@ module
 
 public import Complexity.Probability.OptimalStopping.Basic
 public import Mathlib.Basic.NNReal.Basic
+import Complexity.Probability.OptimalStopping.Quantile
 import Complexity.Probability.PMF.Bind
 
 /-!
@@ -33,7 +34,9 @@ without subtracting extended reals. Two choices of threshold make the hypothesis
   `expectedMax_le_two_mul_expectedReward_half`;
 * `t` a median of `max Xᵢ` (Samuel-Cahn): `expectedMax_le_two_mul_expectedReward_median`, where
   accepting values `≥ t` works when `t ≥ E[max]/2` and accepting values `> t` works when
-  `t ≤ E[max]/2`.
+  `t ≤ E[max]/2`. A median always exists (`exists_median_listMax`, from
+  `exists_tail_quantile`), so some single threshold always works
+  (`exists_expectedMax_le_two_mul_expectedReward`).
 
 The factor `1/2` is optimal: for `tightLaws k`, a sure value `1` followed by `k + 1` with
 probability `1/(k + 1)` and `0` otherwise, every rule, even one using the whole history, has
@@ -59,6 +62,10 @@ which take the last value in that case, collect at least as much, so the bounds 
   threshold `E[max]/2`.
 * `Cslib.Probability.OptimalStopping.Prophet.expectedMax_le_two_mul_expectedReward_median`: a
   median threshold.
+* `Cslib.Probability.OptimalStopping.Prophet.exists_expectedMax_le_two_mul_expectedReward`:
+  Samuel-Cahn's theorem without a median hypothesis.
+* `Cslib.Probability.OptimalStopping.Prophet.expectedMax_le_add_sum`: the prophet's bound
+  `E[max] ≤ t + ∑ᵢ E[(Xᵢ - t)⁺]`.
 * `Cslib.Probability.OptimalStopping.Prophet.exists_tightLaws_lt`: no constant above `1/2` holds.
 
 ## References
@@ -179,6 +186,25 @@ private theorem expectedMax_le_add (t : ℝ≥0) (laws : List (PMF ℝ≥0)) :
         tsum_congr fun xs => mul_add _ _ _
     _ = _ := by rw [tsum_add, tsum_pmf_mul_const]
 
+private theorem tsum_excessSum (t : ℝ≥0) : ∀ laws : List (PMF ℝ≥0),
+    ∑' xs, jointLaw laws xs * excessSum t xs =
+      (laws.map fun μ => ∑' x, μ x * ((x - t : ℝ≥0) : ℝ≥0∞)).sum
+  | [] => by simp [excessSum]
+  | μ :: laws => by
+      rw [tsum_jointLaw_cons_mul, List.map_cons, List.sum_cons, ← tsum_excessSum t laws]
+      simp only [excessSum, mul_add, tsum_add, tsum_pmf_mul_const]
+
+/-- The prophet collects at most `t + ∑ᵢ E[(Xᵢ - t)⁺]`, for every cutoff `t`. -/
+theorem expectedMax_le_add_sum (t : ℝ≥0) (laws : List (PMF ℝ≥0)) :
+    expectedMax laws ≤ t + (laws.map fun μ => ∑' x, μ x * ((x - t : ℝ≥0) : ℝ≥0∞)).sum :=
+  (expectedMax_le_add t laws).trans_eq (by rw [tsum_excessSum])
+
+/-- For `n` i.i.d. values, `E[max] ≤ t + n E[(X - t)⁺]`. -/
+theorem expectedMax_replicate_le (t : ℝ≥0) (μ : PMF ℝ≥0) (n : ℕ) :
+    expectedMax (List.replicate n μ) ≤ t + n * ∑' x, μ x * ((x - t : ℝ≥0) : ℝ≥0∞) := by
+  simpa [List.map_replicate, List.sum_replicate, nsmul_eq_mul] using
+    expectedMax_le_add_sum t (List.replicate n μ)
+
 private theorem rejectsAll_le_one (a : ℝ≥0 → Bool) : ∀ xs, rejectsAll a xs ≤ 1
   | [] => le_rfl
   | x :: xs => by
@@ -296,8 +322,8 @@ private theorem prophet_bound {t : ℝ≥0} {a : ℝ≥0 → Bool} (ha₁ : ∀ 
         add_le_add key le_rfl
     _ = _ := by ring
 
-/-- The arithmetic step: `t + R M ≤ A + 2 t R` gives `M ≤ 2 A` when `t` and `R` lie on the same
-side of `M/2` and `1/2`. -/
+/-- The arithmetic step: `t + R M ≤ A + 2 t R` gives `M ≤ 2 A` when `t` and `R` lie on opposite
+sides of `M/2` and `1/2`. -/
 private theorem le_two_mul_of_bound {t : ℝ≥0} {R M A : ℝ≥0∞}
     (hb : (t : ℝ≥0∞) + R * M ≤ A + 2 * t * R) (hR : R ≤ 1)
     (h : (2 * (t : ℝ≥0∞) ≤ M ∧ 1 ≤ 2 * R) ∨ (M ≤ 2 * t ∧ 2 * R ≤ 1)) : M ≤ 2 * A := by
@@ -409,6 +435,50 @@ theorem expectedMax_le_two_mul_expectedReward_median (laws : List (PMF ℝ≥0))
   rcases le_total (expectedMax laws) (2 * m) with h | h
   · exact Or.inl (expectedMax_le_two_mul_expectedReward_thresholdRule_of_le laws hlt h)
   · exact Or.inr (expectedMax_le_two_mul_expectedReward_strictThresholdRule_of_le laws hle h)
+
+/-- The maximum of independent values has a median. -/
+theorem exists_median_listMax (laws : List (PMF ℝ≥0)) :
+    ∃ m : ℝ≥0, (jointLaw laws).toOuterMeasure {xs | listMax xs < m} ≤ 1 / 2 ∧
+      1 / 2 ≤ (jointLaw laws).toOuterMeasure {xs | listMax xs ≤ m} := by
+  obtain ⟨m, hgt, hge⟩ := exists_tail_quantile ((jointLaw laws).map listMax)
+    (q := 1 / 2) (by simp) (by norm_num)
+  refine ⟨m, ?_⟩
+  have hν (s : Set ℝ≥0) : ((jointLaw laws).map listMax).toOuterMeasure s =
+      ((jointLaw laws).map listMax).toMeasure s :=
+    (PMF.toMeasure_apply_eq_toOuterMeasure _ _).symm
+  have hlt : (jointLaw laws).toOuterMeasure {xs | listMax xs < m} =
+      ((jointLaw laws).map listMax).toMeasure (Set.Iio m) := by
+    rw [← hν, PMF.toOuterMeasure_map_apply]; rfl
+  have hle : (jointLaw laws).toOuterMeasure {xs | listMax xs ≤ m} =
+      ((jointLaw laws).map listMax).toMeasure (Set.Iic m) := by
+    rw [← hν, PMF.toOuterMeasure_map_apply]; rfl
+  rw [hν] at hgt hge
+  rw [hlt, hle]
+  have hA := MeasureTheory.measure_add_measure_compl
+    (μ := ((jointLaw laws).map listMax).toMeasure) (measurableSet_Iio (a := m))
+  have hB := MeasureTheory.measure_add_measure_compl
+    (μ := ((jointLaw laws).map listMax).toMeasure) (measurableSet_Iic (a := m))
+  rw [Set.compl_Iio, MeasureTheory.measure_univ] at hA
+  rw [Set.compl_Iic, MeasureTheory.measure_univ] at hB
+  constructor
+  · refine ENNReal.le_of_add_le_add_right
+      (MeasureTheory.measure_ne_top ((jointLaw laws).map listMax).toMeasure (Set.Ici m)) ?_
+    calc _ = (1 : ℝ≥0∞) := hA
+      _ = 1 / 2 + 1 / 2 := (ENNReal.add_halves 1).symm
+      _ ≤ _ := by gcongr
+  · refine ENNReal.le_of_add_le_add_right (a := 1 / 2) (by simp) ?_
+    calc (1 / 2 : ℝ≥0∞) + 1 / 2 = 1 := ENNReal.add_halves 1
+      _ = _ := hB.symm
+      _ ≤ _ := by gcongr
+
+/-- **Samuel-Cahn's prophet inequality.** For all independent nonnegative values there is a
+single threshold `m` such that accepting the first value of at least `m`, or the first value of
+more than `m`, collects at least half the prophet's expected reward. -/
+theorem exists_expectedMax_le_two_mul_expectedReward (laws : List (PMF ℝ≥0)) :
+    ∃ m : ℝ≥0, expectedMax laws ≤ 2 * expectedReward (thresholdRule m) laws ∨
+      expectedMax laws ≤ 2 * expectedReward (strictThresholdRule m) laws := by
+  obtain ⟨m, hlt, hle⟩ := exists_median_listMax laws
+  exact ⟨m, expectedMax_le_two_mul_expectedReward_median laws hlt hle⟩
 
 /-! ### Tightness -/
 

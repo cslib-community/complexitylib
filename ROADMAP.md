@@ -1113,12 +1113,15 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
 - **Optimal stopping:** `Probability/OptimalStopping/*` covers the rank-based secretary problem
-  (exact cutoff-rule success, optimality among all rank-based rules, `1/e` bounds and limit) and
-  the single-threshold `½` prophet inequality for independent discrete (`PMF`) laws, with
-  tightness ([#2913](https://github.com/cslib-community/complexitylib/issues/2913)). Extend to
-  the i.i.d. `1 - 1/e` and `≈0.745` bounds, prophet secretary and random-order models, matroid
-  and multiple-choice prophet inequalities, the full-information secretary problem, existence of
-  medians of the maximum, randomized rules as mixtures, and the posted-price mechanism corollary.
+  (exact cutoff-rule success, optimality among all rank-based rules, `1/e` bounds and limit), the
+  single-threshold `½` prophet inequality for independent discrete (`PMF`) laws with tightness
+  and Samuel-Cahn's median threshold without hypotheses
+  ([#2913](https://github.com/cslib-community/complexitylib/issues/2913)), and the i.i.d.
+  `1 - (1 - 1/n)ⁿ ≥ 1 - 1/e` bound for one randomized threshold and for the optimal gambler
+  ([#3092](https://github.com/cslib-community/complexitylib/issues/3092)). Extend to the tight
+  i.i.d. constant `≈0.745`, prophet secretary and random-order models, matroid and
+  multiple-choice prophet inequalities, the full-information secretary problem, and the
+  posted-price mechanism corollary.
 
 ### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
 
