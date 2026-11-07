@@ -514,8 +514,9 @@ The native reduction certificate charges both adaptive phases and bounds every e
 For ciphertext reply bounds, `SymmetricCipher.exists_ciphertext_length_bound` returns a native
 unary cap `ctBound n ℓ`, uniform over keys actually sampled by `E.keyGen n` and all messages
 of length `ℓ`. Its runtime guarantee also covers messages outside the cipher's correctness
-and security domain. The current `n`-bit reductions use `ctBound n n`; this bound does not
-extend their security claims to arbitrary words. The
+and security domain. The current `n`-bit reductions use its diagonal specialization
+`SymmetricCipher.exists_ciphertext_length_bound_of_length_eq` (`ctBound n := bound n n`); this
+bound does not extend their security claims to arbitrary words. The
 [authenticated-encryption clients](../../ComplexityTests/Crypto/AuthenticatedEncryption.lean)
 check independent lengths and show why an all-message bound cannot depend only on `n`.
 
