@@ -7,11 +7,11 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Probability.PMF
 public import Mathlib.Combinatorics.SimpleGraph.Finite
 public import Mathlib.Combinatorics.SimpleGraph.Operations
 import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
-import Complexity.Foundations.Data.Set.SymmDiff
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform
 
@@ -34,7 +34,6 @@ probability exactly `1/2`.
 
 * `Cslib.Logic.FO.graph.randomGraph`: the uniform distribution on `SimpleGraph (Fin n)`.
 * `Cslib.Logic.FO.graph.randomGraphProb`: the probability of a graph property under it.
-* `SimpleGraph.EvenEdges`: a graph with an even number of edges.
 
 ## Main results
 
@@ -55,22 +54,6 @@ probability exactly `1/2`.
 public section
 
 open Cslib.Probability
-
-namespace SimpleGraph
-
-/-- A graph has an even number of edges. -/
-@[expose]
-def EvenEdges {V : Type*} (G : SimpleGraph V) : Prop :=
-  Even G.edgeSet.ncard
-
-/-- Toggling one potential edge `uv` of a graph on finitely many vertices changes the parity of
-its number of edges. -/
-theorem evenEdges_symmDiff_edge_iff {V : Type*} [Finite V] {u v : V} (huv : u ≠ v)
-    (G : SimpleGraph V) : (symmDiff G (edge u v)).EvenEdges ↔ ¬G.EvenEdges := by
-  rw [EvenEdges, EvenEdges, edgeSet_symmDiff, edgeSet_edge_of_ne huv]
-  exact Set.even_ncard_symmDiff_singleton_iff (Set.toFinite _) _
-
-end SimpleGraph
 
 namespace Cslib.Logic.FO.graph
 

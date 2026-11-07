@@ -32,8 +32,10 @@ Completeness of the theory, which also needs its satisfiability, is in
 
 ## Main definitions
 
+* `Cslib.Logic.FO.graph.IsExtensionWitness`: a witness of the extension of a tuple by a pattern.
 * `Cslib.Logic.FO.graph.HasExtension`: the extension property for a fixed pattern.
 * `Cslib.Logic.FO.graph.extensionAxiom`: the extension axiom as a first-order sentence.
+* `Cslib.Logic.FO.graph.extensionAxioms`: the set of all extension axioms.
 * `Cslib.Logic.FO.graph.randomGraphTheory`: the simple-graph axioms together with all extension
   axioms.
 * `Cslib.Logic.FO.graph.Satisfies`: satisfaction of a sentence of the graph language by a simple
@@ -63,7 +65,9 @@ open FirstOrder Language Structure BoundedFormula Cardinal
 
 namespace Cslib.Logic.FO.graph
 
-/-- The graph language has no nullary relation symbols. -/
+/-- The graph language has no nullary relation symbols. Mathlib has the analogous instance for
+`Language.order` in `Mathlib/ModelTheory/Order.lean` but not this one, so this instance is an
+upstream candidate for `Mathlib/ModelTheory/Graph.lean`. -/
 instance isEmpty_relations_zero : IsEmpty (Language.graph.Relations 0) :=
   ⟨fun r => nomatch r⟩
 
