@@ -3933,6 +3933,7 @@ public import Complexity.Foundations.Data.Finset.KthLargest.Truncation
 public import Complexity.Foundations.Data.Finset.Lowest
 public import Complexity.Foundations.Data.Finset.LowestMax
 public import Complexity.Foundations.Data.Finset.Markov
+public import Complexity.Foundations.Data.Finset.NatGap
 public import Complexity.Foundations.Data.Finset.OrderGlue
 public import Complexity.Foundations.Data.Finset.OrderedFilter
 public import Complexity.Foundations.Data.Finset.Quantile
@@ -3990,6 +3991,8 @@ public import Complexity.Foundations.Data.MvPolynomial.PartialDerivatives
 public import Complexity.Foundations.Data.MvPolynomial.SetMultilinear
 public import Complexity.Foundations.Data.MvPolynomial.SetMultilinearProjection
 public import Complexity.Foundations.Data.MvPolynomial.SetMultilinearProjectionProd
+public import Complexity.Foundations.Data.MvPolynomial.Support
+public import Complexity.Foundations.Data.MvPolynomial.TruncateTotalDegree
 public import Complexity.Foundations.Data.Nat.ArithmeticProgression
 public import Complexity.Foundations.Data.Nat.Asymptotics
 public import Complexity.Foundations.Data.Nat.BinarySize
@@ -4423,6 +4426,11 @@ public import Complexity.Logics.FirstOrder.Subformula
 public import Complexity.Logics.FirstOrder.Tuple
 public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Polymorphism.BooleanClone
+public import Complexity.Logics.Propositional.Algebraic.CNF
+public import Complexity.Logics.Propositional.Algebraic.Nullstellensatz.PolynomialCalculus
+public import Complexity.Logics.Propositional.Algebraic.Nullstellensatz.Proof
+public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Nullstellensatz
+public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Proof
 public import Complexity.Logics.Propositional.CNF
 public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact

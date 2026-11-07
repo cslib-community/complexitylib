@@ -715,8 +715,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 ### Proof complexity
 
-- Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
-  certified DPLL solver runtimes.
+- Proof-space lower bounds, Frege, cutting planes and sum-of-squares, and certified DPLL solver
+  runtimes.
+- **Algebraic proof systems.** Foundations, generic soundness, quantitative NS-to-PC simulation
+  and PC-to-NS certificate conversion without resource bounds are in
+  `Logics/Propositional/Algebraic`, together with clause-only pointwise CNF arithmetization.
+  Remaining work includes full CNF translation with Boolean and complementary axioms,
+  completeness, size and degree bounds for PC-to-NS, proof-system separations, and degree and
+  size lower bounds.
 - **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
   lower bounds ([#2019]).
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
