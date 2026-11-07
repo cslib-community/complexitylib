@@ -41,7 +41,8 @@ assumes `L.IsRelational`.
 * `Cslib.Logic.FO.PartialIso`: the pebbled tuples define a partial isomorphism.
 * `Cslib.Logic.FO.DuplicatorWins`: Duplicator wins the `n`-round game from a position.
 * `Cslib.Logic.FO.Strategy`, `Cslib.Logic.FO.Strategy.IsWinning`: Duplicator strategies and
-  winning strategies.
+  winning strategies. Both bodies are exposed, so clients can build strategies by recursion and
+  check them with `Strategy.isWinning_zero` and `Strategy.isWinning_succ`.
 * `Cslib.Logic.FO.IsBackAndForth`: back-and-forth systems indexed by the number of rounds left.
 
 ## Main results
@@ -143,20 +144,34 @@ theorem DuplicatorWins.back {n k : ℕ} {a : Fin k → M} {b : Fin k → N}
 /-! ### Strategies -/
 
 /-- A Duplicator strategy for the `n`-round game from the position `(a, b)`: for every move of
-Spoiler, an answer in the other structure together with a strategy for the remaining rounds. -/
-def Strategy : ℕ → ∀ {k : ℕ}, (Fin k → M) → (Fin k → N) → Type (max w w')
+Spoiler, an answer in the other structure together with a strategy for the remaining rounds.
+The body is exposed: clients build strategies and read off their answers. -/
+@[expose] def Strategy : ℕ → ∀ {k : ℕ}, (Fin k → M) → (Fin k → N) → Type (max w w')
   | 0, _, _, _ => PUnit
   | n + 1, _, a, b =>
     (∀ c : M, Σ d : N, Strategy n (Fin.snoc a c : Fin _ → M) (Fin.snoc b d : Fin _ → N)) ×
       (∀ d : N, Σ c : M, Strategy n (Fin.snoc a c : Fin _ → M) (Fin.snoc b d : Fin _ → N))
 
 /-- A strategy is winning when every position reached in a play following it, including the
-initial one, is a partial isomorphism. -/
-def Strategy.IsWinning (L : Language.{u, v}) [L.Structure M] [L.Structure N] :
+initial one, is a partial isomorphism. The body is exposed so that clients can check that a
+concrete strategy wins. -/
+@[expose] def Strategy.IsWinning (L : Language.{u, v}) [L.Structure M] [L.Structure N] :
     ∀ {n k : ℕ} {a : Fin k → M} {b : Fin k → N}, Strategy n a b → Prop
   | 0, _, a, b, _ => PartialIso L a b
   | _ + 1, _, a, b, σ => PartialIso L a b ∧
       (∀ c, (σ.1 c).2.IsWinning L) ∧ ∀ d, (σ.2 d).2.IsWinning L
+
+@[simp]
+theorem Strategy.isWinning_zero {k : ℕ} {a : Fin k → M} {b : Fin k → N} (σ : Strategy 0 a b) :
+    σ.IsWinning L ↔ PartialIso L a b := by
+  rw [Strategy.IsWinning]
+
+@[simp]
+theorem Strategy.isWinning_succ {n k : ℕ} {a : Fin k → M} {b : Fin k → N}
+    (σ : Strategy (n + 1) a b) :
+    σ.IsWinning L ↔ PartialIso L a b ∧ (∀ c, (σ.1 c).2.IsWinning L) ∧
+      ∀ d, (σ.2 d).2.IsWinning L := by
+  rw [Strategy.IsWinning]
 
 /-- Duplicator wins the `n`-round game exactly when she has a winning strategy. -/
 theorem duplicatorWins_iff_exists_strategy :

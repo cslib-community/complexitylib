@@ -19,7 +19,7 @@ distinguishing sentence of quantifier rank `2`, and a client of the nondefinabil
 namespace Cslib.Tests.EhrenfeuchtFraisse
 
 open FirstOrder Language Structure
-open Cslib.Logic.FO Cslib.Logic.FO.LinearOrder
+open Cslib.Logic.FO Cslib.Logic.FO.FiniteLinearOrder
 
 instance (m : ℕ) : Language.order.Structure (Fin m) := orderStructure _
 
@@ -92,5 +92,62 @@ example (n : ℕ) (a : Fin 2 → Fin 3) :
   IsBackAndForth.duplicatorWins (I := fun _ _ a b => b = Equiv.refl (Fin 3) ∘ a)
     ⟨fun h => h ▸ PartialIso.refl _, fun h c => ⟨c, by rw [h, Fin.comp_snoc]; rfl⟩,
       fun h d => ⟨d, by rw [h, Fin.comp_snoc]; rfl⟩⟩ rfl
+
+/-! ### Explicit strategies, built and checked outside the defining module -/
+
+/-- The copycat strategy on a structure against itself: answer every move with the same element.
+Built by recursion through the exposed body of `Strategy`. -/
+def copycat {M : Type} : (n : ℕ) → {k : ℕ} → (a : Fin k → M) → Strategy n a a
+  | 0, _, _ => PUnit.unit
+  | n + 1, _, a =>
+    (fun c => ⟨c, copycat n (Fin.snoc a c)⟩, fun d => ⟨d, copycat n (Fin.snoc a d)⟩)
+
+/-- Spoiler's move `c` is answered by `c`. -/
+example {M : Type} (n k : ℕ) (a : Fin k → M) (c : M) : ((copycat (n + 1) a).1 c).1 = c := rfl
+
+/-- The copycat strategy wins, by unfolding `Strategy.IsWinning` round by round. -/
+theorem copycat_isWinning {M : Type} [Language.order.Structure M] :
+    ∀ (n : ℕ) {k : ℕ} (a : Fin k → M), (copycat n a).IsWinning Language.order
+  | 0, _, a => (Strategy.isWinning_zero _).2 (PartialIso.refl a)
+  | n + 1, _, a => (Strategy.isWinning_succ _).2
+      ⟨PartialIso.refl a, fun _ => copycat_isWinning n _, fun _ => copycat_isWinning n _⟩
+
+/-- A one-round strategy between the orders `Fin 2` and `Fin 3` that is not a copy: every move is
+answered by the least element. It wins, since one pebble cannot detect anything. -/
+def toBottom : Strategy 1 (default : Fin 0 → Fin 2) (default : Fin 0 → Fin 3) :=
+  (fun _ => ⟨0, PUnit.unit⟩, fun _ => ⟨0, PUnit.unit⟩)
+
+theorem partialIso_one {M N : Type} [_root_.LinearOrder M] [_root_.LinearOrder N]
+    [Language.order.Structure M] [Language.order.OrderedStructure M]
+    [Language.order.Structure N] [Language.order.OrderedStructure N]
+    (a : Fin 1 → M) (b : Fin 1 → N) : PartialIso Language.order a b := by
+  refine ⟨fun i j => by simp [Subsingleton.elim i j], fun R f => ?_⟩
+  cases R
+  change RelMap (leSymb : Language.order.Relations 2) (a ∘ f) ↔
+    RelMap (leSymb : Language.order.Relations 2) (b ∘ f)
+  rw [relMap_leSymb, relMap_leSymb]
+  simp only [Function.comp_apply, Subsingleton.elim (f 0) (f 1), le_refl]
+
+theorem toBottom_isWinning : toBottom.IsWinning Language.order := by
+  rw [Strategy.isWinning_succ]
+  refine ⟨⟨fun i => i.elim0, fun R f => ?_⟩, fun c => ?_, fun d => ?_⟩
+  · cases R
+    exact (f 0).elim0
+  · exact (Strategy.isWinning_zero _).2 (partialIso_one _ _)
+  · exact (Strategy.isWinning_zero _).2 (partialIso_one _ _)
+
+/-- Through `duplicatorWins_iff_exists_strategy`, the explicit strategy proves that Duplicator
+wins the one-round game. -/
+example : DuplicatorWins Language.order 1 (default : Fin 0 → Fin 2) (default : Fin 0 → Fin 3) :=
+  duplicatorWins_iff_exists_strategy.2 ⟨toBottom, toBottom_isWinning⟩
+
+/-- Conversely, a winning strategy can be extracted from a win and queried. -/
+example : ∃ σ : Strategy 1 (default : Fin 0 → Fin 3) (default : Fin 0 → Fin 4),
+    σ.IsWinning Language.order ∧ ∀ c, ((σ.1 c).2).IsWinning Language.order := by
+  have h : DuplicatorWins Language.order 1 (default : Fin 0 → Fin 3) (default : Fin 0 → Fin 4) := by
+    rw [duplicatorWins_iff_card, Nat.card_fin, Nat.card_fin]
+    decide
+  obtain ⟨σ, hσ⟩ := duplicatorWins_iff_exists_strategy.1 h
+  exact ⟨σ, hσ, ((Strategy.isWinning_succ σ).1 hσ).2.1⟩
 
 end Cslib.Tests.EhrenfeuchtFraisse

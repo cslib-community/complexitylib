@@ -31,6 +31,10 @@ used only by the Hintikka direction `duplicatorWins_of_forall_realize_iff`, whic
 `L.IsRelational`; the easy direction needs `L.IsRelational` and no finiteness. The structures
 themselves are arbitrary, finite or infinite.
 
+Formulas are stated as `L.BoundedFormula Empty k`, whose `k` bound variables are the pebbles. A
+formula `φ : L.Formula (Fin k)` with free variables `Fin k` becomes one of these by
+`φ.relabel Sum.inr`, which only renames variables (`BoundedFormula.realize_relabel`).
+
 To show that a property of finite structures is not first-order definable, exhibit for each `n`
 two structures, one with the property and one without, on which Duplicator wins the `n`-round
 game (`DuplicatorWins.realize_iff`). For linear orders this is carried out in
@@ -99,6 +103,15 @@ def AtomicIndex.formula {k : ℕ} : AtomicIndex L k → L.BoundedFormula Empty k
 def AtomicIndex.Holds {k : ℕ} (a : Fin k → M) : AtomicIndex L k → Prop
   | .inl ⟨(i, j)⟩ => a i = a j
   | .inr ⟨⟨_, R⟩, f⟩ => RelMap R (a ∘ f)
+
+@[simp] theorem AtomicIndex.holds_inl {k : ℕ} (a : Fin k → M) (i j : Fin k) :
+    AtomicIndex.Holds a (Sum.inl ⟨(i, j)⟩ : AtomicIndex L k) ↔ a i = a j := by
+  rw [AtomicIndex.Holds]
+
+@[simp] theorem AtomicIndex.holds_inr {k l : ℕ} (a : Fin k → M) (R : L.Relations l)
+    (f : Fin l → Fin k) :
+    AtomicIndex.Holds a (Sum.inr ⟨⟨l, R⟩, f⟩ : AtomicIndex L k) ↔ RelMap R (a ∘ f) := by
+  rw [AtomicIndex.Holds]
 
 @[simp] theorem AtomicIndex.realize_formula {k : ℕ} (i : AtomicIndex L k) (a : Fin k → M) :
     i.formula.Realize default a ↔ i.Holds a := by
@@ -307,9 +320,8 @@ theorem exists_finite_quantifierRank_le_realize_iff [L.IsRelational] [Finite (Σ
 /-- For a relational language with finitely many relation symbols, two structures are
 elementarily equivalent exactly when Duplicator wins the `n`-round game on them for every `n`. -/
 theorem elementarilyEquivalent_iff_forall_duplicatorWins [L.IsRelational]
-    [Finite (Σ l, L.Relations l)] :
-    L.ElementarilyEquivalent M N ↔
-      ∀ n, DuplicatorWins L n (default : Fin 0 → M) (default : Fin 0 → N) := by
+    [Finite (Σ l, L.Relations l)] {a : Fin 0 → M} {b : Fin 0 → N} :
+    L.ElementarilyEquivalent M N ↔ ∀ n, DuplicatorWins L n a b := by
   simp only [elementarilyEquivalent_iff, duplicatorWins_iff_forall_sentence]
   exact ⟨fun h n φ _ => h φ, fun h φ => h _ φ le_rfl⟩
 

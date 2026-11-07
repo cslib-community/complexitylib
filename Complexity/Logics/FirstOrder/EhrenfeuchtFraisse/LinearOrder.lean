@@ -27,11 +27,11 @@ linear orders**, even when only orders above a size threshold are considered
 (`not_exists_sentence_realize_iff_even`).
 
 Libkin states the sufficient condition with the threshold `2 ^ n` for both orders; the sharp form
-proved here, with threshold `2 ^ n - 1` and its converse, is the standard folklore
-characterization. Duplicator's strategy keeps every gap between consecutive pebbles (and the two
-virtual endpoints) either equal in both orders or at least `2 ^ r` in both, `r` being the number
-of rounds left; Spoiler wins from any other position by splitting the longer of two different
-gaps.
+proved here, with threshold `2 ^ n - 1` and its converse, is the characterization of
+`n`-equivalence of finite linear orders in Kolaitis's survey [Kolaitis2007]. Duplicator's strategy
+keeps every gap between consecutive pebbles (and the two virtual endpoints) either equal in both
+orders or at least `2 ^ r` in both, `r` being the number of rounds left; Spoiler wins from any
+other position by splitting the longer of two different gaps.
 
 ## Use in ordered descriptive complexity
 
@@ -48,16 +48,20 @@ constants must first be replaced by their defining formulas.
 
 ## Main results
 
-* `Cslib.Logic.FO.LinearOrder.duplicatorWins_iff_card`: Duplicator wins the `n`-round game on
-  two finite linear orders iff they have equal size or both have size at least `2 ^ n - 1`.
-* `Cslib.Logic.FO.LinearOrder.realize_iff_of_two_pow_le_card`: no sentence of quantifier rank at
-  most `n` distinguishes two finite linear orders of size at least `2 ^ n - 1`.
-* `Cslib.Logic.FO.LinearOrder.exists_sentence_of_card_ne`: the bound is sharp.
-* `Cslib.Logic.FO.LinearOrder.not_exists_sentence_realize_iff_even`: EVEN is not first-order
-  definable on finite linear orders.
+* `Cslib.Logic.FO.FiniteLinearOrder.duplicatorWins_iff_card`: Duplicator wins the `n`-round
+  game on two finite linear orders iff they have equal size or both have size at least
+  `2 ^ n - 1`.
+* `Cslib.Logic.FO.FiniteLinearOrder.realize_iff_of_two_pow_le_card`: no sentence of quantifier
+  rank at most `n` distinguishes two finite linear orders of size at least `2 ^ n - 1`.
+* `Cslib.Logic.FO.FiniteLinearOrder.exists_sentence_of_card_ne`: the bound is sharp.
+* `Cslib.Logic.FO.FiniteLinearOrder.not_exists_sentence_realize_iff_even`: EVEN is not
+  first-order definable on finite linear orders.
 
 ## References
 
+* [P. G. Kolaitis, *On the expressive power of logics on finite models*][Kolaitis2007], Chapter 2
+  of *Finite Model Theory and Its Applications* (the sharp characterization of `n`-equivalent
+  finite linear orders).
 * [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Chapter 3 (linear orders of
   size at least `2 ^ n` are indistinguishable in `n` rounds; EVEN is not definable over orders).
 -/
@@ -66,7 +70,7 @@ public section
 
 open FirstOrder Language Structure
 
-namespace Cslib.Logic.FO.LinearOrder
+namespace Cslib.Logic.FO.FiniteLinearOrder
 
 /-! ### Gaps -/
 
@@ -402,9 +406,9 @@ private theorem duplicatorWins_iff_good {m m' r k : ℕ} (C : Coords M m) (D : C
     {a : Fin k → M} {b : Fin k → N} : DuplicatorWins Language.order r a b ↔ Good C D r a b :=
   ⟨DuplicatorWins.good, (isBackAndForth_good C D).duplicatorWins⟩
 
-/-- **Ehrenfeucht–Fraïssé games on finite linear orders.** Duplicator wins the `n`-round game on
-two finite linear orders exactly when they have the same size or both have at least `2 ^ n - 1`
-elements. -/
+/-- **Ehrenfeucht–Fraïssé games on finite linear orders** [Kolaitis2007]. Duplicator wins the
+`n`-round game on two finite linear orders exactly when they have the same size or both have at
+least `2 ^ n - 1` elements. -/
 theorem duplicatorWins_iff_card [Finite M] [Finite N] {n : ℕ} {a : Fin 0 → M} {b : Fin 0 → N} :
     DuplicatorWins Language.order n a b ↔
       Nat.card M = Nat.card N ∨ (2 ^ n ≤ Nat.card M + 1 ∧ 2 ^ n ≤ Nat.card N + 1) := by
@@ -469,4 +473,4 @@ theorem not_exists_sentence_realize_iff_even (t : ℕ) :
     Nat.card_fin, Nat.even_add_one] at h
   exact iff_not_self h
 
-end Cslib.Logic.FO.LinearOrder
+end Cslib.Logic.FO.FiniteLinearOrder
