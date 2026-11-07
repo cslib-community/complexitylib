@@ -89,6 +89,11 @@ Irit Dinur. “The PCP Theorem by Gap Amplification.” *Journal of the ACM* 54(
 
 Cynthia Dwork and Aaron Roth. *The Algorithmic Foundations of Differential Privacy*. Foundations and Trends in Theoretical Computer Science 9(3–4), 211–407, 2014. https://doi.org/10.1561/0400000042 . Definition 2.4, Proposition 2.1, Theorem 2.2 and its footnote, §2.3, Claim 3.5, Theorem 3.16, Theorem B.1 and Corollary B.2 were checked against the published PDF on 2026-11-07.
 
+<a id="erdos1947"></a>
+## erdos1947
+
+Paul Erdős. “Some Remarks on the Theory of Graphs.” *Bulletin of the American Mathematical Society* 53(4), 292–294, 1947. https://doi.org/10.1090/S0002-9904-1947-08785-1 . Bibliographic metadata checked on 2026-11-07; the full text was not inspected in this pass. The manual attributes only the counting lower bound `2 ^ (k / 2) < R(k, k)` to this paper; the formal statement follows Alon–Spencer, *The Probabilistic Method*, Proposition 1.1.1, as cited in the Lean documentation.
+
 <a id="erickson24"></a>
 ## erickson24
 
@@ -203,6 +208,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 ## mathlib
 
 Mathlib contributors. *Mathlib*, pinned source `69552756cd8a2d2d48763cf7279fd814d6a1224d`, inspected 2026-11-01. https://github.com/leanprover-community/mathlib4/tree/69552756cd8a2d2d48763cf7279fd814d6a1224d
+
+<a id="nagy1972"></a>
+## nagy1972
+
+Zsigmond Nagy. “A Constructive Estimation of the Ramsey Numbers” (in Hungarian). *Matematikai Lapok* 23, 301–302, 1972. The original was not inspected; the construction and its bound follow Jukna, *Extremal Combinatorics*, 2nd ed., §13.7 and the Chapter 13 exercises, as cited in the Lean documentation.
 
 <a id="naoryung89"></a>
 ## naoryung89
