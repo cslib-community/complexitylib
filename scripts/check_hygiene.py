@@ -603,17 +603,21 @@ def check_abstract_readmes(root: pathlib.Path = ROOT) -> list[str]:
 # The issue-link reference definitions that `ROADMAP.md` may keep: those on `main` when inline
 # links became the rule, and those of pull requests then open, so that queued work is not failed
 # for following the old convention. The set never grows; a closed direction drops its definition
-# without editing this list. A one-time conversion of the block to inline links can empty it.
+# without editing this list. The one-time conversion of the block to inline links (#2943) empties
+# it.
 ROADMAP_ISSUE_DEFINITIONS = frozenset({
-    321, 324, 399, 456, 459, 474, 486, 581, 585, 608, 640, 643, 798, 800, 862, 884, 886, 888,
-    889, 890, 891, 892, 894, 895, 896, 897, 939, 949, 999, 1002, 1104, 1124, 1155, 1351, 1539,
-    1572, 1817, 2019, 2062, 2063, 2084, 2145, 2205, 2213, 2261, 2289, 2290, 2347, 2423, 2468,
-    2521, 2527, 2568, 2579, 2585, 2620, 2636, 2642, 2652, 2661, 2812, 2855, 2861, 2866, 2867,
-    2873, 2874,
+    321, 324, 399, 456, 459, 474, 486, 581, 585, 608, 640, 643, 798, 800, 862, 884, 886, 888, 889,
+    890, 891, 892, 894, 895, 896, 897, 939, 949, 999, 1002, 1104, 1124, 1155, 1351, 1539, 1572,
+    1817, 2019, 2062, 2063, 2084, 2145, 2205, 2213, 2261, 2289, 2290, 2347, 2423, 2468, 2521,
+    2527, 2568, 2579, 2585, 2620, 2636, 2642, 2652, 2661, 2812, 2855, 2861, 2866, 2870, 2884,
+    2899, 2900,
 })
 # A reference definition `[#N]: target` (CommonMark allows up to three leading spaces).
 ROADMAP_ISSUE_DEFINITION_RE = re.compile(r"^ {0,3}\[#(\d+)\]:", re.M)
 # A use `[#N]` of the label: a shortcut, collapsed or full reference, but not an inline link.
+# This is a plain scan, not a Markdown parse, so `[#N]` in code spans or fenced blocks, as nested
+# link text (`[text [#N]](url)`), after an escape (`\[#N]`) or before another label
+# (`[#N][label]`) is also taken as a use, and is reported when `#N` has no definition.
 ROADMAP_ISSUE_REFERENCE_RE = re.compile(r"\[#(\d+)\](?!\()")
 
 
