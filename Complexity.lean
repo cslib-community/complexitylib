@@ -50,6 +50,7 @@ public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
 public import Complexity.Algorithms.Lean.Sort.Bitonic.ZeroOne
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
+public import Complexity.Algorithms.Lean.VertexCover.Matching
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BandBounds
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
@@ -1917,6 +1918,7 @@ public import Complexity.Computability.Complexity.Problems.TwoSAT.Routines
 public import Complexity.Computability.Complexity.Problems.USAT
 public import Complexity.Computability.Complexity.Problems.USTCON
 public import Complexity.Computability.Complexity.Problems.VertexCover
+public import Complexity.Computability.Complexity.Problems.VertexCover.Approximation
 public import Complexity.Computability.Complexity.Problems.XORSAT
 public import Complexity.Computability.Complexity.Problems.XORSAT.Dense
 public import Complexity.Computability.Complexity.ProofSystem
