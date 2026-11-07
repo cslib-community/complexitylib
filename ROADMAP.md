@@ -1011,6 +1011,24 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
 
+### Mechanism design ([#2947](https://github.com/cslib-community/complexitylib/issues/2947))
+
+Single-parameter mechanisms with Myerson's Lemma for arbitrary monotone allocation rules, the
+Vickrey auction, knapsack auctions with welfare-maximizing rules, and Groves/VCG mechanisms over
+finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
+
+- **Single-parameter corollaries:** the sponsored-search payment formula (rank-by-bid
+  allocation with slot click-through rates) and the greedy knapsack rule with its monotonicity
+  and ½-approximation. State allocation algorithms with charged running time, so that
+  approximation and truthfulness are both proved for an actual algorithm.
+- **Revenue maximization:** Bayesian single-parameter environments with independent priors,
+  expected revenue equals expected virtual welfare, and Myerson's optimal auction for regular
+  distributions. Begin with finitely supported or density-based distributions, whichever the
+  probability API supports better, and keep regularity and ironing explicit.
+- **Multi-parameter characterizations:** Groves mechanisms as the only DSIC welfare maximizers
+  on rich valuation domains (Green–Laffont, Holmström), and limits of VCG such as revenue
+  monotonicity and collusion.
+
 ### Structural graph algorithms
 
 - Tree decompositions, width and normalization into a suitable decomposition form; a reusable

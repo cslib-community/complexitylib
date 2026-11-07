@@ -4336,6 +4336,12 @@ public import Complexity.Foundations.RingTheory.AdjoinRoot
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
+public import Complexity.GameTheory.Mechanism.CriticalBid
+public import Complexity.GameTheory.Mechanism.Knapsack
+public import Complexity.GameTheory.Mechanism.Myerson
+public import Complexity.GameTheory.Mechanism.SingleParameter
+public import Complexity.GameTheory.Mechanism.VCG
+public import Complexity.GameTheory.Mechanism.Vickrey
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString
