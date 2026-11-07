@@ -18,15 +18,14 @@ Katz and Trevisan [KatzTrevisan2000, Theorem 1] observed that a local decoder ca
 `(q, δ, ε)` local decoder yields a `(q, q / δ, ε)` smooth decoder (restated as [Kerenidis and
 de Wolf, Theorem 9][KerenidisDeWolf2004], arXiv:quant-ph/0208062v2, for non-adaptive decoders).
 Here the decoder's queries must not depend on the received word. The decoder reads at most `q`
-positions in
-expectation, so at most `δ |P|` positions are *heavy*, read more than `q / (δ |P|)` times in
-expectation (`Code.card_heavyPositions_le`). The smooth decoder runs the local decoder but answers
-the queries to heavy positions itself, from a fixed word `z`, without reading them (`Code.mask`).
-Run on the codeword `C x`, it behaves as the local decoder run on the word that agrees with `z`
-on the heavy positions and with `C x` elsewhere, which differs from
-`C x` on at most `δ |P|` positions, so it still outputs each bit with probability `1 / 2 + ε`; and
-it reads no heavy position, while it reads every other position as often as the local decoder,
-whose reads do not depend on the word, does against `z`.
+positions in expectation, so at most `δ |P|` positions are *heavy*, read more than `q / (δ |P|)`
+times in expectation (`Code.card_heavyPositions_le`). The smooth decoder runs the local decoder but
+answers the queries to heavy positions itself, from a fixed word `z`, without reading them
+(`Code.mask`). Run on the codeword `C x`, it behaves as the local decoder run on the word that
+agrees with `z` on the heavy positions and with `C x` elsewhere, which differs from `C x` on at
+most `δ |P|` positions, so it still outputs each bit with probability `1 / 2 + ε`; and it reads no
+heavy position, while it reads every other position as often as the local decoder, whose reads do
+not depend on the word, does against `z`.
 
 The hypothesis that the reads are oblivious (`Code.HasObliviousReads`) holds for every
 non-adaptive decoder (`Code.hasObliviousReads_nonadaptive`) and for every decoder making a single
