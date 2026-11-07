@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Input
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Mathlib.Tactic.Linarith
@@ -42,7 +43,8 @@ copied each round; this bound does not implement the buffered Hennie–Stearns s
 
 ## Main definitions
 
-* `Turing.MultiTapeTM.Universal.eDesc`, `.eCfg`: the encodings of descriptions and configurations.
+* `Turing.MultiTapeTM.Universal.eDesc`, `.eCfg`: the encodings of descriptions and configurations,
+  declared with `enc_structure`, which also supplies their `fun_prop` rules.
 * `Turing.MultiTapeTM.Universal.Ctx`, `.WCtx`: the contexts of a step, with and without the input,
   and their named parts (`Ctx.desc`, `Ctx.input`, `Ctx.cfg`, `WCtx.desc`, `WCtx.cfg`, `WCtx.sym`).
 * `Turing.MultiTapeTM.Universal.stepTime`: the time bound of a step.
@@ -63,9 +65,7 @@ namespace Turing.MultiTapeTM.Universal
 public abbrev eSym : Option ℕ ↪ List Bool := encOption encUnary
 
 /-- Keys of transitions, as their fields. -/
-@[expose] public def eKey : Key ↪ List Bool :=
-  (⟨fun k => (k.state, k.input, k.work), fun ⟨_, _, _⟩ ⟨_, _, _⟩ h => by simp_all⟩ :
-    Key ↪ _).trans (encPair encUnary (encPair eSym (encList eSym)))
+enc_structure eKey : Key where state : encUnary, input : eSym, work : (encList eSym)
 
 /-- An action on a work tape. -/
 public abbrev TapeAct := Option (Option ℕ) × SignType
@@ -74,46 +74,18 @@ public abbrev TapeAct := Option (Option ℕ) × SignType
 public abbrev eTA : Option (Option ℕ) × SignType ↪ List Bool := encPair (encOption eSym) encSign
 
 /-- Actions, as their fields. -/
-@[expose] public def eAct : Act ↪ List Bool :=
-  (⟨fun a => (a.inputTape, a.workTapes, a.output, a.state),
-    fun ⟨_, _, _, _⟩ ⟨_, _, _, _⟩ h => by simp_all⟩ : Act ↪ _).trans
-    (encPair encSign (encPair (encList eTA) (encPair eSym eSym)))
+enc_structure eAct : Act where
+  inputTape : encSign, workTapes : (encList eTA), output : eSym, state : eSym
 
 /-- Descriptions, as their fields. -/
-@[expose] public def eDesc : Desc ↪ List Bool :=
-  (⟨fun d => (d.tapes, d.q₀, d.table), fun ⟨_, _, _⟩ ⟨_, _, _⟩ h => by simp_all⟩ :
-    Desc ↪ _).trans (encPair encUnary (encPair encUnary (encList (encPair eKey eAct))))
-
-/-- The fields of a work tape. -/
-public abbrev eTapeFields : ℤ × List (Option ℕ) × List (Option ℕ) ↪ List Bool :=
-  encPair encInt (encPair (encList eSym) (encList eSym))
+enc_structure eDesc : Desc where
+  tapes : encUnary, q₀ : encUnary, table : (encList (encPair eKey eAct))
 
 /-- Work tapes, as their fields. -/
-@[expose] public def eTape : Tape ↪ List Bool :=
-  (⟨fun t => (t.head, t.left, t.right), fun ⟨_, _, _⟩ ⟨_, _, _⟩ h => by simp_all⟩ :
-    Tape ↪ _).trans eTapeFields
-
-/-- The fields of a configuration. -/
-public abbrev eCfgFields : Option ℕ × ℕ × List Tape ↪ List Bool :=
-  encPair eSym (encPair encNat (encList eTape))
+enc_structure eTape : Tape where head : encInt, left : (encList eSym), right : (encList eSym)
 
 /-- Configurations, as their fields. -/
-@[expose] public def eCfg : SCfg ↪ List Bool :=
-  (⟨fun c => (c.state, c.inputPos, c.workTapes), fun ⟨_, _, _⟩ ⟨_, _, _⟩ h => by simp_all⟩ :
-    SCfg ↪ _).trans eCfgFields
-
-@[simp] public lemma eKey_apply (k : Key) :
-    eKey k = encPair encUnary (encPair eSym (encList eSym)) (k.state, k.input, k.work) := rfl
-@[simp] public lemma eAct_apply (a : Act) :
-    eAct a = encPair encSign (encPair (encList eTA) (encPair eSym eSym))
-      (a.inputTape, a.workTapes, a.output, a.state) := rfl
-@[simp] public lemma eDesc_apply (d : Desc) :
-    eDesc d = encPair encUnary (encPair encUnary (encList (encPair eKey eAct)))
-      (d.tapes, d.q₀, d.table) := rfl
-@[simp] public lemma eTape_apply (t : Tape) : eTape t = eTapeFields (t.head, t.left, t.right) :=
-  rfl
-@[simp] public lemma eCfg_apply (c : SCfg) :
-    eCfg c = eCfgFields (c.state, c.inputPos, c.workTapes) := rfl
+enc_structure eCfg : SCfg where state : eSym, inputPos : encNat, workTapes : (encList eTape)
 
 /-- The state of a configuration, in linear time. -/
 public lemma state_inO : ComputableInO SCfg.state eCfg eSym (fun c => (eCfg c).length)
@@ -125,28 +97,6 @@ public lemma state_inO : ComputableInO SCfg.state eCfg eSym (fun c => (eCfg c).l
 section Tape
 
 open ComputableInDegree
-
-lemma tapeFields_deg : ComputableInDegree (fun t : Tape => (t.head, t.left, t.right)) eTape
-    eTapeFields 1 1 :=
-  of_eq fun _ => rfl
-
-@[local fun_prop]
-lemma tapeMk_deg : ComputableInDegree
-    (fun p : ℤ × List (Option ℕ) × List (Option ℕ) => Tape.mk p.1 p.2.1 p.2.2) eTapeFields eTape
-    1 1 :=
-  of_eq fun _ => rfl
-
-@[local fun_prop]
-lemma tapeHead_deg : ComputableInDegree Tape.head eTape encInt 1 1 :=
-  tapeFields_deg.fst'
-
-@[local fun_prop]
-lemma tapeLeft_deg : ComputableInDegree Tape.left eTape (encList eSym) 1 1 :=
-  tapeFields_deg.snd'.fst'
-
-@[local fun_prop]
-lemma tapeRight_deg : ComputableInDegree Tape.right eTape (encList eSym) 1 1 :=
-  tapeFields_deg.snd'.snd'
 
 /-- The symbol under the head. -/
 @[local fun_prop]
