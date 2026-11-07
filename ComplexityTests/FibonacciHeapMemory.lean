@@ -86,12 +86,14 @@ theorem abs_mem : heap.abs mem = IndexedMinPQ.empty 4 := by
   funext v
   fin_cases v <;> decide
 
+-- Kernel `decide` unfolds the full nine-operation heap run over memory.
 set_option maxRecDepth 20000 in
 /-- The run over memory gives the same answers. -/
 example : (Memory.spec 6).clientResult mem (link heap.methods client) =
     [some (1, 3), some (2, 1), some (0, 5)] := by
   decide
 
+-- Kernel `decide` unfolds the full memory-level client history to sum its charges.
 set_option maxRecDepth 20000 in
 /-- Its exact cost: `213` memory units, one per record operation. -/
 example : (Memory.spec 6).totalCost Memory.charge mem
@@ -105,6 +107,7 @@ example : pq.totalCost (charge 4) (IndexedMinPQ.empty 4)
     (pq.clientHistory (IndexedMinPQ.empty 4) client) = 920 := by
   decide
 
+-- Unifying `simulates_client` over the linked memory-level client requires deeper recursion.
 set_option maxRecDepth 20000 in
 /-- **The refinement theorem applies**: the memory run is admissible and answers as the
 specification. -/
@@ -117,6 +120,7 @@ example : (Memory.spec 6).ValidHistory mem
   rw [abs_mem] at hres
   exact ⟨hv, hres⟩
 
+-- Unifying `Amortized.client` over the linked memory-level client requires deeper recursion.
 set_option maxRecDepth 20000 in
 /-- **The amortized bound applies**: the memory cost and the final potential are at most `920`,
 the empty heap's potential being `0`. -/

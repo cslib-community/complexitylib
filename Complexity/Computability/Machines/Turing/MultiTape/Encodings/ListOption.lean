@@ -18,8 +18,10 @@ include the option tag and a possible default. These facts do not require a comp
 
 ## Main results
 
-* `Turing.MultiTapeTM.length_head?_le`: bound the encoded optional head by the encoded list.
-* `Turing.MultiTapeTM.length_getD_le`: bound a selected value by the option and its default.
+* `Turing.MultiTapeTM.length_encOption_head?_le`: bound the encoded optional head by the encoded
+  list.
+* `Turing.MultiTapeTM.length_enc_getD_le`: bound an encoded selected value by the option and its
+  default.
 -/
 
 public section
@@ -29,7 +31,7 @@ namespace Turing.MultiTapeTM
 variable {β γ : Type} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
 
 /-- The encoded optional head is bounded by the encoded list plus its option tag. -/
-theorem length_head?_le (l : List β) :
+theorem length_encOption_head?_le (l : List β) :
     (encOption encB l.head?).length ≤ (encList encB l).length + 1 := by
   cases l with
   | nil => simp
@@ -40,7 +42,7 @@ theorem length_head?_le (l : List β) :
     omega
 
 /-- Selecting an option value or its default charges the option and the encoded default. -/
-theorem length_getD_le [Inhabited γ] (o : Option γ) :
+theorem length_enc_getD_le [Inhabited γ] (o : Option γ) :
     (encC (o.getD default)).length ≤ (encOption encC o).length + (encC default).length := by
   cases o with
   | none => simp

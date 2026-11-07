@@ -45,7 +45,7 @@ Uses Christian Reitwiessner's degree calculus; see the source marker in
 `Complexity/Computability/Machines/Turing/MultiTape/Complexity/Degree.lean`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.TM2
 
@@ -241,9 +241,7 @@ private theorem stepAux_computableInDegree (q : Stmt Γ Λ σ) : ∀ {α : Type}
 private noncomputable def stepCases (M : Λ → Stmt Γ Λ σ) :
     List (Option Λ) → Cfg Γ Λ σ → Cfg Γ Λ σ
   | [], c => c
-  | l :: Ls, c => by
-    classical
-    exact if c.l = l then stepTotal M c else stepCases M Ls c
+  | l :: Ls, c => open Classical in if c.l = l then stepTotal M c else stepCases M Ls c
 
 omit [Fintype K] [Finite Λ] [Finite σ] [∀ k, Finite (Γ k)] in
 private theorem stepCases_eq (M : Λ → Stmt Γ Λ σ) (Ls : List (Option Λ))
@@ -353,27 +351,6 @@ private theorem initList_computableInDegree : ComputableInDegree
       (encMid := encFinite M.tm.σ) M.tm.initialState).prod hstk))
   exact h.mono.of_enc_eq fun _ => rfl
 
-omit hfin in
-/-- The configuration after `i` padded steps keeps every stack within `|w| + C * i`. -/
-private theorem stack_le (C : ℕ)
-    (hC : ∀ (cfg : Cfg M.tm.Γ M.tm.Λ M.tm.σ) (bound : ℕ), (∀ k, (cfg.stk k).length ≤ bound) →
-      ∀ k, ((stepTotal M.tm.m cfg).stk k).length ≤ bound + C)
-    (s : List (M.tm.Γ M.tm.k₀)) (i : ℕ) :
-    ∀ k, (((stepTotal M.tm.m)^[i] (initList M.tm s)).stk k).length ≤ s.length + C * i := by
-  induction i with
-  | zero =>
-    intro k
-    by_cases hk : k = M.tm.k₀
-    · subst k; simp [initList]
-    · simp [initList, hk]
-  | succ i ih =>
-    intro k
-    calc _ = ((stepTotal M.tm.m ((stepTotal M.tm.m)^[i] (initList M.tm s))).stk k).length :=
-          congrArg (fun cfg : Cfg M.tm.Γ M.tm.Λ M.tm.σ => (cfg.stk k).length)
-            (Function.iterate_succ_apply' (stepTotal M.tm.m) i (initList M.tm s))
-      _ ≤ s.length + C * i + C := hC _ _ ih k
-      _ = s.length + C * (i + 1) := by ring
-
 /-- **The clocked run in degree two.** On `(w, t)`, with the bits of `w` framed one by one and
 `t` in unary, `runBit M` has time and space degree two and output degree one, for every machine
 whose stack alphabets are finite. -/
@@ -406,7 +383,7 @@ theorem runBit_computableInDegree :
       rw [List.take_replicate]
       erw [List.foldl_const]
       rw [List.length_replicate]
-      refine hA _ _ fun k => (stack_le M C hC _ _ k).trans ?_
+      refine hA _ _ fun k => (iterate_stepTotal_stack_le M.tm hC _ _ k).trans ?_
       simp only [List.length_map, List.length_replicate] at hi ⊢
       exact Nat.add_le_add_left (Nat.mul_le_mul_left C ((Nat.min_le_left _ _).trans hi)) _)
   have hout := (ComputableInDegree.of_finite (encIn := encFinite (M.tm.Γ M.tm.k₁))

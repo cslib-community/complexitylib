@@ -67,12 +67,14 @@ theorem client_valid : Q.ValidHistory pq.init (Q.clientHistory pq.init client) :
     by simp only [minPQSpec]; decide, trivial, ⟨5, 50, by decide, by decide⟩, trivial, trivial,
     trivial⟩
 
+-- Kernel `decide` unfolds the full 40-cell allocation and eight-operation memory run.
 set_option maxRecDepth 20000 in
 /-- The run over memory gives the same answers. -/
 example : (Memory.spec 7).clientResult empty (pq.run client) =
     ([some (3, 30, 1), some (2, 50, 0), some (7, 70, 1)], some (7, 70)) := by
   decide
 
+-- Kernel `decide` unfolds the full memory-level client history to sum its charges.
 set_option maxRecDepth 20000 in
 /-- Its exact cost: `182` memory units, `42` of them for zeroing the `40` cells. -/
 example : (Memory.spec 7).totalCost Memory.charge empty
@@ -87,6 +89,7 @@ example : Q.totalCost (allocCharge 3) pq.init (Q.clientHistory pq.init client) =
 /-- The memory has room for the queue at word size `7`. -/
 theorem room : Fits 7 (empty.frontier + pq.room) := by decide
 
+-- Elaborating and unifying the linked memory-level client history requires deeper recursion.
 set_option maxRecDepth 20000 in
 /-- **The general theorems apply**: the run is admissible, answers as the allocator, and costs at
 most `42 + 720`. -/
