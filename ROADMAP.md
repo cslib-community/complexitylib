@@ -28,6 +28,113 @@ the FHE industrial context, the first-order design decisions and the repository'
 | A Verso guide with a chapter per area | [#585] |
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
+| STOC manuscript headline formalizations, including quantitative bounds and source obstructions | [#2527](https://github.com/cslib-community/complexitylib/issues/2527) |
+
+For submission 733 in [#2527](https://github.com/cslib-community/complexitylib/issues/2527),
+the fixed-operator run/cosine product, uniform bit-1 average, arbitrary-width
+forward/backward projection, exact common-power stripping, carry decomposition,
+forced solution parity, unique positional cut, and adjacent swap collision with
+arbitrary common context are implemented. The all-bit run factorization, actual
+transfer/distribution bridge, explicit diagonalization/spectral sum and quantitative
+decay/bit-one extremality (Theorem 5) are also implemented. The all-main-results
+objective remains open. The actual guard-based polynomial-time NP-completeness
+reduction, every positive rational width restriction, and the direct linear-width
+3-SAT map are implemented, with explicit encoding-length bounds. Theorem 2's
+sparsification/disjunction resource refinement, exact reduction multiplicity,
+multitape bit-runtime certificates, native meet-in-the-middle resources, small-operand
+bounds, native streaming class enumeration and full dissection time/space certificates,
+and ideal-chain
+search/decision lower bounds still need proofs. Executable bit-table reachability
+with recursive pointer/Boolean cost bounds, exact forward/backward class-counter
+DP and computed balance, both uniform per-class means, and the exact expected
+operator-flip weight are implemented. Quarter-indexed forward/backward class streaming
+and the counter-directed dissection now have unrestricted decision/witness correctness,
+exact indexed multiplicities, output-sensitive chain-call counts and a retained dictionary
+node bound in terms of the actual maximum smaller-class size. Their native runtime,
+preprocessing/address-capacity and compiled peak-space bridges remain open.
+Native forward counter preprocessing now executes from standard encoded input
+through halt, preserving indexed multiplicities, with at most $43(q+1)2^p$
+instructions and a conservative full accessed-storage certificate that includes
+counter word widths and registers. Original-input native projection and backward preprocessing now reuse the same
+counter kernel through explicit operand reversal and complement conjugacy. They
+include input-fit, charged projection/initialization/halt and prefix memory-support
+certificates. Native class streaming, dictionary allocation/reuse and the integrated
+dissection decision/witness time and simultaneous peak-space certificate remain
+open; neither preprocessing certificate completes Lemma 8 or Theorem 7.
+The native balance traversal now reads both actual counter arrays, including
+complemented backward addresses, and returns their exact maximum smaller-class
+size in at most $14\cdot2^p+7$ instructions including halt. Every continuing
+prefix preserves the entire memory, so the scan adds eighteen registers and no
+occupied memory cells. This certificate requires the already constructed arrays;
+their joint original-input execution with class streaming and dictionary storage
+is still missing. It does not complete the requested integrated endpoint.
+Native first-quarter construction now clears actual low-key heads and stores
+all indexed full-state/witness records with charged instruction, halt, word-fit
+and prefix-support certificates. Native operator reversal, inverse head lookup
+and pointer-based full-state recovery on bucket hits are also proved and checked
+in a consecutive native pipeline. Direct full-state dictionary retention now
+consumes actual bucket hits without an output array. Native sparse-address
+insertion/lookup, distinct-state release and exact memory restoration have
+per-bucket instruction and prefix-support proofs. A read-only single-hit backward
+probe now has an exact full-state/tag/witness execution theorem; its local bucket
+iteration and early exit are proved. The composed whole-class streaming code now executes packed-index filtering,
+bucket scanning and early exit, with checked success/exhaustion clients and
+a no-store prefix theorem. The linked scan also exports the actual hit node,
+packed indices, recovered state and dictionary payload provenance. This physical
+contract alone does not prove original-chain witness correctness. A bounded scan
+reconstruction theorem now derives a full original-chain solution from actual filled
+retained entries and semantic backward bucket records, including collision replacement
+and zero packed witnesses. Native projected preparation/filtering and consecutive
+retention-to-probe composition still need to establish its construction premises.
+Consecutive original-input executable clients now cover native projection, both
+preparations, retention, streaming hits and returned-register reconstruction, including
+positive projection width, zero width and collisions. They use one-word quarters
+with self-inverse fourth-quarter operations and one retained second-quarter index;
+these restrictions do not establish the general construction premises.
+General native backward preparation now derives full inverse-state bucket records
+and original packed indices for arbitrary operand lists and widths, including
+non-self-inverse additions. Its consecutive connection through projected queries
+and retained dictionary memory to original-chain scan soundness remains open.
+Forward first-quarter preparation followed by forward second-quarter retention now
+derives its exact retained dictionary, top and provenance from actual native stores,
+with a checked direction-distinguishing client and preservation of all forward buckets.
+This covers one bucket and one second-quarter word only. Preserving this dictionary
+through separate inverse fourth-quarter preparation and connecting both computed
+lists through query/probe remains open. The backward-record consumer below cannot
+substitute for the forward dictionary required by original-chain probe soundness.
+Consecutive backward preparation followed by native forward retention now derives
+its dictionary and payload provenance from computed inverse records, with operand,
+other-memory and register frames. This bounded component is not the full backward
+class enumerator: projected query and inverse continuation/probe composition remain open.
+A separate charged native forward query now preserves all memory and its packed
+index; a layout lemma shows retention preserves every computed inverse bucket.
+The arbitrary-width query and zero-width collision clients are checked. The
+consecutive projected preparation/query/probe and original-chain reconstruction
+connection is still open; these components do not provide that endpoint.
+General whole-class termination/time and unconditional original-input returned-witness
+correctness remain unproved. This is a sparse WordRAM
+implementation, not the source's sorted lists or a compact arena. The general correctness/resource certificates for the
+second-quarter/class iterator and streaming opposite-side consumer, counter-selected
+orientation and single global counter/balance/decision/witness execution remain
+unproved, as do global width and computed-balance peak-space composition and a
+source-bit-model realization. These components do not close Lemma 8 or Theorem 7;
+per-bucket space bounds must not be summed or reused as an unproved global peak
+certificate.
+The pointer/Boolean and counter-operation
+models do not replace native bit-runtime or peak-space certificates. The actual fixed
+WordRAM reachable-state array program now has an unrestricted standard-input-to-halt
+correctness theorem, charged initialization and iteration, and a complete access-transcript
+storage bound: at most $45(q+1)2^m$ instructions and
+$(6\cdot2^m+4q+42)(\lfloor\log_2(3\cdot2^m+2q+12)\rfloor+1)$ stored bits including
+registers. This is a native WordRAM endpoint, not a multitape bit-time or sparse-list
+certificate; the broader missing inventory above remains open. Exact witness search
+with concrete word-step/trie
+operation counts, uniform solution counts and planted size bias, parity/Hamming
+geometry, and all of Lemma 7's difference propagation are implemented. Lemma 10's
+literal lazy simulator has a checked injectivity obstruction; this invalidates
+that exact simulation claim, not Theorem 8's inequality. A repaired lower-bound
+proof remains part of the objective.
+Empirical CDCL and solution-count observations are not asymptotic theorems.
 
 ### Landmark theorems, in priority order
 

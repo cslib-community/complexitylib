@@ -23,7 +23,7 @@ ORDER = [
       'parameterized-complexity', 'search-and-promises', 'endpoints-and-hierarchies', 'native-counting']),
     ('circuits-logic-and-other-models', ['index', 'circuits-and-formulas', 'networks-and-iteration',
       'algebraic-and-quantum', 'query-and-communication', 'finite-model-logic',
-      'proof-systems', 'learning-and-testing', 'metacomplexity-and-methods']),
+      'proof-systems', 'learning-and-testing', 'metacomplexity-and-methods', 'fair-division']),
     ('programs-crypto-and-probability', ['index', 'programs-and-realization',
       'security-games-and-primitives', 'interactive-reductions', 'protocols-and-privacy',
       'average-case-hardness', 'homomorphic-encryption']),
