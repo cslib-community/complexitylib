@@ -37,7 +37,7 @@ Priorities live in this list and in the tiers of [#897].
 1. [Completeness of oblivious transfer](#cryptographic-landmarks)
 2. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
 3. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
+4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity) ([#321])
 5. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
 6. [MIP = NEXP](#interactive-proofs) ([#892])
 7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
@@ -777,8 +777,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
   Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
   has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
-  fields of characteristic other than two (membership now has an explicit Ryser witness over
-  every commutative ring; VNP-hardness remains open); formula and branching-program models,
+  fields of characteristic other than two ([#321]; membership has an explicit Ryser witness over
+  every commutative ring, and arithmetic formulas project to the permanent with dimension
+  `Formula.size + 1` over every commutative semiring; a selector occurring in one permanent entry
+  can be eliminated with one extra dimension when `2` is invertible; the conversion from VP
+  witnesses to formulas, the two-entry gadget and the general Boolean-sum elimination needed for
+  VNP-hardness remain open); formula and branching-program models,
   identity testing, hitting sets, and tensor and rank methods, including partial-derivative
   measures (the order-`k` measure and bounded-product-fan-in depth-three determinant and permanent
   lower bounds, covering homogeneous depth-three circuits, are proved in
@@ -1179,11 +1183,6 @@ and credited.
 These remain coverage targets but are deferred from the active queue; their issues were closed as
 not planned, not as proved.
 
-- The full VNP-completeness reduction for the permanent ([#321]). Arithmetic formulas now
-  project to the permanent with dimension `Formula.size + 1` over every commutative semiring;
-  a selector occurring in one permanent entry can be eliminated with one extra dimension when
-  `2` is invertible. The conversion from VP witnesses to formulas, the two-entry gadget and
-  general Boolean-sum elimination needed for VNP-hardness remain open.
 - General auxiliary-input zero knowledge ([#324]); the GMW protocol's auxiliary-input results and
   their limits are in [`GMW/Simulator.lean`](Complexity/Crypto/Computational/GMW/Simulator.lean).
 - Vollmer's generalized-quantifier survey ([#399]): ordered leaf words, explicit uniformity and
