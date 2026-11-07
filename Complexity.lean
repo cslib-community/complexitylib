@@ -4061,6 +4061,7 @@ public import Complexity.Foundations.LinearAlgebra.VariableCopyPlacement
 public import Complexity.Foundations.Logic.Function.Iterate
 public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Order
 public import Complexity.Foundations.MeasureTheory.Group.ConvolutionDensity
+public import Complexity.Foundations.MeasureTheory.Group.FundamentalDomain
 public import Complexity.Foundations.MeasureTheory.Group.QuotientDensity
 public import Complexity.Foundations.MeasureTheory.Integral.Pi
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Map

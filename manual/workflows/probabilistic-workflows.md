@@ -255,7 +255,14 @@ Import [Gaussian/Quotient.lean](../../Complexity/Foundations/Probability/Gaussia
 Let `L` be a discrete full-rank lattice in a finite-dimensional real inner-product space `E`,
 let `n = Module.finrank ℝ E`, and take `s > 0`. Use `q = QuotientAddGroup.mk`, the
 canonical map to the quotient by `L.toAddSubgroup`, and an actual fundamental domain
-`hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume`. The measures are ordinary
+`hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume`. The opposite subgroup acts by right
+translation, the convention of Mathlib's quotient measures, while the lattice APIs give
+fundamental domains for `L` itself. In a commutative group the two have the same fundamental
+domains, and `MeasureTheory.isAddFundamentalDomain_op_iff` from
+[FundamentalDomain.lean](../../Complexity/Foundations/MeasureTheory/Group/FundamentalDomain.lean)
+converts between them. When `L` is `Submodule.span ℤ (Set.range b)` for a real basis `b`,
+`isAddFundamentalDomain_op_iff.mpr (ZSpan.isAddFundamentalDomain' b volume)` supplies `hF`
+for `F = ZSpan.fundamentalDomain b`, as in the checked clients below. The measures are ordinary
 `Measure.withDensity`, `Measure.map` and scalar multiplication:
 
 - The ambient Gaussian is `volume.withDensity (fun x => ENNReal.ofReal
