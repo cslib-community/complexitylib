@@ -31,9 +31,10 @@ vectors. This gives two bounds that need no eigenvalues in their statements:
 
 For `c > s` and `j` large compared with `log (dim E) / log (c / s)`, the two ranges are disjoint,
 so the trace of a power separates the two cases even though `dim E` is exponential in the
-number of qubits. This is the matrix-analysis step behind the containment of QMA in PP: the
-acceptance probability of a verifier on a witness state `x` is the quadratic form `‖B x‖ ^ 2`
-of the positive operator `B† B` (`LinearMap.re_inner_adjoint_comp_self_apply`). In an
+number of qubits. This is the matrix-analysis step behind the containment of QMA in PP. Any
+operator of the form `B† B` is positive with quadratic form `‖B x‖ ^ 2`
+(`LinearMap.re_inner_adjoint_comp_self_apply`). Writing the acceptance probability of a verifier
+on a witness state in this form is planned for #3028 and is not formalized here. In an
 orthonormal basis the trace of a power is a sum over closed paths of products of matrix entries
 (`LinearMap.trace_pow_eq_sum`), which is what a counting argument computes. See
 [Marriott, Watrous][MarriottWatrous2005], Section 3, for the use of `tr Q` together with strong
