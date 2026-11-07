@@ -21,7 +21,9 @@ This file proves two facts about the primitive `v ↦ ∫ z in 0..v, g z`.
 * **Tail formula.** For a finite measure `μ` concentrated on `[0, h]`,
   `∫ v, (∫ z in 0..v, g z) ∂μ = ∫ z in (0, h], μ([z, ∞)) · g z`.
   The proof swaps the order of integration over the triangle `0 < z ≤ v`. With `g = 1` this is the
-  layer-cake formula `E[v] = ∫ P(v ≥ z) dz` on `[0, h]`.
+  layer-cake formula `E[v] = ∫ P(v ≥ z) dz` on `[0, h]`. Mathlib's layer-cake theorem
+  `MeasureTheory.lintegral_comp_eq_lintegral_meas_le_mul` is the nonnegative `lintegral` relative.
+  Here `g` is a signed integrable function and the integrals are Bochner integrals.
 
 ## Main results
 

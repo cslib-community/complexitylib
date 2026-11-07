@@ -7,9 +7,11 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.MeasureTheory.Integral.PiUpdate
 public import Complexity.GameTheory.Mechanism.Myerson
 public import Complexity.GameTheory.Mechanism.VirtualValue
+public import Mathlib.MeasureTheory.Constructions.Pi
+import Complexity.Foundations.MeasureTheory.Integral.IntervalPrimitive
+import Complexity.Foundations.MeasureTheory.Integral.PiUpdate
 import Mathlib.MeasureTheory.Integral.Pi
 import Mathlib.Tactic.Linarith
 
@@ -142,7 +144,7 @@ theorem integral_sum_myersonPayment_eq (hμ : ∀ i, HasValueDensity (μ i) (f i
     integral_finsetSum _ fun i _ => integrable_virtualValue_mul hμ i (hx i) fun v hv => hB v hv i]
   exact Finset.sum_congr rfl fun i _ => integral_myersonPayment_eq hμ i (hx i) fun v hv => hB v hv i
 
-/-- **Revenue equivalence for normalized DSIC mechanisms**: a DSIC mechanism in which a zero bid
+/-- **Expected revenue of a normalized DSIC mechanism**: a DSIC mechanism in which a zero bid
 pays zero has expected revenue equal to the expected virtual welfare of its allocation rule
 ([Roughgarden2013CS364A], Lecture 5, eq. (6)). -/
 theorem Mechanism.IsDSIC.integral_sum_payment_eq {M : Mechanism ι} (hM : M.IsDSIC)

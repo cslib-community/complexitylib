@@ -64,6 +64,8 @@ DSIC mechanisms. The stronger optimality among Bayesian incentive-compatible mec
   bidders, the Vickrey auction with virtual-value reserve is optimal.
 * `SingleParameter.Vickrey.myersonPayment_reserveAllocation`: its payments are
   `max(r, highest other bid)`.
+* `SingleParameter.Vickrey.integral_sum_payment_le_secondPriceReserve`: the same optimality stated
+  directly for the second-price auction with reserve price `r`.
 * `SingleParameter.IsRegular.isReserveThreshold`: a regular distribution has a reserve price.
 * `SingleParameter.reservePrice_uniform`: the reserve price for the uniform distribution on
   `[0, 1]` is `1/2`.
@@ -433,6 +435,24 @@ theorem myersonPayment_reserveAllocation {φ : ℝ → ℝ} (hφ : MonotoneOn φ
       reserveAllocation φ b i := by
   rw [← criticalBid_mul_eq_myersonPayment (isMonotone_reserveAllocation hφ)
     (isBinary_reserveAllocation φ) hb i, criticalBid_reserveAllocation hr]
+
+/-- **The second-price auction with reserve price `r` is optimal** ([Roughgarden2013CS364A],
+Lecture 5, §3.1). Bidders are i.i.d. with a regular distribution `μ` that has density `f` on
+`[0, h]`, and `r = reservePrice (virtualValue μ f)`. Every DSIC, individually rational
+single-item mechanism has expected revenue at most that of selling to the highest bidder, if its
+bid has nonnegative virtual valuation, at price `max(r, highest other bid)`. -/
+theorem integral_sum_payment_le_secondPriceReserve {μ : Measure ℝ} [IsProbabilityMeasure μ]
+    {f : ℝ → NNReal} {h : ℝ} (hμ : HasValueDensity μ f h) (hreg : IsRegular μ f h)
+    {M : Mechanism ι} (hM : M.IsDSIC) (hIR : M.IsIR)
+    (hMX : ∀ v, 0 ≤ v → M.allocation v ∈ singleItemFeasible)
+    (hMm : ∀ i, Measurable fun v => M.allocation v i) :
+    ∫ v, ∑ i, M.payment v i ∂Measure.pi (fun _ : ι => μ) ≤
+      ∫ v, ∑ i, max (reservePrice (virtualValue μ f)) (highestOtherBid v i) *
+        reserveAllocation (virtualValue μ f) v i ∂Measure.pi (fun _ : ι => μ) := by
+  refine (integral_sum_payment_le_reserve hμ hreg hM hIR hMX hMm).trans_eq (integral_congr_ae ?_)
+  filter_upwards [ae_nonneg fun _ : ι => hμ] with v hv
+  exact Finset.sum_congr rfl fun i _ => myersonPayment_reserveAllocation
+    (hreg.strictMonoOn_Ici hμ).monotoneOn (hreg.isReserveThreshold hμ) hv i
 
 end Vickrey
 

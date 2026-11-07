@@ -7,8 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.MeasureTheory.Integral.IntervalPrimitive
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 public import Mathlib.MeasureTheory.Measure.WithDensity
+import Complexity.Foundations.MeasureTheory.Integral.IntervalPrimitive
 import Mathlib.MeasureTheory.Integral.Bochner.Set
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.Tactic.FieldSimp
@@ -35,15 +36,20 @@ integrating by parts (Step 3). We reverse the order of integration only
 (`integral_intervalIntegral_eq_integral_measureReal_Ici_mul`): the tail `μ([z, ∞))` then cancels
 the density in `φ`. No differentiability or monotonicity of `g` is needed.
 
-The density is assumed positive on the open interval `(0, h)`. Without this, `φ` is not
-determined by `μ` where `f = 0`, and the identity can fail (`φ` uses Lean's `x / 0 = 0`).
+The density is assumed positive on the open interval `(0, h)`. Without this, the identity can fail
+on a set of positive measure where `f = 0` but `μ((v, ∞)) > 0`, because `φ` uses Lean's
+`x / 0 = 0`. Even with positivity, `φ` depends on the chosen version of `f`, which `μ` determines
+only almost everywhere. The identity is insensitive to this, but the pointwise predicate `IsRegular`
+is not: at `v = 0` it evaluates `φ(0) = −1/f(0)`. See the endpoint convention in `IsRegular`, which
+makes it stronger than Lecture 5, Definition 3.1 for densities with `(1 − F)/f → ∞` at `0`.
 
 ## Main definitions
 
 * `SingleParameter.HasValueDensity μ f h`: `μ` is the distribution on `[0, h]` with density `f`,
   positive on `(0, h)`.
 * `SingleParameter.virtualValue μ f v`: the virtual valuation `v − μ((v, ∞)) / f(v)`.
-* `SingleParameter.IsRegular μ f h`: the virtual valuation is strictly increasing on `[0, h]`.
+* `SingleParameter.IsRegular μ f h`: the virtual valuation is strictly increasing on `[0, h]`,
+  including the endpoint `0` (which requires `f(0) > 0` and `φ` bounded below near `0`).
 
 ## Main results
 
@@ -83,7 +89,15 @@ structure HasValueDensity (μ : Measure ℝ) (f : ℝ → NNReal) (h : ℝ) : Pr
   v - μ.real (Ioi v) / f v
 
 /-- A valuation distribution on `[0, h]` is **regular** if its virtual valuation is strictly
-increasing on `[0, h]` ([Roughgarden2013CS364A], Lecture 5, Definition 3.1). -/
+increasing on `[0, h]` ([Roughgarden2013CS364A], Lecture 5, Definition 3.1).
+
+**Endpoint convention.** The predicate includes `v = 0`, where `φ(0) = −1/f(0)` depends on the
+chosen value `f(0)`, which does not affect `μ`. It therefore requires `f(0) > 0` and
+`−1/f(0) < φ(v)` for all `v ∈ (0, h]`; in particular `φ` must be bounded below near `0`. The choice
+`f(0) = 0` never works, because then `φ(0) = 0`. This is strictly stronger than Definition 3.1 for
+densities with `(1 − F(v))/f(v) → ∞` as `v → 0⁺`. For example, `f(v) = 2v` on `[0, 1]` has
+`φ(v) = (3v² − 1)/(2v)` on `(0, 1]`, which is strictly increasing there but tends to `−∞`, so it is
+regular in the textbook sense but satisfies `IsRegular` for no choice of `f(0)`. -/
 @[expose] def IsRegular (μ : Measure ℝ) (f : ℝ → NNReal) (h : ℝ) : Prop :=
   StrictMonoOn (virtualValue μ f) (Icc 0 h)
 

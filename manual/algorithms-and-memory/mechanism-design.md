@@ -86,7 +86,11 @@ DSIC mechanism is compared with other DSIC mechanisms, both played truthfully.
   `f : ℝ → NNReal` measurable and positive on `(0, h)`. Positivity matters: `virtualValue μ f v =
   v - μ.real (Ioi v) / f v` uses Lean's `x / 0 = 0`. Atoms and unbounded supports are excluded.
 - `IsRegular μ f h` is strict monotonicity of `virtualValue μ f` on `[0, h]` (Definition 3.1).
-  `IsRegular.strictMonoOn_Ici` extends it to `[0, ∞)`, where `φ(v) = v` above `h`.
+  `IsRegular.strictMonoOn_Ici` extends it to `[0, ∞)`, where `φ(v) = v` above `h`. Endpoint
+  convention: the predicate includes `v = 0`, where `φ(0) = -1/f(0)` depends on the chosen value
+  `f(0)`. So it needs `f(0) > 0` with `-1/f(0) < φ(v)` on `(0, h]`, and in particular `φ` bounded
+  below near `0`. This is strictly stronger than Definition 3.1 when `(1 - F)/f → ∞` at `0`. For
+  example, `f(v) = 2v` on `[0, 1]` is regular in the textbook sense but never `IsRegular`.
 - `HasValueDensity.integral_payment_eq_integral_virtualValue_mul` is the one-bidder identity
   `E[v g(v) - ∫₀ᵛ g] = E[φ(v) g(v)]` for any measurable `g` bounded on `[0, h]`. The proof
   only reverses the order of integration and does not integrate by parts, so `g` need not be
@@ -106,7 +110,8 @@ DSIC mechanism is compared with other DSIC mechanisms, both played truthfully.
   winner pays `max r (highestOtherBid b i)` (`Vickrey.myersonPayment_reserveAllocation`) for any
   `IsReserveThreshold φ r`. `IsRegular.isReserveThreshold` shows that `reservePrice φ =
   sInf {v | 0 ≤ v ∧ 0 ≤ φ v}` is one, even when `φ` is discontinuous, and `reservePrice_uniform`
-  gives `1/2` for `U[0, 1]`.
+  gives `1/2` for `U[0, 1]`. `Vickrey.integral_sum_payment_le_secondPriceReserve` states the
+  optimality with these second-price-with-reserve payments written out.
 
 Measurability of the virtual-welfare maximizer is a hypothesis of
 `integral_sum_payment_le_myerson`, because no measurable argmax selection is formalized. For the
@@ -118,6 +123,15 @@ To apply the theorem to a new distribution, prove `HasValueDensity` (following
 `virtualValue_uniform`). Supply a measurable virtual-welfare maximizer. If regularity fails, the
 inequality still holds, but `myerson x` need not be DSIC; that case needs ironing, which is not
 formalized.
+
+If `IsRegular` gets stuck at `v = 0`, check the density's value there. Choose `f(0) > 0`, for
+example by redefining `f` at the single point `0`. This does not change `μ`, since
+`withDensity` ignores null sets. Then show that `-1/f(0)` lies below `φ` on `(0, h]`. If
+`(1 - F(v))/f(v) → ∞` as `v → 0⁺`, as for `f(v) = 2v`, then no choice of `f(0)` works. In that
+case the DSIC and single-item results (`IsVirtualWelfareMaximizing.isMonotone`,
+`Vickrey.integral_sum_payment_le_reserve`) do not apply yet. `integral_sum_payment_le_myerson`
+itself still holds, since it does not assume regularity. The checked examples prove that
+`f(v) = 2v` fails `IsRegular` for every choice of `f(0)`.
 
 ## Worked examples
 
@@ -136,7 +150,8 @@ The [optimal-auction examples](../../ComplexityTests/GameTheory/OptimalAuction.l
 `U[0, 1]`, which has reserve price `1/2`. With two bidders, bids `(0.3, 0.4)` do not sell. On
 `(0.6, 0.2)` bidder `0` pays `1/2`. On `(0.7, 0.9)` bidder `1` pays `0.7`. The plain Vickrey rule
 is not a virtual-welfare maximizer, and Myerson's theorem compares Vickrey with and without the
-reserve, so its hypotheses are satisfiable.
+reserve, so its hypotheses are satisfiable. The rising density `f(v) = 2v` on `[0, 1]` fails
+`IsRegular` for every choice of `f(0)`, which illustrates the endpoint convention.
 
 To prove that a concrete rule is implementable, prove `IsMonotone` by `intro i b hb z hz z' hz'
 hzz'` followed by `change` to the explicit curve inequality. Then apply `myerson_isDSIC`, or, for
@@ -150,7 +165,8 @@ entry.
 
 Only dominant-strategy, deterministic, sealed-bid mechanisms are covered. Not yet formalized:
 the sponsored-search payment formula (Lecture 3, (8)–(9)), the greedy knapsack rule and its
-1/2-approximation (Lecture 4, §2.2, Theorem 2.1), ironing for irregular distributions,
+1/2-approximation (Lecture 4, §2.2, Theorem 2.1), ironing for irregular distributions, regular
+distributions whose virtual valuation is unbounded below at `0` (such as `f(v) = 2v`),
 optimality among Bayesian incentive-compatible mechanisms (Lecture 5, §3.2), revenue equivalence
 and first-price equilibria, a measurable argmax for virtual-welfare maximization, the
 Green–Laffont/Holmström characterization of DSIC welfare maximizers, a bridge exhibiting

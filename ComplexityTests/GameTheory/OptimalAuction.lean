@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.GameTheory.Mechanism.OptimalAuction
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 
 /-!
 # Myerson's optimal auction clients
@@ -12,7 +13,8 @@ import Complexity.GameTheory.Mechanism.OptimalAuction
 The uniform distribution on `[0, 1]`: its density, regularity, virtual valuation and reserve price
 `1/2`. Concrete payments of the Vickrey auction with reserve price `1/2`. The plain Vickrey auction
 is not a virtual-welfare maximizer. Myerson's theorem compares Vickrey with and without reserve for
-two i.i.d. uniform bidders, so its hypotheses are satisfiable.
+two i.i.d. uniform bidders, so its hypotheses are satisfiable. The rising density `2v` on `[0, 1]`
+fails `IsRegular` for every choice of its value at `0`, which illustrates the endpoint convention.
 -/
 
 namespace ComplexityTests.GameTheory.OptimalAuction
@@ -138,5 +140,97 @@ example : ∫ v, ∑ i, (mechanism (ι := Fin 2)).payment v i ∂Measure.pi (fun
       ∂Measure.pi (fun _ => unif) :=
   integral_sum_payment_le_reserve hasValueDensity_uniform isRegular_uniform mechanism_isDSIC
     mechanism_isIR (fun v _ => allocation_mem_singleItemFeasible v) measurable_allocation
+
+/-! ### The endpoint convention of `IsRegular` -/
+
+/-- The rising density `f(v) = 2v`. -/
+noncomputable def risingDensity (v : ℝ) : NNReal := Real.toNNReal (2 * v)
+
+/-- The distribution on `[0, 1]` with density `2v`, so `F(v) = v²`. -/
+noncomputable def rising : Measure ℝ :=
+  (volume.restrict (Icc 0 1)).withDensity fun v => (risingDensity v : ENNReal)
+
+/-- The tail of `rising` is `1 − F(v) = 1 − v²` on `[0, 1]`. -/
+theorem rising_real_Ioi {v : ℝ} (hv0 : 0 ≤ v) (hv1 : v ≤ 1) :
+    rising.real (Ioi v) = 1 - v ^ 2 := by
+  have hset : Ioi v ∩ Icc (0 : ℝ) 1 = Ioc v 1 := by
+    ext w
+    simp only [mem_inter_iff, mem_Ioi, mem_Icc, mem_Ioc]
+    constructor
+    · rintro ⟨h1, -, h3⟩
+      exact ⟨h1, h3⟩
+    · rintro ⟨h1, h3⟩
+      exact ⟨h1, hv0.trans h1.le, h3⟩
+  rw [measureReal_def, rising, withDensity_apply _ measurableSet_Ioi,
+    Measure.restrict_restrict measurableSet_Ioi, hset]
+  change (∫⁻ a in Ioc v 1, ENNReal.ofReal (2 * a)).toReal = _
+  have hint : IntegrableOn (fun a : ℝ => 2 * a) (Ioc v 1) :=
+    (continuous_const.mul continuous_id : Continuous fun a : ℝ => 2 * a).integrableOn_Icc.mono_set
+      Ioc_subset_Icc_self
+  have hnn : 0 ≤ᵐ[volume.restrict (Ioc v 1)] fun a : ℝ => 2 * a :=
+    ae_restrict_of_forall_mem measurableSet_Ioc fun a ha => by
+      have := ha.1
+      change (0 : ℝ) ≤ 2 * a
+      linarith
+  rw [← ofReal_integral_eq_lintegral_ofReal hint hnn,
+    ← intervalIntegral.integral_of_le hv1, intervalIntegral.integral_const_mul, integral_id,
+    ENNReal.toReal_ofReal (by nlinarith)]
+  ring
+
+/-- Redefining the density at `0` does not change the distribution. -/
+theorem hasValueDensity_rising (c : NNReal) :
+    HasValueDensity rising (Function.update risingDensity 0 c) 1 where
+  measurable := by
+    have : Function.update risingDensity 0 c = fun x => if x = 0 then c else risingDensity x := by
+      funext x
+      exact Function.update_apply _ _ _ _
+    rw [this]
+    exact Measurable.ite (measurableSet_singleton 0) measurable_const
+      (measurable_const.mul measurable_id).real_toNNReal
+  eq_withDensity := by
+    refine withDensity_congr_ae ?_
+    filter_upwards [ae_restrict_of_ae ((countable_singleton (0 : ℝ)).ae_notMem volume)] with x hx
+    rw [Function.update_of_ne hx]
+  pos := fun v hv => by
+    rw [Function.update_of_ne hv.1.ne']
+    exact Real.toNNReal_pos.2 (by linarith [hv.1])
+
+/-- **Endpoint convention.** The density `2v` is regular in the sense of Lecture 5, Definition 3.1:
+`φ(v) = (3v² − 1)/(2v)` is strictly increasing on `(0, 1]`. But `φ → −∞` as `v → 0⁺`, so for
+every choice `c` of the density at `0` (each a valid density for `rising`, by
+`hasValueDensity_rising`), `IsRegular` fails at the endpoint `0`. -/
+theorem not_isRegular_rising (c : NNReal) :
+    ¬ IsRegular rising (Function.update risingDensity 0 c) 1 := by
+  intro hreg
+  have hφ : ∀ v : ℝ, 0 < v → v ≤ 1 →
+      virtualValue rising (Function.update risingDensity 0 c) v = v - (1 - v ^ 2) / (2 * v) := by
+    intro v hv hv1
+    rw [virtualValue, rising_real_Ioi hv.le hv1, Function.update_of_ne hv.ne', risingDensity,
+      Real.coe_toNNReal _ (by linarith)]
+  have hφ0 : virtualValue rising (Function.update risingDensity 0 c) 0 = -(c : ℝ)⁻¹ := by
+    rw [virtualValue, rising_real_Ioi le_rfl zero_le_one, Function.update_self]
+    ring
+  rcases eq_or_ne c 0 with rfl | hc
+  · have := hreg ⟨le_rfl, zero_le_one⟩ ⟨by norm_num, by norm_num⟩ (by norm_num : (0 : ℝ) < 1 / 2)
+    rw [hφ0, hφ _ (by norm_num) (by norm_num)] at this
+    norm_num at this
+  · set t : ℝ := (c : ℝ)⁻¹ with ht
+    have ht0 : 0 < t := inv_pos.2 (NNReal.coe_pos.2 (pos_iff_ne_zero.2 hc))
+    set v : ℝ := 1 / (8 * (1 + t)) with hv
+    have hv0 : 0 < v := by positivity
+    have hv8 : v ≤ 1 / 8 := by
+      rw [hv, div_le_div_iff₀ (by positivity) (by norm_num)]
+      linarith
+    have h2v : 2 * v * (4 * (1 + t)) = 1 := by
+      rw [hv]
+      field_simp
+      ring
+    have hq : (1 - v ^ 2) / (2 * v) = 4 * (1 + t) * (1 - v ^ 2) := by
+      rw [div_eq_iff (by positivity)]
+      linear_combination -(1 - v ^ 2) * h2v
+    have := hreg ⟨le_rfl, zero_le_one⟩ ⟨hv0.le, by linarith⟩ hv0
+    rw [hφ0, hφ _ hv0 (by linarith), hq] at this
+    have hsq : (0 : ℝ) ≤ 1 / 64 - v ^ 2 := by nlinarith
+    nlinarith [mul_nonneg (by positivity : (0 : ℝ) ≤ 1 + t) hsq]
 
 end ComplexityTests.GameTheory.OptimalAuction

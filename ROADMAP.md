@@ -1109,6 +1109,9 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   and ½-approximation. State allocation algorithms with charged running time, so that
   approximation and truthfulness are both proved for an actual algorithm.
 - **Revenue maximization beyond the regular DSIC case:** ironing for irregular distributions;
+  regular distributions (Lecture 5, Definition 3.1) whose virtual valuation is unbounded below at
+  `0`, such as `f(v) = 2v` on `[0, 1]`, which the endpoint convention of `IsRegular` excludes (this
+  needs an explicit treatment of zero bids);
   optimality among Bayesian incentive-compatible mechanisms (interim allocation rules, the
   revelation principle); revenue equivalence and the symmetric first-price equilibrium
   `b(v) = (n - 1) v / n` for i.i.d. uniform values; a measurable virtual-welfare maximizer for a
