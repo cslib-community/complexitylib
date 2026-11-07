@@ -11,7 +11,9 @@ briefly for GitHub to compute mergeability. It then enqueues with `expectedHeadO
 push after the approval can never be queued in its place.
 
 It does not judge the approval itself, a hold named in it, or a request for human review in the
-PR or its issue; the reviewer checks those before running it.
+PR or its issue; the reviewer checks those before running it. Its retarget check (a base change
+newer than the head's commit date) only catches the common mistake of queueing a stacked PR before
+it merges `main`; `scripts/check_restack.py` is what verifies a restacked head.
 
 Exit status: 0 when the PR is queued (or already was), 1 when it is refused or the check is still
 running, 2 on a `gh` error. Requires an authenticated `gh` with write access to the repository.

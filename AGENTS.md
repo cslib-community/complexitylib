@@ -473,8 +473,10 @@ passes and CI passes at the new head. The script replays the approved change ont
 the new head is based on, which is what the merge queue would have built from the approved head,
 and passes only when the new head's tree is exactly that replay. The one exception is that the
 `mk_all` import aggregates may order their lines differently, since CI's `mk_all --check` pins the
-order. A conflict in the replay, and any other difference, fails it. For a stacked PR whose lower
-PR changed after the approval, pass `--approved-base <lower PR head at approval>`. Anyone, including
+order. A conflict in the replay, and any other difference, fails it. Run `git fetch origin` first.
+An approval given while a PR is based on another branch also names that branch's head, and the
+check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
+review did not cover, would carry the approval if the lower PR never landed. Anyone, including
 the author, may post the script's result line, which names both heads and the exact command. The
 non-author who queues the new head runs that command again rather than relying on the posted line.
 When the script reports differences, review the paths and diffs it prints as a delta, under the

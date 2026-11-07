@@ -9,18 +9,24 @@ commit that NEW (default `HEAD`) is based on, using `git merge-tree`. That repla
 queue would build from the approved head on that `main`. NEW passes when its tree equals the replay
 exactly: every path, mode and byte. The only exceptions are the `mk_all` aggregates (`AGGREGATES`).
 Their merges can order lines differently, so they pass when they contain the same lines in any
-order; CI's `lake exe mk_all --check` then fixes their order. A replay conflict on any other file,
+order; CI's `lake exe mk_all --check` rejects any order but the canonical one. A replay conflict on any other file,
 and any other difference, is reported, so moving, reordering or editing the PR's lines during a
 conflict resolution never passes.
 
-Bases: NEW is based on its merge base with `--base` (default `origin/main`). APPROVED is based on
-its merge base with `--approved-base`, or with `--base` when that is not given. For a stacked PR
-whose lower PR has landed since the approval, pass the lower PR's head at approval time as
-`--approved-base`, so that the replayed change is only the upper PR's.
+Bases: NEW is based on its merge base with `--base` (default `origin/main`; run `git fetch origin`
+first, since a stale ref only produces a false "differs"). APPROVED is based on its merge base
+with `--approved-base`, or with `--base` when that is not given. For any PR approved while it was
+based on another branch (a stacked PR), pass that branch's head at approval time as
+`--approved-base`. Otherwise the replayed change includes the lower branch's changes, which were
+not reviewed in this PR, and they would carry the approval if the lower PR never landed.
+
+The replay uses the attributes in the new head's base commit (`--attr-source`), ignores
+`core.attributesFile`, and refuses to run when `info/attributes` sets merge attributes, so local
+Git configuration cannot change its result.
 
 Exit status: 0 when NEW is the replayed approved change; 1 when it differs (the differing paths
 and diffs are printed); 2 on a usage or Git error, including an approved change that is empty
-relative to its base. A missing commit is fetched from `origin` by its hash. Requires Git 2.40 or
+relative to its base. A missing commit is fetched from `origin` by its hash. Requires Git 2.42 or
 later.
 
 A pass does not replace CI: the replay combines the approved change with newer `main`, which the
@@ -30,6 +36,7 @@ merge queue tests in any case. The carry-forward rule is in AGENTS.md ("Restacks
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -89,19 +96,31 @@ def tree(root: Path, commit: str) -> str:
     return out(root, "rev-parse", f"{commit}^{{tree}}")
 
 
+def check_local_attributes(root: Path) -> None:
+    """Refuse when the repository's own `info/attributes` could select merge drivers."""
+    path = Path(out(root, "rev-parse", "--path-format=absolute", "--git-path", "info/attributes"))
+    if path.is_file() and any("merge" in line and not line.lstrip().startswith("#")
+                              for line in path.read_text(errors="replace").splitlines()):
+        raise GitError(f"{path} sets merge attributes, which would change the replay; "
+                       "run the check in a clone without them")
+
+
 def replay(root: Path, approved_base: str, approved: str, onto: str) -> tuple[str, set[str]]:
     """The tree of `approved_base..approved` merged onto `onto`, and the paths that conflicted."""
-    result = git(root, *MERGE_CONFIG, "merge-tree", "--write-tree", "--name-only", "-z",
+    check_local_attributes(root)
+    result = git(root, f"--attr-source={onto}", "-c", f"core.attributesFile={os.devnull}",
+                 *MERGE_CONFIG, "merge-tree", "--write-tree", "--name-only", "-z",
                  "--no-messages", f"--merge-base={approved_base}", onto, approved, ok=(0, 1))
     fields = result.stdout.split(b"\0")
     if not re.fullmatch(rb"[0-9a-f]{40,64}", fields[0]):
-        raise GitError("unexpected `git merge-tree` output; Git 2.40 or later is required")
+        raise GitError("unexpected `git merge-tree` output; Git 2.42 or later is required")
     conflicts = {f.decode("utf-8", "surrogateescape") for f in fields[1:] if f}
     return fields[0].decode(), conflicts
 
 
 def changed_paths(root: Path, left: str, right: str) -> list[str]:
-    raw = git(root, "diff", "--name-only", "-z", "--no-renames", "--no-ext-diff", left, right)
+    raw = git(root, "diff-tree", "-r", "--name-only", "-z", "--no-renames",
+              "--ignore-submodules=none", left, right)
     return [p.decode("utf-8", "surrogateescape") for p in raw.stdout.split(b"\0") if p]
 
 
@@ -150,7 +169,10 @@ def main(argv: list[str] | None = None) -> int:
             raise GitError(f"the approved head {approved[:12]} makes no change relative to "
                            f"{approved_base[:12]}; check --approved-base")
         replayed, conflicts = replay(root, approved_base, approved, new_base)
-        differing = changed_paths(root, replayed, new)
+        new_tree = tree(root, new)
+        differing = [] if replayed == new_tree else changed_paths(root, replayed, new_tree)
+        if replayed != new_tree and not differing:
+            raise GitError("the trees differ but no differing path was found")
     except GitError as error:
         print(f"check_restack: {error}", file=sys.stderr)
         return 2
@@ -158,6 +180,7 @@ def main(argv: list[str] | None = None) -> int:
              f"{new_base[:12]}, new {new[:12]}")
     # A conflicted path needs review even when the new head matches the replay's tentative content
     # (as when it keeps a file that `main` deleted), unless it is an aggregate with the same lines.
+    # Identical trees pass only without conflicts.
     suspect = sorted(set(differing) | conflicts)
     accepted = [p for p in suspect if p in AGGREGATES and same_lines(root, replayed, new, p)]
     rejected = [p for p in suspect if p not in accepted]

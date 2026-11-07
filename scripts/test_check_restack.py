@@ -231,6 +231,55 @@ class RestackTests(unittest.TestCase):
         self.assertEqual(code, 1, out)
         self.assertIn("img.bin", out)
 
+    def test_user_merge_driver_cannot_hide_a_conflict_resolution(self) -> None:
+        approved = self.feature({"Lib.lean": LIB.replace("def y := 2", "def y := 20")})
+        self.on_main({"Lib.lean": LIB.replace("def y := 2", "def y := 3")})
+        new = self.merge_main({"Lib.lean": LIB.replace("def y := 2", "def y := 20")})
+        attributes = self.root.parent / f"{self.root.name}-attributes"
+        attributes.write_text("*.lean merge=theirs\n")
+        self.addCleanup(attributes.unlink)
+        self.git("config", "core.attributesFile", str(attributes))
+        self.git("config", "merge.theirs.driver", "cp %B %A")
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+
+    def test_merge_attributes_in_info_are_refused(self) -> None:
+        approved = self.feature()
+        self.on_main({"Other.lean": "def o := 0\n"})
+        new = self.merge_main()
+        info = self.root / ".git" / "info"
+        info.mkdir(exist_ok=True)
+        (info / "attributes").write_text("*.lean merge=union\n")
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 2, out)
+        self.assertIn("merge attributes", out)
+
+    def test_hidden_submodule_pointer_change_is_reported(self) -> None:
+        self.git("checkout", "-q", "-b", "feature", "main")
+        self.git("update-index", "--add", "--cacheinfo", f"160000,{'1' * 40},sub")
+        self.git("commit", "-q", "-m", "add submodule")
+        approved = self.git("rev-parse", "HEAD")
+        self.git("update-index", "--cacheinfo", f"160000,{'2' * 40},sub")
+        self.git("commit", "-q", "-m", "move submodule")
+        self.git("config", "diff.ignoreSubmodules", "all")
+        code, out = self.check(approved, self.git("rev-parse", "HEAD"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("sub", out)
+
+    def test_unlanded_lower_branch_needs_approved_base(self) -> None:
+        self.git("checkout", "-q", "-b", "lower", "main")
+        lower = self.commit("lower", {"Lower.lean": "axiom unreviewed : False\n"})
+        self.git("checkout", "-q", "-b", "feature", "lower")
+        approved = self.commit("upper", {"B.lean": "def b := 0\n"})
+        self.on_main({"Other.lean": "def o := 0\n"})
+        new = self.merge_main()
+        # Replayed from `main`, the lower branch's unreviewed lines look approved; the base given
+        # by the approval exposes them.
+        self.assertEqual(self.check(approved, new)[0], 0)
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Lower.lean", out)
+
     # Errors.
 
     def test_empty_approved_change_is_an_error(self) -> None:
