@@ -16,8 +16,8 @@ import Mathlib.Data.Fintype.Pi
 
 /-! # OpenAI: the Exponential Time Hypothesis is false
 
-The four complexity theorems below are proved through `SubexponentialSATBridge` from the
-unconditional native counting endpoint. A fifth theorem, `length_encCNF`, gives the exact length
+The five complexity theorems below are proved through `SubexponentialSATBridge` from the
+unconditional native counting endpoint. A sixth theorem, `length_encCNF`, gives the exact length
 of the input encoding.
 
 The primary result is one deterministic machine for each fixed clause width that computes the
@@ -59,8 +59,6 @@ Construction provenance is recorded in
 -/
 
 namespace ComplexityAbstracts.SubexponentialSATAbstract
-
-open ComplexityTests.Abstracts.Encoding
 
 /-! ## Formulas and model counting
 
@@ -117,7 +115,9 @@ encoded by the empty word. The shared foundation spells out all framing and list
 /-- Encode each literal as a framed binary index followed by its polarity bit; frame the
 literals within clauses and the clauses within the formula. This is the native `encCNF`. -/
 def encCNF : Formula ↪ List Bool :=
-  encList (encList (encPair encNat encBool))
+  ComplexityTests.Abstracts.Encoding.encList (ComplexityTests.Abstracts.Encoding.encList
+    (ComplexityTests.Abstracts.Encoding.encPair ComplexityTests.Abstracts.Encoding.encNat
+      ComplexityTests.Abstracts.Encoding.encBool))
 
 /-! ## Deterministic machine and resource conventions
 
@@ -212,10 +212,17 @@ is the number of variables and `L` the encoding length. -/
 theorem exact_count (k : ℕ) :
     ∃ (count : Formula → ℕ) (A e b : ℕ),
       (∀ φ, HasWidth k φ → count φ = modelCount φ) ∧
-      ComputableInO count encCNF encNat
+      ComputableInO count encCNF ComplexityTests.Abstracts.Encoding.encNat
         (fun φ => ⌈(2 : ℝ) ^ (A * interpolationScale (numVars φ))⌉₊ * ((encCNF φ).length + 1) ^ e)
         (fun φ => ((encCNF φ).length + 1) ^ b) :=
   SubexponentialSATBridge.exact_count k
+
+/-- **Subexponential time for every fixed width.** For every clause width `k` and every positive
+rate `δ`, `k`-SAT is decidable in time `2 ^ (δ n)` times a polynomial in the encoding length,
+where `n` is the number of variables. The decider may depend on `δ`. -/
+theorem decidableInExpTime_KSAT :
+    ∀ (k : ℕ) (δ : ℝ), 0 < δ → DecidableInExpTime (KSAT k) encCNF numVars δ :=
+  SubexponentialSATBridge.decidableInExpTime_KSAT
 
 /-- The exponential time hypothesis is false. -/
 theorem not_eth : ¬ETH := SubexponentialSATBridge.not_eth
@@ -223,7 +230,9 @@ theorem not_eth : ¬ETH := SubexponentialSATBridge.not_eth
 /-- The strong exponential time hypothesis is false. -/
 theorem not_seth : ¬SETH := SubexponentialSATBridge.not_seth
 
-/-- Every fixed-width SAT exponent is zero. -/
+/-- Every fixed-width SAT exponent is zero. Lean's real infimum of the empty set is `0`, so this
+equation would also hold if no rate admitted a decider; its content comes from
+`decidableInExpTime_KSAT`, which supplies a decider at every positive rate. -/
 theorem satExponent_eq_zero : ∀ k, satExponent k = 0 :=
   SubexponentialSATBridge.satExponent_eq_zero
 
@@ -231,7 +240,7 @@ end ComplexityAbstracts.SubexponentialSATAbstract
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.SubexponentialSATAbstract`:
-27 root declarations
+28 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.SubexponentialSATAbstract allowing [

@@ -51,12 +51,13 @@ instructions only), switching at the explicit capacity threshold `regimeThreshol
    `Σ = Fin (2 ^ b)` of size `O(n_max ^ (1 / 2))`, top position count `c = 8`, intermediate position
    count `d = 64`, counting parameter `q = 4` (`d = 2 * q * c`), and `576 * 2 ^ b` words of table
    storage (`(c + 1) * d * |Σ|`, which is `O(n_max ^ (1 / 2))` words).
-   Each `.eval u` performs `c + d` table lookups in `evalTimeBound k` executed instructions
-   (`O_k(1)`), and `.resample` refreshes all `576 * 2 ^ b` table entries in `2880 * 2 ^ b + 16`
-   executed instructions (`O(n_max ^ (1 / 2))`). Whereas `[Thorup2013]` Theorem 1(a), with input and
-   intermediate alphabets both `Σ`, states failure probability `o(|Σ| ^ 2 / |Σ| ^ (d / (2 * c)))`
-   for `k = |Σ| ^ (1 / (5 * c))`, the library's fixed-`k` proof adaptation bounds each resampling
-   epoch's failure probability by `failureProbBound k n_max`: whenever the non-triviality condition
+   Each `.eval u` performs `c + d` table lookups, but the stated bound remains `evalTimeBound k`
+   executed instructions (`O_k(1)`, linear in `k`), and `.resample` refreshes all `576 * 2 ^ b`
+   table entries in `2880 * 2 ^ b + 16` executed instructions (`O(n_max ^ (1 / 2))`). Whereas
+   `[Thorup2013]` Theorem 1(a), with input and intermediate alphabets both `Σ`, states failure
+   probability `o(|Σ| ^ 2 / |Σ| ^ (d / (2 * c)))` for `k = |Σ| ^ (1 / (5 * c))`, the library's
+   fixed-`k` proof adaptation bounds each resampling epoch's failure probability by
+   `failureProbBound k n_max`: whenever the non-triviality condition
    `2 * codeBound k ≤ 2 ^ (3 * b)` holds (where `codeBound k = 8 * ((8 * k) ^ 16 * 64) ^ 4 =
    2 ^ 219 * k ^ 64` from Section 2, Eqs. (6)–(7), p. 11 at `c = 8, d = 64, q = 4`, satisfied for
    `k` up to roughly `n_max ^ (3 / 128)`), `failureProbBound k n_max =
@@ -68,6 +69,14 @@ Across all `n_max : ℕ`, the memory footprint satisfies `space k n_max ≤ (k +
 words (`space_le`), `.eval u` halts within `evalTimeBound k ≤ 111230 * k + 6862` executed
 instructions (`evalTimeBound_le`), and `.resample` halts within
 `resampleTime k n_max ≤ (5 * k + 46096) * (n_max + 1)` executed instructions (`resampleTime_le`).
+
+**Scope note on evaluation time.** The only evaluation-time bound stated here is
+`evalTimeBound k = max (111230 * k + 19) 6858 + 4`, which grows linearly in `k` in both regimes.
+In the large-capacity regime the double-tabulation evaluation code runs `6858` instructions
+(`(12 * c + 11) * d + 10` at `c = 8`, `d = 64`) whatever `k` is, but this abstract does not assert
+a `k`-independent evaluation time, even above `regimeThreshold`. High independence here refers
+to the independence guarantee alone: exact `k`-wise independence below the threshold, and above it
+a coupling bound that is nontrivial for `k` up to roughly `n_max ^ (3 / 128)`.
 
 ## Multi-Operation Execution and High-Probability `k`-Wise Independence Contract
 

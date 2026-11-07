@@ -304,6 +304,7 @@
       "module": "ComplexityAbstracts.SubexponentialSATAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.SubexponentialSATAbstract.exact_count",
+        "ComplexityAbstracts.SubexponentialSATAbstract.decidableInExpTime_KSAT",
         "ComplexityAbstracts.SubexponentialSATAbstract.not_eth",
         "ComplexityAbstracts.SubexponentialSATAbstract.not_seth",
         "ComplexityAbstracts.SubexponentialSATAbstract.satExponent_eq_zero"
@@ -311,7 +312,7 @@
       "supporting_theorems": [
         "ComplexityAbstracts.SubexponentialSATAbstract.length_encCNF"
       ],
-      "summary": "For each fixed clause width, one deterministic native machine exactly counts satisfying assignments in subexponential time and polynomial space. Every fixed-width SAT exponent is zero, and ETH and SETH are false. Native formalization of OpenAI's manuscript, revised 25 October 2026, by the contributors to #1226.",
+      "summary": "For each fixed clause width, one deterministic native machine exactly counts satisfying assignments in subexponential time and polynomial space. Each fixed-width k-SAT problem is therefore decidable in time 2^(δn)·poly(L) for every δ > 0, every fixed-width SAT exponent is zero, and ETH and SETH are false. Native formalization of OpenAI's manuscript, revised 25 October 2026, by the contributors to #1226.",
       "scope": "Explicit CNF semantics, model counts over the occurring variables, and binary formula/output encodings; the interpolation-scale exponent n (log log (n + 16))² / sqrt(log(n + 16)) from §§3–6 and Proposition 6.4, where n is the number of variables, with polynomial time overhead and polynomial workspace in the encoded formula length. Includes all fixed widths and sizes; the count is exact on every formula of the given width. This does not establish the sharper Theorem 1.1 / Appendix D bound.",
       "foundations": [
         "ComplexityAbstracts.Encoding"
