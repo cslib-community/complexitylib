@@ -1027,6 +1027,8 @@ public import Complexity.Computability.Circuit.Boolean.SparseSynthesis
 public import Complexity.Computability.Circuit.Boolean.SparseSynthesisConstruction
 public import Complexity.Computability.Circuit.Boolean.Spira
 public import Complexity.Computability.Circuit.Boolean.Substitution
+public import Complexity.Computability.Circuit.Boolean.SymAnd
+public import Complexity.Computability.Circuit.Boolean.SymAnd.Collapse
 public import Complexity.Computability.Circuit.Boolean.Synthesis
 public import Complexity.Computability.Circuit.Boolean.TC0
 public import Complexity.Computability.Circuit.Boolean.Tableau.Basic
@@ -3694,6 +3696,7 @@ public import Complexity.Foundations.BooleanAnalysis.LongCode
 public import Complexity.Foundations.BooleanAnalysis.LowDegree
 public import Complexity.Foundations.BooleanAnalysis.LowDegree.Addition
 public import Complexity.Foundations.BooleanAnalysis.LowDegree.Dimension
+public import Complexity.Foundations.BooleanAnalysis.LowDegree.Polynomial
 public import Complexity.Foundations.BooleanAnalysis.LowDegreeParity
 public import Complexity.Foundations.BooleanAnalysis.MaximalSupport
 public import Complexity.Foundations.BooleanAnalysis.MirrorSets
@@ -4031,6 +4034,7 @@ public import Complexity.Foundations.Data.Polynomial.CoeffList
 public import Complexity.Foundations.Data.Polynomial.CoeffNorm1
 public import Complexity.Foundations.Data.Polynomial.CoeffProd
 public import Complexity.Foundations.Data.Polynomial.HermiteInterpolation
+public import Complexity.Foundations.Data.Polynomial.ModulusAmplifier
 public import Complexity.Foundations.Data.Polynomial.ParityAmplifier
 public import Complexity.Foundations.Data.Polynomial.ParityAmplifierDegree
 public import Complexity.Foundations.Data.Polynomial.RingLagrange
