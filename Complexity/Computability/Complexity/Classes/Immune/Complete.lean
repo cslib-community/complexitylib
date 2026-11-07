@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.Immune
-public import Complexity.Computability.Complexity.Classes.Ladner.Basic
+import Complexity.Computability.Complexity.Classes.Ladner.Basic
 import Complexity.Computability.Complexity.Classes.Padding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -23,8 +23,8 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 **Berman's theorem** [Berman][Berman1976]: a problem that is `≤ᵖₘ`-complete for `E` has an infinite
 subset in `P`, so it is not `P`-immune. This contrasts with the `P`-bi-immune problems in `E`
 [Balcázar and Schöning][BalcazarSchoening1985]
-(`Complexity.Computability.Complexity.Classes.Immune.Construction`). Juedes and Lutz recall both
-facts in their study of the complexity and distribution of hard problems
+(`Complexity.Computability.Complexity.Classes.Immune.Construction`). Juedes and Lutz recall
+Berman's theorem in their study of the complexity and distribution of hard problems
 [Juedes and Lutz][JuedesLutz1995].
 The argument below gives the same for the complement, so a complete problem is not `P`-bi-immune
 (`Cslib.Complexity.not_isBiImmune_P_of_polyTimeComplete_E`). The same holds for `EXP`

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.Immune.Complete
+public import Complexity.Computability.Complexity.Classes.Ladner.Basic
 import Complexity.Computability.Complexity.Classes.Ladner.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
