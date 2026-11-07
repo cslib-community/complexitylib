@@ -604,13 +604,21 @@ index links to canonical definitions rather than keeping a second set.
 - **Immunity** ([#2899](https://github.com/cslib-community/complexitylib/issues/2899)): after
   `IsImmune`/`IsBiImmune`, a `P`-bi-immune set in `E` (`Classes/Immune/Construction.lean`) and
   Berman's theorem that `≤ᵖₘ`-complete sets for `E`/`EXP` are not `P`-immune
-  (`Classes/Immune/Complete.lean`): a constructed `≤ᵖₘ`-complete problem for `E` and `EXP` (such as
-  bounded halting), so that Berman's hypothesis has a library witness; a SAT-free home for the
-  machine enumeration of `Ladner/Basic.lean` shared by Ladner and the immunity modules;
+  (`Classes/Immune/Complete.lean`), witnessed by bounded halting with a binary time bound
+  (`Problems/BoundedHalting.lean`, [#3002](https://github.com/cslib-community/complexitylib/issues/3002)):
+  a SAT-free home for the machine enumeration of `Ladner/Basic.lean` shared by Ladner and the
+  immunity modules;
   `DTIME(t)`-bi-immune sets in larger time classes for general constructible `t`, the remaining
   Balcázar–Schöning results, complexity cores (Lynch; Orponen and Schöning) and their sizes for
   hard sets (Juedes and Lutz), almost-everywhere hardness, and measure strengthenings (almost every
   set in `E` is `P`-bi-immune, Mayordomo).
+- **Exponential-time complete problems**
+  ([#3002](https://github.com/cslib-community/complexitylib/issues/3002)): after bounded halting
+  with a binary time bound (`E`- and `EXP`-complete, `Problems/BoundedHalting.lean`) and Book's
+  separations (`E ⊊ EXP`, `E ≠ NP`, `E ≠ PSPACE`, `Classes/EXP/Separation.lean`): succinct
+  versions of `P`- and `NP`-complete problems (succinct circuit value for `EXP`, succinct SAT for
+  `NEXP`), generalized games complete for `EXP`, nondeterministic bounded halting for `NE`/`NEXP`,
+  and the isomorphism and density structure of `E`-complete sets.
 
 ### Average-case complexity
 

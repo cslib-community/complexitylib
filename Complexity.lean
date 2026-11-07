@@ -1467,6 +1467,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Tru
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.EXP.Padding
+public import Complexity.Computability.Complexity.Classes.EXP.Separation
 public import Complexity.Computability.Complexity.Classes.FewP
 public import Complexity.Computability.Complexity.Classes.FewP.Machine
 public import Complexity.Computability.Complexity.Classes.FunctionTime
@@ -1793,6 +1794,7 @@ public import Complexity.Computability.Complexity.Parameterized.ColorCoding
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
+public import Complexity.Computability.Complexity.Problems.BoundedHalting
 public import Complexity.Computability.Complexity.Problems.CSP.Affine
 public import Complexity.Computability.Complexity.Problems.CSP.Basic
 public import Complexity.Computability.Complexity.Problems.CSP.Constant
