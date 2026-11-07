@@ -20,9 +20,11 @@ import Mathlib.Data.Nat.Choose.Cast
 `‖μ‖₂² = ∑ a, μ(a)²` is the collision probability (`sum_iid_mul_collisionCount`), and, writing
 `s = ‖μ‖₂²` and `t = ∑ a, μ(a)³`, variance exactly
 `C(k, 2) (s - s²) + k (k - 1) (k - 2) (t - s²)` (`sum_iid_mul_collisionCount_sub_sq`). These are the
-moments behind the collision tester for uniformity [Goldreich–Ron][GoldreichRon2000]; the variance
-identity is the one used in the sharp analysis of
-[Diakonikolas–Gouleakis–Peebles–Price][DiakonikolasGouleakisPeeblesPrice2019].
+moments behind the collision tester for uniformity [Goldreich–Ron][GoldreichRon2000]. The mean is
+[Diakonikolas–Gouleakis–Peebles–Price, Lemma 2][DiakonikolasGouleakisPeeblesPrice2019] and the
+variance identity is the equality chain in the proof of
+[Diakonikolas–Gouleakis–Peebles–Price, Lemma 3][DiakonikolasGouleakisPeeblesPrice2019] (numbering
+of arXiv:1611.03579v1), the basis of their sharp analysis.
 
 The proof inducts on the number of samples, peeling off the first draw (`sum_iid_succ_mul`), and
 tracks the joint moments of the collision count and the occurrence counts of single values.

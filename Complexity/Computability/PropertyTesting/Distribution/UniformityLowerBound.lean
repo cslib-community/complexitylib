@@ -17,9 +17,9 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Series
 
 On a domain of even size `n`, every `k`-sample uniformity tester with proximity `δ ≤ 1 / 2` in
 statistical distance satisfies `n ≤ 52 k² δ⁴` (`card_le_of_isTester_uniform`), so
-`k = Ω(√n / δ²)` samples are necessary [Paninski][Paninski2008]. This matches the collision tester
-(`Cslib.DistributionTesting.isTester_collisionTester`) up to the constant. At `δ = 1 / 2` it is
-the birthday bound `4 n ≤ 13 k²` (`four_mul_card_le_of_isTester_uniform`).
+`k = Ω(√n / δ²)` samples are necessary [Paninski][Paninski2008]. For such `δ` and `n` this matches
+the collision tester (`Cslib.DistributionTesting.isTester_collisionTester`) up to the constant. At
+`δ = 1 / 2` it is the birthday bound `4 n ≤ 13 k²` (`four_mul_card_le_of_isTester_uniform`).
 
 The hard instances live on `Fin m × Bool`. For a sign vector `σ : Fin m → Bool`, Paninski's
 distribution `paninski hε σ` puts mass `(1 ± ε) / (2 m)` on `(i, b)`, with the plus sign when
@@ -41,7 +41,8 @@ The constants `52` and `13` are the ones this proof gives; they are not optimize
 ## Main results
 
 * `Cslib.DistributionTesting.collisionProbability_paninskiMixture_le`: the second-moment bound.
-* `Cslib.DistributionTesting.le_of_isTester_uniform_prod`: the lower bound on `Fin m × Bool`.
+* `Cslib.DistributionTesting.two_mul_le_of_isTester_uniform_prod`: the lower bound on
+  `Fin m × Bool`.
 * `Cslib.DistributionTesting.card_le_of_isTester_uniform`: the lower bound on even domains.
 * `Cslib.DistributionTesting.four_mul_card_le_of_isTester_uniform`: the birthday bound.
 
@@ -266,7 +267,7 @@ theorem dist_paninskiMixture_sq_le [NeZero m] {ε : ℝ} (hε : |ε| ≤ 1) (k :
 
 /-- **Paninski's lower bound** on `Fin m × Bool`: every `k`-sample uniformity tester with proximity
 `δ ≤ 1 / 2` satisfies `2 m ≤ 52 k² δ⁴`. -/
-theorem le_of_isTester_uniform_prod [NeZero m] {k : ℕ}
+theorem two_mul_le_of_isTester_uniform_prod [NeZero m] {k : ℕ}
     {T : (Fin k → Fin m × Bool) → PMF Bool} {δ : ℝ}
     (hT : IsTester T {uniformOfFintype (Fin m × Bool)} δ) (hδ : δ ≤ 1 / 2) :
     (2 * m : ℝ) ≤ 52 * k ^ 2 * δ ^ 4 := by
@@ -323,7 +324,8 @@ theorem card_le_of_isTester_uniform [Nonempty α] (hα : Even (Fintype.card α))
   have hcard : Fintype.card α = Fintype.card (Fin m × Bool) := by
     rw [hm, Fintype.card_prod, Fintype.card_fin, Fintype.card_bool]
     ring
-  have h := le_of_isTester_uniform_prod (hT.comp_equiv_uniform (Fintype.equivOfCardEq hcard)) hδ
+  have h :=
+    two_mul_le_of_isTester_uniform_prod (hT.comp_equiv_uniform (Fintype.equivOfCardEq hcard)) hδ
   rw [hm]
   push_cast
   linarith

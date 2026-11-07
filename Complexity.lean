@@ -4586,6 +4586,7 @@ public import Complexity.Probability.Minimax
 public import Complexity.Probability.Option
 public import Complexity.Probability.PMF
 public import Complexity.Probability.PMF.Bind
+public import Complexity.Probability.PMF.Chebyshev
 public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Filter

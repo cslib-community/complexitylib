@@ -857,8 +857,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   computational hardness. Use the [distributional framework](#average-case-complexity).
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
-  `Θ(√n / ε²)` sample bounds: the collision tester and Paninski's lower bound on even domains.
-  Remaining: further access models, the odd-domain lower bound, identity testing by reduction to
+  `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
+  lower bound. Remaining: further access models, the odd-domain lower bound, identity testing by reduction to
   uniformity, closeness, tolerant and structured-property distribution testing, canonical testers
   and further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime

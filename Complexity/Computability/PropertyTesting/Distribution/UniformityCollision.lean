@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.PropertyTesting.Distribution.Basic
 public import Complexity.Probability.IID.CollisionCount
 import Complexity.Probability.PMF
+import Complexity.Probability.PMF.Chebyshev
 import Mathlib.Data.Nat.Choose.Cast
 
 /-!
@@ -19,13 +20,16 @@ The collision tester of [Goldreich–Ron][GoldreichRon2000] draws `k` samples fr
 distribution `p` on a finite type of size `n` and accepts when the number of colliding pairs
 (`Cslib.Probability.PMF.collisionCount`) is at most `C(k, 2) (1 + 2 ε²) / n`
 (`collisionThreshold`). It is a uniformity tester with proximity `ε` in statistical distance
-whenever `40 √n ≤ (k - 1) ε²` (`isTester_collisionTester`), so `k = O(√n / ε²)` samples suffice.
-This sample complexity is optimal by Paninski's lower bound
+whenever `40 √n ≤ (k - 1) ε²` (`isTester_collisionTester`), so `k = O(√n / ε²)` samples suffice;
+this is [Diakonikolas–Gouleakis–Peebles–Price, Theorem 1][DiakonikolasGouleakisPeeblesPrice2019]
+(numbering of arXiv:1611.03579v1; stated there in `ℓ₂` distance and transferred to total variation
+by Cauchy–Schwarz) with our own constant. For `ε ≤ 1 / 2` on domains of even size this sample
+complexity is optimal up to the constant, by Paninski's lower bound
 (`Cslib.DistributionTesting.card_le_of_isTester_uniform`).
 
 The proof is Chebyshev's inequality with the exact mean and variance of the collision count
 (`Cslib.Probability.PMF.sum_iid_mul_collisionCount_sub_sq`), following the variance analysis of
-[Diakonikolas–Gouleakis–Peebles–Price][DiakonikolasGouleakisPeeblesPrice2019]. Write
+[Diakonikolas–Gouleakis–Peebles–Price, Lemma 3][DiakonikolasGouleakisPeeblesPrice2019]. Write
 `s = ‖p‖₂²` and `D = s - 1 / n`. If `p` is uniform, `D = 0` and the variance is at most
 `C(k, 2) / n`. If `p` is `ε`-far from uniform, Cauchy–Schwarz gives `n D ≥ 4 ε²`
 (`Cslib.Probability.PMF.dist_uniform_sq_le`), and the excess third moment is at most
@@ -38,6 +42,8 @@ samples. The constant `40` is the one this proof gives; it is not optimized.
 * `Cslib.DistributionTesting.collisionTester`: the collision tester.
 
 ## Main results
+
+* `Cslib.DistributionTesting.collisionThreshold_eq`, `collisionTester_apply`: unfolding lemmas.
 
 * `Cslib.DistributionTesting.isTester_collisionTester`: the collision tester is a uniformity
   tester with `k = O(√n / ε²)` samples.
@@ -59,37 +65,33 @@ open Cslib.Probability.PMF Finset
 
 variable {α : Type*} [Fintype α] [DecidableEq α]
 
-omit [DecidableEq α] in
-/-- Chebyshev's inequality for a finite distribution. -/
-private theorem sum_mul_ite_le_sum_mul_sq_div (p : PMF α) (f : α → ℝ) (m : ℝ) {c : ℝ}
-    (hc : 0 < c) (A : α → Bool) (hA : ∀ a, A a → c ≤ |f a - m|) :
-    ∑ a, (p a).toReal * (if A a then 1 else 0) ≤ (∑ a, (p a).toReal * (f a - m) ^ 2) / c ^ 2 := by
-  rw [le_div_iff₀ (by positivity), sum_mul]
-  refine sum_le_sum fun a _ => ?_
-  rw [mul_assoc]
-  refine mul_le_mul_of_nonneg_left ?_ ENNReal.toReal_nonneg
-  split_ifs with h
-  · rw [one_mul, ← sq_abs (f a - m)]
-    exact pow_le_pow_left₀ hc.le (hA a h) 2
-  · rw [zero_mul]
-    exact sq_nonneg _
-
 /-- The collision tester's threshold `C(k, 2) (1 + 2 ε²) / n`, halfway between the expected
-collision counts `C(k, 2) / n` of the uniform distribution and `C(k, 2) (1 + 4 ε²) / n` of a
-distribution `ε`-far from it. -/
+collision count `C(k, 2) / n` of the uniform distribution and `C(k, 2) (1 + 4 ε²) / n`, a lower
+bound on the expected collision count of every distribution `ε`-far from it. -/
 noncomputable def collisionThreshold (n k : ℕ) (ε : ℝ) : ℝ := k.choose 2 * (1 + 2 * ε ^ 2) / n
+
+/-- Unfolding lemma for `collisionThreshold`. -/
+theorem collisionThreshold_eq (n k : ℕ) (ε : ℝ) :
+    collisionThreshold n k ε = k.choose 2 * (1 + 2 * ε ^ 2) / n := by
+  rw [collisionThreshold]
 
 /-- The collision tester accepts `k` samples when their number of colliding pairs is at most
 `collisionThreshold`. -/
 noncomputable def collisionTester (k : ℕ) (ε : ℝ) : (Fin k → α) → PMF Bool :=
   fun x => PMF.pure (decide ((collisionCount x : ℝ) ≤ collisionThreshold (Fintype.card α) k ε))
 
+/-- Unfolding lemma for `collisionTester`. -/
+theorem collisionTester_apply (k : ℕ) (ε : ℝ) (x : Fin k → α) :
+    collisionTester k ε x =
+      PMF.pure (decide ((collisionCount x : ℝ) ≤ collisionThreshold (Fintype.card α) k ε)) := by
+  rw [collisionTester]
+
 private theorem mass_le_one_third {k : ℕ} (p : PMF α) (A : (Fin k → α) → Bool) (m c : ℝ)
     (hc : 0 < c) (hA : ∀ x, A x → c ≤ |(collisionCount x : ℝ) - m|) {V : ℝ}
     (hV : ∑ x, (iid p k x).toReal * ((collisionCount x : ℝ) - m) ^ 2 ≤ V)
     (h3 : 3 * V ≤ c ^ 2) :
     ∑ x, (iid p k x).toReal * (if A x then 1 else 0) ≤ 1 / 3 := by
-  refine (sum_mul_ite_le_sum_mul_sq_div _ _ m hc A hA).trans ?_
+  refine (sum_mul_ite_le_sum_mul_sq_div _ _ m hc (fun x => A x = true) hA).trans ?_
   rw [div_le_iff₀ (by positivity)]
   linarith
 

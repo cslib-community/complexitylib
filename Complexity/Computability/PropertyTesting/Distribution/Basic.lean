@@ -19,9 +19,9 @@ A *`k`-sample tester* for a property `P` of distributions on a finite type `α` 
 decision rule `T : (Fin k → α) → PMF Bool` applied to `k` independent samples of the unknown
 distribution `p` (`Cslib.Probability.PMF.iid p k`). It must accept every `p ∈ P` with probability
 at least `2 / 3` and accept with probability at most `1 / 3` every `p` at statistical distance at
-least `ε` from all of `P` (`IsTester`) [Canonne, §1.1][Canonne2020]. Statistical distance is the
-total variation distance `dist` of the scoped metric space on `PMF α`. The tester is a semantic
-Markov kernel: this file counts samples and does not bound running time.
+least `ε` from all of `P` (`IsTester`) [Canonne][Canonne2020]. Statistical distance is the total
+variation distance `dist` of the metric space on `PMF α` scoped to `Cslib.Probability.PMF`. The
+tester is a semantic Markov kernel: this file counts samples and does not bound running time.
 
 Le Cam's two-point method in mixture form (`one_third_le_dist_iid_bind`) turns a tester into a
 lower bound: the `k`-sample distribution of any `p ∈ P` is at statistical distance at least
@@ -57,12 +57,13 @@ variable {α β : Type*}
 
 /-- The probability that the randomized decision rule `T` accepts `k` independent samples of
 `p`. -/
-@[expose] noncomputable def acceptProb {k : ℕ} (T : (Fin k → α) → PMF Bool) (p : PMF α) : ℝ :=
+noncomputable def acceptProb {k : ℕ} (T : (Fin k → α) → PMF Bool) (p : PMF α) : ℝ :=
   ((iid p k).bind T true).toReal
 
+/-- Unfolding lemma for `acceptProb`. -/
 theorem acceptProb_eq {k : ℕ} (T : (Fin k → α) → PMF Bool) (p : PMF α) :
-    acceptProb T p = ((iid p k).bind T true).toReal :=
-  rfl
+    acceptProb T p = ((iid p k).bind T true).toReal := by
+  rw [acceptProb]
 
 /-- `T` is a `k`-sample tester for the property `P` with proximity `ε`: it accepts every member of
 `P` with probability at least `2 / 3`, and accepts with probability at most `1 / 3` every
@@ -91,19 +92,11 @@ theorem acceptProb_pure_eq_one_sub {k : ℕ} (A : (Fin k → α) → Bool) (p : 
   refine (sum_congr rfl fun x _ => ?_).trans (sum_toReal (iid p k))
   cases A x <;> simp
 
-/-- A randomized decision rule accepts two sample distributions with probabilities differing by at
-most their statistical distance. -/
-private theorem abs_bind_true_sub_le [Fintype β] (P Q : PMF β) (T : β → PMF Bool) :
-    |(P.bind T true).toReal - (Q.bind T true).toReal| ≤ dist P Q := by
-  have h := abs_toOuterMeasure_toReal_sub_le_dist (P.bind T) (Q.bind T) {true}
-  rw [PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_apply_singleton] at h
-  exact h.trans (dist_bind_le _ _ T)
-
 /-- Acceptance probabilities differ by at most the statistical distance of the `k`-sample
 distributions. -/
 theorem abs_acceptProb_sub_le {k : ℕ} (T : (Fin k → α) → PMF Bool) (p q : PMF α) :
     |acceptProb T p - acceptProb T q| ≤ dist (iid p k) (iid q k) :=
-  abs_bind_true_sub_le _ _ T
+  abs_bind_apply_toReal_sub_le_dist _ _ T true
 
 /-- **Le Cam's method** for testers: if `T` is a `k`-sample tester for `P`, then the `k`-sample
 distribution of any `p ∈ P` is at statistical distance at least `1 / 3` from every mixture of
@@ -121,7 +114,7 @@ theorem one_third_le_dist_iid_bind {ι : Type*} [Finite ι] {k : ℕ}
           sum_le_sum fun i _ =>
             mul_le_mul_of_nonneg_left (hT.reject _ (hf i)) ENNReal.toReal_nonneg
       _ = 1 / 3 := by rw [← sum_mul, sum_toReal, one_mul]
-  have h3 := abs_bind_true_sub_le (iid p k) (μ.bind fun i => iid (f i) k) T
+  have h3 := abs_bind_apply_toReal_sub_le_dist (iid p k) (μ.bind fun i => iid (f i) k) T true
   rw [abs_le] at h3
   linarith
 
