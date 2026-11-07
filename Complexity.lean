@@ -4540,6 +4540,7 @@ public import Complexity.Probability.PMF
 public import Complexity.Probability.PMF.Bind
 public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
+public import Complexity.Probability.PMF.Filter
 public import Complexity.Probability.PMF.Map
 public import Complexity.Probability.PMF.Option
 public import Complexity.Probability.PMF.Option.Bind
@@ -4571,6 +4572,7 @@ public import Complexity.Probability.PairwiseIndependentHash.ValidatedWords
 public import Complexity.Probability.Pinsker
 public import Complexity.Probability.Product
 public import Complexity.Probability.Product.Event
+public import Complexity.Probability.Product.Split
 public import Complexity.Probability.ProductConditioning
 public import Complexity.Probability.ProductConditioning.SideInformation
 public import Complexity.Probability.Quantile
@@ -4586,6 +4588,7 @@ public import Complexity.Probability.SmallBias.Powering
 public import Complexity.Probability.SmallBias.Random
 public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.StatisticalDistance.Coupling
+public import Complexity.Probability.StatisticalDistance.Event
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.Uniform
