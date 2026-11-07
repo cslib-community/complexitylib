@@ -33,7 +33,7 @@ times a polynomial gives one within time `2 ^ (k * δ * m)` times a polynomial
 holds as soon as 3SAT is not decidable in subexponential time in the number of clauses
 (`Cslib.Complexity.ETH_of_not_decidableInSubexpTime_length`). The converse is the content of the
 sparsification lemma of Impagliazzo, Paturi and Zane [ImpagliazzoPaturiZane2001], with the
-sparsified formulas searched within time `2 ^ (ε n)` times a polynomial; it is proved in
+sparsified formulas searched within time `2 ^ (ε * n)` times a polynomial; it is proved in
 `Cslib.Complexity.ETH_iff_not_decidableInSubexpTime_length`.
 
 ## Main results

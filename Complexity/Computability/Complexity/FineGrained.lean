@@ -39,7 +39,7 @@ at most `L`, and can be much smaller.
 * `Cslib.Complexity.ETH`, **the exponential time hypothesis** [ImpagliazzoPaturi2001]: for some
   `δ > 0`, 3SAT is not decidable within time `2 ^ (δ * n)` times any polynomial in `L`.
 * `Cslib.Complexity.SETH`, **the strong exponential time hypothesis**: for every `ε > 0` some
-  `k`-SAT is not decidable within time `2 ^ ((1 - ε) n)` times any polynomial in `L`.
+  `k`-SAT is not decidable within time `2 ^ ((1 - ε) * n)` times any polynomial in `L`.
 * `Cslib.Complexity.OV`, the orthogonal vectors problem, and `Cslib.Complexity.OVH`, **the
   orthogonal vectors hypothesis** in its moderate-dimension form: for every `ε > 0`, `OV` is not
   decidable within time `N ^ (2 - ε)` times any polynomial in the dimension `d`, on `N` vectors.
@@ -288,7 +288,7 @@ formulas with `n` variables. -/
 def ETH : Prop := ∃ δ : ℝ, 0 < δ ∧ ¬DecidableInExpTime ThreeSAT encCNF CNF.numVars δ
 
 /-- **The strong exponential time hypothesis** [ImpagliazzoPaturi2001]: for every `ε > 0` there is
-a width `k` such that `k`-SAT is not decidable within time `2 ^ ((1 - ε) n)` times any polynomial in
+a width `k` such that `k`-SAT is not decidable within time `2 ^ ((1 - ε) * n)` times any polynomial in
 the length of the encoded formula, on formulas with `n` variables. -/
 def SETH : Prop :=
   ∀ ε : ℝ, 0 < ε → ∃ k : ℕ, ¬DecidableInExpTime (KSAT k) encCNF CNF.numVars (1 - ε)

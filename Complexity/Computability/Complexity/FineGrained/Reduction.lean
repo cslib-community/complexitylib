@@ -190,7 +190,7 @@ theorem DecidableInSubexpTime.of_reduction {f : α → β}
 /-- **Lower bounds from the exponential time hypothesis** [ImpagliazzoPaturiZane2001]
 [CyganEtAl2015, Chapter 14]. Under `ETH`, if `f` is computable in polynomial time and, on formulas
 `φ` in conjunctive normal form with `m` clauses of at most three literals, maps `φ` to an instance
-of `B` exactly when `φ` is satisfiable, with `μB (f φ) ≤ k m + k`, then `B` is not decidable in
+of `B` exactly when `φ` is satisfiable, with `μB (f φ) ≤ k * m + k`, then `B` is not decidable in
 subexponential time in `μB`: for some `δ > 0`, no decider runs within time `2 ^ (δ * μB b)` times a
 polynomial in the length of the encoded instance. -/
 theorem ETH.not_decidableInSubexpTime_of_reduction (hETH : ETH) {f : CNF ℕ → β}
