@@ -16,8 +16,8 @@ import Mathlib.Data.Fin.VecNotation
 /-!
 # A self-dual reference lift of ternary clause satisfiability
 
-A reference bit is shared by every constraint. Each signed clause is evaluated on the exclusive
-or of its three variable values with that reference. Complementing all values therefore leaves
+The reduction shares a reference bit across its constraints. Each signed clause is evaluated on
+the exclusive or of its three variable values with that reference. Complementing all values leaves
 every relation invariant. Setting the reference false recovers ordinary signed 3SAT, and any
 model can be normalized that way. This is the reference-bit construction of [Chen2006CSP],
 Lemma 5.2 (arXiv v1, p. 18), specialized to the ternary clause language.
