@@ -67,11 +67,13 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 open RealInnerProductSpace
 
 /-- The `±1` encoding of a Boolean label: `true ↦ 1`, `false ↦ -1`. -/
-@[expose] def signedLabel (y : Bool) : ℝ := if y then 1 else -1
+def signedLabel (y : Bool) : ℝ := if y then 1 else -1
 
-@[simp] theorem signedLabel_true : signedLabel true = 1 := rfl
+@[simp] theorem signedLabel_true : signedLabel true = 1 := by
+  simp [signedLabel]
 
-@[simp] theorem signedLabel_false : signedLabel false = -1 := rfl
+@[simp] theorem signedLabel_false : signedLabel false = -1 := by
+  simp [signedLabel]
 
 theorem signedLabel_sq (y : Bool) : signedLabel y ^ 2 = 1 := by cases y <;> norm_num
 

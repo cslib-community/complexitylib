@@ -65,7 +65,7 @@ namespace Cslib.MachineLearning.OnlineLearning.MistakeBound
 open PACLearning (ConceptClass SetShatters vcDim)
 
 /-- The threshold concept: `x` is labelled `true` iff `x < θ`. -/
-@[expose] def thresholdConcept (θ : ℕ) : ℕ → Bool := fun x => decide (x < θ)
+def thresholdConcept (θ : ℕ) : ℕ → Bool := fun x => decide (x < θ)
 
 /-- The class of all threshold concepts on `ℕ`. -/
 def thresholdClass : ConceptClass ℕ Bool := Set.range thresholdConcept
@@ -73,7 +73,8 @@ def thresholdClass : ConceptClass ℕ Bool := Set.range thresholdConcept
 /-- The threshold concepts with `θ ≤ N`. -/
 def thresholdClassUpTo (N : ℕ) : ConceptClass ℕ Bool := thresholdConcept '' Set.Iic N
 
-@[simp] theorem thresholdConcept_apply (θ x : ℕ) : thresholdConcept θ x = decide (x < θ) := rfl
+@[simp] theorem thresholdConcept_apply (θ x : ℕ) : thresholdConcept θ x = decide (x < θ) := by
+  rw [thresholdConcept]
 
 theorem mem_thresholdClass {c : ℕ → Bool} : c ∈ thresholdClass ↔ ∃ θ, thresholdConcept θ = c :=
   Iff.rfl

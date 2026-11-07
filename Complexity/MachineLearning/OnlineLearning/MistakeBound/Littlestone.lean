@@ -111,14 +111,16 @@ theorem HasMistakeTree.of_le {d e : ℕ} {C : ConceptClass α Bool} (h : HasMist
 
 /-- The labelled path through the instance tree `T : List Bool → α` along the labels `ys`: the
 node reached by the labels `zs` is labelled with the instance `T zs`. -/
-@[expose] def treePath (T : List Bool → α) : List Bool → List (α × Bool)
+def treePath (T : List Bool → α) : List Bool → List (α × Bool)
   | [] => []
   | y :: ys => (T [], y) :: treePath (fun zs => T (y :: zs)) ys
 
-@[simp] theorem treePath_nil (T : List Bool → α) : treePath T [] = [] := rfl
+@[simp] theorem treePath_nil (T : List Bool → α) : treePath T [] = [] := by
+  rw [treePath]
 
 @[simp] theorem treePath_cons (T : List Bool → α) (y : Bool) (ys : List Bool) :
-    treePath T (y :: ys) = (T [], y) :: treePath (fun zs => T (y :: zs)) ys := rfl
+    treePath T (y :: ys) = (T [], y) :: treePath (fun zs => T (y :: zs)) ys := by
+  rw [treePath]
 
 /-- The explicit form of mistake trees [ShalevShwartzBenDavid2014, §21.1]: `C` has a complete
 mistake tree of height `d` iff some instance tree has all its labelled root-to-leaf paths of

@@ -29,10 +29,12 @@ of the labelled sequence `S` on which `A` errs. `S` is *realizable* by `C` when 
 `versionSpace C S`, the set of concepts of `C` that agree with every example of `S`, is nonempty.
 The mistake bound of `A` on `C` is the supremum of `mistakes A S` over all finite realizable `S`,
 in `ℕ∞`. The optimal mistake bound of `C` is the infimum of the mistake bounds over all
-deterministic learners. Littlestone writes these as `M_A(C)` and `opt(C)` [Littlestone1988, §3,
-Definition 1]. The supremum ranges over all finite sequences, so `mistakeBound A C ≤ m` says that
-`A` makes at most `m` mistakes on every realizable sequence of every length, matching
-Littlestone's quantification over all sequences.
+deterministic learners. Littlestone writes these as `M_A(C)`, defined just before Definition 1,
+and `opt(C)`, Definition 1 [Littlestone1988, §3]. The supremum ranges over all finite sequences,
+so `mistakeBound A C ≤ m` says that `A` makes at most `m` mistakes on every realizable sequence of
+every length, matching Littlestone's quantification over all sequences. Littlestone sets
+`M_A(∅) = -1`; here the empty class has no realizable sequence, so its mistake bound is `0`
+(`mistakeBound_empty`).
 
 Since the learner is deterministic, adaptivity gives the adversary nothing more. An `Adversary`
 chooses each instance and each label as a function of the history and of the learner's
@@ -110,8 +112,9 @@ history. -/
 @[expose] def Realizable (C : ConceptClass α Bool) (S : List (α × Bool)) : Prop :=
   (versionSpace C S).Nonempty
 
-/-- The mistake bound `M_A(C)` of the learner `A` on the class `C` [Littlestone1988, §3,
-Definition 1]: the supremum of the mistakes of `A` over all finite sequences realizable by `C`. -/
+/-- The mistake bound `M_A(C)` of the learner `A` on the class `C` [Littlestone1988, §3]: the
+supremum of the mistakes of `A` over all finite sequences realizable by `C`. For the empty class
+this is `0`, where Littlestone sets `M_A(∅) = -1`. -/
 noncomputable def mistakeBound (A : OnlineLearner α) (C : ConceptClass α Bool) : ℕ∞ :=
   ⨆ (S : List (α × Bool)) (_ : Realizable C S), (mistakes A S : ℕ∞)
 
@@ -159,7 +162,7 @@ theorem mistakesFrom_eq_card (A : OnlineLearner α) (h S : List (α × Bool)) :
   | cons p S ih =>
     obtain ⟨x, y⟩ := p
     rw [mistakesFrom_cons, ih, Finset.card_filter, Finset.card_filter]
-    erw [Fin.sum_univ_succ]
+    refine Eq.trans ?_ (Fin.sum_univ_succ (n := S.length) _).symm
     congr 1
     · simp
     · refine Finset.sum_congr rfl fun t _ => ?_
@@ -240,6 +243,12 @@ theorem mistakeBound_mono (A : OnlineLearner α) {C C' : ConceptClass α Bool} (
     mistakeBound A C ≤ mistakeBound A C' :=
   mistakeBound_le_iff.mpr fun _ hS => mistakes_le_mistakeBound (hS.mono h)
 
+/-- The empty class has no realizable sequence, so every learner has mistake bound `0` on it.
+Littlestone's convention `M_A(∅) = -1` is not used. -/
+@[simp] theorem mistakeBound_empty (A : OnlineLearner α) : mistakeBound A ∅ = 0 :=
+  nonpos_iff_eq_zero.mp <| mistakeBound_le_iff.mpr fun _ hS => (hS.mono le_rfl).elim
+    fun _ h => (versionSpace_subset ∅ _ h).elim
+
 theorem optimalMistakeBound_le (A : OnlineLearner α) (C : ConceptClass α Bool) :
     optimalMistakeBound C ≤ mistakeBound A C := iInf_le _ A
 
@@ -249,6 +258,10 @@ theorem le_optimalMistakeBound_iff {C : ConceptClass α Bool} {m : ℕ∞} :
 theorem optimalMistakeBound_mono {C C' : ConceptClass α Bool} (h : C ⊆ C') :
     optimalMistakeBound C ≤ optimalMistakeBound C' :=
   iInf_mono fun A => mistakeBound_mono A h
+
+@[simp] theorem optimalMistakeBound_empty : optimalMistakeBound (∅ : ConceptClass α Bool) = 0 :=
+  nonpos_iff_eq_zero.mp <| (optimalMistakeBound_le (fun _ _ => false) ∅).trans_eq
+    (mistakeBound_empty _)
 
 /-- The mistake bound in Littlestone's form [Littlestone1988, §3]: the target `c ∈ C` is fixed and
 the adversary chooses the instances, each labelled by `c`. -/
@@ -280,20 +293,22 @@ structure Adversary (α : Type*) where
   label : List (α × Bool) → Bool → Bool
 
 /-- The labelled history after `t` rounds of the learner `A` against the adversary `B`. -/
-@[expose] def Adversary.transcript (B : Adversary α) (A : OnlineLearner α) : ℕ → List (α × Bool)
+def Adversary.transcript (B : Adversary α) (A : OnlineLearner α) : ℕ → List (α × Bool)
   | 0 => []
   | t + 1 =>
     let h := B.transcript A t
     h ++ [(B.next h, B.label h (A h (B.next h)))]
 
 @[simp] theorem Adversary.transcript_zero (B : Adversary α) (A : OnlineLearner α) :
-    B.transcript A 0 = [] := rfl
+    B.transcript A 0 = [] := by
+  rw [Adversary.transcript]
 
 theorem Adversary.transcript_succ (B : Adversary α) (A : OnlineLearner α) (t : ℕ) :
     B.transcript A (t + 1) =
       B.transcript A t ++
         [(B.next (B.transcript A t),
-          B.label (B.transcript A t) (A (B.transcript A t) (B.next (B.transcript A t))))] := rfl
+          B.label (B.transcript A t) (A (B.transcript A t) (B.next (B.transcript A t))))] := by
+  rw [Adversary.transcript]
 
 @[simp] theorem Adversary.length_transcript (B : Adversary α) (A : OnlineLearner α) (t : ℕ) :
     (B.transcript A t).length = t := by
