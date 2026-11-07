@@ -92,6 +92,10 @@ universes, and `IsEmbeddable.of_dist_le` accepts randomness from any type.
 - `isEmbeddable_map_fst_of_apply_eq_mul` embeds exactly when the masses of a law of
   `((x, y), (s, t))` factor as `c x y · f x s · g y t`, with `f` and `g` finite. The same file
   proves Lemmas 5.2 and 5.4 and Corollary 5.3.
+- `dist_withKernel_condY_le` bounds the left side of the second hypothesis of Corollary 5.3,
+  `dist J (withKernel P₀ fun xy => condY J xy.2)`, by the distance of `J` from the law that keeps
+  `(y, s)` and redraws `x` from a kernel `K` with `P₀ = P_Y K`, plus the distance of the
+  `y`-marginals. `dist_withKernel_condX_le` is the mirror image for the first hypothesis.
 
 Import [TwoProverGame.lean](../../Complexity/Computability/PCP/TwoProverGame.lean) to use an
 embedding against a game `G`. For tuple strategies `ha` and `hb` of `G.pow n`,
@@ -110,7 +114,8 @@ The [embedding clients](../../ComplexityTests/Embeddability.lean) compose two ex
 from `ULift.{2} Bool`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) extracts a
 strategy from the one-fold repetition with `C = ∅`, which bounds every strategy of `chsh.pow 1`
 by `chsh.value`. Run `scripts/build.sh ComplexityTests.Embeddability ComplexityTests.TwoProverGame`.
-The coordinate embedding of Lemma 6.4, which would supply the embedding premise, is not yet proved;
+The next three sections supply the embedding premise at each free coordinate, through the
+coordinate embedding of Lemma 6.4:
 [the next section](#model-the-coordinates-of-the-parallel-repetition-proof) sets up its random
 variables.
 
@@ -153,15 +158,54 @@ The [coordinate-model clients](../../ComplexityTests/RepetitionCoordinateModel.l
 `pairGiven` and a sample mass for the CHSH questions, derive from (6.5) that the redrawn law is
 exact when `C = ∅`, remove the bit condition from the law of `S`, and pass an embedding into the
 model's law to `winProbOn_insert_le`. Run
-`scripts/build.sh ComplexityTests.RepetitionCoordinateModel`. The library does not yet prove the
-steps (6.7)–(6.16); [the next section](#extend-the-coordinate-embedding-to-the-question-tuples)
-proves the last stage of the embedding, (6.17)–(6.19).
+`scripts/build.sh ComplexityTests.RepetitionCoordinateModel`. The next section carries the proof
+from (6.5) to the first stage of the embedding.
+
+## Embed the questions at a free coordinate
+
+Import [ParallelRepetition/Embedding.lean](../../Complexity/Computability/PCP/ParallelRepetition/Embedding.lean)
+for the steps (6.7)–(6.16) of the proof of Holenstein's Lemma 6.4 [holenstein09][holenstein09]
+and the first stage of its embedding. The setting is that of the previous section. Write
+`E := √(#Cᶜ (#C ln (|A| |B|) + ln (1 / Pr[W_C])) / 2)` for the bound of (6.5), and `J` for the law
+`(condLaw G C ha hb hC).map fun ω => (ω.2 j, shared ha hb j ω)` of `((x_j, y_j), S)`.
+
+- `sum_dist_map_condLaw_shared_le hC b` is (6.7)–(6.12). Conditioning both laws of (6.5) on the
+  bit `D_j = b` at most doubles their distance (Claim 6.1), and the condition then drops because
+  `S` and the pair at `j` ignore the bit. Summed over the free `j`, `J` is within `2 E` of the law
+  that keeps `S` and the half `reveal b (ω.2 j)` and redraws the pair from `pairGiven G`.
+  `b = false` keeps Bob's question, as in (6.12); `b = true` keeps Alice's.
+- `sum_dist_map_condLaw_pair_le hC` is (6.14): summed over the free `j`, the pair at `j` under
+  `condLaw` is within `√(#Cᶜ ln (1 / Pr[W_C]) / 2) ≤ E` of `G.questions`.
+- `sum_dist_condLaw_withKernel_condY_le hC` and `sum_dist_condLaw_withKernel_condX_le hC` are
+  (6.15) and (6.16): summed over the free `j`, `J` is within `3 E` of
+  `withKernel G.questions fun xy => condY J xy.2` and of the `condX` analogue. These are the two
+  hypotheses of Corollary 5.3 (`isEmbeddable_diag_of_dist_le`). They follow from (6.12) and
+  (6.14) by the generic triangle step `dist_withKernel_condY_le` (and `dist_withKernel_condX_le`)
+  of [Compose local embeddings and extract a strategy](#compose-local-embeddings-and-extract-a-strategy),
+  with `K` drawing one question of `G` given the other.
+- `exists_isEmbeddable_condLaw_shared hC` is the first stage. It gives errors
+  `ε : {i // i ∉ C} → ℝ` such that `G.questions` embeds with error `ε j` in
+  `(condLaw G C ha hb hC).map fun ω => (ω.2 j, (shared ha hb j ω, shared ha hb j ω))`, and
+  `∑ j, ε j ≤ 27 / √2 · √(#Cᶜ (#C ln (|A| |B|) + ln (1 / Pr[W_C])))`. The constant is
+  `27 = 7 · 3 + 2 · 3`, from the library's Corollary 5.3 error `7 ε₁ + 2 ε₂`; Holenstein's is
+  `15`, from `3 ε₁ + 2 ε₂`, with logarithms in bits and no factor `1 / √2`. `27 / √2 ≈ 19.09` is
+  within the constant `21` that the sharpened recursion of Lemma 7.1 accepts.
+
+To use a single coordinate, pick `j` with `ε j` at most the average, by
+`Finset.exists_le_of_sum_le`; the error is then at most
+`27 / √2 · √((#C ln (|A| |B|) + ln (1 / Pr[W_C])) / #Cᶜ)`. The
+[embedding clients](../../ComplexityTests/RepetitionEmbedding.lean) do this, and check that with
+`C = ∅` every coordinate has the law of `G.questions` and the first stage is exact. Run
+`scripts/build.sh ComplexityTests.RepetitionEmbedding`.
+[The next section](#extend-the-coordinate-embedding-to-the-question-tuples) proves the second
+stage (6.17)–(6.19), which adds the remaining questions through Lemma 5.4, and composes the two
+stages.
 
 ## Extend the coordinate embedding to the question tuples
 
 Import [ParallelRepetition/Factorization.lean](../../Complexity/Computability/PCP/ParallelRepetition/Factorization.lean)
 for the second stage of the proof of Holenstein's Lemma 6.4 [holenstein09][holenstein09], in the
-setting of the previous section. Write `S` for `shared ha hb j ω` and `(x, y)` for the question
+setting of the previous two sections. Write `S` for `shared ha hb j ω` and `(x, y)` for the question
 tuples `(Prod.fst ∘ ω.2, Prod.snd ∘ ω.2)`. Holenstein's first stage embeds the questions in
 `((x j, S), (y j, S))`; the second extends this to the whole tuples, and the parties then forget
 `S`.
@@ -178,17 +222,19 @@ tuples `(Prod.fst ∘ ω.2, Prod.snd ∘ ω.2)`. Holenstein's first stage embeds
   the second premise of `IsEmbeddable.trans`.
 - `isEmbeddable_filter_questions_of_shared` composes the two stages and forgets `S`. Its premise is
   an embedding of a law `P₀` in
-  `(condLaw G C ha hb hC).map fun ω => (ω.2 j, (shared ha hb j ω, shared ha hb j ω))`. For
-  `J := (condLaw G C ha hb hC).map fun ω => (ω.2 j, shared ha hb j ω)`, Corollary 5.3,
-  `isEmbeddable_diag_of_dist_le J P₀ h₁ h₂`, gives such an embedding after `rw [PMF.map_comp]`.
-  The conclusion, with the same error, is the embedding premise of `winProbOn_insert_le`.
+  `(condLaw G C ha hb hC).map fun ω => (ω.2 j, (shared ha hb j ω, shared ha hb j ω))`, which is
+  exactly the per-coordinate embedding of `exists_isEmbeddable_condLaw_shared` in the previous
+  section. Directly from Corollary 5.3, `isEmbeddable_diag_of_dist_le J P₀ h₁ h₂` gives such an
+  embedding after `rw [PMF.map_comp]`. The conclusion, with the same error, is the embedding premise
+  of `winProbOn_insert_le`.
 
 The [factorization clients](../../ComplexityTests/RepetitionFactorization.lean) pass the distance
 bounds of Corollary 5.3 for `J` through the second stage to `winProbOn_insert_le`. In the one-fold
 repetition with `C = ∅`, `S` is trivial and the first stage is exact, so they bound the probability
 of winning the coordinate by `G.value`. Run `scripts/build.sh ComplexityTests.RepetitionFactorization`.
-The library does not yet prove the distance bounds (6.7)–(6.16) that feed Corollary 5.3, the
-embedding of Lemma 6.4, or the parallel repetition bound
+With the previous section, every free coordinate `j` thus supplies the premise of
+`winProbOn_insert_le` with error `ε j`. The library does not yet state Lemma 6.4 as one theorem,
+choose the coordinate of Lemma 6.5, or prove the parallel repetition bound
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
