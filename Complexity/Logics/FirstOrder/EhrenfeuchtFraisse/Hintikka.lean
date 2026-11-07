@@ -31,14 +31,15 @@ used only by the Hintikka direction `duplicatorWins_of_forall_realize_iff`, whic
 `L.IsRelational`; the easy direction needs `L.IsRelational` and no finiteness. The structures
 themselves are arbitrary, finite or infinite.
 
-Formulas are stated as `L.BoundedFormula Empty k`, whose `k` bound variables are the pebbles. A
-formula `φ : L.Formula (Fin k)` with free variables `Fin k` becomes one of these by
-`φ.relabel Sum.inr`, which only renames variables (`BoundedFormula.realize_relabel`).
+Formulas are stated as `L.BoundedFormula Empty k`, whose `k` bound variables are the pebbles.
+`duplicatorWins_iff_forall_formula` restates the theorem for formulas `φ : L.Formula (Fin k)` whose
+free variables name the pebbles; the translation between the two forms preserves quantifier rank
+(`quantifierRank_relabel`, `quantifierRank_toFormula`).
 
 To show that a property of finite structures is not first-order definable, exhibit for each `n`
 two structures, one with the property and one without, on which Duplicator wins the `n`-round
 game (`DuplicatorWins.realize_iff`). For linear orders this is carried out in
-`Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.LinearOrder`.
+`Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder`.
 
 ## Main definitions
 
@@ -55,6 +56,7 @@ game (`DuplicatorWins.realize_iff`). For linear orders this is carried out in
   formula of a type defines it and has quantifier rank at most `n`.
 * `Cslib.Logic.FO.duplicatorWins_of_forall_realize_iff`: **Ehrenfeucht–Fraïssé, hard direction**.
 * `Cslib.Logic.FO.duplicatorWins_iff_forall_realize_iff`,
+  `Cslib.Logic.FO.duplicatorWins_iff_forall_formula`,
   `Cslib.Logic.FO.duplicatorWins_iff_forall_sentence`: **the Ehrenfeucht–Fraïssé theorem**.
 * `Cslib.Logic.FO.exists_finite_quantifierRank_le_realize_iff`: there are finitely many formulas
   of quantifier rank at most `n` in `k` variables up to logical equivalence.
@@ -283,6 +285,19 @@ theorem duplicatorWins_iff_forall_realize_iff [L.IsRelational] [Finite (Σ l, L.
     DuplicatorWins L n a b ↔ ∀ φ : L.BoundedFormula Empty k, quantifierRank φ ≤ n →
       (φ.Realize default a ↔ φ.Realize default b) :=
   ⟨fun h _ hφ => h.realize_iff hφ, duplicatorWins_of_forall_realize_iff⟩
+
+/-- **The Ehrenfeucht–Fraïssé theorem for formulas with free variables.** For a relational
+language with finitely many relation symbols, Duplicator wins the `n`-round game from `(a, b)`
+exactly when `a` and `b` satisfy the same formulas `φ : L.Formula (Fin k)` of quantifier rank at
+most `n`. -/
+theorem duplicatorWins_iff_forall_formula [L.IsRelational] [Finite (Σ l, L.Relations l)]
+    {n k : ℕ} {a : Fin k → M} {b : Fin k → N} :
+    DuplicatorWins L n a b ↔ ∀ φ : L.Formula (Fin k), quantifierRank φ ≤ n →
+      (φ.Realize a ↔ φ.Realize b) := by
+  refine ⟨fun h _ hφ => h.formula_realize_iff hφ, fun h => ?_⟩
+  refine duplicatorWins_of_forall_realize_iff fun ψ hψ => ?_
+  rw [← realize_toFormula_relabel, ← realize_toFormula_relabel]
+  exact h _ (by rwa [quantifierRank_formula_relabel, quantifierRank_toFormula])
 
 /-- **The Ehrenfeucht–Fraïssé theorem for sentences.** For a relational language with finitely
 many relation symbols, Duplicator wins the `n`-round game on `M` and `N` exactly when `M` and `N`
