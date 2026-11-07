@@ -966,9 +966,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
 - **Primal–dual approximation and multiplicative weights:** reusable analyses with vertex cover
-  and set cover as first primal–dual clients; multiplicative-weights regret and approximation
-  bounds with finite-precision implementations, then applications to games, learning and
-  optimization.
+  and set cover as first primal–dual clients. Real-valued regret bounds for weighted majority,
+  multiplicative weights and Hedge (with tuned learning rates), and the algorithmic minimax
+  theorem for zero-sum games, are in `MachineLearning/OnlineLearning`
+  ([#2874](https://github.com/cslib-community/complexitylib/issues/2874)). Remaining:
+  randomized weighted majority and sampled Hedge as probabilistic computations, the regret lower
+  bound, finite-precision implementations with charged running time, and applications to packing
+  and covering LPs, boosting and learning.
 
 ### Combinatorial optimization
 
