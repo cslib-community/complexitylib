@@ -747,8 +747,15 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 ### Proof complexity
 
-- Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
-  certified DPLL solver runtimes.
+- Proof-space lower bounds, Frege, polynomial calculus and sum-of-squares, and certified DPLL
+  solver runtimes.
+- **Cutting planes:** Krajíček's feasible interpolation for cutting planes with bounded
+  coefficients and the resulting clique–colouring lower bound
+  ([#2019](https://github.com/cslib-community/complexitylib/issues/2019), M4); Pudlák's
+  lower bound for unrestricted coefficients via monotone real circuits (untracked);
+  coefficient-size measures; Buss–Clote cutting planes with division by 2 only; and the
+  simulation of resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and
+  translation time.
 - **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
   lower bounds ([#2019]).
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
