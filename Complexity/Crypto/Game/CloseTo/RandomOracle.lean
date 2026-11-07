@@ -23,6 +23,8 @@ unmodified execution. It includes overwriting an existing entry with a different
 ## Main results
 
 * `closeTo_run_interpret_memoize_cons`: visible-output closeness after prepending one entry.
+* `entry_mem_iff_lookup_isSome`: transcript query membership agrees with key lookup on the pair
+  projection.
 
 This is an original application of the existing identical-until-bad and random-oracle laws.
 -/

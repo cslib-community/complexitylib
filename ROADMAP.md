@@ -327,15 +327,15 @@ families and full-input native runtime.
   any query-bounded visible continuation by `R / q^n + sqrt(q^n / (2γ + 1)^m) / 2`, with exact
   visible equality for zero-read continuations. Full executions retaining the final cache
   verify the 0 vs 24/49 empty-cache divergence on the canonical q=17 counterexample.
-  The all-attempt visible simulation milestone
-  ([#2798](https://github.com/cslib-community/complexitylib/issues/2798)) establishes the
-  multi-attempt visible simulation framework (`lyubashevskySimAttempts`,
-  `lyubashevskySignAttemptsVisibleProg`, `lyubashevskySignAttemptsVisibleSim`), proves exact
-  visible distribution equality for zero attempts and pure continuations (`K ≤ 1`), and bounds the
-  visible simulation distance for `K ≤ 1` (`closeTo_lyubashevskySignAttempts_simulate_le_one`);
-  extending the induction to general `K ≥ 2`, adaptive multiple-call replacement, an efficient
-  secret-free simulator, paired same-coins fork equality, native shared-oracle reduction and a
-  security parameter family remain open. Other endpoints include
+  For `K`-attempt visible simulation, `lyubashevskySimAttempts`,
+  `lyubashevskySignAttemptsVisibleProg`, and `lyubashevskySignAttemptsVisibleSim` define the
+  stopping secret-free simulator and visible experiments, with `K ≤ 1` reductions to the
+  single-attempt bridge (`lyubashevskySignAttemptsVisibleProg_zero_eq_sim`,
+  `lyubashevskySignAttemptsVisibleProg_eq_sim_of_pure_le_one`,
+  `closeTo_lyubashevskySignAttempts_simulate_le_one`); the `K ≥ 2` visible simulation induction
+  ([#2798](https://github.com/cslib-community/complexitylib/issues/2798)), adaptive multiple-call
+  replacement, an efficient secret-free simulator, paired same-coins fork equality, native
+  shared-oracle reduction and a security parameter family remain open. Other endpoints include
   identification security under SIS and Dilithium-style
   signature schemes over module SIS and module LWE, as theory.
 - **Hybrid encryption:** the `n`-bit-message modular KEM–DEM adaptive CCA endpoint
