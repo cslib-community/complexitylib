@@ -64,7 +64,7 @@ This formalization differs from the paper's presentation in three respects:
    uniform draws and key-dependent coin space**: in [HofheinzHoevelmannsKiltz2017] (§2.1, §3.2.1
    Fig. 9, §3.2.2 Fig. 12), encryption coins and encapsulated messages/fallback seeds are drawn
    uniformly from finite sets (`r ←$ R`, `m ←$ M`, `s ←$ M`), and §2.1 permits the randomness
-   space `R` (and message space) to depend on the public key `pk`. Here `ExplicitCoinPKE` and
+   space `R` to depend on the public key `pk`. Here `ExplicitCoinPKE` and
    `Scheme` use fixed types `R`, `M`, `K` (independent of `pk`) and parameterize the algorithms by
    arbitrary `ProbComp` samplers `sampleCoins : ProbComp R`, `sampleMsg : ProbComp M`, and
    `sampleKey : ProbComp K`. The deterministic transform lemmas (`decT_encT_eq_some`,
@@ -73,7 +73,7 @@ This formalization differs from the paper's presentation in three respects:
 2. **Single-stage fixed-message probability-difference `indCpaGame` / `indCpaAdvantage` vs.
    HHK17 §2.1 Definition 2.2 / Figure 4**: in [HofheinzHoevelmannsKiltz2017] (§2.1, Def. 2.2,
    Fig. 4), IND-CPA is a two-stage guessing experiment in which stage 1 of the adversary receives
-   `pk` and chooses a pair of equal-length challenge messages `(m₀, m₁)` (allowing key-dependent
+   `pk` and chooses a pair of challenge messages `(m₀, m₁)` in `M` (allowing key-dependent
    message selection) along with state `st`, a uniform challenge bit `b ←$ {0, 1}` is drawn, stage
    2 outputs a guess `b'`, and the advantage is normalized as `|Pr[b' = b] - 1/2|`. Here
    `ExplicitCoinPKE.indCpaGame` and `ExplicitCoinPKE.indCpaAdvantage` formalize a single-stage
