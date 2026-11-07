@@ -1072,6 +1072,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
+- **Single-tape lower bounds**
+  ([#2884](https://github.com/cslib-community/complexitylib/issues/2884)): crossing sequences,
+  cut-and-paste for equal-length prefixes and the quadratic palindrome lower bound for cslib
+  `SingleTapeTM` deciders that halt in the canonical output form are proved. Remaining: the bound
+  for deciders that only leave the answer under the head; an explicit single-tape palindrome
+  decider in time `O(n²)`, which shows the bound is tight and gives a positive instance of
+  `DecidesPalindromesInTime`; a linear-time multi-tape palindrome decider, which gives the
+  one-tape/two-tape time separation; cut-and-paste across boundaries at different positions; and
+  the gap theorem that single-tape deciders running in time `o(n log n)` accept only regular
+  languages.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
