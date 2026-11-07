@@ -2904,8 +2904,10 @@ public import Complexity.Computability.Reduction.ManyOne
 public import Complexity.Computability.Streaming.AMS
 public import Complexity.Computability.Streaming.Basic
 public import Complexity.Computability.Streaming.Communication
+public import Complexity.Computability.Streaming.CountSketch
 public import Complexity.Computability.Streaming.Distinctness
 public import Complexity.Computability.Streaming.Frequency
+public import Complexity.Computability.Streaming.MisraGries
 public import Complexity.Computability.TreeEval.Ary.Basic
 public import Complexity.Computability.TreeEval.Ary.CookMertz
 public import Complexity.Computability.TreeEval.Ary.Descending
@@ -4742,6 +4744,7 @@ public import Complexity.Probability.IID
 public import Complexity.Probability.IID.CollisionCount
 public import Complexity.Probability.Isolation
 public import Complexity.Probability.KWiseIndependent
+public import Complexity.Probability.KWiseIndependent.CountSketch
 public import Complexity.Probability.KWiseIndependent.Coupling
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 public import Complexity.Probability.KWiseIndependent.Polynomial
