@@ -31,17 +31,22 @@ costed evaluator `outM`, and reads off the output for every input.
 
 * The source's `SYM⁺` circuit `C''` with `s''` AND gates `G_j ⊆ [n]` is a
   `C : Circuits.Boolean.SymAnd (Fin n)` with `C.size = s`, presented to the algorithm as a list
-  `gates` of the gate sets with `(gates : Multiset _) = C.gates` (for instance `C.gates.toList`).
+  `gates` of the gate sets with `(gates : Multiset _) = C.gates`. Such a list always exists
+  (`C.gates.toList`), but `Multiset.toList` is noncomputable, so concrete runs supply the list
+  explicitly.
 * The table `f` is `(multiplicityM gates).ret`, and `g` is `(zetaM (multiplicityM gates).ret).ret`.
 * The `i`-th variable assignment is the bit string `(BitString.equivFin n).symm k` of cell `k`,
   with coordinate `0` the least significant bit; `V[k] = 1` iff the circuit outputs `1` there is
   `getElem_ret_truthTableM`.
 * The symmetric function "evaluated in `poly(s)` time" is a costed evaluator
   `outM : ℕ → TimeM ℕ Bool` agreeing with `C.out` on `0, …, s` and costing at most `T` ticks there.
+  As everywhere in `TimeM`, these ticks are `outM`'s own (trusted) annotation of its cost.
 * The running time `(2 ^ n + poly(s)) · poly(n)` is the exact bound
   `(n + 2) * (2 ^ n + (s + 1) * (T + 1))` of `truthTableM_spec`, which is
-  `(2 ^ n + poly(s)) · poly(n)` when `T = poly(s)`. No hypothesis `s ≤ 2 ^ (n / 10)` is needed in
-  this model; the source uses it only to absorb lower-order terms.
+  `(2 ^ n + poly(s)) · poly(n)` when `T = poly(s)`. The source's hypothesis `s ≤ 2^{0.1 n}` is not
+  assumed: in Proof 1 it only absorbs the `s · poly(n)` cost of building the table into `O(2 ^ n)`,
+  and the bound here keeps that term explicit. (The source's Proof 2, by rectangular matrix
+  multiplication, does use it; that proof is not formalized.)
 
 ## Cost model
 
@@ -120,13 +125,6 @@ theorem count_eq_subsetZeta_filter [Fintype ι] (C : SymAnd ι) (x : ι → Bool
 end Count
 
 variable {n : ℕ}
-
-/-- The bit string of cell `k` is the indicator of the set of cell `k`. -/
-theorem equivFin_symm_eq_decide_mem_maskSet (k : Fin (2 ^ n)) :
-    (BitString.equivFin n).symm k = fun i => decide (i ∈ maskSet n k) := by
-  funext i
-  rw [BitString.equivFin_symm_apply]
-  cases h : (k : ℕ).testBit i <;> simp [h]
 
 /-- The table of multiplicities: start from `2 ^ n` zeros, then for each AND gate increment the
 cell of its position set. -/

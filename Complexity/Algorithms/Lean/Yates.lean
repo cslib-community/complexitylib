@@ -36,9 +36,11 @@ input table represents `F` (`getElem_ret_transformM`). The fast zeta transform `
   out-of-place).
 
 This is a unit-cost model: indices of `n` bits and table entries are treated as words. For the
-zeta transform of a table of natural numbers bounded by `s`, the entries stay bounded by `s`, so
-the words have `O(n + log s)` bits. The model is not Turing-machine time; the
-Turing-machine-level bound is not formalized.
+zeta transform of a table of natural numbers whose entries *sum* to at most `s` (such as the table
+of AND-gate multiplicities of a circuit with `s` AND gates), every intermediate and final value is
+a sum of distinct entries, hence at most `s`, so the words have `O(n + log s)` bits. A bound on the
+individual entries alone does not suffice: the zeta transform of the all-ones table has top entry
+`2 ^ n`. The model is not Turing-machine time; the Turing-machine-level bound is not formalized.
 
 ## Main definitions
 
@@ -101,6 +103,13 @@ theorem maskSet_eq_filter {n : ℕ} (k : Fin (2 ^ n)) :
     maskSet n k = univ.filter fun i => (BitString.equivFin n).symm k i = true := by
   ext i
   simp only [mem_maskSet, mem_filter, mem_univ, true_and, BitString.equivFin_symm_apply]
+
+/-- The bit string of cell `k` is the indicator of the set of cell `k`. -/
+theorem equivFin_symm_eq_decide_mem_maskSet {n : ℕ} (k : Fin (2 ^ n)) :
+    (BitString.equivFin n).symm k = fun i => decide (i ∈ maskSet n k) := by
+  funext i
+  rw [BitString.equivFin_symm_apply]
+  cases h : (k : ℕ).testBit i <;> simp [h]
 
 @[simp] theorem maskSet_maskIndex {n : ℕ} (S : Finset (Fin n)) :
     maskSet n (maskIndex S) = S := by
