@@ -188,6 +188,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `distributional-query` | [Distributional decision-tree complexity](circuits-logic-and-other-models/index.md) | information-access |
 | `quantum-query` | [Phase-oracle quantum query algorithms](circuits-logic-and-other-models/index.md) | quantum |
 | `deterministic-communication` | [Two-party bit communication trees](circuits-logic-and-other-models/index.md) | communication |
+| `local-oriented-cycle` | [Deterministic LOCAL algorithms on oriented cycles](circuits-logic-and-other-models/query-and-communication.md) | distributed |
 | `dag-communication` | [Acyclic networks of communication protocols](circuits-logic-and-other-models/index.md) | communication |
 | `round-communication` | [Bounded-round message protocols](circuits-logic-and-other-models/index.md) | communication |
 | `publiccoin` | [Public-coin communication](circuits-logic-and-other-models/index.md) | communication |
