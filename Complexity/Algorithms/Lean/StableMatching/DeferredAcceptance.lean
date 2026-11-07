@@ -22,13 +22,15 @@ This module implements proposer-proposing deferred acceptance [GaleShapley1962] 
 computable Lean function on `Instance n`, and proves that it terminates within the classical
 proposal bound, that its output is stable, and that it is proposer-optimal.
 
-The algorithm is the one-rejection-at-a-time formulation of McVitie and Wilson
-[McVitieWilson1971]. A state records, for each proposer `p`, how many receivers have turned `p`
+We use the iterative formulation in which one rejection happens at a time; McVitie and Wilson
+[McVitieWilson1971] showed that the outcome does not depend on the order of rejections. A state
+records, for each proposer `p`, how many receivers have turned `p`
 down; `p` currently proposes to its next choice. While some receiver receives proposals from two
 proposers, it turns down the one it likes less, which moves on to its next choice. The step
 function always turns down the first outranked proposer in index order, so `deferredAcceptance`
-is a definite function that `decide` evaluates on concrete instances; the proofs use only the
-invariant `Inv`, so they apply to every such rejection order.
+is a definite function that `decide` evaluates on concrete instances. The proofs use only
+`step_cases` and the invariant `Inv`, so they adapt to any rejection order; order independence is
+not stated as a theorem here.
 
 ## Main definitions
 
@@ -39,14 +41,16 @@ invariant `Inv`, so they apply to every such rejection order.
 
 ## Main results
 
-* `Instance.step_run_fixed`: the run stops after at most `(n - 1)^2` rejections.
-* `Instance.proposals_le`: at most `n^2 - n + 1` proposals are made (see [GusfieldIrving1989]).
-* `Instance.isStable_deferredAcceptance`: the output is a (perfect) stable matching; hence a stable
-  matching always exists ([GaleShapley1962], Theorem 1).
+* `Instance.step_run_fixed`, `Instance.run_eq_finalState`: the run stops after at most
+  `(n - 1)^2` rejections.
+* `Instance.proposals_le`: at most `n^2 - n + 1` proposals are made (see [GusfieldIrving1989]);
+  `Instance.proposals_eq` expresses the count through the final partners only.
+* `Instance.isStable_deferredAcceptance`, `Instance.exists_isStable`: the output is a (perfect)
+  stable matching; hence a stable matching always exists ([GaleShapley1962], Theorem 1).
 * `Instance.propRank_deferredAcceptance_le`, `Instance.isProposerOptimal_deferredAcceptance`:
   every proposer weakly prefers its deferred-acceptance partner to its partner in any stable
   matching ([GaleShapley1962], Theorem 2), and receivers are correspondingly worst off
-  ([McVitieWilson1971]).
+  ([McVitieWilson1971]); `Instance.isProposerOptimal_iff` characterizes the output.
 * `Instance.receiverDeferredAcceptance`: receiver-proposing deferred acceptance, which is
   receiver-optimal and proposer-pessimal.
 
@@ -330,6 +334,37 @@ theorem step_run_fixed : I.step (I.run ((n - 1) ^ 2)) = I.run ((n - 1) ^ 2) := b
 /-- The final state satisfies the invariant. -/
 theorem inv_finalState : I.Inv I.finalState := I.inv_run _
 
+/-- One more round of the run is one more step. -/
+theorem run_succ (k : ℕ) : I.run (k + 1) = I.step (I.run k) := by
+  rw [run, Function.iterate_succ_apply']
+  rfl
+
+/-- Rejection counts never decrease along the run. -/
+theorem run_le_run_succ (k : ℕ) (p : Fin n) : I.run k p ≤ I.run (k + 1) p := by
+  rw [run_succ]
+  rcases I.step_cases (I.run k) with ⟨h, -⟩ | ⟨q, -, h⟩
+  · rw [h]
+  · rw [h]
+    by_cases hpq : p = q
+    · subst hpq; rw [Function.update_self]; omega
+    · rw [Function.update_of_ne hpq]
+
+/-- Rejection counts are monotone in the number of rounds. -/
+theorem run_mono {j k : ℕ} (hjk : j ≤ k) (p : Fin n) : I.run j p ≤ I.run k p := by
+  induction k, hjk using Nat.le_induction with
+  | base => exact le_rfl
+  | succ k _ ih => exact ih.trans (I.run_le_run_succ k p)
+
+/-- After `(n - 1) ^ 2` rounds the run has reached the final state. -/
+theorem run_eq_finalState {k : ℕ} (hk : (n - 1) ^ 2 ≤ k) : I.run k = I.finalState :=
+  I.run_fixed_of_le hk I.step_run_fixed
+
+/-- Every intermediate rejection count is bounded by the final one. -/
+theorem run_le_finalState (k : ℕ) (p : Fin n) : I.run k p ≤ I.finalState p := by
+  rcases le_total k ((n - 1) ^ 2) with h | h
+  · exact I.run_mono h p
+  · rw [I.run_eq_finalState h]
+
 /-- No proposer is outranked in the final state. -/
 theorem not_outranked_finalState (p : Fin n) : ¬ I.Outranked I.finalState p := by
   rcases I.step_cases I.finalState with ⟨-, h⟩ | ⟨q, -, h⟩
@@ -439,6 +474,12 @@ theorem propRank_deferredAcceptance_le {ν : Matching n} (hν : I.IsStable ν) (
 /-- The number of proposals made by deferred acceptance: proposer `p` proposed to its first
 `finalState p + 1` choices. -/
 @[expose] def proposals : ℕ := ∑ p, (I.finalState p + 1)
+
+/-- The number of proposals depends only on the output: proposer `p` proposed to every receiver
+that it ranks no lower than its final partner. -/
+theorem proposals_eq :
+    I.proposals = ∑ p, ((I.propRank p (I.deferredAcceptance p)).val + 1) := by
+  simp only [proposals, propRank_deferredAcceptance]
 
 /-- Deferred acceptance makes at most `n^2 - n + 1` proposals (see [GusfieldIrving1989]). -/
 theorem proposals_le : I.proposals ≤ n ^ 2 - n + 1 := by

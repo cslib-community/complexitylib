@@ -24,12 +24,14 @@ deferred acceptance that involves a member of this set produces the blocking pai
 
 Consequences in this file:
 
-* weak Pareto optimality of deferred acceptance for the proposers [Roth1982]: no matching makes
-  every proposer strictly better off;
+* weak Pareto optimality of deferred acceptance for the proposers ([Roth1982], Theorem 6): no
+  matching makes every proposer strictly better off;
 * coalitional strategy-proofness of deferred acceptance for the proposers [DubinsFreedman1981]:
   no nonempty coalition of proposers can misreport so that, in some stable matching of the
   reported instance, every member gets a partner it truly prefers to its deferred-acceptance
-  partner; in particular no single proposer gains by misreporting [Roth1982].
+  partner; in particular no single proposer gains by misreporting ([Roth1982], Theorem 5).
+
+The misreported instances are built with `Instance.updatePropPref` from `Basic`.
 
 ## Main results
 
@@ -51,39 +53,6 @@ public section
 namespace Cslib.Algorithms.Lean.StableMatching.Instance
 
 variable {n : ℕ} (I : Instance n)
-
-/-! ### Monotonicity of the run -/
-
-/-- One more round of the run is one more step. -/
-theorem run_succ (k : ℕ) : I.run (k + 1) = I.step (I.run k) := by
-  rw [run, Function.iterate_succ_apply']
-  rfl
-
-/-- Rejection counts never decrease along the run. -/
-theorem run_le_run_succ (k : ℕ) (p : Fin n) : I.run k p ≤ I.run (k + 1) p := by
-  rw [run_succ]
-  rcases I.step_cases (I.run k) with ⟨h, -⟩ | ⟨q, -, h⟩
-  · rw [h]
-  · rw [h]
-    by_cases hpq : p = q
-    · subst hpq; rw [Function.update_self]; omega
-    · rw [Function.update_of_ne hpq]
-
-/-- Rejection counts are monotone in the number of rounds. -/
-theorem run_mono {j k : ℕ} (hjk : j ≤ k) (p : Fin n) : I.run j p ≤ I.run k p := by
-  induction k, hjk using Nat.le_induction with
-  | base => exact le_rfl
-  | succ k _ ih => exact ih.trans (I.run_le_run_succ k p)
-
-/-- After `(n - 1) ^ 2` rounds the run has reached the final state. -/
-theorem run_eq_finalState {k : ℕ} (hk : (n - 1) ^ 2 ≤ k) : I.run k = I.finalState :=
-  I.run_fixed_of_le hk I.step_run_fixed
-
-/-- Every intermediate rejection count is bounded by the final one. -/
-theorem run_le_finalState (k : ℕ) (p : Fin n) : I.run k p ≤ I.finalState p := by
-  rcases le_total k ((n - 1) ^ 2) with h | h
-  · exact I.run_mono h p
-  · rw [I.run_eq_finalState h]
 
 /-! ### The blocking lemma -/
 
@@ -296,9 +265,9 @@ theorem exists_isBlockingPair_of_lt {μ : Matching n} {q₀ : Fin n}
 
 /-! ### Consequences -/
 
-/-- Weak Pareto optimality of deferred acceptance for the proposers [Roth1982]: when there is at
-least one proposer, no matching gives every proposer a partner it strictly prefers to its
-deferred-acceptance partner. -/
+/-- Weak Pareto optimality of deferred acceptance for the proposers ([Roth1982], Theorem 6): when
+there is at least one proposer, no matching gives every proposer a partner it strictly prefers to
+its deferred-acceptance partner. -/
 theorem not_forall_propRank_lt_deferredAcceptance [NeZero n] (μ : Matching n) :
     ¬ ∀ p, I.propRank p (μ p) < I.propRank p (I.deferredAcceptance p) := by
   intro h
@@ -331,14 +300,6 @@ theorem not_forall_mem_propRank_lt_of_isStable {J : Instance n} {C : Set (Fin n)
   · rw [RecvPrefers, hrq, hrq]
     exact h2
 
-/-- The instance in which proposer `p` reports the list `π` and everyone else reports truthfully. -/
-@[expose] def updatePropPref (p : Fin n) (π : Equiv.Perm (Fin n)) : Instance n :=
-  ⟨Function.update I.propPref p π, I.recvPref⟩
-
-/-- The instance in which receiver `r` reports the list `π` and everyone else reports truthfully. -/
-@[expose] def updateRecvPref (r : Fin n) (π : Equiv.Perm (Fin n)) : Instance n :=
-  ⟨I.propPref, Function.update I.recvPref r π⟩
-
 /-- Individual strategy-proofness of deferred acceptance for the proposers ([DubinsFreedman1981],
 [Roth1982]): if proposer `p` reports the list `π` instead of its true list, then in every matching
 that is stable for the reported instance, `p` gets a partner it does not truly prefer to its
@@ -352,7 +313,7 @@ theorem propRank_deferredAcceptance_le_of_isStable_updatePropPref (p : Fin n)
   exact h
 
 /-- Truthful reporting is a dominant strategy for each proposer under deferred acceptance
-([DubinsFreedman1981], [Roth1982]). -/
+([DubinsFreedman1981]; [Roth1982], Theorem 5). -/
 theorem propRank_deferredAcceptance_le_updatePropPref (p : Fin n) (π : Equiv.Perm (Fin n)) :
     I.propRank p (I.deferredAcceptance p) ≤
       I.propRank p ((I.updatePropPref p π).deferredAcceptance p) :=

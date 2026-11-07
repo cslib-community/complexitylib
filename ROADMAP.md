@@ -935,10 +935,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
   cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
   concrete realizations.
-- **Stable matching:** beyond the one-to-one, complete-list deferred-acceptance development in
+- **Stable matching** ([#2990](https://github.com/cslib-community/complexitylib/issues/2990)):
+  beyond the one-to-one, complete-list deferred-acceptance development in
   `Algorithms/Lean/StableMatching` (stability, the `n^2 - n + 1` proposal bound, optimality, the
-  lattice, the blocking lemma, strategy-proofness and Roth's impossibility theorem): incomplete
-  lists and the rural hospitals theorem, many-to-one college admissions, ties, rotations and the
+  lattice, the blocking lemma, strategy-proofness, and Roth's impossibility theorem for three
+  agents per side): Roth's theorem for every `n ≥ 3` by padding the witness, incomplete lists and
+  the rural hospitals theorem, many-to-one college admissions, ties, rotations and the
   stable-matching poset, stable roommates, and a charged native implementation in `O(n^2)` time.
 
 ### Online algorithms and competitive analysis

@@ -30,18 +30,22 @@ read off the inverse permutation (`propRank`, `recvRank`), so a smaller rank is 
   preferences.
 * `Instance.IsBlockingPair`, `Instance.IsStable`: blocking pairs and stability.
 * `Instance.swap`: the market with the roles of the two sides exchanged.
+* `Instance.updatePropPref`, `Instance.updateRecvPref`: one agent misreports its list.
 * `Instance.IsProposerOptimal`, `Instance.IsReceiverPessimal`: a stable matching that every
   proposer weakly prefers to every other stable matching, and one that every receiver weakly
-  dislikes relative to every other stable matching.
+  dislikes relative to every other stable matching; `Instance.IsReceiverOptimal` and
+  `Instance.IsProposerPessimal` are the same notions with the sides exchanged.
 * `Cslib.Algorithms.Lean.StableMatching.permOfInjective`: a computable permutation from an
   injective self-map of `Fin n`, used for computed matchings and concrete preference lists.
 
 ## Main results
 
 * `Instance.isStable_swap_iff`: `μ.symm` is stable for the swapped market iff `μ` is stable.
-* `Instance.recvRank_le_of_propRank_le`: opposing interests; if every proposer weakly prefers `μ`
-  to a stable matching `ν`, then every receiver weakly prefers `ν` to `μ`.
-* `Instance.IsProposerOptimal.isReceiverPessimal`, `Instance.IsProposerOptimal.unique`.
+* `Instance.recvRank_le_of_propRank_le`, `Instance.propRank_le_of_recvRank_le`: opposing
+  interests; if every proposer weakly prefers `μ` to a stable matching `ν`, then every receiver
+  weakly prefers `ν` to `μ`, and symmetrically.
+* `Instance.IsProposerOptimal.isReceiverPessimal`, `Instance.IsProposerOptimal.unique`,
+  `Instance.isReceiverOptimal_iff_swap`.
 
 ## References
 
@@ -66,8 +70,11 @@ structure Instance (n : ℕ) where
 /-- A matching pairs proposer `p` with receiver `μ p`; `μ.symm r` is receiver `r`'s partner. -/
 abbrev Matching (n : ℕ) := Equiv.Perm (Fin n)
 
-/-- A computable permutation from an injective self-map of `Fin n`. -/
-@[expose] def permOfInjective {n : ℕ} (f : Fin n → Fin n) (hf : Function.Injective f) :
+/-- A computable permutation from an injective self-map of `Fin n`. For a concrete map the
+injectivity proof defaults to `decide`, so `permOfInjective ![2, 0, 1]` lists the agents `2, 0, 1`
+in order. -/
+@[expose] def permOfInjective {n : ℕ} (f : Fin n → Fin n)
+    (hf : Function.Injective f := by decide) :
     Equiv.Perm (Fin n) where
   toFun := f
   invFun := Fintype.bijInv (Finite.injective_iff_bijective.1 hf)
@@ -162,6 +169,20 @@ theorem isBlockingPair_swap (μ : Matching n) (p r : Fin n) :
 theorem isStable_swap_iff (μ : Matching n) : I.swap.IsStable μ.symm ↔ I.IsStable μ := by
   simp only [IsStable, ← I.isBlockingPair_swap μ]
   exact forall_comm
+
+/-! ### Misreports -/
+
+/-- The instance in which proposer `p` reports the list `π` and everyone else reports truthfully. -/
+@[expose] def updatePropPref (p : Fin n) (π : Equiv.Perm (Fin n)) : Instance n :=
+  ⟨Function.update I.propPref p π, I.recvPref⟩
+
+/-- The instance in which receiver `r` reports the list `π` and everyone else reports truthfully. -/
+@[expose] def updateRecvPref (r : Fin n) (π : Equiv.Perm (Fin n)) : Instance n :=
+  ⟨I.propPref, Function.update I.recvPref r π⟩
+
+/-- A receiver's misreport is a proposer's misreport in the swapped market. -/
+theorem swap_updateRecvPref (r : Fin n) (π : Equiv.Perm (Fin n)) :
+    (I.updateRecvPref r π).swap = I.swap.updatePropPref r π := rfl
 
 /-! ### Optimal and pessimal stable matchings -/
 
