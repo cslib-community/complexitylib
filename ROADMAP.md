@@ -867,12 +867,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   recovery; communication-to-streaming transfers with explicit state encodings and pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
-  PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. Give the
-  computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
-  costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
-  sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
-  comparisons where justified, distinguishing restricted-model bounds from unrestricted
-  computational hardness. Use the [distributional framework](#average-case-complexity).
+  PAC/agnostic learning, learning lower bounds, compression and refutation. Statistical queries
+  ([#2910]): the deterministic SQ model has correlational and SQ-dimension query lower bounds,
+  including parities. Remaining: simulating SQ learners from random examples, without noise and
+  under random classification noise (Kearns's Theorems 1 and 3); the low-degree algorithm as an SQ
+  algorithm; randomized SQ learners; and Feldman's statistical dimension for a specified planted
+  problem, with matching sample and runtime upper bounds. Develop low-degree likelihood-ratio and
+  sum-of-squares comparisons where justified, distinguishing restricted-model bounds from
+  unrestricted computational hardness. Use the [distributional framework](#average-case-complexity).
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Remaining: further access models,
   tolerant and distribution testing, query and sample bounds, canonical testers and lower bounds.
@@ -1271,3 +1273,4 @@ not planned, not as proved.
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
 [#2866]: https://github.com/cslib-community/complexitylib/issues/2866
+[#2910]: https://github.com/cslib-community/complexitylib/issues/2910
