@@ -2972,6 +2972,8 @@ public import Complexity.Crypto.Computational.DiffieHellman.EncodingBounds
 public import Complexity.Crypto.Computational.DiffieHellman.MultiDDH
 public import Complexity.Crypto.Computational.DiffieHellman.Order
 public import Complexity.Crypto.Computational.DiscreteLog
+public import Complexity.Crypto.Computational.DiscreteLog.GroupHash
+public import Complexity.Crypto.Computational.DiscreteLog.PohligHellman
 public import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 public import Complexity.Crypto.Computational.ElGamal
 public import Complexity.Crypto.Computational.ElGamal.GeneralCipher
@@ -2993,6 +2995,7 @@ public import Complexity.Crypto.Computational.Encryption.KEMFromPKE.CCA
 public import Complexity.Crypto.Computational.Encryption.PolyTime
 public import Complexity.Crypto.Computational.Encryption.PublicKeyReplacement
 public import Complexity.Crypto.Computational.EvenMansour
+public import Complexity.Crypto.Computational.Factoring.PollardRho
 public import Complexity.Crypto.Computational.GGM.Circuit
 public import Complexity.Crypto.Computational.GGM.Evaluation
 public import Complexity.Crypto.Computational.GGM.Expansion
