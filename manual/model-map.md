@@ -219,6 +219,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `randomized-pac` | [Randomized agnostic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `uniform-learning` | [Uniform-distribution Boolean sample learning](circuits-logic-and-other-models/index.md) | learning |
 | `membership-learning` | [Randomized membership-query learners](circuits-logic-and-other-models/index.md) | learning |
+| `mistake-bound` | [Realizable online mistake-bound learners](circuits-logic-and-other-models/learning-and-testing.md) | learning |
 | `linearity-test` | [Decision-tree property testers for Boolean linearity](circuits-logic-and-other-models/index.md) | learning |
 | `mcsp` | [Total truth-table minimum circuit size](circuits-logic-and-other-models/index.md) | metacomplexity |
 | `partial-mcsp` | [Partial truth-table circuit minimization](circuits-logic-and-other-models/index.md) | metacomplexity |
@@ -298,6 +299,9 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `online-deterministic` | [Deterministic online competitive problems](algorithms-and-memory/online-and-streaming.md) | online |
 | `count-min-stream` | [Weighted insertion Count-Min sketch](algorithms-and-memory/online-and-streaming.md) | streaming |
 | `native-stream-fold` | [Native input-stream folds](algorithms-and-memory/online-and-streaming.md) | streaming |
+| `cost-game` | [Finite strategic games in cost form, potentials and coarse correlated equilibria](algorithms-and-memory/strategic-games.md) | game-theory |
+| `atomic-congestion-game` | [Atomic congestion games with Rosenthal's potential](algorithms-and-memory/strategic-games.md) | game-theory |
+| `nonatomic-routing` | [Nonatomic selfish routing and Wardrop flows](algorithms-and-memory/strategic-games.md) | game-theory |
 | `retroactive-rebuild` | [Timeline editing by reset and replay](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `catalytic-restoring-operations` | [Borrowed-register and key-table restoration](algorithms-and-memory/catalytic-and-tree-evaluation.md) | catalytic-operations |
 | `tree-evaluation-binary` | [Explicit binary Tree Evaluation](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |

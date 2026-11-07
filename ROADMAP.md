@@ -966,6 +966,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
   comparisons where justified, distinguishing restricted-model bounds from unrestricted
   computational hardness. Use the [distributional framework](#average-case-complexity).
+- **Online learning in the mistake-bound model**
+  ([#2908](https://github.com/cslib-community/complexitylib/issues/2908)): the realizable model,
+  the halving algorithm, the Littlestone dimension with the standard optimal algorithm (optimal
+  mistake bound equals Littlestone dimension), the VC comparison with the threshold gap, and
+  Novikoff's perceptron bound are in `MachineLearning/OnlineLearning/MistakeBound`. Remaining:
+  Winnow and attribute-efficient learning of disjunctions (Littlestone 1988, Theorem 7); randomized
+  learners and the agnostic setting, with Littlestone-dimension regret bounds
+  (Ben-David–Pál–Shalev-Shwartz 2009); multiclass and real-valued analogues; online-to-batch
+  conversion into the PAC framework; and running-time bounds, since the standard optimal algorithm
+  is a noncomputable specification.
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
@@ -1083,6 +1093,23 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
 
+### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
+
+- **Computing equilibria:** PLS-completeness of finding a pure Nash equilibrium of a congestion
+  game (Fabrikant–Papadimitriou–Talwar) through an explicit local-search problem interface and
+  succinct game encodings; polynomial-time algorithms for symmetric network congestion games;
+  exponentially long better-response paths. Mixed Nash equilibria of finite games
+  (Nash's theorem) and PPAD-completeness of computing them.
+- **Equilibrium concepts and dynamics:** mixed and correlated equilibria between pure Nash and
+  coarse correlated equilibria; no-regret dynamics converging to coarse correlated equilibria,
+  connecting multiplicative-weights regret bounds to the robust price of anarchy; convergence time
+  of better-response dynamics in potential games.
+- **Price of anarchy:** Wardrop equilibrium existence and essential uniqueness for continuous
+  nondecreasing latencies (Beckmann's convex potential); the Pigou bound for general latency
+  classes and polynomial latencies of bounded degree; Braess's paradox; weighted and
+  mixed-strategy atomic congestion games; the Monderer–Shapley characterization of potential games
+  as congestion games.
+
 ### Mechanism design ([#2947](https://github.com/cslib-community/complexitylib/issues/2947))
 
 Single-parameter mechanisms with Myerson's Lemma for arbitrary monotone allocation rules, the
@@ -1153,6 +1180,13 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
   (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting
   an existence argument into a deterministic or randomized algorithm.
+- **Small sample spaces** ([#2935](https://github.com/cslib-community/complexitylib/issues/2935)):
+  searching a `k`-wise independent space finds an assignment as good as a uniformly random one on
+  clauses of at least `k` distinct literals (`exists_two_pow_mul_countUnsat_le`). The
+  polynomial-time search is certified only for the three-wise parity space. Remaining: a runtime
+  certificate for searching the trinomial-field space
+  (`exists_assignments_two_pow_mul_countUnsat_le`) for fixed `k > 3`. Further directions are
+  small-bias and almost `k`-wise independent spaces and their clients.
 
 ## Machines, RAM and data structures
 

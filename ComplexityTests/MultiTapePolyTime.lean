@@ -105,21 +105,21 @@ example : ComputableInPolyTime (fun p : ℕ × ℕ => ((p.1 : ℤ) - p.2).natAbs
   fun_prop
 
 example : ComputableInPolyTime (fun z : ℤ => (z + 1, (z - 1).natAbs))
-    encInt (encPair encInt encUnary) := by
+    encIntUnary (encPair encIntUnary encUnary) := by
   fun_prop
 
 -- Plain integer rules compose without tidy hypotheses or registrations.
 example : ComputableInPolyTime (fun z : ℤ => (z.toNat, z.natAbs))
-    encInt (encPair encUnary encUnary) := by
+    encIntUnary (encPair encUnary encUnary) := by
   fun_prop
 
 example : ComputableInPolyTime (fun p : ℤ × ℕ => decide (|p.1 + 1| ≤ (p.2 : ℤ)))
-    (encPair encInt encUnary) encBool := by
+    (encPair encIntUnary encUnary) encBool := by
   fun_prop
 
 -- The negative sign's offset is not the magnitude or nonnegative truncation.
-example : encInt (-1) = [true] ∧ Int.natAbs (-1) = 1 ∧ Int.toNat (-1) = 0 ∧
-    encInt 0 = [false] ∧ Int.natAbs 0 = 0 ∧ Int.natAbs 1 = 1 := by
+example : encIntUnary (-1) = [true] ∧ Int.natAbs (-1) = 1 ∧ Int.toNat (-1) = 0 ∧
+    encIntUnary 0 = [false] ∧ Int.natAbs 0 = 0 ∧ Int.natAbs 1 = 1 := by
   decide
 
 open Lean Elab Command in
