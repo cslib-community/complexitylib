@@ -94,4 +94,25 @@ example (n : ℕ) {B : ℝ} (hB : B < 2 ^ n) :
   intro h
   linarith [mul_lt_mul_of_pos_right hB (pow_pos this 2)]
 
+-- Proposition 9.5 applies with `λ = 2⁻ⁿ`: the indicator takes each value with probability at
+-- least `2⁻ⁿ`.
+example (n : ℕ) :
+    (2 ^ n)⁻¹ * 𝔼 x : Fin n → Bool, (if x = fun _ => true then (1 : ℝ) else 0) ^ 4 ≤
+      (𝔼 x : Fin n → Bool, (if x = fun _ => true then (1 : ℝ) else 0) ^ 2) ^ 2 :=
+  Fintype.mul_expect_pow_four_le_of_le_dens fun x => by
+    have hsub : ({x} : Finset (Fin n → Bool)) ⊆
+        ({y | (if y = fun _ => true then (1 : ℝ) else 0) =
+          if x = fun _ => true then (1 : ℝ) else 0} : Finset (Fin n → Bool)) := by
+      simp only [singleton_subset_iff, mem_filter, mem_univ, and_self]
+    calc ((2 : ℝ) ^ n)⁻¹ = (dens ({x} : Finset (Fin n → Bool)) : ℝ) := by
+          simp only [dens_singleton, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin]
+          push_cast; rfl
+      _ ≤ _ := by exact_mod_cast dens_le_dens hsub
+
+-- and it is attained there: `2⁻ⁿ 𝔼 y ^ 4 = (𝔼 y ^ 2) ^ 2`.
+example (n : ℕ) :
+    (2 ^ n)⁻¹ * 𝔼 x : Fin n → Bool, (if x = fun _ => true then (1 : ℝ) else 0) ^ 4 =
+      (𝔼 x : Fin n → Bool, (if x = fun _ => true then (1 : ℝ) else 0) ^ 2) ^ 2 := by
+  rw [expect_pow_four_indicator_eq, ← mul_assoc, inv_mul_cancel₀ (by positivity), one_mul]
+
 end ComplexityTests.FriedgutKalaiNaor

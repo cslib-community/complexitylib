@@ -9,6 +9,7 @@ module
 
 public import Complexity.Foundations.BooleanAnalysis.Anticoncentration
 public import Complexity.Foundations.BooleanAnalysis.LevelWeight
+import Complexity.Probability.KWiseIndependent.TugOfWar
 
 /-!
 # The Friedgut–Kalai–Naor Theorem
@@ -28,13 +29,15 @@ Boolean function with `W^1[f] = 1` is a dictator or a negated dictator
 The proof, following O'Donnell, writes `ℓ = f^{=1} = ∑ᵢ f̂({i}) χ_{i}`, so `𝔼 ℓ ^ 2 = W^1[f]` and
 `𝔼 (f - ℓ) ^ 2 = 1 - W^1[f] ≤ δ`. The variance of `ℓ ^ 2` is
 `2 ((∑ᵢ f̂({i}) ^ 2) ^ 2 - ∑ᵢ f̂({i}) ^ 4)` (`BitString.expect_sum_mul_signVal_sq_sub_expect_sq`)
-[O'Donnell, Exercise 1.20][ODonnell2014]. If it exceeded `6400 δ`, then by the anticoncentration
-of the degree-two function `ℓ ^ 2` (`BitString.nine_div_sixteen_div_nine_pow_le_dens`), with
-probability at least `1 / 144` we would have `|ℓ ^ 2 - 1| > 39 √δ`, hence `(f - ℓ) ^ 2 ≥ 169 δ`
-(`BitString.mul_le_sq_sub_of_sq_eq_one`, [O'Donnell, Exercise 9.5][ODonnell2014]), so
-`𝔼 (f - ℓ) ^ 2 ≥ 169 δ / 144 > δ`. Thus `∑ᵢ f̂({i}) ^ 4 ≥ 1 - 3202 δ`, which bounds the largest
-`|f̂({i})|` from below. The distance bound `1601 δ = (1 - (1 - 3202 δ)) / 2` follows since
-`f̂({i}) = 1 - 2 dist(f, x ↦ x_i)`; for `δ > 1 / 1600` it is trivial.
+[O'Donnell, Exercise 1.20][ODonnell2014]; this is the variance of the tug-of-war estimator
+(`Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign_sub_sq`) for the identity hash family.
+If it exceeded `6400 δ`, then by the anticoncentration of the degree-two function `ℓ ^ 2`
+(`BitString.nine_div_sixteen_div_nine_pow_le_dens`), with probability at least `1 / 144` we would
+have `|ℓ ^ 2 - 1| > 39 √δ`, hence `(f - ℓ) ^ 2 ≥ 169 δ` (`BitString.mul_le_sq_sub_of_sq_eq_one`,
+[O'Donnell, Exercise 9.5][ODonnell2014]), so `𝔼 (f - ℓ) ^ 2 ≥ 169 δ / 144 > δ`. Thus
+`∑ᵢ f̂({i}) ^ 4 ≥ 1 - 3202 δ`, which bounds the largest `|f̂({i})|` from below. The distance bound
+`1601 δ = (1 - (1 - 3202 δ)) / 2` follows since `f̂({i}) = 1 - 2 dist(f, x ↦ x_i)`; for
+`δ > 1 / 1600` it is trivial.
 
 ## Main results
 
@@ -102,116 +105,35 @@ theorem mul_le_sq_sub_of_sq_eq_one {f l δ : ℝ} (hf : f ^ 2 = 1) (hδ₀ : 0 �
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- The coordinate signs are orthonormal: `𝔼 x_k x_l = [k = l]`. -/
-private theorem expect_signVal_mul_signVal_apply (k l : ι) :
-    𝔼 x : ι → Bool, signVal (x k) * signVal (x l) = if k = l then 1 else 0 := by
-  simp only [← chi_singleton, expect_chi_mul_chi, singleton_inj]
+/-- The sign `signVal` has square one. -/
+private theorem signVal_sq (b : Bool) : signVal b ^ 2 = 1 := by rw [sq, signVal_mul_self]
 
-omit [Fintype ι] in
-/-- For `i ≠ j`, `x_i x_j` is the character of `{i, j}`. -/
-private theorem signVal_mul_signVal_eq_chi {i j : ι} (hij : i ≠ j) (x : ι → Bool) :
-    signVal (x i) * signVal (x j) = chi ℝ {i, j} x := by
-  rw [chi_eq_prod_signVal, prod_pair hij]
-
-/-- `𝔼 x_i x_j x_k x_l` for `i ≠ j`. -/
-private theorem expect_signVal_four {i j : ι} (hij : i ≠ j) (k l : ι) :
-    𝔼 x : ι → Bool, signVal (x i) * signVal (x j) * (signVal (x k) * signVal (x l)) =
-      if k = l then 0 else if i = k ∧ j = l ∨ i = l ∧ j = k then 1 else 0 := by
-  by_cases hkl : k = l
-  · subst hkl
-    simp only [signVal_mul_self, mul_one, ite_true]
-    rw [expect_signVal_mul_signVal_apply, ite_eq_right hij]
-  · rw [ite_eq_right hkl]
-    simp only [signVal_mul_signVal_eq_chi hij, signVal_mul_signVal_eq_chi hkl, expect_chi_mul_chi]
-    have hpair : ({i, j} : Finset ι) = {k, l} ↔ i = k ∧ j = l ∨ i = l ∧ j = k := by
-      rw [← coe_inj, coe_pair, coe_pair, Set.pair_eq_pair_iff]
-    simp only [hpair]
-
-omit [Fintype ι] [DecidableEq ι] in
-/-- The square of a homogeneous degree-one function as a double sum. -/
-private theorem sq_sum_mul_signVal [Fintype ι] (a : ι → ℝ) (x : ι → Bool) :
-    (∑ k, a k * signVal (x k)) ^ 2 = ∑ k, ∑ l, a k * a l * (signVal (x k) * signVal (x l)) := by
-  rw [sq, sum_mul_sum]
-  exact sum_congr rfl fun k _ => sum_congr rfl fun l _ => by ring
+/-- The sign `signVal` has mean zero. -/
+private theorem expect_signVal_bool : 𝔼 b : Bool, signVal b = 0 := by
+  rw [Fintype.expect_bool]; norm_num
 
 /-- **Parseval's identity for a homogeneous degree-one function**:
-`𝔼 (∑ᵢ aᵢ xᵢ) ^ 2 = ∑ᵢ aᵢ ^ 2`. -/
+`𝔼 (∑ᵢ aᵢ xᵢ) ^ 2 = ∑ᵢ aᵢ ^ 2`. This is the unbiasedness of the tug-of-war estimator
+(`Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign`) for the identity hash family, whose
+seed `x : ι → Bool` is uniformly random. -/
 theorem expect_sum_mul_signVal_sq (a : ι → ℝ) :
-    𝔼 x : ι → Bool, (∑ i, a i * signVal (x i)) ^ 2 = ∑ i, a i ^ 2 := by
-  rw [expect_congr rfl fun x _ => sq_sum_mul_signVal a x]
-  simp only [expect_sum_comm, ← mul_expect, expect_signVal_mul_signVal_apply, mul_ite, mul_one,
-    mul_zero, sum_ite_eq, mem_univ, ite_true, sq]
-
-/-- `𝔼 x_i x_j ℓ ^ 2` for a homogeneous degree-one function `ℓ = ∑ₖ aₖ xₖ`. -/
-private theorem expect_signVal_mul_signVal_mul_sq (a : ι → ℝ) (i j : ι) :
-    𝔼 x : ι → Bool, signVal (x i) * signVal (x j) * (∑ k, a k * signVal (x k)) ^ 2 =
-      if i = j then ∑ k, a k ^ 2 else 2 * a i * a j := by
-  by_cases hij : i = j
-  · subst hij
-    rw [ite_eq_left rfl]
-    simp only [signVal_mul_self, one_mul]
-    exact expect_sum_mul_signVal_sq a
-  · rw [ite_eq_right hij]
-    simp only [sq_sum_mul_signVal, mul_sum, expect_sum_comm]
-    have h (k l : ι) : 𝔼 x : ι → Bool, signVal (x i) * signVal (x j) *
-        (a k * a l * (signVal (x k) * signVal (x l))) =
-        a k * a l * (if k = l then 0 else if i = k ∧ j = l ∨ i = l ∧ j = k then 1 else 0) := by
-      rw [← expect_signVal_four hij, mul_expect]
-      exact expect_congr rfl fun x _ => by ring
-    simp only [h]
-    have h2 (k l : ι) : a k * a l *
-        (if k = l then 0 else if i = k ∧ j = l ∨ i = l ∧ j = k then (1 : ℝ) else 0) =
-        (if k = i ∧ l = j then a i * a j else 0) + (if k = j ∧ l = i then a i * a j else 0) := by
-      by_cases h1 : k = i ∧ l = j
-      · obtain ⟨rfl, rfl⟩ := h1
-        simp [hij]
-      · by_cases h2 : k = j ∧ l = i
-        · obtain ⟨rfl, rfl⟩ := h2
-          simp [hij, Ne.symm hij, mul_comm]
-        · have h3 : ¬(i = k ∧ j = l ∨ i = l ∧ j = k) := by
-            rintro (⟨rfl, rfl⟩ | ⟨rfl, rfl⟩)
-            exacts [h1 ⟨rfl, rfl⟩, h2 ⟨rfl, rfl⟩]
-          simp [h1, h2, h3]
-    simp only [h2, sum_add_distrib, ite_and, Fintype.sum_ite_eq', sum_const_zero, sum_ite_irrel]
-    ring
+    𝔼 x : ι → Bool, (∑ i, a i * signVal (x i)) ^ 2 = ∑ i, a i ^ 2 :=
+  (Probability.isKWiseIndependentHash_id (X := ι) (Y := Bool) 2).expect_sq_sum_mul_sign
+    signVal_sq expect_signVal_bool univ a
 
 /-- **The variance of the square of a homogeneous degree-one function**: for `ℓ = ∑ᵢ aᵢ xᵢ`,
 `Var[ℓ ^ 2] = 2 ∑_{i ≠ j} aᵢ ^ 2 aⱼ ^ 2 = 2 ((∑ᵢ aᵢ ^ 2) ^ 2 - ∑ᵢ aᵢ ^ 4)`
-[O'Donnell, Exercise 1.20][ODonnell2014]. -/
+[O'Donnell, Exercise 1.20][ODonnell2014]. This is the variance of the tug-of-war estimator
+(`Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign_sub_sq`) for the identity hash
+family. -/
 theorem expect_sum_mul_signVal_sq_sub_expect_sq (a : ι → ℝ) :
     𝔼 x : ι → Bool, ((∑ i, a i * signVal (x i)) ^ 2 -
         𝔼 y : ι → Bool, (∑ i, a i * signVal (y i)) ^ 2) ^ 2 =
       2 * ((∑ i, a i ^ 2) ^ 2 - ∑ i, a i ^ 4) := by
   rw [expect_sum_mul_signVal_sq]
-  set A := ∑ i, a i ^ 2 with hA
-  have h4 : 𝔼 x : ι → Bool, (∑ k, a k * signVal (x k)) ^ 4 = 3 * A ^ 2 - 2 * ∑ i, a i ^ 4 := by
-    have h (x : ι → Bool) : (∑ k, a k * signVal (x k)) ^ 4 = ∑ i, ∑ j, a i * a j *
-        (signVal (x i) * signVal (x j) * (∑ k, a k * signVal (x k)) ^ 2) := by
-      rw [show (∑ k, a k * signVal (x k)) ^ 4 =
-        (∑ k, a k * signVal (x k)) ^ 2 * (∑ k, a k * signVal (x k)) ^ 2 by ring,
-        sq_sum_mul_signVal a x, sum_mul]
-      exact sum_congr rfl fun i _ => by
-        rw [sum_mul]; exact sum_congr rfl fun j _ => by ring
-    rw [expect_congr rfl fun x _ => h x]
-    simp only [expect_sum_comm, ← mul_expect, expect_signVal_mul_signVal_mul_sq]
-    have h2 (i j : ι) : a i * a j * (if i = j then ∑ k, a k ^ 2 else 2 * a i * a j) =
-        2 * a i ^ 2 * a j ^ 2 + if i = j then a i ^ 2 * A - 2 * a i ^ 4 else 0 := by
-      split_ifs with hij
-      · subst hij; ring
-      · ring
-    simp only [h2, sum_add_distrib, Fintype.sum_ite_eq]
-    have h3 : ∑ i, ∑ j, 2 * a i ^ 2 * a j ^ 2 = 2 * A ^ 2 := by
-      rw [hA, sq (∑ i, a i ^ 2), sum_mul_sum, mul_sum]
-      exact sum_congr rfl fun i _ => by
-        rw [mul_sum]; exact sum_congr rfl fun j _ => by ring
-    rw [h3, sum_sub_distrib, ← sum_mul, ← hA, ← mul_sum]
-    ring
-  have hexp (x : ι → Bool) : ((∑ k, a k * signVal (x k)) ^ 2 - A) ^ 2 =
-      (∑ k, a k * signVal (x k)) ^ 4 - 2 * A * (∑ k, a k * signVal (x k)) ^ 2 + A ^ 2 := by
-    ring
-  rw [expect_congr rfl fun x _ => hexp x, expect_add_distrib, expect_sub_distrib, ← mul_expect,
-    Fintype.expect_const, h4, expect_sum_mul_signVal_sq, ← hA]
-  ring
+  exact Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign_sub_sq
+    (Probability.isKWiseIndependentHash_id (X := ι) (Y := Bool) 4) signVal_sq expect_signVal_bool
+    univ a
 
 /-- **The FKN Theorem**, coefficient form: if a Boolean function `f`, read as signs, has
 `W^1[f] ≥ 1 - δ` with `δ ≤ 1 / 1600`, then some degree-one coefficient has
@@ -263,9 +185,11 @@ theorem exists_one_sub_le_abs_fourierCoeff_singleton {f : (ι → Bool) → Bool
           Submodule.smul_mem _ _ (by simpa using chi_mem_lowDegree (F := ℝ) {i})
       exact pow_mem_lowDegree h1 2
     -- by anticoncentration, `|ℓ ^ 2 - A| > √V / 2` with probability at least `1 / 144`
-    have h97 := nine_div_sixteen_div_nine_pow_le_dens hℓdeg hVpos
-    rw [← hV, hℓℓ] at h97
-    norm_num at h97
+    have h97 : (1 / 144 : ℝ) ≤ (dens {x | √V / 2 < |ℓ x ^ 2 - A|} : ℝ) := by
+      have h := nine_div_sixteen_div_nine_pow_le_dens hℓdeg hVpos
+      rw [← hV, hℓℓ] at h
+      calc (1 / 144 : ℝ) = 9 / 16 / 9 ^ 2 := by norm_num
+        _ ≤ _ := h
     have hsqrt : 40 * √δ' < √V / 2 := by
       have : √(6400 * δ') < √V := Real.sqrt_lt_sqrt (by positivity) hVgt
       rw [Real.sqrt_mul (by norm_num), show √(6400 : ℝ) = 80 by
@@ -309,7 +233,7 @@ theorem exists_one_sub_le_abs_fourierCoeff_singleton {f : (ι → Bool) → Bool
         simp only [mem_filter, mem_univ, true_and, Finset.notMem_empty, iff_false, not_lt]
         rw [← hFℓ0 x, show A = 1 by linarith, hFsq x, sub_self, abs_zero]
         positivity
-      rw [hempty, dens_empty] at h97
+      rw [hempty, dens_empty, NNRat.cast_zero] at h97
       norm_num at h97
   -- hence `∑ᵢ aᵢ ^ 4 ≥ 1 - 3202 δ'`, and the largest `aᵢ ^ 2` bounds it
   have h4 : 1 - 3202 * δ' ≤ ∑ i, a i ^ 4 := by

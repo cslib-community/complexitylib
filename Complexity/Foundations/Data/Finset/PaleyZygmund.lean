@@ -13,11 +13,11 @@ import Mathlib.Algebra.Order.BigOperators.Expect
 /-!
 # The Paley–Zygmund inequality and reasonable random variables
 
-A uniform average of a nonnegative function `f` on a finite type exceeds a fraction `θ` of its
-mean on a set of density at least `(1 - θ) ^ 2 (𝔼 f) ^ 2 / 𝔼 f ^ 2`: this is the **Paley–Zygmund
-inequality** (`Fintype.sq_one_sub_mul_expect_le_dens_mul_expect_sq`), the "second moment method"
-of [O'Donnell, Section 9.1][ODonnell2014]. Its case `θ = 0` is the second moment method
-`Fintype.sq_expect_le_dens_mul_expect_sq`.
+A nonnegative function `f` on a finite type, with values in an ordered field, exceeds a fraction
+`θ` of its uniform average on a set of density at least `(1 - θ) ^ 2 (𝔼 f) ^ 2 / 𝔼 f ^ 2`: this is
+the **Paley–Zygmund inequality** (`Fintype.sq_one_sub_mul_expect_le_dens_mul_expect_sq`), the
+"second moment method" of [O'Donnell, Section 9.1][ODonnell2014]. Its case `θ = 0` is the second
+moment method `Fintype.sq_expect_le_dens_mul_expect_sq`.
 
 A real random variable `X` is `B`-*reasonable* when `𝔼 X ^ 4 ≤ B (𝔼 X ^ 2) ^ 2`
 [O'Donnell, Definition 9.1][ODonnell2014]. We do not introduce a predicate for it: the results
@@ -28,7 +28,8 @@ and, by Paley–Zygmund, an anticoncentration bound
 (`Fintype.sq_one_sub_sq_le_mul_dens_of_expect_pow_four_le`,
 [O'Donnell, Proposition 9.4][ODonnell2014]). A function taking each of its values with probability
 at least `λ` is `1 / λ`-reasonable (`Fintype.mul_expect_pow_four_le_of_le_dens`,
-[O'Donnell, Proposition 9.5][ODonnell2014]).
+[O'Donnell, Proposition 9.5][ODonnell2014]). Paley–Zygmund and Proposition 9.5 hold in any ordered
+field; Propositions 9.3 and 9.4 are stated over `ℝ`, since they normalise by `‖X‖₂ = √(𝔼 X ^ 2)`.
 
 ## Main results
 
@@ -50,18 +51,18 @@ open scoped BigOperators
 
 namespace Fintype
 
-variable {ι : Type*} [Fintype ι]
+variable {ι : Type*} [Fintype ι] {𝕜 : Type*} [Field 𝕜] [LinearOrder 𝕜] [IsStrictOrderedRing 𝕜]
 
 /-- **The Paley–Zygmund inequality** for a uniform average: if `f` is nonnegative and
 `0 ≤ θ ≤ 1`, then `((1 - θ) 𝔼 f) ^ 2 ≤ Pr[f > θ 𝔼 f] · 𝔼 f ^ 2`
 [O'Donnell, Section 9.1][ODonnell2014]. -/
-theorem sq_one_sub_mul_expect_le_dens_mul_expect_sq {f : ι → ℝ} (hf : ∀ i, 0 ≤ f i) {θ : ℝ}
+theorem sq_one_sub_mul_expect_le_dens_mul_expect_sq {f : ι → 𝕜} (hf : ∀ i, 0 ≤ f i) {θ : 𝕜}
     (hθ₀ : 0 ≤ θ) (hθ₁ : θ ≤ 1) :
-    ((1 - θ) * 𝔼 i, f i) ^ 2 ≤ (dens {i | θ * 𝔼 j, f j < f i} : ℝ) * 𝔼 i, f i ^ 2 := by
+    ((1 - θ) * 𝔼 i, f i) ^ 2 ≤ (dens {i | θ * 𝔼 j, f j < f i} : 𝕜) * 𝔼 i, f i ^ 2 := by
   classical
   set μ := 𝔼 j, f j with hμ
   have hμ0 : 0 ≤ μ := expect_nonneg fun i _ => hf i
-  set E : ι → ℝ := fun i => if θ * μ < f i then 1 else 0 with hE
+  set E : ι → 𝕜 := fun i => if θ * μ < f i then 1 else 0 with hE
   -- `μ ≤ θ μ + 𝔼 E f`, splitting the mean at the threshold `θ μ`
   have hsplit : μ ≤ θ * μ + 𝔼 i, E i * f i := by
     cases isEmpty_or_nonempty ι with
@@ -79,7 +80,7 @@ theorem sq_one_sub_mul_expect_le_dens_mul_expect_sq {f : ι → ℝ} (hf : ∀ i
   have hlow : 0 ≤ (1 - θ) * μ := mul_nonneg (by linarith) hμ0
   have hle : (1 - θ) * μ ≤ 𝔼 i, E i * f i := by linarith
   have hcs := expect_mul_sq_le_sq_mul_sq univ E f
-  have hE2 : 𝔼 i, E i ^ 2 = (dens {i | θ * μ < f i} : ℝ) := Fintype.expect_boole_sq _
+  have hE2 : 𝔼 i, E i ^ 2 = (dens {i | θ * μ < f i} : 𝕜) := Fintype.expect_boole_sq _
   rw [hE2] at hcs
   calc ((1 - θ) * μ) ^ 2 ≤ (𝔼 i, E i * f i) ^ 2 := pow_le_pow_left₀ hlow hle 2
     _ ≤ _ := hcs
@@ -140,8 +141,8 @@ theorem sq_one_sub_sq_le_mul_dens_of_expect_pow_four_le {f : ι → ℝ} {B : �
 /-- **A random variable with no rare values is reasonable**: if `f` takes each of its values with
 probability at least `l`, then `l 𝔼 f ^ 4 ≤ (𝔼 f ^ 2) ^ 2`, so `f` is `1 / l`-reasonable when
 `l > 0` [O'Donnell, Proposition 9.5][ODonnell2014]. -/
-theorem mul_expect_pow_four_le_of_le_dens {f : ι → ℝ} {l : ℝ}
-    (hl : ∀ i, l ≤ (dens {j | f j = f i} : ℝ)) :
+theorem mul_expect_pow_four_le_of_le_dens {f : ι → 𝕜} {l : 𝕜}
+    (hl : ∀ i, l ≤ (dens {j | f j = f i} : 𝕜)) :
     l * 𝔼 i, f i ^ 4 ≤ (𝔼 i, f i ^ 2) ^ 2 := by
   classical
   cases isEmpty_or_nonempty ι with
@@ -164,12 +165,12 @@ theorem mul_expect_pow_four_le_of_le_dens {f : ι → ℝ} {l : ℝ}
         intro j hj
         simp only [mem_filter, mem_univ, true_and] at hj ⊢
         rw [hj]
-      have hd : (dens ({j | f j = f i₀} : Finset ι) : ℝ) ≤ (dens {i | M ≤ f i ^ 2} : ℝ) := by
+      have hd : (dens ({j | f j = f i₀} : Finset ι) : 𝕜) ≤ (dens {i | M ≤ f i ^ 2} : 𝕜) := by
         exact_mod_cast dens_le_dens hsub
-      calc l * M ≤ (dens {j | f j = f i₀} : ℝ) * M :=
+      calc l * M ≤ (dens {j | f j = f i₀} : 𝕜) * M :=
             mul_le_mul_of_nonneg_right (hl i₀) (sq_nonneg _)
-        _ ≤ (dens {i | M ≤ f i ^ 2} : ℝ) * M := mul_le_mul_of_nonneg_right hd (sq_nonneg _)
-        _ = M * (dens {i | M ≤ f i ^ 2} : ℝ) := mul_comm _ _
+        _ ≤ (dens {i | M ≤ f i ^ 2} : 𝕜) * M := mul_le_mul_of_nonneg_right hd (sq_nonneg _)
+        _ = M * (dens {i | M ≤ f i ^ 2} : 𝕜) := mul_comm _ _
         _ ≤ _ := hmk
     by_cases hl0 : l ≤ 0
     · have : 0 ≤ 𝔼 i, f i ^ 4 := expect_nonneg fun i _ => by positivity
