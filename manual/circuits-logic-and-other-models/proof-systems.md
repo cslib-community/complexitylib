@@ -97,6 +97,17 @@ of general equality elimination. See [clone examples](../../ComplexityTests/Bool
 [gadget examples](../../ComplexityTests/CSPGadget.lean) and
 [hardness examples](../../ComplexityTests/SchaeferHardness.lean).
 
+`CSPSAT.exists_linear_size_reduction_from_threeSAT` supplies one reduction with native
+polynomial-time computation, correctness and the bound
+$n' + m' \le C_\Gamma m \le C_\Gamma(n + m)$. Here `numVars` counts distinct occurring
+variables, `length` counts clauses or constraints, and the constant depends only on the fixed
+target language. The bound holds for every raw CNF, including malformed and empty inputs.
+`CSP.length_replaceGadgets` and `CSP.vars_length_replaceGadgets` give exact sums of template
+constraint and occurrence counts; distinct variables are bounded by occurrences. The guarded
+compiler retains a uniform linear bound because an invalid input is nonempty. These are
+combinatorial size bounds; neither linear running time nor linear binary encoding length is
+asserted. See the [checked size clients](../../ComplexityTests/SchaeferSize.lean).
+
 The result is the Boolean dichotomy; symmetric and larger-domain dichotomies are outside its scope.
 
 ## Three resolution representations

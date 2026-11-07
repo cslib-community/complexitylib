@@ -456,7 +456,8 @@ index links to canonical definitions rather than keeping a second set.
   and native NP-completeness outside them, for each fixed finite Boolean constraint language
   of arbitrary fixed arities. `CSPSAT.schaefer_dichotomy` assembles the actual solvers, fixed
   compilers, clone classification and gadgets under binary labels and exact-arity rejection,
-  including empty/nullary relations. Final review and integration of the stack remain open.
+  including empty/nullary relations. The hard branch has a native 3SAT reduction with
+  `output.numVars + output.length ≤ C * input.length`, for a language-dependent constant.
   Symmetric and larger-domain dichotomies are outside the current scope.
 
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
