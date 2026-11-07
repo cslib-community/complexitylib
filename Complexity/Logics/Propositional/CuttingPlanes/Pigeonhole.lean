@@ -99,7 +99,7 @@ private theorem mem_toIneqs_pigeonhole {i i' : Fin m} (hii' : i ≠ i') (j : Fin
     rw [toIneq_holeClause hii'.symm, add_comm (leOne _)]
 
 /-- The inequality `-∑_{i ∈ P} x_{ij} ≥ -1`: at most one of the pigeons `P` sits in hole `j`. -/
-@[expose] noncomputable def holeSum (P : Finset (Fin m)) (j : Fin n) : Ineq (Fin m × Fin n) :=
+noncomputable def holeSum (P : Finset (Fin m)) (j : Fin n) : Ineq (Fin m × Fin n) :=
   ⟨∑ i ∈ P, Finsupp.single (i, j) (-1), -1⟩
 
 /-- **At most one pigeon per hole** [Cook, Coullard and Turán][CookCoullardTuran1987]: for a
