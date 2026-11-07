@@ -258,7 +258,7 @@
         "ComplexityAbstracts.CommunicationAbstract.equality"
       ],
       "summary": "Disjointness and parity of intersection require linear communication even with shared randomness and bounded error.",
-      "scope": "Binary protocol trees, worst-case cost and error at most one third on every input pair; explicit finite bounds and the final-answer convention."
+      "scope": "Binary protocol trees with depth bounded on the support, including unreachable branches, and error at most one third on every input pair; explicit finite bounds and the final-answer convention."
     },
     {
       "id": "sipser-lautemann",
