@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
+import Complexity.Tactic.EncLen
 
 /-!
 # Same-input query calls
@@ -106,6 +107,19 @@ example : ComputableInSpace machine.finish encState encBits
     (fun s => (encState s).length) :=
   QueryMachine.withCalls_finish_inSpace caller reader request resume encCaller encCallee
     (ComputableInSpace.of_finite _)
+
+/-! The library states these certificates with the reducible names `QueryMachine.encWithCalls`
+and `QueryMachine.encStateRead`; goals spelled out with the combinators still match them, and
+`enc_len` expands the names. -/
+
+example (s : Caller) (t : Callee) :
+    (QueryMachine.encWithCalls encCaller encCallee (.inr (s, t))).length =
+      2 * (encCaller s).length + (encCallee t).length + 2 := by
+  enc_len
+
+example (s : Caller ⊕ (Caller × Callee)) (b : Bool) :
+    (QueryMachine.encStateRead encState (s, some b)).length = 2 * (encState s).length + 3 := by
+  enc_len
 
 example : ComputableInSpace machine.next (encPair encState (encOption encBool)) encState
     (fun p => (encPair encState (encOption encBool) p).length) :=
