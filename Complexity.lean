@@ -4398,6 +4398,7 @@ public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
 public import Complexity.Logics.Propositional.CNF.Compact.ModelCount
 public import Complexity.Logics.Propositional.CNF.Compact.Relabel
+public import Complexity.Logics.Propositional.CNF.ExactDistinct
 public import Complexity.Logics.Propositional.CNF.ExactOne
 public import Complexity.Logics.Propositional.CNF.ExactOne.BlockBounds
 public import Complexity.Logics.Propositional.CNF.ExactOne.Blocks
@@ -4422,6 +4423,9 @@ public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 public import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel
 public import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
+public import Complexity.Logics.Propositional.CNF.Moser
+public import Complexity.Logics.Propositional.CNF.Moser.Compression
+public import Complexity.Logics.Propositional.CNF.Moser.Probability
 public import Complexity.Logics.Propositional.CNF.NotAllEqual
 public import Complexity.Logics.Propositional.CNF.NotAllEqual.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.Occurrence
@@ -4536,6 +4540,7 @@ public import Complexity.Probability.BitString.SubsetSum
 public import Complexity.Probability.BitString.SubsetSum.Matrix
 public import Complexity.Probability.BoundedDifferences
 public import Complexity.Probability.Chernoff
+public import Complexity.Probability.CoinFlips
 public import Complexity.Probability.Collision
 public import Complexity.Probability.Concentration
 public import Complexity.Probability.Conditioning

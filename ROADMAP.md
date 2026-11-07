@@ -974,9 +974,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 ### Constructive probabilistic methods
 
-- **Moser–Tardos resampling:** an actual resampling program, its correctness and expected
-  resampling bound, and native sampling and event-detection costs, building on the variable
-  form of the Local Lemma.
+- **Moser–Tardos resampling:** extend Moser's `k`-SAT resampling machine and its
+  entropy-compression bound to the variable form of the Local Lemma under `e p (d + 1) ≤ 1`
+  (witness trees, sharper expected bounds), with native sampling and event-detection costs.
 - **Conditional expectations and pessimistic estimators:** certified choice and update rules,
   algorithmic alteration, and concrete coloring, satisfiability or combinatorial-construction
   clients. Preserve the quantitative guarantee when converting an existence argument into a

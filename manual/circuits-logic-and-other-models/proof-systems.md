@@ -22,6 +22,18 @@ satisfiable and unsatisfiable instances, and applications of these endpoints. Ru
 `scripts/build.sh ComplexityTests.NAEAndEUThreeSAT` from the repository root to check them;
 successful compilation confirms the displayed theorem types and examples.
 
+For sparse exact `k`-CNFs, import `Complexity.Logics.Propositional.CNF.Moser.Probability`.
+Here `CNF.IsExactDistinct k` requires exactly `k` literals over distinct variables in every
+clause, and `Moser.degree φ i` counts the other clauses sharing a variable with clause `i`.
+Moser's resampling algorithm is a step function `Moser.step` reading an explicit tape
+`ℕ → Bool`, run with a budget of resamplings. Under `3 ≤ k` and `degree φ i < 2 ^ (k - 3)`,
+`Moser.satisfiable_of_degree_lt` proves satisfiability by the entropy-compression count. On the
+fair-coin tape `Cslib.Probability.coinFlips`, `Moser.ae_exists_eval_final` says the run almost
+surely stops with a satisfying assignment, and `Moser.lintegral_resamplings_le` bounds the
+expected number of resamplings by `m + 2`. These count resamplings, not machine time. The
+[checked examples](../../ComplexityTests/Moser.lean) include a concrete run, its log and the
+recovered tape; check them with `scripts/build.sh ComplexityTests.Moser`.
+
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
 [Constraint](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label plus a variable list. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface.
