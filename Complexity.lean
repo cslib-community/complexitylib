@@ -47,6 +47,11 @@ public import Complexity.Algorithms.Lean.Sort.Bitonic.Basic
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Correctness
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
 public import Complexity.Algorithms.Lean.Sort.Bitonic.ZeroOne
+public import Complexity.Algorithms.Lean.StableMatching.Basic
+public import Complexity.Algorithms.Lean.StableMatching.Blocking
+public import Complexity.Algorithms.Lean.StableMatching.DeferredAcceptance
+public import Complexity.Algorithms.Lean.StableMatching.Incentives
+public import Complexity.Algorithms.Lean.StableMatching.Lattice
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
