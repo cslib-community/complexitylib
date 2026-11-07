@@ -31,6 +31,9 @@ bounded formulas over an arbitrary language; no finiteness assumption is involve
   `Cslib.Logic.FO.quantifierRank_iff`: the rank of the derived connectives.
 * `Cslib.Logic.FO.quantifierRank_iInf_le`, `Cslib.Logic.FO.quantifierRank_iSup_le`: finite
   conjunctions and disjunctions do not increase the rank.
+* `Cslib.Logic.FO.quantifierRank_castLE`, `Cslib.Logic.FO.quantifierRank_relabel`,
+  `Cslib.Logic.FO.quantifierRank_formula_relabel`, `Cslib.Logic.FO.quantifierRank_toFormula`:
+  Mathlib's maps between formulas with different variables preserve the rank.
 
 ## References
 
@@ -147,5 +150,46 @@ theorem quantifierRank_iSup_le {β : Type*} [Finite β] {f : β → L.BoundedFor
   refine quantifierRank_foldr_sup_le fun φ hφ => ?_
   obtain ⟨b, -, rfl⟩ := List.mem_map.1 hφ
   exact h b
+
+/-! ### Invariance under Mathlib's syntactic maps -/
+
+/-- Raising the number of bound variables in scope does not change the rank. -/
+@[simp] theorem quantifierRank_castLE {m m' : ℕ} (h : m ≤ m') (φ : L.BoundedFormula α m) :
+    quantifierRank (φ.castLE h) = quantifierRank φ := by
+  induction φ generalizing m' with
+  | falsum => simp only [BoundedFormula.castLE, quantifierRank_falsum]
+  | equal => simp only [BoundedFormula.castLE, quantifierRank_equal]
+  | rel => simp only [BoundedFormula.castLE, quantifierRank_rel]
+  | imp _ _ ih₁ ih₂ => simp only [BoundedFormula.castLE, quantifierRank_imp, ih₁, ih₂]
+  | all _ ih => simp only [BoundedFormula.castLE, quantifierRank_all, ih]
+
+/-- Relabeling variables does not change the rank. -/
+@[simp] theorem quantifierRank_relabel {β : Type*} (g : α → β ⊕ Fin n) {k : ℕ}
+    (φ : L.BoundedFormula α k) : quantifierRank (φ.relabel g) = quantifierRank φ := by
+  induction φ with
+  | falsum => rfl
+  | equal => exact quantifierRank_equal _ _
+  | rel => exact quantifierRank_rel _ _
+  | imp _ _ ih₁ ih₂ =>
+    rw [BoundedFormula.relabel_imp, quantifierRank_imp, quantifierRank_imp, ih₁, ih₂]
+  | all _ ih => rw [BoundedFormula.relabel_all, quantifierRank_all, quantifierRank_all, ih]
+
+/-- Relabeling the free variables of a formula does not change the rank. -/
+@[simp] theorem quantifierRank_formula_relabel {β : Type*} (g : α → β) (φ : L.Formula α) :
+    quantifierRank (φ.relabel g) = quantifierRank φ :=
+  quantifierRank_relabel _ φ
+
+/-- Turning the bound variables in scope into free variables does not change the rank. -/
+@[simp] theorem quantifierRank_toFormula {k : ℕ} (φ : L.BoundedFormula α k) :
+    quantifierRank φ.toFormula = quantifierRank φ := by
+  induction φ with
+  | falsum => rfl
+  | equal => exact quantifierRank_equal _ _
+  | rel => exact quantifierRank_rel _ _
+  | imp _ _ ih₁ ih₂ =>
+    rw [BoundedFormula.toFormula, quantifierRank_imp, quantifierRank_imp, ih₁, ih₂]
+  | all _ ih =>
+    rw [BoundedFormula.toFormula, quantifierRank_all, quantifierRank_all, quantifierRank_relabel,
+      ih]
 
 end Cslib.Logic.FO

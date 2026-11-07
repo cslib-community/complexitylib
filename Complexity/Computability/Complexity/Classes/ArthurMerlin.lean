@@ -38,8 +38,10 @@ instance `enc a`.
 As in `NP`, the lengths are polynomials of `n`, the messages have exactly these lengths, and the
 probabilities are counts of random strings, which are functions `Fin (p n) → Bool`. Merlin's
 messages also range over functions `Fin (q n) → Bool`, so that the counted condition of `AM` is
-decidable. The characterisations by interactive machines and the round-collapse theorem
-`AM[k] = AM` are not proved here.
+decidable. Games with any fixed pattern of moves, and the round collapse `AM[k] = AM`, are in
+`Complexity.Computability.Complexity.Classes.ArthurMerlin.Games` and
+`Complexity.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse`. The characterisations by
+interactive machines are not proved.
 
 Both classes contain `NP` (no coins) and `BPP` (no proof), and are closed under polynomial-time
 many-one reductions. A reduction changes the lengths the verifier expects, so the new verifier
