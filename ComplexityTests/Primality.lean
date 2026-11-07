@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Complexity.Problems.Primes.MillerRabin
 import Complexity.Foundations.NumberTheory.Primality.EulerLiars
+import Mathlib.Tactic.NormNum.LegendreSymbol
 import Mathlib.Tactic.NormNum.Prime
 
 /-! Checked instances for the Euler-liar and strong-liar bounds and for the Miller–Rabin verifier:
@@ -62,6 +63,19 @@ example : 2 * Nat.card (ZMod.eulerLiars 9) ≤ Nat.totient 9 :=
 example : ZMod.eulerLiars 7 = ⊤ :=
   haveI : Fact (Nat.Prime 7) := ⟨by norm_num⟩
   ZMod.eulerLiars_eq_top (by norm_num)
+
+-- Modulo `9`, the unit `-1 = 8` is an Euler liar: `8 ^ 4 = 1 = J(8 | 9)`.
+example : (-1 : (ZMod 9)ˣ) ∈ ZMod.eulerLiars 9 := by
+  rw [ZMod.mem_eulerLiars, Units.val_neg, Units.val_one,
+    show ((-1 : ZMod 9)).val = 8 from rfl]
+  norm_num
+
+-- The unit `2` is not: `2 ^ 4 = 7`, while `J(2 | 9) = 1`.
+example : ZMod.unitOfCoprime 2 (by norm_num : Nat.Coprime 2 9) ∉ ZMod.eulerLiars 9 := by
+  rw [ZMod.mem_eulerLiars, ZMod.coe_unitOfCoprime,
+    show ((2 : ℕ) : ZMod 9).val = 2 from rfl]
+  norm_num
+  decide
 
 /-! ### The verifier -/
 

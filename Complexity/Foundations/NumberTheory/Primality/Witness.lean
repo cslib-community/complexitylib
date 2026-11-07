@@ -5,7 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, `Mathlib/NumberTheory/` next to `FermatPsp`)
+-- upstream: candidate (Mathlib, `Mathlib/GroupTheory/Index` for the subgroup bound,
+-- `Mathlib/Data/ZMod/Basic` for the CRT lemmas, `Mathlib/NumberTheory/` next to `FermatPsp`)
 
 public import Complexity.Init
 public import Mathlib.Data.ZMod.Basic

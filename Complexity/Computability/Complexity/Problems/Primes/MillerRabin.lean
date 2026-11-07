@@ -23,12 +23,12 @@ import Mathlib.Data.Int.CardIntervalMod
 /-!
 # The Miller–Rabin test: PRIMES is in coRP
 
-The Miller–Rabin test [Rabin][Rabin1980] is a polynomial-time verifier that puts the composite
-numbers, given in binary, in `RP`, and so the primes in `coRP`. On an odd `n > 2` it reads a random
-word `r` of `2 |n|` bits, where `|n|` is the length of the binary encoding of `n`. It takes the base
-`a = 1 + (value of r mod (n - 1))`, in `[1, n - 1]`, and accepts, declaring `n` composite, when
-`a` is not a strong liar for `n` (`ZMod.IsStrongLiar`). Numbers below `2` and even numbers other
-than `2` are accepted outright, and `2` is rejected.
+The Miller–Rabin test [Rabin][Rabin1980] is a polynomial-time verifier that puts the non-primes
+(the composite numbers, `0` and `1`), given in binary, in `RP`, and so the primes in `coRP`. On an
+odd `n > 2` it reads a random word `r` of `2 |n|` bits, where `|n|` is the length of the binary
+encoding of `n`. It takes the base `a = 1 + (value of r mod (n - 1))`, in `[1, n - 1]`, and
+accepts, declaring `n` composite, when `a` is not a strong liar for `n` (`ZMod.IsStrongLiar`).
+Numbers below `2` and even numbers other than `2` are accepted outright, and `2` is rejected.
 
 * A prime is never accepted: modulo a prime every nonzero residue is a strong liar
   (`ZMod.isStrongLiar_of_prime`).
@@ -50,14 +50,14 @@ error analysis, which are independent of AKS.
 ## Main definitions
 
 * `Cslib.Complexity.MillerRabin.passes`: one Miller–Rabin round for the candidate `m + 1`.
-* `Cslib.Complexity.MillerRabin.verifier`: the one-sided-error verifier for the composite numbers.
+* `Cslib.Complexity.MillerRabin.verifier`: the one-sided-error verifier for the non-primes.
 
 ## Main results
 
 * `Cslib.Complexity.MillerRabin.passes_eq_true_iff`: a round passes exactly on strong liars.
 * `Cslib.Complexity.MillerRabin.verifier_polyTime`: the verifier runs in polynomial time.
-* `Cslib.Complexity.MillerRabin.decidesWithOneSidedError`: the verifier decides the composite
-  numbers with one-sided error, using `2 |n|` random bits.
+* `Cslib.Complexity.MillerRabin.decidesWithOneSidedError`: the verifier decides the non-primes
+  with one-sided error, using `2 |n|` random bits.
 * `Cslib.Complexity.MillerRabin.primes_mem_coRP`: the primes are in `coRP`.
 
 ## References
@@ -83,7 +83,7 @@ modulo `m + 1`. For `m > 0` this holds exactly when `a` is a strong liar for `m 
       ((m / 2 ^ j % 2 == 1 && a ^ (m / 2 ^ j) % (m + 1) == 1) ||
         (0 < j && a ^ (m / 2 ^ j) % (m + 1) == m))
 
-/-- The **Miller–Rabin verifier** for the composite numbers. It accepts `n < 2` and even `n ≠ 2`,
+/-- The **Miller–Rabin verifier** for the non-primes. It accepts `n < 2` and even `n ≠ 2`,
 rejects `2`, and on an odd `n > 2` accepts exactly when the base `1 + (ofBits r mod (n - 1))` fails
 the round. -/
 @[expose] def verifier (x : ℕ × List Bool) : Bool :=
@@ -262,9 +262,9 @@ private theorem two_mul_card_reject_le {n : ℕ} (hodd : Odd n) (h1 : 1 < n) (hn
     _ ≤ 2 ^ (2 * n.size) / N * N := succ_mul_pred_le hQ
     _ ≤ 2 ^ (2 * n.size) := hQN
 
-/-- **The Miller–Rabin test** decides the composite numbers with one-sided error, reading `2 |n|`
-random bits on the input `n`: an odd composite is accepted on at least half of the random words, and
-a prime on none. -/
+/-- **The Miller–Rabin test** decides the non-primes with one-sided error, reading `2 |n|` random
+bits on the input `n`: `0`, `1` and even composites are always accepted, an odd composite is
+accepted on at least half of the random words, and a prime on none. -/
 theorem decidesWithOneSidedError :
     DecidesWithOneSidedError encNat (2 * Polynomial.X) verifier {n | ¬ n.Prime} := by
   intro n
