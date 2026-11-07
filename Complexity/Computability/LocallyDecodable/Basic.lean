@@ -226,13 +226,17 @@ variable (y : P → Γ)
   rw [decodeLaw_eq]
   exact ProbOracleComp.interpret_query _ _ _
 
-@[simp] theorem decodeLaw_query_inl (n : ℕ) :
+/-- A private coin of `n` bits is uniform. A rewrite lemma, used with `rw`: `simp` does not match
+the call `OracleComp.query (.inl n)` at the index type of `probOracleSpec`. -/
+theorem decodeLaw_query_inl (n : ℕ) :
     decodeLaw (OracleComp.query (spec := probOracleSpec fun _ : P => Γ) (.inl n)) y =
       ProbComp.unifOracle n := by
   rw [decodeLaw_eq]
   exact evalWith_query _ _
 
-@[simp] theorem decodeLaw_query_inr (j : P) :
+/-- A query of the position `j` is answered by `y j`. A rewrite lemma, used with `rw`, like
+`decodeLaw_query_inl`. -/
+theorem decodeLaw_query_inr (j : P) :
     decodeLaw (OracleComp.query (spec := probOracleSpec fun _ : P => Γ) (.inr j)) y =
       PMF.pure (y j) := by
   rw [decodeLaw_eq]
