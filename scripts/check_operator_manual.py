@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check current manual links and contextual Lean excerpt identity (stdlib only).
+"""Check current manual links, book chapter lists and Lean excerpt identity (stdlib only).
 
 This does not fetch URLs, elaborate Lean, audit mathematical meaning, or assert that
 historical evidence describes the current checkout. Run from any working directory.
@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import importlib.util
 import json
 import re
 import sys
@@ -78,6 +79,37 @@ def within(path: Path, root: Path) -> bool:
         return False
 
 
+def load_book_builder(data: Path):
+    """Import `data/build_manual.py` with its own sibling modules, leaving `sys.modules` as found."""
+    siblings = ("build_latex", "visuals")
+    saved = {name: sys.modules.pop(name) for name in siblings if name in sys.modules}
+    sys.path.insert(0, str(data))
+    try:
+        spec = importlib.util.spec_from_file_location("checked_build_manual", data / "build_manual.py")
+        book = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(book)
+        return book
+    finally:
+        sys.path.remove(str(data))
+        for name in siblings:
+            sys.modules.pop(name, None)
+        sys.modules.update(saved)
+
+
+def book_input_errors(repo: Path, manual: Path) -> list[str]:
+    """Run the PDF builder's chapter-list check, which otherwise fails only in the Pandoc build."""
+    data = manual / "data"
+    book = load_book_builder(data)
+    try:
+        book.validate_inputs(manual, book.FILES)
+    except ValueError as error:
+        place = data.relative_to(repo).as_posix() if within(data, repo) else str(data)
+        return [f"{error}. The book's chapter lists are ORDER in {place}/build_latex.py (reference "
+                f"and history chapters) and WORKFLOWS or APPENDICES in {place}/build_manual.py: "
+                "add each 'missing' page there and remove 'extra' or duplicate entries."]
+    return []
+
+
 def check(repo: Path, manual: Path | None = None) -> dict:
     repo = repo.resolve()
     manual = (manual or repo / "manual").resolve()
@@ -122,6 +154,12 @@ def check(repo: Path, manual: Path | None = None) -> dict:
         errors.append("Missing manual/README.md entry page")
     if manual / "AGENT_OPERATORS.md" not in document_set:
         errors.append("Missing manual/AGENT_OPERATORS.md human driver manual")
+    # Manuals without the builder (test fixtures) skip the chapter-list check; the builder's
+    # check also requires AGENT_OPERATORS.md, which is reported above when absent.
+    book_checked = ((manual / "data/build_manual.py").is_file()
+                    and manual / "AGENT_OPERATORS.md" in document_set)
+    if book_checked:
+        errors.extend(book_input_errors(repo, manual))
     pending, reachable = [start], set()
     while pending:
         path = pending.pop()
@@ -193,7 +231,7 @@ def check(repo: Path, manual: Path | None = None) -> dict:
         errors.append("No contextual Lean excerpts registered")
     return {"status": "fail" if errors else "pass", "manual_documents": len(documents),
             "local_links_checked": link_count, "excerpts_checked": len(excerpt_results),
-            **visual_counts,
+            "book_inputs_checked": book_checked, **visual_counts,
             "excerpts": excerpt_results, "errors": errors, "lean_compilation": False,
             "external_links_fetched": False, "historical_revision_checked": False}
 

@@ -4,13 +4,14 @@ import json
 import contextlib
 import importlib.util
 import io
+import shutil
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-from check_operator_manual import check
+from check_operator_manual import book_input_errors, check
 
 DATA = Path(__file__).resolve().parents[1] / "manual/data"
 with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
@@ -101,6 +102,45 @@ class ManualChecks(unittest.TestCase):
     def test_paths_cannot_escape_checkout(self):
         self.doc.write_text(self.doc.read_text() + "\n[Outside](../../../outside.md)\n")
         self.assertTrue(any("escapes repository" in e for e in self.errors()))
+
+    def test_manual_without_builder_skips_chapter_lists(self):
+        self.assertFalse(check(self.repo)["book_inputs_checked"])
+
+
+class BookRegistration(unittest.TestCase):
+    """Run the checker's chapter-list check on a copy of the current manual and its builder."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-registration-")
+        self.addCleanup(self.temp.cleanup)
+        self.repo = Path(self.temp.name)
+        self.manual = self.repo / "manual"
+        shutil.copytree(DATA.parent, self.manual,
+                        ignore=shutil.ignore_patterns("_build", "_generated", "__pycache__"))
+
+    def errors(self):
+        return book_input_errors(self.repo, self.manual)
+
+    def test_current_chapter_lists_cover_every_page(self):
+        self.assertEqual(self.errors(), [])
+
+    def test_unregistered_page_names_the_list_to_edit(self):
+        (self.manual / "workflows/unregistered.md").write_text("# A page outside the book\n")
+        [error] = self.errors()
+        self.assertRegex(error, r"missing=\['workflows/unregistered\.md'\]")
+        self.assertIn("ORDER in manual/data/build_latex.py", error)
+
+    def test_deleted_page_must_leave_the_chapter_list(self):
+        page = book.REFERENCE[-1]
+        (self.manual / page).unlink()
+        [error] = self.errors()
+        self.assertIn(f"extra=['{page}']", error)
+
+    def test_full_check_reports_unregistered_page(self):
+        (self.manual / "workflows/unregistered.md").write_text("# A page outside the book\n")
+        result = check(self.repo)
+        self.assertTrue(result["book_inputs_checked"])
+        self.assertTrue(any("missing=['workflows/unregistered.md']" in e for e in result["errors"]))
 
 
 class BookInputs(unittest.TestCase):

@@ -30,6 +30,12 @@ into this manual without a checked source client. The workflow snippets are cont
 excerpts, each declared in `workflows/data/*-excerpts.json`. They retain source authorship
 and require the linked client's imports, namespace and local assumptions.
 
+A new page also needs a place in the book. Add a reference or history chapter to `ORDER` in
+[build_latex.py](data/build_latex.py), or a workflow or appendix page to `WORKFLOWS` or
+`APPENDICES` in [build_manual.py](data/build_manual.py), and link it from an existing page.
+Chapter order is an editorial choice, so the lists are maintained by hand; the checker
+reports any page missing from them.
+
 Model diagrams and worked-example panels are part of the maintained account. Review the
 meaning of every changed arrow and resource label against the referenced definitions; keep
 missing implementation or uniformity obligations visible. Panels should make the goal, context,
@@ -44,8 +50,9 @@ with the untracked book products.
 2. Open the complete client. Verify that the model, encoding, hypotheses and resource claim
    agree with the explanation; inspect a meaningful edge or failure case.
 3. Run `python3 scripts/check_operator_manual.py` and `python3 scripts/test_operator_manual.py`.
-   The checker validates local paths and Markdown anchors, visual markup, excerpt registration
-   and unique exact excerpt matches in current source; its controls exercise failure and recovery.
+   The checker validates local paths and Markdown anchors, visual markup, the book's chapter
+   lists, excerpt registration and unique exact excerpt matches in current source; its controls
+   exercise failure and recovery.
    Both are required in CI and run before Lean work in full and quick `scripts/check.sh` modes.
    They need only Python, without publishing tools or regenerated research data. Inserting unrelated
    lines above an excerpt is allowed. Changing, removing or duplicating its text needs attention.
