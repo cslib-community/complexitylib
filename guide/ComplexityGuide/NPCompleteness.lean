@@ -13,7 +13,9 @@ import Complexity.Computability.Complexity.Problems.NAEThreeSAT
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Directed
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Undirected
 import Complexity.Computability.Complexity.Problems.IntegerProgramming
+import Complexity.Computability.Complexity.Problems.JobSequencing
 import Complexity.Computability.Complexity.Problems.Knapsack
+import Complexity.Computability.Complexity.Problems.MaxCut
 import Complexity.Computability.Complexity.Problems.Partition
 import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
@@ -314,8 +316,12 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   their satisfying extensions are unique.
 * Subset sum reduces to partition ({name}`polyTimeReducible_SubsetSum_Partition`,
   {name}`Partition_npComplete`), knapsack ({name}`polyTimeReducible_SubsetSum_Knapsack`,
-  {name}`Knapsack_npComplete`) and zero-one integer programming
-  ({name}`polyTimeReducible_SubsetSum_ZeroOneIP`, {name}`ZeroOneIP_npComplete`).
+  {name}`Knapsack_npComplete`), zero-one integer programming
+  ({name}`polyTimeReducible_SubsetSum_ZeroOneIP`, {name}`ZeroOneIP_npComplete`) and sequencing
+  with deadlines and penalties ({name}`polyTimeReducible_SubsetSum_JobSequencing`,
+  {name}`JobSequencing_npComplete`). Partition reduces to weighted maximum cut through Karp's
+  complete graph weighted by products ({name}`polyTimeReducible_Partition_MaxCut`,
+  {name}`MaxCut_npComplete`).
 * SAT reduces to independent set ({name}`polyTimeReducible_SAT_IndependentSet`,
   {name}`IndependentSet_npComplete`), which reduces to clique
   ({name}`polyTimeReducible_IndependentSet_Clique`, {name}`Clique_npComplete`) and vertex cover
