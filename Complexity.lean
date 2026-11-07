@@ -3865,7 +3865,9 @@ public import Complexity.Foundations.Combinatorics.SetPartition.Basic
 public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
+public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
+public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
 public import Complexity.Foundations.Combinatorics.Sunflower
@@ -4087,6 +4089,7 @@ public import Complexity.Foundations.Data.Polynomial.TaperedHermite
 public import Complexity.Foundations.Data.Rat.Basic
 public import Complexity.Foundations.Data.Seq.Computation
 public import Complexity.Foundations.Data.Set.Card
+public import Complexity.Foundations.Data.Set.SymmDiff
 public import Complexity.Foundations.Data.StackTape
 public import Complexity.Foundations.Data.ZMod.Basic
 public import Complexity.Foundations.Data.ZMod.DotProduct
@@ -4450,6 +4453,10 @@ public import Complexity.Logics.FirstOrder.Reduction.Nontrivial
 public import Complexity.Logics.FirstOrder.Reduction.QuantifierFree
 public import Complexity.Logics.FirstOrder.Subformula
 public import Complexity.Logics.FirstOrder.Tuple
+public import Complexity.Logics.FirstOrder.ZeroOneLaw
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionProbability
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.RandomGraph
 public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Polymorphism.BooleanClone
 public import Complexity.Logics.Propositional.CNF
