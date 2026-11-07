@@ -1821,6 +1821,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalPath
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
 public import Complexity.Computability.Complexity.Problems.Graph.Ports
+public import Complexity.Computability.Complexity.Problems.Graph.SpanningTrees
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
 public import Complexity.Computability.Complexity.Problems.Hamiltonian
 public import Complexity.Computability.Complexity.Problems.Hamiltonian.Diamond
@@ -3872,7 +3873,9 @@ public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
+public import Complexity.Foundations.Combinatorics.SimpleGraph.MatrixTree
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
+public import Complexity.Foundations.Combinatorics.SimpleGraph.OrientedIncidence
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
@@ -4138,6 +4141,7 @@ public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
+public import Complexity.Foundations.LinearAlgebra.Matrix.CauchyBinet
 public import Complexity.Foundations.LinearAlgebra.Matrix.ClosedSubmatrix
 public import Complexity.Foundations.LinearAlgebra.Matrix.CoinStep
 public import Complexity.Foundations.LinearAlgebra.Matrix.CopyStage
