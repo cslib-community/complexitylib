@@ -129,7 +129,7 @@ def CNF.numVars (φ : CNF V) : ℕ := φ.vars.toFinset.card
 theorem CNF.numVars_le_length_vars (φ : CNF V) : φ.numVars ≤ φ.vars.length :=
   List.toFinset_card_le _
 
-/-- A formula with `m` clauses of at most `k` literals has at most `k m` variables. -/
+/-- A formula with `m` clauses of at most `k` literals has at most `k * m` variables. -/
 theorem CNF.numVars_le_mul_length {k : ℕ} {φ : CNF V} (h : ∀ c ∈ φ, c.length ≤ k) :
     φ.numVars ≤ k * φ.length :=
   φ.numVars_le_length_vars.trans (CNF.length_vars_le_mul_length h)

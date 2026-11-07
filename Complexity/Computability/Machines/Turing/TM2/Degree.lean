@@ -20,7 +20,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Fold
 
 `Turing.TM2.stepTotal_polyTime` certifies one step of a fixed TM2 program in polynomial time,
 but the degree of that polynomial comes out of the polynomial-time calculus and may depend on the
-program. When the program is chosen after a parameter, as in a `2 ^ (δ n)` argument where the
+program. When the program is chosen after a parameter, as in a `2 ^ (δ * n)` argument where the
 machine depends on `δ`, a program-dependent degree is not enough. Here the step is certified in
 the degree calculus (`Turing.MultiTapeTM.ComputableInDegree`) with time, space and output degree
 one, for every program: composing linear-output pieces keeps the degree at one. A run of `t`
