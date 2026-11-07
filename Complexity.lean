@@ -2594,6 +2594,7 @@ public import Complexity.Computability.PCP.Amplifier
 public import Complexity.Computability.PCP.Approximation.Hastad
 public import Complexity.Computability.PCP.Approximation.Hastad.LinearTest
 public import Complexity.Computability.PCP.Approximation.IndependentSet
+public import Complexity.Computability.PCP.Approximation.Johnson
 public import Complexity.Computability.PCP.Approximation.LabelCover
 public import Complexity.Computability.PCP.Approximation.LabelCover.Incidence
 public import Complexity.Computability.PCP.Approximation.MaxCSP
@@ -3640,6 +3641,7 @@ public import Complexity.Foundations.BooleanAnalysis.FourierBitVal
 public import Complexity.Foundations.BooleanAnalysis.FourierDegree
 public import Complexity.Foundations.BooleanAnalysis.FourierRestriction
 public import Complexity.Foundations.BooleanAnalysis.FriedgutJunta
+public import Complexity.Foundations.BooleanAnalysis.GreedyFixing
 public import Complexity.Foundations.BooleanAnalysis.Hadamard
 public import Complexity.Foundations.BooleanAnalysis.HadamardRectangles
 public import Complexity.Foundations.BooleanAnalysis.HadamardTester
@@ -3782,6 +3784,7 @@ public import Complexity.Foundations.Combinatorics.MajorityVote.Weighted
 public import Complexity.Foundations.Combinatorics.Multigraph
 public import Complexity.Foundations.Combinatorics.PacketPacking
 public import Complexity.Foundations.Combinatorics.PartialLabelScores
+public import Complexity.Foundations.Combinatorics.PessimisticEstimator
 public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
@@ -4390,6 +4393,8 @@ public import Complexity.Logics.Propositional.CNF.Gadgets
 public import Complexity.Logics.Propositional.CNF.Horn
 public import Complexity.Logics.Propositional.CNF.ImplicationChain
 public import Complexity.Logics.Propositional.CNF.ImplicationCycle
+public import Complexity.Logics.Propositional.CNF.Johnson
+public import Complexity.Logics.Propositional.CNF.Johnson.PolyTime
 public import Complexity.Logics.Propositional.CNF.Majority
 public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared

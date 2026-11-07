@@ -113,6 +113,43 @@ The result has two projections: polynomial-time computability of the iterated fu
 
 For a step capturing a parameter, use `iterateWith_spec` and certify the joint `(parameter, state)` operation. `iterateWith_of_bounded_growth` handles additive encoded-state growth bounded polynomially in the original input. A separate efficient procedure for each fixed parameter does not provide the required uniform joint certificate. A polynomial number of efficient steps also does not bound a state that doubles each time. The [plain loop regression client](../../ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean) exercises both positive contracts and a failed constant-state bound. When the size obligation fails, inspect the representation and growth argument before changing tactics.
 
+## Derandomize an averaging argument
+
+**Goal:** turn an averaging proof that some choice of bits is good into a deterministic
+algorithm with the same quantitative guarantee, then certify its running time. Import
+`Complexity.Foundations.Combinatorics.PessimisticEstimator` and open
+`Cslib.PessimisticEstimator`. Describe one round by a branch function
+`branch : R → Bool → S → S` and an estimate `Φ : S → M` of the final cost, for `M` such as `ℕ`
+or `ℝ`; `greedy branch Φ rounds s` takes, in each round, the branch with the smaller estimate,
+with ties going to `true`.
+
+Apply `greedy_spec` with an invariant `Inv : List R → S → Prop` indexed by the rounds still to
+come. Prove that it passes along both branches and that, wherever it holds, the two branch
+estimates sum to at most twice the current estimate. The estimate need not be an exact
+conditional expectation; a pessimistic upper bound suffices. The conclusion returns the
+invariant for the final state together with `Φ final ≤ Φ initial`; use the final invariant to
+identify the final estimate with the cost of the constructed object. For exact conditional
+expectations of a real function on the cube, `BitString.expect_le_greedy_fixCoord` in
+`Complexity.Foundations.BooleanAnalysis.GreedyFixing` already does this.
+
+[Johnson.lean](../../Complexity/Logics/Propositional/CNF/Johnson.lean) is the satisfiability
+client. Its state is the partially set formula and the variables set to `true`; its estimate is
+the weight `Σ_c 2 ^ (L - |c|)`. Its invariant records that the remaining variables are those still
+to be set and that the partial formula falsifies the same clauses as the original under any
+completion. [Johnson/PolyTime.lean](../../Complexity/Logics/Propositional/CNF/Johnson/PolyTime.lean)
+certifies the running time. Because `L` is read from the input formula, the rounds form a fold
+whose step reads the input, certified by `foldlWithInput_of_bounded_growth`. Its growth premise
+uses the fact that setting a variable does not lengthen the encoded formula. The complete
+[JohnsonMaxSAT client](../../ComplexityTests/JohnsonMaxSAT.lean) checks a tight `7 / 8`
+instance and a formula with an empty clause, where the `1 / 2` bound fails without its
+hypothesis. Build it with `scripts/build.sh ComplexityTests.JohnsonMaxSAT`.
+
+**When it fails:** if the averaging inequality holds only on reachable states, strengthen the
+invariant rather than the estimate. Clauses with complementary literals, for example, make
+Johnson's weight strictly pessimistic, but the inequality still holds for every partial
+formula without repeated literals. If the fold's growth premise fails, check that the step
+does not enlarge the encoded state by more than a polynomial in the input.
+
 ## Preserve independent workspace
 
 <!-- worked-example -->

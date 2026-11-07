@@ -700,6 +700,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
   PCP, CSP classifications and relaxation gaps, with assumptions such as the Unique Games
   Conjecture stated explicitly. The 2-to-2 games theorem waits for [#886].
+- **Approximation algorithms:** a general interface for approximation ratios of optimization
+  problems, under which polynomial-time algorithms such as Johnson's `7 / 8` algorithm for
+  MAX-E3SAT meet matching hardness results such as Håstad's ([#886]); LP and SDP rounding, such
+  as Goemans–Williamson for MAX-CUT and MAX-SAT.
 - **A practical PCP construction:** a reasonably runnable construction and its cost on complete
   reductions; rotation certificates polynomial in the bit length of a vertex name; machine-level
   error reduction and extractors from expander walks, with certified seed and evaluation costs.
@@ -978,10 +982,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Moser–Tardos resampling:** an actual resampling program, its correctness and expected
   resampling bound, and native sampling and event-detection costs, building on the variable
   form of the Local Lemma.
-- **Conditional expectations and pessimistic estimators:** certified choice and update rules,
-  algorithmic alteration, and concrete coloring, satisfiability or combinatorial-construction
-  clients. Preserve the quantitative guarantee when converting an existence argument into a
-  deterministic or randomized algorithm.
+- **Conditional expectations and pessimistic estimators:** algorithmic alteration, and coloring,
+  MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
+  (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting
+  an existence argument into a deterministic or randomized algorithm.
 
 ## Machines, RAM and data structures
 
