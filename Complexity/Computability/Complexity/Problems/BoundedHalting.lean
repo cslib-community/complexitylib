@@ -42,7 +42,9 @@ This makes the problem complete for exponential time under polynomial-time many-
   `E` and for `EXP`.
 
 With the step bound in unary, simulation is polynomial in the length of the instance, and the
-problem is in `P`. The nondeterministic version with a unary bound is `NP`-complete.
+problem is in `P`. The nondeterministic version with a unary bound is `NP`-complete. The
+completeness of the binary version for exponential time is standard textbook material; no
+numbered source result is cited for it here.
 
 Hence `BoundedHalting` is not in `P` (`Cslib.Complexity.BoundedHalting.notMem_P`, from
 `Cslib.Complexity.P_ssubset_EXP`). Berman's theorem applies to it
@@ -69,11 +71,6 @@ the classes closed under polynomial-time reductions, such as `NP` and `PSPACE`, 
   `Cslib.Complexity.BoundedHalting.polyTimeComplete_EXP`: bounded halting is complete for `E` and
   for `EXP` under polynomial-time many-one reductions.
 * `Cslib.Complexity.BoundedHalting.notMem_P`: bounded halting is not in `P`.
-
-## References
-
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
-* [C. H. Papadimitriou, *Computational Complexity*][Papadimitriou94]
 -/
 
 open Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal Cslib.BitString
