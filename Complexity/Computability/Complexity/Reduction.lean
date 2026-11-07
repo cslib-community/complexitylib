@@ -78,6 +78,8 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | Subset sum | `SubsetSum_npComplete` |
 | Partition | `Partition_npComplete` |
 | Knapsack | `Knapsack_npComplete` |
+| Weighted maximum cut | `MaxCut_npComplete` |
+| Sequencing with deadlines and penalties | `JobSequencing_npComplete` |
 | Zero-one integer programming | `ZeroOneIP_npComplete` |
 | Traveling salesperson | `TSP_npComplete` |
 
@@ -105,6 +107,8 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | ThreeSAT → SubsetSum | `polyTimeReducible_ThreeSAT_SubsetSum` |
 | SubsetSum → Partition | `polyTimeReducible_SubsetSum_Partition` |
 | SubsetSum → Knapsack | `polyTimeReducible_SubsetSum_Knapsack` |
+| SubsetSum → JobSequencing | `polyTimeReducible_SubsetSum_JobSequencing` |
+| Partition → MaxCut | `polyTimeReducible_Partition_MaxCut` |
 | SubsetSum → ZeroOneIP | `polyTimeReducible_SubsetSum_ZeroOneIP` |
 | ThreeSAT → ZeroOneIP | `polyTimeReducible_ThreeSAT_ZeroOneIP` |
 | HamCycle → TSP | `polyTimeReducible_HamCycle_TSP` |
