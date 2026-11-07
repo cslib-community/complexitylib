@@ -37,9 +37,13 @@ public import Complexity.Algorithms.Lean.MaxFlow.Basic
 public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
 public import Complexity.Algorithms.Lean.MaxFlow.EdmondsKarp
 public import Complexity.Algorithms.Lean.MergeSort.Comparator
+public import Complexity.Algorithms.Lean.Query.Arith.FloydWarshall
+public import Complexity.Algorithms.Lean.Query.Arith.MatMul
+public import Complexity.Algorithms.Lean.Query.FreeM.Tabulate
 public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
 public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
+public import Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlus
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
 public import Complexity.Algorithms.Lean.Query.Submodular.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.ValueQuery
@@ -91,6 +95,10 @@ public import Complexity.Algorithms.Reachability.InductiveCounting.Semantics
 public import Complexity.Algorithms.Reachability.Reingold
 public import Complexity.Algorithms.Reachability.ReingoldEval
 public import Complexity.Algorithms.Reachability.Savitch
+public import Complexity.Algorithms.ShortestPaths.FloydWarshall
+public import Complexity.Algorithms.ShortestPaths.Power
+public import Complexity.Algorithms.ShortestPaths.Tripartite
+public import Complexity.Algorithms.ShortestPaths.Walk
 public import Complexity.Algorithms.Sorting.Counting
 public import Complexity.Algorithms.ThreeSum.ArrayPacking
 public import Complexity.Algorithms.ThreeSum.ChanHe.Collisions
@@ -3658,6 +3666,7 @@ public import Complexity.Foundations.Algebra.FiniteMagnitude
 public import Complexity.Foundations.Algebra.GeometricTail
 public import Complexity.Foundations.Algebra.Module.ZLattice.CoefficientFiber
 public import Complexity.Foundations.Algebra.Shear
+public import Complexity.Foundations.Algebra.Tropical
 public import Complexity.Foundations.Analysis.Asymptotics.CostBound
 public import Complexity.Foundations.Analysis.Asymptotics.Exponential
 public import Complexity.Foundations.Analysis.BernoulliInequality

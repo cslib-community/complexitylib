@@ -49,6 +49,11 @@ Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Articl
 
 Clément L. Canonne, Gautam Kamath and Thomas Steinke. *The Discrete Gaussian for Differential Privacy*. NeurIPS 2020; cited from arXiv:2004.00010v5, 2021. https://arxiv.org/abs/2004.00010 . Definition 28 and Lemmas 29–30 were checked against the arXiv v5 PDF on 2026-11-07.
 
+<a id="clrs09"></a>
+## clrs09
+
+Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein. *Introduction to Algorithms*, third edition. MIT Press, 2009. ISBN 978-0-262-03384-8. The manual uses only the section locators 25.1 (shortest paths by repeated (min,+) squaring) and 25.2 (Floyd–Warshall); bibliographic data from the pinned bibliography.
+
 <a id="complexitylib"></a>
 ## complexitylib
 
@@ -93,6 +98,11 @@ Cynthia Dwork and Aaron Roth. *The Algorithmic Foundations of Differential Priva
 ## erickson24
 
 Jeff Erickson, Ivor van der Hoog, Tillmann Miltzow. “Smoothing the Gap Between NP and ∃R.” *SIAM Journal on Computing* 53(6), FOCS20-102–FOCS20-138, 2024. https://doi.org/10.1137/20M1385287 . Author preprint consulted: https://arxiv.org/abs/1912.02278v3 , §6.1. Published metadata comes from the pinned bibliography; the consulted preprint is dated 2021.
+
+<a id="floyd62"></a>
+## floyd62
+
+Robert W. Floyd. "Algorithm 97: Shortest Path." *Communications of the ACM* 5(6), 345, 1962. https://doi.org/10.1145/367766.368168 . Bibliographic metadata checked on 2026-11-07; the manual attributes only the Floyd–Warshall recurrence to this note.
 
 <a id="fly22"></a>
 ## fly22
@@ -268,6 +278,11 @@ Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High
 ## toda1991
 
 Seinosuke Toda. “PP Is as Hard as the Polynomial-Time Hierarchy.” *SIAM Journal on Computing* 20(5), 865–877 (1991). Publisher abstract inspected 2026-11-01: https://doi.org/10.1137/0220053.
+
+<a id="vww18"></a>
+## vww18
+
+Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Between Path, Matrix, and Triangle Problems." *Journal of the ACM* 65(5), 27:1–27:38, 2018; preliminary version in FOCS 2010. https://doi.org/10.1145/3186893 . Bibliographic metadata checked on 2026-11-07; the manual cites it only as the standard reference for the APSP class and the negative-triangle equivalence, without a theorem locator.
 
 <a id="williams25"></a>
 ## williams25
