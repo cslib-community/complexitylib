@@ -42,6 +42,7 @@ implementing the decoder as a multi-tape Turing machine that receives `φ`, whic
 
 ## Main definitions
 
+* `Cslib.Logic.PL.Moser.decodeWord`: the tape word decoded from an assignment and a log.
 * `Cslib.Logic.PL.Moser.description`: the description of a tape by a run.
 * `Cslib.Logic.PL.Moser.descriptionMethod`: the description method of the decoder.
 
@@ -178,8 +179,9 @@ theorem eval_final_of_length_sub_le_ecomplexity {k : ℕ} (hk : 3 ≤ k)
     (not_exhausts_of_length_sub_le_ecomplexity hk hφ hdeg ht hy hc)
 
 /-- **Fortnow's argument** [Fortnow2009]: if every clause of an exact `k`-CNF shares a variable with
-fewer than `2 ^ (k - 3)` other clauses and `t > m`, the run on an incompressible tape word of length
-`n + t k` ends with a satisfying assignment. -/
+fewer than `2 ^ (k - 3)` other clauses and `t > m`, the run on some tape word of length `n + t k`
+ends with a satisfying assignment. The proof takes a word that is incompressible for the decoder
+and applies `Cslib.Logic.PL.Moser.eval_final_of_length_sub_le_ecomplexity` with `c = 0`. -/
 theorem exists_eval_final_of_degree_lt {k : ℕ} (hk : 3 ≤ k) (hφ : φ.IsExactDistinct k)
     (hdeg : ∀ i : Fin φ.length, degree φ i < 2 ^ (k - 3)) {t : ℕ} (ht : φ.length < t) :
     ∃ y : List Bool, y.length = n + t * k ∧

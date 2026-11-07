@@ -40,8 +40,10 @@ for the same formulas is `CNF.IsExactDistinct.satisfiable_of_exp_mul_le` in
 it does not say how to find the assignment. Fortnow's Kolmogorov-complexity form of the
 compression argument is in `Complexity.Logics.Propositional.CNF.Moser.Kolmogorov`. There the
 complexity is `ecomplexity` for the explicit decoder `Moser.descriptionMethod φ k L`, not for a
-universal machine. `Moser.not_exhausts_of_length_sub_le_ecomplexity` shows that a tape word of
-complexity at least its length minus `c` does not use up a budget of `t > m + c` resamplings. The
+universal machine. Under `3 ≤ k`, `CNF.IsExactDistinct k φ` and `degree φ i < 2 ^ (k - 3)`,
+`Moser.not_exhausts_of_length_sub_le_ecomplexity` shows that a tape word `y` of length `n + t k`
+whose complexity for `Moser.descriptionMethod φ k (k - 3)` is at least `n + t k - c` does not use
+up a budget of `t > m + c` resamplings. The
 [checked examples](../../ComplexityTests/Moser.lean) include a concrete run, its log, the
 recovered tape and its description, and a formula where only the existential bound applies;
 check them with `scripts/build.sh ComplexityTests.Moser`.
