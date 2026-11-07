@@ -37,7 +37,7 @@ Priorities live in this list and in the tiers of [#897].
 1. [Completeness of oblivious transfer](#cryptographic-landmarks)
 2. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
 3. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
+4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity) ([#321])
 5. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
 6. [MIP = NEXP](#interactive-proofs) ([#892])
 7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
@@ -452,12 +452,12 @@ index links to canonical definitions rather than keeping a second set.
 ### Structure, time and space
 
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
-  native polynomial-time tractability for the six common-polymorphism cases and NP-completeness
-  outside them, for each fixed finite Boolean constraint language. Structural majority/2CNF,
-  native NP membership, unary-constant/majority P membership, and the positive-arity Boolean
-  clone classification and native NP-completeness outside the six cases are proved in the stack.
-  The remaining solver applications and six-case assembly do not yet complete the complexity
-  classification.
+  the stack proves native polynomial-time tractability for all six common-polymorphism cases
+  and native NP-completeness outside them, for each fixed finite Boolean constraint language
+  of arbitrary fixed arities. `CSPSAT.schaefer_dichotomy` assembles the actual solvers, fixed
+  compilers, clone classification and gadgets under binary labels and exact-arity rejection,
+  including empty/nullary relations. The hard branch has a native 3SAT reduction with
+  `output.numVars + output.length ≤ C * input.length`, for a language-dependent constant.
   Symmetric and larger-domain dichotomies are outside the current scope.
 
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
@@ -586,9 +586,9 @@ index links to canonical definitions rather than keeping a second set.
   separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
   application needs a native path-counting class and complement closure.
 - **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
-- **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE.
-  P-selective sets (Selman): a P-selective NP-complete set gives `P = NP`, P-selective sets lie in
-  `P/poly` (Ko), and self-reducible P-selective sets lie in P.
+- **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE,
+  self-reducible P-selective sets lie in P, and P-selective sets are not `≤ₜₜᵖ`-hard for NP unless
+  P = NP.
 - **Low and high hierarchies in NP** (Schöning): sparse NP sets lie in `Low₂` (Ko and Schöning), and
   so does graph isomorphism, via graph non-isomorphism in AM.
 - **Immunity:** immune and bi-immune sets, P-bi-immune sets in EXP (Balcázar and Schöning), and
@@ -693,8 +693,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Håstad's optimal MAX-E3SAT hardness** ([#886]): for `0 < ε < 1/8`, NP-hardness of
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
-  `7/8 + ε` of the clauses. This needs Raz–Holenstein parallel repetition for small-soundness
-  Label Cover and Håstad's separate perfect-completeness construction for MAX-E3SAT.
+  `7/8 + ε` of the clauses. Holenstein's parallel repetition theorem for two-prover games is
+  proved (`TwoProverGame.value_pow_le`). What remains is small-soundness Label Cover through
+  parallel repetition and Håstad's separate perfect-completeness construction for MAX-E3SAT.
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
@@ -777,8 +778,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
   Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
   has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
-  fields of characteristic other than two (membership now has an explicit Ryser witness over
-  every commutative ring; VNP-hardness remains open); formula and branching-program models,
+  fields of characteristic other than two ([#321]; membership has an explicit Ryser witness over
+  every commutative ring, and arithmetic formulas project to the permanent with dimension
+  `Formula.size + 1` over every commutative semiring; a selector occurring in one permanent entry
+  can be eliminated with one extra dimension when `2` is invertible; the conversion from VP
+  witnesses to formulas, the two-entry gadget and the general Boolean-sum elimination needed for
+  VNP-hardness remain open); formula and branching-program models,
   identity testing, hitting sets, and tensor and rank methods, including partial-derivative
   measures (the order-`k` measure and bounded-product-fan-in depth-three determinant and permanent
   lower bounds, covering homogeneous depth-three circuits, are proved in
@@ -1179,11 +1184,6 @@ and credited.
 These remain coverage targets but are deferred from the active queue; their issues were closed as
 not planned, not as proved.
 
-- The full VNP-completeness reduction for the permanent ([#321]). Arithmetic formulas now
-  project to the permanent with dimension `Formula.size + 1` over every commutative semiring;
-  a selector occurring in one permanent entry can be eliminated with one extra dimension when
-  `2` is invertible. The conversion from VP witnesses to formulas, the two-entry gadget and
-  general Boolean-sum elimination needed for VNP-hardness remain open.
 - General auxiliary-input zero knowledge ([#324]); the GMW protocol's auxiliary-input results and
   their limits are in [`GMW/Simulator.lean`](Complexity/Crypto/Computational/GMW/Simulator.lean).
 - Vollmer's generalized-quantifier survey ([#399]): ordered leaf words, explicit uniformity and
