@@ -50,6 +50,62 @@ This policy is unsuitable for human-chosen passwords. Existing cost-12 installat
 the same generated token privately through `htpasswd -niBC 4` using stdin, then atomically replace
 the hash file with the same owner/group/mode; the token and GitHub secret do not need to change.
 
+For this dedicated, single-account installation, run the following from the reviewed repository
+checkout on the server. Paste the **existing generated token** at the hidden prompt; do not
+generate a new one. It verifies the token against the current hash before replacing anything,
+and uses the installer's fsynced atomic replacement. It refuses unexpected ownership, modes,
+symlinks or additional accounts. MIT has already completed this rehash; no repeat is needed.
+
+```bash
+sudo python3 -B - <<'PY'
+import base64, getpass, grp, importlib.util, os, re, stat, subprocess, warnings
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("credential", "tools/cache-origin/examples/publisher-credential.py")
+credential = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(credential)
+target = Path("/etc/nginx/cache-publish.htpasswd")
+user = "cache-publisher"
+gid = grp.getgrnam("cache-origin-proxy").gr_gid
+info, parent = target.lstat(), target.parent.lstat()
+if (os.geteuid() != 0 or not stat.S_ISDIR(parent.st_mode) or parent.st_uid != 0
+        or parent.st_mode & 0o022 or not stat.S_ISREG(info.st_mode)
+        or info.st_uid != 0 or info.st_gid != gid or stat.S_IMODE(info.st_mode) != 0o640
+        or info.st_nlink != 1):
+    raise SystemExit("Unsafe credential file or directory; nothing changed")
+previous = target.read_bytes()
+pattern = re.escape(user.encode()) + rb":\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}\n"
+if not re.fullmatch(pattern, previous):
+    raise SystemExit("Expected one bcrypt publisher account; nothing changed")
+warnings.simplefilter("error", getpass.GetPassWarning)
+token = getpass.getpass("Existing generated publisher token: ")
+if (not re.fullmatch(r"[A-Za-z0-9_-]{43}", token)
+        or base64.urlsafe_b64encode(base64.urlsafe_b64decode(token + "=")).decode().rstrip("=") != token):
+    raise SystemExit("Expected a canonical generated 32-byte token; nothing changed")
+secret = (token + "\n").encode()
+verified = subprocess.run(["htpasswd", "-vi", str(target), user], input=secret, capture_output=True)
+if verified.returncode:
+    raise SystemExit("Existing token did not verify; nothing changed")
+hashed = subprocess.run(["htpasswd", "-niBC", "4", user], input=secret, capture_output=True, check=True)
+record = hashed.stdout.rstrip(b"\n") + b"\n"
+if not re.fullmatch(re.escape(user.encode()) + rb":\$2[aby]\$04\$[./A-Za-z0-9]{53}\n", record):
+    raise SystemExit("Unexpected bcrypt output; nothing changed")
+credential.atomic_hash(target, record, gid)
+if subprocess.run(["htpasswd", "-vi", str(target), user], input=secret, capture_output=True).returncode:
+    credential.atomic_hash(target, previous, gid)
+    raise SystemExit("Verification failed; previous hash restored")
+print("Rehashed at cost 4; publisher token unchanged")
+PY
+sudo nginx -t
+```
+
+The token stays out of shell history, argv and files created by this recipe. nginx reads the
+credential file on each authentication attempt, so this rehash requires no nginx restart or
+GitHub secret update. For multiple accounts or another deployment layout, adapt and review the
+recipe before using it; do not overwrite an unrelated credential file.
+
+For an initial installation, generate a new token instead:
+
 ```bash
 sudo install -d -m 0700 /root/cache-origin-handoff
 sudo python3 tools/cache-origin/examples/publisher-credential.py \
