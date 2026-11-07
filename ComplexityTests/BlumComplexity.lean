@@ -20,8 +20,8 @@ gap class is inhabited, and the two-argument gap theorem is instantiated with th
 stretch `g n y = y ^ (n + 1)`. Recursive relatedness is instantiated for the fuel measure against
 itself and, with its explicit threshold, against a second measure (fuel plus input). Blum's
 speedup theorem is instantiated for the fuel measure with exponential speedup `r m = 2 ^ m`. The
-resulting function has a program, so the universally quantified conclusion is not vacuous, and
-the speedup can be applied twice.
+resulting function has a program, so the universally quantified conclusion is not vacuous. It
+is also hard: it lies outside the class of the bound `n + 1`. The speedup can be applied twice.
 -/
 
 namespace ComplexityTests.BlumComplexity
@@ -130,7 +130,7 @@ private def fuelPlusInput : BlumMeasure where
 `fuelPlusInput`: at every input `n ≥ encode c`, each cost is bounded by `r n` of the other. -/
 example : ∃ r : ℕ → ℕ → ℕ, Computable₂ r ∧ ∀ c : Code, ∀ n, Encodable.encode c ≤ n →
     ∀ m ∈ evalnFuel c n, m + n ≤ r n m ∧ m ≤ r n (m + n) := by
-  obtain ⟨r, hr, hrel⟩ := recursively_related_of_le fuelMeasure fuelPlusInput
+  obtain ⟨r, hr, hrel⟩ := recursively_related_of_encode_le fuelMeasure fuelPlusInput
   exact ⟨r, hr, fun c n hn m hm => hrel c n hn m hm (m + n) (Part.mem_map _ hm)⟩
 
 /-- Blum's speedup theorem for the fuel measure with exponential speedup: some computable
@@ -145,6 +145,23 @@ example : ∃ f : ℕ → ℕ, Computable f ∧ (∀ n, f n ≤ 1) ∧ (∃ c : 
   refine ⟨f, hf, hf1, ⟨c, fun n => by rw [hc]; exact Part.mem_some _⟩, fun c hc => ?_⟩
   obtain ⟨c', hc', hev⟩ := hsp c hc
   exact ⟨c', hc', by simpa only [fuelMeasure_cost] using hev⟩
+
+/-- The speedup function is hard: for `r = id` it lies outside the fuel class of `n + 1`. A program
+within fuel `n + 1` would have a faster program, with fuel at most `n`, below the fuel lower bound
+`n < evalnFuel c n`. -/
+example : ∃ f : ℕ → ℕ, Computable f ∧ f ∉ fuelMeasure.complexityClass (· + 1) := by
+  obtain ⟨f, hf, -, hsp⟩ := fuelMeasure.speedup' (r := id) Computable.id
+  refine ⟨f, hf, fun hmem => ?_⟩
+  obtain ⟨c, hc, hev⟩ := mem_complexityClass.1 hmem
+  obtain ⟨c', hc', hev'⟩ := hsp c hc
+  obtain ⟨n, hn, hn'⟩ := (hev.and hev').exists
+  obtain ⟨m, hm⟩ := Part.dom_iff_mem.1 (fuelMeasure.dom_cost_of_total hc n)
+  obtain ⟨m', hm'⟩ := Part.dom_iff_mem.1 (fuelMeasure.dom_cost_of_total hc' n)
+  have h1 := hn m hm
+  have h2 : m' < m := hn' m' hm' m hm
+  rw [fuelMeasure_cost] at hm'
+  have h3 := lt_of_mem_evalnFuel hm'
+  omega
 
 /-- The speedup can be iterated: from any program for the speedup function there are two further
 programs, each faster than the previous one by `r` almost everywhere. -/

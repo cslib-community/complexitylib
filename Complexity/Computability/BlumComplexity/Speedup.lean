@@ -58,7 +58,7 @@ program for `f` halts on every input, so both costs in the conclusion are define
 
 * `Cslib.BlumComplexity.BlumMeasure.speedup`: **Blum's speedup theorem**.
 * `Cslib.BlumComplexity.BlumMeasure.speedup'`: the one-argument form.
-* `Cslib.BlumComplexity.BlumMeasure.not_exists_fastest`: the function `f` has no program that is
+* `Cslib.BlumComplexity.BlumMeasure.exists_no_fastest`: the function `f` has no program that is
   fastest up to `r`.
 
 ## References
@@ -137,11 +137,6 @@ private noncomputable def master (e : Code) (N : ℕ) : Part ℕ :=
   run Φ r e N.unpair.1.unpair.1 N.unpair.1.unpair.2 N.unpair.2
 
 /-! ### Computability of the construction -/
-
-private theorem computable_decide {α : Type*} [Primcodable α] {p : α → Prop} [DecidablePred p]
-    (hp : ComputablePred p) : Computable fun a => decide (p a) := by
-  obtain ⟨_, hp⟩ := hp
-  exact hp.of_eq fun a => decide_eq_decide.2 Iff.rfl
 
 private theorem computable_vers {α : Type*} [Primcodable α] {e : α → Code} {u d : α → ℕ}
     (he : Computable e) (hu : Computable u) (hd : Computable d) :
@@ -238,11 +233,11 @@ private theorem primrec_ovOf : Primrec₂ ovOf := by
 
 private theorem computable_costOK : Computable fun x : ((Code × ℕ) × ℕ) × ℕ =>
     costOK Φ x.1.1.1 x.1.1.2 x.1.2 x.2 :=
-  @computable_decide _ _ _ (fun _ => Classical.dec _) (computablePred_costOK Φ)
+  @ComputablePred.decide _ _ _ (fun _ => Classical.dec _) (computablePred_costOK Φ)
 
 private theorem computable_eligB (hr : Computable₂ r) :
     Computable fun x : ((Code × ℕ) × ℕ) × ℕ => eligB Φ r x.1.1.1 x.1.1.2 x.1.2 x.2 :=
-  @computable_decide _ _ _ (fun _ => Classical.dec _) (computablePred_eligB Φ r hr)
+  @ComputablePred.decide _ _ _ (fun _ => Classical.dec _) (computablePred_eligB Φ r hr)
 
 /-- The run of `vers e u d` at stage `x` under the cost cap `B`, as a function of
 `q = ((e, (u, (d, x))), B)`. -/
@@ -584,7 +579,7 @@ theorem speedup' {r : ℕ → ℕ} (hr : Computable r) :
 /-- The function of Blum's speedup theorem has no program that is fastest up to `r`: for each
 program `c` for it, some program `c'` for it is faster than `c` by `r` almost everywhere, so `c`
 is not within `r` of every other program. -/
-theorem not_exists_fastest {r : ℕ → ℕ → ℕ} (hr : Computable₂ r) :
+theorem exists_no_fastest {r : ℕ → ℕ → ℕ} (hr : Computable₂ r) :
     ∃ f : ℕ → ℕ, Computable f ∧ (∀ n, f n ≤ 1) ∧
       ¬∃ c : Code, (∀ n, f n ∈ c.eval n) ∧ ∀ c' : Code, (∀ n, f n ∈ c'.eval n) →
         ∀ᶠ n in atTop, ∀ m ∈ Φ.cost c n, ∀ m' ∈ Φ.cost c' n, m ≤ r n m' := by

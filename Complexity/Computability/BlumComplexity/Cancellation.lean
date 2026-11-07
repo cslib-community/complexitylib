@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Init
 public import Mathlib.Computability.Primrec.List
 public import Mathlib.Computability.Partrec
 public import Mathlib.Order.Filter.AtTopBot.Basic
@@ -113,11 +114,11 @@ theorem bfind_congr {p q : ℕ → Bool} {s n : ℕ} (h : ∀ i, s ≤ i → i <
 /-- One stage `y`, given the history `h` of earlier stages. If the override `ov y` is set,
 nothing is cancelled. Otherwise the least `i ∈ [u, y]` that is eligible (`E i y`) and was not
 cancelled earlier (`some i ∉ h`) is cancelled. -/
-def step (E : ℕ → ℕ → Bool) (ov : ℕ → Bool) (u y : ℕ) (h : List (Option ℕ)) : Option ℕ :=
+private def step (E : ℕ → ℕ → Bool) (ov : ℕ → Bool) (u y : ℕ) (h : List (Option ℕ)) : Option ℕ :=
   cond (ov y) none (bfind (fun i => E i y && !decide (some i ∈ h)) u (y + 1 - u))
 
 /-- The cancellation history of the stages before `y`. -/
-def hist (E : ℕ → ℕ → Bool) (ov : ℕ → Bool) (u : ℕ) : ℕ → List (Option ℕ)
+private def hist (E : ℕ → ℕ → Bool) (ov : ℕ → Bool) (u : ℕ) : ℕ → List (Option ℕ)
   | 0 => []
   | y + 1 => hist E ov u y ++ [step E ov u y (hist E ov u y)]
 

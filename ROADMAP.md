@@ -467,9 +467,10 @@ index links to canonical definitions rather than keeping a second set.
   `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
   almost-everywhere classes (also with a two-argument stretch), recursive relatedness and Blum's
   speedup theorem, are in `Computability/BlumComplexity`. Remaining: the McCreight–Meyer union
-  theorem, the compression theorem and honesty, an effective speedup theorem (computing the faster
-  program from the slower one), and Blum measures for native multitape time and space through a
-  Gödel-numbering bridge from native descriptions.
+  theorem, the compression theorem and honesty, effective forms of speedup such as Blum's
+  pseudo-speedup, which computes a faster program for a finite variant of `f` (M. Blum, *On
+  effective procedures for speeding up algorithms*, J. ACM 18(2), 1971), and Blum measures for
+  native multitape time and space through a Gödel-numbering bridge from native descriptions.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once

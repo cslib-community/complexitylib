@@ -153,8 +153,7 @@ theorem exists_computable_mem_complexityClass {f : ℕ → ℕ} (hf : Computable
     ∃ t : ℕ → ℕ, Computable t ∧ f ∈ Φ.complexityClass t := by
   obtain ⟨c, hc⟩ := Code.exists_code.1 (Partrec.nat_iff.1 hf)
   have hmem : ∀ n, f n ∈ c.eval n := fun n => by rw [hc]; exact Part.mem_some _
-  have hdom : ∀ n, (Φ.cost c n).Dom := fun n =>
-    (Φ.dom_cost_iff c n).2 (Part.dom_iff_mem.2 ⟨_, hmem n⟩)
+  have hdom : ∀ n, (Φ.cost c n).Dom := Φ.dom_cost_of_total hmem
   refine ⟨fun n => (Φ.cost c n).get (hdom n), ?_, c, hmem, Eventually.of_forall fun n m hm => ?_⟩
   · exact (Φ.partrec_cost.comp (Computable.const c) Computable.id).of_eq_tot fun n =>
       Part.get_mem (hdom n)

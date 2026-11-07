@@ -27,7 +27,7 @@ makes both costs defined together. The search for it is decidable by Blum's seco
 
 * `Cslib.BlumComplexity.BlumMeasure.recursively_related`: any two complexity measures are
   recursively related.
-* `Cslib.BlumComplexity.BlumMeasure.recursively_related_of_le`: the same, with the explicit
+* `Cslib.BlumComplexity.BlumMeasure.recursively_related_of_encode_le`: the same, with the explicit
   threshold `n ≥ encode c` for each program `c`.
 
 ## References
@@ -44,7 +44,7 @@ open Encodable Denumerable Nat.Partrec Filter
 /-- **Recursive relatedness** [Blum1967] with an explicit threshold: for any two complexity
 measures `Φ` and `Ψ` there is a computable `r` with `Ψ c n ≤ r n (Φ c n)` and
 `Φ c n ≤ r n (Ψ c n)` for every program `c` and every input `n ≥ encode c`. -/
-theorem recursively_related_of_le (Φ Ψ : BlumMeasure) :
+theorem recursively_related_of_encode_le (Φ Ψ : BlumMeasure) :
     ∃ r : ℕ → ℕ → ℕ, Computable₂ r ∧ ∀ c : Code, ∀ n, encode c ≤ n →
       ∀ m ∈ Φ.cost c n, ∀ m' ∈ Ψ.cost c n, m' ≤ r n m ∧ m ≤ r n m' := by
   classical
@@ -113,12 +113,12 @@ theorem recursively_related_of_le (Φ Ψ : BlumMeasure) :
 
 /-- **Recursive relatedness** [Blum1967]: for any two complexity measures `Φ` and `Ψ` there is a
 computable `r` with `Ψ c n ≤ r n (Φ c n)` and `Φ c n ≤ r n (Ψ c n)` for every program `c` and all
-sufficiently large `n`. `recursively_related_of_le` gives the explicit threshold
+sufficiently large `n`. `recursively_related_of_encode_le` gives the explicit threshold
 `n ≥ encode c`. -/
 theorem recursively_related (Φ Ψ : BlumMeasure) :
     ∃ r : ℕ → ℕ → ℕ, Computable₂ r ∧ ∀ c : Code, ∀ᶠ n in atTop,
       ∀ m ∈ Φ.cost c n, ∀ m' ∈ Ψ.cost c n, m' ≤ r n m ∧ m ≤ r n m' := by
-  obtain ⟨r, hr, hrel⟩ := recursively_related_of_le Φ Ψ
+  obtain ⟨r, hr, hrel⟩ := recursively_related_of_encode_le Φ Ψ
   exact ⟨r, hr, fun c => (eventually_ge_atTop (encode c)).mono fun n hn => hrel c n hn⟩
 
 end Cslib.BlumComplexity.BlumMeasure
