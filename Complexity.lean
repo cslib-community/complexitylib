@@ -4281,6 +4281,12 @@ public import Complexity.Foundations.RingTheory.AdjoinRoot
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
+public import Complexity.GameTheory.Congestion.Affine
+public import Complexity.GameTheory.Congestion.Basic
+public import Complexity.GameTheory.Congestion.Nonatomic
+public import Complexity.GameTheory.Strategic.Basic
+public import Complexity.GameTheory.Strategic.Potential
+public import Complexity.GameTheory.Strategic.Smooth
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString
