@@ -33,6 +33,8 @@ it does not assert that the absolute constant 28 also proves that relative stabi
 ## Main results
 
 * `Cslib.RowCompression.sum_propagation_mul_dyadic_decay_le`: an explicit uniform sum bound.
+* `Cslib.RowCompression.sum_propagation_mul_sixteenth_le`: factor-28 payment at decay 1/16.
+* `Cslib.RowCompression.sum_propagation_mul_quarter_le`: factor-28 payment at decay 1/4.
 * `Cslib.RowCompression.vertexNormPow_firstOverflowNoiseTail_le_dyadic_budget`: the resulting
   normalized moment bound for the actual first-overflow tail.
 
@@ -77,6 +79,142 @@ theorem sum_propagation_mul_dyadic_decay_le {C q : ℝ}
     _ ≤ C * q / (1 - C * q) := by
       have h := geom_sum_Ico_le_of_lt_one (m := 1) (n := m + 1) (mul_nonneg hC hq) hCq
       simpa only [sum_Ico_eq_sum_range, Nat.add_sub_cancel, pow_one, Nat.add_comm] using h
+
+/-- The actual factor-28 propagation is paid by sixteenth-power dyadic decay.
+The two-unit offset in `2 * (m - i) ≤ dyadicSlack m i + 2` is paid once,
+before summing a geometric series. No event probability or independence is used. -/
+theorem sum_propagation_mul_sixteenth_le (m : ℕ) :
+    ∑ i ∈ range m, (28 : ℝ) ^ (m - i) *
+      (1 / 16 : ℝ) ^ dyadicSlack m i ≤ 1792 / 57 := by
+  have htwo (n : ℕ) : 2 * n ≤ 2 ^ n := by
+    induction n with
+    | zero => norm_num
+    | succ n ih =>
+      by_cases hn : n = 0
+      · subst n; norm_num
+      · have hp : 2 ≤ 2 ^ n := Nat.succ_le_of_lt (Nat.one_lt_two_pow hn)
+        rw [pow_succ]
+        omega
+  have hterm (i : ℕ) (hi : i ∈ range m) :
+      (28 : ℝ) ^ (m - i) * (1 / 16 : ℝ) ^ dyadicSlack m i ≤
+        256 * (7 / 64 : ℝ) ^ (m - i) := by
+    have hrem : 2 * (m - i) ≤ dyadicSlack m i + 2 := by
+      have hh := htwo (m - (i + 1))
+      have hi' := mem_range.mp hi
+      unfold dyadicSlack
+      omega
+    have hp := pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 16) hrem
+    have he : (16 : ℝ) ^ (2 * (m - i)) = (256 : ℝ) ^ (m - i) := by
+      rw [pow_mul]; norm_num
+    rw [he, pow_add] at hp
+    have hden : (0 : ℝ) < 16 ^ dyadicSlack m i := by positivity
+    rw [one_div_pow, mul_one_div, div_le_iff₀ hden]
+    have h := mul_le_mul_of_nonneg_left hp (show 0 ≤ (7 / 64 : ℝ) ^ (m - i) by positivity)
+    have hid : (7 / 64 : ℝ) ^ (m - i) * 256 ^ (m - i) = 28 ^ (m - i) := by
+      rw [← mul_pow]; norm_num
+    rw [hid] at h
+    nlinarith only [h]
+  have hs : ∑ i ∈ range m, (7 / 64 : ℝ) ^ (m - i) ≤ 7 / 57 := by
+    calc
+      _ = ∑ i ∈ range m, (7 / 64 : ℝ) ^ ((m - 1 - i) + 1) := by
+        apply sum_congr rfl
+        intro i hi
+        congr 1
+        have hi' := mem_range.mp hi
+        omega
+      _ = ∑ i ∈ range m, (7 / 64 : ℝ) ^ (i + 1) :=
+        sum_range_reflect (fun i => (7 / 64 : ℝ) ^ (i + 1)) m
+      _ ≤ _ := by
+        have h := geom_sum_Ico_le_of_lt_one (m := 1) (n := m + 1)
+          (by norm_num : (0 : ℝ) ≤ 7 / 64) (by norm_num : (7 / 64 : ℝ) < 1)
+        norm_num only [sum_Ico_eq_sum_range, Nat.add_sub_cancel, pow_one] at h
+        simpa only [Nat.add_comm] using h
+  apply (sum_le_sum hterm).trans
+  rw [← mul_sum]
+  nlinarith only [hs]
+
+/-- The actual factor-28 propagation is paid by quarter-power dyadic decay.
+The eight-unit offset in `4 * (m - i) ≤ dyadicSlack m i + 8` is paid once,
+before summing a geometric series. No event probability or independence is used. -/
+theorem sum_propagation_mul_quarter_le (m : ℕ) :
+    ∑ i ∈ range m, (28 : ℝ) ^ (m - i) *
+      (1 / 4 : ℝ) ^ dyadicSlack m i ≤ 458752 / 57 := by
+  have hfour (n : ℕ) : 4 * n ≤ 2 ^ n + 4 := by
+    induction n with
+    | zero => norm_num
+    | succ n ih =>
+      by_cases hn : n ≤ 1
+      · rcases (show n = 0 ∨ n = 1 by omega) with rfl | rfl <;> norm_num
+      · have hp : 4 ≤ 2 ^ n := by
+          have h := Nat.pow_le_pow_right (by decide : 0 < 2) (by omega : 2 ≤ n)
+          exact h
+        rw [pow_succ]
+        omega
+  have hterm (i : ℕ) (hi : i ∈ range m) :
+      (28 : ℝ) ^ (m - i) * (1 / 4 : ℝ) ^ dyadicSlack m i ≤
+        65536 * (7 / 64 : ℝ) ^ (m - i) := by
+    have hrem : 4 * (m - i) ≤ dyadicSlack m i + 8 := by
+      have hh := hfour (m - (i + 1))
+      have hi' := mem_range.mp hi
+      unfold dyadicSlack
+      omega
+    have hp := pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 4) hrem
+    have he : (4 : ℝ) ^ (4 * (m - i)) = (256 : ℝ) ^ (m - i) := by
+      rw [pow_mul]; norm_num
+    rw [he, pow_add] at hp
+    have hden : (0 : ℝ) < 4 ^ dyadicSlack m i := by positivity
+    rw [one_div_pow, mul_one_div, div_le_iff₀ hden]
+    have h := mul_le_mul_of_nonneg_left hp (show 0 ≤ (7 / 64 : ℝ) ^ (m - i) by positivity)
+    have hid : (7 / 64 : ℝ) ^ (m - i) * 256 ^ (m - i) = 28 ^ (m - i) := by
+      rw [← mul_pow]; norm_num
+    rw [hid] at h
+    nlinarith only [h]
+  have hs : ∑ i ∈ range m, (7 / 64 : ℝ) ^ (m - i) ≤ 7 / 57 := by
+    calc
+      _ = ∑ i ∈ range m, (7 / 64 : ℝ) ^ ((m - 1 - i) + 1) := by
+        apply sum_congr rfl
+        intro i hi
+        congr 1
+        have hi' := mem_range.mp hi
+        omega
+      _ = ∑ i ∈ range m, (7 / 64 : ℝ) ^ (i + 1) :=
+        sum_range_reflect (fun i => (7 / 64 : ℝ) ^ (i + 1)) m
+      _ ≤ _ := by
+        have h := geom_sum_Ico_le_of_lt_one (m := 1) (n := m + 1)
+          (by norm_num : (0 : ℝ) ≤ 7 / 64) (by norm_num : (7 / 64 : ℝ) < 1)
+        norm_num only [sum_Ico_eq_sum_range, Nat.add_sub_cancel, pow_one] at h
+        simpa only [Nat.add_comm] using h
+  apply (sum_le_sum hterm).trans
+  rw [← mul_sum]
+  nlinarith only [hs]
+
+/-- A prefix of the dyadic decay sum retains the decay of its last included group.
+This pays sums of correlated group noises without losing a factor for the prefix length. -/
+theorem sum_prefix_dyadic_decay_le {q : ℝ} (hq : 0 ≤ q) (hq1 : q < 1)
+    {m j : ℕ} (hj : j ≤ m) :
+    ∑ i ∈ range j, q ^ dyadicSlack m i ≤ q ^ dyadicSlack m (j - 1) / (1 - q) := by
+  have hterm (i : ℕ) (hi : i < j) :
+      dyadicSlack m (j - 1) + (j - 1 - i) ≤ dyadicSlack m i := by
+    have hj0 : 0 < j := by omega
+    have he : m - (i + 1) = (m - j) + (j - 1 - i) := by omega
+    have hd : 1 ≤ 2 ^ (m - j) := Nat.one_le_pow _ _ (by decide)
+    have hr : j - 1 - i + 1 ≤ 2 ^ (j - 1 - i) :=
+      Nat.succ_le_of_lt Nat.lt_two_pow_self
+    simp only [dyadicSlack, show j - 1 + 1 = j by omega, he, pow_add]
+    nlinarith
+  calc
+    _ ≤ ∑ i ∈ range j, q ^ dyadicSlack m (j - 1) * q ^ (j - 1 - i) := by
+      apply sum_le_sum
+      intro i hi
+      rw [← pow_add]
+      exact pow_le_pow_of_le_one hq hq1.le (hterm i (mem_range.mp hi))
+    _ = q ^ dyadicSlack m (j - 1) * ∑ i ∈ range j, q ^ i := by
+      rw [← mul_sum, sum_range_reflect]
+    _ ≤ q ^ dyadicSlack m (j - 1) * (1 / (1 - q)) := by
+      apply mul_le_mul_of_nonneg_left _ (pow_nonneg hq _)
+      simpa only [Nat.add_zero, pow_zero, Nat.Ico_zero_eq_range] using
+        geom_sum_Ico_le_of_lt_one (m := 0) (n := j) hq hq1
+    _ = _ := by ring
 
 /-- **A horizon-independent budget for actual first-overflow noise.** Individual moments
 decaying geometrically in the dyadic slack give an explicit normalized tail bound. The

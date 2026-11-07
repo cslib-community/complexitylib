@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of allocated initial-pilot calls)
 import Complexity.Foundations.Probability.InitialPilotCompleted
+import Complexity.Foundations.Probability.HierarchyCompressedBin
 import Complexity.Foundations.Combinatorics.Expander.LowerBound
 
 /-! Actual source-correlated RAW/score calls, including positive allocated walks. -/
@@ -17,6 +18,8 @@ open scoped BigOperators
 attribute [local instance] Classical.propDecidable
 local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 namespace InitialPilotScoreRegression
+-- Scalar walk lemmas and row-valued evaluator equations use the two equivalent type spellings.
+attribute [local implicit_reducible] Matrix
 private def roles : RoleProfile 3 := ⟨0, 1, 2, by decide, by decide, by decide⟩
 private def horizon : Horizon 5 := ⟨1, 4, by decide, by decide⟩
 private def base : Matrix (ZMod 5) (ZMod 5) ℝ := 1
@@ -86,20 +89,17 @@ private lemma walk_eq (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (steps : ℕ) (σ : Environment 5 3) (x y : ZMod 5) :
     initialPilotWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1) base steps σ x y =
       if source σ x then base x y else 0 := by
-  unfold initialPilotWalk conditionalWalk
-  have ht (τ : Environment 5 3) (w : ZMod 5) :
-      Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]) τ w := by
-    simpa only [Y, show side 5 0 = 5 by norm_num [side]] using full_retains (τ roles.terminal) _
-  simp only [mem_filter, mem_univ, true_and, ht, and_true]
-  change (if _h : source σ x then _ else 0) = _
-  split_ifs with hs
-  · have he : (fun τ : RetainedPairSlice
-        (X roles.source (side 5 1) (CopyPadding.identifier 1 [1]))
-        (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3])) x y =>
-        initialPilotRaw HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1) base τ.val x y) =
-          fun _ => base x y := by funext τ; exact raw_eq HP τ.val x y
-    rw [he, RotationMap.walk_pow_const]
-  · rfl
+  have he : initialPilotRaw HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff
+      (fun _ => 1) base = fun _ => base := by
+    funext σ x y
+    exact raw_eq HP σ x y
+  unfold initialPilotWalk
+  rw [he, conditionalWalk_const]
+  have ht : Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]) σ y := by
+    simpa only [Y, show side 5 0 = 5 by norm_num [side]] using
+      full_retains (σ roles.terminal) _
+  simp only [ht, and_true]
+  rfl
 
 private lemma score_eq (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (steps : ℕ) (σ : Environment 5 3) (x : ZMod 5) :
@@ -868,5 +868,619 @@ example : (∀ σ, varyingPrep σ () () ∈ Set.Icc (0:ℝ) 1) ∧
     norm_num [varyingPrep]
   · exact rowSliceMean_conditionalWalk fullMask fullMask
       (fun _ _ => RotationMap.complete FullSlice) (fun _ _ => 1) varyingPrep () ()
+
+-- The new shared request evaluator assembles two nonzero half-bins. These use the
+-- same original environment, and their sum is completed by its actual H4 graph.
+private def budgetData (HP : FourthRootHierarchyParams 16 1 16 32 8) : BudgetData HP 5 where
+  padding := 1
+  base := base
+  bins := {0, 1}
+  binRate := fun _ => 1
+  cutoff := fun _ d => binCutoff d / 2
+  auxiliary := fun _ _ => 1
+  slack := 1
+  slack_pos := by decide
+  rankCharge := 0
+  binCap := 1
+  binCap_nonneg := zero_le_one
+  cutoff_bounds := by
+    intro i d
+    have h := boundedRoutedBinCutoff_mem_Icc (χ := polynomialSwitch4 (1 / 2) 1)
+      (b := fun _ => 1) (cap := 1) (B := 1)
+      (by norm_num) (by norm_num) le_rfl
+      (monotone_polynomialSwitch4 (by norm_num))
+      (fun t ht => polynomialSwitch4_of_le (by norm_num) ht)
+      (fun t ht => polynomialSwitch4_of_ge (by norm_num) ht)
+      (fun t => ⟨polynomialSwitch4_nonneg _ _ t, polynomialSwitch4_le_one _ _ t⟩)
+      (fun _ => zero_lt_one) (fun _ _ _ => le_rfl) (fun _ => by norm_num)
+      (fun _ => 1) (fun _ => ⟨zero_le_one, le_rfl⟩) 0 d
+    change binCutoff d / 2 ∈ Set.Icc 0 1
+    change binCutoff d ∈ Set.Icc 0 1 at h
+    constructor <;> linarith [h.1, h.2]
+
+private def budgetRequest (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    HierarchyTask.Request HP.k (Fin 3) (ZMod 5) :=
+  { request HP with task := .row 0 (.pilotInput ⟨0, HP.k_pos⟩) }
+
+private lemma dense_half (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (σ : Environment 5 3) (x y : ZMod 5) :
+    denseChild 1 id (request HP) (fun d => binCutoff d / 2) (fun _ => 1)
+      HP.ρ HP.K base σ x y = base x y / 2 := by
+  have he : denseChild 1 id (request HP) (fun d => binCutoff d / 2) (fun _ => 1)
+      HP.ρ HP.K base σ x y =
+      denseChild 1 id (request HP) binCutoff (fun _ => 1) HP.ρ HP.K base σ x y / 2 := by
+    unfold denseChild normalizedRequest DenseRowRecipe.normalized
+    dsimp only
+    split_ifs <;> ring
+  rw [he, dense]
+
+private lemma shared_initial (HP : FourthRootHierarchyParams 16 1 16 32 8) (bin : ℕ) :
+    (budgetData HP).initialSample (budgetRequest HP) bin =
+      fun _ x y => base x y / 2 := by
+  funext σ x y
+  let R := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    (budgetRequest HP).source (BudgetData.midpoint (budgetRequest HP))
+    (budgetRequest HP).terminal ((budgetData HP).binRate bin)
+  have hdir : R.direct = { request HP with task := .baseNormalized 0 bin } := by
+    simp only [R, HierarchyTask.rawRequests, budgetRequest, budgetData, request,
+      gridChannel, show rate 0 = 1 by norm_num [rate], min_self]
+  change 1 * HierarchyTask.usageRatio (channels (1 : ZMod 5))
+    (gridChannel 2 0 [2, 3]) R.direct y *
+    denseChild 1 id R.direct (fun d => binCutoff d / 2) (fun _ => 1)
+      HP.ρ HP.K base σ x y = _
+  rw [hdir, denseChild_congr_task]
+  have hr : HierarchyTask.usageRatio (k := HP.k) (channels (1 : ZMod 5))
+      (gridChannel 2 0 [2, 3]) { request HP with task := .baseNormalized 0 bin } y = 1 := by
+    rw [usageRatio_grid (k := HP.k) 1 (gridChannel 2 0 [2, 3])
+      { request HP with task := .baseNormalized 0 bin } 0 0 rfl rfl y]
+    norm_num [side]
+  rw [hr]
+  simpa only [one_mul] using dense_half HP σ x y
+
+private lemma shared_positive (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M : ℕ) (hM : 1 < M) (bin : ℕ) :
+    (budgetData HP).positiveSample
+      (fun m r => if m < M then (budgetData HP).evaluate m r else none)
+      ((budgetData HP).binBudget M bin (budgetRequest HP))
+      bin (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
+      some (fun _ x y => base x y / 2) := by
+  have hm : 0 < (budgetData HP).binBudget M bin (budgetRequest HP) := by
+    simpa [BudgetData.binBudget, budgetData, budgetRequest, request, gridChannel,
+      LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff, rate] using
+      (Nat.sub_pos_of_lt hM)
+  rw [BudgetData.positiveSample_initial _ M _ hm
+    ((budgetData HP).binBudget_lt (by omega) _ _)]
+  change some ((budgetData HP).initialSample (budgetRequest HP) bin) = _
+  rw [shared_initial]
+
+private lemma shared_raw (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M : ℕ) (hM : 1 < M) :
+    (budgetData HP).finiteInput
+      (fun m r => if m < M then (budgetData HP).evaluate m r else none)
+      M (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
+      some (fun _ => base) := by
+  have hp (l : List ℕ) : l.mapM (fun i => (budgetData HP).positiveSample
+      (fun m r => if m < M then (budgetData HP).evaluate m r else none)
+      ((budgetData HP).binBudget M i (budgetRequest HP))
+      i (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP)) =
+      some (l.map (fun _ => fun (_ : Environment 5 3) x y => base x y / 2)) := by
+    induction l with
+    | nil => rfl
+    | cons i l ih =>
+      simp only [List.mapM_cons, shared_positive HP M hM i, ih, List.map_cons]
+      rfl
+  unfold BudgetData.finiteInput
+  rw [hp]
+  change some (fun σ x y => (((budgetData HP).bins.toList.map
+      (fun _ => fun (_ : Environment 5 3) x y => base x y / 2)).map
+      (fun A => A σ x y)).sum - 0) = _
+  apply congrArg some
+  funext σ x y
+  simp [budgetData]
+
+private lemma shared_complete_const (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M : ℕ) (A : Matrix (ZMod 5) (ZMod 5) ℝ) (slack : ℕ := 0) :
+    (budgetData HP).complete M (budgetRequest HP) (fun _ => A) slack =
+      some (fun σ x y => if source σ x then A x y else 0) := by
+  rw [BudgetData.complete_grid _ M _ 0 2 (by decide) 1 0 [1] [2, 3] rfl rfl _ slack]
+  apply congrArg some
+  funext σ x y
+  rw [conditionalWalk_const]
+  have ht : Y (2 : Fin 3) (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [2, 3]) σ y := by
+    simpa only [Y, show side 5 0 = 5 by norm_num [side]] using full_retains (σ 2) _
+  simp only [show (budgetData HP).padding = 1 from rfl, ht, and_true]
+  rfl
+
+-- Both half-bins contribute. Their actual shared completion remains nonconstant
+-- in the source environment, with no new seed or supplied lower-child function.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) (hM : 1 < M) :
+    ((budgetData HP).finiteInput
+      (fun m r => if m < M then (budgetData HP).evaluate m r else none)
+      M (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP)).bind
+      ((budgetData HP).complete M (budgetRequest HP)) =
+      some (fun σ x y => if source σ x then base x y else 0) ∧
+    (if source (seed 0) 0 then base 0 0 else 0) ≠
+      (if source (seed 4) 0 then base 0 0 else 0) := by
+  refine ⟨?_, ?_⟩
+  · rw [shared_raw HP M hM, Option.bind_some, shared_complete_const]
+  · rw [ite_eq_left source_both.1, ite_eq_right source_both.2]
+    norm_num [base]
+
+-- The actual recursive history is sampled at unequal budgets (32 and zero).
+-- Adjacent positive budgets (63 and 62) cancel instead of being completed once.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (bin : ℕ) :
+    (budgetData HP).pairedSample
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 32 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) (some bin) =
+      some (fun _ x y => base x y / 2) ∧
+    (budgetData HP).pairedSample
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 1 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) (some bin) = some 0 := by
+  constructor <;>
+    rw [BudgetData.pairedSample_initial _ 64 _ (by decide), shared_initial]
+  all_goals
+    norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+      BudgetData.sampleScale, budgetData, budgetRequest, request, gridChannel, rate]
+
+-- Dense leaf calls at budget zero are explicitly unavailable; the scheduled initial
+-- approximation above uses its certified coarse sample bound instead of making that call.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).evaluate 0 (request HP) = none := by
+  rw [BudgetData.evaluate_eq]
+  rfl
+
+-- The public RAW route keeps the nonconstant completed row after paired scheduling.
+private lemma shared_scheduled (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).raw
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
+      some (fun σ x y => if source σ x then base x y else 0) := by
+  have hs (bin : ℕ) :
+      (budgetData HP).sampleScale (budgetRequest HP) (some bin) = 0 := by
+    norm_num [BudgetData.sampleScale, budgetData, budgetRequest, request, gridChannel, rate]
+  have hc (a b : ℕ) :
+      ((if a = 0 then 0 else fun (_ : Environment 5 3) x y => base x y / 2) -
+        (if b = 0 then 0 else fun (_ : Environment 5 3) x y => base x y / 2)) =
+      fun (_ : Environment 5 3) x y =>
+        (if a = 0 then 0 else base x y / 2) - (if b = 0 then 0 else base x y / 2) := by
+    funext σ x y
+    split_ifs <;> rfl
+  have hm (l : List ℕ) (f : ℕ → Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) :
+      l.mapM (fun x => some (f x)) = some (l.map f) := List.mapM_pure
+  have he : ((budgetData HP).rays (.pilotInput ⟨0, HP.k_pos⟩)).isEmpty = false := by
+    simp [BudgetData.rays, budgetData]
+  unfold BudgetData.raw BudgetData.completedGroup
+  simp only [he]
+  simp only [Bool.false_eq_true, ↓reduceIte]
+  simp only [BudgetData.rays, List.append_nil, List.mapM_map]
+  dsimp only [Function.comp_def]
+  simp_rw [BudgetData.pairedSample_initial _ 64 _ (by decide), shared_initial, hs]
+  simp_rw [hc]
+  simp only [bind, pure]
+  simp_rw [hm]
+  simp only [Option.bind_some]
+  simp_rw [List.map_map]
+  dsimp only [Function.comp_def]
+  simp_rw [shared_complete_const]
+  simp_rw [hm]
+  simp only [Option.bind_some]
+  norm_num [List.range_succ, Cslib.RowCompression.dyadicSlack, bind, pure, budgetData,
+    LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+
+-- Group aggregation is performed before its common completion. The two nonzero
+-- half-rays combine to the full row at slack 32; the finer slack-1 group cancels.
+set_option backward.isDefEq.respectTransparency false in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).completedGroup
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 32 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
+      some (fun σ x y => if source σ x then base x y else 0) ∧
+    (budgetData HP).completedGroup
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 1 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) = some 0 := by
+  have hinput (d : ℕ) : (budgetData HP).initialGroupInput 64 d (budgetRequest HP) =
+      fun (_ : Environment 5 3) x y =>
+        (if LogSpaceEstimation.lastBudget 64 d 1 0 = 0 then 0 else base x y) -
+        (if LogSpaceEstimation.lastBudget 64 (2 * d) 1 0 = 0 then 0 else base x y) := by
+    funext σ x y
+    simp only [BudgetData.initialGroupInput]
+    simp_rw [shared_initial]
+    norm_num [BudgetData.sampleScale, budgetData, budgetRequest, request, gridChannel, rate]
+    split_ifs <;> ring
+  constructor
+  all_goals
+    rw [BudgetData.completedGroup_initial _ 64 _ (by decide)
+      (show (budgetData HP).bins.Nonempty from by simp [budgetData]), hinput]
+    norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+  · exact shared_complete_const HP 64 base 32
+  · rw [shared_complete_const HP 64 (fun _ _ => 0) 1]
+    congr 1
+    funext σ x y
+    split_ifs <;> rfl
+
+-- This checks the actual routed numerator on a public dense call, including nonconstancy.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).evaluate 1 (request HP) =
+      some (.row (fun _ x y => base x y / 2)) ∧
+    FourthRootHierarchyParams.NormalizedRow.output (fun d => binCutoff d / 2) HP.ρ
+        1 1 1 0 = 1 / 2 ∧
+    FourthRootHierarchyParams.NormalizedRow.output (fun d => binCutoff d / 2) HP.ρ
+        1 0 1 0 = 0 := by
+  refine ⟨?_, ?_, ?_⟩
+  · rw [BudgetData.evaluate_dense _ 1 0 (by decide) _ rfl]
+    congr 2
+    funext τ x y
+    exact dense_half HP τ x y
+  all_goals
+    rw [FourthRootHierarchyParams.NormalizedRow.output, HP.ρ_one 0 HP.η_pos.le]
+    norm_num [FourthRootHierarchyParams.NormalizedRow.clip,
+      show binCutoff 1 = 1 by simpa [base] using binCutoff_base 0 0,
+      show binCutoff 0 = 0 by simpa [base, Matrix.one_apply_ne (by decide :
+        (0 : ZMod 5) ≠ 1)] using binCutoff_base 0 1]
+
+private def completedTable :
+    Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ :=
+  fun σ x y => if source σ x then base x y else 0
+
+set_option backward.isDefEq.respectTransparency false in
+private lemma prefix_sixtyfour (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).initialPrefixes 64 (budgetRequest HP) =
+      some (fun j => if 2 ≤ j then completedTable else 0) := by
+  have hinput (d : ℕ) : (budgetData HP).initialGroupInput 64 d (budgetRequest HP) =
+      fun (_ : Environment 5 3) x y =>
+        (if LogSpaceEstimation.lastBudget 64 d 1 0 = 0 then 0 else base x y) -
+        (if LogSpaceEstimation.lastBudget 64 (2 * d) 1 0 = 0 then 0 else base x y) := by
+    funext σ x y
+    simp only [BudgetData.initialGroupInput]
+    simp_rw [shared_initial]
+    norm_num [BudgetData.sampleScale, budgetData, budgetRequest, request, gridChannel, rate]
+    split_ifs <;> ring
+  have hg (d : ℕ) :
+      (budgetData HP).completedGroup
+        (fun m r => if m ≤ 63 then (budgetData HP).evaluate m r else none)
+        64 d (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
+      (budgetData HP).complete 64 (budgetRequest HP)
+        (fun _ x y =>
+          (if LogSpaceEstimation.lastBudget 64 d 1 0 = 0 then 0 else base x y) -
+          (if LogSpaceEstimation.lastBudget 64 (2 * d) 1 0 = 0 then 0 else base x y)) d := by
+    simpa only [Nat.lt_succ_iff, hinput] using
+      BudgetData.completedGroup_initial (budgetData HP) 64 d (by decide)
+        (show (budgetData HP).bins.Nonempty from by simp [budgetData]) (budgetRequest HP)
+  unfold BudgetData.initialPrefixes
+  have hr : { budgetRequest HP with usage := (budgetRequest HP).terminal } =
+      budgetRequest HP := rfl
+  rw [hr]
+  norm_num [List.range_succ, Cslib.RowCompression.dyadicSlack]
+  simp only [Nat.lt_succ_iff]
+  simp_rw [hg]
+  norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+  simp_rw [shared_complete_const]
+  simp only [Option.bind_some]
+  congr 1
+  funext j σ x y
+  cases j with
+  | zero => simp
+  | succ j => cases j with
+    | zero => simp
+    | succ j =>
+      simp only [List.map_cons, List.take_succ_cons, List.sum_cons]
+      have hz : (List.take j ([0, 0, 0, 0, 0] : List ℝ)).sum = 0 := by
+        apply List.sum_eq_zero
+        intro a ha
+        have hm := List.mem_of_mem_take ha
+        simpa using hm
+      simpa [completedTable] using hz
+
+private lemma bin_preparation_one (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (A : Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) :
+    (budgetData HP).binPreparation 0 (budgetRequest HP) A = fun _ _ _ => 1 := by
+  funext σ x y
+  unfold BudgetData.binPreparation densePreparation DenseRowRecipe.preparation atomPrep rowGate
+  have hz (S : Finset (ZMod 5)) (f : ZMod 5 → ℝ) : kthLargest HP.K S f = 0 :=
+    kthLargest_eq_zero_of_card_lt ((card_le_univ S).trans_lt (by simpa using large_K HP)) f
+  simp only [budgetData, hz, HP.ρ_one 0 HP.η_pos.le, one_mul]
+
+set_option backward.isDefEq.respectTransparency false in
+private lemma compressed_sixtyfour_eq (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ floor : ℝ) :
+    (budgetData HP).compressedBin 64 0 0 ζ floor (budgetRequest HP) =
+      some (fun σ x y =>
+        let S : Finset (ZMod 5) := univ
+        let Δ := fun j z (ν : Fin 2) => if ν = 0 then
+          (if j = 1 then completedTable σ x z else 0)
+          else if j = 0 then ζ * (if source σ x then 1 else 0) else 0
+        let a := Cslib.RowCompression.iterate S
+          (NormalizedMoments.compatibleCapacity HP.K 7) (fun _ => HP.K)
+          (Cslib.RowCompression.dyadicFloor floor 7) Δ ⟨0, 0⟩ 7
+        FourthRootHierarchyParams.NormalizedRow.output (fun d => binCutoff d / 2) HP.ρ ζ
+          (a.row y 0) (a.row y 1)
+          (Cslib.RowCompression.firstRank S HP.K a.defaultValue a.row)) := by
+  unfold BudgetData.compressedBin
+  simp only [BudgetData.decodePrefixes]
+  have hactive : 0 < (budgetData HP).requestPrecision 64 (budgetRequest HP) := by
+    have hlog : Real.logb 2 (rate 1) = -4 := by
+      simp only [rate, pow_one]
+      rw [Real.logb_pow, Real.logb_inv]
+      norm_num
+    norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision, budgetData,
+      budgetRequest, request, gridChannel, hlog, show rate 0 = 1 by norm_num [rate]]
+  have hguard : ¬(64 = 0 ∨ ¬ 0 < (budgetData HP).requestPrecision 64 (budgetRequest HP) ∨
+      (budgetRequest HP).terminal.rate ≠ rate 0) := by
+    simp only [hactive, not_true_eq_false]
+    simp [budgetRequest, request, gridChannel]
+  rw [ite_eq_right hguard]
+  simp only [prefix_sixtyfour, bind, Option.bind_some]
+  simp_rw [bin_preparation_one]
+  have hc (d : ℕ) :
+      (budgetData HP).complete 64 (budgetRequest HP) (fun _ _ _ => 1) d =
+      some (fun σ x _ => if source σ x then 1 else 0) := by
+    exact shared_complete_const HP 64 (fun _ _ => 1) d
+  norm_num [List.range_succ, Cslib.RowCompression.dyadicSlack, hc, bind, pure]
+  funext σ x y
+  have ht (z : ZMod 5) : (budgetRequest HP).terminal.retains (channels (1 : ZMod 5)) σ z := by
+    simp only [budgetRequest, request, gridChannel, CorrectionRowTask.Channel.retains,
+      channels, semanticSide_grid]
+    simpa only [show side 5 0 = 5 by norm_num [side]] using full_retains (σ 2) _
+  have hset : ({z | (budgetRequest HP).terminal.retains (channels (1 : ZMod 5)) σ z} :
+      Finset (ZMod 5)) = univ := by ext z; simp [ht]
+  simp only [show (budgetRequest HP).usage = (budgetRequest HP).terminal from rfl,
+    show (budgetData HP).padding = 1 from rfl, ht, ↓reduceIte]
+  apply congrArg (fun a : Cslib.RowCompression.State (ZMod 5) =>
+    FourthRootHierarchyParams.NormalizedRow.output (fun d => binCutoff d / 2) HP.ρ ζ
+      (a.row y 0) (a.row y 1) (Cslib.RowCompression.firstRank univ HP.K a.defaultValue a.row))
+  apply Cslib.RowCompression.iterate_congr
+  intro j hj
+  funext z ν
+  interval_cases j <;> fin_cases ν <;>
+    norm_num [NormalizedMoments.firstSignalIncrement, NormalizedMoments.secondSignalIncrement,
+      rate]
+
+private lemma advance_wide (n K : ℕ) (hn : 5 < n) (hK : 5 < K)
+    (floor z : ℝ) (hf : 0 ≤ floor) (hz : z ≤ floor)
+    (w Δ : ZMod 5 → Fin 2 → ℝ)
+    (hsize : ∀ y, 3 * floor ≤ Cslib.RowCompression.entrySize ((w + Δ) y)) :
+    Cslib.RowCompression.advance univ n K floor Δ ⟨z, w⟩ = ⟨floor, w + Δ⟩ := by
+  have hk (j : ℕ) (hj : 5 < j) (f : ZMod 5 → ℝ) : kthLargest j univ f = 0 :=
+    kthLargest_eq_zero_of_card_lt (by simpa using hj) f
+  have ht : Cslib.RowCompression.threshold univ n floor z (w + Δ) = floor := by
+    simp only [Cslib.RowCompression.threshold, hk n hn, max_eq_left hf, max_eq_right hz]
+  have hd : Cslib.RowCompression.newDefault univ n K floor z (w + Δ) = floor := by
+    rw [Cslib.RowCompression.newDefault, ht, hk K hK]
+    exact max_eq_left ((min_le_left _ _).trans (max_le hz hf))
+  unfold Cslib.RowCompression.advance
+  congr 1
+  funext y
+  apply Cslib.RowCompression.update_eq_self_of_three_mul_le
+  rw [ht]
+  exact hsize y
+
+private def referenceRow (ζ : ℝ) (x : ZMod 5) (j : ℕ) (y : ZMod 5) (ν : Fin 2) : ℝ :=
+  if ν = 0 then (if 2 ≤ j then base x y else 0) else if j = 0 then 0 else ζ
+
+private def fixtureIncrement (ζ : ℝ) (x : ZMod 5) (j : ℕ) (y : ZMod 5) (ν : Fin 2) : ℝ :=
+  if ν = 0 then (if j = 1 then base x y else 0) else if j = 0 then ζ else 0
+
+private lemma active_iterate (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    {ζ : ℝ} (hζ : 0 < ζ) (x : ZMod 5) (j : ℕ) (hj : j ≤ 7) :
+    Cslib.RowCompression.iterate univ (NormalizedMoments.compatibleCapacity HP.K 7)
+      (fun _ => HP.K) (Cslib.RowCompression.dyadicFloor ζ 7) (fixtureIncrement ζ x) ⟨0, 0⟩ j =
+        ⟨if j = 0 then 0 else Cslib.RowCompression.dyadicFloor ζ 7 (j - 1), referenceRow ζ x
+        j⟩ := by
+  induction j with
+  | zero =>
+    simp only [Cslib.RowCompression.iterate_zero, ↓reduceIte]
+    congr 1
+    funext y ν
+    fin_cases ν <;> simp [referenceRow]
+  | succ j ih =>
+    rw [Cslib.RowCompression.iterate_succ, ih (by omega)]
+    have hn : 5 < NormalizedMoments.compatibleCapacity HP.K 7 j :=
+      (large_K HP).trans_le (NormalizedMoments.compatibleCapacity_bounds HP.K 7 j).1
+    have hz : (if j = 0 then 0 else Cslib.RowCompression.dyadicFloor ζ 7 (j - 1)) ≤
+        Cslib.RowCompression.dyadicFloor ζ 7 j := by
+      by_cases hj0 : j = 0
+      · simp only [hj0, ↓reduceIte]
+        exact Cslib.RowCompression.dyadicFloor_nonneg hζ.le _ _
+      · simp only [hj0, ↓reduceIte]
+        have hm := Cslib.RowCompression.dyadicFloor_mul_le_succ hζ.le
+          (m := 7) (i := j - 1) (by omega)
+        have he : j - 1 + 1 = j := by omega
+        rw [he] at hm
+        linarith [Cslib.RowCompression.dyadicFloor_nonneg hζ.le 7 (j - 1)]
+    have hi (y : ZMod 5) :
+        (referenceRow ζ x j + fixtureIncrement ζ x j) y 1 = ζ := by
+      by_cases hj0 : j = 0 <;> simp [referenceRow, fixtureIncrement, hj0]
+    rw [advance_wide _ _ hn (large_K HP) _ _
+      (Cslib.RowCompression.dyadicFloor_nonneg hζ.le _ _) hz _ _ (fun y => ?_)]
+    · congr 1
+      funext y ν
+      fin_cases ν
+      · by_cases hj0 : j = 0
+        · subst j; simp [referenceRow, fixtureIncrement]
+        · by_cases hj1 : j = 1
+          · subst j; simp [referenceRow, fixtureIncrement]
+          · have hj2 : 2 ≤ j := by omega
+            simp [referenceRow, fixtureIncrement, hj1, hj2, show 2 ≤ j + 1 by omega]
+      · by_cases hj0 : j = 0 <;> norm_num [referenceRow, fixtureIncrement, hj0]
+    · have hb := Cslib.RowCompression.dyadicFloor_le_scale_div hζ.le 7 j
+      have hs := Cslib.RowCompression.abs_apply_le_entrySize
+        ((referenceRow ζ x j + fixtureIncrement ζ x j) y) 1
+      rw [hi, abs_of_pos hζ] at hs
+      linarith
+
+private lemma bin_zero {d : ℝ} (hd : d ≤ 1 / 2) : binCutoff d = 0 :=
+  boundedRoutedBinCutoff_eq_zero (by norm_num)
+    (fun t ht => polynomialSwitch4_of_le (by norm_num) ht)
+    (fun _ => zero_lt_one) (fun _ _ _ => le_rfl) hd 0 (fun _ => 1)
+
+set_option backward.isDefEq.respectTransparency false in
+private lemma compressed_value (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).compressedBin 64 0 0 (HP.η / 4) (HP.η / 4) (budgetRequest HP) =
+      some (fun σ x y => if source σ x then base x y / 2 else 0) := by
+  rw [compressed_sixtyfour_eq]
+  congr 1
+  funext σ x y
+  dsimp only
+  have hζ : 0 < HP.η / 4 := by linarith [HP.η_pos]
+  have hk (f : ZMod 5 → ℝ) : kthLargest HP.K univ f = 0 :=
+    kthLargest_eq_zero_of_card_lt (by simpa using large_K HP) f
+  by_cases hs : source σ x
+  · simp only [completedTable, hs, ↓reduceIte, mul_one]
+    let a := Cslib.RowCompression.iterate univ (NormalizedMoments.compatibleCapacity HP.K 7)
+      (fun _ => HP.K) (Cslib.RowCompression.dyadicFloor (HP.η / 4) 7)
+      (fixtureIncrement (HP.η / 4) x) ⟨0, 0⟩ 7
+    change FourthRootHierarchyParams.NormalizedRow.output (fun d => binCutoff d / 2) HP.ρ
+      (HP.η / 4) (a.row y 0) (a.row y 1)
+      (Cslib.RowCompression.firstRank univ HP.K a.defaultValue a.row) = base x y / 2
+    dsimp only [a]
+    simp_rw [active_iterate HP hζ x 7 (by decide)]
+    have hr : Cslib.RowCompression.dyadicFloor (HP.η / 4) 7 (7 - 1) ≤ HP.η := by
+      linarith [Cslib.RowCompression.dyadicFloor_le_scale_div hζ.le 7 (7 - 1), HP.η_pos]
+    have hf := Cslib.RowCompression.dyadicFloor_nonneg hζ.le 7 (7 - 1)
+    simp only [referenceRow, show (7 : ℕ) ≠ 0 by decide, show 2 ≤ (7 : ℕ) by decide,
+      ↓reduceIte, Cslib.RowCompression.firstRank, hk, max_eq_left hf,
+      FourthRootHierarchyParams.NormalizedRow.output, HP.ρ_one _ hr,
+      FourthRootHierarchyParams.NormalizedRow.clip]
+    rw [binCutoff_base]
+    norm_num [hζ.ne']
+  · simp only [completedTable, hs, ↓reduceIte, mul_zero, ite_self]
+    have hsep : 3 * HP.η₂ < (1 / 2 : ℝ) := by
+      have ht := HP.θ₂_lt
+      norm_num at ht
+      linarith [HP.η₂_lt, HP.δ₀_lt_δ₁, HP.δ₁_lt, HP.θ_lt_θ₂]
+    have hp := Cslib.RowCompression.reference_iterate_output_eq
+      (H := FourthRootHierarchyParams.NormalizedRow.output (fun d => binCutoff d / 2) HP.ρ
+        (HP.η / 4)) (a := (⟨0, 0⟩ : Cslib.RowCompression.State (ZMod 5)))
+      (s := univ) (n := NormalizedMoments.compatibleCapacity HP.K 7)
+      (ρ := Cslib.RowCompression.dyadicFloor (HP.η / 4) 7)
+      HP.η_pos.le (FourthRootHierarchyParams.NormalizedRow.rank_pos HP)
+      (fun _ _ => by dsimp; linarith [HP.η_pos])
+      (fun _ _ => by change |(0 : ℝ)| ≤ HP.η; simpa using HP.η_pos.le)
+      HP.η_lt_η₂ hsep
+      (fun d v q hd => by simp [FourthRootHierarchyParams.NormalizedRow.output, bin_zero hd])
+        (fun d v q hq => by simp [FourthRootHierarchyParams.NormalizedRow.output, HP.ρ_zero q hq])
+          (fun d v q r hq hr => by
+        simp only [FourthRootHierarchyParams.NormalizedRow.output,
+          HP.ρ_one q hq.2, HP.ρ_one r hr.2])
+      7 (fun j _ => (NormalizedMoments.compatibleCapacity_bounds HP.K 7 j).1)
+      (fun j _ => by
+        linarith [Cslib.RowCompression.dyadicFloor_le_scale_div hζ.le 7 j, HP.η_pos])
+      y (mem_univ y)
+    exact hp.trans (by simp [FourthRootHierarchyParams.NormalizedRow.output,
+      bin_zero (by norm_num : (0 : ℝ) ≤ 1 / 2)])
+
+-- Compression does not make the uncertified zero/inactive budget boundary available.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ floor : ℝ) :
+    (budgetData HP).compressedBin 0 0 0 ζ floor (budgetRequest HP) = none ∧
+    (budgetData HP).compressedBin 2 0 0 ζ floor (budgetRequest HP) = none := by
+  have hlog : Real.logb 2 (rate 1) = -4 := by
+    simp only [rate, pow_one]
+    rw [Real.logb_pow, Real.logb_inv]
+    norm_num
+  have hi : ¬ 0 < (budgetData HP).requestPrecision 2 (budgetRequest HP) := by
+    norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision, budgetData,
+      budgetRequest, request, gridChannel, hlog, show rate 0 = 1 by norm_num [rate]]
+  constructor
+  · simp only [BudgetData.compressedBin, true_or, ↓reduceIte]
+  · simp only [BudgetData.compressedBin, hi, not_false_eq_true, or_true, true_or, ↓reduceIte]
+
+-- Positive floors and actual evaluator history produce a nonconstant compressed row.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).compressedBin 64 0 0 (HP.η / 4) (HP.η / 4) (budgetRequest HP) =
+      some (fun σ x y => if source σ x then base x y / 2 else 0) ∧
+    (if source (seed 0) 0 then base 0 0 / 2 else 0) ≠
+      (if source (seed 4) 0 then base 0 0 / 2 else 0) := by
+  refine ⟨compressed_value HP, ?_⟩
+  rw [ite_eq_left source_both.1, ite_eq_right source_both.2]
+  norm_num [base]
+
+-- The postcompression root error is measured against the actual normalized bin target.
+-- The mean agrees on the requested source slice; the inactive source rows stay masked.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ A, (budgetData HP).compressedBin 64 0 0 (HP.η / 4) (HP.η / 4) (budgetRequest HP) = some A ∧
+      rootDistPow 4 5 (rate 1) source
+        (fun σ y => (request HP).usage.retains (channels (1 : ZMod 5)) σ y)
+        A (denseChild 1 id (request HP) (fun d => binCutoff d / 2) (fun _ => 1)
+          HP.ρ HP.K base) = 0 ∧
+      ∀ σ x, #{y ∈ ({y | (request HP).terminal.retains (channels (1 : ZMod 5)) σ y} :
+        Finset (ZMod 5)) | A σ x y ≠ 0} < HP.K := by
+  refine ⟨(fun σ x y => if source σ x then base x y / 2 else 0), compressed_value HP, ?_, ?_⟩
+  · unfold rootDistPow rowNormPow
+    have hz (σ : Environment 5 3) :
+        ∑ x ∈ ({x | source σ x} : Finset (ZMod 5)),
+          ∑ y ∈ ({y | (request HP).usage.retains (channels (1 : ZMod 5)) σ y} : Finset _),
+            |(if source σ x then base x y / 2 else 0) ^ (4⁻¹ : ℝ) -
+              denseChild 1 id (request HP) (fun d => binCutoff d / 2) (fun _ => 1)
+                HP.ρ HP.K base σ x y ^ (4⁻¹ : ℝ)| ^ 4 = 0 := by
+      apply sum_eq_zero
+      intro x hx
+      apply sum_eq_zero
+      intro y _
+      rw [ite_eq_left (mem_filter.mp hx).2, dense_half]
+      simp
+    norm_num only at hz ⊢
+    simp only [hz, Fintype.expect_const, mul_zero]
+  · have hη₂ : HP.η₂ ≤ (1 / 2 : ℝ) := by
+      have ht := HP.θ₂_lt
+      norm_num at ht
+      linarith [HP.η₂_lt, HP.δ₀_lt_δ₁, HP.δ₁_lt, HP.θ_lt_θ₂]
+    exact ((budgetData HP).compressedBin_bounds 64 0 0 (HP.η / 4) (HP.η / 4)
+      (budgetRequest HP) _ (compressed_value HP) (e := 1 / 2) (g := HP.η₂)
+      (by norm_num) hη₂
+      (fun d hd => by change binCutoff d / 2 = 0; rw [bin_zero hd, zero_div]) HP.ρ_zero).2.2
+
+-- An empty initial schedule keeps its zero without touching history or validating
+-- a graph, including at budget zero. Inactive main/residual guards stay separate.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ({ budgetData HP with bins := ∅ } : BudgetData HP 5).completedGroup
+      (fun _ _ => none) 0 1 (.pilotInput ⟨0, HP.k_pos⟩)
+      { budgetRequest HP with source := (budgetRequest HP).usage } = some 0 := by
+  simp [BudgetData.completedGroup, BudgetData.rays]
+
+-- A concrete active parent budget reaches those two bins through the one evaluator.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).evaluate 64 (budgetRequest HP) =
+      some (.row (fun σ x y => if source σ x then base x y else 0)) := by
+  have hlog : Real.logb 2 (rate 1) = -4 := by
+    simp only [rate, pow_one]
+    rw [Real.logb_pow, Real.logb_inv]
+    norm_num
+  have hactive : 0 < (budgetData HP).requestPrecision 64 (budgetRequest HP) := by
+    norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision, budgetData,
+      budgetRequest, request, gridChannel, hlog, show rate 0 = 1 by norm_num [rate]]
+  have htask : (budgetRequest HP).task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩) := rfl
+  rw [BudgetData.evaluate_eq]
+  simp only [BudgetData.step, htask, hactive, ↓reduceIte]
+  rw [shared_scheduled HP]
+  rfl
+
+-- Later RAW constructors use the existing schedule and their own positive-precision
+-- guards. This equation asserts dispatch, not recursive child availability or accuracy.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (hk : 1 < HP.k) (M : ℕ) :
+    let history := fun m r => if m < M then (budgetData HP).evaluate m r else none
+    let input := { request HP with task := .row 0 (.input ⟨1, hk⟩) }
+    let residual := { request HP with task := .residual 0 }
+    (budgetData HP).evaluate M input =
+      (if 0 < (budgetData HP).requestPrecision M input then
+        ((budgetData HP).raw history M (.input ⟨1, hk⟩) input).map BudgetValue.row
+      else none) ∧
+    (budgetData HP).evaluate M residual =
+      (if 0 < (budgetData HP).requestPrecision M residual then
+        ((budgetData HP).raw history M .residual residual).map BudgetValue.row
+      else none) := by
+  dsimp only
+  constructor <;> rw [BudgetData.evaluate_eq] <;> rfl
+
+-- Unsupported cross-stage calls are unavailable rather than placeholder zero outputs.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) :
+    (budgetData HP).evaluate M { request HP with task := .nextMatrix 0 } = none := by
+  rw [BudgetData.evaluate_eq]
+  rfl
+
+-- Literal bases keep the output shape; row lookup cannot consume a vector zero.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ((budgetData HP).evaluate 0 { request HP with task := .row 0 (.maximum 0) }).bind
+      BudgetValue.row? = none := by
+  rw [BudgetData.evaluate_maximum_zero _ _ _ rfl]
+  rfl
 
 end InitialPilotScoreRegression

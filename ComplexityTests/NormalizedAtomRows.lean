@@ -41,8 +41,9 @@ theorem large_off_usage_rank_changes_output
       ζ*(3/4) else 0)
     (∀ y ∈ usage, w y = w' y) ∧
     (∀ y ∈ usage, clippedError (w y 0) (w y 1) (w' y) = 0) ∧
-    0 < output HP ζ (w 0 0) (w 0 1) (firstRank univ HP.K 0 w) ∧
-    output HP ζ (w' 0 0) (w' 0 1) (firstRank univ HP.K 0 w') = 0 := by
+    0 < output HP.toHierarchyParams.atomCutoff HP.ρ ζ (w 0 0) (w 0 1) (firstRank univ HP.K 0 w) ∧
+    output HP.toHierarchyParams.atomCutoff HP.ρ ζ (w' 0 0) (w' 0 1) (firstRank univ HP.K 0 w') =
+      0 := by
   dsimp only
   let w : Fin (HP.K+1) → Fin 2 → ℝ := fun y ν => if ν=0 then (if y=0 then 1 else 0) else (if
     y=0 then ζ*(3/4) else 0)
@@ -78,7 +79,7 @@ theorem large_off_usage_rank_changes_output
     have hy0 := mem_singleton.mp hy
     subst y
     exact clippedError_self _ _ _ rfl rfl
-  · change 0 < output HP ζ 1 (ζ*(3/4)) (firstRank univ HP.K 0 w)
+  · change 0 < output HP.toHierarchyParams.atomCutoff HP.ρ ζ 1 (ζ*(3/4)) (firstRank univ HP.K 0 w)
     rw [firstRank, hr, max_self, output, HP.ρ_one _ HP.η_pos.le, mul_one]
     have hQ : 0 < HP.toHierarchyParams.atomCutoff 1 := by
       rw [HP.toHierarchyParams.atomCutoff_eq (by norm_num) (by
@@ -99,8 +100,10 @@ theorem unbounded_loss_obstruction
     (HP : FourthRootHierarchyParams 16 1 16 32 8) {ζ : ℝ} (hζ : 0 < ζ)
     (D : ℝ) (hD : 0 ≤ D) :
     clippedError D (ζ*(3/4)) (fun ν : Fin 2 => if ν=0 then D+1 else ζ*(3/4)) = 1/(1+D) ∧
-    output HP ζ (D+1-D) (ζ*(3/4)) 0 - output HP ζ (D-D) (ζ*(3/4)) 0 =
-      output HP ζ 1 (ζ*(3/4)) 0 ∧ 0 < output HP ζ 1 (ζ*(3/4)) 0 := by
+    output HP.toHierarchyParams.atomCutoff HP.ρ ζ (D+1-D) (ζ*(3/4)) 0 - output
+      HP.toHierarchyParams.atomCutoff HP.ρ ζ (D-D) (ζ*(3/4)) 0 =
+      output HP.toHierarchyParams.atomCutoff HP.ρ ζ 1 (ζ*(3/4)) 0 ∧ 0 < output
+      HP.toHierarchyParams.atomCutoff HP.ρ ζ 1 (ζ*(3/4)) 0 := by
   have he : 0 ≤ 1/(1+D) := by positivity
   have he1 : 1/(1+D) ≤ 1 := (div_le_one (by linarith : 0 < 1+D)).mpr (by linarith)
   refine ⟨?_,?_,?_⟩
@@ -127,7 +130,7 @@ theorem zero_start_nonzero_output : ∃ HP : FourthRootHierarchyParams 16 1 16 3
     let w : Unit → Fin 2 → ℝ := fun _ ν => if ν = 0 then 1 else (3/4 : ℝ)
     let a := iterate univ (fun _ => HP.K) (fun _ => HP.K) (fun _ => 0)
       (fun _ => w) ⟨0, 0⟩ 1
-    a.row () = w () ∧ 0 < output HP 1 (a.row () 0) (a.row () 1)
+    a.row () = w () ∧ 0 < output HP.toHierarchyParams.atomCutoff HP.ρ 1 (a.row () 0) (a.row () 1)
       (firstRank univ HP.K a.defaultValue a.row) := by
   classical
   obtain ⟨HP⟩ := FourthRootHierarchyParams.nonempty
@@ -150,7 +153,7 @@ theorem zero_start_nonzero_output : ∃ HP : FourthRootHierarchyParams 16 1 16 3
     cases y
     exact hw
   dsimp only
-  change _ ∧ 0 < output HP 1 _ _ _
+  change _ ∧ 0 < output HP.toHierarchyParams.atomCutoff HP.ρ 1 _ _ _
   rw [ha]
   refine ⟨rfl, ?_⟩
   rw [firstRank, unit_rank_zero HP, max_self, output, HP.ρ_one _ HP.η_pos.le, mul_one]

@@ -13,7 +13,7 @@ import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
-# Finite Minkowski bounds for the integrated vertex norm
+# Finite Minkowski bounds for integrated vertex and row norms
 
 The existing `vertexNormPow` is a normalized finite moment on retained sources. Applying
 Mathlib's finite Minkowski inequality to the joint environment/source domain gives a bound
@@ -28,6 +28,7 @@ their weighted sum. In particular, it introduces no factor counting the number o
 * `Cslib.vertexNormPow_add_rpow_le`: the rooted triangle inequality.
 * `Cslib.vertexNormPow_sum_rpow_le`: the rooted finite-sum inequality.
 * `Cslib.vertexNormPow_sum_le_pow_sum`: a finite weighted sum of individual moment budgets.
+* `Cslib.rowNormPow_sum_le_pow_sum`: the same bound on joint source/terminal slices.
 -/
 
 public section
@@ -117,5 +118,38 @@ theorem vertexNormPow_sum_le_pow_sum (hp : p ≠ 0) (hNu : 0 ≤ N * u)
   have h := pow_le_pow_left₀ (Real.rpow_nonneg (vertexNormPow_nonneg hNu _) _)
     (hroot.trans (sum_le_sum hterm)) p
   rwa [Real.rpow_inv_natCast_pow (vertexNormPow_nonneg hNu _) hp] at h
+
+/-- Rows are vertices indexed by endpoint pairs, with the same joint masks and normalization. -/
+theorem rowNormPow_eq_vertexNormPow (f : Ω → V → V → ℝ)
+    (Y : Ω → V → Prop) [∀ σ y, Decidable (Y σ y)] :
+    rowNormPow p N u X Y f = vertexNormPow p N u
+      (fun σ (xy : V × V) => X σ xy.1 ∧ Y σ xy.2)
+      (fun σ xy => f σ xy.1 xy.2) := by
+  simp only [rowNormPow, vertexNormPow, sum_filter, Fintype.sum_prod_type]
+  congr 2
+  funext σ
+  apply sum_congr rfl
+  intro x _
+  by_cases hx : X σ x <;> simp [hx]
+
+/-- A constant scale factors out of a row moment on its unchanged joint masks. -/
+theorem rowNormPow_const_mul (w : ℝ) (f : Ω → V → V → ℝ)
+    (Y : Ω → V → Prop) [∀ σ y, Decidable (Y σ y)] :
+    rowNormPow p N u X Y (fun σ x y => w * f σ x y) =
+      |w| ^ p * rowNormPow p N u X Y f := by
+  rw [rowNormPow_eq_vertexNormPow, vertexNormPow_const_mul, rowNormPow_eq_vertexNormPow]
+
+/-- Finite weighted Minkowski for rows on their original joint source/terminal slice.
+No independence or count of bins or prefixes is used. -/
+theorem rowNormPow_sum_le_pow_sum (hp : p ≠ 0) (hNu : 0 ≤ N * u)
+    (Y : Ω → V → Prop) [∀ σ y, Decidable (Y σ y)]
+    (s : Finset I) (f : I → Ω → V → V → ℝ) (w ε : I → ℝ)
+    (hw : ∀ i ∈ s, 0 ≤ w i) (hε : ∀ i ∈ s, 0 ≤ ε i)
+    (hf : ∀ i ∈ s, rowNormPow p N u X Y (f i) ≤ ε i ^ p) :
+    rowNormPow p N u X Y (fun σ x y => ∑ i ∈ s, w i * f i σ x y) ≤
+      (∑ i ∈ s, w i * ε i) ^ p := by
+  simp_rw [rowNormPow_eq_vertexNormPow] at hf ⊢
+  exact vertexNormPow_sum_le_pow_sum hp hNu s
+    (fun i σ (xy : V × V) => f i σ xy.1 xy.2) w ε hw hε hf
 
 end Cslib

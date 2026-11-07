@@ -153,70 +153,9 @@ theorem initialPilotNormalized_eq_unwalked
   exact hm
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Optional coarse bound using the walked preparation error. Its pointwise PREP
-moment need not decay; `initialPilotNormalized_accuracy` instead uses exact normalizer
-stationarity and pays only the pre-walk RAW perturbation. -/
-theorem initialPilotNormalized_root_moment_coarse
-    (HP : FourthRootHierarchyParams 16 1 16 32 8) :
-    ∃ Cr Cp Cm : ℝ, 0 ≤ Cr ∧ 0 ≤ Cp ∧ 0 ≤ Cm ∧
-    ∀ (P J : ℕ) [Fact P.Prime] (D : ZMod P) (R : RoleProfile J)
-      (bin ks kt kb : ℕ) (ss st : List (ZMod P))
-      (cutoff h : ℝ → ℝ) (C : Matrix (ZMod P) (ZMod P) ℝ)
-      (rawSteps prepSteps detectorSteps : ℕ),
-    let r : HierarchyTask.Request HP.k (Fin J) (ZMod P) :=
-      ⟨.row 0 (.pilotNormalized ⟨0, HP.k_pos⟩), gridChannel R.source ks ss,
-        gridChannel R.terminal kt st, gridChannel R.terminal kt st⟩
-    let X := fun σ v => r.source.retains (channels D) σ (id v)
-    let Y := fun σ v => r.terminal.retains (channels D) σ (id v)
-    let truePrep := fun σ => correctionPrep (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff
-      HP.K ⌈4 * (1 + 32 * HP.R)⌉₊ (rate kt) C (polynomialPrepCutoff4 HP.θ) HP.ρ
-      {v | X σ v} {v | Y σ v}
-    rootDistPow 4 P (rate ks) X Y
-      (initialPilotNormalized HP D R bin ks kt kb ss st cutoff h C
-        rawSteps prepSteps detectorSteps)
-      (correctionRequest D id r (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
-        HP.toHierarchyParams.atomCutoff HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊
-        (fun _ => C) truePrep
-        (fun _ => PilotRowRecipe.maximum 0 (initialTrueDetector HP D R ks kt ss st C))) ≤
-    64 * (((Cr / rate kt) ^ 4 * (P : ℝ) ^ 2) *
-      rowNormPow 4 P (rate ks) X Y (fun σ x y =>
-        initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps σ x y - C x y) +
-      Cp ^ 4 * rowNormPow 4 P (rate ks) X Y (fun σ x y =>
-        initialPilotPreparationWalk HP D R bin ks kt kb ss st cutoff h C
-          rawSteps prepSteps σ x y - truePrep σ x y) +
-      Cm ^ 4 * rowNormPow 4 P (rate ks) X Y (fun _ _ y =>
-        initialPilotDetector HP D R bin ks kt kb ss st cutoff h C detectorSteps y -
-          initialTrueDetector HP D R ks kt ss st C y)) := by
-  obtain ⟨Cr, Cp, Cm, hCr, hCp, hCm, hc⟩ := correctionRequest_pilot_children_root_moment HP
-  refine ⟨Cr, Cp, Cm, hCr, hCp, hCm, ?_⟩
-  intro P J inst D R bin ks kt kb ss st cutoff h C rawSteps prepSteps detectorSteps r X Y truePrep
-  have hr : Admissible r := ⟨R.source_terminal, rfl, rfl⟩
-  have hKc : 0 < ⌈4 * (1 + 32 * HP.R)⌉₊ := by
-    have hj : (0:ℝ) < HP.J := by exact_mod_cast HP.J_pos
-    have hR := HP.R_rank
-    norm_num only [one_mul] at hR
-    apply Nat.ceil_pos.mpr
-    linarith
-  have hp := hc P J (ZMod P) HP.k D id r hr (rate_pos kt) _ hKc
-    (initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps) (fun _ => C)
-    (initialPilotPreparationWalk HP D R bin ks kt kb ss st cutoff h C rawSteps prepSteps)
-    truePrep (fun _ _ => 0)
-    (fun _ => initialPilotDetector HP D R bin ks kt kb ss st cutoff h C detectorSteps)
-    (fun _ _ => 0) (fun _ => initialTrueDetector HP D R ks kt ss st C)
-    P (rate ks) (mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le) (fun _ _ hy => hy)
-  have hz : rowNormPow 4 P (rate ks)
-      (fun σ v => r.source.retains (channels D) σ (id v))
-      (fun σ v => r.terminal.retains (channels D) σ (id v)) (fun _ _ _ => (0:ℝ)) = 0 := by
-    simp [rowNormPow]
-  simp only [sub_self, ZMod.card] at hp
-  rw [hz, zero_add] at hp
-  simpa only [initialPilotNormalized, initialPilotMaximum, X, Y, r, gridChannel,
-    ← Pi.zero_def] using hp
-
-set_option backward.isDefEq.respectTransparency false in
 /-- The normalized child pays only the pre-walk preparation perturbation.
 Stationarity removes preparation-walk noise from the normalizer exactly. This local
-bound is suitable for RAW allocation; the coarse pointwise PREP bound is optional. -/
+bound is suitable for RAW allocation without a pointwise walked-PREP error premise. -/
 theorem initialPilotNormalized_root_moment
     (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     ∃ Cr Cp Cm : ℝ, 0 ≤ Cr ∧ 0 ≤ Cp ∧ 0 ≤ Cm ∧

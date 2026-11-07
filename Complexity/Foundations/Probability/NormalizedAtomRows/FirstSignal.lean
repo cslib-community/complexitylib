@@ -92,6 +92,24 @@ lemma firstSignal_raw_error
     abs_of_pos (rate_pos k), mul_div_cancel₀ _ (rate_pos k).ne']
 
 open Classical in
+/-- Exact first-channel noise for an arbitrary literal prefix family. In particular a
+sum of completed groups need not itself be represented as a single conditional walk. -/
+theorem actualNoiseEntry_first_prefix
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (ss st : List (ZMod P))
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (raw : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    (hz : ∀ σ x y, raw σ x y 0 = 0) (i : ℕ) (σ : Environment P J) (x y : ZMod P) :
+    actualNoiseEntry s t Ls La Lt D ss st k G (firstSignalIncrement F k second) raw 0 i σ x y =
+      |F (i + 1) σ x y - rowSliceMean (retainedMask s Ls D ss) (retainedMask t La D st)
+        (F (i + 1)) x y| / (rate k * (1 + G x y / rate k)) := by
+  unfold actualNoiseEntry twoMaskMean
+  simp only [Fin.isValue, ↓reduceIte, actualPrefix_firstSignalIncrement _ _ _ _ hz]
+  unfold rowSliceMean
+  rw [← expect_div, ← sub_div, abs_div, abs_of_pos (rate_pos k), div_div]
+
+open Classical in
 /-- Exact centered-noise identity for actual full-terminal-rank walk prefixes. -/
 theorem actualNoiseEntry_firstSignalIncrement {E : Type*} [Fintype E] [Nonempty E]
     (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (ss st : List (ZMod P))
@@ -109,15 +127,122 @@ theorem actualNoiseEntry_firstSignalIncrement {E : Type*} [Fintype E] [Nonempty 
       |F (i + 1) σ x y - rowSliceMean (retainedMask s Ls D ss) (retainedMask t La D st)
         (input (i + 1)) x y| / (rate k * (1 + G x y / rate k)) := by
   dsimp only
-  unfold actualNoiseEntry twoMaskMean
-  simp only [Fin.isValue, ↓reduceIte, actualPrefix_firstSignalIncrement _ _ _ _ hz]
-  unfold rowSliceMean
-  rw [← expect_div]
-  change |(_ - rowSliceMean (retainedMask s Ls D ss) (retainedMask t La D st)
-    (conditionalWalk _ _ (graphs (i + 1)) (times (i + 1)) (input (i + 1))) x y / rate k)| /
-    (1 + G x y / rate k) = _
-  rw [rowSliceMean_conditionalWalk, ← sub_div, abs_div, abs_of_pos (rate_pos k), div_div]
-  rfl
+  rw [actualNoiseEntry_first_prefix s t Ls La Lt D ss st _ k G second raw hz,
+    rowSliceMean_conditionalWalk]
+
+open Classical in
+/-- The actual first clipped statistic in matrix units. Clipping stays after the common
+conditional prefix mean; the second increment is arbitrary. -/
+theorem actualClippedMean_first_prefix_eq
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (ss st : List (ZMod P))
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (ζ : ℝ)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (i : ℕ) (x y : ZMod P) :
+    actualClippedMean HP s t Ls La Lt D ss st k G ζ
+      (firstSignalIncrement F k second) 0 0 i x y =
+      min 1 (|rowSliceMean (retainedMask s Ls D ss) (retainedMask t La D st)
+        (F (i + 1)) x y - G x y| / (rate k + G x y)) := by
+  have hr := rate_pos k
+  simp only [actualClippedMean, twoMaskMean, Fin.isValue, ↓reduceIte,
+    actualPrefix_firstSignalIncrement F k second 0 (by intros; rfl),
+    rowSliceMean, ← expect_div, ← sub_div, abs_div, abs_of_pos hr, div_div]
+  congr 2
+  rw [mul_add, mul_one, mul_div_cancel₀ _ hr.ne']
+
+open Classical in
+/-- Conditional first-mean discrepancy in matrix units pays the actual clipped first
+mean after rank-rate normalization. No completion representation of the prefix is needed. -/
+theorem actualClippedMean_first_prefix_row_le
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (ss st : List (ZMod P))
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y) (ζ : ℝ)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (i : ℕ) {N u : ℝ} (hNu : 0 ≤ N * u) :
+    rowNormPow 4 N u (retainedMask s Ls D ss) (retainedMask t La D st)
+      (fun _ x y => actualClippedMean HP s t Ls La Lt D ss st k G ζ
+        (firstSignalIncrement F k second) 0 0 i x y) ≤
+      (rate k)⁻¹ ^ 4 * rowNormPow 4 N u (retainedMask s Ls D ss) (retainedMask t La D st)
+        (fun _ x y => rowSliceMean (retainedMask s Ls D ss)
+          (retainedMask t La D st) (F (i + 1)) x y - G x y) := by
+  apply rowNormPow_le_mul hNu
+  intro σ x y _ _
+  have hr := rate_pos k
+  have hd : 0 ≤ G x y / rate k := div_nonneg (hG x y) hr.le
+  have hden : rate k ≤ rate k * (1 + G x y / rate k) := by nlinarith
+  simp only [actualClippedMean, twoMaskMean, Fin.isValue, ↓reduceIte,
+    actualPrefix_firstSignalIncrement F k second 0 (by intros; rfl),
+    rowSliceMean, ← expect_div, ← sub_div, abs_div, abs_of_pos hr]
+  rw [abs_of_nonneg (le_min (by norm_num) (div_nonneg (by positivity) (by positivity)))]
+  calc
+    _ ≤ (|_ - _| / rate k / (1 + G x y / rate k)) ^ 4 :=
+      pow_le_pow_left₀ (by positivity) (min_le_right _ _) 4
+    _ ≤ (|_ - _| / rate k) ^ 4 := by
+      rw [div_div]
+      exact pow_le_pow_left₀ (by positivity)
+        (div_le_div_of_nonneg_left (abs_nonneg _) hr hden) 4
+    _ = _ := by rw [div_eq_mul_inv, mul_pow]; ring
+
+open Classical in
+/-- Exact relative centered prefix in matrix units. Pairwise normalization stays inside
+both the row moment and conditional mean; no inverse-rate bound is used. -/
+theorem actualNoiseEntry_first_prefix_row_eq
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (ss st : List (ZMod P))
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (raw : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    (hz : ∀ σ x y, raw σ x y 0 = 0) (i : ℕ) (N u : ℝ) :
+    let Xs := retainedMask s Ls D ss
+    let Ya := retainedMask t La D st
+    let A := fun σ x y => F (i + 1) σ x y / (rate k + G x y)
+    rowNormPow 4 N u Xs Ya
+      (actualNoiseEntry s t Ls La Lt D ss st k G (firstSignalIncrement F k second) raw 0 i) =
+      rowNormPow 4 N u Xs Ya (fun σ x y => A σ x y - rowSliceMean Xs Ya A x y) := by
+  dsimp only
+  unfold rowNormPow
+  congr 3
+  funext σ
+  apply sum_congr rfl
+  intro x _
+  apply sum_congr rfl
+  intro y _
+  rw [actualNoiseEntry_first_prefix s t Ls La Lt D ss st F k G second raw hz]
+  have hd : 0 < rate k + G x y := add_pos_of_pos_of_nonneg (rate_pos k) (hG x y)
+  have he : rate k * (1 + G x y / rate k) = rate k + G x y := by
+    rw [mul_add, mul_one, mul_div_cancel₀ _ (rate_pos k).ne']
+  simp only [rowSliceMean, ← expect_div, ← sub_div, abs_div, he,
+    abs_of_pos hd, abs_of_nonneg (div_nonneg (abs_nonneg _) hd.le)]
+
+open Classical in
+/-- Relative first noise for arbitrary literal prefix families costs only the explicit
+inverse fourth power of the rank rate. No width or environment-atom factor is introduced. -/
+theorem actualNoiseEntry_first_prefix_row_le
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (ss st : List (ZMod P))
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (raw : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    (hz : ∀ σ x y, raw σ x y 0 = 0) (i : ℕ) {N u : ℝ} (hNu : 0 ≤ N * u) :
+    rowNormPow 4 N u (retainedMask s Ls D ss) (retainedMask t La D st)
+      (actualNoiseEntry s t Ls La Lt D ss st k G (firstSignalIncrement F k second) raw 0 i) ≤
+      (rate k)⁻¹ ^ 4 * rowNormPow 4 N u (retainedMask s Ls D ss) (retainedMask t La D st)
+        (fun σ x y => F (i + 1) σ x y - rowSliceMean (retainedMask s Ls D ss)
+          (retainedMask t La D st) (F (i + 1)) x y) := by
+  apply rowNormPow_le_mul hNu
+  intro σ x y _ _
+  rw [actualNoiseEntry_first_prefix s t Ls La Lt D ss st F k G
+    second raw hz]
+  have hr := rate_pos k
+  have hd : 0 ≤ G x y / rate k := div_nonneg (hG x y) hr.le
+  have hden : rate k ≤ rate k * (1 + G x y / rate k) := by nlinarith
+  rw [abs_of_nonneg (div_nonneg (abs_nonneg _) (by positivity))]
+  calc
+    _ ≤ (|_ - _| / rate k) ^ 4 := pow_le_pow_left₀ (by positivity)
+      (div_le_div_of_nonneg_left (abs_nonneg _) hr hden) 4
+    _ = _ := by rw [div_eq_mul_inv, mul_pow]; ring
 
 open Classical in
 /-- Relative first noise costs exactly the explicit inverse fourth power of the
@@ -140,18 +265,11 @@ theorem actualNoiseEntry_firstSignal_row_le {E : Type*} [Fintype E] [Nonempty E]
         (fun σ x y => F (i + 1) σ x y - rowSliceMean (retainedMask s Ls D ss)
           (retainedMask t La D st) (input (i + 1)) x y) := by
   dsimp only
-  apply rowNormPow_le_mul hNu
-  intro σ x y _ _
-  rw [actualNoiseEntry_firstSignalIncrement s t Ls La Lt D ss st graphs times input k G
-    second raw hz]
-  have hr := rate_pos k
-  have hd : 0 ≤ G x y / rate k := div_nonneg (hG x y) hr.le
-  have hden : rate k ≤ rate k * (1 + G x y / rate k) := by nlinarith
-  rw [abs_of_nonneg (div_nonneg (abs_nonneg _) (by positivity))]
-  calc
-    _ ≤ (|_ - _| / rate k) ^ 4 := pow_le_pow_left₀ (by positivity)
-      (div_le_div_of_nonneg_left (abs_nonneg _) hr hden) 4
-    _ = _ := by rw [div_eq_mul_inv, mul_pow]; ring
+  have h := actualNoiseEntry_first_prefix_row_le s t Ls La Lt D ss st
+    (fun j => conditionalWalk (retainedMask s Ls D ss) (retainedMask t La D st)
+      (graphs j) (times j) (input j)) k G hG
+    second raw hz i hNu
+  simpa only [rowSliceMean_conditionalWalk] using h
 
 open Classical in
 /-- Actual first/full-rank endpoint noise, paid by the explicit lower-child incoming

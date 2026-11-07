@@ -36,7 +36,7 @@ theorem exact_increment (HP : FourthRootHierarchyParams 16 1 16 32 8)
     let w : Unit → Fin 2 → ℝ := fun _ ν => if ν = 0 then D else ζ * (3/4 : ℝ)
     let a := iterate univ (fun _ => HP.K) (fun _ => HP.K) (dyadicFloor scale 1)
       (fun _ => w) ⟨0, 0⟩ 1
-    stateRootError (output HP ζ) univ HP.K a ⟨0, w⟩ () = 0 := by
+    stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) univ HP.K a ⟨0, w⟩ () = 0 := by
   classical
   let scale := HP.η / 2
   let ζ := scale / 4
