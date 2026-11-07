@@ -50,6 +50,7 @@ public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
 public import Complexity.Algorithms.Lean.Sort.Bitonic.ZeroOne
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
+public import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BandBounds
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
@@ -3877,6 +3878,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Basic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Bounds
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Rooted
+public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Subtree
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
 public import Complexity.Foundations.Combinatorics.Sunflower

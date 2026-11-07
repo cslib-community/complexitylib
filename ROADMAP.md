@@ -1035,9 +1035,10 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   ([#2927](https://github.com/cslib-community/complexitylib/issues/2927)): a reusable evaluator
   over a supplied rooted decomposition
   (`Foundations/Combinatorics/SimpleGraph/TreeDecomposition`), with state-space, transition, join
-  and runtime bounds. Start with maximum-weight independent set in `O(2^k · poly(k) · n)`, then
-  coloring and SAT/CSP decision and counting clients that specify the graph whose width is
-  measured. Also: nice decompositions, treewidth under minors, and its grid and separator
+  and runtime bounds, generalizing the independent-set program; coloring and SAT/CSP decision
+  and counting clients that specify the graph whose width is measured; normalizing the node count
+  so runtimes are stated in the number of vertices; and an encoded treewidth parameter connected
+  to `FPT`. Also: nice decompositions, treewidth under minors, and its grid and separator
   characterizations.
 - **Algorithmic metatheorems:** MSO-to-automata/evaluator compilation and a Courcelle-style
   theorem with computable parameter dependence on width and formula size. Keep the supplied
