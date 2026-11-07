@@ -11,12 +11,12 @@ public import Complexity.Init
 public import Mathlib.Algebra.Polynomial.Derivative
 public import Mathlib.Algebra.Polynomial.Roots
 public import Mathlib.Combinatorics.Enumerative.IncidenceAlgebra
-public import Mathlib.Data.Fintype.CardEmbedding
 public import Mathlib.LinearAlgebra.Matrix.Block
 public import Mathlib.LinearAlgebra.Matrix.Rank
 public import Mathlib.Order.Setoid.Basic
 public import Mathlib.RingTheory.Polynomial.Pochhammer
 public import Mathlib.SetTheory.Cardinal.Finite
+import Mathlib.Data.Fintype.CardEmbedding
 
 /-!
 # The join matrix of the partition lattice
@@ -153,7 +153,7 @@ section Many
 private def extendMap {N j : ℕ} (f : Fin (N - j) → Fin j) (i : Fin N) : Fin j :=
   if h : (i : ℕ) < j then ⟨i, h⟩ else f ⟨i - j, by omega⟩
 
-private theorem extendMap_injective_ker {N j : ℕ} (hj : j ≤ N) :
+private theorem extendMap_injective_ker {N j : ℕ} :
     Function.Injective fun f : Fin (N - j) → Fin j => Setoid.ker (extendMap f) := by
   intro f₁ f₂ h
   funext t
@@ -169,13 +169,13 @@ private theorem extendMap_injective_ker {N j : ℕ} (hj : j ≤ N) :
   rw [h] at h1
   exact ((key f₂ (f₁ t)).mp h1).symm
 
-/-- **Many partitions**: $j^{N-j} \le B_N$ for $j \le N$, by placing the first $j$ elements in
-distinct blocks and each of the others in one of these blocks. -/
-theorem pow_le_card_setoid {N j : ℕ} (hj : j ≤ N) :
+/-- **Many partitions**: $j^{N-j} \le B_N$, by placing the first $j$ elements in distinct blocks
+and each of the others in one of these blocks (and trivially $j^0 = 1 \le B_N$ when $N \le j$). -/
+theorem pow_le_card_setoid (N j : ℕ) :
     j ^ (N - j) ≤ Nat.card (Setoid (Fin N)) := by
   classical
   have := Fintype.ofFinite (Setoid (Fin N))
-  have := Fintype.card_le_of_injective _ (extendMap_injective_ker hj)
+  have := Fintype.card_le_of_injective _ (extendMap_injective_ker (N := N) (j := j))
   simpa [Fintype.card_fun, Fintype.card_fin, Nat.card_eq_fintype_card] using this
 
 end Many
@@ -340,22 +340,28 @@ end Mobius
 open Classical in
 /-- The join matrix over `R`: entry $1$ at $P$ and $Q$ if $P \sqcup Q = \top$, and $0$
 otherwise. -/
-@[expose] noncomputable def joinMatrix (R α : Type*) [Zero R] [One R] :
+noncomputable def joinMatrix (R α : Type*) [Zero R] [One R] :
     Matrix (Setoid α) (Setoid α) R :=
   Matrix.of fun P Q => if P ⊔ Q = ⊤ then 1 else 0
 
 open Classical in
 /-- The entries of the join matrix. -/
 @[simp] theorem joinMatrix_apply {R : Type*} [Zero R] [One R] (P Q : Setoid α) :
-    joinMatrix R α P Q = if P ⊔ Q = ⊤ then 1 else 0 :=
-  rfl
+    joinMatrix R α P Q = if P ⊔ Q = ⊤ then 1 else 0 := by
+  rw [joinMatrix, Matrix.of_apply]
 
 open Classical in
 /-- The zeta matrix of the refinement order over `R`, entry $1$ at $P$ and $z$ if $P \le z$: the
 matrix of Mathlib's `IncidenceAlgebra.zeta`. -/
-@[expose] noncomputable def zetaMatrix (R α : Type*) [Zero R] [One R] :
+noncomputable def zetaMatrix (R α : Type*) [Zero R] [One R] :
     Matrix (Setoid α) (Setoid α) R :=
   Matrix.of fun P z => if P ≤ z then 1 else 0
+
+open Classical in
+/-- The entries of the zeta matrix. -/
+@[simp] theorem zetaMatrix_apply {R : Type*} [Zero R] [One R] (P z : Setoid α) :
+    zetaMatrix R α P z = if P ≤ z then 1 else 0 := by
+  rw [zetaMatrix, Matrix.of_apply]
 
 section Matrices
 

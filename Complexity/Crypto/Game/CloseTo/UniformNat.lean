@@ -20,8 +20,6 @@ program; no exact uniform sampler for arbitrary moduli is asserted.
 ## Main results
 
 * `closeTo_uniform_sampleModNat`: uniform residues are close to the actual sampled residues.
-
-This bridge is moved unchanged from the Lyubashevsky efficiency module, which reexports it.
 -/
 
 public section

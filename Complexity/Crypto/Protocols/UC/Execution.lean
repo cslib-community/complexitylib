@@ -29,10 +29,14 @@ package style of `Complexity.Crypto.Protocols.UC.Machine`:
   `z`, a program with private coins that activates honest parties and the adversary and finally
   outputs a bit.
 
-In the execution `UC.exec π A C Z κ z`, the protocol is wrapped in `UC.corruptRouter C`: the
-environment cannot reach corrupted parties directly, the adversary controls exactly the corrupted
-parties through `.inl (i, x)` on its network port, and every other network query `.inr q` is
-forwarded. Messages are pulled: a machine's outgoing messages wait in its state until queried.
+In the execution `UC.exec π A C Z κ z`, the protocol `π κ C` is wrapped in `UC.corruptRouter C`: on
+the party port, the environment reaches only honest parties (`i ∉ C`), while the adversary reaches
+the party port of corrupted parties (`i ∈ C`) through `.inl (i, x)` on its network port, and every
+other network query `.inr q` is forwarded to `π κ C`. Thus `corruptRouter C` itself only redirects
+party-port inputs and outputs for `C`; stronger corruption behavior (such as Byzantine state
+exposure or arbitrary message injection, as in [Canetti2020]) is determined by how `π κ C` depends
+on `C`, and a protocol independent of `C` is tested only against party-port input/output
+substitution. Messages are pulled: a machine's outgoing messages wait in its state until queried.
 
 `UC.advantage π φ A S C Z κ z` is the distinguishing advantage of `Z` between `(π, A)` and
 `(φ, S)`. The budgets `Protocol.PolyBounded`, `Adversary.PolyBounded` and

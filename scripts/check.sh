@@ -48,7 +48,7 @@ fi
 # A quick check may restart this script for all six gates. Restore only once in that process
 # chain, even if planning takes longer than the bootstrap's ordinary retry window.
 if [ "${COMPLEXITYLIB_CACHE_CHECK_STARTED-}" != "1" ]; then
-  scripts/cache/ensure.sh
+  scripts/cache/ensure.sh || { cache_status=$?; finish; exit "$cache_status"; }
   export COMPLEXITYLIB_CACHE_CHECK_STARTED=1
 fi
 if ((quick)); then

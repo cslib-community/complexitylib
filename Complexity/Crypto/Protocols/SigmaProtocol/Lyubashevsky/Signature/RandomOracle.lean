@@ -13,9 +13,13 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.RandomOracle
 /-!
 # Bounded lattice signatures in the canonical random-oracle game
 
-The existing box signer is a `ROMSignature.Scheme` whose signature is optional. Signing runs all
-`K` attempts against the same memoizing cache. Aborted commitments remain in that cache, repeated
-points reuse their digest, and failed signing requests enter the canonical queried-message log.
+`lyubashevskyROMSignature` is an all-attempt ROM variant of the bounded box signer whose signature
+is optional. Signing runs all `K` attempts against the same memoizing cache even after an earlier
+attempt succeeds. By contrast, the repeat-until-success signer of [Lyubashevsky2009] and
+`fsAbortSignBounded` stop at the first success, so the two agree only in output law for a fixed
+hash (`fiatShamirAbort_sign_fixedHash`), not in stopped ROM cache trace. Aborted commitments
+remain in that cache, repeated points reuse their digest, and failed signing requests enter the
+canonical queried-message log.
 
 For valid bounded witnesses of the same public key, the actual signing/cache law and every
 common adaptive forger's full output/cache/log law agree. This does not construct an efficient
@@ -23,7 +27,8 @@ secret-free simulator, a paired fork with common private coins, or an EUF-CMA re
 
 ## Main definitions
 
-* `lyubashevskyROMSignature`: the canonical scheme using the original key generator and masks.
+* `lyubashevskyROMSignature`: all-attempt ROM variant of the bounded box signer using the original
+  key generator and masks.
 
 ## Main results
 
@@ -44,8 +49,12 @@ namespace Cslib.Crypto.Protocols.SigmaProtocol
 open Probability OracleComp ROMSignature
 open scoped _root_.Matrix
 
-/-- The existing exact bounded box signer as a canonical ROM signature scheme. The secret key
-contains its public key as in `fiatShamir`. `none` is an abort, and verification rejects it. -/
+/-- All-attempt ROM variant of the bounded box signer as a canonical `ROMSignature.Scheme`.
+Unlike `fsAbortSignBounded` and the repeat-until-success signer of [Lyubashevsky2009], which stop
+at the first success, signing executes all `K` attempts against the shared cache and agrees with
+`fsAbortSignBounded` only in output law for a fixed hash (`fiatShamirAbort_sign_fixedHash`). The
+secret key contains its public key as in `fiatShamir`; `none` is an abort, and verification
+rejects it. -/
 noncomputable def lyubashevskyROMSignature (M : Type) (n m k q η γ β K : ℕ) [NeZero q] :
     Scheme
       (Matrix (Fin n) (Fin m) (ZMod q) × Matrix (Fin n) (Fin k) (ZMod q))
@@ -69,7 +78,7 @@ theorem lyubashevskyROMSignature_sign_run_eq (hβ : β ≤ γ) (hη : k * η ≤
       (interpret (oracle (BitString k)) (scheme.sign (S, y) msg coins)).run cache) =
     (scheme.signCoins (S', y) msg).bind fun coins =>
       (interpret (oracle (BitString k)) (scheme.sign (S', y) msg coins)).run cache :=
-  fiatShamirAbortSign_run_eq_of_transcript_eq _ _ _
+  fiatShamirAbortSign_run_eq_of_transcript_eq _ _
     (lyubashevsky_transcript_eq hβ hη hS hS') msg K cache
 
 /-- Any common adaptive forger has identical output, final hash cache and queried-message log

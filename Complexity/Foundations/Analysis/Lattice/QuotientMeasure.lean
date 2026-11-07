@@ -15,19 +15,19 @@ public import Mathlib.MeasureTheory.Measure.Haar.Quotient
 # Normalization of lattice quotient measures
 
 The reference measure is the canonical quotient pushforward of Haar measure restricted to
-an actual fundamental domain, divided by the positive covolume. No new measure is defined.
+an actual fundamental domain, divided by the positive covolume. No new measure is defined;
+these are consequences of Mathlib's fundamental-domain and quotient Haar measure APIs.
 The opposite subgroup action agrees with Mathlib's canonical quotient conventions.
 
 ## Main results
 
+* `ZLattice.measure_eq_ofReal_covolume_of_op`: a fundamental domain for the opposite subgroup
+  action has ambient measure `ENNReal.ofReal (covolume L μ)`.
 * `ZLattice.isProbabilityMeasure_normalized_quotient`: the normalized measure is a probability.
-* `ZLattice.normalized_quotient_eq`: the measure does not depend on the fundamental domain.
+* `ZLattice.normalized_quotient_eq`: the measure does not depend on the fundamental domain
+  (covolume-scaled restatement of `MeasureTheory.IsAddFundamentalDomain.addQuotientMeasure_eq`).
 * `ZLattice.isAddLeftInvariant_normalized_quotient`: the normalized measure is
   translation invariant.
-
-## References
-
-These are consequences of Mathlib's fundamental-domain and quotient Haar measure APIs.
 -/
 
 public section
@@ -57,7 +57,7 @@ private theorem fundamentalDomain_of_op {F : Set E}
     exact add_comm _ _
 
 /-- A fundamental domain has finite ambient measure equal to the positive real covolume. -/
-theorem measure_fundamentalDomain_op {F : Set E}
+theorem measure_eq_ofReal_covolume_of_op {F : Set E}
     (hF : IsAddFundamentalDomain L.toAddSubgroup.op F μ) :
     μ F = ENNReal.ofReal (covolume L μ) := by
   have h := fundamentalDomain_of_op L μ hF
@@ -77,10 +77,12 @@ theorem isProbabilityMeasure_normalized_quotient {F : Set E}
   constructor
   rw [Measure.smul_apply, Measure.map_apply (by fun_prop) MeasurableSet.univ]
   simp only [Set.preimage_univ, Measure.restrict_apply_univ, smul_eq_mul]
-  rw [measure_fundamentalDomain_op L μ hF,
+  rw [measure_eq_ofReal_covolume_of_op L μ hF,
     ENNReal.inv_mul_cancel (ENNReal.ofReal_pos.mpr (covolume_pos L μ)).ne' ENNReal.ofReal_ne_top]
 
-/-- The normalized quotient measure is independent of the chosen fundamental domain. -/
+/-- The normalized quotient measure is independent of the chosen fundamental domain. This is a
+covolume-scaled restatement of `MeasureTheory.IsAddFundamentalDomain.addQuotientMeasure_eq` using
+the countability of `L.toAddSubgroup`. -/
 theorem normalized_quotient_eq {F G : Set E}
     (hF : IsAddFundamentalDomain L.toAddSubgroup.op F μ)
     (hG : IsAddFundamentalDomain L.toAddSubgroup.op G μ) :
