@@ -25,6 +25,7 @@ public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Cost
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Memory
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Source
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Word
+public import Complexity.Algorithms.Lean.Freivalds
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
@@ -4783,6 +4784,7 @@ public import Complexity.Probability.Extractor.TwoSource
 public import Complexity.Probability.Fooling
 public import Complexity.Probability.Fooling.OneSided
 public import Complexity.Probability.Forking
+public import Complexity.Probability.Freivalds
 public import Complexity.Probability.Guessing
 public import Complexity.Probability.Guessing.Leakage
 public import Complexity.Probability.HashFamily

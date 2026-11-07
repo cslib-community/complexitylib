@@ -1217,6 +1217,17 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   (`exists_assignments_two_pow_mul_countUnsat_le`) for fixed `k > 3`. Further directions are
   small-bias and almost `k`-wise independent spaces and their clients.
 
+### Randomized verification and fingerprinting
+
+- **Fingerprinting** ([#2980](https://github.com/cslib-community/complexitylib/issues/2980)):
+  Freivalds' matrix-product verifier with exact `TimeM` operation counts and `(1/|S|)^k`
+  soundness for admissible random-vector encodings is in `Algorithms/Lean/Freivalds` and
+  `Probability/Freivalds`. Remaining: Karp–Rabin fingerprints (random evaluation point over a
+  finite field, and random prime modulus with explicit prime-counting bounds), a rolling-hash
+  pattern matcher with charged updates and a union bound over all windows, and the private-coin
+  `O(log n)` equality protocol in `Communication/Randomized`. Native machine or RAM realizations
+  with bit-level arithmetic costs are a separate endpoint.
+
 ## Machines, RAM and data structures
 
 - **Efficient universal simulation** ([#800]): the clocked universal function runs in time
