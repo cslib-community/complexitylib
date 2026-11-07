@@ -547,6 +547,10 @@ index links to canonical definitions rather than keeping a second set.
   `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
+- **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`**
+  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): an alternating machine
+  checks one cell of a deterministic tableau. It guesses the cell's predecessor window
+  existentially and checks each predecessor cell universally.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
@@ -657,7 +661,9 @@ universe size, not supplied as unverified input tables. In dependency order:
   projections.
 - **Circuit Value P-complete under first-order reductions**, via `REACHa → MCVP → CVP` (Immerman,
   Theorem 3.26 and Exercise 3.28), with the alternating-logspace simulation of polynomial-time
-  machines and the translation to `encCircuitValue`.
+  machines (the machine-level `P ⊆ AL`, see
+  [#2873](https://github.com/cslib-community/complexitylib/issues/2873)) and the translation to
+  `encCircuitValue`.
 - Numeric certificates for further restricted-domain families; canonical BIT on a restricted
   domain need not be first-order definable.
 - Order-free: SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded
