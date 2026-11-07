@@ -21,32 +21,40 @@ method: a deterministic single-tape Turing machine (`Cslib.Turing.SingleTapeTM`)
 palindromes needs `Ω(n²)` steps on some input of each large length `n`.
 
 The proof uses crossing sequences (`CrossingSequence.lean`). Fix `m` and `r` and consider the
-`2 ^ m` hard inputs `palWord a b r x = x ++ aʳ ++ reverse x` for bit strings `x` of length `m`,
-written with the letters `a ≠ b`. All of them are palindromes. If two distinct hard inputs had
-the same crossing sequence at a boundary inside the middle block, the cut-and-paste lemma would
-make the machine accept a non-palindrome. So at every such boundary the `2 ^ m` crossing
-sequences are distinct. Fewer than half of them can be shorter than about `m / log |Q|`. Since
-the crossing sequences of one run have total length at most its running time, some hard input
-needs time proportional to `r · m / log |Q|`.
+`2 ^ m` hard inputs `palWord r x = x ++ falseʳ ++ reverse x` for bit strings `x` of length `m`.
+All of them are palindromes. If two distinct hard inputs had the same crossing sequence at a
+boundary inside the middle block, the cut-and-paste lemma would make the machine accept a
+non-palindrome. So at every such boundary the `2 ^ m` crossing sequences are distinct. Fewer than
+half of them can be shorter than about `m / log |Q|`. Since the crossing sequences of one run have
+total length at most its running time, some hard input needs time proportional to
+`r · m / log |Q|`.
+
+The lower bound is stated for deciders that answer under the head (`DecidesByHeadInTime`): the
+machine halts within the time bound, and the cell under the head then holds `yes` exactly on
+palindromes. The rest of the final tape is unconstrained. Deciders in cslib's canonical output
+form (`DecidesPalindromesInTime`) are a special case.
 
 ## Main definitions
 
 * `Cslib.Turing.SingleTapeTM.DecidesPalindromesInTime tm a b yes T`: on every word over the
   letters `a, b`, `tm` halts within `T n` steps and its output begins with `yes` exactly when
   the input is a palindrome. Halting goes through `OutputsWithinTime`, so the final tape holds
-  only the output, with the head on its first cell; deciders that leave other symbols behind are
-  not covered.
-* `Cslib.Turing.SingleTapeTM.palWord a b r x`: the hard inputs.
+  only the output, with the head on its first cell.
+* `Cslib.Turing.SingleTapeTM.bitSymbol a b`: the letter map writing `false, true` as `a, b`.
+* `Cslib.Turing.SingleTapeTM.palWord r x`: the hard inputs.
 
 ## Main results
 
+* `Cslib.Turing.SingleTapeTM.DecidesPalindromesInTime.decidesByHeadInTime`: a canonical-output
+  palindrome decider answers under the head, through `bitSymbol a b`.
 * `Cslib.Turing.SingleTapeTM.crossings_palWord_injective`: distinct hard inputs have distinct
   crossing sequences at every boundary inside the middle block.
 * `Cslib.Turing.SingleTapeTM.crossing_bound`: if `2 (|Q| + 2) ^ L ≤ 2 ^ m`, then
   `(r + 1) L ≤ 2 T (2m + r)`.
 * `Cslib.Turing.SingleTapeTM.palindrome_lower_bound`: with `d = ⌈log₂ (|Q| + 2)⌉`, every
   `n ≥ 8d` satisfies `n² ≤ 64 d T(n)`.
-* `Cslib.Turing.SingleTapeTM.not_decidesPalindromesInTime_linear`: no single-tape machine
+* `Cslib.Turing.SingleTapeTM.not_decidesByHeadInTime_palindromes_linear` and
+  `Cslib.Turing.SingleTapeTM.not_decidesPalindromesInTime_linear`: no single-tape machine
   decides palindromes within time `c (n + 1)`.
 
 ## References
@@ -90,100 +98,98 @@ left on the tape is not covered. -/
   ∀ w : List Symbol, (∀ x ∈ w, x = a ∨ x = b) →
     ∃ o, tm.OutputsWithinTime w o (T w.length) ∧ (o.head? = some yes ↔ w.Palindrome)
 
-/-- Bit strings written with the letters `a` (for `false`) and `b` (for `true`). -/
-@[expose] def encodeBits (a b : Symbol) (x : List Bool) : List Symbol :=
-  x.map fun β => if β then b else a
+/-- The letter map writing `false` as `a` and `true` as `b`. -/
+@[expose] def bitSymbol (a b : Symbol) (β : Bool) : Symbol := if β then b else a
 
 omit [Inhabited Symbol] [Fintype Symbol] in
-lemma encodeBits_injective {a b : Symbol} (hab : a ≠ b) : Function.Injective (encodeBits a b) := by
-  refine List.map_injective_iff.mpr fun β γ h => ?_
-  cases β <;> cases γ <;> simp_all [eq_comm]
+lemma bitSymbol_injective {a b : Symbol} (hab : a ≠ b) : Function.Injective (bitSymbol a b) := by
+  intro β γ h
+  cases β <;> cases γ <;> simp_all [bitSymbol, eq_comm]
 
 omit [Inhabited Symbol] [Fintype Symbol] in
-@[simp] lemma length_encodeBits (a b : Symbol) (x : List Bool) :
-    (encodeBits a b x).length = x.length := List.length_map _
+private lemma palindrome_map_iff {β γ : Type*} {f : β → γ} (hf : Function.Injective f)
+    {w : List β} : (w.map f).Palindrome ↔ w.Palindrome := by
+  rw [List.Palindrome.iff_reverse_eq, List.Palindrome.iff_reverse_eq, ← List.map_reverse]
+  exact (List.map_injective_iff.mpr hf).eq_iff
 
-/-- The hard inputs: `x`, a block of `r` copies of `a`, then `x` reversed. -/
-@[expose] def palWord (a b : Symbol) (r : ℕ) (x : List Bool) : List Symbol :=
-  encodeBits a b x ++ List.replicate r a ++ (encodeBits a b x).reverse
+/-- A palindrome decider in canonical output form also decides palindromes over `Bool`, written
+with the letters `a ≠ b`, answering under the head. -/
+theorem DecidesPalindromesInTime.decidesByHeadInTime {a b yes : Symbol} (hab : a ≠ b)
+    {T : ℕ → ℕ} (h : tm.DecidesPalindromesInTime a b yes T) :
+    tm.DecidesByHeadInTime (bitSymbol a b) {w : List Bool | w.Palindrome} yes T := by
+  intro w
+  obtain ⟨o, ho, hyes⟩ := h (w.map (bitSymbol a b)) fun x hx => by
+    obtain ⟨β, -, rfl⟩ := List.mem_map.mp hx
+    cases β <;> simp [bitSymbol]
+  rw [List.length_map] at ho
+  refine ⟨tm.haltCfg o, ho, rfl, ?_⟩
+  simp only [haltCfg, BiTape.head_mk₁]
+  rw [hyes]
+  exact palindrome_map_iff (bitSymbol_injective hab)
 
-omit [Inhabited Symbol] [Fintype Symbol] in
-private lemma palWord_split (a b : Symbol) (x : List Bool) {i r : ℕ} (hi : i ≤ r) :
-    palWord a b r x = (encodeBits a b x ++ List.replicate i a) ++
-      (List.replicate (r - i) a ++ (encodeBits a b x).reverse) := by
-  rw [palWord, List.append_assoc, List.append_assoc, ← List.append_assoc (List.replicate i a),
-    ← List.replicate_add, Nat.add_sub_cancel' hi]
+/-- The hard inputs: `x`, a block of `r` copies of `false`, then `x` reversed. -/
+@[expose] def palWord (r : ℕ) (x : List Bool) : List Bool :=
+  x ++ List.replicate r false ++ x.reverse
 
-omit [Inhabited Symbol] [Fintype Symbol] in
-lemma mem_palWord {a b : Symbol} {r : ℕ} {x : List Bool} :
-    ∀ c ∈ palWord a b r x, c = a ∨ c = b := by
-  intro c hc
-  simp only [palWord, encodeBits, List.mem_append, List.mem_map, List.mem_replicate,
-    List.mem_reverse] at hc
-  rcases hc with (⟨β, -, rfl⟩ | ⟨-, rfl⟩) | ⟨β, -, rfl⟩
-  · cases β <;> simp
-  · simp
-  · cases β <;> simp
-
-omit [Inhabited Symbol] [Fintype Symbol] in
-@[simp] lemma length_palWord (a b : Symbol) (r : ℕ) (x : List Bool) :
-    (palWord a b r x).length = 2 * x.length + r := by
+@[simp] lemma length_palWord (r : ℕ) (x : List Bool) :
+    (palWord r x).length = 2 * x.length + r := by
   simp [palWord]; omega
 
-omit [Inhabited Symbol] [Fintype Symbol] in
-private lemma mem_mixWord {a b : Symbol} {r : ℕ} {x y : List Bool} :
-    ∀ c ∈ encodeBits a b x ++ List.replicate r a ++ (encodeBits a b y).reverse,
-      c = a ∨ c = b := by
-  intro c hc
-  simp only [encodeBits, List.mem_append, List.mem_map, List.mem_replicate,
-    List.mem_reverse] at hc
-  rcases hc with (⟨β, -, rfl⟩ | ⟨-, rfl⟩) | ⟨β, -, rfl⟩
-  · cases β <;> simp
-  · simp
-  · cases β <;> simp
-
-omit [Inhabited Symbol] [Fintype Symbol] in
-private lemma palindrome_mixWord_iff {a b : Symbol} (hab : a ≠ b) {r : ℕ} {x y : List Bool}
-    (hxy : y.length = x.length) :
-    (encodeBits a b x ++ List.replicate r a ++ (encodeBits a b y).reverse).Palindrome ↔
-      y = x := by
-  rw [palindrome_append_replicate_append_reverse (by simp [hxy])]
-  exact (encodeBits_injective hab).eq_iff
-
-omit [Inhabited Symbol] [Fintype Symbol] in
-private lemma mixWord_split (a b : Symbol) (x y : List Bool) {i r : ℕ} (hi : i ≤ r) :
-    (encodeBits a b x ++ List.replicate i a) ++
-      (List.replicate (r - i) a ++ (encodeBits a b y).reverse) =
-    encodeBits a b x ++ List.replicate r a ++ (encodeBits a b y).reverse := by
-  rw [List.append_assoc, List.append_assoc, ← List.append_assoc (List.replicate i a),
+private lemma mixWord_split (x y : List Bool) {i r : ℕ} (hi : i ≤ r) :
+    (x ++ List.replicate i false) ++ (List.replicate (r - i) false ++ y.reverse) =
+      x ++ List.replicate r false ++ y.reverse := by
+  rw [List.append_assoc, List.append_assoc, ← List.append_assoc (List.replicate i false),
     ← List.replicate_add, Nat.add_sub_cancel' hi]
+
+private lemma palindrome_mixWord_iff {r : ℕ} {x y : List Bool} (hxy : y.length = x.length) :
+    (x ++ List.replicate r false ++ y.reverse).Palindrome ↔ y = x :=
+  palindrome_append_replicate_append_reverse hxy
 
 /-- Distinct hard inputs have distinct crossing sequences at every boundary inside the middle
 block. -/
-theorem crossings_palWord_injective {a b yes : Symbol} (hab : a ≠ b) {T : ℕ → ℕ}
-    (hdec : DecidesPalindromesInTime tm a b yes T) {r i : ℕ} (hi : i ≤ r) {x y : List Bool}
-    (hxy : y.length = x.length)
-    (h : (tm.absInit (palWord a b r x)).crossings ((x.length + i : ℕ) : ℤ) (T (2 * x.length + r)) =
-      (tm.absInit (palWord a b r y)).crossings ((x.length + i : ℕ) : ℤ) (T (2 * x.length + r))) :
+theorem crossings_palWord_injective {ι : Bool → Symbol} {yes : Symbol} {T : ℕ → ℕ}
+    (hdec : tm.DecidesByHeadInTime ι {w : List Bool | w.Palindrome} yes T) {r i : ℕ}
+    (hi : i ≤ r) {x y : List Bool} (hxy : y.length = x.length)
+    (h : (tm.absInit ((palWord r x).map ι)).crossings ((x.length + i : ℕ) : ℤ)
+        (T (2 * x.length + r)) =
+      (tm.absInit ((palWord r y).map ι)).crossings ((x.length + i : ℕ) : ℤ)
+        (T (2 * x.length + r))) :
     x = y := by
-  obtain ⟨o₁, h₁, hy₁⟩ := hdec (palWord a b r x) mem_palWord
-  obtain ⟨o₂, h₂, hy₂⟩ := hdec (palWord a b r y) mem_palWord
-  have hp₁ : o₁.head? = some yes := hy₁.mpr ((palindrome_mixWord_iff hab rfl).mpr rfl)
-  have hp₂ : o₂.head? = some yes := hy₂.mpr ((palindrome_mixWord_iff hab rfl).mpr rfl)
-  rw [length_palWord] at h₁ h₂
-  rw [hxy] at h₂
-  rw [palWord_split a b x hi] at h₁ h
-  rw [palWord_split a b y hi] at h₂ h
-  have hk : x.length + i = (encodeBits a b x ++ List.replicate i a).length := by simp
-  rw [hk] at h
-  have hu : (encodeBits a b x ++ List.replicate i a).length =
-      (encodeBits a b y ++ List.replicate i a).length := by simp [hxy]
-  obtain ⟨-, -, hout⟩ := cut_and_paste hu h₁ h₂ h
-  rw [mixWord_split a b x y hi] at hout
-  obtain ⟨o, ho, hyo⟩ := hdec _ mem_mixWord
-  have hpo : o.head? = some yes := by
-    rcases hout ho with h' | h' <;> rw [h'] <;> assumption
-  exact ((palindrome_mixWord_iff hab hxy).mp (hyo.mp hpo)).symm
+  obtain ⟨hL, hLy⟩ := hdec.absRun (palWord r x)
+  obtain ⟨hR, hRy⟩ := hdec.absRun (palWord r y)
+  rw [length_palWord] at hL hLy
+  rw [length_palWord, hxy] at hR hRy
+  have hLp := hLy.mpr ((palindrome_mixWord_iff rfl).mpr rfl)
+  have hRp := hRy.mpr ((palindrome_mixWord_iff rfl).mpr rfl)
+  have hsx : (palWord r x).map ι = (x ++ List.replicate i false).map ι ++
+      (List.replicate (r - i) false ++ x.reverse).map ι := by
+    rw [← List.map_append, mixWord_split x x hi, palWord]
+  have hsy : (palWord r y).map ι = (y ++ List.replicate i false).map ι ++
+      (List.replicate (r - i) false ++ y.reverse).map ι := by
+    rw [← List.map_append, mixWord_split y y hi, palWord]
+  rw [hsx] at hL hLp h
+  rw [hsy] at hR hRp h
+  have hk₁ : ((x ++ List.replicate i false).map ι).length = x.length + i := by simp
+  have hk₂ : ((y ++ List.replicate i false).map ι).length = x.length + i := by simp [hxy]
+  have hu : (x ++ List.replicate i false).map ι = [] ↔
+      (y ++ List.replicate i false).map ι = [] := by
+    rw [← List.length_eq_zero_iff, ← List.length_eq_zero_iff, hk₁, hk₂]
+  have hx : (tm.absInit ((x ++ List.replicate i false).map ι ++
+        (List.replicate (r - i) false ++ x.reverse).map ι)).crossings
+        ((x ++ List.replicate i false).map ι).length (T (2 * x.length + r)) =
+      (tm.absInit ((y ++ List.replicate i false).map ι ++
+        (List.replicate (r - i) false ++ y.reverse).map ι)).crossings
+        ((y ++ List.replicate i false).map ι).length (T (2 * x.length + r)) := by
+    rw [hk₁, hk₂]
+    exact h
+  obtain ⟨hC, -, -, hhead⟩ := cut_and_paste_run hu hL hR hx
+  rw [← List.map_append, mixWord_split x y hi] at hC hhead
+  obtain ⟨hM, hMy⟩ := hdec.absRun (x ++ List.replicate r false ++ y.reverse)
+  have hMp : ((tm.absInit ((x ++ List.replicate r false ++ y.reverse).map ι)).run
+      (T (x ++ List.replicate r false ++ y.reverse).length)).scanned = some yes := by
+    rw [AbsCfg.run_eq_of_halted _ hM hC]
+    rcases hhead with h' | h' <;> rw [h'] <;> assumption
+  exact ((palindrome_mixWord_iff hxy).mp (hMy.mp hMp)).symm
 
 omit [Inhabited Symbol] [Fintype Symbol] in
 /-- At most `(|α| + 1) ^ L` elements have pairwise distinct images that are lists of length
@@ -206,18 +212,18 @@ private lemma card_filter_length_lt_le {ι α : Type*} [Fintype α] {s : Finset 
 /-- **Averaging step.** If at most half of the `2 ^ m` hard inputs can have a crossing sequence
 shorter than `L` at any boundary, some hard input of length `2m + r` crosses the `r + 1` middle
 boundaries at least `(r + 1) L / 2` times in total. -/
-theorem crossing_bound {a b yes : Symbol} (hab : a ≠ b) {T : ℕ → ℕ}
-    (hdec : DecidesPalindromesInTime tm a b yes T) (m r L : ℕ)
+theorem crossing_bound {ι : Bool → Symbol} {yes : Symbol} {T : ℕ → ℕ}
+    (hdec : tm.DecidesByHeadInTime ι {w : List Bool | w.Palindrome} yes T) (m r L : ℕ)
     (hL : 2 * (Fintype.card (Option tm.State) + 1) ^ L ≤ 2 ^ m) :
     (r + 1) * L ≤ 2 * T (2 * m + r) := by
   classical
   set P := (Fintype.card (Option tm.State) + 1) ^ L
   set t := T (2 * m + r)
   let cs : ℕ → (Fin m → Bool) → List (Option tm.State) := fun i x =>
-    (tm.absInit (palWord a b r (List.ofFn x))).crossings ((m + i : ℕ) : ℤ) t
+    (tm.absInit ((palWord r (List.ofFn x)).map ι)).crossings ((m + i : ℕ) : ℤ) t
   have hinj (i : ℕ) (hi : i ≤ r) : Set.InjOn (cs i) (Finset.univ : Finset (Fin m → Bool)) := by
     intro x _ y _ hxy
-    have h := crossings_palWord_injective hab hdec hi
+    have h := crossings_palWord_injective hdec hi
       (x := List.ofFn x) (y := List.ofFn y) (by simp) (by simpa [cs, t] using hxy)
     exact List.ofFn_injective h
   have hgood (i : ℕ) (hi : i ≤ r) : (2 ^ m - P) * L ≤ ∑ x, (cs i x).length := by
@@ -239,7 +245,7 @@ theorem crossing_bound {a b yes : Symbol} (hab : a ≠ b) {T : ℕ → ℕ}
   have hupper (x : Fin m → Bool) : ∑ i ∈ Finset.range (r + 1), (cs i x).length ≤ t := by
     have h := AbsCfg.sum_length_crossings_le
       ((Finset.range (r + 1)).image fun i : ℕ => ((m + i : ℕ) : ℤ))
-      (tm.absInit (palWord a b r (List.ofFn x))) t
+      (tm.absInit ((palWord r (List.ofFn x)).map ι)) t
     rwa [Finset.sum_image fun i _ j _ hij => by omega] at h
   have key : (r + 1) * ((2 ^ m - P) * L) ≤ 2 ^ m * t := by
     calc (r + 1) * ((2 ^ m - P) * L)
@@ -259,11 +265,12 @@ theorem crossing_bound {a b yes : Symbol} (hab : a ≠ b) {T : ℕ → ℕ}
     _ = 2 ^ m * (2 * t) := by ring
 
 /-- **Quadratic lower bound for palindromes** (via Hennie's crossing sequences). Let
-`d = ⌈log₂ (|Q| + 2)⌉` where `Q` is the state set. If a single-tape machine decides palindromes
-over two letters `a ≠ b` within time `T`, halting in the canonical output form of
-`DecidesPalindromesInTime`, then `n ^ 2 ≤ 64 d T(n)` for every `n ≥ 8 d`. -/
-theorem palindrome_lower_bound {a b yes : Symbol} (hab : a ≠ b) {T : ℕ → ℕ}
-    (hdec : DecidesPalindromesInTime tm a b yes T) {n : ℕ}
+`d = ⌈log₂ (|Q| + 2)⌉` where `Q` is the state set. If a single-tape machine decides the
+palindromes over `Bool` within time `T`, answering under the head (`DecidesByHeadInTime`, with any
+letter map `ι`), then `n ^ 2 ≤ 64 d T(n)` for every `n ≥ 8 d`. Canonical-output deciders are
+covered through `DecidesPalindromesInTime.decidesByHeadInTime`. -/
+theorem palindrome_lower_bound {ι : Bool → Symbol} {yes : Symbol} {T : ℕ → ℕ}
+    (hdec : tm.DecidesByHeadInTime ι {w : List Bool | w.Palindrome} yes T) {n : ℕ}
     (hn : 8 * Nat.clog 2 (Fintype.card tm.State + 2) ≤ n) :
     n ^ 2 ≤ 64 * Nat.clog 2 (Fintype.card tm.State + 2) * T n := by
   obtain ⟨d, hd_def⟩ : ∃ d, d = Nat.clog 2 (Fintype.card tm.State + 2) := ⟨_, rfl⟩
@@ -283,7 +290,7 @@ theorem palindrome_lower_bound {a b yes : Symbol} (hab : a ≠ b) {T : ℕ → �
         ≤ 2 * (2 ^ d) ^ L := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hpow L)
       _ = 2 ^ (d * L + 1) := by rw [← pow_mul]; ring
       _ ≤ 2 ^ m := Nat.pow_le_pow_right (by norm_num) (by omega)
-  have h1 := crossing_bound hab hdec m r L hL
+  have h1 := crossing_bound hdec m r L hL
   have hn' : 2 * m + r = n := by omega
   rw [hn'] at h1
   have h2 : m ≤ 2 * (d * L) := by omega
@@ -300,13 +307,14 @@ theorem palindrome_lower_bound {a b yes : Symbol} (hab : a ≠ b) {T : ℕ → �
   have F3 := Nat.mul_le_mul_right (n + 6) h6
   nlinarith [F1, F2, F3, h3]
 
-/-- No single-tape machine decides palindromes over two letters in linear time. -/
-theorem not_decidesPalindromesInTime_linear {a b yes : Symbol} (hab : a ≠ b) (c : ℕ) :
-    ¬ DecidesPalindromesInTime tm a b yes fun n => c * (n + 1) := by
+/-- No single-tape machine decides the palindromes over `Bool` in linear time, even answering
+under the head. -/
+theorem not_decidesByHeadInTime_palindromes_linear (ι : Bool → Symbol) (yes : Symbol) (c : ℕ) :
+    ¬ tm.DecidesByHeadInTime ι {w : List Bool | w.Palindrome} yes fun n => c * (n + 1) := by
   intro hdec
   obtain ⟨d, hd_def⟩ : ∃ d, d = Nat.clog 2 (Fintype.card tm.State + 2) := ⟨_, rfl⟩
   have hd : 0 < d := hd_def ▸ Nat.clog_pos one_lt_two (by omega)
-  have h := palindrome_lower_bound hab hdec (n := 8 * d + 64 * d * c + 2) (by omega)
+  have h := palindrome_lower_bound hdec (n := 8 * d + 64 * d * c + 2) (by omega)
   rw [← hd_def] at h
   have key : ∀ M N : ℕ, M + 2 ≤ N → N ^ 2 ≤ M * (N + 1) → False := fun M N h1 h2 => by
     have := Nat.mul_le_mul_right N h1
@@ -314,5 +322,10 @@ theorem not_decidesPalindromesInTime_linear {a b yes : Symbol} (hab : a ≠ b) (
   refine key (64 * d * c) (8 * d + 64 * d * c + 2) (by omega) ?_
   calc (8 * d + 64 * d * c + 2) ^ 2 ≤ 64 * d * (c * (8 * d + 64 * d * c + 2 + 1)) := h
     _ = 64 * d * c * (8 * d + 64 * d * c + 2 + 1) := by ring
+
+/-- No single-tape machine decides palindromes over two letters in linear time. -/
+theorem not_decidesPalindromesInTime_linear {a b yes : Symbol} (hab : a ≠ b) (c : ℕ) :
+    ¬ DecidesPalindromesInTime tm a b yes fun n => c * (n + 1) := fun hdec =>
+  not_decidesByHeadInTime_palindromes_linear _ _ c (hdec.decidesByHeadInTime hab)
 
 end Cslib.Turing.SingleTapeTM
