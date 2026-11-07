@@ -2788,6 +2788,7 @@ public import Complexity.Computability.Probabilistic.Selection
 public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Computability.PropertyTesting.Distribution.Basic
+public import Complexity.Computability.PropertyTesting.Distribution.IdentityReduction
 public import Complexity.Computability.PropertyTesting.Distribution.UniformityCollision
 public import Complexity.Computability.PropertyTesting.Distribution.UniformityLowerBound
 public import Complexity.Computability.PropertyTesting.Linearity
@@ -4047,6 +4048,7 @@ public import Complexity.Foundations.Data.Nat.CeilQuarter
 public import Complexity.Foundations.Data.Nat.Choose
 public import Complexity.Foundations.Data.Nat.Choose.Central
 public import Complexity.Foundations.Data.Nat.Choose.Real
+public import Complexity.Foundations.Data.Nat.Choose.Sum
 public import Complexity.Foundations.Data.Nat.Choose.Vandermonde
 public import Complexity.Foundations.Data.Nat.Div
 public import Complexity.Foundations.Data.Nat.Doubling
@@ -4390,6 +4392,7 @@ public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 public import Complexity.Languages.Probabilistic.Vector
 public import Complexity.Logics.FirstOrder.Basic
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
+public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
 public import Complexity.Logics.FirstOrder.Encoding
@@ -4569,6 +4572,10 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Step
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import Complexity.Logics.Propositional.ClauseSet.SubcubeFree
 public import Complexity.Logics.Propositional.CliqueColoring
+public import Complexity.Logics.Propositional.CuttingPlanes
+public import Complexity.Logics.Propositional.CuttingPlanes.Pigeonhole
+public import Complexity.Logics.Propositional.CuttingPlanes.Resolution
+public import Complexity.Logics.Propositional.CuttingPlanes.Separation
 public import Complexity.Logics.Propositional.DNF
 public import Complexity.Logics.Propositional.Parity
 public import Complexity.Logics.Propositional.Parity.DepthThree
@@ -4603,10 +4610,12 @@ public import Complexity.MachineLearning.OnlineLearning.MultiplicativeWeights
 public import Complexity.MachineLearning.OnlineLearning.WeightedMajority
 public import Complexity.MachineLearning.OnlineLearning.ZeroSum
 public import Complexity.MachineLearning.PACLearning.ERM
+public import Complexity.MachineLearning.PACLearning.EpsilonNet
 public import Complexity.MachineLearning.PACLearning.FiniteClass
 public import Complexity.MachineLearning.PACLearning.GrowthFunction
 public import Complexity.MachineLearning.PACLearning.Realizable
 public import Complexity.MachineLearning.PACLearning.RealizableSample
+public import Complexity.MachineLearning.PACLearning.VCUpperBound
 public import Complexity.MachineLearning.UniformLearning.AC0
 public import Complexity.MachineLearning.UniformLearning.Basic
 public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour

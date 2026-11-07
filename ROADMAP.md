@@ -695,9 +695,10 @@ universe size, not supplied as unverified input tables. In dependency order:
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
 - **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
-  vocabularies, add games for vocabularies with constants, pebble games with their
-  finite-variable equivalence theorems, Hanf and Gaifman locality, and further nondefinability
-  results such as connectivity and acyclicity of finite graphs; then
+  vocabularies and the [nondefinability of connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean)
+  by interpretation from finite linear orders, add games for vocabularies with constants, pebble
+  games with their finite-variable equivalence theorems, Hanf and Gaifman locality, and further
+  nondefinability results such as acyclicity of finite graphs; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
@@ -755,8 +756,15 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 ### Proof complexity
 
-- Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
-  certified DPLL solver runtimes.
+- Proof-space lower bounds, Frege, polynomial calculus and sum-of-squares, and certified DPLL
+  solver runtimes.
+- **Cutting planes:** Krajíček's feasible interpolation for cutting planes with bounded
+  coefficients and the resulting clique–colouring lower bound
+  ([#2019](https://github.com/cslib-community/complexitylib/issues/2019), M4); Pudlák's
+  lower bound for unrestricted coefficients via monotone real circuits (untracked);
+  coefficient-size measures; Buss–Clote cutting planes with division by 2 only; and the
+  simulation of resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and
+  translation time.
 - **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
   lower bounds ([#2019]).
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
@@ -915,9 +923,9 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. For realizable
-  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), prove
-  the VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)`, first for countable domains and
-  then for general well-behaved classes. Give the
+  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), extend
+  the countable-domain VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)` to general
+  well-behaved classes over measurable domains. Give the
   computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
   costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
@@ -926,9 +934,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
-  lower bound. Remaining: further access models, the odd-domain lower bound, identity testing by reduction to
-  uniformity, closeness, tolerant and structured-property distribution testing, canonical testers
-  and further query and sample lower bounds.
+  lower bound. Identity testing to any fixed distribution reduces to uniformity on `4n` points
+  through Goldreich's kernel, which gives `O(√n / ε²)` samples
+  ([#2930](https://github.com/cslib-community/complexitylib/issues/2930)). Remaining: further access
+  models, the odd-domain lower bound, instance-optimal identity testing, closeness, tolerant and
+  structured-property distribution testing, canonical testers and further query and sample lower
+  bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
