@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.SecondOrder.WordMSO.Basic
 public import Mathlib.ModelTheory.Semantics
+import Complexity.Logics.FirstOrder.Interpretation
 
 /-!
 # First-order logic over words in Mathlib's model theory
@@ -110,11 +111,6 @@ end wordStructure
 
 namespace WordFO
 
-/-- The variable that a term of the function-free word vocabulary consists of. -/
-private def termVar {β : Type*} : (wordLanguage α).Term β → β
-  | .var b => b
-  | .func f _ => Empty.elim f
-
 /-- The word-formula variable of a variable of a Mathlib formula without free variables. -/
 private def var {m : ℕ} (b : Empty ⊕ Fin m) : Fin m := Sum.elim Empty.elim id b
 
@@ -130,8 +126,8 @@ any number of unused set variables). Relation symbols become atoms, and equality
 derived `Formula.eq`. -/
 def toFormula {n : ℕ} : {m : ℕ} → (wordLanguage α).BoundedFormula Empty m → Formula α m n
   | _, .falsum => .falsum
-  | _, .equal t₁ t₂ => .eq (var (termVar t₁)) (var (termVar t₂))
-  | _, .rel R ts => relFormula R fun i => var (termVar (ts i))
+  | _, .equal t₁ t₂ => .eq (var (FO.termVar t₁)) (var (FO.termVar t₂))
+  | _, .rel R ts => relFormula R fun i => var (FO.termVar (ts i))
   | _, .imp φ ψ => .imp (toFormula φ) (toFormula ψ)
   | _, .all φ => .all (toFormula φ)
 
@@ -144,15 +140,10 @@ theorem isFO_toFormula {n : ℕ} :
   | _, .imp φ ψ => by simpa [toFormula] using ⟨isFO_toFormula φ, isFO_toFormula ψ⟩
   | _, .all φ => by simpa [toFormula] using isFO_toFormula φ
 
-private theorem realize_termVar (w : List α) {m : ℕ} (t : (wordLanguage α).Term (Empty ⊕ Fin m))
-    (xs : Fin m → Fin w.length) :
-    let := wordStructure w
-    t.realize (Sum.elim (Empty.elim : Empty → Fin w.length) xs) = xs (var (termVar t)) := by
-  cases t with
-  | var b => cases b with
-    | inl e => exact e.elim
-    | inr i => rfl
-  | func f _ => exact Empty.elim f
+private theorem sumElim_eq_var {ℓ m : ℕ} (xs : Fin m → Fin ℓ) (b : Empty ⊕ Fin m) :
+    Sum.elim (Empty.elim : Empty → Fin ℓ) xs b = xs (var b) := by
+  rcases b with e | i
+  exacts [e.elim, rfl]
 
 /-- The translation preserves satisfaction: the word formula holds at an assignment of positions
 iff the Mathlib formula holds in the word structure. -/
@@ -164,12 +155,12 @@ theorem realize_toFormula (w : List α) {n : ℕ} (V : Fin n → Set (Fin w.leng
   | _, .equal t₁ t₂, xs => by
     let := wordStructure w
     change _ ↔ t₁.realize (Sum.elim Empty.elim xs) = t₂.realize (Sum.elim Empty.elim xs)
-    rw [realize_termVar, realize_termVar]
+    rw [FO.realize_termVar, FO.realize_termVar, sumElim_eq_var, sumElim_eq_var]
     simp only [toFormula, Formula.realize_eq]
   | _, .rel R ts, xs => by
     let := wordStructure w
     change _ ↔ RelMap R (fun i => (ts i).realize (Sum.elim Empty.elim xs))
-    simp only [realize_termVar]
+    simp only [FO.realize_termVar, sumElim_eq_var]
     cases R with
     | lt => exact Iff.rfl
     | letter a => exact Iff.rfl

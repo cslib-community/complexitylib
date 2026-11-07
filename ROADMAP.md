@@ -711,10 +711,12 @@ universe size, not supplied as unverified input tables. In dependency order:
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
   regular) and FO[<] ⊊ MSO via EVEN
   ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)): FO[<] = star-free =
-  aperiodic (McNaughton–Papert, Schützenberger);
+  aperiodic (McNaughton–Papert, Schützenberger; star-free ⇒ FO is
+  [#3075](https://github.com/cslib-community/complexitylib/issues/3075));
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
-  lower bound on formula-to-automaton translation; and Büchi's theorem for ω-words (S1S) over
-  cslib's ω-regular languages.
+  lower bound on formula-to-automaton translation; Büchi's theorem for ω-words (S1S) over
+  cslib's ω-regular languages; and MSO on trees: finite trees and tree automata
+  (Thatcher–Wright, Doner) and Rabin's theorem for infinite trees (S2S).
 - **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
   relational vocabularies, constant edge probabilities and unlabelled structures; construct the
   countable random (Rado) graph; then the Kolaitis–Vardi laws for fixed-point and finite-variable

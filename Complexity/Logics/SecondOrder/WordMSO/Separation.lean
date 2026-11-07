@@ -7,26 +7,28 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 public import Complexity.Logics.SecondOrder.WordMSO.FirstOrder
 public import Complexity.Logics.SecondOrder.WordMSO.OfRegular
+public import Mathlib.ModelTheory.Order
+import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 
 /-!
 # First-order logic is strictly weaker than MSO over words
 
 The language of even-length words is MSO-definable (`definable_even`) and regular, but not
 first-order definable over any nonempty alphabet, so `FO[<] ⊊ MSO` over finite words. Over a
-one-letter alphabet `{a}` the language is `(aa)*`, and this is Libkin's Corollary 7.27
-[Libkin2004]: `(aa)*` is regular but not star-free, that is, not first-order definable by
-Theorem 7.26 there. Over larger alphabets it is the same statement for `(ΣΣ)*`, with the same
-proof. The proof follows Libkin's: on a word whose letters
-are all equal to `c`, a first-order word formula is equivalent to a sentence of Mathlib's language
-of orders (`Formula.toOrder`, with `P_c` true and every other letter predicate false), so EVEN would
-be first-order definable on finite linear orders. That contradicts the Ehrenfeucht–Fraïssé bound for
-finite linear orders [Libkin, Theorem 3.6 and Corollary 3.12][Libkin2004], which is
-`Cslib.Logic.FO.FiniteLinearOrder.realize_iff_of_two_pow_le_card`. The library's version is applied
-to the orders of sizes `2 ^ k` and `2 ^ k + 1`, where `k` is the quantifier rank of the translated
-sentence.
+one-letter alphabet `{a}` the language is `(aa)*`, and this is the first-order half of Libkin's
+Corollary 7.27 [Libkin2004], whose proof shows `(aa)*` regular but not star-free because EVEN is
+not first-order definable over linear orders. (Concluding "not star-free" also needs the direction
+star-free ⇒ first-order of Theorem 7.26 there, which this module does not prove.) Over larger
+alphabets it is the same statement for `(ΣΣ)*`, with the same proof. The proof follows Libkin's:
+on a word whose letters are all equal to `c`, a first-order word formula is equivalent to a
+sentence of Mathlib's language of orders (`Formula.toOrder`, with `P_c` true and every other letter
+predicate false), so EVEN would be first-order definable on finite linear orders. That contradicts
+the Ehrenfeucht–Fraïssé bound for finite linear orders [Libkin, Theorem 3.6 and Corollary
+3.12][Libkin2004], which is `Cslib.Logic.FO.FiniteLinearOrder.realize_iff_of_two_pow_le_card`. The
+library's version is applied to the orders of sizes `2 ^ k` and `2 ^ k + 1`, where `k` is the
+quantifier rank of the translated sentence.
 
 Nonemptiness of the alphabet is needed: over the empty alphabet the only word is the empty word, so
 every language is first-order definable (by `⊤` or `⊥`).
@@ -64,12 +66,13 @@ variable {α : Type u}
 
 namespace Formula
 
+open Classical in
 /-- Translation of a word formula into Mathlib's language of orders, for words all of whose letters
 are `c`: `P_c(x)` becomes `⊤` and every other letter predicate `⊥`. Set atoms and set quantifiers,
 which do not occur in first-order formulas without free set variables, become `⊥`. -/
 noncomputable def toOrder (c : α) : {m n : ℕ} → Formula α m n →
     Language.order.BoundedFormula Empty m
-  | _, _, letter a _ => by classical exact if a = c then ⊤ else ⊥
+  | _, _, letter a _ => if a = c then ⊤ else ⊥
   | _, _, lt x y => Term.lt (Term.var (Sum.inr x)) (Term.var (Sum.inr y))
   | _, _, mem _ _ => ⊥
   | _, _, falsum => ⊥
@@ -108,8 +111,8 @@ theorem realize_toOrder {ℓ : ℕ} [Language.order.Structure (Fin ℓ)]
 end Formula
 
 /-- **Even length is not first-order definable** (in `FO[<]` with letter predicates), over any
-nonempty alphabet. Over a one-letter alphabet this is `(aa)*` [Libkin, Corollary 7.27][Libkin2004].
--/
+nonempty alphabet. Over a one-letter alphabet this is `(aa)*`, the first-order half of
+[Libkin, Corollary 7.27][Libkin2004]. -/
 theorem not_foDefinable_even [Nonempty α] : ¬ FODefinable {w : List α | Even w.length} := by
   classical
   rintro ⟨φ, hFO, hφ⟩
