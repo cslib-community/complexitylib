@@ -465,10 +465,12 @@ index links to canonical definitions rather than keeping a second set.
   each reduction's resource bound.
 - **Abstract (Blum) complexity** ([#2866]): Blum complexity measures over Mathlib's
   `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
-  almost-everywhere classes and recursive relatedness, are in `Computability/BlumComplexity`.
-  Remaining: Blum's speedup theorem, the McCreight–Meyer union theorem, the compression theorem
-  and honesty, and Blum measures for native multitape time and space through a Gödel-numbering
-  bridge from native descriptions.
+  almost-everywhere classes (also with a two-argument stretch), recursive relatedness and Blum's
+  speedup theorem, are in `Computability/BlumComplexity`. Remaining: the McCreight–Meyer union
+  theorem, the compression theorem and honesty, effective forms of speedup such as Blum's
+  pseudo-speedup, which computes a faster program for a finite variant of `f` (M. Blum, *On
+  effective procedures for speeding up algorithms*, J. ACM 18(2), 1971), and Blum measures for
+  native multitape time and space through a Gödel-numbering bridge from native descriptions.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
@@ -680,16 +682,22 @@ universe size, not supplied as unverified input tables. In dependency order:
   problems.
 - Extend the synthesis rules to nested operator bodies and give regular-language quantifiers
   their ordered characteristic-word semantics.
-- Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
+- **FO(TC) = NL** on ordered structures
+  ([#1246](https://github.com/cslib-community/complexitylib/issues/1246)): closures under negation
+  in the native NL model checker via an inductive-counting block, and NL ⊆ FO(positive TC) via
+  configuration-graph reachability. Separately, the native NL closure facts this route bypasses:
+  intersection, union, logspace reductions and NL^(NL ∩ coNL) = NL.
+- Further logical characterizations on ordered structures: FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,
   structures and algorithms.
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
 - **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
-  vocabularies, add games for vocabularies with constants, pebble games with their
-  finite-variable equivalence theorems, Hanf and Gaifman locality, and further nondefinability
-  results such as connectivity and acyclicity of finite graphs; then
+  vocabularies and the [nondefinability of connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean)
+  by interpretation from finite linear orders, add games for vocabularies with constants, pebble
+  games with their finite-variable equivalence theorems, Hanf and Gaifman locality, and further
+  nondefinability results such as acyclicity of finite graphs; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
@@ -766,10 +774,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Williams's NEXP ⊄ ACC⁰ and Murray–Williams's NQP ⊄ ACC⁰** ([#889]): no polynomial-size,
   constant-depth circuits over AND, OR, NOT and fixed-modulus counting gates for some language in
-  NEXP. `SymAnd/Collapse.lean` collapses towers of prime-modulus polynomial layers into `SYM ∘ AND`
-  (Beigel–Tarui, Lemma 2.8). Still open: compiling `AC0Mod` circuits into such towers (composite
-  moduli through prime-power digits, AND/OR through small-bias tests), the quasi-polynomial-time
-  construction, Williams's fast `SYM ∘ AND` evaluation and ACC-SAT algorithm, a fine
+  NEXP. `SymAnd/ACC0.lean` proves that every `AC0Mod m` and `ACC0` circuit is a `SYM ∘ AND`
+  circuit of polylogarithmic fan-in and quasi-polynomial size, with explicit bounds (Yao;
+  Beigel–Tarui, Theorem 1.1). This is an existence theorem. Still open: constructing that circuit
+  in quasi-polynomial time, Williams's fast `SYM ∘ AND` evaluation and ACC-SAT algorithm, a fine
   nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
@@ -861,6 +869,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   conversion, rank) is general. Open: every field (the interpolation nodes are the integers of
   characteristic zero), the rectangular and dual exponents, explicit sizes and constants (the
   algorithm is galactic), and the lower bound `omega K ≥ 2` only as the trivial output count.
+- **Fast integer and polynomial multiplication**
+  ([#2923](https://github.com/cslib-community/complexitylib/issues/2923)): Karatsuba on coefficient
+  lists in the arithmetic query model, with exact counts and `O(n ^ log₂ 3)` bounds, is in
+  `Algorithms/Lean/Query/Arith/Karatsuba`. Open: integer Karatsuba on binary numerals, correct
+  against `Nat.mul` with an `O(n ^ log₂ 3)` bit-operation bound and a native or word-RAM
+  realization; Toom–Cook (`O(n ^ log₃ 5)` for Toom-3) and FFT-based multiplication over rings with
+  suitable roots of unity; and lower bounds such as rank `3` for the two-term product tensor.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
@@ -907,7 +922,11 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
   list-size/agreement guarantees and decoding runtime as separate obligations; concrete
   list-decodable codes for Nisan–Wigderson.
-- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications.
+- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications; coverage of
+  O'Donnell's *Analysis of Boolean Functions*
+  ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the book-form
+  statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta theorem
+  with its spectral concentration).
 - **Resource-bounded measure and dimension:** martingales and gales with explicit computation
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds
@@ -920,14 +939,18 @@ each statement against the numbered result. Organize modules by subject, not cha
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
-  storage and evaluation; AMS frequency moments, CountSketch, turnstile updates, and heavy-hitter
-  recovery; communication-to-streaming transfers with explicit state encodings and pass counts.
+  storage and evaluation; the AMS sketches for `F₀` and `F_k` with `k > 2` and the `n^{Ω(1)}`
+  lower bounds for `F_k` with `k ≥ 6`; the remaining `Ω(n)` lower bounds of Alon–Matias–Szegedy
+  §3 for deterministic approximation and randomized exact computation of `F_k` with `k ≠ 1`
+  (Propositions 3.7 and 3.8); `ProbComp` samplers and native realizations of the AMS `F₂` sketch;
+  CountSketch, turnstile updates, and heavy-hitter recovery; multi-pass communication-to-streaming
+  transfers with pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. For realizable
-  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), prove
-  the VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)`, first for countable domains and
-  then for general well-behaved classes. Give the
+  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), extend
+  the countable-domain VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)` to general
+  well-behaved classes over measurable domains. Give the
   computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
   costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
@@ -961,6 +984,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   containments and complete problems. Supply the
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
   reductions.
+
+- **Quantum query separations**
+  ([#2991](https://github.com/cslib-community/complexitylib/issues/2991)): beyond the decision
+  version of Simon's problem, prove the search version (sample rows orthogonal to `s` and recover
+  `s` by Gaussian elimination over `ZMod 2` with constant probability), the classical `n`-query
+  lower bound for Bernstein–Vazirani, and separations in the value-query model. The latter needs
+  quantum states over an arbitrary finite query index type rather than `Fin N`; generalizing
+  `State N W` affects `Quantum/Search.lean`, `Quantum/Composition.lean`, `Quantum/Grover.lean`,
+  `Quantum/UnknownSearch.lean`, `Quantum/Polynomial.lean` and `Quantum/Adversary.lean`. Natural
+  later targets are Forrelation and other optimal quantum–classical query separations.
 
 - **Shor's algorithm:** bounded-error polynomial-time integer factoring and discrete logarithms
   in the native uniform quantum-circuit model, with explicit input/output encodings, success
@@ -1081,10 +1114,10 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   canonical-path and spectral-gap arguments. Implement Metropolis sampling for encoded rational
   target weights, charging initialization, arithmetic and every transition, with support and
   mixing hypotheses explicit.
-- **FPRAS and almost-uniform sampling:** interfaces separating relative error, failure
-  probability, output-distribution error and runtime, including zero-count instances. Start
-  with a complete DNF-counting FPRAS; prove sampling/counting reductions for suitably
-  self-reducible relations, with the sampling and counting oracle costs included.
+- **FPRAS and almost-uniform sampling:** an almost-uniform sampling (FPAUS) interface with
+  explicit output-distribution error alongside the FPRAS interface, and sampling/counting
+  reductions for suitably self-reducible relations, with the sampling and counting oracle
+  costs included.
 - Extend to randomized approximate counting for matchings and permanents of nonnegative
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
   expander APIs and connect to the separate Stockmeyer oracle-counting track where their

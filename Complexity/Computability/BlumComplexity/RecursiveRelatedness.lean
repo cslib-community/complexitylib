@@ -27,6 +27,8 @@ makes both costs defined together. The search for it is decidable by Blum's seco
 
 * `Cslib.BlumComplexity.BlumMeasure.recursively_related`: any two complexity measures are
   recursively related.
+* `Cslib.BlumComplexity.BlumMeasure.recursively_related_of_encode_le`: the same, with the explicit
+  threshold `n ≥ encode c` for each program `c`.
 
 ## References
 
@@ -39,11 +41,11 @@ namespace Cslib.BlumComplexity.BlumMeasure
 
 open Encodable Denumerable Nat.Partrec Filter
 
-/-- **Recursive relatedness** [Blum1967]: for any two complexity measures `Φ` and `Ψ` there is a
-computable `r` with `Ψ c n ≤ r n (Φ c n)` and `Φ c n ≤ r n (Ψ c n)` for every program `c` and all
-sufficiently large `n` (here, all `n ≥ encode c`). -/
-theorem recursively_related (Φ Ψ : BlumMeasure) :
-    ∃ r : ℕ → ℕ → ℕ, Computable₂ r ∧ ∀ c : Code, ∀ᶠ n in atTop,
+/-- **Recursive relatedness** [Blum1967] with an explicit threshold: for any two complexity
+measures `Φ` and `Ψ` there is a computable `r` with `Ψ c n ≤ r n (Φ c n)` and
+`Φ c n ≤ r n (Ψ c n)` for every program `c` and every input `n ≥ encode c`. -/
+theorem recursively_related_of_encode_le (Φ Ψ : BlumMeasure) :
+    ∃ r : ℕ → ℕ → ℕ, Computable₂ r ∧ ∀ c : Code, ∀ n, encode c ≤ n →
       ∀ m ∈ Φ.cost c n, ∀ m' ∈ Ψ.cost c n, m' ≤ r n m ∧ m ≤ r n m' := by
   classical
   -- `R (n, m) B`: for each program numbered `≤ n`, a cost `m` on `n` in one measure implies a
@@ -98,8 +100,8 @@ theorem recursively_related (Φ Ψ : BlumMeasure) :
           Computable.snd) hB
     exact ((Φ.computablePred_mem_cost_comp hcode hn hm).imp (hex' Ψ)).and
       ((Ψ.computablePred_mem_cost_comp hcode hn hm).imp (hex' Φ))
-  refine ⟨fun n m => Nat.find (hex (n, m)), Computable.find hR hex, fun c => ?_⟩
-  filter_upwards [eventually_ge_atTop (encode c)] with n hn m hm m' hm'
+  refine ⟨fun n m => Nat.find (hex (n, m)), Computable.find hR hex, fun c n hn m hm m' hm' => ?_⟩
+  beta_reduce
   have h1 := (Nat.find_spec (hex (n, m))) (encode c) (Nat.lt_succ_of_le hn)
   have h2 := (Nat.find_spec (hex (n, m'))) (encode c) (Nat.lt_succ_of_le hn)
   simp only [ofNat_encode] at h1 h2
@@ -108,5 +110,15 @@ theorem recursively_related (Φ Ψ : BlumMeasure) :
   rw [Part.mem_unique hm' hk'] at *
   rw [Part.mem_unique hm hk2'] at *
   omega
+
+/-- **Recursive relatedness** [Blum1967]: for any two complexity measures `Φ` and `Ψ` there is a
+computable `r` with `Ψ c n ≤ r n (Φ c n)` and `Φ c n ≤ r n (Ψ c n)` for every program `c` and all
+sufficiently large `n`. `recursively_related_of_encode_le` gives the explicit threshold
+`n ≥ encode c`. -/
+theorem recursively_related (Φ Ψ : BlumMeasure) :
+    ∃ r : ℕ → ℕ → ℕ, Computable₂ r ∧ ∀ c : Code, ∀ᶠ n in atTop,
+      ∀ m ∈ Φ.cost c n, ∀ m' ∈ Ψ.cost c n, m' ≤ r n m ∧ m ≤ r n m' := by
+  obtain ⟨r, hr, hrel⟩ := recursively_related_of_encode_le Φ Ψ
+  exact ⟨r, hr, fun c => (eventually_ge_atTop (encode c)).mono fun n hn => hrel c n hn⟩
 
 end Cslib.BlumComplexity.BlumMeasure
