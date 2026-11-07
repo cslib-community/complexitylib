@@ -925,6 +925,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
   cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
   concrete realizations.
+- **Classical approximation algorithms** ([#2869]): beyond the greedy weighted set cover and its
+  `H d` bound in `Algorithms/Lean/SetCover`, the maximal-matching vertex-cover and double-tree
+  metric-TSP 2-approximations, machine-level polynomial-time certificates for these algorithms,
+  and stronger guarantees such as Christofides' `3/2` for metric TSP.
 
 ### Online algorithms and competitive analysis
 
@@ -1257,3 +1261,4 @@ not planned, not as proved.
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
+[#2869]: https://github.com/cslib-community/complexitylib/issues/2869
