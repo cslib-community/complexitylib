@@ -1395,8 +1395,11 @@ public import Complexity.Computability.Complexity.Classes.Alternation.TQBF
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Collapse
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Games
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Games.Repetition
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.GraphNonIsomorphism
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.PH
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound
 public import Complexity.Computability.Complexity.Classes.BPP
 public import Complexity.Computability.Complexity.Classes.BPP.Amplification
