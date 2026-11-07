@@ -1125,13 +1125,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Distributed complexity:** LOCAL and CONGEST models with explicit identifiers, round,
   message-size and randomness conventions; locality lower bounds and communication-to-round
   reductions with corresponding algorithmic examples. The deterministic LOCAL model on oriented
-  cycles, Cole–Vishkin and Linial's `log*` bound exist
+  cycles, Cole–Vishkin and Linial's `log*` bound, the bridge to Mathlib's `cycleGraph` colourings
+  and the `Θ(log* n)` bounds for maximal independent sets on cycles exist
   (`Complexity/Computability/Distributed/OrientedCycle/`). Open: general graphs with port
   numbering, Linial's `O(Δ²)` colouring and `(Δ + 1)`-colouring/MIS on bounded-degree graphs,
-  maximal independent sets on cycles as a corollary of 3-colouring (both bounds), a bridge from
-  `IsProperColoring` to Mathlib's `SimpleGraph.Coloring` on `SimpleGraph.cycleGraph`, CONGEST
-  message bounds, randomized LOCAL algorithms, and closing the additive gap
-  between the `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles.
+  CONGEST message bounds, randomized LOCAL algorithms, and closing the additive gaps between the
+  `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles and between
+  `⌈(log* n) / 2⌉ + 5` and `(log* n) / 2 - 2` for MIS on cycles.
 
 ## Coverage and reuse
 

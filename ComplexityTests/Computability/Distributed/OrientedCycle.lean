@@ -4,10 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.Distributed.OrientedCycle.MIS
 import Complexity.Computability.Distributed.OrientedCycle.RoundComplexity
 
 /-! Concrete Cole–Vishkin runs on a 5-cycle, the infinite path and the one-node cycle; shift
-colourings; the flooding simulation; and instances of Linial's lower bound. -/
+colourings; the flooding simulation; instances of Linial's lower bound; the bridge to Mathlib's
+`cycleGraph`; and maximal independent sets. -/
 
 namespace ComplexityTests.Distributed.OrientedCycle
 
@@ -168,5 +170,61 @@ example {S : Type} (A : Algorithm ℕ S ℕ) :
 -- rounds of optimal.
 example : ∃ (S : Type) (A : Algorithm ℕ S ℕ), A.ColorsCycle 5 5 3 :=
   (exists_colorsCycle_three_and_logStar_le.{0} (n := 5) (by decide)).1
+
+
+/-! ### The graph of the oriented cycle -/
+
+-- The graph of the oriented 5-cycle is Mathlib's `cycleGraph 5`.
+example : graph 5 = SimpleGraph.cycleGraph 5 := graph_succ_eq_cycleGraph 4
+
+-- The Cole–Vishkin output on the 5-cycle as a Mathlib colouring with three colours.
+example : ∃ C : (graph 5).Coloring (Fin 3), ∀ v, (C v : ℕ) = (fastThreeColoring 2).run ids5 5 v :=
+  (fastThreeColoring_colorsCycle (n := 5) (s := 2) (by decide) (by decide) le_rfl).exists_coloring
+    (by decide) (by decide) (by decide)
+
+-- A proper colouring of `ZMod (k + 1)` transported to Mathlib's `cycleGraph (k + 1)`.
+example (k : ℕ) (hk : k ≠ 0) {c : ZMod (k + 1) → ℕ} (hc : IsProperColoring c) :
+    (SimpleGraph.cycleGraph (k + 1)).Coloring ℕ :=
+  graph_succ_eq_cycleGraph k ▸ hc.toColoring (by omega)
+
+/-! ### Maximal independent sets -/
+
+/-- A proper 3-colouring of the 5-cycle. -/
+def col5 : ZMod 5 → ℕ := ![1, 2, 1, 2, 0]
+
+-- Greedy colour classes: after round `0` only the colour-`0` node has joined, which is not yet
+-- maximal; after round `1` the set `{2, 4}` is maximal.
+example : (List.finRange 5).map (fun v => misOfColoring.run col5 0 v) =
+    [false, false, false, false, true] := by decide
+example : ¬IsMIS (misOfColoring.run col5 0) := by decide
+example : (List.finRange 5).map (fun v => misOfColoring.run col5 1 v) =
+    [false, false, true, false, true] := by decide
+example : IsMIS (misOfColoring.run col5 1) := by decide
+
+-- One round from the MIS back to a proper 3-colouring.
+example : (List.finRange 5).map (fun v => colorOfMIS.apply (misOfColoring.run col5 1) v) =
+    [1, 2, 0, 1, 0] := by decide
+
+-- The full MIS algorithm on the 5-cycle with identifiers `3, 0, 4, 1, 2` (`s = 2`, `2 + 5` rounds).
+example : (List.finRange 5).map (fun v => (misAlgorithm 2).run ids5 7 v) =
+    [false, false, true, false, true] := by decide
+example : IsMIS ((misAlgorithm 2).run ids5 7) := by decide
+
+-- The one-node cycle has no MIS in the sense of `IsMIS`: its node is its own neighbour.
+example : ∀ s : ZMod 1 → Bool, ¬IsMIS s := by decide
+
+-- `IsMIS` agrees with Mathlib's maximal independent sets on the 5-cycle.
+example : Maximal (graph 5).IsIndepSet {v | misOfColoring.run col5 1 v = true} :=
+  (isMIS_iff_maximal (by decide)).1 (by decide)
+
+-- No MIS algorithm works without communication on the cycle of length `65537`.
+example {S : Type} (A : Algorithm ℕ S Bool) : ¬A.FindsMIS 65537 0 := fun hA => by
+  have h := hA.logStar_le
+  rw [show Nat.logStar 65537 = 5 by decide] at h
+  omega
+
+-- The `Θ(log* n)` MIS summary for `n = 5`: `⌈3 / 2⌉ + 5 = 7` rounds suffice.
+example : ∃ (S : Type) (A : Algorithm ℕ S Bool), A.FindsMIS 5 7 :=
+  (exists_findsMIS_and_logStar_le.{0} (n := 5) (by decide)).1
 
 end ComplexityTests.Distributed.OrientedCycle

@@ -34,7 +34,8 @@ inputs at distance at most `r` (`Algorithm.state_eq_viewState`), so an `r`-round
 a `LocalRule` of radius `r` (`Algorithm.run_eq_apply`). Conversely every rule of radius `r` is
 computed in `r` rounds by flooding (`LocalRule.toAlgorithm_run`). Lower bounds can thus be proved
 for rules and transferred to algorithms. `LocalRule.andThen` runs a rule and then an algorithm on
-its outputs.
+its outputs, and `Algorithm.seq` runs one algorithm for a fixed number of rounds and then another
+on its outputs.
 
 Identifiers are natural numbers. `Algorithm.ColorsCycle` uses identifiers `{0, …, n - 1}`; the
 standard convention `{1, …, n}` is the same up to a shift by one, made precise by
@@ -48,6 +49,7 @@ standard convention `{1, …, n}` is the same up to a shift by one, made precise
   their executions.
 * `Cslib.Distributed.OrientedCycle.Algorithm.comapInput`: pre-processing the inputs.
 * `Cslib.Distributed.OrientedCycle.MessageAlgorithm`: algorithms with explicit messages.
+* `Cslib.Distributed.OrientedCycle.Algorithm.seq`: running one algorithm after another.
 * `Cslib.Distributed.OrientedCycle.LocalRule`: rules of radius `r` on input windows.
 * `Cslib.Distributed.OrientedCycle.LocalRule.andThen`: a rule followed by an algorithm.
 * `Cslib.Distributed.OrientedCycle.IsProperColoring`: proper colourings of the oriented cycle.
@@ -61,6 +63,7 @@ standard convention `{1, …, n}` is the same up to a shift by one, made precise
 * `Cslib.Distributed.OrientedCycle.LocalRule.toAlgorithm_run`: every radius-`r` rule is computed
   in `r` rounds.
 * `Cslib.Distributed.OrientedCycle.LocalRule.andThen_run`: composition of a rule and an algorithm.
+* `Cslib.Distributed.OrientedCycle.Algorithm.seq_run`: sequential composition of algorithms.
 * `Cslib.Distributed.OrientedCycle.MessageAlgorithm.toAlgorithm_state`: message passing as state
   exchange.
 * `Cslib.Distributed.OrientedCycle.Algorithm.colorsCycle_comapInput_succ_iff`: the identifier
@@ -191,6 +194,47 @@ theorem toAlgorithm_state (x : ZMod n → I) (r : ℕ) (v : ZMod n) :
     rfl
 
 end MessageAlgorithm
+
+namespace Algorithm
+
+variable {I S O S' O' : Type*}
+
+/-- Sequential composition: run `A` for `t` rounds, then run `B` on the outputs of `A`. During the
+first `t` rounds every node keeps `B` in its initial state for the current output of `A`. -/
+@[expose] def seq (A : Algorithm I S O) (t : ℕ) (B : Algorithm O S' O') :
+    Algorithm I (S × S') O' where
+  init x := (A.init x, B.init (A.output (A.init x)))
+  step k p s q :=
+    if k < t then (A.step k p.1 s.1 q.1, B.init (A.output (A.step k p.1 s.1 q.1)))
+    else (s.1, B.step (k - t) p.2 s.2 q.2)
+  output s := B.output s.2
+
+private theorem seq_state_le (A : Algorithm I S O) {t : ℕ} (B : Algorithm O S' O') {n : ℕ}
+    (x : ZMod n → I) {s : ℕ} (hs : s ≤ t) (v : ZMod n) :
+    (A.seq t B).state x s v = (A.state x s v, B.init (A.output (A.state x s v))) := by
+  induction s generalizing v with
+  | zero => rfl
+  | succ s ih =>
+    rw [state_succ, ih (by omega), ih (by omega), ih (by omega), state_succ]
+    simp only [seq, show s < t by omega, ↓reduceIte]
+
+/-- **Sequential composition.** Running `A.seq t B` for `t + r` rounds is running `B` for `r`
+rounds on the outputs of `A` after `t` rounds. -/
+theorem seq_run (A : Algorithm I S O) (t : ℕ) (B : Algorithm O S' O') {n : ℕ} (x : ZMod n → I)
+    (r : ℕ) (v : ZMod n) : (A.seq t B).run x (t + r) v = B.run (A.run x t) r v := by
+  suffices h : ∀ v, (A.seq t B).state x (t + r) v = (A.state x t v, B.state (A.run x t) r v) from
+    congrArg (B.output ∘ Prod.snd) (h v)
+  induction r with
+  | zero =>
+    intro v
+    rw [Nat.add_zero, seq_state_le A B x le_rfl]
+    rfl
+  | succ r ih =>
+    intro v
+    rw [← Nat.add_assoc, state_succ, ih, ih, ih, state_succ]
+    simp only [seq, show ¬t + r < t by omega, ↓reduceIte, Nat.add_sub_cancel_left]
+
+end Algorithm
 
 /-- The inputs seen from node `v` at offsets `j : ℤ`: the window `j ↦ x (v + j)`. On the cycle this
 is the input along the universal cover, the oriented path `ℤ`, viewed from `v`. -/
