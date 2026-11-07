@@ -19,7 +19,7 @@ including distinct descriptions of the same function. Counting their semantic im
 does not give the witness count needed by approximate counting.
 
 This module instantiates the ordered-tuple variant of the good-string argument in
-[OliveiraPichSanthanam2019, Section 4.2, Lemma 23] with the library's fixed-length MCSP
+[OliveiraPichSanthanam2019, Lemma 4.7] with the library's fixed-length MCSP
 certificates. Their validity and evaluation use the existing polynomial-time verifier in
 `MCSP.NP`. The existing unary-field encoding uses
 `certLength n s = s + (n + s) + s * (3 + 2 * (n + s))` bits. No compact description-length bound
@@ -28,7 +28,7 @@ or injectivity of certificate evaluation is assumed.
 The resulting statements give a good input for every nonempty subfamily of valid certificates,
 a geometric bound on the number surviving any prescribed number of greedy rounds, and an
 anti-checker with at most `16 * (certLength n s + 1)` inputs. These are existence and counting
-results. The efficient generator of [OliveiraPichSanthanam2019, Section 4.1, Lemma 17] still
+results. The efficient generator of [OliveiraPichSanthanam2019, Lemma 4.1] still
 requires approximate-counting circuits, search, and circuit-size accounting.
 
 ## Main definitions
@@ -125,16 +125,9 @@ private theorem certificate_strictMajority_ne {n s m : ℕ} {f : BooleanFunction
     (hf : m * s + complexity interpretation (single (strictMajority m)) <
       complexity interpretation (single f))
     (w : Fin m → BitString (certLength n s)) (hw : ∀ i, w i ∈ validCertificates n s) :
-    (fun x => strictMajority m fun i => certificateFunction n s (w i) x) ≠ f := by
-  intro heq
-  have hle := complexity_strictMajority_le (fun i => certificateFunction n s (w i))
-  rw [heq] at hle
-  have hsum : ∑ i, complexity interpretation (single (certificateFunction n s (w i))) ≤
-      ∑ _i : Fin m, s :=
-    sum_le_sum fun i _ => mem_computableFunctions_iff_complexity_le.mp
-      (certificateFunction_mem_computableFunctions (hw i))
-  simp only [sum_const, card_univ, Fintype.card_fin, smul_eq_mul] at hsum
-  omega
+    (fun x => strictMajority m fun i => certificateFunction n s (w i) x) ≠ f :=
+  strictMajority_ne_of_lt_complexity hf _ fun i =>
+    certificateFunction_mem_computableFunctions (hw i)
 
 /-- The good-string bound for every nonempty subfamily of valid circuit descriptions. The
 refuted fraction is measured before quotienting descriptions by the function they compute. -/

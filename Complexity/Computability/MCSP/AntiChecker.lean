@@ -24,7 +24,7 @@ values of `f` on `S` with threshold `s` is a no-instance.
 
 Functions without small circuits have small anti-checkers. The combinatorial core is an
 ordered-tuple variant of the good-string lemma of Oliveira, Pich and Santhanam
-[OliveiraPichSanthanam2019, Section 4.2, Lemma 23, pp. 27:17–18]. Suppose there are at most
+[OliveiraPichSanthanam2019, Lemma 4.7]. Suppose there are at most
 `2 ^ m` inputs, and no `m` members of `F`, repetitions allowed, have `f` as
 their pointwise strict majority. Then every tuple of `m` members of a subfamily `G` is refuted by
 at least half of its entries (at least `m - m / 2` of them) at some input; averaging over the
@@ -46,7 +46,7 @@ fewer than `2 ^ b` functions computable with `s` gates.
 
 This is the existence of anti-checkers: the worst-case form of the theorem of Lipton and Young,
 with an adaptation of the combinatorial proof of Oliveira, Pich and Santhanam. Their
-Anti-Checker Lemma [OliveiraPichSanthanam2019, Section 4.1, Lemma 17], which computes an
+Anti-Checker Lemma [OliveiraPichSanthanam2019, Lemma 4.1], which computes an
 anti-checker from the truth table by a small circuit if `NP ⊆ P/poly`, is not formalized here.
 
 ## Main definitions
@@ -121,7 +121,7 @@ private theorem card_filter_le_card_mem_le {β : Type*} [DecidableEq β] {h : �
         exact Nat.mul_le_mul_right _ (Nat.choose_le_two_pow m h)
 
 /-- **The good-string lemma for an indexed family**, using the tuple-counting variant of
-[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. Suppose there are at most `2 ^ m` inputs and
+[OliveiraPichSanthanam2019, Lemma 4.7]. Suppose there are at most `2 ^ m` inputs and
 no `m` members of the nonempty description family `G` evaluate to functions with pointwise strict
 majority `f`. Then some input refutes at least a sixteenth of the descriptions in `G`.
 The evaluation map need not be injective: distinct descriptions are counted separately. -/
@@ -179,7 +179,7 @@ theorem exists_card_le_sixteen_mul_eval {β : Type*} (eval : β → α → Bool)
   omega
 
 /-- **The good-string lemma**, in the ordered-tuple variant of
-[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. Suppose there are at most `2 ^ m` inputs and
+[OliveiraPichSanthanam2019, Lemma 4.7]. Suppose there are at most `2 ^ m` inputs and
 no `m` members of the nonempty family `G` have `f` as their pointwise strict majority. Then at
 some input `x`, at least a sixteenth of the members of `G` differ from `f`. -/
 theorem exists_card_le_sixteen_mul (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m)
@@ -230,7 +230,7 @@ theorem exists_card_filter_le_eval {β : Type*} (eval : β → α → Bool)
     simp [G, and_assoc, and_comm (a := eval g x = f x)]
 
 /-- **Small anti-checkers against an indexed family**, using the tuple-counting variant of
-[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. If no `m` descriptions in `F` have evaluations
+[OliveiraPichSanthanam2019, Lemma 4.7]. If no `m` descriptions in `F` have evaluations
 with pointwise strict majority `f`, and `F` has fewer than `2 ^ b` descriptions, then at most `16 b`
 inputs refute every evaluated function. No injectivity of `eval` is assumed. -/
 theorem exists_isAntiChecker_image {β : Type*} (eval : β → α → Bool) {b : ℕ}
@@ -254,7 +254,7 @@ theorem exists_isAntiChecker_image {β : Type*} (eval : β → α → Bool) {b :
   omega
 
 /-- **Small anti-checkers**, by the ordered-tuple variant of
-[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. Suppose there are at most `2 ^ m` inputs,
+[OliveiraPichSanthanam2019, Lemma 4.7]. Suppose there are at most `2 ^ m` inputs,
 with `m > 0`, and no `m` members of `F`, repetitions allowed, have `f` as their pointwise strict
 majority. If `F` has fewer than `2 ^ b` members, some set of at most `16 b` inputs is an
 anti-checker for `f` against `F`. -/
@@ -305,8 +305,23 @@ theorem complexity_strictMajority_le (g : Fin m → BooleanFunction n) :
   (complexity_comp_le (fun x i => g i x) (single (strictMajority m))).trans
     (Nat.add_le_add_right (complexity_pi_le g) _)
 
+/-- A strict majority of `m` functions with circuits of at most `s` gates has a circuit with at
+most `m s` gates plus the complexity of strict majority, so it differs from every `f` that needs
+more gates. -/
+theorem strictMajority_ne_of_lt_complexity {f : BooleanFunction n}
+    (hf : m * s + complexity interpretation (single (strictMajority m)) <
+      complexity interpretation (single f))
+    (g : Fin m → BooleanFunction n) (hg : ∀ i, g i ∈ computableFunctions n s) :
+    (fun x => strictMajority m fun i => g i x) ≠ f := fun heq => by
+  have hle := complexity_strictMajority_le g
+  rw [heq] at hle
+  have hsum : ∑ i, complexity interpretation (single (g i)) ≤ ∑ _i : Fin m, s :=
+    sum_le_sum fun i _ => mem_computableFunctions_iff_complexity_le.mp (hg i)
+  simp only [sum_const, card_univ, Fintype.card_fin, smul_eq_mul] at hsum
+  omega
+
 /-- **Small anti-checkers against circuits**, by the ordered-tuple variant of
-[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. Let `n ≤ m` with `m > 0`. If `f` needs more
+[OliveiraPichSanthanam2019, Lemma 4.7]. Let `n ≤ m` with `m > 0`. If `f` needs more
 than `m s` gates plus the complexity of strict majority on `m` bits, and fewer than `2 ^ b`
 functions on `n` inputs have circuits with at most `s` gates, then on some set of at most
 `16 b` inputs `f` needs more than `s` gates. -/
@@ -318,15 +333,8 @@ theorem exists_lt_complexityOn {m b : ℕ} (hm : 0 < m) (hnm : n ≤ m) {f : Boo
   have hα : Fintype.card (BitString n) ≤ 2 ^ m := by
     rw [BitString.card]
     exact Nat.pow_le_pow_right two_pos hnm
-  have hmaj (g : Fin m → BooleanFunction n) (hg : ∀ i, g i ∈ computableFunctions n s) :
-      (fun x => strictMajority m fun i => g i x) ≠ f := fun heq => by
-    have hle := complexity_strictMajority_le g
-    rw [heq] at hle
-    have hsum : ∑ i, complexity interpretation (single (g i)) ≤ ∑ _i : Fin m, s :=
-      sum_le_sum fun i _ => mem_computableFunctions_iff_complexity_le.mp (hg i)
-    simp only [sum_const, card_univ, Fintype.card_fin, smul_eq_mul] at hsum
-    omega
-  obtain ⟨S, hS, hanti⟩ := exists_isAntiChecker hm hα _ hmaj hb
+  obtain ⟨S, hS, hanti⟩ :=
+    exists_isAntiChecker hm hα _ (strictMajority_ne_of_lt_complexity hf) hb
   exact ⟨S, hS, isAntiChecker_computableFunctions_iff.mp hanti⟩
 
 /-- **Small anti-checkers against circuits**, as Succinct MCSP: under the hypotheses of
