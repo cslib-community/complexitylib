@@ -24,11 +24,10 @@ seed `t ∈ {0,1}^(d+1)` gives the variable at position `j` the value `t ⬝ (1,
 `GF(2)`, where `bin_d(j)` are the `d` low binary digits of `j`
 (`Cslib.Logic.PL.paritySample_ofFn`). Over a uniformly random seed these values are three-wise
 independent and uniform: the family `x ↦ t ⬝ (1, x)` on `{0,1}^d` is the one-row Boolean affine
-hash family (`Cslib.Logic.PL.isKWiseIndependentHash_dotProduct_cons_true`, from
-`Cslib.BitString.LinearHash.isThreeWiseIndependentHash_affineHash`), and the variables have
-distinct binary numbers. This is the case `k = 3` of the small sample spaces of `k`-wise
-independent bits of Alon, Babai and Itai [AlonBabaiItai1986]; it has `2 ^ (d + 1) < 4 n` points
-(`Cslib.Logic.PL.length_parityCandidates_lt`).
+hash family (`Cslib.BitString.LinearHash.isKWiseIndependentHash_dotProduct_cons_true`), and the
+variables have distinct binary numbers. This is the case `k = 3` of the small sample spaces of
+`k`-wise independent bits of Alon, Babai and Itai [AlonBabaiItai1986]; it has `2 ^ (d + 1) < 4 n`
+points (`Cslib.Logic.PL.length_parityCandidates_lt`).
 
 By `Cslib.Logic.PL.exists_two_pow_mul_countUnsat_le`, if every clause of `φ` has at least
 `k ≤ 3` distinct literals and `vs` lists the variables of `φ`, one of the seeds falsifies at most
@@ -56,8 +55,6 @@ The polynomial running time is proved in
 
 ## Main results
 
-* `Cslib.Logic.PL.isKWiseIndependentHash_dotProduct_cons_true`: three-wise independence of the
-  sample bits.
 * `Cslib.Logic.PL.length_parityCandidates`, `Cslib.Logic.PL.length_parityCandidates_lt`: the
   sample space has `2 ^ (⌈log₂ n⌉ + 1) < 4 n` points.
 * `Cslib.Logic.PL.exists_mem_parityCandidates_two_pow_mul_countUnsat_le`: some point of the sample
@@ -135,7 +132,7 @@ theorem length_parityCandidates_lt {vs : List V} (hvs : vs ≠ []) :
     rw [pow_succ, pow_succ]
     omega
 
-/-! ### Three-wise independence -/
+/-! ### Binary positions -/
 
 /-- On a seed of `d + 1` bits, `Cslib.Logic.PL.paritySample` is the dot product of the seed with
 `1` followed by the `d` low binary digits of the position. -/
@@ -145,35 +142,9 @@ theorem paritySample_ofFn {d : ℕ} (vs : List V) (t : BitString (d + 1)) (v : V
   rw [paritySample, List.length_ofFn, Nat.add_sub_cancel, lowBits_eq_ofFn, ← List.ofFn_cons,
     ← dotProduct_eq_foldl, dotProduct_comm]
 
-/-- **The sample bits are three-wise independent**: `x ↦ t ⬝ (1, x)`, for a uniformly random
-`t ∈ {0,1}^(d+1)`, is the one-row Boolean affine hash family. -/
-theorem isKWiseIndependentHash_dotProduct_cons_true (d : ℕ) :
-    IsKWiseIndependentHash 3
-      (fun (t : BitString (d + 1)) (x : BitString d) => t ⬝ᵥ Fin.cons true x) := by
-  let e : BitString (d + 1) ≃ (Fin 1 → BitString d) × BitString 1 :=
-    { toFun := fun t => (fun _ => Fin.tail t, fun _ => t 0)
-      invFun := fun s => Fin.cons (s.2 0) (s.1 0)
-      left_inv := fun t => Fin.cons_self_tail t
-      right_inv := fun s => by
-        refine Prod.ext (funext fun i => ?_) (funext fun i => ?_)
-        · rw [Subsingleton.elim i 0]
-          exact Fin.tail_cons (α := fun _ => Bool) (s.2 0) (s.1 0)
-        · rw [Subsingleton.elim i 0]
-          exact Fin.cons_zero (α := fun _ => Bool) (s.2 0) (s.1 0) }
-  have heq : (fun (t : BitString (d + 1)) (x : BitString d) => t ⬝ᵥ Fin.cons true x) =
-      fun t x => Equiv.funUnique (Fin 1) Bool (LinearHash.affineHash (e t) x) := by
-    funext t x
-    change t ⬝ᵥ Matrix.vecCons true x = Fin.tail t ⬝ᵥ x + t 0
-    rw [Matrix.dotProduct_cons, add_comm (Matrix.vecHead t * true)]
-    change Fin.tail t ⬝ᵥ x + (t 0 && true) = Fin.tail t ⬝ᵥ x + t 0
-    rw [Bool.and_true]
-  rw [heq]
-  exact ((LinearHash.isThreeWiseIndependentHash_affineHash 1 d).comp_seedEquiv e).map_equiv
-    (Equiv.funUnique (Fin 1) Bool)
-
 /-- Distinct variables of `vs` have distinct `d`-digit binary positions when `|vs| ≤ 2 ^ d`. -/
-theorem testBit_idxOf_injOn {d : ℕ} {vs : List V} (hd : vs.length ≤ 2 ^ d) {v w : V}
-    (hv : v ∈ vs) (hw : w ∈ vs)
+private theorem testBit_idxOf_injOn {d : ℕ} {vs : List V} (hd : vs.length ≤ 2 ^ d)
+    {v w : V} (hv : v ∈ vs) (hw : w ∈ vs)
     (h : (fun i : Fin d => (vs.idxOf v).testBit i) = fun i : Fin d => (vs.idxOf w).testBit i) :
     v = w := by
   have hv' := (List.idxOf_lt_length_of_mem hv).trans_le hd
@@ -196,7 +167,7 @@ theorem exists_mem_parityCandidates_two_pow_mul_countUnsat_le {k : ℕ} (hk3 : k
   obtain ⟨d, hd'⟩ : ∃ d, Nat.clog 2 vs.length = d := ⟨_, rfl⟩
   have hd : vs.length ≤ 2 ^ d := hd' ▸ Nat.le_pow_clog (by norm_num) _
   obtain ⟨t, ht⟩ := exists_two_pow_mul_countUnsat_le
-    ((isKWiseIndependentHash_dotProduct_cons_true d).mono hk3)
+    ((LinearHash.isKWiseIndependentHash_dotProduct_cons_true d).mono hk3)
     (e := fun v (i : Fin d) => (vs.idxOf v).testBit i)
     (fun v hv w hw hvw => testBit_idxOf_injOn hd (hvs v hv) (hvs w hw) hvw) hk
   refine ⟨vs.filter (paritySample vs (List.ofFn t)),
