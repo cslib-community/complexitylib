@@ -965,10 +965,14 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 ### Optimization and duality
 
-- **Linear programming:** rational input and output encodings, primal and dual certificates,
-  weak and strong duality, and infeasible or unbounded outcomes. Reuse Mathlib's convexity and
-  linear-algebra foundations; certify certificate checking and a polynomial-time LP algorithm
-  with bit complexity and intermediate precision accounted for.
+- **Linear programming** ([#2976](https://github.com/cslib-community/complexitylib/issues/2976)):
+  Fourier–Motzkin elimination, Farkas' lemma, weak and strong duality, the unbounded and
+  infeasible outcomes and complementary slackness over any linearly ordered field are in
+  `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}`. Remaining:
+  rational input and output encodings; bit-size bounds on basic solutions and Farkas
+  certificates (Cramer's rule with the Hadamard bound), giving LP feasibility in NP ∩ coNP with
+  machine-checked certificate verifiers; and a polynomial-time LP algorithm (ellipsoid or
+  interior point) with bit complexity and intermediate precision accounted for.
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
