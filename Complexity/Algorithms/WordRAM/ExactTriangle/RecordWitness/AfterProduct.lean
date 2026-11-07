@@ -11,12 +11,13 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.AfterRec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Readback
 
 /-!
-# Composing a real record product with candidate verification
+# Composing a proved record product with candidate verification
 
-The general caller selects any occupied record. The actual product is executed on its whole
-renamed 320-register bank; the consumer then reads its real answers and protected query words.
-The original signed arrays and caller catalogue remain untouched. The initialized entry derives
-the numerical premises from original input, rather than supplying an intermediate run contract.
+`exec_after_product` composes a supplied 320-register product execution with the native witness
+consumer on an occupied record from `Instances.Output`. The product premise supplies its returned
+result offset, exact signed matrix-product answers, outside-window memory frame and preserved
+registers below 65; concrete callers such as `RecordWitness.Exec` and `BoxRecordWitness.Exec`
+discharge that premise with their compiled product programs.
 -/
 
 public section

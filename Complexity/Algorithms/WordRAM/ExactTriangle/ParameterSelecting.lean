@@ -22,7 +22,7 @@ coefficients and thresholds precede all original inputs, selected primes and phy
 
 The canonical scalar/argument/result register names are `ParameterSelecting.Reg`; parameter
 fields use `DyadicParameters.Reg`. The fixed-prime controller and its callable wrapper are
-`FixedPrime` and `CallableFixedPrime`; no second conservative pipeline is maintained.
+`StreamingFixedPrime` and `CallableFixedPrime`; no second conservative pipeline is maintained.
 Source-modulus width, dirty-memory clipping and original-word prefix bounds are proved for
 this actual program. Native integer parameter tuning and the complete charged composition
 are original; the lower-level reductions and box mathematics retain their source credit.
