@@ -4804,6 +4804,9 @@ public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
 public import Complexity.Probability.Minimax
 public import Complexity.Probability.Minimax.Value
+public import Complexity.Probability.OptimalStopping.Basic
+public import Complexity.Probability.OptimalStopping.Prophet
+public import Complexity.Probability.OptimalStopping.Secretary
 public import Complexity.Probability.Option
 public import Complexity.Probability.PMF
 public import Complexity.Probability.PMF.Bind
