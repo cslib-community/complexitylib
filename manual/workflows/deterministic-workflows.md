@@ -152,6 +152,34 @@ Johnson's weight strictly pessimistic, but the inequality still holds for every 
 formula without repeated literals. If the fold's growth premise fails, check that the step
 does not enlarge the encoded state by more than a polynomial in the input.
 
+## Round, solve exactly and certify a pseudo-polynomial table
+
+**Goal:** an approximation scheme that rounds numbers, solves the rounded instance exactly by
+dynamic programming, and runs in polynomial time. [Knapsack/ProfitDP.lean](../../Complexity/Algorithms/Lean/Knapsack/ProfitDP.lean)
+folds a table indexed by profit over the items. Its invariant `TableSpec` records the table
+length, that each entry is a subsequence of the right profit, and that each entry weighs at most
+every subsequence of that profit. [Knapsack/FPTAS.lean](../../Complexity/Algorithms/Lean/Knapsack/FPTAS.lean)
+rounds the values to at most `n * k`, so the guarantee `(k - 1) * OPT ≤ k * value` is a
+statement about the exact program on the rounded instance.
+
+[Knapsack/PolyTime.lean](../../Complexity/Algorithms/Lean/Knapsack/PolyTime.lean) certifies the
+running time. The table length is the total profit plus one, so the fold's states bound
+(`foldl'`) holds only when profits are charged in unary: the profits are read in `encUnary`, and
+the FPTAS computes its rounded values in unary from `k` in unary. Bound the encoded table under
+the invariant, not by the number of steps. If `fun_prop` times out on `max` or on a map whose
+body mixes unary and binary arithmetic, build that certificate by hand from `ite` with
+`binary_le` and `mapWithInput`. [Knapsack/Unary.lean](../../Complexity/Computability/Complexity/Problems/Knapsack/Unary.lean)
+turns the exact program into `Knapsack ∈ P` for the unary-value encoding, and the
+[KnapsackFPTAS client](../../ComplexityTests/KnapsackFPTAS.lean) checks an instance where the
+scheme is not optimal.
+
+For a hardness-of-approximation statement in this style, state the algorithm as a function with
+a plain `ComputableInPolyTime` hypothesis, a validity hypothesis and a ratio hypothesis, and
+derive `P = NP` from a known `NPComplete` problem through `NPComplete.P_eq_NP_of_mem_P`, as
+[PCP/Approximation/BinPacking.lean](../../Complexity/Computability/PCP/Approximation/BinPacking.lean)
+does from `Partition`. The [BinPackingApprox client](../../ComplexityTests/BinPackingApprox.lean)
+shows that an exact, non-polynomial algorithm satisfies the hypotheses other than running time.
+
 ## Preserve independent workspace
 
 <!-- worked-example -->

@@ -18,9 +18,10 @@ opened later received its first item only because that item did not fit into the
 (`Cslib.Algorithms.Lean.BinPacking.pairwise_firstFit`). So First Fit uses fewer than twice as many
 bins as any packing (`Cslib.Algorithms.Lean.BinPacking.length_firstFit_lt`), that is at most
 `2 * OPT - 1` bins, a slight sharpening of the bound `2 * OPT + 1` of
-[Williamson and Shmoys, Section 3.3][WilliamsonShmoys2011] by the same pairing argument.
-The tight bound `⌊1.7 * OPT⌋` [Johnson, Demers, Ullman, Garey and
-Graham][JohnsonDemersUllmanGareyGraham1974] is not formalized here.
+[Williamson and Shmoys, Section 3.3][WilliamsonShmoys2011] by the same pairing argument, which
+they credit to Johnson's thesis [Johnson][Johnson1973]. The asymptotic bound `17/10 * OPT + 2` of
+[Johnson, Demers, Ullman, Garey and Graham][JohnsonDemersUllmanGareyGraham1974] is not formalized
+here.
 
 ## Main definitions
 
@@ -37,6 +38,7 @@ Graham][JohnsonDemersUllmanGareyGraham1974] is not formalized here.
 
 ## References
 
+* [D. S. Johnson, *Near-optimal bin packing algorithms*][Johnson1973]
 * [D. S. Johnson, A. Demers, J. D. Ullman, M. R. Garey, R. L. Graham, *Worst-case performance
   bounds for simple one-dimensional packing algorithms*][JohnsonDemersUllmanGareyGraham1974]
 * [D. P. Williamson, D. B. Shmoys, *The Design of Approximation Algorithms*][WilliamsonShmoys2011]

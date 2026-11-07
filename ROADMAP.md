@@ -713,6 +713,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   problems, under which polynomial-time algorithms such as Johnson's `7 / 8` algorithm for
   MAX-E3SAT meet matching hardness results such as Håstad's ([#886]); LP and SDP rounding, such
   as Goemans–Williamson for MAX-CUT and MAX-SAT.
+- **Packing approximation** ([#2964]): the asymptotic approximation scheme for bin packing of
+  Fernandez de la Vega and Lueker, First Fit's `17/10` bound, First Fit Decreasing's `11/9`
+  bound and Lawler's faster knapsack FPTAS, building on the knapsack FPTAS and Next Fit and
+  First Fit (`Algorithms/Lean/{Knapsack,BinPacking}`) and the `3/2` bin-packing hardness
+  (`PCP/Approximation/BinPacking`).
 - **A practical PCP construction:** a reasonably runnable construction and its cost on complete
   reductions; rotation certificates polynomial in the bit length of a vertex name; machine-level
   error reduction and extractors from expander walks, with certified seed and evaluation costs.
@@ -1291,3 +1296,4 @@ not planned, not as proved.
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
 [#2866]: https://github.com/cslib-community/complexitylib/issues/2866
+[#2964]: https://github.com/cslib-community/complexitylib/issues/2964

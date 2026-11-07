@@ -16,10 +16,9 @@ Next Fit keeps a single open bin. It places each item into the open bin when the
 otherwise closes the bin and opens a new one holding the item. Every two consecutive bins it
 returns are jointly overfull, since the first item of the later bin did not fit into the earlier
 one, so Next Fit uses fewer than twice as many bins as any packing
-(`Cslib.Algorithms.Lean.BinPacking.length_nextFit_lt`), that is at most `2 * OPT - 1` bins
-[Johnson, Demers, Ullman, Garey and Graham][JohnsonDemersUllmanGareyGraham1974].
-[Williamson and Shmoys, Section 3.3][WilliamsonShmoys2011] prove the bound `2 * OPT + 1` for First
-Fit by the same pairing argument; it applies to Next Fit unchanged.
+(`Cslib.Algorithms.Lean.BinPacking.length_nextFit_lt`), that is at most `2 * OPT - 1` bins. The
+pairing argument is Johnson's analysis of Next Fit [Johnson][Johnson1973]; [Williamson and
+Shmoys, Section 3.3][WilliamsonShmoys2011] use it to prove the bound `2 * OPT + 1` for First Fit.
 
 Next Fit keeps the items in their input order (`flatten_nextFit`), so it returns a packing
 whenever every item fits into a bin (`isPacking_nextFit`).
@@ -38,8 +37,7 @@ whenever every item fits into a bin (`isPacking_nextFit`).
 
 ## References
 
-* [D. S. Johnson, A. Demers, J. D. Ullman, M. R. Garey, R. L. Graham, *Worst-case performance
-  bounds for simple one-dimensional packing algorithms*][JohnsonDemersUllmanGareyGraham1974]
+* [D. S. Johnson, *Near-optimal bin packing algorithms*][Johnson1973]
 * [D. P. Williamson, D. B. Shmoys, *The Design of Approximation Algorithms*][WilliamsonShmoys2011]
 -/
 
@@ -147,8 +145,7 @@ theorem add_one_mul_length_nextFit_div_two_le (C : ℕ) (l : List ℕ) :
   rwa [← List.sum_flatten, flatten_nextFit] at h
 
 /-- **Next Fit is a 2-approximation**: on a nonempty list of items it uses fewer than twice as
-many bins as any packing, that is at most `2 * OPT - 1` bins
-[Johnson, Demers, Ullman, Garey and Graham][JohnsonDemersUllmanGareyGraham1974]. -/
+many bins as any packing, that is at most `2 * OPT - 1` bins [Johnson][Johnson1973]. -/
 theorem length_nextFit_lt {C : ℕ} {l : List ℕ} {Q : List (List ℕ)} (hQ : IsPacking C l Q)
     (hl : l ≠ []) : (nextFit C l).length < 2 * Q.length :=
   length_lt_two_mul_of_isChain (by rw [flatten_nextFit]) (isChain_nextFit C l) hQ hl
