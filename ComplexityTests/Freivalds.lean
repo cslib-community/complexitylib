@@ -99,10 +99,10 @@ theorem eval_verify_one_true :
       funext t i
       have h0 := congrFun (h t) i
       rw [Subsingleton.elim t 0, Subsingleton.elim i 0] at h0 ⊢
-      cases hx : xs 0 0 <;> simp_all [bit]
+      cases hx : xs 0 0 <;> simp_all
     · intro h t
       funext i
-      simp [h, bit]
+      simp [h]
   rw [hfilter, Finset.card_singleton, Fintype.card_fun, Fintype.card_fun, Fintype.card_bool]
   norm_num
 
@@ -123,6 +123,6 @@ example : (Finset.univ.filter fun x : Fin 1 → ZMod 4 =>
 example : (Finset.univ.filter fun x : Fin 1 → Bool =>
     (!![2] : Matrix (Fin 1) (Fin 1) (ZMod 4)) *ᵥ (bit ∘ x) = (0 : Matrix (Fin 1) (Fin 1) _) *ᵥ
       (bit ∘ x)).card * Fintype.card Bool ≤ Fintype.card Bool ^ Fintype.card (Fin 1) :=
-  card_filter_mulVec_eq_mul_card_le injective_mul_boolIndicator (by decide)
+  card_filter_mulVec_eq_mul_card_le injective_mul_bit (by decide)
 
 end ComplexityTests.Freivalds

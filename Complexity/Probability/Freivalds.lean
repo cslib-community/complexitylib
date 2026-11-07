@@ -21,15 +21,20 @@ drawn uniformly from a finite set `S` and encoded in the ring by `e : S → R`. 
 `d : R` makes `s ↦ d * e s` injective, distinct matrices agree on at most a `1/|S|` fraction of
 the vectors, and on `k` independent vectors simultaneously with probability at most `1/|S|^k`.
 
-The encoding hypothesis covers the two standard instances. `S = Bool` with `e` the `0`/`1`
-indicator works over every ring, giving the bound `1/2` of `[MitzenmacherUpfal2017]`,
-Theorem 1.4. Over a finite field, `e = id` gives `1/|F|`. `[MotwaniRaghavan1995]`, Section 7.1,
-presents this technique as fingerprinting.
+The encoding hypothesis covers the two standard instances. `S = Bool` with `e = bit` works
+over every ring, giving the bound `1/2` of `[MitzenmacherUpfal2017]`, Theorem 1.4; Section 1.3
+there works with square matrices over the integers modulo `2` for convenience. Over a finite
+field, `e = id` gives `1/|F|`. `[MotwaniRaghavan1995]`, Section 7.1, presents this technique as
+fingerprinting.
 
 The proof fixes an entry `(i, j)` with `(M - N) i j ≠ 0`. Once the coordinates of `x` other
 than `j` are fixed, at most one value of `x j` satisfies row `i` of `(M - N) *ᵥ x = 0`. This is
 the argument of `[MitzenmacherUpfal2017]`, Theorem 1.4, stated here for rectangular matrices,
 arbitrary encodings and an arbitrary non-unital ring.
+
+## Main definitions
+
+* `bit`: the `0`/`1` encoding of a bit in a ring, with simp lemmas `bit_true` and `bit_false`.
 
 ## Main results
 
@@ -40,6 +45,7 @@ arbitrary encodings and an arbitrary non-unital ring.
   forms, at most `1/|S|` and `1/|S|^k`.
 * `isUniversalHash_mulVec`: `M ↦ M *ᵥ (e ∘ x)` is a `1/|S|`-universal hash family on matrices
   with uniform seed `x`, in the sense of `IsUniversalHash`.
+* `injective_mul_bit`: the `0`/`1` encoding satisfies the encoding hypothesis over every ring.
 
 ## References
 
@@ -156,7 +162,10 @@ theorem toOuterMeasure_forall_mulVec_eq_le
     ← pow_mul]
   exact card_filter_forall_mulVec_eq_le he hMN
 
-/-- Random-vector fingerprints form a `1/|S|`-universal hash family on matrices. -/
+/-- Random-vector fingerprints form a `1/|S|`-universal hash family on matrices. This swaps the
+roles in `isDeltaUniversalHash_mulVec` (`Probability.HashFamily.Matrix`), where a uniform matrix
+is the seed and the vector is the hashed input: here the vector is the seed and the matrix the
+input. -/
 theorem isUniversalHash_mulVec
     {e : S → R} (he : ∀ d : R, d ≠ 0 → Function.Injective fun s => d * e s) :
     IsUniversalHash (PMF.uniformOfFintype (n → S)) (fun x (M : Matrix m n R) => M *ᵥ (e ∘ x))
@@ -165,10 +174,21 @@ theorem isUniversalHash_mulVec
 
 end Probability
 
+section Bit
+
+/-- The `0`/`1` encoding of a bit in a ring. -/
+def bit [Zero R] [One R] (b : Bool) : R := if b then 1 else 0
+
+@[simp] theorem bit_true [Zero R] [One R] : (bit true : R) = 1 := by simp [bit]
+
+@[simp] theorem bit_false [Zero R] [One R] : (bit false : R) = 0 := by simp [bit]
+
 /-- The `0`/`1` encoding of bits satisfies the encoding hypothesis over every ring. -/
-theorem injective_mul_boolIndicator {R : Type*} [NonAssocRing R] (d : R) (hd : d ≠ 0) :
-    Function.Injective fun b : Bool => d * if b then (1 : R) else 0 := by
+theorem injective_mul_bit [NonAssocRing R] (d : R) (hd : d ≠ 0) :
+    Function.Injective fun b : Bool => d * bit b := by
   intro b b' h
   cases b <;> cases b' <;> simp_all [eq_comm]
+
+end Bit
 
 end Cslib.Probability

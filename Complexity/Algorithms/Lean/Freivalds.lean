@@ -14,7 +14,7 @@ public import Cslib.Algorithms.Lean.TimeM
 /-!
 # Freivalds' Matrix-Product Verification
 
-Freivalds' algorithm (`[Freivalds1979]`; `[MitzenmacherUpfal2017]`, Section 1.3;
+Freivalds' algorithm (`[Freivalds1977]`, `[Freivalds1979]`; `[MitzenmacherUpfal2017]`, Section 1.3;
 `[MotwaniRaghavan1995]`, Section 7.1) checks a claimed product `A * B = C` without multiplying
 matrices. It draws random vectors `x` and accepts when `A *ᵥ (B *ᵥ x) = C *ᵥ x` for every
 drawn vector. Each check uses three matrix-vector products and one vector comparison.
@@ -29,13 +29,15 @@ and runs `checkAllM`. Entries of `x` are drawn from a finite set `S` and encoded
 
 * **Matrices:** `A : Matrix (Fin l) (Fin m) R`, `B : Matrix (Fin m) (Fin n) R` and
   `C : Matrix (Fin l) (Fin n) R` are rectangular over any ring `R` with decidable equality,
-  rather than the square matrices of `[MitzenmacherUpfal2017]`, Theorem 1.4.
+  rather than the square matrices over the integers modulo `2` of `[MitzenmacherUpfal2017]`,
+  Section 1.3.
 * **Random vectors:** `verify e k` draws all `k` vectors `Fin k → Fin n → S` from one uniform
   law. This is the product of `k` independent uniform vectors.
 * **Error:** one-sided. A correct product is accepted with probability `1`
   (`eval_verify_of_mul_eq`). An incorrect product is accepted with probability at most
   `(1/|S|)^k` (`eval_verify_true_le`): `(1/2)^k` for `0`/`1` vectors over any ring
-  (`eval_verify_bool_true_le`, the case `k = 1` being `[MitzenmacherUpfal2017]`, Theorem 1.4),
+  (`eval_verify_bool_true_le` with `Cslib.Probability.bit`, the case `k = 1` being
+  `[MitzenmacherUpfal2017]`, Theorem 1.4),
   and `(1/|F|)^k` for uniform vectors over a finite field (`eval_verify_field_true_le`).
 
 ## Cost Model
@@ -60,7 +62,6 @@ and checks all `k` vectors, so each bound is an exact cost rather than a worst c
 * `Cslib.Algorithms.Lean.Freivalds.checkM`: one deterministic check `A *ᵥ (B *ᵥ x) = C *ᵥ x`.
 * `Cslib.Algorithms.Lean.Freivalds.checkAllM`: the check on each of `k` vectors.
 * `Cslib.Algorithms.Lean.Freivalds.verify`: the randomized verifier with `k` uniform vectors.
-* `Cslib.Algorithms.Lean.Freivalds.bit`: the `0`/`1` encoding of a bit in a ring.
 
 ## Main results
 
@@ -72,6 +73,7 @@ and checks all `k` vectors, so each bound is an exact cost rather than a worst c
 
 ## References
 
+* [R. Freivalds, *Probabilistic machines can use less running time*][Freivalds1977]
 * [R. Freivalds, *Fast probabilistic algorithms*][Freivalds1979]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
 * [R. Motwani and P. Raghavan, *Randomized Algorithms*][MotwaniRaghavan1995]
@@ -239,6 +241,8 @@ noncomputable def verify {S : Type} [Fintype S] [Nonempty S] (e : S → R) (k : 
 
 variable {S : Type} [Fintype S] [Nonempty S]
 
+/-- The law of the verifier: the indicator that all `k` checks pass, pushed forward from the
+uniform law on `Fin k → Fin n → S`. -/
 theorem eval_verify (e : S → R) (k : ℕ) (A : Matrix (Fin l) (Fin m) R)
     (B : Matrix (Fin m) (Fin n) R) (C : Matrix (Fin l) (Fin n) R) :
     ProbComp.eval (verify e k A B C) = (PMF.uniformOfFintype (Fin k → Fin n → S)).map
@@ -268,9 +272,6 @@ theorem eval_verify_true_le {e : S → R}
 
 end Check
 
-/-- The `0`/`1` encoding of a bit in a ring. -/
-def bit (b : Bool) : R := if b then 1 else 0
-
 variable [DecidableEq R] {l m n : ℕ}
 
 /-- Freivalds' verifier with `0`/`1` vectors accepts an incorrect product with probability at
@@ -278,7 +279,7 @@ most `(1/2)^k`. The case `k = 1` is `[MitzenmacherUpfal2017]`, Theorem 1.4. -/
 theorem eval_verify_bool_true_le (k : ℕ) {A : Matrix (Fin l) (Fin m) R}
     {B : Matrix (Fin m) (Fin n) R} {C : Matrix (Fin l) (Fin n) R} (h : A * B ≠ C) :
     ProbComp.eval (verify bit k A B C) true ≤ 2⁻¹ ^ k := by
-  have := eval_verify_true_le (S := Bool) (e := bit) injective_mul_boolIndicator k h
+  have := eval_verify_true_le (S := Bool) (e := bit) injective_mul_bit k h
   rwa [Fintype.card_bool, Nat.cast_ofNat] at this
 
 /-- Over a finite field with uniform vectors, Freivalds' verifier accepts an incorrect product

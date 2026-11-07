@@ -13,7 +13,7 @@ The curated [Model map](../model-map.md) contains **92 entries**, separating cha
 | [Networks and finite dynamics](networks-and-iteration.md) | How do graph separators, tensor contractions, nondeterministic paths and function iteration connect? |
 | [Query and communication complexity](query-and-communication.md) | Which information-access costs are charged, including LOCAL rounds, and what lower-bound and simulation theorems use them? |
 | [Finite-model logic](finite-model-logic.md) | How do formulas, interpretations, encodings and native complexity classes meet? |
-| [Propositional proof systems](proof-systems.md) | Which proof objects and measures support resolution lower bounds and interpolation? |
+| [Propositional proof systems](proof-systems.md) | Which proof objects and measures support resolution lower bounds, interpolation and cutting planes? |
 | [Learning and property testing](learning-and-testing.md) | Are the proved bounds on samples, queries, or machine time? |
 | [Metacomplexity and lower-bound methods](metacomplexity-and-methods.md) | What are the MCSP variants and conditional barriers, and how are general lower-bound arguments packaged? |
 
