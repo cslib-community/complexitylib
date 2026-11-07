@@ -67,6 +67,8 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | Vertex cover | `VertexCover_npComplete` |
 | Three-colorability | `ThreeColoring_npComplete` |
 | Fixed `k`-colorability, `3 ≤ k` | `KColoring_npComplete` |
+| Chromatic number, `k` in the input | `ChromaticNumber_npComplete` |
+| Clique cover | `CliqueCover_npComplete` |
 | Directed Hamiltonian path, specified endpoints | `DirHamPath_npComplete` |
 | Directed Hamiltonian cycle | `DirHamCycle_npComplete` |
 | Undirected Hamiltonian path, specified endpoints | `HamPath_npComplete` |
@@ -91,6 +93,8 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | SAT → ThreeColoring | `polyTimeReducible_SAT_ThreeColoring` |
 | ThreeSAT → ThreeColoring | `polyTimeReducible_ThreeSAT_ThreeColoring` |
 | SAT → KColoring `k`, for `3 ≤ k` | `polyTimeReducible_SAT_KColoring` |
+| KColoring `k` → ChromaticNumber | `polyTimeReducible_KColoring_ChromaticNumber` |
+| ChromaticNumber → CliqueCover | `polyTimeReducible_ChromaticNumber_CliqueCover` |
 | SAT → DirHamPath | `polyTimeReducible_SAT_DirHamPath` |
 | ThreeSAT → DirHamPath | `polyTimeReducible_ThreeSAT_DirHamPath` |
 | SAT → DirHamCycle | `polyTimeReducible_SAT_DirHamCycle` |
