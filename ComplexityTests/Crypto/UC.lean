@@ -122,8 +122,12 @@ party. -/
 example (b : Bool) (C : Finset (Fin 1)) (s : Unit) :
     ((corruptRouter C ((bitFunc b).toProtocol 0 C)).handle (.inr (.inl (0, ())))).run s =
       if (0 : Fin 1) ∈ C then pure (.inl (some b), s) else pure (.inl none, s) := by
-  by_cases h : (0 : Fin 1) ∈ C <;>
-    simp [corruptRouter, IdealFunctionality.toProtocol, bitFunc, h, StateT.run] <;> rfl
+  by_cases h : (0 : Fin 1) ∈ C
+  · simp only [corruptRouter, IdealFunctionality.toProtocol, bitFunc, h, ↓reduceIte,
+      StateT.run_map, StateT.run_pure, ProbOracleComp.sample_pure]
+    simp [StateT.run]
+  · simp only [corruptRouter, h, ↓reduceIte]
+    rfl
 
 /-- Asymptotic emulation also fails for distinguishable functionalities. -/
 example : ¬ Emulates (bitFunc true).toProtocol (bitFunc false).toProtocol := by

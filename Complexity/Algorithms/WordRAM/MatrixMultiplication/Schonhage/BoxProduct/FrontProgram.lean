@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.Program
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.Input
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Routing
 
 /-!
 # Original-input routing and shared band production for box products
@@ -16,7 +17,9 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxPr
 A preliminary readonly parameter pass locates the appended threshold before the existing
 router reuses low memory. The unchanged routing and band programs compute real tile spans,
 wanted codes, a stable original-index permutation and shared canonical leaf encodings.
-The extra parameter pass and threshold load are charged explicitly.
+The extra parameter pass and threshold load are charged explicitly. `frontFromSnapshot` and
+`programFromSnapshot` expose the actual shared suffixes after a charged snapshot copy or gather;
+they include matrix adaptation, original-occurrence reconstruction and restoration.
 -/
 
 public section
@@ -44,6 +47,16 @@ open Cslib.WordRAM Cslib.Algorithms.MatrixMultiplication.Schonhage
 @[expose] def loadThreshold : Code .standard 160 :=
   .seq QueriedProduct.parameters thresholdLoad
 
+/-- Shared actual routing, matrix adaptation and bands from a populated snapshot. -/
+@[expose] def frontFromSnapshot (bits : Bool) : Code .standard 160 :=
+  .seq QueriedProduct.routingFromSnapshot (.seq (QueriedProduct.prepareMatrices bits)
+    (BandPreparation.program.rename QueriedProduct.bank))
+
+/-- Charge all actual routing, matrix adaptation and band construction after the snapshot. -/
+@[expose] def snapshotFrontTime (L m N Q : ℕ) : ℕ :=
+  QueriedProduct.routingFromSnapshotTime L m N Q + (8 * (2 * (N * D m)) + 10) +
+    BandPreparation.timeBound L m N
+
 /-- Actual original-coordinate routing and actual shared band encodings. -/
 @[expose] def front (bits : Bool) : Code .standard 160 :=
   .seq loadThreshold (.seq QueriedProduct.prepareRouting
@@ -63,6 +76,11 @@ open Cslib.WordRAM Cslib.Algorithms.MatrixMultiplication.Schonhage
 all retained-table query batches, original-order reconstruction and input restoration. -/
 @[expose] def program (bits : Bool) : Code .standard 160 :=
   .seq (front bits) (.seq prepareGeometry (.seq evaluateTiles
+    (.seq QueriedProduct.reconstruct restoreInput)))
+
+/-- Complete shared suffix, including exact occurrence reconstruction and restoration. -/
+@[expose] def programFromSnapshot (bits : Bool) : Code .standard 160 :=
+  .seq (frontFromSnapshot bits) (.seq prepareGeometry (.seq evaluateTiles
     (.seq QueriedProduct.reconstruct restoreInput)))
 
 /-- Readonly preliminary parameter pass and the nine actual threshold-adapter instructions. -/

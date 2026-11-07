@@ -97,7 +97,6 @@ bounds: time `exp(O(L log s))` and polynomial space.
 
 namespace Cslib.Circuits.Frontier
 
-set_option quotPrecheck false in
 /-- The subring `ℤ_(2)` of rationals with odd denominator. -/
 local macro "ℤ₍₂₎" : term => `(Valuation.integer (Rat.padicValuation 2))
 

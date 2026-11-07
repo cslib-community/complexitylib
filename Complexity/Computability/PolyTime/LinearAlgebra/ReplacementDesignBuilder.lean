@@ -715,7 +715,8 @@ private theorem computableInPolyTime_equivTuple_symm :
     ComputableInPolyTime (fun x => (d x).measurementMatrix)
       encIn (encList (encList encIntBin)) := by
   exact (computableInPolyTime_equivTuple.comp hd).snd'.fst'.snd'.snd'
-@[fun_prop] theorem computableInPolyTime_groupMeasurementMatrices {d : Input → _}
+@[fun_prop] theorem computableInPolyTime_groupMeasurementMatrices
+    {d : Input → ReplacementDesignData}
     (hd : ComputableInPolyTime d encIn encReplacementDesignData) :
     ComputableInPolyTime (fun x => (d x).groupMeasurementMatrices)
       encIn (encList (encList (encList (encList encIntBin)))) := by

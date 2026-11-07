@@ -9,6 +9,7 @@ import Complexity.Computability.Complexity.Problems.CircuitSAT
 import Complexity.Computability.Complexity.Problems.Clique
 import Complexity.Computability.Complexity.Problems.Coloring
 import Complexity.Computability.Complexity.Problems.ExactThreeSAT
+import Complexity.Computability.Complexity.Problems.NAEThreeSAT
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Directed
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Undirected
 import Complexity.Computability.Complexity.Problems.IntegerProgramming
@@ -21,6 +22,7 @@ import Complexity.Computability.Complexity.Problems.TSP
 import Complexity.Computability.Complexity.Problems.ThreeSAT
 import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
+import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Tactic.PolyTime
 
 open Verso.Genre Manual
@@ -246,6 +248,20 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   variables. The implication cycles force each copy's value, so the reduction also preserves
   the exact number of satisfying assignments ({name}`modelCount_toThreeSATThree`). No planarity
   condition is imposed.
+* Ordinary SAT with exactly three distinct variables per clause is NP-complete
+  ({name}`EUThreeSAT_npComplete`). This strengthens the repeated-literal convention of
+  {name}`ExactThreeSAT`. There is no occurrence bound: exact-three distinct-variable formulas
+  with at most three occurrences per variable are always satisfiable by Hall's matching argument
+  ({name}`Cslib.Logic.PL.CNF.satisfiable_of_exactThreeDistinct_of_count_le_three`). Accordingly,
+  {name}`EUThreeSATThree.mem_P` decides this language by checking its syntax alone.
+* Not-all-equal SAT requires both a true and a false literal in every clause
+  ({name}`Cslib.Logic.PL.CNF.evalNAE`). NAE3SAT, with width at most three, is NP-complete
+  ({name}`NAEThreeSAT_npComplete`). NAE EU3SAT, with exactly three distinct variables per clause,
+  is NP-complete ({name}`NAEEUThreeSAT_npComplete`). NAE3SAT-3, with width at most three and at
+  most three occurrences per variable, is NP-complete ({name}`NAEThreeSATThree_npComplete`).
+  The last reduction reuses
+  {name}`toThreeSATThree` and permits binary clauses. It does not establish hardness with
+  both exact-three clauses and occurrence bound three.
 * Orthogonal planar 3SAT-3 is NP-hard, both when a drawing must exist
   ({name}`PlanarThreeSATThree_npHard`) and when it is supplied
   ({name}`DrawnPlanarThreeSATThree_npHard`). Clauses have width at most three, binary clauses
@@ -320,6 +336,30 @@ example : NPHard (encPair encGraph encNat) Clique :=
 
 The module documentation of `Complexity.Computability.Complexity.Reduction` indexes the same
 results by problem, with the module to import for each.
+
+# Boolean Constraint Languages
+
+Schaefer's Boolean dichotomy classifies fixed finite constraint languages over
+`Bool`; the constraints may have any fixed arity. The full six-case complexity
+classification is still open in this library. One structural case is proved:
+majority preservation is equivalent to definability by clauses of width at most
+two, with no auxiliary variables
+({name}`Cslib.Logic.PL.isPolymorphism_majority_iff_exists_twoCNF`).
+
+```lean
+open Cslib.Logic Cslib.Logic.PL in
+example {V : Type} [Finite V] (R : Set (V → Bool))
+    (h : IsPolymorphism (Cslib.majority 3) R) :
+    ∃ φ : CNF V, (∀ c ∈ φ, c.length ≤ 2) ∧
+      ∀ a, a ∈ R ↔ φ.eval a = true :=
+  (isPolymorphism_majority_iff_exists_twoCNF R).mp h
+```
+
+Here preservation applies the operation coordinatewise to satisfying tuples.
+{name}`Cslib.Logic.IsPolymorphism.project` preserves it under existential
+projection, and {name}`Cslib.Logic.IsPolymorphism.substitute` covers repeated
+variables. Empty and nullary relations are allowed. This characterization alone
+does not supply a polynomial-time certificate for constructing the formula.
 
 # Proving a Problem NP-Complete
 %%%

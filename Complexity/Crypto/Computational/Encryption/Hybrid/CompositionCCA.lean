@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Encryption.Hybrid.DEMCCA
 import Complexity.Computability.Probabilistic.Oracle.Substitution
+import Complexity.Crypto.Computational.Encryption.DecryptionBound
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Tactic.PPT
@@ -814,11 +815,7 @@ theorem exists_hybridCCA_reductions (E : SymmetricCipher)
           (ProbComp.eval (E.ccaOneTimeGame Bs true n)) := by
   dsimp only
   obtain ⟨decBound, hdecPoly, hdec⟩ := exists_decryption_length_bound hkeyGen hdecaps
-  obtain ⟨bound, hbound, hct⟩ := E.exists_ciphertext_length_bound
-  let ctBound := fun n => bound n n
-  have hctPoly : ComputableInPolyTime ctBound encUnary encUnary :=
-    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')
-  have hct := fun n => hct n n
+  obtain ⟨ctBound, hctPoly, hct⟩ := E.exists_ciphertext_length_bound_of_length_eq
   obtain ⟨symBound, hsymPoly, hsym⟩ := E.exists_decryption_length_bound
   refine ⟨hybridToKEMCCAHiddenBit E F decBound adversary,
     hybridToOneTimeCCAAdversary E keyGen

@@ -28,10 +28,11 @@ example :
     (volume.withDensity (fun x : ℝ ↦ ENNReal.ofReal (gaussianWeight 4 x / 4))).map
         (fun x ↦ 2 * x) = gaussianReal 0 ((32 / Real.pi).toNNReal) := by
   have h := gaussianWeight_withDensity_map_inner (E := ℝ) 4 (by norm_num) 2
-  norm_num [Real.inner_apply, abs_of_pos (by norm_num : (0 : ℝ) < 2)] at h
-  have hnum : (64 : ℝ) / (2 * Real.pi) = 32 / Real.pi := by ring
-  rw [hnum] at h
-  simpa only [mul_comm] using h
+  have hvar : ((4 : ℝ) * ‖(2 : ℝ)‖) ^ 2 / (2 * Real.pi) = 32 / Real.pi := by
+    rw [Real.norm_eq_abs, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+    ring
+  rw [finrank_self, pow_one, hvar] at h
+  simpa only [Real.inner_apply, RCLike.conj_to_real, mul_comm] using h
 
 -- The zero projection is a point mass, without a nonzero-vector premise.
 example (s : ℝ) (hs : 0 < s) :
