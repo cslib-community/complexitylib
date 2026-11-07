@@ -54,7 +54,7 @@ theorem jacobiSym_val_castHom {n q : ℕ} [NeZero n] [NeZero q] (hq : q ∣ n) (
     castHom_apply, ← ZMod.natCast_val (R := ZMod q) z]
 
 /-- The Jacobi symbol `J(a | n)` of a unit `a` modulo `n`, as a unit of `ℤ`. -/
-def jacobiSymUnit (n : ℕ) [NeZero n] : (ZMod n)ˣ →* ℤˣ where
+def jacobiSymUnit (n : ℕ) : (ZMod n)ˣ →* ℤˣ where
   toFun a :=
     have h : J(((a : ZMod n).val : ℤ) | n) * J(((a : ZMod n).val : ℤ) | n) = 1 := by
       rw [← sq]
@@ -70,17 +70,17 @@ def jacobiSymUnit (n : ℕ) [NeZero n] : (ZMod n)ˣ →* ℤˣ where
     simp only [Units.val_mul, val_mul]
     rw [Int.natCast_mod, ← jacobiSym.mod_left, Nat.cast_mul, jacobiSym.mul_left]
 
-@[simp] theorem val_jacobiSymUnit (n : ℕ) [NeZero n] (a : (ZMod n)ˣ) :
+@[simp] theorem val_jacobiSymUnit (n : ℕ) (a : (ZMod n)ˣ) :
     (jacobiSymUnit n a : ℤ) = J(((a : ZMod n).val : ℤ) | n) := by
   simp only [jacobiSymUnit, MonoidHom.coe_mk, OneHom.coe_mk]
 
 /-- The **Euler liars** modulo `n`: the units `a` with `a ^ ((n - 1) / 2) = J(a | n)`, the bases
 on which the Solovay–Strassen test fails to detect that `n` is composite. -/
-def eulerLiars (n : ℕ) [NeZero n] : Subgroup (ZMod n)ˣ :=
+def eulerLiars (n : ℕ) : Subgroup (ZMod n)ˣ :=
   MonoidHom.eqLocus (powMonoidHom ((n - 1) / 2))
     ((Units.map (Int.castRingHom (ZMod n)).toMonoidHom).comp (jacobiSymUnit n))
 
-theorem mem_eulerLiars {n : ℕ} [NeZero n] {a : (ZMod n)ˣ} :
+theorem mem_eulerLiars {n : ℕ} {a : (ZMod n)ˣ} :
     a ∈ eulerLiars n ↔
       (a : ZMod n) ^ ((n - 1) / 2) = (J(((a : ZMod n).val : ℤ) | n) : ZMod n) := by
   change powMonoidHom _ a = _ ↔ _
