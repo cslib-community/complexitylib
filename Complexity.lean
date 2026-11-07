@@ -1825,6 +1825,7 @@ public import Complexity.Computability.Complexity.Problems.Partition
 public import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 public import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
 public import Complexity.Computability.Complexity.Problems.Primes
+public import Complexity.Computability.Complexity.Problems.Primes.MillerRabin
 public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.Drawing
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.DrawingAssembly
@@ -4141,6 +4142,9 @@ public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootDigitLift
 public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootReduction
 public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootValuation
 public import Complexity.Foundations.NumberTheory.Padics.RatValuation
+public import Complexity.Foundations.NumberTheory.Primality.EulerLiars
+public import Complexity.Foundations.NumberTheory.Primality.StrongLiars
+public import Complexity.Foundations.NumberTheory.Primality.Witness
 public import Complexity.Foundations.NumberTheory.PrimeCounting
 public import Complexity.Foundations.NumberTheory.PrimeWindow
 public import Complexity.Foundations.NumberTheory.SqrtPrimeWindow

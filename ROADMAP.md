@@ -488,6 +488,12 @@ index links to canonical definitions rather than keeping a second set.
   explicit-time sample-and-verify characterization are in place (`Classes/Promise/Time` and
   `Classes/Promise/Time/Verifier`). The advice-free hierarchy for `BPTIME` itself is open and is
   not a target.
+- **Randomized primality tests** ([#2917]): the Euler-liar (Solovay–Strassen) and strong-liar
+  (Miller–Rabin) bounds `2 · #liars ≤ φ(n)` for odd composite `n` are in
+  `Foundations/NumberTheory/Primality`, and an explicit Miller–Rabin verifier puts the primes in
+  `coRP` independently of AKS (`Problems/Primes/MillerRabin`). Remaining: the Rabin–Monier bound
+  `#strong liars ≤ φ(n) / 4`, a polynomial-time Jacobi symbol, and the Solovay–Strassen verifier
+  stated as a `coRP` membership.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -1269,3 +1275,4 @@ not planned, not as proved.
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
 [#2866]: https://github.com/cslib-community/complexitylib/issues/2866
+[#2917]: https://github.com/cslib-community/complexitylib/issues/2917
