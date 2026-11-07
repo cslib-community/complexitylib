@@ -37,7 +37,7 @@ A third chain starts with a local-constraint network. A layout exposes a frontie
 | Arithmetic depth | Ordinary depth or product-only depth; coefficient cost is generally not bit cost. |
 | Query complexity | Usually structural worst-case depth, including all trees in randomized support. |
 | Communication | Transmitted bits, messages, or maximum local DAG-node cost, depending on the model. |
-| Learning | Sample or membership-query count; native runtime is a separate theorem. |
+| Learning | Sample, membership-query or mistake count; native runtime is a separate theorem. |
 | Logic | Usually data complexity of one fixed formula, not combined complexity of formula and structure. |
 | Proof complexity | Lines, tree nodes, or distinct-literal width; not proof-search time. |
 

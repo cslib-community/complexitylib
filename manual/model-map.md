@@ -215,6 +215,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `randomized-pac` | [Randomized agnostic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `uniform-learning` | [Uniform-distribution Boolean sample learning](circuits-logic-and-other-models/index.md) | learning |
 | `membership-learning` | [Randomized membership-query learners](circuits-logic-and-other-models/index.md) | learning |
+| `mistake-bound` | [Realizable online mistake-bound learners](circuits-logic-and-other-models/learning-and-testing.md) | learning |
 | `linearity-test` | [Decision-tree property testers for Boolean linearity](circuits-logic-and-other-models/index.md) | learning |
 | `mcsp` | [Total truth-table minimum circuit size](circuits-logic-and-other-models/index.md) | metacomplexity |
 | `partial-mcsp` | [Partial truth-table circuit minimization](circuits-logic-and-other-models/index.md) | metacomplexity |
