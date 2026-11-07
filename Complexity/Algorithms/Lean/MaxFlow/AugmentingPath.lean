@@ -17,36 +17,43 @@ Combinatorial core of the Hopcroft–Karp maximum bipartite matching algorithm
 `G : L × R → Bool` and `Finset (L × R)` matchings of
 `Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching`.
 
-## Model and source mapping
+## Main definitions
 
-* **Alternating layers (`altLeft`, `altRight`, `IsLayer`):** `altLeft G M j` is the set of left
-  vertices reachable from a free left vertex by an `M`-alternating path with at most `j` matching
-  edges, `altRight G M j` its `G`-neighbourhood, and `IsLayer G M u j` says `u` first appears in
-  layer `j`. This is the breadth-first layering of one Hopcroft–Karp phase. `NoShortAug G M k`
-  says no layer `j < k` reaches a free right vertex, i.e. every augmenting path has at least `k + 1`
-  non-matching edges.
-* **Augmenting paths (`IsAugmentingPath`):** an augmenting path `u₀ v₀ u₁ v₁ … u_ℓ v_ℓ` is
-  recorded by its non-matching edges `(uᵢ, vᵢ)`, with `(uᵢ₊₁, vᵢ) ∈ M`, distinct vertices and free
-  ends. `augment M N` replaces the `M`-edges at left vertices covered by `N` with `N`; for a path
-  this is the symmetric difference `M ⊕ p`.
-* **Berge's theorem (`isMaxMatching_iff_forall_not_isAugmentingPath`):** the bipartite case of
-  [Berge1957]. The proof is not the textbook decomposition of `M ⊕ M*` into alternating paths and
-  cycles: it uses the **layered counting lemma** `card_mul_le_of_noShortAug`,
-  `k * |M'| ≤ (k + 1) * |M|` for every matching `M'` when `NoShortAug G M k`, obtained from weak
-  duality against the vertex covers `layerCover G M j` (unreached left vertices together with
-  reached right vertices).
-* **Phases (`IsMaximalLayeredAugmentation`, `IsLayeredFamily`):** the edge set `N` found by one
-  phase follows the layers of `M` to a free right vertex in layer `k`, replaces `M`-edges at both
-  ends, and admits no further layered path avoiding it. `IsLayeredFamily` is the list-level
-  description produced by depth-first search (concatenated vertex-disjoint shortest augmenting
-  paths), and `IsLayeredFamily.isMaximalLayeredAugmentation` packages it.
-* **Phase lemma (`IsMaximalLayeredAugmentation.noShortAug_augment`):** after augmenting along a
+* `altLeft`, `altRight`, `IsLayer`: `altLeft G M j` is the set of left vertices reachable from a
+  free left vertex by an `M`-alternating path with at most `j` matching edges, `altRight G M j` its
+  `G`-neighbourhood, and `IsLayer G M u j` says `u` first appears in layer `j`. This is the
+  breadth-first layering of one Hopcroft–Karp phase. `NoShortAug G M k` says no layer `j < k`
+  reaches a free right vertex, i.e. every augmenting path has at least `k + 1` non-matching edges.
+* `IsAugmentingPath`, `augment`: an augmenting path `u₀ v₀ u₁ v₁ … u_ℓ v_ℓ` is recorded by its
+  non-matching edges `(uᵢ, vᵢ)`, with `(uᵢ₊₁, vᵢ) ∈ M`, distinct vertices and free ends.
+  `augment M N` replaces the `M`-edges at left vertices covered by `N` with `N`; for a path this is
+  the symmetric difference `M ⊕ p`.
+* `IsMaximalLayeredAugmentation`, `IsLayeredFamily`: the edge set `N` found by one phase follows
+  the layers of `M` to a free right vertex in layer `k`, replaces `M`-edges at both ends, and admits
+  no further layered path avoiding it. `IsLayeredFamily` is the list-level description produced by
+  depth-first search (concatenated vertex-disjoint shortest augmenting paths), and
+  `IsLayeredFamily.isMaximalLayeredAugmentation` packages it.
+* `IsPhaseRun G M n`: `n` Hopcroft–Karp phases from `M`, each using the exact shortest
+  augmenting path parameter and a maximal layered augmentation.
+* `layerCover G M j`: unreached left vertices together with reached right vertices.
+
+## Main results
+
+* `card_mul_le_of_noShortAug` (**layered counting lemma**): `k * |M'| ≤ (k + 1) * |M|` for every
+  matching `M'` when `NoShortAug G M k`, obtained from weak duality against the vertex covers
+  `layerCover G M j`.
+* `isMaxMatching_iff_forall_not_isAugmentingPath` (**Berge's theorem**): the bipartite case of
+  [Berge1957], Theorem 1. The proof is not the textbook decomposition of `M ⊕ M*` into alternating
+  paths and cycles: it uses the layered counting lemma.
+* `IsMaximalLayeredAugmentation.noShortAug_augment` (**phase lemma**): after augmenting along a
   maximal set of vertex-disjoint shortest augmenting paths, the shortest augmenting path is strictly
-  longer ([HopcroftKarp1973]; [CLRS2009], Problem 26-6).
-* **Phase count (`IsPhaseRun.le`, `IsPhaseRun.le_two_mul_sqrt`):** the counting lemma gives the
-  deficit bound `t * (ν - |M|) ≤ |M|` after `t` phases, hence at most `2 ⌊√ν⌋` augmenting phases
-  from the empty matching, `ν` the maximum matching size ([HopcroftKarp1973]).
-* **König certificate (`isMaxMatching_isMinVertexCover_of_stable`):** when the layers stop growing
+  longer ([HopcroftKarp1973], consequence of Theorem 2; [CLRS2009], Problem 26-6).
+* `IsPhaseRun.add_card_le_and_add_le_two_mul_sqrt`, `IsPhaseRun.le_two_mul_sqrt` (**phase
+  count**): the counting lemma gives the deficit bound `t * (ν - |M|) ≤ |M|` after `t` phases, hence
+  at most `2 ⌊√ν⌋` augmenting phases from the empty matching, `ν` the maximum matching size. This
+  is slightly sharper than the `2 ⌊√s⌋ + 2` bound on distinct shortest-path lengths of
+  [HopcroftKarp1973], Theorem 3, because only phases that augment are counted.
+* `isMaxMatching_isMinVertexCover_of_stable` (**König certificate**): when the layers stop growing
   without reaching a free right vertex, the layer cover is a minimum vertex cover of size `|M|`.
 
 ## Limitations
@@ -296,7 +303,7 @@ private theorem size_layerCover_succ (hM : IsMatching G M) (j : ℕ) :
 /-- **Layered counting lemma.** If no alternating path with fewer than `k` matched edges leads from
 a free left vertex to a free right vertex, then every matching `M'` satisfies
 `k * |M'| ≤ (k + 1) * |M|`. -/
-theorem card_mul_le_of_noShortAug [Finite L] [Finite R] (hM : IsMatching G M) {M' : Finset (L × R)}
+theorem card_mul_le_of_noShortAug (hM : IsMatching G M) {M' : Finset (L × R)}
     (hM' : IsMatching G M') {k : ℕ} (hk : NoShortAug G M k) :
     k * M'.card ≤ (k + 1) * M.card := by
   have aux : ∀ j < k, (j + 1) * M'.card ≤ (j + 1) * M.card + (altRight G M j).card := by
@@ -1051,8 +1058,9 @@ inductive IsPhaseRun (G : L × R → Bool) : Finset (L × R) → ℕ → Prop
 /-- **Hopcroft–Karp phase bound.** A run of `n` phases from a matching `M` with no augmenting path
 shorter than `t` satisfies `n + |M| ≤ ν` and, when `t ≤ ⌊√ν⌋`, `t + n ≤ 2⌊√ν⌋`, where `ν` is the
 maximum matching size. In particular, from the empty matching at most `2⌊√ν⌋` phases occur. -/
-theorem IsPhaseRun.le (hM : IsMatching G M) {n : ℕ} (hrun : IsPhaseRun G M n) {t : ℕ}
-    (ht : NoShortAug G M t) {M' : Finset (L × R)} (hM' : IsMaxMatching G M') :
+theorem IsPhaseRun.add_card_le_and_add_le_two_mul_sqrt (hM : IsMatching G M) {n : ℕ}
+    (hrun : IsPhaseRun G M n) {t : ℕ} (ht : NoShortAug G M t) {M' : Finset (L × R)}
+    (hM' : IsMaxMatching G M') :
     n + M.card ≤ M'.card ∧ (t ≤ Nat.sqrt M'.card → t + n ≤ 2 * Nat.sqrt M'.card) := by
   induction hrun generalizing t with
   | done =>
@@ -1088,8 +1096,8 @@ theorem IsPhaseRun.le (hM : IsMatching G M) {n : ℕ} (hrun : IsPhaseRun G M n) 
 theorem IsPhaseRun.le_two_mul_sqrt {n : ℕ} (hrun : IsPhaseRun G ∅ n) {M' : Finset (L × R)}
     (hM' : IsMaxMatching G M') : n ≤ 2 * Nat.sqrt M'.card := by
   have h0 : IsMatching G (∅ : Finset (L × R)) := ⟨by simp, by simp, by simp⟩
-  simpa using (hrun.le h0 (t := 0) (fun _ h => absurd h (Nat.not_lt_zero _)) hM').2
-    (Nat.zero_le _)
+  simpa using (hrun.add_card_le_and_add_le_two_mul_sqrt h0 (t := 0)
+    (fun _ h => absurd h (Nat.not_lt_zero _)) hM').2 (Nat.zero_le _)
 
 /-- If the alternating layers of `M` stop growing at `j` and reach no free right vertex, then the
 layer cover at `j` has size `|M|`. -/

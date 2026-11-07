@@ -39,7 +39,9 @@ The matching is stored as a right-indexed mate table `mate : Vector (Option (Fin
    no further layered path, hence an `IsMaximalLayeredAugmentation` (`hkDfsRootsM_maximal`); the
    mate table is then rematched along it (`hkPhaseM_spec`). The phase lemma
    `IsMaximalLayeredAugmentation.noShortAug_augment` and the phase bound
-   `IsPhaseRun.le_two_mul_sqrt` give at most `2⌊√ν⌋` rounds that augment.
+   `IsPhaseRun.le_two_mul_sqrt` give at most `2⌊√ν⌋` rounds that augment. This is slightly
+   sharper than the `2⌊√s⌋ + 2` bound of [HopcroftKarp1973], Theorem 3, which counts distinct
+   shortest augmenting path lengths.
 
 The phase bound and Berge's theorem are proved through the layered counting lemma
 `card_mul_le_of_noShortAug` rather than the textbook decomposition of `M ⊕ M*` into
