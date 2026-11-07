@@ -35,7 +35,8 @@ The actual total mass in the second term is necessary for arbitrary finite measu
 
 For common weights use `tvDist_nnreal_smul`; for a fixed component with changed weights use
 `tvDist_nnreal_smul_same`. The latter is an equality, including zero weights and the zero
-measure. `tvDist_finsetSum_le` handles finite sums directly. All statements keep the full-L1
+measure. `tvDist_add_le` (and `etvDist_add_le`) and `tvDist_finsetSum_le` handle binary and
+finite sums directly. All statements keep the full-L1
 convention: distinct probability atoms have distance two.
 
 The [checked clients](../../ComplexityTests/TotalVariationMixture.lean) include sharp unequal-mass
@@ -262,9 +263,10 @@ canonical map to the quotient by `L.toAddSubgroup`, and an actual fundamental do
   `ProbabilityTheory.isProbabilityMeasure_gaussianWeight s hs`.
 - The uniform reference is `(ENNReal.ofReal (ZLattice.covolume L))⁻¹ •
   Measure.map q (volume.restrict F)`.
-  `ZLattice.isProbabilityMeasure_normalized_quotient L volume hF` proves it is a probability;
-  `normalized_quotient_eq` and `isAddLeftInvariant_normalized_quotient` prove independence
-  from the fundamental domain and translation invariance.
+  `ZLattice.measure_eq_ofReal_covolume_of_op L volume hF` identifies `volume F` with the
+  covolume; `ZLattice.isProbabilityMeasure_normalized_quotient L volume hF`,
+  `normalized_quotient_eq` and `isAddLeftInvariant_normalized_quotient` prove probability
+  normalization, independence from the chosen fundamental domain, and translation invariance.
 
 `ZLattice.map_gaussianWeight_eq_withDensity L s hs hF` identifies the actual Gaussian
 pushforward's density relative to this reference. At `q x`, the real density is
@@ -366,10 +368,12 @@ by `4ε`, for `0 ≤ ε < 1/2`, when the actual nonzero dual mass at reciprocal 
 `√(1/r² + (‖z‖/α)²)` is at most `ε`. The `_of_gap` theorem discharges that mass bound
 from a positive dual gap `a` and
 `2^dim * exp(-3π h² a²/4) ≤ ε/(1+ε)`, where
-`h = 1/√(1/r² + (‖z‖/α)²)` and `ε > 0`. Projection at `z = 0` is exactly the scalar
-noise law, without a smoothing premise; dimension zero is included.
+`h = 1/√(1/r² + (‖z‖/α)²)` and `ε > 0`. Both theorems cover every `z`, including `z = 0`
+and dimension zero, under their stated premise; at `z = 0` itself, `simp` reduces the
+convolution directly to the scalar noise law with no smoothing condition.
 
-Use `tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_gap` for the same bound
+Use `tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_dual_mass_le` or
+`tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_gap` for the same bound
 after mapping both measures by the canonical `ℝ → UnitAddCircle` coercion. This compares
 actual probability measures, with no density-series assumption.
 The [checked clients](../../ComplexityTests/DiscreteGaussianProjection.lean) use `2ℤ`,
