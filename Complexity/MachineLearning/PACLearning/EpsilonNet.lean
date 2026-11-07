@@ -23,12 +23,13 @@ sample `S : Fin m → Z` is an *ε-net* for `G` under `μ` if every `g ∈ G` wi
 `μ {g = true} ≥ ε` takes the value `true` at some sample point
 [HausslerWelzl1987; ShalevShwartzBenDavid2014, Section 28.3]. The ε-net theorem says that `m`
 i.i.d. samples fail to be an ε-net with probability at most `2 Π_G(2m) 2^(-εm/2)` once
-`εm ≥ 8`, where `Π_G` is the growth function [BlumerEhrenfeuchtHausslerWarmuth1989]. With Sauer's
-lemma this gives the sample size
+`εm ≥ 8`, where `Π_G` is the growth function [ShalevShwartzBenDavid2014, Section 28.3; see also
+BlumerEhrenfeuchtHausslerWarmuth1989]. With Sauer's lemma this gives the sample size
 
 `m ≥ (8 / ε) (d log (48 / ε) + log (4 / δ))`
 
-for failure probability at most `δ` when every set shattered by `G` has at most `d` points.
+for failure probability at most `δ` when every set shattered by `G` has at most `d` points. The
+constants differ from those of the cited sources but have the same form.
 
 The proof is the double-sample symmetrization argument. If some `g` with `μ {g = true} ≥ ε` misses
 the first sample, then by the Chernoff lower tail a second independent sample has at least
@@ -461,9 +462,9 @@ private theorem measure_doubleSampleEvent_mul_two_pow_le (μ : Measure Z)
   exact (ENNReal.mul_le_mul_iff_right (pow_ne_zero _ two_ne_zero)
     (ENNReal.pow_ne_top ENNReal.ofNat_ne_top)).1 key
 
-/-- **The ε-net theorem** on a countable domain [BlumerEhrenfeuchtHausslerWarmuth1989]: if
-`8 ≤ εm`, then `m` i.i.d. samples from `μ` fail to be an ε-net for `G` with probability at most
-`2 Π_G(2m) / 2 ^ ⌈εm/2⌉`. -/
+/-- **The ε-net theorem** on a countable domain [ShalevShwartzBenDavid2014, Section 28.3; see
+also BlumerEhrenfeuchtHausslerWarmuth1989]: if `8 ≤ εm`, then `m` i.i.d. samples from `μ` fail to
+be an ε-net for `G` with probability at most `2 Π_G(2m) / 2 ^ ⌈εm/2⌉`. -/
 theorem measure_pi_not_isEpsNet_mul_two_pow_le (μ : Measure Z) [IsProbabilityMeasure μ]
     (G : ConceptClass Z Bool) {ε : ℝ} {m : ℕ} (hm : 8 ≤ ε * m) :
     Measure.pi (fun _ : Fin m => μ) {S | ¬ IsEpsNet μ G ε S} * 2 ^ ⌈ε * m / 2⌉₊ ≤
@@ -530,7 +531,8 @@ theorem measure_pi_not_isEpsNet_le_of_growthFunction_le (μ : Measure Z) [IsProb
 /-- **The ε-net theorem with an explicit sample size** on a countable domain
 [BlumerEhrenfeuchtHausslerWarmuth1989; ShalevShwartzBenDavid2014, Section 28.3]: if every finite
 set shattered by `G` has at most `d` points and `m ≥ (8 / ε) (d log (48 / ε) + log (4 / δ))`, then
-`m` i.i.d. samples fail to be an ε-net for `G` with probability at most `δ`. -/
+`m` i.i.d. samples fail to be an ε-net for `G` with probability at most `δ`. The constants differ
+from those of the cited sources but have the same form. -/
 theorem measure_pi_not_isEpsNet_le_of_vcSampleSize_le (μ : Measure Z) [IsProbabilityMeasure μ]
     {G : ConceptClass Z Bool} {d : ℕ} (hG : ∀ W : Finset Z, SetShatters G ↑W → W.card ≤ d)
     {ε δ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ1 : δ ≤ 1) {m : ℕ}
