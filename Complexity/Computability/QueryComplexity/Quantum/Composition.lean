@@ -196,12 +196,6 @@ theorem run_smul (U : ℕ → State N W →ₗᵢ[ℂ] State N W) (c : ℂ) (ψ�
   | zero => exact map_smul (U 0) c ψ₀
   | succ t ih => simp only [run, ih, map_smul]
 
-omit [Fintype W] in
-/-- Scaling a state by `c` scales every outcome probability by `‖c‖²`. -/
-theorem measureProb_smul {ι : Type*} (c : ℂ) (ψ : EuclideanSpace ℂ ι) (S : Finset ι) :
-    measureProb (c • ψ) S = ‖c‖ ^ 2 * measureProb ψ S := by
-  simp only [measureProb, PiLp.smul_apply, smul_eq_mul, norm_mul, mul_pow, mul_sum]
-
 /-- Scaling a state by `c` scales the probability of every query index by `‖c‖²`. -/
 theorem regProb_smul (c : ℂ) (ψ : State N W) (i : Fin N) :
     regProb (c • ψ) i = ‖c‖ ^ 2 * regProb ψ i :=
