@@ -12,7 +12,6 @@ public import Mathlib.Analysis.SpecialFunctions.Sqrt
 public import Mathlib.Geometry.Convex.ConvexSpace.Defs
 import Complexity.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
-import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Linarith
 
@@ -38,16 +37,16 @@ the two convexity bounds `(1 - η) ^ x ≤ 1 - η x` on `[0, 1]` and `(1 + η) ^
 
 ## Main definitions
 
-* `Cslib.MachineLearning.OnlineLearning.mwFactor`: the update factor `1 - η x`.
+* `Cslib.MachineLearning.OnlineLearning.Experts.mwFactor`: the update factor `1 - η x`.
 
 ## Main results
 
-* `Cslib.MachineLearning.OnlineLearning.mw_regret_le_sq`: the second-order regret bound.
-* `Cslib.MachineLearning.OnlineLearning.mw_regret_le`: [AroraHazanKale2012, Theorem 2.1].
-* `Cslib.MachineLearning.OnlineLearning.mw_regret_le_stdSimplex`:
+* `Cslib.MachineLearning.OnlineLearning.Experts.mw_regret_le_sq`: the second-order regret bound.
+* `Cslib.MachineLearning.OnlineLearning.Experts.mw_regret_le`: [AroraHazanKale2012, Theorem 2.1].
+* `Cslib.MachineLearning.OnlineLearning.Experts.mw_regret_le_stdSimplex`:
   [AroraHazanKale2012, Corollary 2.2].
-* `Cslib.MachineLearning.OnlineLearning.mw_regret_le_sqrt`: regret `2 √(T ln n)` with the tuned
-  learning rate.
+* `Cslib.MachineLearning.OnlineLearning.Experts.mw_regret_le_sqrt`: regret `2 √(T ln n)` with the
+  tuned learning rate.
 
 ## References
 
@@ -57,9 +56,9 @@ the two convexity bounds `(1 - η) ^ x ≤ 1 - η x` on `[0, 1]` and `(1 + η) ^
   advice*][CesaBianchiMansourStoltz2007]
 -/
 
-@[expose] public section
+public section
 
-namespace Cslib.MachineLearning.OnlineLearning
+namespace Cslib.MachineLearning.OnlineLearning.Experts
 
 open Finset Real
 
@@ -69,7 +68,7 @@ variable {ι : Type*} [Fintype ι] {ℓ : ℕ → ι → ℝ} {t T : ℕ}
 [AroraHazanKale2012, (2.1)]. -/
 def mwFactor (η x : ℝ) : ℝ := 1 - η * x
 
-@[simp] theorem mwFactor_apply (η x : ℝ) : mwFactor η x = 1 - η * x := rfl
+@[simp] theorem mwFactor_apply (η x : ℝ) : mwFactor η x = 1 - η * x := by rw [mwFactor]
 
 /-- The expected MW update factor is `1 - η` times the expected loss. -/
 theorem sum_prob_mul_mwFactor [Nonempty ι] {η : ℝ} (hφ : ∀ s < t, ∀ i, 0 < mwFactor η (ℓ s i)) :
@@ -147,17 +146,6 @@ theorem mw_regret_le_stdSimplex {η : ℝ} (hη : 0 < η) (hη' : η ≤ 1 / 2)
         simp only [mul_add, mul_sum, sum_add_distrib, ← sum_mul, hq, one_mul]
         rw [sum_comm (s := univ), sum_comm (s := univ)]
 
-/-- The tuned learning rate balances the two terms of the regret bound. -/
-private theorem sqrt_div_mul_add_div_sqrt_div {L T : ℝ} (hL : 0 < L) (hT : 0 < T) :
-    √(L / T) * T + L / √(L / T) = 2 * √(T * L) := by
-  rw [sqrt_div hL.le, sqrt_mul hT.le]
-  have ha := sqrt_pos.mpr hL
-  have hb := sqrt_pos.mpr hT
-  have hL' := sq_sqrt hL.le
-  have hT' := sq_sqrt hT.le
-  field_simp
-  nlinarith [hL', hT']
-
 /-- **Tuned regret of multiplicative weights**: for `n ≥ 2` experts, losses in `[-1, 1]` and
 `T ≥ 4 ln n` rounds, MW with learning rate `η = √(ln n / T)` has regret at most `2 √(T ln n)`
 against every expert. The condition `T ≥ 4 ln n` is `η ≤ 1 / 2`. -/
@@ -181,4 +169,4 @@ theorem mw_regret_le_sqrt (hn : 2 ≤ Fintype.card ι) (hT : 4 * log (Fintype.ca
   rw [← sqrt_div_mul_add_div_sqrt_div hL hT0]
   nlinarith [mul_le_mul_of_nonneg_left habs hη.le]
 
-end Cslib.MachineLearning.OnlineLearning
+end Cslib.MachineLearning.OnlineLearning.Experts

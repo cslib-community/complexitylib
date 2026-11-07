@@ -30,6 +30,13 @@ most `v` against each mixed column strategy, so some mixed row strategy pays at 
 every column. Applied to `-Mᵀ`, the same theorem gives a mixed column strategy collecting at least
 `v`.
 
+The open Mathlib pull request
+[mathlib4#39393](https://github.com/leanprover-community/mathlib4/pull/39393) proves the
+existence of a saddle point of a finite matrix game (`Matrix.exists_saddle_point`,
+`Matrix.exists_mixedNash`, from Sion's theorem on `stdSimplex`). Once it lands, the value
+predicate `IsMinimaxValue` and `exists_isMinimaxValue` could be derived from it: the payoff at a
+saddle point is the value.
+
 ## Main definitions
 
 * `Cslib.Probability.IsMinimaxValue`: `v` is the value of a finite zero-sum game.
@@ -46,7 +53,7 @@ every column. Applied to `-Mᵀ`, the same theorem gives a mixed column strategy
 * [J. von Neumann, *Zur Theorie der Gesellschaftsspiele*][vonNeumann1928]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 
@@ -56,8 +63,9 @@ variable {I J : Type*} [Fintype I] [Fintype J]
 
 /-- `v` is the *value* of the finite zero-sum game with loss matrix `M` (the row player pays
 `M i j`): some mixed row strategy pays at most `v` against every column, and some mixed column
-strategy collects at least `v` against every row. -/
-def IsMinimaxValue (M : I → J → ℝ) (v : ℝ) : Prop :=
+strategy collects at least `v` against every row. This is a value predicate, not a saddle-point
+existence theorem; see the module documentation for its relation to mathlib4#39393. -/
+@[expose] def IsMinimaxValue (M : I → J → ℝ) (v : ℝ) : Prop :=
   (∃ p : StdSimplex ℝ I, ∀ j, ∑ i, p.weights i * M i j ≤ v) ∧
     ∃ q : StdSimplex ℝ J, ∀ i, v ≤ ∑ j, q.weights j * M i j
 

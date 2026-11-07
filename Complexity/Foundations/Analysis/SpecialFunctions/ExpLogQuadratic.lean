@@ -65,17 +65,14 @@ theorem neg_sub_sq_le_log_one_sub {y : ℝ} (hy : y ≤ 1 / 2) : -y - y ^ 2 ≤ 
   rw [hinv, inv_le_iff_one_le_mul₀ (exp_pos _)]
   linarith [mul_comm (1 - y) (exp (y + y ^ 2))]
 
-/-- `exp (-y) ≤ 1 - y + y ^ 2` for `-1 ≤ y`: for `|y| ≤ 1` from the second-order Taylor bound
-`Real.exp_bound`, and for `y > 1` because `exp (-y) ≤ 1 ≤ 1 - y + y ^ 2`. -/
+/-- `exp (-y) ≤ 1 - y + y ^ 2` for `-1 ≤ y`: for `|y| ≤ 1` from the second-order bound
+`Real.abs_exp_sub_one_sub_id_le`, and for `y > 1` because `exp (-y) ≤ 1 ≤ 1 - y + y ^ 2`. -/
 theorem exp_neg_le_one_sub_add_sq {y : ℝ} (hy : -1 ≤ y) : exp (-y) ≤ 1 - y + y ^ 2 := by
   rcases le_or_gt y 1 with h1 | h1
   · have habs : |-y| ≤ 1 := by rw [abs_le]; constructor <;> linarith
-    have hb := exp_bound habs (n := 2) (by norm_num)
-    simp only [Finset.sum_range_succ, Finset.sum_range_zero, pow_zero, Nat.factorial,
-      pow_one] at hb
-    have := (abs_le.mp hb).2
-    norm_num at this
-    nlinarith [sq_nonneg y]
+    have h := (abs_le.mp (abs_exp_sub_one_sub_id_le habs)).2
+    rw [neg_sq] at h
+    linarith
   · have : exp (-y) ≤ 1 := exp_le_one_iff.mpr (by linarith)
     nlinarith
 

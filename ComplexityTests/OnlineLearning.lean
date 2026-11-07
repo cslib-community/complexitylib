@@ -12,11 +12,11 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 /-! Checks for learning with experts: concrete multiplicative-weights and Hedge distributions,
 weighted majority with a perfect expert, a failure of the mistake bound without the
 weighted-majority hypothesis, the range of the quadratic `exp` estimate, the value of matching
-pennies, and the algorithmic minimax theorem on it. -/
+pennies, the algorithmic minimax theorem on it, and the conditions of the tuned regret bounds. -/
 
 namespace ComplexityTests.OnlineLearning
 
-open Finset Real Cslib.MachineLearning.OnlineLearning Cslib.Probability Convexity
+open Finset Real Cslib.MachineLearning.OnlineLearning.Experts Cslib.Probability Convexity
 
 /-! ### Concrete distributions -/
 
@@ -116,6 +116,16 @@ example (ℓ : ℕ → Bool → ℝ) (hℓ : ∀ s < 4, ∀ i, |ℓ s i| ≤ 1) 
     (by
       have := log_two_lt_d9
       simp only [Fintype.card_bool, Nat.cast_ofNat]
+      linarith) hℓ i
+
+/-- With two experts, `T = 1` round already satisfies `T ≥ ln n`, the condition of tuned Hedge. -/
+example (ℓ : ℕ → Bool → ℝ) (hℓ : ∀ s < 1, ∀ i, |ℓ s i| ≤ 1) (i : Bool) :
+    ∑ t ∈ range 1, ∑ j, prob (hedgeFactor √(log (Fintype.card Bool) / (1 : ℕ))) ℓ t j * ℓ t j ≤
+      ∑ t ∈ range 1, ℓ t i + 2 * √((1 : ℕ) * log (Fintype.card Bool)) :=
+  hedge_regret_le_sqrt (by simp only [Fintype.card_bool, le_refl])
+    (by
+      have := log_two_lt_d9
+      simp only [Fintype.card_bool, Nat.cast_ofNat, Nat.cast_one]
       linarith) hℓ i
 
 end ComplexityTests.OnlineLearning

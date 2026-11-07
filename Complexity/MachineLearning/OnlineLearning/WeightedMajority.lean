@@ -40,16 +40,16 @@ potential inequality `sum_log_le_log_card_add`, with `-ln (1 - η) ≤ η + η ^
 
 ## Main definitions
 
-* `Cslib.MachineLearning.OnlineLearning.expertLoss`: the mistake indicator of an expert.
-* `Cslib.MachineLearning.OnlineLearning.weightedMajority`: the weighted majority prediction.
+* `Cslib.MachineLearning.OnlineLearning.Experts.expertLoss`: the mistake indicator of an expert.
+* `Cslib.MachineLearning.OnlineLearning.Experts.weightedMajority`: the weighted majority prediction.
 
 ## Main results
 
-* `Cslib.MachineLearning.OnlineLearning.weight_mwFactor_expertLoss`: the weights are
+* `Cslib.MachineLearning.OnlineLearning.Experts.weight_mwFactor_expertLoss`: the weights are
   `(1 - η) ^ mᵢ(t)`.
-* `Cslib.MachineLearning.OnlineLearning.wm_mistakes_le`: [AroraHazanKale2012, Theorem 1.1], for
-  any tie-breaking.
-* `Cslib.MachineLearning.OnlineLearning.weightedMajority_mistakes_le`: the same bound for
+* `Cslib.MachineLearning.OnlineLearning.Experts.wm_mistakes_le`: [AroraHazanKale2012, Theorem 1.1],
+  for any tie-breaking.
+* `Cslib.MachineLearning.OnlineLearning.Experts.weightedMajority_mistakes_le`: the same bound for
   `weightedMajority`.
 
 ## References
@@ -59,9 +59,9 @@ potential inequality `sum_log_le_log_card_add`, with `-ln (1 - η) ≤ η + η ^
   Applications*][AroraHazanKale2012]
 -/
 
-@[expose] public section
+public section
 
-namespace Cslib.MachineLearning.OnlineLearning
+namespace Cslib.MachineLearning.OnlineLearning.Experts
 
 open Finset Real
 
@@ -204,4 +204,4 @@ theorem weightedMajority_mistakes_le {η : ℝ} (hη : 0 < η) (hη' : η ≤ 1 
       2 * (1 + η) * #{t ∈ range T | advice t i ≠ outcome t} + 2 * log (Fintype.card ι) / η :=
   wm_mistakes_le hη hη' _ (fun t _ => weightedMajority_spec η t) i
 
-end Cslib.MachineLearning.OnlineLearning
+end Cslib.MachineLearning.OnlineLearning.Experts

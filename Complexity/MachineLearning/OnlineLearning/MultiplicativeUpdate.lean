@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
+public import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Tactic.FieldSimp
@@ -39,23 +40,33 @@ the expected update factor `∑ i, prob φ ℓ t i * φ (ℓ t i)`. Taking logar
 This is the argument of [AroraHazanKale2012, proof of Theorem 2.1], stated once for every
 positive factor.
 
+The tuned learning rate `η = √(L / T)` balances the two terms `η T + L / η` of the regret bounds
+at `2 √(T L)` (`sqrt_div_mul_add_div_sqrt_div`).
+
+The declarations of the experts setting live in the namespace
+`Cslib.MachineLearning.OnlineLearning.Experts`.
+
 ## Main definitions
 
-* `Cslib.MachineLearning.OnlineLearning.weight`, `Cslib.MachineLearning.OnlineLearning.potential`,
-  `Cslib.MachineLearning.OnlineLearning.prob`: the weights, their sum and the learner's
+* `Cslib.MachineLearning.OnlineLearning.Experts.weight`,
+  `Cslib.MachineLearning.OnlineLearning.Experts.potential`,
+  `Cslib.MachineLearning.OnlineLearning.Experts.prob`: the weights, their sum and the learner's
   distribution under a multiplicative update.
-* `Cslib.MachineLearning.OnlineLearning.adaptiveLoss`: the losses produced by an adaptive
+* `Cslib.MachineLearning.OnlineLearning.Experts.adaptiveLoss`: the losses produced by an adaptive
   adversary against a multiplicative update.
 
 ## Main results
 
-* `Cslib.MachineLearning.OnlineLearning.sum_prob`: the learner plays a distribution.
-* `Cslib.MachineLearning.OnlineLearning.prob_congr`: the distribution in round `t` depends only on
-  the losses before round `t`.
-* `Cslib.MachineLearning.OnlineLearning.log_potential`: the potential is `n` times the product of
-  the expected update factors.
-* `Cslib.MachineLearning.OnlineLearning.sum_log_le_log_card_add`: the potential inequality.
-* `Cslib.MachineLearning.OnlineLearning.adaptiveLoss_eq`: adaptive adversaries.
+* `Cslib.MachineLearning.OnlineLearning.Experts.sum_prob`: the learner plays a distribution.
+* `Cslib.MachineLearning.OnlineLearning.Experts.prob_congr`: the distribution in round `t`
+  depends only on the losses before round `t`.
+* `Cslib.MachineLearning.OnlineLearning.Experts.log_potential`: the potential is `n` times the
+  product of the expected update factors.
+* `Cslib.MachineLearning.OnlineLearning.Experts.sum_log_le_log_card_add`: the potential
+  inequality.
+* `Cslib.MachineLearning.OnlineLearning.Experts.adaptiveLoss_eq`: adaptive adversaries.
+* `Cslib.MachineLearning.OnlineLearning.Experts.sqrt_div_mul_add_div_sqrt_div`: the tuned
+  learning rate.
 
 ## References
 
@@ -63,9 +74,9 @@ positive factor.
   Applications*][AroraHazanKale2012]
 -/
 
-@[expose] public section
+public section
 
-namespace Cslib.MachineLearning.OnlineLearning
+namespace Cslib.MachineLearning.OnlineLearning.Experts
 
 open Finset Real
 
@@ -73,15 +84,15 @@ variable {ι : Type*} [Fintype ι]
 
 /-- The weight of expert `i` in round `t` under the multiplicative update with factor `φ`, against
 the losses `ℓ`: the product of the factors `φ (ℓ s i)` of the rounds `s < t`. -/
-noncomputable def weight (φ : ℝ → ℝ) (ℓ : ℕ → ι → ℝ) (t : ℕ) (i : ι) : ℝ :=
+@[expose] noncomputable def weight (φ : ℝ → ℝ) (ℓ : ℕ → ι → ℝ) (t : ℕ) (i : ι) : ℝ :=
   ∏ s ∈ range t, φ (ℓ s i)
 
 /-- The potential in round `t`: the total weight of the experts. -/
-noncomputable def potential (φ : ℝ → ℝ) (ℓ : ℕ → ι → ℝ) (t : ℕ) : ℝ :=
+@[expose] noncomputable def potential (φ : ℝ → ℝ) (ℓ : ℕ → ι → ℝ) (t : ℕ) : ℝ :=
   ∑ i, weight φ ℓ t i
 
 /-- The learner's distribution in round `t`: the weights normalized by the potential. -/
-noncomputable def prob (φ : ℝ → ℝ) (ℓ : ℕ → ι → ℝ) (t : ℕ) (i : ι) : ℝ :=
+@[expose] noncomputable def prob (φ : ℝ → ℝ) (ℓ : ℕ → ι → ℝ) (t : ℕ) (i : ι) : ℝ :=
   weight φ ℓ t i / potential φ ℓ t
 
 variable {φ : ℝ → ℝ} {ℓ : ℕ → ι → ℝ} {t : ℕ}
@@ -171,18 +182,30 @@ theorem sum_log_le_log_card_add [Nonempty ι] (hφ : ∀ s < t, ∀ i, 0 < φ (�
   exact log_le_log (weight_pos hφ i)
     (single_le_sum (fun j _ => (weight_pos hφ j).le) (mem_univ i))
 
+/-- The tuned learning rate `η = √(L / T)` balances the two terms `η T + L / η` of a regret bound:
+their sum is then `2 √(T L)`. -/
+theorem sqrt_div_mul_add_div_sqrt_div {L T : ℝ} (hL : 0 < L) (hT : 0 < T) :
+    √(L / T) * T + L / √(L / T) = 2 * √(T * L) := by
+  rw [sqrt_div hL.le, sqrt_mul hT.le]
+  have ha := sqrt_pos.mpr hL
+  have hb := sqrt_pos.mpr hT
+  have hL' := sq_sqrt hL.le
+  have hT' := sq_sqrt hT.le
+  field_simp
+  nlinarith [hL', hT']
+
 /-! ### Adaptive adversaries -/
 
 /-- The weights against an adaptive adversary `adv`, which chooses the loss vector of round `t` as
 `adv t p` from the learner's current distribution `p`. -/
-noncomputable def adaptiveWeight (φ : ℝ → ℝ) (adv : ℕ → (ι → ℝ) → ι → ℝ) : ℕ → ι → ℝ
+@[expose] noncomputable def adaptiveWeight (φ : ℝ → ℝ) (adv : ℕ → (ι → ℝ) → ι → ℝ) : ℕ → ι → ℝ
   | 0 => fun _ => 1
   | t + 1 => fun i => adaptiveWeight φ adv t i *
       φ (adv t (fun j => adaptiveWeight φ adv t j / ∑ k, adaptiveWeight φ adv t k) i)
 
 /-- The loss sequence produced by the adaptive adversary `adv` against the multiplicative update
 with factor `φ`. -/
-noncomputable def adaptiveLoss (φ : ℝ → ℝ) (adv : ℕ → (ι → ℝ) → ι → ℝ) (t : ℕ) : ι → ℝ :=
+@[expose] noncomputable def adaptiveLoss (φ : ℝ → ℝ) (adv : ℕ → (ι → ℝ) → ι → ℝ) (t : ℕ) : ι → ℝ :=
   adv t fun j => adaptiveWeight φ adv t j / ∑ k, adaptiveWeight φ adv t k
 
 /-- The weights against `adaptiveLoss φ adv` are the adaptive weights. -/
@@ -210,4 +233,4 @@ theorem adaptiveLoss_eq (φ : ℝ → ℝ) (adv : ℕ → (ι → ℝ) → ι �
   rw [h]
   rfl
 
-end Cslib.MachineLearning.OnlineLearning
+end Cslib.MachineLearning.OnlineLearning.Experts

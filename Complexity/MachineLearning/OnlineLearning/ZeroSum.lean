@@ -25,7 +25,8 @@ current distribution (`bestResponse`). After `T ≥ 4 ln n / ε ^ 2` rounds, wit
 
 * the average of the learner's distributions (`averageProb`) pays at most `v + ε` against every
   column and the empirical distribution of the columns played (`empirical`) collects at least
-  `v - ε` against every row, where `v` is the value of the game (`approx_optimal`);
+  `v - ε` against every row, where `v` is the value of the game
+  (`mw_bestResponse_approx_optimal`);
 * the average payoff `(1 / T) ∑ t, ⟨p t, M · (col t)⟩` lies in `[v, v + ε]`
   (`averagePayoff_mem_Icc`);
 * the average distribution pays at most the guarantee of the empirical column distribution plus
@@ -40,31 +41,41 @@ theorem (`Cslib.Probability.IsMinimaxValue`, `Cslib.Probability.exists_isMinimax
 
 The theorems take the best-response property of the columns as a hypothesis, so they apply to any
 best-response oracle; `bestResponsePlay` is one, defined by choice (`bestResponsePlay_spec`), and
-`bestResponsePlay_approx_optimal` is the result for it with
-`T = ⌈4 ln n / ε ^ 2⌉` [AroraHazanKale2012, proof of Theorem 3.1]. [AroraHazanKale2012] proves the
-bounds on the average payoff and on the row strategy; the bound on the empirical column strategy
-is that of [FreundSchapire1999]. The proof uses Theorem 2.1 of [AroraHazanKale2012] (`mw_regret_le`)
-where [AroraHazanKale2012] uses Corollary 2.2; the two coincide for losses in `[0, 1]`.
+`bestResponsePlay_approx_optimal` is the result for it with `T = ⌈4 ln n / ε ^ 2⌉`, the number of
+rounds of [AroraHazanKale2012, proof of Theorem 3.1].
+
+[AroraHazanKale2012, §3.2, proof of Theorem 3.1] proves all three bounds: the average payoff bound
+is their (3.5), the empirical column bound is derived from (3.5), and the bound for the average
+row strategy is their footnote 1 (their main text uses the distribution of the best single round
+instead). They note that the algorithm and the result are those of [FreundSchapire1999], whose
+proof of convergence is different. [AroraHazanKale2012] apply Corollary 2.2 against an optimal
+row strategy `p*`. Here Theorem 2.1 (`mw_regret_le`) is applied against each single row `i`, and
+the comparison is with the payoff of `i` against the empirical column distribution. This avoids
+`p*` and gives the inequality without `v` above; the `ε`-optimality bounds then follow from it and
+the defining properties of the value (`IsMinimaxValue.exists_le`, `IsMinimaxValue.exists_ge`).
 
 ## Main definitions
 
-* `Cslib.MachineLearning.OnlineLearning.averageProb`: the average of the learner's distributions.
-* `Cslib.MachineLearning.OnlineLearning.empirical`: the empirical distribution of a sequence.
-* `Cslib.MachineLearning.OnlineLearning.bestResponse`: a best response of the column player.
-* `Cslib.MachineLearning.OnlineLearning.bestResponsePlay`: the columns of multiplicative weights
-  against best responses.
+* `Cslib.MachineLearning.OnlineLearning.Experts.averageProb`: the average of the learner's
+  distributions.
+* `Cslib.MachineLearning.OnlineLearning.Experts.empirical`: the empirical distribution of a
+  sequence.
+* `Cslib.MachineLearning.OnlineLearning.Experts.bestResponse`: a best response of the column
+  player.
+* `Cslib.MachineLearning.OnlineLearning.Experts.bestResponsePlay`: the columns of multiplicative
+  weights against best responses.
 
 ## Main results
 
-* `Cslib.MachineLearning.OnlineLearning.sum_averageProb_mul_le_sum_empirical_mul_add`: the
+* `Cslib.MachineLearning.OnlineLearning.Experts.sum_averageProb_mul_le_sum_empirical_mul_add`: the
   approximate minimax inequality.
-* `Cslib.MachineLearning.OnlineLearning.averagePayoff_mem_Icc`: the average payoff approximates the
-  value [AroraHazanKale2012, (3.5)].
-* `Cslib.MachineLearning.OnlineLearning.approx_optimal`: the average row strategy and the empirical
-  column strategy are `ε`-optimal [AroraHazanKale2012, Theorem 3.1].
-* `Cslib.MachineLearning.OnlineLearning.sum_averageProb_mul_le_add_of_forall_exists_sum_le`: an
-  algorithmic form of the minimax theorem.
-* `Cslib.MachineLearning.OnlineLearning.bestResponsePlay_approx_optimal`: Theorem 3.1 of
+* `Cslib.MachineLearning.OnlineLearning.Experts.averagePayoff_mem_Icc`: the average payoff
+  approximates the value [AroraHazanKale2012, (3.5)].
+* `Cslib.MachineLearning.OnlineLearning.Experts.mw_bestResponse_approx_optimal`: the average row
+  strategy and the empirical column strategy are `ε`-optimal [AroraHazanKale2012, Theorem 3.1].
+* `Cslib.MachineLearning.OnlineLearning.Experts.sum_averageProb_mul_le_add_of_forall_exists_sum_le`:
+  an algorithmic form of the minimax theorem.
+* `Cslib.MachineLearning.OnlineLearning.Experts.bestResponsePlay_approx_optimal`: Theorem 3.1 of
   [AroraHazanKale2012] for `bestResponsePlay` with `T = ⌈4 ln n / ε ^ 2⌉` rounds.
 
 ## References
@@ -75,9 +86,9 @@ where [AroraHazanKale2012] uses Corollary 2.2; the two coincide for losses in `[
   weights*][FreundSchapire1999]
 -/
 
-@[expose] public section
+public section
 
-namespace Cslib.MachineLearning.OnlineLearning
+namespace Cslib.MachineLearning.OnlineLearning.Experts
 
 open Finset Real Convexity Cslib.Probability
 
@@ -251,7 +262,8 @@ theorem averagePayoff_mem_Icc (hM : ∀ i j, M i j ∈ Set.Icc (0 : ℝ) 1) (hε
 the average distribution of the row player pays at most `v + ε` against every column, and the
 empirical distribution of the columns collects at least `v - ε` against every row, where `v` is
 the value of the game. -/
-theorem approx_optimal [DecidableEq J] (hM : ∀ i j, M i j ∈ Set.Icc (0 : ℝ) 1) (hε : 0 < ε)
+theorem mw_bestResponse_approx_optimal [DecidableEq J] (hM : ∀ i j, M i j ∈ Set.Icc (0 : ℝ) 1)
+    (hε : 0 < ε)
     (hε' : ε ≤ 1) (hT0 : 0 < T) (hT : 4 * log (Fintype.card I) ≤ ε ^ 2 * T)
     (hbr : ∀ t < T, ∀ j, ∑ i, prob (mwFactor (ε / 2)) (fun s i => M i (col s)) t i * M i j ≤
       ∑ i, prob (mwFactor (ε / 2)) (fun s i => M i (col s)) t i * M i (col t))
@@ -317,6 +329,7 @@ theorem bestResponsePlay_approx_optimal [DecidableEq J] [Nonempty J] {M : I → 
   have hT : 4 * log (Fintype.card I) ≤ ε ^ 2 * T := by
     rw [div_le_iff₀ (by positivity)] at hceil
     linarith
-  exact approx_optimal hM hε hε' hT0 hT (fun t _ j => bestResponsePlay_spec M (ε / 2) t j) hv
+  exact mw_bestResponse_approx_optimal hM hε hε' hT0 hT
+    (fun t _ j => bestResponsePlay_spec M (ε / 2) t j) hv
 
-end Cslib.MachineLearning.OnlineLearning
+end Cslib.MachineLearning.OnlineLearning.Experts
