@@ -75,6 +75,18 @@ example : ¬Sperner2D (1, firstBit) [false, false, false] := by decide
 example : Sperner2D.succ ((1, firstBit), [false, false, false]) = [true, false, false] ∧
     Sperner2D.succ ((1, firstBit), [true, false, false]) = [false, true, false] := by decide
 
+/-- The circuit code with outputs `¬x₀, ¬x₀, x₀` (gate `2` negates input wire `0`). At the centre
+`(1, 1)` of the `2 × 2` grid its outputs are `false, false, true`, which is Case `2` of the case
+encoding `Δ₁⁺, Δ₁⁻, Δ₂⁺, Δ₂⁻` and decodes to colour `2`. -/
+private def caseTwo : CircuitCode := ([(.not, [0])], [2, 2, 0])
+
+example : Sperner2D.color (1, caseTwo) (1, 1) = 2 := by decide
+
+-- The unique trichromatic triangle is then `⟨true, 0, 1⟩`, with code `[true, false, true]`.
+example : Sperner2D (1, caseTwo) [true, false, true] := by decide
+
+example : ¬Sperner2D (1, caseTwo) [false, true, false] := by decide
+
 -- Words of the wrong length are not solutions.
 example : ¬Sperner2D (1, firstBit) [true, true] := by decide
 

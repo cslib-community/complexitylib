@@ -29,6 +29,7 @@ valid colourings of Theorem 4.1 and Definition 4.4 with `d = 2`, colour `3` writ
 `2` on the bottom edge, colour `1` on the rest of the left edge and colour `0` on the rest of the
 boundary. Sperner's lemma says that such a colouring has a trichromatic triangle; here it is proved
 in its parity form, by the path-following argument that underlies `PPAD` [Papadimitriou1994PPAD].
+(Mathlib's `IsAntichain.sperner` is Sperner's theorem on antichains, an unrelated result.)
 
 An edge of a triangle whose endpoints are coloured `1` and `2` is a *door*; traversing the corners
 counterclockwise, it is an *exit* (`2` then `1`, `IsExit`) or an *entry* (`1` then `2`, `IsEntry`).
@@ -83,8 +84,12 @@ namespace Cslib.Sperner
 
 /-- A triangle of the standard triangulation of the integer grid. -/
 structure GridTriangle where
+  /-- `true` for the lower triangle `(x, y), (x + 1, y), (x + 1, y + 1)` of the cell, `false` for
+  the upper triangle `(x, y), (x + 1, y + 1), (x, y + 1)`. -/
   lower : Bool
+  /-- The `x`-coordinate of the lower-left corner of the cell. -/
   x : ℕ
+  /-- The `y`-coordinate of the lower-left corner of the cell. -/
   y : ℕ
   deriving DecidableEq
 

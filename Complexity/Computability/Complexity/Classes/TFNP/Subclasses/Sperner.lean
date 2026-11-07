@@ -41,15 +41,19 @@ from the general results for `endOfLineRel`.
 presentation choices.
 
 * The grid has the points `0, …, 2 ^ m` in each coordinate rather than `0, …, 2 ^ m - 1`, so that
-  the `2 ^ (2m + 1)` triangle codes are exactly the triangles; the circuit is queried only at the
-  interior points, whose coordinates fit in `m` bits.
+  the `2 ^ (2m + 1)` triangle codes are exactly the triangles. The circuit receives the `m`-bit
+  codes of the coordinates of interior points only, rather than codes of all grid points.
 * The boundary colouring is imposed by the problem rather than promised by the circuit, and the
-  outputs of the circuit are decoded into a colour on every input (first output bit: colour `1`;
-  else second output bit: colour `2`; else colour `0`, standing for their colour `3`). Hence there
-  is no promise: every instance is valid and `Sperner2D` is a total search problem.
+  outputs of the circuit are decoded into a colour on every input: colour `1` if output bit `0` is
+  set, otherwise colour `2` if output bit `2` is set, otherwise colour `0` (their colour `3`). With
+  their output order `Δ₁⁺, Δ₁⁻, Δ₂⁺, Δ₂⁻`, outputs in their Case `i` decode to colour `i`. Hence
+  there is no promise: every instance is valid and `Sperner2D` is a total search problem.
 * Solutions are the trichromatic triangles of the triangulation cutting each unit square along its
-  main diagonal. These are panchromatic simplices in the sense of their Definition 4.2, so a
-  solution of `Sperner2D` is a solution of their problem on the same colouring.
+  main diagonal. For a given colouring, each such triangle is a panchromatic simplex in the sense
+  of their Definition 4.2.
+
+Because of the different grid size and input encoding, an instance of `Sperner2D` is not literally
+an instance of their problem.
 
 The membership in `PPAD` is due to Papadimitriou [Papadimitriou1994PPAD]; this file formalizes the
 door-following reduction to `EndOfLine` for this presentation.
@@ -87,10 +91,11 @@ open Turing.MultiTapeTM ComputableInPolyTime
 
 namespace Sperner2D
 
-/-- The colour read off the output bits of a colouring circuit: colour `1` if the first output bit
-is set, otherwise colour `2` if the second output bit is set, otherwise colour `0`. -/
+/-- The colour read off the output bits of a colouring circuit: colour `1` if output bit `0` is set,
+otherwise colour `2` if output bit `2` is set, otherwise colour `0`. On outputs in the case encoding
+`Δ₁⁺, Δ₁⁻, Δ₂⁺, Δ₂⁻` of Chen, Deng and Teng, Case `i` decodes to colour `i` (Case `3` to `0`). -/
 @[expose] def outputColor (out : List Bool) : Fin 3 :=
-  if out.getD 0 false then 1 else if out.getD 1 false then 2 else 0
+  if out.getD 0 false then 1 else if out.getD 2 false then 2 else 0
 
 /-- The colouring of the `2 ^ m × 2 ^ m` grid presented by the instance `(m, code)`: the boundary
 colour on the boundary, and the colour computed by `code` from the `m`-bit codes of the coordinates
