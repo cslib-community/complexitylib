@@ -131,6 +131,16 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
 
+## Exact exponential algorithms: Bellman–Held–Karp
+
+Import `Complexity.Algorithms.Lean.TSP.HeldKarp` ([source](../../Complexity/Algorithms/Lean/TSP/HeldKarp.lean)) for the algorithm and `Complexity.Computability.Complexity.Problems.TSP.HeldKarp` ([source](../../Complexity/Computability/Complexity/Problems/TSP/HeldKarp.lean)) for the decision problems. Like the set-cover algorithm below, `heldKarp d` is a pure Lean program, here in cslib's `TimeM ℕ` tick monad, not a machine program. The cities are `Fin (n + 1)` and `d` is any cost function into a linearly ordered additive commutative monoid: costs may be asymmetric, non-metric or negative (`ℤ`), or `⊤` for a missing edge (`WithTop ℕ`). Tours start and end at city `0`. `walkCosts d S t` is the set of costs of the walks that leave `0`, visit each city of `S ⊆ {1, …, n}` once and then move to `t`. The table entry for `(S, t)` is the Held–Karp value `C(S ∪ {t}, t)` of [Bellman][bellman62] and [Held and Karp][heldkarp62] ([Fomin and Kratsch, Chapter 1][fominkratsch10]).
+
+- **Correctness:** `isLeast_heldKarp` proves that `(heldKarp d).ret` is the least element of `walkCosts d univ 0`; `isLeast_heldKarp_permutations` restates this against brute force over all permutations of `1, …, n`. The proof goes through Bellman's principle `isLeast_walkCosts_of_forall` and the table invariant `HeldKarp.isLeast_tableM`.
+- **Cost:** `time_heldKarp_le` bounds the ticks by `n² · 2ⁿ`. A tick is one candidate `T (S \ {i}, i) + d i t`, i.e. one addition and one comparison in `W`, whatever the size of the numbers. Table reads and writes and the enumeration of subsets are free, and `TimeM` does not measure the `2ⁿ (n + 1)`-entry table.
+- **Decision problems:** `TSP.mem_TSP_iff_heldKarp_le` identifies `TSP` membership of a matrix with `n + 1` rows with `heldKarp` on its `dist` entries; this uses the rotation invariance `TSP.tourLength_rotate`. `TSP.heldKarpDecide` decides `TSP` (`heldKarpDecide_eq_true_iff`) in `(n - 1)² · 2ⁿ⁻¹` ticks on `n` cities, and composed with the polynomial-time reduction `HamCycle.toTSP` it decides `HamCycle` within the same bound in the number of distinct vertices. No machine-level certificate is given: the bounds count unit-cost operations, not Turing-machine or word-RAM steps.
+
+The [checked examples](../../ComplexityTests/TSPHeldKarp.lean) compare a four-city optimum with all six tours, use negative integer costs, cover the one-city edge case and the empty `TSP` instance, and decide `HamCycle` on a triangle (yes) and a three-vertex path (no). Inclusion–exclusion counting of Hamiltonian paths in `2ⁿ · poly(n)` time and polynomial space is open ([ROADMAP](../../ROADMAP.md#search-parameterized-and-fine-grained-complexity)).
+
 ## Other clients and classification
 
 The source tree also contains native integer arithmetic, multiword circuit evaluation, matrix multiplication, primality/counting, predecessor structures, 3SUM/exact-triangle routines and randomized SAT algorithms. These broaden coverage of the machine library; they should be catalogued through the complete module census without counting each as a new model. In particular, a bounded frontend or a conditional transfer theorem should not be presented as completion of an unresolved fine-grained endpoint. The current `ROADMAP.md` and selected abstracts are better evidence of endpoint disposition than a directory name.
@@ -646,6 +656,9 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
+[bellman62]: ../sources.md#bellman62
 [complexitylib]: ../sources.md#complexitylib
+[fominkratsch10]: ../sources.md#fominkratsch10
+[heldkarp62]: ../sources.md#heldkarp62
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11

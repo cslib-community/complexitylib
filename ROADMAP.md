@@ -727,6 +727,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   colorings (a fixed `k`-set is colorful with probability `K.descFactorial k / K ^ k ≥ e ^ (-k)`)
   and the one-sided-error randomized fpt algorithm for `LongPath`; derandomization by perfect hash
   families; W[1] and the W[1]-hardness of `Clique`.
+- **Exact exponential algorithms** ([#3013](https://github.com/cslib-community/complexitylib/issues/3013)):
+  the Bellman–Held–Karp dynamic program for TSP, correct against brute force in `n² · 2ⁿ`
+  unit-cost operations and deciding `TSP` and `HamCycle`, is in `Algorithms/Lean/TSP/HeldKarp`.
+  Remaining: inclusion–exclusion counting of Hamiltonian paths (Karp; Bax) in `2ⁿ · poly(n)` time
+  and polynomial space, with the space bound in a model that measures it; machine-level
+  certificates for these algorithms; and further exact algorithms such as subset convolution and
+  inclusion–exclusion colouring.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ

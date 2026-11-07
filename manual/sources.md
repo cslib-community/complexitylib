@@ -24,6 +24,11 @@ Clark Barrett, Swarat Chaudhuri, Fabrizio Montesi, Jim Grundy, Pushmeet Kohli, L
 
 Eli Ben-Sasson, Alessandro Chiesa and Nicholas Spooner. *Interactive Oracle Proofs*. TCC 2016-B II, 31–60. https://doi.org/10.1007/978-3-662-53644-5_2 .
 
+<a id="bellman62"></a>
+## bellman62
+
+Richard Bellman. “Dynamic Programming Treatment of the Travelling Salesman Problem.” *Journal of the ACM* 9(1), 61–63, 1962. https://doi.org/10.1145/321105.321111 . Bibliographic metadata checked on 2026-11-07; the article body was not inspected in this pass, so the manual cites it for the subset dynamic program and not for a numbered statement.
+
 <a id="blum67"></a>
 ## blum67
 
@@ -104,6 +109,11 @@ Jeff Erickson, Ivor van der Hoog, Tillmann Miltzow. “Smoothing the Gap Between
 
 Zhiyuan Fan, Jiatu Li, and Tianqi Yang. *The Exact Complexity of Pseudorandom Functions and the Black-Box Natural Proof Barrier for Bootstrapping Results in Computational Complexity*. Electronic Colloquium on Computational Complexity (ECCC), Report TR21-125, Revision 1 (12 June 2022), https://eccc.weizmann.ac.il/report/2021/125/ ; conference version in *Proceedings of the 54th Annual ACM SIGACT Symposium on Theory of Computing (STOC 2022)*, 962–975, https://doi.org/10.1145/3519935.3520010 . Inspected ECCC TR21-125 Revision 1 PDF directly: Section 4.1 (pp. 24–26), Section 4.2, Definitions 4.3–4.5 (pp. 26–27), Section 4.4, Definition 4.9 (p. 28), Section 7.1, Definition 7.1, Lemmas 7.2–7.4, and Theorem 7.5 (pp. 39–41), and Section 7.2 (pp. 41–42).
 
+<a id="fominkratsch10"></a>
+## fominkratsch10
+
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. The chapter locator (Chapter 1, the introductory dynamic program for TSP) was taken from secondary descriptions; the book was not inspected in this pass.
+
 <a id="gentry09"></a>
 ## gentry09
 
@@ -138,6 +148,11 @@ Arpita Ghosh, Tim Roughgarden and Mukund Sundararajan. *Universally Utility-Maxi
 ## gsw13
 
 Craig Gentry, Amit Sahai, Brent Waters. “Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based.” *CRYPTO 2013*, LNCS 8042, 75–92. https://doi.org/10.1007/978-3-642-40041-4_5 ; authors' full-version record https://eprint.iacr.org/2013/340 . Metadata/abstract checked; PDF fetch was blocked in this source pass.
+
+<a id="heldkarp62"></a>
+## heldkarp62
+
+Michael Held and Richard M. Karp. “A Dynamic Programming Approach to Sequencing Problems.” *Journal of the Society for Industrial and Applied Mathematics* 10(1), 196–210, 1962. https://doi.org/10.1137/0110015 . Bibliographic metadata checked on 2026-11-07; the article body was not inspected in this pass, so the manual cites it for the subset dynamic program and not for a numbered statement.
 
 <a id="hennie1965"></a>
 ## hennie1965
