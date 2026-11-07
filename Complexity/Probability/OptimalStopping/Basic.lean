@@ -27,14 +27,16 @@ deterministic ones, so every bound below on deterministic rules also bounds rand
 
 `valueFrom reward laws past` is the backward-induction (dynamic programming) value: at each
 step, the better of stopping now and continuing optimally. `tsum_payoff_le_valueFrom` shows that
-no stopping rule beats it.
+no stopping rule beats it, and `tsum_payoff_optimalRule` that the rule `optimalRule`, which stops
+exactly when stopping is at least as good as continuing, attains it (`valueFrom_eq_iSup`).
 
 ## Main definitions
 
 * `Cslib.Probability.OptimalStopping.jointLaw`: independent observations as a list.
 * `Cslib.Probability.OptimalStopping.payoff`, `Cslib.Probability.OptimalStopping.stopIndex`: the
   reward collected by a rule and the time at which it stops.
-* `Cslib.Probability.OptimalStopping.valueFrom`: the backward-induction value.
+* `Cslib.Probability.OptimalStopping.valueFrom`, `Cslib.Probability.OptimalStopping.optimalRule`:
+  the backward-induction value and rule.
 
 ## Main results
 
@@ -44,6 +46,9 @@ no stopping rule beats it.
   stopping time.
 * `Cslib.Probability.OptimalStopping.tsum_payoff_le_valueFrom`: no rule's expected payoff exceeds
   the backward-induction value.
+* `Cslib.Probability.OptimalStopping.tsum_payoff_optimalRule`,
+  `Cslib.Probability.OptimalStopping.valueFrom_eq_iSup`: the backward-induction rule attains it,
+  so it is the optimal expected payoff.
 
 ## References
 
@@ -192,5 +197,58 @@ theorem tsum_payoff_le_valueFrom (stop : List α → Bool) (reward : List α →
         exact le_max_left _ _
       · simp only [payoff, h, Bool.false_eq_true, ite_false]
         exact (tsum_payoff_le_valueFrom stop reward laws (x :: past)).trans (le_max_right _ _)
+
+/-- The backward-induction rule for the observation laws `laws`: on the history `h` (most recent
+first), with the laws `laws.drop h.length` still to come, stop exactly when stopping is at least
+as good as continuing optimally. -/
+noncomputable def optimalRule (reward : List α → List α → ℝ≥0∞) (laws : List (PMF α)) :
+    List α → Bool := fun h =>
+  decide (valueFrom reward (laws.drop h.length) h ≤
+    ∑' xs, jointLaw (laws.drop h.length) xs * reward h xs)
+
+/-- `optimalRule` attains the value from every history whose length is the number of laws
+already used. -/
+private theorem tsum_payoff_optimalRule_aux (reward : List α → List α → ℝ≥0∞) :
+    ∀ (rest pre : List (PMF α)) (past : List α), past.length = pre.length →
+      ∑' xs, jointLaw rest xs * payoff (optimalRule reward (pre ++ rest)) reward past xs =
+        valueFrom reward rest past
+  | [], pre, past, _ => by rw [tsum_jointLaw_nil_mul, payoff_nil, valueFrom_nil]
+  | μ :: rest, pre, past, hlen => by
+      rw [tsum_jointLaw_cons_mul, valueFrom_cons]
+      refine tsum_congr fun x => ?_
+      congr 1
+      have hsplit : pre ++ μ :: rest = (pre ++ [μ]) ++ rest := by simp
+      have hdrop : (pre ++ μ :: rest).drop (x :: past).length = rest := by
+        rw [hsplit]
+        exact List.drop_left' (by simp [hlen])
+      simp only [payoff_cons]
+      by_cases h : valueFrom reward rest (x :: past) ≤
+          ∑' xs, jointLaw rest xs * reward (x :: past) xs
+      · have hr : optimalRule reward (pre ++ μ :: rest) (x :: past) = true := by
+          rw [optimalRule, hdrop]; exact decide_eq_true h
+        simp only [hr, ite_true]
+        exact (max_eq_left h).symm
+      · have hr : optimalRule reward (pre ++ μ :: rest) (x :: past) = false := by
+          rw [optimalRule, hdrop]; exact decide_eq_false h
+        simp only [hr, Bool.false_eq_true, ite_false]
+        rw [hsplit,
+          tsum_payoff_optimalRule_aux reward rest (pre ++ [μ]) (x :: past) (by simp [hlen])]
+        exact (max_eq_right (not_le.mp h).le).symm
+
+/-- **Backward induction attains the value**: the rule `optimalRule` collects exactly the
+backward-induction value. -/
+theorem tsum_payoff_optimalRule (reward : List α → List α → ℝ≥0∞) (laws : List (PMF α)) :
+    ∑' xs, jointLaw laws xs * payoff (optimalRule reward laws) reward [] xs =
+      valueFrom reward laws [] :=
+  tsum_payoff_optimalRule_aux reward laws [] [] rfl
+
+/-- The backward-induction value is the best expected payoff of any stopping rule. -/
+theorem valueFrom_eq_iSup (reward : List α → List α → ℝ≥0∞) (laws : List (PMF α)) :
+    valueFrom reward laws [] =
+      ⨆ stop : List α → Bool, ∑' xs, jointLaw laws xs * payoff stop reward [] xs :=
+  le_antisymm ((tsum_payoff_optimalRule reward laws).symm.le.trans
+      (le_iSup (fun stop : List α → Bool => ∑' xs, jointLaw laws xs * payoff stop reward [] xs)
+        (optimalRule reward laws)))
+    (iSup_le fun stop => tsum_payoff_le_valueFrom stop reward laws [])
 
 end Cslib.Probability.OptimalStopping

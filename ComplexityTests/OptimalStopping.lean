@@ -10,7 +10,8 @@ import Complexity.Probability.OptimalStopping.Secretary
 /-! Checks for optimal stopping: exact secretary success probabilities for small `n`, the optimal
 cutoff for three candidates and the resulting optimal success probability `1/2`, a rule that never
 stops; the prophet inequality's Kleinberg–Weinberg threshold on the tight instance, nonvacuity of
-Samuel-Cahn's median hypotheses, and a concrete violation of every constant above `1/2`. -/
+Samuel-Cahn's median hypotheses, a concrete violation of every constant above `1/2`, and the
+backward-induction value of the tight instance. -/
 
 namespace ComplexityTests.OptimalStopping
 
@@ -102,6 +103,23 @@ example : ∃ k, ∀ stop, expectedReward stop (tightLaws k) < 51 / 100 * expect
   exists_tightLaws_lt (by
     rw [← ENNReal.toReal_lt_toReal (by simp) (by finiteness)]
     norm_num [ENNReal.toReal_div])
+
+/-- The backward-induction value of the tight instance is at most `1`, through the
+characterization of the value as the best expected reward of any rule. -/
+example (k : ℕ) : valueFrom reward (tightLaws k) [] ≤ 1 := by
+  rw [valueFrom_eq_iSup]
+  exact iSup_le fun stop => expectedReward_tightLaws_le k stop
+
+/-- Taking the sure value `1` attains the bound, so the value of the tight instance is `1`. -/
+example (k : ℕ) : valueFrom reward (tightLaws k) [] = 1 := by
+  refine le_antisymm ?_ ?_
+  · rw [valueFrom_eq_iSup]
+    exact iSup_le fun stop => expectedReward_tightLaws_le k stop
+  · rw [valueFrom_eq_iSup]
+    refine le_iSup_of_le (fun _ => true) (le_of_eq ?_)
+    rw [tightLaws, tsum_jointLaw_cons_mul]
+    simp only [payoff_cons, ite_true, reward]
+    simp [tsum_pmf_mul_const]
 
 end Prophet
 
