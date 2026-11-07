@@ -186,7 +186,7 @@ example {r : ℕ → ℕ → ℕ} (hr : Computable₂ r) : ∃ f : ℕ → ℕ, 
 so the universally quantified lower bound is not vacuous. -/
 example : ∃ f : ℕ → ℕ, Computable f ∧ (∀ n, f n ≤ 1) ∧ (∃ c : Code, ∀ n, f n ∈ c.eval n) ∧
     ∀ c : Code, (∀ n, f n ∈ c.eval n) → ∀ᶠ n in atTop, ∀ m ∈ evalnFuel c n, 2 ^ n < m := by
-  obtain ⟨f, hf, hf1, hc⟩ := fuelMeasure.exists_complex (t := fun n => 2 ^ n)
+  obtain ⟨f, hf, hf1, hc⟩ := fuelMeasure.exists_arbitrarilyComplex (t := fun n => 2 ^ n)
     (primrec_pow.comp (Primrec.const 2) Primrec.id).to_comp
   obtain ⟨c, hcf⟩ := Code.exists_code.1 (Partrec.nat_iff.1 hf)
   refine ⟨f, hf, hf1, ⟨c, fun n => by rw [hcf]; exact Part.mem_some _⟩, fun c hc' => ?_⟩

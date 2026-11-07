@@ -15,9 +15,11 @@ import Complexity.Computability.BlumComplexity.Cancellation
 
 For every Blum complexity measure `Φ` and every computable bound `t`, there is a computable
 `0`/`1`-valued function `f` such that every program `c` for `f` has cost `t n < Φ c n` for all
-sufficiently large `n`. This is Rabin's theorem on arbitrarily complex functions, in the
-machine-independent setting of Blum
-[Blum, *A machine-independent theory of the complexity of recursive functions*][Blum1967].
+sufficiently large `n`. This is the standard measure-independent form of the theorem on
+arbitrarily complex functions, in the axiomatic setting of Blum
+[Blum, *A machine-independent theory of the complexity of recursive functions*][Blum1967]. The
+result is commonly credited to Rabin (1960) and to Blum's paper. Neither attribution nor any
+theorem locator has been checked against the original texts.
 
 ## Construction
 
@@ -39,7 +41,7 @@ so it has a program, and every program for `f` has its cost defined everywhere.
 
 ## Main results
 
-* `Cslib.BlumComplexity.BlumMeasure.exists_complex`: arbitrarily complex `0`/`1`-valued
+* `Cslib.BlumComplexity.BlumMeasure.exists_arbitrarilyComplex`: arbitrarily complex `0`/`1`-valued
   functions.
 * `Cslib.BlumComplexity.BlumMeasure.exists_not_mem_complexityClass`: every complexity class of a
   computable bound misses a computable `0`/`1`-valued function.
@@ -124,10 +126,11 @@ end Hierarchy
 
 open Hierarchy
 
-/-- **Arbitrarily complex functions** [Blum1967]. For every computable bound `t` there is a
-computable function `f` with values in `{0, 1}` such that every program `c` for `f` has cost
-`t n < Φ c n` for all sufficiently large `n`. -/
-theorem exists_complex {t : ℕ → ℕ} (ht : Computable t) :
+/-- **Arbitrarily complex functions**, in Blum's axiomatic setting [Blum1967]. For every
+computable bound `t` there is a computable function `f` with values in `{0, 1}` such that every
+program `c` for `f` has cost `t n < Φ c n` for all sufficiently large `n`. The attribution (to
+Rabin and to Blum's paper) is the customary one; no theorem locator has been verified. -/
+theorem exists_arbitrarilyComplex {t : ℕ → ℕ} (ht : Computable t) :
     ∃ f : ℕ → ℕ, Computable f ∧ (∀ n, f n ≤ 1) ∧
       ∀ c : Code, (∀ n, f n ∈ c.eval n) → ∀ᶠ n in atTop, ∀ m ∈ Φ.cost c n, t n < m := by
   let f : ℕ → ℕ := fun y => (diag Φ t y).get (dom_diag Φ t y)
@@ -174,7 +177,7 @@ theorem exists_complex {t : ℕ → ℕ} (ht : Computable t) :
 `C_t`. -/
 theorem exists_not_mem_complexityClass {t : ℕ → ℕ} (ht : Computable t) :
     ∃ f : ℕ → ℕ, Computable f ∧ (∀ n, f n ≤ 1) ∧ f ∉ Φ.complexityClass t := by
-  obtain ⟨f, hf, hf1, hc⟩ := Φ.exists_complex ht
+  obtain ⟨f, hf, hf1, hc⟩ := Φ.exists_arbitrarilyComplex ht
   refine ⟨f, hf, hf1, fun hmem => ?_⟩
   obtain ⟨c, hcf, hev⟩ := mem_complexityClass.1 hmem
   obtain ⟨n, hn, hn'⟩ := ((hc c hcf).and hev).exists
@@ -190,7 +193,9 @@ theorem not_forall_mem_complexityClass {t : ℕ → ℕ} (ht : Computable t) :
   exact hn (h f hf)
 
 /-- **Hierarchy**: every computable bound `t` is dominated by a computable bound `t'` with
-`C_t ⊊ C_{t'}`. -/
+`C_t ⊂ C_{t'}`. The bound `t'` is obtained non-uniformly, from a program for the function of
+`exists_arbitrarilyComplex`; no computable map from programs for `t` to programs for `t'` is
+claimed. This corollary is derived here and is not attributed to a source. -/
 theorem exists_complexityClass_ssubset {t : ℕ → ℕ} (ht : Computable t) :
     ∃ t' : ℕ → ℕ, Computable t' ∧ t ≤ t' ∧ Φ.complexityClass t ⊂ Φ.complexityClass t' := by
   obtain ⟨f, hf, -, hn⟩ := Φ.exists_not_mem_complexityClass ht
