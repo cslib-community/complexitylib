@@ -44,10 +44,11 @@ The deterministic lifting theorem composes a Boolean function with an index gadg
 
 ## Distributed rounds in the LOCAL model
 
-Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity` (or one of the
-modules below it) for deterministic synchronous algorithms in Linial's LOCAL model on
-consistently oriented cycles. The nodes of the oriented `n`-cycle are `ZMod n`: node `v` has
-predecessor `v - 1` and successor `v + 1`, and `n = 0` gives the infinite oriented path `ℤ`. An
+Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity` or
+`Complexity.Computability.Distributed.OrientedCycle.MIS` (or one of the modules below them) for
+deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented cycles.
+The nodes of the oriented `n`-cycle are `ZMod n`: node `v` has predecessor `v - 1` and successor
+`v + 1`, and `n = 0` gives the infinite oriented path `ℤ`. An
 `Algorithm I S O` has an initial state from each node's input, a step function from the round
 number and the predecessor's, own and successor's states, and an output map. Messages and local
 computation are free, so exchanging whole states loses no generality. `MessageAlgorithm` with
@@ -83,12 +84,39 @@ additive `4`. `Nat.logStar` and `Nat.twoTower` live in `Complexity.Foundations.D
 use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values. `Nat.twoTower` is a
 structurally recursive copy of Mathlib's `hyperoperation 4 2` (`Nat.twoTower_eq_hyperoperation`),
 kept because `decide` cannot evaluate the well-founded `hyperoperation`.
+[Graph.lean](../../Complexity/Computability/Distributed/OrientedCycle/Graph.lean) connects the
+model to Mathlib's graphs. `OrientedCycle.graph n` is the circulant graph on `ZMod n` with jump `1`,
+which is `SimpleGraph.cycleGraph (k + 1)` for `n = k + 1` (`graph_succ_eq_cycleGraph`). For
+`n ≠ 1`, `isProperColoring_iff_adj` identifies `IsProperColoring` with proper colourings of this
+graph. `IsProperColoring.toColoring` and `Algorithm.ColorsCycle.exists_coloring` produce
+`SimpleGraph.Coloring`s. The one-node cycle is excluded because its graph has no edges while its
+node is its own successor.
+
+[MIS.lean](../../Complexity/Computability/Distributed/OrientedCycle/MIS.lean) treats maximal
+independent sets. `IsMIS s` is the local description of a marked set `s : ZMod n → Bool`, and
+`isMIS_iff_maximal` matches it with Mathlib's `Maximal (graph n).IsIndepSet` for `n ≠ 1`.
+`misOfColoring_run` turns a proper colouring with colours below `k` into an MIS within `k - 1`
+rounds by greedy colour classes, on every oriented cycle and on the infinite path.
+`misAlgorithm s` runs `fastThreeColoring s` for `s + 3` rounds and then the greedy step, through
+the sequential composition `Algorithm.seq` of `Basic.lean` (`LocalRule.andThen` is `seq` after the
+flooding algorithm of a rule). `Algorithm.FindsMIS A n t` asks that `A` marks an MIS after `t`
+rounds for every bijection from the nodes onto `{0, …, n - 1}`. For `n ≠ 1`,
+`misAlgorithm_findsMIS` finds an MIS within `s + 5` rounds when `log* n ≤ 2 s`. Conversely,
+`colorOfMIS` turns an MIS into a proper 3-colouring in one round, so
+`Algorithm.FindsMIS.logStar_le` gives `log* n ≤ 2t + 4` for every `t`-round MIS algorithm.
+`exists_findsMIS_and_logStar_le` packages both directions for `n ≠ 1`. These reductions are
+standard consequences of the 3-colouring bounds. Compose algorithms with `Algorithm.seq`; do not
+convert an algorithm to a `LocalRule` with `Algorithm.toLocalRule` just to compose it, since
+flooding its whole window makes `decide` impractical.
+
 [Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
 algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no
-proper colouring and that two rounds fail on the cycle of length `2 ↑↑ 6 + 1`.
+proper colouring and no MIS, and that two rounds of 3-colouring fail on the cycle of length
+`2 ↑↑ 6 + 1`. The 5-cycle examples include the greedy MIS steps and the full `misAlgorithm 2` run.
 
 Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
-the CONGEST message-size bound and randomized LOCAL algorithms remain open; see `ROADMAP.md`.
+`(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound and
+randomized LOCAL algorithms remain open; see `ROADMAP.md`.
 
 ## Known Limitations
 
