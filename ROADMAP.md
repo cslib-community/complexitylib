@@ -451,6 +451,14 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Structure, time and space
 
+- **Planar Boolean CSP dichotomy** ([#3091](https://github.com/cslib-community/complexitylib/issues/3091)):
+  extend the native Boolean classification to ordered planar instances of arbitrary fixed
+  relation arity. Preserve individual incidence occurrences and cyclic argument order; prove
+  the embedding/recognition interface, cyclic-difference reduction, even delta-matroid
+  edge-CSP algorithm and planar hardness transfer. The full endpoint must discharge these
+  ingredients internally, including the additional self-complementary tractable family.
+  Supplied-embedding or matching-realizable-only milestones leave this objective open.
+
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
   the stack proves native polynomial-time tractability for all six common-polymorphism cases
   and native NP-completeness outside them, for each fixed finite Boolean constraint language
