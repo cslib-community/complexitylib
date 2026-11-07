@@ -1085,6 +1085,23 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
 
+### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
+
+- **Computing equilibria:** PLS-completeness of finding a pure Nash equilibrium of a congestion
+  game (Fabrikant–Papadimitriou–Talwar) through an explicit local-search problem interface and
+  succinct game encodings; polynomial-time algorithms for symmetric network congestion games;
+  exponentially long better-response paths. Mixed Nash equilibria of finite games
+  (Nash's theorem) and PPAD-completeness of computing them.
+- **Equilibrium concepts and dynamics:** mixed and correlated equilibria between pure Nash and
+  coarse correlated equilibria; no-regret dynamics converging to coarse correlated equilibria,
+  connecting multiplicative-weights regret bounds to the robust price of anarchy; convergence time
+  of better-response dynamics in potential games.
+- **Price of anarchy:** Wardrop equilibrium existence and essential uniqueness for continuous
+  nondecreasing latencies (Beckmann's convex potential); the Pigou bound for general latency
+  classes and polynomial latencies of bounded degree; Braess's paradox; weighted and
+  mixed-strategy atomic congestion games; the Monderer–Shapley characterization of potential games
+  as congestion games.
+
 ### Mechanism design ([#2947](https://github.com/cslib-community/complexitylib/issues/2947))
 
 Single-parameter mechanisms with Myerson's Lemma for arbitrary monotone allocation rules, the
