@@ -811,6 +811,18 @@ theorem IsLayeredFamily.exists_free {l : List (L × R)} (h : IsLayeredFamily G M
     obtain ⟨v, l', rfl⟩ := hp.head
     exact ⟨r, mem_matchedLeft.mpr ⟨v, by simp⟩, isLayer_zero.mp hp.isLayer⟩
 
+theorem IsLayeredFamily.nodup_right (hM : IsMatching G M) {l : List (L × R)}
+    (h : IsLayeredFamily G M k l) : (l.map Prod.snd).Nodup := by
+  induction h with
+  | nil => exact List.nodup_nil
+  | @cons r p l _ _ hp ih =>
+    rw [List.map_append]
+    refine List.nodup_append.mpr ⟨hp.nodup_right hM, ih, ?_⟩
+    intro a ha b hb hab
+    obtain ⟨e, he, rfl⟩ := List.mem_map.mp ha
+    obtain ⟨e', he', rfl⟩ := List.mem_map.mp hb
+    exact hp.notMem e he (hab ▸ mem_matchedRight.mpr ⟨e'.1, List.mem_toFinset.mpr he'⟩)
+
 end Family
 
 section Phase
@@ -1105,8 +1117,25 @@ theorem isMaxMatching_isMinVertexCover_of_stable (hM : IsMatching G M) {j : ℕ}
   · have := card_le_size_of_matching_vertexCover hM hC
     omega
 
+/-- Under stability, the right vertices reached by the layers are exactly the mates of reached
+left vertices. -/
+theorem mem_altRight_iff_of_stable (hM : IsMatching G M) {j : ℕ}
+    (hstable : altLeft G M (j + 1) = altLeft G M j) (hj : altRight G M j ⊆ matchedRight M)
+    {v : R} : v ∈ altRight G M j ↔ ∃ w, (w, v) ∈ M ∧ w ∈ altLeft G M j := by
+  constructor
+  · intro hv
+    obtain ⟨w, hw⟩ := mem_matchedRight.mp (hj hv)
+    exact ⟨w, hw, hstable ▸ mem_altLeft_succ_of_mem hw hv⟩
+  · rintro ⟨w, hw, hwj⟩
+    obtain ⟨i, hij, hwi⟩ := exists_isLayer hwj
+    cases i with
+    | zero => exact absurd (mem_matchedLeft.mpr ⟨v, hw⟩) (isLayer_zero.mp hwi)
+    | succ i =>
+      rcases mem_altLeft_succ.mp hwi.1 with h | ⟨v', hv', hv'i⟩
+      · exact absurd h (hwi.2 i (Nat.lt_succ_self i))
+      · rw [hM.2.1 _ _ _ hw hv']
+        exact altRight_mono (by omega) hv'i
+
 end PhaseCount
-
-
 
 end Cslib.Algorithms.Lean.MaxFlow
