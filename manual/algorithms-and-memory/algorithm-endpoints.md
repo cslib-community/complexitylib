@@ -143,8 +143,9 @@ is Graham's rule that each job goes to a least-loaded machine over the earlier j
 attained for every `m`. `LPT.lean` defines `lptSchedule`, which applies `listSchedule` after
 sorting by `lptOrder`, and proves `makespan_lptSchedule_le`: `C ≤ (4/3 - 1/(3m)) · OPT`.
 
-`Precedence.lean` models `P | prec | C_max` in discrete time. Start times are `s : J → ℕ`, and
-processing times and precedences are arbitrary. `IsFeasible` and `IsGreedy` are predicates on
+`Precedence.lean` models `P | prec | C_max` in discrete time. Start times are `s : J → ℕ`,
+processing times are natural numbers and `prec` is any relation; the bounds assume it is
+well-founded. `IsFeasible` and `IsGreedy` are predicates on
 schedules. `exists_isGreedy` constructs a greedy schedule for well-founded precedences and
 positive processing times. `IsGreedy.exists_chain` is Graham's critical chain.
 `IsGreedy.mul_makespan_le_of_le` is Graham's 1966 anomaly theorem. `Brent.lean` defines the

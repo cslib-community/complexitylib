@@ -17,15 +17,19 @@ import Mathlib.Tactic.Ring
 /-!
 # Graham's Longest-Processing-Time Rule
 
-Graham's longest-processing-time rule ([Graham1969]) runs list scheduling with the jobs sorted
-by non-increasing processing time. This module proves its approximation ratio
-`4/3 - 1/(3m)`: for jobs listed in non-increasing order every list schedule satisfies
-`3m · C_LPT ≤ (4m - 1) · C` against every assignment. The proof follows the case split of
-[WilliamsonShmoys2011], Theorem 2.7. If the last-finishing job is short (`3 p_j ≤ OPT`),
-Graham's averaging bound suffices. Otherwise `exists_prefixLoad_add_le_makespan` replaces the case
-check of [WilliamsonShmoys2011], Lemma 2.8, by a direct counting argument: since every job up to
-`j` is longer than `OPT / 3`, an optimal machine holds at most two of them, so some machine is
-light enough when job `j` arrives.
+Graham's longest-processing-time rule runs list scheduling with the jobs sorted by
+non-increasing processing time. This module proves Graham's sharp approximation ratio
+`4/3 - 1/(3m)` ([Graham1969], Theorem 2; announced in [Graham1966], §III, p. 1581): for jobs
+listed in non-increasing order every list schedule satisfies `3m · C_LPT ≤ (4m - 1) · C` against
+every assignment.
+
+The proof follows the case split of the `4/3` analysis in [WilliamsonShmoys2011], Theorem 2.7, but
+the second case is argued differently. If the last-finishing job is short (`3 p_j ≤ OPT`),
+Graham's averaging bound already gives `4/3 - 1/(3m)`. Otherwise [WilliamsonShmoys2011] appeal to
+Lemma 2.8 (LPT is optimal when every job exceeds `OPT / 3`), whose proof is left as an exercise
+there. This module instead uses its own counting lemma, `exists_prefixLoad_add_le_makespan`:
+since every job up to `j` is longer than `OPT / 3`, an optimal machine holds at most two of them,
+so some machine is light enough when job `j` arrives. This yields the sharp constant directly.
 
 ## Main definitions
 
@@ -41,14 +45,16 @@ light enough when job `j` arrives.
   `IsListSchedule.makespan_le_optMakespan_of_antitone`: the LPT bound for any list schedule of
   jobs in non-increasing order.
 * `makespan_lptSchedule_le`: **Graham's LPT theorem**
-  `C_LPT ≤ (4/3 - 1/(3m)) · OPT` ([Graham1969]; [WilliamsonShmoys2011], Theorem 2.7).
+  `C_LPT ≤ (4/3 - 1/(3m)) · OPT` ([Graham1969], Theorem 2).
 * `makespan_listSchedule_le`: Graham's `2 - 1/m` bound for `listSchedule`.
 
 ## References
 
-* [Graham1969] R. L. Graham, *Bounds on multiprocessing timing anomalies*, 1969.
+* [Graham1966] R. L. Graham, *Bounds for certain multiprocessing anomalies*, 1966.
+* [Graham1969] R. L. Graham, *Bounds on multiprocessing timing anomalies*, 1969. The theorem
+  number is taken from secondary sources; the bound itself is also announced in [Graham1966].
 * [WilliamsonShmoys2011] David P. Williamson and David B. Shmoys, *The Design of Approximation
-  Algorithms*, Theorem 2.7 and Lemma 2.8, 2011.
+  Algorithms*, Theorem 2.7 and Lemma 2.8 (the `4/3` bound), 2011.
 -/
 
 public section
@@ -104,8 +110,9 @@ variable [Field α] [LinearOrder α] [IsStrictOrderedRing α] [NeZero m]
 jobs before `j` some machine has load at most `T - p j`. Each machine of `τ` holds at most two of
 the jobs `0, …, j`; if every machine of `σ` had load above `T - p j`, every machine of `σ` would
 carry an earlier job, and the jobs alone on their machine could share a `τ`-machine with no other
-job, which leaves too few `τ`-places for the `j + 1` jobs. This is the content of
-[WilliamsonShmoys2011], Lemma 2.8, in the form needed by the LPT bound. -/
+job, which leaves too few `τ`-places for the `j + 1` jobs. This replaces the appeal to
+[WilliamsonShmoys2011], Lemma 2.8, in their `4/3` proof; the counting argument is this module's
+own route to the sharp constant. -/
 theorem exists_prefixLoad_add_le_makespan (p : Fin n → α) (hp : ∀ k, 0 ≤ p k)
     (σ τ : Fin n → Fin m) (j : Fin n) (hanti : ∀ k ≤ j, p j ≤ p k) (hj : makespan p τ < 3 * p j) :
     ∃ i, prefixLoad p σ j i + p j ≤ makespan p τ := by
@@ -243,9 +250,10 @@ theorem exists_prefixLoad_add_le_makespan (p : Fin n → α) (hp : ∀ k, 0 ≤ 
       _ = 2 * m := by simp [mul_comm]
   omega
 
-/-- **Graham's LPT bound** for jobs listed in non-increasing order ([Graham1969];
-[WilliamsonShmoys2011], Theorem 2.7): every list schedule has makespan at most
-`4/3 - 1/(3m)` times the makespan of any assignment, stated as `3m · C_LPT ≤ (4m - 1) · C`. -/
+/-- **Graham's LPT bound** for jobs listed in non-increasing order ([Graham1969], Theorem 2):
+every list schedule has makespan at most `4/3 - 1/(3m)` times the makespan of any assignment,
+stated as `3m · C_LPT ≤ (4m - 1) · C`. The case split follows the `4/3` proof of
+[WilliamsonShmoys2011], Theorem 2.7, with `exists_prefixLoad_add_le_makespan` for long jobs. -/
 theorem IsListSchedule.card_mul_makespan_le_of_antitone {p : Fin n → α} {σ : Fin n → Fin m}
     (hσ : IsListSchedule p σ) (hp : ∀ j, 0 ≤ p j) (hanti : Antitone p) (τ : Fin n → Fin m) :
     3 * (m : α) * makespan p σ ≤ (4 * m - 1) * makespan p τ := by
@@ -324,13 +332,13 @@ section Bound
 variable [Field α] [LinearOrder α] [IsStrictOrderedRing α] [NeZero m]
 
 /-- **Graham's bound for `listSchedule`**: `C_LS ≤ (2 - 1/m) · OPT` ([Graham1966];
-[WilliamsonShmoys2011], Theorem 2.6). -/
+[WilliamsonShmoys2011], Theorem 2.6 and the refinement after Theorem 2.5). -/
 theorem makespan_listSchedule_le (p : Fin n → α) (hp : ∀ j, 0 ≤ p j) :
     makespan p (listSchedule (m := m) p) ≤ (2 - 1 / m) * optMakespan m p :=
   (isListSchedule_listSchedule p).makespan_le_optMakespan hp
 
-/-- **Graham's LPT theorem** ([Graham1969]; [WilliamsonShmoys2011], Theorem 2.7):
-`C_LPT ≤ (4/3 - 1/(3m)) · OPT`. -/
+/-- **Graham's LPT theorem** ([Graham1969], Theorem 2): `C_LPT ≤ (4/3 - 1/(3m)) · OPT`. The
+weaker `4/3` bound is [WilliamsonShmoys2011], Theorem 2.7. -/
 theorem makespan_lptSchedule_le (p : Fin n → α) (hp : ∀ j, 0 ≤ p j) :
     makespan p (lptSchedule (m := m) p) ≤ (4 / 3 - 1 / (3 * m)) * optMakespan m p := by
   rw [makespan_lptSchedule, ← optMakespan_comp_perm p (lptOrder p)]

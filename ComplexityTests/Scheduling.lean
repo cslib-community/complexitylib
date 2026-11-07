@@ -40,7 +40,7 @@ example : makespan (grahamTight ℚ 3) (listSchedule (m := 3) (grahamTight ℚ 3
   rw [(isListSchedule_listSchedule _).makespan_grahamTight, optMakespan_grahamTight]
   norm_num
 
-/-! ## 2. LPT on Graham's two-machine instance `3, 3, 2, 2, 2` -/
+/-! ## 2. LPT on the standard two-machine tight instance `3, 3, 2, 2, 2` -/
 
 private def lptJobs : Fin 5 → ℚ := ![3, 3, 2, 2, 2]
 
@@ -65,7 +65,31 @@ example : makespan lptJobs (lptSchedule (m := 2) lptJobs) ≤
   refine makespan_lptSchedule_le (m := 2) lptJobs fun j => ?_
   fin_cases j <;> norm_num [lptJobs]
 
-/-! ## 3. Greedy schedules with precedence constraints -/
+/-! ## 3. LPT on the standard three-machine tight instance `5, 5, 4, 4, 3, 3, 3` -/
+
+private def lptJobs3 : Fin 7 → ℚ := ![5, 5, 4, 4, 3, 3, 3]
+
+-- LPT puts `5, 3, 3` on one machine: makespan `11 = (4/3 - 1/9) · 9`.
+#guard makespan lptJobs3 (lptSchedule (m := 3) lptJobs3) = 11
+
+/-- The optimum is `9` (`5 + 4`, `5 + 4`, `3 + 3 + 3`), so LPT's ratio `11/9 = 4/3 - 1/(3 · 3)` is
+attained on three machines. -/
+example : optMakespan 3 lptJobs3 = 9 := by
+  refine le_antisymm ?_ ?_
+  · refine (optMakespan_le lptJobs3 ![0, 1, 0, 1, 2, 2, 2]).trans ?_
+    rw [makespan_le_iff]
+    intro i
+    fin_cases i <;> norm_num [load_def, Finset.sum_filter, Fin.sum_univ_seven, lptJobs3]
+  · have h := sum_le_card_nsmul_optMakespan (m := 3) lptJobs3
+    simp only [Fin.sum_univ_seven, lptJobs3, nsmul_eq_mul] at h ⊢
+    norm_num at h
+    linarith
+
+/-- The entries of the tight instance are available to clients. -/
+example : grahamTight ℚ 3 0 = 1 ∧ grahamTight ℚ 3 (Fin.last 6) = 3 :=
+  ⟨grahamTight_of_lt (by decide), grahamTight_last⟩
+
+/-! ## 4. Greedy schedules with precedence constraints -/
 
 namespace Precedence
 
@@ -108,6 +132,10 @@ private def chain3 (i j : Fin 3) : Prop := j.val = i.val + 1
 private theorem wf_chain3 : WellFounded chain3 :=
   Subrelation.wf (fun {i j} (h : chain3 i j) => (show i.val < j.val by
     unfold chain3 at h; omega)) (InvImage.wf Fin.val wellFounded_lt)
+
+/-- `makespan_le_iff` bounds a concrete schedule directly: three unit jobs at times `0, 1, 2`. -/
+example : makespan (fun _ : Fin 3 => 1) (fun j => j.val) ≤ 3 :=
+  Precedence.makespan_le_iff.mpr fun j => j.isLt
 
 /-- The span of the three-job chain is `3`. -/
 theorem span_chain3 : span chain3 (fun _ => 1) = 3 := by

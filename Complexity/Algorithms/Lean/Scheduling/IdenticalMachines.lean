@@ -14,6 +14,7 @@ public import Mathlib.Data.Fin.Tuple.Basic
 public import Mathlib.Data.Fintype.Pi
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.GetD
+import Mathlib.Data.List.MinMax
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -41,9 +42,10 @@ jobs ([Graham1966]), and `listSchedule` is the computable rule with lowest-index
 ## Main results
 
 * `sum_le_card_nsmul_optMakespan`, `le_optMakespan`: the lower bounds `∑ p ≤ m · OPT` and
-  `p j ≤ OPT` ([WilliamsonShmoys2011], (2.3) and (2.4)).
+  `p j ≤ OPT` ([WilliamsonShmoys2011], (2.4) and (2.3)).
 * `IsListSchedule.card_mul_makespan_le`, `IsListSchedule.makespan_le_optMakespan`: **Graham's
-  bound** `C_LS ≤ (2 - 1/m) · OPT` ([Graham1966]; [WilliamsonShmoys2011], Section 2.3).
+  bound** `C_LS ≤ (2 - 1/m) · OPT` ([Graham1966], §II, Theorem (p. 1570) with `n = n'`;
+  [WilliamsonShmoys2011], Section 2.3).
 * `isListSchedule_listSchedule`: `listSchedule` satisfies `IsListSchedule`.
 * `optMakespan_grahamTight`, `IsListSchedule.makespan_grahamTight`: on `grahamTight α m` every
   list schedule has makespan exactly `(2 - 1/m) · OPT = 2m - 1`, so the bound is tight for
@@ -78,7 +80,7 @@ order, `prefixLoad p σ j i` is the time at which machine `i` becomes free befor
 def prefixLoad (p : Fin n → α) (σ : Fin n → Fin m) (k : ℕ) (i : Fin m) : α :=
   ∑ j : Fin n with j.val < k ∧ σ j = i, p j
 
-/-- List scheduling ([Graham1966], §1.1; [WilliamsonShmoys2011], §2.3): each job, taken in list
+/-- List scheduling ([Graham1966], §I.1; [WilliamsonShmoys2011], §2.3): each job, taken in list
 order, is assigned to a machine of minimum load over the earlier jobs. -/
 def IsListSchedule [LE α] (p : Fin n → α) (σ : Fin n → Fin m) : Prop :=
   ∀ (j : Fin n) (i : Fin m), prefixLoad p σ j (σ j) ≤ prefixLoad p σ j i
@@ -290,9 +292,10 @@ theorem IsListSchedule.completion_le {p : Fin n → α} {σ : Fin n → Fin m} (
 
 variable [NeZero m]
 
-/-- **Graham's list-scheduling bound** ([Graham1966]; [WilliamsonShmoys2011], Theorem 2.6 and
-the refinement after Theorem 2.5): every list schedule has makespan at most `2 - 1/m` times the
-makespan of any assignment, stated without division as `m · C_LS ≤ (2m - 1) · C`. -/
+/-- **Graham's list-scheduling bound** ([Graham1966], §II, Theorem (p. 1570) with `n = n'` and no
+precedences; [WilliamsonShmoys2011], Theorem 2.6 and the refinement after Theorem 2.5): every list
+schedule has makespan at most `2 - 1/m` times the makespan of any assignment, stated without
+division as `m · C_LS ≤ (2m - 1) · C`. -/
 theorem IsListSchedule.card_mul_makespan_le {p : Fin n → α} {σ : Fin n → Fin m}
     (hσ : IsListSchedule p σ) (hp : ∀ j, 0 ≤ p j) (τ : Fin n → Fin m) :
     (m : α) * makespan p σ ≤ (2 * m - 1) * makespan p τ := by
@@ -335,23 +338,15 @@ variable [LinearOrder α]
 /-- A machine minimizing `f`, the lowest-indexed one among ties (Graham's convention that
 simultaneous claims go to the processor of smaller index). -/
 def argminFin [NeZero m] (f : Fin m → α) : Fin m :=
-  (List.finRange m).foldl (fun b i => if f i < f b then i else b) 0
+  ((List.finRange m).argmin f).getD 0
 
-private theorem foldl_argmin_le (f : Fin m → α) (l : List (Fin m)) (b : Fin m) :
-    f (l.foldl (fun b i => if f i < f b then i else b) b) ≤ f b ∧
-      ∀ i ∈ l, f (l.foldl (fun b i => if f i < f b then i else b) b) ≤ f i := by
-  induction l generalizing b with
-  | nil => simp
-  | cons a l ih =>
-    simp only [List.foldl_cons, List.mem_cons, forall_eq_or_imp]
-    split_ifs with h
-    · obtain ⟨h1, h2⟩ := ih a
-      exact ⟨h1.trans h.le, h1, h2⟩
-    · obtain ⟨h1, h2⟩ := ih b
-      exact ⟨h1, h1.trans (not_lt.mp h), h2⟩
-
-theorem argminFin_le [NeZero m] (f : Fin m → α) (i : Fin m) : f (argminFin f) ≤ f i :=
-  (foldl_argmin_le f _ 0).2 i (List.mem_finRange i)
+theorem argminFin_le [NeZero m] (f : Fin m → α) (i : Fin m) : f (argminFin f) ≤ f i := by
+  unfold argminFin
+  cases h : (List.finRange m).argmin f with
+  | none =>
+    rw [List.argmin_eq_none] at h
+    exact absurd h (List.ne_nil_of_mem (List.mem_finRange i))
+  | some x => exact List.le_of_mem_argmin (List.mem_finRange i) h
 
 end ArgMin
 
@@ -460,15 +455,15 @@ def grahamTight (m : ℕ) (j : Fin (m * (m - 1) + 1)) : α :=
   if j.val < m * (m - 1) then 1 else m
 
 omit [LinearOrder α] [IsStrictOrderedRing α] in
-private theorem grahamTight_of_lt {j : Fin (m * (m - 1) + 1)} (hj : j.val < m * (m - 1)) :
+theorem grahamTight_of_lt {j : Fin (m * (m - 1) + 1)} (hj : j.val < m * (m - 1)) :
     grahamTight α m j = 1 :=
   ite_eq_left hj
 
 omit [LinearOrder α] [IsStrictOrderedRing α] in
-private theorem grahamTight_last : grahamTight α m (Fin.last _) = m :=
+theorem grahamTight_last : grahamTight α m (Fin.last _) = m :=
   ite_eq_right (lt_irrefl _)
 
-private theorem grahamTight_nonneg (j : Fin (m * (m - 1) + 1)) : 0 ≤ grahamTight α m j := by
+theorem grahamTight_nonneg (j : Fin (m * (m - 1) + 1)) : 0 ≤ grahamTight α m j := by
   unfold grahamTight
   split_ifs
   · exact zero_le_one

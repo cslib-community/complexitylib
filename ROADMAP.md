@@ -744,7 +744,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Scheduling:** beyond Graham's list-scheduling, LPT and precedence bounds in
   `Algorithms/Lean/Scheduling`: real-valued processing times with precedences, Graham's anomaly
   instances as checked examples, a general tight family for LPT, the Hochbaum–Shmoys PTAS for
-  `P || C_max`, and runtime bounds for `listSchedule` and `lptSchedule`.
+  `P || C_max`, and runtime bounds for `listSchedule` and `lptSchedule`
+  ([#2909](https://github.com/cslib-community/complexitylib/issues/2909)).
 - **A practical PCP construction:** a reasonably runnable construction and its cost on complete
   reductions; rotation certificates polynomial in the bit length of a vertex name; machine-level
   error reduction and extractors from expander walks, with certified seed and evaluation costs.

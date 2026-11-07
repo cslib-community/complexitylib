@@ -158,10 +158,10 @@ section BrentExistence
 
 variable {prec : J → J → Prop}
 
-/-- **Brent's scheduling lemma** ([Brent1974], Lemma 2), in the unit-time DAG form: if the jobs
-can be run in `D` steps with unboundedly many processors, i.e. every chain has at most `D` jobs,
-then there is a feasible schedule on `m` processors with `m · T ≤ W + (m - 1) · D`, where
-`W = |J|`. -/
+/-- **Brent's scheduling lemma** ([Brent1974], Lemma 2), in the unit-time DAG form: every finite
+DAG of `W = |J|` unit jobs with span `D = span prec (fun _ => 1)` (the number of jobs on a longest
+chain, i.e. the time needed with unboundedly many processors) has a feasible schedule on `m ≥ 1`
+processors with `m · T ≤ W + (m - 1) · D`. -/
 theorem exists_isFeasible_mul_makespan_le (m : ℕ) (hm : 0 < m) (hwf : WellFounded prec) :
     ∃ s, IsFeasible m prec (fun _ => 1) s ∧
       m * makespan (fun _ => 1) s ≤ Fintype.card J + (m - 1) * span prec (fun _ => 1) := by

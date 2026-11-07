@@ -22,24 +22,25 @@ times `p : J → ℕ` and a precedence relation `prec` on `m` identical machines
 occupies the unit time slots `s j, …, s j + p j - 1`. `IsFeasible m prec p s` requires each job to
 start after its predecessors finish and at most `m` jobs to run in each slot. `IsGreedy` adds
 Graham's list-scheduling condition: a machine idles in a slot only if every job not yet started
-has an unfinished predecessor ([Graham1966], §1.1).
+has an unfinished predecessor ([Graham1966], §I.1).
 
 ## Main definitions
 
 * `Cslib.Algorithms.Lean.Scheduling.Precedence.running`: the jobs occupying a time slot.
 * `IsFeasible`, `IsGreedy`: feasible and greedy (list) schedules.
-* `makespan`: the latest completion time.
+* `makespan`: the latest completion time (`le_makespan`, `makespan_le_iff`).
 
 ## Main results
 
 * `IsGreedy.exists_chain`: **Graham's critical chain**. For well-founded precedences there is a
-  precedence chain `c` with `m · C ≤ ∑ p + (m - 1) · ∑_{j ∈ c} p j` ([Graham1966], proof of the
-  Proposition in §II).
+  precedence chain `c` with `m · C ≤ ∑ p + (m - 1) · ∑_{j ∈ c} p j` ([Graham1966], §II, proofs
+  of the Proposition (p. 1567) and the Theorem (p. 1570)).
 * `IsFeasible.sum_le_mul_makespan`, `IsFeasible.sum_chain_le_makespan`: the work and chain lower
   bounds for every feasible schedule.
 * `IsGreedy.mul_makespan_le`: a greedy schedule is within `2 - 1/m` of every feasible schedule,
   `m · C_greedy ≤ (2m - 1) · C`.
-* `IsGreedy.mul_makespan_le_of_le`: **Graham's anomaly bound** ([Graham1966], Theorem in §II).
+* `IsGreedy.mul_makespan_le_of_le`: **Graham's anomaly bound** ([Graham1966], §II, Theorem
+  (p. 1570)).
   Relaxing the precedences, shortening jobs and changing the number of machines from `m` to `m'`
   changes the makespan by at most the factor `1 + (m - 1)/m'`.
 * `exists_isGreedy`: greedy schedules exist for well-founded precedences and positive processing
@@ -50,6 +51,14 @@ has an unfinished predecessor ([Graham1966], §1.1).
 Time is discrete (`ℕ`), so processing times are natural numbers. Graham's bounds are
 scale-invariant, so this covers rational processing times after clearing denominators. Real-valued
 processing times are not modelled.
+
+`IsFeasible` bounds the number of jobs running in each slot instead of assigning jobs to machines.
+For non-preemptive schedules the two are equivalent: the jobs are intervals, interval graphs are
+perfect, so if at most `m` intervals overlap at every point they can be coloured with `m` machines.
+
+Graham's model fixes a priority list. `IsGreedy` keeps only the consequence used by the bounds,
+that no machine idles while a job is ready, so the theorems apply to every list schedule and to
+every other greedy rule.
 
 ## References
 
@@ -93,6 +102,10 @@ def makespan (p s : J → ℕ) : ℕ := univ.sup fun j => s j + p j
 theorem le_makespan (p s : J → ℕ) (j : J) : s j + p j ≤ makespan p s :=
   le_sup (f := fun j => s j + p j) (mem_univ j)
 
+theorem makespan_le_iff {p s : J → ℕ} {T : ℕ} : makespan p s ≤ T ↔ ∀ j, s j + p j ≤ T := by
+  unfold makespan
+  simp [Finset.sup_le_iff]
+
 /-- Summing the number of running jobs over the slots before the makespan counts each job's
 processing time once. -/
 theorem sum_card_running (p s : J → ℕ) :
@@ -133,7 +146,7 @@ private theorem card_le_sum_of_covered (p s : J → ℕ) (c : List J) (T : Finse
       · exact absurd hrun ht.2
       · exact ⟨i, hi, hrun⟩
 
-/-- Graham's chain construction ([Graham1966], proof of the Proposition): for a greedy schedule
+/-- Graham's chain construction ([Graham1966], §II, proof of the Proposition): for a greedy schedule
 and well-founded precedences, every job `j` heads a chain `j = c₀, c₁, …` with `cₖ₊₁ ≺ cₖ` that
 covers every slot before `j` finishes in which fewer than `m` jobs run. -/
 private theorem exists_chain_covering {m : ℕ} {prec : J → J → Prop} {p s : J → ℕ}
@@ -173,7 +186,7 @@ private theorem exists_chain_covering {m : ℕ} {prec : J → J → Prop} {p s :
     push Not at h
     exact absurd (hex t h) (not_le.mpr hm)
 
-/-- **Graham's critical-chain bound** ([Graham1966], proof of the Proposition and Theorem;
+/-- **Graham's critical-chain bound** ([Graham1966], §II, proofs of the Proposition and Theorem;
 [CLRS2009], Theorem 27.1): for a greedy schedule on `m` machines with well-founded precedences
 there is a precedence chain `c` (each job preceding the next) with
 `m · C ≤ ∑ p + (m - 1) · ∑_{j ∈ c} p j`. -/
@@ -243,8 +256,9 @@ theorem IsFeasible.sum_chain_le_makespan {m : ℕ} {prec : J → J → Prop} {p 
   | nil => simp
   | cons j c => have := hf.head_add_sum_le j c hc; omega
 
-/-- **Graham's bound with precedence constraints** ([Graham1966], §III): a greedy schedule is
-within `2 - 1/m` of every feasible schedule, `m · C_greedy ≤ (2m - 1) · C`. -/
+/-- **Graham's bound with precedence constraints** ([Graham1966], §II, Theorem (p. 1570) with
+`n = n'`; restated in §III, p. 1581): a greedy schedule is within `2 - 1/m` of every feasible
+schedule, `m · C_greedy ≤ (2m - 1) · C`. -/
 theorem IsGreedy.mul_makespan_le {m : ℕ} {prec : J → J → Prop} {p s s' : J → ℕ}
     (hg : IsGreedy m prec p s) (hwf : WellFounded prec) (hf : IsFeasible m prec p s') :
     m * makespan p s ≤ (2 * m - 1) * makespan p s' := by
@@ -258,17 +272,17 @@ theorem IsGreedy.mul_makespan_le {m : ℕ} {prec : J → J → Prop} {p s s' : J
         · simp
         · rw [← add_mul]; congr 1; omega
 
-/-- **Graham's anomaly bound** ([Graham1966], Theorem, p. 1570): let `s` be a greedy schedule on
-`m'` machines for precedences `prec'` and processing times `p'`, and `s'` any feasible schedule
-on `m` machines for stronger precedences `prec ⊇ prec'` and longer processing times `p ≥ p'`.
-Then `m' · C ≤ (m + m' - 1) · C'`, i.e. `C / C' ≤ 1 + (m - 1)/m'`. -/
+/-- **Graham's anomaly bound** ([Graham1966], §II, Theorem (p. 1570)): let `s` be a greedy
+schedule on `m'` machines for well-founded precedences `prec'` and processing times `p'`, and `s'`
+any feasible schedule on `m` machines for stronger precedences `prec ⊇ prec'` and longer processing
+times `p ≥ p'`. Then `m' · C ≤ (m + m' - 1) · C'`, i.e. `C / C' ≤ 1 + (m - 1)/m'`. -/
 theorem IsGreedy.mul_makespan_le_of_le {m m' : ℕ} {prec prec' : J → J → Prop} {p p' s s' : J → ℕ}
-    (hg : IsGreedy m' prec' p' s) (hwf : WellFounded prec) (hprec : ∀ i j, prec' i j → prec i j)
+    (hg : IsGreedy m' prec' p' s) (hwf : WellFounded prec') (hprec : ∀ i j, prec' i j → prec i j)
     (hp : ∀ j, p' j ≤ p j) (hf : IsFeasible m prec p s') :
     m' * makespan p' s ≤ (m + m' - 1) * makespan p s' := by
   rcases Nat.eq_zero_or_pos m' with rfl | hm'
   · simp
-  obtain ⟨c, hc, h⟩ := hg.exists_chain (Subrelation.wf (fun {a b} => hprec a b) hwf)
+  obtain ⟨c, hc, h⟩ := hg.exists_chain hwf
   have h1 : ∑ j, p' j ≤ m * makespan p s' :=
     (sum_le_sum fun j _ => hp j).trans hf.sum_le_mul_makespan
   have h2 : (c.map p').sum ≤ makespan p s' :=
@@ -512,8 +526,8 @@ private theorem exists_greedyInv {m : ℕ} {p : J → ℕ} (hwf : WellFounded pr
     exact h.step hwf hm hp
 
 omit [DecidableEq J] in
-/-- **Greedy schedules exist** ([Graham1966], list scheduling): for well-founded precedences and
-positive processing times, at least one machine yields a greedy schedule. -/
+/-- **Greedy schedules exist** (list scheduling, [Graham1966], §I.1): for well-founded precedences
+and positive processing times, a greedy schedule exists on any `m ≥ 1` machines. -/
 theorem exists_isGreedy (m : ℕ) (hm : 0 < m) (prec : J → J → Prop) (hwf : WellFounded prec)
     (p : J → ℕ) (hp : ∀ j, 0 < p j) : ∃ s, IsGreedy m prec p s := by
   classical
