@@ -9,7 +9,7 @@ module
 
 public import Complexity.Probability.OptimalStopping.Basic
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
-public import Mathlib.Analysis.SpecificLimits.Basic
+import Mathlib.Analysis.SpecificLimits.Basic
 
 /-!
 # The secretary problem
@@ -82,9 +82,9 @@ from `0`). -/
   (Cslib.Probability.PMF.uniformOfFintype (Fin (i + 1))).map Fin.val
 
 /-- The laws of the relative ranks of arrivals `k, …, k + m - 1`. -/
-@[expose] noncomputable def rankLaws (k m : ℕ) : List (PMF ℕ) := (List.range' k m).map rankLaw
+noncomputable def rankLaws (k m : ℕ) : List (PMF ℕ) := (List.range' k m).map rankLaw
 
-theorem rankLaws_zero (k : ℕ) : rankLaws k 0 = [] := rfl
+theorem rankLaws_zero (k : ℕ) : rankLaws k 0 = [] := by simp [rankLaws]
 
 theorem rankLaws_succ (k m : ℕ) : rankLaws k (m + 1) = rankLaw k :: rankLaws (k + 1) m := by
   simp [rankLaws, List.range'_succ]
@@ -228,7 +228,7 @@ order. -/
 
 /-- The reward for stopping, in terms of relative ranks: `1` if the current arrival is the best so
 far and no later arrival is. -/
-@[expose] noncomputable def winReward (past future : List ℕ) : ℝ≥0∞ :=
+noncomputable def winReward (past future : List ℕ) : ℝ≥0∞ :=
   if past.head? = some 0 ∧ 0 ∉ future then 1 else 0
 
 theorem relRank_eq_zero_iff {n : ℕ} (σ : Equiv.Perm (Fin n)) (i : Fin n) :
@@ -364,7 +364,7 @@ private theorem tsum_rankLaws_noRecord (k m : ℕ) (hk : k ≠ 0) :
 
 /-- The success probability of the cutoff rule `cutoffRule (s + 1)` with `n` candidates:
 `s/n · ∑_{i=s}^{n-1} 1/i` for `s ≥ 1`, and `1/n` for `s = 0`. -/
-@[expose] noncomputable def cutoffValue (n s : ℕ) : ℝ :=
+noncomputable def cutoffValue (n s : ℕ) : ℝ :=
   if s = 0 then 1 / n else s / n * ∑ i ∈ Finset.Ico s n, (1 : ℝ) / i
 
 theorem cutoffValue_nonneg (n s : ℕ) : 0 ≤ cutoffValue n s := by

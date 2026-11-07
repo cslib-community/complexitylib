@@ -66,7 +66,10 @@ variable {α : Type*}
 /-- Independent observations, the `i`-th drawn from the `i`-th law, collected into a list. -/
 @[expose] noncomputable def jointLaw : List (PMF α) → PMF (List α)
   | [] => PMF.pure []
-  | μ :: laws => μ.bind fun x => (jointLaw laws).map (x :: ·)
+  | μ :: laws => do
+      let x ← μ
+      let xs ← jointLaw laws
+      return x :: xs
 
 @[simp] theorem jointLaw_nil : jointLaw ([] : List (PMF α)) = PMF.pure [] := rfl
 
@@ -104,12 +107,6 @@ theorem tsum_jointLaw_nil_mul (k : List α → ℝ≥0∞) :
 /-- The expectation of a constant is that constant. -/
 theorem tsum_pmf_mul_const (μ : PMF α) (c : ℝ≥0∞) : ∑' x, μ x * c = c := by
   rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-
-/-- The expectation of a function bounded by `1` is at most `1`. -/
-theorem tsum_pmf_mul_le_one (μ : PMF α) {f : α → ℝ≥0∞} (hf : ∀ x, f x ≤ 1) :
-    ∑' x, μ x * f x ≤ 1 :=
-  calc ∑' x, μ x * f x ≤ ∑' x, μ x * 1 := tsum_le_tsum fun x => by gcongr; exact hf x
-    _ = 1 := tsum_pmf_mul_const μ 1
 
 /-- The reward collected by the rule `stop` on the remaining observations `xs` after the history
 `past` (most recent first): it stops at the first `x` with `stop (x :: past)` and collects

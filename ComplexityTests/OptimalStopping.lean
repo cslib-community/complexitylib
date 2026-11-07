@@ -9,9 +9,10 @@ import Complexity.Probability.OptimalStopping.Secretary
 
 /-! Checks for optimal stopping: exact secretary success probabilities for small `n`, the optimal
 cutoff for three candidates and the resulting optimal success probability `1/2`, a rule that never
-stops; the prophet inequality's Kleinberg–Weinberg threshold on the tight instance, nonvacuity of
-Samuel-Cahn's median hypotheses, a concrete violation of every constant above `1/2`, and the
-backward-induction value of the tight instance. -/
+stops; the prophet inequality's Kleinberg–Weinberg threshold on the tight instance, Samuel-Cahn's
+median hypotheses and theorem (a degenerate law, and a law with an atom at the median), a
+concrete violation of every constant above `1/2`, and the backward-induction value of the tight
+instance. -/
 
 namespace ComplexityTests.OptimalStopping
 
@@ -80,6 +81,41 @@ example : (jointLaw [PMF.pure (1 : ℝ≥0)]).toOuterMeasure {xs | listMax xs < 
     1 / 2 ≤ (jointLaw [PMF.pure (1 : ℝ≥0)]).toOuterMeasure {xs | listMax xs ≤ 1} := by
   simp [jointLaw_pure, PMF.toOuterMeasure_pure_apply, listMax]
 
+theorem toOuterMeasure_eq_tsum {α : Type*} (p : PMF α) (s : Set α) [DecidablePred (· ∈ s)] :
+    p.toOuterMeasure s = ∑' x, p x * if x ∈ s then 1 else 0 := by
+  rw [PMF.toOuterMeasure_apply]
+  refine tsum_congr fun x => ?_
+  by_cases hx : x ∈ s <;> simp [Set.indicator, hx]
+
+theorem tsum_pure_mul {α : Type*} (a : α) (f : α → ℝ≥0∞) :
+    ∑' x, PMF.pure a x * f x = f a := by
+  rw [tsum_eq_single a fun b hb => by simp [PMF.pure_apply, hb]]
+  simp
+
+/-- On the tight instance with `k = 1`, `max` is never below `1` and is at most `1` with
+probability `1/2`, so `1` is a median of `max` with an atom. -/
+theorem median_tightLaws_one :
+    (jointLaw (tightLaws 1)).toOuterMeasure {xs | listMax xs < 1} ≤ 1 / 2 ∧
+      1 / 2 ≤ (jointLaw (tightLaws 1)).toOuterMeasure {xs | listMax xs ≤ 1} := by
+  classical
+  constructor <;>
+  · rw [toOuterMeasure_eq_tsum, tightLaws_eq, tsum_jointLaw_cons_mul, tsum_pure_mul,
+      tsum_jointLaw_cons_mul, tsum_longShot_mul]
+    simp only [tsum_jointLaw_nil_mul, Set.mem_ofPred_eq, listMax]
+    norm_num
+
+/-- Samuel-Cahn's median theorem applies nondegenerately to the tight instance. -/
+example : expectedMax (tightLaws 1) ≤ 2 * expectedReward (thresholdRule 1) (tightLaws 1) ∨
+    expectedMax (tightLaws 1) ≤ 2 * expectedReward (strictThresholdRule 1) (tightLaws 1) :=
+  expectedMax_le_two_mul_expectedReward_median _ median_tightLaws_one.1 median_tightLaws_one.2
+
+/-- Here `E[max] = 3/2 ≤ 2 · 1`, the median is at or above `E[max]/2`, and the rule accepting
+values of at least the median is the one that applies. -/
+example : expectedMax (tightLaws 1) ≤ 2 * expectedReward (thresholdRule 1) (tightLaws 1) := by
+  refine expectedMax_le_two_mul_expectedReward_thresholdRule_of_le _ median_tightLaws_one.1 ?_
+  rw [expectedMax_tightLaws, ← ENNReal.toReal_le_toReal (by finiteness) (by simp)]
+  norm_num [ENNReal.toReal_div]
+
 /-- On the tight instance with `k = 1`, `E[max] = 3/2`. -/
 theorem expectedMax_tightLaws_one : expectedMax (tightLaws 1) = 3 / 2 := by
   rw [expectedMax_tightLaws]
@@ -117,7 +153,7 @@ example (k : ℕ) : valueFrom reward (tightLaws k) [] = 1 := by
     exact iSup_le fun stop => expectedReward_tightLaws_le k stop
   · rw [valueFrom_eq_iSup]
     refine le_iSup_of_le (fun _ => true) (le_of_eq ?_)
-    rw [tightLaws, tsum_jointLaw_cons_mul]
+    rw [tightLaws_eq, tsum_jointLaw_cons_mul]
     simp only [payoff_cons, ite_true, reward]
     simp [tsum_pmf_mul_const]
 

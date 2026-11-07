@@ -9,6 +9,7 @@ module
 
 public import Complexity.Probability.OptimalStopping.Basic
 public import Mathlib.Basic.NNReal.Basic
+import Complexity.Probability.PMF.Bind
 
 /-!
 # The prophet inequality
@@ -21,8 +22,8 @@ guarantee half of this, and Samuel-Cahn showed that a single threshold suffices:
 value of at least (or more than) a fixed `t`.
 
 `expectedMax_le_two_mul_expectedReward` is the threshold form proved here. Let `R` be the
-probability that the rule accepts no value. If `t` and `R` lie on the same side of `E[max]/2` and
-`1/2`, in the sense that `2t ≤ E[max]` and `1 ≤ 2R`, or `E[max] ≤ 2t` and `2R ≤ 1`, then the rule's
+probability that the rule accepts no value. If `t` and `R` lie on opposite sides of `E[max]/2` and
+`1/2`, that is, `2t ≤ E[max]` and `1 ≤ 2R`, or `E[max] ≤ 2t` and `2R ≤ 1`, then the rule's
 expected reward is at least `E[max]/2`. The proof bounds the reward from below by
 `t (1 - R) + R ∑ᵢ E[(Xᵢ - t)⁺]` and the maximum from above by `t + ∑ᵢ (Xᵢ - t)⁺`, both arranged
 without subtracting extended reals. Two choices of threshold make the hypothesis automatic:
@@ -31,7 +32,8 @@ without subtracting extended reals. Two choices of threshold make the hypothesis
   `expectedMax_le_two_mul_expectedReward_of_two_mul_eq` and
   `expectedMax_le_two_mul_expectedReward_half`;
 * `t` a median of `max Xᵢ` (Samuel-Cahn): `expectedMax_le_two_mul_expectedReward_median`, where
-  accepting values `≥ t` or values `> t` works, according to which side of `E[max]/2` the median is.
+  accepting values `≥ t` works when `t ≥ E[max]/2` and accepting values `> t` works when
+  `t ≤ E[max]/2`.
 
 The factor `1/2` is optimal: for `tightLaws k`, a sure value `1` followed by `k + 1` with
 probability `1/(k + 1)` and `0` otherwise, every rule, even one using the whole history, has
@@ -200,7 +202,7 @@ private theorem rejectProb_eq (a : ℝ≥0 → Bool) (laws : List (PMF ℝ≥0))
 
 theorem rejectProb_le_one (a : ℝ≥0 → Bool) (laws : List (PMF ℝ≥0)) : rejectProb a laws ≤ 1 := by
   rw [rejectProb_eq]
-  exact tsum_pmf_mul_le_one _ (rejectsAll_le_one a)
+  exact Cslib.Probability.PMF.tsum_mul_le_of_forall_le _ (rejectsAll_le_one a)
 
 /-- One step of the induction for `prophet_key`, with the tail's quantities abstracted. -/
 private theorem prophet_step (μ : PMF ℝ≥0) {t : ℝ≥0} {a : ℝ≥0 → Bool}
@@ -211,7 +213,7 @@ private theorem prophet_step (μ : PMF ℝ≥0) {t : ℝ≥0} {a : ℝ≥0 → B
       ∑' x, μ x * (if a x then (x : ℝ≥0∞) else A) +
         t * ((∑' x, μ x * (if a x then 0 else 1)) * R) := by
   have hq : ∑' x, μ x * (if a x then (0 : ℝ≥0∞) else 1) ≤ 1 :=
-    tsum_pmf_mul_le_one μ fun x => by split_ifs <;> simp
+    Cslib.Probability.PMF.tsum_mul_le_of_forall_le μ fun x => by split_ifs <;> simp
   have hqR : (∑' x, μ x * (if a x then (0 : ℝ≥0∞) else 1)) * R ≤ 1 := mul_le_one' hq hR
   have hpt : ∀ x : ℝ≥0, (t : ℝ≥0∞) + ((x - t : ℝ≥0) : ℝ≥0∞) + (if a x then 0 else 1) * (R * S) ≤
       (if a x then (x : ℝ≥0∞) else A) + (if a x then 0 else 1) * (t * R) := by
@@ -273,7 +275,8 @@ private theorem prophet_key {t : ℝ≥0} {a : ℝ≥0 → Bool} (ha₁ : ∀ x,
         · have hx' : a x = false := by simpa using hx
           simp only [acceptPayoff, hx', Bool.false_eq_true, ↓reduceIte]
       rw [hRc, hSc, hAc]
-      exact prophet_step μ ha₁ ha₂ (tsum_pmf_mul_le_one _ (rejectsAll_le_one a))
+      exact prophet_step μ ha₁ ha₂
+        (Cslib.Probability.PMF.tsum_mul_le_of_forall_le _ (rejectsAll_le_one a))
         (prophet_key ha₁ ha₂ L)
 
 private theorem prophet_bound {t : ℝ≥0} {a : ℝ≥0 → Bool} (ha₁ : ∀ x, t < x → a x = true)
@@ -354,8 +357,8 @@ theorem expectedMax_le_two_mul_expectedReward_half (laws : List (PMF ℝ≥0))
   rw [ENNReal.coe_toNNReal (ENNReal.div_ne_top hM two_ne_zero)]
   exact ENNReal.mul_div_cancel two_ne_zero ENNReal.ofNat_ne_top
 
-/-- Samuel-Cahn's rule for a median `m` of `max Xᵢ` below `E[max]/2`: accepting the first value
-of at least `m` collects at least half the prophet's expected reward. -/
+/-- Samuel-Cahn's rule for a median `m` of `max Xᵢ` at or above `E[max]/2`: accepting the first
+value of at least `m` collects at least half the prophet's expected reward. -/
 theorem expectedMax_le_two_mul_expectedReward_thresholdRule_of_le (laws : List (PMF ℝ≥0))
     {m : ℝ≥0} (hm : (jointLaw laws).toOuterMeasure {xs | listMax xs < m} ≤ 1 / 2)
     (hM : expectedMax laws ≤ 2 * m) :
@@ -376,8 +379,8 @@ theorem expectedMax_le_two_mul_expectedReward_thresholdRule_of_le (laws : List (
   calc 2 * (jointLaw laws).toOuterMeasure {xs | listMax xs < m} ≤ 2 * (1 / 2) := by gcongr
     _ = 1 := by rw [one_div, ENNReal.mul_inv_cancel two_ne_zero ENNReal.ofNat_ne_top]
 
-/-- Samuel-Cahn's rule for a median `m` of `max Xᵢ` above `E[max]/2`: accepting the first value of
-more than `m` collects at least half the prophet's expected reward. -/
+/-- Samuel-Cahn's rule for a median `m` of `max Xᵢ` at or below `E[max]/2`: accepting the first
+value of more than `m` collects at least half the prophet's expected reward. -/
 theorem expectedMax_le_two_mul_expectedReward_strictThresholdRule_of_le (laws : List (PMF ℝ≥0))
     {m : ℝ≥0} (hm : 1 / 2 ≤ (jointLaw laws).toOuterMeasure {xs | listMax xs ≤ m})
     (hM : 2 * (m : ℝ≥0∞) ≤ expectedMax laws) :
@@ -410,7 +413,7 @@ theorem expectedMax_le_two_mul_expectedReward_median (laws : List (PMF ℝ≥0))
 /-! ### Tightness -/
 
 /-- The value `k + 1` with probability `1/(k + 1)`, and `0` otherwise. -/
-@[expose] noncomputable def longShot (k : ℕ) : PMF ℝ≥0 :=
+noncomputable def longShot (k : ℕ) : PMF ℝ≥0 :=
   (Cslib.Probability.PMF.uniformOfFintype (Fin (k + 1))).map
     fun i => if i.val = 0 then (k + 1 : ℝ≥0) else 0
 
@@ -425,7 +428,10 @@ theorem tsum_longShot_mul (k : ℕ) (f : ℝ≥0 → ℝ≥0∞) :
   rw [ENNReal.div_eq_inv_mul]
 
 /-- The tight instance: a sure value `1`, then `longShot k`. -/
-@[expose] noncomputable def tightLaws (k : ℕ) : List (PMF ℝ≥0) := [PMF.pure 1, longShot k]
+noncomputable def tightLaws (k : ℕ) : List (PMF ℝ≥0) := [PMF.pure 1, longShot k]
+
+theorem tightLaws_eq (k : ℕ) : tightLaws k = [PMF.pure 1, longShot k] := by
+  unfold tightLaws; rfl
 
 private theorem tsum_pure_mul {α : Type*} (a : α) (f : α → ℝ≥0∞) :
     ∑' x, PMF.pure a x * f x = f a := by
