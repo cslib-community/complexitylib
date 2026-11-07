@@ -1053,6 +1053,7 @@ public import Complexity.Computability.Circuit.Boolean.Tournament
 public import Complexity.Computability.Circuit.Boolean.Tribes
 public import Complexity.Computability.Circuit.Boolean.Tseitin
 public import Complexity.Computability.Circuit.Boolean.Unbounded
+public import Complexity.Computability.Circuit.Boolean.Unbounded.Encoding
 public import Complexity.Computability.Circuit.Boolean.Unbounded.Restriction
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activation
@@ -1096,6 +1097,7 @@ public import Complexity.Computability.Circuit.Decomposable
 public import Complexity.Computability.Circuit.Depth
 public import Complexity.Computability.Circuit.Encoding.Check
 public import Complexity.Computability.Circuit.Encoding.Evaluation
+public import Complexity.Computability.Circuit.Encoding.Layer
 public import Complexity.Computability.Circuit.Encoding.MapOp
 public import Complexity.Computability.Circuit.Erase
 public import Complexity.Computability.Circuit.Evaluation
@@ -1347,6 +1349,7 @@ public import Complexity.Computability.Circuit.SumOfTerms.Coverage
 public import Complexity.Computability.Circuit.Support
 public import Complexity.Computability.Circuit.Synthesis
 public import Complexity.Computability.Circuit.Unfolding
+public import Complexity.Computability.Circuit.Weft
 public import Complexity.Computability.Circuit.Wiring
 public import Complexity.Computability.Communication.Amplification
 public import Complexity.Computability.Communication.Corruption
@@ -1791,6 +1794,8 @@ public import Complexity.Computability.Complexity.Parameterized.ColorCoding
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
+public import Complexity.Computability.Complexity.Parameterized.WHierarchy
+public import Complexity.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
 public import Complexity.Computability.Complexity.Problems.CSP.Affine
 public import Complexity.Computability.Complexity.Problems.CSP.Basic
 public import Complexity.Computability.Complexity.Problems.CSP.Constant
