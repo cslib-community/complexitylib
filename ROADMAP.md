@@ -191,7 +191,9 @@ transporting key-generation error, and realizing the efficient forking reduction
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
   to a PCP with Merkle trees; Micali's CS proofs and the BCS transform give the random-oracle
-  versions.
+  versions. `exists_kilianSound_of_mem_NP` and `exists_micaliCSProof_of_mem_NP` prove these with
+  honest provers that hold an accepted PCP table; efficient honest provers from arbitrary NP
+  witnesses and the verifier's runtime and message-truncation accounting remain.
 
 ### Modern fully homomorphic encryption
 
@@ -369,8 +371,10 @@ families and full-input native runtime.
   `Crypto/Computational/CompositeResiduosity`. The second condition of Katz–Lindell
   Definition 15.14 (exact distributional equality of multiplied ciphertexts with fresh
   encryptions) fails for the implemented dyadic `unitOrOne` sampler and needs an exact or
-  statistical-closeness formulation; the IND-CPA security reduction under `DCR` (Theorem 15.13,
-  accounting for approximate unit sampling) and native balanced-modulus generation remain open.
+  statistical-closeness formulation. The IND-CPA security reduction under `DCR` (Theorem 15.13,
+  accounting for approximate unit sampling) is proved as `DCR.indcpaOn_paillier` for a supplied
+  generator whose primes have at least `n` bits (hypothesis `hsize`); native balanced-modulus
+  generation remains open.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -378,7 +382,9 @@ families and full-input native runtime.
 ### Zero-knowledge proof systems toward libzk ([#643])
 
 In order:
-- the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding;
+- the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding
+  (`Verifier.wordVerifierWith`, `Verifier.Sound.acceptProb_wordVerifier`, `Reduction.mem_IP` in
+  `Interactive/ToIP.lean`);
 - parallel and AND/OR composition (`Verifier.seqProd`, `Reduction.seqProd`, `relProd`, `relDisj`
   in `Interactive/AuxZK.lean`) and round-by-round knowledge soundness (`Verifier.RbrKnowledgeSound`,
   `Verifier.RbrKnowledgeSound.append`, `Verifier.RbrKnowledgeSound.seqProd`,
@@ -390,7 +396,10 @@ In order:
   auxiliary-input zero knowledge on the core (`Reduction.AuxHVZK`, `Reduction.ZK`,
   `Reduction.EfficientAuxHVZK`, `Reduction.ComputationalAuxHVZK` in `Interactive/AuxZK.lean`);
 - polynomial commitment and evaluation-query reductions, and the Ligero IOP;
-- the BCS transform to non-interactive arguments in the random-oracle model;
+- the BCS transform to non-interactive arguments in the random-oracle model (`BCS/Basic.lean`;
+  `bcsROMSoundness_bound` and `bcsROMKnowledgeSoundness_bound` in `BCS/ROM.lean`; machine-level
+  verifier and extractor runtime, polynomial-time NP-witness-to-IOP encoding and zero knowledge
+  remain);
 - VOLE constraint reductions and VOLE-in-the-head: `VOLE/Basic.lean` supplies ideal correlations,
   and `VOLE/MulCheck.lean` bounds arbitrary single-gate affine claims by `2 / |F|` with an
   independent secret key. `VOLE/BatchMulCheck.lean` batches constraints using a public vector of
@@ -487,8 +496,9 @@ index links to canonical definitions rather than keeping a second set.
   Track the newer Koucký–Mertz–Sami [robust catalytic extensions](https://arxiv.org/abs/2605.09648)
   separately: their broader collapse is conditional on the explicit circuit-hardness assumption,
   with resetting-error and time regimes distinguished from KMPS's unconditional results.
-- **Randomized logspace** ([#459], [#474]): RL and BPL, `USTCON ∈ RL`, Nisan's generator,
-  `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
+- **Randomized logspace** ([#459], [#474]): two-sided `BPL` amplification, the random-walk proof
+  of `USTCON ∈ RL` (membership already follows from `L_subset_RL` and `USTCON_mem_L`), Nisan's
+  generator, `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
   [#1444](https://github.com/cslib-community/complexitylib/issues/1444). Its estimator work in
   [#1721](https://github.com/cslib-community/complexitylib/issues/1721) has an integer-grid slack
   schedule with endpointwise telescoping and summable available-scale precision payments.
@@ -525,10 +535,10 @@ index links to canonical definitions rather than keeping a second set.
   arbitrary injective input encodings and every `t(n) ≥ n`, without time constructibility;
   its fixed driver scans the original input, searches schedules and increases balanced time
   guesses. The paper's time–space separation corollaries (including for linear space) and a
-  curated headline abstract with independent review remain open in [#888]; landing the inclusion
+  curated headline abstract with independent review remain open in [#2855]; landing the inclusion
   and registry does not complete that broader scope.
   For Cook–Mertz itself: malformed-input handling and the refined
-  `O(ℓ + H log(ℓ + 2))` parameter bound remain open.
+  `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
@@ -675,8 +685,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
-  `a / b ≥ 1 - qbar k h`). Remaining: curated abstracts, and the uniform `o(n)` forms of the PPSZ
-  bounds with `w` growing in `n`.
+  `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
+  abstracts, and the uniform `o(n)` forms of the PPSZ bounds with `w` growing in `n`.
   Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
 
 ### Approximation and PCP
@@ -907,9 +917,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions](https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md#graph-algorithms-and-graph-foundations),
 reusing graph and matroid foundations and the shared data-structure interfaces.
 
-- **Flows and matching:** integral max-flow/min-cut and a native augmenting-path algorithm with
-  charged runtime; then minimum-cost flow and weighted bipartite matching through common
-  residual-network and duality machinery.
+- **Flows and matching:** a native augmenting-path algorithm with charged runtime (integral
+  max-flow/min-cut and a `TimeM` Edmonds–Karp solver are in `Algorithms/Lean/MaxFlow`); then
+  minimum-cost flow and weighted bipartite matching through common residual-network and duality
+  machinery.
 - **Matroids:** matroid intersection with explicit oracle and implementation costs, beyond the
   weighted greedy algorithm and its independence-oracle interface.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
@@ -1003,7 +1014,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
-  transfer of Anthropic's modular machine and 3SUM/APSP algorithms; size-based width selection
+  transfer of Anthropic's modular machine and APSP algorithms (3SUM is native:
+  `uniformDecidableInO_one9992`); size-based width selection
   with an input-fit guarantee and explicit overhead;
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
@@ -1172,9 +1184,8 @@ not planned, not as proved.
   a selector occurring in one permanent entry can be eliminated with one extra dimension when
   `2` is invertible. The conversion from VP witnesses to formulas, the two-entry gadget and
   general Boolean-sum elimination needed for VNP-hardness remain open.
-- General auxiliary-input zero knowledge ([#324]); see the GMW theorem above.
-- Williams's square-root-space simulation ([#361]) and implicit Tree Evaluation ([#367]), now the
-  frontier track [#888].
+- General auxiliary-input zero knowledge ([#324]); the GMW protocol's auxiliary-input results and
+  their limits are in [`GMW/Simulator.lean`](Complexity/Crypto/Computational/GMW/Simulator.lean).
 - Vollmer's generalized-quantifier survey ([#399]): ordered leaf words, explicit uniformity and
   input-access models, finite-monoid classification and generalized logical quantifiers.
 
@@ -1182,8 +1193,6 @@ not planned, not as proved.
 [archive-fhe]: https://github.com/cslib-community/complexitylib/blob/c89dd48c/ROADMAP.md#modern-fhe-methods-and-deployment-priorities
 [#321]: https://github.com/cslib-community/complexitylib/issues/321
 [#324]: https://github.com/cslib-community/complexitylib/issues/324
-[#361]: https://github.com/cslib-community/complexitylib/issues/361
-[#367]: https://github.com/cslib-community/complexitylib/issues/367
 [#399]: https://github.com/cslib-community/complexitylib/issues/399
 [#456]: https://github.com/cslib-community/complexitylib/issues/456
 [#459]: https://github.com/cslib-community/complexitylib/issues/459
@@ -1229,6 +1238,7 @@ not planned, not as proved.
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
 [#2290]: https://github.com/cslib-community/complexitylib/issues/2290
+[#2347]: https://github.com/cslib-community/complexitylib/issues/2347
 [#2423]: https://github.com/cslib-community/complexitylib/issues/2423
 
 [#2521]: https://github.com/cslib-community/complexitylib/issues/2521
@@ -1247,3 +1257,4 @@ not planned, not as proved.
 
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
+[#2855]: https://github.com/cslib-community/complexitylib/issues/2855
