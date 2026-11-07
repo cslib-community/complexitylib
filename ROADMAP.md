@@ -710,6 +710,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
+- **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
+  colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
+  colorings (a fixed `k`-set is colorful with probability `K.descFactorial k / K ^ k ≥ e ^ (-k)`)
+  and the one-sided-error randomized fpt algorithm for `LongPath`; derandomization by perfect hash
+  families; W[1] and the W[1]-hardness of `Clique`.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
