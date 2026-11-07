@@ -42,6 +42,48 @@ The communication development includes public-coin equality protocols and linear
 
 The deterministic lifting theorem composes a Boolean function with an index gadget. For the theorem's parameters m and tau, a protocol of cost c yields a decision tree of depth d with `(m/tau)^d <= 4^c`, assuming `4 <= tau`, `tau^2 <= m` and `320 n^2 (log2 m+1) <= tau`. Choosing tau around the square root of m gives a gadget on the order of `n^4 log^2 n`, rather than the smaller gadgets of more recent sharp lifting theorems. This is a documented quantitative scope choice. The source is [the lifting simulation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Communication/Lifting/Simulation.lean).
 
+## Distributed rounds in the LOCAL model
+
+Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity` (or one of the
+modules below it) for deterministic synchronous algorithms in Linial's LOCAL model on
+consistently oriented cycles. The nodes of the oriented `n`-cycle are `ZMod n`: node `v` has
+predecessor `v - 1` and successor `v + 1`, and `n = 0` gives the infinite oriented path `ℤ`. An
+`Algorithm I S O` has an initial state from each node's input, a step function from the round
+number and the predecessor's, own and successor's states, and an output map. Messages and local
+computation are free, so exchanging whole states loses no generality. `MessageAlgorithm` with
+explicit messages reduces to it (`MessageAlgorithm.toAlgorithm_state`). The cost is the number of
+rounds. The round number is common knowledge. Algorithms are non-uniform: one may be chosen for
+each `n`. Identifiers are natural numbers, and `Algorithm.ColorsCycle A n t c` asks for a proper
+colouring with colours below `c` after `t` rounds for every bijection from the nodes onto
+`{0, …, n - 1}`. The usual identifiers `{1, …, n}` are the same up to a shift.
+
+The view formulation is proved rather than assumed. `Algorithm.state_eq_viewState` and
+`Algorithm.run_eq_apply` say that `r` rounds compute a `LocalRule` of radius `r`, a function of
+the input window at offsets `-r, …, r`. `LocalRule.toAlgorithm_run` gives the converse by flooding.
+Lower bounds are therefore proved for rules and transferred to algorithms, and
+`LocalRule.andThen` lets an algorithm first compute a rule and then continue.
+
+[ColeVishkin.lean](../../Complexity/Computability/Distributed/OrientedCycle/ColeVishkin.lean)
+proves the Cole–Vishkin upper bound. `cvColor a b = 2 i + aᵢ`, for the least bit `i` where `a`
+and `b` differ, turns colours below `M` into colours below `2 ⌈log₂ M⌉`. `threeColoring_run`
+3-colours in `log* N + 3` rounds from any proper colouring with colours below `N`, and
+`fastThreeColoring_run` in `s + 3` rounds when `log* N ≤ 2 s`, performing two reduction steps per
+round. [Linial.lean](../../Complexity/Computability/Distributed/OrientedCycle/Linial.lean) proves
+Linial's lower bound `Algorithm.ColorsCycle.logStar_le_of_three`, `log* n ≤ 2t + 2`, by the
+Laurinharju–Suomela speedup lemma on shift colourings (`Cslib.IsShiftColoring` in
+`Complexity.Foundations.Combinatorics.ShiftColoring`). The general form
+`Algorithm.ColorsCycle.logStar_le` allows `c` colours: `log* n ≤ 2t + log* c`.
+`exists_colorsCycle_three_and_logStar_le` packages both directions: `⌈(log* n) / 2⌉ + 3` rounds
+suffice for `n ≠ 1`, and any algorithm needs `log* n ≤ 2t + 2`, so the optimum is known up to an
+additive `4`. `Nat.logStar` and `Nat.twoTower` live in `Complexity.Foundations.Data.Nat.LogStar`;
+use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values.
+[Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
+algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no
+proper colouring and that two rounds fail on the cycle of length `2 ↑↑ 6 + 1`.
+
+Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
+the CONGEST message-size bound and randomized LOCAL algorithms remain open; see `ROADMAP.md`.
+
 ## Known Limitations
 
 The surveyed lower bounds concern total Boolean functions or explicitly stated relation/promise domains. When applying a bound, identify whether it assumes both-party output, finite distributions, a bounded-round alphabet, or a gadget-size regime. No query/communication bound here supplies a native runtime without a separate compilation/resource theorem.

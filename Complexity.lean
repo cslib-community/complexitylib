@@ -1944,6 +1944,10 @@ public import Complexity.Computability.DecisionTree.Separable
 public import Complexity.Computability.DecisionTree.SpectralNorm
 public import Complexity.Computability.DecisionTree.Switching
 public import Complexity.Computability.DecisionTree.Symmetric
+public import Complexity.Computability.Distributed.OrientedCycle.Basic
+public import Complexity.Computability.Distributed.OrientedCycle.ColeVishkin
+public import Complexity.Computability.Distributed.OrientedCycle.Linial
+public import Complexity.Computability.Distributed.OrientedCycle.RoundComplexity
 public import Complexity.Computability.GenericRAM.Algebraic
 public import Complexity.Computability.GenericRAM.Defs
 public import Complexity.Computability.GenericRAM.Native
@@ -3788,6 +3792,7 @@ public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
 public import Complexity.Foundations.Combinatorics.SetPartition.Basic
 public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
+public import Complexity.Foundations.Combinatorics.ShiftColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
@@ -3966,6 +3971,7 @@ public import Complexity.Foundations.Data.Nat.Fields
 public import Complexity.Foundations.Data.Nat.IntermediateValue
 public import Complexity.Foundations.Data.Nat.Log
 public import Complexity.Foundations.Data.Nat.LogRpow
+public import Complexity.Foundations.Data.Nat.LogStar
 public import Complexity.Foundations.Data.Nat.Morton
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits
