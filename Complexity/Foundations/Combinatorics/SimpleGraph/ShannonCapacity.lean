@@ -81,7 +81,7 @@ theorem indepNum_le_shannonCapacity [Finite V] : (G.indepNum : ℝ) ≤ G.shanno
   simpa [indepNum_strongPow_one] using rpow_indepNum_strongPow_le_shannonCapacity (G := G) 0
 
 /-- To bound the Shannon capacity by `t` it suffices that `α(Gᵏ) ≤ tᵏ` for every `k ≥ 1`. -/
-theorem shannonCapacity_le [Finite V] {t : ℝ}
+theorem shannonCapacity_le {t : ℝ}
     (h : ∀ k : ℕ, ((G.strongPow (k + 1)).indepNum : ℝ) ≤ t ^ (k + 1)) :
     G.shannonCapacity ≤ t := by
   have ht : 0 ≤ t := by simpa using (Nat.cast_nonneg _).trans (h 0)
