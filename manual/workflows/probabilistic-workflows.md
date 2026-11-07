@@ -115,9 +115,10 @@ from `ULift.{2} Bool`. The [CHSH client](../../ComplexityTests/TwoProverGame.lea
 strategy from the one-fold repetition with `C = ∅`, which bounds every strategy of `chsh.pow 1`
 by `chsh.value`. Run `scripts/build.sh ComplexityTests.Embeddability ComplexityTests.TwoProverGame`.
 The next three sections supply the embedding premise at each free coordinate, through the
-coordinate embedding of Lemma 6.4:
+coordinate embedding of Lemma 6.4;
 [the next section](#model-the-coordinates-of-the-parallel-repetition-proof) sets up its random
-variables.
+variables. [Bound the value of a parallel repetition](#bound-the-value-of-a-parallel-repetition)
+states Lemma 6.4 as one theorem and proves the parallel repetition theorem.
 
 ## Model the coordinates of the parallel repetition proof
 
@@ -233,8 +234,51 @@ bounds of Corollary 5.3 for `J` through the second stage to `winProbOn_insert_le
 repetition with `C = ∅`, `S` is trivial and the first stage is exact, so they bound the probability
 of winning the coordinate by `G.value`. Run `scripts/build.sh ComplexityTests.RepetitionFactorization`.
 With the previous section, every free coordinate `j` thus supplies the premise of
-`winProbOn_insert_le` with error `ε j`. The library does not yet state Lemma 6.4 as one theorem,
-choose the coordinate of Lemma 6.5, or prove the parallel repetition bound
+`winProbOn_insert_le` with error `ε j`. [The next section](#bound-the-value-of-a-parallel-repetition)
+states Lemma 6.4 as one theorem, chooses the coordinate of Lemma 6.5 and proves the parallel
+repetition theorem.
+
+## Bound the value of a parallel repetition
+
+Import [ParallelRepetition.lean](../../Complexity/Computability/PCP/ParallelRepetition.lean) for
+Holenstein's parallel repetition theorem, his Theorem 2.5 [holenstein09][holenstein09]. Fix a game
+`G : TwoProverGame X Y A B` with `[Finite X] [Finite Y] [Fintype A] [Fintype B]` and a proof
+`hAB : 2 ≤ Fintype.card A * Fintype.card B`. Holenstein's Lemma 7.1 needs `log (|A| |B|) ≥ 1`;
+the hypothesis also makes both answer types nonempty. The strategies of `G.pow n` are arbitrary
+maps of question tuples to answer tuples, as in `TwoProverGame.pow` and `TwoProverGame.value`.
+
+- `G.value_pow_le hAB n` is Theorem 2.5:
+  `(G.pow n).value ≤ (1 - (1 - G.value) ^ 3 / 6000) ^ ((n : ℝ) / Real.logb 2 (Fintype.card A * Fintype.card B))`.
+- `G.value_pow_le_of_value_le hAB hv n` takes `hv : G.value ≤ 1 - ε` and gives the same bound with
+  `ε ^ 3` in place of `(1 - G.value) ^ 3`. Any real `ε` is allowed; for `ε ≤ 0` the bound is at
+  least `1`.
+- `G.winProb_pow_le hAB ha hb` is the bound for one pair of strategies `ha` and `hb`.
+- `G.exists_isEmbeddable_filter_questions ha hb hC` is Lemma 6.4, the composition of the two
+  stages of the previous sections. At every free coordinate `j : {i // i ∉ C}`, `G.questions` embeds
+  with error `ε j` in the law of `((x j, y j), (x, y))` under
+  `(G.pow n).questions.filter (G.winsOn ha hb C) hC`, the premise of `winProbOn_insert_le`, and
+  `∑ j, ε j ≤ 27 / √2 · √(#Cᶜ (#C ln (|A| |B|) + ln (1 / Pr[W_C])))`.
+- `G.exists_winProbOn_insert_le ha hb hCu` is Lemma 6.5, multiplied out. For `hCu : C ≠ univ`, it
+  gives `j ∉ C` with
+  `Pr[W_{insert j C}] ≤ Pr[W_C] (v(G) + 27 / √2 · √((#C ln (|A| |B|) + ln (1 / Pr[W_C])) / (n - #C)))`.
+  It needs no support witness: if `Pr[W_C] = 0`, any free coordinate works. It picks a coordinate
+  with at most the average error of Lemma 6.4, by `Finset.exists_le_of_sum_le`.
+
+The proof of Theorem 2.5 adds the coordinates of Lemma 6.5 one at a time, starting from `∅`, so
+that `p_m = Pr[W_{C_m}]` satisfies the recursion of `ParallelRepetition.le_rpow_of_step`, Holenstein's
+(7.6). The step has the constant `27 / √2 ≈ 19.09` and natural logarithms, where Holenstein's has
+`15` and bits; `ln x ≤ log₂ x` for `x ≥ 1` passes to `L = log₂ (|A| |B|)`, and the sharpened
+recursion accepts any constant up to `21`. The final bound has Holenstein's constant `6000`.
+
+To use the bound for concrete answer types, compute the exponent: rewrite the product of the
+cardinalities as a power of two and apply `Real.logb_rpow`. For CHSH, `|A| |B| = 4` and the
+exponent is `n / 2`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) proves that
+CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
+derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
+repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
+conditioned, which gives a coordinate won with probability at most `G.value`. Run
+`scripts/build.sh ComplexityTests.ParallelRepetition`. The library does not yet use
+the theorem for small-soundness Label Cover
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
