@@ -51,8 +51,7 @@ example : metricProjection K (1 / 2) = 1 / 2 :=
 
 /-- With constant gradient `1` and step size `1` from `0`, the first iterate is `Π (-1) = -1`. -/
 example : ogd (metricProjection K) (fun _ => 1) (fun _ _ => 1) 0 1 = -1 := by
-  rw [ogd_succ, ogd_zero]
-  norm_num
+  simp only [ogd_succ, ogd_zero, one_smul, zero_sub]
   exact metricProjection_eq_self K_nonempty K_isComplete K_convex (by norm_num)
 
 /-- The identity does not map into `[-1, 1]`. -/
@@ -119,5 +118,12 @@ example (c : ℕ → ℝ) (hc : ∀ t, c t ∈ K) {u : ℝ} (hu : u ∈ K) (T : 
   ogd_regret_le_log (f := fun t x => (x - c t) ^ 2 / 2) K_proj (by norm_num) one_pos
     (fun t x hx => K_diam x hx (c t) (hc t))
     (fun t x _ y _ => le_of_eq (by rw [real_inner, Real.norm_eq_abs, sq_abs]; ring)) hu T
+
+/-- The strongly convex hypotheses of the last example bound the diameter of `K` by
+`2 G / α = 4`. -/
+example (c : ℝ) (hc : c ∈ K) {x y : ℝ} (hx : x ∈ K) (hy : y ∈ K) : ‖x - y‖ ≤ 2 * 2 / 1 :=
+  norm_sub_le_of_strongConvex (f := fun x => (x - c) ^ 2 / 2) (g := fun x => x - c) one_pos
+    (fun x hx => K_diam x hx c hc)
+    (fun x _ y _ => le_of_eq (by rw [real_inner, Real.norm_eq_abs, sq_abs]; ring)) hx hy
 
 end ComplexityTests.OnlineGradientDescent

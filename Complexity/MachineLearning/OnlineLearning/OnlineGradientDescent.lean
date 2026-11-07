@@ -44,8 +44,9 @@ the subgradient inequality `f t x + ⟪grad t x, y - x⟫ ≤ f t y` for `x y �
 convexity with subgradients in [Hazan2022, §2.1]. For differentiable convex losses with
 gradients it follows from `ConvexOn.add_inner_le_of_hasGradientAt`. The strongly convex form
 `f t x + ⟪grad t x, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ f t y` follows likewise from
-`StrongConvexOn.add_inner_add_le_of_hasGradientAt`. `D` bounds the diameter of `K` and `G` the
-subgradient norms on `K`.
+`StrongConvexOn.add_inner_add_le_of_hasGradientAt` (or the `HasGradientWithinAt` variants,
+which allow boundary points). `D` bounds the diameter of `K` and `G` the subgradient norms on
+`K`.
 
 ## Main definitions
 
@@ -66,6 +67,8 @@ subgradient norms on `K`.
 * `Cslib.MachineLearning.OnlineLearning.OCO.ogd_regret_le_log`: for `α`-strongly convex losses
   and step sizes `1 / (α (t + 1))`, regret at most `G ^ 2 / (2 α) * (1 + log T)`
   [Hazan2022, Theorem 3.3].
+* `Cslib.MachineLearning.OnlineLearning.OCO.norm_sub_le_of_strongConvex`: the strongly convex
+  hypotheses force `diam K ≤ 2 G / α`.
 
 ## References
 
@@ -97,7 +100,9 @@ theorem isPythagoreanProjection_metricProjection {K : Set E} (hne : K.Nonempty)
 
 omit [InnerProductSpace ℝ E] in
 /-- Unconstrained gradient descent: the identity is a Pythagorean projection onto the whole
-space. -/
+space. Since `Set.univ` has no finite diameter (unless `E` is trivial), and the strongly convex
+hypotheses force a finite diameter (`norm_sub_le_of_strongConvex`), only the per-step bound
+`ogd_two_mul_inner_le` applies to it nontrivially. -/
 theorem isPythagoreanProjection_id : IsPythagoreanProjection (Set.univ : Set E) id :=
   ⟨fun _ => Set.mem_univ _, fun _ _ _ => le_rfl⟩
 
@@ -339,10 +344,36 @@ theorem ogd_regret_le_fixed {f : ℕ → E → ℝ} (hP : IsPythagoreanProjectio
   rw [e1] at h
   linarith
 
+/-- The strongly convex hypotheses bound the diameter: if `f` satisfies
+`f x + ⟪g x, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ f y` on `K` with `α > 0` and `‖g x‖ ≤ G` on `K`,
+then `‖x - y‖ ≤ 2 G / α` for `x y ∈ K`. -/
+theorem norm_sub_le_of_strongConvex {f : E → ℝ} {g : E → E} {G α : ℝ} (hα : 0 < α)
+    (hG : ∀ x ∈ K, ‖g x‖ ≤ G)
+    (hsc : ∀ x ∈ K, ∀ y ∈ K, f x + ⟪g x, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ f y)
+    {x y : E} (hx : x ∈ K) (hy : y ∈ K) : ‖x - y‖ ≤ 2 * G / α := by
+  have h1 := hsc x hx y hy
+  have h2 := hsc y hy x hx
+  rw [norm_sub_rev y x] at h1
+  -- `α ‖x - y‖ ^ 2 ≤ -⟪g x, y - x⟫ - ⟪g y, x - y⟫ ≤ 2 G ‖x - y‖`
+  have hlow : ∀ z ∈ K, ∀ w : E, -(G * ‖w‖) ≤ ⟪g z, w⟫ := fun z hz w =>
+    (neg_le_neg (mul_le_mul_of_nonneg_right (hG z hz) (norm_nonneg w))).trans
+      (abs_le.mp (abs_real_inner_le_norm (g z) w)).1
+  have hcx := hlow x hx (y - x)
+  have hcy := hlow y hy (x - y)
+  rw [norm_sub_rev y x] at hcx
+  have hsq : α * ‖x - y‖ ^ 2 ≤ 2 * G * ‖x - y‖ := by linarith
+  rw [le_div_iff₀ hα]
+  rcases (norm_nonneg (x - y)).eq_or_lt with h0 | hpos
+  · rw [← h0, zero_mul]
+    have := (norm_nonneg (g x)).trans (hG x hx)
+    linarith
+  · nlinarith
+
 /-- **Logarithmic regret for strongly convex losses** [Hazan2022, Theorem 3.3]: if every loss
 satisfies `f t x + ⟪grad t x, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ f t y` on `K` with `α > 0` and the
 subgradients have norm at most `G` on `K`, the step sizes `1 / (α (t + 1))` give regret at most
-`G ^ 2 / (2 α) * (1 + log T)` against every `u ∈ K`. No diameter bound is needed. -/
+`G ^ 2 / (2 α) * (1 + log T)` against every `u ∈ K`. No separate diameter hypothesis is assumed
+(these hypotheses already force `‖x - y‖ ≤ 2 G / α` on `K`, `norm_sub_le_of_strongConvex`). -/
 theorem ogd_regret_le_log {f : ℕ → E → ℝ} (hP : IsPythagoreanProjection K proj) (hx₀ : x₀ ∈ K)
     {G α : ℝ} (hα : 0 < α) (hG : ∀ t, ∀ x ∈ K, ‖grad t x‖ ≤ G)
     (hsc : ∀ t, ∀ x ∈ K, ∀ y ∈ K, f t x + ⟪grad t x, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ f t y)

@@ -51,7 +51,7 @@ namespace Cslib
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-- The metric projection onto `K`: a point of `K` nearest to `y`. It is well defined (and unique)
-when `K` is nonempty, complete and convex; otherwise it returns `y`. -/
+when `K` is nonempty, complete and convex; otherwise its value is unspecified. -/
 noncomputable def metricProjection (K : Set E) (y : E) : E :=
   open Classical in
   if h : ∃ x ∈ K, ‖y - x‖ = ⨅ w : K, ‖y - w‖ then h.choose else y
