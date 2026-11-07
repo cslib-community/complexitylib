@@ -18,8 +18,8 @@ digits of its magnitude (`Turing.MultiTapeTM.encNat`), least significant first. 
 not framed: the sign is a single leading bit, the digits are the rest of the word, and the
 magnitude is the tail of the code, so the binary natural arithmetic applies to it directly. A
 negative integer has a nonzero magnitude, so zero has the single code `[false]`. An integer `z`
-occupies `Nat.size z.natAbs + 1` bits. The unary integers `Turing.MultiTapeTM.encInt` index tape
-positions; this encoding carries values whose magnitude is exponential in their length.
+occupies `Nat.size z.natAbs + 1` bits. The unary integers `Turing.MultiTapeTM.encIntUnary` index
+tape positions; this encoding carries values whose magnitude is exponential in their length.
 
 ## Main definitions
 

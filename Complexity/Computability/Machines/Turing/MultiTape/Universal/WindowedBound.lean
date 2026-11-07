@@ -93,7 +93,7 @@ theorem length_eWin_le {D B h L : ℕ} {w : Win} (hw : WInv D B h L w) :
   obtain ⟨q, ts⟩ := w
   have h₁ := length_eSym_le hw.state
   have h₂ := length_encList_le eTape ts (b := 2 * h + 4 + 2 * L * (2 * B + 3)) fun t ht => by
-    have hi := length_encInt_le t.head
+    have hi := length_encIntUnary_le t.head
     have hl := length_cells_le fun o ho => hw.val t ht o (List.mem_append_left t.right ho)
     have hr := length_cells_le fun o ho => hw.val t ht o (List.mem_append_right t.left ho)
     have hh := hw.head t ht
