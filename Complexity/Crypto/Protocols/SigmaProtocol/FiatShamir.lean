@@ -214,15 +214,16 @@ variable [DecidableEq C]
 
 /-- **The one-way adversary** built from a forger making at most `Qs` signing and `Qro` hash
 calls: draw one simulated transcript per call, fork the forking program with the `Qro + 1`
-answers of its hash oracle, and extract a witness from the two forgeries. -/
-noncomputable def reduction [Nonempty X] (P : SigmaProtocol X Y T C Z)
+answers of its hash oracle, and extract a witness from the two forgeries. A failed fork returns
+the supplied `fallback`; this value need not satisfy the witness relation. -/
+noncomputable def reduction (P : SigmaProtocol X Y T C Z)
     (simulate : Y → C → PMF (T × Z)) (extract : Y → T → C → Z → C → Z → X)
-    (A : Forger Y M (T × Z) Query C) (Qs Qro : ℕ) (y : Y) : PMF X :=
+    (fallback : X) (A : Forger Y M (T × Z) Query C) (Qs Qro : ℕ) (y : Y) : PMF X :=
   (Forking.fork (coins simulate A (Qs + Qro) y)
     (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) (forkingProgram hashPoint P A))).map fun
       result =>
       match result with
-      | none => Classical.arbitrary X
+      | none => fallback
       | some (_, out, out') =>
         let (_, _, (_, t), c, z) := out.1
         let (_, _, _, c', z') := out'.1
@@ -818,14 +819,15 @@ variable [DecidableEq C]
 /-- **Extraction from a successful fork.** Both runs of a successful fork name the same query,
 for the same point, answered with two different challenges, and both forgeries are accepting;
 special soundness turns them into a witness. -/
-private theorem fork_le_oneWayGame [Nonempty X] {P : SigmaProtocol X Y T C Z}
+private theorem fork_le_oneWayGame {P : SigmaProtocol X Y T C Z}
     {keyGen : PMF (X × Y)} {R : X → Y → Prop} [∀ x y, Decidable (R x y)]
     {extract : Y → T → C → Z → C → Z → X} (hsound : P.SpecialSoundOn keyGen R extract)
-    (simulate : Y → C → PMF (T × Z)) (A : Forger Y M (T × Z) Query C) (Qs Qro : ℕ) :
+    (simulate : Y → C → PMF (T × Z)) (fallback : X)
+    (A : Forger Y M (T × Z) Query C) (Qs Qro : ℕ) :
     (Forking.fork (keyGen.bind fun key => coins simulate A (Qs + Qro) key.2)
         (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) (forkingProgram hashPoint P A))).map
           Option.isSome true ≤
-      oneWayGame keyGen R (reduction hashPoint P simulate extract A Qs Qro) true := by
+      oneWayGame keyGen R (reduction hashPoint P simulate extract fallback A Qs Qro) true := by
   have hfork : Forking.fork (keyGen.bind fun key => coins simulate A (Qs + Qro) key.2)
       (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) (forkingProgram hashPoint P A)) =
       keyGen.bind fun key => Forking.fork (coins simulate A (Qs + Qro) key.2)
@@ -917,19 +919,21 @@ signing calls and `Qro` hash calls wins the random-oracle EUF-CMA experiment wit
 most `Qs · (Qs + Qro) · δ + (Qro + 1) / N + √((Qro + 1) · ε')`, where `N` is the number of
 challenges and `ε'` is the probability that the reduction outputs a witness for a generated
 statement. The signer and final verifier use `hashPoint (m, t)`, while `Qro` counts all adversary
-hash calls, including queries outside the embedding's image. -/
-theorem succProbability_eufCmaGame_le [Nonempty X] [Nonempty T] [Nonempty Z] [DecidableEq C]
+hash calls, including queries outside the embedding's image. The bound holds for every supplied
+failure output `fallback`; no correctness assumption is made about that output. -/
+theorem succProbability_eufCmaGame_le [Nonempty T] [Nonempty Z] [DecidableEq C]
     {P : SigmaProtocol X Y T C Z} {keyGen : PMF (X × Y)} {R : X → Y → Prop}
     [∀ x y, Decidable (R x y)] {extract : Y → T → C → Z → C → Z → X}
     {simulate : Y → C → PMF (T × Z)} {δ : ℝ≥0}
     (hkey : ∀ key ∈ keyGen.support, R key.1 key.2) (hsound : P.SpecialSoundOn keyGen R extract)
     (hzk : P.SpecialHVZK R simulate)
     (hcommit : ∀ key ∈ keyGen.support, ∀ t, (P.commit key.1 key.2).map Prod.fst t ≤ δ)
-    (A : Forger Y M (T × Z) Query C) {Qs Qro : ℕ} (hA : A.CallBounded Qs Qro) :
+    (fallback : X) (A : Forger Y M (T × Z) Query C)
+    {Qs Qro : ℕ} (hA : A.CallBounded Qs Qro) :
     (Game.succProbability (eufCmaGame (fiatShamir hashPoint P keyGen) A) : ℝ) ≤
       Qs * (Qs + Qro) * δ + (Qro + 1) / Fintype.card C +
         √((Qro + 1) * Game.succProbability
-          (oneWayGame keyGen R (reduction hashPoint P simulate extract A Qs Qro))) := by
+          (oneWayGame keyGen R (reduction hashPoint P simulate extract fallback A Qs Qro))) := by
   classical
   set first := keyGen.bind fun key => coins simulate A (Qs + Qro) key.2 with hfirst
   have hA' : eufCmaGame (fiatShamir hashPoint P keyGen) A true ≤
@@ -949,7 +953,7 @@ theorem succProbability_eufCmaGame_le [Nonempty X] [Nonempty T] [Nonempty Z] [De
     Probability.PMF.bind_apply_mono_on_support _ _ fun s _ => map_run_le_accept hashPoint P A hQro s
   have hC := le_add_sqrt_fork first (forkingProgram hashPoint P A) (Classical.arbitrary C)
     (fun s => isQueryBounded_forkingProgram hashPoint P A hQro s)
-  have hD := (fork_le_oneWayGame (P := P) hashPoint) hsound simulate A Qs Qro
+  have hD := (fork_le_oneWayGame (P := P) hashPoint) hsound simulate fallback A Qs Qro
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hC
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
   have hK : (((Qs * (Qs + Qro) : ℕ) : ENNReal) * δ).toReal = Qs * (Qs + Qro) * δ := by

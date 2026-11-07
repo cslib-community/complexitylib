@@ -68,6 +68,8 @@ Complexitylib deliberately has both output-uncharged and output-charged APIs:
 
 The definitions and the documented reason for the output charge are in [ResourceBounds.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/ResourceBounds.lean#L88). The charge supports composition when returned values must subsequently occupy work tapes. It matters below linear space: copying an arbitrary input is a logarithmic-workspace transduction but cannot satisfy `ComputableInSpace` with a logarithmic output charge. For decision problems, one output bit makes the distinction asymptotically immaterial. The intended public direction uses plain computability; tidy cleanup and head rewinding remain in machine-level construction proofs and some transitional interfaces at this snapshot.
 
+[Degree.BitString](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/Degree/BitString.lean) certifies linear conversion between raw words (`encBits`) and the existing framed Boolean-list encoding (`encList encBool`). Its [Cut module](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/Degree/BitString/Cut.lean) composes those streaming conversions with the existing unary list cutters. `ComputableInDegree.bitsTake` and `bitsDrop` charge the complete raw word and unary count, including empty words and counts beyond their length. Existing plain polynomial wrappers now reuse these stronger certificates. The [adaptive-game tape client](../../ComplexityTests/Crypto/LeveledTapePartition.lean) certifies its actual choose/encrypt/guess partition in time and output-charged workspace `O(tape.length + chooseCoins + encCoins + 1)`; callback execution and the complete reduction clock remain separate obligations.
+
 `FTIME` is the corresponding function-time class with explicit input and output encodings and affine time `c₁ t(n) + c₂`; its workspace has an arbitrary length-dependent bound. It adds no output charge beyond the time required to write the output. [FTIME](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/FunctionTime.lean#L46) `DTIME`, `NTIME`, `BPTIME`, `DSPACE` and `NSPACE` attach affine bounds to the relevant machine predicates; `P`, `NP`, `BPP`, `L`, `NL`, `PSPACE`, `NPSPACE`, `E`, `NE`, `EXP` and `NEXP` derive familiar bound families.
 
 ## Fair-coin efficiency
@@ -85,6 +87,15 @@ Randomized logarithmic space is defined directly over PTMs. Workspace is bounded
 The source of [MachinePrograms.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/MachinePrograms.lean#L24) distinguishes two nondeterministic successors, a stuck state, and a halted self-loop; it also checks channel isolation and fair-coin semantics. [CountingMachine.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/CountingMachine.lean#L25) contains repeated equal accepting actions and checks three accepting versus one rejecting branch, first-halt padding stability, and malformed certificates. [Alternation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Alternation.lean#L1) uses the same two choices with existential and universal polarity and obtains different acceptance outcomes. These are inspected regression witnesses, not test executions performed during the initial source review.
 
 ## Composing polynomial resource envelopes
+
+For a polynomial-time map on pairs, import
+[`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Families`](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Families.lean).
+Given `hg : ComputableInPolyTime g (encPair encA encB) encC` and polynomial bounds `ha`, `hb`
+on the encoded lengths of two input families, `hg.polynomiallyBounded_length_prod ha hb`
+bounds the encoded output family. The families themselves need not be computable. The
+[Levin](../../Complexity/Crypto/Computational/ZeroKnowledge/Levin.lean) and
+[amplification](../../Complexity/Crypto/Computational/ZeroKnowledge/Amplification.lean)
+proofs use this rule to transport witness families through the same deterministic reduction.
 
 Import
 [`ResourceBounds.Polynomial.Automation`](../../Complexity/Computability/Machines/Turing/MultiTape/ResourceBounds/Polynomial/Automation.lean)
@@ -109,6 +120,13 @@ this polynomial envelope. The
 [native packet resource proofs](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
 combine polynomial preprocessing/postprocessing this way while retaining their separate
 exponential time and polynomial space conclusions.
+
+Pure lookup in `frame u ++ v` uses the small
+[`Encodings.Frame.Lookup`](../../Complexity/Computability/Machines/Turing/MultiTape/Encodings/Frame/Lookup.lean)
+module. `getElem?_frame_append` identifies each marker and data bit;
+`getElem?_frame_append_boundary` identifies the terminator and suffix, including out-of-bounds
+lookup. Both the unary take/drop and zip-transducer machine proofs use these list laws, so
+clients can reuse them without importing either machine implementation.
 
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib

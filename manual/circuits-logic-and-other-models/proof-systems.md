@@ -8,11 +8,51 @@ Complexitylib represents propositional syntax as concrete finite data and distin
 
 The [ClauseSet](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/ClauseSet/Basic.lean#L55) representation instead uses finite sets of finite sets of literals, so order and repetitions disappear. Its occurrence measure counts clauses mentioning a variable. List/set conversions preserve satisfying assignments but need separate size/occurrence lemmas. This is the representation used by the sparsification development.
 
+For ordinary disjunction with exactly three distinct variables per clause, import
+`Complexity.Computability.Complexity.Problems.EUThreeSAT` and use `EUThreeSAT_npComplete`.
+The bounded-occurrence variant behaves differently: `EUThreeSATThree.mem_P` checks syntax,
+because every valid formula is satisfiable. For not-all-equal semantics, import
+`Complexity.Computability.Complexity.Problems.NAEThreeSAT`. Here `CNF.evalNAE` requires a true
+and a false literal in each clause. **NAE EU3SAT** has exactly three distinct variables per clause
+and is proved NP-complete by `NAEEUThreeSAT_npComplete`. **NAE3SAT** permits width at most three;
+**NAE3SAT-3** also bounds total occurrences per variable by three, and is proved NP-complete by
+`NAEThreeSATThree_npComplete`. The latter permits binary clauses. See the
+[checked examples](../../ComplexityTests/NAEAndEUThreeSAT.lean) for the complete import context,
+satisfiable and unsatisfiable instances, and applications of these endpoints. Run
+`scripts/build.sh ComplexityTests.NAEAndEUThreeSAT` from the repository root to check them;
+successful compilation confirms the displayed theorem types and examples.
+
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
 [Constraint](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label plus a variable list. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface.
 
 [QBF](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/QBF.lean#L76) uses named-variable Boolean quantifiers. Evaluating an existential or universal binder updates the assignment with both possible values and ORs or ANDs the results. Arithmetization and native/interactive-proof completeness clients live in their corresponding sections. This formula syntax does not by itself assert a resource bound for evaluation.
+
+## Majority preservation and Boolean constraint languages
+
+A polymorphism combines satisfying tuples coordinatewise and preserves the relation. Import
+[`Complexity.Logics.Polymorphism`](../../Complexity/Logics/Polymorphism.lean) for
+`Cslib.Logic.IsPolymorphism`. Its preservation rules cover conjunction, substitution (including
+repeated variables), existential projection, projections and composition. The operation's index
+type may be empty: a nullary constant preserves a relation exactly when its constant tuple belongs
+to that relation. This differs from vacuous preservation of an empty relation by an operation
+with positive arity.
+
+Import [`Complexity.Logics.Propositional.CNF.Majority`](../../Complexity/Logics/Propositional/CNF/Majority.lean)
+for `Cslib.Logic.PL.isPolymorphism_majority_iff_exists_twoCNF`. For any finite coordinate type
+`V`, a relation `R : Set (V → Bool)` is preserved by `Cslib.majority 3` exactly when some
+`CNF V` defines it using clauses of width at most two. The definition has no auxiliary variables
+and agrees on every assignment. Empty relations and nullary relations are included: an empty
+clause defines falsity and the empty CNF defines truth. The proof uses the existing coordinatewise
+median `Cslib.BitString.median`.
+
+The [checked examples](../../ComplexityTests/MajorityCNF.lean) give a signed 2CNF definition of
+equality, an existential projection, a ternary-disjunction counterexample and the nullary edge
+cases. This is the bijunctive structural equivalence used in Schaefer's Boolean dichotomy.
+It does not assert the full complexity classification or a polynomial-time certificate for
+constructing the defining formula. The remaining Boolean theorem is tracked in
+[#2822](https://github.com/cslib-community/complexitylib/issues/2822); symmetric and larger-domain
+dichotomies are outside that task.
 
 ## Three resolution representations
 

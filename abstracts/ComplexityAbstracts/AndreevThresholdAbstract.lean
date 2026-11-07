@@ -21,13 +21,14 @@ Andreev's function on a `1 / 2 + ε` fraction of inputs.
 
 This development formalizes four improvements over the bounds of Kane and Williams:
 
-**Exact quadratic upper bound (`exact_upper_bound`).** By polarizing each Fourier parity term
-`2 (-1)^(2^b) X_S (-1)^(t_S) = φ(X_S + t_S) + φ(X_S - t_S)` (where `(-1)^(2^b) = 1` for `b > 0`)
-via the alternating linear function `φ(u) = (-1)^u u` and telescoping `φ` into threshold indicators
-over its exact integer range, Andreev's function is computed exactly by a depth-two threshold
-circuit with `4 * 4 ^ b + b * m * 2 ^ b` bottom gates and one top gate (`(5 / 4) n ^ 2 + 1` gates at
-`2 ^ b = b * m`), bottom weights in `{-2, -1, 0, 1, 2}`, and odd integer top weights of absolute
-value below `2 n`.
+**Exact quadratic upper bound (`exact_upper_bound`).** With the alternating linear function
+`φ(u) = (-1)^u u`, each Fourier parity term satisfies the shift identity
+`X_S (-1)^(t_S) = (-1)^(2^b) φ(X_S + t_S) - φ(t_S)` (where `(-1)^(2^b) = 1` for `b > 0`, so
+`X_S` is even). Telescoping `φ(X_S + t_S)` over its range `[-2 ^ b, 2 ^ b + #S m]` and `φ(t_S)`
+over `[0, #S m]` into threshold indicators, Andreev's function is computed exactly by a depth-two
+threshold circuit with `2 * 4 ^ b + b * m * 2 ^ b` bottom gates and one top gate
+(`(3 / 4) n ^ 2 + 1` gates at `2 ^ b = b * m`), bottom weights in `{-2, -1, 0, 1, 2}`, and odd
+integer top weights of absolute value below `2 n`.
 
 **Windowed high-agreement upper bound (`high_agreement_upper_bound`).** Truncating each unary
 threshold ladder to a window of half-width `B ≥ 3 t + 1 / 2` around its expected center reduces
@@ -59,6 +60,21 @@ These are original improvements to the Kane–Williams bounds, using the repaire
 lemmas and an explicit simultaneous Hoeffding tail. The displayed theorems are finite inequalities;
 no asymptotic-limit theorem is asserted here.
 
+**Approximate majorities and top fan-in (`approx_majority_gate_lower_bound`,
+`approx_majority_wire_lower_bound`, `majority_vote_gate_lower_bound`,
+`majority_vote_wire_lower_bound`).** If on every input at least `t (1 / 2 + ε)` of `t` depth-two
+circuits output Andreev's function, averaging gives one of them with agreement `1 / 2 + ε`, so the
+bounds above hold with any common bound `s` on the members' gate or active wire counts. A majority
+vote over the `t` circuits computes Andreev's function when on every input strictly more than
+`t / 2` of them are correct; this is a `1 / (2 t)`-approximate majority. Hence, for
+`3 (b + 2) / sqrt(2 ^ b) ≤ 1 / (2 t)`, `m · 2^b ≤ 576 (b + 2) · t² · s · sqrt(n)` gates and
+`m · sqrt(m) · 2^b ≤ 576 (b + 2) · t² · s` wires. At `2 ^ b = b * m` this is the top fan-in bound
+`t = Omega(n^(3/4) / (log n · sqrt(s)))` for a majority of `THR ∘ THR` circuits with at most `s`
+gates each (Kane–Williams, Corollary 1.1: `Omega~(n^(1/2) / s^(1/3))`), unless already
+`t > sqrt(2 ^ b) / (6 (b + 2))`. The vote is stated through its number of correct members, not as
+a depth-three circuit, and the top gate is not counted in `s`; for odd `t`, a strict-majority vote
+of the outputs computing Andreev's function satisfies this hypothesis.
+
 **Model.** Circuits are straight-line programs of upstream `Cslib.Circuits.Circuit` with one output
 over `Cslib.Circuits.Boolean.WeightedThreshold.signature`. Each gate `Op` has an arity `m`, a real
 weight vector `Fin m → ℝ`, and a real threshold, outputting `true` when the weighted sum of its
@@ -71,8 +87,8 @@ elementary threshold-gate signature and circuit-depth recursion are the two allo
 
 * [D. M. Kane and R. Williams, *Super-Linear Gate and Super-Quadratic Wire Lower Bounds for
   Depth-Two and Depth-Three Threshold Circuits*][KaneWilliams2016], STOC 2016 /
-  `arXiv:1511.07860v1`: Theorem 1.1, Lemma 1.1, Theorem 1.2, Theorem 2.3 (Section 2), Lemma 3.1,
-  Section 5
+  `arXiv:1511.07860v1`: Theorem 1.1, Corollary 1.1, Lemma 1.1, Theorem 1.2, Theorem 2.3
+  (Section 2), Lemma 3.1, Section 5
 * [A. E. Andreev, *On a Method for Obtaining More Than Quadratic Effective Lower Bounds for the
   Complexity of π-Schemes*][Andreev1987]
 * [P. Erdős, *On a lemma of Littlewood and Offord*][Erdos1945]
@@ -122,13 +138,13 @@ def andreev (b m : ℕ) (x : Fin (2 ^ b + b * m) → Bool) : Bool :=
   tableInput x (tableIndex b fun j => parity m (blockInput x j))
 
 /-- **Exact quadratic upper bound.** For all `b, m`, Andreev's function on `n = 2^b + b*m` bits is
-computed by a depth-two weighted threshold circuit with `4 * 4^b + b * m * 2^b + 1` gates
-(`4 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
+computed by a depth-two weighted threshold circuit with `2 * 4^b + b * m * 2^b + 1` gates
+(`2 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
 theorem exact_upper_bound (b m : ℕ) :
     ∃ c : ThrCircuit (2 ^ b + b * m),
       c.depth ≤ 2 ∧
-      c.size = 4 * 4 ^ b + b * m * 2 ^ b + 1 ∧
-      wireCount c ≤ (4 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
+      c.size = 2 * 4 ^ b + b * m * 2 ^ b + 1 ∧
+      wireCount c ≤ (2 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
       (∀ x, evaluate c x = andreev b m x) :=
   AndreevThresholdBridge.exact_upper_bound b m
 
@@ -224,7 +240,55 @@ theorem exact_wire_lower_bound {b m : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b)
       144 * ((b : ℝ) + 2) * (wireCount c : ℝ) :=
   AndreevThresholdBridge.exact_wire_lower_bound hm hmN hb c hd hcomp
 
-/-- info: abstract audit passed for `ComplexityAbstracts.AndreevThresholdAbstract`: 18 root
+/-- **Approximate majority, gates.** If on every input at least `t (1 / 2 + ε)` of the `t`
+depth-two circuits `C i`, each with at most `s` gates, output Andreev's function, then the explicit
+gate bound holds with `s` in place of the circuit size. -/
+theorem approx_majority_gate_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b) (ht : 0 < t)
+    {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (C : Fin t → ThrCircuit (2 ^ b + b * m)) (hd : ∀ i, (C i).depth ≤ 2)
+    (s : ℕ) (hs : ∀ i, (C i).size ≤ s)
+    (hmaj : ∀ x, (t : ℝ) * (1 / 2 + ε) ≤
+      ((Finset.univ.filter fun i => evaluate (C i) x = andreev b m x).card : ℝ)) :
+    (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
+      144 * ((b : ℝ) + 2) * (s : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
+  AndreevThresholdBridge.approx_majority_gate_lower_bound hm hmN ht hε C hd s hs hmaj
+
+/-- **Approximate majority, wires.** If on every input at least `t (1 / 2 + ε)` of the `t`
+depth-two circuits `C i`, each with at most `s` active wires, output Andreev's function, then the
+explicit wire bound holds with `s` in place of the wire count. -/
+theorem approx_majority_wire_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b) (ht : 0 < t)
+    {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (C : Fin t → ThrCircuit (2 ^ b + b * m)) (hd : ∀ i, (C i).depth ≤ 2)
+    (s : ℕ) (hs : ∀ i, wireCount (C i) ≤ s)
+    (hmaj : ∀ x, (t : ℝ) * (1 / 2 + ε) ≤
+      ((Finset.univ.filter fun i => evaluate (C i) x = andreev b m x).card : ℝ)) :
+    (m : ℝ) * Real.sqrt (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤ 144 * ((b : ℝ) + 2) * (s : ℝ) :=
+  AndreevThresholdBridge.approx_majority_wire_lower_bound hm hmN ht hε C hd s hs hmaj
+
+/-- **Top fan-in of a majority vote, gates.** If on every input strictly more than half of the `t`
+depth-two circuits `C i`, each with at most `s` gates, output Andreev's function, and
+`3 (b + 2) / sqrt(2 ^ b) ≤ 1 / (2 t)`, then `m · 2^b ≤ 576 (b + 2) t² s sqrt(n)`. -/
+theorem majority_vote_gate_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b)
+    (hb : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ 1 / (2 * t))
+    (C : Fin t → ThrCircuit (2 ^ b + b * m)) (hd : ∀ i, (C i).depth ≤ 2)
+    (s : ℕ) (hs : ∀ i, (C i).size ≤ s)
+    (hvote : ∀ x, t < 2 * (Finset.univ.filter fun i => evaluate (C i) x = andreev b m x).card) :
+    (m : ℝ) * (2 : ℝ) ^ b ≤
+      576 * ((b : ℝ) + 2) * (t : ℝ) ^ 2 * (s : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
+  AndreevThresholdBridge.majority_vote_gate_lower_bound hm hmN hb C hd s hs hvote
+
+/-- **Top fan-in of a majority vote, wires.** If on every input strictly more than half of the `t`
+depth-two circuits `C i`, each with at most `s` active wires, output Andreev's function, and
+`3 (b + 2) / sqrt(2 ^ b) ≤ 1 / (2 t)`, then `m · sqrt(m) · 2^b ≤ 576 (b + 2) t² s`. -/
+theorem majority_vote_wire_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b)
+    (hb : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ 1 / (2 * t))
+    (C : Fin t → ThrCircuit (2 ^ b + b * m)) (hd : ∀ i, (C i).depth ≤ 2)
+    (s : ℕ) (hs : ∀ i, wireCount (C i) ≤ s)
+    (hvote : ∀ x, t < 2 * (Finset.univ.filter fun i => evaluate (C i) x = andreev b m x).card) :
+    (m : ℝ) * Real.sqrt (m : ℝ) * (2 : ℝ) ^ b ≤ 576 * ((b : ℝ) + 2) * (t : ℝ) ^ 2 * (s : ℝ) :=
+  AndreevThresholdBridge.majority_vote_wire_lower_bound hm hmN hb C hd s hs hvote
+
+/-- info: abstract audit passed for `ComplexityAbstracts.AndreevThresholdAbstract`: 22 root
 declarations -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.AndreevThresholdAbstract allowing [

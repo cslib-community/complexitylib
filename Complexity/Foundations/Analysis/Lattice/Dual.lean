@@ -19,6 +19,7 @@ public import Mathlib.LinearAlgebra.BilinearForm.DualLattice
 
 * `ZLattice.discreteTopology_dualSubmodule`: the existing inner-product dual of a full-rank
   discrete lattice is discrete. This lets lattice convergence results apply to Fourier samples.
+* `ZLattice.isZLattice_dualSubmodule`: the same dual spans the ambient real space.
 
 ## References
 
@@ -46,5 +47,18 @@ theorem discreteTopology_dualSubmodule :
   rw [← b.ofZLatticeBasis_span ℝ,
     LinearMap.BilinForm.dualSubmodule_span_of_basis (innerₗ E) hB]
   infer_instance
+
+/-- The inner-product dual of a full-rank discrete lattice spans the ambient real space. -/
+theorem isZLattice_dualSubmodule
+    [DiscreteTopology (LinearMap.BilinForm.dualSubmodule (innerₗ E) L)] :
+    IsZLattice ℝ (LinearMap.BilinForm.dualSubmodule (innerₗ E) L) := by
+  classical
+  let b := Free.chooseBasis ℤ L
+  have hB : (innerₗ E).Nondegenerate := by
+    constructor <;> intro x hx <;> exact inner_self_eq_zero.mp (hx x)
+  constructor
+  rw [← b.ofZLatticeBasis_span ℝ,
+    LinearMap.BilinForm.dualSubmodule_span_of_basis (innerₗ E) hB]
+  exact ZSpan.span_top _
 
 end ZLattice
