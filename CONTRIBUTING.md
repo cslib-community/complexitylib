@@ -95,6 +95,21 @@ Two places keep projections, as standing exceptions:
   ([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Use projections there,
   or bind the hypothesis in the theorem's own signature.
 
+**Readable encodings** ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)).
+An encoding is part of what a statement claims, so statements show it; they should not make the
+reader parse the same nested encoding again and again. Name a compound encoding that recurs in a
+module's statements with a documented, reducible `abbrev`, give domain encodings their own names,
+declare field-tuple structure encodings with `enc_structure`, and keep unary versus binary,
+representations and framing visible in the name or its docstring. For example, the query-machine
+certificates take
+`ComputableInSpace M.next (encStateRead encS) encS fun p => (encStateRead encS p).length`
+rather than restating `encPair encS (encOption encBool)` twice; `encStateRead` is documented as a
+state paired with the bit read, with the state framed. Because the name is reducible, the
+elaborated statement is unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas see
+through it. New and changed statements follow the exact rules in
+[AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint checks the
+repetition rule. Abstracts stay fully spelled out.
+
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
 

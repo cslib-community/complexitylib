@@ -391,6 +391,7 @@ not need a particular agent installation.
 Read the actual definitions and statements. For substantive mathematics, explain briefly what is
 proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
+Check new and changed statements against [Encodings in statements](#encodings-in-statements).
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
 
@@ -458,6 +459,46 @@ express the intended mathematics; explain a non-obvious decision to introduce a 
 Syntactic similarity is a prompt to inspect reuse, not proof that models should be identified.
 Generalization should improve concrete clients without obscuring semantics or making inference
 and usage harder.
+
+### Encodings in statements
+
+An encoding is part of what a statement claims, so statements show every encoding; but a reader
+should not have to parse the same nested encoding again and again. New declarations, and
+declarations whose statements change, follow these rules. Existing code is brought into line by
+a tracked sweep ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)), and the
+encoding-readability lint checks rule 1 against a per-module baseline that may only fall.
+
+1. **Name repeated compound encodings.** A *compound encoding* is a term of type
+   `α ↪ List Bool` in which one of the generic combinators `encPair`, `encList`, `encOption`,
+   `encSum`, `encFramed`, `encPi` or `encDPi` is applied to another application of one of them,
+   such as `encPair encS (encOption encBool)`. When the same compound encoding, up to the names of
+   local variables, occurs in the types of three or more public declarations of a module, give it
+   a named `abbrev` and write the name in those statements. Occurrences inside larger terms count,
+   including bounds that restate an input encoding, such as
+   `fun p => (encPair encS (encOption encBool) p).length`. The varying encodings become the
+   `abbrev`'s parameters. Define it in that module, or in the lowest module its users share, and
+   once a name exists, use it instead of restating its body.
+2. **Document the layout.** The `abbrev`'s docstring says what is encoded and how: the order of
+   the parts, which parts are framed, and any tag bits. For example, `QueryMachine.encStateRead`
+   is "a state paired with the bit read; the state is framed".
+3. **Keep it reducible.** Use `abbrev`, not `def`: the elaborated statement stays the same, so
+   `enc_len`, `fun_prop`, instance search and the combinators' simp lemmas such as
+   `length_encPair` see through the name, and clients that spell the body out still match.
+4. **Name domain encodings.** Encode a mathematical object (a formula, graph, circuit or problem
+   instance) by a named definition beside its type, not by a compound spelled out inside a larger
+   encoding, even where it occurs only once.
+5. **Declare structure encodings with `enc_structure`.** When a structure is encoded as the
+   tuple of its fields in declaration order, declare the encoding with `enc_structure`, which
+   generates the embedding, its `_apply` equation and its `fun_prop` certificates, rather than
+   writing a `.trans` embedding and proving the certificates by hand. The
+   [Operator's Manual](manual/workflows/choosing-models.md#write-the-contract-before-the-proof)
+   shows the declaration and what it generates.
+6. **Show meaning-bearing choices.** Unary versus binary numbers, the representation of graphs
+   and matrices, and framing that changes a length bound stay visible: the name or the first line
+   of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.
+7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
+   the `enc%` proposal (#1830) is parked. Curated abstracts stay fully spelled out: they write each
+   encoding in place or define it in the abstract itself.
 
 ## Curated formal abstracts
 
