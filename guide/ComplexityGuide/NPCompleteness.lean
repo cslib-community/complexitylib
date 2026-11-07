@@ -25,6 +25,7 @@ import Complexity.Computability.Complexity.Problems.VertexCover
 import Complexity.Computability.Complexity.Problems.CSP.Constant
 import Complexity.Computability.Complexity.Problems.CSP.Majority
 import Complexity.Computability.Complexity.Problems.CSP.Hardness
+import Complexity.Computability.Complexity.Problems.CSP.Schaefer
 import Complexity.Computability.Complexity.Problems.HornSAT
 import Complexity.Computability.Complexity.Problems.XORSAT
 import Complexity.Computability.PolyTime.CSP.Gadget
@@ -346,10 +347,11 @@ results by problem, with the module to import for each.
 
 # Boolean Constraint Languages
 
-Schaefer's Boolean dichotomy classifies fixed finite constraint languages over
-`Bool`; the constraints may have any fixed arity. The full six-case complexity
-classification is still open in this library. One structural case is proved:
-majority preservation is equivalent to definability by clauses of width at most
+Schaefer's full Boolean dichotomy is proved for fixed finite constraint languages
+over `Bool`, with arbitrary fixed relation arities and explicit binary instance
+encoding. The six common-polymorphism cases are native P; otherwise the problem
+is native NP-complete. Its structural ingredients include majority preservation
+being equivalent to definability by clauses of width at most
 two, with no auxiliary variables
 ({name}`Cslib.Logic.PL.isPolymorphism_majority_iff_exists_twoCNF`).
 
@@ -436,7 +438,22 @@ characterizes ternary parity preservation by affine equations.
 {name}`XORSAT.satisfiable_mem_P` certifies ordinary sparse XOR-SAT with binary
 variable names; repeated variables cancel modulo two. The dense Gaussian
 elimination algorithm and sparse compiler both have native certificates.
-These solvers still need fixed-language CSP compilers to finish the three cases.
+Their fixed-language compilers give {name}`CSPSAT.mem_P_of_and`,
+{name}`CSPSAT.mem_P_of_or` and {name}`CSPSAT.mem_P_of_parity`, including repeated
+scope variables, sparse binary labels and empty/nullary relations. Malformed
+scopes are rejected before instantiation.
+
+{name}`CSPSAT.schaefer_dichotomy` assembles all six cases and the hard branch.
+Its unconditional corollary uses no assumption separating P and NP:
+
+```lean
+open Cslib.Logic.PL in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) :
+    CSPSAT arity sem ∈ P (encCSP encRel encNat) ∨
+      NPComplete (encCSP encRel encNat) (CSPSAT arity sem) :=
+  CSPSAT.mem_P_or_npComplete encRel arity sem
+```
 
 # Proving a Problem NP-Complete
 %%%
