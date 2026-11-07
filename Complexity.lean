@@ -1708,6 +1708,7 @@ public import Complexity.Computability.Complexity.CookLevin.Reduction
 public import Complexity.Computability.Complexity.CookLevin.RunFeatures
 public import Complexity.Computability.Complexity.CookLevin.Tableau
 public import Complexity.Computability.Complexity.CookLevin.Witness
+public import Complexity.Computability.Complexity.ExplicitRamsey
 public import Complexity.Computability.Complexity.Fagin.Converse
 public import Complexity.Computability.Complexity.Fagin.Layout
 public import Complexity.Computability.Complexity.Fagin.Ordered
@@ -3871,12 +3872,16 @@ public import Complexity.Foundations.Combinatorics.PessimisticEstimator
 public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
+public import Complexity.Foundations.Combinatorics.SetFamily.Oddtown
 public import Complexity.Foundations.Combinatorics.SetPartition.Basic
 public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Basic
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Erdos
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Nagy
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
@@ -4165,6 +4170,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.TimeLayer
 public import Complexity.Foundations.LinearAlgebra.Matrix.TimeLayer.Fin
 public import Complexity.Foundations.LinearAlgebra.Matrix.Toeplitz
 public import Complexity.Foundations.LinearAlgebra.Matrix.Transvection
+public import Complexity.Foundations.LinearAlgebra.Matrix.UniformGram
 public import Complexity.Foundations.LinearAlgebra.PivotSpace
 public import Complexity.Foundations.LinearAlgebra.Rank
 public import Complexity.Foundations.LinearAlgebra.ReplacementDesign
