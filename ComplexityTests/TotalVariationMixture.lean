@@ -24,6 +24,18 @@ private theorem atoms_distance : tvDist (Measure.dirac (0 : ℝ)) (Measure.dirac
   rw [tvDist_of_mutuallySingular h]
   norm_num
 
+-- Binary subadditivity holds for extended and full-L1 total variation of finite measures.
+example : tvDist (Measure.dirac (0 : ℝ) + Measure.dirac 1)
+    (Measure.dirac 1 + Measure.dirac 0) ≤ 4 := by
+  refine (tvDist_add_le _ _ _ _).trans ?_
+  rw [atoms_distance, tvDist_comm (Measure.dirac 1), atoms_distance]
+  norm_num
+
+example (μ₁ μ₂ ν₁ ν₂ : Measure ℝ)
+    [IsFiniteMeasure μ₁] [IsFiniteMeasure μ₂] [IsFiniteMeasure ν₁] [IsFiniteMeasure ν₂] :
+    etvDist (μ₁ + μ₂) (ν₁ + ν₂) ≤ etvDist μ₁ ν₁ + etvDist μ₂ ν₂ :=
+  etvDist_add_le μ₁ μ₂ ν₁ ν₂
+
 -- Common weights preserve the full-L1 factor of two, rather than half-distance units.
 example : tvDist ((3 : ℝ≥0) • Measure.dirac (0 : ℝ))
     ((3 : ℝ≥0) • Measure.dirac (1 : ℝ)) = 6 := by

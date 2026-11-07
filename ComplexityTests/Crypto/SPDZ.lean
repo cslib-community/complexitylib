@@ -169,8 +169,8 @@ example :
 (`9 / 25 < 2 / 5 = 10 / 25`), illustrating both the `1 / 5` weight-cancellation event (`e 0 = 0`)
 and the `1 / 5` key-guessing event (`e 0 ≠ 0`). -/
 example :
-    (Finset.univ.filter fun p : ZMod 5 × (Fin 1 → ZMod 5) =>
-      p.1 * errorLinearComb p.2 ![1] = (if p.2 0 = 0 then 0 else 1)).card = 9 := by
+    (Finset.univ.filter fun ((alpha, e) : ZMod 5 × (Fin 1 → ZMod 5)) =>
+      alpha * errorLinearComb e ![1] = (if e 0 = 0 then 0 else 1)).card = 9 := by
   decide
 
 /-- Concrete `2 / 5` soundness bound on `ZMod 5` (`T = 1`, `err = ![1]`) in `ℝ≥0∞`, `ℝ`, and

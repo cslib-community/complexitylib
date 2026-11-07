@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.TreeEval.Reader.Encode
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
+import Complexity.Tactic.EncLen
 
 /-!
 # Offsets of nodes within linear work space
@@ -158,7 +159,7 @@ private theorem bodyLength_inSpace :
     .of_le fun q => by
       have := length_encNat_le_self q.1
       have := length_encNat_le_self q.2
-      simp only [length_encPair]; omega
+      enc_len
   have hstep : ComputableInSpace bodyStep (encPair encNat encNat) (encPair encNat encNat)
       fun q => 64 * ((encPair encNat encNat q).length + 1) := by
     have hl₀ : (fun q => (encPair encNat encNat q).length) ≼
@@ -214,7 +215,7 @@ private theorem three_mul_length_le (st : List Frame) : 3 * st.length ≤
   induction st with
   | nil => simp
   | cons fr st ih =>
-    have : 1 ≤ (encFrame fr).length := by rw [encFrame_apply, length_encPair]; omega
+    have : 1 ≤ (encFrame fr).length := by enc_len [encFrame_apply]
     rw [length_encList] at ih ⊢
     simp only [List.length_cons, List.map_cons, List.sum_cons]
     omega
@@ -236,8 +237,7 @@ theorem dirs_inSpace :
       .of_le fun _ => by omega
     have hd := budget_comp (frameFinite_inSpace (encB := encBool)
       fun y : Fin 4 × Bool × Fin 3 => y.1.val % 2 == 1)
-      ((snd (encList encBool) encFrame).weaken hl₀) (.of_le fun x => by
-        simp only [length_encPair]; omega)
+      ((snd (encList encBool) encFrame).weaken hl₀) (.of_le fun x => by enc_len)
     exact (budget_cons hd ((fst (encList encBool) encFrame).weaken hl₀)).of_enc_eq fun _ => rfl
   have hlen (st : List Frame) (i : ℕ) :
       (encList encBool ((st.take i).foldl (fun acc fr => fr.dir :: acc) [])).length ≤
@@ -253,7 +253,7 @@ theorem dirs_inSpace :
     (fun st i hi => by
       have h₁ := hlen st i
       have h₂ := length_le_encList_of_mem encFrame (List.getElem_mem hi)
-      rw [length_encPair]; dsimp only; omega)
+      enc_len)
     (fun st i _ => hlen st i)
   exact h.mono_le fun st => by omega
 
@@ -315,8 +315,7 @@ theorem pathOffset_inSpace :
     have h₁ := length_pathOffset_le q.1.1 q.1.2 (q.2.take j)
     have h₂ := length_encNat_le_self q.1.1
     have h₃ := length_encNat_le_self (q.1.2 - (q.2.take j).length)
-    simp only [length_encPair, zero_add] at *
-    omega
+    enc_len [zero_add] at *
   have h := foldl (encL := encList encBool) (list := fun q : (ℕ × ℕ) × List Bool => q.2)
     (step := pathStep') ((snd (encPair encNat encNat) (encList encBool)).weaken hl) hinit
     pathStep'_inSpace
@@ -325,14 +324,12 @@ theorem pathOffset_inSpace :
     (fun q i hi => by
       have h₁ := hstate q i
       rw [foldl_pathStep', foldl_pathStep] at h₁ ⊢
-      simp only [length_encPair, encBool_apply, List.length_singleton] at h₁ ⊢
-      omega)
+      enc_len at h₁ ⊢)
     (fun q i _ => hstate q i)
   refine (snd' (snd' h)).mono_le (fun q => ?_) |>.of_enc_eq fun q => by
     rw [foldl_pathStep', foldl_pathStep, zero_add]
   have := length_encNat_le_self q.1.1
-  simp only [length_encPair] at *
-  omega
+  enc_len at *
 
 end Reader
 

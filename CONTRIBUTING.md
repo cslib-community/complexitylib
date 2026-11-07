@@ -183,8 +183,9 @@ the root checkout and, when `<branch>` exists only on `origin`, checks it out tr
 `origin/<branch>`). Pass `--source-only` to skip the initial copy; the
 [cache guide](scripts/cache/README.md#automatic-restoration) explains bootstrap and dependency costs.
 Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
-forbidden proof tokens, `set_option` justifications, the key order of `references.bib` and that
-every docstring citation key has an entry there
+forbidden proof tokens, `set_option` justifications, the key order of `references.bib`, that
+every docstring citation key has an entry there and that `ROADMAP.md` adds no `[#N]:` link
+definitions
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
@@ -228,9 +229,12 @@ findings without requiring a duplicate local run.
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
 ROADMAP lists open directions only; status and progress live on issues and PRs, so a PR does not
-edit ROADMAP unless it opens or closes a direction. UPSTREAM records coordination and exceptional
-integration decisions, while source markers record module status. Batch measurements and
-validation/review evidence belong in commit or PR descriptions.
+edit ROADMAP unless it opens or closes a direction. Write a new issue or PR link in ROADMAP inline,
+as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`, rather than as a
+`[#N]: …` reference definition appended to the end of the file: such appended lines conflict
+between PRs in the merge queue, and `scripts/check_hygiene.py` rejects new ones. UPSTREAM records
+coordination and exceptional integration decisions, while source markers record module status.
+Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
 
@@ -288,7 +292,9 @@ in CI and in both full and quick `scripts/check.sh` runs. For documentation-only
 `python3 scripts/check_operator_manual.py` and `python3 scripts/test_operator_manual.py`
 directly; they use only Python and need no generated data or publishing tools. See the manual's
 build instructions for PDF generation; inspect affected rendered pages when changing its content
-or rendering. Generated LaTeX, PDFs and research exports stay untracked; retain their scripts and
+or rendering. The **Operator's Manual PDFs** workflow builds both books for pull requests that
+change the manual or its scripts, so rendered pages can be inspected without local TeX tools.
+Generated LaTeX, PDFs and research exports stay untracked; retain their scripts and
 maintained source inputs. Keep historical measurements and transcript evidence explicitly dated;
 do not present their frozen counts as current library state.
 

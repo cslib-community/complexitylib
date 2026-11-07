@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Foundations.Data.List.Lookup
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 
 /-!
@@ -100,9 +101,7 @@ theorem encInstance_apply (x : Instance) :
 
 /-- The table of an instance is no longer than its encoding. -/
 private theorem two_pow_le_length_encInstance (x : Instance) :
-    2 ^ x.arity ≤ (encInstance x).length := by
-  rw [encInstance_apply, length_encPair, encBits_apply, List.length_ofFn]
-  omega
+    2 ^ x.arity ≤ (encInstance x).length := by enc_len [encInstance_apply, List.length_ofFn]
 
 /-- The number of gates a certificate for `t` samples on `n` inputs may describe: the threshold
 `s`, capped at the sample-set bound `t * (2 * n + 3) + 1`. -/
@@ -518,8 +517,7 @@ theorem computableInPolyTime_checkCertificate_table {α : Type} {encT : List α 
     set T := r.1.1.length
     have hT_enc : 2 * T + 1 ≤ (encIn r).length := by
       have h1 := hlen_le r.1.1
-      simp only [encIn, length_encPair]
-      omega
+      enc_len [encIn]
     have hpow : 2 ^ Nat.log 2 T ≤ T + 1 := by
       rcases Nat.eq_zero_or_pos T with h | h
       · simp [h]

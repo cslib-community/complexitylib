@@ -40,7 +40,7 @@ The specialization to no channels and `Id` is [step-exactly equivalent to the de
 | Nondeterministic `MultiTapeNTM` | Set of actions | Existence of an accepting path; repeated equal actions have no multiplicity | NP, NL, NSPACE, NPSPACE |
 | `MultiTapePTM` | A Boolean-indexed pair of actions | One fresh fair bit per live instruction; equal successor actions still receive their full probability mass | Strict PPT, BPP/RP, randomized logspace, oracle verifiers |
 | `MultiTapeCTM` | List of actions | Occurrences are distinguished by list indices, even when actions coincide | #P, GapP, exact acceptance/rejection counts |
-| `MultiTapeATM` | Boolean pair plus state polarity | Existential control chooses one child; universal control requires both | AP and polynomial-length alternating games |
+| `MultiTapeATM` | Boolean pair plus state polarity | Existential control chooses one child; universal control requires both | AP, APSPACE, AL and polynomial-length alternating games |
 
 The definitions are [PTM](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Probabilistic.lean#L41), [CTM](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Counting.lean#L63), and [ATM](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Alternating.lean#L76). These differences cannot be recovered simply by reusing a set of successors: sets forget multiplicity, and probability and universal branching evaluate the resulting tree differently.
 
@@ -49,6 +49,8 @@ Nondeterministic acceptance is specifically a halted configuration whose output 
 For counting, halting branches are counted at first halt. The CTM labelled transition system does not add artificial choices after halt. `HaltsWithin` and the nonblocking condition rule out the loss of branches at stuck live states where needed for class characterizations. This is distinct from the harmless halted self-loop used to pad nondeterministic reachability paths. [Counting definitions](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Counting.lean#L222)
 
 For alternation, [AcceptsWithin](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Alternating.lean#L128) is a finite accepting-tree relation. A halted `[true]` configuration accepts; live existential and universal configurations use one or both successors respectively. `Accepts` existentially quantifies a finite depth. Infinite branches therefore do not obtain acceptance from coinductive interpretation. The polynomial-time class also supplies an all-branches time bound.
+
+[Space-bounded alternation](../../Complexity/Computability/Machines/Turing/MultiTape/Alternating/Space.lean) follows the nondeterministic pattern. `MultiTapeATM.RecognizesInSpace` bounds every computation path of the table's nondeterministic machine and permits infinite branches. `MultiTapeATM.DecidesInSpace` also bounds path length for each input. The classes `APSPACE` and `AL` use the deciding form. The [simulation](../../Complexity/Computability/Machines/Turing/MultiTape/Alternating/Marking.lean) marks the reachable views bottom-up. Because `Accepts` is a least fixed point, `markAccepts_iff` shows that a bounded number of rounds computes it exactly, with no halting assumption. [Class inclusions](../../Complexity/Computability/Complexity/Classes/Alternation/Space.lean) are proved for recognizers: `RecognizesInSpace.mem_P` and `RecognizesInSpace.mem_EXP` give `AL ⊆ P` and `APSPACE ⊆ EXP`. The converse inclusions `EXP ⊆ APSPACE` and `P ⊆ AL` are open ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)). The [checked clients](../../ComplexityTests/AlternatingSpace.lean) include a universal machine with an infinite branch. It recognizes `∅` within zero space but decides nothing, and marking its views rejects.
 
 ## Independent time, workspace, and encoded output
 
@@ -124,7 +126,8 @@ exponential time and polynomial space conclusions.
 Pure lookup in `frame u ++ v` uses the small
 [`Encodings.Frame.Lookup`](../../Complexity/Computability/Machines/Turing/MultiTape/Encodings/Frame/Lookup.lean)
 module. `getElem?_frame_append` identifies each marker and data bit;
-`getElem?_frame_append_boundary` identifies the terminator and suffix, including out-of-bounds
+`getElem?_frame_append_length` identifies the terminator and
+`getElem?_frame_append_boundary` the suffix, including out-of-bounds
 lookup. Both the unary take/drop and zip-transducer machine proofs use these list laws, so
 clients can reuse them without importing either machine implementation.
 

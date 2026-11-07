@@ -9,6 +9,7 @@ import Complexity.Computability.Complexity.Problems.CircuitSAT
 import Complexity.Computability.Complexity.Problems.Clique
 import Complexity.Computability.Complexity.Problems.Coloring
 import Complexity.Computability.Complexity.Problems.ExactThreeSAT
+import Complexity.Computability.Complexity.Problems.NAEThreeSAT
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Directed
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Undirected
 import Complexity.Computability.Complexity.Problems.IntegerProgramming
@@ -21,6 +22,15 @@ import Complexity.Computability.Complexity.Problems.TSP
 import Complexity.Computability.Complexity.Problems.ThreeSAT
 import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
+import Complexity.Computability.Complexity.Problems.CSP.Constant
+import Complexity.Computability.Complexity.Problems.CSP.Majority
+import Complexity.Computability.Complexity.Problems.CSP.Hardness
+import Complexity.Computability.Complexity.Problems.CSP.Schaefer
+import Complexity.Computability.Complexity.Problems.HornSAT
+import Complexity.Computability.Complexity.Problems.XORSAT
+import Complexity.Computability.PolyTime.CSP.Gadget
+import Complexity.Logics.Polymorphism.BooleanClone
+import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Tactic.PolyTime
 
 open Verso.Genre Manual
@@ -246,6 +256,20 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   variables. The implication cycles force each copy's value, so the reduction also preserves
   the exact number of satisfying assignments ({name}`modelCount_toThreeSATThree`). No planarity
   condition is imposed.
+* Ordinary SAT with exactly three distinct variables per clause is NP-complete
+  ({name}`EUThreeSAT_npComplete`). This strengthens the repeated-literal convention of
+  {name}`ExactThreeSAT`. There is no occurrence bound: exact-three distinct-variable formulas
+  with at most three occurrences per variable are always satisfiable by Hall's matching argument
+  ({name}`Cslib.Logic.PL.CNF.satisfiable_of_exactThreeDistinct_of_count_le_three`). Accordingly,
+  {name}`EUThreeSATThree.mem_P` decides this language by checking its syntax alone.
+* Not-all-equal SAT requires both a true and a false literal in every clause
+  ({name}`Cslib.Logic.PL.CNF.evalNAE`). NAE3SAT, with width at most three, is NP-complete
+  ({name}`NAEThreeSAT_npComplete`). NAE EU3SAT, with exactly three distinct variables per clause,
+  is NP-complete ({name}`NAEEUThreeSAT_npComplete`). NAE3SAT-3, with width at most three and at
+  most three occurrences per variable, is NP-complete ({name}`NAEThreeSATThree_npComplete`).
+  The last reduction reuses
+  {name}`toThreeSATThree` and permits binary clauses. It does not establish hardness with
+  both exact-three clauses and occurrence bound three.
 * Orthogonal planar 3SAT-3 is NP-hard, both when a drawing must exist
   ({name}`PlanarThreeSATThree_npHard`) and when it is supplied
   ({name}`DrawnPlanarThreeSATThree_npHard`). Clauses have width at most three, binary clauses
@@ -320,6 +344,141 @@ example : NPHard (encPair encGraph encNat) Clique :=
 
 The module documentation of `Complexity.Computability.Complexity.Reduction` indexes the same
 results by problem, with the module to import for each.
+
+# Boolean Constraint Languages
+
+Schaefer's full Boolean dichotomy is proved for fixed finite constraint languages
+over `Bool`, with arbitrary fixed relation arities and explicit binary instance
+encoding. The six common-polymorphism cases are native P; otherwise the problem
+is native NP-complete. Its structural ingredients include majority preservation
+being equivalent to definability by clauses of width at most
+two, with no auxiliary variables
+({name}`Cslib.Logic.PL.isPolymorphism_majority_iff_exists_twoCNF`).
+
+```lean
+open Cslib.Logic Cslib.Logic.PL in
+example {V : Type} [Finite V] (R : Set (V → Bool))
+    (h : IsPolymorphism (Cslib.majority 3) R) :
+    ∃ φ : CNF V, (∀ c ∈ φ, c.length ≤ 2) ∧
+      ∀ a, a ∈ R ↔ φ.eval a = true :=
+  (isPolymorphism_majority_iff_exists_twoCNF R).mp h
+```
+
+Here preservation applies the operation coordinatewise to satisfying tuples.
+{name}`Cslib.Logic.IsPolymorphism.project` preserves it under existential
+projection, and {name}`Cslib.Logic.IsPolymorphism.substitute` covers repeated
+variables. Empty and nullary relations are allowed. This characterization alone
+does not supply a polynomial-time certificate for constructing the formula.
+
+For native complexity, {name}`CSPSAT` fixes a relation alphabet, arities and list
+semantics, and rejects input scopes with incorrect lengths. Variable labels are
+arbitrary natural numbers encoded in binary by {name}`encCSP` with {name}`encNat`.
+Every fixed finite Boolean language is in NP ({name}`CSPSAT.mem_NP`). Common unary
+constants and majority give native P via {name}`CSPSAT.mem_P_of_constant` and
+{name}`CSPSAT.mem_P_of_majority`. Empty relations are handled explicitly.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : CSP.HasPolymorphism arity sem (Cslib.majority 3)) :
+    CSPSAT arity sem ∈ P (encCSP encRel encNat) :=
+  CSPSAT.mem_P_of_majority encRel arity sem h
+```
+
+The language is fixed: template lookup is finite preprocessing. The reduction
+instantiates its local clauses in native polynomial time and uses the existing
+native 2SAT theorem; no solver hypothesis is needed.
+
+The positive-arity Boolean clone classification is proved in
+{module}`Complexity.Logics.Polymorphism.BooleanClone`:
+{name}`Cslib.Logic.BooleanClone.classification` covers every positive arity.
+For a language lacking the six common operations,
+{name}`Cslib.Logic.PL.CSP.projection_or_negation_of_not_hasSchaeferPolymorphism`
+identifies every polymorphism as a projection or negated projection. This supplies
+the algebraic ingredient used by the native hardness application below.
+
+For reductions between fixed Boolean languages,
+{name}`Cslib.Logic.PL.CSP.exists_ppGadget_of_polymorphisms` constructs equality-free
+primitive-positive gadgets for nonempty target relations with separating columns.
+{name}`Cslib.Complexity.CSP.computableInPolyTime_replaceGadgetsGuarded` certifies
+fixed-gadget replacement with binary labels, fresh auxiliaries and exact-arity
+rejection. The hardness application must discharge nonemptiness, separation and
+polymorphism invariance; general equality elimination is outside this gadget API.
+The shared guard certificate is
+{name}`Cslib.Complexity.CSP.computableInPolyTime_validArity` in
+{module}`Complexity.Computability.PolyTime.CSP.Boolean`.
+
+The hard branch is native and unconditional:
+{name}`CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` proves NP-completeness
+for any fixed finite language lacking all six common operations. The proof imports
+the proved clone classification, constructs gadgets for the eight self-dual
+reference lifts of signed ternary clauses, and compiles them in native polynomial
+time. Their nonemptiness and separating columns are proved internally. Empty and
+nullary language relations remain allowed.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬ CSP.HasSchaeferPolymorphism arity sem) :
+    NPComplete (encCSP encRel encNat) (CSPSAT arity sem) :=
+  CSPSAT.npComplete_of_not_hasSchaeferPolymorphism encRel arity sem h
+```
+
+{name}`CSPSAT.exists_linear_size_reduction_from_threeSAT` gives the actual
+hardness reduction together with correctness, native polynomial-time computation
+and `output.numVars + output.length ≤ C * input.length`. Thus the number of
+distinct output variables plus constraints is at most a fixed constant times the
+number of input clauses, and hence at most `C * (input.numVars + input.length)`.
+The constant depends only on the fixed language. The bound holds on all raw CNFs,
+including malformed and empty inputs; it concerns combinatorial counts rather
+than encoded bit length or running time.
+
+```lean
+open Cslib.Logic.PL Turing.MultiTapeTM in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬ CSP.HasSchaeferPolymorphism arity sem) :
+    ∃ (f : CNF ℕ → CSP Rel ℕ) (C : ℕ),
+      ComputableInPolyTime f encCNF (encCSP encRel encNat) ∧
+      (∀ φ, φ ∈ ThreeSAT ↔ f φ ∈ CSPSAT arity sem) ∧
+      (∀ φ, (f φ).numVars + (f φ).length ≤ C * (φ.numVars + φ.length)) := by
+  obtain ⟨f, C, hp, hm, hs⟩ :=
+    CSPSAT.exists_linear_size_reduction_from_threeSAT encRel arity sem h
+  refine ⟨f, C, hp, hm, fun φ => (hs φ).trans ?_⟩
+  apply Nat.mul_le_mul_left
+  omega
+```
+
+The remaining tractable normal forms have proved native solvers:
+{name}`Cslib.Logic.PL.isPolymorphism_and_iff_exists_hornCNF` and
+{name}`Cslib.Logic.PL.isPolymorphism_or_iff_exists_dualHornCNF` characterize
+AND/OR preservation. {name}`HornSAT.mem_P` and {name}`DualHornSAT.mem_P` decide
+all-width formulas under {name}`encCNF`. Horn syntax counts positive occurrences,
+so repeating a positive literal twice is rejected as non-Horn syntax.
+
+{name}`Cslib.Logic.PL.isPolymorphism_parity_iff_exists_affineSystem`
+characterizes ternary parity preservation by affine equations.
+{name}`XORSAT.satisfiable_mem_P` certifies ordinary sparse XOR-SAT with binary
+variable names; repeated variables cancel modulo two. The dense Gaussian
+elimination algorithm and sparse compiler both have native certificates.
+Their fixed-language compilers give {name}`CSPSAT.mem_P_of_and`,
+{name}`CSPSAT.mem_P_of_or` and {name}`CSPSAT.mem_P_of_parity`, including repeated
+scope variables, sparse binary labels and empty/nullary relations. Malformed
+scopes are rejected before instantiation.
+
+{name}`CSPSAT.schaefer_dichotomy` assembles all six cases and the hard branch.
+Its unconditional corollary uses no assumption separating P and NP:
+
+```lean
+open Cslib.Logic.PL in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) :
+    CSPSAT arity sem ∈ P (encCSP encRel encNat) ∨
+      NPComplete (encCSP encRel encNat) (CSPSAT arity sem) :=
+  CSPSAT.mem_P_or_npComplete encRel arity sem
+```
 
 # Proving a Problem NP-Complete
 %%%

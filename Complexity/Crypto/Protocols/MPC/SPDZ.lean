@@ -395,7 +395,7 @@ end AuthShare
 @[expose] def ResidualOpening.equivProd (p : ℕ) (Coins : Type) :
     ResidualOpening p Coins ≃ ZMod p × Coins where
   toFun u := (u.sigma, u.decommit)
-  invFun pair := ⟨pair.1, pair.2⟩
+  invFun | (sigma, decommit) => ⟨sigma, decommit⟩
   left_inv _ := rfl
   right_inv _ := rfl
 
@@ -682,8 +682,8 @@ theorem card_filter_macKey_eq_le_one {p : ℕ} [Fact (Nat.Prime p)]
     {L : ZMod p} (hL : L ≠ 0) (d : ZMod p) :
     (Finset.univ.filter fun alpha : ZMod p => alpha * L = d).card ≤ 1 := by
   refine Finset.card_le_one.mpr fun a₁ ha₁ a₂ ha₂ => ?_
-  have h₁ := (Finset.mem_filter.mp ha₁).2
-  have h₂ := (Finset.mem_filter.mp ha₂).2
+  have h₁ := (Finset.mem_filter.mp ha₁).right
+  have h₂ := (Finset.mem_filter.mp ha₂).right
   exact mul_right_cancel₀ hL (h₁.trans h₂.symm)
 
 /-- Stage-2 pointwise key-guessing bound: for any `L, d : ZMod p`, a uniform key `alpha : ZMod p`

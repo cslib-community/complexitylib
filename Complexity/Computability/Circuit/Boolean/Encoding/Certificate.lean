@@ -38,7 +38,9 @@ arity of its operation. Reading is polynomial-time
 (`Cslib.Circuits.Boolean.computableInPolyTime_readCertificate`), and the certificate of a
 circuit, followed by any bits, reads as its code (`readCertificate_certificate_append`). A string
 that is not the certificate of a circuit may read as gates that read wires not yet computed; the
-polynomial-time test `codeCheck` tells the codes of circuits apart (`codeCheck_eq_true_iff`).
+checker `Cslib.Circuits.codeCheck` from `Complexity.Computability.Circuit.Encoding.Check` tells the
+codes of circuits apart (`Cslib.Circuits.codeCheck_eq_true_iff`), and this module registers its
+De Morgan polynomial-time certificate (`Cslib.Circuits.Boolean.computableInPolyTime_codeCheck`).
 
 ## Main definitions
 
@@ -47,7 +49,6 @@ polynomial-time test `codeCheck` tells the codes of circuits apart (`codeCheck_e
 * `Cslib.Circuits.Boolean.certLength`: the length of certificates.
 * `Cslib.Circuits.Boolean.certificate`: the certificate of a circuit code.
 * `Cslib.Circuits.Boolean.readCertificate`: the gates and the output wire read from a certificate.
-* `Cslib.Circuits.codeCheck`: the test for codes of circuits.
 
 ## Main results
 
@@ -55,7 +56,6 @@ polynomial-time test `codeCheck` tells the codes of circuits apart (`codeCheck_e
 * `Cslib.Circuits.Boolean.length_certificate`: certificates have length `certLength n s`.
 * `Cslib.Circuits.Boolean.readCertificate_certificate_append`: a certificate reads as the code of
   its circuit.
-* `Cslib.Circuits.codeCheck_eq_true_iff`: `codeCheck` tests `Program.IsCodeFrom`.
 * `Cslib.Circuits.Boolean.computableInPolyTime_readCertificate`,
   `Cslib.Circuits.Boolean.computableInPolyTime_codeCheck`: reading certificates and checking
   codes are polynomial-time.

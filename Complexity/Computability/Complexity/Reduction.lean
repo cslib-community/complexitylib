@@ -57,6 +57,10 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | CNF satisfiability (Cook–Levin) | `CookLevin.SAT_npComplete` |
 | At most three literals per clause | `ThreeSAT_npComplete` |
 | Exactly three literals, repetitions allowed | `ExactThreeSAT_npComplete` |
+| Exactly three distinct variables per clause | `EUThreeSAT_npComplete` |
+| Not-all-equal SAT, clause width at most three | `NAEThreeSAT_npComplete` |
+| NAE EU3SAT, exactly three distinct variables per clause | `NAEEUThreeSAT_npComplete` |
+| Not-all-equal SAT, width and variable occurrences at most three | `NAEThreeSATThree_npComplete` |
 | Boolean circuit satisfiability | `CircuitSAT_npComplete` |
 | Independent set | `IndependentSet_npComplete` |
 | Clique | `Clique_npComplete` |
@@ -80,6 +84,7 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | SAT → CircuitSAT | `SAT.polyTimeReducible_CircuitSAT` |
 | SAT → IndependentSet | `polyTimeReducible_SAT_IndependentSet` |
 | IndependentSet → Clique | `polyTimeReducible_IndependentSet_Clique` |
+| Clique → IndependentSet | `polyTimeReducible_Clique_IndependentSet` |
 | IndependentSet → VertexCover | `polyTimeReducible_IndependentSet_VertexCover` |
 | SAT → ThreeColoring | `polyTimeReducible_SAT_ThreeColoring` |
 | ThreeSAT → ThreeColoring | `polyTimeReducible_ThreeSAT_ThreeColoring` |

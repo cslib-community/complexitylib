@@ -104,18 +104,11 @@ distribution on `(i : I) → π i`. -/
 theorem uniformOfFintype_pi_map_restrict {ι : Type*} [Fintype ι] [DecidableEq ι]
     {π : ι → Type*} [∀ i, Fintype (π i)] [∀ i, Nonempty (π i)] (I : Finset ι) :
     (uniformOfFintype (∀ i, π i)).map I.restrict = uniformOfFintype ((i : I) → π i) := by
-  let e : (∀ i, π i) ≃ ((i : I) → π i) × ((j : (Iᶜ : Finset ι)) → π j) :=
-    { toFun := fun f => (I.restrict f, Iᶜ.restrict f)
-      invFun := fun p j => if hj : j ∈ I then p.1 ⟨j, hj⟩ else p.2 ⟨j, Finset.mem_compl.mpr hj⟩
-      left_inv := fun f => by ext j; by_cases hj : j ∈ I <;> simp [hj]
-      right_inv := fun ⟨f₁, f₂⟩ => by
-        ext ⟨j, hj⟩
-        · simp [hj]
-        · simp [Finset.mem_compl.mp hj] }
+  let e := Equiv.piEquivPiSubtypeProd (fun i => i ∈ I) π
   calc (uniformOfFintype (∀ i, π i)).map I.restrict
       = ((uniformOfFintype (∀ i, π i)).map e).map Prod.fst := by
           rw [PMF.map_comp]; rfl
-    _ = (uniformOfFintype (((i : I) → π i) × ((j : (Iᶜ : Finset ι)) → π j))).map Prod.fst := by
+    _ = (uniformOfFintype (((i : I) → π i) × ((j : {j // j ∉ I}) → π j))).map Prod.fst := by
           rw [uniformOfFintype_map_equiv e]
     _ = uniformOfFintype ((i : I) → π i) := uniformOfFintype_prod_map_fst
 

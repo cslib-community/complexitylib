@@ -40,6 +40,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `partrec-description` | [Partrec universal description method](machines-and-classes/computability-and-description.md) | description |
 | `tm-description` | [Described-machine-clock Kolmogorov model](machines-and-classes/computability-and-description.md) | description |
 | `conditional-description` | [Conditional description and composition](machines-and-classes/computability-and-description.md) | description |
+| `blum-measure` | [Blum complexity measures over Mathlib partial-recursive codes](machines-and-classes/computability-and-description.md) | computability |
 | `np-verifier` | [Exact-length NP witness verifier](machines-and-classes/verifiers-counting-interaction.md) | verifier |
 | `alternating-verifier` | [PH witness blocks and alternating games](machines-and-classes/verifiers-counting-interaction.md) | verifier |
 | `bpp-verifier` | [BPP uniform-seed verifier](machines-and-classes/verifiers-counting-interaction.md) | verifier |
@@ -161,6 +162,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `vp` | [Valiant VP and polynomial families](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `vnp` | [Valiant VNP and p-projection completeness](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `waring` | [Waring sums of powers](circuits-logic-and-other-models/index.md) | algebraic-circuits |
+| `matrix-multiplication-exponent` | [Matrix multiplication exponent, tensor rank and degeneration](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `sum-of-terms` | [Dictionary sum-of-terms circuits](circuits-logic-and-other-models/index.md) | circuits |
 | `rational-formula` | [Noncommutative rational formulas with partial evaluation](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `decomposable-dag` | [Smooth decomposable set-of-assignments DAGs](circuits-logic-and-other-models/index.md) | networks |
@@ -186,6 +188,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `distributional-query` | [Distributional decision-tree complexity](circuits-logic-and-other-models/index.md) | information-access |
 | `quantum-query` | [Phase-oracle quantum query algorithms](circuits-logic-and-other-models/index.md) | quantum |
 | `deterministic-communication` | [Two-party bit communication trees](circuits-logic-and-other-models/index.md) | communication |
+| `local-oriented-cycle` | [Deterministic LOCAL algorithms on oriented cycles](circuits-logic-and-other-models/query-and-communication.md) | distributed |
 | `dag-communication` | [Acyclic networks of communication protocols](circuits-logic-and-other-models/index.md) | communication |
 | `round-communication` | [Bounded-round message protocols](circuits-logic-and-other-models/index.md) | communication |
 | `publiccoin` | [Public-coin communication](circuits-logic-and-other-models/index.md) | communication |
@@ -249,6 +252,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `crypto-uc` | [Call-bounded UC execution and emulation](programs-crypto-and-probability/protocols-and-privacy.md) | protocols |
 | `crypto-perfect-secrecy` | [Perfect-secrecy encryption](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
 | `crypto-secret-sharing` | [Authorized-coalition secret sharing](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
+| `privacy-differential` | [Differential privacy of output laws for an explicit adjacency relation](programs-crypto-and-probability/protocols-and-privacy.md) | privacy |
 | `average-exact-ppt` | [MildlyHardOnAverage](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
 | `average-symmetric-ppt` | [MildlyHardOnAverageToApprox](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
 | `average-one-sided-ppt` | [MildlyHardOnAverageToOneSidedApprox](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
