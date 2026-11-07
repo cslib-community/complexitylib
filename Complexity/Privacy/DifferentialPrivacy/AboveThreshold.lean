@@ -9,6 +9,7 @@ module
 
 public import Complexity.Privacy.DifferentialPrivacy.Composition
 public import Complexity.Privacy.DifferentialPrivacy.DiscreteLaplace
+import Complexity.Probability.PMF.Map
 
 /-!
 # AboveThreshold and the sparse vector technique with discrete Laplace noise
@@ -19,27 +20,39 @@ each query draws fresh noise `νᵢ` and halts at the first `i` with `fᵢ(D) + 
 `⊤` there and `⊥` before. Its privacy cost does not grow with the number of queries
 [DworkRoth2014, Theorem 3.23].
 
-Here the noise is integer-valued: with the discrete Laplace distribution
-[CanonneKamathSteinke2020, Definition 28] of scales `2 Δ / ε` and `4 Δ / ε` in place of Dwork and
-Roth's continuous `Lap (2 / ε)` and `Lap (4 / ε)`, AboveThreshold is `(ε, 0)`-differentially
-private for integer `Δ ≥ 1` (`differentiallyPrivate_aboveThreshold_discreteLaplace`), and it is
-`α`-accurate except with probability `β` for `α = 8 (ln (k + 1) + ln (2 / β)) / ε` on `k`
-queries (`aboveThreshold_discreteLaplace_toOuterMeasure_not_thresholdAccurate_le`); these are the
-discrete-noise analogues of [DworkRoth2014, Theorem 3.23] and [DworkRoth2014, Theorem 3.24]
-(`k + 1` replaces Dwork and Roth's `k` because the discrete tails carry a factor `2`). The
-queries and threshold are real-valued; only the noise is discrete. The privacy proof follows
-Dwork and Roth's change of variables, with the shift of the noisy threshold by an integer `Δ`.
+Here the noise is integer-valued, from the discrete Laplace distribution
+[CanonneKamathSteinke2020, Definition 28], and the results are discrete-noise analogues of
+Dwork and Roth's theorems for continuous `Lap (2 / ε)` and `Lap (4 / ε)` noise. The queries and
+threshold are real-valued; only the noise is discrete.
+
+* Privacy: for queries of integer sensitivity `Δ ≥ 1`, noise of scales `2 Δ / ε` and `4 Δ / ε`
+  makes AboveThreshold `(ε, 0)`-differentially private
+  (`differentiallyPrivate_aboveThreshold_discreteLaplace`), the analogue of
+  [DworkRoth2014, Theorem 3.23]. The proof follows Dwork and Roth's change of variables, shifting
+  the noisy threshold by the sensitivity `s` and each query's noise by `2 s`
+  (`DifferentiallyPrivate.aboveThresholdMechanism`, for any noise with these shift bounds).
+* Accuracy: for sensitivity-`1` queries, with noise of scales `2 / ε` and `4 / ε`, AboveThreshold
+  on `k` queries is `α`-accurate and does not halt early except with probability `β`, for
+  `α = 8 (ln (k + 1) + ln (2 / β)) / ε`
+  (`aboveThreshold_discreteLaplace_toOuterMeasure_not_accurate_le`), the analogue of
+  [DworkRoth2014, Theorem 3.24]. Here `k + 1` replaces Dwork and Roth's `k` because the discrete
+  tails carry a factor `2`.
 
 The output is the index of the first reported `⊤` (`some i`), or `none` when no query is reported;
 this is equivalent to Dwork and Roth's stream `⊥ ⋯ ⊥ ⊤`. Because the stream of answers before
-halting is always `⊥ ⋯ ⊥`, an analyst choosing the next query adaptively from the answers so far
-fixes the queries in advance, so a fixed list of queries loses no generality.
+halting is always `⊥ ⋯ ⊥`, a deterministic analyst choosing the next query adaptively from the
+answers so far fixes the queries in advance, so a fixed list of queries loses no generality. A
+randomized analyst is a mixture of deterministic ones over its coins, and each run halts after
+reading a finite prefix of an infinite stream; neither reduction is formalized here.
 
-Sparse [DworkRoth2014, Algorithm 2] restarts AboveThreshold on the remaining stream after each
-reported `⊤`, `c` times. It is `c`-fold adaptive composition of AboveThreshold (`sparse`), so
-discrete Laplace noise of scales `2 c Δ / ε` and `4 c Δ / ε` makes it `(ε, 0)`-private
-(`differentiallyPrivate_sparse_discreteLaplace`), the `δ = 0` case of [DworkRoth2014,
-Theorem 3.25].
+Sparse [DworkRoth2014, Algorithm 2] restarts AboveThreshold after each reported `⊤`, `c` times,
+on an adaptively chosen stream. Within a round the analyst sees only `⊥`s, so the queries of a
+round are a function of the earlier rounds' outputs: `sparse ρ ν T qs c` runs `c` rounds of
+adaptive composition, the round after history `h` running AboveThreshold on the queries `qs h`.
+With discrete Laplace noise of scales `2 c Δ / ε` and `4 c Δ / ε` it is `(ε, 0)`-private
+(`differentiallyPrivate_sparse_discreteLaplace`), the `δ = 0` case of
+[DworkRoth2014, Theorem 3.25]. A fixed stream `fs`, each round continuing on the unconsumed
+queries, is the instance `sparseStream fs`.
 
 ## Main definitions
 
@@ -48,14 +61,15 @@ Theorem 3.25].
 * `Cslib.Privacy.aboveThresholdMechanism`: AboveThreshold as a mechanism on datasets.
 * `Cslib.Privacy.ThresholdAccurate`: the accuracy condition [DworkRoth2014, Definition 3.9].
 * `Cslib.Privacy.sparse`: Sparse as `c`-fold adaptive composition of AboveThreshold.
+* `Cslib.Privacy.sparseStream`: the queries of each round of Sparse on a fixed stream.
 
 ## Main results
 
 * `Cslib.Privacy.DifferentiallyPrivate.aboveThresholdMechanism`: privacy for any noise whose
   masses change by bounded factors under integer shifts.
 * `Cslib.Privacy.differentiallyPrivate_aboveThreshold_discreteLaplace`: `(ε, 0)`-privacy.
-* `Cslib.Privacy.aboveThreshold_discreteLaplace_toOuterMeasure_not_thresholdAccurate_le`:
-  accuracy.
+* `Cslib.Privacy.aboveThreshold_discreteLaplace_toOuterMeasure_not_thresholdAccurate_le`,
+  `Cslib.Privacy.aboveThreshold_discreteLaplace_toOuterMeasure_not_accurate_le`: accuracy.
 * `Cslib.Privacy.differentiallyPrivate_sparse_discreteLaplace`: `(ε, 0)`-privacy of Sparse.
 
 ## References
@@ -69,22 +83,6 @@ open scoped ENNReal
 public section
 
 namespace Cslib.Privacy
-
-private theorem PMF.map_apply_le_mul {α β : Type*} {p q : PMF α} {c : ℝ≥0∞}
-    (h : ∀ a, p a ≤ c * q a) (f : α → β) (b : β) : p.map f b ≤ c * q.map f b := by
-  classical
-  rw [PMF.map_apply, PMF.map_apply, ← ENNReal.tsum_mul_left]
-  refine tsum_le_tsum fun a => ?_
-  split_ifs
-  · exact h a
-  · simp
-
-private theorem PMF.tsum_mul_indicator_one {α : Type*} (p : PMF α) (S : Set α) :
-    ∑' a, p a * S.indicator 1 a = p.toOuterMeasure S := by
-  classical
-  rw [PMF.toOuterMeasure_apply]
-  refine tsum_congr fun a => ?_
-  by_cases ha : a ∈ S <;> simp [ha]
 
 /-- AboveThreshold against a fixed noisy threshold `T̂`: draw `ν` for the first answer `a`,
 report index `0` if `a + ν ≥ T̂`, and otherwise continue with the remaining answers. -/
@@ -105,10 +103,10 @@ noncomputable def aboveThresholdMechanism {D : Type*} (ρ ν : PMF ℤ) (T : ℝ
     (x : D) : PMF (Option ℕ) :=
   aboveThreshold ρ ν T (fs.map fun f => f x)
 
-/-- The change of variables in [DworkRoth2014, Theorem 3.23], for a fixed noisy threshold: if each
-answer in `bs` is at least the corresponding answer in `as` minus `s`, and shifting the query noise
-by `2 s` changes its masses by at most `c ≥ 1`, then raising the threshold by `s` changes each
-output probability by at most `c`. -/
+/-- The change of variables in the proof of [DworkRoth2014, Theorem 3.23], for a fixed noisy
+threshold: if each answer in `bs` is at least the corresponding answer in `as` minus `s`, and
+shifting the query noise by `2 s` changes its masses by at most `c ≥ 1`, then raising the threshold
+by `s` changes each output probability by at most `c`. -/
 theorem aboveThresholdAux_apply_le {ν : PMF ℤ} {c : ℝ≥0∞} {s : ℤ} (hc : 1 ≤ c)
     (hν : ∀ v, ν v ≤ c * ν (v + 2 * s)) {as bs : List ℝ}
     (hab : List.Forall₂ (fun a b : ℝ => a - s ≤ b ∧ b ≤ a + s) as bs) (T : ℝ) (o : Option ℕ) :
@@ -152,12 +150,14 @@ theorem aboveThresholdAux_apply_le {ν : PMF ℤ} {c : ℝ≥0∞} {s : ℤ} (hc
         simp only [hv, hv', ↓reduceIte]
         calc ν v * (aboveThresholdAux ν T as).map (Option.map Nat.succ) o
             ≤ ν v * (c * (aboveThresholdAux ν (T + s) bs).map (Option.map Nat.succ) o) := by
-              gcongr; exact PMF.map_apply_le_mul ih _ o
+              gcongr; exact Probability.PMF.map_apply_le_mul ih _ o
           _ = c * (ν v * (aboveThresholdAux ν (T + s) bs).map (Option.map Nat.succ) o) := by ring
 
 /-- AboveThreshold is `(ε₁ + ε₂, 0)`-differentially private for queries of sensitivity `s`
 whenever shifting the threshold noise by `s` changes its masses by at most `exp ε₁` and shifting
-the query noise by `2 s` changes them by at most `exp ε₂` [DworkRoth2014, Theorem 3.23]. -/
+the query noise by `2 s` changes them by at most `exp ε₂`. This generalizes
+[DworkRoth2014, Theorem 3.23], which takes `Lap (2 / ε)` and `Lap (4 / ε)` noise, and follows its
+proof. -/
 theorem DifferentiallyPrivate.aboveThresholdMechanism {D : Type*} {Adj : D → D → Prop}
     {ρ ν : PMF ℤ} {T : ℝ} {fs : List (D → ℝ)} {s : ℤ} {ε₁ ε₂ : ℝ} (hε₂ : 0 ≤ ε₂)
     (hfs : ∀ f ∈ fs, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ s)
@@ -218,7 +218,7 @@ theorem differentiallyPrivate_aboveThreshold_discreteLaplace {D : Type*} {Adj : 
 /-- The accuracy condition of [DworkRoth2014, Definition 3.9] for the answers `as`, threshold `T`
 and slack `α`: every answer reported below threshold is at most `T + α`, and the answer reported
 above threshold, if any, is at least `T - α`. -/
-def ThresholdAccurate (T α : ℝ) : List ℝ → Option ℕ → Prop
+@[expose] def ThresholdAccurate (T α : ℝ) : List ℝ → Option ℕ → Prop
   | [], _ => True
   | a :: _, some 0 => T - α ≤ a
   | a :: as, some (n + 1) => a ≤ T + α ∧ ThresholdAccurate T α as (some n)
@@ -302,7 +302,7 @@ theorem aboveThresholdAux_toOuterMeasure_not_thresholdAccurate_le (ν : PMF ℤ)
             as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} := by
           simp only [mul_add]
           rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.tsum_mul_indicator_one]
+            ← Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
       _ = (a :: as).length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} := by
           rw [List.length_cons, Nat.cast_succ, add_mul, one_mul, add_comm]
 
@@ -334,7 +334,7 @@ theorem aboveThreshold_toOuterMeasure_not_thresholdAccurate_le (ρ ν : PMF ℤ)
           as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} := by
         simp only [mul_add]
         rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-          PMF.tsum_mul_indicator_one]
+          ← Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
 
 /-- Accuracy of AboveThreshold with discrete Laplace noise (scales `2 / ε` and `4 / ε`): on `k`
 answers it is `α`-accurate except with probability at most `β`, for
@@ -379,6 +379,24 @@ theorem aboveThreshold_discreteLaplace_toOuterMeasure_not_thresholdAccurate_le {
           _ = 2 * (k + 1) * Real.exp (-L) := by ring
           _ = β := by rw [hexpL]; field_simp
 
+/-- The accuracy theorem [DworkRoth2014, Theorem 3.24] for discrete Laplace noise of scales
+`2 / ε` and `4 / ε` and sensitivity-`1` queries: if every answer before the last is below `T - α`,
+then except with probability `β` the output is `α`-accurate and, if it reports an index, reports
+the last one, for `α = 8 (ln (k + 1) + ln (2 / β)) / ε` on `k` answers and `0 < β ≤ 1`. -/
+theorem aboveThreshold_discreteLaplace_toOuterMeasure_not_accurate_le {ε β : ℝ} (hε : 0 < ε)
+    (hβ : 0 < β) (hβ1 : β ≤ 1) (T : ℝ) (as : List ℝ)
+    (has : ∀ j (hj : j + 1 < as.length),
+      as[j] < T - 8 * (Real.log (as.length + 1) + Real.log (2 / β)) / ε) :
+    (aboveThreshold (discreteLaplace (2 / ε) (by positivity))
+        (discreteLaplace (4 / ε) (by positivity)) T as).toOuterMeasure
+      {o | ¬ (ThresholdAccurate T (8 * (Real.log (as.length + 1) + Real.log (2 / β)) / ε) as o ∧
+        ∀ i, o = some i → as.length ≤ i + 1)} ≤ ENNReal.ofReal β := by
+  refine le_trans (MeasureTheory.measure_mono fun o ho => ?_)
+    (aboveThreshold_discreteLaplace_toOuterMeasure_not_thresholdAccurate_le hε hβ hβ1 T as)
+  simp only [Set.mem_ofPred_eq] at ho ⊢
+  intro hacc
+  exact ho ⟨hacc, fun i hi => (hi ▸ hacc).length_le has⟩
+
 section Sparse
 
 variable {D : Type*}
@@ -395,47 +413,58 @@ def sparseOffset (n : ℕ) : List (Option ℕ) → ℕ
   | [] => 0
   | o :: history => sparseOffset n history + aboveThresholdConsumed (n - sparseOffset n history) o
 
-/-- Sparse [DworkRoth2014, Algorithm 2] with cutoff `c`, as `c`-fold adaptive composition of
-AboveThreshold: each round restarts AboveThreshold, with fresh threshold noise, on the queries not
-yet consumed. The transcript lists the index reported by each round, most recent first. -/
-noncomputable def sparse (ρ ν : PMF ℤ) (T : ℝ) (fs : List (D → ℝ)) (c : ℕ) :
+/-- Sparse [DworkRoth2014, Algorithm 2] with cutoff `c` on an adaptively chosen stream, as
+`c`-fold adaptive composition of AboveThreshold: the round after the history `h` (the indices
+reported by the earlier rounds, most recent first) restarts AboveThreshold, with fresh threshold
+noise, on the queries `qs h`. The transcript lists the index reported by each round, most recent
+first. Within a round the analyst sees only `⊥`s, so a deterministic analyst's queries for a round
+depend only on the earlier rounds' outputs. -/
+noncomputable def sparse (ρ ν : PMF ℤ) (T : ℝ) (qs : List (Option ℕ) → List (D → ℝ)) (c : ℕ) :
     D → PMF (List (Option ℕ)) :=
-  adaptiveComposition
-    (fun history => aboveThresholdMechanism ρ ν T (fs.drop (sparseOffset fs.length history))) c
+  adaptiveComposition (fun history => aboveThresholdMechanism ρ ν T (qs history)) c
+
+/-- The queries of each round of Sparse on the fixed stream `fs`: the round continues on the
+queries not yet consumed by the earlier rounds. -/
+def sparseStream (fs : List (D → ℝ)) (history : List (Option ℕ)) : List (D → ℝ) :=
+  fs.drop (sparseOffset fs.length history)
+
+/-- Every query of a round of Sparse on a fixed stream belongs to the stream. -/
+theorem mem_of_mem_sparseStream {fs : List (D → ℝ)} {history : List (Option ℕ)} {f : D → ℝ}
+    (hf : f ∈ sparseStream fs history) : f ∈ fs :=
+  List.mem_of_mem_drop hf
 
 /-- Sparse with cutoff `c` is `(c (ε₁ + ε₂), 0)`-private when each AboveThreshold round is
-`(ε₁ + ε₂, 0)`-private, by basic adaptive composition [DworkRoth2014, Theorem 3.25]. -/
+`(ε₁ + ε₂, 0)`-private, by basic adaptive composition; this follows the proof of
+[DworkRoth2014, Theorem 3.25] for `δ = 0`. -/
 theorem DifferentiallyPrivate.sparse {Adj : D → D → Prop} {ρ ν : PMF ℤ} {T : ℝ}
-    {fs : List (D → ℝ)} {s : ℤ} {ε₁ ε₂ : ℝ} (hε₂ : 0 ≤ ε₂)
-    (hfs : ∀ f ∈ fs, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ s)
+    {qs : List (Option ℕ) → List (D → ℝ)} {s : ℤ} {ε₁ ε₂ : ℝ} (hε₂ : 0 ≤ ε₂)
+    (hqs : ∀ history, ∀ f ∈ qs history, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ s)
     (hρ : ∀ r, ρ r ≤ ENNReal.ofReal (Real.exp ε₁) * ρ (r + s))
     (hν : ∀ v, ν v ≤ ENNReal.ofReal (Real.exp ε₂) * ν (v + 2 * s)) (c : ℕ) :
-    DifferentiallyPrivate Adj (Privacy.sparse ρ ν T fs c) (c * (ε₁ + ε₂)) 0 := by
+    DifferentiallyPrivate Adj (Privacy.sparse ρ ν T qs c) (c * (ε₁ + ε₂)) 0 := by
   have := DifferentiallyPrivate.adaptiveComposition (Adj := Adj)
-    (M := fun history =>
-      Privacy.aboveThresholdMechanism ρ ν T (fs.drop (sparseOffset fs.length history)))
+    (M := fun history => Privacy.aboveThresholdMechanism ρ ν T (qs history))
     (ε := fun _ => ε₁ + ε₂) (δ := fun _ => 0)
-    (fun history => DifferentiallyPrivate.aboveThresholdMechanism hε₂
-      (fun f hf => hfs f (List.mem_of_mem_drop hf)) hρ hν) c
+    (fun history => DifferentiallyPrivate.aboveThresholdMechanism hε₂ (hqs history) hρ hν) c
   rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul, Finset.sum_const_zero] at this
   exact this
 
-/-- Sparse with cutoff `c ≥ 1` and discrete Laplace noise of scales `2 c Δ / ε` and `4 c Δ / ε` is
-`(ε, 0)`-differentially private for queries of sensitivity `Δ ≥ 1`; the `δ = 0` case of
-[DworkRoth2014, Theorem 3.25], with discrete noise. -/
+/-- Sparse with cutoff `c ≥ 1` on an adaptively chosen stream, with discrete Laplace noise of
+scales `2 c Δ / ε` and `4 c Δ / ε`, is `(ε, 0)`-differentially private for queries of sensitivity
+`Δ ≥ 1` (an integer); the `δ = 0` case of [DworkRoth2014, Theorem 3.25], with discrete noise. -/
 theorem differentiallyPrivate_sparse_discreteLaplace {Adj : D → D → Prop} {T : ℝ}
-    {fs : List (D → ℝ)} {Δ : ℕ} (hΔ : 0 < Δ)
-    (hfs : ∀ f ∈ fs, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ Δ) {c : ℕ} (hc : 0 < c) {ε : ℝ}
-    (hε : 0 < ε) :
+    {qs : List (Option ℕ) → List (D → ℝ)} {Δ : ℕ} (hΔ : 0 < Δ)
+    (hqs : ∀ history, ∀ f ∈ qs history, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ Δ) {c : ℕ} (hc : 0 < c)
+    {ε : ℝ} (hε : 0 < ε) :
     DifferentiallyPrivate Adj
       (sparse (discreteLaplace (2 * c * Δ / ε) (by positivity))
-        (discreteLaplace (4 * c * Δ / ε) (by positivity)) T fs c) ε 0 := by
+        (discreteLaplace (4 * c * Δ / ε) (by positivity)) T qs c) ε 0 := by
   have hΔ' : (0 : ℝ) < Δ := by exact_mod_cast hΔ
   have hc' : (0 : ℝ) < c := by exact_mod_cast hc
   have h₁ : (Δ : ℝ) / (2 * c * Δ / ε) = ε / (2 * c) := by field_simp
   have h₂ : (2 * Δ : ℝ) / (4 * c * Δ / ε) = ε / (2 * c) := by field_simp; ring
-  have := DifferentiallyPrivate.sparse (Adj := Adj) (T := T) (fs := fs)
-    (s := Δ) (ε₁ := ε / (2 * c)) (ε₂ := ε / (2 * c)) (by positivity) (by exact_mod_cast hfs)
+  have := DifferentiallyPrivate.sparse (Adj := Adj) (T := T) (qs := qs)
+    (s := Δ) (ε₁ := ε / (2 * c)) (ε₂ := ε / (2 * c)) (by positivity) (by exact_mod_cast hqs)
     (fun r => by
       have := discreteLaplace_apply_le (2 * c * Δ / ε) (by positivity) (Δ := Δ) r Δ (by simp)
       rwa [h₁] at this)
@@ -445,6 +474,19 @@ theorem differentiallyPrivate_sparse_discreteLaplace {Adj : D → D → Prop} {T
       rwa [h₂] at this) c
   have hε' : (c : ℝ) * (ε / (2 * c) + ε / (2 * c)) = ε := by field_simp; ring
   rwa [hε'] at this
+
+/-- Sparse on a fixed stream of queries of sensitivity `Δ ≥ 1`, each round continuing on the
+unconsumed queries, with discrete Laplace noise of scales `2 c Δ / ε` and `4 c Δ / ε`, is
+`(ε, 0)`-differentially private. -/
+theorem differentiallyPrivate_sparse_sparseStream_discreteLaplace {Adj : D → D → Prop} {T : ℝ}
+    {fs : List (D → ℝ)} {Δ : ℕ} (hΔ : 0 < Δ)
+    (hfs : ∀ f ∈ fs, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ Δ) {c : ℕ} (hc : 0 < c) {ε : ℝ}
+    (hε : 0 < ε) :
+    DifferentiallyPrivate Adj
+      (sparse (discreteLaplace (2 * c * Δ / ε) (by positivity))
+        (discreteLaplace (4 * c * Δ / ε) (by positivity)) T (sparseStream fs) c) ε 0 :=
+  differentiallyPrivate_sparse_discreteLaplace hΔ
+    (fun _ f hf => hfs f (mem_of_mem_sparseStream hf)) hc hε
 
 end Sparse
 

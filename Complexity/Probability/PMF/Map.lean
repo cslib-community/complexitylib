@@ -17,6 +17,7 @@ import Complexity.Probability.PMF.Bind
 
 * `Cslib.Probability.PMF.map_equiv_apply`: point masses after an equivalence.
 * `Cslib.Probability.PMF.map_congr_on_support`: only supported inputs need equal outputs.
+* `Cslib.Probability.PMF.map_apply_le_mul`: relabeling preserves a pointwise ratio bound.
 * `Cslib.Probability.PMF.map_apply_toReal`: finite fiber sums.
 * `Cslib.Probability.PMF.uniformOfFintype_map_apply`: uniform image masses from fiber sizes.
 * `Cslib.Probability.PMF.bind_map_prodMk_apply`: point masses of a pairing bind.
@@ -52,6 +53,16 @@ theorem map_equiv_apply (p : PMF α) (e : α ≃ β) (b : β) :
 theorem map_congr_on_support (p : PMF α) (f g : α → β)
     (h : ∀ a ∈ p.support, f a = g a) : p.map f = p.map g :=
   PMF.bind_congr_on_support p _ _ (fun a ha => congrArg PMF.pure (h a ha))
+
+/-- A pointwise likelihood-ratio bound `p ≤ c · q` survives relabeling by any map. -/
+theorem map_apply_le_mul {p q : PMF α} {c : ℝ≥0∞} (h : ∀ a, p a ≤ c * q a) (f : α → β)
+    (b : β) : p.map f b ≤ c * q.map f b := by
+  classical
+  rw [PMF.map_apply, PMF.map_apply, ← ENNReal.tsum_mul_left]
+  refine tsum_le_tsum fun a => ?_
+  split_ifs
+  · exact h a
+  · simp
 
 /-- The mass of a deterministic image is the sum of the masses in its fiber. -/
 theorem map_apply_toReal [Fintype α] [DecidableEq β] (p : PMF α) (f : α → β) (b : β) :

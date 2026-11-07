@@ -119,9 +119,10 @@ omit [Fintype R] [Nonempty R] in
 theorem le_optUtility [Finite R] (u : D → R → ℝ) (x : D) (r : R) : u x r ≤ optUtility u x :=
   le_ciSup (Set.finite_range _).bddAbove r
 
+open Classical in
 /-- The outputs of optimal utility, `R_OPT = {r | u(x, r) = OPT_u(x)}`; it is nonempty. -/
-noncomputable def optSet (u : D → R → ℝ) (x : D) : Finset R := by
-  classical exact Finset.univ.filter fun r => u x r = optUtility u x
+noncomputable def optSet (u : D → R → ℝ) (x : D) : Finset R :=
+  Finset.univ.filter fun r => u x r = optUtility u x
 
 omit [Nonempty R] in
 theorem mem_optSet {u : D → R → ℝ} {x : D} {r : R} : r ∈ optSet u x ↔ u x r = optUtility u x := by
