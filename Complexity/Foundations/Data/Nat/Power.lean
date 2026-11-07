@@ -27,6 +27,12 @@ and bounds by exponentials.
 * `Nat.mul_add_one_pow_le`: `(R + 1) * d ≤ M → R * (M + 1) ^ d ≤ (R + 1) * M ^ d`.
 * `Nat.sq_le_two_pow`: `4 ≤ s → s ^ 2 ≤ 2 ^ s`.
 * `Nat.pow_le_two_pow`: `1 ≤ D → 4 * D ^ 2 ≤ b → b ^ D ≤ 2 ^ b`.
+* `Nat.succ_pow_sub_pow_le`: `(c + 1) ^ (j + 1) - c ^ (j + 1) ≤ (j + 1) * (c + 1) ^ j`.
+
+## References
+
+* [N. Alon, Y. Matias, M. Szegedy, *The space complexity of approximating the frequency
+  moments*, proof of Theorem 2.1][AlonMatiasSzegedy1999]
 -/
 
 @[expose] public section
@@ -130,5 +136,25 @@ theorem pow_le_two_pow {D b : ℕ} (hD : 1 ≤ D) (hb : 4 * D ^ 2 ≤ b) :
     _ ≤ (2 ^ s) ^ D := Nat.pow_le_pow_left (sq_le_two_pow hs4) D
     _ = 2 ^ (s * D) := (Nat.pow_mul 2 s D).symm
     _ ≤ 2 ^ b := Nat.pow_le_pow_right (by decide) (Nat.div_mul_le_self b D)
+
+/-- Consecutive `(j + 1)`-th powers differ by at most `(j + 1) (c + 1) ^ j`, the case `a = b + 1`
+of `a ^ k - b ^ k ≤ (a - b) k a ^ (k - 1)` [AlonMatiasSzegedy1999, proof of Theorem 2.1]. -/
+theorem succ_pow_sub_pow_le (c j : ℕ) :
+    (c + 1) ^ (j + 1) - c ^ (j + 1) ≤ (j + 1) * (c + 1) ^ j := by
+  induction j with
+  | zero => simp
+  | succ j ih =>
+    obtain ⟨d, hd⟩ : ∃ d, (c + 1) ^ (j + 1) = c ^ (j + 1) + d :=
+      Nat.exists_eq_add_of_le (Nat.pow_le_pow_left (Nat.le_succ c) _)
+    rw [hd, Nat.add_sub_cancel_left] at ih
+    have e1 : (c + 1) ^ (j + 1 + 1) = (c + 1) * (c + 1) ^ (j + 1) := by ring
+    have e2 : c ^ (j + 1 + 1) = c * c ^ (j + 1) := by ring
+    have e3 : (c + 1) ^ (j + 1) = (c + 1) * (c + 1) ^ j := by ring
+    have hcd : c * d ≤ (j + 1) * (c + 1) ^ (j + 1) :=
+      calc c * d ≤ c * ((j + 1) * (c + 1) ^ j) := Nat.mul_le_mul_left c ih
+        _ ≤ (c + 1) * ((j + 1) * (c + 1) ^ j) := Nat.mul_le_mul_right _ (Nat.le_succ c)
+        _ = (j + 1) * (c + 1) ^ (j + 1) := by rw [e3]; ring
+    rw [e1, e2, Nat.sub_le_iff_le_add, hd]
+    nlinarith
 
 end Nat
