@@ -647,6 +647,14 @@ Two more classical approximation algorithms are stated as plain inequalities aga
 
 The [vertex-cover examples](../../ComplexityTests/VertexCoverApproximation.lean) pin the optimum of a path and a star exactly, so the factor `2` is attained. The [TSP examples](../../ComplexityTests/TSPApproximation.lean) include a matrix violating the triangle inequality where the tour costs `202` against a tour of cost `4`, so the metric hypothesis cannot be dropped. Concrete TSP runs first pin the sorted edge list with `simp [sortEdges_cons_cons]`, because `List.mergeSort` does not reduce in the kernel. No machine running time is certified for the TSP tour yet; that needs a polynomial-time certificate for Kruskal's algorithm on encoded matrices.
 
+## Euler circuits in multigraphs
+
+Import `Complexity.Algorithms.Lean.Euler.Circuit` ([source](../../Complexity/Algorithms/Lean/Euler/Circuit.lean)). A finite multigraph is an edge list `H : List (α × α)`, with parallel edges and self-loops allowed, and edges are compared up to orientation through `undirected`. A walk is a vertex list whose edges are its consecutive pairs (`walkEdges`). `IsEulerCircuit H u w` says that `w` runs from `u` back to `u` and uses every edge of `H` exactly once, in either direction. The degree of a vertex counts endpoints, so a self-loop counts twice.
+
+`exists_isEulerCircuit_iff` is Euler's theorem in this model: an Euler circuit from `u` exists exactly when every degree is even and every edge is connected to `u` (`Relation.EqvGen` of the edge relation, as for Kruskal's tree). The sufficiency direction is constructive. `eulerCircuit H u` is Hierholzer's algorithm [Hierholzer][hierholzer73] ([Korte and Vygen][kortevygen18], Section 2.4): `walkFrom` follows unused edges greedily, and `walkFrom_spec` shows that it can only stop at the other odd vertex, or back at its start when all degrees are even. `eulerLoop` then splices in closed walks from visited vertices that still have unused edges. `sum_map_walkEdges_eq` says that an Euler circuit weighs as much as its multigraph under a symmetric weight. Mathlib's `SimpleGraph.Walk.IsEulerian` covers only simple graphs and only necessity. The list model is what Christofides' algorithm needs, since a spanning tree together with a matching may repeat an edge. No running time is charged.
+
+The [examples](../../ComplexityTests/EulerCircuit.lean) run the algorithm on a bowtie (where a second triangle must be spliced in) and on a multigraph with parallel edges and a self-loop. They also refute Euler circuits for a path with odd endpoints and for two disjoint triangles whose degrees are even.
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -657,5 +665,7 @@ The numeric values above are transcriptions of checked source statements, not re
 
 [complexitylib]: ../sources.md#complexitylib
 [clrs09]: ../sources.md#clrs09
+[hierholzer73]: ../sources.md#hierholzer73
+[kortevygen18]: ../sources.md#kortevygen18
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
