@@ -747,14 +747,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
   abstracts, and the uniform `o(n)` forms of the PPSZ bounds with `w` growing in `n`.
   Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
-- **APSP class** ([#2989](https://github.com/cslib-community/complexitylib/issues/2989)): APSP and
+- **APSP class** ([#3076](https://github.com/cslib-community/complexitylib/issues/3076)): APSP and
   the (min,+) product reduce to each other in the query model (repeated squaring costs
   `⌈log₂ (n - 1)⌉` products, the tripartite graph one APSP call on `3 n` vertices), with
   Floyd–Warshall and schoolbook products as instances. Remaining: the negative-triangle
-  equivalence of Vassilevska Williams and Williams and the other members of the APSP class
-  (minimum-weight cycle, replacement paths, radius, (min,+) product verification); word-RAM
-  realizations with bit-length costs; Bellman–Ford with negative-cycle reporting; Kerr's `Ω(n³)`
-  bound for (min,+) products over `(min, +)` straight-line programs.
+  equivalence and the other APSP-equivalent problems of Vassilevska Williams and Williams
+  (minimum-weight cycle, replacement paths, metricity, (min,+) product verification); the
+  radius and median equivalences of Abboud, Grandoni and Vassilevska Williams (SODA 2015); a
+  bridge from vertex-list walks to `Quiver.Path` weights; word-RAM realizations with bit-length
+  costs; Kerr's `Ω(n³)` bound for (min,+) straight-line programs. Bellman–Ford with
+  negative-cycle reporting is [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
 
 ### Approximation and PCP
 

@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Algebra/Tropical/BigOperators.lean`)
 
 public import Complexity.Init
 public import Mathlib.Algebra.Tropical.BigOperators

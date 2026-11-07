@@ -78,7 +78,9 @@ theorem cost_tabulateMatrix {T : Type} [AddCommMonoid T] (oracle : {ι : Type} �
     (tabulateMatrix n f).cost oracle weight = ∑ i, ∑ j, (f i j).cost oracle weight := by
   simp only [tabulateMatrix, cost_map, cost_tabulate]
 
-/-- The value of a monadic left fold whose steps have known values. -/
+/-- The value of a monadic left fold whose steps have known values. This is the pure-valued
+special case of `Cslib.IsMonadHom.map_listFoldlM` applied to `Cslib.FreeM.isMonadHom_pure_eval`,
+stated with the step function replaced by its value. -/
 theorem eval_foldlM {β γ : Type} (oracle : {ι : Type} → Q ι → ι) (step : β → γ → FreeM Q β)
     (g : β → γ → β) (hstep : ∀ b c, (step b c).eval oracle = g b c) :
     ∀ (l : List γ) (b : β), (l.foldlM step b).eval oracle = l.foldl g b

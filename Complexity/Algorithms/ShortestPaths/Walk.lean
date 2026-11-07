@@ -31,6 +31,15 @@ vertices, so it suffices to check that `D` is achieved by walks and lies below e
 walk (`isShortestDistances_of_sound_complete`). Closed walks of length at most `card V` already
 decide `NoNegCycle` (`noNegCycle_of_forall_length_le`).
 
+Walks are vertex lists rather than Mathlib's `Quiver.Path`, which the word-RAM Dijkstra
+development uses with `Quiver.Path.addWeight`. A matrix has an entry for every ordered pair, so
+the underlying quiver would be complete and its arrows would carry no information. Lists make
+the arguments here direct: `List.Nodup` states that a walk is simple, splitting a list at a
+repeated vertex removes a closed sub-walk, and induction on length bounds the closed walks that
+decide `NoNegCycle`, which `Power.lean` then turns into a decision procedure. A lemma identifying
+`walkWeight` with `Quiver.Path.weightOfEPs` on the complete quiver on `V` is left as a follow-up
+([#3076](https://github.com/cslib-community/complexitylib/issues/3076)).
+
 ## Main definitions
 
 * `Cslib.Algorithms.ShortestPaths.walkWeight`: the weight of a walk.
