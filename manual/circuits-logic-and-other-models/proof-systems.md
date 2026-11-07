@@ -88,6 +88,21 @@ preserved. [Checked examples](../../ComplexityTests/BooleanClone.lean) include a
 with none of the six operations and with negation as a polymorphism. This is the algebraic
 classification; its hardness application remains part of #2822.
 
+For fixed-language reductions, import `Complexity.Logics.Propositional.CSP.PrimitivePositive`
+and `Complexity.Computability.PolyTime.CSP.Gadget`. A `CSP.PPGadget` is a well-formed conjunction
+with free ports and existential auxiliary ports. `CSP.exists_ppGadget_of_polymorphisms` proves
+the canonical finite construction when the target relation is nonempty, separates its coordinate
+columns, and is preserved by every positive-arity common polymorphism. This restricted
+equality-free form does not assert general equality elimination. The native
+`CSP.computableInPolyTime_replaceGadgetsGuarded` compiler uses fixed gadget lookup, fresh odd
+auxiliary names and even original names, retaining binary variable labels. It checks exact source
+arities and substitutes an explicit rejecting instance on malformed inputs.
+[Checked examples](../../ComplexityTests/CSPGadget.lean) exercise freshness, repeated ports,
+existential witnesses, empty/nullary instances and malformed rejection.
+The shared exact-arity certificate is
+`Cslib.Complexity.CSP.computableInPolyTime_validArity` in
+`Complexity.Computability.PolyTime.CSP.Boolean`; both satisfiability and gadget compilers reuse it.
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |

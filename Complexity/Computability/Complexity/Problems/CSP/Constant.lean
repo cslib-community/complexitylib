@@ -67,7 +67,7 @@ theorem mem_P_of_constant [Finite Rel] (encRel : Rel ↪ List Bool) (arity : Rel
       ((hp.comp (ComputableInPolyTime.fst _ _)).comp (ComputableInPolyTime.snd _ _))
   have hs : ComputableInPolyTime solver (encCSP encRel encNat) encBool := by
     exact ComputableInPolyTime.bool_and.comp
-      ((computableInPolyTime_validArity encRel arity).prod hall)
+      ((CSP.computableInPolyTime_validArity encRel arity).prod hall)
   refine ⟨solver, hs, fun F => ?_⟩
   change F.WellFormed arity ∧ F.Satisfiable sem ↔ solver F = true
   simp only [solver, Bool.and_eq_true, CSP.validArity_eq_true_iff, List.all_eq_true]
