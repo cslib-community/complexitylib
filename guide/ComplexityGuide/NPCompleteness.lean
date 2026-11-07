@@ -426,6 +426,31 @@ example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
   CSPSAT.npComplete_of_not_hasSchaeferPolymorphism encRel arity sem h
 ```
 
+{name}`CSPSAT.exists_linear_size_reduction_from_threeSAT` gives the actual
+hardness reduction together with correctness, native polynomial-time computation
+and `output.numVars + output.length ≤ C * input.length`. Thus the number of
+distinct output variables plus constraints is at most a fixed constant times the
+number of input clauses, and hence at most `C * (input.numVars + input.length)`.
+The constant depends only on the fixed language. The bound holds on all raw CNFs,
+including malformed and empty inputs; it concerns combinatorial counts rather
+than encoded bit length or running time.
+
+```lean
+open Cslib.Logic.PL Turing.MultiTapeTM in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬ CSP.HasSchaeferPolymorphism arity sem) :
+    ∃ (f : CNF ℕ → CSP Rel ℕ) (C : ℕ),
+      ComputableInPolyTime f encCNF (encCSP encRel encNat) ∧
+      (∀ φ, φ ∈ ThreeSAT ↔ f φ ∈ CSPSAT arity sem) ∧
+      (∀ φ, (f φ).numVars + (f φ).length ≤ C * (φ.numVars + φ.length)) := by
+  obtain ⟨f, C, hp, hm, hs⟩ :=
+    CSPSAT.exists_linear_size_reduction_from_threeSAT encRel arity sem h
+  refine ⟨f, C, hp, hm, fun φ => (hs φ).trans ?_⟩
+  apply Nat.mul_le_mul_left
+  omega
+```
+
 The remaining tractable normal forms have proved native solvers:
 {name}`Cslib.Logic.PL.isPolymorphism_and_iff_exists_hornCNF` and
 {name}`Cslib.Logic.PL.isPolymorphism_or_iff_exists_dualHornCNF` characterize

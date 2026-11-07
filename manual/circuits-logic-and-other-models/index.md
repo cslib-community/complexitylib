@@ -11,7 +11,7 @@ The curated [Model map](../model-map.md) contains **92 entries**, separating cha
 | [Circuits and formulas](circuits-and-formulas.md) | What is a gate, what is free, and how do the Boolean bases and nonuniform classes differ? |
 | [Algebraic and quantum models](algebraic-and-quantum.md) | Which algebraic equalities, partial operations, encodings, the matrix multiplication exponent and quantum resources are formalized? |
 | [Networks and finite dynamics](networks-and-iteration.md) | How do graph separators, tensor contractions, nondeterministic paths and function iteration connect? |
-| [Query and communication complexity](query-and-communication.md) | Which information-access costs are charged, and what lower-bound and simulation theorems use them? |
+| [Query and communication complexity](query-and-communication.md) | Which information-access costs are charged, including LOCAL rounds, and what lower-bound and simulation theorems use them? |
 | [Finite-model logic](finite-model-logic.md) | How do formulas, interpretations, encodings and native complexity classes meet? |
 | [Propositional proof systems](proof-systems.md) | Which proof objects and measures support resolution lower bounds, interpolation and cutting planes? |
 | [Learning and property testing](learning-and-testing.md) | Are the proved bounds on samples, queries, or machine time? |
@@ -37,6 +37,7 @@ A third chain starts with a local-constraint network. A layout exposes a frontie
 | Arithmetic depth | Ordinary depth or product-only depth; coefficient cost is generally not bit cost. |
 | Query complexity | Usually structural worst-case depth, including all trees in randomized support. |
 | Communication | Transmitted bits, messages, or maximum local DAG-node cost, depending on the model. |
+| Distributed rounds | Synchronous LOCAL rounds with unbounded messages and local computation; identifiers and the cycle length are explicit inputs. |
 | Learning | Sample or membership-query count; native runtime is a separate theorem. |
 | Logic | Usually data complexity of one fixed formula, not combined complexity of formula and structure. |
 | Proof complexity | Lines, tree nodes, or distinct-literal width; not proof-search time. |

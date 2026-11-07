@@ -25,7 +25,8 @@ probability of a pair of deterministic strategies `X → A` and `Y → B`
 asks `n` independent pairs of questions at once and accepts when every coordinate is accepted
 (`Cslib.PCP.TwoProverGame.pow`) [Holenstein, Definition 2.3][Holenstein2009]. Answering each
 coordinate independently with an optimal strategy shows `value G ^ n ≤ value (G.pow n)`
-(`pow_value_le_value_pow`); the parallel repetition theorem bounds `value (G.pow n)` from above.
+(`pow_value_le_value_pow`); the parallel repetition theorem bounds `value (G.pow n)` from above
+(`value_pow_le`, in `Complexity/Computability/PCP/ParallelRepetition.lean`).
 
 For a pair of strategies of the repetition, `winsOn` is the event that every coordinate in a set
 `C` is won [Holenstein, Definition 2.4][Holenstein2009] and `winProbOn` its probability. If the
