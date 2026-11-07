@@ -228,9 +228,12 @@ findings without requiring a duplicate local run.
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
 ROADMAP lists open directions only; status and progress live on issues and PRs, so a PR does not
-edit ROADMAP unless it opens or closes a direction. UPSTREAM records coordination and exceptional
-integration decisions, while source markers record module status. Batch measurements and
-validation/review evidence belong in commit or PR descriptions.
+edit ROADMAP unless it opens or closes a direction. Write a new issue or PR link in ROADMAP inline,
+as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`, rather than as a
+`[#N]: …` reference definition appended to the end of the file: such appended lines conflict
+between PRs in the merge queue, and `scripts/check_hygiene.py` rejects new ones. UPSTREAM records
+coordination and exceptional integration decisions, while source markers record module status.
+Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
 

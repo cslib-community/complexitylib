@@ -42,11 +42,16 @@ Checks enforced by default (see AGENTS.md):
    `README.md` (`](abstracts/ComplexityAbstracts/<Name>.lean)`) and from `abstracts/README.md`
    (`](ComplexityAbstracts/<Name>.lean)`), and neither README links an abstract module that the
    catalogue does not select (#1921).
+9. (Default selection only.) `ROADMAP.md` adds no issue-link reference definitions
+   (`[#N]: https://…`): only the labels in `ROADMAP_ISSUE_DEFINITIONS`, which predate the rule,
+   may be defined. New links are written inline, since every PR appending a definition to the
+   shared tail block conflicts with the others in the merge queue. Each `[#N]` shortcut that is
+   not an inline link or a definition must still have its definition.
 
 Opt-in heuristic checks:
-9. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
-   under Complexity/.
-10. (`--max-lines N`) Flag Lean files exceeding N lines.
+10. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
+    under Complexity/.
+11. (`--max-lines N`) Flag Lean files exceeding N lines.
 """
 
 from __future__ import annotations
@@ -595,6 +600,49 @@ def check_abstract_readmes(root: pathlib.Path = ROOT) -> list[str]:
     return errors
 
 
+# The issue-link reference definitions that `ROADMAP.md` may keep: those on `main` when inline
+# links became the rule, and those of pull requests then open, so that queued work is not failed
+# for following the old convention. The set never grows; a closed direction drops its definition
+# without editing this list. A one-time conversion of the block to inline links can empty it.
+ROADMAP_ISSUE_DEFINITIONS = frozenset({
+    321, 324, 399, 456, 459, 474, 486, 581, 585, 608, 640, 643, 798, 800, 862, 884, 886, 888,
+    889, 890, 891, 892, 894, 895, 896, 897, 939, 949, 999, 1002, 1104, 1124, 1155, 1351, 1539,
+    1572, 1817, 2019, 2062, 2063, 2084, 2145, 2205, 2213, 2261, 2289, 2290, 2347, 2423, 2468,
+    2521, 2527, 2568, 2579, 2585, 2620, 2636, 2642, 2652, 2661, 2812, 2855, 2861, 2866, 2867,
+    2873, 2874,
+})
+# A reference definition `[#N]: target` (CommonMark allows up to three leading spaces).
+ROADMAP_ISSUE_DEFINITION_RE = re.compile(r"^ {0,3}\[#(\d+)\]:", re.M)
+# A use `[#N]` of the label: a shortcut, collapsed or full reference, but not an inline link.
+ROADMAP_ISSUE_REFERENCE_RE = re.compile(r"\[#(\d+)\](?!\()")
+
+
+def check_roadmap_links(text: str, rel: str = "ROADMAP.md") -> list[str]:
+    """No new `[#N]:` reference definitions, and every `[#N]` reference is defined."""
+    errors: list[str] = []
+    defined: set[int] = set()
+    for m in ROADMAP_ISSUE_DEFINITION_RE.finditer(text):
+        number = int(m.group(1))
+        defined.add(number)
+        if number not in ROADMAP_ISSUE_DEFINITIONS:
+            line = text.count("\n", 0, m.start()) + 1
+            errors.append(
+                f"{rel}:{line}: new reference definition `[#{number}]:`; write the link inline as "
+                f"`[#{number}](https://github.com/cslib-community/complexitylib/issues/{number})`, "
+                "since definitions appended to the end of the file conflict across queued PRs "
+                "(CONTRIBUTING.md, Documentation)")
+    for m in ROADMAP_ISSUE_REFERENCE_RE.finditer(text):
+        number = int(m.group(1))
+        if number in defined:
+            continue
+        line = text.count("\n", 0, m.start()) + 1
+        errors.append(
+            f"{rel}:{line}: `[#{number}]` has no reference definition and renders as plain text; "
+            f"write it as `[#{number}](https://github.com/cslib-community/complexitylib/issues/"
+            f"{number})`")
+    return errors
+
+
 def check_paths(
     paths: list[pathlib.Path],
     root: pathlib.Path = ROOT,
@@ -662,6 +710,7 @@ def main() -> int:
         errors += check_bibliography(bibliography)
         errors += check_heartbeat_allowlist_stale(heartbeat_caps)
         errors += check_abstract_readmes()
+        errors += check_roadmap_links((ROOT / "ROADMAP.md").read_text(encoding="utf-8"))
     if errors:
         for err in errors:
             print(f"ERROR: {err}", file=sys.stderr)
