@@ -630,7 +630,7 @@ index links to canonical definitions rather than keeping a second set.
   schemes (instances of probability zero obstruct a literal equivalence), randomized
   average-case classes, and `(L, U) ∈ AvgP` implying `L ∈ E`-style consequences. Reuse the
   specialized Liu–Pass hardness notions through further proved bridges.
-- **Completeness beyond computable ensembles:** extend the bounded-halting completeness for
+- **Completeness beyond computable ensembles** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the bounded-halting completeness for
   `DistNP` to samplable distributions (Impagliazzo–Levin, `SampNP`), and bridge the verifier-form
   bounded halting problem to a nondeterministic machine model. Connect the framework to one-way
   functions, learning and the metacomplexity track ([#798]), preserving the distribution and

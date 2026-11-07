@@ -122,11 +122,11 @@ theorem ensemble_dist (N : ℕ) : H.ensemble.dist N = (Ensemble.uniform.dist N).
 /-! ### The block of a header -/
 
 /-- The least value of a word of length `|r|` with the header of `r`. -/
-@[expose] def lo (r : List Bool) : ℕ :=
+def lo (r : List Bool) : ℕ :=
   BitString.binaryValue (H.header r) * 2 ^ (r.length - (H.header r).length)
 
 /-- One more than the greatest value of a word of length `|r|` with the header of `r`. -/
-@[expose] def hi (r : List Bool) : ℕ :=
+def hi (r : List Bool) : ℕ :=
   (BitString.binaryValue (H.header r) + 1) * 2 ^ (r.length - (H.header r).length)
 
 theorem lo_le_hi (r : List Bool) : H.lo r ≤ H.hi r :=
@@ -201,7 +201,7 @@ theorem collapse_eq_collapse_iff {r r' : List Bool} (hv : H.valid r = true)
 
 /-- The numerator of the cumulative distribution of the collapsed ensemble at `y`: one more than the
 value of `y` if `y` is a collapsed word, and otherwise the bottom of the block of `y`. -/
-@[expose] def cdfNum (y : List Bool) : ℕ :=
+def cdfNum (y : List Bool) : ℕ :=
   if H.collapse y = y then BitString.binaryValue y + 1 else H.lo y
 
 theorem valid_of_collapse_ne {y : List Bool} (hy : H.collapse y ≠ y) : H.valid y = true := by

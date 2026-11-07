@@ -139,10 +139,15 @@ example : BoundedHalting.problem ∈ DistNP := BoundedHalting.problem_mem_DistNP
 
 example : DistComplete DistNP BoundedHalting.problem := BoundedHalting.distComplete_problem
 
-/-- If `(BH, U^BH)` has an errorless heuristic scheme, so does every problem of `DistNP`, for
-example `(BH, U)` with the uniform ensemble when `BH` paired with it is in `DistNP`. -/
+/-- If `(BH, U^BH)` has an errorless heuristic scheme, so does every problem of `DistNP`. -/
 example (h : BoundedHalting.problem ∈ AvgP) (L : DistProblem) (hL : L ∈ DistNP) : L ∈ AvgP :=
   BoundedHalting.problem_mem_AvgP_iff.mp h hL
+
+/-- For example, an errorless heuristic scheme for `(BH, U^BH)` gives one for `BH` under the
+uniform ensemble, which is also in `DistNP`. -/
+example (h : BoundedHalting.problem ∈ AvgP) : ⟨BoundedHalting.BH, Ensemble.uniform⟩ ∈ AvgP :=
+  BoundedHalting.problem_mem_AvgP_iff.mp h
+    (mem_DistNP.mpr ⟨BoundedHalting.BH_mem_NP, Ensemble.uniform_pComp⟩)
 
 example (h : BoundedHalting.problem ∈ HeurP) (L : DistProblem) (hL : L ∈ DistNP) : L ∈ HeurP :=
   BoundedHalting.problem_mem_HeurP_iff.mp h hL
