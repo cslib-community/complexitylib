@@ -122,7 +122,7 @@ Thomas Holenstein. “Pseudorandom Generators from One-Way Functions: A Simple C
 <a id="holenstein09"></a>
 ## holenstein09
 
-Thomas Holenstein. “Parallel Repetition: Simplifications and the No-Signaling Case.” *Theory of Computing* 5(8), 141–172, 2009. https://doi.org/10.4086/toc.2009.v005a008 . Journal PDF inspected (Definition 2.4, p. 146; Definition 5.1, p. 151; Lemma 5.4 and (5.5), p. 153; Lemma 6.5 and its proof, p. 157).
+Thomas Holenstein. “Parallel Repetition: Simplifications and the No-Signaling Case.” *Theory of Computing* 5(8), 141–172, 2009. https://doi.org/10.4086/toc.2009.v005a008 . Journal PDF inspected (Definition 2.4, p. 146; Definition 5.1, p. 151; Lemma 5.4 and (5.5), p. 153; Lemma 6.4 and (6.3)–(6.7) of its proof, p. 155; Lemma 6.5 and its proof, p. 157).
 
 <a id="immerman1988"></a>
 ## immerman1988
