@@ -3647,6 +3647,7 @@ public import Complexity.Foundations.Analysis.RowCompression.SentinelIteration
 public import Complexity.Foundations.Analysis.RowCompression.SentinelRelative
 public import Complexity.Foundations.Analysis.RowCompression.Stationary
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
+public import Complexity.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
 public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
@@ -4514,6 +4515,11 @@ public import Complexity.Logics.SecondOrder.Grounding
 public import Complexity.Logics.SecondOrder.IndependentSet
 public import Complexity.Logics.SecondOrder.Projection
 public import Complexity.Logics.SecondOrder.Reduction
+public import Complexity.MachineLearning.OnlineLearning.Hedge
+public import Complexity.MachineLearning.OnlineLearning.MultiplicativeUpdate
+public import Complexity.MachineLearning.OnlineLearning.MultiplicativeWeights
+public import Complexity.MachineLearning.OnlineLearning.WeightedMajority
+public import Complexity.MachineLearning.OnlineLearning.ZeroSum
 public import Complexity.MachineLearning.UniformLearning.AC0
 public import Complexity.MachineLearning.UniformLearning.Basic
 public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
@@ -4579,6 +4585,7 @@ public import Complexity.Probability.MinEntropy
 public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
 public import Complexity.Probability.Minimax
+public import Complexity.Probability.Minimax.Value
 public import Complexity.Probability.Option
 public import Complexity.Probability.PMF
 public import Complexity.Probability.PMF.Bind
