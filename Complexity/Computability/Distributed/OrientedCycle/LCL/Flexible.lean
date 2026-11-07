@@ -50,13 +50,14 @@ its length.
    length `g ≥ k + 1` between consecutive anchors, outputs the `d`-th label of a fixed closed walk
    of length `g`. This takes `2k (3 ^ k - 1) + 1` rounds.
 
-The source computes the anchoring as a maximal independent set in a power of the line graph. The
-strict local minima of a distance colouring used here are easier to formalize, and the longer gaps
-they allow only enlarge the additive term.
+The source suggests computing the anchoring e.g. as a maximal independent set in a power of the
+line graph. The strict local minima of a distance colouring used here are easier to formalize, and
+the longer gaps they allow only enlarge the additive term.
 
-The leading coefficient `(K - 1) / 2` of `log* n` comes from running the `K - 1` Cole–Vishkin
-colourings of stage 1 one after another. It is not tight: the lower bound has `½`, and closing the
-gap is left open.
+The leading coefficient `(K - 1) / 2` of `log* n` comes from the dilation in stage 1. The run with
+step `j + 1 ≤ k` simulates `s + 3` Cole–Vishkin rounds on a cycle whose edges have length `j + 1`,
+so stage 1 has radius `k (s + 3)`. This coefficient is not tight: the lower bound has `½`, and
+closing the gap is left open.
 
 ## Main definitions
 
