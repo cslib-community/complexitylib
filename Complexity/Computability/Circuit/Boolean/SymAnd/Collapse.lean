@@ -43,7 +43,9 @@ polynomial to be `0` or `1` modulo `m`. Here each level has a prime modulus, and
 theorem normalizes arbitrary integer values, so no `0`/`1` promise is needed. Composite moduli
 reduce to prime moduli by the source's Lemma 2.1 and the Chinese remainder theorem. That
 reduction, and the passage from ACC⁰ circuits (`Circuits.Boolean.AC0Mod`) to modular polynomial
-layers ([BeigelTarui1994, Lemma 2.5]), are not formalized here.
+layers ([BeigelTarui1994, Lemma 2.5]), are not formalized here. The collapsed circuit reads all
+slots of `T`; a circuit over the inputs alone also needs a restriction step that fixes the
+non-input slots to their initial value `false` and drops the AND gates meeting them.
 
 ## Main definitions
 
@@ -125,7 +127,8 @@ private theorem sum_prod_mem_lowDegree {G : Multiset (Finset T)} {F E : ℕ}
 /-- **Collapsing one modular layer** [BeigelTarui1994, Lemma 2.8]. Let `C` be a `SYM ∘ AND`
 circuit on slots `T` and `L` a layer with prime modulus `p` whose slot polynomials have degree at
 most `D`. If `C.size < p ^ k`, then some `SYM ∘ AND` circuit computes `C` after `L`, with fan-in at
-most `C.fanIn * (2k - 1)(p - 1)D` and at most `p ^ k * (|T| + 1) ^ fanIn` AND gates. -/
+most `F = C.fanIn * (2k - 1)(p - 1)D` and at most `p ^ k * (|T| + 1) ^ F` AND gates, where the
+exponent `F` is this new fan-in bound. -/
 theorem exists_eval_eq_eval_step [Fintype T] (C : SymAnd T) (L : ModPolyLayer T)
     (hp : L.p.Prime) {D : ℕ} (hq : ∀ t, L.q t ∈ lowDegree ℤ T D) {k : ℕ}
     (hk : C.size < L.p ^ k) :

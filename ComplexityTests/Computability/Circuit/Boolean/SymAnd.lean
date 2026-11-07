@@ -88,17 +88,39 @@ example : ModPolyLayer.run [top, bottom] ![true, false, false] 2 = false := by d
 example : ModPolyLayer.run [top, bottom] ![false, true, false] 2 = false := by decide
 example : ModPolyLayer.run [top, bottom] ![false, false, false] 2 = false := by decide
 
+/-- The slot polynomials of `bottom` have degree at most one. -/
+theorem bottom_q_mem_lowDegree (t : Fin 3) : bottom.q t ∈ lowDegree ℤ (Fin 3) 1 := by
+  by_cases ht : t = 2
+  · convert Submodule.add_mem _ (bitVal_mem_lowDegree (R := ℤ) (0 : Fin 3))
+      (bitVal_mem_lowDegree (R := ℤ) (1 : Fin 3)) using 1
+    funext v
+    simp [bottom, ht]
+  · convert bitVal_mem_lowDegree (R := ℤ) t using 1
+    funext v
+    simp [bottom, ht]
+
+/-- The slot polynomials of `top` have degree at most one. -/
+theorem top_q_mem_lowDegree (t : Fin 3) : top.q t ∈ lowDegree ℤ (Fin 3) 1 := by
+  by_cases ht : t = 2
+  · convert Submodule.add_mem _ (Submodule.add_mem _ (bitVal_mem_lowDegree (R := ℤ) (0 : Fin 3))
+      (bitVal_mem_lowDegree (R := ℤ) (1 : Fin 3)))
+      (Submodule.smul_mem _ (2 : ℤ) (bitVal_mem_lowDegree (R := ℤ) (2 : Fin 3))) using 1
+    funext v
+    simp [top, ht]
+  · convert bitVal_mem_lowDegree (R := ℤ) t using 1
+    funext v
+    simp [top, ht]
+
 /-- The tower `[top, bottom]` meets the collapse hypotheses with `B = 3`: primes `3` and `2`, and
-every function on three bits has degree at most `3`. -/
+slot polynomials of degree at most one. -/
 theorem tower_hyps : ∀ L ∈ [top, bottom],
     L.p.Prime ∧ L.p ≤ 3 ∧ ∀ t, L.q t ∈ lowDegree ℤ (Fin 3) 3 := by
-  have hdeg : ∀ (L : ModPolyLayer (Fin 3)) t, L.q t ∈ lowDegree ℤ (Fin 3) 3 := fun L t => by
-    simpa only [Fintype.card_fin] using mem_lowDegree_self (L.q t)
   intro L hL
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hL
   rcases hL with rfl | rfl
-  · exact ⟨Nat.prime_three, le_rfl, hdeg _⟩
-  · exact ⟨Nat.prime_two, by norm_num [bottom], hdeg _⟩
+  · exact ⟨Nat.prime_three, le_rfl, fun t => lowDegree_mono (by norm_num) (top_q_mem_lowDegree t)⟩
+  · exact ⟨Nat.prime_two, by norm_num [bottom],
+      fun t => lowDegree_mono (by norm_num) (bottom_q_mem_lowDegree t)⟩
 
 /-- **Non-vacuity of the tower collapse.** The output slot of `[top, bottom]` is a `SYM ∘ AND`
 circuit within the stated bounds, and that circuit takes both values. -/
@@ -114,8 +136,7 @@ theorem collapse_nonvacuous : ∃ C : SymAnd (Fin 3),
 /-- The single-layer collapse applies to a `SYM ∘ AND` circuit above `top` with `k = 2`. -/
 example : ∃ C' : SymAnd (Fin 3), ∀ v, C'.eval v = parity3.eval (top.step v) := by
   obtain ⟨C', hC', -, -⟩ := SymAnd.exists_eval_eq_eval_step parity3 top Nat.prime_three
-    (fun t => by simpa only [Fintype.card_fin] using mem_lowDegree_self (top.q t))
-    (k := 2) (by decide)
+    top_q_mem_lowDegree (k := 2) (by decide)
   exact ⟨C', hC'⟩
 
 end ComplexityTests.Computability.Circuit.Boolean.SymAnd
