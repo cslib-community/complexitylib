@@ -19,12 +19,12 @@ clique of size `k` or an independent set of size `l`. A graph on `Fin n` is the 
 red/blue colouring of the edges of the complete graph `K_n` (red edges are the adjacencies), so this
 is the classical two-colour Ramsey number.
 
-The upper bound is the induction of Erdős and Szekeres: a vertex `v` of a set with
-`C(a + b + 1, a + 1)` vertices has `C(a + b, a)` neighbours or `C(a + b, a + 1)` non-neighbours in
-the set, and an `a`-clique among the neighbours or a `(b + 1)`-independent set among the
-non-neighbours extends by `v`. Hence `R(a + 1, b + 1) ≤ C(a + b, a)`, that is
-`R(k, l) ≤ C(k + l - 2, k - 1)` for `k, l ≥ 1`, and `R(k, k) ≤ 4 ^ (k - 1)`
-[ErdosSzekeres1935, pp. 466–467] [Jukna2011, §4.9].
+The upper bound is the induction of Erdős and Szekeres. To find an `(a + 2)`-clique or a
+`(b + 1)`-independent set in a set of `C(a + b + 1, a + 1)` vertices, fix a vertex `v`: it has at
+least `C(a + b, a)` neighbours or at least `C(a + b, a + 1)` non-neighbours in the set. An
+`(a + 1)`-clique among the neighbours, or a `b`-independent set among the non-neighbours, extends
+by `v`. Hence `R(a + 1, b + 1) ≤ C(a + b, a)`, that is `R(k, l) ≤ C(k + l - 2, k - 1)` for
+`k, l ≥ 1`, and `R(k, k) ≤ 4 ^ (k - 1)` [ErdosSzekeres1935, pp. 466–467].
 
 ## Main definitions
 
@@ -43,7 +43,6 @@ non-neighbours extends by `v`. Hence `R(a + 1, b + 1) ≤ C(a + b, a)`, that is
 ## References
 
 * [P. Erdős, G. Szekeres, *A combinatorial problem in geometry*][ErdosSzekeres1935]
-* [S. Jukna, *Extremal Combinatorics*][Jukna2011]
 -/
 
 public section
@@ -177,7 +176,7 @@ theorem ramseyNumber_comm (k l : ℕ) : ramseyNumber k l = ramseyNumber l k := b
   exact ⟨key k l n, key l k n⟩
 
 /-- **Erdős–Szekeres**: `R(a + 1, b + 1) ≤ C(a + b, a)`, that is, `R(k, l) ≤ C(k + l - 2, k - 1)`
-for `k, l ≥ 1` [ErdosSzekeres1935, pp. 466–467] [Jukna2011, §4.9]. -/
+for `k, l ≥ 1` [ErdosSzekeres1935, pp. 466–467]. -/
 theorem ramseyNumber_succ_succ_le (a b : ℕ) :
     ramseyNumber (a + 1) (b + 1) ≤ (a + b).choose a := by
   have h := ramseyNumber_le_card_iff (k := a + 1) (l := b + 1) (V := Fin ((a + b).choose a))

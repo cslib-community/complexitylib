@@ -24,9 +24,9 @@ adjacent when they meet in exactly one point. With `t = |α|`:
   cannot meet in `3`), an oddtown family, so it has at most `t` members.
 
 So the graph has `C(t, 3)` vertices and neither a clique nor an independent set of size `t + 1`,
-whence `C(t, 3) < R(t + 1, t + 1)` [Nagy1972] [Jukna2011, §13.7 and Chapter 13, Exercises]. This
-beats the easy explicit construction, `t` disjoint cliques of size `t`, which gives only
-`t ^ 2 < R(t + 1, t + 1)`. Erdős's bound gives `2 ^ ((t + 1) / 2) < R(t + 1, t + 1)`
+whence `C(t, 3) < R(t + 1, t + 1)` [Nagy1972] [Jukna2011, §13.7]. This beats the easy explicit
+construction, `t` disjoint cliques of size `t`, which gives only `t ^ 2 < R(t + 1, t + 1)`.
+Erdős's bound gives `2 ^ ((t + 1) / 2) < R(t + 1, t + 1)`
 (`SimpleGraph.two_rpow_half_lt_ramseyNumber`) but no graph.
 
 ## Main definitions

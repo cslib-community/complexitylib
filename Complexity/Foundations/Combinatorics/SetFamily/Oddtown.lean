@@ -25,8 +25,9 @@ characteristic vectors of the sets, whose dot products are the intersection size
 bound `Fintype.card_le_of_dotProduct_eq_ite`:
 
 * **Oddtown**: if every set has odd size and any two distinct members meet in an even number of
-  points, the family has at most `|κ|` members. Over `ZMod 2` the Gram matrix is the identity
-  [Jukna2011, Chapter 13, Exercises].
+  points, the family has at most `|κ|` members. Over `ZMod 2` the Gram matrix is the identity.
+  This is the classical oddtown theorem of the linear algebra method [Jukna2011, Chapter 13]; the
+  exact theorem or exercise number there was not verified.
 * **Uniform Fisher inequality**: if every set has size `d` and any two distinct members meet in
   exactly `c < d` points, the family has at most `|κ|` members. Over `ℚ` the Gram matrix is
   `(d - c) I + c J`, which is positive definite [Jukna2011, §7.3].
@@ -63,7 +64,7 @@ private theorem charVec_dotProduct (K : Type*) [Field K] (A B : Finset κ) :
   simp [and_comm]
 
 /-- **Oddtown**: a family of odd-size subsets of `κ` whose distinct members pairwise meet in an even
-number of points has at most `|κ|` members [Jukna2011, Chapter 13, Exercises]. -/
+number of points has at most `|κ|` members [Jukna2011, Chapter 13]. -/
 theorem Fintype.card_le_of_odd_card_of_even_card_inter (A : ι → Finset κ)
     (hodd : ∀ i, Odd #(A i)) (heven : ∀ i j, i ≠ j → Even #(A i ∩ A j)) :
     Fintype.card ι ≤ Fintype.card κ := by

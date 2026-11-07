@@ -23,7 +23,7 @@ cover fewer than all graphs, some graph has neither a `k`-clique nor a `k`-indep
 
 * `2 * C(n, k) < 2 ^ C(k, 2)` implies `n < R(k, k)` [AlonSpencer2016, Proposition 1.1.1];
 * `n ^ 2 ≤ 2 ^ k` and `k ≥ 3` imply `2 * C(n, k) < 2 ^ C(k, 2)`, hence `2 ^ (k / 2) < R(k, k)` for
-  `k ≥ 3` [Erdos1947] [Jukna2011, §4.9].
+  `k ≥ 3` [Erdos1947] [AlonSpencer2016, Proposition 1.1.1].
 
 We count graphs exactly rather than build the uniform distribution: the graphs are encoded by their
 edge indicators `Sym2 (Fin n) → Bool`, and the union bound becomes `Finset.card_biUnion_le`.
@@ -45,7 +45,6 @@ The argument proves existence only. No explicit graph matching it is known; Nagy
 
 * [N. Alon, J. H. Spencer, *The Probabilistic Method*][AlonSpencer2016]
 * [P. Erdős, *Some remarks on the theory of graphs*][Erdos1947]
-* [S. Jukna, *Extremal Combinatorics*][Jukna2011]
 -/
 
 public section
@@ -208,7 +207,7 @@ theorem two_mul_choose_lt_of_sq_le {n k : ℕ} (hk : 3 ≤ k) (hn : n ^ 2 ≤ 2 
 
 /-- **Erdős 1947**: if `k ≥ 3` and `n ≤ 2 ^ (k / 2)`, that is `n ^ 2 ≤ 2 ^ k`, then some graph on
 `n` vertices has neither a `k`-clique nor a `k`-independent set, so `n < R(k, k)`
-[Erdos1947] [Jukna2011, §4.9]. -/
+[Erdos1947] [AlonSpencer2016, Proposition 1.1.1]. -/
 theorem lt_ramseyNumber_of_sq_le {n k : ℕ} (hk : 3 ≤ k) (hn : n ^ 2 ≤ 2 ^ k) :
     n < ramseyNumber k k :=
   lt_ramseyNumber_of_two_mul_choose_lt (two_mul_choose_lt_of_sq_le hk hn)
@@ -220,7 +219,8 @@ theorem two_pow_lt_ramseyNumber_sq {k : ℕ} (hk : 3 ≤ k) : 2 ^ k < ramseyNumb
   calc 2 ^ k < (Nat.sqrt (2 ^ k) + 1) ^ 2 := h2
     _ ≤ ramseyNumber k k ^ 2 := Nat.pow_le_pow_left h1 _
 
-/-- **Erdős 1947**: `2 ^ (k / 2) < R(k, k)` for every `k ≥ 3` [Erdos1947] [Jukna2011, §4.9]. -/
+/-- **Erdős 1947**: `2 ^ (k / 2) < R(k, k)` for every `k ≥ 3` [Erdos1947]
+[AlonSpencer2016, Proposition 1.1.1]. -/
 theorem two_rpow_half_lt_ramseyNumber {k : ℕ} (hk : 3 ≤ k) :
     (2 : ℝ) ^ ((k : ℝ) / 2) < ramseyNumber k k := by
   have h := two_pow_lt_ramseyNumber_sq hk

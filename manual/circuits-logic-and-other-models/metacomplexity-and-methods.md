@@ -33,7 +33,7 @@ The [machine endpoint account](../machines-and-classes/endpoints-and-hierarchies
 
 ## Explicit Ramsey graphs
 
-Explicit Ramsey graphs are a standard derandomization benchmark: the counting argument shows that most graphs have no large homogeneous set, but it names none. [`SimpleGraph.ramseyNumber`](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Basic.lean) is the least `n` such that every simple graph on `n` vertices has a `k`-clique or an `l`-independent set. It is characterized by `ramseyNumber_le_card_iff`, and the Erdős–Szekeres recursion gives `ramseyNumber_le_four_pow`. The [Erdős module](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Erdos.lean) proves the lower bound `two_rpow_half_lt_ramseyNumber`, `2 ^ (k / 2) < R(k, k)` for `k ≥ 3`, by finite counting. The underlying count `lt_ramseyNumber_of_two_mul_choose_lt` (`2 C(n, k) < 2 ^ C(k, 2)`) needs no probability space. [erdos1947][erdos1947]
+Explicit Ramsey graphs are a standard derandomization benchmark: the counting argument shows that most graphs have no large homogeneous set, but it names none. [`SimpleGraph.ramseyNumber`](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Basic.lean) is the least `n` such that every simple graph on `n` vertices has a `k`-clique or an `l`-independent set. It is characterized on any finite vertex type by `ramseyNumber_le_card_iff` (upper bounds) and `card_lt_ramseyNumber_iff` (lower bounds: exhibit one graph with neither). The Erdős–Szekeres recursion gives `ramseyNumber_le_four_pow`. [erdosszekeres1935][erdosszekeres1935] The [Erdős module](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Erdos.lean) proves the lower bound `two_rpow_half_lt_ramseyNumber`, `2 ^ (k / 2) < R(k, k)` for `k ≥ 3`, by finite counting. The underlying count `lt_ramseyNumber_of_two_mul_choose_lt` (`2 C(n, k) < 2 ^ C(k, 2)`) needs no probability space. [erdos1947][erdos1947]
 
 The explicit counterpart is [Nagy's graph](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Nagy.lean). Its vertices are the `3`-subsets of a `t`-element type, and two vertices are adjacent when they meet in exactly one point. Oddtown and the uniform Fisher inequality bound its cliques and independent sets by `t`. Both are proved through one [Gram-matrix rank bound](../../Complexity/Foundations/LinearAlgebra/Matrix/UniformGram.lean) over `ZMod 2` and `ℚ` ([set-family module](../../Complexity/Foundations/Combinatorics/SetFamily/Oddtown.lean)). Hence `choose_three_lt_ramseyNumber` gives `C(t, 3) < R(t + 1, t + 1)`. [nagy1972][nagy1972]
 
@@ -63,6 +63,7 @@ The conditional statements, truth-table scales and source-specific quantitative 
 
 [complexitylib]: ../sources.md#complexitylib
 [erdos1947]: ../sources.md#erdos1947
+[erdosszekeres1935]: ../sources.md#erdosszekeres1935
 [impagliazzowigderson97]: ../sources.md#impagliazzowigderson97
 [nagy1972]: ../sources.md#nagy1972
 [nisanwigderson94]: ../sources.md#nisanwigderson94

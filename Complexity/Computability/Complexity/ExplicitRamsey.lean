@@ -23,10 +23,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 Erdős's lower bound `2 ^ (k / 2) < R(k, k)` (`SimpleGraph.two_rpow_half_lt_ramseyNumber`) is a
 counting argument: it shows that most graphs on `2 ^ (k / 2)` vertices have neither a `k`-clique
 nor a `k`-independent set, but names none of them. Constructing such graphs explicitly is a
-standard benchmark for derandomization. Here a graph family is *strongly explicit* if its vertices
-have names of polynomial length that can be recognized, and adjacency of two named vertices can be
-decided, in time polynomial in the length of the names, that is, polylogarithmic in the number of
-vertices.
+standard benchmark for derandomization. Here a graph family on `N` vertices is *strongly explicit*
+if its vertices have names of length `O(log N)` that can be recognized, and adjacency of two named
+vertices can be decided, in time polynomial in the length of the names, that is, polylogarithmic in
+`N`.
 
 Nagy's graph `SimpleGraph.nagyGraph (Fin t)` is strongly explicit in this sense:
 
