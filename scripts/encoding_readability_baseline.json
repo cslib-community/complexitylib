@@ -50,9 +50,6 @@
  "Complexity/Computability/Complexity/CookLevin/Clauses.lean": {
   "encList (encList (encPair encVar encBool))": 8
  },
- "Complexity/Computability/Complexity/FineGrained/CountingFiniteCSP.lean": {
-  "encPair encUnary (encCSP (encOption ?1) encNat)": 3
- },
  "Complexity/Computability/Complexity/Parameterized/ColorCoding.lean": {
   "encPair encGraph (encList encNat)": 3
  },
@@ -103,12 +100,6 @@
  },
  "Complexity/Computability/MCSP/SuccinctNP.lean": {
   "encPair encUnary (encList (encPair encBits encBool))": 3
- },
- "Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/QueryMachine.lean": {
-  "encPair ?1 (encOption encBool)": 6
- },
- "Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/QueryMachine/CallSpace.lean": {
-  "encSum ?1 (encPair ?1 ?2)": 7
  },
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Fold.lean": {
   "encPair (encPair ?1 ?2) ?3": 4
