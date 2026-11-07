@@ -7,8 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Logics.Propositional.CSP.Boolean
-public import Complexity.Computability.PolyTime.CSP.ToCNF
+public import Complexity.Computability.PolyTime.CSP.Boolean
 public import Complexity.Computability.Complexity.Reduction
 import Complexity.Computability.Complexity.Classes.NP.Witness
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
@@ -59,23 +58,6 @@ variable {Rel : Type}
 theorem mem_iff (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) (F : CSP Rel ℕ) :
     F ∈ CSPSAT arity sem ↔ F.WellFormed arity ∧ F.Satisfiable sem := Iff.rfl
 
-/-- The exact-arity guard is polynomial-time for each fixed finite relation alphabet. -/
-theorem computableInPolyTime_validArity [Finite Rel] (encRel : Rel ↪ List Bool)
-    (arity : Rel → ℕ) :
-    ComputableInPolyTime (CSP.validArity arity) (encCSP encRel encNat) encBool := by
-  have ha : ComputableInPolyTime arity encRel encUnary := ComputableInPolyTime.of_finite _
-  have ht : ComputableInPolyTime
-      (fun c : Constraint Rel ℕ => decide (c.2.length = arity c.1))
-      (encConstraint encRel encNat) encBool :=
-    ComputableInPolyTime.decide_eq'
-      ((ComputableInPolyTime.length_list encNat).comp (ComputableInPolyTime.snd _ _))
-      (ha.comp (ComputableInPolyTime.fst _ _))
-  change ComputableInPolyTime
-    (fun F : CSP Rel ℕ => F.all (fun c => decide (c.2.length = arity c.1)))
-    (encCSP encRel encNat) encBool
-  exact ComputableInPolyTime.allWithInput ComputableInPolyTime.id'
-    (ht.comp (ComputableInPolyTime.snd _ _))
-
 private def toSAT (k : ℕ) (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (F : CSP Rel ℕ) : CNF ℕ :=
   if F.validArity arity then F.toCNFBounded k sem else [[]]
@@ -89,7 +71,7 @@ theorem mem_NP [Finite Rel] (encRel : Rel ↪ List Bool) (arity : Rel → ℕ)
   let k := Finset.univ.sup arity
   have hbound (R : Rel) : arity R ≤ k := Finset.le_sup (Finset.mem_univ R)
   have hf : ComputableInPolyTime (toSAT k arity sem) (encCSP encRel encNat) encCNF := by
-    exact (computableInPolyTime_validArity encRel arity).ite
+    exact (CSP.computableInPolyTime_validArity encRel arity).ite
       (CSP.computableInPolyTime_toCNFBounded_of_finite encRel encNat k sem)
       (ComputableInPolyTime.const [[]])
   have hred : PolyTimeReducible (encCSP encRel encNat) encCNF (CSPSAT arity sem) SAT := by
