@@ -712,7 +712,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Weighted threshold representations:** v1's explicit source-reduction family, universal scalar
   circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
 - **Depth-two threshold circuits for Andreev's function** ([#2347]): the exact quadratic
-  `4 * 4 ^ b + b * m * 2 ^ b + 1` depth-two weighted threshold upper bound
+  `2 * 4 ^ b + b * m * 2 ^ b + 1` depth-two weighted threshold upper bound
   (`WeightedThreshold/Andreev.lean`), the windowed average-case `(1 - δ)`-agreement and
   `(1 / 2 + ε)`-correlation depth-two upper bounds (`WeightedThreshold/AndreevWindowed.lean` and
   `WeightedThreshold/AndreevAverage.lean`), Erdős–Littlewood–Offord anti-concentration
