@@ -1075,6 +1075,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - Request sequences, online strategies, offline optima and competitive ratios with additive
   constants; distinguish deterministic and randomized strategies and oblivious and adaptive
   adversaries. Compare algorithms in the same action and cost model, including initialization.
+- **Beyond deterministic ski rental and list update:** the randomized `e/(e-1)` ski-rental bound
+  against an oblivious adversary, randomized list update (BIT, COMB), list update with insertions
+  and deletions, and the `k`-server problem, starting with Double Coverage on the line and on
+  trees ([#3057](https://github.com/cslib-community/complexitylib/issues/3057)).
 - **Adaptive search trees:** working-set and dynamic-finger bounds for splay trees, and a BST
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
