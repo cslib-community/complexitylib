@@ -3750,6 +3750,7 @@ public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.Sqrt
+public import Complexity.Foundations.Analysis.SpecificLimits.DescFactorial
 public import Complexity.Foundations.BooleanAnalysis.AffineDegree
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
 public import Complexity.Foundations.BooleanAnalysis.Bonami
@@ -4036,6 +4037,7 @@ public import Complexity.Foundations.Data.Finset.SymmDiff
 public import Complexity.Foundations.Data.Finset.Tournament
 public import Complexity.Foundations.Data.Finset.UniqueTail
 public import Complexity.Foundations.Data.Finset.Variance
+public import Complexity.Foundations.Data.Fintype.RestrictInjective
 public import Complexity.Foundations.Data.Hamming
 public import Complexity.Foundations.Data.Hamming.Expansion
 public import Complexity.Foundations.Data.Int.LogBounds
@@ -4539,6 +4541,11 @@ public import Complexity.Logics.FirstOrder.ZeroOneLaw
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionProbability
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.RandomGraph
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.Relational
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.Relational.ExtensionAxiom
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.Relational.ExtensionProbability
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.Transfer
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.UniformStructure
 public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Polymorphism.BooleanClone
 public import Complexity.Logics.Propositional.CNF
