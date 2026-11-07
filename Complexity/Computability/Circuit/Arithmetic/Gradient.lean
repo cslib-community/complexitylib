@@ -63,13 +63,16 @@ transfer (`Cslib.Circuits.Circuit.le_three_mul_mulCost_of_psum`).
 
 ## Main results
 
-* `Cslib.Circuits.Circuit.eval_withGradient_castAdd`: the original outputs are kept.
+* `Cslib.Circuits.Circuit.eval_withGradient_castAdd`,
+  `Cslib.Circuits.Circuit.polynomial_withGradient_castAdd`: the original outputs are kept.
 * `Cslib.Circuits.Circuit.sum_eval_withGradient_natAdd`: the new outputs are the adjoints.
 * `Cslib.Circuits.Circuit.polynomial_withGradient_natAdd`: the new outputs are the partial
   derivatives.
 * `Cslib.Circuits.Circuit.cost_program_withGradient`, `Cslib.Circuits.Circuit.size_withGradient`,
-  `Cslib.Circuits.Circuit.size_withGradient_le`, `Cslib.Circuits.Circuit.mulCost_withGradient`:
-  exact costs.
+  `Cslib.Circuits.Circuit.size_withGradient_le`, `Cslib.Circuits.Circuit.mulCost_withGradient`,
+  `Cslib.Circuits.Circuit.addCost_withGradient`: exact costs.
+* `Cslib.Circuits.Program.cost_addCost_add_cost_mulCost_le`: additions and multiplications
+  together are at most the number of gates.
 * `Cslib.Circuits.Circuit.exists_gradient`: the Baur–Strassen theorem for arithmetic circuits.
 * `Cslib.Circuits.Circuit.le_five_mul_size_add_two_of_gradient`,
   `Cslib.Circuits.Circuit.le_three_mul_mulCost_of_gradient`: lower-bound transfer.

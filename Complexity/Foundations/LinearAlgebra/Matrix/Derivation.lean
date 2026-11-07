@@ -22,6 +22,8 @@ along row `i` and the vanishing of the derivation on the adjugate entries `adjug
 ## Main results
 
 * `Matrix.derivation_det_eq_zero`: derivations vanishing on the entries vanish on the determinant.
+* `Matrix.derivation_adjugate_eq_zero`: derivations vanishing outside row `i` vanish on the
+  cofactors of row `i`.
 * `Matrix.derivation_det_eq_sum_adjugate`: the derivative of the determinant along one row.
 -/
 

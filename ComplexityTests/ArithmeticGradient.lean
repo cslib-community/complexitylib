@@ -10,12 +10,12 @@ import Complexity.Computability.Circuit.Arithmetic.Gradient
 /-!
 # Reverse-mode differentiation of arithmetic circuits
 
-Concrete runs of `Cslib.Circuits.Circuit.withGradient`, checked by kernel evaluation: a shared
-input wire, a wire read twice by one gate, a non-unit seed, a circuit with two outputs
-differentiated along either one, an output that is an input wire, and a constant output. The exact
-size formula is checked on these circuits. At the polynomial level, the theorems are instantiated
-for `x₀ * x₁ + x₀`, for the power sum `x₀ ^ 2 + x₁ ^ 2` (whose scaled gradient is the identity
-power map) and for the generic `2 × 2` adjugate.
+Concrete runs of `Cslib.Circuits.Circuit.withGradient`, checked by kernel evaluation over `ℤ` and
+the semiring `ℕ`: a shared input wire, a wire read twice by one gate, a non-unit seed, a circuit
+with two outputs differentiated along either one, an output that is an input wire, and a constant
+output. The exact size formula is checked on these circuits. At the polynomial level, the theorems
+are instantiated for `x₀ * x₁ + x₀`, for the power sum `x₀ ^ 2 + x₁ ^ 2` (whose scaled gradient is
+the identity power map) and for the generic `2 × 2` adjugate.
 -/
 
 namespace ComplexityTests.ArithmeticGradient
@@ -47,6 +47,12 @@ private def selfProduct : Circuit (arithSignature ℤ) 1 1 where
   outputs := fun _ => .gate 0
 
 example : (selfProduct.withGradient 0 1 0).eval (arithInterpretation ℤ) ![7] = ![49, 14] := by
+  decide +kernel
+
+/-- Over the semiring `ℕ`, without subtraction. -/
+example : ((Circuit.mk (Program.empty.gate ⟨.mul, ![.input 0, .input 0]⟩) fun _ => .gate 0 :
+    Circuit (arithSignature ℕ) 1 1).withGradient 0 1 0).eval (arithInterpretation ℕ) ![7] =
+    ![49, 14] := by
   decide +kernel
 
 /-- Two outputs, `x₀ * x₁` and `x₀ * x₁ + x₀`, differentiated along either one. -/
