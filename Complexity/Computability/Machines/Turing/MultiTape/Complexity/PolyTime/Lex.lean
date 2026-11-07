@@ -25,8 +25,7 @@ strings differ, and compare there, or compare the lengths if there is none.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bits_lex_le`,
-  `Turing.MultiTapeTM.ComputableInPolyTime.bits_lex_le`: `decide (x ≤ y)` for the lexicographic
+* `Turing.MultiTapeTM.ComputableInPolyTime.bits_lex_le`: `decide (x ≤ y)` for the lexicographic
   order on bit strings is polynomial-time.
 -/
 
@@ -60,32 +59,26 @@ private theorem lexLe_eq_decide (x y : List Bool) : lexLe x y = decide (x ≤ y)
         Nat.add_le_add_iff_right]
       cases a <;> cases b <;> simp
 
-namespace ComputableTidilyInPolyTime
-
 /-- **Lexicographic comparison of bit strings** is polynomial-time. -/
-theorem bits_lex_le :
-    ComputableTidilyInPolyTime (fun p : List Bool × List Bool => decide (p.1 ≤ p.2))
+theorem ComputableInPolyTime.bits_lex_le :
+    ComputableInPolyTime (fun p : List Bool × List Bool => decide (p.1 ≤ p.2))
       (encPair encBits encBits) encBool := by
+  refine .of_tidy ?_
   have hzip : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => p.1.zip p.2)
       (encPair encBits encBits) (encList (encPair encBool encBool)) :=
-    (zip encBool encBool).comp ((bitsToList.comp (fst _ _)).prod (bitsToList.comp (snd _ _)))
-  have hfind := findWithInput (test := fun (_ : List Bool × List Bool) (q : Bool × Bool) =>
-    q.1 != q.2) hzip ((of_finite fun q : Bool × Bool => q.1 != q.2).comp (snd _ _))
+    (ComputableTidilyInPolyTime.zip encBool encBool).comp
+      ((ComputableTidilyInPolyTime.bitsToList.comp (.fst _ _)).prod
+        (ComputableTidilyInPolyTime.bitsToList.comp (.snd _ _)))
+  have hfind := ComputableTidilyInPolyTime.findWithInput
+    (test := fun (_ : List Bool × List Bool) (q : Bool × Bool) => q.1 != q.2) hzip
+    ((ComputableTidilyInPolyTime.of_finite fun q : Bool × Bool => q.1 != q.2).comp (.snd _ _))
   have hlen : ComputableTidilyInPolyTime
       (fun p : List Bool × List Bool => decide (p.1.length ≤ p.2.length))
       (encPair encBits encBits) encBool := by
     fun_prop
-  have h := optionElimWithInput (body := fun _ q => !q.1) hfind hlen
-    ((of_finite fun q : Bool × Bool => !q.1).comp (snd _ _))
+  have h := ComputableTidilyInPolyTime.optionElimWithInput (body := fun _ q => !q.1) hfind hlen
+    ((ComputableTidilyInPolyTime.of_finite fun q : Bool × Bool => !q.1).comp (.snd _ _))
   convert h using 2 with p
   rw [← lexLe_eq_decide, lexLe]
-
-end ComputableTidilyInPolyTime
-
-/-- **Lexicographic comparison of bit strings** is polynomial-time. -/
-theorem ComputableInPolyTime.bits_lex_le :
-    ComputableInPolyTime (fun p : List Bool × List Bool => decide (p.1 ≤ p.2))
-      (encPair encBits encBits) encBool :=
-  .of_tidy ComputableTidilyInPolyTime.bits_lex_le
 
 end Turing.MultiTapeTM
