@@ -876,7 +876,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   recovery; communication-to-streaming transfers with explicit state encodings and pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
-  PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. Give the
+  PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. For realizable
+  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), prove
+  the VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)`, first for countable domains and
+  then for general well-behaved classes. Give the
   computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
   costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares

@@ -4553,6 +4553,11 @@ public import Complexity.Logics.SecondOrder.Grounding
 public import Complexity.Logics.SecondOrder.IndependentSet
 public import Complexity.Logics.SecondOrder.Projection
 public import Complexity.Logics.SecondOrder.Reduction
+public import Complexity.MachineLearning.PACLearning.ERM
+public import Complexity.MachineLearning.PACLearning.FiniteClass
+public import Complexity.MachineLearning.PACLearning.GrowthFunction
+public import Complexity.MachineLearning.PACLearning.Realizable
+public import Complexity.MachineLearning.PACLearning.RealizableSample
 public import Complexity.MachineLearning.UniformLearning.AC0
 public import Complexity.MachineLearning.UniformLearning.Basic
 public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
