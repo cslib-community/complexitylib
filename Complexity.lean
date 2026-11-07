@@ -3794,6 +3794,7 @@ public import Complexity.Foundations.BooleanAnalysis.LowDegree.Choose
 public import Complexity.Foundations.BooleanAnalysis.LowDegree.Dimension
 public import Complexity.Foundations.BooleanAnalysis.LowDegree.OrTest
 public import Complexity.Foundations.BooleanAnalysis.LowDegree.Polynomial
+public import Complexity.Foundations.BooleanAnalysis.LowDegreeMoments
 public import Complexity.Foundations.BooleanAnalysis.LowDegreeParity
 public import Complexity.Foundations.BooleanAnalysis.MaximalSupport
 public import Complexity.Foundations.BooleanAnalysis.MirrorSets
@@ -3803,6 +3804,7 @@ public import Complexity.Foundations.BooleanAnalysis.MultilinearExtension
 public import Complexity.Foundations.BooleanAnalysis.Noise
 public import Complexity.Foundations.BooleanAnalysis.PolynomialCorrelation
 public import Complexity.Foundations.BooleanAnalysis.PolynomialThreshold
+public import Complexity.Foundations.BooleanAnalysis.PolynomialThresholdWeight
 public import Complexity.Foundations.BooleanAnalysis.QuadraticForm
 public import Complexity.Foundations.BooleanAnalysis.RelevantCoordinates
 public import Complexity.Foundations.BooleanAnalysis.SignApproximation
@@ -4021,6 +4023,7 @@ public import Complexity.Foundations.Data.Finset.Average
 public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.ExpectPi
 public import Complexity.Foundations.Data.Finset.Finpartition
+public import Complexity.Foundations.Data.Finset.Holder
 public import Complexity.Foundations.Data.Finset.KthLargest
 public import Complexity.Foundations.Data.Finset.KthLargest.Moment
 public import Complexity.Foundations.Data.Finset.KthLargest.Stability
