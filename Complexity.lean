@@ -1322,6 +1322,7 @@ public import Complexity.Computability.Circuit.Quantum.PathNetworkPolyTime
 public import Complexity.Computability.Circuit.Quantum.PathSum
 public import Complexity.Computability.Circuit.Quantum.Reversible
 public import Complexity.Computability.Circuit.Quantum.Uniform
+public import Complexity.Computability.Circuit.Quantum.Verifier
 public import Complexity.Computability.Circuit.Rational
 public import Complexity.Computability.Circuit.Rational.Affine
 public import Complexity.Computability.Circuit.Rational.BlockDivision
@@ -1626,6 +1627,9 @@ public import Complexity.Computability.Complexity.Classes.Promise.Randomized
 public import Complexity.Computability.Complexity.Classes.Promise.Reduction
 public import Complexity.Computability.Complexity.Classes.Promise.Time
 public import Complexity.Computability.Complexity.Classes.Promise.Time.Verifier
+public import Complexity.Computability.Complexity.Classes.QMA
+public import Complexity.Computability.Complexity.Classes.QMA.Amplification
+public import Complexity.Computability.Complexity.Classes.QMA.NP
 public import Complexity.Computability.Complexity.Classes.RP
 public import Complexity.Computability.Complexity.Classes.RP.Closure
 public import Complexity.Computability.Complexity.Classes.RepeatedTrials
@@ -4393,6 +4397,7 @@ public import Complexity.Foundations.Probability.TrueSampleMeans
 public import Complexity.Foundations.Quantum.HadamardTransform
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
+public import Complexity.Foundations.Quantum.TensorPower
 public import Complexity.Foundations.Relation.InductiveCounting
 public import Complexity.Foundations.Relation.RelatesWithinSteps
 public import Complexity.Foundations.RingTheory.AdjoinRoot
