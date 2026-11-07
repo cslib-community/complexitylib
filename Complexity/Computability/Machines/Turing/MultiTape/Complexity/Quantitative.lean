@@ -287,37 +287,37 @@ private def intPredT : Transducer Bool (Fin 3) where
   length_final_le q := by split_ifs <;> simp
 
 /-- Adding one on unary-magnitude signed integers. -/
-theorem int_succ : ComputableInDegree (· + 1) encInt encInt 1 1 := by
+theorem int_succ : ComputableInDegree (· + 1) encIntUnary encIntUnary 1 1 := by
   refine of_transducer intSuccT fun z => ?_
   have hc := Transducer.run_eq_self intSuccT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with n | _ | n
   · rw [show intSuccT.q₀ = 0 from rfl]
-    simp only [encInt_ofNat, Transducer.run_cons]
+    simp only [encIntUnary_ofNat, Transducer.run_cons]
     change false :: true :: List.replicate n true =
       [false, true] ++ intSuccT.run 2 (List.replicate n true)
     simp [hc]
   · rfl
-  · change encInt (Int.negSucc n) =
+  · change encIntUnary (Int.negSucc n) =
       intSuccT.run 0 (true :: true :: List.replicate n true)
-    simp only [encInt_negSucc, Transducer.run_cons]
+    simp only [encIntUnary_negSucc, Transducer.run_cons]
     change true :: List.replicate n true =
       [] ++ ([true] ++ intSuccT.run 2 (List.replicate n true))
     simp [hc]
 
 /-- Subtracting one on unary-magnitude signed integers. -/
-theorem int_pred : ComputableInDegree (· - 1) encInt encInt 1 1 := by
+theorem int_pred : ComputableInDegree (· - 1) encIntUnary encIntUnary 1 1 := by
   refine of_transducer intPredT fun z => ?_
   have hc := Transducer.run_eq_self intPredT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with (_ | n) | n
   · rfl
   · rw [show Int.ofNat (n + 1) - 1 = Int.ofNat n by simp, show intPredT.q₀ = 0 from rfl]
-    simp only [encInt_ofNat, List.replicate_succ, Transducer.run_cons]
+    simp only [encIntUnary_ofNat, List.replicate_succ, Transducer.run_cons]
     change false :: List.replicate n true =
       [] ++ ([false] ++ intPredT.run 2 (List.replicate n true))
     simp [hc]
-  · change encInt (Int.negSucc (n + 1)) =
+  · change encIntUnary (Int.negSucc (n + 1)) =
       intPredT.run 0 (true :: List.replicate n true)
-    simp only [encInt_negSucc, List.replicate_succ, Transducer.run_cons]
+    simp only [encIntUnary_negSucc, List.replicate_succ, Transducer.run_cons]
     change true :: true :: List.replicate n true =
       [true, true] ++ intPredT.run 2 (List.replicate n true)
     simp [hc]
