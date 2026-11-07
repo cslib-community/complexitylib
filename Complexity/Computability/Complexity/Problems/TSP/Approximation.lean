@@ -25,8 +25,8 @@ row indices `0, …, D.length - 1`, distances are `TSP.dist D`, and `TSP.tourLen
 length of the closed tour `p`. A matrix is metric (`TSP.IsMetric`) when the distances between
 cities are symmetric and satisfy the triangle inequality. The triangle inequality is required for
 all triples of cities, including those with `i = k`, so each diagonal entry is at most twice any
-distance from its city. Diagonal entries need not be zero, as [WilliamsonShmoys2011] assumes; the
-bound does not need that. Entries outside the city range are irrelevant.
+distance from its city. Diagonal entries need not be zero ([WilliamsonShmoys2011] assumes they
+are); the bound does not need that. Entries outside the city range are irrelevant.
 
 ## Main definitions
 
