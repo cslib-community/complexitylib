@@ -30,7 +30,9 @@ satisfy `φ` (`Cslib.Complexity.SAT.verifier_search`). The answers need only be 
 formulas the self-reduction asks about, whose encodings are at most `queryBound` of the length of
 `φ`'s, so a procedure that is correct up to that length suffices; this is how Karp and Lipton use
 circuits for `SAT`. The values are output as a certificate for `Cslib.Complexity.SAT.verifier`,
-one bit for each literal occurrence.
+one bit for each literal occurrence. Correctness only uses that each answer chooses a value that
+keeps the formula satisfiable (`Cslib.Complexity.SAT.verifier_search_of_step`); this is how a
+P-selector for `SAT` decides it (`Cslib.Complexity.SAT.mem_P_of_mem_PSel`).
 
 The self-reduction makes one query for each literal occurrence, so it runs in polynomial time when
 the queries are answered in polynomial time
@@ -51,6 +53,8 @@ satisfying assignments can be found in polynomial time (`Cslib.Complexity.SAT.ex
 * `Cslib.Complexity.SAT.length_encList_le_of_mem_vars`,
   `Cslib.Complexity.SAT.length_encCNF_units_le`: the literals and the unit clauses fixing
   variables of `φ` are short.
+* `Cslib.Complexity.SAT.verifier_search_of_step`: if each step of the self-reduction keeps the
+  formula satisfiable, it finds a satisfying assignment of every satisfiable formula.
 * `Cslib.Complexity.SAT.verifier_search`: with answers correct up to `queryBound`, the
   self-reduction finds a satisfying assignment of every satisfiable formula.
 * `Cslib.Complexity.SAT.computableInPolyTime_search`: the self-reduction is polynomial-time
@@ -199,10 +203,12 @@ private theorem length_query_le {φ : CNF ℕ} {answers : List (Literal ℕ)}
   rw [length_encCNF_append, length_encCNF_append, queryBound]
   nlinarith
 
-/-- With answers correct on the queries, the self-reduction keeps a satisfiable formula
-satisfiable. -/
+/-- If every step of the self-reduction keeps a satisfiable formula satisfiable, so does every
+fold of the steps. -/
 private theorem satisfiable_foldl_selfReduceStep {D : CNF ℕ → Bool} {φ : CNF ℕ}
-    (hD : ∀ ψ, (encCNF ψ).length ≤ queryBound (encCNF φ).length → (D ψ = true ↔ ψ ∈ SAT))
+    (hstep : ∀ answers : List (Literal ℕ), (∀ l ∈ answers, l.1 ∈ φ.vars) →
+      answers.length < φ.vars.length → ∀ v ∈ φ.vars, (φ ++ units answers).Satisfiable →
+        (φ ++ units answers ++ [[(v, D (φ ++ units answers ++ [[(v, true)]]))]]).Satisfiable)
     (l : List ℕ) (hl : ∀ v ∈ l, v ∈ φ.vars) (answers : List (Literal ℕ))
     (hanswers : ∀ a ∈ answers, a.1 ∈ φ.vars) (hlen : answers.length + l.length ≤ φ.vars.length)
     (hsat : (φ ++ units answers).Satisfiable) :
@@ -220,27 +226,21 @@ private theorem satisfiable_foldl_selfReduceStep {D : CNF ℕ → Bool} {φ : CN
         exact hv
     · rw [selfReduceStep, List.length_append, List.length_singleton]
       omega
-    · have hquery := hD _ (length_query_le hanswers (by omega) hv)
-      rw [selfReduceStep, show ∀ b, units (answers ++ [(v, b)]) = units answers ++ [[(v, b)]] from
+    · rw [selfReduceStep, show ∀ b, units (answers ++ [(v, b)]) = units answers ++ [[(v, b)]] from
         fun b => List.map_append .., ← List.append_assoc]
-      obtain ⟨σ, hσ⟩ := hsat
-      rw [CNF.eval_append, Bool.and_eq_true] at hσ
-      cases hb : D (φ ++ units answers ++ [[(v, true)]])
-      · have hσv : σ v = false := by
-          by_contra hσv
-          rw [Bool.not_eq_false] at hσv
-          rw [hb] at hquery
-          exact Bool.false_ne_true (hquery.2 ⟨σ, by simp [hσ.1, hσ.2, hσv]⟩)
-        exact ⟨σ, by simp [hσ.1, hσ.2, hσv]⟩
-      · exact hquery.1 hb
+      exact hstep answers hanswers (by omega) v hv hsat
 
-/-- **Search to decision.** If `D` decides satisfiability correctly on the formulas of length at
-most `queryBound` of the length of `φ`, and `φ` is satisfiable, the certificate found by the
-self-reduction satisfies `φ`. -/
-theorem verifier_search {D : CNF ℕ → Bool} {φ : CNF ℕ}
-    (hD : ∀ ψ, (encCNF ψ).length ≤ queryBound (encCNF φ).length → (D ψ = true ↔ ψ ∈ SAT))
+/-- **Search to decision, stepwise.** If each step of the self-reduction of `φ` keeps a
+satisfiable formula satisfiable (the value `D` chooses for the next variable `v` leaves
+`φ`, with the values fixed so far, satisfiable), and `φ` is satisfiable, the certificate found
+by the self-reduction satisfies `φ`. The answers of `D` need not be correct: the self-reduction
+only needs them to choose a satisfiable branch. -/
+theorem verifier_search_of_step {D : CNF ℕ → Bool} {φ : CNF ℕ}
+    (hstep : ∀ answers : List (Literal ℕ), (∀ l ∈ answers, l.1 ∈ φ.vars) →
+      answers.length < φ.vars.length → ∀ v ∈ φ.vars, (φ ++ units answers).Satisfiable →
+        (φ ++ units answers ++ [[(v, D (φ ++ units answers ++ [[(v, true)]]))]]).Satisfiable)
     (hφ : φ ∈ SAT) : verifier (φ, search D φ) = true := by
-  obtain ⟨σ, hσ⟩ := satisfiable_foldl_selfReduceStep hD φ.vars (fun _ h => h) []
+  obtain ⟨σ, hσ⟩ := satisfiable_foldl_selfReduceStep hstep φ.vars (fun _ h => h) []
     (by simp) (by simp) (by rw [show units [] = [] from rfl, List.append_nil]; exact hφ)
   rw [← selfReduce, eval_append_units] at hσ
   rw [verifier, CNF.eval_congr fun v hv => ?_]
@@ -255,6 +255,25 @@ theorem verifier_search {D : CNF ℕ → Bool} {φ : CNF ℕ}
       rw [this, List.getElem_idxOf hlt]
     rw [assignment, search, List.getD_eq_getElem _ _ (by simpa using hlt'), List.getElem_map,
       ← hσ.2 _ (List.getElem_mem hlt'), hfst]
+
+/-- **Search to decision.** If `D` decides satisfiability correctly on the formulas of length at
+most `queryBound` of the length of `φ`, and `φ` is satisfiable, the certificate found by the
+self-reduction satisfies `φ`. -/
+theorem verifier_search {D : CNF ℕ → Bool} {φ : CNF ℕ}
+    (hD : ∀ ψ, (encCNF ψ).length ≤ queryBound (encCNF φ).length → (D ψ = true ↔ ψ ∈ SAT))
+    (hφ : φ ∈ SAT) : verifier (φ, search D φ) = true := by
+  refine verifier_search_of_step (fun answers hanswers hlen v hv hsat => ?_) hφ
+  have hquery := hD _ (length_query_le hanswers hlen.le hv)
+  obtain ⟨σ, hσ⟩ := hsat
+  rw [CNF.eval_append, Bool.and_eq_true] at hσ
+  cases hb : D (φ ++ units answers ++ [[(v, true)]])
+  · have hσv : σ v = false := by
+      by_contra hσv
+      rw [Bool.not_eq_false] at hσv
+      rw [hb] at hquery
+      exact Bool.false_ne_true (hquery.2 ⟨σ, by simp [hσ.1, hσ.2, hσv]⟩)
+    exact ⟨σ, by simp [hσ.1, hσ.2, hσv]⟩
+  · exact hquery.1 hb
 
 /-- The self-reduction never finds a satisfying assignment of an unsatisfiable formula: the
 certificate it finds is accepted exactly when the formula is satisfiable. -/
