@@ -147,6 +147,43 @@ When an optional sampler feeds a randomized continuation, [PMF/Option/Bind.lean]
 
 Randomized Word-RAM takes another convention: one instruction may sample uniformly from any fitted finite interval. Its query count and `unifBitCost` are explicit currencies; neither equals the strict fair-coin runtime without a further implementation theorem. See [the RAM discussion](../algorithms-and-memory/wordram-and-bridges.md).
 
+## Exact finite graph-selector profiles
+
+Import `Complexity.Probability.ReplicableDecisions.Basic` and open
+`Cslib.ReplicableDecisions`. A `Problem V` gives a simple graph and disjoint forced-zero
+and forced-one sets. Alternatively, use `Problem.ofAcceptableSets G Γ` for the paper's
+nonempty binary acceptable sets; `ofAcceptableSets_accepts_iff` checks that correspondence.
+Vertices outside both forced sets accept both labels. The boundary contains both endpoints
+of every edge across which a selector changes labels. Neighborhood correctness checks the
+closed neighborhood, including the vertex itself.
+
+`Problem.classDistance` is the extended shortest distance between forced classes. Given
+`hD : P.classDistance = D` for a natural number `D`, apply `P.finite_profiles hD` to obtain
+$\Phi=1/(k+1)$ and $\Psi=1/k$, with $k=(D+1)/2$ using natural-number division.
+For $D\ge3$ the same theorem gives $\Lambda=1/(k-1)$. At $D\le2$,
+`P.neighborhoodProfile_eq_top hD hsmall` gives infinity and
+`not_neighborhoodCorrect_of_classDistance_le_two` rules out every deterministic selector.
+When the classes are disconnected or one is empty, `P.infinite_profiles hD` gives all
+three profiles zero on a nonempty vertex type.
+
+The stronger `joint_optimum`, `correct_optimum` and `neighborhood_optimum` statements
+include an attaining law and a lower bound against every admissible PMF over all binary
+labelings. The laws are uniform mixtures of BFS thresholds (plus the two constants for
+joint defect), with one threshold shared across all vertices. This is the exact semantic
+finite minimax endpoint of Chen's Theorem 3.2, PDF pages 13–14 (printed 11–12),
+[immutable manuscript](https://github.com/sigact-stoc/stoc2027/releases/download/papers-2/1425.pdf).
+No BFS runtime, sampling-bit cost, machine realization or statistical sample-complexity
+claim follows from this API.
+
+Start with the complete checked client
+[ReplicableDecisions.lean](../../ComplexityTests/ReplicableDecisions.lean), which proves actual
+line-graph distances three and four, applies the optimality theorems, and checks distances
+one/two, disconnected classes, an empty class and indifference. From a bootstrapped repository
+root, run `scripts/build.sh ComplexityTests.ReplicableDecisions`; success means the clients
+elaborate without warnings. If a distance hypothesis fails, verify the forced sets and
+connectivity first: `classDistance` takes the minimum over all pairs, rather than the distance
+between one arbitrarily selected pair. Full integration validation still uses the six gates.
+
 ## Known Limitations
 
 No expected-PPT machine predicate was identified in the surveyed probabilistic computability modules. The existing [ZPP definition](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/ZPP.lean#L79) uses native polynomial-time `Option Bool` trials: every returned Boolean is correct and at least half of the polynomial-length seeds return an answer. It is [proved equal to `RP ∩ coRP`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/ZPP.lean#L266); an expected-polynomial-time characterization is not modeled here. See its [machine-model account](../machines-and-classes/verifiers-counting-interaction.md). This survey did not inspect every low-level composition proof or run the `ppt` tactic. Query-bounded ideal algorithms and native realizable algorithms remain distinct interfaces in the model map.

@@ -4532,6 +4532,7 @@ public import Complexity.Probability.Quantile
 public import Complexity.Probability.RankDecoder
 public import Complexity.Probability.RankDecoder.Native
 public import Complexity.Probability.RejectionSampling
+public import Complexity.Probability.ReplicableDecisions.Basic
 public import Complexity.Probability.Resilience
 public import Complexity.Probability.Rewinding
 public import Complexity.Probability.Rewinding.Consistency
