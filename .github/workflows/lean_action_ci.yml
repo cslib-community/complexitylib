@@ -89,6 +89,11 @@ jobs:
         run: python3 -B scripts/check_operator_manual.py
       - name: "Source hygiene"
         run: python3 -B scripts/check_hygiene.py --check-simp
+      # A compound encoding that three or more public statements of a module spell out needs a
+      # name (#1656). The existing ones are counted per module in
+      # scripts/encoding_readability_baseline.json, which only falls. Sources only: no Lean.
+      - name: "Encoding readability ratchet"
+        run: python3 -B scripts/check_encoding_readability.py
       # The API documentation (docbuild/) and the guide (guide/) are separate Lake projects that
       # share the library's toolchain and `.lake/packages`, so their lockfiles must follow the root
       # pins. Checking here makes a root cslib or Mathlib bump without matching lockfile updates

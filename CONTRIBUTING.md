@@ -189,7 +189,10 @@ every docstring citation key has an entry there
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
 listed in a module docstring's "Main …" sections must exist, and a new test file must do more
-than restate signatures with `example … := name`. CI runs both. On pull requests CI also runs
+than restate signatures with `example … := name`. CI runs both, and also
+`python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
+public statements ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)); its
+docstring gives the rule and `--update-baseline`. On pull requests CI also runs
 `python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another
