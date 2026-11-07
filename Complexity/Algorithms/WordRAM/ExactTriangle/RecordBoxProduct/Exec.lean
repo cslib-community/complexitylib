@@ -29,17 +29,20 @@ open RecordProduct
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
-/-- The retained per-record upper bound covers the improved actual gather implementation. -/
+/-- Conservative per-record instruction upper bound, expressed in terms of
+`CallableBoxProduct.timeBound` and linear staging terms. -/
 @[expose] def timeBound {m n : ℕ} (qs : List (Fin n × Fin n)) : ℕ :=
   CallableBoxProduct.timeBound m (m / 9) qs + 8 * m + 14 * (n * D m) + 14 * qs.length + 87
 
-/-- Actual improved allowance: scalar preparation, four pointer deliveries, gather product,
-and the returned physical pointer. The conservative public envelope remains `timeBound`. -/
+/-- Per-record gather allowance covering scalar preparation (`prepare`), four pointer deliveries,
+`PointerBoxProduct.program`, and copying the returned physical pointer; bounded above by
+`timeBound`. -/
 @[expose] def gatherTimeBound {m n : ℕ} (qs : List (Fin n × Fin n)) : ℕ :=
   PointerBoxProduct.timeBound m (m / 9) qs + 8 * m + 69
 
-/-- Exact identity of allowances. Three extra native pointer deliveries are charged alongside
-all four gather copies; the two former staging allowances form the comparison pool. -/
+/-- Exact ledger relating `timeBound` plus `PointerBoxProduct.gatherTime` and three pointer-delivery
+steps to `gatherTimeBound` plus the `RecordProduct.prepare` array-copy term and the translated
+snapshot-copy term. -/
 theorem gatherTimeBound_ledger {m n : ℕ} (qs : List (Fin n × Fin n)) :
     timeBound (m := m) qs + PointerBoxProduct.gatherTime (n * D m) qs.length + 3 =
       gatherTimeBound (m := m) qs + (14 * (n * D m) + 14 * qs.length + 21) +
@@ -48,8 +51,8 @@ theorem gatherTimeBound_ledger {m n : ℕ} (qs : List (Fin n × Fin n)) :
   unfold timeBound gatherTimeBound
   omega
 
-/-- The actual gather allowance fits the previous advertised time envelope. This compares
-proved upper bounds, and does not measure the difference of execution times. -/
+/-- `gatherTimeBound` is at most the conservative `timeBound` envelope. This compares proved upper
+bounds, and does not measure the difference of execution times. -/
 theorem gatherTimeBound_le_timeBound {m n : ℕ} (qs : List (Fin n × Fin n)) :
     gatherTimeBound (m := m) qs ≤ timeBound (m := m) qs := by
   have h := gatherTimeBound_ledger (m := m) qs

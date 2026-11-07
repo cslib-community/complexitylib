@@ -98,7 +98,7 @@ theorem bounded_reachable {W m n g p A k : ℕ} (values : List ℤ)
   have hi := (exec_input values hlen hD hg hp hN hv hW).1
   exact hr.bounded_init hi
 
-/-- Every wider prefix of the migrated concrete program has the same input-derived word and
+/-- Every wider prefix of `entryProgram.program Reg.result` has the same input-derived word and
 support envelope. This derives from its actual initialized halting run, without a supplied execution
 certificate. -/
 theorem bounded_reachable_original {W m n g p A k : ℕ} (values : List ℤ)

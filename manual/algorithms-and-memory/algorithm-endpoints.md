@@ -159,7 +159,7 @@ Use `RecordProduct.NumericBounds` and `RecordWitness.NumericBounds` for numerica
 and word estimates. The actual all-prefix execution theorems remain in `RecordProduct.SourceBounds` and
 `RecordWitness.SourceBounds`, each following from its real `runs_input` theorem.
 
-`RecordBoxProduct.program` now uses the physical pointer front
+`RecordBoxProduct.program` uses the physical pointer front
 [`PointerBoxProduct.exec`](../../Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/CallableBox/Pointer/Exec.lean).
 For a separate caller, initialize its five scalar/header words and appended threshold, supply
 raw row-major X/Y pointers and the interleaved query pointer, and prove all three source ends
@@ -175,10 +175,11 @@ physical pointers above the virtual modulus. Returned answers are exact physical
 external sources and memory outside the window survive. Original routing, matrix doubling,
 restoration and both final normalization loops remain. The snapshot remains live until matrix
 adaptation and restoration finish. `RecordBoxProduct.gatherTimeBound_ledger` accounts for the
-actual gather and bridge instructions, and `gatherTimeBound_le_timeBound` preserves the previous
-advertised envelope. This compares certified allowances, not measured execution times; it changes
-neither the reserved window nor the 1.9992/2.99835 headline exponents. The original `RecordProduct`
-and contiguous-input `CallableBoxProduct` retain their own initialized/restoring clients.
+actual gather and bridge instructions, and `gatherTimeBound_le_timeBound` bounds `gatherTimeBound`
+by the conservative `RecordBoxProduct.timeBound` envelope. This compares certified allowances, not
+measured execution times; it changes neither the reserved window nor the 1.9992/2.99835 headline
+exponents. `RecordProduct` and contiguous-input `CallableBoxProduct` provide their own
+initialized/restoring clients.
 
 For a source-level continuation after a real gather, import
 `Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.Exec` and use
@@ -190,9 +191,8 @@ Both raw unsigned and canonical signed matrix inputs use this same charged suffi
 `BoxProduct.exec_frontFromSnapshot` prepares matrices and bands, and `exec_fromSnapshot`
 constructs geometry, evaluates tiles, reconstructs original occurrences and restores input.
 The contiguous `BoxProduct.exec` establishes the snapshot by its actual original copy, then
-uses the same suffix. Pointer-only routing/front/execution modules have been removed; use
-the shared source topics directly. The physical gather and native memory-window frames remain
-proved in `CallableBox.Pointer`; a canonical register view does not establish a memory frame.
+uses the same suffix. The physical gather and native memory-window frames are proved in
+`CallableBox.Pointer`; a canonical register view does not establish a memory frame.
 
 When composing another proved record product with the existing verifier, use
 `RecordWitness.exec_after_product` from `RecordWitness.AfterProduct`. Supply its actual
@@ -208,8 +208,8 @@ For a reused slot, use `RecordWitness.exec_after_record_product` from
 `BoxRecordWitness.exec_at_record` from `BoxRecordWitness.Record`. Supply the actual physical
 descriptor, query span, matrix pair and protected original arrays. Its physical ordinal is
 independent of the logical chunk/piece index; an all-record `Instances.Output` is neither
-required nor asserted for that slot. The old `exec_after_product` specializes this boundary
-for genuine standalone producer outputs.
+required nor asserted for that slot. `RecordWitness.exec_after_product` specializes this boundary
+for standalone producer outputs.
 
 The [pure readback client](../../ComplexityTests/WordRAMExactTriangleRecordReadback.lean)
 checks duplicate occurrence order with dirty unused memory. The
@@ -225,10 +225,9 @@ To decide whether three signed integer matrices contain a zero-weight triangle, 
 [the streaming test module](../../ComplexityTests/WordRAMExactTriangleStreamingFixedPrime.lean):
 it discharges admission, recovers a successful witness, and checks negative exhaustion. The
 [general-threshold client](../../ComplexityTests/WordRAMExactTriangleFixedPrimeInput.lean)
-checks the same canonical solver at `m=2`, including prime-three false positives. The old
-materialized fixed-prime program and its execution certificates have been retired;
-`Instances` remains an independent all-record producer, and standalone record products and
-witness consumers remain available. `FixedPrime` now holds numerical and controller support.
+checks the same canonical solver at `m=2`, including prime-three false positives. `Instances`
+provides an independent all-record producer, standalone record products and witness consumers are
+available separately, and `FixedPrime` holds numerical and controller support.
 
 Provide `3*n²` signed weights in row-major AB, BC, AC order, with every absolute value at most
 `A`. `PreparationInput.input n (D m) g p values` supplies the scalar headers and canonical
@@ -256,8 +255,8 @@ was already reused; its size and the coarse admission/word/support bounds remain
 This is a smaller record region, with no claim of an asymptotic total-space improvement.
 
 For `m=9k`, apply `FixedPrime.timeBound_le` to the derived genuine standalone reference returned by
-`runs_input`. `StreamingFixedPrime.time_le_old` places every streaming charge, including halt,
-within this old conservative envelope; that reference is never asserted for a reused slot. Its complete finite bound retains preparation, aggregate box charges,
+`runs_input`. `StreamingFixedPrime.streamingCharge_le_timeBound` places every streaming charge,
+including halt, within `FixedPrime.timeBound`; that reference is never asserted for a reused slot. Its complete finite bound retains preparation, aggregate box charges,
 root/query/controller overhead and **one global** `F(p)+1` original-weight scan reserve.
 The product term is `125829120(189k+1)^2(9k+1)D^(-8/125)n³g`; that saving alone is not an
 unconditional total exponent. The zero-weight and constant-257 negative clients are checked
