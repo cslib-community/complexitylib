@@ -193,14 +193,18 @@
         "ComplexityAbstracts.AndreevThresholdAbstract.gate_lower_bound",
         "ComplexityAbstracts.AndreevThresholdAbstract.gate_lower_bound_of_le_eps",
         "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound",
-        "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound_of_le_eps"
+        "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound_of_le_eps",
+        "ComplexityAbstracts.AndreevThresholdAbstract.approx_majority_gate_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.approx_majority_wire_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.majority_vote_gate_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.majority_vote_wire_lower_bound"
       ],
       "supporting_theorems": [
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_gate_lower_bound",
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_wire_lower_bound"
       ],
-      "summary": "For Andreev's function on n = 2^b + b m bits, alternating-linear polarization gives an exact depth-two weighted threshold circuit of 4·4^b + b m 2^b + 1 gates ((5/4)n^2 + 1 at 2^b = b m, improving Kane–Williams O(n^3 / log n)) and windowed average-case upper bounds for 1 - δ agreement (O(n^(3/2) sqrt(log(n / δ))) gates, O(n^(5/2) sqrt(log(n / δ))) wires) and 1/2 + ε agreement (O(ε^2 n^(3/2) sqrt(log n)) gates, O(ε^2 n^(5/2) sqrt(log n)) wires); fixed-weight threshold-shift counting and Cauchy–Schwarz improve the Kane–Williams average-case lower bounds to Omega(ε² n^(3/2) / log² n) gates and Omega(ε² n^(5/2) / log^(5/2) n) active wires in the balanced regime for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2.",
-      "scope": "Arbitrary real-weight threshold gates (THR ∘ THR), size counting all threshold gates, active wireCount summing nonzero-weight wires across gates, explicit non-asymptotic finite bounds, simultaneous fixed-weight Hoeffding–Chow union-bound tail, and explicit linear-in-b counting losses with m ≤ 2^b for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2; nonuniform."
+      "summary": "For Andreev's function on n = 2^b + b m bits, an alternating-linear shift identity gives an exact depth-two weighted threshold circuit of 2·4^b + b m 2^b + 1 gates ((3/4)n^2 + 1 at 2^b = b m, improving Kane–Williams O(n^3 / log n)) and windowed average-case upper bounds for 1 - δ agreement (O(n^(3/2) sqrt(log(n / δ))) gates, O(n^(5/2) sqrt(log(n / δ))) wires) and 1/2 + ε agreement (O(ε^2 n^(3/2) sqrt(log n)) gates, O(ε^2 n^(5/2) sqrt(log n)) wires); fixed-weight threshold-shift counting and Cauchy–Schwarz improve the Kane–Williams average-case lower bounds to Omega(ε² n^(3/2) / log² n) gates and Omega(ε² n^(5/2) / log^(5/2) n) active wires in the balanced regime for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2. Averaging extends these bounds to ε-approximate majorities of depth-two circuits, so a majority vote of t such circuits with at most s gates each needs top fan-in t = Omega(n^(3/4) / (log n · sqrt(s))) whenever 3(b + 2) / sqrt(2^b) ≤ 1/(2t) (Kane–Williams: Omega~(n^(1/2) / s^(1/3))).",
+      "scope": "Arbitrary real-weight threshold gates (THR ∘ THR), size counting all threshold gates, active wireCount summing nonzero-weight wires across gates, explicit non-asymptotic finite bounds, simultaneous fixed-weight Hoeffding–Chow union-bound tail, and explicit linear-in-b counting losses with m ≤ 2^b for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2; majority votes are stated through the number of correct depth-two members on each input, not as a depth-three circuit, and the top gate is not counted; nonuniform."
     },
     {
       "id": "constant-depth-arithmetic",
@@ -233,24 +237,6 @@
       ]
     },
     {
-      "id": "gsw-fhe",
-      "title": "Gentry and GSW: fully homomorphic encryption from LWE",
-      "module": "ComplexityAbstracts.GSWFHEAbstract",
-      "headline_theorems": [
-        "ComplexityTests.Abstracts.GSWFHEAbstract.leveled",
-        "ComplexityTests.Abstracts.GSWFHEAbstract.fullyHomomorphic"
-      ],
-      "summary": "Bootstrapping the GSW scheme gives leveled fully homomorphic encryption from decision LWE, and fully homomorphic encryption under an additional circular-security assumption.",
-      "scope": "Explicit GSW key generation, encryption and decryption at a centered-binomial LWE family with quasi-polynomial modulus. The leveled scheme family E has joint native strict PPT runtime in (security, d) via NativeInDepth, its fresh-ciphertext key pair has the GSW key-generation law, and the fully homomorphic scheme's key generation is Gentry's self-loop key; the evaluator, the rest of the leveled keys and the decryption circuits are existential. Perfect correctness on fresh encryptions, fixed widths, uniformly generated polynomial-size decryption circuits, native strict PPT algorithms and asymptotic IND-CPA. Circular security is a separate hypothesis; no lattice hardness, circuit privacy, multi-hop evaluation or concrete loss.",
-      "namespace": "ComplexityTests.Abstracts.GSWFHEAbstract",
-      "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation",
-        "ComplexityAbstracts.Randomized",
-        "ComplexityAbstracts.GSW"
-      ]
-    },
-    {
       "id": "resolution",
       "title": "Haken: pigeonhole formulas require long resolution proofs",
       "module": "ComplexityAbstracts.ResolutionAbstract",
@@ -276,7 +262,7 @@
         "ComplexityAbstracts.CommunicationAbstract.equality"
       ],
       "summary": "Disjointness and parity of intersection require linear communication even with shared randomness and bounded error.",
-      "scope": "Binary protocol trees, worst-case cost and error at most one third on every input pair; explicit finite bounds and the final-answer convention."
+      "scope": "Binary protocol trees with depth bounded on the support, including unreachable branches, and error at most one third on every input pair; explicit finite bounds and the final-answer convention."
     },
     {
       "id": "sipser-lautemann",

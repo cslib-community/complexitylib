@@ -22,6 +22,7 @@ normalization and bounded-range arguments retain Samuel Schlesinger's credit.
 
 ## Main results
 
+* `correctionRequest_congr_normalizer`: preparation substitution using only joint means.
 * `correctionRequest_multiplier`: exact factorization of the pilot multiplier.
 * `correctionRequest_maximum_root_stability`: uniform pointwise fourth-root sensitivity.
 * `correctionRequest_maximum_root_moment`: integrated sensitivity on the original masks.
@@ -32,6 +33,24 @@ namespace Matrix.HierarchyParams.H4RankEnvironment
 open Finset Cslib Cslib.Probability
 attribute [local instance] Classical.propDecidable
 variable {P J : ℕ} [Fact P.Prime] {V : Type*} [Fintype V]
+
+/-- A correction reads its preparation only through the literal joint source/usage
+normalizer. Equal means suffice even when the preparatory functions differ pointwise. -/
+theorem correctionRequest_congr_normalizer {k : ℕ}
+    (D : ZMod P) (ident : V → ZMod P)
+    (r : HierarchyTask.Request k (Fin J) (ZMod P)) (hr : Admissible r)
+    (I : ℝ → ℝ → ℝ) (τ ρ Q γ : ℝ → ℝ) (K Kc : ℕ)
+    (raw prep prep' : Environment P J → Matrix V V ℝ)
+    (maximum : Environment P J → V → ℝ) (x y : V)
+    (hm : rowSliceMean (fun σ v => r.source.retains (channels D) σ (ident v))
+      (fun σ v => r.usage.retains (channels D) σ (ident v)) prep x y =
+      rowSliceMean (fun σ v => r.source.retains (channels D) σ (ident v))
+        (fun σ v => r.usage.retains (channels D) σ (ident v)) prep' x y)
+    (σ : Environment P J) :
+    correctionRequest D ident r I τ ρ Q γ K Kc raw prep maximum σ x y =
+      correctionRequest D ident r I τ ρ Q γ K Kc raw prep' maximum σ x y := by
+  simp only [correctionRequest, dite_eq_left hr, CorrectionRowRecipe.normalized]
+  rw [normalizer_full D ident r hr prep, normalizer_full D ident r hr prep', hm]
 
 /-- Factor the completed pilot multiplier out of the actual request, keeping the original
 raw ranks, incoming gate, usage mask and source/usage preparatory mean. -/
@@ -66,6 +85,22 @@ private lemma unitMultiplier_range {k : ℕ}
       HP.incomingCutoff_nonneg HP.incomingCutoff_le_one
       (fun _ => by norm_num) (fun _ => le_rfl) _ _ _ _ _ _
   · exact ⟨le_rfl, mul_nonneg (by norm_num) (HP.Q_nonneg _)⟩
+
+/-- The actual correction request stays bounded for arbitrary computed children,
+including inadmissible requests (which return zero). No accuracy premise is needed. -/
+theorem correctionRequest_mem_Icc {k : ℕ}
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (D : ZMod P) (ident : V → ZMod P)
+    (r : HierarchyTask.Request k (Fin J) (ZMod P)) (Kc : ℕ)
+    (raw prep : Environment P J → Matrix V V ℝ)
+    (maximum : Environment P J → V → ℝ) (σ : Environment P J) (x y : V) :
+    correctionRequest D ident r (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+      HP.toHierarchyParams.atomCutoff HP.γ HP.K Kc raw prep maximum σ x y ∈
+      Set.Icc 0 (2 * HP.Q HP.toHierarchyParams.atomCap) := by
+  rw [correctionRequest_multiplier]
+  have h := unitMultiplier_range HP D ident r Kc raw prep σ x y
+  exact ⟨mul_nonneg h.1 (HP.γ_nonneg _),
+    (mul_le_mul_of_nonneg_left (HP.γ_le_one _) h.1).trans (by simpa using h.2)⟩
 
 /-- Uniform fourth-root sensitivity to the completed pilot maximum. Only that child
 changes; this is not a raw/preparation stability theorem or a recursive accuracy claim. -/

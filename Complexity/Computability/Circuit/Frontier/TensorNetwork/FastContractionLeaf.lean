@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 
@@ -100,17 +101,14 @@ theorem scale_add_prec_add_length_fl_le (x : Call T) :
     x.scale + x.prec + x.fl.length ≤ (encCall encT x).length := by
   have h := length_le_length_encList encNat x.fl
   obtain ⟨⟨s, d, b, p, fl, r⟩, D⟩ := x
-  simp only [Call.scale, Call.prec, Call.fl, encCall, encParams, length_encPair, encUnary_apply,
-    List.length_replicate] at h ⊢
-  omega
+  enc_len [Call.scale, Call.prec, Call.fl, encCall, encParams] at h ⊢
 
 /-- The network of a call is at most its encoded length. -/
 theorem length_net_le (x : Call T) :
     (DescribedNetwork.encDescribed (VertexDesc.enc encT) x.net).length ≤
       (encCall encT x).length := by
   obtain ⟨p, D⟩ := x
-  simp only [Call.net, encCall, length_encPair]
-  omega
+  enc_len [Call.net, encCall]
 
 /-- A vertex of a call is at most its encoded length. -/
 theorem length_vertex_le {x : Call T} {v : List ℕ × VertexDesc T}
@@ -121,9 +119,7 @@ theorem length_vertex_le {x : Call T} {v : List ℕ × VertexDesc T}
       (DescribedNetwork.encDescribed (VertexDesc.enc encT) x.net).length := by
     change _ ≤ (encPair encUnary (encList (encPair (encList encNat) (VertexDesc.enc encT)))
       (x.net.numEdges, x.net.vertices)).length
-    rw [length_encPair]
-    dsimp only
-    omega
+    enc_len
   have h3 := length_net_le encT x
   omega
 

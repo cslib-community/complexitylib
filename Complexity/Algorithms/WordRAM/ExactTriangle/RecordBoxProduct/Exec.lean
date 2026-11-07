@@ -13,9 +13,9 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Exec
 /-!
 # Complete native per-record product execution
 
-Native preparation and the threshold-aware patch precede the actual compiled box product.
-Every returned
-word answers its original occurrence; the whole producer catalogue remains below the owned
+Scalar preparation and the threshold-aware patch precede a native direct-to-snapshot gather.
+Every returned word answers its original occurrence; the whole producer catalogue remains below
+the owned
 window and is preserved. These are internal readback composition rules; the producer client
 discharges their descriptor and source-span assertions from its actual initialized execution.
 -/
@@ -29,9 +29,35 @@ open RecordProduct
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
-/-- The complete per-record charge includes actual decoding, copying and callee invocation. -/
+/-- Conservative per-record instruction upper bound, expressed in terms of
+`CallableBoxProduct.timeBound` and linear staging terms. -/
 @[expose] def timeBound {m n : ℕ} (qs : List (Fin n × Fin n)) : ℕ :=
   CallableBoxProduct.timeBound m (m / 9) qs + 8 * m + 14 * (n * D m) + 14 * qs.length + 87
+
+/-- Per-record gather allowance covering scalar preparation (`prepare`), four pointer deliveries,
+`PointerBoxProduct.program`, and copying the returned physical pointer; bounded above by
+`timeBound`. -/
+@[expose] def gatherTimeBound {m n : ℕ} (qs : List (Fin n × Fin n)) : ℕ :=
+  PointerBoxProduct.timeBound m (m / 9) qs + 8 * m + 69
+
+/-- Exact ledger relating `timeBound` plus `PointerBoxProduct.gatherTime` and three pointer-delivery
+steps to `gatherTimeBound` plus the `RecordProduct.prepare` array-copy term and the translated
+snapshot-copy term. -/
+theorem gatherTimeBound_ledger {m n : ℕ} (qs : List (Fin n × Fin n)) :
+    timeBound (m := m) qs + PointerBoxProduct.gatherTime (n * D m) qs.length + 3 =
+      gatherTimeBound (m := m) qs + (14 * (n * D m) + 14 * qs.length + 21) +
+        3 * (7 * QueriedProduct.inputEnd m n qs.length + 10) := by
+  have h := PointerBoxProduct.timeBound_ledger m (m / 9) qs
+  unfold timeBound gatherTimeBound
+  omega
+
+/-- `gatherTimeBound` is at most the conservative `timeBound` envelope. This compares proved upper
+bounds, and does not measure the difference of execution times. -/
+theorem gatherTimeBound_le_timeBound {m n : ℕ} (qs : List (Fin n × Fin n)) :
+    gatherTimeBound (m := m) qs ≤ timeBound (m := m) qs := by
+  have h := gatherTimeBound_ledger (m := m) qs
+  unfold PointerBoxProduct.gatherTime QueriedProduct.inputEnd at h
+  omega
 
 /-- Actual record-to-product execution, with only original input/readback premises and no
 solver/run/time oracle. The final initialized client derives these premises from the producer. -/
@@ -64,45 +90,46 @@ theorem exec {W b m n i out rho piece s t q : ℕ}
       (∀ a, a < b ∨ b + CallableProduct.windowSize n qs.length ≤ a → y.mem a = x.mem a) ∧
       ∀ j : Fin 320, j.val < 65 → y.regs j = x.regs j := by
   have hmargin := preparation_margin (Q := qs.length) hN
-  obtain ⟨a, ha, ab, ain, af, ar⟩ :=
-    RecordProduct.exec_prepare X Y qs x hD hn hi hout hb hrec hrecord
-      hsb htb hqb hleft hright hqueries (hfit.of_le (by omega))
+  obtain ⟨a, ha, ab, as, aright, aq, ahead, athreshold, af, ar⟩ := exec_prepare X Y qs x
+    hD hn hi hout hb hrec hrecord (hfit.of_le (by omega))
+  have hread (j : ℕ) (hj : j < b) : a.mem j = x.mem j := af j (Or.inl hj)
+  have word (j : ℕ) (hj : 5 ≤ j) (hj' : j < QueriedProduct.inputEnd m n qs.length) :
+      (State.init (QueriedProduct.input true (19 * m) X Y qs) : State 160).data.mem j =
+        (State.init (BoxProduct.input true (21 * m) (m / 9) X Y qs) : State 160).data.mem j :=
+    (QueriedProduct.input_change_level true (19 * m) (21 * m) X Y qs j (by omega)).trans
+      (BoxProduct.input_prefix true X Y qs j (by omega) hj').symm
+  obtain ⟨y, hy, yr, yv, yf, yg⟩ := exec_invoke X Y qs a ab as aright aq ahead athreshold
+    hsb htb hqb
+    (by
+      intro j hj
+      rw [hread _ (by omega)]
+      exact (hleft j hj).trans
+        (word _ (by omega) (by unfold QueriedProduct.inputEnd; omega)))
+    (by
+      intro j hj
+      rw [hread _ (by omega)]
+      exact (hright j hj).trans
+        (word _ (by omega) (by unfold QueriedProduct.inputEnd; omega)))
+    (by
+      intro j hj
+      rw [hread _ (by omega)]
+      exact (hqueries j hj).trans
+        (word _ (by omega) (by unfold QueriedProduct.inputEnd; omega)))
+    hX hY (Nat.div_le_self _ _) hN hfit
   have hI : 5 ≤ QueriedProduct.inputEnd m n qs.length := by
-    unfold QueriedProduct.inputEnd
-    omega
-  have hm : a.mem (b + 2) = m := by
-    rw [ain 2 (by omega)]
-    rfl
-  have hlen : a.mem b = QueriedProduct.inputEnd m n qs.length - 1 := by
-    have h := ain 0 (by omega)
-    have hl := QueriedProduct.input_length true (19 * m) X Y qs
-    simp only [Nat.add_zero, State.init, Data.init_mem_zero] at h
-    omega
-  have hmD : m ≤ D m := (Nat.lt_pow_self (by decide : 1 < (4 : ℕ))).le
-  obtain ⟨z, hz, zm, zb, zr⟩ := exec_patchInput a ab hm hlen hI (hfit.of_le (by
-    unfold QueriedProduct.inputEnd
-    omega))
-  have zin (j : ℕ) (hj : j < QueriedProduct.inputEnd m n qs.length + 1) :
-      z.mem (b + j) =
-        (State.init (BoxProduct.input true (21 * m) (m / 9) X Y qs) : State 160).data.mem j := by
-    rw [zm]
-    exact patch_input_readback X Y qs a ain j hj
-  obtain ⟨y, hy, yr, yv, yi, yf, yg⟩ := exec_invoke X Y qs z zb zin hX hY hN
-    (hfit.of_le (by omega))
-  have hIwindow : QueriedProduct.inputEnd m n qs.length <
+    unfold QueriedProduct.inputEnd; omega
+  have hIwindow : QueriedProduct.inputEnd m n qs.length + 1 <
       CallableProduct.windowSize n qs.length := by
     unfold QueriedProduct.inputEnd
     omega
-  refine ⟨y, ((ha.seq hz).seq hy).mono (by unfold timeBound; omega), yr, yv, ?_, ?_⟩
+  refine ⟨y, (ha.seq hy).mono ?_, yr, yv, ?_, ?_⟩
+  · exact (show 8 * m + 64 + (PointerBoxProduct.timeBound m (m / 9) qs + 5) ≤
+        gatherTimeBound (m := m) qs by unfold gatherTimeBound; omega).trans
+      (gatherTimeBound_le_timeBound qs)
   · intro j hj
-    rw [yf j hj]
-    rw [zm, Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega)]
-    apply af j
-    unfold QueriedProduct.inputEnd
-    omega
+    exact (yf j hj).trans (af j (by omega))
   · intro j hj
     have hne : j ≠ Reg.result := by intro h; subst j; simp [Reg.result] at hj
-    exact (yg j (by omega) hne).trans ((zr j hj).trans (ar j hj))
+    exact (yg j (by omega) hne).trans (ar j hj)
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct

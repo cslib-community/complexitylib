@@ -19,6 +19,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Map
+import Complexity.Tactic.EncLen
 import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
@@ -179,12 +180,9 @@ theorem half_le_succProbability_inversionGame {p : Polynomial ℕ}
           p.eval (encPreimagePrefix (query j)).length ≤ searchCoinLength p (n, f x) := by
       have hj' := length_iterate_preimageSearchStep D (n, f x) j
       constructor
-      · simp only [query, length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-        omega
+      · enc_len [query]
       · refine Polynomial.eval_mono p ?_
-        simp only [query, length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
-          List.length_append, hj', List.length_singleton]
-        omega
+        enc_len [query, hj']
     have hbad (j : ℕ) (hj : j < n) : μ.toOuterMeasure (bad j) ≤ 1 / 2 ^ (n + 1) := by
       refine (toOuterMeasure_take_wrong_le hV (query j) (hlen j hj).2).trans ?_
       simp only [Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_one]

@@ -30,6 +30,79 @@ Prove certificates for opaque subroutines, then let `fun_prop` compose registere
 
 The [automation reference](../design-and-assurance/automation.md) explains registration and [troubleshooting](troubleshooting.md) handles failures.
 
+For binary sign-magnitude integers, import
+`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary`.
+The plain `ComputableInPolyTime.intBin_natAbs`, `intBin_isNeg`, `intBin_signMagnitude`,
+`intBin_prod` and `intBin_pow` rules compose through `fun_prop`; `intBin_pow'` accepts computed
+base and unary exponent certificates. The complete
+[IntBinary client](../../ComplexityTests/RationalHitting/IntBinary.lean) checks composed products, powers,
+magnitudes and signs. A binary exponent has a different output-size obligation: do not replace
+the unary exponent encoding merely to make a goal match.
+
+For a padded integer dot product, import
+[PolyTime/Int/DotProduct.lean](../../Complexity/Computability/PolyTime/Int/DotProduct.lean)
+and use `ComputableInPolyTime.listDotProduct`. It certifies the existing pure public
+`Mathlib.Tactic.Matrix.ListMatrix.dotProduct`: the cutoff is unary, coefficients are signed
+binary, missing entries are zero, and entries beyond the cutoff are ignored. Runtime still
+charges both complete framed input lists. The operation lives in a Mathlib tactic-support
+file but is ordinary term-level arithmetic, not a meta program.
+The pure [list identities](../../Complexity/Foundations/Data/List/DotProduct.lean) and
+[residue-matrix bridge](../../Complexity/Foundations/Data/ZMod/DotProduct.lean) require neither
+crypto nor native imports. The former local Lyubashevsky `listDot` duplicate has been removed;
+its verifier, extractor and signer use the same upstream operation. The
+[checked clients](../../ComplexityTests/ListDotProduct.lean) cover padding, truncation, signed
+large coefficients and unchanged verifier outcomes and commitment bytes. This API
+consolidation adds no cryptographic security claim.
+
+Keep a record's encoded tuple layout at its construction boundary. For example,
+[`NativePacket.PacketCtx.mk_polyTime`](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
+composes certificates for named fields while preserving the existing encoded words; its
+[packet-construction client](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/NativeChildPolyTime.lean)
+does not reconstruct the product tree. The
+[`BranchEvalInput` interface](../../Complexity/Computability/PolyTime/BooleanAnalysis/SparsePolyCounter.lean)
+similarly supplies named parameter access and certificates with the original unary/binary
+choices. Use these boundaries when changing a client, and retain its encoded-length bounds.
+
+For a computed optional value, import
+`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option`.
+The shared `ComputableInPolyTime.optionMapWithInput` rule certifies
+`fun x => (value x).map (f x)` from certificates for `value` and the joint callback
+`fun p => f p.1 p.2`. The callback is charged against both the original input and
+the present value; input and output value encodings may differ.
+The [public-import client](../../ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeOptionPublicImport.lean)
+checks a captured parameter and an encoding change.
+[Boolean measurement search](../../Complexity/Computability/PolyTime/LinearAlgebra/BooleanMeasurements.lean)
+uses this rule for its optional-result codec, and
+[hybrid CCA composition](../../Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
+uses it to postprocess successful decapsulation while preserving rejection.
+
+## Walk two lists with a collecting fold
+
+Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold`
+and open `Turing.MultiTapeTM`. Apply `ComputableInO.zipFold` or
+`ComputableInSpace.zipFold` explicitly. The complete [zipFold clients](../../ComplexityTests/ZipFold.lean)
+show padding, dropping and a time certificate; [subtractSums_inSpace](../../Complexity/Computability/TreeEval/Reader/Cert/Regs.lean)
+uses the space-only rule for register subtraction.
+
+`zipFold f p left right` takes one step for every element of `left`, consuming one
+position of `right` even when `f` returns `none` and drops that output. After `right`
+is exhausted, the callback receives `none`; it chooses whether to pad or drop.
+Unused elements of a longer `right` are ignored, and retained outputs keep their order.
+
+Supply one joint certificate for `(p, a, b?) ↦ f p a b?`, with the parameter, left element
+and optional right element encoded together. Both cost rules require `Inhabited` for the
+right-element and output types. They also require a bound on **every encoded output prefix**:
+the result of `zipFold f p (left.take i) right` for every `i`, not only the final list.
+Keep the parameter and element encodings explicit when applying the rule.
+
+Let `N` be the length of the joint encoding of `(p, left, right)`. A callback with linear
+time and charged space, and prefixes bounded by `k * (N + 1)` for one constant `k`, gives
+time `O((left.length + 1) * (N + 1))` and linear charged space. The space-only rule needs
+a linear-space callback and a prefix bound `B (p, left, right)`; it gives space
+`O(N + B (p, left, right) + 1)` and makes no time claim. Both space bounds include the
+encoded output. A callback certificate for each fixed parameter is insufficient: certify
+the joint function, and discharge the prefix bound separately.
+
 ## Certify a loop and its postcondition
 
 **Goal:** a plain computation certificate together with a final invariant. Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration`. The public import exposes [ComputableInPolyTime.iterate_spec](../../Complexity/Computability/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean); its current implementation lives in the machine layer.
