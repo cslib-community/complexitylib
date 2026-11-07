@@ -3748,6 +3748,7 @@ public import Complexity.Foundations.Analysis.RowCompression.SentinelIteration
 public import Complexity.Foundations.Analysis.RowCompression.SentinelRelative
 public import Complexity.Foundations.Analysis.RowCompression.Stationary
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
+public import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 public import Complexity.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
 public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
@@ -4289,6 +4290,7 @@ public import Complexity.Foundations.Probability.Gaussian.Convolution
 public import Complexity.Foundations.Probability.Gaussian.Correlated
 public import Complexity.Foundations.Probability.Gaussian.Discrete
 public import Complexity.Foundations.Probability.Gaussian.DiscreteTail
+public import Complexity.Foundations.Probability.Gaussian.ExpSq
 public import Complexity.Foundations.Probability.Gaussian.Fourier
 public import Complexity.Foundations.Probability.Gaussian.MassBounds
 public import Complexity.Foundations.Probability.Gaussian.Measure
@@ -4723,6 +4725,7 @@ public import Complexity.Probability.BitString.LinearHash.Collisions
 public import Complexity.Probability.BitString.List
 public import Complexity.Probability.BitString.List.All
 public import Complexity.Probability.BitString.List.Vote
+public import Complexity.Probability.BitString.Rademacher
 public import Complexity.Probability.BitString.SubsetSum
 public import Complexity.Probability.BitString.SubsetSum.Matrix
 public import Complexity.Probability.BoundedDifferences
@@ -4756,6 +4759,7 @@ public import Complexity.Probability.HashIsolation
 public import Complexity.Probability.IID
 public import Complexity.Probability.IID.CollisionCount
 public import Complexity.Probability.Isolation
+public import Complexity.Probability.JohnsonLindenstrauss
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.KWiseIndependent.Coupling
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
