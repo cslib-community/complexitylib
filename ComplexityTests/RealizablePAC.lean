@@ -6,12 +6,15 @@ Authors: Samuel Schlesinger
 
 import Complexity.MachineLearning.PACLearning.FiniteClass
 import Complexity.MachineLearning.PACLearning.GrowthFunction
+import Complexity.MachineLearning.PACLearning.VCUpperBound
 import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-! Checks for distribution-free realizable PAC learning: realizability, consistency and empirical
 risk minimization on concrete distributions and learners; the finite-class Occam bound with
-explicit parameters, including a matching nonvacuity check that zero examples do not suffice; and
-the growth function and VC dimension of threshold concepts on `ℕ` and of all Boolean concepts. -/
+explicit parameters, including a matching nonvacuity check that zero examples do not suffice; the
+growth function and VC dimension of threshold concepts on `ℕ` and of all Boolean concepts; and
+ε-nets and the VC upper bound for thresholds, with an explicit sample size and a matching check
+that zero examples do not suffice. -/
 
 namespace ComplexityTests.RealizablePAC
 
@@ -193,19 +196,19 @@ example : growthFunction thresholds 2 = 3 := by
     (fun W hW => card_le_one_of_setShatters_thresholds hW) (C := thresholds) 2
   refine le_antisymm (by simpa using hle) ?_
   have hsub : (({![true, true], ![false, true], ![false, false]} : Finset (Fin 2 → Bool)) :
-      Set (Fin 2 → Bool)) ⊆ restrictions thresholds ![0, 1] := by
+      Set (Fin 2 → Bool)) ⊆ restriction thresholds ![0, 1] := by
     intro v hv
     simp only [Finset.coe_insert, Finset.coe_singleton, Set.mem_insert_iff,
       Set.mem_singleton_iff] at hv
-    rw [mem_restrictions]
+    rw [mem_restriction]
     rcases hv with rfl | rfl | rfl
     · exact ⟨fun x => decide (0 ≤ x), ⟨0, rfl⟩, by decide⟩
     · exact ⟨fun x => decide (1 ≤ x), ⟨1, rfl⟩, by decide⟩
     · exact ⟨fun x => decide (2 ≤ x), ⟨2, rfl⟩, by decide⟩
   calc 3 = (({![true, true], ![false, true], ![false, false]} : Finset (Fin 2 → Bool)) :
         Set (Fin 2 → Bool)).ncard := by rw [Set.ncard_coe_finset]; decide
-    _ ≤ (restrictions thresholds ![0, 1]).ncard := Set.ncard_le_ncard hsub (Set.toFinite _)
-    _ ≤ growthFunction thresholds 2 := ncard_restrictions_le_growthFunction _ _
+    _ ≤ (restriction thresholds ![0, 1]).ncard := Set.ncard_le_ncard hsub (Set.toFinite _)
+    _ ≤ growthFunction thresholds 2 := ncard_restriction_le_growthFunction _ _
 
 theorem hasFiniteVCDim_thresholds : HasFiniteVCDim thresholds :=
   hasFiniteVCDim_iff.2 ⟨1, fun _ hW => card_le_one_of_setShatters_thresholds hW⟩
@@ -241,5 +244,108 @@ example (m : ℕ) : growthFunction (Set.univ : ConceptClass ℕ Bool) m = 2 ^ m 
 /-- A finite class realizes at most as many labelings as it has concepts. -/
 example (m : ℕ) : growthFunction (constants : Set (Bool → Bool)) m ≤ 2 :=
   card_constants ▸ growthFunction_le_card constants m
+
+/-! ### ε-nets and the VC upper bound -/
+
+/-- Under a point mass at `0`, the one-point sample `0` is a `1 / 2`-net for thresholds: every
+threshold of mass at least `1 / 2` contains `0`. -/
+example : IsEpsNet (Measure.dirac (0 : ℕ)) thresholds (1 / 2) ![0] := by
+  rintro g - hg
+  refine ⟨0, ?_⟩
+  by_contra h
+  have h0 : g 0 = false := by simpa using h
+  have : (Measure.dirac (0 : ℕ)) {z | g z = true} = 0 := by
+    simp [h0]
+  rw [this] at hg
+  exact absurd hg (by simp)
+
+/-- The empty sample is not a `1 / 2`-net for thresholds under a point mass: the threshold at `0`
+has mass one and no sample point. -/
+example : ¬ IsEpsNet (Measure.dirac (0 : ℕ)) thresholds (1 / 2) (Fin.elim0 : Fin 0 → ℕ) := by
+  refine not_isEpsNet_iff.2 ⟨fun x => decide (0 ≤ x), ⟨0, rfl⟩, ?_, fun i => i.elim0⟩
+  simp only [zero_le, decide_true, Set.ofPred_true, measure_univ]
+  exact ENNReal.ofReal_le_one.2 (by norm_num)
+
+/-- **The ε-net theorem for thresholds**, a class of VC dimension one: under every distribution on
+`ℕ`, `m ≥ (8 / ε) (log (48 / ε) + log (4 / δ))` samples fail to be an ε-net with probability at
+most `δ`. -/
+example (μ : Measure ℕ) [IsProbabilityMeasure μ] {ε δ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1)
+    (hδ : 0 < δ) (hδ1 : δ ≤ 1) {m : ℕ} (hm : vcSampleSize 1 ε δ ≤ m) :
+    Measure.pi (fun _ : Fin m => μ) {S | ¬ IsEpsNet μ thresholds ε S} ≤ ENNReal.ofReal δ :=
+  measure_pi_not_isEpsNet_le_of_vcSampleSize_le μ
+    (fun _ hW => card_le_one_of_setShatters_thresholds hW) hε hε1 hδ hδ1 hm
+
+/-- Thresholds on `ℕ` are PAC learnable in the realizable setting. -/
+example : IsPACLearnable thresholds (realizableDistributions thresholds) :=
+  isPACLearnable_realizableDistributions_of_hasFiniteVCDim hasFiniteVCDim_thresholds
+
+theorem thresholds_nonempty : thresholds.Nonempty := ⟨fun x => decide (0 ≤ x), 0, rfl⟩
+
+/-- `vcSampleSize 1 (1 / 2) (1 / 2) = 16 (log 96 + log 8) ≤ 112`, since `96 ≤ 2 ^ 7` and
+`log 2 < 0.7`. -/
+theorem vcSampleSize_one_half_half_le : vcSampleSize 1 (1 / 2) (1 / 2) ≤ 112 := by
+  have h96 : Real.log 96 ≤ 7 * Real.log 2 := by
+    calc Real.log 96 ≤ Real.log ((2 : ℝ) ^ 7) := Real.log_le_log (by norm_num) (by norm_num)
+      _ = 7 * Real.log 2 := by rw [Real.log_pow]; norm_num
+  have h8 : Real.log 8 = 3 * Real.log 2 := by
+    rw [show (8 : ℝ) = 2 ^ 3 by norm_num, Real.log_pow]
+    norm_num
+  rw [vcSampleSize, show (48 : ℝ) / (1 / 2) = 96 by norm_num,
+    show (4 : ℝ) / (1 / 2) = 8 by norm_num, h8]
+  push_cast
+  nlinarith [Real.log_two_lt_d9]
+
+/-- **An explicit VC sample size**: `112` examples learn thresholds to accuracy and confidence
+`1 / 2` over every realizable distribution on `ℕ`. -/
+theorem isPACLearnerFor_thresholds_112 :
+    IsPACLearnerFor 112 half half thresholds (realizableDistributions thresholds) := by
+  refine isPACLearnerFor_realizableDistributions_of_vcSampleSize_le thresholds_nonempty
+    (fun _ hW => card_le_one_of_setShatters_thresholds hW) ?_
+  simp only [half, NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat, Nat.cast_ofNat]
+  exact vcSampleSize_one_half_half_le
+
+/-- Zero examples do not suffice for thresholds: the hypothesis output on the empty sample is wrong
+with probability one under a point mass at `0` labeled by the threshold at `0` or at `1`. -/
+theorem not_isPACLearnerFor_thresholds_zero :
+    ¬ IsPACLearnerFor 0 half half thresholds (realizableDistributions thresholds) := by
+  rintro ⟨A, hA⟩
+  set h0 := A fun i => i.elim0
+  set t : ℕ := if h0 0 then 1 else 0
+  set D : Measure (ℕ × Bool) := Measure.dirac (0, !h0 0)
+  have hD : D ∈ realizableDistributions thresholds := by
+    refine ⟨fun x => decide (t ≤ x), ⟨t, rfl⟩, ?_⟩
+    cases h : h0 0 <;> simp [D, error, t, h]
+  have key := hA D hD
+  rw [IsRealizableBy.optimalError_eq_zero hD, zero_add] at key
+  have hset : {S : LabeledSample ℕ Bool 0 | ((half.val : ℝ≥0) : ℝ≥0∞) < error D (A S)} =
+      Set.univ := by
+    refine Set.eq_univ_of_forall fun S => ?_
+    have hS : S = fun i => i.elim0 := Subsingleton.elim _ _
+    have herr : error D (A S) = 1 := by
+      rw [hS]
+      simp [D, error, h0]
+    change ((half.val : ℝ≥0) : ℝ≥0∞) < error D (A S)
+    rw [herr, half]
+    exact_mod_cast (by norm_num : (1 / 2 : ℝ≥0) < 1)
+  rw [hset, measure_univ, half] at key
+  exact absurd key (by exact_mod_cast (by norm_num : ¬ (1 : ℝ≥0) ≤ 1 / 2))
+
+/-- The realizable sample complexity of thresholds at `(1/2, 1/2)` lies in `[1, 112]`. -/
+example : 1 ≤ sampleComplexity IsPACLearnerFor thresholds half half
+      (realizableDistributions thresholds) ∧
+    sampleComplexity IsPACLearnerFor thresholds half half
+      (realizableDistributions thresholds) ≤ 112 := by
+  refine ⟨Nat.one_le_iff_ne_zero.2 fun h0 => not_isPACLearnerFor_thresholds_zero ?_,
+    Nat.sInf_le isPACLearnerFor_thresholds_112⟩
+  have hmem := Nat.sInf_mem (⟨112, isPACLearnerFor_thresholds_112⟩ :
+    {m | IsPACLearnerFor m half half thresholds (realizableDistributions thresholds)}.Nonempty)
+  unfold sampleComplexity at h0
+  rwa [h0] at hmem
+
+/-- The loss class of thresholds has growth function at most `m + 1`. -/
+example (m : ℕ) : growthFunction (lossClass thresholds) m ≤ m + 1 :=
+  (growthFunction_lossClass_le thresholds m).trans (by
+    simpa using growthFunction_le_add_one_pow
+      (fun W hW => card_le_one_of_setShatters_thresholds hW) m)
 
 end ComplexityTests.RealizablePAC
