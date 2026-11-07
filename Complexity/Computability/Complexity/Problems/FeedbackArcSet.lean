@@ -35,12 +35,21 @@ leaves an acyclic graph, numbered by the witness; conversely, a topological numb
 left by a feedback arc set (`Cslib.Complexity.Graph.isDirAcyclic_iff_exists_rank`) has all its
 back arcs in that set, and it can be taken below the number of declared vertices.
 
-Hardness is the vertex-splitting reduction from `FeedbackVertexSet` [Karp1972]
+Hardness is a vertex-splitting reduction from `FeedbackVertexSet`
 (`FeedbackVertexSet.toFeedbackArcSet`): every vertex `v` becomes an arc `2v → 2v + 1`, and every
 arc `u → v` becomes an arc `2u + 1 → 2v` (`FeedbackVertexSet.splitVertices`), with the same `k`.
 Every walk passes through the arcs of the vertices it visits, so removing the arcs of a feedback
 vertex set leaves an acyclic graph; conversely, removing an arc `2v → 2v + 1` or `2v + 1 → 2w`
 can be replaced by removing the vertex `v`.
+
+Attribution: in Karp's reduction tree [Karp1972], FEEDBACK NODE SET and FEEDBACK ARC SET are both
+reduced from NODE COVER. His FEEDBACK ARC SET reduction splits the vertices of the node-cover
+instance: `⟨u, 0⟩ → ⟨u, 1⟩` for every vertex `u`, and `⟨u, 1⟩ → ⟨v, 0⟩` and `⟨v, 1⟩ → ⟨u, 0⟩` for
+every edge `{u, v}`. Here the splitting is generalized to arbitrary directed graphs and factored
+through `FeedbackVertexSet`. For a loopless graph `G`, `splitVertices (VertexCover.bidirect G)`
+(the graph of `VertexCover.toFeedbackVertexSet`) is Karp's graph with `⟨u, i⟩` numbered `2u + i`.
+This account of Karp's construction follows secondary descriptions; it has not been checked
+against the printed paper.
 
 ## Main definitions
 
@@ -326,7 +335,10 @@ theorem computableInPolyTime_toFeedbackArcSet :
 
 end FeedbackVertexSet
 
-/-- `FeedbackVertexSet` reduces to `FeedbackArcSet` in polynomial time [Karp1972]. -/
+/-- `FeedbackVertexSet` reduces to `FeedbackArcSet` in polynomial time, by vertex splitting.
+Karp [Karp1972] instead reduces NODE COVER to FEEDBACK ARC SET by splitting the vertices of the
+node-cover instance. This reduction generalizes his splitting to arbitrary directed graphs, and
+composing it with `polyTimeReducible_VertexCover_FeedbackVertexSet` recovers his graph. -/
 theorem polyTimeReducible_FeedbackVertexSet_FeedbackArcSet :
     PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) FeedbackVertexSet
       FeedbackArcSet :=

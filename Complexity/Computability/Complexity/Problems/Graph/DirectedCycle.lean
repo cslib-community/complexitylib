@@ -174,8 +174,8 @@ theorem isDirAcyclic_deleteVerts_iff {G : Graph} {R : Finset ℕ} :
 
 /-! ### Listed numberings -/
 
-/-- A numbering below `m` listed along the vertex list of an instance whose encoding has length
-`n ≥ m` has an encoding of length at most `2 n ^ 2 + n`. -/
+/-- A numbering listed along the vertex list of a graph with at most `n` listed vertices, whose
+values on the declared vertices are at most `n`, has an encoding of length at most `2 n ^ 2 + n`. -/
 theorem length_encList_map_le {G : Graph} {f : ℕ → ℕ} {n : ℕ} (hG : G.1.length ≤ n)
     (hf : ∀ v ∈ G.1, f v ≤ n) : (encList encNat (G.1.map f)).length ≤ 2 * n ^ 2 + n := by
   have hentry : ∀ a ∈ G.1.map f, (encNat a).length ≤ n := by
