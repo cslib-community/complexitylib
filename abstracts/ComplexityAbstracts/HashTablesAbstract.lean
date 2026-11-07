@@ -74,14 +74,15 @@ polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4` where requ
   charges `upOpCharge`, `cuckooQueryCharge` and `cuckooInsertCharge` do not depend on `n_max`,
   but below `regimeThreshold = 2 ^ 320000` they only cap quantities that grow with `n_max`.
   `upOpCharge` allows `13` instructions for each of `regimeThreshold` probes, a cap on the
-  deterministic probe count `n_max + 1`; the library's bound of at most `3` expected probes holds
-  only for `n_max ≥ regimeThreshold` and is not stated here. The cuckoo charges price every hash
-  evaluation at the largest polynomial degree used below the threshold (`cuckooKBound = 3840026`).
-  These `O(1)` bounds are therefore asymptotic statements, met trivially at realizable
-  capacities: a linear scan of the stored keys at up to `13` instructions per key stays within
-  `upOpCharge` for every `n_max < regimeThreshold`, and the cuckoo charges (more than
-  `8 * 10 ^ 11` instructions per operation) exceed a linear scan's cost for capacities up to
-  about `10 ^ 10`.
+  deterministic probe count `n_max + 1`. The cuckoo charges price every hash evaluation at the
+  largest polynomial degree used below the threshold (`cuckooKBound = 3840026`). These `O(1)`
+  bounds are therefore asymptotic statements, met trivially at realizable capacities: a linear
+  scan of the stored keys at up to `13` instructions per key stays within `upOpCharge` for every
+  `n_max < regimeThreshold`, and the cuckoo charges (more than `8 * 10 ^ 11` instructions per
+  operation) exceed a linear scan's cost for capacities up to about `10 ^ 10`. For uniform probing,
+  `uniformProbing` also states the threshold-free bound: when `n_max ≥ regimeThreshold`, at most
+  `3` expected probes give at most `upLargeOpCharge = 13778` expected instructions per operation.
+  No analogous threshold-free charge is stated for cuckoo hashing.
 
 A reader only needs to inspect the definitions and theorem statements in this file to verify that
 the formalization proves the intended mathematical claims; Lean verifies the proofs through
@@ -728,9 +729,17 @@ def upHashEvalSteps : ℕ :=
 `c_exp = 4` (independent of `n_max` and `U`; astronomically large because the unconditional
 all-`n_max` probe bound uses `regimeThreshold = 2 ^ 320000` below the double-tabulation
 threshold). Below that threshold it only caps the deterministic probe count `n_max + 1`, so a
-linear scan of the stored keys at up to `13` instructions per key also meets it. -/
+linear scan of the stored keys at up to `13` instructions per key also meets it. The
+threshold-free charge for `n_max ≥ regimeThreshold` is `upLargeOpCharge`. -/
 def upOpCharge : ℕ :=
   13 * regimeThreshold + upHashEvalSteps + 8
+
+/-- Expected per-operation instruction charge `13 * 3 + upHashEvalSteps + 8 = 13778` for uniform
+probing at `c_exp = 4` once `n_max ≥ regimeThreshold`: at most `3` expected probes at `13`
+instructions each, the two Double Tabulation evaluations (`upHashEvalSteps`), and `8` instructions
+of overhead. It does not depend on `regimeThreshold`, `n_max` or `U`. -/
+def upLargeOpCharge : ℕ :=
+  13 * 3 + upHashEvalSteps + 8
 
 /-- **Uniform Probing via Odd-Stride Double Hashing** (`UniformProbing.seq_expected_amortized`,
 specialized to `c_exp = 4`):
@@ -752,7 +761,11 @@ memory in `[base, base + upSpace n_max)`, there exists an initial coupled distri
   (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected executed instructions per `query` or
   `insert`, independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no
   bound is stated on static code length). Below `regimeThreshold` this charge only caps the
-  deterministic probe count, so the bound is met trivially at every realizable `n_max`.
+  deterministic probe count, so the bound is met trivially at every realizable `n_max`;
+- for `n_max ≥ regimeThreshold`, the same execution also satisfies
+  `upInitSteps n_max + T_ops ≤ upInitSteps n_max + ops.length * upLargeOpCharge`
+  (`upLargeOpCharge = 13778` expected executed instructions per operation, from at most `3`
+  expected probes; this constant does not depend on `regimeThreshold`).
 
 References: `[CLRS2009]` (3rd ed., Section 11.4, pp. 269–277); `[SchmidtSiegel1990]` (STOC 1990,
 pp. 224–234; NYU Courant Technical Report `TR1995-687`, May 1995, pp. 1–2, 4–7, 37–39);
@@ -786,7 +799,10 @@ theorem uniformProbing :
                     base (upSpace n_max) (emptyDict U) ops
                     μ_init μ_final T_ops ∧
                   (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
-                    ((upInitSteps n_max + ops.length * upOpCharge : ℕ) : ℝ≥0∞) :=
+                    ((upInitSteps n_max + ops.length * upOpCharge : ℕ) : ℝ≥0∞) ∧
+                  (regimeThreshold ≤ n_max →
+                    (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
+                      ((upInitSteps n_max + ops.length * upLargeOpCharge : ℕ) : ℝ≥0∞)) :=
   ComplexityAbstracts.HashTablesBridge.uniformProbing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
@@ -813,7 +829,7 @@ theorem uniformProbing :
       fun _ _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ _ _ => rfl,
       fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
       @ExecDictOps.nil, @ExecDictOps.cons⟩
-    regimeThreshold upHashEvalSteps upOpCharge rfl rfl rfl
+    regimeThreshold upHashEvalSteps upOpCharge upLargeOpCharge rfl rfl rfl rfl
 
 /-! ## Table 4: Pagh–Rodler Cuckoo Hashing (`CuckooHashing.lean`) -/
 
@@ -1069,7 +1085,10 @@ theorem cuckooHashing :
     rfl rfl rfl rfl rfl rfl rfl rfl
     @cuckooOpCharge (fun _ => rfl) (fun _ _ => rfl)
 
-/-- info: abstract audit passed for `ComplexityAbstracts.HashTablesAbstract`: 416 root declarations -/
+/--
+info: abstract audit passed for `ComplexityAbstracts.HashTablesAbstract`: 417 root
+declarations
+-/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.HashTablesAbstract
 

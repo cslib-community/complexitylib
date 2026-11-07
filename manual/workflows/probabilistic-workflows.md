@@ -65,8 +65,13 @@ Import [StatisticalDistance/Event.lean](../../Complexity/Probability/Statistical
 to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
 over a finite type, active after `open scoped Cslib.Probability.PMF`. It uses the half-L1
 convention: distinct point masses have distance `1`, half of Mathlib's `tvDist` above.
-`abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`, and
-`dist_map_of_injective` keeps the distance unchanged under an injective relabeling. Import
+`abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`;
+`abs_bind_apply_toReal_sub_le_dist p q T b` does the same for the probability that a randomized
+distinguisher `T` outputs `b`. `dist_map_of_injective` keeps the distance unchanged under an
+injective relabeling. For a second-moment tail bound on a finite PMF without measure-theoretic side
+conditions, import [PMF/Chebyshev.lean](../../Complexity/Probability/PMF/Chebyshev.lean): by
+`sum_mul_ite_le_sum_mul_sq_div`, the mass where `|f a − m| ≥ c` is at most
+`∑ a, p(a) (f a − m)² / c²`. Import
 [Product/Split.lean](../../Complexity/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
 satisfying `P` and the remaining coordinates form two independent products.
@@ -74,6 +79,45 @@ satisfying `P` and the remaining coordinates form two independent products.
 The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two fair bits on
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
+
+## Bound the mixing time of a finite Markov chain
+
+Import [MarkovChain/Coupling.lean](../../Complexity/Probability/MarkovChain/Coupling.lean). A chain
+`P : Cslib.Probability.MarkovChain S` is a transition kernel `S → PMF S`, and `P ^ t` is its
+`t`-step kernel, so `pow_add_apply` is Chapman–Kolmogorov. Prove a stationary law with
+`IsStationary P π` (`π.bind P = π`), or more easily with detailed balance
+`IsReversible P π` and `IsReversible.isStationary`. To get a chain with a given target,
+[MarkovChain/Metropolis.lean](../../Complexity/Probability/MarkovChain/Metropolis.lean) builds
+`metropolis Ψ π` from any proposal chain `Ψ`, and `isReversible_metropolis` holds without
+positivity or symmetry hypotheses. With `[Fintype S]`,
+[MarkovChain/Mixing.lean](../../Complexity/Probability/MarkovChain/Mixing.lean) defines
+`distToStationary P π t` (`d(t)`, a maximum over starting states of cslib's half-L1 `dist`),
+`distPair P t` (`d̄(t)`) and `mixingTime P π ε : ℕ∞`, which is `⊤` when the chain never comes
+within `ε`. Nothing assumes irreducibility or aperiodicity: the periodic flip on `Bool` has
+`t_mix(ε) = ⊤` for every `ε < 1/2`. For stationary `π`, `IsStationary.mixingTime_le_iff` turns a
+mixing-time goal into `d(t) ≤ ε`, and `IsStationary.mixingTime_le_ceil_logb_mul` amplifies
+`t_mix(1/4)` to `t_mix(ε)`.
+
+To bound `d(t)`, build a chain `Q` on `S × S` and prove `IsMarkovianCoupling P Q`, i.e. that both
+coordinates of `Q z` have the laws `P z.1` and `P z.2`. Then
+`distToStationary_le_of_coupling hπ (fun _ _ => Q) (fun _ _ => hQ) hε` bounds `d(t)` by any `ε`
+that bounds `(((Q ^ t) (x, y)).toOuterMeasure {w | w.1 ≠ w.2}).toReal` for all starting pairs.
+The bounded event is "the copies differ at time `t`", not the source's coupling-time tail, and is
+never larger. The theorem covers time-homogeneous Markovian couplings only, but needs no
+stickiness. To bound the event, `PMF.toOuterMeasure_bind_le_mul_ennreal` from
+[PMF/Event.lean](../../Complexity/Probability/PMF/Event.lean) gives a step-by-step induction. The
+worked client is [BitString/LazyRandomWalk.lean](../../Complexity/Probability/BitString/LazyRandomWalk.lean):
+for the lazy hypercube walk `Cslib.BitString.lazyRandomWalk ι`, `mixingTime_lazyRandomWalk_le`
+proves `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉`. The ceiling is necessary, as the `n = 1`, `ε = 2/5`
+check shows.
+
+The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
+`t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip
+chain never mixes, compute a Metropolis acceptance probability, and give the hypercube instance
+with `n = 1`. Run
+`scripts/build.sh ComplexityTests.MarkovChain`. A goal of the form `t_mix(ε) = k` needs both
+directions: `mixingTime_le_of_distToStationary_le` for `≤`, and
+`(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
 ## Compose local embeddings and extract a strategy
 
