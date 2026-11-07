@@ -365,10 +365,11 @@ families and full-input native runtime.
   word key generation, dyadic-sampled encryption, decryption, perfect correctness and
   plaintext-addition preservation under decryption over a supplied balanced-modulus generator,
   alongside the Decisional Composite Residuosity assumption (`DCR`) in
-  `Crypto/Computational/CompositeResiduosity`. The IND-CPA security reduction under `DCR`
-  (Katz–Lindell Theorem 15.13, accounting for approximate unit sampling), the full
-  distributional additive-homomorphism condition (Definition 15.14), and native balanced-modulus
-  generation remain open.
+  `Crypto/Computational/CompositeResiduosity`. The second condition of Katz–Lindell
+  Definition 15.14 (exact distributional equality of multiplied ciphertexts with fresh
+  encryptions) fails for the implemented dyadic `unitOrOne` sampler and needs an exact or
+  statistical-closeness formulation; the IND-CPA security reduction under `DCR` (Theorem 15.13,
+  accounting for approximate unit sampling) and native balanced-modulus generation remain open.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
