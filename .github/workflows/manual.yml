@@ -1,0 +1,122 @@
+name: Operator's Manual PDFs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "manual/**"
+      - "scripts/build_operator_manual.py"
+      - "scripts/check_operator_manual.py"
+      - ".github/workflows/manual.yml"
+  pull_request:
+    paths:
+      - "manual/**"
+      - "scripts/build_operator_manual.py"
+      - "scripts/check_operator_manual.py"
+      - ".github/workflows/manual.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new run for a pull request cancels that pull request's superseded run; `main` runs keep the
+# package cache warm for pull requests.
+concurrency:
+  group: manual-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      # manual/BUILD.md: Pandoc, XeLaTeX with fontspec, fvextra, xurl, bookmark, microtype,
+      # fancyhdr, etoolbox and tcolorbox, TeX Gyre Pagella/Heros and DejaVu Sans Mono, pdfinfo
+      # (Poppler) and Graphviz for the model diagrams.
+      MANUAL_PACKAGES: >-
+        pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra tex-gyre
+        fonts-dejavu-core graphviz poppler-utils
+      # Downloaded archives are cached as in abstracts.yml; apt still verifies their digests.
+      MANUAL_DEBS: /var/cache/manual-debs
+    steps:
+      # Pull requests build their head commit, so the PDFs' revision-pinned source links and
+      # manifests name the exact revision under review.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Check the manual sources
+        run: |
+          python3 -B scripts/check_operator_manual.py
+          python3 -B scripts/test_operator_manual.py
+      - name: Resolve PDF tooling packages
+        id: debs
+        run: |
+          sudo apt-get update
+          sudo install -d -o "$USER" "$MANUAL_DEBS"
+          apt-get install --no-install-recommends -y -qq --print-uris \
+            -o Dir::Cache::Archives="$MANUAL_DEBS" $MANUAL_PACKAGES \
+            | awk '{print $2, $3, $4}' | sort > "$RUNNER_TEMP/manual-debs.txt"
+          test -s "$RUNNER_TEMP/manual-debs.txt"
+          echo "prefix=manual-debs-$ImageOS-" >> "$GITHUB_OUTPUT"
+          echo "key=manual-debs-$ImageOS-$(sha256sum < "$RUNNER_TEMP/manual-debs.txt" | cut -c1-16)" >> "$GITHUB_OUTPUT"
+      - name: Restore cached packages
+        id: debs-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /var/cache/manual-debs
+          key: ${{ steps.debs.outputs.key }}
+          restore-keys: ${{ steps.debs.outputs.prefix }}
+      - name: Install PDF tooling and fonts
+        run: |
+          sudo apt-get install --no-install-recommends -y \
+            -o Dir::Cache::Archives="$MANUAL_DEBS" $MANUAL_PACKAGES
+      # Pull requests read the cache saved by main; cache maintenance never blocks the build.
+      - name: Prune the package cache
+        id: debs-prune
+        if: steps.debs-cache.outputs.cache-hit != 'true' && github.event_name != 'pull_request'
+        continue-on-error: true
+        run: |
+          sudo find "$MANUAL_DEBS" -mindepth 1 -maxdepth 1 ! -name '*.deb' -exec rm -rf {} +
+          cut -d' ' -f1 "$RUNNER_TEMP/manual-debs.txt" > "$RUNNER_TEMP/manual-debs.keep"
+          find "$MANUAL_DEBS" -maxdepth 1 -name '*.deb' -printf '%f\n' \
+            | { grep -vxFf "$RUNNER_TEMP/manual-debs.keep" || true; } \
+            | sed "s|^|$MANUAL_DEBS/|" | xargs -r sudo rm -f --
+          diff <(ls "$MANUAL_DEBS" | sort) <(sort "$RUNNER_TEMP/manual-debs.keep")
+      - name: Save the package cache
+        if: steps.debs-prune.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /var/cache/manual-debs
+          key: ${{ steps.debs.outputs.key }}
+      - name: Build both manuals
+        run: |
+          python3 -B scripts/build_operator_manual.py --output-dir manual/_build
+          python3 -B scripts/build_operator_manual.py --agent-manual --output-dir manual/_build
+      - name: Check the builds against their sources
+        run: |
+          python3 -B scripts/build_operator_manual.py --check-build manual/_build
+          python3 -B scripts/build_operator_manual.py --agent-manual --check-build manual/_build
+      - name: Upload review artifact
+        id: artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator-manuals-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_attempt }}
+          path: |
+            manual/_build/*.pdf
+            manual/_build/*-source-manifest.json
+          if-no-files-found: error
+          retention-days: ${{ github.ref == 'refs/heads/main' && 90 || 30 }}
+      - name: Link the review artifact
+        env:
+          ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          {
+            echo "[Download both manual PDFs and their source manifests]($ARTIFACT_URL)"
+            echo
+            echo "Built from: \`$SOURCE_SHA\`"
+            echo
+            echo "Inspect the affected rendered pages and source links before integration."
+          } >> "$GITHUB_STEP_SUMMARY"
