@@ -3265,6 +3265,7 @@ public import Complexity.Crypto.Game.UntilBad
 public import Complexity.Crypto.Negligible
 public import Complexity.Crypto.Negligible.Basic
 public import Complexity.Crypto.Negligible.Dyadic
+public import Complexity.Crypto.Primitives.BlockCipher.CBCMAC
 public import Complexity.Crypto.Primitives.BlockCipher.Modes
 public import Complexity.Crypto.Primitives.PRG.Circuit
 public import Complexity.Crypto.Primitives.PRG.Game
@@ -3804,6 +3805,7 @@ public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Positions
 public import Complexity.Foundations.Data.BitString.List.Vote
+public import Complexity.Foundations.Data.BitString.PadBlocks
 public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Parity.DotProduct
 public import Complexity.Foundations.Data.BitString.Parity.Weight
