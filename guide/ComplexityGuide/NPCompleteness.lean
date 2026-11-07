@@ -24,6 +24,7 @@ import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
 import Complexity.Computability.Complexity.Problems.CSP.Constant
 import Complexity.Computability.Complexity.Problems.CSP.Majority
+import Complexity.Computability.Complexity.Problems.CSP.Hardness
 import Complexity.Computability.PolyTime.CSP.Gadget
 import Complexity.Logics.Polymorphism.BooleanClone
 import Complexity.Logics.Propositional.CNF.Majority
@@ -391,8 +392,7 @@ The positive-arity Boolean clone classification is proved in
 For a language lacking the six common operations,
 {name}`Cslib.Logic.PL.CSP.projection_or_negation_of_not_hasSchaeferPolymorphism`
 identifies every polymorphism as a projection or negated projection. This supplies
-the algebraic ingredient for hardness; the native hardness application remains
-part of the full objective.
+the algebraic ingredient used by the native hardness application below.
 
 For reductions between fixed Boolean languages,
 {name}`Cslib.Logic.PL.CSP.exists_ppGadget_of_polymorphisms` constructs equality-free
@@ -404,6 +404,23 @@ polymorphism invariance; general equality elimination is outside this gadget API
 The shared guard certificate is
 {name}`Cslib.Complexity.CSP.computableInPolyTime_validArity` in
 {module}`Complexity.Computability.PolyTime.CSP.Boolean`.
+
+The hard branch is native and unconditional:
+{name}`CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` proves NP-completeness
+for any fixed finite language lacking all six common operations. The proof imports
+the proved clone classification, constructs gadgets for the eight self-dual
+reference lifts of signed ternary clauses, and compiles them in native polynomial
+time. Their nonemptiness and separating columns are proved internally. Empty and
+nullary language relations remain allowed.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬ CSP.HasSchaeferPolymorphism arity sem) :
+    NPComplete (encCSP encRel encNat) (CSPSAT arity sem) :=
+  CSPSAT.npComplete_of_not_hasSchaeferPolymorphism encRel arity sem h
+```
 
 # Proving a Problem NP-Complete
 %%%
