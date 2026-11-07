@@ -918,9 +918,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
-  lower bound. Remaining: further access models, the odd-domain lower bound, identity testing by reduction to
-  uniformity, closeness, tolerant and structured-property distribution testing, canonical testers
-  and further query and sample lower bounds.
+  lower bound. Identity testing to any fixed distribution reduces to uniformity on `4n` points
+  through Goldreich's kernel, which gives `O(√n / ε²)` samples
+  ([#2930](https://github.com/cslib-community/complexitylib/issues/2930)). Remaining: further access
+  models, the odd-domain lower bound, instance-optimal identity testing, closeness, tolerant and
+  structured-property distribution testing, canonical testers and further query and sample lower
+  bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
