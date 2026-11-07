@@ -16,8 +16,10 @@ A configuration `P` blocks a vertex `v` when every path from a source to `v` mee
 `Unblocked G P v` is the complement: some source path into `v` avoids `P`. The predicate
 `ForcesPebbles G R v n` says that every legal run that starts with `v` unblocked and later pebbles
 `v` passes, strictly after its start, through a configuration with at least `n` pebbles on the
-region `R`. This is the invariant behind Cook's pyramid lower bound
-([Cook1974]; [Nordstrom2015Survey], Theorem 4.8).
+region `R`. Blocking is Definition 4.9 of [Nordstrom2015Survey]; the invariant `ForcesPebbles`
+is this library's own formulation of the path-blocking argument for Cook's pyramid lower bound
+([Cook1974]; [Nordstrom2015Survey], Theorem 4.8), whose written proof argues with converging
+paths instead.
 
 ## Main definitions
 

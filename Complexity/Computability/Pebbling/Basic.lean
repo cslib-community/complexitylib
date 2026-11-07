@@ -21,7 +21,7 @@ pebbled vertices, where `G.Adj u v` means that `u` is an immediate predecessor o
 either places a pebble on a vertex whose predecessors all carry pebbles, or removes a pebble.
 In particular a pebble can always be placed on a source. A vertex is pebblable with `s` pebbles
 if some run from the empty configuration that never holds more than `s` pebbles pebbles it. The
-black pebbling price of a vertex is the least such `s`.
+black pebbling price of a vertex is the least such `s`, and `0` when no budget suffices.
 
 We use Nordström's convention, without sliding: placing a pebble always uses a new pebble. Under
 the sliding rule of [Savage1998] every price is one lower ([Nordstrom2015Survey],
@@ -82,7 +82,13 @@ inductive BlackStep : Finset V → Move V → Finset V → Prop where
 @[expose] def BlackPebblable (s : ℕ) (v : V) : Prop :=
   ∃ (ms : List (Move V)) (C : Finset V), (blackPebbleGame G s).MTr ∅ ms C ∧ v ∈ C
 
-/-- The black pebbling price. -/
+/-- The black pebbling price of `v`: the least `s` such that `v` is pebblable with `s` pebbles.
+
+When no budget suffices (for example at a vertex with a self-loop, with infinitely many
+predecessors, or with no open path from a source), the set is empty and the price is
+`sInf ∅ = 0`. Statements about the price therefore need a pebblability witness, as in
+`blackPebblingPrice_eq`; on a finite graph with well-founded predecessor relation every vertex
+is pebblable (`blackPebblable_fintypeCard`). -/
 noncomputable def blackPebblingPrice (v : V) : ℕ :=
   sInf {s | BlackPebblable G s v}
 

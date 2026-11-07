@@ -16,7 +16,8 @@ The pyramid `Π_h` of height `h` has levels `0, …, h`, with `h + 1 - k` vertic
 The vertex at level `k + 1` and position `j` has the two predecessors at level `k` and positions
 `j` and `j + 1`. Level `0` holds the sources and level `h` the single sink.
 
-Cook proved that pebbling the sink requires `h + 2` pebbles in the game without sliding. We
+Cook proved that pebbling the sink of `Π_h` requires `h + 2` pebbles; we follow the formulation of
+[Nordstrom2015Survey], Theorem 4.8, in the game without sliding. We
 derive this from the path-blocking engine in `Complexity.Computability.Pebbling.Blocking`:
 blocking the column path into one predecessor and the diagonal path into the other gives the
 extra pebble at each level. The matching upper bound pebbles the two predecessors of a vertex one
