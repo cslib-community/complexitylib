@@ -682,7 +682,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   problems.
 - Extend the synthesis rules to nested operator bodies and give regular-language quantifiers
   their ordered characteristic-word semantics.
-- Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
+- **FO(TC) = NL** on ordered structures
+  ([#1246](https://github.com/cslib-community/complexitylib/issues/1246)): closures under negation
+  in the native NL model checker via an inductive-counting block, and NL ⊆ FO(positive TC) via
+  configuration-graph reachability. Separately, the native NL closure facts this route bypasses:
+  intersection, union, logspace reductions and NL^(NL ∩ coNL) = NL.
+- Further logical characterizations on ordered structures: FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,
   structures and algorithms.
@@ -769,10 +774,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Williams's NEXP ⊄ ACC⁰ and Murray–Williams's NQP ⊄ ACC⁰** ([#889]): no polynomial-size,
   constant-depth circuits over AND, OR, NOT and fixed-modulus counting gates for some language in
-  NEXP. `SymAnd/Collapse.lean` collapses towers of prime-modulus polynomial layers into `SYM ∘ AND`
-  (Beigel–Tarui, Lemma 2.8). Still open: compiling `AC0Mod` circuits into such towers (composite
-  moduli through prime-power digits, AND/OR through small-bias tests), the quasi-polynomial-time
-  construction, Williams's fast `SYM ∘ AND` evaluation and ACC-SAT algorithm, a fine
+  NEXP. `SymAnd/ACC0.lean` proves that every `AC0Mod m` and `ACC0` circuit is a `SYM ∘ AND`
+  circuit of polylogarithmic fan-in and quasi-polynomial size, with explicit bounds (Yao;
+  Beigel–Tarui, Theorem 1.1). This is an existence theorem. Still open: constructing that circuit
+  in quasi-polynomial time, Williams's fast `SYM ∘ AND` evaluation and ACC-SAT algorithm, a fine
   nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
@@ -916,8 +921,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
-  storage and evaluation; AMS frequency moments, CountSketch, turnstile updates, and heavy-hitter
-  recovery; communication-to-streaming transfers with explicit state encodings and pass counts.
+  storage and evaluation; the AMS sketches for `F₀` and `F_k` with `k > 2` and the `n^{Ω(1)}`
+  lower bounds for `F_k` with `k ≥ 6`; the remaining `Ω(n)` lower bounds of Alon–Matias–Szegedy
+  §3 for deterministic approximation and randomized exact computation of `F_k` with `k ≠ 1`
+  (Propositions 3.7 and 3.8); `ProbComp` samplers and native realizations of the AMS `F₂` sketch;
+  CountSketch, turnstile updates, and heavy-hitter recovery; multi-pass communication-to-streaming
+  transfers with pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. For realizable
