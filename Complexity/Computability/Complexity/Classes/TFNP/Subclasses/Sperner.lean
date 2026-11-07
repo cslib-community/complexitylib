@@ -362,14 +362,11 @@ private theorem prev_tri {α : Type} {enc : α ↪ List Bool} {a : α → ℕ ×
 
 attribute [local fun_prop] next_tri prev_tri
 
-private theorem lsbValue_eq_ofBits (w : List Bool) : lsbValue w = ofBits w :=
-  lsbValue_eq_foldr_bit w
-
 private theorem decodeTriangle_tri {α : Type} {enc : α ↪ List Bool} {m : α → ℕ}
     {w : α → List Bool} (hm : ComputableInPolyTime m enc encUnary)
     (hw : ComputableInPolyTime w enc encBits) :
     ComputableInPolyTime (fun a => decodeTriangle (m a) (w a)) enc encTri := by
-  simp only [decodeTriangle, lsbValue_eq_ofBits]
+  simp only [decodeTriangle, show ∀ w, lsbValue w = ofBits w from lsbValue_eq_foldr_bit]
   fun_prop
 
 private theorem encodeTriangle_tri {α : Type} {enc : α ↪ List Bool} {m : α → ℕ}
