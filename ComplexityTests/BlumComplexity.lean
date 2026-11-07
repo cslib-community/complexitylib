@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.BlumComplexity.Fuel
 import Complexity.Computability.BlumComplexity.Gap
 import Complexity.Computability.BlumComplexity.RecursiveRelatedness
+import Complexity.Computability.BlumComplexity.Speedup
 
 /-!
 # Blum complexity measure clients
@@ -15,7 +16,12 @@ The fuel of the constant-zero program is computed exactly. For the fuel measure,
 bound `id` is empty, while the bound `n + 1` admits the constant-zero function. The class
 convention is almost everywhere: a bound that fails at finitely many inputs still admits a
 function. The gap theorem is instantiated with `g n = n * n` and a lower bound, and the resulting
-gap class is inhabited. Recursive relatedness is instantiated for the fuel measure against itself.
+gap class is inhabited, and the two-argument gap theorem is instantiated with the input-dependent
+stretch `g n y = y ^ (n + 1)`. Recursive relatedness is instantiated for the fuel measure against
+itself and, with its explicit threshold, against a second measure (fuel plus input). Blum's
+speedup theorem is instantiated for the fuel measure with exponential speedup `r m = 2 ^ m`. The
+resulting function has a program, so the universally quantified conclusion is not vacuous, and
+the speedup can be applied twice.
 -/
 
 namespace ComplexityTests.BlumComplexity
@@ -90,5 +96,69 @@ example : ∃ r : ℕ → ℕ → ℕ, Computable₂ r ∧
     ∀ᶠ n in atTop, ∀ m ∈ evalnFuel Code.zero n, m ≤ r n m := by
   obtain ⟨r, hr, hrel⟩ := recursively_related fuelMeasure fuelMeasure
   exact ⟨r, hr, (hrel Code.zero).mono fun n hn m hm => (hn m hm m hm).1⟩
+
+private theorem primrec_pow : Primrec₂ ((· ^ ·) : ℕ → ℕ → ℕ) :=
+  Primrec₂.unpaired'.1 Nat.Primrec.pow
+
+/-- The two-argument gap theorem with the input-dependent stretch `g n y = y ^ (n + 1)`. -/
+example : ∃ t : ℕ → ℕ, Computable t ∧
+    fuelMeasure.complexityClass (fun n => t n ^ (n + 1)) = fuelMeasure.complexityClass t := by
+  obtain ⟨t, ht, -, -, hgap⟩ := fuelMeasure.gap_theorem₂ (g := fun n y => y ^ (n + 1))
+    (primrec_pow.comp Primrec.snd (Primrec.succ.comp Primrec.fst)).to_comp
+    (fun n y => Nat.le_self_pow (Nat.succ_ne_zero n) y) (Computable.const 0)
+  exact ⟨t, ht, hgap⟩
+
+/-- A second Blum measure: the fuel plus the input. -/
+private def fuelPlusInput : BlumMeasure where
+  cost c n := (evalnFuel c n).map (· + n)
+  dom_cost_iff c n := dom_evalnFuel_iff c n
+  computablePred_mem_cost := by
+    refine ((ComputablePred.nat_le (Computable.snd.comp Computable.fst) Computable.snd).and
+      (fuelMeasure.computablePred_mem_cost_comp (Computable.fst.comp Computable.fst)
+        (Computable.snd.comp Computable.fst)
+        (Primrec.nat_sub.to_comp.comp Computable.snd
+          (Computable.snd.comp Computable.fst)))).of_eq ?_
+    rintro ⟨⟨c, n⟩, m⟩
+    simp only [fuelMeasure_cost, Part.mem_map_iff]
+    constructor
+    · rintro ⟨hnm, h⟩
+      exact ⟨m - n, h, by omega⟩
+    · rintro ⟨k, hk, rfl⟩
+      exact ⟨by omega, by simpa using hk⟩
+
+/-- Recursive relatedness with its explicit threshold, for the fuel measure against
+`fuelPlusInput`: at every input `n ≥ encode c`, each cost is bounded by `r n` of the other. -/
+example : ∃ r : ℕ → ℕ → ℕ, Computable₂ r ∧ ∀ c : Code, ∀ n, Encodable.encode c ≤ n →
+    ∀ m ∈ evalnFuel c n, m + n ≤ r n m ∧ m ≤ r n (m + n) := by
+  obtain ⟨r, hr, hrel⟩ := recursively_related_of_le fuelMeasure fuelPlusInput
+  exact ⟨r, hr, fun c n hn m hm => hrel c n hn m hm (m + n) (Part.mem_map _ hm)⟩
+
+/-- Blum's speedup theorem for the fuel measure with exponential speedup: some computable
+`0`/`1`-valued function has a program, and each of its programs is beaten by another one that
+needs exponentially less fuel almost everywhere. -/
+example : ∃ f : ℕ → ℕ, Computable f ∧ (∀ n, f n ≤ 1) ∧ (∃ c : Code, ∀ n, f n ∈ c.eval n) ∧
+    ∀ c : Code, (∀ n, f n ∈ c.eval n) → ∃ c' : Code, (∀ n, f n ∈ c'.eval n) ∧
+      ∀ᶠ n in atTop, ∀ m ∈ evalnFuel c' n, ∀ m' ∈ evalnFuel c n, 2 ^ m < m' := by
+  obtain ⟨f, hf, hf1, hsp⟩ := fuelMeasure.speedup' (r := fun m => 2 ^ m)
+    (primrec_pow.comp (Primrec.const 2) Primrec.id).to_comp
+  obtain ⟨c, hc⟩ := Code.exists_code.1 (Partrec.nat_iff.1 hf)
+  refine ⟨f, hf, hf1, ⟨c, fun n => by rw [hc]; exact Part.mem_some _⟩, fun c hc => ?_⟩
+  obtain ⟨c', hc', hev⟩ := hsp c hc
+  exact ⟨c', hc', by simpa only [fuelMeasure_cost] using hev⟩
+
+/-- The speedup can be iterated: from any program for the speedup function there are two further
+programs, each faster than the previous one by `r` almost everywhere. -/
+example {r : ℕ → ℕ → ℕ} (hr : Computable₂ r) : ∃ f : ℕ → ℕ, Computable f ∧
+    ∀ c : Code, (∀ n, f n ∈ c.eval n) → ∃ c' c'' : Code,
+      (∀ n, f n ∈ c'.eval n) ∧ (∀ n, f n ∈ c''.eval n) ∧
+      ∀ᶠ n in atTop, ∀ m ∈ evalnFuel c n, ∀ m' ∈ evalnFuel c' n, ∀ m'' ∈ evalnFuel c'' n,
+        r n m'' < m' ∧ r n m' < m := by
+  obtain ⟨f, hf, -, hsp⟩ := fuelMeasure.speedup hr
+  refine ⟨f, hf, fun c hc => ?_⟩
+  obtain ⟨c', hc', hev'⟩ := hsp c hc
+  obtain ⟨c'', hc'', hev''⟩ := hsp c' hc'
+  refine ⟨c', c'', hc', hc'', ?_⟩
+  filter_upwards [hev', hev''] with n h' h'' m hm m' hm' m'' hm''
+  exact ⟨h'' m'' hm'' m' hm', h' m' hm' m hm⟩
 
 end ComplexityTests.BlumComplexity
