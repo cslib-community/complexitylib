@@ -692,6 +692,10 @@ universe size, not supplied as unverified input tables. In dependency order:
   results such as connectivity and acyclicity of finite graphs; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
+- **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
+  relational vocabularies, constant edge probabilities and unlabelled structures; construct the
+  countable random (Rado) graph; then the Kolaitis–Vardi laws for fixed-point and finite-variable
+  infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
@@ -832,7 +836,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   multiplication bounds, and shifted partial derivatives remain open) and the depth-reduction chasms at
   depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
   construction costs certified
-  separately from gate counts.
+  separately from gate counts. Also Strassen's degree bound (Bézout's inequality and the
+  `n log d` multiplication lower bound for the power map), which through the proved Baur–Strassen
+  transfer in [`Arithmetic/Gradient`](Complexity/Computability/Circuit/Arithmetic/Gradient.lean)
+  ([#2906](https://github.com/cslib-community/complexitylib/issues/2906)) would give the
+  `Ω(n log d)` bound for the single power sum `∑ xᵢ^(d+1)`; and matrix inversion from the
+  determinant through the adjugate circuits of
+  [`Arithmetic/Adjugate`](Complexity/Computability/Circuit/Arithmetic/Adjugate.lean), which needs
+  a circuit model with division.
 - **The matrix multiplication exponent** (ω ≤ 9/4): Pass's constructive proof
   (arXiv:2610.28627v2) of OpenAI's bound is formalized over every field of characteristic zero:
   for every `τ > 9/4` an exact bilinear algorithm for some `v × v` multiplication with fewer than
@@ -962,9 +973,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
 - **Primal–dual approximation and multiplicative weights:** reusable analyses with vertex cover
-  and set cover as first primal–dual clients; multiplicative-weights regret and approximation
-  bounds with finite-precision implementations, then applications to games, learning and
-  optimization.
+  and set cover as first primal–dual clients. Real-valued regret bounds for weighted majority,
+  multiplicative weights and Hedge (with tuned learning rates), and the algorithmic minimax
+  theorem for zero-sum games, are in `MachineLearning/OnlineLearning`
+  ([#2874](https://github.com/cslib-community/complexitylib/issues/2874)). Remaining:
+  randomized weighted majority and sampled Hedge as probabilistic computations, the regret lower
+  bound, finite-precision implementations with charged running time, and applications to packing
+  and covering LPs, boosting and learning.
 
 ### Combinatorial optimization
 
@@ -995,6 +1010,24 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Adaptive search trees:** working-set and dynamic-finger bounds for splay trees, and a BST
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
+
+### Mechanism design ([#2947](https://github.com/cslib-community/complexitylib/issues/2947))
+
+Single-parameter mechanisms with Myerson's Lemma for arbitrary monotone allocation rules, the
+Vickrey auction, knapsack auctions with welfare-maximizing rules, and Groves/VCG mechanisms over
+finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
+
+- **Single-parameter corollaries:** the sponsored-search payment formula (rank-by-bid
+  allocation with slot click-through rates) and the greedy knapsack rule with its monotonicity
+  and ½-approximation. State allocation algorithms with charged running time, so that
+  approximation and truthfulness are both proved for an actual algorithm.
+- **Revenue maximization:** Bayesian single-parameter environments with independent priors,
+  expected revenue equals expected virtual welfare, and Myerson's optimal auction for regular
+  distributions. Begin with finitely supported or density-based distributions, whichever the
+  probability API supports better, and keep regularity and ironing explicit.
+- **Multi-parameter characterizations:** Groves mechanisms as the only DSIC welfare maximizers
+  on rich valuation domains (Green–Laffont, Holmström), and limits of VCG such as revenue
+  monotonicity and collusion.
 
 ### Structural graph algorithms
 
@@ -1072,6 +1105,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
+- **Single-tape lower bounds**
+  ([#2884](https://github.com/cslib-community/complexitylib/issues/2884)): crossing sequences,
+  cut-and-paste for equal-length prefixes and the quadratic palindrome lower bound for cslib
+  `SingleTapeTM` deciders that halt in the canonical output form are proved. Remaining: the bound
+  for deciders that only leave the answer under the head; an explicit single-tape palindrome
+  decider in time `O(n²)`, which shows the bound is tight and gives a positive instance of
+  `DecidesPalindromesInTime`; a linear-time multi-tape palindrome decider, which gives the
+  one-tape/two-tape time separation; cut-and-paste across boundaries at different positions; and
+  the gap theorem that single-tape deciders running in time `o(n log n)` accept only regular
+  languages.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
@@ -1161,13 +1204,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Distributed complexity:** LOCAL and CONGEST models with explicit identifiers, round,
   message-size and randomness conventions; locality lower bounds and communication-to-round
   reductions with corresponding algorithmic examples. The deterministic LOCAL model on oriented
-  cycles, Cole–Vishkin and Linial's `log*` bound exist
+  cycles, Cole–Vishkin and Linial's `log*` bound, the bridge to Mathlib's `cycleGraph` colourings
+  and the `Θ(log* n)` bounds for maximal independent sets on cycles exist
   (`Complexity/Computability/Distributed/OrientedCycle/`). Open: general graphs with port
   numbering, Linial's `O(Δ²)` colouring and `(Δ + 1)`-colouring/MIS on bounded-degree graphs,
-  maximal independent sets on cycles as a corollary of 3-colouring (both bounds), a bridge from
-  `IsProperColoring` to Mathlib's `SimpleGraph.Coloring` on `SimpleGraph.cycleGraph`, CONGEST
-  message bounds, randomized LOCAL algorithms, and closing the additive gap
-  between the `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles.
+  CONGEST message bounds, randomized LOCAL algorithms, and closing the additive gaps between the
+  `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles and between
+  `⌈(log* n) / 2⌉ + 5` and `(log* n) / 2 - 2` for MIS on cycles.
 
 ## Coverage and reuse
 
