@@ -288,8 +288,8 @@ formulas with `n` variables. -/
 def ETH : Prop := ∃ δ : ℝ, 0 < δ ∧ ¬DecidableInExpTime ThreeSAT encCNF CNF.numVars δ
 
 /-- **The strong exponential time hypothesis** [ImpagliazzoPaturi2001]: for every `ε > 0` there is
-a width `k` such that `k`-SAT is not decidable within time `2 ^ ((1 - ε) * n)` times any polynomial in
-the length of the encoded formula, on formulas with `n` variables. -/
+a width `k` such that `k`-SAT is not decidable within time `2 ^ ((1 - ε) * n)` times any polynomial
+in the length of the encoded formula, on formulas with `n` variables. -/
 def SETH : Prop :=
   ∀ ε : ℝ, 0 < ε → ∃ k : ℕ, ¬DecidableInExpTime (KSAT k) encCNF CNF.numVars (1 - ε)
 
