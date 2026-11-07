@@ -17,8 +17,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 
 Exponential time bounds in a parameter of the instance transfer along polynomial-time reductions
 that increase the parameter at most linearly. If `f` reduces `A` to `B` in polynomial time and
-`μB (f a) ≤ c μA a + c`, then a decider for `B` within time `2 ^ (δ μB b)` times a polynomial in
-the length of the encoded instance gives a decider for `A` within time `2 ^ (c δ μA a)` times a
+`μB (f a) ≤ c * μA a + c`, then a decider for `B` within time `2 ^ (δ * μB b)` times a polynomial in
+the length of the encoded instance gives a decider for `A` within time `2 ^ (c * δ * μA a)` times a
 polynomial (`Cslib.Complexity.DecidableInExpTime.of_reduction`): run the reduction, then the
 decider. The polynomial absorbs the running time of the reduction and the length of its output.
 Hence subexponential time in `μB` gives subexponential time in `μA`
@@ -73,8 +73,8 @@ section Measure
 
 variable {α : Type*} {enc : α ↪ List Bool} {A : Set α} {μ μ' : α → ℕ}
 
-/-- A decider within time `2 ^ (δ μ a)` times a polynomial, for a measure `μ ≤ c μ' + c`, decides
-within time `2 ^ (c δ μ' a)` times a polynomial. -/
+/-- A decider within time `2 ^ (δ * μ a)` times a polynomial, for a measure `μ ≤ c * μ' + c`,
+decides within time `2 ^ (c * δ * μ' a)` times a polynomial. -/
 theorem DecidableInExpTime.mono_measure {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c) {δ : ℝ}
     (hδ : 0 ≤ δ) (h : DecidableInExpTime A enc μ δ) : DecidableInExpTime A enc μ' (c * δ) := by
   obtain ⟨e, h⟩ := h
@@ -92,7 +92,7 @@ theorem DecidableInExpTime.mono_measure {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ'
   have h₄ : (0 : ℝ) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.cast_nonneg _
   nlinarith
 
-/-- Subexponential time in a measure `μ ≤ c μ' + c` gives subexponential time in `μ'`. So a lower
+/-- Subexponential time in a measure `μ ≤ c * μ' + c` gives subexponential time in `μ'`. So a lower
 bound for `μ'` gives the lower bound for `μ`. -/
 theorem DecidableInSubexpTime.mono_measure {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c)
     (h : DecidableInSubexpTime A enc μ) : DecidableInSubexpTime A enc μ' := by
@@ -111,9 +111,9 @@ variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {A :
   {μA : α → ℕ} {μB : β → ℕ}
 
 /-- **Transfer along reductions of linear size.** If `f` reduces `A` to `B` in polynomial time
-with `μB (f a) ≤ c μA a + c`, then a decider for `B` within time `2 ^ (δ μB b)` times a polynomial
-in the length of the encoded instance gives a decider for `A` within time `2 ^ (c δ μA a)` times a
-polynomial. -/
+with `μB (f a) ≤ c * μA a + c`, then a decider for `B` within time `2 ^ (δ * μB b)` times a
+polynomial in the length of the encoded instance gives a decider for `A` within time
+`2 ^ (c * δ * μA a)` times a polynomial. -/
 theorem DecidableInExpTime.of_reduction {f : α → β}
     (hf : ComputableInPolyTime f encA encB) (hfA : ∀ a, a ∈ A ↔ f a ∈ B) {c : ℕ}
     (hμ : ∀ a, μB (f a) ≤ c * μA a + c) {δ : ℝ} (hδ : 0 ≤ δ)
@@ -176,7 +176,7 @@ theorem DecidableInExpTime.of_reduction {f : α → β}
     _ = ⌈K⌉₊ * (X * (((encA a).length : ℝ) + 1) ^ (d * e + d)) := by rw [hPow]
 
 /-- **Transfer along reductions of linear size.** If `f` reduces `A` to `B` in polynomial time
-with `μB (f a) ≤ c μA a + c`, and `B` is decidable in subexponential time in `μB`, then `A` is
+with `μB (f a) ≤ c * μA a + c`, and `B` is decidable in subexponential time in `μB`, then `A` is
 decidable in subexponential time in `μA`. -/
 theorem DecidableInSubexpTime.of_reduction {f : α → β}
     (hf : ComputableInPolyTime f encA encB) (hfA : ∀ a, a ∈ A ↔ f a ∈ B) {c : ℕ}
@@ -191,7 +191,7 @@ theorem DecidableInSubexpTime.of_reduction {f : α → β}
 [CyganEtAl2015, Chapter 14]. Under `ETH`, if `f` is computable in polynomial time and, on formulas
 `φ` in conjunctive normal form with `m` clauses of at most three literals, maps `φ` to an instance
 of `B` exactly when `φ` is satisfiable, with `μB (f φ) ≤ k m + k`, then `B` is not decidable in
-subexponential time in `μB`: for some `δ > 0`, no decider runs within time `2 ^ (δ μB b)` times a
+subexponential time in `μB`: for some `δ > 0`, no decider runs within time `2 ^ (δ * μB b)` times a
 polynomial in the length of the encoded instance. -/
 theorem ETH.not_decidableInSubexpTime_of_reduction (hETH : ETH) {f : CNF ℕ → β}
     (hf : ComputableInPolyTime f encCNF encB)

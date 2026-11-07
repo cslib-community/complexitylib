@@ -30,7 +30,7 @@ The sparsification lemma of Impagliazzo, Paturi and Zane [ImpagliazzoPaturiZane2
 machines: a depth-first search of the sparsification tree, with a decider applied at its leaves,
 runs within time `2 ^ (ε n)` times the sum of a polynomial and the time of the decider on formulas
 with at most `c n + 1` clauses, on formulas with `n` variables. Hence a decider for `k`-SAT within
-time `2 ^ (δ m)` times a polynomial, on formulas with `m` clauses, gives one within time
+time `2 ^ (δ * m)` times a polynomial, on formulas with `m` clauses, gives one within time
 `2 ^ ((ε + c δ) n)` times a polynomial, on formulas with `n` variables
 (`Cslib.Complexity.exists_decidableInExpTime_numVars_of_length`), and the exponential time
 hypothesis says that 3SAT is not decidable in subexponential time in the number of clauses
@@ -548,7 +548,7 @@ private theorem exists_computableInO_search {k M : ℕ} (hkK : k ≤ K) (hM : Le
     hstep hround hround hstate).snd'⟩
 
 include hK hα in
-/-- **The time of the search.** With a decider within time `2 ^ (δ m)` times a polynomial, on
+/-- **The time of the search.** With a decider within time `2 ^ (δ * m)` times a polynomial, on
 formulas with `m` clauses, the formulas accepted by the search are decidable within time
 `2 ^ ((1 / M + c δ) n)` times a polynomial, on formulas with `n` variables, for
 `c = occBound K α`. -/
@@ -723,7 +723,7 @@ end Sparsify
 
 /-- **Sparsification on the native machines** [ImpagliazzoPaturiZane2001]. For every width `k` and
 every `ε > 0` there is a constant `c` such that, for every `δ ≥ 0`, a decider for `k`-SAT within
-time `2 ^ (δ m)` times a polynomial in the length of the encoded formula, on formulas with `m`
+time `2 ^ (δ * m)` times a polynomial in the length of the encoded formula, on formulas with `m`
 clauses, gives a decider for `k`-SAT within time `2 ^ ((ε + c δ) n)` times a polynomial, on
 formulas with `n` variables. -/
 theorem exists_decidableInExpTime_numVars_of_length (k : ℕ) {ε : ℝ} (hε : 0 < ε) :
@@ -776,8 +776,8 @@ theorem exists_decidableInExpTime_numVars_of_length (k : ℕ) {ε : ℝ} (hε : 
     (by linarith)
 
 /-- **Subexponential time in the clauses gives subexponential time in the variables**
-[ImpagliazzoPaturiZane2001]: if `k`-SAT is decidable within time `2 ^ (δ m)` times a polynomial
-for every `δ > 0`, on formulas with `m` clauses, it is decidable within time `2 ^ (δ n)` times a
+[ImpagliazzoPaturiZane2001]: if `k`-SAT is decidable within time `2 ^ (δ * m)` times a polynomial
+for every `δ > 0`, on formulas with `m` clauses, it is decidable within time `2 ^ (δ * n)` times a
 polynomial for every `δ > 0`, on formulas with `n` variables. -/
 theorem DecidableInSubexpTime.numVars_of_length {k : ℕ}
     (h : DecidableInSubexpTime (KSAT k) encCNF List.length) :
