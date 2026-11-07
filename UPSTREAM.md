@@ -744,6 +744,17 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
 * **Earlier review requests.** The withdrawn #1099–#1101 requested abstract word encodings and
   textbook sources for FP/poly, P/poly and their machine simulation. The withdrawn #869 and
   #871–#875 requested composition above configuration level; use `TransformsTapes`-style specs.
+* **Realizable PAC learning.** `MachineLearning/PACLearning/Realizable` copies Shaopeng Zhu's
+  #858 unchanged; drop the copy once #858 lands. The local `RealizableSample`, `ERM`,
+  `FiniteClass` and `GrowthFunction` modules build on it and on the pinned
+  `PACLearning.{Defs, VersionSpace, VCDimension}`. Samuel Schlesinger's lower-bound stack
+  (#950, #961 merged; headline on `SamuelSchlesinger/cslib:feat/pac-learning-ehkv-headline`)
+  proves the EHKV `Ω(d/ε)` bound, so it is not duplicated here; that branch's
+  `error_realizable_self_eq_zero` and `optimalError_realizable_eq_zero` overlap
+  `isRealizableBy_map_graph` and `IsRealizableBy.optimalError_eq_zero`, so reconcile names
+  before submission. #966 would make `sampleComplexity` and `vcDim` `ℕ∞`-valued;
+  `sampleComplexity_realizableDistributions_le_of_finite` and
+  `growthFunction_le_sum_choose_vcDim` will need restating if it lands.
 
 These are coordination references, not a second record of live PR status. Check the relevant
 upstream discussion before starting or submitting overlapping work.
