@@ -24,6 +24,9 @@ example : MillerRabin.passes 8 2 = false := by decide
 -- `8 ≡ -1 (mod 9)` is a strong liar for `9`.
 example : MillerRabin.passes 8 8 = true := by decide
 
+-- For `15`, `14 = 2 * 7`: `2 ^ 7 ≡ 8 (mod 15)`, so `2` is a witness, and `14 ≡ -1` is a liar.
+example : MillerRabin.passes 14 2 = false ∧ MillerRabin.passes 14 14 = true := by decide
+
 -- `561 = 3 * 11 * 17` is a Carmichael number, but `2` is a Miller–Rabin witness for it. The
 -- unreduced powers are large, so these are checked by the kernel alone.
 example : MillerRabin.passes 560 2 = false := by decide +kernel
