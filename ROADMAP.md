@@ -1052,10 +1052,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
   cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
   concrete realizations.
-- **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)): beyond the greedy weighted set cover and its
-  `H d` bound in `Algorithms/Lean/SetCover`, the maximal-matching vertex-cover and double-tree
-  metric-TSP 2-approximations, machine-level polynomial-time certificates for these algorithms,
-  and stronger guarantees such as Christofides' `3/2` for metric TSP. LP-based and primal–dual
+- **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)):
+  remaining after greedy set cover, maximal-matching vertex cover and the MST tour for metric
+  TSP (`Algorithms/Lean/{SetCover,VertexCover,TSP}`): machine-level polynomial-time
+  certificates for greedy set cover and for Kruskal-based TSP tours on encoded matrices, and
+  stronger guarantees such as Christofides' `3/2` for metric TSP. LP-based and primal–dual
   analyses of the same problems belong to the primal–dual approximation direction under
   Optimization and duality.
 
