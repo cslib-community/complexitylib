@@ -19,9 +19,9 @@ public import Mathlib.Logic.Relation
 A finite multigraph is given by a list `H : List (α × α)` of edges; parallel edges and self-loops
 are allowed, and an edge `(a, b)` may be traversed in either direction. Its edges are compared up
 to orientation through `undirected : α × α → Sym2 α`. A walk is a list of vertices and uses the
-edges between consecutive entries (`walkEdges`). An **Euler circuit** of `H` from `u`
-(`IsEulerCircuit H u w`) is a walk `w` from `u` back to `u` whose edges are those of `H`, each used
-exactly once, in either direction.
+edges between consecutive entries (Mathlib's `List.consecutivePairs`). An **Euler circuit** of
+`H` from `u` (`IsEulerCircuit H u w`) is a walk `w` from `u` back to `u` whose edges are those of
+`H`, each used exactly once, in either direction.
 
 **Euler's theorem** (`exists_isEulerCircuit_iff`): `H` has an Euler circuit from `u` exactly when
 every vertex has even degree (`degree`, where a self-loop counts twice) and every edge is
@@ -34,17 +34,23 @@ edges (`splice`, `eulerLoop`).
 
 Vertices form any type with decidable equality. The degree of `x` counts the endpoints of edges
 of `H` equal to `x`. Connectivity is phrased with `Relation.EqvGen` of the relation "`(a, b)` is an
-edge of `H`", the same form as in `Cslib.Algorithms.Lean.TSP.eqvGen_kruskalEdges_completeEdges`.
+edge of `H`", analogous to `Cslib.Algorithms.Lean.TSP.eqvGen_kruskalEdges_completeEdges`.
 Vertices without edges are irrelevant: the condition only concerns endpoints of edges, and the
-empty multigraph has the Euler circuit `[u]`. Mathlib's `SimpleGraph.Walk.IsEulerian` proves the
-necessity of even degrees for simple graphs; the list model here admits the multigraphs that
-Christofides' algorithm builds (a spanning tree together with a matching may repeat an edge).
+empty multigraph has the Euler circuit `[u]`. Compared with the textbook statement for connected
+graphs ([KorteVygen2018], Section 2.4), the model thus generalizes in three harmless ways:
+connectivity is required of edges only, the empty multigraph is allowed, and so are self-loops.
+Mathlib's `SimpleGraph.Walk.IsEulerian` proves the necessity of even degrees for simple graphs;
+the list model here admits the multigraphs that Christofides' algorithm builds (a spanning tree
+together with a matching may repeat an edge).
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.Euler.walkEdges`: the consecutive pairs of a walk.
+* `Cslib.Algorithms.Lean.Euler.undirected`: an ordered pair as an unordered edge.
 * `Cslib.Algorithms.Lean.Euler.IsEulerCircuit`: a closed walk using each edge once.
 * `Cslib.Algorithms.Lean.Euler.degree`: the degree of a vertex in an edge list.
+* `Cslib.Algorithms.Lean.Euler.walkFrom`: the greedy walk along unused edges.
+* `Cslib.Algorithms.Lean.Euler.splice`: splice a closed walk into a walk at a vertex.
+* `Cslib.Algorithms.Lean.Euler.eulerLoop`: repeatedly splice in closed walks.
 * `Cslib.Algorithms.Lean.Euler.eulerCircuit`: Hierholzer's algorithm.
 
 ## Main results
@@ -57,8 +63,10 @@ Christofides' algorithm builds (a spanning tree together with a matching may rep
 * `Cslib.Algorithms.Lean.Euler.even_degree_of_isEulerCircuit`,
   `Cslib.Algorithms.Lean.Euler.eqvGen_of_isEulerCircuit`: the converse conditions.
 * `Cslib.Algorithms.Lean.Euler.exists_isEulerCircuit_iff`: Euler's theorem.
-* `Cslib.Algorithms.Lean.Euler.sum_map_walkEdges_eq`: for a symmetric weight, an Euler circuit
-  weighs as much as its multigraph.
+* `Cslib.Algorithms.Lean.Euler.mem_of_isEulerCircuit`: an Euler circuit visits every vertex
+  connected to its start.
+* `Cslib.Algorithms.Lean.Euler.sum_map_consecutivePairs_eq`: for a symmetric weight, an Euler
+  circuit weighs as much as its multigraph.
 
 ## References
 
@@ -76,35 +84,35 @@ variable {α : Type*}
 
 /-! ### Walks and their edges -/
 
-/-- The edges of the walk `w`: the pairs of consecutive entries. -/
-def walkEdges : List α → List (α × α)
-  | a :: b :: l => (a, b) :: walkEdges (b :: l)
-  | _ => []
+/-! The edges of a walk `w` are the pairs of its consecutive entries, Mathlib's
+`w.consecutivePairs` (`w.zip w.tail`). -/
 
-@[simp] theorem walkEdges_nil : walkEdges ([] : List α) = [] := rfl
+@[simp] theorem consecutivePairs_nil : ([] : List α).consecutivePairs = [] := rfl
 
-@[simp] theorem walkEdges_singleton (a : α) : walkEdges [a] = [] := rfl
+@[simp] theorem consecutivePairs_singleton (a : α) : [a].consecutivePairs = [] := rfl
 
-@[simp] theorem walkEdges_cons_cons (a b : α) (l : List α) :
-    walkEdges (a :: b :: l) = (a, b) :: walkEdges (b :: l) := rfl
+@[simp] theorem consecutivePairs_cons_cons (a b : α) (l : List α) :
+    (a :: b :: l).consecutivePairs = (a, b) :: (b :: l).consecutivePairs := rfl
 
 /-- The unordered edge `{a, b}` underlying the ordered pair `(a, b)`. -/
 def undirected (e : α × α) : Sym2 α := s(e.1, e.2)
 
 @[simp] theorem undirected_mk (a b : α) : undirected (a, b) = s(a, b) := rfl
 
-theorem walkEdges_append_cons (A : List α) (x : α) (B : List α) :
-    walkEdges (A ++ x :: B) = walkEdges (A ++ [x]) ++ walkEdges (x :: B) := by
+/-- Splitting a walk at a vertex `x` splits its edges. This generalizes
+`Cslib.Orthogonal.consecutivePairs_join`, which joins routes of points at a common endpoint. -/
+theorem consecutivePairs_append_cons (A : List α) (x : α) (B : List α) :
+    (A ++ x :: B).consecutivePairs = (A ++ [x]).consecutivePairs ++ (x :: B).consecutivePairs := by
   induction A with
   | nil => simp
   | cons a A ih =>
     cases A with
     | nil => simp
     | cons b A =>
-      simp only [List.cons_append, walkEdges_cons_cons] at ih ⊢
+      simp only [List.cons_append, consecutivePairs_cons_cons] at ih ⊢
       rw [ih]
 
-theorem mem_of_mem_walkEdges {w : List α} {e : α × α} (h : e ∈ walkEdges w) :
+theorem mem_of_mem_consecutivePairs {w : List α} {e : α × α} (h : e ∈ w.consecutivePairs) :
     e.1 ∈ w ∧ e.2 ∈ w := by
   induction w with
   | nil => simp at h
@@ -112,7 +120,7 @@ theorem mem_of_mem_walkEdges {w : List α} {e : α × α} (h : e ∈ walkEdges w
     cases l with
     | nil => simp at h
     | cons b l =>
-      rw [walkEdges_cons_cons, List.mem_cons] at h
+      rw [consecutivePairs_cons_cons, List.mem_cons] at h
       rcases h with rfl | h
       · simp
       · obtain ⟨h1, h2⟩ := ih h
@@ -121,7 +129,7 @@ theorem mem_of_mem_walkEdges {w : List α} {e : α × α} (h : e ∈ walkEdges w
 /-- A walk whose steps are related by `EqvGen r` relates its first vertex to all of its
 vertices. -/
 theorem eqvGen_of_mem_cons {r : α → α → Prop} :
-    ∀ {a : α} {l : List α}, (∀ e ∈ walkEdges (a :: l), Relation.EqvGen r e.1 e.2) →
+    ∀ {a : α} {l : List α}, (∀ e ∈ (a :: l).consecutivePairs, Relation.EqvGen r e.1 e.2) →
       ∀ y ∈ a :: l, Relation.EqvGen r a y
   | a, [], _, y, hy => by rw [List.mem_singleton.mp hy]; exact .refl _
   | a, b :: l, h, y, hy => by
@@ -131,17 +139,18 @@ theorem eqvGen_of_mem_cons {r : α → α → Prop} :
         (eqvGen_of_mem_cons (fun e he => h e (by simp [he])) y hy)
 
 /-- Replacing one occurrence of `x` by a closed walk `c` from `x` adds the edges of `c`. -/
-theorem walkEdges_append_append {A c B : List α} {x : α} (hc1 : c.head? = some x)
+theorem consecutivePairs_append_append {A c B : List α} {x : α} (hc1 : c.head? = some x)
     (hc2 : c.getLast? = some x) :
-    (walkEdges (A ++ c ++ B)).Perm (walkEdges (A ++ x :: B) ++ walkEdges c) := by
+    (A ++ c ++ B).consecutivePairs.Perm
+      ((A ++ x :: B).consecutivePairs ++ c.consecutivePairs) := by
   obtain ⟨c₁, rfl⟩ := List.head?_eq_some_iff.mp hc1
   obtain ⟨c₂, hc₂⟩ := List.getLast?_eq_some_iff.mp hc2
   have e1 : A ++ x :: c₁ ++ B = A ++ x :: (c₁ ++ B) := by simp
   have e2 : x :: (c₁ ++ B) = c₂ ++ x :: B := by
     rw [← List.cons_append, hc₂]
     simp
-  rw [e1, walkEdges_append_cons A x (c₁ ++ B), e2, walkEdges_append_cons c₂ x B, ← hc₂,
-    walkEdges_append_cons A x B, List.append_assoc]
+  rw [e1, consecutivePairs_append_cons A x (c₁ ++ B), e2, consecutivePairs_append_cons c₂ x B,
+    ← hc₂, consecutivePairs_append_cons A x B, List.append_assoc]
   exact List.Perm.append_left _ List.perm_append_comm
 
 theorem head?_append_append {A c B : List α} {x : α} (hc1 : c.head? = some x) :
@@ -164,14 +173,15 @@ structure IsEulerCircuit (H : List (α × α)) (u : α) (w : List α) : Prop whe
   /-- The walk ends at `u`. -/
   getLast : w.getLast? = some u
   /-- The walk uses the edges of `H`, each once, in either direction. -/
-  perm : ((walkEdges w).map undirected).Perm (H.map undirected)
+  perm : (w.consecutivePairs.map undirected).Perm (H.map undirected)
 
 /-- **Euler's theorem, necessity of connectivity**: every edge of a multigraph with an Euler
 circuit from `u` is connected to `u`. -/
 theorem eqvGen_of_isEulerCircuit {H : List (α × α)} {u : α} {w : List α}
     (h : IsEulerCircuit H u w) : ∀ e ∈ H, Relation.EqvGen (fun a b => (a, b) ∈ H) e.1 u := by
   obtain ⟨w', rfl⟩ := List.head?_eq_some_iff.mp h.head
-  have hstep : ∀ e ∈ walkEdges (u :: w'), Relation.EqvGen (fun a b => (a, b) ∈ H) e.1 e.2 := by
+  have hstep :
+      ∀ e ∈ (u :: w').consecutivePairs, Relation.EqvGen (fun a b => (a, b) ∈ H) e.1 e.2 := by
     intro ⟨a, b⟩ he
     have hm : undirected (a, b) ∈ H.map undirected := h.perm.subset (List.mem_map_of_mem he)
     obtain ⟨⟨c, d⟩, hcd, hce⟩ := List.mem_map.mp hm
@@ -180,10 +190,10 @@ theorem eqvGen_of_isEulerCircuit {H : List (α × α)} {u : α} {w : List α}
     · exact .rel _ _ hcd
     · exact .symm _ _ (.rel _ _ hcd)
   intro e he
-  have hm : undirected e ∈ (walkEdges (u :: w')).map undirected :=
+  have hm : undirected e ∈ (u :: w').consecutivePairs.map undirected :=
     h.perm.symm.subset (List.mem_map_of_mem he)
   obtain ⟨f, hf, hfe⟩ := List.mem_map.mp hm
-  have hf12 := mem_of_mem_walkEdges hf
+  have hf12 := mem_of_mem_consecutivePairs hf
   have he1 : e.1 ∈ u :: w' := by
     obtain ⟨a, b⟩ := e
     obtain ⟨c, d⟩ := f
@@ -193,11 +203,34 @@ theorem eqvGen_of_isEulerCircuit {H : List (α × α)} {u : α} {w : List α}
     · exact hf12.2
   exact .symm _ _ (eqvGen_of_mem_cons hstep _ he1)
 
+/-- An Euler circuit from `u` visits every vertex connected to `u` by edges of `H`. -/
+theorem mem_of_isEulerCircuit {H : List (α × α)} {u : α} {w : List α} (h : IsEulerCircuit H u w)
+    {x : α} (hx : Relation.EqvGen (fun a b => (a, b) ∈ H) x u) : x ∈ w := by
+  have hedge : ∀ e ∈ H, e.1 ∈ w ∧ e.2 ∈ w := by
+    intro ⟨a, b⟩ he
+    obtain ⟨⟨c, d⟩, hf, hfe⟩ := List.mem_map.mp (h.perm.symm.subset (List.mem_map_of_mem he))
+    have hf12 := mem_of_mem_consecutivePairs hf
+    simp only [undirected_mk, Sym2.eq_iff] at hfe
+    rcases hfe with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    · exact hf12
+    · exact ⟨hf12.2, hf12.1⟩
+  have hu : u ∈ w := by
+    obtain ⟨w', rfl⟩ := List.head?_eq_some_iff.mp h.head
+    exact List.mem_cons_self ..
+  suffices ∀ a b, Relation.EqvGen (fun a b => (a, b) ∈ H) a b → (a ∈ w ↔ b ∈ w) from
+    (this x u hx).2 hu
+  intro a b hab
+  induction hab with
+  | rel a b hab => exact ⟨fun _ => (hedge _ hab).2, fun _ => (hedge _ hab).1⟩
+  | refl => exact Iff.rfl
+  | symm _ _ _ ih => exact ih.symm
+  | trans _ _ _ _ _ ih1 ih2 => exact ih1.trans ih2
+
 /-- For a symmetric weight `δ`, an Euler circuit of `H` weighs as much as `H`. -/
-theorem sum_map_walkEdges_eq {β : Type*} [AddCommMonoid β] {δ : α → α → β}
+theorem sum_map_consecutivePairs_eq {β : Type*} [AddCommMonoid β] {δ : α → α → β}
     (hsymm : ∀ a b, δ a b = δ b a) {H : List (α × α)} {u : α} {w : List α}
     (h : IsEulerCircuit H u w) :
-    ((walkEdges w).map fun e => δ e.1 e.2).sum = (H.map fun e => δ e.1 e.2).sum := by
+    (w.consecutivePairs.map fun e => δ e.1 e.2).sum = (H.map fun e => δ e.1 e.2).sum := by
   have hd : ∀ L : List (α × α), (L.map fun e => δ e.1 e.2).sum =
       ((L.map undirected).map (Sym2.lift ⟨δ, hsymm⟩)).sum := by
     intro L
@@ -240,8 +273,8 @@ theorem degree_eq_of_perm {H K : List (α × α)}
 
 /-- Twice the number of visits to `x` counts the edges of the walk at `x`, plus one for each end
 of the walk at `x`. -/
-theorem degree_walkEdges_cons (a : α) (l : List α) (x : α) :
-    degree (walkEdges (a :: l)) x + (if x = a then 1 else 0) +
+theorem degree_consecutivePairs_cons (a : α) (l : List α) (x : α) :
+    degree (a :: l).consecutivePairs x + (if x = a then 1 else 0) +
       (if x = (a :: l).getLast (List.cons_ne_nil a l) then 1 else 0) = 2 * (a :: l).count x := by
   induction l generalizing a with
   | nil =>
@@ -251,7 +284,7 @@ theorem degree_walkEdges_cons (a : α) (l : List α) (x : α) :
     · simp [h, Ne.symm h]
   | cons b l ih =>
     have := ih b
-    rw [walkEdges_cons_cons, degree_cons, List.getLast_cons_cons, List.count_cons]
+    rw [consecutivePairs_cons_cons, degree_cons, List.getLast_cons_cons, List.count_cons]
     simp only [ends, beq_iff_eq] at this ⊢
     by_cases h : x = a
     · subst h
@@ -269,7 +302,7 @@ theorem even_degree_of_isEulerCircuit {H : List (α × α)} {u : α} {w : List �
     have := h.getLast
     rw [List.getLast?_eq_some_getLast (List.cons_ne_nil _ _)] at this
     exact Option.some.inj this
-  have := degree_walkEdges_cons u w' x
+  have := degree_consecutivePairs_cons u w' x
   rw [hl] at this
   rw [← degree_eq_of_perm h.perm]
   exact Nat.even_iff.mpr (by split_ifs at this <;> omega)
@@ -365,7 +398,7 @@ theorem walkFrom_spec (fuel : ℕ) (H : List (α × α)) (u t : α) (hfuel : H.l
     (hpar : ∀ y, (degree H y + (if y = u then 1 else 0) + (if y = t then 1 else 0)) % 2 = 0) :
     (walkFrom fuel H u).1.head? = some u ∧ (walkFrom fuel H u).1.getLast? = some t ∧
       (H.map undirected).Perm
-        ((walkEdges (walkFrom fuel H u).1 ++ (walkFrom fuel H u).2).map undirected) ∧
+        (((walkFrom fuel H u).1.consecutivePairs ++ (walkFrom fuel H u).2).map undirected) ∧
       ∀ y, degree (walkFrom fuel H u).2 y % 2 = 0 := by
   induction fuel generalizing H u with
   | zero =>
@@ -408,7 +441,7 @@ theorem walkFrom_spec (fuel : ℕ) (H : List (α × α)) (u t : α) (hfuel : H.l
       simp only [walkFrom, hfind]
       rw [hr1] at ih2 ih3 ⊢
       refine ⟨rfl, by simpa using ih2, ?_, ih4⟩
-      simp only [walkEdges_cons_cons, List.cons_append, List.map_cons]
+      simp only [consecutivePairs_cons_cons, List.cons_append, List.map_cons]
       refine (hperm.map undirected).trans ?_
       rw [List.map_cons, undirected_eq_of_touches hte]
       exact ih3.cons _
@@ -436,18 +469,18 @@ theorem exists_splice {x : α} (c : List α) {w : List α} (hx : x ∈ w) :
 are those of `H`, then some vertex of `w` touches an edge of `R`, unless `R` is empty. -/
 theorem eq_nil_of_forall_not_touches {H R : List (α × α)} {w : List α} {u : α} (hu : u ∈ w)
     (hconn : ∀ e ∈ H, Relation.EqvGen (fun a b => (a, b) ∈ H) e.1 u)
-    (hperm : (H.map undirected).Perm ((walkEdges w ++ R).map undirected))
+    (hperm : (H.map undirected).Perm ((w.consecutivePairs ++ R).map undirected))
     (hnt : ∀ x ∈ w, ∀ e ∈ R, touches x e = false) : R = [] := by
   have key : ∀ y z, Relation.EqvGen (fun a b => (a, b) ∈ H) y z → (y ∈ w ↔ z ∈ w) := by
     intro y z h
     induction h with
     | rel a b hab =>
-      have hm : undirected (a, b) ∈ (walkEdges w ++ R).map undirected :=
+      have hm : undirected (a, b) ∈ (w.consecutivePairs ++ R).map undirected :=
         hperm.subset (List.mem_map_of_mem hab)
       obtain ⟨⟨f1, f2⟩, hf, hfe⟩ := List.mem_map.mp hm
       simp only [undirected_mk, Sym2.eq_iff] at hfe
       rcases List.mem_append.mp hf with hf | hf
-      · have := mem_of_mem_walkEdges hf
+      · have := mem_of_mem_consecutivePairs hf
         rcases hfe with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> simp_all
       · have n1 : f1 ∉ w := fun hm => by simpa [touches] using hnt f1 hm _ hf
         have n2 : f2 ∉ w := fun hm => by simpa [touches] using hnt f2 hm _ hf
@@ -485,7 +518,7 @@ def eulerLoop : ℕ → List α → List (α × α) → List α
 theorem eulerLoop_spec {H : List (α × α)} {u : α}
     (hconn : ∀ e ∈ H, Relation.EqvGen (fun a b => (a, b) ∈ H) e.1 u) (fuel : ℕ) :
     ∀ (w : List α) (R : List (α × α)), w.head? = some u → w.getLast? = some u →
-      (H.map undirected).Perm ((walkEdges w ++ R).map undirected) →
+      (H.map undirected).Perm ((w.consecutivePairs ++ R).map undirected) →
       (∀ y, degree R y % 2 = 0) → R.length ≤ fuel → IsEulerCircuit H u (eulerLoop fuel w R) := by
   induction fuel with
   | zero =>
@@ -525,7 +558,7 @@ theorem eulerLoop_spec {H : List (α × α)} {u : α}
       · rw [hsp, head?_append_append s1, ← hw, h1]
       · rw [hsp, getLast?_append_append s2, ← hw, h2]
       · rw [hsp]
-        have hw' := walkEdges_append_append (A := A) (B := B) s1 s2
+        have hw' := consecutivePairs_append_append (A := A) (B := B) s1 s2
         rw [← hw] at hw'
         refine h3.trans ?_
         rw [List.map_append]
