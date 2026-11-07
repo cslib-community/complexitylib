@@ -2376,6 +2376,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StepMachine
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StepMachineComp
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StreamFold
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Sum
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Tape
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
@@ -3674,6 +3675,7 @@ public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.Sqrt
+public import Complexity.Foundations.BooleanAnalysis.AffineDegree
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
 public import Complexity.Foundations.BooleanAnalysis.Bonami
 public import Complexity.Foundations.BooleanAnalysis.BucketWeight
@@ -3814,6 +3816,7 @@ public import Complexity.Foundations.Combinatorics.GreedySchedules
 public import Complexity.Foundations.Combinatorics.Hoeffding
 public import Complexity.Foundations.Combinatorics.Hypergeometric
 public import Complexity.Foundations.Combinatorics.HypergraphCut
+public import Complexity.Foundations.Combinatorics.InclusionMatrix
 public import Complexity.Foundations.Combinatorics.Janson
 public import Complexity.Foundations.Combinatorics.Lautemann
 public import Complexity.Foundations.Combinatorics.LineCode.Basic
@@ -4551,6 +4554,11 @@ public import Complexity.Logics.SecondOrder.Grounding
 public import Complexity.Logics.SecondOrder.IndependentSet
 public import Complexity.Logics.SecondOrder.Projection
 public import Complexity.Logics.SecondOrder.Reduction
+public import Complexity.MachineLearning.PACLearning.ERM
+public import Complexity.MachineLearning.PACLearning.FiniteClass
+public import Complexity.MachineLearning.PACLearning.GrowthFunction
+public import Complexity.MachineLearning.PACLearning.Realizable
+public import Complexity.MachineLearning.PACLearning.RealizableSample
 public import Complexity.MachineLearning.UniformLearning.AC0
 public import Complexity.MachineLearning.UniformLearning.Basic
 public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
