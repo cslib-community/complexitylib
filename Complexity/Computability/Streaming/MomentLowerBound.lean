@@ -8,11 +8,12 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Communication.Functions
-public import Complexity.Computability.Communication.Randomized
 public import Complexity.Computability.Streaming.Basic
 public import Complexity.Computability.Streaming.GraphStream
 import Complexity.Computability.Communication.Disjointness
+import Complexity.Computability.Communication.Randomized
 import Complexity.Computability.Streaming.Communication
+import Complexity.Foundations.Data.Code.HammingBound
 import Complexity.Foundations.Data.Hamming
 import Complexity.Probability.PMF.Event
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -52,9 +53,11 @@ is `2 n` exactly when the supports are disjoint
 `Cslib.Streaming.Randomized.ecomplexityFun_le_of_spaceLE`, and the `Ω(n)` lower bound for
 disjointness [KalyanasundaramSchnitger1992][Razborov1992] bounds its memory. The source applies the
 reduction of its Proposition 3.1 instead, which streams the positions of the ones of both players.
-Then `F_k` decides disjointness only by comparing it with the number of ones, which Bob knows but a
-fixed answer map does not; the graph streams make the threshold `2 n` independent of the inputs, at
-the price of the universe `Fin n × Fin 3` of size `3 n`.
+Then `F_k` decides disjointness only by comparing it with the number of ones `|x| + |y|`, which
+depends on both inputs, whereas the answer map of
+`Cslib.Streaming.Randomized.ecomplexityFun_le_of_spaceLE` is fixed (Alice could send `|x|` in
+`O(log n)` more bits). The graph streams make the threshold `2 n` independent of the inputs, at the
+price of the universe `Fin n × Fin 3` of size `3 n`.
 * For error `ε ≤ 1 / 2`: `n ≤ 2 ^ 10 r (b + 1) + 2 ^ 12` whenever `(4 ε (1 - ε)) ^ r ≤ 1 / 64`
   (`Cslib.Streaming.le_of_solves_freqMoment`); for error `1 / 3`, `n ≤ 36864 (b + 1) + 2 ^ 12`
   (`Cslib.Streaming.le_of_solves_freqMoment_one_third`).

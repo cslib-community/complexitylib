@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.Streaming.MomentLowerBound
+public import Complexity.Foundations.Data.Code.HammingBound
 
 /-!
 # Unit tests for the linear-memory lower bounds for frequency moments

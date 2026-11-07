@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Streaming.Frequency
-public import Complexity.Foundations.Data.Code.HammingBound
+public import Mathlib.InformationTheory.Hamming
 import Complexity.Foundations.Data.Hamming
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.List.OfFn
