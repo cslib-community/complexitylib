@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import os
 import pathlib
 import subprocess
@@ -159,6 +160,31 @@ class MergeBibTests(unittest.TestCase):
         self.assertEqual(rbc.merge_bib(text, text, text), text)
 
 
+class MergeReportTests(unittest.TestCase):
+    STAGES = b"".join(b"100644 %s %d\treferences.bib\0" % (b"0" * 40, s) for s in (1, 2, 3))
+    MESSAGES = (b"1\0references.bib\0Auto-merging\0Auto-merging references.bib\n\0"
+                b"1\0references.bib\0CONFLICT (contents)\0CONFLICT (content): Merge conflict in "
+                b"references.bib\n\0")
+
+    def test_parses_stages_and_messages(self) -> None:
+        tree, stages, messages = rbc.merge_report(b"t" * 40 + b"\0" + self.STAGES + b"\0"
+                                                  + self.MESSAGES)
+        self.assertEqual(tree, "t" * 40)
+        self.assertEqual([stage for _, _, stage, _ in stages], ["1", "2", "3"])
+        self.assertEqual(messages, [([b"references.bib"], "Auto-merging"),
+                                    ([b"references.bib"], "CONFLICT (contents)")])
+
+    def test_malformed_output_is_refused(self) -> None:
+        good = b"t" * 40 + b"\0" + self.STAGES + b"\0" + self.MESSAGES
+        for bad in (good[:-1], good + b"x\0", good.replace(b"\t", b" ", 1),
+                    good.replace(b"\x001\0references.bib", b"\0x\0references.bib", 1),
+                    good.replace(b"\x001\0references.bib", b"\x000\0references.bib", 1),
+                    b"t" * 40 + b"\0" + self.STAGES):
+            with self.subTest(bad=bad[-40:]):
+                with self.assertRaisesRegex(rbc.Refusal, "unexpected `git merge-tree` output"):
+                    rbc.merge_report(bad)
+
+
 class GitTests(unittest.TestCase):
     """Commit and driver modes in a scratch repository."""
 
@@ -190,12 +216,23 @@ class GitTests(unittest.TestCase):
         self.git("add", ".")
         self.git("commit", "-qm", message)
 
-    def branch(self, name: str, files: dict[str, str]) -> str:
-        self.git("checkout", "-q", "-b", name, self.base)
+    def branch(self, name: str, files: dict[str, str], start: str | None = None) -> str:
+        self.git("checkout", "-q", "-b", name, start or self.base)
         for path, text in files.items():
+            (self.root / path).parent.mkdir(parents=True, exist_ok=True)
             self.write(path, text)
         self.commit(name)
         return self.git("rev-parse", "HEAD")
+
+    def bib_branches(self, start: str | None = None, ours: dict[str, str] | None = None,
+                     theirs: dict[str, str] | None = None) -> None:
+        """`feature` and `upstream` add different entries between the same neighbours."""
+        self.branch("feature", {
+            "references.bib": bib(entry("Alpha2000"), entry("Kappa2001"), entry("Zeta2000")),
+            **(ours or {})}, start)
+        self.branch("upstream", {
+            "references.bib": bib(entry("Alpha2000"), entry("Beta2001"), entry("Zeta2000")),
+            **(theirs or {})}, start)
 
     def refs(self) -> str:
         return self.git("for-each-ref")
@@ -203,6 +240,13 @@ class GitTests(unittest.TestCase):
     def commits(self) -> set[str]:
         objects = self.git("cat-file", "--batch-all-objects", "--batch-check").splitlines()
         return {line.split()[0] for line in objects if line.split()[1] == "commit"}
+
+    def assert_refused(self, pattern: str) -> None:
+        """`resolve` refuses with `pattern` and writes no commit and no ref."""
+        commits, refs = self.commits(), self.refs()
+        with self.assertRaisesRegex(rbc.Refusal, pattern):
+            rbc.resolve("feature", "upstream", cwd=self.root)
+        self.assertEqual((self.commits(), self.refs()), (commits, refs))
 
     def test_bib_only_conflict_writes_a_merge_commit(self) -> None:
         head = self.branch("feature", {
@@ -222,22 +266,55 @@ class GitTests(unittest.TestCase):
                          "upstream\n\none\n\ntwo\n\nthree\n\nfeature")
 
     def test_other_conflicts_are_refused_without_a_commit(self) -> None:
-        self.branch("feature", {
-            "references.bib": bib(entry("Alpha2000"), entry("Kappa2001"), entry("Zeta2000")),
-            "notes.md": "one\n\nfeature\n\nthree\n"})
-        self.branch("upstream", {
-            "references.bib": bib(entry("Alpha2000"), entry("Beta2001"), entry("Zeta2000")),
-            "notes.md": "one\n\nupstream\n\nthree\n"})
-        commits, refs = self.commits(), self.refs()
-        with self.assertRaisesRegex(rbc.Refusal, "notes.md, references.bib"):
-            rbc.resolve("feature", "upstream", cwd=self.root)
-        self.assertEqual((self.commits(), self.refs()), (commits, refs))
+        self.bib_branches(ours={"notes.md": "one\n\nfeature\n\nthree\n"},
+                          theirs={"notes.md": "one\n\nupstream\n\nthree\n"})
+        self.assert_refused(r"CONFLICT \(contents\): notes\.md; CONFLICT \(contents\): "
+                            r"references\.bib")
+
+    def test_a_directory_rename_split_is_refused(self) -> None:
+        # The split leaves no conflicted stage: only git's messages report it.
+        start = self.branch("dirs", {"dir/a": "a\n", "dir/b": "b\n"})
+        self.bib_branches(start, theirs={"dir/c": "c\n"})
+        self.git("checkout", "-q", "feature")
+        for src, dst in (("dir/a", "x/a"), ("dir/b", "y/b")):
+            (self.root / dst).parent.mkdir()
+            self.git("mv", src, dst)
+        self.commit("split dir")
+        names = self.git("merge-tree", "--write-tree", "--name-only", "--no-messages",
+                         "feature", "upstream", check=False)
+        self.assertEqual(names.splitlines()[1:], ["references.bib"], "the only conflicted path")
+        self.assert_refused(r"directory rename unclear split\): dir")
+
+    def test_tracked_union_attributes_are_not_applied(self) -> None:
+        # Tracked `merge=union` merges same-gap imports into an unsorted list without reporting
+        # a conflict; the plain text merge reports it, so the merge is refused.
+        start = self.branch("union", {
+            ".gitattributes": "Complexity.lean merge=union\nreferences.bib merge=bibkeys\n",
+            "Complexity.lean": "import A.W\nimport A.Z\n"})
+        self.bib_branches(start, ours={"Complexity.lean": "import A.W\nimport A.Y\nimport A.Z\n"},
+                          theirs={"Complexity.lean": "import A.W\nimport A.X\nimport A.Z\n"})
+        names = self.git("merge-tree", "--write-tree", "--name-only", "--no-messages",
+                         "feature", "upstream", check=False)
+        self.assertEqual(names.splitlines()[1:], ["references.bib"], "git applies the union")
+        for source in (None, "HEAD"):
+            with self.subTest(GIT_ATTR_SOURCE=source):
+                with patch.dict(os.environ, {"GIT_ATTR_SOURCE": source} if source else {}):
+                    self.assert_refused(r"CONFLICT \(contents\): Complexity\.lean")
+
+    def test_local_info_attributes_are_refused(self) -> None:
+        self.bib_branches()
+        info = pathlib.Path(self.git("rev-parse", "--path-format=absolute", "--git-path",
+                                     "info/attributes"))
+        info.parent.mkdir(exist_ok=True)
+        info.write_text("# comments only\n\n", encoding="utf-8")
+        self.assertIsNotNone(rbc.resolve("feature", "upstream", cwd=self.root))
+        info.write_text("notes.md merge=union\n", encoding="utf-8")
+        self.assert_refused(r"info/attributes sets attributes")
 
     def test_conflicting_entry_edits_are_refused(self) -> None:
         self.branch("feature", {"references.bib": bib(entry("Alpha2000", "X"), entry("Zeta2000"))})
         self.branch("upstream", {"references.bib": bib(entry("Alpha2000", "Y"), entry("Zeta2000"))})
-        with self.assertRaisesRegex(rbc.Refusal, "both sides changed entry `alpha2000`"):
-            rbc.resolve("feature", "upstream", cwd=self.root)
+        self.assert_refused("both sides changed entry `alpha2000`")
 
     def test_clean_merge_writes_nothing(self) -> None:
         self.branch("feature", {"notes.md": "one\n\ntwo\n\nthree\n\nfeature\n"})
@@ -246,16 +323,28 @@ class GitTests(unittest.TestCase):
         self.assertIsNone(rbc.resolve("feature", "upstream", cwd=self.root))
 
     def test_commit_mode_ignores_a_configured_driver(self) -> None:
-        # A configured driver would hide the conflict that GitHub reports; commit mode must not.
+        # A configured driver would hide the conflict that GitHub reports (here by reporting a
+        # clean merge, which writes nothing); commit mode must still see and resolve it.
         self.git("config", "merge.bibkeys.driver", "true")
-        self.branch("feature", {
-            "references.bib": bib(entry("Alpha2000"), entry("Kappa2001"), entry("Zeta2000")),
-            "notes.md": "one\n\nfeature\n\nthree\n"})
-        self.branch("upstream", {
-            "references.bib": bib(entry("Alpha2000"), entry("Beta2001"), entry("Zeta2000")),
-            "notes.md": "one\n\nupstream\n\nthree\n"})
-        with self.assertRaisesRegex(rbc.Refusal, "notes.md, references.bib"):
-            rbc.resolve("feature", "upstream", cwd=self.root)
+        self.bib_branches()
+        sha = rbc.resolve("feature", "upstream", cwd=self.root)
+        self.assertIsNotNone(sha)
+        self.assertEqual(self.git("show", f"{sha}:references.bib") + "\n", bib(
+            entry("Alpha2000"), entry("Beta2001"), entry("Kappa2001"), entry("Zeta2000")))
+
+    def test_driver_falls_back_to_markers_on_any_failure(self) -> None:
+        paths = [self.root / name for name in ("base", "ours", "theirs")]
+        texts = (bib(entry("Alpha2000"), entry("Zeta2000")),
+                 bib(entry("Alpha2000"), entry("Kappa2001"), entry("Zeta2000")),
+                 bib(entry("Alpha2000"), entry("Beta2001"), entry("Zeta2000")))
+        for path, text in zip(paths, texts):
+            path.write_text(text, encoding="utf-8")
+        with patch.object(rbc, "merge_bib", side_effect=RuntimeError("unexpected")), \
+                patch("sys.stderr", new_callable=io.StringIO) as stderr:
+            status = rbc.driver(*map(str, paths))
+        self.assertEqual(status, 1)
+        self.assertIn("unexpected; falling back to a text merge", stderr.getvalue())
+        self.assertIn("<<<<<<< ours", paths[1].read_text(encoding="utf-8"))
 
     def test_driver_resolves_git_merge_and_falls_back_to_markers(self) -> None:
         self.git("config", "merge.bibkeys.driver",
