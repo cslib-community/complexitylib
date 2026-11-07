@@ -713,6 +713,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   problems, under which polynomial-time algorithms such as Johnson's `7 / 8` algorithm for
   MAX-E3SAT meet matching hardness results such as Håstad's ([#886]); LP and SDP rounding, such
   as Goemans–Williamson for MAX-CUT and MAX-SAT.
+- **Scheduling:** beyond Graham's list-scheduling, LPT and precedence bounds in
+  `Algorithms/Lean/Scheduling`: real-valued processing times with precedences, Graham's anomaly
+  instances as checked examples, a general tight family for LPT, the Hochbaum–Shmoys PTAS for
+  `P || C_max`, and runtime bounds for `listSchedule` and `lptSchedule`.
 - **A practical PCP construction:** a reasonably runnable construction and its cost on complete
   reductions; rotation certificates polynomial in the bit length of a vertex name; machine-level
   error reduction and extractors from expander walks, with certified seed and evaluation costs.
@@ -1115,9 +1119,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 ### Parallel, external-memory and distributed models
 
-- **Parallel algorithms:** work–span semantics and a processor-scheduling or simulation theorem,
-  followed by prefix scan, sorting and graph primitives with both work and span bounds. State
-  processor access, synchronization and scheduling overhead explicitly.
+- **Parallel algorithms:** work–span semantics for a parallel language or PRAM model whose
+  computation DAGs feed the unit-time DAG scheduling bounds (work and span laws, greedy bound and
+  Brent's lemma are in `Algorithms/Lean/Scheduling/Brent.lean`), followed by prefix scan, sorting
+  and graph primitives with both work and span bounds. State processor access, synchronization and
+  scheduling overhead explicitly, including work stealing (Blumofe–Leiserson).
 - **Memory hierarchies:** external-memory and ideal-cache models with explicit capacity and
   block-size parameters; scanning, B-tree operations, blocked matrix multiplication and
   cache-oblivious sorting as clients. Connect arithmetic-step, memory-access and cache-miss
