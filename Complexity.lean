@@ -4486,6 +4486,10 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Step
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import Complexity.Logics.Propositional.ClauseSet.SubcubeFree
 public import Complexity.Logics.Propositional.CliqueColoring
+public import Complexity.Logics.Propositional.CuttingPlanes
+public import Complexity.Logics.Propositional.CuttingPlanes.Pigeonhole
+public import Complexity.Logics.Propositional.CuttingPlanes.Resolution
+public import Complexity.Logics.Propositional.CuttingPlanes.Separation
 public import Complexity.Logics.Propositional.DNF
 public import Complexity.Logics.Propositional.Parity
 public import Complexity.Logics.Propositional.Parity.DepthThree
