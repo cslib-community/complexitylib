@@ -12,7 +12,8 @@ With nothing conditioned (`C = ∅`), the bounds collapse to zero: the question 
 coordinate has the law of `G.questions`, and the questions embed exactly in the law of
 `((x_j, y_j), (S, S))`. In general, averaging the errors of the first stage gives a free coordinate
 whose error is at most `27 / √2 · √((#C ln (|A| |B|) + ln (1 / Pr[W_C])) / #Cᶜ)`: the coordinate
-that Holenstein's Lemma 6.5 picks.
+that Holenstein's Lemma 6.5 picks. Regrouped for `IsEmbeddable.trans`, the law of the first stage
+is the input of the second.
 -/
 
 namespace ComplexityTests.RepetitionEmbedding
@@ -33,6 +34,17 @@ example (hC : ∃ q ∈ G.winsOn ha hb ∅, q ∈ (G.pow n).questions.support)
     Real.sqrt_zero] at h
   exact dist_le_zero.mp ((Finset.sum_eq_zero_iff_of_nonneg fun i _ => dist_nonneg).mp
     (le_antisymm h (Finset.sum_nonneg fun i _ => dist_nonneg)) j (Finset.mem_univ j)).le
+
+-- Regrouped as `((x, s), (y, t))`, the input of `IsEmbeddable.trans`, the law of the first stage is
+-- the law that the second stage starts from.
+example (C : Finset (Fin n)) (hC : ∃ q ∈ G.winsOn ha hb C, q ∈ (G.pow n).questions.support)
+    (j : {i // i ∉ C}) :
+    ((condLaw G C ha hb hC).map fun ω => (ω.2 j, (shared ha hb j ω, shared ha hb j ω))).map
+        (fun ((x, y), (s, t)) => ((x, s), (y, t))) =
+      (condLaw G C ha hb hC).map fun ω =>
+        (((ω.2 j).1, shared ha hb j ω), ((ω.2 j).2, shared ha hb j ω)) := by
+  rw [PMF.map_comp]
+  rfl
 
 variable [Fintype A] [Fintype B]
 
