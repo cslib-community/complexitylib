@@ -101,7 +101,7 @@ theorem length_le_of_reach {w₀ w : List Bool} (h : Reach List.tail w₀ w) :
 /-- The tail game is in `APSPACE`, through the word game machine. -/
 example : {w : List Bool | Wins List.tail w} ∈ APSPACE encBits :=
   mem_APSPACE_of_wins (I := id) (U := List.tail) (ℓ := List.length)
-    ComputableTidilyInPolyTime.id'.computableInPolyTime
+    ComputableInPolyTime.id'
     ComputableTidilyInPolyTime.bitsTail.computableInPolyTime
     (PolyBounded.of_forall_le 1 1 fun w => by simp)
     (fun _ _ h => length_le_of_reach h)

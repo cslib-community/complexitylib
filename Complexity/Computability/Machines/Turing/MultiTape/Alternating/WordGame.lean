@@ -15,9 +15,11 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Gue
 A **word game** has positions that are binary words. At a position `u :: x :: r` with at least two
 symbols, the player `u` (`false` existential, `true` universal) chooses a move `b`, which replaces
 the cell `x`, and the update `U` gives the next position `U (u :: b :: r)`. The game ends at a
-position with fewer than two symbols, and the existential player wins at `[true]`
+position with fewer than two symbols, and the existential player wins at `[true]`. This format is
+the library's packaging of the proof idea of the inclusion `DTIME(2 ^ O(s)) ⊆ ASPACE(s)`
 [Chandra, Kozen and Stockmeyer, Section 3][ChandraKozenStockmeyer1981]
-[Sipser, Section 10.3][Sipser2013].
+[Sipser, Section 10.3][Sipser2013]: the alternating machine stores one position and recomputes the
+next one after each move.
 
 * `Turing.MultiTapeATM.WordGame.Reach U w₀`: the positions reachable from `w₀`.
 * `Turing.MultiTapeATM.WordGame.Wins U`: the positions won by the existential player, as a least
@@ -53,6 +55,8 @@ exponential time to `APSPACE`.
 * `Turing.MultiTapeATM.wordGame_spec`: the machine stays within the space of the preparation and of
   one round, accepts exactly when the existential player wins, and halts within a time linear in
   the length of the longest play.
+* `Turing.MultiTapeATM.runsInSpace_wordGame`, `Turing.MultiTapeATM.accepts_wordGame_iff`,
+  `Turing.MultiTapeATM.runsInTime_wordGame`: the three parts of `wordGame_spec` separately.
 
 ## References
 
@@ -114,7 +118,7 @@ instance instFiniteState {S₁ S₂ : Type} [Finite S₁] [Finite S₂] : Finite
 variable {k : ℕ} {S₁ S₂ : Type}
 
 /-- The action that writes `w` on tape `N`, moves its head by `d`, and enters `q`. -/
-def act (N : Fin k) (w : Option (Option Bool)) (d : SignType) (out : Option Bool)
+private def act (N : Fin k) (w : Option (Option Bool)) (d : SignType) (out : Option Bool)
     (q : Option (State S₁ S₂)) : Turing.Action k Bool (State S₁ S₂) :=
   { inputTape := 0
     workTapes := Function.update (fun _ => (none, 0)) N (w, d)
@@ -122,13 +126,13 @@ def act (N : Fin k) (w : Option (Option Bool)) (d : SignType) (out : Option Bool
     state := q }
 
 /-- Embed an action of a phase machine, sending its halting to `disp0`. -/
-def lift {S : Type} (f : S → State S₁ S₂) (a : Turing.Action k Bool S) :
+private def lift {S : Type} (f : S → State S₁ S₂) (a : Turing.Action k Bool S) :
     Turing.Action k Bool (State S₁ S₂) :=
   { a with state := some (a.state.elim .disp0 f) }
 
 /-- The transition function of the deterministic machine of the move `b`. -/
-noncomputable def tr (P : MultiTapeTM k Bool S₁) (R : MultiTapeTM k Bool S₂) (N : Fin k)
-    (b : Bool) :
+private noncomputable def tr (P : MultiTapeTM k Bool S₁) (R : MultiTapeTM k Bool S₂)
+    (N : Fin k) (b : Bool) :
     State S₁ S₂ → Option Bool → (Fin k → Option Bool) → Turing.Action k Bool (State S₁ S₂)
   | .prep q, inp, work => lift .prep (P.tr q inp work)
   | .round q, inp, work => lift .round (R.tr q inp work)
@@ -141,12 +145,12 @@ noncomputable def tr (P : MultiTapeTM k Bool S₁) (R : MultiTapeTM k Bool S₂)
   | .move _, _, _ => act N (some (some b)) (-1) none (some (.round R.q₀))
 
 /-- The deterministic machine of the move `b`. -/
-noncomputable def tm (P : MultiTapeTM k Bool S₁) (R : MultiTapeTM k Bool S₂) (N : Fin k)
-    (b : Bool) : MultiTapeTM k Bool (State S₁ S₂) :=
+private noncomputable def tm (P : MultiTapeTM k Bool S₁) (R : MultiTapeTM k Bool S₂)
+    (N : Fin k) (b : Bool) : MultiTapeTM k Bool (State S₁ S₂) :=
   MultiTapeTM.ofTr (.prep P.q₀) (tr P R N b)
 
 /-- The universal states: the move states of the universal player. -/
-def isUniversal : State S₁ S₂ → Bool
+private def isUniversal : State S₁ S₂ → Bool
   | .move u => u
   | _ => false
 
@@ -659,5 +663,35 @@ theorem wordGame_spec {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
     exact ⟨n + τ, (acceptsWithin_iff_of_phase hnext hrun hd _).mpr (by simpa using hn)⟩
   · rw [runsInTime_iff_haltsWithin, haltsWithin_iff_of_phase hnext hrun hd]
     exact ⟨by omega, (haltsWithin_of_ends (P := P) hR n w₀ .start hn).mono (by omega)⟩
+
+open WordGame in
+/-- The space part of `Turing.MultiTapeATM.wordGame_spec`: every computation path of the word game
+machine stays within the space of the preparation and of one round. -/
+theorem runsInSpace_wordGame {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
+    {R : MultiTapeTM k Bool S₂} {N : Fin k} {input : List Bool} {U : List Bool → List Bool}
+    {w₀ : List Bool} {tP sP tR sR : ℕ} (hP : PrepSpec P N input w₀ tP sP)
+    (hR : RoundSpec R N input U w₀ tR sR) :
+    (wordGame P R N).toPTM.toNTM.RunsInSpace input (k * (2 * max (max sP sR) 1 + 1)) :=
+  (wordGame_spec hP hR).1
+
+open WordGame in
+/-- The acceptance part of `Turing.MultiTapeATM.wordGame_spec`: the word game machine accepts
+exactly when the existential player wins the game from `w₀`. -/
+theorem accepts_wordGame_iff {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
+    {R : MultiTapeTM k Bool S₂} {N : Fin k} {input : List Bool} {U : List Bool → List Bool}
+    {w₀ : List Bool} {tP sP tR sR : ℕ} (hP : PrepSpec P N input w₀ tP sP)
+    (hR : RoundSpec R N input U w₀ tR sR) :
+    (wordGame P R N).Accepts input ↔ Wins U w₀ :=
+  (wordGame_spec hP hR).2.1
+
+open WordGame in
+/-- The time part of `Turing.MultiTapeATM.wordGame_spec`: if every play ends within `n` moves,
+every branch of the word game machine halts within `tP + (n * (tR + 3) + 2)` steps. -/
+theorem runsInTime_wordGame {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
+    {R : MultiTapeTM k Bool S₂} {N : Fin k} {input : List Bool} {U : List Bool → List Bool}
+    {w₀ : List Bool} {tP sP tR sR : ℕ} (hP : PrepSpec P N input w₀ tP sP)
+    (hR : RoundSpec R N input U w₀ tR sR) {n : ℕ} (hn : Ends U n w₀) :
+    (wordGame P R N).toPTM.toNTM.RunsInTime input (tP + (n * (tR + 3) + 2)) :=
+  (wordGame_spec hP hR).2.2 n hn
 
 end Turing.MultiTapeATM

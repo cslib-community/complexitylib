@@ -28,7 +28,8 @@ recomputes the next position in polynomial time and hence polynomial space
 The plays may be exponentially long: only their finiteness is assumed, since deciding asks every
 branch to halt. This is the step from deterministic exponential time to `APSPACE`. A game checking
 the tableau of a machine running in time `2 ^ n ^ k`, whose positions name one cell of the tableau,
-gives `EXP ⊆ APSPACE` with `Cslib.Complexity.APSPACE_subset_EXP`.
+gives `EXP ⊆ APSPACE`; together with `Cslib.Complexity.APSPACE_subset_EXP` that gives
+`APSPACE = EXP`.
 
 ## Main results
 
