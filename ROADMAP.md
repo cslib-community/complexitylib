@@ -1012,6 +1012,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
   (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting
   an existence argument into a deterministic or randomized algorithm.
+- **Small sample spaces** ([#2935]): searching a `k`-wise independent space finds an assignment
+  as good as a uniformly random one on clauses of at least `k` distinct literals
+  (`exists_two_pow_mul_countUnsat_le`). The polynomial-time search is certified only for the
+  three-wise parity space. Remaining: a runtime certificate for searching the trinomial-field
+  space (`exists_assignments_two_pow_mul_countUnsat_le`) for fixed `k > 3`. Further directions
+  are small-bias and almost `k`-wise independent spaces and their clients.
 
 ## Machines, RAM and data structures
 
@@ -1291,3 +1297,4 @@ not planned, not as proved.
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
 [#2866]: https://github.com/cslib-community/complexitylib/issues/2866
+[#2935]: https://github.com/cslib-community/complexitylib/issues/2935
