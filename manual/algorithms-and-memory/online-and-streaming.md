@@ -24,6 +24,20 @@ The metric is number of page faults. The recency-list Lean implementation is not
 
 This is a stream algorithm model and an exact probability theorem, distinct from a general complexity class of one-pass bounded-space machines. It also does not imply differential privacy.
 
+## One-pass streaming algorithms and the AMS sketch
+
+[Complexity/Computability/Streaming/Basic.lean](../../Complexity/Computability/Streaming/Basic.lean) defines a deterministic one-pass `Streaming.Algorithm σ α β`: an initial memory state, an update reading one item and an output. Updates are arbitrary functions, so the model is non-uniform and charges only the memory surviving between items. `A.SpaceLE m b` says that the states reached on streams of at most `m` items have an injective `b`-bit encoding, so space is `⌈log₂⌉` of the number of reachable states. A `Streaming.Randomized` algorithm is a `PMF` over deterministic algorithms, with randomness drawn before the stream as for public-coin protocols. Its memory bound must hold for every algorithm in the support, and `Solves ε R m` bounds the error on every stream of at most `m` items. `Algorithm.reduce` prefixes items, translates items and post-processes answers while keeping memory bounds.
+
+[Complexity/Computability/Streaming/Communication.lean](../../Complexity/Computability/Streaming/Communication.lean) turns an algorithm with `b` bits into a one-way protocol in which Alice sends the encoded state after her part of the stream. `Algorithm.ecomplexityFun_le_of_spaceLE` and `Randomized.ecomplexityFun_le_of_spaceLE` bound deterministic and public-coin communication by `b + 1`. [Complexity/Computability/Streaming/Distinctness.lean](../../Complexity/Computability/Streaming/Distinctness.lean) applies this to the disjointness lower bounds:
+
+- `le_of_solves_nodup` covers distinctness of at most `2n` items of `Fin n` with error `ε ≤ 1/2`. It gives `n ≤ 2^10 r (b+1) + 2^12` whenever `(4ε(1-ε))^r ≤ 1/64`; at error `1/3`, `n ≤ 36864 (b+1) + 2^12`.
+- `le_of_solves_maxFreq` is the `F∞` lower bound of Alon–Matias–Szegedy, Proposition 3.1 [alonmatiasszegedy99][alonmatiasszegedy99], for estimates within less than `F∞/3`. A fixed item is prefixed to make the stream nonempty, so the statement uses `Fin (n+1)` and `2n+1` items.
+- `Algorithm.le_of_run_eq_decide_nodup` and `Algorithm.le_of_run_eq_maxFreq` show that exact deterministic algorithms need `n ≤ b`.
+
+The [test file](../../ComplexityTests/StreamingAMS.lean) shows that an algorithm storing the items seen and a flag uses `n + 1` bits.
+
+[Complexity/Computability/Streaming/AMS.lean](../../Complexity/Computability/Streaming/AMS.lean) implements the AMS `F₂` sketch from Theorem 2.2. It keeps `2r` groups of `k` tug-of-war counters, each adding `sgn (h θ a) = ±1` per item, and answers the median over groups of the mean squared counter. The moment computations `𝔼 Z² = F₂` and `𝔼 (Z² - F₂)² ≤ 2F₂²` for four-wise independent signs are in [KWiseIndependent/TugOfWar.lean](../../Complexity/Probability/KWiseIndependent/TugOfWar.lean). The median-of-means amplification is in [MedianOfMeans.lean](../../Complexity/Probability/MedianOfMeans.lean), built on the lower median of [Finset/Median.lean](../../Complexity/Foundations/Data/Finset/Median.lean). `dens_amsSketch_error_le` and `solves_ams` give error `(8/9)^r` for relative accuracy `η` when `6 ≤ kη²`. The seeds are stored in the memory state, and `spaceLE_ams` charges them: `b` bits suffice once `(|ι|(2m+1))^(2rk) ≤ 2^b`. The test file instantiates the hypotheses with the four-wise independent trinomial hash family. It also shows that with a constant sign the sketch reports `F₁²` instead of `F₂`.
+
 ## Native streaming folds
 
 [Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean) gives actual machine-backed scans of raw bit strings through Christian Reitwiessner's streaming backend. A round holds an encoded accumulator and one input bit instead of copying the remaining input list. Time sums the round computation, old/new state encoding sizes and control; workspace takes a peak bound and charges retained accumulators. Read-only input and write-only output are excluded from work-tape space.
@@ -34,8 +48,9 @@ These are compositional native resource theorems on the [machine model](../machi
 
 ## Known Limitations
 
-The three meanings of “streaming” here should not be conflated: an input-list fold, an accurate stored probabilistic sketch, and a native machine scan with measured workspace. No automatic native realization of the Count-Min sketch was identified in its four source modules. The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions.
+The four meanings of “streaming” here should not be conflated: an input-list fold, an accurate stored probabilistic sketch, the abstract one-pass memory model with communication lower bounds, and a native machine scan with measured workspace. The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness, and the AMS sketch has no `ProbComp` sampler or machine realization. Multi-pass algorithms, turnstile updates, `F_k` for `k > 2` and CountSketch are not formalized. No automatic native realization of the Count-Min sketch was identified in its four source modules. The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions.
 
+[alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
 [sleatortarjan85]: ../sources.md#sleatortarjan85

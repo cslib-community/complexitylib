@@ -2813,6 +2813,10 @@ public import Complexity.Computability.RAM.Defs
 public import Complexity.Computability.RAM.Input
 public import Complexity.Computability.RAM.Squaring
 public import Complexity.Computability.Reduction.ManyOne
+public import Complexity.Computability.Streaming.AMS
+public import Complexity.Computability.Streaming.Basic
+public import Complexity.Computability.Streaming.Communication
+public import Complexity.Computability.Streaming.Distinctness
 public import Complexity.Computability.TreeEval.Ary.Basic
 public import Complexity.Computability.TreeEval.Ary.CookMertz
 public import Complexity.Computability.TreeEval.Ary.Descending
@@ -3911,6 +3915,7 @@ public import Complexity.Foundations.Data.Finset.KthLargest.Truncation
 public import Complexity.Foundations.Data.Finset.Lowest
 public import Complexity.Foundations.Data.Finset.LowestMax
 public import Complexity.Foundations.Data.Finset.Markov
+public import Complexity.Foundations.Data.Finset.Median
 public import Complexity.Foundations.Data.Finset.OrderGlue
 public import Complexity.Foundations.Data.Finset.OrderedFilter
 public import Complexity.Foundations.Data.Finset.Quantile
@@ -4573,9 +4578,11 @@ public import Complexity.Probability.KWiseIndependent.Reduced
 public import Complexity.Probability.KWiseIndependent.ReducedLimbs
 public import Complexity.Probability.KWiseIndependent.Restriction
 public import Complexity.Probability.KWiseIndependent.Trinomial
+public import Complexity.Probability.KWiseIndependent.TugOfWar
 public import Complexity.Probability.LinearCombination
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
+public import Complexity.Probability.MedianOfMeans
 public import Complexity.Probability.MinEntropy
 public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
