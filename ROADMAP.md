@@ -18,6 +18,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Program | Issues |
 | --- | --- |
 | Frontier program: ambitious theorems toward the research frontier | [#897]; its tracks are linked below |
+| Optional experiment: formalize unformalized STOC 2027 submission results, subject to independent source-correspondence review | [#2527] |
 | Metacomplexity: time-bounded Kolmogorov complexity, partial MCSP, hardness magnification | [#798], audit [#884] |
 | Plain computability: delete the tidy calculus, keeping a machine-level kernel | [#862], from [#456] |
 | Consolidation: duplicates, accurate statements and docs, less churn | [#949], [#939] |
@@ -1227,6 +1228,8 @@ not planned, not as proved.
 [#2423]: https://github.com/cslib-community/complexitylib/issues/2423
 
 [#2521]: https://github.com/cslib-community/complexitylib/issues/2521
+
+[#2527]: https://github.com/cslib-community/complexitylib/issues/2527
 
 [#2568]: https://github.com/cslib-community/complexitylib/issues/2568
 
