@@ -1,7 +1,7 @@
 # Mechanism design
 
 The modules under `Complexity/GameTheory/Mechanism/` formalize sealed-bid mechanisms with
-quasilinear utilities, following Roughgarden's CS364A lecture notes (2013), Lectures 2–4 and 7.
+quasilinear utilities, following Roughgarden's CS364A lecture notes (2013), Lectures 2–5 and 7.
 They are mathematical models of incentives: allocation and payment rules are arbitrary real
 functions, and no running time is charged. Hardness and approximation of the allocation
 problems, such as knapsack, are separate questions.
@@ -75,6 +75,50 @@ outcomes, `vcg f` uses the Clarke pivot `clarkePivot` (a `Finset.sup'`). `vcg_is
 `vcg_payment_nonneg` and `vcg_isIR` are Lecture 7, Theorem 2.1 and the remarks after (2) and
 (4). `exists_isDSIC_isWelfareMaximizing` packages them for `[Finite Ω] [Nonempty Ω]`.
 
+## Revenue maximization: virtual values and Myerson's optimal auction
+
+Import `Complexity.GameTheory.Mechanism.OptimalAuction` (Lecture 5; Myerson 1981). Valuations are
+independent, bidder `i`'s drawn from `μ i`. Expectations are Bochner integrals over the product
+`Measure.pi μ` of the payments at truthful bids `v`. The revelation principle is not formalized: a
+DSIC mechanism is compared with other DSIC mechanisms, both played truthfully.
+
+- `HasValueDensity μ f h` says `μ = (volume.restrict (Icc 0 h)).withDensity f` with
+  `f : ℝ → NNReal` measurable and positive on `(0, h)`. Positivity matters: `virtualValue μ f v =
+  v - μ.real (Ioi v) / f v` uses Lean's `x / 0 = 0`. Atoms and unbounded supports are excluded.
+- `IsRegular μ f h` is strict monotonicity of `virtualValue μ f` on `[0, h]` (Definition 3.1).
+  `IsRegular.strictMonoOn_Ici` extends it to `[0, ∞)`, where `φ(v) = v` above `h`.
+- `HasValueDensity.integral_payment_eq_integral_virtualValue_mul` is the one-bidder identity
+  `E[v g(v) - ∫₀ᵛ g] = E[φ(v) g(v)]` for any measurable `g` bounded on `[0, h]`. The proof
+  only reverses the order of integration and does not integrate by parts, so `g` need not be
+  monotone.
+- `integral_sum_myersonPayment_eq` (Revenue module, eq. (6)) states that expected revenue equals
+  expected virtual welfare for a measurable rule bounded on nonnegative profiles.
+  `Mechanism.IsDSIC.integral_sum_payment_eq` gives the same for normalized DSIC mechanisms, and
+  `Mechanism.IsDSIC.integral_sum_payment_le` gives the inequality for DSIC and IR mechanisms.
+- `IsVirtualWelfareMaximizing φ X x`: on every nonnegative profile `x b ∈ X` maximizes
+  `∑ i, φ i (b i) * y i`. `integral_sum_payment_le_myerson` is the optimality theorem: if `X ⊆ [0,
+  1]^ι` and `x` is a measurable virtual-welfare maximizer, then `myerson x` has the largest expected
+  revenue among DSIC, IR mechanisms with measurable allocations in `X`. The inequality does not
+  use regularity. Regularity makes `myerson x` DSIC through `IsVirtualWelfareMaximizing.isMonotone`
+  and `myerson_isDSIC_of_isVirtualWelfareMaximizing`, for any tie-breaking.
+- Single item, i.i.d. bidders: `Vickrey.reserveAllocation φ` sells to the Vickrey winner when its
+  virtual value is nonnegative. `Vickrey.integral_sum_payment_le_reserve` is its optimality. The
+  winner pays `max r (highestOtherBid b i)` (`Vickrey.myersonPayment_reserveAllocation`) for any
+  `IsReserveThreshold φ r`. `IsRegular.isReserveThreshold` shows that `reservePrice φ =
+  sInf {v | 0 ≤ v ∧ 0 ≤ φ v}` is one, even when `φ` is discontinuous, and `reservePrice_uniform`
+  gives `1/2` for `U[0, 1]`.
+
+Measurability of the virtual-welfare maximizer is a hypothesis of
+`integral_sum_payment_le_myerson`, because no measurable argmax selection is formalized. For the
+single-item rule it is proved (`Vickrey.measurable_reserveAllocation`), and so is the
+measurability of the plain Vickrey rule (`Vickrey.measurable_allocation`).
+
+To apply the theorem to a new distribution, prove `HasValueDensity` (following
+`hasValueDensity_uniform`), then `IsRegular` by computing `virtualValue` on `[0, h]` (following
+`virtualValue_uniform`). Supply a measurable virtual-welfare maximizer. If regularity fails, the
+inequality still holds, but `myerson x` need not be DSIC; that case needs ironing, which is not
+formalized.
+
 ## Worked examples
 
 The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) show the following:
@@ -88,6 +132,12 @@ The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) sh
 - Knapsack feasibility holds and fails on small inputs, and the existence theorems are
   nonvacuous.
 
+The [optimal-auction examples](../../ComplexityTests/GameTheory/OptimalAuction.lean) use
+`U[0, 1]`, which has reserve price `1/2`. With two bidders, bids `(0.3, 0.4)` do not sell. On
+`(0.6, 0.2)` bidder `0` pays `1/2`. On `(0.7, 0.9)` bidder `1` pays `0.7`. The plain Vickrey rule
+is not a virtual-welfare maximizer, and Myerson's theorem compares Vickrey with and without the
+reserve, so its hypotheses are satisfiable.
+
 To prove that a concrete rule is implementable, prove `IsMonotone` by `intro i b hb z hz z' hz'
 hzz'` followed by `change` to the explicit curve inequality. Then apply `myerson_isDSIC`, or, for
 0-1 rules, give a threshold and use `isMonotone_of_threshold`. If monotonicity fails at some
@@ -100,7 +150,9 @@ entry.
 
 Only dominant-strategy, deterministic, sealed-bid mechanisms are covered. Not yet formalized:
 the sponsored-search payment formula (Lecture 3, (8)–(9)), the greedy knapsack rule and its
-1/2-approximation (Lecture 4, §2.2, Theorem 2.1), Bayesian revenue maximization with virtual
-values (Lecture 5), the Green–Laffont/Holmström characterization of DSIC welfare maximizers, a
-bridge exhibiting single-parameter mechanisms as general ones (for example VCG specializing to
-Vickrey), and any computational cost of allocation rules. See `ROADMAP.md` and issue #2947.
+1/2-approximation (Lecture 4, §2.2, Theorem 2.1), ironing for irregular distributions,
+optimality among Bayesian incentive-compatible mechanisms (Lecture 5, §3.2), revenue equivalence
+and first-price equilibria, a measurable argmax for virtual-welfare maximization, the
+Green–Laffont/Holmström characterization of DSIC welfare maximizers, a bridge exhibiting
+single-parameter mechanisms as general ones (for example VCG specializing to Vickrey), and any
+computational cost of allocation rules. See `ROADMAP.md` and issues #2947 and #3001.
