@@ -687,9 +687,10 @@ universe size, not supplied as unverified input tables. In dependency order:
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
 - **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
-  vocabularies, add games for vocabularies with constants, pebble games with their
-  finite-variable equivalence theorems, Hanf and Gaifman locality, and further nondefinability
-  results such as connectivity and acyclicity of finite graphs; then
+  vocabularies and the [nondefinability of connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean)
+  by interpretation from finite linear orders, add games for vocabularies with constants, pebble
+  games with their finite-variable equivalence theorems, Hanf and Gaifman locality, and further
+  nondefinability results such as acyclicity of finite graphs; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
