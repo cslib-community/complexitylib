@@ -2640,6 +2640,7 @@ public import Complexity.Computability.PCP.LocalTest
 public import Complexity.Computability.PCP.LocalTest.DecisionTree
 public import Complexity.Computability.PCP.LocalTest.Repetition
 public import Complexity.Computability.PCP.ParallelRepetition.CoordinateModel
+public import Complexity.Computability.PCP.ParallelRepetition.Embedding
 public import Complexity.Computability.PCP.ParallelRepetition.Recursion
 public import Complexity.Computability.PCP.Power
 public import Complexity.Computability.PCP.Power.Complexity
