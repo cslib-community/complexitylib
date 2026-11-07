@@ -96,7 +96,7 @@ theorem hasSum_pow_natAbs (h0 : 0 ≤ α) (h1 : α < 1) :
   field_simp
 
 /-- The masses of the two-sided geometric distribution sum to one. -/
-theorem hasSum_twoSidedGeometricMass (h0 : 0 ≤ α) (h1 : α < 1) :
+theorem hasSum_mul_pow_natAbs (h0 : 0 ≤ α) (h1 : α < 1) :
     HasSum (fun z : ℤ => (1 - α) / (1 + α) * α ^ z.natAbs) 1 := by
   convert (hasSum_pow_natAbs h0 h1).mul_left ((1 - α) / (1 + α)) using 1
   have : (1 - α) ≠ 0 := by linarith
@@ -109,7 +109,7 @@ noncomputable def twoSidedGeometric (α : ℝ) (h0 : 0 ≤ α) (h1 : α < 1) : P
   ⟨fun z => ENNReal.ofReal ((1 - α) / (1 + α) * α ^ z.natAbs),
     hasSum_ofReal_of_hasSum_one
       (fun z => mul_nonneg (div_nonneg (by linarith) (by linarith)) (pow_nonneg h0 _))
-      (hasSum_twoSidedGeometricMass h0 h1)⟩
+      (hasSum_mul_pow_natAbs h0 h1)⟩
 
 /-- The mass of `z` under the two-sided geometric distribution. -/
 theorem twoSidedGeometric_apply (h0 : 0 ≤ α) (h1 : α < 1) (z : ℤ) :
@@ -145,7 +145,7 @@ theorem twoSidedGeometric_toOuterMeasure_Ici (h0 : 0 ≤ α) (h1 : α < 1) (m : 
   have h1' : 0 ≤ 1 - α := by linarith
   set C := (1 - α) / (1 + α) with hC
   rw [toOuterMeasure_eq_ofReal_tsum (f := fun z : ℤ => C * α ^ z.natAbs) (fun z => by positivity)
-    (hasSum_twoSidedGeometricMass h0 h1).summable _ (twoSidedGeometric_apply h0 h1)]
+    (hasSum_mul_pow_natAbs h0 h1).summable _ (twoSidedGeometric_apply h0 h1)]
   congr 1
   have hpos (n : ℕ) : (Set.Ici (m : ℤ)).indicator (fun z => C * α ^ z.natAbs) (n : ℤ) =
       if m ≤ n then C * α ^ n else 0 := by
@@ -185,7 +185,7 @@ theorem twoSidedGeometric_toOuterMeasure_le_natAbs (h0 : 0 ≤ α) (h1 : α < 1)
   have h1' : 0 ≤ 1 - α := by linarith
   set C := (1 - α) / (1 + α) with hC
   rw [toOuterMeasure_eq_ofReal_tsum (f := fun z : ℤ => C * α ^ z.natAbs) (fun z => by positivity)
-    (hasSum_twoSidedGeometricMass h0 h1).summable _ (twoSidedGeometric_apply h0 h1)]
+    (hasSum_mul_pow_natAbs h0 h1).summable _ (twoSidedGeometric_apply h0 h1)]
   congr 1
   set F : ℕ → ℝ := fun n => if m ≤ n then C * α ^ n else 0
   have hA : HasSum F (C * α ^ m * (1 - α)⁻¹) := hasSum_ite_le_mul_pow h0 h1 C m
