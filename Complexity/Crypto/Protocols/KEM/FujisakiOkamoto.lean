@@ -45,8 +45,9 @@ honest keys `H(m, c)` and implicit-rejection keys `H(s, c)` from a single untagg
 `false` tagging valid key derivations `H(false, m, c)` and `true` tagging implicit-rejection
 queries `H(true, fallback, c)`. This is a deliberate domain-separated variant (analogous to the
 separate implicit-rejection hash `J(s, c)` in ML-KEM / FIPS 203) that keeps the valid-key and
-rejection-key namespaces disjoint without altering the deterministic correctness and re-encryption
-rigidity properties proved below or weakening subsequent ROM security bounds.
+rejection-key namespaces disjoint. It does not affect the deterministic correctness and
+re-encryption rigidity lemmas proved below; its effect on random-oracle security bounds is not
+analysed in this module.
 
 Unlike the standard-model bit-string KEM interfaces in `Cslib.Crypto.Encryption.KEMINDCPA`
 (`Complexity/Crypto/Computational/Encryption/Hybrid.lean`),
