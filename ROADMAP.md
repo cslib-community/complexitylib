@@ -682,7 +682,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   problems.
 - Extend the synthesis rules to nested operator bodies and give regular-language quantifiers
   their ordered characteristic-word semantics.
-- Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
+- **FO(TC) = NL** on ordered structures
+  ([#1246](https://github.com/cslib-community/complexitylib/issues/1246)): closures under negation
+  in the native NL model checker via an inductive-counting block, and NL ⊆ FO(positive TC) via
+  configuration-graph reachability. Separately, the native NL closure facts this route bypasses:
+  intersection, union, logspace reductions and NL^(NL ∩ coNL) = NL.
+- Further logical characterizations on ordered structures: FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,
   structures and algorithms.
