@@ -110,8 +110,51 @@ The [embedding clients](../../ComplexityTests/Embeddability.lean) compose two ex
 from `ULift.{2} Bool`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) extracts a
 strategy from the one-fold repetition with `C = ∅`, which bounds every strategy of `chsh.pow 1`
 by `chsh.value`. Run `scripts/build.sh ComplexityTests.Embeddability ComplexityTests.TwoProverGame`.
-The library does not yet prove the coordinate embedding of Lemma 6.4, which would supply the
-embedding premise, or the parallel repetition bound
+The coordinate embedding of Lemma 6.4, which would supply the embedding premise, is not yet proved;
+[the next section](#model-the-coordinates-of-the-parallel-repetition-proof) sets up its random
+variables.
+
+## Model the coordinates of the parallel repetition proof
+
+Import [ParallelRepetition/CoordinateModel.lean](../../Complexity/Computability/PCP/ParallelRepetition/CoordinateModel.lean)
+to work with the random variables of the proof of Holenstein's Lemma 6.4 [holenstein09][holenstein09].
+Fix a game `G` with finite question types, tuple strategies `ha` and `hb` of `G.pow n`, a set
+`C : Finset (Fin n)` of conditioned coordinates, and a support witness `hC` for
+`G.winsOn ha hb C`, as in `winProbOn_insert_le`. The coordinates `j : {i // i ∉ C}` are free.
+Holenstein conditions on `C = {k + 1, …, n}`; any `C` works here.
+
+- A sample `ω : Sample X Y C` is a pair `(d, q)`: a bit `d j` for each free coordinate and a
+  question pair `q i` for each coordinate. `sampleLaw G C` draws the bits uniformly and the pairs
+  independently from `G.questions`, with masses given by `sampleLaw_apply`.
+  `condLaw G C ha hb hC` conditions it on winning every coordinate in `C`. Write each law of the
+  proof as the image `(condLaw G C ha hb hC).map f` of this one law.
+- The variables are functions of `ω`. `revealed C ω` is Holenstein's `T`: the pairs on `C`, and at
+  each free `j` one half of the pair, `inl x` when the bit is `true` and `inr y` when it is
+  `false`. So the bit `false` plays the role of Holenstein's `D_j = 0`, and `pairGiven G (.inr y)`
+  draws Alice's question from `P_{X | Y = y}`. `answers C ha hb ω.2` is `V`, the answers on `C`.
+  `ω.2 j` is the whole pair at `j`, where Holenstein's `U_j` is only its hidden half.
+  `shared ha hb j ω` is `S`: `T` without its half at `j`, together with `V`.
+- `map_condLaw_questions` identifies the image of `condLaw` under
+  `fun ω => (Prod.fst ∘ ω.2, Prod.snd ∘ ω.2)` with `(G.pow n).questions.filter (G.winsOn ha hb C) hC`,
+  the law in `winProbOn_insert_le`. `map_snd_condLaw` writes the pairs as a conditioned product,
+  the input of `sq_sum_dist_map_filter_pi_le`, and `toOuterMeasure_pi_winsOnPairs` gives the
+  probability of the event.
+- `toOuterMeasure_condLaw_bit` proves `Pr[D_j = b | W_C] = 1 / 2`, the premise of Claim 6.1
+  (`dist_filter_le_two_mul`). `map_filter_condLaw_bit` removes a condition `D_j = b` from the law
+  of any variable that ignores the bit `d j`; for `shared`, `shared_update` proves that it does.
+- `map_sampleLaw_eq_sideJoint` and `map_fst_sideKernel` show that the law of `((T, V), U)` has the
+  form that Corollary 4.3 requires. `sum_dist_condLaw_le` is the resulting (6.5): summed over the
+  free `j`, the distance between the law of `((T, V), ω.2 j)` under `condLaw` and the law that
+  redraws the pair at `j` from `pairGiven G` of its revealed half is at most
+  `√(#Cᶜ (#C ln (|A| |B|) + ln (1 / Pr[W_C])) / 2)`. The logarithms are natural; Holenstein's
+  (6.6) uses bits and has no factor `1 / 2`.
+
+The [coordinate-model clients](../../ComplexityTests/RepetitionCoordinateModel.lean) compute
+`pairGiven` and a sample mass for the CHSH questions, derive from (6.5) that the redrawn law is
+exact when `C = ∅`, remove the bit condition from the law of `S`, and pass an embedding into the
+model's law to `winProbOn_insert_le`. Run
+`scripts/build.sh ComplexityTests.RepetitionCoordinateModel`. The library does not yet prove the
+remaining steps (6.7)–(6.19), the embedding of Lemma 6.4, or the parallel repetition bound
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
