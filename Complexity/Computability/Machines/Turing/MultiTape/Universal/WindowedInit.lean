@@ -261,10 +261,11 @@ private lemma fin_inO : ComputableTidilyInO (fun m : Desc × ℕ × List (Option
       (fun n => (encUnary n).length) fun n => (encUnary n).length :=
     of_linear (.of_cons_true fun n => by simp only [encUnary_apply, List.replicate_succ])
   have hr := (takeU eSym).comp_linear (pxs.prod (hs.comp_linear pt))
-  have htape := ((const (encIn := eMid) (encMid := encInt) (0 : ℤ)).prod (hl.prod hr)).of_enc_eq
-    (encOut := eTape) (g := fun m : Desc × ℕ × List (Option ℕ) =>
-      (⟨0, if decide (m.2.1 = 0) then [] else [some 0], m.2.2.take (m.2.1 + 1)⟩ : Tape))
-    fun m => rfl
+  have htape :=
+    ((const (encIn := eMid) (encMid := encIntUnary) (0 : ℤ)).prod (hl.prod hr)).of_enc_eq
+      (encOut := eTape) (g := fun m : Desc × ℕ × List (Option ℕ) =>
+        (⟨0, if decide (m.2.1 = 0) then [] else [some 0], m.2.2.take (m.2.1 + 1)⟩ : Tape))
+      fun m => rfl
   have hb := (ComputableTidilyInDegree.replicate eTape).inO.comp
     ((hf.fst'.comp_linear pd).prod (const (encMid := eTape) (⟨0, [], []⟩ : Tape)))
   have hw := (htape.prod hb).of_enc_eq (encOut := encList eTape)
