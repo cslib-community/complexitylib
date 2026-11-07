@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Complexity.Problems.ChromaticNumber
+import Complexity.Computability.Complexity.Problems.Graph.VertexColors
 
 /-!
 # Chromatic number: tests
@@ -70,17 +71,16 @@ example : triangle.induced.chromaticNumber ≤ 3 :=
 /-! ### Witnesses -/
 
 -- A color is read at the first occurrence of a vertex, with `0` past the end of the list.
-example : ChromaticNumber.colorAt [5, 7, 5] [2, 0, 1] 5 = 2 ∧
-    ChromaticNumber.colorAt [5, 7, 5] [2, 0, 1] 7 = 0 ∧
-    ChromaticNumber.colorAt [5, 7] [2] 7 = 0 ∧ ChromaticNumber.colorAt [5, 7] [2, 3] 9 = 0 :=
+example : colorOf ([5, 7, 5], []) [2, 0, 1] 5 = 2 ∧ colorOf ([5, 7, 5], []) [2, 0, 1] 7 = 0 ∧
+    colorOf ([5, 7], []) [2] 7 = 0 ∧ colorOf ([5, 7], []) [2, 3] 9 = 0 :=
   ⟨rfl, rfl, rfl, rfl⟩
 
-example : ChromaticNumber.colorAt [5, 7] ([5, 7].map fun v => v + 1) 7 = 8 :=
-  ChromaticNumber.colorAt_map (by simp)
+example : colorOf ([5, 7], []) ([5, 7].map fun v => v + 1) 7 = 8 :=
+  colorOf_map (G := ([5, 7], [])) (by simp)
 
 -- Compositional `fun_prop` synthesis for colors read from computed lists.
-example : ComputableInPolyTime (fun p : List ℕ × ℕ => ChromaticNumber.colorAt p.1 p.1 p.2)
-    (encPair (encList encNat) encNat) encNat := by
+example : ComputableInPolyTime (fun p : (Graph × List ℕ) × ℕ => colorOf p.1.1 p.1.2 0)
+    (encPair (encPair encGraph (encList encNat)) encNat) encNat := by
   fun_prop
 
 end ComplexityTests.ChromaticNumber

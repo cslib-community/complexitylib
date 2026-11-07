@@ -42,7 +42,7 @@ example : PolyTimeReducible encGraph (encPair encGraph encNat) ThreeColoring Cli
 
 -- The path `0 - 1 - 2` is covered by the cliques `{0, 1}` and `{2}`, but by no single clique.
 example : (path3, 2) ∈ CliqueCover := by
-  rw [mem_CliqueCover_iff_compl, mem_ChromaticNumber_iff, mem_KColoring_iff]
+  rw [Graph.mem_CliqueCover_iff_compl, mem_ChromaticNumber_iff, mem_KColoring_iff]
   refine ⟨fun v => if v = 2 then 1 else 0, by decide, fun u hu v hv huv => ?_⟩
   rw [← Graph.adjBool_eq_true_iff] at huv
   have hu' : u ∈ path3.1 := hu
@@ -51,7 +51,7 @@ example : (path3, 2) ∈ CliqueCover := by
   rcases hu' with rfl | rfl | rfl <;> rcases hv' with rfl | rfl | rfl <;> revert huv <;> decide
 
 example : (path3, 1) ∉ CliqueCover := by
-  rw [mem_CliqueCover_iff_compl, mem_ChromaticNumber_iff, mem_KColoring_iff]
+  rw [Graph.mem_CliqueCover_iff_compl, mem_ChromaticNumber_iff, mem_KColoring_iff]
   rintro ⟨c, hc, hadj⟩
   have h₀ := hc 0 (by decide)
   have h₂ := hc 2 (by decide)
@@ -60,7 +60,7 @@ example : (path3, 1) ∉ CliqueCover := by
 
 -- Karp's reduction: the triangle is 3-colorable, so its complement is covered by 3 cliques.
 example : (triangle.compl, 3) ∈ CliqueCover :=
-  compl_mem_CliqueCover_iff.2 (by
+  Graph.compl_mem_CliqueCover_iff.2 (by
     rw [mem_ChromaticNumber_iff, mem_KColoring_iff]
     exact ⟨id, by decide, fun u _ v _ huv => huv.ne⟩)
 

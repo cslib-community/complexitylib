@@ -24,7 +24,7 @@ The cliques of a cover may be taken to be the color classes of a coloring of the
 (`SimpleGraph.exists_cliqueCover_iff_colorable_compl`), so complementing the graph on its declared
 vertices (`Cslib.Complexity.Graph.compl`) reduces `CliqueCover` and `ChromaticNumber` to each
 other. Karp's reduction from CHROMATIC NUMBER maps `(G, k)` to the complement of `G` with `k`
-cliques (`Cslib.Complexity.compl_mem_CliqueCover_iff`); the converse reduction gives `NP`
+cliques (`Cslib.Complexity.Graph.compl_mem_CliqueCover_iff`); the converse reduction gives `NP`
 membership.
 
 ## Main definitions
@@ -34,9 +34,9 @@ membership.
 
 ## Main results
 
-* `Cslib.Complexity.mem_CliqueCover_iff_compl`: a cover by `l` cliques is an `l`-coloring of the
-  complement.
-* `Cslib.Complexity.compl_mem_CliqueCover_iff`: correctness of Karp's reduction.
+* `Cslib.Complexity.Graph.mem_CliqueCover_iff_compl`: a cover by `l` cliques is an `l`-coloring
+  of the complement.
+* `Cslib.Complexity.Graph.compl_mem_CliqueCover_iff`: correctness of Karp's reduction.
 * `Cslib.Complexity.polyTimeReducible_ChromaticNumber_CliqueCover`,
   `Cslib.Complexity.polyTimeReducible_CliqueCover_ChromaticNumber`: the two reductions.
 * `Cslib.Complexity.CliqueCover.mem_NP`, `Cslib.Complexity.CliqueCover_npHard`,
@@ -66,7 +66,7 @@ given number of cliques. -/
 def CliqueCover : Set (Graph × ℕ) := {x | x.1.CoveredByCliques x.2}
 
 /-- A graph has a cover by `l` cliques exactly when its complement is `l`-colorable. -/
-theorem mem_CliqueCover_iff_compl {G : Graph} {l : ℕ} :
+theorem Graph.mem_CliqueCover_iff_compl {G : Graph} {l : ℕ} :
     (G, l) ∈ CliqueCover ↔ (G.compl, l) ∈ ChromaticNumber := by
   change G.CoveredByCliques l ↔ G.compl.induced.Colorable l
   rw [Graph.induced_compl]
@@ -74,7 +74,7 @@ theorem mem_CliqueCover_iff_compl {G : Graph} {l : ℕ} :
 
 /-- **Karp's reduction from `ChromaticNumber`.** A graph is `k`-colorable exactly when its
 complement is covered by `k` cliques. -/
-theorem compl_mem_CliqueCover_iff {G : Graph} {k : ℕ} :
+theorem Graph.compl_mem_CliqueCover_iff {G : Graph} {k : ℕ} :
     (G.compl, k) ∈ CliqueCover ↔ (G, k) ∈ ChromaticNumber := by
   change G.compl.CoveredByCliques k ↔ G.induced.Colorable k
   unfold Graph.CoveredByCliques
@@ -86,13 +86,13 @@ theorem compl_mem_CliqueCover_iff {G : Graph} {k : ℕ} :
 theorem polyTimeReducible_ChromaticNumber_CliqueCover :
     PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) ChromaticNumber
       CliqueCover :=
-  ⟨fun x => (x.1.compl, x.2), by fun_prop, fun ⟨_, _⟩ => compl_mem_CliqueCover_iff.symm⟩
+  ⟨fun x => (x.1.compl, x.2), by fun_prop, fun ⟨_, _⟩ => Graph.compl_mem_CliqueCover_iff.symm⟩
 
 /-- `CliqueCover` reduces to `ChromaticNumber` in polynomial time by complementing the graph. -/
 theorem polyTimeReducible_CliqueCover_ChromaticNumber :
     PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) CliqueCover
       ChromaticNumber :=
-  ⟨fun x => (x.1.compl, x.2), by fun_prop, fun ⟨_, _⟩ => mem_CliqueCover_iff_compl⟩
+  ⟨fun x => (x.1.compl, x.2), by fun_prop, fun ⟨_, _⟩ => Graph.mem_CliqueCover_iff_compl⟩
 
 /-- `CliqueCover` belongs to `NP`. -/
 theorem CliqueCover.mem_NP : CliqueCover ∈ NP (encPair encGraph encNat) :=
