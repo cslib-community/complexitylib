@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Foundations.Data.BiTape
 public import Cslib.Computability.Machines.Turing.SingleTape.Deterministic
+public import Complexity.Computability.Machines.Turing.SingleTape.Decision
 import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
 
 /-!
@@ -25,21 +26,29 @@ the states entered by the steps whose head move crosses that boundary.
 
 * `Cslib.Turing.SingleTapeTM.AbsCfg`, `AbsCfg.next`, `AbsCfg.run`, `absInit`: the run in
   absolute coordinates. `Agrees` links it to the `BiTape` configurations of `tm.step`.
+* `Cslib.Turing.SingleTapeTM.AbsCfg.scanned`: the symbol under the head.
+* `Cslib.Turing.SingleTapeTM.AbsCfg.shift d`: translation by `d` cells.
 * `Cslib.Turing.SingleTapeTM.AbsCfg.crossings k a t`: the crossing sequence at boundary `k`
   during the first `t` steps from `a`.
 
 ## Main results
 
-* `Cslib.Turing.SingleTapeTM.absRun_of_outputsWithinTime`: if `tm.OutputsWithinTime l l' t`,
-  the absolute run from `absInit l` has halted at step `t` with the head on the first symbol of
-  `l'`.
+* `Cslib.Turing.SingleTapeTM.absRun_of_relatesWithinSteps`: if `tm.step` leads from the initial
+  configuration on `l` to a halted configuration within `t` steps, the absolute run from
+  `absInit l` has halted at step `t` and scans the same symbol. `absRun_of_outputsWithinTime`
+  and `DecidesByHeadInTime.absRun` specialize it.
+* `Cslib.Turing.SingleTapeTM.AbsCfg.run_shift`, `AbsCfg.crossings_shift`: translation
+  invariance of runs and crossing sequences.
 * `Cslib.Turing.SingleTapeTM.AbsCfg.sum_length_crossings_le`: for any finite set of boundaries,
   the crossing sequences during `t` steps have total length at most `t`.
-* `Cslib.Turing.SingleTapeTM.cut_and_paste`: let `|u₁| = |u₂|`. If the runs on `u₁ ++ v₁` and
-  `u₂ ++ v₂` halt within `t₁` and `t₂` steps with equal crossing sequences at the boundary
-  after the prefix, then the run on `u₁ ++ v₂` halts within `t₁ + t₂` steps with the same
-  crossing sequence, and the first symbol of its output is the first symbol of one of the two
-  original outputs.
+* `Cslib.Turing.SingleTapeTM.cut_and_paste_run`: let the prefixes `u₁, u₂` be both empty or both
+  nonempty. If the runs on `u₁ ++ v₁` and `u₂ ++ v₂` have halted by steps `t₁` and `t₂` with
+  equal crossing sequences after the prefixes, then the run on `u₁ ++ v₂` has halted by step
+  `t₁ + t₂`. On the left of `|u₁|` its crossing sequences are those of the first run, on the
+  right those of the second run, shifted by `|u₂| - |u₁|`. It scans the final symbol of one of
+  the two runs.
+* `Cslib.Turing.SingleTapeTM.cut_and_paste`: the same for canonical outputs: any output of `tm`
+  on `u₁ ++ v₂` begins with the first symbol of one of the two original outputs.
 
 ## References
 
@@ -136,6 +145,43 @@ lemma AbsCfg.run_zero (a : tm.AbsCfg) : a.run 0 = a := rfl
 lemma AbsCfg.run_of_none {a : tm.AbsCfg} (h : a.state = none) (t : ℕ) : a.run t = a :=
   Function.iterate_fixed (next_of_none h) t
 
+/-- The symbol under the head. -/
+@[expose] def AbsCfg.scanned (c : tm.AbsCfg) : Option Symbol := c.cells c.pos
+
+/-- Translate a configuration `d` cells to the right: the head and every cell move by `d`. -/
+@[expose] def AbsCfg.shift (d : ℤ) (c : tm.AbsCfg) : tm.AbsCfg :=
+  ⟨c.state, c.pos + d, fun p => c.cells (p - d)⟩
+
+@[simp] lemma AbsCfg.shift_state (d : ℤ) (c : tm.AbsCfg) : (c.shift d).state = c.state := rfl
+
+@[simp] lemma AbsCfg.shift_pos (d : ℤ) (c : tm.AbsCfg) : (c.shift d).pos = c.pos + d := rfl
+
+@[simp] lemma AbsCfg.shift_cells (d : ℤ) (c : tm.AbsCfg) (p : ℤ) :
+    (c.shift d).cells p = c.cells (p - d) := rfl
+
+@[simp] lemma AbsCfg.scanned_shift (d : ℤ) (c : tm.AbsCfg) : (c.shift d).scanned = c.scanned := by
+  simp [scanned]
+
+/-- **Translation invariance.** Shifting commutes with a step. -/
+lemma AbsCfg.next_shift (d : ℤ) (c : tm.AbsCfg) : (c.shift d).next = c.next.shift d := by
+  rcases c with ⟨_ | q, p, f⟩
+  · rfl
+  · simp only [shift, next, add_sub_cancel_right]
+    congr 1
+    · exact add_right_comm _ _ _
+    · funext x
+      by_cases hx : x = p + d
+      · subst hx
+        simp
+      · rw [Function.update_of_ne hx, Function.update_of_ne (fun h => hx (by omega))]
+
+/-- **Translation invariance.** Shifting commutes with running. -/
+lemma AbsCfg.run_shift (d : ℤ) (c : tm.AbsCfg) (t : ℕ) :
+    (c.shift d).run t = (c.run t).shift d := by
+  induction t generalizing c with
+  | zero => rfl
+  | succ t ih => rw [run_succ, run_succ, next_shift, ih]
+
 /-- Cell `p` lies to the left of the boundary between cells `k - 1` and `k`. -/
 @[expose] def IsLeftOf (k p : ℤ) : Prop := p < k
 
@@ -201,6 +247,72 @@ lemma AbsCfg.crossings_of_none {a : tm.AbsCfg} (h : a.state = none) (k : ℤ) (t
   induction t with
   | zero => rfl
   | succ t ih => simp [crossings, next_of_none h, ih]
+
+/-- **Translation invariance.** The shifted run crosses the shifted boundary in the same
+states. -/
+lemma AbsCfg.crossings_shift (d k : ℤ) (c : tm.AbsCfg) (t : ℕ) :
+    (c.shift d).crossings (k + d) t = c.crossings k t := by
+  induction t generalizing c with
+  | zero => rfl
+  | succ t ih =>
+    have hl (p : ℤ) : IsLeftOf (k + d) (p + d) ↔ IsLeftOf k p := add_lt_add_iff_right d
+    simp only [crossings, next_shift, shift_pos, shift_state, hl, ih]
+
+/-- One step from `a` to `a.next` that stays strictly left of `k` crosses no boundary
+`k' ≥ k`. -/
+private lemma AbsCfg.crossings_succ_of_left {k k' : ℤ} (hk : k ≤ k') {a : tm.AbsCfg} {t : ℕ}
+    (h1 : IsLeftOf k a.pos) (h2 : IsLeftOf k a.next.pos) :
+    a.crossings k' (t + 1) = a.next.crossings k' t := by
+  have hc : IsLeftOf k' a.pos ↔ IsLeftOf k' a.next.pos := by
+    unfold IsLeftOf at *
+    exact ⟨fun _ => by omega, fun _ => by omega⟩
+  simp only [crossings, hc, ite_true]
+
+/-- One step from `a` to `a.next` that stays at or right of `k` crosses no boundary
+`k' ≤ k`. -/
+private lemma AbsCfg.crossings_succ_of_right {k k' : ℤ} (hk : k' ≤ k) {a : tm.AbsCfg} {t : ℕ}
+    (h1 : ¬ IsLeftOf k a.pos) (h2 : ¬ IsLeftOf k a.next.pos) :
+    a.crossings k' (t + 1) = a.next.crossings k' t := by
+  have hc : IsLeftOf k' a.pos ↔ IsLeftOf k' a.next.pos := by
+    unfold IsLeftOf at *
+    exact ⟨fun _ => by omega, fun _ => by omega⟩
+  simp only [crossings, hc, ite_true]
+
+/-- A run that starts left of `k` and never crosses `k` crosses no boundary `k' ≥ k`. -/
+private lemma AbsCfg.crossings_eq_nil_of_left {k k' : ℤ} (hk : k ≤ k') :
+    ∀ {t : ℕ} {a : tm.AbsCfg}, IsLeftOf k a.pos → a.crossings k t = [] →
+      a.crossings k' t = [] := by
+  intro t
+  induction t with
+  | zero => intro a _ _; rfl
+  | succ t ih =>
+    intro a ha h
+    simp only [crossings] at h
+    split_ifs at h with hc
+    rw [crossings_succ_of_left hk ha (hc.mp ha)]
+    exact ih (hc.mp ha) h
+
+/-- A run that starts at or right of `k` and never crosses `k` crosses no boundary `k' ≤ k`. -/
+private lemma AbsCfg.crossings_eq_nil_of_right {k k' : ℤ} (hk : k' ≤ k) :
+    ∀ {t : ℕ} {a : tm.AbsCfg}, ¬ IsLeftOf k a.pos → a.crossings k t = [] →
+      a.crossings k' t = [] := by
+  intro t
+  induction t with
+  | zero => intro a _ _; rfl
+  | succ t ih =>
+    intro a ha h
+    simp only [crossings] at h
+    split_ifs at h with hc
+    rw [crossings_succ_of_right hk ha (not_congr hc |>.mp ha)]
+    exact ih (not_congr hc |>.mp ha) h
+
+/-- Two runs whose first steps have the same endpoints and target state, and whose remaining
+crossing sequences at `k` agree, have equal crossing sequences at `k`. -/
+private lemma AbsCfg.crossings_succ_congr {k : ℤ} {C A : tm.AbsCfg} {t s : ℕ}
+    (hp : C.pos = A.pos) (hp' : C.next.pos = A.next.pos) (hs : C.next.state = A.next.state)
+    (h : C.next.crossings k t = A.next.crossings k s) :
+    C.crossings k (t + 1) = A.crossings k (s + 1) := by
+  simp only [crossings, hp, hp', hs, h]
 
 private lemma AbsCfg.next_cells_of_ne (a : tm.AbsCfg) {p : ℤ} (hp : p ≠ a.pos) :
     a.next.cells p = a.cells p := by
@@ -402,6 +514,29 @@ private lemma AbsCfg.run_split (a : tm.AbsCfg) {j T : ℕ} (hj : j < T) :
   congr 1
   omega
 
+/-- Split a crossing sequence after step `j`, keeping step `j + 1` in the second part. -/
+private lemma AbsCfg.crossings_split (a : tm.AbsCfg) {j T : ℕ} (hj : j < T) (k : ℤ) :
+    a.crossings k T = a.crossings k j ++ (a.run j).crossings k (T - j - 1 + 1) := by
+  rw [← crossings_add]
+  congr 1
+  omega
+
+/-- While the splice follows the left run, its next step agrees with the left run's. -/
+private lemma Splice.next_agree_left {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C)
+    (hC : IsLeftOf k C.pos) : C.next.state = L.next.state ∧ C.next.pos = L.next.pos := by
+  obtain ⟨hs, hp⟩ := h.follow_left hC
+  have hcell : C.cells C.pos = L.cells L.pos := by rw [h.cells, ite_eq_left hC, hp]
+  obtain ⟨hs', hp', -⟩ := AbsCfg.next_agree hs hp hcell
+  exact ⟨hs', hp'⟩
+
+/-- While the splice follows the right run, its next step agrees with the right run's. -/
+private lemma Splice.next_agree_right {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C)
+    (hC : ¬ IsLeftOf k C.pos) : C.next.state = R.next.state ∧ C.next.pos = R.next.pos := by
+  obtain ⟨hs, hp⟩ := h.follow_right hC
+  have hcell : C.cells C.pos = R.cells R.pos := by rw [h.cells, ite_eq_right hC, hp]
+  obtain ⟨hs', hp', -⟩ := AbsCfg.next_agree hs hp hcell
+  exact ⟨hs', hp'⟩
+
 /-- Advancing the parked right run through steps without crossings preserves the splice. -/
 private lemma Splice.run_right_of_nil {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C)
     (hC : IsLeftOf k C.pos) {t : ℕ} (h0 : R.crossings k t = []) : Splice k L (R.run t) C := by
@@ -427,20 +562,24 @@ private lemma Splice.run_left_of_nil {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k
   · rw [ite_eq_right hp, ite_eq_right hp]
 
 /-- **Cut-and-paste, absolute form.** If the left and right runs halt within `T₁` and `T₂`
-steps with equal crossing sequences at `k`, the splice halts within `T₁ + T₂` steps with the same
-crossing sequence, and its final configuration is the splice of the two final ones. -/
+steps with equal crossing sequences at `k`, the splice halts within `T₁ + T₂` steps and its
+final configuration is the splice of the two final ones. At every boundary `k' ≤ k` the splice
+has the crossing sequence of the left run, and at every boundary `k' ≥ k` that of the right
+run. -/
 private theorem Splice.run_halts {k : ℤ} :
     ∀ (n : ℕ) {L R C : tm.AbsCfg} {T₁ T₂ : ℕ}, T₁ + T₂ ≤ n → Splice k L R C →
       (L.run T₁).state = none → (R.run T₂).state = none →
       L.crossings k T₁ = R.crossings k T₂ →
-      ∃ T ≤ T₁ + T₂, (C.run T).state = none ∧ C.crossings k T = L.crossings k T₁ ∧
+      ∃ T ≤ T₁ + T₂, (C.run T).state = none ∧
+        (∀ k' ≤ k, C.crossings k' T = L.crossings k' T₁) ∧
+        (∀ k', k ≤ k' → C.crossings k' T = R.crossings k' T₂) ∧
         Splice k (L.run T₁) (R.run T₂) (C.run T) := by
   intro n
   induction n with
   | zero =>
     intro L R C T₁ T₂ hT h hL hR _
     obtain ⟨rfl, rfl⟩ : T₁ = 0 ∧ T₂ = 0 := by omega
-    refine ⟨0, le_rfl, ?_, rfl, h⟩
+    refine ⟨0, le_rfl, ?_, fun _ _ => rfl, fun _ _ => rfl, h⟩
     by_cases hC : IsLeftOf k C.pos
     · rw [AbsCfg.run_zero, (h.follow_left hC).1]; exact hL
     · rw [AbsCfg.run_zero, (h.follow_right hC).1]; exact hR
@@ -448,11 +587,13 @@ private theorem Splice.run_halts {k : ℤ} :
     intro L R C T₁ T₂ hT h hL hR hx
     by_cases hC : IsLeftOf k C.pos
     · obtain ⟨hsL, hpL⟩ := h.follow_left hC
+      have hRside : IsLeftOf k R.pos := h.right_side.mpr hC
       by_cases hL0 : L.state = none
       · have hnil : L.crossings k T₁ = [] := AbsCfg.crossings_of_none hL0 k T₁
         have hR0 : R.crossings k T₂ = [] := hx ▸ hnil
-        refine ⟨0, Nat.zero_le _, by rw [AbsCfg.run_zero, hsL]; exact hL0, by
-          rw [hnil]; rfl, ?_⟩
+        refine ⟨0, Nat.zero_le _, by rw [AbsCfg.run_zero, hsL]; exact hL0,
+          fun k' _ => (AbsCfg.crossings_of_none hL0 k' T₁).symm,
+          fun k' hk' => (AbsCfg.crossings_eq_nil_of_left hk' hRside hR0).symm, ?_⟩
         rw [AbsCfg.run_of_none hL0, AbsCfg.run_zero]
         exact h.run_right_of_nil hC hR0
       · obtain ⟨T₁, rfl⟩ : ∃ m, T₁ = m + 1 := by
@@ -461,40 +602,44 @@ private theorem Splice.run_halts {k : ℤ} :
           · exact ⟨m, rfl⟩
         rw [AbsCfg.run_succ] at hL
         have hLside : IsLeftOf k L.pos := h.left_side.mpr hC
+        obtain ⟨hsn, hpn⟩ := h.next_agree_left hC
         by_cases hs : IsLeftOf k L.pos ↔ IsLeftOf k L.next.pos
         · have hcr : L.crossings k (T₁ + 1) = L.next.crossings k T₁ := by
             simp only [AbsCfg.crossings, hs, ite_true]
-          obtain ⟨T, hT', hhalt, hcs, hsp⟩ :=
-            ih (by omega) (h.next_left hC (hs.mp hLside)) hL hR (hcr ▸ hx)
-          have hC' : IsLeftOf k C.next.pos :=
-            (h.next_left hC (hs.mp hLside)).left_side.mp (hs.mp hLside)
-          refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, ?_, ?_⟩
-          · simp only [AbsCfg.crossings, iff_of_true hC hC', ite_true]
-            rw [hcs]
-            exact hcr.symm
-          · rw [AbsCfg.run_succ, AbsCfg.run_succ]; exact hsp
+          have hsp0 := h.next_left hC (hs.mp hLside)
+          obtain ⟨T, hT', hhalt, hcL, hcR, hsp⟩ := ih (by omega) hsp0 hL hR (hcr ▸ hx)
+          have hC' : IsLeftOf k C.next.pos := hsp0.left_side.mp (hs.mp hLside)
+          refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt,
+            fun k' hk' => AbsCfg.crossings_succ_congr hpL hpn hsn (hcL k' hk'),
+            fun k' hk' => ?_, by rw [AbsCfg.run_succ, AbsCfg.run_succ]; exact hsp⟩
+          rw [AbsCfg.crossings_succ_of_left hk' hC hC']
+          exact hcR k' hk'
         · have hcr : L.crossings k (T₁ + 1) = L.next.state :: L.next.crossings k T₁ := by
             simp only [AbsCfg.crossings, hs, ite_false]
           obtain ⟨j, hj, h0, hxj, hstj, hrest⟩ := AbsCfg.exists_first_crossing (hcr ▸ hx).symm
           have hn : ¬ IsLeftOf k L.next.pos := fun h' => hs ⟨fun _ => h', fun _ => hLside⟩
           have hsp1 := h.next_cross_right hC hn h0 hxj hstj
+          have hR' : IsLeftOf k (R.run j).pos := (AbsCfg.run_of_crossings_nil h0).1.mpr hRside
+          obtain ⟨hR'k, hR'nk⟩ :=
+            AbsCfg.cross_right hR' (fun h' => hxj ⟨fun _ => h', fun _ => hR'⟩)
+          obtain ⟨hLk1, hLk⟩ := AbsCfg.cross_right hLside hn
           rw [AbsCfg.run_split R hj] at hR ⊢
-          obtain ⟨T, hT', hhalt, hcs, hsp⟩ := ih (by omega) hsp1 hL hR hrest.symm
-          refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, ?_, ?_⟩
-          · have hCn : ¬ IsLeftOf k C.next.pos := fun h' => hn (hsp1.left_side.mpr h')
-            have hsC : C.next.state = L.next.state := (hsp1.follow_right hCn).1.trans hstj
-            have hne : ¬(IsLeftOf k C.pos ↔ IsLeftOf k C.next.pos) := fun h' => hCn (h'.mp hC)
-            simp only [AbsCfg.crossings, hne, ite_false]
-            rw [hcs, hsC]
-            exact hcr.symm
-          · rw [AbsCfg.run_succ, AbsCfg.run_succ]; exact hsp
+          obtain ⟨T, hT', hhalt, hcL, hcR, hsp⟩ := ih (by omega) hsp1 hL hR hrest.symm
+          refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt,
+            fun k' hk' => AbsCfg.crossings_succ_congr hpL hpn hsn (hcL k' hk'),
+            fun k' hk' => ?_, by rw [AbsCfg.run_succ, AbsCfg.run_succ]; exact hsp⟩
+          rw [AbsCfg.crossings_split R hj, AbsCfg.crossings_eq_nil_of_left hk' hRside h0,
+            List.nil_append]
+          exact AbsCfg.crossings_succ_congr (hpL.trans (hLk1.trans hR'k.symm))
+            (hpn.trans (hLk.trans hR'nk.symm)) (hsn.trans hstj.symm) (hcR k' hk')
     · obtain ⟨hsR, hpR⟩ := h.follow_right hC
-      rw [hx]
+      have hLside : ¬ IsLeftOf k L.pos := fun h' => hC (h.left_side.mp h')
       by_cases hR0 : R.state = none
       · have hnil : R.crossings k T₂ = [] := AbsCfg.crossings_of_none hR0 k T₂
         have hL0 : L.crossings k T₁ = [] := hx ▸ hnil
-        refine ⟨0, Nat.zero_le _, by rw [AbsCfg.run_zero, hsR]; exact hR0, by
-          rw [hnil]; rfl, ?_⟩
+        refine ⟨0, Nat.zero_le _, by rw [AbsCfg.run_zero, hsR]; exact hR0,
+          fun k' hk' => (AbsCfg.crossings_eq_nil_of_right hk' hLside hL0).symm,
+          fun k' _ => (AbsCfg.crossings_of_none hR0 k' T₂).symm, ?_⟩
         rw [AbsCfg.run_of_none hR0, AbsCfg.run_zero]
         exact h.run_left_of_nil hC hL0
       · obtain ⟨T₂, rfl⟩ : ∃ m, T₂ = m + 1 := by
@@ -503,19 +648,19 @@ private theorem Splice.run_halts {k : ℤ} :
           · exact ⟨m, rfl⟩
         rw [AbsCfg.run_succ] at hR
         have hRside : ¬ IsLeftOf k R.pos := fun h' => hC (h.right_side.mp h')
+        obtain ⟨hsn, hpn⟩ := h.next_agree_right hC
         by_cases hs : IsLeftOf k R.pos ↔ IsLeftOf k R.next.pos
         · have hcr : R.crossings k (T₂ + 1) = R.next.crossings k T₂ := by
             simp only [AbsCfg.crossings, hs, ite_true]
           have hn : ¬ IsLeftOf k R.next.pos := fun h' => hRside (hs.mpr h')
-          obtain ⟨T, hT', hhalt, hcs, hsp⟩ :=
-            ih (by omega) (h.next_right hC hn) hL hR (hcr ▸ hx)
-          have hC' : ¬ IsLeftOf k C.next.pos := fun h' =>
-            hn ((h.next_right hC hn).right_side.mpr h')
-          refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, ?_, ?_⟩
-          · simp only [AbsCfg.crossings, iff_of_false hC hC', ite_true]
-            rw [hcs, hx]
-            rfl
-          · rw [AbsCfg.run_succ, AbsCfg.run_succ]; exact hsp
+          have hsp0 := h.next_right hC hn
+          obtain ⟨T, hT', hhalt, hcL, hcR, hsp⟩ := ih (by omega) hsp0 hL hR (hcr ▸ hx)
+          have hC' : ¬ IsLeftOf k C.next.pos := fun h' => hn (hsp0.right_side.mpr h')
+          refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, fun k' hk' => ?_,
+            fun k' hk' => AbsCfg.crossings_succ_congr hpR hpn hsn (hcR k' hk'),
+            by rw [AbsCfg.run_succ, AbsCfg.run_succ]; exact hsp⟩
+          rw [AbsCfg.crossings_succ_of_right hk' hC hC']
+          exact hcL k' hk'
         · have hcr : R.crossings k (T₂ + 1) = R.next.state :: R.next.crossings k T₂ := by
             simp only [AbsCfg.crossings, hs, ite_false]
           obtain ⟨j, hj, h0, hxj, hstj, hrest⟩ := AbsCfg.exists_first_crossing (hx.trans hcr)
@@ -523,16 +668,22 @@ private theorem Splice.run_halts {k : ℤ} :
             by_contra h'
             exact hs ⟨fun h'' => (hRside h'').elim, fun h'' => (h' h'').elim⟩
           have hsp1 := h.next_cross_left hC hn h0 hxj hstj
+          have hL' : ¬ IsLeftOf k (L.run j).pos :=
+            fun h' => hLside ((AbsCfg.run_of_crossings_nil h0).1.mp h')
+          have hL'n : IsLeftOf k (L.run j).next.pos := by
+            by_contra h'
+            exact hxj ⟨fun h'' => (hL' h'').elim, fun h'' => (h' h'').elim⟩
+          obtain ⟨hL'k, hL'nk⟩ := AbsCfg.cross_left hL' hL'n
+          obtain ⟨hRk, hRnk⟩ := AbsCfg.cross_left hRside hn
           rw [AbsCfg.run_split L hj] at hL ⊢
-          obtain ⟨T, hT', hhalt, hcs, hsp⟩ := ih (by omega) hsp1 hL hR hrest
-          refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, ?_, ?_⟩
-          · have hCn : IsLeftOf k C.next.pos := hsp1.right_side.mp hn
-            have hsC : C.next.state = R.next.state := (hsp1.follow_left hCn).1.trans hstj
-            have hne : ¬(IsLeftOf k C.pos ↔ IsLeftOf k C.next.pos) := fun h' => hC (h'.mpr hCn)
-            simp only [AbsCfg.crossings, hne, ite_false]
-            rw [hcs, hsC, hrest]
-            exact hcr.symm
-          · rw [AbsCfg.run_succ, AbsCfg.run_succ]; exact hsp
+          obtain ⟨T, hT', hhalt, hcL, hcR, hsp⟩ := ih (by omega) hsp1 hL hR hrest
+          refine ⟨T + 1, by omega, by rw [AbsCfg.run_succ]; exact hhalt, fun k' hk' => ?_,
+            fun k' hk' => AbsCfg.crossings_succ_congr hpR hpn hsn (hcR k' hk'),
+            by rw [AbsCfg.run_succ, AbsCfg.run_succ]; exact hsp⟩
+          rw [AbsCfg.crossings_split L hj, AbsCfg.crossings_eq_nil_of_right hk' hLside h0,
+            List.nil_append]
+          exact AbsCfg.crossings_succ_congr (hpR.trans (hRk.trans hL'k.symm))
+            (hpn.trans (hRnk.trans hL'nk.symm)) (hsn.trans hstj.symm) (hcL k' hk')
 
 /-- Agreement is preserved along a run of the finite machine. -/
 lemma Agrees.relatesInSteps {c c' : tm.Cfg} {a : tm.AbsCfg} {m : ℕ} (h : Agrees c a)
@@ -542,55 +693,6 @@ lemma Agrees.relatesInSteps {c c' : tm.Cfg} {a : tm.AbsCfg} {m : ℕ} (h : Agree
   | tail t' t'' n _ hstep ih =>
     rw [AbsCfg.run, Function.iterate_succ_apply']
     exact (ih h).step hstep
-
-/-- If `tm` outputs `l'` on `l` within `t` steps, then the absolute run has halted by time `t`,
-and the cell under its head holds the first symbol of `l'`. -/
-theorem absRun_of_outputsWithinTime {l l' : List Symbol} {t : ℕ}
-    (h : tm.OutputsWithinTime l l' t) :
-    ((tm.absInit l).run t).state = none ∧
-      ((tm.absInit l).run t).cells ((tm.absInit l).run t).pos = l'.head? := by
-  obtain ⟨m, hm, hr⟩ := h
-  have hag := (agrees_init (tm := tm) l).relatesInSteps hr
-  have hhalt : ((tm.absInit l).run m).state = none := hag.1.symm
-  obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hm
-  have hrun : (tm.absInit l).run (m + d) = (tm.absInit l).run m := by
-    rw [AbsCfg.run, Nat.add_comm, Function.iterate_add_apply]
-    exact Function.iterate_fixed (AbsCfg.next_of_none hhalt) d
-  rw [hrun]
-  refine ⟨hhalt, ?_⟩
-  rw [← hag.2.head]
-  simp [haltCfg]
-
-omit [Inhabited Symbol] [Fintype Symbol] in
-private lemma read_mk₁_append_left {u v v' : List Symbol} {p : ℤ} (hp : p < u.length) :
-    (BiTape.mk₁ (u ++ v)).read p = (BiTape.mk₁ (u ++ v')).read p := by
-  rw [BiTape.read_mk₁, BiTape.read_mk₁]
-  split_ifs with h0
-  · rw [List.getElem?_append_left (by omega), List.getElem?_append_left (by omega)]
-  · rfl
-
-omit [Inhabited Symbol] [Fintype Symbol] in
-private lemma read_mk₁_append_right {u u' v : List Symbol} (hu : u.length = u'.length) {p : ℤ}
-    (hp : ¬ p < u.length) :
-    (BiTape.mk₁ (u ++ v)).read p = (BiTape.mk₁ (u' ++ v)).read p := by
-  rw [BiTape.read_mk₁, BiTape.read_mk₁, ite_eq_left_of_eq_true _ _ (eq_true (by omega)),
-    ite_eq_left_of_eq_true _ _ (eq_true (by omega)),
-    List.getElem?_append_right (by omega), List.getElem?_append_right (by omega), hu]
-
-/-- The initial configuration on `u₁ ++ v₂` is the splice at `|u₁|` of those on `u₁ ++ v₁` and
-`u₂ ++ v₂`, when `|u₁| = |u₂|`. -/
-private lemma splice_absInit {u₁ v₁ u₂ v₂ : List Symbol} (hu : u₁.length = u₂.length) :
-    Splice (u₁.length : ℤ) (tm.absInit (u₁ ++ v₁)) (tm.absInit (u₂ ++ v₂))
-      (tm.absInit (u₁ ++ v₂)) where
-  cells p := by
-    simp only [absInit]
-    split_ifs with hp
-    · exact read_mk₁_append_left hp
-    · exact read_mk₁_append_right hu hp
-  left_side := Iff.rfl
-  right_side := Iff.rfl
-  follow_left _ := ⟨rfl, rfl⟩
-  follow_right _ := ⟨rfl, rfl⟩
 
 lemma AbsCfg.run_add (a : tm.AbsCfg) (s t : ℕ) : a.run (s + t) = (a.run s).run t := by
   rw [run, run, run, Nat.add_comm, Function.iterate_add_apply]
@@ -604,26 +706,149 @@ lemma AbsCfg.run_eq_of_halted (a : tm.AbsCfg) {s t : ℕ} (hs : (a.run s).state 
   · obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le h
     rw [run_add, run_of_none ht]
 
-/-- The symbol under the head of the final configuration of a splice is the one under the head
-of the final configuration of the run owning that side. -/
+/-- If `tm` reaches a halted configuration `c` from the initial configuration on `l` within `t`
+steps, then the absolute run has halted by time `t` and scans the symbol under the head of
+`c`. -/
+theorem absRun_of_relatesWithinSteps {l : List Symbol} {c : tm.Cfg} {t : ℕ}
+    (h : RelatesWithinSteps tm.TransitionRelation (tm.initCfg l) c t) (hc : c.state = none) :
+    ((tm.absInit l).run t).state = none ∧ ((tm.absInit l).run t).scanned = c.BiTape.head := by
+  obtain ⟨m, hm, hr⟩ := h
+  have hag := (agrees_init (tm := tm) l).relatesInSteps hr
+  have hhalt : ((tm.absInit l).run m).state = none := hag.1.symm.trans hc
+  obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hm
+  rw [AbsCfg.run_add, AbsCfg.run_of_none hhalt]
+  exact ⟨hhalt, hag.2.head.symm⟩
+
+/-- If `tm` outputs `l'` on `l` within `t` steps, then the absolute run has halted by time `t`,
+and the cell under its head holds the first symbol of `l'`. -/
+theorem absRun_of_outputsWithinTime {l l' : List Symbol} {t : ℕ}
+    (h : tm.OutputsWithinTime l l' t) :
+    ((tm.absInit l).run t).state = none ∧ ((tm.absInit l).run t).scanned = l'.head? := by
+  have h' := absRun_of_relatesWithinSteps (c := tm.haltCfg l') h rfl
+  simpa [haltCfg] using h'
+
+/-- A decider that answers under the head has halted in the absolute run by the time bound, and
+the scanned cell then holds `yes` exactly on members of the language. -/
+theorem DecidesByHeadInTime.absRun {α : Type*} {ι : α → Symbol} {L : Language α} {yes : Symbol}
+    {T : ℕ → ℕ} (h : tm.DecidesByHeadInTime ι L yes T) (w : List α) :
+    ((tm.absInit (w.map ι)).run (T w.length)).state = none ∧
+      (((tm.absInit (w.map ι)).run (T w.length)).scanned = some yes ↔ w ∈ L) := by
+  obtain ⟨c, hr, hc, hyes⟩ := h w
+  obtain ⟨h1, h2⟩ := absRun_of_relatesWithinSteps hr hc
+  refine ⟨h1, ?_⟩
+  rw [h2]
+  exact hyes
+
+omit [Inhabited Symbol] [Fintype Symbol] in
+private lemma read_mk₁_append_left {u v v' : List Symbol} {p : ℤ} (hp : p < u.length) :
+    (BiTape.mk₁ (u ++ v)).read p = (BiTape.mk₁ (u ++ v')).read p := by
+  rw [BiTape.read_mk₁, BiTape.read_mk₁]
+  split_ifs with h0
+  · rw [List.getElem?_append_left (by omega), List.getElem?_append_left (by omega)]
+  · rfl
+
+/-- The initial configuration on `u₁ ++ v₂` is the splice at `|u₁|` of the initial configuration
+on `u₁ ++ v₁` and that on `u₂ ++ v₂` translated by `|u₁| - |u₂|`. The prefixes must be both
+empty or both nonempty, so that all three heads start on the same side of the boundary. -/
+private lemma splice_absInit {u₁ v₁ u₂ v₂ : List Symbol} (hu : u₁ = [] ↔ u₂ = []) :
+    Splice (u₁.length : ℤ) (tm.absInit (u₁ ++ v₁))
+      ((tm.absInit (u₂ ++ v₂)).shift ((u₁.length : ℤ) - u₂.length))
+      (tm.absInit (u₁ ++ v₂)) where
+  cells p := by
+    simp only [absInit, AbsCfg.shift_cells]
+    split_ifs with hp
+    · exact read_mk₁_append_left hp
+    · unfold IsLeftOf at hp
+      rw [BiTape.read_mk₁, BiTape.read_mk₁, ite_eq_left_of_eq_true _ _ (eq_true (by omega)),
+        ite_eq_left_of_eq_true _ _ (eq_true (by omega)),
+        List.getElem?_append_right (by omega), List.getElem?_append_right (by omega)]
+      congr 1
+      omega
+  left_side := Iff.rfl
+  right_side := by
+    simp only [absInit, AbsCfg.shift_pos, IsLeftOf, zero_add]
+    rw [← List.length_eq_zero_iff, ← List.length_eq_zero_iff] at hu
+    omega
+  follow_left _ := ⟨rfl, rfl⟩
+  follow_right hp := by
+    simp only [absInit, IsLeftOf] at hp
+    have h1 : u₁ = [] := List.length_eq_zero_iff.mp (by omega)
+    have h2 : u₂ = [] := hu.mp h1
+    subst h1 h2
+    simp [absInit]
+
+/-- The symbol under the head of a splice is the one under the head of the run owning that
+side. -/
 private lemma Splice.head_cell {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k L R C) :
-    C.cells C.pos = L.cells L.pos ∨ C.cells C.pos = R.cells R.pos := by
+    C.scanned = L.scanned ∨ C.scanned = R.scanned := by
   by_cases hC : IsLeftOf k C.pos
   · left
-    rw [h.cells, ite_eq_left hC, (h.follow_left hC).2]
+    rw [AbsCfg.scanned, h.cells, ite_eq_left hC, (h.follow_left hC).2]
+    rfl
   · right
-    rw [h.cells, ite_eq_right hC, (h.follow_right hC).2]
+    rw [AbsCfg.scanned, h.cells, ite_eq_right hC, (h.follow_right hC).2]
+    rfl
 
-/-- **Cut-and-paste lemma** (Hennie). Let `|u₁| = |u₂|`. If `tm` outputs `o₁` on `u₁ ++ v₁`
-within `t₁` steps and `o₂` on `u₂ ++ v₂` within `t₂` steps, with the same crossing sequence at the
-boundary after `u₁`, then the run on `u₁ ++ v₂` halts within `t₁ + t₂` steps with that crossing
-sequence, and any output `o` of `tm` on `u₁ ++ v₂` begins with the first symbol of `o₁` or of
-`o₂`. -/
+/-- **Cut-and-paste lemma, run form** (Hennie). Let the prefixes `u₁, u₂` be both empty or both
+nonempty. Suppose the runs on `u₁ ++ v₁` and `u₂ ++ v₂` have halted by steps `t₁` and `t₂`,
+with the same crossing sequence at the boundary after the prefix. Then the run on `u₁ ++ v₂`
+has halted by step `t₁ + t₂`. At every boundary `k ≤ |u₁|` its crossing sequence is that of the
+run on `u₁ ++ v₁`, and at every boundary `k ≥ |u₁|` it is that of the run on `u₂ ++ v₂` at the
+corresponding boundary `k - |u₁| + |u₂|`. The symbol under its head at the halt is the one under
+the head of one of the two original runs at its halt. -/
+theorem cut_and_paste_run {u₁ v₁ u₂ v₂ : List Symbol} {t₁ t₂ : ℕ} (hu : u₁ = [] ↔ u₂ = [])
+    (h₁ : ((tm.absInit (u₁ ++ v₁)).run t₁).state = none)
+    (h₂ : ((tm.absInit (u₂ ++ v₂)).run t₂).state = none)
+    (hx : (tm.absInit (u₁ ++ v₁)).crossings u₁.length t₁ =
+      (tm.absInit (u₂ ++ v₂)).crossings u₂.length t₂) :
+    ((tm.absInit (u₁ ++ v₂)).run (t₁ + t₂)).state = none ∧
+      (∀ k : ℤ, k ≤ u₁.length → (tm.absInit (u₁ ++ v₂)).crossings k (t₁ + t₂) =
+        (tm.absInit (u₁ ++ v₁)).crossings k t₁) ∧
+      (∀ k : ℤ, (u₁.length : ℤ) ≤ k → (tm.absInit (u₁ ++ v₂)).crossings k (t₁ + t₂) =
+        (tm.absInit (u₂ ++ v₂)).crossings (k - u₁.length + u₂.length) t₂) ∧
+      (((tm.absInit (u₁ ++ v₂)).run (t₁ + t₂)).scanned =
+          ((tm.absInit (u₁ ++ v₁)).run t₁).scanned ∨
+        ((tm.absInit (u₁ ++ v₂)).run (t₁ + t₂)).scanned =
+          ((tm.absInit (u₂ ++ v₂)).run t₂).scanned) := by
+  have hsp := splice_absInit (tm := tm) (v₁ := v₁) (v₂ := v₂) hu
+  have hR : (((tm.absInit (u₂ ++ v₂)).shift ((u₁.length : ℤ) - u₂.length)).run t₂).state =
+      none := by
+    rw [AbsCfg.run_shift, AbsCfg.shift_state]
+    exact h₂
+  have hx' : (tm.absInit (u₁ ++ v₁)).crossings u₁.length t₁ =
+      ((tm.absInit (u₂ ++ v₂)).shift ((u₁.length : ℤ) - u₂.length)).crossings u₁.length t₂ := by
+    rw [hx, ← AbsCfg.crossings_shift ((u₁.length : ℤ) - u₂.length) (u₂.length : ℤ)
+      (tm.absInit (u₂ ++ v₂))]
+    congr 1
+    omega
+  obtain ⟨T, hT, hC, hcL, hcR, hsp'⟩ := Splice.run_halts _ le_rfl hsp h₁ hR hx'
+  obtain ⟨e, he⟩ := Nat.exists_eq_add_of_le hT
+  have hrun : (tm.absInit (u₁ ++ v₂)).run (t₁ + t₂) = (tm.absInit (u₁ ++ v₂)).run T := by
+    rw [he, AbsCfg.run_add, AbsCfg.run_of_none hC]
+  have hcr (k : ℤ) : (tm.absInit (u₁ ++ v₂)).crossings k (t₁ + t₂) =
+      (tm.absInit (u₁ ++ v₂)).crossings k T := by
+    rw [he, AbsCfg.crossings_add, AbsCfg.crossings_of_none hC, List.append_nil]
+  refine ⟨hrun ▸ hC, fun k hk => (hcr k).trans (hcL k hk), fun k hk => ?_, ?_⟩
+  · rw [hcr, hcR k hk, ← AbsCfg.crossings_shift ((u₁.length : ℤ) - u₂.length)
+      (k - u₁.length + u₂.length) (tm.absInit (u₂ ++ v₂))]
+    congr 1
+    omega
+  · rw [hrun]
+    rcases hsp'.head_cell with h | h
+    · exact Or.inl h
+    · right
+      rw [h, AbsCfg.run_shift, AbsCfg.scanned_shift]
+
+/-- **Cut-and-paste lemma** (Hennie). Let the prefixes `u₁, u₂` be both empty or both
+nonempty. If `tm` outputs `o₁` on `u₁ ++ v₁` within `t₁` steps and `o₂` on `u₂ ++ v₂` within
+`t₂` steps, with the same crossing sequence at the boundary after the prefix, then the run on
+`u₁ ++ v₂` halts within `t₁ + t₂` steps with that crossing sequence after `u₁`, and any output
+`o` of `tm` on `u₁ ++ v₂` begins with the first symbol of `o₁` or of `o₂`. -/
 theorem cut_and_paste {u₁ v₁ u₂ v₂ o₁ o₂ : List Symbol} {t₁ t₂ : ℕ}
-    (hu : u₁.length = u₂.length) (h₁ : tm.OutputsWithinTime (u₁ ++ v₁) o₁ t₁)
+    (hu : u₁ = [] ↔ u₂ = []) (h₁ : tm.OutputsWithinTime (u₁ ++ v₁) o₁ t₁)
     (h₂ : tm.OutputsWithinTime (u₂ ++ v₂) o₂ t₂)
     (hx : (tm.absInit (u₁ ++ v₁)).crossings u₁.length t₁ =
-      (tm.absInit (u₂ ++ v₂)).crossings u₁.length t₂) :
+      (tm.absInit (u₂ ++ v₂)).crossings u₂.length t₂) :
     ((tm.absInit (u₁ ++ v₂)).run (t₁ + t₂)).state = none ∧
       (tm.absInit (u₁ ++ v₂)).crossings u₁.length (t₁ + t₂) =
         (tm.absInit (u₁ ++ v₁)).crossings u₁.length t₁ ∧
@@ -631,14 +856,10 @@ theorem cut_and_paste {u₁ v₁ u₂ v₂ o₁ o₂ : List Symbol} {t₁ t₂ :
         o.head? = o₁.head? ∨ o.head? = o₂.head? := by
   obtain ⟨hL, hLc⟩ := absRun_of_outputsWithinTime h₁
   obtain ⟨hR, hRc⟩ := absRun_of_outputsWithinTime h₂
-  obtain ⟨T, hT, hC, hcs, hsp⟩ := Splice.run_halts _ le_rfl (splice_absInit hu) hL hR hx
-  obtain ⟨d, hd⟩ := Nat.exists_eq_add_of_le hT
-  refine ⟨by rw [hd, AbsCfg.run_add, AbsCfg.run_of_none hC]; exact hC, ?_, ?_⟩
-  · rw [hd, AbsCfg.crossings_add, AbsCfg.crossings_of_none hC, List.append_nil, hcs]
-  · intro o t ho
-    obtain ⟨hO, hOc⟩ := absRun_of_outputsWithinTime ho
-    rw [← hOc, AbsCfg.run_eq_of_halted _ hO hC, ← hLc, ← hRc]
-    exact hsp.head_cell
-
+  obtain ⟨hC, hcL, -, hhead⟩ := cut_and_paste_run hu hL hR hx
+  refine ⟨hC, hcL _ le_rfl, fun ho => ?_⟩
+  obtain ⟨hO, hOc⟩ := absRun_of_outputsWithinTime ho
+  rw [← hOc, AbsCfg.run_eq_of_halted _ hO hC, ← hLc, ← hRc]
+  exact hhead
 
 end Cslib.Turing.SingleTapeTM
