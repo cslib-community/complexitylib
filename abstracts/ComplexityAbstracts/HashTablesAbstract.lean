@@ -70,6 +70,18 @@ polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4` where requ
   `∃ (Seed : Type) (μ_init : PMF (CoupledState Seed r))` produced by `p_init` is quantified
   **before** `∀ ops : List (DictOp U)`, and `ops` is fixed before the random choices of `p_init`
   and `p_op`.
+- **Threshold-derived constants:** In `uniformProbing` and `cuckooHashing` the per-operation
+  charges `upOpCharge`, `cuckooQueryCharge` and `cuckooInsertCharge` do not depend on `n_max`,
+  but below `regimeThreshold = 2 ^ 320000` they only cap quantities that grow with `n_max`.
+  `upOpCharge` allows `13` instructions for each of `regimeThreshold` probes, a cap on the
+  deterministic probe count `n_max + 1`; the library's bound of at most `3` expected probes holds
+  only for `n_max ≥ regimeThreshold` and is not stated here. The cuckoo charges price every hash
+  evaluation at the largest polynomial degree used below the threshold (`cuckooKBound = 3840026`).
+  These `O(1)` bounds are therefore asymptotic statements, met trivially at realizable
+  capacities: a linear scan of the stored keys at up to `13` instructions per key stays within
+  `upOpCharge` for every `n_max < regimeThreshold`, and the cuckoo charges (more than
+  `8 * 10 ^ 11` instructions per operation) exceed a linear scan's cost for capacities up to
+  about `10 ^ 10`.
 
 A reader only needs to inspect the definitions and theorem statements in this file to verify that
 the formalization proves the intended mathematical claims; Lean verifies the proofs through
@@ -648,7 +660,8 @@ theorem linearProbing :
 
 /-- Double-tabulation threshold `2 ^ 320000` (`doubleTabThreshold 4`) at `c_exp = 4`, corresponding
 to character bit-width `charBits n_max ≥ 4 * (8 + 48 * 4) ^ 2 = 160000`. Note that constants
-derived from `regimeThreshold` in uniform probing and cuckoo hashing are astronomically large. -/
+derived from `regimeThreshold` in uniform probing and cuckoo hashing are astronomically large; see
+the threshold-derived constants note in the module documentation. -/
 def regimeThreshold : ℕ :=
   2 ^ 320000
 
@@ -714,7 +727,8 @@ def upHashEvalSteps : ℕ :=
 `13 * regimeThreshold + upHashEvalSteps + 8 = 13 * 2 ^ 320000 + 13739` for uniform probing at
 `c_exp = 4` (independent of `n_max` and `U`; astronomically large because the unconditional
 all-`n_max` probe bound uses `regimeThreshold = 2 ^ 320000` below the double-tabulation
-threshold). -/
+threshold). Below that threshold it only caps the deterministic probe count `n_max + 1`, so a
+linear scan of the stored keys at up to `13` instructions per key also meets it. -/
 def upOpCharge : ℕ :=
   13 * regimeThreshold + upHashEvalSteps + 8
 
@@ -737,7 +751,8 @@ memory in `[base, base + upSpace n_max)`, there exists an initial coupled distri
   `upInitSteps n_max + T_ops ≤ upInitSteps n_max + ops.length * upOpCharge`
   (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected executed instructions per `query` or
   `insert`, independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no
-  bound is stated on static code length).
+  bound is stated on static code length). Below `regimeThreshold` this charge only caps the
+  deterministic probe count, so the bound is met trivially at every realizable `n_max`.
 
 References: `[CLRS2009]` (3rd ed., Section 11.4, pp. 269–277); `[SchmidtSiegel1990]` (STOC 1990,
 pp. 224–234; NYU Courant Technical Report `TR1995-687`, May 1995, pp. 1–2, 4–7, 37–39);
@@ -880,18 +895,22 @@ function (`h₁` or `h₂`) at `c_exp = 4` under `U ≤ max n_max 4 ^ 4` (with `
 def cuckooEvalHashBound : ℕ :=
   max (((11 * 100 + 12) * 100 + 30) * cuckooKBound + 19) (doubleTabEvalSteps 8 64) + 4
 
-/-- Worst-case deterministic instruction bound `2 * (cuckooEvalHashBound + 36) + 31 = 854252184109`
-for the two-probe `query` subprogram at `c_exp = 4`. -/
+/-- Instruction allowance `2 * (cuckooEvalHashBound + 36) + 31 = 854252184109` for the two-probe
+`query` subprogram at `c_exp = 4`, an ingredient of `cuckooQueryCharge`. This abstract asserts no
+worst-case bound for the subprogram. -/
 def cuckooQueryStepsBound : ℕ :=
   2 * (cuckooEvalHashBound + 36) + 31
 
-/-- Worst-case deterministic instruction bound `cuckooQueryStepsBound + 2 = 854252184111` for a
-`query` operation via `p_op` at `c_exp = 4`. -/
+/-- Expected instruction charge `cuckooQueryStepsBound + 2 = 854252184111` for a `query` operation
+via `p_op` at `c_exp = 4`. `cuckooHashing` asserts it only through the expected total cost of an
+operation sequence (`ExecProgramDist` bounds `expectedTime`); no worst-case bound for a single
+query is stated. -/
 def cuckooQueryCharge : ℕ :=
   cuckooQueryStepsBound + 2
 
-/-- Worst-case deterministic instruction bound `2 * (cuckooEvalHashBound + 54) + 59 = 854252184173`
-for a single two-table cuckoo displacement round at `c_exp = 4`. -/
+/-- Instruction allowance `2 * (cuckooEvalHashBound + 54) + 59 = 854252184173` for a single
+two-table cuckoo displacement round at `c_exp = 4`, an ingredient of `cuckooInsertCharge`. This
+abstract asserts no worst-case bound for a round. -/
 def cuckooEvictIterBound : ℕ :=
   2 * (cuckooEvalHashBound + 54) + 59
 
@@ -962,7 +981,8 @@ that:
   `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + ops.length * cuckooInsertCharge`
   (independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no bound is
   stated on static code length; constants reflect `cuckooKBound = 3840026` from the
-  double-tabulation threshold `regimeThreshold = 2 ^ 320000`).
+  double-tabulation threshold `regimeThreshold = 2 ^ 320000`, so at realizable capacities these
+  bounds are met trivially; see the threshold-derived constants note in the module documentation).
 
 References: `[PaghRodler2004]` (8 Dec 2003 author manuscript / *J. Algorithms* 51(2):122–144, 2004,
 Section 2.3 "Analysis", manuscript pp. 6–10: Lemma 1 p. 7, Eq. (3) p. 9, rehash analysis pp. 9–10);

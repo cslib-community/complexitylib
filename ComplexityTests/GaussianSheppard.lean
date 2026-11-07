@@ -43,7 +43,8 @@ example : (stdGaussian (EuclideanSpace ℝ (Fin 2))).real
     {x | (0 : ℝ) ∈ Ι ⟪e 0, x⟫ ⟪e 1, x⟫} = 1 / 2 := by
   rw [measureReal_stdGaussian_zero_mem_uIoc_eq_arccos (by simp) (by simp),
     EuclideanSpace.inner_single_left]
-  simp [arccos_zero]
+  simp only [Fin.isValue, conj_trivial, ne_eq, zero_ne_one, not_false_eq_true,
+    PiLp.single_eq_of_ne, mul_zero, arccos_zero]
   field_simp
 
 /-- Opposite vectors: the projections differ in sign with probability `1`. -/

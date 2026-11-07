@@ -9,7 +9,6 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.VisitorCall
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalLocalEmission
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalFold
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalPackedBounds
 
 /-!

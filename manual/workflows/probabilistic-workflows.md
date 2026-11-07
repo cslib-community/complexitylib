@@ -35,7 +35,8 @@ The actual total mass in the second term is necessary for arbitrary finite measu
 
 For common weights use `tvDist_nnreal_smul`; for a fixed component with changed weights use
 `tvDist_nnreal_smul_same`. The latter is an equality, including zero weights and the zero
-measure. `tvDist_finsetSum_le` handles finite sums directly. All statements keep the full-L1
+measure. `tvDist_add_le` (and `etvDist_add_le`) and `tvDist_finsetSum_le` handle binary and
+finite sums directly. All statements keep the full-L1
 convention: distinct probability atoms have distance two.
 
 The [checked clients](../../ComplexityTests/TotalVariationMixture.lean) include sharp unequal-mass
@@ -45,6 +46,196 @@ joint error of `4 * ε + δ`. The tags are actual measurable pushforwards, so ma
 supplies their component bounds. Run `scripts/build.sh ComplexityTests.TotalVariationMixture`.
 The [Regev joint experiment](https://github.com/cslib-community/complexitylib/issues/2767) still
 has to discharge those bounds for its actual Gaussian laws and residue marginal.
+
+## Condition and compare finite PMFs
+
+Import [PMF/Filter.lean](../../Complexity/Probability/PMF/Filter.lean) to rewrite a conditioned
+law `p.filter s h`. Mathlib's `PMF.filter` takes a support witness `h : ∃ a ∈ s, a ∈ p.support`,
+so each lemma assumes such a witness for every conditioned law it mentions; an event of
+probability zero cannot be conditioned on. `toOuterMeasure_filter_mul_eq_inter` states
+`Pr_{p | s}[t] · Pr_p[s] = Pr_p[s ∩ t]` without dividing. `filter_filter`, `filter_map` (for a
+preimage event `f ⁻¹' s`) and `filter_eq_self_of_support_subset` move conditioning past a second
+condition, a relabeling and an almost sure event. For a two-stage law
+`μ.bind fun a => (K a).map (a, ·)`, `filter_bind_pair` conditions the first stage on an event about
+`a` and keeps the kernel. When the second draw is independent of the first,
+`filter_bind_pair_prod` conditions both factors on a rectangle `s ×ˢ t`, and
+`map_snd_filter_bind_pair_prod` shows that the condition on `a` does not affect the law of `b`.
+
+Import [StatisticalDistance/Event.lean](../../Complexity/Probability/StatisticalDistance/Event.lean)
+to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
+over a finite type, active after `open scoped Cslib.Probability.PMF`. It uses the half-L1
+convention: distinct point masses have distance `1`, half of Mathlib's `tvDist` above.
+`abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`, and
+`dist_map_of_injective` keeps the distance unchanged under an injective relabeling. Import
+[Product/Split.lean](../../Complexity/Probability/Product/Split.lean) to split an independent
+product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
+satisfying `P` and the remaining coordinates form two independent products.
+
+The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two fair bits on
+rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
+`scripts/build.sh ComplexityTests.PMFConditioning`.
+
+## Compose local embeddings and extract a strategy
+
+Import [CorrelatedSampling/Embeddability.lean](../../Complexity/Probability/CorrelatedSampling/Embeddability.lean)
+for `IsEmbeddable P₀ P₁ ε`, Holenstein's Definition 5.1 [holenstein09][holenstein09]. From
+`(x, y) ~ P₀`, Alice and Bob use shared randomness, but no communication, to produce `s` and `t`
+so that `((x, y), (s, t))` is within statistical distance `ε` of `P₁`. The types may live in any
+universes, and `IsEmbeddable.of_dist_le` accepts randomness from any type.
+
+- `IsEmbeddable.mono` weakens the error.
+- `IsEmbeddable.map` lets each party post-process its own output, for instance to forget part of
+  it.
+- `IsEmbeddable.trans` composes two embeddings and adds their errors. The second embedding's input
+  is the law of `((x, s), (y, t))` under `P₁`; the result is regrouped as
+  `((x, y), ((s, u), (t, v)))`.
+- `isEmbeddable_map_fst_of_apply_eq_mul` embeds exactly when the masses of a law of
+  `((x, y), (s, t))` factor as `c x y · f x s · g y t`, with `f` and `g` finite. The same file
+  proves Lemmas 5.2 and 5.4 and Corollary 5.3.
+- `dist_withKernel_condY_le` bounds the left side of the second hypothesis of Corollary 5.3,
+  `dist J (withKernel P₀ fun xy => condY J xy.2)`, by the distance of `J` from the law that keeps
+  `(y, s)` and redraws `x` from a kernel `K` with `P₀ = P_Y K`, plus the distance of the
+  `y`-marginals. `dist_withKernel_condX_le` is the mirror image for the first hypothesis.
+
+Import [TwoProverGame.lean](../../Complexity/Computability/PCP/TwoProverGame.lean) to use an
+embedding against a game `G`. For tuple strategies `ha` and `hb` of `G.pow n`,
+`G.winsOn ha hb C` is the event that every coordinate in `C : Finset (Fin n)` is won, and
+`G.winProbOn ha hb C` is its probability. `winProbOn_insert_le` is the strategy extraction in the
+proof of Lemma 6.5, multiplied out so that it never divides by `Pr[W_C]`. Its premises are a
+support witness `hC` for `G.winsOn ha hb C` and an embedding of `G.questions`, with error `ε`, in
+the law of `((x j, y j), (x, y))` under `(G.pow n).questions.filter (G.winsOn ha hb C) hC`. It
+concludes `G.winProbOn ha hb (insert j C) ≤ G.winProbOn ha hb C * (G.value + ε)`. If
+`Pr[W_C] = 0`, the same inequality follows from `winProbOn_anti` without an embedding. The general
+step, `toOuterMeasure_accepts_le_value_add`, turns any embedding of the questions into a strategy
+with shared randomness and bounds its success by `G.value + ε`.
+
+The [embedding clients](../../ComplexityTests/Embeddability.lean) compose two exact embeddings
+(copy, negate, forget the copies), apply the product-form criterion, and draw shared randomness
+from `ULift.{2} Bool`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) extracts a
+strategy from the one-fold repetition with `C = ∅`, which bounds every strategy of `chsh.pow 1`
+by `chsh.value`. Run `scripts/build.sh ComplexityTests.Embeddability ComplexityTests.TwoProverGame`.
+The next three sections supply the embedding premise at each free coordinate, through the
+coordinate embedding of Lemma 6.4:
+[the next section](#model-the-coordinates-of-the-parallel-repetition-proof) sets up its random
+variables.
+
+## Model the coordinates of the parallel repetition proof
+
+Import [ParallelRepetition/CoordinateModel.lean](../../Complexity/Computability/PCP/ParallelRepetition/CoordinateModel.lean)
+to work with the random variables of the proof of Holenstein's Lemma 6.4 [holenstein09][holenstein09].
+Fix a game `G` with finite question types, tuple strategies `ha` and `hb` of `G.pow n`, a set
+`C : Finset (Fin n)` of conditioned coordinates, and a support witness `hC` for
+`G.winsOn ha hb C`, as in `winProbOn_insert_le`. The coordinates `j : {i // i ∉ C}` are free.
+Holenstein conditions on `C = {k + 1, …, n}`; any `C` works here.
+
+- A sample `ω : Sample X Y C` is a pair `(d, q)`: a bit `d j` for each free coordinate and a
+  question pair `q i` for each coordinate. `sampleLaw G C` draws the bits uniformly and the pairs
+  independently from `G.questions`, with masses given by `sampleLaw_apply`.
+  `condLaw G C ha hb hC` conditions it on winning every coordinate in `C`. Write each law of the
+  proof as the image `(condLaw G C ha hb hC).map f` of this one law.
+- The variables are functions of `ω`. `revealed C ω` is Holenstein's `T`: the pairs on `C`, and at
+  each free `j` one half of the pair, `inl x` when the bit is `true` and `inr y` when it is
+  `false`. So the bit `false` plays the role of Holenstein's `D_j = 0`, and `pairGiven G (.inr y)`
+  draws Alice's question from `P_{X | Y = y}`. `answers C ha hb ω.2` is `V`, the answers on `C`.
+  `ω.2 j` is the whole pair at `j`, where Holenstein's `U_j` is only its hidden half.
+  `shared ha hb j ω` is `S`: `T` without its half at `j`, together with `V`.
+- `map_condLaw_questions` identifies the image of `condLaw` under
+  `fun ω => (Prod.fst ∘ ω.2, Prod.snd ∘ ω.2)` with `(G.pow n).questions.filter (G.winsOn ha hb C) hC`,
+  the law in `winProbOn_insert_le`. `map_snd_condLaw` writes the pairs as a conditioned product,
+  the input of `sq_sum_dist_map_filter_pi_le`, and `toOuterMeasure_pi_winsOnPairs` gives the
+  probability of the event.
+- `toOuterMeasure_condLaw_bit` proves `Pr[D_j = b | W_C] = 1 / 2`, the premise of Claim 6.1
+  (`dist_filter_le_two_mul`). `map_filter_condLaw_bit` removes a condition `D_j = b` from the law
+  of any variable that ignores the bit `d j`; for `shared`, `shared_update` proves that it does.
+- `map_sampleLaw_eq_sideJoint` and `map_fst_sideKernel` show that the law of `((T, V), U)` has the
+  form that Corollary 4.3 requires. `sum_dist_condLaw_le` is the resulting (6.5): summed over the
+  free `j`, the distance between the law of `((T, V), ω.2 j)` under `condLaw` and the law that
+  redraws the pair at `j` from `pairGiven G` of its revealed half is at most
+  `√(#Cᶜ (#C ln (|A| |B|) + ln (1 / Pr[W_C])) / 2)`. The logarithms are natural; Holenstein's
+  (6.6) uses bits and has no factor `1 / 2`.
+
+The [coordinate-model clients](../../ComplexityTests/RepetitionCoordinateModel.lean) compute
+`pairGiven` and a sample mass for the CHSH questions, derive from (6.5) that the redrawn law is
+exact when `C = ∅`, remove the bit condition from the law of `S`, and pass an embedding into the
+model's law to `winProbOn_insert_le`. Run
+`scripts/build.sh ComplexityTests.RepetitionCoordinateModel`. The next section carries the proof
+from (6.5) to the first stage of the embedding.
+
+## Embed the questions at a free coordinate
+
+Import [ParallelRepetition/Embedding.lean](../../Complexity/Computability/PCP/ParallelRepetition/Embedding.lean)
+for the steps (6.7)–(6.16) of the proof of Holenstein's Lemma 6.4 [holenstein09][holenstein09]
+and the first stage of its embedding. The setting is that of the previous section. Write
+`E := √(#Cᶜ (#C ln (|A| |B|) + ln (1 / Pr[W_C])) / 2)` for the bound of (6.5), and `J` for the law
+`(condLaw G C ha hb hC).map fun ω => (ω.2 j, shared ha hb j ω)` of `((x_j, y_j), S)`.
+
+- `sum_dist_map_condLaw_shared_le hC b` is (6.7)–(6.12). Conditioning both laws of (6.5) on the
+  bit `D_j = b` at most doubles their distance (Claim 6.1), and the condition then drops because
+  `S` and the pair at `j` ignore the bit. Summed over the free `j`, `J` is within `2 E` of the law
+  that keeps `S` and the half `reveal b (ω.2 j)` and redraws the pair from `pairGiven G`.
+  `b = false` keeps Bob's question, as in (6.12); `b = true` keeps Alice's.
+- `sum_dist_map_condLaw_pair_le hC` is (6.14): summed over the free `j`, the pair at `j` under
+  `condLaw` is within `√(#Cᶜ ln (1 / Pr[W_C]) / 2) ≤ E` of `G.questions`.
+- `sum_dist_condLaw_withKernel_condY_le hC` and `sum_dist_condLaw_withKernel_condX_le hC` are
+  (6.15) and (6.16): summed over the free `j`, `J` is within `3 E` of
+  `withKernel G.questions fun xy => condY J xy.2` and of the `condX` analogue. These are the two
+  hypotheses of Corollary 5.3 (`isEmbeddable_diag_of_dist_le`). They follow from (6.12) and
+  (6.14) by the generic triangle step `dist_withKernel_condY_le` (and `dist_withKernel_condX_le`)
+  of [Compose local embeddings and extract a strategy](#compose-local-embeddings-and-extract-a-strategy),
+  with `K` drawing one question of `G` given the other.
+- `exists_isEmbeddable_condLaw_shared hC` is the first stage. It gives errors
+  `ε : {i // i ∉ C} → ℝ` such that `G.questions` embeds with error `ε j` in
+  `(condLaw G C ha hb hC).map fun ω => (ω.2 j, (shared ha hb j ω, shared ha hb j ω))`, and
+  `∑ j, ε j ≤ 27 / √2 · √(#Cᶜ (#C ln (|A| |B|) + ln (1 / Pr[W_C])))`. The constant is
+  `27 = 7 · 3 + 2 · 3`, from the library's Corollary 5.3 error `7 ε₁ + 2 ε₂`; Holenstein's is
+  `15`, from `3 ε₁ + 2 ε₂`, with logarithms in bits and no factor `1 / √2`. `27 / √2 ≈ 19.09` is
+  within the constant `21` that the sharpened recursion of Lemma 7.1 accepts.
+
+To use a single coordinate, pick `j` with `ε j` at most the average, by
+`Finset.exists_le_of_sum_le`; the error is then at most
+`27 / √2 · √((#C ln (|A| |B|) + ln (1 / Pr[W_C])) / #Cᶜ)`. The
+[embedding clients](../../ComplexityTests/RepetitionEmbedding.lean) do this, and check that with
+`C = ∅` every coordinate has the law of `G.questions` and the first stage is exact. Run
+`scripts/build.sh ComplexityTests.RepetitionEmbedding`.
+[The next section](#extend-the-coordinate-embedding-to-the-question-tuples) proves the second
+stage (6.17)–(6.19), which adds the remaining questions through Lemma 5.4, and composes the two
+stages.
+
+## Extend the coordinate embedding to the question tuples
+
+Import [ParallelRepetition/Factorization.lean](../../Complexity/Computability/PCP/ParallelRepetition/Factorization.lean)
+for the second stage of the proof of Holenstein's Lemma 6.4 [holenstein09][holenstein09], in the
+setting of the previous two sections. Write `S` for `shared ha hb j ω` and `(x, y)` for the question
+tuples `(Prod.fst ∘ ω.2, Prod.snd ∘ ω.2)`. Holenstein's first stage embeds the questions in
+`((x j, S), (y j, S))`; the second extends this to the whole tuples, and the parties then forget
+`S`.
+
+- `exists_map_condLaw_apply_eq_mul` is the product form (5.5) of the conditioned law. The mass of
+  `(((x j, S), (y j, S)), (x, y))` under `condLaw` factors as `c · f · g`, where `f` depends only
+  on Alice's view `(x j, S)` and her tuple `x`, and `g` only on Bob's view `(y j, S)` and `y`.
+  Holenstein reaches this form through the Markov chains (6.17)–(6.19) and his Claims 6.2 and 6.3;
+  the library computes the masses directly instead.
+- `isEmbeddable_map_condLaw_tuples` applies Lemma 5.4 in this form
+  (`isEmbeddable_map_fst_of_apply_eq_mul`): the law of `((x j, S), (y j, S))` embeds with error `0`
+  in the law of `(((x j, S), (y j, S)), (x, y))`. Its input is the first stage's law of
+  `((x j, y j), (S, S))` regrouped as `IsEmbeddable.trans` requires; after `rw [PMF.map_comp]` it is
+  the second premise of `IsEmbeddable.trans`.
+- `isEmbeddable_filter_questions_of_shared` composes the two stages and forgets `S`. Its premise is
+  an embedding of a law `P₀` in
+  `(condLaw G C ha hb hC).map fun ω => (ω.2 j, (shared ha hb j ω, shared ha hb j ω))`, which is
+  exactly the per-coordinate embedding of `exists_isEmbeddable_condLaw_shared` in the previous
+  section. Directly from Corollary 5.3, `isEmbeddable_diag_of_dist_le J P₀ h₁ h₂` gives such an
+  embedding after `rw [PMF.map_comp]`. The conclusion, with the same error, is the embedding premise
+  of `winProbOn_insert_le`.
+
+The [factorization clients](../../ComplexityTests/RepetitionFactorization.lean) pass the distance
+bounds of Corollary 5.3 for `J` through the second stage to `winProbOn_insert_le`. In the one-fold
+repetition with `C = ∅`, `S` is trivial and the first stage is exact, so they bound the probability
+of winning the coordinate by `G.value`. Run `scripts/build.sh ComplexityTests.RepetitionFactorization`.
+With the previous section, every free coordinate `j` thus supplies the premise of
+`winProbOn_insert_le` with error `ε j`. The library does not yet state Lemma 6.4 as one theorem,
+choose the coordinate of Lemma 6.5, or prove the parallel repetition bound
+([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
 
@@ -254,7 +445,14 @@ Import [Gaussian/Quotient.lean](../../Complexity/Foundations/Probability/Gaussia
 Let `L` be a discrete full-rank lattice in a finite-dimensional real inner-product space `E`,
 let `n = Module.finrank ℝ E`, and take `s > 0`. Use `q = QuotientAddGroup.mk`, the
 canonical map to the quotient by `L.toAddSubgroup`, and an actual fundamental domain
-`hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume`. The measures are ordinary
+`hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume`. The opposite subgroup acts by right
+translation, the convention of Mathlib's quotient measures, while the lattice APIs give
+fundamental domains for `L` itself. In a commutative group the two have the same fundamental
+domains, and `MeasureTheory.isAddFundamentalDomain_op_iff` from
+[FundamentalDomain.lean](../../Complexity/Foundations/MeasureTheory/Group/FundamentalDomain.lean)
+converts between them. When `L` is `Submodule.span ℤ (Set.range b)` for a real basis `b`,
+`isAddFundamentalDomain_op_iff.mpr (ZSpan.isAddFundamentalDomain' b volume)` supplies `hF`
+for `F = ZSpan.fundamentalDomain b`, as in the checked clients below. The measures are ordinary
 `Measure.withDensity`, `Measure.map` and scalar multiplication:
 
 - The ambient Gaussian is `volume.withDensity (fun x => ENNReal.ofReal
@@ -262,9 +460,10 @@ canonical map to the quotient by `L.toAddSubgroup`, and an actual fundamental do
   `ProbabilityTheory.isProbabilityMeasure_gaussianWeight s hs`.
 - The uniform reference is `(ENNReal.ofReal (ZLattice.covolume L))⁻¹ •
   Measure.map q (volume.restrict F)`.
-  `ZLattice.isProbabilityMeasure_normalized_quotient L volume hF` proves it is a probability;
-  `normalized_quotient_eq` and `isAddLeftInvariant_normalized_quotient` prove independence
-  from the fundamental domain and translation invariance.
+  `ZLattice.measure_eq_ofReal_covolume_of_op L volume hF` identifies `volume F` with the
+  covolume; `ZLattice.isProbabilityMeasure_normalized_quotient L volume hF`,
+  `normalized_quotient_eq` and `isAddLeftInvariant_normalized_quotient` prove probability
+  normalization, independence from the chosen fundamental domain, and translation invariance.
 
 `ZLattice.map_gaussianWeight_eq_withDensity L s hs hF` identifies the actual Gaussian
 pushforward's density relative to this reference. At `q x`, the real density is
@@ -366,10 +565,12 @@ by `4ε`, for `0 ≤ ε < 1/2`, when the actual nonzero dual mass at reciprocal 
 `√(1/r² + (‖z‖/α)²)` is at most `ε`. The `_of_gap` theorem discharges that mass bound
 from a positive dual gap `a` and
 `2^dim * exp(-3π h² a²/4) ≤ ε/(1+ε)`, where
-`h = 1/√(1/r² + (‖z‖/α)²)` and `ε > 0`. Projection at `z = 0` is exactly the scalar
-noise law, without a smoothing premise; dimension zero is included.
+`h = 1/√(1/r² + (‖z‖/α)²)` and `ε > 0`. Both theorems cover every `z`, including `z = 0`
+and dimension zero, under their stated premise; at `z = 0` itself, `simp` reduces the
+convolution directly to the scalar noise law with no smoothing condition.
 
-Use `tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_gap` for the same bound
+Use `tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_dual_mass_le` or
+`tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_gap` for the same bound
 after mapping both measures by the canonical `ℝ → UnitAddCircle` coercion. This compares
 actual probability measures, with no density-series assumption.
 The [checked clients](../../ComplexityTests/DiscreteGaussianProjection.lean) use `2ℤ`,
@@ -510,8 +711,9 @@ The native reduction certificate charges both adaptive phases and bounds every e
 For ciphertext reply bounds, `SymmetricCipher.exists_ciphertext_length_bound` returns a native
 unary cap `ctBound n ℓ`, uniform over keys actually sampled by `E.keyGen n` and all messages
 of length `ℓ`. Its runtime guarantee also covers messages outside the cipher's correctness
-and security domain. The current `n`-bit reductions use `ctBound n n`; this bound does not
-extend their security claims to arbitrary words. The
+and security domain. The current `n`-bit reductions use its diagonal specialization
+`SymmetricCipher.exists_ciphertext_length_bound_of_length_eq` (`ctBound n := bound n n`); this
+bound does not extend their security claims to arbitrary words. The
 [authenticated-encryption clients](../../ComplexityTests/Crypto/AuthenticatedEncryption.lean)
 check independent lengths and show why an all-message bound cannot depend only on `n`.
 
@@ -979,6 +1181,7 @@ Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.l
 Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model.
 
 [complexitylib]: ../sources.md#complexitylib
+[holenstein09]: ../sources.md#holenstein09
 
 The two reserve-output theorems choose their output constant after the fixed hierarchy,
 ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
@@ -1296,6 +1499,41 @@ preservation. Run `scripts/build.sh ComplexityTests.GaussianNoiseOperator` from 
 root to check them.
 
 Additivity, `gaussianNoiseOp_add`, holds only `γ`-almost everywhere, because the Bochner integral
-is `0` off the integrable functions; scaling by a constant holds everywhere. General multilinear
-polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and Hermite expansions are not part of this
-module.
+is `0` off the integrable functions; scaling by a constant holds everywhere. For multilinear
+polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and continuity at `ρ = 1`, see
+[Compose Gaussian noise operators](#compose-gaussian-noise-operators). Hermite expansions are not
+part of this module.
+
+## Compose Gaussian noise operators
+
+Multilinear polynomials stay in
+[`Complexity.Foundations.Probability.Gaussian.NoiseOperator`](../../Complexity/Foundations/Probability/Gaussian/NoiseOperator.lean),
+and the semigroup law and continuity live in
+[`Complexity.Foundations.Probability.Gaussian.NoiseSemigroup`](../../Complexity/Foundations/Probability/Gaussian/NoiseSemigroup.lean).
+Open the `ProbabilityTheory` namespace, and write `γ` for
+`Measure.pi fun _ : ι => gaussianReal 0 1` as before.
+
+- `gaussianNoiseOp_prod ρ S z` evaluates a monomial pointwise:
+  `U_ρ (∏ i ∈ S, x i) z = ρ ^ #S * ∏ i ∈ S, z i`, for every `ρ` and with no integrability
+  hypothesis. `gaussianNoiseOp_sum_mul_prod` does the same for a finite sum
+  `∑ k ∈ s, c k * ∏ i ∈ S k, x i`, which is O'Donnell's `U_ρ f (z) = f (ρ z)` (Fact 11.13).
+- `gaussianNoiseOp_gaussianNoiseOp hρ₁ hρ₂ hf` is the semigroup law
+  `U_ρ₁ (U_ρ₂ f) =ᵐ[γ] U_{ρ₁ ρ₂} f` for `|ρ₁|, |ρ₂| ≤ 1` and integrable `f` (Exercise 11.4). It is
+  an almost-everywhere identity, so rewrite inside integrals or norms with `integral_congr_ae` or
+  `eLpNorm_congr_ae`, not pointwise.
+- `tendsto_eLpNorm_gaussianNoiseOp_sub hf` gives `‖U_ρ f - f‖₁ → 0` as `ρ → 1⁻` along
+  `𝓝[<] 1`, for integrable `f` (Proposition 11.17).
+
+The supporting finset-product integrals over product probability measures,
+`MeasureTheory.Integrable.finset_prod_pi` and `MeasureTheory.integral_finset_prod_pi_eq_prod`,
+are in
+[`Complexity.Foundations.MeasureTheory.Integral.Pi`](../../Complexity/Foundations/MeasureTheory/Integral/Pi.lean).
+
+The checked [`GaussianNoiseSemigroup.lean` clients](../../ComplexityTests/GaussianNoiseSemigroup.lean)
+compute `U_{1/2} U_{1/2} (x₀ x₁)` both through the semigroup law and through Fact 11.13 twice,
+check the boundary cases `ρ₂ = 0` and `ρ₁ = -1`, and apply continuity to a coordinate and to a
+discontinuous halfspace indicator. Run `scripts/build.sh ComplexityTests.GaussianNoiseSemigroup`
+from the repository root to check them; the monomial clients are in
+`ComplexityTests.GaussianNoiseOperator`.
+
+Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.

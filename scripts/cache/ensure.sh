@@ -4,7 +4,7 @@
 set -u
 SCRIPT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)" || exit 1
 export COMPLEXITYLIB_CACHE_SCRIPT_ROOT="$SCRIPT_ROOT"
-exec python3 - "$@" <<'PY'
+exec python3 -B - "$@" <<'PY'
 import argparse
 import hashlib
 import json
@@ -24,10 +24,23 @@ parser.add_argument(
     help="target checkout directory (defaults to COMPLEXITYLIB_CACHE_CHECKOUT or this script's repo)",
 )
 args = parser.parse_args()
-if os.environ.get("COMPLEXITYLIB_CACHE_AUTO") == "0":
+if (os.environ.get("COMPLEXITYLIB_CACHE_AUTO") == "0"
+        or os.environ.get("DISABLE_CACHE_RESTORE", "").lower() in ("true", "1")):
     raise SystemExit(0)
 
 script_root = Path(os.environ["COMPLEXITYLIB_CACHE_SCRIPT_ROOT"]).resolve()
+sys.path.insert(0, str(script_root / "scripts/cache"))
+from bounded import UnsafeShutdown, interruptible, run, seconds
+from restore import origins
+
+try:
+    cache_origins = origins(os.environ)
+    origin_timeout = seconds(os.environ, "COMPLEXITYLIB_CACHE_ORIGIN_TIMEOUT", 180)
+    bootstrap_timeout = seconds(os.environ, "COMPLEXITYLIB_CACHE_BOOTSTRAP_TIMEOUT",
+                                630 + len(cache_origins) * (origin_timeout + 10), 7200)
+except ValueError as error:
+    print(f"note: invalid optional cache configuration; building from source: {error}", file=sys.stderr)
+    raise SystemExit(0)
 checkout_env = os.environ.get("COMPLEXITYLIB_CACHE_CHECKOUT")
 if args.checkout is not None:
     root = args.checkout.resolve()
@@ -50,8 +63,9 @@ try:
         path = root / name
         files[name] = hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
     state = {"checkout": str(root), "head": head, "files": files,
-             "endpoint": os.environ.get("COMPLEXITYLIB_CACHE_URL",
-                                        "https://storage.googleapis.com/complexitylib-lake-cache"),
+             "endpoints": cache_origins,
+             "origin_timeout": origin_timeout, "bootstrap_timeout": bootstrap_timeout,
+             "recovery_generation": os.environ.get("CACHE_RECOVERY_GENERATION", "0"),
              "cache_dir": os.environ.get("LAKE_CACHE_DIR")}
     fingerprint = hashlib.sha256(json.dumps(state, sort_keys=True).encode()).hexdigest()
 except (OSError, subprocess.CalledProcessError) as error:
@@ -74,11 +88,21 @@ if not get_script.exists():
     get_script = script_root / "scripts/cache/get.sh"
 child_env = {**os.environ, "COMPLEXITYLIB_CACHE_CHECKOUT": str(root)}
 try:
-    result = subprocess.run([str(get_script)], cwd=root, env=child_env)
+    # Nested download supervisors handle SIGTERM by draining their own groups.
+    # Give them longer than their ten-second shutdown bound before a forced kill.
+    with interruptible():
+        result = run([str(get_script)], timeout=bootstrap_timeout, cwd=root, env=child_env, grace=15)
+except UnsafeShutdown as error:
+    print(f"error: {error}", file=sys.stderr)
+    raise SystemExit(125)
+except KeyboardInterrupt:
+    raise SystemExit(124)
 except OSError as error:
     print(f"note: cache bootstrap unavailable; continuing without restoration: {error}",
           file=sys.stderr)
     raise SystemExit(0)
+if result.returncode == 125:
+    raise SystemExit(125)
 if result.returncode:
     print("note: cache bootstrap did not complete; continuing with the build",
           file=sys.stderr)

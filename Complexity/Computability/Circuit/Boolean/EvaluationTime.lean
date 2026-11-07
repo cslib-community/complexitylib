@@ -18,17 +18,16 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
-# Evaluating circuits in polynomial time
+# Evaluating De Morgan circuits in polynomial time
 
-`evalCode` evaluates a list of gates (`Cslib.Circuits.Program.code`) on a list of input values:
-starting from the inputs, it appends the value of each gate in turn, reading wire `i` at
-position `i` of the values computed so far. On the code of a program it returns the inputs
-followed by the values of the gates (`Cslib.Circuits.Program.evalCode_code`), so it evaluates
-circuits exactly as `Cslib.Circuits.Circuit.eval` does (`Cslib.Circuits.Circuit.eval_eq_getD`).
-It is total: an argument or a wire missing from a malformed list reads a default value.
+`Complexity.Computability.Circuit.Encoding.Evaluation` defines signature-polymorphic gate-list
+evaluation (`Cslib.Circuits.evalCode`) and proves its agreement with typed circuit evaluation
+(`Cslib.Circuits.Program.evalCode_code`, `Cslib.Circuits.Circuit.eval_eq_getD`). This module
+specializes that evaluator to De Morgan circuits (`Cslib.Circuits.Boolean.evalOutput`) and proves
+polynomial-time computability certificates for it.
 
 For De Morgan circuits, `evalCode` is computable in polynomial time on the binary encoding of
-gate lists (`Cslib.Circuits.Boolean.computableInPolyTime_evalCode`), so is reading an output
+gate lists (`Cslib.Circuits.Boolean.computableInPolyTime_evalCode`), and so is reading an output
 wire given by its binary number (`Cslib.Circuits.Boolean.computableInPolyTime_evalOutput`).
 These are certificates for the `fun_prop` calculus of polynomial-time computations; the
 evaluators of `Complexity.Computability.Circuit.Evaluation` carry no runtime bound. Each gate is
@@ -42,19 +41,12 @@ generation, input preparation, binary wire lookup and evaluation are all include
 
 ## Main definitions
 
-* `Cslib.Circuits.evalCode`: evaluation of a list of gates.
 * `Cslib.Circuits.Boolean.evalOutput`: the value of a wire after evaluating a list of De Morgan
   gates.
 
 ## Main results
 
-* `Cslib.Circuits.prefix_evalCode`: evaluating a gate list preserves its input prefix.
-* `Cslib.Circuits.getD_evalCode`: the value of a well-formed gate from its arguments.
-
-* `Cslib.Circuits.Program.evalCode_code`: on the code of a program, `evalCode` lists the inputs and
-  the gate values.
-* `Cslib.Circuits.Circuit.eval_eq_getD`: circuit evaluation through the code.
-* `Cslib.Circuits.Circuit.eval_eq_evalOutput`: the same for De Morgan circuits, through
+* `Cslib.Circuits.Circuit.eval_eq_evalOutput`: De Morgan circuit evaluation through
   `Cslib.Circuits.Boolean.evalOutput`.
 * `Cslib.Circuits.Circuit.eval_ofList_eq_evalOutput`: typed evaluation on an arbitrary input list
   uses the padded or truncated input word.

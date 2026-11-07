@@ -27,7 +27,8 @@ open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
 -- The finite preservation test traverses the relocated 320-register code.
 set_option maxRecDepth 4096 in
-private theorem read_preserves : ∀ i : Fin 320, i.val < 65 → readRecord.Preserves i := by decide
+/-- `readRecord` preserves the 64-register producer bank and the ordinal register `64`. -/
+theorem read_preserves : ∀ i : Fin 320, i.val < 65 → readRecord.Preserves i := by decide
 
 /-- Complete native preparation from a selected record and its actual three source spans.
 No source execution, encoded matrix or routing table is supplied. -/

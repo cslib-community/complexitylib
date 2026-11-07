@@ -8,14 +8,15 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Patch
-import all Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Prepare
+import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Prepare
 
 /-!
 # Record decoding without low-payload staging
 
 Only the selected record, logarithm and five scalar/header words are prepared, followed by the
 ordinary threshold patch. Raw matrices and query occurrences remain at their physical source
-pointers. The old initialized contiguous-input preparation remains independently available.
+pointers. Contiguous-input preparation with low-payload array copies is provided separately by
+`RecordProduct.prepare`.
 -/
 
 public section

@@ -37,3 +37,14 @@ example : iteratedPDeriv ![0, 3] ((Arithmetic.genericMatrix ℚ 2).det) = 1 := b
   rw [hcoords] at h
   rw [hdet, h]
   simp [iteratedPDeriv, Matrix.det_fin_two, Matrix.mvPolynomialX]
+
+-- `genericMatrix_eq_map_rename` and `iteratedPDeriv_rename` work over a commutative semiring
+-- (`ℕ`) and across distinct variable universes (`ULift.{1}`).
+example : Arithmetic.genericMatrix ℕ 2 =
+    (Matrix.mvPolynomialX (Fin 2) (Fin 2) ℕ).map (rename finProdFinEquiv) :=
+  Arithmetic.genericMatrix_eq_map_rename
+
+example (p : MvPolynomial (Fin 2) ℕ) :
+    iteratedPDeriv (ULift.up.{1} ∘ (![0, 1] : Fin 2 → Fin 2)) (rename ULift.up.{1} p) =
+      rename ULift.up.{1} (iteratedPDeriv ![0, 1] p) :=
+  iteratedPDeriv_rename ULift.up_injective ![0, 1] p
