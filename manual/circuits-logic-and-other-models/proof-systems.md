@@ -193,7 +193,7 @@ Theorem 5.1 of Impagliazzo, Pudlák and Sgall. Suppose every `c i` is nonzero an
 `m - ∑ c i * X i`, with the Boolean axioms, has no polynomial calculus refutation
 (`PC.not_refutableInDegree_subsetSumPoly`) and no Nullstellensatz refutation
 (`NS.not_refutableInDegree_subsetSumPoly`) of degree `⌈n/2⌉ = (n + 1) / 2`. The source proves
-this over `ℝ`; the formal statement needs only a field in which `n!` is nonzero. When no subset
+this over `ℝ`; the formal statement needs only a field in which `⌈n/2⌉!` is nonzero. When no subset
 of the `c i` sums to `m`, completeness gives a refutation of degree `n + 1`
 (`PC.refutableInDegree_subsetSumPoly_iff`). The proof runs the invariant method
 `PC.IsProof.mem_of_degree_le` on the submodule of polynomials that agree on the cube with
@@ -204,6 +204,8 @@ of the `c i` sums to `m`, completeness gives a refutation of degree `n + 1`
 - An explicit degree-2 Nullstellensatz refutation of `1/2 - x`, which has no degree-1
   polynomial calculus refutation.
 - `x₁ + x₂ + x₃ + x₄ = 5` over `ℚ` and over `ZMod 7`, refutable in degree 5 but not in degree 2.
+- `x₁ + x₂ + x₃ = m` over the field with nine elements, for `m` outside `0, 1, 2, 3`, refutable
+  in degree 4 but not in degree 2, although `3!` vanishes there.
 - The instance with no variables, refutable in degree 0, which shows that `n ≥ 1` is needed.
 - `v ∧ ¬v`, refuted in degree 1, and the satisfiable formula `v`, which has no refutation.
 
@@ -236,7 +238,7 @@ Interpolation modules extract circuits separating the two sides of a refuted con
 
 ## Foundations for algebraic degree lower bounds
 
-Two Boolean-analysis lemmas from the subset-sum degree lower bound of Impagliazzo, Pudlák and Sgall (Theorem 5.1) are available before the algebraic proof systems themselves. Lemma 5.2 of that paper is [`BitString.totalDegree_affine_mul`](../../Complexity/Foundations/BooleanAnalysis/AffineDegree.lean). It concerns `L = m - ∑ c i * x i` with every `c i` nonzero and a nonzero function `r` on the cube with `2 * deg r < n`: the product `L * r` has multilinear degree exactly `deg r + 1`. The source proves it over `ℝ`; the formal statement needs only a field in which `n!` is nonzero. Its proof compares subset Möbius coefficients (`BitString.subsetMobius_bitVal_mul`) and applies Gottlieb's full-rank theorem for inclusion matrices ([`Finset.eq_zero_of_sum_powersetCard_eq_zero`](../../Complexity/Foundations/Combinatorics/InclusionMatrix.lean)), proved over any field in which `1, …, #U` are nonzero. The tests ([inclusion matrices](../../ComplexityTests/Foundations/Combinatorics/InclusionMatrix.lean), [affine degree](../../ComplexityTests/Foundations/BooleanAnalysis/AffineDegree.lean)) show that the field hypothesis, `t + s ≤ #U` and `2 * deg r < n` cannot be dropped.
+Two Boolean-analysis lemmas from the subset-sum degree lower bound of Impagliazzo, Pudlák and Sgall (Theorem 5.1) are available before the algebraic proof systems themselves. Lemma 5.2 of that paper is [`BitString.totalDegree_affine_mul`](../../Complexity/Foundations/BooleanAnalysis/AffineDegree.lean). It concerns `L = m - ∑ c i * x i` with every `c i` nonzero and a nonzero function `r` on the cube with `2 * deg r < n`: the product `L * r` has multilinear degree exactly `deg r + 1`. The source proves it over `ℝ`; the formal statement needs only a field in which `1, …, deg r + 1` are nonzero. Its proof compares subset Möbius coefficients (`BitString.subsetMobius_bitVal_mul`) and applies Gottlieb's full-rank theorem for inclusion matrices ([`Finset.eq_zero_of_sum_powersetCard_eq_zero`](../../Complexity/Foundations/Combinatorics/InclusionMatrix.lean)), proved over any field in which `1, …, s` are nonzero. The tests ([inclusion matrices](../../ComplexityTests/Foundations/Combinatorics/InclusionMatrix.lean), [affine degree](../../ComplexityTests/Foundations/BooleanAnalysis/AffineDegree.lean)) show that the field hypothesis, `t + s ≤ #U` and `2 * deg r < n` cannot be dropped.
 
 ## Known Limitations
 

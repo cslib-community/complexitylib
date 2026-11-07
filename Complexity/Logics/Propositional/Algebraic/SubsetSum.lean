@@ -29,9 +29,10 @@ For `c = 1` and `m > n`, Theorem 4.2 of the same paper gives a refutation of deg
 under a condition on the characteristic. The source notes that this matches the lower bound over
 `ℝ`. That upper bound is not formalized here.
 
-The statement here holds over every field in which `n!` is nonzero, so in characteristic zero and
-in every characteristic larger than `n`; the source states it over `ℝ`. This is a mild
-generalization of the source statement, with the same proof.
+The statement here holds over every field in which `⌈n/2⌉!` is nonzero, so in characteristic zero
+and in every characteristic larger than `⌈n/2⌉`; the source states it over `ℝ`. This is a mild
+generalization of the source statement, with the same proof: Lemma 5.2 is applied only to
+functions of degree below `⌈n/2⌉`, and needs `1, …, deg r + 1` to be nonzero.
 
 The proof follows the source, through the invariant method
 (`Cslib.Logic.PL.PC.IsProof.mem_of_degree_le`). Let `L x = m - ∑ᵢ cᵢ xᵢ`, and let `M` be the
@@ -54,7 +55,7 @@ polynomials that agree on the cube with `L * r` for a function `r` of degree at 
 * `Cslib.Logic.PL.Algebraic.isBoolSolution_subsetSumPoly_iff`: the `0/1` solutions are the subsets
   summing to `m`.
 * `Cslib.Logic.PL.PC.not_refutableInDegree_subsetSumPoly`: Theorem 5.1 of
-  [ImpagliazzoPudlakSgall1999], over fields with `n! ≠ 0`.
+  [ImpagliazzoPudlakSgall1999], over fields with `⌈n/2⌉! ≠ 0`.
 * `Cslib.Logic.PL.NS.not_refutableInDegree_subsetSumPoly`: the same bound for Nullstellensatz.
 * `Cslib.Logic.PL.PC.refutableInDegree_subsetSumPoly_iff`: refutability in degree `n + 1`
   exactly when no subset sums to `m`.
@@ -129,7 +130,8 @@ private theorem mem_invariant {c : ι → F} {m : F} {k : ℕ} {p : MvPolynomial
 /-- Multiplying by a variable stays in the invariant within degree `d`, when `2 (d - 1) < n`. -/
 private theorem mulVar_mem_invariant {c : ι → F} (hc : ∀ i, c i ≠ 0) (m : F) {d : ℕ}
     (hd : 2 * (d - 1) < Fintype.card ι)
-    (hF : ∀ j : ℕ, 0 < j → j ≤ Fintype.card ι → (j : F) ≠ 0) (i : ι) (p : MvPolynomial ι F)
+    (hF : ∀ j : ℕ, 0 < j → j ≤ (Fintype.card ι + 1) / 2 → (j : F) ≠ 0) (i : ι)
+    (p : MvPolynomial ι F)
     (hp : p ∈ invariant c m (d - 1)) (hXp : (X i * p).totalDegree ≤ d) :
     X i * p ∈ invariant c m (d - 1) := by
   obtain ⟨r, hr, hp⟩ := mem_invariant.1 hp
@@ -143,7 +145,7 @@ private theorem mulVar_mem_invariant {c : ι → F} (hc : ∀ i, c i ≠ 0) (m :
     rw [totalDegree_mul_of_isDomain (X_ne_zero i) hp0, totalDegree_X] at hXp
     omega
   have hrk : BitString.totalDegree r ≤ d - 1 := totalDegree_le_of_mem_lowDegree hr
-  have h52 := totalDegree_affine_mul hc m hF hr0 (by omega)
+  have h52 := totalDegree_affine_mul hc m (fun j hj hjr => hF j hj (by omega)) hr0 (by omega)
   have hLr : BitString.totalDegree ((fun x => m - ∑ i, c i * bitVal F (x i)) * r) ≤ d - 1 := by
     rw [hp]
     exact totalDegree_le_of_mem_lowDegree (lowDegree_mono hdeg (cube_mem_lowDegree p))
@@ -160,18 +162,18 @@ open Algebraic
 variable {ι F : Type*} [Field F] [Fintype ι]
 
 /-- **Theorem 5.1 of [ImpagliazzoPudlakSgall1999].** Let `c₁, …, cₙ` be nonzero, `n ≥ 1`, and `m`
-arbitrary, over a field in which `n!` is nonzero. Then the subset-sum polynomial `m - ∑ᵢ cᵢ xᵢ`,
+arbitrary, over a field in which `⌈n/2⌉!` is nonzero. Then the subset-sum polynomial `m - ∑ᵢ cᵢ xᵢ`,
 with the Boolean axioms, has no polynomial calculus refutation of degree `⌈n/2⌉ = (n + 1) / 2`.
 The source states the theorem over `ℝ`. For `n = 0` and `m ≠ 0` the constant `m` refutes itself
 in degree `0`. -/
 public theorem PC.not_refutableInDegree_subsetSumPoly [Nonempty ι] {c : ι → F}
-    (hc : ∀ i, c i ≠ 0) (m : F) (hF : ((Fintype.card ι).factorial : F) ≠ 0) {d : ℕ}
+    (hc : ∀ i, c i ≠ 0) (m : F) (hF : (((Fintype.card ι + 1) / 2).factorial : F) ≠ 0) {d : ℕ}
     (hd : d ≤ (Fintype.card ι + 1) / 2) :
     ¬ PC.RefutableInDegree ([subsetSumPoly c m] ++ boolAxioms ι F) d := by
   classical
   rintro ⟨ls, hls, h1, hdeg⟩
   have hn : 0 < Fintype.card ι := Fintype.card_pos
-  have hF' : ∀ j : ℕ, 0 < j → j ≤ Fintype.card ι → (j : F) ≠ 0 := by
+  have hF' : ∀ j : ℕ, 0 < j → j ≤ (Fintype.card ι + 1) / 2 → (j : F) ≠ 0 := by
     intro j hj hjn hj0
     apply hF
     obtain ⟨q, hq⟩ := Nat.dvd_factorial hj hjn
@@ -184,8 +186,8 @@ public theorem PC.not_refutableInDegree_subsetSumPoly [Nonempty ι] {c : ι → 
       rintro rfl
       rw [mul_zero] at h1
       exact zero_ne_one h1
-    have h52 := totalDegree_affine_mul hc m hF' hr0
-      (by have := totalDegree_le_of_mem_lowDegree hr; omega)
+    have hrd := totalDegree_le_of_mem_lowDegree hr
+    have h52 := totalDegree_affine_mul hc m (fun j hj hjr => hF' j hj (by omega)) hr0 (by omega)
     rw [h1] at h52
     have h0 : BitString.totalDegree (1 : (ι → Bool) → F) = 0 :=
       Nat.le_zero.1 (totalDegree_le_of_mem_lowDegree (one_mem_lowDegree 0))
@@ -202,7 +204,7 @@ public theorem PC.not_refutableInDegree_subsetSumPoly [Nonempty ι] {c : ι → 
 `Cslib.Logic.PL.PC.not_refutableInDegree_subsetSumPoly`, the subset-sum polynomial, with the
 Boolean axioms, has no Nullstellensatz refutation of degree `⌈n/2⌉`. -/
 public theorem NS.not_refutableInDegree_subsetSumPoly [Nonempty ι] {c : ι → F}
-    (hc : ∀ i, c i ≠ 0) (m : F) (hF : ((Fintype.card ι).factorial : F) ≠ 0) {d : ℕ}
+    (hc : ∀ i, c i ≠ 0) (m : F) (hF : (((Fintype.card ι + 1) / 2).factorial : F) ≠ 0) {d : ℕ}
     (hd : d ≤ (Fintype.card ι + 1) / 2) :
     ¬ NS.RefutableInDegree ([subsetSumPoly c m] ++ boolAxioms ι F) d := fun h =>
   PC.not_refutableInDegree_subsetSumPoly hc m hF hd (.of_ns h)

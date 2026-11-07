@@ -25,8 +25,8 @@ subsets `A` of `U`, its columns by the `s`-element subsets `B`, and the entry `1
 row rank over `ℚ`: a weighting `a` of the `t`-subsets whose sums `∑_{A ⊆ B, #A = t} a A` vanish for
 every `s`-subset `B` is zero (`Finset.eq_zero_of_sum_powersetCard_eq_zero`).
 
-The theorem is proved here over any field in which the integers `1, …, #U` are nonzero, so in
-characteristic zero and in every characteristic larger than `#U`. Gottlieb states the rational
+The theorem is proved here over any field in which the integers `1, …, s` are nonzero, so in
+characteristic zero and in every characteristic larger than `s`. Gottlieb states the rational
 case. The proof here, by induction on `U`, divides only by integers between `2` and `s`, so this
 mild generalization costs nothing. The induction splits the subsets by an element `x`: double
 counting (`Finset.sum_sum_powersetCard_erase`) turns the hypothesis for `s`-subsets of `U` into the
@@ -41,7 +41,7 @@ Impagliazzo, Pudlák and Sgall use the theorem to bound polynomial-calculus degr
 * `Finset.sum_powersetCard_succ_insert`: the `(t+1)`-subsets of `insert x B` split by whether they
   contain `x`.
 * `Finset.eq_zero_of_sum_powersetCard_eq_zero`: Gottlieb's theorem, over a field in which
-  `1, …, #U` are nonzero.
+  `1, …, s` are nonzero.
 
 ## References
 
@@ -104,10 +104,10 @@ omit [DecidableEq α] in
 the `t`-subsets against the `s`-subsets of `U` has full row rank. If the weights `a A` of the
 `t`-subsets sum to zero inside every `s`-subset `B` of `U`, then every weight is zero.
 
-Gottlieb proves this over `ℚ`; here the field may be any field in which the integers `1, …, #U`
+Gottlieb proves this over `ℚ`; here the field may be any field in which the integers `1, …, s`
 are nonzero. -/
 theorem eq_zero_of_sum_powersetCard_eq_zero {U : Finset α} {t s : ℕ} (hts : t ≤ s)
-    (hsum : t + s ≤ #U) (hU : ∀ j : ℕ, 0 < j → j ≤ #U → (j : F) ≠ 0) {a : Finset α → F}
+    (hsum : t + s ≤ #U) (hU : ∀ j : ℕ, 0 < j → j ≤ s → (j : F) ≠ 0) {a : Finset α → F}
     (ha : ∀ B ∈ U.powersetCard s, ∑ A ∈ B.powersetCard t, a A = 0) :
     ∀ A ∈ U.powersetCard t, a A = 0 := by
   classical
@@ -136,7 +136,7 @@ theorem eq_zero_of_sum_powersetCard_eq_zero {U : Finset α} {t s : ℕ} (hts : t
       exact h
     obtain ⟨t', rfl⟩ : ∃ t', t = t' + 1 := ⟨t - 1, by omega⟩
     obtain ⟨s', rfl⟩ : ∃ s', s = s' + 1 := ⟨s - 1, by omega⟩
-    have hU' : ∀ j : ℕ, 0 < j → j ≤ #U → (j : F) ≠ 0 := fun j hj hjU =>
+    have hU' : ∀ j : ℕ, 0 < j → j ≤ s' → (j : F) ≠ 0 := fun j hj hjs =>
       hU j hj (by omega)
     -- the `s`-subsets avoiding `x`
     have eq1 : ∀ B ∈ U.powersetCard (s' + 1), ∑ A ∈ B.powersetCard (t' + 1), a A = 0 :=
@@ -168,7 +168,7 @@ theorem eq_zero_of_sum_powersetCard_eq_zero {U : Finset α} {t s : ℕ} (hts : t
       refine (mul_eq_zero.1 h2).resolve_left ?_
       exact hU (s' + 1 - t') (by omega) (by omega)
     have ha'' : ∀ A ∈ U.powersetCard t', a (insert x A) = 0 :=
-      ih (t := t') (s := s' + 1) (a := fun A => a (insert x A)) (by omega) (by omega) hU' eq3
+      ih (t := t') (s := s' + 1) (a := fun A => a (insert x A)) (by omega) (by omega) hU eq3
     have eq5 : ∀ B ∈ U.powersetCard s', ∑ A ∈ B.powersetCard (t' + 1), a A = 0 := by
       intro B hB
       have h := eq2 B hB

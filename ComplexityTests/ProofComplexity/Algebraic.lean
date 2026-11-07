@@ -8,6 +8,7 @@ import Complexity.Logics.Propositional.Algebraic.CNF.Boolean
 import Complexity.Logics.Propositional.Algebraic.SubsetSum
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Field.ZMod
+import Mathlib.FieldTheory.Finite.GaloisField
 import Mathlib.Tactic.LinearCombination
 
 /-!
@@ -16,8 +17,9 @@ import Mathlib.Tactic.LinearCombination
 An explicit Nullstellensatz refutation of `1/2 - x` of degree two, which has no polynomial
 calculus refutation of degree one; the Impagliazzo–Pudlák–Sgall degree lower bound for the
 unsatisfiable subset-sum instance `x₁ + x₂ + x₃ + x₄ = 5` over `ℚ` and over `ZMod 7`, next to the
-refutations given by completeness; the instance with no variables, which shows that the lower bound
-needs `n ≥ 1`; a satisfiable system without refutations; and the clause polynomials of a
+refutations given by completeness; an instance over the field with nine elements, where `3!`
+vanishes but `⌈3/2⌉! = 2` does not; the instance with no variables, which shows that the lower
+bound needs `n ≥ 1`; a satisfiable system without refutations; and the clause polynomials of a
 contradictory and of a satisfiable CNF formula.
 -/
 
@@ -122,7 +124,7 @@ theorem five_ne_zmod (x : Fin 4 → Bool) :
   rw [Fin.sum_univ_four]
   cases x 0 <;> cases x 1 <;> cases x 2 <;> cases x 3 <;> decide
 
-/-- Over `ZMod 7`, where `4! = 24` is nonzero, the same instance is refuted in degree `5` but has
+/-- Over `ZMod 7`, where `⌈4/2⌉! = 2` is nonzero, the same instance is refuted in degree `5` but has
 no Nullstellensatz refutation of degree `2`. -/
 example :
     PC.RefutableInDegree
@@ -131,6 +133,54 @@ example :
       ([subsetSumPoly (fun _ : Fin 4 => (1 : ZMod 7)) 5] ++ boolAxioms (Fin 4) (ZMod 7)) 2 :=
   ⟨(PC.refutableInDegree_subsetSumPoly_iff _ _).2 five_ne_zmod,
     NS.not_refutableInDegree_subsetSumPoly (fun _ => one_ne_zero) _ (by decide) (by simp)⟩
+
+/-- The field with nine elements, of characteristic three. -/
+private abbrev GF9 := GaloisField 3 2
+
+local instance : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+
+/-- Some element of the field with nine elements is not among `0, 1, 2, 3`. -/
+private theorem exists_ne_natCast : ∃ m : GF9, ∀ k : ℕ, k ≤ 3 → (k : GF9) ≠ m := by
+  by_contra h
+  push Not at h
+  choose k hk hkm using h
+  have hinj : Function.Injective fun m : GF9 => (⟨k m, by have := hk m; omega⟩ : Fin 4) := by
+    intro a b hab
+    simp only [Fin.mk.injEq] at hab
+    rw [← hkm a, ← hkm b, hab]
+  have := Nat.card_le_card_of_injective _ hinj
+  rw [GaloisField.card 3 2 (by norm_num), Nat.card_eq_fintype_card, Fintype.card_fin] at this
+  omega
+
+/-- The degree bound needs only `⌈n/2⌉!` to be nonzero. Over the field with nine elements, where
+`3! = 6` vanishes, `x₁ + x₂ + x₃ = m` for an `m` outside `0, 1, 2, 3` is refuted in degree `3 + 1`,
+but not in degree `⌈3/2⌉ = 2`, since `2! = 2` is nonzero. -/
+example : ((Fintype.card (Fin 3)).factorial : GF9) = 0 ∧ ∃ m : GF9,
+    PC.RefutableInDegree ([subsetSumPoly (fun _ : Fin 3 => (1 : GF9)) m] ++ boolAxioms (Fin 3) GF9)
+      4 ∧
+    ¬ PC.RefutableInDegree
+      ([subsetSumPoly (fun _ : Fin 3 => (1 : GF9)) m] ++ boolAxioms (Fin 3) GF9) 2 := by
+  refine ⟨?_, ?_⟩
+  · rw [Fintype.card_fin, CharP.cast_eq_zero_iff GF9 3]
+    decide
+  obtain ⟨m, hm⟩ := exists_ne_natCast
+  refine ⟨m, (PC.refutableInDegree_subsetSumPoly_iff _ _).2 fun x => ?_,
+    PC.not_refutableInDegree_subsetSumPoly (fun _ => one_ne_zero) m ?_ (by simp)⟩
+  · have hsum : ∑ i, (fun _ => (1 : GF9)) i * bitVal GF9 (x i) =
+        ((∑ i, if x i then 1 else 0 : ℕ) : GF9) := by
+      rw [Nat.cast_sum]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      cases x i <;> simp
+    have hle : (∑ i, if x i then 1 else 0 : ℕ) ≤ 3 :=
+      calc (∑ i, if x i then 1 else 0 : ℕ) ≤ ∑ _i : Fin 3, 1 :=
+            Finset.sum_le_sum fun i _ => by split <;> omega
+        _ = 3 := by simp
+    rw [hsum]
+    exact hm _ hle
+  · have h2 : ((2 : ℕ) : GF9) ≠ 0 := by
+      rw [Ne, CharP.cast_eq_zero_iff GF9 3]
+      decide
+    exact h2
 
 /-! ### CNF formulas -/
 
