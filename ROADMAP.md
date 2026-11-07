@@ -709,9 +709,9 @@ universe size, not supplied as unverified input tables. In dependency order:
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
-  regular, [#2885](https://github.com/cslib-community/complexitylib/issues/2885)): the strict
-  inclusion FO[<] ⊊ MSO via EVEN, through a translation of first-order word sentences into
-  Mathlib's order language; FO[<] = star-free = aperiodic (McNaughton–Papert, Schützenberger);
+  regular) and FO[<] ⊊ MSO via EVEN
+  ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)): FO[<] = star-free =
+  aperiodic (McNaughton–Papert, Schützenberger);
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; and Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages.
