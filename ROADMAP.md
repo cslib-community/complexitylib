@@ -857,8 +857,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   comparisons where justified, distinguishing restricted-model bounds from unrestricted
   computational hardness. Use the [distributional framework](#average-case-complexity).
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
-  linearity testing have explicit decision-tree query bounds. Remaining: further access models,
-  tolerant and distribution testing, query and sample bounds, canonical testers and lower bounds.
+  linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
+  `Θ(√n / ε²)` sample bounds: the collision tester and Paninski's lower bound on even domains.
+  Remaining: further access models, the odd-domain lower bound, identity testing by reduction to
+  uniformity, closeness, tolerant and structured-property distribution testing, canonical testers
+  and further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
