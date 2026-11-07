@@ -767,6 +767,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Width
 public import Complexity.Algorithms.WordRAM.ThreeSum.LowerBound
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
+public import Complexity.Computability.Automata.NA.Map
 public import Complexity.Computability.BlumComplexity.Basic
 public import Complexity.Computability.BlumComplexity.Cancellation
 public import Complexity.Computability.BlumComplexity.Fuel
@@ -2073,6 +2074,7 @@ public import Complexity.Computability.Kolmogorov.SelfDelimiting
 public import Complexity.Computability.Kolmogorov.SingleTape
 public import Complexity.Computability.Kolmogorov.TimeBounded
 public import Complexity.Computability.Kolmogorov.Uncomputability
+public import Complexity.Computability.Languages.RegularLanguage
 public import Complexity.Computability.Languages.Slice
 public import Complexity.Computability.MCSP.AntiChecker
 public import Complexity.Computability.MCSP.AntiChecker.Certificate
@@ -4666,6 +4668,9 @@ public import Complexity.Logics.SecondOrder.Grounding
 public import Complexity.Logics.SecondOrder.IndependentSet
 public import Complexity.Logics.SecondOrder.Projection
 public import Complexity.Logics.SecondOrder.Reduction
+public import Complexity.Logics.SecondOrder.WordMSO.Basic
+public import Complexity.Logics.SecondOrder.WordMSO.OfRegular
+public import Complexity.Logics.SecondOrder.WordMSO.ToRegular
 public import Complexity.MachineLearning.OnlineLearning.Hedge
 public import Complexity.MachineLearning.OnlineLearning.MultiplicativeUpdate
 public import Complexity.MachineLearning.OnlineLearning.MultiplicativeWeights

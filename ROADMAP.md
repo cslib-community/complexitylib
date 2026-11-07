@@ -708,6 +708,13 @@ universe size, not supplied as unverified input tables. In dependency order:
   nondefinability results such as acyclicity of finite graphs; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
+- **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
+  regular, [#2885](https://github.com/cslib-community/complexitylib/issues/2885)): the strict
+  inclusion FO[<] ⊊ MSO via EVEN, through a translation of first-order word sentences into
+  Mathlib's order language; FO[<] = star-free = aperiodic (McNaughton–Papert, Schützenberger);
+  closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
+  lower bound on formula-to-automaton translation; and Büchi's theorem for ω-words (S1S) over
+  cslib's ω-regular languages.
 - **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
   relational vocabularies, constant edge probabilities and unlabelled structures; construct the
   countable random (Rado) graph; then the Kolaitis–Vardi laws for fixed-point and finite-variable
