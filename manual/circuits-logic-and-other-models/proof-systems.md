@@ -158,6 +158,60 @@ every clause polynomial at that same Boolean assignment. Arbitrary literal coord
 a spurious solution to contradictory unit clauses.
 [Pointwise CNF encoding](../../Complexity/Logics/Propositional/Algebraic/CNF.lean).
 
+### Refutations over the Boolean cube
+
+[The Boolean-cube layer](../../Complexity/Logics/Propositional/Algebraic/Boolean.lean) reuses
+the NS and PC proofs above and passes the Boolean axioms `X i ^ 2 - X i` as explicit inputs,
+`F ++ boolAxioms σ R`. `IsBoolSolution F x` says that every `f ∈ F` vanishes at the `0/1` point
+`x : σ → Bool`, read in `R` with `1` for true. Soundness (`NS.IsProof.not_isBoolSolution`,
+`PC.IsProof.not_isBoolSolution`) holds over every nontrivial commutative ring. Completeness holds
+over a field. If every input has total degree at most `D` in `n = card σ` variables and there is
+no Boolean solution, then `NS.refutableInDegree_of_forall_not_isBoolSolution` gives a
+Nullstellensatz refutation of degree at most `n + D`, and `PC.RefutableInDegree.of_ns` transfers
+it to polynomial calculus (`NS.refutableInDegree_iff`, `PC.refutableInDegree_iff`). The proof uses
+Mathlib's Combinatorial Nullstellensatz. The bound `n + D` comes from that argument; the sharper
+polynomial calculus bound `max(D, n + 1)` of Impagliazzo, Pudlák and Sgall (Lemma 4.1) is not
+formalized. Two helpers support these results:
+[`NS.exists_isProof_of_sum`](../../Complexity/Logics/Propositional/Algebraic/Nullstellensatz/Combination.lean)
+turns a finite combination of inputs into a certificate with the same degree bound, and
+[`PC.IsProof.mono`](../../Complexity/Logics/Propositional/Algebraic/PolynomialCalculus/Invariant.lean)
+enlarges the input list.
+
+[The Boolean CNF encoding](../../Complexity/Logics/Propositional/Algebraic/CNF/Boolean.lean)
+substitutes `X v` for the positive literal coordinate and `1 - X v` for the negative one in
+`Clause.toPoly`. So `Clause.toBoolPoly` is the standard product encoding in the original
+variables: `x ∨ ¬y` becomes `(1 - x) · y`. With `1` read as true, the clause polynomial is `0`
+at a satisfying point and `1` at a falsifying point (`Clause.eval_toBoolPoly`), and
+`CNF.isBoolSolution_toBoolPolys_iff` identifies Boolean solutions with satisfying assignments.
+Because the Boolean axioms are inputs, contradictory unit clauses have no spurious solution.
+`CNF.not_satisfiable_of_ns` and `CNF.not_satisfiable_of_pc` give soundness. Over a field,
+`CNF.ns_refutableInDegree_iff` and `CNF.pc_refutableInDegree_iff` give refutability in degree
+`card V + w`, for clauses of at most `w` literals, exactly when the formula is unsatisfiable.
+
+[The subset-sum lower bound](../../Complexity/Logics/Propositional/Algebraic/SubsetSum.lean) is
+Theorem 5.1 of Impagliazzo, Pudlák and Sgall. Suppose every `c i` is nonzero and `n ≥ 1`. Then
+`m - ∑ c i * X i`, with the Boolean axioms, has no polynomial calculus refutation
+(`PC.not_refutableInDegree_subsetSumPoly`) and no Nullstellensatz refutation
+(`NS.not_refutableInDegree_subsetSumPoly`) of degree `⌈n/2⌉ = (n + 1) / 2`. The source proves
+this over `ℝ`; the formal statement needs only a field in which `n!` is nonzero. When no subset
+of the `c i` sums to `m`, completeness gives a refutation of degree `n + 1`
+(`PC.refutableInDegree_subsetSumPoly_iff`). The proof runs the invariant method
+`PC.IsProof.mem_of_degree_le` on the submodule of polynomials that agree on the cube with
+`(m - ∑ c i x i) · r` for some `r` of degree below `d`, using Lemma 5.2 from the
+[foundations section](#foundations-for-algebraic-degree-lower-bounds). The
+[tests](../../ComplexityTests/ProofComplexity/Algebraic.lean) check the following instances:
+
+- An explicit degree-2 Nullstellensatz refutation of `1/2 - x`, which has no degree-1
+  polynomial calculus refutation.
+- `x₁ + x₂ + x₃ + x₄ = 5` over `ℚ` and over `ZMod 7`, refutable in degree 5 but not in degree 2.
+- The instance with no variables, refutable in degree 0, which shows that `n ≥ 1` is needed.
+- `v ∧ ¬v`, refuted in degree 1, and the satisfiable formula `v`, which has no refutation.
+
+Run `scripts/build.sh ComplexityTests.ProofComplexity.Algebraic` from the repository root to
+check them. Not yet formalized: the matching upper bound of Theorem 4.2, the size lower bounds of
+the same paper, pigeonhole degree lower bounds, the simulation of bounded-width resolution by
+polynomial calculus, and sum-of-squares.
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |
@@ -186,6 +240,6 @@ Two Boolean-analysis lemmas from the subset-sum degree lower bound of Impagliazz
 
 ## Known Limitations
 
-This chapter covers propositional syntax, resolution, and foundational algebraic proof predicates. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
+This chapter covers propositional syntax, resolution, algebraic proof predicates over the Boolean cube and one algebraic degree lower bound. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [complexitylib]: ../sources.md#complexitylib

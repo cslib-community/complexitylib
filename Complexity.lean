@@ -4428,11 +4428,16 @@ public import Complexity.Logics.FirstOrder.Subformula
 public import Complexity.Logics.FirstOrder.Tuple
 public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Polymorphism.BooleanClone
+public import Complexity.Logics.Propositional.Algebraic.Boolean
 public import Complexity.Logics.Propositional.Algebraic.CNF
+public import Complexity.Logics.Propositional.Algebraic.CNF.Boolean
+public import Complexity.Logics.Propositional.Algebraic.Nullstellensatz.Combination
 public import Complexity.Logics.Propositional.Algebraic.Nullstellensatz.PolynomialCalculus
 public import Complexity.Logics.Propositional.Algebraic.Nullstellensatz.Proof
+public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Invariant
 public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Nullstellensatz
 public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Proof
+public import Complexity.Logics.Propositional.Algebraic.SubsetSum
 public import Complexity.Logics.Propositional.CNF
 public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
