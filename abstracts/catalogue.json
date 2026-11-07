@@ -184,7 +184,7 @@
     },
     {
       "id": "andreev-threshold",
-      "title": "Depth-two threshold circuits for Andreev's function: quadratic upper bound and tight average-case bounds",
+      "title": "Depth-two threshold circuits for Andreev's function: quadratic upper bound and average-case bounds tight up to polylogarithmic factors",
       "module": "ComplexityAbstracts.AndreevThresholdAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_upper_bound",
@@ -332,7 +332,7 @@
         "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP",
         "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP_encBinary"
       ],
-      "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions requires at least quasi-polynomial time in the truth-table size. Note (October 2026): the native formalization of OpenAI's manuscript now proves ETH false; see the catalogue entry ‘OpenAI: the Exponential Time Hypothesis is false’. This conditional theorem is retained and remains valid, but its premise is false.",
+      "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions cannot be done in time N^o(log log N), where N is the truth-table size. Note (October 2026): the native formalization of OpenAI's manuscript now proves ETH false; see the catalogue entry ‘OpenAI: the Exponential Time Hypothesis is false’. This conditional theorem is retained and remains valid, but its premise is false.",
       "scope": "Explicit 3SAT and PartialMCSP encodings (both unary and binary size thresholds), De Morgan all-gates and binary-gate cost measures, and deterministic multi-tape subexponential-time lower bounds 2^o(m log m) = N^o(log log N).",
       "foundations": [
         "ComplexityAbstracts.Encoding",
