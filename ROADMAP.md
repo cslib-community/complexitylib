@@ -548,9 +548,11 @@ index links to canonical definitions rather than keeping a second set.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
 - **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`**
-  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): an alternating machine
-  checks one cell of a deterministic tableau. It guesses the cell's predecessor window
-  existentially and checks each predecessor cell universally.
+  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): word games on
+  polynomially long positions are in `APSPACE` (`mem_APSPACE_of_wins`). What remains is the
+  tableau game, in which a position names one cell of a deterministic tableau of time `2 ^ n ^ k`,
+  the existential player guesses the cell's predecessor window and the universal player picks the
+  predecessor cell to check. A logspace version of the word game machine would give `P ⊆ AL`.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).

@@ -1397,6 +1397,7 @@ public import Complexity.Computability.Complexity.Classes.Alternation.GuessVerif
 public import Complexity.Computability.Complexity.Classes.Alternation.NP
 public import Complexity.Computability.Complexity.Classes.Alternation.Savitch
 public import Complexity.Computability.Complexity.Classes.Alternation.Space
+public import Complexity.Computability.Complexity.Classes.Alternation.SpaceGame
 public import Complexity.Computability.Complexity.Classes.Alternation.TQBF
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification
@@ -2065,6 +2066,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Gue
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Marking
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Views
+public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.WordGame
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.BalancedParameters
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluator
