@@ -11,7 +11,8 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 - [Memory and state-transition specifications](memory-specifications.md): relational adaptive clients, refinement, amortization, memory charges, native callable contracts, framing and traces.
 - [Online and streaming models](online-and-streaming.md): demand paging, competitive analysis, Count-Min and native streaming folds.
 - [Borrowed registers and native Tree Evaluation](catalytic-and-tree-evaluation.md): exact restoration, explicit gate-table inputs, Cook–Mertz workspace, and fan-in/packed variants.
-- [Representative algorithm endpoints](algorithm-endpoints.md): what the formal abstracts prove about sorting/selection, shortest paths, heaps, hashing and minimum cut, and the pure-Lean greedy set-cover approximation bound.
+- [Representative algorithm endpoints](algorithm-endpoints.md): what the formal abstracts prove about sorting/selection, shortest paths, heaps, hashing and minimum cut, and the classical approximation bounds for set cover, vertex cover and metric TSP.
+- [Mechanism design](mechanism-design.md): single-parameter mechanisms, Myerson's Lemma, Vickrey and knapsack auctions, and VCG; incentive properties only, with no running time charged.
 
 ## Taxonomy
 
@@ -33,6 +34,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 | Restoring operations | Arbitrary borrowed vector registers or key tables | Exact restoration; native realization not bundled |
 | Tree-evaluation problem family | Binary/fan-in-d gate trees and packed controllers | Explicit input encoding; native Cook–Mertz workspace distinct from algebraic correctness |
 | History transformation | Timeline editing by reset and replay | Explicit edit/reset/replay calls; no automatic rollback or constant-time list copying |
+| Incentive model | Single-parameter and general sealed-bid mechanisms | None: allocation and payment rules are arbitrary real functions; DSIC/IR over nonnegative bids |
 
 ## Major bridge statements
 
