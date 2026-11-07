@@ -37,6 +37,10 @@ who holds `y`, can use shared randomness, but no communication, to produce `s` a
   factor as `c x y · f x s · g y t` has this form (`isEmbeddable_map_fst_of_apply_eq_mul`).
 * **Claim 6.1** (`dist_filter_le_two_mul`): conditioning two distributions on an event of
   probability `1 / 2` under both at most doubles their distance.
+* **The hypotheses of Corollary 5.3 from a redrawn input** (`dist_withKernel_condY_le`,
+  `dist_withKernel_condX_le`): if `J` is close to the law that keeps `(y, s)` and redraws `x` from
+  `P₀` given `y`, and the `y`-marginals of `J` and `P₀` are close, then `J` is close to
+  `P₀ P_{S | Y}`. This is the triangle step of Holenstein's (6.13)–(6.15).
 
 Embeddings compose, adding their errors (`IsEmbeddable.trans`); the parties may post-process their
 outputs locally (`IsEmbeddable.map`); and the error may be weakened (`IsEmbeddable.mono`).
@@ -59,6 +63,9 @@ Shared randomness from any type, in any universe, witnesses an embedding
   `Cslib.Probability.CorrelatedSampling.IsEmbeddable.trans`: introduction, weakening, local
   post-processing and composition.
 * `Cslib.Probability.CorrelatedSampling.dist_filter_le_two_mul`: Claim 6.1.
+* `Cslib.Probability.CorrelatedSampling.dist_withKernel_condY_le`,
+  `Cslib.Probability.CorrelatedSampling.dist_withKernel_condX_le`: the hypotheses of
+  Corollary 5.3 from a redrawn input.
 
 ## References
 
@@ -337,5 +344,81 @@ theorem dist_filter_le_two_mul {Z : Type*} [Fintype Z] (p q : PMF Z) (E : Set Z)
     norm_num [div_eq_mul_inv, mul_comm]
   · simp only [sub_self, abs_zero]
     positivity
+
+/-! ### The hypotheses of Corollary 5.3 from a redrawn input -/
+
+section RedrawnInput
+
+/-- **The triangle step of Holenstein's (6.13)–(6.15)** [Holenstein, proof of Lemma 6.4,
+(6.13)–(6.15)][Holenstein2009]. Let `K` draw `x` given `y` under `P₀`, so that `P₀ = P_Y K`. A
+joint law `J` of `((x, y), s)` is within `ε₁ + ε₂` of `P₀ P_{S | Y}`, the left side of the second
+hypothesis of Corollary 5.3, if it is within `ε₁` of the law that keeps `(y, s)` from `J` and
+redraws `x` from `K y`, and its `y`-marginal is within `ε₂` of that of `P₀`. -/
+theorem dist_withKernel_condY_le (J : PMF ((X × Y) × S)) (P₀ : PMF (X × Y)) (K : Y → PMF X)
+    (hK : (P₀.map Prod.snd).bind (fun y => (K y).map (·, y)) = P₀) :
+    dist J (withKernel P₀ fun xy => condY J xy.2) ≤
+      dist J ((J.map (Prod.map Prod.snd id)).bind fun (y, s) => (K y).map fun x => ((x, y), s)) +
+        dist ((J.map Prod.fst).map Prod.snd) (P₀.map Prod.snd) := by
+  set M := J.map (Prod.map Prod.snd id)
+  -- Both laws draw `y` and then `x` and `s` independently, from `K y` and `P_{S | Y = y}`.
+  set Λ : Y → PMF ((X × Y) × S) := fun y =>
+    (condY J y).bind fun s => (K y).map fun x => ((x, y), s)
+  have hR : (M.bind fun (y, s) => (K y).map fun x => ((x, y), s)) = (M.map Prod.fst).bind Λ := by
+    conv_lhs => rw [← bind_conditionalSnd M]
+    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def, Λ, condY, M]
+  have hT : withKernel P₀ (fun xy => condY J xy.2) = (P₀.map Prod.snd).bind Λ := by
+    conv_lhs => rw [← hK]
+    simp only [withKernel, PMF.bind_bind, PMF.bind_map, Function.comp_def, Λ]
+    congr 1
+    funext y
+    simp only [PMF.map, Function.comp_def]
+    exact PMF.bind_comm _ _ _
+  have hM : M.map Prod.fst = (J.map Prod.fst).map Prod.snd := by
+    simp only [M, PMF.map_comp]
+    rfl
+  rw [hR, hT]
+  calc _ ≤ dist J ((M.map Prod.fst).bind Λ) +
+        dist ((M.map Prod.fst).bind Λ) ((P₀.map Prod.snd).bind Λ) := dist_triangle _ _ _
+    _ ≤ _ := by
+      gcongr
+      rw [hM]
+      exact dist_bind_le _ _ _
+
+/-- **The triangle step of Holenstein's (6.16)** [Holenstein, proof of Lemma 6.4,
+(6.16)][Holenstein2009], the mirror image of `dist_withKernel_condY_le`. Let `K` draw `y` given
+`x` under `P₀`. A joint law `J` of `((x, y), s)` is within `ε₁ + ε₂` of `P₀ P_{S | X}`, the left
+side of the first hypothesis of Corollary 5.3, if it is within `ε₁` of the law that keeps `(x, s)`
+from `J` and redraws `y` from `K x`, and its `x`-marginal is within `ε₂` of that of `P₀`. -/
+theorem dist_withKernel_condX_le (J : PMF ((X × Y) × S)) (P₀ : PMF (X × Y)) (K : X → PMF Y)
+    (hK : (P₀.map Prod.fst).bind (fun x => (K x).map (x, ·)) = P₀) :
+    dist J (withKernel P₀ fun xy => condX J xy.1) ≤
+      dist J ((J.map (Prod.map Prod.fst id)).bind fun (x, s) => (K x).map fun y => ((x, y), s)) +
+        dist ((J.map Prod.fst).map Prod.fst) (P₀.map Prod.fst) := by
+  set M := J.map (Prod.map Prod.fst id)
+  -- Both laws draw `x` and then `y` and `s` independently, from `K x` and `P_{S | X = x}`.
+  set Λ : X → PMF ((X × Y) × S) := fun x =>
+    (condX J x).bind fun s => (K x).map fun y => ((x, y), s)
+  have hR : (M.bind fun (x, s) => (K x).map fun y => ((x, y), s)) = (M.map Prod.fst).bind Λ := by
+    conv_lhs => rw [← bind_conditionalSnd M]
+    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def, Λ, condX, M]
+  have hT : withKernel P₀ (fun xy => condX J xy.1) = (P₀.map Prod.fst).bind Λ := by
+    conv_lhs => rw [← hK]
+    simp only [withKernel, PMF.bind_bind, PMF.bind_map, Function.comp_def, Λ]
+    congr 1
+    funext x
+    simp only [PMF.map, Function.comp_def]
+    exact PMF.bind_comm _ _ _
+  have hM : M.map Prod.fst = (J.map Prod.fst).map Prod.fst := by
+    simp only [M, PMF.map_comp]
+    rfl
+  rw [hR, hT]
+  calc _ ≤ dist J ((M.map Prod.fst).bind Λ) +
+        dist ((M.map Prod.fst).bind Λ) ((P₀.map Prod.fst).bind Λ) := dist_triangle _ _ _
+    _ ≤ _ := by
+      gcongr
+      rw [hM]
+      exact dist_bind_le _ _ _
+
+end RedrawnInput
 
 end Cslib.Probability.CorrelatedSampling
