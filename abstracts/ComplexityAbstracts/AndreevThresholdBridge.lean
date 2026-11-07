@@ -56,19 +56,28 @@ def andreev (b m : ℕ) (x : Fin (2 ^ b + b * m) → Bool) : Bool :=
   tableInput x (tableIndex b fun j => parity m (blockInput x j))
 
 /-- **Exact quadratic upper bound.** For all `b, m`, Andreev's function on `n = 2^b + b*m` bits is
-computed by a depth-two weighted threshold circuit with `2 * 4^b + b * m * 2^b + 1` gates
-(`2 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
+computed by a depth-two weighted threshold circuit with `2 * 4^b + b * m * 2^b + 1` gates in which
+every gate either reads only original inputs, with integer weights of absolute value at most `2`, or
+reads only gates, with odd integer weights of absolute value below `2 n`. The weight conjunct is
+`Cslib.Circuits.Boolean.WeightedThreshold.lines_andreevCircuit_bottom_or_top`. -/
 theorem exact_upper_bound (b m : ℕ) :
     ∃ c : ThrCircuit (2 ^ b + b * m),
       c.depth ≤ 2 ∧
       c.size = 2 * 4 ^ b + b * m * 2 ^ b + 1 ∧
       wireCount c ≤ (2 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
-      (∀ x, evaluate c x = andreev b m x) :=
+      (∀ x, evaluate c x = andreev b m x) ∧
+      ∀ gate : Fin c.size,
+        ((∀ a, ∃ i, (c.program.lines gate).wires a = Cslib.Circuits.Wire.input i) ∧
+          ∀ a, ∃ z : ℤ, |z| ≤ 2 ∧ (c.program.lines gate).op.weight a = z) ∨
+        ((∀ a, ∃ g, (c.program.lines gate).wires a = Cslib.Circuits.Wire.gate g) ∧
+          ∀ a, ∃ z : ℤ, Odd z ∧ |z| < 2 * ((2 ^ b + b * m : ℕ) : ℤ) ∧
+            (c.program.lines gate).op.weight a = z) :=
   ⟨Cslib.Circuits.Boolean.WeightedThreshold.andreevCircuit b m,
     Cslib.Circuits.Boolean.WeightedThreshold.depth_andreevCircuit_le b m,
     Cslib.Circuits.Boolean.WeightedThreshold.size_andreevCircuit b m,
     Cslib.Circuits.Boolean.WeightedThreshold.wireCount_andreevCircuit_le b m,
-    fun x => congrFun (Cslib.Circuits.Boolean.WeightedThreshold.computes_andreevCircuit b m x) 0⟩
+    fun x => congrFun (Cslib.Circuits.Boolean.WeightedThreshold.computes_andreevCircuit b m x) 0,
+    Cslib.Circuits.Boolean.WeightedThreshold.lines_andreevCircuit_bottom_or_top b m⟩
 
 /-- **High-agreement (`1 - δ`) windowed upper bound.** Restricting the `2^b` parity-character
 ladders to closed windows of half-width `B` around their expected centers gives a depth-two

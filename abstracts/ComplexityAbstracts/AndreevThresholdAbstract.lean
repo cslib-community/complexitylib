@@ -26,9 +26,11 @@ This development formalizes four improvements over the bounds of Kane and Willia
 `X_S (-1)^(t_S) = (-1)^(2^b) φ(X_S + t_S) - φ(t_S)` (where `(-1)^(2^b) = 1` for `b > 0`, so
 `X_S` is even). Telescoping `φ(X_S + t_S)` over its range `[-2 ^ b, 2 ^ b + #S m]` and `φ(t_S)`
 over `[0, #S m]` into threshold indicators, Andreev's function is computed exactly by a depth-two
-threshold circuit with `2 * 4 ^ b + b * m * 2 ^ b` bottom gates and one top gate
-(`(3 / 4) n ^ 2 + 1` gates at `2 ^ b = b * m`), bottom weights in `{-2, -1, 0, 1, 2}`, and odd
-integer top weights of absolute value below `2 n`.
+threshold circuit with `2 * 4 ^ b + b * m * 2 ^ b + 1` gates (`(3 / 4) n ^ 2 + 1` gates at
+`2 ^ b = b * m`); the construction has `2 * 4 ^ b + b * m * 2 ^ b` bottom gates and one top gate,
+and the theorem states the total. The theorem also states the weights gate by gate: every gate
+either reads only original inputs, with integer bottom weights in `{-2, -1, 0, 1, 2}`, or reads only
+other gates, with odd integer top weights of absolute value below `2 n`.
 
 **Windowed high-agreement upper bound (`high_agreement_upper_bound`).** Truncating each unary
 threshold ladder to a window of half-width `B ≥ 3 t + 1 / 2` around its expected center reduces
@@ -78,10 +80,13 @@ of the outputs computing Andreev's function satisfies this hypothesis.
 **Model.** Circuits are straight-line programs of upstream `Cslib.Circuits.Circuit` with one output
 over `Cslib.Circuits.Boolean.WeightedThreshold.signature`. Each gate `Op` has an arity `m`, a real
 weight vector `Fin m → ℝ`, and a real threshold, outputting `true` when the weighted sum of its
-`{0, 1}`-valued inputs is at least that threshold. `c.size` counts all threshold gates, `c.depth`
-is the longest path of gates from an output to an input, and `wireCount c` sums over all gates the
-number of distinct input or predecessor-gate wires with nonzero aggregated weight in that gate. The
-elementary threshold-gate signature and circuit-depth recursion are the two allowed model modules.
+`{0, 1}`-valued inputs is at least that threshold. Line `c.program.lines gate` records the gate's
+operation and, for each argument `a`, the wire feeding it: an original input
+`Cslib.Circuits.Wire.input i` or an earlier gate `Cslib.Circuits.Wire.gate g`. `c.size` counts all
+threshold gates, `c.depth` is the longest path of gates from an output to an input, and
+`wireCount c` sums over all gates the number of distinct input or predecessor-gate wires with
+nonzero aggregated weight in that gate. The elementary threshold-gate signature and circuit-depth
+recursion are the two allowed model modules.
 
 ## References
 
@@ -138,14 +143,22 @@ def andreev (b m : ℕ) (x : Fin (2 ^ b + b * m) → Bool) : Bool :=
   tableInput x (tableIndex b fun j => parity m (blockInput x j))
 
 /-- **Exact quadratic upper bound.** For all `b, m`, Andreev's function on `n = 2^b + b*m` bits is
-computed by a depth-two weighted threshold circuit with `2 * 4^b + b * m * 2^b + 1` gates
-(`2 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
+computed by a depth-two weighted threshold circuit with `2 * 4^b + b * m * 2^b + 1` gates and
+integer weights: every gate either reads only original inputs, with weights of absolute value at
+most `2` (a bottom gate), or reads only other gates, with odd weights of absolute value below `2 n`
+(a top gate). -/
 theorem exact_upper_bound (b m : ℕ) :
     ∃ c : ThrCircuit (2 ^ b + b * m),
       c.depth ≤ 2 ∧
       c.size = 2 * 4 ^ b + b * m * 2 ^ b + 1 ∧
       wireCount c ≤ (2 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
-      (∀ x, evaluate c x = andreev b m x) :=
+      (∀ x, evaluate c x = andreev b m x) ∧
+      ∀ gate : Fin c.size,
+        ((∀ a, ∃ i, (c.program.lines gate).wires a = Cslib.Circuits.Wire.input i) ∧
+          ∀ a, ∃ z : ℤ, |z| ≤ 2 ∧ (c.program.lines gate).op.weight a = z) ∨
+        ((∀ a, ∃ g, (c.program.lines gate).wires a = Cslib.Circuits.Wire.gate g) ∧
+          ∀ a, ∃ z : ℤ, Odd z ∧ |z| < 2 * ((2 ^ b + b * m : ℕ) : ℤ) ∧
+            (c.program.lines gate).op.weight a = z) :=
   AndreevThresholdBridge.exact_upper_bound b m
 
 /-- **High-agreement (`1 - δ`) windowed upper bound.** Restricting the `2^b` parity-character

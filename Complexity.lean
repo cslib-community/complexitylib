@@ -1078,6 +1078,7 @@ public import Complexity.Computability.Circuit.Boolean.Yablonskii
 public import Complexity.Computability.Circuit.Clique
 public import Complexity.Computability.Circuit.Complexity
 public import Complexity.Computability.Circuit.CompositionDepth
+public import Complexity.Computability.Circuit.CompositionLines
 public import Complexity.Computability.Circuit.Continuity
 public import Complexity.Computability.Circuit.Counting
 public import Complexity.Computability.Circuit.CriticalPath
