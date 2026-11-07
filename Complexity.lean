@@ -1500,6 +1500,9 @@ public import Complexity.Computability.Complexity.Classes.IP.TQBF.Protocol
 public import Complexity.Computability.Complexity.Classes.IP.TQBF.Tokens
 public import Complexity.Computability.Complexity.Classes.IP.TQBF.Verifier
 public import Complexity.Computability.Complexity.Classes.IP.TQBF.Words
+public import Complexity.Computability.Complexity.Classes.Immune
+public import Complexity.Computability.Complexity.Classes.Immune.Complete
+public import Complexity.Computability.Complexity.Classes.Immune.Construction
 public import Complexity.Computability.Complexity.Classes.Inclusions
 public import Complexity.Computability.Complexity.Classes.Ladner
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
