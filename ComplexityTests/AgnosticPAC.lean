@@ -113,4 +113,9 @@ example : 1 ≤ sampleComplexity IsPACLearnerFor (constants : Set (Bool → Bool
     push_cast
     linarith [Real.log_two_lt_d9]
 
+/-- Agnostic PAC learnability of a finite class needs no inhabited hypothesis space: with an empty
+label type there are no hypotheses at all, and the empty class is still learnable. -/
+example : IsPACLearnable ((∅ : Finset (Bool → Empty)) : Set (Bool → Empty)) Set.univ :=
+  isPACLearnable_univ_of_finite (by simp)
+
 end ComplexityTests.AgnosticPAC

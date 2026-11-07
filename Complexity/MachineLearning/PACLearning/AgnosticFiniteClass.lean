@@ -12,8 +12,9 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 /-! # Agnostic PAC learning of finite classes
 
-Every finite class `H` of hypotheses `α → β` is agnostically PAC learnable by empirical risk
-minimization [ShalevShwartzBenDavid2014, Corollary 4.6]. Under *every* distribution `D` on
+Every finite class `H` of hypotheses `α → β` is agnostically PAC learnable for the 0-1 loss by
+empirical risk minimization [ShalevShwartzBenDavid2014, Corollary 4.6, stated there for any loss
+with values in `[0, 1]`]. Under *every* distribution `D` on
 `α × β`, realizable or not, an ERM learner on
 
 `m ≥ 2 log (2 |H| / δ) / ε²`
@@ -69,9 +70,10 @@ theorem IsERM.measure_pi_lt_error_le (D : Measure (α × β)) [IsProbabilityMeas
   · exact fun hrep => (not_le.2 hS) (hrep.error_le_optimalError_add hA)
   · rw [show -2 * (m : ℝ) * (ε / 2) ^ 2 = -m * ε ^ 2 / 2 by ring]
 
-/-- **Finite classes are agnostically PAC learnable by ERM** [ShalevShwartzBenDavid2014,
-Corollary 4.6]: under every distribution `D`, if `m ≥ 2 log (2 |H| / δ) / ε²` then an empirical
-risk minimizer for `H` misses `optimalError D H + ε` with probability at most `δ`. -/
+/-- **Finite classes are agnostically PAC learnable by ERM** for the 0-1 loss
+[ShalevShwartzBenDavid2014, Corollary 4.6]: under every distribution `D`, if
+`m ≥ 2 log (2 |H| / δ) / ε²` then an empirical risk minimizer for `H` misses
+`optimalError D H + ε` with probability at most `δ`. -/
 theorem IsERM.measure_pi_lt_error_le_of_log_le (D : Measure (α × β)) [IsProbabilityMeasure D]
     {H : Finset (α → β)} (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2}) {m : ℕ}
     {A : Learner α β m} (hA : IsERM A (H : Set (α → β))) {ε δ : ℝ} (hε : 0 ≤ ε) (hδ : 0 < δ)
@@ -100,12 +102,12 @@ section PAC
 
 variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
 
-/-- **Agnostic PAC learning of finite classes** [ShalevShwartzBenDavid2014, Corollary 4.6]: a finite
-class `H` is `(ε, δ)`-PAC learnable over all distributions from `m ≥ 2 log (2 |H| / δ) / ε²`
-examples. If `H` is nonempty the learner is any empirical risk minimizer. If `H` is empty the
-optimal error is `⊤` and any learner works. The instance `Nonempty (α → β)` is needed in that
-case: the hypothesis on `m` then holds at `m = 0`, and there is no learner from zero examples
-when `α → β` is empty. -/
+/-- **Agnostic PAC learning of finite classes** for the 0-1 loss [ShalevShwartzBenDavid2014,
+Corollary 4.6]: a finite class `H` is `(ε, δ)`-PAC learnable over all distributions from
+`m ≥ 2 log (2 |H| / δ) / ε²` examples. If `H` is nonempty the learner is any empirical risk
+minimizer. If `H` is empty the optimal error is `⊤` and any learner works. The instance
+`Nonempty (α → β)` is needed in that case: the hypothesis on `m` then holds at `m = 0`, and there
+is no learner from zero examples when `α → β` is empty. -/
 theorem isPACLearnerFor_univ_of_log_le [Nonempty (α → β)] {H : Finset (α → β)}
     (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2}) {m : ℕ} {ε δ : Set.Ioo (0 : ℝ≥0) 1}
     (hm : 2 * Real.log (2 * H.card / (δ.val : ℝ)) ≤ (ε.val : ℝ) ^ 2 * m) :
@@ -131,7 +133,7 @@ private theorem log_le_ceil {n : ℕ} (ε δ : Set.Ioo (0 : ℝ≥0) 1) :
   rw [div_le_iff₀ hε] at this
   linarith
 
-/-- The agnostic sample complexity of a finite class `H` is at most
+/-- The agnostic sample complexity of a finite class `H` for the 0-1 loss is at most
 `⌈2 log (2 |H| / δ) / ε²⌉` [ShalevShwartzBenDavid2014, Corollary 4.6]. -/
 theorem sampleComplexity_univ_le_of_finite [Nonempty (α → β)] {H : Finset (α → β)}
     (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2}) (ε δ : Set.Ioo (0 : ℝ≥0) 1) :
@@ -139,12 +141,16 @@ theorem sampleComplexity_univ_le_of_finite [Nonempty (α → β)] {H : Finset (�
       ⌈2 * Real.log (2 * H.card / (δ.val : ℝ)) / (ε.val : ℝ) ^ 2⌉₊ :=
   Nat.sInf_le (isPACLearnerFor_univ_of_log_le hH (log_le_ceil ε δ))
 
-/-- **Every finite class is agnostically PAC learnable** [ShalevShwartzBenDavid2014,
-Corollary 4.6]. -/
-theorem isPACLearnable_univ_of_finite [Nonempty (α → β)] {H : Finset (α → β)}
+/-- **Every finite class is agnostically PAC learnable** for the 0-1 loss
+[ShalevShwartzBenDavid2014, Corollary 4.6]. No instance `Nonempty (α → β)` is needed here: for
+the empty class one example suffices, and the learner returns its label. -/
+theorem isPACLearnable_univ_of_finite {H : Finset (α → β)}
     (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2}) :
-    IsPACLearnable (H : Set (α → β)) Set.univ := fun ε δ =>
-  ⟨_, isPACLearnerFor_univ_of_log_le hH (log_le_ceil ε δ)⟩
+    IsPACLearnable (H : Set (α → β)) Set.univ := fun ε δ => by
+  rcases H.eq_empty_or_nonempty with rfl | ⟨h, -⟩
+  · exact ⟨1, fun S _ => (S 0).2, fun D _ _ => by simp [optimalError]⟩
+  · have : Nonempty (α → β) := ⟨h⟩
+    exact ⟨_, isPACLearnerFor_univ_of_log_le hH (log_le_ceil ε δ)⟩
 
 end PAC
 

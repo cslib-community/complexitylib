@@ -62,7 +62,7 @@ variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β] [DecidableEq 
 /-- A labeled sample `S` is *ε-representative* for the class `C` under `D` if the empirical error
 `empiricalMiscount h S / m` of every `h ∈ C` is within `ε` of its true error
 [ShalevShwartzBenDavid2014, Definition 4.1]. -/
-def IsRepresentative (D : Measure (α × β)) (C : ConceptClass α β) (ε : ℝ) {m : ℕ}
+@[expose] def IsRepresentative (D : Measure (α × β)) (C : ConceptClass α β) (ε : ℝ) {m : ℕ}
     (S : LabeledSample α β m) : Prop :=
   ∀ h ∈ C, |(empiricalMiscount h S : ℝ) / m - (error D h).toReal| ≤ ε
 
