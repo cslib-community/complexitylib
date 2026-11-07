@@ -22,13 +22,13 @@ For a Markov chain `P` on a finite state space with a distribution `π`, define 
 statistical distances after `t` steps
 
 * `d(t) = max_x ‖Pᵗ(x, ·) - π‖_TV` (`Cslib.Probability.MarkovChain.distToStationary`,
-  [LevinPeresWilmer2017], (4.22)), and
+  [LevinPeres2017], (4.22)), and
 * `d̄(t) = max_{x,y} ‖Pᵗ(x, ·) - Pᵗ(y, ·)‖_TV` (`Cslib.Probability.MarkovChain.distPair`,
-  [LevinPeresWilmer2017], (4.23)),
+  [LevinPeres2017], (4.23)),
 
 and the mixing time `t_mix(ε) = min {t | d(t) ≤ ε}` (`Cslib.Probability.MarkovChain.mixingTime`,
-[LevinPeresWilmer2017], (4.30)). Here `‖μ - ν‖_TV` is cslib's statistical distance `dist μ ν`,
-which is LPW's total-variation distance `max_A |μ A - ν A|` (half of Mathlib's `tvDist`). The
+[LevinPeres2017], (4.30)). Here `‖μ - ν‖_TV` is cslib's statistical distance `dist μ ν`,
+which is the total-variation distance `max_A |μ A - ν A|` (half of Mathlib's `tvDist`). The
 mixing time takes values in `ℕ∞` and is `⊤` exactly when `d(t) > ε` for every `t`, so no
 irreducibility or aperiodicity hypothesis is built in.
 
@@ -56,7 +56,7 @@ from an optimal coupling (`Cslib.Probability.PMF.dist_bind_le_mul`).
 
 ## References
 
-* [LevinPeresWilmer2017], Sections 4.4 and 4.5.
+* [LevinPeres2017], Sections 4.4 and 4.5.
 -/
 
 public section
@@ -70,16 +70,16 @@ open Cslib.Probability.PMF
 variable {S : Type*} [Fintype S]
 
 /-- `d(t) = max_x ‖Pᵗ(x, ·) - π‖_TV`, the worst-case statistical distance to `π` after `t` steps
-([LevinPeresWilmer2017], (4.22)). -/
+([LevinPeres2017], (4.22)). -/
 noncomputable def distToStationary (P : MarkovChain S) (π : PMF S) (t : ℕ) : ℝ :=
   ⨆ x, dist ((P ^ t) x) π
 
 /-- `d̄(t) = max_{x,y} ‖Pᵗ(x, ·) - Pᵗ(y, ·)‖_TV`, the worst-case statistical distance between two
-copies of the chain after `t` steps ([LevinPeresWilmer2017], (4.23)). -/
+copies of the chain after `t` steps ([LevinPeres2017], (4.23)). -/
 noncomputable def distPair (P : MarkovChain S) (t : ℕ) : ℝ :=
   ⨆ x, ⨆ y, dist ((P ^ t) x) ((P ^ t) y)
 
-/-- The mixing time `t_mix(ε) = min {t | d(t) ≤ ε}` ([LevinPeresWilmer2017], (4.30)), or `⊤` if
+/-- The mixing time `t_mix(ε) = min {t | d(t) ≤ ε}` ([LevinPeres2017], (4.30)), or `⊤` if
 `d(t) > ε` for every `t`. -/
 noncomputable def mixingTime (P : MarkovChain S) (π : PMF S) (ε : ℝ) : ℕ∞ :=
   open Classical in
@@ -122,7 +122,7 @@ theorem distPair_le_one (t : ℕ) : P.distPair t ≤ 1 :=
 
 variable {P π}
 
-/-- `d(t) ≤ d̄(t)` for stationary `π` ([LevinPeresWilmer2017], Lemma 4.10). -/
+/-- `d(t) ≤ d̄(t)` for stationary `π` ([LevinPeres2017], Lemma 4.10). -/
 theorem IsStationary.distToStationary_le_distPair (hπ : P.IsStationary π) (t : ℕ) :
     P.distToStationary π t ≤ P.distPair t := by
   refine P.distToStationary_le π (fun x => ?_) (P.distPair_nonneg t)
@@ -131,7 +131,7 @@ theorem IsStationary.distToStationary_le_distPair (hπ : P.IsStationary π) (t :
     _ ≤ P.distPair t :=
         dist_bind_left_le_of_le π (P ^ t) ((P ^ t) x) fun y _ => P.dist_le_distPair t y x
 
-/-- `d̄(t) ≤ 2 d(t)` ([LevinPeresWilmer2017], Lemma 4.10); this holds for every `π`. -/
+/-- `d̄(t) ≤ 2 d(t)` ([LevinPeres2017], Lemma 4.10); this holds for every `π`. -/
 theorem distPair_le_two_mul_distToStationary (t : ℕ) :
     P.distPair t ≤ 2 * P.distToStationary π t := by
   refine P.distPair_le (fun x y => ?_) (by linarith [P.distToStationary_nonneg π t])
@@ -150,7 +150,7 @@ theorem IsStationary.distToStationary_succ_le (hπ : P.IsStationary π) (t : ℕ
     _ ≤ dist ((P ^ t) x) π := dist_bind_le _ _ _
     _ ≤ _ := P.dist_le_distToStationary π t x
 
-/-- `d(t)` is non-increasing for stationary `π` ([LevinPeresWilmer2017], Exercise 4.2). -/
+/-- `d(t)` is non-increasing for stationary `π` ([LevinPeres2017], Exercise 4.2). -/
 theorem IsStationary.antitone_distToStationary (hπ : P.IsStationary π) :
     Antitone (P.distToStationary π) :=
   antitone_nat_of_succ_le hπ.distToStationary_succ_le
@@ -160,11 +160,11 @@ theorem distPair_succ_le (t : ℕ) : P.distPair (t + 1) ≤ P.distPair t := by
   rw [pow_succ_apply, pow_succ_apply]
   exact (dist_bind_le _ _ _).trans (P.dist_le_distPair t x y)
 
-/-- `d̄(t)` is non-increasing ([LevinPeresWilmer2017], Exercise 4.2). -/
+/-- `d̄(t)` is non-increasing ([LevinPeres2017], Exercise 4.2). -/
 theorem antitone_distPair : Antitone P.distPair :=
   antitone_nat_of_succ_le distPair_succ_le
 
-/-- **Submultiplicativity** `d̄(s + t) ≤ d̄(s) d̄(t)` ([LevinPeresWilmer2017], Lemma 4.11). -/
+/-- **Submultiplicativity** `d̄(s + t) ≤ d̄(s) d̄(t)` ([LevinPeres2017], Lemma 4.11). -/
 theorem distPair_add_le (s t : ℕ) : P.distPair (s + t) ≤ P.distPair s * P.distPair t := by
   refine P.distPair_le (fun x y => ?_)
     (mul_nonneg (P.distPair_nonneg s) (P.distPair_nonneg t))
@@ -172,7 +172,7 @@ theorem distPair_add_le (s t : ℕ) : P.distPair (s + t) ≤ P.distPair s * P.di
   exact (dist_bind_le_mul _ _ (P ^ t) (P.dist_le_distPair t)).trans
     (mul_le_mul_of_nonneg_right (P.dist_le_distPair s x y) (P.distPair_nonneg t))
 
-/-- `d̄(ℓ t) ≤ d̄(t)^ℓ` ([LevinPeresWilmer2017], (4.29)). -/
+/-- `d̄(ℓ t) ≤ d̄(t)^ℓ` ([LevinPeres2017], (4.29)). -/
 theorem distPair_mul_le (ℓ t : ℕ) : P.distPair (ℓ * t) ≤ P.distPair t ^ ℓ := by
   induction ℓ with
   | zero => simpa using P.distPair_le_one 0
@@ -181,7 +181,7 @@ theorem distPair_mul_le (ℓ t : ℕ) : P.distPair (ℓ * t) ≤ P.distPair t ^ 
     exact (P.distPair_add_le _ _).trans
       (mul_le_mul_of_nonneg_right ih (P.distPair_nonneg t))
 
-/-- `d(ℓ t) ≤ (2 d(t))^ℓ` for stationary `π` ([LevinPeresWilmer2017], (4.32)). -/
+/-- `d(ℓ t) ≤ (2 d(t))^ℓ` for stationary `π` ([LevinPeres2017], (4.32)). -/
 theorem IsStationary.distToStationary_mul_le (hπ : P.IsStationary π) (ℓ t : ℕ) :
     P.distToStationary π (ℓ * t) ≤ (2 * P.distToStationary π t) ^ ℓ :=
   (hπ.distToStationary_le_distPair _).trans <| (P.distPair_mul_le ℓ t).trans <|
@@ -225,7 +225,7 @@ theorem IsStationary.mixingTime_le_iff (hπ : P.IsStationary π) (ε : ℝ) (t :
     (P.distToStationary_le_of_mixingTime_eq hs.symm)
 
 /-- `t_mix(ε) ≤ ⌈log₂ ε⁻¹⌉ t_mix(1/4)` for stationary `π` and `0 < ε`
-([LevinPeresWilmer2017], (4.34)). -/
+([LevinPeres2017], (4.34)). -/
 theorem IsStationary.mixingTime_le_ceil_logb_mul (hπ : P.IsStationary π) {ε : ℝ} (hε : 0 < ε) :
     P.mixingTime π ε ≤ (⌈Real.logb 2 ε⁻¹⌉₊ : ℕ∞) * P.mixingTime π (1 / 4) := by
   set ℓ := ⌈Real.logb 2 ε⁻¹⌉₊

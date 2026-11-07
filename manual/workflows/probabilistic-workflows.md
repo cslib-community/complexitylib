@@ -96,9 +96,10 @@ mixing-time goal into `d(t) ≤ ε`, and `IsStationary.mixingTime_le_ceil_logb_m
 To bound `d(t)`, build a chain `Q` on `S × S` and prove `IsMarkovianCoupling P Q`, i.e. that both
 coordinates of `Q z` have the laws `P z.1` and `P z.2`. Then
 `distToStationary_le_of_coupling hπ (fun _ _ => Q) (fun _ _ => hQ) hε` bounds `d(t)` by any `ε`
-that bounds `((Q ^ t) (x, y)).toOuterMeasure {w | w.1 ≠ w.2}` for all starting pairs. The bounded
-event is "the copies differ at time `t`", not LPW's coupling-time tail, and is never larger. To
-bound it, `PMF.toOuterMeasure_bind_le_mul_ennreal` from
+that bounds `(((Q ^ t) (x, y)).toOuterMeasure {w | w.1 ≠ w.2}).toReal` for all starting pairs.
+The bounded event is "the copies differ at time `t`", not the source's coupling-time tail, and is
+never larger. The theorem covers time-homogeneous Markovian couplings only, but needs no
+stickiness. To bound the event, `PMF.toOuterMeasure_bind_le_mul_ennreal` from
 [PMF/Event.lean](../../Complexity/Probability/PMF/Event.lean) gives a step-by-step induction. The
 worked client is [BitString/LazyRandomWalk.lean](../../Complexity/Probability/BitString/LazyRandomWalk.lean):
 for the lazy hypercube walk `Cslib.BitString.lazyRandomWalk ι`, `mixingTime_lazyRandomWalk_le`
@@ -110,8 +111,8 @@ The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2
 chain never mixes, compute a Metropolis acceptance probability, and give the hypercube instance
 with `n = 1`. Run
 `scripts/build.sh ComplexityTests.MarkovChain`. A goal of the form `t_mix(ε) = k` needs both
-directions: `mixingTime_le_of_distToStationary_le` for `≤`, and `mixingTime_le_iff` at `k - 1`
-for `≥`.
+directions: `mixingTime_le_of_distToStationary_le` for `≤`, and
+`(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
 ## Compose local embeddings and extract a strategy
 

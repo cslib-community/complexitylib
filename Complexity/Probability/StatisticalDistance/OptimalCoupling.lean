@@ -38,7 +38,7 @@ pairwise distance of a Markov chain.
 
 ## References
 
-* [LevinPeresWilmer2017], Proposition 4.7 and Remark 4.8 (optimal coupling).
+* [LevinPeres2017], Proposition 4.7 and Remark 4.8 (optimal coupling).
 -/
 
 public section
@@ -52,7 +52,7 @@ variable {α β : Type*}
 private theorem sum_coe_eq_one [Fintype α] (μ : PMF α) : ∑ a, μ a = 1 := by
   simpa [tsum_fintype] using μ.tsum_coe
 
-/-- **Optimal coupling** ([LevinPeresWilmer2017], Proposition 4.7 and Remark 4.8). On a finite
+/-- **Optimal coupling** ([LevinPeres2017], Proposition 4.7 and Remark 4.8). On a finite
 type, two distributions have a coupling whose disagreement probability is exactly their
 statistical distance. -/
 theorem exists_coupling_toReal_eq_dist [Fintype α] (μ ν : PMF α) :

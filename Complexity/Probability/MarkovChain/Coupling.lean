@@ -16,18 +16,21 @@ import Complexity.Probability.PMF.Map
 # Markovian couplings and the coupling bound on mixing
 
 A *Markovian coupling* of a chain `P` on `S` is a chain `Q` on `S × S` whose two coordinates each
-move according to `P` ([LevinPeresWilmer2017], Section 5.1):
+move according to `P` ([LevinPeres2017], Section 5.1):
 `(Q (x, y)).map Prod.fst = P x` and `(Q (x, y)).map Prod.snd = P y`. Then `(Q ^ t) (x, y)` couples
 `(P ^ t) x` with `(P ^ t) y`, so the coupling inequality bounds their statistical distance by the
 probability that the two copies differ at time `t`
-(`Cslib.Probability.MarkovChain.IsMarkovianCoupling.dist_pow_le`, [LevinPeresWilmer2017],
+(`Cslib.Probability.MarkovChain.IsMarkovianCoupling.dist_pow_le`, [LevinPeres2017],
 Theorem 5.4). Taking the worst starting pair bounds `d(t)`
 (`Cslib.Probability.MarkovChain.distToStationary_le_of_coupling`, Corollary 5.5).
 
-LPW state these bounds with the tail `P{τ_couple > t}` of the coupling time. This module bounds by
-the larger-or-equal quantity's lower companion `P{X_t ≠ Y_t}` instead, which is at most
-`P{τ_couple > t}` because `{X_t ≠ Y_t} ⊆ {τ_couple > t}`; the bounds here therefore imply LPW's.
-A coupling is *sticky* (`Cslib.Probability.MarkovChain.IsSticky`, [LevinPeresWilmer2017], (5.2))
+[LevinPeres2017] state these bounds with the tail `P{τ_couple > t}` of the coupling time, for any
+coupling of the two chains that satisfies (5.2), Markovian or not. This module bounds by
+`P{X_t ≠ Y_t}`, which is at most `P{τ_couple > t}` because `{X_t ≠ Y_t} ⊆ {τ_couple > t}` (this
+is the source's intermediate step (5.5)). The results here are restricted to time-homogeneous
+Markovian couplings `Q : MarkovChain (S × S)`, but they need no stickiness; [LevinPeres2017],
+Remark 5.3, notes that every coupling used in the book is Markovian.
+A coupling is *sticky* (`Cslib.Probability.MarkovChain.IsSticky`, [LevinPeres2017], (5.2))
 if the diagonal is absorbing. Under stickiness the two events coincide and their probability is
 non-increasing in `t` (`Cslib.Probability.MarkovChain.IsSticky.antitone_toOuterMeasure`). No
 path-space coupling time is constructed.
@@ -48,7 +51,7 @@ path-space coupling time is constructed.
 
 ## References
 
-* [LevinPeresWilmer2017], Sections 5.1 and 5.2.
+* [LevinPeres2017], Sections 5.1 and 5.2.
 -/
 
 public section
@@ -62,7 +65,7 @@ open Cslib.Probability.PMF
 variable {S : Type*}
 
 /-- `Q` is a Markovian coupling of `P` with itself: each coordinate of `Q` moves according to `P`
-([LevinPeresWilmer2017], Section 5.1). -/
+([LevinPeres2017], Section 5.1). -/
 structure IsMarkovianCoupling (P : MarkovChain S) (Q : MarkovChain (S × S)) : Prop where
   /-- The first coordinate moves according to `P`. -/
   map_fst : ∀ z, (Q z).map Prod.fst = P z.1
@@ -70,7 +73,7 @@ structure IsMarkovianCoupling (P : MarkovChain S) (Q : MarkovChain (S × S)) : P
   map_snd : ∀ z, (Q z).map Prod.snd = P z.2
 
 /-- A coupling is sticky if the two copies stay together once they meet
-([LevinPeresWilmer2017], (5.2)). -/
+([LevinPeres2017], (5.2)). -/
 @[expose] def IsSticky (Q : MarkovChain (S × S)) : Prop :=
   ∀ x, ∀ w ∈ (Q (x, x)).support, w.1 = w.2
 
@@ -98,14 +101,14 @@ theorem IsMarkovianCoupling.coupledWithin_pow (h : P.IsMarkovianCoupling Q) (t :
     CoupledWithin ((P ^ t) x) ((P ^ t) y) (((Q ^ t) (x, y)).toOuterMeasure {w | w.1 ≠ w.2}) :=
   ⟨(Q ^ t) (x, y), h.map_fst_pow t (x, y), h.map_snd_pow t (x, y), le_rfl⟩
 
-/-- **Coupling bound** ([LevinPeresWilmer2017], Theorem 5.4, with the event `{X_t ≠ Y_t}`):
+/-- **Coupling bound** ([LevinPeres2017], Theorem 5.4, with the event `{X_t ≠ Y_t}`):
 `‖Pᵗ(x, ·) - Pᵗ(y, ·)‖_TV ≤ P_{x,y}{X_t ≠ Y_t}`. -/
 theorem IsMarkovianCoupling.dist_pow_le [Fintype S] (h : P.IsMarkovianCoupling Q) (t : ℕ)
     (x y : S) :
     dist ((P ^ t) x) ((P ^ t) y) ≤ (((Q ^ t) (x, y)).toOuterMeasure {w | w.1 ≠ w.2}).toReal :=
   (h.coupledWithin_pow t x y).dist_le (toOuterMeasure_ne_top _ _)
 
-/-- **Coupling bound on mixing** ([LevinPeresWilmer2017], Corollary 5.5): if for every pair of
+/-- **Coupling bound on mixing** ([LevinPeres2017], Corollary 5.5): if for every pair of
 starting states there is a Markovian coupling whose copies differ at time `t` with probability at
 most `ε`, then `d(t) ≤ ε`. -/
 theorem distToStationary_le_of_coupling [Fintype S] {π : PMF S} (hπ : P.IsStationary π)

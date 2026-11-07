@@ -14,15 +14,17 @@ public import Complexity.Probability.MarkovChain.Basic
 
 Given a proposal chain `Ψ` and a target distribution `π`, the Metropolis chain at `x` draws a
 candidate `y ~ Ψ x`, accepts it with probability `min (π y Ψ(y, x) / (π x Ψ(x, y))) 1` and
-otherwise stays at `x` ([LevinPeresWilmer2017], Section 3.2.2, (3.4)). For a symmetric proposal
+otherwise stays at `x` ([LevinPeres2017], Section 3.2.2, (3.4)). For a symmetric proposal
 the acceptance ratio is `π y / π x` (Section 3.2.1). Every Metropolis chain is reversible with
-respect to `π`, and so has `π` as a stationary distribution ([LevinPeresWilmer2017],
+respect to `π`, and so has `π` as a stationary distribution ([LevinPeres2017],
 Section 3.2 and Exercise 3.1).
 
-The construction is total. Ratios are computed in `ℝ≥0∞`, so if `π x Ψ(x, y) = 0` the move is
-always accepted. No positivity, irreducibility or symmetry hypothesis is needed for
-reversibility. The source divides by `π x`, so it implicitly assumes `π` is positive; that
-assumption is not needed here.
+The construction is total. Ratios are computed in `ℝ≥0∞`, where `d / 0 = ⊤` for `d ≠ 0` and
+`0 / 0 = 0`. So if `π x Ψ(x, y) = 0` the move is always accepted when `π y Ψ(y, x) ≠ 0` and
+always rejected when `π y Ψ(y, x) = 0`. Either way `π x P(x, y) = min (π x Ψ(x, y)) (π y Ψ(y, x))`
+for `x ≠ y`. No positivity, irreducibility or symmetry hypothesis is needed for reversibility.
+The source divides by `π x`, so it implicitly assumes `π` is positive; that assumption is not
+needed here.
 
 ## Main definitions
 
@@ -33,14 +35,14 @@ assumption is not needed here.
 ## Main results
 
 * `Cslib.Probability.MarkovChain.metropolis_apply_of_ne`: off-diagonal transition probabilities,
-  [LevinPeresWilmer2017], (3.5).
+  [LevinPeres2017], (3.5).
 * `Cslib.Probability.MarkovChain.isReversible_metropolis`: detailed balance with respect to `π`.
 * `Cslib.Probability.MarkovChain.isStationary_metropolis`: `π` is stationary.
 * `Cslib.Probability.MarkovChain.metropolisRatio_of_symm`: the symmetric-proposal ratio.
 
 ## References
 
-* [LevinPeresWilmer2017], Section 3.2.
+* [LevinPeres2017], Section 3.2.
 -/
 
 public section
@@ -67,19 +69,19 @@ noncomputable def acceptCoin (p : ℝ≥0∞) : PMF Bool :=
   rw [acceptCoin, PMF.ofFintype_apply, ite_eq_right Bool.false_ne_true]
 
 /-- The Metropolis–Hastings ratio `π(y) Ψ(y, x) / (π(x) Ψ(x, y))` for a move from `x` to `y`
-([LevinPeresWilmer2017], (3.4)); the acceptance probability is its minimum with `1`. -/
+([LevinPeres2017], (3.4)); the acceptance probability is its minimum with `1`. -/
 noncomputable def metropolisRatio (Ψ : MarkovChain S) (π : PMF S) (x y : S) : ℝ≥0∞ :=
   π y * Ψ y x / (π x * Ψ x y)
 
 /-- The Metropolis chain for the proposal chain `Ψ` and the target distribution `π`
-([LevinPeresWilmer2017], Section 3.2.2): from `x`, propose `y ~ Ψ x`, move to `y` with probability
+([LevinPeres2017], Section 3.2.2): from `x`, propose `y ~ Ψ x`, move to `y` with probability
 `min (metropolisRatio Ψ π x y) 1`, and otherwise stay at `x`. -/
 noncomputable def metropolis (Ψ : MarkovChain S) (π : PMF S) : MarkovChain S where
   step x := (Ψ x).bind fun y =>
     (acceptCoin (metropolisRatio Ψ π x y)).map fun b => if b then y else x
 
 /-- Off the diagonal, the Metropolis chain moves from `x` to `y` with probability
-`Ψ(x, y) min (r(x, y)) 1` ([LevinPeresWilmer2017], (3.5)). -/
+`Ψ(x, y) min (r(x, y)) 1` ([LevinPeres2017], (3.5)). -/
 theorem metropolis_apply_of_ne (Ψ : MarkovChain S) (π : PMF S) {x y : S} (hxy : x ≠ y) :
     metropolis Ψ π x y = Ψ x y * min (metropolisRatio Ψ π x y) 1 := by
   change ((Ψ x).bind _) y = _
@@ -104,7 +106,7 @@ private theorem mul_min_div_one {c d : ℝ≥0∞} (hc : c ≠ ⊤) : c * min (d
 
 /-- The Metropolis chain satisfies detailed balance with respect to its target distribution:
 `π(x) P(x, y) = min (π x Ψ(x, y)) (π y Ψ(y, x))` is symmetric in `x` and `y`
-([LevinPeresWilmer2017], Section 3.2 and Exercise 3.1). -/
+([LevinPeres2017], Section 3.2 and Exercise 3.1). -/
 theorem isReversible_metropolis (Ψ : MarkovChain S) (π : PMF S) :
     (metropolis Ψ π).IsReversible π := by
   intro x y
@@ -121,7 +123,7 @@ theorem isStationary_metropolis (Ψ : MarkovChain S) (π : PMF S) :
   (isReversible_metropolis Ψ π).isStationary
 
 /-- For a symmetric proposal, the Metropolis ratio of a possible move is `π y / π x`
-([LevinPeresWilmer2017], Section 3.2.1). -/
+([LevinPeres2017], Section 3.2.1). -/
 theorem metropolisRatio_of_symm (Ψ : MarkovChain S) (π : PMF S) {x y : S}
     (hΨ : Ψ x y = Ψ y x) (h0 : Ψ x y ≠ 0) : metropolisRatio Ψ π x y = π y / π x := by
   rw [metropolisRatio, hΨ, ENNReal.mul_div_mul_right _ _ (hΨ ▸ h0) (PMF.apply_ne_top _ _)]

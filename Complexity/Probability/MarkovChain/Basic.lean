@@ -17,10 +17,10 @@ next state from `x`, and `P x y` is the transition probability. Chains on a fixe
 a monoid under composition of kernels, `(P * Q) x = (P x).bind Q`, so `P ^ t` is the `t`-step
 kernel and `pow_add` gives the Chapman–Kolmogorov equations.
 
-A distribution `π` is *stationary* if `π.bind P = π` (`π = πP`, [LevinPeresWilmer2017], (1.14)),
+A distribution `π` is *stationary* if `π.bind P = π` (`π = πP`, [LevinPeres2017], (1.14)),
 and `P` is *reversible* with respect to `π` if it satisfies detailed balance
-`π x * P x y = π y * P y x` ([LevinPeresWilmer2017], (1.29)). Detailed balance implies
-stationarity ([LevinPeresWilmer2017], Proposition 1.20).
+`π x * P x y = π y * P y x` ([LevinPeres2017], (1.29)). Detailed balance implies
+stationarity ([LevinPeres2017], Proposition 1.20).
 
 The kernel representation reuses the library's `PMF` and statistical-distance APIs directly.
 Mathlib's measure-theoretic `ProbabilityTheory.Kernel.Invariant` and
@@ -42,7 +42,7 @@ Mathlib's measure-theoretic `ProbabilityTheory.Kernel.Invariant` and
 
 ## References
 
-* [LevinPeresWilmer2017], Chapter 1.
+* [LevinPeres2017], Chapter 1.
 -/
 
 public section
@@ -99,11 +99,11 @@ theorem pow_add_apply (P : MarkovChain S) (s t : ℕ) (x : S) :
     (P ^ (s + t)) x = ((P ^ s) x).bind (P ^ t) := by
   rw [pow_add, mul_apply]
 
-/-- `π` is a stationary distribution of `P`: `π = πP` ([LevinPeresWilmer2017], (1.14)). -/
+/-- `π` is a stationary distribution of `P`: `π = πP` ([LevinPeres2017], (1.14)). -/
 @[expose] def IsStationary (P : MarkovChain S) (π : PMF S) : Prop := π.bind P = π
 
 /-- `P` is reversible with respect to `π`, i.e. satisfies the detailed balance equations
-([LevinPeresWilmer2017], (1.29)). -/
+([LevinPeres2017], (1.29)). -/
 @[expose] def IsReversible (P : MarkovChain S) (π : PMF S) : Prop :=
   ∀ x y, π x * P x y = π y * P y x
 
@@ -123,7 +123,7 @@ theorem IsStationary.pow {P : MarkovChain S} {π : PMF S} (h : P.IsStationary π
     (P ^ t).IsStationary π :=
   h.bind_pow t
 
-/-- **Detailed balance implies stationarity** ([LevinPeresWilmer2017], Proposition 1.20). -/
+/-- **Detailed balance implies stationarity** ([LevinPeres2017], Proposition 1.20). -/
 theorem IsReversible.isStationary {P : MarkovChain S} {π : PMF S} (h : P.IsReversible π) :
     P.IsStationary π := by
   ext y

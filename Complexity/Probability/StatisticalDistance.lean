@@ -33,8 +33,6 @@ These statements reuse the upstream finite-PMF metric and its enumeration instan
 * `Cslib.Probability.PMF.dist_bind_left_le_of_le`: uniform distance bound across a `PMF.bind`
   mixture.
 * `Cslib.Probability.PMF.dist_uniformOfFintype_bool`: statistical distance from uniform on `Bool`.
-* `Cslib.Probability.PMF.dist_pure_left`, `Cslib.Probability.PMF.dist_bool`: distance from a point
-  mass, and distance on `Bool`.
 * `Cslib.Probability.PMF.dist_eq_sum_filter_lt`: statistical distance as the excess on `{p > q}`.
 * `Cslib.Probability.PMF.dist_eq_tvDist_toMeasure_div_two`: statistical distance is half of
   `tvDist`.
@@ -168,38 +166,6 @@ theorem dist_uniformOfFintype_bool (p : PMF Bool) :
   have hfalse : |(p false).toReal - 2⁻¹| = |(p true).toReal - 2⁻¹| := by
     rw [show (p false).toReal - 2⁻¹ = -((p true).toReal - 2⁻¹) by linarith, abs_neg]
   linarith
-
-/-- The statistical distance from a point mass is the mass the other distribution places
-elsewhere. -/
-theorem dist_pure_left [Fintype α] (a : α) (q : PMF α) :
-    dist (PMF.pure a) q = 1 - (q a).toReal := by
-  classical
-  rw [dist_eq, ← Finset.add_sum_erase _ _ (Finset.mem_univ a)]
-  have hrest : ∑ b ∈ Finset.univ.erase a, |((PMF.pure a) b).toReal - (q b).toReal| =
-      ∑ b ∈ Finset.univ.erase a, (q b).toReal := by
-    refine Finset.sum_congr rfl fun b hb => ?_
-    rw [PMF.pure_apply_of_ne _ _ (Finset.ne_of_mem_erase hb), ENNReal.toReal_zero, zero_sub,
-      abs_neg, abs_of_nonneg ENNReal.toReal_nonneg]
-  have hsum : (q a).toReal + ∑ b ∈ Finset.univ.erase a, (q b).toReal = 1 := by
-    rw [Finset.add_sum_erase _ (fun b => (q b).toReal) (Finset.mem_univ a)]
-    exact sum_toReal q
-  have hle : (q a).toReal ≤ 1 := by
-    linarith [Finset.sum_nonneg fun b (_ : b ∈ Finset.univ.erase a) =>
-      (ENNReal.toReal_nonneg : 0 ≤ (q b).toReal)]
-  rw [hrest, PMF.pure_apply_self, ENNReal.toReal_one, abs_of_nonneg (by linarith)]
-  linarith
-
-/-- Statistical distance on `Bool` is the difference of the probabilities of `true`. -/
-theorem dist_bool (p q : PMF Bool) :
-    dist p q = |(p true).toReal - (q true).toReal| := by
-  have hfalse (r : PMF Bool) : (r false).toReal = 1 - (r true).toReal := by
-    have h := sum_toReal r
-    rw [Fintype.sum_bool] at h
-    linarith
-  rw [dist_eq, Fintype.sum_bool, hfalse p, hfalse q,
-    show 1 - (p true).toReal - (1 - (q true).toReal) = -((p true).toReal - (q true).toReal) by
-      ring, abs_neg]
-  ring
 
 section TotalVariation
 

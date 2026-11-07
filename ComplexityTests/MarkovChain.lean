@@ -6,7 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Probability.BitString.LazyRandomWalk
 import Complexity.Probability.MarkovChain.Metropolis
-import Complexity.Probability.StatisticalDistance
+import Complexity.Probability.StatisticalDistance.ClosedForm
 import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
@@ -15,7 +15,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 * A deterministic flip on `Bool`: the uniform distribution is reversible, `d(t) = 1/2` for every
   `t`, so `t_mix(ε) = ⊤` for `ε < 1/2` and `t_mix(1/2) = 0`. The `ℕ∞`-valued mixing time does not
   hide a periodicity hypothesis.
-* The two-state chain of [LevinPeresWilmer2017], Example 1.1, with `p = 1/2` and `q = 1/4`:
+* The two-state chain of [LevinPeres2017], Example 1.1, with `p = 1/2` and `q = 1/4`:
   the non-uniform law `π = (1/3, 2/3)` is reversible, `d(t) = (2/3)(1/4)^t` exactly, and
   `t_mix(1/4) = 1`.
 * The Metropolis chain for the flip proposal and the target `(1/3, 2/3)` is stationary and accepts
@@ -23,7 +23,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 * The independent coupling is a Markovian coupling.
 * The lazy hypercube walk with `n = 1`: `t_mix(2/5) = 1`, matching the ceilinged bound
   `⌈n log n + n log ε⁻¹⌉ = 1`, while the right-hand side `n log n + n log ε⁻¹ = log (5/2) < 1`
-  of [LevinPeresWilmer2017], (5.6), as printed without a ceiling, is too small.
+  of [LevinPeres2017], (5.6), as printed without a ceiling, is too small.
 -/
 
 namespace ComplexityTests.MarkovChain
@@ -84,7 +84,7 @@ theorem coin_apply_toReal (p : ℝ) (h0 : 0 ≤ p) (h1 : p ≤ 1) (b : Bool) :
   rw [coin, PMF.ofFintype_apply, ENNReal.toReal_ofReal]
   split_ifs <;> linarith
 
-/-- The two-state chain of [LevinPeresWilmer2017], Example 1.1, with `false ↦ true` probability
+/-- The two-state chain of [LevinPeres2017], Example 1.1, with `false ↦ true` probability
 `p = 1/2` and `true ↦ false` probability `q = 1/4`. -/
 noncomputable def twoState : MarkovChain Bool :=
   ⟨fun b => if b then coin (3 / 4) (by norm_num) (by norm_num)
@@ -202,7 +202,7 @@ theorem lazyRandomWalk_unit_mixingTime :
       ENNReal.toReal_inv, ENNReal.toReal_ofNat] at hx
     norm_num at hx
 
-/-- The right-hand side `n log n + n log ε⁻¹` of [LevinPeresWilmer2017], (5.6), without a ceiling,
+/-- The right-hand side `n log n + n log ε⁻¹` of [LevinPeres2017], (5.6), without a ceiling,
 is below the true mixing time `1` for `n = 1` and `ε = 2/5`. -/
 example : (Fintype.card Unit : ℝ) * Real.log (Fintype.card Unit) +
     Fintype.card Unit * Real.log (2 / 5)⁻¹ < 1 := by

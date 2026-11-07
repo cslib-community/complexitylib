@@ -19,14 +19,14 @@ import Complexity.Probability.PMF.Uniform
 
 The lazy random walk on `{0,1}^ι` (`Cslib.BitString.lazyRandomWalk`) picks a coordinate `i` and a
 fair bit `b` uniformly and independently and overwrites coordinate `i` by `b`
-([LevinPeresWilmer2017], Sections 2.3 and 5.3.1). It is reversible with respect to the uniform
+([LevinPeres2017], Sections 2.3 and 5.3.1). It is reversible with respect to the uniform
 distribution.
 
 The coordinate-refresh coupling (`Cslib.BitString.lazyRandomWalkCoupling`) uses the same
 coordinate and the same bit in both copies, so once coordinate `i` has been chosen the copies
 agree there forever. A fixed coordinate is never chosen in `t` steps with probability
 `(1 - 1/n)^t`, where `n = |ι|`. The union bound over the coordinates is the coupon-collector tail
-bound of [LevinPeresWilmer2017], Proposition 2.4, and with the coupling bound
+bound of [LevinPeres2017], Proposition 2.4, and with the coupling bound
 (Corollary 5.5) gives
 
 * `d(t) ≤ n (1 - 1/n)^t ≤ n e^{-t/n}` (`Cslib.BitString.distToStationary_lazyRandomWalk_le`,
@@ -34,7 +34,7 @@ bound of [LevinPeresWilmer2017], Proposition 2.4, and with the coupling bound
 * `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉` for every `ε > 0`
   (`Cslib.BitString.mixingTime_lazyRandomWalk_le`).
 
-The last bound is [LevinPeresWilmer2017], (5.6), with a ceiling: (5.6) is printed as
+The last bound is [LevinPeres2017], (5.6), with a ceiling: (5.6) is printed as
 `t_mix(ε) ≤ n log n + log(1/ε) n`, which fails without rounding up for `n = 1` and `ε = 2/5`, where
 `t_mix(ε) = 1 > log (5/2)`. The ceiling is what Proposition 2.4 gives; the library's Markov chain
 tests check this instance.
@@ -56,7 +56,7 @@ tests check this instance.
 
 ## References
 
-* [LevinPeresWilmer2017], Sections 2.2, 2.3 and 5.3.1.
+* [LevinPeres2017], Sections 2.2, 2.3 and 5.3.1.
 -/
 
 public section
@@ -70,13 +70,13 @@ open Cslib.Probability Cslib.Probability.PMF Cslib.Probability.MarkovChain
 variable (ι : Type*) [Fintype ι] [DecidableEq ι] [Nonempty ι]
 
 /-- The lazy random walk on the hypercube `ι → Bool`: overwrite a uniformly random coordinate by
-a fair bit ([LevinPeresWilmer2017], Sections 2.3 and 5.3.1). -/
+a fair bit ([LevinPeres2017], Sections 2.3 and 5.3.1). -/
 noncomputable def lazyRandomWalk : MarkovChain (ι → Bool) :=
   ⟨fun x => (PMF.uniformOfFintype (ι × Bool)).map fun ib => Function.update x ib.1 ib.2⟩
 
 /-- The coordinate-refresh coupling of two lazy random walks on the hypercube: both copies
 overwrite the same uniformly random coordinate by the same fair bit
-([LevinPeresWilmer2017], Section 5.3.1). -/
+([LevinPeres2017], Section 5.3.1). -/
 noncomputable def lazyRandomWalkCoupling : MarkovChain ((ι → Bool) × (ι → Bool)) :=
   ⟨fun z => (PMF.uniformOfFintype (ι × Bool)).map fun ib =>
     (Function.update z.1 ib.1 ib.2, Function.update z.2 ib.1 ib.2)⟩
@@ -188,7 +188,7 @@ theorem lazyRandomWalkCoupling_pow_toOuterMeasure_ne_le (i : ι) (t : ℕ)
     exact mul_le_mul_of_nonneg_right (ih z) (by linarith [inv_le_one_of_one_le₀ hn])
 
 /-- After `t` steps of the coordinate-refresh coupling, the copies differ with probability at most
-`n (1 - 1/n)^t` (union bound over coordinates, [LevinPeresWilmer2017], Proposition 2.4). -/
+`n (1 - 1/n)^t` (union bound over coordinates, [LevinPeres2017], Proposition 2.4). -/
 theorem lazyRandomWalkCoupling_pow_toOuterMeasure_le (t : ℕ) (z : (ι → Bool) × (ι → Bool)) :
     (((lazyRandomWalkCoupling ι ^ t) z).toOuterMeasure {w | w.1 ≠ w.2}).toReal ≤
       Fintype.card ι * (1 - (Fintype.card ι : ℝ)⁻¹) ^ t := by
@@ -215,7 +215,7 @@ theorem distToStationary_lazyRandomWalk_le (t : ℕ) :
     (fun x y => lazyRandomWalkCoupling_pow_toOuterMeasure_le t (x, y))
 
 /-- `d(t) ≤ n e^{-t/n}` for the lazy random walk on the hypercube
-([LevinPeresWilmer2017], Section 5.3.1). -/
+([LevinPeres2017], Section 5.3.1). -/
 theorem distToStationary_lazyRandomWalk_le_exp (t : ℕ) :
     (lazyRandomWalk ι).distToStationary (PMF.uniformOfFintype _) t ≤
       Fintype.card ι * Real.exp (-(t / Fintype.card ι)) := by
@@ -230,7 +230,7 @@ theorem distToStationary_lazyRandomWalk_le_exp (t : ℕ) :
         congr 1
         ring
 
-/-- **Mixing time of the lazy hypercube walk** ([LevinPeresWilmer2017], (5.6), with the ceiling
+/-- **Mixing time of the lazy hypercube walk** ([LevinPeres2017], (5.6), with the ceiling
 made explicit): `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉` for every `ε > 0`, where `n = |ι|`. -/
 theorem mixingTime_lazyRandomWalk_le {ε : ℝ} (hε : 0 < ε) :
     (lazyRandomWalk ι).mixingTime (PMF.uniformOfFintype _) ε ≤
