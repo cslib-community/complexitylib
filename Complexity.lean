@@ -943,6 +943,7 @@ public import Complexity.Computability.Circuit.Boolean.Iteration.SparseTime
 public import Complexity.Computability.Circuit.Boolean.Iteration.Target
 public import Complexity.Computability.Circuit.Boolean.Iteration.UniversalMap
 public import Complexity.Computability.Circuit.Boolean.Iteration.VisitScheduleCircuits
+public import Complexity.Computability.Circuit.Boolean.Karatsuba
 public import Complexity.Computability.Circuit.Boolean.KarchmerWigderson
 public import Complexity.Computability.Circuit.Boolean.KeyedSort
 public import Complexity.Computability.Circuit.Boolean.Khrapchenko
@@ -1090,6 +1091,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Support
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.TranscriptTree
 public import Complexity.Computability.Circuit.Boolean.Word
+public import Complexity.Computability.Circuit.Boolean.Word.Rewire
 public import Complexity.Computability.Circuit.Boolean.XorLemma
 public import Complexity.Computability.Circuit.Boolean.Yablonskii
 public import Complexity.Computability.Circuit.Clique
