@@ -3249,6 +3249,7 @@ public import Complexity.Crypto.Protocols.MPC.OTCommitment.Serial.Receiver
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Session
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime
+public import Complexity.Crypto.Protocols.MPC.SPDZ
 public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.PolynomialCommitment.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
