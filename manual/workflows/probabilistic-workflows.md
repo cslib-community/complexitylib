@@ -119,6 +119,32 @@ with `n = 1`. Run
 directions: `mixingTime_le_of_distToStationary_le` for `≤`, and
 `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
+## Test for a perfect matching with a random determinant
+
+Import [Matching/Edmonds.lean](../../Complexity/Algorithms/Matching/Edmonds.lean). A bipartite
+graph is `G : V × V → Bool` on a finite type `V` of left and right vertices, the representation
+of `Cslib.Circuits.BipartiteMatching.HasPerfectMatching`. `edmondsMatrix G` has the indeterminate
+`X (i, j)` at each edge and `0` elsewhere. `det_edmondsMatrix_ne_zero_iff` is Edmonds' criterion:
+over any nontrivial commutative ring, the determinant is a nonzero polynomial exactly when `G` has
+a perfect matching. The randomized test of Lovász evaluates `edmondsEval G r`, the same matrix
+with values `r : V × V → R`. Its error is one-sided: `det_edmondsEval_eq_zero` gives determinant
+`0` at every `r` when there is no perfect matching. When there is one, over an integral domain,
+`card_det_edmondsEval_eq_zero_div_le` bounds the proportion of `r ∈ S ^ (V × V)` with determinant
+`0` by `|V| / |S|`. `exists_det_edmondsEval_ne_zero` turns any `S` with more than `|V|`
+elements into a detecting choice of values. The probability is a counting ratio over
+`Fintype.piFinset`, not a `PMF`, and no machine running time is certified for the determinant.
+
+The bound comes from two lemmas in
+[MvPolynomial/SchwartzZippel.lean](../../Complexity/Foundations/Data/MvPolynomial/SchwartzZippel.lean):
+`MvPolynomial.schwartz_zippel_totalDegree_fintype` extends Mathlib's Schwartz–Zippel lemma from
+the variables `Fin n` to any finite type, and `MvPolynomial.totalDegree_det_le` bounds the total
+degree of a determinant of polynomials. Use them for other symbolic-determinant tests.
+
+The [checked clients](../../ComplexityTests/EdmondsMatching.lean) compute the `2 × 2`
+determinant of the complete graph, apply the test to a graph whose right vertex `1` is
+unmatched, and show that `|V| < |S|` cannot be relaxed to `|V| ≤ |S|`. Run
+`scripts/build.sh ComplexityTests.EdmondsMatching`.
+
 ## Compose local embeddings and extract a strategy
 
 Import [CorrelatedSampling/Embeddability.lean](../../Complexity/Probability/CorrelatedSampling/Embeddability.lean)

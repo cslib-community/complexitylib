@@ -1057,6 +1057,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   max-flow/min-cut and a `TimeM` Edmonds–Karp solver are in `Algorithms/Lean/MaxFlow`); then
   minimum-cost flow and weighted bipartite matching through common residual-network and duality
   machinery.
+- **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
+  remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
+  graphs (`Algorithms/Matching/Edmonds`): the Mulmuley–Vazirani–Vazirani core (isolating weights
+  and reading the matching off the adjugate), Tutte's matrix for general graphs, a machine-level
+  running-time certificate for the determinant test, and an RNC implementation.
 - **Matroids:** matroid intersection with explicit oracle and implementation costs, beyond the
   weighted greedy algorithm and its independence-oracle interface.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
