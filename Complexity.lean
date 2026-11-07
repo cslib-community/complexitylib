@@ -3268,6 +3268,7 @@ public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Sampling
 public import Complexity.Crypto.Protocols.BCS.Basic
 public import Complexity.Crypto.Protocols.BCS.ROM
 public import Complexity.Crypto.Protocols.Cipher.EvenMansour
+public import Complexity.Crypto.Protocols.Cipher.FeistelNetworks
 public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.Commitment.World
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
@@ -3784,6 +3785,7 @@ public import Complexity.Foundations.Data.BitString.Counter
 public import Complexity.Foundations.Data.BitString.CoverCoding
 public import Complexity.Foundations.Data.BitString.Enumeration
 public import Complexity.Foundations.Data.BitString.Flip
+public import Complexity.Foundations.Data.BitString.HalfSplit
 public import Complexity.Foundations.Data.BitString.Hamming
 public import Complexity.Foundations.Data.BitString.InitialTests
 public import Complexity.Foundations.Data.BitString.Isolation
@@ -4227,6 +4229,7 @@ public import Complexity.Languages.Probabilistic.QueryCount.Support
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 public import Complexity.Languages.Probabilistic.RandomPermutation
+public import Complexity.Languages.Probabilistic.RandomPermutation.ExtPermsCard
 public import Complexity.Languages.Probabilistic.Repeat
 public import Complexity.Languages.Probabilistic.Sampling.F4
 public import Complexity.Languages.Probabilistic.Selection
