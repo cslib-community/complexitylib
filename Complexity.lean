@@ -4567,6 +4567,11 @@ public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
 public import Complexity.MachineLearning.UniformLearning.LowDegree
 public import Complexity.MachineLearning.UniformLearning.LowDegreeClasses
 public import Complexity.MachineLearning.UniformLearning.MembershipQuery
+public import Complexity.Privacy.DifferentialPrivacy.Basic
+public import Complexity.Privacy.DifferentialPrivacy.Composition
+public import Complexity.Privacy.DifferentialPrivacy.DiscreteLaplace
+public import Complexity.Privacy.DifferentialPrivacy.Hamming
+public import Complexity.Privacy.DifferentialPrivacy.RandomizedResponse
 public import Complexity.Probability.AdaptiveWeights
 public import Complexity.Probability.ApproximateCounting
 public import Complexity.Probability.ApproximateCounting.Relative
