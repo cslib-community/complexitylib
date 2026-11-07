@@ -65,8 +65,13 @@ Import [StatisticalDistance/Event.lean](../../Complexity/Probability/Statistical
 to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
 over a finite type, active after `open scoped Cslib.Probability.PMF`. It uses the half-L1
 convention: distinct point masses have distance `1`, half of Mathlib's `tvDist` above.
-`abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`, and
-`dist_map_of_injective` keeps the distance unchanged under an injective relabeling. Import
+`abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`;
+`abs_bind_apply_toReal_sub_le_dist p q T b` does the same for the probability that a randomized
+distinguisher `T` outputs `b`. `dist_map_of_injective` keeps the distance unchanged under an
+injective relabeling. For a second-moment tail bound on a finite PMF without measure-theoretic side
+conditions, import [PMF/Chebyshev.lean](../../Complexity/Probability/PMF/Chebyshev.lean): by
+`sum_mul_ite_le_sum_mul_sq_div`, the mass where `|f a − m| ≥ c` is at most
+`∑ a, p(a) (f a − m)² / c²`. Import
 [Product/Split.lean](../../Complexity/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
 satisfying `P` and the remaining coordinates form two independent products.
