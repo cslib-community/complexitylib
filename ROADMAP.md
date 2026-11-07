@@ -873,7 +873,9 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Quantum computation** ([#896]): channel semantics and approximation costs alongside the
   circuit and measurement semantics, reusing suitable quantum foundations rather than
   incompatible models, and a bridge between the query and circuit models; complete problems for
-  BQP; QMA and related query, communication and interactive classes, with amplification,
+  BQP; for QMA ([#2876]), error reduction from an inverse-polynomial gap, strong error reduction
+  that keeps the witness length, `QMA ⊆ PP`, `MA ⊆ QMA`, mixed witnesses, QCMA and the local
+  Hamiltonian problem; related query, communication and interactive classes, with amplification,
   containments and complete problems. Supply the
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
   reductions.
@@ -1215,6 +1217,7 @@ not planned, not as proved.
 [#894]: https://github.com/cslib-community/complexitylib/issues/894
 [#895]: https://github.com/cslib-community/complexitylib/issues/895
 [#896]: https://github.com/cslib-community/complexitylib/issues/896
+[#2876]: https://github.com/cslib-community/complexitylib/issues/2876
 [#897]: https://github.com/cslib-community/complexitylib/issues/897
 [#939]: https://github.com/cslib-community/complexitylib/issues/939
 [#949]: https://github.com/cslib-community/complexitylib/issues/949
