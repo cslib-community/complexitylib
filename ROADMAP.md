@@ -1089,8 +1089,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Equilibrium concepts and dynamics:** mixed and correlated equilibria between pure Nash and
   coarse correlated equilibria; swap regret and convergence to correlated equilibria, extending
   the Hedge dynamics of [#3034](https://github.com/cslib-community/complexitylib/issues/3034);
-  bandit feedback and sampled play; convergence time of better-response dynamics in potential
-  games.
+  last-iterate convergence of no-regret dynamics; bandit feedback and sampled play; convergence
+  time of better-response dynamics in potential games.
 - **Price of anarchy:** Wardrop equilibrium existence and essential uniqueness for continuous
   nondecreasing latencies (Beckmann's convex potential); the Pigou bound for general latency
   classes and polynomial latencies of bounded degree; the price of stability by the potential

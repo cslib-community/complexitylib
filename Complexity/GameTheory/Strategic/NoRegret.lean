@@ -22,13 +22,15 @@ In repeated play of a cost-minimization game, round `t` produces a distribution 
 Player `i` has *regret at most `R i`* after `T` rounds if, for every fixed strategy `a`, its total
 expected cost `∑ t < T, E_{σ t}[cost i]` exceeds the total expected cost
 `∑ t < T, E_{s ∼ σ t}[cost i (update s i a)]` of always playing `a` by at most `R i`
-([Roughgarden2013CS364A], Lecture 17, Definition 1.2 and §3). The time average
+([Roughgarden2013CS364A], Lecture 17, Definition 1.2 and §3). Thus `R i` bounds the *total*
+regret, whereas Definition 1.2 measures *time-averaged* regret: the source's `ε` in
+Proposition 3.1 and its `R_i` in Corollary 3.3 correspond to `R i / T` here. The time average
 `timeAverage σ T = (1/T) ∑ t < T, σ t` of the distributions is then a coarse correlated equilibrium
 up to the additive slack `R i / T` ([Roughgarden2013CS364A], Lecture 17, Proposition 3.1). With the
 robust price of anarchy of smooth games (`CostGame.IsSmooth.expected_socialCost_le_of_forall_le`),
 the total expected social cost of `T` rounds in a `(λ, μ)`-smooth game with `μ < 1` is at most
 `(T λ socialCost s' + ∑ i, R i) / (1 - μ)` for every profile `s'` ([Roughgarden2013CS364A],
-Lecture 17, Corollary 3.3; [Roughgarden2015], Theorem 3.3).
+Lecture 17, Corollary 3.3; [Roughgarden2015], Theorem 3.3 and Remark 3.4, inequality (25)).
 
 The source states Corollary 3.3 for the time average and leaves its proof as an exercise. We
 prove the equivalent bound for totals, which also covers `T = 0`, and the time-average form for
@@ -106,9 +108,10 @@ namespace CostGame
 variable {ι : Type*} {S : ι → Type*} [DecidableEq ι] {G : CostGame ι S}
 
 /-- **No-regret play yields approximate coarse correlated equilibria** ([Roughgarden2013CS364A],
-Lecture 17, Proposition 3.1): if after `T` rounds player `i` has regret at most `R i` with respect
-to every fixed strategy, then the time average of the distributions satisfies the coarse
-correlated equilibrium inequalities up to the additive slack `R i / T`. -/
+Lecture 17, Proposition 3.1): if after `T` rounds player `i` has total regret at most `R i` with
+respect to every fixed strategy, then the time average of the distributions satisfies the coarse
+correlated equilibrium inequalities up to the additive slack `R i / T`, the time-averaged regret
+that the source calls `ε`. -/
 theorem timeAverage_le_add {σ : ℕ → Convexity.StdSimplex ℝ (∀ i, S i)} {T : ℕ} (hT : 0 < T)
     {R : ι → ℝ}
     (hR : ∀ i (a : S i), ∑ t ∈ range T, (σ t).weights.sum (fun s w => w * G.cost i s)
@@ -124,9 +127,9 @@ variable [Fintype ι]
 
 /-- **The robust price of anarchy of no-regret play**, time-average form
 ([Roughgarden2013CS364A], Lecture 17, Corollary 3.3): if `G` is `(λ, μ)`-smooth with `μ < 1` and
-after `T > 0` rounds player `i` has regret at most `R i`, then the expected social cost under the
-time average of the distributions is at most `(λ socialCost s' + ∑ i, R i / T) / (1 - μ)` for every
-profile `s'`. -/
+after `T > 0` rounds player `i` has total regret at most `R i`, then the expected social cost under
+the time average of the distributions is at most `(λ socialCost s' + ∑ i, R i / T) / (1 - μ)` for
+every profile `s'`. The time-averaged regrets `R i / T` are the source's `R_i`. -/
 theorem IsSmooth.timeAverage_expected_socialCost_le {lam μ : ℝ} (hG : G.IsSmooth lam μ)
     (hμ : μ < 1) {σ : ℕ → Convexity.StdSimplex ℝ (∀ i, S i)} {T : ℕ} (hT : 0 < T) {R : ι → ℝ}
     (hR : ∀ i (a : S i), ∑ t ∈ range T, (σ t).weights.sum (fun s w => w * G.cost i s)
@@ -137,10 +140,11 @@ theorem IsSmooth.timeAverage_expected_socialCost_le {lam μ : ℝ} (hG : G.IsSmo
   hG.expected_socialCost_le_of_forall_le hμ (timeAverage_le_add hT hR) s'
 
 /-- **The robust price of anarchy of no-regret play**, total form ([Roughgarden2013CS364A],
-Lecture 17, Corollary 3.3; [Roughgarden2015], Theorem 3.3): if `G` is `(λ, μ)`-smooth with
-`μ < 1` and after `T` rounds player `i` has regret at most `R i`, then the total expected social
-cost of the `T` rounds is at most `(T λ socialCost s' + ∑ i, R i) / (1 - μ)` for every profile
-`s'`. -/
+Lecture 17, Corollary 3.3; [Roughgarden2015], Theorem 3.3 and Remark 3.4, inequality (25)): if `G`
+is `(λ, μ)`-smooth with `μ < 1` and after `T` rounds player `i` has total regret at most `R i`,
+then the total expected social cost of the `T` rounds is at most
+`(T λ socialCost s' + ∑ i, R i) / (1 - μ)` for every profile `s'`. Dividing by `T > 0` gives the
+source's time-averaged statement with `R_i = R i / T`. -/
 theorem IsSmooth.sum_expected_socialCost_le {lam μ : ℝ} (hG : G.IsSmooth lam μ) (hμ : μ < 1)
     {σ : ℕ → Convexity.StdSimplex ℝ (∀ i, S i)} {T : ℕ} {R : ι → ℝ}
     (hR : ∀ i (a : S i), ∑ t ∈ range T, (σ t).weights.sum (fun s w => w * G.cost i s)

@@ -52,9 +52,8 @@ converges to the robust price of anarchy `λ / (1 - μ)` at rate `O(1 / √T)`.
 * `Cslib.GameTheory.CostGame.mwuWeight`, `Cslib.GameTheory.CostGame.mwuProb`: weights and mixed
   strategies under simultaneous multiplicative updates with factors `φ i`.
 * `Cslib.GameTheory.CostGame.mwuLoss`: the loss sequence each player faces.
-* `Cslib.GameTheory.CostGame.hedgeRate`: the tuned learning rate `√(ln n / T)`.
 * `Cslib.GameTheory.CostGame.hedgeProb`, `Cslib.GameTheory.CostGame.hedgeDist`: Hedge dynamics
-  and their outcome distribution in each round.
+  with the tuned learning rate `√(ln |S i| / T)` and their outcome distribution in each round.
 
 ## Main results
 
@@ -132,14 +131,11 @@ theorem prob_mwuLoss (G : CostGame ι S) (φ : ι → ℝ → ℝ) (i : ι) (t :
 
 /-! ### Hedge dynamics -/
 
-/-- The tuned learning rate `√(ln n / T)` of Hedge with `n = |α|` experts and horizon `T`. -/
-noncomputable def hedgeRate (α : Type*) [Fintype α] (T : ℕ) : ℝ :=
-  √(Real.log (Fintype.card α) / T)
-
 /-- **Hedge dynamics** with cost bound `M` and horizon `T`: the mixed strategies in round `t` when
-every player `i` runs Hedge with learning rate `hedgeRate (S i) T` on the costs divided by `M`. -/
+every player `i` runs Hedge with the tuned learning rate `√(ln |S i| / T)` on the costs divided by
+`M`. -/
 noncomputable def hedgeProb (G : CostGame ι S) (M : ℝ) (T t : ℕ) : ∀ i, S i → ℝ :=
-  G.mwuProb (fun i x => hedgeFactor (hedgeRate (S i) T) (x / M)) t
+  G.mwuProb (fun i x => hedgeFactor √(Real.log (Fintype.card (S i)) / T) (x / M)) t
 
 variable {G : CostGame ι S} {M : ℝ} {T : ℕ}
 
@@ -179,14 +175,14 @@ theorem hedge_regret_le [∀ i, Nonempty (S i)] (hM : 0 < M) (hc : ∀ i s, |G.c
           sum_congr rfl fun b _ => by rw [hx b, hx a]
       _ = D t a := by rw [← sum_mul, sum_hedgeProb, one_mul]
   · set ℓ : ℕ → S i → ℝ := fun t b => D t b / M with hℓ
-    have hprob : ∀ t, prob (hedgeFactor (hedgeRate (S i) T)) ℓ t = q t := fun t =>
-      G.prob_mwuLoss (fun i x => hedgeFactor (hedgeRate (S i) T) (x / M)) i t
+    have hprob : ∀ t, prob (hedgeFactor √(Real.log (Fintype.card (S i)) / T)) ℓ t = q t :=
+      fun t => G.prob_mwuLoss
+        (fun i x => hedgeFactor √(Real.log (Fintype.card (S i)) / T) (x / M)) i t
     have hℓ1 : ∀ s < T, ∀ b, |ℓ s b| ≤ 1 := fun s _ b => by
       rw [hℓ, abs_div, abs_of_pos hM, div_le_one hM]
       exact G.abs_deviationCost_le (fun j b => hedgeProb_nonneg s j b)
         (fun j => sum_hedgeProb s j) (hc i) b
     have h := hedge_regret_le_sqrt h2 hT hℓ1 a
-    simp only [hedgeRate] at hprob
     simp only [hprob] at h
     simp only [hℓ] at h
     have e1 : ∑ t ∈ range T, ∑ b, q t b * (D t b / M)
@@ -219,7 +215,7 @@ theorem hedgeDist_regret (hM : 0 < M) (hc : ∀ i s, |G.cost i s| ≤ M)
   simp only [hedgeDist, productDist_sum]
   refine le_trans (le_of_eq (sum_congr rfl fun t _ =>
     (sum_mul_deviationCost G _ (sum_hedgeProb t i)).symm)) ?_
-  exact hedge_regret_le hM hc (hT i) a
+  simpa only [deviationCost_def] using hedge_regret_le hM hc (hT i) a
 
 private theorem sqrt_mul_div_self {T L : ℝ} (hT : 0 < T) : √(T * L) / T = √(L / T) := by
   have hs : √T * √T = T := Real.mul_self_sqrt hT.le

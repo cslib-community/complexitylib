@@ -144,8 +144,13 @@ namespace CostGame
 /-- The **expected cost vector** of player `i` against the mixed strategies `p`
 ([Roughgarden2013CS364A], Lecture 17, §3): the expected cost of strategy `a` when every player
 `j` samples `s j` from `p j` and player `i` then replaces `s i` by `a`. -/
-@[expose] def deviationCost (G : CostGame ι S) (p : ∀ i, S i → ℝ) (i : ι) (a : S i) : ℝ :=
+def deviationCost (G : CostGame ι S) (p : ∀ i, S i → ℝ) (i : ι) (a : S i) : ℝ :=
   ∑ s, productWeight p s * G.cost i (Function.update s i a)
+
+/-- Unfolding equation for `deviationCost`, whose body is not exposed. -/
+theorem deviationCost_def (G : CostGame ι S) (p : ∀ i, S i → ℝ) (i : ι) (a : S i) :
+    G.deviationCost p i a = ∑ s, productWeight p s * G.cost i (Function.update s i a) := by
+  rw [deviationCost]
 
 /-- Averaging the expected cost vector of player `i` against its own mixed strategy gives its
 expected cost under the product distribution. -/

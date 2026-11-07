@@ -3,9 +3,9 @@
 [Chapter index](index.md) · [Online and streaming models](online-and-streaming.md)
 
 This page covers finite strategic games in cost-minimization form, potential games, atomic and
-nonatomic congestion games, price-of-anarchy bounds, and no-regret (Hedge) dynamics. All of it is mathematics about
-real-valued costs. No machine model is involved, and equilibrium computation carries no resource
-claim [complexitylib][complexitylib].
+nonatomic congestion games, price-of-anarchy bounds, and no-regret (Hedge) dynamics. All of it is
+mathematics about real-valued costs. No machine model is involved, and equilibrium computation
+carries no resource claim [complexitylib][complexitylib].
 
 ## The strategic-game layer
 
@@ -166,10 +166,12 @@ price-of-anarchy bound to the two-link game for every horizon.
 ## Known Limitations
 
 Mixed Nash and correlated equilibria (with swap regret), existence of Wardrop flows, and weighted
-congestion games are not formalized. Hedge dynamics are full-information and deterministic: they
-work with expected costs, not sampled play or bandit feedback. The same holds for the Monderer–Shapley isomorphism between potential games and
-congestion games (Theorems 2.8 and 3.2) and for the complexity of finding equilibria (PLS- and
-PPAD-completeness). These are ROADMAP directions under [#2900](https://github.com/cslib-community/complexitylib/issues/2900).
+congestion games are not formalized. The same holds for the Monderer–Shapley isomorphism between
+potential games and congestion games (Theorems 2.8 and 3.2) and for the complexity of finding
+equilibria (PLS- and PPAD-completeness). These are ROADMAP directions under
+[#2900](https://github.com/cslib-community/complexitylib/issues/2900). Hedge dynamics are
+full-information and deterministic: they work with expected costs, not sampled play or bandit
+feedback, and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
