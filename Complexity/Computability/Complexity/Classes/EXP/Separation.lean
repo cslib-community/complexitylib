@@ -32,9 +32,10 @@ eventually exceeds every `c * 2 ^ (k * n) + c`, so this problem is in no class
 Bounded halting with a binary time bound is in `E` and hard for `EXP`
 (`Cslib.Complexity.BoundedHalting.polyTimeComplete_E`,
 `Cslib.Complexity.BoundedHalting.polyTimeHard_EXP`). Closure would therefore put all of `EXP` in
-`E`. Consequently `E` differs from every class that is closed under these reductions and contains
-bounded halting, or is contained in `E`: in particular `E ≠ NP`, `E ≠ PSPACE` and `E ≠ P`. These
-separations say nothing about the inclusions between `E` and `NP` or `PSPACE`, which are open.
+`E`. Consequently `E` differs from every class closed under these reductions
+(`Cslib.Complexity.E_ne_of_polyTimeReducible_mem`), in particular `NP`, `PSPACE` and `P`; for `P`
+this also follows from `Cslib.Complexity.P_ssubset_E`. These separations say nothing about the
+inclusions between `E` and `NP` or `PSPACE`, which are open.
 
 ## Main results
 
