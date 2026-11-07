@@ -227,15 +227,20 @@ seed_package() (
 bootstrap_worktree_cache() {
   local wt_path="$1"
   local wt_real
+  local cache_status=0
   wt_real="$(resolve_path "$wt_path")"
   if [ "${COMPLEXITYLIB_WORKTREE_SKIP_CACHE_BOOTSTRAP:-0}" = "1" ]; then
     return 0
   fi
   if [ -x "$wt_path/scripts/cache/ensure.sh" ]; then
-    (cd "$wt_path" && COMPLEXITYLIB_CACHE_CHECKOUT="$wt_real" ./scripts/cache/ensure.sh) || true
+    (cd "$wt_path" && COMPLEXITYLIB_CACHE_CHECKOUT="$wt_real" ./scripts/cache/ensure.sh) || cache_status=$?
   elif [ -x "$ROOT/scripts/cache/ensure.sh" ]; then
-    (cd "$wt_path" && COMPLEXITYLIB_CACHE_CHECKOUT="$wt_real" "$ROOT/scripts/cache/ensure.sh" --checkout "$wt_real") || true
+    (cd "$wt_path" && COMPLEXITYLIB_CACHE_CHECKOUT="$wt_real" "$ROOT/scripts/cache/ensure.sh" --checkout "$wt_real") || cache_status=$?
   fi
+  # Ordinary misses remain optional. An unresolved downloader must not be hidden
+  # behind a successful preparation result that invites an overlapping build.
+  if [ "$cache_status" -eq 125 ]; then return 125; fi
+  return 0
 }
 
 # refuse_primary_or_symlink_target <wt_path> [prospective|seed]

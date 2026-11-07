@@ -8,6 +8,20 @@ Complexitylib represents propositional syntax as concrete finite data and distin
 
 The [ClauseSet](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/ClauseSet/Basic.lean#L55) representation instead uses finite sets of finite sets of literals, so order and repetitions disappear. Its occurrence measure counts clauses mentioning a variable. List/set conversions preserve satisfying assignments but need separate size/occurrence lemmas. This is the representation used by the sparsification development.
 
+For ordinary disjunction with exactly three distinct variables per clause, import
+`Complexity.Computability.Complexity.Problems.EUThreeSAT` and use `EUThreeSAT_npComplete`.
+The bounded-occurrence variant behaves differently: `EUThreeSATThree.mem_P` checks syntax,
+because every valid formula is satisfiable. For not-all-equal semantics, import
+`Complexity.Computability.Complexity.Problems.NAEThreeSAT`. Here `CNF.evalNAE` requires a true
+and a false literal in each clause. **NAE EU3SAT** has exactly three distinct variables per clause
+and is proved NP-complete by `NAEEUThreeSAT_npComplete`. **NAE3SAT** permits width at most three;
+**NAE3SAT-3** also bounds total occurrences per variable by three, and is proved NP-complete by
+`NAEThreeSATThree_npComplete`. The latter permits binary clauses. See the
+[checked examples](../../ComplexityTests/NAEAndEUThreeSAT.lean) for the complete import context,
+satisfiable and unsatisfiable instances, and applications of these endpoints. Run
+`scripts/build.sh ComplexityTests.NAEAndEUThreeSAT` from the repository root to check them;
+successful compilation confirms the displayed theorem types and examples.
+
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
 [Constraint](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label plus a variable list. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface.

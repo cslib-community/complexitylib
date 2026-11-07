@@ -9,7 +9,6 @@ module
 
 public import Complexity.Computability.Interactive.Security
 public import Complexity.Crypto.Game
-import Complexity.Probability.PMF.Bind
 
 /-!
 # Bridging Boolean game advantage and all-events statistical closeness
@@ -47,7 +46,8 @@ ensembles `PMF (List Bool)` and protocol transcripts.
   `Cslib.Crypto.Game.closeTo_iff_forall_coe_advantage_bind_le`,
   `Cslib.Crypto.Game.closeTo_iff_forall_advantage_bind_le`: variational characterizations of
   `CloseTo` via deterministic and randomized Boolean distinguishers.
-* `Cslib.Crypto.Game.closeTo_bind_of_le`: pointwise error bounds on mixtures under `CloseTo`.
+* `Cslib.Interactive.CloseTo.bind_right_tsum`: input-dependent error bounds on mixtures
+  under `CloseTo`.
 -/
 
 @[expose] public section
@@ -187,32 +187,26 @@ theorem closeTo_iff_forall_advantage_bind_le {α : Type} {μ ν : PMF α} {ε : 
   rw [← PMF.bind_pure_comp, ← PMF.bind_pure_comp]
   exact h _
 
-/-- Pointwise error bounds on mixtures under `CloseTo`. -/
-theorem closeTo_bind_of_le {β γ : Type} (μ : PMF β) (f g : β → PMF γ) (err : β → Game)
-    (h : ∀ a ∈ μ.support, ∀ test : γ → Bool,
-      ((f a).map test) true ≤ ((g a).map test) true + err a true ∧
-      ((g a).map test) true ≤ ((f a).map test) true + err a true) :
-    CloseTo (μ.bind f) (μ.bind g) ((μ.bind err) true) := by
-  classical
-  let g' : β → PMF γ := fun a => if a ∈ μ.support then g a else f a
-  have hg : μ.bind g' = μ.bind g := Probability.PMF.bind_congr_on_support μ _ _
-    (fun a ha => by simp only [g', ha, ↓reduceIte])
-  rw [← hg]
-  apply closeTo_of_coe_advantage_decide_le
-  intro event
-  let test : γ → Bool := fun b => decide (b ∈ event)
-  have he (a : β) :
-      ((f a).map test) true ≤ ((g' a).map test) true + err a true ∧
-      ((g' a).map test) true ≤ ((f a).map test) true + err a true := by
-    by_cases ha : a ∈ μ.support
-    · simpa only [g', ha, ↓reduceIte] using h a ha test
-    · simp only [g', ha, ↓reduceIte]
-      exact ⟨le_add_of_nonneg_right zero_le,
-        le_add_of_nonneg_right zero_le⟩
-  have hadv := advantage_bind_le_succProbability_bind μ
-    (fun a => (f a).map test) (fun a => (g' a).map test) err he
-  have hc := ENNReal.coe_le_coe.mpr hadv
-  rw [succProbability, ENNReal.coe_toNNReal (PMF.apply_ne_top _ _)] at hc
-  simpa only [PMF.map_bind] using hc
-
 end Cslib.Crypto.Game
+
+namespace Cslib.Interactive
+
+open scoped ENNReal
+
+/-- Pointwise statistical closeness of continuations on `μ.support` with input-dependent error
+`err : α → ℝ≥0∞` bounds the mixture distance by `∑' a, μ a * err a`. -/
+theorem CloseTo.bind_right_tsum {α β : Type} (μ : PMF α) {f g : α → PMF β} {err : α → ℝ≥0∞}
+    (h : ∀ a ∈ μ.support, CloseTo (f a) (g a) (err a)) :
+    CloseTo (μ.bind f) (μ.bind g) (∑' a, μ a * err a) := fun event => by
+  rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]
+  calc
+    ∑' a, μ a * (f a).toOuterMeasure event
+      ≤ ∑' a, μ a * ((g a).toOuterMeasure event + err a) := by
+        refine tsum_le_tsum fun a => ?_
+        by_cases ha : a ∈ μ.support
+        · exact mul_le_mul_of_nonneg_left (h a ha event) zero_le
+        · simp [(PMF.apply_eq_zero_iff μ a).mpr ha]
+    _ = ∑' a, μ a * (g a).toOuterMeasure event + ∑' a, μ a * err a := by
+        simp only [mul_add, tsum_add]
+
+end Cslib.Interactive

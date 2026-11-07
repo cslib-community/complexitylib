@@ -17,7 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 # Subexponential `k`-SAT on the word RAM
 
 `Cslib.Complexity.CountingNativeEndpoint.decidableInSubexpTime_KSAT` decides `k`-SAT on multi-tape
-machines in time `2 ^ (δ n)` times a polynomial, for every `δ > 0`. Its consequence `not_ETH`
+machines in time `2 ^ (δ * n)` times a polynomial, for every `δ > 0`. Its consequence `not_ETH`
 passes through `Cslib.Complexity.DecidableInTimeO`, which forgets the work space of the decider.
 Here the decider is rebuilt from the native model counter
 `Cslib.Complexity.CountingNativeEndpoint.exists_modelCounter`, whose `ComputableInO` contract
@@ -38,7 +38,7 @@ hypothesis `Cslib.Complexity.ETH`, read on the word RAM over `Basis.additive` wi
   machine decides `k`-SAT within time `2 ^ (A * interpolationScale n)` times a polynomial and
   within polynomial work space.
 * `Cslib.WordRAM.uniformDecidableInTimeLogWord_KSAT`: for every `δ > 0`, one fixed program over
-  `Basis.additive` decides `k`-SAT within `c * (⌈2 ^ (δ n)⌉ * (L + 1) ^ e) + c` instructions, at
+  `Basis.additive` decides `k`-SAT within `c * (⌈2 ^ (δ * n)⌉ * (L + 1) ^ e) + c` instructions, at
   every word size above a logarithmic threshold in `L`.
 -/
 
@@ -116,7 +116,7 @@ open Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
 /-- **Subexponential `k`-SAT on the word RAM.** For every `δ > 0`, one fixed program over
 `Basis.additive`, run on the bits of `encCNF φ`, decides `KSAT k` within
-`c * (⌈2 ^ (δ n)⌉ * (L + 1) ^ e) + c` instructions, where `n = φ.numVars` and
+`c * (⌈2 ^ (δ * n)⌉ * (L + 1) ^ e) + c` instructions, where `n = φ.numVars` and
 `L = |encCNF φ|`, at every word size `w ≥ logWidth k' L` for a constant `k' > 0`. -/
 theorem uniformDecidableInTimeLogWord_KSAT (k : ℕ) {δ : ℝ} (hδ : 0 < δ) :
     ∃ c e : ℕ, UniformDecidableInTimeLogWord .additive (KSAT k)

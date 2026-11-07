@@ -47,14 +47,23 @@ noncomputable def echoCipher : SymmetricCipher where
 example : ∃ cap : ℕ → ℕ → ℕ,
     ComputableInPolyTime (fun p : ℕ × ℕ => cap p.1 p.2)
       (encPair encUnary encUnary) encUnary ∧
-    (∀ n ℓ, ℓ ≤ cap n ℓ) ∧ 37 ≤ cap 0 37 ∧ 0 ≤ cap 37 0 := by
+    ∀ n ℓ, ℓ ≤ cap n ℓ := by
   obtain ⟨cap, hcap, hbound⟩ := echoCipher.exists_ciphertext_length_bound
-  have hlen (n ℓ : ℕ) : ℓ ≤ cap n ℓ := by
-    have h := hbound n ℓ [] (by simp [echoCipher, ProbComp.eval_pure])
-      (List.replicate ℓ false) (List.length_replicate) (List.replicate ℓ false)
-      (by simp [echoCipher, ProbComp.eval_pure])
-    simpa only [List.length_replicate] using h
-  exact ⟨cap, hcap, hlen, hlen 0 37, hlen 37 0⟩
+  refine ⟨cap, hcap, fun n ℓ => ?_⟩
+  have h := hbound n ℓ [] (by simp [echoCipher, ProbComp.eval_pure])
+    (List.replicate ℓ false) List.length_replicate (List.replicate ℓ false)
+    (by simp [echoCipher, ProbComp.eval_pure])
+  simpa only [List.length_replicate] using h
+
+/-- The diagonal corollary bounds `n`-bit ciphertexts at security parameter `n`. -/
+example : ∃ cap : ℕ → ℕ,
+    ComputableInPolyTime cap encUnary encUnary ∧ ∀ n, n ≤ cap n := by
+  obtain ⟨cap, hcap, hbound⟩ := echoCipher.exists_ciphertext_length_bound_of_length_eq
+  refine ⟨cap, hcap, fun n => ?_⟩
+  have h := hbound n [] (by simp [echoCipher, ProbComp.eval_pure])
+    (List.replicate n false) List.length_replicate (List.replicate n false)
+    (by simp [echoCipher, ProbComp.eval_pure])
+  simpa only [List.length_replicate] using h
 
 /-- Dropping the message-length argument would be false even for the native echo cipher. -/
 example (n : ℕ) : ¬ ∃ cap : ℕ, ∀ msg : List Bool,

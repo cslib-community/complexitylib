@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Foundations.MeasureTheory.Group.FundamentalDomain
 import Complexity.Foundations.Probability.Gaussian.Quotient
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.Real.Pi.Bounds
@@ -149,12 +150,8 @@ private theorem basis_domain_op {E : Type*} [NormedAddCommGroup E] [InnerProduct
     [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] {ι : Type*} [Finite ι]
     (b : Basis ι ℝ E) :
     IsAddFundamentalDomain (Submodule.span ℤ (Set.range b)).toAddSubgroup.op
-      (ZSpan.fundamentalDomain b) volume := by
-  have h := (ZSpan.isAddFundamentalDomain' b volume).preimage_of_equiv
-    (QuasiMeasurePreserving.id volume) (AddSubgroup.equivOp _).bijective (fun g x ↦ ?_)
-  · convert! h using 1
-  · change x + (g : E) = (g : E) + x
-    exact add_comm _ _
+      (ZSpan.fundamentalDomain b) volume :=
+  isAddFundamentalDomain_op_iff.mpr (ZSpan.isAddFundamentalDomain' b volume)
 
 private abbrev lineDomain := ZSpan.fundamentalDomain twoBasis
 private abbrev lineQuotient := ℝ ⧸ L.toAddSubgroup
@@ -234,6 +231,12 @@ example (s : ℝ) (hs : 0 < s) :
     ZLattice.isProbabilityMeasure_normalized_quotient pointLattice volume
       (basis_domain_op pointBasis)
   exact tvDist_eq_zero_iff.mp (point_tv_zero s hs)
+
+/-- A fundamental domain for the opposite subgroup action has ambient measure equal to the
+covolume. -/
+example : volume lineDomain = 2 := by
+  simpa [covolume_two] using
+    ZLattice.measure_eq_ofReal_covolume_of_op L volume (basis_domain_op twoBasis)
 
 /-- The reference probability does not depend on which actual fundamental domain is used. -/
 example {F : Set ℝ} (hF : IsAddFundamentalDomain L.toAddSubgroup.op F volume) :

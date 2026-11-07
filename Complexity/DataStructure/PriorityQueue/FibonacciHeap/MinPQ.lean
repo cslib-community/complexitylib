@@ -40,13 +40,17 @@ unchanged.
 * `Slot`, `Lower`, `allocState`, `Inv`, `methods`, `impl`: the allocator over the heap and the
   slots.
 * `charge`: the amortized charges `1`, `3`, `47`, `104` and `extractCharge m + 4`.
-* `allocator`: the queue allocated in memory.
+* `allocAllocator`, `allocator`: the deterministic allocator and the relational queue allocated in
+  memory.
 
 ## Main results
 
 * `amortized_impl`: each operation costs its charge in calls to the heap and the slots.
-* `amortized_allocator`: each operation costs its charge in memory units, amortized.
-* `run_correct`, `run_cost`: a client of the queue run over memory.
+* `amortized_allocAllocator`, `amortized_allocator`: each operation costs its charge in memory
+  units, amortized.
+* `run_correct`, `run_cost`: a client of the deterministic allocator (`allocSpec`) run over memory
+  through `allocAllocator`. Relational `minPQSpec` clients of `allocator` are not covered by a
+  whole-run theorem here (`Memory.Allocator.run_correct` requires `HasStepFn`).
 -/
 
 @[expose] public section
@@ -331,7 +335,8 @@ theorem freeList_eq_cons {t : ℕ} (ht : g .top = t + 1) :
   cases toHandle n (g (.free t)) <;> rfl
 
 /-- The free list read from slots that agree on the stack. -/
-theorem filterMap_congr {g' : Slot → ℕ} {t : ℕ} (h : ∀ i < t, g' (.free i) = g (.free i)) :
+private theorem freeList_filterMap_congr {g' : Slot → ℕ} {t : ℕ}
+    (h : ∀ i < t, g' (.free i) = g (.free i)) :
     ((List.range t).reverse.filterMap fun i => toHandle n (g' (.free i))) =
       (List.range t).reverse.filterMap fun i => toHandle n (g (.free i)) :=
   List.filterMap_congr fun i hi => by
@@ -515,7 +520,7 @@ theorem methods_spec (hn : Fits w n) (hV : Fits w V) (hI : Inv n U s g)
           rw [freeList_eq_cons (s := Function.update s h none)
             (g := Function.update (Function.update g (.free (g .top)) h) .top (g .top + 1))
             (t := g .top) (by simp)]
-          rw [filterMap_congr (g := g) fun i hi => by simp [Nat.ne_of_lt hi]]
+          rw [freeList_filterMap_congr (g := g) fun i hi => by simp [Nat.ne_of_lt hi]]
           simp [toHandle, allocState]
       refine ⟨⟨trivial, h.isLt, trivial, ⟨by simp only [Slot.ok]; omega, hn.of_le h.isLt.le⟩,
         ⟨trivial, hn.of_le htn⟩, trivial⟩, heq,

@@ -272,7 +272,7 @@ private lemma inputAt_frame_append (u v : List Bool) {i : ℕ} (hi : i < u.lengt
 /-- The terminator of the frame. -/
 private lemma inputAt_frame_append_length (u v : List Bool) :
     inputAt (frame u ++ v) (2 * u.length + 1) = some false := by
-  simpa [inputAt] using (getElem?_frame_append_boundary u v 0).1
+  simpa [inputAt] using getElem?_frame_append_length u v
 
 /-! ### The phases of the machine -/
 
@@ -358,7 +358,7 @@ private lemma seg_copy {i : ℕ} (hi : i ≤ n) :
   | succ d ih =>
     have hi' : i < n := by omega
     have hx : inputAt (word u n) (2 * u.length + 2 + i) = some true := by
-      have := (getElem?_frame_append_boundary u (List.replicate n true) i).2
+      have := getElem?_frame_append_boundary u (List.replicate n true) i
       rw [List.getElem?_replicate_of_lt hi'] at this
       simpa [inputAt, (by omega : 2 * u.length + 2 + i - 1 = 2 * u.length + 1 + i)] using this
     have ht : Function.update (tapeOfList (List.replicate i true)) (i : ℤ) (some true) =

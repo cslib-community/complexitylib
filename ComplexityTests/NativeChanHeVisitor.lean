@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalFold
 import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalLocalDelivery
 import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Program
 import Complexity.Algorithms.WordRAM.ThreeSum.Host.Slow
@@ -44,8 +43,8 @@ example (Q : Finset ℕ) (Λ : ℕ) (t : Math.Task) (ts : List Math.Task)
     (seen : List Cslib.Algorithms.ThreeSum.ChanHe.Node) :
     (Math.output Q Λ (t :: ts)).foldl (fun xs node => xs ++ [node]) seen =
       (Math.output Q Λ (Math.step Q Λ t ts).1).foldl (fun xs node => xs ++ [node])
-        ((Math.step Q Λ t ts).2.toList.foldl (fun xs node => xs ++ [node]) seen) :=
-  Math.foldl_step _ _ _ _ _ _
+        ((Math.step Q Λ t ts).2.toList.foldl (fun xs node => xs ++ [node]) seen) := by
+  rw [Math.output_step, List.foldl_append]
 
 private def rootInput (f n : ℕ) (z : ℤ) : Data 128 where
   regs i := match i.val with

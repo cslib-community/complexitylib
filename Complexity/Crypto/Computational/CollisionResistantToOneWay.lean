@@ -137,18 +137,6 @@ theorem isCollision_or_eq_of_keyDigest_eq {H : List Bool → List Bool → List 
   · exact Or.inr hmessage
   · exact Or.inl (isCollision_eq_true_iff.2 ⟨rfl, rfl, Ne.symm hmessage, hdigest.symm⟩)
 
-/-- Pointwise additive bounds on the possible first-stage results bound the whole experiment. -/
-private theorem bind_apply_le_add_on_support {α β : Type*} (μ : PMF α) {f g₁ g₂ : α → PMF β}
-    (b : β) (h : ∀ a ∈ μ.support, f a b ≤ g₁ a b + g₂ a b) :
-    μ.bind f b ≤ μ.bind g₁ b + μ.bind g₂ b := by
-  simp only [PMF.bind_apply]
-  rw [← tsum_add]
-  refine tsum_le_tsum fun a => ?_
-  by_cases ha : a ∈ μ.support
-  · rw [← mul_add]
-    exact mul_le_mul_right (h a ha) _
-  · simp [(PMF.apply_eq_zero_iff μ a).2 ha]
-
 /-- Comparing a function of a sample with a fixed word accepts with the probability that the image
 distribution gives that word. -/
 private theorem bind_pure_beq_apply (P : PMF (List Bool)) (φ : List Bool → List Bool)
@@ -229,13 +217,13 @@ theorem succProbability_inversionGame_le {H : List Bool → List Bool → List B
     simp only [inversionGame, collisionGame, finder, ProbComp.eval_bind, ProbComp.eval_pure,
       BitString.eval_sampleList, hsplit, PMF.bind_bind, PMF.bind_map, PMF.pure_bind,
       Function.comp_def]
-    refine (bind_apply_le_add_on_support _ true fun key hkey => ?_).trans
+    refine (PMF.bind_apply_le_add_on_support _ true fun key hkey => ?_).trans
       (add_le_add le_rfl (PMF.bind_apply_le_on_support _ hguess))
-    refine bind_apply_le_add_on_support _ true fun message hmessage => ?_
+    refine PMF.bind_apply_le_add_on_support _ true fun message hmessage => ?_
     have hklen := BitString.length_of_mem_support_uniformList hkey
     have hmlen := BitString.length_of_mem_support_uniformList hmessage
     rw [keyDigest_append H (by rw [hmlen, hklen]) hr]
-    refine bind_apply_le_add_on_support _ true fun candidate _ => ?_
+    refine PMF.bind_apply_le_add_on_support _ true fun candidate _ => ?_
     cases hwin : (keyDigest H candidate == key ++ H key message)
     · simp
     · rcases isCollision_or_eq_of_keyDigest_eq hlen n (beq_iff_eq.1 hwin) with hcol | hguess

@@ -98,7 +98,7 @@ noncomputable def genericMatrix (K : Type u) [CommSemiring K] (n : ℕ) :
 
 /-- The generic matrix of `Cslib.Circuits.Arithmetic.genericMatrix` renames the variables of
 `Matrix.mvPolynomialX` to row-major order. -/
-theorem genericMatrix_eq_map_rename {K : Type u} [Field K] {n : ℕ} :
+theorem genericMatrix_eq_map_rename {K : Type u} [CommSemiring K] {n : ℕ} :
     Arithmetic.genericMatrix K n =
       (Matrix.mvPolynomialX (Fin n) (Fin n) K).map (rename finProdFinEquiv) := by
   ext i j

@@ -23,20 +23,24 @@ import Complexity.Probability.PMF.Uniform
 /-!
 # Native structured module matrices
 
-Private total implementations realize the existing `ModuleSIS.encodeMatrix` representation
-and sample its exact structured uniform law. Dimensions and sampling width are unary; coefficient
-lists and the deterministic modulus are binary. Every input entry and output frame is charged.
-Polynomial coefficients are sampled independently before rotation-block expansion; expanded
-scalar entries are not independent. This is original implementation and sampling algebra.
+Private total implementations realize the existing `ModuleSIS.encodeMatrix` representation for
+arbitrary positive binary moduli and sample its exact structured uniform law for power-of-two
+moduli `2 ^ w`. Dimensions and sampling width are unary; coefficient lists and the deterministic
+modulus are binary. Every input entry and output frame is charged. Polynomial coefficients are
+sampled independently before rotation-block expansion; expanded scalar entries are not independent.
+This is original implementation and sampling algebra.
 
 ## Main results
 
 * `exists_computableInPolyTime_encodeModuleMatrix`: canonical native rectangular expansion.
-* `exists_isPPTOn_sampleEncodedModuleMatrix`: exact sampling of the existing encoded matrix law.
+* `exists_isPPTOn_sampleEncodedModuleMatrix`: exact sampling of the encoded structured matrix law
+  for power-of-two moduli `2 ^ w`.
 
 The canonical expansion identity requires a positive modulus, including one. Zero dimensions
-and width are permitted. These results supply no seed compression, rejection policy or security
-claim, and do not implement the entire randomized encryption scheme.
+and width are permitted. Exact sampling here is restricted to moduli `2 ^ w`; see
+`Complexity.Crypto.Computational.SIS.Module.ApproximateSampling` for arbitrary positive binary
+moduli. These results supply no seed compression, rejection policy or security claim, and do not
+implement the entire randomized encryption scheme.
 -/
 
 public section
@@ -213,9 +217,11 @@ private theorem sampledMatrixWord_eval (d k n w : ℕ) :
   funext A
   exact expandedWord_ofFn (by positivity) A
 
-/-- An exact strict-PPT sampler for the existing structured module-matrix encoding. All three
-dimensions and the bit width are unary runtime inputs. The `d*k*n` independent coefficients
-are expanded into rotation blocks; the expanded scalar entries are not independent. -/
+/-- An exact strict-PPT sampler for the existing structured module-matrix encoding at power-of-two
+moduli `2 ^ w` (for arbitrary positive binary moduli, see
+`Complexity.Crypto.Computational.SIS.Module.ApproximateSampling`). All three dimensions and the
+bit width `w` are unary runtime inputs. The `d*k*n` independent coefficients are expanded into
+rotation blocks; the expanded scalar entries are not independent. -/
 theorem exists_isPPTOn_sampleEncodedModuleMatrix :
     ∃ sample : (((ℕ × ℕ) × ℕ) × ℕ) → ProbComp (List Bool),
       IsPPTOn (encPair (encPair (encPair encUnary encUnary) encUnary) encUnary) encBits sample ∧
