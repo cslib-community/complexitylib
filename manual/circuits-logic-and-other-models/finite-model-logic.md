@@ -60,6 +60,8 @@ The easy half is [rePred_finSat](../../Complexity/Logics/FirstOrder/Raw/FinSat.l
 
 Scope. The encoded computation is `Code.evaln` rather than a Turing machine run. Relation symbols have arity at most three, but `haltSentence c` uses the symbols up to `encode c + 4`, so the theorem is about the union of all finite relational vocabularies. Libkin's form (undecidability for every vocabulary with at least one binary relation symbol) and a computable bridge to Mathlib `L.Sentence` remain open ([#2886](https://github.com/cslib-community/complexitylib/issues/2886)).
 
+To use the results, import `Complexity.Logics.FirstOrder.Trakhtenbrot.Undecidability`. To show that another predicate `p` is undecidable, give a computable `f : RawFormula → α` with `FinSat φ ↔ p (f φ)`, and then apply `not_computablePred_finSat` to `(hp.comp hf).of_eq`. The name `RawFormula` is also used by the FO(LFP) syntax `Cslib.Logic.FO.LFP.RawFormula`, so qualify it when both namespaces are open.
+
 ## Known Limitations
 
 This survey checks the model definitions and selected endpoint routes rather than every formula-level proof. Source ownership is mixed: Mathlib supplies the underlying first-order logic, while local modules supply finite encodings and complexity-specific operators/reductions. Cardinality, input length and tuple dimension are separate parameters; quoted complexity claims should preserve them and retain the positivity/order/encoding hypotheses.

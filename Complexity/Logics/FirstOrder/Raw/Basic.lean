@@ -16,8 +16,9 @@ public import Mathlib.Basic.Finite.Defs
 
 `Cslib.Logic.FO.RawFormula` is a flat syntax of relational first-order formulas: variables are
 natural numbers, relation symbols are natural numbers, and an atom `rel r args` applies symbol `r`
-to the variable list `args` (its arity is the length of `args`). Connectives are `falsum`, `imp`
-and `all`; the others are derived (`neg`, `verum`, `disj`, `conj`, `ex`, `iff`, `bigConj`).
+to the variable list `args` (its arity is the length of `args`). The primitives are `falsum`,
+equality of variables `equal x y`, atoms `rel r args`, `imp` and `all`; the other connectives are
+derived (`neg`, `verum`, `disj`, `conj`, `ex`, `iff`, `bigConj`).
 
 **Why a separate syntax.** Mathlib's `FirstOrder.Language.BoundedFormula` is a dependent family
 over a language whose symbol types are arbitrary, and Mathlib has no `Primcodable` instance for it
@@ -31,6 +32,10 @@ constructors and structural recursion are primitive recursive
 A formula is interpreted in any type `M` by a relation interpretation `I : ℕ → List M → Prop`
 (the meaning of `rel r args` under an assignment `v` is `I r (args.map v)`) and an assignment
 `v : ℕ → M`.
+
+The name `RawFormula` is also used by the FO(LFP) syntax `Cslib.Logic.FO.LFP.RawFormula`
+(`Complexity/Logics/FirstOrder/Operator/LeastFixedPoint.lean`); under
+`open Cslib.Logic.FO Cslib.Logic.FO.LFP` qualify the name.
 
 ## Main definitions
 
@@ -51,6 +56,9 @@ A formula is interpreted in any type `M` by a relation interpretation `I : ℕ �
   satisfiable.
 -/
 
+-- The section is exposed because other modules unfold these definitions definitionally: for
+-- example `primrec_neg` (`Raw/Primrec.lean`) uses `neg φ = imp φ falsum`, the primitive
+-- recursiveness proofs unfold the coding, and clients destructure `FinSat` directly.
 @[expose] public section
 
 namespace Cslib.Logic.FO
@@ -74,7 +82,8 @@ namespace RawFormula
 
 /-! ### Coding -/
 
-/-- The code of a formula: constructor tag `0`–`4` modulo `4` and paired arguments. -/
+/-- The code of a formula: `falsum` is `0`, and a formula built by `equal`, `rel`, `imp` or `all`
+(index `i = 1, 2, 3, 4`) from arguments paired into `p` has code `4 * p + i`. -/
 def toNat : RawFormula → ℕ
   | falsum => 0
   | equal x y => 4 * Nat.pair x y + 1

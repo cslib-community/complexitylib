@@ -15,8 +15,11 @@ import Complexity.Foundations.Computability.ComputablePred
 /-!
 # Trakhtenbrot's theorem
 
-**Trakhtenbrot's theorem** ([Trakhtenbrot1950]; [Libkin2004], Theorem 9.2 and Corollary 9.3):
-finite satisfiability of first-order sentences is undecidable. Since it is r.e.
+**Trakhtenbrot's theorem** ([Trakhtenbrot1950]; compare [Libkin2004], Theorem 9.2 and
+Corollary 9.3): finite satisfiability of first-order sentences is undecidable. It is proved here
+for raw relational sentences over the union of all finite vocabularies (unboundedly many relation
+symbols, each of arity at most three); Libkin's fixed-vocabulary form is not yet formalized (see
+**Scope** below). Since finite satisfiability is r.e.
 (`Cslib.Logic.FO.RawFormula.rePred_finSat`), finite validity is co-r.e. but not r.e., so no
 effective proof system is sound and complete for truth in all finite structures.
 
@@ -51,8 +54,9 @@ further interpretation of the vocabulary in one binary relation and is not forma
 
 * `Cslib.Logic.FO.Trakhtenbrot.eval_dom_iff_finSat`: the reduction from halting.
 * `Cslib.Logic.FO.Trakhtenbrot.primrec_haltSentence`: the reduction is primitive recursive.
-* `Cslib.Logic.FO.RawFormula.not_computablePred_finSat`: **Trakhtenbrot's theorem**.
-* `Cslib.Logic.FO.RawFormula.not_rePred_finValid`: finite validity is not r.e.
+* `Cslib.Logic.FO.RawFormula.not_computablePred_finSat`: **Trakhtenbrot's theorem**, for raw
+  sentences over the union of all finite vocabularies.
+* `Cslib.Logic.FO.RawFormula.not_rePred_finValid`: finite validity of such sentences is not r.e.
 * `Cslib.Logic.FO.RawFormula.not_rePred_not_finSat`: finite unsatisfiability is not r.e.
 * `Cslib.Logic.FO.RawFormula.exists_finValid_not_of_rePred`: every r.e. set of finitely valid
   sentences misses a finitely valid sentence.
@@ -168,13 +172,18 @@ open Trakhtenbrot
 
 /-! ### Trakhtenbrot's theorem and its corollaries -/
 
-/-- **Trakhtenbrot's theorem** ([Trakhtenbrot1950]; [Libkin2004], Theorem 9.2): finite
-satisfiability of first-order sentences is undecidable. -/
+/-- **Trakhtenbrot's theorem** ([Trakhtenbrot1950]): finite satisfiability of first-order
+sentences is undecidable. This is the form for raw relational sentences over the union of all
+finite vocabularies (unboundedly many relation symbols, each of arity at most three). The
+fixed-vocabulary form of [Libkin2004], Theorem 9.2 (every vocabulary with a binary relation
+symbol) is not yet formalized. -/
 theorem not_computablePred_finSat : ¬ComputablePred FinSat := fun h =>
   ComputablePred.halting_problem 0 <|
     (h.comp primrec_haltSentence.to_comp).of_eq fun c => (eval_dom_iff_finSat c).symm
 
-/-- **Finite validity is not r.e.** ([Libkin2004], Corollary 9.3). -/
+/-- **Finite validity is not r.e.**, for raw relational sentences over the union of all finite
+vocabularies. [Libkin2004], Corollary 9.3, is the corresponding statement for a fixed vocabulary
+with a binary relation symbol, which is not yet formalized. -/
 theorem not_rePred_finValid : ¬REPred FinValid := fun h =>
   ComputablePred.halting_problem_not_re 0 <|
     (h.comp (primrec_neg primrec_haltSentence).to_comp).of_eq fun c => by
