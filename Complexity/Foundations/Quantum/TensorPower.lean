@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Analysis.Complex.Basic
 

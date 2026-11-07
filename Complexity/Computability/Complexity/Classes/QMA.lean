@@ -16,9 +16,9 @@ public import Complexity.Computability.Circuit.Quantum.Verifier
 
 `QMA` (quantum Merlin–Arthur, Kitaev's `BQNP`) is the quantum analogue of `NP` and `MA`: a
 polynomial-time quantum verifier receives, besides the input, a quantum witness state
-[Kitaev, Shen, Vyalyi][KitaevShenVyalyi2002], Section 14.1; [Watrous][Watrous2008], Section V.1;
-[Marriott, Watrous][MarriottWatrous2005], Definition 3.1. A promise problem `Q` is in
-`PromiseQMA c s enc` when some polynomial-time uniform family of verifiers
+[Kitaev, Shen, Vyalyi][KitaevShenVyalyi2002], Section 14.2, Definition 14.2;
+[Watrous][Watrous2008], Section V.1; [Marriott, Watrous][MarriottWatrous2005], Definition 3.1. A
+promise problem `Q` is in `PromiseQMA c s enc` when some polynomial-time uniform family of verifiers
 (`Cslib.Quantum.UniformVerifierFamily`) satisfies, with `n` the length of the encoded instance:
 
 * **completeness**: for every yes-instance some unit witness state is accepted with probability at

@@ -52,7 +52,7 @@ namespace Cslib.Quantum
 open Finset Turing.MultiTapeTM GateCode
 
 /-- The bits of `frame x`: a marker `true` before each bit of `x`, and `false` at the end. -/
-theorem getD_frame (x : List Bool) (k : ℕ) :
+private theorem getD_frame (x : List Bool) (k : ℕ) :
     (frame x).getD k false =
       if k < 2 * x.length then (if k % 2 = 0 then true else x.getD (k / 2) false) else false := by
   induction x generalizing k with
@@ -356,7 +356,7 @@ theorem PromiseNP_subset_PromiseQMA : PromiseNP enc ⊆ PromiseQMA (fun _ => 1) 
     rw [hket, hno a ha _ hlen]
     norm_num
 
-/-- **`NP ⊆ QMA`** [Watrous, Section V.2][Watrous2008]. -/
+/-- **`NP ⊆ QMA`** [Watrous][Watrous2008], Section V.2. -/
 theorem NP_subset_QMA : NP enc ⊆ QMA enc := fun A hA =>
   PromiseQMA_mono (fun _ => by norm_num) (fun _ => by norm_num)
     (PromiseNP_subset_PromiseQMA (ofSet_mem_PromiseNP.mpr hA))

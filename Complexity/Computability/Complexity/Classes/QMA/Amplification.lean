@@ -91,7 +91,7 @@ open Finset GateCode Turing.MultiTapeTM
 namespace QMAAmplify
 
 /-- Division with remainder by `W` is unique. -/
-theorem eq_of_add_mul_eq {W a a' b b' : ℕ} (ha : a < W) (ha' : a' < W)
+private theorem eq_of_add_mul_eq {W a a' b b' : ℕ} (ha : a < W) (ha' : a' < W)
     (h : a + b * W = a' + b' * W) : a = a' ∧ b = b' := by
   have hW : 0 < W := Nat.lt_of_le_of_lt (Nat.zero_le _) ha
   have hmod := congrArg (· % W) h
@@ -134,14 +134,14 @@ theorem mem_moveOutCodes {n p W k : ℕ} {g : GateCode} :
     exact ⟨j, hj, i, hi, rfl⟩
 
 /-- Qubit `i` of block `j < k` of width `p` lies in the first `k p` qubits. -/
-theorem add_mul_lt {p k i j : ℕ} (hj : j < k) (hi : i < p) : i + p * j < k * p := by
+private theorem add_mul_lt {p k i j : ℕ} (hj : j < k) (hi : i < p) : i + p * j < k * p := by
   have := Nat.mul_le_mul_left p (show j + 1 ≤ k by omega)
   rw [Nat.mul_add, Nat.mul_one] at this
   rw [Nat.mul_comm k]
   omega
 
 /-- Block `j + 1` of width `W` starts at or after qubit `W`. -/
-theorem le_add_mul {W i j : ℕ} : W ≤ i + (j + 1) * W := by
+private theorem le_add_mul {W i j : ℕ} : W ≤ i + (j + 1) * W := by
   have := Nat.le_mul_of_pos_left W (show 0 < j + 1 by omega)
   omega
 
@@ -193,12 +193,9 @@ def copiesEmb (hm : m ≤ W) : Fin (2 * R) × Fin m ↪ Fin (Amplify.width W R) 
 @[simp] theorem copiesEmb_apply (hm : m ≤ W) (q : Fin (2 * R) × Fin m) :
     copiesEmb hm q = copyEmb hm q.1 q.2 := rfl
 
-/-- The witness qubits `n, …, n + p - 1` of the original register. -/
-def witEmb (hnp : n + p ≤ m) : Fin p ↪ Fin m := blockEmb n hnp
-
-/-- The witness qubits of all copies, indexed by the copy and the qubit. -/
+/-- The witness qubits `n, …, n + p - 1` of all copies, indexed by the copy and the qubit. -/
 def slotEmb (hnp : n + p ≤ m) (hm : m ≤ W) : Fin (2 * R) × Fin p ↪ Fin (Amplify.width W R) :=
-  (Function.Embedding.prodMap (Function.Embedding.refl _) (witEmb hnp)).trans (copiesEmb hm)
+  (Function.Embedding.prodMap (Function.Embedding.refl _) (blockEmb n hnp)).trans (copiesEmb hm)
 
 @[simp] theorem slotEmb_apply_val (hnp : n + p ≤ m) (hm : m ≤ W) (q : Fin (2 * R) × Fin p) :
     (slotEmb hnp hm q : ℕ) = q.2 + n + (q.1 + 1) * W := rfl
@@ -407,11 +404,11 @@ theorem eval_prep (hnp : n + p ≤ m) (hm : m ≤ W) (hW : n + 2 * R * p ≤ W) 
 theorem glue_slotsEmb_comp_copyEmb (hnp : n + p ≤ m) (hm : m ≤ W) (Z : Fin (2 * R * p) → Bool)
     (X : Fin (Amplify.width W R) → Bool) (j : Fin (2 * R)) :
     glue (slotsEmb hnp hm) Z X ∘ copyEmb hm j =
-      glue (witEmb hnp) (fun i => Z (finProdFinEquiv (j, i))) (X ∘ copyEmb hm j) := by
+      glue (blockEmb n hnp) (fun i => Z (finProdFinEquiv (j, i))) (X ∘ copyEmb hm j) := by
   funext i
-  by_cases hi : ∃ i', witEmb hnp i' = i
+  by_cases hi : ∃ i', blockEmb n hnp i' = i
   · obtain ⟨i', rfl⟩ := hi
-    have : copyEmb hm j (witEmb hnp i') = slotsEmb hnp hm (finProdFinEquiv (j, i')) := by
+    have : copyEmb hm j (blockEmb n hnp i') = slotsEmb hnp hm (finProdFinEquiv (j, i')) := by
       rw [slotsEmb_finProdFinEquiv]
       rfl
     rw [Function.comp_apply, this, glue_apply_emb, glue_apply_emb]
@@ -423,7 +420,7 @@ theorem glue_slotsEmb_comp_copyEmb (hnp : n + p ≤ m) (hm : m ≤ W) (Z : Fin (
     have h' : (i' : ℕ) + n + (j' + 1) * W = i + (j + 1) * W := congrArg Fin.val h
     have := eq_of_add_mul_eq (lt_of_lt_of_le (show (i' : ℕ) + n < m by omega) hm)
       (lt_of_lt_of_le i.2 hm) h'
-    exact hi i' (Fin.ext (by simp [witEmb]; omega))
+    exact hi i' (Fin.ext (by simp; omega))
 
 /-- The copies of the original circuit, on the copies of the original register. -/
 theorem ofCodes_copiesCodes_copyEmb (hm : m ≤ W) {gs : List GateCode}
@@ -448,17 +445,25 @@ theorem pairwise_copyEmb (hm : m ≤ W) :
 the basis witness `w`. -/
 noncomputable def amp (hnp : n + p ≤ m) (gs : List GateCode) (x : List Bool) (u : Fin m → Bool)
     (w : Fin p → Bool) : ℂ :=
-  (Circuit.eval (Circuit.ofCodes m gs) (ket (glue (witEmb hnp) w (inputState m x)))).ofLp u
+  (Circuit.run (Circuit.ofCodes m gs) (glue (blockEmb n hnp) w (inputState m x))).ofLp u
 
 /-- **The gate codes of the amplified verifier**: move the `2 R` witness blocks into the witness
 qubits of `2 R` copies of the original register (of width at most `W`), copy the input into them,
 run the original circuit `gs` on each copy, and take the strict majority of their answers with the
 reversible counter of `Cslib.Quantum.Amplify`. -/
 def codes (n p W R : ℕ) (gs : List GateCode) : List GateCode :=
-  ((moveInCodes n p W (2 * R) ++ moveOutCodes n p W (2 * R)) ++ Amplify.copyCodes n W (2 * R)) ++
-    (Amplify.copiesCodes W (2 * R) gs ++
-      (Counter.codes (Amplify.base W R) (R + 1) (fun s => (s + 1) * W) (2 * R) ++
-        swapCodes (Amplify.answer W R)))
+  (moveInCodes n p W (2 * R) ++ moveOutCodes n p W (2 * R)) ++ Amplify.codes n W R gs
+
+/-- The gate codes of the amplified verifier, grouped into the classical preparation, the copies of
+the original circuit, and the counter. -/
+theorem codes_eq (n p W R : ℕ) (gs : List GateCode) :
+    codes n p W R gs =
+      ((moveInCodes n p W (2 * R) ++ moveOutCodes n p W (2 * R)) ++
+          Amplify.copyCodes n W (2 * R)) ++
+        (Amplify.copiesCodes W (2 * R) gs ++
+          (Counter.codes (Amplify.base W R) (R + 1) (fun s => (s + 1) * W) (2 * R) ++
+            swapCodes (Amplify.answer W R))) := by
+  simp only [codes, Amplify.codes, List.append_assoc]
 
 /-- **The acceptance probability of the amplified verifier** on the witness `Ψ` for the `2 R`
 blocks: the weight of the outcomes of the `2 R` copies of the original circuit in which more than
@@ -506,7 +511,7 @@ theorem measureProb_codes (hnp : n + p ≤ m) (hm : m ≤ W) (hW : n + 2 * R * p
       (hc : ∀ q, copiesEmb hm q ≠ c) : glue (slotsEmb hnp hm) Z X1 c = X1 c := by
     refine glue_of_not _ _ _ fun q h => ?_
     obtain ⟨⟨j, i⟩, rfl⟩ := finProdFinEquiv.surjective q
-    exact hc (j, witEmb hnp i) (by rw [← h, slotsEmb_finProdFinEquiv]; rfl)
+    exact hc (j, blockEmb n hnp i) (by rw [← h, slotsEmb_finProdFinEquiv]; rfl)
   have hmem (c : Fin (Amplify.width W R)) :
       (∀ e ∈ (List.finRange (2 * R)).map (copyEmb hm), ∀ i, e i ≠ c) ↔
         ∀ q, copiesEmb hm q ≠ c := by
@@ -545,7 +550,7 @@ theorem measureProb_codes (hnp : n + p ≤ m) (hm : m ≤ W) (hW : n + 2 * R * p
           swapCodes (Amplify.answer W R)))
       (Circuit.eval (Circuit.ofCodes (Amplify.width W R) (Amplify.copiesCodes W (2 * R) gs))
         (embedState (slotsEmb hnp hm) X1 Ψ)) := by
-    rw [codes, Circuit.ofCodes_append, Circuit.eval_append, eval_prep hnp hm hW hW0 X0 hX0high,
+    rw [codes_eq, Circuit.ofCodes_append, Circuit.eval_append, eval_prep hnp hm hW hW0 X0 hX0high,
       Circuit.ofCodes_append, Circuit.eval_append]
   rw [hsplit, Circuit.measureProb_eval_ofCodes (Amplify.isClassical_counter_swap hW0)]
   simp only [hamp]
@@ -623,13 +628,7 @@ theorem computableInPolyTime_codes {n p W R : γ → ℕ} {gs : γ → List Gate
       (encList encGateCode) := by
     unfold moveOutCodes
     fun_prop
-  have h₃ := Amplify.computableInPolyTime_copyCodes hn hW (k := fun c => 2 * R c) (by fun_prop)
-  have h₄ := Amplify.computableInPolyTime_copiesCodes hW (k := fun c => 2 * R c) (by fun_prop) hgs
-  have h₅ := Amplify.computableInPolyTime_counter hW hR
-  have h₆ : ComputableInPolyTime (fun c => swapCodes (Amplify.answer (W c) (R c))) enc
-      (encList encGateCode) := by
-    simp only [swapCodes, Amplify.answer, Counter.level, Amplify.base]
-    fun_prop
+  have h₃ := Amplify.computableInPolyTime_codes hn hW hR hgs
   unfold codes
   fun_prop
 
@@ -680,6 +679,7 @@ def amplify (r : ℕ → ℕ) (hr : ComputableInPolyTime r encUnary encUnary) :
     have hw := V.width_pos n
     have hle := V.le_width n
     have hwit := V.add_witnessLength_le n
+    rw [codes_eq] at hg
     rcases List.mem_append.mp hg with hg | hg
     · rcases List.mem_append.mp hg with hg | hg
       · exact (isClassical_moveCodes (by omega) g hg).2
