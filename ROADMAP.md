@@ -960,10 +960,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Output/count validation and complete native circuit-bound VOLE execution (#2765; #643;
   prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
   and fresh-session amplification remain separate endpoints.
-- **Markov-chain sampling:** finite kernels, stationarity, reversibility and total-variation
-  mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
-  Metropolis sampling for encoded rational target weights, charging initialization, arithmetic
-  and every transition, with support and mixing hypotheses explicit.
+- **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
+  stationarity, reversibility, total-variation mixing times, Markovian couplings and reversible
+  Metropolis chains, with the lazy hypercube walk as client
+  (`Probability/BitString/LazyRandomWalk`, #2857). Extend with path coupling, conductance,
+  canonical-path and spectral-gap arguments. Implement Metropolis sampling for encoded rational
+  target weights, charging initialization, arithmetic and every transition, with support and
+  mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** interfaces separating relative error, failure
   probability, output-distribution error and runtime, including zero-count instances. Start
   with a complete DNF-counting FPRAS; prove sampling/counting reductions for suitably
