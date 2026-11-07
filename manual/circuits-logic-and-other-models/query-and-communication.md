@@ -32,6 +32,8 @@ The relation-solving predicate is defined on explicit input domains, and extende
 | [PrivateCoin](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Communication/Randomized.lean#L221) | Deterministic protocol on inputs augmented by independent finite uniform private tapes. |
 | [IsCover](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Communication/Nondeterministic/Basic.lean#L139) | Cover by valid monochromatic rectangles; k certificate bits provide at most `2^k` rectangles. |
 
+Two building blocks bound concrete protocols. In `Protocol.ecomplexityFun_le_clog_card_finset_succ`, Alice sends a value from a known finite set and Bob answers, at a cost of `⌈log₂ |s|⌉ + 1` bits. [Binary search](../../Complexity/Computability/Communication/BinarySearch.lean) (`Protocol.exists_search_lt`) finds an index at which Bob's integer weight is below Alice's, given that Bob's total over a list is below hers. It needs `⌈log₂ |l|⌉` comparisons of partial sums, each of cost at most `c`. Krajíček's cutting-planes interpolation uses both.
+
 The nondeterministic cover convention does not charge a final output announcement. Its relationship to a tree in which both parties know the answer therefore has an explicit small overhead. Public-coin PMFs and finite-support randomized query trees are different probability representations; neither should be silently substituted for the other.
 
 ## Major communication bridges and bounds

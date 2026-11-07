@@ -1375,6 +1375,7 @@ public import Complexity.Computability.Circuit.Synthesis
 public import Complexity.Computability.Circuit.Unfolding
 public import Complexity.Computability.Circuit.Wiring
 public import Complexity.Computability.Communication.Amplification
+public import Complexity.Computability.Communication.BinarySearch
 public import Complexity.Computability.Communication.Corruption
 public import Complexity.Computability.Communication.DagProtocol
 public import Complexity.Computability.Communication.Discrepancy
@@ -4680,6 +4681,7 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import Complexity.Logics.Propositional.ClauseSet.SubcubeFree
 public import Complexity.Logics.Propositional.CliqueColoring
 public import Complexity.Logics.Propositional.CuttingPlanes
+public import Complexity.Logics.Propositional.CuttingPlanes.Interpolation
 public import Complexity.Logics.Propositional.CuttingPlanes.Pigeonhole
 public import Complexity.Logics.Propositional.CuttingPlanes.Resolution
 public import Complexity.Logics.Propositional.CuttingPlanes.Separation

@@ -795,16 +795,19 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - Proof-space lower bounds, Frege, polynomial calculus and sum-of-squares, and certified DPLL
   solver runtimes.
-- **Cutting planes:** Krajíček's feasible interpolation for cutting planes with bounded
-  coefficients and the resulting clique–colouring lower bound
-  ([#2019](https://github.com/cslib-community/complexitylib/issues/2019), M4); Pudlák's
+- **Cutting planes:** the clique–colouring lower bound for cutting planes with bounded
+  coefficients from Krajíček's feasible interpolation, Corollary 7.3
+  ([#2019](https://github.com/cslib-community/complexitylib/issues/2019), M4b), and the
+  monotone case of the interpolation theorem in which the shared variables occur in `Γ_B` with
+  nonpositive coefficients only; Pudlák's
   lower bound for unrestricted coefficients via monotone real circuits (untracked);
   coefficient-size measures; Buss–Clote cutting planes with division by 2 only; and the
   simulation of resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and
   translation time.
 - **Feasible interpolation** ([#1817]): further clients of Krajíček's interpolation theorem for
   semantic derivations ([#2019]): resolution through Theorem 6.1, the linear equational calculus,
-  and the monotone case for the `ℬ` side. The cutting-planes client is under **Cutting planes**.
+  and the monotone case for the `ℬ` side. The remaining cutting-planes work is under **Cutting
+  planes**.
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
