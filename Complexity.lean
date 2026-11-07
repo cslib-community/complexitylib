@@ -3493,6 +3493,7 @@ public import Complexity.DataStructure.CountMin.Program
 public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.DataStructure.Dictionary.DoubleHashing
 public import Complexity.DataStructure.Dictionary.Dynamic.Spec
+public import Complexity.DataStructure.Dictionary.FeistelPerm
 public import Complexity.DataStructure.Dictionary.FeistelQuotient
 public import Complexity.DataStructure.Dictionary.Memory
 public import Complexity.DataStructure.Dictionary.Spec
