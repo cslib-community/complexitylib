@@ -184,6 +184,11 @@ Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circui
 
 Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edition. CRC Press, 2020. Bibliographic metadata and section titles checked against the authors' 3rd-edition table of contents and preface: https://www.cs.umd.edu/~jkatz/imc/toc-preface-3rd.pdf (Sections 9.2.3–9.2.4 on the factoring and RSA assumptions; Section 15.1.1 on trapdoor permutations; Section 15.2 on Paillier encryption; Sections 15.4.1–15.4.3 on quadratic residues and the quadratic residuosity assumption; and Sections 15.5.1–15.5.2 on modular square roots and the Rabin trapdoor permutation). Detailed numbered locators (Definitions, Claims, Propositions, Lemmas, Constructions, Examples, Exercises, and Theorems) remain attributed to the Lean source docstrings, as the textbook body was not independently audited; the Lean modules adapt the parameter generators, RSA challenge domain, Rabin sampling distribution, and the Paillier encryption-randomness sampler (dyadic sampling with `unitOrOne` in place of uniform `ℤ_N^*`) as documented in their module docstrings and implementation notes.
 
+<a id="knuth1994"></a>
+## knuth1994
+
+Donald E. Knuth. *The Sandwich Theorem*. Electronic Journal of Combinatorics 1, A1, 1994. https://doi.org/10.37236/1193 ; arXiv text https://arxiv.org/abs/math/9312214 . The arXiv text was consulted on 2026-11-07 for §1 (orthogonal labelings and the lemma `α ≤ ϑ`), §4 (4.9), §5 (5.2), the product lemma of §20 and the pentagon umbrella of §22. The formal umbrella matches §22 up to the vertex relabelling `i ↦ 3i`.
+
 <a id="lean-validation"></a>
 ## lean-validation
 
@@ -198,6 +203,11 @@ Carsten Lund, Lance Fortnow, Howard Karloff and Noam Nisan. *Algebraic Methods f
 ## liupass20
 
 Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOCS 2020, 1243–1254. https://doi.org/10.1109/FOCS46700.2020.00118 . Definition/theorem locators refer to the full version https://arxiv.org/abs/2009.11514v1 , §§2.3 and 3, pp. 8–9.
+
+<a id="lovasz1979"></a>
+## lovasz1979
+
+László Lovász. *On the Shannon Capacity of a Graph*. IEEE Transactions on Information Theory 25(1), 1–7, 1979. https://doi.org/10.1109/TIT.1979.1055985 . Bibliographic data from the DOI record. The full text was not inspected in this pass, so no theorem numbers are quoted. The attributed content (orthonormal representations with orthogonality on nonadjacent pairs, `ϑ`, `Θ ≤ ϑ`, submultiplicativity under strong products and `Θ(C₅) = √5`) follows [knuth1994](#knuth1994) and standard accounts.
 
 <a id="mathlib"></a>
 ## mathlib
@@ -243,6 +253,11 @@ John Rompel. “One-Way Functions are Necessary and Sufficient for Secure Signat
 ## shamir1992
 
 Adi Shamir. “IP = PSPACE.” *Journal of the ACM* 39(4), 869–877 (1992). DOI: https://doi.org/10.1145/146585.146609. Original-paper scan inspected: https://crypto.cs.mcgill.ca/~crepeau/COMP647/2007/TOPIC01/Shamir-IP=PSPACE.pdf.
+
+<a id="shannon1956"></a>
+## shannon1956
+
+Claude E. Shannon. *The Zero Error Capacity of a Noisy Channel*. IRE Transactions on Information Theory 2(3), 8–19, 1956. https://doi.org/10.1109/TIT.1956.1056798 . Bibliographic data from the DOI record. The zero-error capacity as a limit over strong powers, and the five-word code in the square of the pentagon, are attributed from secondary accounts; the full text was not inspected in this pass.
 
 <a id="sleatortarjan85"></a>
 ## sleatortarjan85

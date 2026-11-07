@@ -638,6 +638,17 @@ Import `Complexity.Algorithms.Lean.SetCover.Greedy` ([Complexity/Algorithms/Lean
 
 The [checked examples](../../ComplexityTests/SetCoverGreedy.lean) include an instance where greedy pays `11/6` against an optimum of `11/10`, inside the bound `121/60`. They also show a fractional cover strictly cheaper than every integral cover. Machine-level running time and the other classical approximation algorithms are open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
 
+## Lovász theta and Shannon capacity
+
+These are graph invariants with no algorithm attached yet. They are the mathematical side of the semidefinite route to perfect-graph optimization ([ROADMAP](../../ROADMAP.md#optimization-and-duality)). Four modules under `Complexity/Foundations/Combinatorics/SimpleGraph/` build them on Mathlib's `SimpleGraph.indepNum`, `chromaticNumber` and `cycleGraph`:
+
+- [StrongProduct.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/StrongProduct.lean) defines `G ⊠ H` (scoped notation in `SimpleGraph`) and the powers `G.strongPow k` on `Fin k → V`. It proves supermultiplicativity `α(G) α(H) ≤ α(G ⊠ H)` and `α(Gᵏ) ≤ |V|ᵏ`. Mathlib has no strong product at the pin; mathlib4#43170 proposes one.
+- [ShannonCapacity.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/ShannonCapacity.lean) defines `shannonCapacity G` as the supremum over `k ≥ 1` of `α(Gᵏ)^(1/k)`. `tendsto_shannonCapacity` shows that the sequence converges to it (Fekete's lemma); for an empty vertex type both sides are `0`.
+- [LovaszTheta.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/LovaszTheta.lean) defines `IsOrthonormalRepresentation` (unit vectors, orthogonal on *nonadjacent* distinct pairs, as in [Lovász][lovasz1979]) and `lovaszTheta G`. The latter is the infimum over representations `u` in some `ℝᵈ` and unit handles `c` of `max_v 1/⟪c, u v⟫²`; `lovaszTheta_le_of_rep` accepts representations in any real inner product space. It proves the sandwich `indepNum_le_lovaszTheta` and `lovaszTheta_le_chromaticNumber_compl`, that is `α(G) ≤ ϑ(G) ≤ χ(Gᶜ)` for finite `G`, together with `lovaszTheta_strongProd_le` and `shannonCapacity_le_lovaszTheta`. The [Knuth][knuth1994] locators in the module docstring give the sandwich and product lemmas.
+- [Pentagon.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/Pentagon.lean) gives Shannon's five-word code in `C₅ ⊠ C₅` [Shannon][shannon1956] and Lovász's umbrella in `ℝ³`. Together they prove `shannonCapacity_cycleGraph_five` and `lovaszTheta_cycleGraph_five` (both `√5`) and `indepNum_cycleGraph_five`.
+
+The theta function is a real infimum without a computational interface. Its SDP and eigenvalue characterizations, polynomial-time approximation (Grötschel–Lovász–Schrijver) and the resulting perfect-graph algorithms are open ([#2998](https://github.com/cslib-community/complexitylib/issues/2998)). The [checked examples](../../ComplexityTests/Foundations/Combinatorics/SimpleGraph/LovaszTheta.lean) compute `ϑ` for empty, complete and edgeless graphs and `Θ` for empty and edgeless graphs. They separate `α(C₅) = 2` from `Θ(C₅) = √5`, and restate the Shannon-capacity statement of the pentagon from first principles.
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -647,5 +658,8 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
 [complexitylib]: ../sources.md#complexitylib
+[knuth1994]: ../sources.md#knuth1994
+[lovasz1979]: ../sources.md#lovasz1979
+[shannon1956]: ../sources.md#shannon1956
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
