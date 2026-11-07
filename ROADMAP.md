@@ -928,7 +928,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Classical approximation algorithms** ([#2869]): beyond the greedy weighted set cover and its
   `H d` bound in `Algorithms/Lean/SetCover`, the maximal-matching vertex-cover and double-tree
   metric-TSP 2-approximations, machine-level polynomial-time certificates for these algorithms,
-  and stronger guarantees such as Christofides' `3/2` for metric TSP.
+  and stronger guarantees such as Christofides' `3/2` for metric TSP. LP-based and primal–dual
+  analyses of the same problems belong to the primal–dual approximation direction under
+  Optimization and duality.
 
 ### Online algorithms and competitive analysis
 

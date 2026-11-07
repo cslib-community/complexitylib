@@ -64,7 +64,7 @@ cover (`sum_greedy_le_harmonic_mul`, [WilliamsonShmoys2011], Theorem 1.12 with `
 `cost ≤ (1 + log d) · w(C)` (`sum_greedy_le_one_add_log_mul`).
 
 Earlier greedy analyses for unweighted set cover are due to Johnson and Lovász; see
-[WilliamsonShmoys2011], Section 1.8.
+[WilliamsonShmoys2011], Chapter 1, Chapter Notes.
 
 ## Limitations
 
@@ -243,8 +243,8 @@ theorem greedy_covers {U : Finset α} (hcov : ∀ a ∈ U, ∃ j ∈ J, a ∈ S 
   greedyLoop_covers le_rfl hcov
 
 /-- The greedy algorithm chooses only candidates. -/
-theorem greedy_subset {U : Finset α} : ∀ i ∈ greedy S w J U, i ∈ J :=
-  greedyLoop_subset
+theorem greedy_subset {U : Finset α} : greedy S w J U ⊆ J :=
+  fun _ hi => greedyLoop_subset _ hi
 
 /-- The greedy algorithm never chooses a candidate twice. -/
 theorem nodup_greedy {U : Finset α} : (greedy S w J U).Nodup :=
@@ -360,8 +360,8 @@ theorem sum_greedyLoop_le_sum_harmonic {k : ℕ} {R : Finset α} {C : Finset ι}
           rw [← Finset.sum_add_distrib]
           exact Finset.sum_congr rfl fun j _ => sub_add_cancel _ _
 
-/-- **Chvátal's bound** ([Chvatal1979]; [WilliamsonShmoys2011], Theorem 1.12): against every
-fractional cover `x` of `U` by candidates, the greedy cover costs at most
+/-- **Chvátal's bound** ([Chvatal1979]; cf. the proof of [WilliamsonShmoys2011], Theorem 1.12):
+against every fractional cover `x` of `U` by candidates, the greedy cover costs at most
 `∑ j ∈ C, x j * w j * H(|S j ∩ U|)`. -/
 theorem sum_greedy_le_sum_harmonic {U : Finset α} {C : Finset ι} {x : ι → 𝕜}
     (hw : ∀ j ∈ J, 0 ≤ w j) (hCJ : ∀ j ∈ C, j ∈ J) (hx : ∀ j ∈ C, 0 ≤ x j)
