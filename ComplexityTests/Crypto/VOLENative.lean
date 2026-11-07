@@ -29,7 +29,7 @@ noncomputable def receiver : Receiver Bool Input (List Bool) State Result where
     let coin ← ProbComp.uniform Bool
     return (coin, share, [])
   challenge input share state d := pure
-    (List.replicate input.2.1.length
+    (List.replicate input.2.length
       (state.1 ^^ share.1 ^^ share.2.getD 0 false ^^ d.getD 0 false),
       (state.1, state.2.1, d))
   receive _ share state reply :=
@@ -59,35 +59,35 @@ theorem receiver_simulator_ppt :
 
 -- The same program simulates every satisfying circuit, including noninjective wire maps.
 example {n m : ℕ} (left right output : Fin m → Fin n) (w : Fin n → Bool)
-    (hw : ∀ i, w (left i) * w (right i) = w (output i)) (z : List Bool) :
+    (hw : ∀ i, w (left i) * w (right i) = w (output i)) :
     (maskedMulCheckReceiverView left right output
       (receiver.strategy n List.ofFn (Fin.val (n := m))) w
-      (inputOfMaps left right output z)).map viewToLists =
+      (inputOfMaps left right output)).map viewToLists =
         ProbComp.eval (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d)
-          (inputOfMaps left right output z)) := by
+          (inputOfMaps left right output)) := by
   simpa only [Receiver.mapFirst_id] using receiverView_eq_eval_simulate left right output
     (ProbComp.uniform Bool) (ProbComp.eval_uniform _) receiver id (fun _ _ d => d)
-    (inputOfMaps left right output z) z rfl w hw
+    (inputOfMaps left right output) rfl w hw
 
-example (m : ℕ) (z : List Bool) :
+example (m : ℕ) :
     (maskedMulCheckReceiverView (fun _ : Fin m => (0 : Fin 1)) (fun _ => 0) (fun _ => 0)
       (receiver.strategy 1 List.ofFn (Fin.val (n := m))) (fun _ => true)
-      (inputOfMaps (fun _ : Fin m => (0 : Fin 1)) (fun _ => 0) (fun _ => 0) z)).map viewToLists =
+      (inputOfMaps (fun _ : Fin m => (0 : Fin 1)) (fun _ => 0) (fun _ => 0))).map viewToLists =
       ProbComp.eval (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d)
-        (1, List.replicate m (0, 0, 0), z)) := by
+        (1, List.replicate m (0, 0, 0))) := by
   simpa [inputOfMaps] using receiverView_eq_eval_simulate
     (fun _ : Fin m => (0 : Fin 1)) (fun _ => 0) (fun _ => 0)
-    (ProbComp.uniform Bool) (ProbComp.eval_uniform _) receiver id (fun _ _ d => d) _ z rfl
+    (ProbComp.uniform Bool) (ProbComp.eval_uniform _) receiver id (fun _ _ d => d) _ rfl
     (fun _ => true) (fun _ => rfl)
 
 example :
     (maskedMulCheckReceiverView (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0 Fin.elim0
-      (receiver.strategy 0 List.ofFn (Fin.val (n := 0))) Fin.elim0 (0, [], [])).map viewToLists =
+      (receiver.strategy 0 List.ofFn (Fin.val (n := 0))) Fin.elim0 (0, [])).map viewToLists =
       ProbComp.eval
-        (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d) (0, [], [])) := by
+        (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d) (0, [])) := by
   simpa [inputOfMaps] using receiverView_eq_eval_simulate
     (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0 Fin.elim0 (ProbComp.uniform Bool)
-    (ProbComp.eval_uniform _) receiver id (fun _ _ d => d) _ [] rfl
+    (ProbComp.eval_uniform _) receiver id (fun _ _ d => d) _ rfl
     Fin.elim0 (fun i => Fin.elim0 i)
 
 -- Both short and long callback replies are normalized into the actual transmitted vector.
@@ -95,13 +95,13 @@ example : weights 3 [true] = [true, false, false] ∧
     weights 1 [false, true] = [false] := by decide
 
 -- A huge binary gate index uses the default, rather than requiring that many wires.
-example : checkValue (1, [(2 ^ 100, 0, 0)], [])
+example : checkValue (1, [(2 ^ 100, 0, 0)])
     (true, [true, false]) [false] [true] = true := by decide
 
 -- The private coin, receiver key, raw tag and correction all affect the chosen weight.
 example :
-    receiver.challenge (1, [(0, 0, 0)], []) (false, []) (false, (false, []), []) [false] ≠
-      receiver.challenge (1, [(0, 0, 0)], []) (false, []) (true, (false, []), []) [false] := by
+    receiver.challenge (1, [(0, 0, 0)]) (false, []) (false, (false, []), []) [false] ≠
+      receiver.challenge (1, [(0, 0, 0)]) (false, []) (true, (false, []), []) [false] := by
   simp [receiver]
 
 -- Every run retains the initial coin and share while the terminal phase reads the cache again.
@@ -111,7 +111,7 @@ example (input : Input) (view : View Bool Result)
     view.2.2.2.2.1.2.1 = view.1 ∧ view.2.2.2.2.2 = view.1 ∧
       view.2.2.2.2.1.2.2 = [view.2.2.2.1.1, view.2.2.2.1.2, view.1.1] ++
         view.1.2 ++ view.2.1 ∧
-      view.2.2.1 = List.replicate input.2.1.length
+      view.2.2.1 = List.replicate input.2.length
         (view.2.2.2.2.1.1 ^^ view.1.1 ^^ view.1.2.getD 0 false ^^ view.2.1.getD 0 false) := by
   simp only [simulate, id_eq, receiver, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hv
@@ -120,7 +120,7 @@ example (input : Input) (view : View Bool Result)
   refine ⟨rfl, rfl, rfl, ?_⟩
   apply List.ext_getElem (by simp [weights])
   intro i hi hi'
-  have hi0 : i < input.2.1.length := by
+  have hi0 : i < input.2.length := by
     simpa only [weights, List.length_map, List.length_range] using hi
   simp [weights, hi0]
 
@@ -140,10 +140,10 @@ private def falseView :
 private theorem falseView_real : falseView ∈
     (maskedMulCheckReceiverView leftWire leftWire outWire
       (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1)))
-      falseWitness (inputOfMaps leftWire leftWire outWire [])).support := by
+      falseWitness (inputOfMaps leftWire leftWire outWire)).support := by
   have hrun : maskedMulCheckReceiverView leftWire leftWire outWire
       (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1))) falseWitness
-      (inputOfMaps leftWire leftWire outWire []) = (voleIdealDist Bool 3).map (fun c =>
+      (inputOfMaps leftWire leftWire outWire) = (voleIdealDist Bool 3).map (fun c =>
         (c.receiverView, (voleCommitWitness falseWitness (Fin.init c.u), (fun _ => true),
           maskedMulCheckReply leftWire leftWire outWire falseWitness c.u c.v (fun _ => true),
             ()), ())) := by
@@ -161,12 +161,12 @@ private theorem falseView_real : falseView ∈
 example :
     (maskedMulCheckReceiverView leftWire leftWire outWire
       (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1)))
-      falseWitness (inputOfMaps leftWire leftWire outWire [])).map viewToLists ≠
+      falseWitness (inputOfMaps leftWire leftWire outWire)).map viewToLists ≠
       ProbComp.eval (simulate (ProbComp.uniform Bool) constantReceiver id (fun _ _ d => d)
-        (inputOfMaps leftWire leftWire outWire [])) := by
+        (inputOfMaps leftWire leftWire outWire)) := by
   intro heq
   rw [eval_simulate leftWire leftWire outWire (ProbComp.uniform Bool) (ProbComp.eval_uniform _)
-    constantReceiver id (fun _ _ d => d) (inputOfMaps leftWire leftWire outWire []) [] rfl,
+    constantReceiver id (fun _ _ d => d) (inputOfMaps leftWire leftWire outWire) rfl,
     Receiver.mapFirst_id] at heq
   have hinj : Function.Injective
       (viewToLists (F := Bool) (Result := Unit) (n := 2) (m := 1)) := by
@@ -177,7 +177,7 @@ example :
   rw [PMF.map_injective hinj heq] at hv
   have hcheck := maskedMulCheckReceiverSimulate_accepts leftWire leftWire outWire
     (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1)))
-    (inputOfMaps leftWire leftWire outWire []) hv
+    (inputOfMaps leftWire leftWire outWire) hv
   have hfalse : ¬ (maskedMulCheckValue leftWire leftWire outWire falseView.1.1 falseView.1.2
       falseView.2.1.1 falseView.2.1.2.1 =
         falseView.2.1.2.2.1.1 * falseView.1.1 + falseView.2.1.2.2.1.2) := by decide
@@ -225,20 +225,20 @@ example : IsPPTOn contextEncoding (encView encBool resultEncoding)
 
 -- The actual cached-world law carries an arbitrary extra word through every callback.
 example {n m : ℕ} (left right output : Fin m → Fin n) (w : Fin n → Bool)
-    (hw : ∀ i, w (left i) * w (right i) = w (output i)) (z extra : List Bool) :
+    (hw : ∀ i, w (left i) * w (right i) = w (output i)) (extra : List Bool) :
     (maskedMulCheckReceiverView left right output
       ((contextReceiver.mapFirst contextFirst).strategy n List.ofFn (Fin.val (n := m))) w
-      (inputOfMaps left right output z, extra)).map viewToLists =
+      (inputOfMaps left right output, extra)).map viewToLists =
         ProbComp.eval (simulate (ProbComp.uniform Bool) contextReceiver Prod.fst contextFirst
-          (inputOfMaps left right output z, extra)) :=
+          (inputOfMaps left right output, extra)) :=
   receiverView_eq_eval_simulate left right output _ (ProbComp.eval_uniform _)
-    contextReceiver Prod.fst contextFirst _ z rfl w hw
+    contextReceiver Prod.fst contextFirst _ rfl w hw
 
 -- Equal layouts with different extra data really choose different weights.
 example :
-    (contextReceiver.mapFirst contextFirst).challenge ((1, [(0, 0, 0)], []), [false])
+    (contextReceiver.mapFirst contextFirst).challenge ((1, [(0, 0, 0)]), [false])
       (false, []) (false, (false, []), []) [] ≠
-    (contextReceiver.mapFirst contextFirst).challenge ((1, [(0, 0, 0)], []), [true])
+    (contextReceiver.mapFirst contextFirst).challenge ((1, [(0, 0, 0)]), [true])
       (false, []) (false, (false, []), []) [] := by
   simp [Receiver.mapFirst, contextReceiver, contextFirst, receiver]
 

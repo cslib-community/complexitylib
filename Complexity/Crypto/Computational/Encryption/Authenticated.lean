@@ -128,8 +128,10 @@ Section 5.4.1, Example 5.2 and Theorem 5.2, printed pp. 183–187) are formalize
 
 ## Main results
 
-* `Cslib.Crypto.SymmetricCipher.exists_ciphertext_length_bound`: a native cap indexed by the
-  security parameter and actual message length, including messages outside the security domain.
+* `Cslib.Crypto.SymmetricCipher.exists_ciphertext_length_bound`,
+  `Cslib.Crypto.SymmetricCipher.exists_ciphertext_length_bound_of_length_eq`: a native cap indexed
+  by the security parameter and actual message length (including messages outside the security
+  domain), together with its `n`-bit diagonal.
 
 * `Cslib.Crypto.SymmetricCipher.isPPTOn_cpaGame`, `isPPT_cpaGame`, `isPPTOn_cpaOneTimeGame`,
   `isPPT_cpaOneTimeGame`, `isPPTOn_ciGame`, `isPPT_ciGame`, `isPPTOn_ciOneTimeGame`,
@@ -298,6 +300,19 @@ theorem exists_ciphertext_length_bound (E : SymmetricCipher) :
   simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
     hmsg] at hctLen
   exact hctLen.trans (Nat.mul_le_mul_left ce (Nat.pow_le_pow_left (by lia) de))
+
+/-- A unary polynomial-time ciphertext bound on `n`-bit messages at security parameter `n`,
+derived as the diagonal of `exists_ciphertext_length_bound`. -/
+theorem exists_ciphertext_length_bound_of_length_eq (E : SymmetricCipher) :
+    ∃ ctBound : ℕ → ℕ,
+      ComputableInPolyTime ctBound encUnary encUnary ∧
+      ∀ (n : ℕ) (k : List Bool), k ∈ (ProbComp.eval (E.keyGen n)).support →
+        ∀ (msg : List Bool), msg.length = n →
+        ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n := by
+  obtain ⟨bound, hbound, hctBound⟩ := E.exists_ciphertext_length_bound
+  exact ⟨fun n => bound n n,
+    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id'),
+    fun n => hctBound n n⟩
 
 /-- A polynomial-time bound on encoded decryption replies, uniform over the actual key sampler.
 It bounds rejection and successful empty messages without identifying their encodings. -/
@@ -749,11 +764,7 @@ theorem eval_cpaGame_cpaLimitToOneQuery (E : SymmetricCipher) (ctBound : ℕ →
 theorem INDCPA.oneTimeINDCPA {E : SymmetricCipher} (hcpa : E.INDCPA) :
     E.OneTimeINDCPA := by
   intro adversary hadversary
-  obtain ⟨bound, hbound, hctBound⟩ := E.exists_ciphertext_length_bound
-  let ctBound := fun n => bound n n
-  have hctBoundPoly : ComputableInPolyTime ctBound encUnary encUnary :=
-    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')
-  have hctBound := fun n => hctBound n n
+  obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E.exists_ciphertext_length_bound_of_length_eq
   have hneg := hcpa (cpaLimitToOneQuery ctBound adversary)
     (isOraclePPT_cpaLimitToOneQuery hctBoundPoly hadversary)
   refine hneg.congr fun n => ?_
@@ -1441,11 +1452,7 @@ theorem CiphertextIntegrity.oneTimeCiphertextIntegrity {E : SymmetricCipher}
     (hci : E.CiphertextIntegrity) : E.OneTimeCiphertextIntegrity := by
   apply OneTimeCiphertextIntegrity.of_negligible
   intro adversary hadversary
-  obtain ⟨bound, hbound, hctBound⟩ := E.exists_ciphertext_length_bound
-  let ctBound := fun n => bound n n
-  have hctBoundPoly : ComputableInPolyTime ctBound encUnary encUnary :=
-    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')
-  have hctBound := fun n => hctBound n n
+  obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E.exists_ciphertext_length_bound_of_length_eq
   have hneg := hci.negligible (ciLimitToOneQuery ctBound adversary)
     (isOraclePPT_ciLimitToOneQuery hctBoundPoly hadversary)
   refine hneg.congr fun n => ?_
@@ -2123,11 +2130,7 @@ theorem eval_ccaGame_ccaLimitToOneEncryptionQuery (E : SymmetricCipher) (ctBound
 theorem INDCCA.oneTimeINDCCA {E : SymmetricCipher} (hcca : E.INDCCA) :
     E.OneTimeINDCCA := by
   intro adversary hadversary
-  obtain ⟨bound, hbound, hctBound⟩ := E.exists_ciphertext_length_bound
-  let ctBound := fun n => bound n n
-  have hctBoundPoly : ComputableInPolyTime ctBound encUnary encUnary :=
-    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')
-  have hctBound := fun n => hctBound n n
+  obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E.exists_ciphertext_length_bound_of_length_eq
   obtain ⟨decBound, hdecBoundPoly, hdecBound⟩ := E.exists_decryption_length_bound
   have hneg := hcca (ccaLimitToOneEncryptionQuery ctBound decBound adversary)
     (isOraclePPT_ccaLimitToOneEncryptionQuery hctBoundPoly hdecBoundPoly hadversary)
@@ -3445,11 +3448,7 @@ theorem AuthenticatedEncryption.indcca {E : SymmetricCipher} (hAE : E.Authentica
     E.INDCCA := by
   rcases hAE with ⟨hcpa, hci⟩
   intro adversary hadversary
-  obtain ⟨bound, hbound, hctBound⟩ := E.exists_ciphertext_length_bound
-  let ctBound := fun n => bound n n
-  have hctBoundPoly : ComputableInPolyTime ctBound encUnary encUnary :=
-    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')
-  have hctBound := fun n => hctBound n n
+  obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E.exists_ciphertext_length_bound_of_length_eq
   obtain ⟨cq, dq, hqbounds⟩ := hadversary.query_bounds
   let Q : ℕ → ℕ := fun n => cq * (n + 2) ^ dq
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by
@@ -4558,11 +4557,7 @@ theorem OneTimeAuthenticatedEncryption.oneTimeINDCCA {E : SymmetricCipher}
     E.OneTimeINDCCA := by
   rcases h1AE with ⟨hcpa, hci⟩
   intro adversary hadversary
-  obtain ⟨bound, hbound, hctBound⟩ := E.exists_ciphertext_length_bound
-  let ctBound := fun n => bound n n
-  have hctBoundPoly : ComputableInPolyTime ctBound encUnary encUnary :=
-    hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')
-  have hctBound := fun n => hctBound n n
+  obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E.exists_ciphertext_length_bound_of_length_eq
   obtain ⟨cq, dq, hqbounds⟩ := hadversary.query_bounds
   let Q : ℕ → ℕ := fun n => cq * (n + 2) ^ dq
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by

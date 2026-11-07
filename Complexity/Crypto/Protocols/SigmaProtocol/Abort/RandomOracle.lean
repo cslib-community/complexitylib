@@ -17,7 +17,9 @@ public import Complexity.Probability.IID
 
 The signer executes every attempt, including attempts after the first success. Consequently
 all attempted hash inputs affect the shared cache. Only the returned signature selects the
-first success. The underlying one-attempt program is the existing `fiatShamir` signer.
+first success. `fiatShamirAbortSign` executes the one-attempt commitment-hash-response step
+directly without requiring a key generator, while `fiatShamirAbort` packages it with `keyGen`
+as a `ROMSignature.Scheme`.
 
 ## Main definitions
 
@@ -28,6 +30,7 @@ first success. The underlying one-attempt program is the existing `fiatShamir` s
 
 * `fiatShamirAbortSign_queryBound`: the program makes at most the attempt budget of hash calls.
 * `fiatShamirAbort_sign_fixedHash`: fixed-hash output law equals the existing bounded signer.
+* `fiatShamir_sign_run_eq_of_transcript_eq`: one-attempt stateful witness invariance.
 * `fiatShamirAbortSign_run_eq_of_transcript_eq`: sequential stateful witness invariance.
 * `fiatShamirAbort_world_eq_of_transcript_eq`: equality of the canonical shared-cache worlds.
 -/
@@ -43,12 +46,13 @@ variable {X Y T C Z M : Type}
 /-- Execute all attempts and return the first success. Even when the first attempt succeeds,
 the recursive call runs and retains its oracle effects. -/
 noncomputable def fiatShamirAbortSign (P : SigmaProtocol X Y T C (Option Z))
-    (keyGen : PMF (X × Y)) (sk : X × Y) (msg : M) :
+    (sk : X × Y) (msg : M) :
     (K : ℕ) → (Fin K → T × P.State) → OracleComp (fun _ : M × T => C) (Option (T × Z))
   | 0, _ => pure none
   | K + 1, coins => do
-      let view ← (fiatShamir (Function.Embedding.refl _) P keyGen).sign sk msg (coins 0)
-      let later ← fiatShamirAbortSign P keyGen sk msg K (Fin.tail coins)
+      let view ← (fun c => ((coins 0).1, P.respond sk.1 sk.2 (coins 0).2 c)) <$>
+        OracleComp.query (spec := fun _ : M × T => C) (msg, (coins 0).1)
+      let later ← fiatShamirAbortSign P sk msg K (Fin.tail coins)
       return (view.2.map fun z => (view.1, z)).orElse fun _ => later
 
 /-- An aborting Fiat–Shamir scheme with exactly `K` attempted hash calls per signing request.
@@ -58,7 +62,7 @@ noncomputable def fiatShamirAbort (P : SigmaProtocol X Y T C (Option Z))
   keyGen := (fiatShamir (Function.Embedding.refl (M × T)) P keyGen).keyGen
   SignCoins := Fin K → T × P.State
   signCoins sk _ := iid (P.commit sk.1 sk.2) K
-  sign sk msg coins := fiatShamirAbortSign P keyGen sk msg K coins
+  sign sk msg coins := fiatShamirAbortSign P sk msg K coins
   verify y msg
     | none => pure false
     | some (w, z) => (fiatShamir (Function.Embedding.refl _) P keyGen).verify y msg (w, some z)
@@ -66,13 +70,13 @@ noncomputable def fiatShamirAbort (P : SigmaProtocol X Y T C (Option Z))
 /-- Every branch of the all-attempt signer has at most `K` hash calls. This counts queries,
 not running time. -/
 theorem fiatShamirAbortSign_queryBound (P : SigmaProtocol X Y T C (Option Z))
-    (keyGen : PMF (X × Y)) (sk : X × Y) (msg : M) (K : ℕ)
+    (sk : X × Y) (msg : M) (K : ℕ)
     (coins : Fin K → T × P.State) :
-    IsQueryBounded (fiatShamirAbortSign P keyGen sk msg K coins) K := by
+    IsQueryBounded (fiatShamirAbortSign P sk msg K coins) K := by
   induction K with
   | zero => exact .pure _ _
   | succ K ih =>
-    unfold fiatShamirAbortSign fiatShamir
+    unfold fiatShamirAbortSign
     simp only [map_eq_pure_bind, bind_assoc, pure_bind]
     apply IsCostBounded.liftBind
     intro c
@@ -81,15 +85,15 @@ theorem fiatShamirAbortSign_queryBound (P : SigmaProtocol X Y T C (Option Z))
 
 /-- With a fixed hash, the oracle program returns the first successful deterministic step. -/
 theorem fiatShamirAbortSign_fixedHash (P : SigmaProtocol X Y T C (Option Z))
-    (keyGen : PMF (X × Y)) (hash : M × T → C) (x : X) (y : Y) (msg : M)
+    (hash : M × T → C) (x : X) (y : Y) (msg : M)
     (K : ℕ) (coins : Fin K → T × P.State) :
-    interpret (fun q => PMF.pure (hash q)) (fiatShamirAbortSign P keyGen (x, y) msg K coins) =
+    interpret (fun q => PMF.pure (hash q)) (fiatShamirAbortSign P (x, y) msg K coins) =
       PMF.pure ((((List.ofFn coins).map (fsAbortSignStep P hash x y msg)).find?
         Option.isSome).getD none) := by
   induction K with
   | zero => simp [fiatShamirAbortSign]
   | succ K ih =>
-    simp only [fiatShamirAbortSign, fiatShamir, interpret_bind, interpret_map, interpret_query,
+    simp only [fiatShamirAbortSign, interpret_bind, interpret_map, interpret_query,
       PMF.monad_map_eq_map, PMF.pure_map, PMF.monad_bind_eq_bind, PMF.pure_bind, ih,
       interpret_pure, PMF.monad_pure_eq_pure, List.ofFn_succ, List.map_cons]
     simp only [show Fin.tail coins = (fun i => coins i.succ) from rfl]
@@ -112,37 +116,42 @@ theorem fiatShamirAbort_sign_fixedHash (P : SigmaProtocol X Y T C (Option Z))
 
 section View
 
-variable {R : Type} (P : SigmaProtocol X Y T C (Option Z)) (keyGen : PMF (X × Y))
-  (answer : (q : M × T) → StateT R PMF C)
-
 /-- The complete one-attempt reply and external state have the same law for witnesses with
-equal full transcripts. The stateful answering kernel is common to both witnesses. -/
-theorem fiatShamir_sign_run_eq_of_transcript_eq {x x' : X} {y : Y}
+equal full transcripts. The stateful answering kernel and hash-point map are common to both
+witnesses. -/
+theorem fiatShamir_sign_run_eq_of_transcript_eq {Query R : Type}
+    (hashPoint : M × T → Query) (P : SigmaProtocol X Y T C Z)
+    (answer : (q : Query) → StateT R PMF C) {x x' : X} {y : Y}
     (h : ∀ c, P.transcript x y c = P.transcript x' y c) (msg : M) (state : R) :
     ((P.commit x y).bind fun coin =>
       (interpret answer
-        ((fiatShamir (Function.Embedding.refl _) P keyGen).sign (x, y) msg coin)).run state) =
+        ((fun c => (coin.1, P.respond x y coin.2 c)) <$>
+          OracleComp.query (hashPoint (msg, coin.1)))).run state) =
     (P.commit x' y).bind fun coin =>
       (interpret answer
-        ((fiatShamir (Function.Embedding.refl _) P keyGen).sign (x', y) msg coin)).run state := by
+        ((fun c => (coin.1, P.respond x' y coin.2 c)) <$>
+          OracleComp.query (hashPoint (msg, coin.1)))).run state := by
   have hk := bind_respond_challenge_eq_of_transcript_eq P h
-    (fun w => (answer (msg, w)).run state)
-  simpa only [fiatShamir, Function.Embedding.refl_apply, interpret_map, interpret_query,
-    StateT.run_map,
+    (fun w => (answer (hashPoint (msg, w))).run state)
+  simpa only [interpret_map, interpret_query, StateT.run_map,
     PMF.monad_map_eq_map, PMF.map_bind, PMF.map_comp, Function.comp_def] using
     congrArg (PMF.map fun view => ((view.1, view.2.2.1), view.2.2.2)) hk
+
+variable {R : Type} (P : SigmaProtocol X Y T C (Option Z))
+  (answer : (q : M × T) → StateT R PMF C)
 
 /-- Sampling coins in advance agrees with executing the first attempt, then sampling and
 executing the remaining attempts from its updated state. -/
 theorem fiatShamirAbortSign_run_succ (x : X) (y : Y) (msg : M) (K : ℕ) (state : R) :
     ((iid (P.commit x y) (K + 1)).bind fun coins =>
-      (interpret answer (fiatShamirAbortSign P keyGen (x, y) msg (K + 1) coins)).run state) =
+      (interpret answer (fiatShamirAbortSign P (x, y) msg (K + 1) coins)).run state) =
     ((P.commit x y).bind fun coin =>
       (interpret answer
-        ((fiatShamir (Function.Embedding.refl _) P keyGen).sign (x, y) msg coin)).run state).bind
+        ((fun c => (coin.1, P.respond x y coin.2 c)) <$>
+          OracleComp.query (msg, coin.1))).run state).bind
       fun first =>
     ((iid (P.commit x y) K).bind fun coins =>
-      (interpret answer (fiatShamirAbortSign P keyGen (x, y) msg K coins)).run first.2).map
+      (interpret answer (fiatShamirAbortSign P (x, y) msg K coins)).run first.2).map
       fun later =>
         ((first.1.2.map fun z => (first.1.1, z)).orElse (fun _ => later.1), later.2) := by
   simp only [iid, PMF.monad_bind_eq_bind, PMF.bind_bind, Fin.cons_zero,
@@ -157,14 +166,14 @@ It applies in particular to a memoizing random oracle, including aborts and repe
 theorem fiatShamirAbortSign_run_eq_of_transcript_eq {x x' : X} {y : Y}
     (h : ∀ c, P.transcript x y c = P.transcript x' y c) (msg : M) (K : ℕ) (state : R) :
     ((iid (P.commit x y) K).bind fun coins =>
-      (interpret answer (fiatShamirAbortSign P keyGen (x, y) msg K coins)).run state) =
+      (interpret answer (fiatShamirAbortSign P (x, y) msg K coins)).run state) =
     (iid (P.commit x' y) K).bind fun coins =>
-      (interpret answer (fiatShamirAbortSign P keyGen (x', y) msg K coins)).run state := by
+      (interpret answer (fiatShamirAbortSign P (x', y) msg K coins)).run state := by
   induction K generalizing state with
   | zero => simp [iid, fiatShamirAbortSign]
   | succ K ih =>
     rw [fiatShamirAbortSign_run_succ, fiatShamirAbortSign_run_succ,
-      fiatShamir_sign_run_eq_of_transcript_eq P keyGen answer h]
+      fiatShamir_sign_run_eq_of_transcript_eq (fun x => x) P answer h msg state]
     congr 1
     funext first
     rw [ih]
@@ -187,7 +196,7 @@ theorem fiatShamirAbort_handler_eq_of_transcript_eq
   | inl msg =>
     simp only [handler, fiatShamirAbort, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
       ← PMF.bind_bind]
-    rw [fiatShamirAbortSign_run_eq_of_transcript_eq P keyGen (oracle C) h]
+    rw [fiatShamirAbortSign_run_eq_of_transcript_eq P (oracle C) h]
   | inr query => rfl
 
 /-- Every common adaptive forger program has the same joint output, hash cache and queried
@@ -215,7 +224,7 @@ theorem fiatShamirAbort_world_eq_of_transcript_eq
     funext request cache
     cases request with
     | inl msg =>
-      exact fiatShamirAbortSign_run_eq_of_transcript_eq P keyGen (oracle C) h msg K cache
+      exact fiatShamirAbortSign_run_eq_of_transcript_eq P (oracle C) h msg K cache
     | inr query => rfl
   simp only [world, hImpl]
 

@@ -197,9 +197,7 @@ def RabinOneWay (gen : BlumGen) : Prop :=
       (fun input => A input.1 input.2) →
     Negligible (fun n => Game.succProbability (rabinInversionGame gen A n))
 
-/-- Explicit PPT reduction from factoring to Rabin inversion: given `(n, N)`, sample a random
-`r` of length `2 * N.bits.length`, check `gcd(x, N)` first, and otherwise invoke the Rabin
-inverter `A` on `(N, x ^ 2 % N)` and take `gcd(x + x', N)`. -/
+/-- Split `N` at `g = Nat.gcd u N`, returning `(g, N / g)`. -/
 def rabinFactorPair (u N : ℕ) : ℕ × ℕ :=
   let g := Nat.gcd u N
   (g, N / g)
@@ -320,14 +318,6 @@ private theorem computableInPolyTime_crtStep {α : Type} {enc : α ↪ List Bool
   unfold crtStep
   fun_prop
 
-private theorem computableInPolyTime_add_mul {α : Type} {enc : α ↪ List Bool}
-    {x y z : α → ℕ}
-    (hx : ComputableInPolyTime x enc encNat)
-    (hy : ComputableInPolyTime y enc encNat)
-    (hz : ComputableInPolyTime z enc encNat) :
-    ComputableInPolyTime (fun a => x a + y a * z a) enc encNat := by
-  fun_prop
-
 private theorem computableInPolyTime_crtSqrt {α : Type} {enc : α ↪ List Bool}
     {y a b : α → ℕ}
     (hy : ComputableInPolyTime y enc encNat)
@@ -351,14 +341,8 @@ private theorem computableInPolyTime_crtSqrt {α : Type} {enc : α ↪ List Bool
       (fun x => b x ^ (a x - 2) % (if a x = 0 then 1 else a x)) enc encNat :=
     ComputableInPolyTime.binary_powMod hb (by fun_prop) ha' ha_pos
   have hstep := computableInPolyTime_crtStep hsp hsq hinv ha'
-  exact computableInPolyTime_add_mul hsq hb hstep
-
-private theorem computableInPolyTime_gcd {α : Type} {enc : α ↪ List Bool}
-    {u v : α → ℕ}
-    (hu : ComputableInPolyTime u enc encNat)
-    (hv : ComputableInPolyTime v enc encNat) :
-    ComputableInPolyTime (fun x => Nat.gcd (u x) (v x)) enc encNat :=
-  ComputableInPolyTime.binary_gcd.comp' (hu.pair hv)
+  dsimp only
+  fun_prop
 
 private theorem computableInPolyTime_rabinFactorPair {α : Type} {enc : α ↪ List Bool}
     {u N : α → ℕ}
@@ -366,7 +350,7 @@ private theorem computableInPolyTime_rabinFactorPair {α : Type} {enc : α ↪ L
     (hN : ComputableInPolyTime N enc encNat) :
     ComputableInPolyTime (fun x => rabinFactorPair (u x) (N x)) enc (encPair encNat encNat) := by
   unfold rabinFactorPair
-  have hg := computableInPolyTime_gcd hu hN
+  have hg := ComputableInPolyTime.binary_gcd' hu hN
   fun_prop
 
 /-- `factorToRabin F` is uniform PPT whenever `F` is uniform PPT. -/
@@ -389,7 +373,6 @@ theorem isPPTOn_rabinToFactor {A : ℕ → ℕ × ℕ → ProbComp ℕ}
     IsPPTOn (encPair encUnary encNat) (encPair encNat encNat)
       (fun input => rabinToFactor A input.1 input.2) := by
   unfold rabinToFactor rabinEval
-  have hgcd := @computableInPolyTime_gcd
   have hpair := @computableInPolyTime_rabinFactorPair
   have hlen : ComputableInPolyTime (fun input : ℕ × ℕ => 2 * input.2.bits.length)
       (encPair encUnary encNat) encUnary := by fun_prop
@@ -398,10 +381,6 @@ theorem isPPTOn_rabinToFactor {A : ℕ → ℕ × ℕ → ProbComp ℕ}
       (fun x : (ℕ × ℕ) × List Bool =>
         decide (1 < Nat.gcd (ofBits x.2) x.1.2 ∧ Nat.gcd (ofBits x.2) x.1.2 < x.1.2))
       (encPair (encPair encUnary encNat) encBits) encBool := by
-    have hg : ComputableInPolyTime
-        (fun x : (ℕ × ℕ) × List Bool => Nat.gcd (ofBits x.2) x.1.2)
-        (encPair (encPair encUnary encNat) encBits) encNat :=
-      hgcd (by fun_prop) (by fun_prop)
     fun_prop
   have hyes : ComputableInPolyTime
       (fun x : (ℕ × ℕ) × List Bool => rabinFactorPair (ofBits x.2) x.1.2)
@@ -595,29 +574,9 @@ private theorem tsum_uniformList_mul (L : ℕ) (g : List Bool → ℝ≥0∞) :
     (fun x => g (List.ofFn ((BitString.equivFin L).symm x)))
     (fun f => by simp)
 
-private theorem lt_two_pow_bits_length : ∀ n : ℕ, n < 2 ^ n.bits.length := by
-  intro n
-  induction n using Nat.strong_induction_on with
-  | ind n ih =>
-    rcases eq_or_ne n 0 with rfl | hn
-    · simp
-    · have hbit : Nat.bit (decide (n % 2 = 1)) (n / 2) = n := by
-        cases h : decide (n % 2 = 1) <;> simp [Nat.bit_val] at h ⊢ <;> omega
-      have hn' : n / 2 = 0 → decide (n % 2 = 1) = true := by
-        intro h0
-        simp
-        omega
-      have hlen : n.bits.length = (n / 2).bits.length + 1 := by
-        conv_lhs => rw [← hbit]
-        rw [Nat.bits_append_bit (n / 2) (decide (n % 2 = 1)) hn', List.length_cons]
-      rw [hlen, pow_succ']
-      have hdiv : n / 2 < 2 ^ (n / 2).bits.length :=
-        ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero hn) (by omega))
-      omega
-
 private theorem le_two_pow_two_mul_bits_length_div (N : ℕ) (hN : 0 < N) :
     N ≤ 2 ^ (2 * N.bits.length) / N := by
-  have hlt : N < 2 ^ N.bits.length := lt_two_pow_bits_length N
+  have hlt : N < 2 ^ N.bits.length := Nat.size_eq_bits_len N ▸ Nat.lt_size_self N
   have hsq : N * N ≤ 2 ^ (2 * N.bits.length) := by
     rw [two_mul, pow_add]
     exact Nat.mul_le_mul hlt.le hlt.le
