@@ -11,6 +11,7 @@ public import Complexity.Foundations.Data.Nat.MasterTheorem
 public import Mathlib.Analysis.Asymptotics.Defs
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Complexity.Foundations.Data.Nat.LogTwoRpow
 
 /-!
 # The master theorem in asymptotic form
@@ -29,10 +30,11 @@ needs an equality recurrence over `ℝ` with positive base values and polynomial
 driving term. The statements here start from the inequality `Nat.DivideConquerBound` and
 give upper bounds only.
 
+The conversions to real powers and logarithms are `Nat.pow_clog_le_mul_rpow_logb` and
+`Nat.clog_le_two_mul_logb` (`Complexity.Foundations.Data.Nat.LogTwoRpow`).
+
 ## Main results
 
-* `Nat.pow_clog_le_mul_rpow_logb`: `a ^ ⌈log_b n⌉ ≤ a n ^ log_b a` for `n ≠ 0`.
-* `Nat.clog_le_two_mul_logb`: `⌈log_b n⌉ ≤ 2 log_b n` for `n ≥ b`.
 * `Nat.DivideConquerBound.le_mul_rpow`: case 1 with a real power and an explicit constant.
 * `Nat.DivideConquerBound.isBigO_rpow`, `Nat.DivideConquerBound.isBigO_pow_mul_log`,
   `Nat.DivideConquerBound.isBigO_pow`: the three cases as `IsBigO` statements.
@@ -47,44 +49,6 @@ public section
 namespace Nat
 
 open Asymptotics Filter
-
-private theorem pow_rpow_logb {a b : ℕ} (hb : 1 < b) (ha : 1 ≤ a) (j : ℕ) :
-    ((b : ℝ) ^ j) ^ Real.logb b a = (a : ℝ) ^ j := by
-  have hb0 : (0 : ℝ) < b := by exact_mod_cast (by omega : 0 < b)
-  have hb1 : (b : ℝ) ≠ 1 := by exact_mod_cast (by omega : b ≠ 1)
-  rw [← Real.rpow_natCast (b : ℝ) j, ← Real.rpow_mul hb0.le, mul_comm,
-    Real.rpow_mul hb0.le, Real.rpow_logb hb0 hb1 (by exact_mod_cast (by omega : 0 < a)),
-    Real.rpow_natCast]
-
-/-- `a ^ ⌈log_b n⌉ ≤ a n ^ log_b a` for `b ≥ 2`, `a ≥ 1` and `n ≠ 0`. -/
-theorem pow_clog_le_mul_rpow_logb {a b n : ℕ} (hb : 1 < b) (ha : 1 ≤ a) (hn : n ≠ 0) :
-    ((a ^ clog b n : ℕ) : ℝ) ≤ a * (n : ℝ) ^ Real.logb b a := by
-  rcases Nat.lt_or_ge n 2 with h | h
-  · obtain rfl : n = 1 := by omega
-    simp only [clog_one_right, pow_zero, Nat.cast_one, Real.one_rpow, mul_one]
-    exact_mod_cast ha
-  · have hlog : 0 ≤ Real.logb b (a : ℝ) :=
-      Real.logb_nonneg (by exact_mod_cast hb) (by exact_mod_cast ha)
-    set k := clog b n
-    have hlt : b ^ (k - 1) < n := pow_pred_clog_lt_self hb (by omega)
-    have hk : k = (k - 1) + 1 := (Nat.succ_pred_eq_of_pos (clog_pos hb h)).symm
-    calc ((a ^ k : ℕ) : ℝ) = (a : ℝ) * ((b : ℝ) ^ (k - 1)) ^ Real.logb b a := by
-          rw [pow_rpow_logb hb ha, Nat.cast_pow, hk, pow_succ, Nat.add_sub_cancel, mul_comm]
-      _ ≤ a * (n : ℝ) ^ Real.logb b a := by
-          gcongr
-          exact_mod_cast hlt.le
-
-/-- `⌈log_b n⌉ ≤ 2 log_b n` for `b ≥ 2` and `n ≥ b`. -/
-theorem clog_le_two_mul_logb {b n : ℕ} (hb : 1 < b) (hn : b ≤ n) :
-    (clog b n : ℝ) ≤ 2 * Real.logb b n := by
-  have hb' : (1 : ℝ) < b := by exact_mod_cast hb
-  have h1 : 1 ≤ Real.logb b n := by
-    rw [← Real.logb_self_eq_one hb']
-    exact Real.logb_le_logb_of_le hb' (by positivity) (by exact_mod_cast hn)
-  have h2 : (clog b n : ℝ) < Real.logb b n + 1 := by
-    rw [← Real.natCeil_logb_natCast]
-    exact Nat.ceil_lt_add_one (by linarith)
-  linarith
 
 namespace DivideConquerBound
 
@@ -172,7 +136,7 @@ theorem isBigO_pow (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ d)
   filter_upwards [eventually_ge_atTop 1] with n hn
   rw [Real.norm_natCast, Real.norm_of_nonneg (by positivity)]
   have hmain : ((b ^ d - a : ℕ) : ℝ) * T n ≤ K * (((b * n) ^ d : ℕ) : ℝ) := by
-    exact_mod_cast h.sub_mul_le_mul_pow ha hb hn₀ (by omega : n ≠ 0)
+    exact_mod_cast h.pow_sub_mul_le_mul_pow ha hb hn₀ (by omega : n ≠ 0)
   rw [Nat.cast_pow, Nat.cast_mul, mul_pow] at hmain
   rw [div_mul_eq_mul_div, le_div_iff₀ hpos]
   linarith

@@ -1340,7 +1340,10 @@ reuse is demonstrated.
   for inequality recurrences over `ℕ`, with explicit constants for all three polynomial cases and
   `IsBigO` forms, is in `Foundations/Data/Nat/MasterTheorem`. Open: matching lower bounds
   (`Θ`) for equality recurrences; case 3 under the general regularity condition; and moving
-  the hand-solved recurrences (cslib merge sort, Karatsuba, Strassen, the halving lemma) onto it.
+  hand-solved recurrences onto it where the generic constant suffices (for example Strassen's
+  `7 ^ k` induction). cslib's merge-sort bound `n ⌈log₂ n⌉` is sharper, and the halving lemma's
+  subtracted-term form is needed by `addCount_add_le_pow_clog`; the halving lemma stays as the
+  sharp tool for `b = 2`.
 
 ### OpenAI math results ([#1002])
 

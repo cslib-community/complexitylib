@@ -7,12 +7,12 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Data.Nat.Log
+public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.Nat.Log
+import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Tactic.LinearCombination
+import Mathlib.Algebra.Ring.GeomSum
 import Mathlib.Tactic.Ring
 
 /-!
@@ -41,6 +41,10 @@ left factor is zero. The `n`-forms use `b ^ ⌈log_b n⌉ ≤ b n` (`Nat.pow_clo
 `Complexity.Foundations.Data.Nat.MasterTheoremAsymptotics` converts them into
 `O(n ^ log_b a)`, `O(n ^ d log n)` and `O(n ^ d)`.
 
+`Nat.add_mul_two_pow_le_mul_pow_of_halving` (`Complexity.Foundations.Data.Nat.HalvingRecurrence`)
+remains the sharper tool for `b = 2`: it carries a subtracted lower-order term through the
+induction, which some clients need.
+
 These are upper bounds only. The source theorem is a `Θ` statement for equality recurrences.
 Case 3 is proved for polynomial `f` only, not under the general regularity condition.
 
@@ -50,11 +54,12 @@ Case 3 is proved for polynomial `f` only, not under the general regularity condi
 
 ## Main results
 
-* `Nat.DivideConquerBound.le_sum`: the unrolled recursion.
+* `Nat.DivideConquerBound.le_sum`: the unrolled recursion; `Nat.DivideConquerBound.le_geom_sum`
+  for `f n = c n ^ d`.
 * `Nat.DivideConquerBound.sub_mul_le_pow`, `Nat.DivideConquerBound.le_pow_mul`,
-  `Nat.DivideConquerBound.sub_mul_le_pow'`: the three cases for `n ≤ n₀ b ^ k`.
+  `Nat.DivideConquerBound.pow_sub_mul_le_pow`: the three cases for `n ≤ n₀ b ^ k`.
 * `Nat.DivideConquerBound.sub_mul_le_pow_clog`, `Nat.DivideConquerBound.le_mul_pow_mul_clog`,
-  `Nat.DivideConquerBound.sub_mul_le_mul_pow`: the three cases with `k = ⌈log_b n⌉`.
+  `Nat.DivideConquerBound.pow_sub_mul_le_mul_pow`: the three cases in terms of `n`.
 
 ## References
 
@@ -126,7 +131,7 @@ private theorem sum_pow_mul_poly (c d n₀ a b k : ℕ) :
   ring
 
 /-- The unrolled recursion for `f n = c n ^ d`. -/
-theorem le_poly (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ d) (ha : 1 ≤ a)
+theorem le_geom_sum (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ d) (ha : 1 ≤ a)
     (k n : ℕ) (hn : n ≤ n₀ * b ^ k) :
     T n ≤ a ^ k * T₀ + c * n₀ ^ d * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i) := by
   have := h.le_sum ha (fun x y hxy => Nat.mul_le_mul_left c (Nat.pow_le_pow_left hxy d)) k n hn
@@ -136,38 +141,21 @@ end DivideConquerBound
 
 /-! ### Geometric sums -/
 
-private theorem geomSum_succ (a q k : ℕ) :
-    ∑ i ∈ range (k + 1), a ^ i * q ^ (k + 1 - i) =
-      a * ∑ i ∈ range k, a ^ i * q ^ (k - i) + q ^ (k + 1) := by
-  rw [sum_range_succ', mul_sum]
-  simp only [Nat.add_sub_add_right, Nat.sub_zero, pow_zero, one_mul, pow_succ, ← mul_assoc]
-  congr 1
-  exact sum_congr rfl fun i _ => by ring
+/-- The sum `∑ i < k, a ^ i q ^ (k - i)` is `q` times Mathlib's `geom_sum₂` form. -/
+private theorem sum_pow_mul_pow_sub (a q k : ℕ) :
+    ∑ i ∈ range k, a ^ i * q ^ (k - i) = q * ∑ i ∈ range k, a ^ i * q ^ (k - 1 - i) := by
+  rw [mul_sum]
+  refine sum_congr rfl fun i hi => ?_
+  have : k - i = (k - 1 - i) + 1 := by have := mem_range.mp hi; omega
+  rw [this, pow_succ]
+  ring
 
-private theorem sub_mul_geomSum_add {a q : ℕ} (h : q ≤ a) (k : ℕ) :
-    (a - q) * ∑ i ∈ range k, a ^ i * q ^ (k - i) + q * q ^ k = q * a ^ k := by
-  obtain ⟨e, rfl⟩ := Nat.exists_eq_add_of_le h
-  rw [Nat.add_sub_cancel_left]
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    rw [geomSum_succ]
-    linear_combination (q + e) * ih
-
-private theorem sub_mul_geomSum_add' {a q : ℕ} (h : a ≤ q) (k : ℕ) :
-    (q - a) * ∑ i ∈ range k, a ^ i * q ^ (k - i) + q * a ^ k = q * q ^ k := by
-  obtain ⟨e, rfl⟩ := Nat.exists_eq_add_of_le h
-  rw [Nat.add_sub_cancel_left]
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    rw [geomSum_succ]
-    linear_combination a * ih
-
-private theorem geomSum_self (q k : ℕ) : ∑ i ∈ range k, q ^ i * q ^ (k - i) = k * q ^ k := by
-  rw [sum_congr rfl fun i hi => (pow_add q i (k - i)).symm.trans
-    (by rw [Nat.add_sub_cancel' (Finset.mem_range.mp hi).le])]
-  simp
+private theorem sum_pow_mul_pow_sub_self (q k : ℕ) :
+    ∑ i ∈ range k, q ^ i * q ^ (k - i) = k * q ^ k := by
+  rcases k with _ | k
+  · simp
+  · rw [sum_pow_mul_pow_sub, geom_sum₂_self, Nat.add_sub_cancel, Nat.cast_id]
+    ring
 
 /-! ### The three cases -/
 
@@ -181,16 +169,21 @@ and is trivial when `a ≤ b ^ d`. -/
 theorem sub_mul_le_pow (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ d) (ha : 1 ≤ a)
     (k n : ℕ) (hn : n ≤ n₀ * b ^ k) :
     (a - b ^ d) * T n ≤ ((a - b ^ d) * T₀ + c * n₀ ^ d * b ^ d) * a ^ k := by
-  have hT := h.le_poly ha k n hn
+  have hT := h.le_geom_sum ha k n hn
   rcases le_or_gt (b ^ d) a with hq | hq
-  · have hg := sub_mul_geomSum_add hq k
+  · have hg : (a - b ^ d) * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i) ≤ b ^ d * a ^ k := by
+      calc (a - b ^ d) * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i)
+          = b ^ d * ((∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - 1 - i)) * (a - b ^ d)) := by
+            rw [sum_pow_mul_pow_sub]; ring
+        _ ≤ b ^ d * a ^ k := by
+            rw [geom_sum₂_mul_of_ge hq]; exact Nat.mul_le_mul_left _ (Nat.sub_le _ _)
     calc (a - b ^ d) * T n
         ≤ (a - b ^ d) * (a ^ k * T₀ + c * n₀ ^ d * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i)) :=
           Nat.mul_le_mul_left _ hT
       _ = (a - b ^ d) * a ^ k * T₀ +
             c * n₀ ^ d * ((a - b ^ d) * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i)) := by ring
       _ ≤ (a - b ^ d) * a ^ k * T₀ + c * n₀ ^ d * (b ^ d * a ^ k) :=
-          Nat.add_le_add_left (Nat.mul_le_mul_left _ (by omega)) _
+          Nat.add_le_add_left (Nat.mul_le_mul_left _ hg) _
       _ = _ := by ring
   · rw [Nat.sub_eq_zero_of_le hq.le]
     simp
@@ -200,20 +193,25 @@ theorem sub_mul_le_pow (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ 
 theorem le_pow_mul (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ d) (ha : 1 ≤ a)
     (had : a = b ^ d) (k n : ℕ) (hn : n ≤ n₀ * b ^ k) :
     T n ≤ a ^ k * (T₀ + c * n₀ ^ d * k) := by
-  have hT := h.le_poly ha k n hn
-  rw [← had, geomSum_self] at hT
+  have hT := h.le_geom_sum ha k n hn
+  rw [← had, sum_pow_mul_pow_sub_self] at hT
   calc T n ≤ _ := hT
     _ = _ := by ring
 
 /-- **Master theorem, case 3** (`a < b ^ d`), for `n ≤ n₀ b ^ k`:
 `(b ^ d - a) T n ≤ ((b ^ d - a) T₀ + c n₀ ^ d b ^ d) (b ^ d) ^ k`. The bound holds for every
 `a ≥ 1` and is trivial when `a ≥ b ^ d`. -/
-theorem sub_mul_le_pow' (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ d) (ha : 1 ≤ a)
+theorem pow_sub_mul_le_pow (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ d) (ha : 1 ≤ a)
     (k n : ℕ) (hn : n ≤ n₀ * b ^ k) :
     (b ^ d - a) * T n ≤ ((b ^ d - a) * T₀ + c * n₀ ^ d * b ^ d) * (b ^ d) ^ k := by
-  have hT := h.le_poly ha k n hn
+  have hT := h.le_geom_sum ha k n hn
   rcases le_or_gt a (b ^ d) with hq | hq
-  · have hg := sub_mul_geomSum_add' hq k
+  · have hg : (b ^ d - a) * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i) ≤ b ^ d * (b ^ d) ^ k := by
+      calc (b ^ d - a) * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i)
+          = b ^ d * ((∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - 1 - i)) * (b ^ d - a)) := by
+            rw [sum_pow_mul_pow_sub]; ring
+        _ ≤ b ^ d * (b ^ d) ^ k := by
+            rw [geom_sum₂_mul_of_le hq]; exact Nat.mul_le_mul_left _ (Nat.sub_le _ _)
     have hak : a ^ k ≤ (b ^ d) ^ k := Nat.pow_le_pow_left hq k
     calc (b ^ d - a) * T n
         ≤ (b ^ d - a) * (a ^ k * T₀ + c * n₀ ^ d * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i)) :=
@@ -221,10 +219,8 @@ theorem sub_mul_le_pow' (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^
       _ = (b ^ d - a) * a ^ k * T₀ +
             c * n₀ ^ d * ((b ^ d - a) * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i)) := by ring
       _ ≤ (b ^ d - a) * (b ^ d) ^ k * T₀ + c * n₀ ^ d * (b ^ d * (b ^ d) ^ k) := by
-          have h1 : (b ^ d - a) * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i) ≤
-              b ^ d * (b ^ d) ^ k := by omega
           exact Nat.add_le_add (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hak))
-            (Nat.mul_le_mul_left _ h1)
+            (Nat.mul_le_mul_left _ hg)
       _ = _ := by ring
   · rw [Nat.sub_eq_zero_of_le hq.le]
     simp
@@ -260,10 +256,10 @@ theorem le_mul_pow_mul_clog (h : DivideConquerBound T a b n₀ T₀ fun n => c *
 
 /-- **Master theorem, case 3** in terms of `n`: if `n ≠ 0`, then
 `(b ^ d - a) T n ≤ ((b ^ d - a) T₀ + c n₀ ^ d b ^ d) (b n) ^ d`. -/
-theorem sub_mul_le_mul_pow (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ d)
+theorem pow_sub_mul_le_mul_pow (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ d)
     (ha : 1 ≤ a) (hb : 1 < b) (hn₀ : 1 ≤ n₀) {n : ℕ} (hn : n ≠ 0) :
     (b ^ d - a) * T n ≤ ((b ^ d - a) * T₀ + c * n₀ ^ d * b ^ d) * (b * n) ^ d := by
-  refine (h.sub_mul_le_pow' ha _ n (le_mul_pow_clog hb hn₀ n)).trans
+  refine (h.pow_sub_mul_le_pow ha _ n (le_mul_pow_clog hb hn₀ n)).trans
     (Nat.mul_le_mul_left _ ?_)
   rw [← pow_mul, mul_comm d, pow_mul]
   exact Nat.pow_le_pow_left (pow_clog_le_mul hb hn) d

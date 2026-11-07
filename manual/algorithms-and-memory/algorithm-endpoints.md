@@ -138,7 +138,14 @@ The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` w
 - The base bound: `T n ≤ T₀` for `n ≤ n₀`.
 - The recursive step: for `n > n₀`, every `S` that bounds `T` on `[0, ⌈n/b⌉]` gives `T n ≤ a S + f n`.
 
-So a cost function with floor and ceiling splits, or several subproblems of size at most `⌈n/b⌉`, satisfies it directly. Monotonicity is not required and the recurrence need not be an equality.
+So a cost function with floor and ceiling splits, or several subproblems of size at most `⌈n/b⌉`, satisfies it directly. Monotonicity is not required and the recurrence need not be an equality. To prove `step` for a concrete recurrence:
+
+1. Unfold one level with `rw`. If the definition's pattern match does not rewrite cleanly, state the one-level equation first.
+2. Instantiate `hS` at each subproblem size, proving each `m ≤ (n + b - 1) / b` with `omega`.
+3. Normalize `c * n ^ d` with `simp only`.
+4. Close the goal with `omega`.
+
+The clients below follow this recipe.
 
 `DivideConquerBound.le_sum` unrolls the recursion for monotone `f`. For `f n = c n ^ d` the three cases follow:
 
@@ -146,9 +153,9 @@ So a cost function with floor and ceiling splits, or several subproblems of size
 |---|---|---|
 | `a > b ^ d` | `sub_mul_le_pow_clog` | `(a - b ^ d) T n ≤ ((a - b ^ d) T₀ + c n₀ ^ d b ^ d) a ^ ⌈log_b n⌉` |
 | `a = b ^ d` | `le_mul_pow_mul_clog` | `T n ≤ (b n) ^ d (T₀ + c n₀ ^ d ⌈log_b n⌉)` for `n ≠ 0` |
-| `a < b ^ d` | `sub_mul_le_mul_pow` | `(b ^ d - a) T n ≤ ((b ^ d - a) T₀ + c n₀ ^ d b ^ d) (b n) ^ d` for `n ≠ 0` |
+| `a < b ^ d` | `pow_sub_mul_le_mul_pow` | `(b ^ d - a) T n ≤ ((b ^ d - a) T₀ + c n₀ ^ d b ^ d) (b n) ^ d` for `n ≠ 0` |
 
-[MasterTheoremAsymptotics.lean](../../Complexity/Foundations/Data/Nat/MasterTheoremAsymptotics.lean) turns these into `O(n ^ log_b a)`, `O(n ^ d log n)` and `O(n ^ d)` as Mathlib `IsBigO` statements (`isBigO_rpow`, `isBigO_pow_mul_log`, `isBigO_pow`). In case 1 it also gives an explicit real-power bound (`le_mul_rpow`). Mathlib's `Mathlib.Computability.AkraBazzi` proves the more general Akra–Bazzi `Θ` bound, but it needs an equality recurrence over `ℝ` with positive base values. The statements here give upper bounds only. Case 3 is proved for polynomial `f`, not under the general regularity condition. Applied to cslib's merge-sort count, case 2 gives `2 n ⌈log₂ n⌉`, which is weaker by the factor `b` than cslib's own `n ⌈log₂ n⌉`.
+[MasterTheoremAsymptotics.lean](../../Complexity/Foundations/Data/Nat/MasterTheoremAsymptotics.lean) turns these into `O(n ^ log_b a)`, `O(n ^ d log n)` and `O(n ^ d)` as Mathlib `IsBigO` statements (`isBigO_rpow`, `isBigO_pow_mul_log`, `isBigO_pow`). In case 1 it also gives an explicit real-power bound (`le_mul_rpow`). The conversions are the base-`b` lemmas `Nat.pow_clog_le_mul_rpow_logb` and `Nat.clog_le_two_mul_logb` in [LogTwoRpow.lean](../../Complexity/Foundations/Data/Nat/LogTwoRpow.lean), whose base-`2` cases are used by Karatsuba. Mathlib's `Mathlib.Computability.AkraBazzi` proves the more general Akra–Bazzi `Θ` bound, but it needs an equality recurrence over `ℝ` with positive base values. The statements here give upper bounds only. Case 3 is proved for polynomial `f`, not under the general regularity condition. Applied to cslib's merge-sort count, case 2 gives `2 n ⌈log₂ n⌉`, which is weaker by the factor `b` than cslib's own `n ⌈log₂ n⌉`. The halving lemma `Nat.add_mul_two_pow_clog_le_of_halving` ([HalvingRecurrence.lean](../../Complexity/Foundations/Data/Nat/HalvingRecurrence.lean)) remains the sharper tool for `b = 2`. It carries a subtracted lower-order term through the induction, which the Karatsuba addition count needs (`addCount_add_le_pow_clog`).
 
 The checked client [MasterTheorem.lean](../../ComplexityTests/MasterTheorem.lean) applies the theorem to:
 

@@ -157,7 +157,7 @@ theorem t3_bound : DivideConquerBound t3 2 3 1 1 fun n => 1 * n ^ 1 := by
 
 /-- `T(n) ≤ 12 n` for `n ≠ 0`. -/
 example (n : ℕ) (hn : n ≠ 0) : t3 n ≤ 12 * n := by
-  have := t3_bound.sub_mul_le_mul_pow (by norm_num) (by norm_num) le_rfl hn
+  have := t3_bound.pow_sub_mul_le_mul_pow (by norm_num) (by norm_num) le_rfl hn
   norm_num at this
   omega
 
