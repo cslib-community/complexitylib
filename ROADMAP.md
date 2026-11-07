@@ -967,7 +967,7 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 Single-parameter mechanisms with Myerson's Lemma for arbitrary monotone allocation rules, the
 Vickrey auction, knapsack auctions with welfare-maximizing rules, and Groves/VCG mechanisms over
-finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
+finite outcome sets are in `GameTheory/Mechanism`. Remaining directions ([#2947]):
 
 - **Single-parameter corollaries:** the sponsored-search payment formula (rank-by-bid
   allocation with slot click-through rates) and the greedy knapsack rule with its monotonicity
@@ -1310,3 +1310,4 @@ not planned, not as proved.
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
 [#2866]: https://github.com/cslib-community/complexitylib/issues/2866
 [#2907]: https://github.com/cslib-community/complexitylib/issues/2907
+[#2947]: https://github.com/cslib-community/complexitylib/issues/2947

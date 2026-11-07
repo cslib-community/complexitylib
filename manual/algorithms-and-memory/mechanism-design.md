@@ -98,4 +98,4 @@ Only dominant-strategy, deterministic, sealed-bid mechanisms are covered. Not ye
 the sponsored-search payment formula (Lecture 3, (8)–(9)), the greedy knapsack rule and its
 ½-approximation (Lecture 4, §2.2, Theorem 2.1), Bayesian revenue maximization with virtual
 values (Lecture 5), the Green–Laffont/Holmström characterization of DSIC welfare maximizers, and
-any computational cost of allocation rules. See `ROADMAP.md` and issue #2907.
+any computational cost of allocation rules. See `ROADMAP.md` and issue #2947.
