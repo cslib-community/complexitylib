@@ -81,7 +81,7 @@ def within(path: Path, root: Path) -> bool:
 
 def load_book_builder(data: Path):
     """Import `data/build_manual.py` with its own sibling modules, leaving `sys.modules` as found."""
-    siblings = ("build_latex", "visuals")
+    siblings = {path.stem for path in data.glob("*.py")}
     saved = {name: sys.modules.pop(name) for name in siblings if name in sys.modules}
     sys.path.insert(0, str(data))
     try:

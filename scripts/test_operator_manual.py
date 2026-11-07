@@ -108,26 +108,30 @@ class ManualChecks(unittest.TestCase):
 
 
 class BookRegistration(unittest.TestCase):
-    """Run the checker's chapter-list check on a copy of the current manual and its builder."""
+    """Run the chapter-list check with the real builder on placeholder copies of its pages."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-registration-")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
         self.manual = self.repo / "manual"
-        shutil.copytree(DATA.parent, self.manual,
-                        ignore=shutil.ignore_patterns("_build", "_generated", "__pycache__"))
+        (self.manual / "data").mkdir(parents=True)
+        for name in book.CONVERTER_INPUTS:
+            shutil.copy(DATA.parent / name, self.manual / name)
+        for name in [*book.FILES, "AGENT_OPERATORS.md"]:
+            (self.manual / name).parent.mkdir(parents=True, exist_ok=True)
+            (self.manual / name).write_text("# Placeholder chapter\n")
 
     def errors(self):
         return book_input_errors(self.repo, self.manual)
 
-    def test_current_chapter_lists_cover_every_page(self):
+    def test_registered_pages_pass(self):
         self.assertEqual(self.errors(), [])
 
     def test_unregistered_page_names_the_list_to_edit(self):
-        (self.manual / "workflows/unregistered.md").write_text("# A page outside the book\n")
+        (self.manual / "machines-and-classes/unregistered.md").write_text("# Outside the book\n")
         [error] = self.errors()
-        self.assertRegex(error, r"missing=\['workflows/unregistered\.md'\]")
+        self.assertRegex(error, r"missing=\['machines-and-classes/unregistered\.md'\]")
         self.assertIn("ORDER in manual/data/build_latex.py", error)
 
     def test_deleted_page_must_leave_the_chapter_list(self):
@@ -136,8 +140,20 @@ class BookRegistration(unittest.TestCase):
         [error] = self.errors()
         self.assertIn(f"extra=['{page}']", error)
 
+    def test_checked_manual_uses_its_own_chapter_lists(self):
+        page = book.REFERENCE[-1]
+        source = self.manual / "data/build_latex.py"
+        entry = repr(Path(page).stem)
+        self.assertEqual(source.read_text().count(entry), 1)
+        source.write_text(source.read_text().replace(entry, ""))
+        path, cached = list(sys.path), sys.modules.get("build_latex")
+        [error] = self.errors()
+        self.assertIn(f"missing=['{page}']", error)
+        self.assertEqual(sys.path, path)
+        self.assertIs(sys.modules.get("build_latex"), cached)
+
     def test_full_check_reports_unregistered_page(self):
-        (self.manual / "workflows/unregistered.md").write_text("# A page outside the book\n")
+        (self.manual / "workflows/unregistered.md").write_text("# Outside the book\n")
         result = check(self.repo)
         self.assertTrue(result["book_inputs_checked"])
         self.assertTrue(any("missing=['workflows/unregistered.md']" in e for e in result["errors"]))

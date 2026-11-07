@@ -33,6 +33,8 @@ and require the linked client's imports, namespace and local assumptions.
 A new page also needs a place in the book. Add a reference or history chapter to `ORDER` in
 [build_latex.py](data/build_latex.py), or a workflow or appendix page to `WORKFLOWS` or
 `APPENDICES` in [build_manual.py](data/build_manual.py), and link it from an existing page.
+A new reference section goes before the final `development-history` entry of `ORDER`; a page
+deliberately kept out of the book belongs in `NON_CHAPTER_DOCUMENTS` in `build_manual.py`.
 Chapter order is an editorial choice, so the lists are maintained by hand; the checker
 reports any page missing from them.
 
