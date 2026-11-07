@@ -30,10 +30,9 @@ Conversely every deterministic online strategy has an instance with `OPT ≥ 1` 
 `(2B - 1) * OPT ≤ B * ALG` (`exists_witness`), so no deterministic strategy achieves any rational
 ratio `p / q < 2 - 1/B` without an additive constant (`exists_ratio_violation_of_lt`).
 
-The lower bound is genuinely multiplicative: since `OPT ≤ B`, every strategy is
-`(1, B)`-competitive with additive constant `B`; the break-even strategy is even
-`(1, B - 1)`-competitive (`breakEven_isCompetitive_one`). Ratios for ski rental are therefore
-stated with additive constant `0`.
+The break-even strategy is `(1, B - 1)`-competitive (`breakEven_isCompetitive_one`), so with an
+additive constant the factor-`1` question is trivial; the meaningful ratio has no additive
+constant, and ratios for ski rental are stated with additive constant `0`.
 
 ## Main definitions
 
@@ -263,9 +262,10 @@ theorem cost_rentThenBuy (B t : Nat) (reqs : List Unit) :
 abbrev breakEven (B : Nat) : DetStrategy (problem B) :=
   rentThenBuy B (B - 1)
 
-/-- **Break-even upper bound** ([KarlinManasseRudolphSleator1988]): on every request sequence and
-against every valid offline schedule, the break-even strategy satisfies
-`B * ALG ≤ (2B - 1) * OPT`, i.e. it has competitive ratio `2 - 1/B` with no additive constant. -/
+/-- **Break-even upper bound** (for the rent-or-buy framing of [KarlinManasseRudolphSleator1988]
+only): on every request sequence and against every valid offline schedule, the break-even strategy
+satisfies `B * ALG ≤ (2B - 1) * OPT`, i.e. it has competitive ratio `2 - 1/B` with no additive
+constant. -/
 theorem breakEven_mul_cost_le {B : Nat} {reqs : List Unit} {states : List Bool}
     (hv : (problem B).ValidSchedule false reqs states) :
     B * (breakEven B).cost false reqs ≤

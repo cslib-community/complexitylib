@@ -66,7 +66,10 @@ are separate.
   `DetStrategy.competitiveAnyInit_of_amortized`: `Cslib.DataStructure.Amortized` certificates imply
   competitive bounds.
 * `DetStrategy.cost_adaptiveRequests_eq`: an adversary forcing per-step cost `w` at every reachable
-  state forces total online cost `n * w` over `n` requests.
+  state forces total online cost `n * w` over `n` requests; `DetStrategy.le_cost_adaptiveRequests`
+  is the version forcing per-step cost at least `w`.
+* `DetStrategy.length_states`, `DetStrategy.states_take`: the online state trajectory has one state
+  per request, and its prefixes are the trajectories of request prefixes.
 
 ## References
 

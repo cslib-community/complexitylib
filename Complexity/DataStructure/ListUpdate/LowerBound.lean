@@ -14,13 +14,15 @@ public import Complexity.DataStructure.ListUpdate.Basic
 
 No deterministic online list-update strategy over an `n`-element universe has competitive ratio
 smaller than `2n / (n + 1) = 2 - 2/(n + 1)`, with any additive constant. This is the standard
-"cruel adversary" bound for deterministic list accessing; see [Borodin and El-Yaniv, *Online
-Computation and Competitive Analysis*, Chapter 1][BorodinElYaniv1998]. The argument:
+"cruel adversary" bound for deterministic list accessing. It is credited to Karp and Raghavan as
+reported in [Irani, *Two Results on the List Update Problem*][Irani1991] (the paper's text was not
+inspected here); see also [Borodin and El-Yaniv, *Online Computation and Competitive Analysis*,
+Chapter 1][BorodinElYaniv1998]. The argument:
 
 1. **Cruel adversary (`cruelRequests`):** always request the item at the end of the online
-   strategy's current list. Whatever rearrangement the strategy then makes, it pays at least `n`
-   per request (`idxOf_le_inversions_add`), so `m` requests cost it at least `m * n`
-   (`le_cost_cruelRequests`).
+   strategy's current list (`List.getLastD`). Whatever rearrangement the strategy then makes, it
+   pays at least `n` per request (`idxOf_le_inversions_add`), so `m` requests cost it at least
+   `m * n` (`le_cost_cruelRequests`).
 2. **Two static schedules:** the offline schedule that keeps the initial arrangement `s₀`, and
    the one that reverses it on the first request and then stays put. Each request's positions in
    `s₀` and its reversal add up to `n + 1` (`idxOf_reverse_add_idxOf`), and reversing costs at
@@ -37,11 +39,12 @@ static arrangements, which gives the same constant. For `n ≥ 2` no determinist
 
 ## Main definitions
 
-* `Cslib.DataStructure.ListUpdate.lastItem`: the last item of a list (with a default).
-* `ListUpdate.cruelRequests`: the adaptive request sequence against a deterministic strategy.
+* `Cslib.DataStructure.ListUpdate.cruelRequests`: the adaptive request sequence against a
+  deterministic strategy.
 
 ## Main results
 
+* `idxOf_getLastD_add_one`: the last item of an arrangement is at position `n`.
 * `le_cost_cruelRequests`: the cruel adversary forces cost `≥ n` per request.
 * `scheduleCost_static_le`, `sum_idxOf_add_sum_idxOf_reverse`: cost of static offline schedules.
 * `exists_ratio_violation_of_lt`, `not_isCompetitiveFrom_of_lt`, `not_isCompetitive_of_lt`,
@@ -51,6 +54,7 @@ static arrangements, which gives the same constant. For `n ≥ 2` no determinist
 ## References
 
 * [A. Borodin and R. El-Yaniv, *Online Computation and Competitive Analysis*][BorodinElYaniv1998]
+* [S. Irani, *Two Results on the List Update Problem*][Irani1991]
 * [D. D. Sleator and R. E. Tarjan, *Amortized Efficiency of List Update and Paging
   Rules*][SleatorTarjan1985]
 -/
@@ -61,16 +65,11 @@ namespace Cslib.DataStructure.ListUpdate
 
 open Cslib.DataStructure.Online
 
-/-- The last item of `l`, or `x₀` if `l` is empty. -/
-@[expose]
-def lastItem {α : Type} (x₀ : α) (l : List α) : α :=
-  l.reverse.headD x₀
-
 variable {α : Type} [DecidableEq α]
 
 /-- The last item of a nonempty duplicate-free list sits at position `length - 1`. -/
-theorem idxOf_lastItem_add_one {l : List α} (hl : l.Nodup) (hne : l ≠ []) (x₀ : α) :
-    l.idxOf (lastItem x₀ l) + 1 = l.length := by
+theorem idxOf_getLastD_add_one {l : List α} (hl : l.Nodup) (hne : l ≠ []) (x₀ : α) :
+    l.idxOf (l.getLastD x₀) + 1 = l.length := by
   obtain ⟨a, t, ht⟩ : ∃ a t, l.reverse = a :: t := by
     cases h : l.reverse with
     | nil => exact absurd (List.reverse_eq_nil_iff.1 h) hne
@@ -78,7 +77,10 @@ theorem idxOf_lastItem_add_one {l : List α} (hl : l.Nodup) (hne : l ≠ []) (x�
   have hmem : a ∈ l := List.mem_reverse.1 (ht ▸ List.mem_cons_self)
   have h := idxOf_reverse_add_idxOf hl hmem
   rw [ht, List.idxOf_cons_self] at h
-  rw [lastItem, ht, List.headD_cons]
+  have hlast : l.getLastD x₀ = a := by
+    rw [List.getLastD_eq_getLast?, List.getLast?_eq_head?_reverse, ht, List.head?_cons,
+      Option.getD_some]
+  rw [hlast]
   omega
 
 variable [Fintype α]
@@ -86,7 +88,7 @@ variable [Fintype α]
 /-- The cruel adversary: `n` requests, each for the last item of the strategy's current list. -/
 @[expose]
 def cruelRequests (x₀ : α) (A : DetStrategy (problem α)) (s₀ : List α) (m : Nat) : List α :=
-  A.adaptiveRequests (lastItem x₀) s₀ m
+  A.adaptiveRequests (fun l => l.getLastD x₀) s₀ m
 
 @[simp]
 theorem length_cruelRequests (x₀ : α) (A : DetStrategy (problem α)) (s₀ : List α) (m : Nat) :
@@ -98,12 +100,12 @@ theorem le_cost_cruelRequests (x₀ : α) (A : DetStrategy (problem α)) {s₀ :
     (hs₀ : IsArrangement s₀) (m : Nat) :
     m * Fintype.card α ≤ A.cost s₀ (cruelRequests x₀ A s₀ m) := by
   refine A.le_cost_adaptiveRequests (fun {mem} hmem => ?_) hs₀ m
-  have hstep := (A.valid_step (lastItem x₀ (A.project mem)) hmem).2
+  have hstep := (A.valid_step ((A.project mem).getLastD x₀) hmem).2
   have hcur : IsArrangement (A.project mem) := hstep.1
-  have hnext : IsArrangement (A.project (A.step mem (lastItem x₀ (A.project mem)))) := hstep.2
+  have hnext : IsArrangement (A.project (A.step mem ((A.project mem).getLastD x₀))) := hstep.2
   have hne : A.project mem ≠ [] := List.ne_nil_of_mem (hcur.2 x₀)
-  have hpos := idxOf_lastItem_add_one hcur.1 hne x₀
-  have hle := idxOf_le_inversions_add hcur hnext (lastItem x₀ (A.project mem))
+  have hpos := idxOf_getLastD_add_one hcur.1 hne x₀
+  have hle := idxOf_le_inversions_add hcur hnext ((A.project mem).getLastD x₀)
   rw [hcur.length_eq] at hpos
   change _ ≤ stepCost _ _ _
   rw [stepCost]

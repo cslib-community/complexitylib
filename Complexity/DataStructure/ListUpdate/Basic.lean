@@ -198,7 +198,6 @@ theorem two_mul_inversions_le [Fintype α] (l l' : List α) :
   omega
 
 /-- Items that precede `r` in `l` but follow it in `l'`. -/
-@[expose]
 def crossBefore [Fintype α] (l l' : List α) (r : α) : Finset α :=
   Finset.univ.filter fun x => l.idxOf x < l.idxOf r ∧ l'.idxOf r < l'.idxOf x
 
@@ -206,15 +205,11 @@ theorem mem_crossBefore [Fintype α] {l l' : List α} {r x : α} :
     x ∈ crossBefore l l' r ↔ l.idxOf x < l.idxOf r ∧ l'.idxOf r < l'.idxOf x := by
   simp only [crossBefore, Finset.mem_filter, Finset.mem_univ, true_and]
 
-/-- The embedding `x ↦ (x, r)`. -/
-private def pairRight (r : α) : α ↪ α × α :=
-  ⟨fun x => (x, r), fun _ _ h => congrArg Prod.fst h⟩
-
 /-- The inversions avoiding `r` and the inversions `(x, r)` are disjoint parts of all inversions. -/
 theorem card_filter_ne_add_card_crossBefore_le [Fintype α] (l l' : List α) (r : α) :
     ((inversionSet l l').filter fun p => p.1 ≠ r ∧ p.2 ≠ r).card + (crossBefore l l' r).card ≤
       inversions l l' := by
-  rw [← Finset.card_map (pairRight r), ← Finset.card_union_of_disjoint]
+  rw [← Finset.card_map (Function.Embedding.sectL α r), ← Finset.card_union_of_disjoint]
   · refine Finset.card_le_card (Finset.union_subset (Finset.filter_subset _ _) ?_)
     intro p hp
     obtain ⟨x, hx, rfl⟩ := Finset.mem_map.1 hp

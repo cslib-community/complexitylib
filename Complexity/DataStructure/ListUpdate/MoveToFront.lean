@@ -26,7 +26,8 @@ arrangement `s₀` while move-to-front starts from `m₀`,
 (`mtf_cost_add_inversions_add_length_le`). This is the Sleator–Tarjan bound
 `C_MF(s) ≤ 2 C_A(s) + X_A(s) - F_A(s) - m + I`, with the offline schedule's paid and free
 exchanges accounted for by `exchangeCost`, which counts the inversions between consecutive
-offline arrangements.
+offline arrangements. The module docstring of `Complexity.DataStructure.ListUpdate.Basic` gives
+the informal translation between the two cost models; it is not formalized.
 
 The proof uses the Sleator–Tarjan potential, the number of inversions between move-to-front's list
 and the offline list. Serving `r` costs move-to-front `k = pos(r)`. Moving `r` to the front creates
@@ -120,8 +121,7 @@ variable [Fintype α]
 theorem inversions_moveToFront {l : List α} (hl : IsArrangement l) (r : α) :
     inversions l (moveToFront r l) = l.idxOf r := by
   refine le_antisymm ?_ ?_
-  · rw [← card_filter_idxOf_lt hl r, ← Finset.card_map ⟨fun x => (x, r), fun _ _ h =>
-      congrArg Prod.fst h⟩]
+  · rw [← card_filter_idxOf_lt hl r, ← Finset.card_map (Function.Embedding.sectL α r)]
     refine Finset.card_le_card fun ⟨x, y⟩ h => ?_
     rw [mem_inversionSet] at h
     have hyr : y = r := by
@@ -151,8 +151,7 @@ theorem inversions_moveToFront_le {m L : List α} (hm : IsArrangement m) (hL : I
     (r : α) :
     m.idxOf r + 1 + inversions (moveToFront r m) L ≤ 2 * (L.idxOf r + 1) - 1 + inversions m L := by
   have hsub : inversionSet (moveToFront r m) L ⊆
-      (Finset.univ.filter fun y => L.idxOf y < L.idxOf r).map
-          ⟨fun y => (r, y), fun _ _ h => congrArg Prod.snd h⟩ ∪
+      (Finset.univ.filter fun y => L.idxOf y < L.idxOf r).map (Function.Embedding.sectR r α) ∪
         (inversionSet m L).filter fun p => p.1 ≠ r ∧ p.2 ≠ r := by
     rintro ⟨x, y⟩ h
     rw [mem_inversionSet] at h
