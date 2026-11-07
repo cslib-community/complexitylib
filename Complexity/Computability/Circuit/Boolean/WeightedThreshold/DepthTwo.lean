@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.LTF
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Menus
+public import Complexity.Computability.Circuit.CompositionLines
 public import Complexity.Computability.Circuit.Simulation
 public import Mathlib.Algebra.Ring.NegOnePow
 
@@ -52,6 +53,8 @@ count `p.cost Op.arity`.
   `Cslib.Circuits.Boolean.WeightedThreshold.depth_depthTwo_le`,
   `Cslib.Circuits.Boolean.WeightedThreshold.wireCount_depthTwo_le`: evaluation, gate count, depth,
   and wire count of `depthTwo`.
+* `Cslib.Circuits.Boolean.WeightedThreshold.lines_depthTwo_bottom_or_top`: every gate of `depthTwo`
+  is a bottom gate reading only original inputs or the top gate reading only gates.
 * `Cslib.Circuits.Boolean.WeightedThreshold.altLinear_add_add_altLinear_sub`,
   `Cslib.Circuits.Boolean.WeightedThreshold.negOnePow_mul_altLinear_add_sub_altLinear`,
   `Cslib.Circuits.Boolean.WeightedThreshold.sum_sub_mul_decide_le`: alternating linear polarization
@@ -221,6 +224,42 @@ theorem wireCount_depthTwo_le (top : Op) (bottom : Fin top.arity → Op)
     (depthTwo top bottom args).wireCount ≤ (∑ j, (bottom j).arity) + top.arity :=
   (depthTwo top bottom args).wireCount_le_cost_arity.trans_eq
     (cost_arity_depthTwo top bottom args)
+
+/-- Every gate of `depthTwo top bottom args` is either a bottom gate `bottom j`, reading the
+original inputs `args j`, or the top gate `top`, reading only gates. -/
+theorem lines_depthTwo_bottom_or_top (top : Op) (bottom : Fin top.arity → Op)
+    (args : ∀ j, Fin (bottom j).arity → Fin n) (k : Fin (depthTwo top bottom args).size) :
+    (∃ j, (depthTwo top bottom args).program.lines k = ⟨bottom j, fun a => .input (args j a)⟩) ∨
+      ∃ ws : Fin top.arity → Fin (depthTwo top bottom args).size,
+        (depthTwo top bottom args).program.lines k = ⟨top, fun a => .gate (ws a)⟩ := by
+  obtain ⟨k, rfl⟩ | ⟨k, rfl⟩ :
+      (∃ k', k = Fin.castAdd 1 k') ∨ ∃ k', k = Fin.natAdd
+        (Circuit.pi fun j => Circuit.oneGate (σ := signature) (bottom j) (args j)).size k' :=
+    Fin.addCases (motive := fun k => (∃ k', k = Fin.castAdd 1 k') ∨ ∃ k', k = Fin.natAdd _ k')
+      (fun k' => .inl ⟨k', rfl⟩) (fun k' => .inr ⟨k', rfl⟩) k
+  · obtain ⟨j, k', f, hi, -, hk⟩ := Circuit.exists_lines_pi _ k
+    refine .inl ⟨j, ?_⟩
+    obtain rfl : k' = Fin.last 0 := Fin.fin_one_eq_zero k'
+    refine (Program.lines_append_castAdd _ _ _ k).trans ?_
+    rw [hk]
+    change ((((Program.empty : Program signature n 0).gate
+      (⟨bottom j, fun a => Wire.input (args j a)⟩ : Line signature n 0)).lines
+        (Fin.last 0)).mapWires f).mapWires (Wire.castAdd 1) = _
+    rw [Program.lines_gate_last]
+    exact congrArg (Line.mk (σ := signature) (bottom j))
+      (funext fun a => congrArg (Wire.castAdd 1) (hi (args j a)))
+  · obtain rfl : k = Fin.last 0 := Fin.fin_one_eq_zero k
+    choose ws hws using Circuit.outputs_pi_eq_gate
+      (fun j => Circuit.oneGate (σ := signature) (bottom j) (args j)) (fun _ => ⟨Fin.last 0, rfl⟩)
+    refine .inr ⟨fun a => Fin.castAdd 1 (ws a), ?_⟩
+    refine (Program.lines_append_natAdd _ _ _ (Fin.last 0)).trans ?_
+    change (((Program.empty : Program signature top.arity 0).gate
+      (⟨top, fun a => Wire.input a⟩ : Line signature top.arity 0)).lines (Fin.last 0)).mapWires
+        (Program.appendedWire _) = _
+    rw [Program.lines_gate_last]
+    simp only [Line.mapWires, Function.comp_def, Wire.Renaming.castSucc_apply, Wire.castSucc_input,
+      Program.appendedWire_input, hws, Wire.castAdd_gate]
+    rfl
 
 /-! ### Alternating linear function and integer interval telescoping -/
 

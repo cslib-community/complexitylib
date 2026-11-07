@@ -77,6 +77,10 @@ circuits of `AndreevWindowed` truncate the polarization `φ(u^+_S) + φ(u^-_S) =
   `Cslib.Circuits.Boolean.WeightedThreshold.andreevTopWeightInt_emod_two_ne_zero`,
   `Cslib.Circuits.Boolean.WeightedThreshold.abs_weight_andreevTopOp_le`: explicit bottom and top
   weight bounds.
+* `Cslib.Circuits.Boolean.WeightedThreshold.lines_andreevCircuit_bottom_or_top`: gate by gate, every
+  gate of `andreevCircuit b m` reads only original inputs with integer weights of absolute value at
+  most `2`, or reads only gates with odd integer weights of absolute value below
+  `2 * (2 ^ b + b * m)`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.exists_depthTwo_computes_andreev`: the bundled
   existence statement.
 
@@ -605,6 +609,33 @@ theorem abs_weight_andreevTopOp_le (b m : ℕ) (j : Fin (2 * 4 ^ b + b * m * 2 ^
   unfold andreevTopOp
   dsimp only
   exact_mod_cast abs_andreevTopWeightInt_le b m ((andreevBottomEquiv b m).symm j)
+
+/-- Gate by gate, every gate of `andreevCircuit b m` is either a bottom gate, reading only original
+inputs with integer weights of absolute value at most `2`, or a top gate, reading only gates with
+odd integer weights of absolute value below `2 * (2 ^ b + b * m)`. -/
+theorem lines_andreevCircuit_bottom_or_top (b m : ℕ) (k : Fin (andreevCircuit b m).size) :
+    ((∀ a, ∃ i, ((andreevCircuit b m).program.lines k).wires a = .input i) ∧
+      ∀ a, ∃ z : ℤ, |z| ≤ 2 ∧ ((andreevCircuit b m).program.lines k).op.weight a = z) ∨
+    ((∀ a, ∃ g, ((andreevCircuit b m).program.lines k).wires a = .gate g) ∧
+      ∀ a, ∃ z : ℤ, Odd z ∧ |z| < 2 * ((2 ^ b + b * m : ℕ) : ℤ) ∧
+        ((andreevCircuit b m).program.lines k).op.weight a = z) := by
+  obtain ⟨j, hj⟩ | ⟨ws, hws⟩ :=
+    lines_depthTwo_bottom_or_top (andreevTopOp b m) (andreevBottomOp b m) (fun _ => id) k
+  · have hj' : (andreevCircuit b m).program.lines k =
+        ⟨andreevBottomOp b m j, fun a => .input a⟩ := hj
+    rw [hj']
+    let idx := (andreevBottomEquiv b m).symm j
+    exact .inl ⟨fun a => ⟨a, rfl⟩, fun a => ⟨andreevStairWeightInt b m idx.subset idx.stair a,
+      abs_le_two_of_mem (andreevStairWeightInt_mem b m idx.subset idx.stair a), rfl⟩⟩
+  · have hws' : (andreevCircuit b m).program.lines k =
+        ⟨andreevTopOp b m, fun a => .gate (ws a)⟩ := hws
+    rw [hws']
+    refine .inr ⟨fun a => ⟨ws a, rfl⟩, fun a =>
+      ⟨andreevTopWeightInt b m ((andreevBottomEquiv b m).symm a), ?_, ?_, rfl⟩⟩
+    · exact Int.odd_iff.mpr (Int.emod_two_ne_zero.mp (andreevTopWeightInt_emod_two_ne_zero b m _))
+    · refine (abs_andreevTopWeightInt_le b m _).trans_lt ?_
+      push_cast
+      exact sub_one_lt _
 
 /-- **Exact quadratic depth-two threshold circuit upper bound for Andreev's function**:
 for all `b, m : ℕ`, there is a depth-two weighted threshold circuit with
