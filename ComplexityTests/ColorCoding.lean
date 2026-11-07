@@ -13,7 +13,7 @@ import Complexity.Computability.Complexity.Parameterized.ColorCoding
 Concrete instances of `LongPath` and `ColorfulPath` on the path `0 - 1 - 2 - 3`: the color-coding
 decider accepts a colorful coloring and rejects a coloring with repeated colors, both evaluated by
 `decide`; edge cases `k = 0`, `k` above the number of vertices, and colors at least `k`; and the
-headline results with their encodings and parameters.
+resource consequences: an exponent at least `1`, and `FPT` for a larger parameter.
 -/
 
 namespace ComplexityTests.ColorCoding
@@ -67,6 +67,10 @@ example : ((P4, [0, 1, 0, 1]), 2) ∈ ColorfulPath :=
 example : ((P4, [0, 1, 2, 0]), 3) ∈ ColorfulPath :=
   (colorfulPathBool_eq_true_iff _).1 (by decide)
 
+-- A vertex off the path may have a color at least `k`: `0 - 1 - 2` is a solution for `k = 3`.
+example : ((P4, [0, 1, 2, 7]), 3) ∈ ColorfulPath :=
+  (colorfulPathBool_eq_true_iff _).1 (by decide)
+
 -- Colors must be less than `k`: four distinct colors that are not `{0, 1, 2, 3}` are rejected.
 example : ((P4, [1, 2, 3, 4]), 4) ∉ ColorfulPath := fun h => by
   have := (colorfulPathBool_eq_true_iff _).2 h
@@ -89,19 +93,18 @@ example : (ColorCoding.table P4 (colorOf P4 [0, 1, 2, 3]) 16).getD 5 [] = [] := 
 example : ColorCoding.Reaches P4 (colorOf P4 [0, 1, 2, 3]) 15 3 :=
   (ColorCoding.mem_table_getD (by decide : 15 < 16)).1 (by decide)
 
-/-! ### Headline results -/
+/-! ### Resource consequences -/
 
-example : ∃ δ : ℝ, DecidableInExpTime ColorfulPath
+-- The exponent can be taken at least `1`.
+example : ∃ δ : ℝ, 1 ≤ δ ∧ DecidableInExpTime ColorfulPath
     (encPair (encPair encGraph (encList encNat)) encNat) Prod.snd δ :=
-  ColorfulPath_decidableInExpTime
+  let ⟨δ, h⟩ := ColorfulPath_decidableInExpTime
+  ⟨max δ 1, le_max_right _ _, h.mono (le_max_left _ _)⟩
 
-example : ColorfulPath ∈ FPT (encPair (encPair encGraph (encList encNat)) encNat) Prod.snd :=
-  ColorfulPath_mem_FPT
-
-example : ComputableInPolyTime
-    (fun x : (Graph × List ℕ) × ℕ => ColorCoding.table x.1.1 (colorOf x.1.1 x.1.2) x.2)
-    (encPair (encPair encGraph (encList encNat)) encUnary) (encList (encList encNat)) :=
-  ColorCoding.computableInPolyTime_table
+-- Fixed-parameter tractable also for a larger parameter: `k` plus the number of listed colors.
+example : ColorfulPath ∈
+    FPT (encPair (encPair encGraph (encList encNat)) encNat) fun x => x.2 + x.1.2.length :=
+  FPT_subset_FPT_of_le_comp (h := id) (fun _ => Nat.le_add_right _ _) ColorfulPath_mem_FPT
 
 /-! ### Clique and Independent Set -/
 

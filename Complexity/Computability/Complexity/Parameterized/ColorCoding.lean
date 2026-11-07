@@ -16,7 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
-import Complexity.Foundations.Data.Nat.Bitwise.Sparse
+import Complexity.Foundations.Data.Nat.Bitwise.Carry
 import Mathlib.Data.List.GetD
 
 /-!
