@@ -11,6 +11,7 @@ public import Complexity.Logics.Propositional.CNF.Johnson
 public import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -25,7 +26,7 @@ variables, with literals encoded by `encPair` and clauses and formulas by `encLi
 (`Cslib.Logic.PL.computableInPolyTime_johnson`). Removing repeated literals, setting a variable
 and computing the weight are polynomial-time, the weight in binary from the bound `L` in unary.
 The algorithm is a fold over the distinct variables whose step reads the input formula; setting a
-variable does not lengthen the encoded formula (`Cslib.Logic.PL.CNF.length_encList_assign_le`)
+variable does not lengthen the encoded formula (`Cslib.Logic.PL.CNF.length_encList_restrict_le`)
 and each round adds one variable to the output, so the state stays polynomially bounded. The
 weights have `O(L)` bits, and comparing them is polynomial-time.
 
@@ -33,7 +34,7 @@ weights have `O(L)` bits, and comparing them is polynomial-time.
 
 * `Cslib.Logic.PL.Clause.computableInPolyTime_eraseDupLits`,
   `Cslib.Logic.PL.CNF.computableInPolyTime_eraseDupLits`: removing repeated literals.
-* `Cslib.Logic.PL.CNF.computableInPolyTime_assign`: setting a variable.
+* `Cslib.Logic.PL.CNF.computableInPolyTime_restrict`: setting a variable.
 * `Cslib.Logic.PL.CNF.computableInPolyTime_johnsonWeight`: Johnson's weight.
 * `Cslib.Logic.PL.computableInPolyTime_johnson`: Johnson's algorithm.
 
@@ -66,11 +67,11 @@ theorem CNF.computableInPolyTime_eraseDupLits :
   fun_prop
 
 /-- Setting a variable is polynomial-time. -/
-theorem CNF.computableInPolyTime_assign :
-    ComputableInPolyTime (fun p : (V × Bool) × CNF V => p.2.assign p.1.1 p.1.2)
+theorem CNF.computableInPolyTime_restrict :
+    ComputableInPolyTime (fun p : (V × Bool) × CNF V => p.2.restrict p.1.1 p.1.2)
       (encPair (encPair enc encBool) (encList (encList (encPair enc encBool))))
       (encList (encList (encPair enc encBool))) := by
-  unfold CNF.assign
+  unfold CNF.restrict
   fun_prop
 
 omit [DecidableEq V] in
@@ -82,21 +83,21 @@ theorem CNF.computableInPolyTime_johnsonWeight :
   fun_prop
 
 /-- Setting a variable does not lengthen the encoding of a formula. -/
-theorem CNF.length_encList_assign_le (v : V) (b : Bool) (ψ : CNF V) :
-    (encList (encList (encPair enc encBool)) (ψ.assign v b)).length ≤
+theorem CNF.length_encList_restrict_le (v : V) (b : Bool) (ψ : CNF V) :
+    (encList (encList (encPair enc encBool)) (ψ.restrict v b)).length ≤
       (encList (encList (encPair enc encBool)) ψ).length :=
   (length_encList_map_le _ _ fun _ _ =>
     length_encList_sublist _ List.filter_sublist).trans
     (length_encList_sublist _ List.filter_sublist)
 
 /-- Setting a computed variable to a computed value in a computed formula is polynomial-time. -/
-theorem CNF.computableInPolyTime_assign' {α : Type} {input : α ↪ List Bool} {v : α → V}
+theorem CNF.computableInPolyTime_restrict' {α : Type} {input : α ↪ List Bool} {v : α → V}
     {b : α → Bool} {ψ : α → CNF V} (hv : ComputableInPolyTime v input enc)
     (hb : ComputableInPolyTime b input encBool)
     (hψ : ComputableInPolyTime ψ input (encList (encList (encPair enc encBool)))) :
-    ComputableInPolyTime (fun a => (ψ a).assign (v a) (b a)) input
+    ComputableInPolyTime (fun a => (ψ a).restrict (v a) (b a)) input
       (encList (encList (encPair enc encBool))) := by
-  have h := (CNF.computableInPolyTime_assign enc).comp ((hv.prod hb).prod hψ)
+  have h := (CNF.computableInPolyTime_restrict enc).comp ((hv.prod hb).prod hψ)
   exact h
 
 omit [DecidableEq V] in
@@ -113,30 +114,29 @@ is polynomial-time. -/
 private theorem computableInPolyTime_johnsonRound :
     ComputableInPolyTime
       (fun p : (CNF V × (CNF V × List V)) × V =>
-        if (p.1.2.1.assign p.2 true).johnsonWeight p.1.1.vars.length ≤
-            (p.1.2.1.assign p.2 false).johnsonWeight p.1.1.vars.length then
-          (p.1.2.1.assign p.2 true, p.2 :: p.1.2.2) else (p.1.2.1.assign p.2 false, p.1.2.2))
+        if (p.1.2.1.restrict p.2 true).johnsonWeight p.1.1.vars.length ≤
+            (p.1.2.1.restrict p.2 false).johnsonWeight p.1.1.vars.length then
+          (p.1.2.1.restrict p.2 true, p.2 :: p.1.2.2) else (p.1.2.1.restrict p.2 false, p.1.2.2))
       (encPair (encPair (encList (encList (encPair enc encBool)))
         (encPair (encList (encList (encPair enc encBool))) (encList enc))) enc)
       (encPair (encList (encList (encPair enc encBool))) (encList enc)) := by
-  have hassign (b : Bool) := CNF.computableInPolyTime_assign' enc (snd _ _) (const b)
+  have hrestrict (b : Bool) := CNF.computableInPolyTime_restrict' enc (snd _ _) (const b)
     ((fst (encPair (encList (encList (encPair enc encBool)))
       (encPair (encList (encList (encPair enc encBool))) (encList enc))) enc).snd'.fst')
   have hweight (b : Bool) := CNF.computableInPolyTime_johnsonWeight' enc
-    (CNF.computableInPolyTime_vars_length (fst _ _).fst') (hassign b)
-  have hle := ComputableTidilyInPolyTime.binary_le.computableInPolyTime.comp
-    ((hweight true).prod (hweight false))
+    (CNF.computableInPolyTime_vars_length (fst _ _).fst') (hrestrict b)
+  have hle := binary_le' (hweight true) (hweight false)
   have hT := (fst (encPair (encList (encList (encPair enc encBool)))
     (encPair (encList (encList (encPair enc encBool))) (encList enc))) enc).snd'.snd'
-  have h := ite hle ((hassign true).prod (cons' (snd _ _) hT)) ((hassign false).prod hT)
+  have h := ite hle ((hrestrict true).prod (cons' (snd _ _) hT)) ((hrestrict false).prod hT)
   simpa only [Function.comp_apply, decide_eq_true_eq] using h
 
 /-- Johnson's algorithm as a fold whose step reads the input formula. -/
 private theorem johnson_eq_foldl (φ : CNF V) :
     johnson φ = (φ.distinctVars.foldl (fun s v =>
-      if (s.1.assign v true).johnsonWeight φ.vars.length ≤
-          (s.1.assign v false).johnsonWeight φ.vars.length then
-        (s.1.assign v true, v :: s.2) else (s.1.assign v false, s.2))
+      if (s.1.restrict v true).johnsonWeight φ.vars.length ≤
+          (s.1.restrict v false).johnsonWeight φ.vars.length then
+        (s.1.restrict v true, v :: s.2) else (s.1.restrict v false, s.2))
       (φ.eraseDupLits, [])).2 :=
   rfl
 
@@ -151,16 +151,16 @@ theorem computableInPolyTime_johnson :
     (encA := enc) (encB := encPair (encList (encList (encPair enc encBool))) (encList enc))
     (list := fun φ : CNF V => φ.distinctVars)
     (step := fun (φ : CNF V) (s : CNF V × List V) (v : V) =>
-      if (s.1.assign v true).johnsonWeight φ.vars.length ≤
-          (s.1.assign v false).johnsonWeight φ.vars.length then
-        (s.1.assign v true, v :: s.2) else (s.1.assign v false, s.2))
+      if (s.1.restrict v true).johnsonWeight φ.vars.length ≤
+          (s.1.restrict v false).johnsonWeight φ.vars.length then
+        (s.1.restrict v true, v :: s.2) else (s.1.restrict v false, s.2))
     hinit ⟨hlist, computableInPolyTime_johnsonRound enc, inferInstance, inferInstance⟩
     (growth := fun φ => 2 * (encList enc φ.distinctVars).length + 1)
     ⟨((PolyBounded.const 2).mul hlist.polyBounded_length).add (.const 1),
       fun φ s v hv => by
         have := SizedListEncoding.length_elem_le (encA := enc) (encL := encList enc) _ v hv
-        have h1 := CNF.length_encList_assign_le enc v true s.1
-        have h2 := CNF.length_encList_assign_le enc v false s.1
+        have h1 := CNF.length_encList_restrict_le enc v true s.1
+        have h2 := CNF.length_encList_restrict_le enc v false s.1
         split
         · simp only [length_encPair, encList_cons, List.length_append, length_frame]
           omega

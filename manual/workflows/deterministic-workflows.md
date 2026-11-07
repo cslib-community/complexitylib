@@ -124,9 +124,11 @@ or `ℝ`; `greedy branch Φ rounds s` takes, in each round, the branch with the 
 with ties going to `true`.
 
 Apply `greedy_spec` with an invariant `Inv : List R → S → Prop` indexed by the rounds still to
-come. Prove that it passes along both branches and that, wherever it holds, the two branch
-estimates sum to at most twice the current estimate. The estimate need not be an exact
-conditional expectation; a pessimistic upper bound suffices. The conclusion returns the
+come. Prove that it passes along both branches and that, wherever it holds, the smaller branch
+estimate is at most the current estimate. For an averaging argument, use
+`greedy_spec_of_add_le` and prove instead that the two branch estimates sum to at most twice the
+current estimate. The estimate need not be an exact conditional expectation; a pessimistic upper
+bound suffices. The conclusion returns the
 invariant for the final state together with `Φ final ≤ Φ initial`; use the final invariant to
 identify the final estimate with the cost of the constructed object. For exact conditional
 expectations of a real function on the cube, `BitString.expect_le_greedy_fixCoord` in
@@ -134,9 +136,9 @@ expectations of a real function on the cube, `BitString.expect_le_greedy_fixCoor
 
 [Johnson.lean](../../Complexity/Logics/Propositional/CNF/Johnson.lean) is the satisfiability
 client. Its state is the partially set formula and the variables set to `true`; its estimate is
-the weight `Σ_c 2 ^ (L - |c|)`. Its invariant records that the remaining variables are those still
-to be set and that the partial formula falsifies the same clauses as the original under any
-completion. [Johnson/PolyTime.lean](../../Complexity/Logics/Propositional/CNF/Johnson/PolyTime.lean)
+the weight `Σ_c 2 ^ (L - |c|)`. It sets a variable with the resolution module's `CNF.restrict`. Its invariant records
+that the remaining variables are those still to be set and that the partial formula falsifies
+the same number of clauses as the original under any completion. [Johnson/PolyTime.lean](../../Complexity/Logics/Propositional/CNF/Johnson/PolyTime.lean)
 certifies the running time. Because `L` is read from the input formula, the rounds form a fold
 whose step reads the input, certified by `foldlWithInput_of_bounded_growth`. Its growth premise
 uses the fact that setting a variable does not lengthen the encoded formula. The complete
@@ -144,7 +146,7 @@ uses the fact that setting a variable does not lengthen the encoded formula. The
 instance and a formula with an empty clause, where the `1 / 2` bound fails without its
 hypothesis. Build it with `scripts/build.sh ComplexityTests.JohnsonMaxSAT`.
 
-**When it fails:** if the averaging inequality holds only on reachable states, strengthen the
+**When it fails:** if the round inequality holds only on reachable states, strengthen the
 invariant rather than the estimate. Clauses with complementary literals, for example, make
 Johnson's weight strictly pessimistic, but the inequality still holds for every partial
 formula without repeated literals. If the fold's growth premise fails, check that the step

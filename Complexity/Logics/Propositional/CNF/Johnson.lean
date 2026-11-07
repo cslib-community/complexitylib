@@ -11,6 +11,7 @@ public import Complexity.Foundations.Combinatorics.PessimisticEstimator
 public import Complexity.Foundations.Data.List.EraseDupsBy
 public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.UnsatVal
+public import Complexity.Logics.Propositional.Resolution
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -25,12 +26,13 @@ clause with `j` distinct literals, none of them yet set, is falsified by a unifo
 random assignment with probability `2 ^ -j`, so the weight `Σ_c 2 ^ (L - |c|)`
 (`Cslib.Logic.PL.CNF.johnsonWeight`) is `2 ^ L` times the expected number of falsified clauses
 when no clause contains a complementary pair. Setting a variable `v` to `b` drops the clauses
-satisfied by the literal `(v, b)` and deletes `(v, !b)` from the others
-(`Cslib.Logic.PL.CNF.assign`); the weights after setting `v` to `true` and to `false` sum to at
-most twice the current weight (`Cslib.Logic.PL.CNF.johnsonWeight_assign_add_le`), with equality
-when no clause contains both `(v, true)` and `(v, false)`. Setting each variable to the value of
-smaller weight is therefore the method of conditional expectations with the weight as a
-pessimistic estimator (`Cslib.PessimisticEstimator.greedy_spec`).
+satisfied by the literal `(v, b)` and deletes `(v, !b)` from the others; this is the restriction
+`Cslib.Logic.PL.CNF.restrict` used for resolution. The weights after setting `v` to `true` and
+to `false` sum to at most twice the current weight
+(`Cslib.Logic.PL.CNF.johnsonWeight_restrict_add_le`), with equality when no clause contains both
+`(v, true)` and `(v, false)`. Setting each variable to the value of smaller weight is therefore
+the method of conditional expectations with the weight as a pessimistic estimator
+(`Cslib.PessimisticEstimator.greedy_spec_of_add_le`).
 
 The algorithm (`Cslib.Logic.PL.johnson`) first removes repeated literals from each clause, then
 sets the variables in order of first occurrence. When no variable is left, every remaining clause
@@ -51,14 +53,15 @@ The polynomial running time is proved in `Complexity.Logics.Propositional.CNF.Jo
 
 * `Cslib.Logic.PL.Clause.eraseDupLits`, `Cslib.Logic.PL.CNF.eraseDupLits`: remove repeated
   literals.
-* `Cslib.Logic.PL.CNF.assign`: set a variable in a formula.
 * `Cslib.Logic.PL.CNF.johnsonWeight`: Johnson's weight.
 * `Cslib.Logic.PL.johnson`, `Cslib.Logic.PL.johnsonAssignment`: Johnson's algorithm, as the list
   of variables it sets to `true` and as an assignment.
 
 ## Main results
 
-* `Cslib.Logic.PL.CNF.johnsonWeight_assign_add_le`: the averaging step.
+* `Cslib.Logic.PL.CNF.countUnsat_restrict`: setting a variable as the assignment does keeps the
+  number of falsified clauses.
+* `Cslib.Logic.PL.CNF.johnsonWeight_restrict_add_le`: the averaging step.
 * `Cslib.Logic.PL.two_pow_mul_countUnsat_johnsonAssignment_le`: correctness against the initial
   weight.
 * `Cslib.Logic.PL.countUnsat_johnsonAssignment_le_sum`: the output falsifies at most
@@ -132,79 +135,44 @@ theorem Clause.length_eraseDupLits (c : Clause V) : c.eraseDupLits.length = c.to
 
 /-! ### Setting a variable -/
 
-/-- Set `v` to `b`: drop the clauses containing the literal `(v, b)` and delete the literal
-`(v, !b)` from the others. -/
-@[expose] def CNF.assign (v : V) (b : Bool) (ψ : CNF V) : CNF V :=
-  (ψ.filter fun c => !c.any fun l => decide (l = (v, b))).map
-    fun c => c.filter fun l => !decide (l = (v, !b))
-
-private theorem any_eq_decide_mem {α : Type*} [DecidableEq α] (c : List α) (a : α) :
-    (c.any fun l => decide (l = a)) = decide (a ∈ c) := by
-  rw [Bool.eq_iff_iff, List.any_eq_true, decide_eq_true_iff]
-  simp
-
-/-- Setting a variable, one clause at a time. -/
-theorem CNF.assign_cons (v : V) (b : Bool) (c : Clause V) (ψ : CNF V) :
-    CNF.assign v b (c :: ψ) = if (v, b) ∈ c then ψ.assign v b
-      else (c.filter fun l => !decide (l = (v, !b))) :: ψ.assign v b := by
-  by_cases h : (v, b) ∈ c
-  · simp [CNF.assign, any_eq_decide_mem, h]
-  · simp [CNF.assign, any_eq_decide_mem, h]
-
-/-- The clauses after setting `v` to `b` are the clauses without the literal `(v, b)`, with the
-literal `(v, !b)` deleted. -/
-theorem CNF.mem_assign {v : V} {b : Bool} {ψ : CNF V} {c' : Clause V} :
-    c' ∈ ψ.assign v b ↔ ∃ c ∈ ψ, (v, b) ∉ c ∧ c' = c.filter fun l => !decide (l = (v, !b)) := by
-  simp only [CNF.assign, List.mem_map, List.mem_filter, any_eq_decide_mem, Bool.not_eq_true',
-    decide_eq_false_iff_not]
-  constructor
-  · rintro ⟨c, ⟨hc, hvb⟩, rfl⟩
-    exact ⟨c, hc, hvb, rfl⟩
-  · rintro ⟨c, hc, hvb, rfl⟩
-    exact ⟨c, ⟨hc, hvb⟩, rfl⟩
+/-- Setting a variable with `CNF.restrict`, one clause at a time. -/
+theorem CNF.restrict_cons (v : V) (b : Bool) (c : Clause V) (ψ : CNF V) :
+    CNF.restrict (c :: ψ) v b = if (v, b) ∈ c then ψ.restrict v b
+      else c.filter (· ≠ (v, !b)) :: ψ.restrict v b := by
+  by_cases h : (v, b) ∈ c <;> simp [CNF.restrict, h]
 
 /-- Under an assignment that sets `v` to `b`, setting `v` to `b` in the formula does not change
 the number of falsified clauses. -/
-theorem CNF.countUnsat_assign {σ : V → Bool} {v : V} {b : Bool} (hσ : σ v = b) (ψ : CNF V) :
-    (ψ.assign v b).countUnsat σ = ψ.countUnsat σ := by
+theorem CNF.countUnsat_restrict {σ : V → Bool} {v : V} {b : Bool} (hσ : σ v = b) (ψ : CNF V) :
+    (ψ.restrict v b).countUnsat σ = ψ.countUnsat σ := by
   induction ψ with
   | nil => rfl
   | cons c ψ ih =>
-    rw [CNF.assign_cons]
+    rw [CNF.restrict_cons]
     split
     · rename_i h
       have hc : c.eval σ = true :=
         (Clause.eval_eq_true_iff σ c).2 ⟨_, h, by simp [hσ]⟩
       rw [ih]
       exact (List.countP_cons_of_neg (by simp [hc])).symm
-    · have hc : Clause.eval σ (c.filter fun l => !decide (l = (v, !b))) = c.eval σ := by
+    · have hc : Clause.eval σ (c.filter (· ≠ (v, !b))) = c.eval σ := by
         rw [Bool.eq_iff_iff, Clause.eval_eq_true_iff, Clause.eval_eq_true_iff]
         constructor
         · rintro ⟨l, hl, hle⟩
           exact ⟨l, (List.mem_filter.1 hl).1, hle⟩
         · rintro ⟨l, hl, hle⟩
           refine ⟨l, List.mem_filter.2 ⟨hl, ?_⟩, hle⟩
-          simp only [Bool.not_eq_true', decide_eq_false_iff_not]
+          rw [decide_eq_true_iff]
           rintro rfl
           simp [hσ] at hle
       simp only [CNF.countUnsat, List.countP_cons, hc] at ih ⊢
       rw [ih]
 
-/-- Setting `v` removes `v` and introduces no variable. -/
-theorem CNF.vars_assign {v : V} {b : Bool} {ψ : CNF V} {w : V} (hw : w ∈ (ψ.assign v b).vars) :
-    w ∈ ψ.vars ∧ w ≠ v := by
-  obtain ⟨c', hc', b', hl⟩ := CNF.mem_vars.1 hw
-  obtain ⟨c, hc, hvb, rfl⟩ := CNF.mem_assign.1 hc'
-  obtain ⟨hl, hne⟩ := List.mem_filter.1 hl
-  refine ⟨CNF.mem_vars.2 ⟨c, hc, b', hl⟩, ?_⟩
-  rintro rfl
-  cases b <;> cases b' <;> simp_all
-
 /-! ### Johnson's weight -/
 
-/-- Johnson's weight `Σ_c 2 ^ (L - |c|)`. For clauses of at most `L` distinct literals without
-complementary pairs, this is `2 ^ L` times the expected number of clauses falsified by a uniformly
-random assignment. -/
+/-- Johnson's weight `Σ_c 2 ^ (L - |c|)`. For clauses of length at most `L` without repeated
+literals and without complementary pairs, this is `2 ^ L` times the expected number of clauses
+falsified by a uniformly random assignment. -/
 @[expose] def CNF.johnsonWeight (L : ℕ) (ψ : CNF V) : ℕ :=
   (ψ.map fun c => 2 ^ (L - c.length)).sum
 
@@ -218,7 +186,7 @@ omit [DecidableEq V] in
     CNF.johnsonWeight L (c :: ψ) = 2 ^ (L - c.length) + CNF.johnsonWeight L ψ := rfl
 
 private theorem length_filter_ne_add_one {c : Clause V} (hc : c.Nodup) {a : Literal V}
-    (ha : a ∈ c) : (c.filter fun l => !decide (l = a)).length + 1 = c.length := by
+    (ha : a ∈ c) : (c.filter (· ≠ a)).length + 1 = c.length := by
   induction c with
   | nil => simp at ha
   | cons x xs ih =>
@@ -231,27 +199,26 @@ private theorem length_filter_ne_add_one {c : Clause V} (hc : c.Nodup) {a : Lite
         ih hxs ((List.mem_cons.1 ha).resolve_left (Ne.symm hxa))]
 
 private theorem filter_ne_eq_self {c : Clause V} {a : Literal V} (ha : a ∉ c) :
-    (c.filter fun l => !decide (l = a)) = c :=
+    c.filter (· ≠ a) = c :=
   List.filter_eq_self.2 fun l hl => by simpa using fun h : l = a => ha (h ▸ hl)
 
 /-- **Averaging**: on clauses without repeated literals and of length at most `L`, setting a
 variable to `true` and to `false` gives weights summing to at most twice the weight. -/
-theorem CNF.johnsonWeight_assign_add_le {L : ℕ} (v : V) {ψ : CNF V}
+theorem CNF.johnsonWeight_restrict_add_le {L : ℕ} (v : V) {ψ : CNF V}
     (hψ : ∀ c ∈ ψ, c.Nodup ∧ c.length ≤ L) :
-    (ψ.assign v true).johnsonWeight L + (ψ.assign v false).johnsonWeight L ≤
+    (ψ.restrict v true).johnsonWeight L + (ψ.restrict v false).johnsonWeight L ≤
       ψ.johnsonWeight L + ψ.johnsonWeight L := by
   induction ψ with
-  | nil => simp [CNF.assign]
+  | nil => simp [CNF.restrict]
   | cons c ψ ih =>
     obtain ⟨hnd, hlen⟩ := hψ c List.mem_cons_self
     have ih := ih fun c hc => hψ c (List.mem_cons_of_mem _ hc)
-    rw [CNF.assign_cons, CNF.assign_cons, CNF.johnsonWeight_cons]
+    rw [CNF.restrict_cons, CNF.restrict_cons, CNF.johnsonWeight_cons]
     -- Deleting one literal from a nonempty clause doubles its term.
     have hdouble {a : Literal V} (ha : a ∈ c) :
-        2 ^ (L - (c.filter fun l => !decide (l = a)).length) =
-          2 ^ (L - c.length) + 2 ^ (L - c.length) := by
+        2 ^ (L - (c.filter (· ≠ a)).length) = 2 ^ (L - c.length) + 2 ^ (L - c.length) := by
       have h1 := length_filter_ne_add_one hnd ha
-      rw [show L - (c.filter fun l => !decide (l = a)).length = L - c.length + 1 by omega,
+      rw [show L - (c.filter (· ≠ a)).length = L - c.length + 1 by omega,
         pow_succ]
       ring
     by_cases hT : (v, true) ∈ c <;> by_cases hF : (v, false) ∈ c <;>
@@ -291,7 +258,7 @@ theorem CNF.johnsonWeight_of_vars_eq_nil {L : ℕ} {ψ : CNF V} (hψ : ∀ v, v 
 
 /-- Fix `v` to `b`, recording `v` among the variables set to `true` when `b` is `true`. -/
 @[expose] def johnsonBranch (v : V) (b : Bool) (s : CNF V × List V) : CNF V × List V :=
-  (s.1.assign v b, if b then v :: s.2 else s.2)
+  (s.1.restrict v b, if b then v :: s.2 else s.2)
 
 /-- The final state of Johnson's algorithm: the variables of `φ` are fixed in order of first
 occurrence, each to the value giving the smaller weight. -/
@@ -325,11 +292,14 @@ theorem two_pow_mul_countUnsat_johnsonAssignment_le (φ : CNF V) :
     rintro r rs ⟨ψ, T⟩ b ⟨hnd, hcl, hvars, hT, hcount⟩
     obtain ⟨hr, hnd⟩ := List.nodup_cons.1 hnd
     refine ⟨hnd, fun c hc => ?_, fun w hw => ?_, fun w hw => ?_, fun σ hσ => ?_⟩
-    · obtain ⟨c₀, hc₀, -, rfl⟩ := CNF.mem_assign.1 hc
+    · obtain ⟨c₀, hc₀, -, rfl⟩ := CNF.mem_restrict.1 hc
       obtain ⟨hnd, hlen⟩ := hcl c₀ hc₀
       exact ⟨hnd.filter _, (List.length_filter_le _ _).trans hlen⟩
-    · obtain ⟨hw, hne⟩ := CNF.vars_assign hw
-      exact (List.mem_cons.1 (hvars w hw)).resolve_left hne
+    · obtain ⟨c, hc, b', hl⟩ := CNF.mem_vars.1 hw
+      have hne := CNF.fst_ne_of_mem_restrict hc hl
+      obtain ⟨c₀, hc₀, -, rfl⟩ := CNF.mem_restrict.1 hc
+      exact (List.mem_cons.1 (hvars w (CNF.mem_vars.2 ⟨c₀, hc₀, b', (List.mem_filter.1 hl).1⟩)))
+        |>.resolve_left hne
     · have hw : w = r ∨ w ∈ T := by
         cases b
         · exact .inr hw
@@ -347,12 +317,12 @@ theorem two_pow_mul_countUnsat_johnsonAssignment_le (φ : CNF V) :
         rw [List.mem_cons, not_or] at hv
         rw [hσ v hv.2]
         cases b <;> simp [johnsonBranch, hv.1]
-      rw [johnsonBranch, CNF.countUnsat_assign hrσ]
+      rw [johnsonBranch, CNF.countUnsat_restrict hrσ]
       exact hcount σ hσ'
   have havg : ∀ r rs s, Inv (r :: rs) s →
       (johnsonBranch r true s).1.johnsonWeight L + (johnsonBranch r false s).1.johnsonWeight L ≤
         s.1.johnsonWeight L + s.1.johnsonWeight L :=
-    fun r _ s hs => CNF.johnsonWeight_assign_add_le r hs.2.1
+    fun r _ s hs => CNF.johnsonWeight_restrict_add_le r hs.2.1
   have hinit : Inv φ.distinctVars (φ.eraseDupLits, []) := by
     refine ⟨φ.nodup_distinctVars, fun c hc => ?_, fun v hv => ?_, by simp, fun σ _ => by simp⟩
     · obtain ⟨c₀, hc₀, rfl⟩ := List.mem_map.1 hc
@@ -361,7 +331,7 @@ theorem two_pow_mul_countUnsat_johnsonAssignment_le (φ : CNF V) :
       obtain ⟨c, hc, rfl⟩ := List.mem_map.1 hc'
       exact CNF.mem_distinctVars.2 (CNF.mem_vars.2 ⟨c, hc, b, Clause.mem_eraseDupLits.1 hb⟩)
   obtain ⟨⟨-, -, hvars, -, hcount⟩, hle⟩ :=
-    greedy_spec johnsonBranch (fun s => s.1.johnsonWeight L) Inv hbranch havg _ _ hinit
+    greedy_spec_of_add_le johnsonBranch (fun s => s.1.johnsonWeight L) Inv hbranch havg _ _ hinit
   have hcount := hcount (johnsonAssignment φ) fun v _ => rfl
   rw [CNF.johnsonWeight_of_vars_eq_nil (fun v hv => by simpa using hvars v hv)
     (johnsonAssignment φ), hcount] at hle
@@ -470,15 +440,13 @@ theorem CNF.IsExactThreeDistinct.seven_div_eight_mul_le_johnsonAssignment {φ : 
     7 / 8 * (1 - φ.unsatVal) ≤ 1 - (φ.countUnsat (johnsonAssignment φ) : ℝ) / φ.length := by
   have h := one_sub_inv_two_pow_mul_le_johnsonAssignment (k := 3) fun _ hc =>
     (hφ.card_toFinset_eq hc).ge
-  norm_num at h
-  exact h
+  rwa [show (1 : ℝ) - 2⁻¹ ^ 3 = 7 / 8 by norm_num] at h
 
 /-- **The `1 / 2` approximation ratio** for MAX-SAT on formulas without empty clauses. -/
 theorem one_div_two_mul_le_johnsonAssignment {φ : CNF V} (hφ : ∀ c ∈ φ, c ≠ []) :
     1 / 2 * (1 - φ.unsatVal) ≤ 1 - (φ.countUnsat (johnsonAssignment φ) : ℝ) / φ.length := by
   have h := one_sub_inv_two_pow_mul_le_johnsonAssignment (k := 1) fun c hc =>
     Finset.one_le_card.2 ⟨_, List.mem_toFinset.2 (List.head_mem (hφ c hc))⟩
-  norm_num at h
-  exact h
+  rwa [show (1 : ℝ) - 2⁻¹ ^ 1 = 1 / 2 by norm_num] at h
 
 end Cslib.Logic.PL

@@ -27,9 +27,10 @@ larger conditional expectation, therefore ends at a point where `f` is at least 
 [Williamson and Shmoys, Section 5.2][WilliamsonShmoys2011].
 
 This is the exact form of the method, the instance of `Cslib.PessimisticEstimator.greedy` in
-which the estimate is the conditional expectation itself. Clients for which the conditional
-expectation is expensive use a pessimistic estimator with `Cslib.PessimisticEstimator.greedy_spec`
-directly, as Johnson's algorithm does in `Complexity.Logics.Propositional.CNF.Johnson`.
+which the estimate is the conditional expectation itself
+(`Cslib.PessimisticEstimator.greedy_spec_of_add_le`). Clients for which the conditional
+expectation is expensive use a pessimistic estimator instead, as Johnson's algorithm does in
+`Complexity.Logics.Propositional.CNF.Johnson`.
 
 ## Main definitions
 
@@ -107,7 +108,7 @@ theorem expect_le_greedy_fixCoord (f : (ι → Bool) → ℝ) (coords : List ι)
     simp only [Φ, fixCoord]
     linarith
   have hinit : Inv coords (x, fun _ => false) := ⟨hnd, fun i => by simp [hcov i]⟩
-  obtain ⟨⟨-, hend⟩, hle⟩ := greedy_spec fixCoord Φ Inv hbranch havg coords _ hinit
+  obtain ⟨⟨-, hend⟩, hle⟩ := greedy_spec_of_add_le fixCoord Φ Inv hbranch havg coords _ hinit
   set e := greedy fixCoord Φ coords (x, fun _ => false)
   have hsel : e.2 = fun _ => true := funext fun i => by simp [hend i]
   have h0 : Φ (x, fun _ => false) = -𝔼 y, f y := by
