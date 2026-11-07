@@ -41,6 +41,12 @@ Assign review by the unanswered question. One non-authoring reviewer may cover c
 
 The [semantic-withdrawal cases](../development-history/case-studies.md) explain why hypotheses, adversary power and realizability need attention after successful Lean checking. They are historical diagnoses, not asserted defects in the reviewed snapshot. The circuit-synthesis case illustrates a concrete API review question: does simplifying construction preserve wire sharing and charge the actual gates?
 
+## Queue approved work and keep its approval
+
+A reviewer with write access who approves a PR queues the approved head in the same step, with `python3 scripts/queue_pr.py <PR> <approved head>`. The script refuses any other head, a draft, a stacked PR still based on another branch, a conflict and failed checks. The reviewer does not queue when human review has been requested in the PR or its issue, or when the approval names a hold; [Approve and queue](../../AGENTS.md#approve-and-queue) gives the rule.
+
+Merge `main` into an approved PR only when it conflicts, needs a change on `main` to pass CI, or a lower stacked PR has landed; the merge queue already tests each PR on top of the current `main`. After such a restack, `python3 scripts/check_restack.py <approved head> <new head>` compares the PR's own added and removed lines at both heads. When it reports them identical and CI passes, post its result and queue the new head without another review; otherwise review the lines it lists. See [Restacks](../../AGENTS.md#restacks).
+
 ## Record evidence at the level of the claim
 
 | Outcome | Evidence to retain |

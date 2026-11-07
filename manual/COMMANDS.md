@@ -16,6 +16,8 @@ which evidence is required. A zero exit status means that command's stated scope
 | Check the manual checker | `python3 scripts/test_operator_manual.py` | Runs isolated positive and negative controls; failure identifies a checker regression |
 | Generate an editable book | `python3 scripts/build_operator_manual.py` | Writes LaTeX/PDF under ignored `manual/_build/`; inspect changed pages before distributing |
 | See isolated worktrees | `scripts/worktree.sh list` | Lists registered work; inspect ownership before takeover or removal |
+| Queue an approved PR | `python3 scripts/queue_pr.py <PR> <approved head>` | Queues exactly that head once its required check passes; a refusal names the precondition to fix |
+| Check a restacked PR | `python3 scripts/check_restack.py <approved head> <new head>` | Exit 0: the PR's own lines are unchanged and the approval carries; exit 1: review the listed lines |
 
 The full validation sequence is maintained in [AGENTS.md](../AGENTS.md#validation-sequence),
 and cache behavior in [the cache guide](../scripts/cache/README.md). Commands above call
