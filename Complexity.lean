@@ -1475,6 +1475,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Tru
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.EXP.Padding
+public import Complexity.Computability.Complexity.Classes.FPRAS
 public import Complexity.Computability.Complexity.Classes.FewP
 public import Complexity.Computability.Complexity.Classes.FewP.Machine
 public import Complexity.Computability.Complexity.Classes.FunctionTime
@@ -1925,6 +1926,9 @@ public import Complexity.Computability.Complexity.Problems.STCON
 public import Complexity.Computability.Complexity.Problems.STCON.Completeness
 public import Complexity.Computability.Complexity.Problems.STCON.Reduction
 public import Complexity.Computability.Complexity.Problems.STCON.Search
+public import Complexity.Computability.Complexity.Problems.SharpDNF
+public import Complexity.Computability.Complexity.Problems.SharpDNF.KarpLubyMadras
+public import Complexity.Computability.Complexity.Problems.SharpDNF.KarpLubyMadras.PolyTime
 public import Complexity.Computability.Complexity.Problems.SharpSAT
 public import Complexity.Computability.Complexity.Problems.SharpThreeSAT
 public import Complexity.Computability.Complexity.Problems.SubsetSum
@@ -4608,6 +4612,7 @@ public import Complexity.Logics.Propositional.CuttingPlanes.Pigeonhole
 public import Complexity.Logics.Propositional.CuttingPlanes.Resolution
 public import Complexity.Logics.Propositional.CuttingPlanes.Separation
 public import Complexity.Logics.Propositional.DNF
+public import Complexity.Logics.Propositional.DNF.ModelCount
 public import Complexity.Logics.Propositional.Parity
 public import Complexity.Logics.Propositional.Parity.DepthThree
 public import Complexity.Logics.Propositional.Pigeonhole
