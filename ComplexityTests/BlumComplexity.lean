@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.BlumComplexity.Fuel
 import Complexity.Computability.BlumComplexity.Gap
+import Complexity.Computability.BlumComplexity.Hierarchy
 import Complexity.Computability.BlumComplexity.RecursiveRelatedness
 import Complexity.Computability.BlumComplexity.Speedup
 
@@ -22,6 +23,9 @@ itself and, with its explicit threshold, against a second measure (fuel plus inp
 speedup theorem is instantiated for the fuel measure with exponential speedup `r m = 2 ^ m`. The
 resulting function has a program, so the universally quantified conclusion is not vacuous. It
 is also hard: it lies outside the class of the bound `n + 1`. The speedup can be applied twice.
+The arbitrarily complex function for the bound `2 ^ n` has a program, every program for it needs
+fuel above `2 ^ n` almost everywhere, and the fuel class of `2 ^ n` is strictly contained in the
+fuel class of a larger computable bound.
 -/
 
 namespace ComplexityTests.BlumComplexity
@@ -177,5 +181,22 @@ example {r : ℕ → ℕ → ℕ} (hr : Computable₂ r) : ∃ f : ℕ → ℕ, 
   refine ⟨c', c'', hc', hc'', ?_⟩
   filter_upwards [hev', hev''] with n h' h'' m hm m' hm' m'' hm''
   exact ⟨h'' m'' hm'' m' hm', h' m' hm' m hm⟩
+
+/-- An arbitrarily complex function for the fuel measure and the bound `2 ^ n`. It has a program,
+so the universally quantified lower bound is not vacuous. -/
+example : ∃ f : ℕ → ℕ, Computable f ∧ (∀ n, f n ≤ 1) ∧ (∃ c : Code, ∀ n, f n ∈ c.eval n) ∧
+    ∀ c : Code, (∀ n, f n ∈ c.eval n) → ∀ᶠ n in atTop, ∀ m ∈ evalnFuel c n, 2 ^ n < m := by
+  obtain ⟨f, hf, hf1, hc⟩ := fuelMeasure.exists_complex (t := fun n => 2 ^ n)
+    (primrec_pow.comp (Primrec.const 2) Primrec.id).to_comp
+  obtain ⟨c, hcf⟩ := Code.exists_code.1 (Partrec.nat_iff.1 hf)
+  refine ⟨f, hf, hf1, ⟨c, fun n => by rw [hcf]; exact Part.mem_some _⟩, fun c hc' => ?_⟩
+  simpa only [fuelMeasure_cost] using hc c hc'
+
+/-- The fuel class of `2 ^ n` is strictly contained in the fuel class of a larger computable
+bound. -/
+example : ∃ t' : ℕ → ℕ, Computable t' ∧ (∀ n, 2 ^ n ≤ t' n) ∧
+    fuelMeasure.complexityClass (fun n => 2 ^ n) ⊂ fuelMeasure.complexityClass t' :=
+  fuelMeasure.exists_complexityClass_ssubset
+    (primrec_pow.comp (Primrec.const 2) Primrec.id).to_comp
 
 end ComplexityTests.BlumComplexity
