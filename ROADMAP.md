@@ -749,6 +749,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
   construction costs certified
   separately from gate counts.
+- **The matrix multiplication exponent** (ω ≤ 9/4): Pass's constructive proof
+  (arXiv:2610.28627v2) of OpenAI's bound is formalized over every field of characteristic zero:
+  for every `τ > 9/4` an exact bilinear algorithm for some `v × v` multiplication with fewer than
+  `v ^ τ` multiplications (`Foundations/LinearAlgebra/Tensor/Round.lean`), hence circuits of size
+  `O(n ^ τ)` by block recursion and `omega K ≤ 9/4`
+  (`Circuit/Arithmetic/MatrixMultiplication/NineQuarters.lean`). The tensor framework
+  (`Foundations/LinearAlgebra/Tensor/`: restrictions, degenerations over `K[ε]`, Bini's
+  conversion, rank) is general. Open: every field (the interpolation nodes are the integers of
+  characteristic zero), the rectangular and dual exponents, explicit sizes and constants (the
+  algorithm is galactic), and the lower bound `omega K ≥ 2` only as the trivial output count.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).

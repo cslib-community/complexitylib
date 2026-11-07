@@ -771,6 +771,8 @@ public import Complexity.Computability.Circuit.Arithmetic.Formula
 public import Complexity.Computability.Circuit.Arithmetic.GeneralLowerBound
 public import Complexity.Computability.Circuit.Arithmetic.Hessian
 public import Complexity.Computability.Circuit.Arithmetic.Hessian.SourceComplexity
+public import Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.Exponent
+public import Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 public import Complexity.Computability.Circuit.Arithmetic.Pairing
 public import Complexity.Computability.Circuit.Arithmetic.Permanent
 public import Complexity.Computability.Circuit.Arithmetic.Permanent.BooleanSum
@@ -4040,6 +4042,13 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Transvection
 public import Complexity.Foundations.LinearAlgebra.PivotSpace
 public import Complexity.Foundations.LinearAlgebra.Rank
 public import Complexity.Foundations.LinearAlgebra.ReplacementDesign
+public import Complexity.Foundations.LinearAlgebra.Tensor.Amplify
+public import Complexity.Foundations.LinearAlgebra.Tensor.Basic
+public import Complexity.Foundations.LinearAlgebra.Tensor.Degeneration
+public import Complexity.Foundations.LinearAlgebra.Tensor.Polynomial
+public import Complexity.Foundations.LinearAlgebra.Tensor.Primal
+public import Complexity.Foundations.LinearAlgebra.Tensor.Round
+public import Complexity.Foundations.LinearAlgebra.Tensor.Separate
 public import Complexity.Foundations.LinearAlgebra.VariableCopyPlacement
 public import Complexity.Foundations.Logic.Function.Iterate
 public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Order
