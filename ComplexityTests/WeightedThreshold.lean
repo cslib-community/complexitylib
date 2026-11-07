@@ -166,13 +166,13 @@ example : ∃ x y : Fin 1 → Bool,
     exact Bool.false_ne_true (congrFun h 0)
 
 -- Exact depth-two weighted threshold circuit for Andreev's function at `b = 2, m = 2` (`8` bits):
--- 80 bottom gates, 81 total gates, depth at most 2, and mixed truth-table evaluation where
+-- 48 bottom gates, 49 total gates, depth at most 2, and mixed truth-table evaluation where
 -- changing block parities changes the selected truth-table entry.
 example :
     (andreevCircuit 2 2).Computes interpretation (single (Boolean.andreev 2 2)) ∧
-    (andreevCircuit 2 2).size = 81 ∧
+    (andreevCircuit 2 2).size = 49 ∧
     (andreevCircuit 2 2).depth ≤ 2 ∧
-    (andreevCircuit 2 2).wireCount ≤ 720 ∧
+    (andreevCircuit 2 2).wireCount ≤ 432 ∧
     (andreevCircuit 2 2).eval interpretation
       (fun i => decide (i = 1 ∨ i = 2 ∨ i = 4)) 0 = true ∧
     (andreevCircuit 2 2).eval interpretation

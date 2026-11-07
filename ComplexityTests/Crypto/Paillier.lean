@@ -5,6 +5,7 @@ Authors: Karn Seth
 -/
 
 import Complexity.Crypto.Computational.Paillier
+import Complexity.Crypto.Computational.Paillier.Security
 import Mathlib.Tactic.NormNum.Prime
 
 /-!
@@ -14,7 +15,8 @@ The arithmetic of [KatzLindell2020], Example 15.12 (`N = 187 = 11 * 17`, `m = 17
 checked by evaluation. The factor pair `(11, 13)` is a valid description of a balanced modulus,
 and the premises of the efficiency, correctness and homomorphism theorems are satisfiable: the
 constant modulus generator for `N = 143` is uniform strict PPT, and its key pair is in the support
-of key generation.
+of key generation. For the IND-CPA reduction, the admissibility predicate is checked by evaluation,
+and the reduction distinguisher and the security theorem are applied to a concrete adversary.
 -/
 
 namespace ComplexityTests.Crypto.Paillier
@@ -81,7 +83,6 @@ theorem mem_support_keyGen_constGen (n : ℕ) :
     PMF.support_pure, Set.mem_singleton_iff]
   rfl
 
-private theorem ofBits_encNat_143 : ofBits (encNat 143) = 143 := Nat.foldr_bit_bits 143
 
 /-- Every encryption of `42` under `N = 143` decrypts to `42`. -/
 example (n : ℕ) {ct : List Bool}
@@ -89,7 +90,7 @@ example (n : ℕ) {ct : List Bool}
     decrypt (encPair encNat encNat (143, 120)) ct = encNat 42 :=
   decrypt_encrypt (gen := constGen) (keys := (encNat 143, encPair encNat encNat (143, 120)))
     (mem_support_keyGen_constGen n)
-    (show 42 < ofBits (encNat 143) by rw [ofBits_encNat_143]; norm_num) hct
+    (show 42 < ofBits (encNat 143) by rw [ofBits_encNat]; norm_num) hct
 
 /-- Combining encryptions of `100` and `50` under `N = 143` gives a ciphertext that decrypts to
 `7`. -/
@@ -102,7 +103,7 @@ example (n : ℕ) {ct₁ ct₂ : List Bool}
     (keys := (encNat 143, encPair encNat encNat (143, 120))) (mem_support_keyGen_constGen n)
     hct₁ hct₂
   dsimp only at h
-  rw [ofBits_encNat_143] at h
+  rw [ofBits_encNat] at h
   exact h.trans (by norm_num)
 
 /-! ### Decisional composite residuosity assumption client -/
@@ -119,6 +120,44 @@ example (setup : ℕ → PMF Desc) (h : DCR setup) :
     Negligible (fun n => Game.advantage (dcrRealGame setup (fun _ _ => pure true) n)
       (dcrIdealGame setup (fun _ _ => pure true) n)) :=
   h (fun _ _ => pure true) isPPTOn_constDistinguisher
+
+/-! ### IND-CPA security under decisional composite residuosity -/
+
+/-- Both challenge messages must be below the modulus. -/
+example : validMessages 0 (encNat 143) 5 142 = true := by
+  rw [validMessages, ofBits_encNat]
+  decide
+
+example : validMessages 0 (encNat 143) 5 143 = false := by
+  rw [validMessages, ofBits_encNat]
+  decide
+
+/-- The adversary that challenges with `0` and `1` and always guesses `true`. -/
+noncomputable def constAdversary : Encryption.AdversaryOf ℕ where
+  choose _ _ := pure ((0, 1), [])
+  guess _ _ _ := pure true
+
+theorem constAdversary_isPPT : constAdversary.IsPPT encNat where
+  choose := (ComputableInPolyTime.const _).isPPTOn
+  guess := (ComputableInPolyTime.const true).isPPTOn
+
+/-- The reduction distinguisher built from a concrete adversary is uniform strict PPT. -/
+example (bit : Bool) :
+    IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool
+      (fun input => dcrDistinguisher constAdversary bit input.1 input.2) :=
+  isPPTOn_dcrDistinguisher constAdversary_isPPT bit
+
+/-- Under DCR, for a generator whose primes have at least `n` bits, the concrete adversary has
+negligible IND-CPA advantage. -/
+example {gen : ℕ → ProbComp Desc}
+    (hsize : ∀ n, ∀ d ∈ (ProbComp.eval (gen n)).support, n ≤ d.p.size ∧ n ≤ d.q.size)
+    (hDCR : DCR fun n => ProbComp.eval (gen n)) :
+    Negligible fun n => Game.advantage
+      (ProbComp.eval
+        (Encryption.gameOn validMessages (keyGen gen) encrypt constAdversary false n))
+      (ProbComp.eval
+        (Encryption.gameOn validMessages (keyGen gen) encrypt constAdversary true n)) :=
+  DCR.indcpaOn_paillier hsize hDCR constAdversary constAdversary_isPPT
 
 /-! ### Axiom guards for headline results -/
 

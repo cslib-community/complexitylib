@@ -34,13 +34,13 @@ example (b m : ℕ) :
   rfl
 
 /-- At `b = 2, m = 2` (`n = 8` bits), `exact_upper_bound` gives a depth-two weighted threshold
-circuit of `81` gates (`80` bottom gates and `1` top gate) and at most `720` active wires computing
+circuit of `49` gates (`48` bottom gates and `1` top gate) and at most `432` active wires computing
 `andreev 2 2` on all `256` inputs. -/
 example :
     ∃ c : ThrCircuit 8,
       c.depth ≤ 2 ∧
-      c.size = 81 ∧
-      ComplexityAbstracts.AndreevThresholdAbstract.wireCount c ≤ 720 ∧
+      c.size = 49 ∧
+      ComplexityAbstracts.AndreevThresholdAbstract.wireCount c ≤ 432 ∧
       (∀ x, evaluate c x = ComplexityAbstracts.AndreevThresholdAbstract.andreev 2 2 x) :=
   exact_upper_bound 2 2
 

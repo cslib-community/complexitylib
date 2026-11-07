@@ -56,13 +56,13 @@ def andreev (b m : ℕ) (x : Fin (2 ^ b + b * m) → Bool) : Bool :=
   tableInput x (tableIndex b fun j => parity m (blockInput x j))
 
 /-- **Exact quadratic upper bound.** For all `b, m`, Andreev's function on `n = 2^b + b*m` bits is
-computed by a depth-two weighted threshold circuit with `4 * 4^b + b * m * 2^b + 1` gates
-(`4 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
+computed by a depth-two weighted threshold circuit with `2 * 4^b + b * m * 2^b + 1` gates
+(`2 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
 theorem exact_upper_bound (b m : ℕ) :
     ∃ c : ThrCircuit (2 ^ b + b * m),
       c.depth ≤ 2 ∧
-      c.size = 4 * 4 ^ b + b * m * 2 ^ b + 1 ∧
-      wireCount c ≤ (4 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
+      c.size = 2 * 4 ^ b + b * m * 2 ^ b + 1 ∧
+      wireCount c ≤ (2 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
       (∀ x, evaluate c x = andreev b m x) :=
   ⟨Cslib.Circuits.Boolean.WeightedThreshold.andreevCircuit b m,
     Cslib.Circuits.Boolean.WeightedThreshold.depth_andreevCircuit_le b m,

@@ -35,7 +35,8 @@ The actual total mass in the second term is necessary for arbitrary finite measu
 
 For common weights use `tvDist_nnreal_smul`; for a fixed component with changed weights use
 `tvDist_nnreal_smul_same`. The latter is an equality, including zero weights and the zero
-measure. `tvDist_finsetSum_le` handles finite sums directly. All statements keep the full-L1
+measure. `tvDist_add_le` (and `etvDist_add_le`) and `tvDist_finsetSum_le` handle binary and
+finite sums directly. All statements keep the full-L1
 convention: distinct probability atoms have distance two.
 
 The [checked clients](../../ComplexityTests/TotalVariationMixture.lean) include sharp unequal-mass
@@ -262,9 +263,10 @@ canonical map to the quotient by `L.toAddSubgroup`, and an actual fundamental do
   `ProbabilityTheory.isProbabilityMeasure_gaussianWeight s hs`.
 - The uniform reference is `(ENNReal.ofReal (ZLattice.covolume L))⁻¹ •
   Measure.map q (volume.restrict F)`.
-  `ZLattice.isProbabilityMeasure_normalized_quotient L volume hF` proves it is a probability;
-  `normalized_quotient_eq` and `isAddLeftInvariant_normalized_quotient` prove independence
-  from the fundamental domain and translation invariance.
+  `ZLattice.measure_eq_ofReal_covolume_of_op L volume hF` identifies `volume F` with the
+  covolume; `ZLattice.isProbabilityMeasure_normalized_quotient L volume hF`,
+  `normalized_quotient_eq` and `isAddLeftInvariant_normalized_quotient` prove probability
+  normalization, independence from the chosen fundamental domain, and translation invariance.
 
 `ZLattice.map_gaussianWeight_eq_withDensity L s hs hF` identifies the actual Gaussian
 pushforward's density relative to this reference. At `q x`, the real density is
@@ -366,10 +368,12 @@ by `4ε`, for `0 ≤ ε < 1/2`, when the actual nonzero dual mass at reciprocal 
 `√(1/r² + (‖z‖/α)²)` is at most `ε`. The `_of_gap` theorem discharges that mass bound
 from a positive dual gap `a` and
 `2^dim * exp(-3π h² a²/4) ≤ ε/(1+ε)`, where
-`h = 1/√(1/r² + (‖z‖/α)²)` and `ε > 0`. Projection at `z = 0` is exactly the scalar
-noise law, without a smoothing premise; dimension zero is included.
+`h = 1/√(1/r² + (‖z‖/α)²)` and `ε > 0`. Both theorems cover every `z`, including `z = 0`
+and dimension zero, under their stated premise; at `z = 0` itself, `simp` reduces the
+convolution directly to the scalar noise law with no smoothing condition.
 
-Use `tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_gap` for the same bound
+Use `tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_dual_mass_le` or
+`tvDist_map_mod_one_conv_map_inner_discreteGaussian_le_of_gap` for the same bound
 after mapping both measures by the canonical `ℝ → UnitAddCircle` coercion. This compares
 actual probability measures, with no density-series assumption.
 The [checked clients](../../ComplexityTests/DiscreteGaussianProjection.lean) use `2ℤ`,
@@ -1296,6 +1300,41 @@ preservation. Run `scripts/build.sh ComplexityTests.GaussianNoiseOperator` from 
 root to check them.
 
 Additivity, `gaussianNoiseOp_add`, holds only `γ`-almost everywhere, because the Bochner integral
-is `0` off the integrable functions; scaling by a constant holds everywhere. General multilinear
-polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and Hermite expansions are not part of this
-module.
+is `0` off the integrable functions; scaling by a constant holds everywhere. For multilinear
+polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and continuity at `ρ = 1`, see
+[Compose Gaussian noise operators](#compose-gaussian-noise-operators). Hermite expansions are not
+part of this module.
+
+## Compose Gaussian noise operators
+
+Multilinear polynomials stay in
+[`Complexity.Foundations.Probability.Gaussian.NoiseOperator`](../../Complexity/Foundations/Probability/Gaussian/NoiseOperator.lean),
+and the semigroup law and continuity live in
+[`Complexity.Foundations.Probability.Gaussian.NoiseSemigroup`](../../Complexity/Foundations/Probability/Gaussian/NoiseSemigroup.lean).
+Open the `ProbabilityTheory` namespace, and write `γ` for
+`Measure.pi fun _ : ι => gaussianReal 0 1` as before.
+
+- `gaussianNoiseOp_prod ρ S z` evaluates a monomial pointwise:
+  `U_ρ (∏ i ∈ S, x i) z = ρ ^ #S * ∏ i ∈ S, z i`, for every `ρ` and with no integrability
+  hypothesis. `gaussianNoiseOp_sum_mul_prod` does the same for a finite sum
+  `∑ k ∈ s, c k * ∏ i ∈ S k, x i`, which is O'Donnell's `U_ρ f (z) = f (ρ z)` (Fact 11.13).
+- `gaussianNoiseOp_gaussianNoiseOp hρ₁ hρ₂ hf` is the semigroup law
+  `U_ρ₁ (U_ρ₂ f) =ᵐ[γ] U_{ρ₁ ρ₂} f` for `|ρ₁|, |ρ₂| ≤ 1` and integrable `f` (Exercise 11.4). It is
+  an almost-everywhere identity, so rewrite inside integrals or norms with `integral_congr_ae` or
+  `eLpNorm_congr_ae`, not pointwise.
+- `tendsto_eLpNorm_gaussianNoiseOp_sub hf` gives `‖U_ρ f - f‖₁ → 0` as `ρ → 1⁻` along
+  `𝓝[<] 1`, for integrable `f` (Proposition 11.17).
+
+The supporting finset-product integrals over product probability measures,
+`MeasureTheory.Integrable.finset_prod_pi` and `MeasureTheory.integral_finset_prod_pi_eq_prod`,
+are in
+[`Complexity.Foundations.MeasureTheory.Integral.Pi`](../../Complexity/Foundations/MeasureTheory/Integral/Pi.lean).
+
+The checked [`GaussianNoiseSemigroup.lean` clients](../../ComplexityTests/GaussianNoiseSemigroup.lean)
+compute `U_{1/2} U_{1/2} (x₀ x₁)` both through the semigroup law and through Fact 11.13 twice,
+check the boundary cases `ρ₂ = 0` and `ρ₁ = -1`, and apply continuity to a coordinate and to a
+discontinuous halfspace indicator. Run `scripts/build.sh ComplexityTests.GaussianNoiseSemigroup`
+from the repository root to check them; the monomial clients are in
+`ComplexityTests.GaussianNoiseOperator`.
+
+Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.

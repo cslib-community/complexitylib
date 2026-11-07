@@ -21,13 +21,14 @@ Andreev's function on a `1 / 2 + ε` fraction of inputs.
 
 This development formalizes four improvements over the bounds of Kane and Williams:
 
-**Exact quadratic upper bound (`exact_upper_bound`).** By polarizing each Fourier parity term
-`2 (-1)^(2^b) X_S (-1)^(t_S) = φ(X_S + t_S) + φ(X_S - t_S)` (where `(-1)^(2^b) = 1` for `b > 0`)
-via the alternating linear function `φ(u) = (-1)^u u` and telescoping `φ` into threshold indicators
-over its exact integer range, Andreev's function is computed exactly by a depth-two threshold
-circuit with `4 * 4 ^ b + b * m * 2 ^ b` bottom gates and one top gate (`(5 / 4) n ^ 2 + 1` gates at
-`2 ^ b = b * m`), bottom weights in `{-2, -1, 0, 1, 2}`, and odd integer top weights of absolute
-value below `2 n`.
+**Exact quadratic upper bound (`exact_upper_bound`).** With the alternating linear function
+`φ(u) = (-1)^u u`, each Fourier parity term satisfies the shift identity
+`X_S (-1)^(t_S) = (-1)^(2^b) φ(X_S + t_S) - φ(t_S)` (where `(-1)^(2^b) = 1` for `b > 0`, so
+`X_S` is even). Telescoping `φ(X_S + t_S)` over its range `[-2 ^ b, 2 ^ b + #S m]` and `φ(t_S)`
+over `[0, #S m]` into threshold indicators, Andreev's function is computed exactly by a depth-two
+threshold circuit with `2 * 4 ^ b + b * m * 2 ^ b` bottom gates and one top gate
+(`(3 / 4) n ^ 2 + 1` gates at `2 ^ b = b * m`), bottom weights in `{-2, -1, 0, 1, 2}`, and odd
+integer top weights of absolute value below `2 n`.
 
 **Windowed high-agreement upper bound (`high_agreement_upper_bound`).** Truncating each unary
 threshold ladder to a window of half-width `B ≥ 3 t + 1 / 2` around its expected center reduces
@@ -137,13 +138,13 @@ def andreev (b m : ℕ) (x : Fin (2 ^ b + b * m) → Bool) : Bool :=
   tableInput x (tableIndex b fun j => parity m (blockInput x j))
 
 /-- **Exact quadratic upper bound.** For all `b, m`, Andreev's function on `n = 2^b + b*m` bits is
-computed by a depth-two weighted threshold circuit with `4 * 4^b + b * m * 2^b + 1` gates
-(`4 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
+computed by a depth-two weighted threshold circuit with `2 * 4^b + b * m * 2^b + 1` gates
+(`2 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
 theorem exact_upper_bound (b m : ℕ) :
     ∃ c : ThrCircuit (2 ^ b + b * m),
       c.depth ≤ 2 ∧
-      c.size = 4 * 4 ^ b + b * m * 2 ^ b + 1 ∧
-      wireCount c ≤ (4 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
+      c.size = 2 * 4 ^ b + b * m * 2 ^ b + 1 ∧
+      wireCount c ≤ (2 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
       (∀ x, evaluate c x = andreev b m x) :=
   AndreevThresholdBridge.exact_upper_bound b m
 

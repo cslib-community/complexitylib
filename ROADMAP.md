@@ -170,7 +170,7 @@ transporting key-generation error, and realizing the efficient forking reduction
   dual-gap width criterion, are proved in
   [#2707](https://github.com/cslib-community/complexitylib/issues/2707). The actual scalar and
   canonical mod-one pushforward bounds of Corollary 3.10, including a discharged dual-gap
-  criterion and the exact zero-projection case, are proved in
+  criterion (covering `z = 0` under the same dual-mass or gap premise), are proved in
   [#2734](https://github.com/cslib-community/complexitylib/issues/2734). An attained minimum
   smoothing parameter, the periodic-density series, arbitrary-modulus search-LWE sampling
   experiment, efficient finite-precision sampling and quantum reduction remain open in
@@ -496,15 +496,17 @@ index links to canonical definitions rather than keeping a second set.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): the native implicit
-  Tree Evaluation/block-tree evaluator, complete HPV driver and final
+  Tree Evaluation/block-tree evaluator, complete Hopcroft–Paul–Valiant block-simulation driver
+  and final
   [`DTIME_subset_DSPACE_sqrt`](Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean)
   inclusion have landed, together with the [checked registry entry](ComplexityResults/Entries.lean)
   ([#2142](https://github.com/cslib-community/complexitylib/pull/2142),
   [#2143](https://github.com/cslib-community/complexitylib/pull/2143)). The inclusion covers
   arbitrary injective input encodings and every `t(n) ≥ n`, without time constructibility;
   its fixed driver scans the original input, searches schedules and increases balanced time
-  guesses. M4's separation corollaries and curated abstract with independent review remain
-  open in [#888]; landing the inclusion and registry does not complete that broader scope.
+  guesses. The paper's time–space separation corollaries (including for linear space) and a
+  curated headline abstract with independent review remain open in [#888]; landing the inclusion
+  and registry does not complete that broader scope.
   For Cook–Mertz itself: malformed-input handling and the refined
   `O(ℓ + H log(ℓ + 2))` parameter bound remain open.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
@@ -710,7 +712,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Weighted threshold representations:** v1's explicit source-reduction family, universal scalar
   circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
 - **Depth-two threshold circuits for Andreev's function** ([#2347]): the exact quadratic
-  `4 * 4 ^ b + b * m * 2 ^ b + 1` depth-two weighted threshold upper bound
+  `2 * 4 ^ b + b * m * 2 ^ b + 1` depth-two weighted threshold upper bound
   (`WeightedThreshold/Andreev.lean`), the windowed average-case `(1 - δ)`-agreement and
   `(1 / 2 + ε)`-correlation depth-two upper bounds (`WeightedThreshold/AndreevWindowed.lean` and
   `WeightedThreshold/AndreevAverage.lean`), Erdős–Littlewood–Offord anti-concentration
@@ -745,10 +747,24 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   fields of characteristic other than two (membership now has an explicit Ryser witness over
   every commutative ring; VNP-hardness remains open); formula and branching-program models,
   identity testing, hitting sets, and tensor and rank methods, including partial-derivative
-  measures (Nisan–Wigderson depth-3 bounds and shifted partials) and the depth-reduction chasms at
+  measures (the order-`k` measure and bounded-product-fan-in depth-three determinant and permanent
+  lower bounds, covering homogeneous depth-three circuits, are proved in
+  [`Arithmetic/DepthThree`](Complexity/Computability/Circuit/Arithmetic/DepthThree.lean);
+  Nisan–Wigderson's all-orders measure, their elementary symmetric polynomial and iterated matrix
+  multiplication bounds, and shifted partial derivatives remain open) and the depth-reduction chasms at
   depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
   construction costs certified
   separately from gate counts.
+- **The matrix multiplication exponent** (ω ≤ 9/4): Pass's constructive proof
+  (arXiv:2610.28627v2) of OpenAI's bound is formalized over every field of characteristic zero:
+  for every `τ > 9/4` an exact bilinear algorithm for some `v × v` multiplication with fewer than
+  `v ^ τ` multiplications (`Foundations/LinearAlgebra/Tensor/Round.lean`), hence circuits of size
+  `O(n ^ τ)` by block recursion and `omega K ≤ 9/4`
+  (`Circuit/Arithmetic/MatrixMultiplication/NineQuarters.lean`). The tensor framework
+  (`Foundations/LinearAlgebra/Tensor/`: restrictions, degenerations over `K[ε]`, Bini's
+  conversion, rank) is general. Open: every field (the interpolation nodes are the integers of
+  characteristic zero), the rectangular and dual exponents, explicit sizes and constants (the
+  algorithm is galactic), and the lower bound `omega K ≥ 2` only as the trivial output count.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
