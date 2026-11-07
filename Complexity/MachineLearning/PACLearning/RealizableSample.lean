@@ -97,6 +97,7 @@ theorem isRealizableBy_map_graph [MeasurableEq β] (P : Measure α) {C : Concept
   rw [this, measure_empty]
 
 /-- No distribution is realizable by the empty class. -/
+@[simp]
 theorem realizableDistributions_empty : realizableDistributions (∅ : ConceptClass α β) = ∅ :=
   Set.eq_empty_of_forall_notMem fun _ ⟨_, hc, _⟩ => Set.notMem_empty _ hc
 

@@ -149,16 +149,23 @@ theorem IsConsistent.measure_pi_lt_error_le_of_log_card_add_log_inv_le {H : Fins
 [ShalevShwartzBenDavid2014, Corollary 2.3]: a finite class `H` is `(ε, δ)`-PAC learnable
 from `m` examples over the distributions realizable by `H` whenever
 `log |H| + log (1 / δ) ≤ ε m`. If `H` is nonempty the learner is any consistent learner, which
-exists by `exists_isConsistent`; if `H` is empty no distribution is realizable and any learner
-works, which is where `Nonempty (α → β)` is used. -/
-theorem isPACLearnerFor_realizableDistributions_of_log_card_add_log_inv_le [Nonempty (α → β)]
+exists by `exists_isConsistent`. If `H` is empty no distribution is realizable, and the
+hypothesis forces `m ≥ 1` because `log 0 = 0 < log (1 / δ)`; any learner that returns the label of
+its first example works. -/
+theorem isPACLearnerFor_realizableDistributions_of_log_card_add_log_inv_le
     {H : Finset (α → β)} (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2})
     {m : ℕ} {ε δ : Set.Ioo (0 : ℝ≥0) 1}
     (hm : Real.log H.card + Real.log (δ.val : ℝ)⁻¹ ≤ ε.val * m) :
     IsPACLearnerFor m ε δ (H : Set (α → β)) (realizableDistributions (H : Set (α → β))) := by
   rcases H.eq_empty_or_nonempty with rfl | hne
-  · simpa only [Finset.coe_empty] using
-      isPACLearnerFor_realizableDistributions_empty (fun _ => Classical.arbitrary _) ε δ
+  · have hδ : 0 < Real.log (δ.val : ℝ)⁻¹ :=
+      Real.log_pos ((one_lt_inv₀ (by exact_mod_cast δ.2.1)).2 (by exact_mod_cast δ.2.2))
+    have hm0 : 0 < m := Nat.pos_of_ne_zero fun h => by
+      subst h
+      simp only [Finset.card_empty, Nat.cast_zero, Real.log_zero, zero_add, mul_zero] at hm
+      linarith
+    simpa only [Finset.coe_empty] using
+      isPACLearnerFor_realizableDistributions_empty (fun S _ => (S ⟨0, hm0⟩).2) ε δ
   obtain ⟨A, hA⟩ := exists_isConsistent (m := m) (C := (H : Set (α → β))) (by exact_mod_cast hne)
   refine ⟨A, fun D _ hD => ?_⟩
   have h := hA.measure_pi_lt_error_le_of_log_card_add_log_inv_le hH hD ε.val.coe_nonneg
@@ -169,7 +176,7 @@ theorem isPACLearnerFor_realizableDistributions_of_log_card_add_log_inv_le [None
 
 /-- The realizable sample complexity of a finite class `H` is at most
 `⌈(log |H| + log (1 / δ)) / ε⌉` [ShalevShwartzBenDavid2014, Corollary 2.3]. -/
-theorem sampleComplexity_realizableDistributions_le_of_finite [Nonempty (α → β)]
+theorem sampleComplexity_realizableDistributions_le_of_finite
     {H : Finset (α → β)} (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2})
     (ε δ : Set.Ioo (0 : ℝ≥0) 1) :
     sampleComplexity IsPACLearnerFor (H : Set (α → β)) ε δ
