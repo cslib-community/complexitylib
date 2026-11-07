@@ -19,11 +19,11 @@ Let `G` be the confusability graph of a noisy channel with input alphabet `V`: t
 adjacent when the channel can map them to the same output. A zero-error code of block length `k`
 is an independent set of the strong power `G.strongPow k`, so `α(Gᵏ)^(1/k)` letters per symbol can
 be sent without error. The *Shannon capacity* (zero-error capacity) of `G` is
-`Θ(G) = sup_{k ≥ 1} α(Gᵏ)^(1/k)` [Shannon1956], [Lovasz1979].
+`Θ(G) = sup_{k ≥ 1} α(Gᵏ)^(1/k)` [Shannon1956].
 
 Since `α(Gᵐ⁺ⁿ) ≥ α(Gᵐ) α(Gⁿ)`, the sequence `1 / α(Gᵏ)` is submultiplicative and Fekete's lemma
 (Mathlib's `Submultiplicative.tendsto_lim`) shows that the supremum is also the limit
-(`SimpleGraph.tendsto_shannonCapacity`); Lovász takes the limit as the definition [Lovasz1979].
+(`SimpleGraph.tendsto_shannonCapacity`); accounts of the capacity use either form.
 We define `Θ(G)` as the supremum over `k + 1`, which gives the same value.
 
 ## Main definitions
@@ -36,6 +36,10 @@ We define `Θ(G)` as the supremum over `k + 1`, which gives the same value.
 * `SimpleGraph.shannonCapacity_le`: `Θ(G) ≤ t` when `α(Gᵏ) ≤ tᵏ` for every `k ≥ 1`.
 * `SimpleGraph.shannonCapacity_le_natCard`: `Θ(G) ≤ |V|`.
 * `SimpleGraph.tendsto_shannonCapacity`: `α(Gᵏ)^(1/k) → Θ(G)` (Fekete).
+
+## References
+
+* [C. E. Shannon, *The zero error capacity of a noisy channel*][Shannon1956]
 -/
 
 public section

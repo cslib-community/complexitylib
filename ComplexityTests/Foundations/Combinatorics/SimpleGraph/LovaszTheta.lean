@@ -46,6 +46,15 @@ example : ((cycleGraph 5).indepNum : ℝ) < (cycleGraph 5).shannonCapacity := by
   rw [indepNum_cycleGraph_five, shannonCapacity_cycleGraph_five, Real.lt_sqrt (by norm_num)]
   norm_num
 
+/-- The clique-cover form of the upper sandwich bound: three cliques cover `C₅`, so
+`ϑ(C₅) ≤ 3`. This is weaker than `ϑ(C₅) = √5`, as it should be. -/
+example : (cycleGraph 5).lovaszTheta ≤ 3 := by
+  have h := lovaszTheta_le_of_cliqueCover (G := cycleGraph 5) (S := {{0, 1}, {2, 3}, {4}})
+    (by decide) (by decide)
+  have hcard : ({{0, 1}, {2, 3}, {4}} : Finset (Finset (Fin 5))).card = 3 := by decide
+  rw [hcard] at h
+  exact_mod_cast h
+
 /-! ### Edge cases: empty, complete and edgeless graphs -/
 
 example : (⊥ : SimpleGraph (Fin 0)).lovaszTheta = 0 := lovaszTheta_eq_zero_of_isEmpty

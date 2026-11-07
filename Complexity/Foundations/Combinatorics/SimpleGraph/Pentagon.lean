@@ -25,12 +25,22 @@ make `⟪u i, u j⟫ = 1/√5 + r² cos (2π(i - j)/5)` vanish when `i - j ≡ �
 `ϑ(C₅) ≤ √5`. This is the three-dimensional construction of Knuth's notes for odd cycles with
 `n = 5` [Knuth1994, §22], up to the relabelling `i ↦ 3i` that maps `C₅` onto its complement.
 
+## Main definitions
+
+* `SimpleGraph.pentagonUmbrella`: Lovász's umbrella, an orthonormal representation of `C₅` in `ℝ³`.
+
 ## Main results
 
 * `SimpleGraph.shannonCapacity_cycleGraph_five`: `Θ(C₅) = √5`.
 * `SimpleGraph.tendsto_indepNum_strongPow_cycleGraph_five`: `α(C₅ᵏ)^(1/k) → √5`.
 * `SimpleGraph.lovaszTheta_cycleGraph_five`: `ϑ(C₅) = √5`.
 * `SimpleGraph.indepNum_cycleGraph_five`: `α(C₅) = 2`, so `α(C₅) < Θ(C₅)`.
+
+## References
+
+* [D. E. Knuth, *The sandwich theorem*][Knuth1994]
+* [L. Lovász, *On the Shannon capacity of a graph*][Lovasz1979]
+* [C. E. Shannon, *The zero error capacity of a noisy channel*][Shannon1956]
 -/
 
 public section

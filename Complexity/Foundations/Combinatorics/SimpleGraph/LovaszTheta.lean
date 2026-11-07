@@ -12,6 +12,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.ShannonCapacity
 public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.Analysis.InnerProductSpace.TensorProduct
 public import Mathlib.Combinatorics.SimpleGraph.Coloring.Vertex
+import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 
 /-!
 # The Lovász theta function
@@ -54,10 +55,16 @@ programming or the ellipsoid method [Knuth1994]; that algorithmic statement is n
 ## Main results
 
 * `SimpleGraph.indepNum_le_lovaszTheta`, `SimpleGraph.lovaszTheta_le_chromaticNumber_compl`: the
-  sandwich theorem.
+  sandwich theorem; `SimpleGraph.lovaszTheta_le_of_cliqueCover` states the upper half for a
+  cover by cliques, as in [Knuth1994, §4, (4.9)].
 * `SimpleGraph.lovaszTheta_strongProd_le`, `SimpleGraph.lovaszTheta_strongPow_le`:
   submultiplicativity.
 * `SimpleGraph.shannonCapacity_le_lovaszTheta`: Lovász's bound `Θ(G) ≤ ϑ(G)`.
+
+## References
+
+* [D. E. Knuth, *The sandwich theorem*][Knuth1994]
+* [L. Lovász, *On the Shannon capacity of a graph*][Lovasz1979]
 -/
 
 public section
@@ -219,6 +226,15 @@ theorem lovaszTheta_le_of_colorable_compl {k : ℕ} (hc : Gᶜ.Colorable k) : G.
 theorem lovaszTheta_le_chromaticNumber_compl [Finite V] :
     G.lovaszTheta ≤ (Gᶜ.chromaticNumber.toNat : ℝ) :=
   lovaszTheta_le_of_colorable_compl Gᶜ.colorable_chromaticNumber_of_fintype
+
+/-- **Sandwich theorem, upper half, clique-cover form**: if the vertices are covered by the cliques
+of `G` in `S`, then `ϑ(G) ≤ #S`. The colour classes of a colouring of `Gᶜ` are such cliques
+(`SimpleGraph.exists_cliqueCover_iff_colorable_compl`). -/
+theorem lovaszTheta_le_of_cliqueCover [Finite V] {S : Finset (Finset V)}
+    (hS : ∀ s ∈ S, G.IsClique (s : Set V)) (hcover : ∀ v, ∃ s ∈ S, v ∈ s) :
+    G.lovaszTheta ≤ S.card :=
+  lovaszTheta_le_of_colorable_compl
+    (exists_cliqueCover_iff_colorable_compl.1 ⟨S, le_rfl, hS, hcover⟩)
 
 theorem lovaszTheta_le_natCard [Finite V] : G.lovaszTheta ≤ Nat.card V := by
   have := Fintype.ofFinite V

@@ -5,11 +5,10 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/StrongProduct.lean`)
+-- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/Prod.lean`, see mathlib4#43170)
 
 public import Complexity.Init
-public import Mathlib.Combinatorics.SimpleGraph.Clique
-public import Mathlib.Combinatorics.SimpleGraph.Maps
+public import Complexity.Foundations.Combinatorics.SimpleGraph.IndepNum
 import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
@@ -22,18 +21,18 @@ zero-error model, `G` is the confusability graph of a channel, `G.strongPow k` i
 confusability graph of words of length `k`, and an independent set of `G.strongPow k` is a
 zero-error code of block length `k` [Shannon1956].
 
-The independence number is invariant under isomorphism and monotone under embeddings
-(`SimpleGraph.Iso.indepNum_eq`, `SimpleGraph.Embedding.indepNum_le`), and it is supermultiplicative
-under the strong product: a product of independent sets is independent
-(`SimpleGraph.indepNum_mul_le_indepNum_strongProd`). Since
-`G.strongPow (m + n) ≃g G.strongPow m ⊠ G.strongPow n` (`SimpleGraph.strongPowAddIso`), the
+The independence number is supermultiplicative under the strong product: a product of
+independent sets is independent (`SimpleGraph.indepNum_mul_le_indepNum_strongProd`). Since
+`G.strongPow (m + n) ≃g G.strongPow m ⊠ G.strongPow n` (`SimpleGraph.strongPowAddIso`) and the
+independence number is invariant under isomorphism (`SimpleGraph.Iso.indepNum_eq`), the
 independence numbers of the strong powers are supermultiplicative
 (`SimpleGraph.indepNum_strongPow_add`).
 
-The notation `⊠` is scoped to `SimpleGraph` because `CategoryTheory` uses the same symbol. The
-name and notation follow the open Mathlib pull request
+The notation `⊠` is scoped to `SimpleGraph` (use `open SimpleGraph`) because `CategoryTheory`
+uses the same symbol. The name and notation follow the open Mathlib pull request
 [mathlib4#43170](https://github.com/leanprover-community/mathlib4/pull/43170), which defines
-`G ⊠ H` as `G □ H ⊔ G ×g H`; here the adjacency is stated directly.
+`G ⊠ H` as `G □ H ⊔ G ×g H` in `Mathlib/Combinatorics/SimpleGraph/Prod.lean`; here the adjacency
+is stated directly.
 
 ## Main definitions
 
@@ -46,6 +45,10 @@ name and notation follow the open Mathlib pull request
 * `SimpleGraph.indepNum_mul_le_indepNum_strongProd`: `α(G) α(H) ≤ α(G ⊠ H)`.
 * `SimpleGraph.indepNum_strongPow_add`: `α(Gᵐ) α(Gⁿ) ≤ α(Gᵐ⁺ⁿ)`.
 * `SimpleGraph.indepNum_strongPow_le`: `α(Gᵏ) ≤ |V| ^ k`.
+
+## References
+
+* [C. E. Shannon, *The zero error capacity of a noisy channel*][Shannon1956]
 -/
 
 public section
@@ -137,36 +140,6 @@ def strongPowOneIso (G : SimpleGraph V) : G.strongPow 1 ≃g G :=
     rfl
 
 /-! ### The independence number -/
-
-/-- The independence number is monotone under graph embeddings. -/
-theorem Embedding.indepNum_le [Finite W] (f : G ↪g H) : G.indepNum ≤ H.indepNum := by
-  classical
-  obtain ⟨s, hs⟩ := G.exists_isNIndepSet_indepNum
-  have hind : H.IsIndepSet (s.map f.toEmbedding) := by
-    intro x hx y hy hxy
-    simp only [coe_map, Set.mem_image, mem_coe] at hx hy
-    obtain ⟨a, ha, rfl⟩ := hx
-    obtain ⟨b, hb, rfl⟩ := hy
-    rw [RelEmbedding.coe_toEmbedding, f.map_adj_iff]
-    exact hs.isIndepSet ha hb fun h => hxy (by rw [h])
-  have h := hind.card_le_indepNum
-  rwa [card_map, hs.card_eq] at h
-
-/-- The independence number is invariant under graph isomorphisms. -/
-theorem Iso.indepNum_eq [Finite V] [Finite W] (e : G ≃g H) : G.indepNum = H.indepNum :=
-  le_antisymm e.toEmbedding.indepNum_le e.symm.toEmbedding.indepNum_le
-
-theorem indepNum_le_natCard [Finite V] : G.indepNum ≤ Nat.card V := by
-  rw [← cliqueNum_compl]
-  exact Gᶜ.cliqueNum_le_natCard
-
-theorem one_le_indepNum [Finite V] [Nonempty V] : 1 ≤ G.indepNum := by
-  rw [← cliqueNum_compl]
-  exact Nat.one_le_iff_ne_zero.2 Gᶜ.cliqueNum_ne_zero_of_finite
-
-theorem indepNum_eq_zero_of_isEmpty [IsEmpty V] : G.indepNum = 0 := by
-  rw [← cliqueNum_compl]
-  exact Gᶜ.cliqueNum_of_isEmpty
 
 /-- **Supermultiplicativity of the independence number** under the strong product: a product of
 independent sets is independent in `G ⊠ H`. -/
