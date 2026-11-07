@@ -1154,11 +1154,13 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
   and fresh-session amplification remain separate endpoints.
 - **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
-  stationarity, reversibility, total-variation mixing times, Markovian couplings and reversible
-  Metropolis chains, with the lazy hypercube walk as client
-  (`Probability/BitString/LazyRandomWalk`, #2857). Extend with path coupling, conductance,
-  canonical-path and spectral-gap arguments. Implement Metropolis sampling for encoded rational
-  target weights, charging initialization, arithmetic and every transition, with support and
+  stationarity, reversibility, total-variation mixing times, Markovian couplings, reversible
+  Metropolis chains and path coupling, with the lazy hypercube walk
+  (`Probability/BitString/LazyRandomWalk`, #2857) and Glauber dynamics for `q > 2Δ` colorings
+  (`Probability/MarkovChain/Coloring`, #2933) as clients. Extend with conductance,
+  canonical-path and spectral-gap arguments, and with the reduction from approximately counting
+  colorings to sampling them with the Glauber chain. Implement Metropolis sampling for encoded
+  rational target weights, charging initialization, arithmetic and every transition, with support and
   mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** an almost-uniform sampling (FPAUS) interface with
   explicit output-distribution error alongside the FPRAS interface, and sampling/counting
