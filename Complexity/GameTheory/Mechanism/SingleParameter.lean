@@ -31,6 +31,11 @@ rationality (`IsIR`) are separate predicates; Roughgarden's "DSIC" bundles both 
 Theorem 5.1 (1)). Values of a rule on profiles with a negative entry are irrelevant to every
 definition here.
 
+General valuations and the VCG mechanism use the separate structure `Cslib.GameTheory.Mechanism`
+in `Complexity.GameTheory.Mechanism.VCG`. Its incentive predicates range over all real
+valuation functions, whereas the ones here range over the restricted domain `v · xᵢ`. No bridge
+between the two models is proved yet.
+
 ## Main definitions
 
 * `SingleParameter.Mechanism`: an allocation rule and a payment rule.
@@ -113,13 +118,8 @@ variable [DecidableEq ι]
 
 /-- Replacing one entry of a nonnegative bid profile by a nonnegative bid keeps it nonnegative. -/
 theorem update_nonneg {b : ι → ℝ} (hb : 0 ≤ b) (i : ι) {z : ℝ} (hz : 0 ≤ z) :
-    0 ≤ Function.update b i z := by
-  intro j
-  rcases eq_or_ne j i with rfl | hj
-  · rw [Pi.zero_apply, Function.update_self]
-    exact hz
-  · rw [Pi.zero_apply, Function.update_of_ne hj]
-    exact hb j
+    0 ≤ Function.update b i z :=
+  le_update_iff.2 ⟨hz, fun j _ => hb j⟩
 
 /-- An allocation rule is *monotone* if, for every bidder `i` and nonnegative bids of the others,
 `i`'s allocation is nondecreasing in its own nonnegative bid ([Roughgarden2013CS364A], Lecture 3,
@@ -177,7 +177,7 @@ arbitrarily. -/
 
 /-- Changing bidder `i`'s bid to `z` changes the welfare of a fixed allocation `y` by
 `(z − bᵢ) yᵢ`. -/
-theorem sum_update_mul [DecidableEq ι] (b y : ι → ℝ) (i : ι) (z : ℝ) :
+private theorem sum_update_mul [DecidableEq ι] (b y : ι → ℝ) (i : ι) (z : ℝ) :
     ∑ j, Function.update b i z j * y j = ∑ j, b j * y j + (z - b i) * y i := by
   have h : (fun j => Function.update b i z j * y j) =
       Function.update (fun j => b j * y j) i (z * y i) := by

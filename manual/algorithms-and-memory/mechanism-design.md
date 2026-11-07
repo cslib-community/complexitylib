@@ -22,7 +22,7 @@ are:
   Theorem 5.1 (1)).
 - `IsMonotone x` says each curve `z ↦ x (Function.update b i z) i` is monotone on `[0, ∞)`
   when `0 ≤ b`. `IsImplementable x` says some payment rule makes `⟨x, p⟩` DSIC.
-- `IsNormalized M` is the normalization `p_i(0, b₋ᵢ) = 0` of Myerson's Lemma (b).
+- `IsNormalized M` is the normalization `p_i(0, b_{-i}) = 0` of Myerson's Lemma (b).
 - `IsWelfareMaximizing X x` asks that on every nonnegative profile `x b ∈ X` maximizes the
   reported welfare `∑ i, b i * y i` over `y ∈ X`; tie-breaking is arbitrary.
 
@@ -40,7 +40,7 @@ monotone rule, not only piecewise-constant ones:
 - `IsWelfareMaximizing.isMonotone`: welfare maximization is monotone for any tie-breaking, so
   it is implementable in every single-parameter environment.
 
-The uniqueness proof does not differentiate. It shows that `u(v) - ∫₀ᵛ x` is constant by
+The uniqueness proof does not differentiate. It shows that `u(v) - ∫ x` over `[0, v]` is constant by
 summing the swap inequalities over uniform partitions and letting the mesh go to zero. The
 private lemmas stay one-dimensional, so the same argument applies to any monotone curve.
 
@@ -77,7 +77,7 @@ outcomes, `vcg f` uses the Clarke pivot `clarkePivot` (a `Finset.sup'`). `vcg_is
 
 ## Worked examples
 
-The [checked examples](../../ComplexityTests/MechanismDesign.lean) show the following:
+The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) show the following:
 
 - A Vickrey auction on bids `(3, 5, 4)`: bidder `1` wins and pays `4`. With a tie on `(5, 5)`,
   bidder `0` wins.
@@ -90,12 +90,17 @@ The [checked examples](../../ComplexityTests/MechanismDesign.lean) show the foll
 
 To prove that a concrete rule is implementable, prove `IsMonotone` by `intro i b hb z hz z' hz'
 hzz'` followed by `change` to the explicit curve inequality. Then apply `myerson_isDSIC`, or, for
-0-1 rules, give a threshold and use `isMonotone_of_threshold`.
+0-1 rules, give a threshold and use `isMonotone_of_threshold`. If monotonicity fails at some
+nonnegative profile, the rule is not implementable at all (`isImplementable_iff_isMonotone`), as
+in the `lowBidRule` example. A failure caused only by negative bids is irrelevant: change the
+rule there, since `Mechanism.IsDSIC.congr` shows that DSIC ignores profiles with a negative
+entry.
 
 ## Known Limitations
 
 Only dominant-strategy, deterministic, sealed-bid mechanisms are covered. Not yet formalized:
 the sponsored-search payment formula (Lecture 3, (8)–(9)), the greedy knapsack rule and its
-½-approximation (Lecture 4, §2.2, Theorem 2.1), Bayesian revenue maximization with virtual
-values (Lecture 5), the Green–Laffont/Holmström characterization of DSIC welfare maximizers, and
-any computational cost of allocation rules. See `ROADMAP.md` and issue #2947.
+1/2-approximation (Lecture 4, §2.2, Theorem 2.1), Bayesian revenue maximization with virtual
+values (Lecture 5), the Green–Laffont/Holmström characterization of DSIC welfare maximizers, a
+bridge exhibiting single-parameter mechanisms as general ones (for example VCG specializing to
+Vickrey), and any computational cost of allocation rules. See `ROADMAP.md` and issue #2947.

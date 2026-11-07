@@ -18,7 +18,7 @@ implementable, Myerson's payments for a continuous (linear) allocation rule, VCG
 two-agent public project, knapsack feasibility, and nonvacuity of the existence theorems.
 -/
 
-namespace ComplexityTests.MechanismDesign
+namespace ComplexityTests.GameTheory.MechanismDesign
 
 open Cslib.GameTheory Cslib.GameTheory.SingleParameter
 
@@ -193,4 +193,4 @@ example : ∃ x, IsWelfareMaximizing (knapsackFeasible ![(2 : ℝ), 3] 4) x ∧
     ∀ b, 0 ≤ b → ∀ i, criticalBid x b i * x b i = myersonPayment x b i :=
   exists_knapsack_isWelfareMaximizing _ (by norm_num)
 
-end ComplexityTests.MechanismDesign
+end ComplexityTests.GameTheory.MechanismDesign

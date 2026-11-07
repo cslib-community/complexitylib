@@ -34,6 +34,12 @@ DSIC holds for arbitrary real valuations; nonnegativity is only assumed for indi
 rationality. The finite outcome set is needed for the Clarke pivot and for the existence of a
 welfare-maximizing outcome rule; DSIC of Groves mechanisms holds for any outcome type.
 
+This `Mechanism ι Ω` is separate from `SingleParameter.Mechanism ι`. A single-parameter
+environment is the special case in which agent `i`'s valuation of an allocation is `vᵢ · xᵢ`
+for a private scalar `vᵢ ≥ 0`, and its incentive predicates quantify only over such valuations
+and nonnegative bids. No bridge between the two models (for example VCG specializing to the
+Vickrey auction) is proved yet.
+
 ## Main definitions
 
 * `Mechanism`: an outcome rule and a payment rule on reported valuation profiles.
@@ -102,7 +108,7 @@ welfare ([Roughgarden2013CS364A], Lecture 7, (1)). -/
 @[expose] def IsWelfareMaximizing (f : (ι → Ω → ℝ) → Ω) : Prop :=
   ∀ b ω, welfare b ω ≤ welfare b (f b)
 
-theorem welfare_eq_add [DecidableEq ι] (b : ι → Ω → ℝ) (i : ι) (ω : Ω) :
+private theorem welfare_eq_add [DecidableEq ι] (b : ι → Ω → ℝ) (i : ι) (ω : Ω) :
     welfare b ω = b i ω + ∑ j ∈ Finset.univ.erase i, b j ω :=
   (Finset.add_sum_erase _ _ (Finset.mem_univ i)).symm
 
@@ -114,7 +120,7 @@ variable [DecidableEq ι]
   outcome := f
   payment b i := h i b - ∑ j ∈ Finset.univ.erase i, b j (f b)
 
-theorem sum_erase_update (b : ι → Ω → ℝ) (i : ι) (v : Ω → ℝ) (ω : Ω) :
+private theorem sum_erase_update (b : ι → Ω → ℝ) (i : ι) (v : Ω → ℝ) (ω : Ω) :
     ∑ j ∈ Finset.univ.erase i, Function.update b i v j ω = ∑ j ∈ Finset.univ.erase i, b j ω :=
   Finset.sum_congr rfl fun j hj => by rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
 
