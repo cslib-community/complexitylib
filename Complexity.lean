@@ -4045,6 +4045,7 @@ public import Complexity.Foundations.Logic.Function.Iterate
 public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Order
 public import Complexity.Foundations.MeasureTheory.Group.ConvolutionDensity
 public import Complexity.Foundations.MeasureTheory.Group.QuotientDensity
+public import Complexity.Foundations.MeasureTheory.Integral.Pi
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Map
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Mixture
 public import Complexity.Foundations.NumberTheory.AKS.Coefficients
@@ -4096,6 +4097,7 @@ public import Complexity.Foundations.Probability.Gaussian.MassBounds
 public import Complexity.Foundations.Probability.Gaussian.Measure
 public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.NoiseOperator
+public import Complexity.Foundations.Probability.Gaussian.NoiseSemigroup
 public import Complexity.Foundations.Probability.Gaussian.Periodization
 public import Complexity.Foundations.Probability.Gaussian.Poisson
 public import Complexity.Foundations.Probability.Gaussian.Projection

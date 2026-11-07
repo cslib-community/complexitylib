@@ -1300,6 +1300,41 @@ preservation. Run `scripts/build.sh ComplexityTests.GaussianNoiseOperator` from 
 root to check them.
 
 Additivity, `gaussianNoiseOp_add`, holds only `γ`-almost everywhere, because the Bochner integral
-is `0` off the integrable functions; scaling by a constant holds everywhere. General multilinear
-polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and Hermite expansions are not part of this
-module.
+is `0` off the integrable functions; scaling by a constant holds everywhere. For multilinear
+polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and continuity at `ρ = 1`, see
+[Compose Gaussian noise operators](#compose-gaussian-noise-operators). Hermite expansions are not
+part of this module.
+
+## Compose Gaussian noise operators
+
+Multilinear polynomials stay in
+[`Complexity.Foundations.Probability.Gaussian.NoiseOperator`](../../Complexity/Foundations/Probability/Gaussian/NoiseOperator.lean),
+and the semigroup law and continuity live in
+[`Complexity.Foundations.Probability.Gaussian.NoiseSemigroup`](../../Complexity/Foundations/Probability/Gaussian/NoiseSemigroup.lean).
+Open the `ProbabilityTheory` namespace, and write `γ` for
+`Measure.pi fun _ : ι => gaussianReal 0 1` as before.
+
+- `gaussianNoiseOp_prod ρ S z` evaluates a monomial pointwise:
+  `U_ρ (∏ i ∈ S, x i) z = ρ ^ #S * ∏ i ∈ S, z i`, for every `ρ` and with no integrability
+  hypothesis. `gaussianNoiseOp_sum_mul_prod` does the same for a finite sum
+  `∑ k ∈ s, c k * ∏ i ∈ S k, x i`, which is O'Donnell's `U_ρ f (z) = f (ρ z)` (Fact 11.13).
+- `gaussianNoiseOp_gaussianNoiseOp hρ₁ hρ₂ hf` is the semigroup law
+  `U_ρ₁ (U_ρ₂ f) =ᵐ[γ] U_{ρ₁ ρ₂} f` for `|ρ₁|, |ρ₂| ≤ 1` and integrable `f` (Exercise 11.4). It is
+  an almost-everywhere identity, so rewrite inside integrals or norms with `integral_congr_ae` or
+  `eLpNorm_congr_ae`, not pointwise.
+- `tendsto_eLpNorm_gaussianNoiseOp_sub hf` gives `‖U_ρ f - f‖₁ → 0` as `ρ → 1⁻` along
+  `𝓝[<] 1`, for integrable `f` (Proposition 11.17).
+
+The supporting finset-product integrals over product probability measures,
+`MeasureTheory.Integrable.finset_prod_pi` and `MeasureTheory.integral_finset_prod_pi_eq_prod`,
+are in
+[`Complexity.Foundations.MeasureTheory.Integral.Pi`](../../Complexity/Foundations/MeasureTheory/Integral/Pi.lean).
+
+The checked [`GaussianNoiseSemigroup.lean` clients](../../ComplexityTests/GaussianNoiseSemigroup.lean)
+compute `U_{1/2} U_{1/2} (x₀ x₁)` both through the semigroup law and through Fact 11.13 twice,
+check the boundary cases `ρ₂ = 0` and `ρ₁ = -1`, and apply continuity to a coordinate and to a
+discontinuous halfspace indicator. Run `scripts/build.sh ComplexityTests.GaussianNoiseSemigroup`
+from the repository root to check them; the monomial clients are in
+`ComplexityTests.GaussianNoiseOperator`.
+
+Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.
