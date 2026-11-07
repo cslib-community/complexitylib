@@ -145,6 +145,22 @@ determinant of the complete graph, apply the test to a graph whose right vertex 
 unmatched, and show that `|V| < |S|` cannot be relaxed to `|V| ≤ |S|`. Run
 `scripts/build.sh ComplexityTests.EdmondsMatching`.
 
+To find the matching rather than only detect it, import
+[Matching/MVV.lean](../../Complexity/Algorithms/Matching/MVV.lean), the algebraic core of
+Mulmuley, Vazirani and Vazirani. `weightedEdmonds G w` is the Edmonds matrix over `ℤ` at the
+values `2 ^ w (i, j)`. When `IsUniqueMinMatching G w σ₀` holds, `matchingWeight_eq_padicValInt_det`
+recovers the weight `W` of `σ₀` as the `2`-adic valuation of the determinant, and
+`two_pow_dvd_mul_adjugate_weightedEdmonds` gives `σ₀ i = j ↔ ¬ 2 ^ (W + 1) ∣ B i j * adj(B) j i`.
+Edge weights are functions `Edges G → Fin N`, read as `1, …, N` by `extendWeight`.
+`half_le_dens_exists_isUniqueMinMatching` applies the isolation lemma when `2 |E| ≤ N`, and
+`half_le_dens_mvv` states that the whole procedure returns a perfect matching for at least half of
+the weight functions. These are bipartite statements, and the parallel determinant and inverse
+computations are not formalized. The [checked clients](../../ComplexityTests/MVVMatching.lean)
+recover the identity matching on `K₂,₂` from the determinant `-12` and show that equal weights make
+the determinant vanish. Run `scripts/build.sh ComplexityTests.MVVMatching`. A concrete instance of
+`half_le_dens_mvv` on `Fin 2` needs `convert` rather than `exact`, because the concrete and generic
+`Decidable` instances of the filter predicate differ.
+
 ## Compose local embeddings and extract a strategy
 
 Import [CorrelatedSampling/Embeddability.lean](../../Complexity/Probability/CorrelatedSampling/Embeddability.lean)
