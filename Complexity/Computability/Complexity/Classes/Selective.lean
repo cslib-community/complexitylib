@@ -17,7 +17,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Ba
 A *selector* for a set `A` picks one of any two instances so that the pick is in `A` whenever
 either instance is (`Cslib.Complexity.IsSelector`). A set is *P-selective*
 (`Cslib.Complexity.PSel`) when it has a selector computable in polynomial time [Selman1979];
-see also [Hemaspaandra and Torenvliet, Introduction][HemaspaandraTorenvliet2003].
+see also [Hemaspaandra and Torenvliet, *Introduction to Semi-Feasible
+Computation*][HemaspaandraTorenvliet2003].
 P-selective sets are the "semi-feasible" sets: membership need not be decidable, but of any two
 instances one that is in `A` if either is can be found in polynomial time.
 
@@ -52,8 +53,8 @@ infinite binary sequences, an uncountable family of P-selective sets, are built 
 
 * [A. L. Selman, *P-selective sets, tally languages, and the behavior of polynomial time
   reducibilities on NP*][Selman1979]
-* [L. A. Hemaspaandra and L. Torenvliet, *Theory of Semi-Feasible Algorithms*,
-  Introduction][HemaspaandraTorenvliet2003]
+* [L. A. Hemaspaandra and L. Torenvliet, *Theory of Semi-Feasible Algorithms*, chapter
+  *Introduction to Semi-Feasible Computation*][HemaspaandraTorenvliet2003]
 -/
 
 public section
@@ -107,8 +108,7 @@ theorem mem_PSel_iff_bool {α : Type} {enc : α ↪ List Bool} {A : Set α} :
   classical
   constructor
   · rintro ⟨f, hf, hsel⟩
-    refine ⟨fun p => decide (f p.1 p.2 = p.1), .of_tidy
-      (ComputableTidilyInPolyTime.decide_eq' hf.tidy (ComputableTidilyInPolyTime.fst enc enc)),
+    refine ⟨fun p => decide (f p.1 p.2 = p.1), ComputableInPolyTime.decide_eq' hf (.fst enc enc),
       fun x y hxy => ?_⟩
     change (if decide (f x y = x) = true then x else y) ∈ A
     by_cases hx : f x y = x

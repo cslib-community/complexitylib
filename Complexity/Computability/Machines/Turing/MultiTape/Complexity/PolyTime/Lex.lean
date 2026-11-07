@@ -63,21 +63,20 @@ private theorem lexLe_eq_decide (x y : List Bool) : lexLe x y = decide (x ≤ y)
 theorem ComputableInPolyTime.bits_lex_le :
     ComputableInPolyTime (fun p : List Bool × List Bool => decide (p.1 ≤ p.2))
       (encPair encBits encBits) encBool := by
-  refine .of_tidy ?_
-  have hzip : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => p.1.zip p.2)
+  have hzip : ComputableInPolyTime (fun p : List Bool × List Bool => p.1.zip p.2)
       (encPair encBits encBits) (encList (encPair encBool encBool)) :=
-    (ComputableTidilyInPolyTime.zip encBool encBool).comp
-      ((ComputableTidilyInPolyTime.bitsToList.comp (.fst _ _)).prod
-        (ComputableTidilyInPolyTime.bitsToList.comp (.snd _ _)))
-  have hfind := ComputableTidilyInPolyTime.findWithInput
+    (ComputableInPolyTime.zip encBool encBool).comp
+      ((ComputableInPolyTime.bitsToList.comp (.fst _ _)).prod
+        (ComputableInPolyTime.bitsToList.comp (.snd _ _)))
+  have hfind := ComputableInPolyTime.findWithInput
     (test := fun (_ : List Bool × List Bool) (q : Bool × Bool) => q.1 != q.2) hzip
-    ((ComputableTidilyInPolyTime.of_finite fun q : Bool × Bool => q.1 != q.2).comp (.snd _ _))
-  have hlen : ComputableTidilyInPolyTime
+    ((ComputableInPolyTime.of_finite fun q : Bool × Bool => q.1 != q.2).comp (.snd _ _))
+  have hlen : ComputableInPolyTime
       (fun p : List Bool × List Bool => decide (p.1.length ≤ p.2.length))
       (encPair encBits encBits) encBool := by
     fun_prop
-  have h := ComputableTidilyInPolyTime.optionElimWithInput (body := fun _ q => !q.1) hfind hlen
-    ((ComputableTidilyInPolyTime.of_finite fun q : Bool × Bool => !q.1).comp (.snd _ _))
+  have h := ComputableInPolyTime.optionElimWithInput (body := fun _ q => !q.1) hfind hlen
+    ((ComputableInPolyTime.of_finite fun q : Bool × Bool => !q.1).comp (.snd _ _))
   convert h using 2 with p
   rw [← lexLe_eq_decide, lexLe]
 

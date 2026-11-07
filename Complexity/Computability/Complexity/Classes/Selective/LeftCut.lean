@@ -19,7 +19,8 @@ import Complexity.Foundations.Data.List.Lex
 The *left cut* of an infinite binary sequence `r` (`Cslib.Complexity.leftCut`) is the set of bit
 strings `x` that are lexicographically at most the prefix of `r` of the same length; read as binary
 fractions, `0.x ≤ 0.r₀r₁r₂…`. Left cuts are the standard examples of P-selective sets [Selman1979];
-see also [Hemaspaandra and Torenvliet, Introduction][HemaspaandraTorenvliet2003]. A left cut is a
+see also [Hemaspaandra and Torenvliet, *Introduction to Semi-Feasible
+Computation*][HemaspaandraTorenvliet2003]. A left cut is a
 lower set of the lexicographic order (`Cslib.Complexity.isLowerSet_leftCut`), which is compared in
 polynomial time, so the lexicographic minimum is a polynomial-time selector, for every sequence
 `r`, however hard `r` is to compute (`Cslib.Complexity.leftCut_mem_PSel`).
@@ -46,8 +47,8 @@ count of machines is not formalized here.
 
 * [A. L. Selman, *P-selective sets, tally languages, and the behavior of polynomial time
   reducibilities on NP*][Selman1979]
-* [L. A. Hemaspaandra and L. Torenvliet, *Theory of Semi-Feasible Algorithms*,
-  Introduction][HemaspaandraTorenvliet2003]
+* [L. A. Hemaspaandra and L. Torenvliet, *Theory of Semi-Feasible Algorithms*, chapter
+  *Introduction to Semi-Feasible Computation*][HemaspaandraTorenvliet2003]
 -/
 
 public section

@@ -80,7 +80,7 @@ example (h : P encCNF ≠ NP encCNF) : SAT ∉ PSel encCNF := fun hSAT =>
 
 /-! ### Tournaments -/
 
-/-- The cyclic tournament on three vertices: `y` beats `x` when `y = x` or `y = x + 1`. -/
+/-- The cyclic tournament on three vertices: `y` covers `x` when `y = x` or `y = x + 1`. -/
 def cyclic (x y : Fin 3) : Prop := y = x ∨ y = x + 1
 
 instance : DecidableRel cyclic := fun _ _ => inferInstanceAs (Decidable (_ ∨ _))

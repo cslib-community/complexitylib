@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib)
+-- upstream: candidate (Mathlib, new `Mathlib/Combinatorics/Tournament.lean`)
 
 public import Complexity.Init
 public import Mathlib.Data.Finset.Card
@@ -18,17 +18,16 @@ import Mathlib.Algebra.Order.BigOperators.Group.Finset
 # Dominating sets of tournaments
 
 Let `R` be a total relation on a finite set `T`: for all `x, y ∈ T`, `R x y` or `R y x`, as in a
-tournament where `R x y` says that `y` beats (or is) `x`. Counting the pairs, some `y ∈ T` beats at
-least half of `T` (`Finset.exists_card_le_two_mul_card_filter_rel`). Taking such a `y` and
-recursing on the elements it does not beat, fewer than `2 ^ k` elements are dominated by at most
-`k` of them: every element is beaten by one of them
-(`Finset.exists_dominating_subset_of_card_lt_two_pow`). This is the combinatorial core of Ko's
-theorem that P-selective sets have polynomial advice: the at most `2 ^ n` members of length `n`
-are dominated by at most `n + 1` of them [Ko1983].
+tournament; read `R x y` as "`y` covers `x`". Counting the pairs, some `y ∈ T` covers at least half
+of `T` (`Finset.exists_card_le_two_mul_card_filter_rel`). Taking such a `y` and recursing on the
+elements it does not cover, fewer than `2 ^ k` elements are dominated by at most `k` of them: every
+element is covered by one of them (`Finset.exists_dominating_subset_of_card_lt_two_pow`). This is
+the combinatorial core of Ko's theorem that P-selective sets have polynomial advice: the at most
+`2 ^ n` members of length `n` are dominated by at most `n + 1` of them [Ko1983].
 
 ## Main results
 
-* `Finset.exists_card_le_two_mul_card_filter_rel`: some element beats at least half of `T`.
+* `Finset.exists_card_le_two_mul_card_filter_rel`: some element covers at least half of `T`.
 * `Finset.exists_dominating_subset_of_card_lt_two_pow`: a set of fewer than `2 ^ k` elements has
   a dominating subset of at most `k` elements.
 
@@ -44,7 +43,7 @@ namespace Finset
 variable {α : Type*}
 
 /-- **A good vertex of a tournament.** If `R` is total on a nonempty finite set `T`, some `y ∈ T`
-is related from at least half of `T`: `R x y` for at least `|T| / 2` elements `x ∈ T`. -/
+covers at least half of `T`: `R x y` for at least `|T| / 2` elements `x ∈ T`. -/
 theorem exists_card_le_two_mul_card_filter_rel (T : Finset α) (R : α → α → Prop)
     [DecidableRel R] (htot : ∀ x ∈ T, ∀ y ∈ T, R x y ∨ R y x) (hT : T.Nonempty) :
     ∃ y ∈ T, T.card ≤ 2 * (T.filter fun x => R x y).card := by
@@ -71,8 +70,8 @@ theorem exists_card_le_two_mul_card_filter_rel (T : Finset α) (R : α → α �
   omega
 
 /-- **Dominating sets of tournaments.** If `R` is total on a finite set `T` of fewer than `2 ^ k`
-elements, some `S ⊆ T` of at most `k` elements dominates `T`: every `x ∈ T` has `R x y` for some
-`y ∈ S`. -/
+elements, some `S ⊆ T` of at most `k` elements dominates `T`: every `x ∈ T` is covered by some
+`y ∈ S`, i.e. `R x y`. -/
 theorem exists_dominating_subset_of_card_lt_two_pow (R : α → α → Prop) :
     ∀ (k : ℕ) (T : Finset α), (∀ x ∈ T, ∀ y ∈ T, R x y ∨ R y x) → T.card < 2 ^ k →
       ∃ S ⊆ T, S.card ≤ k ∧ ∀ x ∈ T, ∃ y ∈ S, R x y

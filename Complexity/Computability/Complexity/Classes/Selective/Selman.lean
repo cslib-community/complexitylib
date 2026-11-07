@@ -19,7 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 # NP-hard P-selective sets: Selman's theorem
 
 If some `NP`-hard set is P-selective, then `P = NP` [Selman1979]; see also
-[Hemaspaandra and Torenvliet, Chapter 3][HemaspaandraTorenvliet2003]. P-selectivity transfers
+[Hemaspaandra and Torenvliet][HemaspaandraTorenvliet2003]. P-selectivity transfers
 down polynomial-time reductions, so `SAT` would be P-selective, and a selector for `SAT` decides
 it through the self-reduction of `SAT`
 (`Cslib.Complexity.SAT.verifier_search_of_step`): to fix the next variable `v` of a satisfiable
@@ -42,8 +42,8 @@ membership answers.
 
 * [A. L. Selman, *P-selective sets, tally languages, and the behavior of polynomial time
   reducibilities on NP*][Selman1979]
-* [L. A. Hemaspaandra and L. Torenvliet, *Theory of Semi-Feasible Algorithms*,
-  Chapter 3][HemaspaandraTorenvliet2003]
+* [L. A. Hemaspaandra and L. Torenvliet, *Theory of Semi-Feasible
+  Algorithms*][HemaspaandraTorenvliet2003]
 -/
 
 public section
@@ -100,9 +100,9 @@ theorem mem_P_of_mem_PSel (h : SAT ∈ PSel encCNF) : SAT ∈ P encCNF := by
   obtain ⟨f, hf, hsel⟩ := h
   have hD : ComputableInPolyTime (selectorQuery f) encCNF encBool := by
     unfold selectorQuery
-    exact .of_tidy (ComputableTidilyInPolyTime.decide_eq'
-      (hf.comp (ComputableInPolyTime.id'.prod computableInPolyTime_flipLast)).tidy
-      ComputableInPolyTime.id'.tidy)
+    exact ComputableInPolyTime.decide_eq'
+      (hf.comp (ComputableInPolyTime.id'.prod computableInPolyTime_flipLast))
+      ComputableInPolyTime.id'
   refine ⟨fun φ => verifier (φ, search (selectorQuery f) φ), ?_, fun φ => ⟨fun hφ => ?_, ?_⟩⟩
   · exact computableInPolyTime_verifier.comp (ComputableInPolyTime.id'.prod
       (computableInPolyTime_search (D := fun _ => selectorQuery f) (hD.comp (.snd _ _))

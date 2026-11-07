@@ -21,36 +21,36 @@ import Mathlib.Data.Set.Finite.List
 /-!
 # P-selective sets have polynomial advice: Ko's theorem
 
-Every P-selective set is in `P/poly` [Ko1983]; see also
-[Hemaspaandra and Torenvliet, Chapter 1][HemaspaandraTorenvliet2003]. Given a selector `f` for
-`A`, relate `x` to `y` when `f` picks `x` from `x` and `y`, in one of the two orders; then
-`x ∈ A` whenever `y ∈ A`. The relation is total, so on the members of `A` of encoded length `n`
-it is a tournament. There are at most `2 ^ n` such members, so at most `n + 1` of them dominate:
-every member of length `n` is related to one of them
+Every P-selective set is in `P/poly` [Ko1983]; see also the chapter *Advice* of
+[Hemaspaandra and Torenvliet][HemaspaandraTorenvliet2003]. Given a selector `f` for `A`, say that
+`y` covers `x` when `f` picks `x` from `x` and `y`, in one of the two orders; then `x ∈ A`
+whenever `y ∈ A`. The relation is total, so on the members of `A` of encoded length `n` it is a
+tournament. There are at most `2 ^ n` such members, so at most `n + 1` of them dominate: every
+member of length `n` is covered by one of them
 (`Finset.exists_dominating_subset_of_card_lt_two_pow`). Hence an instance of length `n` is in
-`A` exactly when it is related to one of them (`Cslib.Complexity.IsSelector.exists_advice`).
+`A` exactly when it is covered by one of them (`Cslib.Complexity.IsSelector.exists_advice`).
 
 The advice for length `n` is that list of at most `n + 1` instances, each of encoded length `n`;
 with the list encoding `Turing.MultiTapeTM.encList` it takes at most `(n + 1) * (2 * n + 1)` bits,
 so `O(n ^ 2)` bits, which is Ko's `P/quadratic` bound
-(`Cslib.Complexity.PSel.exists_advice_polyTime`). With this advice, a polynomial-time machine
-decides `A` by running the selector against each advice instance. This is the library's `P/poly`
-advice convention (`Cslib.Circuits.Boolean.PPoly.of_advice`), so every P-selective set is in
-`PPolyOn` (`Cslib.Complexity.PSel_subset_PPolyOn`).
+(`Cslib.Complexity.exists_advice_polyTime_of_mem_PSel`). With this advice, a polynomial-time
+machine decides `A` by running the selector against each advice instance. This is the library's
+`P/poly` advice convention (`Cslib.Circuits.Boolean.PPoly.of_advice`), so every P-selective set is
+in `PPolyOn` (`Cslib.Complexity.PSel_subset_PPolyOn`).
 
 ## Main results
 
 * `Cslib.Complexity.IsSelector.exists_advice`: for each length `n`, at most `n + 1` members of
   `A` of length `n` decide membership in `A` at length `n` through the selector.
-* `Cslib.Complexity.PSel.exists_advice_polyTime`: a P-selective set is decided in polynomial time
-  with advice of at most `(n + 1) * (2 * n + 1)` bits at length `n`.
+* `Cslib.Complexity.exists_advice_polyTime_of_mem_PSel`: a P-selective set is decided in
+  polynomial time with advice of at most `(n + 1) * (2 * n + 1)` bits at length `n`.
 * `Cslib.Complexity.PSel_subset_PPolyOn`: **Ko's theorem**, P-selective sets are in `P/poly`.
 
 ## References
 
 * [K.-I. Ko, *On self-reducibility and weak P-selectivity*][Ko1983]
-* [L. A. Hemaspaandra and L. Torenvliet, *Theory of Semi-Feasible Algorithms*,
-  Chapter 1][HemaspaandraTorenvliet2003]
+* [L. A. Hemaspaandra and L. Torenvliet, *Theory of Semi-Feasible Algorithms*, chapter
+  *Advice*][HemaspaandraTorenvliet2003]
 -/
 
 public section
@@ -111,7 +111,7 @@ theorem IsSelector.exists_advice {α : Type*} {A : Set α} {f : α → α → α
 function `D` of the advice and the instance, with advice `adv n` for the instances of encoded
 length `n` taking at most `(n + 1) * (2 * n + 1)` bits: at most `n + 1` instances of length `n`
 in the list encoding. -/
-theorem PSel.exists_advice_polyTime {α : Type} {enc : α ↪ List Bool} {A : Set α}
+theorem exists_advice_polyTime_of_mem_PSel {α : Type} {enc : α ↪ List Bool} {A : Set α}
     (hA : A ∈ PSel enc) :
     ∃ D : List α × α → Bool, ComputableInPolyTime D (encPair (encList enc) enc) encBool ∧
       ∃ adv : ℕ → List α, (∀ n, (encList enc (adv n)).length ≤ (n + 1) * (2 * n + 1)) ∧
@@ -128,8 +128,8 @@ theorem PSel.exists_advice_polyTime {α : Type} {enc : α ↪ List Bool} {A : Se
         (encPair (encPair (encList enc) enc) enc) enc := ComputableInPolyTime.snd _ _
     exact ComputableInPolyTime.anyWithInput (ComputableInPolyTime.fst _ _)
       (ComputableInPolyTime.decide_or
-        (.of_tidy (ComputableTidilyInPolyTime.decide_eq' (hf.comp (hx.prod hy)).tidy hx.tidy))
-        (.of_tidy (ComputableTidilyInPolyTime.decide_eq' (hf.comp (hy.prod hx)).tidy hx.tidy)))
+        (ComputableInPolyTime.decide_eq' (hf.comp (hx.prod hy)) hx)
+        (ComputableInPolyTime.decide_eq' (hf.comp (hy.prod hx)) hx))
   · rw [length_encList]
     have h := List.sum_le_length_nsmul ((adv n).map fun a => 2 * (enc a).length + 1)
       (2 * n + 1) (fun x hx => by
@@ -144,7 +144,7 @@ open Circuits.Boolean in
 /-- **Ko's theorem.** Every P-selective set is in `P/poly` [Ko1983]. -/
 theorem PSel_subset_PPolyOn {α : Type} {enc : α ↪ List Bool} : PSel enc ⊆ PPolyOn enc := by
   intro A hA
-  obtain ⟨D, hD, adv, hadv, hA⟩ := PSel.exists_advice_polyTime hA
+  obtain ⟨D, hD, adv, hadv, hA⟩ := exists_advice_polyTime_of_mem_PSel hA
   obtain ⟨M, hM, hDM⟩ := PPoly.exists_of_polyTime hD
   let w : ℕ → List Bool := fun n => encList enc (adv n)
   have hw : PolynomiallyBounded fun n => (w n).length :=

@@ -234,8 +234,8 @@ self-reduction lemma `SAT.verifier_search_of_step`, which needs only that each a
 formula satisfiable, not that the answers are correct; the verifier checks the result.
 [`Selective.Ko`](../../Complexity/Computability/Complexity/Classes/Selective/Ko.lean) proves
 `PSel_subset_PPolyOn`. The advice at length `n` is a list of at most `n + 1` members of length `n`,
-using at most `(n + 1)(2n + 1)` bits (`PSel.exists_advice_polyTime`), in the `PPoly.of_advice`
-convention. Its combinatorial core is the finite tournament lemma
+using at most `(n + 1)(2n + 1)` bits (`exists_advice_polyTime_of_mem_PSel`), in the
+`PPoly.of_advice` convention. Its combinatorial core is the finite tournament lemma
 `Finset.exists_dominating_subset_of_card_lt_two_pow` in
 [`Foundations/Data/Finset/Tournament`](../../Complexity/Foundations/Data/Finset/Tournament.lean).
 
