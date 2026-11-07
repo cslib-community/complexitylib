@@ -95,6 +95,21 @@ Two places keep projections, as standing exceptions:
   ([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Use projections there,
   or bind the hypothesis in the theorem's own signature.
 
+**Readable encodings** ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)).
+An encoding is part of what a statement claims, so statements show it; they should not make the
+reader parse the same nested encoding again and again. Name a compound encoding that recurs in a
+module's statements with a documented, reducible `abbrev`, give domain encodings their own names,
+declare field-tuple structure encodings with `enc_structure`, and keep unary versus binary,
+representations and framing visible in the name or its docstring. For example, the query-machine
+certificates take
+`ComputableInSpace M.next (encStateRead encS) encS fun p => (encStateRead encS p).length`
+rather than restating `encPair encS (encOption encBool)` twice; `encStateRead` is documented as a
+state paired with the bit read, with the state framed. Because the name is reducible, the
+elaborated statement is unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas see
+through it. New and changed statements follow the exact rules in
+[AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint checks the
+repetition rule. Abstracts stay fully spelled out.
+
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
 
@@ -183,8 +198,9 @@ the root checkout and, when `<branch>` exists only on `origin`, checks it out tr
 `origin/<branch>`). Pass `--source-only` to skip the initial copy; the
 [cache guide](scripts/cache/README.md#automatic-restoration) explains bootstrap and dependency costs.
 Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
-forbidden proof tokens, `set_option` justifications, the key order of `references.bib` and that
-every docstring citation key has an entry there
+forbidden proof tokens, `set_option` justifications, the key order of `references.bib`, that
+every docstring citation key has an entry there and that `ROADMAP.md` adds no `[#N]:` link
+definitions
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
@@ -228,9 +244,12 @@ findings without requiring a duplicate local run.
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
 ROADMAP lists open directions only; status and progress live on issues and PRs, so a PR does not
-edit ROADMAP unless it opens or closes a direction. UPSTREAM records coordination and exceptional
-integration decisions, while source markers record module status. Batch measurements and
-validation/review evidence belong in commit or PR descriptions.
+edit ROADMAP unless it opens or closes a direction. Write a new issue or PR link in ROADMAP inline,
+as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`, rather than as a
+`[#N]: …` reference definition appended to the end of the file: such appended lines conflict
+between PRs in the merge queue, and `scripts/check_hygiene.py` rejects new ones. UPSTREAM records
+coordination and exceptional integration decisions, while source markers record module status.
+Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
 
