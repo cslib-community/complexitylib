@@ -28,8 +28,9 @@ over a domain of `4 n` cells (`IdentityDomain q`):
 The kernel sends `q` exactly to the uniform distribution on these cells
 (`bind_identityKernel_self`). It shrinks statistical distance by at most a factor `3`
 (`dist_le_three_mul_dist_bind_identityKernel`), because each block size is at least two thirds of
-`2 n` times the mixed mass. Hence a uniformity tester with proximity `ε / 3` on the cells, run on
-the mapped samples, tests identity to `q` with proximity `ε` (`isTester_identity_of_uniform`).
+`4 n` times the mixed mass, that is, of `2 n q(a) + 2`. Hence a uniformity tester with proximity
+`ε / 3` on the cells, run on the mapped samples, tests identity to `q` with proximity `ε`
+(`isTester_identity_of_uniform`).
 
 With the collision tester this gives an explicit identity tester (`identityTester`) whenever
 `720 √n ≤ (k - 1) ε²` (`isTester_identityTester`), so `k = O(√n / ε²)` samples suffice for every
