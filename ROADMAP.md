@@ -642,8 +642,10 @@ index links to canonical definitions rather than keeping a second set.
 
 - **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- Private-to-public-coin transformations, `AM[k] = AM`, interactive-machine characterizations
-  of Arthur–Merlin classes, and statistical and perfect zero knowledge.
+- Private-to-public-coin transformations (Goldwasser–Sipser `IP[k] ⊆ AM[k + 2]`), the
+  Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that depend
+  on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
+  statistical and perfect zero knowledge.
 
 ### Descriptive complexity and first-order reductions
 
