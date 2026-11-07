@@ -61,6 +61,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `awpp` | [AWPP](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `sbp` | [SBP](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `bpppath` | [BPPpath](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
+| `fpras` | [FPRAS approximate counting](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
 | `deterministic-oracle` | [Efficient deterministic oracle program](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `counting-oracle` | [#P function-bit oracle](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `ma` | [Merlin-Arthur verifier](machines-and-classes/verifiers-counting-interaction.md) | interactive |
@@ -297,6 +298,9 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `online-deterministic` | [Deterministic online competitive problems](algorithms-and-memory/online-and-streaming.md) | online |
 | `count-min-stream` | [Weighted insertion Count-Min sketch](algorithms-and-memory/online-and-streaming.md) | streaming |
 | `native-stream-fold` | [Native input-stream folds](algorithms-and-memory/online-and-streaming.md) | streaming |
+| `cost-game` | [Finite strategic games in cost form, potentials and coarse correlated equilibria](algorithms-and-memory/strategic-games.md) | game-theory |
+| `atomic-congestion-game` | [Atomic congestion games with Rosenthal's potential](algorithms-and-memory/strategic-games.md) | game-theory |
+| `nonatomic-routing` | [Nonatomic selfish routing and Wardrop flows](algorithms-and-memory/strategic-games.md) | game-theory |
 | `retroactive-rebuild` | [Timeline editing by reset and replay](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `catalytic-restoring-operations` | [Borrowed-register and key-table restoration](algorithms-and-memory/catalytic-and-tree-evaluation.md) | catalytic-operations |
 | `tree-evaluation-binary` | [Explicit binary Tree Evaluation](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |

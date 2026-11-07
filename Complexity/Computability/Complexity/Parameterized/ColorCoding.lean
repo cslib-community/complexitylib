@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Parameterized
+public import Complexity.Computability.Complexity.Problems.Graph.VertexColors
 public import Complexity.Computability.Complexity.Problems.LongPath
 import Complexity.Computability.Complexity.FineGrained.Padding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
@@ -48,8 +49,8 @@ tractable in `k` (`Cslib.Complexity.ColorfulPath_mem_FPT`). The constant `δ` is
 
 ## Main definitions
 
-* `Cslib.Complexity.colorOf`, `Cslib.Complexity.ColorfulPath`: colors given by a list, and colorful
-  paths on `k` vertices with colors less than `k`.
+* `Cslib.Complexity.ColorfulPath`: colorful paths on `k` vertices with colors less than `k`, the
+  colors given by a list (`Cslib.Complexity.colorOf`).
 * `Cslib.Complexity.ColorCoding.Reaches`: the colorful paths with a given color set and last
   vertex.
 * `Cslib.Complexity.ColorCoding.table`: the dynamic programming table over color sets.
@@ -80,11 +81,6 @@ public section
 namespace Cslib.Complexity
 
 open Turing.MultiTapeTM
-
-/-- The color of the vertex `v` under a list of colors `cs` parallel to the vertex list of `G`:
-the entry of `cs` at the first occurrence of `v`, and `0` when there is none. -/
-@[expose]
-def colorOf (G : Graph) (cs : List ℕ) (v : ℕ) : ℕ := cs.getD (G.1.idxOf v) 0
 
 /-- **Colorful k-Path** [CyganEtAl2015, Section 5.2]: the triples `((G, cs), k)` such that `G` has a
 path on `k` vertices whose colors are pairwise distinct and less than `k`; colors are given by a
