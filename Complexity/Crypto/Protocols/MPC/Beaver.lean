@@ -30,7 +30,7 @@ Beaver multiplication:
    `beaverTripleWorld`):** an $m$-party generalization of the 2-party dealer ("2.5-party")
    functionality in [BonehShoup2023], Section 23.2.2 (building on circuit randomization via
    multiplication triples from [Beaver1991] and the $m$-party additive-share online model of
-   [DamgardPastroSmartZakarias2012], Section 2). It samples uniform additive shares
+   [DamgardPastroSmartZakarias2012]). It samples uniform additive shares
    `(a_i, b_i, c_i)` over `ZMod p` conditioned on $\sum_i c_i = (\sum_i a_i) \cdot (\sum_i b_i)$,
    reusing
    `ProbComp.sampleAdditiveShares` from `Complexity.Languages.Probabilistic.Sharing`. For every
@@ -106,7 +106,7 @@ Beaver multiplication:
 
 * [D. Beaver, *Efficient Multiparty Protocols Using Circuit Randomization*][Beaver1991].
 * [I. Damgård, V. Pastro, N. P. Smart, S. Zakarias, *Multiparty Computation from Somewhat
-  Homomorphic Encryption*][DamgardPastroSmartZakarias2012], Section 2.
+  Homomorphic Encryption*][DamgardPastroSmartZakarias2012].
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023], Sections
   23.2.2 and 23.2.4.
 -/
@@ -134,7 +134,7 @@ open scoped ENNReal NNReal
 
 /-- Randomized `m`-party Beaver triple preprocessing functionality over `ZMod p` (an `m`-party
 generalization of the 2-party dealer in [BonehShoup2023], Section 23.2.2; cf. [Beaver1991];
-[DamgardPastroSmartZakarias2012], Section 2): samples independent uniform additive share vectors
+[DamgardPastroSmartZakarias2012]): samples independent uniform additive share vectors
 `a, b : Fin m → ZMod p` and uniform additive shares `c` summing to `(∑ i, a i) * (∑ i, b i)`. -/
 noncomputable def beaverTripleFunctionality (p m : ℕ) [NeZero p] :
     Functionality m (fun _ => Unit) (fun _ => TripleShare (ZMod p)) := fun _ => do
@@ -230,15 +230,17 @@ theorem eval_restrict_beaverTripleFunctionality {p m : ℕ} [NeZero p]
 
 /-- Party `i`'s local masked opening share `(x_i - a_i, y_i - b_i)`. -/
 @[expose] def localMaskedOpening {R : Type} [Sub R] (xy : R × R) (t : TripleShare R) : R × R :=
-  (xy.1 - t.a, xy.2 - t.b)
+  let (x, y) := xy
+  (x - t.a, y - t.b)
 
 /-- Party `i`'s local Beaver output share given public reconstructed masked opening `op = (d, e)`
 and party `i`'s triple share `t = (a_i, b_i, c_i)` ([BonehShoup2023], Section 23.2.2, generalized
-to `m` parties; [DamgardPastroSmartZakarias2012], Section 2; cf. [Beaver1991]): party `0` adds the
-public product term `op.1 * op.2` to `op.1 * b_i + op.2 * a_i + c_i`. -/
+to `m` parties; [DamgardPastroSmartZakarias2012]; cf. [Beaver1991]): party `0` adds the
+public product term `d * e` to `d * b_i + e * a_i + c_i`. -/
 @[expose] def beaverMulShare {R : Type} [CommRing R] {m : ℕ}
     (i : Fin m) (op : R × R) (t : TripleShare R) : R :=
-  (if i.val = 0 then op.1 * op.2 else 0) + op.1 * t.b + op.2 * t.a + t.c
+  let (d, e) := op
+  (if i.val = 0 then d * e else 0) + d * t.b + e * t.a + t.c
 
 /-- Sum of `beaverMulShare` across all `m` parties (`m > 0`). -/
 theorem sum_beaverMulShare {R : Type} [CommRing R] {m : ℕ} [NeZero m]
@@ -250,7 +252,7 @@ theorem sum_beaverMulShare {R : Type} [CommRing R] {m : ℕ} [NeZero m]
     Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
 
 /-- Algebraic correctness of Beaver multiplication ([BonehShoup2023], Section 23.2.2, generalized
-to `m` parties; [DamgardPastroSmartZakarias2012], Section 2; cf. [Beaver1991]): when
+to `m` parties; [DamgardPastroSmartZakarias2012]; cf. [Beaver1991]): when
 `op = ∑ i, localMaskedOpening (xy i) (t i)` and `∑ i, (t i).c = (∑ i, (t i).a) * (∑ i, (t i).b)`,
 the output shares sum to `(∑ i, (xy i).1) * (∑ i, (xy i).2)`. -/
 theorem sum_beaverMulShare_eq_mul {R : Type} [CommRing R] {m : ℕ} [NeZero m]
@@ -272,7 +274,7 @@ followed by an all-to-all broadcast of `ZMod p × ZMod p`. -/
 
 /-- Synchronous `m`-party Beaver online multiplication protocol in the `beaverTripleSpec p m`-hybrid
 model (generalizing [BonehShoup2023], Section 23.2.2 to `m` parties;
-[DamgardPastroSmartZakarias2012], Section 2; cf. [Beaver1991]):
+[DamgardPastroSmartZakarias2012]; cf. [Beaver1991]):
 1. All `m` parties invoke `beaverTripleSpec p m` to receive triple shares `t_i = (a_i, b_i, c_i)`.
 2. Each party `i` broadcasts `localMaskedOpening xy_i t_i = (x_i - a_i, y_i - b_i)`.
 3. Each party `i` sums the received openings `op = ∑ j, msgs j` and outputs
