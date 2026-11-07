@@ -80,6 +80,18 @@ theorem measureProb_le_measureProb_univ [Fintype ι] (ψ : EuclideanSpace ℂ ι
     measureProb ψ S ≤ measureProb ψ univ :=
   sum_le_sum_of_subset_of_nonneg (subset_univ S) fun _ _ _ => by positivity
 
+/-- Outcome probabilities scale with the squared modulus of a scalar. -/
+theorem measureProb_smul (c : ℂ) (ψ : EuclideanSpace ℂ ι) (S : Finset ι) :
+    measureProb (c • ψ) S = ‖c‖ ^ 2 * measureProb ψ S := by
+  simp only [measureProb, WithLp.ofLp_smul, Pi.smul_apply, smul_eq_mul, norm_mul, mul_pow,
+    mul_sum]
+
+/-- A state is the sum of the basis states weighted by its amplitudes. -/
+theorem sum_smul_ket [Fintype ι] [DecidableEq ι] (ψ : EuclideanSpace ℂ ι) :
+    ∑ x, ψ.ofLp x • ket x = ψ := by
+  ext y
+  simp [Finset.sum_apply]
+
 /-- **Measurement in the computational basis**: a unit state `ψ` gives outcome `y` with
 probability `|ψ_y|²`. -/
 noncomputable def measure [Fintype ι] (ψ : EuclideanSpace ℂ ι) (hψ : ‖ψ‖ = 1) : PMF ι :=

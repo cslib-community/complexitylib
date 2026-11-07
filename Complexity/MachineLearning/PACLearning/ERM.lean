@@ -13,7 +13,7 @@ public import Cslib.MachineLearning.PACLearning.VersionSpace
 
 A learner is an *empirical risk minimizer* (ERM) for a concept class `C` if, on every labeled
 sample, it outputs a concept of `C` with the fewest sample errors among all concepts of `C`
-[ShalevShwartzBenDavid2014, Section 2.2]. On a realizable sample some concept of `C` makes no
+[ShalevShwartzBenDavid2014, Section 2.3]. On a realizable sample some concept of `C` makes no
 errors, so an ERM output lies in the version space: in the realizable setting every ERM learner is
 a consistent learner (`IsConsistent`). Every nonempty class has both kinds of learner. These
 learners are semantic: no bound on the time needed to find a minimizer is claimed.
@@ -42,7 +42,7 @@ variable {α β : Type*} {m : ℕ}
 
 /-- The learner `A` is an *empirical risk minimizer* for the concept class `C`: on every labeled
 sample `S` it outputs a concept of `C` whose number of errors on `S` is minimal among the concepts
-of `C` [ShalevShwartzBenDavid2014, Section 2.2]. -/
+of `C` [ShalevShwartzBenDavid2014, Section 2.3]. -/
 @[expose] def IsERM [DecidableEq β] (A : Learner α β m) (C : ConceptClass α β) : Prop :=
   ∀ S, A S ∈ C ∧ ∀ h ∈ C, empiricalMiscount (A S) S ≤ empiricalMiscount h S
 
