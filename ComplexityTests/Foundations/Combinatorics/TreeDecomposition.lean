@@ -14,7 +14,8 @@ public import Mathlib.Data.Fin.VecNotation
 A concrete width-one rooted decomposition of the path on four vertices, checked by `decide`, and
 the resulting treewidth; parent and bag data that violate connectivity and so form no rooted
 decomposition; and the closed forms for complete graphs, cycles and edgeless graphs, together with
-the characterization of forests by treewidth at most one.
+the characterization of forests by treewidth at most one. The empty vertex type has treewidth `0`,
+and extended treewidth is `⊤` on the edgeless graph on `ℕ`.
 -/
 
 public section
@@ -78,5 +79,12 @@ example : ¬(cycleGraph 5).IsAcyclic := fun h => by
 
 /-- The edgeless graph has treewidth zero. -/
 example : (⊥ : SimpleGraph (Fin 3)).treewidth = 0 := treewidth_bot
+
+/-- The empty vertex type has treewidth zero, not `-1`. -/
+example : (⊥ : SimpleGraph (Fin 0)).treewidth = 0 := treewidth_bot
+
+/-- Extended treewidth is `⊤` on every infinite vertex type, even for the edgeless graph: it
+records only that no decomposition with finitely many nodes exists. -/
+example : (⊥ : SimpleGraph ℕ).etreewidth = ⊤ := etreewidth_eq_top_iff.2 inferInstance
 
 end Cslib.Tests.TreeDecomposition

@@ -28,7 +28,8 @@ contain `v`. This condition is decidable for concrete data and is equivalent to 
 (`SimpleGraph.RootedTreeDecomposition.preconnected_bag` and
 `SimpleGraph.RootedTreeDecomposition.ofPreconnected`).
 
-Every finite tree decomposition can be rooted and renumbered into this form with the same bags
+Every finite tree decomposition can be rooted and renumbered into this form with the same bags,
+along a bijection of nodes that preserves tree adjacency
 (`SimpleGraph.TreeDecomposition.exists_rooted`). As an application, every finite clique lies in a
 single bag (`SimpleGraph.TreeDecomposition.exists_subset_bag_of_isClique`).
 
@@ -41,8 +42,8 @@ single bag (`SimpleGraph.TreeDecomposition.exists_subset_bag_of_isClique`).
 
 ## Main results
 
-* `SimpleGraph.TreeDecomposition.exists_rooted`: every finite tree decomposition is the
-  renumbering of a rooted one with the same bags.
+* `SimpleGraph.TreeDecomposition.exists_rooted`: every finite tree decomposition is isomorphic,
+  as a tree with bags, to a rooted one.
 * `SimpleGraph.treewidth_le_iff_exists_rooted`: `G` has treewidth at most `k` if and only if it
   has a rooted decomposition of width at most `k`.
 * `SimpleGraph.TreeDecomposition.exists_subset_bag_of_isClique`: every finite clique lies in some
@@ -280,11 +281,11 @@ theorem width_le_iff {k : ℕ} : R.width ≤ k ↔ ∀ i, (R.bag i).card ≤ k +
 theorem card_bag_le (i : Fin (n + 1)) : (R.bag i).card ≤ R.width + 1 :=
   R.width_le_iff.1 le_rfl i
 
-/-- In every nonempty finite vertex set `S` some vertex `u` has a small neighbourhood inside `S`:
+/-- In every nonempty finite vertex set `S` some vertex `u` has at most `width` neighbours in `S`:
 `u` and its neighbours in `S` all lie in one bag. Take `u ∈ S` whose topmost node is numbered
 last. -/
-theorem exists_card_filter_adj_add_one_le [DecidableRel G.Adj] {S : Finset V}
-    (hS : S.Nonempty) : ∃ u ∈ S, (S.filter (G.Adj u)).card + 1 ≤ R.width + 1 := by
+theorem exists_card_filter_adj_le_width [DecidableRel G.Adj] {S : Finset V}
+    (hS : S.Nonempty) : ∃ u ∈ S, (S.filter (G.Adj u)).card ≤ R.width := by
   classical
   obtain ⟨u, huS, hu⟩ := S.exists_max_image R.top hS
   refine ⟨u, huS, ?_⟩
@@ -293,8 +294,9 @@ theorem exists_card_filter_adj_add_one_le [DecidableRel G.Adj] {S : Finset V}
     rw [Finset.mem_filter] at hw
     exact R.mem_bag_top_of_adj hw.2 (hu w hw.1)
   have hnot : u ∉ S.filter (G.Adj u) := fun h => G.loopless.irrefl u (Finset.mem_filter.1 h).2
-  rw [← Finset.card_insert_of_notMem hnot]
-  exact (Finset.card_le_card hsub).trans (R.card_bag_le _)
+  have := (Finset.card_le_card hsub).trans (R.card_bag_le _)
+  rw [Finset.card_insert_of_notMem hnot] at this
+  omega
 
 end RootedTreeDecomposition
 
@@ -302,11 +304,12 @@ end RootedTreeDecomposition
 
 namespace TreeDecomposition
 
-/-- Every tree decomposition with finitely many nodes can be rooted and renumbered: it is the
-renumbering of a rooted tree decomposition with the same bags. -/
+/-- Every tree decomposition with finitely many nodes can be rooted and renumbered: there is a
+rooted tree decomposition with the same bags whose parent-array tree corresponds to the index tree
+along a bijection of nodes. -/
 theorem exists_rooted [Finite ι] (D : G.TreeDecomposition ι) :
     ∃ n, ∃ R : G.RootedTreeDecomposition n, ∃ e : Fin (n + 1) ≃ ι,
-      ∀ i, R.bag i = D.bag (e i) := by
+      (∀ i, R.bag i = D.bag (e i)) ∧ ∀ i j, R.tree.Adj i j ↔ D.tree.Adj (e i) (e j) := by
   classical
   have := Fintype.ofFinite ι
   -- Root the index tree at some `r` and number the nodes by depth, breaking ties arbitrarily:
@@ -361,9 +364,13 @@ theorem exists_rooted [Finite ι] (D : G.TreeDecomposition ι) :
     have := hpar (e i) (fun h => hi ((he_iff i).2 h))
     rw [← e.lt_iff_lt, e.apply_symm_apply]
     exact this
+  have hadj : ∀ i j, (parentTree parent).Adj i j ↔ D.tree.Adj (e i) (e j) := by
+    intro i j
+    rw [parentTree_adj parent_lt, D.isTree.adj_iff_parent r, Ne, Ne, Ne, Ne, he_iff i, he_iff j]
+    simp only [parent, par, OrderIso.symm_apply_eq]
   refine ⟨n, RootedTreeDecomposition.ofPreconnected parent parent_zero parent_lt
     (fun i => D.bag (e i)) (fun v => ?_) (fun u v huv => ?_) (fun v => ?_), e.toEquiv,
-    fun i => by unfold RootedTreeDecomposition.ofPreconnected; rfl⟩
+    fun i => by unfold RootedTreeDecomposition.ofPreconnected; rfl, fun i j => ?_⟩
   · obtain ⟨t, ht⟩ := D.exists_mem_bag v
     exact ⟨e.symm t, by simpa using ht⟩
   · obtain ⟨t, ht⟩ := D.exists_adj_mem_bag huv
@@ -377,27 +384,18 @@ theorem exists_rooted [Finite ι] (D : G.TreeDecomposition ι) :
           exact t.2⟩
         map_rel' := fun {a b} h => by
           change (parentTree parent).Adj (e.symm a) (e.symm b)
-          have h' : D.tree.Adj a b := h
-          rw [parentTree_adj parent_lt]
-          rcases (D.isTree.adj_iff_parent r).1 h' with ⟨ha, hab⟩ | ⟨hb, hba⟩
-          · left
-            refine ⟨fun h0 => ha ?_, ?_⟩
-            · rw [← e.apply_symm_apply (a : ι), (he_iff _).1 h0]
-            · simp only [parent, OrderIso.apply_symm_apply]
-              exact congrArg e.symm hab
-          · right
-            refine ⟨fun h0 => hb ?_, ?_⟩
-            · rw [← e.apply_symm_apply (b : ι), (he_iff _).1 h0]
-            · simp only [parent, OrderIso.apply_symm_apply]
-              exact congrArg e.symm hba }
+          rw [hadj, OrderIso.apply_symm_apply, OrderIso.apply_symm_apply]
+          exact h }
     refine (D.preconnected_bag v).map f ?_
     rintro ⟨i, hi⟩
     exact ⟨⟨e i, hi⟩, Subtype.ext (e.symm_apply_apply i)⟩
+  · rw [RootedTreeDecomposition.tree_eq]
+    exact hadj i j
 
 /-- Every tree decomposition with finitely many nodes has a rooted one of the same width. -/
 theorem exists_rooted_width_eq [Fintype ι] (D : G.TreeDecomposition ι) :
     ∃ n, ∃ R : G.RootedTreeDecomposition n, R.width = D.width := by
-  obtain ⟨n, R, e, he⟩ := D.exists_rooted
+  obtain ⟨n, R, e, he, -⟩ := D.exists_rooted
   refine ⟨n, R, le_antisymm (R.width_le_iff.2 fun i => ?_) (D.width_le_iff.2 fun t => ?_)⟩
   · rw [he]
     exact D.card_bag_le _
@@ -407,7 +405,7 @@ theorem exists_rooted_width_eq [Fintype ι] (D : G.TreeDecomposition ι) :
 /-- Every finite clique lies in a single bag of a tree decomposition with finitely many nodes. -/
 theorem exists_subset_bag_of_isClique [Finite ι] (D : G.TreeDecomposition ι) {K : Finset V}
     (hK : G.IsClique (K : Set V)) : ∃ t, K ⊆ D.bag t := by
-  obtain ⟨n, R, e, he⟩ := D.exists_rooted
+  obtain ⟨n, R, e, he, -⟩ := D.exists_rooted
   obtain ⟨i, hi⟩ := R.exists_subset_bag_of_isClique hK
   exact ⟨e i, he i ▸ hi⟩
 
@@ -416,8 +414,8 @@ theorem exists_card_filter_adj_le_width [Fintype ι] [DecidableRel G.Adj]
     (D : G.TreeDecomposition ι) {S : Finset V} (hS : S.Nonempty) :
     ∃ u ∈ S, (S.filter (G.Adj u)).card ≤ D.width := by
   obtain ⟨n, R, hR⟩ := D.exists_rooted_width_eq
-  obtain ⟨u, huS, hu⟩ := R.exists_card_filter_adj_add_one_le hS
-  exact ⟨u, huS, by omega⟩
+  obtain ⟨u, huS, hu⟩ := R.exists_card_filter_adj_le_width hS
+  exact ⟨u, huS, hR ▸ hu⟩
 
 /-- A tree decomposition has width at least the size of any finite clique minus one. -/
 theorem card_le_width_add_one_of_isClique [Fintype ι] (D : G.TreeDecomposition ι) {K : Finset V}

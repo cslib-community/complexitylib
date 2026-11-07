@@ -25,9 +25,13 @@ The *width* of a decomposition with finitely many nodes is the largest bag size 
 *treewidth* of `G` is the least width of a decomposition with finitely many nodes.
 
 We work with finite bags and finite index trees throughout. `SimpleGraph.etreewidth` takes values
-in `ℕ∞`: it is `⊤` exactly when `G` has no such decomposition, which happens only for infinite
-`V`. `SimpleGraph.treewidth` is its truncation to `ℕ`, following the `egirth`/`girth` convention
-of Mathlib. For finite `V` the single-bag decomposition shows `treewidth G ≤ card V - 1`.
+in `ℕ∞` and is `⊤` exactly when `G` has no such decomposition. Finitely many finite bags cover
+only finitely many vertices, so this happens if and only if `V` is infinite, whatever the edges of
+`G` (`SimpleGraph.etreewidth_eq_top_iff`). In particular `⊤` carries no graph information, and
+`etreewidth` is not the treewidth of infinite graphs, which allows decompositions over infinite
+trees. `SimpleGraph.treewidth` is the truncation to `ℕ`. It is the textbook treewidth for finite
+`V`, where the single-bag decomposition shows `treewidth G ≤ card V - 1`. A graph on an empty
+vertex type has treewidth `0`.
 
 Condition 3 is stated as preconnectedness of the induced subgraph, so a vertex lying in no bag
 would satisfy it vacuously; condition 1 rules that out.
@@ -45,6 +49,7 @@ would satisfy it vacuously; condition 1 rules that out.
   (`SimpleGraph.treewidth_mono`).
 * `SimpleGraph.Iso.treewidth_eq`: treewidth is an isomorphism invariant.
 * `SimpleGraph.treewidth_le_card`: `treewidth G ≤ card V - 1`.
+* `SimpleGraph.etreewidth_eq_top_iff`: `etreewidth G = ⊤ ↔ Infinite V`.
 * `SimpleGraph.exists_width_eq_treewidth`, `SimpleGraph.le_treewidth_iff`,
   `SimpleGraph.treewidth_le_iff`: treewidth is attained, and its order characterizations.
 
@@ -101,6 +106,14 @@ theorem le_width_of_le_card [Fintype ι] (D : G.TreeDecomposition ι) {k : ℕ} 
     (h : k + 1 ≤ (D.bag t).card) : k ≤ D.width := by
   have := D.card_bag_le t
   omega
+
+/-- Finitely many finite bags cover the vertices, so a graph with a tree decomposition with
+finitely many nodes has a finite vertex type. -/
+theorem finite [Finite ι] (D : G.TreeDecomposition ι) : Finite V := by
+  refine Set.finite_univ_iff.1 ((Set.finite_iUnion fun t => (D.bag t).finite_toSet).subset
+    fun v _ => ?_)
+  obtain ⟨t, ht⟩ := D.exists_mem_bag v
+  exact Set.mem_iUnion.2 ⟨t, ht⟩
 
 /-- Transport a tree decomposition along an equivalence of index types. -/
 def reindex (D : G.TreeDecomposition ι) (e : ι ≃ κ) : G.TreeDecomposition κ where
@@ -185,7 +198,12 @@ variable {G : SimpleGraph V} {H : SimpleGraph W}
 
 /-- The extended treewidth of `G`: the least width of a tree decomposition of `G` with finitely
 many nodes, or `⊤` if there is none. Nodes are indexed by `Fin n`, which loses no generality
-(`SimpleGraph.etreewidth_le_width`). -/
+(`SimpleGraph.etreewidth_le_width`).
+
+Since finitely many finite bags cover only finitely many vertices, `etreewidth G = ⊤` if and only
+if `V` is infinite (`SimpleGraph.etreewidth_eq_top_iff`). So `⊤` carries no information about
+the edges of `G`, and this is not the treewidth of infinite graphs, which allows decompositions
+over infinite trees. -/
 noncomputable def etreewidth (G : SimpleGraph V) : ℕ∞ :=
   ⨅ D : (Σ n : ℕ, G.TreeDecomposition (Fin n)), (D.2.width : ℕ∞)
 
@@ -215,9 +233,18 @@ theorem etreewidth_ne_top [Finite V] : G.etreewidth ≠ ⊤ := by
   have := Fintype.ofFinite V
   exact ne_top_of_le_ne_top (ENat.natCast_ne_top _) etreewidth_le_card
 
+/-- `etreewidth G = ⊤` exactly when the vertex type is infinite, whatever the edges of `G`. -/
+theorem etreewidth_eq_top_iff : G.etreewidth = ⊤ ↔ Infinite V := by
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · by_contra hV
+    have := not_infinite_iff_finite.1 hV
+    exact etreewidth_ne_top h
+  · exact iInf_eq_top.2 fun D => absurd D.2.finite (not_finite_iff_infinite.2 h)
+
 /-- The treewidth of `G`: the least width of a tree decomposition of `G` with finitely many nodes.
-This is meaningful for finite `V`, where such a decomposition always exists; it is `0` when there
-is none (see `SimpleGraph.etreewidth`). -/
+This is meaningful for finite `V`, where such a decomposition always exists. For infinite `V` it is
+the junk value `0` (see `SimpleGraph.etreewidth_eq_top_iff`). A graph on an empty vertex type has
+treewidth `0` (one empty bag), not the value `-1` used by some texts. -/
 noncomputable def treewidth (G : SimpleGraph V) : ℕ := G.etreewidth.toNat
 
 theorem coe_treewidth [Finite V] : (G.treewidth : ℕ∞) = G.etreewidth :=
