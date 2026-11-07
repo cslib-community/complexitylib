@@ -53,6 +53,9 @@
  "Complexity/Computability/Complexity/FineGrained/CountingFiniteCSP.lean": {
   "encPair encUnary (encCSP (encOption ?1) encNat)": 3
  },
+ "Complexity/Computability/Complexity/Parameterized/ColorCoding.lean": {
+  "encPair encGraph (encList encNat)": 3
+ },
  "Complexity/Computability/Complexity/Problems/Hamiltonian.lean": {
   "encPair encGraph (encPair encNat encNat)": 6
  },
