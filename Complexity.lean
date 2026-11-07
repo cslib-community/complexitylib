@@ -1835,8 +1835,10 @@ public import Complexity.Computability.Complexity.Problems.HornSAT
 public import Complexity.Computability.Complexity.Problems.IndependentSet
 public import Complexity.Computability.Complexity.Problems.IndependentSet.Sparse
 public import Complexity.Computability.Complexity.Problems.IntegerProgramming
+public import Complexity.Computability.Complexity.Problems.JobSequencing
 public import Complexity.Computability.Complexity.Problems.Knapsack
 public import Complexity.Computability.Complexity.Problems.LongPath
+public import Complexity.Computability.Complexity.Problems.MaxCut
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness
 public import Complexity.Computability.Complexity.Problems.NAEThreeSAT
