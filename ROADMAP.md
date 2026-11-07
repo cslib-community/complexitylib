@@ -740,8 +740,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `Ω(ε² n ^ (5 / 2) / log ^ (5 / 2) n)` active-wire lower bounds for
   `3 * (b + 2) / √(2 ^ b) ≤ ε ≤ 1 / 2` in the balanced regime
   (`WeightedThreshold/AndreevLowerBound.lean`, improving the
-  `ε³` dependence in Theorem 1.1 and Section 5 of arXiv:1511.07860v1) are proved; closing the
-  worst-case depth-two threshold gate gap between `Ω̃(n ^ (3 / 2))` and `O(n ^ 2)` remains open.
+  `ε³` dependence in Theorem 1.1 and Section 5 of arXiv:1511.07860v1) are proved. Averaging
+  extends these bounds to `ε`-approximate majorities of depth-two circuits, so a majority vote of
+  `t` depth-two circuits with at most `s` gates each needs top fan-in
+  `t = Ω(n ^ (3 / 4) / (log n · √s))` once `t ≤ √(2 ^ b) / (6 (b + 2))`
+  (`WeightedThreshold/AndreevApproxMajority.lean`, [#2812]; Kane–Williams, Corollary 1.1, have
+  `Ω̃(n ^ (1 / 2) / s ^ (1 / 3))`). The vote is stated through its number of correct members rather
+  than as a depth-three circuit model. Closing the worst-case depth-two threshold gate gap between
+  `Ω̃(n ^ (3 / 2))` and `O(n ^ 2)` remains open, as do the other [#2812] milestones.
 - **Construction runtimes**, certified separately from gate counts: the mass-production
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
@@ -1231,3 +1237,4 @@ not planned, not as proved.
 [#2652]: https://github.com/cslib-community/complexitylib/issues/2652
 
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
+[#2812]: https://github.com/cslib-community/complexitylib/issues/2812
