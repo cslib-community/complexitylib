@@ -716,6 +716,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
   PCP, CSP classifications and relaxation gaps, with assumptions such as the Unique Games
   Conjecture stated explicitly. The 2-to-2 games theorem waits for [#886].
+- **Approximation algorithms:** a general interface for approximation ratios of optimization
+  problems, under which polynomial-time algorithms such as Johnson's `7 / 8` algorithm for
+  MAX-E3SAT meet matching hardness results such as Håstad's ([#886]); LP and SDP rounding, such
+  as Goemans–Williamson for MAX-CUT and MAX-SAT.
 - **A practical PCP construction:** a reasonably runnable construction and its cost on complete
   reductions; rotation certificates polynomial in the bit length of a vertex name; machine-level
   error reduction and extractors from expander walks, with certified seed and evaluation costs.
@@ -874,7 +878,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   recovery; communication-to-streaming transfers with explicit state encodings and pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
-  PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. Give the
+  PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. For realizable
+  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), prove
+  the VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)`, first for countable domains and
+  then for general well-behaved classes. Give the
   computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
   costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
@@ -987,10 +994,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Output/count validation and complete native circuit-bound VOLE execution (#2765; #643;
   prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
   and fresh-session amplification remain separate endpoints.
-- **Markov-chain sampling:** finite kernels, stationarity, reversibility and total-variation
-  mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
-  Metropolis sampling for encoded rational target weights, charging initialization, arithmetic
-  and every transition, with support and mixing hypotheses explicit.
+- **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
+  stationarity, reversibility, total-variation mixing times, Markovian couplings and reversible
+  Metropolis chains, with the lazy hypercube walk as client
+  (`Probability/BitString/LazyRandomWalk`, #2857). Extend with path coupling, conductance,
+  canonical-path and spectral-gap arguments. Implement Metropolis sampling for encoded rational
+  target weights, charging initialization, arithmetic and every transition, with support and
+  mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** interfaces separating relative error, failure
   probability, output-distribution error and runtime, including zero-count instances. Start
   with a complete DNF-counting FPRAS; prove sampling/counting reductions for suitably
@@ -1005,10 +1015,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Moser–Tardos resampling:** an actual resampling program, its correctness and expected
   resampling bound, and native sampling and event-detection costs, building on the variable
   form of the Local Lemma.
-- **Conditional expectations and pessimistic estimators:** certified choice and update rules,
-  algorithmic alteration, and concrete coloring, satisfiability or combinatorial-construction
-  clients. Preserve the quantitative guarantee when converting an existence argument into a
-  deterministic or randomized algorithm.
+- **Conditional expectations and pessimistic estimators:** algorithmic alteration, and coloring,
+  MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
+  (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting
+  an existence argument into a deterministic or randomized algorithm.
 
 ## Machines, RAM and data structures
 
