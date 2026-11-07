@@ -352,50 +352,21 @@ theorem toAlgorithm_run (F : LocalRule I O r) {n : ℕ} (x : ZMod n → I) (v : 
     F.toAlgorithm.run x r v = F.apply x v :=
   F.toFun_congr fun j hj₁ hj₂ => F.toAlgorithm_state_eq x r v j hj₁ hj₂
 
-/-- Running a rule `F` of radius `r` and then an algorithm `B` on its outputs: for `r` rounds the
-nodes flood windows as in `F.toAlgorithm` and keep `B` initialised from `F` on the current window;
-from round `r` on they run `B`. -/
+/-- Running a rule `F` of radius `r` and then an algorithm `B` on its outputs: the flooding
+algorithm `F.toAlgorithm` for `r` rounds, followed by `B` (`Algorithm.seq`). -/
 @[expose] def andThen {S' O' : Type*} (F : LocalRule I O r) (B : Algorithm O S' O') :
-    Algorithm I ((ℤ → I) × S') O' where
-  init x := (fun _ => x, B.init (F.toFun fun _ => x))
-  step k p s q :=
-    if k < r then
-      (F.toAlgorithm.step k p.1 s.1 q.1, B.init (F.toFun (F.toAlgorithm.step k p.1 s.1 q.1)))
-    else (s.1, B.step (k - r) p.2 s.2 q.2)
-  output s := B.output s.2
-
-private theorem andThen_state_le {S' O' : Type*} (F : LocalRule I O r) (B : Algorithm O S' O')
-    {n : ℕ} (x : ZMod n → I) {s : ℕ} (hs : s ≤ r) (v : ZMod n) :
-    (F.andThen B).state x s v =
-      (F.toAlgorithm.state x s v, B.init (F.toFun (F.toAlgorithm.state x s v))) := by
-  induction s generalizing v with
-  | zero => rfl
-  | succ s ih =>
-    have hstep : ∀ p q : (ℤ → I) × S', ∀ c : (ℤ → I) × S', (F.andThen B).step s p c q =
-        (F.toAlgorithm.step s p.1 c.1 q.1, B.init (F.toFun (F.toAlgorithm.step s p.1 c.1 q.1))) :=
-      fun p q c => by simp only [andThen, show s < r by omega, ↓reduceIte]
-    rw [Algorithm.state_succ, hstep, ih (by omega), ih (by omega), ih (by omega),
-      Algorithm.state_succ]
+    Algorithm I ((ℤ → I) × S') O' :=
+  F.toAlgorithm.seq r B
 
 /-- **Composition.** Running `F.andThen B` for `r + t` rounds is running `B` for `t` rounds on the
 outputs of `F`. -/
 theorem andThen_run {S' O' : Type*} (F : LocalRule I O r) (B : Algorithm O S' O') {n : ℕ}
     (x : ZMod n → I) (t : ℕ) (v : ZMod n) :
     (F.andThen B).run x (r + t) v = B.run (F.apply x) t v := by
-  suffices h : ∀ v, ((F.andThen B).state x (r + t) v).2 = B.state (F.apply x) t v from
-    congrArg B.output (h v)
-  induction t with
-  | zero =>
-    intro v
-    rw [Nat.add_zero, andThen_state_le F B x le_rfl]
-    exact congrArg B.init (F.toAlgorithm_run x v)
-  | succ t ih =>
-    intro v
-    have hstep : ∀ p q c : (ℤ → I) × S', (F.andThen B).step (r + t) p c q =
-        (c.1, B.step t p.2 c.2 q.2) :=
-      fun p q c => by simp only [andThen, show ¬r + t < r by omega, ↓reduceIte,
-        Nat.add_sub_cancel_left]
-    rw [← Nat.add_assoc, Algorithm.state_succ, hstep, ih, ih, ih, Algorithm.state_succ]
+  rw [andThen, Algorithm.seq_run]
+  congr 1
+  funext u
+  exact F.toAlgorithm_run x u
 
 end LocalRule
 

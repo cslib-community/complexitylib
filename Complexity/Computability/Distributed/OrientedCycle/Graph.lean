@@ -56,10 +56,9 @@ theorem graph_succ_eq_cycleGraph (k : ℕ) : graph (k + 1) = SimpleGraph.cycleGr
   (SimpleGraph.cycleGraph_eq_circulantGraph k).symm
 
 /-- Away from the one-node cycle no node is its own successor. -/
-theorem self_ne_add_one {n : ℕ} (hn : n ≠ 1) (v : ZMod n) : v ≠ v + 1 := by
+theorem self_ne_add_one {n : ℕ} (hn : n ≠ 1) (v : ZMod n) : v ≠ v + 1 :=
   have : Nontrivial (ZMod n) := ZMod.nontrivial_iff.2 hn
-  intro h
-  exact one_ne_zero (left_eq_add.1 h)
+  left_ne_add.2 one_ne_zero
 
 theorem graph_adj_add_one {n : ℕ} (hn : n ≠ 1) (v : ZMod n) : (graph n).Adj v (v + 1) :=
   graph_adj.2 ⟨self_ne_add_one hn v, Or.inr rfl⟩
@@ -77,12 +76,12 @@ theorem isProperColoring_iff_adj {n : ℕ} (hn : n ≠ 1) {C : Type*} {c : ZMod 
     exact h v (v + 1) (graph_adj_add_one hn v)
 
 /-- A proper colouring of the oriented cycle as a colouring of its graph. -/
-@[expose] def IsProperColoring.toColoring {n : ℕ} (hn : n ≠ 1) {C : Type*} {c : ZMod n → C}
+def IsProperColoring.toColoring {n : ℕ} (hn : n ≠ 1) {C : Type*} {c : ZMod n → C}
     (hc : IsProperColoring c) : (graph n).Coloring C :=
   SimpleGraph.Coloring.mk c fun {u v} huv => (isProperColoring_iff_adj hn).1 hc u v huv
 
 @[simp] theorem IsProperColoring.toColoring_apply {n : ℕ} (hn : n ≠ 1) {C : Type*}
-    {c : ZMod n → C} (hc : IsProperColoring c) (v : ZMod n) : hc.toColoring hn v = c v :=
+    {c : ZMod n → C} (hc : IsProperColoring c) (v : ZMod n) : hc.toColoring hn v = c v := by
   rfl
 
 /-- An algorithm that properly `c`-colours every oriented `n`-cycle, `n ≠ 1`, in `t` rounds outputs

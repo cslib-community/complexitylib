@@ -171,7 +171,6 @@ example {S : Type} (A : Algorithm ℕ S ℕ) :
 example : ∃ (S : Type) (A : Algorithm ℕ S ℕ), A.ColorsCycle 5 5 3 :=
   (exists_colorsCycle_three_and_logStar_le.{0} (n := 5) (by decide)).1
 
-
 /-! ### The graph of the oriented cycle -/
 
 -- The graph of the oriented 5-cycle is Mathlib's `cycleGraph 5`.

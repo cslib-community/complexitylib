@@ -96,15 +96,18 @@ node is its own successor.
 independent sets. `IsMIS s` is the local description of a marked set `s : ZMod n → Bool`, and
 `isMIS_iff_maximal` matches it with Mathlib's `Maximal (graph n).IsIndepSet` for `n ≠ 1`.
 `misOfColoring_run` turns a proper colouring with colours below `k` into an MIS within `k - 1`
-rounds by greedy colour classes. `misAlgorithm s` runs `fastThreeColoring s` for `s + 3` rounds
-and then the greedy step, through the sequential composition `Algorithm.seq` of `Basic.lean`.
+rounds by greedy colour classes, on every oriented cycle and on the infinite path.
+`misAlgorithm s` runs `fastThreeColoring s` for `s + 3` rounds and then the greedy step, through
+the sequential composition `Algorithm.seq` of `Basic.lean` (`LocalRule.andThen` is `seq` after the
+flooding algorithm of a rule). `Algorithm.FindsMIS A n t` asks that `A` marks an MIS after `t`
+rounds for every bijection from the nodes onto `{0, …, n - 1}`. For `n ≠ 1`,
 `misAlgorithm_findsMIS` finds an MIS within `s + 5` rounds when `log* n ≤ 2 s`. Conversely,
 `colorOfMIS` turns an MIS into a proper 3-colouring in one round, so
 `Algorithm.FindsMIS.logStar_le` gives `log* n ≤ 2t + 4` for every `t`-round MIS algorithm.
-`exists_findsMIS_and_logStar_le` packages both directions. These reductions are standard
-consequences of the 3-colouring bounds. Use `Algorithm.seq` rather than `LocalRule.andThen` when
-composing algorithms that `decide` must evaluate, since the flooding simulation behind `andThen`
-makes kernel evaluation exponentially slower.
+`exists_findsMIS_and_logStar_le` packages both directions for `n ≠ 1`. These reductions are
+standard consequences of the 3-colouring bounds. Compose algorithms with `Algorithm.seq`; do not
+convert an algorithm to a `LocalRule` with `Algorithm.toLocalRule` just to compose it, since
+flooding its whole window makes `decide` impractical.
 
 [Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
 algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no

@@ -7,8 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Distributed.OrientedCycle.ColeVishkin
 public import Complexity.Computability.Distributed.OrientedCycle.Graph
-public import Complexity.Computability.Distributed.OrientedCycle.RoundComplexity
+public import Complexity.Computability.Distributed.OrientedCycle.Linial
 
 /-!
 # Maximal independent sets on oriented cycles
