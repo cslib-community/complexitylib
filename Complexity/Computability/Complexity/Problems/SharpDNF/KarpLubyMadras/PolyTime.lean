@@ -283,8 +283,6 @@ theorem isPPTOn_estimate : IsPPTOn (encPair encDNF (encPair encUnary encUnary))
       (encPair (encPair encDNF (encPair encUnary encUnary)) encUnary)
       (encPair encNat encNat) := by
     have hnv := CNF.computableInPolyTime_numVars encNat
-    have hub : ComputableInPolyTime (fun n : ℕ => n) encUnary encNat :=
-      .of_tidy ComputableTidilyInPolyTime.unary_to_binary
     fun_prop
   exact IsPPTOn.map_with (program := fun x : DNF ℕ × ℕ × ℕ =>
       OracleComp.countTrue (trialBudget x.1 x.2.1 x.2.2) (trial x.1))

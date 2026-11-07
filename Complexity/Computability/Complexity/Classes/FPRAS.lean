@@ -23,7 +23,7 @@ failure probability `δ`, outputs an estimate within relative error `ε` of `f x
 at least `1 - δ`, in time polynomial in the length of `x`, in `1 / ε` and in `log (1 / δ)`
 [Karp, Luby and Madras][KarpLubyMadras1989],
 [Jerrum, Valiant and Vazirani][JerrumValiantVazirani1986],
-[Mitzenmacher and Upfal, Section 11.2][MitzenmacherUpfal2017].
+[Mitzenmacher and Upfal, Section 11.2, Definition 11.2][MitzenmacherUpfal2017].
 
 `Cslib.Complexity.IsFPRAS enc f A` parameterizes the relative error as `ε = 1 / p` and the
 failure probability as `δ = 2 ^ (-t)`, for natural numbers `p` and `t` both written in unary. A
@@ -61,7 +61,8 @@ the guarantee in the usual form for real `ε > 0` and `δ > 0`, running `A` on `
   problems*][KarpLubyMadras1989]
 * [M. R. Jerrum, L. G. Valiant, V. V. Vazirani, *Random generation of combinatorial structures from
   a uniform distribution*][JerrumValiantVazirani1986]
-* [M. Mitzenmacher, E. Upfal, *Probability and Computing*, Section 11.2][MitzenmacherUpfal2017]
+* [M. Mitzenmacher, E. Upfal, *Probability and Computing*, Section 11.2, Definition
+  11.2][MitzenmacherUpfal2017]
 -/
 
 @[expose] public section
