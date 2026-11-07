@@ -60,6 +60,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `awpp` | [AWPP](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `sbp` | [SBP](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `bpppath` | [BPPpath](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
+| `fpras` | [FPRAS approximate counting](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
 | `deterministic-oracle` | [Efficient deterministic oracle program](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `counting-oracle` | [#P function-bit oracle](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `ma` | [Merlin-Arthur verifier](machines-and-classes/verifiers-counting-interaction.md) | interactive |

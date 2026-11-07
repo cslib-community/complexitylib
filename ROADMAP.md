@@ -964,10 +964,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
   Metropolis sampling for encoded rational target weights, charging initialization, arithmetic
   and every transition, with support and mixing hypotheses explicit.
-- **FPRAS and almost-uniform sampling:** interfaces separating relative error, failure
-  probability, output-distribution error and runtime, including zero-count instances. Start
-  with a complete DNF-counting FPRAS; prove sampling/counting reductions for suitably
-  self-reducible relations, with the sampling and counting oracle costs included.
+- **FPRAS and almost-uniform sampling:** an almost-uniform sampling (FPAUS) interface with
+  explicit output-distribution error alongside the FPRAS interface, and sampling/counting
+  reductions for suitably self-reducible relations, with the sampling and counting oracle
+  costs included.
 - Extend to randomized approximate counting for matchings and permanents of nonnegative
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
   expander APIs and connect to the separate Stockmeyer oracle-counting track where their
