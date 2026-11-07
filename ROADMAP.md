@@ -590,8 +590,13 @@ index links to canonical definitions rather than keeping a second set.
   `P/poly` (Ko), and self-reducible P-selective sets lie in P.
 - **Low and high hierarchies in NP** (Schöning): sparse NP sets lie in `Low₂` (Ko and Schöning), and
   so does graph isomorphism, via graph non-isomorphism in AM.
-- **Immunity:** immune and bi-immune sets, P-bi-immune sets in EXP (Balcázar and Schöning), and
-  almost-everywhere hardness.
+- **Immunity** ([#2899]): after `IsImmune`/`IsBiImmune`, a `P`-bi-immune set in `E`
+  (`Classes/Immune/Construction.lean`) and Berman's theorem that `≤ᵖₘ`-complete sets for `E`/`EXP`
+  are not `P`-immune (`Classes/Immune/Complete.lean`): `DTIME(t)`-bi-immune sets in larger time
+  classes for general constructible `t`, the remaining Balcázar–Schöning results, complexity
+  cores (Lynch; Orponen and Schöning) and their sizes for hard sets (Juedes and Lutz),
+  almost-everywhere hardness, and measure strengthenings (almost every set in `E` is
+  `P`-bi-immune, Mayordomo).
 
 ### Average-case complexity
 
@@ -1257,3 +1262,4 @@ not planned, not as proved.
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
+[#2899]: https://github.com/cslib-community/complexitylib/issues/2899
