@@ -33,9 +33,11 @@ jobs:
       # manual/BUILD.md: Pandoc, XeLaTeX with fontspec, fvextra, xurl, bookmark, microtype,
       # fancyhdr, etoolbox and tcolorbox, TeX Gyre Pagella/Heros and DejaVu Sans Mono, pdfinfo
       # (Poppler) and Graphviz for the model diagrams. The TeX Gyre OpenType files are in
-      # fonts-texgyre, which tex-gyre only recommends.
+      # fonts-texgyre, which tex-gyre only recommends; hyperref needs the Zapf Dingbats metrics
+      # from texlive-fonts-recommended.
       MANUAL_PACKAGES: >-
-        pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra tex-gyre fonts-texgyre
+        pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
+        tex-gyre fonts-texgyre
         fonts-dejavu-core graphviz poppler-utils
       # Downloaded archives are cached as in abstracts.yml; apt still verifies their digests.
       MANUAL_DEBS: /var/cache/manual-debs
