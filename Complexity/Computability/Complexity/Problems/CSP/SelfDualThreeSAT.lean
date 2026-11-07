@@ -16,8 +16,8 @@ import Mathlib.Data.Fin.VecNotation
 /-!
 # A self-dual reference lift of ternary clause satisfiability
 
-A reference bit is shared by every constraint. Each signed clause is evaluated on the exclusive
-or of its three variable values with that reference. Complementing all values therefore leaves
+The reduction shares a reference bit across its constraints. Each signed clause is evaluated on
+the exclusive or of its three variable values with that reference. Complementing all values leaves
 every relation invariant. Setting the reference false recovers ordinary signed 3SAT, and any
 model can be normalized that way. This is the reference-bit construction of [Chen2006CSP],
 Lemma 5.2 (arXiv v1, p. 18), specialized to the ternary clause language.
@@ -38,6 +38,8 @@ labels remain binary; the original variable `v` becomes `v+1`, and zero is the r
 * `Cslib.Complexity.SelfDualThreeSAT.relation_nonempty`: each relation has a model.
 * `Cslib.Complexity.SelfDualThreeSAT.separates_coordinates`: no two free-coordinate columns
   coincide.
+* `Cslib.Complexity.SelfDualThreeSAT.length_ofExactThreeSAT_le`: the lift does not increase
+  the number of constraints, including on malformed inputs.
 * `Cslib.Complexity.SelfDualThreeSAT.npComplete`: native NP-completeness.
 -/
 
@@ -112,6 +114,18 @@ private def valid (φ : CNF ℕ) : Bool := φ.all (fun c => decide (c.length = 3
 Malformed exact-three syntax produces a malformed target constraint. -/
 def ofExactThreeSAT (φ : CNF ℕ) : CSP SignPattern ℕ :=
   if valid φ then φ.map constraint else [((true, true, true), [])]
+
+/-- The reference lift does not increase the number of clauses/constraints. An invalid input
+is nonempty, so the singleton malformed reject instance satisfies the same bound. -/
+theorem length_ofExactThreeSAT_le (φ : CNF ℕ) :
+    (ofExactThreeSAT φ).length ≤ φ.length := by
+  unfold ofExactThreeSAT
+  split
+  · simp
+  · rename_i hvalid
+    cases φ with
+    | nil => exact (hvalid rfl).elim
+    | cons c φ => simp
 
 private theorem eval_constraint {c : Clause ℕ} (hc : c.length = 3) (τ : ℕ → Bool) :
     (constraint c).eval sem τ = c.eval (fun v => τ (v + 1) ^^ τ 0) := by
