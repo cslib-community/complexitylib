@@ -642,6 +642,37 @@ class AbstractReadmeTests(unittest.TestCase):
         self.assertEqual(check_hygiene.check_abstract_readmes(), [])
 
 
+class RoadmapLinkTests(unittest.TestCase):
+    URL = "https://github.com/cslib-community/complexitylib/issues/"
+
+    def test_inline_and_grandfathered_links_pass(self) -> None:
+        text = (f"- **Direction** ([#585], [#9999]({self.URL}9999), [text][#897])\n"
+                f"- Collapsed [#585][]\n\n[archive]: {self.URL}1\n"
+                f"[#585]: {self.URL}585\n   [#897]: {self.URL}897\n")
+        self.assertEqual(check_hygiene.check_roadmap_links(text), [])
+
+    def test_new_definition_fails(self) -> None:
+        text = f"- **Direction** ([#9999])\n\n[#585]: {self.URL}585\n[#9999]: {self.URL}9999\n"
+        self.assertEqual(check_hygiene.check_roadmap_links(text), [
+            "ROADMAP.md:4: new reference definition `[#9999]:`; write the link inline as "
+            f"`[#9999]({self.URL}9999)`, since definitions appended to the end of the file "
+            "conflict across queued PRs (CONTRIBUTING.md, Documentation)",
+        ])
+
+    def test_undefined_reference_fails(self) -> None:
+        text = "- **Direction** ([#9999]); see [the issue][#9998]\n"
+        self.assertEqual(check_hygiene.check_roadmap_links(text), [
+            "ROADMAP.md:1: `[#9999]` has no reference definition and renders as plain text; "
+            f"write it as `[#9999]({self.URL}9999)`",
+            "ROADMAP.md:1: `[#9998]` has no reference definition and renders as plain text; "
+            f"write it as `[#9998]({self.URL}9998)`",
+        ])
+
+    def test_repository_roadmap_passes(self) -> None:
+        text = (check_hygiene.ROOT / "ROADMAP.md").read_text(encoding="utf-8")
+        self.assertEqual(check_hygiene.check_roadmap_links(text), [])
+
+
 class CitationTests(unittest.TestCase):
     keys = frozenset({"AroraBarak09", "Ilango2020FOCS", "Sipser2013"})
 
