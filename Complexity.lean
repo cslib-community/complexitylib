@@ -761,6 +761,8 @@ public import Complexity.Computability.BlumComplexity.RecursiveRelatedness
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
 public import Complexity.Computability.Catalytic.Comparison
+public import Complexity.Computability.CellProbe.Defs
+public import Complexity.Computability.CellProbe.Randomized
 public import Complexity.Computability.Circuit.Approximation
 public import Complexity.Computability.Circuit.Approximation.Hamming
 public import Complexity.Computability.Circuit.Arithmetic
