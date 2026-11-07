@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.LinearOrder
+public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 
 /-! # Ehrenfeucht–Fraïssé games: checked instances
 
@@ -92,6 +92,33 @@ example (n : ℕ) (a : Fin 2 → Fin 3) :
   IsBackAndForth.duplicatorWins (I := fun _ _ a b => b = Equiv.refl (Fin 3) ∘ a)
     ⟨fun h => h ▸ PartialIso.refl _, fun h c => ⟨c, by rw [h, Fin.comp_snoc]; rfl⟩,
       fun h d => ⟨d, by rw [h, Fin.comp_snoc]; rfl⟩⟩ rfl
+
+/-! ### Formulas with free variables -/
+
+/-- "Something lies strictly below the pebble `x₀`": a formula of quantifier rank `1` with one free
+variable. -/
+def hasBelow : Language.order.Formula (Fin 1) :=
+  ∃' ((&0).lt (Term.var (Sum.inl 0)))
+
+theorem quantifierRank_hasBelow : quantifierRank hasBelow = 1 := by
+  simp [hasBelow, Term.lt, Term.le]
+
+/-- Spoiler wins one round from the position `(0, 1)` on `Fin 3`: `hasBelow` separates the
+pebbles, by the Ehrenfeucht–Fraïssé theorem for formulas with free variables. -/
+example : ¬ DuplicatorWins Language.order 1 ![(0 : Fin 3)] ![(1 : Fin 3)] := by
+  rw [duplicatorWins_iff_forall_formula]
+  intro h
+  have := h hasBelow quantifierRank_hasBelow.le
+  simp only [hasBelow, Formula.Realize, BoundedFormula.realize_ex, Term.realize_lt,
+    Term.realize_var, Sum.elim_inl] at this
+  revert this
+  decide
+
+/-- The relabelings between formulas with free variables and bounded formulas preserve rank. -/
+example : quantifierRank (BoundedFormula.relabel (Sum.inr : Fin 1 → Empty ⊕ Fin 1) hasBelow) = 1 ∧
+    quantifierRank (hasBelow.relabel (Sum.inr : Fin 1 → Empty ⊕ Fin 1)) = 1 := by
+  rw [quantifierRank_relabel, quantifierRank_formula_relabel, quantifierRank_hasBelow]
+  exact ⟨rfl, rfl⟩
 
 /-! ### Explicit strategies, built and checked outside the defining module -/
 
