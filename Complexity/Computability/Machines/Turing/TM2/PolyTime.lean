@@ -119,26 +119,8 @@ theorem run_polyTime (tm : FinTM2) [∀ k, Finite (tm.Γ k)] (p : Polynomial ℕ
       ((hlength.polyBounded.add ((PolyBounded.const C).mul hcount.polyBounded)).add
         (PolyBounded.const 1)))
   intro input i hi
-  apply hA
-  have hstacks : ∀ i k,
-      (((stepTotal tm.m)^[i] (initList tm input)).stk k).length ≤ input.length + C * i := by
-    intro i
-    induction i with
-    | zero =>
-      intro k
-      by_cases hk : k = tm.k₀
-      · subst k; simp [initList]
-      · simp [initList, hk]
-    | succ i ih =>
-      intro k
-      calc
-        _ = ((stepTotal tm.m ((stepTotal tm.m)^[i] (initList tm input))).stk k).length :=
-          congrArg (fun cfg : Cfg tm.Γ tm.Λ tm.σ => (cfg.stk k).length)
-            (Function.iterate_succ_apply' (stepTotal tm.m) i (initList tm input))
-        _ ≤ input.length + C * i + C := hC _ (input.length + C * i) ih k
-        _ = input.length + C * (i + 1) := by ring
-  intro k
-  exact (hstacks i k).trans (Nat.add_le_add_left (Nat.mul_le_mul_left C hi) _)
+  exact hA _ _ fun k => (iterate_stepTotal_stack_le tm hC input i k).trans
+    (Nat.add_le_add_left (Nat.mul_le_mul_left C hi) _)
 
 end Turing.TM2
 

@@ -43,9 +43,9 @@ The important endpoint is not merely eventual computational equivalence:
 - [computableInPolySpace_iff_tm2](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/TM2/Reverse/Transfer.lean#L150) connects the function model with polynomial encoded output to polynomial total-stack space.
 - [mem_PSPACE_iff_tm2](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/TM2/Reverse/Transfer.lean#L170) supplies the Boolean decision-class equivalence.
 
-For a machine chosen after a parameter, as in a `2^(δ n)` argument, the degree of `stepTotal_polyTime` may depend on the program. [`stepTotal_computableInDegree`](../../Complexity/Computability/Machines/Turing/TM2/Degree.lean) certifies one step in `ComputableInDegree … 1 1` for every program, and `runBit_computableInDegree` certifies the clocked run on `(w, t)`, with `t` in unary, in degree two for every machine with finite stack alphabets; `runBit_eq` reads the answer once the clock reaches the running time.
-
 The reverse stack-space bound counts input, visited workspace and output at every target step, including initialization and cleanup. In contrast, native workspace excludes input and append-only output. Consequently these theorems establish polynomial-space invariance and do not identify logarithmic native workspace with logarithmic total stack size. A simulation that materializes the input cannot justify that sublinear-space conclusion. The guide explicitly preserves this boundary.
+
+For a machine chosen after a parameter, as in a `2^(δ n)` argument, the degree of `stepTotal_polyTime` may depend on the program. [`stepTotal_computableInDegree`](../../Complexity/Computability/Machines/Turing/TM2/Degree.lean) certifies one step in `ComputableInDegree … 1 1` for every program, and `runBit_computableInDegree` certifies the clocked run on `(w, t)`, with `t` in unary, in degree two for every machine with finite stack alphabets; `runBit_eq` reads the answer once the clock reaches the running time.
 
 ## Representative tests
 

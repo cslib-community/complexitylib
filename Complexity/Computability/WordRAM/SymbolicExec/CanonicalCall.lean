@@ -61,7 +61,10 @@ simproc ↓ [wram_simps] Data.reduceExtendRegs (Data.regs _ _) := fun e => do
   let some (some hi) ← WP.Exec.decideClosed? p | return .continue
   return .visit { expr := mkApp3 (mkConst ``Data.regs) s x j, proof? := mkApp hp hi }
 
--- Apply a renamed routine contract with its small returned state and canonical caller view.
+/-- Apply a renamed routine contract with its small returned state and canonical caller view
+`small.extend bank caller`. -/
+tactic_extension wramCall
+
 @[tactic_alt wramCall]
 syntax (name := wramCallCanonical) "wram_call " term:max " canonical " term:max " with"
   (ppSpace colGt rintroPat)+ : tactic

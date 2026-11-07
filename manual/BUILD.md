@@ -59,6 +59,11 @@ an older PDF left in the output directory. Rebuild after such changes and inspec
 affected pages. A passing live link/excerpt check alone does not validate an older PDF.
 Bibliography bodies are read directly from canonical `sources.md`.
 
+Without local publishing tools, use the **Operator's Manual PDFs** workflow. It runs on pull
+requests that change `manual/` or the manual scripts, and can also be started by hand. It builds
+and checks both books from the pull request's head commit, and its run summary links an artifact
+containing both PDFs and their source manifests.
+
 To generate TeX with its diagram assets, or select another output directory:
 
 ```bash

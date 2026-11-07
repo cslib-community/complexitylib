@@ -27,24 +27,25 @@ instance `a`, on the same machines. A bound that is a function of the length giv
 (`Cslib.Complexity.mem_DTIME_iff_decidableInTimeO`).
 
 `Cslib.Complexity.DecidableInExpTime A enc μ δ` says that `A` is decidable within time
-`2 ^ (δ μ a)` times a polynomial in `L`, for a parameter `μ`. The polynomial in `L` is the cost of
+`2 ^ (δ * μ a)` times a polynomial in `L`, for a parameter `μ`. The polynomial in `L` is the cost of
 reading and processing the instance; the parameter is never hidden in the encoding length. For
 formulas `μ` is usually the number of distinct variables (`Cslib.Logic.PL.CNF.numVars`), which is
 at most `L`, and can be much smaller.
 
 * `Cslib.Complexity.KSAT k` is `k`-SAT, the satisfiable formulas whose clauses have at most `k`
   literals, and `Cslib.Complexity.satExponent k` is its exponent `s_k` [ImpagliazzoPaturi2001]: the
-  infimum of the `δ ≥ 0` for which `k`-SAT is decidable within time `2 ^ (δ n)` times a polynomial.
+  infimum of the `δ ≥ 0` for which `k`-SAT is decidable within time `2 ^ (δ * n)` times a
+  polynomial.
 * `Cslib.Complexity.ETH`, **the exponential time hypothesis** [ImpagliazzoPaturi2001]: for some
-  `δ > 0`, 3SAT is not decidable within time `2 ^ (δ n)` times any polynomial in `L`.
+  `δ > 0`, 3SAT is not decidable within time `2 ^ (δ * n)` times any polynomial in `L`.
 * `Cslib.Complexity.SETH`, **the strong exponential time hypothesis**: for every `ε > 0` some
-  `k`-SAT is not decidable within time `2 ^ ((1 - ε) n)` times any polynomial in `L`.
+  `k`-SAT is not decidable within time `2 ^ ((1 - ε) * n)` times any polynomial in `L`.
 * `Cslib.Complexity.OV`, the orthogonal vectors problem, and `Cslib.Complexity.OVH`, **the
   orthogonal vectors hypothesis** in its moderate-dimension form: for every `ε > 0`, `OV` is not
   decidable within time `N ^ (2 - ε)` times any polynomial in the dimension `d`, on `N` vectors.
 
 The negation of `ETH` is `Cslib.Complexity.DecidableInSubexpTime`: decidability within time
-`2 ^ (δ n)` times a polynomial for every `δ > 0`, by a decider that may depend on `δ`
+`2 ^ (δ * n)` times a polynomial for every `δ > 0`, by a decider that may depend on `δ`
 (`Cslib.Complexity.ETH_iff_not_decidableInSubexpTime`).
 
 The companion CountingNativeEndpoint module proves subexponential decidability of k-SAT for each
@@ -199,14 +200,14 @@ end Machines
 
 /-! ### Exponential and subexponential time -/
 
-/-- `A` is decidable within time `2 ^ (δ μ a)` times a polynomial in the length of the encoded
-instance: within time `O(2 ^ (δ μ a) * (L + 1) ^ e)` for some `e`, on instances `a` with encoding
+/-- `A` is decidable within time `2 ^ (δ * μ a)` times a polynomial in the length of the encoded
+instance: within time `O(2 ^ (δ * μ a) * (L + 1) ^ e)` for some `e`, on instances `a` with encoding
 of length `L`. -/
 def DecidableInExpTime (A : Set α) (enc : α ↪ List Bool) (μ : α → ℕ) (δ : ℝ) : Prop :=
   ∃ e : ℕ, DecidableInTimeO A enc fun a => 2 ^ (δ * μ a) * ((enc a).length + 1) ^ e
 
-/-- `A` is decidable in subexponential time in `μ`: within time `2 ^ (δ μ a)` times a polynomial in
-the length of the encoded instance, for every `δ > 0`. The decider may depend on `δ`, so this is
+/-- `A` is decidable in subexponential time in `μ`: within time `2 ^ (δ * μ a)` times a polynomial
+in the length of the encoded instance, for every `δ > 0`. The decider may depend on `δ`, so this is
 weaker than a single decider within time `2 ^ o(μ a)`; it is the negation of the quantifier pattern
 of the exponential time hypothesis. -/
 def DecidableInSubexpTime (A : Set α) (enc : α ↪ List Bool) (μ : α → ℕ) : Prop :=
@@ -228,8 +229,8 @@ section Machines
 
 variable {α : Type} {enc : α ↪ List Bool} {A B : Set α}
 
-/-- A decider within time `O(t)`, for `t` within a constant times `2 ^ (δ μ a)` times a
-polynomial, decides within time `2 ^ (δ μ a)` times a polynomial. -/
+/-- A decider within time `O(t)`, for `t` within a constant times `2 ^ (δ * μ a)` times a
+polynomial, decides within time `2 ^ (δ * μ a)` times a polynomial. -/
 theorem DecidableInExpTime.of_computableInO {μ : α → ℕ} {δ : ℝ} {g : α → Bool}
     {t S : α → ℕ} (hg : ComputableInO g enc encBool t S) (hA : ∀ a, a ∈ A ↔ g a = true)
     (c e : ℕ) (ht : ∀ a, (t a : ℝ) ≤ c * (2 ^ (δ * μ a) * ((enc a).length + 1) ^ e)) :
@@ -275,20 +276,20 @@ theorem KSAT_three : KSAT 3 = ThreeSAT := rfl
 theorem KSAT_subset_SAT (k : ℕ) : KSAT k ⊆ SAT := fun _ h => h.2
 
 /-- The exponent `s_k` of `k`-SAT [ImpagliazzoPaturi2001]: the infimum of the `δ ≥ 0` for which
-`k`-SAT is decidable within time `2 ^ (δ n)` times a polynomial in the length of the encoded
+`k`-SAT is decidable within time `2 ^ (δ * n)` times a polynomial in the length of the encoded
 formula, on formulas with `n` variables. Exhaustive search puts `1` in this set, so `s_k ∈ [0, 1]`
 (`Cslib.Complexity.satExponent_le_one`). -/
 noncomputable def satExponent (k : ℕ) : ℝ :=
   sInf {δ | 0 ≤ δ ∧ DecidableInExpTime (KSAT k) encCNF CNF.numVars δ}
 
 /-- **The exponential time hypothesis** [ImpagliazzoPaturi2001]: for some `δ > 0`, 3SAT is not
-decidable within time `2 ^ (δ n)` times any polynomial in the length of the encoded formula, on
+decidable within time `2 ^ (δ * n)` times any polynomial in the length of the encoded formula, on
 formulas with `n` variables. -/
 def ETH : Prop := ∃ δ : ℝ, 0 < δ ∧ ¬DecidableInExpTime ThreeSAT encCNF CNF.numVars δ
 
 /-- **The strong exponential time hypothesis** [ImpagliazzoPaturi2001]: for every `ε > 0` there is
-a width `k` such that `k`-SAT is not decidable within time `2 ^ ((1 - ε) n)` times any polynomial in
-the length of the encoded formula, on formulas with `n` variables. -/
+a width `k` such that `k`-SAT is not decidable within time `2 ^ ((1 - ε) * n)` times any polynomial
+in the length of the encoded formula, on formulas with `n` variables. -/
 def SETH : Prop :=
   ∀ ε : ℝ, 0 < ε → ∃ k : ℕ, ¬DecidableInExpTime (KSAT k) encCNF CNF.numVars (1 - ε)
 

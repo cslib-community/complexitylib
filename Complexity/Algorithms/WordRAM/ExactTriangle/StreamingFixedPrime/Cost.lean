@@ -10,11 +10,12 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.TimeBound
 
 /-!
-# Streaming charges fit the existing fixed-prime envelope
+# Streaming charges fit `FixedPrime.timeBound`
 
-A visit uses `40nD+66` instructions and the heap reset uses one more. Replacing the two old
-loops by one saves enough loop overhead to retain the old complete time envelope, including
-halt. Product and global failure-scan terms are unchanged.
+Each record visit uses `40 * (n * D m) + 66` instructions and the heap reset uses one more.
+Executing construction and consumption in a single loop fits within the conservative
+`FixedPrime.timeBound` envelope, including the final halt. Product and global failure-scan terms
+are unchanged.
 -/
 
 public section
@@ -25,10 +26,10 @@ open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open FixedPrime
 
-/-- Charge the actual catalogue/setup prefix, all streaming iterations, controller and final
-halt within the old allowance. No extra successful scan is reserved per instance. -/
-theorem time_le_old {m n g p : ℕ} (hn : 0 < n) (values : List ℤ) (initial a : Data 64)
-    (hp : p ≠ 0)
+/-- Charge the catalogue/setup prefix, all streaming iterations, controller overhead and final
+halt within `FixedPrime.timeBound`. No extra successful scan is reserved per instance. -/
+theorem streamingCharge_le_timeBound {m n g p : ℕ} (hn : 0 < n) (values : List ℤ)
+    (initial a : Data 64) (hp : p ≠ 0)
     (hout : Instances.Output n (D m) g p (fun q => values.getD q 0) initial a) :
     let V := fun q => values.getD q 0
     let wAB := fun u v : Fin n => V (pairIndex (u, v))

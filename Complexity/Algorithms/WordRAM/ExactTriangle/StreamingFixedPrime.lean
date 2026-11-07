@@ -20,14 +20,14 @@ chunk-major/piece-major order and early success, returning an original-coordinat
 witness or exhausting every logical record. A modular hit alone never suffices.
 
 The actual program retains the existing logarithmic admission, polynomial all-prefix word and
-support bounds, fixed code envelope and conservative `FixedPrime.timeBound`. `time_le_old`
-proves that its construction, consumption, reset, loop and halt charges fit this envelope.
-`CallableFixedPrime` uses this program through the real memory-window compiler, so the ordinary
-3SUM and ExactTriangle quantitative endpoints retain their existing bounds.
+support bounds, fixed code envelope and conservative `FixedPrime.timeBound`.
+`streamingCharge_le_timeBound` proves that its construction, consumption, reset, loop and halt
+charges fit this envelope. `CallableFixedPrime` uses this program through the real memory-window
+compiler, so the ordinary 3SUM and ExactTriangle quantitative endpoints retain their existing
+bounds.
 
-The independent `Instances` all-record producer remains available. Its genuine Output supplies
-a derived mathematical reference, but is never asserted for a reused slot. The superseded
-materialized fixed-prime controller and its execution certificates have been retired.
-The slot's raw matrix pair may be overwritten by solver work; queries, catalogue and original
-signed arrays remain protected for subsequent records and calls. No dirty scratch is cleared.
+The independent `Instances` all-record producer remains available. Its genuine `Output` supplies
+a derived mathematical reference, but is never asserted for a reused slot. The slot's raw matrix
+pair may be overwritten by solver work; queries, catalogue and original signed arrays remain
+protected for subsequent records and calls. No dirty scratch is cleared.
 -/
