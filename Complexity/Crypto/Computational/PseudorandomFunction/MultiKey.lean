@@ -420,17 +420,6 @@ private theorem uniformList_bind_keyBlock {β : Type} (t n : ℕ) (f : (Fin t �
     simp only [finProdFinEquiv_apply_val]
     ring
 
-/-- Replacing one coordinate of a uniform tuple by an independent uniform value preserves the law
-of any experiment on the tuple. -/
-private theorem bind_uniformOfFintype_update {γ β : Type} [Fintype γ] [Nonempty γ] (i : Fin t)
-    (F : (Fin t → γ) → PMF β) :
-    (PMF.uniformOfFintype (Fin t → γ)).bind F =
-      (PMF.uniformOfFintype γ).bind fun value =>
-        (PMF.uniformOfFintype (Fin t → γ)).bind fun values =>
-          F (Function.update values i value) := by
-  conv_lhs => rw [← PMF.uniformOfFintype_update i]
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
-
 /-- Keyed replies to valid queries have the key's length. -/
 private theorem length_prfOracle_le (hfamily : PseudorandomFunction family) {n : ℕ}
     {key : List Bool} (hkey : key.length = n) (query : List Bool) :
@@ -493,7 +482,7 @@ private theorem eval_prfRealGame_prfMultiReduction (hfamily : PseudorandomFuncti
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_prfMultiReduction,
     run_semanticHandler]
   simp only [hybridGame, PMF.monad_bind_eq_bind]
-  rw [bind_uniformOfFintype_update ⟨j, hj⟩, BitString.uniformList, PMF.bind_map]
+  rw [PMF.bind_uniformOfFintype_update ⟨j, hj⟩, BitString.uniformList, PMF.bind_map]
   congr 1
   funext value
   refine (uniformList_bind_keyBlock t n (fun blocks =>
@@ -527,7 +516,7 @@ private theorem eval_prfIdealGame_prfMultiReduction (hfamily : PseudorandomFunct
   conv_rhs =>
     arg 2
     ext keys
-    rw [bind_uniformOfFintype_update ⟨j, hj⟩]
+    rw [PMF.bind_uniformOfFintype_update ⟨j, hj⟩]
   conv_rhs => rw [PMF.bind_comm]
   congr 1
   funext table

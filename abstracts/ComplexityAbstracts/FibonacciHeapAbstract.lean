@@ -17,9 +17,13 @@ identified by a handle `h : Fin n_max` allocated by the data structure. It suppo
 handle-lookup queries (`isEmpty`, `get h`), inserting a new `(key, value)` pair (`insert u v`, which
 allocates and returns an unused handle `h : Fin n_max`), lowering the key of a currently stored
 handle (`decreaseKey h u'`), and removing a stored element of minimum key (`extractMin`, which
-returns `some (u, v, h)` or `none` when empty). Fredman and Tarjan's Fibonacci heap supports queries
-in `O(1)` time, `insert` and `decreaseKey` in `O(1)` amortized time, and `extractMin` in
-`O(log n + 1)` amortized time, where `n` is the current number of stored elements.
+returns `some (u, v, h)` or `none` when empty). Fredman and Tarjan's Fibonacci heap supports these
+queries, `insert` and `decreaseKey` in `O(1)` amortized time, and `extractMin` in `O(log n + 1)`
+amortized time, where `n` is the current number of stored elements. All of these bounds are
+amortized: the theorems below bound the total number of instructions over a client's whole run and
+assert no worst-case bound for any single call, queries included. The operations include no
+non-removing `findMin`, so the textbook `O(1)` find-min operation is not covered: `extractMin` is
+the only operation that locates a minimum entry, and it removes that entry.
 
 The theorems below state this guarantee on the word RAM over the exact basis of operations, inside a
 caller-chosen contiguous block `[base, base + 11 * n_max + 1)` of `11 * n_max + 1` words:

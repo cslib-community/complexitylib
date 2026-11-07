@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Anthropic, PBC, Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Anthropic, PBC, Erik Demaine
 -/
 
 module
@@ -14,9 +14,13 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Controller
 
 Only the catalogue is computed before traversal. Each iteration writes the next logical
 chunk/piece into the same physical slot, runs the complete box product and original-weight
-verifier at physical ordinal zero, and resets the heap by a charged copy. The existing
-controller preserves chunk-major/piece-major order and stops immediately after success.
-No matrix, query or solver scratch window is cleared between iterations.
+verifier at physical ordinal zero, and resets the heap by a charged copy. The controller
+preserves chunk-major/piece-major order and stops immediately after success. No matrix, query or
+solver scratch window is cleared between iterations.
+
+The loop initialization and early-stop traversal control (together with `FixedPrime.receive`)
+adapt `Host.Loop` at `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`; one-slot
+construction, heap reset and native charges are original.
 -/
 
 public section

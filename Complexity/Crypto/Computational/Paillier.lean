@@ -70,8 +70,9 @@ part of this file.
   encryptions of the sum), which is generally false for the implemented dyadic sampler plus
   `unitOrOne`: at `N = 143`, `n = 0`, and `m₁ = m₂ = 0`, a fresh ciphertext `encNat 1` has mass
   `44 / 256 = 11 / 64`, while multiplying two independent encryptions gives mass
-  `2316 / 65536 = 579 / 16384`. The full definition of an additively homomorphic scheme and the
-  IND-CPA reduction ([KatzLindell2020], Theorem 15.13) remain separate objectives.
+  `2316 / 65536 = 579 / 16384`. The full definition of an additively homomorphic scheme remains a
+  separate objective; the IND-CPA reduction ([KatzLindell2020], Theorem 15.13) is in
+  `Complexity.Crypto.Computational.Paillier.Security`.
 
 ## References
 
@@ -209,7 +210,7 @@ theorem computableInPolyTime_unitOrOne {α : Type} {input : α ↪ List Bool} {N
       (ComputableTidilyInPolyTime.const 1)) hr.tidy (ComputableTidilyInPolyTime.const 1))
 
 /-- Squaring is computable in polynomial time. -/
-private theorem computableInPolyTime_sq {α : Type} {input : α ↪ List Bool} {N : α → ℕ}
+theorem computableInPolyTime_sq {α : Type} {input : α ↪ List Bool} {N : α → ℕ}
     (hN : ComputableInPolyTime N input encNat) :
     ComputableInPolyTime (fun a => N a ^ 2) input encNat := by
   simpa only [sq] using
@@ -307,7 +308,8 @@ theorem computableInPolyTime_addCiphertexts :
 
 /-! ### Correctness and the additive homomorphism -/
 
-private theorem ofBits_encNat (x : ℕ) : ofBits (encNat x) = x := Nat.foldr_bit_bits x
+/-- Decoding the binary encoding of a natural number returns it. -/
+theorem ofBits_encNat (x : ℕ) : ofBits (encNat x) = x := Nat.foldr_bit_bits x
 
 private theorem unframe_encPair_encNat (a b : ℕ) :
     unframe (encPair encNat encNat (a, b)) = encNat a := by

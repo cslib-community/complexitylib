@@ -44,6 +44,11 @@ example :
     jacobiSymbol 3 5 (ZMod.unitOfCoprime 2 (by decide)) = 1 := by
   decide
 
+example : jacobiSym 2 15 = 1 :=
+  letI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+  letI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+  (jacobiSymbol_eq_jacobiSym 3 5 (ZMod.unitOfCoprime 2 (by decide))).symm.trans (by decide)
+
 /-- info: 'Cslib.Crypto.jacobiPosSet_eq_disjoint_union' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Cslib.Crypto.jacobiPosSet_eq_disjoint_union

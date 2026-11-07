@@ -21,7 +21,7 @@ The inhabitance hypothesis supplies a fixed default for the head primitive; the 
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableInO.head?_inO`: linear time and charged space for `List.head?`.
+* `Turing.MultiTapeTM.ComputableInO.head?`: linear time and charged space for `List.head?`.
 -/
 
 public section
@@ -32,7 +32,7 @@ variable {β : Type} {encB : β ↪ List Bool}
 
 /-- Read the optional head in linear time and charged space. The displayed constant depends
 only on the fixed default encoding, not on the input list. -/
-theorem head?_inO [Inhabited β] : ComputableInO (fun l : List β => l.head?) (encList encB)
+theorem head? [Inhabited β] : ComputableInO (fun l : List β => l.head?) (encList encB)
     (encOption encB) (fun l => (2 * (encB default).length + 8) * ((encList encB l).length + 1))
     fun l => (2 * (encB default).length + 8) * ((encList encB l).length + 1) := by
   have hsome := (ComputableInDegree.optionSome (enc₁ := encB) (enc := encOption encB)).inO_one

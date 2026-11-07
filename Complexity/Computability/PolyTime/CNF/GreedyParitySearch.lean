@@ -116,6 +116,7 @@ theorem length_encNat_candidateTupleCount_le (m P : ℕ) :
     {m P : α → ℕ} (hm : ComputableInPolyTime m input encUnary)
     (hP : ComputableInPolyTime P input encUnary) :
     ComputableInPolyTime (fun a => candidateTupleCount (m a) (P a)) input encNat := by
+  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
   have h := computableInPolyTime_candidateTupleCount.comp' (hm.prod hP)
   exact h
 
@@ -318,6 +319,7 @@ theorem exists_fin_of_lt_candidateTupleCount {m P j : ℕ} (hj : j < candidateTu
     (hP : ComputableInPolyTime P input encUnary) (hj : ComputableInPolyTime j input encNat) :
     ComputableInPolyTime (fun a => decodeTestTuple (m a) (P a) (j a))
       input (encList (encPair encUnary encBool)) := by
+  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
   have h := computableInPolyTime_decodeTestTuple.comp' ((hm.prod hP).prod hj)
   exact h
 
@@ -421,6 +423,7 @@ theorem count_true_materializeTestRow_decodeTestTuple_le (m P j : ℕ) :
     {m : α → ℕ} {γ : α → List (ℕ × Bool)} (hm : ComputableInPolyTime m input encUnary)
     (hγ : ComputableInPolyTime γ input (encList (encPair encUnary encBool))) :
     ComputableInPolyTime (fun a => materializeTestRow (m a) (γ a)) input encBits := by
+  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
   have h := computableInPolyTime_materializeTestRow.comp' (hm.prod hγ)
   exact h
 
@@ -797,6 +800,7 @@ theorem computableInPolyTime_augCandidateRows :
   have hrows := (ComputableInPolyTime.fst (encList encBits) _).comp'
     ((ComputableInPolyTime.snd (encPair encUnary encUnary) encRest).comp'
       (ComputableInPolyTime.snd encNat (encPair (encPair encUnary encUnary) encRest)))
+  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
   have h := (ComputableInPolyTime.snoc encBits).comp' (hrows.prod hcand)
   exact h
 
@@ -948,6 +952,7 @@ private def greedyRoundCountIn (a : ℕ × ℕ × ℕ × List (List Bool)) : ℕ
 private theorem computableInPolyTime_greedyRoundCountIn :
     ComputableInPolyTime greedyRoundCountIn encGreedyIn encNat := by
   unfold greedyRoundCountIn encGreedyIn
+  -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
   have h := ComputableInPolyTime.unary_to_binary.comp'
     (ComputableInPolyTime.unary_mul' (.const 3) (ComputableInPolyTime.fst encUnary encSelectBestIn))
   exact h

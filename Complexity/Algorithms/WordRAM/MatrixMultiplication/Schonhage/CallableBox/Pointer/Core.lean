@@ -10,7 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Setup
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Readback
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.Exec
-import all Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Exec
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Exec
 
 /-!
 # Pointer-gather product core
@@ -33,7 +33,8 @@ open CallableProduct
   517 * Nat.clog 2 (N + qs.length + 3) + 184 + 3 * PointerInput.prefixTime (21 * m) +
     gatherTime (N * D m) qs.length + 3 * BoxProduct.snapshotTimeBound (21 * m) m t qs
 
-/-- Execute the genuine pointer front, including all source work after the removed copy. -/
+/-- Execute the pointer-gather front and the snapshot-based box-product continuation
+`BoxProduct.programFromSnapshot`. -/
 theorem exec_core {W b m t N s r q : ℕ}
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
     (qs : List (Fin N × Fin N)) (x : Data 173)
