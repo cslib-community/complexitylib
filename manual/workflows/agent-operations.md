@@ -45,7 +45,7 @@ The [semantic-withdrawal cases](../development-history/case-studies.md) explain 
 
 A reviewer with write access who approves a PR queues the approved head in the same step, with `python3 scripts/queue_pr.py <PR> <approved head>`. The script refuses any other head, a draft, a stacked PR still based on another branch, a conflict and failed checks. The reviewer does not queue when human review has been requested in the PR or its issue, or when the approval names a hold; [Approve and queue](../../AGENTS.md#approve-and-queue) gives the rule.
 
-Merge `main` into an approved PR only when it conflicts, needs a change on `main` to pass CI, or a lower stacked PR has landed; the merge queue already tests each PR on top of the current `main`. After such a restack, `python3 scripts/check_restack.py <approved head> <new head>` compares the PR's own added and removed lines at both heads. When it reports them identical and CI passes, post its result and queue the new head without another review; otherwise review the lines it lists. See [Restacks](../../AGENTS.md#restacks).
+Merge `main` into an approved PR only when it conflicts, needs a change on `main` to pass CI, or a lower stacked PR has landed; the merge queue already tests each PR on top of the current `main`. After such a restack, `python3 scripts/check_restack.py <approved head> <new head>` replays the approved change onto the new head's `main` and compares the result with the new head. When they match and CI passes, the approval carries over: post the result line, and the non-author who queues the new head reruns the command it names. Otherwise review the paths and diffs it prints. See [Restacks](../../AGENTS.md#restacks).
 
 ## Record evidence at the level of the claim
 

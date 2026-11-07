@@ -15,16 +15,21 @@ SHA = "a" * 40
 
 
 def check_run(name: str = "ci-checks", status: str = "COMPLETED",
-              conclusion: str | None = "SUCCESS", started: str = "2026-11-07T10:00:00Z") -> dict:
-    return {"__typename": "CheckRun", "name": name, "status": status, "conclusion": conclusion,
-            "startedAt": started}
+              conclusion: str | None = "SUCCESS", started: str = "2026-11-07T10:00:00Z",
+              app: int = 15368) -> dict:
+    return {"name": name, "status": status, "conclusion": conclusion, "startedAt": started,
+            "checkSuite": {"app": {"databaseId": app}}}
 
 
-def pr(*checks: dict, **fields) -> dict:
+def pr(*checks: dict, committed: str = "2026-11-07T09:00:00Z", retargeted: str | None = None,
+       **fields) -> dict:
     return {"id": "PR_1", "state": "OPEN", "isDraft": False, "baseRefName": "main",
             "headRefOid": SHA, "mergeable": "MERGEABLE", "mergeQueueEntry": None,
-            "commits": {"nodes": [{"commit": {"oid": SHA, "statusCheckRollup": {
-                "contexts": {"nodes": list(checks)}}}}]}, **fields}
+            "timelineItems": {"nodes": [{"createdAt": retargeted}] if retargeted else []},
+            "commits": {"nodes": [{"commit": {"oid": SHA, "committedDate": committed,
+                                              "statusCheckRollup": {
+                                                  "contexts": {"nodes": list(checks)}}}}]},
+            **fields}
 
 
 class AssessTests(unittest.TestCase):
@@ -69,14 +74,30 @@ class AssessTests(unittest.TestCase):
         self.assertEqual(status, "pending")
         self.assertIn("merges cleanly", reasons[0])
 
+    def test_check_from_another_app_does_not_count(self) -> None:
+        self.assertEqual(queue_pr.assess(pr(check_run(app=1)), SHA)[0], "pending")
+
+    def test_retargeted_head_must_merge_main_first(self) -> None:
+        status, reasons = queue_pr.assess(pr(check_run(), retargeted="2026-11-07T09:30:00Z"), SHA)
+        self.assertEqual(status, "refused")
+        self.assertIn("base changed", reasons[0])
+        later = pr(check_run(), retargeted="2026-11-07T08:00:00Z")
+        self.assertEqual(queue_pr.assess(later, SHA)[0], "ready")
+
+    def test_stale_latest_commit_is_refused(self) -> None:
+        stale = pr(check_run())
+        stale["commits"]["nodes"][0]["commit"]["oid"] = "c" * 40
+        self.assertEqual(queue_pr.assess(stale, SHA)[0], "refused")
+
     def test_closed_pr_is_refused(self) -> None:
         self.assertEqual(queue_pr.assess(pr(check_run(), state="MERGED"), SHA)[0], "refused")
 
 
 class ArgumentTests(unittest.TestCase):
-    def test_abbreviated_sha_is_rejected(self) -> None:
-        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
-            queue_pr.main(["12", "abc1234"])
+    def test_abbreviated_sha_and_bad_repo_are_rejected(self) -> None:
+        for argv in (["12", "abc1234"], ["12", SHA, "--repo", "complexitylib"]):
+            with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+                queue_pr.main(argv)
 
 
 if __name__ == "__main__":

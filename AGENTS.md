@@ -469,13 +469,16 @@ does not require branches to be up to date, so refreshing an approved PR only re
 head.
 
 A restack keeps its approval when `python3 scripts/check_restack.py <approved head> <new head>`
-reports that the PR's own changes are identical (its added and removed lines, file by file, match
-the approved delta) and CI passes at the new head. For a stacked PR whose lower PR has landed since
-the approval, pass `--approved-base <lower PR head at approval>`. Any agent may run it; post its
-one-line result, which names both heads, as the carry-forward record, then queue the new head as
-above. Identical deltas leave only the combination with newer `main`, which the merge queue tests
-as it does for every approved PR that `main` has moved past. When the script reports differences,
-review the files and lines it lists as a delta, under the carry-forward rule above.
+passes and CI passes at the new head. The script replays the approved change onto the `main` that
+the new head is based on, which is what the merge queue would have built from the approved head,
+and passes only when the new head's tree is exactly that replay. The one exception is that the
+`mk_all` import aggregates may order their lines differently, since CI's `mk_all --check` pins the
+order. A conflict in the replay, and any other difference, fails it. For a stacked PR whose lower
+PR changed after the approval, pass `--approved-base <lower PR head at approval>`. Anyone, including
+the author, may post the script's result line, which names both heads and the exact command. The
+non-author who queues the new head runs that command again rather than relying on the posted line.
+When the script reports differences, review the paths and diffs it prints as a delta, under the
+carry-forward rule above.
 
 ## New statements and definitions
 

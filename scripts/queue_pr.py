@@ -27,8 +27,9 @@ import sys
 import time
 
 REPO = "cslib-community/complexitylib"
-# The checks the `main` ruleset requires (Settings → Rules → main); keep in sync with it.
-REQUIRED_CHECKS = ("ci-checks",)
+# The checks the `main` ruleset requires (Settings → Rules → main), each with the GitHub App that
+# must report it (15368 is GitHub Actions), as the ruleset pins them; keep in sync with it.
+REQUIRED_CHECKS = {"ci-checks": 15368}
 POLL_SECONDS = 30
 # GitHub computes mergeability lazily, so the first query can return UNKNOWN; re-ask this often.
 MERGEABLE_RETRIES, MERGEABLE_SECONDS = 10, 3
@@ -39,13 +40,17 @@ query($owner: String!, $name: String!, $number: Int!) {
     pullRequest(number: $number) {
       id state isDraft baseRefName headRefOid mergeable
       mergeQueueEntry { position state }
-      commits(last: 1) { nodes { commit { oid statusCheckRollup { contexts(first: 100) {
+      timelineItems(last: 1, itemTypes: [BASE_REF_CHANGED_EVENT,
+                                         AUTOMATIC_BASE_CHANGE_SUCCEEDED_EVENT]) {
         nodes {
-          __typename
-          ... on CheckRun { name status conclusion startedAt }
-          ... on StatusContext { context state createdAt }
+          ... on BaseRefChangedEvent { createdAt }
+          ... on AutomaticBaseChangeSucceededEvent { createdAt }
         }
-      } } } } }
+      }
+      commits(last: 1) { nodes { commit { oid committedDate
+        statusCheckRollup { contexts(first: 100) { nodes {
+          ... on CheckRun { name status conclusion startedAt checkSuite { app { databaseId } } }
+        } } } } } }
     }
   }
 }"""
@@ -78,24 +83,25 @@ def gh_graphql(query: str, **variables: str | int) -> dict:
 def check_state(pr: dict) -> tuple[str, list[str]]:
     """Combined state of the required checks on the PR's latest commit, with failing names.
 
-    Like branch protection, only the most recent run of each check counts (an earlier run of the
-    same commit may have been cancelled or failed). `success` when every required check's latest
-    run succeeded, `pending` while one is missing or running, `failure` otherwise.
+    Only check runs from the app the ruleset names count, and, like branch protection, only the
+    most recent run of each check (an earlier run of the same commit may have been cancelled or
+    failed). `success` when every required check's latest run succeeded, `pending` while one is
+    missing or running, `failure` otherwise.
     """
     commits = pr["commits"]["nodes"]
     rollup = commits[0]["commit"].get("statusCheckRollup") if commits else None
     contexts = rollup["contexts"]["nodes"] if rollup else []
     pending, failed = False, []
-    for name in REQUIRED_CHECKS:
-        runs = [c for c in contexts if c.get("name", c.get("context")) == name]
+    for name, app in REQUIRED_CHECKS.items():
+        runs = [c for c in contexts if c.get("name") == name
+                and ((c.get("checkSuite") or {}).get("app") or {}).get("databaseId") == app]
         if not runs:
             pending = True
             continue
-        latest = max(runs, key=lambda c: c.get("startedAt") or c.get("createdAt") or "~")
-        if latest.get("status", "COMPLETED") != "COMPLETED" or latest.get("state") in (
-                "PENDING", "EXPECTED"):
+        latest = max(runs, key=lambda c: c.get("startedAt") or "~")
+        if latest.get("status") != "COMPLETED":
             pending = True
-        elif latest.get("conclusion", latest.get("state")) != "SUCCESS":
+        elif latest.get("conclusion") != "SUCCESS":
             failed.append(name)
     if failed:
         return "failure", failed
@@ -111,7 +117,15 @@ def assess(pr: dict, sha: str) -> tuple[str, list[str]]:
                            "review the new head (or run scripts/check_restack.py) first"]
     if pr.get("mergeQueueEntry"):
         return "queued", []
+    commits = pr["commits"]["nodes"]
+    if not commits or commits[0]["commit"]["oid"] != sha:
+        return "refused", ["GitHub's latest commit for it is not the approved head; retry shortly"]
     reasons = []
+    retargets = [e["createdAt"] for e in pr["timelineItems"]["nodes"] if e.get("createdAt")]
+    if retargets and retargets[-1] > commits[0]["commit"]["committedDate"]:
+        reasons.append("its base changed after the approved head was committed (a stacked PR "
+                       "retargeted when its lower PR landed); merge `main` into it, run "
+                       "scripts/check_restack.py, and queue the new head")
     if pr["isDraft"]:
         reasons.append("it is a draft")
     if pr["baseRefName"] != "main":
@@ -142,13 +156,17 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if not re.fullmatch(r"[0-9a-f]{40}", args.sha):
         parser.error("SHA must be the full 40-character commit hash")
+    if not re.fullmatch(r"[^/\s]+/[^/\s]+", args.repo):
+        parser.error("--repo must be OWNER/NAME")
     owner, name = args.repo.split("/", 1)
     deadline = time.monotonic() + 60 * args.wait
     retries = MERGEABLE_RETRIES
     try:
         while True:
-            pr = gh_graphql(QUERY, owner=owner, name=name, number=args.pr)["repository"][
-                "pullRequest"]
+            pr = (gh_graphql(QUERY, owner=owner, name=name, number=args.pr)["repository"]
+                  or {}).get("pullRequest")
+            if pr is None:
+                raise GhError(f"no pull request #{args.pr} in {args.repo}")
             status, reasons = assess(pr, args.sha)
             if status != "pending":
                 break
@@ -168,10 +186,14 @@ def main(argv: list[str] | None = None) -> int:
             verb = "not queued yet" if status == "pending" else "not queued"
             print(f"#{args.pr} {verb}: " + "; ".join(reasons) + ".")
             return 1
-        entry = gh_graphql(ENQUEUE, id=pr["id"], sha=args.sha)["enqueuePullRequest"][
-            "mergeQueueEntry"]
+        entry = (gh_graphql(ENQUEUE, id=pr["id"], sha=args.sha)["enqueuePullRequest"]
+                 or {}).get("mergeQueueEntry")
     except GhError as error:
         print(f"queue_pr: {error}", file=sys.stderr)
+        return 2
+    if entry is None:
+        print(f"queue_pr: GitHub returned no queue entry for #{args.pr}; check its state",
+              file=sys.stderr)
         return 2
     print(f"#{args.pr} queued at {args.sha[:12]} (position {entry['position']}).")
     return 0
