@@ -7,12 +7,14 @@ on:
       - "manual/**"
       - "scripts/build_operator_manual.py"
       - "scripts/check_operator_manual.py"
+      - "scripts/test_operator_manual.py"
       - ".github/workflows/manual.yml"
   pull_request:
     paths:
       - "manual/**"
       - "scripts/build_operator_manual.py"
       - "scripts/check_operator_manual.py"
+      - "scripts/test_operator_manual.py"
       - ".github/workflows/manual.yml"
   workflow_dispatch:
 

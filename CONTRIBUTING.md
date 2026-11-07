@@ -289,7 +289,8 @@ in CI and in both full and quick `scripts/check.sh` runs. For documentation-only
 directly; they use only Python and need no generated data or publishing tools. See the manual's
 build instructions for PDF generation; inspect affected rendered pages when changing its content
 or rendering. The **Operator's Manual PDFs** workflow builds both books for pull requests that
-change them, so rendered pages can be inspected without local TeX tools. Generated LaTeX, PDFs and research exports stay untracked; retain their scripts and
+change the manual or its scripts, so rendered pages can be inspected without local TeX tools.
+Generated LaTeX, PDFs and research exports stay untracked; retain their scripts and
 maintained source inputs. Keep historical measurements and transcript evidence explicitly dated;
 do not present their frozen counts as current library state.
 
