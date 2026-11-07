@@ -16,9 +16,10 @@ Next Fit keeps a single open bin. It places each item into the open bin when the
 otherwise closes the bin and opens a new one holding the item. Every two consecutive bins it
 returns are jointly overfull, since the first item of the later bin did not fit into the earlier
 one, so Next Fit uses fewer than twice as many bins as any packing
-(`Cslib.Algorithms.Lean.BinPacking.length_nextFit_lt`), that is at most `2 * OPT - 1` bins. The
-pairing argument is Johnson's analysis of Next Fit [Johnson][Johnson1973]; [Williamson and
-Shmoys, Section 3.3][WilliamsonShmoys2011] use it to prove the bound `2 * OPT + 1` for First Fit.
+(`Cslib.Algorithms.Lean.BinPacking.length_nextFit_lt`), that is at most `2 * OPT - 1` bins. Next
+Fit is analysed in Johnson's thesis [Johnson][Johnson1973]; [Williamson and Shmoys,
+Section 3.3][WilliamsonShmoys2011] prove the bound `2 * OPT + 1` for First Fit by the same pairing
+argument, which by their notes to Chapter 3 is the thesis's analysis of Next Fit.
 
 Next Fit keeps the items in their input order (`flatten_nextFit`), so it returns a packing
 whenever every item fits into a bin (`isPacking_nextFit`).

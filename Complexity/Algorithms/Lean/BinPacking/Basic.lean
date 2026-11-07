@@ -96,13 +96,8 @@ end IsPacking
 
 /-- One bin for each item packs a list of items exactly when every item fits into a bin. -/
 theorem isPacking_map_singleton {C : ℕ} {l : List ℕ} (hl : ∀ a ∈ l, a ≤ C) :
-    IsPacking C l (l.map fun a => [a]) := by
-  have h : ∀ l' : List ℕ, (l'.map fun a => [a]).flatten = l' := by
-    intro l'
-    induction l' with
-    | nil => rfl
-    | cons a l' ih => rw [List.map_cons, List.flatten_cons, ih, List.singleton_append]
-  exact ⟨by rw [h], by simpa using hl⟩
+    IsPacking C l (l.map fun a => [a]) :=
+  ⟨by rw [← List.flatMap_def, List.flatMap_singleton'], by simpa using hl⟩
 
 /-- A packing exists exactly when every item fits into a bin. -/
 theorem exists_isPacking_iff {C : ℕ} {l : List ℕ} :

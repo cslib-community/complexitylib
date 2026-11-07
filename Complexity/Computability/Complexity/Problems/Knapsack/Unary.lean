@@ -77,7 +77,7 @@ theorem computableInPolyTime_unaryDecider :
     ((snd (encList (encPair encNat encUnary)) (encPair encNat encNat)).fst'.prod
       (fst (encList (encPair encNat encUnary)) (encPair encNat encNat)))
   have hval : ComputableInPolyTime (fun a : ℕ × ℕ => a.2) (encPair encNat encUnary) encNat :=
-    ComputableTidilyInPolyTime.unary_to_binary.computableInPolyTime.comp (snd _ _)
+    ComputableInPolyTime.unary_to_binary.comp (snd _ _)
   have hsum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
   have hv := hsum.comp ((map hval).comp hDP)
   exact binary_le' (snd (encList (encPair encNat encUnary)) (encPair encNat encNat)).snd' hv

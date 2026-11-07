@@ -140,7 +140,7 @@ theorem computableInPolyTime_profitDP (hw : ComputableInPolyTime w encI encNat)
       (encPair encNat (encList encI)) (encList encI) := by
   have hT := (computableInPolyTime_profitTable hw hp hpl).comp (snd encNat (encList encI))
   have hp' : ComputableInPolyTime p encI encNat :=
-    ComputableTidilyInPolyTime.unary_to_binary.computableInPolyTime.comp hp
+    ComputableInPolyTime.unary_to_binary.comp hp
   have hstep : ComputableInPolyTime
       (fun q : (ℕ × List ι) × Option (List ι) => selectStep w p q.1.1 q.1.2 q.2)
       (encPair (encPair encNat (encList encI)) (encOption (encList encI))) (encList encI) := by
@@ -175,13 +175,13 @@ private theorem computableInPolyTime_maxValue :
     ComputableInPolyTime maxValue (encList (encPair encNat encNat)) encNat := by
   have hm := (fst (encPair (encList (encPair encNat encNat)) encNat) (encPair encNat encNat)).snd'
   have ha := (snd (encPair (encList (encPair encNat encNat)) encNat) (encPair encNat encNat)).snd'
-  have hle := ComputableTidilyInPolyTime.binary_le.computableInPolyTime.comp (hm.prod ha)
+  have hle := binary_le' hm ha
   have hstep : ComputableInPolyTime
       (fun q : (List (ℕ × ℕ) × ℕ) × (ℕ × ℕ) => max q.1.2 q.2.2)
       (encPair (encPair (encList (encPair encNat encNat)) encNat) (encPair encNat encNat))
       encNat := by
     have h := ite hle ha hm
-    simp only [Function.comp_apply, decide_eq_true_eq] at h
+    simp only [decide_eq_true_eq] at h
     simpa only [max_def] using h
   have h := foldlWithInput_of_bounded_growth (encA := encPair encNat encNat)
     (encB := encNat) (encL := encList (encPair encNat encNat))
@@ -220,13 +220,13 @@ theorem computableInPolyTime_fptas :
       (encList (encPair (encPair encNat encNat) encUnary)) := by
     have hNq := hN.comp (fst (encPair encUnary (encPair (encList (encPair encNat encNat)) encNat))
       (encPair encNat encNat))
-    have hNb := ComputableTidilyInPolyTime.unary_to_binary.computableInPolyTime.comp hNq
+    have hNb := ComputableInPolyTime.unary_to_binary.comp hNq
     have hPq := hP.comp (fst (encPair encUnary (encPair (encList (encPair encNat encNat)) encNat))
       (encPair encNat encNat))
     have hv := (snd (encPair encUnary (encPair (encList (encPair encNat encNat)) encNat))
       (encPair encNat encNat)).snd'
-    have hmul := ComputableTidilyInPolyTime.binary_mul.computableInPolyTime.comp (hv.prod hNb)
-    have hdiv := ComputableTidilyInPolyTime.binary_div.computableInPolyTime.comp (hmul.prod hPq)
+    have hmul := binary_mul' hv hNb
+    have hdiv := ComputableInPolyTime.binary_div.comp (hmul.prod hPq)
     have hbody := (snd _ _).prod (binary_min_unary' hNq hdiv)
     exact mapWithInput hF hbody
   have hDP := computableInPolyTime_profitDP (encI := encPair (encPair encNat encNat) encUnary)

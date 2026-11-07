@@ -18,8 +18,10 @@ opened later received its first item only because that item did not fit into the
 (`Cslib.Algorithms.Lean.BinPacking.pairwise_firstFit`). So First Fit uses fewer than twice as many
 bins as any packing (`Cslib.Algorithms.Lean.BinPacking.length_firstFit_lt`), that is at most
 `2 * OPT - 1` bins, a slight sharpening of the bound `2 * OPT + 1` of
-[Williamson and Shmoys, Section 3.3][WilliamsonShmoys2011] by the same pairing argument, which
-they credit to Johnson's thesis [Johnson][Johnson1973]. The asymptotic bound `17/10 * OPT + 2` of
+[Williamson and Shmoys, Section 3.3][WilliamsonShmoys2011] by the same pairing argument. Johnson's
+thesis [Johnson][Johnson1973] analyses Next Fit and First Fit; by the notes to Chapter 3 of
+Williamson and Shmoys, their First Fit argument uses the thesis's analysis of Next Fit. The
+asymptotic bound `17/10 * OPT + 2` of
 [Johnson, Demers, Ullman, Garey and Graham][JohnsonDemersUllmanGareyGraham1974] is not formalized
 here.
 
