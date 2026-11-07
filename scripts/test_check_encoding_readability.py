@@ -43,6 +43,9 @@ class RuleTests(unittest.TestCase):
     def test_single_combinator_applications_are_not_compound(self) -> None:
         flat = "encPair encNat encNat"
         self.assertEqual(violations("".join(theorem(n, flat) for n in "abcde")), {})
+        # The inner combinator must be an argument of the outer one, not of another function.
+        indirect = "encPair encNat (encCSP (encOption encBool) encNat)"
+        self.assertEqual(violations("".join(theorem(n, indirect) for n in "abc")), {})
 
     def test_whitespace_and_comments_do_not_matter(self) -> None:
         spaced = "encPair  encNat\n      ( encList /- bits -/ encBool )"

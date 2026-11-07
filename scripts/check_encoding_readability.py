@@ -6,8 +6,10 @@ Usage: python3 scripts/check_encoding_readability.py [--update-baseline [--allow
 
 This checks rule 1 of "Encodings in statements" in AGENTS.md. A *compound encoding* is an
 application of one of the generic combinators `encPair`, `encList`, `encOption`, `encSum`,
-`encFramed`, `encPi` or `encDPi` (`COMBINATORS`) that contains another, such as
-`encPair encS (encOption encBool)`; `encPair encNat encNat` is not compound. A compound encoding
+`encFramed`, `encPi` or `encDPi` (`COMBINATORS`) with an application of one of them as an
+argument, such as `encPair encS (encOption encBool)`. `encPair encNat encNat` is not compound, and
+neither is `encPair encNat (encCSP (encOption e) encNat)`, whose inner combinator is an argument of
+another function. A compound encoding
 that the signatures of three or more public declarations of a module spell out is a violation:
 give it a documented, reducible `abbrev` (or use one that already exists with the same meaning)
 and write the name in those statements.
@@ -66,9 +68,7 @@ UPDATE = "python3 scripts/check_encoding_readability.py --update-baseline"
 # Encodings/`) and their explicit arities.
 COMBINATORS = {"encPair": 2, "encList": 1, "encOption": 1, "encSum": 2, "encFramed": 1,
                "encPi": 1, "encDPi": 1}
-# A term is compound when it holds at least this many combinator applications, and repeated when
-# at least this many public declarations of a module spell it out.
-MIN_COMBINATORS = 2
+# A compound term is repeated when at least this many public declarations of a module spell it out.
 MIN_DECLARATIONS = 3
 
 MODIFIER = r"(?:public|private|protected|noncomputable|unsafe|partial|nonrec|scoped|local|meta)"
@@ -312,9 +312,9 @@ def canonical(term: str, local_names: frozenset[str] | set[str]) -> str:
     return "".join(out)
 
 
-def encoding_terms(signature: str) -> list[tuple[int, int, int]]:
+def encoding_terms(signature: str) -> list[tuple[int, int, int, bool]]:
     """Every application of an encoding combinator in `signature`, as `(start, end, number of
-    combinator applications it contains)`."""
+    combinator applications it contains, whether it is compound)`."""
     tokens = [m for m in TOKEN.finditer(signature) if m.lastgroup != "space"]
     heads = []
     for i, token in enumerate(tokens):
@@ -326,10 +326,10 @@ def encoding_terms(signature: str) -> list[tuple[int, int, int]]:
                 i + 2 >= len(tokens) or tokens[i + 2][0] != "="):
             continue  # a binder named like a combinator
         heads.append(i)
-    starts = [tokens[i].start() for i in heads]
+    starts, head_set = [tokens[i].start() for i in heads], set(heads)
     spans = []
     for i in heads:
-        end, j = tokens[i].end(), i + 1
+        end, j, compound = tokens[i].end(), i + 1, False
         for _ in range(COMBINATORS[tokens[i][0].rsplit(".", 1)[-1]]):
             if j >= len(tokens):
                 break
@@ -337,6 +337,7 @@ def encoding_terms(signature: str) -> list[tuple[int, int, int]]:
             if arg.lastgroup in ("ident", "num") and arg[0] not in KEYWORDS:
                 j += 1
             elif arg.lastgroup == "open":
+                compound |= arg[0] == "(" and j + 1 in head_set
                 depth = 0
                 while j < len(tokens):
                     depth += (tokens[j].lastgroup == "open") - (tokens[j].lastgroup == "close")
@@ -351,7 +352,7 @@ def encoding_terms(signature: str) -> list[tuple[int, int, int]]:
                     tokens[j + 1].lastgroup == "ident" and tokens[j + 1].start() == end + 1:
                 end, j = tokens[j + 1].end(), j + 2
         start = tokens[i].start()
-        spans.append((start, end, sum(start <= s < end for s in starts)))
+        spans.append((start, end, sum(start <= s < end for s in starts), compound))
     return spans
 
 
@@ -362,8 +363,8 @@ def module_violations(declarations: list[Declaration]) -> list[Violation]:
     occurrences: dict[str, list[tuple[int, int, int, str]]] = defaultdict(list)
     size: dict[str, int] = {}
     for index, declaration in enumerate(declarations):
-        for start, end, count in encoding_terms(declaration.signature):
-            if count >= MIN_COMBINATORS:
+        for start, end, count, compound in encoding_terms(declaration.signature):
+            if compound:
                 spelling = declaration.signature[start:end]
                 term = canonical(spelling, declaration.locals)
                 occurrences[term].append((index, start, end, _normalize(spelling)))
@@ -397,7 +398,7 @@ def scan(root: Path) -> dict[str, list[Violation]]:
         rel = path.relative_to(root).as_posix()
         text = path.read_text(encoding="utf-8")
         # A violation mentions combinators at least this often.
-        if len(COMBINATOR_NAME.findall(text)) < MIN_COMBINATORS * MIN_DECLARATIONS:
+        if len(COMBINATOR_NAME.findall(text)) < 2 * MIN_DECLARATIONS:
             continue
         try:
             violations = module_violations(public_declarations(text))
