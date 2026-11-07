@@ -661,10 +661,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   structures and algorithms.
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
-- **Logical lower-bound methods:** Ehrenfeucht–Fraïssé and pebble games with their logical
-  equivalence theorems, locality and concrete nondefinability results; then counting and
-  fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Reuse upstream
-  model-theoretic foundations and connect the methods to the ordered capture theorems.
+- **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
+  vocabularies, add games for vocabularies with constants, pebble games with their
+  finite-variable equivalence theorems, Hanf and Gaifman locality, and further nondefinability
+  results such as connectivity and acyclicity of finite graphs; then
+  counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
+  the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
