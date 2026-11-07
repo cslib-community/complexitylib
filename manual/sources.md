@@ -199,6 +199,11 @@ Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edi
 
 Lean development team. *Validating a Lean Proof*, The Lean Language Reference, accessed 2026-11-02 UTC. https://lean-lang.org/doc/reference/latest/ValidatingProofs/ . The page was inspected live; the requested version-specific URL was unavailable, and no verified archival snapshot was obtained. Version-specific library assertions in this dossier instead rely on pinned repository sources.
 
+<a id="lev86"></a>
+## lev86
+
+Leonid A. Levin. *Average Case Complete Problems*. SIAM Journal on Computing 15(1), 285–286, 1986. https://doi.org/10.1137/0215020 . Bibliographic metadata checked on 2026-11-07. The manual attributes only the existence of a complete distributional problem for `(NP, PComp)` to this paper, and follows the proof of [bt06](#bt06), Theorem 19.
+
 <a id="lfkn92"></a>
 ## lfkn92
 
