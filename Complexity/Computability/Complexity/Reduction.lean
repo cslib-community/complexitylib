@@ -86,6 +86,7 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | SAT → CircuitSAT | `SAT.polyTimeReducible_CircuitSAT` |
 | SAT → IndependentSet | `polyTimeReducible_SAT_IndependentSet` |
 | IndependentSet → Clique | `polyTimeReducible_IndependentSet_Clique` |
+| Clique → IndependentSet | `polyTimeReducible_Clique_IndependentSet` |
 | IndependentSet → VertexCover | `polyTimeReducible_IndependentSet_VertexCover` |
 | SAT → ThreeColoring | `polyTimeReducible_SAT_ThreeColoring` |
 | ThreeSAT → ThreeColoring | `polyTimeReducible_ThreeSAT_ThreeColoring` |
