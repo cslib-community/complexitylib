@@ -465,9 +465,12 @@ index links to canonical definitions rather than keeping a second set.
   each reduction's resource bound.
 - **Abstract (Blum) complexity** ([#2866]): Blum complexity measures over Mathlib's
   `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
-  almost-everywhere classes (also with a two-argument stretch), recursive relatedness and Blum's
-  speedup theorem, are in `Computability/BlumComplexity`. Remaining: the McCreight–Meyer union
-  theorem, the compression theorem and honesty, effective forms of speedup such as Blum's
+  almost-everywhere classes (also with a two-argument stretch), recursive relatedness, Blum's
+  speedup theorem, and arbitrarily complex functions with the resulting strict hierarchy of
+  classes, are in `Computability/BlumComplexity`. Remaining: the McCreight–Meyer union theorem;
+  Blum's compression theorem in its running-time form (a single computable `h` such that every
+  total `φ_i` has `C_{Φ_i} ⊂ C_{n ↦ h n (Φ_i n)}`; the value form with `φ_i` in place of `Φ_i`
+  is false, by the gap theorem); honesty; effective forms of speedup such as Blum's
   pseudo-speedup, which computes a faster program for a finite variant of `f` (M. Blum, *On
   effective procedures for speeding up algorithms*, J. ACM 18(2), 1971), and Blum measures for
   native multitape time and space through a Gödel-numbering bridge from native descriptions.
@@ -715,10 +718,11 @@ universe size, not supplied as unverified input tables. In dependency order:
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; and Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages.
-- **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
-  relational vocabularies, constant edge probabilities and unlabelled structures; construct the
-  countable random (Rado) graph; then the Kolaitis–Vardi laws for fixed-point and finite-variable
-  infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
+- **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` and its Rado-graph
+  transfer to arbitrary finite relational vocabularies
+  ([#2967](https://github.com/cslib-community/complexitylib/issues/2967)), constant edge
+  probabilities and unlabelled structures; then the Kolaitis–Vardi laws for fixed-point and
+  finite-variable infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
@@ -1159,11 +1163,13 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
   and fresh-session amplification remain separate endpoints.
 - **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
-  stationarity, reversibility, total-variation mixing times, Markovian couplings and reversible
-  Metropolis chains, with the lazy hypercube walk as client
-  (`Probability/BitString/LazyRandomWalk`, #2857). Extend with path coupling, conductance,
-  canonical-path and spectral-gap arguments. Implement Metropolis sampling for encoded rational
-  target weights, charging initialization, arithmetic and every transition, with support and
+  stationarity, reversibility, total-variation mixing times, Markovian couplings, reversible
+  Metropolis chains and path coupling, with the lazy hypercube walk
+  (`Probability/BitString/LazyRandomWalk`, #2857) and Glauber dynamics for `q > 2Δ` colorings
+  (`Probability/MarkovChain/Coloring`, #2933) as clients. Extend with conductance,
+  canonical-path and spectral-gap arguments, and with the reduction from approximately counting
+  colorings to sampling them with the Glauber chain. Implement Metropolis sampling for encoded
+  rational target weights, charging initialization, arithmetic and every transition, with support and
   mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** an almost-uniform sampling (FPAUS) interface with
   explicit output-distribution error alongside the FPRAS interface, and sampling/counting

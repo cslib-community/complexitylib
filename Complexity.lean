@@ -774,6 +774,7 @@ public import Complexity.Computability.BlumComplexity.Basic
 public import Complexity.Computability.BlumComplexity.Cancellation
 public import Complexity.Computability.BlumComplexity.Fuel
 public import Complexity.Computability.BlumComplexity.Gap
+public import Complexity.Computability.BlumComplexity.Hierarchy
 public import Complexity.Computability.BlumComplexity.RecursiveRelatedness
 public import Complexity.Computability.BlumComplexity.Speedup
 public import Complexity.Computability.BranchingProgram.MonoidProgram
@@ -3931,7 +3932,9 @@ public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
+public import Complexity.Foundations.Combinatorics.SimpleGraph.GreedyColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Rado
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
@@ -4405,6 +4408,7 @@ public import Complexity.Foundations.Quantum.HadamardTransform
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
 public import Complexity.Foundations.Quantum.TensorPower
+public import Complexity.Foundations.Relation.Acyclic
 public import Complexity.Foundations.Relation.InductiveCounting
 public import Complexity.Foundations.Relation.RelatesWithinSteps
 public import Complexity.Foundations.RingTheory.AdjoinRoot
@@ -4552,6 +4556,7 @@ public import Complexity.Logics.FirstOrder.Tuple
 public import Complexity.Logics.FirstOrder.ZeroOneLaw
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionProbability
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.Rado
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.RandomGraph
 public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Polymorphism.BooleanClone
@@ -4790,9 +4795,11 @@ public import Complexity.Probability.LinearCombination
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
 public import Complexity.Probability.MarkovChain.Basic
+public import Complexity.Probability.MarkovChain.Coloring
 public import Complexity.Probability.MarkovChain.Coupling
 public import Complexity.Probability.MarkovChain.Metropolis
 public import Complexity.Probability.MarkovChain.Mixing
+public import Complexity.Probability.MarkovChain.PathCoupling
 public import Complexity.Probability.MedianOfMeans
 public import Complexity.Probability.MinEntropy
 public import Complexity.Probability.MinEntropy.Flat

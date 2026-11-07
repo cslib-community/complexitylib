@@ -27,9 +27,11 @@ most `r` followed by one of at most `s` (`exists_hammingDist_le_and_hammingDist_
 
 Two functions are at Hamming distance one when they differ at exactly one coordinate
 (`hammingDist_eq_one_iff`); changing one coordinate of a function to a new value moves it to
-distance one (`hammingDist_update_of_ne`). The pairs of `A × B` at Hamming distance one are the
-edges of the Hamming graph between `A` and `B` (`hammingEdges`); counting them from either side
-gives the same number (`card_hammingEdges_comm`, `card_hammingEdges_eq_sum_card_filter`).
+distance one (`hammingDist_update_of_ne`), and updating two functions at the same coordinate
+changes their distance only through that coordinate (`hammingDist_update_update`). The pairs of
+`A × B` at Hamming distance one are the edges of the Hamming graph between `A` and `B`
+(`hammingEdges`); counting them from either side gives the same number (`card_hammingEdges_comm`,
+`card_hammingEdges_eq_sum_card_filter`).
 
 ## Main definitions
 
@@ -42,6 +44,7 @@ gives the same number (`card_hammingEdges_comm`, `card_hammingEdges_eq_sum_card_
 * `hammingDist_div_eq_expect`: the relative Hamming distance is a probability.
 * `exists_hammingDist_le_and_hammingDist_le`: splitting a distance.
 * `hammingDist_eq_one_iff`: Hamming distance one.
+* `hammingDist_update_update`: updating two functions at the same coordinate.
 * `card_hammingEdges_eq_sum_card_filter`: counting the edges of the Hamming graph.
 -/
 
@@ -120,6 +123,22 @@ theorem hammingDist_eq_one_iff {x y : ∀ i, β i} :
 theorem hammingDist_update_of_ne [DecidableEq ι] {x : ∀ i, β i} {i : ι} {v : β i}
     (h : x i ≠ v) : hammingDist x (update x i v) = 1 :=
   hammingDist_eq_one_iff.2 ⟨i, by simpa using h, fun j hj => (update_of_ne hj _ _).symm⟩
+
+/-- Updating two functions at the same coordinate changes their Hamming distance only through
+that coordinate. -/
+theorem hammingDist_update_update [DecidableEq ι] (x y : ∀ i, β i) (i : ι) (a b : β i) :
+    hammingDist (update x i a) (update y i b) + (if x i ≠ y i then 1 else 0) =
+      hammingDist x y + (if a ≠ b then 1 else 0) := by
+  have h (u v : ∀ i, β i) : hammingDist u v =
+      (if u i ≠ v i then 1 else 0) + ∑ j ∈ univ.erase i, if u j ≠ v j then 1 else 0 := by
+    rw [hammingDist, card_filter]
+    exact (add_sum_erase _ _ (mem_univ i)).symm
+  have hrest : ∑ j ∈ univ.erase i, (if update x i a j ≠ update y i b j then 1 else 0) =
+      ∑ j ∈ univ.erase i, if x j ≠ y j then 1 else 0 :=
+    sum_congr rfl fun j hj => by
+      rw [update_of_ne (ne_of_mem_erase hj), update_of_ne (ne_of_mem_erase hj)]
+  rw [h (update x i a) (update y i b), h x y, hrest, update_self, update_self]
+  ring
 
 /-- The pairs of `A × B` at Hamming distance one: the edges of the Hamming graph between `A` and
 `B`. -/
