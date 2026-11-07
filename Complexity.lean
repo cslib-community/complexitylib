@@ -3934,6 +3934,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Foundations.Combinatorics.SimpleGraph.GreedyColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Rado
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
@@ -4554,6 +4555,7 @@ public import Complexity.Logics.FirstOrder.Tuple
 public import Complexity.Logics.FirstOrder.ZeroOneLaw
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionProbability
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.Rado
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.RandomGraph
 public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Polymorphism.BooleanClone
