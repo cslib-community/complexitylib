@@ -2023,6 +2023,7 @@ public import Complexity.Computability.Machines.ReadMachine.StepMachine
 public import Complexity.Computability.Machines.ReadMachine.Tidy
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Evaluator
+public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Native
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Simulation
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
