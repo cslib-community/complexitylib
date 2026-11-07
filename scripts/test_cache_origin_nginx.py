@@ -58,9 +58,9 @@ class RealNginxCacheTests(unittest.TestCase):
                         "-addext", "subjectAltName=IP:127.0.0.1,DNS:localhost"],
                        check=True, capture_output=True, timeout=15)
         self.user, self.password = "fixture-publisher", secrets.token_urlsafe(32)
-        password_record = subprocess.check_output(["htpasswd", "-niBC", "12", self.user],
+        password_record = subprocess.check_output(["htpasswd", "-niBC", "4", self.user],
                                                   input=(self.password + "\n").encode()).decode().strip()
-        self.assertTrue(password_record.startswith(self.user + ":$2y$12$"))
+        self.assertTrue(password_record.startswith(self.user + ":$2y$04$"))
         password_file = self.root / "htpasswd"
         password_file.write_text(password_record + "\n")
         password_file.chmod(0o640)

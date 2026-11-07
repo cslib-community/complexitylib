@@ -39,11 +39,16 @@ download behavior after removing bandwidth limits; do not drop system caches on 
 ## Publication credential and rotation
 
 Install `apache2-utils` for `htpasswd`. Use [publisher-credential.py](examples/publisher-credential.py)
-to generate a fresh 32-byte CSPRNG token, install its bcrypt cost-12 hash and write a private
+to generate a fresh 32-byte CSPRNG token, install its bcrypt cost-4 hash and write a private
 handoff. The 43-character base64url shape checked by the client is not proof of entropy: do
 not choose a password manually or reuse a token. The installed hash file is
 `root:cache-origin-proxy 0640`; only the hash is kept there. Plaintext belongs only in the
 private operator handoff and GitHub's protected Environment secret.
+Cost 4 is intentional for this generated 256-bit token: password stretching adds little
+protection against guessing such a token, while nginx verifies bcrypt synchronously in a worker.
+This policy is unsuitable for human-chosen passwords. Existing cost-12 installations can rehash
+the same generated token privately through `htpasswd -niBC 4` using stdin, then atomically replace
+the hash file with the same owner/group/mode; the token and GitHub secret do not need to change.
 
 ```bash
 sudo install -d -m 0700 /root/cache-origin-handoff
@@ -85,7 +90,7 @@ Install the reviewed files as follows (root-owned, non-writable by other account
 | `cache-origin-usage-service.conf` | `/etc/systemd/system/systemd-journald@cache-origin-usage.service.d/cache-origin.conf` |
 | `cache-origin-fail2ban.conf` | `/etc/fail2ban/jail.d/cache-origin.local` |
 
-nginx's upload request/connection limits apply before expensive password verification; rejected
+nginx's upload request/connection limits apply before password verification; rejected
 requests return `429`. Read limits allow the native Lake curl client's parallel transfers.
 Upload limits are per IP; there is no small shared upload bucket or connection pool that
 anonymous clients can consume instead of the legitimate publisher. Broader server-wide
@@ -93,6 +98,21 @@ request/connection limits still protect the host, so this does not promise immun
 large traffic flood. Bandwidth is uncapped: neither nginx `limit_rate` nor a cache-owned traffic
 shaper is installed. The upload-size bound is 4 GiB, buffered and staged on the data filesystem;
 allow space for both copies plus retained objects. Byte/count/memory limits remain independent.
+Aggregate authentication work has no small shared upload bound: many source IPs can still
+occupy nginx workers despite per-IP limits and Fail2ban. Cost 4 makes each comparison cheaper
+without solving general CPU or traffic exhaustion. If IPv6 is enabled, limits/bans apply to
+individual addresses rather than a client's whole prefix; rotating addresses can evade them.
+
+The 4 GiB upload limit is a size ceiling, not a promise that every 4 GiB upload finishes in
+time. curl allows 360 seconds per attempt with a 600-second retry window; the GitHub publisher
+job has a 15-minute ceiling. The Go origin has five-minute read/write deadlines after nginx
+starts forwarding its buffered body. nginx's body timeout is 60 seconds between reads, and its
+proxy read/send timeouts are six minutes between operations. These cover different phases and
+must be considered together when changing them. Keep the current deadlines while successful
+publications remain comfortably below them; investigate network, staging/fsync and size growth
+before increasing budgets together. The usage journal's PUT duration measures the whole nginx
+request, while the CI publish step also includes local packaging. Neither response-body bytes
+in usage records nor the configured size ceiling measures uploaded package bytes.
 
 When updating an older installation that has the previous bandwidth cap, inspect its actual
 default-route interface and queue configuration before removing anything:
@@ -108,8 +128,16 @@ obsolete `cache-origin-egress.service`. Stopping that service alone leaves its q
 Only after confirming the root queue is the cache-owned TBF (128 Mbit/s, handle `1:`, 256 KB
 burst, 400 ms latency) and there is no unrelated policy, replace that specific queue with
 the recorded uncapped queue (or the kernel default when no prior policy was recorded).
-Remove the obsolete unit file and reload
-systemd again. Never delete or replace an unknown shaper; resolve ownership first. Keep SSH
+For the MIT host's recorded queue, after the ownership checks above:
+
+```bash
+sudo tc qdisc replace dev ens3 root pfifo_fast
+sudo tc -s qdisc show dev ens3
+```
+
+To choose the kernel default instead, use `sudo tc qdisc del dev <primary-interface> root`
+and verify it with `sudo tc -s qdisc show dev <primary-interface>`. Remove the obsolete unit
+file and reload systemd again. Never delete or replace an unknown shaper; resolve ownership first. Keep SSH
 and an operator console available, and verify the live queue and nginx dependency list after
 the change. On fresh installations these migration steps are unnecessary.
 
