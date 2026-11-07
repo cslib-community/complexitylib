@@ -13,6 +13,7 @@ import Complexity.Computability.Probabilistic.Adaptive
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Tactic.PPT
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 
 /-!
 # A clocked hard-core boosting program
@@ -63,15 +64,10 @@ structure State where
 namespace State
 
 /-- Reuse the standard Boolean, unary, and list encodings. -/
-def encoding : State ↪ List Bool :=
-  ⟨fun state => encPair encBool (encPair encUnary (encList encBits))
-    (state.stopped, state.threshold, state.predictors), by
-    intro left right h
-    have hfields := (encPair encBool
-      (encPair encUnary (encList encBits))).injective h
-    cases left
-    cases right
-    simpa using hfields⟩
+global enc_structure encoding : State where
+  stopped : encBool, threshold : encUnary, predictors : (encList encBits)
+
+attribute [program_certificate] encoding_mk_polyTime
 
 /-- Start before any learned predictors or threshold shifts. -/
 def initial : State := ⟨false, 0, []⟩
@@ -104,8 +100,8 @@ def add (state : State) (bound : ℕ) (code : List Bool) : State :=
 @[simp] theorem length_encoding (state : State) :
     (encoding state).length = 2 * state.threshold +
       (encList encBits state.predictors).length + 4 := by
-  simp only [encoding, Function.Embedding.coeFn_mk, length_encPair, encBool_apply,
-    List.length_singleton, encUnary_apply, List.length_replicate]
+  simp only [encoding_apply, length_encPair, encBool_apply, List.length_singleton, encUnary_apply,
+    List.length_replicate]
   lia
 
 /-- After `rounds` rounds there are at most that many shifts and bounded descriptions. -/
@@ -153,47 +149,6 @@ theorem Bounded.length_encoding_le {rounds codeBound : ℕ} {state : State}
 section Efficiency
 
 variable {α : Type} {input : α ↪ List Bool} {state : α → State}
-
-private theorem isPolyTime_fields
-    (hstate : ComputableTidilyInPolyTime state input encoding) :
-    ComputableTidilyInPolyTime
-      (fun a => ((state a).stopped, (state a).threshold, (state a).predictors))
-      input (encPair encBool (encPair encUnary (encList encBits))) :=
-  hstate.of_enc_eq (fun _ => rfl)
-
-/-- Efficient field values construct an efficient state. -/
-@[program_certificate]
-theorem isPolyTime_mk {stopped : α → Bool} {threshold : α → ℕ}
-    {predictors : α → List (List Bool)}
-    (hstopped : ComputableInPolyTime stopped input encBool)
-    (hthreshold : ComputableInPolyTime threshold input encUnary)
-    (hpredictors : ComputableInPolyTime predictors input (encList encBits)) :
-    ComputableInPolyTime (fun a => ⟨stopped a, threshold a, predictors a⟩) input encoding := by
-  have hstopped := hstopped.tidy
-  have hthreshold := hthreshold.tidy
-  have hpredictors := hpredictors.tidy
-  exact .of_tidy ((hstopped.prod (hthreshold.prod hpredictors)).of_enc_eq (fun _ => rfl))
-
-/-- Project the stopping flag through the shared pair implementation. -/
-@[fun_prop]
-theorem isPolyTime_stopped (hstate : ComputableInPolyTime state input encoding) :
-    ComputableInPolyTime (fun a => (state a).stopped) input encBool := by
-  have hstate := hstate.tidy
-  exact .of_tidy ((isPolyTime_fields hstate).fst')
-
-/-- Project the threshold through the shared pair implementation. -/
-@[fun_prop]
-theorem isPolyTime_threshold (hstate : ComputableInPolyTime state input encoding) :
-    ComputableInPolyTime (fun a => (state a).threshold) input encUnary := by
-  have hstate := hstate.tidy
-  exact .of_tidy ((isPolyTime_fields hstate).snd'.fst')
-
-/-- Project the predictor collection through the shared pair implementation. -/
-@[fun_prop]
-theorem isPolyTime_predictors (hstate : ComputableInPolyTime state input encoding) :
-    ComputableInPolyTime (fun a => (state a).predictors) input (encList encBits) := by
-  have hstate := hstate.tidy
-  exact .of_tidy ((isPolyTime_fields hstate).snd'.snd')
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Evaluating a list of descriptions is an ordinary captured map. -/
@@ -252,86 +207,11 @@ structure Parameters where
 namespace Parameters
 
 /-- Store all five resource parameters in unary using the shared product encoding. -/
-def encoding : Parameters ↪ List Bool :=
-  ⟨fun params => encPair encUnary (encPair encUnary
-      (encPair encUnary (encPair encUnary encUnary)))
-    (params.confidence, params.densityNumerator, params.densityBound,
-      params.rateBound, params.codeBound), by
-    intro left right h
-    have hfields := (encPair encUnary (encPair encUnary
-      (encPair encUnary (encPair encUnary encUnary)))).injective h
-    cases left
-    cases right
-    simpa using hfields⟩
+global enc_structure encoding : Parameters where
+  confidence : encUnary, densityNumerator : encUnary, densityBound : encUnary,
+  rateBound : encUnary, codeBound : encUnary
 
-section Efficiency
-
-variable {α : Type} {input : α ↪ List Bool} {params : α → Parameters}
-
-private theorem isPolyTime_fields
-    (hparams : ComputableTidilyInPolyTime params input encoding) :
-    ComputableTidilyInPolyTime (fun a =>
-      ((params a).confidence, (params a).densityNumerator, (params a).densityBound,
-        (params a).rateBound, (params a).codeBound))
-      input (encPair encUnary
-        (encPair encUnary (encPair encUnary (encPair encUnary encUnary)))) :=
-  hparams.of_enc_eq (fun _ => rfl)
-
-/-- Computing the five fields suffices to construct the encoded parameter record. -/
-@[program_certificate]
-theorem isPolyTime_mk {confidence densityNumerator densityBound rateBound codeBound : α → ℕ}
-    (hconfidence : ComputableInPolyTime confidence input encUnary)
-    (hdensityNumerator : ComputableInPolyTime densityNumerator input encUnary)
-    (hdensityBound : ComputableInPolyTime densityBound input encUnary)
-    (hrateBound : ComputableInPolyTime rateBound input encUnary)
-    (hcodeBound : ComputableInPolyTime codeBound input encUnary) :
-    ComputableInPolyTime (fun a =>
-      ⟨confidence a, densityNumerator a, densityBound a, rateBound a, codeBound a⟩)
-      input encoding := by
-  have hconfidence := hconfidence.tidy
-  have hdensityNumerator := hdensityNumerator.tidy
-  have hdensityBound := hdensityBound.tidy
-  have hrateBound := hrateBound.tidy
-  have hcodeBound := hcodeBound.tidy
-  exact .of_tidy ((hconfidence.prod (hdensityNumerator.prod
-    (hdensityBound.prod (hrateBound.prod hcodeBound)))).of_enc_eq (fun _ => rfl))
-
-/-- Project the confidence through the shared product implementation. -/
-@[fun_prop]
-theorem isPolyTime_confidence (hparams : ComputableInPolyTime params input encoding) :
-    ComputableInPolyTime (fun a => (params a).confidence) input encUnary := by
-  have hparams := hparams.tidy
-  exact .of_tidy ((isPolyTime_fields hparams).fst')
-
-/-- Project the density numerator through the shared product implementation. -/
-@[fun_prop]
-theorem isPolyTime_densityNumerator (hparams : ComputableInPolyTime params input encoding) :
-    ComputableInPolyTime (fun a => (params a).densityNumerator) input encUnary := by
-  have hparams := hparams.tidy
-  exact .of_tidy ((isPolyTime_fields hparams).snd'.fst')
-
-/-- Project the density parameter through the shared product implementation. -/
-@[fun_prop]
-theorem isPolyTime_densityBound (hparams : ComputableInPolyTime params input encoding) :
-    ComputableInPolyTime (fun a => (params a).densityBound) input encUnary := by
-  have hparams := hparams.tidy
-  exact .of_tidy ((isPolyTime_fields hparams).snd'.snd'.fst')
-
-/-- Project the rate parameter through the shared product implementation. -/
-@[fun_prop]
-theorem isPolyTime_rateBound (hparams : ComputableInPolyTime params input encoding) :
-    ComputableInPolyTime (fun a => (params a).rateBound) input encUnary := by
-  have hparams := hparams.tidy
-  exact .of_tidy ((isPolyTime_fields hparams).snd'.snd'.snd'.fst')
-
-/-- Project the description bound through the shared product implementation. -/
-@[fun_prop]
-theorem isPolyTime_codeBound (hparams : ComputableInPolyTime params input encoding) :
-    ComputableInPolyTime (fun a => (params a).codeBound) input encUnary := by
-  have hparams := hparams.tidy
-  exact .of_tidy ((isPolyTime_fields hparams).snd'.snd'.snd'.snd')
-
-end Efficiency
+attribute [program_certificate] encoding_mk_polyTime
 
 /-- The density denominator is a positive power of two. -/
 def denominator (params : Parameters) : ℕ := dyadicSize params.densityBound
@@ -471,7 +351,7 @@ theorem isPPTOn_run {α : Type} {input : α ↪ List Bool} {evaluate : List Bool
   have hclock : ComputableTidilyInPolyTime (fun a => (params a).clock) input encUnary := by
     unfold Parameters.clock Parameters.inverseRate Parameters.denominator
     polytime
-  have hcode := (Parameters.isPolyTime_codeBound (.of_tidy hparams)).tidy
+  have hcode := (Parameters.encoding_codeBound_polyTime (.of_tidy hparams)).tidy
   refine (IsPPTOn.iterateWith_spec (stateEncoding := State.encoding)
     (initial := fun _ => State.initial)
     (step := fun a => round evaluate (source a) (learn a) (params a))

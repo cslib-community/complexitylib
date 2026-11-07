@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.NP.Witness
 public import Complexity.Computability.Complexity.Classes.Promise.Basic
 public import Complexity.Computability.Kolmogorov.TimeBounded
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -111,16 +112,9 @@ namespace MINKT
 
 /-- Standard encoding of `MINKT.Instance`: the string `x`, followed by `1^time` and `1^size` in
 unary ([Ko][Ko1991]; [Hirahara, Definition 9][Hirahara2018]). -/
-def enc : Instance ↪ List Bool :=
-  (⟨fun i => (i.string, (i.time, i.size)), fun i j h => by
-    cases i; cases j; simpa using h⟩ : Instance ↪ List Bool × (ℕ × ℕ)).trans
-    (encPair encBits (encPair encUnary encUnary))
+enc_structure enc : Instance where string : encBits, time : encUnary, size : encUnary
 
-/-- Applying `MINKT.enc` encodes `(i.string, (i.time, i.size))` via `encPair`. -/
-@[simp]
-theorem enc_apply (i : Instance) :
-    enc i = encPair encBits (encPair encUnary encUnary) (i.string, (i.time, i.size)) :=
-  rfl
+attribute [simp] enc_apply
 
 /-- The unary size parameter `i.size` is at most the encoded instance length `(enc i).length`. -/
 theorem size_le_length_enc (i : Instance) : i.size ≤ (enc i).length := by

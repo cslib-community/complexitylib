@@ -251,7 +251,7 @@ theorem isPolyTime_toCNF :
     | cons p l ih =>
       simp only [List.filter_cons, List.map_cons, apply_ite]
       exact (htest p).ite ((hclause p).cons' ih) ih
-  exact flatMapWithInput (isPolyTime_edges id') ((hmapFilter pairs).comp (snd _ _))
+  exact flatMapWithInput (encoding_edges_polyTime id') ((hmapFilter pairs).comp (snd _ _))
 
 end Cslib.PCP.Encoded.Graph
 

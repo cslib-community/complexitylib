@@ -75,7 +75,7 @@ example : MultiTapeTM.ComputableInPolyTime (fun x : List Bool =>
       fun h => windowCells 2 (w₁ h)⟩ : IntervalData 1 Bool).count walk)
     MultiTapeTM.encBits MultiTapeTM.encUnary :=
   computableInPolyTime_localIntervalCount walk
-    (IntervalData.computableInPolyTime_mk MultiTapeTM.ComputableInPolyTime.id'
+    (encIntervalData_mk_polyTime MultiTapeTM.ComputableInPolyTime.id'
       (.const _) (.const _) (.const _) (.const _) (.const _) (.const _) (.const _))
     (size := fun _ => 20) (Cslib.PolynomiallyBounded.const 20) fun _ => by norm_num
 

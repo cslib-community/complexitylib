@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Equali
 public import Complexity.Computability.GenericRAM.Simulation.Finite
 public import Complexity.Computability.GenericRAM.SparseMemory.Turing
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 
 /-!
 # Native implementation of fixed-program finite RAM steps
@@ -68,22 +69,11 @@ open NativeCertificate
 variable {M : Model.{0, 0, 0, 0}} {r : ℕ}
 
 /-- Encode all finite state components, including the default and distinct stored bindings. -/
-def encoding (enc : M.Encoding) : FiniteState M r ↪ List Bool :=
-  ⟨fun s => encPair encNat (encPair (encPi enc.value)
-      (encPair enc.value (SparseMemory.encoding enc.address enc.value)))
-      (s.pc, s.regs, s.default, s.memory), by
-    intro s t h
-    have hp := (encPair encNat (encPair (encPi enc.value)
-      (encPair enc.value (SparseMemory.encoding enc.address enc.value)))).injective h
-    cases s
-    cases t
-    cases hp
-    rfl⟩
+enc_structure encoding (enc : M.Encoding) : FiniteState M r where
+  pc : encNat, regs : (encPi (Index := Fin r) enc.value), default : enc.value,
+  memory : (SparseMemory.encoding enc.address enc.value)
 
-@[simp] theorem encoding_apply (enc : M.Encoding) (s : FiniteState M r) :
-    encoding enc s = encPair encNat (encPair (encPi enc.value)
-      (encPair enc.value (SparseMemory.encoding enc.address enc.value)))
-      (s.pc, s.regs, s.default, s.memory) := rfl
+attribute [simp] encoding_apply
 
 /-- Configuration is a runtime input, alongside the complete finite state. -/
 abbrev inputEncoding (enc : M.Encoding) :

@@ -68,11 +68,11 @@ theorem isPolyTime_addTrivial (enc : C ↪ List Bool) (truth : C) :
       (encList (encPair encUnary encUnary)) := ComputableInPolyTime.snd _ _
   have hedge : ComputableInPolyTime (fun p : ℕ × ℕ => Edge.mk p.1 p.2 truth)
       (encPair encUnary encUnary) (Edge.encoding enc) :=
-    Edge.isPolyTime_mk (ComputableInPolyTime.fst _ _) (ComputableInPolyTime.snd _ _)
+    Edge.encoding_mk_polyTime (ComputableInPolyTime.fst _ _) (ComputableInPolyTime.snd _ _)
       (ComputableInPolyTime.const truth)
   unfold addTrivial
-  exact isPolyTime_mk (isPolyTime_vertices hgraph)
-    (ComputableInPolyTime.listAppend' (isPolyTime_edges hgraph)
+  exact encoding_mk_polyTime (encoding_vertices_polyTime hgraph)
+    (ComputableInPolyTime.listAppend' (encoding_edges_polyTime hgraph)
       ((ComputableInPolyTime.map hedge).comp hextra))
 
 /-- Constructing all self-loops, including enumerating their endpoints, is polynomial-time. -/
@@ -84,7 +84,7 @@ theorem isPolyTime_addLoops (enc : C ↪ List Bool) (truth : C) :
     (ComputableInPolyTime.id'.prod
       ((ComputableInPolyTime.map
         (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')).comp
-        (ComputableInPolyTime.range.comp (isPolyTime_vertices ComputableInPolyTime.id'))))
+        (ComputableInPolyTime.range.comp (encoding_vertices_polyTime ComputableInPolyTime.id'))))
 
 /-- An appended edge list has the declared number of old and new edges. -/
 @[simp]
