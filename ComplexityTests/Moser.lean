@@ -11,7 +11,7 @@ recovered tape, instances of the Local Lemma hypotheses, and instances where the
 
 namespace ComplexityTests.Moser
 
-open Cslib.Logic.PL Cslib.Logic.PL.Moser Cslib.Probability MeasureTheory
+open Cslib.Logic.PL Cslib.Logic.PL.Moser Cslib.BitString MeasureTheory
 open scoped ENNReal
 
 /-- `(x₀ ∨ x₁ ∨ x₂) ∧ (¬x₃ ∨ x₄ ∨ x₅)`: two exact `3`-clauses on disjoint variables. -/

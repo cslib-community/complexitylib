@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CNF.Moser.Compression
-public import Complexity.Probability.CoinFlips
+public import Complexity.Probability.BitString.CoinFlips
 public import Mathlib.Basic.Real.ENatENNReal
 import Mathlib.Analysis.SpecificLimits.Basic
 
@@ -16,7 +16,7 @@ import Mathlib.Analysis.SpecificLimits.Basic
 # Moser's algorithm on fair coins
 
 Run Moser's algorithm (`Complexity.Logics.Propositional.CNF.Moser`) on a tape of independent fair
-coin flips (`Cslib.Probability.coinFlips`). Whether the run uses up a budget of `t` resamplings
+coin flips (`Cslib.BitString.coinFlips`). Whether the run uses up a budget of `t` resamplings
 depends only on the first `n + t k` bits of the tape, so its probability is the fraction of the
 words of that length on which it does. If every clause of an exact `k`-CNF shares a variable with
 fewer than `2 ^ (k - 3)` other clauses, the counting bound of
@@ -26,9 +26,12 @@ fewer than `2 ^ (k - 3)` other clauses, the counting bound of
 The number of resamplings of the run without a budget (`resamplings`, `⊤` when the run does not
 stop) is therefore at most `m + 2` in expectation (`lintegral_resamplings_le`) and finite almost
 surely (`ae_resamplings_ne_top`). Almost surely the run stops with a satisfying assignment
-(`ae_exists_eval_final`). These are the termination and the expected linear number of resamplings
-of Moser's algorithm [Moser2009], for the bound `r < 2 ^ (k - 3)` of [Fortnow2009]; the general
-criterion `e p (d + 1) ≤ 1` of Moser and Tardos [MoserTardos2010] is not covered.
+(`ae_exists_eval_final`). The constant `m + 2` is the one of this encoding, whose scan of `Solve`
+costs one bit per clause, under the bound `r < 2 ^ (k - 3)` reported by Fortnow [Fortnow2009]; it
+is not a cited endpoint. Fortnow derives `O(m log m)` resamplings, and Moser [Moser2009] expected
+polynomial time for his algorithm with restarts. An expected number of resamplings linear in `m`
+is the symmetric case of the theorem of Moser and Tardos [MoserTardos2010], whose general
+criterion `e p (d + 1) ≤ 1` is not covered here.
 
 ## Main definitions
 
@@ -54,7 +57,7 @@ public section
 
 namespace Cslib.Logic.PL.Moser
 
-open Finset MeasureTheory Cslib.Probability
+open Finset MeasureTheory Cslib.BitString
 open scoped ENNReal
 
 variable {n : ℕ} {φ : CNF (Fin n)}
@@ -99,8 +102,9 @@ theorem coinFlips_exhausts_le {k : ℕ} (hk : 3 ≤ k) (hφ : φ.IsExactDistinct
 /-! ### The number of resamplings -/
 
 variable (φ) in
-/-- The number of resamplings of the run without a budget, `⊤` if it does not stop. With a budget
-of `t` the run is the run without a budget, stopped at its `t`-th resampling. -/
+/-- The number of resamplings of the run without a budget, `⊤` if it does not stop. The run with a
+budget of `t` follows the run without a budget until it would make a `t + 1`-st resampling, and
+stops there instead; it makes the same passes and returns until then. -/
 noncomputable def resamplings (k : ℕ) (x : ℕ → Bool) : ℕ∞ :=
   ⨆ t, ((final φ k t x).trace.length : ℕ∞)
 

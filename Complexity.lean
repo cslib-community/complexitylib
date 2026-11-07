@@ -4570,6 +4570,7 @@ public import Complexity.Probability.ApproximateCounting.Relative
 public import Complexity.Probability.BitString
 public import Complexity.Probability.BitString.AffineHash
 public import Complexity.Probability.BitString.AffineHash.ThreeWise
+public import Complexity.Probability.BitString.CoinFlips
 public import Complexity.Probability.BitString.Collision
 public import Complexity.Probability.BitString.LazyRandomWalk
 public import Complexity.Probability.BitString.LinearHash
@@ -4581,7 +4582,6 @@ public import Complexity.Probability.BitString.SubsetSum
 public import Complexity.Probability.BitString.SubsetSum.Matrix
 public import Complexity.Probability.BoundedDifferences
 public import Complexity.Probability.Chernoff
-public import Complexity.Probability.CoinFlips
 public import Complexity.Probability.Collision
 public import Complexity.Probability.Concentration
 public import Complexity.Probability.Conditioning

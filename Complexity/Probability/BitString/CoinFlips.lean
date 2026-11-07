@@ -13,7 +13,7 @@ public import Mathlib.Probability.ProductMeasure
 /-!
 # Fair coin flips
 
-`Cslib.Probability.coinFlips` is the probability measure on infinite bit tapes `ℕ → Bool` under
+`Cslib.BitString.coinFlips` is the probability measure on infinite bit tapes `ℕ → Bool` under
 which the bits are independent fair coins: the product `MeasureTheory.Measure.infinitePi` of
 uniform distributions on `Bool`. An event determined by the first `N` bits of the tape has
 probability equal to the fraction of the `2 ^ N` words of length `N` that it contains
@@ -23,23 +23,23 @@ algorithms reading a bounded prefix of a random tape to counting words.
 
 ## Main definitions
 
-* `Cslib.Probability.coinFlips`: independent fair coin flips.
-* `Cslib.Probability.prefixCylinder`: the tapes beginning with a given word.
+* `Cslib.BitString.coinFlips`: independent fair coin flips.
+* `Cslib.BitString.prefixCylinder`: the tapes beginning with a given word.
 
 ## Main results
 
-* `Cslib.Probability.coinFlips_prefixCylinder`: a given word of length `N` begins the tape with
+* `Cslib.BitString.coinFlips_prefixCylinder`: a given word of length `N` begins the tape with
   probability `2⁻ᴺ`.
-* `Cslib.Probability.measurableSet_setOf_of_prefix`,
-  `Cslib.Probability.coinFlips_setOf_eq_card_mul`: events determined by a prefix of the tape are
+* `Cslib.BitString.measurableSet_setOf_of_prefix`,
+  `Cslib.BitString.coinFlips_setOf_eq_card_mul`: events determined by a prefix of the tape are
   measurable, with probability the fraction of the words in them.
 -/
 
 public section
 
-namespace Cslib.Probability
+namespace Cslib.BitString
 
-open MeasureTheory Finset
+open MeasureTheory Finset Probability
 
 /-- Independent fair coin flips: the product of uniform distributions on `Bool`. -/
 noncomputable def coinFlips : Measure (ℕ → Bool) :=
@@ -126,4 +126,4 @@ theorem coinFlips_setOf_eq_card_mul {N : ℕ} {P : (ℕ → Bool) → Prop} [Dec
     rw [← mem_prefixCylinder.1 hx i, ← mem_prefixCylinder.1 hx' i]
   · exact fun y _ => measurableSet_prefixCylinder y
 
-end Cslib.Probability
+end Cslib.BitString

@@ -27,18 +27,22 @@ the position of the scan of `Solve`, the resampled clauses and the current assig
 given a *budget* of `t` resamplings: when the next move would resample for the `t + 1`-st time,
 the machine stops instead.
 
-Every run stops within `m + 2 t` steps, where `m` is the number of clauses (`move_final`). A run
-that does not use up its budget ends with a satisfying assignment (`eval_final_of_not_exhausts`),
-and a run with budget `t` reads only the first `n + t k` tape bits (`exhausts_congr`). The
+Every run stops within `m + 2 t` steps, where `m` is the number of clauses
+(`move_final_eq_stop`). A run that does not use up its budget ends with a satisfying assignment
+(`eval_final_of_not_exhausts`), and a run with budget `t` reads only the first `n + t k` tape bits
+(`exhausts_congr`). The
 entropy-compression argument bounding the number of tapes that use up the budget is in
 `Complexity.Logics.Propositional.CNF.Moser.Compression`, and its probabilistic consequences are in
 `Complexity.Logics.Propositional.CNF.Moser.Probability`.
 
 `Fix` takes the first violated clause in index order, as Moser takes the lexicographically first
-one; `Solve` also takes the first violated clause (`lt_of_move_eq_root`). `Solve` makes one pass
-over the clauses, as in Fortnow's exposition [Fortnow2009]: a returning `Fix` call leaves every
-clause it found satisfied satisfied (`Sound`), so a rescan from the first clause would find the
-same clause. Moser's restarts, which serve his running-time analysis, are omitted.
+one. In Fortnow's exposition [Fortnow2009], `Solve` calls `Fix` on a violated clause as long as
+there is one. Here `Solve` is a variant making a single pass over the clauses, which is equivalent
+by the invariant `Sound`: every violated clause lies at or after the scan position or shares a
+variable with an active `Fix` call. So when the last `Fix` call returns, the clauses before the
+scan position are satisfied, and the scan reaches the first violated clause
+(`eval_of_lt_of_move_eq_root`). The restarts of Moser's Algorithm 2.2, which serve his
+running-time analysis, are omitted.
 
 ## Main definitions
 
@@ -51,9 +55,9 @@ same clause. Moser's restarts, which serve his running-time analysis, are omitte
 
 ## Main results
 
-* `Cslib.Logic.PL.Moser.move_final`: every run stops within `m + 2 t` steps.
+* `Cslib.Logic.PL.Moser.move_final_eq_stop`: every run stops within `m + 2 t` steps.
 * `Cslib.Logic.PL.Moser.eval_final_of_not_exhausts`: **correctness**.
-* `Cslib.Logic.PL.Moser.lt_of_move_eq_root`: `Solve` fixes the first violated clause.
+* `Cslib.Logic.PL.Moser.eval_of_lt_of_move_eq_root`: `Solve` fixes the first violated clause.
 * `Cslib.Logic.PL.Moser.Exhausts.mono`, `Cslib.Logic.PL.Moser.final_eq_of_not_exhausts`: runs with
   larger budgets.
 * `Cslib.Logic.PL.Moser.exhausts_congr`: a run with budget `t` reads `n + t k` tape bits.
@@ -64,7 +68,7 @@ same clause. Moser's restarts, which serve his running-time analysis, are omitte
 * [L. Fortnow, *A Kolmogorov Complexity Proof of the Lovász Local Lemma*][Fortnow2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 
@@ -94,7 +98,7 @@ variable {n : ℕ}
 abbrev vbl (c : Clause (Fin n)) : List (Fin n) := c.map Prod.fst
 
 /-- Two clauses share a variable. -/
-def Shares (c d : Clause (Fin n)) : Prop := ∃ v ∈ vbl c, v ∈ vbl d
+@[expose] def Shares (c d : Clause (Fin n)) : Prop := ∃ v ∈ vbl c, v ∈ vbl d
 
 instance (c d : Clause (Fin n)) : Decidable (Shares c d) :=
   inferInstanceAs (Decidable (∃ v ∈ vbl c, v ∈ vbl d))
@@ -105,12 +109,13 @@ theorem shares_self {c : Clause (Fin n)} (hc : c ≠ []) : Shares c c := by
 
 /-- Replace the values of the variables of `c` by tape bits: the `i`-th variable of `c` receives
 `x (o + i)`, and every other variable keeps its value. -/
-def resample (c : Clause (Fin n)) (x : ℕ → Bool) (o : ℕ) (σ : Fin n → Bool) : Fin n → Bool :=
+@[expose] def resample (c : Clause (Fin n)) (x : ℕ → Bool) (o : ℕ) (σ : Fin n → Bool) :
+    Fin n → Bool :=
   fun v => if v ∈ vbl c then x (o + (vbl c).idxOf v) else σ v
 
 /-- Undo the resampling of a clause that was violated before it: its variables get the values that
 falsify their literals. -/
-def unresample (c : Clause (Fin n)) (σ : Fin n → Bool) : Fin n → Bool :=
+@[expose] def unresample (c : Clause (Fin n)) (σ : Fin n → Bool) : Fin n → Bool :=
   fun v => match c.find? (fun l => l.1 == v) with
     | some l => !l.2
     | none => σ v
@@ -190,14 +195,14 @@ variable (φ : CNF (Fin n))
 
 /-- The clauses sharing a variable with clause `c` (including `c`, if it is nonempty), in index
 order. -/
-def neighbors (c : Fin φ.length) : List (Fin φ.length) :=
+@[expose] def neighbors (c : Fin φ.length) : List (Fin φ.length) :=
   (List.finRange φ.length).filter fun d => decide (Shares φ[c] φ[d])
 
 /-- The number of other clauses sharing a variable with clause `i`. -/
-def degree (i : Fin φ.length) : ℕ := #{j : Fin φ.length | j ≠ i ∧ Shares φ[i] φ[j]}
+@[expose] def degree (i : Fin φ.length) : ℕ := #{j : Fin φ.length | j ≠ i ∧ Shares φ[i] φ[j]}
 
 /-- The next move with a budget of `t` resamplings. -/
-def move (t : ℕ) (s : State n φ.length) : Move φ.length :=
+@[expose] def move (t : ℕ) (s : State n φ.length) : Move φ.length :=
   match s.stack with
   | [] =>
     if h : s.ptr < φ.length then
@@ -211,7 +216,7 @@ def move (t : ℕ) (s : State n φ.length) : Move φ.length :=
 
 /-- Perform a move. The `j`-th resampling reads the tape bits `x (n + j k), …,
 x (n + j k + k - 1)`. -/
-def apply (k : ℕ) (x : ℕ → Bool) (s : State n φ.length) : Move φ.length → State n φ.length
+@[expose] def apply (k : ℕ) (x : ℕ → Bool) (s : State n φ.length) : Move φ.length → State n φ.length
   | .skip => { s with ptr := s.ptr + 1 }
   | .root c =>
     { assignment := resample φ[c] x (n + s.trace.length * k) s.assignment
@@ -227,26 +232,26 @@ def apply (k : ℕ) (x : ℕ → Bool) (s : State n φ.length) : Move φ.length 
   | .stop => s
 
 /-- One step of the machine with a budget of `t` resamplings. -/
-def step (k t : ℕ) (x : ℕ → Bool) (s : State n φ.length) : State n φ.length :=
+@[expose] def step (k t : ℕ) (x : ℕ → Bool) (s : State n φ.length) : State n φ.length :=
   apply φ k x s (move φ t s)
 
 /-- The initial state: the first `n` tape bits are the assignment. -/
-def init (x : ℕ → Bool) : State n φ.length :=
+@[expose] def init (x : ℕ → Bool) : State n φ.length :=
   { assignment := fun v => x v, stack := [], ptr := 0, trace := [] }
 
 /-- The state after `N` steps. -/
-def run (k t : ℕ) (x : ℕ → Bool) : ℕ → State n φ.length
+@[expose] def run (k t : ℕ) (x : ℕ → Bool) : ℕ → State n φ.length
   | 0 => init φ x
   | N + 1 => step φ k t x (run k t x N)
 
 /-- Enough steps for every run with a budget of `t` resamplings to stop. -/
-def fuel (t : ℕ) : ℕ := φ.length + 2 * t
+@[expose] def fuel (t : ℕ) : ℕ := φ.length + 2 * t
 
 /-- The final state of the run with a budget of `t` resamplings. -/
-def final (k t : ℕ) (x : ℕ → Bool) : State n φ.length := run φ k t x (fuel φ t)
+@[expose] def final (k t : ℕ) (x : ℕ → Bool) : State n φ.length := run φ k t x (fuel φ t)
 
 /-- The run on the tape `x` uses up its budget of `t` resamplings. -/
-def Exhausts (k t : ℕ) (x : ℕ → Bool) : Prop := t ≤ (final φ k t x).trace.length
+@[expose] def Exhausts (k t : ℕ) (x : ℕ → Bool) : Prop := t ≤ (final φ k t x).trace.length
 
 instance (k t : ℕ) (x : ℕ → Bool) : Decidable (Exhausts φ k t x) :=
   inferInstanceAs (Decidable (t ≤ _))
@@ -396,8 +401,8 @@ theorem sound_run (hne : ∀ c ∈ φ, c ≠ []) (k t : ℕ) (x : ℕ → Bool) 
 
 /-- `Solve` calls `Fix` on the first violated clause: in a sound state, every clause before the one
 it fixes is satisfied. -/
-theorem lt_of_move_eq_root {t : ℕ} {s : State n φ.length} (hs : Sound φ s) {c : Fin φ.length}
-    (hm : move φ t s = .root c) {j : Fin φ.length} (hj : j < c) :
+theorem eval_of_lt_of_move_eq_root {t : ℕ} {s : State n φ.length} (hs : Sound φ s)
+    {c : Fin φ.length} (hm : move φ t s = .root c) {j : Fin φ.length} (hj : j < c) :
     φ[j].eval s.assignment = true := by
   rcases move_cases t s with ⟨hm', -⟩ | ⟨c', hm', hst, hc', -⟩ | ⟨e, st, d, hm', -⟩ |
     ⟨e, st, hm', -⟩ | ⟨hm', -⟩ <;> rw [hm] at hm' <;> cases hm'
@@ -470,7 +475,7 @@ theorem potential_run_add_le (k t : ℕ) (x : ℕ → Bool) (N : ℕ) :
         omega
 
 /-- **Termination.** Every run with a budget of `t` resamplings stops within `m + 2 t` steps. -/
-theorem move_final (k t : ℕ) (x : ℕ → Bool) : move φ t (final φ k t x) = .stop := by
+theorem move_final_eq_stop (k t : ℕ) (x : ℕ → Bool) : move φ t (final φ k t x) = .stop := by
   unfold final
   rcases potential_run_add_le k t x (fuel φ t) with h | h
   · exact h
@@ -480,7 +485,7 @@ theorem run_eq_final {k t : ℕ} {x : ℕ → Bool} {N : ℕ} (hN : fuel φ t �
     run φ k t x N = final φ k t x := by
   induction N, hN using Nat.le_induction with
   | base => rfl
-  | succ N hN ih => rw [run_succ, ih, step_eq_self (move_final k t x)]
+  | succ N hN ih => rw [run_succ, ih, step_eq_self (move_final_eq_stop k t x)]
 
 /-- A run that does not use up its budget ends with `Solve` done: no active `Fix` call and a
 finished scan. -/
@@ -488,10 +493,10 @@ theorem final_halted {k t : ℕ} {x : ℕ → Bool} (h : ¬Exhausts φ k t x) :
     (final φ k t x).stack = [] ∧ φ.length ≤ (final φ k t x).ptr := by
   rcases move_cases t (final φ k t x) with ⟨hm, -⟩ | ⟨c, hm, -⟩ | ⟨e, st, d, hm, -⟩ |
     ⟨e, st, hm, -⟩ | ⟨-, ht | hh⟩
-  · simp [move_final] at hm
-  · simp [move_final] at hm
-  · simp [move_final] at hm
-  · simp [move_final] at hm
+  · simp [move_final_eq_stop] at hm
+  · simp [move_final_eq_stop] at hm
+  · simp [move_final_eq_stop] at hm
+  · simp [move_final_eq_stop] at hm
   · exact absurd ht h
   · exact hh
 

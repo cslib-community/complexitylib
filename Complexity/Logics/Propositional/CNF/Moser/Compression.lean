@@ -30,10 +30,13 @@ there are fewer than `2 ^ (n + m + 1 + t (L + 2))` such tapes (`card_exhausts_lt
 If every clause shares a variable with fewer than `2 ^ (k - 3)` other clauses, take `L = k - 3`.
 Then fewer than a `2 ^ (m + 1 - t)` fraction of the tapes of length `n + t k` use up `t`
 resamplings (`card_exhausts_mul_two_pow_lt`). For `t = m + 1` some tape does not, so the formula is
-satisfiable (`satisfiable_of_degree_lt`). This is Moser's argument as presented by Fortnow
-[Fortnow2009], with the bound `r < 2 ^ (k - 3)` that Fortnow reports from Moser's talk
-[Moser2009]. Fortnow encodes each `Fix` call made by `Solve` in `log m` bits; here the scan of
-`Solve` costs one bit per clause.
+satisfiable (`satisfiable_of_degree_lt`). This is the entropy-compression argument as presented
+by Fortnow [Fortnow2009], with the bound `r < 2 ^ (k - 3)` that Fortnow reports from Moser's STOC
+2009 talk. The paper [Moser2009] analyses its algorithm differently, by counting witness trees,
+under the stronger hypothesis that each clause shares a variable with at most `2 ^ (k - 5)`
+clauses, itself included (its Theorem 1.2); neither that argument nor that bound is formalized
+here. Fortnow encodes each `Fix` call made by `Solve` in `log m` bits; here the scan of `Solve`
+costs one bit per clause.
 
 ## Main definitions
 
@@ -54,7 +57,7 @@ satisfiable (`satisfiable_of_degree_lt`). This is Moser's argument as presented 
 * [L. Fortnow, *A Kolmogorov Complexity Proof of the Lovász Local Lemma*][Fortnow2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.Moser
 
@@ -66,19 +69,19 @@ variable {n : ℕ} (φ : CNF (Fin n))
 
 /-- The execution log of a move: one bit for the kind of move, followed by the `L`-bit position of
 the clause of a recursive call. -/
-def bits (L : ℕ) : Move φ.length → List Bool
+@[expose] def bits (L : ℕ) : Move φ.length → List Bool
   | .skip | .pop => [false]
   | .root _ => [true]
   | .child pos _ => true :: BitString.lowBits L pos
   | .stop => []
 
 /-- The execution log of the first `N` steps. -/
-def log (k t L : ℕ) (x : ℕ → Bool) : ℕ → List Bool
+@[expose] def log (k t L : ℕ) (x : ℕ → Bool) : ℕ → List Bool
   | 0 => []
   | N + 1 => log k t L x N ++ bits φ L (move φ t (run φ k t x N))
 
 /-- Replay an execution log, recomputing the control state. -/
-def replay (L : ℕ) : Control φ.length → List Bool → Control φ.length
+@[expose] def replay (L : ℕ) : Control φ.length → List Bool → Control φ.length
   | c, [] => c
   | ⟨[], ptr, trace⟩, false :: w => replay L ⟨[], ptr + 1, trace⟩ w
   | ⟨[], ptr, trace⟩, true :: w =>
@@ -95,7 +98,7 @@ decreasing_by all_goals simp only [List.length_cons, List.length_drop]; omega
 /-- Recover the tape from an assignment and the resampled clauses (latest first): the bits read by
 the latest resampling are the current values of the variables of its clause, and the earlier bits
 are recovered after undoing it. -/
-def recoverTape (k : ℕ) : List (Fin φ.length) → (Fin n → Bool) → ℕ → Bool
+@[expose] def recoverTape (k : ℕ) : List (Fin φ.length) → (Fin n → Bool) → ℕ → Bool
   | [], σ, i => if h : i < n then σ ⟨i, h⟩ else false
   | c :: tr, σ, i =>
     if n + tr.length * k ≤ i then
@@ -105,7 +108,7 @@ def recoverTape (k : ℕ) : List (Fin φ.length) → (Fin n → Bool) → ℕ �
     else recoverTape k tr (unresample φ[c] σ) i
 
 /-- The decoder: the tape recovered from a final assignment and an execution log. -/
-def decode (k L : ℕ) (σ : Fin n → Bool) (w : List Bool) : ℕ → Bool :=
+@[expose] def decode (k L : ℕ) (σ : Fin n → Bool) (w : List Bool) : ℕ → Bool :=
   recoverTape φ k (replay φ L ⟨[], 0, []⟩ w).trace σ
 
 variable {φ}
