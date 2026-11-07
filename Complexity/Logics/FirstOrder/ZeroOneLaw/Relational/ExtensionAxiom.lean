@@ -30,7 +30,8 @@ back-and-forth property: a finite partial isomorphism extends to any new element
 witness of the extension axiom given by the atomic type of the new element. When `L` has no nullary
 relation symbols, whose truth values the extension axioms leave open, two countable models are
 therefore isomorphic (`Cslib.Logic.FO.Relational.aleph0_categorical_extensionTheory`).
-Satisfiability and completeness of the theory are in
+Satisfiability and completeness of the theory, and with them the 0-1 law of Glebskiĭ, Kogan,
+Liogon'kiĭ and Talanov and of Fagin [GlebskiiKoganLiogonkiiTalanov1969] [Fagin1976], are in
 `Complexity.Logics.FirstOrder.ZeroOneLaw.Relational`.
 
 For `L = Language.graph` these are the extension axioms of directed graphs with loops, not the
@@ -59,6 +60,9 @@ extension axioms of simple graphs in `Complexity.Logics.FirstOrder.ZeroOneLaw.Ex
 
 ## References
 
+* [Y. V. Glebskiĭ, D. I. Kogan, M. I. Liogon'kiĭ and V. A. Talanov, *Range and degree of
+  realizability of formulas in the restricted predicate calculus*]
+  [GlebskiiKoganLiogonkiiTalanov1969]
 * [R. Fagin, *Probabilities on finite models*][Fagin1976]
 * [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Chapter 12.
 -/

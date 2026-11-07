@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Boolean.FirstOrder
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.Transfer
 import Complexity.Foundations.Data.Fintype.RestrictInjective
+import Complexity.Foundations.ModelTheory.Basic
 import Complexity.Probability.PMF.Uniform
 
 /-!
@@ -20,7 +21,7 @@ is the same as the truth table of its atomic facts `R(a₁, …, aₗ)`
 (`Cslib.Logic.FO.atomStructureEquiv`). `Cslib.Logic.FO.uniformStructure n` draws every atomic fact
 independently with probability `1/2`. Equivalently, it is the uniform distribution on the
 `L`-structures on `Fin n` (`Cslib.Logic.FO.structProb_uniformStructure_eq_card`): the measure `μₙ`
-of Fagin's 0-1 law [Fagin1976] [Libkin2004, Chapter 12].
+of the 0-1 law [GlebskiiKoganLiogonkiiTalanov1969] [Fagin1976] [Libkin2004, Chapter 12].
 
 For `L = Language.graph` the uniform random structure is a random *directed* graph with loops: each
 of the `n²` ordered pairs is an edge with probability `1/2`. It is not `G(n, 1/2)`, the uniform
@@ -49,6 +50,9 @@ A nullary relation symbol is a single atomic fact, true with probability exactly
 
 ## References
 
+* [Y. V. Glebskiĭ, D. I. Kogan, M. I. Liogon'kiĭ and V. A. Talanov, *Range and degree of
+  realizability of formulas in the restricted predicate calculus*]
+  [GlebskiiKoganLiogonkiiTalanov1969]
 * [R. Fagin, *Probabilities on finite models*][Fagin1976]
 * [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Chapter 12.
 -/
@@ -67,22 +71,6 @@ instance {L : Language} [Finite (Σ l, L.Relations l)] {n : ℕ} : Finite (Atom 
 
 variable {L : Language.{u, v}} [L.IsRelational]
 
-/-- Two structures for a relational language on the same type are equal when they interpret every
-relation symbol alike. -/
-theorem structure_ext {M : Type*} {S T : L.Structure M}
-    (h : ∀ {l} (R : L.Relations l) (x : Fin l → M), @RelMap L M S l R x ↔ @RelMap L M T l R x) :
-    S = T := by
-  obtain ⟨F, R⟩ := S
-  obtain ⟨F', R'⟩ := T
-  have hF : @F = @F' := by
-    funext l f
-    exact isEmptyElim f
-  have hR : @R = @R' := by
-    funext l r x
-    exact propext (h r x)
-  subst hF hR
-  rfl
-
 /-- The structure on `Fin n` whose true atomic facts are those given by `y`: the structure of
 `Cslib.Circuits.Boolean.ModelChecking.Model y`. -/
 abbrev atomStructure {n : ℕ} (y : Atom L n → Bool) : L.Structure (Fin n) :=
@@ -94,14 +82,14 @@ theorem relMap_atomStructure {n l : ℕ} (y : Atom L n → Bool) (R : L.Relation
 
 open Classical in
 /-- For a relational language, a structure on `Fin n` is the same as the truth table of its
-atomic facts. -/
+atomic facts. The inverse reads off the atomic facts with `ModelChecking.atomsOf`. -/
 noncomputable def atomStructureEquiv (n : ℕ) : (Atom L n → Bool) ≃ L.Structure (Fin n) where
   toFun := atomStructure
-  invFun S a := decide (@RelMap L (Fin n) S _ a.1.2 a.2)
+  invFun S := letI := S; atomsOf (L := L) (Equiv.refl (Fin n))
   left_inv y := by
     funext a
     exact Bool.decide_eq_true
-  right_inv S := structure_ext fun R x => decide_eq_true_iff
+  right_inv S := Structure.ext_of_isRelational fun R x => decide_eq_true_iff
 
 @[simp]
 theorem atomStructureEquiv_apply {n : ℕ} (y : Atom L n → Bool) :

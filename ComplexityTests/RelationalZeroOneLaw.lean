@@ -9,7 +9,7 @@ import Complexity.Logics.FirstOrder.ZeroOneLaw.Relational
 import Mathlib.Tactic.FinCases
 
 /-!
-# Tests for Fagin's 0-1 law for finite relational vocabularies
+# Tests for the 0-1 law for finite relational vocabularies
 
 The law instantiated at the language of graphs; exact probabilities of atomic facts; an extension
 axiom holding in a concrete one-element structure and failing in every one-element structure;
@@ -24,7 +24,7 @@ open FirstOrder Language Structure Cslib.Logic.FO Cslib.Circuits.Boolean.ModelCh
 
 /-! ### The law for the language of graphs -/
 
-/-- Fagin's 0-1 law for the language of graphs: uniform random directed graphs with loops. -/
+/-- The relational 0-1 law for the language of graphs: uniform random directed graphs with loops. -/
 example (φ : Language.graph.Sentence) :
     Tendsto (fun n => sentenceProb (uniformStructure n) φ) atTop (nhds 0) ∨
       Tendsto (fun n => sentenceProb (uniformStructure n) φ) atTop (nhds 1) :=
@@ -124,7 +124,7 @@ theorem sentenceProb_irreflexive (n : ℕ) :
   rw [one_div]
 
 /-- So the simple-graph axioms fail almost surely, and the extension theory refutes them: the 0-1
-law for `G(n, 1/2)` is not the special case `L = Language.graph` of Fagin's law. -/
+law for `G(n, 1/2)` is not the special case `L = Language.graph` of the relational law. -/
 example : Tendsto (fun n => sentenceProb (uniformStructure n)
     (adj.irreflexive : Language.graph.Sentence)) atTop (nhds 0) := by
   simp only [sentenceProb_irreflexive]

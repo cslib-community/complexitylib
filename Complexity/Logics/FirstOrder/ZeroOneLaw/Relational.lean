@@ -11,12 +11,12 @@ public import Complexity.Logics.FirstOrder.Reduction
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.Relational.ExtensionProbability
 
 /-!
-# Fagin's 0-1 law for finite relational vocabularies
+# The 0-1 law for finite relational vocabularies
 
-**Theorem** (Fagin 1976). Let `L` be a relational language with finitely many relation symbols, none
-of them nullary. For every first-order sentence `φ` of `L`, the fraction `μₙ(φ)` of the
-`L`-structures on `{0, …, n - 1}` that satisfy `φ` tends to `0` or to `1` as `n → ∞` [Fagin1976]
-[Libkin2004, Chapter 12].
+**Theorem** (Glebskiĭ–Kogan–Liogon'kiĭ–Talanov 1969; Fagin 1976). Let `L` be a relational language
+with finitely many relation symbols, none of them nullary. For every first-order sentence `φ` of
+`L`, the fraction `μₙ(φ)` of the `L`-structures on `{0, …, n - 1}` that satisfy `φ` tends to `0` or
+to `1` as `n → ∞` [GlebskiiKoganLiogonkiiTalanov1969] [Fagin1976] [Libkin2004, Chapter 12].
 
 Here `μₙ(φ)` is `Cslib.Logic.FO.sentenceProb (uniformStructure n) φ`, which is the fraction of
 structures by `Cslib.Logic.FO.structProb_uniformStructure_eq_card`. The proof is Fagin's. Every
@@ -38,7 +38,7 @@ does not specialize to the 0-1 law for the uniform random simple graph `G(n, 1/2
 * `Cslib.Logic.FO.Relational.isSatisfiable_extensionTheory`: the extension theory is satisfiable.
 * `Cslib.Logic.FO.Relational.isComplete_extensionTheory`: without nullary relation symbols, it is
   complete.
-* `Cslib.Logic.FO.Relational.zero_one_law`: Fagin's 0-1 law.
+* `Cslib.Logic.FO.Relational.zero_one_law`: the 0-1 law.
 * `Cslib.Logic.FO.Relational.tendsto_sentenceProb_one_iff`,
   `Cslib.Logic.FO.Relational.tendsto_sentenceProb_zero_iff`: the limit is `1` exactly when `T ⊨ φ`,
   and `0` exactly when `T ⊨ ¬φ`.
@@ -48,6 +48,9 @@ does not specialize to the 0-1 law for the uniform random simple graph `G(n, 1/2
 
 ## References
 
+* [Y. V. Glebskiĭ, D. I. Kogan, M. I. Liogon'kiĭ and V. A. Talanov, *Range and degree of
+  realizability of formulas in the restricted predicate calculus*]
+  [GlebskiiKoganLiogonkiiTalanov1969]
 * [R. Fagin, *Probabilities on finite models*][Fagin1976]
 * [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Chapter 12.
 -/
@@ -77,9 +80,10 @@ theorem isComplete_extensionTheory : (extensionTheory L).IsComplete := by
   exact aleph0_categorical_extensionTheory.{u, v, max u v}.isComplete ℵ₀ _ le_rfl hcard
     isSatisfiable_extensionTheory fun M => infinite_of_model_extensionTheory (L := L)
 
-/-- **Fagin's 0-1 law** for a finite relational vocabulary without nullary relation symbols:
-for every first-order sentence `φ`, the probability that the uniform random structure on
-`Fin n` satisfies `φ` tends to `0` or to `1` [Fagin1976]. -/
+/-- **The 0-1 law** (Glebskiĭ–Kogan–Liogon'kiĭ–Talanov; Fagin) for a finite relational vocabulary
+without nullary relation symbols: for every first-order sentence `φ`, the probability that the
+uniform random structure on `Fin n` satisfies `φ` tends to `0` or to `1`
+[GlebskiiKoganLiogonkiiTalanov1969] [Fagin1976]. -/
 theorem zero_one_law (φ : L.Sentence) :
     Tendsto (fun n => sentenceProb (uniformStructure n) φ) atTop (nhds 0) ∨
       Tendsto (fun n => sentenceProb (uniformStructure n) φ) atTop (nhds 1) :=
