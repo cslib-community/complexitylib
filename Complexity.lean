@@ -1793,12 +1793,14 @@ public import Complexity.Computability.Complexity.Problems.CSP.Horn
 public import Complexity.Computability.Complexity.Problems.CSP.Majority
 public import Complexity.Computability.Complexity.Problems.CSP.Schaefer
 public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
+public import Complexity.Computability.Complexity.Problems.ChromaticNumber
 public import Complexity.Computability.Complexity.Problems.CircuitSAT
 public import Complexity.Computability.Complexity.Problems.CircuitValue
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Compilation
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
 public import Complexity.Computability.Complexity.Problems.Clique
+public import Complexity.Computability.Complexity.Problems.CliqueCover
 public import Complexity.Computability.Complexity.Problems.Coloring
 public import Complexity.Computability.Complexity.Problems.CountingSAT
 public import Complexity.Computability.Complexity.Problems.EUThreeSAT
@@ -3856,6 +3858,7 @@ public import Complexity.Foundations.Combinatorics.SetPartition.Basic
 public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
+public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount

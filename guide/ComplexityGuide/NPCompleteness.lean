@@ -6,7 +6,9 @@ Authors: Samuel Schlesinger
 import VersoManual
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.CircuitSAT
+import Complexity.Computability.Complexity.Problems.ChromaticNumber
 import Complexity.Computability.Complexity.Problems.Clique
+import Complexity.Computability.Complexity.Problems.CliqueCover
 import Complexity.Computability.Complexity.Problems.Coloring
 import Complexity.Computability.Complexity.Problems.ExactThreeSAT
 import Complexity.Computability.Complexity.Problems.NAEThreeSAT
@@ -322,7 +324,11 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   ({name}`polyTimeReducible_IndependentSet_VertexCover`, {name}`VertexCover_npComplete`).
 * SAT reduces to three-colorability ({name}`polyTimeReducible_SAT_ThreeColoring`,
   {name}`ThreeColoring_npComplete`) and to `k`-colorability for every `k ≥ 3`
-  ({name}`polyTimeReducible_SAT_KColoring`, {name}`KColoring_npComplete`).
+  ({name}`polyTimeReducible_SAT_KColoring`, {name}`KColoring_npComplete`). Fixed colorability
+  reduces to chromatic number, with the number of colors in the input
+  ({name}`polyTimeReducible_KColoring_ChromaticNumber`, {name}`ChromaticNumber_npComplete`), which
+  reduces to clique cover by complementing the graph
+  ({name}`polyTimeReducible_ChromaticNumber_CliqueCover`, {name}`CliqueCover_npComplete`).
 * SAT reduces to directed Hamiltonian paths and cycles ({name}`polyTimeReducible_SAT_DirHamPath`,
   {name}`DirHamPath_npComplete`, {name}`polyTimeReducible_SAT_DirHamCycle`,
   {name}`DirHamCycle_npComplete`), these reduce to their undirected versions
