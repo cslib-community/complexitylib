@@ -8,8 +8,10 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Data.BitString.Sign
-public import Complexity.Languages.Probabilistic.QueriesWith
+public import Complexity.Languages.Probabilistic.QueryCount
+public import Complexity.Languages.Probabilistic.Semantics
 public import Cslib.MachineLearning.PACLearning.Defs
+import Complexity.Languages.Probabilistic.QueriesWith
 import Complexity.Probability.PMF
 
 /-!
@@ -38,7 +40,7 @@ particular a learner with the single tolerance `τ`, so lower bounds for the sin
 to it. As in Kearns's Definition 3 there is no confidence parameter: the oracle is adversarial but
 always within tolerance. A learner that is correct against every fixed answer function within
 tolerance (`StatisticalQuery.LearnsStateless`) is all that the lower bounds need, and every learner
-is one (`StatisticalQuery.Learns.learnsStateless`).
+satisfying `StatisticalQuery.Learns` is one (`StatisticalQuery.Learns.learnsStateless`).
 
 The correlation `StatisticalQuery.corr D f g` of two concepts is `E_D [f · g]` for their `±1`
 values (`Cslib.BitString.signVal`); it is `1 - 2 · disagreement D f g`

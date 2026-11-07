@@ -874,8 +874,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable
   PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), prove
   the VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)`, first for countable domains and
-  then for general well-behaved classes. Statistical queries ([#2910]): the deterministic SQ model
-  has correlational and SQ-dimension query lower bounds, including parities. Remaining:
+  then for general well-behaved classes. Statistical queries
+  ([#2910](https://github.com/cslib-community/complexitylib/issues/2910)): the deterministic SQ
+  model has correlational and SQ-dimension query lower bounds, including parities. Remaining:
   simulating SQ learners from random examples, without noise and under random classification
   noise (Kearns's Theorems 1 and 3); the low-degree algorithm as an SQ algorithm; randomized SQ
   learners; and Feldman's statistical dimension for a specified planted problem, with matching
@@ -1293,4 +1294,3 @@ not planned, not as proved.
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
 [#2866]: https://github.com/cslib-community/complexitylib/issues/2866
-[#2910]: https://github.com/cslib-community/complexitylib/issues/2910

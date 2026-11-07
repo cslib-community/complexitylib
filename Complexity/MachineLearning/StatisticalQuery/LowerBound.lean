@@ -9,6 +9,7 @@ module
 
 public import Complexity.MachineLearning.StatisticalQuery.Basic
 import Complexity.Foundations.Geometry.Euclidean.Angle.Cap
+import Complexity.Languages.Probabilistic.QueriesWith
 import Complexity.Probability.PMF
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
@@ -39,9 +40,12 @@ least `1 - 2 ε`, for each such `f i`, and by the same inequality at most
 The bound assumes only `LearnsStateless`, so it applies to every learner (`Learns.learnsStateless`)
 and to queries with values in `[-1, 1]`, which include the predicates of [Kearns1998].
 When only the one-sided bound `corr D (f i) (f j) ≤ γ` holds, the first term doubles
-(`StatisticalQuery.LearnsStateless.card_le_of_corr_le`). With `γ = 1 / d` for `d = |κ|` and exact
-learning this is the bound `d τ ^ 2 - 1 ≤ 2 q` of [Reyzin, Theorem 12][Reyzin2020] in terms of the
-statistical query dimension [Reyzin, Definition 11][Reyzin2020]
+(`StatisticalQuery.LearnsStateless.card_le_of_corr_le`). Take `γ = 1 / d` for `d = |κ|`, so that
+the statistical query dimension [Reyzin, Definition 11][Reyzin2020] is at least `d`. Requiring
+accuracy `τ`, that is `1 - 2 ε ≥ τ`, as in [Reyzin, Theorem 12][Reyzin2020], gives
+`d τ ^ 2 - 1 ≤ 2 q + 1`
+(`StatisticalQuery.LearnsStateless.card_mul_sq_sub_one_le_two_mul_add_one`). For exact learning,
+the special case `ε = 0`, this sharpens to Reyzin's query count `d τ ^ 2 - 1 ≤ 2 q`
 (`StatisticalQuery.LearnsStateless.card_mul_sq_sub_one_le_two_mul`).
 
 ## Main results
@@ -50,6 +54,8 @@ statistical query dimension [Reyzin, Definition 11][Reyzin2020]
   for pairwise almost uncorrelated concepts.
 * `Cslib.MachineLearning.StatisticalQuery.LearnsStateless.card_le_of_corr_le`: the lower bound for
   concepts with one-sided correlation bounds.
+* `Cslib.MachineLearning.StatisticalQuery.LearnsStateless.card_mul_sq_sub_one_le_two_mul_add_one`:
+  the statistical query dimension bound for learning with accuracy `τ`.
 * `Cslib.MachineLearning.StatisticalQuery.LearnsStateless.card_mul_sq_sub_one_le_two_mul`: the
   statistical query dimension bound for exact learning.
 
@@ -323,11 +329,13 @@ theorem LearnsStateless.card_le_of_corr_le {κ : Type} [Fintype κ] {D : PMF X}
   calc (Fintype.card κ : ℝ) ≤ _ := h
     _ = _ := by ring
 
-/-- **The statistical query dimension bound** [Reyzin, Theorem 12][Reyzin2020]. If `C` contains
+/-- **The statistical query dimension bound for exact learning**: the special case `ε = 0` of
+[Reyzin, Theorem 12][Reyzin2020], which assumes only accuracy `τ`
+(`LearnsStateless.card_mul_sq_sub_one_le_two_mul_add_one`). If `C` contains
 `d ≥ 2` concepts with pairwise correlations at most `1 / d` under `D`, so that the statistical
 query dimension of `C` under `D` is at least `d` [Reyzin, Definition 11][Reyzin2020], then a
 learner learning `C` exactly under `D` from at most `q` queries of tolerance `τ ≥ 0` has
-`d τ ^ 2 - 1 ≤ 2 q`. -/
+`d τ ^ 2 - 1 ≤ 2 q`, Reyzin's query count. -/
 theorem LearnsStateless.card_mul_sq_sub_one_le_two_mul {κ : Type} [Fintype κ] {D : PMF X}
     {C : PACLearning.ConceptClass X Bool} {A : Algorithm X} {τ : ℝ}
     (hA : LearnsStateless A D C τ 0) {q : ℕ} (hq : A.IsQueryBounded q)
@@ -367,5 +375,57 @@ theorem LearnsStateless.card_mul_sq_sub_one_le_two_mul {κ : Type} [Fintype κ] 
     rw [← e, ← e']
     exact mul_le_mul_of_nonneg_right h4 hdpos.le
   exact le_of_mul_le_mul_left h5 (by linarith)
+
+/-- **The statistical query dimension bound for weak learning** [Reyzin, Theorem 12][Reyzin2020].
+If `C` contains `d` concepts with pairwise correlations at most `1 / d` under `D`, and `A` learns
+`C` under `D` from at most `q` queries of tolerance `τ ≥ 0` with accuracy `τ`, that is with error
+`ε ≥ 0` where `1 - 2 ε ≥ τ`, so that every hypothesis has correlation at least `τ` with the
+target, then `d τ ^ 2 - 1 ≤ 2 q + 1`. -/
+theorem LearnsStateless.card_mul_sq_sub_one_le_two_mul_add_one {κ : Type} [Fintype κ]
+    {D : PMF X} {C : PACLearning.ConceptClass X Bool} {A : Algorithm X} {τ ε : ℝ}
+    (hA : LearnsStateless A D C τ ε) {q : ℕ} (hq : A.IsQueryBounded q)
+    {f : κ → X → Bool} (hf : ∀ i, f i ∈ C)
+    (hcorr : ∀ i j, i ≠ j → corr D (f i) (f j) ≤ 1 / Fintype.card κ)
+    (hτ : 0 ≤ τ) (hε0 : 0 ≤ ε) (hετ : τ ≤ 1 - 2 * ε) :
+    Fintype.card κ * τ ^ 2 - 1 ≤ 2 * q + 1 := by
+  rcases le_or_gt ((Fintype.card κ : ℝ) * τ ^ 2) 1 with h1 | h1
+  · have : (0 : ℝ) ≤ 2 * q + 1 := by positivity
+    linarith
+  have hd1 : (1 : ℝ) ≤ Fintype.card κ := by
+    have hne : Fintype.card κ ≠ 0 := by
+      intro h0
+      rw [h0, Nat.cast_zero, zero_mul] at h1
+      linarith
+    exact_mod_cast Nat.one_le_iff_ne_zero.2 hne
+  set d : ℝ := (Fintype.card κ : ℝ) with hd
+  have hdpos : 0 < d := by linarith
+  have hγτ : 1 / d < τ ^ 2 := by
+    rw [div_lt_iff₀ hdpos]
+    linarith
+  have hττ : τ ^ 2 ≤ (1 - 2 * ε) ^ 2 := pow_le_pow_left₀ hτ hετ 2
+  have hγε : 1 / d < (1 - 2 * ε) ^ 2 := hγτ.trans_le hττ
+  have h := hA.card_le_of_corr_le hq hf hcorr hτ hε0 (by linarith) hγτ hγε
+  have hnum : 0 ≤ 1 - 1 / d := by
+    rw [sub_nonneg, div_le_one hdpos]
+    exact hd1
+  have hpos : 0 < τ ^ 2 - 1 / d := sub_pos.2 hγτ
+  have h2 : (1 - 1 / d) / ((1 - 2 * ε) ^ 2 - 1 / d) ≤ (1 - 1 / d) / (τ ^ 2 - 1 / d) :=
+    div_le_div_of_nonneg_left hnum hpos (by linarith)
+  have h' : d ≤ (2 * q + 1) * ((1 - 1 / d) / (τ ^ 2 - 1 / d)) := by
+    calc d ≤ _ := h
+      _ ≤ 2 * q * ((1 - 1 / d) / (τ ^ 2 - 1 / d)) + (1 - 1 / d) / (τ ^ 2 - 1 / d) := by
+        linarith
+      _ = _ := by ring
+  have h3 : d * (τ ^ 2 - 1 / d) ≤ (2 * q + 1) * (1 - 1 / d) := by
+    calc d * (τ ^ 2 - 1 / d)
+        ≤ (2 * q + 1) * ((1 - 1 / d) / (τ ^ 2 - 1 / d)) * (τ ^ 2 - 1 / d) :=
+          mul_le_mul_of_nonneg_right h' hpos.le
+      _ = _ := by rw [mul_assoc, div_mul_cancel₀ _ hpos.ne']
+  have h4 : d * (τ ^ 2 - 1 / d) = d * τ ^ 2 - 1 := by
+    field_simp
+  have h5 : (2 * q + 1) * (1 - 1 / d) ≤ 2 * q + 1 := by
+    have : 0 ≤ (2 * q + 1 : ℝ) * (1 / d) := by positivity
+    nlinarith
+  linarith
 
 end Cslib.MachineLearning.StatisticalQuery

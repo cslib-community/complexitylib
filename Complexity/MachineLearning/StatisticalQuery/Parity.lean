@@ -22,7 +22,7 @@ Under the uniform distribution on the cube `ι → Bool`, distinct parities `par
 orthonormal (`Cslib.BitString.expect_chi_mul_chi`). With the `2 ^ n` parities as the almost
 orthogonal family, `γ = 0`, the statistical query lower bound
 (`StatisticalQuery.LearnsStateless.card_le_of_abs_corr_le`) gives the following. A learner that
-learns every class containing the parities on `n` bits under the uniform distribution, with
+learns a class containing the parities on `n` bits under the uniform distribution, with
 tolerance `τ > 0` and error `ε ∈ [0, 1/2)`, using at most `q` queries, has
 `2 ^ n ≤ q / τ ^ 2 + 1 / (1 - 2 ε) ^ 2`
 (`StatisticalQuery.LearnsStateless.two_pow_card_le_of_parityOn_mem`). So it needs `2 ^ {Ω(n)}`

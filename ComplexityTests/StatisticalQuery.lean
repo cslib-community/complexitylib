@@ -123,4 +123,20 @@ example (n : ℕ) (hn : 1 ≤ n) (A : Algorithm (Fin n → Bool)) (q : ℕ) (hq 
   rw [hcard, Nat.cast_pow, Nat.cast_ofNat] at h
   exact h
 
+/-- The statistical query dimension bound with accuracy `τ` for the `2 ^ n` parities: learning them
+with error `(1 - τ) / 2` from `q` queries of tolerance `τ` needs `2 ^ n τ ^ 2 - 1 ≤ 2 q + 1`. -/
+example (n : ℕ) (A : Algorithm (Fin n → Bool)) (q : ℕ) (hq : A.IsQueryBounded q)
+    (τ : ℝ) (hτ : 0 ≤ τ) (hτ1 : τ ≤ 1)
+    (hA : LearnsStateless A (PMF.uniformOfFintype (Fin n → Bool)) {f | ∃ S, f = parityOn S} τ
+      ((1 - τ) / 2)) :
+    (2 : ℝ) ^ n * τ ^ 2 - 1 ≤ 2 * q + 1 := by
+  have hcard : Fintype.card (Finset (Fin n)) = 2 ^ n := by
+    rw [Fintype.card_finset, Fintype.card_fin]
+  have h := hA.card_mul_sq_sub_one_le_two_mul_add_one hq
+    (f := fun S : Finset (Fin n) => parityOn S) (fun S => ⟨S, rfl⟩) (fun S T hST => by
+      rw [corr_uniformOfFintype_parityOn, ite_eq_right hST]
+      positivity) hτ (by linarith) (by linarith)
+  rw [hcard, Nat.cast_pow, Nat.cast_ofNat] at h
+  exact h
+
 end ComplexityTests.StatisticalQuery
