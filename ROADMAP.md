@@ -1057,6 +1057,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   max-flow/min-cut and a `TimeM` Edmonds–Karp solver are in `Algorithms/Lean/MaxFlow`); then
   minimum-cost flow and weighted bipartite matching through common residual-network and duality
   machinery.
+- **Graph search and shortest paths** ([#3053](https://github.com/cslib-community/complexitylib/issues/3053)):
+  after `TimeM` depth-first search, topological sort and Bellman–Ford
+  (`Algorithms/Lean/{DFS,BellmanFord}`), strongly connected components in linear time with the
+  linear-time 2-SAT algorithm as a client of the `TwoSAT` problem module; the Bellman–Ford
+  predecessor tree; and bridges from Bellman–Ford to Dijkstra's distances and to the matrix
+  shortest-path model.
 - **Matroids:** matroid intersection with explicit oracle and implementation costs, beyond the
   weighted greedy algorithm and its independence-oracle interface.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
