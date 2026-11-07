@@ -21,7 +21,8 @@ This file connects the Bellman–Held–Karp dynamic program
 
 An instance `(D, b)` with `D.length = n + 1` has the cities `0, …, n` at distances
 `TSP.dist D i j`, and it belongs to `TSP` when some ordering of all cities has closed tour length
-at most `b`. Since the tour length is invariant under rotation (`TSP.tourLength_rotate`), such a
+at most `b`. The tour length is the closed-walk cost `cycleCost (dist D)`
+(`TSP.tourLength_eq_cycleCost`), which is invariant under rotation (`cycleCost_rotate`), so such a
 tour can be taken to start at city `0`, which is the normal form `heldKarp` optimizes over.
 `TSP.heldKarpDecide` therefore decides `TSP` in at most `(n - 1)² · 2ⁿ⁻¹` ticks on `n` cities,
 in the unit-cost model of `heldKarp`: one tick per addition-and-comparison of natural numbers,
@@ -36,7 +37,7 @@ examined by brute force.
 
 ## Main results
 
-* `Cslib.Complexity.TSP.tourLength_rotate`: rotating a tour preserves its length.
+* `Cslib.Complexity.TSP.tourLength_eq_cycleCost`: tour length is the cost of the closed walk.
 * `Cslib.Complexity.TSP.mem_TSP_iff_heldKarp_le`: `(D, b) ∈ TSP` exactly when the
   Bellman–Held–Karp optimum is at most `b`.
 * `Cslib.Complexity.TSP.heldKarpDecide_eq_true_iff`, `Cslib.Complexity.TSP.time_heldKarpDecide_le`:
@@ -50,7 +51,7 @@ examined by brute force.
 * [R. Bellman, *Dynamic programming treatment of the travelling salesman problem*][Bellman1962]
 * [M. Held and R. M. Karp, *A dynamic programming approach to sequencing
   problems*][HeldKarp1962]
-* [F. V. Fomin and D. Kratsch, *Exact Exponential Algorithms*][FominKratsch2010], Chapter 1
+* [F. V. Fomin and D. Kratsch, *Exact Exponential Algorithms*][FominKratsch2010], Section 1.2
 -/
 
 public section
@@ -59,31 +60,16 @@ namespace Cslib.Complexity.TSP
 
 open Cslib.Algorithms.Lean Cslib.Algorithms.Lean.TSP
 
-private theorem sum_zipWith_append_singleton (D : List (List ℕ)) (x a : ℕ) (L : List ℕ) :
-    (List.zipWith (dist D) (x :: L) (L ++ [a])).sum = walkCost (dist D) x L a := by
-  induction L generalizing x with
-  | nil => simp [walkCost]
-  | cons y L ih =>
-    simp only [List.cons_append, List.zipWith_cons_cons, List.sum_cons, ih, walkCost]
-
-/-- A closed tour from `a` is the walk from `a` through the remaining cities back to `a`. -/
-theorem tourLength_cons (D : List (List ℕ)) (a : ℕ) (L : List ℕ) :
-    tourLength D (a :: L) = walkCost (dist D) a L a := by
-  rw [tourLength, (List.rotate_cons_succ L a 0).trans (List.rotate_zero _),
-    sum_zipWith_append_singleton]
-
-/-- A closed tour has the same length from every starting city. -/
-theorem tourLength_rotate (D : List (List ℕ)) (p : List ℕ) (k : ℕ) :
-    tourLength D (p.rotate k) = tourLength D p := by
-  unfold tourLength
-  rw [List.rotate_rotate, Nat.add_comm, ← List.rotate_rotate,
-    ← List.zipWith_rotate_distrib _ _ _ _ (List.length_rotate p 1).symm]
-  exact (List.rotate_perm _ _).sum_eq
+/-- The length of a tour is the cost of the closed walk through its cities under `dist D`. -/
+theorem tourLength_eq_cycleCost (D : List (List ℕ)) (p : List ℕ) :
+    tourLength D p = cycleCost (dist D) p :=
+  rfl
 
 private theorem walkCost_succ_eq_tourLength (D : List (List ℕ)) {n : ℕ} (L : List (Fin n)) :
     walkCost (fun i j : Fin (n + 1) => dist D i j) 0 (L.map Fin.succ) 0 =
       tourLength D (0 :: L.map fun i : Fin n => (i : ℕ) + 1) := by
-  rw [tourLength_cons, ← walkCost_map Fin.val (dist D) (0 : Fin (n + 1)) (L.map Fin.succ) 0]
+  rw [tourLength_eq_cycleCost, cycleCost_cons,
+    ← walkCost_map Fin.val (dist D) (0 : Fin (n + 1)) (L.map Fin.succ) 0]
   simp only [List.map_map, Function.comp_def, Fin.val_succ, Fin.val_zero]
 
 /-- **`TSP` by the Bellman–Held–Karp algorithm.** An instance with `n + 1` cities belongs to
@@ -97,7 +83,8 @@ theorem mem_TSP_iff_heldKarp_le {D : List (List ℕ)} {b n : ℕ} (hn : D.length
     obtain ⟨A, B, rfl⟩ := List.append_of_mem (hp.symm.subset (List.mem_range.2 (Nat.succ_pos n)))
     have hp' : (0 :: (B ++ A)).Perm (List.range (n + 1)) := List.perm_append_comm.symm.trans hp
     have hrot : tourLength D (A ++ 0 :: B) = tourLength D (0 :: (B ++ A)) := by
-      rw [← tourLength_rotate D (A ++ 0 :: B) A.length, List.rotate_append_length_eq]
+      rw [tourLength_eq_cycleCost, tourLength_eq_cycleCost,
+        ← cycleCost_rotate (dist D) (A ++ 0 :: B) A.length, List.rotate_append_length_eq]
       rfl
     have hnd := hp'.nodup_iff.2 List.nodup_range
     have hpos : ∀ x ∈ B ++ A, x ≠ 0 := fun x hx h => (List.nodup_cons.1 hnd).1 (h ▸ hx)

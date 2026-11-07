@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Algorithms.Lean.TSP.Walk
 public import Cslib.Algorithms.Lean.TimeM
 public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 public import Mathlib.Algebra.Order.Monoid.Defs
@@ -22,7 +23,7 @@ import Mathlib.Data.Nat.Choose.Sum
 # The Bellman–Held–Karp algorithm for the traveling salesman problem
 
 The Bellman–Held–Karp dynamic program [Bellman1962] [HeldKarp1962]
-([FominKratsch2010], Chapter 1) computes an optimal traveling salesman tour on `n + 1` cities
+([FominKratsch2010], Section 1.2) computes an optimal traveling salesman tour on `n + 1` cities
 in `O(n² · 2ⁿ)` operations, instead of examining the `n!` tours one by one.
 
 ## Model
@@ -44,9 +45,13 @@ Bellman's principle (`isLeast_walkCosts_of_forall`) computes this entry from the
 sets `S.erase i`: the walk visits some `i ∈ S` last. `heldKarp` fills the table by increasing
 `|S|` (`HeldKarp.tableM`) and returns the entry for all cities and `t = 0`.
 
-The entries are indexed by the set `S` of cities visited *before* the target, which is
-[HeldKarp1962]'s `C(S ∪ {t}, t)`. Only the targets `t ∉ S` are filled (`HeldKarp.targets`), and
-the final entry, all cities followed by the return to `0`, is the optimal tour.
+The entries are indexed by the set `S` of cities visited *before* the target. For a target
+`t = i.succ` with `i ∉ S` this is [HeldKarp1962]'s `C(S ∪ {t}, t)`. The table also fills the
+entries `(S, 0)` for every `S` (`HeldKarp.targets` always contains city `0`): such an entry is the
+least cost of a walk from `0` through `S` back to `0`, which is not a Held–Karp value unless `S` is
+every city. Only the final entry `(univ, 0)` is read, and it is the optimal tour; Held and Karp
+compute it by a separate closing minimization. The other `(S, 0)` entries cost at most
+`n · 2ⁿ⁻¹` extra ticks, within the bound below.
 
 ## Cost model
 
@@ -60,7 +65,6 @@ force. `TimeM` does not measure space: the table has an entry for each of the `2
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.TSP.walkCost`: the cost of a walk through a list of cities.
 * `Cslib.Algorithms.Lean.TSP.walkCosts`: the costs of the walks from `0` through `S` to `t`.
 * `Cslib.Algorithms.Lean.TSP.heldKarp`: the Bellman–Held–Karp algorithm.
 * `Cslib.Algorithms.Lean.TSP.HeldKarp.entryM`, `HeldKarp.fillM`, `HeldKarp.layerM`,
@@ -79,7 +83,7 @@ force. `TimeM` does not measure space: the table has an entry for each of the `2
 * [R. Bellman, *Dynamic programming treatment of the travelling salesman problem*][Bellman1962]
 * [M. Held and R. M. Karp, *A dynamic programming approach to sequencing
   problems*][HeldKarp1962]
-* [F. V. Fomin and D. Kratsch, *Exact Exponential Algorithms*][FominKratsch2010], Chapter 1
+* [F. V. Fomin and D. Kratsch, *Exact Exponential Algorithms*][FominKratsch2010], Section 1.2
 -/
 
 public section
@@ -89,26 +93,6 @@ namespace Cslib.Algorithms.Lean.TSP
 open Cslib.Algorithms.Lean.TimeM
 
 variable {α W : Type*}
-
-/-- The cost `d a x₀ + d x₀ x₁ + ⋯ + d xₖ b` of the walk from `a` through the entries
-`x₀, …, xₖ` of `L` in order to `b`. -/
-@[expose] def walkCost [Add W] (d : α → α → W) : α → List α → α → W
-  | a, [], b => d a b
-  | a, x :: L, b => d a x + walkCost d x L b
-
-/-- Extending a walk by one city at its end adds one step. -/
-theorem walkCost_append_singleton [AddSemigroup W] (d : α → α → W) (a : α) (L : List α)
-    (x b : α) : walkCost d a (L ++ [x]) b = walkCost d a L x + d x b := by
-  induction L generalizing a with
-  | nil => rfl
-  | cons y L ih => simp only [List.cons_append, walkCost, ih, add_assoc]
-
-/-- Relabeling the cities of a walk relabels its costs. -/
-theorem walkCost_map {β : Type*} [Add W] (f : α → β) (d : β → β → W) (a : α) (L : List α)
-    (b : α) : walkCost d (f a) (L.map f) (f b) = walkCost (fun x y => d (f x) (f y)) a L b := by
-  induction L generalizing a with
-  | nil => rfl
-  | cons x L ih => simp only [List.map_cons, walkCost, ih]
 
 namespace HeldKarp
 
@@ -260,7 +244,8 @@ candidate. -/
       ✓ minFoldM (fun j => T (S.erase j, j.succ) + d j.succ t)
         (T (S.erase i, i.succ) + d i.succ t) l
 
-/-- The targets of the entries for `S`: city `0` and the cities `1, …, n` outside `S`. -/
+/-- The targets of the entries for `S`: city `0` and the cities `1, …, n` outside `S`. Only the
+entry `(univ, 0)` among those for city `0` is read by `heldKarp`. -/
 @[expose] def targets (S : Finset (Fin n)) : List (Fin (n + 1)) :=
   0 :: ((List.finRange n).filter (· ∉ S)).map Fin.succ
 
