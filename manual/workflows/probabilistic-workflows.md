@@ -146,8 +146,16 @@ supported in `C`. The client is Glauber dynamics with a frozen boundary,
 gives the sampling time of Levin and Peres, (14.23). For approximate counting,
 [Coloring/Ratio.lean](../../Complexity/Probability/MarkovChain/Coloring/Ratio.lean) proves their
 Lemma 14.16, `inv_exp_mul_le_card_frozenColorings_erase_div`: freezing one more vertex keeps at
-least a `1 / (e q)` fraction of the colorings. The estimator of Theorem 14.14 is not yet
-formalized.
+least a `1 / (e q)` fraction of the colorings.
+[Coloring/Count.lean](../../Complexity/Probability/MarkovChain/Coloring/Count.lean) proves their
+Theorem 14.14, `le_toOuterMeasure_coloringCountEstimator`: `coloringCountEstimator` multiplies,
+over the `n` vertices, the fraction of `a` frozen-boundary samples in which one more vertex keeps
+its color, and with `t` and `a` as in (14.21) it is within relative error `ε` of
+`1 / |properColorings|` with probability at least `1 - η`. The concentration step is the generic
+product estimator of [Product/Estimator.lean](../../Complexity/Probability/Product/Estimator.lean):
+`le_toOuterMeasure_productEstimate` needs each stage probability within relative error
+`ε / (6 n)` of a target `r k ≥ b > 0` and `48 n ≤ 5 η ε² a b`, and proves it from the exact
+mean and second moment of independent empirical frequencies by Chebyshev's inequality.
 
 The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
 `t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip
@@ -155,7 +163,10 @@ chain never mixes, compute a Metropolis acceptance probability, and give the hyp
 with `n = 1`. The [path-coupling checks](../../ComplexityTests/PathCoupling.lean) instantiate the
 coloring bound on a single edge, show that the condition `ρ ≥ 1` off the diagonal cannot be
 dropped, and compute the frozen colorings, the ratio of Lemma 14.16 and the frozen sampling time
-on a single edge. Run `scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling`.
+on a single edge. The [counting checks](../../ComplexityTests/ColoringCount.lean) instantiate
+Theorem 14.14 on a single edge, show that its sample sizes can always be met, and show that one
+sample per stage never gives relative error `1 / 2` there. Run
+`scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling ComplexityTests.ColoringCount`.
 A goal of the form `t_mix(ε) = k` needs both directions: `mixingTime_le_of_distToStationary_le`
 for `≤`, and `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
