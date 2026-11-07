@@ -213,6 +213,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `resolution-relation` | [Inductive resolution derivability](circuits-logic-and-other-models/index.md) | proof-systems |
 | `resolution-lines` | [Resolution proofs as ordered line lists](circuits-logic-and-other-models/index.md) | proof-systems |
 | `resolution-tree` | [Tree-like resolution derivations](circuits-logic-and-other-models/index.md) | proof-systems |
+| `cutting-planes-lines` | [Cutting planes proofs as ordered lists of integer inequalities](circuits-logic-and-other-models/index.md) | proof-systems |
 | `pac` | [General deterministic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `randomized-pac` | [Randomized agnostic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `uniform-learning` | [Uniform-distribution Boolean sample learning](circuits-logic-and-other-models/index.md) | learning |
@@ -301,3 +302,5 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `tree-evaluation-binary` | [Explicit binary Tree Evaluation](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
 | `tree-evaluation-ary` | [Fan-in-d Tree Evaluation and shared registers](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
 | `tree-evaluation-packed-controller` | [Packed tree registers and uniform raw controller](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
+| `mechanism-single-parameter` | [Single-parameter sealed-bid mechanisms and Myerson's Lemma](algorithms-and-memory/mechanism-design.md) | mechanism-design |
+| `mechanism-general-vcg` | [General-valuation mechanisms and VCG](algorithms-and-memory/mechanism-design.md) | mechanism-design |
