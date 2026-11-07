@@ -2612,6 +2612,7 @@ public import Complexity.Computability.PCP.Amplifier
 public import Complexity.Computability.PCP.Approximation.Hastad
 public import Complexity.Computability.PCP.Approximation.Hastad.LinearTest
 public import Complexity.Computability.PCP.Approximation.IndependentSet
+public import Complexity.Computability.PCP.Approximation.Johnson
 public import Complexity.Computability.PCP.Approximation.LabelCover
 public import Complexity.Computability.PCP.Approximation.LabelCover.Incidence
 public import Complexity.Computability.PCP.Approximation.MaxCSP
@@ -3686,6 +3687,7 @@ public import Complexity.Foundations.BooleanAnalysis.FourierBitVal
 public import Complexity.Foundations.BooleanAnalysis.FourierDegree
 public import Complexity.Foundations.BooleanAnalysis.FourierRestriction
 public import Complexity.Foundations.BooleanAnalysis.FriedgutJunta
+public import Complexity.Foundations.BooleanAnalysis.GreedyFixing
 public import Complexity.Foundations.BooleanAnalysis.Hadamard
 public import Complexity.Foundations.BooleanAnalysis.HadamardRectangles
 public import Complexity.Foundations.BooleanAnalysis.HadamardTester
@@ -3829,6 +3831,7 @@ public import Complexity.Foundations.Combinatorics.MajorityVote.Weighted
 public import Complexity.Foundations.Combinatorics.Multigraph
 public import Complexity.Foundations.Combinatorics.PacketPacking
 public import Complexity.Foundations.Combinatorics.PartialLabelScores
+public import Complexity.Foundations.Combinatorics.PessimisticEstimator
 public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
@@ -4448,6 +4451,8 @@ public import Complexity.Logics.Propositional.CNF.Horn
 public import Complexity.Logics.Propositional.CNF.Horn.Relabel
 public import Complexity.Logics.Propositional.CNF.ImplicationChain
 public import Complexity.Logics.Propositional.CNF.ImplicationCycle
+public import Complexity.Logics.Propositional.CNF.Johnson
+public import Complexity.Logics.Propositional.CNF.Johnson.PolyTime
 public import Complexity.Logics.Propositional.CNF.Majority
 public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
@@ -4548,6 +4553,11 @@ public import Complexity.Logics.SecondOrder.Grounding
 public import Complexity.Logics.SecondOrder.IndependentSet
 public import Complexity.Logics.SecondOrder.Projection
 public import Complexity.Logics.SecondOrder.Reduction
+public import Complexity.MachineLearning.PACLearning.ERM
+public import Complexity.MachineLearning.PACLearning.FiniteClass
+public import Complexity.MachineLearning.PACLearning.GrowthFunction
+public import Complexity.MachineLearning.PACLearning.Realizable
+public import Complexity.MachineLearning.PACLearning.RealizableSample
 public import Complexity.MachineLearning.UniformLearning.AC0
 public import Complexity.MachineLearning.UniformLearning.Basic
 public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
@@ -4561,6 +4571,7 @@ public import Complexity.Probability.BitString
 public import Complexity.Probability.BitString.AffineHash
 public import Complexity.Probability.BitString.AffineHash.ThreeWise
 public import Complexity.Probability.BitString.Collision
+public import Complexity.Probability.BitString.LazyRandomWalk
 public import Complexity.Probability.BitString.LinearHash
 public import Complexity.Probability.BitString.LinearHash.Collisions
 public import Complexity.Probability.BitString.List
@@ -4611,6 +4622,10 @@ public import Complexity.Probability.KWiseIndependent.Trinomial
 public import Complexity.Probability.LinearCombination
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
+public import Complexity.Probability.MarkovChain.Basic
+public import Complexity.Probability.MarkovChain.Coupling
+public import Complexity.Probability.MarkovChain.Metropolis
+public import Complexity.Probability.MarkovChain.Mixing
 public import Complexity.Probability.MinEntropy
 public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
@@ -4668,8 +4683,10 @@ public import Complexity.Probability.SmallBias
 public import Complexity.Probability.SmallBias.Powering
 public import Complexity.Probability.SmallBias.Random
 public import Complexity.Probability.StatisticalDistance
+public import Complexity.Probability.StatisticalDistance.ClosedForm
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.Event
+public import Complexity.Probability.StatisticalDistance.OptimalCoupling
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.Uniform
