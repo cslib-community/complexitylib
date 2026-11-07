@@ -1389,6 +1389,7 @@ public import Complexity.Computability.Complexity.Classes.Alternation.Game
 public import Complexity.Computability.Complexity.Classes.Alternation.GuessVerify
 public import Complexity.Computability.Complexity.Classes.Alternation.NP
 public import Complexity.Computability.Complexity.Classes.Alternation.Savitch
+public import Complexity.Computability.Complexity.Classes.Alternation.Space
 public import Complexity.Computability.Complexity.Classes.Alternation.TQBF
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification
@@ -2038,6 +2039,9 @@ public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Simulati
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
+public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Marking
+public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Space
+public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Views
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.BalancedParameters
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluator
@@ -2191,6 +2195,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSp
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.BoundedSearch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.Recompute
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.SmallSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph
