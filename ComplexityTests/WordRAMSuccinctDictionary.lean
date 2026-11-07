@@ -23,19 +23,19 @@ Exercises:
      `quotient_val_bits_le_optBits` bound;
 3. `Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray`:
    - concrete evaluations of `packedWords`, evaluated cross-word read/write verification at index
-     `5` of `12`-bit entries in `64`-bit words (spanning bit `60` of word `0` through bit `7` of
-     word `1`), and symbolic verification of `readPacked_writePacked_self` and
-     `readPacked_writePacked_of_ne`;
+     `5` of `12`-bit entries in `64`-bit words (`4` bits in word `100` and `8` bits in word `101`),
+     and symbolic verification of `readPacked_writePacked_self` and `readPacked_writePacked_of_ne`;
 4. `Cslib.DataStructure.Dictionary.SuccinctBucket` and
    `Cslib.DataStructure.Dictionary.WordRAM.Succinct`:
-   - concrete evaluations of `slabSize`, `maxFullSlabs`, `maxTailItems`, `totalMicroBits`,
-     `microBits`, `qBits`, `hashB`, `hashSpace`, `space`, and `initSteps` in both the single-bucket
-     regime (`(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 16, 100)`) and the multi-bucket regime
-     (`(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 2 ^ 16, 100)`,
-      where `numBuckets (2 ^ 16) = 16`);
-   - verification of `space_le_succinctWords`, `initSteps_le`, `initSteps_le_mul`,
-     `initTime_impl_le`, `impl`, `implStandard`, and `seq_expected_amortized` on a multi-operation
-     sequence with insertions, overwrites, present/absent queries, and deletions in both regimes.
+   - in the single-bucket regime (`(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 16, 100)`):
+     concrete evaluations of `slabSize`, `maxFullSlabs`, `maxTailItems`, `totalMicroBits`,
+     `microBits`, `qBits`, `hashB`, `reducedTrinomialStep`, `hashSpace`, `space`, and `initSteps`,
+     plus verification of `space_le_succinctWords`, `initSteps_le`, `initSteps_le_mul`,
+     `initTime_impl_le`, `impl`, `implStandard`, and `seq_expected_amortized` on `sampleDictOps`;
+   - in the multi-bucket regime (`(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 2 ^ 16, 100)`,
+     where `numBuckets (2 ^ 16) = 16`): concrete evaluations of `slabSize`, `maxFullSlabs`,
+     `maxTailItems`, `reducedTrinomialStep`, `hashSpace`, and `space`, plus verification of
+     `space_le_succinctWords`, `impl`, and `seq_expected_amortized` on `sampleDictOps`.
 -/
 
 @[expose] public section

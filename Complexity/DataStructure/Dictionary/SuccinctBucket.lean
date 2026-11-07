@@ -395,7 +395,7 @@ theorem numBuckets_mul_slabScale_cubed_le {n : ℕ} (hb : 0 < bucketBits n) :
     Nat.sub_add_cancel (by omega)]
   exact Nat.pow_log_le_self 2 (by omega)
 
-/-- Every value `≤ n` is strictly less than `2 ^ globalPtrBits n`. -/
+/-- `n` is strictly less than `2 ^ globalPtrBits n`. -/
 theorem lt_two_pow_globalPtrBits (n : ℕ) : n < 2 ^ globalPtrBits n := by
   unfold globalPtrBits
   have hle : n + 1 ≤ 2 ^ Nat.clog 2 (n + 1) := Nat.le_pow_clog (by decide) (n + 1)

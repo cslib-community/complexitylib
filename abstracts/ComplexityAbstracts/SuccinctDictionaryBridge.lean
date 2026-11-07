@@ -21,8 +21,8 @@ Sections 3–4) with one-round Feistel quotienting (`[ArbitmanNaorSegev2010]`, F
 `[BenderConwayFarachColtonKuszmaulTagliavini2023]`, *J. ACM* 70(6):40, 2023;
 `arXiv:2109.04548`, Section 7, pp. 31–33). It uses the full-slab and shared tail-pool layout of
 `[BenderFarachColtonKuszmaulKuszmaulLiu2022]` (STOC 2022; `arXiv:2111.00602`, Sections 5.2 and 6.1,
-Lemma 24) together with this formalization's own micro-bucket chains and slab-hysteresis potential,
-and hashes quotients via two-stage multiply-shift reduction and `3`-wise independent polynomial
+Lemma 24) together with this formalization's own micro-bucket chains and slab-hysteresis potential.
+Quotients are hashed via two-stage multiply-shift reduction and `3`-wise independent polynomial
 hashing with bit-packed multiplication tables (`ReducedKWise.lean`).
 
 This bridge connects the self-contained dynamic dictionary specification, multi-operation

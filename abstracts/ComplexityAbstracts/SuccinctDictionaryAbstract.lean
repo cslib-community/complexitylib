@@ -39,12 +39,12 @@ bit-packed Four-Russians multiplication table (`ReducedKWise.impl`; `[CarterWegm
   present), and `delete u` (removing `u` or leaving `s` unchanged if `u` is absent) across
   oblivious operation sequences `ops : List (DynDictOp U)` of any length
   (`ValidDynDictHistory V n_max`). Unlike `[BenderFarachColtonKuszmaulKuszmaul2024]`, the capacity
-  `n_max` is fixed (no table resizing), and hashing uses explicit two-stage `3`-wise independent
+  `n_max` is fixed without table resizing. Hashing uses explicit two-stage `3`-wise independent
   quotient hashing rather than fully random hash functions (SOSA 2024 Section 2.1). Micro-bucket
-  chains and the slab-hysteresis potential replace SOSA 2024's B-tree query mapper. Operations run
-  in `O(1)` expected amortized time on sequences fixed before initialization, whereas SOSA 2024
-  Lemma 4.3 gives worst-case `O(1)` queries and deletions and expected `O(1)` insertions at fixed
-  capacity, and Sections 5–6 prove with-high-probability bounds and support resizing.
+  chains and the slab-hysteresis potential replace SOSA 2024's B-tree query mapper. Operations here
+  run in `O(1)` expected amortized time on sequences fixed before initialization. By contrast,
+  SOSA 2024 Lemma 4.3 gives worst-case `O(1)` queries and deletions and expected `O(1)` insertions
+  at fixed capacity. SOSA 2024 Sections 5–6 prove with-high-probability bounds and add resizing.
 - **Why `n_max ≤ U` is assumed and `optBits` rounding:** Distinct active keys are drawn from
   `Fin U`, so at most `U` keys can coexist (`(dictDom s).card ≤ U`), and the binomial coefficient
   `U.choose n_max` inside `optBits U V n_max = ⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉` is zero
@@ -52,8 +52,9 @@ bit-packed Four-Russians multiplication table (`ReducedKWise.impl`; `[CarterWegm
   information-theoretic minimum `⌈log₂(C(U, n_max) · V ^ n_max)⌉` when `V` is a power of two and
   exceeds it by at most `n_max` bits otherwise. When `V = 0`, there are no valued non-empty
   dictionaries.
-- **Single seed and per-bucket probe/hysteresis accounting:** A single quotient-hash seed is
-  sampled once at initialization (`seedSlack = 1`, no rehash), and no persistent flag is kept to
+- **Single seed and per-bucket probe/hysteresis accounting:** Initialization draws one quotient-hash
+  seed uniformly, and every operation keeps that seed unchanged. Its seed distribution therefore
+  stays exact (`seedSlack = 1`). No persistent flag is kept to
   latch hash or overflow failures across operations. Each bucket's item count and expected extra
   collision or overflow probes (`probeExcess`) per operation depend only on the current active key
   set. The physical chain order and the division of a bucket's items between fixed-size full slabs

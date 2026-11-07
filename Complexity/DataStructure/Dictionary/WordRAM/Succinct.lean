@@ -33,12 +33,12 @@ shared tail pool ([Bender, Farach-Colton, J. Kuszmaul, W. Kuszmaul, and M. Liu, 
 Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]) together with this
 formalization's own micro-bucket chains and slab-hysteresis potential.
 Unlike [Bender, Farach-Colton, J. Kuszmaul, and W. Kuszmaul, SOSA
-2024][BenderFarachColtonKuszmaulKuszmaul2024], the capacity `n_max` is fixed (no table resizing),
-and hashing uses explicit two-stage 3-wise independent quotient hashing rather than fully random
-hash functions (SOSA 2024 Section 2.1). Operations run in `O(1)` expected amortized time on
-oblivious operation sequences fixed before initialization, whereas SOSA 2024 Lemma 4.3 gives
-worst-case `O(1)` queries and deletions and expected `O(1)` insertions at fixed capacity, and
-Sections 5–6 prove with-high-probability bounds and support resizing.
+2024][BenderFarachColtonKuszmaulKuszmaul2024], the capacity `n_max` is fixed without table resizing.
+Hashing uses explicit two-stage 3-wise independent quotient hashing rather than fully random hash
+functions (SOSA 2024 Section 2.1). Operations here run in `O(1)` expected amortized time on
+oblivious operation sequences fixed before initialization. By contrast, SOSA 2024 Lemma 4.3 gives
+worst-case `O(1)` queries and deletions and expected `O(1)` insertions at fixed capacity. SOSA 2024
+Sections 5–6 prove with-high-probability bounds and add resizing.
 
 1. **One-round Feistel quotienting (`FeistelQuotient`)**: splits each key `u : Fin U` into a
    `bucketBits n_max`-bit low part and a `quotientBits U n_max`-bit quotient `q`, storing only `q`
@@ -74,8 +74,8 @@ Sections 5–6 prove with-high-probability bounds and support resizing.
   No theorem bounds static code size. All time bounds (`initSteps`, `chargeVal`, `charge`) count
   **executed Word-RAM instructions**.
 * **Initialization (`initSteps`)**: `initSteps U n_max ≤ 31 * n_max + 1091 ≤ 1091 * (n_max + 1)`
-  (`initSteps_le`, `initSteps_le_mul`), building the Four-Russians table and sampling the single
-  quotient hash seed once with `seedSlack = 1` and `initPotential = 0`.
+  (`initSteps_le`, `initSteps_le_mul`). Initialization builds the Four-Russians table and draws one
+  uniform quotient-hash seed (`seedSlack = 1`, `initPotential = 0`) that operations keep unchanged.
 * **Space (`space`)**: `space U V w n_max ≤ Dynamic.succinctWords 81 213 U V w n_max` words
   (`space_le_succinctWords`) for every `0 < w` and `n_max ≤ U` with `Fits w U` (`U < 2 ^ w`).
 * **Constant operation charge (`seq_expected_amortized`)**: at the `Memory.Prog` level
