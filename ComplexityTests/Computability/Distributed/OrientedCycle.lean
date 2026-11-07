@@ -155,6 +155,15 @@ example {S : Type} (A : Algorithm ℕ S ℕ) : ¬A.ColorsCycle (Nat.twoTower 6 +
   rw [Nat.logStar_twoTower_add_one] at h
   omega
 
+-- Identifiers from `{1, …, 5}`: no algorithm 3-colours the oriented 5-cycle without
+-- communication either.
+example {S : Type} (A : Algorithm ℕ S ℕ) :
+    ¬∀ x : ZMod 5 → ℕ, Function.Injective x → (∀ v, 1 ≤ x v ∧ x v ≤ 5) →
+      IsProperColoring (A.run x 0) ∧ ∀ v, A.run x 0 v < 3 := fun hA => by
+  have h := ((A.colorsCycle_comapInput_succ_iff 5 0 3).2 hA).logStar_le_of_three
+  rw [show Nat.logStar 5 = 3 by decide] at h
+  omega
+
 -- The `Θ(log* n)` summary for `n = 5`: `⌈3 / 2⌉ + 3 = 5` rounds suffice and are within `4`
 -- rounds of optimal.
 example : ∃ (S : Type) (A : Algorithm ℕ S ℕ), A.ColorsCycle 5 5 3 :=

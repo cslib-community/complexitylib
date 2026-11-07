@@ -1101,7 +1101,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   cycles, Cole–Vishkin and Linial's `log*` bound exist
   (`Complexity/Computability/Distributed/OrientedCycle/`). Open: general graphs with port
   numbering, Linial's `O(Δ²)` colouring and `(Δ + 1)`-colouring/MIS on bounded-degree graphs,
-  CONGEST message bounds, randomized LOCAL algorithms, and closing the additive gap
+  maximal independent sets on cycles as a corollary of 3-colouring (both bounds), a bridge from
+  `IsProperColoring` to Mathlib's `SimpleGraph.Coloring` on `SimpleGraph.cycleGraph`, CONGEST
+  message bounds, randomized LOCAL algorithms, and closing the additive gap
   between the `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles.
 
 ## Coverage and reuse

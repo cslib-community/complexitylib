@@ -14,6 +14,11 @@ open Nat
 
 example : twoTower 4 = 65536 := by decide
 
+-- The structural tower agrees with Mathlib's `hyperoperation 4 2`, which `decide` cannot evaluate.
+example : hyperoperation 4 2 3 = 16 := by
+  rw [← twoTower_eq_hyperoperation]
+  decide
+
 -- `log* n` is the least `k` with `n ≤ 2 ↑↑ k`, so it steps up just after each tower.
 example : logStar 0 = 0 ∧ logStar 1 = 0 ∧ logStar 2 = 1 ∧ logStar 3 = 2 ∧ logStar 4 = 2 := by
   decide

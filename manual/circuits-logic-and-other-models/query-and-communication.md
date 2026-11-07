@@ -55,7 +55,11 @@ explicit messages reduces to it (`MessageAlgorithm.toAlgorithm_state`). The cost
 rounds. The round number is common knowledge. Algorithms are non-uniform: one may be chosen for
 each `n`. Identifiers are natural numbers, and `Algorithm.ColorsCycle A n t c` asks for a proper
 colouring with colours below `c` after `t` rounds for every bijection from the nodes onto
-`{0, …, n - 1}`. The usual identifiers `{1, …, n}` are the same up to a shift.
+`{0, …, n - 1}`. The usual identifiers `{1, …, n}` are the same up to a shift:
+`Algorithm.colorsCycle_comapInput_succ_iff` moves results between the two conventions through
+`Algorithm.comapInput`. For `n = 0` no identifier assignment qualifies, so `ColorsCycle 0 t c` is
+vacuous. Results for the infinite oriented path are stated for `Algorithm.run` directly, as in
+`threeColoring_run` and `fastThreeColoring_run`.
 
 The view formulation is proved rather than assumed. `Algorithm.state_eq_viewState` and
 `Algorithm.run_eq_apply` say that `r` rounds compute a `LocalRule` of radius `r`, a function of
@@ -76,7 +80,9 @@ Laurinharju–Suomela speedup lemma on shift colourings (`Cslib.IsShiftColoring`
 `exists_colorsCycle_three_and_logStar_le` packages both directions: `⌈(log* n) / 2⌉ + 3` rounds
 suffice for `n ≠ 1`, and any algorithm needs `log* n ≤ 2t + 2`, so the optimum is known up to an
 additive `4`. `Nat.logStar` and `Nat.twoTower` live in `Complexity.Foundations.Data.Nat.LogStar`;
-use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values.
+use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values. `Nat.twoTower` is a
+structurally recursive copy of Mathlib's `hyperoperation 4 2` (`Nat.twoTower_eq_hyperoperation`),
+kept because `decide` cannot evaluate the well-founded `hyperoperation`.
 [Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
 algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no
 proper colouring and that two rounds fail on the cycle of length `2 ↑↑ 6 + 1`.

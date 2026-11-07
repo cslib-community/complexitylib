@@ -36,13 +36,17 @@ computed in `r` rounds by flooding (`LocalRule.toAlgorithm_run`). Lower bounds c
 for rules and transferred to algorithms. `LocalRule.andThen` runs a rule and then an algorithm on
 its outputs.
 
-Identifiers are natural numbers. The standard convention of identifiers from `{1, …, n}` is the
-convention `{0, …, n - 1}` used by `Algorithm.ColorsCycle`, shifted by one.
+Identifiers are natural numbers. `Algorithm.ColorsCycle` uses identifiers `{0, …, n - 1}`; the
+standard convention `{1, …, n}` is the same up to a shift by one, made precise by
+`Algorithm.colorsCycle_comapInput_succ_iff`. For `n = 0` no identifier assignment qualifies, so
+`ColorsCycle 0 t c` holds vacuously; results on the infinite oriented path are stated directly for
+`Algorithm.run` (for instance `threeColoring_run`).
 
 ## Main definitions
 
 * `Cslib.Distributed.OrientedCycle.Algorithm`, `Algorithm.state`, `Algorithm.run`: algorithms and
   their executions.
+* `Cslib.Distributed.OrientedCycle.Algorithm.comapInput`: pre-processing the inputs.
 * `Cslib.Distributed.OrientedCycle.MessageAlgorithm`: algorithms with explicit messages.
 * `Cslib.Distributed.OrientedCycle.LocalRule`: rules of radius `r` on input windows.
 * `Cslib.Distributed.OrientedCycle.LocalRule.andThen`: a rule followed by an algorithm.
@@ -59,6 +63,8 @@ convention `{0, …, n - 1}` used by `Algorithm.ColorsCycle`, shifted by one.
 * `Cslib.Distributed.OrientedCycle.LocalRule.andThen_run`: composition of a rule and an algorithm.
 * `Cslib.Distributed.OrientedCycle.MessageAlgorithm.toAlgorithm_state`: message passing as state
   exchange.
+* `Cslib.Distributed.OrientedCycle.Algorithm.colorsCycle_comapInput_succ_iff`: the identifier
+  conventions `{0, …, n - 1}` and `{1, …, n}` agree up to a shift.
 
 ## References
 
@@ -120,6 +126,24 @@ def mapOutput {O' : Type*} (g : O → O') : Algorithm I S O' where
 @[simp] theorem mapOutput_run {O' : Type*} (g : O → O') (x : ZMod n → I) (r : ℕ) (v : ZMod n) :
     (A.mapOutput g).run x r v = g (A.run x r v) := by
   simp only [run, mapOutput_state]
+  rfl
+
+/-- Pre-processing the input of an algorithm by `f`: every node starts from `f` of its input. -/
+def comapInput {I' : Type*} (f : I' → I) : Algorithm I' S O where
+  init := A.init ∘ f
+  step := A.step
+  output := A.output
+
+@[simp] theorem comapInput_state {I' : Type*} (f : I' → I) (x : ZMod n → I') (r : ℕ) :
+    (A.comapInput f).state x r = A.state (f ∘ x) r := by
+  funext v
+  induction r generalizing v with
+  | zero => rfl
+  | succ r ih => simp only [state_succ, ih]; rfl
+
+@[simp] theorem comapInput_run {I' : Type*} (f : I' → I) (x : ZMod n → I') (r : ℕ) (v : ZMod n) :
+    (A.comapInput f).run x r v = A.run (f ∘ x) r v := by
+  simp only [run, comapInput_state]
   rfl
 
 end Algorithm
@@ -350,9 +374,47 @@ theorem IsProperColoring.of_injective {n : ℕ} {C : Type*} {c : ZMod n → C}
   exact one_ne_zero h1
 
 /-- After `t` rounds, `A` properly colours every oriented `n`-cycle whose nodes carry distinct
-identifiers from `{0, …, n - 1}`, with colours `0, …, c - 1`. -/
+identifiers from `{0, …, n - 1}`, with colours `0, …, c - 1`.
+
+For `n = 0` this is vacuous, since no `x : ℤ → ℕ` has all values below `0`; colourings of the
+infinite oriented path are stated directly for `Algorithm.run`, as in `threeColoring_run` and
+`fastThreeColoring_run`. -/
 @[expose] def Algorithm.ColorsCycle {S : Type*} (A : Algorithm ℕ S ℕ) (n t c : ℕ) : Prop :=
   ∀ x : ZMod n → ℕ, Function.Injective x → (∀ v, x v < n) →
     IsProperColoring (A.run x t) ∧ ∀ v, A.run x t v < c
+
+/-- **Identifiers from `{1, …, n}`.** An algorithm `A` properly `c`-colours every oriented `n`-cycle
+with distinct identifiers from `{1, …, n}` in `t` rounds iff `A.comapInput (· + 1)`, which first
+adds one to every identifier, satisfies `ColorsCycle n t c`. Upper and lower bounds for the
+`{0, …, n - 1}` convention therefore transfer to the `{1, …, n}` convention. -/
+theorem Algorithm.colorsCycle_comapInput_succ_iff {S : Type*} (A : Algorithm ℕ S ℕ) (n t c : ℕ) :
+    (A.comapInput (· + 1)).ColorsCycle n t c ↔
+      ∀ x : ZMod n → ℕ, Function.Injective x → (∀ v, 1 ≤ x v ∧ x v ≤ n) →
+        IsProperColoring (A.run x t) ∧ ∀ v, A.run x t v < c := by
+  constructor
+  · intro hA x hx hxn
+    have hcomp : (· + 1) ∘ (fun v => x v - 1) = x := by
+      funext v
+      have := (hxn v).1
+      simp only [Function.comp_apply]
+      omega
+    have hinj : Function.Injective fun v => x v - 1 := fun u v huv => by
+      have := (hxn u).1
+      have := (hxn v).1
+      exact hx (by simp only at huv; omega)
+    have h := hA (fun v => x v - 1) hinj fun v => by
+      have := hxn v
+      omega
+    have hrun : (A.comapInput (· + 1)).run (fun v => x v - 1) t = A.run x t := by
+      funext v
+      rw [comapInput_run, hcomp]
+    rwa [hrun] at h
+  · intro hA y hy hyn
+    have hrun : (A.comapInput (· + 1)).run y t = A.run ((· + 1) ∘ y) t := by
+      funext v
+      rw [comapInput_run]
+    rw [hrun]
+    exact hA _ (fun u v huv => hy (by simp only [Function.comp_apply] at huv; omega))
+      fun v => ⟨Nat.le_add_left 1 _, hyn v⟩
 
 end Cslib.Distributed.OrientedCycle

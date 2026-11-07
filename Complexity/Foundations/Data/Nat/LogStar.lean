@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, next to `Mathlib/Data/Nat/Log.lean`)
 
 public import Complexity.Init
+public import Mathlib.Data.Nat.Hyperoperation
 public import Mathlib.Data.Nat.Log
 public import Mathlib.Logic.Function.Iterate
 
@@ -17,16 +18,21 @@ public import Mathlib.Logic.Function.Iterate
 The tower `Nat.twoTower k = 2 ^ 2 ^ ⋯ ^ 2` (`k` twos, `twoTower 0 = 1`) and its inverse, the
 iterated logarithm `Nat.logStar n = log* n`: the number of times `⌈log₂ ·⌉` must be applied to `n`
 to reach a value at most `1`. Both are computable by structural recursion, so small values follow
-by `decide`. The characterization `log* n ≤ k ↔ n ≤ twoTower k` (`Nat.logStar_le_iff`) is the main
+by `decide`. Mathlib already has the tower as `hyperoperation 4 2` (and no iterated logarithm);
+`Nat.twoTower_eq_hyperoperation` identifies the two. The structural copy is kept because
+`hyperoperation` is defined by well-founded recursion, on which `decide` and kernel reduction get
+stuck. The characterization `log* n ≤ k ↔ n ≤ twoTower k` (`Nat.logStar_le_iff`) is the main
 interface; the recursion `log* n = log* ⌈log₂ n⌉ + 1` for `n ≥ 2` is `Nat.logStar_of_two_le`.
 
 ## Main definitions
 
-* `Nat.twoTower`: the tower of twos `2 ↑↑ k`.
+* `Nat.twoTower`: the tower of twos `2 ↑↑ k`, a structurally recursive copy of
+  `hyperoperation 4 2`.
 * `Nat.logStar`: the iterated ceiling logarithm `log* n`.
 
 ## Main results
 
+* `Nat.twoTower_eq_hyperoperation`: `twoTower k = hyperoperation 4 2 k`.
 * `Nat.logStar_le_iff`: `log* n ≤ k ↔ n ≤ 2 ↑↑ k`.
 * `Nat.logStar_of_two_le`: `log* n = log* ⌈log₂ n⌉ + 1` for `n ≥ 2`.
 * `Nat.logStar_twoTower`, `Nat.logStar_twoTower_add_one`: `log* (2 ↑↑ k) = k` and
@@ -40,7 +46,11 @@ public section
 
 namespace Nat
 
-/-- The tower of twos `2 ↑↑ k`: `twoTower 0 = 1` and `twoTower (k + 1) = 2 ^ twoTower k`. -/
+/-- The tower of twos `2 ↑↑ k`: `twoTower 0 = 1` and `twoTower (k + 1) = 2 ^ twoTower k`.
+
+This equals Mathlib's `hyperoperation 4 2` (`Nat.twoTower_eq_hyperoperation`). It is redefined by
+structural recursion so that `decide` and kernel reduction can evaluate it; `hyperoperation` uses
+well-founded recursion and does not reduce. -/
 @[expose] def twoTower : ℕ → ℕ
   | 0 => 1
   | k + 1 => 2 ^ twoTower k
@@ -57,6 +67,12 @@ a value at most `1`. Equivalently (`Nat.logStar_le_iff`), the least `k` with `n 
 @[simp] theorem twoTower_zero : twoTower 0 = 1 := rfl
 
 theorem twoTower_succ (k : ℕ) : twoTower (k + 1) = 2 ^ twoTower k := rfl
+
+/-- The tower is Mathlib's fourth hyperoperation with base `2`. -/
+theorem twoTower_eq_hyperoperation (k : ℕ) : twoTower k = hyperoperation 4 2 k := by
+  induction k with
+  | zero => rw [hyperoperation_ge_three_eq_one]; rfl
+  | succ k ih => rw [twoTower, ih, hyperoperation_recursion, hyperoperation_three]
 
 theorem twoTower_pos (k : ℕ) : 0 < twoTower k := by
   cases k with

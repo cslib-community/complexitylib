@@ -14,12 +14,16 @@ public import Complexity.Computability.Distributed.OrientedCycle.Linial
 # The round complexity of 3-colouring oriented cycles
 
 Deterministic LOCAL algorithms 3-colour oriented `n`-cycles with identifiers `{0, …, n - 1}` in
-`Θ(log* n)` rounds. The Cole–Vishkin algorithm of [Cole and Vishkin][ColeVishkin1986] needs
-`log* n + 3` rounds, and with two reduction steps per round `⌈(log* n) / 2⌉ + 3` rounds. By the
+`Θ(log* n)` rounds. The Cole–Vishkin algorithm of [Cole and Vishkin][ColeVishkin1986] runs in
+`log* n + 3` rounds, and with two reduction steps per round in `⌈(log* n) / 2⌉ + 3` rounds. By the
 lower bound of [Linial][Linial1992], in the form of
 [Laurinharju and Suomela][LaurinharjuSuomela2014], any `t`-round algorithm has
 `log* n ≤ 2t + 2`. The upper and lower bounds on the least number of
 rounds differ by at most `4`.
+
+The statements use `Algorithm.ColorsCycle`, which is vacuous for `n = 0`; on the infinite oriented
+path the upper bounds are `threeColoring_run` and `fastThreeColoring_run`. For identifiers from
+`{1, …, n}` apply `Algorithm.colorsCycle_comapInput_succ_iff`.
 
 ## Main results
 
