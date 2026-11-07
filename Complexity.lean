@@ -3959,6 +3959,9 @@ public import Complexity.Foundations.Data.BitString.Combination
 public import Complexity.Foundations.Data.BitString.Convolution
 public import Complexity.Foundations.Data.BitString.Counter
 public import Complexity.Foundations.Data.BitString.CoverCoding
+public import Complexity.Foundations.Data.BitString.CyclicDifference
+public import Complexity.Foundations.Data.BitString.DeltaMatroid.Basic
+public import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 public import Complexity.Foundations.Data.BitString.Enumeration
 public import Complexity.Foundations.Data.BitString.Flip
 public import Complexity.Foundations.Data.BitString.HalfSplit
