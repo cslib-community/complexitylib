@@ -673,6 +673,11 @@ universe size, not supplied as unverified input tables. In dependency order:
   results such as connectivity and acyclicity of finite graphs; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
+- **Undecidability in the finite:** Trakhtenbrot's theorem holds for raw relational sentences
+  over unboundedly many symbols of arity at most three. Next, sharpen it to a fixed vocabulary
+  and then to a single binary relation (Libkin, Theorem 9.2), and add a computable `Primcodable`
+  bridge from Mathlib `L.Sentence` that transfers the results to Mathlib syntax
+  ([#2886](https://github.com/cslib-community/complexitylib/issues/2886)).
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
