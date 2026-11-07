@@ -30,6 +30,9 @@ The distance-to-uniform estimate is the Cauchy–Schwarz step in the leftover ha
 
 * `Cslib.Probability.PMF.collisionProbability_eq_probability`: independent-sample experiment.
 * `Cslib.Probability.PMF.collisionProbability_le_of_mass_le`: pointwise mass upper bounds.
+* `Cslib.Probability.PMF.collisionProbability_pos`, `collisionProbability_le_one`,
+  `toReal_le_sqrt_of_collisionProbability_le`: elementary bounds.
+* `Cslib.Probability.PMF.collisionProbability_sq_le_sum_pow_three`: Jensen, `‖p‖₂⁴ ≤ ‖p‖₃³`.
 * `Cslib.Probability.PMF.dist_uniform_le`: distance to uniform from excess collisions.
 
 ## References
@@ -103,6 +106,42 @@ theorem collisionProbability_le_of_mass_le (p : PMF α) {bound : ℝ}
       intro a
       simpa only [sq] using mul_le_mul_of_nonneg_left (h a) (ENNReal.toReal_nonneg (a := p a))
     _ = bound := by rw [tsum_mul_right, tsum_toReal, one_mul]
+
+/-- The collision probability is at most `1`. -/
+theorem collisionProbability_le_one (p : PMF α) : collisionProbability p ≤ 1 :=
+  collisionProbability_le_of_mass_le p fun a =>
+    ENNReal.toReal_le_of_le_ofReal zero_le_one (ENNReal.ofReal_one.symm ▸ PMF.coe_le_one p a)
+
+/-- The squared mass of each point is at most the collision probability. -/
+theorem toReal_sq_le_collisionProbability (p : PMF α) (a : α) :
+    (p a).toReal ^ 2 ≤ collisionProbability p :=
+  (summable_collision p).le_tsum a fun _ _ => sq_nonneg _
+
+/-- Every mass is at most the square root of a bound on the collision probability. -/
+theorem toReal_le_sqrt_of_collisionProbability_le (p : PMF α) {b : ℝ}
+    (hb : collisionProbability p ≤ b) (a : α) : (p a).toReal ≤ Real.sqrt b :=
+  Real.le_sqrt_of_sq_le ((toReal_sq_le_collisionProbability p a).trans hb)
+
+/-- The collision probability is positive. -/
+theorem collisionProbability_pos (p : PMF α) : 0 < collisionProbability p := by
+  obtain ⟨a, ha⟩ := p.support_nonempty
+  have hpos : 0 < (p a).toReal :=
+    ENNReal.toReal_pos ((PMF.mem_support_iff p a).mp ha) (p.apply_ne_top a)
+  exact (pow_pos hpos 2).trans_le (toReal_sq_le_collisionProbability p a)
+
+/-- **Jensen's inequality** for the collision probability: `‖p‖₂⁴ ≤ ‖p‖₃³`, since the variance of
+`p(a)` for `a` drawn from `p` is nonnegative. -/
+theorem collisionProbability_sq_le_sum_pow_three [Fintype α] (p : PMF α) :
+    collisionProbability p ^ 2 ≤ ∑ a, (p a).toReal ^ 3 := by
+  have key (s : ℝ) : ∑ a, (p a).toReal * ((p a).toReal - s) ^ 2 =
+      ∑ a, (p a).toReal ^ 3 - 2 * s * ∑ a, (p a).toReal ^ 2 + s ^ 2 * ∑ a, (p a).toReal := by
+    rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl fun a _ => by ring
+  have h0 : 0 ≤ ∑ a, (p a).toReal * ((p a).toReal - ∑ b, (p b).toReal ^ 2) ^ 2 :=
+    Finset.sum_nonneg fun a _ => mul_nonneg ENNReal.toReal_nonneg (sq_nonneg _)
+  rw [key, sum_toReal] at h0
+  rw [collisionProbability_eq_sum]
+  nlinarith
 
 /-- A deterministic image collides exactly when the original samples have the same image. -/
 theorem collisionProbability_map [Fintype α] [DecidableEq β] (p : PMF α) (f : α → β) :

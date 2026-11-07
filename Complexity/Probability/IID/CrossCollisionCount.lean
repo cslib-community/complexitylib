@@ -28,9 +28,9 @@ Write `t = ∑ a, p(a) q(a)`, `u = ∑ a, p(a) q(a)²` and `v = ∑ a, p(a)² q(
   (`sum_sum_iid_mul_crossCollisionCount_mul_collisionCount`).
 
 These are the moments of the collision-based closeness tester
-[Diakonikolas–Gouleakis–Peebles–Price, §3][DiakonikolasGouleakisPeeblesPrice2019]. Each follows
-from the occurrence-count moments of `Complexity.Probability.IID.CollisionCount` and the
-independence of the two samples.
+[Diakonikolas–Gouleakis–Peebles–Price, §3][DiakonikolasGouleakisPeeblesPrice2019] (section numbers
+follow arXiv:1611.03579v1). Each follows from the occurrence-count moments of
+`Complexity.Probability.IID.CollisionCount` and the independence of the two samples.
 
 ## Main definitions
 

@@ -79,9 +79,6 @@ variable [DecidableEq α]
 @[expose] def collisionCount {k : ℕ} (x : Fin k → α) : ℕ :=
   #{ij : Fin k × Fin k | ij.1 < ij.2 ∧ x ij.1 = x ij.2}
 
-/-- Number of samples equal to `b`. -/
-private def occ {k : ℕ} (x : Fin k → α) (b : α) : ℝ := ∑ i, if x i = b then 1 else 0
-
 omit [Fintype α] in
 /-- The number of sample positions `i` with `x i = b`. -/
 def occurrenceCount {k : ℕ} (x : Fin k → α) (b : α) : ℕ := #{i | x i = b}
@@ -94,20 +91,17 @@ theorem occurrenceCount_eq_sum {k : ℕ} (x : Fin k → α) (b : α) :
     Nat.cast_zero]
 
 omit [Fintype α] in
-private theorem occ_eq {k : ℕ} (x : Fin k → α) (b : α) : occ x b = occurrenceCount x b :=
-  (occurrenceCount_eq_sum x b).symm
-
-omit [Fintype α] in
-private theorem occ_cons {k : ℕ} (a : α) (x : Fin k → α) (b : α) :
-    occ (Fin.cons a x : Fin (k + 1) → α) b = (if a = b then 1 else 0) + occ x b := by
-  simp only [occ, Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_succ]
+private theorem occurrenceCount_cons {k : ℕ} (a : α) (x : Fin k → α) (b : α) :
+    (occurrenceCount (Fin.cons a x : Fin (k + 1) → α) b : ℝ) =
+      (if a = b then 1 else 0) + occurrenceCount x b := by
+  simp only [occurrenceCount_eq_sum, Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_succ]
 
 omit [Fintype α] in
 private theorem collisionCount_cons {k : ℕ} (a : α) (x : Fin k → α) :
     (collisionCount (Fin.cons a x : Fin (k + 1) → α) : ℝ) =
-      occ x a + collisionCount x := by
-  simp only [collisionCount, occ, Finset.card_filter, Fintype.sum_prod_type, Fin.sum_univ_succ,
-    Fin.cons_zero, Fin.cons_succ, false_and, ite_false, Fin.succ_pos, true_and,
+      (occurrenceCount x a : ℝ) + collisionCount x := by
+  simp only [collisionCount, occurrenceCount_eq_sum, Finset.card_filter, Fintype.sum_prod_type,
+    Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_succ, false_and, ite_false, Fin.succ_pos, true_and,
     Fin.not_lt_zero, Fin.succ_lt_succ_iff, zero_add, eq_comm (a := a), Nat.cast_add, Nat.cast_sum,
     Nat.cast_ite, Nat.cast_one, Nat.cast_zero]
 
@@ -162,38 +156,42 @@ private theorem sum_mul_ite_mul (b : α) (g : α → ℝ) :
     ∑ a, (μ a).toReal * ((if a = b then 1 else 0) * g a) = (μ b).toReal * g b := by
   simp only [ite_mul, one_mul, zero_mul, mul_ite, mul_zero, sum_ite_eq', mem_univ, ite_true]
 
-private theorem ex_occ (b : α) (k : ℕ) : ex μ k (fun x => occ x b) = k * (μ b).toReal := by
+private theorem ex_occ (b : α) (k : ℕ) :
+    ex μ k (fun x => (occurrenceCount x b : ℝ)) = k * (μ b).toReal := by
   induction k with
-  | zero => simp [ex, occ]
+  | zero => simp [ex, occurrenceCount_eq_sum]
   | succ k ih =>
     rw [ex_succ]
-    simp only [occ_cons]
+    simp only [occurrenceCount_cons]
     simp only [ex_add, ex_const, ih, mul_add, sum_add_distrib, sum_mul_ite μ b (fun _ => 1),
       ← sum_mul, sum_toReal]
     push_cast
     ring
 
 private theorem ex_occ_mul_occ (a b : α) (k : ℕ) :
-    ex μ k (fun x => occ x a * occ x b) =
+    ex μ k (fun x => (occurrenceCount x a : ℝ) * occurrenceCount x b) =
       k * (k - 1) * (μ a).toReal * (μ b).toReal + k * (if a = b then (μ a).toReal else 0) := by
   induction k with
-  | zero => simp [ex, occ]
+  | zero => simp [ex, occurrenceCount_eq_sum]
   | succ k ih =>
     rw [ex_succ]
-    have hinner (c : α) : ex μ k (fun x => occ (Fin.cons c x : Fin (k + 1) → α) a *
-        occ (Fin.cons c x : Fin (k + 1) → α) b) =
+    have hinner (c : α) : ex μ k (fun x =>
+        (occurrenceCount (Fin.cons c x : Fin (k + 1) → α) a : ℝ) *
+          occurrenceCount (Fin.cons c x : Fin (k + 1) → α) b) =
         ((if c = a then 1 else 0) * (if c = b then 1 else 0) +
           ((if c = a then 1 else 0) * (k * (μ b).toReal) +
           (if c = b then 1 else 0) * (k * (μ a).toReal))) +
           (k * (k - 1) * (μ a).toReal * (μ b).toReal +
             k * (if a = b then (μ a).toReal else 0)) := by
-      have hfun : (fun x : Fin k → α => occ (Fin.cons c x : Fin (k + 1) → α) a *
-          occ (Fin.cons c x : Fin (k + 1) → α) b) = fun x =>
+      have hfun : (fun x : Fin k → α =>
+          (occurrenceCount (Fin.cons c x : Fin (k + 1) → α) a : ℝ) *
+            occurrenceCount (Fin.cons c x : Fin (k + 1) → α) b) = fun x =>
           ((if c = a then 1 else 0) * (if c = b then 1 else 0) +
-            ((if c = a then 1 else 0) * occ x b + (if c = b then 1 else 0) * occ x a)) +
-            occ x a * occ x b := by
+            ((if c = a then 1 else 0) * (occurrenceCount x b : ℝ) +
+              (if c = b then 1 else 0) * (occurrenceCount x a : ℝ))) +
+            (occurrenceCount x a : ℝ) * occurrenceCount x b := by
         funext x
-        rw [occ_cons, occ_cons]
+        rw [occurrenceCount_cons, occurrenceCount_cons]
         ring
       rw [hfun, ex_add, ex_add, ex_const, ex_add, ex_const_mul, ex_const_mul, ex_occ, ex_occ, ih]
     simp only [hinner]
@@ -220,7 +218,7 @@ private theorem ex_collisionCount (k : ℕ) :
     ring
 
 private theorem ex_collisionCount_mul_occ (b : α) (k : ℕ) :
-    ex μ k (fun x => (collisionCount x : ℝ) * occ x b) =
+    ex μ k (fun x => (collisionCount x : ℝ) * occurrenceCount x b) =
       k * (k - 1) * (k - 2) / 2 * (∑ a, (μ a).toReal ^ 2) * (μ b).toReal +
         k * (k - 1) * (μ b).toReal ^ 2 := by
   induction k with
@@ -228,18 +226,19 @@ private theorem ex_collisionCount_mul_occ (b : α) (k : ℕ) :
   | succ k ih =>
     rw [ex_succ]
     have hinner (c : α) : ex μ k (fun x => (collisionCount (Fin.cons c x : Fin (k + 1) → α) : ℝ) *
-        occ (Fin.cons c x : Fin (k + 1) → α) b) =
+        occurrenceCount (Fin.cons c x : Fin (k + 1) → α) b) =
         (if c = b then 1 else 0) * (k * (μ c).toReal + k * (k - 1) / 2 * ∑ a, (μ a).toReal ^ 2) +
           ((k * (k - 1) * (μ c).toReal * (μ b).toReal +
             k * (if c = b then (μ c).toReal else 0)) +
           (k * (k - 1) * (k - 2) / 2 * (∑ a, (μ a).toReal ^ 2) * (μ b).toReal +
             k * (k - 1) * (μ b).toReal ^ 2)) := by
       have hfun : (fun x : Fin k → α => (collisionCount (Fin.cons c x : Fin (k + 1) → α) : ℝ) *
-          occ (Fin.cons c x : Fin (k + 1) → α) b) = fun x =>
-          (if c = b then 1 else 0) * (occ x c + collisionCount x) +
-            (occ x c * occ x b + (collisionCount x : ℝ) * occ x b) := by
+          occurrenceCount (Fin.cons c x : Fin (k + 1) → α) b) = fun x =>
+          (if c = b then 1 else 0) * ((occurrenceCount x c : ℝ) + collisionCount x) +
+            ((occurrenceCount x c : ℝ) * occurrenceCount x b +
+              (collisionCount x : ℝ) * occurrenceCount x b) := by
         funext x
-        rw [collisionCount_cons, occ_cons]
+        rw [collisionCount_cons, occurrenceCount_cons]
         ring
       rw [hfun, ex_add, ex_const_mul, ex_add, ex_add, ex_occ, ex_collisionCount, ih,
         ex_occ_mul_occ]
@@ -273,8 +272,8 @@ private theorem ex_collisionCount_sq (k : ℕ) :
           3 * k * (k - 1) * (μ c).toReal ^ 2 := by
       have hfun : (fun x : Fin k → α =>
           (collisionCount (Fin.cons c x : Fin (k + 1) → α) : ℝ) ^ 2) =
-          fun x => occ x c * occ x c + (2 * ((collisionCount x : ℝ) * occ x c) +
-            (collisionCount x : ℝ) ^ 2) := by
+          fun x => (occurrenceCount x c : ℝ) * occurrenceCount x c +
+            (2 * ((collisionCount x : ℝ) * occurrenceCount x c) + (collisionCount x : ℝ) ^ 2) := by
         funext x
         rw [collisionCount_cons]
         ring
@@ -315,7 +314,6 @@ theorem sum_iid_mul_collisionCount_sub_sq (k : ℕ) :
 `k μ(b)` times on average. -/
 theorem sum_iid_mul_occurrenceCount (b : α) (k : ℕ) :
     ∑ x, (iid μ k x).toReal * occurrenceCount x b = k * (μ b).toReal := by
-  simp only [← occ_eq]
   exact ex_occ μ b k
 
 /-- **Joint moment of two occurrence counts** among `k` independent draws from `μ`:
@@ -323,7 +321,6 @@ theorem sum_iid_mul_occurrenceCount (b : α) (k : ℕ) :
 theorem sum_iid_mul_occurrenceCount_mul_occurrenceCount (a b : α) (k : ℕ) :
     ∑ x, (iid μ k x).toReal * ((occurrenceCount x a : ℝ) * occurrenceCount x b) =
       k * (k - 1) * (μ a).toReal * (μ b).toReal + k * (if a = b then (μ a).toReal else 0) := by
-  simp only [← occ_eq]
   exact ex_occ_mul_occ μ a b k
 
 /-- **Joint moment of the collision count and an occurrence count** among `k` independent draws
@@ -333,7 +330,6 @@ theorem sum_iid_mul_collisionCount_mul_occurrenceCount (b : α) (k : ℕ) :
       k * (k - 1) * (k - 2) / 2 * collisionProbability μ * (μ b).toReal +
         k * (k - 1) * (μ b).toReal ^ 2 := by
   rw [collisionProbability_eq_sum]
-  simp only [← occ_eq]
   exact ex_collisionCount_mul_occ μ b k
 
 /-- **Second moment of the collision count** among `k` independent draws from `μ`, with
