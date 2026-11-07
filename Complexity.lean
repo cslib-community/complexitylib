@@ -4144,8 +4144,11 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
 public import Complexity.Foundations.LinearAlgebra.Matrix.Derivation
 public import Complexity.Foundations.LinearAlgebra.Matrix.FactorialTruncation
+public import Complexity.Foundations.LinearAlgebra.Matrix.Farkas
+public import Complexity.Foundations.LinearAlgebra.Matrix.FourierMotzkin
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
 public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
+public import Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming
 public import Complexity.Foundations.LinearAlgebra.Matrix.ListProd
 public import Complexity.Foundations.LinearAlgebra.Matrix.Moore
 public import Complexity.Foundations.LinearAlgebra.Matrix.PartialDerivatives
