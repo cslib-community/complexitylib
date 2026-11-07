@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 module
 
 public import Complexity.Crypto.Computational.Encryption.Hybrid
+import Complexity.Crypto.Computational.Encryption.CCA
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF.Bind
 import Complexity.Tactic.PPT
@@ -32,7 +34,9 @@ Exercises the KEM, DEM, and KEM–DEM hybrid encryption API in
 * the word one-time pad and its `WordINDCPA` corollary
   (`indcpa_hybridEncrypt_idealEncaps_otpWordEncrypt`), and a length-only scheme that satisfies
   `WordINDCPA` (`wordINDCPA_lengthOnly`) but not the unrestricted `INDCPAOf encBits`
-  (`not_indcpaOf_lengthOnly`).
+  (`not_indcpaOf_lengthOnly`);
+* doubled key-length security, native sampling, exact key lengths and decryption correctness,
+  plus the zero-length boundary.
 -/
 
 @[expose] public section
@@ -55,7 +59,7 @@ def leakingEncaps (_ : ℕ) (pk : List Bool) : ProbComp (List Bool × List Bool)
   pure (true :: pk, true :: pk)
 
 /-- Deterministic decapsulation returning the encapsulation ciphertext directly. -/
-def leakingDecaps (_ : ℕ) (_ ctKem : List Bool) : List Bool := ctKem
+def leakingDecaps (_ : ℕ) (_ ctKem : List Bool) : Option (List Bool) := some ctKem
 
 theorem toyKeyGen_ppt : IsPPTOn encUnary (encPair encBits encBits) toyKeyGen := by
   unfold toyKeyGen
@@ -70,7 +74,7 @@ theorem leakingEncaps_ppt :
 theorem leakingDecaps_polyTime :
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => leakingDecaps p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encPair encUnary (encPair encBits encBits)) (encOption encBits) := by
   unfold leakingDecaps
   fun_prop
 
@@ -94,13 +98,62 @@ theorem eqKemDistinguisher_ppt : IsPPT encBool eqKemDistinguisher := by
 
 -- Native runtime checks for `kemRealGame`, `kemIdealGame`, `demGame`, `hybridEncrypt`,
 -- and `hybridDecrypt`.
-example : IsPPTOn encUnary encBool
-    (kemRealGame toyKeyGen leakingEncaps eqKemDistinguisher) :=
-  isPPTOn_kemRealGame toyKeyGen_ppt leakingEncaps_ppt eqKemDistinguisher_ppt (by fun_prop)
+
+-- Canonical pair equality is exactly component equality; reuse the embedding's injectivity.
+example (k₀ k₁ c₀ c₁ : List Bool) :
+    encPair encBits encBits (k₀, c₀) = encPair encBits encBits (k₁, c₁) ↔
+      k₀ = k₁ ∧ c₀ = c₁ := by
+  simp only [(encPair encBits encBits).injective.eq_iff, Prod.mk.injEq]
+
+-- Total frame projections alone admit noncanonical aliases, including a nonempty first component.
+example : unframe [true, true] = unframe [true, true, false] ∧
+    dropFrame [true, true] = dropFrame [true, true, false] ∧
+    ([true, true] : List Bool) ≠ [true, true, false] := by decide
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [true, true] = (none : Option (List Bool)) := rfl
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [true, true, false] = some ([] : List Bool) := rfl
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [] = (none : Option (List Bool)) := rfl
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [true] = (none : Option (List Bool)) := rfl
+
+-- The canonical empty pair is accepted, so an empty key/message is not a rejection.
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some [])
+    0 [] [false] = some ([] : List Bool) := rfl
+
+example : hybridDecrypt (fun _ _ _ => none) (fun _ _ _ => some [])
+    0 [] [false] = (none : Option (List Bool)) := rfl
+
+example : hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => none)
+    0 [] [false] = (none : Option (List Bool)) := rfl
+
+-- Actual CCA replies distinguish accepted empty plaintext from a malformed alias and the challenge.
+example : cca2Phase2Oracle encBits
+    (hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some []))
+    0 [] [false] ((), [true, true, false]) () = pure ([true], ()) := rfl
+
+example : cca2Phase2Oracle encBits
+    (hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some []))
+    0 [] [false] ((), []) () = pure ([], ()) := rfl
+
+example : cca2Phase2Oracle encBits
+    (hybridDecrypt (fun _ _ _ => some []) (fun _ _ _ => some []))
+    0 [] [false] ((), [false]) () = pure ([], ()) := rfl
 
 example : IsPPTOn encUnary encBool
-    (kemIdealGame toyKeyGen leakingEncaps eqKemDistinguisher) :=
-  isPPTOn_kemIdealGame toyKeyGen_ppt leakingEncaps_ppt eqKemDistinguisher_ppt (by fun_prop)
+    (kemRealGame toyKeyGen leakingEncaps eqKemDistinguisher) :=
+  isPPTOn_kemRealGame toyKeyGen_ppt leakingEncaps_ppt
+    eqKemDistinguisher_ppt (by fun_prop)
+
+example : IsPPTOn encUnary encBool
+    (kemIdealGame (fun n => n) toyKeyGen leakingEncaps eqKemDistinguisher) :=
+  isPPTOn_kemIdealGame (by fun_prop) toyKeyGen_ppt leakingEncaps_ppt
+    eqKemDistinguisher_ppt (by fun_prop)
 
 example (adversary : Adversary) (hadversary : adversary.IsPPT) (bit : Bool) :
     IsPPTOn encUnary encBool (demGame otpEncrypt adversary bit) :=
@@ -112,15 +165,16 @@ example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
 
 example : ComputableInPolyTime
     (fun p : ℕ × List Bool × List Bool =>
-      hybridDecrypt leakingDecaps otpDecrypt p.1 p.2.1 p.2.2)
-    (encPair encUnary (encPair encBits encBits)) encBool :=
-  computableInPolyTime_hybridDecrypt leakingDecaps_polyTime computableInPolyTime_otpDecrypt
+      hybridDecrypt leakingDecaps (fun n k ct => some (otpDecrypt n k ct)) p.1 p.2.1 p.2.2)
+    (encPair encUnary (encPair encBits encBits)) (encOption encBool) :=
+  computableInPolyTime_hybridDecrypt leakingDecaps_polyTime
+    ((ComputableInPolyTime.optionSome encBool).comp computableInPolyTime_otpDecrypt)
 
 /-- Every ciphertext produced by `hybridEncrypt leakingEncaps otpEncrypt` decrypts to the original
-plaintext bit under `hybridDecrypt leakingDecaps otpDecrypt`. -/
+plaintext bit under `hybridDecrypt leakingDecaps (fun n k ct => some (otpDecrypt n k ct))`. -/
 example (n : ℕ) (pk sk ct : List Bool) (bit : Bool)
     (hct : ct ∈ (ProbComp.eval (hybridEncrypt leakingEncaps otpEncrypt n pk bit)).support) :
-    hybridDecrypt leakingDecaps otpDecrypt n sk ct = bit := by
+    hybridDecrypt leakingDecaps (fun n k ct => some (otpDecrypt n k ct)) n sk ct = some bit := by
   refine hybridDecrypt_hybridEncrypt ?_ ?_ hct
   · intro k ctKem hsupp
     simp only [leakingEncaps, ProbComp.eval_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hsupp
@@ -129,12 +183,12 @@ example (n : ℕ) (pk sk ct : List Bool) (bit : Bool)
   · intro k ctDem _ hdemSupp
     simp only [otpEncrypt, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hdemSupp
     subst hdemSupp
-    exact otpDecrypt_otpEncrypt n k bit
+    exact congrArg some (otpDecrypt_otpEncrypt n k bit)
 
 /-- Concrete round-trip evaluation of `hybridDecrypt` on an encoded `(ctKem, ctDem)` pair. -/
 example (bit : Bool) :
-    hybridDecrypt leakingDecaps otpDecrypt 4 []
-      (encPair encBits encBits ([true, false], [true ^^ bit])) = bit := by
+    hybridDecrypt leakingDecaps (fun n k ct => some (otpDecrypt n k ct)) 4 []
+      (encPair encBits encBits ([true, false], [true ^^ bit])) = some bit := by
   rw [hybridDecrypt_encPair]
   simp [leakingDecaps, otpDecrypt]
 
@@ -142,7 +196,8 @@ example (bit : Bool) :
 theorem eval_kemRealGame_leaking (n : ℕ) :
     ProbComp.eval (kemRealGame toyKeyGen leakingEncaps eqKemDistinguisher n) =
       PMF.pure true := by
-  simp only [kemRealGame, toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemRealGame, kemRealGameWith,
+    toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind,
     decide_true, PMF.bind_const]
@@ -150,9 +205,10 @@ theorem eval_kemRealGame_leaking (n : ℕ) :
 /-- In `kemIdealGame`, `eqKemDistinguisher` always outputs `false` on `leakingEncaps` because the
 ideal key `kIdeal` has length `n` while `ctKem = true :: pk` has length `n + 1`. -/
 theorem eval_kemIdealGame_leaking (n : ℕ) :
-    ProbComp.eval (kemIdealGame toyKeyGen leakingEncaps eqKemDistinguisher n) =
+    ProbComp.eval (kemIdealGame (fun n => n) toyKeyGen leakingEncaps eqKemDistinguisher n) =
       PMF.pure false := by
-  simp only [kemIdealGame, toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind]
   trans (BitString.uniformList n).bind (fun _ => PMF.pure false)
@@ -171,7 +227,7 @@ theorem eval_kemIdealGame_leaking (n : ℕ) :
 
 /-- The leaking KEM is not IND-CPA secure: `eqKemDistinguisher` achieves advantage `1` at every
 security parameter. -/
-theorem not_kemINDCPA_leaking : ¬ KEMINDCPA toyKeyGen leakingEncaps := by
+theorem not_kemINDCPA_leaking : ¬ KEMINDCPA (fun n => n) toyKeyGen leakingEncaps := by
   intro hsecure
   have hneg := hsecure eqKemDistinguisher eqKemDistinguisher_ppt
   simp only [eval_kemRealGame_leaking, eval_kemIdealGame_leaking] at hneg
@@ -216,9 +272,11 @@ theorem uniformList_bind_decide_eq_apply_true {n : ℕ} {w : List Bool} (hw : w.
 
 /-- In `kemRealGame`, `eqKemDistinguisher` always outputs `true` on `sameLengthLeakingEncaps`. -/
 theorem eval_kemRealGame_sameLengthLeaking (n : ℕ) :
-    ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps eqKemDistinguisher n) =
+    ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps
+          eqKemDistinguisher n) =
       PMF.pure true := by
-  simp only [kemRealGame, toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemRealGame, kemRealGameWith,
+    toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind,
     decide_true, PMF.bind_const]
@@ -226,9 +284,11 @@ theorem eval_kemRealGame_sameLengthLeaking (n : ℕ) :
 /-- In `kemIdealGame`, `eqKemDistinguisher` outputs `true` on `sameLengthLeakingEncaps` exactly
 when the independent ideal key equals the public key, which has probability `2⁻ⁿ`. -/
 theorem eval_kemIdealGame_sameLengthLeaking_true (n : ℕ) :
-    ProbComp.eval (kemIdealGame toyKeyGen sameLengthLeakingEncaps eqKemDistinguisher n) true =
+    ProbComp.eval (kemIdealGame (fun n => n) toyKeyGen sameLengthLeakingEncaps
+          eqKemDistinguisher n) true =
       (2 ^ n)⁻¹ := by
-  simp only [kemIdealGame, toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind]
   rw [PMF.bind_apply]
@@ -245,8 +305,10 @@ theorem eval_kemIdealGame_sameLengthLeaking_true (n : ℕ) :
 `1 - 2⁻ⁿ`: it accepts with probability `1` in the real game and `2⁻ⁿ` in the ideal game. -/
 theorem advantage_kem_sameLengthLeaking (n : ℕ) :
     Game.advantage
-        (ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps eqKemDistinguisher n))
-        (ProbComp.eval (kemIdealGame toyKeyGen sameLengthLeakingEncaps eqKemDistinguisher n)) =
+        (ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps
+          eqKemDistinguisher n))
+        (ProbComp.eval (kemIdealGame (fun n => n) toyKeyGen sameLengthLeakingEncaps
+          eqKemDistinguisher n)) =
       1 - (2 ^ n)⁻¹ := by
   have hle : ((2 : ℝ≥0) ^ n)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (one_le_pow₀ one_le_two)
   rw [Game.advantage, Game.succProbability, Game.succProbability,
@@ -257,8 +319,10 @@ theorem advantage_kem_sameLengthLeaking (n : ℕ) :
 /-- At `n = 1` the advantage is `1 / 2`. -/
 example :
     Game.advantage
-        (ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps eqKemDistinguisher 1))
-        (ProbComp.eval (kemIdealGame toyKeyGen sameLengthLeakingEncaps eqKemDistinguisher 1)) =
+        (ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps
+          eqKemDistinguisher 1))
+        (ProbComp.eval (kemIdealGame (fun n => n) toyKeyGen sameLengthLeakingEncaps
+          eqKemDistinguisher 1)) =
       1 / 2 := by
   rw [advantage_kem_sameLengthLeaking,
     tsub_eq_iff_eq_add_of_le (inv_le_one_of_one_le₀ (one_le_pow₀ one_le_two))]
@@ -267,8 +331,10 @@ example :
 /-- At `n = 2` the advantage is `3 / 4`. -/
 example :
     Game.advantage
-        (ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps eqKemDistinguisher 2))
-        (ProbComp.eval (kemIdealGame toyKeyGen sameLengthLeakingEncaps eqKemDistinguisher 2)) =
+        (ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps
+          eqKemDistinguisher 2))
+        (ProbComp.eval (kemIdealGame (fun n => n) toyKeyGen sameLengthLeakingEncaps
+          eqKemDistinguisher 2)) =
       3 / 4 := by
   rw [advantage_kem_sameLengthLeaking,
     tsub_eq_iff_eq_add_of_le (inv_le_one_of_one_le₀ (one_le_pow₀ one_le_two))]
@@ -276,7 +342,8 @@ example :
 
 /-- The same-length leaking KEM is not IND-CPA secure: the advantage `1 - 2⁻ⁿ` of
 `eqKemDistinguisher` plus the negligible `2⁻ⁿ` is the constant `1`. -/
-theorem not_kemINDCPA_sameLengthLeaking : ¬ KEMINDCPA toyKeyGen sameLengthLeakingEncaps := by
+theorem not_kemINDCPA_sameLengthLeaking :
+    ¬ KEMINDCPA (fun n => n) toyKeyGen sameLengthLeakingEncaps := by
   intro hsecure
   have hneg := hsecure eqKemDistinguisher eqKemDistinguisher_ppt
   simp only [advantage_kem_sameLengthLeaking] at hneg
@@ -297,9 +364,9 @@ example (keyGen : ℕ → ProbComp (List Bool × List Bool))
         (ProbComp.eval
           (kemRealGame keyGen encaps (hybridToKEMHiddenBitDistinguisher otpEncrypt adversary) n))
         (ProbComp.eval
-          (kemIdealGame keyGen encaps
+          (kemIdealGame (fun n => n) keyGen encaps
             (hybridToKEMHiddenBitDistinguisher otpEncrypt adversary) n)) := by
-  have h := advantage_hybridGame_le_two_mul keyGen encaps otpEncrypt adversary n
+  have h := advantage_hybridGame_le_two_mul (fun n => n) keyGen encaps otpEncrypt adversary n
   rwa [advantage_demGame_otpEncrypt_eq_zero hn, add_zero] at h
 
 /-- For `1 ≤ n`, specializing `advantage_hybridGame_le` to `otpEncrypt` eliminates the DEM
@@ -314,29 +381,34 @@ example (keyGen : ℕ → ProbComp (List Bool × List Bool))
         (ProbComp.eval
           (kemRealGame keyGen encaps (hybridToKEMDistinguisher otpEncrypt adversary false) n))
         (ProbComp.eval
-          (kemIdealGame keyGen encaps (hybridToKEMDistinguisher otpEncrypt adversary false) n)) +
+          (kemIdealGame (fun n => n) keyGen encaps
+            (hybridToKEMDistinguisher otpEncrypt adversary false) n)) +
       Game.advantage
         (ProbComp.eval
           (kemRealGame keyGen encaps (hybridToKEMDistinguisher otpEncrypt adversary true) n))
         (ProbComp.eval
-          (kemIdealGame keyGen encaps (hybridToKEMDistinguisher otpEncrypt adversary true) n)) := by
-  have h := advantage_hybridGame_le keyGen encaps otpEncrypt adversary n
+          (kemIdealGame (fun n => n) keyGen encaps
+            (hybridToKEMDistinguisher otpEncrypt adversary true) n)) := by
+  have h := advantage_hybridGame_le (fun n => n) keyGen encaps otpEncrypt adversary n
   rwa [advantage_demGame_otpEncrypt_eq_zero hn, add_zero] at h
 
-/-- Undecryptable security-game test fixture that draws a fresh uniform `n`-bit key, discards any
+/-- Undecryptable security-game test fixture that draws a uniform `keyLen n`-bit key, discards any
 recovery information, and emits `[]`, making `kemRealGame` and `kemIdealGame` distributionally
-identical. No `decaps` can recover the encapsulated key on every supported output for `1 ≤ n`; this
+identical. No `decaps` can recover the encapsulated key on every supported output when
+`1 ≤ keyLen n`; this
 fixture exercises the `KEMINDCPA` security predicate and reduction only. -/
-noncomputable def idealEncaps (n : ℕ) (_ : List Bool) : ProbComp (List Bool × List Bool) := do
-  let k ← BitString.sampleList n
+noncomputable def idealEncaps (keyLen : ℕ → ℕ) (n : ℕ) (_ : List Bool) :
+    ProbComp (List Bool × List Bool) := do
+  let k ← BitString.sampleList (keyLen n)
   return (k, [])
 
-theorem idealEncaps_ppt :
+theorem idealEncaps_ppt {keyLen : ℕ → ℕ}
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
     IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
-      (fun p => idealEncaps p.1 p.2) := by
+      (fun p => idealEncaps keyLen p.1 p.2) := by
   have hk : IsPPTOn (encPair encUnary encBits) encBits
-      (fun p : ℕ × List Bool => BitString.sampleList p.1) :=
-    ComputableInPolyTime.sampleList (by fun_prop)
+      (fun p : ℕ × List Bool => BitString.sampleList (keyLen p.1)) :=
+    (hkeyLen.comp' (ComputableInPolyTime.fst _ _)).sampleList
   have hret : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × List Bool => (p.2, ([] : List Bool)))
       (encPair (encPair encUnary encBits) encBits) (encPair encBits encBits) :=
@@ -344,21 +416,24 @@ theorem idealEncaps_ppt :
   unfold idealEncaps
   exact hk.bind_with hret.isPPTOn
 
-theorem eval_kemRealGame_idealEncaps_eq_ideal (D : Distinguisher) (n : ℕ) :
-    ProbComp.eval (kemRealGame toyKeyGen idealEncaps D n) =
-      ProbComp.eval (kemIdealGame toyKeyGen idealEncaps D n) := by
-  simp only [kemRealGame, kemIdealGame, idealEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
+theorem eval_kemRealGame_idealEncaps_eq_ideal (keyLen : ℕ → ℕ) (D : Distinguisher) (n : ℕ) :
+    ProbComp.eval (kemRealGame toyKeyGen (idealEncaps keyLen) D n) =
+      ProbComp.eval (kemIdealGame keyLen toyKeyGen (idealEncaps keyLen) D n) := by
+  simp only [kemRealGame, kemRealGameWith,
+    kemIdealGame, kemIdealGameWith, idealEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
     BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind, PMF.bind_const]
 
-theorem kemINDCPA_idealEncaps : KEMINDCPA toyKeyGen idealEncaps := by
+theorem kemINDCPA_idealEncaps (keyLen : ℕ → ℕ) :
+    KEMINDCPA keyLen toyKeyGen (idealEncaps keyLen) := by
   intro D _
   simpa only [eval_kemRealGame_idealEncaps_eq_ideal, Game.advantage_self] using negligible_zero
 
 /-- Instantiation of the security reduction `KEMINDCPA.hybrid_otpEncrypt_indcpa` on the
 undecryptable security-game fixture `idealEncaps` and `otpEncrypt` (security predicate only). -/
 theorem indcpa_hybridEncrypt_idealEncaps_otpEncrypt :
-    INDCPA toyKeyGen (hybridEncrypt idealEncaps otpEncrypt) :=
-  kemINDCPA_idealEncaps.hybrid_otpEncrypt_indcpa toyKeyGen_ppt idealEncaps_ppt
+    INDCPA toyKeyGen (hybridEncrypt (idealEncaps (fun n => n)) otpEncrypt) :=
+  (kemINDCPA_idealEncaps (fun n => n)).hybrid_otpEncrypt_indcpa
+    toyKeyGen_ppt (idealEncaps_ppt (by fun_prop))
 
 /-- Concrete 3-bit word one-time pad encryption and decryption round-trip on
 `k = [true, false, true]` and `m = [true, true, false]`. -/
@@ -372,13 +447,81 @@ example :
       1 := by
   have h : [false, true, true] =
       BitString.listXor 3 [[true, false, true], [true, true, false]] := by decide
-  rw [otpWordEncrypt, ProbComp.eval_pure, h, PMF.pure_apply_self]
+  rw [otpWordEncrypt, otpKeyWordEncrypt, ProbComp.eval_pure, h, PMF.pure_apply_self]
 
 /-- Instantiation of the word-message security reduction `KEMINDCPA.hybrid_otpWordEncrypt_indcpa`
 on `idealEncaps` and `otpWordEncrypt`. -/
 theorem indcpa_hybridEncrypt_idealEncaps_otpWordEncrypt :
-    WordINDCPA toyKeyGen (hybridEncrypt idealEncaps otpWordEncrypt) :=
-  kemINDCPA_idealEncaps.hybrid_otpWordEncrypt_indcpa toyKeyGen_ppt idealEncaps_ppt
+    WordINDCPA toyKeyGen (hybridEncrypt (idealEncaps (fun n => n)) otpWordEncrypt) :=
+  (kemINDCPA_idealEncaps (fun n => n)).hybrid_otpWordEncrypt_indcpa
+    toyKeyGen_ppt (idealEncaps_ppt (by fun_prop))
+
+/-! ### Key length is independent of the security parameter -/
+
+/-- The existing security-only fixture also works with twice the security parameter in key bits.
+This checks the generalized composition, not decapsulation of the fixture's discarded key. -/
+theorem indcpaOf_hybridEncrypt_doubleKey_otp :
+    INDCPAOf encBits toyKeyGen
+      (hybridEncrypt (idealEncaps (fun n => 2 * n)) (otpKeyWordEncrypt (fun n => 2 * n))) :=
+  (kemINDCPA_idealEncaps (fun n => 2 * n)).hybrid_indcpa
+    (demOneTimeKeyINDCPA_otpKeyWordEncrypt _) toyKeyGen_ppt
+    (idealEncaps_ppt (by fun_prop)) (isPPTOn_otpKeyWordEncrypt (by fun_prop))
+
+/-- The arbitrary-length ideal KEM experiment is natively strict PPT for `keyLen n = 2 * n`. -/
+example : IsPPTOn encUnary encBool
+    (kemIdealGame (fun n => 2 * n) toyKeyGen (idealEncaps (fun n => 2 * n))
+      eqKemDistinguisher) :=
+  isPPTOn_kemIdealGame (by fun_prop) toyKeyGen_ppt (idealEncaps_ppt (by fun_prop))
+    eqKemDistinguisher_ppt (by fun_prop)
+
+/-- Honest hybrid encryption remains native strict PPT at the doubled key length. -/
+example : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
+    (fun p => hybridEncrypt (idealEncaps (fun n => 2 * n)) (otpKeyWordEncrypt (fun n => 2 * n))
+      p.1 p.2.1 p.2.2) :=
+  isPPTOn_hybridEncrypt (idealEncaps_ppt (by fun_prop))
+    (isPPTOn_otpKeyWordEncrypt (by fun_prop))
+
+/-- Supported keys have exactly the chosen length, including the zero-length case. -/
+example (keyLen : ℕ → ℕ) (n : ℕ) (pk k ct : List Bool)
+    (h : (k, ct) ∈ (ProbComp.eval (idealEncaps keyLen n pk)).support) :
+    k.length = keyLen n ∧ ct = [] := by
+  simp only [idealEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
+    BitString.eval_sampleList, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at h
+  obtain ⟨k', hk, heq⟩ := h
+  cases heq
+  exact ⟨BitString.length_of_mem_support_uniformList hk, rfl⟩
+
+/-- The generic correctness theorem is independent of the key schedule. Here it recovers every
+`2 * n`-bit message using the deliberately insecure, but correctly decryptable, leaking KEM. -/
+example (n : ℕ) (pk sk ct m : List Bool) (hm : m.length = 2 * n)
+    (hct : ct ∈ (ProbComp.eval
+      (hybridEncrypt sameLengthLeakingEncaps (otpKeyWordEncrypt (fun n => 2 * n))
+        n pk m)).support) :
+    hybridDecrypt leakingDecaps
+      (fun n k ct => some (otpKeyWordDecrypt (fun n => 2 * n) n k ct)) n sk ct = some m := by
+  refine hybridDecrypt_hybridEncrypt ?_ ?_ hct
+  · intro k ctKem hsupp
+    simp only [sameLengthLeakingEncaps, ProbComp.eval_pure, PMF.mem_support_pure_iff,
+      Prod.mk.injEq] at hsupp
+    rcases hsupp with ⟨rfl, rfl⟩
+    rfl
+  · intro k ctDem _ hdemSupp
+    simp only [otpKeyWordEncrypt, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hdemSupp
+    subst ctDem
+    exact congrArg some (otpKeyWordDecrypt_otpKeyWordEncrypt (fun n => 2 * n) n k hm)
+
+/-- Zero key length is permitted by the security predicate; correctness of this zero-width pad
+is restricted to the empty message. -/
+example : KEMINDCPA (fun _ => 0) toyKeyGen (idealEncaps (fun _ => 0)) :=
+  kemINDCPA_idealEncaps _
+
+example (n : ℕ) (pk : List Bool) :
+    ProbComp.eval (idealEncaps (fun _ => 0) n pk) = PMF.pure ([], []) := by
+  simp [idealEncaps, BitString.sampleList]
+
+example (n : ℕ) (k : List Bool) :
+    otpKeyWordDecrypt (fun _ => 0) n k (BitString.listXor 0 [k, []]) = [] :=
+  otpKeyWordDecrypt_otpKeyWordEncrypt (fun _ => 0) n k rfl
 
 /-! ### The equal-length rule has force -/
 

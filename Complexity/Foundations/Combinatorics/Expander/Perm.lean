@@ -41,6 +41,10 @@ are expanders [Hoory, Linial and Wigderson, Theorem 4.16][HooryLinialWigderson20
   permutations move out of it, twice.
 * `Cslib.RotationMap.le_edgeExpansion_ofPerms`: a lower bound on these counts for every set of at
   most half of the vertices bounds the edge expansion.
+* `Cslib.RotationMap.expect_mul_walk_ofPerms`: the Dirichlet form of the walk is the total squared
+  change of a function along the permutations.
+* `Cslib.RotationMap.secondEigenvalue_ofPerms_le`: a Poincaré inequality for the permutations
+  bounds the second eigenvalue.
 
 ## References
 
@@ -132,5 +136,64 @@ theorem le_edgeExpansion_ofPerms [Nontrivial V] {c : ℝ}
   have := h S hS
   push_cast at this ⊢
   linarith
+
+omit [DecidableEq V] in
+/-- **The Dirichlet form of a permutation multigraph**: the correlation of `f` with its walk is
+`𝔼 f²` minus `1 / (2 |K|)` times the total squared change `∑ k, 𝔼 v, (f (σ k v) - f v) ^ 2` of `f`
+along the permutations. -/
+theorem expect_mul_walk_ofPerms [Nonempty K] (f : V → ℝ) :
+    𝔼 v, f v * (ofPerms σ).walk f v =
+      (𝔼 v, f v ^ 2) - (∑ k, 𝔼 v, (f (σ k v) - f v) ^ 2) / (2 * Fintype.card K) := by
+  have hK : (0 : ℝ) < Fintype.card K := Nat.cast_pos.2 Fintype.card_pos
+  have hwalk (v : V) : (ofPerms σ).walk f v =
+      (∑ k, (f (σ k v) + f ((σ k).symm v))) / (2 * Fintype.card K) := by
+    rw [walk_apply, Fintype.expect_eq_sum_div_card, Fintype.sum_prod_type, Fintype.card_prod,
+      Fintype.card_bool]
+    simp only [Fintype.sum_bool, neighbor_ofPerms_true, neighbor_ofPerms_false,
+      add_comm (f ((σ _).symm v))]
+    push_cast
+    ring
+  have hsymm (k : K) : ∑ v, f v * f ((σ k).symm v) = ∑ v, f v * f (σ k v) := by
+    rw [← Equiv.sum_comp (σ k)]
+    simp [mul_comm]
+  have hcross (k : K) : ∑ v, (f (σ k v) - f v) ^ 2 =
+      2 * ∑ v, f v ^ 2 - 2 * ∑ v, f v * f (σ k v) := by
+    simp only [sub_sq, sum_add_distrib, sum_sub_distrib, Equiv.sum_comp (σ k) (fun v ↦ f v ^ 2),
+      mul_sum]
+    ring_nf
+    simp only [← sum_mul, mul_comm (f _) (f _)]
+  calc 𝔼 v, f v * (ofPerms σ).walk f v
+      = (∑ v, f v * ∑ k, (f (σ k v) + f ((σ k).symm v))) / (2 * Fintype.card K) /
+          Fintype.card V := by
+        simp only [hwalk, Fintype.expect_eq_sum_div_card, ← mul_div_assoc, ← sum_div]
+    _ = (2 * ∑ k, ∑ v, f v * f (σ k v)) / (2 * Fintype.card K) / Fintype.card V := by
+        congr 2
+        simp only [mul_sum, mul_add, sum_add_distrib]
+        rw [sum_comm, sum_comm (f := fun v k ↦ f v * f ((σ k).symm v))]
+        simp only [hsymm, ← two_mul, mul_sum]
+    _ = _ := by
+        simp only [Fintype.expect_eq_sum_div_card, ← sum_div, hcross, sum_sub_distrib, sum_const,
+          card_univ, nsmul_eq_mul, ← mul_sum]
+        field_simp
+        ring
+
+omit [DecidableEq V] in
+/-- **A Poincaré inequality bounds the second eigenvalue** of a permutation multigraph on at least
+two vertices: if `c 𝔼 f² ≤ ∑ k, 𝔼 v, (f (σ k v) - f v) ^ 2` for every `f` of expectation zero, then
+`λ₂ ≤ 1 - c / (2 |K|)`. -/
+theorem secondEigenvalue_ofPerms_le [Nonempty K] [Nontrivial V] {c : ℝ}
+    (h : ∀ f : V → ℝ, 𝔼 v, f v = 0 → c * (𝔼 v, f v ^ 2) ≤ ∑ k, 𝔼 v, (f (σ k v) - f v) ^ 2) :
+    (ofPerms σ).secondEigenvalue ≤ 1 - c / (2 * Fintype.card K) := by
+  refine (ofPerms σ).secondEigenvalue_le_iff.2 fun f hf ↦ ?_
+  have hK : (0 : ℝ) < 2 * Fintype.card K := by
+    have := Fintype.card_pos (α := K)
+    positivity
+  calc 𝔼 v, f v * (ofPerms σ).walk f v
+      = (𝔼 v, f v ^ 2) - (∑ k, 𝔼 v, (f (σ k v) - f v) ^ 2) / (2 * Fintype.card K) :=
+        expect_mul_walk_ofPerms σ f
+    _ ≤ (𝔼 v, f v ^ 2) - c * (𝔼 v, f v ^ 2) / (2 * Fintype.card K) := by
+        have := div_le_div_of_nonneg_right (h f hf) hK.le
+        linarith
+    _ = (1 - c / (2 * Fintype.card K)) * 𝔼 v, f v ^ 2 := by ring
 
 end Cslib.RotationMap

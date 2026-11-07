@@ -54,13 +54,13 @@ private noncomputable def randomized : ProbOracleComp (fun _ : Bool => Bool)
 -- Private sampling is forwarded identically even though external replies change type.
 example :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) source)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) source)
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => ProbOracleComp.sample (ProbComp.unifFin n))
+        (OracleComp.sumHandler (fun n => ProbOracleComp.sample (ProbComp.unifFin n))
           (fun q => Prod.fst <$> ProbOracleComp.query q)) randomized)).run (false, true)).map
         (fun (result, state) => (result, state.1)) =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) target)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) target)
           randomized).run false :=
   ProbOracleComp.run_interpret_map_response_state (fun _ => Prod.fst) source target Prod.fst
     step randomized (false, true)

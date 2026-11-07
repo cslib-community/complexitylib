@@ -156,7 +156,7 @@ theorem exactThreeSAT_npComplete : NPComplete encCNF ExactThreeSAT :=
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.CookLevinAbstract`:
-19 root declarations, 69 dependencies checked
+19 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.CookLevinAbstract allowing [

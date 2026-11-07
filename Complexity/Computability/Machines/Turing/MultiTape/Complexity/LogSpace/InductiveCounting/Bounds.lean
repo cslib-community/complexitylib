@@ -73,15 +73,15 @@ variable (k State) in
 /-- The instruction budget of the controller on round `J₀`, which bounds every earlier round. -/
 noncomputable def roundBudget (J₀ n : ℕ) : ℕ :=
   Cslib.InductiveCounting.budget (vertexBound (k := k) (roundRadix State n J₀))
-    (guessWidth k (roundRadix State n J₀))
+    (vertexWidth k (roundRadix State n J₀))
 
 theorem rank_install_le {J₀ n j : ℕ} (hj : j ≤ J₀) :
     Cslib.InductiveCounting.rank (vertexBound (k := k) (roundRadix State n j))
-      (guessWidth k (roundRadix State n j)) (install ntm (roundRadix State n j)) ≤
+      (vertexWidth k (roundRadix State n j)) (install ntm (roundRadix State n j)) ≤
       roundBudget k State J₀ n := by
   refine Cslib.InductiveCounting.rank_initial_le_budget.trans ?_
   have hN := vertexBound_mono (k := k) (roundRadix_mono (State := State) n hj)
-  have hw : guessWidth k (roundRadix State n j) ≤ guessWidth k (roundRadix State n J₀) :=
+  have hw : vertexWidth k (roundRadix State n j) ≤ vertexWidth k (roundRadix State n J₀) :=
     Nat.size_le_size hN
   unfold roundBudget Cslib.InductiveCounting.budget
   gcongr
@@ -99,7 +99,7 @@ private theorem not_halted_counting {B : ℕ} {chk : Bool} {c : Cslib.InductiveC
 
 /-- On a checked radix, every branch halts within the controller's progress measure. -/
 theorem halted_replay_checked {B : ℕ} {c : Cslib.InductiveCounting.State} (choices : List Bool)
-    (h : Cslib.InductiveCounting.rank (vertexBound (k := k) B) (guessWidth k B) c ≤
+    (h : Cslib.InductiveCounting.rank (vertexBound (k := k) B) (vertexWidth k B) c ≤
       choices.length) :
     (queryMachine ntm).halted
       ((queryMachine ntm).replay input choices ⟨input.length, B, true, some c⟩) = true := by
@@ -121,7 +121,7 @@ private theorem halted_replay_unchecked {J₀ : ℕ}
       RuntimeInvariant ntm input
         ⟨input.length, roundRadix State input.length j, false, some c⟩ →
       Cslib.InductiveCounting.rank (vertexBound (k := k) (roundRadix State input.length j))
-          (guessWidth k (roundRadix State input.length j)) c + 1 +
+          (vertexWidth k (roundRadix State input.length j)) c + 1 +
           roundBudget k State J₀ input.length +
           m * (roundBudget k State J₀ input.length + 1) ≤ choices.length →
       (queryMachine ntm).halted ((queryMachine ntm).replay input choices
@@ -133,7 +133,7 @@ private theorem halted_replay_unchecked {J₀ : ℕ}
   all_goals
     intro j hm c
     induction hr : Cslib.InductiveCounting.rank (vertexBound (k := k)
-      (roundRadix State input.length j)) (guessWidth k (roundRadix State input.length j)) c
+      (roundRadix State input.length j)) (vertexWidth k (roundRadix State input.length j)) c
       using Nat.strong_induction_on generalizing c with
     | _ r ih =>
     intro choices hinv hlen
@@ -191,13 +191,14 @@ private theorem halted_replay_unchecked {J₀ : ℕ}
       rw [step_counting ntm input (by simp [ho]) (by simp [ha])] at hinv'
       have hc : Cslib.InductiveCounting.halted c = false := by
         simp [Cslib.InductiveCounting.halted, ha, hnr]
-      have hlt := Cslib.InductiveCounting.rank_advance_lt (N := vertexBound (k := k)
-        (roundRadix State input.length j)) (width := guessWidth k (roundRadix State input.length j))
+      have hlt := Cslib.InductiveCounting.rank_advance_lt
+        (N := vertexBound (k := k) (roundRadix State input.length j))
+        (width := vertexWidth k (roundRadix State input.length j))
         (source := startID ntm (roundRadix State input.length j))
         (Cslib.InductiveCounting.answer (graphEdge ntm (roundRadix State input.length j) input)
           (graphBad ntm input (roundRadix State input.length j) false) c) b hc
       have hlt' : Cslib.InductiveCounting.rank (vertexBound (k := k)
-          (roundRadix State input.length j)) (guessWidth k (roundRadix State input.length j))
+          (roundRadix State input.length j)) (vertexWidth k (roundRadix State input.length j))
           (ctlStep ntm input (roundRadix State input.length j) false c b) < r := hr ▸ hlt
       exact ih _ hlt' _ rfl rest hinv' (by omega)
 
@@ -275,11 +276,11 @@ theorem length_runtime_le {J₀ : ℕ} (hJ₀ : Closed ntm (roundRadix State inp
       rw [pow_mul]
       exact Nat.pow_le_pow_left hB _
     have hNpos : 1 ≤ N := Nat.one_le_iff_ne_zero.mpr (pow_ne_zero _ (by omega))
-    have hreg : Cslib.InductiveCounting.registerBound N (guessWidth k
+    have hreg : Cslib.InductiveCounting.registerBound N (vertexWidth k
         (roundRadix State input.length j)) ≤ 2 ^ (E * Fintype.card (Register k) + 3) := by
       have hsize := Nat.size_le.mpr (Nat.lt_two_pow_self (n := N))
       have hpow := two_pow_size_le N
-      unfold Cslib.InductiveCounting.registerBound guessWidth
+      unfold Cslib.InductiveCounting.registerBound vertexWidth
       have hs : N.size ≤ N := Nat.size_le.mpr Nat.lt_two_pow_self
       rw [pow_add]
       change N + 2 ^ N.size + N.size + 2 ≤ _

@@ -315,8 +315,8 @@ private theorem finsetTargetWitness {ι : Type*} (s : Finset ι) {g : α → ℤ
 
 /-- **Finite multiple-target robustness for `WPP`:** a `GapP` function that takes `0` outside `A`
 and one of a fixed finite family of nonzero polynomial-time targets on `A` witnesses `A ∈ WPP`
-(the fixed-`Finset` case of the product interpolation in
-[Hemaspaandra et al., Theorem 3.1][HemaspaandraEtAl2018]). -/
+(the fixed-`Finset` case of [Hemaspaandra et al., Theorem 3.7][HemaspaandraEtAl2018], whose proof
+is the product interpolation of their Theorem 3.1). -/
 theorem mem_WPP_of_finset_targets {ι : Type*} (s : Finset ι) {g : α → ℤ} {f : ι → α → ℤ}
     (hg : g ∈ GapP enc)
     (hf : ∀ i ∈ s, ComputableInPolyTime (f i) enc encIntBin)
@@ -367,7 +367,7 @@ theorem mem_LWPP_of_polyTime_index {g : α → ℤ} {f : ℕ → ℤ} {k : α �
       ((ComputableInPolyTime.unary_eval p).prod (.const 1))
   let F (n : ℕ) : ℤ := ((List.range (bound n)).map f).prod
   have hF : ComputableInPolyTime F encUnary encIntBin :=
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
+    ComputableInPolyTime.intBin_prod.comp
       ((ComputableInPolyTime.map hf).comp
         (ComputableInPolyTime.range.comp hbound))
   have hFn (n : ℕ) : F n ≠ 0 := List.prod_ne_zero (by simp [hn])
@@ -382,7 +382,7 @@ theorem mem_LWPP_of_polyTime_index {g : α → ℤ} {f : ℕ → ℤ} {k : α �
       (ComputableInPolyTime.decide_eq' (.snd enc encUnary) (hk.comp (.fst enc encUnary)))).of_enc_eq
       fun x => congrArg encBool (by simp)
   have hh : ComputableInPolyTime h enc encIntBin :=
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
+    ComputableInPolyTime.intBin_prod.comp
       ((ComputableInPolyTime.map hf).comp
         (ComputableInPolyTime.filterWithInput hlist htest))
   have hmul (a : α) : f (k a) * h a = F (enc a).length := by

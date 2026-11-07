@@ -40,7 +40,7 @@ example (State : Type) (oracle : Bool → StateT State PMF Bool)
     (s s' : State) (result : Bool × Bool × Bool)
     (transcript : OracleComp.Transcript (fun _ : Bool => Bool))
     (h : (result, s', transcript) ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (OracleComp.withTranscript oracle)) randomized).run (s, [])).support) :
     (transcript.map fun _ => 1).sum ≤ 2 :=
   ProbOracleComp.isCostBounded_iff_transcript_cost_le.mp randomized_queryBounds
@@ -84,7 +84,7 @@ private noncomputable def flipOracle (_ : Bool) : StateT Bool PMF Bool :=
 -- in reverse chronological order, and both state transitions are retained jointly.
 private theorem run_duplicatedRequests :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (OracleComp.withTranscript flipOracle)) duplicatedRequests).run (false, []) =
       PMF.pure ((false, true), false,
         ([⟨false, true⟩, ⟨false, false⟩] : OracleComp.Transcript (fun _ : Bool => Bool))) := by
@@ -105,20 +105,20 @@ example : ¬duplicatedRequests.IsQueryBounded 1 := by
 -- experiments on `randomized`.
 example :
     ProbComp.eval (Prod.fst <$> (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (memoize (fun _ : Bool => ProbComp.uniform Bool))) randomized).run []) =
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
           (Cslib.RandomOracle.answer (fun _ => PMF.uniformOfFintype Bool))) randomized).run
             (fun _ => none)).map Prod.fst := by
   have heager :
       ProbComp.eval (Prod.fst <$> (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
           (memoize (fun _ : Bool => ProbComp.uniform Bool))) randomized).run []) =
         (do
           let table ← PMF.pi (fun _ : Bool => PMF.uniformOfFintype Bool)
           OracleComp.interpret
-            (ProbOracleComp.handler ProbComp.unifOracle (fun q => PMF.pure (table q)))
+            (OracleComp.sumHandler ProbComp.unifOracle (fun q => PMF.pure (table q)))
               randomized) := by
     simpa only [ProbComp.eval_uniform] using
       Cslib.RandomOracle.eval_run_interpret_memoize_prob_eq_eager
@@ -129,7 +129,7 @@ example :
 -- only with respect to this storage bound, not the separate machine time certificate.
 example (result : Bool × Bool × Bool) (cache : List (Bool × Bool))
     (h : (result, cache) ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (memoize (fun _ : Bool => PMF.uniformOfFintype Bool))) randomized).run []).support) :
     (encList (encPair encBool encBool) cache).length ≤ 18 := by
   exact memoize_cache_size_le encBool encBool _ randomized 2 1 1 randomized_queryBounds
@@ -146,7 +146,7 @@ example : (true, [(false, true), (false, false)]) ∈
 -- Two equal sampling requests draw independently, even in the presence of an external oracle.
 example (State : Type) (oracle : Bool → StateT State PMF Bool) (s : State) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         ((do
           let first ← ProbOracleComp.sample (ProbComp.uniform Bool)
           let second ← ProbOracleComp.sample (ProbComp.uniform Bool)
@@ -196,7 +196,7 @@ private noncomputable def respond (caller : List Bool) (_ : Unit × List Bool)
 -- Reply size is unbounded in the caller, and the local invariant survives every sampled bit.
 example : IsPPTOn encBits (encPair encBits encBits) (fun word =>
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
         (requestHead word)).run word) := by
   apply requestHead_isOraclePPTOn.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
     (resources := fun caller _ => caller.length + 1)
@@ -214,7 +214,7 @@ example : IsPPTOn encBits (encPair encBits encBits) (fun word =>
 -- The same bit appears in the output and the returned state; no marginalization is hidden.
 example (word : List Bool) :
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
         (requestHead word)).run word) =
       (PMF.uniformOfFintype Bool).map (fun bit => ([bit], bit :: word)) := by
   rw [ProbOracleComp.eval_run_interpret]
@@ -226,7 +226,7 @@ example (word : List Bool) :
 -- The API accepts a different caller encoding and preprocessing without any machine annotation.
 example : IsPPTOn (encList encBool) (encPair encBits encBits) (fun word =>
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
         (requestHead word.reverse)).run word) := by
   apply requestHead_isOraclePPTOn.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
     (resources := fun caller _ => caller.length + 1)
@@ -263,7 +263,7 @@ example {β : Type} {output : β ↪ List Bool} {program : List Bool → WordOra
     (hprogram : IsOraclePPTOn encBits output program) :
     IsPPTOn encBits (encPair output (encList (encPair encBits encBits))) (fun word =>
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
           (fun request => memoize (fun _ => BitString.sampleList word.length) request.2))
             (program word)).run []) := by
   apply hprogram.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
@@ -284,7 +284,7 @@ example {β : Type} {output : β ↪ List Bool} {program : List Bool → WordOra
 -- The trace contains one external request despite private draws and an unbounded reply.
 example (n : ℕ) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (OracleComp.withTranscript (fun _ : Unit × List Bool =>
           fun state : ℕ => PMF.pure (List.replicate n true, state + 1))))
             (requestHead [])).run (7, []) =
@@ -310,7 +310,7 @@ example : ¬ IsOraclePPTOn encBits encBits
 example : IsPPTOn (encPair encBits (encList encBits))
     (encPair encBits (encPair encBits (encList encBits))) (fun pair =>
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
           (OracleComp.withSampleList [] (fun value _ state =>
             pure (value.take pair.1.length, value.take pair.1.length ++ state))))
               (requestHead pair.1)).run (pair.1, pair.2)) := by

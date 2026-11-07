@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Encoding
 
 /-!
@@ -35,10 +36,9 @@ theorem exec_copyOut {w : ℕ} (x : Data 32) (h1 : Fits w 1)
     ∃ y, ExecWithin w copyOut x y (7 * x.regs capacity + 4) ∧
       y.mem = ArrayCopy.copyPrefix x.mem (x.regs src) (x.regs output) (x.regs capacity) ∧
       (∀ i, i ≠ cell → i ≠ address → i ≠ accumulator → i ≠ one → y.regs i = x.regs i) := by
-  obtain ⟨z, hz, hm, _, _, _⟩ := ArrayCopy.exec_of_separated_or_eq (x.comap copyRegisters)
-    h1 hs hd hdisj
-  have he := hz.rename copyRegisters_injective
-  refine ⟨z.extend copyRegisters x, he, hm, ?_⟩
+  obtain ⟨y, he, ⟨hm, _, _, _⟩, -⟩ := ExecWithin.rename_post copyRegisters_injective
+    (ArrayCopy.exec_of_separated_or_eq (x.comap copyRegisters) h1 hs hd hdisj)
+  refine ⟨y, he, hm, ?_⟩
   intro i hc ha hv ho
   apply he.regs_eq
   have hp : ∀ i : Fin 32, i ≠ cell → i ≠ address → i ≠ accumulator → i ≠ one →

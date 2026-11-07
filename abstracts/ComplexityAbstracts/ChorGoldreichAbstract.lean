@@ -98,7 +98,7 @@ info: 'ComplexityAbstracts.ChorGoldreichAbstract.chor_goldreich_strong' depends 
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.ChorGoldreichAbstract`: 7 root
-declarations, 73 dependencies checked
+declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.ChorGoldreichAbstract

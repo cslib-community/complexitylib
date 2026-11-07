@@ -397,12 +397,11 @@ on `(δ₁, δ₂, ξ)` and are independent of `τ₂`. -/
 def projHash2FiberChangeEquiv (d : F.Desc) (α ρ : ZMod (F.order d)) :
     (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)) ≃
       (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)) where
-  toFun p :=
-    ((p.1.1 - α * (p.2.1 - ρ * p.2.2), p.2.1 - ρ * p.2.2),
-      (p.1.2 - α * p.2.2, p.2.2))
-  invFun q :=
-    ((q.1.1 + α * q.1.2, q.2.1 + α * q.2.2),
-      (q.1.2 + ρ * q.2.2, q.2.2))
+  toFun := fun ((δ₁, δ₂), (ξ, τ₂)) =>
+    let τ₁ := ξ - ρ * τ₂
+    ((δ₁ - α * τ₁, τ₁), (δ₂ - α * τ₂, τ₂))
+  invFun := fun ((σ₁, τ₁), (σ₂, τ₂)) =>
+    ((σ₁ + α * τ₁, σ₂ + α * τ₂), (τ₁ + ρ * τ₂, τ₂))
   left_inv p := by
     ext
     · dsimp only; ring
@@ -534,11 +533,13 @@ the probability over uniform `τ₂ : ZMod (F.order d)` that at least one tuple 
 theorem uniform_projHash2_fiber_any_le (d : F.Desc) [DecidableEq (F.Carrier d)]
     (α ρ δ₁ δ₂ ξ : ZMod (F.order d))
     (queries : List (ZMod (F.order d) × ZMod (F.order d) × ZMod (F.order d) × F.Carrier d))
-    (hq : ∀ q ∈ queries, q.2.1 ≠ α * q.1 ∧ q.2.2.1 ≠ ρ) :
+    (hq : ∀ q ∈ queries,
+      let (β', γ', ρ', _) := q
+      γ' ≠ α * β' ∧ ρ' ≠ ρ) :
     ((PMF.uniformOfFintype (ZMod (F.order d))).map (fun τ₂ =>
-      queries.any (fun q =>
-        decide (projHash2 F d (δ₁ - α * (ξ - ρ * τ₂)) (ξ - ρ * τ₂) (δ₂ - α * τ₂) τ₂ q.2.2.1
-          (q.1 • F.generator d) (q.2.1 • F.generator d) = q.2.2.2)))) true ≤
+      queries.any (fun (β', γ', ρ', z') =>
+        decide (projHash2 F d (δ₁ - α * (ξ - ρ * τ₂)) (ξ - ρ * τ₂) (δ₂ - α * τ₂) τ₂
+          ρ' (β' • F.generator d) (γ' • F.generator d) = z')))) true ≤
       (queries.length : ℝ≥0∞) / (F.order d : ℝ≥0∞) := by
   let μ := PMF.uniformOfFintype (ZMod (F.order d))
   let hit (q : ZMod (F.order d) × ZMod (F.order d) × ZMod (F.order d) × F.Carrier d)
@@ -550,7 +551,9 @@ theorem uniform_projHash2_fiber_any_le (d : F.Desc) [DecidableEq (F.Carrier d)]
     simp
   | cons q qs ih =>
     have hq_head : q.2.1 ≠ α * q.1 ∧ q.2.2.1 ≠ ρ := hq q List.mem_cons_self
-    have hq_tail : ∀ q' ∈ qs, q'.2.1 ≠ α * q'.1 ∧ q'.2.2.1 ≠ ρ :=
+    have hq_tail : ∀ q' ∈ qs,
+        let (β', γ', ρ', _) := q'
+        γ' ≠ α * β' ∧ ρ' ≠ ρ :=
       fun q' hmem => hq q' (List.mem_cons_of_mem q hmem)
     have hor :
         (μ.map (fun τ₂ => (q :: qs).any (fun q' => hit q' τ₂))) true ≤
@@ -586,15 +589,13 @@ def projHash2Equiv (d : F.Desc) {α β γ β' γ' ρ ρ' : ZMod (F.order d)}
     (hγ : γ ≠ α * β) (hγ' : γ' ≠ α * β') (hρ : ρ' ≠ ρ) :
     (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)) ≃
       (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)) where
-  toFun p :=
-    ((p.1.1 + α * p.1.2, p.2.1 + α * p.2.2),
-      (β * (p.1.1 + ρ * p.2.1) + γ * (p.1.2 + ρ * p.2.2),
-        β' * (p.1.1 + ρ' * p.2.1) + γ' * (p.1.2 + ρ' * p.2.2)))
-  invFun q :=
-    let δ₁ := q.1.1
-    let δ₂ := q.1.2
-    let ξ := (γ - α * β)⁻¹ * (q.2.1 - β * (δ₁ + ρ * δ₂))
-    let ξ' := (γ' - α * β')⁻¹ * (q.2.2 - β' * (δ₁ + ρ' * δ₂))
+  toFun := fun ((σ₁, τ₁), (σ₂, τ₂)) =>
+    ((σ₁ + α * τ₁, σ₂ + α * τ₂),
+      (β * (σ₁ + ρ * σ₂) + γ * (τ₁ + ρ * τ₂),
+        β' * (σ₁ + ρ' * σ₂) + γ' * (τ₁ + ρ' * τ₂)))
+  invFun := fun ((δ₁, δ₂), (z, z')) =>
+    let ξ := (γ - α * β)⁻¹ * (z - β * (δ₁ + ρ * δ₂))
+    let ξ' := (γ' - α * β')⁻¹ * (z' - β' * (δ₁ + ρ' * δ₂))
     let τ₂ := (ρ' - ρ)⁻¹ * (ξ' - ξ)
     let τ₁ := ξ - ρ * τ₂
     ((δ₁ - α * τ₁, τ₁), (δ₂ - α * τ₂, τ₂))
@@ -676,10 +677,11 @@ def projHash2Equiv (d : F.Desc) {α β γ β' γ' ρ ρ' : ZMod (F.order d)}
 theorem projHash2_bijective_of_ne (d : F.Desc) {α β γ β' γ' ρ ρ' : ZMod (F.order d)}
     (hγ : γ ≠ α * β) (hγ' : γ' ≠ α * β') (hρ : ρ' ≠ ρ) :
     Function.Bijective
-      (fun p : (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)) =>
-        (projHash2Aux F d p.1.1 p.1.2 p.2.1 p.2.2 (α • F.generator d),
-          (projHash2 F d p.1.1 p.1.2 p.2.1 p.2.2 ρ (β • F.generator d) (γ • F.generator d),
-            projHash2 F d p.1.1 p.1.2 p.2.1 p.2.2 ρ'
+      (fun (((σ₁, τ₁), (σ₂, τ₂)) :
+          (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d))) =>
+        (projHash2Aux F d σ₁ τ₁ σ₂ τ₂ (α • F.generator d),
+          (projHash2 F d σ₁ τ₁ σ₂ τ₂ ρ (β • F.generator d) (γ • F.generator d),
+            projHash2 F d σ₁ τ₁ σ₂ τ₂ ρ'
               (β' • F.generator d) (γ' • F.generator d)))) := by
   have hcomp :
       (fun p : (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)) =>
@@ -708,10 +710,10 @@ theorem uniform_projHash2_apply_of_ne (d : F.Desc) {α β γ β' γ' ρ ρ' : ZM
     (hγ : γ ≠ α * β) (hγ' : γ' ≠ α * β') (hρ : ρ' ≠ ρ) (h₁ h₂ z z' : F.Carrier d) :
     ((PMF.uniformOfFintype
       ((ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)))).map
-      (fun p =>
-        (projHash2Aux F d p.1.1 p.1.2 p.2.1 p.2.2 (α • F.generator d),
-          (projHash2 F d p.1.1 p.1.2 p.2.1 p.2.2 ρ (β • F.generator d) (γ • F.generator d),
-            projHash2 F d p.1.1 p.1.2 p.2.1 p.2.2 ρ'
+      (fun ((σ₁, τ₁), (σ₂, τ₂)) =>
+        (projHash2Aux F d σ₁ τ₁ σ₂ τ₂ (α • F.generator d),
+          (projHash2 F d σ₁ τ₁ σ₂ τ₂ ρ (β • F.generator d) (γ • F.generator d),
+            projHash2 F d σ₁ τ₁ σ₂ τ₂ ρ'
               (β' • F.generator d) (γ' • F.generator d))))) ((h₁, h₂), (z, z')) =
       ((F.order d : ℝ≥0∞) ^ 4)⁻¹ := by
   obtain ⟨δ₁, rfl⟩ := F.smul_generator_surjective d h₁

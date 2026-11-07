@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.ExactTriangle.FailureAccounting
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Indexing
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Failures
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Exec
 
 /-!
 # Global accounting for actual catalogue query blocks
@@ -41,7 +42,7 @@ The constant includes the outer loop's two control instructions. -/
     (values : ℕ → ℤ) (mem : ℕ → ℕ) (idx : InstanceIndex p) : ℕ :=
   let Q := RecordProduct.recordQueryCount n (D m) p values idx
   let qs := RecordProduct.decodedQueries hn mem (RecordProduct.recordQueries n (D m) p idx) Q
-  RecordProduct.timeBound (m := m) qs + 5 * Nat.sqrt (D m) + 8 * Q + 61
+  RecordBoxProduct.timeBound (m := m) qs + 5 * Nat.sqrt (D m) + 8 * Q + 61
 
 /-- Number of accepted queries without an original witness in one actual producer block.
 This is a value specification for charged native scans, not an executable scan oracle. -/

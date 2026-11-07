@@ -59,11 +59,11 @@ example : ∃ N₀_leaf N₀_top C_t d_t A_t : ℕ, 1 ≤ A_t ∧
     ∀ x : (Unit × ℕ) × Logic.PL.CNF ℕ, x.2.length ≤ leafOccBound 3 x.1.2 * x.1.2 + 1 →
       ((branchedSparseCNFDeclaredCertificate 3 N₀_leaf N₀_top 16384
           boundedIncidenceBranchCertificate branchBound16384).time x : ℝ) ≤
-        (C_t : ℝ) * ((encPair (encPair Universal.encUnit encUnary) encCNF x).length + 1 : ℝ) ^
+        (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^
           d_t * (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale x.1.2) ∧
       ((branchedSparseCNFLeafCertificate 3 N₀_leaf N₀_top 16384
           boundedIncidenceBranchCertificate branchBound16384).time x : ℝ) ≤
-        (C_t : ℝ) * ((encPair (encPair Universal.encUnit encUnary) encCNF x).length + 1 : ℝ) ^
+        (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^
           d_t * (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale x.1.2) :=
   exists_branchedSparseCNF_time_bound 3 16384 boundedIncidenceBranchCertificate branchBound16384
     polyBounded_boundedIncidenceBranchCertificate_space

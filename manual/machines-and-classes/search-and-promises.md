@@ -1,0 +1,48 @@
+# Search relations and promises
+
+[Chapter index](index.md) · [Verifier models](verifiers-counting-interaction.md)
+
+A decision language, a search relation and a promise problem impose different obligations. Complexitylib makes those obligations explicit while reusing the native polynomial-time machine interface. This avoids treating finite failure to find an answer as a solution to an unrestricted total-search task. [complexitylib][complexitylib]
+
+## Search relations
+
+A search problem is `R : α → List Bool → Prop`. [FNP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP.lean#L173) requires a native polynomial-time decision procedure for this relation on framed input/witness pairs and a polynomial bound on **every** solution's length. It does not fix one exact witness length, unlike the base NP verifier convention.
+
+[SolvesSearch](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP.lean#L133) is a contract for a total function `α → Option (List Bool)`: any `some w` must be a solution, and `none` is allowed only when no solution exists. [FPSearch](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP.lean#L180) consists of FNP relations with a native polynomial-time solver of this form. [TFNP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP.lean#L185) consists of total FNP relations, so a solver cannot legitimately return `none` on any input.
+
+The domain of an FNP relation is an NP language, and every NP language arises this way. The search-to-decision development constructs witnesses through prefix queries and proves the relationship between polynomial-time search and decision. A disjoint sum of witnesses for a language and its complement makes the standard `NP ∩ coNP` connection to TFNP. These are theorems about the stated solver contracts; TFNP is not defined by an unchecked terminating Lean function that selects a witness. [FNP/NP bridge](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP.lean#L269) [Search-to-decision](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP/SearchToDecision.lean#L15)
+
+[SearchReducible](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP.lean#L396) uses a polynomial-time map of instances and a polynomial-time map taking any target solution back to a source solution. For partial relations it also preserves existence of a solution. That extra condition prevents a target solver from correctly returning `none` on an instance for which the source has a solution. For a total target this obligation holds automatically. The maps retain explicit encodings and therefore include their actual native implementation cost.
+
+## Total-search principle models
+
+The four subclasses are defined through uniform polynomial-time families of finite problems on `n(a)`-bit vertices. The dimension function must be computable in unary in polynomial time, so exponentially wide vertices cannot be hidden in a short binary dimension. Local functions receive the original encoded input and a candidate vertex. [TFNP subclasses](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP/Subclasses.lean#L20)
+
+| Class | Finite principle and accepted witness | Encoding/resource choice |
+|---|---|---|
+| PLS | A local minimum for a cost function and one neighbor function | Costs are binary natural numbers; dimension is unary; both functions are native polynomial time |
+| PPP | A preimage of the zero vertex or a collision of a map on the cube | Candidate outputs have the fixed vertex width |
+| PPAD | Another unbalanced vertex of a predecessor/successor graph with degrees at most one, or a defect at the designated zero source | Only mutually consistent predecessor/successor links form active edges |
+| PPA | Another odd-degree vertex of an undirected degree-at-most-two graph, or an even-degree defect at the designated zero source | Two neighbor maps describe the implicit graph |
+
+The underlying finite combinatorial principles prove totality. Membership is then closed under search reductions. The canonical problems `LocalOpt`, `Pigeon`, `EndOfLine`, and `Leaf` provide raw De Morgan circuit codes and unary width as input. The circuit evaluator is polynomial-time, and the reverse direction compiles uniform native polynomial-time family computations to circuits. Thus these are uniform-family models with checked canonical circuit presentations, not merely four axiomatic class names.
+
+The completed results include membership in TFNP, `PPAD ⊆ PPP`, `PPAD ⊆ PPA`, and the four search-completeness theorems: [Pigeon_searchComplete](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean#L222), [EndOfLine_searchComplete](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean#L228), [Leaf_searchComplete](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean#L234), and [LocalOpt_searchComplete](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP/Subclasses/Completeness.lean#L240). Circuit syntax itself is discussed in the circuits chapter.
+
+## Promise computation
+
+[PromiseProblem](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Promise/Basic.lean#L66) contains disjoint yes and no sets. Answers on the remaining instances are unconstrained, while the machine realizing a total Boolean function still has its prescribed resource bound on valid encoded inputs. `ofSet` embeds ordinary decision languages by taking the complement as the no set.
+
+The generic `promiseClass C` lifts a decision class through separating completions: there must be one language in `C` containing every promised yes instance and no promised no instance. `PromiseP` and `PromiseNP` are these lifts, and their explicit machine/verifier characterizations are proved. [promiseClass](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Promise/Basic.lean#L130)
+
+Randomized promise classes use one-sided or bounded-error constraints only on their yes/no sets. They should not be assumed to be the generic completion lift: an algorithm can have an intermediate acceptance probability outside the promise, and producing a global bounded-error completion is an additional claim. [PromiseBPP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BPP.lean#L156) and [PromiseRP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/RP.lean#L130) are defined directly. Native strict-PPT characterizations retain the promise boundary; oracle reductions must tolerate every admissible behavior outside it.
+
+Time-bounded promise classes, PP promises, circuit promises and promise reductions reuse these contracts. They are variants of the preceding machine, count or circuit semantics, not a new instruction set. The distinction is material in gap versions of Kolmogorov problems: a gap leaves a deliberate intermediate region, rather than classifying that region arbitrarily as no.
+
+## Representative tests and limits
+
+[TFNP.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/TFNP.lean#L1) and [TFNPCompleteness.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/TFNPCompleteness.lean#L1) contain concrete search-family/canonical-problem clients. [PromiseProbabilistic.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/PromiseProbabilistic.lean#L1) exercises the strict-PPT promise bridge. Their presence is source evidence for instantiated contracts, not a new compilation result.
+
+This page does not claim complexity lower bounds for solving the four canonical total-search problems. Their totality and completeness are distinct from a separation from polynomial-time search. Nor does it claim that every abstract selection function supplied by classical choice has a native algorithm.
+
+[complexitylib]: ../sources.md#complexitylib

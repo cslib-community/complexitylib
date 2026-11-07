@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Flat
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.ThinProduct
+public import Complexity.Algorithms.WordRAM.NatSqrt
 public import Complexity.Computability.WordRAM.Power
 
 /-!
@@ -198,16 +199,13 @@ def countBody : Code .standard 96 :=
 def countMasks : Code .standard 96 :=
   .seq (ram[ mask ← #0; count ← #0 ]) (.loop (.lt mask masks) countBody)
 
-/-- One explicitly squared trial in the integer square-root search. -/
-def rootBody : Code .standard 96 := ram[
-  root ← root + one; temporary ← root + one; square ← temporary * temporary ]
+/-- Embed the six-register integer square-root kernel into the band-preparation register bank. -/
+def rootRegisters : Fin 6 → Fin 96 := ![count, root, temporary, square, one, limit]
 
-/-- Compute the integer square root by squared comparisons. No square-root instruction
-is added to the native basis. -/
+/-- Compute the integer square root and its square by renaming `NatSqrt.program` and charging
+one final multiplication. No square-root instruction is added to the native basis. -/
 def rootCode : Code .standard 96 :=
-  .seq (ram[
-  root ← #0; square ← #1; limit ← count + one
-  ]) (.seq (.loop (.lt square limit) rootBody) (ram[ square ← root * root ]))
+  .seq (NatSqrt.program.rename rootRegisters) (ram[ square ← root * root ])
 
 /-- Compute the ceiling quotient giving the number of bands. -/
 def bandCount : Code .standard 96 := ram[

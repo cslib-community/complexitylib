@@ -357,10 +357,8 @@ private theorem sum_uniformOfFinset_le_mul_uniformOfFintype {n : ℕ}
 /-- The trivial inverter that ignores the challenge image and samples a uniform $k$-bit string. -/
 private noncomputable def trivialInverter : Inverter := fun k _ => BitString.sampleList k
 
-@[local program_certificate]
-private theorem isPPT_trivialInverter : IsPPT encBits trivialInverter := by
-  unfold trivialInverter
-  ppt
+private theorem isPPT_trivialInverter : IsPPT encBits trivialInverter :=
+  (ComputableInPolyTime.fst encUnary encBits).sampleList
 
 /-- If $S_{k, r}$ is a regularity bucket of `finiteFunction` with
 $2^k \le (k + 1) \cdot |S_{k, r}|$, then the trivial inverter inverts $g$ at parameter $k$
@@ -425,18 +423,17 @@ private theorem trivialInverter_succ_ge {g : List Bool → List Bool} {imgLen : 
     Nat.cast_pow, Nat.cast_ofNat, ← Finset.mul_sum, ← Finset.sum_filter,
     Finset.filter_univ_mem, Finset.sum_const, nsmul_eq_mul]
   have hdense_real : (2 : ℝ) ^ k ≤ (k + 1 : ℝ) * (S.card : ℝ) := by exact_mod_cast hdense
-  rw [div_le_iff₀ (by positivity)]
-  have hrew : ((2 : ℝ) ^ k)⁻¹ * ((S.card : ℝ) * ((2 : ℝ) ^ r.val / (2 : ℝ) ^ k)) *
-      ((k + 1 : ℝ) * (2 : ℝ) ^ k) =
-      ((2 : ℝ) ^ r.val / (2 : ℝ) ^ k) * ((k + 1 : ℝ) * (S.card : ℝ)) := by
-    have h2k : (2 : ℝ) ^ k ≠ 0 := by positivity
-    field_simp
-  rw [hrew]
-  have hgoal := mul_le_mul_of_nonneg_left hdense_real
-    (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ r.val / (2 : ℝ) ^ k)
-  have hcancel : ((2 : ℝ) ^ r.val / (2 : ℝ) ^ k) * (2 : ℝ) ^ k = (2 : ℝ) ^ r.val :=
-    div_mul_cancel₀ _ (by positivity)
-  linarith
+  have hmul : (2 : ℝ) ^ r.val / ((k + 1 : ℝ) * (2 : ℝ) ^ k) ≤
+      (2 : ℝ) ^ r.val * (S.card : ℝ) / ((2 : ℝ) ^ k * (2 : ℝ) ^ k) := by
+    rw [div_le_div_iff₀ (by positivity) (by positivity)]
+    calc
+      (2 : ℝ) ^ r.val * ((2 : ℝ) ^ k * (2 : ℝ) ^ k)
+        = ((2 : ℝ) ^ r.val * (2 : ℝ) ^ k) * (2 : ℝ) ^ k := by ring
+      _ ≤ ((2 : ℝ) ^ r.val * (2 : ℝ) ^ k) * ((k + 1 : ℝ) * (S.card : ℝ)) :=
+        mul_le_mul_of_nonneg_left hdense_real (by positivity)
+      _ = (2 : ℝ) ^ r.val * (S.card : ℝ) * ((k + 1 : ℝ) * (2 : ℝ) ^ k) := by ring
+  refine hmul.trans_eq ?_
+  ring
 
 /-- For any one-way function $g$ with fixed output length `imgLen` and any sequence of dense
 regularity indices $r(k)$, for every constant $D \in \mathbb{N}$ we eventually have
@@ -469,8 +466,8 @@ theorem eventually_regularity_gap {g : List Bool → List Bool} (hg : OneWay g)
   have hpow_le : (2 : ℝ) ^ ((r k).val + D * Nat.log 2 k) ≤ (2 : ℝ) ^ k := by
     have hpos : (0 : ℝ) < k + 1 := by positivity
     have h1 : (2 : ℝ) ^ (r k).val * (k + 1 : ℝ) ^ D ≤ (2 : ℝ) ^ k := by
-      rw [hpow_D] at hcross
-      nlinarith
+      rw [hpow_D, mul_left_comm] at hcross
+      exact le_of_mul_le_mul_left hcross hpos
     calc
       (2 : ℝ) ^ ((r k).val + D * Nat.log 2 k)
         = (2 : ℝ) ^ (r k).val * ((2 : ℝ) ^ (Nat.log 2 k)) ^ D := by
@@ -837,7 +834,9 @@ private theorem ofFn_packSeedEmb {imgLen : ℕ → ℕ} {d γ_core k n r : ℕ}
     (hr : r ≤ k) (hfits : coreSeedLen imgLen d γ_core k ≤ n)
     (t : SeedTuple imgLen d γ_core k n) :
     List.ofFn (packSeedEmb hr hfits t) = packSeedWords r t :=
-  ofFn_ofList (length_packSeedWords hr hfits t)
+  -- Unfold the embedding first: unifying it with `ofList` directly takes seconds.
+  (congrArg List.ofFn (congrFun (Function.Embedding.coeFn_mk _ _) t)).trans
+    (ofFn_ofList (length_packSeedWords hr hfits t))
 
 /-- Evaluating `rawGen` on a packed seed recovers the exact concatenation of `pad`, `h1`,
 `wordHash l1 h1 (g x)`, `h2`, and `wordHash (l2 + mActual) h2 x`. -/
@@ -994,7 +993,7 @@ private theorem dist_seededHash_regularityBucket_fiber_le {k m2 c2 : ℕ} {Image
   intro side source seed2 hash2
   split_ifs with hm2_zero
   · subst m2
-    have hsub : Subsingleton (BitString 0) := inferInstanceAs (Subsingleton (Fin 0 → Bool))
+    have hsub : Subsingleton (BitString 0) := ⟨fun _ _ => funext fun i => i.elim0⟩
     have heq : (side.bind fun x₀ => (seededHash seed2 (source x₀) hash2).map (x₀, ·)) =
         (side.bind fun x₀ =>
           (seed2.bind fun h2 => (PMF.uniformOfFintype (BitString 0)).map (h2, ·)).map (x₀, ·)) := by
@@ -1078,20 +1077,21 @@ $((h_1, \mathrm{hash}_1(h_1, f(x))), (h_2, \mathrm{hash}_2(h_2, x)))$. -/
 private noncomputable def coreLHLDist {k imgLen_k m1 m2 c2 : ℕ}
     (f : BitString k → BitString imgLen_k) (r : Fin (k + 1))
     (hS : (regularityBucket f r).Nonempty) (hm1 : m1 ≤ k) (hm2 : m2 ≤ c2) :
-    PMF ((BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) :=
-  (PMF.uniformOfFinset (regularityBucket f r) hS).bind fun x =>
-    (PMF.uniformOfFintype (BitString (k * imgLen_k))).bind fun h1 =>
-      (PMF.uniformOfFintype (BitString (c2 * k))).map fun h2 =>
-        ((h1, LinearHash.hash (block h1 ∘ Fin.castLE hm1) (f x)),
-          (h2, LinearHash.hash (block h2 ∘ Fin.castLE hm2) x))
+    PMF ((BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) := do
+  let x ← PMF.uniformOfFinset (regularityBucket f r) hS
+  let h1 ← PMF.uniformOfFintype (BitString (k * imgLen_k))
+  (PMF.uniformOfFintype (BitString (c2 * k))).map fun h2 =>
+    ((h1, LinearHash.hash (block h1 ∘ Fin.castLE hm1) (f x)),
+      (h2, LinearHash.hash (block h2 ∘ Fin.castLE hm2) x))
 
 /-- Ideal uniform core tuple distribution matching `coreLHLDist`. -/
 private noncomputable def unifCoreDist (k imgLen_k m1 m2 c2 : ℕ) :
-    PMF ((BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) :=
-  ((PMF.uniformOfFintype (BitString (k * imgLen_k))).bind fun h1 =>
-    (PMF.uniformOfFintype (BitString m1)).map (h1, ·)).bind fun p1 =>
-      ((PMF.uniformOfFintype (BitString (c2 * k))).bind fun h2 =>
-        (PMF.uniformOfFintype (BitString m2)).map fun d2 => (p1, (h2, d2)))
+    PMF ((BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) := do
+  let p1 ← do
+    let h1 ← PMF.uniformOfFintype (BitString (k * imgLen_k))
+    (PMF.uniformOfFintype (BitString m1)).map (h1, ·)
+  let h2 ← PMF.uniformOfFintype (BitString (c2 * k))
+  (PMF.uniformOfFintype (BitString m2)).map fun d2 => (p1, (h2, d2))
 
 /-- Statistical distance between `coreLHLDist` and `unifCoreDist` is bounded by the sum of the
 fiber leftover-hash error on $x$ and the image leftover-hash error on $f(x)$
@@ -1122,6 +1122,7 @@ private theorem dist_coreLHLDist_unifCoreDist_le {k imgLen_k m1 m2 c2 : ℕ}
   have hcore_eq : coreLHLDist f r hS hm1 hm2 =
       (side.bind fun x₀ => (seededHash seed2 (source x₀) hash2).map (x₀, ·)).bind stepF := by
     unfold coreLHLDist
+    simp only [PMF.monad_bind_eq_bind]
     conv_lhs => rw [← bind_regularityBucket_fiber_eq f r hS]
     change ((side.bind source).bind fun x => seed1.bind fun h1 =>
       seed2.map fun h2 => ((h1, hash1 h1 (f x)), (h2, hash2 h2 x))) = _
@@ -1157,7 +1158,8 @@ private theorem dist_coreLHLDist_unifCoreDist_le {k imgLen_k m1 m2 c2 : ℕ}
   have hunif_eq : unifCoreDist k imgLen_k m1 m2 c2 =
       (seed1.bind fun h1 => (PMF.uniformOfFintype (BitString m1)).map (h1, ·)).bind
         fun p1 => unif2.map (p1, ·) := by
-    simp [unifCoreDist, seed1, seed2, unif2, PMF.map_bind, PMF.map_comp, Function.comp_def]
+    simp [unifCoreDist, seed1, seed2, unif2, PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp,
+      Function.comp_def]
   have hhash1 : IsTwoUniversal seed1 hash1 := isTwoUniversal_block_prefix hm1
   have hdist2 : dist midCore (unifCoreDist k imgLen_k m1 m2 c2) ≤
       Real.sqrt ((2 : ℝ) ^ m1 * ((2 * (k + 1 : ℝ) * (2 : ℝ) ^ r.val) / (2 : ℝ) ^ k)) / 2 := by
@@ -1254,14 +1256,6 @@ private theorem bind_four_comm_fifth {α₁ α₂ α₃ α₄ α₅ β : Type*}
   congr 1; funext a₃
   exact PMF.bind_comm p₄ p₅ (fun a₄ a₅ => PMF.pure (F a₁ a₂ a₃ a₄ a₅))
 
-private theorem uniformList_map_ofList (m : ℕ) :
-    (uniformList m).map (ofList m) = PMF.uniformOfFintype (BitString m) := by
-  unfold uniformList
-  rw [PMF.map_comp]
-  have hid : ofList m ∘ (List.ofFn : BitString m → List Bool) = id := by
-    funext x; exact ofList_ofFn x
-  rw [hid, PMF.map_id]
-
 private theorem ofList_take_eq_ofList (m : ℕ) (w : List Bool) :
     ofList m (w.take m) = ofList m w := by
   funext i
@@ -1302,10 +1296,10 @@ private theorem unifCoreDist_bind_packLHL (k imgLen_k m1 m2 c2 padLen m_lhl : �
             (PMF.uniformOfFintype (BitString m2)).map fun d2 =>
               List.ofFn pad ++ List.ofFn h1 ++ List.ofFn d1 ++
                 List.ofFn h2 ++ List.ofFn d2).map (ofList m_lhl) := by
-    simp only [unifCoreDist, PMF.bind_bind, PMF.bind_map, PMF.map_bind,
+    simp only [unifCoreDist, PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, PMF.map_bind,
       PMF.map_comp, Function.comp_def]
     exact bind_four_comm_fifth _ _ _ _ _ _
-  rw [h1, uniformOfFintype_five_append, hlen, uniformList_map_ofList]
+  rw [h1, uniformOfFintype_five_append, hlen, Cslib.BitString.uniformList_ofList]
 
 /-- Conditional entropy preservation for `fullGen` on `condSeedSet`:
 when `coreLHLDist` is within `1 / (lhlPrefixLen d k n) ^ 2` of `unifCoreDist`, the Shannon
@@ -1391,6 +1385,7 @@ private theorem entropy_fullGen_condSeedSet_ge (g : List Bool → List Bool) (im
       dsimp [D_seed]
       rw [h1, h2]
     dsimp only [D_lhl, coreLHLDist, packLHL]
+    simp only [PMF.monad_bind_eq_bind]
     rw [hcond_seed]
     refine map_bind_four_eq_bind_three_map _ _ _ _ _ _ _ _ fun x h1 h2 pad => ?_
     have hplen : (packSeedWords (r k).val (x, h1, h2, pad)).length = n :=
@@ -1523,8 +1518,17 @@ private theorem computableTidilyInPolyTime_wordStepPredictor {α : Type} {encode
       (fun a => wordStepPredictor evaluate (n a) (k a) (m1 a) (idx a) (pad a) (h1 a)
         (image a) (h2 a) (digest a) (r_word a) (pol_word a) (z_tail a) (coins a) (query a))
       encode encBool := by
-  unfold wordStepPredictor
-  fun_prop
+  -- `fun_prop` takes seconds to find this composition through the case split.
+  have heval : ComputableTidilyInPolyTime
+      (fun a => evaluate (n a, wordChallenge (k a) (m1 a) (idx a) (pad a) (h1 a) (image a) (h2 a)
+        (digest a) (r_word a) (z_tail a) (query a)) (coins a)) encode encBool :=
+    hevaluate.comp' ((hn.prod (computableTidilyInPolyTime_wordChallenge hk hm1 hidx hpad hh1
+      himage hh2 hdigest hr_word hz_tail hquery)).prod hcoins)
+  have hr_bit : ComputableTidilyInPolyTime (fun a => (r_word a).headD false) encode encBool :=
+    (ComputableTidilyInPolyTime.headD false).comp' hr_word
+  exact ComputableTidilyInPolyTime.bool_xor.comp'
+    ((heval.ite' hr_bit (ComputableTidilyInPolyTime.bool_not.comp' hr_bit)).prod
+      ((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp' hpol_word))
 
 /-- Coin budget for the PRG distinguisher on an output of length `n + γ * Nat.log 2 n` at
 security parameter `n`. -/
@@ -1891,6 +1895,13 @@ private theorem fiber_step_diff_le {k imgLen_k : ℕ}
       Bool :=
     (evaluate (n, wordChallenge k m1 (m2 + j) pad h1 (List.ofFn (f x₀))
       (h2Word rows) (digestWord rows x) [b] z_tail (List.ofFn query)) coins) ^^ pol
+  have h1_upd (rows : Fin c2 → BitString k) (query : BitString k) :
+      h2Word (Function.update rows idx query) =
+        spliceMatrixWord k (m2 + j) (h2Word rows) (List.ofFn query) :=
+    (spliceMatrixWord_eq_ofFn_update rows idx query).symm
+  have h2_upd (rows : Fin c2 → BitString k) (query : BitString k) (x : BitString k) :
+      digestWord (Function.update rows idx query) x = digestWord rows x := by
+    dsimp only [digestWord]; rw [update_comp_castLE_of_eq rows idx query hlen rfl]
   have hp_succ : p_succ =
       (PMF.uniformOfFintype (Fin c2 → BitString k)).bind fun rows =>
         (PMF.uniformOfFintype {x : BitString k // f x = f x₀}).bind fun x =>
@@ -1898,19 +1909,9 @@ private theorem fiber_step_diff_le {k imgLen_k : ℕ}
             evalBit rows x.val query (x.val ⬝ᵥ query) := by
     dsimp only [p_succ]
     rw [← uniformOfFintype_bind_bind_update_row idx, PMF.bind_comm]
-    congr 1; funext rows
-    simp only [PMF.map, Function.comp_def]
-    rw [PMF.bind_comm]
-    congr 1; funext x
-    congr 1; funext query
-    have h1_upd : h2Word (Function.update rows idx query) =
-        spliceMatrixWord k (m2 + j) (h2Word rows) (List.ofFn query) :=
-      (spliceMatrixWord_eq_ofFn_update rows idx query).symm
-    have h2_upd : digestWord (Function.update rows idx query) x.val = digestWord rows x.val := by
-      dsimp only [digestWord]
-      rw [update_comp_castLE_of_eq rows idx query hlen rfl]
-    have h3_upd : Function.update rows idx query idx = query := Function.update_self idx query rows
-    simp only [evalBit, wordChallenge, h1_upd, h2_upd, h3_upd]
+    congr 1; funext rows; simp only [PMF.map, Function.comp_def]; rw [PMF.bind_comm]
+    congr 1; funext x; congr 1; funext query
+    simp only [evalBit, wordChallenge, h1_upd, h2_upd, Function.update_self]
   have hp_curr : p_curr =
       (PMF.uniformOfFintype (Fin c2 → BitString k)).bind fun rows =>
         (PMF.uniformOfFintype {x : BitString k // f x = f x₀}).bind fun x =>
@@ -1918,16 +1919,8 @@ private theorem fiber_step_diff_le {k imgLen_k : ℕ}
             (PMF.uniformOfFintype Bool).map (evalBit rows x.val query) := by
     dsimp only [p_curr]
     rw [← uniformOfFintype_bind_bind_update_row idx, PMF.bind_comm]
-    congr 1; funext rows
-    rw [PMF.bind_comm]
-    congr 1; funext x
-    congr 1; funext query
-    have h1_upd : h2Word (Function.update rows idx query) =
-        spliceMatrixWord k (m2 + j) (h2Word rows) (List.ofFn query) :=
-      (spliceMatrixWord_eq_ofFn_update rows idx query).symm
-    have h2_upd : digestWord (Function.update rows idx query) x.val = digestWord rows x.val := by
-      dsimp only [digestWord]
-      rw [update_comp_castLE_of_eq rows idx query hlen rfl]
+    congr 1; funext rows; rw [PMF.bind_comm]
+    congr 1; funext x; congr 1; funext query
     simp only [evalBit, wordChallenge, h1_upd, h2_upd]
   have hpred_eq (r_bit : Bool) (rows : Fin c2 → BitString k) (x : BitString k) :
       (fun query => if evalBit rows x query r_bit then r_bit else !r_bit) =
@@ -1959,10 +1952,9 @@ private theorem fiber_step_diff_le {k imgLen_k : ℕ}
     · refine Finset.sum_congr rfl fun rows _ => ?_
       rw [PMF.bind_apply_toReal, PMF.bind_apply_toReal]
       rw [← mul_sub, ← Finset.sum_sub_distrib, ← mul_assoc, mul_comm 2, mul_assoc, Finset.mul_sum]
-      congr 1
-      refine Finset.sum_congr rfl fun x _ => ?_
+      refine congrArg (_ * ·) (Finset.sum_congr rfl fun x _ => ?_)
       rw [← mul_sub, ← mul_assoc, mul_comm 2, mul_assoc]
-      congr 1
+      refine congrArg (_ * ·) ?_
       simp_rw [← hpred_eq _ rows x.val]
       exact (sum_bool_agreement_eq (evalBit rows x.val) x.val).symm
     · exact sum_mul_sum_mul_sum_comm _ _ _ _
@@ -2066,16 +2058,53 @@ private noncomputable def fiberHybridAcceptDist {k imgLen_k : ℕ}
     (n d γ_core r_val padLen m coinLen j : ℕ)
     (hlen : l2Val d k r_val + j ≤ h2Rows d γ_core k) : PMF Bool :=
   haveI : Nonempty {x : BitString k // f x = f x₀} := ⟨⟨x₀, rfl⟩⟩
-  (BitString.uniformList padLen).bind fun pad =>
-    (BitString.uniformList (k * imgLen_k)).bind fun h1 =>
-      (BitString.uniformList (m - j)).bind fun z_tail =>
-        (BitString.uniformList coinLen).bind fun coins =>
-          (PMF.uniformOfFintype (Fin (h2Rows d γ_core k) → BitString k)).bind fun rows =>
-            (PMF.uniformOfFintype {x : BitString k // f x = f x₀}).map fun x =>
-              (evaluate (n, pad ++ h1 ++
-                LinearHash.wordHash (l1Val d k r_val) h1 (List.ofFn (f x₀)) ++
-                List.ofFn ((blocksEquiv (m := h2Rows d γ_core k) (k := k)).symm rows) ++
-                List.ofFn (LinearHash.hash (rows ∘ Fin.castLE hlen) x.val) ++ z_tail) coins) ^^ pol
+  do
+    let pad ← BitString.uniformList padLen
+    let h1 ← BitString.uniformList (k * imgLen_k)
+    let z_tail ← BitString.uniformList (m - j)
+    let coins ← BitString.uniformList coinLen
+    let rows ← PMF.uniformOfFintype (Fin (h2Rows d γ_core k) → BitString k)
+    (PMF.uniformOfFintype {x : BitString k // f x = f x₀}).map fun x =>
+      (evaluate (n, pad ++ h1 ++
+        LinearHash.wordHash (l1Val d k r_val) h1 (List.ofFn (f x₀)) ++
+        List.ofFn ((blocksEquiv (m := h2Rows d γ_core k) (k := k)).symm rows) ++
+        List.ofFn (LinearHash.hash (rows ∘ Fin.castLE hlen) x.val) ++ z_tail) coins) ^^ pol
+
+private theorem eval_stepAuxInverter_map_eq (g : List Bool → List Bool) (imgLen : ℕ → ℕ)
+    {k : ℕ} (f : BitString k → BitString (imgLen k))
+    (hf : ∀ x : BitString k, g (List.ofFn x) = List.ofFn (f x))
+    (x₀ : BitString k)
+    (evaluate : (ℕ × List Bool) → List Bool → Bool)
+    (d γ_core γ c_eval d_eval deg r_val n_offset j : ℕ) :
+    let n := coreSeedLen imgLen d γ_core k + n_offset
+    let m := mActual d γ k n
+    let coinLen := condCoinBudget c_eval d_eval γ n
+    let Aux := BitString n_offset × BitString (k * imgLen k) × BitString (m - (j + 1)) ×
+      BitString coinLen
+    (ProbComp.eval (stepAuxInverter g imgLen evaluate d γ_core γ c_eval d_eval deg
+      k r_val n_offset j (List.ofFn (f x₀)))).map (fun w => decide (g w = List.ofFn (f x₀))) =
+    (PMF.uniformOfFintype Aux).bind fun a =>
+      (PMF.uniformOfFintype Bool).bind fun r_bit =>
+        (PMF.uniformOfFintype Bool).bind fun p =>
+          (Pseudoentropy.guessInverter f
+            (stepPredictor evaluate n k (imgLen k) d γ_core r_val j
+              (List.ofFn a.1) (List.ofFn a.2.1) [r_bit] [p] (List.ofFn a.2.2.1) (List.ofFn a.2.2.2)
+              (f x₀))
+            (PMF.uniformOfFintype (Fin (h2Rows d γ_core k) → BitString k))
+            (GoldreichLevin.precision deg k) (f x₀)).map (fun z => f z == f x₀) := by
+  intro n m coinLen Aux
+  simp only [stepAuxInverter, ProbComp.eval_bind, BitString.eval_sampleList, PMF.map_bind]
+  conv_lhs =>
+    arg 2; ext pad; arg 2; ext h1
+    rw [bind_two_comm_two (BitString.uniformList 1) (BitString.uniformList 1)
+      (BitString.uniformList (m - (j + 1))) (BitString.uniformList coinLen)]
+  rw [uniformList_four_bind_eq]
+  congr 1; funext a
+  simp only [uniformList_one_eq, PMF.bind_map, Function.comp_def]
+  congr 1; funext r_bit; congr 1; funext p
+  rw [eval_innerGuessInverter g f hf, PMF.map_comp]
+  congr 1; funext z
+  simp [hf z, List.ofFn_inj, beq_eq_decide]
 
 /-- Single-step hybrid inequality on the fiber of `x₀`, averaged over the auxiliary hybrid words
 `pad`, `h1`, `z_tail`, `coins` and bounded by `stepAuxInverter`. -/
@@ -2134,16 +2163,16 @@ private theorem fiberHybrid_step_le (g : List Bool → List Bool) (imgLen : ℕ 
         (Nat.succ_le_of_lt hidx_lt) =
       (PMF.uniformOfFintype Aux).bind p_succ := by
     unfold fiberHybridAcceptDist
+    simp only [PMF.monad_bind_eq_bind]
     rw [uniformList_four_bind_eq]
-    congr 1; funext a; congr 1; funext rows; congr 1; funext x
+    refine congrArg (PMF.bind _) (funext fun a => ?_)
+    congr 1; funext rows; congr 1; funext x
     simp only [h2Word, digestWord, m1, m2, idx, ofFn_hash_castLE_succ rows x.val hlen hidx_lt,
       List.append_assoc]
   have hcurr_eq :
       fiberHybridAcceptDist f x₀ evaluate pol n d γ_core r_val n_offset m coinLen j hlen =
       (PMF.uniformOfFintype Aux).bind p_curr := by
-    have hm_sub : m - j = (m - (j + 1)) + 1 := by
-      dsimp [m, n]
-      omega
+    have hm_sub : m - j = (m - (j + 1)) + 1 := by dsimp [m, n]; omega
     have hunif_split : BitString.uniformList (m - j) =
         ((PMF.uniformOfFintype Bool).bind fun b =>
           (BitString.uniformList (m - (j + 1))).map fun z_tail => (b, z_tail)).map
@@ -2151,13 +2180,15 @@ private theorem fiberHybrid_step_le (g : List Bool → List Bool) (imgLen : ℕ 
       rw [hm_sub, BitString.uniformList_succ]
       simp [PMF.map_bind, PMF.map_comp, Function.comp_def]
     unfold fiberHybridAcceptDist
+    simp only [PMF.monad_bind_eq_bind]
     rw [hunif_split]
     simp only [PMF.bind_map, Function.comp_def]
     conv_lhs =>
       arg 2; ext pad; arg 2; ext h1
       rw [bind_map_comm_four]
     rw [uniformList_four_bind_eq]
-    congr 1; funext a; congr 1; funext rows; congr 1; funext x; congr 1; funext b
+    refine congrArg (PMF.bind _) (funext fun a => ?_)
+    congr 1; funext rows; congr 1; funext x; congr 1; funext b
     simp only [h2Word, digestWord, m1, List.append_assoc, Function.comp_def]
   let invProb (a : Aux) (r_bit p : Bool) : PMF Bool :=
     (Pseudoentropy.guessInverter f
@@ -2171,29 +2202,9 @@ private theorem fiberHybrid_step_le (g : List Bool → List Bool) (imgLen : ℕ 
         k r_val n_offset j (List.ofFn (f x₀)))).map (fun w => decide (g w = List.ofFn (f x₀))) =
       (PMF.uniformOfFintype Aux).bind fun a =>
         (PMF.uniformOfFintype Bool).bind fun r_bit =>
-          (PMF.uniformOfFintype Bool).bind fun p => invProb a r_bit p := by
-    have hmap_inner (pad h1 r_word pol_word z_tail coins : List Bool) :
-        (ProbComp.eval (innerGuessInverter g evaluate d γ_core deg n k r_val j
-          pad h1 (List.ofFn (f x₀)) r_word pol_word z_tail coins)).map
-            (fun w => decide (g w = List.ofFn (f x₀))) =
-        (Pseudoentropy.guessInverter f
-          (stepPredictor evaluate n k (imgLen k) d γ_core r_val j
-            pad h1 r_word pol_word z_tail coins (f x₀))
-          (PMF.uniformOfFintype (Fin c2 → BitString k))
-          (GoldreichLevin.precision deg k) (f x₀)).map (fun z => f z == f x₀) := by
-      rw [eval_innerGuessInverter g f hf, PMF.map_comp]
-      congr 1; funext z
-      simp [hf z, List.ofFn_inj, beq_eq_decide]
-    dsimp only [n] at hmap_inner
-    simp only [stepAuxInverter, ProbComp.eval_bind, BitString.eval_sampleList, PMF.map_bind]
-    simp_rw [hmap_inner]
-    conv_lhs =>
-      arg 2; ext pad; arg 2; ext h1
-      rw [bind_two_comm_two (BitString.uniformList 1) (BitString.uniformList 1)
-        (BitString.uniformList (m - (j + 1))) (BitString.uniformList coinLen)]
-    rw [uniformList_four_bind_eq]
-    congr 1; funext a
-    simp only [uniformList_one_eq, PMF.bind_map, Function.comp_def, invProb, n]
+          (PMF.uniformOfFintype Bool).bind fun p => invProb a r_bit p :=
+    eval_stepAuxInverter_map_eq g imgLen f hf x₀ evaluate d γ_core γ c_eval d_eval deg
+      r_val n_offset j
   have hpoint (a : Aux) :
       2 * ((p_succ a true).toReal - (p_curr a true).toReal) ≤
         1 / (GoldreichLevin.precision deg k : ℝ) +
@@ -2203,21 +2214,8 @@ private theorem fiberHybrid_step_le (g : List Bool → List Bool) (imgLen : ℕ 
           (∑ r_bit : Bool, (PMF.uniformOfFintype Bool r_bit).toReal *
             ∑ p : Bool, (PMF.uniformOfFintype Bool p).toReal *
               (invProb a r_bit p true).toReal) := by
-    have hfib : 2 * ((p_succ a true).toReal - (p_curr a true).toReal) ≤
-        1 / (GoldreichLevin.precision deg k : ℝ) +
-        (if m2 = 0 then 0 else
-          2 * Real.sqrt ((2 : ℝ) ^ m2 / Nat.card {x : BitString k // f x = f x₀})) +
-        2 ^ (j + 1) *
-          (∑ r_bit : Bool, (PMF.uniformOfFintype Bool r_bit).toReal *
-            (invProb a r_bit pol true).toReal) :=
-      fiber_step_diff_le f x₀ evaluate pol n d γ_core r_val j deg
-        (List.ofFn a.1) (List.ofFn a.2.1) (List.ofFn a.2.2.1) (List.ofFn a.2.2.2) hlen hidx_lt
-    have hpol_le (r_bit : Bool) :
-        (invProb a r_bit pol true).toReal ≤
-          2 * ∑ p : Bool, (PMF.uniformOfFintype Bool p).toReal *
-            (invProb a r_bit p true).toReal :=
-      le_two_mul_sum_uniformOfFintype_bool (fun p => (invProb a r_bit p true).toReal)
-        (fun _ => ENNReal.toReal_nonneg) pol
+    have hfib := fiber_step_diff_le f x₀ evaluate pol n d γ_core r_val j deg
+      (List.ofFn a.1) (List.ofFn a.2.1) (List.ofFn a.2.2.1) (List.ofFn a.2.2.2) hlen hidx_lt
     have hsum_le :
         (∑ r_bit : Bool, (PMF.uniformOfFintype Bool r_bit).toReal *
           (invProb a r_bit pol true).toReal) ≤
@@ -2225,23 +2223,13 @@ private theorem fiberHybrid_step_le (g : List Bool → List Bool) (imgLen : ℕ 
           ∑ p : Bool, (PMF.uniformOfFintype Bool p).toReal * (invProb a r_bit p true).toReal := by
       rw [Finset.mul_sum]
       refine Finset.sum_le_sum fun r_bit _ => ?_
-      linarith [mul_le_mul_of_nonneg_left (hpol_le r_bit)
+      have hpol := le_two_mul_sum_uniformOfFintype_bool
+        (fun p => (invProb a r_bit p true).toReal) (fun _ => ENNReal.toReal_nonneg) pol
+      linarith [mul_le_mul_of_nonneg_left hpol
         (ENNReal.toReal_nonneg : 0 ≤ (PMF.uniformOfFintype Bool r_bit).toReal)]
-    have hmul : (2 : ℝ) ^ (j + 1) *
-        (∑ r_bit : Bool, (PMF.uniformOfFintype Bool r_bit).toReal *
-          (invProb a r_bit pol true).toReal) ≤
-        2 ^ (j + 2) *
-          (∑ r_bit : Bool, (PMF.uniformOfFintype Bool r_bit).toReal *
-            ∑ p : Bool, (PMF.uniformOfFintype Bool p).toReal *
-              (invProb a r_bit p true).toReal) := by
-      calc
-        _ ≤ (2 : ℝ) ^ (j + 1) * (2 * ∑ r_bit : Bool, (PMF.uniformOfFintype Bool r_bit).toReal *
-              ∑ p : Bool, (PMF.uniformOfFintype Bool p).toReal *
-                (invProb a r_bit p true).toReal) :=
-          mul_le_mul_of_nonneg_left hsum_le (by positivity)
-        _ = 2 ^ (j + 2) * ∑ r_bit : Bool, (PMF.uniformOfFintype Bool r_bit).toReal *
-              ∑ p : Bool, (PMF.uniformOfFintype Bool p).toReal *
-                (invProb a r_bit p true).toReal := by ring
+    have hmul := mul_le_mul_of_nonneg_left hsum_le (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (j + 1))
+    rw [← mul_assoc, (by ring : (2 : ℝ) ^ (j + 1) * 2 = (2 : ℝ) ^ (j + 2))] at hmul
+    dsimp only [p_succ, p_curr, h2Word, digestWord, c2, m1, m2, idx, invProb] at hfib hmul ⊢
     linarith
   rw [hsucc_eq, hcurr_eq, hstep_inv]
   simp only [PMF.bind_apply_toReal]
@@ -2417,34 +2405,10 @@ private theorem fiberHybrid_total_le (g : List Bool → List Bool) (imgLen : ℕ
           (dyadicSize (k + 1) : ℝ) *
           (((ProbComp.eval (condInverter g imgLen evaluate d γ_core γ c_eval d_eval deg
             k (List.ofFn (f x₀)))).map
-              (fun w => decide (g w = List.ofFn (f x₀)))) true).toReal := by
-    calc
-      ∑ j ∈ Finset.range m, stepInv j
-        ≤ (dyadicSize m : ℝ) *
-            (((ProbComp.eval (do
-              let j ← ProbComp.sampleDyadicIndex m
-              stepAuxInverter g imgLen evaluate d γ_core γ c_eval d_eval deg k r_val n_offset j
-                (List.ofFn (f x₀)))).map
-                  (fun w => decide (g w = List.ofFn (f x₀)))) true).toReal := hdyadic_j
-      _ ≤ (dyadicSize m : ℝ) *
-            ((dyadicSize (coreSeedLen imgLen d γ_core (k + 1)) : ℝ) *
-              (((ProbComp.eval (do
-                let n_off ← ProbComp.sampleDyadicIndex (coreSeedLen imgLen d γ_core (k + 1))
-                let j ← ProbComp.sampleDyadicIndex
-                  (mActual d γ k (coreSeedLen imgLen d γ_core k + n_off))
-                stepAuxInverter g imgLen evaluate d γ_core γ c_eval d_eval deg k r_val n_off j
-                  (List.ofFn (f x₀)))).map
-                    (fun w => decide (g w = List.ofFn (f x₀)))) true).toReal) :=
-        mul_le_mul_of_nonneg_left hdyadic_n (by positivity)
-      _ ≤ (dyadicSize m : ℝ) *
-            ((dyadicSize (coreSeedLen imgLen d γ_core (k + 1)) : ℝ) *
-              ((dyadicSize (k + 1) : ℝ) *
-                (((ProbComp.eval (condInverter g imgLen evaluate d γ_core γ c_eval d_eval deg
-                  k (List.ofFn (f x₀)))).map
-                    (fun w => decide (g w = List.ofFn (f x₀)))) true).toReal)) :=
-        mul_le_mul_of_nonneg_left
-          (mul_le_mul_of_nonneg_left hdyadic_r (by positivity)) (by positivity)
-      _ = _ := by ring
+              (fun w => decide (g w = List.ofFn (f x₀)))) true).toReal :=
+    (hdyadic_j.trans (mul_le_mul_of_nonneg_left
+      (hdyadic_n.trans (mul_le_mul_of_nonneg_left hdyadic_r (by positivity)))
+      (by positivity))).trans_eq (by simp only [condInverter, mul_assoc])
   rw [← hF_m, ← hF_0]
   have hmul_inv :=
     mul_le_mul_of_nonneg_left hinv_chain (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (m + 1))
@@ -2663,6 +2627,7 @@ private theorem bind_fiberHybridAcceptDist_eq {k imgLen_k : ℕ}
           z_tail) coins) ^^ pol := by
     congr 1; funext x; rw [x.property]
   unfold fiberHybridAcceptDist
+  simp only [PMF.monad_bind_eq_bind]
   simp_rw [hinner]
   rw [bind_comm_five_inner_map (PMF.uniformOfFinset (regularityBucket f r) hS)
     (BitString.uniformList padLen) (BitString.uniformList (k * imgLen_k))
@@ -2691,12 +2656,12 @@ private noncomputable def evalCore {k imgLen_k m1 m2 c2 : ℕ}
     (evaluate : (ℕ × List Bool) → List Bool → Bool) (pol : Bool)
     (n padLen m coinLen : ℕ)
     (c : (BitString (k * imgLen_k) × BitString m1) × (BitString (c2 * k) × BitString m2)) :
-    PMF Bool :=
-  (BitString.uniformList padLen).bind fun pad =>
-    (BitString.uniformList m).bind fun z_tail =>
-      (BitString.uniformList coinLen).map fun coins =>
-        (evaluate (n, pad ++ List.ofFn c.1.1 ++ List.ofFn c.1.2 ++
-          List.ofFn c.2.1 ++ List.ofFn c.2.2 ++ z_tail) coins) ^^ pol
+    PMF Bool := do
+  let pad ← BitString.uniformList padLen
+  let z_tail ← BitString.uniformList m
+  (BitString.uniformList coinLen).map fun coins =>
+    (evaluate (n, pad ++ List.ofFn c.1.1 ++ List.ofFn c.1.2 ++
+      List.ofFn c.2.1 ++ List.ofFn c.2.2 ++ z_tail) coins) ^^ pol
 
 /-- At hybrid step `j = 0`, averaging `fiberHybridAcceptDist` over $S_{k, r}$ equals
 `coreLHLDist` bound to `evalCore`. -/
@@ -2712,7 +2677,7 @@ private theorem bind_fiberHybridAcceptDist_zero_eq {k imgLen_k : ℕ}
       (evalCore evaluate pol n padLen m coinLen) := by
   rw [bind_fiberHybridAcceptDist_eq]
   unfold coreLHLDist evalCore
-  simp only [Nat.sub_zero, PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [Nat.sub_zero, PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, Function.comp_def]
   congr 1; funext x
   have h1_eq : BitString.uniformList (k * imgLen_k) =
       (PMF.uniformOfFintype (BitString (k * imgLen_k))).map List.ofFn := rfl
@@ -2767,7 +2732,7 @@ private theorem unifCoreDist_bind_evalCore_eq (k imgLen_k m1 m2 c2 : ℕ)
             (evaluate (n, prefix_word ++ z_tail) coins) ^^ pol := by
     unfold unifCoreDist evalCore
     rw [hpad]
-    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
+    simp only [PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, Function.comp_def]
     exact bind_four_comm_fifth_bind _ _ _ _ _ _
   rw [hstep1, uniformOfFintype_five_append]
   have hadd :
@@ -3138,12 +3103,14 @@ private theorem eventually_coreSeedLen_succ_le_pow {imgLen : ℕ → ℕ} {c_i d
         Nat.mul_le_mul (by omega) himg_k1
       _ = 2 * k ^ (d_i + 2) := by rw [pow_succ' k (d_i + 1)]; ring
   have hh2 : h2Rows d γ_core (k + 1) ≤ 2 * k ^ 2 := by
-    have hm : mMax d γ_core (k + 1) ≤ (2 * d + γ_core + 2) * (k + 1) := by
-      unfold mMax
-      nlinarith
+    have hd_log := Nat.mul_le_mul_left d hlog
+    have hγ_log := Nat.mul_le_mul_left γ_core hlog
+    have h_expand : (2 * d + γ_core + 3) * (k + 1) =
+        2 * (d * (k + 1)) + γ_core * (k + 1) + 3 * (k + 1) := by ring
     have hh : h2Rows d γ_core (k + 1) ≤ (2 * d + γ_core + 3) * (k + 1) := by
-      unfold h2Rows
-      linarith
+      rw [h_expand]
+      unfold h2Rows mMax
+      omega
     calc
       h2Rows d γ_core (k + 1) ≤ (2 * d + γ_core + 3) * (k + 1) := hh
       _ ≤ k * (2 * k) := Nat.mul_le_mul (by omega) (by omega)
@@ -3158,14 +3125,21 @@ private theorem eventually_coreSeedLen_succ_le_pow {imgLen : ℕ → ℕ} {c_i d
   have hpow_le3 : k ^ 3 ≤ k ^ (d_i + 3) :=
     Nat.pow_le_pow_right (by omega) (by omega)
   have hreg : regWidth (k + 1) + (k + 1) ≤ 2 * k ^ (d_i + 3) := by
+    have hk_sq : 8 * k ≤ k ^ 2 := by rw [sq]; exact Nat.mul_le_mul_right k hk8
+    have hpow_le_sq : k ^ 2 ≤ k ^ (d_i + 3) := Nat.pow_le_pow_right (by omega) (by omega)
     unfold regWidth
-    nlinarith
+    omega
+  have hterm_img' : (k + 1) * imgLen (k + 1) ≤ 2 * k ^ (d_i + 3) :=
+    hterm_img.trans (Nat.mul_le_mul_left 2 hpow_le2)
+  have hterm_h2' : h2Rows d γ_core (k + 1) * (k + 1) ≤ 4 * k ^ (d_i + 3) :=
+    hterm_h2.trans (Nat.mul_le_mul_left 4 hpow_le3)
   calc
     coreSeedLen imgLen d γ_core (k + 1)
       = (regWidth (k + 1) + (k + 1)) + (k + 1) * imgLen (k + 1) +
           h2Rows d γ_core (k + 1) * (k + 1) := by
         unfold coreSeedLen; ring
-    _ ≤ 2 * k ^ (d_i + 3) + 2 * k ^ (d_i + 3) + 4 * k ^ (d_i + 3) := by linarith
+    _ ≤ 2 * k ^ (d_i + 3) + 2 * k ^ (d_i + 3) + 4 * k ^ (d_i + 3) :=
+        Nat.add_le_add (Nat.add_le_add hreg hterm_img') hterm_h2'
     _ = 8 * k ^ (d_i + 3) := by ring
     _ ≤ k * k ^ (d_i + 3) := Nat.mul_le_mul_right _ hk8
     _ = k ^ (d_i + 4) := (pow_succ' k (d_i + 3)).symm
@@ -3178,8 +3152,9 @@ private theorem sqrt_lhl_err_le {E δ k n : ℕ} (hk : 8 ≤ k) (hn_pos : 1 ≤ 
   set B := E * (2 * δ + 4) + 4
   have hpow2 : k ^ B ≤ 2 ^ (d * Nat.log 2 k) := by
     simpa [d, mul_assoc] using pow_le_two_pow_two_mul_log B (by omega : 2 ≤ k)
-  have hk1 : 2 * (k + 1) ≤ k ^ 2 := by nlinarith
-  have hk16 : 16 ≤ k ^ 2 := by nlinarith
+  have hk_sq : 8 * k ≤ k ^ 2 := by rw [sq]; exact Nat.mul_le_mul_right k hk
+  have hk1 : 2 * (k + 1) ≤ k ^ 2 := by omega
+  have hk16 : 16 ≤ k ^ 2 := by omega
   have hn_pow : n ^ (2 * δ + 4) ≤ k ^ (E * (2 * δ + 4)) :=
     (Nat.pow_le_pow_left hn (2 * δ + 4)).trans_eq (pow_mul k E (2 * δ + 4)).symm
   have hnat : 2 * (k + 1) * (16 * n ^ (2 * δ + 4)) ≤ 2 ^ (d * Nat.log 2 k) := by
@@ -3211,7 +3186,7 @@ private theorem gl_err_le {E δ k n m : ℕ} (hk : 8 ≤ k) (hn_pos : 1 ≤ n) (
     (m : ℝ) / (2 * (GoldreichLevin.precision deg k : ℝ)) ≤ 1 / (4 * (n : ℝ) ^ δ) := by
   intro deg
   have hn_rpos : (0 : ℝ) < n := Nat.cast_pos.mpr hn_pos
-  have h4 : 4 ≤ k ^ 2 := by nlinarith
+  have h4 : 4 ≤ k ^ 2 := (by omega : 4 ≤ k).trans (Nat.le_self_pow two_ne_zero k)
   have hn_pow : n ^ (δ + 2) ≤ k ^ (E * (δ + 2)) :=
     (Nat.pow_le_pow_left hn (δ + 2)).trans_eq (pow_mul k E (δ + 2)).symm
   have hnat : 4 * n ^ δ * m ≤ 2 * GoldreichLevin.precision deg k := by
@@ -3240,7 +3215,8 @@ private theorem inv_term_le {E δ d γ_core k n m cs_succ : ℕ} {succProb : ℝ
     (1 / 2) * (2 : ℝ) ^ (m + 1) * (dyadicSize m : ℝ) *
       (dyadicSize cs_succ : ℝ) * (dyadicSize (k + 1) : ℝ) * (k + 1 : ℝ) * succProb ≤
       1 / (4 * (n : ℝ) ^ δ) := by
-  set D_inv := (2 * d + γ_core + 2) + 3 + (E + 1) + 2 + 2 + E * δ
+  let D_inv := (2 * d + γ_core + 2) + 3 + (E + 1) + 2 + 2 + E * δ
+  change succProb ≤ 1 / ((k + 1 : ℝ) ^ D_inv) at hsucc
   have hk8 : 8 ≤ k := by omega
   have hlog_k : Nat.log 2 k ≤ k := Nat.log_le_self 2 k
   have hm_ub : m ≤ (2 * d + γ_core + 1) * Nat.log 2 k + 1 := by
@@ -3258,11 +3234,15 @@ private theorem inv_term_le {E δ d γ_core k n m cs_succ : ℕ} {succProb : ℝ
       _ = k ^ (2 * d + γ_core + 2) := (pow_succ' k (2 * d + γ_core + 1)).symm
   have h2 : dyadicSize m ≤ k ^ 3 := by
     have hm_k2 : m + 1 ≤ 2 * k ^ 2 := by
-      have hm_le_k : m + 1 ≤ (2 * d + γ_core + 2) * k := by nlinarith
+      have hmul_log := Nat.mul_le_mul_left (2 * d + γ_core + 1) hlog_k
+      have h_expand : (2 * d + γ_core + 2) * k = (2 * d + γ_core + 1) * k + k := by ring
+      have hm_le_k : m + 1 ≤ (2 * d + γ_core + 2) * k := by
+        rw [h_expand]
+        omega
       calc
         m + 1 ≤ (2 * d + γ_core + 2) * k := hm_le_k
         _ ≤ k * k := Nat.mul_le_mul_right k (by omega)
-        _ ≤ 2 * k ^ 2 := by nlinarith
+        _ ≤ 2 * k ^ 2 := by rw [sq]; omega
     calc
       dyadicSize m ≤ 2 * (m + 1) := dyadicSize_le m
       _ ≤ 4 * k ^ 2 := by omega
@@ -3275,49 +3255,207 @@ private theorem inv_term_le {E δ d γ_core k n m cs_succ : ℕ} {succProb : ℝ
       _ ≤ 4 * k ^ E := by omega
       _ ≤ k * k ^ E := Nat.mul_le_mul_right _ (by omega)
       _ = k ^ (E + 1) := (pow_succ' k E).symm
+  have hk_sq : 8 * k ≤ k ^ 2 := by rw [sq]; exact Nat.mul_le_mul_right k hk8
   have h4 : dyadicSize (k + 1) ≤ k ^ 2 := by
     have := dyadicSize_le (k + 1)
-    nlinarith
-  have h5 : 4 * (k + 1) ≤ k ^ 2 := by nlinarith
+    omega
+  have h5 : 4 * (k + 1) ≤ k ^ 2 := by omega
   have h6 : n ^ δ ≤ k ^ (E * δ) :=
     (Nat.pow_le_pow_left hn δ).trans_eq (pow_mul k E δ).symm
-  have hprod_nat :
-      2 ^ (m + 1) * dyadicSize m * dyadicSize cs_succ *
-        dyadicSize (k + 1) * (4 * (k + 1)) * n ^ δ ≤ (k + 1) ^ D_inv := by
+  let P_nat : ℕ :=
+    2 ^ (m + 1) * dyadicSize m * dyadicSize cs_succ * dyadicSize (k + 1) * (k + 1)
+  have hprod_nat : P_nat * (4 * n ^ δ) ≤ (k + 1) ^ D_inv := by
     calc
-      2 ^ (m + 1) * dyadicSize m * dyadicSize cs_succ *
-          dyadicSize (k + 1) * (4 * (k + 1)) * n ^ δ
-        ≤ k ^ (2 * d + γ_core + 2) * k ^ 3 * k ^ (E + 1) * k ^ 2 * k ^ 2 * k ^ (E * δ) :=
+      P_nat * (4 * n ^ δ)
+        = 2 ^ (m + 1) * dyadicSize m * dyadicSize cs_succ *
+            dyadicSize (k + 1) * (4 * (k + 1)) * n ^ δ := by dsimp only [P_nat]; ring
+      _ ≤ k ^ (2 * d + γ_core + 2) * k ^ 3 * k ^ (E + 1) * k ^ 2 * k ^ 2 * k ^ (E * δ) :=
           Nat.mul_le_mul
             (Nat.mul_le_mul
               (Nat.mul_le_mul
                 (Nat.mul_le_mul (Nat.mul_le_mul h1 h2) h3) h4) h5) h6
       _ = k ^ D_inv := by
-        dsimp [D_inv]
+        dsimp only [D_inv]
         simp only [pow_add]
       _ ≤ (k + 1) ^ D_inv := Nat.pow_le_pow_left (by omega) D_inv
-  let Pref : ℝ := (2 : ℝ) ^ (m + 1) * (dyadicSize m : ℝ) *
-    (dyadicSize cs_succ : ℝ) * (dyadicSize (k + 1) : ℝ) * (k + 1 : ℝ)
-  have hPref_nonneg : 0 ≤ Pref := by dsimp [Pref]; positivity
+  have hP_nonneg : 0 ≤ (P_nat : ℝ) := Nat.cast_nonneg P_nat
   have hn_rpos : (0 : ℝ) < n := Nat.cast_pos.mpr hn_pos
-  have hprod_real : Pref * (4 * (n : ℝ) ^ δ) ≤ (k + 1 : ℝ) ^ D_inv := by
-    have hcast : (2 : ℝ) ^ (m + 1) * (dyadicSize m : ℝ) * (dyadicSize cs_succ : ℝ) *
-        (dyadicSize (k + 1) : ℝ) * (4 * (k + 1 : ℝ)) * (n : ℝ) ^ δ ≤
-        (k + 1 : ℝ) ^ D_inv := by exact_mod_cast hprod_nat
-    dsimp [Pref]
-    linarith
-  have hPref_div : Pref * (1 / (k + 1 : ℝ) ^ D_inv) ≤ 1 / (4 * (n : ℝ) ^ δ) := by
+  have hprod_real : (P_nat : ℝ) * (4 * (n : ℝ) ^ δ) ≤ (k + 1 : ℝ) ^ D_inv := by
+    have hcast : ((P_nat * (4 * n ^ δ) : ℕ) : ℝ) ≤ (((k + 1) ^ D_inv : ℕ) : ℝ) :=
+      Nat.cast_le.mpr hprod_nat
+    simpa only [Nat.cast_mul, Nat.cast_pow, Nat.cast_add, Nat.cast_one, Nat.cast_ofNat]
+      using hcast
+  have hPref_div : (P_nat : ℝ) * (1 / (k + 1 : ℝ) ^ D_inv) ≤ 1 / (4 * (n : ℝ) ^ δ) := by
     rw [mul_one_div, div_le_div_iff₀ (by positivity) (by positivity)]
-    linarith
+    linarith only [hprod_real]
+  have hP_eq :
+      (1 / 2) * (2 : ℝ) ^ (m + 1) * (dyadicSize m : ℝ) *
+        (dyadicSize cs_succ : ℝ) * (dyadicSize (k + 1) : ℝ) * (k + 1 : ℝ) * succProb =
+      (1 / 2) * (P_nat : ℝ) * succProb := by
+    dsimp only [P_nat]
+    push_cast
+    ring
   calc
     (1 / 2) * (2 : ℝ) ^ (m + 1) * (dyadicSize m : ℝ) *
         (dyadicSize cs_succ : ℝ) * (dyadicSize (k + 1) : ℝ) * (k + 1 : ℝ) * succProb
-      = (1 / 2) * Pref * succProb := by dsimp [Pref]; ring
-    _ ≤ Pref * succProb :=
-        mul_le_mul_of_nonneg_right (by linarith) hsucc_nonneg
-    _ ≤ Pref * (1 / (k + 1 : ℝ) ^ D_inv) :=
-        mul_le_mul_of_nonneg_left hsucc hPref_nonneg
+      = (1 / 2) * (P_nat : ℝ) * succProb := hP_eq
+    _ ≤ (P_nat : ℝ) * succProb :=
+        mul_le_mul_of_nonneg_right (by linarith only [hP_nonneg]) hsucc_nonneg
+    _ ≤ (P_nat : ℝ) * (1 / (k + 1 : ℝ) ^ D_inv) :=
+        mul_le_mul_of_nonneg_left hsucc hP_nonneg
     _ ≤ 1 / (4 * (n : ℝ) ^ δ) := hPref_div
+
+private theorem fullGen_condSeedSet_advantage_le
+    {g : List Bool → List Bool} {imgLen : ℕ → ℕ}
+    (himgLen : ∀ x, (g x).length = imgLen x.length)
+    (E δ γ d γ_core c_eval d_eval : ℕ)
+    (hd : d = 2 * (E * (2 * δ + 4) + 4)) (hγ_core : γ_core = γ * (2 * E))
+    (S : ∀ k, Finset (BitString k)) (hS : ∀ k, (S k).Nonempty) (r : ∀ k, Fin (k + 1))
+    (hS_eq : ∀ k,
+      S k = regularityBucket (fun x : BitString k => ofList (imgLen k) (g (List.ofFn x))) (r k))
+    (hdense : ∀ k, 2 ^ k ≤ (k + 1) * (S k).card)
+    (evaluate : (ℕ × List Bool) → List Bool → Bool) (adversary : Distinguisher)
+    (hlaw : ∀ (a : ℕ × List Bool) length,
+      c_eval * ((encPair encUnary encBits a).length + 1) ^ d_eval ≤ length →
+      ProbComp.eval (adversary a.1 a.2) = (BitString.uniformList length).map (evaluate a))
+    {n k : ℕ} (hk_eq : k = GeneratorReindex.parameter (coreSeedLen imgLen d γ_core) n)
+    (hn0 : coreSeedLen imgLen d γ_core 0 ≤ n)
+    (hk_min : 2 * d + γ_core + γ + 8 ≤ k)
+    (hk_2d : 2 * (d * Nat.log 2 k) ≤ k)
+    (hgap : (r k).val + d * Nat.log 2 k ≤ k)
+    (hcs_pow : coreSeedLen imgLen d γ_core (k + 1) ≤ k ^ E)
+    (hinv_le : (Game.succProbability (ProbComp.eval
+      (inversionGame g (condInverter g imgLen evaluate d γ_core γ c_eval d_eval
+        (E * (δ + 2) + 2)) k)) : ℝ) ≤
+      1 / ((k + 1 : ℝ) ^ ((2 * d + γ_core + 2) + 3 + (E + 1) + 2 + 2 + E * δ))) :
+    (Game.advantage
+      ((((PMF.uniformOfFinset (condSeedSet imgLen d γ_core S r n)
+        (condSeedSet_nonempty imgLen d γ_core S hS r n)).map List.ofFn).map
+          (fullGen g imgLen d γ_core γ)).bind fun y => ProbComp.eval (adversary n y))
+      ((BitString.uniformList (n + γ * Nat.log 2 n)).bind
+        fun y => ProbComp.eval (adversary n y)) : ℝ) ≤ 1 / (n : ℝ) ^ δ := by
+  subst hk_eq
+  set deg := E * (δ + 2) + 2
+  set k := GeneratorReindex.parameter (coreSeedLen imgLen d γ_core) n
+  have hfits : coreSeedLen imgLen d γ_core k ≤ n := GeneratorReindex.parameter_fits hn0
+  have hlt_next : n < coreSeedLen imgLen d γ_core (k + 1) :=
+    GeneratorReindex.lt_length_succ_parameter (coreSeedLen_ge_succ imgLen d γ_core) n
+  have hn_le_pow : n ≤ k ^ E := hlt_next.le.trans hcs_pow
+  have hk_lt_n : k < n :=
+    lt_of_lt_of_le (Nat.lt_succ_self k) ((coreSeedLen_ge_succ imgLen d γ_core k).trans hfits)
+  have hn_pos : 1 ≤ n := by omega
+  have hlog_le : Nat.log 2 n ≤ 2 * E * Nat.log 2 k :=
+    log_le_two_mul_log_of_le_pow (by omega : 2 ≤ k) hn_le_pow
+  have hm_le_mMax : mActual d γ k n ≤ mMax d γ_core k :=
+    mActual_le_mMax (by
+      rw [hγ_core]; exact (Nat.mul_le_mul_left γ hlog_le).trans_eq (Nat.mul_assoc _ _ _).symm)
+  have hm_le : l2Val d k (r k).val + mActual d γ k n ≤ h2Rows d γ_core k := by
+    have := l2Val_le d k (r k).val; unfold h2Rows; omega
+  have hm_le_n2 : mActual d γ k n ≤ n ^ 2 := by
+    have hcs : coreSeedLen imgLen d γ_core k =
+        (Nat.log 2 k + 1) + k + k * imgLen k + h2Rows d γ_core k * k := rfl
+    have h1 : 2 * (d * Nat.log 2 k) + Nat.log 2 k + 1 ≤ n := by omega
+    have hγ_log := Nat.mul_le_mul_left γ (Nat.log_le_self 2 n)
+    have h_exp : (γ + 1) * n = γ * n + n := by ring
+    have h3 : mActual d γ k n ≤ (γ + 1) * n := by rw [h_exp]; unfold mActual; omega
+    exact (h3.trans (Nat.mul_le_mul_right n (by omega))).trans_eq (sq n).symm
+  have hf_k (x : BitString k) :
+      g (List.ofFn x) = List.ofFn (ofList (imgLen k) (g (List.ofFn x))) :=
+    (ofFn_ofList (by simp [himgLen])).symm
+  have hdist := dist_condSeedSet_uniform_le g imgLen d γ_core γ c_eval d_eval deg
+    S hS r evaluate adversary hlaw hfits hlt_next hk_2d hgap hm_le hf_k (hS_eq k)
+    (by dsimp only; rw [← hS_eq k]; exact hdense k)
+  dsimp only at hdist
+  have hlhl_err : Real.sqrt (2 * (k + 1 : ℝ) / (2 : ℝ) ^ (d * Nat.log 2 k)) ≤
+      1 / (4 * (n : ℝ) ^ (δ + 2)) := by
+    rw [hd]; exact sqrt_lhl_err_le (δ := δ) (by omega : 8 ≤ k) hn_pos hn_le_pow
+  have hn_rpos : (0 : ℝ) < n := Nat.cast_pos.mpr hn_pos
+  have hn_pow_le : (n : ℝ) ^ δ ≤ (n : ℝ) ^ (δ + 2) := by
+    exact_mod_cast Nat.pow_le_pow_right hn_pos (by omega : δ ≤ δ + 2)
+  have hterm1 : Real.sqrt (2 * (k + 1 : ℝ) / (2 : ℝ) ^ (d * Nat.log 2 k)) ≤
+      1 / (4 * (n : ℝ) ^ δ) :=
+    hlhl_err.trans (one_div_le_one_div_of_le (by positivity) (by linarith only [hn_pow_le]))
+  have hterm2 := gl_err_le (δ := δ) (by omega) hn_pos hn_le_pow hm_le_n2
+  have hterm3 : (mActual d γ k n : ℝ) * Real.sqrt (1 / (2 : ℝ) ^ (d * Nat.log 2 k)) ≤
+      1 / (4 * (n : ℝ) ^ δ) := by
+    have hsqrt_le : Real.sqrt (1 / (2 : ℝ) ^ (d * Nat.log 2 k)) ≤
+        1 / (4 * (n : ℝ) ^ (δ + 2)) :=
+      (Real.sqrt_le_sqrt (div_le_div_of_nonneg_right (by linarith) (by positivity))).trans hlhl_err
+    have hm_r : (mActual d γ k n : ℝ) ≤ (n : ℝ) ^ 2 := by exact_mod_cast hm_le_n2
+    refine (mul_le_mul hm_r hsqrt_le (by positivity) (by positivity)).trans_eq ?_
+    rw [pow_add (n : ℝ) δ 2]; field_simp
+  have hterm4 := inv_term_le (by omega) hn_pos hn_le_pow hcs_pow hm_le_mMax (by positivity) hinv_le
+  have hsum4 : 4 * (1 / (4 * (n : ℝ) ^ δ)) = 1 / (n : ℝ) ^ δ := by ring
+  dsimp only [k] at hterm1 hterm2 hterm3 hterm4
+  linarith only [hdist, hterm1, hterm2, hterm3, hterm4, hsum4]
+
+private theorem fullGen_condSeedSet_entropy_ge
+    {g : List Bool → List Bool} {imgLen : ℕ → ℕ}
+    (himgLen : ∀ x, (g x).length = imgLen x.length)
+    (E δ γ d γ_core : ℕ) (hd : d = 2 * (E * (2 * δ + 4) + 4))
+    (S : ∀ k, Finset (BitString k)) (hS : ∀ k, (S k).Nonempty) (r : ∀ k, Fin (k + 1))
+    (hS_eq : ∀ k,
+      S k = regularityBucket (fun x : BitString k => ofList (imgLen k) (g (List.ofFn x))) (r k))
+    (hdense : ∀ k, 2 ^ k ≤ (k + 1) * (S k).card)
+    {n k : ℕ} (hk_eq : k = GeneratorReindex.parameter (coreSeedLen imgLen d γ_core) n)
+    (hn0 : coreSeedLen imgLen d γ_core 0 ≤ n) (hlog_n1 : 1 ≤ Nat.log 2 n)
+    (hk8 : 8 ≤ k) (hk_2d : 2 * (d * Nat.log 2 k) ≤ k)
+    (hgap : (r k).val + d * Nat.log 2 k ≤ k)
+    (hcs_pow : coreSeedLen imgLen d γ_core (k + 1) ≤ k ^ E) :
+    (n : ℝ) - ((2 * d + 4 : ℕ) : ℝ) * (Nat.log 2 n : ℝ) ≤
+      PMF.entropy ((PMF.uniformOfFinset (condSeedSet imgLen d γ_core S r n)
+        (condSeedSet_nonempty imgLen d γ_core S hS r n)).map fun x =>
+          BitString.ofList (n + γ * Nat.log 2 n)
+            (fullGen g imgLen d γ_core γ (List.ofFn x))) := by
+  subst hk_eq
+  set k := GeneratorReindex.parameter (coreSeedLen imgLen d γ_core) n
+  let f_k (x : BitString k) : BitString (imgLen k) := ofList (imgLen k) (g (List.ofFn x))
+  have hS_reg : (regularityBucket f_k (r k)).Nonempty := hS_eq k ▸ hS k
+  have hfits : coreSeedLen imgLen d γ_core k ≤ n := GeneratorReindex.parameter_fits hn0
+  have hlt_next : n < coreSeedLen imgLen d γ_core (k + 1) :=
+    GeneratorReindex.lt_length_succ_parameter (coreSeedLen_ge_succ imgLen d γ_core) n
+  have hn_le_pow : n ≤ k ^ E := hlt_next.le.trans hcs_pow
+  have hk_lt_n : k < n :=
+    lt_of_lt_of_le (Nat.lt_succ_self k) ((coreSeedLen_ge_succ imgLen d γ_core k).trans hfits)
+  have hn_pos : 1 ≤ n := by omega
+  have hcs_def : coreSeedLen imgLen d γ_core k =
+      (Nat.log 2 k + 1) + k + k * imgLen k + h2Rows d γ_core k * k := rfl
+  have hh2_pos : 1 ≤ h2Rows d γ_core k * k :=
+    Nat.mul_pos (by unfold h2Rows mMax; omega) (by omega)
+  have hlhl_pos : 1 ≤ lhlPrefixLen d k n := by unfold lhlPrefixLen; omega
+  have hlhl_le_n : lhlPrefixLen d k n ≤ n := by unfold lhlPrefixLen; omega
+  have hdist_core :
+      dist (coreLHLDist f_k (r k) hS_reg (l1Val_le d k (r k).val)
+          (l2Val_le_h2Rows d γ_core k (r k).val))
+        (unifCoreDist k (imgLen k) (l1Val d k (r k).val) (l2Val d k (r k).val)
+          (h2Rows d γ_core k)) ≤ 1 / (lhlPrefixLen d k n : ℝ) ^ 2 := by
+    refine (dist_coreLHLDist_unifCoreDist_le_of_gap
+      f_k (r k) hS_reg (hS_eq k ▸ hdense k) hgap).trans ?_
+    have hlhl_err : Real.sqrt (2 * (k + 1 : ℝ) / (2 : ℝ) ^ (d * Nat.log 2 k)) ≤
+        1 / (4 * (n : ℝ) ^ (δ + 2)) := by
+      rw [hd]; exact sqrt_lhl_err_le (δ := δ) hk8 hn_pos hn_le_pow
+    refine hlhl_err.trans (one_div_le_one_div_of_le (by positivity) ?_)
+    have h1 : (lhlPrefixLen d k n) ^ 2 ≤ 4 * n ^ (δ + 2) :=
+      ((Nat.pow_le_pow_left hlhl_le_n 2).trans
+        (Nat.pow_le_pow_right hn_pos (Nat.le_add_left 2 δ))).trans (by omega)
+    exact_mod_cast h1
+  have hg_len_k (x : BitString k) : (g (List.ofFn x)).length = imgLen k := by simp [himgLen]
+  have hent := entropy_fullGen_condSeedSet_ge g imgLen d γ_core γ S hS r hfits hk_2d
+    hg_len_k (hS_eq k) hdist_core
+  dsimp only at hent
+  have hlog_kn : Nat.log 2 k ≤ Nat.log 2 n := Nat.log_mono_right hk_lt_n.le
+  have hsub_le : 2 * (d * Nat.log 2 k) + Nat.log 2 k + 1 ≤ n := by omega
+  have hlhl_cast : (lhlPrefixLen d k n : ℝ) =
+      (n : ℝ) - (2 * (d : ℝ) * (Nat.log 2 k : ℝ) + (Nat.log 2 k : ℝ) + 1) := by
+    unfold lhlPrefixLen; rw [Nat.cast_sub hsub_le]; push_cast; ring
+  have hloss_le :
+      (n : ℝ) - ((2 * d + 4 : ℕ) : ℝ) * (Nat.log 2 n : ℝ) ≤ (lhlPrefixLen d k n : ℝ) - 2 := by
+    rw [hlhl_cast]
+    have hlog_kn_r : (Nat.log 2 k : ℝ) ≤ (Nat.log 2 n : ℝ) := by exact_mod_cast hlog_kn
+    have hlog_n1_r : (1 : ℝ) ≤ (Nat.log 2 n : ℝ) := by exact_mod_cast hlog_n1
+    push_cast
+    linarith [mul_le_mul_of_nonneg_left hlog_kn_r (Nat.cast_nonneg (α := ℝ) d)]
+  exact hloss_le.trans hent
 
 /-- **[Liu and Pass, Theorem 5.5, §5.3, p. 15 of arXiv:2009.11514v1][LiuPass2020]: Every one-way
 function yields a conditional entropy-preserving pseudorandom generator.**
@@ -3345,6 +3483,17 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
   let S (k : ℕ) : Finset (BitString k) := regularityBucket (f_fin k) (r k)
   have hS (k : ℕ) : (S k).Nonempty := (hbucket k).choose_spec.1
   have hdense (k : ℕ) : 2 ^ k ≤ (k + 1) * (S k).card := (hbucket k).choose_spec.2.1
+  have hparam_tendsto := GeneratorReindex.parameter_tendsto (coreSeedLen imgLen d γ_core)
+  have hev_k_base : ∀ᶠ k : ℕ in atTop,
+      (2 * d + γ_core + γ + 8 ≤ k) ∧
+      (2 * (d * Nat.log 2 k) ≤ k) ∧
+      ((r k).val + d * Nat.log 2 k ≤ k) ∧
+      (coreSeedLen imgLen d γ_core (k + 1) ≤ k ^ E) := by
+    filter_upwards [eventually_ge_atTop (2 * d + γ_core + γ + 8),
+      Nat.eventually_add_mul_log_le 0 (2 * d) Nat.one_lt_two,
+      eventually_regularity_gap hg himgLen r hdense d,
+      eventually_coreSeedLen_succ_le_pow himg_le d γ_core] with k hk1 hk2 hk3 hk4
+    exact ⟨hk1, by rw [← Nat.mul_assoc]; omega, hk3, hk4⟩
   refine ⟨fullGen g imgLen d γ_core γ, α,
     computableInPolyTime_fullGen hg.polyTime.tidy himgLen_poly.tidy d γ_core γ,
     length_fullGen g imgLen d γ_core γ,
@@ -3354,173 +3503,22 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
     let D_inv := (2 * d + γ_core + 2) + 3 + (E + 1) + 2 + 2 + E * δ
     have hinv_ppt : IsPPT encBits
         (condInverter g imgLen evaluate d γ_core γ c_eval d_eval deg) :=
-      isPPT_condInverter hg.polyTime.tidy himgLen_poly.tidy hevaluate d γ_core γ c_eval d_eval deg
+      isPPT_condInverter hg.polyTime.tidy himgLen_poly.tidy hevaluate.tidy d γ_core γ c_eval d_eval
+        deg
     have hinv_neg :=
       (hg.inversion_negligible _ hinv_ppt).eventually_le_inv_polynomial
         (p := fun k => (k + 1) ^ D_inv) (by fun_prop) (fun k => by positivity)
-    have hparam_tendsto := GeneratorReindex.parameter_tendsto (coreSeedLen imgLen d γ_core)
-    have hev_k : ∀ᶠ k : ℕ in atTop,
-        (2 * d + γ_core + γ + 8 ≤ k) ∧
-        (0 + 2 * d * Nat.log 2 k ≤ k) ∧
-        ((r k).val + d * Nat.log 2 k ≤ k) ∧
-        (coreSeedLen imgLen d γ_core (k + 1) ≤ k ^ E) ∧
-        ((Game.succProbability (ProbComp.eval
-          (inversionGame g
-            (condInverter g imgLen evaluate d γ_core γ c_eval d_eval deg) k)) : ℝ) ≤
-          1 / ((k + 1 : ℝ) ^ D_inv)) := by
-      filter_upwards [eventually_ge_atTop (2 * d + γ_core + γ + 8),
-        Nat.eventually_add_mul_log_le 0 (2 * d) Nat.one_lt_two,
-        eventually_regularity_gap hg himgLen r hdense d,
-        eventually_coreSeedLen_succ_le_pow himg_le d γ_core,
-        hinv_neg] with k hk1 hk2 hk3 hk4 hk5
-      refine ⟨hk1, hk2, hk3, hk4, ?_⟩
-      simpa only [Nat.cast_pow, Nat.cast_add, Nat.cast_one] using hk5
     filter_upwards [eventually_ge_atTop (coreSeedLen imgLen d γ_core 0),
-      hparam_tendsto.eventually hev_k] with n hn0 ⟨hk_min, hk_2d', hgap, hcs_pow, hinv_le⟩
-    set k := GeneratorReindex.parameter (coreSeedLen imgLen d γ_core) n
-    have hfits : coreSeedLen imgLen d γ_core k ≤ n := GeneratorReindex.parameter_fits hn0
-    have hlt_next : n < coreSeedLen imgLen d γ_core (k + 1) :=
-      GeneratorReindex.lt_length_succ_parameter (coreSeedLen_ge_succ imgLen d γ_core) n
-    have hk_2d : 2 * (d * Nat.log 2 k) ≤ k := by linarith [hk_2d']
-    have hn_le_pow : n ≤ k ^ E := hlt_next.le.trans hcs_pow
-    have hk_lt_n : k < n :=
-      lt_of_lt_of_le (Nat.lt_succ_self k) ((coreSeedLen_ge_succ imgLen d γ_core k).trans hfits)
-    have hn_pos : 1 ≤ n := by omega
-    have hlog_le : Nat.log 2 n ≤ 2 * E * Nat.log 2 k :=
-      log_le_two_mul_log_of_le_pow (by omega : 2 ≤ k) hn_le_pow
-    have hm_le_mMax : mActual d γ k n ≤ mMax d γ_core k := by
-      apply mActual_le_mMax
-      dsimp [γ_core]
-      nlinarith
-    have hm_le : l2Val d k (r k).val + mActual d γ k n ≤ h2Rows d γ_core k := by
-      have := l2Val_le d k (r k).val
-      unfold h2Rows
-      omega
-    have hm_le_n2 : mActual d γ k n ≤ n ^ 2 := by
-      have hcs : coreSeedLen imgLen d γ_core k =
-          (Nat.log 2 k + 1) + k + k * imgLen k + h2Rows d γ_core k * k := rfl
-      have h1 : 2 * (d * Nat.log 2 k) + Nat.log 2 k + 1 ≤ n := by omega
-      have h2 : Nat.log 2 n ≤ n := Nat.log_le_self 2 n
-      have h3 : mActual d γ k n ≤ (γ + 1) * n := by
-        unfold mActual
-        nlinarith
-      have h4 : (γ + 1) * n ≤ n * n := Nat.mul_le_mul_right n (by omega)
-      calc
-        mActual d γ k n ≤ (γ + 1) * n := h3
-        _ ≤ n * n := h4
-        _ = n ^ 2 := (sq n).symm
-    have hf_k (x : BitString k) : g (List.ofFn x) = List.ofFn (f_fin k x) := by
-      refine (ofFn_ofList ?_).symm
-      simp [himgLen]
-    have hdist := dist_condSeedSet_uniform_le g imgLen d γ_core γ c_eval d_eval deg
-      S hS r evaluate adversary hlaw hfits hlt_next hk_2d hgap hm_le hf_k rfl (hdense k)
-    dsimp only at hdist
-    have hlhl_err := sqrt_lhl_err_le (δ := δ) (by omega : 8 ≤ k) hn_pos hn_le_pow
-    have hn_rpos : (0 : ℝ) < n := Nat.cast_pos.mpr hn_pos
-    have hn_pow_le : (n : ℝ) ^ δ ≤ (n : ℝ) ^ (δ + 2) := by
-      exact_mod_cast Nat.pow_le_pow_right hn_pos (by omega : δ ≤ δ + 2)
-    have hterm1 : Real.sqrt (2 * (k + 1 : ℝ) / (2 : ℝ) ^ (d * Nat.log 2 k)) ≤
-        1 / (4 * (n : ℝ) ^ δ) := by
-      refine hlhl_err.trans (one_div_le_one_div_of_le (by positivity) ?_)
-      linarith
-    have hterm2 : (mActual d γ k n : ℝ) / (2 * (GoldreichLevin.precision deg k : ℝ)) ≤
-        1 / (4 * (n : ℝ) ^ δ) :=
-      gl_err_le (by omega) hn_pos hn_le_pow hm_le_n2
-    have hterm3 : (mActual d γ k n : ℝ) * Real.sqrt (1 / (2 : ℝ) ^ (d * Nat.log 2 k)) ≤
-        1 / (4 * (n : ℝ) ^ δ) := by
-      have hsqrt_le : Real.sqrt (1 / (2 : ℝ) ^ (d * Nat.log 2 k)) ≤
-          1 / (4 * (n : ℝ) ^ (δ + 2)) := by
-        refine (Real.sqrt_le_sqrt ?_).trans hlhl_err
-        exact div_le_div_of_nonneg_right (by linarith) (by positivity)
-      have hm_r : (mActual d γ k n : ℝ) ≤ (n : ℝ) ^ 2 := by exact_mod_cast hm_le_n2
-      calc
-        (mActual d γ k n : ℝ) * Real.sqrt (1 / (2 : ℝ) ^ (d * Nat.log 2 k))
-          ≤ (n : ℝ) ^ 2 * (1 / (4 * (n : ℝ) ^ (δ + 2))) :=
-            mul_le_mul hm_r hsqrt_le (by positivity) (by positivity)
-        _ = 1 / (4 * (n : ℝ) ^ δ) := by
-            rw [pow_add (n : ℝ) δ 2]
-            field_simp
-    have hterm4 :
-        (1 / 2) * (2 : ℝ) ^ (mActual d γ k n + 1) * (dyadicSize (mActual d γ k n) : ℝ) *
-          (dyadicSize (coreSeedLen imgLen d γ_core (k + 1)) : ℝ) *
-          (dyadicSize (k + 1) : ℝ) * (k + 1 : ℝ) *
-          (Game.succProbability (ProbComp.eval
-            (inversionGame g
-              (condInverter g imgLen evaluate d γ_core γ c_eval d_eval deg) k)) : ℝ) ≤
-        1 / (4 * (n : ℝ) ^ δ) :=
-      inv_term_le (by omega) hn_pos hn_le_pow hcs_pow hm_le_mMax
-        (by positivity) hinv_le
-    have hsum4 : 4 * (1 / (4 * (n : ℝ) ^ δ)) = 1 / (n : ℝ) ^ δ := by ring
-    dsimp only [k] at hterm1 hterm2 hterm3 hterm4
-    linarith
-  · have hparam_tendsto := GeneratorReindex.parameter_tendsto (coreSeedLen imgLen d γ_core)
-    have hev_k : ∀ᶠ k : ℕ in atTop,
-        (8 ≤ k) ∧
-        (0 + 2 * d * Nat.log 2 k ≤ k) ∧
-        ((r k).val + d * Nat.log 2 k ≤ k) ∧
-        (coreSeedLen imgLen d γ_core (k + 1) ≤ k ^ E) := by
-      filter_upwards [eventually_ge_atTop 8,
-        Nat.eventually_add_mul_log_le 0 (2 * d) Nat.one_lt_two,
-        eventually_regularity_gap hg himgLen r hdense d,
-        eventually_coreSeedLen_succ_le_pow himg_le d γ_core] with k hk1 hk2 hk3 hk4
-      exact ⟨hk1, hk2, hk3, hk4⟩
-    filter_upwards [eventually_ge_atTop (coreSeedLen imgLen d γ_core 0),
+      hparam_tendsto.eventually (hev_k_base.and hinv_neg)] with
+      n hn0 ⟨⟨hk_min, hk_2d, hgap, hcs_pow⟩, hinv_le⟩
+    exact fullGen_condSeedSet_advantage_le himgLen E δ γ d γ_core c_eval d_eval rfl rfl
+      S hS r (fun _ => rfl) hdense evaluate adversary hlaw rfl hn0 hk_min hk_2d hgap hcs_pow
+      (by simpa only [Nat.cast_pow, Nat.cast_add, Nat.cast_one] using hinv_le)
+  · filter_upwards [eventually_ge_atTop (coreSeedLen imgLen d γ_core 0),
       Nat.eventually_le_log 1 Nat.one_lt_two,
-      hparam_tendsto.eventually hev_k] with n hn0 hlog_n1 ⟨hk8, hk_2d', hgap, hcs_pow⟩
-    set k := GeneratorReindex.parameter (coreSeedLen imgLen d γ_core) n
-    have hfits : coreSeedLen imgLen d γ_core k ≤ n := GeneratorReindex.parameter_fits hn0
-    have hlt_next : n < coreSeedLen imgLen d γ_core (k + 1) :=
-      GeneratorReindex.lt_length_succ_parameter (coreSeedLen_ge_succ imgLen d γ_core) n
-    have hk_2d : 2 * (d * Nat.log 2 k) ≤ k := by linarith [hk_2d']
-    have hn_le_pow : n ≤ k ^ E := hlt_next.le.trans hcs_pow
-    have hk_lt_n : k < n :=
-      lt_of_lt_of_le (Nat.lt_succ_self k) ((coreSeedLen_ge_succ imgLen d γ_core k).trans hfits)
-    have hn_pos : 1 ≤ n := by omega
-    have hcs_def : coreSeedLen imgLen d γ_core k =
-        (Nat.log 2 k + 1) + k + k * imgLen k + h2Rows d γ_core k * k := rfl
-    have hh2_pos : 1 ≤ h2Rows d γ_core k * k := by unfold h2Rows; nlinarith
-    have hlhl_pos : 1 ≤ lhlPrefixLen d k n := by
-      unfold lhlPrefixLen
-      omega
-    have hlhl_le_n : lhlPrefixLen d k n ≤ n := by
-      unfold lhlPrefixLen
-      omega
-    have hdist_core :
-        dist (coreLHLDist (f_fin k) (r k) (hS k) (l1Val_le d k (r k).val)
-            (l2Val_le_h2Rows d γ_core k (r k).val))
-          (unifCoreDist k (imgLen k) (l1Val d k (r k).val) (l2Val d k (r k).val)
-            (h2Rows d γ_core k)) ≤ 1 / (lhlPrefixLen d k n : ℝ) ^ 2 := by
-      refine (dist_coreLHLDist_unifCoreDist_le_of_gap
-        (f_fin k) (r k) (hS k) (hdense k) hgap).trans ?_
-      refine (sqrt_lhl_err_le (δ := δ) hk8 hn_pos hn_le_pow).trans ?_
-      have hlhl_rpos : (0 : ℝ) < (lhlPrefixLen d k n : ℝ) ^ 2 := by positivity
-      refine one_div_le_one_div_of_le hlhl_rpos ?_
-      have h1 : (lhlPrefixLen d k n) ^ 2 ≤ 4 * n ^ (δ + 2) := by
-        calc
-          (lhlPrefixLen d k n) ^ 2 ≤ n ^ 2 := Nat.pow_le_pow_left hlhl_le_n 2
-          _ ≤ n ^ (δ + 2) := Nat.pow_le_pow_right hn_pos (by omega)
-          _ ≤ 4 * n ^ (δ + 2) := by omega
-      exact_mod_cast h1
-    have hg_len_k (x : BitString k) : (g (List.ofFn x)).length = imgLen k := by
-      simp [himgLen]
-    have hent := entropy_fullGen_condSeedSet_ge g imgLen d γ_core γ S hS r hfits hk_2d
-      hg_len_k rfl hdist_core
-    dsimp only at hent
-    have hlog_kn : Nat.log 2 k ≤ Nat.log 2 n := Nat.log_mono_right hk_lt_n.le
-    have hsub_le : 2 * (d * Nat.log 2 k) + Nat.log 2 k + 1 ≤ n := by omega
-    have hlhl_cast : (lhlPrefixLen d k n : ℝ) =
-        (n : ℝ) - (2 * (d : ℝ) * (Nat.log 2 k : ℝ) + (Nat.log 2 k : ℝ) + 1) := by
-      unfold lhlPrefixLen
-      rw [Nat.cast_sub hsub_le]
-      push_cast
-      ring
-    have hloss_le : (n : ℝ) - (α : ℝ) * (Nat.log 2 n : ℝ) ≤ (lhlPrefixLen d k n : ℝ) - 2 := by
-      rw [hlhl_cast]
-      have hlog_kn_r : (Nat.log 2 k : ℝ) ≤ (Nat.log 2 n : ℝ) := by exact_mod_cast hlog_kn
-      have hlog_n1_r : (1 : ℝ) ≤ (Nat.log 2 n : ℝ) := by exact_mod_cast hlog_n1
-      have hα_def : (α : ℝ) = 2 * (d : ℝ) + 4 := by dsimp [α]; push_cast; ring
-      rw [hα_def]
-      nlinarith
-    exact hloss_le.trans hent
+      hparam_tendsto.eventually hev_k_base] with
+      n hn0 hlog_n1 ⟨hk_min, hk_2d, hgap, hcs_pow⟩
+    exact fullGen_condSeedSet_entropy_ge himgLen E δ γ d γ_core rfl S hS r (fun _ => rfl) hdense
+      rfl hn0 hlog_n1 (by omega) hk_2d hgap hcs_pow
 
 end Cslib.Crypto

@@ -107,6 +107,23 @@ def roundCertificate {body : ℕ × β → β}
   space p := (encPair encNat encB p).length + ((encNat p.1).length + 1) + cb.space p
   computes := (ComputableInO.natSucc.comp (ComputableInO.fst encNat encB)).prod cb.computes
 
+/-- A polynomial callback gives a polynomial round: advancing the binary index costs a polynomial
+in its length. -/
+theorem roundCertificate_isPolynomial {body : ℕ × β → β}
+    (cb : NativeCertificate body (encPair encNat encB) encB) (hcb : cb.IsPolynomial) :
+    (roundCertificate cb).IsPolynomial := by
+  have hsq : PolyBounded (fun p : ℕ × β => (encPair encNat encB p).length)
+      (fun p => ((encNat p.1).length + 1) ^ 2) :=
+    PolyBounded.of_forall_le 1 2 fun p => by
+      have hp1 : (encNat p.1).length ≤ (encPair encNat encB p).length := by
+        simp only [length_encPair]; omega
+      simpa only [one_mul] using Nat.pow_le_pow_left (Nat.add_le_add_right hp1 1) 2
+  have hlin : PolyBounded (fun p : ℕ × β => (encPair encNat encB p).length)
+      (fun p => (encNat p.1).length + 1) :=
+    PolyBounded.of_forall_le 1 1 fun p => by
+      simp only [length_encPair, pow_one, one_mul]; omega
+  exact ⟨(PolyBounded.self.add hsq).add hcb.1, (PolyBounded.self.add hlin).add hcb.2⟩
+
 /-- One fixed native machine streams a runtime binary number of indices. Its bound is the
 existing iterator's trajectory-max bound; neither a finite state type nor a machine is selected
 separately for each runtime `n`. -/

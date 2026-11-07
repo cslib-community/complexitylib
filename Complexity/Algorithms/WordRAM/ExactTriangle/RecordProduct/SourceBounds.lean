@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Flat
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.NumericBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationBounds
 
 /-!
@@ -26,34 +27,6 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.RecordProduct
 open Cslib.WordRAM Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-- Explicit input-derived bound for all prefix words and the address support, independent
-of any larger admitted physical width. This is a reservation, not a bulk initialization. -/
-@[expose] def wordBound (n D g p A : ℕ) : ℕ := 2 ^ admissionWidth n D g p A
-
-/-- The prefix bound is polynomial in original size for the usual original scalar/weight
-envelopes, with an explicit fixed exponent for each magnitude exponent κ. -/
-theorem wordBound_le_pow {n D g p A κ : ℕ} (hn : 1 ≤ n)
-    (hD : D ≤ n) (hg : g ≤ n) (hp : p ≤ n) (hA : A ≤ (n + 2) ^ κ) :
-    wordBound n D g p A ≤ (n + 2) ^ (514 * κ + 11812) := by
-  let b := n + 2
-  have hb : 1 < b := by dsimp only [b]; omega
-  have hc := Nat.clog_pos (by decide : 1 < (2 : ℕ)) hb
-  have hp2 := Nat.pow_pred_clog_lt_self (by decide : 1 < (2 : ℕ)) hb
-  have he : Nat.clog 2 b = (Nat.clog 2 b).pred + 1 := (Nat.succ_pred_eq_of_pos hc).symm
-  have hbase : 2 ^ Nat.clog 2 b ≤ b ^ 2 := by
-    rw [he, pow_succ]
-    nlinarith only [hp2, show 2 ≤ b by omega]
-  have hw := admissionWidth_le_log hn hD hg hp hA
-  have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hw
-  change 2 ^ admissionWidth n D g p A ≤ _
-  calc
-    _ ≤ 2 ^ ((257 * κ + 5906) * Nat.clog 2 b) := hpow
-    _ = (2 ^ Nat.clog 2 b) ^ (257 * κ + 5906) := by rw [← Nat.pow_mul, Nat.mul_comm]
-    _ ≤ (b ^ 2) ^ (257 * κ + 5906) := Nat.pow_le_pow_left hbase _
-    _ = b ^ (514 * κ + 11812) := by
-      rw [← Nat.pow_mul]
-      exact congrArg (fun k : ℕ => b ^ k) (by omega : 2 * (257 * κ + 5906) = 514 * κ + 11812)
-
 /-- Every actual native prefix at every admitted width has input-derived bounded words and
 zero memory beyond the same bound. The real halting run at the minimum admitted width and
 the existing width-independent prefix theorem derive the result. -/
@@ -68,23 +41,7 @@ theorem bounded_reachable_original {W m n g p A k : ℕ} (values : List ℤ)
       ∀ a, wordBound n (D m) g p A ≤ a → s.data.mem a = 0 := by
   obtain ⟨hi, a, idx, ha, hidx, hord, y, t, ht, hpref, he, hy, yr, hv', hf, hreg, hQ⟩ :=
     runs_input values hlen hD hg hp hN hv le_rfl
-  have hlow := Runs.prefix_at_smaller_width entryProgram_fixed.2 hW hr he
-  have hs := hlow.bounded (Data.Bounded.init hi)
-  refine ⟨hs.1, hs.2, ?_⟩
-  intro a ha
-  rw [hlow.mem_above (Data.Bounded.init hi) ha]
-  cases a with
-  | zero =>
-    change 2 ^ admissionWidth n (D m) g p A ≤ 0 at ha
-    have := Nat.two_pow_pos (admissionWidth n (D m) g p A)
-    omega
-  | succ a =>
-    change (PreparationInput.input n (D m) g p values).getD a 0 = 0
-    apply List.getD_eq_default
-    have hlen := hi.1
-    dsimp only [Fits] at hlen
-    change 2 ^ admissionWidth n (D m) g p A ≤ a + 1 at ha
-    omega
+  exact hr.prefix_bounds_init entryProgram_fixed.2 hW hi he le_rfl
 
 /-- Complete producer preparation plus one actual record product, including the final halt.
 The per-record sparsity is supplied by its actual native chunk, not an aggregate solver oracle. -/

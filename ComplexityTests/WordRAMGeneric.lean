@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.WordRAM.Generic
+import Complexity.Computability.WordRAM.Defs
 
 /-!
 # Exact word-RAM specialization
@@ -42,6 +42,24 @@ example :
    by rw [run_toGeneric]; rfl,
    by rw [step_toGeneric]; rfl⟩
 
+/-- The word RAM's interpreter metatheory is the generic one transported: a concrete run found by
+the interpreter is a halting execution, and its output and count are unique. -/
+example : Executes 4 double (State.init [3]) 6 4 ∧
+    ∀ v n, Executes 4 double (State.init [3]) v n → v = 6 ∧ n = 4 :=
+  have h : Executes 4 double (State.init [3]) 6 4 := .of_run (fuel := 4) (by decide)
+  ⟨h, fun _ _ h' => (h.unique h').imp Eq.symm Eq.symm⟩
+
+/-- Runs of a program correspond exactly to generic runs of its translation. -/
+example (s t : State 2) (m : ℕ) :
+    GenericRAM.Runs (M := Basis.standard.genericModel) 4 double.toGeneric (s.toGeneric .standard)
+      (t.toGeneric .standard) m ↔ Runs 4 double s t m :=
+  runs_toGeneric_iff
+
+/-- A constant that does not fit the word faults, so the program has no halting execution. -/
+example (v n : ℕ) :
+    ¬Executes 3 ([.op (.const 0 8), .halt 0] : Program .standard 1) (State.init []) v n :=
+  not_executes_of_fault rfl
+
 /-- info: 'Cslib.WordRAM.step_toGeneric' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.WordRAM.step_toGeneric
@@ -53,5 +71,9 @@ example :
 /-- info: 'Cslib.GenericRAM.Executes.unique' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.GenericRAM.Executes.unique
+
+/-- info: 'Cslib.WordRAM.Executes.unique' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Cslib.WordRAM.Executes.unique
 
 end ComplexityTests.WordRAMGeneric

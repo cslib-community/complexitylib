@@ -38,16 +38,21 @@ Checks enforced by default (see AGENTS.md):
    Inline and multiline settings and decimal/hexadecimal numerals are checked. With the default
    selection, an entry whose file no longer needs it (no budget above the default, or a cap above the largest
    budget) is reported as stale, so the allowlist only shrinks as budgets are reduced (#1528).
+8. (Default selection only.) Every `abstracts/catalogue.json` entry is linked from the top-level
+   `README.md` (`](abstracts/ComplexityAbstracts/<Name>.lean)`) and from `abstracts/README.md`
+   (`](ComplexityAbstracts/<Name>.lean)`), and neither README links an abstract module that the
+   catalogue does not select (#1921).
 
 Opt-in heuristic checks:
-8. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
+9. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
    under Complexity/.
-9. (`--max-lines N`) Flag Lean files exceeding N lines.
+10. (`--max-lines N`) Flag Lean files exceeding N lines.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 import re
 import sys
@@ -361,8 +366,27 @@ BARE_SIMP_RE = re.compile(
 )
 
 
+# Finishing tactics that do not depend on the exact shape of a `simp` normal form; Mathlib's
+# flexible-tactic linter accepts them after `simp`, so a `simp` they close counts as terminal.
+FINISHING_RE = re.compile(r"^(?:omega|linarith|nlinarith|norm_num|ring|grind|tauto)\b")
+
+
+def closes_block(lines: list[str], j: int) -> bool:
+    """Whether line `j` is a finishing tactic and the last tactic of its block."""
+    if not FINISHING_RE.match(lines[j].strip()):
+        return False
+    indent = len(lines[j]) - len(lines[j].lstrip(" "))
+    k = j + 1
+    while k < len(lines) and not lines[k].strip():
+        k += 1
+    if k >= len(lines) or COMMAND.match(lines[k]):
+        return True
+    return len(lines[k]) - len(lines[k].lstrip(" ")) < indent
+
+
 def find_nonterminal_bare_simps(code: str) -> list[int]:
-    """Return 1-based line numbers of non-terminal bare `simp` tactics in masked code."""
+    """Return 1-based line numbers of non-terminal bare `simp` tactics in masked code. A `simp`
+    followed only by a finishing tactic (`FINISHING_RE`) that ends its block is terminal."""
     lines = code.split("\n")
     violations: list[int] = []
     for i, line in enumerate(lines):
@@ -393,10 +417,10 @@ def find_nonterminal_bare_simps(code: str) -> list[int]:
         next_has_bullet = next_stripped.startswith(("·", "•"))
         if has_bullet:
             # Inside a `· simp` line, a following tactic at indent > bullet indent is non-terminal.
-            if next_indent > indent and not next_has_bullet:
+            if next_indent > indent and not next_has_bullet and not closes_block(lines, j):
                 violations.append(i + 1)
         else:
-            if next_indent == indent and not next_has_bullet:
+            if next_indent == indent and not next_has_bullet and not closes_block(lines, j):
                 violations.append(i + 1)
     return violations
 
@@ -537,6 +561,40 @@ def check_bibliography(text: str, rel: str = "references.bib") -> list[str]:
     return errors
 
 
+# Each README with the prefix of its links to abstract modules.
+ABSTRACT_READMES = (("README.md", "abstracts/"), ("abstracts/README.md", ""))
+# A Markdown link to an abstract module (not to a bridge or a shared foundation).
+ABSTRACT_LINK_RE = re.compile(
+    r"\]\((?P<target>(?:abstracts/)?ComplexityAbstracts/[A-Za-z0-9_]+Abstract\.lean)\)")
+
+
+def check_abstract_readmes(root: pathlib.Path = ROOT) -> list[str]:
+    """Both READMEs link exactly the abstract modules that the catalogue selects."""
+    rel_catalogue = "abstracts/catalogue.json"
+    try:
+        entries = json.loads((root / rel_catalogue).read_text(encoding="utf-8"))["entries"]
+        sources = {entry["module"].replace(".", "/") + ".lean": entry["id"] for entry in entries}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as err:
+        return [f"{rel_catalogue}: cannot read the catalogue entries ({err})"]
+    errors: list[str] = []
+    for rel, prefix in ABSTRACT_READMES:
+        try:
+            text = (root / rel).read_text(encoding="utf-8")
+        except OSError as err:
+            errors.append(f"{rel}: cannot read ({err})")
+            continue
+        linked = {m.group("target") for m in ABSTRACT_LINK_RE.finditer(text)}
+        for source, entry_id in sources.items():
+            if prefix + source not in linked:
+                errors.append(f"{rel}: catalogue entry `{entry_id}` is not listed; add a line "
+                              f"linking `{prefix}{source}`")
+        for target in sorted(linked):
+            if not target.startswith(prefix) or target[len(prefix):] not in sources:
+                errors.append(f"{rel}: links `{target}`, which is not a catalogue entry of "
+                              f"`{rel_catalogue}` (or uses the wrong relative path)")
+    return errors
+
+
 def check_paths(
     paths: list[pathlib.Path],
     root: pathlib.Path = ROOT,
@@ -603,6 +661,7 @@ def main() -> int:
     if not args.paths:
         errors += check_bibliography(bibliography)
         errors += check_heartbeat_allowlist_stale(heartbeat_caps)
+        errors += check_abstract_readmes()
     if errors:
         for err in errors:
             print(f"ERROR: {err}", file=sys.stderr)

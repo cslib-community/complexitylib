@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
 public import Complexity.Computability.WordRAM.Width
 public import Complexity.Computability.GenericRAM.Signed.Fits
 public import Mathlib.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Initialized native ExactTriangle preparation
@@ -29,7 +30,8 @@ pre-halt state and the final halt charged.
 
 ## Main results
 
-* `PreparationInput.exec_input`: structured execution for composition, without the final halt.
+* `PreparationInput.exec_at`: structured execution from arbitrary registers and dirty memory.
+* `PreparationInput.exec_input`: initialized structured execution, without the final halt.
 * `PreparationInput.runs_input`: initialized execution, exact readback, fits and charged halt.
 * `PreparationInput.bounded_reachable`: input-derived word and address bounds at every prefix.
 * `PreparationInput.width_le_log`, `PreparationInput.wordBound_le_pow`: logarithmic physical
@@ -177,24 +179,26 @@ theorem wordBound_le_pow {n D g p A κ : ℕ} (hn : 1 ≤ n)
       Nat.mul_le_mul hc (envelope_le_pow hn hD hg hp hA)
     _ = (n + 2) ^ (κ + 19) := by rw [← Nat.pow_add]; congr 1; omega
 
-private theorem fits_at_width (n D g p A : ℕ) :
+/-- Original numeric admission covers signed residues and the complete native producer budget. -/
+theorem fits_at_width (n D g p A : ℕ) :
     GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) ((A + p + 1 : ℕ) : ℤ) ∧
       Fits (width n D g p A) (Instances.budget n D g p) := by
   let V := envelope n D g p A
   let k := Nat.clog 2 V
-  have hpow : V ≤ 2 ^ k := Nat.le_pow_clog (by decide) V
-  have hmag : A + p + 1 < 2 ^ k := lt_of_lt_of_le
-    (by dsimp only [V, envelope]; omega) hpow
-  have hbudget : Instances.budget n D g p < 2 ^ k := lt_of_lt_of_le
-    (by dsimp only [V, envelope]; omega) hpow
-  refine ⟨⟨by omega, ?_, ?_⟩, (show Fits k (Instances.budget n D g p) from hbudget).mono
+  have hmag : A + p + 1 < 2 ^ k :=
+    fits_of_lt_clog_le (B := V) (by dsimp only [V, envelope]; omega) (le_refl _)
+  have hbudget : Fits k (Instances.budget n D g p) :=
+    fits_of_lt_clog_le (B := V) (by dsimp only [V, envelope]; omega) (le_refl _)
+  refine ⟨⟨by omega, ?_, ?_⟩, hbudget.mono
     (by dsimp only [width, k, V]; omega)⟩
   · simp only [Nat.add_sub_cancel]
     exact (neg_nonpos.mpr (by positivity)).trans (Int.natCast_nonneg _)
   · simp only [Nat.add_sub_cancel]
     exact_mod_cast hmag
 
-private theorem input_fits {n D g p A : ℕ} (values : List ℤ)
+/-- Original scalar headers and canonical signed words fit at the derived preparation width.
+Caller-side memory-window translations reuse this bound before normalizing their source view. -/
+theorem input_fits {n D g p A : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n)) (hv : ∀ z ∈ values, z.natAbs ≤ A) :
     InputFits (width n D g p A) (input n D g p values) := by
   obtain ⟨hmag, hbudget⟩ := fits_at_width n D g p A
@@ -214,6 +218,37 @@ private theorem input_fits {n D g p A : ℕ} (values : List ℤ)
       have hs := hmag.of_natAbs_le ((hv z hz).trans (by omega : A ≤ A + p + 1))
       exact (Signed.encode_fits hs).mono (by dsimp only [width]; omega)
 
+/-- Execute preparation from actual scalar headers and original signed array words, with
+arbitrary old registers and dirty remaining memory. Admission is derived from original
+parameters using the same proof as the initialized client. No intermediate fit is supplied. -/
+theorem exec_at {n D g p A W : ℕ} (values : List ℤ)
+    (hlen : values.length = 3 * (n * n)) (initial : Data 64)
+    (hDHeader : initial.mem 1 = D) (hgHeader : initial.mem 2 = g)
+    (hnHeader : initial.mem 3 = n) (hpHeader : initial.mem 4 = p)
+    (hinput : ∀ q < 3 * (n * n), initial.mem (5 + q) = Signed.encode (values.getD q 0))
+    (hD : 1 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : 0 < p)
+    (hv : ∀ z ∈ values, z.natAbs ≤ A) (hw : width n D g p A ≤ W) :
+    let C := fun rho => Nat.count (fun q => (values.getD q 0 % (p : ℤ)).toNat = rho) (n * n)
+    let K := ChunkCatalogue.before C (queryCap n D) p
+    ∃ y, ExecWithin W Instances.program initial y
+        (Instances.timeBound n D p K (numPieces n D g) - 1) ∧
+      Instances.Output n D g p (fun q => values.getD q 0) initial y := by
+  obtain ⟨hmag, hbudget⟩ := fits_at_width n D g p A
+  have hmod : GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (p : ℤ) :=
+    hmag.of_natAbs_le (by simp only [Int.natAbs_natCast]; omega)
+  have hvalues (q : ℕ) (hq : q < 3 * (n * n)) :
+      GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (values.getD q 0) := by
+    have hq' : q < values.length := by omega
+    have hmem : values.getD q 0 ∈ values := by
+      rw [List.getD_eq_getElem _ _ hq']
+      exact List.getElem_mem hq'
+    exact hmag.of_natAbs_le ((hv _ hmem).trans (by omega : A ≤ A + p + 1))
+  obtain ⟨y, hy, hout⟩ := Instances.exec_at n D g p (fun q => values.getD q 0)
+    initial hDHeader hgHeader hnHeader hpHeader hinput
+    hD hDn hg hp hmod hvalues hbudget
+  have hew := ExecWithin.mono_width Instances.program_fixed.2 hy hw
+  exact ⟨y, hew, hout⟩
+
 /-- Structured initialized execution for real native caller composition. The budget excludes
 only the final halt; all existing original-input, width and exact readback hypotheses remain.
 This does not accept an execution, layout or intermediate-fit certificate. -/
@@ -228,23 +263,10 @@ theorem exec_input {n D g p A W : ℕ} (values : List ℤ)
       Instances.Output n D g p (fun q => values.getD q 0)
         (.init (input n D g p values)) y ∧
       InputFits W (input n D g p values) ∧ y.Bounded W := by
-  obtain ⟨hmag, hbudget⟩ := fits_at_width n D g p A
-  have hmod : GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (p : ℤ) :=
-    hmag.of_natAbs_le (by simp only [Int.natAbs_natCast]; omega)
-  have hvalues (q : ℕ) (hq : q < 3 * (n * n)) :
-      GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (values.getD q 0) := by
-    have hq' : q < values.length := by omega
-    have hmem : values.getD q 0 ∈ values := by
-      rw [List.getD_eq_getElem _ _ hq']
-      exact List.getElem_mem hq'
-    exact hmag.of_natAbs_le ((hv _ hmem).trans (by omega : A ≤ A + p + 1))
-  obtain ⟨y, hy, hout⟩ := Instances.exec_at n D g p (fun q => values.getD q 0)
-    (.init (input n D g p values)) rfl rfl rfl rfl (fun q _ => input_word n D g p values q)
-    hD hDn hg hp hmod hvalues hbudget
-  have hew := ExecWithin.mono_width Instances.program_fixed.2 hy hw
+  obtain ⟨y, hew, hout⟩ := exec_at values hlen (.init (input n D g p values))
+    rfl rfl rfl rfl (fun q _ => input_word n D g p values q) hD hDn hg hp hv hw
   have hi := (input_fits values hlen hv).mono hw
-  have hybounded := hew.bounded (Data.Bounded.init hi)
-  exact ⟨y, hew, hout, hi, hybounded⟩
+  exact ⟨y, hew, hout, hi, hew.bounded (Data.Bounded.init hi)⟩
 
 /-- Complete initialized execution at every admitted physical width. The prefix witness and
 the output predicate use the same actual pre-halt memory, and the bound includes the halt. -/
@@ -307,20 +329,6 @@ theorem bounded_reachable {n D g p A W : ℕ} (values : List ℤ)
       (∀ a, s.data.mem a < wordBound n D g p A) ∧
       ∀ a, wordBound n D g p A ≤ a → s.data.mem a = 0 := by
   obtain ⟨_, _, _, _, he, _, hi, -⟩ := runs_input values hlen hD hDn hg hp hv le_rfl
-  have hlow := Runs.prefix_at_smaller_width flatProgram_fixed.2 hw hr he
-  have hs := Runs.bounded hlow (Data.Bounded.init hi)
-  have hword := pow_width_lt n D g p A
-  refine ⟨fun i => (hs.1 i).trans hword, fun a => (hs.2 a).trans hword, ?_⟩
-  intro a ha
-  have habove : 2 ^ width n D g p A ≤ a := hword.le.trans ha
-  rw [hlow.mem_above (Data.Bounded.init hi) habove]
-  cases a with
-  | zero => have := Nat.two_pow_pos (width n D g p A); omega
-  | succ a =>
-    change (input n D g p values).getD a 0 = 0
-    apply List.getD_eq_default
-    have hlenFit := hi.1
-    dsimp only [Fits] at hlenFit
-    omega
+  exact hr.prefix_bounds_init flatProgram_fixed.2 hw hi he (pow_width_lt n D g p A).le
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.PreparationInput

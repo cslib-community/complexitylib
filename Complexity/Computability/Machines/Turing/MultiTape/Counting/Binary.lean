@@ -26,6 +26,7 @@ not by its input. Distinct indices remain distinct even when their actions or su
 
 * `Turing.MultiTapeCTM.binaryIndices_binaryCertificate`: decoding the code recovers its indices.
 * `Turing.MultiTapeCTM.binaryCertificate_binaryIndices`: full-width words are recovered exactly.
+* `Turing.MultiTapeCTM.card_binaryCertificateAccepts`: binary words preserve exact branch counts.
 * `Turing.MultiTapeCTM.decodeCertificate_indices_lt`: a transition-list bound also bounds every
   index in a successful canonical certificate, including terminal padding.
 
@@ -144,5 +145,53 @@ theorem decodeCertificate_indices_lt {k : ℕ} {Symbol State : Type*} {input : L
   · exact machine.runBranch_indices_lt hbound hrun index hindex
   · obtain ⟨_, rfl⟩ := List.mem_replicate.mp hindex
     exact hpos
+
+/-- Fixed-width binary words count the canonical occurrence certificates exactly, for any
+terminal verdict. This is the common counting bijection for executable certificate checkers
+and native binary-choice replay machines. The proof is extracted from
+`Checker.acceptCount_checkBinary` by Samuel Schlesinger. -/
+theorem card_binaryCertificateAccepts {k : ℕ} {Symbol State : Type*} {input : List Symbol}
+    (machine : MultiTapeCTM k Symbol State) {width : ℕ}
+    (cfg : Cfg k Symbol State input)
+    (hbound : ∀ cfg : Cfg k Symbol State input, (machine.actions cfg).length ≤ 2 ^ width)
+    (count : ℕ) (verdict : List Symbol → Bool) :
+    (Finset.univ.filter fun word : BitString (count * width) =>
+      machine.certificateAccepts verdict cfg
+        (binaryIndices count width (List.ofFn word)) = true).card =
+      machine.branchCount verdict count cfg := by
+  rw [← machine.certificateCount_eq_branchCount]
+  unfold certificateCount
+  refine Finset.card_bij (fun word _ => binaryIndices count width (List.ofFn word)) ?_ ?_ ?_
+  · intro word hword
+    have hcheck := (Finset.mem_filter.mp hword).2
+    refine Finset.mem_filter.mpr ⟨(machine.mem_certificates_iff _ _ _).mpr ⟨by simp, ?_⟩,
+      hcheck⟩
+    unfold certificateAccepts at hcheck
+    cases hdecode : machine.decodeCertificate cfg
+        (binaryIndices count width (List.ofFn word)) <;>
+      simp_all
+  · intro left _ right _ heq
+    apply List.ofFn_injective
+    calc
+      List.ofFn left = binaryCertificate width (binaryIndices count width (List.ofFn left)) :=
+        (binaryCertificate_binaryIndices List.length_ofFn).symm
+      _ = binaryCertificate width (binaryIndices count width (List.ofFn right)) :=
+        congrArg (binaryCertificate width) heq
+      _ = List.ofFn right := binaryCertificate_binaryIndices List.length_ofFn
+  · intro indices hindices
+    obtain ⟨hcert, hverdict⟩ := Finset.mem_filter.mp hindices
+    obtain ⟨hlen, hvalid⟩ := (machine.mem_certificates_iff _ _ _).mp hcert
+    obtain ⟨⟨choices, final⟩, hdecode⟩ := Option.isSome_iff_exists.mp hvalid
+    have hsmall := machine.decodeCertificate_indices_lt (Nat.two_pow_pos _) hbound hdecode
+    have hlength : (binaryCertificate width indices).length = count * width := by
+      rw [length_binaryCertificate hsmall, hlen]
+    let word := BitString.ofList (count * width) (binaryCertificate width indices)
+    have hword : List.ofFn word = binaryCertificate width indices :=
+      BitString.ofFn_ofList hlength
+    have hround : binaryIndices count width (List.ofFn word) = indices := by
+      rw [hword, ← hlen, binaryIndices_binaryCertificate hsmall]
+    refine ⟨word, Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩, hround⟩
+    rw [hround]
+    exact hverdict
 
 end Turing.MultiTapeCTM

@@ -9,8 +9,10 @@ module
 
 public import Complexity.Computability.GenericRAM.SparseMemory.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
-import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
+import Complexity.Tactic.EncLen
 
 /-!
 # Native Turing-machine certificates for sparse memory
@@ -154,8 +156,7 @@ theorem scanSpace_le (q : Address × SparseMemory Address Value) :
     have hv := le_listMax (f := fun e : Address × Value => (encV e.2).length) he
     change (encA e.1).length ≤ maxKeyLength encA q.2 at hk
     change (encV e.2).length ≤ maxValueLength encV q.2 at hv
-    simp only [compareSpace, length_encPair]
-    omega
+    enc_len [compareSpace]
   unfold scanSpace
   omega
 
@@ -207,130 +208,6 @@ theorem scanSpace_le_linear (q : Address × SparseMemory Address Value) :
   omega
 
 variable [DecidableEq Address]
-
-open ComputableTidilyInDegree
-  (findStep foldl_findStep filterStep foldl_filterStep length_encList_filter_le)
-
-private theorem findWith {γ α π : Type} {encIn : γ ↪ List Bool} {enc : α ↪ List Bool}
-    {encP : π ↪ List Bool} {par : γ → π} {list : γ → List α} {Tp Tl Sp Sl : γ → ℕ}
-    {t : π × α → Bool} {Tt St : π × α → ℕ}
-    (ht : ComputableInO t (encPair encP enc) encBool Tt St)
-    (hpar : ComputableInO par encIn encP Tp Sp)
-    (hlist : ComputableInO list encIn (encList enc) Tl Sl) :
-    ComputableInO (fun x => (list x).find? fun a => t (par x, a)) encIn (encOption enc)
-      (fun x => (encIn x).length + Tp x + Tl x + ((list x).length + 1) *
-        ((encP (par x)).length + (encList enc (list x)).length +
-          listMax (fun a => Tt (par x, a)) (list x)))
-      fun x => (encIn x).length + Sp x + Sl x + (encP (par x)).length +
-        (encList enc (list x)).length + listMax (fun a => St (par x, a)) (list x) := by
-  have hq := fst (encPair encP (encOption enc)) enc
-  have hel := snd (encPair encP (encOption enc)) enc
-  have hisSome := (ComputableInDegree.isSome enc).inO_one.comp_linear hq.snd'
-  have h := hisSome.ite hq.snd' ((ht.comp (hq.fst'.prod hel)).ite
-    ((ComputableInDegree.optionSome (enc₁ := enc)).inO_one.comp_linear hel) (const none))
-  have hstep : ComputableInO (fun q : (π × Option α) × α => findStep t q.1.1 q.1.2 q.2)
-      (encPair (encPair encP (encOption enc)) enc) (encOption enc)
-      (fun q => (encPair (encPair encP (encOption enc)) enc q).length + Tt (q.1.1, q.2))
-      fun q => (encPair (encPair encP (encOption enc)) enc q).length + St (q.1.1, q.2) := by
-    refine (h.mono 4 (fun q => ?_) fun q => ?_).of_enc_eq fun ⟨⟨p, acc⟩, a⟩ => ?_
-    · split_ifs <;> omega
-    · split_ifs <;> omega
-    · cases acc <;> simp [findStep]
-  have hst (x : γ) (i : ℕ) :
-      (encOption enc (((list x).take i).foldl (findStep t (par x)) none)).length ≤
-        (encList enc (list x)).length + 1 := by
-    rw [foldl_findStep, Option.none_or]
-    exact (length_encOption_find?_le enc _ _).trans
-      (Nat.add_le_add_right (length_encList_take_le enc _ _) 1)
-  have hfold := foldlWith (encL := encList enc) (encB := encOption enc) hpar hlist
-    (const none) hstep (R := fun x => 4 * (encP (par x)).length +
-      3 * (encList enc (list x)).length + 5 + listMax (fun a => Tt (par x, a)) (list x))
-    (Q := fun x => 4 * (encP (par x)).length +
-      3 * (encList enc (list x)).length + 5 + listMax (fun a => St (par x, a)) (list x))
-    (B := fun x => (encList enc (list x)).length + 1)
-    (fun x i hi => by
-      have h₁ := length_le_encList_of_mem enc (List.getElem_mem hi)
-      have h₂ := le_listMax (f := fun a => Tt (par x, a)) (List.getElem_mem hi)
-      have h₃ := hst x i
-      simp only [length_encPair] at h₂ ⊢
-      omega)
-    (fun x i hi => by
-      have h₁ := length_le_encList_of_mem enc (List.getElem_mem hi)
-      have h₂ := le_listMax (f := fun a => St (par x, a)) (List.getElem_mem hi)
-      have h₃ := hst x i
-      simp only [length_encPair] at h₂ ⊢
-      omega)
-    (fun x i _ => by have := hst x i; omega)
-  refine (hfold.mono 16 (fun x => ?_) fun x => ?_).of_enc_eq fun x => ?_
-  · have h₁ := length_le_length_encList enc (list x)
-    have h₂ : (list x).length ≤ (list x).length * (encList enc (list x)).length := by
-      rcases Nat.eq_zero_or_pos (list x).length with h | h
-      · simp [h]
-      · exact Nat.le_mul_of_pos_right _ (by omega)
-    ring_nf
-    omega
-  · omega
-  · rw [foldl_findStep, Option.none_or]
-
-private theorem filterWith {γ α π : Type} {encIn : γ ↪ List Bool} {enc : α ↪ List Bool}
-    {encP : π ↪ List Bool} {par : γ → π} {list : γ → List α} {Tp Tl Sp Sl : γ → ℕ}
-    {t : π × α → Bool} {Tt St : π × α → ℕ}
-    (ht : ComputableInO t (encPair encP enc) encBool Tt St)
-    (hpar : ComputableInO par encIn encP Tp Sp)
-    (hlist : ComputableInO list encIn (encList enc) Tl Sl) :
-    ComputableInO (fun x => (list x).filter fun a => t (par x, a)) encIn (encList enc)
-      (fun x => (encIn x).length + Tp x + Tl x + ((list x).length + 1) *
-        ((encP (par x)).length + (encList enc (list x)).length +
-          listMax (fun a => Tt (par x, a)) (list x)))
-      fun x => (encIn x).length + Sp x + Sl x + (encP (par x)).length +
-        (encList enc (list x)).length + listMax (fun a => St (par x, a)) (list x) := by
-  have hq := fst (encPair encP (encList enc)) enc
-  have hel := snd (encPair encP (encList enc)) enc
-  have h := (ht.comp (hq.fst'.prod hel)).ite
-    ((ComputableInDegree.snoc enc).inO_one.comp_linear (hq.snd'.prod hel)) hq.snd'
-  have hstep : ComputableInO
-      (fun q : (π × List α) × α => filterStep t q.1.1 q.1.2 q.2)
-      (encPair (encPair encP (encList enc)) enc) (encList enc)
-      (fun q => (encPair (encPair encP (encList enc)) enc q).length + Tt (q.1.1, q.2))
-      fun q => (encPair (encPair encP (encList enc)) enc q).length + St (q.1.1, q.2) := by
-    refine (h.mono 4 (fun q => ?_) fun q => ?_).of_enc_eq fun ⟨⟨p, acc⟩, a⟩ => ?_
-    · split_ifs <;> omega
-    · split_ifs <;> omega
-    · simp [filterStep]
-  have hst (x : γ) (i : ℕ) :
-      (encList enc (((list x).take i).foldl (filterStep t (par x)) [])).length ≤
-        (encList enc (list x)).length := by
-    rw [foldl_filterStep, List.nil_append]
-    exact (length_encList_filter_le enc _ _).trans (length_encList_take_le enc _ _)
-  have hfold := foldlWith (encL := encList enc) (encB := encList enc) hpar hlist
-    (const []) hstep (R := fun x => 4 * (encP (par x)).length +
-      3 * (encList enc (list x)).length + 5 + listMax (fun a => Tt (par x, a)) (list x))
-    (Q := fun x => 4 * (encP (par x)).length +
-      3 * (encList enc (list x)).length + 5 + listMax (fun a => St (par x, a)) (list x))
-    (B := fun x => (encList enc (list x)).length + 1)
-    (fun x i hi => by
-      have h₁ := length_le_encList_of_mem enc (List.getElem_mem hi)
-      have h₂ := le_listMax (f := fun a => Tt (par x, a)) (List.getElem_mem hi)
-      have h₃ := hst x i
-      simp only [length_encPair] at h₂ ⊢
-      omega)
-    (fun x i hi => by
-      have h₁ := length_le_encList_of_mem enc (List.getElem_mem hi)
-      have h₂ := le_listMax (f := fun a => St (par x, a)) (List.getElem_mem hi)
-      have h₃ := hst x i
-      simp only [length_encPair] at h₂ ⊢
-      omega)
-    (fun x i _ => by have := hst x i; omega)
-  refine (hfold.mono 16 (fun x => ?_) fun x => ?_).of_enc_eq fun x => ?_
-  · have h₁ := length_le_length_encList enc (list x)
-    have h₂ : (list x).length ≤ (list x).length * (encList enc (list x)).length := by
-      rcases Nat.eq_zero_or_pos (list x).length with h | h
-      · simp [h]
-      · exact Nat.le_mul_of_pos_right _ (by omega)
-    ring_nf
-    omega
-  · omega
-  · rw [foldl_filterStep, List.nil_append]
 
 private theorem compare_inO :
     ComputableInO (fun q : Address × (Address × Value) => decide (q.1 = q.2.1))
@@ -412,26 +289,16 @@ private theorem readResult_inO :
       (encPair (encOption (encPair encA encV)) encV) encV
       (fun q => (encPair (encOption (encPair encA encV)) encV q).length)
       (fun q => (encPair (encOption (encPair encA encV)) encV q).length) := by
-  have hd := snd (encOption (encPair encA encV)) encV
-  rcases isEmpty_or_nonempty (Address × Value) with h | h
-  · convert hd using 1
-    funext q
-    cases q.1 with
-    | none => rfl
-    | some e => exact isEmptyElim e
-  · obtain ⟨e⟩ := h
-    have ho := fst (encOption (encPair encA encV)) encV
-    have ht := (ComputableInDegree.isSome (encPair encA encV)).inO_one.comp_linear ho
-    have hv := ((ComputableInDegree.getD (enc₁ := encPair encA encV) e).inO_one
-      |>.comp_linear ho).snd'
-    have hr := (ht.ite hv hd).mono
-      (T' := fun q => (encPair (encOption (encPair encA encV)) encV q).length)
-      (S' := fun q => (encPair (encOption (encPair encA encV)) encV q).length) 2
-      (fun q => by split <;> omega) (fun q => by split <;> omega)
-    convert hr using 1
-    funext q
-    rcases q with ⟨o, d⟩
+  have heq : (fun q : Option (Address × Value) × Value => (q.1.map Prod.snd).getD q.2) =
+      fun q => q.1.elim q.2 Prod.snd := by
+    funext ⟨o, d⟩
     cases o <;> rfl
+  rw [heq]
+  refine .mono (by fun_prop) 8 (fun q => ?_) fun q => ?_
+  all_goals
+    rcases q with ⟨_ | e, d⟩ <;>
+      simp only [Option.elim_none, Option.elim_some, length_encPair, encOption_some,
+        List.length_cons] <;> omega
 
 /-- A read input supplies both the queried store and its default value. -/
 def readEncoding : ((Address × SparseMemory Address Value) × Value) ↪ List Bool :=
@@ -467,9 +334,7 @@ theorem insert_inO_cube :
   apply (insert_inO encA encV).mono 40
   · intro q
     have hq : (queryEncoding encA encV (q.1.1, q.2)).length ≤
-        (writeEncoding encA encV q).length := by
-      simp only [queryEncoding, writeEncoding, length_encPair]
-      omega
+        (writeEncoding encA encV q).length := by enc_len [queryEncoding, writeEncoding]
     have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
     have ht := scanTime_le_cube encA encV (q.1.1, q.2)
     have he : (writeEncoding encA encV q).length ≤
@@ -478,8 +343,7 @@ theorem insert_inO_cube :
     nlinarith
   · intro q
     have hs := scanSpace_le_linear encA encV (q.1.1, q.2)
-    simp only [writeSpace, queryEncoding, writeEncoding, length_encPair] at hs ⊢
-    omega
+    enc_len [writeSpace, queryEncoding, writeEncoding] at hs ⊢
 
 /-- A cubic-time, linear-space specialization of the parameterized read certificate. -/
 theorem read_inO_cube :
@@ -491,8 +355,7 @@ theorem read_inO_cube :
   apply (read_inO encA encV).mono 40
   · intro q
     have hq : (queryEncoding encA encV q.1).length ≤ (readEncoding encA encV q).length := by
-      simp only [readEncoding, length_encPair]
-      omega
+      enc_len [readEncoding]
     have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
     have ht := scanTime_le_cube encA encV q.1
     have he : (readEncoding encA encV q).length ≤
@@ -501,8 +364,7 @@ theorem read_inO_cube :
     nlinarith
   · intro q
     have hs := scanSpace_le_linear encA encV q.1
-    simp only [readSpace, readEncoding, length_encPair] at hs ⊢
-    omega
+    enc_len [readSpace, readEncoding] at hs ⊢
 
 /-- Polynomial-time writes are a corollary of the native parameterized certificate. -/
 @[fun_prop]

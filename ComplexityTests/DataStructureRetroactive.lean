@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Retroactive
+public import Complexity.DataStructure.Retroactive.Basic
 
 /-!
 # Reset-and-replay contract tests
@@ -23,38 +23,35 @@ machine time.
 
 namespace ComplexityTests.DataStructureRetroactive
 
-open Cslib.Stateful Cslib.Algorithms.Lean
+open Cslib.DataStructure
 
 /-- `true` increments; `false` decrements a positive counter. -/
-abbrev counter : Spec where
-  State := Nat
-  Op := Bool
-  Result := fun _ => Unit
-  step n op := (if op then n + 1 else n - 1, ())
-  valid n op := if op then True else 0 < n
+abbrev counter : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := Nat) (Op := Bool) (Result := fun _ => Unit)
+    (fun n op => (if op then n + 1 else n - 1, ()))
+    (fun n op => if op then True else 0 < n)
 
 /-- The primitive interface manages the operation timeline and the counter. -/
-abbrev lower : Spec := Retroactive.backend counter 0
+abbrev lower : StateTransitionSpec := Retroactive.backend counter 0
 
 /-- Direct mathematical execution with the actual primitive operation as its event. -/
 def execution : Execution lower lower.State lower.Op :=
-  fun c o a c' event => (c', a) = lower.step c o ∧ event = o
+  fun c o a c' event => (c', a) = lower.stepFn c o ∧ event = o
 
 /-- A nonempty realization of every primitive contract. -/
-def realization : Realization lower execution where
-  rep := Eq
-  total o hr _ := by
-    subst hr
-    exact ⟨(lower.step _ o).2, (lower.step _ o).1, o, rfl, rfl⟩
-  correct hr _ he := by
-    subst hr
-    exact ⟨congrArg Prod.snd he.1, (congrArg Prod.fst he.1).symm⟩
+def impl : StateTransitionImpl lower execution :=
+  StateTransitionImpl.ofFn Eq
+    (fun o hr _ => by
+      subst hr
+      exact ⟨(lower.stepFn _ o).2, (lower.stepFn _ o).1, o, rfl, rfl⟩)
+    (fun hr _ he => by
+      subst hr
+      exact ⟨congrArg Prod.snd he.1, (congrArg Prod.fst he.1).symm⟩)
 
 /-- The trace records one event per primitive call. -/
-theorem primitive_calls : Bound realization (fun _ => 1)
-    (Retroactive.primitiveCharge counter 0 (fun _ _ => 1) 1 (fun _ _ => 1)) := by
-  intro s c o a c' event hr hv he
-  cases o <;> exact Nat.le_refl 1
+theorem primitive_calls : Bound impl (fun _ => 1)
+    (Retroactive.primitiveCharge counter 0 (fun _ _ => 1) 1 (fun _ _ => 1)) :=
+  fun {_ _ o _ _ _} _ _ _ => by cases o <;> exact Nat.le_refl 1
 
 /-- Insertions retain both incremental and decremental operations. -/
 example : (Retroactive.spec counter 0).ValidHistory []
@@ -70,7 +67,7 @@ example : (Retroactive.spec counter 0).valid [true, false] (.erase 1) := by
   simp [TimelineEdit.apply, TimelineEdit.Valid, counter]
 
 /-- The composed realization inherits correctness without reproving counter semantics. -/
-def rebuilt := (Retroactive.implementation counter 0).realize realization
+def rebuilt := (Retroactive.implementation counter 0).realize impl
 
 /-- This edit client creates a valid increment/decrement timeline and then removes the decrement. -/
 def edits : (Retroactive.spec counter 0).Client Unit :=
@@ -99,7 +96,7 @@ theorem edits_bound {c' : lower.State} {traces : List lower.Op}
   obtain ⟨chunks, hc, ht⟩ := link_exec_decompose _ _ he
   have B : Bound rebuilt (total (fun _ : lower.Op => 1))
       (fun os e => 1 + 1 + counter.totalCost (fun _ _ => 1) 0 (e.apply os)) :=
-    Retroactive.realized_bound counter 0 realization (fun _ => 1)
+    Retroactive.realized_bound counter 0 impl (fun _ => 1)
       (fun _ _ => 1) 1 (fun _ _ => 1) primitive_calls
   have hb := B.client (p := edits) (s := [])
     ⟨([], 0), ⟨rfl, rfl⟩, rfl⟩ (by
@@ -114,23 +111,23 @@ theorem edits_bound {c' : lower.State} {traces : List lower.Op}
   simpa only [hlen] using hb
 
 /--
-info: 'Cslib.Algorithms.Lean.Retroactive.implementation' depends on axioms:
+info: 'Cslib.DataStructure.Retroactive.implementation' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Retroactive.implementation
+#print axioms Cslib.DataStructure.Retroactive.implementation
 /--
-info: 'Cslib.Algorithms.Lean.Retroactive.operation_charge' depends on axioms:
+info: 'Cslib.DataStructure.Retroactive.operation_charge' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Retroactive.operation_charge
+#print axioms Cslib.DataStructure.Retroactive.operation_charge
 /--
-info: 'Cslib.Algorithms.Lean.Retroactive.realized_bound' depends on axioms:
+info: 'Cslib.DataStructure.Retroactive.realized_bound' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Retroactive.realized_bound
+#print axioms Cslib.DataStructure.Retroactive.realized_bound
 /--
 info: 'ComplexityTests.DataStructureRetroactive.edits_execute' depends on axioms:
 [propext]

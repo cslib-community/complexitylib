@@ -33,7 +33,7 @@ set_option maxRecDepth 8192 in
 -- This closed structural check traverses the two fixed native program trees and signed kernels.
 /-- The full flattened instruction list, including halt, is fixed independently of the input. -/
 public theorem program_length_le (bits : Bool) :
-    (program bits |>.program output).length ≤ 32768 := by
+    (program bits |>.program Reg.output).length ≤ 32768 := by
   cases bits <;> decide +kernel
 
 set_option maxRecDepth 8192 in
@@ -53,9 +53,9 @@ public theorem runs {w L m N A : ℕ} (hw : 0 < w) (hm : m ≤ L) (bits : Bool)
     (hfit : Fits (w + 2) (wordBudget L m N qs.length)) :
     InputFits (w + 2) (input bits L X Y qs) ∧
     ∃ y n, n ≤ timeBound hm qs ∧
-      Runs (w + 2) ((program bits).program output) (State.init (input bits L X Y qs))
+      Runs (w + 2) ((program bits).program Reg.output) (State.init (input bits L X Y qs))
         ⟨(program bits).size, y⟩ n ∧
-      Executes (w + 2) ((program bits).program output) (State.init (input bits L X Y qs))
+      Executes (w + 2) ((program bits).program Reg.output) (State.init (input bits L X Y qs))
         (outputBase L m N qs.length) (n + 1) ∧ y.Bounded (w + 2) ∧
       (∀ i : Fin qs.length, y.mem (outputBase L m N qs.length + i.val) =
         Signed.encode ((X * Y) (qs.get i).1 (qs.get i).2)) ∧
@@ -68,8 +68,8 @@ public theorem runs {w L m N A : ℕ} (hw : 0 < w) (hm : m ≤ L) (bits : Bool)
   obtain ⟨n, hn, he⟩ := he
   refine ⟨hi, y, n, hn, ?_, ?_, hy, hv, hf⟩
   · simpa only [Nat.zero_add, State.init] using he.runs (pc := 0)
-      (p := (program bits).program output) (Program.Contains.self _).append_left
-  · simpa only [hp.output, State.init] using he.executes output
+      (p := (program bits).program Reg.output) (Program.Contains.self _).append_left
+  · simpa only [hp.output, State.init] using he.executes Reg.output
 
 /-- Every reachable initialized prefix is bounded at the same physical width. -/
 public theorem bounded_reachable {w L m N A n : ℕ} (hw : 0 < w) (hm : m ≤ L) (bits : Bool)
@@ -77,7 +77,8 @@ public theorem bounded_reachable {w L m N A n : ℕ} (hw : 0 < w) (hm : m ≤ L)
     (qs : List (Fin N × Fin N)) (hX : ∀ i k, |X i k| ≤ (A : ℤ))
     (hY : ∀ k j, |Y k j| ≤ (A : ℤ)) (hmag : magnitudeBound L A < 2 ^ (w - 1))
     (hfit : Fits (w + 2) (wordBudget L m N qs.length)) {y : State 160}
-    (hy : Runs (w + 2) ((program bits).program output) (State.init (input bits L X Y qs)) y n) :
+    (hy :
+      Runs (w + 2) ((program bits).program Reg.output) (State.init (input bits L X Y qs)) y n) :
     y.data.Bounded (w + 2) := hy.bounded_init (input_fits hw hm bits X Y qs hX hY hmag hfit)
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct

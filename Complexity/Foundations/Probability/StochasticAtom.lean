@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -60,6 +60,8 @@ formed.
 * `Cslib.binWeight`: the bin weights.
 
 ## Main results
+
+* `Matrix.denseAtom_nonneg`: nonnegativity from nonnegative cutoffs and gates.
 
 * `Matrix.expect_denseAtom`, `Matrix.expect_denseAtom_of_retentionChannels`: the dense atom
   identity.
@@ -274,6 +276,24 @@ theorem expect_denseAtom_of_retentionChannels {ι : Type*} [Fintype ι] {X : ι 
   exact hp
 
 end DenseAtom
+
+section Nonneg
+
+variable [Fintype κ] {Y Yt : κ → V → Prop}
+  [∀ t y, Decidable (Y t y)] [∀ t y, Decidable (Yt t y)]
+  {k h ρ : ℝ → ℝ} {K : ℕ} {a : ℝ}
+
+/-- Nonnegative cutoff and gate values give a nonnegative atom. -/
+theorem denseAtom_nonneg {H : Matrix V V ℝ}
+    (hk0 : ∀ v, 0 ≤ k v) (hρ0 : ∀ r, 0 ≤ ρ r) (t : κ) (z y : V) :
+    0 ≤ denseAtom Y Yt k h ρ K a H t z y := by
+  rw [denseAtom]
+  split_ifs
+  · refine div_nonneg (mul_nonneg (hk0 _) (hρ0 _)) ?_
+    exact le_trans (by norm_num : (0 : ℝ) ≤ 1 / 2) (le_max_left _ _)
+  · exact le_rfl
+
+end Nonneg
 
 end Matrix
 

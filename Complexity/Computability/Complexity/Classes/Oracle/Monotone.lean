@@ -82,7 +82,7 @@ theorem ComputableInPolyTimeWithOracle.of_polyTimeReducible {A B : Set (List Boo
       fun a State oracle s => ?_
     congr 2
     rw [OracleComp.interpret_interpret, OracleComp.interpret_interpret]
-    have hH : (fun q : Unit × List Bool => OracleComp.interpret (ProbOracleComp.handler
+    have hH : (fun q : Unit × List Bool => OracleComp.interpret (OracleComp.sumHandler
         (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
         (fun (q : Unit × List Bool) (_ : Unit) => (fun r => (r, ())) <$> (List.take 1 <$>
           ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool) ((), g q.2))))

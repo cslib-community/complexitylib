@@ -90,8 +90,8 @@ theorem countingTreeBound_of_budget (hM2 : 2 ≤ M) {B : ℕ} (hB : 1 ≤ B)
     obtain ⟨C, hC, rfl⟩ := mem_toClauseSet.mp hC'
     exact hsupport C hC l (List.mem_toFinset.mp hl)
   refine ⟨fun w hw => ?_, fun W hW => ?_⟩
-  · exact CountingBranchingRule.IsLeafWord.length_le (R := rule hM hK) hM2 ψ.2.reduced
-      hnt ψ.2.card_le declared hsup hw
+  · exact CountingBranchingRule.length_le_of_isNodeWord (R := rule hM hK) hM2 ψ.2.reduced
+      hnt ψ.2.card_le declared hsup hw.isNodeWord
   · exact CountingBranchingRule.card_le_two_pow_of_isLeafWord (R := rule hM hK) hM2
       ψ.2.reduced hnt ψ.2.card_le declared hsup hB hbudget W hW
 

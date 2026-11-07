@@ -100,20 +100,43 @@ example {ι : Type 1} (l : List ι) :
   fun_prop
 
 -- Signed subtraction feeds the magnitude operation, with both natural results in unary.
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => ((p.1 : ℤ) - p.2).natAbs)
+example : ComputableInPolyTime (fun p : ℕ × ℕ => ((p.1 : ℤ) - p.2).natAbs)
     (encPair encUnary encUnary) encUnary := by
   fun_prop
 
-example : ComputableTidilyInPolyTime (fun z : ℤ => (z + 1, (z - 1).natAbs))
+example : ComputableInPolyTime (fun z : ℤ => (z + 1, (z - 1).natAbs))
     encInt (encPair encInt encUnary) := by
   fun_prop
+
+-- Plain integer rules compose without tidy hypotheses or registrations.
+example : ComputableInPolyTime (fun z : ℤ => (z.toNat, z.natAbs))
+    encInt (encPair encUnary encUnary) := by
+  fun_prop
+
+example : ComputableInPolyTime (fun p : ℤ × ℕ => decide (|p.1 + 1| ≤ (p.2 : ℤ)))
+    (encPair encInt encUnary) encBool := by
+  fun_prop
+
+-- The negative sign's offset is not the magnitude or nonnegative truncation.
+example : encInt (-1) = [true] ∧ Int.natAbs (-1) = 1 ∧ Int.toNat (-1) = 0 ∧
+    encInt 0 = [false] ∧ Int.natAbs 0 = 0 ∧ Int.natAbs 1 = 1 := by
+  decide
+
+open Lean Elab Command in
+run_cmd do
+  for name in [`int_natCast, `int_negSucc, `int_natCast_sub, `int_succ, `int_pred,
+      `int_pos, `int_neg, `int_toNat, `int_natAbs, `int_sub_sign, `int_abs_le_nat,
+      `int_abs_le_nat', `int_equivNat] do
+    let old := `Turing.MultiTapeTM.ComputableTidilyInPolyTime ++ name
+    if (← getEnv).contains old then
+      throwError "retired tidy integer certificate remains: {old}"
 
 -- Negative tape positions retain their existing numbering when emitted in binary.
 example : ComputableInPolyTime
     (fun n => (Turing.windowList n).map Equiv.intEquivNat) encUnary (encList encNat) :=
   (ComputableInPolyTime.map
     (ComputableInPolyTime.unary_to_binary.comp
-      ComputableTidilyInPolyTime.int_equivNat.computableInPolyTime)).comp
+      ComputableInPolyTime.int_equivNat)).comp
     Turing.computableInPolyTime_windowList
 
 -- Unary loop bounds can be evaluated and enumerated for every fixed polynomial and exponent.

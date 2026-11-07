@@ -33,6 +33,15 @@ jobs:
           build: "false"
           test: "false"
           lint: "false"
+          use-mathlib-cache: "false"
+      - name: Restore Mathlib cache with retries
+        continue-on-error: true
+        timeout-minutes: 10
+        run: python3 -B scripts/cache/get_mathlib.py --lean-action
+      - name: Restore missing Complexitylib build outputs
+        continue-on-error: true
+        timeout-minutes: 10
+        run: scripts/cache/get-missing.sh
       - name: Generate API documentation
         run: DISABLE_EQUATIONS=1 lake -d docbuild build Complexity:docs
       # Also catches library changes that break one of the guide's examples.

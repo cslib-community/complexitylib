@@ -201,24 +201,12 @@ noncomputable def gateAt (n T t c : ℕ) (l : Loc k State) : Op × List ℕ :=
 
 /-- **The gate with number `g`** of the tableau of `tm` for `T` steps on inputs of length `n`:
 gates `0` and `1` are the constants `false` and `true`, and gate `2 + t * B + r` is the gate at
-offset `r` of block `t`, for blocks of `B` gates. -/
+offset `r` of block `t`, for blocks of `B` gates, at the column and position decoded by `posOf`. -/
 noncomputable def gateCode (n T g : ℕ) : Op × List ℕ :=
   if g < 2 then (.const (decide (g = 1)), [])
   else
-    let t := (g - 2) / blockSize k State T
-    let r := (g - 2) % blockSize k State T
-    if r < globStart k T then
-      gateAt tm n T t (r / scanWidth k) (.scan (ScanLoc.ofIdx (r % scanWidth k)))
-    else if r < gfStart k State T then
-      gateAt tm n T t 0 (.glob (GlobLoc.ofIdx (r - globStart k T)))
-    else if r < colStart k State T then
-      gateAt tm n T t 0 (.gf (GFeat.ofIdx ((r - gfStart k State T) / 16))
-        (gadgetB (r - gfStart k State T)) (gadgetJ (r - gfStart k State T)))
-    else
-      gateAt tm n T t ((r - colStart k State T) / colWidth k)
-        (.col (ColFeat.ofIdx ((r - colStart k State T) % colWidth k / 16))
-          (gadgetB ((r - colStart k State T) % colWidth k))
-          (gadgetJ ((r - colStart k State T) % colWidth k)))
+    let (c, l) := posOf T ((g - 2) % blockSize k State T)
+    gateAt tm n T ((g - 2) / blockSize k State T) c l
 
 /-- **The gate list of the tableau** of `tm` for `T` steps on inputs of length `n`. -/
 noncomputable def gates (n T : ℕ) : List (Op × List ℕ) :=
@@ -238,45 +226,7 @@ theorem gateCode_wire {n T t : ℕ} {l : Loc k State} {c : ℕ} (hl : l.ColOK T 
   obtain ⟨hdiv, hmod⟩ := div_mod_wire (n := n) (t := t) hl
   have h2 : ¬ wire n T t l c - n < 2 := by rw [wire_sub]; omega
   rw [gateCode, ite_eq_right h2]
-  simp only [hdiv, hmod]
-  have hgs : globStart k T ≤ gfStart k State T := Nat.le_add_right _ _
-  have hgc : gfStart k State T ≤ colStart k State T := Nat.le_add_right _ _
-  rcases l with l | l | ⟨f, b, j⟩ | ⟨f, b, j⟩ <;> simp only [Loc.ColOK] at hl <;>
-    simp only [Loc.offset]
-  · have hi := l.idx_lt
-    have h₁ : c * scanWidth k + l.idx < globStart k T := scan_offset_lt_globStart hl l
-    have h₂ : (c * scanWidth k + l.idx) / scanWidth k = c := Nat.mul_add_div_of_lt c hi
-    have h₃ : (c * scanWidth k + l.idx) % scanWidth k = l.idx := by
-      rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hi]
-    simp only [h₁, ↓reduceIte, h₂, h₃, ScanLoc.ofIdx_idx]
-  · have hi := l.idx_lt
-    subst hl
-    have h₁ : ¬ globStart k T + l.idx < globStart k T := by omega
-    have h₂ : globStart k T + l.idx < gfStart k State T := by simp only [gfStart]; omega
-    simp only [h₁, h₂, ↓reduceIte, Nat.add_sub_cancel_left, GlobLoc.ofIdx_idx]
-  · subst hl
-    have := gfStart_add_gadgetIdx_lt (k := k) (T := T) f b j
-    have h₁ : ¬ gfStart k State T + gadgetIdx f.idx b j < globStart k T := by omega
-    have h₂ : ¬ gfStart k State T + gadgetIdx f.idx b j < gfStart k State T := by omega
-    simp only [h₁, h₂, this, ↓reduceIte, Nat.add_sub_cancel_left, gadgetIdx_div,
-      GFeat.ofIdx_idx, gadgetB_gadgetIdx, gadgetJ_gadgetIdx]
-  · have h₁ := gadgetIdx_lt f.idx b j
-    have h₂ := f.idx_lt
-    have hw : gadgetIdx f.idx b j < colWidth k := by simp only [colWidth]; omega
-    have h₃ : ¬ colStart k State T + c * colWidth k + gadgetIdx f.idx b j < globStart k T := by
-      omega
-    have h₄ : ¬ colStart k State T + c * colWidth k + gadgetIdx f.idx b j < gfStart k State T := by
-      omega
-    have h₅ : ¬ colStart k State T + c * colWidth k + gadgetIdx f.idx b j <
-        colStart k State T := by omega
-    have h₆ : colStart k State T + c * colWidth k + gadgetIdx f.idx b j - colStart k State T =
-        gadgetIdx f.idx b j + c * colWidth k := by omega
-    have h₇ : (gadgetIdx f.idx b j + c * colWidth k) / colWidth k = c :=
-      Nat.add_mul_div_of_lt c hw
-    have h₈ : (gadgetIdx f.idx b j + c * colWidth k) % colWidth k = gadgetIdx f.idx b j := by
-      rw [Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hw]
-    simp only [h₃, h₄, h₅, ↓reduceIte, h₆, h₇, h₈, gadgetIdx_div, ColFeat.ofIdx_idx,
-      gadgetB_gadgetIdx, gadgetJ_gadgetIdx]
+  simp only [hdiv, hmod, posOf_offset hl]
 
 /-! ### Well-formedness -/
 

@@ -92,7 +92,7 @@ omit [DecidableEq Operation] in
 theorem run_interpret_sample_uniform_bool
     (oracle : Operation × List Symbol → StateT OracleState PMF (List Symbol)) (s : OracleState) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (ProbOracleComp.sample (ProbComp.uniform Bool))).run s =
       (PMF.uniformOfFintype Bool).map (fun bit => (bit, s)) := by
   simp only [ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform]
@@ -104,14 +104,14 @@ theorem run_interpret_runOracleConfigFrom_add_of_halted
     (oracle : Operation × List Symbol → StateT OracleState PMF (List Symbol))
     (cfg : Config k Symbol State Operation input) (fuel padding : ℕ) (s : OracleState)
     (hhalt : ∀ final ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom fuel cfg)).run s).support,
       final.1.tapes.state = none) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom (fuel + padding) cfg)).run s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         (machine.runOracleConfigFrom fuel cfg)).run s :=
   MultiTapeMachine.run_interpret_runConfigFrom_add_of_halted machine _ _ _ cfg fuel padding s hhalt
 
@@ -123,14 +123,14 @@ theorem run_interpret_runOracleConfigFrom_eq_of_halted
     (cfg : Config k Symbol State Operation input) {fuel larger : ℕ} (hle : fuel ≤ larger)
     (s : OracleState)
     (hhalt : ∀ final ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom fuel cfg)).run s).support,
       final.1.tapes.state = none) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom larger cfg)).run s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         (machine.runOracleConfigFrom fuel cfg)).run s := by
   simpa only [Nat.add_sub_of_le hle] using
     run_interpret_runOracleConfigFrom_add_of_halted machine oracle cfg fuel (larger - fuel) s hhalt
@@ -141,7 +141,7 @@ theorem run_interpret_runOracleConfigFrom_ofDeterministic
     (oracle : Operation × List Symbol → StateT OracleState PMF (List Symbol))
     (fuel : ℕ) (cfg : Config k Symbol State Operation input) (s : OracleState) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       ((ofDeterministic machine).runOracleConfigFrom fuel cfg)).run s =
       PMF.pure ({ cfg with tapes := machine.runFrom cfg.tapes fuel }, s) :=
   run_interpret_runConfigFrom_ofDeterministic machine _ _ _ (PMF.uniformOfFintype Bool)
@@ -154,24 +154,24 @@ theorem run_interpret_runOracleConfigFrom_seq
     (oracle : Operation × List Symbol → StateT OracleState PMF (List Symbol))
     (cfg : Config k Symbol State₀ Operation input) (t₁ t₂ : ℕ) (s : OracleState)
     (h₁ : ∀ result ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (first.runOracleConfigFrom t₁ cfg)).run s).support,
       result.1.tapes.state = none)
     (h₂ : ∀ result ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (first.runOracleConfigFrom t₁ cfg)).run s).support,
       ∀ final ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         (second.runOracleConfigFrom t₂ (Sequential.start second result.1))).run result.2).support,
         final.1.tapes.state = none) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       ((first.seq second).runOracleConfigFrom (t₁ + t₂) (Sequential.left second cfg))).run s =
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (first.runOracleConfigFrom t₁ cfg)).run s).bind (fun result =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         (second.runOracleConfigFrom t₂
           (Sequential.start second result.1))).run result.2).map
         (fun (final, s') => (Sequential.right final, s'))) :=
@@ -190,10 +190,10 @@ theorem run_interpret_runOracleConfigFrom_succ_step
       machine.tr state cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols bit =
         .step action symbol move) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom (fuel + 1) cfg)).run s =
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom fuel (cfg.step action symbol move))).run s := by
   dsimp only [runOracleConfigFrom, runConfigFrom]
   rw [MultiTapeMachine.runConfigFrom]
@@ -213,11 +213,11 @@ theorem run_interpret_runOracleConfigFrom_succ_query
       machine.tr state cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols bit =
         .query op next) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom (fuel + 1) cfg)).run s =
     (oracle (op, (cfg.channels op).queryBuffer) s).bind (fun (answer, s') =>
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         (machine.runOracleConfigFrom fuel (cfg.receive op next answer))).run s') := by
   dsimp only [runOracleConfigFrom, runConfigFrom]
   rw [MultiTapeMachine.runConfigFrom]
@@ -238,11 +238,11 @@ def RunsWords (machine : MultiTapePTM k Bool State Operation) (x : List Bool)
     cfg.tapes = wordsCfg x (some machine.initial) ws₀ out₀ →
     (∀ op, (cfg.channels op).queryBuffer = []) →
     let run := (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom time cfg)).run s
     run.map (fun (final, s') => (final.tapes, s')) =
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         program).run s).map
         (fun (a, s') => (wordsCfg x none (ws₁ a) (out₀ ++ emit a), s')) ∧
     ∀ final ∈ run.support, ∀ op, (final.1.channels op).queryBuffer = []
@@ -270,13 +270,13 @@ theorem halted (h : machine.RunsWords x ws₀ out₀ time program ws₁ emit)
     (htapes : cfg.tapes = wordsCfg x (some machine.initial) ws₀ out₀)
     (hbuf : ∀ op, (cfg.channels op).queryBuffer = []) :
     ∀ final ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom time cfg)).run s).support,
       final.1.tapes.state = none := by
   intro final hfinal
   have hmap : (final.1.tapes, final.2) ∈
       (((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         (machine.runOracleConfigFrom time cfg)).run s).map
         (fun (final, s') => (final.tapes, s'))).support :=
     (PMF.mem_support_map_iff _ _ _).mpr ⟨final, hfinal, rfl⟩
@@ -293,10 +293,10 @@ theorem mem_support (h : machine.RunsWords x ws₀ out₀ time program ws₁ emi
     (hbuf : ∀ op, (cfg.channels op).queryBuffer = [])
     {final : Config k Bool State Operation x} {s' : OracleState}
     (hfinal : (final, s') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom time cfg)).run s).support) :
     (∃ a, (a, s') ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         program).run s).support ∧
       final.tapes = wordsCfg x none (ws₁ a) (out₀ ++ emit a)) ∧
     ∀ op, (final.channels op).queryBuffer = [] := by
@@ -304,7 +304,7 @@ theorem mem_support (h : machine.RunsWords x ws₀ out₀ time program ws₁ emi
   refine ⟨?_, hclean (final, s') hfinal⟩
   have hmap : (final.tapes, s') ∈
       (((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         (machine.runOracleConfigFrom time cfg)).run s).map
         (fun (final, s') => (final.tapes, s'))).support :=
     (PMF.mem_support_map_iff _ _ _).mpr ⟨(final, s'), hfinal, rfl⟩
@@ -327,10 +327,10 @@ theorem congr (h : machine.RunsWords x ws₀ out₀ time program ws₁ emit)
     (heq : ∀ (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool)) (s : OracleState),
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         program).run s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         program').run s) :
     machine.RunsWords x ws₀ out₀ time program' ws₁ emit := by
   intro OracleState oracle s cfg htapes hbuf
@@ -380,7 +380,7 @@ theorem seq_bind {first : MultiTapePTM k Bool State₀ Operation}
     (h₂ : ∀ a (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool)) (s s' : OracleState),
       (a, s') ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         prog₁).run s).support →
       second.RunsWords x (ws₁ a) (out₀ ++ emit₁ a) t₂ (prog₂ a) (ws₂ a) (emit₂ a)) :
     (first.seq second).RunsWords x ws₀ out₀ (t₁ + t₂)
@@ -401,10 +401,10 @@ theorem seq_bind {first : MultiTapePTM k Bool State₀ Operation}
     exact hinj (Prod.ext hws hem)
   have hhalt₁ := h₁.halted oracle s cfg₀ rfl hbuf
   have hhalt₂ : ∀ result ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (first.runOracleConfigFrom t₁ cfg₀)).run s).support,
       ∀ final ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         (second.runOracleConfigFrom t₂ (Sequential.start second result.1))).run result.2).support,
         final.1.tapes.state = none := by
     rintro ⟨mid, s₁⟩ hmid
@@ -422,7 +422,7 @@ theorem seq_bind {first : MultiTapePTM k Bool State₀ Operation}
         PMF (Cfg k Bool (State₀ ⊕ State₁) x × OracleState) :=
       if h : ∃ a, p.1 = f a then
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (prog₂ (Classical.choose h))).run p.2).map
           (fun (b, s₂) =>
             (wordsCfg x none (ws₂ (Classical.choose h) b)
@@ -431,7 +431,7 @@ theorem seq_bind {first : MultiTapePTM k Bool State₀ Operation}
     have hg (a : α) (s₁ : OracleState) :
         g (wordsCfg x none (ws₁ a) (out₀ ++ emit₁ a), s₁) =
           ((OracleComp.interpret
-            (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+            (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
             (prog₂ a)).run s₁).map
             (fun (b, s₂) =>
               (wordsCfg x none (ws₂ a b) (out₀ ++ (emit₁ a ++ emit₂ a b)), s₂)) := by
@@ -441,17 +441,17 @@ theorem seq_bind {first : MultiTapePTM k Bool State₀ Operation}
       simp only [hex, ↓reduceDIte, hchoose]
     have hcongr :
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (first.runOracleConfigFrom t₁ cfg₀)).run s).bind
           (fun result =>
             PMF.map (fun (final, s') => (final.tapes, s'))
               (PMF.map (fun (final, s') => (Sequential.right final, s'))
                 ((OracleComp.interpret
-                  (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+                  (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
                   (second.runOracleConfigFrom t₂
                     (Sequential.start second result.1))).run result.2))) =
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (first.runOracleConfigFrom t₁ cfg₀)).run s).bind
           (fun result => g (result.1.tapes, result.2)) := by
       apply PMF.bind_congr_on_support
@@ -466,12 +466,12 @@ theorem seq_bind {first : MultiTapePTM k Bool State₀ Operation}
           PMF.map (fun p => (p.1.tapes, p.2))
             (PMF.map (fun p => (Sequential.right (State₀ := State₀) p.1, p.2))
               ((OracleComp.interpret
-                (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+                (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
                 (second.runOracleConfigFrom t₂ (Sequential.start second mid))).run s₁)) =
           PMF.map (fun p => (Cfg.mapState (Option.map (Sum.inr (α := State₀))) p.1, p.2))
             (PMF.map (fun p => (p.1.tapes, p.2))
               ((OracleComp.interpret
-                (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+                (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
                 (second.runOracleConfigFrom t₂ (Sequential.start second mid))).run s₁)) := by
         simp only [PMF.map_comp, Function.comp_def, Sequential.right]
       rw [hright, hsecondLaw, hmidTapes, hg a s₁, PMF.map_comp]
@@ -483,11 +483,11 @@ theorem seq_bind {first : MultiTapePTM k Bool State₀ Operation}
     rw [hcongr]
     have hmapBind :
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (first.runOracleConfigFrom t₁ cfg₀)).run s).bind
           (fun result => g (result.1.tapes, result.2)) =
         (((OracleComp.interpret
-          (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (first.runOracleConfigFrom t₁ cfg₀)).run s).map
           (fun (final, s') => (final.tapes, s'))).bind g := by
       rw [PMF.bind_map]
@@ -533,7 +533,7 @@ theorem seq_pure_right {first : MultiTapePTM k Bool State₀ Operation}
     (h₂ : ∀ a (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool)) (s s' : OracleState),
       (a, s') ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         prog₁).run s).support →
       second.RunsWords x (ws₁ a) (out₀ ++ emit₁ a) t₂ (pure ())
         (fun _ => ws₂ a) (fun _ => emit₂ a)) :
@@ -567,12 +567,12 @@ theorem of_nil_output (h : machine.RunsWords x ws₀ [] time program ws₁ emit)
         PMF.map (fun (final, s') => (final.tapes, s'))
           (PMF.map (fun (a, s') => (a.prependOutput out₀, s'))
             ((OracleComp.interpret
-              (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+              (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
               (machine.runOracleConfigFrom time cfg₀)).run s)) =
         PMF.map (fun (tapes, s') => (tapes.prependOutput out₀, s'))
           (PMF.map (fun (final, s') => (final.tapes, s'))
             ((OracleComp.interpret
-              (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+              (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
               (machine.runOracleConfigFrom time cfg₀)).run s)) := by
       simp only [PMF.map_comp, Function.comp_def, Config.prependOutput]
     rw [hmap, hlaw, PMF.map_comp]
@@ -650,12 +650,12 @@ theorem of_first_step_mapState {S : Type} {tm : MultiTapePTM k Bool S Operation}
             (final.1.tapes, final.2))
           (PMF.map (fun (a, s') => (Config.mapState f a, s'))
             ((OracleComp.interpret
-              (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+              (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
               (tm.runOracleConfigFrom time cfg₀)).run s)) =
         PMF.map (fun (tapes, s') => (tapes.mapState (Option.map f), s'))
           (PMF.map (fun (final, s') => (final.tapes, s'))
             ((OracleComp.interpret
-              (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+              (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
               (tm.runOracleConfigFrom time cfg₀)).run s)) := by
       simp only [PMF.map_comp, Function.comp_def, Config.mapState]
     rw [hmap, hlaw, PMF.map_comp]
@@ -681,14 +681,14 @@ theorem length_output_le_of_mem_support_runOracleConfigFrom {x : List Bool}
     (fuel : ℕ) (cfg : Config k Bool State Operation x) (s : OracleState)
     {final : Config k Bool State Operation x} {s' : OracleState}
     (hfinal : (final, s') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracleConfigFrom fuel cfg)).run s).support) :
     final.tapes.output.length ≤ cfg.tapes.output.length + fuel :=
   MultiTapeMachine.length_output_runConfigFrom_le machine
     (fun choices => choices <$> ProbOracleComp.sample (ProbComp.uniform Bool))
     (fun op word => ProbOracleComp.query
       (spec := fun _ : Operation × List Bool => List Bool) (op, word))
-    (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
     fuel cfg final s s' hfinal
 
 /-- Any word emitted by a `RunsWords` phase has length at most `time`. -/
@@ -700,7 +700,7 @@ theorem RunsWords.length_emit_le {machine : MultiTapePTM k Bool State Operation}
     (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
     (s : OracleState) {a : α} {s' : OracleState}
     (ha : (a, s') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       program).run s).support) :
     (emit a).length ≤ time := by
   let cfg : Config k Bool State Operation x :=
@@ -709,7 +709,7 @@ theorem RunsWords.length_emit_le {machine : MultiTapePTM k Bool State Operation}
   obtain ⟨hlaw, _⟩ := h OracleState oracle s cfg rfl (fun _ => rfl)
   have hmem : (wordsCfg x (none : Option State) (ws₁ a) (out₀ ++ emit a), s') ∈
       (((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         program).run s).map
         (fun (a, s') => (wordsCfg x (none : Option State) (ws₁ a) (out₀ ++ emit a), s'))).support :=
     (PMF.mem_support_map_iff _ _ _).mpr ⟨(a, s'), ha, rfl⟩
@@ -737,10 +737,10 @@ theorem congr (h : machine.ComputesTidily x time program)
     (heq : ∀ (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool)) (s : OracleState),
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         program).run s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         program').run s) :
     machine.ComputesTidily x time program' :=
   fun out₀ => (h out₀).congr heq
@@ -749,10 +749,10 @@ theorem congr (h : machine.ComputesTidily x time program)
 theorem runOracle (h : machine.ComputesTidily x time program)
     (oracle : Operation × List Bool → StateT OracleState PMF (List Bool)) (s : OracleState) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (machine.runOracle time x)).run s =
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       program).run s := by
   have hlaw := ((h []) OracleState oracle s (machine.initialConfig x)
     (Cfg.init_eq_wordsCfg machine.initial x) (fun _ => rfl)).1
@@ -784,7 +784,7 @@ theorem length_output_le (h : machine.ComputesTidily x time program)
     (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
     (s : OracleState) {w : List Bool} {s' : OracleState}
     (hw : (w, s') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       program).run s).support) :
     w.length ≤ time :=
   (h []).length_emit_le oracle s hw

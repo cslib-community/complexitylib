@@ -197,9 +197,9 @@ public theorem runs_thin {W m N A : ℕ} (bits : Bool)
     (hW : 128 * Nat.clog 2 (N + qs.length + A + 2) ≤ W) :
     InputFits W (input bits (19 * m) X Y qs) ∧
     ∃ y n,
-      Runs W ((program bits).program output) (State.init (input bits (19 * m) X Y qs))
+      Runs W ((program bits).program Reg.output) (State.init (input bits (19 * m) X Y qs))
         ⟨(program bits).size, y⟩ n ∧
-      Executes W ((program bits).program output) (State.init (input bits (19 * m) X Y qs))
+      Executes W ((program bits).program Reg.output) (State.init (input bits (19 * m) X Y qs))
         (outputBase (19 * m) m N qs.length) (n + 1) ∧
       ((n + 1 : ℕ) : ℝ) ≤ 4325376 * ((19 * m + 1 : ℕ) : ℝ) * (N : ℝ) ^ 2 /
         (D m : ℝ) ^ (1 / 18 : ℝ) ∧ y.Bounded W ∧

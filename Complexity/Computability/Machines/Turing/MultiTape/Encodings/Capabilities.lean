@@ -39,27 +39,27 @@ public class PairEncoding (enc₁ : α ↪ List Bool) (enc₂ : β ↪ List Bool
     ∃ c, ComputableInTimeAndSpace (fun x => (f x, g x)) encIn enc
       (fun x => c * (t x + 1)) (fun x => c * (s x + (enc (f x, g x)).length + 1))
   /-- The first projection is computable in linear time and space. -/
-  fst : ComputableInLinearTimeAndSpace Prod.fst enc enc₁
+  fst : ComputableInDegree Prod.fst enc enc₁ 1 1
   /-- The second projection is computable in linear time and space. -/
-  snd : ComputableInLinearTimeAndSpace Prod.snd enc enc₂
+  snd : ComputableInDegree Prod.snd enc enc₂ 1 1
 
 /-- `enc` encodes options compatibly with `enc₁`: `none` is encoded by the empty word. -/
 public class OptionEncoding (enc₁ : α ↪ List Bool) (enc : Option α ↪ List Bool) : Prop where
   /-- `none` is encoded by the empty word. -/
   none_eq : enc none = []
   /-- `some` is computable in linear time and space. -/
-  some : ComputableInLinearTimeAndSpace some enc₁ enc
+  some : ComputableInDegree some enc₁ enc 1 1
   /-- `Option.getD` is computable in linear time and space. -/
-  getD (d : α) : ComputableInLinearTimeAndSpace (fun o => o.getD d) enc enc₁
+  getD (d : α) : ComputableInDegree (fun o => o.getD d) enc enc₁ 1 1
 
 /-- `enc` encodes lists compatibly with `enc₁`. -/
 public class ListEncoding (enc₁ : α ↪ List Bool) (enc : List α ↪ List Bool) : Prop where
   /-- `List.headD` is computable in linear time and space. -/
-  headD (d : α) : ComputableInLinearTimeAndSpace (fun l => l.headD d) enc enc₁
+  headD (d : α) : ComputableInDegree (fun l => l.headD d) enc enc₁ 1 1
   /-- `List.tail` is computable in linear time and space. -/
-  tail : ComputableInLinearTimeAndSpace List.tail enc enc
+  tail : ComputableInDegree List.tail enc enc 1 1
   /-- Testing a list for emptiness is computable in linear time and space. -/
-  isEmpty : ComputableInLinearTimeAndSpace List.isEmpty enc encBool
+  isEmpty : ComputableInDegree List.isEmpty enc encBool 1 1
 
 /-- Pairing functions computable within different bounds. -/
 public theorem PairEncoding.pair_mono {enc₁ : α ↪ List Bool} {enc₂ : β ↪ List Bool}

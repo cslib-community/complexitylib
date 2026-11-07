@@ -9,6 +9,9 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 public import Mathlib.Data.List.DropRight
+public import Complexity.Foundations.Data.BitString.List.Binary
+import Complexity.Foundations.Data.BitString.Binary
+import Complexity.Foundations.Data.BitString.Counter
 import Complexity.Foundations.Data.List.Append
 import Complexity.Foundations.Data.Nat.Bits
 import Mathlib.Data.Nat.Size
@@ -26,6 +29,8 @@ complexity certificates. Trailing false symbols are ignored, and the empty word 
 ## Main results
 
 * `Turing.MultiTapeTM.bits_ofBits`: normalize a word by removing its trailing false symbols.
+* `Turing.MultiTapeTM.bits_add_two_pow`: the binary digits of `x + 2 ^ W`, for `x < 2 ^ W`, are
+  the `W` low-order digits of `x` (`Cslib.BitString.lowBits`) followed by a one.
 -/
 
 @[expose] public section
@@ -49,5 +54,28 @@ theorem bits_ofBits (w : List Bool) : (ofBits w).bits = w.rdropWhile (!·) := by
         simp [h₀, List.rdropWhile_singleton]
       · simp only [Nat.bits_eq_nil_iff, h₀, ↓reduceIte]
         rfl
+
+/-- A trailing one adds `2 ^ |w|` to the value of a word. -/
+private theorem foldr_bit_one_eq (w : List Bool) :
+    w.foldr Nat.bit 1 = w.foldr Nat.bit 0 + 2 ^ w.length := by
+  induction w with
+  | nil => rfl
+  | cons b w ih =>
+    rw [List.foldr_cons, List.foldr_cons, ih, Nat.bit_val, Nat.bit_val, List.length_cons, pow_succ]
+    omega
+
+/-- The binary digits of `x + 2 ^ W`, for `x < 2 ^ W`, are the `W` low-order digits of `x`,
+followed by a one. -/
+theorem bits_add_two_pow {W x : ℕ} (hx : x < 2 ^ W) :
+    (x + 2 ^ W).bits = Cslib.BitString.lowBits W x ++ [true] := by
+  have h := foldr_bit_one_eq (Cslib.BitString.lowBits W x)
+  rw [← Cslib.BitString.lsbValue_eq_foldr_bit, Cslib.BitString.lsbValue_lowBits hx,
+    Cslib.BitString.length_lowBits] at h
+  rw [← h, Nat.bits_foldr_bit_one]
+
+/-- The `W` low-order digits of `x < 2 ^ W` are `(x + 2 ^ W).bits` without its last digit. -/
+theorem dropLast_bits_add_two_pow {W x : ℕ} (hx : x < 2 ^ W) :
+    (x + 2 ^ W).bits.dropLast = Cslib.BitString.lowBits W x := by
+  rw [bits_add_two_pow hx, List.dropLast_concat]
 
 end Turing.MultiTapeTM

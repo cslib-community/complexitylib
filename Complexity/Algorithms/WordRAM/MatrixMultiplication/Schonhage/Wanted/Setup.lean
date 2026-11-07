@@ -132,7 +132,7 @@ theorem exec_tables {w L m N Q : ℕ} (hm : m ≤ L) (x : Data 96)
     (hfit : Fits w (wordBudget L m N Q)) :
     ∃ y, ExecWithin w (.seq BandPreparation.header (.seq BandPreparation.countCode
       (.seq setup BandPreparation.tablesCode))) x y
-        (16 * L + (12 * L + 33) * 2 ^ L + 83) ∧ Parameters L m N Q y ∧
+        (16 * L + (12 * L + 33) * 2 ^ L + 85) ∧ Parameters L m N Q y ∧
       (∀ gh : Fin (K0 L m) × Fin (K0 L m),
         y.mem (tableAddress L Q + (MaskTable.pairRank gh).val) =
           (MaskTable.selectedMask gh).val) ∧

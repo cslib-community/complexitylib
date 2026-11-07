@@ -90,7 +90,7 @@ example :
   ⟨by polytime, by polytime, by fun_prop⟩
 
 -- Fixed parameter lists need no encoding or finiteness instance for their element type, whether
--- selected via `filter` or `flatMap`.
+-- selected via `filter` or `flatMap`; plain automation supplies both certificates directly.
 example {ι : Type} (parameters : List ι) (weight : ι → ℕ) :
     ComputableInPolyTime (fun n =>
       (parameters.filter (fun i => decide (weight i ≤ n))).map
@@ -99,7 +99,7 @@ example {ι : Type} (parameters : List ι) (weight : ι → ℕ) :
     ComputableInPolyTime (fun n => parameters.flatMap fun i =>
       if weight i ≤ n then [List.replicate (n + weight i) true] else [])
       encUnary (encList encBits) :=
-  ⟨.of_tidy (by fun_prop), .of_tidy (by fun_prop)⟩
+  ⟨by fun_prop, by fun_prop⟩
 
 -- Total input-head movement clips even an out-of-range starting position.
 example : Turing.moveInputPosNat 0 9 .neg = 1 ∧

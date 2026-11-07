@@ -24,17 +24,18 @@ statements whose proofs delegate to a bridge module (`*Bridge.lean`). The comman
    internal-looking names. The audit traverses the roots transitively, following `type` for all
    declarations, `value?` for non-theorems and the constructors of inductive types.
 3. A dependency defined in the current file must lie in `Namespace`. A dependency from an imported
-   `Complexity.*`, `ComplexityAbstracts.*` or `ComplexityTests.*` module is rejected unless its module is allowlisted with
-   `allowing [...]`. The audit keeps traversing allowlisted declarations, so the allowlist must
-   cover their transitive dependencies as well. Traversal stops at every other module: the
-   background libraries `Init`, `Std`, `Lean`, `Batteries`, `Mathlib` and upstream `Cslib`, and
-   the dependencies they bring in (`Aesop`, `Qq`, `Plausible`, `ProofWidgets`, …).
+   `Complexity.*`, `ComplexityAbstracts.*` or `ComplexityTests.*` module is rejected unless its
+   module is allowlisted with `allowing [...]`. The audit keeps traversing allowlisted declarations,
+   so the allowlist must cover their transitive dependencies as well. Traversal stops at every other
+   module: the background libraries `Init`, `Std`, `Lean`, `Batteries`, `Mathlib` and upstream
+   `Cslib`, and the dependencies they bring in (`Aesop`, `Qq`, `Plausible`, `ProofWidgets`, …).
 4. Every declaration in `Namespace` is checked with `collectAxioms` to depend only on `propext`,
    `Classical.choice` and `Quot.sound`.
 5. Declarations in `Namespace` whose user-facing names are not internal may not be `opaque`,
    `partial` or `unsafe`, nor may dependencies defined in the current file.
 
-On success the command logs the number of audited roots and dependencies. Both counts include
+On success the command logs the number of audited roots in its guarded status message and logs the
+number of transitive dependencies checked as unguarded silent information. Both counts include
 compiler-generated declarations, so they may change with the Lean toolchain.
 
 ### Scope
@@ -78,9 +79,10 @@ def statementDependencies (info : ConstantInfo) : Array Name := Id.run do
 
 /-- Audit all declarations in `abstractNamespace` as described in the module docstring:
 require them to be defined in the current file, reject transitive dependencies on
-non-allowlisted `Complexity.*`, `ComplexityAbstracts.*` or `ComplexityTests.*` modules in definitions and theorem
-statements, and reject non-standard axioms. On success, log the number of audited roots and
-dependencies. -/
+non-allowlisted `Complexity.*`, `ComplexityAbstracts.*` or `ComplexityTests.*` modules in
+definitions and theorem statements, and reject non-standard axioms. On success, log the number of
+audited roots and, as silent information not pinned by `#guard_msgs`, the number of transitive
+dependencies checked. -/
 def checkAbstract (abstractNamespace : Name) (allowedModules : Array Name := #[]) :
     CommandElabM Unit := do
   let env := (← getEnv).setExporting false
@@ -146,18 +148,20 @@ def checkAbstract (abstractNamespace : Name) (allowedModules : Array Name := #[]
         if let some info := env.find? name then
           for c in statementDependencies info do
             pending := pending.push (root, c)
-  logInfo m!"abstract audit passed for `{abstractNamespace}`: {roots} root declarations, \
-    {visited.size} dependencies checked"
+  logInfo m!"abstract audit passed for `{abstractNamespace}`: {roots} root declarations"
+  log m!"abstract audit for `{abstractNamespace}`: {visited.size} dependencies checked"
+    (severity := .information) (isSilent := true)
 
 /-- `#check_abstract Namespace` verifies that every declaration in `Namespace` is defined in the
 current file, that its statement and (for non-theorems) body reference only `Namespace` and the
 background libraries (`Init`, `Std`, `Lean`, `Batteries`, `Mathlib`, upstream `Cslib`), and that it
-depends only on the standard axioms. On success it logs the number of audited roots and
-dependencies.
+depends only on the standard axioms. On success it logs the number of audited roots and, as silent
+information not pinned by `#guard_msgs`, the number of transitive dependencies checked.
 
 `#check_abstract Namespace allowing [Mod1, Mod2]` additionally permits references to the listed
-`Complexity.*`, `ComplexityAbstracts.*` or `ComplexityTests.*` modules. The audit traverses allowlisted declarations too, so
-the list must be closed under their transitive statement and definition dependencies. -/
+`Complexity.*`, `ComplexityAbstracts.*` or `ComplexityTests.*` modules. The audit traverses
+allowlisted declarations too, so the list must be closed under their transitive statement and
+definition dependencies. -/
 syntax (name := checkAbstractCmd)
   "#check_abstract " ident (" allowing " "[" ident,* "]")? : command
 

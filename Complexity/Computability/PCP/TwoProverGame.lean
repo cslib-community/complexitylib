@@ -13,14 +13,14 @@ import Complexity.Probability.PMF.Event
 /-!
 # Two-prover one-round games
 
-A *two-prover one-round game* [Holenstein, Definition 1][Holenstein2009] draws a pair of questions
+A *two-prover one-round game* [Holenstein, Definition 2.2][Holenstein2009] draws a pair of questions
 `(x, y)` from a distribution on `X × Y`, sends `x` to Alice and `y` to Bob, and accepts their
 answers `a` and `b` according to a predicate `Q x y a b`. Its *value* is the largest winning
 probability of a pair of deterministic strategies `X → A` and `Y → B`
 (`Cslib.PCP.TwoProverGame.value`). Shared randomness does not help
-(`winProb_shared_le_value`) [Holenstein, (3)][Holenstein2009]. The `n`-fold *parallel repetition*
+(`winProb_shared_le_value`) [Holenstein, (2.5)][Holenstein2009]. The `n`-fold *parallel repetition*
 asks `n` independent pairs of questions at once and accepts when every coordinate is accepted
-(`Cslib.PCP.TwoProverGame.pow`) [Holenstein, Definition 2][Holenstein2009]. Answering each
+(`Cslib.PCP.TwoProverGame.pow`) [Holenstein, Definition 2.3][Holenstein2009]. Answering each
 coordinate independently with an optimal strategy shows `value G ^ n ≤ value (G.pow n)`
 (`pow_value_le_value_pow`); the parallel repetition theorem bounds `value (G.pow n)` from above.
 
@@ -46,7 +46,7 @@ coordinate independently with an optimal strategy shows `value G ^ n ≤ value (
 
 namespace Cslib.PCP
 
-/-- A **two-prover one-round game** [Holenstein, Definition 1][Holenstein2009]: questions drawn
+/-- A **two-prover one-round game** [Holenstein, Definition 2.2][Holenstein2009]: questions drawn
 from `questions`, answers accepted by `accepts`. -/
 structure TwoProverGame (X Y A B : Type*) where
   /-- The distribution of the pair of questions. -/
@@ -101,7 +101,7 @@ theorem value_le_one [Nonempty A] [Nonempty B] : G.value ≤ 1 := by
   obtain ⟨ha, hb, h⟩ := G.exists_winProb_eq_value
   exact h ▸ G.winProb_le_one ha hb
 
-/-- **Shared randomness does not help** [Holenstein, (3)][Holenstein2009]: strategies that read a
+/-- **Shared randomness does not help** [Holenstein, (2.5)][Holenstein2009]: strategies that read a
 common random string `r` drawn from `ρ` win with probability at most the value. -/
 theorem winProb_shared_le_value [Nonempty A] [Nonempty B] {R : Type*} (ρ : PMF R)
     (ha : X → R → A) (hb : Y → R → B) :
@@ -144,7 +144,7 @@ theorem _root_.Cslib.Probability.PMF.toOuterMeasure_pi_forall {ι : Type*} [Fint
     obtain ⟨i, hi⟩ := hu
     exact (Finset.prod_eq_zero (Finset.mem_univ i) (ite_eq_right hi)).symm
 
-/-- The **`n`-fold parallel repetition** [Holenstein, Definition 2][Holenstein2009]: `n`
+/-- The **`n`-fold parallel repetition** [Holenstein, Definition 2.3][Holenstein2009]: `n`
 independent pairs of questions, accepted when every coordinate is accepted. -/
 noncomputable def pow [Finite X] [Finite Y] (n : ℕ) :
     TwoProverGame (Fin n → X) (Fin n → Y) (Fin n → A) (Fin n → B) where

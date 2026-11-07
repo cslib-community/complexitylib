@@ -147,6 +147,13 @@ theorem IsQueryBounded.length_runWithAnswers_le (default : H)
     rw [runWithAnswers_query_bind, List.length_cons]
     exact Nat.succ_le_succ (ih _ _)
 
+/-- The result component of a `runWithAnswers` output pair `(result, queries)`. -/
+abbrev runWithAnswersOutput {α γ : Type} (out : α × γ) : α := out.1
+
+/-- The final handler state produced by `runWithAnswers` on a stateful handler execution. -/
+abbrev runWithAnswersState {σ β : Type} (out : (β × σ) × List Query) : σ :=
+  (runWithAnswersOutput out).2
+
 /-- **An invariant of a handler's run on a list of answers.** A program runs through a stateful
 handler whose calls are oracle programs, and the resulting program runs on a list of answers. A
 property of the handler's state and of the queries asked so far that every handler call
@@ -155,12 +162,14 @@ theorem runWithAnswers_run_interpret_invariant {ι σ β : Type} {spec : ι → 
     (handler : (q : ι) → StateT σ (OracleComp (fun _ : Query => H)) (spec q))
     (answers : List H) (invariant : σ → List Query → Prop)
     (step : ∀ q s queries, invariant s queries →
-      invariant (runWithAnswers default ((handler q).run s) (answers.drop queries.length)).1.2
+      invariant
+        (runWithAnswersState (runWithAnswers default ((handler q).run s)
+          (answers.drop queries.length)))
         (queries ++ (runWithAnswers default ((handler q).run s)
           (answers.drop queries.length)).2))
     (program : OracleComp spec β) (s : σ) (queries : List Query) (hs : invariant s queries) :
-    invariant (runWithAnswers default ((interpret handler program).run s)
-        (answers.drop queries.length)).1.2
+    invariant (runWithAnswersState (runWithAnswers default ((interpret handler program).run s)
+        (answers.drop queries.length)))
       (queries ++ (runWithAnswers default ((interpret handler program).run s)
         (answers.drop queries.length)).2) := by
   induction program using OracleComp.induction generalizing s queries with
@@ -180,7 +189,7 @@ theorem runWithAnswers_run_interpret_invariant {ι σ β : Type} {spec : ι → 
 private theorem eval_run_withSampleList (default : H)
     (program : OracleComp (fun _ : Query => H) α) (answers : List H) :
     ProbComp.eval ((fun (result, next, _) => (result, next)) <$>
-      (interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+      (interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (withSampleList default fun v _ s => (pure (v, s) : ProbComp (H × Unit))))
           (interpret (fun q => ProbOracleComp.query (spec := fun _ : Query => H) q)
             program)).run ((), answers)) =
@@ -194,7 +203,7 @@ private theorem eval_run_withSampleList (default : H)
 /-- Answering lifted queries uniformly as they come is answering them uniformly. -/
 private theorem eval_run_uniform [Fintype H] [Nonempty H]
     (program : OracleComp (fun _ : Query => H) α) :
-    ProbComp.eval ((interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+    ProbComp.eval ((interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (fun _ s => do
           let value ← ProbComp.uniform H
           (pure (value, s) : ProbComp (H × Unit))))
@@ -259,7 +268,7 @@ list. -/
 private theorem eval_run_withSampleList_count (default : H)
     (program : OracleComp (fun _ : Query => H) α) (count : ℕ) (answers : List H) :
     ProbComp.eval ((fun (result, next, _) => (result, next)) <$>
-      (interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+      (interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (withSampleList default fun v _ n => (pure (v, n + 1) : ProbComp (H × ℕ))))
           (interpret (fun q => ProbOracleComp.query (spec := fun _ : Query => H) q)
             program)).run (count, answers)) =
@@ -278,7 +287,7 @@ private theorem eval_run_withSampleList_count (default : H)
 /-- Answering lifted queries uniformly as they come, counting them, is `countingUniform`. -/
 private theorem eval_run_counting [Fintype H] [Nonempty H]
     (program : OracleComp (fun _ : Query => H) α) (count : ℕ) :
-    ProbComp.eval ((interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+    ProbComp.eval ((interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (fun _ n => do
           let value ← ProbComp.uniform H
           (pure (value, n + 1) : ProbComp (H × ℕ))))
@@ -328,14 +337,17 @@ theorem validIndex_eq_some {q count : ℕ} {position : Option ℕ} {j : Fin q}
     subst h
     exact ⟨rfl, hp.2⟩
 
+/-- The named query position returned by a forking-lemma program execution. -/
+abbrev forkNamedPosition {β γ : Type} (out : (Option ℕ × β) × γ) : Option ℕ :=
+  (runWithAnswersOutput out).1
+
 /-- A program with explicit coins as an algorithm on coins and `q` answers, for the general
 forking lemma: the validly named position, and the result with the queries. -/
 def forkingAlgorithm {S β : Type} (default : H) (q : ℕ)
     (program : S → OracleComp (fun _ : Query => H) (Option ℕ × β)) (s : S) (h : Fin q → H) :
     Option (Fin q) × ((Option ℕ × β) × List Query) :=
-  (validIndex q (runWithAnswers default (program s) (List.ofFn h)).2.length
-      (runWithAnswers default (program s) (List.ofFn h)).1.1,
-    runWithAnswers default (program s) (List.ofFn h))
+  let run := runWithAnswers default (program s) (List.ofFn h)
+  (validIndex q run.2.length (forkNamedPosition run), run)
 
 variable {S β : Type} [Fintype H] [Nonempty H] [DecidableEq H]
 
@@ -349,7 +361,7 @@ theorem le_add_sqrt_fork (first : PMF S)
     ((do
       let s ← first
       let run ← (interpret countingUniform (program s)).run 0
-      return (validIndex q run.2 run.1.1).isSome : PMF Bool) true).toReal ≤
+      return (validIndex q run.2 (forkNamedPosition run)).isSome : PMF Bool) true).toReal ≤
       q / Fintype.card H + √(q * ((Forking.fork first (forkingAlgorithm default q program)).map
         Option.isSome true).toReal) := by
   have hacc : (do
@@ -377,7 +389,7 @@ theorem mem_support_fork {first : PMF S}
     ∃ s ∈ first.support, ∃ h h' : Fin q → H, (∀ i < j, h i = h' i) ∧ h j ≠ h' j ∧
       out = runWithAnswers default (program s) (List.ofFn h) ∧
       out' = runWithAnswers default (program s) (List.ofFn h') ∧
-      out.1.1 = some j.val ∧ out'.1.1 = some j.val ∧
+      forkNamedPosition out = some j.val ∧ forkNamedPosition out' = some j.val ∧
       out.2.take (j + 1) = out'.2.take (j + 1) ∧
       ∃ query, out.2[j.val]? = some query ∧ out'.2[j.val]? = some query := by
   obtain ⟨s, hs, h, h', hagree, hne, hrun, hrun'⟩ := Forking.mem_support_fork hfork

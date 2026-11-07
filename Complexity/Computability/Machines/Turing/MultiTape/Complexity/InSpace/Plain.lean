@@ -34,8 +34,6 @@ It also records the equivalence with `Turing.MultiTapeTM.ComputableTidilyInSpace
 * `Turing.MultiTapeTM.ComputableInSpace.comp`, `.prod`, `.append`, `.ite`: plain closure rules.
 * `Turing.MultiTapeTM.ComputableInSpace.iterate`, `.foldl`, `.foldlWith`: plain space-bounded
   loops.
-* `Turing.MultiTapeTM.computableInSpace_iff_computableTidilyInSpace`: equivalence with the tidy
-  counterpart.
 -/
 
 @[expose] public section
@@ -67,11 +65,6 @@ theorem ComputableInSpace.of_tidy (h : ComputableTidilyInSpace f encIn encOut S)
 theorem ComputableTidilyInSpace.computableInSpace (h : ComputableTidilyInSpace f encIn encOut S) :
     ComputableInSpace f encIn encOut S :=
   .of_tidy h
-
-/-- **Plain and tidy computability within a space bound agree.** -/
-theorem computableInSpace_iff_computableTidilyInSpace :
-    ComputableInSpace f encIn encOut S ↔ ComputableTidilyInSpace f encIn encOut S :=
-  ⟨ComputableInSpace.tidy, ComputableInSpace.of_tidy⟩
 
 end Bridge
 

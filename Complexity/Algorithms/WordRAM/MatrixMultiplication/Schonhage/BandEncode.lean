@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPrepare
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandCollect
 
@@ -67,14 +68,12 @@ theorem exec_encoderKernel {w L m N : ℕ} (hw : 0 < w) (side : Bool)
           L 0 arr p 0)) ∧
       (∀ b, ¬(Encoding.outputBase L ≤ b ∧ b < Encoding.scratchBase L + 10 ^ L) →
         y.mem b = x.mem b) ∧ (∀ i, 32 ≤ i.val → y.regs i = x.regs i) := by
-  obtain ⟨z, hz, hv, hf, _, _⟩ := Encoding.exec hw side arr (x.comap encoderRegisters)
-    hheader hinput A hA ha hmag (encoder_fits hfit)
-  refine ⟨z.extend encoderRegisters x, hz.rename encoderRegisters_injective, hv, hf, ?_⟩
-  intro i hi
-  change Function.extend encoderRegisters z.regs x.regs i = x.regs i
-  apply Function.extend_apply'
-  rintro ⟨j, hj⟩
-  have hv := congrArg (fun k : Fin 96 => k.val) hj
+  obtain ⟨y, hy, ⟨hv, hf, _, _⟩, hframe⟩ := ExecWithin.rename_post encoderRegisters_injective
+    (Encoding.exec hw side arr (x.comap encoderRegisters) hheader hinput A hA ha hmag
+      (encoder_fits hfit))
+  refine ⟨y, hy, hv, hf, fun i hi => hframe i ?_⟩
+  intro j hj
+  have hv := congrArg Fin.val hj
   change j.val = i.val at hv
   omega
 

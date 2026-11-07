@@ -53,6 +53,10 @@ vertices and edges, so the lower bounds for them imply the lower bounds for the 
 to a polynomial in the length of the encoded instance, and a lower bound says: for some `δ > 0`, no
 decider runs within time `2 ^ (δ μ)` times a polynomial.
 
+**The hypothesis is refuted.** `Cslib.Complexity.CountingNativeEndpoint.not_ETH` proves that `ETH`
+is false, so the `ETH`-conditional lower bounds below hold vacuously. They are kept as conditional
+statements; the reductions and size bounds behind them are unconditional.
+
 ## Main results
 
 * `Cslib.Complexity.ETH.not_decidableInSubexpTime_ThreeColoring`: no `2 ^ o(|V| + |E|)` algorithm

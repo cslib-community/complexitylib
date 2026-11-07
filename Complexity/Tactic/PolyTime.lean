@@ -28,6 +28,9 @@ are unfolded. `fun_prop` handles composition; Aesop chooses loop rules and uses 
 contracts. Plain and internal tidy goals use separate rules, with fixed machines and polynomial
 bounds across all encoded inputs. Plain search applies plain statements directly; it does not
 lower a goal or restate its hypotheses tidily. Unknown algorithms still require certificates.
+On ordinary failure, `polytime` includes one failed compositional attempt when the backend has
+reported one. This is a search hint, not a claim that the subterm is uncomputable. Resource-limit
+and interrupt exceptions are unchanged.
 
 ## Main definitions
 
@@ -274,16 +277,22 @@ private meta def polytimeKnownFacts : TacticM Unit := withMainContext do
     else (``ComputableInPolyTime, ``ComputableInPolyTime.tidy)
   restateKnownFacts source conversion
 
+open Lean in
+/-- Whether a constant name is in the raw family: its component after `Turing.MultiTapeTM` starts
+with `ComputableTidily` or `ComputesTidily`. -/
+private meta def isRawFamilyName : Name → Bool
+  | .str (.str (.str .anonymous "Turing") "MultiTapeTM") head =>
+    head.startsWith "ComputableTidily" || head.startsWith "ComputesTidily"
+  | .str parent _ | .num parent _ => isRawFamilyName parent
+  | .anonymous => false
+
 open Lean Meta in
 /-- Inspect proposition aliases with the same reducible transparency used by `fun_prop`.
 `Meta.transform` maintains binder context, including dependent and quantified premises; data and
 proof implementations are not unfolded merely to classify a transition's proposition. -/
 private meta def rawTransitionPremise (type : Expr) : MetaM Bool := do
-  let rawName := fun n : Name =>
-    n.toString.startsWith "Turing.MultiTapeTM.ComputableTidily" ||
-      n.toString.startsWith "Turing.MultiTapeTM.ComputesTidily"
   if (type.find? fun e => match e with
-      | .const n _ => rawName n
+      | .const n _ => isRawFamilyName n
       | _ => false).isSome then
     return true
   let inspect : StateRefT Bool MetaM Unit := do
@@ -291,7 +300,7 @@ private meta def rawTransitionPremise (type : Expr) : MetaM Bool := do
       if ← get then return .done e
       let reduced ← if ← isProp e then whnfR e else pure e
       if let .const name _ := reduced.getAppFn then
-        if rawName name then
+        if isRawFamilyName name then
           set true
           return .done reduced
       return .continue (some reduced))
@@ -433,6 +442,34 @@ private meta def plainBuiltinEnvironment (env : Environment) : MetaM Environment
   unless matched.size == 1 do throwError "expected one builtin local-application rule"
   return searchRuleState ext env fun state => { state with unsafeRules := index }
 
+open Lean in
+/-- For each imported module, whether its import closure declares a raw-family constant. -/
+private meta def rawImportClosure (header : EnvironmentHeader) : Std.HashMap Name Bool := Id.run do
+  -- Imports are dependency-first. A theorem in a module with no raw-family declaration in
+  -- its import closure cannot hide one behind an alias: aliases cannot refer to later modules.
+  let mut rawModules : Std.HashMap Name Bool := {}
+  for i in [:header.moduleNames.size] do
+    let moduleName := header.moduleNames[i]!
+    let data := header.moduleData[i]!
+    let ownsRaw := data.constNames.any isRawFamilyName
+    let importsRaw := data.imports.any fun imported => rawModules.getD imported.module true
+    rawModules := rawModules.insert moduleName (ownsRaw || importsRaw)
+  return rawModules
+
+open Lean in
+/-- `rawImportClosure` of the imports, which are fixed for the whole file. Importing only creates
+the thunk: the first tactic invocation scans the imported constants, and every later one,
+including proofs elaborated in parallel, reuses the result. The extension stores no entries. -/
+private meta initialize rawImportClosureExt :
+    PersistentEnvExtension Empty Empty (Thunk (Std.HashMap Name Bool)) ←
+  registerPersistentEnvExtension {
+    mkInitial := pure (.pure {})
+    addImportedFn := fun _ => do
+      let header := (← read).env.header
+      return .mk fun _ => rawImportClosure header
+    addEntryFn := fun rawModules _ => rawModules
+    exportEntriesFn := fun _ => #[] }
+
 open Lean Meta Mathlib.Meta.FunProp in
 /-- Prepare only immutable global declaration classifications, never proofs or local evidence. -/
 private meta def preparePlainRuleMemo : MetaM PlainRuleCache := do
@@ -450,18 +487,8 @@ private meta def preparePlainRuleMemo : MetaM PlainRuleCache := do
     for node in rules.theorems.tries do
       for rule in node.values do names := names.insert rule.thmName
       for (_, rule) in node.pending do names := names.insert rule.thmName
-  -- Imports are dependency-first. A theorem in a module with no raw-family declaration in
-  -- its import closure cannot hide one behind an alias: aliases cannot refer to later modules.
   -- Unknown module metadata remains conservative, and current-module rules are always checked.
-  let mut rawModules : Std.HashMap Name Bool := {}
-  for i in [:env.header.moduleNames.size] do
-    let moduleName := env.header.moduleNames[i]!
-    let data := env.header.moduleData[i]!
-    let ownsRaw := data.constNames.any fun name =>
-      name.toString.startsWith "Turing.MultiTapeTM.ComputableTidily" ||
-        name.toString.startsWith "Turing.MultiTapeTM.ComputesTidily"
-    let importsRaw := data.imports.any fun imported => rawModules.getD imported.module true
-    rawModules := rawModules.insert moduleName (ownsRaw || importsRaw)
+  let rawModules := (rawImportClosureExt.getState env).get
   let mut cache : Std.HashMap Name Bool := {}
   for name in names do
     let mayUseRaw := match env.getModuleIdxFor? name with
@@ -610,6 +637,28 @@ private meta def polytimeConditionalFast : TacticM Unit := withMainContext do
     catch _ => before.restore
   throwError "no supplied-guard conditional proof closed all premises"
 
+open Lean in
+/-- The current invocation's rendered hint. The reference survives search backtracking, but the
+local environment containing it is discarded when the invocation finishes. -/
+private meta initialize failureHint : EnvExtension (Option (IO.Ref (Option String))) ←
+  registerEnvExtension (pure none) (asyncMode := .local)
+
+open Lean Elab Tactic in
+/-- Collect one backend hint without rerunning search. Each invocation, including a nested one,
+has its own reference; `withEnv` restores the caller's environment even on resource exceptions.
+The ordinary `catch` does not intercept Lean's resource-limit or interrupt exceptions. -/
+private meta def withFailureHint (action : TacticM Unit) : TacticM Unit := do
+  let hint ← IO.mkRef (none : Option String)
+  try
+    withEnv (failureHint.setState (← getEnv) (some hint)) action
+  catch ex =>
+    let some message ← hint.get | throw ex
+    match ex with
+    | .error ref messageData =>
+      throw <| .error ref (messageData ++ .note m!"polytime could not certify a subterm in one \
+        attempted route:\n{message}")
+    | .internal .. => throw ex
+
 open Lean Meta Elab Tactic Mathlib.Meta.FunProp in
 /-- Shared compositional backend with a fresh alias-aware raw-premise boundary. The standard
 assumption discharger and ordinary transition depth are retained; callers keep their step limit.
@@ -634,7 +683,13 @@ meta def Internal.funPropWithPlainBoundary (maxSteps : Nat) : TacticM Unit := do
       transitionTheorems := ← plainGeneralTheorems (transitionTheoremsExt.getState env) }
     let ruleEnv ← plainRuleEnvironment env
     let (result, state) ← withEnv ruleEnv <| (funProp target ctx).run state
-    let some result := result | throwError "no compositional plain certificate: {state.msgLog}"
+    let some result := result | do
+      if let some hint := failureHint.getState (← getEnv) then
+        if (← hint.get).isNone then
+          -- FunProp rendered these strings while its telescope variables were in scope.
+          -- Keep its first report, without retaining expressions from its failure cache.
+          hint.set state.msgLog.getLast?
+      throwError "no compositional plain certificate: {state.msgLog}"
     goal.assign result.proof
     replaceMainGoal []
 open Lean Elab Tactic in
@@ -893,7 +948,7 @@ private meta def polytimeIterateAlternative : Lean.Elab.Tactic.TacticM Unit :=
 /-- Prove a polynomial-time certificate from known routines and controlled loop rules. -/
 -- Unfold only reducible aliases when comparing assumptions. Ordinary program definitions may
 -- contain large fixed enumerations; their named certificates should be tried before unfolding.
-elab "polytime" : tactic => Internal.withPlainRuleCache do
+elab "polytime" : tactic => withFailureHint <| Internal.withPlainRuleCache do
   Lean.Elab.Tactic.evalTactic (← `(tactic| solve |
     aesop (config := { terminal := true, assumptionTransparency := .reducible })
       (rule_sets := [PolyTime])))

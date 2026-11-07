@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Foundations.Data.Nat.Choose.Central
 public import Mathlib.Data.Nat.Choose.Central
 public import Mathlib.Data.Fintype.Powerset
 public import Mathlib.Data.Fintype.Card
@@ -29,7 +30,7 @@ binomial coefficients), are at most `6 / 10` of all sets when `100 (t + 1)² ≤
 
 ## Main results
 
-* `Cslib.centralBinom_sq_mul_le`: `C(2m, m)² (2m + 1) ≤ 16 ^ m`.
+* `Nat.centralBinom_sq_mul_le`: `C(2m, m)² (2m + 1) ≤ 16 ^ m`.
 * `Cslib.two_pow_succ_le_centralBinom`: `2 ^ (B + 1) ≤ B.centralBinom` for `B ≥ 3`.
 * `Cslib.choose_half_sq_mul_le`: `C(n, ⌊n/2⌋)² (n + 1) ≤ 4 ^ n`.
 * `Cslib.ten_mul_card_filter_card_le_le`: few sets are much larger than half.
@@ -45,29 +46,6 @@ binomial coefficients), are at most `6 / 10` of all sets when `100 (t + 1)² ≤
 namespace Cslib
 
 open Finset
-
-/-- The central binomial coefficient satisfies `C(2m, m)² (2m + 1) ≤ 16^m`. -/
-theorem centralBinom_sq_mul_le (m : ℕ) :
-    m.centralBinom ^ 2 * (2 * m + 1) ≤ 16 ^ m := by
-  induction m with
-  | zero => simp
-  | succ m ih =>
-    have hrec := Nat.succ_mul_centralBinom_succ m
-    have key : (m + 1) ^ 2 * ((m + 1).centralBinom ^ 2 * (2 * (m + 1) + 1)) ≤
-        (m + 1) ^ 2 * 16 ^ (m + 1) := by
-      calc
-        (m + 1) ^ 2 * ((m + 1).centralBinom ^ 2 * (2 * (m + 1) + 1)) =
-            ((m + 1) * (m + 1).centralBinom) ^ 2 * (2 * m + 3) := by ring
-        _ = (2 * (2 * m + 1) * m.centralBinom) ^ 2 * (2 * m + 3) := by rw [hrec]
-        _ = 4 * (2 * m + 1) * (2 * m + 3) * (m.centralBinom ^ 2 * (2 * m + 1)) := by
-          ring
-        _ ≤ 4 * (2 * m + 1) * (2 * m + 3) * 16 ^ m := Nat.mul_le_mul_left _ ih
-        _ ≤ 16 * (m + 1) ^ 2 * 16 ^ m := by
-          apply Nat.mul_le_mul_right
-          ring_nf
-          omega
-        _ = (m + 1) ^ 2 * 16 ^ (m + 1) := by ring
-    exact Nat.le_of_mul_le_mul_left key (by positivity)
 
 /-- `2 ^ (B + 1) ≤ B.centralBinom` for `B ≥ 3`. -/
 theorem two_pow_succ_le_centralBinom {B : ℕ} (hB : 3 ≤ B) : 2 ^ (B + 1) ≤ B.centralBinom := by
@@ -90,7 +68,7 @@ theorem choose_half_sq_mul_le (n : ℕ) :
   obtain ⟨m, rfl | rfl⟩ := Nat.even_or_odd' n
   · have hhalf : 2 * m / 2 = m := by omega
     rw [hhalf, ← Nat.centralBinom_eq_two_mul_choose, pow_mul]
-    simpa using centralBinom_sq_mul_le m
+    simpa using Nat.centralBinom_sq_mul_le m
   · have hhalf : (2 * m + 1) / 2 = m := by omega
     rw [hhalf]
     have hc : 2 * (2 * m + 1).choose m = (m + 1).centralBinom := by
@@ -98,7 +76,7 @@ theorem choose_half_sq_mul_le (n : ℕ) :
         show 2 * (m + 1) = (2 * m + 1) + 1 by ring, Nat.choose_succ_succ',
         Nat.choose_symm_half]
       ring
-    have hcentral := centralBinom_sq_mul_le (m + 1)
+    have hcentral := Nat.centralBinom_sq_mul_le (m + 1)
     rw [← hc] at hcentral
     have h16 : (16 : ℕ) ^ (m + 1) = 4 * 4 ^ (2 * m + 1) := by
       rw [pow_succ, pow_succ, pow_mul]

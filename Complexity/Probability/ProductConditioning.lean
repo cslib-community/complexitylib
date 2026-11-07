@@ -21,7 +21,7 @@ import Mathlib.Algebra.Order.Chebyshev
 Condition independent coordinates `U₁, …, U_k` on an event `W`. Then the coordinates barely move:
 `∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖² ≤ ln (1 / Pr[W]) / 2`
 (`Cslib.Probability.PMF.sum_sq_dist_map_filter_pi_le`). This is Raz's conditioning lemma
-[Raz, Claim 5.1][Raz1998], [Holenstein, Lemma 5][Holenstein2009], and it drives the coordinate
+[Raz, Claim 5.1][Raz1998], [Holenstein, Lemma 4.1][Holenstein2009], and it drives the coordinate
 selection in the proof of the parallel repetition theorem. Holenstein states it as
 `Pr[W] ≤ 2 ^ (-∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖²)` (`toOuterMeasure_toReal_le_two_rpow`), which follows
 since `ln x / 2 ≤ log₂ x` for `x ≥ 1`, and uses it through Cauchy–Schwarz in the form
@@ -133,7 +133,7 @@ theorem sum_sum_mul_log_div_map_le [DecidableEq ι] (P : PMF (∀ i, β i)) (p :
   simp only [← hmarg]
   linarith
 
-/-- **Raz's conditioning lemma** [Raz, Claim 5.1][Raz1998], [Holenstein, Lemma 5][Holenstein2009].
+/-- **Raz's conditioning lemma** [Raz, Claim 5.1][Raz1998], [Holenstein, Lemma 4.1][Holenstein2009].
 Conditioning independent coordinates on an event `W` moves them little:
 `∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖² ≤ ln (1 / Pr[W]) / 2`. -/
 theorem sum_sq_dist_map_filter_pi_le (p : ∀ i, PMF (β i)) (W : Set (∀ i, β i))
@@ -159,7 +159,7 @@ theorem sum_sq_dist_map_filter_pi_le (p : ∀ i, PMF (β i)) (W : Set (∀ i, β
   rw [← mul_sum] at this
   linarith
 
-/-- **Raz's conditioning lemma** in the form of [Holenstein, Lemma 5, (7)][Holenstein2009]:
+/-- **Raz's conditioning lemma** in the form of [Holenstein, Lemma 4.1, (4.1)][Holenstein2009]:
 `Pr[W] ≤ 2 ^ (-∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖²)`. -/
 theorem toOuterMeasure_toReal_le_two_rpow (p : ∀ i, PMF (β i)) (W : Set (∀ i, β i))
     (hW : ∃ u ∈ W, u ∈ (pi p).support) :
@@ -197,7 +197,7 @@ theorem sq_sum_dist_map_filter_pi_le (p : ∀ i, PMF (β i)) (W : Set (∀ i, β
         exact sum_sq_dist_map_filter_pi_le p W hW
     _ = _ := by ring
 
-/-- **Raz's conditioning lemma** in the form of [Holenstein, (8)][Holenstein2009]:
+/-- **Raz's conditioning lemma** in the form of [Holenstein, (4.2)][Holenstein2009]:
 `∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖ ≤ √(k · ln (1 / Pr[W]))` for `k` independent coordinates. -/
 theorem sum_dist_map_filter_pi_le (p : ∀ i, PMF (β i)) (W : Set (∀ i, β i))
     (hW : ∃ u ∈ W, u ∈ (pi p).support) :

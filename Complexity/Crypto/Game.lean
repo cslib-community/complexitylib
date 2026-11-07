@@ -35,6 +35,16 @@ directly, and computational definitions over infinite sample spaces can reuse th
 
 * `Cslib.Crypto.Game.Indistinguishable.of_reduction`: preserve admissibility and transfer security
   with a polynomial loss and negligible error.
+* `Cslib.Crypto.Game.advantage_pure_false_left`,
+  `Cslib.Crypto.Game.indistinguishable_pure_false_iff`,
+  `Cslib.Crypto.Game.pure_false_indistinguishable_iff`,
+  `Cslib.Crypto.Game.Indistinguishable.negligible_succProbability`,
+  `Cslib.Crypto.Game.Indistinguishable.of_negligible_succProbability`,
+  `Cslib.Crypto.Game.Indistinguishable.of_eventually_succProbability_le`,
+  `Cslib.Crypto.Game.Indistinguishable.of_succProbability_le`,
+  `Cslib.Crypto.Game.Indistinguishable.of_eventually_succProbability_reduction`,
+  `Cslib.Crypto.Game.Indistinguishable.of_succProbability_reduction`: one-sided search/forgery game
+  characterizations and success-probability reductions against `PMF.pure false`.
 * `Cslib.Crypto.Game.advantage_le_of_apply_le`, `Cslib.Crypto.Game.advantage_bind_le`: bound
   real-valued distinguishing advantage from mutual acceptance-probability bounds or across a common
   first-stage distribution.
@@ -248,6 +258,109 @@ theorem Indistinguishable.of_reduction {SourceAdversary TargetAdversary : Type*}
   exact negligible_of_le (by fun_prop (disch := assumption)) hbound
 
 -- upstream: candidate
+
+/-- Comparing certain failure on the left with a game measures the game's success probability. -/
+@[simp] theorem advantage_pure_false_left (game : Game) :
+    advantage (PMF.pure false) game = succProbability game :=
+  (advantage_comm _ _).trans (advantage_pure_false game)
+
+/-- A family of games is indistinguishable from `PMF.pure false` if and only if every admissible
+adversary has negligible success probability. -/
+theorem indistinguishable_pure_false_iff {Adversary : Type*} (game : Adversary → ℕ → Game)
+    (Admissible : Adversary → Prop) :
+    Indistinguishable game (fun _ _ => PMF.pure false) Admissible ↔
+      ∀ adversary, Admissible adversary →
+        Negligible (fun n => succProbability (game adversary n)) := by
+  simp [Indistinguishable]
+
+/-- `PMF.pure false` is indistinguishable from a family of games if and only if every admissible
+adversary has negligible success probability. -/
+theorem pure_false_indistinguishable_iff {Adversary : Type*} (game : Adversary → ℕ → Game)
+    (Admissible : Adversary → Prop) :
+    Indistinguishable (fun _ _ => PMF.pure false) game Admissible ↔
+      ∀ adversary, Admissible adversary →
+        Negligible (fun n => succProbability (game adversary n)) := by
+  simp [Indistinguishable]
+
+/-- Indistinguishability from `PMF.pure false` gives negligible success probability for every
+admissible adversary. -/
+theorem Indistinguishable.negligible_succProbability {Adversary : Type*}
+    {game : Adversary → ℕ → Game} {Admissible : Adversary → Prop}
+    (h : Indistinguishable game (fun _ _ => PMF.pure false) Admissible)
+    (adversary : Adversary) (ha : Admissible adversary) :
+    Negligible (fun n => succProbability (game adversary n)) :=
+  (indistinguishable_pure_false_iff game Admissible).mp h adversary ha
+
+/-- Establish indistinguishability from `PMF.pure false` by showing that every admissible
+adversary has negligible success probability. -/
+theorem Indistinguishable.of_negligible_succProbability {Adversary : Type*}
+    {game : Adversary → ℕ → Game} {Admissible : Adversary → Prop}
+    (h : ∀ adversary, Admissible adversary →
+      Negligible (fun n => succProbability (game adversary n))) :
+    Indistinguishable game (fun _ _ => PMF.pure false) Admissible :=
+  (indistinguishable_pure_false_iff game Admissible).mpr h
+
+/-- If `game2` is indistinguishable from `PMF.pure false` and every admissible adversary
+eventually has success probability in `game1` at most its success probability in `game2`, then
+`game1` is also indistinguishable from `PMF.pure false`. -/
+theorem Indistinguishable.of_eventually_succProbability_le {Adversary : Type*}
+    {game1 game2 : Adversary → ℕ → Game} {Admissible : Adversary → Prop}
+    (h : Indistinguishable game2 (fun _ _ => PMF.pure false) Admissible)
+    (hle : ∀ adversary, Admissible adversary →
+      ∀ᶠ n in Filter.atTop,
+        succProbability (game1 adversary n) ≤ succProbability (game2 adversary n)) :
+    Indistinguishable game1 (fun _ _ => PMF.pure false) Admissible :=
+  of_negligible_succProbability fun adversary ha =>
+    negligible_of_eventually_le (h.negligible_succProbability adversary ha) (hle adversary ha)
+
+/-- If `game2` is indistinguishable from `PMF.pure false` and every admissible adversary has
+success probability in `game1` at most its success probability in `game2` at every parameter, then
+`game1` is also indistinguishable from `PMF.pure false`. -/
+theorem Indistinguishable.of_succProbability_le {Adversary : Type*}
+    {game1 game2 : Adversary → ℕ → Game} {Admissible : Adversary → Prop}
+    (h : Indistinguishable game2 (fun _ _ => PMF.pure false) Admissible)
+    (hle : ∀ adversary, Admissible adversary →
+      ∀ n, succProbability (game1 adversary n) ≤ succProbability (game2 adversary n)) :
+    Indistinguishable game1 (fun _ _ => PMF.pure false) Admissible :=
+  h.of_eventually_succProbability_le fun adversary ha =>
+    Filter.Eventually.of_forall (hle adversary ha)
+
+/-- One-sided reduction from `source` to `target`: if `source` is indistinguishable from
+`PMF.pure false` and `reduce` maps every admissible target adversary to an admissible source
+adversary that eventually upper-bounds its success probability, then `target` is indistinguishable
+from `PMF.pure false`. -/
+theorem Indistinguishable.of_eventually_succProbability_reduction
+    {SourceAdversary TargetAdversary : Type*}
+    {source : SourceAdversary → ℕ → Game} {target : TargetAdversary → ℕ → Game}
+    {SourceAdmissible : SourceAdversary → Prop} {TargetAdmissible : TargetAdversary → Prop}
+    (h : Indistinguishable source (fun _ _ => PMF.pure false) SourceAdmissible)
+    (reduce : TargetAdversary → SourceAdversary)
+    (hadmissible : ∀ adversary, TargetAdmissible adversary → SourceAdmissible (reduce adversary))
+    (hle : ∀ adversary, TargetAdmissible adversary →
+      ∀ᶠ n in Filter.atTop,
+        succProbability (target adversary n) ≤ succProbability (source (reduce adversary) n)) :
+    Indistinguishable target (fun _ _ => PMF.pure false) TargetAdmissible :=
+  of_negligible_succProbability fun adversary ha =>
+    negligible_of_eventually_le
+      (h.negligible_succProbability (reduce adversary) (hadmissible adversary ha))
+      (hle adversary ha)
+
+/-- Pointwise one-sided reduction from `source` to `target`: if `source` is indistinguishable from
+`PMF.pure false` and `reduce` maps every admissible target adversary to an admissible source
+adversary that upper-bounds its success probability at every parameter, then `target` is
+indistinguishable from `PMF.pure false`. -/
+theorem Indistinguishable.of_succProbability_reduction
+    {SourceAdversary TargetAdversary : Type*}
+    {source : SourceAdversary → ℕ → Game} {target : TargetAdversary → ℕ → Game}
+    {SourceAdmissible : SourceAdversary → Prop} {TargetAdmissible : TargetAdversary → Prop}
+    (h : Indistinguishable source (fun _ _ => PMF.pure false) SourceAdmissible)
+    (reduce : TargetAdversary → SourceAdversary)
+    (hadmissible : ∀ adversary, TargetAdmissible adversary → SourceAdmissible (reduce adversary))
+    (hle : ∀ adversary, TargetAdmissible adversary →
+      ∀ n, succProbability (target adversary n) ≤ succProbability (source (reduce adversary) n)) :
+    Indistinguishable target (fun _ _ => PMF.pure false) TargetAdmissible :=
+  h.of_eventually_succProbability_reduction reduce hadmissible fun adversary ha =>
+    Filter.Eventually.of_forall (hle adversary ha)
 
 /-- As a real number, the success probability is the real-valued probability of `true`. -/
 @[simp] theorem coe_succProbability (game : Game) :

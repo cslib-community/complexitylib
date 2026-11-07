@@ -183,6 +183,23 @@ class CheckPrNamesTests(unittest.TestCase):
         self.assertEqual(list(self.check("`inBlock` `inLine` `inDoc` `real_decl`")),
                          ["inBlock", "inLine", "inDoc"])
 
+    def test_comment_delimiters_in_literals_preserve_following_declarations(self) -> None:
+        literals = ['"/-"', '"--"', '"-/"', 'r#"/- nested -- -/"#', "'/'", "'-'"]
+        for literal in literals:
+            with self.subTest(literal=literal):
+                decls = cpn.Declarations()
+                cpn.parse_source(
+                    "namespace Sample\n"
+                    f"def marker := {literal}\n"
+                    "/- outer /- nested -/ comment -/\n"
+                    "def after_marker : Nat := 0\nend Sample\n", decls)
+                self.assertTrue(decls.declared("Sample.after_marker"))
+
+    def test_comment_masking_preserves_syntax_keyword_literals(self) -> None:
+        decls = cpn.Declarations()
+        cpn.parse_source('syntax "demo_keyword" : tactic\n', decls)
+        self.assertIn("demo_keyword", decls.keywords)
+
     # --- Base revision and CLI ----------------------------------------------------------------
 
     def git(self, *args: str) -> str:
@@ -195,6 +212,7 @@ class CheckPrNamesTests(unittest.TestCase):
 
     def test_names_removed_by_the_change_are_recognized(self) -> None:
         self.git("init", "-q")
+        self.git("config", "color.ui", "always")
         self.commit("--allow-empty", "-m", "root")
         self.write("Complexity/Demo/Old.lean",
                    "namespace Cslib.Old\ntheorem old_lemma : True := trivial\nend Cslib.Old\n")

@@ -1,6 +1,6 @@
 name = "complexitylib"
 version = "0.2.0"
-defaultTargets = ["Complexity"]
+defaultTargets = ["Complexity", "ComplexityResults"]
 testDriver = "ComplexityTests"
 lintDriver = "batteries/runLinter"
 # Share build outputs between local checkouts (worktrees, agent sandboxes) through Lake's
@@ -45,6 +45,11 @@ leanOptions = {weak.linter.style.header = false}
 allowNonModules = true
 
 [[lean_lib]]
+name = "ComplexityResults"
+leanOptions = {weak.linter.style.header = false}
+allowNonModules = true
+
+[[lean_lib]]
 name = "ComplexityTests"
 roots = []
 globs = ["ComplexityTests.+"]
@@ -64,3 +69,18 @@ supportInterpreter = true
 name = "checkInitImports"
 srcDir = "scripts"
 root = "CheckInitImports"
+
+# Optional statement-comparison suites; neither is a default target.
+[[lean_lib]]
+name = "ComplexityComparator"
+srcDir = "comparator"
+roots = []
+globs = ["ComplexityComparator.+"]
+
+# Generated children are explicit comparator inputs, never default build targets or aggregates.
+[[lean_lib]]
+name = "ComplexityComparatorChallenges"
+srcDir = "comparator"
+roots = []
+globs = ["ComplexityComparatorChallenges.+"]
+defaultFacets = []

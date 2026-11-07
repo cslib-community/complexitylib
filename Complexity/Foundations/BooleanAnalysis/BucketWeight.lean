@@ -25,7 +25,8 @@ The bucket weight is the expected squared coefficient of the restriction of `F` 
 coordinates outside `J` at random (`BitString.expect_fourierCoeff_piecewise_sq`), hence the
 expectation of `F (x, z) χ_S(x) F (y, z) χ_S(y)` for independent uniform `x`, `y`, `z`, where
 `(x, z)` takes the coordinates in `J` from `x` and the others from `z`
-(`BitString.bucketWeight_eq_expect_sample`) [O'Donnell, Proposition 3.40][ODonnell2014]. With query
+(`BitString.bucketWeight_eq_expect_sample`), as in the proof of
+[O'Donnell, Proposition 3.40][ODonnell2014]. With query
 access to a Boolean function this lets one estimate any bucket weight by sampling: the basis of
 the Goldreich–Levin and Kushilevitz–Mansour algorithms [GoldreichLevin1989]
 [KushilevitzMansour1993].
@@ -97,10 +98,10 @@ theorem bucketWeight_eq_expect (F : (ι → Bool) → ℝ) (J S : Finset ι) :
     bucketWeight F J S = 𝔼 z, fourierCoeff (fun x => F (J.piecewise x z)) S ^ 2 :=
   (expect_fourierCoeff_piecewise_sq F J S).symm
 
-/-- **Estimating a bucket weight by sampling** [O'Donnell, Proposition 3.40][ODonnell2014]: the
-bucket weight of `S` in `J` is the expectation of `F (x, z) χ_S(x) F (y, z) χ_S(y)` for independent
-uniform `x`, `y`, `z`, where `(x, z)` takes the coordinates in `J` from `x` and the others
-from `z`. -/
+/-- **Estimating a bucket weight by sampling**: the bucket weight of `S` in `J` is the expectation
+of `F (x, z) χ_S(x) F (y, z) χ_S(y)` for independent uniform `x`, `y`, `z`, where `(x, z)` takes
+the coordinates in `J` from `x` and the others from `z`, as in the proof of
+[O'Donnell, Proposition 3.40][ODonnell2014]. -/
 theorem bucketWeight_eq_expect_sample (F : (ι → Bool) → ℝ) (J S : Finset ι) :
     bucketWeight F J S = 𝔼 p : (ι → Bool) × (ι → Bool) × (ι → Bool),
       F (J.piecewise p.1 p.2.2) * chi ℝ S p.1 * (F (J.piecewise p.2.1 p.2.2) * chi ℝ S p.2.1) := by

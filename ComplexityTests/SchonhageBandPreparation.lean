@@ -94,6 +94,40 @@ private def observeAsymmetricRead (side : Bool) (a : ℕ) :
 /-- The original numerical width premise has a checked strict boundary. -/
 example : ¬Fits 13 (wordBudget 1 0 4) ∧ Fits 14 (wordBudget 1 0 4) := by decide +kernel
 
+private def rootTestInput (k : ℕ) : Data 96 where
+  regs i := if i = count then k else if i = one then 1 else if i = rows then 37 else 0
+  mem a := if a = 5 then 73 else 0
+
+/-- Direct kernel-checked `exec_root` regressions covering zero (`k = 0`), nonsquare (`k = 6`),
+and exact-square (`k = 9`) arguments, verifying the `5 * Nat.sqrt k + 8` step bound, `root`,
+`square`, memory preservation, and register frame. -/
+example :
+    (∃ y, ExecWithin 6 rootCode (rootTestInput 0) y 8 ∧
+      y.regs root = 0 ∧ y.regs square = 0 ∧ y.mem 5 = 73 ∧ y.regs rows = 37) ∧
+    (∃ y, ExecWithin 6 rootCode (rootTestInput 6) y 18 ∧
+      y.regs root = 2 ∧ y.regs square = 4 ∧ y.mem 5 = 73 ∧ y.regs rows = 37) ∧
+    (∃ y, ExecWithin 6 rootCode (rootTestInput 9) y 23 ∧
+      y.regs root = 3 ∧ y.regs square = 9 ∧ y.mem 5 = 73 ∧ y.regs rows = 37) := by
+  refine ⟨?_, ?_, ?_⟩
+  · obtain ⟨y, he, hr, hs, hm, hf⟩ :=
+      exec_root (w := 6) 0 (rootTestInput 0) rfl rfl (by decide)
+    have h0 : Nat.sqrt 0 = 0 := by norm_num
+    rw [h0] at he hr hs
+    exact ⟨y, he, hr, hs, congrFun hm 5,
+      (hf rows (by decide) (by decide) (by decide) (by decide)).trans rfl⟩
+  · obtain ⟨y, he, hr, hs, hm, hf⟩ :=
+      exec_root (w := 6) 6 (rootTestInput 6) rfl rfl (by decide)
+    have h6 : Nat.sqrt 6 = 2 := by decide +kernel
+    rw [h6] at he hr hs
+    exact ⟨y, he, hr, hs, congrFun hm 5,
+      (hf rows (by decide) (by decide) (by decide) (by decide)).trans rfl⟩
+  · obtain ⟨y, he, hr, hs, hm, hf⟩ :=
+      exec_root (w := 6) 9 (rootTestInput 9) rfl rfl (by decide)
+    have h9 : Nat.sqrt 9 = 3 := by decide +kernel
+    rw [h9] at he hr hs
+    exact ⟨y, he, hr, hs, congrFun hm 5,
+      (hf rows (by decide) (by decide) (by decide) (by decide)).trans rfl⟩
+
 /-- A negative zero-depth initialized client. The actual final memory belongs to the
 charged prefix run, which is followed by its charged halt. -/
 example : ∃ y : Data 96, ∃ n, n ≤ timeBound 0 0 1 ∧

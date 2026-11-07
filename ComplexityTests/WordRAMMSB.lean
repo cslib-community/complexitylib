@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Algorithms.WordRAM.FusionTree.MSBProgram
+import Complexity.DataStructure.FusionTree.WordRAM.MSBProgram
 
 /-! Actual shift/transfer regressions and nonvacuous MSB execution clients. Full MSB
 interpretation is deliberately avoided here; the charged execution theorem covers it. -/
@@ -34,7 +34,7 @@ example : ∀ q ∈ List.range 8,
     (roundTrip.eval 3 0 ⟨![7, 7, 7, 7, q, 7, 7, 7], fun _ => 5⟩).map
       (fun (y, t) => (y.regs 4, t, y.mem 12)) = some (q, 28, 5) := by decide
 
-open Cslib.Algorithms.WordRAM.FusionTree.MSB
+open Cslib.DataStructure.FusionTree.WordRAM.MSB
 
 /-- The singleton-input endpoint includes a real width-two instance. -/
 example : ∃ t ≤ 200001, Executes 2 (Program.program 2) (State.init [3]) 1 t := by

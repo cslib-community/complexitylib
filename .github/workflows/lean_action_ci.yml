@@ -25,6 +25,9 @@ concurrency:
 jobs:
   ci-checks:
     runs-on: ubuntu-latest
+    # Temporary #1728 hooks: absent plan is OFF. Activation needs a separately reviewed protocol.
+    env:
+      HANDOFF_MEASUREMENT_PLAN: ${{ vars.HANDOFF_MEASUREMENT_PLAN }}
     permissions:
       contents: read
       # Main may download the exact landed revision's successful merge-group build artifact.
@@ -34,19 +37,34 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - name: Test documentation checker
+      - name: Prepare optional handoff measurement
+        id: handoff-measurement
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.HANDOFF_MEASUREMENT_PLAN != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
+        run: python3 -B scripts/cache_handoff_measurement.py prepare
+      # Includes the manual checker/builder controls in test_operator_manual.py. These source
+      # checks need only Python: no research exports, publishing tools or Lean installation.
+      - name: Test Python tooling
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Operator manual links and excerpts
+        run: python3 -B scripts/check_operator_manual.py
       - name: "Source hygiene"
         run: python3 -B scripts/check_hygiene.py --check-simp
       # The API documentation (docbuild/) and the guide (guide/) are separate Lake projects that
       # share the library's toolchain and `.lake/packages`, so their lockfiles must follow the root
-      # pins. Their own workflows run only nightly or on guide changes; checking here makes a root
-      # cslib or Mathlib bump without matching lockfile updates fail at PR time. It reads only
-      # checked-in files: no Lean, network or `.lake`.
+      # pins. Checking here makes a root cslib or Mathlib bump without matching lockfile updates
+      # fail before Lean setup; the Guide workflow also compiles examples for library/pin changes.
+      # This reads only checked-in files: no Lean, network or `.lake`.
       - name: "Documentation pins"
         run: python3 -B scripts/check_docs.py --config-only
+      - name: Reclaim unused hosted-runner SDK space
+        continue-on-error: true
+        run: scripts/ci/prepare-runner.sh
       # lean-action has no hook between installing the toolchain and building, so here it only
-      # installs elan and fetches Mathlib's cache. The steps around it do the rest of what it did:
+      # installs elan. The steps around it do the rest of what it did, with bounded cache retries:
       # restore and save `.lake` under the same Actions cache key, then build, test and lint.
       - name: Restore .lake from the Actions cache
         id: lake-cache
@@ -65,6 +83,11 @@ jobs:
           test: "false"
           lint: "false"
           use-github-cache: "false"
+          use-mathlib-cache: "false"
+      - name: Restore Mathlib cache with retries
+        continue-on-error: true
+        timeout-minutes: 10
+        run: python3 -B scripts/cache/get_mathlib.py --lean-action
       # The earlier script tests run before Lean is installed and skip this real build test.
       # Exercise both compiler setup-input omissions with an isolated, cache-disabled project.
       - name: Test Lake build handoff reuse
@@ -80,7 +103,23 @@ jobs:
       - name: Restore build outputs from the remote cache
         continue-on-error: true
         timeout-minutes: 10
-        run: scripts/cache/get-missing.sh
+        run: |
+          if [ -n "${HANDOFF_MEASUREMENT_LOG:-}" ]; then
+            set -o pipefail
+            scripts/cache/get-missing.sh | tee "$HANDOFF_MEASUREMENT_LOG"
+          else
+            scripts/cache/get-missing.sh
+          fi
+      - name: Optional controlled handoff measurement
+        id: handoff-measurement-result
+        if: steps.handoff-measurement.outputs.selected == 'true'
+        continue-on-error: true
+        timeout-minutes: 150
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
+          HANDOFF_MEASUREMENT_ACTIONS_KEY: ${{ steps.lake-cache.outputs.cache-matched-key }}
+        run: python3 -B scripts/cache_handoff_measurement.py measure
       # A merge-group build has already checked this exact commit before it lands on main.
       # Reuse its root outputs without granting merge groups access to the public-cache writer.
       # Missing, expired or mismatched handoffs leave the ordinary build below unchanged.
@@ -88,7 +127,8 @@ jobs:
       - name: Restore validated merge-group build outputs
         if: >-
           github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
+          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true' &&
+          steps.handoff-measurement-result.outputs.bypass_restore != 'true'
         continue-on-error: true
         timeout-minutes: 3
         env:
@@ -127,6 +167,8 @@ jobs:
           test -d .lake/packages
           python3 -B -m unittest scripts/test_check_tidy_surface.py
           python3 -B scripts/check_tidy_surface.py
+      - name: "Result registry references"
+        run: python3 -B scripts/results_registry.py --compiled
       # Lints for the files a pull request adds or changes: names in module docstrings' "Main …"
       # lists exist, and a new test file does more than restate signatures. See
       # scripts/check_changed_files.py. The checkout is shallow, so the base commit is fetched
@@ -149,12 +191,14 @@ jobs:
           python3 -B scripts/check_changed_files.py --base "$BASE"
       # Advisory only: public definitions that a pull request adds or changes and that share a
       # large anonymized subterm with an existing definition, or only rename one (AGENTS.md, "New
-      # statements and definitions"). Candidates go to the job summary and appear as notices; the
-      # step never fails the job. Its compiled-fixture tests need Lean, so the Python tests at the
-      # start skip them; they run here. See scripts/parallel_defs.py. The comparison base is the
-      # first parent of the checked-out merge commit: `pull_request.base.sha` can be an older tip of
-      # the base branch, and comparing with it would attribute later base commits to the PR.
-      - name: "Parallel-definition notice (advisory)"
+      # statements and definitions"), and theorems it adds or changes whose statement the library
+      # or a dependency already proves (#949). Candidates go to the job summary and appear as
+      # notices; the step never fails the job. Its compiled-fixture tests need Lean, so the Python
+      # tests at the start skip them; they run here. See scripts/parallel_defs.py. The comparison
+      # base is the first parent of the checked-out merge commit: `pull_request.base.sha` can be an
+      # older tip of the base branch, and comparing with it would attribute later base commits to
+      # the PR.
+      - name: "Parallel-definition and duplicate-statement notices (advisory)"
         if: github.event_name == 'pull_request'
         continue-on-error: true
         timeout-minutes: 10
@@ -165,6 +209,7 @@ jobs:
           BASE=${BASE:-$RECORDED_BASE}
           git fetch --no-tags --depth=1 origin "$BASE"
           python3 -B scripts/parallel_defs.py --base "$BASE" --github --no-build-check
+          python3 -B scripts/parallel_defs.py --theorems --base "$BASE" --github --no-build-check
           python3 -B -m unittest scripts/test_parallel_defs.py
       # Advisory only: backticked Lean names in the PR description that the checked-out merge
       # commit does not declare (renamed or dropped while the PR evolved). It reads the sources of
@@ -236,3 +281,11 @@ jobs:
         run: |
           set -e
           scripts/cache/upload.sh "${{ vars.LAKE_CACHE_BUCKET }}"
+      - name: Record optional handoff measurement
+        if: always() && steps.handoff-measurement.outputs.report != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: handoff-measurement-${{ github.run_id }}-${{ github.run_attempt }}
+          # Metadata only: the directory also holds private trial state and must never be uploaded.
+          path: ${{ steps.handoff-measurement.outputs.report }}
+          retention-days: 14

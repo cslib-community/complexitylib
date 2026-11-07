@@ -34,32 +34,32 @@ by the caller.
 
 namespace Turing.MultiTapeNTM.ConfigurationGraph
 
-open MultiTapeTM ComputableTidilyInSpace
+open MultiTapeTM ComputableInSpace
 
 variable {α : Type} {enc : α ↪ List Bool} {S : α → ℕ}
 
 private theorem and_inSpace {f g : α → Bool}
-    (hf : ComputableTidilyInSpace f enc encBool S) (hg : ComputableTidilyInSpace g enc encBool S) :
-    ComputableTidilyInSpace (fun a => f a && g a) enc encBool S :=
+    (hf : ComputableInSpace f enc encBool S) (hg : ComputableInSpace g enc encBool S) :
+    ComputableInSpace (fun a => f a && g a) enc encBool S :=
   budget_finite (fun p : Bool × Bool => p.1 && p.2) (budget_prod hf hg)
 
 private theorem or_inSpace {f g : α → Bool}
-    (hf : ComputableTidilyInSpace f enc encBool S) (hg : ComputableTidilyInSpace g enc encBool S) :
-    ComputableTidilyInSpace (fun a => f a || g a) enc encBool S :=
+    (hf : ComputableInSpace f enc encBool S) (hg : ComputableInSpace g enc encBool S) :
+    ComputableInSpace (fun a => f a || g a) enc encBool S :=
   budget_finite (fun p : Bool × Bool => p.1 || p.2) (budget_prod hf hg)
 
 private theorem all_inSpace {ι : Type} (l : List ι) {f : ι → α → Bool}
-    (hf : ∀ i, ComputableTidilyInSpace (f i) enc encBool S)
+    (hf : ∀ i, ComputableInSpace (f i) enc encBool S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => (l.map fun i => f i a).all id) enc encBool S := by
+    ComputableInSpace (fun a => (l.map fun i => f i a).all id) enc encBool S := by
   induction l with
   | nil => exact budget_const true hin
   | cons i l ih => exact and_inSpace (hf i) ih
 
 private theorem any_inSpace {ι : Type} (l : List ι) {f : ι → α → Bool}
-    (hf : ∀ i, ComputableTidilyInSpace (f i) enc encBool S)
+    (hf : ∀ i, ComputableInSpace (f i) enc encBool S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => l.any fun i => f i a) enc encBool S := by
+    ComputableInSpace (fun a => l.any fun i => f i a) enc encBool S := by
   induction l with
   | nil => exact budget_const false hin
   | cons i l ih => exact or_inSpace (hf i) ih
@@ -68,22 +68,22 @@ variable {k : ℕ} {State : Type} [Fintype State]
   {B n u v : α → ℕ} {symbol : α → Option Bool}
 
 /-- Reading any fixed register preserves a common space budget. -/
-private theorem readRegisters_budget (hB : ComputableTidilyInSpace B enc encNat S)
-    (hu : ComputableTidilyInSpace u enc encNat S) (i : Register k) :
-    ComputableTidilyInSpace (fun a => readRegisters (B a) (u a) i) enc encNat S :=
+private theorem readRegisters_budget (hB : ComputableInSpace B enc encNat S)
+    (hu : ComputableInSpace u enc encNat S) (i : Register k) :
+    ComputableInSpace (fun a => readRegisters (B a) (u a) i) enc encNat S :=
   budget_comp_linear (component_inSpace i) (budget_prod hB hu)
 
 /-- The ambient graph size is computable from the radix. -/
-theorem vertexBound_budget (hB : ComputableTidilyInSpace B enc encNat S)
+theorem vertexBound_budget (hB : ComputableInSpace B enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => vertexBound (k := k) (B a)) enc encNat S :=
+    ComputableInSpace (fun a => vertexBound (k := k) (B a)) enc encNat S :=
   budget_natPow hB hin (Fintype.card (Register k))
 
-private theorem valid_budget (hB : ComputableTidilyInSpace B enc encNat S)
-    (hn : ComputableTidilyInSpace n enc encNat S)
-    (hu : ComputableTidilyInSpace u enc encNat S)
+private theorem valid_budget (hB : ComputableInSpace B enc encNat S)
+    (hn : ComputableInSpace n enc encNat S)
+    (hu : ComputableInSpace u enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => valid (k := k) (State := State) (B a) (n a) (u a))
+    ComputableInSpace (fun a => valid (k := k) (State := State) (B a) (n a) (u a))
       enc encBool S := by
   have hr := readRegisters_budget (k := k) hB hu
   have hb := vertexBound_budget (k := k) hB hin
@@ -101,21 +101,21 @@ private theorem valid_budget (hB : ComputableTidilyInSpace B enc encNat S)
   rfl
 
 private theorem inputSymbol_budget {p : α → ℕ}
-    (hn : ComputableTidilyInSpace n enc encNat S)
-    (hp : ComputableTidilyInSpace p enc encNat S)
-    (hs : ComputableTidilyInSpace symbol enc (encOption encBool) S)
+    (hn : ComputableInSpace n enc encNat S)
+    (hp : ComputableInSpace p enc encNat S)
+    (hs : ComputableInSpace symbol enc (encOption encBool) S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => inputSymbol (n a) (p a) (symbol a))
+    ComputableInSpace (fun a => inputSymbol (n a) (p a) (symbol a))
       enc (encOption encBool) S := by
   have hc := or_inSpace (budget_natIsZero hp) (budget_natEq hp (budget_natSucc hn))
   simpa only [inputSymbol, Bool.or_eq_true, decide_eq_true_eq] using
     budget_ite hc (budget_const none hin) hs
 
 private theorem nextRegisters_budget {r : α → Register k → ℕ}
-    (hn : ComputableTidilyInSpace n enc encNat S)
-    (hr : ∀ i, ComputableTidilyInSpace (fun a => r a i) enc encNat S)
+    (hn : ComputableInSpace n enc encNat S)
+    (hr : ∀ i, ComputableInSpace (fun a => r a i) enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) (act : Action k Bool State) (i : Register k) :
-    ComputableTidilyInSpace (fun a => nextRegisters (n a) (r a) act i) enc encNat S := by
+    ComputableInSpace (fun a => nextRegisters (n a) (r a) act i) enc encNat S := by
   cases i with
   | inputPos =>
     cases hm : act.inputTape with
@@ -137,12 +137,12 @@ private theorem nextRegisters_budget {r : α → Register k → ℕ}
         budget_ite (budget_natIsZero (hr .output))
           (budget_const (encB := encNat) (if b then 1 else 2) hin) (budget_const 2 hin)
   | head i | left i | right i =>
-    have hh : ComputableTidilyInSpace
+    have hh : ComputableInSpace
         (fun a => (act.workTapes i).1.elim (r a (.head i)) symbolCode) enc encNat S := by
       cases (act.workTapes i).1 with
       | none => exact hr (.head i)
       | some b => exact budget_const _ hin
-    have hthree : ComputableTidilyInSpace (fun _ : α => 3) enc encNat S := budget_const 3 hin
+    have hthree : ComputableInSpace (fun _ : α => 3) enc encNat S := budget_const 3 hin
     cases hm : (act.workTapes i).2 <;>
       simp only [nextRegisters, tapeStep, hm] <;>
       first
@@ -153,11 +153,11 @@ private theorem nextRegisters_budget {r : α → Register k → ℕ}
       | exact budget_natAdd hh (budget_natMul hthree (hr _))
 
 private theorem matchesEntry_budget {r : α → Register k → ℕ}
-    (hn : ComputableTidilyInSpace n enc encNat S)
-    (hr : ∀ i, ComputableTidilyInSpace (fun a => r a i) enc encNat S)
-    (hs : ComputableTidilyInSpace symbol enc (encOption encBool) S)
+    (hn : ComputableInSpace n enc encNat S)
+    (hr : ∀ i, ComputableInSpace (fun a => r a i) enc encNat S)
+    (hs : ComputableInSpace symbol enc (encOption encBool) S)
     (hin : (fun a => (enc a).length) ≼ S) (t : Instruction k State) :
-    ComputableTidilyInSpace (fun a => matchesEntry (n a) (r a) (symbol a) t) enc encBool S := by
+    ComputableInSpace (fun a => matchesEntry (n a) (r a) (symbol a) t) enc encBool S := by
   have hc := budget_natEq (hr .control) (budget_const (stateCode (some t.1)) hin)
   have hi := budget_finite (encC := encBool) (fun b : Option Bool => decide (b = t.2.1))
     (inputSymbol_budget hn (hr .inputPos) hs hin)
@@ -171,22 +171,22 @@ private theorem matchesEntry_budget {r : α → Register k → ℕ}
   rfl
 
 private theorem fitsB_budget {r : α → Register k → ℕ}
-    (hB : ComputableTidilyInSpace B enc encNat S)
-    (hr : ∀ i, ComputableTidilyInSpace (fun a => r a i) enc encNat S)
+    (hB : ComputableInSpace B enc encNat S)
+    (hr : ∀ i, ComputableInSpace (fun a => r a i) enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => fitsB (B a) (r a)) enc encBool S := by
+    ComputableInSpace (fun a => fitsB (B a) (r a)) enc encBool S := by
   simpa only [fitsB, List.all_map, Function.comp_def, id_eq] using
     all_inSpace (Finset.univ.toList : List (Register k)) (fun i => budget_natLt (hr i) hB) hin
 
 /-- Local edge evaluation preserves any budget covering the short arguments. -/
 theorem edgeWithSymbol_budget (ntm : MultiTapeNTM k Bool State)
-    (hB : ComputableTidilyInSpace B enc encNat S)
-    (hn : ComputableTidilyInSpace n enc encNat S)
-    (hu : ComputableTidilyInSpace u enc encNat S)
-    (hv : ComputableTidilyInSpace v enc encNat S)
-    (hs : ComputableTidilyInSpace symbol enc (encOption encBool) S)
+    (hB : ComputableInSpace B enc encNat S)
+    (hn : ComputableInSpace n enc encNat S)
+    (hu : ComputableInSpace u enc encNat S)
+    (hv : ComputableInSpace v enc encNat S)
+    (hs : ComputableInSpace symbol enc (encOption encBool) S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => edgeWithSymbol ntm (B a) (n a) (u a) (v a) (symbol a))
+    ComputableInSpace (fun a => edgeWithSymbol ntm (B a) (n a) (u a) (v a) (symbol a))
       enc encBool S := by
   have hr := readRegisters_budget (k := k) hB hu
   have hh := and_inSpace
@@ -201,12 +201,12 @@ theorem edgeWithSymbol_budget (ntm : MultiTapeNTM k Bool State)
 
 /-- The overflow test preserves any budget covering the short arguments. -/
 theorem overflow_budget (ntm : MultiTapeNTM k Bool State)
-    (hB : ComputableTidilyInSpace B enc encNat S)
-    (hn : ComputableTidilyInSpace n enc encNat S)
-    (hu : ComputableTidilyInSpace u enc encNat S)
-    (hs : ComputableTidilyInSpace symbol enc (encOption encBool) S)
+    (hB : ComputableInSpace B enc encNat S)
+    (hn : ComputableInSpace n enc encNat S)
+    (hu : ComputableInSpace u enc encNat S)
+    (hs : ComputableInSpace symbol enc (encOption encBool) S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => overflow ntm (B a) (n a) (u a) (symbol a))
+    ComputableInSpace (fun a => overflow ntm (B a) (n a) (u a) (symbol a))
       enc encBool S := by
   have hr := readRegisters_budget (k := k) hB hu
   have hentry (t : Instruction k State) :=
@@ -216,17 +216,17 @@ theorem overflow_budget (ntm : MultiTapeNTM k Bool State)
   exact and_inSpace (valid_budget hB hn hu hin) (any_inSpace (instructions ntm) hentry hin)
 
 /-- Compute the only input query in native deterministic linear workspace. -/
-theorem queryIndex_budget (hB : ComputableTidilyInSpace B enc encNat S)
-    (hu : ComputableTidilyInSpace u enc encNat S) :
-    ComputableTidilyInSpace (fun a => queryIndex (k := k) (B a) (u a)) enc encNat S :=
+theorem queryIndex_budget (hB : ComputableInSpace B enc encNat S)
+    (hu : ComputableInSpace u enc encNat S) :
+    ComputableInSpace (fun a => queryIndex (k := k) (B a) (u a)) enc encNat S :=
   budget_natPred (readRegisters_budget hB hu .inputPos)
 
 /-- Recognize the accepting halted vertices in native deterministic linear workspace. -/
-theorem bad_budget (hB : ComputableTidilyInSpace B enc encNat S)
-    (hn : ComputableTidilyInSpace n enc encNat S)
-    (hu : ComputableTidilyInSpace u enc encNat S)
+theorem bad_budget (hB : ComputableInSpace B enc encNat S)
+    (hn : ComputableInSpace n enc encNat S)
+    (hu : ComputableInSpace u enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => bad (State := State) (k := k) (B a) (n a) (u a))
+    ComputableInSpace (fun a => bad (State := State) (k := k) (B a) (n a) (u a))
       enc encBool S := by
   have hr := readRegisters_budget (k := k) hB hu
   exact and_inSpace (and_inSpace (valid_budget hB hn hu hin)
@@ -235,9 +235,9 @@ theorem bad_budget (hB : ComputableTidilyInSpace B enc encNat S)
 
 /-- Compute the input-independent start ID from the radix. -/
 theorem startID_budget (ntm : MultiTapeNTM k Bool State)
-    (hB : ComputableTidilyInSpace B enc encNat S)
+    (hB : ComputableInSpace B enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => startID ntm (B a)) enc encNat S :=
+    ComputableInSpace (fun a => startID ntm (B a)) enc encNat S :=
   pack_inSpace hB (fun _ => budget_const _ hin) hin
 
 end Turing.MultiTapeNTM.ConfigurationGraph

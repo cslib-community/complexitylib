@@ -16,8 +16,8 @@ downloads them for the nearest cached ancestor of your `HEAD`:
 scripts/build.sh --wfail --iofail   # restore caches, then build changed or missing modules
 ```
 
-A complete set of library and test outputs is about 75 MB compressed. Outputs are platform
-independent (`platformIndependent = true`), so Linux CI builds serve macOS checkouts.
+A complete set of library and test outputs is about 200 MB compressed (November 2026). Outputs
+are platform independent (`platformIndependent = true`), so Linux CI builds serve macOS checkouts.
 `COMPLEXITYLIB_CACHE_URL` overrides the location; set it to an empty string to skip the
 Complexitylib download.
 
@@ -26,11 +26,39 @@ CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, L
 input hash already matches a build trace in `.lake`. A fresh runner would otherwise download a
 complete set on every run, although `.lake` usually has most of it.
 
+Mathlib downloads are retried in the same checkout by `scripts/cache/get_mathlib.py`: at most
+three ordinary `lake exe cache get` attempts, each limited to three minutes, with two-second
+pauses. Completed archives remain in place, so the pinned Mathlib client retries only missing
+downloads. Exhausted attempts warn and leave the strict build/check commands to compile what is
+missing. On POSIX, shutdown sends SIGTERM to the attempt's own process group, allowing Git's
+signal handlers to remove their locks, then waits up to five seconds before escalating to
+SIGKILL and waiting up to five more seconds. Parent exit alone does not establish descendant
+exit: retries stop early if the group still exists (including unreaped zombies). On Windows,
+the same bounded terminate/kill sequence applies to the direct child only. The helper never
+removes Git locks; forced termination can still leave one behind.
+
+Lean CI, API docs and Comparator disable only lean-action's built-in Mathlib fetch and call this helper
+with `--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACHE_GET_URL` selects
+`https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
+explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
+their existing client-default/environment behavior. API docs also use the existing missing-only
+Complexitylib restore before generation. The Guide workflow restores Lean CI's `.lake` entry from
+the Actions cache and then uses the same missing-only restore. Cache failures remain optional;
+installation and validation failures remain strict.
+
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
 about 600 MB) from the Actions cache before `leanprover/lean-action` runs, so that the action does
 not download the toolchain. On a miss, `.github/actions/install-lean` installs them with bounded
 retries and saves the entry before any Lake command runs, so it never contains the local artifact
 cache above.
+
+## Hosted-runner disk space
+
+Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to remove the unused
+Android and .NET SDKs and report available disk space. It runs only on GitHub-hosted Linux
+runners; local and self-hosted invocations skip cleanup. The Lean toolchain, compiler, Python,
+Node actions, repository and caches are retained. Cleanup is optional; all validation still runs
+if it fails.
 
 ## Merge-queue handoff
 
@@ -77,6 +105,10 @@ following builds while preserving the public cache's authorization boundary.
   from source and the local artifact cache.
 
 ## Automatic restoration
+
+Temporary controlled measurement is specified in [MEASUREMENT.md](MEASUREMENT.md) (#1728).
+Its hooks are disabled without an explicit plan and expire on 2026-11-15. Installing them does
+not authorize study activation or complete #1197's net-benefit requirement.
 
 `scripts/build.sh` runs `scripts/cache/ensure.sh`, then forwards its arguments and exit status to
 `lake build`. `scripts/check.sh` uses the same bootstrap before full or quick validation; a quick
@@ -197,11 +229,12 @@ CI skips the upload until the repository variable `LAKE_CACHE_BUCKET` is set.
 
 **Costs.** Storage is small: each `main` push uploads only modules whose outputs changed. CI
 downloads only what its restored `.lake` lacks: nothing when the Actions cache is current, about
-12 MB when it is a few hundred modules behind, and a complete set (about 75 MB) when it misses.
+12 MB when it is a few hundred modules behind, and a complete set (about 200 MB) when it misses.
 Cloud Storage's free tier covers 5 GB of storage and 100 GB of egress per month in `us-east1`;
 at 150–200 CI runs a day, a complete download on every run would exceed that several times over
-and soon reach the budget. The budget alerts and the kill switch bound abuse of the public
-bucket.
+and soon reach the budget. Workflows that read the bucket therefore restore `.lake` from the
+Actions cache first and download only what it lacks. The budget alerts and the kill switch bound
+abuse of the public bucket.
 
 **After the kill switch fires.** Downloads fail and builds fall back to compiling. Check the egress
 graph and the function's log, then restore public read:

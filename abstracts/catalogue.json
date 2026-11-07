@@ -70,6 +70,20 @@
       "namespace": "ComplexityTests.Abstracts.USTCONAbstract"
     },
     {
+      "id": "primes",
+      "title": "Agrawal–Kayal–Saxena: PRIMES is in P",
+      "module": "ComplexityAbstracts.PrimesAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.PrimesAbstract.primes_mem_P"
+      ],
+      "summary": "Primality of a natural number given in binary is decidable in deterministic polynomial time.",
+      "scope": "Binary digits least significant first, and native multi-tape P with polynomial time and space; the library decider is the AKS algorithm with integer thresholds on the word RAM, simulated by a Turing machine; no exponent is stated.",
+      "foundations": [
+        "ComplexityAbstracts.Encoding",
+        "ComplexityAbstracts.Computation"
+      ]
+    },
+    {
       "id": "immerman-szelepcsenyi",
       "title": "Immerman–Szelepcsényi: nondeterministic space is closed under complement",
       "module": "ComplexityAbstracts.ImmermanSzelepcsenyiAbstract",
@@ -104,6 +118,20 @@
       "summary": "Every problem in the polynomial hierarchy is decidable in polynomial time with an exact counting oracle.",
       "scope": "Witness counts and oracle bit answers are explicit; correctness holds for every extension of valid oracle answers.",
       "namespace": "ComplexityTests.Abstracts.TodaAbstract",
+      "foundations": [
+        "ComplexityAbstracts.Encoding",
+        "ComplexityAbstracts.Computation"
+      ]
+    },
+    {
+      "id": "bqp-pp",
+      "title": "Adleman–DeMarrais–Huang: BQP is contained in PP",
+      "module": "ComplexityAbstracts.BQPAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.BQPAbstract.BQP_subset_PP"
+      ],
+      "summary": "Every problem decided with bounded error by a polynomial-time uniform family of quantum circuits is decided by a polynomial-time strict-majority vote over random strings.",
+      "scope": "Explicit amplitude semantics for the fixed gate set {Hadamard, NOT, CNOT, Toffoli}, acceptance by measuring qubit 0 from the zero-padded input, uniformity in polynomial time from n in unary, and native multi-tape PP; equivalence to textbook BQP over arbitrary elementary gates (universality and Solovay–Kitaev) is a cited, unformalized remark.",
       "foundations": [
         "ComplexityAbstracts.Encoding",
         "ComplexityAbstracts.Computation"
@@ -155,6 +183,26 @@
       "namespace": "ComplexityTests.Abstracts.FormulaBoundsAbstract"
     },
     {
+      "id": "andreev-threshold",
+      "title": "Depth-two threshold circuits for Andreev's function: quadratic upper bound and tight average-case bounds",
+      "module": "ComplexityAbstracts.AndreevThresholdAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.AndreevThresholdAbstract.exact_upper_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.high_agreement_upper_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.weak_agreement_upper_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.gate_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.gate_lower_bound_of_le_eps",
+        "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound_of_le_eps"
+      ],
+      "supporting_theorems": [
+        "ComplexityAbstracts.AndreevThresholdAbstract.exact_gate_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.exact_wire_lower_bound"
+      ],
+      "summary": "For Andreev's function on n = 2^b + b m bits, alternating-linear polarization gives an exact depth-two weighted threshold circuit of 4·4^b + b m 2^b + 1 gates ((5/4)n^2 + 1 at 2^b = b m, improving Kane–Williams O(n^3 / log n)) and windowed average-case upper bounds for 1 - δ agreement (O(n^(3/2) sqrt(log(n / δ))) gates, O(n^(5/2) sqrt(log(n / δ))) wires) and 1/2 + ε agreement (O(ε^2 n^(3/2) sqrt(log n)) gates, O(ε^2 n^(5/2) sqrt(log n)) wires); fixed-weight threshold-shift counting and Cauchy–Schwarz improve the Kane–Williams average-case lower bounds to Omega(ε² n^(3/2) / log² n) gates and Omega(ε² n^(5/2) / log^(5/2) n) active wires in the balanced regime for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2.",
+      "scope": "Arbitrary real-weight threshold gates (THR ∘ THR), size counting all threshold gates, active wireCount summing nonzero-weight wires across gates, explicit non-asymptotic finite bounds, simultaneous fixed-weight Hoeffding–Chow union-bound tail, and explicit linear-in-b counting losses with m ≤ 2^b for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2; nonuniform."
+    },
+    {
       "id": "constant-depth-arithmetic",
       "title": "Limaye–Srinivasan–Tavenas over any field (after Forbes): constant-depth algebraic circuits for IMM need superpolynomial size",
       "module": "ComplexityAbstracts.ConstantDepthArithmeticAbstract",
@@ -182,24 +230,6 @@
         "ComplexityAbstracts.Encoding",
         "ComplexityAbstracts.Computation",
         "ComplexityAbstracts.Randomized"
-      ]
-    },
-    {
-      "id": "gsw-fhe",
-      "title": "Gentry and GSW: fully homomorphic encryption from LWE",
-      "module": "ComplexityAbstracts.GSWFHEAbstract",
-      "headline_theorems": [
-        "ComplexityTests.Abstracts.GSWFHEAbstract.leveled",
-        "ComplexityTests.Abstracts.GSWFHEAbstract.fullyHomomorphic"
-      ],
-      "summary": "Bootstrapping the GSW scheme gives leveled fully homomorphic encryption from decision LWE, and fully homomorphic encryption under an additional circular-security assumption.",
-      "scope": "Explicit GSW key generation, encryption and decryption at a centered-binomial LWE family with quasi-polynomial modulus. The leveled scheme family E has joint native strict PPT runtime in (security, d) via NativeInDepth, its fresh-ciphertext key pair has the GSW key-generation law, and the fully homomorphic scheme's key generation is Gentry's self-loop key; the evaluator, the rest of the leveled keys and the decryption circuits are existential. Perfect correctness on fresh encryptions, fixed widths, uniformly generated polynomial-size decryption circuits, native strict PPT algorithms and asymptotic IND-CPA. Circular security is a separate hypothesis; no lattice hardness, circuit privacy, multi-hop evaluation or concrete loss.",
-      "namespace": "ComplexityTests.Abstracts.GSWFHEAbstract",
-      "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation",
-        "ComplexityAbstracts.Randomized",
-        "ComplexityAbstracts.GSW"
       ]
     },
     {
@@ -253,6 +283,16 @@
       ],
       "summary": "Two independent weak random sources whose min-entropies add up to more than the string length give a nearly fair bit through the inner product modulo two.",
       "scope": "Arbitrary sources with real min-entropy bounds, the exact bias bound 2^((n - k1 - k2)/2)/2 and its strong form, and sharpness at k1 + k2 = n; information-theoretic, with no running time asserted."
+    },
+    {
+      "id": "schoening",
+      "title": "Schöning: 3-SAT in time (4/3)^n on the randomized word RAM",
+      "module": "ComplexityAbstracts.SchoeningAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.SchoeningAbstract.schoening3SAT"
+      ],
+      "summary": "One fixed randomized word-RAM program runs R = ⌈(3n + 1)(4/3)^n⌉·c independent trials of Schöning's local search on a CNF formula with n variables. It never errs on unsatisfiable formulas, fails with probability exactly (1 - p)^R for the success probability p of one restated trial, and fails on satisfiable 3-CNFs with probability at most e^(-c).",
+      "scope": "Unit-cost randomized word RAM over the standard basis (truncated subtraction, x / 0 = 0, x % 0 = x; unit-cost uniform rand), restated in the abstract, with words of O(log(n + L + c)) bits for input length L. Worst-case time ⌊900 (n + L + 4)^3 (4/3)^n (c + 1)⌋ = O((n + L)^3 (4/3)^n (c + 1)) on every random path. Explicit word encoding of CNF formulas; exact output law; one-sided error. The source's O*((4/3)^n) bound with an explicit polynomial factor, not the PPSZ improvement."
     },
     {
       "id": "subexponential-sat",

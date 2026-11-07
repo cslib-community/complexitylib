@@ -15,10 +15,17 @@ public import Mathlib.Data.List.Lex
 
 A prefix of a list is lexicographically at most that list (`List.isPrefix_le`), and the extensions
 of any prefix form an order-convex interval under the lexicographic order
-(`List.IsPrefix.of_le_of_le`, `List.IsPrefix.of_prefix_of_le_of_le`).
+(`List.IsPrefix.of_le_of_le`, `List.IsPrefix.of_prefix_of_le_of_le`). Lists of equal length keep a
+strict comparison when anything is appended to them (`List.append_lt_append_of_lt_of_length_eq`).
+
+Mathlib's lexicographic `LinearOrder` on lists replaces core's `≤` on lists, so core's
+`List.cons_le_cons_iff` does not apply to it; `List.cons_le_cons_iff'` is its counterpart.
 
 ## Main results
 
+* `List.cons_le_cons_iff'`: `a :: l ≤ b :: l'` iff `a < b`, or `a = b` and `l ≤ l'`.
+* `List.append_lt_append_of_lt_of_length_eq`: if `a < b` and `a`, `b` have the same length, then
+  `a ++ c < b ++ d`.
 * `List.isPrefix_le`: if `a <+: b`, then `a ≤ b` lexicographically.
 * `List.IsPrefix.of_le_of_le`: if `p <+: b` and `p ≤ c ≤ b`, then `p <+: c`.
 * `List.IsPrefix.of_prefix_of_le_of_le`: if `p <+: a`, `p <+: b`, and `a ≤ c ≤ b`, then `p <+: c`.
@@ -30,6 +37,33 @@ namespace List
 
 universe u
 variable {α : Type u} [LinearOrder α]
+
+/-- Comparing lists with heads: compare the heads, and the tails when the heads agree. -/
+theorem cons_le_cons_iff' {a b : α} {l l' : List α} :
+    a :: l ≤ b :: l' ↔ a < b ∨ a = b ∧ l ≤ l' := by
+  rw [le_iff_lt_or_eq, le_iff_lt_or_eq, show a :: l < b :: l' ↔ Lex (· < ·) (a :: l) (b :: l')
+    from Iff.rfl, cons_lex_cons_iff]
+  constructor
+  · rintro ((h | ⟨rfl, h⟩) | h)
+    · exact .inl h
+    · exact .inr ⟨rfl, .inl h⟩
+    · obtain ⟨rfl, rfl⟩ := List.cons.inj h
+      exact .inr ⟨rfl, .inr rfl⟩
+  · rintro (h | ⟨rfl, h | rfl⟩)
+    · exact .inl (.inl h)
+    · exact .inl (.inr ⟨rfl, h⟩)
+    · exact .inr rfl
+
+/-- A strict comparison between lists of the same length survives appending anything to them:
+it is decided at a position inside both. -/
+theorem append_lt_append_of_lt_of_length_eq {a b : List α} (h : a < b)
+    (hlen : a.length = b.length) (c d : List α) : a ++ c < b ++ d := by
+  change Lex (· < ·) a b at h
+  change Lex (· < ·) (a ++ c) (b ++ d)
+  induction h with
+  | nil => simp at hlen
+  | cons _ ih => exact .cons (ih (by simpa using hlen))
+  | rel h => exact .rel h
 
 /-- A list is lexicographically at most every list it is a prefix of. -/
 theorem isPrefix_le {a b : List α} (h : a <+: b) : a ≤ b := by

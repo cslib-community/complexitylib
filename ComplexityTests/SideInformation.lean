@@ -6,9 +6,9 @@ Authors: Samuel Schlesinger
 
 import Complexity.Probability.ProductConditioning.SideInformation
 
-/-! # Holenstein's Corollary 6
+/-! # Holenstein's Corollary 4.3
 
-Without a conditioning variable or side information, Corollary 6 specializes to Raz's
+Without a conditioning variable or side information, Corollary 4.3 specializes to Raz's
 conditioning lemma; and the side-information form applies to any joint distribution with a product
 first marginal, including two fair bits conditioned on the first bit being `true`.
 -/
@@ -18,7 +18,7 @@ namespace ComplexityTests.SideInformation
 open Cslib.Probability.PMF
 open scoped Cslib.Probability.PMF
 
--- With trivial `T` and `V`, Corollary 6 bounds the coordinate distances of a conditioned product.
+-- With trivial `T` and `V`, Corollary 4.3 bounds the coordinate distances of a conditioned product.
 example {ι : Type} [Fintype ι] {β : ι → Type} [∀ i, Fintype (β i)] (p : ∀ i, PMF (β i))
     (W : Set ((Unit × Unit) × (∀ i, β i)))
     (hW : ∃ x ∈ W, x ∈ (sideJoint (PMF.pure ()) fun _ => (pi p).map (·, ())).support) :

@@ -99,10 +99,10 @@ theorem congr {program program' : α → WordOracleComp Operation γ}
     (h : IsTidyOraclePPTOn input output program)
     (heq : ∀ a (State : Type) (oracle : Operation × List Bool → StateT State PMF (List Bool)) s,
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (program a)).run s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (program' a)).run s) :
     IsTidyOraclePPTOn input output program' := by
   obtain ⟨hops, k, Control, hfinite, machine, c, d, h⟩ := h
@@ -122,7 +122,7 @@ theorem length_le {program : α → WordOracleComp Operation γ}
     ∃ c d : ℕ, ∀ a (State : Type)
       (oracle : Operation × List Bool → StateT State PMF (List Bool)) s s' result,
       (result, s') ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (program a)).run s).support →
       (output result).length ≤ c * ((input a).length + 1) ^ d :=
   h.isOraclePPTOn.length_le

@@ -59,30 +59,18 @@ private theorem of_computesPlain {f : α → β} {k : ℕ} {State : Type} [Finit
 
 /-- Frame a raw word with the existing streaming encoder. -/
 @[fun_prop]
-theorem frame : ComputableInPolyTime Turing.MultiTapeTM.frame encBits encBits := by
-  obtain ⟨c, k, State, hfinite, tm, htm⟩ :=
-    (ComputableInLinearTimeAndSpace.of_frame (fun _ => rfl) :
-      ComputableInLinearTimeAndSpace Turing.MultiTapeTM.frame encBits encBits)
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, State, hfinite, tm, htm⟩
+theorem frame : ComputableInPolyTime Turing.MultiTapeTM.frame encBits encBits :=
+  (ComputableInDegree.of_frame (fun _ => rfl)).computableInPolyTime
 
 /-- Read the first framed word, including incomplete or malformed inputs. -/
 @[fun_prop]
-theorem unframe : ComputableInPolyTime Turing.MultiTapeTM.unframe encBits encBits := by
-  obtain ⟨c, k, State, hfinite, tm, htm⟩ :=
-    (ComputableInLinearTimeAndSpace.of_unframe (fun _ => rfl) :
-      ComputableInLinearTimeAndSpace Turing.MultiTapeTM.unframe encBits encBits)
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, State, hfinite, tm, htm⟩
+theorem unframe : ComputableInPolyTime Turing.MultiTapeTM.unframe encBits encBits :=
+  (ComputableInDegree.of_unframe (fun _ => rfl)).computableInPolyTime
 
 /-- Drop the first framed word, including incomplete or malformed inputs. -/
 @[fun_prop]
-theorem dropFrame : ComputableInPolyTime Turing.MultiTapeTM.dropFrame encBits encBits := by
-  obtain ⟨c, k, State, hfinite, tm, htm⟩ :=
-    (ComputableInLinearTimeAndSpace.of_dropFrame (fun _ => rfl) :
-      ComputableInLinearTimeAndSpace Turing.MultiTapeTM.dropFrame encBits encBits)
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, State, hfinite, tm, htm⟩
+theorem dropFrame : ComputableInPolyTime Turing.MultiTapeTM.dropFrame encBits encBits :=
+  (ComputableInDegree.of_dropFrame (fun _ => rfl)).computableInPolyTime
 
 /-- **Composition**, through the machine-level composition of tidy machines. The intermediate word
 is no longer than the time of the inner machine. -/
@@ -220,18 +208,14 @@ theorem _root_.Turing.MultiTapeTM.PairEncoding.computableInPolyTime_fst
     {β₁ β₂ : Type u} {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool}
     {enc : β₁ × β₂ ↪ List Bool} [h : PairEncoding enc₁ enc₂ enc] :
     ComputableInPolyTime (fun p : β₁ × β₂ => p.1) enc enc₁ :=
-  let ⟨c, _, _, _, _, htm⟩ := h.fst
-  of_computesPlain (T := fun n => c * (n + 1)) (by fun_prop) htm (fun _ => le_rfl)
-    (fun _ => le_rfl)
+  h.fst.computableInPolyTime
 
 /-- The second projection of an encoding of pairs, from its linear-time machine. -/
 theorem _root_.Turing.MultiTapeTM.PairEncoding.computableInPolyTime_snd
     {β₁ β₂ : Type u} {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool}
     {enc : β₁ × β₂ ↪ List Bool} [h : PairEncoding enc₁ enc₂ enc] :
     ComputableInPolyTime (fun p : β₁ × β₂ => p.2) enc enc₂ :=
-  let ⟨c, _, _, _, _, htm⟩ := h.snd
-  of_computesPlain (T := fun n => c * (n + 1)) (by fun_prop) htm (fun _ => le_rfl)
-    (fun _ => le_rfl)
+  h.snd.computableInPolyTime
 
 
 /-- Project the first entry of an ordinary framed pair. -/

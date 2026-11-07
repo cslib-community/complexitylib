@@ -213,7 +213,10 @@ def setupHead : Code .standard 32 := ram[
   address ← #1; depth ← *address;
   inputSize ← #1; capacity ← #1; stage ← #0 ]
 
-/-- One multiplication by each radix and one counter increment. -/
+/-- One multiplication by each radix and one counter increment. Computing `7^L` and `10^L`
+simultaneously in a single `stage < depth` loop charges `5 * L + 18` setup instructions and
+shares one counter register, whereas two sequential `WordRAM.Power.program` loops would
+duplicate the loop control and counter reset. -/
 def powerBody : Code .standard 32 := ram[
   inputSize ← inputSize * seven; capacity ← capacity * ten; stage ← stage + one ]
 

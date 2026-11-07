@@ -1,0 +1,50 @@
+name: Comparator
+
+# Manual only (Samuel, 2026-10-31): automatic pull-request and main-push runs took far more CI
+# time than the assurance they added. Run on demand from the Actions tab, or with
+# `gh workflow run comparator.yml --ref <branch>`.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: comparator-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the proof-checking sandbox
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes bubblewrap
+      - name: Restore build outputs
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ./.lake
+          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
+      - uses: ./.github/actions/install-lean
+      - uses: leanprover/lean-action@v1
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-github-cache: 'false'
+          use-mathlib-cache: 'false'
+      - name: Restore Mathlib cache with retries
+        continue-on-error: true
+        timeout-minutes: 10
+        run: python3 -B scripts/cache/get_mathlib.py --lean-action
+      - name: Restore remote build outputs
+        continue-on-error: true
+        timeout-minutes: 10
+        run: scripts/cache/get-missing.sh
+      - name: Compare all reviewed contracts and reject the changed-statement control
+        run: python3 scripts/check_comparator.py basic automation sat --negative-control

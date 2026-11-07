@@ -12,7 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Optio
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Computable
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Reduction
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import Mathlib.Computability.Partrec
 public import Mathlib.Computability.Primrec.List
 public import Mathlib.Computability.Reduce

@@ -7,6 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.QueryScan
 
 /-!
@@ -169,35 +170,30 @@ theorem exec {w : ℕ} (x : Data 20) (R : ℕ → ℕ) (h1 : Fits w 1)
       change y.mem (x.regs src + q) = _
       rw [hyframe _ (by dsimp [b, n] at *; omega) (by dsimp [d, b, n] at *; omega)]
       exact hinput q hq
-    obtain ⟨v, hv, -, hvc, hvr, hvpairs, hvframe⟩ := QueryScan.exec (a.comap scanReg) R h1
-      (by simpa only [ha_src, ha_size, Data.comap_mem] using hread)
-      (by rw [ha_src, ha_size]; exact hcount.of_le (by omega))
-      (by rw [ha_dst, ha_size]; exact hquery.of_le (by rw [Nat.mul_comm j s]; omega))
-      (by rw [ha_src, ha_size, ha_dst, Nat.mul_comm j s]; omega)
+    obtain ⟨v', hv, ⟨-, hvc, hvr, hvpairs, hvframe⟩, -⟩ :=
+      ExecWithin.rename_post scanReg_injective (QueryScan.exec (a.comap scanReg) R h1
+        (by simpa only [ha_src, ha_size, Data.comap_mem] using hread)
+        (by rw [ha_src, ha_size]; exact hcount.of_le (by omega))
+        (by rw [ha_dst, ha_size]; exact hquery.of_le (by rw [Nat.mul_comm j s]; omega))
+        (by rw [ha_src, ha_size, ha_dst, Nat.mul_comm j s]; omega))
     simp only [ha_dst, ha_residue, ha_size] at hvc hvpairs hvframe
-    let v' := v.extend scanReg a
     have hv' : ExecWithin w scan a v' (14 * (n * n) + 6) := by
-      simpa only [ha_size, scan, v'] using hv.rename scanReg_injective
+      simpa only [ha_size, scan] using hv
     have hvreg (i : Fin 20) (hi : 12 ≤ i.val) : v'.regs i = y.regs i :=
       (hv'.regs_eq (scan_preserves i hi)).trans (ha i (by
         constructor <;> intro heq <;> subst i <;> simp_all [dst, residue]))
-    have hext (i : Fin 12) : v'.regs (scanReg i) = v.regs i :=
-      scanReg_injective.extend_apply _ _ i
     have hvsrc : v'.regs src = y.regs src := by
       change v'.regs (scanReg QueryScan.src) = _
-      rw [hext]
       have h := hvr QueryScan.src (by decide)
-      change v.regs QueryScan.src = a.regs src at h
+      change v'.regs src = a.regs src at h
       exact h.trans (ha src (by decide))
     have hvsize : v'.regs size = y.regs size := by
       change v'.regs (scanReg QueryScan.size) = _
-      rw [hext]
       have h := hvr QueryScan.size (by decide)
-      change v.regs QueryScan.size = a.regs size at h
+      change v'.regs size = a.regs size at h
       exact h.trans (ha size (by decide))
     have hvcount : v'.regs count = C j (n * n) := by
       change v'.regs (scanReg QueryScan.count) = _
-      rw [hext]
       exact hvc
     have hvj : v'.regs cursor = j := hvreg cursor (by decide)
     have hvone : v'.regs one = 1 := (hvreg one (by decide)).trans hyo
@@ -214,9 +210,9 @@ theorem exec {w : ℕ} (x : Data 20) (R : ℕ → ℕ) (h1 : Fits w 1)
           i = one ∨ i = stride) : z.regs i = y.regs i :=
       (hstart.seq (hv'.seq hend)).regs_eq (body_preserves i hi)
     have hzj : z.regs cursor = j + 1 := by simp [z]
-    have hmem : z.mem = Function.update v.mem (b + j) (C j (n * n)) := rfl
+    have hmem : z.mem = Function.update v'.mem (b + j) (C j (n * n)) := rfl
     have hvframe' : ∀ q, ¬(d + s * j ≤ q ∧ q < d + s * (j + 1)) →
-        v.mem q = y.mem q := by
+        v'.mem q = y.mem q := by
       intro q hq
       apply hvframe q
       rw [hvc, Nat.mul_comm j s, Nat.add_comm (s * j) d]
@@ -248,7 +244,8 @@ theorem exec {w : ℕ} (x : Data 20) (R : ℕ → ℕ) (h1 : Fits w 1)
       · rw [Function.update_of_ne (by omega)]
         by_cases hkj : k = j
         · rw [hkj] at hkey ⊢
-          simpa only [Nat.mul_comm j s, Nat.add_comm (s * j) d] using (hvpairs q hq hkey).1
+          simpa only [Data.comap_mem, Nat.mul_comm j s, Nat.add_comm (s * j) d] using
+            (hvpairs q hq hkey).1
         · rw [hvframe' _ (by
             have hmul' : s * (k + 1) ≤ s * j := Nat.mul_le_mul_left s (by omega)
             have hstep' : s * (k + 1) = s * k + s := Nat.mul_succ s k
@@ -257,7 +254,8 @@ theorem exec {w : ℕ} (x : Data 20) (R : ℕ → ℕ) (h1 : Fits w 1)
       · rw [Function.update_of_ne (by omega)]
         by_cases hkj : k = j
         · rw [hkj] at hkey ⊢
-          simpa only [Nat.mul_comm j s, Nat.add_comm (s * j) d] using (hvpairs q hq hkey).2
+          simpa only [Data.comap_mem, Nat.mul_comm j s, Nat.add_comm (s * j) d] using
+            (hvpairs q hq hkey).2
         · rw [hvframe' _ (by
             have hmul' : s * (k + 1) ≤ s * j := Nat.mul_le_mul_left s (by omega)
             have hstep' : s * (k + 1) = s * k + s := Nat.mul_succ s k

@@ -9,19 +9,20 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.WordRAM.Randomized.Expected
-public import Complexity.Computability.WordRAM.Randomized.Subroutine
+public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
 
 /-!
 # Randomized Word-RAM geometric loop and subroutine interface tests
 
 Verifies the distributional structured execution relation `ExecCodeDist`, the geometric Las Vegas
 loop expected-time bound `ExecCodeDist.loop_geometric`, and the randomized Word-RAM subroutine
-interface `Cslib.WordRAM.Randomized.SubroutineDS`:
+interface `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl`:
 * a concrete geometric coin-flipping Las Vegas loop (`while r0 == r1 do r0 ← rand r1` with
   `r1 = 1` and exit probability `1 / 2` per iteration) almost surely halts with `r0 = 0` and
   bounded expected step count;
 * a concrete randomized data structure executing `Instr.rand` during its operations instantiates
-  `Cslib.WordRAM.Randomized.SubroutineDS` and exercises `toStandard`, `initFresh_exec`,
+  `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` and exercises `toStandard`,
+  `initFresh_exec`,
   `initClear_exec`, `frame_caller_dist` (across a randomized caller step), `call_rename`, and
   `seq_expected_amortized`.
 -/
@@ -30,7 +31,7 @@ interface `Cslib.WordRAM.Randomized.SubroutineDS`:
 
 namespace ComplexityTests.WordRAMRandomizedSubroutine
 
-open Cslib Cslib.WordRAM Cslib.WordRAM.Randomized
+open Cslib Cslib.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open Cslib.Probability.PMF (uniformOfFintype uniformOfFintype_apply)
 open scoped ENNReal
 
@@ -152,15 +153,13 @@ theorem geomCoinLoop_halts {w : ℕ} (hw : 1 ≤ w) :
     ENNReal.add_ne_top.mpr ⟨ENNReal.div_ne_top h12_ne (by simp), ENNReal.ofNat_ne_top⟩
   exact ⟨hAS hT_ne, hExp⟩
 
-/-! ## 2. Concrete randomized data structure (`Cslib.WordRAM.Randomized.SubroutineDS`) -/
+/-! ## 2. Concrete randomized data structure (`WordRAM.Randomized.StateTransitionImpl`) -/
 
 /-- Trivial stateful specification for a randomized sampler subroutine whose implementation invokes
 `Instr.rand` during each operation. -/
-def coinSpec : Stateful.Spec.{0, 0, 0} where
-  State := PUnit
-  Op := PUnit
-  Result _ := PUnit
-  step _ _ := (PUnit.unit, PUnit.unit)
+abbrev coinSpec : DataStructure.StateTransitionSpec.{0, 0, 0} :=
+  DataStructure.StateTransitionSpec.ofFn (State := PUnit) (Op := PUnit) (Result := fun _ => PUnit)
+    fun _ _ => (PUnit.unit, PUnit.unit)
 
 /-- Subroutine code with 5 registers (`0` = `baseReg`, `1` = `frontierReg`, `2` = `zeroReg`,
 `3` = `curReg` / scratch output, `4` = `oneReg`). Its operation body `code` executes
@@ -181,7 +180,7 @@ def coinSubroutineCode : SubroutineCode .exact 5 0 where
 
 /-- Representation invariant for `coinSubroutineCode`: machine words are `w`-bounded, `baseReg`
 holds `base`, and `oneReg` holds `1`. -/
-def coinRep (w base : ℕ) (_θ : Fin 2) (_s : PUnit) (x : Data 5) : Prop :=
+def coinRep (w base : ℕ) (_θ : Fin 2) (_s : PUnit.{1}) (x : Data 5) : Prop :=
   x.Bounded w ∧ x.regs 0 = base ∧ x.regs 4 = 1
 
 private theorem pmf_map_fst_const {α β γ : Type*} (q : PMF α) (b : β) (g : α → γ) :
@@ -198,94 +197,95 @@ private theorem pmf_map_snd_const {α β γ : Type*} (q : PMF α) (f : α → β
   rw [PMF.map_comp]
   by_cases h : y = c <;> simp [PMF.map_apply, h, q.tsum_coe]
 
-/-- Concrete randomized `SubroutineDS` certificate for `coinSubroutineCode` with latent seed type
+/-- Concrete randomized `StateTransitionImpl` certificate for `coinSubroutineCode` with latent seed
+type
 `Fin 2` and uniform reference distribution `uniformOfFintype (Fin 2)`. The native operation
 samples from `Fin 2`; its randomness is separate from this latent coupling seed. -/
-noncomputable def coinSubroutineDS (w base : ℕ) (hw : 1 ≤ w) :
-    Cslib.WordRAM.Randomized.SubroutineDS
-      coinSubroutineCode coinSpec w base Fin.elim0 PUnit.unit where
-  Seed := Fin 2
-  seedLaw := uniformOfFintype (Fin 2)
-  seedSlack := 1
-  seedSlack_ne_top := ENNReal.one_ne_top
-  space := 0
-  spanTime := 1
-  setupTime := 1
-  initPotential := 0
-  charge _ _ := 1
-  rep := coinRep w base
-  potential _ _ := 0
-  encode _ _ := 0
-  argMatch _ _ := True
-  decode _ _ := some PUnit.unit
-  bounded h := h.1
-  rep_unique _ _ := rfl
-  arguments_fit _ _ _ _ := fits_zero w
-  encode_matches _ _ := trivial
-  rep_supported hreg _ hb' hrep :=
-    ⟨hb',
-      by rw [hreg 0 rfl, hrep.2.1],
-      by rw [hreg 4 rfl, hrep.2.2]⟩
-  potential_supported _ _ _ := rfl
-  clear_nodup := by decide
-  params_not_clear j := Fin.elim0 j
-  incCur_eval {x} h1 hfit := by
-    change Data.put w x 3 (x.regs 3 + x.regs 4) =
-      some (x.set coinSubroutineCode.curReg (x.regs coinSubroutineCode.curReg + 1))
-    change x.regs 4 = 1 at h1
-    rw [h1]
-    exact Data.put_of_fits hfit
-  span_exec hx hfr _ := by
-    refine ⟨_, ExecWithin.copy, rfl, ?_, ?_, fun j => Fin.elim0 j⟩
-    · simpa [coinSubroutineCode, Data.set] using hfr
-    · simpa [coinSubroutineCode, Data.set] using hfr
-  setup_exec {x₁} hx₁ hb₁ hfr₁ _ _ := by
-    let x₂ : Data 5 := x₁.set 4 1
-    let ν₀ : PMF (Fin 2 × Data 5) := (uniformOfFintype (Fin 2)).map fun θ => (θ, x₂)
-    refine ⟨ν₀, ?_, ?_, ?_⟩
-    · have hex : ExecCodeDist (B := .exact) w (.op (.const 4 1)) x₁ (PMF.pure x₂) (1 : ℕ) :=
-        ExecCodeDist.of_exec (Exec.const (fits_one_of_pos hw))
-      exact hex.congr_dist (pmf_map_snd_const (uniformOfFintype (Fin 2)) id x₂).symm (by simp)
-    · intro θ
-      rw [PMF.map_comp]
-      simp
-    · intro p hp
-      rw [PMF.mem_support_map_iff] at hp
-      obtain ⟨θ, _, rfl⟩ := hp
-      refine ⟨?_, ?_, Nat.le_refl 0, Modifies.refl _ _⟩
-      · simpa [coinSubroutineCode, x₂, Data.set] using hfr₁
-      · refine ⟨hx₁.set (fits_one_of_pos hw), ?_, ?_⟩
-        · simp [x₂, Data.set, ← hb₁, coinSubroutineCode]
-        · simp [x₂, Data.set]
-  step_exec _ ν _ hseed hsupp := by
-    let μ_step : Fin 2 × Data 5 → PMF (Fin 2 × Data 5) := fun p =>
-      (uniformOfFintype (Fin (p.2.regs 4 + 1))).map fun k => (p.1, p.2.set 3 k.val)
-    refine ⟨μ_step, fun _ => 1, ?_, ?_, ?_⟩
-    · intro p hp
-      obtain ⟨⟨hbp, hb0, ho4⟩, _⟩ := hsupp p hp
-      refine ⟨?_, ?_⟩
-      · have hr := ExecCodeDist.rand (B := .exact) (w := w) (x := p.2) (dst := 3) (src := 4)
-          (hbp.1 4)
-        refine hr.congr_dist ?_ le_rfl
-        rw [ProbComp.eval_unifFin, PMF.map_comp]
-        rfl
-      · intro q hq
-        rw [PMF.mem_support_map_iff] at hq
-        obtain ⟨k, _, rfl⟩ := hq
-        have hk1 : k.val ≤ 1 := by omega
-        refine ⟨rfl, ⟨?_, ?_, ?_⟩, Modifies.refl _ _⟩
-        · exact hbp.set ((fits_one_of_pos hw).of_le hk1)
-        · simp [Data.set, hb0]
-        · simp [Data.set, ho4]
-    · intro θ'
-      have hmap : (ν.bind μ_step).map Prod.fst = ν.map Prod.fst := by
-        rw [PMF.map_bind, PMF.map]
-        refine congrArg (ν.bind ·) (funext fun p => ?_)
-        exact pmf_map_fst_const (uniformOfFintype (Fin (p.2.regs 4 + 1))) p.1
-          (fun k => p.2.set 3 k.val)
-      rw [hmap]
-      exact hseed θ'
-    · simp [ν.tsum_coe]
+noncomputable abbrev coinStateTransitionImpl (w base : ℕ) (hw : 1 ≤ w) :
+    Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl
+      coinSubroutineCode coinSpec w base Fin.elim0 PUnit.unit :=
+  Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.ofFn
+    (Seed := Fin 2)
+    (seedLaw := uniformOfFintype (Fin 2))
+    (seedSlack := 1)
+    (seedSlack_ne_top := ENNReal.one_ne_top)
+    (space := 0)
+    (spanTime := 1)
+    (setupTime := 1)
+    (initPotential := 0)
+    (charge := fun _ _ => 1)
+    (rep := coinRep w base)
+    (potential := fun _ _ => 0)
+    (encode := fun _ _ => 0)
+    (argMatch := fun _ _ => True)
+    (decode := fun _ _ => some PUnit.unit)
+    (bounded := fun h => h.1)
+    (arguments_fit := fun _ _ _ _ => fits_zero w)
+    (encode_matches := fun _ _ => trivial)
+    (rep_supported := fun hreg _ hb' hrep =>
+      ⟨hb',
+        by rw [hreg 0 rfl, hrep.2.1],
+        by rw [hreg 4 rfl, hrep.2.2]⟩)
+    (potential_supported := fun _ _ _ => rfl)
+    (clear_nodup := by decide)
+    (params_not_clear := fun j => Fin.elim0 j)
+    (incCur_eval := fun {x} h1 hfit => by
+      change Data.put w x 3 (x.regs 3 + x.regs 4) =
+        some (x.set coinSubroutineCode.curReg (x.regs coinSubroutineCode.curReg + 1))
+      change x.regs 4 = 1 at h1
+      rw [h1]
+      exact Data.put_of_fits hfit)
+    (span_exec := fun _ hfr _ => by
+      refine ⟨_, ExecWithin.copy, rfl, ?_, ?_, fun j => Fin.elim0 j⟩
+      · simpa [coinSubroutineCode, Data.set] using hfr
+      · simpa [coinSubroutineCode, Data.set] using hfr)
+    (setup_exec := fun {x₁} hx₁ hb₁ hfr₁ _ _ => by
+      let x₂ : Data 5 := x₁.set 4 1
+      let ν₀ : PMF (Fin 2 × Data 5) := (uniformOfFintype (Fin 2)).map fun θ => (θ, x₂)
+      refine ⟨ν₀, ?_, ?_, ?_⟩
+      · have hex : ExecCodeDist (B := .exact) w (.op (.const 4 1)) x₁ (PMF.pure x₂) (1 : ℕ) :=
+          ExecCodeDist.of_exec (Exec.const (fits_one_of_pos hw))
+        exact hex.congr_dist (pmf_map_snd_const (uniformOfFintype (Fin 2)) id x₂).symm (by simp)
+      · intro θ
+        rw [PMF.map_comp]
+        simp
+      · intro p hp
+        rw [PMF.mem_support_map_iff] at hp
+        obtain ⟨θ, _, rfl⟩ := hp
+        refine ⟨?_, ?_, Nat.le_refl 0, Modifies.refl _ _⟩
+        · simpa [coinSubroutineCode, x₂, Data.set] using hfr₁
+        · refine ⟨hx₁.set (fits_one_of_pos hw), ?_, ?_⟩
+          · simp [x₂, Data.set, ← hb₁, coinSubroutineCode]
+          · simp [x₂, Data.set])
+    (step_exec := fun _ ν _ hseed hsupp => by
+      let μ_step : Fin 2 × Data 5 → PMF (Fin 2 × Data 5) := fun p =>
+        (uniformOfFintype (Fin (p.2.regs 4 + 1))).map fun k => (p.1, p.2.set 3 k.val)
+      refine ⟨μ_step, fun _ => 1, ?_, ?_, ?_⟩
+      · intro p hp
+        obtain ⟨⟨hbp, hb0, ho4⟩, _⟩ := hsupp p hp
+        refine ⟨?_, ?_⟩
+        · have hr := ExecCodeDist.rand (B := .exact) (w := w) (x := p.2) (dst := 3) (src := 4)
+            (hbp.1 4)
+          refine hr.congr_dist ?_ le_rfl
+          rw [ProbComp.eval_unifFin, PMF.map_comp]
+          rfl
+        · intro q hq
+          rw [PMF.mem_support_map_iff] at hq
+          obtain ⟨k, _, rfl⟩ := hq
+          have hk1 : k.val ≤ 1 := by omega
+          refine ⟨rfl, ⟨?_, ?_, ?_⟩, Modifies.refl _ _⟩
+          · exact hbp.set ((fits_one_of_pos hw).of_le hk1)
+          · simp [Data.set, hb0]
+          · simp [Data.set, ho4]
+      · intro θ'
+        have hmap : (ν.bind μ_step).map Prod.fst = ν.map Prod.fst := by
+          rw [PMF.map_bind, PMF.map]
+          refine congrArg (ν.bind ·) (funext fun p => ?_)
+          exact pmf_map_fst_const (uniformOfFintype (Fin (p.2.regs 4 + 1))) p.1
+            (fun k => p.2.set 3 k.val)
+        rw [hmap]
+        exact hseed θ'
+      · simp [ν.tsum_coe])
 
 /-- The concrete represented state with `oneReg = 1` executes the native sampler in one body
 instruction, and its output register is exactly fair on both `0` and `1`. -/
@@ -309,21 +309,21 @@ theorem coinSubroutineCode_two_outcomes {w : ℕ} (hw : 1 ≤ w) :
   · simp [μ, PMF.map_comp, Function.comp_def, PMF.map_apply, tsum_fintype,
       Fin.sum_univ_two, uniformOfFintype_apply, Data.set]
 
-/-- Standard-basis lifting of `coinSubroutineDS`. -/
-noncomputable def coinSubroutineDS_standard (w base : ℕ) (hw : 1 ≤ w) :
-    Cslib.WordRAM.Randomized.SubroutineDS
+/-- Standard-basis lifting of `coinStateTransitionImpl`. -/
+noncomputable def coinStateTransitionImpl_standard (w base : ℕ) (hw : 1 ≤ w) :
+    Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl
       coinSubroutineCode.toStandard coinSpec w base Fin.elim0 PUnit.unit :=
-  (coinSubroutineDS w base hw).toStandard
+  (coinStateTransitionImpl w base hw).toStandard
 
 /-- Fresh initialization + multi-operation expected-amortized sequence bound for
-`coinSubroutineDS`. -/
-theorem coinSubroutineDS_seq_amortized (w base : ℕ) (hw : 1 ≤ w)
+`coinStateTransitionImpl`. -/
+theorem coinStateTransitionImpl_seq_amortized (w base : ℕ) (hw : 1 ≤ w)
     (ops : List PUnit) {x₀ : Data 5}
     (hx₀ : x₀.Bounded w) (hfr : x₀.regs 1 = base) :
-    let C := coinSubroutineDS w base hw
+    let C := coinStateTransitionImpl w base hw
     ∃ (ν₀ ν_final : PMF (C.Seed × Data 5)) (T_ops : ℝ≥0∞),
       ExecCodeDist w coinSubroutineCode.initFresh x₀ (ν₀.map Prod.snd) C.initTime ∧
-      C.ExecSteps PUnit.unit ops ν₀ ν_final T_ops ∧
+      C.ExecStepsOfFn PUnit.unit ops ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
       (∀ p ∈ ν_final.support, C.rep p.1 (coinSpec.run PUnit.unit ops).1 p.2) ∧
       C.initTime + T_ops + (∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)) ≤
@@ -337,36 +337,36 @@ theorem coinSubroutineDS_seq_amortized (w base : ℕ) (hw : 1 ≤ w)
   have hz : ∀ a ∈ (Block.mk base C.space).footprint, x₀.mem a = 0 := by
     change ∀ a ∈ (Block.mk base 0).footprint, x₀.mem a = 0
     simp [Block.footprint]
-  exact C.seq_expected_amortized ops hx₀ hfr (fun j => Fin.elim0 j) hz hvalid
+  exact C.seq_expected_amortized_ofFn ops hx₀ hfr (fun j => Fin.elim0 j) hz hvalid
 
 /-- From concrete empty memory, initialization and two genuine coin-sampling bodies have
-expected cost at most four; external argument delivery is uncharged by `ExecSteps`. -/
+expected cost at most four; external argument delivery is uncharged by `ExecStepsOfFn`. -/
 example :
-    let C := coinSubroutineDS 1 0 (by decide)
+    let C := coinStateTransitionImpl 1 0 (by decide)
     ∃ (ν₀ ν_final : PMF (C.Seed × Data 5)) (T_ops : ℝ≥0∞),
       ExecCodeDist 1 coinSubroutineCode.initFresh (Data.init []) (ν₀.map Prod.snd) C.initTime ∧
-      C.ExecSteps PUnit.unit [PUnit.unit, PUnit.unit] ν₀ ν_final T_ops ∧
+      C.ExecStepsOfFn PUnit.unit [PUnit.unit, PUnit.unit] ν₀ ν_final T_ops ∧
       C.initTime + T_ops ≤ 4 := by
   intro C
   obtain ⟨ν₀, ν_final, T_ops, hinit, hsteps, _, _, hcost⟩ :=
-    coinSubroutineDS_seq_amortized 1 0 (by decide) [PUnit.unit, PUnit.unit]
+    coinStateTransitionImpl_seq_amortized 1 0 (by decide) [PUnit.unit, PUnit.unit]
       (x₀ := (Data.init [] : Data 5))
       (Data.Bounded.init (by simp [InputFits])) (by simp [Data.init])
   refine ⟨ν₀, ν_final, T_ops, hinit, hsteps, ?_⟩
   have hT : T_ops ≤ 2 := by
-    simpa [C, coinSubroutineDS, Cslib.WordRAM.Randomized.SubroutineDS.initTime,
-      Stateful.Spec.totalCost, coinSpec] using hcost
+    simpa [C, coinStateTransitionImpl, StateTransitionImpl.initTime,
+      DataStructure.StateTransitionSpec.totalCost, coinSpec] using hcost
   have hinitTime : C.initTime = 2 := by
-    norm_num [C, coinSubroutineDS, Cslib.WordRAM.Randomized.SubroutineDS.initTime]
+    norm_num [C, coinStateTransitionImpl, StateTransitionImpl.initTime]
   rw [hinitTime]
   calc
     2 + T_ops ≤ 2 + 2 := add_le_add le_rfl hT
     _ = 4 := by norm_num
 
-/-- Dirty-memory initialization via `initClear_exec` for `coinSubroutineDS`. -/
-theorem coinSubroutineDS_initClear (w base : ℕ) (hw : 1 ≤ w) {x₀ : Data 5}
+/-- Dirty-memory initialization via `initClear_exec` for `coinStateTransitionImpl`. -/
+theorem coinStateTransitionImpl_initClear (w base : ℕ) (hw : 1 ≤ w) {x₀ : Data 5}
     (hx₀ : x₀.Bounded w) (hfr : x₀.regs 1 = base) :
-    let C := coinSubroutineDS w base hw
+    let C := coinStateTransitionImpl w base hw
     ∃ ν₀ : PMF (C.Seed × Data 5),
       ExecCodeDist w coinSubroutineCode.initClear x₀ (ν₀.map Prod.snd)
         (C.initTime + (4 * C.space + 6 : ℕ)) ∧
@@ -379,16 +379,17 @@ theorem coinSubroutineDS_initClear (w base : ℕ) (hw : 1 ≤ w) {x₀ : Data 5}
   intro C
   exact C.initClear_exec hx₀ hfr (fun j => Fin.elim0 j)
 
-/-- Inline caller subroutine invocation via `call_rename` for `coinSubroutineDS`: a caller with
+/-- Inline caller subroutine invocation via `call_rename_ofFn` for `coinStateTransitionImpl`: a
+caller with
 6 registers embeds `Fin 5` via `Fin.castSucc`, executes `prep := .op (.const 5 0)` on its own
 register `r5`, and invokes `coinSubroutineCode.code.rename Fin.castSucc`. -/
-theorem coinSubroutineDS_call_rename (w base : ℕ) (hw : 1 ≤ w)
-    (ν : PMF ((coinSubroutineDS w base hw).Seed × Data 6))
+theorem coinStateTransitionImpl_call_rename (w base : ℕ) (hw : 1 ≤ w)
+    (ν : PMF ((coinStateTransitionImpl w base hw).Seed × Data 6))
     (hseed : ∀ θ, (ν.map Prod.fst) θ ≤
-      (coinSubroutineDS w base hw).seedSlack * (coinSubroutineDS w base hw).seedLaw θ)
+      (coinStateTransitionImpl w base hw).seedSlack * (coinStateTransitionImpl w base hw).seedLaw θ)
     (hrep : ∀ p ∈ ν.support,
-      (coinSubroutineDS w base hw).rep p.1 PUnit.unit (p.2.comap Fin.castSucc)) :
-    let C := coinSubroutineDS w base hw
+      (coinStateTransitionImpl w base hw).rep p.1 PUnit.unit (p.2.comap Fin.castSucc)) :
+    let C := coinStateTransitionImpl w base hw
     let prep : Code .exact 6 := .op (.const 5 0)
     ∃ (μ_call : C.Seed × Data 6 → PMF (C.Seed × Data 6))
       (T_call : C.Seed × Data 6 → ℝ≥0∞),
@@ -397,8 +398,8 @@ theorem coinSubroutineDS_call_rename (w base : ℕ) (hw : 1 ≤ w)
           p.2 ((μ_call p).map Prod.snd) (T_call p) ∧
         ∀ q ∈ (μ_call p).support,
           C.decode PUnit.unit (q.2.comap Fin.castSucc).regs =
-            some (coinSpec.step PUnit.unit PUnit.unit).2 ∧
-          C.rep q.1 (coinSpec.step PUnit.unit PUnit.unit).1 (q.2.comap Fin.castSucc) ∧
+            some (coinSpec.stepFn PUnit.unit PUnit.unit).2 ∧
+          C.rep q.1 (coinSpec.stepFn PUnit.unit PUnit.unit).1 (q.2.comap Fin.castSucc) ∧
           ∃ x' ∈ (PMF.pure (p.2.set 5 0) : PMF (Data 6)).support,
             Modifies (Block.mk base C.space).footprint x'.mem q.2.mem ∧
             ∀ j ∉ Set.range (Fin.castSucc : Fin 5 → Fin 6), q.2.regs j = x'.regs j) ∧
@@ -408,7 +409,7 @@ theorem coinSubroutineDS_call_rename (w base : ℕ) (hw : 1 ≤ w)
         1 + (C.charge PUnit.unit PUnit.unit : ℝ≥0∞) +
           ∑' p, ν p * (C.potential p.1 (p.2.comap Fin.castSucc) : ℝ≥0∞) := by
   intro C prep
-  refine C.call_rename (Fin.castSucc_injective 5) PUnit.unit ν
+  refine C.call_rename_ofFn (Fin.castSucc_injective 5) PUnit.unit ν
     (prep := prep) (B_prep := 1)
     (μ_prep := fun p => PMF.pure (p.2.set 5 0)) (T_prep := fun _ => 1)
     trivial hseed hrep ?_
@@ -431,14 +432,14 @@ theorem coinSubroutineDS_call_rename (w base : ℕ) (hw : 1 ≤ w)
 
 /-- Caller framing across a randomized caller step: a caller with 6 registers embeds `Fin 5` via
 `Fin.castSucc` and executes `r5 ← rand r4` on its own register `r5` (`5 : Fin 6`), preserving the
-coupled seed marginal bound, `rep`, and expected potential via `frame_caller_dist`. -/
-theorem coinSubroutineDS_caller_rand_frame (w base : ℕ) (hw : 1 ≤ w)
-    (ν : PMF ((coinSubroutineDS w base hw).Seed × Data 6))
+coupled seed marginal bound, `rep`, and expected potential via `frame_caller_dist_ofFn`. -/
+theorem coinStateTransitionImpl_caller_rand_frame (w base : ℕ) (hw : 1 ≤ w)
+    (ν : PMF ((coinStateTransitionImpl w base hw).Seed × Data 6))
     (hseed : ∀ θ, (ν.map Prod.fst) θ ≤
-      (coinSubroutineDS w base hw).seedSlack * (coinSubroutineDS w base hw).seedLaw θ)
+      (coinStateTransitionImpl w base hw).seedSlack * (coinStateTransitionImpl w base hw).seedLaw θ)
     (hrep : ∀ p ∈ ν.support,
-      (coinSubroutineDS w base hw).rep p.1 PUnit.unit (p.2.comap Fin.castSucc)) :
-    let C := coinSubroutineDS w base hw
+      (coinStateTransitionImpl w base hw).rep p.1 PUnit.unit (p.2.comap Fin.castSucc)) :
+    let C := coinStateTransitionImpl w base hw
     let μ_caller : C.Seed × Data 6 → PMF (Data 6) := fun p =>
       (uniformOfFintype (Fin 2)).map fun k => p.2.set 5 k.val
     (∀ p ∈ ν.support, ExecCodeDist (B := .exact) w (.rand 5 4) p.2 (μ_caller p) 1) ∧
@@ -454,7 +455,7 @@ theorem coinSubroutineDS_caller_rand_frame (w base : ℕ) (hw : 1 ≤ w)
     have he := ExecCodeDist.rand (B := .exact) (w := w) (x := p.2) (dst := 5) (src := 4) hfit
     rw [ProbComp.eval_unifFin, hsource] at he
     exact he
-  · refine C.frame_caller_dist (F := ∅) hseed hrep (Finset.disjoint_empty_right _) ?_
+  · refine C.frame_caller_dist_ofFn (F := ∅) hseed hrep (Finset.disjoint_empty_right _) ?_
     intro p hp x' hx'
     rw [PMF.mem_support_map_iff] at hx'
     obtain ⟨k, _, rfl⟩ := hx'
@@ -467,5 +468,163 @@ theorem coinSubroutineDS_caller_rand_frame (w base : ℕ) (hw : 1 ≤ w)
     · intro i _
       have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
       simp [Data.set, hne]
+
+/-! ## 3. Genuinely relational `WordRAM.Randomized.StateTransitionImpl` (branch-dependent state) -/
+
+/-- Nondeterministic relational specification where each coin operation `PUnit.unit` may transition
+to either abstract state `0 : Fin 2` or `1 : Fin 2`, returning the new state `s'`. -/
+abbrev nondetCoinSpec : DataStructure.StateTransitionSpec.{0, 0, 0} where
+  State := Fin 2
+  Op := PUnit
+  Result _ := Fin 2
+  step _ _ s' a := s' = a
+
+/-- Relational randomized `StateTransitionImpl` certificate for `coinSubroutineCode` over
+`nondetCoinSpec`:
+each random branch `k : Fin 2` of `r3 ← rand r4` angelically witnesses its own next abstract state
+`s' = k : Fin 2`. -/
+noncomputable abbrev nondetCoinStateTransitionImpl (w base : ℕ) (hw : 1 ≤ w) :
+    Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl
+      coinSubroutineCode nondetCoinSpec w base Fin.elim0 0 where
+  Seed := Fin 2
+  seedLaw := uniformOfFintype (Fin 2)
+  seedSlack := 1
+  seedSlack_ne_top := ENNReal.one_ne_top
+  space := 0
+  spanTime := 1
+  setupTime := 1
+  initPotential := 0
+  charge _ _ := 1
+  rep θ _ x := coinRep w base θ PUnit.unit x
+  potential _ _ := 0
+  encode _ _ := 0
+  argMatch _ _ := True
+  decode _ regs := some ⟨regs 3 % 2, Nat.mod_lt _ (by decide)⟩
+  bounded h := h.1
+  arguments_fit _ _ _ _ := fits_zero w
+  encode_matches _ _ := trivial
+  rep_supported hreg _ hb' hrep :=
+    ⟨hb',
+      by rw [hreg 0 rfl, hrep.2.1],
+      by rw [hreg 4 rfl, hrep.2.2]⟩
+  potential_supported _ _ _ := rfl
+  clear_nodup := by decide
+  params_not_clear j := Fin.elim0 j
+  incCur_eval {x} h1 hfit := by
+    change Data.put w x 3 (x.regs 3 + x.regs 4) =
+      some (x.set coinSubroutineCode.curReg (x.regs coinSubroutineCode.curReg + 1))
+    change x.regs 4 = 1 at h1
+    rw [h1]
+    exact Data.put_of_fits hfit
+  span_exec _ hfr _ := by
+    refine ⟨_, ExecWithin.copy, rfl, ?_, ?_, fun j => Fin.elim0 j⟩
+    · simpa [coinSubroutineCode, Data.set] using hfr
+    · simpa [coinSubroutineCode, Data.set] using hfr
+  setup_exec {x₁} hx₁ hb₁ hfr₁ _ _ := by
+    let x₂ : Data 5 := x₁.set 4 1
+    let ν₀ : PMF (Fin 2 × Data 5) := (uniformOfFintype (Fin 2)).map fun θ => (θ, x₂)
+    refine ⟨ν₀, ?_, ?_, ?_⟩
+    · have hex : ExecCodeDist (B := .exact) w (.op (.const 4 1)) x₁ (PMF.pure x₂) (1 : ℕ) :=
+        ExecCodeDist.of_exec (Exec.const (fits_one_of_pos hw))
+      exact hex.congr_dist (pmf_map_snd_const (uniformOfFintype (Fin 2)) id x₂).symm (by simp)
+    · intro θ
+      rw [PMF.map_comp]
+      simp
+    · intro p hp
+      rw [PMF.mem_support_map_iff] at hp
+      obtain ⟨θ, _, rfl⟩ := hp
+      refine ⟨?_, ?_, Nat.le_refl 0, Modifies.refl _ _⟩
+      · simpa [coinSubroutineCode, x₂, Data.set] using hfr₁
+      · refine ⟨hx₁.set (fits_one_of_pos hw), ?_, ?_⟩
+        · simp [x₂, Data.set, ← hb₁, coinSubroutineCode]
+        · simp [x₂, Data.set]
+  step_exec _ ν _ hseed hsupp := by
+    let μ_step : CoupledState (Fin 2) (Fin 2) 5 → PMF (CoupledState (Fin 2) (Fin 2) 5) := fun t =>
+      (uniformOfFintype (Fin (t.data.regs 4 + 1))).map fun k =>
+        ⟨t.seed, ⟨k.val % 2, Nat.mod_lt _ (by decide)⟩, t.data.set 3 k.val⟩
+    refine ⟨μ_step, fun _ => 1, ?_, ?_, nofun, ?_⟩
+    · intro t ht
+      obtain ⟨_, ⟨hbp, hb0, ho4⟩, _⟩ := hsupp t ht
+      refine ⟨?_, ?_⟩
+      · have hr := ExecCodeDist.rand (B := .exact) (w := w) (x := t.data) (dst := 3) (src := 4)
+          (hbp.1 4)
+        refine hr.congr_dist ?_ le_rfl
+        rw [ProbComp.eval_unifFin, PMF.map_comp]
+        rfl
+      · intro q hq
+        rw [PMF.mem_support_map_iff] at hq
+        obtain ⟨k, _, rfl⟩ := hq
+        have hk1 : k.val ≤ 1 := by omega
+        refine ⟨⟨k.val % 2, Nat.mod_lt _ (by decide)⟩, rfl, ?_, ⟨?_, ?_, ?_⟩, Modifies.refl _ _⟩
+        · simp [Data.set]
+        · exact hbp.set ((fits_one_of_pos hw).of_le hk1)
+        · simp [Data.set, hb0]
+        · simp [Data.set, ho4]
+    · intro θ'
+      have hmap : (ν.bind μ_step).map CoupledState.seed = ν.map CoupledState.seed := by
+        rw [PMF.map_bind, PMF.map]
+        refine congrArg (ν.bind ·) (funext fun t => ?_)
+        ext θ
+        rw [PMF.map_comp]
+        change ((uniformOfFintype (Fin (t.data.regs 4 + 1))).map (Function.const _ t.seed)) θ =
+          PMF.pure t.seed θ
+        simp
+      rw [hmap]
+      exact hseed θ'
+    · simp [ν.tsum_coe]
+
+/-- End-to-end relational `seq_expected_amortized` over `nondetCoinSpec`. -/
+theorem nondetCoinStateTransitionImpl_seq_amortized (w base : ℕ) (hw : 1 ≤ w)
+    (ops : List PUnit) {x₀ : Data 5}
+    (hx₀ : x₀.Bounded w) (hfr : x₀.regs 1 = base) :
+    let C := nondetCoinStateTransitionImpl w base hw
+    ∃ (ν₀ : PMF (C.Seed × Data 5)) (ν_final : PMF (CoupledState C.Seed (Fin 2) 5))
+      (T_ops C_ops : ℝ≥0∞),
+      ExecCodeDist w coinSubroutineCode.initFresh x₀ (ν₀.map Prod.snd) C.initTime ∧
+      C.ExecSteps ops (ν₀.map fun p => ⟨p.1, 0, p.2⟩) ν_final T_ops C_ops ∧
+      (∀ θ, (ν_final.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ) ∧
+      (∀ t ∈ ν_final.support, C.rep t.seed t.state t.data) ∧
+      C.initTime + T_ops + (∑' t, ν_final t * (C.potential t.seed t.data : ℝ≥0∞)) ≤
+        C.initTime + (C.initPotential : ℝ≥0∞) + C_ops := by
+  intro C
+  have hvalid : nondetCoinSpec.ValidOpSeq 0 ops :=
+    nondetCoinSpec.validOpSeq_of_forall_valid (fun _ _ => trivial) 0 ops
+  have hz : ∀ a ∈ (Block.mk base C.space).footprint, x₀.mem a = 0 := by
+    change ∀ a ∈ (Block.mk base 0).footprint, x₀.mem a = 0
+    simp [Block.footprint]
+  exact C.seq_expected_amortized ops hx₀ hfr (fun j => Fin.elim0 j) hz hvalid
+
+/-- Relational caller framing across a randomized caller step over `nondetCoinSpec` via
+`frame_caller_dist` on `frameStateDist`. -/
+theorem nondetCoinStateTransitionImpl_caller_rand_frame (w base : ℕ) (hw : 1 ≤ w)
+    (ν : PMF (CoupledState (nondetCoinStateTransitionImpl w base hw).Seed (Fin 2) 6))
+    (hseed : ∀ θ, (ν.map CoupledState.seed) θ ≤
+      (nondetCoinStateTransitionImpl w base hw).seedSlack *
+        (nondetCoinStateTransitionImpl w base hw).seedLaw θ)
+    (hrep : ∀ t ∈ ν.support,
+      (nondetCoinStateTransitionImpl w base hw).rep t.seed t.state (t.data.comap Fin.castSucc)) :
+    let C := nondetCoinStateTransitionImpl w base hw
+    let μ_caller : CoupledState C.Seed (Fin 2) 6 → PMF (Data 6) := fun t =>
+      (uniformOfFintype (Fin 2)).map fun k => t.data.set 5 k.val
+    (∀ θ, ((C.frameStateDist ν μ_caller).map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ) ∧
+    (∀ q ∈ (C.frameStateDist ν μ_caller).support,
+      C.rep q.seed q.state (q.data.comap Fin.castSucc)) ∧
+    (∑' q, C.frameStateDist ν μ_caller q *
+        (C.potential q.seed (q.data.comap Fin.castSucc) : ℝ≥0∞)) =
+      ∑' t, ν t * (C.potential t.seed (t.data.comap Fin.castSucc) : ℝ≥0∞) := by
+  intro C μ_caller
+  refine C.frame_caller_dist (F := ∅) hseed hrep (Finset.disjoint_empty_right _) ?_
+  intro t ht x' hx'
+  rw [PMF.mem_support_map_iff] at hx'
+  obtain ⟨k, _, rfl⟩ := hx'
+  have hbt : (t.data.comap Fin.castSucc).Bounded w := C.bounded (hrep t ht)
+  refine ⟨?_, ?_, Modifies.refl _ _⟩
+  · refine ⟨fun i => ?_, hbt.2⟩
+    have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
+    simp only [Data.comap_regs, Data.set_regs, Function.update_of_ne hne]
+    exact hbt.1 i
+  · intro i _
+    have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
+    simp [Data.set, hne]
 
 end ComplexityTests.WordRAMRandomizedSubroutine

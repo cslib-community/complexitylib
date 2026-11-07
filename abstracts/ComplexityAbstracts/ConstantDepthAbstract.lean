@@ -77,7 +77,7 @@ theorem razborov_smolensky {p n ℓ : ℕ} (prime : p.Prime) (odd : p ≠ 2)
   ConstantDepthBridge.razborov_smolensky prime odd C correct hℓ budget
 
 /-- info: abstract audit passed for `ComplexityTests.Abstracts.ConstantDepthAbstract`: 8 root
-declarations, 98 dependencies checked -/
+declarations -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.ConstantDepthAbstract allowing [
   Complexity.Computability.Circuit.Boolean.Unbounded,

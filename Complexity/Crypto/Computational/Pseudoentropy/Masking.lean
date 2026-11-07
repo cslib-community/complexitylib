@@ -13,7 +13,9 @@ public import Complexity.Crypto.Computational.Hybrid.Sequence
 public import Complexity.Crypto.Computational.Pseudoentropy.Boosting.Sampling
 import Complexity.Probability.PMF.Event
 import Complexity.Languages.Probabilistic.Notation
-import Complexity.Tactic.PPT
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.Sampling
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Fresh masks for a pseudoentropy pair
@@ -74,11 +76,8 @@ noncomputable def maskedSample {α β : Type} (source : ProbComp α)
 theorem eval_maskBit (mask : ProbComp Bool) (truth : Bool) :
     ProbComp.eval (maskBit mask truth) = (ProbComp.eval mask).bind
       (fun replace => if replace then PMF.uniformOfFintype Bool else PMF.pure truth) := by
-  unfold maskBit
-  rw [ProbComp.eval_bind]
-  congr 1
-  funext replace
-  cases replace <;> simp [ProbComp.eval_uniform]
+  rw [maskBit, ProbComp.eval_bind]
+  congr 1; funext replace; cases replace <;> simp [ProbComp.eval_uniform]
 
 /-- The original label remains with probability `1 - maskProbability / 2`. -/
 theorem eval_maskBit_apply (mask : ProbComp Bool) (truth bit : Bool) :
@@ -93,9 +92,8 @@ theorem eval_maskBit_apply (mask : ProbComp Bool) (truth bit : Bool) :
 theorem entropy_maskBit_ge (mask : ProbComp Bool) (truth : Bool) :
     Pr[mask] ≤ entropy (ProbComp.eval (maskBit mask truth)) := by
   rw [eval_maskBit]
-  have h := sum_mul_entropy_le_entropy_bind (ProbComp.eval mask)
+  simpa using sum_mul_entropy_le_entropy_bind (ProbComp.eval mask)
     (fun replace => if replace then PMF.uniformOfFintype Bool else PMF.pure truth)
-  simpa using h
 
 /-- The masked pair reveals the original observation and averages the pointwise masked laws. -/
 theorem eval_maskedSample {α β : Type} (source : ProbComp α)
@@ -114,8 +112,7 @@ theorem maskedSample_entropy_ge {α β : Type} [Fintype α] [Finite β] (source 
   rw [eval_maskedSample]
   exact (Finset.sum_le_sum (fun x _ => mul_le_mul_of_nonneg_left
     (entropy_maskBit_ge (mask x) (truth x)) ENNReal.toReal_nonneg)).trans
-      (conditionalEntropy_observe_ge (ProbComp.eval source)
-        (fun x => ProbComp.eval (maskBit (mask x) (truth x))) observe)
+      (conditionalEntropy_observe_ge _ _ observe)
 
 /-- The entropy available from executable boosting masks is at least their exact soft density. -/
 theorem maskedSample_weight_entropy_ge {α β : Type} [Fintype α] [Finite β]
@@ -134,8 +131,7 @@ mask probability. The predictor itself receives only the test, not the mask or h
 theorem maskBit_prediction_gap (test : Bool → ProbComp Bool) (mask : ProbComp Bool)
     (truth : Bool) :
     Pr[test truth] - Pr[maskBit mask truth >>= test] =
-      Pr[mask] *
-        (Pr[(fun guess => guess == truth) <$> bitPredictor test] - 1 / 2) := by
+      Pr[mask] * (Pr[(fun guess => guess == truth) <$> bitPredictor test] - 1 / 2) := by
   rw [ProbComp.probability_bind, bitPredictor_bias]
   simp only [Fintype.sum_bool, eval_maskBit_apply]
   cases truth <;> norm_num <;> ring
@@ -148,8 +144,7 @@ theorem maskedSample_prediction_gap {α β : Type} [Fintype α] (source : ProbCo
     Pr[source >>= fun x => test (observe x) (truth x)] -
         Pr[maskedSample source observe truth mask >>= fun pair => test pair.1 pair.2] =
       ∑ x, (ProbComp.eval source x).toReal * Pr[mask x] *
-        (Pr[(fun guess => guess == truth x) <$> bitPredictor (test (observe x))] -
-          1 / 2) := by
+        (Pr[(fun guess => guess == truth x) <$> bitPredictor (test (observe x))] - 1 / 2) := by
   simp only [maskedSample, bind_assoc, bind_map_left]
   rw [ProbComp.probability_bind, ProbComp.probability_bind, ← Finset.sum_sub_distrib]
   simp only [← mul_sub, maskBit_prediction_gap, mul_assoc]
@@ -159,9 +154,10 @@ theorem maskedSample_prediction_gap {α β : Type} [Fintype α] (source : ProbCo
 theorem isPPTOn_maskBit {α : Type} {input : α ↪ List Bool} {mask : α → ProbComp Bool}
     {truth : α → Bool} (hmask : IsPPTOn input encBool mask)
     (htruth : ComputableInPolyTime truth input encBool) :
-    IsPPTOn input encBool (fun a => maskBit (mask a) (truth a)) := by
-  unfold maskBit
-  ppt
+    IsPPTOn input encBool (fun a => maskBit (mask a) (truth a)) :=
+  hmask.bind_with (IsPPTOn.cond' (.snd input encBool)
+    (isPPTOn_uniform_bool (encPair input encBool))
+    ((ComputableInPolyTime.fst input encBool).trans htruth).isPPTOn)
 
 /-- Masked sampling composes a certified source, observation, label, and mask. All callbacks may
 capture the original input, and all intermediate encodings are charged. -/
@@ -176,9 +172,10 @@ theorem isPPTOn_maskedSample {α β γ : Type} {input : α ↪ List Bool}
       (encPair input sample) encBool)
     (hmask : IsPPTOn (encPair input sample) encBool (fun pair => mask pair.1 pair.2)) :
     IsPPTOn input (encPair output encBool)
-      (fun a => maskedSample (source a) (observe a) (truth a) (mask a)) := by
-  unfold maskedSample
-  ppt
+      (fun a => maskedSample (source a) (observe a) (truth a) (mask a)) :=
+  hsource.bind_with ((isPPTOn_maskBit hmask htruth).map_with
+    (((ComputableInPolyTime.fst (encPair input sample) encBool).trans hobserve).prod
+      (.snd _ encBool)))
 
 /-- Predict from one public observation by simulating a random-coordinate masked hybrid.
 Hidden labels and masks are computed only on independently generated surrounding samples. -/
@@ -205,9 +202,7 @@ theorem maskedSequence_prediction_gap {α β : Type} [Fintype α] (source : Prob
   have hgap := sequenceTest_gap (maskedSample source observe truth mask)
     ((fun x => (observe x, truth x)) <$> source) count test
   simp only [Game.coe_succProbability] at hgap
-  rw [hgap]
-  unfold maskedSequencePredictor
-  congr 1
+  rw [hgap]; unfold maskedSequencePredictor; congr 1
   simpa only [bind_map_left] using maskedSample_prediction_gap source observe truth mask
     (fun observation trial => sequenceTest (maskedSample source observe truth mask)
       ((fun x => (observe x, truth x)) <$> source) count test (observation, trial))
@@ -231,11 +226,14 @@ theorem isPPTOn_maskedSequencePredictor {Param α β : Type} {input : Param ↪ 
       (fun pair => test pair.1 pair.2))
     (hobservation : ComputableInPolyTime observation input output) :
     IsPPTOn input encBool (fun a => maskedSequencePredictor (source a) (observe a)
-      (truth a) (mask a) (count a) (test a) (observation a)) := by
-  have hmasked := isPPTOn_maskedSample hsource hobserve htruth hmask
-  have horiginal : IsPPTOn input (encPair output encBool)
-      (fun a => (fun x => (observe a x, truth a x)) <$> source a) := by ppt
-  unfold maskedSequencePredictor
-  ppt
+      (truth a) (mask a) (count a) (test a) (observation a)) :=
+  let p1 := ComputableInPolyTime.fst input encBool
+  let eL := encList (encPair output encBool)
+  isPPTOn_bitPredictor (isPPTOn_sequenceTest
+    ((isPPTOn_maskedSample hsource hobserve htruth hmask).preprocess p1)
+    ((hsource.map_with (f := fun a x => (observe a x, truth a x))
+      (hobserve.prod htruth)).preprocess p1) (p1.trans hcount)
+    (htest.preprocess ((ComputableInPolyTime.fst (encPair input encBool) eL).fst'.prod
+      (.snd _ eL))) ((p1.trans hobservation).prod (.snd input encBool)))
 
 end Cslib.Crypto.Pseudoentropy

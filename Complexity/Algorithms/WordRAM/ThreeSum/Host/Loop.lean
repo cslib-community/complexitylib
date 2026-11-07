@@ -7,7 +7,10 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Prepare
+
+import Complexity.Computability.WordRAM.CountingLoop
 
 /-!
 # The native Convolution-3SUM instance loop
@@ -176,42 +179,37 @@ theorem exec_fill_at {w N U src workspace s : ℕ} (μ : ℕ → ℤ) (x : Data 
       Cell.matAB, Cell.matBC, Cell.matAC, encode,
       show ¬(2 * (U : ℤ) + 1 < 0) from by omega]
     omega
-  obtain ⟨p, he, hm, -⟩ := Fill.exec (instanceArgsAt N U src workspace s μ) (b.comap fillRegisters)
-    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.side, Cell.inst,
-      Cell.matAB, Cell.matBC, Cell.matAC])
-    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.inst,
-      Cell.matAB, Cell.matBC, Cell.matAC])
-    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.matAB, Cell.matBC, Cell.matAC])
-    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.matBC, Cell.matAC])
-    (by simp [b, instanceArgsAt])
-    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.len, Cell.base, Cell.filler,
-      Cell.side, Cell.inst, Cell.matAB, Cell.matBC, Cell.matAC])
-    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.base, Cell.filler,
-      Cell.side, Cell.inst, Cell.matAB, Cell.matBC, Cell.matAC]) hbf
-    hmem hidx hF hnF hμ
-    (hsize.of_le (by dsimp [instanceArgsAt]; omega))
-    (hsize.of_le (by dsimp [instanceArgsAt]; omega))
-    (hsize.of_le (by dsimp [instanceArgsAt]; omega))
-    (hsize.of_le (by dsimp [instanceArgsAt]; omega))
-    (by dsimp [instanceArgsAt]; omega) (by dsimp [instanceArgsAt]; omega)
-    (by dsimp [instanceArgsAt]; omega)
-  let y := p.extend fillRegisters b
-  have hy : ExecWithin (w + 2) (Fill.program.rename fillRegisters) b y
-      (131 * (sideLength N * sideLength N) + 5) := he.rename fill_injective
+  obtain ⟨y, hy, ⟨hm, -⟩, -⟩ :=
+    ExecWithin.rename_post fill_injective
+      (Fill.exec (instanceArgsAt N U src workspace s μ) (b.comap fillRegisters)
+      (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.side, Cell.inst,
+        Cell.matAB, Cell.matBC, Cell.matAC])
+      (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.inst,
+        Cell.matAB, Cell.matBC, Cell.matAC])
+      (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.matAB, Cell.matBC, Cell.matAC])
+      (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.matBC, Cell.matAC])
+      (by simp [b, instanceArgsAt])
+      (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.len, Cell.base, Cell.filler,
+        Cell.side, Cell.inst, Cell.matAB, Cell.matBC, Cell.matAC])
+      (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.base, Cell.filler,
+        Cell.side, Cell.inst, Cell.matAB, Cell.matBC, Cell.matAC]) hbf
+      hmem hidx hF hnF hμ
+      (hsize.of_le (by dsimp [instanceArgsAt]; omega))
+      (hsize.of_le (by dsimp [instanceArgsAt]; omega))
+      (hsize.of_le (by dsimp [instanceArgsAt]; omega))
+      (hsize.of_le (by dsimp [instanceArgsAt]; omega))
+      (by dsimp [instanceArgsAt]; omega) (by dsimp [instanceArgsAt]; omega)
+      (by dsimp [instanceArgsAt]; omega))
+  change ExecWithin (w + 2) (Fill.program.rename fillRegisters) b y
+    (131 * (sideLength N * sideLength N) + 5) at hy
   have hyr (i : Fin 64) (hi : 34 ≤ i.val) : y.regs i = x.regs i := by
-    refine (hy.regs_eq ?_).trans (hbregs i hi)
-    apply Code.preserves_rename_of_forall_ne
-    intro j heq
-    have hv := congrArg Fin.val heq
-    dsimp only [fillRegisters] at hv
-    have := j.isLt
-    omega
+    exact (hy.regs_eq (Code.preserves_rename_of_offset (offset := 0) Fill.program fillRegisters
+      (fun j => (Nat.zero_add j.val).symm) i (Or.inr (by omega)))).trans (hbregs i hi)
   refine ⟨y, ?_, parameters_of_regs hp (fun i hi _ _ => hyr i hi), (hyr inst (by decide)).trans hs,
     hyr found (by decide), hm, ?_⟩
   · convert hb.seq hy using 1 <;> first | rfl | omega
   · intro a ha
-    change p.mem a = x.mem a
-    rw [hm]
+    rw [show y.mem = _ from hm]
     apply Fill.Args.outside_filled
     all_goals dsimp [instanceArgsAt]; omega
 
@@ -330,43 +328,27 @@ theorem exec_round_at {w r N U src workspace s T : ℕ} (μ : ℕ → ℤ)
       y.regs (hostRegisters found) ≤ 1 ∧
       (y.regs (hostRegisters found) = 1 ↔ x.regs (hostRegisters found) = 1 ∨ hit N U s μ) ∧
       (∀ a < workspace, y.mem a = x.mem a) := by
-  obtain ⟨a, ha, hap, hasi, haf, ham, -⟩ :=
-    exec_fill_at μ (x.comap hostRegisters) hp hs hmem hidx hF hnF hμ hsize hbelow
-  let y := a.extend hostRegisters x
-  have hy : ExecWithin (w + 2) (fill.rename hostRegisters) x y
-      (131 * (sideLength N * sideLength N) + 13) := ha.rename hostRegisters_injective
-  have hyc : y.comap hostRegisters = a := Data.comap_extend hostRegisters_injective _ _
-  have hyp : ParametersAt N U src workspace (y.comap hostRegisters) := by rw [hyc]; exact hap
-  have hysi : y.regs (hostRegisters inst) = s :=
-    (hostRegisters_injective.extend_apply _ _ inst).trans hasi
-  have hyf : y.regs (hostRegisters found) = x.regs (hostRegisters found) :=
-    (hostRegisters_injective.extend_apply _ _ found).trans haf
+  obtain ⟨y, hy, ⟨hyp, hysi, hyf, ham, -⟩, -⟩ := ExecWithin.rename_post hostRegisters_injective
+    (exec_fill_at μ (x.comap hostRegisters) hp hs hmem hidx hF hnF hμ hsize hbelow)
   obtain ⟨b, hb, hbr, hbm, hb0, hb1, hb2, hb3, hb4, hb5⟩ := exec_solverSetup (w := w + 2) y
   have hbp : ParametersAt N U src workspace (b.comap hostRegisters) :=
     parameters_of_regs hyp (fun i _ _ _ => hbr i)
-  obtain ⟨c, hc, hcans, hchit, hcm⟩ := hsolver (b.comap solverRegisters) x.mem
-    (hb0.trans hyp.side) (hb1.trans hyp.filler) (hb2.trans hyp.ab)
-    (hb3.trans hyp.bc) (hb4.trans hyp.ac) (hb5.trans hyp.free)
-    (hbm.trans ham)
-  let z := c.extend solverRegisters b
-  have hz : ExecWithin (w + 2) (solver.rename solverRegisters) b z T :=
-    hc.rename solver_injective
+  obtain ⟨z, hz, ⟨hcans, hchit, hcm⟩, -⟩ :=
+    ExecWithin.rename_post solver_injective (hsolver (b.comap solverRegisters) x.mem
+      (hb0.trans hyp.side) (hb1.trans hyp.filler) (hb2.trans hyp.ab)
+      (hb3.trans hyp.bc) (hb4.trans hyp.ac) (hb5.trans hyp.free)
+      (hbm.trans ham))
   have hzr (i : Fin 64) : z.regs (hostRegisters i) = b.regs (hostRegisters i) := by
-    apply hz.regs_eq
-    apply Code.preserves_rename_of_forall_ne
-    intro j he
-    have hv := congrArg Fin.val he
-    dsimp only [solverRegisters, hostRegisters] at hv
-    have := i.isLt
-    omega
+    exact hz.regs_eq (solver.preserves_rename_of_offset solverRegisters (fun _ => rfl) _
+      (Or.inl i.isLt))
   have hzp : ParametersAt N U src workspace (z.comap hostRegisters) :=
     parameters_of_regs hbp (fun i _ _ _ => hzr i)
   have hzsi : z.regs (hostRegisters inst) = s :=
     (hzr inst).trans ((hbr inst).trans hysi)
   have hzf : z.regs (hostRegisters found) = x.regs (hostRegisters found) :=
     (hzr found).trans ((hbr found).trans hyf)
-  have hza : z.regs (callRegisters 6) = c.regs (solverArg 6) :=
-    solver_injective.extend_apply _ _ _
+  change z.regs (callRegisters 6) ≤ 1 at hcans
+  change (z.regs (callRegisters 6) = 1 ↔ hit N U s μ) at hchit
   have hinc : Fits (w + 2) (s + 1) := hsize.of_le (by
     have := Nat.le_mul_self (sideLength N)
     omega)
@@ -375,10 +357,10 @@ theorem exec_round_at {w r N U src workspace s T : ℕ} (μ : ℕ → ℤ)
     parameters_of_regs hzp (fun i _ hi hf => hqr i hi hf)
   refine ⟨q, ?_, hqp, hqi, ?_, ?_, ?_⟩
   · exact (hy.seq (hb.seq (hz.seq hq))).mono (by omega)
-  · rw [hqf, hza, hzf]
+  · rw [hqf, hzf]
     split_ifs <;> omega
-  · rw [hqf, hza, hzf]
-    by_cases h : c.regs (solverArg 6) = 1
+  · rw [hqf, hzf]
+    by_cases h : z.regs (callRegisters 6) = 1
     · simp only [h, ↓reduceIte, hchit.mp h, or_true]
     · simp only [h, ↓reduceIte, hchit.not.mp h, or_false]
   · intro a ha
@@ -416,30 +398,26 @@ theorem exec_loop_at {w r N U src workspace T : ℕ} (μ : ℕ → ℤ)
       y.regs (hostRegisters found) ≤ 1 ∧
       (y.regs (hostRegisters found) = 1 ↔ ∃ s < 2 * sideLength N, hit N U s μ) ∧
       (∀ a < workspace, y.mem a = x.mem a) := by
-  let I (y : Data (64 + (r + 7))) : Prop :=
+  let P (j : ℕ) (y : Data (64 + (r + 7))) : Prop :=
     ParametersAt N U src workspace (y.comap hostRegisters) ∧
-      y.regs (hostRegisters inst) ≤ 2 * sideLength N ∧
       y.regs (hostRegisters found) ≤ 1 ∧
-      (y.regs (hostRegisters found) = 1 ↔ ∃ s < y.regs (hostRegisters inst), hit N U s μ) ∧
+      (y.regs (hostRegisters found) = 1 ↔ ∃ s < j, hit N U s μ) ∧
       (∀ a < workspace, y.mem a = x.mem a)
-  have hbody (y : Data (64 + (r + 7))) (hy : I y)
-      (hc : (Cond.lt (hostRegisters inst) (hostRegisters stop)).Holds y) :
+  have hbody (y : Data (64 + (r + 7))) (hy : P (y.regs (hostRegisters inst)) y)
+      (hlt : y.regs (hostRegisters inst) < 2 * sideLength N) :
       ∃ z, ExecWithin (w + 2) (round solver) y z
-          (131 * (sideLength N * sideLength N) + T + 23) ∧ I z ∧
-        2 * sideLength N - z.regs (hostRegisters inst) <
-          2 * sideLength N - y.regs (hostRegisters inst) := by
-    obtain ⟨hyp, hys, hyf, hyans, hym⟩ := hy
-    have hlt : y.regs (hostRegisters inst) < 2 * sideLength N := by
-      change y.regs (hostRegisters inst) < y.regs (hostRegisters stop) at hc
-      exact hc.trans_eq hyp.stop
+          (131 * (sideLength N * sideLength N) + T + 23) ∧
+        P (y.regs (hostRegisters inst) + 1) z ∧
+        z.regs (hostRegisters inst) = y.regs (hostRegisters inst) + 1 := by
+    obtain ⟨hyp, hyf, hyans, hym⟩ := hy
     have hyinput : ∀ i < N, y.mem (src + i) = encode (μ i) := by
       intro i hi
       rw [hym _ (by omega)]
       exact hmem i hi
     obtain ⟨z, hz, hzp, hzsi, hzf, hzans, hzm⟩ := exec_round_at μ solver y hyp rfl hlt
       hyf hyinput (hidx _ hlt) hF hnF hμ hsize hbelow (hsolver _ hlt)
-    refine ⟨z, hz, ⟨hzp, by omega, hzf, ?_, ?_⟩, by omega⟩
-    · rw [hzans, hyans, hzsi]
+    refine ⟨z, hz, ⟨hzp, hzf, ?_, ?_⟩, hzsi⟩
+    · rw [hzans, hyans]
       constructor
       · rintro (⟨s, hs, hh⟩ | hh)
         · exact ⟨s, by omega, hh⟩
@@ -451,17 +429,12 @@ theorem exec_loop_at {w r N U src workspace T : ℕ} (μ : ℕ → ℤ)
           exact Or.inr (he ▸ hh)
     · intro a ha
       exact (hzm a ha).trans (hym a ha)
-  have hx : I x := ⟨hp, by omega, by omega, by simp [hi, hf], fun _ _ => rfl⟩
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => 2 * sideLength N - y.regs (hostRegisters inst)) hbody hx
-  obtain ⟨hyp, hyi, hyf, hyans, hym⟩ := hy
-  have hend : y.regs (hostRegisters inst) = 2 * sideLength N := by
-    change ¬y.regs (hostRegisters inst) < y.regs (hostRegisters stop) at hc
-    have hstop : y.regs (hostRegisters stop) = 2 * sideLength N := hyp.stop
-    omega
-  refine ⟨y, ?_, hyp, hend, hyf, ?_, hym⟩
-  · simpa only [loop, hi, Nat.sub_zero, Nat.add_assoc, Nat.reduceAdd] using he
-  · simpa only [hend] using hyans
+  have hx : P (x.regs (hostRegisters inst)) x :=
+    ⟨hp, by omega, by simp [hi, hf], fun _ _ => rfl⟩
+  obtain ⟨y, he, ⟨hyp, hyf, hyans, hym⟩, hend⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.1.stop) hbody (by simp [hi]) hx
+  exact ⟨y, by simpa only [loop, hi, Nat.sub_zero, Nat.add_assoc, Nat.reduceAdd] using he,
+    hyp, hend, hyf, hyans, hym⟩
 
 /-- Standalone specialization of the caller-layout execution theorem. -/
 theorem exec_fill {w N U s : ℕ} (μ : ℕ → ℤ) (x : Data 64)

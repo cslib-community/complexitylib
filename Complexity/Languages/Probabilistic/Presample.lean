@@ -75,10 +75,10 @@ theorem IsQueryBounded.run_interpret_presample {program : ProbOracleComp spec α
     (h : program.IsQueryBounded n) (source : PMF Value) (fallback : Value)
     (oracle : Value → (q : Query) → StateT State PMF (spec q)) (s : State) :
     ((PMF.iid source n).map List.ofFn).bind (fun values =>
-      ((interpret (handler (fun k => StateT.lift (ProbComp.unifOracle k))
+      ((interpret (sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
         (withSampleList fallback oracle)) program).run (s, values)).map
-          fun result => (result.1, result.2.1)) =
-      (interpret (handler (fun k => StateT.lift (ProbComp.unifOracle k))
+          fun (result, next, _) => (result, next)) =
+      (interpret (sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
         (fun q state => source.bind fun value => oracle value q state)) program).run s := by
   induction h generalizing s with
   | pure a n =>
@@ -86,13 +86,13 @@ theorem IsQueryBounded.run_interpret_presample {program : ProbOracleComp spec α
   | liftBind q cont n _ ih =>
     cases q with
     | inl k =>
-      simp only [Sum.elim_inl, Nat.add_zero, run_interpret_bind, run_interpret_query, handler,
+      simp only [Sum.elim_inl, Nat.add_zero, run_interpret_bind, run_interpret_query, sumHandler,
         StateT.lift, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
         PMF.pure_bind, PMF.map_bind]
       rw [PMF.bind_comm]
       exact congrArg ((ProbComp.unifOracle k).bind ·) (funext fun a => ih a s)
     | inr q =>
-      simp only [Sum.elim_inr, run_interpret_bind, run_interpret_query, handler, PMF.iid,
+      simp only [Sum.elim_inr, run_interpret_bind, run_interpret_query, sumHandler, PMF.iid,
         withSampleList, PMF.monad_bind_eq_bind, PMF.monad_map_eq_map, PMF.map_bind, PMF.bind_bind,
         PMF.bind_map, PMF.map_comp, Function.comp_def, List.ofFn_succ, Fin.cons_zero,
         Fin.cons_succ, List.headD_cons, List.tail_cons]
@@ -111,9 +111,9 @@ theorem IsQueryBounded.eval_presample {program : ProbOracleComp spec α} {count 
     ProbComp.eval (do
       let values ← replicate count source
       (fun (result, next, _) => (result, next)) <$> (interpret
-        (handler (fun n => StateT.lift (ProbComp.unifFin n))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
           (withSampleList fallback oracle)) program).run (s, values)) =
-      ProbComp.eval ((interpret (handler (fun n => StateT.lift (ProbComp.unifFin n))
+      ProbComp.eval ((interpret (sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (fun q s => do
           let value ← source
           oracle value q s)) program).run s) := by
@@ -137,7 +137,7 @@ theorem OracleComp.IsQueryBounded.run_interpret_presample {Query State Value γ 
     (oracle : Value → (q : Query) → StateT State PMF (spec q)) (s : State) :
     ((Probability.PMF.iid source n).map List.ofFn).bind (fun values =>
       ((interpret (withSampleList fallback oracle) program).run (s, values)).map
-        fun result => (result.1, result.2.1)) =
+        fun (result, next, _) => (result, next)) =
       (interpret (m := StateT State PMF)
         (fun q state => source.bind fun value => oracle value q state) program).run s := by
   simpa only [interpret_interpret, ProbOracleComp.interpret_query] using

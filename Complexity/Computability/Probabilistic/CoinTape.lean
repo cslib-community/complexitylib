@@ -41,7 +41,7 @@ assumed: supported output words have unique preimages under the declared encodin
 
 Adapted from Computability/Probabilistic/CoinTape.lean on the cslib `crypto` branch at
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the common machine, standard pair encoding and
-tidy computability calculus.
+plain polynomial-time certificates.
 -/
 
 @[expose] public section
@@ -52,6 +52,15 @@ open Turing Turing.MultiTapeTM
 
 variable {α β : Type} {input : α ↪ List Bool} {output : β ↪ List Bool}
   {program : α → ProbComp β}
+
+/-- Change the output encoding along an equality of encoded values: certificates speak only about
+encoded words. -/
+private theorem computableInPolyTime_of_enc_eq {γ δ : Type} {encIn : γ ↪ List Bool}
+    {encOut : β ↪ List Bool} {encMid : δ ↪ List Bool} {f : γ → β} {g : γ → δ}
+    (hg : ComputableInPolyTime g encIn encMid) (h : ∀ a, encOut (f a) = encMid (g a)) :
+    ComputableInPolyTime f encIn encOut := by
+  obtain ⟨t, s, ht, hs, k, State, hfinite, tm, htm⟩ := hg
+  exact ⟨t, s, ht, hs, k, State, hfinite, tm, fun a => by rw [h a]; exact htm a⟩
 
 /-- One finite machine and one polynomial budget realize the whole program family from saved
 fair bits. Neither witness depends on the input value. -/
@@ -69,13 +78,13 @@ theorem IsPPTOn.exists_coin_machine (h : IsPPTOn input output program) :
 polynomial time. Its exact realization law applies to encoded inputs at the stated budget. -/
 theorem IsPPTOn.exists_polyTime_coin_evaluator (h : IsPPTOn input output program) :
     ∃ (c d : ℕ) (evaluate : List Bool → List Bool → List Bool),
-      ComputableTidilyInPolyTime (fun p : List Bool × List Bool => evaluate p.1 p.2)
+      ComputableInPolyTime (fun (coins, word) => evaluate coins word)
         (encPair encBits encBits) encBits ∧
       ∀ a, (ProbComp.eval (program a)).map output =
         (BitString.uniformList (c * ((input a).length + 1) ^ d)).map
           (fun coins => evaluate coins (input a)) := by
   obtain ⟨k, State, _, machine, c, d, hm⟩ := h.exists_coin_machine
-  exact ⟨c, d, machine.runClosedCoins, machine.computableInPolyTime_runClosedCoins.tidy, hm⟩
+  exact ⟨c, d, machine.runClosedCoins, machine.computableInPolyTime_runClosedCoins, hm⟩
 
 /-- Every typed PPT program has a total deterministic polynomial-time evaluator. Every seed
 produces a supported result. Short seeds are padded; longer seeds are truncated to the program's
@@ -84,7 +93,7 @@ budget. Every uniform seed at least that long yields exactly the program's distr
 Computability is relative to the output encoding and requires no decoder for invalid words. -/
 theorem IsPPTOn.exists_total_seeded_evaluator (h : IsPPTOn input output program) :
     ∃ (c d : ℕ) (evaluate : α → List Bool → β),
-      ComputableTidilyInPolyTime (fun p : α × List Bool => evaluate p.1 p.2)
+      ComputableInPolyTime (fun (a, coins) => evaluate a coins)
         (encPair input encBits) output ∧
       (∀ a coins, evaluate a coins ∈ (ProbComp.eval (program a)).support) ∧
       ∀ a length, c * ((input a).length + 1) ^ d ≤ length →
@@ -108,20 +117,20 @@ theorem IsPPTOn.exists_total_seeded_evaluator (h : IsPPTOn input output program)
   have hencode (a : α) (coins : List Bool) :
       output (evaluate a coins) = raw (tape a coins) (input a) := (hvalid a coins).choose_spec.2
   refine ⟨c, d, evaluate, ?_, fun a coins => (hvalid a coins).choose_spec.1, ?_⟩
-  · have hinput : ComputableTidilyInPolyTime input input encBits := .of_eq fun _ => rfl
-    have hbudget : ComputableTidilyInPolyTime budget input encUnary := by
+  · have hinput : ComputableInPolyTime (fun a => input a) input encBits := .of_eq fun _ => rfl
+    have hbudget : ComputableInPolyTime budget input encUnary := by
       dsimp only [budget]
       fun_prop
-    have hpad : ComputableTidilyInPolyTime (fun a => List.replicate (budget a) true)
-        input encBits := hbudget.of_enc_eq (fun _ => rfl)
-    have ht : ComputableTidilyInPolyTime
-        (fun p : α × List Bool => (tape p.1 p.2, input p.1))
+    have hpad : ComputableInPolyTime (fun a => List.replicate (budget a) true) input encBits :=
+      computableInPolyTime_of_enc_eq hbudget fun _ => rfl
+    have ht : ComputableInPolyTime
+        (fun (a, coins) => (tape a coins, input a))
         (encPair input encBits) (encPair encBits encBits) := by
-      have hfirst := ComputableTidilyInPolyTime.fst input encBits
-      have hsecond := ComputableTidilyInPolyTime.snd input encBits
-      exact (ComputableTidilyInPolyTime.bitsTakeWithInput
+      have hfirst := ComputableInPolyTime.fst input encBits
+      have hsecond := ComputableInPolyTime.snd input encBits
+      exact (ComputableInPolyTime.bitsTakeWithInput
         (hsecond.bitsAppend (hpad.comp hfirst)) (hbudget.comp hfirst)).prod (hinput.comp hfirst)
-    exact (hraw.comp ht).of_enc_eq (fun p => hencode p.1 p.2)
+    exact computableInPolyTime_of_enc_eq (hraw.comp ht) fun (a, coins) => hencode a coins
   · intro a length hbudget
     apply PMF.map_injective output.injective
     rw [hlaw, PMF.map_comp, ← BitString.uniformList_take hbudget, PMF.map_comp]
@@ -137,7 +146,7 @@ theorem IsPPTOn.exists_total_seeded_evaluator (h : IsPPTOn input output program)
 /-- The exact-budget specialization of the total seeded evaluator. -/
 theorem IsPPTOn.exists_seeded_evaluator (h : IsPPTOn input output program) :
     ∃ (c d : ℕ) (evaluate : α → List Bool → β),
-      ComputableTidilyInPolyTime (fun p : α × List Bool => evaluate p.1 p.2)
+      ComputableInPolyTime (fun (a, coins) => evaluate a coins)
         (encPair input encBits) output ∧
       ∀ a, ProbComp.eval (program a) =
         (BitString.uniformList (c * ((input a).length + 1) ^ d)).map (evaluate a) := by
@@ -148,7 +157,7 @@ theorem IsPPTOn.exists_seeded_evaluator (h : IsPPTOn input output program) :
 raw word evaluator trims to each input's own budget and accepts arbitrary encoded words. -/
 theorem IsPPTOn.exists_padded_coin_evaluator (h : IsPPTOn input output program) :
     ∃ (c d : ℕ) (evaluate : List Bool → List Bool → List Bool),
-      ComputableTidilyInPolyTime (fun p : List Bool × List Bool => evaluate p.1 p.2)
+      ComputableInPolyTime (fun (coins, word) => evaluate coins word)
         (encPair encBits encBits) encBits ∧
       ∀ a length, c * ((input a).length + 1) ^ d ≤ length →
         (ProbComp.eval (program a)).map output = (BitString.uniformList length).map
@@ -156,8 +165,8 @@ theorem IsPPTOn.exists_padded_coin_evaluator (h : IsPPTOn input output program) 
   obtain ⟨c, d, evaluate, hefficient, hlaw⟩ := h.exists_polyTime_coin_evaluator
   refine ⟨c, d, fun coins input => evaluate (coins.take (c * (input.length + 1) ^ d)) input,
     ?_, ?_⟩
-  · exact hefficient.comp (show ComputableTidilyInPolyTime
-      (fun p : List Bool × List Bool => (p.1.take (c * (p.2.length + 1) ^ d), p.2))
+  · exact hefficient.comp (show ComputableInPolyTime
+      (fun (coins, word) => (coins.take (c * (word.length + 1) ^ d), word))
       (encPair encBits encBits) (encPair encBits encBits) by fun_prop)
   · intro a length hlength
     rw [hlaw, ← BitString.uniformList_take hlength, PMF.map_comp]
@@ -168,7 +177,7 @@ shared tape budget may depend only on a bound on the encoded input size. -/
 theorem IsPPTOn.exists_padded_bool_coin_evaluator {program : α → ProbComp Bool}
     (h : IsPPTOn input encBool program) :
     ∃ (c d : ℕ) (evaluate : List Bool → List Bool → List Bool),
-      ComputableTidilyInPolyTime (fun p : List Bool × List Bool => evaluate p.1 p.2)
+      ComputableInPolyTime (fun (coins, word) => evaluate coins word)
         (encPair encBits encBits) encBits ∧
       ∀ a length, c * ((input a).length + 1) ^ d ≤ length →
         ProbComp.eval (program a) = (BitString.uniformList length).map

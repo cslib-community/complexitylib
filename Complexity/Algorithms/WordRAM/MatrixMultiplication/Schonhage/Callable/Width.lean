@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Bounds
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Every-wide-width initialized callable product
@@ -37,29 +38,18 @@ theorem admission_bounds {W N Q P : ℕ} (caller : List ℕ)
     (hP : ∀ v ∈ caller, v ≤ P) (hW : admissionWidth caller N Q P ≤ W) :
     Fits W (inputBase caller + 4 * windowSize N Q + 1024) ∧
       ∀ v ∈ caller, Fits W v := by
-  have hc : Nat.clog 2 (inputBase caller + N + Q + P + 5) ≤ W := by
-    unfold admissionWidth at hW
-    omega
   refine ⟨physical_fits ?_, ?_⟩
   · have h := Nat.clog_mono_right 2 (by omega :
       inputBase caller + N + Q + 5 ≤ inputBase caller + N + Q + P + 5)
     unfold admissionWidth at hW
     omega
   · intro v hv
-    have h := hP v hv
-    have hceil := Nat.le_pow_clog (by decide : 1 < (2 : ℕ))
-      (inputBase caller + N + Q + P + 5)
-    have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hc
-    change v < 2 ^ W
-    omega
+    exact fits_of_lt_clog_le (by have := hP v hv; omega :
+      v < inputBase caller + N + Q + P + 5) (by unfold admissionWidth at hW; omega)
 
 private theorem context_fits {W b N Q P : ℕ}
     (hW : 256 * Nat.clog 2 (b + N + Q + P + 5) ≤ W) : Fits W P := by
-  have hc : Nat.clog 2 (b + N + Q + P + 5) ≤ W := by omega
-  have hceil := Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) (b + N + Q + P + 5)
-  have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hc
-  change P < 2 ^ W
-  omega
+  exact fits_of_lt_clog_le (by omega : P < b + N + Q + P + 5) (by omega)
 
 /-- Every native caller prefix is physically word-bounded, including a loaded dirty word
 before the following remainder. Here `P` bounds every initial register and memory word,

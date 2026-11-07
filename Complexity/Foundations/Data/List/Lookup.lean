@@ -28,6 +28,7 @@ import Mathlib.Data.List.OfFn
 * `List.getD_take_drop`: reading an in-range entry of `(l.drop k).take w` reads index `k + i`
   of `l`.
 * `List.getD_ofFn_of_lt`, `List.getD_ofFn`: reading `List.ofFn f` at a valid index returns `f`.
+* `List.set_ofFn`: updating `List.ofFn f` tabulates the updated function.
 * `List.forall_mem_set_of_forall_mem`, `List.getD_le_of_forall_le`: preserve invariants under
   updates and bound defaulted reads of numeric register files.
 * `List.getD_map_range`: read a function tabulated over a bounded range.
@@ -36,6 +37,7 @@ import Mathlib.Data.List.OfFn
   `ys.length = xs.length`.
 * `List.find?_range_getD_eq_sInf`: the least index below `m` passing a test, or `m`, as a search
   over a range.
+* `List.lookup_map_snd`: mapping stored values in an association list commutes with `List.lookup`.
 -/
 
 @[expose] public section
@@ -86,6 +88,15 @@ theorem List.getD_ofFn_of_lt {α : Type*} {n : ℕ} (f : Fin n → α) {i : ℕ}
 theorem List.getD_ofFn {α : Type*} {n : ℕ} (f : Fin n → α) (i : Fin n) (d : α) :
     (List.ofFn f).getD i d = f i :=
   List.getD_ofFn_of_lt f i.isLt d
+
+/-- Updating `List.ofFn f` at `i : Fin n` tabulates the updated function. -/
+theorem List.set_ofFn {α : Type*} {n : ℕ} (f : Fin n → α) (i : Fin n) (a : α) :
+    (List.ofFn f).set i a = List.ofFn (Function.update f i a) := by
+  classical
+  apply List.ext_getElem (by simp)
+  intro j hj _
+  simp only [List.getElem_set, List.getElem_ofFn, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 /-- A property of all the entries of a list holds of all the entries of an update by a value
 having it. -/
@@ -164,3 +175,12 @@ theorem List.find?_range_getD_eq_sInf (m : ℕ) (p : ℕ → Bool) :
       · have := hmin i hi
         simp_all
   exact le_antisymm (not_lt.mp fun h => hmem.2 _ h (Nat.sInf_mem ⟨v, hmem.1⟩)) (Nat.sInf_le hmem.1)
+
+/-- Mapping stored values in an association list commutes with `List.lookup` at every key. -/
+theorem List.lookup_map_snd {α β γ : Type*} [BEq α] (l : List (α × β)) (f : β → γ) (k : α) :
+    (l.map fun e => (e.1, f e.2)).lookup k = (l.lookup k).map f := by
+  induction l with
+  | nil => rfl
+  | cons e rest ih =>
+    rcases e with ⟨k', v⟩
+    cases h : k == k' <;> simp [List.lookup_cons, h, ih]

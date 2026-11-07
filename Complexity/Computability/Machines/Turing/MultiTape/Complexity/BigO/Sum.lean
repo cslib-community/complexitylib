@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Sum
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
 
 /-!
 # Linear resource bounds for tagged sum constructors
@@ -29,8 +29,6 @@ Uses Christian Reitwiessner's native degree/resource calculus (`ComputableInO.ap
 -/
 
 @[expose] public section
-
-attribute [fun_prop] Turing.MultiTapeTM.ComputableInO
 
 namespace Turing.MultiTapeTM.ComputableInO
 

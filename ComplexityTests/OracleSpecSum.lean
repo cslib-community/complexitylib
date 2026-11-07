@@ -34,13 +34,7 @@ example :
       (OracleComp.liftLeft left) = some false := by
   simp [left]
 
--- The combined handler of a program with private coins is the sum handler, and sampling is the
--- left embedding.
-example (spec : Bool → Type) (random : (n : ℕ) → Option (Fin (n + 1)))
-    (oracle : (q : Bool) → Option (spec q)) :
-    ProbOracleComp.handler random oracle = OracleComp.sumHandler random oracle :=
-  ProbOracleComp.handler_eq_sumHandler random oracle
-
+-- Sampling in a program with private coins is the left embedding.
 example (program : ProbComp Bool) :
     ProbOracleComp.sample (spec := fun _ : Bool => Bool) program = OracleComp.liftLeft program :=
   ProbOracleComp.sample_eq_liftLeft program

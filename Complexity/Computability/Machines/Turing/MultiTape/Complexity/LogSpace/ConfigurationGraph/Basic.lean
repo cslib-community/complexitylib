@@ -10,6 +10,8 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Configurations
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Tape
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Radix
+public import Mathlib.Data.Nat.Bits
+import Mathlib.Data.Nat.Size
 
 /-!
 # Compact configuration graph: local arithmetic
@@ -28,6 +30,7 @@ emission after either nonempty output tag gives the rejecting tag.
 ## Main definitions
 
 * `Turing.MultiTapeNTM.ConfigurationGraph.vertexID`: pack the input-free view.
+* `Turing.MultiTapeNTM.ConfigurationGraph.vertexWidth`: the number of bits of a vertex ID.
 * `Turing.MultiTapeNTM.ConfigurationGraph.queryIndex`: the only requested input-bit position.
 * `Turing.MultiTapeNTM.ConfigurationGraph.edgeWithSymbol`: guarded local edge query.
 * `Turing.MultiTapeNTM.ConfigurationGraph.bad`: accepting halted vertices.
@@ -80,6 +83,17 @@ def radix (D n : ℕ) : ℕ := (n + 2) ^ D
 
 /-- Number of vertices in the ambient graph of radix `B`, including invalid IDs. -/
 def vertexBound (B : ℕ) : ℕ := B ^ Fintype.card (Register k)
+
+variable (k) in
+/-- The number of bits of a vertex of the graph of radix `B`: every vertex ID is below
+`2 ^ vertexWidth k B`. -/
+def vertexWidth (B : ℕ) : ℕ := (vertexBound (k := k) B).size
+
+variable (k) in
+/-- Every vertex ID of the graph of radix `B` fits in `vertexWidth k B` bits. -/
+theorem vertexBound_lt_two_pow_vertexWidth (B : ℕ) :
+    vertexBound (k := k) B < 2 ^ vertexWidth k B :=
+  Nat.lt_size_self _
 
 /-- All components fit below the radix. -/
 def Fits (B : ℕ) (r : Register k → ℕ) : Prop := ∀ i, r i < B

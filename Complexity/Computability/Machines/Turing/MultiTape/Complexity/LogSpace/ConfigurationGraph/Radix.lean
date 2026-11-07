@@ -33,11 +33,11 @@ namespace Turing.MultiTapeNTM.ConfigurationGraph
 
 variable {ι : Type} [Fintype ι]
 
-open MultiTapeTM ComputableTidilyInSpace
+open MultiTapeTM ComputableInSpace
 
 /-- Reading a fixed digit uses linear space in the binary radix and packed value. -/
 theorem digit_inSpace (i : ℕ) :
-    ComputableTidilyInSpace (fun p : ℕ × ℕ => Cslib.Radix.digit p.1 p.2 i)
+    ComputableInSpace (fun p : ℕ × ℕ => Cslib.Radix.digit p.1 p.2 i)
       (encPair encNat encNat) encNat fun p => (encPair encNat encNat p).length := by
   induction i with
   | zero => exact budget_natMod (snd _ _) (fst _ _)
@@ -47,17 +47,17 @@ theorem digit_inSpace (i : ℕ) :
 
 /-- Reading any one fixed component is a native deterministic linear-space routine. -/
 theorem component_inSpace (i : ι) :
-    ComputableTidilyInSpace (fun p : ℕ × ℕ => Cslib.Radix.component p.1 p.2 i)
+    ComputableInSpace (fun p : ℕ × ℕ => Cslib.Radix.component p.1 p.2 i)
       (encPair encNat encNat) encNat fun p => (encPair encNat encNat p).length :=
   digit_inSpace (Fintype.equivFin ι i).val
 
 /-- Packing a fixed tuple of computed components preserves a common space budget. -/
 theorem pack_inSpace {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {B : α → ℕ}
-    {f : α → ι → ℕ} (hB : ComputableTidilyInSpace B enc encNat S)
-    (hf : ∀ i, ComputableTidilyInSpace (fun a => f a i) enc encNat S)
+    {f : α → ι → ℕ} (hB : ComputableInSpace B enc encNat S)
+    (hf : ∀ i, ComputableInSpace (fun a => f a i) enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableTidilyInSpace (fun a => Cslib.Radix.pack (B a) (f a)) enc encNat S := by
-  have hlist : ∀ l : List ι, ComputableTidilyInSpace
+    ComputableInSpace (fun a => Cslib.Radix.pack (B a) (f a)) enc encNat S := by
+  have hlist : ∀ l : List ι, ComputableInSpace
       (fun a => Nat.ofDigits (B a) (l.map (f a))) enc encNat S := by
     intro l
     induction l with

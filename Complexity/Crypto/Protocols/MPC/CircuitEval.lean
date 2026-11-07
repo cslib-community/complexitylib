@@ -60,6 +60,11 @@ print pp. 645–648):
    every static coalition `I : Finset (Fin m)` for every circuit `C` without syntactic restrictions
    on `C.outputs`.
 
+Privacy is `PerfectSemiHonestPrivate` with the explicit simulators below: exact equality of
+distributions, with no certificate that the simulators run in probabilistic polynomial time as
+Goldreich's definitions require. Efficiency is certified only for the composed
+$\text{OT}_1^4$-hybrid protocol, in `Complexity.Crypto.Protocols.MPC.PolyTime`.
+
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.MPC.circuitFunctionality`: deterministic $m$-party functionality computed
@@ -143,7 +148,8 @@ and applying `finish` at `.done`. -/
     .message (sender := p.1) (receiver := p.2)
       (fun st => st.1 p.2)
       ((msgStepsWith finish L).mapState fun i st =>
-        (st.1.1, st.1.2 + extractMsg p i st.2))
+        let (toSend, acc) := st.1
+        (toSend, acc + extractMsg p i st.2))
 
 /-- All-to-all message exchange: party `s` sends `toSend s r` to party `r`, and party `i` applies
 `finish i` to the vector `fun s => toSend s i` of received messages. -/
@@ -631,18 +637,19 @@ private theorem eval_progDist_restrict_of_ne_univ {m inputCount g : ℕ} [NeZero
     (recv : (Round.message (spec := spec) s r Bool).Received i) : Bool :=
   if h : i = r then recv h else 0
 
-/-- Gather `Bool` shares at receiver `r` from senders `S`, preserving `st.1` and `st.2.1` and
+/-- Gather `Bool` shares at receiver `r` from senders `S`, preserving `state` and `myShare` and
 applying `finish` at `.done`. -/
 @[expose] def gatherStepsWith {m : ℕ} {spec : MultiOracleSpec} {State Out : Fin m → Type}
     (r : Fin m) (finish : (i : Fin m) → State i → Bool → Out i) :
     (S : List (Fin m)) →
       Steps (fun i => State i × Bool × Bool) Out (gatherSchedule m (spec := spec) r S)
-  | [] => .done (fun i st => finish i st.1 st.2.2)
+  | [] => .done (fun i (state, _, acc) => finish i state acc)
   | s :: S =>
     .message (sender := s) (receiver := r)
-      (fun st => st.2.1)
+      (fun (_, myShare, _) => myShare)
       ((gatherStepsWith r finish S).mapState fun i st =>
-        (st.1.1, st.1.2.1, st.1.2.2 + extractBitFor s r i st.2))
+        let (state, myShare, acc) := st.1
+        (state, myShare, acc + extractBitFor s r i st.2))
 
 /-- Sum of party `i`'s received bits along `gatherSchedule m r S`. -/
 @[expose] def sumGatherBits {m : ℕ} {spec : MultiOracleSpec} (r : Fin m) :

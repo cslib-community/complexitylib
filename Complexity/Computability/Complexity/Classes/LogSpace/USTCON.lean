@@ -33,7 +33,11 @@ equivalence with logspace reducibility to `USTCON` are not separately formalized
 `USTCON_mem_L` with the logspace reduction of any problem in `L` to `USTCON` via the canonical
 two-vertex witness `Cslib.Complexity.USTCONInstance.ofBool` yields completeness of `USTCON` for `L`
 (`Cslib.Complexity.USTCON_logSpaceComplete_L`) and Reingold's corollary `SL = L`
-(`Cslib.Complexity.SL_eq_L`) [Reingold, Theorem 4.2][Reingold2008].
+(`Cslib.Complexity.SL_eq_L`) [Reingold, Theorem 4.2][Reingold2008]. This completeness says
+nothing beyond `USTCON_mem_L`. Under logspace many-one reductions, every problem in `L` with a
+member and a non-member is complete for `L`, because the reduction can decide its input. A
+meaningful notion of completeness for `L` needs weaker reductions, such as first-order reductions;
+this file does not state one.
 
 ## Main definitions
 
@@ -48,7 +52,8 @@ two-vertex witness `Cslib.Complexity.USTCONInstance.ofBool` yields completeness 
 * `Cslib.Complexity.USTCON_logSpaceHard_SL`, `Cslib.Complexity.USTCON_logSpaceComplete_SL`:
   `USTCON` is logspace-complete for `SL`, immediately from the definition of `SL`.
 * `Cslib.Complexity.USTCON_logSpaceHard_L`, `Cslib.Complexity.USTCON_logSpaceComplete_L`:
-  `USTCON` is logspace-complete for `L`.
+  `USTCON` is logspace-complete for `L`, immediately from `USTCON_mem_L`, as is every problem in
+  `L` with a member and a non-member.
 * `Cslib.Complexity.SL_subset_L`, `Cslib.Complexity.L_subset_SL`, `Cslib.Complexity.SL_eq_L`:
   symmetric logarithmic space coincides with deterministic logarithmic space (`SL = L`).
 * `Cslib.Complexity.compl_mem_SL`: `SL` is closed under complement.
@@ -106,14 +111,17 @@ theorem USTCON_logSpaceComplete_SL : LogSpaceComplete SL encUSTCON USTCON :=
   ⟨USTCON_mem_SL, USTCON_logSpaceHard_SL⟩
 
 /-- `USTCON` is logspace-hard for `L`: compose a logspace decider with the finite map
-`USTCONInstance.ofBool`. -/
+`USTCONInstance.ofBool`. The same argument makes every problem with a member and a non-member
+logspace-hard for `L`. -/
 theorem USTCON_logSpaceHard_L : LogSpaceHard L encUSTCON USTCON := by
   rintro α enc A ⟨f, hf, hA⟩
   refine ⟨USTCONInstance.ofBool ∘ f,
     (ComputableInLogSpace.of_finite (encIn := encBool) USTCONInstance.ofBool).comp hf,
     fun a ↦ (hA a).trans USTCONInstance.ofBool_mem_USTCON.symm⟩
 
-/-- **`USTCON` is logspace-complete for `L`** [Reingold, Theorem 4.1][Reingold2008]. -/
+/-- `USTCON` is logspace-complete for `L`. The content is membership (`USTCON_mem_L`)
+[Reingold, Theorem 4.1][Reingold2008]. Hardness under logspace many-one reductions holds for every
+problem in `L` with a member and a non-member (`USTCON_logSpaceHard_L`). -/
 theorem USTCON_logSpaceComplete_L : LogSpaceComplete L encUSTCON USTCON :=
   ⟨USTCON_mem_L, USTCON_logSpaceHard_L⟩
 

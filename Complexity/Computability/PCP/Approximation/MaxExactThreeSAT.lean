@@ -134,10 +134,8 @@ theorem computableInPolyTime_reduce : ComputableInPolyTime reduce encCNF encCNF 
   unfold reduce
   have hempty : ComputableInPolyTime (List.isEmpty : Clause ℕ → Bool)
       (encList (encPair encNat encBool)) encBool := by
-    obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.isEmpty
-      (enc₁ := encPair encNat encBool) (enc := encList (encPair encNat encBool))
-    exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-      k, Q, hfin, tm, fun l => htm l⟩
+    exact (ListEncoding.isEmpty (enc₁ := encPair encNat encBool)
+      (enc := encList (encPair encNat encBool))).computableInPolyTime
   have hany : ComputableInPolyTime (fun φ : CNF ℕ => φ.any List.isEmpty) encCNF encBool :=
     ComputableInPolyTime.anyWithInput (ComputableInPolyTime.id' (encIn := encCNF))
       (hempty.comp (ComputableInPolyTime.snd _ _))

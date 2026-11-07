@@ -11,7 +11,7 @@ import Complexity.Probability.StatisticalDistance
 /-! # Local embeddings
 
 Independent private samples embed exactly, and a common value known to both parties is embedded
-by Lemma 8. A perfectly correlated pair embeds with error `0`, whereas a target requiring one
+by Lemma 5.2. A perfectly correlated pair embeds with error `0`, whereas a target requiring one
 party to reproduce the other party's uniform input without communication is not locally embeddable
 below error `1 / 2`.
 -/
@@ -21,7 +21,7 @@ namespace ComplexityTests.Embeddability
 open Cslib.Probability.CorrelatedSampling
 open scoped Cslib.Probability.PMF
 
--- Lemma 10: independent private samples embed with error `0`.
+-- Lemma 5.4: independent private samples embed with error `0`.
 example (P₀ : PMF (Bool × Bool)) (KS : Bool → PMF Bool) (KT : Bool → PMF Bool) :
     IsEmbeddable P₀
       (P₀.bind fun xy => (KS xy.1).bind fun s => (KT xy.2).map fun t => (xy, (s, t))) 0 :=
@@ -31,7 +31,7 @@ example (P₀ : PMF (Bool × Bool)) (KS : Bool → PMF Bool) (KT : Bool → PMF 
 noncomputable def correlatedTriple : PMF ((Bool × Bool) × Bool) :=
   (Cslib.Probability.PMF.uniformOfFintype Bool).map fun b => ((b, b), b)
 
--- Lemma 8 instantiated on `correlatedTriple`.
+-- Lemma 5.2 instantiated on `correlatedTriple`.
 example :
     IsEmbeddable (correlatedTriple.map Prod.fst)
       (correlatedTriple.map fun z => (z.1, (z.2, z.2)))

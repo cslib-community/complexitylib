@@ -37,12 +37,7 @@ private theorem sqrtBank_injective : Function.Injective sqrtBank := by
 
 private theorem squareRoot_preserves (i : Fin 400) (hi : i.val < 336 ∨ 342 ≤ i.val) :
     squareRoot.Preserves i := by
-  apply Code.preserves_rename_of_forall_ne
-  intro j hj
-  have hv := congrArg Fin.val hj
-  change 336 + j.val = i.val at hv
-  have hj := j.isLt
-  omega
+  exact Code.preserves_rename_of_offset _ _ (fun _ => rfl) i hi
 
 /-- Read the original dimension/divisor and this actual six-word record, then reset the
 per-record search state. The record address is computed from the native selected ordinal. -/

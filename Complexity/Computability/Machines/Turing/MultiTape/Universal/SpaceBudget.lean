@@ -516,7 +516,8 @@ private lemma foldFinishS_inO : ComputableTidilyInO foldFinishS eSSt eOut
     (fun s => ((eSSt s).length + 1) ^ 3) fun s => (eSSt s).length + 1 := by
   have h₁ := fst eSt (encPair encUnary (encList encUnary))
   have h₂ := snd eSt (encPair encUnary (encList encUnary))
-  have hst := state_inO.comp_linear h₁.fst'.snd'
+  -- bridge for #862: tidy client of the plain `state_inO`
+  have hst := state_inO.tidy.comp_linear h₁.fst'.snd'
   have hnone := (ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := encBool)
     fun b : Bool => !b).inO_one.comp_linear
       ((ComputableTidilyInDegree.isSome encUnary).inO_one.comp_linear hst)

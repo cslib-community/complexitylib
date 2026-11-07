@@ -305,10 +305,6 @@ section Rename
 
 variable {f : Fin r → Fin r'}
 
-private theorem extend_set_eq (hf : f.Injective) (y : Data r) (x : Data r') (i : Fin r) (v : ℕ) :
-    (y.set i v).extend f x = (y.extend f x).set (f i) v :=
-  Data.ext (hf.extend_update _ _ _ _) rfl
-
 /-- Running a structured randomized program through an injective register map `f` transforms its
 outputs via `Data.extend f x`, preserving instruction counts and untouched registers. -/
 theorem ExecRand.rename (hf : f.Injective) {w : ℕ} {c : Code B r} {x : Data r'}
@@ -332,7 +328,7 @@ theorem ExecRand.rename (hf : f.Injective) {w : ℕ} {c : Code B r} {x : Data r'
         pure (x.set (f dst) k.val, 1)) := by
       rw [← bind_pure_comp, bind_assoc]
       refine congrArg (ProbComp.unifFin (x.regs (f src)) >>= ·) (funext fun k => ?_)
-      simp only [pure_bind, extend_set_eq hf, Data.extend_comap hf]
+      simp only [pure_bind, Data.extend_set hf, Data.extend_comap hf]
     simp only [Code.rename, Data.comap_regs]
     rw [heq]
     exact ExecRand.rand hfit'

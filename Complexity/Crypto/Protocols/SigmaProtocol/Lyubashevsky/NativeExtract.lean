@@ -101,8 +101,9 @@ def lyubashevskyExtractList (input : LyubashevskyExtractInput) : List ℤ :=
       (if input.2.1.1.getD i false then (1 : ℤ) else 0))
 
 /-- Extraction always writes the two declared segments, even on malformed-length inputs. -/
-@[simp] theorem length_lyubashevskyExtractList (input : LyubashevskyExtractInput) :
-    (lyubashevskyExtractList input).length = input.1.1 + input.1.2 := by
+@[simp] theorem length_lyubashevskyExtractList (m k : ℕ)
+    (cz cz' : List Bool × Option (List ℤ)) :
+    (lyubashevskyExtractList ((m, k), cz, cz')).length = m + k := by
   simp [lyubashevskyExtractList]
 
 /-- One native extractor handles runtime dimensions and all binary integer magnitudes. -/

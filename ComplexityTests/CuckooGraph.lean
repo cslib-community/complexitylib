@@ -8,14 +8,14 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.CuckooHashing
+public import Complexity.DataStructure.Dictionary.CuckooHashing
 
 /-!
 # Pagh–Rodler Cuckoo Graph & Walk Tail Bounds — Test Suite
 
 Verifies concrete decidable instances of the cuckoo walk dichotomy (`HasAltPath`,
 `HasBicyclicPrefix`, `HasExcessSubset`, `cuckooWalk_dichotomy`) and non-vacuity of
-`IsCuckooHashPair` in `Cslib.Algorithms.Lean.CuckooHashing`:
+`IsCuckooHashPair` in `Cslib.DataStructure.Dictionary.CuckooHashing`:
 * a 3-key colliding configuration (`constH : Fin 3 → Fin 2 := fun _ => 0`) where two keys place
   validly (`pureReplay ... [0, 1]`), inserting the third key fails (`pureEvict ... = none`), and
   both `HasBicyclicPrefix` and `HasExcessSubset ... 3` hold by `decide`;
@@ -33,8 +33,8 @@ Verifies concrete decidable instances of the cuckoo walk dichotomy (`HasAltPath`
 namespace ComplexityTests.CuckooGraph
 
 open Cslib Cslib.Probability
-open Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
-open Cslib.Algorithms.Lean.CuckooHashing
+open Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
+open Cslib.DataStructure.Dictionary.CuckooHashing
 
 /-! ## 1. Concrete decidable checks of the walk dichotomy (Case A, Case B, injective contrast) -/
 

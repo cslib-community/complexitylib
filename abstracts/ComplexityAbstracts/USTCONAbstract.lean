@@ -95,7 +95,7 @@ theorem ustcon_mem_l : USTCON ∈ L encInstance := USTCONBridge.ustcon_mem_l
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.USTCONAbstract`:
-18 root declarations, 68 dependencies checked
+18 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.USTCONAbstract
