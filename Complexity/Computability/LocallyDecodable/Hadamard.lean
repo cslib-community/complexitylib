@@ -24,7 +24,7 @@ from the codeword on a fraction `δ` of the positions corrupts either read with 
 `δ`, and the decoder fails with probability at most `2 δ`
 (`BitString.one_sub_two_mul_le_expect_selfCorrect_eq_apply`). It is therefore a
 `(2, δ, 1 / 2 - 2 δ)` local decoder for every `δ`, and a `(2, 2, 1 / 2)` smooth decoder
-[AroraBarak09][Yekhanin2012].
+[Arora and Barak, Chapters 11 and 19][AroraBarak09], [Yekhanin, Chapter 1][Yekhanin2012].
 
 ## Main definitions
 
@@ -37,8 +37,9 @@ from the codeword on a fraction `δ` of the positions corrupts either read with 
 
 ## References
 
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
-* [S. Yekhanin, *Locally decodable codes*][Yekhanin2012]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Chapters 11
+  and 19
+* [S. Yekhanin, *Locally decodable codes*][Yekhanin2012], Chapter 1
 -/
 
 public section
@@ -99,7 +100,8 @@ theorem isSmoothDecoder_hadamardDecoder :
     fun x i => by
       have h := (isLocalDecoder_hadamardDecoder (ι := ι) 0).correct x (hadamardCode x) i
         (by simp)
-      norm_num at h ⊢
+      have hε : (1 / 2 + (1 / 2 - 2 * 0) : ℝ) = 1 / 2 + 1 / 2 := by norm_num
+      rw [hε] at h
       exact h
 
 end Cslib.BitString

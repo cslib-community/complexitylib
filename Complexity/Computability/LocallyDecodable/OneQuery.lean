@@ -18,16 +18,21 @@ import Mathlib.Tactic.Linarith
 # One-query locally decodable codes are short
 
 A decoder making a single query learns one symbol of the received word. Katz and Trevisan
-[KatzTrevisan2000] showed that a one-query local decoder cannot recover the bits of long
-messages. This file proves a quantitative form of that fact with explicit constants.
+[KatzTrevisan2000] proved that one-query locally decodable codes have bounded message length: for
+`q = 1` they do not exist once the message is longer than a constant depending on `δ` and `ε`
+(as summarized in [Kerenidis and de Wolf, Section 1][KerenidisDeWolf2004]). This file proves a
+different, explicit inequality for one-query decoders by a degree-one Fourier argument.
 
-**Original result (explicit form).** A `(1, c, ε)` smooth decoder with `0 ≤ ε` for a code
-`C : (ι → Bool) → P → Γ` satisfies `4 |ι| ε² ≤ c² (|Γ| - 1)`
-(`Code.IsSmoothDecoder.four_mul_card_mul_sq_le`). So a `(1, δ, ε)` locally decodable code, which is
-`(1, 1 / δ, ε)` smooth (`Code.IsLocalDecoder.isSmoothCode_of_one`), satisfies
-`4 δ² |ι| ε² ≤ |Γ| - 1` (`Code.IsLocalDecoder.four_mul_sq_mul_card_mul_sq_le`), whatever the
-length of the code. The repetition code of a single bit, read at a uniform position, attains
-equality with `|ι| = 1`, `c = 1`, `ε = 1 / 2` and `|Γ| = 2`.
+**Original result.** An explicit one-query bound, proved by a degree-one Fourier argument. A
+`(1, c, ε)` smooth decoder with `0 ≤ ε` for a code `C : (ι → Bool) → P → Γ` satisfies
+`4 |ι| ε² ≤ c² (|Γ| - 1)` (`Code.IsSmoothDecoder.four_mul_card_mul_sq_le`). So a `(1, δ, ε)`
+locally decodable code, which is `(1, 1 / δ, ε)` smooth (`Code.IsLocalDecoder.isSmoothCode_of_one`),
+satisfies `4 δ² |ι| ε² ≤ |Γ| - 1` (`Code.IsLocalDecoder.four_mul_sq_mul_card_mul_sq_le`), whatever
+the length of the code. The bound is polynomial in `|Γ| - 1` and in `δ²`, and the repetition code
+of a single bit, read at a uniform position, attains equality with `|ι| = 1`, `c = 1`, `ε = 1 / 2`
+and `|Γ| = 2`. This is not the inequality of Katz and Trevisan, and we did not find this form in
+the literature we searched (Katz–Trevisan, Kerenidis–de Wolf, Yekhanin's survey, and a web
+search).
 
 The proof correlates the decoder's output with the sign of the bit `i` over a uniform message.
 A decoder making one query decides from one symbol, so the correlation is at most the expected
@@ -50,6 +55,8 @@ positions.
 
 * [J. Katz, L. Trevisan, *On the efficiency of local decoding procedures for error-correcting
   codes*][KatzTrevisan2000]
+* [I. Kerenidis, R. de Wolf, *Exponential lower bound for 2-query locally decodable codes via a
+  quantum argument*][KerenidisDeWolf2004], numbering of arXiv:quant-ph/0208062v2
 -/
 
 public section
@@ -186,9 +193,12 @@ end Correlation
 
 variable {ι : Type} [Fintype ι]
 
-/-- **One-query smooth codes are short** (original explicit form of [KatzTrevisan2000]): a
-`(1, c, ε)` smooth decoder with `0 ≤ ε` for a code from `ι`-bit messages to words over `Γ`
-satisfies `4 |ι| ε² ≤ c² (|Γ| - 1)`. -/
+/-- **One-query smooth codes are short.** Original result: an explicit one-query bound proved by a
+degree-one Fourier argument. A `(1, c, ε)` smooth decoder with `0 ≤ ε` for a code from `ι`-bit
+messages to words over `Γ` satisfies `4 |ι| ε² ≤ c² (|Γ| - 1)`. Katz and Trevisan
+[KatzTrevisan2000] proved that one-query locally decodable codes have bounded message length;
+this is a different inequality, polynomial in `|Γ| - 1`, and we did not find this form in the
+literature. -/
 theorem IsSmoothDecoder.four_mul_card_mul_sq_le [DecidableEq P] [Nonempty Γ]
     {C : (ι → Bool) → P → Γ} {c ε : ℝ} {A : LocalDecoder ι P Γ} (hA : IsSmoothDecoder C 1 c ε A)
     (hε : 0 ≤ ε) : 4 * Fintype.card ι * ε ^ 2 ≤ c ^ 2 * (Fintype.card Γ - 1) := by
@@ -311,9 +321,12 @@ theorem IsSmoothDecoder.four_mul_card_mul_sq_le [DecidableEq P] [Nonempty Γ]
           nlinarith
         exact le_of_mul_le_mul_left this hKpos
 
-/-- **One-query locally decodable codes are short** (original explicit form of
-[KatzTrevisan2000]): a `(1, δ, ε)` locally decodable code with `0 < δ` and `0 ≤ ε` from `ι`-bit
-messages to words over `Γ` satisfies `4 δ² |ι| ε² ≤ |Γ| - 1`, whatever its length. -/
+/-- **One-query locally decodable codes are short.** Original result: an explicit one-query bound
+proved by a degree-one Fourier argument. A `(1, δ, ε)` locally decodable code with `0 < δ` and
+`0 ≤ ε` from `ι`-bit messages to words over `Γ` satisfies `4 δ² |ι| ε² ≤ |Γ| - 1`, whatever its
+length. Katz and Trevisan [KatzTrevisan2000] proved that one-query locally decodable codes have
+bounded message length; this is a different inequality, polynomial in `|Γ| - 1` and in `δ²`, and
+we did not find this form in the literature. -/
 theorem IsLocalDecoder.four_mul_sq_mul_card_mul_sq_le [DecidableEq Γ] [Nonempty Γ]
     {C : (ι → Bool) → P → Γ} {δ ε : ℝ} {A : LocalDecoder ι P Γ} (hA : IsLocalDecoder C 1 δ ε A)
     (hδ : 0 < δ) (hε : 0 ≤ ε) : 4 * δ ^ 2 * Fintype.card ι * ε ^ 2 ≤ Fintype.card Γ - 1 := by

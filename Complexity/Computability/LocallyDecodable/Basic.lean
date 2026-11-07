@@ -23,13 +23,19 @@ the decoder may be adaptive, and its query budget is the library's
 
 * `IsLocalDecoder C q δ ε A`: `A` makes at most `q` queries and, from every word `y` within
   Hamming distance `δ |P|` of the codeword `C x`, outputs each bit `x i` with probability at least
-  `1 / 2 + ε` [KatzTrevisan2000][KerenidisDeWolf2004][Yekhanin2012].
+  `1 / 2 + ε` [KatzTrevisan2000]. This is [Kerenidis and de Wolf, Definition 1 and
+  Appendix B][KerenidisDeWolf2004] (numbering of arXiv:quant-ph/0208062v2), except that the
+  decoder here may be adaptive; [Yekhanin, Definition 2.1][Yekhanin2012] also allows adaptive
+  decoders and writes the success probability as `1 - ε`.
 * `IsSmoothDecoder C q c ε A`: `A` makes at most `q` queries, decodes the codewords themselves with
   probability at least `1 / 2 + ε`, and on codewords reads each position at most `c / |P|` times
-  in expectation (`Code.expectedReads`, an `OracleComp.expectedCost`). Since a position read is
-  read at least once, this bounds the probability of reading it by `c / |P|` as well, so it implies
-  the smoothness of Katz and Trevisan [KatzTrevisan2000][KerenidisDeWolf2004]; for
-  non-adaptive decoders whose queries are distinct the two coincide.
+  in expectation (`Code.expectedReads`, an `OracleComp.expectedCost`). Smooth codes in
+  [Kerenidis and de Wolf, Definition 3][KerenidisDeWolf2004], after [KatzTrevisan2000], have
+  non-adaptive decoders and bound the probability of querying each position by `c / |P|`. A
+  position that is read is read at least once, so the expected-reads bound here implies that
+  read-probability bound; the two coincide for decoders that never read a position twice, such as
+  one-query decoders. The decoders here may be adaptive, so `IsSmoothDecoder` does not imply the
+  non-adaptivity clause of the source definition.
 
 The received word is the oracle: `Code.decodeLaw program y` answers the private coins uniformly
 and each query `j` by `y j`. A decoder whose expected reads do not depend on the received word
@@ -61,7 +67,7 @@ one (`Code.hasObliviousReads_nonadaptive`).
 * [J. Katz, L. Trevisan, *On the efficiency of local decoding procedures for error-correcting
   codes*][KatzTrevisan2000]
 * [I. Kerenidis, R. de Wolf, *Exponential lower bound for 2-query locally decodable codes via a
-  quantum argument*][KerenidisDeWolf2004]
+  quantum argument*][KerenidisDeWolf2004], numbering of arXiv:quant-ph/0208062v2
 * [S. Yekhanin, *Locally decodable codes*][Yekhanin2012]
 -/
 
@@ -123,7 +129,11 @@ variable [Fintype P]
 
 /-- `A` is a `(q, δ, ε)` local decoder for the code `C`: it makes at most `q` queries, and from
 every word within Hamming distance `δ |P|` of the codeword of `x` it outputs each bit of `x` with
-probability at least `1 / 2 + ε`. -/
+probability at least `1 / 2 + ε`. This is [Kerenidis and de Wolf, Definition 1 and
+Appendix B][KerenidisDeWolf2004] (arXiv:quant-ph/0208062v2), with adaptive decoders allowed.
+
+For `δ < 0` no word is within distance `δ |P|` of a codeword, so every decoder making at most `q`
+queries is a `(q, δ, ε)` local decoder; the statements below assume `0 < δ` where it matters. -/
 structure IsLocalDecoder [DecidableEq Γ] (C : (ι → Bool) → P → Γ) (q : ℕ) (δ ε : ℝ)
     (A : LocalDecoder ι P Γ) : Prop where
   /-- Each bit is decoded with at most `q` queries on every path. -/
@@ -134,7 +144,12 @@ structure IsLocalDecoder [DecidableEq Γ] (C : (ι → Bool) → P → Γ) (q : 
 
 /-- `A` is a `(q, c, ε)` smooth decoder for the code `C`: it makes at most `q` queries, outputs
 each bit of `x` from the codeword of `x` with probability at least `1 / 2 + ε`, and on codewords
-reads each position at most `c / |P|` times in expectation. -/
+reads each position at most `c / |P|` times in expectation.
+
+Compared with [Kerenidis and de Wolf, Definition 3][KerenidisDeWolf2004] (arXiv:quant-ph/0208062v2),
+the decoder may be adaptive, and the bound is on expected reads, not on the probability of reading
+a position. Expected reads bound that probability, so the read-probability clause of the source
+definition follows; the non-adaptivity clause does not. -/
 structure IsSmoothDecoder [DecidableEq P] (C : (ι → Bool) → P → Γ) (q : ℕ) (c ε : ℝ)
     (A : LocalDecoder ι P Γ) : Prop where
   /-- Each bit is decoded with at most `q` queries on every path. -/

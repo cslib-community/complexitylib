@@ -7,7 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.BooleanAnalysis.Monotone
+public import Complexity.Foundations.BooleanAnalysis.Influence
+import Complexity.Foundations.BooleanAnalysis.Monotone
 import Mathlib.Algebra.Order.Chebyshev
 import Mathlib.Tactic.Linarith
 

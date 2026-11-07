@@ -83,6 +83,40 @@ example : 4 * Fintype.card Unit * (1 / 2 : ℝ) ^ 2 ≤ 1 ^ 2 * (Fintype.card Bo
 example : 4 * Fintype.card Unit * (1 / 2 : ℝ) ^ 2 = 1 ^ 2 * (Fintype.card Bool - 1) := by
   norm_num
 
+/-- The repetition code of one bit, of length three, is a `(1, 1/3, 1/6)` locally decodable code:
+a word with at most one corrupted position agrees with the codeword on at least two of the three
+positions, so a uniform read recovers the bit with probability at least `2/3`. -/
+private theorem isLocalDecoder_repetitionDecoder :
+    IsLocalDecoder repetition 1 (1 / 3) (1 / 6) repetitionDecoder where
+  isQueryBounded _ := isQueryBounded_nonadaptive _ _ _
+  correct x y i hy := by
+    have h3 : (1 / 3 : ℝ) * Fintype.card (Fin 3) = 1 := by norm_num
+    rw [h3] at hy
+    have hd : hammingDist y (repetition x) ≤ 1 := by exact_mod_cast hy
+    have hsplit := Finset.card_filter_add_card_filter_not
+      (s := (Finset.univ : Finset (Fin 3))) (fun r => y r = x i)
+    have hdist : (Finset.univ.filter fun r : Fin 3 => ¬ y r = x i).card =
+        hammingDist y (repetition x) := rfl
+    rw [Finset.card_univ, Fintype.card_fin, hdist] at hsplit
+    have hgood : (2 : ℝ) ≤ (Finset.univ.filter fun r : Fin 3 => y r = x i).card := by
+      exact_mod_cast (by omega : 2 ≤ (Finset.univ.filter fun r : Fin 3 => y r = x i).card)
+    rw [repetitionDecoder, decodeLaw_nonadaptive, ProbComp.eval_uniform,
+      PMF.toReal_uniformOfFintype_map_apply, Finset.nnratCast_dens, Fintype.card_fin]
+    change 1 / 2 + 1 / 6 ≤ ((Finset.univ.filter fun r : Fin 3 => y r = x i).card : ℝ) / (3 : ℕ)
+    rw [Nat.cast_ofNat, le_div_iff₀ (by norm_num)]
+    linarith
+
+example : IsLocallyDecodable repetition 1 (1 / 3) (1 / 6) :=
+  isLocalDecoder_repetitionDecoder.isLocallyDecodable
+
+/-- Katz–Trevisan smoothing of a concrete one-query code: the `(1, 1/3, 1/6)` repetition code is a
+`(1, 3, 1/6)` smooth code. -/
+example : IsSmoothCode repetition 1 3 (1 / 6) := by
+  have h := isLocalDecoder_repetitionDecoder.isSmoothCode_of_one (by norm_num)
+  have h3 : (1 : ℝ) / (1 / 3) = 3 := by norm_num
+  rw [h3] at h
+  exact h
+
 /-! ### Codes that are not one-query decodable -/
 
 /-- No binary code of two message bits is a `(1, 1, 1/2)` smooth code. -/

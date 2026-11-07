@@ -31,6 +31,11 @@ With a cost that is `1` on the reads of one position of an oracle and `0` elsewh
 cost is the expected number of times a program reads that position, which is how the smoothness of
 a local decoder is measured.
 
+`Cslib.DataStructure.RandomizedSpec.expectedCost` is the stateful counterpart, for calls to a
+randomized data structure whose answers depend on its state, with its own Wald identity
+(`RandomizedSpec.expectedCost_bind`) and budget bound
+(`RandomizedSpec.expectedCost_le_of_isCostBounded`).
+
 ## Main definitions
 
 * `Cslib.OracleComp.expectedCost`: the expected total cost of the calls.

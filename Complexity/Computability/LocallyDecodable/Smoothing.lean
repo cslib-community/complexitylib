@@ -14,9 +14,11 @@ import Mathlib.Tactic.Positivity
 /-!
 # Locally decodable codes are smooth
 
-Katz and Trevisan [KatzTrevisan2000] observed that a local decoder can be made smooth: a
-`(q, δ, ε)` local decoder whose queries do not depend on the received word yields a `(q, q / δ, ε)`
-smooth decoder (see also [KerenidisDeWolf2004]). The decoder reads at most `q` positions in
+Katz and Trevisan [KatzTrevisan2000, Theorem 1] observed that a local decoder can be made smooth: a
+`(q, δ, ε)` local decoder yields a `(q, q / δ, ε)` smooth decoder (restated as [Kerenidis and
+de Wolf, Theorem 9][KerenidisDeWolf2004], arXiv:quant-ph/0208062v2, for non-adaptive decoders).
+Here the decoder's queries must not depend on the received word. The decoder reads at most `q`
+positions in
 expectation, so at most `δ |P|` positions are *heavy*, read more than `q / (δ |P|)` times in
 expectation (`Code.card_heavyPositions_le`). The smooth decoder runs the local decoder but answers
 the queries to heavy positions itself, from a fixed word `z`, without reading them (`Code.mask`).
@@ -221,9 +223,19 @@ section Smoothing
 
 variable [Fintype P] [DecidableEq Γ]
 
-/-- **Katz–Trevisan smoothing** [KatzTrevisan2000]: a `(q, δ, ε)` local decoder whose
-reads do not depend on the received word becomes a `(q, q / δ, ε)` smooth decoder when the queries
-to its heavy positions are answered from a fixed word `z` instead. -/
+/-- **Katz–Trevisan smoothing** [KatzTrevisan2000, Theorem 1], as restated in [Kerenidis and
+de Wolf, Theorem 9][KerenidisDeWolf2004] (arXiv:quant-ph/0208062v2): a `(q, δ, ε)` local decoder
+whose reads do not depend on the received word becomes a `(q, q / δ, ε)` smooth decoder when the
+queries to its heavy positions are answered from a fixed word `z` instead.
+
+Source mapping. The source states that every `(q, δ, ε)` locally decodable code is a
+`(q, q / δ, ε)` smooth code, for non-adaptive decoders (Definitions 1 and 3 there), with smoothness
+bounding the probability of querying each position. Here the hypothesis is that the reads are
+oblivious (`HasObliviousReads`), which holds for every non-adaptive decoder
+(`hasObliviousReads_nonadaptive`) and for every one-query decoder, adaptive or not
+(`hasObliviousReads_of_isQueryBounded_one`); general adaptive decoders are not covered. The
+conclusion bounds expected reads, which is at least as strong as the source's read-probability
+bound. -/
 theorem isSmoothDecoder_mask_heavyPositions {C : (ι → Bool) → P → Γ} {q : ℕ} {δ ε : ℝ}
     {A : LocalDecoder ι P Γ} (hA : IsLocalDecoder C q δ ε A) (hobl : ∀ i, HasObliviousReads (A i))
     (hδ : 0 < δ) (z : P → Γ) :
@@ -308,8 +320,9 @@ section Smoothing
 
 variable [Fintype P] [DecidableEq Γ]
 
-/-- **One-query locally decodable codes are smooth** [KatzTrevisan2000]: a
-`(1, δ, ε)` local decoder, adaptive or not, yields a `(1, 1 / δ, ε)` smooth decoder. -/
+/-- **One-query locally decodable codes are smooth**, the case `q = 1` of
+[KatzTrevisan2000, Theorem 1] (see `isSmoothDecoder_mask_heavyPositions`): a `(1, δ, ε)` local
+decoder, adaptive or not, yields a `(1, 1 / δ, ε)` smooth decoder. -/
 theorem IsLocalDecoder.isSmoothCode_of_one {C : (ι → Bool) → P → Γ} {δ ε : ℝ}
     {A : LocalDecoder ι P Γ} (hA : IsLocalDecoder C 1 δ ε A) (hδ : 0 < δ) :
     IsSmoothCode C 1 (1 / δ) ε := by
