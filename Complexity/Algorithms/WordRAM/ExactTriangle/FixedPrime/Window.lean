@@ -10,10 +10,11 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Width
 
 /-!
-# Monotonicity of the shared record workspace reservation
+# Monotonicity of the per-record workspace reservation
 
-This numerical fact supports both materialized and one-slot fixed-prime traversals without
-importing either execution proof. It concerns a reserved address envelope, not a clearing loop.
+`window_mono` bounds `CallableProduct.windowSize n Q` for `Q ≤ n * n` by the uniform `n * n`
+reservation used in the one-slot fixed-prime traversal, without importing the execution proof.
+It concerns a reserved address envelope, not a clearing loop.
 -/
 
 public section

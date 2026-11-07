@@ -12,10 +12,10 @@ public import Complexity.Computability.Probabilistic.Oracle.Parameter
 public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Crypto.Computational.Encryption.Basic
-public import Complexity.Crypto.Computational.Encryption.DecryptionBound
 public import Complexity.Crypto.Game.Hybrid
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Crypto.Computational.Encryption.DecryptionBound
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Crypto.Negligible.Dyadic
 import Complexity.Languages.Probabilistic.Oracle.Simulation

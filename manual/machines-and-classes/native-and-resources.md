@@ -124,7 +124,8 @@ exponential time and polynomial space conclusions.
 Pure lookup in `frame u ++ v` uses the small
 [`Encodings.Frame.Lookup`](../../Complexity/Computability/Machines/Turing/MultiTape/Encodings/Frame/Lookup.lean)
 module. `getElem?_frame_append` identifies each marker and data bit;
-`getElem?_frame_append_boundary` identifies the terminator and suffix, including out-of-bounds
+`getElem?_frame_append_length` identifies the terminator and
+`getElem?_frame_append_boundary` the suffix, including out-of-bounds
 lookup. Both the unary take/drop and zip-transducer machine proofs use these list laws, so
 clients can reuse them without importing either machine implementation.
 

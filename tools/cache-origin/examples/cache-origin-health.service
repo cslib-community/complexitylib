@@ -1,0 +1,14 @@
+[Unit]
+Description=Check cache bytes, inodes and mount
+OnFailure=cache-origin-alert@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/libexec/cache-origin-health.py
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=32M
+TasksMax=4
+TimeoutStartSec=30s

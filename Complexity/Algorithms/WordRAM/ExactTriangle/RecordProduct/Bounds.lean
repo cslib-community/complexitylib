@@ -11,12 +11,12 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Producer
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.NumericBounds
 
 /-!
-# Input-derived admission and charged adapter overhead
+# Charged adapter overhead and per-record thin bounds
 
-The actual producer supplies a polynomial bound for every pre-adapter word and address.
-Its existing `wordBound` determines a sufficient positive logarithmic physical width for the
-selected product's computed window. Adaptation is linear in `nD+Q`; this per-record statement
-does not sum an ExactTriangle solver or establish its aggregate subcubic bound.
+`RecordProduct.timeBound` adds linear preparation and call overhead in `n * D m + qs.length` to
+`CallableProduct.timeBound`, so distinct-set and occurrence sparsity bounds transfer from
+`CallableProduct`. Input-derived width and word envelopes (`admissionWidth`, `wordBound`) live in
+`RecordProduct.NumericBounds`; summing all records for an ExactTriangle solver is separate.
 -/
 
 public section

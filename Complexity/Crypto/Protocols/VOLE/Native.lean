@@ -51,8 +51,8 @@ namespace Cslib.Crypto.Protocols.VOLE.Native
 open Probability Interactive Interactive.Spec
 open scoped BigOperators
 
-/-- Runtime wire count, ordered gate triples and auxiliary word. -/
-abbrev Input := ℕ × List (ℕ × ℕ × ℕ) × List Bool
+/-- Runtime wire count and ordered gate triples. -/
+abbrev Input := ℕ × List (ℕ × ℕ × ℕ)
 
 /-- Receiver key and tags, including the final fresh-mask tag. -/
 abbrev Share (F : Type) := F × List F
@@ -101,7 +101,7 @@ def weights (count : ℕ) (r : List F) : List F :=
 never determine an allocation or loop bound. The wire count selects the fresh mask's tag. -/
 def checkValue (input : Input) (share : Share F) (d r : List F) : F :=
   let adjusted := fun i => share.2.getD i 0 + d.getD i 0 * share.1
-  ((input.2.1.zip (weights input.2.1.length r)).map fun (gate, weight) =>
+  ((input.2.zip (weights input.2.length r)).map fun (gate, weight) =>
     weight * (adjusted gate.1 * adjusted gate.2.1 - adjusted gate.2.2 * share.1)).sum +
       share.2.getD input.1 0
 
@@ -118,7 +118,7 @@ def simulate (sample : ProbComp F) (receiver : Receiver F I First State Result)
   let s ← receiver.init input share
   let d ← OracleComp.replicate shape.1 sample
   let (r, s) ← receiver.challenge input share s (first input share d)
-  let r := weights shape.2.1.length r
+  let r := weights shape.2.length r
   let a ← sample
   let reply := (a, checkValue shape share d r - a * delta)
   let s ← receiver.receive input share s reply
@@ -152,8 +152,8 @@ def Receiver.strategy {Message Index : Type} (receiver : Receiver F I First Stat
         ProbOracleComp.sample (receiver.terminal input (share.1, List.ofFn share.2) state))))
 
 /-- Public input representing finite wire maps; binary indices retain repeated wires. -/
-def inputOfMaps {n m : ℕ} (left right output : Fin m → Fin n) (z : List Bool) : Input :=
-  (n, List.ofFn (fun i => ((left i).val, (right i).val, (output i).val)), z)
+def inputOfMaps {n m : ℕ} (left right output : Fin m → Fin n) : Input :=
+  (n, List.ofFn (fun i => ((left i).val, (right i).val, (output i).val)))
 
 /-- List representation of the full typed receiver view, including its private share. -/
 def viewToLists {n m : ℕ} :
@@ -177,9 +177,9 @@ theorem weights_ofFn {m : ℕ} (r : Fin m → F) : weights m (List.ofFn r) = Lis
   simp
 
 /-- The total list algorithm agrees with the existing algebraic check on valid wire maps. -/
-theorem checkValue_ofFn {n m : ℕ} (left right output : Fin m → Fin n) (z : List Bool)
+theorem checkValue_ofFn {n m : ℕ} (left right output : Fin m → Fin n)
     (delta : F) (q : Fin (n + 1) → F) (d : Fin n → F) (r : Fin m → F) :
-    checkValue (inputOfMaps left right output z) (delta, List.ofFn q)
+    checkValue (inputOfMaps left right output) (delta, List.ofFn q)
       (List.ofFn d) (List.ofFn r) = maskedMulCheckValue left right output delta q d r := by
   simp only [checkValue, inputOfMaps, List.length_ofFn, weights_ofFn]
   have hzip :
@@ -219,8 +219,8 @@ state effects. The public input and vector dimensions are tied by the explicit l
 theorem eval_simulate {n m : ℕ} (left right output : Fin m → Fin n)
     (sample : ProbComp F) (hsample : ProbComp.eval sample = PMF.uniformOfFintype F)
     (receiver : Receiver F I First State Result) (layout : I → Input)
-    (first : I → Share F → List F → First) (input : I) (z : List Bool)
-    (hlayout : layout input = inputOfMaps left right output z) :
+    (first : I → Share F → List F → First) (input : I)
+    (hlayout : layout input = inputOfMaps left right output) :
     ProbComp.eval (simulate sample receiver layout first input) =
       (ProbComp.eval (maskedMulCheckReceiverSimulate left right output
         ((receiver.mapFirst first).strategy n List.ofFn (Fin.val (n := m))) input)).map
@@ -234,7 +234,7 @@ theorem eval_simulate {n m : ℕ} (left right output : Fin m → Fin n)
     PMF.bind_map, PMF.map_bind, PMF.pure_map, inputOfMaps, List.length_ofFn]
   simp only [Function.comp_def, weights_eq_ofFn, viewToLists]
   have hv (delta : F) (q : Fin (n + 1) → F) (d : Fin n → F) (r : Fin m → F) :=
-    checkValue_ofFn left right output z delta q d r
+    checkValue_ofFn left right output delta q d r
   simp only [inputOfMaps] at hv
   simp only [hv]
 
@@ -244,13 +244,13 @@ retains the raw corrections; a sender-realizable transformed transcript needs a 
 theorem receiverView_eq_eval_simulate {n m : ℕ} (left right output : Fin m → Fin n)
     (sample : ProbComp F) (hsample : ProbComp.eval sample = PMF.uniformOfFintype F)
     (receiver : Receiver F I First State Result) (layout : I → Input)
-    (first : I → Share F → List F → First) (input : I) (z : List Bool)
-    (hlayout : layout input = inputOfMaps left right output z) (w : Fin n → F)
+    (first : I → Share F → List F → First) (input : I)
+    (hlayout : layout input = inputOfMaps left right output) (w : Fin n → F)
     (hw : ∀ i, w (left i) * w (right i) = w (output i)) :
     (maskedMulCheckReceiverView left right output
       ((receiver.mapFirst first).strategy n List.ofFn (Fin.val (n := m))) w input).map viewToLists =
         ProbComp.eval (simulate sample receiver layout first input) := by
   rw [maskedMulCheckReceiverView_eq_simulate left right output _ w _ hw,
-    eval_simulate left right output sample hsample receiver layout first input z hlayout]
+    eval_simulate left right output sample hsample receiver layout first input hlayout]
 
 end Cslib.Crypto.Protocols.VOLE.Native

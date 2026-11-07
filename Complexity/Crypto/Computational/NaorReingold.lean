@@ -595,10 +595,8 @@ theorem multiDDHRealTupleLaw_naorReingoldLevelTest (d : F.Desc) {n : ℕ} (k : �
       exact congrArg (· • F.generator d) (by ring)
     · simp [hxk, smul_smul, mul_comm]
   simp_rw [hfn]
-  simpa only [PMF.bind_bind, PMF.bind_map, Function.comp_def] using
-    congrArg (fun p : PMF (Fin n → ZMod (F.order d)) => p.bind
-      (fun α => F.naorReingoldEvalWithFn d n adv (F.naorReingoldHybridEval d k B α)))
-      (PMF.uniformOfFintype_update (γ := ZMod (F.order d)) ⟨k, hk⟩)
+  symm
+  exact PMF.bind_uniformOfFintype_update (⟨k, hk⟩ : Fin n) _
 
 /-- Under `multiDDHIdealTupleLaw`, `naorReingoldLevelTest` reproduces `naorReingoldHybridGame` at
 depth `k + 1`. -/

@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.UniformNat
+import Complexity.Crypto.Game.FourHop
 import Complexity.Crypto.Game.Statistical
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Crypto.Negligible.Dyadic
@@ -622,14 +623,6 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
   calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
     _ = 2 / 2 ^ n := by ring
 
-private theorem advantage_four_hop_le {G0 M0 M1 G1 : Game} {c : ℝ≥0}
-    (h0 : G0.advantage M0 ≤ c) (h1 : G1.advantage M1 ≤ c) :
-    G0.advantage G1 ≤ c + M0.advantage M1 + c := by
-  rw [Game.advantage_comm] at h1
-  rw [add_assoc]
-  exact (G0.advantage_triangle M0 G1).trans
-    (add_le_add h0 ((M0.advantage_triangle M1 G1).trans (add_le_add le_rfl h1)))
-
 /-- **Multiplicative ElGamal satisfies `Encryption.INDCPAOn` under DDH** ([BonehShoup2023],
 Exercise 11.5(a), p. 459): for any polynomial-time group description family `d : ℕ → F.Desc`,
 polynomial-time message encoder `encodeMsg`, and polynomial-time admissibility predicate `valid`
@@ -653,7 +646,7 @@ theorem DDH.indcpaOn_elGamalEncryptProb {F : PrimeOrderGroupFamily}
   have h2 : Negligible fun n => (2 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 2
   refine negligible_of_le ((h2.add hmid).add h2) fun n => ?_
   dsimp only [Pi.add_apply]
-  exact advantage_four_hop_le
+  exact Game.advantage_four_hop_le
     (F.advantage_gameOn_elGamalMsgCPAGameOn_le valid encodeMsg d adversary false n)
     (F.advantage_gameOn_elGamalMsgCPAGameOn_le valid encodeMsg d adversary true n)
 

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Josha Dekker, Devon Tuma, Kexing Ying, Samuel Schlesinger
+Authors: Josha Dekker, Devon Tuma, Kexing Ying, Karn Seth, Samuel Schlesinger
 -/
 
 module
@@ -16,7 +16,8 @@ A two-stage experiment `μ.bind f` gives an outcome `b` the probability `c` when
 second stage does (`bind_apply_of_forall`), and some possible first stage gives `b` at least the
 probability of the whole experiment (`exists_bind_apply_le`). Continuations need agree, or be
 compared, only on outcomes the first stage can produce (`bind_congr_on_support`,
-`le_bind_apply_on_support`, `bind_apply_mono_on_support`). Averages of bounded values are bounded
+`le_bind_apply_on_support`, `bind_apply_mono_on_support`, `bind_apply_le_add_on_support`). Averages
+of bounded values are bounded
 (`tsum_mul_le_of_forall_le`, `tsum_mul_le_card_mul_add`), and the pairing law holds for dependent
 second samples (`bind_sigma_apply`).
 
@@ -27,7 +28,8 @@ second samples (`bind_sigma_apply`).
   outcome probabilities of two-stage experiments.
 * `Cslib.Probability.PMF.le_bind_apply_on_support`,
   `Cslib.Probability.PMF.bind_apply_le_on_support`,
-  `Cslib.Probability.PMF.bind_apply_mono_on_support`: comparing continuations at one outcome.
+  `Cslib.Probability.PMF.bind_apply_mono_on_support`,
+  `Cslib.Probability.PMF.bind_apply_le_add_on_support`: comparing continuations at one outcome.
 * `Cslib.Probability.PMF.tsum_mul_le_of_forall_le`,
   `Cslib.Probability.PMF.tsum_mul_le_card_mul_add`: averages of bounded values.
 * `Cslib.Probability.PMF.bind_sigma_apply`: the pairing law for dependent second samples.
@@ -103,6 +105,18 @@ theorem bind_apply_mono_on_support (μ : PMF α) {f g : α → PMF β} (b : β)
   by_cases ha : a ∈ μ.support
   · exact mul_le_mul_right (h a ha) _
   · simp [(μ.apply_eq_zero_iff a).mpr ha]
+
+/-- Pointwise additive bounds on the possible first-stage results bound the whole experiment. -/
+theorem bind_apply_le_add_on_support (μ : PMF α) {f g₁ g₂ : α → PMF β} (b : β)
+    (h : ∀ a ∈ μ.support, f a b ≤ g₁ a b + g₂ a b) :
+    μ.bind f b ≤ μ.bind g₁ b + μ.bind g₂ b := by
+  simp only [PMF.bind_apply]
+  rw [← tsum_add]
+  refine tsum_le_tsum fun a => ?_
+  by_cases ha : a ∈ μ.support
+  · rw [← mul_add]
+    exact mul_le_mul_right (h a ha) _
+  · simp [(PMF.apply_eq_zero_iff μ a).2 ha]
 
 /-- Some possible outcome of the first stage of a two-stage experiment does at least as well as
 the experiment. -/

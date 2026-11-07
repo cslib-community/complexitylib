@@ -10,7 +10,6 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Core
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Finish
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Exec
-import all Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Exec
 import Complexity.Computability.WordRAM.Call
 
 /-!
@@ -94,7 +93,8 @@ theorem exec {W b m t N s r q : ℕ}
   · exact (he.regs_eq pointer_registers_preserved.2.1).trans hr
   · exact (he.regs_eq pointer_registers_preserved.2.2).trans hq
 
-/-- Allowance identity: native gather replaces only the old translated snapshot pass. -/
+/-- Allowance identity relating `CallableBoxProduct.timeBound` plus `gatherTime` to `timeBound`
+plus the translated snapshot-copy term. -/
 theorem timeBound_ledger (m t : ℕ) {N : ℕ} (qs : List (Fin N × Fin N)) :
     CallableBoxProduct.timeBound m t qs + gatherTime (N * D m) qs.length =
       timeBound m t qs + 3 * (7 * QueriedProduct.inputEnd m N qs.length + 10) := by

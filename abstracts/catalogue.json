@@ -193,14 +193,18 @@
         "ComplexityAbstracts.AndreevThresholdAbstract.gate_lower_bound",
         "ComplexityAbstracts.AndreevThresholdAbstract.gate_lower_bound_of_le_eps",
         "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound",
-        "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound_of_le_eps"
+        "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound_of_le_eps",
+        "ComplexityAbstracts.AndreevThresholdAbstract.approx_majority_gate_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.approx_majority_wire_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.majority_vote_gate_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.majority_vote_wire_lower_bound"
       ],
       "supporting_theorems": [
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_gate_lower_bound",
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_wire_lower_bound"
       ],
-      "summary": "For Andreev's function on n = 2^b + b m bits, alternating-linear polarization gives an exact depth-two weighted threshold circuit of 4·4^b + b m 2^b + 1 gates ((5/4)n^2 + 1 at 2^b = b m, improving Kane–Williams O(n^3 / log n)) and windowed average-case upper bounds for 1 - δ agreement (O(n^(3/2) sqrt(log(n / δ))) gates, O(n^(5/2) sqrt(log(n / δ))) wires) and 1/2 + ε agreement (O(ε^2 n^(3/2) sqrt(log n)) gates, O(ε^2 n^(5/2) sqrt(log n)) wires); fixed-weight threshold-shift counting and Cauchy–Schwarz improve the Kane–Williams average-case lower bounds to Omega(ε² n^(3/2) / log² n) gates and Omega(ε² n^(5/2) / log^(5/2) n) active wires in the balanced regime for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2.",
-      "scope": "Arbitrary real-weight threshold gates (THR ∘ THR), size counting all threshold gates, active wireCount summing nonzero-weight wires across gates, explicit non-asymptotic finite bounds, simultaneous fixed-weight Hoeffding–Chow union-bound tail, and explicit linear-in-b counting losses with m ≤ 2^b for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2; nonuniform."
+      "summary": "For Andreev's function on n = 2^b + b m bits, an alternating-linear shift identity gives an exact depth-two weighted threshold circuit of 2·4^b + b m 2^b + 1 gates ((3/4)n^2 + 1 at 2^b = b m, improving Kane–Williams O(n^3 / log n)) and windowed average-case upper bounds for 1 - δ agreement (O(n^(3/2) sqrt(log(n / δ))) gates, O(n^(5/2) sqrt(log(n / δ))) wires) and 1/2 + ε agreement (O(ε^2 n^(3/2) sqrt(log n)) gates, O(ε^2 n^(5/2) sqrt(log n)) wires); fixed-weight threshold-shift counting and Cauchy–Schwarz improve the Kane–Williams average-case lower bounds to Omega(ε² n^(3/2) / log² n) gates and Omega(ε² n^(5/2) / log^(5/2) n) active wires in the balanced regime for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2. Averaging extends these bounds to ε-approximate majorities of depth-two circuits, so a majority vote of t such circuits with at most s gates each needs top fan-in t = Omega(n^(3/4) / (log n · sqrt(s))) whenever 3(b + 2) / sqrt(2^b) ≤ 1/(2t) (Kane–Williams: Omega~(n^(1/2) / s^(1/3))).",
+      "scope": "Arbitrary real-weight threshold gates (THR ∘ THR), size counting all threshold gates, active wireCount summing nonzero-weight wires across gates, explicit non-asymptotic finite bounds, simultaneous fixed-weight Hoeffding–Chow union-bound tail, and explicit linear-in-b counting losses with m ≤ 2^b for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2; majority votes are stated through the number of correct depth-two members on each input, not as a depth-three circuit, and the top gate is not counted; nonuniform."
     },
     {
       "id": "constant-depth-arithmetic",
@@ -258,7 +262,7 @@
         "ComplexityAbstracts.CommunicationAbstract.equality"
       ],
       "summary": "Disjointness and parity of intersection require linear communication even with shared randomness and bounded error.",
-      "scope": "Binary protocol trees, worst-case cost and error at most one third on every input pair; explicit finite bounds and the final-answer convention."
+      "scope": "Binary protocol trees with depth bounded on the support, including unreachable branches, and error at most one third on every input pair; explicit finite bounds and the final-answer convention."
     },
     {
       "id": "sipser-lautemann",
@@ -300,6 +304,7 @@
       "module": "ComplexityAbstracts.SubexponentialSATAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.SubexponentialSATAbstract.exact_count",
+        "ComplexityAbstracts.SubexponentialSATAbstract.decidableInExpTime_KSAT",
         "ComplexityAbstracts.SubexponentialSATAbstract.not_eth",
         "ComplexityAbstracts.SubexponentialSATAbstract.not_seth",
         "ComplexityAbstracts.SubexponentialSATAbstract.satExponent_eq_zero"
@@ -307,7 +312,7 @@
       "supporting_theorems": [
         "ComplexityAbstracts.SubexponentialSATAbstract.length_encCNF"
       ],
-      "summary": "For each fixed clause width, one deterministic native machine exactly counts satisfying assignments in subexponential time and polynomial space. Every fixed-width SAT exponent is zero, and ETH and SETH are false. Native formalization of OpenAI's manuscript, revised 25 October 2026, by the contributors to #1226.",
+      "summary": "For each fixed clause width, one deterministic native machine exactly counts satisfying assignments in subexponential time and polynomial space. Each fixed-width k-SAT problem is therefore decidable in time 2^(δn)·poly(L) for every δ > 0, every fixed-width SAT exponent is zero, and ETH and SETH are false. Native formalization of OpenAI's manuscript, revised 25 October 2026, by the contributors to #1226.",
       "scope": "Explicit CNF semantics, model counts over the occurring variables, and binary formula/output encodings; the interpolation-scale exponent n (log log (n + 16))² / sqrt(log(n + 16)) from §§3–6 and Proposition 6.4, where n is the number of variables, with polynomial time overhead and polynomial workspace in the encoded formula length. Includes all fixed widths and sizes; the count is exact on every formula of the given width. This does not establish the sharper Theorem 1.1 / Appendix D bound.",
       "foundations": [
         "ComplexityAbstracts.Encoding"

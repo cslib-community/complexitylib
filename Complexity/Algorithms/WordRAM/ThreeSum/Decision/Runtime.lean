@@ -106,12 +106,12 @@ theorem packed_side_eventually_le_rpow (κ : ℕ) {ε : ℝ} (hε : 0 < ε) :
   change (t : ℝ) ≤ _
   nlinarith only [hsq, hroot, ht0, hr0]
 
-/-- The actual native catalogue allowance has the same degree-seven logarithmic estimate
+/-- The actual native emitted-node allowance has the same degree-seven logarithmic estimate
 as the finite instance count. The shared finite lemma avoids a duplicate counting proof. -/
 theorem instanceBound_le_numBound (κ n : ℕ) : instanceBound κ n ≤ numBound κ (n + 2) :=
   shifted_count_bound_le n κ
 
-/-- Every fixed positive real power eventually absorbs the actual catalogue allowance. -/
+/-- Every fixed positive real power eventually absorbs the actual emitted-node allowance. -/
 theorem instanceBound_eventually_le_rpow (κ : ℕ) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n : ℕ in atTop, (instanceBound κ n : ℝ) ≤ (n : ℝ) ^ ε := by
   have h := Nat.eventually_mul_log_add_pow_le_rpow (by decide : 1 < (2 : ℕ))

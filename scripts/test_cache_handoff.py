@@ -105,6 +105,23 @@ class HandoffTests(unittest.TestCase):
         change(data)
         path.write_text(json.dumps(data))
 
+    def test_recovery_generation_rejects_preincident_handoff_without_installing(self):
+        self.pack()
+        original = (self.build / "lib/lean/Example.olean").read_bytes()
+        self.env["CACHE_RECOVERY_GENERATION"] = "incident-20261106-1"
+        with self.assertRaisesRegex(handoff.Rejected, "mismatch"):
+            self.restore()
+        self.assertEqual((self.build / "lib/lean/Example.olean").read_bytes(), original)
+
+    def test_cache_recovery_disables_handoff_before_packing_or_api_access(self):
+        self.env["DISABLE_CACHE_RESTORE"] = "true"
+        with self.assertRaisesRegex(handoff.Rejected, "cache recovery"):
+            self.pack()
+        with self.assertRaisesRegex(handoff.Rejected, "cache recovery"):
+            self.restore()
+        self.assertFalse(self.output.exists())
+        self.assertEqual(self.api.calls, [])
+
     def replace_archive(self, members):
         archive = self.output / "build.tar.gz"
         size = 0
