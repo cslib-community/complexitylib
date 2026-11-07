@@ -1427,6 +1427,10 @@ public import Complexity.Computability.Complexity.Classes.ArthurMerlin.GraphNonI
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.PH
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound
+public import Complexity.Computability.Complexity.Classes.AverageCase.BoundedHalting
+public import Complexity.Computability.Complexity.Classes.AverageCase.Collapse
+public import Complexity.Computability.Complexity.Classes.AverageCase.Completeness
+public import Complexity.Computability.Complexity.Classes.AverageCase.Compression
 public import Complexity.Computability.Complexity.Classes.AverageCase.Distributional
 public import Complexity.Computability.Complexity.Classes.AverageCase.Ensemble
 public import Complexity.Computability.Complexity.Classes.AverageCase.MildHardness
@@ -3966,6 +3970,7 @@ public import Complexity.Foundations.Data.BitString.InitialTests
 public import Complexity.Foundations.Data.BitString.Isolation
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.List.Binary
+public import Complexity.Foundations.Data.BitString.List.BinaryOrder
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Positions
 public import Complexity.Foundations.Data.BitString.List.Vote
@@ -4093,6 +4098,7 @@ public import Complexity.Foundations.Data.Nat.Asymptotics
 public import Complexity.Foundations.Data.Nat.BinarySize
 public import Complexity.Foundations.Data.Nat.Bits
 public import Complexity.Foundations.Data.Nat.Bitwise.Carry
+public import Complexity.Foundations.Data.Nat.Bitwise.CommonPrefix
 public import Complexity.Foundations.Data.Nat.Bitwise.HighestDiff
 public import Complexity.Foundations.Data.Nat.Bitwise.Multiplication
 public import Complexity.Foundations.Data.Nat.Bitwise.PackedCount
@@ -4793,6 +4799,7 @@ public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound
 public import Complexity.Probability.PMF.UniformSubset
+public import Complexity.Probability.PMF.Union
 public import Complexity.Probability.PairwiseIndependent
 public import Complexity.Probability.PairwiseIndependentHash
 public import Complexity.Probability.PairwiseIndependentHash.Affine
