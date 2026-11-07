@@ -85,7 +85,7 @@ The [space hierarchy](https://github.com/cslib-community/complexitylib/blob/13e6
 
 The source of [Space/Savitch.lean tests](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Space/Savitch.lean#L1) supplies a small directed path, forward and backward reachability cases, and actual stack-machine examples. [Reingold tests](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Reingold.lean#L1) supplies connected and disconnected instances, the concrete adjacency encoding and transformation checks. These are useful nonvacuity witnesses. They do not replace a source-level assessment of a bound or a comparison to the original theorem.
 
-The following broader endpoints remain outside the completed results: optimal general time-hierarchy overhead, sublinear-space hierarchy at the logarithmic threshold, a general `NSPACE(s) → DSPACE(s²)` class theorem, the NEXP-to-MIP lower inclusion, and the game-theoretic parallel-repetition upper bound. The existing bounded or conditional theorems remain valid useful results; they do not complete these stronger statements.
+The following broader endpoints remain outside the completed results: optimal general time-hierarchy overhead, sublinear-space hierarchy at the logarithmic threshold, a general `NSPACE(s) → DSPACE(s²)` class theorem, and the NEXP-to-MIP lower inclusion. The existing bounded or conditional theorems remain valid useful results; they do not complete these stronger statements.
 
 [complexitylib]: ../sources.md#complexitylib
 [dinur2007]: ../sources.md#dinur2007
