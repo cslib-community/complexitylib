@@ -754,6 +754,10 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Width
 public import Complexity.Algorithms.WordRAM.ThreeSum.LowerBound
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
+public import Complexity.Computability.BlumComplexity.Basic
+public import Complexity.Computability.BlumComplexity.Fuel
+public import Complexity.Computability.BlumComplexity.Gap
+public import Complexity.Computability.BlumComplexity.RecursiveRelatedness
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
 public import Complexity.Computability.Catalytic.Comparison
@@ -3836,6 +3840,7 @@ public import Complexity.Foundations.Combinatorics.UniformSchedules
 public import Complexity.Foundations.Combinatorics.WeightBudget
 public import Complexity.Foundations.Combinatorics.WeightedCut
 public import Complexity.Foundations.Combinatorics.WeightedCut.Multigraph
+public import Complexity.Foundations.Computability.ComputablePred
 public import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 public import Complexity.Foundations.Control.Monad.Memoize
 public import Complexity.Foundations.Data.BiTape

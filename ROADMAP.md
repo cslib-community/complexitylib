@@ -463,6 +463,12 @@ index links to canonical definitions rather than keeping a second set.
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
+- **Abstract (Blum) complexity** ([#2866]): Blum complexity measures over Mathlib's
+  `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
+  almost-everywhere classes and recursive relatedness, are in `Computability/BlumComplexity`.
+  Remaining: Blum's speedup theorem, the McCreight–Meyer union theorem, the compression theorem
+  and honesty, and Blum measures for native multitape time and space through a Gödel-numbering
+  bridge from native descriptions.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
@@ -1262,3 +1268,4 @@ not planned, not as proved.
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
 [#2812]: https://github.com/cslib-community/complexitylib/issues/2812
 [#2855]: https://github.com/cslib-community/complexitylib/issues/2855
+[#2866]: https://github.com/cslib-community/complexitylib/issues/2866
