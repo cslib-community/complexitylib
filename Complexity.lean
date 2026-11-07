@@ -4311,6 +4311,7 @@ public import Complexity.Languages.Probabilistic.Oracle.Simulation
 public import Complexity.Languages.Probabilistic.Oracle.Support
 public import Complexity.Languages.Probabilistic.Oracle.Transcript
 public import Complexity.Languages.Probabilistic.Presample
+public import Complexity.Languages.Probabilistic.QueriesWith
 public import Complexity.Languages.Probabilistic.QueryCount
 public import Complexity.Languages.Probabilistic.QueryCount.Support
 public import Complexity.Languages.Probabilistic.RandomOracle
