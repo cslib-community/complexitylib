@@ -667,10 +667,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   structures and algorithms.
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
-- **Logical lower-bound methods:** Ehrenfeucht–Fraïssé and pebble games with their logical
-  equivalence theorems, locality and concrete nondefinability results; then counting and
-  fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Reuse upstream
-  model-theoretic foundations and connect the methods to the ordered capture theorems.
+- **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
+  vocabularies, add games for vocabularies with constants, pebble games with their
+  finite-variable equivalence theorems, Hanf and Gaifman locality, and further nondefinability
+  results such as connectivity and acyclicity of finite graphs; then
+  counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
+  the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
@@ -707,6 +709,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
   PCP, CSP classifications and relaxation gaps, with assumptions such as the Unique Games
   Conjecture stated explicitly. The 2-to-2 games theorem waits for [#886].
+- **Approximation algorithms:** a general interface for approximation ratios of optimization
+  problems, under which polynomial-time algorithms such as Johnson's `7 / 8` algorithm for
+  MAX-E3SAT meet matching hardness results such as Håstad's ([#886]); LP and SDP rounding, such
+  as Goemans–Williamson for MAX-CUT and MAX-SAT.
 - **A practical PCP construction:** a reasonably runnable construction and its cost on complete
   reductions; rotation certificates polynomial in the bit length of a vertex name; machine-level
   error reduction and extractors from expander walks, with certified seed and evaluation costs.
@@ -865,15 +871,21 @@ each statement against the numbered result. Organize modules by subject, not cha
   recovery; communication-to-streaming transfers with explicit state encodings and pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
-  PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. Give the
+  PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. For realizable
+  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), prove
+  the VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)`, first for countable domains and
+  then for general well-behaved classes. Give the
   computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
   costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
   comparisons where justified, distinguishing restricted-model bounds from unrestricted
   computational hardness. Use the [distributional framework](#average-case-complexity).
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
-  linearity testing have explicit decision-tree query bounds. Remaining: further access models,
-  tolerant and distribution testing, query and sample bounds, canonical testers and lower bounds.
+  linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
+  `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
+  lower bound. Remaining: further access models, the odd-domain lower bound, identity testing by reduction to
+  uniformity, closeness, tolerant and structured-property distribution testing, canonical testers
+  and further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
@@ -975,10 +987,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Output/count validation and complete native circuit-bound VOLE execution (#2765; #643;
   prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
   and fresh-session amplification remain separate endpoints.
-- **Markov-chain sampling:** finite kernels, stationarity, reversibility and total-variation
-  mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
-  Metropolis sampling for encoded rational target weights, charging initialization, arithmetic
-  and every transition, with support and mixing hypotheses explicit.
+- **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
+  stationarity, reversibility, total-variation mixing times, Markovian couplings and reversible
+  Metropolis chains, with the lazy hypercube walk as client
+  (`Probability/BitString/LazyRandomWalk`, #2857). Extend with path coupling, conductance,
+  canonical-path and spectral-gap arguments. Implement Metropolis sampling for encoded rational
+  target weights, charging initialization, arithmetic and every transition, with support and
+  mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** interfaces separating relative error, failure
   probability, output-distribution error and runtime, including zero-count instances. Start
   with a complete DNF-counting FPRAS; prove sampling/counting reductions for suitably
@@ -993,10 +1008,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Moser–Tardos resampling:** an actual resampling program, its correctness and expected
   resampling bound, and native sampling and event-detection costs, building on the variable
   form of the Local Lemma.
-- **Conditional expectations and pessimistic estimators:** certified choice and update rules,
-  algorithmic alteration, and concrete coloring, satisfiability or combinatorial-construction
-  clients. Preserve the quantitative guarantee when converting an existence argument into a
-  deterministic or randomized algorithm.
+- **Conditional expectations and pessimistic estimators:** algorithmic alteration, and coloring,
+  MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
+  (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting
+  an existence argument into a deterministic or randomized algorithm.
 
 ## Machines, RAM and data structures
 
@@ -1112,7 +1127,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   bounds through concrete realizations, including replacement and initialization conventions.
 - **Distributed complexity:** LOCAL and CONGEST models with explicit identifiers, round,
   message-size and randomness conventions; locality lower bounds and communication-to-round
-  reductions with corresponding algorithmic examples.
+  reductions with corresponding algorithmic examples. The deterministic LOCAL model on oriented
+  cycles, Cole–Vishkin and Linial's `log*` bound exist
+  (`Complexity/Computability/Distributed/OrientedCycle/`). Open: general graphs with port
+  numbering, Linial's `O(Δ²)` colouring and `(Δ + 1)`-colouring/MIS on bounded-degree graphs,
+  maximal independent sets on cycles as a corollary of 3-colouring (both bounds), a bridge from
+  `IsProperColoring` to Mathlib's `SimpleGraph.Coloring` on `SimpleGraph.cycleGraph`, CONGEST
+  message bounds, randomized LOCAL algorithms, and closing the additive gap
+  between the `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles.
 
 ## Coverage and reuse
 
