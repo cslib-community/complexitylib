@@ -106,6 +106,6 @@ example :
 -- The specification and both forms of the separation at `n = 1`.
 example : ‖(simonInit 0 : State 2 (SimonWork 3 1))‖ = 1 := (simonAlg_spec E1 0).1
 
-example : (1 + 2) * 1 ≤ 3 * Nat.log 2 2 ^ 2 := (simon_separation_inputLength E1 le_rfl).1
+example : (1 + 2) * 1 ≤ 3 * Nat.log 2 2 ^ 2 := (simon_separation_inputLength E1 0 le_rfl).2.1
 
 end ComplexityTests.QuantumSimon

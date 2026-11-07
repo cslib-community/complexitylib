@@ -23,11 +23,14 @@ to decide whether `s ≠ 0`. With `s = 0` the promise says that `f` is injective
 **The model.** We work with bit queries: the input is the truth table `X : Fin N → Bool` of the
 `N = n · 2^n` output bits of `f`, with the positions identified with the pairs `(a, j)` (input `a`,
 output bit `j`) by an equivalence `E : Fin N ≃ ({0,1}^n) × Fin n`, and
-`Cslib.QueryComplexity.simonFun E X` is the function with `f(a)_j = X(E⁻¹(a, j))`. A query to one
-value `f(a)` costs `n` bit queries, so the lower bound below, which counts bit queries, is a lower
-bound on value queries as well (de Wolf §3.1 makes the same identification). The matching quantum
+`Cslib.QueryComplexity.simonFun E X` is the function with `f(a)_j = X(E⁻¹(a, j))` (de Wolf §3.1
+views the problem in the same way, as a function of `n 2^n` binary variables). The matching quantum
 upper bound, in the same bit-query model, is in
-`Complexity/Computability/QueryComplexity/Quantum/Simon.lean`.
+`Complexity/Computability/QueryComplexity/Quantum/Simon.lean`. Both sides count bit queries, so
+the comparison is like for like. Simulating a value query `f(a)` by `n` bit queries transfers the
+lower bound below to value queries only up to that factor (`q_v ≥ 2^{n/2} / n`); the coupling
+argument, which uses only that `q` queries touch at most `q` inputs `a`, would give `2^n ≤ q_v²`
+directly, but that is not formalized here.
 
 **The lower bound.** A randomized decision tree that decides whether `s ≠ 0` with error `ε` on every
 promise input has depth `q` with `2 (2^n - 1) (1 - 2ε) ≤ (q² - q)(1 - ε)`
@@ -43,10 +46,11 @@ queries on `π ∘ rep_s` contains no pair `{a, a ⊕ s}`, then the involution t
 exactly when `A` meets `{a, a ⊕ s}` in an element other than the representative turns `π` into a
 permutation `ρ` with `π ∘ rep_s = ρ` on `A`; so `t` behaves identically on both inputs, and this is
 a bijection. Since `|A| ≤ q`, at most `(q² - q)/2` nonzero strings `s` have a pair in `A`. Summing
-over `s` and `π`, a tree that errs on `c₀` injective hard inputs errs on at least
-`(2^n - 1 - (q² - q)/2) c₀` hard inputs with nonzero hidden strings; averaging over the trees of
-the randomized tree, the injective inputs force error at least `1 - ε` there and the others allow
-at most `ε`, which gives the inequality.
+over `s` and `π`, a tree that answers `false` on `c₀` injective hard inputs answers `false`
+(wrongly) on at least `(2^n - 1 - (q² - q)/2) c₀` hard inputs with nonzero hidden strings.
+Averaging over the trees of the randomized tree, the answer `false` has probability at least
+`1 - ε` on each injective input and at most `ε` on each input with a nonzero hidden string, which
+gives the inequality.
 
 ## Main definitions
 
@@ -93,7 +97,7 @@ is bitwise exclusive or. -/
   ∀ a b, f a = f b ↔ b = a ∨ b = a + s
 
 /-- The truth table of `g`: position `i` holds the bit `g(a)_j` for `(a, j) = E i`. -/
-@[expose] def simonInput (E : Fin N ≃ (Fin n → Bool) × Fin n)
+def simonInput (E : Fin N ≃ (Fin n → Bool) × Fin n)
     (g : (Fin n → Bool) → Fin n → Bool) : Fin N → Bool := fun i => g (E i).1 (E i).2
 
 @[simp] theorem simonFun_simonInput (E : Fin N ≃ (Fin n → Bool) × Fin n)
@@ -351,8 +355,9 @@ private theorem sum_card_filter_comm {α γ : Type*} (S : Finset α) (T : Finset
   refine sum_congr rfl fun ρ _ => ?_
   by_cases hP : P ρ <;> simp [hP]
 
-/-- **The per-tree inequality**: a tree of depth at most `q` that errs on `c₀` injective hard
-inputs errs on at least `(2^n - 1 - (q² - q)/2) c₀` hard inputs with nonzero hidden strings. -/
+/-- **The per-tree inequality**: a tree of depth at most `q` that answers `false` on `c₀` injective
+hard inputs answers `false` (wrongly) on at least `(2^n - 1 - (q² - q)/2) c₀` hard inputs with
+nonzero hidden strings. -/
 private theorem card_simonHard_le {q : ℕ} (ht : t.depth ≤ q) :
     2 * (2 ^ n - 1) * #{ρ : Equiv.Perm (Fin n → Bool) | t.eval (simonHard E ρ 0) = false} ≤
       2 * ∑ s ∈ univ.erase (0 : Fin n → Bool),
@@ -411,16 +416,15 @@ private theorem card_simonHard_le {q : ℕ} (ht : t.depth ≤ q) :
         rw [sum_add_distrib, ← mul_sum, sum_const, smul_eq_mul, mul_comm (#_)]
     _ ≤ _ := Nat.add_le_add_right (Nat.mul_le_mul_left 2 (hswap ▸ h1)) _
 
-/-- The number of wrong answers of `t` on the hard inputs with nonzero hidden strings. -/
-private noncomputable def err1 (t : DecisionTree (Fin N) Bool) : ℕ :=
+/-- The number of wrong answers (`false`) of `t` on the hard inputs with nonzero hidden strings. -/
+private noncomputable def numFalse1 (t : DecisionTree (Fin N) Bool) : ℕ :=
   ∑ s ∈ univ.erase (0 : Fin n → Bool),
     #{π : Equiv.Perm (Fin n → Bool) | t.eval (simonHard E π s) = false}
 
-/-- The number of wrong answers of `t` on the injective hard inputs. -/
-private noncomputable def err0 (t : DecisionTree (Fin N) Bool) : ℕ :=
+/-- The number of `false` answers of `t` on the injective hard inputs; these answers are correct. -/
+private noncomputable def numFalse0 (t : DecisionTree (Fin N) Bool) : ℕ :=
   #{ρ : Equiv.Perm (Fin n → Bool) | t.eval (simonHard E ρ 0) = false}
 
-open Convexity in
 /-- **The classical randomized lower bound for Simon's problem**: a randomized decision tree that
 decides whether the hidden string is nonzero with error `ε` on every promise input has depth `q`
 with `2 (2^n - 1) (1 - 2ε) ≤ (q² - q)(1 - ε)`. -/
@@ -439,26 +443,26 @@ theorem simon_randomized_lower_bound (μ : RandomizedDecisionTree (Fin N) Bool)
       Fintype.card_fin, hM]
   set K : ℝ := (Fintype.card (Equiv.Perm (Fin n → Bool)) : ℝ) with hKdef
   have hK : 0 < K := Nat.cast_pos.mpr Fintype.card_pos
-  have hpt : ∀ t ∈ μ.weights.support, 2 * (2 ^ n - 1) * (err0 E t : ℝ) ≤
-      2 * (err1 E t : ℝ) + ((μ.depth * μ.depth - μ.depth : ℕ) : ℝ) * (err0 E t : ℝ) := by
+  have hpt : ∀ t ∈ μ.weights.support, 2 * (2 ^ n - 1) * (numFalse0 E t : ℝ) ≤
+      2 * (numFalse1 E t : ℝ) + ((μ.depth * μ.depth - μ.depth : ℕ) : ℝ) * (numFalse0 E t : ℝ) := by
     intro t ht
     have h := card_simonHard_le E t (RandomizedDecisionTree.depth_le_depth ht)
     rw [← hM]
-    simp only [err0, err1]
+    simp only [numFalse0, numFalse1]
     exact_mod_cast h
-  have herr0 : ∀ t : DecisionTree (Fin N) Bool, (err0 E t : ℝ) = ∑ ρ : Equiv.Perm (Fin n → Bool),
-      if t.eval (simonHard E ρ 0) = false then 1 else 0 := fun t => by
-    rw [err0, natCast_card_filter]
-  have herr1 : ∀ t : DecisionTree (Fin N) Bool, (err1 E t : ℝ) =
+  have hnumFalse0 : ∀ t : DecisionTree (Fin N) Bool, (numFalse0 E t : ℝ) =
+      ∑ ρ : Equiv.Perm (Fin n → Bool), if t.eval (simonHard E ρ 0) = false then 1 else 0 :=
+    fun t => by rw [numFalse0, natCast_card_filter]
+  have hnumFalse1 : ∀ t : DecisionTree (Fin N) Bool, (numFalse1 E t : ℝ) =
       ∑ s ∈ univ.erase (0 : Fin n → Bool), ∑ π : Equiv.Perm (Fin n → Bool),
         if t.eval (simonHard E π s) = false then 1 else 0 := fun t => by
-    rw [err1, Nat.cast_sum]
+    rw [numFalse1, Nat.cast_sum]
     exact sum_congr rfl fun s _ => natCast_card_filter _ _
-  have hS1 : ∑ t ∈ μ.weights.support, μ.weights t * (err1 E t : ℝ) ≤ (2 ^ n - 1) * K * ε := by
-    calc ∑ t ∈ μ.weights.support, μ.weights t * (err1 E t : ℝ)
+  have hS1 : ∑ t ∈ μ.weights.support, μ.weights t * (numFalse1 E t : ℝ) ≤ (2 ^ n - 1) * K * ε := by
+    calc ∑ t ∈ μ.weights.support, μ.weights t * (numFalse1 E t : ℝ)
         = ∑ s ∈ univ.erase (0 : Fin n → Bool), ∑ π : Equiv.Perm (Fin n → Bool),
             μ.errorProb F (simonHard E π s) := by
-          simp only [herr1, mul_sum]
+          simp only [hnumFalse1, mul_sum]
           rw [sum_comm]
           refine sum_congr rfl fun s hs => ?_
           rw [sum_comm]
@@ -474,7 +478,7 @@ theorem simon_randomized_lower_bound (μ : RandomizedDecisionTree (Fin N) Bool)
       _ = (2 ^ n - 1) * K * ε := by
           rw [sum_const, sum_const, card_univ, nsmul_eq_mul, nsmul_eq_mul, hcardR, hKdef]
           ring
-  have hS0 : K * (1 - ε) ≤ ∑ t ∈ μ.weights.support, μ.weights t * (err0 E t : ℝ) := by
+  have hS0 : K * (1 - ε) ≤ ∑ t ∈ μ.weights.support, μ.weights t * (numFalse0 E t : ℝ) := by
     have hw : ∑ t ∈ μ.weights.support, μ.weights t = 1 := μ.total
     have hρ : ∀ ρ, μ.errorProb F (simonHard E ρ 0) = 1 - ∑ t ∈ μ.weights.support,
         μ.weights t * if t.eval (simonHard E ρ 0) = false then 1 else 0 := by
@@ -487,18 +491,19 @@ theorem simon_randomized_lower_bound (μ : RandomizedDecisionTree (Fin N) Bool)
       refine (sum_congr rfl fun t _ => ?_).trans hw
       cases t.eval (simonHard E ρ 0) <;> simp
     have hsum : ∑ ρ : Equiv.Perm (Fin n → Bool), μ.errorProb F (simonHard E ρ 0) =
-        K - ∑ t ∈ μ.weights.support, μ.weights t * (err0 E t : ℝ) := by
-      simp only [hρ, sum_sub_distrib, sum_const, card_univ, nsmul_eq_mul, mul_one, herr0, mul_sum]
+        K - ∑ t ∈ μ.weights.support, μ.weights t * (numFalse0 E t : ℝ) := by
+      simp only [hρ, sum_sub_distrib, sum_const, card_univ, nsmul_eq_mul, mul_one, hnumFalse0,
+        mul_sum]
       rw [sum_comm]
     have hle : ∑ ρ : Equiv.Perm (Fin n → Bool), μ.errorProb F (simonHard E ρ 0) ≤ K * ε := by
       calc _ ≤ ∑ ρ : Equiv.Perm (Fin n → Bool), ε :=
             sum_le_sum fun ρ _ => hμ _ _ (simonPromise_simonHard E ρ 0)
         _ = K * ε := by rw [sum_const, card_univ, nsmul_eq_mul]
     linarith
-  have hcomb : 2 * (2 ^ n - 1) * ∑ t ∈ μ.weights.support, μ.weights t * (err0 E t : ℝ) ≤
-      2 * ∑ t ∈ μ.weights.support, μ.weights t * (err1 E t : ℝ) +
+  have hcomb : 2 * (2 ^ n - 1) * ∑ t ∈ μ.weights.support, μ.weights t * (numFalse0 E t : ℝ) ≤
+      2 * ∑ t ∈ μ.weights.support, μ.weights t * (numFalse1 E t : ℝ) +
         ((μ.depth * μ.depth - μ.depth : ℕ) : ℝ) *
-          ∑ t ∈ μ.weights.support, μ.weights t * (err0 E t : ℝ) := by
+          ∑ t ∈ μ.weights.support, μ.weights t * (numFalse0 E t : ℝ) := by
     rw [mul_sum, mul_sum, mul_sum, ← sum_add_distrib]
     refine sum_le_sum fun t ht => ?_
     have := mul_le_mul_of_nonneg_left (hpt t ht) (μ.weights_nonneg t)
@@ -510,8 +515,8 @@ theorem simon_randomized_lower_bound (μ : RandomizedDecisionTree (Fin N) Bool)
     have : (1 : ℝ) ≤ 2 ^ n := one_le_pow₀ (by norm_num)
     linarith
   generalize ((μ.depth * μ.depth - μ.depth : ℕ) : ℝ) = Q at hcomb hQ ⊢
-  generalize ∑ t ∈ μ.weights.support, μ.weights t * (err0 E t : ℝ) = W0 at hcomb hS0
-  generalize ∑ t ∈ μ.weights.support, μ.weights t * (err1 E t : ℝ) = W1 at hcomb hS1
+  generalize ∑ t ∈ μ.weights.support, μ.weights t * (numFalse0 E t : ℝ) = W0 at hcomb hS0
+  generalize ∑ t ∈ μ.weights.support, μ.weights t * (numFalse1 E t : ℝ) = W1 at hcomb hS1
   by_cases hsign : 2 * (2 ^ n - 1) - Q ≤ 0
   · have h1 : 0 ≤ (Q - 2 * (2 ^ n - 1)) * (1 - ε) := mul_nonneg (by linarith) (by linarith)
     have h2 : 0 ≤ (2 ^ n - 1) * ε := mul_nonneg hM0 hε0
@@ -556,6 +561,7 @@ theorem simon_two_pow_le_depth_sq (μ : RandomizedDecisionTree (Fin N) Bool)
     generalize μ.depth * μ.depth = D at h hle ⊢
     generalize 2 ^ n = P at h h2 ⊢
     omega
+
 /-- **Exponential classical lower bound, as a randomized query complexity**: for `n ≥ 1` and every
 total function `F` that answers Simon's problem on the promise inputs, `2^n ≤ R_{1/3}(F)²`. -/
 theorem simon_two_pow_le_randomizedComplexity_sq (F : (Fin N → Bool) → Bool)

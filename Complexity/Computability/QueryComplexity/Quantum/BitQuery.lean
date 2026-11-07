@@ -46,7 +46,7 @@ variable {N : ℕ} {W : Type*} [Fintype W]
 permutations `π 0, …, π T` separated by bit queries, then the final isometry `post`. The `t`-th
 isometry of the underlying phase-query algorithm is `H π_t H` with Hadamard gates `H` on the control
 bit (`Cslib.Quantum.hadCtrl`), except that `prep` replaces the first and `post` the last `H`. -/
-@[expose] noncomputable def bitQueryAlg (T : ℕ) (π : ℕ → Equiv.Perm (Fin N × Bool × W))
+noncomputable def bitQueryAlg (T : ℕ) (π : ℕ → Equiv.Perm (Fin N × Bool × W))
     (prep post : State N W →ₗᵢ[ℂ] State N W) : ℕ → State N W →ₗᵢ[ℂ] State N W := fun t =>
   (if t = T then post else hadCtrl).comp
     ((permute (π t)).toLinearIsometry.comp (if t = 0 then prep else hadCtrl))

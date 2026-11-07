@@ -50,10 +50,11 @@ separation is exponential: `n (n + 2)` quantum bit queries against `2^{n/2}` ran
 (`Cslib.Quantum.simon_separation`). In terms of the input length `N = n 2^n`, for which
 `n ≤ log₂ N`, the quantum algorithm makes at most `3 log₂² N` queries and every such randomized
 decision tree has `N ≤ q² log₂ N`, so `q ≥ (N / log₂ N)^{1/2} = N^{1/2 - o(1)}`
-(`Cslib.Quantum.simon_separation_inputLength`). Both sides count bit queries. A query to a value
-`f(a)` costs `n` bit queries, so the quantum side pays a factor `n` over the `n + 2` value queries
-of de Wolf §3.2, while the classical lower bound is also a lower bound on value queries: the bit
-model does not inflate the separation.
+(`Cslib.Quantum.simon_separation_inputLength`). Both sides count bit queries, so the comparison is
+like for like; the quantum side pays a factor `n` over the `n + 2` value queries of de Wolf §3.2.
+Simulating value queries by bit queries transfers the classical bound to value queries only up to
+that factor (`q_v ≥ 2^{n/2} / n`); the coupling argument, which uses only that `q` queries touch at
+most `q` inputs `a`, would give `2^n ≤ q_v²` directly, but that is not formalized.
 
 **Source mapping.** de Wolf §3.2 repeats the subroutine `O(n)` times and solves the resulting
 linear system to find `s`; de Wolf §3.3.2 proves the classical lower bound for the decision
@@ -518,10 +519,16 @@ theorem simon_separation (E : Fin N ≃ (Fin n → Bool) × Fin n) (i₀ : Fin N
       2 ^ n ≤ μ.depth ^ 2 :=
   ⟨(simonAlg_spec E i₀).2, fun μ F hF hμ => simon_two_pow_le_depth_sq E μ F hF hμ hn⟩
 
-/-- **The separation in the input length** `N = n 2^n`, for `n ≥ 1`: Simon's algorithm makes at most
-`3 log₂² N` queries, while every randomized decision tree deciding Simon's problem with error
-`1/3` has depth `q` with `N ≤ q² log₂ N`, so `q ≥ (N / log₂ N)^{1/2} = N^{1/2 - o(1)}`. -/
-theorem simon_separation_inputLength (E : Fin N ≃ (Fin n → Bool) × Fin n) (hn : 1 ≤ n) :
+/-- **The separation in the input length** `N = n 2^n`, for `n ≥ 1`: Simon's algorithm decides
+Simon's problem with error below `1/4` using `n (n + 2)` queries, which is at most `3 log₂² N`,
+while every randomized decision tree deciding it with error `1/3` (as the restriction to the
+promise inputs of a total function `F`) has depth `q` with `N ≤ q² log₂ N`, so
+`q ≥ (N / log₂ N)^{1/2} = N^{1/2 - o(1)}`. -/
+theorem simon_separation_inputLength (E : Fin N ≃ (Fin n → Bool) × Fin n) (i₀ : Fin N)
+    (hn : 1 ≤ n) :
+    (∀ X s, SimonPromise (simonFun E X) s →
+      |measureProb (run (simonAlg (n + 2) E i₀) (simonInit i₀) X ((n + 2) * n))
+        (simonAccept (n + 2) n) - bitVal ℝ (decide (s ≠ 0))| < 1 / 4) ∧
     (n + 2) * n ≤ 3 * Nat.log 2 N ^ 2 ∧
     ∀ (μ : RandomizedDecisionTree (Fin N) Bool) (F : (Fin N → Bool) → Bool),
       (∀ X s, SimonPromise (simonFun E X) s → F X = decide (s ≠ 0)) →
@@ -533,7 +540,7 @@ theorem simon_separation_inputLength (E : Fin N ≃ (Fin n → Bool) × Fin n) (
     refine Nat.le_log_of_pow_le (by norm_num) ?_
     rw [hN]
     exact Nat.le_mul_of_pos_right _ hn
-  refine ⟨?_, fun μ F hF hμ => ?_⟩
+  refine ⟨(simonAlg_spec E i₀).2, ?_, fun μ F hF hμ => ?_⟩
   · calc (n + 2) * n ≤ (3 * n) * n := Nat.mul_le_mul_right _ (by omega)
       _ = 3 * n ^ 2 := by ring
       _ ≤ 3 * Nat.log 2 N ^ 2 := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hlog 2)
