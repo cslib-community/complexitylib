@@ -56,8 +56,12 @@ Whether a word with index below `n` belongs to the language depends only on the 
 
 ## Main results
 
-* `Cslib.Complexity.Ladner.word_index`, `Cslib.Complexity.Ladner.two_pow_length_word_le`: every word
-  has an index, and the word with index `j` has length at most `log₂ (j + 1)`.
+* `Cslib.Complexity.Ladner.word_index`, `Cslib.Complexity.Ladner.index_word`,
+  `Cslib.Complexity.Ladner.two_pow_length_word_le`: words and indices are inverse bijections, and
+  the word with index `j` has length at most `log₂ (j + 1)`.
+* `Cslib.Complexity.Ladner.universal_desc_of_halted_map`,
+  `Cslib.Complexity.Ladner.exists_index_ge`: the universal function runs a machine from its
+  description, and every description has arbitrarily large indices.
 * `Cslib.Complexity.Ladner.unpad_pad`, `Cslib.Complexity.Ladner.pad_unpad`: padding is undone.
 * `Cslib.Complexity.Ladner.Htable_eq`: the tables hold the values of `H`.
 * `Cslib.Complexity.Ladner.H_le`, `Cslib.Complexity.Ladner.H_le_of_agrees`,
@@ -105,6 +109,28 @@ theorem two_pow_length_word_le (j : ℕ) : 2 ^ (word j).length ≤ j + 1 := by
 
 private theorem length_word_lt (j : ℕ) : (word j).length < j + 1 :=
   (Nat.lt_two_pow_self).trans_le (two_pow_length_word_le j)
+
+/-- **The index of the word with index `j` is `j`.** The binary digits of `j + 1` end with `true`:
+otherwise the word with index `j` would itself be the binary digits of `j + 1`, of length at most
+`log₂ (j + 1)`. -/
+@[simp]
+theorem index_word (j : ℕ) : index (word j) = j := by
+  have hne : (j + 1).bits ≠ [] := by rw [Ne, Nat.bits_eq_nil_iff]; omega
+  have h := Nat.foldr_bit_bits (j + 1)
+  rw [← List.dropLast_append_getLast hne, List.foldr_append, List.foldr_cons,
+    List.foldr_nil] at h
+  have hlt := Nat.foldr_bit_lt (word j)
+  have hle := two_pow_length_word_le j
+  rw [word] at hlt hle
+  rw [index, word]
+  cases hl : (j + 1).bits.getLast hne
+  · rw [hl, show Nat.bit false 0 = 0 from rfl] at h
+    omega
+  · rw [hl, show Nat.bit true 0 = 1 from rfl] at h
+    omega
+
+theorem word_injective : Function.Injective word := fun i j h => by
+  rw [← index_word i, h, index_word]
 
 /-! ### Padding -/
 
@@ -173,6 +199,44 @@ theorem mem_padSAT_congr {e e' : ℕ → ℕ} {y : List Bool} (h : ∀ m < y.len
 description at the start of the `i`-th word, and `w` under the coding `false ↦ 0`, `true ↦ 1`. -/
 def runIndexed (i : ℕ) (w : List Bool) (t : ℕ) : List ℕ × Bool :=
   universal (decodeDesc (unframe (word i)), w.map eBit, t)
+
+open Turing in
+/-- A finite binary machine halting within time `t x` with output `f x`, simulated by the
+universal function on its description for at least `t x` steps, halts with output `(f x).map eBit`.
+-/
+theorem universal_desc_of_halted_map {k : ℕ} {State : Type} [Fintype State] (eS : State ↪ ℕ)
+    (tm : MultiTapeTM k Bool State) {f : List Bool → List Bool} {t : List Bool → ℕ}
+    (h : ∀ x, (tm.runFrom (tm.initCfg x) (t x)).Halted ∧
+      (tm.runFrom (tm.initCfg x) (t x)).output = f x)
+    {x : List Bool} {T : ℕ} (hT : t x ≤ T) :
+    universal (desc eS eBit tm, x.map eBit, T) = ((f x).map eBit, true) := by
+  obtain ⟨hhalt, hout⟩ := h x
+  simp only [Cfg.Halted] at hhalt
+  rw [universal_desc, MultiTapeTM.runFrom_eq_of_halt tm _ hT hhalt, hout, hhalt]
+  rfl
+
+open Turing in
+/-- A finite binary machine halting within time `t x` with output `[f x]`, simulated by the
+universal function on its description for at least `t x` steps, halts with output `[eBit (f x)]`.
+-/
+theorem universal_desc_of_halted {k : ℕ} {State : Type} [Fintype State] (eS : State ↪ ℕ)
+    (tm : MultiTapeTM k Bool State) {f : List Bool → Bool} {t : List Bool → ℕ}
+    (h : ∀ x, (tm.runFrom (tm.initCfg x) (t x)).Halted ∧
+      (tm.runFrom (tm.initCfg x) (t x)).output = [f x])
+    {x : List Bool} {T : ℕ} (hT : t x ≤ T) :
+    universal (desc eS eBit tm, x.map eBit, T) = ([eBit (f x)], true) :=
+  universal_desc_of_halted_map eS tm (f := fun x => [f x]) h hT
+
+/-- **Every description is the description of machines with arbitrarily large indices.** -/
+theorem exists_index_ge (d : Desc) (B : ℕ) :
+    ∃ i, B ≤ i ∧ decodeDesc (unframe (word i)) = d := by
+  refine ⟨index (frame (eDesc d) ++ List.replicate B false), ?_, by
+    rw [word_index, decodeDesc_unframe_frame_append]⟩
+  have h₁ := two_pow_length_word_le (index (frame (eDesc d) ++ List.replicate B false))
+  rw [word_index, List.length_append, List.length_replicate] at h₁
+  have h₂ : B < 2 ^ ((frame (eDesc d)).length + B) :=
+    Nat.lt_two_pow_self.trans_le (Nat.pow_le_pow_right (by omega) (by omega))
+  omega
 
 /-- The clock of the machine with index `i` on inputs of length `l`. -/
 def clock (i l : ℕ) : ℕ := (2 * l + 2) ^ i

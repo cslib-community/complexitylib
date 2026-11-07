@@ -252,6 +252,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `crypto-uc` | [Call-bounded UC execution and emulation](programs-crypto-and-probability/protocols-and-privacy.md) | protocols |
 | `crypto-perfect-secrecy` | [Perfect-secrecy encryption](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
 | `crypto-secret-sharing` | [Authorized-coalition secret sharing](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
+| `privacy-differential` | [Differential privacy of output laws for an explicit adjacency relation](programs-crypto-and-probability/protocols-and-privacy.md) | privacy |
 | `average-exact-ppt` | [MildlyHardOnAverage](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
 | `average-symmetric-ppt` | [MildlyHardOnAverageToApprox](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
 | `average-one-sided-ppt` | [MildlyHardOnAverageToOneSidedApprox](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
@@ -300,3 +301,5 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `tree-evaluation-binary` | [Explicit binary Tree Evaluation](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
 | `tree-evaluation-ary` | [Fan-in-d Tree Evaluation and shared registers](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
 | `tree-evaluation-packed-controller` | [Packed tree registers and uniform raw controller](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
+| `mechanism-single-parameter` | [Single-parameter sealed-bid mechanisms and Myerson's Lemma](algorithms-and-memory/mechanism-design.md) | mechanism-design |
+| `mechanism-general-vcg` | [General-valuation mechanisms and VCG](algorithms-and-memory/mechanism-design.md) | mechanism-design |
