@@ -22,6 +22,8 @@ import Complexity.Computability.Complexity.Problems.TSP
 import Complexity.Computability.Complexity.Problems.ThreeSAT
 import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
+import Complexity.Computability.Complexity.Problems.CSP.Constant
+import Complexity.Computability.Complexity.Problems.CSP.Majority
 import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Tactic.PolyTime
 
@@ -360,6 +362,26 @@ Here preservation applies the operation coordinatewise to satisfying tuples.
 projection, and {name}`Cslib.Logic.IsPolymorphism.substitute` covers repeated
 variables. Empty and nullary relations are allowed. This characterization alone
 does not supply a polynomial-time certificate for constructing the formula.
+
+For native complexity, {name}`CSPSAT` fixes a relation alphabet, arities and list
+semantics, and rejects input scopes with incorrect lengths. Variable labels are
+arbitrary natural numbers encoded in binary by {name}`encCSP` with {name}`encNat`.
+Every fixed finite Boolean language is in NP ({name}`CSPSAT.mem_NP`). Common unary
+constants and majority give native P via {name}`CSPSAT.mem_P_of_constant` and
+{name}`CSPSAT.mem_P_of_majority`. Empty relations are handled explicitly.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : CSP.HasPolymorphism arity sem (Cslib.majority 3)) :
+    CSPSAT arity sem ∈ P (encCSP encRel encNat) :=
+  CSPSAT.mem_P_of_majority encRel arity sem h
+```
+
+The language is fixed: template lookup is finite preprocessing. The reduction
+instantiates its local clauses in native polynomial time and uses the existing
+native 2SAT theorem; no solver hypothesis is needed.
 
 # Proving a Problem NP-Complete
 %%%
