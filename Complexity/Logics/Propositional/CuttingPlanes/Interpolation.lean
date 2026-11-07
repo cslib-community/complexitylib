@@ -7,9 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Communication.BinarySearch
 public import Complexity.Logics.Propositional.CuttingPlanes
 public import Complexity.Logics.Propositional.SemanticDerivation
+import Complexity.Computability.Communication.BinarySearch
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.Ring.Abs
