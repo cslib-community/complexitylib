@@ -4410,6 +4410,7 @@ public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
 public import Complexity.GameTheory.Congestion.Affine
 public import Complexity.GameTheory.Congestion.Basic
+public import Complexity.GameTheory.Congestion.Hedge
 public import Complexity.GameTheory.Congestion.Nonatomic
 public import Complexity.GameTheory.Mechanism.CriticalBid
 public import Complexity.GameTheory.Mechanism.Knapsack
@@ -4418,6 +4419,9 @@ public import Complexity.GameTheory.Mechanism.SingleParameter
 public import Complexity.GameTheory.Mechanism.VCG
 public import Complexity.GameTheory.Mechanism.Vickrey
 public import Complexity.GameTheory.Strategic.Basic
+public import Complexity.GameTheory.Strategic.Hedge
+public import Complexity.GameTheory.Strategic.Mixed
+public import Complexity.GameTheory.Strategic.NoRegret
 public import Complexity.GameTheory.Strategic.Potential
 public import Complexity.GameTheory.Strategic.Smooth
 public import Complexity.Init
