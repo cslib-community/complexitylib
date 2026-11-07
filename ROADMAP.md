@@ -667,10 +667,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   structures and algorithms.
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
-- **Logical lower-bound methods:** Ehrenfeucht–Fraïssé and pebble games with their logical
-  equivalence theorems, locality and concrete nondefinability results; then counting and
-  fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Reuse upstream
-  model-theoretic foundations and connect the methods to the ordered capture theorems.
+- **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
+  vocabularies, add games for vocabularies with constants, pebble games with their
+  finite-variable equivalence theorems, Hanf and Gaifman locality, and further nondefinability
+  results such as connectivity and acyclicity of finite graphs; then
+  counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
+  the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
   regular, [#2885](https://github.com/cslib-community/complexitylib/issues/2885)): the strict
   inclusion FO[<] ⊊ MSO via EVEN, through a translation of first-order word sentences into
@@ -879,8 +881,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   comparisons where justified, distinguishing restricted-model bounds from unrestricted
   computational hardness. Use the [distributional framework](#average-case-complexity).
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
-  linearity testing have explicit decision-tree query bounds. Remaining: further access models,
-  tolerant and distribution testing, query and sample bounds, canonical testers and lower bounds.
+  linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
+  `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
+  lower bound. Remaining: further access models, the odd-domain lower bound, identity testing by reduction to
+  uniformity, closeness, tolerant and structured-property distribution testing, canonical testers
+  and further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
@@ -1119,7 +1124,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   bounds through concrete realizations, including replacement and initialization conventions.
 - **Distributed complexity:** LOCAL and CONGEST models with explicit identifiers, round,
   message-size and randomness conventions; locality lower bounds and communication-to-round
-  reductions with corresponding algorithmic examples.
+  reductions with corresponding algorithmic examples. The deterministic LOCAL model on oriented
+  cycles, Cole–Vishkin and Linial's `log*` bound exist
+  (`Complexity/Computability/Distributed/OrientedCycle/`). Open: general graphs with port
+  numbering, Linial's `O(Δ²)` colouring and `(Δ + 1)`-colouring/MIS on bounded-degree graphs,
+  maximal independent sets on cycles as a corollary of 3-colouring (both bounds), a bridge from
+  `IsProperColoring` to Mathlib's `SimpleGraph.Coloring` on `SimpleGraph.cycleGraph`, CONGEST
+  message bounds, randomized LOCAL algorithms, and closing the additive gap
+  between the `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles.
 
 ## Coverage and reuse
 
