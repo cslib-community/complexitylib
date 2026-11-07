@@ -25,7 +25,7 @@ Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib
 | Target collision resistance | [Complexity/Crypto/Computational/TargetCollisionResistant.lean](../../Complexity/Crypto/Computational/TargetCollisionResistant.lean), [Complexity/Crypto/Computational/NaorYung.lean](../../Complexity/Crypto/Computational/NaorYung.lean), [Complexity/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../Complexity/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Two-stage pre-key target choice and post-key second-preimage search; polynomial key/block schedules, fixed-depth `2^n`-capacity tree extension, Naor–Yung UOWHFs from `OneWayPermutation`, and Rompel–HHRVW UOWHFs from `OneWay` |
 | Inaccessible entropy and shrinking collision grids | [Complexity/Crypto/Computational/InaccessibleEntropy/Basic.lean](../../Complexity/Crypto/Computational/InaccessibleEntropy/Basic.lean), [Complexity/Crypto/Computational/InaccessibleEntropy/Amplify.lean](../../Complexity/Crypto/Computational/InaccessibleEntropy/Amplify.lean), [Complexity/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../Complexity/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Fixed-width native polynomial evaluation, accessible preimage subsets with eventual `1 / denom n` entropy gap, polynomial-size grids of `1`-bit shrinking candidates with an existential random-collision-resistant sequence (`exists_good_candidate`), and uniform `gridCount n`-way cascade concatenation |
 | Discrete logarithm and DDH | [Complexity/Crypto/Computational/DiscreteLog.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiscreteLog.lean), [Complexity/Crypto/Computational/DiffieHellman.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiffieHellman.lean) | Encoded prime-order group families, exact ideal group laws; public operations and samplers require separate certificates |
-| Decisional composite residuosity and Paillier encryption | [Complexity/Crypto/Computational/CompositeResiduosity.lean](../../Complexity/Crypto/Computational/CompositeResiduosity.lean), [Complexity/Crypto/Computational/Paillier.lean](../../Complexity/Crypto/Computational/Paillier.lean) | Factor pairs `(p, q)` of balanced moduli with validity in the type; arbitrary setup law; Paillier encryption with perfect correctness and plaintext-addition preservation under decryption over an abstract strict-PPT modulus generator, which is not constructed |
+| Decisional composite residuosity and Paillier encryption | [Complexity/Crypto/Computational/CompositeResiduosity.lean](../../Complexity/Crypto/Computational/CompositeResiduosity.lean), [Complexity/Crypto/Computational/Paillier.lean](../../Complexity/Crypto/Computational/Paillier.lean), [Complexity/Crypto/Computational/Paillier/Security.lean](../../Complexity/Crypto/Computational/Paillier/Security.lean) | Factor pairs `(p, q)` of balanced moduli with validity in the type; arbitrary setup law; Paillier encryption with perfect correctness and plaintext-addition preservation under decryption over an abstract strict-PPT modulus generator, which is not constructed; IND-CPA security under DCR with an explicit prime-growth hypothesis |
 | Quadratic residuosity, RSA, and Rabin factoring | [Complexity/Crypto/Computational/QuadraticResiduosity.lean](../../Complexity/Crypto/Computational/QuadraticResiduosity.lean), [Complexity/Crypto/Computational/RSATrapdoor.lean](../../Complexity/Crypto/Computational/RSATrapdoor.lean), [Complexity/Crypto/Computational/RabinFactoring.lean](../../Complexity/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
 | LWE, SIS, and module lattices | [Complexity/Crypto/Computational/LWE/Basic.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/LWE/Basic.lean), [Complexity/Crypto/Computational/SIS/Basic.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/SIS/Basic.lean), [Complexity/Crypto/Computational/SIS/Module.lean](../../Complexity/Crypto/Computational/SIS/Module.lean), [Complexity/Crypto/Computational/SIS/ModuleEncryption.lean](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) | Explicit dimensions, modulus and noise/norm parameters (`2^w` binary matrix words in `Basic.lean`, arbitrary `[NeZero (q security)]` moduli, Ajtai collision extraction, negacyclic `R_q = ℤ_q[X]/(X^n+1)` block-anticirculant expansion `expandModuleMatrix`, `ModuleSIS`, `RingSIS`, and `DecisionModuleLWE` in `SIS/Module.lean`, and dual-Regev `ModuleLWE` public-key encryption in `SIS/ModuleEncryption.lean`); classical uniform-PPT hardness hypotheses |
 
@@ -322,9 +322,10 @@ For composite-modulus number-theoretic hardness assumptions, import [`QuadraticR
 
 For composite residuosity and Paillier encryption, import
 [`CompositeResiduosity.lean`](../../Complexity/Crypto/Computational/CompositeResiduosity.lean) and
-[`Paillier.lean`](../../Complexity/Crypto/Computational/Paillier.lean) ([katzlindell20][katzlindell20],
-Chapter 15, Proposition 15.6, Claims 15.7–15.9, Definition 15.10, Construction 15.11, Example 15.12,
-and Definition 15.14; checked instances are in
+[`Paillier.lean`](../../Complexity/Crypto/Computational/Paillier.lean), and for IND-CPA security
+[`Paillier/Security.lean`](../../Complexity/Crypto/Computational/Paillier/Security.lean)
+([katzlindell20][katzlindell20], Chapter 15, Proposition 15.6, Claims 15.7–15.9, Definition 15.10,
+Construction 15.11, Example 15.12, Theorem 15.13, and Definition 15.14; checked instances are in
 [`ComplexityTests/Crypto/Paillier.lean`](../../ComplexityTests/Crypto/Paillier.lean)).
 A balanced modulus is a product `N = p * q` of distinct odd primes of the same bit length
 (`BalancedModulus.Valid (p, q)`). The Decisional Composite Residuosity assumption
@@ -357,12 +358,27 @@ Only this decryption-side addition identity is established; the second condition
 Definition 15.14—distributional equality between combined ciphertexts and fresh encryptions of the
 sum—does not hold for the dyadic sampler with `unitOrOne` (e.g. at `N = 143`, `n = 0`, and
 `m₁ = m₂ = 0`, fresh `encNat 1` has mass `44 / 256`, whereas multiplying two independent encryptions
-yields mass `2316 / 65536 = 579 / 16384`), and full Definition 15.14 as well as the IND-CPA reduction
-(Theorem 15.13) remain separate objectives.
+yields mass `2316 / 65536 = 579 / 16384`), and full Definition 15.14 remains a separate objective.
+
+IND-CPA security (Katz–Lindell Theorem 15.13) is in
+[`Paillier/Security.lean`](../../Complexity/Crypto/Computational/Paillier/Security.lean).
+Challenge pairs are admissible when both messages are below the modulus (`validMessages n pk m₀ m₁`,
+i.e. `m₀, m₁ < ofBits pk`). `DCR.indcpaOn_paillier` proves
+`Encryption.INDCPAOn validMessages encNat (keyGen gen) encrypt` from `DCR (fun n => eval (gen n))`
+and the extra hypothesis `hsize`: every description in the support of `gen n` has primes of at least
+`n` bits. The reduction `dcrDistinguisher A b` answers the challenge with `(1 + N) ^ m_b * y mod N ^ 2`
+and is uniform strict PPT (`isPPTOn_dcrDistinguisher`). The book samples the encryption randomness
+uniformly from the units modulo `N`; here `encrypt` uses the dyadic sampler with `unitOrOne`, which is
+within `N / 2 ^ (n + |N|) + (N - φ(N)) / N` of uniform on the units. Under `hsize` this costs at most
+`5 / 2 ^ n` per real hop, so the IND-CPA advantage is at most `10 / 2 ^ n` plus the two DCR
+advantages; without a growth condition on the primes the non-unit loss need not be negligible. The
+distributional-homomorphism gap above is unaffected.
 [`ComplexityTests/Crypto/Paillier.lean`](../../ComplexityTests/Crypto/Paillier.lean) checks the
 concrete parameters of Example 15.12 (`N = 187`, `m = 175`, `r = 83`, `c = 23911`), homomorphic
 decryption to `12` and `7` modulo `143`, validity of `(11, 13)`, uniform strict PPT for a constant
-generator `constGen`, and end-to-end correctness and homomorphic addition on its supported key pair.
+generator `constGen`, and end-to-end correctness and homomorphic addition on its supported key pair;
+for IND-CPA it evaluates `validMessages` on admissible and inadmissible pairs and applies
+`isPPTOn_dcrDistinguisher` and `DCR.indcpaOn_paillier` to a concrete strict-PPT adversary.
 
 ## Encryption and chosen-message attacks
 
