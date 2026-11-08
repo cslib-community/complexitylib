@@ -3886,7 +3886,9 @@ public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.Memory.Triple
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
+public import Complexity.DataStructure.Online.Randomized
 public import Complexity.DataStructure.Online.SkiRental
+public import Complexity.DataStructure.Online.SkiRental.Randomized
 public import Complexity.DataStructure.OrderedSet.Basic
 public import Complexity.DataStructure.OrderedSet.ExtractMin
 public import Complexity.DataStructure.OrderedSet.Spec
