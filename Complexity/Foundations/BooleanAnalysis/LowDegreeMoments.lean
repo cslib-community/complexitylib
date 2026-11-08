@@ -173,7 +173,7 @@ theorem lpNorm_two_le_exp_mul_lpNorm_one {k : ℕ} {f : (ι → Bool) → ℝ}
 /-- **The tail bound for low-degree functions**: if `f ≢ 0` has degree at most `k` and
 `t ≥ √(2 e) ^ k`, then `Pr[|f| ≥ t ‖f‖_2] ≤ exp (-(k / (2 e)) t ^ (2 / k))`
 [O'Donnell, Theorem 9.23][ODonnell2014]. The hypothesis `‖f‖_2 > 0` replaces the book's
-normalisation `‖f‖_2 = 1`: for `f = 0` the event is everything. -/
+normalization `‖f‖_2 = 1`: for `f = 0` the event is everything. -/
 theorem dens_le_exp_neg_mul_rpow {k : ℕ} {f : (ι → Bool) → ℝ} (hf : f ∈ lowDegree ℝ ι k)
     (hf0 : 0 < lpNorm 2 f) {t : ℝ} (ht : √(2 * Real.exp 1) ^ k ≤ t) :
     (dens {x | t * lpNorm 2 f ≤ |f x|} : ℝ) ≤
