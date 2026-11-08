@@ -137,7 +137,7 @@ Irit Dinur. “The PCP Theorem by Gap Amplification.” *Journal of the ACM* 54(
 <a id="dworkroth14"></a>
 ## dworkroth14
 
-Cynthia Dwork and Aaron Roth. *The Algorithmic Foundations of Differential Privacy*. Foundations and Trends in Theoretical Computer Science 9(3–4), 211–407, 2014. https://doi.org/10.1561/0400000042 . Definition 2.4, Proposition 2.1, Theorem 2.2 and its footnote, §2.3, Claim 3.5, Theorem 3.16, Theorem B.1 and Corollary B.2 were checked against the published PDF on 2026-11-07.
+Cynthia Dwork and Aaron Roth. *The Algorithmic Foundations of Differential Privacy*. Foundations and Trends in Theoretical Computer Science 9(3–4), 211–407, 2014. https://doi.org/10.1561/0400000042 . Definition 2.4, Proposition 2.1, Theorem 2.2 and its footnote, §2.3, Claim 3.5, Theorem 3.16, Definition 3.7, Theorem 3.20, Corollary 3.21, Theorem B.1 and Corollary B.2 were checked against the published PDF on 2026-11-07.
 
 <a id="erdos1947"></a>
 ## erdos1947
@@ -293,6 +293,11 @@ Kojiro Kobayashi. "On proving time constructibility of functions." *Theoretical 
 ## kortevygen18
 
 Bernhard Korte and Jens Vygen. *Combinatorial Optimization: Theory and Algorithms*, sixth edition. Springer, Algorithms and Combinatorics 21, 2018. https://doi.org/10.1007/978-3-662-56039-6 . Cited for Section 2.4 (Eulerian and bipartite graphs), which characterizes connected graphs with a closed Eulerian walk by even degrees (Euler, Hierholzer). The section was located from secondary sources and not checked against the printed book; its theorem number is not cited.
+
+<a id="kov17"></a>
+## kov17
+
+Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Differential Privacy*. IEEE Transactions on Information Theory 63(6), 4037–4049, 2017. https://doi.org/10.1109/TIT.2017.2685505 ; theorem numbering cited from arXiv:1311.0776v4, 2015. Theorem 3.4 (equation (7)) was checked against the arXiv v4 PDF on 2026-11-07; the journal metadata was checked against Crossref.
 
 <a id="lean-validation"></a>
 ## lean-validation

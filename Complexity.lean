@@ -3941,6 +3941,7 @@ public import Complexity.Foundations.Analysis.SignedDigitStream.Reciprocal
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
 public import Complexity.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
 public import Complexity.Foundations.Analysis.SpecialFunctions.ExpOneSubInvPow
+public import Complexity.Foundations.Analysis.SpecialFunctions.Hyperbolic
 public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
@@ -5020,12 +5021,14 @@ public import Complexity.MachineLearning.UniformLearning.LowDegree
 public import Complexity.MachineLearning.UniformLearning.LowDegreeClasses
 public import Complexity.MachineLearning.UniformLearning.MembershipQuery
 public import Complexity.Privacy.DifferentialPrivacy.AboveThreshold
+public import Complexity.Privacy.DifferentialPrivacy.AdvancedComposition
 public import Complexity.Privacy.DifferentialPrivacy.Basic
 public import Complexity.Privacy.DifferentialPrivacy.Composition
 public import Complexity.Privacy.DifferentialPrivacy.DiscreteLaplace
 public import Complexity.Privacy.DifferentialPrivacy.ExponentialMechanism
 public import Complexity.Privacy.DifferentialPrivacy.Hamming
 public import Complexity.Privacy.DifferentialPrivacy.Packing
+public import Complexity.Privacy.DifferentialPrivacy.PrivacyLoss
 public import Complexity.Privacy.DifferentialPrivacy.RandomizedResponse
 public import Complexity.Privacy.DifferentialPrivacy.Reconstruction
 public import Complexity.Probability.AdaptiveWeights
