@@ -1078,11 +1078,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   the countable-domain VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)` to general
   well-behaved classes over measurable domains. Statistical queries
   ([#2910](https://github.com/cslib-community/complexitylib/issues/2910)): the deterministic SQ
-  model has correlational and SQ-dimension query lower bounds, including parities. Remaining:
+  model has correlational and SQ-dimension query lower bounds, including parities, and the SQ
+  dimension characterizes weak learning under a fixed distribution
+  ([#3204](https://github.com/cslib-community/complexitylib/issues/3204)). Remaining:
   simulating SQ learners from random examples, without noise and under random classification
-  noise (Kearns's Theorems 1 and 3); the low-degree algorithm as an SQ algorithm; randomized SQ
-  learners; and Feldman's statistical dimension for a specified planted problem, with matching
-  sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
+  noise (Kearns's Theorems 1 and 3); the low-degree algorithm as an SQ algorithm; the
+  Bshouty–Feldman transfer from statistical to correlational queries; randomized SQ learners;
+  Feldman's strong SQ dimension characterizing strong learning; and Feldman's statistical
+  dimension for a specified planted problem, with matching sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
   comparisons where justified, distinguishing restricted-model bounds from unrestricted
   computational hardness. Use the [distributional framework](#average-case-complexity).
 - **Online learning in the mistake-bound model**
