@@ -1537,6 +1537,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   [#3285](https://github.com/cslib-community/complexitylib/issues/3285)): the Gomory–Hu or
   Gusfield construction with `n - 1` maximum-flow calls as a `TimeM` program over Edmonds–Karp,
   with its running-time bound, and real-valued capacities.
+- **Menger's theorem** ([#3409](https://github.com/cslib-community/complexitylib/issues/3409)):
+  remaining after the two-terminal arc, edge and vertex forms for finite digraphs and simple
+  graphs, derived from integral max-flow/min-cut via flow decomposition
+  (`Algorithms/Lean/MaxFlow/Menger`, `MaxFlow/Decomposition`,
+  [#3380](https://github.com/cslib-community/complexitylib/issues/3380)): the `A`–`B` set
+  version and the global `k`-connectivity form, Menger for infinite graphs (the Erdős–Menger
+  conjecture, proved by Aharoni and Berger), and a native `k`-connectivity test with a charged
+  running-time bound.
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core

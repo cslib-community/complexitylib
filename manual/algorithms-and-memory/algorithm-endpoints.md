@@ -247,6 +247,39 @@ Limitations:
 
 [#3320](https://github.com/cslib-community/complexitylib/issues/3320) tracks the remaining work.
 
+## Menger's theorem
+
+Import `Complexity.Algorithms.Lean.MaxFlow.Menger` ([source](../../Complexity/Algorithms/Lean/MaxFlow/Menger.lean)). The declarations live in `Cslib.Algorithms.Lean.MaxFlow`. This is a theorem-level development: there is no algorithm and no running time. Every form of [Menger's theorem][menger27] is derived from the integral max-flow min-cut theorem `Network.exists_maxFlow_eq_minCut` together with a flow decomposition, and each comes in two versions: an `iff` against all cuts, and an existence statement whose cut has exactly as many elements as there are paths. Graphs are finite and have two terminals. Directed paths are duplicate-free vertex lists (`IsDipath`). Undirected paths are Mathlib `Walk`s with `IsPath`.
+
+| Form | Source | `iff` version | Matching-cut version |
+|---|---|---|---|
+| directed, arc-disjoint | [Schrijver 2017][schrijver17], Corollary 4.1b | `exists_arcDisjoint_iff_forall_isArcCut` | `exists_arcDisjoint_eq_outArcs` |
+| directed, internally disjoint | [Schrijver 2017][schrijver17], Corollary 4.1a | `exists_internallyDisjoint_iff_forall_isVertexCut` | `exists_internallyDisjoint_eq_isVertexCut` |
+| undirected, edge-disjoint | [Diestel 2025][diestel25], Corollary 3.3.5 (ii) | `isEdgeReachable_iff_exists_edgeDisjoint` | `exists_edgeDisjoint_eq_not_reachable` |
+| undirected, internally disjoint | [Diestel 2025][diestel25], Corollary 3.3.5 (i) | `exists_internallyDisjoint_iff_forall_isVertexSeparator` | `exists_internallyDisjoint_eq_isVertexSeparator` |
+
+- **Directed, arc-disjoint.** For `s ≠ t`, the matching-cut version gives `(outArcs G S).card` pairwise arc-disjoint `s`–`t` paths for some `S` with `s ∈ S` and `t ∉ S`. Here `outArcs G S` is Schrijver's `δ^out(S)`.
+- **Directed, internally disjoint.** For `s ≠ t` not adjacent, the matching-cut version gives internally disjoint paths and an `s`–`t` vertex cut (`IsVertexCut`) of the same size. The proof splits each vertex, as in the derivation after Corollary 4.1b.
+- **Undirected, edge-disjoint.** The `iff` version characterizes Mathlib's `SimpleGraph.IsEdgeReachable k u v` by `k` pairwise edge-disjoint `u`–`v` paths. Antiparallel flow is cancelled (`Network.Flow.cancel`), so the paths share no undirected edge in either direction.
+- **Undirected, internally disjoint.** Separators are `IsVertexSeparator` (Diestel §1.4).
+
+The `iff` versions also hold in the degenerate cases: `s = t`, and for the vertex forms adjacent `s`, `t`. In those cases no cut exists and both sides are true for every `k`.
+
+Each form has a weak-duality lemma: `card_le_card_of_arcDisjoint_of_isArcCut`, `card_le_card_of_internallyDisjoint_of_isVertexCut`, `le_encard_of_edgeDisjoint_of_not_reachable` and `card_le_card_of_internallyDisjoint_of_isVertexSeparator`. Four closed-set certificates turn a vertex set `S` with `s ∈ S` and `t ∉ S` into a decidable cut check: `isArcCut_outArcs`, `isVertexCut_of_forall_adj`, `not_reachable_deleteEdges_of_forall_adj` and `isVertexSeparator_of_forall_adj`.
+
+The reusable flow layer is [Decomposition.lean](../../Complexity/Algorithms/Lean/MaxFlow/Decomposition.lean). `Network.Flow.exists_flowPaths` decomposes an integral flow of value `k` into `k` simple paths along positive-flow arcs, with each arc `(u, v)` on at most `f u v` of them. `Network.Flow.cancel` removes antiparallel flow and keeps the value.
+
+The [tests](../../ComplexityTests/Menger.lean) check two examples. In the 3-cube, between antipodal vertices, the edge and vertex connectivity are both `3`: they give three explicit paths, show `IsEdgeReachable 3`, refute `IsEdgeReachable 4` with the three edges at `0`, and refute four internally disjoint paths with the separator `{1, 2, 4}`. They also check a small digraph with arc and vertex connectivity `2`.
+
+Limitations:
+
+- Only finite graphs with two terminals are covered.
+- The `A`–`B` set version ([Schrijver 2017][schrijver17], Theorem 4.1; [Diestel 2025][diestel25], Theorem 3.3.1) is not formalized, and neither is the global `k`-connectivity form ([Diestel 2025][diestel25], Theorem 3.3.6).
+- Infinite graphs and the Erdős–Menger conjecture (Aharoni–Berger) are not formalized.
+- No algorithm or running time is given for computing local connectivity.
+
+[#3409](https://github.com/cslib-community/complexitylib/issues/3409) tracks the remaining work.
+
 ## Bipartite matching and Hopcroft–Karp
 
 Import `Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp` ([Complexity/Algorithms/Lean/MaxFlow/HopcroftKarp.lean](../../Complexity/Algorithms/Lean/MaxFlow/HopcroftKarp.lean)). It is a native `TimeM ℕ` program, not a RAM-model program. It takes `G : Fin m × Fin r → Bool` and candidate neighbour lists `adj` with `BipAdjValid G adj` (every edge of `G` occurs in `adj`; extra candidates only cost time). `hopcroftKarpM_correct` gives a maximum matching (`IsMaxMatching`), a minimum König cover (`IsMinVertexCover`), equal sizes, and at most `2 * Nat.sqrt ν` augmenting phases, where `ν` is the maximum matching size. `hopcroftKarpM_time_le` bounds the charged steps by `(2 * Nat.sqrt ν + 1) * (7 * m + 3 * r + 1 + 4 * bipAdjSteps adj) + m + 3 * r`. Ticks are charged per entry of each allocated table (mate, matched-left, layer and visited tables), per mate entry scanned to mark matched left vertices, per left vertex examined when seeding BFS layer `0`, per expanded BFS layer, per frontier left vertex and candidate edge inspected by the BFS, per DFS root and candidate edge scanned by the DFS, per rematched right vertex, and per step of the final matching and cover extraction. Vector reads and writes, list cons, `Finset` insertion, `ℕ`/`Option` comparisons and edge queries `G (u, v)` are free primitives inside those charged steps, as in the Edmonds–Karp solver (the module docstring's "Cost model and limitations" gives the per-phase breakdown). Converting the input into `adj` is not charged. `hopcroftKarpDenseM` uses every pair as a candidate, giving `O(m r √(min m r))`. The [checked client](../../ComplexityTests/HopcroftKarp.lean) builds `adj` for small graphs, discharges `BipAdjValid` by `decide`, evaluates complete runs, and applies `hopcroftKarpM_correct` and `hopcroftKarpDenseM_time_le`.
@@ -965,6 +998,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [bfprt73]: ../sources.md#bfprt73
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
+[diestel25]: ../sources.md#diestel25
 [edmonds65]: ../sources.md#edmonds65
 [fks84]: ../sources.md#fks84
 [floyd62]: ../sources.md#floyd62
@@ -977,6 +1011,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [kasami65]: ../sources.md#kasami65
 [kortevygen18]: ../sources.md#kortevygen18
 [lll82]: ../sources.md#lll82
+[menger27]: ../sources.md#menger27
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
