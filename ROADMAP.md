@@ -1517,11 +1517,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Ω(k / ε)` bound for one-way marginals and the Dinur–Nissim reconstruction attack, with its
   consequence that the distortion a private mechanism can guarantee on every database for all
   subset-count queries is linear in the number of rows, are in `Privacy/DifferentialPrivacy`
-  (Dwork–Roth Chapter 8). Remaining
+  (Dwork–Roth Chapter 8), and so is De's `Ω(min(k, d) / ε)` bound over a small universe
+  (Theorem 8.8) for row-replacement adjacency. Remaining
   ([#3201](https://github.com/cslib-community/complexitylib/issues/3201)): reconstruction from
-  `O(n)` random `±1` queries with `o(√n)` error (Dwork–Roth Theorem 8.2), De's
-  `Ω(min(k, d) / ε)` bound over a small universe (Theorem 8.8), and `(ε, δ)` lower bounds via
-  fingerprinting codes.
+  `O(n)` random `±1` queries with `o(√n)` error (Dwork–Roth Theorem 8.2), and `(ε, δ)` lower
+  bounds via fingerprinting codes. The transfer of Theorem 8.8 to add/remove adjacency on
+  histograms (group privacy with `ε` doubled) is a small open follow-up.
 
 ## Algorithms and optimization
 
