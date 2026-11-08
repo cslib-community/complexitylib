@@ -377,11 +377,13 @@ theorem memoryResizable_refinement_and_frame (w : ℕ) (b : Block)
     {s : Memory.State} {vs : Fin b.length → ℕ}
     (hcan : Memory.Resizable.Canonical w s) (hfit : Fits w (s.frontier + 8))
     (hb : b.Realizes s.mem vs) (hb_fit : b.base + b.length ≤ s.frontier) :
-    let ref := Memory.Resizable.spec_refines_demonicSpec w
-    Memory.Resizable.Canonical w (Memory.Resizable.step s (.grow 8)).1 ∧
+    let ref := Memory.Resizable.specRefinesDemonicSpec w
+    Nonempty (Refinement (Memory.Resizable.demonicSpec w) (Memory.Resizable.spec w)) ∧
+      Memory.Resizable.Canonical w (Memory.Resizable.step s (.grow 8)).1 ∧
       b.Realizes (Memory.Resizable.step s (.grow 8)).1.mem vs ∧
       ref.abs s = s := by
-  refine ⟨Memory.Resizable.canonical_step hcan hfit, ?_, rfl⟩
+  refine ⟨Memory.Resizable.spec_refines_demonicSpec w,
+    Memory.Resizable.canonical_step hcan hfit, ?_, rfl⟩
   refine Memory.Resizable.Block.realizes_of_unchangedOutside b hb ?_
     (Memory.Resizable.UnchangedOutside.step_grow s 8) (fun _ _ hmem => hmem)
   simp only [Memory.Resizable.step_grow]

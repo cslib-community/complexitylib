@@ -36,8 +36,9 @@ may **grow** (`grow k`, `growDirty k`) or **shrink** (`shrink k`) the active pre
   and `growDirty` ([KuszmaulLiangZhou2026], Section 5.1, Footnote 10).
 * `Cslib.DataStructure.Memory.Resizable.step`, `Cslib.DataStructure.Memory.Resizable.spec`:
   deterministic zero-initialized specification (`HasStepFn`) at word width `w`.
-* `Cslib.DataStructure.Memory.Resizable.spec_refines_demonicSpec`: refinement certificate
-  `Refinement (demonicSpec w) (spec w)`.
+* `Cslib.DataStructure.Memory.Resizable.specRefinesDemonicSpec`,
+  `Cslib.DataStructure.Memory.Resizable.spec_refines_demonicSpec`: refinement certificate
+  `Refinement (demonicSpec w) (spec w)` and its `Prop` witness.
 * `Cslib.DataStructure.Memory.Resizable.charge`,
   `Cslib.DataStructure.Memory.Resizable.spaceWords`,
   `Cslib.DataStructure.Memory.Resizable.spaceBits`,
@@ -324,7 +325,7 @@ theorem canonical_demonicStep {w : ℕ} {s s' : State} {o : Op} {r : o.Result}
     Canonical w s' :=
   ⟨wellFormed_demonicStep hs.1 hv hstep, zeroAbove_demonicStep hs.2 hv hstep⟩
 
-/-! ## Refinement `spec_refines_demonicSpec` and lifting `Memory.Prog` -/
+/-! ## Refinement `specRefinesDemonicSpec` and lifting `Memory.Prog` -/
 
 /-- Every deterministic `step` transition satisfies `demonicStep w`. -/
 theorem demonicStep_of_step (w : ℕ) (s : State) (o : Op) :
@@ -353,7 +354,7 @@ theorem demonicStep_grow_of_demonicGrow {w k : ℕ} {s s' : State}
 /-- The zero-initialized specification `spec w` refines `demonicSpec w` over the identity state
 map: every client verified against `demonicSpec w` is valid and has its behavior included in
 `demonicSpec w` when executed on `spec w`. -/
-def spec_refines_demonicSpec (w : ℕ) : Refinement (demonicSpec w) (spec w) where
+def specRefinesDemonicSpec (w : ℕ) : Refinement (demonicSpec w) (spec w) where
   methods o := .liftBind o fun a => .pure a
   inv _ := True
   abs s := s
@@ -367,6 +368,10 @@ def spec_refines_demonicSpec (w : ℕ) : Refinement (demonicSpec w) (spec w) whe
       have hd := demonicStep_of_step w e o
       rw [← hstep] at hd
       exact ⟨hd, trivial⟩
+
+/-- `Prop`-valued witness that `spec w` refines `demonicSpec w`. -/
+theorem spec_refines_demonicSpec (w : ℕ) : Nonempty (Refinement (demonicSpec w) (spec w)) :=
+  ⟨specRefinesDemonicSpec w⟩
 
 /-- Lift a program written against grow-only `Memory.Prog` into `Resizable.Prog`. -/
 def liftMemory {α : Type} : Memory.Prog α → Prog α
