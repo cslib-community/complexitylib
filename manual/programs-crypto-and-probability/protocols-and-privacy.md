@@ -904,10 +904,45 @@ Increase word width or separate the arenas/arrays when fit or separation fails;
 initial dictionary cells must really be zero. Bounds count every construction,
 transfer, load and scan instruction in this sparse WordRAM model.
 
-These APIs select one bucket on each side and fix one word per middle quarter.
-Projected query selection, whole-class completeness, orientation and global
-computed-balance time/peak storage are still uncomposed. A miss is not a global
-no-instance conclusion. The following backward-record consumer cannot substitute
+To derive those bucket choices from original operands, import
+`Complexity.Cryptanalysis.AddXNORNativeProjectedProbe` and use
+`Quarter.projectedProbe_exec`. Supply the original first/second-quarter arrays
+in forward order and third/fourth-quarter arrays in reverse order. All original
+arrays must end before the first scratch array. Place the two nonoverlapping
+projection arrays before the forward heads, followed by the forward records,
+inverse heads/records, and initially zero dictionary region. The two explicit
+word-fit bounds cover query setup and construction/scanning respectively.
+The class value and two middle-quarter packed words are ordinary parameters;
+there is no projected-array, selected-key, dictionary or witness premise.
+
+`selectQueries_exec` constructs the reversed projected second-quarter array and
+forward projected third-quarter array, computes the inverse and forward queries,
+and saves their actual physical bucket addresses. It also computes the forward
+class index and complemented backward index used by the existing counter API.
+This computes indices, not counter contents or an orientation decision.
+`selectedProbe` reads the saved addresses; register-parameter substitution reuses
+the earlier execution proof with identical final data and instruction count.
+`projectedProbe_exec` includes every projection, query, transfer, preparation,
+retention and probe instruction, and proves any reported witness solves the
+original chain. For the source's low-bit class interpretation use $p\le m$;
+the hit-soundness contract itself permits other admitted widths.
+
+From the repository root run
+`lake build Complexity.Cryptanalysis.AddXNORNativeProjectedProbe`, then
+`lake env lean ComplexityTests/AddXNORNativeProjectedProbe.lean`.
+The [complete client](../../ComplexityTests/AddXNORNativeProjectedProbe.lean)
+supplies all raw premises with non-self-inverse addition and colliding low keys,
+checks native multiword projection/query order and counter indices, and executes
+whole-program zero-width-hit and empty-class-miss cases. Dirty scratch cells are
+allowed and overwritten; unread input is framed. If layout/fit fails, separate the
+arrays/arenas or increase word width rather than installing query results as an
+oracle. `RegisterParameter` in `Complexity.Computability.WordRAM.RegisterParameters`
+is also available for clients replacing selected immediate writes by copies of
+an already computed, preserved register.
+
+These APIs fix one word per middle quarter. Whole-class completeness, actual
+counter-table/orientation composition and global computed-balance time/peak
+storage are still open. A miss is not a global no-instance conclusion. The following backward-record consumer cannot substitute
 for the forward retained dictionary.
 
 For consecutive backward preparation and native forward retention, import
@@ -936,8 +971,8 @@ including buckets other than the consumed one. The complete
 checks addition by one (distinguishing forward and inverse lookup) and a
 zero-width collision. Build the module, then run
 `lake env lean ComplexityTests/AddXNORNativeOppositeQuery.lean`.
-These interfaces do not yet connect raw preparation and retention through a
-projected query to original-chain probe soundness.
+Use `projectedProbe_exec` above for the bounded raw-input projected-query/scan
+connection; these older interfaces alone do not certify a complete class search.
 
 To execute the complete opposite-class consumer, use `Quarter.probeClass`
 from the same import and root-context client above. Set `count` to the second

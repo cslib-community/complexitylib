@@ -93,8 +93,8 @@ with self-inverse fourth-quarter operations and one retained second-quarter inde
 these restrictions do not establish the general construction premises.
 General native backward preparation now derives full inverse-state bucket records
 and original packed indices for arbitrary operand lists and widths, including
-non-self-inverse additions. Its consecutive connection through projected queries
-and retained dictionary memory to original-chain scan soundness remains open.
+non-self-inverse additions. Its connection to the source complete class enumerator remains open; the bounded
+projected-query/retained-dictionary scan is described below.
 Forward first-quarter preparation followed by forward second-quarter retention now
 derives its exact retained dictionary, top and provenance from actual native stores,
 with a checked direction-distinguishing client and preservation of all forward buckets.
@@ -104,20 +104,30 @@ The bounded `dualProbe_exec` composes those constructions, native register trans
 inverse-bucket head loading and third-quarter scanning, proving any reported hit
 solves the original chain. Complete clients check direction-sensitive operands,
 zero witness tags, dirty outside memory, an actual hit and a miss. These results
-select one bucket per side and one word per middle quarter; projected query selection,
-whole-class completeness and the global endpoint remain open.
-The backward-record consumer below cannot substitute for the forward dictionary required by original-chain probe soundness.
+now compute both bucket selections from a class value and the original middle
+quarters: native projection/reversal and inverse/forward query evaluation feed
+saved addresses into retention and scanning. The generic original-input
+`projectedProbe_exec` proves hit soundness with every setup/projection/query stage
+charged. Native forward/complemented backward counter indices are also computed;
+actual counter-table reads and orientation are not yet composed. Checked clients
+include non-self-inverse addition, colliding full-state low keys, multiword
+projection order, nonzero counter indices and whole-program zero-width/local-miss
+runs. The two middle-quarter words remain fixed parameters; whole-class iteration,
+termination/completeness and the global endpoint remain open.
+The backward-record consumer below cannot substitute for the forward dictionary
+required by original-chain probe soundness.
 Consecutive backward preparation followed by native forward retention now derives
 its dictionary and payload provenance from computed inverse records, with operand,
 other-memory and register frames. This bounded component is not the full backward
 class enumerator: projected query and inverse continuation/probe composition remain open.
 A separate charged native forward query now preserves all memory and its packed
 index; a layout lemma shows retention preserves every computed inverse bucket.
-The arbitrary-width query and zero-width collision clients are checked. The
-consecutive projected preparation/query/probe and original-chain reconstruction
-connection is still open; these components do not provide that endpoint.
-General whole-class termination/time and unconditional original-input returned-witness
-correctness remain unproved. This is a sparse WordRAM
+The arbitrary-width query and zero-width collision clients are checked.
+The bounded projected preparation/query/probe and original-chain reconstruction
+connection is now supplied by `projectedProbe_exec` above; these older components
+do not by themselves provide whole-class completeness.
+General whole-class termination/time and an integrated original-input class-search
+decision/witness theorem remain unproved. This is a sparse WordRAM
 implementation, not the source's sorted lists or a compact arena. The general correctness/resource certificates for the
 second-quarter/class iterator and streaming opposite-side consumer, counter-selected
 orientation and single global counter/balance/decision/witness execution remain

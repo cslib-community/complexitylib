@@ -2844,6 +2844,7 @@ public import Complexity.Computability.WordRAM.Realization.WhileAbsorb
 public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.Computability.WordRAM.RegisterCopy
 public import Complexity.Computability.WordRAM.RegisterFrame
+public import Complexity.Computability.WordRAM.RegisterParameters
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
 public import Complexity.Computability.WordRAM.Signed.ArrayArithmetic.Body
@@ -2897,12 +2898,17 @@ public import Complexity.Cryptanalysis.AddXNORNativeEnumeration
 public import Complexity.Cryptanalysis.AddXNORNativeForwardRetain
 public import Complexity.Cryptanalysis.AddXNORNativeOppositeQuery
 public import Complexity.Cryptanalysis.AddXNORNativeProbe
+public import Complexity.Cryptanalysis.AddXNORNativeProjectFrom
+public import Complexity.Cryptanalysis.AddXNORNativeProjectedProbe
 public import Complexity.Cryptanalysis.AddXNORNativeProjection
+public import Complexity.Cryptanalysis.AddXNORNativeQuarterProjection
 public import Complexity.Cryptanalysis.AddXNORNativeQuery
+public import Complexity.Cryptanalysis.AddXNORNativeQuerySelection
 public import Complexity.Cryptanalysis.AddXNORNativeResources
 public import Complexity.Cryptanalysis.AddXNORNativeRetain
 public import Complexity.Cryptanalysis.AddXNORNativeReverse
 public import Complexity.Cryptanalysis.AddXNORNativeRun
+public import Complexity.Cryptanalysis.AddXNORNativeSelectedProbe
 public import Complexity.Cryptanalysis.AddXNORParity
 public import Complexity.Cryptanalysis.AddXNORReachability
 public import Complexity.Cryptanalysis.AddXNORRuns
