@@ -1031,8 +1031,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `3`-CNF pigeonhole formula with `n` holes. The converse, Atserias–Dalmau Lemma 2
   ([#3375](https://github.com/cslib-community/complexitylib/issues/3375)), gives their Theorem 2
   for formulas without clauses of width exactly `w + 1`, and the space–width inequality is proved
-  from any Duplicator strategy. Next:
-  - space lower bounds for the wide pigeonhole formula and random `k`-CNFs;
+  from any Duplicator strategy. `WidePigeonholeSpace.lean`
+  ([#3498](https://github.com/cslib-community/complexitylib/issues/3498)) gives Torán's exact clause
+  space `n + 2` of the wide pigeonhole formula with `0 < n < m`, whatever the number of pigeons.
+  Next:
+  - space lower bounds for random `k`-CNFs;
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
   - degree versus space in polynomial calculus.

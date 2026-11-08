@@ -222,7 +222,7 @@ Interpolation modules extract circuits separating the two sides of a refuted con
 
 ## Clause space
 
-Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitions and the inequality, `Complexity.Logics.Propositional.Resolution.TseitinSpace` for the Tseitin corollaries, `Complexity.Logics.Propositional.Resolution.TreeLikeSpace` for tree-like refutations, or `Complexity.Logics.Propositional.Resolution.PigeonholeSpace` for Duplicator strategies and the pigeonhole bounds.
+Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitions and the inequality, `Complexity.Logics.Propositional.Resolution.TseitinSpace` for the Tseitin corollaries, `Complexity.Logics.Propositional.Resolution.TreeLikeSpace` for tree-like refutations and DPLL trees, `Complexity.Logics.Propositional.Resolution.PigeonholeSpace` for Duplicator strategies and the extended pigeonhole bounds, or `Complexity.Logics.Propositional.Resolution.WidePigeonholeSpace` for the exact clause space of the wide pigeonhole formula.
 
 [Configuration-style resolution](../../Complexity/Logics/Propositional/Resolution/Space.lean) follows Esteban and Torán. It keeps a `Finset` of clauses in memory, and each move (`ConfigMove`) changes it by one of three rules (`CNF.ConfigStep`): download a clause of the formula, add the resolvent of two clauses in memory, or erase a clause. The resolution rule is that of `CNF.IsProof`, with no weakening. `CNF.configLTS φ s` is the cslib `LTS` of these moves, restricted to configurations of at most `s` clauses. It follows the same pattern as the pebbling library's `Cslib.Pebbling.blackPebbleGame`.
 
@@ -245,7 +245,15 @@ The proof works for any Duplicator strategy. `DuplicatorStrategy.add_three_le` s
 - `CNF.pigeonholeExtStrategy m n` is Duplicator's strategy on `EPHP^m_{n+1}` with `n + 1` pebbles: the partial assignments that agree with a placement of pigeons that is injective on the pebbled pigeons.
 - So with `n + 1` holes there is no refutation of width `n` (`not_refutableInWidth_pigeonholeExt`). Stated per hole count, every refutation of `EPHP^m_n` has width at least `n` (`le_of_refutableInWidth_pigeonholeExt`) and clause space at least `n` (`le_of_refutableInSpace_pigeonholeExt`, through `RefutableInSpace.add_four_le` with `k = 3`). The number of pigeons is arbitrary.
 
-The mathematical symbols of the available copy of Atserias and Dalmau's paper do not extract. So neither their exact clauses nor the pebble count of their Lemma 6 is quoted; the encoding, the strategy and these constants are ours. The clause space of the wide formula `PHP^m_n` itself, proved by Alekhnovich, Ben-Sasson, Razborov and Wigderson, is not treated, and their paper was not inspected.
+The mathematical symbols of the available copy of Atserias and Dalmau's paper do not extract. So neither their exact clauses nor the pebble count of their Lemma 6 is quoted; the encoding, the strategy and these constants are ours. Alekhnovich, Ben-Sasson, Razborov and Wigderson also proved pigeonhole space lower bounds; their paper was not inspected.
+
+[The wide pigeonhole module](../../Complexity/Logics/Propositional/Resolution/WidePigeonholeSpace.lean) gives the exact clause space of `PHP^m_n` itself. Import `Complexity.Logics.Propositional.Resolution.WidePigeonholeSpace`. Torán's survey (Section 4) states resolution space exactly `n + 1` for `m > n`, whatever the number of pigeons. It credits this to Torán's CSL 1999 paper, which was not inspected, so the proofs are reconstructions. The survey's pebble game may shift a pebble from a premise to the resolvent, so in the convention here the value is `n + 2`:
+
+- `CNF.add_two_le_of_refutableInSpace_pigeonhole`: for `1 ≤ n`, every refutation in clause space `s` has `n + 2 ≤ s`. The proof is an invariant on configurations: they are implied by a partial matching (every matching containing it satisfies each clause) except perhaps for one pigeon clause. A clause implied by a matching is implied by at most one of its pairs, so with at most `n` clauses a hole is free for the exceptional pigeon clause, and no matching implies `[]`.
+- `CNF.refutableInSpace_pigeonhole`: for `n < m`, a refutation in clause space `n + 2`. An explicit DPLL tree queries each pigeon in the free holes, then the later pigeons in the hole found. It has rank at most `n`, and `DecisionTree.FindsFalsifiedClause.refutableInSpace` turns a DPLL tree of rank `r` into clause space `r + 2`. This uses the rank bound of `DecisionTree.FindsFalsifiedClause.exists_derivation_rank_le`.
+- `CNF.refutableInSpace_pigeonhole_iff` combines the two for `0 < n < m`.
+
+The clauses of `PHP^m_n` have width `n`, so the Atserias–Dalmau inequality gives nothing for it. With no holes, `PHP^m_0` contains the empty clause and is refutable in clause space `1`. The [checked examples](../../ComplexityTests/ProofComplexity/WidePigeonholeSpace.lean) give clause space exactly `3` for `PHP^2_1`, exactly `7` for `PHP^1000_5`, and exactly `5` for every `PHP^m_3` with `m > 3`. They also refute `PHP^1_0` in clause space `1` and `x ∧ ¬x` from a rank-`1` DPLL tree. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.WidePigeonholeSpace`.
 
 [The Tseitin module](../../Complexity/Logics/Propositional/Resolution/TseitinSpace.lean) combines this with the width bound of Ben-Sasson and Wigderson:
 
@@ -266,7 +274,7 @@ The [checked examples](../../ComplexityTests/ProofComplexity/Space.lean) refute 
 
 Not yet formalized:
 
-- clause space of the wide pigeonhole formula and of random `k`-CNFs;
+- clause space of random `k`-CNFs;
 - total and variable space;
 - time–space trade-offs and pebbling formulas;
 - the polynomial-calculus analogue, degree versus space, which is open.
