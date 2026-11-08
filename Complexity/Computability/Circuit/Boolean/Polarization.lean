@@ -18,10 +18,10 @@ import Complexity.Probability.StatisticalDistance.Event
 /-!
 # Polarization of circuit samplers
 
-The Polarization Lemma of Sahai and Vadhan [SahaiVadhan2003, §3] acts on pairs of circuits: from
-De Morgan circuits `C₀` and `C₁` with `n` inputs and `m` outputs it builds circuits whose output
-distributions are the polarized pair `Cslib.Probability.PMF.polarize` of the output distributions
-of `C₀` and `C₁`, up to the flattening of tuples of outputs into one bit string.
+The Polarization Lemma of Sahai and Vadhan [SahaiVadhan2003, Lemma 3.3] acts on pairs of circuits:
+from De Morgan circuits `C₀` and `C₁` with `n` inputs and `m` outputs it builds circuits whose
+output distributions are the polarized pair `Cslib.Probability.PMF.polarize` of the output
+distributions of `C₀` and `C₁`, up to the flattening of tuples of outputs into one bit string.
 
 The XOR construction on `j + 1` coordinates (`xorMixCircuit C₀ C₁ j c`) reads `j` selector bits
 `r` and `j + 1` blocks of `n` data bits. A chain of exclusive-or gadgets computes the last
@@ -161,7 +161,7 @@ theorem eval_xorMixBlock {n m : ℕ} (C₀ C₁ : Circuit signature n m) (b : Bo
     eval_muxCircuit]
   cases b <;> rfl
 
-/-- **The XOR construction on circuits** [SahaiVadhan2003, §3], on `j + 1` coordinates: the
+/-- **The XOR construction on circuits** [SahaiVadhan2003, Lemma 3.5], on `j + 1` coordinates: the
 inputs are `j` selector bits followed by `j + 1` consecutive blocks of `n` data bits, and output
 block `i` is `C₁` or `C₀` on data block `i`, according to bit `i` of the selector completed to
 parity `c`. -/
@@ -204,9 +204,9 @@ theorem outputDist_xorMixCircuit {n m : ℕ} (C₀ C₁ : Circuit signature n m)
     Prod.map_apply, id, Equiv.apply_symm_apply, BitString.blocksEquiv_apply, happ]
   exact eval_xorMixCircuit C₀ C₁ j c r d
 
-/-- **The polarization construction on circuits** [SahaiVadhan2003, §3]: the XOR construction on
-`k + 1` coordinates applied to `ell` independent copies of the XOR construction on `lam + 1`
-coordinates. -/
+/-- **The polarization construction on circuits** [SahaiVadhan2003, proof of Lemma 3.3]: the XOR
+construction on `k + 1` coordinates applied to `ell` independent copies of the XOR construction on
+`lam + 1` coordinates. -/
 def polarizeCircuit {n m : ℕ} (C₀ C₁ : Circuit signature n m) (lam ell k : ℕ) (c : Bool) :
     Circuit signature (k + (k + 1) * (ell * (lam + (lam + 1) * n)))
       ((k + 1) * (ell * ((lam + 1) * m))) :=
