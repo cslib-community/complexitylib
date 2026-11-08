@@ -311,11 +311,13 @@ theorem computableInPolyTime_addCiphertexts :
 /-- Decoding the binary encoding of a natural number returns it. -/
 theorem ofBits_encNat (x : ℕ) : ofBits (encNat x) = x := Nat.foldr_bit_bits x
 
-private theorem unframe_encPair_encNat (a b : ℕ) :
+/-- The first component of the binary encoding of a pair of natural numbers. -/
+theorem unframe_encPair_encNat (a b : ℕ) :
     unframe (encPair encNat encNat (a, b)) = encNat a := by
   simp only [encPair_apply, unframe_frame_append]
 
-private theorem dropFrame_encPair_encNat (a b : ℕ) :
+/-- The second component of the binary encoding of a pair of natural numbers. -/
+theorem dropFrame_encPair_encNat (a b : ℕ) :
     dropFrame (encPair encNat encNat (a, b)) = encNat b := by
   simp only [encPair_apply, dropFrame_frame_append]
 
