@@ -88,7 +88,7 @@ example : Fintype.card (Fin 120) + 2 ≤
 /-- The explicit expander family has refutation width at least `n / 18000`: on `4392000`
 vertices, at least `244`. -/
 example : ∃ m, ∃ φ : CNF (Fin m), ¬ φ.Satisfiable ∧ ∀ w, φ.RefutableInWidth w → 244 ≤ w := by
-  obtain ⟨m, -, ends, χ, -, hG, he, -, -, hunsat⟩ :=
+  obtain ⟨m, -, ends, χ, -, hG, he, -, -, -, hunsat⟩ :=
     Tseitin.exists_expander_tseitinFormula 4392000 (by norm_num)
   refine ⟨m, CNF.tseitinFormula ends χ, hunsat, fun w h => ?_⟩
   have hw := Tseitin.minBalancedCut_le_of_refutableInWidth hG h

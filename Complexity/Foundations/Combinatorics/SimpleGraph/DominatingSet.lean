@@ -15,8 +15,9 @@ public import Mathlib.Combinatorics.SimpleGraph.Basic
 
 A set `S` of vertices of a simple graph is *dominating* when every vertex lies in `S` or is
 adjacent to a vertex of `S`. Deciding whether a graph has a dominating set of at most `k`
-vertices is the NP-complete dominating set problem, the source problem of the hardness of
-approximating metric k-center ([WilliamsonShmoys2011], Section 2.2;
+vertices is the NP-complete dominating set problem (`Cslib.Complexity.DominatingSet_npComplete`
+on the library's encoded graphs), the source problem of the hardness of approximating metric
+k-center ([WilliamsonShmoys2011], Section 2.2;
 `Cslib.Algorithms.Lean.KCenter.isDominatingSet_of_radius_le_mul`). Mathlib has no notion of
 domination for simple graphs.
 
