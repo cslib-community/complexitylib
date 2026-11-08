@@ -28,6 +28,7 @@ public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Cost
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Memory
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Source
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Word
+public import Complexity.Algorithms.Lean.Euler.Circuit
 public import Complexity.Algorithms.Lean.Freivalds
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
@@ -43,6 +44,9 @@ public import Complexity.Algorithms.Lean.Knapsack.ProfitDP
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
 public import Complexity.Algorithms.Lean.Matroid.Greedy
+public import Complexity.Algorithms.Lean.Matroid.Intersection
+public import Complexity.Algorithms.Lean.Matroid.Intersection.Konig
+public import Complexity.Algorithms.Lean.Matroid.Intersection.Solver
 public import Complexity.Algorithms.Lean.MaxFlow.AugmentingPath
 public import Complexity.Algorithms.Lean.MaxFlow.Basic
 public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
@@ -58,10 +62,12 @@ public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Cost
 public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Defs
 public import Complexity.Algorithms.Lean.Query.Arith.Lemmas
 public import Complexity.Algorithms.Lean.Query.Arith.MatMul
+public import Complexity.Algorithms.Lean.Query.FreeM.FilterM
 public import Complexity.Algorithms.Lean.Query.FreeM.MOfFn
 public import Complexity.Algorithms.Lean.Query.FreeM.Tabulate
 public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
+public import Complexity.Algorithms.Lean.Query.Matroid.Intersection
 public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
 public import Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlus
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
@@ -88,6 +94,8 @@ public import Complexity.Algorithms.Lean.TimeM.Loops
 public import Complexity.Algorithms.Lean.VertexCover.Matching
 public import Complexity.Algorithms.Lean.Yates
 public import Complexity.Algorithms.Matching.Edmonds
+public import Complexity.Algorithms.Matching.MVV
+public import Complexity.Algorithms.Matching.Tutte
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BandBounds
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
@@ -129,6 +137,7 @@ public import Complexity.Algorithms.Reachability.InductiveCounting.Semantics
 public import Complexity.Algorithms.Reachability.Reingold
 public import Complexity.Algorithms.Reachability.ReingoldEval
 public import Complexity.Algorithms.Reachability.Savitch
+public import Complexity.Algorithms.Reachability.ShortestWalk
 public import Complexity.Algorithms.ShortestPaths.FloydWarshall
 public import Complexity.Algorithms.ShortestPaths.Power
 public import Complexity.Algorithms.ShortestPaths.Tripartite
@@ -805,9 +814,12 @@ public import Complexity.Computability.BlumComplexity.Gap
 public import Complexity.Computability.BlumComplexity.Hierarchy
 public import Complexity.Computability.BlumComplexity.RecursiveRelatedness
 public import Complexity.Computability.BlumComplexity.Speedup
+public import Complexity.Computability.BlumComplexity.Union
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
+public import Complexity.Computability.BranchingProgram.ReadOnce
 public import Complexity.Computability.Catalytic.Comparison
+public import Complexity.Computability.CellProbe.Chronogram
 public import Complexity.Computability.CellProbe.DecisionTree
 public import Complexity.Computability.CellProbe.Defs
 public import Complexity.Computability.CellProbe.Randomized
@@ -828,6 +840,8 @@ public import Complexity.Computability.Circuit.Arithmetic.Hessian
 public import Complexity.Computability.Circuit.Arithmetic.Hessian.SourceComplexity
 public import Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.Exponent
 public import Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
+public import Complexity.Computability.Circuit.Arithmetic.Noncommutative.ABP
+public import Complexity.Computability.Circuit.Arithmetic.Noncommutative.Nisan
 public import Complexity.Computability.Circuit.Arithmetic.Pairing
 public import Complexity.Computability.Circuit.Arithmetic.Permanent
 public import Complexity.Computability.Circuit.Arithmetic.Permanent.BooleanSum
@@ -836,6 +850,7 @@ public import Complexity.Computability.Circuit.Arithmetic.Permanent.Projection
 public import Complexity.Computability.Circuit.Arithmetic.Power
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRank
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRankUpper
+public import Complexity.Computability.Circuit.Arithmetic.Rigidity
 public import Complexity.Computability.Circuit.Arithmetic.SPCircuit
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinear
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearGadget
@@ -1110,7 +1125,9 @@ public import Complexity.Computability.Circuit.Boolean.Tournament
 public import Complexity.Computability.Circuit.Boolean.Tribes
 public import Complexity.Computability.Circuit.Boolean.Tseitin
 public import Complexity.Computability.Circuit.Boolean.Unbounded
+public import Complexity.Computability.Circuit.Boolean.Unbounded.Certificate
 public import Complexity.Computability.Circuit.Boolean.Unbounded.Encoding
+public import Complexity.Computability.Circuit.Boolean.Unbounded.Kleene
 public import Complexity.Computability.Circuit.Boolean.Unbounded.Restriction
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activation
@@ -1329,6 +1346,7 @@ public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Asympt
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.LowerBound
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Negative
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Positive
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Separation
 public import Complexity.Computability.Circuit.Monotone.Clique.Approximator
 public import Complexity.Computability.Circuit.Monotone.Clique.Asymptotic
 public import Complexity.Computability.Circuit.Monotone.Clique.Closure.Approximator
@@ -1357,6 +1375,7 @@ public import Complexity.Computability.Circuit.Quantum.Basic
 public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
 public import Complexity.Computability.Circuit.Quantum.Counter
+public import Complexity.Computability.Circuit.Quantum.HadamardLayer
 public import Complexity.Computability.Circuit.Quantum.Output
 public import Complexity.Computability.Circuit.Quantum.OutputSupport
 public import Complexity.Computability.Circuit.Quantum.Parallel
@@ -1429,6 +1448,10 @@ public import Complexity.Computability.Communication.Lifting.Density
 public import Complexity.Computability.Communication.Lifting.Gadget
 public import Complexity.Computability.Communication.Lifting.Partition
 public import Complexity.Computability.Communication.Lifting.Simulation
+public import Complexity.Computability.Communication.NOF.Discrepancy
+public import Complexity.Computability.Communication.NOF.Protocol
+public import Complexity.Computability.Communication.NOF.Randomized
+public import Complexity.Computability.Communication.NOF.TwoParty
 public import Complexity.Computability.Communication.Newman
 public import Complexity.Computability.Communication.Nondeterministic.Basic
 public import Complexity.Computability.Communication.Nondeterministic.Functions
@@ -1481,6 +1504,7 @@ public import Complexity.Computability.Complexity.Classes.AverageCase.Distributi
 public import Complexity.Computability.Complexity.Classes.AverageCase.Ensemble
 public import Complexity.Computability.Complexity.Classes.AverageCase.MildHardness
 public import Complexity.Computability.Complexity.Classes.AverageCase.Reduction
+public import Complexity.Computability.Complexity.Classes.AverageCase.WorstCase
 public import Complexity.Computability.Complexity.Classes.BPP
 public import Complexity.Computability.Complexity.Classes.BPP.Amplification
 public import Complexity.Computability.Complexity.Classes.BPP.Collapse
@@ -1534,6 +1558,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Tru
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedSum
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
+public import Complexity.Computability.Complexity.Classes.EXP.Decidable
 public import Complexity.Computability.Complexity.Classes.EXP.Padding
 public import Complexity.Computability.Complexity.Classes.EXP.Separation
 public import Complexity.Computability.Complexity.Classes.FPAUS
@@ -1588,6 +1613,7 @@ public import Complexity.Computability.Complexity.Classes.Inclusions
 public import Complexity.Computability.Complexity.Classes.Ladner
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
 public import Complexity.Computability.Complexity.Classes.Ladner.PolyTime
+public import Complexity.Computability.Complexity.Classes.Ladner.Stages
 public import Complexity.Computability.Complexity.Classes.LogSpace
 public import Complexity.Computability.Complexity.Classes.LogSpace.Complement
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder
@@ -1619,6 +1645,9 @@ public import Complexity.Computability.Complexity.Classes.MIP
 public import Complexity.Computability.Complexity.Classes.MIP.Defs
 public import Complexity.Computability.Complexity.Classes.MIP.NEXP
 public import Complexity.Computability.Complexity.Classes.MIP.OptimalProver
+public import Complexity.Computability.Complexity.Classes.Measure.Basic
+public import Complexity.Computability.Complexity.Classes.Measure.Conservation
+public import Complexity.Computability.Complexity.Classes.Measure.DTIME
 public import Complexity.Computability.Complexity.Classes.ModP
 public import Complexity.Computability.Complexity.Classes.ModP.GapP
 public import Complexity.Computability.Complexity.Classes.ModP.Time
@@ -1668,6 +1697,7 @@ public import Complexity.Computability.Complexity.Classes.PH.Closure
 public import Complexity.Computability.Complexity.Classes.PH.Collapse
 public import Complexity.Computability.Complexity.Classes.PH.Kannan
 public import Complexity.Computability.Complexity.Classes.PH.KarpLipton
+public import Complexity.Computability.Complexity.Classes.PH.OracleNP
 public import Complexity.Computability.Complexity.Classes.PH.Projection
 public import Complexity.Computability.Complexity.Classes.PH.SipserLautemann
 public import Complexity.Computability.Complexity.Classes.PP
@@ -1693,6 +1723,7 @@ public import Complexity.Computability.Complexity.Classes.Promise.Time.Verifier
 public import Complexity.Computability.Complexity.Classes.QMA
 public import Complexity.Computability.Complexity.Classes.QMA.Amplification
 public import Complexity.Computability.Complexity.Classes.QMA.Counting
+public import Complexity.Computability.Complexity.Classes.QMA.MA
 public import Complexity.Computability.Complexity.Classes.QMA.NP
 public import Complexity.Computability.Complexity.Classes.RP
 public import Complexity.Computability.Complexity.Classes.RP.Closure
@@ -1756,6 +1787,9 @@ public import Complexity.Computability.Complexity.Classes.TFNP
 public import Complexity.Computability.Complexity.Classes.TFNP.SearchToDecision
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness
+public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.PPADS
+public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLine
+public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Principles
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Sperner
 public import Complexity.Computability.Complexity.Classes.Tally
@@ -1893,7 +1927,11 @@ public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy
+public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Bracket
+public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Graph
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
+public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching
+public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
 public import Complexity.Computability.Complexity.Problems.BoundedHalting
 public import Complexity.Computability.Complexity.Problems.CSP.Affine
 public import Complexity.Computability.Complexity.Problems.CSP.Basic
@@ -1910,6 +1948,7 @@ public import Complexity.Computability.Complexity.Problems.CircuitValue.Compilat
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
 public import Complexity.Computability.Complexity.Problems.Clique
+public import Complexity.Computability.Complexity.Problems.Clique.OfAdj
 public import Complexity.Computability.Complexity.Problems.CliqueCover
 public import Complexity.Computability.Complexity.Problems.Coloring
 public import Complexity.Computability.Complexity.Problems.CountingSAT
@@ -2441,6 +2480,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Lex
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.ListsUpTo
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Matrix.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -2453,6 +2493,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Factorial
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Fin
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Jacobi
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Pair
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
@@ -2790,6 +2831,8 @@ public import Complexity.Computability.PCP.Approximation.IndependentSet
 public import Complexity.Computability.PCP.Approximation.Johnson
 public import Complexity.Computability.PCP.Approximation.LabelCover
 public import Complexity.Computability.PCP.Approximation.LabelCover.Incidence
+public import Complexity.Computability.PCP.Approximation.LabelCover.Repetition
+public import Complexity.Computability.PCP.Approximation.LabelCover.SmallSoundness
 public import Complexity.Computability.PCP.Approximation.MaxCSP
 public import Complexity.Computability.PCP.Approximation.MaxExactThreeSAT
 public import Complexity.Computability.PCP.Approximation.MaxThreeSAT
@@ -2816,10 +2859,12 @@ public import Complexity.Computability.PCP.Encoded.Composition.Enumeration
 public import Complexity.Computability.PCP.Encoded.Constraints
 public import Complexity.Computability.PCP.Encoded.Count
 public import Complexity.Computability.PCP.Encoded.DegreeReduction
+public import Complexity.Computability.PCP.Encoded.Deloop
 public import Complexity.Computability.PCP.Encoded.GapTheorem
 public import Complexity.Computability.PCP.Encoded.GenericComposition
 public import Complexity.Computability.PCP.Encoded.GenericComposition.Enumeration
 public import Complexity.Computability.PCP.Encoded.Iteration
+public import Complexity.Computability.PCP.Encoded.ParallelEdges
 public import Complexity.Computability.PCP.Encoded.Power
 public import Complexity.Computability.PCP.Encoded.Preprocess
 public import Complexity.Computability.PCP.Encoded.Preprocess.Programs
@@ -2855,7 +2900,10 @@ public import Complexity.Computability.Pebbling.Basic
 public import Complexity.Computability.Pebbling.BinaryTree
 public import Complexity.Computability.Pebbling.Blocking
 public import Complexity.Computability.Pebbling.Map
+public import Complexity.Computability.Pebbling.Path
 public import Complexity.Computability.Pebbling.Pyramid
+public import Complexity.Computability.Pebbling.Reversible
+public import Complexity.Computability.Pebbling.ReversiblePath
 public import Complexity.Computability.PolyTime.BitString.InitialTestsSearch
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
@@ -2939,6 +2987,7 @@ public import Complexity.Computability.Probabilistic.Selection
 public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Computability.PropertyTesting.DenseGraph.Basic
+public import Complexity.Computability.PropertyTesting.DenseGraph.Canonical
 public import Complexity.Computability.PropertyTesting.DenseGraph.TriangleFree
 public import Complexity.Computability.PropertyTesting.Distribution.Basic
 public import Complexity.Computability.PropertyTesting.Distribution.ClosenessCollision
@@ -2960,6 +3009,10 @@ public import Complexity.Computability.QueryComplexity.Monotone
 public import Complexity.Computability.QueryComplexity.NisanSzegedy
 public import Complexity.Computability.QueryComplexity.OneSided
 public import Complexity.Computability.QueryComplexity.Quantum.Adversary
+public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary
+public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.Symmetric
+public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.Tribes
+public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.WeightLayers
 public import Complexity.Computability.QueryComplexity.Quantum.BernsteinVazirani
 public import Complexity.Computability.QueryComplexity.Quantum.BitQuery
 public import Complexity.Computability.QueryComplexity.Quantum.Composition
@@ -3029,6 +3082,10 @@ public import Complexity.Computability.RAM.Defs
 public import Complexity.Computability.RAM.Input
 public import Complexity.Computability.RAM.Squaring
 public import Complexity.Computability.Reduction.ManyOne
+public import Complexity.Computability.StreamArithmetic.EstimatorRecipes
+public import Complexity.Computability.StreamArithmetic.Interface
+public import Complexity.Computability.StreamArithmetic.Primitives
+public import Complexity.Computability.StreamArithmetic.QueryTree
 public import Complexity.Computability.Streaming.AMS
 public import Complexity.Computability.Streaming.Basic
 public import Complexity.Computability.Streaming.Communication
@@ -3517,6 +3574,8 @@ public import Complexity.Crypto.Primitives.BlockCipher.Modes
 public import Complexity.Crypto.Primitives.PRG.Circuit
 public import Complexity.Crypto.Primitives.PRG.Game
 public import Complexity.Crypto.Primitives.PRG.NextBit
+public import Complexity.Crypto.Primitives.PRG.Nisan
+public import Complexity.Crypto.Primitives.PRG.Nisan.Bits
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Circuit
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Derandomization
@@ -3704,6 +3763,9 @@ public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.ReducedKWise
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
+public import Complexity.DataStructure.ListUpdate.Basic
+public import Complexity.DataStructure.ListUpdate.LowerBound
+public import Complexity.DataStructure.ListUpdate.MoveToFront
 public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Memory.Copy
 public import Complexity.DataStructure.Memory.Field
@@ -3715,6 +3777,7 @@ public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.Memory.Triple
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
+public import Complexity.DataStructure.Online.SkiRental
 public import Complexity.DataStructure.OrderedSet.Basic
 public import Complexity.DataStructure.OrderedSet.ExtractMin
 public import Complexity.DataStructure.OrderedSet.Spec
@@ -3858,6 +3921,7 @@ public import Complexity.Foundations.Analysis.Lattice.Schwartz
 public import Complexity.Foundations.Analysis.LpNorm
 public import Complexity.Foundations.Analysis.LpNormMeasure
 public import Complexity.Foundations.Analysis.MarkovBrothersInequality
+public import Complexity.Foundations.Analysis.Normed.Ring.PowSub
 public import Complexity.Foundations.Analysis.RootError
 public import Complexity.Foundations.Analysis.RowCompression
 public import Complexity.Foundations.Analysis.RowCompression.BoundedCap
@@ -3880,9 +3944,14 @@ public import Complexity.Foundations.Analysis.RowCompression.Sentinel
 public import Complexity.Foundations.Analysis.RowCompression.SentinelIteration
 public import Complexity.Foundations.Analysis.RowCompression.SentinelRelative
 public import Complexity.Foundations.Analysis.RowCompression.Stationary
+public import Complexity.Foundations.Analysis.SignedDigitStream.Basic
+public import Complexity.Foundations.Analysis.SignedDigitStream.Elementary
+public import Complexity.Foundations.Analysis.SignedDigitStream.Multiplication
+public import Complexity.Foundations.Analysis.SignedDigitStream.Reciprocal
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
 public import Complexity.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
 public import Complexity.Foundations.Analysis.SpecialFunctions.ExpOneSubInvPow
+public import Complexity.Foundations.Analysis.SpecialFunctions.Hyperbolic
 public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
@@ -4068,18 +4137,23 @@ public import Complexity.Foundations.Combinatorics.SetPartition.Basic
 public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Acyclic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Foundations.Combinatorics.SimpleGraph.GreedyColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.MatrixTree
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SimpleGraph.OrientedIncidence
+public import Complexity.Foundations.Combinatorics.SimpleGraph.PermMatching
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ProperColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Rado
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Basic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Erdos
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Nagy
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
+public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Basic
+public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Bounds
+public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Rooted
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.Sperner
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
@@ -4093,6 +4167,7 @@ public import Complexity.Foundations.Combinatorics.WeightBudget
 public import Complexity.Foundations.Combinatorics.WeightedCut
 public import Complexity.Foundations.Combinatorics.WeightedCut.Multigraph
 public import Complexity.Foundations.Computability.ComputablePred
+public import Complexity.Foundations.Control.Monad.FilterM
 public import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 public import Complexity.Foundations.Control.Monad.Memoize
 public import Complexity.Foundations.Data.BiTape
@@ -4141,6 +4216,7 @@ public import Complexity.Foundations.Data.BitString.Sum
 public import Complexity.Foundations.Data.BitString.Support
 public import Complexity.Foundations.Data.BitString.Threshold
 public import Complexity.Foundations.Data.BitString.Weight
+public import Complexity.Foundations.Data.BitString.WeightInterval
 public import Complexity.Foundations.Data.BitString.WordCount
 public import Complexity.Foundations.Data.BitString.ZModTwo
 public import Complexity.Foundations.Data.Code.AsymptoticallyGood
@@ -4215,8 +4291,10 @@ public import Complexity.Foundations.Data.List.EraseDupsBy
 public import Complexity.Foundations.Data.List.Filter
 public import Complexity.Foundations.Data.List.FilterMap
 public import Complexity.Foundations.Data.List.Fold
+public import Complexity.Foundations.Data.List.FoldlIdx
 public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
+public import Complexity.Foundations.Data.List.ListsUpTo
 public import Complexity.Foundations.Data.List.Lookup
 public import Complexity.Foundations.Data.List.OfFn
 public import Complexity.Foundations.Data.List.Perm
@@ -4279,6 +4357,8 @@ public import Complexity.Foundations.Data.Nat.Log
 public import Complexity.Foundations.Data.Nat.LogRpow
 public import Complexity.Foundations.Data.Nat.LogStar
 public import Complexity.Foundations.Data.Nat.LogTwoRpow
+public import Complexity.Foundations.Data.Nat.MasterTheorem
+public import Complexity.Foundations.Data.Nat.MasterTheoremAsymptotics
 public import Complexity.Foundations.Data.Nat.Morton
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits
@@ -4357,8 +4437,10 @@ public import Complexity.Foundations.GroupTheory.Perm.Fin
 public import Complexity.Foundations.GroupTheory.Perm.FiveCycle
 public import Complexity.Foundations.GroupTheory.Perm.Fixing
 public import Complexity.Foundations.GroupTheory.Perm.Last
+public import Complexity.Foundations.GroupTheory.Perm.ReverseCycle
 public import Complexity.Foundations.LinearAlgebra.CubeSum
 public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
+public import Complexity.Foundations.LinearAlgebra.FreeAlgebra
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
@@ -4380,9 +4462,12 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Moore
 public import Complexity.Foundations.LinearAlgebra.Matrix.PairedPorts
 public import Complexity.Foundations.LinearAlgebra.Matrix.PartialDerivatives
 public import Complexity.Foundations.LinearAlgebra.Matrix.PilotCorrection
+public import Complexity.Foundations.LinearAlgebra.Matrix.PowPerturbation
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rank
 public import Complexity.Foundations.LinearAlgebra.Matrix.RectPermanent
+public import Complexity.Foundations.LinearAlgebra.Matrix.Rigidity
 public import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
+public import Complexity.Foundations.LinearAlgebra.Matrix.SkewDeterminant
 public import Complexity.Foundations.LinearAlgebra.Matrix.SubmatrixRobust
 public import Complexity.Foundations.LinearAlgebra.Matrix.TimeLayer
 public import Complexity.Foundations.LinearAlgebra.Matrix.TimeLayer.Fin
@@ -4504,6 +4589,7 @@ public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.InfinitePi
 public import Complexity.Foundations.Probability.InitialPilotCompleted
 public import Complexity.Foundations.Probability.InitialPilotCorrection
 public import Complexity.Foundations.Probability.InitialPilotCorrectionMean
@@ -4586,7 +4672,9 @@ public import Complexity.GameTheory.Congestion.Affine
 public import Complexity.GameTheory.Congestion.Basic
 public import Complexity.GameTheory.Congestion.Hedge
 public import Complexity.GameTheory.Congestion.Nonatomic
+public import Complexity.GameTheory.Mechanism.Bayesian
 public import Complexity.GameTheory.Mechanism.CriticalBid
+public import Complexity.GameTheory.Mechanism.FirstPrice
 public import Complexity.GameTheory.Mechanism.Knapsack
 public import Complexity.GameTheory.Mechanism.Myerson
 public import Complexity.GameTheory.Mechanism.OptimalAuction
@@ -4640,6 +4728,7 @@ public import Complexity.Languages.Probabilistic.Sum
 public import Complexity.Languages.Probabilistic.Transcript
 public import Complexity.Languages.Probabilistic.Traverse
 public import Complexity.Languages.Probabilistic.Traverse.CoinTape
+public import Complexity.Languages.Probabilistic.Traverse.SupportWith
 public import Complexity.Languages.Probabilistic.UniformNat
 public import Complexity.Languages.Probabilistic.UniformNat.Support
 public import Complexity.Languages.Probabilistic.UntilBad
@@ -4885,9 +4974,13 @@ public import Complexity.Logics.Propositional.Resolution.Pigeonhole
 public import Complexity.Logics.Propositional.Resolution.Proof
 public import Complexity.Logics.Propositional.Resolution.Restrict
 public import Complexity.Logics.Propositional.Resolution.SizeWidth
+public import Complexity.Logics.Propositional.Resolution.Space
+public import Complexity.Logics.Propositional.Resolution.SpaceWidth
 public import Complexity.Logics.Propositional.Resolution.TreeLike
+public import Complexity.Logics.Propositional.Resolution.TreeLikeSpace
 public import Complexity.Logics.Propositional.Resolution.Tseitin
 public import Complexity.Logics.Propositional.Resolution.TseitinExpander
+public import Complexity.Logics.Propositional.Resolution.TseitinSpace
 public import Complexity.Logics.Propositional.SemanticDerivation
 public import Complexity.Logics.Propositional.SigmaThree
 public import Complexity.Logics.Propositional.Tseitin
@@ -4932,6 +5025,7 @@ public import Complexity.MachineLearning.PACLearning.UniformConvergence
 public import Complexity.MachineLearning.PACLearning.VCDimension
 public import Complexity.MachineLearning.PACLearning.VCUpperBound
 public import Complexity.MachineLearning.StatisticalQuery.Basic
+public import Complexity.MachineLearning.StatisticalQuery.Dimension
 public import Complexity.MachineLearning.StatisticalQuery.LowDegree
 public import Complexity.MachineLearning.StatisticalQuery.LowerBound
 public import Complexity.MachineLearning.StatisticalQuery.Parity
@@ -4943,12 +5037,16 @@ public import Complexity.MachineLearning.UniformLearning.LowDegree
 public import Complexity.MachineLearning.UniformLearning.LowDegreeClasses
 public import Complexity.MachineLearning.UniformLearning.MembershipQuery
 public import Complexity.Privacy.DifferentialPrivacy.AboveThreshold
+public import Complexity.Privacy.DifferentialPrivacy.AdvancedComposition
 public import Complexity.Privacy.DifferentialPrivacy.Basic
 public import Complexity.Privacy.DifferentialPrivacy.Composition
 public import Complexity.Privacy.DifferentialPrivacy.DiscreteLaplace
 public import Complexity.Privacy.DifferentialPrivacy.ExponentialMechanism
 public import Complexity.Privacy.DifferentialPrivacy.Hamming
+public import Complexity.Privacy.DifferentialPrivacy.Packing
+public import Complexity.Privacy.DifferentialPrivacy.PrivacyLoss
 public import Complexity.Privacy.DifferentialPrivacy.RandomizedResponse
+public import Complexity.Privacy.DifferentialPrivacy.Reconstruction
 public import Complexity.Probability.AdaptiveWeights
 public import Complexity.Probability.ApproximateCounting
 public import Complexity.Probability.ApproximateCounting.Relative
@@ -4965,6 +5063,7 @@ public import Complexity.Probability.BitString.List.All
 public import Complexity.Probability.BitString.List.Vote
 public import Complexity.Probability.BitString.SubsetSum
 public import Complexity.Probability.BitString.SubsetSum.Matrix
+public import Complexity.Probability.BitString.ToeplitzHash
 public import Complexity.Probability.BoundedDifferences
 public import Complexity.Probability.Chernoff
 public import Complexity.Probability.Coding.PrefixFreeEntropy
@@ -5028,8 +5127,11 @@ public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
 public import Complexity.Probability.Minimax
 public import Complexity.Probability.Minimax.Value
+public import Complexity.Probability.MoserTardos
+public import Complexity.Probability.MoserTardos.Witness
 public import Complexity.Probability.OptimalStopping.Basic
 public import Complexity.Probability.OptimalStopping.Prophet
+public import Complexity.Probability.OptimalStopping.ProphetIID
 public import Complexity.Probability.OptimalStopping.Secretary
 public import Complexity.Probability.Option
 public import Complexity.Probability.PMF
@@ -5041,6 +5143,7 @@ public import Complexity.Probability.PMF.Filter
 public import Complexity.Probability.PMF.Map
 public import Complexity.Probability.PMF.Option
 public import Complexity.Probability.PMF.Option.Bind
+public import Complexity.Probability.PMF.TailQuantile
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound
@@ -5058,6 +5161,7 @@ public import Complexity.Probability.PairwiseIndependentHash.FrameRetention
 public import Complexity.Probability.PairwiseIndependentHash.FrameSubstitution
 public import Complexity.Probability.PairwiseIndependentHash.HeavyCount
 public import Complexity.Probability.PairwiseIndependentHash.HierarchyChannels
+public import Complexity.Probability.PairwiseIndependentHash.Mixing
 public import Complexity.Probability.PairwiseIndependentHash.Retention
 public import Complexity.Probability.PairwiseIndependentHash.RetentionChannel
 public import Complexity.Probability.PairwiseIndependentHash.RowFourthMoment
@@ -5082,6 +5186,8 @@ public import Complexity.Probability.RejectionSampling
 public import Complexity.Probability.Resilience
 public import Complexity.Probability.Rewinding
 public import Complexity.Probability.Rewinding.Consistency
+public import Complexity.Probability.SaksZhou
+public import Complexity.Probability.SaksZhou.Snap
 public import Complexity.Probability.Shearer
 public import Complexity.Probability.SmallBias
 public import Complexity.Probability.SmallBias.Powering
@@ -5090,10 +5196,13 @@ public import Complexity.Probability.Split
 public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.StatisticalDistance.ClosedForm
 public import Complexity.Probability.StatisticalDistance.Coupling
+public import Complexity.Probability.StatisticalDistance.DirectProduct
 public import Complexity.Probability.StatisticalDistance.Event
 public import Complexity.Probability.StatisticalDistance.OptimalCoupling
+public import Complexity.Probability.StatisticalDistance.Polarization
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
+public import Complexity.Probability.StatisticalDistance.XOR
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash

@@ -16,11 +16,22 @@ import Mathlib.Analysis.Real.Sqrt
 Two unit states with a large overlap give nearly the same probability to every set of outcomes:
 `|⟨ψ, φ⟩|² + (P_ψ(S) - P_φ(S))² ≤ 1` (`Cslib.Quantum.norm_inner_sq_add_sq_measureProb_sub_le_one`).
 This is how an adversary argument turns a bound on overlaps into a bound on the success
-probability of a measurement.
+probability of a measurement. In particular, states that a measurement tells apart with error
+`ε ≤ 1/2` have overlap at most `2√(ε(1-ε))`
+(`Cslib.Quantum.norm_inner_le_two_mul_sqrt_of_measureProb`, [Ambainis2002], Lemma 1).
 
 ## Main results
 
 * `Cslib.Quantum.norm_inner_sq_add_sq_measureProb_sub_le_one`: `|⟨ψ, φ⟩|² + (p - q)² ≤ 1`.
+* `Cslib.Quantum.norm_inner_le_two_mul_sqrt_of_measureProb`: `|⟨ψ, φ⟩| ≤ 2√(ε(1-ε))` when a
+  measurement accepts `ψ` with probability at least `1 - ε` and `φ` with probability at most
+  `ε ≤ 1/2`.
+* `Cslib.Quantum.one_sub_two_mul_sqrt_nonneg`: the resulting factor `1 - 2√(ε(1-ε))` is
+  nonnegative.
+
+## References
+
+* [A. Ambainis, *Quantum lower bounds by quantum arguments*][Ambainis2002]
 -/
 
 public section
@@ -86,6 +97,33 @@ theorem norm_inner_sq_add_sq_measureProb_sub_le_one {ι : Type*} [Fintype ι]
   have h₂ : (p - q) ^ 2 ≤ (a * b' - a' * b) ^ 2 := by
     rw [hdiff, mul_pow]
     nlinarith [sq_nonneg (a * b' - a' * b)]
+  linarith
+
+/-- **Distinguishable states have small overlap** [Ambainis2002], Lemma 1: if a measurement
+accepts the unit state `ψ` with probability at least `1 - ε` and the unit state `φ` with
+probability at most `ε ≤ 1/2`, then `|⟨ψ, φ⟩| ≤ 2√(ε(1-ε))`. -/
+theorem norm_inner_le_two_mul_sqrt_of_measureProb {ι : Type*} [Fintype ι]
+    {ψ φ : EuclideanSpace ℂ ι} (hψ : ‖ψ‖ = 1) (hφ : ‖φ‖ = 1) {S : Finset ι} {ε : ℝ}
+    (h₁ : 1 - ε ≤ measureProb ψ S) (h₂ : measureProb φ S ≤ ε) (hε : 2 * ε ≤ 1) :
+    ‖inner ℂ ψ φ‖ ≤ 2 * √(ε * (1 - ε)) := by
+  have hov := norm_inner_sq_add_sq_measureProb_sub_le_one hψ hφ S
+  have hle : measureProb ψ S ≤ 1 := by
+    have := measureProb_le_measureProb_univ ψ S
+    rwa [measureProb_univ, hψ, one_pow] at this
+  have hε0 : 0 ≤ ε := (measureProb_nonneg φ S).trans h₂
+  have hgap : (1 - 2 * ε) ^ 2 ≤ (measureProb ψ S - measureProb φ S) ^ 2 :=
+    pow_le_pow_left₀ (by linarith) (by linarith) 2
+  have hc : (2 * √(ε * (1 - ε))) ^ 2 = 4 * (ε * (1 - ε)) := by
+    rw [mul_pow, Real.sq_sqrt (mul_nonneg hε0 (by linarith))]
+    norm_num
+  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 ?_
+  rw [hc]
+  nlinarith
+
+/-- The factor `1 - 2√(ε(1-ε))` of the adversary bounds is nonnegative, as `ε (1 - ε) ≤ 1/4`. -/
+theorem one_sub_two_mul_sqrt_nonneg (ε : ℝ) : 0 ≤ 1 - 2 * √(ε * (1 - ε)) := by
+  have : √(ε * (1 - ε)) ≤ 1 / 2 :=
+    (Real.sqrt_le_left (by norm_num)).2 (by nlinarith [sq_nonneg (1 - 2 * ε)])
   linarith
 
 end Cslib.Quantum

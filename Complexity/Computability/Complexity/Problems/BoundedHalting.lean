@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Decode
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
 public import Complexity.Foundations.Data.BitString.List.Binary
+import Complexity.Computability.Complexity.Classes.EXP.Decidable
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -171,9 +172,8 @@ theorem mem_EXP : BoundedHalting ∈ EXP encBits :=
   E_subset_EXP mem_E
 
 /-- **Bounded halting is decidable**, since it is in `E`. -/
-theorem isDecidable : IsDecidable BoundedHalting encBits := by
-  obtain ⟨k, c₁, c₂, s, h⟩ := Set.mem_iUnion.mp mem_E
-  exact ⟨_, _, h⟩
+theorem isDecidable : IsDecidable BoundedHalting encBits :=
+  isDecidable_of_mem_E mem_E
 
 /-- **Exponential-time problems reduce to bounded halting.** A problem decided within time
 `c₁ * 2 ^ p n + c₂` on instances of encoded length `n`, where `p` is computable in polynomial time
