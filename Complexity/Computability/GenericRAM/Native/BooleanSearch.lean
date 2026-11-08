@@ -50,6 +50,15 @@ open Turing.MultiTapeTM Cslib.BitString
 
 variable {C : Type}
 
+/-- An optional Boolean word: `none` is empty; `some` has a leading `true` followed by the
+list encoding, which frames each bit. -/
+abbrev encResult : Option (List Bool) ↪ List Bool := encOption (encList encBool)
+
+/-- A context paired with a Boolean word: the context is framed, followed by the list encoding,
+which frames each bit. -/
+abbrev encTestInput (encC : C ↪ List Bool) : C × List Bool ↪ List Bool :=
+  encPair encC (encList encBool)
+
 /-- Retain the context and the first match, using the existing list-search step. -/
 @[expose] def step (test : C × List Bool → Bool)
     (p : (ℕ × List Bool) × (C × Option (List Bool))) : C × Option (List Bool) :=
@@ -152,7 +161,7 @@ private theorem length_enc_words (word : List Bool) :
 
 /-- A prefix stores at most one width-sized result, including the option tag and list framing. -/
 theorem length_prefix_result_le (test : C × List Bool → Bool) (p : C × ℕ) (j : ℕ) :
-    (encOption (encList encBool) (runPrefix test p j).2.2.2).length ≤ 3 * p.2 + 1 := by
+    (encResult (runPrefix test p j).2.2.2).length ≤ 3 * p.2 + 1 := by
   cases h : (runPrefix test p j).2.2.2 with
   | none => simp
   | some word =>
@@ -163,7 +172,7 @@ theorem length_prefix_result_le (test : C × List Bool → Bool) (p : C × ℕ) 
 /-- The complete captured accumulator has polynomial size at every prefix, independently of
 the number of visited assignments. -/
 theorem length_prefix_accumulator_le (test : C × List Bool → Bool) (p : C × ℕ) (j : ℕ) :
-    (encPair encC (encOption (encList encBool)) (runPrefix test p j).2.2).length ≤
+    (encPair encC encResult (runPrefix test p j).2.2).length ≤
       2 * (encC p.1).length + 3 * p.2 + 2 := by
   rw [length_encPair]
   have hc : (runPrefix test p j).2.2.1 = p.1 := by rw [prefix_accumulator]
@@ -174,13 +183,13 @@ theorem length_prefix_accumulator_le (test : C × List Bool → Bool) (p : C × 
 /-- The full index/width/context/result state stays polynomial even at the terminal prefix. -/
 theorem length_prefix_le (test : C × List Bool → Bool) (p : C × ℕ) (j : ℕ)
     (hj : j ≤ 2 ^ p.2) :
-    (encPair encNat (encPair encUnary (encPair encC (encOption (encList encBool))))
+    (encPair encNat (encPair encUnary (encPair encC encResult))
       (runPrefix test p j)).length ≤ 2 * (encC p.1).length + 7 * p.2 + 6 := by
   exact (BooleanFold.length_prefix_le (step test) p.2 j _ (p.1, none) hj
     (length_prefix_accumulator_le test p j)).trans (by omega)
 
 private abbrev encAccumulator (encC : C ↪ List Bool) :=
-  encPair encC (encOption (encList encBool))
+  encPair encC encResult
 
 private abbrev encCallback (encC : C ↪ List Bool) :=
   encPair (encPair encUnary encBits) (encAccumulator encC)
@@ -188,14 +197,14 @@ private abbrev encCallback (encC : C ↪ List Bool) :=
 private def contextCertificate :
     NativeCertificate (fun p : (ℕ × List Bool) × (C × Option (List Bool)) => p.2.1)
       (encCallback encC) encC :=
-  NativeCertificate.linear ((ComputableInO.fst encC (encOption (encList encBool))).comp_linear
+  NativeCertificate.linear ((ComputableInO.fst encC encResult).comp_linear
     (ComputableInO.snd (encPair encUnary encBits) (encAccumulator encC)))
 
 private def resultCertificate :
     NativeCertificate (fun p : (ℕ × List Bool) × (C × Option (List Bool)) => p.2.2)
-      (encCallback encC) (encOption (encList encBool)) :=
+      (encCallback encC) encResult :=
   NativeCertificate.linear
-    ((ComputableInO.snd encC (encOption (encList encBool))).comp_linear
+    ((ComputableInO.snd encC encResult).comp_linear
       (ComputableInO.snd (encPair encUnary encBits) (encAccumulator encC)))
 
 private theorem word_polyTime :
@@ -214,10 +223,10 @@ private noncomputable def wordCertificate :
 test when a word has already been found; the decoder's bit word is converted to the agreed list
 encoding before invoking the test. -/
 noncomputable def stepCertificate {test : C × List Bool → Bool}
-    (ct : NativeCertificate test (encPair encC (encList encBool)) encBool) :
+    (ct : NativeCertificate test (encTestInput encC) encBool) :
     NativeCertificate (step test)
-      (encPair (encPair encUnary encBits) (encPair encC (encOption (encList encBool))))
-      (encPair encC (encOption (encList encBool))) := by
+      (encPair (encPair encUnary encBits) (encPair encC encResult))
+      (encPair encC encResult) := by
   exact (contextCertificate.prod
     (NativeCertificate.branch
       (resultCertificate.post (ComputableInDegree.isSome (encList encBool)).inO_one)
@@ -228,7 +237,7 @@ noncomputable def stepCertificate {test : C × List Bool → Bool}
 /-- A polynomial native test gives a polynomial step in the complete captured input encoding.
 This does not assert polynomial time for the exponential traversal. -/
 theorem stepCertificate_isPolynomial {test : C × List Bool → Bool}
-    (ct : NativeCertificate test (encPair encC (encList encBool)) encBool)
+    (ct : NativeCertificate test (encTestInput encC) encBool)
     (hct : ct.IsPolynomial) : (stepCertificate ct).IsPolynomial := by
   unfold stepCertificate
   apply NativeCertificate.congr_isPolynomial
@@ -251,15 +260,15 @@ theorem stepCertificate_isPolynomial {test : C × List Bool → Bool}
 charged time and space bounds are those of the binary streaming iterator, including count
 preparation, initialization, decoding, the selected test calls and output projection. -/
 noncomputable def certificate {test : C × List Bool → Bool}
-    (ct : NativeCertificate test (encPair encC (encList encBool)) encBool) :
-    NativeCertificate (run test) (encPair encC encUnary) (encOption (encList encBool)) :=
+    (ct : NativeCertificate test (encTestInput encC) encBool) :
+    NativeCertificate (run test) (encPair encC encUnary) encResult :=
   ((BooleanFold.certificate
     (NativeCertificate.linear (ComputableInO.snd encC encUnary))
     ((NativeCertificate.linear (ComputableInO.fst encC encUnary)).prod
       (NativeCertificate.const none)) (stepCertificate ct)).snd.snd.snd).congr (fun _ => rfl)
 
 private theorem stepCertificate_bounds {test : C × List Bool → Bool}
-    (ct : NativeCertificate test (encPair encC (encList encBool)) encBool)
+    (ct : NativeCertificate test (encTestInput encC) encBool)
     (q : (ℕ × List Bool) × (C × Option (List Bool))) :
     (stepCertificate ct).time q ≤ 4 * (encCallback encC q).length +
         2 * (wordCertificate (encC := encC)).time q + ct.time (q.2.1, q.1.2) ∧
@@ -275,7 +284,7 @@ private theorem stepCertificate_bounds {test : C × List Bool → Bool}
 polynomial; the traversal count multiplies time only. All fixed preparation and state costs are
 included in the polynomial overhead. -/
 theorem exists_computableInO_of_visit_bounds {test : C × List Bool → Bool}
-    (ct : NativeCertificate test (encPair encC (encList encBool)) encBool)
+    (ct : NativeCertificate test (encTestInput encC) encBool)
     {R Q : C × ℕ → ℕ}
     (hR : ∀ p j, j ≤ 2 ^ p.2 →
       (BooleanFold.visitCertificate (stepCertificate ct)).time (runPrefix test p j) ≤ R p)
@@ -283,18 +292,18 @@ theorem exists_computableInO_of_visit_bounds {test : C × List Bool → Bool}
       (BooleanFold.visitCertificate (stepCertificate ct)).space (runPrefix test p j) ≤ Q p) :
     ∃ overhead : C × ℕ → ℕ,
       PolyBounded (fun p => (encPair encC encUnary p).length) overhead ∧
-      ComputableInO (run test) (encPair encC encUnary) (encOption (encList encBool))
+      ComputableInO (run test) (encPair encC encUnary) encResult
         (fun p => (2 ^ p.2 + 1) * (overhead p + R p)) (fun p => overhead p + Q p) := by
   let size := fun p : C × ℕ => (encPair encC encUnary p).length
   let cn := BooleanFold.clock.comp
     (NativeCertificate.linear (ComputableInO.snd encC encUnary))
   let ci := (NativeCertificate.linear (ComputableInO.snd encC encUnary)).prod
     ((NativeCertificate.linear (ComputableInO.fst encC encUnary)).prod
-      (NativeCertificate.const (em := encOption (encList encBool)) none))
+      (NativeCertificate.const (em := encResult) none))
   let cv := BooleanFold.visitCertificate (stepCertificate ct)
   let B := fun p : C × ℕ => 10 * (size p + 1)
   have hstate (p : C × ℕ) (j : ℕ) (hj : j ≤ 2 ^ p.2) :
-      (encPair encNat (encPair encUnary (encPair encC (encOption (encList encBool))))
+      (encPair encNat (encPair encUnary (encPair encC encResult))
         (runPrefix test p j)).length ≤ B p := by
     have h := length_prefix_le (encC := encC) test p j hj
     apply h.trans
@@ -306,7 +315,7 @@ theorem exists_computableInO_of_visit_bounds {test : C × List Bool → Bool}
       have h := hstate p j hj
       rw [length_encPair] at h
       exact le_trans (Nat.le_add_left _ _) h)
-  have hfinal := (ComputableInO.snd encC (encOption (encList encBool))).comp_linear
+  have hfinal := (ComputableInO.snd encC encResult).comp_linear
     ((ComputableInO.snd encUnary (encAccumulator encC)).comp_linear
       ((ComputableInO.snd encNat (encPair encUnary (encAccumulator encC))).comp_linear hrun))
   let stateSize := fun p : C × ℕ => 2 * (p.2 + 1) + 1 + B p
@@ -356,13 +365,13 @@ theorem exists_computableInO_of_visit_bounds {test : C × List Bool → Bool}
 machinery is polynomial: `T` and `S` are any uniform bounds over the candidates of the runtime
 width. Exponentially many visits multiply time, while their workspace is reused. -/
 theorem exists_computableInO_of_bounds {test : C × List Bool → Bool}
-    (ct : NativeCertificate test (encPair encC (encList encBool)) encBool)
+    (ct : NativeCertificate test (encTestInput encC) encBool)
     {T S : C × ℕ → ℕ}
     (hT : ∀ p w, w.length = p.2 → ct.time (p.1, w) ≤ T p)
     (hS : ∀ p w, w.length = p.2 → ct.space (p.1, w) ≤ S p) :
     ∃ overhead : C × ℕ → ℕ,
       PolyBounded (fun p => (encPair encC encUnary p).length) overhead ∧
-      ComputableInO (run test) (encPair encC encUnary) (encOption (encList encBool))
+      ComputableInO (run test) (encPair encC encUnary) encResult
         (fun p => (2 ^ p.2 + 1) * (overhead p + T p)) (fun p => overhead p + S p) := by
   let encState := encPair encNat (encPair encUnary (encAccumulator encC))
   let prepare := fun p : ℕ × (ℕ × (C × Option (List Bool))) =>
@@ -440,17 +449,17 @@ theorem exists_computableInO_of_bounds {test : C × List Bool → Bool}
 only polynomial charged workspace. The two polynomials and the realizing machine are fixed
 before the runtime context and width. In particular, the traversal count does not enter space. -/
 theorem exists_computableInO {test : C × List Bool → Bool}
-    (ct : NativeCertificate test (encPair encC (encList encBool)) encBool)
+    (ct : NativeCertificate test (encTestInput encC) encBool)
     (hct : ct.IsPolynomial) :
     ∃ overhead workspace : C × ℕ → ℕ,
       PolyBounded (fun p => (encPair encC encUnary p).length) overhead ∧
       PolyBounded (fun p => (encPair encC encUnary p).length) workspace ∧
-      ComputableInO (run test) (encPair encC encUnary) (encOption (encList encBool))
+      ComputableInO (run test) (encPair encC encUnary) encResult
         (fun p => (2 ^ p.2 + 1) * overhead p) workspace := by
   let size := fun p : C × ℕ => (encPair encC encUnary p).length
   let B := fun p : C × ℕ => 2 * (encC p.1).length + 3 * p.2 + 1
   have hlen (p : C × ℕ) (w : List Bool) (hw : w.length = p.2) :
-      (encPair encC (encList encBool) (p.1, w)).length ≤ B p := by
+      (encTestInput encC (p.1, w)).length ≤ B p := by
     simp only [length_encPair, length_enc_words, hw, B]
     omega
   obtain ⟨a, b, ht⟩ := hct.1.exists_le

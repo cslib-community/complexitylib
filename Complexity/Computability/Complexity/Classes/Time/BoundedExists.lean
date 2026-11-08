@@ -28,7 +28,7 @@ Every polynomial in the cost is absorbed by the exponential, so the exponent is 
 `|x| + ℓ x`, with a constant
 that depends on the test.
 
-The same edges give the closure of `PSPACE` under bounded existential quantification
+The shared search gives the closure of `PSPACE` under bounded existential quantification
 (`Cslib.Complexity.setOf_exists_mem_PSPACE`), where the point is the space of the run. Here the
 time is the point: this brute force is the last step of lazy diagonalization for
 nondeterministic time, which must decide deterministically whether some certificate is
