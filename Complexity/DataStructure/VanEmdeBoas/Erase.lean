@@ -140,11 +140,6 @@ Section 20.3, p. 554). -/
 @[simp] theorem erase_empty (d x : ℕ) : (empty d).erase x = empty d := by
   cases d <;> rfl
 
-private theorem index_lt_index {u i j a b : ℕ} (ha : a < u) (hij : i < j) :
-    i * u + a < j * u + b := by
-  have h := Nat.mul_le_mul_right u (show i + 1 ≤ j by omega)
-  nlinarith
-
 private theorem singleton_contains_of_bounds_eq {t : Tree d} (ht : t.Valid) {m : ℕ}
     (hb : t.bounds = some (m, m)) (y : ℕ) : t.Contains y ↔ y = m := by
   have he := ht.extrema
@@ -240,11 +235,8 @@ private theorem valid_node_of_clusterMax {newMin : ℕ} {s' : Tree d}
       simp only [Extrema, bounds]
       have hgt : newMin < sM * universeSize d + cM := hexcl j cM hce.2.2.2.1
       have hM_lt : sM * universeSize d + cM < universeSize (d + 1) := by
-        rw [universeSize_succ]
-        have hmul := Nat.mul_le_mul_right (universeSize d)
-          (show sM + 1 ≤ universeSize d by omega)
-        have hcM_lt := hce.2.1
-        nlinarith
+        have := cluster_key_lt_of_lt (b := 0) hce.2.1 hse.2.1
+        rwa [Nat.add_zero] at this
       refine ⟨hgt.le, hM_lt, ⟨newMin, _, rfl, Or.inl rfl⟩,
         ⟨newMin, _, rfl, Or.inr ⟨j, cM, hce.2.2.2.1, rfl⟩⟩, ?_⟩
       intro z hz
@@ -260,7 +252,7 @@ private theorem valid_node_of_clusterMax {newMin : ℕ} {s' : Tree d}
         · have hk_lt : k.val < sM := by
             have : k.val ≠ sM := fun h => hkj (Fin.ext h)
             omega
-          exact (index_lt_index ((hc' k).contains_lt hy) hk_lt).le
+          exact (cluster_key_lt_of_lt ((hc' k).contains_lt hy) hk_lt).le
 
 private theorem update_cluster_erase_spec {c : Fin (universeSize d) → Tree d}
     (hc : ∀ k, (c k).Valid) {i : Fin (universeSize d)} {low : ℕ} {t : Tree d}
@@ -280,10 +272,12 @@ private theorem update_cluster_erase_spec {c : Fin (universeSize d) → Tree d}
       simpa only [Function.update_self, true_and] using hs y
     · simp [h]
 
+/-- One recursive deletion step at a valid occupied node. Removing `low` from cluster `i` and
+installing `newMin` as the local minimum yields a valid node representing the old set without
+`x`, provided `hkeys` describes that set as `newMin` plus the remaining cluster keys. -/
 private theorem erase_cluster_branch {s : Tree d} {c : Fin (universeSize d) → Tree d}
     {m M x newMin low cm cM : ℕ} {i : Fin (universeSize d)}
-    (hs : s.Valid) (hc : ∀ k, (c k).Valid)
-    (ho : ∀ k, s.Contains k.val ↔ (c k).bounds.isSome = true)
+    (ht : (node (some (m, M)) s c).Valid)
     (ih : ∀ {t : Tree d}, t.Valid → ∀ z,
       (t.erase z).Valid ∧ ∀ y, (t.erase z).Contains y ↔ y ≠ z ∧ t.Contains y)
     (hmin_lt : newMin < universeSize (d + 1))
@@ -291,10 +285,9 @@ private theorem erase_cluster_branch {s : Tree d} {c : Fin (universeSize d) → 
     (hlow_eq : cm = cM → low = cm)
     (hexcl' : ∀ k y, ¬(k = i ∧ y = low) → (c k).Contains y →
       newMin < k.val * universeSize d + y)
-    (hset_eq : ∀ (s' : Tree d) (c' : Fin (universeSize d) → Tree d) (M' : ℕ),
-      (∀ k y, (c' k).Contains y ↔ ¬(k = i ∧ y = low) ∧ (c k).Contains y) →
-        ∀ y, (node (some (newMin, M')) s' c').Contains y ↔
-          y ≠ x ∧ (node (some (m, M)) s c).Contains y) :
+    (hkeys : ∀ y, (y = newMin ∨ ∃ k a, (¬(k = i ∧ a = low) ∧ (c k).Contains a) ∧
+        y = k.val * universeSize d + a) ↔
+      y ≠ x ∧ (node (some (m, M)) s c).Contains y) :
     (let t' :=
       if cm = cM then
         if low = cm then
@@ -306,6 +299,17 @@ private theorem erase_cluster_branch {s : Tree d} {c : Fin (universeSize d) → 
         let c' := Function.update c i (erase (c i) low)
         node (some (newMin, clusterMax newMin s c')) s c'
     t'.Valid ∧ ∀ y, t'.Contains y ↔ y ≠ x ∧ (node (some (m, M)) s c).Contains y) := by
+  have hs := ht.summary
+  have hc := ht.cluster
+  have ho := ht.summary_contains_iff
+  -- Every update of cluster `i` that removes exactly `low` has the represented set `hkeys`.
+  have hset_eq : ∀ (s' : Tree d) (c' : Fin (universeSize d) → Tree d) (M' : ℕ),
+      (∀ k y, (c' k).Contains y ↔ ¬(k = i ∧ y = low) ∧ (c k).Contains y) →
+        ∀ y, (node (some (newMin, M')) s' c').Contains y ↔
+          y ≠ x ∧ (node (some (m, M)) s c).Contains y := by
+    intro s' c' M' hcs y
+    rw [← hkeys y]
+    simp only [contains_node_some, hcs]
   dsimp only
   by_cases hcm : cm = cM
   · have hlow : low = cm := hlow_eq hcm
@@ -357,243 +361,18 @@ private theorem erase_cluster_branch {s : Tree d} {c : Fin (universeSize d) → 
       exact hexcl' k y hne hyc
     exact ⟨valid_node_of_clusterMax hmin_lt hs hcv ho' hexcl, hset_eq s c' _ hcs⟩
 
-private theorem erase_spec {t : Tree d} (ht : t.Valid) (x : ℕ) :
-    (t.erase x).Valid ∧ ∀ y, (t.erase x).Contains y ↔ y ≠ x ∧ t.Contains y := by
-  induction d generalizing x with
-  | zero =>
-    cases t with
-    | leaf b =>
-      cases b with
-      | none =>
-        refine ⟨ht, fun y => ?_⟩
-        simp [erase, Contains]
-      | some b =>
-        obtain ⟨m, M⟩ := b
-        have he := ht.extrema
-        simp only [Extrema, bounds] at he
-        by_cases hboth : x = m ∧ x = M
-        · rw [erase, ite_eq_left hboth]
-          refine ⟨valid_empty 0, fun y => ?_⟩
-          simp only [contains_leaf_some]
-          rcases hboth with ⟨rfl, hM⟩
-          rw [← hM]
-          simp [Contains]
-        · by_cases hxm : x = m
-          · rw [erase, ite_eq_right hboth, ite_eq_left hxm]
-            have hmM : m < M := by omega
-            refine ⟨?_, fun y => ?_⟩
-            · simp only [Valid, Extrema, bounds, contains_leaf_some]
-              exact ⟨le_rfl, he.2.1, Or.inl trivial, Or.inl trivial, fun z hz => by omega⟩
-            · simp only [contains_leaf_some]
-              omega
-          · by_cases hxM : x = M
-            · rw [erase, ite_eq_right hboth, ite_eq_right hxm, ite_eq_left hxM]
-              have hmM : m < M := by omega
-              refine ⟨?_, fun y => ?_⟩
-              · simp only [Valid, Extrema, bounds, contains_leaf_some]
-                exact ⟨le_rfl, by omega, Or.inl trivial, Or.inl trivial, fun z hz => by omega⟩
-              · simp only [contains_leaf_some]
-                omega
-            · rw [erase, ite_eq_right hboth, ite_eq_right hxm, ite_eq_right hxM]
-              refine ⟨ht, fun y => ?_⟩
-              simp only [contains_leaf_some]
-              omega
-  | succ d ih =>
-    cases t with
-    | node b s c =>
-      cases b with
-      | none =>
-        refine ⟨ht, fun y => ?_⟩
-        simp [erase, Contains]
-      | some b =>
-        obtain ⟨m, M⟩ := b
-        have he := ht.extrema
-        simp only [Extrema, bounds] at he
-        by_cases hout : x < m ∨ M < x
-        · rw [erase, ite_eq_left hout]
-          refine ⟨ht, fun y => ?_⟩
-          constructor
-          · intro hy
-            have hyb := he.2.2.2.2 y hy
-            exact ⟨by omega, hy⟩
-          · exact And.right
-        · by_cases heq : m = M
-          · rw [erase, ite_eq_right hout, ite_eq_left heq]
-            have hxm : x = m := by omega
-            subst M
-            obtain ⟨hv, _, hnone⟩ := empty_of_bounds_eq ht (m := m) rfl
-            refine ⟨hv, fun y => ?_⟩
-            rw [singleton_contains_of_bounds_eq ht (m := m) rfl y, hxm]
-            exact ⟨fun hy => False.elim (hnone y hy), fun h => False.elim (h.1 h.2)⟩
-          · have ⟨_, hs, hc, ho, hmin⟩ := ht
-            by_cases hxm : x = m
-            · -- Deleting the excluded minimum `m`: promote the least cluster key to `newMin`.
-              have hM_mem : (node (some (m, M)) s c).Contains M := he.2.2.2.1
-              simp only [contains_node_some] at hM_mem
-              rcases hM_mem with hMm | ⟨kM, yM, hyM, _⟩
-              · exact False.elim (heq hMm.symm)
-              · have hs_kM : s.Contains kM.val :=
-                  (ho kM).mpr ((hc kM).bounds_isSome_iff.mpr ⟨yM, hyM⟩)
-                cases hbs : s.bounds with
-                | none => exact False.elim (not_contains_of_bounds_none hbs kM.val hs_kM)
-                | some sb =>
-                  obtain ⟨sm, sM⟩ := sb
-                  have hse := hs.extrema
-                  simp only [Extrema, hbs] at hse
-                  have hsm_lt : sm < universeSize d := hs.contains_lt hse.2.2.1
-                  let i : Fin (universeSize d) := ⟨sm, hsm_lt⟩
-                  have hbi_some : (c i).bounds.isSome = true := (ho i).mp hse.2.2.1
-                  cases hbi : (c i).bounds with
-                  | none => simp [hbi] at hbi_some
-                  | some cb =>
-                    obtain ⟨cm, cM⟩ := cb
-                    have hce := (hc i).extrema
-                    simp only [Extrema, hbi] at hce
-                    let newMin := sm * universeSize d + cm
-                    have hnewMin_mem : (node (some (m, M)) s c).Contains newMin :=
-                      ⟨m, M, rfl, Or.inr ⟨i, cm, hce.2.2.1, rfl⟩⟩
-                    have hnewMin_lt : newMin < universeSize (d + 1) := ht.contains_lt hnewMin_mem
-                    have htarget : eraseTarget m x s c = some ⟨newMin, i, cm⟩ := by
-                      simp [eraseTarget, hxm, minimum, hbs, hsm_lt, i, hbi, newMin]
-                    have hexcl' : ∀ k y, ¬(k = i ∧ y = cm) → (c k).Contains y →
-                        newMin < k.val * universeSize d + y := by
-                      intro k y hne hy
-                      have hsk : s.Contains k.val :=
-                        (ho k).mpr ((hc k).bounds_isSome_iff.mpr ⟨y, hy⟩)
-                      have hik : sm ≤ k.val := (hse.2.2.2.2 k.val hsk).1
-                      by_cases hki : k = i
-                      · subst k
-                        have hyne : y ≠ cm := fun h => hne ⟨rfl, h⟩
-                        have hcmy : cm ≤ y := (hce.2.2.2.2 y hy).1
-                        dsimp only [newMin, i]
-                        omega
-                      · have hlt : sm < k.val := by
-                          have : k.val ≠ sm := fun h => hki (Fin.ext h)
-                          omega
-                        exact index_lt_index (Nat.lt_of_le_of_lt hce.1 hce.2.1) hlt
-                    have hset_eq : ∀ (s' : Tree d) (c' : Fin (universeSize d) → Tree d) (M' : ℕ),
-                        (∀ k y, (c' k).Contains y ↔ ¬(k = i ∧ y = cm) ∧ (c k).Contains y) →
-                          ∀ y, (node (some (newMin, M')) s' c').Contains y ↔
-                            y ≠ x ∧ (node (some (m, M)) s c).Contains y := by
-                      intro s' c' M' hcs y
-                      simp only [contains_node_some, hcs]
-                      constructor
-                      · rintro (rfl | ⟨k, a, ⟨hne, ha⟩, rfl⟩)
-                        · have hm_lt : m < newMin := hmin i cm hce.2.2.1
-                          exact ⟨by omega, Or.inr ⟨i, cm, hce.2.2.1, rfl⟩⟩
-                        · have hm_lt : m < k.val * universeSize d + a := hmin k a ha
-                          exact ⟨by omega, Or.inr ⟨k, a, ha, rfl⟩⟩
-                      · rintro ⟨hyx, rfl | ⟨k, a, ha, rfl⟩⟩
-                        · exact False.elim (hyx hxm.symm)
-                        · by_cases hka : k = i ∧ a = cm
-                          · rcases hka with ⟨rfl, rfl⟩
-                            exact Or.inl rfl
-                          · exact Or.inr ⟨k, a, ⟨hka, ha⟩, rfl⟩
-                    have hres := erase_cluster_branch (m := m) (M := M) (x := x)
-                      hs hc ho ih hnewMin_lt hbi (fun _ => rfl) hexcl' hset_eq
-                    rw [erase, ite_eq_right hout, ite_eq_right heq, htarget]
-                    dsimp only at hres ⊢
-                    rw [hbi]
-                    exact hres
-            · -- Deleting `x ≠ m` (`m < x ≤ M`): keep `m` and delete `x % u` from `c (x / u)`.
-              have hx_lt : x < universeSize (d + 1) :=
-                Nat.lt_of_le_of_lt (show x ≤ M by omega) he.2.1
-              have hx_div : x / universeSize d < universeSize d :=
-                (Nat.div_lt_iff_lt_mul (universeSize_pos d)).mpr hx_lt
-              let i : Fin (universeSize d) := ⟨x / universeSize d, hx_div⟩
-              let low := x % universeSize d
-              have hx_decomp : x = i.val * universeSize d + low := by
-                simpa only [i, low, Nat.mul_comm] using
-                  (Nat.div_add_mod x (universeSize d)).symm
-              have htarget : eraseTarget m x s c = some ⟨m, i, low⟩ := by
-                simp [eraseTarget, hxm, hx_div, i, low]
-              have hnot_mem_of_not_low : ¬(c i).Contains low →
-                  ¬(node (some (m, M)) s c).Contains x := by
-                intro hnot hx_mem
-                simp only [contains_node_some] at hx_mem
-                rcases hx_mem with hxm' | ⟨k, a, ha, hxa⟩
-                · exact hxm hxm'
-                · have hcoord := cluster_coordinates (i := k.val) (universeSize_pos d)
-                    ((hc k).contains_lt ha)
-                  have hki : i = k := Fin.ext (by simp [i, hxa, hcoord.1])
-                  have halow : low = a := by simp [low, hxa, hcoord.2]
-                  subst k a
-                  exact hnot ha
-              rw [erase, ite_eq_right hout, ite_eq_right heq, htarget]
-              dsimp only
-              cases hbi : (c i).bounds with
-              | none =>
-                have hnot := hnot_mem_of_not_low (not_contains_of_bounds_none hbi low)
-                refine ⟨ht, fun y => ?_⟩
-                exact ⟨fun hy => ⟨fun hyx => hnot (hyx ▸ hy), hy⟩, And.right⟩
-              | some cb =>
-                obtain ⟨cm, cM⟩ := cb
-                dsimp only
-                by_cases hsingleton_miss : cm = cM ∧ low ≠ cm
-                · rcases hsingleton_miss with ⟨rfl, hne⟩
-                  rw [ite_eq_left rfl, ite_eq_right hne]
-                  have hnot_low : ¬(c i).Contains low := by
-                    rw [singleton_contains_of_bounds_eq (hc i) hbi]
-                    exact hne
-                  have hnot := hnot_mem_of_not_low hnot_low
-                  refine ⟨ht, fun y => ?_⟩
-                  exact ⟨fun hy => ⟨fun hyx => hnot (hyx ▸ hy), hy⟩, And.right⟩
-                · have hlow_eq : cm = cM → low = cm := by
-                    intro hcm
-                    by_cases hl : low = cm
-                    · exact hl
-                    · exact False.elim (hsingleton_miss ⟨hcm, hl⟩)
-                  have hm_lt : m < universeSize (d + 1) := ht.contains_lt he.2.2.1
-                  have hexcl' : ∀ k y, ¬(k = i ∧ y = low) → (c k).Contains y →
-                      m < k.val * universeSize d + y := fun k y _ hy => hmin k y hy
-                  have hset_eq : ∀ (s' : Tree d) (c' : Fin (universeSize d) → Tree d) (M' : ℕ),
-                      (∀ k y, (c' k).Contains y ↔ ¬(k = i ∧ y = low) ∧ (c k).Contains y) →
-                        ∀ y, (node (some (m, M')) s' c').Contains y ↔
-                          y ≠ x ∧ (node (some (m, M)) s c).Contains y := by
-                    intro s' c' M' hcs y
-                    simp only [contains_node_some, hcs]
-                    constructor
-                    · rintro (rfl | ⟨k, a, ⟨hne, ha⟩, rfl⟩)
-                      · exact ⟨Ne.symm hxm, Or.inl rfl⟩
-                      · refine ⟨?_, Or.inr ⟨k, a, ha, rfl⟩⟩
-                        intro hyx
-                        have hcoord := cluster_coordinates (i := k.val) (universeSize_pos d)
-                          ((hc k).contains_lt ha)
-                        have hki : k = i := Fin.ext (by simp [i, ← hyx, hcoord.1])
-                        have halow : a = low := by simp [low, ← hyx, hcoord.2]
-                        exact hne ⟨hki, halow⟩
-                    · rintro ⟨hyx, rfl | ⟨k, a, ha, rfl⟩⟩
-                      · exact Or.inl rfl
-                      · refine Or.inr ⟨k, a, ⟨?_, ha⟩, rfl⟩
-                        rintro ⟨rfl, rfl⟩
-                        exact hyx hx_decomp.symm
-                  exact erase_cluster_branch (m := m) (M := M) (x := x)
-                    hs hc ho ih hm_lt hbi hlow_eq hexcl' hset_eq
-
-/-- Deletion of any key preserves the recursive van Emde Boas representation invariant. -/
-theorem valid_erase {t : Tree d} (ht : t.Valid) (x : ℕ) : (t.erase x).Valid :=
-  (erase_spec ht x).1
-
-/-- Deletion removes `x` and preserves membership of every other key. -/
-theorem contains_erase {t : Tree d} (ht : t.Valid) (x y : ℕ) :
-    (t.erase x).Contains y ↔ y ≠ x ∧ t.Contains y :=
-  (erase_spec ht x).2 y
-
 private theorem clusterMax_eq_of_valid {m M : ℕ} {s : Tree d}
     {c : Fin (universeSize d) → Tree d} (ht : (node (some (m, M)) s c).Valid) :
     clusterMax m s c = M := by
-  have he := ht.extrema
-  simp only [Extrema, bounds] at he
-  have ⟨_, hs, hc, ho, hmin⟩ := ht
-  have hv' := valid_node_of_clusterMax (ht.contains_lt he.2.2.1) hs hc ho hmin
-  have he' := hv'.extrema
-  simp only [Extrema, bounds] at he'
+  have hv' := valid_node_of_clusterMax (ht.contains_lt (ht.contains_minimum rfl)) ht.summary
+    ht.cluster ht.summary_contains_iff fun _ _ => ht.min_lt_cluster
+  -- Both nodes represent the same keys, so their cached maxima bound each other.
   have hsame : ∀ z, (node (some (m, clusterMax m s c)) s c).Contains z ↔
       (node (some (m, M)) s c).Contains z := by
     intro z
-    simp [contains_node_some]
-  have h1 : clusterMax m s c ≤ M := (he.2.2.2.2 _ ((hsame _).mp he'.2.2.2.1)).2
-  have h2 : M ≤ clusterMax m s c := (he'.2.2.2.2 _ ((hsame _).mpr he.2.2.2.1)).2
+    simp
+  have h1 := ht.le_max_of_contains rfl ((hsame _).mp (hv'.contains_maximum rfl))
+  have h2 := hv'.le_max_of_contains rfl ((hsame _).mpr (ht.contains_maximum rfl))
   omega
 
 /-- Deleting a key not represented by a valid tree returns the exact tree `t`. -/
@@ -616,46 +395,217 @@ theorem erase_eq_of_not_contains {t : Tree d} (ht : t.Valid) {x : ℕ}
       | none => rfl
       | some b =>
         obtain ⟨m, M⟩ := b
-        have he := ht.extrema
-        simp only [Extrema, bounds] at he
         by_cases hout : x < m ∨ M < x
         · rw [erase, ite_eq_left hout]
-        · have hxm : x ≠ m := fun h => hx (h ▸ he.2.2.1)
-          have heq : m ≠ M := by grind
-          have hx_lt : x < universeSize (d + 1) :=
-            Nat.lt_of_le_of_lt (show x ≤ M by omega) he.2.1
-          have hx_div : x / universeSize d < universeSize d :=
-            (Nat.div_lt_iff_lt_mul (universeSize_pos d)).mpr hx_lt
-          let i : Fin (universeSize d) := ⟨x / universeSize d, hx_div⟩
-          let low := x % universeSize d
-          have hx_decomp : x = i.val * universeSize d + low := by
-            simpa only [i, low, Nat.mul_comm] using
-              (Nat.div_add_mod x (universeSize d)).symm
-          have hnot_low : ¬(c i).Contains low := by
-            intro hlow
-            exact hx ⟨m, M, rfl, Or.inr ⟨i, low, hlow, hx_decomp⟩⟩
-          have htarget : eraseTarget m x s c = some ⟨m, i, low⟩ := by
-            simp [eraseTarget, hxm, hx_div, i, low]
-          rw [erase, ite_eq_right hout, ite_eq_right heq, htarget]
+        -- Otherwise `m < x ≤ M`, so `x` is routed to cluster `x / u` at low part `x % u`.
+        have hxm : x ≠ m := fun h => hx (h ▸ ht.contains_minimum rfl)
+        have heq : m ≠ M := by omega
+        have hx_div : x / universeSize d < universeSize d :=
+          (Nat.div_lt_iff_lt_mul (universeSize_pos d)).mpr
+            ((show x ≤ M by omega).trans_lt (ht.contains_lt (ht.contains_maximum rfl)))
+        let i : Fin (universeSize d) := ⟨x / universeSize d, hx_div⟩
+        let low := x % universeSize d
+        have hnot_low : ¬(c i).Contains low := fun hlow => hx ((contains_node_some ..).mpr
+          (Or.inr ⟨i, low, hlow, (Nat.div_add_mod' x (universeSize d)).symm⟩))
+        have htarget : eraseTarget m x s c = some ⟨m, i, low⟩ := by
+          simp [eraseTarget, hxm, hx_div, i, low]
+        rw [erase, ite_eq_right hout, ite_eq_right heq, htarget]
+        dsimp only
+        cases hbi : (c i).bounds with
+        | none => rfl
+        | some cb =>
+          obtain ⟨cm, cM⟩ := cb
           dsimp only
-          cases hbi : (c i).bounds with
-          | none => rfl
-          | some cb =>
-            obtain ⟨cm, cM⟩ := cb
-            dsimp only
-            by_cases hcm : cm = cM
-            · subst cM
-              have hne : low ≠ cm := fun h =>
-                hnot_low (h ▸ (ht.2.2.1 i).contains_minimum hbi)
-              rw [ite_eq_left rfl, ite_eq_right hne]
-            · rw [ite_eq_right hcm]
-              have hci_eq : erase (c i) low = c i := ih (ht.2.2.1 i) hnot_low
-              have hc_eq : Function.update c i (erase (c i) low) = c := by
-                rw [hci_eq]
-                funext k
-                by_cases hk : k = i
-                · subst k; simp
-                · simp [hk]
-              rw [hc_eq, clusterMax_eq_of_valid ht]
+          by_cases hcm : cm = cM
+          · -- A singleton cluster that does not contain `low` is left alone.
+            subst cM
+            have hne : low ≠ cm := fun h =>
+              hnot_low (h ▸ (ht.cluster i).contains_minimum hbi)
+            rw [ite_eq_left rfl, ite_eq_right hne]
+          · -- The recursive deletion is the identity, and so is the rebuilt header.
+            rw [ite_eq_right hcm, ih (ht.cluster i) hnot_low, Function.update_eq_self,
+              clusterMax_eq_of_valid ht]
+
+/-- Deleting an absent key leaves both the invariant and the represented set unchanged. -/
+private theorem erase_spec_of_not_contains {t : Tree d} (ht : t.Valid) {x : ℕ}
+    (hx : ¬t.Contains x) :
+    (t.erase x).Valid ∧ ∀ y, (t.erase x).Contains y ↔ y ≠ x ∧ t.Contains y := by
+  rw [erase_eq_of_not_contains ht hx]
+  exact ⟨ht, fun y => ⟨fun hy => ⟨fun hyx => hx (hyx ▸ hy), hy⟩, And.right⟩⟩
+
+/-- Deleting the excluded minimum `m` of a valid node with `m < M` promotes the least cluster key
+`newMin` to the local minimum and deletes it from its cluster. -/
+private theorem erase_spec_min {s : Tree d} {c : Fin (universeSize d) → Tree d} {m M : ℕ}
+    (ht : (node (some (m, M)) s c).Valid) (heq : m ≠ M)
+    (ih : ∀ {t : Tree d}, t.Valid → ∀ z,
+      (t.erase z).Valid ∧ ∀ y, (t.erase z).Contains y ↔ y ≠ z ∧ t.Contains y) :
+    let t' := (node (some (m, M)) s c).erase m
+    t'.Valid ∧ ∀ y, t'.Contains y ↔ y ≠ m ∧ (node (some (m, M)) s c).Contains y := by
+  have hmM := ht.min_le_of_contains rfl (ht.contains_maximum rfl)
+  have hout : ¬(m < m ∨ M < m) := by omega
+  -- Since `m < M`, the maximum lies in some cluster, so the summary is occupied.
+  obtain ⟨kM, yM, hyM, -⟩ :=
+    ((contains_node_some ..).mp (ht.contains_maximum rfl)).resolve_left (Ne.symm heq)
+  obtain ⟨⟨sm, sM⟩, hbs⟩ :=
+    Option.isSome_iff_exists.mp (bounds_isSome_of_contains (ht.summary_contains hyM))
+  -- The least cluster key lies in the cluster `i` named by the summary minimum.
+  have hsm := ht.summary.contains_minimum hbs
+  have hsm_lt := ht.summary.contains_lt hsm
+  let i : Fin (universeSize d) := ⟨sm, hsm_lt⟩
+  obtain ⟨⟨cm, cM⟩, hbi⟩ := Option.isSome_iff_exists.mp ((ht.summary_contains_iff i).mp hsm)
+  have hcm := (ht.cluster i).contains_minimum hbi
+  let newMin := sm * universeSize d + cm
+  have hnew : newMin = i.val * universeSize d + cm := rfl
+  have hm_new : m < newMin := ht.min_lt_cluster hcm
+  have hnewMin_lt : newMin < universeSize (d + 1) :=
+    ht.contains_lt ((contains_node_some ..).mpr (Or.inr ⟨i, cm, hcm, rfl⟩))
+  have htarget : eraseTarget m m s c = some ⟨newMin, i, cm⟩ := by
+    simp [eraseTarget, minimum, hbs, hsm_lt, i, hbi, newMin]
+  -- Every other cluster key lies above `newMin`, the least cluster key.
+  have hexcl' : ∀ k y, ¬(k = i ∧ y = cm) → (c k).Contains y →
+      newMin < k.val * universeSize d + y := by
+    intro k y hne hy
+    have hik : sm ≤ k.val := ht.summary.min_le_of_contains hbs (ht.summary_contains hy)
+    rcases Nat.lt_or_eq_of_le hik with hlt | hik
+    · exact cluster_key_lt_of_lt ((ht.cluster i).contains_lt hcm) hlt
+    · obtain rfl : i = k := Fin.ext hik
+      have hcmy := (ht.cluster i).min_le_of_contains hbi hy
+      have hyne : y ≠ cm := fun h => hne ⟨rfl, h⟩
+      omega
+  have hkeys : ∀ y, (y = newMin ∨ ∃ k a, (¬(k = i ∧ a = cm) ∧ (c k).Contains a) ∧
+      y = k.val * universeSize d + a) ↔
+      y ≠ m ∧ (node (some (m, M)) s c).Contains y := by
+    intro y
+    simp only [contains_node_some]
+    constructor
+    · rintro (rfl | ⟨k, a, ⟨-, ha⟩, rfl⟩)
+      · exact ⟨by omega, Or.inr ⟨i, cm, hcm, rfl⟩⟩
+      · exact ⟨by have := ht.min_lt_cluster ha; omega, Or.inr ⟨k, a, ha, rfl⟩⟩
+    · rintro ⟨hym, rfl | ⟨k, a, ha, rfl⟩⟩
+      · exact absurd rfl hym
+      by_cases hka : k = i ∧ a = cm
+      · obtain ⟨rfl, rfl⟩ := hka
+        exact Or.inl rfl
+      · exact Or.inr ⟨k, a, ⟨hka, ha⟩, rfl⟩
+  have hres := erase_cluster_branch (x := m) ht ih hnewMin_lt hbi (fun _ => rfl) hexcl' hkeys
+  dsimp only
+  rw [erase, ite_eq_right hout, ite_eq_right heq, htarget]
+  dsimp only at hres ⊢
+  rw [hbi]
+  exact hres
+
+/-- Deleting a cluster key `x = j * u + a` of a valid node keeps the local minimum `m` and
+deletes `a` from cluster `j`. -/
+private theorem erase_spec_cluster {s : Tree d} {c : Fin (universeSize d) → Tree d}
+    {m M a : ℕ} {j : Fin (universeSize d)}
+    (ht : (node (some (m, M)) s c).Valid)
+    (ih : ∀ {t : Tree d}, t.Valid → ∀ z,
+      (t.erase z).Valid ∧ ∀ y, (t.erase z).Contains y ↔ y ≠ z ∧ t.Contains y)
+    (ha : (c j).Contains a) :
+    let x := j.val * universeSize d + a
+    let t' := (node (some (m, M)) s c).erase x
+    t'.Valid ∧ ∀ y, t'.Contains y ↔ y ≠ x ∧ (node (some (m, M)) s c).Contains y := by
+  intro x
+  have hx : (node (some (m, M)) s c).Contains x :=
+    (contains_node_some ..).mpr (Or.inr ⟨j, a, ha, rfl⟩)
+  have ha_lt := (ht.cluster j).contains_lt ha
+  have hxm : m < x := ht.min_lt_cluster ha
+  have hxM := ht.le_max_of_contains rfl hx
+  have hout : ¬(x < m ∨ M < x) := by omega
+  have heq : m ≠ M := by omega
+  have hcoord := cluster_coordinates (i := j.val) (universeSize_pos d) ha_lt
+  have htarget : eraseTarget m x s c = some ⟨m, j, a⟩ := by
+    simp [eraseTarget, x, hxm.ne', hcoord.1, hcoord.2]
+  obtain ⟨⟨cm, cM⟩, hbi⟩ := Option.isSome_iff_exists.mp (bounds_isSome_of_contains ha)
+  -- In a singleton cluster, the represented key `a` must be its only key.
+  have hlow_eq : cm = cM → a = cm := by
+    rintro rfl
+    exact (singleton_contains_of_bounds_eq (ht.cluster j) hbi a).mp ha
+  have hkeys : ∀ y, (y = m ∨ ∃ k b, (¬(k = j ∧ b = a) ∧ (c k).Contains b) ∧
+      y = k.val * universeSize d + b) ↔
+      y ≠ x ∧ (node (some (m, M)) s c).Contains y := by
+    intro y
+    simp only [contains_node_some]
+    constructor
+    · rintro (rfl | ⟨k, b, ⟨hne, hb⟩, rfl⟩)
+      · exact ⟨hxm.ne, Or.inl rfl⟩
+      · refine ⟨fun hyx => hne ?_, Or.inr ⟨k, b, hb, rfl⟩⟩
+        have := (cluster_key_eq_iff ((ht.cluster k).contains_lt hb) ha_lt).mp hyx
+        exact ⟨Fin.ext this.1, this.2⟩
+    · rintro ⟨hyx, rfl | ⟨k, b, hb, rfl⟩⟩
+      · exact Or.inl rfl
+      · refine Or.inr ⟨k, b, ⟨?_, hb⟩, rfl⟩
+        rintro ⟨rfl, rfl⟩
+        exact hyx rfl
+  dsimp only
+  rw [erase, ite_eq_right hout, ite_eq_right heq, htarget]
+  dsimp only
+  rw [hbi]
+  exact erase_cluster_branch ht ih (ht.contains_lt (ht.contains_minimum rfl)) hbi hlow_eq
+    (fun _ _ _ hy => ht.min_lt_cluster hy) hkeys
+
+private theorem erase_spec {t : Tree d} (ht : t.Valid) (x : ℕ) :
+    (t.erase x).Valid ∧ ∀ y, (t.erase x).Contains y ↔ y ≠ x ∧ t.Contains y := by
+  by_cases hx : t.Contains x
+  swap
+  · exact erase_spec_of_not_contains ht hx
+  induction d generalizing x with
+  | zero =>
+    cases t with
+    | leaf b =>
+      cases b with
+      | none => exact absurd hx (not_contains_of_bounds_none rfl x)
+      | some b =>
+        obtain ⟨m, M⟩ := b
+        -- A depth-zero leaf stores at most the two keys `m ≤ M < 2`.
+        have hmM := ht.min_le_of_contains rfl (ht.contains_maximum rfl)
+        have hM := ht.contains_lt (ht.contains_maximum rfl)
+        simp only [contains_leaf_some, universeSize_zero] at hx hM
+        simp only [erase]
+        split_ifs
+        · exact ⟨valid_empty 0, fun y => by simp [Contains]; omega⟩
+        all_goals
+          refine ⟨?_, fun y => ?_⟩
+          · simp only [Valid, Extrema, bounds, contains_leaf_some, universeSize_zero, or_self,
+              forall_eq, true_and]
+            omega
+          · simp only [contains_leaf_some]
+            omega
+  | succ d ih =>
+    have ih' : ∀ {t : Tree d}, t.Valid → ∀ z,
+        (t.erase z).Valid ∧ ∀ y, (t.erase z).Contains y ↔ y ≠ z ∧ t.Contains y := by
+      intro t ht z
+      by_cases hz : t.Contains z
+      · exact ih ht z hz
+      · exact erase_spec_of_not_contains ht hz
+    cases t with
+    | node b s c =>
+      cases b with
+      | none => exact absurd hx (not_contains_of_bounds_none rfl x)
+      | some b =>
+        obtain ⟨m, M⟩ := b
+        by_cases heq : m = M
+        · -- A singleton node: clearing the local header clears the whole node.
+          subst M
+          have hxm : x = m := (singleton_contains_of_bounds_eq ht rfl x).mp hx
+          subst x
+          have hout : ¬(m < m ∨ m < m) := by omega
+          rw [erase, ite_eq_right hout, ite_eq_left rfl]
+          obtain ⟨hv, _, hnone⟩ := empty_of_bounds_eq ht (m := m) rfl
+          refine ⟨hv, fun y => ?_⟩
+          rw [singleton_contains_of_bounds_eq ht (m := m) rfl y]
+          exact ⟨fun hy => False.elim (hnone y hy), fun h => False.elim (h.1 h.2)⟩
+        rcases (contains_node_some ..).mp hx with rfl | ⟨j, a, ha, rfl⟩
+        · exact erase_spec_min ht heq ih'
+        · exact erase_spec_cluster ht ih' ha
+
+/-- Deletion of any key preserves the recursive van Emde Boas representation invariant. -/
+theorem valid_erase {t : Tree d} (ht : t.Valid) (x : ℕ) : (t.erase x).Valid :=
+  (erase_spec ht x).1
+
+/-- Deletion removes `x` and preserves membership of every other key. -/
+theorem contains_erase {t : Tree d} (ht : t.Valid) (x y : ℕ) :
+    (t.erase x).Contains y ↔ y ≠ x ∧ t.Contains y :=
+  (erase_spec ht x).2 y
 
 end Cslib.DataStructure.VanEmdeBoas.Tree

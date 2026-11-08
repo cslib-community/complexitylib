@@ -38,19 +38,6 @@ namespace Cslib.DataStructure.VanEmdeBoas.Tree
 
 variable {d : ℕ}
 
-/-- A leaf with bounds `some (m, M)` contains `y` iff `y = m` or `y = M`. -/
-@[simp] theorem contains_leaf_some (m M y : ℕ) :
-    (leaf (some (m, M))).Contains y ↔ y = m ∨ y = M := by
-  simp [Contains]
-
-/-- An internal node with bounds `some (m, M)` contains `y` iff `y = m` or `y` is in some
-cluster. -/
-@[simp] theorem contains_node_some (m M : ℕ) (s : Tree d)
-    (c : Fin (universeSize d) → Tree d) (y : ℕ) :
-    (node (some (m, M)) s c).Contains y ↔
-      y = m ∨ ∃ i a, (c i).Contains a ∧ y = i.val * universeSize d + a := by
-  simp [Contains]
-
 private theorem extrema_insert_of_contains {t t' : Tree d} (ht : t.Valid)
     {m M x : ℕ} (hb : t.bounds = some (m, M))
     (hb' : t'.bounds = some (min m x, max M x)) (hx : x < universeSize d)
@@ -163,13 +150,12 @@ private theorem valid_node_update {s s' : Tree d}
     · rintro (hji | hj)
       · have hji' : j = i := Fin.ext hji
         exact ⟨a, (hcc j a).mpr (Or.inl ⟨hji', rfl⟩)⟩
-      · obtain ⟨y, hy⟩ := (ht.2.2.1 j).bounds_isSome_iff.mp ((ht.2.2.2.1 j).mp hj)
+      · obtain ⟨y, hy⟩ := (ht.cluster j).bounds_isSome_iff.mp ((ht.summary_contains_iff j).mp hj)
         exact ⟨y, (hcc j y).mpr (Or.inr hy)⟩
     · rintro ⟨y, hy⟩
       rcases (hcc j y).mp hy with ⟨rfl, rfl⟩ | hy
       · exact Or.inl rfl
-      · exact Or.inr ((ht.2.2.2.1 j).mpr
-          ((ht.2.2.1 j).bounds_isSome_iff.mpr ⟨y, hy⟩))
+      · exact Or.inr (ht.summary_contains hy)
   · intro j y hy
     rcases (hcc j y).mp hy with ⟨rfl, rfl⟩ | hy
     · rw [← hz]
@@ -178,7 +164,7 @@ private theorem valid_node_update {s s' : Tree d}
         omega
       · rw [min_eq_right h, max_eq_left h]
         omega
-    · exact Nat.lt_of_le_of_lt (min_le_left m x) (ht.2.2.2.2 j y hy)
+    · exact Nat.lt_of_le_of_lt (min_le_left m x) (ht.min_lt_cluster hy)
 
 private theorem update_cluster_spec {c : Fin (universeSize d) → Tree d}
     (hc : ∀ j, (c j).Valid) {i : Fin (universeSize d)} {a : ℕ} {t : Tree d}
@@ -252,21 +238,21 @@ private theorem insert_spec {t : Tree d} (ht : t.Valid) {x : ℕ}
             simpa only [i, a, Nat.mul_comm] using (Nat.div_add_mod (max m x) (universeSize d)).symm
           cases hb : (c i).bounds with
           | none =>
-            obtain ⟨hv, hs⟩ := singleton_of_bounds_none (ht.2.2.1 i) hb ha
+            obtain ⟨hv, hs⟩ := singleton_of_bounds_none (ht.cluster i) hb ha
             have hset : ∀ y, ((c i).withBounds (some (a, a))).Contains y ↔
                 y = a ∨ (c i).Contains y := by
               intro y
               simpa only [not_contains_of_bounds_none hb y, or_false] using hs y
-            obtain ⟨hcv, hcs⟩ := update_cluster_spec ht.2.2.1 hv hset
-            obtain ⟨hsv, hss⟩ := ih ht.2.1 i.isLt
+            obtain ⟨hcv, hcs⟩ := update_cluster_spec ht.cluster hv hset
+            obtain ⟨hsv, hss⟩ := ih ht.summary i.isLt
             have hresult := valid_node_update ht hx hm hz hsv hcv hss hcs
             dsimp only [i] at hb
             simpa only [insert, ite_eq_right hm, dite_eq_left hi, i, a, hb] using hresult
           | some b =>
-            obtain ⟨hv, hs⟩ := ih (ht.2.2.1 i) ha
-            obtain ⟨hcv, hcs⟩ := update_cluster_spec ht.2.2.1 hv hs
+            obtain ⟨hv, hs⟩ := ih (ht.cluster i) ha
+            obtain ⟨hcv, hcs⟩ := update_cluster_spec ht.cluster hv hs
             have hi_mem : s.Contains i.val :=
-              (ht.2.2.2.1 i).mpr (by simp [hb])
+              (ht.summary_contains_iff i).mpr (by simp [hb])
             have hss : ∀ j, s.Contains j ↔ j = i.val ∨ s.Contains j := by
               intro j
               constructor
@@ -274,7 +260,7 @@ private theorem insert_spec {t : Tree d} (ht : t.Valid) {x : ℕ}
               · rintro (rfl | hj)
                 · exact hi_mem
                 · exact hj
-            have hresult := valid_node_update ht hx hm hz ht.2.1 hcv hss hcs
+            have hresult := valid_node_update ht hx hm hz ht.summary hcv hss hcs
             dsimp only [i] at hb
             simpa only [insert, ite_eq_right hm, dite_eq_left hi, i, a, hb] using hresult
 

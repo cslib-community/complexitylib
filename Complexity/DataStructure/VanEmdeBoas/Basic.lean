@@ -161,6 +161,19 @@ def Valid : {d : ℕ} → Tree d → Prop
       | none => s.bounds = none ∧ ∀ i, (c i).bounds = none
       | some (m, _) => ∀ i y, (c i).Contains y → m < i.val * universeSize d + y
 
+/-- A leaf with bounds `some (m, M)` contains `y` iff `y = m` or `y = M`. -/
+@[simp] theorem contains_leaf_some (m M y : ℕ) :
+    (leaf (some (m, M))).Contains y ↔ y = m ∨ y = M := by
+  simp [Contains]
+
+/-- An internal node with bounds `some (m, M)` contains `y` iff `y = m` or `y` is in some
+cluster. -/
+@[simp] theorem contains_node_some (m M : ℕ) (s : Tree d)
+    (c : Fin (universeSize d) → Tree d) (y : ℕ) :
+    (node (some (m, M)) s c).Contains y ↔
+      y = m ∨ ∃ i a, (c i).Contains a ∧ y = i.val * universeSize d + a := by
+  simp [Contains]
+
 /-- The empty tree at depth `d` has no cached bounds. -/
 @[simp] theorem bounds_empty (d : ℕ) : (empty d).bounds = none := by
   cases d <;> rfl
@@ -218,6 +231,41 @@ theorem not_contains_of_bounds_none {t : Tree d} (hb : t.bounds = none) (x : ℕ
   | leaf b => simp only [bounds] at hb; simp [Contains, hb]
   | node b s c => simp only [bounds] at hb; simp [Contains, hb]
 
+/-- A node that represents some key has an occupied local header. -/
+theorem bounds_isSome_of_contains {t : Tree d} {x : ℕ} (hx : t.Contains x) :
+    t.bounds.isSome = true := by
+  cases hb : t.bounds with
+  | none => exact absurd hx (not_contains_of_bounds_none hb x)
+  | some _ => rfl
+
+/-- The summary of a valid internal node is valid. -/
+theorem Valid.summary {b : Option (ℕ × ℕ)} {s : Tree d} {c : Fin (universeSize d) → Tree d}
+    (h : (node b s c).Valid) : s.Valid :=
+  h.2.1
+
+/-- Every cluster of a valid internal node is valid. -/
+theorem Valid.cluster {b : Option (ℕ × ℕ)} {s : Tree d} {c : Fin (universeSize d) → Tree d}
+    (h : (node b s c).Valid) (i : Fin (universeSize d)) : (c i).Valid :=
+  h.2.2.1 i
+
+/-- The summary of a valid internal node records exactly its occupied clusters. -/
+theorem Valid.summary_contains_iff {b : Option (ℕ × ℕ)} {s : Tree d}
+    {c : Fin (universeSize d) → Tree d} (h : (node b s c).Valid) (i : Fin (universeSize d)) :
+    s.Contains i.val ↔ (c i).bounds.isSome = true :=
+  h.2.2.2.1 i
+
+/-- The summary of a valid internal node records every cluster that represents a key. -/
+theorem Valid.summary_contains {b : Option (ℕ × ℕ)} {s : Tree d}
+    {c : Fin (universeSize d) → Tree d} (h : (node b s c).Valid) {i : Fin (universeSize d)}
+    {y : ℕ} (hy : (c i).Contains y) : s.Contains i.val :=
+  (h.summary_contains_iff i).mpr (bounds_isSome_of_contains hy)
+
+/-- The local minimum of a valid internal node is strictly below every key in its clusters. -/
+theorem Valid.min_lt_cluster {m M : ℕ} {s : Tree d} {c : Fin (universeSize d) → Tree d}
+    (h : (node (some (m, M)) s c).Valid) {i : Fin (universeSize d)} {y : ℕ}
+    (hy : (c i).Contains y) : m < i.val * universeSize d + y :=
+  h.2.2.2.2 i y hy
+
 /-- An occupied valid node has a represented cached minimum. -/
 theorem Valid.contains_minimum {t : Tree d} (h : t.Valid) {m M : ℕ}
     (hb : t.bounds = some (m, M)) : t.Contains m := by
@@ -232,12 +280,56 @@ theorem Valid.contains_maximum {t : Tree d} (h : t.Valid) {m M : ℕ}
   simp only [Extrema, hb] at he
   exact he.2.2.2.1
 
+/-- Every key represented by a valid node is at least its cached minimum. -/
+theorem Valid.min_le_of_contains {t : Tree d} (h : t.Valid) {m M : ℕ}
+    (hb : t.bounds = some (m, M)) {x : ℕ} (hx : t.Contains x) : m ≤ x := by
+  have he := h.extrema
+  simp only [Extrema, hb] at he
+  exact (he.2.2.2.2 x hx).1
+
+/-- Every key represented by a valid node is at most its cached maximum. -/
+theorem Valid.le_max_of_contains {t : Tree d} (h : t.Valid) {m M : ℕ}
+    (hb : t.bounds = some (m, M)) {x : ℕ} (hx : t.Contains x) : x ≤ M := by
+  have he := h.extrema
+  simp only [Extrema, hb] at he
+  exact (he.2.2.2.2 x hx).2
+
 /-- Division and remainder recover a cluster's coordinates for bounded low parts. -/
 theorem cluster_coordinates {u i y : ℕ} (hu : 0 < u) (hy : y < u) :
     (i * u + y) / u = i ∧ (i * u + y) % u = y := by
   constructor
   · rw [Nat.mul_comm i u, Nat.mul_add_div hu, Nat.div_eq_of_lt hy, Nat.add_zero]
   · exact Nat.mul_add_mod_of_lt hy
+
+/-- A key in an earlier cluster is smaller than every key in a later cluster. -/
+theorem cluster_key_lt_of_lt {u i j a b : ℕ} (ha : a < u) (hij : i < j) :
+    i * u + a < j * u + b := by
+  have h := Nat.mul_le_mul_right u (Nat.succ_le_of_lt hij)
+  rw [Nat.succ_mul] at h
+  omega
+
+/-- Keys with bounded low parts compare lexicographically: first by cluster, then by low part. -/
+theorem cluster_key_lt_iff {u i j a b : ℕ} (ha : a < u) (hb : b < u) :
+    i * u + a < j * u + b ↔ i < j ∨ i = j ∧ a < b := by
+  rcases Nat.lt_trichotomy i j with hij | rfl | hji
+  · simp only [hij, true_or, iff_true]
+    exact cluster_key_lt_of_lt ha hij
+  · simp
+  · have := cluster_key_lt_of_lt (b := a) hb hji
+    constructor
+    · omega
+    · rintro (h | ⟨rfl, _⟩) <;> omega
+
+/-- Keys with bounded low parts are equal exactly when their coordinates are equal. -/
+theorem cluster_key_eq_iff {u i j a b : ℕ} (ha : a < u) (hb : b < u) :
+    i * u + a = j * u + b ↔ i = j ∧ a = b := by
+  have h₁ := cluster_key_lt_iff (i := i) (j := j) ha hb
+  have h₂ := cluster_key_lt_iff (i := j) (j := i) hb ha
+  constructor
+  · intro h
+    omega
+  · rintro ⟨rfl, rfl⟩
+    rfl
 
 /-- Boolean lookup agrees with the mathematical interpretation of every valid tree. -/
 theorem member_iff_contains {t : Tree d} (ht : t.Valid) (x : ℕ) :
@@ -257,10 +349,10 @@ theorem member_iff_contains {t : Tree d} (ht : t.Valid) (x : ℕ) :
       | some b =>
         obtain ⟨m, M⟩ := b
         by_cases hm : x = m
-        · simp [member, Contains, hm]
+        · simp [member, hm]
         · by_cases hi : x / universeSize d < universeSize d
           · let i : Fin (universeSize d) := ⟨x / universeSize d, hi⟩
-            rw [member, ite_eq_right hm, dite_eq_left hi, ih (ht.2.2.1 i)]
+            rw [member, ite_eq_right hm, dite_eq_left hi, ih (ht.cluster i)]
             constructor
             · intro hx
               refine ⟨m, M, rfl, Or.inr ⟨i, x % universeSize d, hx, ?_⟩⟩
@@ -268,7 +360,7 @@ theorem member_iff_contains {t : Tree d} (ht : t.Valid) (x : ℕ) :
             · rintro ⟨m', M', he, hm' | ⟨j, y, hy, hxy⟩⟩
               · cases he
                 exact False.elim (hm hm')
-              · have hylt := (ht.2.2.1 j).contains_lt hy
+              · have hylt := (ht.cluster j).contains_lt hy
                 have hcoord := cluster_coordinates (i := j.val) (universeSize_pos d) hylt
                 have hhigh : x / universeSize d = j.val := by grind
                 have hlow : x % universeSize d = y := by grind
