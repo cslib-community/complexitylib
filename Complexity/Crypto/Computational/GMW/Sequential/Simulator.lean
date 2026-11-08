@@ -850,9 +850,8 @@ theorem isPPTOn_gmwSeqSimulator {α : Type} {enc : α ↪ List Bool}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hk : ComputableInPolyTime k encUnary encUnary)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z)) :
-    IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z)) :
+    IsPPTOn (encInstanceAuxInput enc) encBits
       (fun (n, a, z) => gmwSeqSimulator enc generator length f k Vstar n a z) := by
   let encIn := encPair encUnary (encPair enc encBits)
   let tapes := hV.2.choose
@@ -919,14 +918,14 @@ private theorem eval_gmwSeqInteract_eq_machine_of_isOraclePPTOn {α : Type} {enc
       (OracleComp.interpret
         (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (machine.runOracle
-            (c * ((encPair encUnary (encPair enc encBits) p).length + 1) ^ d)
-            (encPair encUnary (encPair enc encBits) p))).run st)
+            (c * ((encInstanceAuxInput enc p).length + 1) ^ d)
+            (encInstanceAuxInput enc p))).run st)
     (n : ℕ) (a : α) (z : List Bool) :
     ProbComp.eval (gmwSeqInteract generator s m φ w K (Vstar n a z)) =
       ProbComp.eval (gmwSeqInteract generator s m φ w K
         (machine.runOracle
-          (c * ((encPair encUnary (encPair enc encBits) (n, a, z)).length + 1) ^ d)
-          (encPair encUnary (encPair enc encBits) (n, a, z)))) := by
+          (c * ((encInstanceAuxInput enc (n, a, z)).length + 1) ^ d)
+          (encInstanceAuxInput enc (n, a, z)))) := by
   simp only [gmwSeqInteract, ProbComp.eval_bind, eval_runSeq]
   refine congrArg (PMF.bind _) (funext fun coinsList => congrArg (PMF.map Prod.fst) ?_)
   have h := hspec (n, a, z) (Bool × List (List Bool × List (List Bool)))
@@ -943,8 +942,7 @@ the PRG advantage of `gmwSeqViewReduction` at seed length `n + 7`. -/
 theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
     (generator : List Bool → List Bool) (length : ℕ → ℕ) (f : α → CNF ℕ) (k : ℕ → ℕ)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
     (adversary : ℕ → α → List Bool → List Bool → ProbComp Bool)
     (n : ℕ) (a : α) (w z : List Bool) (hw : ThreeSAT.verifier (f a, w) = true) :
     Game.advantage
@@ -1057,9 +1055,8 @@ private theorem isPPTOn_gmwSeqViewReduction_aux {α Aux : Type}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hk : ComputableInPolyTime k encUnary encUnary)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
       (fun ((n, a, z'), view) => adversary n a z' view)) :
     IsPPTOn
       (encPair (encPair encUnary (encPair enc (encPair encBits encAux))) encBits) encBool
@@ -1141,12 +1138,11 @@ theorem isPPTOn_gmwSeqViewReduction {α : Type} {enc : α ↪ List Bool}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hk : ComputableInPolyTime k encUnary encUnary)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
       (fun ((n, a, z), view) => adversary n a z view)) :
     IsPPTOn
-      (encPair (encPair encUnary (encPair enc (encPair encBits encBits))) encBits) encBool
+      (encPair (encInstanceWitnessAuxInput enc) encBits) encBool
       (fun ((n, a, w, z), challenge) =>
         gmwSeqViewReduction enc generator length f k Vstar adversary n a w z challenge) := by
   have h := isPPTOn_gmwSeqViewReduction_aux
@@ -1163,9 +1159,8 @@ private theorem isPPTOn_gmwSeqViewReduction_pair {α : Type} {enc : α ↪ List 
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hk : ComputableInPolyTime k encUnary encUnary)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
       (fun ((n, a, z'), view) => adversary n a z' view)) :
     IsPPTOn
       (encPair (encPair encUnary (encPair enc (encPair encBits (encPair encBits encBits)))) encBits)
@@ -1187,9 +1182,8 @@ theorem AdvicePRG.gmwSeqView_negligible {α : Type} {enc : α ↪ List Bool}
     (hAdv : AdvicePRG enc generator length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hk : ComputableInPolyTime k encUnary encUnary)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
       (fun ((n, a, z'), view) => adversary n a z' view))
     {a : ℕ → α} {w z z' : ℕ → List Bool}
     (ha : PolynomiallyBounded (fun n => (enc (a n)).length))
@@ -1241,8 +1235,7 @@ theorem gmwSeqView_indistinguishable_gmwSeqSimulator {α : Type} {enc : α ↪ L
     {f : α → CNF ℕ} (hf : ComputableInPolyTime f enc encCNF)
     (hk : ComputableInPolyTime k encUnary encUnary)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
     {a : ℕ → α} {w z : ℕ → List Bool}
     (ha : ComputableInPolyTime a encUnary enc)
     (hw_comp : ComputableInPolyTime w encUnary encBits)
