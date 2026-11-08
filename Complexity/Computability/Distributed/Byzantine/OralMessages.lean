@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Distributed.Byzantine.NodeBound
-public import Complexity.Foundations.Data.BitString.Threshold
+public import Complexity.Foundations.Data.BitString.MajorityVote
 
 /-!
 # Byzantine agreement against one fault
@@ -30,7 +30,9 @@ estimates its own input from the relays as it does every other.
 
 Together with the node bound this settles the single-fault case:
 `exists_solvesByzantineAgreement_one_iff` says that `n` processes can solve Byzantine agreement
-against one fault in `R ≥ 2` rounds exactly when `n ≤ 1` or `n ≥ 4`.
+against one fault in `R ≥ 2` rounds exactly when `n ≤ 1` or `n ≥ 4`. The recursive algorithm
+`OM(t)` for any number of faults, and the proof that `om1` decides as its case `t = 1`, are in
+`Complexity.Computability.Distributed.Byzantine.RecursiveOralMessages`.
 
 ## Main definitions
 
@@ -55,27 +57,6 @@ public section
 namespace Cslib.Distributed.Byzantine
 
 open Finset BitString
-
-/-- `strictMajorityOn` depends only on the votes in `s`. -/
-private theorem strictMajorityOn_congr {ι : Type*} {s : Finset ι} {f g : ι → Bool}
-    (h : ∀ i ∈ s, f i = g i) : strictMajorityOn s f = strictMajorityOn s g := by
-  unfold strictMajorityOn
-  rw [Finset.filter_congr fun i hi => by rw [h i hi]]
-
-/-- A strict majority of `s` is `v` if every vote outside `F` is `v` and these are more than half
-of `s`. -/
-private theorem strictMajorityOn_eq_of_forall_notMem {ι : Type*}
-    {s F : Finset ι} {vote : ι → Bool} {v : Bool} (hv : ∀ j ∈ s, j ∉ F → vote j = v)
-    (h : s.card / 2 < s.card - F.card) : strictMajorityOn s vote = v := by
-  classical
-  by_contra hne
-  have h₁ := card_filter_eq_le_half_of_strictMajorityOn_ne s vote v hne
-  have h₂ : s \ F ⊆ s.filter fun j => vote j = v := fun j hj =>
-    Finset.mem_filter.2 ⟨(Finset.mem_sdiff.1 hj).1, hv j (Finset.mem_sdiff.1 hj).1
-      (Finset.mem_sdiff.1 hj).2⟩
-  have h₃ := Finset.card_le_card h₂
-  have h₄ := Finset.le_card_sdiff F s
-  omega
 
 /-- The local state of a process running `om1`. -/
 structure OM1State (P : Type*) where

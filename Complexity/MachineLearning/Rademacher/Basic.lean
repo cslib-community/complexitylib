@@ -16,6 +16,7 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Complexity.Probability.BitString.Massart
 import Complexity.Probability.PMF.Expect
 import Mathlib.Algebra.Order.BigOperators.Expect
+import Mathlib.Algebra.Order.Group.CompleteLattice
 
 /-!
 # Rademacher complexity
@@ -65,6 +66,10 @@ class.
   `Cslib.MachineLearning.rademacherAverage_of_isEmpty`,
   `Cslib.MachineLearning.rademacherAverage_le_of_forall_exists`: nonnegativity, the value `0` for a
   single vector and for the empty family, and monotonicity.
+* `Cslib.MachineLearning.rademacherAverage_eq_of_forall_exists`: families realizing the same
+  vectors have the same Rademacher average.
+* `Cslib.MachineLearning.rademacherAverage_add_mul_signVal_mul`: affine invariance; a fixed
+  translation, fixed coordinate flips and a scaling by `β ≥ 0` multiply the average by `β`.
 * `Cslib.MachineLearning.empiricalRademacherComplexity_singleton`,
   `Cslib.MachineLearning.empiricalRademacherComplexity_empty`,
   `Cslib.MachineLearning.empiricalRademacherComplexity_nonneg`,
@@ -76,8 +81,10 @@ class.
 * `Cslib.MachineLearning.empiricalRademacherComplexity_le_of_finset`,
   `Cslib.MachineLearning.rademacherComplexity_le_of_finset`: finite classes.
 * `Cslib.MachineLearning.rademacherComplexity_le`,
-  `Cslib.MachineLearning.rademacherComplexity_nonneg`: a bound on every empirical complexity bounds
-  the Rademacher complexity, which is nonnegative for a nonempty bounded class.
+  `Cslib.MachineLearning.rademacherComplexity_nonneg`,
+  `Cslib.MachineLearning.rademacherComplexity_singleton`: a bound on every empirical complexity
+  bounds the Rademacher complexity, which is nonnegative for a nonempty bounded class and `0` for a
+  single function.
 
 ## References
 
@@ -169,6 +176,48 @@ theorem rademacherAverage_le_of_forall_exists {ι κ : Type*} {m : ℕ} {a : ι 
   obtain ⟨k, hk⟩ := hab j
   rw [hk]
   exact le_ciSup (bddAbove_range_expect_signVal_mul b hb σ) k
+
+/-- Two bounded families realizing the same vectors have the same Rademacher average. -/
+theorem rademacherAverage_eq_of_forall_exists {ι κ : Type*} {m : ℕ} {a : ι → Fin m → ℝ}
+    {b : κ → Fin m → ℝ} {B : ℝ} (ha : ∀ j i, |a j i| ≤ B) (hb : ∀ k i, |b k i| ≤ B)
+    (hab : ∀ j, ∃ k, a j = b k) (hba : ∀ k, ∃ j, b k = a j) :
+    rademacherAverage a = rademacherAverage b :=
+  le_antisymm (rademacherAverage_le_of_forall_exists hb hab)
+    (rademacherAverage_le_of_forall_exists ha hba)
+
+/-- **Affine invariance.** Translating every vector by a fixed `c`, flipping fixed coordinates
+(multiplying coordinate `i` by `signVal (s i)`) and scaling by `β ≥ 0` multiplies the Rademacher
+average of a bounded family by `β`: the translation has mean-zero correlation with the signs, and
+a fixed flip preserves the uniform distribution of the sign vector. This is the computation in
+the proof of [MohriRostamizadehTalwalkar2018, Lemma 3.4]. -/
+theorem rademacherAverage_add_mul_signVal_mul {ι : Type*} {m : ℕ} {a : ι → Fin m → ℝ} {B : ℝ}
+    (ha : ∀ j i, |a j i| ≤ B) (c : Fin m → ℝ) (s : Fin m → Bool) {β : ℝ} (hβ : 0 ≤ β) :
+    rademacherAverage (fun j i => c i + β * (signVal (s i) * a j i)) =
+      β * rademacherAverage a := by
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · rw [rademacherAverage_of_isEmpty, rademacherAverage_of_isEmpty, mul_zero]
+  have hbdd (σ : Fin m → Bool) := bddAbove_range_expect_signVal_mul a ha σ
+  have hσ (σ : Fin m → Bool) :
+      ⨆ j, 𝔼 i, signVal (σ i) * (c i + β * (signVal (s i) * a j i)) =
+        𝔼 i, signVal (σ i) * c i + β * ⨆ j, 𝔼 i, signVal (σ i ^^ s i) * a j i := by
+    have hbddβ : BddAbove (Set.range fun j => β * 𝔼 i, signVal (σ i ^^ s i) * a j i) := by
+      obtain ⟨M, hM⟩ := hbdd fun i => σ i ^^ s i
+      refine ⟨β * M, ?_⟩
+      rintro _ ⟨j, rfl⟩
+      exact mul_le_mul_of_nonneg_left (hM ⟨j, rfl⟩) hβ
+    rw [Real.mul_iSup_of_nonneg hβ, add_ciSup hbddβ]
+    refine iSup_congr fun j => ?_
+    rw [Finset.mul_expect, ← Finset.expect_add_distrib]
+    refine Finset.expect_congr rfl fun i _ => ?_
+    rw [signVal_xor]
+    ring
+  have hinv : Function.Involutive fun (σ : Fin m → Bool) i => σ i ^^ s i :=
+    fun σ => funext fun i => by simp
+  rw [rademacherAverage_def, rademacherAverage_def, Finset.expect_congr rfl fun σ _ => hσ σ,
+    Finset.expect_add_distrib, expect_expect_signVal_mul_eq_zero, zero_add, Finset.mul_expect]
+  exact Fintype.expect_equiv (Function.Involutive.toPerm _ hinv)
+    (fun σ => β * ⨆ j, 𝔼 i, signVal (σ i ^^ s i) * a j i)
+    (fun σ => β * ⨆ j, 𝔼 i, signVal (σ i) * a j i) fun σ => rfl
 
 /-- **Massart's lemma**, normalized [MohriRostamizadehTalwalkar2018, Theorem 3.7]: the Rademacher
 average of finitely many vectors of Euclidean norm at most `r` is at most `r √(2 log N) / m`. -/
@@ -291,6 +340,12 @@ theorem rademacherComplexity_le (D : PMF Z) {F : Set (Z → ℝ)} {m : ℕ} {c :
     (h : ∀ S : Fin m → Z, empiricalRademacherComplexity F S ≤ c) :
     rademacherComplexity D F m ≤ c :=
   Probability.PMF.sum_mul_le _ _ _ h
+
+/-- A single function has Rademacher complexity `0`. -/
+theorem rademacherComplexity_singleton (D : PMF Z) (f : Z → ℝ) (m : ℕ) :
+    rademacherComplexity D {f} m = 0 := by
+  simp only [rademacherComplexity_def, empiricalRademacherComplexity_singleton, mul_zero,
+    Finset.sum_const_zero]
 
 /-- A nonempty bounded class has nonnegative Rademacher complexity. -/
 theorem rademacherComplexity_nonneg (D : PMF Z) {F : Set (Z → ℝ)} (hne : F.Nonempty) {B : ℝ}
