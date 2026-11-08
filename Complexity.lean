@@ -1,5 +1,6 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import Complexity.Algorithms.Ellipsoid.Basic
 public import Complexity.Algorithms.ExactTriangle.CountPrime
 public import Complexity.Algorithms.ExactTriangle.CountPrime.Extraction
 public import Complexity.Algorithms.ExactTriangle.Defs
@@ -4276,6 +4277,7 @@ public import Complexity.Foundations.Analysis.Asymptotics.Exponential
 public import Complexity.Foundations.Analysis.BernoulliInequality
 public import Complexity.Foundations.Analysis.Brouwer
 public import Complexity.Foundations.Analysis.Calculus.Taylor
+public import Complexity.Foundations.Analysis.Convex.Ellipsoid
 public import Complexity.Foundations.Analysis.Convex.ExtendedFormulation
 public import Complexity.Foundations.Analysis.Convex.FirstOrder
 public import Complexity.Foundations.Analysis.Convex.Strong

@@ -1792,13 +1792,19 @@ each statement against the numbered result. Organize modules by subject, not cha
   and an optimal dual solution read off the final dictionary are in `Algorithms/Lean/Simplex`
   ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)), as is the Klee–Minty
   lower bound: Dantzig's rule makes exactly `2ⁿ - 1` pivots on the `n`-dimensional Klee–Minty
-  program ([#3441](https://github.com/cslib-community/complexitylib/issues/3441)). Remaining: a
-  polynomial-time LP algorithm (ellipsoid or interior point) with bit complexity and intermediate
-  precision accounted for; and LP optimization as a search problem with rational outputs. For the
-  simplex method: Phase I (an initial feasible dictionary or an infeasibility certificate);
-  exponential lower bounds for other pivoting rules, such as Bland's rule on Klee–Minty-type
-  programs (Avis–Chvátal 1978); smoothed analysis (Spielman–Teng); strongly polynomial special
-  cases; and a costed implementation.
+  program ([#3441](https://github.com/cslib-community/complexitylib/issues/3441)). The geometric
+  core of the central-cut ellipsoid method over exact reals is in
+  `Foundations/Analysis/Convex/Ellipsoid` and `Algorithms/Ellipsoid/Basic`
+  ([#3240](https://github.com/cslib-community/complexitylib/issues/3240)): half-ellipsoid
+  containment, the volume ratio `exp (-1 / (2 (n + 1)))` and the iteration bound against a strong
+  separation oracle. Remaining: a polynomial-time LP algorithm (ellipsoid or interior point) with
+  bit complexity and intermediate precision accounted for; and LP optimization as a search problem
+  with rational outputs. For the ellipsoid route that means a finite-precision update with its
+  rounding error, a volume lower bound for full-dimensional rational polytopes, the reduction of
+  feasibility to that case, and a machine-level running-time bound. For the simplex method: Phase I
+  (an initial feasible dictionary or an infeasibility certificate); exponential lower bounds for
+  other pivoting rules, such as Bland's rule on Klee–Minty-type programs (Avis–Chvátal 1978);
+  smoothed analysis (Spielman–Teng); strongly polynomial special cases; and a costed implementation.
 - **Extension complexity** ([#3258](https://github.com/cslib-community/complexitylib/issues/3258)):
   nonnegative rank, slack matrices, extended formulations with free equations, Yannakakis's
   factorization theorem `xc P = rank₊ S` for nontrivial polytopes, and the rectangle covering bound
