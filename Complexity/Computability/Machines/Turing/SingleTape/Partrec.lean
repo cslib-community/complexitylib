@@ -316,12 +316,8 @@ theorem extractWord_eq_some_iff {b : BiTape Symbol} {l : List Symbol} :
       rw [unmapSome_eq_some_iff.mp h, StackTape.mapSome]
     have hcons : StackTape.cons b.head b.right = StackTape.mapSome l :=
       StackTape.ext hcons_list
-    have h1 : b.head = (StackTape.mapSome l).head := by
-      have := congrArg StackTape.head hcons
-      rwa [StackTape.head_cons] at this
-    have h2 : b.right = (StackTape.mapSome l).tail := by
-      have := congrArg StackTape.tail hcons
-      rwa [StackTape.tail_cons] at this
+    have h1 : b.head = (StackTape.mapSome l).head := by grind [StackTape.head_cons]
+    have h2 : b.right = (StackTape.mapSome l).tail := by grind [StackTape.tail_cons]
     have hhead : b.head = (BiTape.mk₁ l).head :=
       h1.trans (by cases l <;> rfl)
     have hright : b.right = (BiTape.mk₁ l).right :=

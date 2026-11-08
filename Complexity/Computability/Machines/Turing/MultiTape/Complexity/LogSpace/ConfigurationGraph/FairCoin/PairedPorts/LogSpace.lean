@@ -295,9 +295,7 @@ private theorem bitsGetElem_run (w : List Bool) (i : ℕ) {B : ℕ}
             simpa [hgt] using CounterProgram.Reaches.refl _
         · simp [hnone, bitsGetElemProgram, instr]
       · have hpow_le_w : 2 ^ j ≤ w.length := by omega
-        have hnext_pow : 2 ^ (j + 1) ≤ 2 * w.length + 1 := by
-          rw [pow_succ]
-          omega
+        have hnext_pow : 2 ^ (j + 1) ≤ 2 * w.length + 1 := by grind
         have hnext_rem : valBits (i.bits.take (j + 1)) ≤ 2 * w.length := by
           have hv := valBits_lt_two_pow (i.bits.take (j + 1))
           have htl : (i.bits.take (j + 1)).length = j + 1 :=
@@ -379,9 +377,7 @@ theorem length_encNat_lt_of_lt_clockedVertexBound {k : ℕ} {D d n u : ℕ}
   let E := D * Fintype.card (Register k) + d + 2
   have hn_lt : n < 2 ^ (encNat n).length := by
     simpa [encNat_apply, Nat.size_eq_bits_len] using Nat.lt_size_self n
-  have htwo_n : 2 * (n + 1) ≤ 2 ^ ((encNat n).length + 1) := by
-    rw [pow_succ']
-    omega
+  have htwo_n : 2 * (n + 1) ≤ 2 ^ ((encNat n).length + 1) := by grind
   have hbox := clockedVertexBound_add_one_le_pow (k := k) D d n
   have hu_pow : u < 2 ^ (E * ((encNat n).length + 1)) := by
     calc

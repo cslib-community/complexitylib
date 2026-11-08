@@ -155,9 +155,7 @@ variable {α : Type} [DecidableEq α] {enc : α ↪ List Bool}
 theorem insertNew : ComputableInPolyTime
     (fun p : List α × α => Cslib.Reachability.insertNew p.1 p.2) (encPair (encList enc) enc)
     (encList enc) := by
-  have hmem (l : List α) (a : α) : decide (a ∈ l) = l.any fun b => decide (b = a) := by
-    rw [Bool.eq_iff_iff, decide_eq_true_eq, List.any_eq_true]
-    simp only [decide_eq_true_eq, exists_eq_right]
+  have hmem (l : List α) (a : α) : decide (a ∈ l) = l.any fun b => decide (b = a) := by grind
   have hfst := fst (encList enc) enc
   have hsnd := snd (encList enc) enc
   unfold Cslib.Reachability.insertNew

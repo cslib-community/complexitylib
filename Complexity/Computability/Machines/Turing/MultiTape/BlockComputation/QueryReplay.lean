@@ -290,9 +290,7 @@ theorem runFrom_represents (M : MultiTapeTM k Bool Q) {s : Config k Q}
   | zero => exact hs
   | succ t ih =>
     have hprev := ih (by omega)
-    have hcounter : 0 < ((machine M).runFrom w s t).remaining := by
-      rw [remaining_runFrom, hrem]
-      omega
+    have hcounter : 0 < ((machine M).runFrom w s t).remaining := by grind [remaining_runFrom]
     have hinterior (h : Fin k) :
         0 < ((machine M).runFrom w s t).heads h ∧
           ((machine M).runFrom w s t).heads h <

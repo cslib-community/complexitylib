@@ -37,9 +37,7 @@ theorem space_le (k s : ℕ) (Q : Type) : ∃ C, ∀ N A : ℕ,
     unfold candidateSpace
     apply Finset.sup_le
     intro guess hguess
-    have hguessA : guess ≤ A := by
-      have h := Finset.mem_range.mp hguess
-      omega
+    have hguessA : guess ≤ A := by grind
     have hcost := hc N (BalancedParameters.blockWidth guess)
       (BalancedParameters.horizon guess) (BalancedParameters.blockWidth_pos guess)
     have hstorage := BalancedParameters.storage_le guess

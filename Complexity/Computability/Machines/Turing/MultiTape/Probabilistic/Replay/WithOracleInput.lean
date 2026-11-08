@@ -223,9 +223,7 @@ theorem exists_oracleReplay {k : ℕ} {State Oracle : Type} [Finite State] [Deci
   have hbound : time + 2 + (2 * coins.length + 1) ≤ (c + 5) * size := by
     dsimp only [time, size]
     nlinarith
-  have htime : time + 2 + (2 * coins.length + 1 + padding) = (c + 5) * size := by
-    dsimp only [padding]
-    omega
+  have htime : time + 2 + (2 * coins.length + 1 + padding) = (c + 5) * size := by grind
   have hrun := run_interpret_compile machine prepare coin query oracle coinLaw hcoin
     coins input (encPair encBits encBits (coins, input)) time time padding store (hp (coins, input))
   rw [htime] at hrun

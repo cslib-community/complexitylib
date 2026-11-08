@@ -387,9 +387,7 @@ public theorem ComputableTidilyInTimeAndSpace.streamFold_sum_after {α σ : Type
       have f₇ := Nat.le_mul_of_pos_left (tF (streamState (init x) next l n)) hD1
       have f₈ := Nat.le_mul_of_pos_left (encIn x).length hD1
       have f₉ := Nat.mul_le_mul_right (L + 1) (show 20 ≤ D by omega)
-      have hlen : ((elems x).flatMap tok).length ≤ (encIn x).length := by
-        rw [hL x, List.length_append]
-        omega
+      have hlen : ((elems x).flatMap tok).length ≤ (encIn x).length := by grind
       have f₁₀ : ((elems x).flatMap tok).length ≤ D * (encIn x).length := hlen.trans f₈
       have z₁ := Nat.zero_le (D * L)
       have z₂ := Nat.zero_le (D * ∑ j ∈ Finset.range n, roundCost x j)

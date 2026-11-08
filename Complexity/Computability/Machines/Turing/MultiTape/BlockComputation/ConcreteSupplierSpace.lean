@@ -148,9 +148,7 @@ theorem node_reply_encoding_le {k s p r m : ℕ} {Q : Type}
   have hlength : (InitialVector.values M e (limit, m, r)).length = r := by
     rw [InitialVector.length_values, Nat.min_eq_left hcapacity]
   rw [hlength] at hvalues
-  have htag : ImplicitNode.classify k (σ, q, path) ≤ 2 := by
-    simp only [ImplicitNode.classify]
-    split <;> (try split) <;> omega
+  have htag : ImplicitNode.classify k (σ, q, path) ≤ 2 := by grind [ImplicitNode.classify]
   have htaglen := length_encNat_mono htag
   have htwo : (encNat 2).length = 2 := rfl
   have hone : (encNat 1).length = 1 := rfl

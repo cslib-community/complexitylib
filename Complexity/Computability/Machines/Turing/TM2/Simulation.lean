@@ -157,9 +157,7 @@ theorem stepAux_stack_bound (q : Stmt Γ Λ σ) (v : σ) (store : ∀ k, List (�
   induction q generalizing v store bound with
   | push j f q ih =>
     have hupdate (k : K) : (Function.update store j (f v :: store j) k).length ≤ bound + 1 := by
-      by_cases hk : k = j
-      · subst k; simpa using Nat.add_le_add_right (h j) 1
-      · simpa only [Function.update_of_ne hk] using (h k).trans (Nat.le_add_right bound 1)
+      grind
     simpa only [stepAux, pushBound, Nat.add_assoc, Nat.add_comm 1] using
       ih v _ (bound + 1) hupdate
   | peek j f q ih => exact ih _ _ bound h

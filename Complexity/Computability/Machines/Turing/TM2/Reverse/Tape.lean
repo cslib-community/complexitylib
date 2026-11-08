@@ -109,9 +109,7 @@ theorem read_moveLeft (t : RawTape Symbol) (z : ℤ) :
     cases n with
     | zero => cases l <;> rfl
     | succ n =>
-      have he : (Int.ofNat (n + 1) : ℤ) - 1 = Int.ofNat n := by
-        simp only [Int.ofNat_eq_natCast]
-        omega
+      have he : (Int.ofNat (n + 1) : ℤ) - 1 = Int.ofNat n := by grind
       rw [he]
       cases n <;> rfl
   | negSucc n =>
@@ -124,9 +122,7 @@ theorem read_moveRight (t : RawTape Symbol) (z : ℤ) :
   rcases t with ⟨h, l, r⟩
   cases z with
   | ofNat n =>
-    have he : (Int.ofNat n : ℤ) + 1 = Int.ofNat (n + 1) := by
-      simp only [Int.ofNat_eq_natCast]
-      omega
+    have he : (Int.ofNat n : ℤ) + 1 = Int.ofNat (n + 1) := by grind
     rw [he]
     cases n <;> cases r <;> rfl
   | negSucc n =>

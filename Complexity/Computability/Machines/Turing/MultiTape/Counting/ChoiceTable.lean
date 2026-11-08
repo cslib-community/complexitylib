@@ -194,9 +194,7 @@ private theorem stepCoins_prefix {width : ℕ} (hw : 0 < width)
     rw [MultiTapePTM.stepCoins_nil, simCfg_of_running hw cfg state hs]
     rfl
   | append_singleton bits bit ih =>
-    have hpre : bits.length < width := by
-      simp only [List.length_append, List.length_singleton] at hlen
-      omega
+    have hpre : bits.length < width := by grind
     have hcursor : bits.length + 1 < width := by
       simpa only [List.length_append, List.length_singleton] using hlen
     have hvalue : 2 * BitString.binaryValue bits + bit.toNat < 2 ^ width := by
@@ -476,9 +474,7 @@ private theorem acceptCount_partial {width : ℕ} (hw : 0 < width)
     simp only [MultiTapePTM.runClosedCoins_eq_output_stepCoins]
     change ((table hw machine).stepCoins (List.ofFn word)
       (simCfg hw (Cfg.init machine.initial input))).output = [true] ↔ _
-    have ht : ((List.ofFn word).take (count * width)).length = count * width := by
-      simp only [List.length_take, List.length_ofFn]
-      omega
+    have ht : ((List.ofFn word).take (count * width)).length = count * width := by grind
     have hd : ((List.ofFn word).drop (count * width)).length = rest := by
       simp only [List.length_drop, List.length_ofFn, Nat.add_sub_cancel_left]
     have h := stepCoins_full_suffix hw machine (Cfg.init machine.initial input) count

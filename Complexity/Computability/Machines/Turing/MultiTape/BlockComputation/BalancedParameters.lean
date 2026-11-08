@@ -178,9 +178,7 @@ theorem blockWidth_inSpace : ComputableInSpace blockWidth encNat encNat
   refine (budget_natPow_variable (budget_const (encB := encNat) 2 (.refl _)) hexp
     (.of_le_linear 4 4 fun T => ?_)).of_enc_eq fun _ => rfl
   have hsize_le := length_encNat_le_self T.size
-  have hexp_le : (T.size + T.size.size) / 2 ≤ T.size := by
-    rw [length_encNat_eq_size] at hsize_le
-    omega
+  have hexp_le : (T.size + T.size.size) / 2 ≤ T.size := by grind [length_encNat_eq_size]
   have hbits := (length_encNat_le_self ((T.size + T.size.size) / 2)).trans hexp_le
   have htwo : (encNat 2).length = 2 := rfl
   simp only [htwo, length_encNat_eq_size] at hbits ⊢

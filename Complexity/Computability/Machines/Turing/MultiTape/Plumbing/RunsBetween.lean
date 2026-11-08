@@ -421,8 +421,7 @@ theorem runsBetween_whileCond {c : Option Symbol → (Fin k → Option Symbol) �
         omega
   obtain ⟨τ, hτ, hrun, hsp⟩ := hrec n le_rfl
   have hfinal : (whileCond c tm).runFrom start (τ + 1) = (cfg n).withState none := by
-    rw [runFrom_succ, hrun, step_check, hstop]
-    rfl
+    grind [runFrom_succ, step_check]
   have hhalt : ((whileCond c tm).runFrom start (τ + 1)).state = none := by rw [hfinal]; rfl
   refine ⟨by rw [runFrom_eq_of_halt _ _ (by lia) hhalt, hfinal], ?_⟩
   rw [space_eq_of_halt _ (by lia) hhalt]

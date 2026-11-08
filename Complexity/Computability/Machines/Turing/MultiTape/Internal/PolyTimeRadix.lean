@@ -36,10 +36,7 @@ theorem intBin_subNatNat : ComputableInPolyTime (fun p : ℕ × ℕ => Int.subNa
   change encIntBin (Int.subNatNat p.1 p.2) =
     decide (p.1 < p.2) :: ((p.1 - p.2) + (p.2 - p.1)).bits
   rw [encIntBin_apply, Int.subNatNat_eq_coe]
-  have hs : decide ((p.1 : ℤ) - p.2 < 0) = decide (p.1 < p.2) := by
-    rw [Bool.eq_iff_iff]
-    simp only [decide_eq_true_eq]
-    omega
+  have hs : decide ((p.1 : ℤ) - p.2 < 0) = decide (p.1 < p.2) := by grind
   rw [hs]
   congr 2
   rcases le_total p.1 p.2 with hl | hr

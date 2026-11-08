@@ -80,10 +80,7 @@ theorem length_runFrom_loadView_le (M : MultiTapeTM k Bool Q) (w : List Bool)
     change ((machine M).runFrom w (loadView w.length b J v) u).heads h ≤ 3 * b
     omega
   have hcells (h : Fin k) : (state.cells h).length ≤ 3 * state.width := by
-    rw [hwidth]
-    change (((machine M).runFrom w (loadView w.length b J v) u).cells h).length ≤ 3 * b
-    rw [length_cells_runFrom]
-    simp [loadView]
+    grind [length_cells_runFrom, loadView]
   have hcodes (h : Fin k) (n : ℕ) (hn : n ∈ state.cells h) : n ≤ 2 := by
     have hc := cells_lt_three_runFrom M w (loadView w.length b J v)
       (cells_lt_three_loadView b J v) u h n hn
@@ -102,10 +99,7 @@ theorem length_rawResult_runFrom_loadView_le (M : MultiTapeTM k Bool Q) (w : Lis
   let state := (machine M).runFrom w (loadView w.length b J v) t
   have hwidth : state.width = b := width_runFrom M w _ t
   have hcells (h : Fin k) : (state.cells h).length ≤ 3 * state.width := by
-    rw [hwidth]
-    change (((machine M).runFrom w (loadView w.length b J v) t).cells h).length ≤ 3 * b
-    rw [length_cells_runFrom]
-    simp [loadView]
+    grind [length_cells_runFrom, loadView]
   have hcodes (h : Fin k) (n : ℕ) (hn : n ∈ state.cells h) : n ≤ 2 := by
     have hc := cells_lt_three_runFrom M w (loadView w.length b J v)
       (cells_lt_three_loadView b J v) t h n hn

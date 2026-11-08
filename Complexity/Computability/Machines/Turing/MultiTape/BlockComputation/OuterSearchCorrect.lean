@@ -151,11 +151,7 @@ theorem exists_first_decision [Finite Q] (M : MultiTapeTM k Bool Q) (e : Q ≃ F
         | some answer => (w.length, guess, some answer))).length ≤ callerSpace w.length bound
       cases hv : value guess with
       | none =>
-        have hlt : guess < bound := by
-          by_contra h
-          have heq : guess = bound := by omega
-          rw [heq, hbound] at hv
-          cases hv
+        have hlt : guess < bound := by grind
         exact caller_encoding_le w.length bound (guess + 1) none (by omega)
       | some answer => exact caller_encoding_le w.length bound guess (some answer) hguess
     refine ⟨T + 2, ?_, ?_⟩
@@ -200,11 +196,7 @@ theorem exists_first_decision [Finite Q] (M : MultiTapeTM k Bool Q) (e : Q ≃ F
             rw [QueryMachine.runFrom_add, hT, hv]
             exact hUspace u (by omega)
       | some answer =>
-        have hans : some answer = some result := by
-          rcases hsafe guess with hnone | hans
-          · rw [hv] at hnone
-            cases hnone
-          · exact hv.symm.trans hans
+        have hans : some answer = some result := by grind
         refine ⟨T, guess, by omega, ?_, hspace⟩
         rw [hv] at hT
         rw [← hans]

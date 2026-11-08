@@ -89,9 +89,7 @@ theorem inputSymbol_eq_getD (finite : FiniteCfg k Symbol State) :
     · rw [inputSymbol, inputSymbolInner (finite.inputPos.val - 1)
         (by simpa [toCfg, Nat.add_comm] using hpos) hlt]
       simp [List.getElem?_eq_getElem hlt]
-    · have hright : finite.inputPos.val = finite.input.length + 1 := by
-        have := finite.inputPos.isLt
-        lia
+    · have hright : finite.inputPos.val = finite.input.length + 1 := by grind
       rw [inputSymbol, inputSymbol_eq_none_of_boundary (Or.inr hright)]
       simp [List.getElem?_eq_none (Nat.le_of_not_gt hlt)]
 

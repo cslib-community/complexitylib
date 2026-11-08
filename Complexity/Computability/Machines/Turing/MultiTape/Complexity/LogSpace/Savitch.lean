@@ -184,9 +184,7 @@ theorem reflTransGen_sink_iff (hstart : startID ntm B < vertexBound (k := k) B) 
           ofBits_lowBits (hlt.2.trans hW)]
         rw [show edgeWithSymbol ntm B w.length a b w[queryIndex (k := k) B a]? = true from hab,
           Bool.true_or]
-    have hu' : u < vertexBound (k := k) B := by
-      simp only [bad, Bool.and_eq_true] at hb
-      exact lt_vertexBound_of_valid hb.1.1
+    have hu' : u < vertexBound (k := k) B := by grind
     refine (key u hu).1.tail ⟨length_lowBits _ _, List.length_replicate, ?_⟩
     simp only [inputEdge, wordEdge, ofBits_lowBits (hu'.trans hW), hb, Bool.true_and,
       Bool.or_eq_true]
