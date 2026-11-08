@@ -2284,6 +2284,7 @@ public import Complexity.Computability.Kolmogorov.Uncomputability
 public import Complexity.Computability.Languages.ChomskyNormalForm
 public import Complexity.Computability.Languages.RegularLanguage
 public import Complexity.Computability.Languages.Slice
+public import Complexity.Computability.Languages.StarFree
 public import Complexity.Computability.LocallyDecodable.Basic
 public import Complexity.Computability.LocallyDecodable.Hadamard
 public import Complexity.Computability.LocallyDecodable.OneQuery
@@ -5153,6 +5154,7 @@ public import Complexity.Logics.SecondOrder.WordMSO.Basic
 public import Complexity.Logics.SecondOrder.WordMSO.FirstOrder
 public import Complexity.Logics.SecondOrder.WordMSO.OfRegular
 public import Complexity.Logics.SecondOrder.WordMSO.Separation
+public import Complexity.Logics.SecondOrder.WordMSO.StarFree
 public import Complexity.Logics.SecondOrder.WordMSO.ToRegular
 public import Complexity.MachineLearning.OnlineLearning.Hedge
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Agnostic
