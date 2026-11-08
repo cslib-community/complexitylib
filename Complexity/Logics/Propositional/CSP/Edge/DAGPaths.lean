@@ -255,7 +255,8 @@ theorem PairedCopies.union {S U : DAG F} (hs : S.PairedCopies) (hu : U.PairedCop
   · exact hside hs hus hd c hc
   · simpa only [union_comm U.arcs S.arcs] using hside hu hss hd.symm c hc
 
-/-- Two distinct incoming arcs at one terminal copy satisfy the two-arc property. -/
+/-- Two distinct arcs at one terminal copy, at least one incoming, satisfy the two-arc
+property. -/
 theorem pairedCopies_terminalPair {a b : Arc F} (hi : a.incoming = true)
     (hc : a.copy = b.copy) (hne : a ≠ b) : (terminalPair a b).PairedCopies := by
   intro c hcm
