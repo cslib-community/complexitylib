@@ -83,8 +83,9 @@ rectangles, split off one of two fair bits, and relabel two point masses injecti
 Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
 upper bound, import [PMF/ToReal.lean](../../Complexity/Probability/PMF/ToReal.lean) and use
 `PMF.toReal_apply_le_one μ a` for an outcome or `PMF.toOuterMeasure_toReal_le_one μ s` for an
-event, rather than converting `μ a ≤ 1` through `ENNReal.toReal` by hand. The `Pr[e]` notation
-module re-exports this file, so `Pr[e] ≤ 1` is `PMF.toReal_apply_le_one _ true`; the
+event (these short names need `open Cslib.Probability`), rather than converting `μ a ≤ 1` through
+`ENNReal.toReal` by hand. The `Pr[e]` notation module re-exports this file, so `Pr[e] ≤ 1` is
+`PMF.toReal_apply_le_one _ true`; the
 [checked examples](../../ComplexityTests/ProbabilityNotation.lean) bound a program and a set event.
 Run `scripts/build.sh ComplexityTests.ProbabilityNotation`.
 

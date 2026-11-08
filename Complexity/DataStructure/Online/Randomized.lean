@@ -16,12 +16,21 @@ public import Mathlib.Probability.ProbabilityMassFunction.Constructions
 This file adds randomized strategies to the online model of
 `Complexity.DataStructure.Online.Basic`, for the **oblivious adversary**, which fixes the whole
 request sequence before the strategy's coins are tossed. Against such an adversary a randomized
-online strategy is a probability distribution over deterministic online strategies: drawing all
-coins up front and then running the resulting deterministic strategy is the same random process
-as tossing coins online, because the requests do not depend on the outcomes. This is the
+online strategy can be viewed as a probability distribution over deterministic online strategies:
+drawing all coins up front and then running the resulting deterministic strategy gives the same
+costs as tossing coins online, because the requests do not depend on the outcomes. This is the
 standard mixed-strategy view of randomized online algorithms against oblivious adversaries; see
 [Borodin and El-Yaniv, *Online Computation and Competitive Analysis*][BorodinElYaniv1998] for a
 textbook treatment.
+
+A `RandStrategy` is a `PMF`, so it covers only **discrete (countably supported) mixtures** of
+deterministic strategies. Nothing is lost for ski rental
+(`Complexity.DataStructure.Online.SkiRental`), where every deterministic strategy acts as a
+rent-then-buy threshold in `ℕ ∪ {∞}`, so every randomized algorithm induces a countably supported
+law. Algorithms that toss fresh independent
+coins at unboundedly many steps, such as the marking algorithm for paging, generally induce a
+non-atomic law on `DetStrategy P`. They need a behavioural or bounded-horizon variant of this
+model.
 
 A `RandStrategy P` is a `PMF (DetStrategy P)`. Its expected cost on a request sequence is
 `∑' A, μ A * A.cost s₀ reqs` in `ℝ≥0∞` (`RandStrategy.expectedCost`), and `(c, b)`-competitiveness
@@ -69,8 +78,9 @@ public section
 
 namespace Cslib.DataStructure.Online
 
-/-- A randomized online strategy for `P` against an oblivious adversary: a probability distribution
-over deterministic online strategies, all of whose coins are drawn before the first request. -/
+/-- A randomized online strategy for `P` against an oblivious adversary: a discrete (countably
+supported) probability distribution over deterministic online strategies, all of whose coins are
+drawn before the first request. -/
 abbrev RandStrategy (P : Problem) : Type 1 := PMF (DetStrategy P)
 
 namespace RandStrategy

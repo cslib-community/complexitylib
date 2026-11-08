@@ -24,9 +24,10 @@ ski day) against an **oblivious adversary**, in the model of
   `randomizedRatio B = 1 / (1 - (1 - 1/B)^B) = B^B / (B^B - (B-1)^B)`
   (`randomizedRatio_eq`),
 
-for example `4/3` for `B = 2` and `27/19` for `B = 3`. It increases to `e/(e-1) ≈ 1.582`
-(`randomizedRatio_le`, `tendsto_randomizedRatio`), below the deterministic `2 - 1/B` of
-`Complexity.DataStructure.Online.SkiRental` for every `B ≥ 2` (`randomizedRatio_lt_two_sub`).
+for example `4/3` for `B = 2` and `27/19` for `B = 3`. It is at most and tends to
+`e/(e-1) ≈ 1.582` (`randomizedRatio_le`, `tendsto_randomizedRatio`; monotonicity in `B` is not
+proved), and it is below the deterministic `2 - 1/B` of `Complexity.DataStructure.Online.SkiRental`
+for every `B ≥ 2` (`randomizedRatio_lt_two_sub`).
 
 **Upper bound.** The strategy `randomRentThenBuy B` rents for `t ∈ {0, …, B-1}` days and buys on
 day `t + 1`, choosing `t` with probability proportional to
@@ -51,7 +52,8 @@ cost at least `randomizedRatio B` times the mean optimum (`le_sum_advWeight_mul_
 
 As in the deterministic file, ratios are stated with additive constant `0`: the deterministic
 break-even strategy is already `(1, B - 1)`-competitive (`breakEven_isCompetitive_one`), so with an
-additive constant the ratio question is trivial.
+additive constant the ratio question is trivial. The asymptotic form of the lower bound (no
+`c < e/(e-1)` is achievable with any fixed additive constant once `B` is large) is not formalized.
 
 ## Main definitions
 
