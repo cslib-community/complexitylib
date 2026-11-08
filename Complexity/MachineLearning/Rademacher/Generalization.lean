@@ -25,7 +25,7 @@ deviation term. With probability at least `1 - δ`, for all `f ∈ F`,
 * `E_D f ≤ Ê_S f + 2 R̂_S(F) + 3 (b - a) √(log (2 / δ) / (2 m))`,
 
 [MohriRostamizadehTalwalkar2018, Theorem 3.3] (stated there for `[0, 1]`-valued classes, the case
-`a = 0`, `b = 1`) [BartlettMendelson2002, Theorem 8] [ShalevShwartzBenDavid2014, Theorem 26.5].
+`a = 0`, `b = 1`) [BartlettMendelson2002, Theorem 8] [ShalevShwartzBenDavid2014, Chapter 26].
 The second bound is data-dependent: its complexity term can be computed from the sample.
 
 The proof has two parts.
