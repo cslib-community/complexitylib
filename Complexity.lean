@@ -794,6 +794,9 @@ public import Complexity.Computability.BlumComplexity.Speedup
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
 public import Complexity.Computability.Catalytic.Comparison
+public import Complexity.Computability.CellProbe.DecisionTree
+public import Complexity.Computability.CellProbe.Defs
+public import Complexity.Computability.CellProbe.Randomized
 public import Complexity.Computability.Circuit.Approximation
 public import Complexity.Computability.Circuit.Approximation.Hamming
 public import Complexity.Computability.Circuit.Arithmetic
@@ -1589,6 +1592,7 @@ public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.Co
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.CompactTimeLayer
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.ConfigurationMatrix
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.ConfigurationReader
+public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.PairedPorts
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.PolyTime
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.TimeLayer
 public import Complexity.Computability.Complexity.Classes.LogSpace.Savitch
@@ -2342,6 +2346,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.Clocked
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.ClockedTable
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.PairedPorts
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.PairedPorts.LogSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.ReadInput
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.Table
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Injective
@@ -3487,6 +3493,7 @@ public import Complexity.Crypto.Protocols.Cipher.EvenMansour
 public import Complexity.Crypto.Protocols.Cipher.FeistelNetworks
 public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.Commitment.World
+public import Complexity.Crypto.Protocols.KEM.FujisakiOkamoto
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
 public import Complexity.Crypto.Protocols.MPC.Basic
 public import Complexity.Crypto.Protocols.MPC.Beaver
@@ -4319,6 +4326,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
 public import Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming
 public import Complexity.Foundations.LinearAlgebra.Matrix.ListProd
 public import Complexity.Foundations.LinearAlgebra.Matrix.Moore
+public import Complexity.Foundations.LinearAlgebra.Matrix.PairedPorts
 public import Complexity.Foundations.LinearAlgebra.Matrix.PartialDerivatives
 public import Complexity.Foundations.LinearAlgebra.Matrix.PilotCorrection
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rank
@@ -4366,6 +4374,7 @@ public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootReduction
 public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootValuation
 public import Complexity.Foundations.NumberTheory.Padics.RatValuation
 public import Complexity.Foundations.NumberTheory.Primality.EulerLiars
+public import Complexity.Foundations.NumberTheory.Primality.RabinMonier
 public import Complexity.Foundations.NumberTheory.Primality.StrongLiars
 public import Complexity.Foundations.NumberTheory.Primality.Witness
 public import Complexity.Foundations.NumberTheory.PrimeCounting
@@ -4602,6 +4611,8 @@ public import Complexity.Logics.FirstOrder.Interpretation.Rank
 public import Complexity.Logics.FirstOrder.Interpretation.Tagged
 public import Complexity.Logics.FirstOrder.Interpretation.Tuple
 public import Complexity.Logics.FirstOrder.Interpretation.Unit
+public import Complexity.Logics.FirstOrder.Locality.Gaifman
+public import Complexity.Logics.FirstOrder.Locality.Hanf
 public import Complexity.Logics.FirstOrder.Operator.Basic
 public import Complexity.Logics.FirstOrder.Operator.Definability
 public import Complexity.Logics.FirstOrder.Operator.Definability.Finite
@@ -4840,11 +4851,13 @@ public import Complexity.Logics.SecondOrder.WordMSO.OfRegular
 public import Complexity.Logics.SecondOrder.WordMSO.Separation
 public import Complexity.Logics.SecondOrder.WordMSO.ToRegular
 public import Complexity.MachineLearning.OnlineLearning.Hedge
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Agnostic
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Basic
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Halving
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Littlestone
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.MonotoneDisjunctions
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Perceptron
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Randomized
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.SOA
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Thresholds
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.VCDimension
