@@ -877,6 +877,16 @@ Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearP
 
 The [checked examples](../../ComplexityTests/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean) give an infeasible system with its certificate, a feasible system with no certificate, an empty system, programs with values `3` and `22 / 5`, and an unbounded program with infeasible dual. Not formalized: bit-size bounds on solutions and certificates, membership of rational LP feasibility in NP ∩ coNP, and any polynomial-time LP algorithm ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
 
+## LLL-reduced bases and lattice basis reduction
+
+Import `Complexity.Algorithms.LatticeReduction.Potential` ([Reduced.lean](../../Complexity/Algorithms/LatticeReduction/Reduced.lean), [Potential.lean](../../Complexity/Algorithms/LatticeReduction/Potential.lean)). This is mathematics with no machine model or running time, following [Lenstra, Lenstra and Lovász, §1][lll82]. A family `b : Fin n → E` lives in an arbitrary real inner product space (for example `EuclideanSpace ℝ (Fin m)`). Its Gram–Schmidt vectors are Mathlib's `gramSchmidt ℝ b`, and its coefficients are `gramSchmidtCoeff ℝ b i j = ⟪b*ⱼ, bᵢ⟫ / ‖b*ⱼ‖²` ([GramSchmidtOrtho.lean](../../Complexity/Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho.lean), a Mathlib candidate). The lattice is `Submodule.span ℤ (Set.range b)`.
+
+- **Reduced bases and Proposition (1.11):** `IsReduced δ b` is size reduction (1.4) together with the exchange condition (1.5), where the constant `3/4` is replaced by `δ`. `IsReduced.norm_sq_le` proves `‖b₀‖² ≤ (4/(4δ-1))ⁿ ‖x‖²` for `b : Fin (n + 1) → E`, `1/4 < δ ≤ 1` and every nonzero lattice vector `x`. `IsReduced.norm_le_sqrt_two_pow_mul` is the case `δ = 3/4`, `‖b₀‖ ≤ (√2)ⁿ ‖x‖`. Neither statement assumes linear independence.
+- **Steps:** `IsSizeStep` (`bᵢ ← bᵢ - r bⱼ`, `j < i`, `r ∈ ℤ`) keeps the lattice and every Gram–Schmidt vector. `abs_gramSchmidtCoeff_round_le` shows that rounding `μᵢⱼ` gives `|μᵢⱼ| ≤ 1/2`. `IsSwapStep δ` swaps `bᵢ, bᵢ₊₁` when (1.5) fails, and `gramSchmidt_swap_self` is the swap formula (1.22).
+- **Potential:** `gramPrefixDet b k = ∏_{j<k} ‖b*ⱼ‖²` equals the Gram determinant of the first `k` vectors (`gramPrefixDet_eq_det`, via `det_gram_eq_prod_norm_gramSchmidt_sq`). `potential b` is their product `D`. `IsSwapStep.potential_lt` proves `D' < δ D`. For linearly independent `b` with integral inner products (`HasIntegralGram`, e.g. `bᵢ ∈ ℤᵐ`) and `‖bᵢ‖² ≤ B`, `one_le_potential` and `potential_le` give `1 ≤ D ≤ B^{n(n-1)/2}`. Along any run of `IsStep`s, `inv_pow_swapCount_le` and `swapCount_le` bound the number of exchange steps by `(n(n-1)/2) log B / log (1/δ)`.
+
+The [checked examples](../../ComplexityTests/Algorithms/LatticeReduction.lean) show that the standard basis of `ℤ²` is `3/4`-reduced and apply the SVP bound to it. They also show that `(e₀, e₀ + e₁)` is not size reduced, and that swapping `(2 e₀, e₀ + e₁)` is an exchange step taking the potential from `4` to `2 < (3/4) · 4`. Not formalized: an executable LLL algorithm, the count of size-reduction steps, the arithmetic and bit-size bounds of (1.26), and a polynomial-time statement ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
+
 ## Goemans–Williamson MAX-CUT rounding
 
 Import `Complexity.Algorithms.Lean.MaxCut.GoemansWilliamson` ([GoemansWilliamson.lean](../../Complexity/Algorithms/Lean/MaxCut/GoemansWilliamson.lean)). This analyzes random-hyperplane rounding of a given vector solution of the MAX-CUT semidefinite relaxation [Goemans and Williamson, Sections 2–3][goemanswilliamson95]. The rounding is an expectation under Mathlib's exact `stdGaussian`; no SDP solver, finite-precision sampler or running time is involved. A weighted multigraph is a `Fintype` of edges `ι` with `ends : ι → V × V` and weights `w : ι → ℝ`. `cutValue ends w side` is the weight of a cut and `sdpValue ends w v = ∑ e, w e * (1 - ⟪v (ends e).1, v (ends e).2⟫) / 2` is the relaxation's objective at a vector assignment `v : V → F`. `hyperplaneSide v r i = decide (0 ≤ ⟪v i, r⟫)` is the rounded cut. The source draws `r` uniformly from the sphere; the side depends only on the direction of `r`, so a standard Gaussian gives the same distribution.
@@ -940,6 +950,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [hmu06]: ../sources.md#hmu06
 [kasami65]: ../sources.md#kasami65
 [kortevygen18]: ../sources.md#kortevygen18
+[lll82]: ../sources.md#lll82
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
