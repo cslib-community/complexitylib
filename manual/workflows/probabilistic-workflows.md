@@ -80,6 +80,86 @@ The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two 
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
 
+## Polarize statistical distance
+
+Sahai and Vadhan's polarization of statistical distance (Sahai–Vadhan 2003, §3) is formalized on
+explicit distributions over finite types, with the half-L1 `dist` above.
+
+- **XOR construction.** Import
+  [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
+  `xorMix p₀ p₁ k c` draws selector bits of parity `c` uniformly, then coordinate `i` from `p₀`
+  or `p₁` according to bit `i`. For `k ≠ 0`, `dist_xorMix` proves
+  `dist (xorMix p₀ p₁ k false) (xorMix p₀ p₁ k true) = dist p₀ p₁ ^ k`.
+  `dist_xorMix_le` gives the upper bound for every `k`. The identity fails at `k = 0`, where both
+  sides live on a one-point type.
+- **Direct-product lower bound.** Import
+  [StatisticalDistance/DirectProduct.lean](../../Complexity/Probability/StatisticalDistance/DirectProduct.lean).
+  `one_sub_two_mul_exp_le_dist_iid` proves `1 - 2 exp (-k δ² / 2) ≤ dist (iid μ k) (iid ν k)` from
+  Hoeffding's inequality. The matching upper bound `k δ` is `dist_iid_le`.
+- **Polarization.** Import
+  [StatisticalDistance/Polarization.lean](../../Complexity/Probability/StatisticalDistance/Polarization.lean).
+  `polarize p₀ p₁ λ ℓ k c` applies the XOR construction on `k` coordinates to `ℓ` independent
+  copies of the XOR construction on `λ` coordinates. `dist_polarize_le` bounds its distance by
+  `(ℓ δ^λ)^k`, and `one_sub_two_mul_mul_exp_le_dist_polarize` bounds it below by
+  `1 - 2 k exp (-ℓ δ^(2λ) / 2)`. For constant thresholds `0 ≤ β < α² ≤ 1`,
+  `exists_polarization` provides constants `m ≠ 0` and `b`. With these, `λ = m (⌊log₂ k⌋ + 1)` and
+  `ℓ = 2 ^ (b (⌊log₂ k⌋ + 1))` are polynomially bounded in `k`. Distance `≥ α` then becomes
+  `≥ 1 - 2⁻ᵏ`, and distance `≤ β` becomes `≤ 2⁻ᵏ`. Use it as
+  `obtain ⟨m, b, hm, hlam, hell, h⟩ := exists_polarization hβ hβα hα hα1`, then
+  `(h p₀ p₁ k).1` for the far side and `(h p₀ p₁ k).2` for the near side.
+
+The checked clients in [Polarization.lean](../../ComplexityTests/Polarization.lean) cover the
+following:
+
+- the exact XOR distance `1/8` of a uniform bit against a point mass;
+- the failure of the identity at `k = 0`;
+- a direct-product bound at `32` copies;
+- the thresholds `α = 2/3`, `β = 1/3`.
+
+Run `scripts/build.sh ComplexityTests.Polarization`.
+
+### Polarize circuit samplers and Statistical Difference instances
+
+A circuit `C : Circuit σ n m` is a sampler. `C.outputDist I` is the distribution of its outputs on
+uniform inputs, defined in
+[Circuit/OutputDistribution.lean](../../Complexity/Computability/Circuit/OutputDistribution.lean).
+`Circuit.outputDist_replicate` says that `C.replicate k` samples `iid (C.outputDist I) k`, with the
+`k` output blocks flattened by `Cslib.BitString.blocksEquiv`.
+
+- **XOR and polarization circuits.** Import
+  [Circuit/Boolean/Polarization.lean](../../Complexity/Computability/Circuit/Boolean/Polarization.lean).
+  For De Morgan circuits `C₀ C₁ : Circuit signature n m`, `xorMixCircuit C₀ C₁ j c` reads `j`
+  selector bits and then `j + 1` data blocks. It samples
+  `xorMix (C₀.outputDist _) (C₁.outputDist _) (j + 1) c` (`outputDist_xorMixCircuit`). The selector
+  is completed to parity `c` by `BitString.parityComplete`, from
+  [XORSampling.lean](../../Complexity/Probability/StatisticalDistance/XORSampling.lean).
+  `polarizeCircuit C₀ C₁ lam ell k c` samples `polarize … (lam + 1) ell (k + 1) c`
+  (`outputDist_polarizeCircuit`). Note that the coordinate counts are passed as predecessors.
+  `dist_outputDist_polarizeCircuit` transfers the distance bounds of `polarize` unchanged.
+- **Statistical Difference.** Import
+  [Problems/StatisticalDifference.lean](../../Complexity/Computability/Complexity/Problems/StatisticalDifference.lean).
+  An `SDInstance` is a pair of De Morgan circuits with common input and output counts, and
+  `StatisticalDifference α β` is `PromiseProblem.gapMax` of `SDInstance.distance`.
+  `SDInstance.exists_polarize` is the Polarization Lemma on instances, for constant thresholds
+  `0 ≤ β < α² ≤ 1`. It passes `m (⌊log₂ (k + 1)⌋ + 1) - 1` as `lam`, so there are
+  `m (⌊log₂ (k + 1)⌋ + 1)` inner coordinates. It passes `2 ^ (b (⌊log₂ (k + 1)⌋ + 1))` as `ell`,
+  the number of copies, and `k` as the outer argument, so there are `k + 1` outer coordinates.
+  `StatisticalDifference.exists_mapsTo_polarize` states the result as `Set.MapsTo` into
+  `StatisticalDifference (1 - (1/2)^(k+1)) ((1/2)^(k+1))`, for `k ≠ 0`.
+
+This is the semantic half of the reduction only. Polynomial-time computability of the
+polarization map on encoded instances, with `k` growing with the instance length, is not formalized
+yet. Neither is SZK. [Issue #3205](https://github.com/cslib-community/complexitylib/issues/3205)
+tracks both. The checked clients in
+[StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
+
+- parity completion;
+- the XOR circuit on two constant circuits;
+- a far instance and a near instance against `SD^{2/3,1/3}`;
+- both instances pushed through the Polarization Lemma.
+
+Run `scripts/build.sh ComplexityTests.StatisticalDifference`.
+
 ## Bound the mixing time of a finite Markov chain
 
 Import [MarkovChain/Coupling.lean](../../Complexity/Probability/MarkovChain/Coupling.lean). A chain
@@ -206,6 +286,30 @@ The bound `|V| < |S|` comes from Schwartz–Zippel and is not sharp in general: 
 degree at most `1` in each variable, so over an integral domain any `S` with two elements detects a
 perfect matching (not formalized). Run
 `scripts/build.sh ComplexityTests.EdmondsMatching`.
+
+For a general graph, import [Matching/Tutte.lean](../../Complexity/Algorithms/Matching/Tutte.lean).
+The graph is a Mathlib `G : SimpleGraph V` with `[DecidableRel G.Adj]` on a finite, linearly ordered
+`V`, and a perfect matching is `∃ M : G.Subgraph, M.IsPerfectMatching`. `tutteMatrix G` has one
+indeterminate per unordered pair, `X s(i, j)` at an edge with `i < j` and `-X s(i, j)` at an edge
+with `j < i`. `det_tutteMatrix_ne_zero_iff` is Tutte's matrix theorem, proved here over any
+nontrivial commutative ring (the sources state it over a field). For Tutte's combinatorial
+odd-component criterion use Mathlib's `SimpleGraph.tutte`. The randomized test uses `tutteEval G r` with `r : Sym2 V → R`. As in the bipartite case,
+`det_tutteEval_eq_zero` gives no false positives, `card_det_tutteEval_eq_zero_div_le` bounds false
+negatives by `|V| / |S|` over an integral domain, and `exists_det_tutteEval_ne_zero` finds detecting
+values in any `S` with more than `|V|` elements. Two reusable pieces sit underneath:
+`Matrix.det_eq_sum_even_cycleType_of_transpose_eq_neg` in
+[SkewDeterminant.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/SkewDeterminant.lean)
+(odd cycles cancel in a skew-symmetric determinant, via `Equiv.Perm.reverseCycle` in
+[ReverseCycle.lean](../../Complexity/Foundations/GroupTheory/Perm/ReverseCycle.lean); an alternating
+matrix of odd order has determinant `0`), and `SimpleGraph.exists_isPerfectMatching_of_perm` in
+[PermMatching.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/PermMatching.lean) (a
+permutation along the edges with only even cycles gives a perfect matching). The
+[checked clients](../../ComplexityTests/TutteMatching.lean), a `module`, compute the determinant
+`r²` of a single edge and its `2 / 3` probability bound over `{0, 1, 2}`, extract and detect a
+perfect matching of `K₄` from the rotation of `Fin 4`, show that the triangle's Tutte matrix is
+singular at all values and that the star `K₁,₃` has the zero Tutte polynomial, and show that the
+zero-diagonal hypothesis is needed over `ZMod 2`. Run
+`scripts/build.sh ComplexityTests.TutteMatching`.
 
 To find the matching rather than only detect it, import
 [Matching/MVV.lean](../../Complexity/Algorithms/Matching/MVV.lean), the algebraic core of
@@ -433,14 +537,35 @@ conditioned, which gives a coordinate won with probability at most `G.value`. Ru
 
 For Label Cover, import
 [LabelCover/Repetition.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/Repetition.lean)
-and apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hsimple hβγ hε k`. Its premises are that the
-instance is simple (`Graph.IsSimple`, decidable), that `2 ≤ |β| |γ|` and that `ε` is at most the
-unsatisfied value of the instance. The conclusion bounds the satisfied proportion of the `k`-fold
-repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be nonempty
-or well formed. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
-compute the numbering of a two-fold repetition, separate simple from non-simple instances, and
-bound the repetitions of an instance of value `1/2` by `(1 - (1/2)³ / 6000)^{k / 2}`. NP-hardness of
-small-soundness Label Cover is not yet derived
+and open `Cslib.PCP.Encoded`. For an instance `g : Graph (β → γ)` with `[Fintype β] [Fintype γ]`
+and `[DecidableEq γ]`, apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hpar hβγ hε k`. Its
+premises are that the instance has no parallel edges (`hpar : g.NoParallelEdges`, decidable), that
+`2 ≤ Fintype.card β * Fintype.card γ`, and `hε : ε ≤ (g.toGraph projectionEval).unsatVal`. The
+conclusion bounds the satisfied proportion `1 - ((pow k g).toGraph projectionEval).unsatVal` of the
+`k`-fold repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be
+nonempty or well formed. The vertex numbers of the repetition grow like `(n + 1) ^ (2 ^ k)`
+(`LabelCoverRepetition.vertices_pow_le`), so its polynomial-time compilation holds for each fixed
+`k` only. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
+compute the numbering of a two-fold repetition, separate instances without parallel edges from
+instances with them, and bound the repetitions of an instance of value `1/2` by
+`(1 - (1/2)³ / 6000)^{k / 2}`.
+
+For a hardness result, import
+[LabelCover/SmallSoundness.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/SmallSoundness.lean).
+`polyTimeReducible_GapTwoCSP_GapLabelCover_pow a b hab encA hε hε1 hk` reduces
+`GapTwoCSP α (1 - ε)` to Label Cover over `k`-tuples, for any finite alphabet `α` with two
+distinct symbols, `0 < ε ≤ 1` and `0 < k`. The soundness is
+`(1 - (ε / 2)³ / 6000)^{k / log₂ (|α|² |α|)}`. Apply `Graph.deloop` before
+`LabelCoverIncidence.reduce`: loop removal makes a binary CSP instance loopless without changing
+its value (`Graph.isLoopless_deloop`, `Graph.unsatVal_deloop`), and the incidence reduction of a
+loopless instance has no parallel edges (`LabelCoverIncidence.noParallelEdges_reduce`). Compose with a hard source through
+`PromiseProblem.NPHard.trans`, as `GapLabelCover_npHard_pow` does with `GapTwoCSP_npHard`, and
+weaken the soundness with `PromiseProblem.NPHard.mono`, as `exists_GapLabelCover_npHard` does. The
+[small-soundness clients](../../ComplexityTests/LabelCoverSmallSoundness.lean) remove a concrete
+loop, show that the incidence reduction of a loop has parallel edges and has none after loop
+removal, and instantiate both hardness theorems. Run
+`scripts/build.sh ComplexityTests.LabelCoverRepetition ComplexityTests.LabelCoverSmallSoundness`.
+Håstad's reductions from Label Cover remain open
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
@@ -1745,3 +1870,33 @@ from the repository root to check them; the monomial clients are in
 `ComplexityTests.GaussianNoiseOperator`.
 
 Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.
+
+## Evaluate a multi-component conditional walk via validated words
+
+Import
+[`Complexity.Probability.PairwiseIndependentHash.ProductValidatedWords`](../../Complexity/Probability/PairwiseIndependentHash/ProductValidatedWords.lean)
+and open `Cslib.Probability` to express `t` steps of the lazy conditional product walk over `J`
+retention slices and a free-bit torus `(ZMod M)^H` on the ambient space
+`ComponentSpace H M P = (∀ j, FrameChannel (P j) H 1) × (Fin H → ZMod M)` (Section 6.1, Lemma 6.3,
+items 1–4 of [OpenAI's logspace preprint](../sources.md#openai-logspace26)).
+
+- Each step label `ComponentLazyStep H J` has `4 * (J + 1) * H^2` choices (`card_componentLazyStep`),
+  and each candidate wrap vector lies in `affineWrapBox H = {-3, …, 3}^H` of size `7^H`
+  (`card_affineWrapBox`), independently of `P`, `L`, `M`, `y` and `t`.
+- Every length-`t` word permutation `componentWordPerm L w z` is a bijection of
+  `ComponentSpace H M P` independent of the retained identifiers `y` and preserves uniform
+  expectations (`expect_componentWordPerm`).
+- Retained identifiers `y` enter only through the endpoint wrap test `IsValidComponentWord`: on
+  `ComponentSlice H M P L y`, a unique wrap word in `(affineWrapBox H)^t` survives
+  (`existsUnique_isValidComponentWord`, `componentWordWrap_mem`) and matches the exact slice walk
+  trajectory (`componentWordPerm_wrap_eq`), so averaging over move words `w` and summing over
+  wrap words `z` without dividing by `(7^H)^t` equals `walk^t`
+  (`walk_pow_componentMove_eq_expect_word`, and iteratively `walk_pow_componentMove_eq_iterate`).
+
+The checked [`ProductValidatedWords.lean` clients](../../ComplexityTests/ProductValidatedWords.lean)
+verify concrete alphabet sizes and step wraps on two channels (`𝔽₅`, `𝔽₇`) plus `(ZMod 8)^3` and
+combine `walk_pow_componentMove_eq_expect_word` with `ComponentGap` and `SliceFourthMoment` to
+bound the `L²` and `L⁴` central moments of the explicit validated-word estimator. Run
+`scripts/build.sh ComplexityTests.ProductValidatedWords` from the repository root to check them.
+This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
+or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
