@@ -1065,14 +1065,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   smoothing covers every adaptive decoder), the matching/XOR normal form and the Katz–Trevisan bound
   `n ≥ Ω(k^{q/(q-1)})` with explicit `(δ, ε, q)` dependence, and the Goldreich–Karloff–Schulman–
   Trevisan and Kerenidis–de Wolf exponential bounds for two-query codes.
-- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications; coverage of
-  O'Donnell's *Analysis of Boolean Functions*
-  ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the book-form
-  statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta theorem
-  with its spectral concentration) and the low-degree consequences of hypercontractivity beyond
-  the FKN Theorem ([#3054](https://github.com/cslib-community/complexitylib/issues/3054)): the
-  `L¹`–`L²` comparison for low-degree functions, the low-degree tail bound, and the Gotsman–Linial
-  lower bound on the low-degree weight of polynomial threshold functions.
+- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its further applications
+  (small-set expansion, the Level-k inequalities); coverage of O'Donnell's *Analysis of Boolean
+  Functions* ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the
+  book-form statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta
+  theorem with its spectral concentration).
 - **Resource-bounded measure and dimension:** martingales and gales with explicit computation
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds
