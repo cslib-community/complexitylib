@@ -1222,11 +1222,17 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Linear programming** ([#2976](https://github.com/cslib-community/complexitylib/issues/2976)):
   Fourier–Motzkin elimination, Farkas' lemma, weak and strong duality, the unbounded and
   infeasible outcomes and complementary slackness over any linearly ordered field are in
-  `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}`. Remaining:
-  rational input and output encodings; bit-size bounds on basic solutions and Farkas
-  certificates (Cramer's rule with the Hadamard bound), giving LP feasibility in NP ∩ coNP with
-  machine-checked certificate verifiers; and a polynomial-time LP algorithm (ellipsoid or
-  interior point) with bit complexity and intermediate precision accounted for.
+  `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}`. The geometric
+  core of the central-cut ellipsoid method over exact reals is in
+  `Foundations/Analysis/Convex/Ellipsoid` and `Algorithms/Ellipsoid/Basic`
+  ([#3240](https://github.com/cslib-community/complexitylib/issues/3240)): half-ellipsoid
+  containment, the volume ratio `exp (-1 / (2 (n + 1)))` and the iteration bound against a strong
+  separation oracle. Remaining: rational input and output encodings; bit-size bounds on basic
+  solutions and Farkas certificates (Cramer's rule with the Hadamard bound), giving LP
+  feasibility in NP ∩ coNP with machine-checked certificate verifiers; and a polynomial-time LP
+  algorithm. For the ellipsoid route that means a finite-precision update with its rounding
+  error, a volume lower bound for full-dimensional rational polytopes, the reduction of
+  feasibility to that case, and a machine-level running-time bound.
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
