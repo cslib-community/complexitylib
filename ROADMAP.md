@@ -1021,8 +1021,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `Formula.size + 1` over every commutative semiring; a selector occurring in one permanent entry
   can be eliminated with one extra dimension when `2` is invertible; the conversion from VP
   witnesses to formulas, the two-entry gadget and the general Boolean-sum elimination needed for
-  VNP-hardness remain open); formula and branching-program models,
-  identity testing, hitting sets, and tensor and rank methods, including partial-derivative
+  VNP-hardness remain open); formula and branching-program models (Nisan's exact size formula for
+  homogeneous layered non-commutative ABPs is proved in
+  [`Arithmetic/Noncommutative`](Complexity/Computability/Circuit/Arithmetic/Noncommutative/Nisan.lean)
+  ([#3198](https://github.com/cslib-community/complexitylib/issues/3198)); open there: the `n^m`
+  palindrome bound and the separation from non-commutative circuits, the reduction from general
+  non-commutative ABPs, non-commutative formula lower bounds for the determinant and permanent,
+  and ROABPs), identity testing, hitting sets, and tensor and rank methods, including partial-derivative
   measures (the order-`k` measure and bounded-product-fan-in depth-three determinant and permanent
   lower bounds, covering homogeneous depth-three circuits, are proved in
   [`Arithmetic/DepthThree`](Complexity/Computability/Circuit/Arithmetic/DepthThree.lean);
