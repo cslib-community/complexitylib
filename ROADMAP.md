@@ -1012,13 +1012,14 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Online learning in the mistake-bound model**
   ([#2908](https://github.com/cslib-community/complexitylib/issues/2908)): the realizable model,
   the halving algorithm, the Littlestone dimension with the standard optimal algorithm (optimal
-  mistake bound equals Littlestone dimension), the VC comparison with the threshold gap, and
-  Novikoff's perceptron bound are in `MachineLearning/OnlineLearning/MistakeBound`. Remaining:
-  Winnow and attribute-efficient learning of disjunctions (Littlestone 1988, Theorem 7); randomized
-  learners and the agnostic setting, with Littlestone-dimension regret bounds
-  (Ben-David–Pál–Shalev-Shwartz 2009); multiclass and real-valued analogues; online-to-batch
-  conversion into the PAC framework; and running-time bounds, since the standard optimal algorithm
-  is a noncomputable specification.
+  mistake bound equals Littlestone dimension), the VC comparison with the threshold gap,
+  Novikoff's perceptron bound, and WINNOW1 for monotone disjunctions with Littlestone's matching
+  `k ⌊log₂ (n / k)⌋` lower bound are in `MachineLearning/OnlineLearning/MistakeBound`. Remaining:
+  WINNOW2 for linearly separable Boolean functions with separation `δ` and Littlestone's
+  attribute transformations (Littlestone 1988, Theorems 9 and 10); randomized learners and the
+  agnostic setting, with Littlestone-dimension regret bounds (Ben-David–Pál–Shalev-Shwartz 2009);
+  multiclass and real-valued analogues; online-to-batch conversion into the PAC framework; and
+  running-time bounds, since the standard optimal algorithm is a noncomputable specification.
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
