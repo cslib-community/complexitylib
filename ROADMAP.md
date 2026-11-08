@@ -48,7 +48,8 @@ both productive-count bridges and conditional-history binomial coverage bounds;
 the comparison recurrence is identified with Mathlib's binomial law. The retained
 family carries the local dual certificate. The universal revealed-cover observable
 is not yet composed with a universal selection-only machine/output model or the
-lower-cost accounting theorem. Actual retained-completion reach bounds and the finite stopped conditional-mean
+lower-cost accounting theorem in the original component; the finite behavioral
+policy assembly below now supplies that connection. Actual retained-completion reach bounds and the finite stopped conditional-mean
 bill sum are proved. Response-dependent accrued bills are connected by the finite tower identity.
 The binomial survival series now has derived sum `r/p` for `p>0`; every finite actual
 response-bill expectation is bounded by `c*r/p`. Noncompletion probabilities and
@@ -73,8 +74,16 @@ connects capped physical execution with stopped accounting. Supported per-respon
 latency contracts give a measurable joint deadline/completion/dual-certificate event
 with the binomial probability lower bound; actual capped token cost has the finite
 survival bound. Correlated, null-history, early-stop, zero-budget/empty-ground and
-`p=1` clients check these interfaces. Universal selection-only policy/lower-cost and
-matching-envelope assembly and encoded machine resources remain open; Theorem 6 needs the actual dual-certified residual
+`p=1` clients check these interfaces. `SelectionPolicy` now separates a fixed oracle
+from arbitrary randomized choice/halt/output kernels, with selection-only provenance
+from all buffered proposals rather than local retention. `SelectionLowerBound` and
+`SelectionDeadline` derive universal token and necessary deadline-binomial bounds
+from supported selected-batch envelopes. `SelectionOptimum` constructs an admissible
+retaining witness, bounds the infimum over all admissible policies, and proves the
+matching-envelope `1/eta` ratio. Correlated, randomized halt/output and uncertified
+buffering clients check that this is a broader policy class. These are fixed finite-
+alphabet behavioral semantics; encoded PTM realization, general measurable-alphabet
+coverage and native machine resources remain open; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
 claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.
 

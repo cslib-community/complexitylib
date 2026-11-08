@@ -763,8 +763,58 @@ cost at most `7/2`, an actual early singleton output of duration two, zero turn
 budget, empty ground and `p=1`. A full batch/response joint client retains the
 selected batch and tolerates poisoned null histories and a null batch.
 
-The remaining Theorem 5 universal selection-only/lower-cost and matching-envelope
-composition, general measurable-alphabet realization and encoded machine resources are open. Theorem 4's native runtime/hardness and
+For universal comparisons, import
+`Complexity.Probability.StochasticOracle.SelectionOptimum`. `SelectionPolicy.Oracle`
+fixes conditional responses, all valid proposed sets, token charges and physical
+durations. An arbitrary `Policy` supplies randomized batch-or-halt choices and a
+randomized terminal output kernel. `law` samples the selected batch then its response;
+halt is absorbing and carries no extra oracle information. `Admissible` requires only
+that each supported final output use previously proposed sets. It allows buffering
+locally uncertified proposals and extracting a certified subset later; it imposes no
+local retention algorithm. `successProbability` integrates the actual conditional
+randomized output's coverage/certificate/deadline indicator. `expectedCost` charges
+only actual issued calls. Both are identified with cylinder expectations under the
+constructed infinite process, without an assumed process-law equality.
+
+`LowerBounds` contains supported per-selected-batch progress/size/token/latency
+contracts. `UniversalBounds` quantifies those local contracts over every admissible
+behavioral policy for the fixed oracle. `universal_lower_cost` derives the source
+`eta*rb*c/p` token lower bound. `universal_lower_bounds` also derives the necessary
+binomial tail with `v = min(u,floor(D/ℓ))`. Output provenance and the size cap prove
+the success-to-revealed-count bridge. Supported latency lower bounds prove that a
+successful deadline path has no issued call after that prefix; a halt cannot restart.
+The progress comparison permits arbitrary full-history response correlations.
+The existing `conditional_lower_cost` aggregates the derived marginal tables; no
+aggregate expected-cost lower bound is a hypothesis.
+
+`retainingPolicy` constructs an admissible upper policy from a randomized batch
+selector; `UpperBounds` contains only its supported source contracts.
+`retaining_guarantee` derives its actual certified deadline probability and stopped
+finite token bound. `optimalCost` is the real infimum over **all** admissible policies and all finite
+turn budgets achieving the deadline success level, including competitors using a
+different turn budget from the upper witness. Competitors must satisfy
+`DeadlineFeasible`, the physical deadline on every supported terminal transcript;
+this is derived for the upper witness from its per-call contract, not assumed.
+`optimalCost_sandwich` proves nonemptiness
+from the constructed upper witness and boundedness from the universal lower theorem,
+then sandwiches this infimum between the source lower bound and actual upper-policy
+cost. `matching_envelope_ratio` derives the `1/eta` comparison with that universal
+infimum for matching coverage/probability/cost envelopes and positive `eta`.
+No optimum attainment, lower optimum bound or optimality certificate is assumed.
+
+The [complete policy client](../../ComplexityTests/StochasticOracleSelectionPolicy.lean)
+checks universal local contracts for every policy of a correlated oracle, randomized
+early halt, randomized final output, the physical one-call deadline inside a two-turn
+budget, and the matching comparison. Its second instance offers a costly bundle
+rejected by local retention: an admissible buffering policy extracts the cheap
+certified singleton and succeeds with probability one, and the universal lower
+cost theorem still applies. This checks that the competing class includes policies
+outside the constructive retention algorithm.
+
+Theorem 5 remains incomplete at unrestricted source scope: these are finite-alphabet
+behavioral kernels, without a realization/representation theorem for every encoded
+selection-only PTM or general measurable alphabets. Native encoded machine resources
+also remain open. Theorem 4's native runtime/hardness and
 Theorem 6's residual construction and universal optimum remain open. None of these
 components or clients changes the curated abstract catalogue. The Agent Operator's
 Manual requires no edit: ownership, review, validation and human direction are
