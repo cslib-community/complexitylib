@@ -1150,12 +1150,59 @@ checks separate positions for repeated equations, a cap that admits a singleton 
 that rejects it, native readback for a nonconstant equation, no equations and a constant
 contradiction, and composition with the existing binary time/space certificate.
 
-The remaining original-count equality compares this `selectionPolynomial`, in the
-truncated modular ring at the computed parameters, with `systemIncidencePolynomial`.
-Transport local test positions to original row indices and identify canonical listed
-integer monomial counts with finite equation lifts; preserve degree and free-variable
-weight through that transport. `rootCount_eq_incidenceResidue` becomes applicable only
-after this equality is proved. Original count correctness, high-incidence/parity/sparsification composition,
-eta-time absorption/rescaling, common-occurrence/raw-row/table/graph and ALL-main remain
-open. The source is OpenAI2026ETH, Lemma D.2, PDF pp.55–56; this is not the complete
-STOC1575 Lemma 3.2 or Theorem 7.1.
+The next section proves the original-equation coordinate and coefficient bridge for
+this family sum. The source is OpenAI2026ETH, Lemma D.2, PDF pp.55–56; the complete
+STOC1575 Lemma 3.2 and Theorem 7.1 still need the separate resource compositions below.
+
+### Count original assignments with the native incidence stream
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceOriginalCounter`
+and open `Cslib.Circuits.Frontier.IncidenceNetwork`.
+`selectionPolynomial_eq_incidenceSum` transports the capped family sum to the original
+finite equations. Its identity is exact over integer polynomials at every cap. Local
+positions in a residue-class group biject with original row indices, so repeated equations
+remain distinct. Canonical listed integer monomial counts equal finite equation lifts;
+selected incidence degree, per-test coefficient products and every declared free-variable
+weight are preserved. No polynomial identity or desired output is supplied as a premise.
+
+`trunc_selectionPolynomial_eq_systemIncidencePolynomial` specializes this to the actual
+quarter-root grouping, computed cap and truncated coefficient ring. `sumArrays_eq_rootCount`
+then proves the native output equals `HeavyBranchFold.rootCount` when $n\ge1$, every equation
+is canonical, all listed variable indices are below $n$, and every listed monomial has length
+at most $k$. The degree hypothesis supplies the cap needed for source residue recovery;
+the coordinate transport itself does not need it. The theorem counts all declared variables,
+including those absent from every equation.
+
+For zero variables, use `countOriginal k (n, sys)`. Its `zeroCount` branch evaluates the
+system on the unique empty assignment, with proved polynomial binary time and actual output
+writing. `countOriginal_eq_rootCount` covers every $n$ under the same semantic hypotheses.
+Positive sizes use the existing streamed contractions. There is no positive-size exhaustive
+fallback: the existing exhaustive-counter module supplies only its polynomial input-evaluation
+lemma to the zero-variable branch.
+
+`exists_countOriginal_certificate` certifies one actual native machine for this dispatch.
+For fixed $k,c$ and all sufficiently large admissible sparse branches, its time is bounded by
+$$P(L)+(\operatorname{degreeCount}+1)A(L+1)^A
+  2^{\lfloor As/\lfloor\sqrt{\lfloor\log_2 s\rfloor}\rfloor\rfloor},
+  \qquad s=n\lceil\log_2\lceil\log_2 n\rceil\rceil,$$
+and its peak space by $P(L)+A(L+1)^A$, with $P$ polynomial and $L$ the full original encoding
+length. The zero-variable branch has polynomial time and space even for arbitrary raw equation
+lists. The actual branch test, direct output, binary network writing and streamed summation
+are charged by the composed certificate. The degree-array multiplier remains explicit.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceOriginalCount`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceOriginalCount.lean)
+derives numeric original counts for a three-variable parity equation, declared free variables,
+repeated equations in different groups, interleaved local positions, a nonlinear equation with a
+constant term, empty and contradictory systems, and the zero-variable dispatch. It also checks
+the exact truncated-ring bridge, negative semantic hypotheses and a genuine sparse family with
+both the original answer and actual native resource certificate.
+
+This finishes original-count correctness of the incidence branch solver. High-incidence
+branching, every parity query, sharper sparsification, array/contraction exponent absorption and
+weighted eta-time rescaling remain to compose. No extra log-log factor has been discarded;
+the older complete counter still has that factor. Common-occurrence weighted rows, arbitrary
+ragged raw rows, table/graph endpoints, full Theorem 7.1 and ALL-main remain open. The source is
+OpenAI2026ETH Appendix D.3, Lemma D.2, PDF pp.55–56, particularly the per-test coefficient,
+free-variable weight and contraction-sum paragraphs.

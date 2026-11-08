@@ -1146,6 +1146,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceN
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkSize
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceOriginalCount
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceOriginalCounter
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidencePadding
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceRankSum
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelectionSum

@@ -1175,16 +1175,32 @@ reindexing. `sumArrays_eq_selectionResidue` connects this capped family sum to
 the actual native scalar output, preserving its binary time and peak-space
 certificate without executing the mathematical family enumeration.
 
-The precise remaining equality is now between the images under
-`truncRingHom (n+1) (n+1)` of `selectionPolynomial` at the computed parameters and
-`systemIncidencePolynomial k (n,sys)`. Reindex selected block incidences through
-the residue-class/local-test-position bijection into original test/variable
-families, preserving total degree and the free-variable weight. Identify the
-canonical listed integer monomial counts with the finite equation lift and
-transport the per-test coefficient products. The array/rank reindexing is proved;
-this original-coordinate/coefficient identity is still not a theorem premise.
-Original-assignment count correctness, complete sharper-counter
-branch/parity/sparsification composition and actual eta-time absorption/rescaling
-remain open. The old complete counter still retains its extra log-log factor;
-common-occurrence weighted rows, arbitrary variable-length raw rows, tables,
-graphs, Theorem 7.1 and ALL-main retain their broader limits.
+`IncidenceOriginalCount` now proves that remaining original-coordinate bridge.
+`selectionPolynomial_eq_incidenceSum` is an exact integer-polynomial identity,
+transporting residue-class/local-test positions to original row indices,
+canonical listed integer monomial counts to finite equation lifts, and the
+incidence degree/coefficient products/declared-variable weights. It does not
+assume the desired equality; the reviewed array/rank reindexing is reused.
+`trunc_selectionPolynomial_eq_systemIncidencePolynomial` is the precise computed
+truncated-ring equality, and `sumArrays_eq_rootCount` composes it with actual
+native readback and source residue recovery for n≥1 under canonical equations,
+declared variables and listed degree ≤k. Repeated equations retain their identity.
+
+`IncidenceOriginalCounter.countOriginal` dispatches n=0 to the actual polynomial
+binary evaluation of the unique empty assignment. It equals the original count
+for every n under those semantic hypotheses; the bare zero-group contraction is
+not used to decide zero-variable contradictions. `exists_countOriginal_certificate`
+composes the actual branch test/direct output/native stream and bounds its binary
+time by a fixed polynomial overhead plus the existing degree-count multiplier
+and contraction bound, and its peak space by a polynomial, on all sufficiently
+large admissible sparse branches and on the direct zero-variable branch.
+The checked client now derives numeric original counts, including interleaved
+and repeated rows, nonlinear/constant equations and declared free variables.
+
+Remaining core work is the complete sharper-counter high-incidence branching,
+every parity query, sharper sparsification, actual array/contraction exponent
+absorption and weighted eta-time rescaling. The array multiplier remains explicit;
+this semantic milestone does not assert the full source eta bound. The old
+complete counter still retains its extra log-log factor. Common-occurrence
+weighted rows, arbitrary variable-length raw rows, tables, graphs, Theorem 7.1
+and ALL-main retain their broader limits.
