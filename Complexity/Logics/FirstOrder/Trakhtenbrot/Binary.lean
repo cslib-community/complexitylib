@@ -77,7 +77,7 @@ namespace Cslib.Logic.FO
 namespace RawFormula
 
 /-- Renaming the binary symbol `0` to `s` preserves finite satisfiability. -/
-theorem finSat_rename_singleton {φ : RawFormula} (hφ : ∀ a ∈ φ.atoms, a = (0, 2)) (s : ℕ) :
+private theorem finSat_rename_singleton {φ : RawFormula} (hφ : ∀ a ∈ φ.atoms, a = (0, 2)) (s : ℕ) :
     FinSat (rename [s] φ) ↔ FinSat φ := by
   constructor
   · rintro ⟨M, hf, hn, I, v, h⟩

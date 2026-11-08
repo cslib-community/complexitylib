@@ -14,7 +14,7 @@ public import Complexity.Logics.FirstOrder.Raw.Primrec
 
 Every raw formula can be rewritten with a single relation symbol, preserving finite
 satisfiability. `Cslib.Logic.FO.RawFormula.uniformize B φ` replaces each atom `R_r(x̄)` by
-`R_0(x̄, x_B, …, x_B)`, padded to the length `padLen r |x̄| = pair r |x̄| + 1`. The length codes the
+`R_0(x̄, x_B, …, x_B)`, padded to the length `pair r |x̄| + 1`. The length codes the
 pair `(r, |x̄|)` injectively, so a structure for `φ` and a structure for `uniformize B φ` determine
 each other (`Cslib.Logic.FO.RawFormula.finSat_uniformize`). Every atom of `uniformize B φ` is the
 symbol `0` at a positive arity (`Cslib.Logic.FO.RawFormula.atoms_uniformize`).
@@ -25,8 +25,7 @@ symbol `0` at a positive arity (`Cslib.Logic.FO.RawFormula.atoms_uniformize`).
 
 ## Main results
 
-* `Cslib.Logic.FO.RawFormula.realize_uniformize`, `Cslib.Logic.FO.RawFormula.finSat_uniformize`:
-  semantics and preservation of finite satisfiability.
+* `Cslib.Logic.FO.RawFormula.finSat_uniformize`: preservation of finite satisfiability.
 * `Cslib.Logic.FO.RawFormula.primrec₂_uniformize`: the rewriting is primitive recursive.
 -/
 
@@ -37,9 +36,9 @@ namespace Cslib.Logic.FO
 namespace RawFormula
 
 /-- The padded length coding symbol `r` with `k` arguments. -/
-def padLen (r k : ℕ) : ℕ := Nat.pair r k + 1
+private def padLen (r k : ℕ) : ℕ := Nat.pair r k + 1
 
-/-- Replace every atom `R_r(x̄)` by `R_0(x̄, x_B, …, x_B)`, padded to length `padLen r |x̄|`. -/
+/-- Replace every atom `R_r(x̄)` by `R_0(x̄, x_B, …, x_B)`, padded to length `pair r |x̄| + 1`. -/
 def uniformize (B : ℕ) : RawFormula → RawFormula
   | falsum => falsum
   | equal x y => equal x y
@@ -49,10 +48,10 @@ def uniformize (B : ℕ) : RawFormula → RawFormula
 
 /-- The interpretation of the original symbols induced by an interpretation `J` of the symbol `0`
 and the padding element `b`. -/
-def uniformInterp {M : Type*} (J : ℕ → List M → Prop) (b : M) : ℕ → List M → Prop :=
+private def uniformInterp {M : Type*} (J : ℕ → List M → Prop) (b : M) : ℕ → List M → Prop :=
   fun r as => J 0 (as ++ List.replicate (padLen r as.length - as.length) b)
 
-theorem realize_uniformize {M : Type*} (B : ℕ) (J : ℕ → List M → Prop) :
+private theorem realize_uniformize {M : Type*} (B : ℕ) (J : ℕ → List M → Prop) :
     ∀ (φ : RawFormula) (v : ℕ → M), φ.varBound ≤ B →
       ((uniformize B φ).Realize J v ↔ φ.Realize (uniformInterp J (v B)) v)
   | falsum, _, _ => Iff.rfl

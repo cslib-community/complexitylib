@@ -34,8 +34,9 @@ edges `(l, j + 1) → (l, j)` and `(l, j) → l[j]`. A tuple gadget holds in the
 for the tuples of `I 0` (`Cslib.Logic.FO.RawFormula.isTupleGadget_tupleGraph_iff`): the two
 boundary conditions force a witnessing chain to be a whole gadget chain of the right length.
 
-This is the standard interpretation of a relational structure in a graph, as used for the
-binary-relation case of Trakhtenbrot's theorem ([Libkin2004], Theorem 9.2).
+This is a standard interpretation of a relational structure in a graph (used to sharpen
+Trakhtenbrot's theorem to one binary relation, cf. [Libkin2004], Theorem 9.2). The atom helpers
+`edgeAtom`, `loopAtom` and `listRel` live in the namespace `Cslib.Logic.FO.RawFormula.Graph`.
 
 ## Main definitions
 
@@ -64,11 +65,22 @@ namespace RawFormula
 
 /-! ### The tuple gadget -/
 
+namespace Graph
+
 /-- The edge atom `E(x, y)` of the single binary relation `0`. -/
 def edgeAtom (x y : ℕ) : RawFormula := rel 0 [x, y]
 
 /-- The loop atom `E(x, x)`, defining the domain. -/
 def loopAtom (x : ℕ) : RawFormula := edgeAtom x x
+
+/-- Binary relations as list relations. -/
+def listRel {G : Type*} (E : G → G → Prop) : List G → Prop
+  | [a, b] => E a b
+  | _ => False
+
+end Graph
+
+open Graph
 
 /-- The body of the tuple gadget for `args` (of length `L`), with chain variables
 `u_i = x_{B+i}` and a scratch variable `x_{B+L}`: the `u_i` are non-loops, `u_{i+1} → u_i`, `u_0`
@@ -95,11 +107,6 @@ theorem atoms_tupleGadget (B : ℕ) (args : List ℕ) :
     List.not_mem_nil, or_false] at hφ
   rcases hφ with ((⟨i, -, rfl⟩ | ⟨i, -, rfl⟩) | rfl | rfl) | ⟨i, -, rfl⟩ <;>
     simpa [loopAtom, edgeAtom, neg, atoms] using h
-
-/-- Binary relations as list relations. -/
-def listRel {G : Type*} (E : G → G → Prop) : List G → Prop
-  | [a, b] => E a b
-  | _ => False
 
 /-- The semantic tuple gadget in a graph `E`: the witnesses `u_i` of the gadget formula. -/
 def IsTupleGadget {G : Type*} (E : G → G → Prop) (xs : List G) : Prop :=
@@ -273,12 +280,13 @@ def tupleGraphLoopEquiv : M ≃ {g : M ⊕ TupleVertex I K // tupleGraph I K g g
     · rfl
     · exact absurd h (by simp [tupleGraph])
 
-theorem coe_tupleGraphLoopEquiv_symm (g : {g : M ⊕ TupleVertex I K // tupleGraph I K g g}) :
+private theorem coe_tupleGraphLoopEquiv_symm (g : {g : M ⊕ TupleVertex I K // tupleGraph I K g g}) :
     (g : M ⊕ TupleVertex I K) = .inl ((tupleGraphLoopEquiv I K).symm g) := by
   conv_lhs => rw [← (tupleGraphLoopEquiv I K).apply_symm_apply g]
   rfl
 
 end Canonical
+
 /-! ### The graph translation -/
 
 /-- The graph translation with free variables below `B`: they are loops, and the formula is
@@ -297,7 +305,7 @@ theorem atoms_toGraph (B : ℕ) (ψ : RawFormula) : ∀ a ∈ (toGraph B ψ).ato
       (fun x a h => by simpa [loopAtom, edgeAtom, atoms] using h)
       (fun _ args => atoms_tupleGadget B args) ψ a h
 
-theorem listRel_iff {G : Type*} {J : ℕ → List G → Prop} {as : List G} (h : as.length = 2) :
+private theorem listRel_iff {G : Type*} {J : ℕ → List G → Prop} {as : List G} (h : as.length = 2) :
     J 0 as ↔ listRel (fun a b => J 0 [a, b]) as := by
   rcases as with _ | ⟨a, _ | ⟨b, _ | ⟨c, as⟩⟩⟩
   · simp at h
@@ -305,7 +313,7 @@ theorem listRel_iff {G : Type*} {J : ℕ → List G → Prop} {as : List G} (h :
   · exact Iff.rfl
   · simp at h
 
-theorem realize_listRel_of_atoms {G : Type*} {J : ℕ → List G → Prop} {φ : RawFormula}
+private theorem realize_listRel_of_atoms {G : Type*} {J : ℕ → List G → Prop} {φ : RawFormula}
     (hφ : ∀ a ∈ φ.atoms, a = (0, 2)) (w : ℕ → G) :
     φ.Realize J w ↔ φ.Realize (fun _ => listRel fun a b => J 0 [a, b]) w := by
   refine realize_congr_rel φ w fun r as h => ?_
@@ -314,9 +322,10 @@ theorem realize_listRel_of_atoms {G : Type*} {J : ℕ → List G → Prop} {φ :
   exact listRel_iff hl
 
 /-- The largest arity of an atom of `φ`. -/
-def arityBound (φ : RawFormula) : ℕ := (φ.atoms.map Prod.snd).foldr max 0
+private def arityBound (φ : RawFormula) : ℕ := (φ.atoms.map Prod.snd).foldr max 0
 
-theorem le_arityBound {φ : RawFormula} {a : ℕ × ℕ} (h : a ∈ φ.atoms) : a.2 ≤ arityBound φ := by
+private theorem le_arityBound {φ : RawFormula} {a : ℕ × ℕ} (h : a ∈ φ.atoms) :
+    a.2 ≤ arityBound φ := by
   unfold arityBound
   generalize φ.atoms = l at h ⊢
   induction l with
@@ -385,11 +394,11 @@ open Primrec
 
 variable {α : Type*} [Primcodable α]
 
-theorem primrec_edgeAtom {f g : α → ℕ} (hf : Primrec f) (hg : Primrec g) :
+theorem Graph.primrec_edgeAtom {f g : α → ℕ} (hf : Primrec f) (hg : Primrec g) :
     Primrec fun a => edgeAtom (f a) (g a) :=
   primrec_rel (const 0) (list_cons.comp hf (list_cons.comp hg (const [])))
 
-theorem primrec_loopAtom : Primrec loopAtom := primrec_edgeAtom Primrec.id Primrec.id
+theorem Graph.primrec_loopAtom : Primrec loopAtom := primrec_edgeAtom Primrec.id Primrec.id
 
 theorem primrec₂_tupleGadgetBody : Primrec₂ tupleGadgetBody := by
   have hB : Primrec fun p : ℕ × List ℕ => p.1 := fst
