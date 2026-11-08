@@ -985,9 +985,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   variables. `ExistentialPebble.lean` and `PigeonholeSpace.lean`
   ([#3321](https://github.com/cslib-community/complexitylib/issues/3321)) add Duplicator
   strategies (Atserias–Dalmau Lemma 3) and width and clause space at least `n` for the extended
-  `3`-CNF pigeonhole formula with `n` holes. Next:
+  `3`-CNF pigeonhole formula with `n` holes. The converse, Atserias–Dalmau Lemma 2
+  ([#3375](https://github.com/cslib-community/complexitylib/issues/3375)), gives their Theorem 2
+  for formulas of narrow clauses, and the space–width inequality is proved from any Duplicator
+  strategy. Next:
   - space lower bounds for the wide pigeonhole formula and random `k`-CNFs;
-  - the converse direction, Atserias–Dalmau Lemma 2, as a public `DuplicatorStrategy`;
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
   - degree versus space in polynomial calculus.
