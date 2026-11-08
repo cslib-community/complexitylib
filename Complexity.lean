@@ -4640,8 +4640,12 @@ public import Complexity.Logics.Propositional.CSP.BinaryDigits
 public import Complexity.Logics.Propositional.CSP.Boolean
 public import Complexity.Logics.Propositional.CSP.CNFTemplate
 public import Complexity.Logics.Propositional.CSP.Edge.Augmenting
+public import Complexity.Logics.Propositional.CSP.Edge.DAG
+public import Complexity.Logics.Propositional.CSP.Edge.DAGPaths
+public import Complexity.Logics.Propositional.CSP.Edge.DAGSurgery
 public import Complexity.Logics.Propositional.CSP.Edge.Defects
 public import Complexity.Logics.Propositional.CSP.Edge.Walk
+public import Complexity.Logics.Propositional.CSP.Edge.Walk.Operations
 public import Complexity.Logics.Propositional.CSP.ExactlyOne
 public import Complexity.Logics.Propositional.CSP.HardCore
 public import Complexity.Logics.Propositional.CSP.Occurrence

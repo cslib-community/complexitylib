@@ -40,6 +40,8 @@ import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Logics.Propositional.CSP.Edge.Augmenting
+import Complexity.Logics.Propositional.CSP.Edge.DAGPaths
+import Complexity.Logics.Propositional.CSP.Edge.Walk.Operations
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Logics.Propositional.CSP.Planar.Crossover
 import Complexity.Foundations.Data.BitString.CyclicDifference
@@ -73,6 +75,8 @@ import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Logics.Propositional.CSP.Edge.Augmenting
+import Complexity.Logics.Propositional.CSP.Edge.DAGPaths
+import Complexity.Logics.Propositional.CSP.Edge.Walk.Operations
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Logics.Propositional.CSP.Planar.Crossover
 import Complexity.Foundations.Data.BitString.CyclicDifference
@@ -838,6 +842,49 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 
 The test module also rejects final-only validity. A complete solver still needs
 DAG/forest/blossom search and the native runtime certificate.
+
+
+# Timestamped DAG Search Prerequisites
+
+{name}`Cslib.Logic.PL.CSP.DAG.IsFDAG` combines base validity with all six KKR
+invariants. Copies use original constraint positions and timestamps; arcs use
+actual argument occurrences. Supported isolated nodes are retained. Finite ranks
+can be made injective without changing any required comparison.
+
+The earliest-copy deletion and rerooting theorems preserve the invariants after
+a feasible pair flip, with the source's leaf and degree hypotheses explicit.
+Rerooting keeps unselected children. The paired-copy theorem gives the directed
+path argument; original constraints may recur at distinct timestamps. Prefix
+validity is a conclusion, not part of the path certificate:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.DAG in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    {sem : Rel → List Bool → Bool} {f : OccurrenceLabeling F Bool}
+    {T : DAG F} {w : Walk F} {time : Occurrence F → ℕ}
+    (hp : DirectedPath T w time) (hT : T.IsFDAG sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) (n : ℕ) :
+    ValidLabeling sem ((w.take n).flip f) := hp.valid_take hT hM n
+```
+
+{name}`Cslib.Logic.PL.CSP.DAG.DirectedPath.isFWalk` also requires distinct
+endpoints and original internal consistency. Lemma 43 is formalized by
+{name}`Cslib.Logic.PL.CSP.DAG.IsFDAG.flip_walk_of_no_prefix_extension`, using
+actual prefix extensions against every used incidence. Its direct-exchange proof
+handles timestamp zero without adding a smaller timestamp.
+
+For assembly, trail reversal preserves the underlying trail:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} {F : CSP Rel V} {w : Walk F}
+    (hw : w.IsWalk) : w.reverse.IsWalk := hw.reverse
+```
+
+Arbitrary f-walk reversal need not preserve prefix validity, even for even
+delta-matroid relations. Operation tests give a counterexample. These results
+still leave forest construction/Lemma 34, whole-blossom search, native cost and
+the full planar dichotomy open.
 
 
 # Finite Crossover Gadget Semantics
