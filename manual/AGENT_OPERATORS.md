@@ -112,6 +112,10 @@ different meanings. Preserve the stated machine model when reporting a milestone
 a native RAM word bound alone does not supply a multitape bit-time theorem. A separately proved
 bit codec also needs a charged connection to its producing machine; an already
 serialized codec input is a material calling convention, not a full simulation.
+A concrete fixed-program simulator may charge input conversion and memory extraction
+while its machine and constants still depend on scalar parameters. Check whether
+programs/headers are runtime encoded inputs or fixed parameters, and keep sparse
+stored bindings distinct from live nonzero support before transferring resource bounds.
 
 ## Correct course and hand work over
 

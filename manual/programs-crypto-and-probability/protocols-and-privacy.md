@@ -1154,7 +1154,7 @@ most $q$ operators, including status and halt, with zero work-tape space. The fi
 native resource theorem includes this machine certificate for the encoding of
 its own actual returned array. Input/output tapes are not counted as work tapes.
 
-This bit stage starts from the already encoded output array. Reading RAM memory
+This standalone bit stage starts from the already encoded output array. Reading RAM memory
 into that machine input is not charged by the codec theorem. Original input still
 uses the reversed-suffix RAM calling convention; scalar header decoding and
 uniform encoded program construction remain open. The core uses sparse full-state
@@ -1164,7 +1164,8 @@ simulator scans stored bindings and retains bindings written to zero; its generi
 bounds depend on historical storage and may add factors exponential in $q$.
 Neither it nor the output codec supplies the source sorted-list membership and
 memory-reuse algorithm. No source global bit-time or peak-space asymptotic is
-claimed from this output milestone.
+claimed from this output milestone. The following fixed-parameter execution bridge
+charges input conversion and memory extraction without supplying the missing sharp bound.
 
 From the repository root build
 `lake build Complexity.Cryptanalysis.AddXNORNativeOutputResources`, then run
@@ -1174,6 +1175,61 @@ computed balance, actual output validity and all-prefix space. Consecutive nativ
 executions check both bit orders, leading zeros and dirty outside memory. Empty
 original-input hits and exhaustive misses check both status formats; the same
 client checks the concrete bit decoder and fixed graph size.
+
+For an actual bit-machine input and execution connection, import
+`Complexity.Cryptanalysis.AddXNORBitExecution`. `BitInput.encoding` represents four
+quarter lists of binary natural words in original chain order, with explicit
+framed quarter boundaries. `BitInput.prepareCertificate` implements concatenation
+and suffix reversal on a multitape machine; `initialCertificate` also constructs
+the finite sparse memory, including the length header, zero-valued input cells
+and their addresses. These are charged polynomial bit computations. For $q$
+original $m$-bit operands the encoded input has at most $4q(2m+1)+4$ bits.
+
+`BitExecution.solveBitsCertificate p a b c d s t` composes that preparation with
+the concrete finite-state simulation of the 1,109-instruction native program,
+then reads the length-prefixed output from simulated memory and runs the actual
+output decoder. `original_bits_correct hp as bs cs ds s t` proves exhaustive
+absence or a correctly sized original-chain witness from those original operands.
+No simulation, dictionary, query, completion or witness correctness conclusion is
+an input premise. The input words are not presumed already reversed or already
+materialized in RAM. The generic reusable implementation is
+`Program.clockedListCertificate` in
+`Complexity.Computability.WordRAM.Turing.ClockedListOutput`.
+
+The certificate's `time` and `space` have explicit composition equations
+`executionCertificate_time` and `executionCertificate_space`: input preparation,
+initialization and runtime width/clock setup, `FiniteState.runTime`/`runSpace`,
+then the standalone parked-output reader. That reader operates on the produced
+state, so it does not rerun the dissection. Simulator profiles charge control
+dispatch, checked arithmetic, address encodings and sparse-memory scans; workspace
+bounds are simultaneous bounds on the implementing machine, including encoded
+intermediates and output charges, up to constants. The final linear bit decoder
+is absorbed using the producer's proved output-length charge.
+
+This is a **fixed-parameter machine family**. Widths, quarter lengths and endpoints
+are fixed in the program and in the finite machine; implementation constants can
+depend on them. No encoded program is accepted at runtime, and header-to-program
+construction, scalar validation and uniform immediate-bit costs are still open.
+For the actual prepared operands, `original_encoding_bound` bounds every simulated
+outcome by `stateBound 40 (labelBound P.parkHalts.toGeneric) W (q+1+j)` after $j$
+steps, with the proved physical width $W=globalWidth$ and clock
+`globalTime + outputTime + 1`. The simulator retains zero bindings, so its stored
+state can depend on $j$ rather than native computed-balance live support. The
+native bounds remain intact, but these bit profiles do not establish the source
+sorted-list time or peak-space asymptotics. A generic simulator certificate is
+not a sharp bit-model theorem, and this family is not a uniform ALL-main endpoint.
+
+From the repository root build
+`lake build Complexity.Cryptanalysis.AddXNORBitExecution`, then run
+`lake env lean ComplexityTests/AddXNORBitExecution.lean`. The
+[complete client](../../ComplexityTests/AddXNORBitExecution.lean) checks original-order
+suffix reversal, materialized zero cells, concrete small-program simulation and
+readback, an actual overflow fault, unequal-quarter strict inverse/collision and
+nonempty forward clients, and empty hit/miss bit encodings. For a failed physical
+fit, use the derived `globalWidth` and valid full-width operands; do not replace
+it with the operand width $m$. For a variable input header or a source asymptotic,
+the fixed-parameter theorem is insufficient: prove the remaining uniform compiler
+and stronger simulation first.
 
 From the repository root, run
 `lake build Complexity.Cryptanalysis.AddXNORNativeClassSearch` followed by

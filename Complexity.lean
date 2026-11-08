@@ -2869,10 +2869,13 @@ public import Complexity.Computability.WordRAM.Trace
 public import Complexity.Computability.WordRAM.TraceBounds
 public import Complexity.Computability.WordRAM.TraceParameters
 public import Complexity.Computability.WordRAM.Turing
+public import Complexity.Computability.WordRAM.Turing.ClockedListOutput
 public import Complexity.Computability.WordRAM.Turing.ListOutput
 public import Complexity.Computability.WordRAM.Turing.Overhead
 public import Complexity.Computability.WordRAM.Width
 public import Complexity.Cryptanalysis.AddXNOR
+public import Complexity.Cryptanalysis.AddXNORBitExecution
+public import Complexity.Cryptanalysis.AddXNORBitInput
 public import Complexity.Cryptanalysis.AddXNORBits
 public import Complexity.Cryptanalysis.AddXNORChain
 public import Complexity.Cryptanalysis.AddXNORChainReverse

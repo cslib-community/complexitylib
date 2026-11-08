@@ -189,15 +189,24 @@ with halt), independent of quarter lengths. The six-state `OutputCodec.decoder`
 is also an actual deterministic multitape machine: it converts the encoded
 represented word array to an optional raw bit witness in at most $6q+9$ steps
 and zero work-tape space. Empty hits and misses have distinct encodings.
-This codec begins with the output array already encoded; extracting RAM memory
-into that machine input is not charged. Original input reversal remains the RAM
-calling convention, and scalar header decoding and uniform encoded program
-construction remain open. Core sparse RAM access is not source multitape bit
-access: the generic association-list simulator scans stored bindings and retains
-bindings written to zero, so its current overhead does not preserve the source
-sharp time or computed-balance live-space bounds. The source sorted-list lookup,
-compact reuse and bit-machine realization remain open. No source global bit
-asymptotic is claimed. Small-operand resources, reduction multiplicity and
+The standalone codec begins with the output array already encoded. The new
+`BitExecution.solveBitsCertificate` now connects original-order framed quarter
+operands through actual bit-machine suffix reversal, sparse initialization,
+clocked execution of the real native program, output-memory readback and decoding.
+`original_bits_correct` derives an exhaustive miss or a sound original witness
+without supplied simulation or semantic conclusions. Input framing is bounded by
+$4q(2m+1)+4$ bits. The generic reusable `Program.clockedListCertificate` exposes
+charged initialization, simulator and reader profiles; physical state bounds use
+the derived width and $q+1+j$ stored cells after $j$ steps, including zero bindings.
+This is a fixed-parameter family: quarter lengths, endpoints and widths remain
+fixed in the finite program/machine, with parameter-dependent constants. A runtime
+header decoder, charged uniform encoded program/immediate construction and
+validation remain open. Core sparse RAM access is not source multitape bit
+access: association-list scans and retained zero bindings mean these concrete
+bit profiles do not preserve the source sharp time or computed-balance live-space
+bounds. Source sorted-list lookup, compact reuse and sharp bit-machine realization
+remain open. No source global bit asymptotic is claimed. Small-operand resources,
+reduction multiplicity and
 sparsification refinements, and repaired ideal-model bounds remain open as well.
 These components do not close Lemma 8/Theorem 7 or 733 ALL-main. Earlier component
 contracts above are not individually the global resource endpoint.
