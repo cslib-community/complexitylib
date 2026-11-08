@@ -1212,17 +1212,24 @@ length/encoding transfer, all reduced solver costs and binary accumulation are
 charged. General natural/real estimates also prove fixed linear query-variable
 rescaling without adding an iterated-log factor.
 
-Remaining core work is every actual greedy parity query and the sharper
-sparsification composition for arbitrary-density CNFs. Instantiate
-`SparseCNFLeafCounter` with the new `countSparse`, prove all compiled candidate
-systems satisfy its sparse-system hypotheses, and derive the actual callback and
-greedy-enumeration budgets. Appendix D.3 (PDF p.57) uses sigma=1/ceil(sqrt(lambda))
-for the counting sparsifier. The old `SparseCountingScale` instead uses
-`ReplacementParams.numGroups` with nu² in its denominator; its tree exponent
-cannot be reused as a single-loglog bound. Then compose native traversal,
-small-dimension fallback and weighted binary reconstruction/eta rescaling.
-The older complete interpolation counter still retains its extra loglog factor;
-only the new normalized sparse-system path has the sharper proved bound.
-Common-occurrence weighted rows, arbitrary variable-length weighted raw rows,
-table/graph endpoints, full Lemma 3.2/Theorem 7.1, other-paper objectives and
-ALL-main remain open.
+The actual parity-leaf composition now uses the native counter:
+`IncidenceUniformSparseCounter` derives a global sharp callback time/polynomial-space
+certificate by executable sparse validation and a fixed-size exhaustive fallback.
+`IncidenceParityCounter.compiledSystem_isSparse` proves the sparse hypotheses for
+every compiled greedy candidate, including discarded candidates. `countParity`
+counts original assignments on polylogarithmic-density leaves, preserving declared
+unused variables. Its actual native certificate has global polynomial workspace
+and an explicit initial-search/all-candidate time bound with sharp per-call costs.
+No counter/resource contract substitutes for these implementations.
+
+Remaining core work is absorbing the parity initial-search/candidate overhead into
+eta and the sharper counting-sparsification composition for arbitrary-density CNFs.
+Appendix D.3 (PDF p.57) uses sigma=1/ceil(sqrt(lambda)); the old
+`SparseCountingScale` uses `ReplacementParams.numGroups` with nu² in its
+denominator, so its tree exponent cannot be reused as a single-loglog bound.
+Then compose native traversal, small-dimension handling and weighted binary
+reconstruction/eta rescaling. The older complete interpolation counter still
+retains its extra loglog factor; only the new normalized sparse-system path has
+the sharper proved endpoint. Common-occurrence weighted rows, arbitrary
+variable-length weighted raw rows, table/graph endpoints, full Lemma 3.2/Theorem 7.1,
+other-paper objectives and ALL-main remain open.

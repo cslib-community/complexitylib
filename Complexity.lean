@@ -1149,11 +1149,13 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceN
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceOriginalCount
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceOriginalCounter
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidencePadding
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceParityCounter
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceRankSum
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelectionSum
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelections
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSharpResources
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSparseCounter
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceUniformSparseCounter
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceWireDecoding
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceWireRanks
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates

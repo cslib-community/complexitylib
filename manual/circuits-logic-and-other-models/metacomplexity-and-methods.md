@@ -1246,13 +1246,46 @@ checks a genuinely heavy variable with both a reduced incidence-solver call and 
 branch, the original answer, invalid-input rejection, zero-variable cases, a numerical rounding
 instance, linear rescaling and a nonempty all-size sparse family with the real resource certificate.
 
-The general-density CNF endpoint is still open. Next instantiate `SparseCNFLeafCounter` with
-`countSparse`, validate every compiled greedy candidate and charge the actual candidate traversal.
-Then use the Appendix D.3 p.57 sparsification schedule $\sigma=1/\lceil\sqrt\lambda\rceil$.
-The older `SparseCountingScale` schedule has $\nu^2$ in its group-count denominator, so its
-tree bound cannot be relabeled with the sharper exponent. Native tree traversal, bounded-size
-fallback, weighted binary reconstruction and full runtime composition remain to connect.
-The existing complete CNF/weighted counter still has its extra log-log factor. Common-occurrence
-weighted input, arbitrary ragged weighted rows, table/graph, full Lemma 3.2/Theorem 7.1 and
-ALL-main gaps remain. The source for the completed normalized sparse-system step is
-OpenAI2026ETH Appendix D.3, Lemma D.2, PDF pp.54–57.
+### Count polylogarithmic-density parity leaves with the native machine
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceParityCounter`.
+`countParity k β N₀ (n, ψ)` runs the actual initial-row search and greedy parity reduction,
+using `uniformSparseCount k (paritySparsity β) N₀` for every candidate system. It counts over
+all declared variables, including unused bits. `countParity_eq_modelCountOn` proves the
+original CNF count when the width is at most $k$, variables are below $n$, and either
+$m\le\lceil\log_2 n\rceil^\beta n$ or $n<\texttt{parityCutoff}\ k\ \beta$.
+`countParity_le` bounds the binary output on every input, including rejected ones.
+
+`compiledSystem_isSparse` covers every candidate, including discarded candidates: above the
+fixed cutoff there are at most $6n$ equations, each canonical, declared, degree at most $k$,
+and listing at most $\lceil\log_2 n\rceil^{\max(6,2\beta+4)}$ monomials. This discharges
+correctness for the actual callback rather than assuming a polynomial-system oracle.
+
+`exists_uniformSparseCount_certificate` supplies a global sharper-time/polynomial-space
+certificate for that callback. The algorithm uses direct counting only below a fixed threshold,
+validates the sparse domain otherwise, and rejects outside it. The threshold is an algorithm
+constant; no input rank, desired answer or runtime is supplied. Its time includes validation,
+output writing and all original native stages, even on invalid inputs.
+
+`exists_countParity_certificate` composes an actual greedy-search machine with global polynomial
+workspace. Its explicit `sparseCNFTimeBound` charges the initial search and
+$(3n+1)(\texttt{candidateTupleCount}\ m\ P+1)$ actual candidate evaluations, where
+$P=\texttt{greedyRowListLength}\ B\ m$. Each call has the proved single-loglog callback
+bound with a polynomial encoded-system length. The theorem does **not** yet absorb the initial
+search/candidate overhead into $\eta(n)$.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceParityCounter`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceParityCounter.lean)
+checks a unit formula with an unused declared variable, zero variables, contradiction,
+symbolic above-cutoff candidate coverage, and global native callback/parity workspace bounds.
+
+The general-density CNF endpoint is still open. Absorb the explicit parity overhead and use
+the Appendix D.3 p.57 counting-sparsification schedule
+$\sigma=1/\lceil\sqrt\lambda\rceil$. The older `SparseCountingScale` schedule has $\nu^2$
+in its group-count denominator, so its tree bound cannot be relabeled with the sharper exponent.
+Native tree traversal, bounded-size handling at that endpoint, weighted binary reconstruction
+and full runtime composition remain to connect. The existing complete CNF/weighted counter
+still has its extra log-log factor. Common-occurrence weighted input, arbitrary ragged weighted
+rows, table/graph, full Lemma 3.2/Theorem 7.1 and ALL-main gaps remain. The source for the
+completed normalized sparse-system step is OpenAI2026ETH Appendix D.3, Lemma D.2, PDF pp.54–57.
