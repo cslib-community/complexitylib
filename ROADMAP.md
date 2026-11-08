@@ -1537,6 +1537,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   [#3285](https://github.com/cslib-community/complexitylib/issues/3285)): the Gomory–Hu or
   Gusfield construction with `n - 1` maximum-flow calls as a `TimeM` program over Edmonds–Karp,
   with its running-time bound, and real-valued capacities.
+- **Push–relabel maximum flow** ([#3373](https://github.com/cslib-community/complexitylib/issues/3373)):
+  remaining after preflows, valid labelings, optimality at termination with a gap minimum cut, the
+  operation bounds of the generic Goldberg–Tarjan algorithm and a verified executable scheduler
+  (`Algorithms/Lean/MaxFlow/{Preflow,PushRelabel}`): a charged `TimeM` version with current-arc
+  scanning (`O(|V|² |E|)`), the FIFO and relabel-to-front rules (`O(|V|³)`), highest-label
+  selection (`O(|V|² √|E|)`), gap and global-relabelling heuristics, and dynamic trees
+  (`O(|V| |E| log(|V|² / |E|))`).
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core

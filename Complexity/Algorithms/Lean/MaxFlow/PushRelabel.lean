@@ -47,12 +47,13 @@ executable scheduler.
 ## Main results
 
 * `PushRelabel.numRelabels_le`: at most `(|V| - 2)(2|V| - 1)` relabels; `numRelabels_lt`:
-  fewer than `2|V|²` ([CLRS2009], Lemma 26.21).
+  fewer than `2|V|²` ([CLRS2009], Corollary 26.21).
 * `PushRelabel.numSatPushes_le`: at most `|V| |N.symArcs|` saturating pushes;
-  `numSatPushes_le_posArcs`: at most `2|V| |E|` ([CLRS2009], Lemma 26.22).
+  `numSatPushes_le_posArcs`: at most `2|V| |E|` ([CLRS2009], Lemma 26.22, which states `<`; the
+  non-strict form also covers `E = ∅`).
 * `PushRelabel.numNonsatPushes_le`: at most `(|V| - 2)(2|V| - 1) + (2|V| - 1)|V| |N.symArcs|`
-  nonsaturating pushes; `numNonsatPushes_le_posArcs`: at most `4|V|²(|V| + |E|)` ([CLRS2009],
-  Lemma 26.23).
+  nonsaturating pushes; `numNonsatPushes_lt_posArcs`: fewer than `4|V|²(|V| + |E|)`
+  ([CLRS2009], Lemma 26.23).
 * `PushRelabel.length_le`: every run from the initial state has at most `maxOps N` operations, so
   the generic algorithm terminates after `O(|V|² |E|)` operations ([CLRS2009], Theorem 26.24).
 * `pushRelabelWith_correct`, `pushRelabel_correct`: the executable returns a maximum flow and a
@@ -585,7 +586,7 @@ theorem potential_init : (init N).potential = 0 := by
   · simp [Preflow.initialHeight, hx.1]
   · rfl
 
-/-- **Relabel bound** ([CLRS2009], Lemma 26.21): a run from the initial state performs at most
+/-- **Relabel bound** ([CLRS2009], Corollary 26.21): a run from the initial state performs at most
 `(|V| - 2)(2|V| - 1)` relabels. -/
 theorem numRelabels_le (hst : N.s ≠ N.t) {os : List (Op V)} (hos : (init N).IsRun os) :
     (init N).numRelabels os ≤ (Fintype.card V - 2) * (2 * Fintype.card V - 1) := by
@@ -594,7 +595,7 @@ theorem numRelabels_le (hst : N.s ≠ N.t) {os : List (Op V)} (hos : (init N).Is
   rw [sum_height_init] at h1
   omega
 
-/-- **Relabel bound**, [CLRS2009]'s form (Lemma 26.21): fewer than `2|V|²` relabels. -/
+/-- **Relabel bound**, [CLRS2009]'s form (Corollary 26.21): fewer than `2|V|²` relabels. -/
 theorem numRelabels_lt (hst : N.s ≠ N.t) {os : List (Op V)} (hos : (init N).IsRun os) :
     (init N).numRelabels os < 2 * Fintype.card V ^ 2 := by
   have h := numRelabels_le hst hos
@@ -615,7 +616,7 @@ theorem numSatPushes_le (hst : N.s ≠ N.t) {os : List (Op V)} (hos : (init N).I
   numSatPushes_le_of_inv (inv_init hst) hos
 
 /-- **Saturating-push bound**, [CLRS2009]'s form (Lemma 26.22): at most `2|V| |E|` saturating
-pushes, where `E = N.posArcs`. -/
+pushes, where `E = N.posArcs`. The source states `<`; the non-strict form also covers `E = ∅`. -/
 theorem numSatPushes_le_posArcs (hst : N.s ≠ N.t) {os : List (Op V)} (hos : (init N).IsRun os) :
     (init N).numSatPushes os ≤ 2 * Fintype.card V * N.posArcs.card := by
   have h := numSatPushes_le hst hos
@@ -635,26 +636,26 @@ theorem numNonsatPushes_le (hst : N.s ≠ N.t) {os : List (Op V)} (hos : (init N
   rw [potential_init, sum_height_init] at h1
   omega
 
-/-- **Nonsaturating-push bound**, [CLRS2009]'s form (Lemma 26.23): at most `4|V|²(|V| + |E|)`
+/-- **Nonsaturating-push bound**, [CLRS2009]'s form (Lemma 26.23): fewer than `4|V|²(|V| + |E|)`
 nonsaturating pushes, where `E = N.posArcs`. -/
-theorem numNonsatPushes_le_posArcs (hst : N.s ≠ N.t) {os : List (Op V)}
+theorem numNonsatPushes_lt_posArcs (hst : N.s ≠ N.t) {os : List (Op V)}
     (hos : (init N).IsRun os) :
-    (init N).numNonsatPushes os ≤ 4 * Fintype.card V ^ 2 * (Fintype.card V + N.posArcs.card) := by
+    (init N).numNonsatPushes os < 4 * Fintype.card V ^ 2 * (Fintype.card V + N.posArcs.card) := by
   have h := numNonsatPushes_le hst hos
   have hS := N.card_symArcs_le_two_mul_posArcs
+  have hpos : 0 < Fintype.card V := Fintype.card_pos_iff.mpr ⟨N.s⟩
   obtain ⟨n, hn⟩ : ∃ n, Fintype.card V = n := ⟨_, rfl⟩
   obtain ⟨P, hP⟩ : ∃ P, N.posArcs.card = P := ⟨_, rfl⟩
-  rw [hn] at h ⊢
+  rw [hn] at h hpos ⊢
   rw [hP] at hS ⊢
   have h1 : (n - 2) * (2 * n - 1) ≤ n * (2 * n) := Nat.mul_le_mul (by omega) (by omega)
   have h2 : (2 * n - 1) * (n * N.symArcs.card) ≤ (2 * n) * (n * (2 * P)) :=
     Nat.mul_le_mul (by omega) (Nat.mul_le_mul_left _ hS)
-  have h3 : n * (2 * n) ≤ 4 * n ^ 2 * n := by
-    rcases Nat.eq_zero_or_pos n with rfl | hpos
-    · exact le_rfl
-    · have h4 : n * (2 * n) = 2 * n ^ 2 := by ring
-      have h5 : 4 * n ^ 2 ≤ 4 * n ^ 2 * n := Nat.le_mul_of_pos_right _ hpos
-      omega
+  have h3 : n * (2 * n) < 4 * n ^ 2 * n := by
+    have h4 : n * (2 * n) = 2 * n ^ 2 := by ring
+    have h5 : 4 * n ^ 2 ≤ 4 * n ^ 2 * n := Nat.le_mul_of_pos_right _ hpos
+    have h6 : 0 < n ^ 2 := Nat.pow_pos hpos
+    omega
   have h6 : 2 * n * (n * (2 * P)) = 4 * n ^ 2 * P := by ring
   have h7 : 4 * n ^ 2 * (n + P) = 4 * n ^ 2 * n + 4 * n ^ 2 * P := by ring
   omega

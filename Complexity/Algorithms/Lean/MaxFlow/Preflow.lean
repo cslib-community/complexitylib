@@ -321,16 +321,16 @@ theorem pushAmount_le_resCap (f : N.Preflow) (u v : V) : f.pushAmount u v ≤ f.
   min_le_right _ _
 
 /-- Residual out-neighbours of `u`. -/
-@[expose] def resNbrs [DecidableEq V] (f : N.Preflow) (u : V) : Finset V :=
+@[expose] def resNbrs (f : N.Preflow) (u : V) : Finset V :=
   Finset.univ.filter fun v => 0 < f.resCap u v
 
-theorem mem_resNbrs [DecidableEq V] (f : N.Preflow) (u v : V) :
+theorem mem_resNbrs (f : N.Preflow) (u v : V) :
     v ∈ f.resNbrs u ↔ 0 < f.resCap u v := by
   simp [resNbrs]
 
 /-- The height `1 + min {h v | c_f(u, v) > 0}` assigned by a relabel of `u` ([CLRS2009], Section
 26.4, procedure `RELABEL`); `h u` when `u` has no residual out-arc. -/
-@[expose] def relabelHeight [DecidableEq V] (f : N.Preflow) (h : V → ℕ) (u : V) : ℕ :=
+@[expose] def relabelHeight (f : N.Preflow) (h : V → ℕ) (u : V) : ℕ :=
   if hne : (f.resNbrs u).Nonempty then (f.resNbrs u).inf' hne h + 1 else h u
 
 /-- Precondition of a push from `u` to `v` ([CLRS2009], Section 26.4): `u` is active and `(u, v)` is
@@ -663,6 +663,7 @@ theorem IsValidLabeling.push {f : N.Preflow} {h : V → ℕ} {u v : V} (hh : f.I
 @[expose] def relabel (f : N.Preflow) (h : V → ℕ) (u : V) : V → ℕ :=
   Function.update h u (f.relabelHeight h u)
 
+omit [DecidableEq V] in
 theorem resNbrs_nonempty (f : N.Preflow) {u : V} (hu : 0 < f.excess u) :
     (f.resNbrs u).Nonempty := by
   by_contra hne
@@ -688,6 +689,7 @@ theorem relabel_of_ne (f : N.Preflow) (h : V → ℕ) {u x : V} (hx : x ≠ u) :
     f.relabel h u x = h x :=
   Function.update_of_ne hx _ _
 
+omit [DecidableEq V] in
 theorem relabelHeight_le {f : N.Preflow} {h : V → ℕ} {u v : V} (hpos : 0 < f.resCap u v) :
     f.relabelHeight h u ≤ h v + 1 := by
   have hv : v ∈ f.resNbrs u := (mem_resNbrs f u v).mpr hpos
@@ -697,6 +699,7 @@ theorem relabelHeight_le {f : N.Preflow} {h : V → ℕ} {u v : V} (hpos : 0 < f
   have := Finset.inf'_le h hv
   omega
 
+omit [DecidableEq V] in
 /-- A relabel strictly raises the height of the relabelled vertex ([CLRS2009], Lemma 26.15). -/
 theorem CanRelabel.lt_relabelHeight {f : N.Preflow} {h : V → ℕ} {u : V} (hr : f.CanRelabel h u) :
     h u < f.relabelHeight h u := by
