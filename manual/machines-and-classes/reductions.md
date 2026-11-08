@@ -82,7 +82,7 @@ imports, exercises both membership branches, active and inactive self-queries, a
 full-language OR and empty-language AND witnesses. Its `L`-complete Boolean singleton examples
 also show how to apply the complement-closed-class completeness corollaries. These establish
 Proposition 2.7(2,3) of the expanded ECCC TR13-047 version; the theorem module maps the exact
-source and conventions. The remaining full-paper objective stays on [issue #2468](https://github.com/cslib-community/complexitylib/issues/2468).
+source and conventions. The remaining full-paper objective stays on [issue #2468](https://github.com/cslib-community/cslib-frontier/issues/2468).
 
 [`PolyTimeTuringAutoreducible`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/TuringAutoreducible.lean#L80) has a more specific execution quantifier: no encoded self-query occurs along the run with the language's actual oracle, measured by `OracleComp.queriesWith`. It does not demand absence of self-queries along every counterfactual oracle-response path. Its native efficiency certificate still applies across handlers. [Every P language](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/TuringAutoreducible.lean#L135) has such an autoreduction, using zero queries. In contrast, [singletons](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L379) and their complements fail fixed-point-free many-one autoreducibility.
 
@@ -254,7 +254,7 @@ rather than an assumed ordinary logspace characteristic function for the target 
 **The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
 evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
 assumed as a substitute. Complete NL/P instances, Theorem 3.5, and Sections 4–5 remain under
-[issue #2468](https://github.com/cslib-community/complexitylib/issues/2468).
+[issue #2468](https://github.com/cslib-community/cslib-frontier/issues/2468).
 
 ## Selectivity
 

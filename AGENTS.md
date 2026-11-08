@@ -1,9 +1,10 @@
 # Project Instructions
 
-Complexitylib is a Lean 4 library of computational complexity theory built on **cslib**
-(`leanprover/cslib`). Library modules must be upstreamable unchanged apart from rewriting
-`Complexity.` → `Cslib.`. General mathematics destined for Mathlib and local project scaffolding
-are documented exceptions; see `UPSTREAM.md` and the source markers.
+cslib-frontier is the frontier formalization library for **cslib** (`leanprover/cslib`): a Lean 4
+library covering computer science generally, including algorithms and data structures,
+complexity, cryptography, logic and models of computation. Library modules must be upstreamable
+unchanged apart from rewriting `Complexity.` → `Cslib.`. General mathematics destined for Mathlib
+and local project scaffolding are documented exceptions; see `UPSTREAM.md` and the source markers.
 
 Read the pinned cslib `AGENTS.md`, `CONTRIBUTING.md` and `CODESTYLE.md` in
 `.lake/packages/cslib` (or a checkout at the same revision). Follow its mathematical, API and
@@ -219,7 +220,7 @@ benchmark campaign or separate design study for every small improvement.
 Bootstrap a cold checkout with `scripts/cache/ensure.sh` before Lean elaboration or building.
 Retry when needed artifacts are missing or toolchain/dependency changes require new ones;
 a new commit or branch switch alone does not require a manual bootstrap if outputs are warm.
-MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not Complexitylib's. Cache misses
+MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not cslib-frontier's. Cache misses
 or download failures leave Lean to compile missing outputs. The helper's actual retry behavior
 and opt-out for warm local builds are documented in [the cache guide](scripts/cache/README.md).
 
@@ -304,6 +305,13 @@ requirement above; documentation-only checks need not invoke quick mode.
 
    public section
    ```
+   In a new file, `<authors>` names (a) the originator(s) of the issue or proposal the file
+   implements: the person named in the issue's "Originated by" field when someone wrote the issue
+   on their behalf, and otherwise the issue's author; and (b) the person who contributed the
+   inference for the implementation, meaning the human whose agents did the work, named as a
+   person rather than as a fleet or bot account. The rule applies going forward, not
+   retroactively: existing headers stay unless someone asks for a correction. A port still keeps
+   the original authors (rule 3).
 3. **Upstream marker** values: `candidate`, `submitted #N @SHA` (a copy of an open cslib pull
    request at its head `SHA`), `vendored <owner>:<branch> @SHA (unsubmitted)` (a copy of a branch
    of a contributor's cslib fork that has no pull request yet), `merged @SHA` (delete the file and
@@ -514,7 +522,7 @@ and usage harder.
 An encoding is part of what a statement claims, so statements show every encoding; but a reader
 should not have to parse the same nested encoding again and again. New declarations, and
 declarations whose statements change, follow these rules. Existing code is brought into line by
-a tracked sweep ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)), and the
+a tracked sweep ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)), and the
 encoding-readability lint checks rule 1 against a per-module baseline that may only fall.
 
 1. **Name repeated compound encodings.** A *compound encoding* is a term of type

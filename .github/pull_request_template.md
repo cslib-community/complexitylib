@@ -7,6 +7,9 @@ For mathematical changes, state the claim and important assumptions. Where relev
 the source-to-Lean mapping or why existing definitions could not be reused.
 New or changed statements follow AGENTS.md#encodings-in-statements; explain any exception. -->
 
+Authors of new files: <!-- the issue's originator(s) (its "Originated by" field, else its author)
+and the person whose agents did the work, as in AGENTS.md#file-rules. Delete if no file is added. -->
+
 ## Manual impact
 
 <!-- Required for every change: assess both the Operator's Manual and Agent Operator's Manual.

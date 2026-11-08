@@ -1,8 +1,11 @@
-# Complexitylib
+# cslib-frontier
 
-Complexitylib is a Lean 4 library of computational complexity theory, built on
-[CSLib](https://github.com/leanprover/cslib) and Mathlib. It develops reusable arguments about
-algorithms, resource bounds, reductions, lower bounds, and cryptographic security.
+cslib-frontier is the frontier formalization library for
+[CSLib](https://github.com/leanprover/cslib), written in Lean 4 on top of CSLib and Mathlib. Its
+scope is computer science generally: algorithms and data structures, computational complexity,
+cryptography, logic, models of computation, and more. It develops reusable arguments about
+algorithms, resource bounds, reductions, lower bounds, and cryptographic security, held to CSLib's
+standards so that they can move upstream.
 
 A central goal is to let you write recognizable functional programs and prove their efficiency
 compositionally, with Turing-machine implementations justified underneath. Nonconstructive
@@ -19,14 +22,14 @@ mathematics. See [Contributing](CONTRIBUTING.md) to propose, implement, or revie
 The [Operator's Manual](manual/README.md) covers using the codebase by hand or with an agent:
 setup, worked examples, tactics, models, design patterns and troubleshooting. The short
 [Agent Operator's Manual](manual/AGENT_OPERATORS.md) explains how humans direct agents, choose
-roles and manage review and handoffs. The [guide](https://www.cslib.io/complexitylib/guide/)
+roles and manage review and handoffs. The [guide](https://www.cslib.io/cslib-frontier/guide/)
 provides checked Lean tutorials. For a particular task, start below.
 
 | I want to… | Start with… |
 | --- | --- |
 | Learn to use the library from the beginning | [Operator's Manual](manual/README.md) |
 | Direct agents working in the library | [Agent Operator's Manual](manual/AGENT_OPERATORS.md) |
-| Use Complexitylib in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
+| Use cslib-frontier in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
 | Build or edit this repository | [Build a checkout](#build-a-checkout) |
 | Certify functional programs and loops | [PolyTime examples](ComplexityTests/PolyTimeTactic.lean) |
 | State P/NP membership or prove a problem NP-complete | [Checked plain examples](ComplexityTests/NPCompleteness.lean), then [Clique](Complexity/Computability/Complexity/Problems/Clique.lean) |
@@ -36,8 +39,9 @@ provides checked Lean tutorials. For a particular task, start below.
 | State deterministic function-time or exact path-counting bounds | [FTIME and SharpTIME examples](ComplexityTests/TimeClasses.lean) |
 | Write probabilistic programs or oracle reductions | [PPT examples](ComplexityTests/PPTTactic.lean), [oracle examples](ComplexityTests/OraclePPT.lean) |
 | Estimate frequencies in a stream | [Count-Min examples](ComplexityTests/CountMin.lean), then [fixed-query accuracy](Complexity/DataStructure/CountMin/Probability.lean) |
-| Find a named result, such as Cook–Levin or the PCP theorem | [Results inventory](results/README.md), then the declarations it links in the [API documentation](https://www.cslib.io/complexitylib/) |
-| Find a computational model or mathematical tool | [Search the API documentation](https://www.cslib.io/complexitylib/search.html), rebuilt nightly from `main`; [Complexity.lean](Complexity.lean) lists every module, and each documents its definitions, results, and references |
+| Find a named result, such as Cook–Levin or the PCP theorem | [Results inventory](results/README.md), then the declarations it links in the [API documentation](https://www.cslib.io/cslib-frontier/) |
+| Find a computational model or mathematical tool | [Search the API documentation](https://www.cslib.io/cslib-frontier/search.html), rebuilt nightly from `main`; [Complexity.lean](Complexity.lean) lists every module, and each documents its definitions, results, and references |
+| Propose a substantial new direction | [Open an issue](https://github.com/cslib-community/cslib-frontier/issues/new/choose), as [Contributing](CONTRIBUTING.md#proposing-and-contributing-work) describes; [ROADMAP.md](ROADMAP.md) lists the accepted directions |
 | Contribute a result or improve an API | [Contributing](CONTRIBUTING.md) |
 
 The checked examples show `fun_prop`, `polytime`, and `ppt` with explicit encodings and
@@ -54,13 +58,16 @@ claims with plain `ComputableInPolyTime`.
 
 The [results and reference inventory](results/README.md) uses readable Lean commands to collect
 named results, with checked theorem identifiers and cited sources; its generated index links each
-theorem to the [API documentation](https://www.cslib.io/complexitylib/). Coverage and source
+theorem to the [API documentation](https://www.cslib.io/cslib-frontier/). Coverage and source
 audits remain incomplete.
 
 ## Build and use
 
 The package is named `complexitylib`; imports begin with `Complexity.`. Most declaration
-namespaces begin with `Cslib`, and Turing-machine declarations use `Turing`.
+namespaces begin with `Cslib`, and Turing-machine declarations use `Turing`. In an announced
+cutover ([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)), the module root
+will be renamed from `Complexity.` to `CslibFrontier.` and the package to `cslib-frontier`;
+declaration names do not change.
 
 ### Build a checkout
 
@@ -70,12 +77,12 @@ and Python 3.11+. The commands below assume Bash. Elan selects the Lean and Lake
 [lake-manifest.json](lake-manifest.json) record the dependency versions.
 
 ```bash
-git clone https://github.com/cslib-community/complexitylib.git
-cd complexitylib
+git clone https://github.com/cslib-community/cslib-frontier.git
+cd cslib-frontier
 scripts/build.sh --wfail --iofail
 ```
 
-The wrapper restores Mathlib and Complexitylib caches before invoking `lake build`, then
+The wrapper restores Mathlib and cslib-frontier caches before invoking `lake build`, then
 compiles changed or missing modules. It forwards Lake arguments and its exit status.
 `scripts/check.sh` also restores caches before validation. Before using Lean through MCP or
 another editor, run `scripts/cache/ensure.sh`; bare `lake` and MCP commands do not call it.
@@ -90,7 +97,7 @@ follow [CONTRIBUTING.md](CONTRIBUTING.md) and the
 ### Use from another Lean project
 
 APIs are still evolving, so pin a full commit SHA. Choose a revision from the
-[commit history](https://github.com/cslib-community/complexitylib/commits/main/), and copy the
+[commit history](https://github.com/cslib-community/cslib-frontier/commits/main/), and copy the
 contents of its `lean-toolchain` into your project's `lean-toolchain`. Use the toolchain from
 that same revision when adding or updating the dependency.
 
@@ -100,12 +107,12 @@ chosen full SHA:
 ```toml
 [[require]]
 name = "complexitylib"
-git = "https://github.com/cslib-community/complexitylib"
+git = "https://github.com/cslib-community/cslib-frontier"
 rev = "<commit SHA>"
 ```
 
 CSLib and Mathlib are transitive dependencies. If your project already requires either one,
-first align those requirements with the versions in Complexitylib's `lake-manifest.json` at
+first align those requirements with the versions in cslib-frontier's `lake-manifest.json` at
 the chosen revision.
 
 Then run the commands below from your project directory. When changing existing direct
@@ -138,7 +145,7 @@ python3 -m http.server --bind 127.0.0.1 --directory docbuild/.lake/build/doc
 ```
 
 Open `http://localhost:8000` to browse and search. The **API documentation** workflow publishes
-`main` to the [API documentation site](https://www.cslib.io/complexitylib/) nightly.
+`main` to the [API documentation site](https://www.cslib.io/cslib-frontier/) nightly.
 A manual run on another branch produces an `api-docs` artifact instead; serve it by replacing
 the directory argument above with the extracted artifact directory.
 
@@ -169,12 +176,17 @@ python3 -m http.server --bind 127.0.0.1 --directory guide/.lake/build/site/html-
 
 The first build compiles Verso and links the guide's generator, which takes a few minutes. The
 **API documentation** workflow publishes the guide from `main` with the API documentation, at
-[/guide/](https://www.cslib.io/complexitylib/guide/). The **Guide** workflow builds
+[/guide/](https://www.cslib.io/cslib-frontier/guide/). The **Guide** workflow builds
 pull requests that change the guide and uploads the pages as a `guide` artifact.
 
 ## Project information
 
-This is the canonical CSLib-based Complexitylib. The renamed historical
+This repository was the canonical CSLib-based Complexitylib until 2026-11-08, when it was renamed
+from complexitylib to cslib-frontier and its scope widened from computational complexity theory to
+computer science generally. [Epsilon Eridani](https://github.com/cslib-community/EpsilonEridani)
+merged into it at the same time: its B-tree development is being ported here, its open proposals
+are now issues here, and the repository will be archived
+([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)). The renamed historical
 [pre-CSLib implementation](https://github.com/SamuelSchlesinger/complexitylib-v1) remains available
 with archival pending; it has a different API, and some developments remain to be ported. The temporary
 repository and package name `complexitylib2` was retired when this repository moved to CSLib
@@ -183,7 +195,7 @@ imports remain unchanged.
 
 Modules follow CSLib's APIs, paths, namespaces, and contribution standards so they can move
 upstream with the import prefix changed from `Complexity.` to `Cslib.`. Acceptance requires
-CSLib review. [ROADMAP.md](ROADMAP.md) records outstanding work;
+CSLib review. [ROADMAP.md](ROADMAP.md) lists the accepted directions;
 [UPSTREAM.md](UPSTREAM.md) records upstream coordination and exceptional integration decisions.
 
 Source headers retain authorship, module docstrings credit mathematical and formalization

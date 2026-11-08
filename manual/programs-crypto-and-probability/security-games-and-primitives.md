@@ -39,7 +39,7 @@ uniform `n`-bit seed is computationally indistinguishable from `uniformList (L n
 stretch security and reverse/take postprocessing. [PRGStretch clients](../../ComplexityTests/PRGStretch.lean)
 check zero widths, order-sensitive output, and native XOR encryption/recovery. This is the emitted-pad
 prerequisite for the stream-cipher route of Boneh–Shoup §3.2 [bs23][bs23]; adaptive arbitrary-word
-one-time encryption and hash-then-MAC/EtM remain open in [#2749](https://github.com/cslib-community/complexitylib/issues/2749).
+one-time encryption and hash-then-MAC/EtM remain open in [#2749](https://github.com/cslib-community/cslib-frontier/issues/2749).
 
 Several independently keyed copies of a pseudorandom function are again pseudorandom: [`PseudorandomFunction.multiKey`](../../Complexity/Crypto/Computational/PseudorandomFunction/MultiKey.lean) answers `t` word channels with the `n`-bit blocks of one `t * n`-bit key, against `t` independent random functions, for every fixed `t`. Its hybrid reduction `prfMultiReduction` simulates the already random channels with a lazy list cache and is itself oracle PPT; the concrete bound sums `t` PRF advantages (Boneh–Shoup, Exercise 4.26). The number of keys is a constant, not a function of the security parameter; the exercise also allows a polynomially bounded number of keys, which this theorem does not cover.
 

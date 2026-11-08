@@ -1,6 +1,6 @@
-# Complexitylib Agent Operator's Manual
+# cslib-frontier Agent Operator's Manual
 
-This short manual is for people directing agents in Complexitylib. It explains whom to ask,
+This short manual is for people directing agents in cslib-frontier. It explains whom to ask,
 what to ask for, and how to judge the handoff. The substantial [Operator's Manual](README.md)
 explains how to work in the codebase: its tactics, models, proof patterns, examples and procedures.
 Both humans and agents use that reference. You do not need an agent to follow it.
