@@ -318,3 +318,4 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `tree-evaluation-packed-controller` | [Packed tree registers and uniform raw controller](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
 | `mechanism-single-parameter` | [Single-parameter sealed-bid mechanisms and Myerson's Lemma](algorithms-and-memory/mechanism-design.md) | mechanism-design |
 | `mechanism-general-vcg` | [General-valuation mechanisms and VCG](algorithms-and-memory/mechanism-design.md) | mechanism-design |
+| `social-welfare-function` | [Social welfare functions on strict rankings and Arrow's theorem](algorithms-and-memory/mechanism-design.md) | social-choice |

@@ -1415,6 +1415,25 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   on rich valuation domains (Green–Laffont, Holmström), and limits of VCG such as revenue
   monotonicity and collusion.
 
+### Social choice ([#3282](https://github.com/cslib-community/complexitylib/issues/3282))
+
+Social welfare functions on strict rankings and Arrow's impossibility theorem (Geanakoplos's
+pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
+
+- **Strategy-proofness:** the Gibbard–Satterthwaite theorem for social choice functions onto at
+  least three alternatives, for example by Reny's side-by-side proof (Economics Letters 70, 2001),
+  sharing the pivotal-voter infrastructure with Arrow's theorem.
+- **Characterizations:** May's theorem (majority rule is the only anonymous, neutral, positively
+  responsive rule on two alternatives); Arrow's theorem with individual weak orders; the
+  infinite-electorate counterexample from a nonprincipal ultrafilter (Fishburn 1970).
+- **Quantitative Arrow:** Kalai's Fourier-analytic bound on the probability of a Condorcet
+  paradox and its robust version via FKN, tracked under
+  [#2131](https://github.com/cslib-community/complexitylib/issues/2131).
+- **Computational social choice:** polynomial-time manipulation of greedy-manipulable rules and
+  NP-hardness of manipulating second-order Copeland (Bartholdi–Tovey–Trick 1989), and the
+  complexity of winner determination for Dodgson and Kemeny rules, with explicit profile
+  encodings and charged running time.
+
 ### Structural graph algorithms
 
 - **Dynamic programming over tree decompositions**
