@@ -1144,6 +1144,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   and sample-complexity lower bounds; then adaptive data-analysis and generalization guarantees.
   Keep the adjacency relation, interaction model, privacy parameters and computational resources
   explicit, reusing the probability, oracle-computation and learning APIs.
+- **Privacy–accuracy lower bounds**
+  ([#3178](https://github.com/cslib-community/complexitylib/issues/3178)): the packing lemma, the
+  `Ω(k / ε)` bound for one-way marginals and the Dinur–Nissim reconstruction attack, with its
+  consequence that private answers to all subset-count queries have linear distortion, are in
+  `Privacy/DifferentialPrivacy` (Dwork–Roth Chapter 8). Remaining: reconstruction from `O(n)`
+  random `±1` queries with `o(√n)` error (Dwork–Roth Theorem 8.2), De's `Ω(min(k, d) / ε)` bound
+  over a small universe (Theorem 8.8), and `(ε, δ)` lower bounds via fingerprinting codes.
 
 ## Algorithms and optimization
 
