@@ -59,8 +59,7 @@ theorem eventually_mul_natCeil_two_rpow_le {e : ℕ → ℝ}
         apply mul_le_mul_of_nonneg_left _ (Nat.cast_nonneg a)
         nlinarith [mul_le_mul_of_nonneg_left hpow hC]
     _ = ((a : ℝ) * (C + 1)) * (2 : ℝ) ^ (ε / 2 * (n : ℝ)) := by ring
-    _ ≤ (2 : ℝ) ^ (ε / 2 * (n : ℝ)) * (2 : ℝ) ^ (ε / 2 * (n : ℝ)) :=
-        mul_le_mul_of_nonneg_right ha (Real.rpow_nonneg (by norm_num) _)
+    _ ≤ (2 : ℝ) ^ (ε / 2 * (n : ℝ)) * (2 : ℝ) ^ (ε / 2 * (n : ℝ)) := by gcongr
     _ = (2 : ℝ) ^ (ε * (n : ℝ)) := by
         rw [← Real.rpow_add (by norm_num : (0 : ℝ) < 2)]
         congr 1

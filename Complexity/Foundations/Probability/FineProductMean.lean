@@ -324,8 +324,7 @@ theorem fineScaleCost_le {s : ℕ} (hs : s ≠ 0) {a b πa πb Ca cb : ℝ}
     rw [Nat.add_sub_cancel, pow_succ]
     field_simp
   calc
-    _ ≤ (b / a) ^ s * ((Ca / cb) * (a / b)) :=
-      mul_le_mul_of_nonneg_left hratio (by positivity)
+    _ ≤ (b / a) ^ s * ((Ca / cb) * (a / b)) := by gcongr
     _ = (Ca / cb) * ((b / a) ^ s * (a / b)) := by ring
     _ = _ := by rw [hcancel]
 

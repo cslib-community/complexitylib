@@ -219,8 +219,7 @@ theorem vertexCoverNum_eq (h : G.IsCrown C H) :
       · exact Or.inr h'
       · exact Or.inl h'
     rw [← hcard]
-    calc (G.induce R).vertexCoverNum + H.card ≤ (S ∩ R).encard + (S ∩ (↑H ∪ ↑C)).encard :=
-          add_le_add h₁ h₂
+    calc (G.induce R).vertexCoverNum + H.card ≤ (S ∩ R).encard + (S ∩ (↑H ∪ ↑C)).encard := by gcongr
       _ = (S ∩ R ∪ S ∩ (↑H ∪ ↑C)).encard := (Set.encard_union_eq hdisj).symm
       _ ≤ S.encard := Set.encard_le_encard (Set.union_subset Set.inter_subset_left
           Set.inter_subset_left)

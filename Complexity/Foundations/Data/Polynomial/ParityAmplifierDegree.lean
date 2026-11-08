@@ -192,8 +192,7 @@ theorem natDegree_coeff_prod_parityFactor_le [CommRing R] (I : Finset κ) (ℓ :
             ((∏ i ∈ I, parityFactor ℓ (L i)).coeff p.2).natDegree := natDegree_mul_le
       _ ≤ (1 + 2 * p.1) * (L a).natDegree + d * (#I + 2 * p.2) :=
           add_le_add (natDegree_coeff_parityFactor_le ℓ (L a) p.1) (ih hIL p.2)
-      _ ≤ (1 + 2 * p.1) * d + d * (#I + 2 * p.2) :=
-          add_le_add (Nat.mul_le_mul_left _ haL) le_rfl
+      _ ≤ (1 + 2 * p.1) * d + d * (#I + 2 * p.2) := by gcongr
       _ = d * (#I + 1 + 2 * (p.1 + p.2)) := by ring
       _ = d * (#I + 1 + 2 * s) := by rw [hp]
 

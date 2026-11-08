@@ -269,8 +269,7 @@ theorem exists_dependsOn_hammingDist_div_le_of_totalInfluence_le (f : (ι → Bo
     rw [show s = 3 * ε / (2 * K * A) from rfl]
     field_simp
   rw [e]
-  have h1 : ε / (2 * K) * totalInfluence F ≤ ε / (2 * K) * K :=
-    mul_le_mul_of_nonneg_left hK (by positivity)
+  have h1 : ε / (2 * K) * totalInfluence F ≤ ε / (2 * K) * K := by gcongr
   have h2 : ε / (2 * K) * K = ε / 2 := by
     field_simp
   linarith

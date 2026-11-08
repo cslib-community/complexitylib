@@ -95,8 +95,7 @@ theorem norm_inner_sq_add_sq_measureProb_sub_le_one {ι : Type*} [Fintype ι]
     nlinarith [sq_nonneg (a * b - a' * b')]
   have hdiff : p - q = (a * b' - a' * b) * (a * b' + a' * b) := by
     nlinarith
-  have h₁ : ‖inner ℂ ψ φ‖ ^ 2 ≤ (a * b + a' * b') ^ 2 :=
-    pow_le_pow_left₀ (norm_nonneg _) hinner 2
+  have h₁ : ‖inner ℂ ψ φ‖ ^ 2 ≤ (a * b + a' * b') ^ 2 := by gcongr
   have h₂ : (p - q) ^ 2 ≤ (a * b' - a' * b) ^ 2 := by
     rw [hdiff, mul_pow]
     nlinarith [sq_nonneg (a * b' - a' * b)]

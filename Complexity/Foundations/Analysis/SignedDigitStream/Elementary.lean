@@ -497,8 +497,7 @@ theorem shiftClipApprox_isScaledApprox (v : ℤ) {x : ℕ → ℤ} (hx : IsSigne
         _ = (2 : ℝ) ^ ((t : ℤ) + v) * |streamVal x| := by
             rw [abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ v),
               zpow_add₀ (by norm_num), zpow_natCast, mul_assoc]
-        _ ≤ (2 : ℝ) ^ (-5 : ℤ) * 12 :=
-            mul_le_mul hpow_le hx12 (abs_nonneg _) (by positivity)
+        _ ≤ (2 : ℝ) ^ (-5 : ℤ) * 12 := by gcongr
         _ = 3 / 8 := by norm_num
     simp only [Int.cast_zero, zero_sub, abs_neg]
     linarith
@@ -552,9 +551,7 @@ theorem shiftClipApprox_isScaledApprox (v : ℤ) {x : ℕ → ℤ} (hx : IsSigne
             mul_le_mul_of_nonneg_left hlip (by positivity)
         _ = (2 : ℝ) ^ t * ((2 : ℝ) ^ v * |streamPrefix x K - streamVal x|) := by
             rw [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ v)]
-        _ ≤ (2 : ℝ) ^ t * ((2 : ℝ) ^ v * (6 / (2 : ℝ) ^ K)) :=
-            mul_le_mul_of_nonneg_left
-              (mul_le_mul_of_nonneg_left hx_err (by positivity)) (by positivity)
+        _ ≤ (2 : ℝ) ^ t * ((2 : ℝ) ^ v * (6 / (2 : ℝ) ^ K)) := by gcongr
         _ = 3 / 8 := by
             have hzpow : (2 : ℝ) ^ t * ((2 : ℝ) ^ v / (2 : ℝ) ^ K) = 1 / 16 := by
               rw [← zpow_natCast (2 : ℝ) t, ← zpow_natCast (2 : ℝ) K, div_eq_mul_inv,

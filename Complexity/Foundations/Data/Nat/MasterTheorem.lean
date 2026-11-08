@@ -188,8 +188,7 @@ theorem sub_mul_le_pow (h : DivideConquerBound T a b n₀ T₀ fun n => c * n ^ 
           Nat.mul_le_mul_left _ hT
       _ = (a - b ^ d) * a ^ k * T₀ +
             c * n₀ ^ d * ((a - b ^ d) * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i)) := by ring
-      _ ≤ (a - b ^ d) * a ^ k * T₀ + c * n₀ ^ d * (b ^ d * a ^ k) :=
-          Nat.add_le_add_left (Nat.mul_le_mul_left _ hg) _
+      _ ≤ (a - b ^ d) * a ^ k * T₀ + c * n₀ ^ d * (b ^ d * a ^ k) := by gcongr
       _ = _ := by ring
   · rw [Nat.sub_eq_zero_of_le hq.le]
     simp
@@ -225,8 +224,7 @@ theorem pow_sub_mul_le_pow (h : DivideConquerBound T a b n₀ T₀ fun n => c * 
       _ = (b ^ d - a) * a ^ k * T₀ +
             c * n₀ ^ d * ((b ^ d - a) * ∑ i ∈ range k, a ^ i * (b ^ d) ^ (k - i)) := by ring
       _ ≤ (b ^ d - a) * (b ^ d) ^ k * T₀ + c * n₀ ^ d * (b ^ d * (b ^ d) ^ k) := by
-          exact Nat.add_le_add (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hak))
-            (Nat.mul_le_mul_left _ hg)
+          gcongr
       _ = _ := by ring
   · rw [Nat.sub_eq_zero_of_le hq.le]
     simp

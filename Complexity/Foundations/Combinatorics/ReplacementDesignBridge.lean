@@ -517,8 +517,7 @@ theorem domainExaminationBound_le_mul_exp_threeTermExponent {q : ℕ} {c : ℝ}
     have hnn : 0 ≤ (n : ℝ) * (τ * Real.log (2 * (D : ℝ) + 1)) := by positivity
     calc Real.log (2 * (D : ℝ) + 1) * (2 * τ * (n : ℝ))
         = 2 * ((n : ℝ) * (τ * Real.log (2 * (D : ℝ) + 1))) := by ring
-      _ ≤ (c + 4) * ((n : ℝ) * (τ * Real.log (2 * (D : ℝ) + 1))) :=
-          mul_le_mul_of_nonneg_right hle hnn
+      _ ≤ (c + 4) * ((n : ℝ) * (τ * Real.log (2 * (D : ℝ) + 1))) := by gcongr
       _ = (c + 4) * (n : ℝ) * (τ * Real.log (2 * (D : ℝ) + 1)) := by ring
   have hgroup_exp :
       (2 : ℝ) ^ (2 * (n : ℝ) / r) ≤
@@ -531,8 +530,7 @@ theorem domainExaminationBound_le_mul_exp_threeTermExponent {q : ℕ} {c : ℝ}
     have hnn : 0 ≤ (n : ℝ) * (1 / (r : ℝ)) := by positivity
     calc Real.log 2 * (2 * (n : ℝ) / r)
         = (2 * Real.log 2) * ((n : ℝ) * (1 / (r : ℝ))) := by ring
-      _ ≤ (c + 4) * ((n : ℝ) * (1 / (r : ℝ))) :=
-          mul_le_mul_of_nonneg_right hle hnn
+      _ ≤ (c + 4) * ((n : ℝ) * (1 / (r : ℝ))) := by gcongr
       _ = (c + 4) * (n : ℝ) * (1 / (r : ℝ)) := by ring
   have hprod :
       (subsetPairCount n q : ℝ) * (2 * (D : ℝ) + 1) ^ (2 * τ * (n : ℝ)) *

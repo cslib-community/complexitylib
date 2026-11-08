@@ -161,8 +161,7 @@ private theorem le_of_tanner_bound {B μ d k ℓ m w : ℕ} (hB : 1 ≤ B) (hμ 
   have hk2 : a / 2 ≤ (k : ℝ) - d / (2 * N) := by
     have : (d : ℝ) / (2 * N) = a / 2 := by simp only [a]; field_simp
     rw [this]; linarith
-  have hprod : a * (a / 2) ≤ (k : ℝ) * ((k : ℝ) - d / (2 * N)) :=
-    mul_le_mul ha hk2 (by positivity) (by linarith)
+  have hprod : a * (a / 2) ≤ (k : ℝ) * ((k : ℝ) - d / (2 * N)) := by gcongr
   have hq : (0 : ℝ) < 2 ^ ℓ := by positivity
   have h1 : a * (a / 2) * 2 ^ ℓ ≤ d * w := (mul_le_mul_of_nonneg_right hprod hq.le).trans hw
   have h2 : (d : ℝ) * 2 ^ ℓ ≤ 2 * N ^ 2 * w := by

@@ -209,8 +209,7 @@ private theorem valMinAbs_add_mul {a b : ZMod n} {k : ℤ} (hk : |k| ≤ 4)
   have hn : (0 : ℤ) < n := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne n)
   have h₁ : |a.valMinAbs + k * b.valMinAbs| ≤ |a.valMinAbs| + |k| * |b.valMinAbs| :=
     (abs_add_le _ _).trans_eq (by rw [abs_mul])
-  have h₂ : |k| * |b.valMinAbs| ≤ 4 * |b.valMinAbs| :=
-    mul_le_mul_of_nonneg_right hk (abs_nonneg _)
+  have h₂ : |k| * |b.valMinAbs| ≤ 4 * |b.valMinAbs| := by gcongr
   have h₃ := neg_abs_le (a.valMinAbs + k * b.valMinAbs)
   have h₄ := le_abs_self (a.valMinAbs + k * b.valMinAbs)
   constructor <;> linarith
