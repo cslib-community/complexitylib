@@ -29,9 +29,9 @@ the same class. Toffoli and Hadamard gates are universal for quantum computation
 [Shi][Shi2003], [Aharonov][Aharonov2003]; with the Solovay–Kitaev approximation theorem, circuits
 over them simulate circuits over arbitrary elementary operations with polynomial overhead and small
 error. This equivalence is cited, not formalized here; its exact step for the controlled phase
-gates, through the real encoding, is `Cslib.Complexity.mem_BQP_iff_phase`. A fixed finite gate set matters:
-Adleman, DeMarrais and Huang show that arbitrary complex amplitudes would put uncountably many
-languages into `BQP` [Adleman, DeMarrais, Huang][AdlemanDeMarraisHuang1997].
+gates, through the real encoding, is `Cslib.Complexity.mem_BQP_iff_phase`. A fixed finite gate
+set matters: Adleman, DeMarrais and Huang show that arbitrary complex amplitudes would put
+uncountably many languages into `BQP` [Adleman, DeMarrais, Huang][AdlemanDeMarraisHuang1997].
 
 Acceptance is the measurement of qubit `0`, after a single measurement of the whole register in the
 computational basis at the end; Arora and Barak note that intermediate measurements and mixed
