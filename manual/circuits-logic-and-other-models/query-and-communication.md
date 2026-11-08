@@ -20,6 +20,16 @@ The [zero-error module](../../Complexity/Computability/QueryComplexity/Randomize
 
 Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../Complexity/Computability/QueryComplexity/Simon.lean).
 
+## Adaptive cell-probe trees and schemes
+
+[`Complexity.Computability.CellProbe.Defs`](../../Complexity/Computability/CellProbe/Defs.lean), [`Complexity.Computability.CellProbe.DecisionTree`](../../Complexity/Computability/CellProbe/DecisionTree.lean), and [`Complexity.Computability.CellProbe.Randomized`](../../Complexity/Computability/CellProbe/Randomized.lean) formalize the adaptive cell-probe model (`Cslib.CellProbe`), originating in Minsky and Papert and developed in dynamic form by Fredman and static form by Yao. In a time-invariant deterministic `Scheme`, persistent state between operations consists solely of `S` cells of `w`-bit words (`Mem S w := Fin S → Fin (2 ^ w)`), with no persistent registers across operation boundaries; `IndexedScheme` is a **time-aware relaxation** whose `step` additionally receives the global operation index `t : ℕ` (a free clock outside cell memory). Each deterministic operation is an adaptive read/write decision tree `ProbeTree S w α` (`OracleComp (@ProbeOp.Result S w) α`): reading cell `i` branches `2 ^ w`-ways on `m i`, writing `v` updates cell `i` and returns `PUnit`, reads and writes are charged separately at one probe each (at most twice the cost of combined read-and-write nodes), and local computation and initial memory (`Scheme.init`, equivalent for deterministic schemes to `zeroMem` via uncharged XOR relabeling) charge zero probes.
+
+Structural worst-case height `ProbeTree.depth`, input-specific path cost `ProbeTree.probes m`, and the distinct accessed footprint `ProbeTree.probedCells m` are kept separate (`card_probedCells_le_probes`, `probes_le_depth`). Frame lemmas (`ProbeTree.nextMem_eq_of_notMem_probedCells`, `IndexedScheme.nextMem_runInterval_eq_of_notMem_probedCellsInterval`) show that unprobed cells retain their initial values, while `ProbeTree.run_eq_of_eq_on_probedCells` and `IndexedScheme.runInterval_eq_of_eq_on_probedCellsInterval` establish cell-probe locality: if two memories agree on the cells probed from the first memory, replaying the tree or operation slice from the second memory yields the same output transcript, probe count, probed-cell set, and post-memory contents on all probed cells. In `DecisionTree.lean`, `ProbeTree.ofDecisionTree` embeds static 1-bit `DecisionTree (Fin S) α` trees as read-only `ProbeTree S 1 α` computations preserving output, `probes`, `probedCells`, and `depth`, while `ProbeTree.card_le_pow_depth_of_injective` and `ProbeTree.clog_le_depth_of_injective` prove the standard `2 ^ w`-ary branching bound `K ≤ (2 ^ w) ^ t.depth` (`Nat.clog (2 ^ w) K ≤ t.depth`, for any `w : ℕ`) whenever `t` distinguishes `K` memory states.
+
+`RandProbeTree S w α` (`ProbOracleComp (@ProbeOp.Result S w) α`) adds private finite-uniform coin draws (`unifSpec`) at zero probe cost, with `ℝ≥0∞`-valued expectation `RandProbeTree.expectedProbes` and single-operation coin-fixing equivalence `RandProbeTree.run_eq_coinLaw_bind_fixCoins`. Over oblivious operation sequences, `Randomized.Scheme.exists_det_indexedScheme_le_expectedSeqProbes` gives the **averaging (coin-fixing) argument, the easy direction of Yao's principle, for zero-error (Las Vegas) schemes** (`Cslib.Probability.PMF.exists_mem_support_tsum_mul_le_tsum_mul`): `hcorr` requires every supported transcript on `correctSeqs` to satisfy `Good`, so bounded-error (Monte Carlo) schemes and adaptive sequence adversaries are out of scope. Taking an explicit finite `opsAlphabet : Finset Op` and `horizon : ℕ` and separating `correctSeqs` from `hardDist`, it produces a step-indexed `IndexedScheme` in `indexedSchemeLaw`'s support, so deterministic lower bounds paired with it must hold against time-aware `IndexedScheme`s. In the random-initial-memory / coin-free-step specialization (`IsCoinFree`, where randomness lives only in the initial-memory distribution `init` and operations observe it only by probing cells), `Randomized.Scheme.exists_det_scheme_le_expectedSeqProbes` returns a time-invariant `CellProbe.Scheme` without `opsAlphabet` or `horizon`.
+
+The complete [checked client](../../ComplexityTests/CellProbe.lean) exercises read/write locality and frame lemmas on distinct memories, the `DecisionTree` adapter, a tight `K = 17` lower and upper bound in `Mem 3 2` (`3 ≤ t.depth`, plus `w = 0`), and zero-error coin-fixing over an infinite operation type where `correctSeqs` strictly extends `hardDist.support` (plus a non-trivial write-read check on uniform random initial memory). Run `scripts/build.sh --wfail --iofail ComplexityTests.CellProbe`. These modules define the standalone cell-probe layer without `Cslib.DataStructure` specification wrappers or a Word-RAM simulation theorem; transferring a cell-probe lower bound to Word-RAM instruction counts requires a separate machine-to-cell-probe simulation bridge.
+
 ## Deterministic communication and its variants
 
 [Protocol](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Communication/Protocol.lean#L92) is a two-party binary protocol tree. At an Alice node the next bit is any function of Alice's input; similarly for Bob. Leaves carry the output, so the transcript determines an answer known to both players. The principal cost is maximum transmitted bits. Rectangle partitions, fooling sets and matrix-rank methods support lower bounds. Deterministic equality costs n+1 bits for n at least one under this both-player-output convention.
@@ -50,7 +60,7 @@ The deterministic lifting theorem composes a Boolean function with an index gadg
 
 Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity`,
 `Complexity.Computability.Distributed.OrientedCycle.MIS` or
-`Complexity.Computability.Distributed.OrientedCycle.LCL.Flexible` (or one of the modules below
+`Complexity.Computability.Distributed.OrientedCycle.LCL.Classification` (or one of the modules below
 them) for deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented
 cycles.
 The nodes of the oriented `n`-cycle are `ZMod n`: node `v` has predecessor `v - 1` and successor
@@ -87,7 +97,9 @@ Laurinharju–Suomela speedup lemma on shift colourings (`Cslib.IsShiftColoring`
 `exists_colorsCycle_three_and_logStar_le` packages both directions: `⌈(log* n) / 2⌉ + 3` rounds
 suffice for `n ≠ 1`, and any algorithm needs `log* n ≤ 2t + 2`, so the optimum is known up to an
 additive `4`. `Nat.logStar` and `Nat.twoTower` live in `Complexity.Foundations.Data.Nat.LogStar`;
-use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values. `Nat.twoTower` is a
+use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values. The companion
+iterated floor logarithm `Nat.iterLog` and floor stopping count `Nat.floorLogStar`
+(`Nat.floorLogStar_le_iff`) live in `Complexity.Foundations.Data.Nat.IterLog`. `Nat.twoTower` is a
 structurally recursive copy of Mathlib's `hyperoperation 4 2` (`Nat.twoTower_eq_hyperoperation`),
 kept because `decide` cannot evaluate the well-founded `hyperoperation`.
 [Graph.lean](../../Complexity/Computability/Distributed/OrientedCycle/Graph.lean) connects the
@@ -115,9 +127,11 @@ standard consequences of the 3-colouring bounds. Compose algorithms with `Algori
 convert an algorithm to a `LocalRule` with `Algorithm.toLocalRule` just to compose it, since
 flooding its whole window makes `decide` impractical.
 
-[LCL/Basic.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Basic.lean) and
-[LCL/Flexible.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Flexible.lean)
-cover part of the classification of LCL problems without inputs on directed cycles by Chang,
+[LCL/Basic.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Basic.lean),
+[LCL/Flexible.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Flexible.lean),
+[LCL/Linear.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Linear.lean) and
+[LCL/Classification.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Classification.lean)
+cover the classification of LCL problems without inputs on directed cycles by Chang,
 Studený and Suomela (TCS 2023, Table 1). A problem is a relation `R : L → L → Prop`, and
 `LCL.IsSolution R ℓ` asks `R (ℓ v) (ℓ (v + 1))` at every node. Their node-edge-checkable problems
 are the instance `LCL.nodeEdge` (`isSolution_nodeEdge_iff`, `nodeEdge_iff`), and MIS is an example
@@ -138,21 +152,39 @@ maximal anchoring (Def. 3.8). `IsFlexible.exists_solvesLCL_and_logStar_le`
 packages the `Θ(log* n)` bounds for flexible problems without a loop. The leading coefficient
 `(K - 1) / 2` is not tight. These rules are compositions of `LocalRule`s (`LocalRule.comp`,
 `LocalRule.apply_comp` in `Basic.lean`), so run them with `LocalRule.toAlgorithm_run` instead of
-unfolding `Algorithm.run`. Problems with no flexible state (`Ω(n)` rounds, their Thm 6.5) are not
-covered yet.
+unfolding `Algorithm.run`.
+In `Linear.lean`, `Algorithm.SolvesLCL.le_of_forall_not_isFlexible` is the `Ω(n)` lower bound
+(their Thm 6.5 via Lemma 6.3): if no state is flexible, every `t`-round algorithm has
+`n ≤ (|L| + 1) (2t + 1)`. The proof takes two nodes with equal outputs and disjoint windows, then
+moves one node so that one of the windows shifts by one. This gives closed walks of the consecutive
+lengths `d` and `d + 1`, and `IsFlexible.of_consecutive` (Mathlib's `frobeniusNumber_pair`) then
+makes that state flexible. The source instead moves nodes repeatedly; the single move is a
+difference in proof route, not a new result. `IsSolution.exists_solvesLCL` is the matching upper
+bound: on a cycle where `R` is solvable, `gatherRule` sees the whole cycle in `⌊n / 2⌋` rounds and
+outputs a rotation of a fixed solution. It finds the node with identifier `0`, so it relies on the
+`{0, …, n - 1}` identifier convention. Theorem 6.5 also assumes a repeatable state, which only
+makes `R` solvable on infinitely many cycles; the Lean bounds are stated for each solvable `n`
+instead. `LCL.trichotomy` in `Classification.lean` assembles the three rows for finite `L`: a loop
+and `0` rounds, no loop but a flexible state and `Θ(log* n)`, or no flexible state and `Θ(n)`. The
+bounds hold for each `n`, and the algorithms of the last two rows may depend on `n`. The last row
+also contains the problems solvable on no cycle (no repeatable state), which the source lists
+separately as unsolvable; for them its clauses are vacuous. The lower-bound clauses quantify over
+state types of any universe, so destructuring `trichotomy` needs explicit universes, as in
+`trichotomy.{0, 0, 0} R`.
 
 [Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
 algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no
 proper colouring and no MIS, and that two rounds of 3-colouring fail on the cycle of length
 `2 ↑↑ 6 + 1`. The 5-cycle examples include the greedy MIS steps and the full `misAlgorithm 2` run.
 [LCL examples](../../ComplexityTests/Computability/Distributed/LCL.lean) check that 3-colouring
-and MIS are flexible without a loop, that 2-colouring has no flexible state, and the anchors and
-filling on a 6-cycle.
+and MIS are flexible without a loop, and the anchors and filling on a 6-cycle. For 2-colouring,
+which has no flexible state, they check that no `1`-round algorithm solves the 10-cycle, that
+gathering solves it in `5` rounds, and that the trichotomy puts it in the `Θ(n)` row.
 
 Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
 `(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound,
-randomized LOCAL algorithms and the `Ω(n)` row of the LCL classification remain open; see
-`ROADMAP.md`.
+randomized LOCAL algorithms, and LCLs with inputs or on paths and undirected cycles remain open;
+see `ROADMAP.md`.
 
 ## Locally decodable codes
 
