@@ -9,7 +9,7 @@ module
 
 public import Complexity.Probability.OptimalStopping.Basic
 public import Mathlib.Basic.NNReal.Basic
-import Complexity.Probability.OptimalStopping.Quantile
+import Complexity.Probability.PMF.TailQuantile
 import Complexity.Probability.PMF.Bind
 
 /-!
@@ -35,7 +35,7 @@ without subtracting extended reals. Two choices of threshold make the hypothesis
 * `t` a median of `max Xᵢ` (Samuel-Cahn): `expectedMax_le_two_mul_expectedReward_median`, where
   accepting values `≥ t` works when `t ≥ E[max]/2` and accepting values `> t` works when
   `t ≤ E[max]/2`. A median always exists (`exists_median_listMax`, from
-  `exists_tail_quantile`), so some single threshold always works
+  `PMF.exists_tail_quantile`), so some single threshold always works
   (`exists_expectedMax_le_two_mul_expectedReward`).
 
 The factor `1/2` is optimal: for `tightLaws k`, a sure value `1` followed by `k + 1` with
@@ -440,7 +440,7 @@ theorem expectedMax_le_two_mul_expectedReward_median (laws : List (PMF ℝ≥0))
 theorem exists_median_listMax (laws : List (PMF ℝ≥0)) :
     ∃ m : ℝ≥0, (jointLaw laws).toOuterMeasure {xs | listMax xs < m} ≤ 1 / 2 ∧
       1 / 2 ≤ (jointLaw laws).toOuterMeasure {xs | listMax xs ≤ m} := by
-  obtain ⟨m, hgt, hge⟩ := exists_tail_quantile ((jointLaw laws).map listMax)
+  obtain ⟨m, hgt, hge⟩ := PMF.exists_tail_quantile ((jointLaw laws).map listMax)
     (q := 1 / 2) (by simp) (by norm_num)
   refine ⟨m, ?_⟩
   have hν (s : Set ℝ≥0) : ((jointLaw laws).map listMax).toOuterMeasure s =

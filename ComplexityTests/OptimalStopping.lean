@@ -169,7 +169,7 @@ open Cslib.Probability.OptimalStopping.Prophet
 example (q : ℝ≥0∞) (hq : 0 < q) (hq1 : q ≤ 1) :
     ∃ τ : ℝ≥0, (PMF.pure (1 : ℝ≥0)).toOuterMeasure (Set.Ioi τ) ≤ q ∧
       q ≤ (PMF.pure (1 : ℝ≥0)).toOuterMeasure (Set.Ici τ) :=
-  exists_tail_quantile _ hq hq1
+  Cslib.Probability.PMF.exists_tail_quantile _ hq hq1
 
 /-- Samuel-Cahn's theorem needs no median hypothesis. -/
 example : ∃ m : ℝ≥0,
@@ -191,28 +191,11 @@ theorem tsum_fiveOrOne_mul (f : ℝ≥0 → ℝ≥0∞) :
   push_cast
   rw [ENNReal.div_eq_inv_mul]
 
-example (a : ℝ≥0 → Bool) :
-    expectedReward (acceptRule a) [fiveOrOne, fiveOrOne] ≤ 9 / 5 := by
-  rw [expectedReward]
-  simp only [tsum_jointLaw_cons_mul, tsum_jointLaw_nil_mul, payoff_cons, payoff_nil, acceptRule,
-    reward, tsum_fiveOrOne_mul]
-  rcases Bool.eq_false_or_eq_true (a 5) with h5 | h5 <;>
-    rcases Bool.eq_false_or_eq_true (a 1) with h1 | h1 <;>
-    simp only [h5, h1, Bool.false_eq_true, ↓reduceIte]
-  all_goals
-    have h5i : (5 : ℝ≥0∞)⁻¹ = ((5⁻¹ : ℝ≥0) : ℝ≥0∞) := by
-      rw [ENNReal.coe_inv (by norm_num), ENNReal.coe_ofNat]
-    simp only [div_eq_mul_inv, h5i]
-    norm_cast
-    rw [← NNReal.coe_le_coe]
-    push_cast
-    norm_num
-
 private theorem inv_five : (5 : ℝ≥0∞)⁻¹ = ((5⁻¹ : ℝ≥0) : ℝ≥0∞) := by
   rw [ENNReal.coe_inv (by norm_num), ENNReal.coe_ofNat]
 
-/-- Every deterministic memoryless rule on two values `fiveOrOne` collects at most `9/5`: accept
-both values or only `5`, and either way the reward is `9/5`. -/
+/-- Every deterministic memoryless (time-invariant) rule on two values `fiveOrOne` collects at
+most `9/5`, attained by accepting both values or only `5`. -/
 theorem expectedReward_acceptRule_le (a : ℝ≥0 → Bool) :
     expectedReward (acceptRule a) [fiveOrOne, fiveOrOne] ≤ 9 / 5 := by
   rw [expectedReward]

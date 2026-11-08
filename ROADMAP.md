@@ -1120,8 +1120,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `1 - (1 - 1/n)ⁿ ≥ 1 - 1/e` bound for one randomized threshold and for the optimal gambler
   ([#3092](https://github.com/cslib-community/complexitylib/issues/3092)). Extend to the tight
   i.i.d. constant `≈0.745`, prophet secretary and random-order models, matroid and
-  multiple-choice prophet inequalities, the full-information secretary problem, and the
-  posted-price mechanism corollary.
+  multiple-choice prophet inequalities, the full-information secretary problem, a general
+  mixtures theorem for randomized rules (only the coin-tie threshold case,
+  `tieExpectedReward_le_valueFrom`, is proved), and the posted-price mechanism corollary.
 
 ### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
 

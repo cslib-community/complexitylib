@@ -9,7 +9,7 @@ module
 
 public import Complexity.Probability.OptimalStopping.Prophet
 public import Mathlib.Analysis.SpecialFunctions.Exponential
-import Complexity.Probability.OptimalStopping.Quantile
+import Complexity.Probability.PMF.TailQuantile
 import Complexity.Probability.PMF.Bind
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
@@ -22,9 +22,9 @@ reward. Each value `X ~ μ` comes with an independent tie-breaking coin (`withCo
 `one_sub_pow_mul_expectedMax_le` proves that if this rule accepts each value with probability
 `1/n`, it collects at least `1 - (1 - 1/n)ⁿ ≥ 1 - 1/e` of `E[max]`
 (`ofReal_one_sub_exp_mul_expectedMax_le`). Such a threshold and coin exist for every law
-(`exists_tieAccept_eq`, from `exists_tail_quantile`). The coin fills the atom at `τ`, and it is
-needed: the library's optimal-stopping tests exhibit two i.i.d. values on which every
-deterministic memoryless rule falls short of the bound.
+(`exists_tieAccept_eq`, from `PMF.exists_tail_quantile`). The coin fills the atom at `τ`, and it is
+needed for the constant `1 - (1 - 1/n)ⁿ`: the library's optimal-stopping tests exhibit two
+i.i.d. values on which every deterministic time-invariant rule falls short of `1 - (1 - 1/2)²`.
 
 The proof writes `A = E[X; accept]`.
 * The prophet's side is `E[max] ≤ τ + n E[(X - τ)⁺] = n A` (`expectedMax_replicate_le`), because
@@ -290,7 +290,7 @@ coin. -/
 theorem exists_tieAccept_eq (μ : PMF ℝ≥0) {q : ℝ≥0∞} (hq : 0 < q) (hq1 : q ≤ 1) :
     ∃ (τ : ℝ≥0) (coin : PMF Bool),
       (withCoin coin μ).toOuterMeasure {o | tieAccept τ o = true} = q := by
-  obtain ⟨τ, hgt, hge⟩ := exists_tail_quantile μ hq hq1
+  obtain ⟨τ, hgt, hge⟩ := PMF.exists_tail_quantile μ hq hq1
   have hIci : μ.toOuterMeasure (Ici τ) = μ.toOuterMeasure (Ioi τ) + μ τ := by
     simp only [← PMF.toMeasure_apply_eq_toOuterMeasure]
     rw [← Ioi_union_left, MeasureTheory.measure_union (by simp) (measurableSet_singleton τ),
@@ -324,15 +324,6 @@ theorem exists_one_sub_pow_mul_expectedMax_le (μ : PMF ℝ≥0) (n : ℕ) :
     (ENNReal.inv_le_one.mpr (by exact_mod_cast hn))
   exact ⟨τ, coin, one_sub_pow_mul_expectedMax_le μ τ coin h,
     ofReal_one_sub_exp_mul_expectedMax_le μ τ coin h⟩
-
-private theorem valueFrom_reward_congr : ∀ (laws : List (PMF ℝ≥0)) (past past' : List ℝ≥0),
-    valueFrom reward laws past = valueFrom reward laws past'
-  | [], _, _ => rfl
-  | μ :: laws, past, past' => by
-      rw [valueFrom_cons, valueFrom_cons]
-      refine tsum_congr fun y => ?_
-      rw [valueFrom_reward_congr laws (y :: past) (y :: past')]
-      rfl
 
 private theorem tsum_tiePayoff_le_valueFrom (τ : ℝ≥0) (coin : PMF Bool) :
     ∀ (laws : List (PMF ℝ≥0)) (past : List ℝ≥0),

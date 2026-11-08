@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Cslib.Init
+public import Complexity.Init
 public import Mathlib.MeasureTheory.Constructions.BorelSpace.Real
 public import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.MeasureTheory.Measure.Continuity
@@ -30,13 +30,13 @@ support has `P(X > t) > 0` for every `t`.
 
 ## Main results
 
-* `Cslib.Probability.OptimalStopping.exists_tail_quantile`: an upper quantile exists at every
+* `Cslib.Probability.PMF.exists_tail_quantile`: an upper quantile exists at every
   positive level.
 -/
 
 public section
 
-namespace Cslib.Probability.OptimalStopping
+namespace Cslib.Probability.PMF
 
 open scoped ENNReal NNReal
 open MeasureTheory Set Filter
@@ -110,4 +110,4 @@ theorem exists_tail_quantile (μ : PMF ℝ≥0) {q : ℝ≥0∞} (hq : 0 < q) (h
     simp only [S, mem_ofPred_eq, not_le] at this
     exact this.le
 
-end Cslib.Probability.OptimalStopping
+end Cslib.Probability.PMF

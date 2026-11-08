@@ -4825,7 +4825,6 @@ public import Complexity.Probability.Minimax.Value
 public import Complexity.Probability.OptimalStopping.Basic
 public import Complexity.Probability.OptimalStopping.Prophet
 public import Complexity.Probability.OptimalStopping.ProphetIID
-public import Complexity.Probability.OptimalStopping.Quantile
 public import Complexity.Probability.OptimalStopping.Secretary
 public import Complexity.Probability.Option
 public import Complexity.Probability.PMF
@@ -4837,6 +4836,7 @@ public import Complexity.Probability.PMF.Filter
 public import Complexity.Probability.PMF.Map
 public import Complexity.Probability.PMF.Option
 public import Complexity.Probability.PMF.Option.Bind
+public import Complexity.Probability.PMF.TailQuantile
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound
