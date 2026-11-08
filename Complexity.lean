@@ -1134,17 +1134,22 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceA
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySupport
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArrays
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceBlockCoverage
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceColumnWeights
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceCountReconstruction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCertificate
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCorrectness
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryPolyTime
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGroupCoefficients
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkSize
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidencePadding
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelections
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceWireDecoding
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceWireRanks
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.KernelProduct
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
@@ -3435,6 +3440,7 @@ public import Complexity.Foundations.BooleanAnalysis.LowDegreeParity
 public import Complexity.Foundations.BooleanAnalysis.MaximalSupport
 public import Complexity.Foundations.BooleanAnalysis.MirrorSets
 public import Complexity.Foundations.BooleanAnalysis.Mobius
+public import Complexity.Foundations.BooleanAnalysis.MobiusColorProduct
 public import Complexity.Foundations.BooleanAnalysis.MobiusInsert
 public import Complexity.Foundations.BooleanAnalysis.Monotone
 public import Complexity.Foundations.BooleanAnalysis.MultilinearExtension
@@ -3580,6 +3586,7 @@ public import Complexity.Foundations.Data.BitString.AgreeExpect
 public import Complexity.Foundations.Data.BitString.Basic
 public import Complexity.Foundations.Data.BitString.Binary
 public import Complexity.Foundations.Data.BitString.Block
+public import Complexity.Foundations.Data.BitString.BlockRanks
 public import Complexity.Foundations.Data.BitString.Combination
 public import Complexity.Foundations.Data.BitString.CombinationCoverage
 public import Complexity.Foundations.Data.BitString.Convolution
@@ -3595,6 +3602,7 @@ public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Positions
 public import Complexity.Foundations.Data.BitString.List.Vote
+public import Complexity.Foundations.Data.BitString.PaddingSum
 public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Parity.DotProduct
 public import Complexity.Foundations.Data.BitString.Parity.Weight

@@ -1112,11 +1112,41 @@ This is a mathematical reconstruction specification, not an exponential
 monomial-enumeration implementation.
 
 Still missing is the global equality between that polynomial and the supported
-native contraction sum: common-wire rank decoding at both endpoints, coverage
-of the full wire assignment space, padding contribution one, and group
-coefficient/free-variable-weight factorization. Then high-incidence branches,
-parity queries, sharper sparsification, actual eta-time absorption and weighted
-rescaling remain to compose. The old complete counter retains the extra log-log
+native contraction sum. Common-wire decoding, complete main-wire assignment
+coverage, padding contribution one and actual group coefficient/weight
+factorization are now proved below. Global reindexing into the original finite
+per-test incidence families, invalid-rank removal and listed/finite coefficient
+identification remain. High-incidence branches, parity queries, sharper
+sparsification, actual eta-time absorption and weighted rescaling then remain.
+The old complete counter retains the extra log-log
 factor. No complete sharper counter or Theorem 7.1/ALL-main completion is claimed;
 common-occurrence positive weighted rows and raw-row/table/graph limitations
 remain as above.
+
+
+The physical-wire/global-product components are now proved. `IncidenceWireDecoding`
+characterizes the actual sequential port reader at both endpoints, including
+zero widths. `IncidenceWireRanks` uses prefix-sum coordinates to give a bijection
+between all actual main-wire assignments and tuples of full-width binary ranks;
+valid local ranks have one assignment and the full assignment sum reindexes
+without multiplicity. `IncidencePadding` proves exact natural polynomial
+contraction preservation for the actual forced-false padding, including dead
+arrays, and transports it to the actual `sumArrays` output.
+
+`IncidenceGroupCoefficients.val_rowVertex_prod` factors the actual whole-group
+stream into individual test coefficients in the truncated ring, deriving its
+scope conditions from the blocks. `IncidenceColumnWeights` proves common-wire
+selection membership agrees at both endpoints and the actual column entries
+multiply to two per declared variable unselected by all rows. Free variables
+outside every scope are retained. These are semantic identities of the existing
+certified machine; its actual binary resource bounds are unchanged and no
+exhaustive-rank replacement algorithm is introduced.
+
+The final native-sum/incidence-polynomial identity is not yet assembled. It
+still needs global reindexing into the original equation/subset families,
+invalid binary-rank removal and identification of listed-test integer lifts and
+group-local coordinates with the finite normalized equations. Then compose
+high-incidence branches, every parity query, sharper sparsification, explicit
+exponent absorption and weighted eta-time rescaling. The old counter's extra
+log-log factor and the raw-row/common-occurrence/table/graph/Theorem 7.1/ALL-main
+limitations remain; no complete sharper-counter endpoint is claimed.

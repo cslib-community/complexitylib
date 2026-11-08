@@ -1004,13 +1004,75 @@ and constant contradiction. A duplicate-monomial negative case checks that the
 normalization hypothesis is material.
 
 The remaining global correspondence must identify the supported native
-contraction sum with `systemIncidencePolynomial` in the truncated ring. In
-particular, prove that a shared edge assignment gives the same local rank at
-both endpoints, that valid ranks assemble without multiplicity, that padding
-contributes one, and that group coefficient products and free-variable weights
-match the global incidence expansion. Local uniqueness and zero support do not
-establish that identity by themselves. High-incidence branches, parity queries,
-sharper sparsification and actual eta-time absorption/rescaling then remain.
+contraction sum with `systemIncidencePolynomial` in the truncated ring. The
+shared-wire, padding and factorization stages are now proved below. The sum
+still needs to be reindexed globally into the original per-test incidence
+families, with invalid binary ranks removed and listed-test coefficients
+identified with the finite normalized equations. High-incidence branches, parity
+queries, sharper sparsification and actual eta-time absorption/rescaling remain.
 The old counter's extra log-log factor and the weighted common-occurrence,
 variable-length raw-row, table, graph and full Theorem 7.1/ALL-main gaps remain
 explicitly open.
+
+
+### Identify physical wire assignments, padding and coefficient products
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceWireRanks`,
+`Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidencePadding`,
+`Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGroupCoefficients`
+and `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceColumnWeights`.
+The namespace is `Cslib.Circuits.Frontier.IncidenceNetwork`.
+
+`blockIndices_rowPorts` and `blockIndices_colPorts` characterize the actual fold
+that reads each endpoint's ports. `row_col_index_eq` proves both endpoints read
+the same physical block, even though their block order differs. Width-zero
+blocks are included. `wireRankEquiv` identifies the actual main-wire assignment
+space with the tuples of ranks below $2^{w_b}$; its coordinate map is the actual
+prefix sum plus in-block offset, rather than a cardinality-only bijection.
+`wireRankEquiv_apply` identifies its rank with `wireIndex`. Thus
+`existsUnique_wireAssignment` constructs the unique main-wire assignment for
+any fitting local subset ranks, and `sum_wireAssignments_eq_sum_ranks` reindexes
+the full assignment sum exactly. No assignment or decoding identity is advice.
+
+`polyContraction_network_padding` proves that the actual added padding leaves
+the natural polynomial contraction unchanged, before truncation or reduction.
+Each added row `[1,0]` forces its edge false and the column `[1,1]` contributes
+one. The prefix/suffix bijection and `sum_padding_false` count each original
+assignment exactly once. Dead arrays and no padding are covered.
+`sumArrays_eq_unpadded` transports this to the existing native loop's actual
+scalar output, while keeping the same charged construction/contraction machine.
+Its previously proved time and polynomial original-input space bounds are
+unchanged; the mathematical reindexing is not a new exhaustive evaluator.
+
+The generic `subsetMobius_color_product` factors coefficients across disjoint
+coordinate colors. `val_rowVertex_prod` applies it to the actual group stream:
+the row entry is the product of the separate test coefficients in the truncated
+modular ring, with selected-test scope bounds derived from its constructed
+blocks. Invalid ranks still give zero. On the variable side,
+`mem_allColumnSelected_iff_rows` proves both endpoints select the same incidences
+on their shared wires. `val_colVertices_prod` then identifies the product of the
+actual column entries with $2^u$, where $u$ is the number of declared variables
+missing from all actual row selections. Residue classes count each variable
+once, including variables outside every scope. The variable-side theorem assumes
+$J>0$; the wire and padding theorems also handle no blocks.
+
+These are the concrete shared-wire, assignment-coverage, padding and group-weight
+steps of OpenAI2026ETH, Appendix D.3, Lemma D.2, PDF pp.55–56. From the repository
+root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceGlobal`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceGlobal.lean)
+checks distinct row/column port orders, actual readback, unique fitting-rank
+assignments, zero widths and no blocks, forced padding multiplicity, live/dead
+padded readback, a negative test-coefficient product modulo 16, and variables
+outside every scope contributing their powers of two.
+
+The final global sum identity is still open. Reindex the supported unpadded
+contractions by the original equation/subset families, remove invalid binary
+ranks via the actual row-zero tests, and identify the listed-test integer lifts
+and group-local test coordinates with `systemIncidencePolynomial`'s finite
+normalized equations. The new component identities do not assert that final
+equality. High-incidence branch and parity-query composition, sharper
+sparsification, explicit exponent absorption and weighted eta-time rescaling
+remain after it. The old complete counter still retains its extra log-log
+factor; the common-occurrence weighted frontend, arbitrary variable-length raw
+rows, table/graph endpoints, full Theorem 7.1 and ALL-main remain open.
