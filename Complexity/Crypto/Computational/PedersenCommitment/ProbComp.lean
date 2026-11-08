@@ -68,7 +68,7 @@ public key encoding, and message word. -/
 theorem isPPTOn_pedersenCommitProb :
     IsPPTOn (encPair encUnary (encPair F.pedersenScheme.encodeKey encBits))
       (encPair encBits encBits)
-      (fun p : ℕ × F.PedersenKey × List Bool => F.pedersenCommitProb p.1 p.2.1 p.2.2) := by
+      (fun ((n, key, msg) : ℕ × F.PedersenKey × List Bool) => F.pedersenCommitProb n key msg) := by
   let E := encPair encUnary (encPair F.pedersenScheme.encodeKey encBits)
   have hn := ComputableInPolyTime.fst encUnary (encPair F.pedersenScheme.encodeKey encBits)
   have hrest := ComputableInPolyTime.snd encUnary (encPair F.pedersenScheme.encodeKey encBits)

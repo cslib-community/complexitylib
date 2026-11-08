@@ -47,6 +47,8 @@ the later condition `K ≤ n` is not needed for this local result.
 * `Cslib.RowCompression.abs_update_sub_le_six_mul`: one update changes a coordinate by at most
   six times its threshold, the local bound used in the subsequent preloss argument.
 * `Cslib.RowCompression.le_newDefault`: defaults are nondecreasing.
+* `Cslib.RowCompression.threshold_congr_on`, `Cslib.RowCompression.newDefault_congr_on`:
+  `threshold` and `newDefault` depend only on the row entries on `s`.
 * `Cslib.RowCompression.card_candidates_lt`: fewer than `n` candidates suffice.
 * `Cslib.RowCompression.update_eq_default_of_not_mem_candidates`: the candidate set represents
   the entire row on `s`.
@@ -141,6 +143,22 @@ theorem le_newDefault : z ≤ newDefault s n K ρ z w :=
 
 theorem newDefault_nonneg : 0 ≤ newDefault s n K ρ z w :=
   threshold_nonneg.trans threshold_le_newDefault
+
+/-- `threshold` depends only on the row entries on `s`. -/
+theorem threshold_congr_on {w₁ w₂ : ι → Fin 2 → ℝ}
+    (hw : ∀ x ∈ s, ∀ μ, w₁ x μ = w₂ x μ) :
+    threshold s n ρ z w₁ = threshold s n ρ z w₂ := by
+  unfold threshold
+  congr 2
+  exact kthLargest_congr fun x hx => by
+    simp only [entrySize, hw x hx 0, hw x hx 1]
+
+/-- `newDefault` depends only on the row entries on `s`. -/
+theorem newDefault_congr_on {w₁ w₂ : ι → Fin 2 → ℝ}
+    (hw : ∀ x ∈ s, ∀ μ, w₁ x μ = w₂ x μ) :
+    newDefault s n K ρ z w₁ = newDefault s n K ρ z w₂ := by
+  unfold newDefault
+  rw [threshold_congr_on hw, kthLargest_congr fun x hx => hw x hx 0]
 
 theorem updateEntry_eq_default_of_size_le {u b : ℝ} {v : Fin 2 → ℝ}
     (hv : entrySize v ≤ 2 * u) : updateEntry u b v = defaultEntry b := by

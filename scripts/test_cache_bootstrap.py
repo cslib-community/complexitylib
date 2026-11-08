@@ -5,7 +5,9 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
+import time
 import unittest
 
 REPO = Path(__file__).resolve().parent.parent
@@ -48,10 +50,14 @@ class CacheBootstrapTests(unittest.TestCase):
                          "BOOTSTRAP_LOG": str(self.log)})
         self.git("init", "-q")
         for name in ("scripts/build.sh", "scripts/check.sh", "scripts/quick_check.py",
-                     "scripts/cache/ensure.sh"):
+                     "scripts/cache/ensure.sh", "scripts/cache/bounded.py", "scripts/cache/restore.py", "scripts/cache/windows_job.py"):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(REPO / name, path)
+        # These mini-checkouts exercise cache dispatch with only a Demo library. The real
+        # manual preflight and its failure behavior are covered in test_quick_check.py.
+        for name in ("scripts/check_operator_manual.py", "scripts/test_operator_manual.py"):
+            self.write(name, "raise SystemExit(0)\n")
         self.write("scripts/cache/get.sh", FAKE_FETCH).chmod(0o755)
         self.write(".gitignore", ".lake/\n")
         self.write("lean-toolchain", "leanprover/lean4:v4.36.0-rc1\n")
@@ -152,7 +158,10 @@ class CacheBootstrapTests(unittest.TestCase):
         count += 1
         self.assertEqual(self.fetch_count(), count)
         overrides = {}
-        for key, value in (("COMPLEXITYLIB_CACHE_URL", "https://cache.example.invalid"),
+        for key, value in (("COMPLEXITYLIB_CACHE_URLS", "https://mit.example.invalid https://gcp.example.invalid"),
+                           ("COMPLEXITYLIB_CACHE_ORIGIN_TIMEOUT", "90"),
+                           ("CACHE_RECOVERY_GENERATION", "recovery-1"),
+                           ("COMPLEXITYLIB_CACHE_URL", "https://cache.example.invalid"),
                            ("LAKE_CACHE_DIR", str(self.temp / "other cache"))):
             overrides[key] = value
             self.assert_success(self.run_script("cache/ensure.sh", **overrides))
@@ -189,6 +198,39 @@ class CacheBootstrapTests(unittest.TestCase):
         self.assertFalse(self.stamp.exists())
         self.assert_success(self.run_script("build.sh"))
         self.assertEqual(self.fetch_count(), 1)
+
+    def test_bootstrap_deadline_falls_back_to_the_strict_build(self):
+        self.write("scripts/cache/get.sh", "#!/usr/bin/env python3\nimport time\ntime.sleep(30)\n").chmod(0o755)
+        started = time.monotonic()
+        result = self.run_script("build.sh", COMPLEXITYLIB_CACHE_BOOTSTRAP_TIMEOUT=".5",
+                                 BOOTSTRAP_BUILD_EXIT="23")
+        self.assertEqual(result.returncode, 23, result.stdout + result.stderr)
+        self.assertLess(time.monotonic() - started, 6)
+        self.assertEqual(json.loads(self.stamp.read_text())["fetch_exit_code"], 124)
+
+    def test_unconfirmed_shutdown_never_overlaps_a_source_build(self):
+        result = self.run_script("build.sh", BOOTSTRAP_FETCH_EXIT="125")
+        self.assertEqual(result.returncode, 125, result.stdout + result.stderr)
+        self.assertFalse(any(event["kind"] == "lake" for event in self.events()))
+
+    @unittest.skipIf(sys.platform == "cygwin", "Windows job cancellation terminates all descendants atomically")
+    def test_nested_shutdown_failure_survives_the_outer_bootstrap_deadline(self):
+        self.write("scripts/cache/get.sh", '''#!/usr/bin/env python3
+import os, pathlib, signal, sys, time
+def stop(*_):
+    pathlib.Path(os.environ["COMPLEXITYLIB_CACHE_SHUTDOWN_MARKER"]).touch()
+    sys.exit(125)
+signal.signal(signal.SIGTERM, stop)
+time.sleep(30)
+''').chmod(0o755)
+        result = self.run_script("build.sh", COMPLEXITYLIB_CACHE_BOOTSTRAP_TIMEOUT=".5")
+        self.assertEqual(result.returncode, 125, result.stdout + result.stderr)
+        self.assertFalse(any(event["kind"] == "lake" for event in self.events()))
+
+    def test_recovery_switch_skips_fetch_without_recording_a_stamp(self):
+        self.assert_success(self.run_script("build.sh", DISABLE_CACHE_RESTORE="true"))
+        self.assertEqual(self.fetch_count(), 0)
+        self.assertFalse(self.stamp.exists())
 
     def test_invalid_arguments_do_not_fetch(self):
         for name in ("cache/ensure.sh", "check.sh"):

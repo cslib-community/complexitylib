@@ -101,7 +101,7 @@ abbrev queue (o : IndexedMinPQ.Op n) : (spec n K V).Client (IndexedMinPQ.Op.Resu
 
 /-- Look up the tentative distance of `v`: `none` while `v` is unreached. -/
 abbrev getDist (v : Fin n) : (spec n K V).Client (Option ℕ) :=
-  PFunctor.FreeM.lift (P := (spec n K V).signature) (.inr (.inl (.get v)))
+  PFunctor.FreeM.lift (P := (spec n K V).signature) (.inr (.inl (.query v)))
 
 /-- Set the tentative distance of `v` to `d`. -/
 abbrev setDist (v : Fin n) (d : ℕ) : (spec n K V).Client Unit :=
@@ -252,7 +252,7 @@ private theorem runClient_getDist_bind {α : Type} (s : (spec n K V).State) (v :
     (k : Option ℕ → (spec n K V).Client α) :
     (spec n K V).runClient s (getDist v >>= k) =
       let (r, s', os) := (spec n K V).runClient s (k (s.2.1 v))
-      (r, s', .inr (.inl (.get v)) :: os) := rfl
+      (r, s', .inr (.inl (.query v)) :: os) := rfl
 
 private theorem runClient_setDist_bind {α : Type} (s : (spec n K V).State) (v : Fin n) (d : ℕ)
     (k : Unit → (spec n K V).Client α) :
@@ -363,7 +363,7 @@ private theorem relaxEdge_runs (T : Finset (Fin n)) (dm : Dictionary.State n)
   · have hvT : v ∉ T := fun h => by obtain ⟨dv, h1, _⟩ := hT h; simp [hdm] at h1
     have hrun : (spec n K V).runClient (syncQ T dm, dm, adj) (relaxEdge u du i) =
         ((), (Function.update (syncQ T dm) v (some (du + c)), Function.update dm v (some (du + c)),
-          adj), [.inr (.inr (.edge u i)), .inr (.inl (.get v)), .inr (.inl (.insert v (du + c))),
+          adj), [.inr (.inr (.edge u i)), .inr (.inl (.query v)), .inr (.inl (.insert v (du + c))),
             .inl (.insert v (du + c))]) := by
       simp only [relaxEdge, runClient_edge_bind, AdjacencyList.step_edge _ _ hi, hvc,
         runClient_getDist_bind, hdm, runClient_setDist_bind, runClient_insert]
@@ -390,7 +390,7 @@ private theorem relaxEdge_runs (T : Finset (Fin n)) (dm : Dictionary.State n)
       have hrun : (spec n K V).runClient (syncQ T dm, dm, adj) (relaxEdge u du i) =
           ((), (Function.update (syncQ T dm) v (some (du + c)),
             Function.update dm v (some (du + c)), adj),
-            [.inr (.inr (.edge u i)), .inr (.inl (.get v)), .inr (.inl (.insert v (du + c))),
+            [.inr (.inr (.edge u i)), .inr (.inl (.query v)), .inr (.inl (.insert v (du + c))),
               .inl (.decreaseKey v (du + c))]) := by
         simp only [relaxEdge, runClient_edge_bind, AdjacencyList.step_edge _ _ hi, hvc,
           runClient_getDist_bind, hdm, hlt, ite_true, runClient_setDist_bind,
@@ -413,7 +413,7 @@ private theorem relaxEdge_runs (T : Finset (Fin n)) (dm : Dictionary.State n)
         dsimp only [kind, edgeRate]
         omega
     · have hrun : (spec n K V).runClient (syncQ T dm, dm, adj) (relaxEdge u du i) =
-          ((), (syncQ T dm, dm, adj), [.inr (.inr (.edge u i)), .inr (.inl (.get v))]) := by
+          ((), (syncQ T dm, dm, adj), [.inr (.inr (.edge u i)), .inr (.inl (.query v))]) := by
         simp only [relaxEdge, runClient_edge_bind, AdjacencyList.step_edge _ _ hi, hvc,
           runClient_getDist_bind, hdm, hlt, ite_false]
         rfl

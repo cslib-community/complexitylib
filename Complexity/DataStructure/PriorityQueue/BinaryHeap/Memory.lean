@@ -39,8 +39,8 @@ by its layout (`framed`) and composes with other structures in the same memory
 (`Memory.Framed.prod`). Allocated in memory that is zero above the frontier, the heap starts empty
 at a cost of two memory units (`allocLayout_bind`, `inv_allocated`).
 
-The word-RAM counterpart is `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap`, a hand-stepped
-dispatcher over the same memory layout.
+`BinaryHeap.Native` realizes these same memory programs as one fixed word-RAM program, with
+their exact source state and history preserved and native arithmetic and control charged.
 
 ## Main definitions
 
@@ -75,7 +75,7 @@ dispatcher over the same memory layout.
 namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Memory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+open Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 /-- The storage of an indexed binary heap on the handles `Fin n`: a one-cell field holding the
 number of entries, and three arrays from `base`, laid out as in `BinaryHeap.Model`. -/
@@ -105,18 +105,40 @@ abbrev arrays : Block := ⟨L.base, space n⟩
 def footprint : Finset ℕ := L.size.footprint ∪ L.arrays.footprint
 
 /-- Static well-formedness at word size `w` for keys at most `K`: the size field is one cell
-outside the arrays, and `n` and `K` fit a word. -/
+outside the touched array cells, and `n` and `K` fit a word. Heap position zero is unused and may
+hold that field without enlarging the array block. -/
 structure Valid (L : Layout n) (w K : ℕ) : Prop where
   /-- The size field is one cell. -/
   size_length : L.size.length = 1
-  /-- The size cell is not in the arrays. -/
-  size_not_owns : ¬L.arrays.Owns L.size.base
+  /-- The size cell is outside the arrays, or at their unused heap position zero. -/
+  size_separate : ¬L.arrays.Owns L.size.base ∨ L.size.base = L.base + n
   /-- The number of handles fits a word, hence so does every handle and position. -/
   n_fits : Fits w n
   /-- The largest key fits a word. -/
   key_fits : Fits w K
 
 end Layout
+
+/-- A specialization of the existing layout using exactly `space n` cells. The size occupies
+the unused heap position zero; the key, positive heap positions and position array do not move. -/
+abbrev compactLayout (n base : ℕ) : Layout n := ⟨⟨base + n, 1⟩, base⟩
+
+/-- The compact layout owns precisely the original three-array block. -/
+theorem compactLayout_footprint (n base : ℕ) :
+    (compactLayout n base).footprint = (Block.mk base (space n)).footprint := by
+  apply Finset.union_eq_right.mpr
+  intro a ha
+  rw [Block.mem_footprint] at ha ⊢
+  dsimp only [compactLayout, Block.Owns, space] at ha ⊢
+  omega
+
+/-- Compact storage adds no extra word or width requirement. -/
+theorem valid_compactLayout {n base w K : ℕ} (hn : Fits w n) (hK : Fits w K) :
+    (compactLayout n base).Valid w K where
+  size_length := rfl
+  size_separate := Or.inr rfl
+  n_fits := hn
+  key_fits := hK
 
 variable {n : ℕ} (L : Layout n)
 
@@ -178,8 +200,9 @@ def isEmpty : Prog Bool := do
   let S ← L.size.get 0
   pure (decide (S = 0))
 
-/-- The key of handle `v`: absent when its position is `0`. -/
-def getKey (v : Fin n) : Prog (Option ℕ) := do
+/-- The key of handle `v`: absent when its position is `0`. Correctness is stated for `v < n`
+through the typed indexed-PQ operations; the program accepts the runtime index word directly. -/
+def getKey (v : ℕ) : Prog (Option ℕ) := do
   let p ← L.pos.get v
   if p = 0 then pure none else do
     let k ← L.key.get v
@@ -187,7 +210,7 @@ def getKey (v : Fin n) : Prog (Option ℕ) := do
 
 /-- Insert the absent handle `v` with key `k`: store the key, append `v` at the end of the heap,
 and sift it up. -/
-def insert (v : Fin n) (k : ℕ) : Prog Unit := do
+def insert (v : ℕ) (k : ℕ) : Prog Unit := do
   let S ← L.size.get 0
   L.size.set 0 (S + 1)
   L.key.set v k
@@ -196,7 +219,7 @@ def insert (v : Fin n) (k : ℕ) : Prog Unit := do
   siftUp L (S + 1)
 
 /-- Lower the key of the present handle `v` to `k`, and sift it up from its position. -/
-def decreaseKey (v : Fin n) (k : ℕ) : Prog Unit := do
+def decreaseKey (v : ℕ) (k : ℕ) : Prog Unit := do
   let p ← L.pos.get v
   L.key.set v k
   siftUp L p
@@ -468,12 +491,14 @@ theorem not_mem_footprint (hL : L.Valid w K) {a : ℕ} (ha : a ∉ L.footprint) 
     not_and_or, not_le, not_lt, hL.size_length, space] at ha
   omega
 
-/-- The size cell lies outside the arrays. -/
-theorem size_outside (hL : L.Valid w K) :
-    L.size.base < L.base ∨ L.base + 3 * n + 1 ≤ L.size.base := by
-  have h := hL.size_not_owns
-  simp only [Block.Owns, not_and_or, not_le, not_lt, space] at h
-  omega
+/-- The size cell is outside the array block or at its unused heap position zero. -/
+theorem size_location (hL : L.Valid w K) :
+    L.size.base < L.base ∨ L.size.base = L.base + n ∨
+      L.base + 3 * n + 1 ≤ L.size.base := by
+  rcases hL.size_separate with h | h
+  · simp only [Block.Owns, not_and_or, not_le, not_lt, space] at h
+    omega
+  · exact Or.inr (Or.inl h)
 
 /-- The size cell is allocated. -/
 theorem Inv.size_lt (hL : L.Valid w K) {s : Memory.State} (hs : Inv L s) :
@@ -483,9 +508,15 @@ theorem Inv.size_lt (hL : L.Valid w K) {s : Memory.State} (hs : Inv L s) :
 /-- A heap invariant survives a write to the size cell. -/
 theorem heapInv_update_size (hL : L.Valid w K) {S : ℕ} {m : ℕ → ℕ}
     (h : HeapInv n L.base S m) (x : ℕ) :
-    HeapInv n L.base S (Function.update m L.size.base x) :=
-  h.congr_mem fun a ha => Function.update_of_ne (fun he => hL.size_not_owns
-    (by rw [← he]; exact Block.mem_footprint.mp ha)) x m
+    HeapInv n L.base S (Function.update m L.size.base x) := by
+  apply h.congr_mem
+  intro a ha hzero
+  apply Function.update_of_ne
+  intro he
+  rcases hL.size_separate with hout | hslot
+  · exact hout (by rw [← he]; exact Block.mem_footprint.mp ha)
+  · exact hzero (he.trans hslot)
+
 
 variable (L) in
 /-- What a run of the operation `o` from `s` establishes: the specified step from the represented
@@ -526,7 +557,7 @@ theorem insert_triple (hL : L.Valid w K) {s : Memory.State} (hs : Inv L s) {v : 
     by_contra h
     simp [abs, stateOfMem, h] at hnone
   have hSn := hs.heap.size_lt v.isLt hp
-  have hsz := size_outside hL
+  have hsz := size_location hL
   have hlog := Nat.log_mono_right (b := 2) (show s.mem L.size.base + 1 ≤ n by omega)
   refine (?_ : Triple w s _ (8 * Nat.log 2 (s.mem L.size.base + 1) + 4 + 5) _).mono (by omega)
     fun _ _ h => h
@@ -568,7 +599,7 @@ theorem decreaseKey_triple (hL : L.Valid w K) {s : Memory.State} (hs : Inv L s) 
     intro h
     simp [abs, stateOfMem, h] at hk₀
   have hkey : s.mem (L.base + v) = k₀ := by simpa [abs, stateOfMem, hp] using hk₀
-  have hsz := size_outside hL
+  have hsz := size_location hL
   have hpS := hs.heap.pos_le v v.isLt
   have hSn := hs.heap.size_le
   have hlog := Nat.log_mono_right (b := 2) (show s.mem (L.base + 2 * n + 1 + v) ≤ n by omega)
@@ -614,7 +645,7 @@ memory units. -/
 theorem extractMin_triple (hL : L.Valid w K) {s : Memory.State} (hs : Inv L s) :
     Triple w s (extractMin L) (opCost n) (Post L s .extractMin) := by
   have hA := hs.arrays_allocated
-  have hsz := size_outside hL
+  have hsz := size_location hL
   obtain ⟨S, hS⟩ : ∃ S, s.mem L.size.base = S := ⟨_, rfl⟩
   have hinv : HeapInv n L.base S s.mem := hS ▸ hs.heap
   have hSn := hinv.size_le
@@ -763,7 +794,7 @@ theorem Inv.congr (hL : L.Valid w K) {s s' : Memory.State} (hs : Inv L s)
   heap := by
     rw [h _ (Finset.mem_union_left _ (Block.mem_footprint.mpr
       ⟨le_rfl, by rw [hL.size_length]; omega⟩))]
-    exact hs.heap.congr_mem fun a ha => h a (Finset.mem_union_right _ ha)
+    exact hs.heap.congr_mem fun a ha _ => h a (Finset.mem_union_right _ ha)
 
 /-- The binary heap, with its layout's cells as a constant footprint, so that it shares memory
 with other structures (`Memory.Framed.prod`). -/
@@ -790,6 +821,33 @@ theorem opCost_le (n : ℕ) : opCost n ≤ 14 * (Nat.log 2 n + 1) := by
   unfold opCost
   omega
 
+/-- Zero count and position cells suffice for the empty invariant; memory outside the layout
+can be arbitrary. This is a representation fact, not a zeroing program or an allocation charge. -/
+theorem inv_empty {s : Memory.State} (hsize : L.size.Allocated s) (hA : L.arrays.Allocated s)
+    (hcount : s.mem L.size.base = 0)
+    (hpos : ∀ v < n, s.mem (L.base + 2 * n + 1 + v) = 0) :
+    Inv L s ∧ abs L s = IndexedMinPQ.empty n := by
+  have hshape : HeapShape n L.base 0 s.mem :=
+    ⟨Nat.zero_le _, fun _ h1 h2 => by omega, fun _ h1 h2 => by omega,
+      fun v hv => (hpos v hv).le, fun v hv h0 => absurd (hpos v hv) h0⟩
+  refine ⟨⟨hsize, hA, ?_⟩, hshape.stateOfMem_zero⟩
+  rw [hcount]
+  exact ⟨hshape, fun _ h1 h2 => by omega⟩
+
+/-- A locally zero owned block supplies the compact empty heap, without a global `ZeroAbove`
+assumption. Native initialization must still pay its actual reservation and setup instructions. -/
+theorem inv_compactLayout {base : ℕ} {s : Memory.State}
+    (hA : (Block.mk base (space n)).Allocated s)
+    (hz : ∀ a, (Block.mk base (space n)).Owns a → s.mem a = 0) :
+    Inv (compactLayout n base) s ∧ abs (compactLayout n base) s = IndexedMinPQ.empty n := by
+  apply inv_empty
+  · dsimp only [Block.Allocated, compactLayout, space] at hA ⊢
+    omega
+  · exact hA
+  · exact hz _ (by dsimp only [Block.Owns, space]; omega)
+  · intro v hv
+    exact hz _ (by dsimp only [Block.Owns, space]; omega)
+
 /-! ## Allocation -/
 
 /-- Allocate a heap on `n` handles without clearing its storage: in memory that is zero above
@@ -815,7 +873,7 @@ theorem allocLayout_bind {α : Type} {s : Memory.State} {c : ℕ} {next : Layout
 theorem valid_allocated {f : ℕ} (hn : Fits w n) (hK : Fits w K) :
     (allocated n f).Valid w K where
   size_length := rfl
-  size_not_owns := by simp [Block.Owns]
+  size_separate := Or.inl (by simp [Block.Owns])
   n_fits := hn
   key_fits := hK
 
@@ -829,13 +887,14 @@ is empty. -/
 theorem inv_allocated {s : Memory.State} (hz : ZeroAbove s) :
     Inv (allocated n s.frontier) ⟨s.mem, s.frontier + 1 + space n⟩ ∧
       abs (allocated n s.frontier) ⟨s.mem, s.frontier + 1 + space n⟩ = IndexedMinPQ.empty n := by
-  have hpos : ∀ v < n, s.mem (s.frontier + 1 + 2 * n + 1 + v) = 0 := fun v _ => hz _ (by omega)
-  have hshape : HeapShape n (s.frontier + 1) 0 s.mem :=
-    ⟨Nat.zero_le _, fun _ h1 h2 => by omega, fun _ h1 h2 => by omega,
-      fun v hv => (hpos v hv).le, fun v hv h0 => absurd (hpos v hv) h0⟩
-  refine ⟨⟨le_rfl.trans (by simp only; omega), by simp only [Block.Allocated]; omega, ?_⟩,
-    hshape.stateOfMem_zero⟩
-  rw [hz s.frontier le_rfl]
-  exact ⟨hshape, fun _ h1 h2 => by omega⟩
+  apply inv_empty
+  · simp only [Block.Allocated]
+    omega
+  · simp only [Block.Allocated]
+    omega
+  · exact hz _ le_rfl
+  · intro v _
+    exact hz _ (by dsimp only [allocated]; omega)
+
 
 end Cslib.DataStructure.PriorityQueue.BinaryHeap.Memory

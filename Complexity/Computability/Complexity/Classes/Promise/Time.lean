@@ -49,7 +49,7 @@ namespace Turing.MultiTapePTM
 
 open Cslib.Complexity
 
-variable {α : Type} {k : ℕ} {State : Type}
+variable {α : Type*} {k : ℕ} {State : Type}
 
 /-- Every run halts by `t`; bounded error is required only on the two sides of the promise. -/
 @[expose] def SolvesPromiseWithBoundedErrorInTime (machine : MultiTapePTM k Bool State)
@@ -103,7 +103,7 @@ namespace Cslib.Complexity
 open _root_.Turing _root_.Turing.MultiTapeTM
 open scoped ENNReal
 
-variable {α : Type} {enc : α ↪ List Bool} {T : ℕ → ℕ}
+variable {α : Type*} {enc : α ↪ List Bool} {T : ℕ → ℕ}
 
 /-- Native bounded-error promise problems with fixed machine parameters and affine time `T`.
 All encoded inputs terminate, but the error conditions only constrain promised inputs. -/

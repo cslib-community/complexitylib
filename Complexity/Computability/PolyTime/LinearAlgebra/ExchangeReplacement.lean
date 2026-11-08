@@ -52,6 +52,8 @@ unencoded semantic bridges to `Complexity.Foundations.LinearAlgebra.ExchangeRepl
 * `Cslib.LinearAlgebra.decodeAuxDigits`, `Cslib.LinearAlgebra.encodeAuxDigits`,
   `Cslib.LinearAlgebra.encodeAuxLabel`, `Cslib.LinearAlgebra.decodeAuxLabel`,
   `Cslib.LinearAlgebra.auxLabelEquivFin`: mixed-radix `AuxLabel Q r` encoding and decoding.
+* `Cslib.LinearAlgebra.encAuxDigits`: the tape encoding of digit-list pairs `(u₁, u₂)`, with
+  digits in binary.
 * `Cslib.LinearAlgebra.size_commonDenom_le`, `Cslib.LinearAlgebra.computableInPolyTime_commonDenom`:
   bit-length bounds and polynomial-time certificates for `commonDenom Q R`.
 * `Cslib.LinearAlgebra.auxMeasurementRowsBounded`, `Cslib.LinearAlgebra.auxMeasurementRows`,
@@ -99,9 +101,8 @@ def auxLabelToDigits {Q r : ℕ} (u : AuxLabel Q r) : List ℕ × List ℕ :=
 def encodeAuxLabel {Q r : ℕ} (u : AuxLabel Q r) : ℕ := encodeAuxDigits r (auxLabelToDigits u)
 
 private theorem pos_of_pow_two_mul_pos {Q r : ℕ} (hD : 0 < r ^ (2 * Q)) (s : Fin Q) : 0 < r := by
-  rcases Nat.eq_zero_or_pos r with rfl | hr
-  · exfalso; rw [zero_pow (by have := s.2; omega)] at hD; omega
-  · exact hr
+  rcases Nat.eq_zero_or_pos r with rfl | hr; · rw [zero_pow (by have := s.2; omega)] at hD; omega
+  exact hr
 
 /-- Decode an index `idx : ℕ` into `AuxLabel Q r` whenever `0 < r ^ (2 * Q)`. -/
 def decodeAuxLabel {Q r : ℕ} (hD : 0 < r ^ (2 * Q)) (idx : ℕ) : AuxLabel Q r :=
@@ -137,9 +138,9 @@ theorem encodeAuxDigits_lt {Q r : ℕ} {u : List ℕ × List ℕ} (hu₁ : u.1.l
   rcases hQr with rfl | hr
   · simp only [encodeAuxDigits, List.eq_nil_of_length_eq_zero hu₁, Nat.mul_zero, pow_zero,
       List.eq_nil_of_length_eq_zero hu₂, List.append_nil, Nat.ofDigits_nil, Nat.zero_lt_one]
-  · have hlt := Nat.ofDigits_lt_base_pow_length_of_pos hr (u.1 ++ u.2) fun a ha =>
-      (List.mem_append.1 ha).elim (hb₁ a) (hb₂ a)
-    rwa [List.length_append, hu₁, hu₂, ← two_mul] at hlt
+  · simpa only [encodeAuxDigits, List.length_append, hu₁, hu₂, ← two_mul] using
+      Nat.ofDigits_lt_base_pow_length_of_pos hr (u.1 ++ u.2) fun a ha =>
+        (List.mem_append.1 ha).elim (hb₁ a) (hb₂ a)
 
 /-- Decoding `encodeAuxDigits r u` recovers `u` for every pair of length-`Q` digit lists `< r`. -/
 theorem decodeAuxDigits_encodeAuxDigits {Q r : ℕ} {u : List ℕ × List ℕ} (hu₁ : u.1.length = Q)
@@ -218,9 +219,9 @@ theorem encodeAuxLabel_lt {Q r : ℕ} (u : AuxLabel Q r) : encodeAuxLabel u < r 
     decodeAuxLabel hD (encodeAuxLabel u) = u := by
   have hdig :=
     auxLabelToDigits_decodeAuxLabel hD (encodeAuxLabel u) ▸ decodeAuxDigits_encodeAuxLabel u
-  refine Prod.ext (funext fun s => Fin.ext ?_) (funext fun s => Fin.ext ?_)
-  · simpa only [auxLabelToDigits, List.getD_ofFn] using congrArg (fun p => p.1.getD s 0) hdig
-  · simpa only [auxLabelToDigits, List.getD_ofFn] using congrArg (fun p => p.2.getD s 0) hdig
+  refine Prod.ext (funext fun s => Fin.ext ?_) (funext fun s => Fin.ext ?_) <;>
+    [simpa only [auxLabelToDigits, List.getD_ofFn] using congrArg (fun p => p.1.getD s 0) hdig;
+     simpa only [auxLabelToDigits, List.getD_ofFn] using congrArg (fun p => p.2.getD s 0) hdig]
 
 /-- Right-inverse identity for `encodeAuxLabel` and `decodeAuxLabel` on `idx < r ^ (2 * Q)`. -/
 @[simp] theorem encodeAuxLabel_decodeAuxLabel {Q r idx : ℕ} (hD : 0 < r ^ (2 * Q))
@@ -348,23 +349,23 @@ theorem isTableShape_auxMeasurementRows (Q r A₀ R : ℕ) :
   refine ⟨?_, fun row hrow => ?_⟩
   · simp only [auxMeasurementRows, auxMeasurementRowsBounded, List.length_map]
     rcases Nat.eq_zero_or_pos (r ^ (2 * Q)) with h0 | hD
-    · have hempty : IsEmpty (AuxLabel Q r) := Fintype.card_eq_zero_iff.1 (card_auxLabel Q r ▸ h0)
+    · have : IsEmpty (AuxLabel Q r) := Fintype.card_eq_zero_iff.1 (card_auxLabel Q r ▸ h0)
       simp only [auxMeasurementIndicesBounded, h0, Nat.min_self, List.range_zero, List.filter_nil,
         List.length_nil, Finset.eq_empty_of_isEmpty (measurementIndices Q r A₀ R),
         Finset.card_empty]
-    · have hnodup : (auxMeasurementIndices Q r A₀ R).Nodup := by
-        unfold auxMeasurementIndices auxMeasurementIndicesBounded
-        exact List.Nodup.filter _ List.nodup_range
+    · have hnodup : (auxMeasurementIndices Q r A₀ R).Nodup :=
+        List.Nodup.filter _ List.nodup_range
       rw [← auxMeasurementIndices, ← List.toFinset_card_of_nodup hnodup]
       refine Finset.card_bij (fun b_idx _ => decodeAuxLabel hD b_idx)
         (fun _ hb => (decodeAuxLabel_mem_measurementIndices_iff
           (mem_auxMeasurementIndices_lt (List.mem_toFinset.1 hb))).2 (List.mem_toFinset.1 hb))
         (fun _ hb₁ _ hb₂ heq => ?_) fun β hβ => ⟨encodeAuxLabel β, List.mem_toFinset.2 ?_,
           decodeAuxLabel_encodeAuxLabel hD β⟩
-      · have henc := congrArg encodeAuxLabel heq
-        have h1 := mem_auxMeasurementIndices_lt (List.mem_toFinset.1 hb₁)
-        have h2 := mem_auxMeasurementIndices_lt (List.mem_toFinset.1 hb₂)
-        rwa [encodeAuxLabel_decodeAuxLabel hD h1, encodeAuxLabel_decodeAuxLabel hD h2] at henc
+      · simpa only [encodeAuxLabel_decodeAuxLabel hD
+          (mem_auxMeasurementIndices_lt (List.mem_toFinset.1 hb₁)),
+          encodeAuxLabel_decodeAuxLabel hD
+          (mem_auxMeasurementIndices_lt (List.mem_toFinset.1 hb₂))] using
+          congrArg encodeAuxLabel heq
       · rwa [← decodeAuxLabel_mem_measurementIndices_iff (encodeAuxLabel_lt β),
           decodeAuxLabel_encodeAuxLabel]
   · simp only [auxMeasurementRows, auxMeasurementRowsBounded, Nat.min_self, List.mem_map] at hrow
@@ -429,9 +430,8 @@ theorem measurementMatrix_mulVec_eq_zero_iff_auxMeasurementRows (Q r A₀ R : �
         decodeAuxLabel_encodeAuxLabel]
       exact Finset.mem_filter.2 ⟨Finset.mem_univ β, hβ⟩
     rw [← sum_row_eigenvecDigits_eq_dotProduct K β ξ, ← decodeAuxDigits_encodeAuxLabel β]
-    exact hrows _ <| by
-      simp only [auxMeasurementRows, auxMeasurementRowsBounded, Nat.min_self, List.mem_map]
-      exact ⟨encodeAuxLabel β, hb, rfl⟩
+    unfold auxMeasurementRows auxMeasurementRowsBounded at hrows; rw [Nat.min_self] at hrows
+    exact hrows _ (List.mem_map.2 ⟨encodeAuxLabel β, hb, rfl⟩)
 
 /-! ### 4. Executable cleared integer replacement rows (`auxReplacementRowCoeffs`) -/
 
@@ -552,11 +552,9 @@ private theorem card_diffSet_slotSwap_of_mem_diffSet {Q r : ℕ} {z y : AuxLabel
     (h s).elim (fun ⟨h1, _⟩ => absurd h1 (Finset.mem_filter.1 hs).2) And.right
   suffices diffSet z (slotSwap s y) = (diffSet z y).erase s by
     rw [this, Finset.card_erase_of_mem hs]
-  ext t; simp only [diffSet, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_erase,
-    slotSwap, subsetSwap, Finset.mem_singleton]
-  by_cases hts : t = s
-  · subst hts; simp only [↓reduceIte, hy2]; tauto
-  · simp only [hts, ↓reduceIte]; tauto
+  ext t; by_cases hts : t = s <;>
+    simp only [diffSet, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_erase,
+      slotSwap, subsetSwap, Finset.mem_singleton, hts, ↓reduceIte, hy2] <;> tauto
 private theorem card_diffSet_slotSwap_of_mem_offDiag_sdiff {Q r : ℕ} {z y : AuxLabel Q r}
     (h : IsSwapOrbit z y) {s : Fin Q} (hs : s ∈ offDiagSet z \ diffSet z y) :
     #(diffSet z (slotSwap s y)) = #(diffSet z y) + 1 := by
@@ -568,11 +566,9 @@ private theorem card_diffSet_slotSwap_of_mem_offDiag_sdiff {Q r : ℕ} {z y : Au
     fun ⟨h1, _⟩ => absurd (hy1.symm.trans h1) hoff
   suffices diffSet z (slotSwap s y) = insert s (diffSet z y) by
     rw [this, Finset.card_insert_of_notMem hnot]
-  ext t; simp only [diffSet, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert,
-    slotSwap, subsetSwap, Finset.mem_singleton]
-  by_cases hts : t = s
-  · subst hts; simp only [↓reduceIte]; tauto
-  · simp only [hts, ↓reduceIte]; tauto
+  ext t; by_cases hts : t = s <;>
+    simp only [diffSet, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert,
+      slotSwap, subsetSwap, Finset.mem_singleton, hts, ↓reduceIte] <;> tauto
 private theorem mul_twoW0_sub_apply {Q r : ℕ} (P : Matrix (AuxLabel Q r) (AuxLabel Q r) ℤ)
     (c : ℤ) (z y : AuxLabel Q r) :
     (P * (twoW0 Q r ℤ - c • 1)) z y = ((Q : ℤ) - c) * P z y - ∑ s : Fin Q, P z (slotSwap s y) := by
@@ -580,15 +576,13 @@ private theorem mul_twoW0_sub_apply {Q r : ℕ} (P : Matrix (AuxLabel Q r) (AuxL
     smul_eq_mul, twoW0, Matrix.mul_sum, Matrix.sum_apply]
   have hterm : ∀ s : Fin Q,
       (P * (1 - slotSwapMatrix Q r ℤ s)) z y = P z y - P z (slotSwap s y) := fun s => by
-    let row : AuxLabel Q r → ℤ := P z
     have hinv : ∀ w : AuxLabel Q r, (y = slotSwap s w) ↔ (w = slotSwap s y) := fun w =>
       ⟨fun h => h ▸ (slotSwap_self s w).symm, fun h => h ▸ (slotSwap_self s y).symm⟩
     rw [Matrix.mul_sub, Matrix.mul_one, Matrix.sub_apply, Matrix.mul_apply]
-    change row y - ∑ w, row w * (if y = slotSwap s w then 1 else 0) = row y - row (slotSwap s y)
+    change P z y - ∑ w, P z w * (if y = slotSwap s w then 1 else 0) = P z y - P z (slotSwap s y)
     simp only [mul_ite, mul_one, mul_zero, hinv, Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
-  simp_rw [hterm]
-  rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
-  ring
+  simp_rw [hterm]; rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+    nsmul_eq_mul]; ring
 private theorem fallingProdMatrixInt_eq_fallingOrbitWeights (Q r A₀ j : ℕ) (z y : AuxLabel Q r) :
     fallingProdMatrixInt Q r A₀ j z y =
       if IsSwapOrbit z y then
@@ -651,8 +645,7 @@ private theorem fallingProdMatrixInt_eq_fallingOrbitWeights (Q r A₀ j : ℕ) (
             Finset.sum_const, Finset.card_compl, Fintype.card_fin, nsmul_eq_mul]
         · rw [Finset.sum_congr rfl fun _ hs =>
               congrArg (f.getD · 0) (card_diffSet_slotSwap_of_mem_diffSet horb hs),
-            Finset.sum_const, nsmul_eq_mul]
-          change (d : ℤ) * f.getD (d - 1) 0 = _
+            Finset.sum_const, nsmul_eq_mul]; change (d : ℤ) * f.getD (d - 1) 0 = _
           split_ifs <;> [rfl; simp only [show d = 0 by omega, Nat.cast_zero, zero_mul]]
         · rw [Finset.sum_congr rfl fun _ hs =>
               congrArg (f.getD · 0) (card_diffSet_slotSwap_of_mem_offDiag_sdiff horb hs),
@@ -696,10 +689,8 @@ private theorem fallingProdMatrixInt_eq_fallingOrbitWeights (Q r A₀ j : ℕ) (
     simp only [Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
     exact Finset.sum_congr rfl fun _ _ => by simp only [fallingTermMatrixInt, Matrix.smul_apply,
       smul_eq_mul, fallingProdMatrixInt_eq_fallingOrbitWeights, horb, ↓reduceIte, mul_assoc]
-  · have hfalse : isSwapOrbitDigits Q (auxLabelToDigits u) (auxLabelToDigits y) = false :=
-      Bool.eq_false_iff.2 fun hb => horb (horb_iff.1 hb)
-    simp only [hfalse, Bool.false_eq_true, ↓reduceIte, M0ScaledInt, fullSwapMatrix_mul_apply,
-      Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
+  · simp only [Bool.eq_false_iff.2 fun hb => horb (horb_iff.1 hb), Bool.false_eq_true, ↓reduceIte,
+      M0ScaledInt, fullSwapMatrix_mul_apply, Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
     exact (Finset.sum_eq_zero fun _ _ => by simp only [fallingTermMatrixInt, Matrix.smul_apply,
       smul_eq_mul, fallingProdMatrixInt_eq_fallingOrbitWeights, horb, ↓reduceIte, mul_zero]).symm
 
@@ -716,9 +707,8 @@ private theorem ofCoeffList_mulLinearSub (p : List ℤ) (t : ℤ) :
   · unfold mulLinearSub; rw [List.getD_map_range _ 0 hk]
   · have hge : (mulLinearSub p t).length ≤ k := by
       simp only [mulLinearSub, List.length_map, List.length_range]; omega
-    rw [List.getD_eq_default (mulLinearSub p t) 0 hge,
-      List.getD_eq_default p 0 (by omega), mul_zero,
-      ite_eq_left (by omega : 0 < k), List.getD_eq_default p 0 (by omega), sub_zero]
+    rw [List.getD_eq_default (mulLinearSub p t) 0 hge, List.getD_eq_default p 0 (by omega),
+      mul_zero, ite_eq_left (by omega : 0 < k), List.getD_eq_default p 0 (by omega), sub_zero]
 private theorem mismatchAnnihilatorCoeffsDigits_succ (k : ℕ) (u y : List ℕ × List ℕ) :
     mismatchAnnihilatorCoeffsDigits (k + 1) u y =
       if y.1.getD k 0 = u.2.getD k 0 then
@@ -763,13 +753,12 @@ private theorem ofCoeffList_mismatchAnnihilatorCoeffsDigits_eq_prod (Q : ℕ)
   exact congrArg₂ _
     (Finset.prod_congr rfl fun _ hs => by simp only [Finset.mem_compl.1 hs, ↓reduceIte])
     (Finset.prod_congr rfl fun _ hs => by simp only [hs, ↓reduceIte])
-
 private theorem eqAuxDigits_auxLabelToDigits {Q r : ℕ} (u y : AuxLabel Q r) :
     eqAuxDigits Q (auxLabelToDigits u) (auxLabelToDigits y) = decide (u = y) := by
   rw [Bool.eq_iff_iff, decide_eq_true_eq]; unfold eqAuxDigits; rw [List.all_eq_true]; constructor
   · intro h; have hs : ∀ s : Fin Q, (u.1 s).1 = (y.1 s).1 ∧ (u.2 s).1 = (y.2 s).1 := fun s => by
-      have hmem := h s.1 (List.mem_range.2 s.2)
-      simpa only [auxLabelToDigits, List.getD_ofFn, decide_eq_true_eq] using hmem
+      simpa only [auxLabelToDigits, List.getD_ofFn, decide_eq_true_eq] using
+        h s.1 (List.mem_range.2 s.2)
     exact Prod.ext (funext fun s => Fin.ext (hs s).1) (funext fun s => Fin.ext (hs s).2)
   · rintro rfl _ _; simp only [decide_eq_true_eq, and_self]
 
@@ -811,11 +800,10 @@ theorem getD_auxReplacementRowCoeffs (Q r A₀ R : ℕ) (u y : AuxLabel Q r) (k 
   · rw [List.getD_eq_default _ 0 (by rw [length_auxReplacementRowCoeffs]; omega)]
     unfold auxReplacementRowScaledInt; rw [coeff_add, coeff_C, coeff_C_mul]
     simp only [show k ≠ 0 by omega, ↓reduceIte, zero_add]
-    by_cases hm0 : M0ScaledInt Q r A₀ R u y = 0
-    · simp only [hm0, zero_mul]
-    · have hdeg := (natDegree_mismatchAnnihilatorScaledInt_le u y).trans
-        (card_mismatchSet_le_of_M0ScaledInt_ne_zero hm0)
-      rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega), mul_zero]
+    by_cases hm0 : M0ScaledInt Q r A₀ R u y = 0; · simp only [hm0, zero_mul]
+    have hdeg := (natDegree_mismatchAnnihilatorScaledInt_le u y).trans
+      (card_mismatchSet_le_of_M0ScaledInt_ne_zero hm0)
+    rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega), mul_zero]
 
 /-- Reconstructing a polynomial from `auxReplacementRowCoeffs Q r A₀ R u y` gives
 `auxReplacementRowScaledInt Q r A₀ R u y` unconditionally. -/
@@ -847,9 +835,8 @@ private theorem length_fallingOrbitWeights (m A₀ j : ℕ) :
   unfold fallingOrbitWeights; induction j with
   | zero => simp only [List.range_zero, List.foldl_nil, List.length_cons, List.length_replicate]
   | succ j _ =>
-    rw [List.range_succ]
-    simp only [List.foldl_append, List.foldl_cons, List.foldl_nil, orbitWeightStep,
-      List.length_map, List.length_range]
+    rw [List.range_succ]; simp only [List.foldl_append, List.foldl_cons, List.foldl_nil,
+      orbitWeightStep, List.length_map, List.length_range]
 private theorem natAbs_mem_fallingOrbitWeights_le (m A₀ j : ℕ) :
     ∀ x ∈ fallingOrbitWeights m A₀ j, x.natAbs ≤ (2 * (m + A₀ + j)) ^ j := by
   induction j with
@@ -926,11 +913,9 @@ theorem sum_natAbs_mismatchAnnihilatorCoeffsDigits_le (Q : ℕ) (u y : List ℕ 
         (if y.1.getD k 0 = u.2.getD k 0 then p.map (((k : ℤ) + 1) * ·)
         else mulLinearSub p ((k : ℤ) + 1))).coeffNorm1 ≤
         (2 * (k + 1)) * (Polynomial.ofCoeffList p).coeffNorm1 := by
-      split_ifs
-      · rw [ofCoeffList_map_mul]
-        exact (Polynomial.coeffNorm1_C_mul_le _ _).trans (Nat.mul_le_mul_right _ (by omega))
-      · rw [ofCoeffList_mulLinearSub]
-        exact (Polynomial.coeffNorm1_C_sub_X_mul_le _ _).trans (Nat.mul_le_mul_right _ (by omega))
+      split_ifs <;> [rw [ofCoeffList_map_mul]; rw [ofCoeffList_mulLinearSub]]
+      · exact (Polynomial.coeffNorm1_C_mul_le _ _).trans (Nat.mul_le_mul_right _ (by omega))
+      · exact (Polynomial.coeffNorm1_C_sub_X_mul_le _ _).trans (Nat.mul_le_mul_right _ (by omega))
     exact hstep.trans (calc (2 * (k + 1)) * (Polynomial.ofCoeffList p).coeffNorm1
         ≤ (2 * (k + 1)) * (2 ^ k * k.factorial) := Nat.mul_le_mul_left _ ih
       _ = 2 ^ (k + 1) * (k + 1).factorial := by rw [pow_succ, Nat.factorial_succ]; ring)
@@ -979,7 +964,7 @@ theorem length_encIntBin_mem_auxReplacementRowCoeffs_le {Q r A₀ R : ℕ} {u y 
       (commonDenom Q R).size + Q + R.size + (R - 1) * (2 * (Q + A₀ + R)).size + 5 := by
   rw [length_encIntBin]
   have h2Q : (1 + 2 ^ Q).size ≤ Q + 2 := Nat.size_le.2 (by
-    have hlt : 2 ^ Q < 2 ^ (Q + 1) := Nat.pow_lt_pow_right (by omega) (Nat.lt_succ_self Q)
+    have := Nat.pow_lt_pow_right (by omega : 1 < 2) (Nat.lt_succ_self Q)
     rw [pow_succ _ (Q + 1)]; omega)
   have hX : ((1 + 2 ^ Q) * R * (2 * (Q + A₀ + R)) ^ (R - 1)).size ≤
       Q + R.size + (R - 1) * (2 * (Q + A₀ + R)).size + 3 := by
@@ -987,9 +972,8 @@ theorem length_encIntBin_mem_auxReplacementRowCoeffs_le {Q r A₀ R : ℕ} {u y 
     have := Nat.size_mul_le (1 + 2 ^ Q) R
     have := Nat.size_pow_le (2 * (Q + A₀ + R)) (R - 1); omega
   set X := (1 + 2 ^ Q) * R * (2 * (Q + A₀ + R)) ^ (R - 1)
-  have hle : c.natAbs.size ≤ (commonDenom Q R).size + (1 + X).size :=
-    (Nat.size_le_size (natAbs_mem_auxReplacementRowCoeffsDigits_le hc)).trans
-      (Nat.size_mul_le (commonDenom Q R) (1 + X))
+  have := (Nat.size_le_size (natAbs_mem_auxReplacementRowCoeffsDigits_le hc)).trans
+    (Nat.size_mul_le (commonDenom Q R) (1 + X))
   have := Nat.size_add_le_max 1 X; have : (1 : ℕ).size = 1 := Nat.size_one; omega
 
 /-- **Row-`ℓ₁` coefficient bound (Lemma 4.6, p. 33)**: when `0 < Q` and `∀ a < R - 1, A₀ + a ≤ Q`,
@@ -1008,135 +992,98 @@ section PolyTime
 open ComputableInPolyTime
 
 local notation "CPT" => ComputableInPolyTime
-local notation "encDigits" => encPair (encList encNat) (encList encNat)
-
 variable {α : Type} {input : α ↪ List Bool}
 
-@[local fun_prop] private theorem er_cond {β : Type} {encB : β ↪ List Bool}
-    {c : α → Bool} {yes no : α → β} (hc : CPT c input encBool)
-    (hyes : CPT yes input encB) (hno : CPT no input encB) :
-    CPT (fun a => if c a then yes a else no a) input encB := hc.ite' hyes hno
-@[local fun_prop] private theorem er_ite_decide {β : Type} {encB : β ↪ List Bool}
+private theorem er_ite_decide {β : Type} {encB : β ↪ List Bool}
     {cond : α → Prop} [∀ a, Decidable (cond a)] {yes no : α → β}
     (hc : CPT (fun a => decide (cond a)) input encBool)
     (hyes : CPT yes input encB) (hno : CPT no input encB) :
     CPT (fun a => if cond a then yes a else no a) input encB := by
-  simpa only [decide_eq_true_eq] using er_cond hc hyes hno
-@[local fun_prop] private theorem er_bool_not {x : α → Bool} (hx : CPT x input encBool) :
-    CPT (fun a => !(x a)) input encBool := bool_not.comp hx
-attribute [local fun_prop] ComputableInPolyTime.bool_and' ComputableInPolyTime.unary_range'
-  ComputableInPolyTime.binary_pow'
-@[local fun_prop] private theorem er_decide_ne {β : Type} {encB : β ↪ List Bool}
+  simpa only [decide_eq_true_eq] using hc.ite' hyes hno
+private theorem er_decide_ne {β : Type} {encB : β ↪ List Bool}
     [DecidableEq β] {l r : α → β} (hl : CPT l input encB) (hr : CPT r input encB) :
     CPT (fun a => decide (l a ≠ r a)) input encBool := by
   simpa only [Function.comp_def, _root_.decide_not] using bool_not.comp (hl.decide_eq' hr)
-@[local fun_prop] private theorem er_allWithInput {β : Type} {encB : β ↪ List Bool}
-    {test : α → β → Bool} {list : α → List β} (hl : CPT list input (encList encB))
-    (ht : CPT (fun p : α × β => test p.1 p.2) (encPair input encB) encBool) :
-    CPT (fun a => (list a).all (test a)) input encBool := allWithEncoding ht id' hl
-@[local fun_prop] private theorem er_listReverse {β : Type} {encB : β ↪ List Bool}
-    {l : α → List β} (hl : CPT l input (encList encB)) :
-    CPT (fun a => (l a).reverse) input (encList encB) :=
-  (show CPT List.reverse (encList encB) (encList encB) by fun_prop).comp hl
-@[local fun_prop] private theorem er_listAppend {β : Type} {encB : β ↪ List Bool}
-    {l r : α → List β} (hl : CPT l input (encList encB)) (hr : CPT r input (encList encB)) :
-    CPT (fun a => l a ++ r a) input (encList encB) :=
-  (show CPT (fun p : List β × List β => p.1 ++ p.2)
-    (encPair (encList encB) (encList encB)) (encList encB) by fun_prop).comp (hl.prod hr)
-@[local fun_prop] private theorem er_cons {β : Type} {encB : β ↪ List Bool}
-    {h : α → β} {t : α → List β} (hh : CPT h input encB) (ht : CPT t input (encList encB)) :
-    CPT (fun a => h a :: t a) input (encList encB) :=
-  (show CPT (fun p : β × List β => p.1 :: p.2)
-    (encPair encB (encList encB)) (encList encB) by fun_prop).comp (hh.prod ht)
-@[local fun_prop] private theorem er_replicate {β : Type} {encB : β ↪ List Bool}
-    {count : α → ℕ} {val : α → β} (hc : CPT count input encUnary) (hv : CPT val input encB) :
-    CPT (fun a => List.replicate (count a) (val a)) input (encList encB) := by
-  simpa only [Function.comp_def, List.map_const', List.length_range] using
-    mapWithInput (f := fun a _ => val a) (range.comp hc) (hv.comp (fst input encUnary))
-@[local fun_prop] private theorem er_unary_max {l r : α → ℕ} (hl : CPT l input encUnary)
-    (hr : CPT r input encUnary) : CPT (fun a => max (l a) (r a)) input encUnary :=
-  (show CPT (fun p : ℕ × ℕ => max p.1 p.2) (encPair encUnary encUnary) encUnary by fun_prop).comp
-    (hl.prod hr)
-@[local fun_prop] private theorem er_binary_div {l r : α → ℕ} (hl : CPT l input encNat)
-    (hr : CPT r input encNat) : CPT (fun a => l a / r a) input encNat :=
-  binary_div.comp (hl.prod hr)
-@[local fun_prop] private theorem er_binary_mod {l r : α → ℕ} (hl : CPT l input encNat)
-    (hr : CPT r input encNat) : CPT (fun a => l a % r a) input encNat :=
-  binary_mod.comp (hl.prod hr)
-@[local fun_prop] private theorem er_binary_factorial {n : α → ℕ} (hn : CPT n input encUnary) :
-    CPT (fun a => (n a).factorial) input encNat :=
-  (show CPT Nat.factorial encUnary encNat by fun_prop).comp hn
-@[local fun_prop] private theorem er_intBin_natCast {n : α → ℕ} (hn : CPT n input encNat) :
-    CPT (fun a => (n a : ℤ)) input encIntBin := intBin_natCast.comp hn
-@[local fun_prop] private theorem er_intBin_natCast_unary {n : α → ℕ}
-    (hn : CPT n input encUnary) : CPT (fun a => (n a : ℤ)) input encIntBin :=
-  intBin_natCast.comp (unary_to_binary.comp hn)
-@[local fun_prop] private theorem er_intBin_add {l r : α → ℤ} (hl : CPT l input encIntBin)
+private theorem er_map {β γ : Type} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+    {list : α → List β} {f : α × β → γ} (hlist : CPT list input (encList encB))
+    (hf : CPT f (encPair input encB) encC) :
+    CPT (fun a => (list a).map fun b => f (a, b)) input (encList encC) := by
+  exact mapWithInput (f := fun a b => f (a, b)) hlist hf
+private theorem er_filter {β : Type} {encB : β ↪ List Bool}
+    {list : α → List β} {test : α × β → Bool} (hlist : CPT list input (encList encB))
+    (ht : CPT test (encPair input encB) encBool) :
+    CPT (fun a => (list a).filter fun b => test (a, b)) input (encList encB) := by
+  exact filterWithInput (test := fun a b => test (a, b)) hlist ht
+private theorem er_countP {β : Type} {encB : β ↪ List Bool}
+    {list : α → List β} {test : α × β → Bool} (hlist : CPT list input (encList encB))
+    (ht : CPT test (encPair input encB) encBool) :
+    CPT (fun a => (list a).countP fun b => test (a, b)) input encUnary := by
+  exact countPWithInput (test := fun a b => test (a, b)) hlist ht
+private theorem er_all {β : Type} {encB : β ↪ List Bool}
+    {list : α → List β} {test : α × β → Bool} (hlist : CPT list input (encList encB))
+    (ht : CPT test (encPair input encB) encBool) :
+    CPT (fun a => (list a).all fun b => test (a, b)) input encBool := by
+  exact allWithInput (test := fun a b => test (a, b)) hlist ht
+private theorem er_binary_factorial {n : α → ℕ} (hn : CPT n input encUnary) :
+    CPT (fun a => (n a).factorial) input encNat := by exact binary_factorial.comp' hn
+private theorem er_intBin_natCast {n : α → ℕ} (hn : CPT n input encNat) :
+    CPT (fun a => (n a : ℤ)) input encIntBin := by exact intBin_natCast.comp' hn
+private theorem er_intBin_natCast_unary {n : α → ℕ} (hn : CPT n input encUnary) :
+    CPT (fun a => (n a : ℤ)) input encIntBin :=
+  intBin_natCast.comp' (unary_to_binary.comp' hn)
+private theorem er_intBin_add {l r : α → ℤ} (hl : CPT l input encIntBin)
     (hr : CPT r input encIntBin) : CPT (fun a => l a + r a) input encIntBin :=
-  (show CPT (fun p : ℤ × ℤ => p.1 + p.2) (encPair encIntBin encIntBin) encIntBin by fun_prop).comp
-    (hl.prod hr)
-@[local fun_prop] private theorem er_intBin_sub {l r : α → ℤ} (hl : CPT l input encIntBin)
-    (hr : CPT r input encIntBin) : CPT (fun a => l a - r a) input encIntBin :=
-  intBin_sub.comp (hl.prod hr)
-@[local fun_prop] private theorem er_intBin_neg {x : α → ℤ} (hx : CPT x input encIntBin) :
-    CPT (fun a => -x a) input encIntBin :=
-  (show CPT (fun z : ℤ => -z) encIntBin encIntBin by fun_prop).comp hx
-@[local fun_prop] private theorem er_intBin_pow {b : α → ℤ} {e : α → ℕ}
-    (hb : CPT b input encIntBin) (he : CPT e input encUnary) :
-    CPT (fun a => b a ^ e a) input encIntBin :=
-  (show CPT (fun p : ℤ × ℕ => p.1 ^ p.2) (encPair encIntBin encUnary) encIntBin by fun_prop).comp
-    (hb.prod he)
-@[local fun_prop] private theorem er_intBin_sum {l : α → List ℤ}
-    (hl : CPT l input (encList encIntBin)) : CPT (fun a => (l a).sum) input encIntBin :=
-  (show CPT List.sum (encList encIntBin) encIntBin by fun_prop).comp hl
-@[local fun_prop] private theorem er_intBin_prod {l : α → List ℤ}
-    (hl : CPT l input (encList encIntBin)) : CPT (fun a => (l a).prod) input encIntBin :=
-  (show CPT List.prod (encList encIntBin) encIntBin by fun_prop).comp hl
-@[local fun_prop] private theorem er_length_listIntBin {l : α → List ℤ}
-    (hl : CPT l input (encList encIntBin)) : CPT (fun a => (l a).length) input encUnary :=
-  (length_list encIntBin).comp hl
-@[local fun_prop] private theorem er_radixDigit {r idx s : α → ℕ} (hr : CPT r input encNat)
+  (of_tidy .intBin_add).comp' (hl.prod hr)
+private theorem er_intBin_sub {l r : α → ℤ} (hl : CPT l input encIntBin)
+    (hr : CPT r input encIntBin) : CPT (fun a => l a - r a) input encIntBin := by
+  exact intBin_sub.comp' (hl.prod hr)
+private theorem er_radixDigit {r idx s : α → ℕ} (hr : CPT r input encNat)
     (hidx : CPT idx input encNat) (hs : CPT s input encUnary) :
     CPT (fun a => Cslib.Radix.digit (r a) (idx a) (s a)) input encNat := by
-  simp_rw [Cslib.Radix.digit_eq_div_pow_mod]; fun_prop
-@[local fun_prop] private theorem er_min_D_cap {D_cap Q r : α → ℕ}
+  simpa only [Cslib.Radix.digit_eq_div_pow_mod] using
+    binary_mod.comp' ((binary_div.comp' (hidx.prod (binary_pow' hr hs))).prod hr)
+private theorem er_min_D_cap {D_cap Q r : α → ℕ}
     (hD : CPT D_cap input encUnary) (hQ : CPT Q input encUnary) (hr : CPT r input encUnary) :
     CPT (fun a => min (D_cap a) (r a ^ (2 * Q a))) input encUnary := by
-  have hr_bin : CPT r input encNat := unary_to_binary.comp hr
-  have hpow : CPT (fun a => r a ^ (2 * Q a)) input encNat := by fun_prop
-  exact binary_min_unary' hD hpow
+  exact binary_min_unary' hD (binary_pow' (unary_to_binary.comp' hr) (unary_mul' (.const 2) hQ))
 
-@[local fun_prop] private theorem er_decodeAuxDigits {Q r idx : α → ℕ}
-    (hQ : CPT Q input encUnary) (hr : CPT r input encNat) (hidx : CPT idx input encNat) :
-    CPT (fun a => decodeAuxDigits (Q a) (r a) (idx a)) input encDigits := by
-  unfold decodeAuxDigits; fun_prop
-@[local fun_prop] private theorem er_decodeAuxDigits_unary {Q r idx : α → ℕ}
-    (hQ : CPT Q input encUnary) (hr : CPT r input encUnary) (hidx : CPT idx input encUnary) :
-    CPT (fun a => decodeAuxDigits (Q a) (r a) (idx a)) input encDigits :=
-  er_decodeAuxDigits hQ (unary_to_binary.comp hr) (unary_to_binary.comp hidx)
-@[local fun_prop] private theorem er_eigenvecDigits {Q : α → ℕ} {β u : α → List ℕ × List ℕ}
-    (hQ : CPT Q input encUnary) (hβ : CPT β input encDigits) (hu : CPT u input encDigits) :
-    CPT (fun a => eigenvecDigits (Q a) (β a) (u a)) input encIntBin := by
-  unfold eigenvecDigits pairBasisNat; fun_prop
-@[local fun_prop] private theorem er_antisymCountDigits {Q : α → ℕ} {β : α → List ℕ × List ℕ}
-    (hQ : CPT Q input encUnary) (hβ : CPT β input encDigits) :
-    CPT (fun a => antisymCountDigits (Q a) (β a)) input encUnary := by
-  unfold antisymCountDigits; fun_prop
+/-- Pairs `(u₁, u₂)` of base-`r` digit lists of an auxiliary label, with digits in binary: the
+framed list `u₁`, then the list `u₂`, each the concatenation of its framed digits, each encoded by
+`encNat`. -/
+abbrev encAuxDigits : List ℕ × List ℕ ↪ List Bool :=
+  encPair (encList encNat) (encList encNat)
 
 /-- `decodeAuxDigits` is computable in polynomial time from unary `Q` and binary `(r, idx)`. -/
 @[fun_prop] theorem computableInPolyTime_decodeAuxDigits {Q r idx : α → ℕ}
     (hQ : ComputableInPolyTime Q input encUnary) (hr : ComputableInPolyTime r input encNat)
     (hidx : ComputableInPolyTime idx input encNat) :
     ComputableInPolyTime (fun a => decodeAuxDigits (Q a) (r a) (idx a))
-      input (encPair (encList encNat) (encList encNat)) :=
-  er_decodeAuxDigits hQ hr hidx
+      input encAuxDigits := by
+  have hp1 := fst input encUnary; have hp2 := snd input encUnary
+  have hr1 := hr.comp' hp1; have hidx1 := hidx.comp' hp1
+  exact (er_map (unary_range' hQ) (er_radixDigit hr1 hidx1 hp2)).prod
+    (er_map (unary_range' hQ) (er_radixDigit hr1 hidx1 (unary_add' (hQ.comp' hp1) hp2)))
+private theorem er_decodeAuxDigits_unary {Q r idx : α → ℕ}
+    (hQ : CPT Q input encUnary) (hr : CPT r input encUnary) (hidx : CPT idx input encUnary) :
+    CPT (fun a => decodeAuxDigits (Q a) (r a) (idx a)) input encAuxDigits := by
+  exact computableInPolyTime_decodeAuxDigits hQ (unary_to_binary.comp' hr)
+    (unary_to_binary.comp' hidx)
+private theorem er_pairBasisNat {a d x y : α → ℕ} (ha : CPT a input encNat)
+    (hd : CPT d input encNat) (hx : CPT x input encNat) (hy : CPT y input encNat) :
+    CPT (fun i => pairBasisNat (a i) (d i) (x i) (y i)) input encIntBin := by
+  have h1 : CPT _ input encIntBin := .const 1; have h0 : CPT _ input encIntBin := .const 0
+  have had := er_ite_decide (decide_and (hx.decide_eq' ha) (hy.decide_eq' hd)) h1 h0
+  have hda := er_ite_decide (decide_and (hx.decide_eq' hd) (hy.decide_eq' ha)) h1 h0
+  exact er_ite_decide (ha.decide_eq' hd)
+    (er_ite_decide (decide_and (hx.decide_eq' ha) (hy.decide_eq' ha)) h1 h0)
+    (er_ite_decide (binary_lt' ha hd) (er_intBin_add had hda) (er_intBin_sub hda had))
 
 /-- `encodeAuxDigits` is computable in polynomial time from binary `r` and digit lists `u`. -/
 @[fun_prop] theorem computableInPolyTime_encodeAuxDigits {r : α → ℕ} {u : α → List ℕ × List ℕ}
     (hr : ComputableInPolyTime r input encNat)
-    (hu : ComputableInPolyTime u input (encPair (encList encNat) (encList encNat))) :
+    (hu : ComputableInPolyTime u input encAuxDigits) :
     ComputableInPolyTime (fun a => encodeAuxDigits (r a) (u a)) input encNat := by
-  have hlist : CPT (fun a => ((u a).1 ++ (u a).2).reverse) input (encList encNat) := by fun_prop
+  have hlist := (of_tidy (.listReverse encNat)).comp' (hu.fst'.listAppend' hu.snd')
   have hstep : CPT (fun q : (ℕ × ℕ) × ℕ => q.2 + q.1.1 * q.1.2)
       (encPair (encPair encNat encNat) encNat) encNat :=
     binary_add.comp ((snd _ _).prod
@@ -1150,7 +1097,7 @@ attribute [local fun_prop] ComputableInPolyTime.bool_and' ComputableInPolyTime.u
     ((hlist.polyBounded_length.add hr.polyBounded_length).add (.const 1)) (fun a acc d hd => by
       have hd_len := SizedListEncoding.length_elem_le (encA := encNat) (encL := encList encNat)
         ((u a).1 ++ (u a).2).reverse d hd
-      have hadd := Nat.size_add_le_max d (r a * acc); have hmul := Nat.size_mul_le (r a) acc
+      have := Nat.size_add_le_max d (r a * acc); have := Nat.size_mul_le (r a) acc
       simp only [encNat_apply, Nat.size_eq_bits_len] at hd_len ⊢; omega)
   simpa only [encodeAuxDigits, List.foldl_reverse, Nat.ofDigits_eq_foldr, Nat.cast_id] using hfold
 
@@ -1158,13 +1105,13 @@ attribute [local fun_prop] ComputableInPolyTime.bool_and' ComputableInPolyTime.u
 @[fun_prop] theorem computableInPolyTime_commonDenom {Q R : α → ℕ}
     (hQ : ComputableInPolyTime Q input encUnary) (hR : ComputableInPolyTime R input encUnary) :
     ComputableInPolyTime (fun a => commonDenom (Q a) (R a)) input encNat := by
-  unfold commonDenom; fun_prop
+  exact binary_mul' (er_binary_factorial (unary_sub' hR (.const 1))) (er_binary_factorial hQ)
 
 /-- `(commonDenom Q R : ℤ)` is computable in polynomial time in `encIntBin` from unary `(Q, R)`. -/
 theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
     (hQ : ComputableInPolyTime Q input encUnary) (hR : ComputableInPolyTime R input encUnary) :
-    ComputableInPolyTime (fun a => (commonDenom (Q a) (R a) : ℤ)) input encIntBin :=
-  intBin_natCast.comp (computableInPolyTime_commonDenom hQ hR)
+    ComputableInPolyTime (fun a => (commonDenom (Q a) (R a) : ℤ)) input encIntBin := by
+  exact intBin_natCast.comp (computableInPolyTime_commonDenom hQ hR)
 
 /-- `auxMeasurementRowsBounded` (`C^B`) is computable in polynomial time from unary
 `(D_cap, Q, r, A₀, R)`. -/
@@ -1174,126 +1121,167 @@ theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
     (hR : ComputableInPolyTime R input encUnary) :
     ComputableInPolyTime (fun a => auxMeasurementRowsBounded (D_cap a) (Q a) (r a) (A₀ a) (R a))
       input (encList (encList encIntBin)) := by
-  unfold auxMeasurementRowsBounded auxMeasurementIndicesBounded; dsimp only; fun_prop
-
-@[local fun_prop] private theorem er_orbitWeightStep {m : α → ℕ} {c : α → ℤ} {f : α → List ℤ}
-    (hm : CPT m input encUnary) (hc : CPT c input encIntBin)
-    (hf : CPT f input (encList encIntBin)) :
-    CPT (fun a => orbitWeightStep (m a) (c a) (f a)) input (encList encIntBin) := by
-  unfold orbitWeightStep; fun_prop
-
-@[local fun_prop] private theorem er_fallingOrbitWeights {m A₀ j : α → ℕ}
+  have hDlen := er_min_D_cap hD hQ hr
+  have hp1 := fst input encUnary; have hp2 := snd input encUnary
+  have hQ1 := hQ.comp' hp1; have hr1 := hr.comp' hp1
+  have hβ := er_decodeAuxDigits_unary hQ1 hr1 hp2
+  have hs1 := fst (encPair input encUnary) encUnary
+  have hs2 := snd (encPair input encUnary) encUnary
+  have hj := er_countP (unary_range' hQ1)
+    (binary_lt' (listGetDWithInput (hβ.comp' hs1).snd' hs2 0)
+      (listGetDWithInput (hβ.comp' hs1).fst' hs2 0))
+  have hidx := er_filter (unary_range' hDlen)
+    (bool_not.comp' ((unary_le' (hA₀.comp' hp1) hj).bool_and'
+      (unary_lt' hj (unary_add' (hA₀.comp' hp1) (hR.comp' hp1)))))
+  have hQ2 := hQ1.comp' hs1; have hr2 := hr1.comp' hs1
+  have ht1 := fst (encPair (encPair input encUnary) encUnary) encUnary
+  have ht2 := snd (encPair (encPair input encUnary) encUnary) encUnary
+  have hβ2 := (er_decodeAuxDigits_unary hQ2 hr2 (hp2.comp' hs1)).comp' ht1
+  have hu2 := (er_decodeAuxDigits_unary hQ2 hr2 hs2).comp' ht1
+  exact er_map hidx (er_map (unary_range' (hDlen.comp' hp1))
+    ((of_tidy .intBin_prod).comp' (er_map (unary_range' hQ2)
+      (er_pairBasisNat (listGetDWithInput hβ2.fst' ht2 0) (listGetDWithInput hβ2.snd' ht2 0)
+        (listGetDWithInput hu2.fst' ht2 0) (listGetDWithInput hu2.snd' ht2 0)))))
+private theorem er_fallingOrbitWeights {m A₀ j : α → ℕ}
     (hm : CPT m input encUnary) (hA₀ : CPT A₀ input encUnary) (hj : CPT j input encUnary) :
     CPT (fun a => fallingOrbitWeights (m a) (A₀ a) (j a)) input (encList encIntBin) := by
   let stepFn : (ℕ × ℕ) → List ℤ → ℕ → List ℤ := fun par f a =>
     orbitWeightStep par.1 (2 * ((par.2 : ℤ) + (a : ℤ))) f
+  let encS := encPair (encPair encUnary encUnary) (encList encIntBin)
+  have hq1 := fst encS encUnary; have hq2 := snd encS encUnary
+  have hm0 := hq1.fst'.fst'; have hf0 := hq1.snd'
+  have hc0 := intBin_mul' (.const 2)
+    (er_intBin_add (er_intBin_natCast_unary hq1.fst'.snd') (er_intBin_natCast_unary hq2))
+  have hp1 := fst (encPair encS encUnary) encUnary; have hp2 := snd (encPair encS encUnary) encUnary
+  have hm1 := hm0.comp' hp1; have hf1 := hf0.comp' hp1
   have hstep : CPT (fun q : ((ℕ × ℕ) × List ℤ) × ℕ => stepFn q.1.1 q.1.2 q.2)
-      (encPair (encPair (encPair encUnary encUnary) (encList encIntBin)) encUnary)
-      (encList encIntBin) := by dsimp only [stepFn]; fun_prop
+      (encPair encS encUnary) (encList encIntBin) :=
+    er_map (unary_range' (unary_add' hm0 (.const 1)))
+      (er_intBin_sub (er_intBin_sub
+          (intBin_mul' (er_intBin_sub (er_intBin_natCast_unary hm1) (hc0.comp' hp1))
+            (listGetDWithInput hf1 hp2 0))
+          (er_ite_decide (unary_lt' (.const 0) hp2) (intBin_mul' (er_intBin_natCast_unary hp2)
+              (listGetDWithInput hf1 (unary_sub' hp2 (.const 1)) 0)) (.const 0)))
+        (er_ite_decide (unary_lt' hp2 hm1)
+          (intBin_mul' (er_intBin_natCast_unary (unary_sub' hm1 hp2))
+            (listGetDWithInput hf1 (unary_add' hp2 (.const 1)) 0)) (.const 0)))
   have pm := hm.polyBounded; have pA := hA₀.polyBounded; have pj := hj.polyBounded
   have hB : PolyBounded (fun a => (input a).length)
       (fun a => (m a + 1) * (2 * (j a * (2 * (m a + A₀ a + j a)) + 2) + 1)) :=
     (pm.add (.const 1)).mul (((PolyBounded.const 2).mul
       ((pj.mul ((PolyBounded.const 2).mul ((pm.add pA).add pj))).add (.const 2))).add (.const 1))
+  have hrep : CPT (fun a => List.replicate (m a) (0 : ℤ)) input (encList encIntBin) := by
+    simpa only [Function.comp_def, List.map_const', List.length_range] using
+      er_map (unary_range' hm) (.const (0 : ℤ))
   exact foldlWith (encP := encPair encUnary encUnary) (encA := encUnary)
     (encL := encList encUnary) (encB := encList encIntBin) (par := fun a => (m a, A₀ a))
     (list := fun a => List.range (j a)) (init := fun a => (1 : ℤ) :: List.replicate (m a) 0)
-    (step := stepFn) (hm.prod hA₀) (unary_range' hj)
-    (er_cons (.const 1) (er_replicate hm (.const 0))) hstep hB fun a i _ => by
+    (step := stepFn) (hm.prod hA₀) (unary_range' hj) ((const 1).cons' hrep) hstep hB fun a i _ => by
       rw [List.take_range]
       change (encList encIntBin (fallingOrbitWeights (m a) (A₀ a) (min i (j a)))).length ≤ _
       set k := min i (j a); have hk : k ≤ j a := Nat.min_le_right i (j a)
       refine Nat.le_trans (length_encList_le encIntBin (fallingOrbitWeights (m a) (A₀ a) k)
-        (b := j a * (2 * (m a + A₀ a + j a)) + 2) ?_) ?_
-      · intro z hz; rw [length_encIntBin]
-        have hsz := (Nat.size_le_size (natAbs_mem_fallingOrbitWeights_le (m a) (A₀ a) k z hz)).trans
-          (Nat.size_pow_le (2 * (m a + A₀ a + k)) k)
-        have hmon : k * (2 * (m a + A₀ a + k)).size ≤ j a * (2 * (m a + A₀ a + j a)) :=
-          Nat.mul_le_mul hk ((Nat.size_le_self _).trans (by omega))
-        omega
-      · rw [length_fallingOrbitWeights]
-
-@[local fun_prop] private theorem er_isSwapOrbitDigits {Q : α → ℕ} {u y : α → List ℕ × List ℕ}
-    (hQ : CPT Q input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
-    CPT (fun a => isSwapOrbitDigits (Q a) (u a) (y a)) input encBool := by
-  unfold isSwapOrbitDigits; fun_prop
-@[local fun_prop] private theorem er_offDiagCountDigits {Q : α → ℕ} {u : α → List ℕ × List ℕ}
-    (hQ : CPT Q input encUnary) (hu : CPT u input encDigits) :
-    CPT (fun a => offDiagCountDigits (Q a) (u a)) input encUnary := by
-  unfold offDiagCountDigits; fun_prop
-@[local fun_prop] private theorem er_mismatchCountDigits {Q : α → ℕ} {u y : α → List ℕ × List ℕ}
-    (hQ : CPT Q input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
-    CPT (fun a => mismatchCountDigits (Q a) (u a) (y a)) input encUnary := by
-  unfold mismatchCountDigits; fun_prop
-@[local fun_prop] private theorem er_eqAuxDigits {Q : α → ℕ} {u y : α → List ℕ × List ℕ}
-    (hQ : CPT Q input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
-    CPT (fun a => eqAuxDigits (Q a) (u a) (y a)) input encBool := by
-  unfold eqAuxDigits; fun_prop
-@[local fun_prop] private theorem er_m0ScaledIntDigits {Q A₀ R : α → ℕ}
+        (b := j a * (2 * (m a + A₀ a + j a)) + 2) ?_) (by rw [length_fallingOrbitWeights])
+      intro z hz; rw [length_encIntBin]
+      have := (Nat.size_le_size (natAbs_mem_fallingOrbitWeights_le (m a) (A₀ a) k z hz)).trans
+        (Nat.size_pow_le (2 * (m a + A₀ a + k)) k)
+      have : k * (2 * (m a + A₀ a + k)).size ≤ j a * (2 * (m a + A₀ a + j a)) :=
+        Nat.mul_le_mul hk ((Nat.size_le_self _).trans (by omega))
+      omega
+private theorem er_m0ScaledIntDigits {Q A₀ R : α → ℕ}
     {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hA₀ : CPT A₀ input encUnary)
-    (hR : CPT R input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
+    (hR : CPT R input encUnary) (hu : CPT u input encAuxDigits) (hy : CPT y input encAuxDigits) :
     CPT (fun a => m0ScaledIntDigits (Q a) (A₀ a) (R a) (u a) (y a)) input encIntBin := by
-  unfold m0ScaledIntDigits; dsimp only; fun_prop
-
-@[local fun_prop] private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
-    {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hu : CPT u input encDigits)
-    (hy : CPT y input encDigits) :
+  have hp1 := fst input encUnary; have hp2 := snd input encUnary
+  have hu1 := hu.comp' hp1; have hy1 := hy.comp' hp1
+  have hu1s := listGetDWithInput hu1.fst' hp2 0; have hu2s := listGetDWithInput hu1.snd' hp2 0
+  have hy1s := listGetDWithInput hy1.fst' hp2 0; have hy2s := listGetDWithInput hy1.snd' hp2 0
+  have horb := er_all (unary_range' hQ)
+    (decide_or (decide_and (hy1s.decide_eq' hu2s) (hy2s.decide_eq' hu1s))
+      (decide_and (hy1s.decide_eq' hu1s) (hy2s.decide_eq' hu2s)))
+  have hm := er_countP (unary_range' hQ) (er_decide_ne hu2s hu1s)
+  have hd := er_countP (unary_range' hQ) (er_decide_ne hy1s hu2s)
+  have hfacR := er_binary_factorial (unary_sub' hR (.const 1))
+  exact horb.ite'
+    ((of_tidy .intBin_sum).comp' (er_map (unary_range' hR)
+      (intBin_mul' (intBin_mul'
+          (er_intBin_natCast (binary_div.comp' ((hfacR.comp' hp1).prod (er_binary_factorial hp2))))
+          ((of_tidy .intBin_pow).comp'
+            ((const (-1 : ℤ)).prod (unary_add' (hA₀.comp' hp1) hp2))))
+        (listGetDWithInput (er_fallingOrbitWeights (hm.comp' hp1) (hA₀.comp' hp1) hp2)
+          (hd.comp' hp1) 0)))) (.const 0)
+private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
+    {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hu : CPT u input encAuxDigits)
+    (hy : CPT y input encAuxDigits) :
     CPT (fun a => mismatchAnnihilatorCoeffsDigits (Q a) (u a) (y a))
       input (encList encIntBin) := by
   unfold mismatchAnnihilatorCoeffsDigits
   let stepFn : ((List ℕ × List ℕ) × (List ℕ × List ℕ)) → List ℤ → ℕ → List ℤ := fun par p s =>
     if par.2.1.getD s 0 = par.1.2.getD s 0 then p.map (((s : ℤ) + 1) * ·)
     else mulLinearSub p ((s : ℤ) + 1)
+  let encS := encPair (encPair encAuxDigits encAuxDigits) (encList encIntBin)
+  have hq1 := fst encS encUnary; have hq2 := snd encS encUnary
+  have hp := hq1.snd'; have ht := er_intBin_add (er_intBin_natCast_unary hq2) (.const 1)
+  have hm1 := fst (encPair encS encUnary) encIntBin
+  have hm2 := snd (encPair encS encUnary) encIntBin
+  have hk1 := fst (encPair encS encUnary) encUnary; have hk2 := snd (encPair encS encUnary) encUnary
   have hstep : CPT
       (fun q : (((List ℕ × List ℕ) × (List ℕ × List ℕ)) × List ℤ) × ℕ => stepFn q.1.1 q.1.2 q.2)
-      (encPair (encPair (encPair encDigits encDigits) (encList encIntBin)) encUnary)
-      (encList encIntBin) := by dsimp only [stepFn]; unfold mulLinearSub; fun_prop
+      (encPair encS encUnary) (encList encIntBin) :=
+    er_ite_decide
+      ((listGetDWithInput hq1.fst'.snd'.fst' hq2 0).decide_eq'
+        (listGetDWithInput hq1.fst'.fst'.snd' hq2 0))
+      (er_map hp (intBin_mul' (ht.comp' hm1) hm2))
+      (er_map (unary_range' (unary_add' ((length_list encIntBin).comp' hp) (.const 1)))
+        (er_intBin_sub (intBin_mul' (ht.comp' hk1) (listGetDWithInput (hp.comp' hk1) hk2 0))
+          (er_ite_decide (unary_lt' (.const 0) hk2)
+            (listGetDWithInput (hp.comp' hk1) (unary_sub' hk2 (.const 1)) 0) (.const 0))))
   have pQ := hQ.polyBounded
   have hB : PolyBounded (fun a => (input a).length)
       (fun a => (Q a + 1) * (2 * (Q a * Q a + Q a + 3) + 1)) :=
     (pQ.add (.const 1)).mul
       (((PolyBounded.const 2).mul (((pQ.mul pQ).add pQ).add (.const 3))).add (.const 1))
-  refine foldlWith (encP := encPair encDigits encDigits) (encA := encUnary)
+  refine foldlWith (encP := encPair encAuxDigits encAuxDigits) (encA := encUnary)
     (encL := encList encUnary) (encB := encList encIntBin) (step := stepFn) (hu.prod hy)
-    (range.comp hQ) (init := fun _ => [1]) (const [1]) hstep hB ?_
-  intro a i _; rw [List.take_range]
-  have hfold_eq : (List.range (min i (Q a))).foldl (stepFn (u a, y a)) [1] =
-      mismatchAnnihilatorCoeffsDigits (min i (Q a)) (u a) (y a) := rfl
-  rw [hfold_eq]; set k := min i (Q a); have hk : k ≤ Q a := Nat.min_le_right i (Q a)
-  refine (length_encList_le encIntBin _ (b := Q a * Q a + Q a + 3) ?_).trans ?_
-  · intro z hz; rw [length_encIntBin]; obtain ⟨j, _, rfl⟩ := List.getElem_of_mem hz
-    have hj_eq : (mismatchAnnihilatorCoeffsDigits k (u a) (y a))[j] =
-        (Polynomial.ofCoeffList (mismatchAnnihilatorCoeffsDigits k (u a) (y a))).coeff j := by
-      rw [coeff_ofCoeffList, List.getD_eq_getElem]
-    have hle : (mismatchAnnihilatorCoeffsDigits k (u a) (y a))[j].natAbs ≤ 2 ^ k * k.factorial := by
-      rw [hj_eq]; exact (Polynomial.natAbs_coeff_le_coeffNorm1 _ j).trans
-        ((Polynomial.coeffNorm1_ofCoeffList _).le.trans
-          (sum_natAbs_mismatchAnnihilatorCoeffsDigits_le k (u a) (y a)))
-    have hsz := (Nat.size_le_size hle).trans (Nat.size_mul_le (2 ^ k) k.factorial)
-    have h2k : (2 ^ k).size ≤ k + 1 :=
-      Nat.size_le.2 (Nat.pow_lt_pow_right (by omega) (Nat.lt_succ_self k))
-    have hfac := Nat.size_factorial_le k
-    have hkk : k * k.size ≤ Q a * Q a := Nat.mul_le_mul hk ((Nat.size_le_self k).trans hk)
-    omega
-  · exact Nat.mul_le_mul_right _
-      ((length_mismatchAnnihilatorCoeffsDigits_le k _ _).trans (by omega))
-@[local fun_prop] private theorem er_auxReplacementRowCoeffsDigits {Q A₀ R : α → ℕ}
-    {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hA₀ : CPT A₀ input encUnary)
-    (hR : CPT R input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
-    CPT (fun a => auxReplacementRowCoeffsDigits (Q a) (A₀ a) (R a) (u a) (y a))
-      input (encList encIntBin) := by
-  unfold auxReplacementRowCoeffsDigits; dsimp only; fun_prop
+    (range.comp hQ) (init := fun _ => [1]) (const [1]) hstep hB fun a i _ => ?_
+  rw [List.take_range]
+  change (encList encIntBin (mismatchAnnihilatorCoeffsDigits (min i (Q a)) (u a) (y a))).length ≤ _
+  set k := min i (Q a); have hk : k ≤ Q a := Nat.min_le_right i (Q a)
+  refine (length_encList_le encIntBin _ (b := Q a * Q a + Q a + 3) ?_).trans
+    (Nat.mul_le_mul_right _ ((length_mismatchAnnihilatorCoeffsDigits_le k _ _).trans (by omega)))
+  intro z hz; rw [length_encIntBin]; obtain ⟨j, _, rfl⟩ := List.getElem_of_mem hz
+  have hle : (mismatchAnnihilatorCoeffsDigits k (u a) (y a))[j].natAbs ≤ 2 ^ k * k.factorial := by
+    rw [← List.getD_eq_getElem _ 0, ← coeff_ofCoeffList]
+    exact (Polynomial.natAbs_coeff_le_coeffNorm1 _ j).trans
+      ((Polynomial.coeffNorm1_ofCoeffList _).le.trans
+        (sum_natAbs_mismatchAnnihilatorCoeffsDigits_le k (u a) (y a)))
+  have := (Nat.size_le_size hle).trans (Nat.size_mul_le (2 ^ k) k.factorial)
+  have : (2 ^ k).size ≤ k + 1 :=
+    Nat.size_le.2 (Nat.pow_lt_pow_right (by omega) (Nat.lt_succ_self k))
+  have := Nat.size_factorial_le k; have := Nat.mul_le_mul hk ((Nat.size_le_self k).trans hk); omega
 
 /-- `auxReplacementRowCoeffsDigits` (`d_den · P⃗_u(T)_y`) is computable in polynomial time per
 `(u, y)` pair from unary `(Q, A₀, R)` and digit lists `u, y`. -/
 @[fun_prop] theorem computableInPolyTime_auxReplacementRowCoeffsDigits {Q A₀ R : α → ℕ}
     {u y : α → List ℕ × List ℕ} (hQ : ComputableInPolyTime Q input encUnary)
     (hA₀ : ComputableInPolyTime A₀ input encUnary) (hR : ComputableInPolyTime R input encUnary)
-    (hu : ComputableInPolyTime u input (encPair (encList encNat) (encList encNat)))
-    (hy : ComputableInPolyTime y input (encPair (encList encNat) (encList encNat))) :
+    (hu : ComputableInPolyTime u input encAuxDigits)
+    (hy : ComputableInPolyTime y input encAuxDigits) :
     ComputableInPolyTime (fun a => auxReplacementRowCoeffsDigits (Q a) (A₀ a) (R a) (u a) (y a))
-      input (encList encIntBin) :=
-  er_auxReplacementRowCoeffsDigits hQ hA₀ hR hu hy
+      input (encList encIntBin) := by
+  have hp1 := fst input encUnary; have hp2 := snd input encUnary
+  have hu1 := hu.comp' hp1; have hy1 := hy.comp' hp1
+  have heq := er_all (unary_range' hQ) (decide_and
+    ((listGetDWithInput hu1.fst' hp2 0).decide_eq' (listGetDWithInput hy1.fst' hp2 0))
+    ((listGetDWithInput hu1.snd' hp2 0).decide_eq' (listGetDWithInput hy1.snd' hp2 0)))
+  have hm0 := er_m0ScaledIntDigits hQ hA₀ hR hu hy
+  have hphi := er_mismatchAnnihilatorCoeffsDigits hQ hu hy
+  have hc0 := intBin_mul' (er_intBin_natCast (er_binary_factorial hQ))
+    (er_intBin_sub (heq.ite'
+      (er_intBin_natCast (er_binary_factorial (unary_sub' hR (.const 1)))) (.const 0)) hm0)
+  exact er_map (unary_range' ((of_tidy .unary_max).comp' (hR.prod (.const 1))))
+    (er_intBin_add (er_ite_decide (hp2.decide_eq' (.const 0)) (hc0.comp' hp1) (.const 0))
+      (intBin_mul' (hm0.comp' hp1) (listGetDWithInput (hphi.comp' hp1) hp2 0)))
 
 /-- `auxReplacementRowCoeffsIdx` is computable in polynomial time per `(u_idx, y_idx)` pair from
 unary `(Q, A₀, R)` and binary `(r, u_idx, y_idx)`. -/
@@ -1303,8 +1291,8 @@ unary `(Q, A₀, R)` and binary `(r, u_idx, y_idx)`. -/
     (hu : ComputableInPolyTime u_idx input encNat) (hy : ComputableInPolyTime y_idx input encNat) :
     ComputableInPolyTime
       (fun a => auxReplacementRowCoeffsIdx (Q a) (r a) (A₀ a) (R a) (u_idx a) (y_idx a))
-      input (encList encIntBin) :=
-  computableInPolyTime_auxReplacementRowCoeffsDigits hQ hA₀ hR
+      input (encList encIntBin) := by
+  exact computableInPolyTime_auxReplacementRowCoeffsDigits hQ hA₀ hR
     (computableInPolyTime_decodeAuxDigits hQ hr hu)
     (computableInPolyTime_decodeAuxDigits hQ hr hy)
 
@@ -1317,7 +1305,14 @@ is computable in polynomial time from unary `(D_cap, Q, r, A₀, R)` (Lemma 4.7,
     (hR : ComputableInPolyTime R input encUnary) :
     ComputableInPolyTime (fun a => auxReplacementTableBounded (D_cap a) (Q a) (r a) (A₀ a) (R a))
       input (encList (encList (encList encIntBin))) := by
-  unfold auxReplacementTableBounded auxReplacementRowCoeffsIdx; dsimp only; fun_prop
+  have hDlen := er_min_D_cap hD hQ hr
+  have hp1 := fst input encUnary; have hp2 := snd input encUnary
+  have hq1 := fst (encPair input encUnary) encUnary
+  have hq2 := snd (encPair input encUnary) encUnary
+  have ha := hp1.comp' hq1; have hr_bin := unary_to_binary.comp' (hr.comp' ha)
+  exact er_map (unary_range' hDlen) (er_map (unary_range' (hDlen.comp' hp1))
+    (computableInPolyTime_auxReplacementRowCoeffsIdx (hQ.comp' ha) hr_bin (hA₀.comp' ha)
+      (hR.comp' ha) (unary_to_binary.comp' (hp2.comp' hq1)) (unary_to_binary.comp' hq2)))
 
 end PolyTime
 end Cslib.LinearAlgebra

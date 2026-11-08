@@ -76,6 +76,148 @@ example : GlueComputable .exact (fun v => if v 0 = v 1 then 0 else 7 / v 0)
     (fun v : Fin 2 → ℕ => v 0 ≤ 100 ∧ v 1 = 0) (fun _ => 100) := by
   fun_prop (disch := intro v hv; have := Nat.div_le_self 7 (v 0); omega)
 
+/-- Direct input-register guards stage nothing, so the compared inputs need not fit the result
+envelope: here the inputs are unbounded although every result fits in `1`. Staging `v 0` and
+`v 1` would require `v 0 ≤ 1` and `v 1 ≤ 1`, which fail at inputs such as `![2, 3]`. -/
+theorem ite_lt_direct_unbounded : GlueComputable .exact
+    (fun v : Fin 2 → ℕ => if v 0 < v 1 then 0 else 1) (fun _ => True) (fun _ => 1) := by
+  fun_prop (disch := intros; omega)
+
+/-- The equality analogue of `ite_lt_direct_unbounded`. -/
+theorem ite_eq_direct_unbounded : GlueComputable .exact
+    (fun v : Fin 2 → ℕ => if v 0 = v 1 then 0 else 1) (fun _ => True) (fun _ => 1) := by
+  fun_prop (disch := intros; omega)
+
+-- Staged computed comparison operands: comparing against a constant or arithmetic subterm needs no
+-- auxiliary input register or manual `comp_many` staging.
+example : GlueComputable .exact (fun v => if v 0 = 0 then 0 else 7 / v 0)
+    (fun v : Fin 1 → ℕ => v 0 ≤ 100) (fun _ => 100) := by
+  fun_prop (disch := intro v hv; have := Nat.div_le_self 7 (v 0); omega)
+
+example : GlueComputable .exact
+    (fun v => if v 0 + 1 < v 1 then v 1 - (v 0 + 1) else (v 0 + 1) - v 1)
+    (fun v : Fin 2 → ℕ => v 0 + 1 ≤ 100 ∧ v 1 ≤ 100) (fun _ => 100) := by
+  fun_prop (disch := intros; (try dsimp [BinOp.eval, Function.comp_def] at *); omega)
+
+-- Explicit guard and branch costs for staged equality and `<` selection.
+example : GlueComputes .exact (fun v : Fin 1 → ℕ => v 0 ≤ 100)
+    (fun v => if v 0 = 0 then 0 else 7 / v 0) (fun _ => 100) 8 := by
+  have hl : GlueComputes .exact (fun v : Fin 1 → ℕ => v 0 ≤ 100)
+      (fun v => v 0) (fun _ => 100) 1 := GlueComputes.proj 0 (by intros; omega)
+  have hr : GlueComputes .exact (fun v : Fin 1 → ℕ => v 0 ≤ 100)
+      (fun _ => 0) (fun _ => 100) 1 := GlueComputes.const 0 (by intros; omega)
+  have hf : GlueComputes .exact (fun v : Fin 1 → ℕ => v 0 ≤ 100 ∧ v 0 = 0)
+      (fun _ => 0) (fun _ => 100) 1 := GlueComputes.const 0 (by intros; omega)
+  have hg : GlueComputes .exact (fun v : Fin 1 → ℕ => v 0 ≤ 100 ∧ ¬v 0 = 0)
+      (fun v => 7 / v 0) (fun _ => 100) 3 := by
+    apply GlueComputes.bin_exact (GlueComputes.const 7 ?_) (GlueComputes.proj 0 ?_) .div
+    · intro v hv
+      simp [hv.2]
+    all_goals
+      intro v hv
+      try dsimp [BinOp.eval] at *
+      have := Nat.div_le_self 7 (v 0)
+      omega
+  exact GlueComputes.ite_eq_staged hl hr hf hg
+
+example : GlueComputes .exact (fun v : Fin 2 → ℕ => v 0 + 1 ≤ 100 ∧ v 1 ≤ 100)
+    (fun v => if v 0 + 1 < v 1 then v 1 - v 0 else v 0 + 1) (fun _ => 100) 10 := by
+  have hl : GlueComputes .exact (fun v : Fin 2 → ℕ => v 0 + 1 ≤ 100 ∧ v 1 ≤ 100)
+      (fun v => v 0 + 1) (fun _ => 100) 3 := by
+    apply GlueComputes.bin_exact (GlueComputes.proj 0 ?_) (GlueComputes.const 1 ?_) .add
+    · intros; rfl
+    all_goals intros; (try dsimp [BinOp.eval] at *); omega
+  have hr : GlueComputes .exact (fun v : Fin 2 → ℕ => v 0 + 1 ≤ 100 ∧ v 1 ≤ 100)
+      (fun v => v 1) (fun _ => 100) 1 := GlueComputes.proj 1 (by intros; omega)
+  have hf : GlueComputes .exact
+      (fun v : Fin 2 → ℕ => (v 0 + 1 ≤ 100 ∧ v 1 ≤ 100) ∧ v 0 + 1 < v 1)
+      (fun v => v 1 - v 0) (fun _ => 100) 3 := by
+    apply GlueComputes.bin_exact (GlueComputes.proj 1 ?_) (GlueComputes.proj 0 ?_) .sub
+    · intro v hv
+      have : v 0 ≤ v 1 := by omega
+      simp [this]
+    all_goals intros; (try dsimp [BinOp.eval] at *); omega
+  have hg : GlueComputes .exact
+      (fun v : Fin 2 → ℕ => (v 0 + 1 ≤ 100 ∧ v 1 ≤ 100) ∧ ¬v 0 + 1 < v 1)
+      (fun v => v 0 + 1) (fun _ => 100) 3 := by
+    apply GlueComputes.bin_exact (GlueComputes.proj 0 ?_) (GlueComputes.const 1 ?_) .add
+    · intros; rfl
+    all_goals intros; (try dsimp [BinOp.eval] at *); omega
+  exact GlueComputes.ite_lt_staged hl hr hf hg
+
+set_option maxHeartbeats 20000 in
+-- Performance guard: syntax-directed closure on a 6-input mixed arithmetic/bitwise/opaque tree.
+example : GlueComputable .exact
+    (fun v : Fin 6 → ℕ =>
+      WordRAMGlueNamed.twice (((v 0 + v 1) - v 2) + ((v 3 &&& v 4) ^^^ (v 5 >>> 1))))
+    (fun v => v 0 + v 1 ≤ 100 ∧ v 2 ≤ v 0 + v 1 ∧
+      2 * ((v 0 + v 1 - v 2) + ((v 3 &&& v 4) ^^^ (v 5 >>> 1))) ≤ 100 ∧
+      v 3 ≤ 100 ∧ v 4 ≤ 100 ∧ v 5 ≤ 100)
+    (fun _ => 100) := by
+  have ht := WordRAMGlueNamed.twice_glue
+  fun_prop (disch :=
+    intro v hv
+    try dsimp at *
+    have := Nat.and_le_left (n := v 3) (m := v 4)
+    have := Nat.shiftRight_le (v 5) 1
+    omega)
+
+set_option maxHeartbeats 20000 in
+-- Performance guard: nested lazy selection with computed comparison operands in both guards.
+example : GlueComputable .exact
+    (fun v : Fin 3 → ℕ =>
+      if v 0 = 0 then
+        if v 1 + 1 < v 2 then v 2 - (v 1 + 1) else (v 1 + 1) - v 2
+      else (7 / v 0) + (v 1 &&& v 2))
+    (fun v => v 0 ≤ 100 ∧ v 1 + 1 ≤ 100 ∧ v 2 ≤ 100 ∧ (7 / v 0) + (v 1 &&& v 2) ≤ 100)
+    (fun _ => 100) := by
+  fun_prop (disch :=
+    intro v hv
+    have := Nat.div_le_self 7 (v 0)
+    have := Nat.and_le_left (n := v 1) (m := v 2)
+    omega)
+
+set_option maxHeartbeats 20000 in
+-- Performance guard: missing opaque certificates and unprovable side conditions fail fast.
+example : True := by
+  -- Missing opaque scalar certificate (`WordRAMGlueNamed.twice_glue` not in context).
+  fail_if_success
+    have : GlueComputable .exact (fun v : Fin 1 → ℕ => WordRAMGlueNamed.twice (v 0))
+        (fun v => 2 * v 0 ≤ 100) (fun _ => 100) := by
+      fun_prop (disch := intros; omega)
+  -- Missing opaque scalar certificate with permissive dischargers.
+  fail_if_success
+    have : GlueComputable .exact (fun v : Fin 1 → ℕ => WordRAMGlueNamed.twice (v 0))
+        (fun v => 2 * v 0 ≤ 100) (fun _ => 100) := by
+      fun_prop (disch := intros; try simp_all)
+  -- Missing opaque vector certificate (`WordRAMGlueNamed.weighted_glue` not in context).
+  fail_if_success
+    have : GlueComputable .exact
+        (fun v : Fin 2 → ℕ => WordRAMGlueNamed.weighted ![v 0 + 1, v 1])
+        (fun v => v 0 + 1 + 2 * v 1 ≤ 100) (fun _ => 100) := by
+      fun_prop (disch := intros; omega)
+  -- Uncovered arithmetic head (`^`).
+  fail_if_success
+    have : GlueComputable .exact (fun v : Fin 2 → ℕ => v 0 ^ v 1)
+        (fun v => v 0 ^ v 1 ≤ 100) (fun _ => 100) := by
+      fun_prop (disch := intros; try assumption)
+  -- Unprovable exact-subtraction domain side condition (`v 1 ≤ v 0` missing), even with `simp_all`.
+  fail_if_success
+    have : GlueComputable .exact (fun v : Fin 2 → ℕ => v 0 - v 1)
+        (fun v => v 0 ≤ 100 ∧ v 1 ≤ 100) (fun _ => 100) := by
+      fun_prop (disch := intros; try simp_all)
+  -- Unprovable exact-division nonzero-divisor side condition (`v 0 ≠ 0` missing).
+  fail_if_success
+    have : GlueComputable .exact (fun v : Fin 1 → ℕ => 7 / v 0)
+        (fun v => v 0 ≤ 100) (fun _ => 100) := by
+      fun_prop (disch := intros; try assumption)
+  -- Unprovable envelope side condition (`v 0 + 1 ≤ 100` does not follow from `v 0 ≤ 100`).
+  fail_if_success
+    have : GlueComputable .exact (fun v : Fin 1 → ℕ => v 0 + 1)
+        (fun v => v 0 ≤ 100) (fun _ => 100) := by
+      fun_prop (disch := intros; omega)
+  trivial
+
 -- Repeated source registers are supported by layout substitution, without injectivity of ρ.
 example : GlueComputes .exact (fun v : Fin 1 → ℕ => 2 * v 0 ≤ 100)
     (fun v => v 0 + v 0) (fun _ => 100) 3 := by

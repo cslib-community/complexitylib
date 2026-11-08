@@ -19,8 +19,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 are lists of exactly three literals. The literals of a clause need not be distinct, so a clause
 `x ∨ x ∨ y` is allowed. This is weaker than 3-satisfiability as defined by Garey and Johnson
 [Garey and Johnson, Problem LO2][GareyJohnson1979], whose clauses are sets of three distinct
-literals; `NP`-completeness of that version, where short clauses are padded with fresh variables,
-is not proved here.
+literals. The stronger distinct-variable version is proved NP-complete as `EUThreeSAT` in
+`Complexity.Computability.Complexity.Problems.EUThreeSAT`.
 
 `ExactThreeSAT` is `NP`-complete: `ThreeSAT` (clauses of at most three literals) reduces to it by
 repeating a literal of every clause with one or two literals

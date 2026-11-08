@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Mathlib.Analysis.SpecialFunctions.Pow.NthRootLemmas
@@ -147,10 +148,8 @@ theorem exec_rename {r w : ℕ} (f : Fin 6 → Fin r) (hf : f.Injective) (x : Da
         y.regs (f p) = x.regs (f m) ^ x.regs (f k)) ∧
       y.regs (f m) = x.regs (f m) ∧ y.regs (f k) = x.regs (f k) ∧
       y.regs (f n) = x.regs (f n) ∧ y.regs (f one) = 1 ∧ y.mem = x.mem := by
-  obtain ⟨y, hy, hle, heq, hym, hyk, hyn, hyo, hymem⟩ := exec (x.comap f) hm h1 hk hprod
-  have hext (j : Fin 6) : (y.extend f x).regs (f j) = y.regs j := hf.extend_apply _ _ j
-  refine ⟨y.extend f x, hy.rename hf, ?_, ?_, ?_, ?_, ?_, ?_, hymem⟩ <;>
-    simp only [hext] <;> assumption
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post hf (exec (x.comap f) hm h1 hk hprod)
+  exact ⟨y, hy, hpost⟩
 
 end CapPow
 
@@ -317,9 +316,7 @@ theorem exec_rename {r w : ℕ} (f : Fin 10 → Fin r) (hf : f.Injective) (x : D
       y.regs (f lo) = Nat.nthRoot (x.regs (f k)) (x.regs (f n)) ∧
       y.regs (f n) = x.regs (f n) ∧ y.regs (f k) = x.regs (f k) ∧
       y.regs (f one) = 1 ∧ y.regs (f two) = 2 ∧ y.mem = x.mem := by
-  obtain ⟨y, hy, hlo, hyn, hyk, hyo, hyt, hymem⟩ := exec (x.comap f) hk hkfit hfit
-  have hext (j : Fin 10) : (y.extend f x).regs (f j) = y.regs j := hf.extend_apply _ _ j
-  refine ⟨y.extend f x, hy.rename hf, ?_, ?_, ?_, ?_, ?_, hymem⟩ <;> simp only [hext] <;>
-    assumption
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post hf (exec (x.comap f) hk hkfit hfit)
+  exact ⟨y, hy, hpost⟩
 
 end Cslib.Algorithms.WordRAM.NatNthRoot

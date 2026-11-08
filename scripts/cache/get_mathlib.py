@@ -4,14 +4,15 @@
 import argparse
 import os
 from pathlib import Path
-import signal
-import subprocess
 import sys
 import time
+
+from bounded import UnsafeShutdown, interruptible, note_unsafe, run
 
 ATTEMPTS = 3
 ATTEMPT_SECONDS = 180
 RETRY_SECONDS = 2
+SHUTDOWN_SECONDS = 5
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -26,23 +27,12 @@ def restore(root, env, lean_action=False):
     for attempt in range(1, ATTEMPTS + 1):
         print(f"Mathlib cache attempt {attempt}/{ATTEMPTS}", flush=True)
         try:
-            process = subprocess.Popen(["lake", "exe", "cache", "get"], cwd=root, env=env,
-                                       start_new_session=(os.name == "posix"))
-            try:
-                if process.wait(timeout=ATTEMPT_SECONDS) == 0:
-                    return True
-                reason = f"exit status {process.returncode}"
-            finally:
-                if process.poll() is None:
-                    if os.name == "posix":
-                        try:
-                            os.killpg(process.pid, signal.SIGKILL)
-                        except ProcessLookupError:
-                            pass
-                    else:
-                        process.kill()
-                    process.wait()
-        except (OSError, subprocess.TimeoutExpired) as error:
+            result = run(["lake", "exe", "cache", "get"], cwd=root, env=env,
+                         timeout=ATTEMPT_SECONDS, grace=SHUTDOWN_SECONDS)
+            if result.returncode == 0:
+                return True
+            reason = f"exit status {result.returncode}"
+        except OSError as error:
             reason = str(error)
         print(f"warning: Mathlib cache attempt failed: {reason}", file=sys.stderr, flush=True)
         if attempt < ATTEMPTS:
@@ -57,8 +47,21 @@ def main():
     parser.add_argument("--lean-action", action="store_true",
                         help="retain lean-action's cache URL defaults")
     args = parser.parse_args()
+    if os.environ.get("DISABLE_CACHE_RESTORE", "").lower() in ("true", "1"):
+        return 0
     root = Path(os.environ.get("COMPLEXITYLIB_CACHE_CHECKOUT") or ROOT)
-    restore(root, os.environ, args.lean_action)
+    try:
+        with interruptible():
+            restore(root, os.environ, args.lean_action)
+    except UnsafeShutdown as error:
+        try:
+            note_unsafe(os.environ)
+        except OSError:
+            pass
+        print(f"error: {error}", file=sys.stderr, flush=True)
+        return 125
+    except KeyboardInterrupt:
+        return 124
     return 0  # Cache availability never substitutes for the subsequent strict build.
 
 

@@ -10,6 +10,7 @@ module
 public import Complexity.Probability.RankDecoder
 public import Complexity.Computability.GenericRAM.Native.ExpTimePolySpace.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
 
@@ -217,10 +218,12 @@ theorem nativeCertificate_expTimePolySpace {enc : α ↪ List Bool}
     (nativeCertificate hd hr cm).ExpTimePolySpace E := by
   obtain ⟨C, d, hround⟩ := stepCertificate_expTimePolySpace hd cm hm
   let B a := (stateEncoding enc (a, ([] : List Bool), rank a)).length + 2 * depth a
-  have hB : PolyBounded (fun a => (enc a).length) B :=
-    (initial_polyTime hr).polyBounded_length.add ((PolyBounded.const 2).mul hdepth)
-  have hfactor : PolyBounded (fun a => (enc a).length) (fun a => C * (B a + 1) ^ d) :=
-    (PolyBounded.const C).mul ((hB.add (.const 1)).pow d)
+  have hinitial := (initial_polyTime hr).polyBounded_length
+  have hB : PolyBounded (fun a => (enc a).length) B := by
+    dsimp only [B]
+    growth_poly
+  have hfactor : PolyBounded (fun a => (enc a).length) (fun a => C * (B a + 1) ^ d) := by
+    growth_poly
   have hstate (a : α) (j : ℕ) (hj : j ≤ depth a) :
       (stateEncoding enc ((step mass depth)^[j] (a, [], rank a))).length ≤ B a :=
     (state_length_iterate_le enc mass depth j (a, [], rank a)).trans

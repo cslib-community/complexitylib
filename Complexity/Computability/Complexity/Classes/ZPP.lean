@@ -123,14 +123,7 @@ end DecidesWithZeroError
 /-- **`ZPP` is closed under complement.** -/
 theorem compl_mem_ZPP {A : Set α} (hA : A ∈ ZPP enc) : Aᶜ ∈ ZPP enc := by
   obtain ⟨p, V, hV, h⟩ := mem_ZPP.mp hA
-  refine mem_ZPP.mpr ⟨p, fun x => (V x).map Bool.not, ?_, h.compl⟩
-  have : ComputableInPolyTime (fun x => (V x).elim none fun b => some !b)
-      (encPair enc encBits) (encOption encBool) :=
-    ComputableInPolyTime.optionElimWithInput hV (.const none)
-      ((ComputableInPolyTime.optionSome encBool).comp
-        (ComputableInPolyTime.bool_not.comp (.snd _ _)))
-  convert this using 2 with x
-  cases V x <;> rfl
+  exact mem_ZPP.mpr ⟨p, fun x => (V x).map Bool.not, by fun_prop, h.compl⟩
 
 /-- **`ZPP ⊆ RP`**: accept exactly on the answer `some true`. -/
 theorem ZPP_subset_RP : ZPP enc ⊆ RP enc := fun _ ⟨p, V, hV, h⟩ =>

@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Indexing
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.SourceBounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.NumericBounds
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-input bounds for the catalogue controller
@@ -64,11 +65,7 @@ theorem recordQueryCount_le (n D p : ℕ) (values : ℕ → ℤ) (idx : Instance
 /-- Every larger admitted physical width contains the complete accumulated-counter bound. -/
 theorem counter_fits {W n D g p A : ℕ} (hW : admissionWidth n D g p A ≤ W) :
     Fits W (counterEnvelope n p) := by
-  have hc : Nat.clog 2 (counterEnvelope n p) < W := by
-    unfold admissionWidth at hW
-    omega
-  exact (Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) _).trans_lt
-    (Nat.pow_lt_pow_right (by decide : 1 < (2 : ℕ)) hc)
+  exact fits_of_clog_lt (by unfold admissionWidth at hW; omega)
 
 /-- The controller threshold retains the original concrete callee admission. -/
 theorem record_admitted {W n D g p A : ℕ} (hW : admissionWidth n D g p A ≤ W) :

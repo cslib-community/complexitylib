@@ -9,12 +9,12 @@ module
 
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Memory.Alloc
-public import Complexity.DataStructure.Stack.WordRAM.Basic
+public import Complexity.DataStructure.Stack.Spec
 
 /-!
 # An array stack over the memory oracle
 
-The bounded stack `Stack.WordRAM.spec w C` is implemented by three short programs over
+The bounded stack `Stack.spec w C` is implemented by three short programs over
 `Memory.spec w`. The storage is a `Layout` with two named fields: a one-cell `count` and an
 `items` array of `C` cells, bottom first. The abstraction function reads the first `count` items
 and reverses them, so the top comes first. Each operation is at most three memory operations and
@@ -28,9 +28,9 @@ layout (`framed`), and stacks with disjoint layouts share one memory through the
 `Memory.Framed.prod`. `allocator` packages the allocation of an empty stack (`allocLayout`) with
 the framed stack it sets up, so that clients allocate stacks through `Memory.Allocator`.
 
-This is the same specification that `Stack.WordRAM` implements by a hand-stepped nine-register
-dispatcher. Here no register or instruction count appears. Word fit enters only through the
-admissibility of `Memory.spec w` and one static fact of the layout, that the capacity fits.
+No register or instruction count appears here. Word fit enters only through the admissibility
+of `Memory.spec w` and one static fact of the layout, that the capacity fits. `Stack.Native` runs
+these programs on the word RAM.
 
 ## Main definitions
 
@@ -122,7 +122,7 @@ def pop : Prog (Option ℕ) := do
 def size : Prog ℕ := L.count.get 0
 
 /-- The stack operations as memory programs. -/
-def methods (w C : ℕ) : Methods (Stack.WordRAM.spec w C) (Memory.spec w)
+def methods (w C : ℕ) : Methods (Stack.spec w C) (Memory.spec w)
   | .push v => push L v
   | .pop => pop L
   | .size => size L
@@ -217,7 +217,7 @@ theorem Inv.item_lt {s : Memory.State} (hs : Inv L s) {i : ℕ} (hi : i < L.item
   hs.items_allocated.lt_frontier hi
 
 /-- The array stack implements the bounded stack of capacity `C`. -/
-def refinement (hL : L.Valid w C) : Refinement (Stack.WordRAM.spec w C) (Memory.spec w) :=
+def refinement (hL : L.Valid w C) : Refinement (Stack.spec w C) (Memory.spec w) :=
   Refinement.ofFn (methods L w C) (Inv L) (abs L)
     (by
       intro s o hs hv
@@ -283,7 +283,7 @@ def refinement (hL : L.Valid w C) : Refinement (Stack.WordRAM.spec w C) (Memory.
 
 /-- Each admissible operation writes only the layout's cells and never allocates. -/
 theorem modifies_methods (hL : L.Valid w C) {s : Memory.State} (o : StackOp ℕ)
-    (hv : (Stack.WordRAM.spec w C).valid (abs L s) o) :
+    (hv : (Stack.spec w C).valid (abs L s) o) :
     (∀ a ∉ L.footprint,
         ((Memory.spec w).clientState s (methods L w C o)).mem a = s.mem a) ∧
       ((Memory.spec w).clientState s (methods L w C o)).frontier = s.frontier := by
@@ -317,7 +317,7 @@ theorem Inv.lt_frontier {s : Memory.State} (hs : Inv L s) {a : ℕ} (ha : a ∈ 
 
 /-- The array stack, with its layout's cells as a constant footprint. Stacks with disjoint
 layouts therefore share one memory as a product of stacks (`Memory.Framed.prod`). -/
-def framed (hL : L.Valid w C) : Memory.Framed (Stack.WordRAM.spec w C) w :=
+def framed (hL : L.Valid w C) : Memory.Framed (Stack.spec w C) w :=
   .ofStatic (refinement hL) L.footprint (fun hs ha => Inv.lt_frontier hs ha)
     (fun hs h hf => ⟨hs.congr hL h hf, abs_congr hL hs h⟩)
     (fun o _ hv b _ hb => (modifies_methods hL o hv).1 b hb)
@@ -398,7 +398,7 @@ theorem runClient_allocLayout (C : ℕ) (s : Memory.State) :
 
 /-- **The array stack as an allocator**: allocate an empty stack of capacity `C` in `C + 1`
 cells, at a memory cost of three units. -/
-def allocator (w C : ℕ) : Allocator (Stack.WordRAM.spec w C) w where
+def allocator (w C : ℕ) : Allocator (Stack.spec w C) w where
   Handle := Layout
   alloc := allocLayout C
   methods L := methods L w C

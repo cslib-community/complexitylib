@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.SymbolicExec.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Program
 
 /-!
@@ -35,31 +36,25 @@ theorem exec_trial {w : ℕ} (x : Data 160) (hp : 2 ≤ x.regs Reg.cursor)
       y.regs Reg.trialFlag = (if (x.regs Reg.cursor).Prime then 1 else 0) ∧
       y.mem = x.mem ∧ ∀ i, 6 ≤ i.val → y.regs i = x.regs i := by
   let p := x.set Reg.trialArg (x.regs Reg.cursor)
-  obtain ⟨z, hz, hflag, _, hmem⟩ := PrimeTrial.exec (p.comap trialRegisters)
-    (by change 2 ≤ x.regs Reg.cursor; exact hp)
-    (by change Fits w (x.regs Reg.cursor + 2); exact hfit)
-  let y := z.extend trialRegisters p
-  have hyflag : y.regs Reg.trialFlag = z.regs PrimeTrial.flag := by
-    change Function.extend trialRegisters z.regs p.regs (trialRegisters PrimeTrial.flag) = _
-    exact trial_injective.extend_apply _ _ _
-  have hcopy : ExecWithin (B := .standard) w (ram[ Reg.trialArg ← Reg.cursor ]) x p 1 :=
-    ExecWithin.copy
-  refine ⟨y, ?_, hyflag.trans hflag, hmem, ?_⟩
-  · exact (hcopy.seq (hz.rename trial_injective)).mono (by
-      change 1 + (7 * (x.regs Reg.cursor - 2) + 6) ≤ 7 * x.regs Reg.cursor + 7
-      omega)
+  unfold trial
+  wram_exec
+  wram_call (PrimeTrial.exec (p.comap trialRegisters)
+      (by change 2 ≤ x.regs Reg.cursor; exact hp)
+      (by change Fits w (x.regs Reg.cursor + 2); exact hfit)) renamed trial_injective with
+    y ⟨⟨hflag, _, hmem⟩, hframe⟩
+  refine ⟨?_, hflag, hmem, ?_⟩
+  · change 7 * (x.regs Reg.cursor - 2) + 6 + 1 ≤ 7 * x.regs Reg.cursor + 7
+    omega
   · intro i hi
-    change Function.extend trialRegisters z.regs p.regs i = x.regs i
-    rw [Function.extend_apply']
-    · have hne : i ≠ Reg.trialArg := by
-        intro h
-        subst i
-        change 6 ≤ 0 at hi
-        omega
-      exact Function.update_of_ne hne _ _
-    · rintro ⟨j, hj⟩
-      have hv := congrArg Fin.val hj
-      dsimp only [trialRegisters] at hv
+    have hne : i ≠ Reg.trialArg := by
+      intro h
+      subst i
+      change 6 ≤ 0 at hi
       omega
+    refine (hframe i ?_).trans (Function.update_of_ne hne _ _)
+    intro j hj
+    have hv := congrArg Fin.val hj
+    dsimp only [trialRegisters] at hv
+    omega
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.PrimeSelection

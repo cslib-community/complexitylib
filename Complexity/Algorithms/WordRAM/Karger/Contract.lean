@@ -7,11 +7,12 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
-public import Complexity.Algorithms.WordRAM.Karger.Graph
+public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.Notation
-public import Complexity.Computability.WordRAM.Randomized.Structured
+public import Complexity.Computability.WordRAM.Randomized.Law
 
 /-!
 # Workspace-relocatable randomized contraction on the word RAM
@@ -32,6 +33,16 @@ instructions and issues at most `1` `rand` call (`0` calls when total active wei
 yielding `36 * (k ^ 2 - t ^ 2) + 4` worst-case instructions and at most `k - t` `rand` calls from
 `k` down to `t`, with survival probability at least `(t * (t - 1)) / (k * (k - 1))` for any fixed
 minimum cut of a connected multigraph.
+
+The probability is not proved on machine states. `contractDownTo` simulates Karger's algorithm as
+a client of the contraction structure `Cslib.Algorithms.Lean.Karger.spec`: the graph the machine
+holds (`heldGraph`) has the law of `Cslib.Algorithms.Lean.Karger.contractTimes`
+(`contractDownTo_law`). Each step's `rand` call draws the offset uniformly below the total weight,
+as the client's coin does, and `postRandStep_exec` contracts the pair sampled there. The survival
+bound and the contraction invariant are the specification's
+(`Cslib.Algorithms.Lean.Karger.survives_contractTimes`,
+`Cslib.Algorithms.Lean.Karger.isContractionOf_of_mem_support_contractTimes`), carried through that
+law.
 
 ## Source statements and notation mapping
 
@@ -68,6 +79,8 @@ minimum cut of a connected multigraph.
   `Cslib.Algorithms.WordRAM.Karger.ContractState`: relocatable memory layout and word-bound
   invariants for an active `k × k` supervertex adjacency matrix with row stride `stride` and row
   degree array at `dBase`.
+* `Cslib.Algorithms.WordRAM.Karger.heldGraph`: the graph a machine state holds, as a state of
+  `Cslib.Algorithms.Lean.Karger.spec`.
 * `Cslib.Algorithms.WordRAM.Karger.computeDegreesAndTotal`,
   `Cslib.Algorithms.WordRAM.Karger.computeDegreesAndTotalAt`: deterministic `O(k ^ 2)` initializer
   populating `D[0..k)` and `totS`.
@@ -80,10 +93,17 @@ minimum cut of a connected multigraph.
 * `Cslib.Algorithms.WordRAM.Karger.computeDegreesAndTotal_exec`: `computeDegreesAndTotal` populates
   `HoldsWorkspace` and `totS = totalDoubledWeight W` within `6 * k ^ 2 + 12 * k + 6` instructions,
   modifying only `Finset.Ico dBase (dBase + k)`.
+* `Cslib.Algorithms.WordRAM.Karger.contractDownTo_law`: `contractDownTo` simulates `k - t`
+  contractions of the specification: `ExecRandLaw` with `IsQueryBounded (k - t)`, worst-case step
+  bound `36 * (k ^ 2 - t ^ 2) + 4`, `Modifies` frame, and the law of `heldGraph`.
+* `Cslib.Algorithms.WordRAM.Karger.contractDownToAt_law`: the same on any `r ≥ 16` registers,
+  preserving the caller's registers.
+* `Cslib.Algorithms.WordRAM.Karger.ContractState.mem_add_one`: on two supervertices, the weight
+  between them is half the total weight of the held graph.
 * `Cslib.Algorithms.WordRAM.Karger.contractDownTo_spec`: joint certificate of `ExecRand`,
   `IsQueryBounded (k - t)`, worst-case step bound `36 * (k ^ 2 - t ^ 2) + 4`, `Modifies` frame,
-  contraction invariant `IsContractionOf`, and telescoping cut-survival probability lower bound
-  `((t * (t - 1) : ℕ) : ℝ≥0∞) / (k * (k - 1))`.
+  contraction invariant `IsContractionOf`, and cut-survival probability lower bound
+  `((t * (t - 1) : ℕ) : ℝ≥0∞) / (k * (k - 1))`, the last two from the specification.
 
 ## References
 
@@ -169,6 +189,37 @@ structure ContractState (w wb db str k t : ℕ) (W : Fin k → Fin k → ℕ) (x
   fits_dEnd : Fits w (db + k)
   fits_totS : Fits w (totalDoubledWeight W)
   workspace : HoldsWorkspace x.mem wb db str W
+
+/-- The graph that a machine state holds in the workspace at `wb` with row stride `str`: `activeK`
+supervertices, with the weight matrix read from memory. It abstracts a `ContractState` to a state
+of the contraction structure `Lean.Karger.spec`. -/
+def heldGraph (wb str : ℕ) (x : Data 16) : Lean.Karger.Graph :=
+  ⟨x.regs Reg.activeK, fun i j => x.mem (wb + i.val * str + j.val)⟩
+
+/-- A state holding `W` on `k` supervertices holds the graph `⟨k, W⟩`. -/
+theorem ContractState.heldGraph_eq {w wb db str k t : ℕ} {W : Fin k → Fin k → ℕ} {x : Data 16}
+    (hst : ContractState w wb db str k t W x) : heldGraph wb str x = ⟨k, W⟩ := by
+  unfold heldGraph
+  rw [hst.regs_activeK]
+  exact congrArg _ (funext₂ hst.workspace.1)
+
+/-- On two supervertices, the weight between them, at `wb + 1`, is half the total weight of the
+held graph. -/
+theorem ContractState.mem_add_one {w wb db str t : ℕ} {W : Fin 2 → Fin 2 → ℕ} {x : Data 16}
+    (hst : ContractState w wb db str 2 t W x) (hW : IsMultigraph W) :
+    x.mem (wb + 1) = totalDoubledWeight (heldGraph wb str x).weight / 2 := by
+  rw [hst.heldGraph_eq]
+  change _ = totalDoubledWeight W / 2
+  rw [totalDoubledWeight_fin_two hW, show x.mem (wb + 1) = W 0 1 by simpa using hst.workspace.1 0 1]
+  omega
+
+/-- The weight matrix of a state is the weight of the graph it holds. -/
+private theorem ContractState.eq_of_heldGraph_eq {w wb db str k t : ℕ} {W W' : Fin k → Fin k → ℕ}
+    {x : Data 16} (hst : ContractState w wb db str k t W x) (h : heldGraph wb str x = ⟨k, W'⟩) :
+    W = W' := by
+  have h' := hst.heldGraph_eq.symm.trans h
+  simp only [Lean.Karger.Graph.mk.injEq, heq_eq_eq, true_and] at h'
+  exact h'
 
 theorem matAddr_lt_end {wb str k : ℕ} (hstr : k ≤ str) (i j : Fin k) :
     wb + i.val * str + j.val < wb + str * k := by
@@ -2466,14 +2517,7 @@ theorem postRandStep_exec {w wb db str m t r_val : ℕ}
         workspace := hws_m
       }
 
-/-! #### `PMF.toOuterMeasure` helpers for step-count maps and `contractDownTo_spec` -/
-
-private theorem eval_map_snd_toOuterMeasure {α : Type} (m : ProbComp (α × ℕ))
-    (g : α × ℕ → ℕ) (P : α → Prop) :
-    (((fun z => (z.1, g z)) <$> m).eval).toOuterMeasure {z | P z.1} =
-      m.eval.toOuterMeasure {z | P z.1} := by
-  rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-  rfl
+/-! #### Simulation of the contraction structure and `contractDownTo_spec` -/
 
 private theorem step_budget_succ {t m n_post z₂ : ℕ} (ht : 2 ≤ t) (hm : t ≤ m)
     (hn : n_post ≤ 45 * (m + 1) + 22) (hz : z₂ ≤ 36 * (m ^ 2 - t ^ 2) + 2) :
@@ -2497,87 +2541,78 @@ def SurvivalPost {n : ℕ} (W₀ : Fin n → Fin n → ℕ) (wb db str t : ℕ)
     y.regs totS = totalDoubledWeight W' ∧
     pullbackCut part' B' = C_star
 
-private theorem contractLoop_spec {n w wb db str t steps : ℕ} {W₀ : Fin n → Fin n → ℕ}
-    {W : Fin (t + steps) → Fin (t + steps) → ℕ} {part : Fin n → Fin (t + steps)} {x : Data 16}
-    (ht : 2 ≤ t) (hC : IsContractionOf W₀ part W)
-    (h0 : x.regs zero = 0) (h1 : x.regs one = 1)
-    (hst : ContractState w wb db str (t + steps) t W x) :
-    ∃ m : ProbComp (Data 16 × ℕ),
-      ExecRand w ram[while targetT < activeK do [ ⟪contractStep⟫ ]] x m ∧
-      m.IsQueryBounded steps ∧
-      (∀ z ∈ m.support,
-        z.2 ≤ 36 * ((t + steps) ^ 2 - t ^ 2) + 2 ∧
-        Modifies (workspaceFootprint wb db str (t + steps)) x.mem z.1.mem ∧
-        ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
-          IsContractionOf W₀ part' W' ∧
-          ContractState w wb db str t t W' z.1) ∧
-      (∀ B : Finset (Fin (t + steps)),
-        0 < minCut W₀ → IsNonTrivialCut B →
-        cutWeight W₀ (pullbackCut part B) = minCut W₀ →
-        (((t * (t - 1) : ℕ) : ℝ≥0∞) / (((t + steps) * (t + steps - 1) : ℕ) : ℝ≥0∞)) ≤
-          m.eval.toOuterMeasure {z | SurvivalPost W₀ wb db str t (pullbackCut part B) z.1}) := by
-  induction steps generalizing x with
+/-- **The contraction loop refines the contraction structure.** From a state holding a multigraph
+`W` on `t + s` supervertices, the loop runs within `36 ((t + s)² - t²) + 2` instructions and `s`
+`rand` calls, writes only the workspace and ends holding a multigraph on `t` supervertices. The
+graph it holds has the law of `s` contractions of `⟨t + s, W⟩` in `Lean.Karger.spec`: each
+positive-weight step draws the offset uniformly below the total weight, as the client
+`Lean.Karger.contractStep` does, and `postRandStep` contracts the pair sampled there. -/
+private theorem contractLoop_law {w wb db str t s : ℕ} {W : Fin (t + s) → Fin (t + s) → ℕ}
+    {x : Data 16} (ht : 2 ≤ t) (hW : IsMultigraph W) (h0 : x.regs zero = 0)
+    (h1 : x.regs one = 1) (hst : ContractState w wb db str (t + s) t W x) :
+    ExecRandLaw w ram[while targetT < activeK do [ ⟪contractStep⟫ ]] x
+      (fun y => Modifies (workspaceFootprint wb db str (t + s)) x.mem y.mem ∧
+        ∃ W' : Fin t → Fin t → ℕ, IsMultigraph W' ∧ ContractState w wb db str t t W' y)
+      (36 * ((t + s) ^ 2 - t ^ 2) + 2) s (heldGraph wb str)
+      ((Lean.Karger.spec.toRandomized.withCoins.run (Lean.Karger.contractTimes s)
+        ⟨t + s, W⟩).map Prod.snd) := by
+  induction s generalizing x with
   | zero =>
-    have hk_eq : t + 0 = t := Nat.add_zero t
     have hnc : ¬ (Cond.lt targetT activeK).Holds x := by
       simp [hst.regs_targetT, hst.regs_activeK]
-    refine ⟨pure (x, 2), ExecRand.loop_exit hnc, .pure _ 0, ?_, ?_⟩
-    · intro z hz
-      cases OracleComp.eq_of_mem_supportWith_pure hz
-      refine ⟨by simp, Modifies.refl _ _, ?_⟩
-      cases hk_eq
-      exact ⟨W, part, hC, hst⟩
-    · intro B _ _ _
-      simp only [Nat.add_zero, ProbComp.eval_pure, PMF.toOuterMeasure_pure_apply]
-      have ht_pos : 0 < t * (t - 1) := Nat.mul_pos (by omega) (by omega)
-      have hne0 : (((t * (t - 1) : ℕ) : ℝ≥0∞)) ≠ 0 := by exact_mod_cast ht_pos.ne'
-      have htop : (((t * (t - 1) : ℕ) : ℝ≥0∞)) ≠ ⊤ := ENNReal.natCast_ne_top _
-      rw [ENNReal.div_self hne0 htop]
-      have hmem : (x, 2) ∈ {z : Data 16 × ℕ |
-          SurvivalPost W₀ wb db str t (pullbackCut part B) z.1} := by
-        cases hk_eq
-        exact ⟨W, part, B, hC, hst.workspace, hst.regs_totS, rfl⟩
-      simp [hmem]
+    refine ((ExecRandLaw.loop_exit hnc ⟨Modifies.refl _ _, W, hW, hst⟩).congr_law ?_).mono
+      (fun _ h => h) (Nat.le_add_left _ _) le_rfl
+    rw [hst.heldGraph_eq]
+    exact (PMF.pure_map Prod.snd ((), (⟨t + 0, W⟩ : Lean.Karger.Graph))).symm
   | succ s ih =>
-    let m_cur := t + s
-    have hm_def : m_cur = t + s := rfl
-    have hm_ge : 2 ≤ m_cur := by omega
+    let κ (G : Lean.Karger.Graph) : PMF Lean.Karger.Graph :=
+      (Lean.Karger.spec.toRandomized.withCoins.run (Lean.Karger.contractTimes s) G).map Prod.snd
     have hc_loop : (Cond.lt targetT activeK).Holds x := by
       simp only [Cond.holds_lt, hst.regs_targetT, hst.regs_activeK]
       omega
+    -- After one contraction the machine holds a multigraph on `t + s` supervertices, from which
+    -- the rest of the loop has the law of the rest of the client.
+    let P (y : Data 16) : Prop :=
+      Modifies (workspaceFootprint wb db str (t + s + 1)) x.mem y.mem ∧ y.regs zero = 0 ∧
+        y.regs one = 1 ∧ ∃ W' : Fin (t + s) → Fin (t + s) → ℕ,
+          IsMultigraph W' ∧ ContractState w wb db str (t + s) t W' y
+    have hrest : ∀ y, P y → ExecRandLaw w ram[while targetT < activeK do [ ⟪contractStep⟫ ]] y
+        (fun z => Modifies (workspaceFootprint wb db str (t + (s + 1))) x.mem z.mem ∧
+          ∃ W' : Fin t → Fin t → ℕ, IsMultigraph W' ∧ ContractState w wb db str t t W' z)
+        (36 * ((t + s) ^ 2 - t ^ 2) + 2) s (heldGraph wb str) (κ (heldGraph wb str y)) := by
+      rintro y ⟨hmod, hy0, hy1, W', hW', hst'⟩
+      rw [hst'.heldGraph_eq]
+      exact (ih hW' hy0 hy1 hst').mono (fun z ⟨hmz, hz⟩ => ⟨modifies_trans_subset hmod hmz
+        Finset.Subset.rfl (workspaceFootprint_mono (Nat.le_succ _)), hz⟩) le_rfl le_rfl
+    have hbudget := step_budget_succ (n_post := 45 * (t + s + 1) + 22) ht (Nat.le_add_right t s)
+      le_rfl le_rfl
     by_cases hS0 : totalDoubledWeight W = 0
-    · -- Zero-weight branch: `totS = 0`, deterministic merge of `(0, Fin.last m_cur)` in `0` calls.
+    · -- Zero weight: `contractDownTo` drops the last supervertex, which is the specification's
+      -- contraction of `0` and the last supervertex of a weightless graph.
       have hcond_z : (Cond.eq totS zero).Holds x := by
         simp [hst.regs_totS, hS0, h0]
-      have hm_fit : Fits w m_cur := hst.fits_dEnd.of_le (by omega)
-      let x_next := x.set activeK m_cur
-      have hsub1 : (t + (s + 1)) - 1 = m_cur := by omega
+      have hm_fit : Fits w (t + s) := hst.fits_dEnd.of_le (by omega)
+      let x_next := x.set activeK (t + s)
+      have hsub1 : t + (s + 1) - 1 = t + s := by omega
       have hop : (Op.bin .sub activeK activeK one).eval w x = some x_next := by
         simp only [Op.eval_bin, BinOp.eval, hst.regs_activeK, h1, hsub1]
         exact Data.put_of_fits hm_fit
-      have hstep_det : ExecRand w contractStep x (pure (x_next, 2)) := by
-        unfold contractStep
-        simpa only [map_pure] using ExecRand.branch_pos hcond_z (ExecRand.op hop)
-      let u₀ : Fin (m_cur + 1) := ⟨0, by omega⟩
-      let v₀ : Fin (m_cur + 1) := Fin.last m_cur
-      have huv₀ : u₀ ≠ v₀ := by
-        intro h
-        have := congrArg Fin.val h
-        change 0 = m_cur at this
-        omega
-      have hW_zero : ∀ a b : Fin (m_cur + 1), W a b = 0 := fun a b => by
+      have hW_zero : ∀ a b : Fin (t + s + 1), W a b = 0 := fun a b => by
         have := entry_le_totalDoubledWeight W a b
         omega
-      have hcm_zero : ∀ i j : Fin m_cur, contractMatrix W u₀ v₀ i j = 0 := fun i j => by
-        unfold contractMatrix mergePair
-        simp [hW_zero]
-      have hdeg_cm_zero : ∀ i : Fin m_cur, rowDeg (contractMatrix W u₀ v₀) i = 0 := fun i => by
+      have hcm_zero : ∀ i j : Fin (t + s), contractMatrix W 0 (Fin.last (t + s)) i j = 0 :=
+        fun i j => by
+          unfold contractMatrix mergePair
+          simp [hW_zero]
+      have hdeg_cm_zero : ∀ i : Fin (t + s),
+          rowDeg (contractMatrix W 0 (Fin.last (t + s))) i = 0 := fun i => by
         unfold rowDeg
         simp [hcm_zero]
-      have htot_cm_zero : totalDoubledWeight (contractMatrix W u₀ v₀) = 0 := by
+      have htot_cm_zero : totalDoubledWeight (contractMatrix W 0 (Fin.last (t + s))) = 0 := by
         unfold totalDoubledWeight
         simp [hdeg_cm_zero]
-      have hws_next : HoldsWorkspace x_next.mem wb db str (contractMatrix W u₀ v₀) := by
+      have hws_next :
+          HoldsWorkspace x_next.mem wb db str (contractMatrix W 0 (Fin.last (t + s))) := by
         refine ⟨fun i j => ?_, fun i => ?_⟩
         · have hw1 : x.mem (wb + i.val * str + j.val) = W i.castSucc j.castSucc :=
             hst.workspace.1 i.castSucc j.castSucc
@@ -2589,8 +2624,9 @@ private theorem contractLoop_spec {n w wb db str t steps : ℕ} {W₀ : Fin n �
           rw [hw2, hdeg_cm_zero]
           unfold rowDeg
           simp [hW_zero]
-      have hmul_le : str * m_cur ≤ str * (t + (s + 1)) := Nat.mul_le_mul_left str (by omega)
-      have hst_next : ContractState w wb db str m_cur t (contractMatrix W u₀ v₀) x_next := {
+      have hmul_le : str * (t + s) ≤ str * (t + (s + 1)) := Nat.mul_le_mul_left str (by omega)
+      have hst_next :
+          ContractState w wb db str (t + s) t (contractMatrix W 0 (Fin.last (t + s))) x_next := {
         regs_wBase := by simpa +decide [x_next, Function.update_apply] using hst.regs_wBase
         regs_dBase := by simpa +decide [x_next, Function.update_apply] using hst.regs_dBase
         regs_stride := by simpa +decide [x_next, Function.update_apply] using hst.regs_stride
@@ -2607,82 +2643,38 @@ private theorem contractLoop_spec {n w wb db str t steps : ℕ} {W₀ : Fin n �
         fits_totS := by rw [htot_cm_zero]; exact fits_zero w
         workspace := hws_next
       }
-      have hC_next : IsContractionOf W₀ (contractPart part u₀ v₀ huv₀)
-          (contractMatrix W u₀ v₀) := isContractionOf_contract hC huv₀
-      obtain ⟨m_tail, hm_tail, hq_tail, hsup_tail, _⟩ := ih hC_next
-        (by simpa +decide [x_next, Function.update_apply] using h0)
-        (by simpa +decide [x_next, Function.update_apply] using h1)
-        hst_next
-      have hiter := ExecRand.loop_iter hc_loop hstep_det (ml := fun _ => m_tail) fun z hz => by
-        cases OracleComp.eq_of_mem_supportWith_pure hz
-        exact hm_tail
-      refine ⟨_, hiter, ?_, ?_, ?_⟩
-      · rw [pure_bind]
-        exact (hq_tail.bind fun _ => .pure _ 0).mono (by omega)
-      · intro z hz
-        obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-        cases OracleComp.eq_of_mem_supportWith_pure hz₁
-        obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-        cases OracleComp.eq_of_mem_supportWith_pure hfinal
-        rcases hsup_tail z₂ hz₂ with ⟨htime₂, hmod₂, W', part', hC', hst'⟩
-        refine ⟨?_, ?_, W', part', hC', hst'⟩
-        · have hbud := step_budget_succ ht (by omega : t ≤ m_cur) (Nat.zero_le _) htime₂
-          change 2 + z₂.2 + 2 ≤ 36 * ((m_cur + 1) ^ 2 - t ^ 2) + 2
-          omega
-        · exact modifies_trans_subset (Modifies.refl _ x.mem) hmod₂
-            Finset.Subset.rfl (workspaceFootprint_mono (Nat.le_succ m_cur))
-      · -- Vacuous when `0 < minCut W₀` since `0 < minCut W₀ ≤ minCut W` forces `0 < totS`.
-        intro B hmin_pos _ _
-        have hminW : 0 < minCut W :=
-          lt_of_lt_of_le hmin_pos
-            (minCut_le_of_isContractionOf (by rw [Fintype.card_fin]; omega) hC)
-        have hS_pos := totalDoubledWeight_pos_of_minCut_pos (by rw [Fintype.card_fin]; omega)
-          hC.multigraph hminW
-        omega
-    · -- Positive-weight branch: `0 < totalDoubledWeight W`.
-      have hS_pos : 0 < totalDoubledWeight W := Nat.pos_of_ne_zero hS0
-      let S := totalDoubledWeight W
-      have hS_def : S = totalDoubledWeight W := rfl
+      have hb : ExecRandLaw w contractStep x P 2 0 (heldGraph wb str)
+          (PMF.pure (heldGraph wb str x_next)) := by
+        unfold contractStep
+        exact ExecRandLaw.branch_pos hcond_z (ExecRandLaw.of_execWithin (ExecWithin.op hop)
+          ⟨Modifies.refl _ _, by simpa +decide [x_next, Function.update_apply] using h0,
+            by simpa +decide [x_next, Function.update_apply] using h1, _,
+            isMultigraph_contractMatrix hW _ _, hst_next⟩)
+      refine ((ExecRandLaw.loop_iter hc_loop hb hrest).congr_law ?_).mono (fun _ h => h)
+        (le_trans (by omega) hbudget) (by omega)
+      rw [PMF.pure_bind, hst_next.heldGraph_eq]
+      exact (congrArg (PMF.map Prod.snd) (Lean.Karger.run_contractStep_bind_of_eq_zero (m := t + s)
+        (Lean.Karger.contractTimes s) W hS0)).symm
+    · -- Positive weight: one `rand` call draws the offset uniformly below the total weight, and
+      -- `postRandStep` contracts the pair sampled there.
       have hcond_nz : ¬ (Cond.eq totS zero).Holds x := by
         simp [hst.regs_totS, h0, hS0]
-      have hSm1_fit : Fits w (S - 1) := hst.fits_totS.of_le (by omega)
-      let x_sub := x.set val1 (S - 1)
+      have hSm1_fit : Fits w (totalDoubledWeight W - 1) := hst.fits_totS.of_le (by omega)
+      let x_sub := x.set val1 (totalDoubledWeight W - 1)
       have hop_sub : (Op.bin .sub val1 totS one).eval w x = some x_sub := by
         simp only [Op.eval_bin, BinOp.eval, hst.regs_totS, h1]
         exact Data.put_of_fits hSm1_fit
-      have hfit_rand : Fits w (x_sub.regs val1) := by simpa [x_sub] using hSm1_fit
-      have hper_sample : ∀ k : Fin (x_sub.regs val1 + 1),
-          ∃ (u v : Fin (m_cur + 1)) (huv : u ≠ v) (y_post : Data 16) (n_post : ℕ)
-            (m_rec : ProbComp (Data 16 × ℕ)),
-            IsSampledPair W k.val u v ∧
-            n_post ≤ 45 * (m_cur + 1) + 22 ∧
-            Exec w postRandStep (x_sub.set rem k.val) y_post n_post ∧
-            Modifies (workspaceFootprint wb db str (m_cur + 1)) x.mem y_post.mem ∧
-            ContractState w wb db str m_cur t (contractMatrix W u v) y_post ∧
-            ExecRand w ram[while targetT < activeK do [ ⟪contractStep⟫ ]] y_post m_rec ∧
-            m_rec.IsQueryBounded s ∧
-            (∀ z ∈ m_rec.support,
-              z.2 ≤ 36 * (m_cur ^ 2 - t ^ 2) + 2 ∧
-              Modifies (workspaceFootprint wb db str m_cur) y_post.mem z.1.mem ∧
-              ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
-                IsContractionOf W₀ part' W' ∧
-                ContractState w wb db str t t W' z.1) ∧
-            (∀ B' : Finset (Fin m_cur),
-              0 < minCut W₀ → IsNonTrivialCut B' →
-              cutWeight W₀ (pullbackCut (contractPart part u v huv) B') = minCut W₀ →
-              (((t * (t - 1) : ℕ) : ℝ≥0∞) / ((m_cur * (m_cur - 1) : ℕ) : ℝ≥0∞)) ≤
-                m_rec.eval.toOuterMeasure
-                  {z | SurvivalPost W₀ wb db str t
-                    (pullbackCut (contractPart part u v huv) B') z.1}) := by
+      have hN : x_sub.regs val1 = totalDoubledWeight W - 1 := by simp [x_sub]
+      have hpost : ∀ k : Fin (x_sub.regs val1 + 1), ∃ y,
+          ExecWithin w postRandStep (x_sub.set rem k.val) y (45 * (t + s + 1) + 22) ∧ P y ∧
+            heldGraph wb str y = Lean.Karger.contractGraph ⟨t + s + 1, W⟩
+              (Lean.Karger.sampledPair W k).1 (Lean.Karger.sampledPair W k).2 := by
         intro k
-        have hk_lt : k.val < S := by
-          have hk_bound := k.isLt
-          simp only [x_sub, Data.set_regs, Function.update_self] at hk_bound
-          omega
-        obtain ⟨u, v, hsamp⟩ := exists_isSampledPair W hk_lt
-        have huv : u ≠ v := isSampledPair_ne hC.multigraph hsamp
-        obtain ⟨y_post, ⟨n_post, hn_post, he_post⟩, hmod_post, hst_post, hy0, hy1⟩ :=
-          postRandStep_exec (x := x_sub.set rem k.val) (t := t) hm_ge hC.multigraph hsamp
+        obtain ⟨u, v, hsamp⟩ := exists_isSampledPair W (show k.val < totalDoubledWeight W by
+          have := k.isLt
+          omega)
+        obtain ⟨y, hy, hmod, hst', hy0, hy1⟩ :=
+          postRandStep_exec (x := x_sub.set rem k.val) (m := t + s) (t := t) (by omega) hW hsamp
             (by simpa +decide [x_sub, Function.update_apply] using h0)
             (by simpa +decide [x_sub, Function.update_apply] using h1)
             (by simpa +decide [x_sub, Function.update_apply] using hst.regs_wBase)
@@ -2697,205 +2689,60 @@ private theorem contractLoop_spec {n w wb db str t steps : ℕ} {W₀ : Fin n �
             (by simp +decide)
             hst.le_stride hst.disjoint_blocks hst.fits_wEnd hst.fits_dEnd hst.fits_totS
             hst.workspace
-        obtain ⟨m_rec, hm_rec, hq_rec, hsup_rec, hsurv_rec⟩ :=
-          ih (isContractionOf_contract hC huv) hy0 hy1 hst_post
-        exact ⟨u, v, huv, y_post, n_post, m_rec, hsamp, hn_post, he_post, hmod_post, hst_post,
-          hm_rec, hq_rec, hsup_rec, hsurv_rec⟩
-      -- Assemble `ExecRand` for `contractStep` via `codeComp`.
-      let m_post (d : Data 16) := codeComp w postRandStep d
-      have hrand_post : ExecRand w ram[rem ← rand val1; ⟪postRandStep⟫] x_sub
-          (do
-            let z₁ ← (do
-              let k ← ProbComp.unifFin (x_sub.regs val1)
-              pure (x_sub.set rem k.val, 1))
-            let z₂ ← m_post z₁.1
-            pure (z₂.1, z₁.2 + z₂.2)) := by
-        refine ExecRand.seq (ExecRand.rand hfit_rand) fun z₁ hz₁ => ?_
-        obtain ⟨k, -, hk_eq'⟩ := OracleComp.mem_supportWith_bind_iff.mp hz₁
-        cases OracleComp.eq_of_mem_supportWith_pure hk_eq'
-        obtain ⟨_, _, _, y_post, n_post, _, _, _, he_post, _, _, _, _, _, _⟩ := hper_sample k
-        dsimp only [m_post]
-        rw [he_post.execRand.codeComp_eq]
-        exact he_post.execRand
-      have hsub_rand_post := (Exec.op hop_sub).seqRand hrand_post
-      have hstep_rand : ExecRand w contractStep x
-          ((fun z => (z.1, z.2 + 2)) <$> ((fun z => (z.1, 1 + z.2)) <$> (do
-            let z₁ ← (do
-              let k ← ProbComp.unifFin (x_sub.regs val1)
-              pure (x_sub.set rem k.val, 1))
-            let z₂ ← m_post z₁.1
-            pure (z₂.1, z₁.2 + z₂.2)))) :=
-        ExecRand.branch_neg hcond_nz hsub_rand_post
-      let m_loop_rec (d : Data 16) :=
-        codeComp w ram[while targetT < activeK do [ ⟪contractStep⟫ ]] d
-      let mb := (fun z : Data 16 × ℕ => (z.1, z.2 + 2)) <$> ((fun z => (z.1, 1 + z.2)) <$> (do
-        let z₁ ← (do
-          let k ← ProbComp.unifFin (x_sub.regs val1)
-          pure (x_sub.set rem k.val, 1))
-        let z₂ ← m_post z₁.1
-        pure (z₂.1, z₁.2 + z₂.2)))
-      have hmb_support : ∀ z ∈ mb.support, ∃ k : Fin (x_sub.regs val1 + 1),
-          ∃ (u v : Fin (m_cur + 1)) (huv : u ≠ v) (y_post : Data 16) (n_post : ℕ)
-            (m_rec : ProbComp (Data 16 × ℕ)),
-            z = (y_post, (1 + (1 + n_post)) + 2) ∧
-            IsSampledPair W k.val u v ∧
-            n_post ≤ 45 * (m_cur + 1) + 22 ∧
-            Modifies (workspaceFootprint wb db str (m_cur + 1)) x.mem y_post.mem ∧
-            m_loop_rec y_post = m_rec ∧
-            ExecRand w ram[while targetT < activeK do [ ⟪contractStep⟫ ]] y_post m_rec ∧
-            m_rec.IsQueryBounded s ∧
-            (∀ z' ∈ m_rec.support,
-              z'.2 ≤ 36 * (m_cur ^ 2 - t ^ 2) + 2 ∧
-              Modifies (workspaceFootprint wb db str m_cur) y_post.mem z'.1.mem ∧
-              ∃ (W' : Fin t → Fin t → ℕ) (part' : Fin n → Fin t),
-                IsContractionOf W₀ part' W' ∧
-                ContractState w wb db str t t W' z'.1) := by
-        intro z hz
-        obtain ⟨za, hza, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-        obtain ⟨zb, hzb, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hza
-        obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hzb
-        obtain ⟨k, -, hk_pure⟩ := OracleComp.mem_supportWith_bind_iff.mp hz₁
-        cases OracleComp.eq_of_mem_supportWith_pure hk_pure
-        obtain ⟨u, v, huv, y_post, n_post, m_rec, hsamp, hn_post, he_post, hmod_post, _,
-          hm_rec, hq_rec, hsup_rec, _⟩ := hper_sample k
-        obtain ⟨z₂, hz₂, hzb_pure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-        cases OracleComp.eq_of_mem_supportWith_pure hzb_pure
-        dsimp only [m_post] at hz₂
-        rw [he_post.execRand.codeComp_eq] at hz₂
-        cases OracleComp.eq_of_mem_supportWith_pure hz₂
-        have hml_eq : m_loop_rec y_post = m_rec := hm_rec.codeComp_eq
-        exact ⟨k, u, v, huv, y_post, n_post, m_rec, rfl, hsamp, hn_post, hmod_post,
-          hml_eq, hm_rec, hq_rec, hsup_rec⟩
-      have hiter : ExecRand w ram[while targetT < activeK do [ ⟪contractStep⟫ ]] x
-          (do
-            let z₁ ← mb
-            let z₂ ← m_loop_rec z₁.1
-            pure (z₂.1, z₁.2 + z₂.2 + 2)) := by
-        refine ExecRand.loop_iter hc_loop hstep_rand fun z₁ hz₁ => ?_
-        obtain ⟨_, _, _, _, _, _, m_rec, rfl, _, _, _, hml_eq, hm_rec, _, _⟩ := hmb_support z₁ hz₁
-        rw [hml_eq]
-        exact hm_rec
-      have hmb_qb : mb.IsQueryBounded 1 := by
-        dsimp only [mb]
-        simp only [OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-        have hrand_qb : (do
-            let k ← ProbComp.unifFin (x_sub.regs val1)
-            pure (x_sub.set rem k.val, 1)).IsQueryBounded 1 := by
-          simpa only [Nat.add_zero] using
-            (ProbComp.isQueryBounded_unifFin (x_sub.regs val1)).bind fun _ => .pure _ 0
-        have hpost_qb : ∀ z₁ ∈ (do
-            let k ← ProbComp.unifFin (x_sub.regs val1)
-            pure (x_sub.set rem k.val, 1)).support,
-            (m_post z₁.1 >>= fun z₂ => pure (z₂.1, z₁.2 + z₂.2)).IsQueryBounded 0 := by
-          intro z₁ hz₁
-          obtain ⟨k, -, hk_p⟩ := OracleComp.mem_supportWith_bind_iff.mp hz₁
-          cases OracleComp.eq_of_mem_supportWith_pure hk_p
-          obtain ⟨_, _, _, _, _, _, _, _, he_post, _, _, _, _, _, _⟩ := hper_sample k
-          dsimp only [m_post]
-          rw [he_post.execRand.codeComp_eq, pure_bind]
-          exact .pure _ 0
-        simpa only [Nat.add_zero] using
-          OracleComp.IsCostBounded.bind_on_support hrand_qb hpost_qb
-      refine ⟨_, hiter, ?_, ?_, ?_⟩
-      · have htot_qb : (1 : ℕ) + s = s + 1 := Nat.add_comm 1 s
-        rw [← htot_qb]
-        refine OracleComp.IsCostBounded.bind_on_support hmb_qb fun z₁ hz₁ => ?_
-        obtain ⟨_, _, _, _, _, _, m_rec, rfl, _, _, _, hml_eq, _, hq_rec, _⟩ := hmb_support z₁ hz₁
-        rw [hml_eq]
-        simpa only [Nat.add_zero] using hq_rec.bind fun _ => .pure _ 0
-      · intro z hz
-        obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-        obtain ⟨k, u, v, huv, y_post, n_post, m_rec, rfl, _, hn_post, hmod_post,
-          hml_eq, _, _, hsup_rec⟩ := hmb_support z₁ hz₁
-        rw [hml_eq] at hrest
-        obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-        cases OracleComp.eq_of_mem_supportWith_pure hfinal
-        rcases hsup_rec z₂ hz₂ with ⟨htime₂, hmod₂, W', part', hC', hst'⟩
-        refine ⟨?_, ?_, W', part', hC', hst'⟩
-        · exact step_budget_succ ht (by omega : t ≤ m_cur) hn_post htime₂
-        · exact modifies_trans_subset hmod_post hmod₂ Finset.Subset.rfl
-            (workspaceFootprint_mono (Nat.le_succ m_cur))
-      · -- Telescoping survival probability bound.
-        intro B hmin_pos hB_nt hB_min
-        let C_star := pullbackCut part B
-        let E : Set (Data 16 × ℕ) := {z | SurvivalPost W₀ wb db str t C_star z.1}
-        have hN_eq : x_sub.regs val1 + 1 = S := by
-          simp only [x_sub, Data.set_regs, Function.update_self]
-          omega
-        have hm_simp : (do
-            let z₁ ← mb
-            let z₂ ← m_loop_rec z₁.1
-            pure (z₂.1, z₁.2 + z₂.2 + 2)) = (do
-            let k ← ProbComp.unifFin (x_sub.regs val1)
-            let zp ← m_post (x_sub.set rem k.val)
-            let z₂ ← m_loop_rec zp.1
-            pure (z₂.1, ((1 + (1 + zp.2)) + 2) + z₂.2 + 2)) := by
-          dsimp only [mb]
-          simp only [← bind_pure_comp, bind_assoc, pure_bind]
-        rw [hm_simp, ProbComp.eval_bind]
-        let castFin : Fin (x_sub.regs val1 + 1) ≃ Fin (totalDoubledWeight W) := finCongr hN_eq
-        let survSet : Set (Fin (x_sub.regs val1 + 1)) :=
-          {k | SampleSurvives W B (castFin k)}
-        have hdeg_bound : (m_cur + 1) * cutWeight W B ≤ totalDoubledWeight W := by
-          have hcw_eq : cutWeight W B = minCut W₀ := by
-            rw [← cutWeight_pullbackCut hC B, hB_min]
-          rw [hcw_eq]
-          have hmul := mul_minCut_le_totalDoubledWeight (by rw [Fintype.card_fin]; omega)
-            hC.multigraph
-          rw [Fintype.card_fin] at hmul
-          exact (Nat.mul_le_mul_left (m_cur + 1)
-            (minCut_le_of_isContractionOf (by rw [Fintype.card_fin]; omega) hC)).trans hmul
-        have hstep_prob : (((m_cur - 1 : ℕ) : ℝ≥0∞) / (m_cur + 1 : ℕ)) ≤
-            (ProbComp.unifFin (x_sub.regs val1)).eval.toOuterMeasure survSet := by
-          rw [ProbComp.eval_unifFin]
-          let _ : Nonempty (Fin (x_sub.regs val1 + 1)) := ⟨⟨0, by omega⟩⟩
-          let _ : Nonempty (Fin (totalDoubledWeight W)) := ⟨⟨0, hS_pos⟩⟩
-          have hmap_u : Cslib.Probability.PMF.uniformOfFintype (Fin (totalDoubledWeight W)) =
-              (Cslib.Probability.PMF.uniformOfFintype
-                (Fin (x_sub.regs val1 + 1))).map castFin :=
-            (Cslib.Probability.PMF.uniformOfFintype_map_equiv castFin).symm
-          have h1_step := step_survival_prob_ge (by omega : 2 ≤ m_cur + 1) hC.multigraph
-            hS_pos hdeg_bound
-          have hsub_m : m_cur + 1 - 2 = m_cur - 1 := by omega
-          rw [hsub_m, hmap_u, PMF.toOuterMeasure_map_apply] at h1_step
-          exact h1_step
-        have hsub_ms : t + (s + 1) - 1 = m_cur := by omega
-        have hm_add : t + (s + 1) = m_cur + 1 := rfl
-        have htele : (((m_cur - 1 : ℕ) : ℝ≥0∞) / (m_cur + 1 : ℕ)) *
-            (((t * (t - 1) : ℕ) : ℝ≥0∞) / ((m_cur * (m_cur - 1) : ℕ) : ℝ≥0∞)) =
-            (((t * (t - 1) : ℕ) : ℝ≥0∞) / (((t + (s + 1)) * (t + (s + 1) - 1) : ℕ) : ℝ≥0∞)) := by
-          rw [hsub_ms, hm_add]
-          exact telescope_survival_step ht (by omega : t ≤ m_cur)
-        rw [← htele]
-        refine toOuterMeasure_bind_ge_mul_ennreal _ _ survSet E hstep_prob ?_
-        intro k _ hk_surv
-        obtain ⟨u, v, huv, y_post, n_post, m_rec, hsamp, _, he_post, _, _,
-          hm_rec, _, _, hsurv_rec⟩ := hper_sample k
-        have hmp_eq : m_post (x_sub.set rem k.val) = pure (y_post, n_post) :=
-          he_post.execRand.codeComp_eq
-        have hml_eq : m_loop_rec y_post = m_rec := hm_rec.codeComp_eq
-        have hcont_eq : (do
-            let zp ← m_post (x_sub.set rem k.val)
-            let z₂ ← m_loop_rec zp.1
-            pure (z₂.1, ((1 + (1 + zp.2)) + 2) + z₂.2 + 2)) =
-              ((fun z₂ => (z₂.1, ((1 + (1 + n_post)) + 2) + z₂.2 + 2)) <$> m_rec) := by
-          rw [hmp_eq, pure_bind, hml_eq, ← bind_pure_comp]
-        rw [hcont_eq, eval_map_snd_toOuterMeasure]
-        rcases hk_surv with ⟨u', v', hsamp', hsame'⟩
-        have hcast_val : (castFin k).val = k.val := rfl
-        rw [hcast_val] at hsamp'
-        rcases isSampledPair_unique W hsamp hsamp' with ⟨rfl, rfl⟩
-        let B' := contractCut v B
-        have hpb_eq : pullbackCut (contractPart part u v huv) B' = C_star :=
-          pullbackCut_contractCut part huv hsame'
-        have hC_star_nt : IsNonTrivialCut C_star :=
-          isNonTrivialCut_pullbackCut hC.surj hB_nt
-        have hB'_nt : IsNonTrivialCut B' :=
-          isNonTrivialCut_of_pullbackCut (contractPart part u v huv) (hpb_eq ▸ hC_star_nt)
-        have hB'_min : cutWeight W₀ (pullbackCut (contractPart part u v huv) B') = minCut W₀ := by
-          rw [hpb_eq]
-          exact hB_min
-        simpa only [hpb_eq] using hsurv_rec B' hmin_pos hB'_nt hB'_min
+        refine ⟨y, hy, ⟨hmod, hy0, hy1, _, isMultigraph_contractMatrix hW u v, hst'⟩, ?_⟩
+        rw [hst'.heldGraph_eq, Lean.Karger.sampledPair_eq hsamp, Lean.Karger.contractGraph_fin]
+      choose y hy using hpost
+      have hb : ExecRandLaw w contractStep x P (1 + (1 + (45 * (t + s + 1) + 22)) + 2) 1
+          (heldGraph wb str) ((Probability.PMF.uniformOfFintype (Fin (x_sub.regs val1 + 1))).map
+            fun k => heldGraph wb str (y k)) := by
+        unfold contractStep
+        exact ExecRandLaw.branch_neg hcond_nz (ExecRandLaw.seq_det (ExecWithin.op hop_sub)
+          (ExecRandLaw.rand_seq (by rw [hN]; exact hSm1_fit) (fun k => (hy k).1)
+            fun k => (hy k).2.1))
+      refine ((ExecRandLaw.loop_iter hc_loop hb hrest).congr_law ?_).mono (fun _ h => h)
+        hbudget (by omega)
+      have hlaw : ∀ k, κ (heldGraph wb str (y k)) = κ (Lean.Karger.contractGraph ⟨t + s + 1, W⟩
+          (Lean.Karger.sampledPair W k).1 (Lean.Karger.sampledPair W k).2) :=
+        fun k => by rw [(hy k).2.2]
+      rw [PMF.bind_map, Function.comp_def, funext hlaw, hN]
+      exact (PMF.map_bind _ _ _).symm.trans (congrArg (PMF.map Prod.snd)
+        (Lean.Karger.run_contractStep_bind (m := t + s) (Lean.Karger.contractTimes s) W hS0).symm)
+
+/-- **`contractDownTo` refines the contraction structure.** From a state holding a multigraph `W`
+on `k ≥ t ≥ 2` supervertices, `contractDownTo` runs within `36 (k² - t²) + 4` instructions and
+`k - t` `rand` calls, writes only the workspace and ends holding a multigraph on `t` supervertices.
+The graph it holds (`heldGraph`) has the law of `k - t` contractions of `⟨k, W⟩` by the client
+`Lean.Karger.contractTimes` of `Lean.Karger.spec`. -/
+theorem contractDownTo_law {w wb db str k t : ℕ} {W : Fin k → Fin k → ℕ} {x : Data 16}
+    (ht : 2 ≤ t) (htk : t ≤ k) (hW : IsMultigraph W) (hst : ContractState w wb db str k t W x) :
+    ExecRandLaw w contractDownTo x
+      (fun y => Modifies (workspaceFootprint wb db str k) x.mem y.mem ∧
+        ∃ W' : Fin t → Fin t → ℕ, IsMultigraph W' ∧ ContractState w wb db str t t W' y)
+      (36 * (k ^ 2 - t ^ 2) + 4) (k - t) (heldGraph wb str)
+      ((Lean.Karger.spec.toRandomized.withCoins.run (Lean.Karger.contractTimes (k - t))
+        ⟨k, W⟩).map Prod.snd) := by
+  obtain ⟨s, rfl⟩ : ∃ s, k = t + s := ⟨k - t, by omega⟩
+  rw [Nat.add_sub_cancel_left]
+  have h1_fit : Fits w 1 := hst.fits_dEnd.of_le (by omega)
+  let x₁ := (x.set zero 0).set one 1
+  have hst₁ : ContractState w wb db str (t + s) t W x₁ := {
+    regs_wBase := by simpa +decide [x₁, Function.update_apply] using hst.regs_wBase
+    regs_dBase := by simpa +decide [x₁, Function.update_apply] using hst.regs_dBase
+    regs_stride := by simpa +decide [x₁, Function.update_apply] using hst.regs_stride
+    regs_activeK := by simpa +decide [x₁, Function.update_apply] using hst.regs_activeK
+    regs_targetT := by simpa +decide [x₁, Function.update_apply] using hst.regs_targetT
+    regs_totS := by simpa +decide [x₁, Function.update_apply] using hst.regs_totS
+    le_stride := hst.le_stride
+    disjoint_blocks := hst.disjoint_blocks
+    fits_wEnd := hst.fits_wEnd
+    fits_dEnd := hst.fits_dEnd
+    fits_totS := hst.fits_totS
+    workspace := hst.workspace
+  }
+  have hloop := contractLoop_law ht hW (by simp +decide [x₁]) (by simp +decide [x₁]) hst₁
+  unfold contractDownTo
+  exact (ExecRandLaw.seq_det (ExecWithin.const (fits_zero w))
+    (ExecRandLaw.seq_det (ExecWithin.const h1_fit) hloop)).mono (fun _ h => h) (by omega) le_rfl
 
 /-- **Master specification for `contractDownTo` (`Code .standard 16`).**
 Starting from any `ContractState w wb db str k t W x` (`2 ≤ t ≤ k`) where `W` is a contraction of
@@ -2906,7 +2753,12 @@ Starting from any `ContractState w wb db str k t W x` (`2 ≤ t ≤ k`) where `W
    `workspaceFootprint wb db str k` and leaving a valid `t`-supervertex `ContractState` that is a
    contraction of `W₀`, and
 4. preserves any fixed minimum cut `pullbackCut part B` of a connected multigraph (`0 < minCut W₀`)
-   with probability at least `(t * (t - 1)) / (k * (k - 1))`. -/
+   with probability at least `(t * (t - 1)) / (k * (k - 1))`.
+
+The first three parts and the law of the held graph are `contractDownTo_law`. The contraction in
+part 3 and the bound in part 4 are the specification's
+(`Lean.Karger.isContractionOf_of_mem_support_contractTimes`, `Lean.Karger.survives_contractTimes`),
+carried through that law. -/
 theorem contractDownTo_spec {n w wb db str k t : ℕ} {W₀ : Fin n → Fin n → ℕ}
     {W : Fin k → Fin k → ℕ} {part : Fin n → Fin k} {x : Data 16}
     (ht : 2 ≤ t) (htk : t ≤ k) (hC : IsContractionOf W₀ part W)
@@ -2925,55 +2777,32 @@ theorem contractDownTo_spec {n w wb db str k t : ℕ} {W₀ : Fin n → Fin n �
         cutWeight W₀ (pullbackCut part B) = minCut W₀ →
         (((t * (t - 1) : ℕ) : ℝ≥0∞) / ((k * (k - 1) : ℕ) : ℝ≥0∞)) ≤
           m.eval.toOuterMeasure {z | SurvivalPost W₀ wb db str t (pullbackCut part B) z.1}) := by
-  have hk_split : t + (k - t) = k := Nat.add_sub_of_le htk
-  revert W part hst
-  rw [← hk_split]
-  intro W part hC hst
-  have h1_fit : Fits w 1 := hst.fits_dEnd.of_le (by omega)
-  let x₁ := (x.set zero 0).set one 1
-  have e0 : Exec w (Code.op (.const zero 0)) x (x.set zero 0) 1 :=
-    Exec.const (B := .standard) (d := zero) (x := x) (fits_zero w)
-  have e1 : Exec w (Code.op (.const one 1)) (x.set zero 0) x₁ 1 :=
-    Exec.const (B := .standard) (d := one) (x := x.set zero 0) h1_fit
-  have hst₁ : ContractState w wb db str (t + (k - t)) t W x₁ := {
-    regs_wBase := by simpa +decide [x₁, Function.update_apply] using hst.regs_wBase
-    regs_dBase := by simpa +decide [x₁, Function.update_apply] using hst.regs_dBase
-    regs_stride := by simpa +decide [x₁, Function.update_apply] using hst.regs_stride
-    regs_activeK := by simpa +decide [x₁, Function.update_apply] using hst.regs_activeK
-    regs_targetT := by simpa +decide [x₁, Function.update_apply] using hst.regs_targetT
-    regs_totS := by simpa +decide [x₁, Function.update_apply] using hst.regs_totS
-    le_stride := hst.le_stride
-    disjoint_blocks := hst.disjoint_blocks
-    fits_wEnd := hst.fits_wEnd
-    fits_dEnd := hst.fits_dEnd
-    fits_totS := hst.fits_totS
-    workspace := hst.workspace
-  }
-  obtain ⟨m_loop, hm_loop, hq_loop, hsup_loop, hsurv_loop⟩ :=
-    contractLoop_spec ht hC (by simp +decide [x₁])
-      (by simp +decide [x₁]) hst₁
-  have hfull : ExecRand w contractDownTo x ((fun z => (z.1, 2 + z.2)) <$> m_loop) := by
-    unfold contractDownTo
-    have he12 := e1.seqRand hm_loop
-    have he012 := e0.seqRand he12
-    have hmap_assoc : ((fun z : Data 16 × ℕ => (z.1, 1 + z.2)) <$>
-        ((fun z : Data 16 × ℕ => (z.1, 1 + z.2)) <$> m_loop)) =
-        ((fun z : Data 16 × ℕ => (z.1, 2 + z.2)) <$> m_loop) := by
-      rw [Functor.map_map]
-      refine congrArg (· <$> m_loop) (funext fun z => Prod.ext rfl (by omega))
-    rwa [hmap_assoc] at he012
-  have hsub_cancel : t + (k - t) - t = k - t := by omega
-  refine ⟨(fun z => (z.1, 2 + z.2)) <$> m_loop, hfull, ?_, ?_, ?_⟩
-  · rw [hsub_cancel]
-    simp only [OracleComp.IsQueryBounded, OracleComp.isCostBounded_map_iff]
-    exact hq_loop
-  · intro z hz
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    rcases hsup_loop z₀ hz₀ with ⟨ht0, hmod0, W', part', hC', hst'⟩
-    exact ⟨by omega, hmod0, W', part', hC', hst'⟩
-  · intro B hmin_pos hB_nt hB_min
-    rw [eval_map_snd_toOuterMeasure]
-    exact hsurv_loop B hmin_pos hB_nt hB_min
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := contractDownTo_law ht htk hC.multigraph hst
+  obtain ⟨s, rfl⟩ : ∃ s, k = t + s := ⟨k - t, by omega⟩
+  rw [Nat.add_sub_cancel_left, ProbComp.eval_map] at hlaw
+  refine ⟨m, hm, hq, fun z hz => ?_, fun B hmin hB hBmin => ?_⟩
+  · obtain ⟨⟨hmod, W', -, hst'⟩, hT⟩ := hsup z hz
+    have hz' : heldGraph wb str z.1 ∈ ((Lean.Karger.spec.toRandomized.withCoins.run
+        (Lean.Karger.contractTimes s) ⟨t + s, W⟩).map Prod.snd).support := by
+      rw [← hlaw, PMF.mem_support_map_iff]
+      exact ⟨z, by rwa [ProbComp.support_eval], rfl⟩
+    obtain ⟨y, hy, hyz⟩ := (PMF.mem_support_map_iff _ _ _).mp hz'
+    obtain ⟨W'', part', hy', hC'⟩ :=
+      Lean.Karger.isContractionOf_of_mem_support_contractTimes (by omega) s hC hy
+    obtain rfl := hst'.eq_of_heldGraph_eq (hyz.symm.trans hy')
+    exact ⟨hT, hmod, W', part', hC', hst'⟩
+  · calc _ ≤ _ := Lean.Karger.survives_contractTimes ht hmin s hC hB hBmin
+      _ = (m.eval.map fun z => heldGraph wb str z.1).toOuterMeasure
+          {G | Lean.Karger.Survives W₀ (pullbackCut part B) t G} := by
+        rw [hlaw, PMF.toOuterMeasure_map_apply]
+        rfl
+      _ ≤ _ := by
+        rw [PMF.toOuterMeasure_map_apply]
+        refine PMF.toOuterMeasure_mono _ fun z ⟨⟨W'', part', B', hG, hC', hpb⟩, hz⟩ => ?_
+        rw [ProbComp.support_eval] at hz
+        obtain ⟨⟨-, W', -, hst'⟩, -⟩ := hsup z hz
+        obtain rfl := hst'.eq_of_heldGraph_eq hG
+        exact ⟨W', part', B', hC', hst'.workspace, hst'.regs_totS, hpb⟩
 
 /-- At `t = 2`, any state satisfying `SurvivalPost W₀ wb db str 2 C_star y` where `C_star` is a
 non-trivial cut attaining `minCut W₀` stores `minCut W₀` in `y.mem (wb + 1)`. -/
@@ -2982,20 +2811,10 @@ theorem survivalPost_two_mem_eq {n : ℕ} {W₀ : Fin n → Fin n → ℕ} {wb d
     (hnt : IsNonTrivialCut C_star) (hmin : cutWeight W₀ C_star = minCut W₀)
     (hsurv : SurvivalPost W₀ wb db str 2 C_star y) :
     y.mem (wb + 1) = minCut W₀ := by
-  rcases hsurv with ⟨W', part', B', hC', hws', _, hpb'⟩
-  have hB'_nt : IsNonTrivialCut B' :=
-    isNonTrivialCut_of_pullbackCut part' (hpb' ▸ hnt)
-  rw [isNonTrivialCut_iff_card, Fintype.card_fin] at hB'_nt
-  have hcard1 : B'.card = 1 := by omega
-  rcases Finset.card_eq_one.mp hcard1 with ⟨b, rfl⟩
-  have hcell : y.mem (wb + 1) = W' 0 1 := by
-    simpa using hws'.1 0 1
-  rw [hcell, ← hmin, ← hpb', cutWeight_pullbackCut hC']
-  have hb : b = 0 ∨ b = 1 := by omega
-  rcases hb with rfl | rfl
-  · exact (cutWeight_two_singleton_zero hC'.multigraph).symm
-  · have hcompl : ({(1 : Fin 2)} : Finset (Fin 2)) = Finset.univ \ {0} := by decide
-    rw [hcompl, cutWeight_compl hC'.multigraph, cutWeight_two_singleton_zero hC'.multigraph]
+  obtain ⟨W', part', B', hC', hws', -, hpb'⟩ := hsurv
+  have hB' : IsNonTrivialCut B' := isNonTrivialCut_of_pullbackCut part' (hpb' ▸ hnt)
+  rw [show y.mem (wb + 1) = W' 0 1 by simpa using hws'.1 0 1,
+    ← cutWeight_fin_two hC'.multigraph hB', ← cutWeight_pullbackCut hC', hpb', hmin]
 
 /-! ### Register-embedding (`Code.rename`) wrappers for callers with `r ≥ 16` -/
 
@@ -3006,11 +2825,6 @@ def computeDegreesAndTotalAt {r : ℕ} (hr : 16 ≤ r) : Code .standard r :=
 /-- `contractDownTo` embedded on registers `0..15` of any `r`-register file (`16 ≤ r`). -/
 def contractDownToAt {r : ℕ} (hr : 16 ≤ r) : Code .standard r :=
   contractDownTo.rename (Fin.castLE hr)
-
-private theorem extend_castLE_regs_lt {r : ℕ} (hr : 16 ≤ r) (y : Data 16) (x : Data r)
-    (i : Fin 16) :
-    (y.extend (Fin.castLE hr) x).regs (Fin.castLE hr i) = y.regs i :=
-  (Fin.castLE_injective hr).extend_apply y.regs x.regs i
 
 private theorem extend_castLE_regs_ge {r : ℕ} (hr : 16 ≤ r) (y : Data 16) (x : Data r)
     (j : Fin r) (hj : 16 ≤ j.val) :
@@ -3039,17 +2853,33 @@ theorem computeDegreesAndTotalAt_exec {r w wb db str k : ℕ} (hr : 16 ≤ r)
       y.regs (Fin.castLE hr targetT) = x.regs (Fin.castLE hr targetT) ∧
       y.regs (Fin.castLE hr totS) = totalDoubledWeight W ∧
       ∀ j : Fin r, 16 ≤ j.val → y.regs j = x.regs j := by
-  obtain ⟨y₀, hy₀_exec, hy₀_ws, hy₀_mod, _, _, hy₀_wb, hy₀_db, hy₀_str, hy₀_k, hy₀_t, hy₀_tot⟩ :=
-    computeDegreesAndTotal_exec (x := x.comap (Fin.castLE hr))
-      hwBase hdBase hstride hactiveK hstr hdisj h1 hwEnd hdEnd htot hmat
-  refine ⟨y₀.extend (Fin.castLE hr) x, hy₀_exec.rename (Fin.castLE_injective hr),
-    hy₀_ws, hy₀_mod, ?_, ?_, ?_, ?_, ?_, ?_, fun j hj => extend_castLE_regs_ge hr y₀ x j hj⟩
-  · rw [extend_castLE_regs_lt, hy₀_wb]
-  · rw [extend_castLE_regs_lt, hy₀_db]
-  · rw [extend_castLE_regs_lt, hy₀_str]
-  · rw [extend_castLE_regs_lt, hy₀_k]
-  · rw [extend_castLE_regs_lt, hy₀_t]; rfl
-  · rw [extend_castLE_regs_lt, hy₀_tot]
+  obtain ⟨y, hy, ⟨hws, hmod, _, _, hwb, hdb, hstr, hk, ht, htot⟩, hframe⟩ :=
+    ExecWithin.rename_post (Fin.castLE_injective hr)
+      (computeDegreesAndTotal_exec (x := x.comap (Fin.castLE hr))
+        hwBase hdBase hstride hactiveK hstr hdisj h1 hwEnd hdEnd htot hmat)
+  refine ⟨y, hy, hws, hmod, hwb, hdb, hstr, hk, ht, htot, fun j hj => hframe j ?_⟩
+  intro i hi
+  have hv := congrArg Fin.val hi
+  change i.val = j.val at hv
+  omega
+
+/-- `contractDownToAt hr` simulates `k - t` contractions of `Lean.Karger.spec` on any `r`-register
+file (`16 ≤ r`), as `contractDownTo_law` does, and preserves all caller registers with index
+`≥ 16`. -/
+theorem contractDownToAt_law {r w wb db str k t : ℕ} (hr : 16 ≤ r) {W : Fin k → Fin k → ℕ}
+    {x : Data r} (ht : 2 ≤ t) (htk : t ≤ k) (hW : IsMultigraph W)
+    (hst : ContractState w wb db str k t W (x.comap (Fin.castLE hr))) :
+    ExecRandLaw w (contractDownToAt hr) x
+      (fun y => Modifies (workspaceFootprint wb db str k) x.mem y.mem ∧
+        (∀ j : Fin r, 16 ≤ j.val → y.regs j = x.regs j) ∧
+        ∃ W' : Fin t → Fin t → ℕ, IsMultigraph W' ∧
+          ContractState w wb db str t t W' (y.comap (Fin.castLE hr)))
+      (36 * (k ^ 2 - t ^ 2) + 4) (k - t) (fun y => heldGraph wb str (y.comap (Fin.castLE hr)))
+      ((Lean.Karger.spec.toRandomized.withCoins.run (Lean.Karger.contractTimes (k - t))
+        ⟨k, W⟩).map Prod.snd) :=
+  (ExecRandLaw.rename (Fin.castLE_injective hr) (contractDownTo_law ht htk hW hst)).mono
+    (fun _ ⟨y, ⟨hmod, hy⟩, he⟩ => he ▸ ⟨hmod, fun j hj => extend_castLE_regs_ge hr y x j hj,
+      by rwa [Data.comap_extend (Fin.castLE_injective hr)]⟩) le_rfl le_rfl
 
 /-- Specification of `contractDownToAt hr` on any `r`-register file (`16 ≤ r`), preserving all
 caller registers with index `≥ 16`. -/

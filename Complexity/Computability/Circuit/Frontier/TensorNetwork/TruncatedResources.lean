@@ -9,9 +9,11 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
+import Complexity.Tactic.EncLen
 
 /-!
 # Resources of the truncation-order reduction
@@ -145,8 +147,7 @@ theorem length_encCore_coreInput_le (y : List ℕ × ℕ × ℕ × ℕ × Descri
     (P, ℓ, fl, FastContraction.digits fl.length k)
   set L := (encEngine encT (fl, P, ℓ, r, G)).length
   have hd : (encSpecData (P, ℓ, fl, FastContraction.digits fl.length k)).length ≤ 3 * L := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate] at hlen ⊢
-    omega
+    enc_len at hlen ⊢
   have hkL : G.vertices.length ≤ L := by omega
   have hmul : G.vertices.length *
       (2 * (encSpecData (P, ℓ, fl, FastContraction.digits fl.length k)).length) ≤ L * (6 * L) :=
@@ -174,8 +175,7 @@ theorem length_run_engineStep_le (y : List ℕ × ℕ × ℕ × ℕ × Described
       obtain ⟨k, hk, rfl⟩ := List.mem_map.mp hv
       exact hY k (List.mem_range.mp hk)
   simp only [List.length_map, List.length_range] at h
-  simp only [length_encPair]
-  omega
+  enc_len
 
 /-! ### The loop -/
 
@@ -283,8 +283,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     have hs := hstate j hj
     have hY := (hcore j hj).2.2
     rw [run_engineStep] at hs ⊢
-    simp only [length_encPair] at hs ⊢
-    omega
+    enc_len at hs ⊢
   have hround_time (j : ℕ) (hj : j ≤ N) :
       (IndexFold.roundCertificate (engineStepCertificate core cc)).time
           (IndexFold.run (engineStep core) j (y, [])) ≤
@@ -423,11 +422,8 @@ theorem specEntryCertificate_le :
   have hnZ : n ≤ Z := by omega
   have hH : (encPair encSpecData (encList encNat) ((P, ℓ, fl, ζ), entry t bs)).length ≤
       2 * Z + 1 := by
-    have : (encSpecData (P, ℓ, fl, ζ)).length ≤ n := by
-      simp only [hn, length_encPair]
-      omega
-    simp only [length_encPair] at this ⊢
-    omega
+    have : (encSpecData (P, ℓ, fl, ζ)).length ≤ n := by enc_len [hn]
+    enc_len at this ⊢
   simp only [U] at hUZ
   have h1 := (bD ((t, P, ℓ, fl, ζ), bs)).1.trans (mD hnZ)
   have h2 := (bE ((t, P, ℓ, fl, ζ), bs)).1.trans (mE hnZ)
@@ -493,23 +489,10 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
     K₂ * (2 * Z + 1 + cS * (Z + Uf Z + 1) + Z * (2 * Z + 3) + 1) ^ K₂
   let Tf : ℕ → ℕ := fun Z => pS Z + (Z + 2) * (Bf Z + 2 * Uf Z) + (Z + 2) * 2
   let Sf : ℕ → ℕ := fun Z => pS Z + Bf Z + (Z + Uf Z)
-  have hAp : PolyBounded id Af :=
-    ((((PolyBounded.const 3).mul PolyBounded.self).add (PolyBounded.const 1)).add
-      ((PolyBounded.const cE).mul (PolyBounded.self.add (PolyBounded.const 1)))).add
-      (PolyBounded.const 1)
-  have hUp : PolyBounded id Uf := (PolyBounded.const K₃).mul (hAp.pow K₃)
-  have hBp : PolyBounded id Bf :=
-    (PolyBounded.const K₂).mul ((((((PolyBounded.const 2).mul PolyBounded.self).add
-      (PolyBounded.const 1)).add ((PolyBounded.const cS).mul ((PolyBounded.self.add hUp).add
-        (PolyBounded.const 1)))).add (PolyBounded.self.mul (((PolyBounded.const 2).mul
-          PolyBounded.self).add (PolyBounded.const 3)))).add (PolyBounded.const 1) |>.pow K₂)
   have qS := PolyBounded.of_polynomiallyBounded id hpS
-  have hTSp : PolyBounded id fun Z => Tf Z + Sf Z :=
-    ((((qS.comp PolyBounded.self).add
-      ((PolyBounded.self.add (PolyBounded.const 2)).mul
-        (hBp.add ((PolyBounded.const 2).mul hUp)))).add
-      ((PolyBounded.self.add (PolyBounded.const 2)).mul (PolyBounded.const 2)))).add
-      (((qS.comp PolyBounded.self).add hBp).add (PolyBounded.self.add hUp))
+  have hTSp : PolyBounded id fun Z => Tf Z + Sf Z := by
+    dsimp only [Tf, Sf, Bf, Uf, Af]
+    growth_poly
   obtain ⟨a, d, had⟩ := hTSp.exists_le
   refine ⟨a + d, fun P ℓ r fl ζ G E ES hE => ?_⟩
   set G' := DescribedNetwork.specNet P ℓ fl ζ G with hG'
@@ -518,8 +501,7 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
   set X := 2 ^ G.numEdges with hX
   have hX1 : 1 ≤ X := Nat.one_le_two_pow
   have hG'n : (DescribedNetwork.encDescribed (encSpecDesc encT) G').length ≤ n := by
-    simp only [hn, encCore, length_encPair]
-    omega
+    enc_len [hn, encCore]
   -- The specialized entries.
   have hv : ∀ v' ∈ G'.vertices, ∀ bs : List Bool, bs.length = v'.1.length →
       (specEntryCertificate entry ce).time (v'.2, bs) ≤ E + Uf Z ∧
@@ -555,9 +537,7 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
   have hr : ∀ z, SumOps.galois.Reduced (P, fl) z → (encList encNat z).length ≤ Z * (2 * Z + 3) :=
     fun z hz => (SumOps.length_encList_le_of_galois_reduced hz).trans (by
       have hfl := length_le_length_encList encNat fl
-      have hlen : (encList encNat fl).length + P ≤ n := by
-        simp only [hn, encCore, length_encPair, encUnary_apply, List.length_replicate]
-        omega
+      have hlen : (encList encNat fl).length + P ≤ n := by enc_len [hn, encCore]
       dsimp only
       exact Nat.mul_le_mul (by omega) (by omega))
   obtain ⟨hT, hS⟩ := hK₂ ((P, fl), G') (E + Uf Z) (ES + Uf Z) (cS * (Z + Uf Z + 1))
@@ -565,9 +545,7 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
   have hin : (DescribedNetwork.encInput (encPair encUnary (encList encNat)) (encSpecDesc encT)
       ((P, fl), G')).length ≤ 2 * Z + 1 := by
     have : (DescribedNetwork.encInput (encPair encUnary (encList encNat)) (encSpecDesc encT)
-        ((P, fl), G')).length ≤ 2 * n + 1 := by
-      simp only [hn, DescribedNetwork.encInput, encCore, length_encPair]
-      omega
+        ((P, fl), G')).length ≤ 2 * n + 1 := by enc_len [hn, DescribedNetwork.encInput, encCore]
     omega
   have hB : K₂ * ((DescribedNetwork.encInput (encPair encUnary (encList encNat))
       (encSpecDesc encT) ((P, fl), G')).length + cS * (Z + Uf Z + 1) + Z * (2 * Z + 3) + 1) ^ K₂ ≤
@@ -644,19 +622,10 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
   let Engf : ℕ → ℕ := fun W => K₁ * (Yf W + cD * (Rf W + 1) + 1) ^ K₁
   let Tf : ℕ → ℕ := fun W => pM W + (Yf W * Yf W + 2) * (Engf W + Rf W)
   let Sf : ℕ → ℕ := fun W => pM W + (Engf W + Rf W)
-  have hYp : PolyBounded id Yf :=
-    (PolyBounded.const cY).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow dY)
-  have hRp : PolyBounded id Rf :=
-    (PolyBounded.const KA).mul (((((PolyBounded.const 9).mul ((hYp.add
-      (PolyBounded.const 1)).pow 2)).add PolyBounded.self).add (PolyBounded.const 1)).pow KA)
-  have hEngp : PolyBounded id Engf :=
-    (PolyBounded.const K₁).mul (((hYp.add ((PolyBounded.const cD).mul
-      (hRp.add (PolyBounded.const 1)))).add (PolyBounded.const 1)).pow K₁)
   have qM := PolyBounded.of_polynomiallyBounded id hpM
-  have hTSp : PolyBounded id fun W => Tf W + Sf W :=
-    ((qM.comp PolyBounded.self).add
-      (((hYp.mul hYp).add (PolyBounded.const 2)).mul (hEngp.add hRp))).add
-      ((qM.comp PolyBounded.self).add (hEngp.add hRp))
+  have hTSp : PolyBounded id fun W => Tf W + Sf W := by
+    dsimp only [Tf, Sf, Engf, Rf, Yf]
+    growth_poly
   obtain ⟨a, d, had⟩ := hTSp.exists_le
   refine ⟨a + d, fun P ℓ r G E ES hE => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length with hn

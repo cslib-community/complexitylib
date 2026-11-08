@@ -40,13 +40,16 @@ first-order interpretations.
 * `Cslib.Complexity.mem_Clique_iff`: cliques as subsets of `ℕ` contained in the declared vertices.
 * `Cslib.Complexity.Graph.induced_compl`, `Cslib.Complexity.Graph.compl_mem_Clique_iff`:
   `G.compl.induced = G.inducedᶜ` and `(G.compl, m) ∈ Clique ↔ (G, m) ∈ IndependentSet`.
+* `Cslib.Complexity.Graph.compl_mem_IndependentSet_iff`:
+  `(G.compl, m) ∈ IndependentSet ↔ (G, m) ∈ Clique`.
 * `Cslib.Complexity.Graph.le_cliqueNum_iff`, `Cslib.Complexity.Graph.cliqueNum_compl`: the clique
   number is the largest target of `Clique`, and that of the complement is the independence number.
 * `Cslib.Complexity.Graph.computableInPolyTime_compl`: complementing a graph on its declared
   vertices is polynomial-time.
 * `Cslib.Complexity.Clique.mem_NP`: `Clique ∈ NP (encPair encGraph encNat)`.
-* `Cslib.Complexity.polyTimeReducible_IndependentSet_Clique`: `IndependentSet` reduces to `Clique`
-  in polynomial time.
+* `Cslib.Complexity.polyTimeReducible_IndependentSet_Clique`,
+  `Cslib.Complexity.polyTimeReducible_Clique_IndependentSet`: `IndependentSet` and `Clique` reduce
+  to each other in polynomial time.
 * `Cslib.Complexity.Clique_npHard`: `Clique` is `NP`-hard.
 * `Cslib.Complexity.Clique_npComplete`: `Clique` is `NP`-complete.
 
@@ -115,6 +118,12 @@ theorem induced_compl (G : Graph) :
 theorem compl_mem_Clique_iff (G : Graph) (m : ℕ) :
     (G.compl, m) ∈ Clique ↔ (G, m) ∈ IndependentSet := by
   simp_rw [IndependentSet, Set.mem_ofPred_eq, ← SimpleGraph.isNClique_compl, ← induced_compl]
+  rfl
+
+/-- **Cliques are independent sets of the complement.** -/
+theorem compl_mem_IndependentSet_iff (G : Graph) (m : ℕ) :
+    (G.compl, m) ∈ IndependentSet ↔ (G, m) ∈ Clique := by
+  simp_rw [Clique, Set.mem_ofPred_eq, ← SimpleGraph.isNIndepSet_compl, ← induced_compl]
   rfl
 
 /-- Complementing a graph on its declared vertices is polynomial-time with the graph encoding. -/
@@ -189,6 +198,13 @@ declared vertices. -/
 theorem polyTimeReducible_IndependentSet_Clique :
     PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) IndependentSet Clique :=
   ⟨fun x => (x.1.compl, x.2), by fun_prop, fun ⟨G, m⟩ => (Graph.compl_mem_Clique_iff G m).symm⟩
+
+/-- `Clique` reduces to `IndependentSet` in polynomial time by complementing the graph on its
+declared vertices. -/
+theorem polyTimeReducible_Clique_IndependentSet :
+    PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) Clique IndependentSet :=
+  ⟨fun x => (x.1.compl, x.2), by fun_prop,
+    fun ⟨G, m⟩ => (Graph.compl_mem_IndependentSet_iff G m).symm⟩
 
 /-- `Clique` is `NP`-hard. -/
 theorem Clique_npHard : NPHard (encPair encGraph encNat) Clique :=

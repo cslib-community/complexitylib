@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -58,6 +58,8 @@ such sources would all have score one, which closes the incoming gate
 * `Matrix.correctionPrep`, `Matrix.correctionNormalizer`, `Matrix.correctionAtom`: the atom.
 
 ## Main results
+
+* `Matrix.correctionAtom_nonneg`: nonnegativity from nonnegative cutoffs and gates.
 
 * `Finset.expect_mul_div_clip_eq`: the normalization principle.
 * `Finset.card_filter_le_card_filter_mul_le`: few draws retain many members of a sparse set.
@@ -411,5 +413,24 @@ theorem expect_correctionAtom {x y : V} (hSx : ({s | X s x} : Finset ι).Nonempt
     expect_mul_div_clip_eq (hSx.product hSy) (fun d _ => mul_nonneg (hρ0 _) (hτ0 _))
       (fun d _ => mul_le_one_of_gate (hρ1 _) (hτ0 _) (hτ1 _)) hfail _
   rw [expect_congr rfl hterm, ← expect_mul, key]
+
+section Nonneg
+
+variable {I : ℝ → ℝ → ℝ} {τ Q h ρ : ℝ → ℝ} {X : ι → V → Prop} {Z Zt : κ → V → Prop}
+  [∀ s x, Decidable (X s x)] [∀ t z, Decidable (Z t z)] [∀ t z, Decidable (Zt t z)]
+
+/-- Nonnegative cutoff and gate values give a nonnegative atom. -/
+theorem correctionAtom_nonneg {G : Matrix V V ℝ} {g₀ : V → ℝ}
+    (hQ0 : ∀ v, 0 ≤ Q v) (hρ0 : ∀ r, 0 ≤ ρ r) (hτ0 : ∀ r, 0 ≤ τ r)
+    (hg₀ : ∀ z, 0 ≤ g₀ z) (d : ι × κ) (x z : V) :
+    0 ≤ correctionAtom I τ K Kc f G X Z Zt Q h ρ g₀ d x z := by
+  rw [correctionAtom]
+  split_ifs
+  · refine mul_nonneg (div_nonneg (mul_nonneg (hQ0 _) (mul_nonneg (hρ0 _) (hτ0 _))) ?_)
+      (hg₀ z)
+    exact le_trans (by norm_num : (0 : ℝ) ≤ 1 / 2) (le_max_left _ _)
+  · exact le_rfl
+
+end Nonneg
 
 end Matrix

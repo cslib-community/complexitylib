@@ -33,6 +33,7 @@ in the soundness argument, never by the polynomial-time verifier.
 * `PCPVerifier.isPolyTime_queryTable`: the complete address table is computable in polynomial
   time under the logarithmic coin bound.
 * `PCPVerifier.isPolyTime_tableVerifier`: uniform efficiency, including malformed tables.
+* `PCPVerifier.mem_queryTable`: the table records every address queried on a valid random word.
 * `PCPVerifier.tableVerifier_complete`, `PCPVerifier.tableVerifier_sound`: exact proof transfer.
 * `Cslib.Complexity.PCP_log_subset_NP`: logarithmic-randomness PCP is contained in NP.
 
@@ -114,7 +115,8 @@ theorem isPolyTime_tableVerifier (hV : V.PolyTime enc)
   exact ComputableInPolyTime.allWithInput
     (he.comp (ComputableInPolyTime.fst enc encBits)) htest
 
-private theorem mem_queryTable {a : α} {word : List Bool} {address : ℕ}
+/-- Every address queried on a random word of the right length occurs in the address table. -/
+theorem mem_queryTable {a : α} {word : List Bool} {address : ℕ}
     (hword : word.length = V.coins a) (haddress : address ∈ V.queries (a, word)) :
     address ∈ V.queryTable a :=
   List.mem_flatMap.mpr ⟨word, BitString.mem_enumList.mpr hword, haddress⟩

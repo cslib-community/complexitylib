@@ -121,15 +121,16 @@ noncomputable def runWith (O : (Fin n → Option Bool) → Fin n → Option Bool
     (π : Equiv.Perm (Fin n)) : ℕ → PMF (Fin n → Option Bool)
   | 0 => PMF.pure fun _ => none
   | i + 1 =>
-    if h : i < n then
-      (runWith O π i).bind fun τ =>
-        (stepWith O τ (π ⟨i, h⟩)).map fun b => Function.update τ (π ⟨i, h⟩) (some b)
+    if h : i < n then do
+      let τ ← runWith O π i
+      (stepWith O τ (π ⟨i, h⟩)).map fun b => Function.update τ (π ⟨i, h⟩) (some b)
     else runWith O π i
 
 /-- **One round with the oracle `O`**: process all variables in a uniformly random order. -/
 noncomputable def roundWith (O : (Fin n → Option Bool) → Fin n → Option Bool) :
-    PMF (Fin n → Option Bool) :=
-  (Cslib.Probability.PMF.uniformOfFintype (Equiv.Perm (Fin n))).bind fun π => runWith O π n
+    PMF (Fin n → Option Bool) := do
+  let π ← Cslib.Probability.PMF.uniformOfFintype (Equiv.Perm (Fin n))
+  runWith O π n
 
 /-- One step of PPZ on `x`: the forced value if there is one, and a uniform bit otherwise. -/
 noncomputable def step (φ : CNF (Fin n)) (τ : Fin n → Option Bool) (x : Fin n) : PMF Bool :=
@@ -166,7 +167,7 @@ theorem runWith_succ (O : (Fin n → Option Bool) → Fin n → Option Bool)
     (π : Equiv.Perm (Fin n)) {i : ℕ} (h : i < n) :
     runWith O π (i + 1) = (runWith O π i).bind fun τ =>
       (stepWith O τ (π ⟨i, h⟩)).map fun b => Function.update τ (π ⟨i, h⟩) (some b) := by
-  simp only [runWith, h, ↓reduceDIte]
+  simp only [runWith, h, ↓reduceDIte, Probability.PMF.monad_bind_eq_bind]
 
 /-- A run stops after all `n` variables are processed. -/
 theorem runWith_succ_of_le (O : (Fin n → Option Bool) → Fin n → Option Bool)
@@ -487,7 +488,8 @@ theorem roundWith_apply_eq {O : (Fin n → Option Bool) → Fin n → Option Boo
     ((roundWith O) fun x => some (σ x)).toReal =
       ∑ π : Equiv.Perm (Fin n),
         ((n.factorial : ℝ))⁻¹ * (1 / 2 : ℝ) ^ unforcedCountWith O σ π n := by
-  rw [roundWith, PMF.bind_apply, tsum_fintype, ENNReal.toReal_sum (fun π _ => ENNReal.mul_ne_top
+  rw [roundWith, Probability.PMF.monad_bind_eq_bind, PMF.bind_apply, tsum_fintype,
+    ENNReal.toReal_sum (fun π _ => ENNReal.mul_ne_top
     (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _))]
   refine sum_congr rfl fun π _ => ?_
   rw [← restrict_prefixSet_self σ π, runWith_apply_restrict hO π le_rfl, ENNReal.toReal_mul,

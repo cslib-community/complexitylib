@@ -46,8 +46,9 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
      capacity `n_max` words each.
 
 2. **Lookup, displacement, and Las Vegas rehash:**
-   - `get u` probes at most the two candidate locations `T₁[h₁(u)]` and `T₂[h₂(u)]` in deterministic
-     worst-case `getSteps c_exp n_max U ≤ getStepsBound c_exp` instructions with zero `rand` calls.
+   - `query u` probes at most the two candidate locations `T₁[h₁(u)]` and `T₂[h₂(u)]` in
+     deterministic worst-case `querySteps c_exp n_max U ≤ queryStepsBound c_exp` instructions with
+     zero `rand` calls.
    - `insert u v` first runs the same 2-probe check (`probeKeyCode`): if `u` is already present,
      it updates `insVals[idx] ← v` in place in `insertBaseSteps c_exp n_max U` deterministic steps
      without moving any keys. If `u` is absent, it appends `(u, v)` at index
@@ -71,8 +72,8 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
      `IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_max) 3 4` unconditionally
      for every `n_max : ℕ` via
      `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily`
-     [PaghRodler2004, Thorup2013], yielding assumption-free `O_{c_exp}(1)` worst-case `get` cost
-     `getChargeBound c_exp` and `O_{c_exp}(1)` expected-amortized `insert` cost
+     [PaghRodler2004, Thorup2013], yielding assumption-free `O_{c_exp}(1)` worst-case `query` cost
+     `queryChargeBound c_exp` and `O_{c_exp}(1)` expected-amortized `insert` cost
      `insertChargeBound c_exp` (`expectedOpCharge c_exp`) independent of `n_max` and `U`.
 
 ## Main definitions
@@ -92,7 +93,7 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
 * `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.isCuckooHashFamily_tableBits`: unconditional
   `IsCuckooHashFamily` instance (`C_walk = 3`, `C_reh = 4`) for every `n_max : ℕ` under
   `U ≤ max n_max 4 ^ c_exp`.
-* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.getCode_execWithin`: worst-case
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.queryCode_execWithin`: worst-case
   deterministic
   2-probe lookup specification.
 * `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.rehashLoopCode_execCodeDist`: geometric Las
@@ -101,7 +102,7 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
 * `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.cuckoo_steps_expected_amortized`,
   `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.cuckoo_seq_expected_amortized`:
   unconditional
-  continuation and end-to-end expected-time bounds across arbitrary valid `get`/`insert` histories
+  continuation and end-to-end expected-time bounds across arbitrary valid `query`/`insert` histories
   under `U ≤ max n_max 4 ^ c_exp`.
 
 ## References
@@ -123,7 +124,7 @@ public section
 
 namespace Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 
-open Cslib.WordRAM Cslib.Algorithms.WordRAM
+open Cslib.WordRAM
 open Cslib.WordRAM.Randomized
 open Cslib.Probability
 open Cslib.Probability.PMF
@@ -1085,7 +1086,7 @@ theorem initSetup_spec {w base c_exp n_max U V : ℕ} {x₁ : Data 19}
       hd2_frame a (ha.imp (by omega) (by have := le_space c_exp n_max; omega)),
       hd1_mem]
 
-/-! ### Section 3: Base-shifted hash wrappers, `probeKeyCode`, and `getCode` -/
+/-! ### Section 3: Base-shifted hash wrappers, `probeKeyCode`, and `queryCode` -/
 
 /-- Encode `Option ℕ` as a single machine word (`0` for `none` and `v + 1` for `some v`). -/
 @[expose]
@@ -1868,10 +1869,10 @@ theorem probeKeyCode_execWithin {w base c_exp n_max U : ℕ}
       · simp only [hk2, ↓reduceIte, hs5_13, ht2]
         exact hs2_13_eq
 
-/-- Positive branch of `getCode` when `foundFlag = 1`: loads `idx = mem[base + 14]`,
+/-- Positive branch of `queryCode` when `foundFlag = 1`: loads `idx = mem[base + 14]`,
 `valsBase = mem[base + 10]`, `v = mem[valsBase + idx]`, and sets `reg 2 = v + 1`. -/
 @[expose]
-def getFoundBranchCode : Code .exact 19 :=
+def queryFoundBranchCode : Code .exact 19 :=
   .seq (loadHeaderCode 17 14)
   (.seq (loadHeaderCode 16 10)
   (.seq (.op (.exactBin .add 16 16 17))
@@ -1879,24 +1880,24 @@ def getFoundBranchCode : Code .exact 19 :=
   (.seq (.op (.const 15 1))
         (.op (.exactBin .add 2 16 15))))))
 
-/-- Lookup operation (`getCode`): stores `u.val` from `reg 3` into `mem[base + 11]`, runs
+/-- Lookup operation (`queryCode`): stores `u.val` from `reg 3` into `mem[base + 11]`, runs
 `probeKeyCode`, and writes `encodeOptionNat (s u)` into `reg 2`. -/
 @[expose]
-def getCode (c_exp n_max : ℕ) : Code .exact 19 :=
+def queryCode (c_exp n_max : ℕ) : Code .exact 19 :=
   .seq (storeHeaderCode 11 3)
   (.seq (probeKeyCode c_exp n_max)
   (.seq (loadHeaderCode 16 13)
   (.seq (.op (.const 15 0))
   (.branch (.lt 15 16)
-    getFoundBranchCode
+    queryFoundBranchCode
     (.op (.const 2 0))))))
 
-/-- Step bound for `getCode`. -/
+/-- Step bound for `queryCode`. -/
 @[expose]
-def getSteps (c_exp n_max U : ℕ) : ℕ :=
+def querySteps (c_exp n_max U : ℕ) : ℕ :=
   probeKeySteps c_exp n_max U + 19
 
-theorem getCode_execWithin {w base c_exp n_max U V : ℕ}
+theorem queryCode_execWithin {w base c_exp n_max U V : ℕ}
     {ks : List (Fin U)} {s : Dictionary.State U}
     {u : Fin U} {x : Data 19}
     (hrep : RepWithKeys w base c_exp n_max U V ks s x)
@@ -1905,7 +1906,7 @@ theorem getCode_execWithin {w base c_exp n_max U V : ℕ}
     (hfit_end : Fits w (base + space c_exp n_max))
     (hfit_V : Fits w V) :
     ∃ y : Data 19,
-      ExecWithin w (getCode c_exp n_max) x y (getSteps c_exp n_max U) ∧
+      ExecWithin w (queryCode c_exp n_max) x y (querySteps c_exp n_max U) ∧
       y.regs 2 = encodeOptionNat (s u) ∧
       RepWithKeys w base c_exp n_max U V ks s y ∧
       extractSeed (hashBase base) c_exp n_max U (tableBits n_max) y.mem =
@@ -2070,14 +2071,14 @@ theorem getCode_execWithin {w base c_exp n_max U V : ℕ}
     set s10 := s9.set 2 (s2.mem (valsBase base c_exp n_max + idx) + 1)
     have e_add2 : Exec w (.op (.exactBin .add 2 16 15) : Code .exact 19) s9 s10 1 :=
       ExactLog.exec_exactBin (by simp +decide [s9, hs9_16, hs9_15]) hfit_res
-    have e_found : Exec w getFoundBranchCode s4 s10 (3 + (3 + (1 + (1 + (1 + 1))))) :=
+    have e_found : Exec w queryFoundBranchCode s4 s10 (3 + (3 + (1 + (1 + (1 + 1))))) :=
       e_ld14.seq (e_ld10.seq (e_add1.seq (e_ldv.seq (e_c1.seq e_add2))))
     have e_br := e_found.branch_pos (neg := .op (.const 2 0)) hcond
-    have hall : Exec w (getCode c_exp n_max) x s10
+    have hall : Exec w (queryCode c_exp n_max) x s10
         (3 + (t_probe + (3 + (1 + ((3 + (3 + (1 + (1 + (1 + 1))))) + 1))))) :=
       e_st11.seq (he_probe.seq (e_ld13.seq (e_c0.seq e_br)))
-    have hwithin : ExecWithin w (getCode c_exp n_max) x s10 (getSteps c_exp n_max U) :=
-      ⟨_, by dsimp only [getSteps]; omega, hall⟩
+    have hwithin : ExecWithin w (queryCode c_exp n_max) x s10 (querySteps c_exp n_max U) :=
+      ⟨_, by dsimp only [querySteps]; omega, hall⟩
     refine ⟨s10, hwithin, ?_, ?_, hs2_seed_x, hs2_mod⟩
     · simp only [s10, Data.set, Function.update_self, hsu, encodeOptionNat]
     · refine ⟨hwithin.bounded hx_bdd, by simp +decide [s10, s9, s8, s7, s6, hs5_0],
@@ -2096,11 +2097,11 @@ theorem getCode_execWithin {w base c_exp n_max U V : ℕ}
       simp [Cond.Holds, hs4_15, hs4_16, hs2_lookup]
     set s5 := s4.set 2 0
     have e_c2 : Exec w (.op (.const 2 0) : Code .exact 19) s4 s5 1 := Exec.const hfit_0
-    have e_br := e_c2.branch_neg (pos := getFoundBranchCode) hcond
-    have hall : Exec w (getCode c_exp n_max) x s5 (3 + (t_probe + (3 + (1 + (1 + 2))))) :=
+    have e_br := e_c2.branch_neg (pos := queryFoundBranchCode) hcond
+    have hall : Exec w (queryCode c_exp n_max) x s5 (3 + (t_probe + (3 + (1 + (1 + 2))))) :=
       e_st11.seq (he_probe.seq (e_ld13.seq (e_c0.seq e_br)))
-    have hwithin : ExecWithin w (getCode c_exp n_max) x s5 (getSteps c_exp n_max U) :=
-      ⟨_, by dsimp only [getSteps]; omega, hall⟩
+    have hwithin : ExecWithin w (queryCode c_exp n_max) x s5 (querySteps c_exp n_max U) :=
+      ⟨_, by dsimp only [querySteps]; omega, hall⟩
     have hsu : s u = none := by
       rw [← Dictionary.notMem_dom_iff]
       exact fun h => hmem ((hdom_iff u).mpr h)
@@ -4754,7 +4755,7 @@ theorem insertSeedSteps_le_insertWorstSteps (c_exp n_max U : ℕ) (ks : List (Fi
 /-- Insertion-order key list after executing dictionary operation `o` from key list `ks`. -/
 @[expose]
 def stepKeys {U : ℕ} (ks : List (Fin U)) : Dictionary.Op U → List (Fin U)
-  | .get _ => ks
+  | .query _ => ks
   | .insert u _ => if u ∈ ks then ks else ks ++ [u]
 
 theorem survivingSeeds_stepKeys_subset {U : ℕ} (c_exp n_max : ℕ) (ks : List (Fin U))
@@ -4764,7 +4765,7 @@ theorem survivingSeeds_stepKeys_subset {U : ℕ} (c_exp n_max : ℕ) (ks : List 
       survivingSeeds (Θ := Seed c_exp n_max U (tableBits n_max))
         evalHash1 evalHash2 (maxEvictions n_max) ks := by
   cases o with
-  | get _ => exact Finset.Subset.refl _
+  | query _ => exact Finset.Subset.refl _
   | insert u _ =>
     dsimp only [stepKeys]
     split_ifs
@@ -5365,12 +5366,12 @@ theorem insertCode_execCodeDist {w base c_exp n_max U V v : ℕ}
 /-! ### Section 6: `opCode`, `cuckooCode`, `impl`, and `cuckoo_seq_expected_amortized` -/
 
 /-- Standalone register encoding for `Dictionary.Op U`:
-* `get u` sets `reg 2 = 0` (selector) and `reg 3 = u.val`.
+* `query u` sets `reg 2 = 0` (selector) and `reg 3 = u.val`.
 * `insert u v` sets `reg 2 = 1` (selector), `reg 3 = u.val`, and `reg 4 = v`. -/
 @[expose]
 def encode {U : ℕ} (o : Dictionary.Op U) (i : Fin 19) : ℕ :=
   match o with
-  | .get u =>
+  | .query u =>
     if i = 2 then 0
     else if i = 3 then u.val
     else 0
@@ -5384,7 +5385,7 @@ def encode {U : ℕ} (o : Dictionary.Op U) (i : Fin 19) : ℕ :=
 @[expose]
 def argMatch {U : ℕ} (o : Dictionary.Op U) (regs : Fin 19 → ℕ) : Prop :=
   match o with
-  | .get u => regs 2 = 0 ∧ regs 3 = u.val
+  | .query u => regs 2 = 0 ∧ regs 3 = u.val
   | .insert u v => regs 2 = 1 ∧ regs 3 = u.val ∧ regs 4 = v
 
 /-- Output decoder reading `Option ((Dictionary.spec U V n_max).Result o)` from final registers. -/
@@ -5392,16 +5393,16 @@ def argMatch {U : ℕ} (o : Dictionary.Op U) (regs : Fin 19 → ℕ) : Prop :=
 def decode {U V n_max : ℕ} (o : Dictionary.Op U) (regs : Fin 19 → ℕ) :
     Option ((Dictionary.spec U V n_max).Result o) :=
   match o with
-  | .get _ => some (decodeOptionNat (regs 2))
+  | .query _ => some (decodeOptionNat (regs 2))
   | .insert _ _ => some ()
 
-/-- Combined operation body (`opCode`): dispatches on `reg 2 = 0` (`getCode`) vs `reg 2 ≠ 0`
+/-- Combined operation body (`opCode`): dispatches on `reg 2 = 0` (`queryCode`) vs `reg 2 ≠ 0`
 (`insertCode`). -/
 @[expose]
 def opCode (c_exp n_max : ℕ) : Code .exact 19 :=
   .seq (.op (.const 15 0))
   (.branch (.eq 2 15)
-    (getCode c_exp n_max)
+    (queryCode c_exp n_max)
     (insertCode c_exp n_max))
 
 /-- Amortized rehash contribution per insertion:
@@ -5422,7 +5423,7 @@ def insertCharge (c_exp n_max U C_walk C_reh : ℕ) : ℕ :=
 /-- Per-operation amortized instruction charge for `Dictionary.Op U`. -/
 @[expose]
 def charge (c_exp n_max U C_walk C_reh : ℕ) (_s : Dictionary.State U) : Dictionary.Op U → ℕ
-  | .get _ => getSteps c_exp n_max U + 2
+  | .query _ => querySteps c_exp n_max U + 2
   | .insert _ _ => insertCharge c_exp n_max U C_walk C_reh
 
 /-- State-independent expected step bound for a single `opCode` invocation under an arbitrary
@@ -5431,21 +5432,21 @@ input distribution (used in the standalone `Randomized.StateTransitionImpl` cert
 valid trajectories from `initFresh`). -/
 @[expose]
 def stepWorstCharge (c_exp n_max U : ℕ) (_s : Dictionary.State U) : Dictionary.Op U → ℕ
-  | .get _ => getSteps c_exp n_max U + 2
+  | .query _ => querySteps c_exp n_max U + 2
   | .insert _ _ => insertWorstSteps c_exp n_max U + 3
 
 /-- Seed-and-state-dependent step bound for `opCode`. -/
 @[expose]
 noncomputable def opSeedSteps (c_exp n_max U : ℕ) (ks : List (Fin U))
     (θ : Seed c_exp n_max U (tableBits n_max)) (s : Dictionary.State U) : Dictionary.Op U → ℝ≥0∞
-  | .get _ => (getSteps c_exp n_max U + 2 : ℕ)
+  | .query _ => (querySteps c_exp n_max U + 2 : ℕ)
   | .insert u _ => insertSeedSteps c_exp n_max U ks θ s u + 3
 
 theorem opSeedSteps_le_stepWorstCharge (c_exp n_max U : ℕ) (ks : List (Fin U))
     (θ : Seed c_exp n_max U (tableBits n_max)) (s : Dictionary.State U) (o : Dictionary.Op U) :
     opSeedSteps c_exp n_max U ks θ s o ≤ (stepWorstCharge c_exp n_max U s o : ℝ≥0∞) := by
   cases o with
-  | get _ => exact le_rfl
+  | query _ => exact le_rfl
   | insert u _ =>
     dsimp only [opSeedSteps, stepWorstCharge]
     push_cast
@@ -5493,23 +5494,23 @@ theorem opCode_execCodeDist {w base c_exp n_max U V : ℕ}
     RepWithKeys.supported (x := x) (x' := s1) (by simp +decide [s1]) (fun _ _ => rfl)
       (e_c0.bounded hrep.1) hrep
   cases o with
-  | get u =>
+  | query u =>
     obtain ⟨h2, h3⟩ := harg
     have hcond : (Cond.eq 2 15 : Cond 19).Holds s1 := by
       simp +decide [Cond.Holds, s1, h2]
     obtain ⟨y, ⟨t_g, ht_g, he_g⟩, hy_2, hy_rep, hy_seed, hy_mod⟩ :=
-      getCode_execWithin (u := u) hs1_rep (by simp +decide [s1, h3]) hw hfit_end hfit_V
+      queryCode_execWithin (u := u) hs1_rep (by simp +decide [s1, h3]) hw hfit_end hfit_V
     have e_br := he_g.branch_pos (neg := insertCode c_exp n_max) hcond
     have hall := e_c0.seq e_br
     have hθ_surv : θ_mem ∈ survivingSeeds evalHash1 evalHash2 (maxEvictions n_max) ks :=
       hrep.extractSeed_mem_survivingSeeds
     have hE' :
         (survivingSeeds evalHash1 evalHash2 (maxEvictions n_max)
-          (stepKeys ks (.get u))).Nonempty :=
+          (stepKeys ks (.query u))).Nonempty :=
       ⟨θ_mem, hθ_surv⟩
     refine ⟨PMF.pure y, hE', (ExecCodeDist.of_exec hall).mono ?_, ?_, ?_⟩
     · dsimp only [opSeedSteps]
-      exact_mod_cast (by omega : 1 + (t_g + 1) ≤ getSteps c_exp n_max U + 2)
+      exact_mod_cast (by omega : 1 + (t_g + 1) ≤ querySteps c_exp n_max U + 2)
     · dsimp only [stepKeys]
       simp only [hθ_surv, ↓reduceIte, PMF.map, PMF.pure_bind, Function.comp_apply]
       rw [hy_seed]
@@ -5527,7 +5528,7 @@ theorem opCode_execCodeDist {w base c_exp n_max U V : ℕ}
     obtain ⟨μ_ins, hE', hins_dist, hins_law, hins_supp⟩ :=
       insertCode_execCodeDist hreh hs1_rep (by simp +decide [s1, h3])
         (by simp +decide [s1, h4]) hvalid hfit_ev hw hfit_end hfit_q
-    have hbr := hins_dist.branch_neg (pos := getCode c_exp n_max) hcond
+    have hbr := hins_dist.branch_neg (pos := queryCode c_exp n_max) hcond
     have hseq := (ExecCodeDist.of_exec e_c0).seq_pure hbr
     refine ⟨μ_ins, hE', hseq.mono ?_, hins_law, ?_⟩
     · dsimp only [opSeedSteps]
@@ -5828,7 +5829,7 @@ theorem cuckoo_arguments_fit {w n_max U V : ℕ}
     (hv : (Dictionary.spec U V n_max).valid s o) (i : Fin 19) :
     Fits w (encode o i) := by
   cases o with
-  | get u =>
+  | query u =>
     dsimp only [encode]
     split_ifs
     · exact hfit_U.of_le (Nat.zero_le _)
@@ -5874,16 +5875,16 @@ theorem isCuckooHashFamily_tableBits {c_exp U n_max : ℕ}
   Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily
     hU (thirtyTwo_mul_max_le_tableSize n_max)
 
-/-- `O(c_exp⁴) = O_{c_exp}(1)` worst-case step bound for `getCode c_exp n_max`, independent of
+/-- `O(c_exp⁴) = O_{c_exp}(1)` worst-case step bound for `queryCode c_exp n_max`, independent of
 `n_max` and `U` whenever `U ≤ max n_max 4 ^ c_exp`. -/
 @[expose]
-def getStepsBound (c_exp : ℕ) : ℕ :=
+def queryStepsBound (c_exp : ℕ) : ℕ :=
   2 * (evalHashBound c_exp + 36) + 31
 
-/-- `O(c_exp⁴) = O_{c_exp}(1)` worst-case instruction bound for `get` via `opCode c_exp n_max`. -/
+/-- `O(c_exp⁴) = O_{c_exp}(1)` worst-case instruction bound for `query` via `opCode c_exp n_max`. -/
 @[expose]
-def getChargeBound (c_exp : ℕ) : ℕ :=
-  getStepsBound c_exp + 2
+def queryChargeBound (c_exp : ℕ) : ℕ :=
+  queryStepsBound c_exp + 2
 
 /-- `O(c_exp⁴) = O_{c_exp}(1)` step bound per eviction round in `evictLoopCode c_exp n_max`. -/
 @[expose]
@@ -5920,7 +5921,7 @@ def insertChargeBound (c_exp : ℕ) : ℕ :=
 cuckoo hashing, completely independent of `n_max` and `U` whenever `U ≤ max n_max 4 ^ c_exp`. -/
 @[expose]
 def expectedOpCharge (c_exp : ℕ) {U : ℕ} (_s : Dictionary.State U) : Dictionary.Op U → ℕ
-  | .get _ => getChargeBound c_exp
+  | .query _ => queryChargeBound c_exp
   | .insert _ _ => insertChargeBound c_exp
 
 private theorem tableBits_le_clog (c_exp n_max : ℕ) :
@@ -5935,11 +5936,11 @@ theorem evalHashSteps_tableBits_le {c_exp n_max U : ℕ}
     evalHashSteps c_exp n_max U (tableBits n_max) ≤ evalHashBound c_exp :=
   evalHashSteps_le hU (tableBits_le_clog c_exp n_max)
 
-theorem getSteps_le {c_exp n_max U : ℕ}
+theorem querySteps_le {c_exp n_max U : ℕ}
     (hU : U ≤ max n_max 4 ^ c_exp) :
-    getSteps c_exp n_max U ≤ getStepsBound c_exp := by
+    querySteps c_exp n_max U ≤ queryStepsBound c_exp := by
   have hev := evalHashSteps_tableBits_le hU
-  dsimp only [getSteps, getStepsBound, probeKeySteps, probeTableSlotSteps, evalHashAtBaseSteps]
+  dsimp only [querySteps, queryStepsBound, probeKeySteps, probeTableSlotSteps, evalHashAtBaseSteps]
   omega
 
 theorem evictIterSteps_le {c_exp n_max U : ℕ}
@@ -6057,9 +6058,9 @@ theorem charge_le_expectedOpCharge {c_exp n_max U : ℕ}
     (hU : U ≤ max n_max 4 ^ c_exp) (s : Dictionary.State U) (o : Dictionary.Op U) :
     charge c_exp n_max U 3 4 s o ≤ expectedOpCharge c_exp s o := by
   cases o with
-  | get _ =>
-    dsimp only [charge, expectedOpCharge, getChargeBound]
-    have hg := getSteps_le hU
+  | query _ =>
+    dsimp only [charge, expectedOpCharge, queryChargeBound]
+    have hg := querySteps_le hU
     omega
   | insert _ _ =>
     dsimp only [charge, expectedOpCharge, insertCharge, insertChargeBound]
@@ -6333,7 +6334,7 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
             (fun θ => opSeedSteps c_exp n_max U ks θ s o)).symm
         rw [hmap_lhs]
         cases o with
-        | get u =>
+        | query u =>
           dsimp only [opSeedSteps, charge]
           rw [ENNReal.tsum_mul_right, (ν.map Prod.fst).tsum_coe, one_mul]
         | insert u v =>
@@ -6369,10 +6370,10 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
 /-- **Unconditional end-to-end expected-amortized theorem for Pagh–Rodler cuckoo hashing.**
 Whenever `U ≤ max n_max 4 ^ c_exp`, starting from zeroed memory in
 `[base, base + space c_exp n_max)`, initializing `cuckooCode c_exp n_max` and executing any valid
-sequence `ops : List (Dictionary.Op U)` of `get` and `insert` operations takes expected
+sequence `ops : List (Dictionary.Op U)` of `query` and `insert` operations takes expected
 instruction cost at most `spanSteps + setupSteps c_exp n_max U +
   (Dictionary.spec U V n_max).totalCost (expectedOpCharge c_exp) (Dictionary.empty U) ops`,
-where `expectedOpCharge c_exp` charges `O(c_exp⁴) = O_{c_exp}(1)` instructions per `get` and
+where `expectedOpCharge c_exp` charges `O(c_exp⁴) = O_{c_exp}(1)` instructions per `query` and
 `insert` operation (completely independent of `n_max` and `U`!) and `space c_exp n_max ≤
 spaceFactor c_exp * (n_max + 1)` uses `O_{c_exp}(n_max + 1)` words of memory across every
 capacity `n_max : ℕ` (`[PaghRodler2004]`, `[Thorup2013]`). -/

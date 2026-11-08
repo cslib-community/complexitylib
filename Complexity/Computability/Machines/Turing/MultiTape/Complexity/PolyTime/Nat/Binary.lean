@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -31,12 +30,11 @@ import Mathlib.Data.Nat.Bitwise
 Polynomial-time certificates for arithmetic on the binary encoding `Turing.MultiTapeTM.encNat`
 (digits least significant first), the binary counterparts of the unary certificates in
 `Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat.lean`. Addition and
-multiplication are Christian Reitwiessner's degree-bounded
-machines (`Turing.MultiTapeTM.computableTidilyInDegree_add`,
-`Turing.MultiTapeTM.computableTidilyInDegree_mul`). A list is summed by a left fold whose
-accumulator grows by at most one digit more than the length of the element added. Powers of two are
-computed from a unary exponent by repeated doubling. Comparisons are the linear-time zip
-transducers of `Turing.MultiTapeTM.computableInTimeAndSpace_natLt` and
+multiplication reuse Christian Reitwiessner's plain schoolbook certificates
+`Turing.MultiTapeTM.ComputableInO.natAdd` and `Turing.MultiTapeTM.ComputableInO.natMul`. A list is
+summed by a left fold whose accumulator grows by at most one digit more than the length of the
+element added. Powers of two are computed from a unary exponent by repeated doubling. Comparisons
+are the linear-time zip transducers of `Turing.MultiTapeTM.computableInTimeAndSpace_natLt` and
 `Turing.MultiTapeTM.computableInTimeAndSpace_natLe`; bitwise OR is that of
 `Turing.MultiTapeTM.computableInTimeAndSpace_natOr`. The verifiers and reductions
 of the number problems (`Cslib.Complexity.SubsetSum` and its relatives) are built from these.
@@ -55,9 +53,9 @@ multiplication.
 ## Main results
 
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat`: binary decoding of arbitrary words.
-* `Nat.size_add_le`: a sum has at most one binary digit more than its summands together.
-* `Nat.size_add_le_max`, `Nat.size_mul_le`, `Nat.size_pow_le`, `Nat.size_sum_le`: binary lengths
-  of sums, products, powers and list sums.
+* `Nat.size_sum_le`: the binary length of a list sum. The binary lengths of sums, products and
+  powers (`Nat.size_add_le`, `Nat.size_mul_le`, `Nat.size_pow_le`) are in
+  `Complexity/Foundations/Data/Nat/BinarySize.lean`.
 * `Turing.MultiTapeTM.BinarySub.sub_eq`: truncated subtraction through the final borrow.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_add`, `.binary_mul`: addition and
   multiplication.
@@ -85,27 +83,6 @@ multiplication.
 
 namespace Nat
 
-/-- The binary length of a sum is at most the binary lengths of the summands together, plus one. -/
-theorem size_add_le (m n : ℕ) : (m + n).size ≤ m.size + n.size + 1 := by
-  refine Nat.size_le.2 ?_
-  have hm := Nat.lt_size_self m
-  have hn := Nat.lt_size_self n
-  have h₁ : 2 ^ m.size ≤ 2 ^ (m.size + n.size) := Nat.pow_le_pow_right (by lia) (by lia)
-  have h₂ : 2 ^ n.size ≤ 2 ^ (m.size + n.size) := Nat.pow_le_pow_right (by lia) (by lia)
-  rw [Nat.pow_succ]
-  lia
-
-/-- The binary length of a sum is at most one more than the longer binary length of the
-summands. -/
-theorem size_add_le_max (m n : ℕ) : (m + n).size ≤ max m.size n.size + 1 := by
-  refine Nat.size_le.2 ?_
-  have hm := (Nat.lt_size_self m).trans_le
-    (Nat.pow_le_pow_right (by lia) (le_max_left m.size n.size))
-  have hn := (Nat.lt_size_self n).trans_le
-    (Nat.pow_le_pow_right (by lia) (le_max_right m.size n.size))
-  rw [Nat.pow_succ]
-  lia
-
 /-- A sum of naturals of binary length at most `b` has binary length at most `b` plus the binary
 length of the number of summands. -/
 theorem size_sum_le {l : List ℕ} {b : ℕ} (h : ∀ n ∈ l, n.size ≤ b) :
@@ -116,10 +93,6 @@ theorem size_sum_le {l : List ℕ} {b : ℕ} (h : ∀ n ∈ l, n.size ≤ b) :
       List.sum_le_length_nsmul l (2 ^ b) fun n hn => (Nat.size_le.1 (h n hn)).le
   rw [Nat.pow_add, Nat.mul_comm (2 ^ b)]
   exact hsum.trans_lt (Nat.mul_lt_mul_of_pos_right (Nat.lt_size_self _) (by positivity))
-
-/-- A binary length is at most the number itself. -/
-theorem size_le_self (n : ℕ) : n.size ≤ n :=
-  Nat.size_le.2 Nat.lt_two_pow_self
 
 end Nat
 
@@ -193,7 +166,8 @@ theorem binary_add : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + p.2
 @[fun_prop]
 theorem binary_mul : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 * p.2)
     (encPair encNat encNat) encNat :=
-  computableTidilyInDegree_mul.computableTidilyInPolyTime
+  (ComputableInPolyTime.binary_mul' (ComputableInPolyTime.fst encNat encNat)
+    (ComputableInPolyTime.snd encNat encNat)).tidy
 
 /-- Add computed binary values, fixing their intermediate encodings for proof search. -/
 @[fun_prop]

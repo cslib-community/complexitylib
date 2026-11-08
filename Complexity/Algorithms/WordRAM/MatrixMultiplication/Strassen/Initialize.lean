@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Frame
 import Mathlib.Tactic.FinCases
 
@@ -54,25 +55,18 @@ theorem exec_setup {w : ℕ} (x : Data 64)
     ram_eval [powerArguments, r, h1, h4, h7, Reg.zero, Reg.one, Reg.four, Reg.frameWidth,
       Reg.powerBase, Reg.powerExponent, Reg.depth]
   let f : Fin 5 → Fin 64 := Fin.castLE (by decide)
-  obtain ⟨t, ht, hvalue, _, _, htm, _, _⟩ := Power.exec 4 (x.regs Reg.depth) (by decide)
-    (r.comap f)
-    (by simp +decide [r, f, Data.comap, Power.base, Reg.powerBase, Reg.powerExponent])
-    (by simp [r, f, Data.comap, Power.exponent, Reg.powerExponent])
-    (hw.of_le (by omega))
-  let s := t.extend f r
-  have hpower : ExecWithin w (Power.program.rename f) r s (4 * x.regs Reg.depth + 5) :=
-    ht.rename (Fin.castLE_injective _)
+  obtain ⟨s, hpower, hsvalue, _, _, htm, _, _, hframe⟩ :=
+    Power.exec_rename f (Fin.castLE_injective _) 4 (x.regs Reg.depth) (by decide) r
+      (by simp +decide [r, f, Power.base, Reg.powerBase, Reg.powerExponent])
+      (by simp [r, f, Power.exponent, Reg.powerExponent])
+      (hw.of_le (by omega))
+  change s.regs Reg.powerValue = 4 ^ x.regs Reg.depth at hsvalue
   have hhigh (i : Fin 64) (hi : 32 ≤ i.val) : s.regs i = r.regs i := by
-    have hn : ¬∃ j, f j = i := by
-      rintro ⟨j, hj⟩
-      have hj' := congrArg Fin.val hj
-      change j.val = i.val at hj'
-      omega
-    exact Function.extend_apply' _ _ _ hn
-  have hsvalue : s.regs Reg.powerValue = 4 ^ x.regs Reg.depth := by
-    change (s.comap f).regs Power.value = _
-    rw [Data.comap_extend (Fin.castLE_injective _)]
-    exact hvalue
+    apply hframe
+    intro j hj
+    have hj' := congrArg Fin.val hj
+    change j.val = i.val at hj'
+    omega
   have hsmod : s.regs Reg.modulus = x.regs Reg.modulus := by
     simpa +decide [r, Reg.zero, Reg.one, Reg.four, Reg.frameWidth,
       Reg.powerBase, Reg.powerExponent, Reg.modulus] using hhigh Reg.modulus (by decide)

@@ -9,8 +9,10 @@ module
 
 public import Complexity.Computability.GenericRAM.SparseMemory.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
+import Complexity.Tactic.EncLen
 
 /-!
 # Native Turing-machine certificates for sparse memory
@@ -154,8 +156,7 @@ theorem scanSpace_le (q : Address × SparseMemory Address Value) :
     have hv := le_listMax (f := fun e : Address × Value => (encV e.2).length) he
     change (encA e.1).length ≤ maxKeyLength encA q.2 at hk
     change (encV e.2).length ≤ maxValueLength encV q.2 at hv
-    simp only [compareSpace, length_encPair]
-    omega
+    enc_len [compareSpace]
   unfold scanSpace
   omega
 
@@ -288,26 +289,16 @@ private theorem readResult_inO :
       (encPair (encOption (encPair encA encV)) encV) encV
       (fun q => (encPair (encOption (encPair encA encV)) encV q).length)
       (fun q => (encPair (encOption (encPair encA encV)) encV q).length) := by
-  have hd := snd (encOption (encPair encA encV)) encV
-  rcases isEmpty_or_nonempty (Address × Value) with h | h
-  · convert hd using 1
-    funext q
-    cases q.1 with
-    | none => rfl
-    | some e => exact isEmptyElim e
-  · obtain ⟨e⟩ := h
-    have ho := fst (encOption (encPair encA encV)) encV
-    have ht := (ComputableInDegree.isSome (encPair encA encV)).inO_one.comp_linear ho
-    have hv := ((ComputableInDegree.getD (enc₁ := encPair encA encV) e).inO_one
-      |>.comp_linear ho).snd'
-    have hr := (ht.ite hv hd).mono
-      (T' := fun q => (encPair (encOption (encPair encA encV)) encV q).length)
-      (S' := fun q => (encPair (encOption (encPair encA encV)) encV q).length) 2
-      (fun q => by split <;> omega) (fun q => by split <;> omega)
-    convert hr using 1
-    funext q
-    rcases q with ⟨o, d⟩
+  have heq : (fun q : Option (Address × Value) × Value => (q.1.map Prod.snd).getD q.2) =
+      fun q => q.1.elim q.2 Prod.snd := by
+    funext ⟨o, d⟩
     cases o <;> rfl
+  rw [heq]
+  refine .mono (by fun_prop) 8 (fun q => ?_) fun q => ?_
+  all_goals
+    rcases q with ⟨_ | e, d⟩ <;>
+      simp only [Option.elim_none, Option.elim_some, length_encPair, encOption_some,
+        List.length_cons] <;> omega
 
 /-- A read input supplies both the queried store and its default value. -/
 def readEncoding : ((Address × SparseMemory Address Value) × Value) ↪ List Bool :=
@@ -343,9 +334,7 @@ theorem insert_inO_cube :
   apply (insert_inO encA encV).mono 40
   · intro q
     have hq : (queryEncoding encA encV (q.1.1, q.2)).length ≤
-        (writeEncoding encA encV q).length := by
-      simp only [queryEncoding, writeEncoding, length_encPair]
-      omega
+        (writeEncoding encA encV q).length := by enc_len [queryEncoding, writeEncoding]
     have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
     have ht := scanTime_le_cube encA encV (q.1.1, q.2)
     have he : (writeEncoding encA encV q).length ≤
@@ -354,8 +343,7 @@ theorem insert_inO_cube :
     nlinarith
   · intro q
     have hs := scanSpace_le_linear encA encV (q.1.1, q.2)
-    simp only [writeSpace, queryEncoding, writeEncoding, length_encPair] at hs ⊢
-    omega
+    enc_len [writeSpace, queryEncoding, writeEncoding] at hs ⊢
 
 /-- A cubic-time, linear-space specialization of the parameterized read certificate. -/
 theorem read_inO_cube :
@@ -367,8 +355,7 @@ theorem read_inO_cube :
   apply (read_inO encA encV).mono 40
   · intro q
     have hq : (queryEncoding encA encV q.1).length ≤ (readEncoding encA encV q).length := by
-      simp only [readEncoding, length_encPair]
-      omega
+      enc_len [readEncoding]
     have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
     have ht := scanTime_le_cube encA encV q.1
     have he : (readEncoding encA encV q).length ≤
@@ -377,8 +364,7 @@ theorem read_inO_cube :
     nlinarith
   · intro q
     have hs := scanSpace_le_linear encA encV q.1
-    simp only [readSpace, readEncoding, length_encPair] at hs ⊢
-    omega
+    enc_len [readSpace, readEncoding] at hs ⊢
 
 /-- Polynomial-time writes are a corollary of the native parameterized certificate. -/
 @[fun_prop]

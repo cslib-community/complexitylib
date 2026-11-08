@@ -560,6 +560,11 @@ private theorem unary_choose_intBin :
   simp only [nat_choose_eq_ite]
   split_ifs <;> rfl
 
+/-- Hermite interpolation nodes `(nodes, J)`: the integer nodes as a list of binary integers
+(`encIntBin`), then their common jet order `J` in unary. The node list is framed, and so is each
+node within it; `J` is not. -/
+abbrev encHermiteNodes : List ℤ × ℕ ↪ List Bool := encPair (encList encIntBin) encUnary
+
 variable {α : Type} {encIn : α ↪ List Bool}
 
 /-- Constructing `hermiteRows (nodes x) (J x)` from binary integer nodes and a unary order `J` is
@@ -568,8 +573,7 @@ computable in polynomial time. -/
 theorem computableInPolyTime_hermiteRows {nodes : α → List ℤ} {J : α → ℕ}
     (hnodes : ComputableInPolyTime nodes encIn (encList encIntBin))
     (hJ : ComputableInPolyTime J encIn encUnary) :
-    ComputableInPolyTime (fun x => hermiteRows (nodes x) (J x))
-      encIn (encList (encList encIntBin)) := by
+    ComputableInPolyTime (fun x => hermiteRows (nodes x) (J x)) encIn encIntTable := by
   have hdim : ComputableInPolyTime (fun x => (nodes x).length * J x) encIn encUnary := by
     fun_prop
   have hentry : ComputableInPolyTime
@@ -606,28 +610,25 @@ theorem computableInPolyTime_hermiteRows {nodes : α → List ℤ} {J : α → �
       hrow
   exact ComputableInPolyTime.flatMapWithInput hnodes hblock
 
-/-- `hermiteRows` is computable in polynomial time on `encPair (encList encIntBin) encUnary`. -/
+/-- `hermiteRows` is computable in polynomial time on `encHermiteNodes`. -/
 theorem hermiteRows_polytime :
-    ComputableInPolyTime (fun p : List ℤ × ℕ => hermiteRows p.1 p.2)
-      (encPair (encList encIntBin) encUnary) (encList (encList encIntBin)) :=
+    ComputableInPolyTime (fun p : List ℤ × ℕ => hermiteRows p.1 p.2) encHermiteNodes encIntTable :=
   computableInPolyTime_hermiteRows (by fun_prop) (by fun_prop)
 
 /-- Replacing column `0` via `cramerColZeroRows` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_cramerColZeroRows
     {mat : α → List (List ℤ)} {rhs : α → List ℤ}
-    (hmat : ComputableInPolyTime mat encIn (encList (encList encIntBin)))
+    (hmat : ComputableInPolyTime mat encIn encIntTable)
     (hrhs : ComputableInPolyTime rhs encIn (encList encIntBin)) :
-    ComputableInPolyTime (fun x => cramerColZeroRows (mat x) (rhs x))
-      encIn (encList (encList encIntBin)) := by
+    ComputableInPolyTime (fun x => cramerColZeroRows (mat x) (rhs x)) encIn encIntTable := by
   unfold cramerColZeroRows
   fun_prop
 
 /-- `cramerColZeroRows` is computable in polynomial time on pairs of integer matrix and RHS. -/
 theorem cramerColZeroRows_polytime :
     ComputableInPolyTime (fun p : List (List ℤ) × List ℤ => cramerColZeroRows p.1 p.2)
-      (encPair (encList (encList encIntBin)) (encList encIntBin))
-      (encList (encList encIntBin)) :=
+      (encPair encIntTable (encList encIntBin)) encIntTable :=
   computableInPolyTime_cramerColZeroRows (by fun_prop) (by fun_prop)
 
 /-- Confluent Hermite Cramer recovery `hermiteRecoverZero` is computable in polynomial time. -/
@@ -637,7 +638,7 @@ theorem computableInPolyTime_hermiteRecoverZero
     (hnodes : ComputableInPolyTime nodes encIn (encList encIntBin))
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hΩ : ComputableInPolyTime Ω encIn encIntBin)
-    (hjets : ComputableInPolyTime jets encIn (encList (encList encIntBin))) :
+    (hjets : ComputableInPolyTime jets encIn encIntTable) :
     ComputableInPolyTime
       (fun x => hermiteRecoverZero (nodes x) (J x) (Ω x) (jets x))
       encIn encIntBin := by
@@ -652,9 +653,7 @@ theorem hermiteRecoverZero_polytime :
     ComputableInPolyTime
       (fun q : ((List ℤ × ℕ) × ℤ) × List (List ℤ) =>
         hermiteRecoverZero q.1.1.1 q.1.1.2 q.1.2 q.2)
-      (encPair (encPair (encPair (encList encIntBin) encUnary) encIntBin)
-        (encList (encList encIntBin)))
-      encIntBin := by
+      (encPair (encPair encHermiteNodes encIntBin) encIntTable) encIntBin := by
   fun_prop
 
 /-- Modular confluent Hermite Cramer recovery `hermiteRecoverModPowTwo` is computable in
@@ -666,7 +665,7 @@ theorem computableInPolyTime_hermiteRecoverModPowTwo
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hΩ : ComputableInPolyTime Ω encIn encIntBin)
-    (hjets : ComputableInPolyTime jets encIn (encList (encList encIntBin))) :
+    (hjets : ComputableInPolyTime jets encIn encIntTable) :
     ComputableInPolyTime
       (fun x => hermiteRecoverModPowTwo (nodes x) (J x) (ℓ x) (Ω x) (jets x))
       encIn encIntBin := by
@@ -678,9 +677,7 @@ theorem hermiteRecoverModPowTwo_polytime :
     ComputableInPolyTime
       (fun q : (((List ℤ × ℕ) × ℕ) × ℤ) × List (List ℤ) =>
         hermiteRecoverModPowTwo q.1.1.1.1 q.1.1.1.2 q.1.1.2 q.1.2 q.2)
-      (encPair (encPair (encPair (encPair (encList encIntBin) encUnary) encUnary) encIntBin)
-        (encList (encList encIntBin)))
-      encIntBin := by
+      (encPair (encPair (encPair encHermiteNodes encUnary) encIntBin) encIntTable) encIntBin := by
   fun_prop
 
 /-- Recovering a coordinate sum `∑_s H_s(0) mod 2 ^ ℓ` across a list of scaled jet tables sharing
@@ -693,8 +690,7 @@ theorem computableInPolyTime_modPowTwo_sum_hermiteRecoverZero
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hΩ : ComputableInPolyTime Ω encIn encIntBin)
-    (hcoordJets : ComputableInPolyTime coordJets encIn
-      (encList (encList (encList encIntBin)))) :
+    (hcoordJets : ComputableInPolyTime coordJets encIn (encList encIntTable)) :
     ComputableInPolyTime
       (fun x => ((coordJets x).map (hermiteRecoverZero (nodes x) (J x) (Ω x))).sum.modPowTwo (ℓ x))
       encIn encIntBin := by

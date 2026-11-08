@@ -7,8 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.DataStructure.Memory.Spec
-public import Complexity.DataStructure.StateTransition.Refinement
+public import Complexity.DataStructure.Memory.Alloc
 
 /-!
 # Records of named cells over the memory oracle
@@ -27,8 +26,12 @@ determines admissibility, answer, final state and cost of the run (`wp_iff`).
 
 A `Record.Layout` places the cells in memory: an address for each cell, injective on the cells
 that exist. `Record.refinement` implements the record over `Memory.spec w` by one memory operation
-per record operation (`Record.amortized`). Address arithmetic, allocation and word-fit of addresses
-are therefore proved once here, for every record.
+per record operation (`Record.amortized`). `Record.framed` packages it as a framed structure over
+memory, whose footprint holds the cells' addresses, and `Record.allocator` allocates a record in
+zeroed cells at the frontier. A structure written over a record then joins products of
+structures over one memory through `Memory.Framed.comp` and `Memory.Allocator.comp`. Address
+arithmetic, allocation and word-fit of addresses are therefore proved once here, for every
+record.
 
 ## Main definitions
 
@@ -37,13 +40,14 @@ are therefore proved once here, for every record.
 * `Record.wp`: weakest precondition of a program, with the number of its operations.
 * `Record.Layout`, `Record.Layout.abs`, `Record.Layout.Inv`: a placement in memory.
 * `Record.refinement`: the record over the memory oracle.
+* `Record.framed`, `Record.allocator`: the record as a framed structure, and its allocation.
 
 ## Main results
 
 * `Record.wp_iff`: the weakest precondition is admissibility of the run together with the
   postcondition on its answer, final state and length.
 * `Record.wp_bind`, `Record.wp_mono`: sequencing and consequence.
-* `Record.amortized`: each record operation costs one memory unit.
+* `Record.amortized`, `Record.amortized_allocator`: each record operation costs one memory unit.
 -/
 
 @[expose] public section
@@ -235,5 +239,72 @@ theorem amortized [DecidablePred ok] (L : Layout ok) (w : ℕ) :
   apply Refinement.Amortized.ofFn
   intro m o _ _
   cases o <;> simp [refinement, Layout.methods, StateTransitionSpec.clientHistory]
+
+/-! ## Records as framed structures -/
+
+/-- **A record in memory as a framed structure.** Its footprint `fp` holds the addresses of its
+cells, and is allocated once they are. Each record operation reads or writes the address of one
+cell and keeps the frontier. -/
+def framed [DecidablePred ok] (L : Layout ok) (w : ℕ) (fp : Finset ℕ)
+    (hfp : ∀ i, ok i → L.addr i ∈ fp)
+    (hlt : ∀ {s : Memory.State} {a : ℕ}, L.Inv s → a ∈ fp → a < s.frontier) :
+    Memory.Framed (spec ok w) w :=
+  Memory.Framed.ofStatic (refinement L w) fp hlt
+    (fun {s s'} hs h hf => by
+      refine ⟨fun i hi => (hs i hi).trans_le hf, ?_⟩
+      change L.abs s' = L.abs s
+      funext i
+      by_cases hi : ok i
+      · simp [Layout.abs, hi, h _ (hfp i hi)]
+      · simp [Layout.abs, hi])
+    (fun {s} o _ hv b _ hb => by
+      cases o with
+      | read i => rfl
+      | write i v =>
+        change Function.update s.mem (L.addr i) v b = s.mem b
+        exact Function.update_of_ne (fun e => hb (by rw [e]; exact hfp i hv.1)) _ _)
+    (fun o _ _ => by cases o <;> rfl)
+
+/-- **Allocating a record**: `size` zeroed cells at the frontier, laid out by `L` from their base,
+where the last of them is a cell. It costs `size + 1` memory units, and the record holds `0` in
+every cell. -/
+def allocator [DecidablePred ok] (L : ℕ → Layout ok) (size w : ℕ)
+    (hL : ∀ base i, ok i → base ≤ (L base).addr i ∧ (L base).addr i < base + size)
+    (hlast : ∀ base, ∃ i, ok i ∧ (L base).addr i + 1 = base + size) :
+    Memory.Allocator (spec ok w) w where
+  Handle := ℕ
+  alloc := Memory.alloc size
+  methods base := (L base).methods w
+  init := fun _ => 0
+  room := size
+  cost := size + 1
+  framed s _ _ := framed (L s.frontier) w (Finset.Ico s.frontier (s.frontier + size))
+    (fun i hi => Finset.mem_Ico.mpr (hL _ i hi))
+    (fun {s'} {a} hs ha => by
+      obtain ⟨i, hi, hlast⟩ := hlast s.frontier
+      have := hs i hi
+      have := (Finset.mem_Ico.mp ha).2
+      omega)
+  allocates s _ hroom := by
+    refine
+      { validHistory := ⟨hroom, trivial⟩, cost_le := le_rfl, mem_eq := fun a ha => ?_,
+        methods_eq := rfl, inv := fun i hi => ?_, abs_eq := ?_,
+        of_mem_footprint := fun a ha => .inr (Finset.mem_Ico.mp ha).1, room_le := le_rfl }
+    · change clear s.mem s.frontier size a = s.mem a
+      exact clear_of_not_owns (by simp only [Block.Owns]; omega)
+    · exact (hL s.frontier i hi).2
+    · change (L s.frontier).abs ⟨clear s.mem s.frontier size, s.frontier + size⟩ = fun _ => 0
+      funext i
+      by_cases hi : ok i
+      · simp only [Layout.abs, hi, ite_true]
+        exact clear_of_owns (show Block.Owns ⟨s.frontier, size⟩ _ from hL s.frontier i hi)
+      · simp [Layout.abs, hi]
+
+/-- Every operation on an allocated record costs one memory unit, with no potential. -/
+theorem amortized_allocator [DecidablePred ok] {L : ℕ → Layout ok} {size w : ℕ}
+    {hL : ∀ base i, ok i → base ≤ (L base).addr i ∧ (L base).addr i < base + size}
+    {hlast : ∀ base, ∃ i, ok i ∧ (L base).addr i + 1 = base + size} :
+    (allocator L size w hL hlast).Amortized (fun _ _ => 1) 0 :=
+  fun _ _ _ => ⟨fun _ => 0, amortized _ w, Memory.Framed.Local.const _ 0, le_rfl⟩
 
 end Cslib.DataStructure.Record

@@ -40,8 +40,9 @@ definitions:
 
 This module covers deterministic strategies (for which step-by-step adaptive request generation
 produces an ordinary request list whose oblivious replay induces the identical execution).
-Randomized strategies and expected-cost distinctions between oblivious and adaptive adversaries
-are separate.
+Randomized strategies against an oblivious adversary, as distributions over deterministic
+strategies, are in `Complexity.DataStructure.Online.Randomized`; adaptive adversaries against
+randomized strategies are not modelled.
 
 ## Main definitions
 
@@ -66,7 +67,10 @@ are separate.
   `DetStrategy.competitiveAnyInit_of_amortized`: `Cslib.DataStructure.Amortized` certificates imply
   competitive bounds.
 * `DetStrategy.cost_adaptiveRequests_eq`: an adversary forcing per-step cost `w` at every reachable
-  state forces total online cost `n * w` over `n` requests.
+  state forces total online cost `n * w` over `n` requests; `DetStrategy.le_cost_adaptiveRequests`
+  is the version forcing per-step cost at least `w`.
+* `DetStrategy.length_states`, `DetStrategy.states_take`: the online state trajectory has one state
+  per request, and its prefixes are the trajectories of request prefixes.
 
 ## References
 
@@ -432,6 +436,37 @@ theorem finalState_statesFrom (m : A.Mem) (reqs : List P.Req) :
   | nil => rfl
   | cons r rs ih => exact ih (A.step m r)
 
+/-- `statesFrom` produces exactly one observable state per request. -/
+@[simp]
+theorem length_statesFrom (m : A.Mem) (reqs : List P.Req) :
+    (A.statesFrom m reqs).length = reqs.length := by
+  induction reqs generalizing m with
+  | nil => rfl
+  | cons r rs ih => simp only [statesFrom_cons, List.length_cons, ih]
+
+/-- `states` produces exactly one observable state per request. -/
+@[simp]
+theorem length_states (s₀ : P.State) (reqs : List P.Req) :
+    (A.states s₀ reqs).length = reqs.length :=
+  A.length_statesFrom (A.init s₀) reqs
+
+/-- Online trajectories are prefix-consistent: the states produced on the first `k` requests are
+the first `k` states produced on the whole request sequence. -/
+theorem statesFrom_take (m : A.Mem) (reqs : List P.Req) (k : Nat) :
+    A.statesFrom m (reqs.take k) = (A.statesFrom m reqs).take k := by
+  induction reqs generalizing m k with
+  | nil => simp only [List.take_nil, statesFrom_nil]
+  | cons r rs ih =>
+    cases k with
+    | zero => simp only [List.take_zero, statesFrom_nil]
+    | succ k => simp only [List.take_succ_cons, statesFrom_cons, ih]
+
+/-- Prefix consistency of `states`: an online strategy's trajectory on a prefix of the request
+sequence is the corresponding prefix of its trajectory on the whole sequence. -/
+theorem states_take (s₀ : P.State) (reqs : List P.Req) (k : Nat) :
+    A.states s₀ (reqs.take k) = (A.states s₀ reqs).take k :=
+  A.statesFrom_take (A.init s₀) reqs k
+
 /-! ### Competitive ratio predicates -/
 
 /-- `A` is `(c, b)`-competitive from a fixed initial state `s₀` when its cost on every request
@@ -648,6 +683,33 @@ theorem cost_adaptiveRequests_eq {chooseReq : P.State → P.Req} {w : Nat}
     A.cost s₀ (A.adaptiveRequests chooseReq s₀ n) = n * w := by
   rw [A.cost_eq_costFrom hs₀]
   exact A.costFrom_adaptiveRequestsFrom_eq hw (A.valid_init hs₀).1 n
+
+/-- If `chooseReq` forces step cost at least `w` at every reachable state of `A`, then `n` generated
+requests force online cost at least `n * w`. -/
+theorem le_costFrom_adaptiveRequestsFrom {chooseReq : P.State → P.Req} {w : Nat}
+    (hw : ∀ {m}, A.ValidMem m →
+      w ≤ P.stepCost (A.project m) (chooseReq (A.project m))
+        (A.project (A.step m (chooseReq (A.project m)))))
+    {m : A.Mem} (hm : A.ValidMem m) (n : Nat) :
+    n * w ≤ A.costFrom m (A.adaptiveRequestsFrom chooseReq m n) := by
+  induction n generalizing m with
+  | zero => simp only [Nat.zero_mul, Nat.zero_le]
+  | succ n ih =>
+    simp only [adaptiveRequestsFrom_succ, costFrom_cons, Nat.add_mul, Nat.one_mul]
+    have h₁ := hw hm
+    have h₂ := ih (A.valid_step (chooseReq (A.project m)) hm).1
+    omega
+
+/-- From an admissible initial state `s₀`, if `chooseReq` forces step cost at least `w` at every
+reachable state, then `A.adaptiveRequests chooseReq s₀ n` has online cost at least `n * w`. -/
+theorem le_cost_adaptiveRequests {chooseReq : P.State → P.Req} {w : Nat}
+    (hw : ∀ {m}, A.ValidMem m →
+      w ≤ P.stepCost (A.project m) (chooseReq (A.project m))
+        (A.project (A.step m (chooseReq (A.project m)))))
+    {s₀ : P.State} (hs₀ : P.ValidInit s₀) (n : Nat) :
+    n * w ≤ A.cost s₀ (A.adaptiveRequests chooseReq s₀ n) := by
+  rw [A.cost_eq_costFrom hs₀]
+  exact A.le_costFrom_adaptiveRequestsFrom hw (A.valid_init hs₀).1 n
 
 end DetStrategy
 

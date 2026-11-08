@@ -11,6 +11,8 @@ public import Complexity.Init
 public import Cslib.Probability.PMF
 public import Mathlib.Analysis.Real.Sqrt
 import Complexity.Probability.PMF
+import Complexity.Probability.PMF.Expect
+import Complexity.Probability.PMF.ToReal
 
 /-!
 # The rewinding lemma
@@ -87,32 +89,6 @@ noncomputable def twice [DecidableEq T] (first : PMF S) (challenge : S → PMF T
 
 /-! ### Proof of the rewinding lemma -/
 
-/-- Jensen's inequality `E[g]² ≤ E[g²]` for a function with values in `[0, 1]`. -/
-private theorem sq_tsum_le_tsum_sq {α : Type*} (μ : PMF α) {g : α → ℝ} (h0 : ∀ a, 0 ≤ g a)
-    (h1 : ∀ a, g a ≤ 1) :
-    (∑' a, (μ a).toReal * g a) ^ 2 ≤ ∑' a, (μ a).toReal * g a ^ 2 := by
-  have hm : Summable fun a => (μ a).toReal := Probability.PMF.summable_toReal μ
-  have hbounded {f : α → ℝ} (f0 : ∀ a, 0 ≤ f a) (f1 : ∀ a, f a ≤ 1) :
-      Summable fun a => (μ a).toReal * f a :=
-    hm.of_nonneg_of_le (fun a => mul_nonneg ENNReal.toReal_nonneg (f0 a))
-      fun a => mul_le_of_le_one_right ENNReal.toReal_nonneg (f1 a)
-  have hg := hbounded h0 h1
-  have hg2 := hbounded (fun a => sq_nonneg (g a)) fun a => pow_le_one₀ (h0 a) (h1 a)
-  set e := ∑' a, (μ a).toReal * g a
-  have hexpand : ∑' a, (μ a).toReal * (g a - e) ^ 2 =
-      ∑' a, (μ a).toReal * g a ^ 2 - e ^ 2 := by
-    have hsplit : (fun a => (μ a).toReal * (g a - e) ^ 2) = fun a =>
-        ((μ a).toReal * g a ^ 2 - 2 * e * ((μ a).toReal * g a)) + e ^ 2 * (μ a).toReal := by
-      funext a
-      ring
-    rw [hsplit, (hg2.sub (hg.mul_left (2 * e))).tsum_add (hm.mul_left (e ^ 2)),
-      hg2.tsum_sub (hg.mul_left (2 * e)), tsum_mul_left, tsum_mul_left,
-      Probability.PMF.tsum_toReal]
-    ring
-  have hnonneg : 0 ≤ ∑' a, (μ a).toReal * (g a - e) ^ 2 :=
-    tsum_nonneg fun a => mul_nonneg ENNReal.toReal_nonneg (sq_nonneg _)
-  linarith
-
 /-- Two independent Boolean outcomes are both true, together with a fixed condition, with the
 product probability. -/
 private theorem bind_bind_and_apply (X Y : PMF A) (f g : A → Bool) (d : Bool) :
@@ -138,8 +114,7 @@ private theorem pass_nonneg (answer : S → T → PMF A) (ok : S → T → A →
 
 private theorem pass_le_one (answer : S → T → PMF A) (ok : S → T → A → Bool) (s : S) (t : T) :
     pass answer ok s t ≤ 1 :=
-  ENNReal.toReal_le_of_le_ofReal zero_le_one
-    (by rw [ENNReal.ofReal_one]; exact PMF.coe_le_one _ true)
+  PMF.toReal_apply_le_one _ true
 
 variable [Fintype T]
 
@@ -272,7 +247,7 @@ theorem sq_sub_mul_le_twice [Finite T] {κ : ℝ}
   calc (∑' s, (first s).toReal * g s) ^ 2 - κ * (∑' s, (first s).toReal * g s)
       ≤ ∑' s, (first s).toReal * g s ^ 2 - κ * (∑' s, (first s).toReal * g s) := by
         gcongr
-        exact sq_tsum_le_tsum_sq first (fun s => (hg s).1) fun s => (hg s).2
+        exact Probability.PMF.sq_tsum_le_tsum_sq first (fun s => (hg s).1) fun s => (hg s).2
     _ = ∑' s, ((first s).toReal * g s ^ 2 - κ * ((first s).toReal * g s)) := by
         rw [hsumg2.tsum_sub (hsumg.mul_left κ), tsum_mul_left]
     _ ≤ ∑' s, (first s).toReal * h s :=

@@ -8,27 +8,17 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost
-import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
+public import Complexity.Foundations.Data.Nat.LogRpow
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
-# Uniform strict-subcubic component budgets
+# Absorbing the complete cubic logarithmic box coefficient
 
-Mathlib's logarithm-versus-real-power theorem absorbs the logarithmic coefficient of the
-computed dyadic native budgets. The resulting threshold depends only on the original weight
-exponent; it is shared by all matrices, selected primes and reference memories.
-
-This is an asymptotic theorem about the existing proved component charges. It does not assemble
-an execution, account for the callable adapter or dispatch small inputs, and does not assert
-the source's tuned 3SUM exponent.
-
-## Main results
-
-* `exists_components_subcubic_threshold`: beyond one threshold, the actual component allowance
-  is at most `4*n^(3-1/1296)`, uniformly over original weights bounded by `n^κ`.
+The finite native ledger has degree three in tensor depth. A single threshold per fixed
+original weight exponent absorbs that full coefficient into every positive real input power.
 -/
 
 public section
@@ -38,119 +28,85 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.DyadicCost
 open Filter Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open ParameterChoice
 
-private noncomputable def coefficient (κ : ℝ) (n : ℕ) : ℝ :=
-  238169 + 12 * (Nat.log 2 n : ℝ) + 138412032 * ((19 * level n + 1 : ℕ) : ℝ) +
-    (140 * falsePositiveConst + 140) * κ * Real.log n
+/-- Degree-three logarithmic coefficient retaining the finite native box charges. -/
+@[expose] noncomputable def costCoefficient (κ : ℝ) (n : ℕ) : ℝ :=
+  238169 + 16 * (Nat.log 2 n : ℝ) +
+    125829120 * ((21 * level n + 1 : ℕ) : ℝ) ^ 2 * ((level n + 1 : ℕ) : ℝ) +
+      (140 * falsePositiveConst + 140) * κ * Real.log n
+
+/-- Increasing the original weight exponent increases only the charged scan allowance. -/
+theorem costCoefficient_mono {n : ℕ} (hn : 1 ≤ n) {a b : ℝ} (h : a ≤ b) :
+    costCoefficient a n ≤ costCoefficient b n := by
+  have hC : 0 ≤ falsePositiveConst := (by norm_num : (0 : ℝ) ≤ 1).trans one_le_falsePositiveConst
+  have hlog : 0 ≤ Real.log (n : ℝ) := Real.log_nonneg (by exact_mod_cast hn)
+  have hm := mul_le_mul_of_nonneg_left h
+    (show 0 ≤ (140 * falsePositiveConst + 140) * Real.log (n : ℝ) by positivity)
+  unfold costCoefficient
+  nlinarith only [hm]
 
 private noncomputable def logCoefficient (κ : ℝ) : ℝ :=
-  238169 + 138412032 + (12 + 19 * 138412032) / Real.log 2 +
-    (140 * falsePositiveConst + 140) * κ
+  238169 + 16 + 441 * 125829120 + (140 * falsePositiveConst + 140) * κ
 
 private theorem logCoefficient_pos {κ : ℝ} (hκ : 1 ≤ κ) : 0 < logCoefficient κ := by
   have hC : 0 ≤ falsePositiveConst := (by norm_num : (0 : ℝ) ≤ 1).trans one_le_falsePositiveConst
   have hk : 0 ≤ κ := by linarith
-  have hlog : 0 < Real.log 2 := Real.log_pos (by norm_num)
   unfold logCoefficient
   positivity
 
-private theorem coefficient_le_log {n : ℕ} {κ : ℝ} (hn : 16 ≤ n) :
-    coefficient κ n ≤ logCoefficient κ * Real.log n := by
-  have hnR : (16 : ℝ) ≤ n := by exact_mod_cast hn
-  have hlog1 : 1 ≤ Real.log n :=
-    (Real.le_log_iff_exp_le (by linarith)).mpr
-      (Real.exp_one_lt_three.le.trans (by linarith))
-  have hl : (level n : ℝ) ≤ Nat.log 2 n := by exact_mod_cast level_le_log n
-  have hb : (Nat.log 2 n : ℝ) ≤ Real.log n / Real.log 2 := by
-    simpa only [Real.logb, Nat.cast_ofNat] using Real.natLog_le_logb n 2
-  unfold coefficient logCoefficient
-  push_cast
-  have hlevel := mul_le_mul_of_nonneg_left hl (by norm_num : (0 : ℝ) ≤ 19 * 138412032)
-  have hconstant := mul_le_mul_of_nonneg_left hlog1
-    (by norm_num : (0 : ℝ) ≤ 238169 + 138412032)
-  calc
-    _ ≤ (238169 + 138412032) + (12 + 19 * 138412032) * (Nat.log 2 n : ℝ) +
-        (140 * falsePositiveConst + 140) * κ * Real.log n := by nlinarith only [hlevel]
-    _ ≤ (238169 + 138412032) + (12 + 19 * 138412032) * (Real.log n / Real.log 2) +
-        (140 * falsePositiveConst + 140) * κ * Real.log n :=
-      by gcongr
-    _ ≤ (238169 + 138412032) * Real.log n +
-        (12 + 19 * 138412032) * (Real.log n / Real.log 2) +
-        (140 * falsePositiveConst + 140) * κ * Real.log n :=
-      by
-        gcongr
-        simpa only [mul_one] using hconstant
-    _ = _ := by ring
+private theorem coefficient_le_log_cube {n : ℕ} {κ : ℝ} (hn : 1 ≤ n) (hκ : 1 ≤ κ) :
+    costCoefficient κ n ≤ logCoefficient κ * ((Nat.log 2 n : ℝ) + 1) ^ 3 := by
+  let L : ℝ := (Nat.log 2 n : ℝ) + 1
+  have hL : 1 ≤ L := by
+    dsimp only [L]
+    have h := Nat.cast_nonneg (α := ℝ) (Nat.log 2 n)
+    linarith only [h]
+  have hLcube : L ≤ L ^ 3 := le_self_pow₀ hL (by decide)
+  have hunit : 1 ≤ L ^ 3 := one_le_pow₀ hL
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast (by omega : 0 < n)
+  have hpow : (n : ℝ) ≤ (2 : ℝ) ^ (Nat.log 2 n + 1) := by
+    exact_mod_cast (Nat.lt_pow_succ_log_self (by decide : 1 < (2 : ℕ)) n).le
+  have hl : Real.log (n : ℝ) ≤ L * Real.log 2 := by
+    simpa only [Real.log_pow, Nat.cast_add, Nat.cast_one, L] using Real.log_le_log hn0 hpow
+  have htwo : Real.log (2 : ℝ) ≤ 1 := by
+    have h := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)
+    linarith only [h]
+  have hlog : Real.log (n : ℝ) ≤ L ^ 3 :=
+    (hl.trans ((mul_le_mul_of_nonneg_left htwo (by positivity)).trans_eq (mul_one L))).trans hLcube
+  have hlevel : (level n : ℝ) ≤ Nat.log 2 n := by exact_mod_cast level_le_log n
+  have hleft : ((21 * level n + 1 : ℕ) : ℝ) ≤ 21 * L := by
+    push_cast
+    dsimp only [L]
+    linarith only [hlevel]
+  have hright : ((level n + 1 : ℕ) : ℝ) ≤ L := by
+    push_cast
+    dsimp only [L]
+    linarith only [hlevel]
+  have hdepth : ((21 * level n + 1 : ℕ) : ℝ) ^ 2 * ((level n + 1 : ℕ) : ℝ) ≤
+      441 * L ^ 3 := by
+    calc
+      _ ≤ (21 * L) ^ 2 * L :=
+        mul_le_mul (pow_le_pow_left₀ (by positivity) hleft 2) hright (by positivity) (by positivity)
+      _ = _ := by ring
+  have hprod := mul_le_mul_of_nonneg_left hdepth (by norm_num : (0 : ℝ) ≤ 125829120)
+  have hconst := mul_le_mul_of_nonneg_left hunit (by norm_num : (0 : ℝ) ≤ 238169)
+  have hlinear : 16 * (Nat.log 2 n : ℝ) ≤ 16 * L ^ 3 := by
+    have hsmall : (Nat.log 2 n : ℝ) ≤ L := by dsimp only [L]; linarith
+    exact mul_le_mul_of_nonneg_left (hsmall.trans hLcube) (by norm_num)
+  have hC : 0 ≤ falsePositiveConst := (by norm_num : (0 : ℝ) ≤ 1).trans one_le_falsePositiveConst
+  have hk : 0 ≤ κ := by linarith
+  have hscan := mul_le_mul_of_nonneg_left hlog
+    (show (0 : ℝ) ≤ (140 * falsePositiveConst + 140) * κ by positivity)
+  dsimp only [costCoefficient, logCoefficient]
+  change _ ≤ _ * L ^ 3
+  nlinarith only [hprod, hconst, hlinear, hscan]
 
-private theorem coefficient_eventually_le_rpow {κ ε : ℝ} (hκ : 1 ≤ κ) (hε : 0 < ε) :
-    ∀ᶠ n : ℕ in atTop, coefficient κ n ≤ (n : ℝ) ^ ε := by
-  have hc := logCoefficient_pos hκ
-  have hlog : (fun n : ℕ => Real.log (n : ℝ)) =o[atTop] (fun n => (n : ℝ) ^ ε) :=
-    (isLittleO_log_rpow_atTop hε).comp_tendsto tendsto_natCast_atTop_atTop
-  filter_upwards [eventually_ge_atTop (16 : ℕ), hlog.bound (inv_pos.mpr hc)] with n hn hsmall
-  have hlog0 : 0 ≤ Real.log (n : ℝ) := Real.log_nonneg (by exact_mod_cast (by omega : 1 ≤ n))
-  have hpow0 : 0 ≤ (n : ℝ) ^ ε := Real.rpow_nonneg (Nat.cast_nonneg n) ε
-  rw [Real.norm_eq_abs, abs_of_nonneg hlog0, Real.norm_eq_abs, abs_of_nonneg hpow0] at hsmall
-  calc
-    _ ≤ logCoefficient κ * Real.log n := coefficient_le_log hn
-    _ ≤ logCoefficient κ * ((logCoefficient κ)⁻¹ * (n : ℝ) ^ ε) :=
-      mul_le_mul_of_nonneg_left hsmall hc.le
-    _ = _ := by rw [← mul_assoc, mul_inv_cancel₀ hc.ne', one_mul]
-
--- Permit the fixed 1296-bit fast-threshold numeral during filter transport.
-set_option exponentiation.threshold 1296 in
-private theorem components_eventually_le {κ ε : ℝ} (hκ : 1 ≤ κ) (hε : 0 < ε) :
-    ∀ᶠ n : ℕ in atTop, ∀ (hn : 0 < n) (values : List ℤ) (mem : ℕ → ℕ) (p : ℕ),
-      WeightsBoundedBy
-        (fun u v : Fin n => values.getD (pairIndex (u, v)) 0)
-        (fun u v => values.getD (n * n + pairIndex (u, v)) 0)
-        (fun u v => values.getD (2 * (n * n) + pairIndex (u, v)) 0) ((n : ℝ) ^ κ) →
-      IsSelectedPrime
-        (fun u v : Fin n => values.getD (pairIndex (u, v)) 0)
-        (fun u v => values.getD (n * n + pairIndex (u, v)) 0)
-        (fun u v => values.getD (2 * (n * n) + pairIndex (u, v)) 0) (window n) p →
-      ((12 * Nat.log 2 n + 36 + (PrimeSelection.timeBound n (window n) + 16) +
-          FixedPrime.timeBound (m := level n) hn (groups n) p values mem : ℕ) : ℝ) ≤
-        4 * (n : ℝ) ^ (3 - 1 / 648 + ε : ℝ) := by
-  filter_upwards [coefficient_eventually_le_rpow hκ hε,
-    eventually_ge_atTop (2 ^ 1296 : ℕ)] with n hc hfast
-  intro hn values mem p hv hp
-  have hf := (blocks_pos_iff n).mpr hfast
-  have hb := components_timeBound_le hf hκ values mem hv hp
-  change (_ : ℝ) ≤ coefficient κ n * ((n : ℝ) ^ 3 / groups n) at hb
-  calc
-    _ ≤ coefficient κ n * ((n : ℝ) ^ 3 / groups n) := hb
-    _ ≤ (n : ℝ) ^ ε * ((n : ℝ) ^ 3 / groups n) :=
-      mul_le_mul_of_nonneg_right hc (by positivity)
-    _ ≤ (n : ℝ) ^ ε * (4 * (n : ℝ) ^ (3 - 1 / 648 : ℝ)) :=
-      mul_le_mul_of_nonneg_left (cubic_div_groups_le hn) (by positivity)
-    _ = _ := by
-      rw [mul_left_comm, ← Real.rpow_add (by exact_mod_cast hn)]
-      congr 2
-      ring
-
-/-- A single threshold for each original weight exponent bounds all actual component charges
-strictly below cubic. It is independent of the original matrices, chosen prime, reference
-memory and physical width. The existing budget's positive-input proof is explicit; positivity
-also follows from the threshold. This does not assert an execution of a composed solver. -/
-theorem exists_components_subcubic_threshold {κ : ℝ} (hκ : 1 ≤ κ) :
-    ∃ N : ℕ, 2 ^ 1296 ≤ N ∧
-      ∀ n ≥ N, ∀ (hn : 0 < n) (values : List ℤ) (mem : ℕ → ℕ) (p : ℕ),
-        WeightsBoundedBy
-          (fun u v : Fin n => values.getD (pairIndex (u, v)) 0)
-          (fun u v => values.getD (n * n + pairIndex (u, v)) 0)
-          (fun u v => values.getD (2 * (n * n) + pairIndex (u, v)) 0) ((n : ℝ) ^ κ) →
-        IsSelectedPrime
-          (fun u v : Fin n => values.getD (pairIndex (u, v)) 0)
-          (fun u v => values.getD (n * n + pairIndex (u, v)) 0)
-          (fun u v => values.getD (2 * (n * n) + pairIndex (u, v)) 0) (window n) p →
-        ((12 * Nat.log 2 n + 36 + (PrimeSelection.timeBound n (window n) + 16) +
-            FixedPrime.timeBound (m := level n) hn (groups n) p values mem : ℕ) : ℝ) ≤
-          4 * (n : ℝ) ^ (3 - 1 / 1296 : ℝ) := by
-  have h := components_eventually_le hκ (by norm_num : (0 : ℝ) < 1 / 1296)
-  rw [show (3 - 1 / 648 + 1 / 1296 : ℝ) = 3 - 1 / 1296 by norm_num] at h
-  obtain ⟨N, hN⟩ := eventually_atTop.mp h
-  refine ⟨max N (2 ^ 1296), le_max_right _ _, ?_⟩
-  intro n hn
-  exact hN n ((le_max_left _ _).trans hn)
+/-- Every fixed positive power eventually absorbs the complete degree-three coefficient. -/
+theorem costCoefficient_eventually_le_rpow {κ ε : ℝ} (hκ : 1 ≤ κ) (hε : 0 < ε) :
+    ∀ᶠ n : ℕ in Filter.atTop, costCoefficient κ n ≤ (n : ℝ) ^ ε := by
+  have h := Nat.eventually_mul_log_add_pow_le_rpow (by decide : 1 < (2 : ℕ))
+    0 1 3 (K := logCoefficient κ) (logCoefficient_pos hκ) hε
+  filter_upwards [h, Filter.eventually_ge_atTop (1 : ℕ)] with n hn hpos
+  exact (coefficient_le_log_cube hpos hκ).trans
+    (by simpa only [Nat.add_zero, Nat.cast_one] using hn)
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.DyadicCost

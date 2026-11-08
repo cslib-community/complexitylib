@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.SymbolicExec.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Quadrant
 
 /-!
@@ -39,47 +40,44 @@ theorem exec_copyForm {w q t : ℕ} (base dst : Fin 64) (x : Data 64)
   have hqfit : Fits w (x.regs base + 4 * x.regs Reg.quarter + 4) := by
     rw [hq]
     exact hw.of_le (by omega)
-  obtain ⟨s, hs, hsm, hsrc, hsr⟩ := exec_quadrant base Reg.copySource x hbt ht hqfit
+  apply WP.exists_execWithin
+  simp only [form, ite_true]
+  apply WP.seq
+  wram_call (exec_quadrant base Reg.copySource x hbt ht hqfit) with s ⟨hsm, hsrc, hsr⟩
   have hhigh (i : Fin 64) (hi : 32 ≤ i.val) (htemp : i ≠ Reg.temporary) :
       s.regs i = x.regs i := hsr i (by intro he; subst i; contradiction) htemp
   have hsq := (hhigh Reg.quarter (by decide) (by decide)).trans hq
   have hsd := hhigh dst hd hdt
   have hss : s.regs Reg.copySource = x.regs base + t * q := by simpa only [hq] using hsrc
-  let z := (s.set Reg.copyTarget (x.regs dst)).set Reg.copyLength q
-  have hargs : ExecWithin (B := .standard) w
-      (ram[ Reg.copyTarget ← dst; Reg.copyLength ← Reg.quarter ]) s z 2 := by
-    ram_eval [z, hsq, hsd, Reg.copyTarget, Reg.copyLength]
+  wram_exec [hsq, hsd]
+  refine WP.name fun z hz => ?_
   let f : Fin 7 → Fin 64 := Fin.castLE (by decide)
   have hzs : (z.comap f).regs ArrayCopy.src = x.regs base + t * q := by
-    simpa +decide [z, f, Data.comap, Reg.copyTarget, Reg.copyLength,
+    simpa +decide [hz, f, Data.comap, Reg.copyTarget, Reg.copyLength,
       Reg.copySource, ArrayCopy.src] using hss
   have hzd : (z.comap f).regs ArrayCopy.dst = x.regs dst := by
-    simp +decide [z, f, Data.comap, Reg.copyTarget, Reg.copyLength, ArrayCopy.dst]
+    simp +decide [hz, f, Data.comap, Reg.copyTarget, Reg.copyLength, ArrayCopy.dst]
   have hzl : (z.comap f).regs ArrayCopy.len = q := by
-    simp [z, f, Data.comap, Reg.copyLength, ArrayCopy.len]
+    simp [hz, f, Data.comap, Reg.copyLength, ArrayCopy.len]
   have hquarter : t * q + q ≤ 4 * q := by
     have hmul := Nat.mul_le_mul_right q (Nat.succ_le_of_lt ht)
     simpa only [Nat.succ_mul] using hmul
-  obtain ⟨u, hu, hum, _, _, _⟩ := ArrayCopy.exec_of_separated_or_eq (z.comap f)
-    (hw.of_le (by omega))
-    (by rw [hzs, hzl]; exact hw.of_le (by omega))
-    (by rw [hzd, hzl]; exact hw.of_le (by omega))
-    (by
-      rw [hzs, hzd, hzl]
-      rcases hsep with h | h
-      · exact Or.inl (by omega)
-      · exact Or.inr (Or.inl (by omega)))
-  let y := u.extend f z
-  have hcopy : ExecWithin w (ArrayCopy.program.rename f) z y (7 * q + 4) := by
-    simpa only [hzl] using hu.rename (Fin.castLE_injective _)
-  have he : ExecWithin w (form base dst t 0 0) x y (7 * q + 9) := by
-    simpa only [form, ite_true, f] using
-      (hs.seq (hargs.seq hcopy)).mono (by omega : 3 + (2 + (7 * q + 4)) ≤ 7 * q + 9)
+  wram_call (ArrayCopy.exec_of_separated_or_eq (z.comap f)
+      (hw.of_le (by omega))
+      (by rw [hzs, hzl]; exact hw.of_le (by omega))
+      (by rw [hzd, hzl]; exact hw.of_le (by omega))
+      (by
+        rw [hzs, hzd, hzl]
+        rcases hsep with h | h
+        · exact Or.inl (by omega)
+        · exact Or.inr (Or.inl (by omega)))) renamed (Fin.castLE_injective _) with
+      y ⟨⟨hum, _, _, _⟩, hframe⟩
   have hym : y.mem = ArrayCopy.copyPrefix x.mem (x.regs base + t * q) (x.regs dst) q := by
     rw [hzs, hzd, hzl] at hum
-    have hzm : z.mem = x.mem := hsm
-    simpa only [y, Data.extend, Data.comap_mem, hzm] using hum
-  refine ⟨y, he, ?_, ?_, ?_⟩
+    have hzm : z.mem = x.mem := by simpa only [hz, Data.set_mem] using hsm
+    simpa only [Data.comap_mem, hzm] using hum
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · simpa only [hzl] using (by omega : 7 * q + 4 + 1 + 1 + 3 ≤ 7 * q + 9)
   · intro j hj
     rw [hym]
     simpa only [Nat.add_assoc] using ArrayCopy.copyPrefix_read (mem := x.mem)
@@ -88,16 +86,15 @@ theorem exec_copyForm {w q t : ℕ} (base dst : Fin 64) (x : Data 64)
     rw [hym]
     exact ArrayCopy.copyPrefix_outside (by omega)
   · intro i hi htemp
-    have hn : ¬∃ j, f j = i := by
-      rintro ⟨j, hj⟩
+    have hyi : y.regs i = z.regs i := hframe i (by
+      intro j hj
       have hv := congrArg Fin.val hj
       change j.val = i.val at hv
-      omega
-    have hyi : y.regs i = z.regs i := Function.extend_apply' _ _ _ hn
+      omega)
     apply hyi.trans
     have hi1 : i ≠ Reg.copyTarget := by intro h; subst i; contradiction
     have hi2 : i ≠ Reg.copyLength := by intro h; subst i; contradiction
-    simpa only [z, Data.set, Function.update_of_ne hi1, Function.update_of_ne hi2] using
+    simpa only [hz, Data.set, Function.update_of_ne hi1, Function.update_of_ne hi2] using
       hhigh i hi htemp
 
 end Cslib.Algorithms.WordRAM.Strassen

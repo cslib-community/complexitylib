@@ -64,7 +64,8 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
   `StateTransitionSpec.DemonicValid.exists_clientRun`: existence of valid runs under
   `[StateTransitionSpec.Total]`.
 * `StateTransitionSpec.ClientRun.bind`, `StateTransitionSpec.clientRun_bind_iff`,
-  `StateTransitionSpec.DemonicValid.bind`: sequential composition for relational adaptive clients.
+  `StateTransitionSpec.DemonicValid.bind`, `StateTransitionSpec.DemonicValid.of_bind`: sequential
+  composition and decomposition for relational adaptive clients.
 * `StateTransitionSpec.validOpSeq_iff_validHistory`, `StateTransitionSpec.validTranscript_iff_run`,
   `StateTransitionSpec.demonicValid_iff_validHistory_runClient`,
   `StateTransitionSpec.clientRun_iff_runClient`: equivalence of relational and functional semantics
@@ -557,6 +558,23 @@ theorem DemonicValid.bind {D : StateTransitionSpec.{u, v, w}} {s : D.State} {p :
     refine .liftBind o (fun r => (cont r).bind k) hv_o fun s₁ r hstep => ?_
     exact ih s₁ r hstep fun a s₂ tr hrun => hk a s₂ (⟨o, r, s₁⟩ :: tr)
       (.liftBind o cont r hv_o hstep hrun)
+
+/-- Demonic admissibility of `p.bind k` splits: `p` is demonically admissible, and so is the
+continuation after every valid run of `p`. This is the converse of `DemonicValid.bind`. -/
+theorem DemonicValid.of_bind {D : StateTransitionSpec.{u, v, w}} {s : D.State} {p : D.Client α}
+    {k : α → D.Client β} (h : D.DemonicValid s (p.bind k)) :
+    D.DemonicValid s p ∧ ∀ a s' tr, D.ClientRun s p a s' tr → D.DemonicValid s' (k a) := by
+  induction p generalizing s with
+  | pure a =>
+    refine ⟨.pure s a, fun b s' tr hrun => ?_⟩
+    obtain ⟨rfl, rfl, -⟩ := (clientRun_pure_iff s a b s' tr).mp hrun
+    exact h
+  | liftBind o cont ih =>
+    obtain ⟨hv, hk⟩ := (demonicValid_liftBind_iff s o fun r => (cont r).bind k).mp h
+    refine ⟨.liftBind o cont hv fun s₁ r hstep => (ih r (hk s₁ r hstep)).1,
+      fun b s₂ tr hrun => ?_⟩
+    obtain ⟨-, r, s₁, tr', hstep, hrest, -⟩ := (clientRun_liftBind_iff s o cont b s₂ tr).mp hrun
+    exact (ih r (hk s₁ r hstep)).2 b s₂ tr' hrest
 
 /-! ## Deterministic specifications (`StateTransitionSpec.ofFn`, `StateTransitionSpec.HasStepFn`)
 and functional helpers -/

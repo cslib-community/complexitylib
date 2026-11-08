@@ -8,8 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.Memory.Record
-public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Consolidate
-public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Cut
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Forest
 
 /-!
 # A Fibonacci heap as a record of named cells

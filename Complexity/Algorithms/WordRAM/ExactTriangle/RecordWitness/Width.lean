@@ -7,7 +7,8 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Exec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.NumericBounds
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-input admission for product-selected witness recovery
@@ -71,11 +72,7 @@ theorem physical_fits {w m n g p A heap Q : ℕ}
     exact Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega))
   have hout := (outputBase_lt_window (Q := Q) hN).le.trans hwindow
   have he : Fits (w + 2) (envelope n (D m) g p A) := by
-    have hn := Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) (envelope n (D m) g p A)
-    have hw : Nat.clog 2 (envelope n (D m) g p A) < w + 2 := by
-      unfold admissionWidth at hW
-      omega
-    exact hn.trans_lt (Nat.pow_lt_pow_right (by decide : 1 < (2 : ℕ)) hw)
+    exact fits_of_clog_lt (by unfold admissionWidth at hW; omega)
   apply he.of_le
   unfold envelope
   rw [pow_two] at hQ hwindow hout ⊢
@@ -89,9 +86,7 @@ theorem signed_fits {w n D g p A : ℕ} (hW : admissionWidth n D g p A ≤ w + 2
     unfold admissionWidth at hW
     omega
   have he : 2 * A < envelope n D g p A := by unfold envelope; omega
-  have hp := Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) (envelope n D g p A)
-  have ht : 2 * A < 2 ^ (w - 1) := he.trans_le
-    (hp.trans (Nat.pow_le_pow_right (by decide) (by omega)))
+  have ht : 2 * A < 2 ^ (w - 1) := fits_of_lt_clog_le he (by omega)
   refine ⟨by omega, ?_, by exact_mod_cast ht⟩
   have hz : (0 : ℤ) ≤ (2 * A : ℕ) := by exact_mod_cast Nat.zero_le (2 * A)
   have hp : (0 : ℤ) ≤ 2 ^ (w - 1) := by positivity

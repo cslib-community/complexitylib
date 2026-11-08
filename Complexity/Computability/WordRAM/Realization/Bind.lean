@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Realization.Basic
+public import Complexity.Computability.WordRAM.Realization.Witness
 public import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
@@ -15,12 +15,19 @@ public import Mathlib.Logic.Equiv.Fin.Basic
 
 The continuation has one realization for the environment paired with its runtime answer.
 Its source registers append the first computation's answer slots to the original inputs.
-Two disjoint static scratch banks preserve that environment without client-written intermediate
-assertions. The continuation's bank already contains the final output slots, so no copy is needed.
+The predecessor's auxiliary words are dead after its answer is available, so the continuation
+reuses them. Its bank already contains the final output slots, so no result copy is needed.
+The retained witness gives the concrete scratch, factor and emitter with the existing Spec.
+
+## Main definitions
+
+* `bindSharedLeft`, `bindSharedRight`: the shared-bank layout for retained binds.
+* `Realizes.Witness.bind`: sequential composition retaining data and sharing dead scratch.
 
 ## Main results
 
 * `Realizes.bind`: sequential realization with additive memory and local-work charges.
+* `Realizes.Witness.bind_execWithin`: tighter native budgets on the same supplied emitter.
 -/
 
 @[expose] public section
@@ -29,26 +36,16 @@ namespace Cslib.WordRAM.Realization
 
 open Cslib.DataStructure
 
-private def bindLeft {m n₂ l n₁ : ℕ} (i : Fin (m + n₂ + 1)) :
-    Fin (m + (n₂ + l + n₁ + 1) + 1) := ⟨i.val, by omega⟩
+/-- The continuation's prefix in a bind that shares dead predecessor auxiliary words. -/
+def bindSharedLeft {m n₂ l n₁ : ℕ} (i : Fin (m + n₂ + 1)) :
+    Fin (m + (l + max n₁ n₂) + 1) := ⟨i.val, by omega⟩
 
-private def bindRight {m n₂ l n₁ : ℕ} (i : Fin (l + n₁ + 1)) :
-    Fin (m + (n₂ + l + n₁ + 1) + 1) := ⟨m + n₂ + 1 + i.val, by omega⟩
-
-private theorem validHistory_bind {α β : Type} (w : ℕ) (s : Memory.State)
-    (p : Memory.Prog α) (q : α → Memory.Prog β) :
-    (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p.bind q)) ↔
-      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s p) ∧
-        (Memory.spec w).ValidHistory ((Memory.spec w).clientState s p)
-          ((Memory.spec w).clientHistory ((Memory.spec w).clientState s p)
-            (q ((Memory.spec w).clientResult s p))) := by
-  have hh : (Memory.spec w).clientHistory s (p.bind q) =
-      (Memory.spec w).clientHistory s p ++
-        (Memory.spec w).clientHistory ((Memory.spec w).clientState s p)
-          (q ((Memory.spec w).clientResult s p)) := by
-    simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.clientState,
-      StateTransitionSpec.clientResult, StateTransitionSpec.runClient_bind]
-  rw [hh, StateTransitionSpec.validHistory_append, StateTransitionSpec.run_runClient]
+/-- The predecessor's live answer is placed at the tail; its dead auxiliary words share the
+continuation's prefix. Each stage map is injective, although their union need not be. -/
+def bindSharedRight {m n₂ l n₁ : ℕ} (i : Fin (l + n₁ + 1)) :
+    Fin (m + (l + max n₁ n₂) + 1) :=
+  if h : i.val < l then ⟨m + max n₁ n₂ + 1 + i.val, by omega⟩
+  else ⟨i.val - l, by omega⟩
 
 namespace Realizes
 
@@ -59,31 +56,68 @@ variable {B : Basis} {δ α β : Type} {k l m : ℕ}
   {safeP : ℕ → δ → Memory.State → Prop} {safeQ : ℕ → δ × α → Memory.State → Prop}
   {workP : δ → Memory.State → ℕ} {workQ : δ × α → Memory.State → ℕ}
 
-/-- One uniform continuation emitter consumes the original environment and the first runtime
-answer. Its domain and work charge are evaluated at the deterministic intermediate state.
-All emitted code, register banks and the exchange constant precede runtime answers. -/
-theorem bind (hP : Realizes B p input answer safeP workP)
-    (hQ : Realizes B q ((input.prodMap answer).trans (Fin.appendEquiv k l).toEmbedding)
-      output safeQ workQ) :
-    Realizes B (fun d => (p d).bind (fun a => q (d, a))) input output
-      (fun w d s => safeP w d s ∧
-        safeQ w (d, (Memory.spec 0).clientResult s (p d))
-          ((Memory.spec 0).clientState s (p d)))
-      (fun d s => workP d s +
-        workQ (d, (Memory.spec 0).clientResult s (p d))
-          ((Memory.spec 0).clientState s (p d)) + 1) := by
-  obtain ⟨n₁, C₁, emitP, heP⟩ := hP
-  obtain ⟨n₂, C₂, emitQ, heQ⟩ := hQ
-  let N := n₂ + l + n₁ + 1
-  let C := max C₁ C₂
-  let left : Fin (m + n₂ + 1) → Fin (m + N + 1) := bindLeft
-  let right : Fin (l + n₁ + 1) → Fin (m + N + 1) := bindRight
+/-- Tighten the native budgets of the supplied component runs without changing code, domain
+or semantic postconditions. The continuation receives the predecessor's derived encoded answer,
+exact intermediate memory, boundedness, safety and valid history. Both stages receive their
+derived layout premises. Only execution bounds are
+supplied by the callbacks; the complete frame/input/memory proof is shared with `Witness.bind`.
+The resulting bound is additive on the same retained sequential emitter. -/
+theorem Witness.bind_execWithin (hP : Witness B p input answer safeP workP)
+    (hQ : Witness B q (appendWords input answer) output safeQ workQ) :
+  let n₁ := hP.scratchSize
+  let n₂ := hQ.scratchSize
+  let C₁ := hP.factor
+  let C₂ := hQ.factor
+  let N := l + max n₁ n₂
+  let left : Fin (m + n₂ + 1) → Fin (m + N + 1) := bindSharedLeft
+  let right : Fin (l + n₁ + 1) → Fin (m + N + 1) := bindSharedRight
   let emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
       (Fin (m + N + 1) → Fin r) → Code B r := fun frontier src tmp =>
-    .seq (emitP frontier src (tmp ∘ right))
-      (emitQ frontier
+    .seq (hP.code frontier src (tmp ∘ right))
+      (hQ.code frontier
         (Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))) (tmp ∘ left))
-  refine ⟨N, C, emit, ?_⟩
+  ∀ {r : ℕ} (frontier : Fin r) (src : Fin k → Fin r) (tmp : Fin (m + N + 1) → Fin r),
+    Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
+    (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
+    ¬(emit frontier src tmp).ReadsWidth ∧
+    ∀ (w : ℕ) (d : δ) (x : Data r),
+      let s := memoryState frontier x
+      let a := (Memory.spec 0).clientResult s (p d)
+      let s' := (Memory.spec 0).clientState s (p d)
+      let nextSrc := Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))
+      x.Bounded w → x.regs ∘ src = input d → (safeP w d s ∧ safeQ w (d, a) s') →
+      (Memory.spec w).ValidHistory s
+        ((Memory.spec w).clientHistory s ((p d).bind fun a => q (d, a))) →
+      ∀ TP TQ : ℕ,
+        (Function.Injective (tmp ∘ right) →
+          (∀ i j, src i ≠ (tmp ∘ right) j) → (∀ j, (tmp ∘ right) j ≠ frontier) →
+          (∀ i, src i ≠ frontier) →
+          (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p d)) →
+          ∀ z, ExecWithin w (hP.code frontier src (tmp ∘ right)) x z
+          (C₁ * (memoryCost (p d) s + workP d s + 1)) →
+            ExecWithin w (hP.code frontier src (tmp ∘ right)) x z TP) →
+        (∀ z, Function.Injective (tmp ∘ left) →
+          (∀ i j, nextSrc i ≠ (tmp ∘ left) j) → (∀ j, (tmp ∘ left) j ≠ frontier) →
+          (∀ i, nextSrc i ≠ frontier) →
+          z.Bounded w → z.regs ∘ nextSrc = appendWords input answer (d, a) →
+          memoryState frontier z = s' → safeQ w (d, a) (memoryState frontier z) →
+          (Memory.spec w).ValidHistory (memoryState frontier z)
+            ((Memory.spec w).clientHistory (memoryState frontier z) (q (d, a))) →
+          ∀ y, ExecWithin w (hQ.code frontier nextSrc (tmp ∘ left)) z y
+            (C₂ * (memoryCost (q (d, a)) (memoryState frontier z) +
+              workQ (d, a) (memoryState frontier z) + 1)) →
+            ExecWithin w (hQ.code frontier nextSrc (tmp ∘ left)) z y TQ) →
+        ∃ y, ExecWithin w (emit frontier src tmp) x y (TP + TQ) ∧
+          memoryState frontier y = (Memory.spec w).clientState s ((p d).bind fun a => q (d, a)) ∧
+          (∀ i : Fin m, y.regs (tmp (Fin.castAdd (N + 1) i)) =
+            output ((Memory.spec w).clientResult s ((p d).bind fun a => q (d, a))) i) ∧
+          ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i := by
+  let n₁ := hP.scratchSize
+  let n₂ := hQ.scratchSize
+  let N := l + max n₁ n₂
+  let left : Fin (m + n₂ + 1) → Fin (m + N + 1) := bindSharedLeft
+  let right : Fin (l + n₁ + 1) → Fin (m + N + 1) := bindSharedRight
+  dsimp only
   intro r frontier src tmp hi hd hf hs
   have hleft : Function.Injective (tmp ∘ left) := by
     intro a b hab
@@ -93,14 +127,20 @@ theorem bind (hP : Realizes B p input answer safeP workP)
   have hright : Function.Injective (tmp ∘ right) := by
     intro a b hab
     apply Fin.ext
-    have := congrArg Fin.val (hi hab)
-    change m + n₂ + 1 + a.val = m + n₂ + 1 + b.val at this
-    omega
-  have hdisjoint (a : Fin (l + n₁ + 1)) (b : Fin (m + n₂ + 1)) :
-      tmp (right a) ≠ tmp (left b) := by
+    have h := congrArg Fin.val (hi hab)
+    have hm₁ := Nat.le_max_left n₁ n₂
+    have ha := a.isLt
+    have hb := b.isLt
+    dsimp only [right, bindSharedRight] at h
+    split_ifs at h <;> dsimp only at h <;> omega
+  have hdisjoint (a : Fin l) (b : Fin (m + n₂ + 1)) :
+      tmp (right (Fin.castAdd (n₁ + 1) a)) ≠ tmp (left b) := by
     intro hab
-    have := congrArg Fin.val (hi hab)
-    change m + n₂ + 1 + a.val = b.val at this
+    have h := congrArg Fin.val (hi hab)
+    have hm₂ := Nat.le_max_right n₁ n₂
+    have hb := b.isLt
+    simp only [right, bindSharedRight, Fin.val_castAdd, dite_eq_left a.isLt, left,
+      bindSharedLeft] at h
     omega
   let nextSrc : Fin (k + l) → Fin r :=
     Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))
@@ -109,25 +149,25 @@ theorem bind (hP : Realizes B p input answer safeP workP)
     refine Fin.addCases (fun a => ?_) (fun b => ?_) i
     · simpa only [nextSrc, Fin.append_left, Function.comp_apply] using hd a (left j)
     · simpa only [nextSrc, Fin.append_right, Function.comp_apply] using
-        hdisjoint (Fin.castAdd (n₁ + 1) b) j
+        hdisjoint b j
   have hnextFrontier (i : Fin (k + l)) : nextSrc i ≠ frontier := by
     refine Fin.addCases (fun a => ?_) (fun b => ?_) i
     · simpa only [nextSrc, Fin.append_left] using hs a
     · simpa only [nextSrc, Fin.append_right] using hf (right (Fin.castAdd (n₁ + 1) b))
-  obtain ⟨hnwP, hrunP⟩ := heP frontier src (tmp ∘ right) hright
+  obtain ⟨hnwP, hrunP⟩ := hP.code_spec frontier src (tmp ∘ right) hright
     (fun i j => hd i (right j)) (fun j => hf (right j)) hs
-  obtain ⟨hnwQ, hrunQ⟩ := heQ frontier nextSrc (tmp ∘ left) hleft hnextDisjoint
+  obtain ⟨hnwQ, hrunQ⟩ := hQ.code_spec frontier nextSrc (tmp ∘ left) hleft hnextDisjoint
     (fun j => hf (left j)) hnextFrontier
   refine ⟨fun h => h.elim hnwP hnwQ, ?_⟩
-  intro w d x hx hin hsafe hv
+  intro w d x hx hin hsafe hv TP TQ htP htQ
   let s := memoryState frontier x
   let a := (Memory.spec 0).clientResult s (p d)
   let s' := (Memory.spec 0).clientState s (p d)
   have hresult : (Memory.spec w).clientResult s (p d) = a :=
-    congrArg Prod.fst (runClient_width w (p d) s)
+    clientResult_width w (p d) s
   have hstate : (Memory.spec w).clientState s (p d) = s' :=
-    congrArg (fun z => z.2.1) (runClient_width w (p d) s)
-  obtain ⟨hvP, hvQ⟩ := (validHistory_bind w s (p d) (fun a => q (d, a))).mp hv
+    clientState_width w (p d) s
+  obtain ⟨hvP, hvQ⟩ := (validHistory_bind w (p d) (fun a => q (d, a)) s).mp hv
   obtain ⟨z, hz, hmP, houtP, hframeP⟩ := hrunP w d x hx hin hsafe.1 hvP
   change memoryState frontier z = (Memory.spec w).clientState s (p d) at hmP
   rw [hstate] at hmP
@@ -135,7 +175,7 @@ theorem bind (hP : Realizes B p input answer safeP workP)
     answer ((Memory.spec w).clientResult s (p d)) i at houtP
   rw [hresult] at houtP
   have hinQ : z.regs ∘ nextSrc =
-      ((input.prodMap answer).trans (Fin.appendEquiv k l).toEmbedding) (d, a) := by
+      (appendWords input answer) (d, a) := by
     funext i
     refine Fin.addCases (fun j => ?_) (fun j => ?_) i
     · change z.regs (nextSrc (Fin.castAdd l j)) =
@@ -154,13 +194,71 @@ theorem bind (hP : Realizes B p input answer safeP workP)
     simpa only [hstate, hresult] using hvQ
   obtain ⟨y, hy, hmQ, houtQ, hframeQ⟩ :=
     hrunQ w (d, a) z (hz.bounded hx) hinQ hsafeQ hvalidQ
-  refine ⟨y, (hz.seq hy).mono ?_, ?_, ?_, ?_⟩
-  · change C₁ * (memoryCost (p d) s + workP d s + 1) +
-      C₂ * (memoryCost (q (d, a)) (memoryState frontier z) +
-        workQ (d, a) (memoryState frontier z) + 1) ≤
-        C * (memoryCost ((p d).bind (fun a => q (d, a))) s +
+  have hzT := htP hright (fun i j => hd i (right j)) (fun j => hf (right j)) hs hvP z hz
+  have hyT := htQ z hleft hnextDisjoint (fun j => hf (left j)) hnextFrontier
+    (hz.bounded hx) hinQ hmP hsafeQ hvalidQ y hy
+  refine ⟨y, hzT.seq hyT, ?_, ?_, ?_⟩
+  · rw [hmP] at hmQ
+    exact hmQ.trans (by
+      simp only [StateTransitionSpec.clientState, StateTransitionSpec.runClient_bind]
+      rw [runClient_width w (p d) s])
+  · intro i
+    have hout := houtQ i
+    rw [hmP] at hout
+    change y.regs (tmp (Fin.castAdd (N + 1) i)) =
+      output ((Memory.spec w).clientResult s' (q (d, a))) i at hout
+    change y.regs (tmp (Fin.castAdd (N + 1) i)) =
+      output ((Memory.spec w).clientResult s ((p d).bind (fun a => q (d, a)))) i
+    simpa only [StateTransitionSpec.clientResult, StateTransitionSpec.clientState,
+      StateTransitionSpec.runClient_bind, runClient_width, a, s', s] using hout
+  · intro i hif htmp
+    exact (hframeQ i hif (fun j => htmp (left j))).trans
+      (hframeP i hif (fun j => htmp (right j)))
+
+/-- Retain one uniform sequential emitter while reusing the predecessor's dead auxiliary words.
+Only its runtime answer remains live in a separate tail bank. The continuation's result slots
+are already the composite result slots, so no copies or extra charge are introduced. -/
+def Witness.bind (hP : Witness B p input answer safeP workP)
+    (hQ : Witness B q (appendWords input answer)
+      output safeQ workQ) :
+    Witness B (fun d => (p d).bind (fun a => q (d, a))) input output
+      (fun w d s => safeP w d s ∧
+        safeQ w (d, (Memory.spec 0).clientResult s (p d))
+          ((Memory.spec 0).clientState s (p d)))
+      (fun d s => workP d s +
+        workQ (d, (Memory.spec 0).clientResult s (p d))
+          ((Memory.spec 0).clientState s (p d)) + 1) :=
+  let n₁ := hP.scratchSize
+  let n₂ := hQ.scratchSize
+  let C₁ := hP.factor
+  let C₂ := hQ.factor
+  let N := l + max n₁ n₂
+  let C := max C₁ C₂
+  let left : Fin (m + n₂ + 1) → Fin (m + N + 1) := bindSharedLeft
+  let right : Fin (l + n₁ + 1) → Fin (m + N + 1) := bindSharedRight
+  let emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (m + N + 1) → Fin r) → Code B r := fun frontier src tmp =>
+    .seq (hP.code frontier src (tmp ∘ right))
+      (hQ.code frontier
+        (Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))) (tmp ∘ left))
+  ⟨N, C, emit, by
+    intro r frontier src tmp hi hd hf hs
+    have h := Witness.bind_execWithin hP hQ frontier src tmp hi hd hf hs
+    refine ⟨h.1, fun w d x hx hin hsafe hv => ?_⟩
+    let s := memoryState frontier x
+    let a := (Memory.spec 0).clientResult s (p d)
+    let s' := (Memory.spec 0).clientState s (p d)
+    let TP := C₁ * (memoryCost (p d) s + workP d s + 1)
+    let TQ := C₂ * (memoryCost (q (d, a)) s' + workQ (d, a) s' + 1)
+    obtain ⟨y, hy, hm, hout, hframe⟩ := h.2 w d x hx hin hsafe hv TP TQ
+      (fun _ _ _ _ _ _ he => he)
+      (fun _ _ _ _ _ _ _ hm _ _ _ he => by simpa only [hm] using he)
+    refine ⟨y, hy.mono ?_, hm, hout, hframe⟩
+    change C₁ * (memoryCost (p d) s + workP d s + 1) +
+      C₂ * (memoryCost (q (d, a)) s' + workQ (d, a) s' + 1) ≤
+        C * (memoryCost ((p d).bind fun a => q (d, a)) s +
           (workP d s + workQ (d, a) s' + 1) + 1)
-    rw [hmP, memoryCost_bind]
+    rw [memoryCost_bind]
     calc
       _ ≤ C * (memoryCost (p d) s + workP d s + 1) +
           C * (memoryCost (q (d, a)) s' + workQ (d, a) s' + 1) :=
@@ -170,19 +268,22 @@ theorem bind (hP : Realizes B p input answer safeP workP)
         rw [← Nat.mul_add]
         congr 1
         dsimp only [a, s']
-        omega
-  · rw [hmP] at hmQ
-    exact hmQ.trans (by
-      simp only [StateTransitionSpec.clientState, StateTransitionSpec.runClient_bind]
-      rw [runClient_width w (p d) s])
-  · intro i
-    have hslot : left (Fin.castAdd (n₂ + 1) i) = Fin.castAdd (N + 1) i := rfl
-    rw [hmP] at houtQ
-    simpa only [hslot, Function.comp_apply, StateTransitionSpec.clientResult,
-      StateTransitionSpec.runClient_bind, runClient_width] using houtQ i
-  · intro i hif htmp
-    exact (hframeQ i hif (fun j => htmp (left j))).trans
-      (hframeP i hif (fun j => htmp (right j)))
+        omega⟩
+
+/-- One uniform continuation emitter consumes the original environment and the first runtime
+answer. Its domain and work charge are evaluated at the deterministic intermediate state.
+All emitted code, register banks and the exchange constant precede runtime answers. -/
+theorem bind (hP : Realizes B p input answer safeP workP)
+    (hQ : Realizes B q (appendWords input answer)
+      output safeQ workQ) :
+    Realizes B (fun d => (p d).bind (fun a => q (d, a))) input output
+      (fun w d s => safeP w d s ∧
+        safeQ w (d, (Memory.spec 0).clientResult s (p d))
+          ((Memory.spec 0).clientState s (p d)))
+      (fun d s => workP d s +
+        workQ (d, (Memory.spec 0).clientResult s (p d))
+          ((Memory.spec 0).clientState s (p d)) + 1) :=
+  (Witness.bind (Witness.ofRealizes hP) (Witness.ofRealizes hQ)).toRealizes
 
 end Realizes
 

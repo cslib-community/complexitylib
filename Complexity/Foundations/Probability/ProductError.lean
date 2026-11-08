@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 module
@@ -34,6 +34,7 @@ No final-estimator or machine-space contract is assumed.
 
 ## Main results
 
+* `Cslib.abs_sum_mul_sub_mul_le`: absolute error with separate estimated/true ranges.
 * `Cslib.rootDistPow_mul_le`: a coupled product-table estimate with row and incoming caps.
 * `Matrix.correctionAtom_denseAtom_rootDistPow_le`: the actual atom specialization, deriving
   both support caps from the incoming and row gates.
@@ -50,6 +51,25 @@ open Finset
 open scoped BigOperators
 
 namespace Cslib
+
+/-- Absolute coupled product errors, splitting through estimated-left times canonical-right.
+The first range bounds estimated left; the second bounds canonical right. All four tables
+can depend on the same environment, fixed before this finite comparison. -/
+theorem abs_sum_mul_sub_mul_le {α : Type*} (T : Finset α)
+    (a a' b b' : α → ℝ) {CA CB : ℝ}
+    (ha : ∀ z ∈ T, |a z| ≤ CA) (hb' : ∀ z ∈ T, |b' z| ≤ CB) :
+    |(∑ z ∈ T, a z * b z) - ∑ z ∈ T, a' z * b' z| ≤
+      ∑ z ∈ T, (CA * |b z - b' z| + |a z - a' z| * CB) := by
+  rw [← sum_sub_distrib]
+  apply (abs_sum_le_sum_abs _ _).trans
+  apply sum_le_sum
+  intro z hz
+  rw [show a z * b z - a' z * b' z =
+    a z * (b z - b' z) + (a z - a' z) * b' z by ring]
+  exact (abs_add_le _ _).trans (by
+    rw [abs_mul, abs_mul]
+    exact add_le_add (mul_le_mul_of_nonneg_right (ha z hz) (abs_nonneg _))
+      (mul_le_mul_of_nonneg_left (hb' z hz) (abs_nonneg _)))
 
 private theorem root_mul_sub_pow_le {s : ℕ} (hs : s ≠ 0) {a a' b b' : ℝ}
     (ha : 0 ≤ a) (ha' : 0 ≤ a') (hb : 0 ≤ b) (hb' : 0 ≤ b') :
@@ -235,26 +255,6 @@ variable {Ω V ι κ υ : Type*} [Fintype Ω] [Fintype V] [Fintype ι] [Fintype 
   [∀ t x, Decidable (X t x)] [∀ t z, Decidable (Z t z)] [∀ t z, Decidable (Zt t z)]
   [∀ t y, Decidable (Y t y)] [∀ t y, Decidable (Yt t y)]
 
-private theorem nonneg_correctionAtom {G : Matrix V V ℝ} {g₀ : V → ℝ}
-    (hQ0 : ∀ v, 0 ≤ Q v) (hρ0 : ∀ r, 0 ≤ ρF r) (hτ0 : ∀ r, 0 ≤ τ r)
-    (hg₀ : ∀ z, 0 ≤ g₀ z) (d : ι × κ) (x z : V) :
-    0 ≤ correctionAtom I τ KF Kc f G X Z Zt Q hF ρF g₀ d x z := by
-  rw [correctionAtom]
-  split_ifs
-  · refine mul_nonneg (div_nonneg (mul_nonneg (hQ0 _) (mul_nonneg (hρ0 _) (hτ0 _))) ?_)
-      (hg₀ z)
-    exact le_trans (by norm_num : (0 : ℝ) ≤ 1 / 2) (le_max_left _ _)
-  · exact le_rfl
-
-private theorem nonneg_denseAtom {H : Matrix V V ℝ}
-    (hk0 : ∀ v, 0 ≤ k v) (hρ0 : ∀ r, 0 ≤ ρB r) (t : υ) (z y : V) :
-    0 ≤ denseAtom Y Yt k hB ρB KB b H t z y := by
-  rw [denseAtom]
-  split_ifs
-  · refine div_nonneg (mul_nonneg (hk0 _) (hρ0 _)) ?_
-    exact le_trans (by norm_num : (0 : ℝ) ≤ 1 / 2) (le_max_left _ _)
-  · exact le_rfl
-
 /-- **Product errors for actual correction and dense atoms**. The matrices, multipliers, and
 both seed maps may depend on one shared environment. The bounded cutoffs give `CF = 2 * AF`
 and `CB = 2 * AB`; the actual incoming and row gates give caps `Kc` and `KB`.
@@ -293,10 +293,10 @@ theorem correctionAtom_denseAtom_rootDistPow_le
   classical
   dsimp only
   refine Cslib.rootDistPow_mul_le hs hN hu hf
-    (fun σ => nonneg_correctionAtom hQ0 hρF0 hτ0 (hg0 σ) (drawF σ))
-    (fun σ => nonneg_correctionAtom hQ0 hρF0 hτ0 (hg'0 σ) (drawF σ))
-    (fun σ => nonneg_denseAtom hk0 hρB0 (drawB σ))
-    (fun σ => nonneg_denseAtom hk0 hρB0 (drawB σ))
+    (fun σ => correctionAtom_nonneg hQ0 hρF0 hτ0 (hg0 σ) (drawF σ))
+    (fun σ => correctionAtom_nonneg hQ0 hρF0 hτ0 (hg'0 σ) (drawF σ))
+    (fun σ => denseAtom_nonneg hk0 hρB0 (drawB σ))
+    (fun σ => denseAtom_nonneg hk0 hρB0 (drawB σ))
     (by positivity) (by positivity) ?_ ?_ ?_ ?_
   · intro σ x z
     calc

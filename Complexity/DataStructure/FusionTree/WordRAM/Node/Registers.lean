@@ -76,17 +76,6 @@ theorem bank_injective {k offset : ℕ} (hk : offset + k ≤ registers) :
   dsimp only [bank] at this
   omega
 
-/-- In particular, a contiguous bank frames every physical register outside its interval. -/
-theorem preserves_bank {k offset : ℕ} (hk : offset + k ≤ registers)
-    (c : Code .standard k) (i : Fin registers)
-    (hi : i.val < offset ∨ offset + k ≤ i.val) :
-    (c.rename (bank offset hk)).Preserves i := by
-  apply Code.preserves_rename_of_forall_ne
-  intro j he
-  have := congrArg Fin.val he
-  dsimp only [bank] at this
-  omega
-
 /-- Eighteen-word header reader, including its pointer and address scratch. -/
 abbrev headerBank : Fin 21 → Fin registers := bank 10 (by decide)
 /-- Compression workspace. -/

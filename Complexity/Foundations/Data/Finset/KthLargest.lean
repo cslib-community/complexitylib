@@ -27,10 +27,12 @@ is at least `t` exactly when at least `k` values are at least `t` (`Finset.le_kt
 ## Main definitions
 
 * `Finset.kthLargest`: the `k`-th largest value, padded with zeros.
+* `Finset.abs_le_kthLargest_one`: absolute values are bounded by the full-slice maximum.
 
 ## Main results
 
 * `Finset.kthLargest_nonneg`, `Finset.kthLargest_le`: bounds.
+* `Finset.kthLargest_congr`: congruence under pointwise equality on `s`.
 * `Finset.lt_kthLargest_iff`, `Finset.le_kthLargest_iff`: the threshold characterizations.
 * `Finset.kthLargest_eq_of_eq_or_gt`: replacing values strictly above a bounded rank preserves it.
 * `Finset.kthLargest_le_kthLargest_add`, `Finset.abs_kthLargest_sub_kthLargest_le`: stability
@@ -65,6 +67,23 @@ theorem kthLargest_le (ht : 0 ≤ t) (hh : ∀ x ∈ s, h x ≤ t) : kthLargest 
   · exact ht
   · obtain ⟨x, hx, rfl⟩ := mem_image.mp ha
     exact hh x (mem_filter.mp hx).1
+
+/-- `kthLargest` depends only on the values of the function on `s`. -/
+theorem kthLargest_congr {f g : α → R} (hfg : ∀ x ∈ s, f x = g x) :
+    kthLargest k s f = kthLargest k s g := by
+  unfold kthLargest
+  have hflt : (s.filter fun x => k ≤ #{w ∈ s | f x ≤ f w}) =
+      s.filter fun x => k ≤ #{w ∈ s | g x ≤ g w} := by
+    refine filter_congr fun x hx => ?_
+    have hinner : ({w ∈ s | f x ≤ f w} : Finset α) = {w ∈ s | g x ≤ g w} := by
+      refine filter_congr fun w hw => ?_
+      rw [hfg x hx, hfg w hw]
+    rw [hinner]
+  have himg : ((s.filter fun x => k ≤ #{w ∈ s | f x ≤ f w}).image f) =
+      (s.filter fun x => k ≤ #{w ∈ s | g x ≤ g w}).image g := by
+    rw [hflt]
+    exact image_congr fun x hx => hfg x (mem_filter.mp hx).1
+  simp_rw [himg]
 
 /-- A value of `s` reached or exceeded by at least `k` values is at most the `k`-th largest. -/
 private theorem le_kthLargest_of_le_card {x : α} (hx : x ∈ s)
@@ -178,5 +197,16 @@ theorem abs_kthLargest_sub_kthLargest_le (hk : 0 < k) (hε : 0 ≤ ε)
       sub_le_iff_le_add'.mp (le_of_abs_le ((abs_sub_comm _ _).trans_le (h x hx))))
 
 end Stability
+
+open Classical in
+/-- A retained endpoint's magnitude is bounded by the full row maximum, including zero. -/
+lemma abs_le_kthLargest_one {ι R' : Type*} [AddCommGroup R'] [LinearOrder R']
+    [IsOrderedAddMonoid R'] (S : Finset ι) (b : ι → R') (y : ι) (hy : y ∈ S) :
+    |b y| ≤ kthLargest 1 S (fun z => |b z|) := by
+  by_cases hz : b y = 0
+  · simpa only [hz, abs_zero] using (kthLargest_nonneg (k := 1) (s := S) (h := fun z => |b z|))
+  · exact (le_kthLargest_iff (by decide : 0 < 1) (abs_pos.mpr hz)).mpr
+      (card_pos.mpr ⟨y, mem_filter.mpr ⟨hy, le_rfl⟩⟩)
+
 
 end Finset

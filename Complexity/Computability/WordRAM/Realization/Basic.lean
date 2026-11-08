@@ -33,6 +33,7 @@ not a competing execution semantics or a second client language.
 
 ## Main results
 
+* `Realizes.Spec.consequence`, `Realizes.consequence`: strengthen the domain or enlarge work.
 * `Realizes.exists_refines`: forget the fresh-register frame to the existing `Refines` API.
 
 The realization certificate and its grading are original infrastructure. The memory interface,
@@ -70,6 +71,33 @@ theorem runClient_width (w : ℕ) (p : Memory.Prog α) (s : Memory.State) :
     exact congrArg (fun t : α × Memory.State × List Memory.Op => (t.1, t.2.1, o :: t.2.2))
       (ih (Memory.step s o).2 (Memory.step s o).1)
 
+/-- The result of the memory interpreter is independent of the admissibility width. -/
+theorem clientResult_width (w : ℕ) (p : Memory.Prog α) (s : Memory.State) :
+    (Memory.spec w).clientResult s p = (Memory.spec 0).clientResult s p :=
+  congrArg Prod.fst (runClient_width w p s)
+
+/-- The final memory/frontier state is independent of the admissibility width. -/
+theorem clientState_width (w : ℕ) (p : Memory.Prog α) (s : Memory.State) :
+    (Memory.spec w).clientState s p = (Memory.spec 0).clientState s p :=
+  congrArg (fun t => t.2.1) (runClient_width w p s)
+
+/-- Admissible sequential histories split at the actual returned value and memory state. -/
+theorem validHistory_bind (w : ℕ) {α β : Type} (p : Memory.Prog α)
+    (q : α → Memory.Prog β) (s : Memory.State) :
+    (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p.bind q)) ↔
+      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s p) ∧
+      (Memory.spec w).ValidHistory ((Memory.spec w).clientState s p)
+        ((Memory.spec w).clientHistory ((Memory.spec w).clientState s p)
+          (q ((Memory.spec w).clientResult s p))) := by
+  simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_bind]
+  rw [StateTransitionSpec.validHistory_append, StateTransitionSpec.run_runClient]
+
+/-- Faithfully append a returned word vector to the original input environment.
+This is static register wiring; it performs no native computation or copies. -/
+def appendWords (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ)) :
+    δ × α ↪ (Fin (k + l) → ℕ) :=
+  (input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding
+
 /-- A semantic return issues no memory operation. Its native glue is charged separately. -/
 @[simp] theorem memoryCost_pure (a : α) (s : Memory.State) :
     memoryCost (pure a) s = 0 := rfl
@@ -82,6 +110,30 @@ theorem memoryCost_bind {β : Type} (p : Memory.Prog α) (q : α → Memory.Prog
   unfold memoryCost
   simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_bind]
   rw [StateTransitionSpec.totalCost_append, StateTransitionSpec.run_runClient]
+
+/-- The execution contract for specified scratch, exchange factor and emitter. Both the
+existential judgment and data witnesses use this same contract. -/
+def Realizes.Spec (B : Basis) (p : δ → Memory.Prog α)
+    (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+    (safe : ℕ → δ → Memory.State → Prop) (work : δ → Memory.State → ℕ) (n C : ℕ)
+    (emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (l + n + 1) → Fin r) → Code B r) : Prop :=
+  ∀ {r : ℕ} (frontier : Fin r) (src : Fin k → Fin r)
+    (tmp : Fin (l + n + 1) → Fin r),
+    Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
+    (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
+    ¬(emit frontier src tmp).ReadsWidth ∧
+    ∀ (w : ℕ) (d : δ) (x : Data r), x.Bounded w → x.regs ∘ src = input d →
+      safe w d (memoryState frontier x) →
+      (Memory.spec w).ValidHistory (memoryState frontier x)
+        ((Memory.spec w).clientHistory (memoryState frontier x) (p d)) →
+      ∃ y, ExecWithin w (emit frontier src tmp) x y
+          (C * (memoryCost (p d) (memoryState frontier x) +
+            work d (memoryState frontier x) + 1)) ∧
+        memoryState frontier y = (Memory.spec w).clientState (memoryState frontier x) (p d) ∧
+        (∀ i : Fin l, y.regs (tmp (Fin.castAdd (n + 1) i)) =
+          output ((Memory.spec w).clientResult (memoryState frontier x) (p d)) i) ∧
+        ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i
 
 /-- Existing `Memory.Prog` clients have a fixed emitter and a combined charge. The explicit
 `safe` predicate may contain glue domains and fit envelopes; it is never existentially chosen.
@@ -98,22 +150,7 @@ def Realizes (B : Basis) (p : δ → Memory.Prog α)
   ∃ n C : ℕ,
     ∃ emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
         (Fin (l + n + 1) → Fin r) → Code B r,
-      ∀ {r : ℕ} (frontier : Fin r) (src : Fin k → Fin r)
-        (tmp : Fin (l + n + 1) → Fin r),
-        Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
-        (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
-        ¬(emit frontier src tmp).ReadsWidth ∧
-        ∀ (w : ℕ) (d : δ) (x : Data r), x.Bounded w → x.regs ∘ src = input d →
-          safe w d (memoryState frontier x) →
-          (Memory.spec w).ValidHistory (memoryState frontier x)
-            ((Memory.spec w).clientHistory (memoryState frontier x) (p d)) →
-          ∃ y, ExecWithin w (emit frontier src tmp) x y
-              (C * (memoryCost (p d) (memoryState frontier x) +
-                work d (memoryState frontier x) + 1)) ∧
-            memoryState frontier y = (Memory.spec w).clientState (memoryState frontier x) (p d) ∧
-            (∀ i : Fin l, y.regs (tmp (Fin.castAdd (n + 1) i)) =
-              output ((Memory.spec w).clientResult (memoryState frontier x) (p d)) i) ∧
-            ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i
+      Realizes.Spec B p input output safe work n C emit
 
 namespace Realizes
 
@@ -121,15 +158,16 @@ variable {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)}
   {output : α ↪ (Fin l → ℕ)} {safe : ℕ → δ → Memory.State → Prop}
   {work : δ → Memory.State → ℕ}
 
-/-- Strengthen the visible entry domain or enlarge the local-work charge. The entry word and
-memory bounds may discharge fit conditions; no executable code or domain is hidden by this rule. -/
-theorem consequence {safe' : ℕ → δ → Memory.State → Prop} {work' : δ → Memory.State → ℕ}
-    (h : Realizes B p input output safe work)
+/-- Strengthen the visible entry domain or enlarge the local-work charge for a specified
+scratch size, exchange factor and emitter, all of which are unchanged. -/
+theorem Spec.consequence {safe' : ℕ → δ → Memory.State → Prop}
+    {work' : δ → Memory.State → ℕ} {n C : ℕ}
+    {emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (l + n + 1) → Fin r) → Code B r}
+    (he : Spec B p input output safe work n C emit)
     (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
       safe' w d s → safe w d s)
-    (hwork : ∀ d s, work d s ≤ work' d s) : Realizes B p input output safe' work' := by
-  obtain ⟨n, C, emit, he⟩ := h
-  refine ⟨n, C, emit, ?_⟩
+    (hwork : ∀ d s, work d s ≤ work' d s) : Spec B p input output safe' work' n C emit := by
   intro r frontier src tmp hi hd hf hs
   obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
   refine ⟨hnw, ?_⟩
@@ -139,6 +177,16 @@ theorem consequence {safe' : ℕ → δ → Memory.State → Prop} {work' : δ �
     hrun w d x hx hin (hsafe w d _ hwords (wellFormed_memoryState hx) hsafe') hv
   exact ⟨y, hy.mono (Nat.mul_le_mul_left C (by have := hwork d (memoryState frontier x); omega)),
     hm, hout, hframe⟩
+
+/-- Strengthen the visible entry domain or enlarge the local-work charge. The entry word and
+memory bounds may discharge fit conditions; no executable code or domain is hidden by this rule. -/
+theorem consequence {safe' : ℕ → δ → Memory.State → Prop} {work' : δ → Memory.State → ℕ}
+    (h : Realizes B p input output safe work)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      safe' w d s → safe w d s)
+    (hwork : ∀ d s, work d s ≤ work' d s) : Realizes B p input output safe' work' :=
+  let ⟨n, C, emit, he⟩ := h
+  ⟨n, C, emit, he.consequence hsafe hwork⟩
 
 /-- Existing defined-evaluation basis simulation preserves the complete realization certificate. -/
 theorem mapSimulates {B' : Basis} (h : Realizes B p input output safe work)

@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Controller
 import Mathlib.Tactic.Ring
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Complete charged execution of the shared encoder
 
@@ -49,20 +51,14 @@ theorem exec_coordinates {w L : ℕ} (hw : 0 < w) (side : Bool) (arr : ℕ → �
     (haddr : Fits (w + 2) (addressBound L)) :
     ∃ y, ExecWithin (w + 2) (.loop (.lt stage depth) (stageBody side)) x y
         (L * (207 * 10 ^ L + 14) + 2) ∧ Progress side L L arr initial y := by
-  let I (y : Data 32) : Prop := ∃ j, j ≤ L ∧ Progress side L j arr initial y
-  have hbody (y : Data 32) (hy : I y) (hc : (Cond.lt stage depth).Holds y) :
-      ∃ z, ExecWithin (w + 2) (stageBody side) y z (207 * 10 ^ L + 12) ∧ I z ∧
-        L - z.regs stage < L - y.regs stage := by
-    obtain ⟨j, hj, hprogress⟩ := hy
-    have hjL : j < L := by simpa only [Cond.holds_lt, hprogress.stage, hprogress.fixed.1] using hc
-    obtain ⟨z, he, hz⟩ := progress_step hw hjL side arr initial y hprogress A hA ha hmag haddr
-    exact ⟨z, he, ⟨j + 1, by omega, hz⟩, by rw [hprogress.stage, hz.stage]; omega⟩
-  obtain ⟨y, he, ⟨j, hj, hy⟩, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => L - y.regs stage) hbody ⟨0, Nat.zero_le _, hx⟩
-  have hjL : j = L := by
-    simp only [Cond.holds_lt, hy.stage, hy.fixed.1] at hc
-    omega
-  subst j
+  let P (j : ℕ) (y : Data 32) : Prop := Progress side L j arr initial y
+  have hbody (y : Data 32) (hy : P (y.regs stage) y) (hlt : y.regs stage < L) :
+      ∃ z, ExecWithin (w + 2) (stageBody side) y z (207 * 10 ^ L + 12) ∧
+        P (y.regs stage + 1) z ∧ z.regs stage = y.regs stage + 1 := by
+    obtain ⟨z, he, hz⟩ := progress_step hw hlt side arr initial y hy A hA ha hmag haddr
+    exact ⟨z, he, hz, hz.stage⟩
+  obtain ⟨y, he, hy, _⟩ := ExecWithin.loop_count P (fun _ hy => hy.fixed.1) hbody
+    (by rw [hx.stage]; omega) (by simpa only [hx.stage] using hx)
   refine ⟨y, ?_, hy⟩
   simpa only [hx.stage, Nat.sub_zero, Nat.add_assoc] using he
 

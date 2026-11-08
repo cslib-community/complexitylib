@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Catalogue
 public import Complexity.Algorithms.WordRAM.ExactTriangle.InstancePair
+import Complexity.Computability.WordRAM.Sequence
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -36,11 +37,15 @@ it does not choose a prime, evaluate their queried products or decide ExactTrian
 ## Main results
 
 * `Instances.exec_at`: complete native execution from the original header and weight arrays.
+* `Instances.exec_at_with_prefix`: complete execution together with the post-catalogue/setup
+  state shared with one-slot streaming callers.
+* `Instances.exec_visit`: single-record chunk/piece construction step.
 
 `PreparationInput` supplies the initialized flat-program interface and derived width bounds;
 `PreparationBounds` proves the preparation time bound in the source's parameter regime.
-Code-stage definitions are exposed for kernel-checked interpreter clients.
-Proof helpers are private.
+Code-stage definitions and single-visit invariants (`pairInput`, `visit_preserves`,
+`budget_covers_loop`) are exposed for interpreter and streaming clients; internal proof helpers are
+private.
 
 ## References
 
@@ -233,7 +238,8 @@ theorem program_fixed : program.size ≤ 640 ∧ ¬program.ReadsWidth := by deci
 
 private theorem select_preserves : ∀ i : Fin 64, i.val < 50 → select.Preserves i := by decide
 
-private theorem visit_preserves : ∀ i : Fin 64,
+/-- One instance visit preserves metadata except its heap and logical progress counters. -/
+theorem visit_preserves : ∀ i : Fin 64,
     (32 ≤ i.val ∧ i.val < 50 ∧ i ≠ heap ∧ i ≠ produced) → visit.Preserves i := by decide
 
 private theorem prefix_preserves : ∀ i : Fin 64, 32 ≤ i.val → i.val < 50 →
@@ -249,7 +255,8 @@ private theorem budget_covers_setup {n D g p K H : ℕ}
   dsimp only [budget]
   omega
 
-private theorem budget_covers_loop {n D g p K H B : ℕ}
+/-- The original input budget covers every visit using the actual chunk and piece bounds. -/
+theorem budget_covers_loop {n D g p K H B : ℕ}
     (hK : K ≤ p * (n * n)) (hH : H ≤ n) (hHB : H * B ≤ n * n) :
     2 * (5 + 6 * (n * n) + p + 2 * (n * n) * p + 3 * K) +
       K * H * (6 + 2 * (n * D)) + 11 * (n * n) + 2 * p + n + H + H * B + K * H + 26 ≤
@@ -259,6 +266,7 @@ private theorem budget_covers_loop {n D g p K H B : ℕ}
   dsimp only [budget]
   omega
 
+/-- Execute the shared catalogue-to-instance setup, charging all twenty-six instructions. -/
 private theorem exec_setup {w : ℕ} (x : Data 64) (n D p B H K desc out : ℕ)
     (hn : x.regs 16 = n) (hp : x.regs 17 = p) (hB : x.regs 28 = B)
     (hH : x.regs 29 = H) (hK : x.regs 21 = K) (hd : x.regs 18 = desc)
@@ -317,9 +325,9 @@ private theorem pairBank_injective : Function.Injective pairBank := by
   intro i j h
   exact Fin.ext (congrArg (fun k : Fin 64 => k.val) h)
 
--- A specification of the delivered metadata, not a runtime layout input. Its scratch registers
--- are irrelevant: `InstancePair`'s arguments and record words read only registers17–28.
-private def pairInput (x : Data 64) : Data 32 where
+/-- Specification of the delivered metadata, not a runtime layout input. Scratch registers
+are irrelevant: the pair arguments and record words read only registers 17–28. -/
+@[expose] def pairInput (x : Data 64) : Data 32 where
   regs i := match i.val with
     | 17 => x.regs srcLeft
     | 18 => x.regs srcRight
@@ -429,7 +437,10 @@ private theorem exec_select {w : ℕ} (x : Data 64)
   · simp +decide [y, f, j, first, length]
   · simp +decide [y, l, f, j, length]
 
-private theorem exec_visit {w : ℕ} (x : Data 64) (L R : ℕ → ℕ)
+/-- Execute one logical chunk/piece at the current heap pointer. Previous records and dirty
+scratch outside its destination span are unrestricted. All native argument delivery and both
+matrix calls are included in the charge. -/
+theorem exec_visit {w : ℕ} (x : Data 64) (L R : ℕ → ℕ)
     (ho : x.regs one = 1) (ht : x.regs three = 3) (hH : 0 < x.regs pieces)
     (hi : x.regs produced < x.regs chunks * x.regs pieces)
     (hstride : x.regs stride = 6 + 2 * (x.regs size * x.regs dimension))
@@ -1018,12 +1029,9 @@ private theorem output_of_loop {n D g p : ℕ} (values : ℕ → ℤ)
     · exact Or.inl h
     · exact Or.inr (by rw [hvK]; omega)
 
-/-- Execute the complete preparation from the real header and signed matrices. Every output
-record refers to the actual computed query chunk, followed by its raw zero/one matrix pair.
-The only resource premises concern the original signed values and the explicit numeric budget;
-neither a catalogue nor a layout or execution certificate is an input. The final halt is
-excluded here and added by the initialized flat-program client. -/
-theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data 64)
+/-- Execute just the real catalogue and setup. The returned state is ready for logical
+chunk/piece visits but contains no instance records. Its bound excludes any final halt. -/
+private theorem exec_prefix {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data 64)
     (hDHeader : initial.mem 1 = D) (hgHeader : initial.mem 2 = g)
     (hnHeader : initial.mem 3 = n) (hpHeader : initial.mem 4 = p)
     (hinput : ∀ q < 3 * (n * n), initial.mem (5 + q) = Signed.encode (values q))
@@ -1031,13 +1039,21 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
     (hmod : GenericRAM.Signed.Fits w (p : ℤ))
     (hvalues : ∀ q < 3 * (n * n), GenericRAM.Signed.Fits w (values q))
     (hbudget : Fits (w + 2) (budget n D g p)) :
-    let N := n * n
-    let R := fun q => (values q % (p : ℤ)).toNat
-    let C := fun rho => Nat.count (fun q => R q = rho) N
-    let K := ChunkCatalogue.before C (queryCap n D) p
-    let H := numPieces n D g
-    ∃ y, ExecWithin (w + 2) program initial y (timeBound n D p K H - 1) ∧
-      Output n D g p values initial y := by
+    ∃ v : Data 32, Catalogue.Output n D g p values (initial.comap (Fin.castLE (by decide))) v ∧
+      ∃ b : Data 64,
+        ExecWithin (w + 2) (.seq catalogue setup) initial b (Catalogue.cost n D p + 26) ∧
+        b.mem = v.mem ∧
+        b.regs size = n ∧ b.regs dimension = D ∧ b.regs modulus = p ∧
+        b.regs pieceLength = pieceSize D g ∧ b.regs pieces = numPieces n D g ∧
+        b.regs chunks = ChunkCatalogue.before
+          (fun rho => Nat.count (fun q => (values q % (p : ℤ)).toNat = rho) (n * n))
+          (queryCap n D) p ∧
+        b.regs descriptors = 5 + 6 * (n * n) + p + 2 * (n * n) * p ∧
+        b.regs output = 5 + 6 * (n * n) + p + 2 * (n * n) * p + 3 * b.regs chunks ∧
+        b.regs produced = 0 ∧ b.regs total = b.regs chunks * b.regs pieces ∧
+        b.regs heap = b.regs output ∧ b.regs stride = 6 + 2 * (n * D) ∧
+        b.regs one = 1 ∧ b.regs three = 3 ∧
+        b.regs srcLeft = 5 + 5 * (n * n) ∧ b.regs srcRight = 5 + 4 * (n * n) := by
   let N := n * n
   let R (q : ℕ) := (values q % (p : ℤ)).toNat
   let C (rho : ℕ) := Nat.count (fun q => R q = rho) N
@@ -1054,7 +1070,6 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
   change ∀ j < H, j * B ≤ n at hstart
   have hK : K ≤ p * N := ChunkCatalogue.before_le (one_le_queryCap hD hDn)
     (fun _ _ => Nat.count_le _) le_rfl
-  have hHB : H * B ≤ N := Nat.mul_le_mul hHn hBn
   have hCatalogue : Catalogue.budget n D g p ≤ budget n D g p := by
     dsimp only [budget]
     omega
@@ -1098,16 +1113,85 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
     ha16 ha17 ha28 ha29 ha21 ha18 ha22 haD (hbudget.of_le (budget_covers_setup hK hHn))
   change b.regs srcLeft = 5 + 5 * N at hbL
   change b.regs srcRight = 5 + 4 * N at hbR
+  refine ⟨v, hcatSave, b, ha.seq hb, hbmem, hbn, hbD, hbp, hbB, hbH, hbK, hbd,
+    ?_, hbzero, ?_, hbh.trans hbo.symm, hbs, hb1, hb3, hbL, hbR⟩
+  · rw [hbo, hbK]
+  · rw [hbt, hbK, hbH]
+
+/-- Execute the complete preparation from the real header and signed matrices. Every output
+record refers to the actual computed query chunk, followed by its raw zero/one matrix pair.
+The only resource premises concern the original signed values and the explicit numeric budget;
+neither a catalogue nor a layout or execution certificate is an input. The final halt is
+excluded here and added by the initialized flat-program client. -/
+theorem exec_at_with_prefix {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data 64)
+    (hDHeader : initial.mem 1 = D) (hgHeader : initial.mem 2 = g)
+    (hnHeader : initial.mem 3 = n) (hpHeader : initial.mem 4 = p)
+    (hinput : ∀ q < 3 * (n * n), initial.mem (5 + q) = Signed.encode (values q))
+    (hD : 1 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : 0 < p)
+    (hmod : GenericRAM.Signed.Fits w (p : ℤ))
+    (hvalues : ∀ q < 3 * (n * n), GenericRAM.Signed.Fits w (values q))
+    (hbudget : Fits (w + 2) (budget n D g p)) :
+    let N := n * n
+    let R := fun q => (values q % (p : ℤ)).toNat
+    let C := fun rho => Nat.count (fun q => R q = rho) N
+    let K := ChunkCatalogue.before C (queryCap n D) p
+    let H := numPieces n D g
+    ∃ y, ExecWithin (w + 2) program initial y (timeBound n D p K H - 1) ∧
+      Output n D g p values initial y ∧
+      ∃ b : Data 64,
+        ExecWithin (w + 2) (.seq catalogue setup) initial b (Catalogue.cost n D p + 26) ∧
+        b.regs size = n ∧ b.regs dimension = D ∧ b.regs modulus = p ∧
+        b.regs pieceLength = pieceSize D g ∧ b.regs pieces = numPieces n D g ∧
+        b.regs chunks = K ∧ b.regs descriptors = 5 + 6 * N + p + 2 * N * p ∧
+        b.regs output = y.regs output ∧ b.regs produced = 0 ∧
+        b.regs total = y.regs produced ∧ b.regs heap = b.regs output ∧
+        b.regs stride = 6 + 2 * (n * D) ∧ b.regs one = 1 ∧ b.regs three = 3 ∧
+        b.regs srcLeft = 5 + 5 * N ∧ b.regs srcRight = 5 + 4 * N ∧
+        Set.EqOn b.mem y.mem (Set.Iio (b.regs output)) ∧
+        (∀ u, u < 5 + 3 * N ∨ b.regs output ≤ u → b.mem u = initial.mem u) := by
+  let N := n * n
+  let R (q : ℕ) := (values q % (p : ℤ)).toNat
+  let C (rho : ℕ) := Nat.count (fun q => R q = rho) N
+  let K := ChunkCatalogue.before C (queryCap n D) p
+  let H := numPieces n D g
+  let B := pieceSize D g
+  let desc := 5 + 6 * N + p + 2 * N * p
+  let out := desc + 3 * K
+  let S := 6 + 2 * (n * D)
+  obtain ⟨-, hBn, hH, hHn, hstart⟩ := parameter_bounds hD hDn hg
+  change B ≤ n at hBn
+  change 0 < H at hH
+  change H ≤ n at hHn
+  change ∀ j < H, j * B ≤ n at hstart
+  have hK : K ≤ p * N := ChunkCatalogue.before_le (one_le_queryCap hD hDn)
+    (fun _ _ => Nat.count_le _) le_rfl
+  have hHB : H * B ≤ N := Nat.mul_le_mul hHn hBn
+  obtain ⟨v, hcatOriginal, b, hprefixExec, hbmem, hbn, hbD, hbp, hbB, hbH, hbK,
+      hbd, hbo', hbzero, hbt', hbh', hbs, hb1, hb3, hbL, hbR⟩ :=
+    exec_prefix n D g p values initial hDHeader hgHeader hnHeader hpHeader hinput
+      hD hDn hg hp hmod hvalues hbudget
+  have hbo : b.regs output = out := by rw [hbo', hbK]
+  have hbt : b.regs total = K * H := by rw [hbt', hbK, hbH]
+  have hbh : b.regs heap = out := hbh'.trans hbo
+  have hcatSave := hcatOriginal
+  obtain ⟨hvn, hvp, -, -, hvd, -, hvB, hvH, hvK, hvheap,
+    hvres, hvcounts, hvpairs, hvdesc, hvframe⟩ := hcatOriginal
+  change v.regs ChunkCatalogue.written = K at hvK
+  change ∀ q < 3 * N, v.mem (5 + 3 * N + q) = R q at hvres
+  change ∀ rho < p, ∀ k < C rho ⌈/⌉ queryCap n D,
+    v.mem (desc + 3 * (ChunkCatalogue.before C (queryCap n D) rho + k)) = rho ∧
+      v.mem (desc + 3 * (ChunkCatalogue.before C (queryCap n D) rho + k) + 1) =
+        5 + 6 * N + p + 2 * rho * N + 2 * (k * queryCap n D) ∧
+      v.mem (desc + 3 * (ChunkCatalogue.before C (queryCap n D) rho + k) + 2) =
+        min (queryCap n D) (C rho - k * queryCap n D) at hvdesc
   have hres (q : ℕ) : R q < p := Int.natMod_lt (by omega)
   have hleft (i : ℕ) (hi : i < N) : b.mem (5 + 5 * N + i) = R (2 * N + i) := by
     rw [hbmem]
-    change v.mem (5 + 5 * N + i) = R (2 * N + i)
     convert hvres (2 * N + i) (by omega) using 1
     congr 1
     omega
   have hright (i : ℕ) (hi : i < N) : b.mem (5 + 4 * N + i) = R (N + i) := by
     rw [hbmem]
-    change v.mem (5 + 4 * N + i) = R (N + i)
     convert hvres (N + i) (by omega) using 1
     congr 1
     omega
@@ -1146,9 +1230,10 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
   rw [hbo, hbt, hbs] at hyheap
   have hyreg (i : Fin 64) (hi : 32 ≤ i.val ∧ i.val < 50 ∧ i ≠ heap ∧ i ≠ produced) :
       y.regs i = b.regs i := hy.regs_eq (visit_preserves i hi)
-  refine ⟨y, ?_, ?_⟩
-  · apply (ha.seq (hb.seq hy)).mono
-    change Catalogue.cost n D p + (26 + (K * H * (40 * (n * D) + 68) + 2)) ≤
+  refine ⟨y, ?_, ?_, b, hprefixExec, hbn, hbD, hbp, hbB, hbH, hbK, hbd,
+    ?_, hbzero, ?_, hbh'.trans rfl, hbs, hb1, hb3, hbL, hbR, ?_, ?_⟩
+  · apply ExecWithin.seq_assoc.mp ((hprefixExec.seq hy).mono ?_)
+    change Catalogue.cost n D p + 26 + (K * H * (40 * (n * D) + 68) + 2) ≤
       Catalogue.cost n D p + K * H * (40 * (n * D) + 68) + 29 - 1
     omega
   · apply output_of_loop values initial v b y hcatSave hbmem
@@ -1157,5 +1242,37 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
         (hyreg modulus (by decide)).trans hbp, hyreg output (by decide)⟩ hycount
       (by rw [hbo, hycount, hbs]; exact hyheap) hH
       (by rw [hycount]; exact hywritten) hyframe
+  · exact (hyreg output (by decide)).symm
+  · rw [hbt, hycount]
+  · intro q hq
+    exact (hyframe q (by change q < b.regs output at hq; omega)).symm
+  · intro u hu
+    rw [hbmem]
+    apply hvframe u
+    rw [hvK]
+    rcases hu with hu | hu
+    · exact Or.inl hu
+    · exact Or.inr (by rw [hbo] at hu; exact hu)
+
+/-- Complete native preparation from the real original input, preserving the standalone
+all-record producer contract and halt-exclusive allowance. -/
+theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data 64)
+    (hDHeader : initial.mem 1 = D) (hgHeader : initial.mem 2 = g)
+    (hnHeader : initial.mem 3 = n) (hpHeader : initial.mem 4 = p)
+    (hinput : ∀ q < 3 * (n * n), initial.mem (5 + q) = Signed.encode (values q))
+    (hD : 1 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : 0 < p)
+    (hmod : GenericRAM.Signed.Fits w (p : ℤ))
+    (hvalues : ∀ q < 3 * (n * n), GenericRAM.Signed.Fits w (values q))
+    (hbudget : Fits (w + 2) (budget n D g p)) :
+    let N := n * n
+    let R := fun q => (values q % (p : ℤ)).toNat
+    let C := fun rho => Nat.count (fun q => R q = rho) N
+    let K := ChunkCatalogue.before C (queryCap n D) p
+    let H := numPieces n D g
+    ∃ y, ExecWithin (w + 2) program initial y (timeBound n D p K H - 1) ∧
+      Output n D g p values initial y := by
+  obtain ⟨y, he, hout, _⟩ := exec_at_with_prefix n D g p values initial
+    hDHeader hgHeader hnHeader hpHeader hinput hD hDn hg hp hmod hvalues hbudget
+  exact ⟨y, he, hout⟩
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.Instances

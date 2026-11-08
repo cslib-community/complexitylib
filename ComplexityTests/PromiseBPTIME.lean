@@ -95,4 +95,25 @@ theorem mem_PromiseBPTIME_linear_of_verifier_roundTrip {Q : PromiseProblem (List
 example : promiseClass (BPTIME encBits fun n => n) ⊆ PromiseBPTIME encBits fun n => n :=
   promiseClass_BPTIME_subset_PromiseBPTIME
 
+universe u
+
+/-- The down embedding from a higher-universe lifted bitstring carrier `ULift.{u} (List Bool)` into
+`List Bool`. -/
+def encULiftBits : ULift.{u} (List Bool) ↪ List Bool :=
+  ⟨ULift.down, fun _ _ h => ULift.ext h⟩
+
+/-- At a higher-universe carrier `ULift.{u} (List Bool)`, the decision-problem bridge
+`ofSet_mem_PromiseBPTIME`, monotonicity `PromiseBPTIME_mono`, promise-subset closure
+`mem_PromiseBPTIME_of_subset`, and the `BPTIME`/`PPTIME` completion inclusions all apply directly to
+the canonical `PromiseBPTIME` class. -/
+example {A : Set (ULift.{u} (List Bool))} {T₁ T₂ : ℕ → ℕ} (hT : ∀ n, T₁ n ≤ T₂ n)
+    (hA : A ∈ BPTIME encULiftBits.{u} T₁) :
+    PromiseProblem.ofSet A ∈ PromiseBPTIME encULiftBits.{u} T₂ ∧
+      PromiseProblem.ofSet A ∈ promiseClass (PPTIME encULiftBits.{u} T₂) := by
+  have hmem₁ : PromiseProblem.ofSet A ∈ PromiseBPTIME encULiftBits.{u} T₁ :=
+    ofSet_mem_PromiseBPTIME.mpr hA
+  have hmem₂ : PromiseProblem.ofSet A ∈ PromiseBPTIME encULiftBits.{u} T₂ :=
+    PromiseBPTIME_mono hT hmem₁
+  exact ⟨hmem₂, PromiseBPTIME_subset_promiseClass_PPTIME hmem₂⟩
+
 end ComplexityTests.PromiseBPTIME

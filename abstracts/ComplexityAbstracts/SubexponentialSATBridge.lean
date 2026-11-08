@@ -31,9 +31,9 @@ every unused declared variable and all small or zero sizes.
 dense relabeling, with all resource charges referring to `encCNF φ`.
 
 The native endpoint's dense-relabeling argument supplies the decision consequences for formulas
-with arbitrary natural labels and the occurring-variable parameter. Its SAT exponent and
-ETH/SETH results are transferred directly here. No branch-certificate or exactness premise
-remains in any of the four complexity theorems.
+with arbitrary natural labels and the occurring-variable parameter. Its subexponential-time, SAT
+exponent and ETH/SETH results are transferred directly here. No branch-certificate or exactness
+premise remains in any of the five complexity theorems.
 
 The argument follows OpenAI's *The Exponential Time Hypothesis is False*, revised 25 October
 2026, Sections 3–6, Proposition 6.4 (pp. 43–44), and Appendices A–B [OpenAI2026ETH], pinned to
@@ -80,6 +80,12 @@ theorem length_encCNF (φ : List (List (ℕ × Bool))) :
     rw [encList_cons, List.length_append, length_frame, ih, List.flatten_cons, List.map_append,
       List.sum_append, ← hc c, List.length_cons]
     ring
+
+/-- Every fixed-width `k`-SAT problem is decidable at every positive exponential rate: the
+library's `DecidableInSubexpTime`, unfolded. -/
+theorem decidableInExpTime_KSAT :
+    ∀ (k : ℕ) (δ : ℝ), 0 < δ → DecidableInExpTime (KSAT k) encCNF CNF.numVars δ :=
+  CountingNativeEndpoint.decidableInSubexpTime_KSAT
 
 /-- The native counter refutes the library's Exponential Time Hypothesis. -/
 theorem not_eth : ¬ETH := CountingNativeEndpoint.not_ETH

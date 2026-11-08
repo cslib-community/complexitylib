@@ -7,8 +7,10 @@ or a claim that every cited paper is fully formalized.
 Initial collection: Christian Reitwiessner, with Codex assistance.
 
 The collector reuses the selected groups in [the abstract catalogue](../abstracts/catalogue.json)
-and adds eight Lean-authored groups: oracle counting lowness, first-order model checking in L,
-NL ⊆ P, PPZ and Schöning success bounds, the OV-to-SAT transfer, and native sparsification.
+and adds ten Lean-authored groups: oracle counting lowness, first-order model checking in L,
+NL ⊆ P, PPZ and Schöning success bounds, the OV-to-SAT transfer, native sparsification,
+Williams's square-root-space simulation of deterministic time, and Goldreich–Micali–Wigderson
+zero-knowledge proofs for NP.
 The catalogue continues to own abstract titles, scopes and theorem selections. The bibliography
 remains [references.bib](../references.bib); neither is copied into another authored manifest.
 

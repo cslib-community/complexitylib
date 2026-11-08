@@ -78,10 +78,12 @@ with coins (`RandomizedRefinement.compCoins`), and expected potentials stack acr
 
 * `RandomizedSpec.mem_support_run_of_clientRun`, `RandomizedSpec.exists_clientRun_of_mem_support`:
   the support of a run consists of the relational runs.
-* `StateTransitionSpec.run_toRandomized`, `StateTransitionSpec.toRandomized_step_iff`: a
-  deterministic run is a point mass, and the support of a deterministic specification is itself.
-* `RandomizedSpec.demonicValid_liftRight`, `RandomizedSpec.demonicValid_sample_bind`: coin calls
-  are admissible, and programs over `E` keep their admissibility.
+* `StateTransitionSpec.run_toRandomized`, `StateTransitionSpec.toRandomized_step_iff`,
+  `StateTransitionSpec.toRandomized_demonicValid_iff`: a deterministic run is a point mass, and the
+  support of a deterministic specification is itself, with the same admissible clients.
+* `RandomizedSpec.demonicValid_liftRight`, `RandomizedSpec.demonicValid_liftRight_iff`,
+  `RandomizedSpec.demonicValid_sample_bind`: coin calls are admissible, and programs over `E`
+  keep their admissibility.
 * `RandomizedSpec.expectedCost_bind`, `RandomizedSpec.expectedCost_le_of_isCostBounded`,
   `RandomizedSpec.isCostBounded_obliviousClient`: expected charges of sequenced programs, and
   query budgets.
@@ -189,7 +191,8 @@ theorem exists_clientRun_of_mem_support {p : D.toSpec.Client α} {s s' : D.toSpe
     exact ⟨_, .liftBind o k r hv_o hstep htr⟩
 
 /-- The expected total charge of a client run from `s`, where a call `o` from state `s` costs
-`charge s o`. -/
+`charge s o`. `Cslib.OracleComp.expectedCost` is the stateless counterpart, for calls answered by
+fixed distributions. -/
 noncomputable def expectedCost (charge : D.State → D.Op → ℕ) :
     OracleComp D.Result α → D.State → ℝ≥0∞
   | .pure _, _ => 0
@@ -300,6 +303,18 @@ theorem demonicValid_liftRight {p : D.toSpec.Client α} {s : D.toSpec.State}
   | liftBind o k hv _ ih =>
     exact StateTransitionSpec.DemonicValid.liftBind (D := D.withCoins.toSpec) (Sum.inr o)
       (fun a => OracleComp.liftRight (k a)) hv fun s' a hstep => ih s' a hstep
+
+/-- A program over `E` is admissible over `E.withCoins` exactly when it is admissible over `E`. -/
+theorem demonicValid_liftRight_iff {p : D.toSpec.Client α} {s : D.toSpec.State} :
+    D.withCoins.toSpec.DemonicValid s (OracleComp.liftRight p) ↔ D.toSpec.DemonicValid s p := by
+  refine ⟨fun h => ?_, demonicValid_liftRight⟩
+  induction p generalizing s with
+  | pure a => exact .pure s a
+  | liftBind o k ih =>
+    obtain ⟨hv, hk⟩ := (StateTransitionSpec.demonicValid_liftBind_iff (D := D.withCoins.toSpec) s
+      (Sum.inr o) fun a => OracleComp.liftRight (k a)).mp h
+    exact StateTransitionSpec.DemonicValid.liftBind (D := D.toSpec) o k hv
+      fun s' a hstep => ih a (hk s' a hstep)
 
 /-- Coin calls are admissible, and leave the state unchanged. -/
 theorem demonicValid_sample_bind {q : ProbComp β} {k : β → OracleComp D.withCoins.Result α}
@@ -419,6 +434,18 @@ theorem toRandomized_demonicValid {p : D.Client α} {s : D.State} (h : D.Demonic
   | liftBind o k hv _ ih =>
     exact StateTransitionSpec.DemonicValid.liftBind (D := D.toRandomized.toSpec) o k hv
       fun s' a hstep => ih s' a ((toRandomized_step_iff _ _ _ _).mp hstep)
+
+/-- Admissibility on the support of a deterministic specification is admissibility on it. -/
+theorem toRandomized_demonicValid_iff {p : D.Client α} {s : D.State} :
+    D.toRandomized.toSpec.DemonicValid s p ↔ D.DemonicValid s p := by
+  refine ⟨fun h => ?_, toRandomized_demonicValid⟩
+  induction p generalizing s with
+  | pure a => exact .pure s a
+  | liftBind o k ih =>
+    obtain ⟨hv, hk⟩ := (StateTransitionSpec.demonicValid_liftBind_iff
+      (D := D.toRandomized.toSpec) s o k).mp h
+    exact StateTransitionSpec.DemonicValid.liftBind (D := D) o k hv fun s' a hstep =>
+      ih a (hk s' a ((toRandomized_step_iff _ _ _ _).mpr hstep))
 
 /-- Admissibility of a deterministic history is admissibility on the support. -/
 theorem toRandomized_demonicValid_of_validHistory {p : D.Client α} {s : D.State}
