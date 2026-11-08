@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.Classes
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 public import Complexity.Computability.WordRAM.Compile
 public import Mathlib.Data.List.GetD
+import Complexity.Tactic.Fits
 
 /-!
 # Initialized signed weights to native residue classes
@@ -199,7 +200,7 @@ theorem exec_at {w : ℕ} (header n p : ℕ) (values : ℕ → ℤ) (initial : D
     simpa [Signed.encode, two_mul, show ¬(p : ℤ) < 0 by omega] using h
   have hsizeFit : Fits (w + 2) n := hN.of_le
     (by simpa only [N, pow_two] using Nat.le_self_pow two_ne_zero n)
-  have hpFit : Fits (w + 2) p := hmodfit.of_le (by omega)
+  have hpFit : Fits (w + 2) p := by fits
   let a := initial.set one 1 |>.set 0 header |>.set size n |>.set 0 (header + 1) |>.set modulus p
     |>.set weights base |>.set area N |>.set 11 (N + N) |>.set 11 (N + N + N)
     |>.set 9 base |>.set 10 (base + (N + N + N)) |>.set residues (base + (N + N + N))
@@ -228,8 +229,8 @@ theorem exec_at {w : ℕ} (header n p : ℕ) (values : ℕ → ℤ) (initial : D
   obtain ⟨v, hv, hvm, -⟩ := Residues.exec (a.comap (bank 16 (by decide)))
     (fun q => values q) hp hmod ha12
     (by intro q hq; apply hvalues q; simpa only [ha11, N] using hq)
-    (by rw [ha9, ha11]; exact haddress.of_le (by dsimp [addressBoundAt, N, base]; omega))
-    (by rw [ha10, ha11]; exact haddress.of_le (by dsimp [addressBoundAt, N, base]; omega))
+    (by rw [ha9, ha11]; fits)
+    (by rw [ha10, ha11]; fits)
     (by rw [ha9, ha10, ha11])
     (by intro q hq; rw [ha9]; exact hinput q (by simpa only [ha11, N] using hq))
   let v' := v.extend (bank 16 (by decide)) a
@@ -285,7 +286,7 @@ theorem exec_at {w : ℕ} (header n p : ℕ) (values : ℕ → ℤ) (initial : D
     (by intro q hq; rw [hb0]; exact hresmem q (by rw [hb2] at hq; dsimp [N, base] at *; omega))
     (by rw [hb0, hb2, hb12]; dsimp [N, base]; omega)
     (by rw [hb12, hb14, hb13])
-    (by rw [hb12, hb14]; exact haddress.of_le (by dsimp [addressBoundAt, N, base]; omega))
+    (by rw [hb12, hb14]; fits)
     (by rw [hb13, hb2, hb14]; exact haddress.of_le (by dsimp [addressBoundAt, N, base]; omega))
     (haddress.of_le (by rw [hb2]; dsimp [addressBoundAt, N, base]; omega))
   let y := z.extend (bank 20 (by decide)) b

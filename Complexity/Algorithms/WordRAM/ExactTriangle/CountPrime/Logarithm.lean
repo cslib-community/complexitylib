@@ -9,6 +9,7 @@ module
 
 import Complexity.Computability.WordRAM.SymbolicExec.CanonicalCall
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Computed native CountPrime depth
@@ -35,11 +36,11 @@ theorem exec_logarithm {w : ℕ} (x : Data 128)
       ∀ i, 4 ≤ i.val → i ≠ Reg.depth → i ≠ Reg.zero → i ≠ Reg.one →
         i ≠ Reg.two → i ≠ Reg.four → y.regs i = x.regs i := by
   unfold logarithm
-  have fit (v : ℕ) (hv : v ≤ 8) : Fits w v := hw.of_le (by omega)
+  have fit (v : ℕ) (hv : v ≤ 8) : Fits w v := by fits
   wram_exec [fit]
-  wram_call (NatClog.exec _ (hw.of_le (by omega))
-    (by wram_simp [NatClog.arg]; exact hw.of_le (by omega))
-    (by wram_simp [NatClog.arg]; exact hw.of_le (by omega))) canonical
+  wram_call (NatClog.exec _ (by fits)
+    (by wram_simp [NatClog.arg]; fits)
+    (by wram_simp [NatClog.arg]; fits)) canonical
     (Fin.castLE_injective _) with t ⟨result, memory, _, _⟩
   wram_exec [NatClog.result, result]
   wram_simp [NatClog.arg, memory, result]

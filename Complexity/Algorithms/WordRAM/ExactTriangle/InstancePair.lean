@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.WriteMatrices
 import Mathlib.Tactic.FinCases
+import Complexity.Tactic.Fits
 
 /-!
 # Native matrix pairs and instance records
@@ -168,10 +169,10 @@ private theorem exec_header {w : ℕ} (x : Data 32)
   let b := x.regs base
   let M := x.regs size * x.regs dimension
   let a := x.set one 1 |>.set addr 6 |>.set 1 (b + 6) |>.set area M
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h6 : Fits w 6 := hfit.of_le (by omega)
-  have hb6 : Fits w (x.regs base + 6) := hfit.of_le (by omega)
-  have hM : Fits w (x.regs size * x.regs dimension) := hfit.of_le (by omega)
+  have h1 : Fits w 1 := by fits
+  have h6 : Fits w 6 := by fits
+  have hb6 : Fits w (x.regs base + 6) := by fits
+  have hM : Fits w (x.regs size * x.regs dimension) := by fits
   have hsetup : ExecWithin w setup x a 4 := by
     ram_eval [setup, a, b, M, one, addr, base, area, size, dimension, h1, h6, hb6, hM,
       Fin.mk.injEq]
@@ -181,12 +182,12 @@ private theorem exec_header {w : ℕ} (x : Data 32)
     |>.set addr (b + 3) |>.write (b + 3) (x.regs count)
     |>.set addr (b + 4) |>.write (b + 4) (b + 6)
     |>.set addr (b + 5) |>.set 0 (b + 6 + M) |>.write (b + 5) (b + 6 + M)
-  have hb1 : Fits w (b + 1) := hfit.of_le (by dsimp [b]; omega)
-  have hb2 : Fits w (b + 1 + 1) := hfit.of_le (by dsimp [b]; omega)
-  have hb3 : Fits w (b + 1 + 1 + 1) := hfit.of_le (by dsimp [b]; omega)
-  have hb4 : Fits w (b + 1 + 1 + 1 + 1) := hfit.of_le (by dsimp [b]; omega)
-  have hb5 : Fits w (b + 1 + 1 + 1 + 1 + 1) := hfit.of_le (by dsimp [b]; omega)
-  have hbM : Fits w (b + 6 + M) := hfit.of_le (by dsimp [b, M]; omega)
+  have hb1 : Fits w (b + 1) := by fits
+  have hb2 : Fits w (b + 1 + 1) := by fits
+  have hb3 : Fits w (b + 1 + 1 + 1) := by fits
+  have hb4 : Fits w (b + 1 + 1 + 1 + 1) := by fits
+  have hb5 : Fits w (b + 1 + 1 + 1 + 1 + 1) := by fits
+  have hbM : Fits w (b + 6 + M) := by fits
   have hheader : ExecWithin w writeHeader a y 13 := by
     ram_eval [writeHeader, y, a, b, M, one, addr, base, area, rho, piece, queries, count,
       hb1, hb2, hb3, hb4, hb5, hbM, Fin.mk.injEq]

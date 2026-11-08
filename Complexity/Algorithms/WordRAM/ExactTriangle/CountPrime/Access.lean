@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Spread
+import Complexity.Tactic.Fits
 
 /-!
 # Charged native modular-counter matrix accesses
@@ -43,8 +44,8 @@ theorem exec_morton {w k : ℕ} (x : Data 128) (h2 : x.regs Reg.two = 2)
   have hprod : Fits w (Nat.Morton.spread (x.regs Reg.row) * 2) := hw.of_le (by
     unfold Nat.Morton.index at hi
     omega)
-  have haddrR : Fits w (x.regs Reg.spread + x.regs Reg.row) := hw.of_le (by omega)
-  have haddrC : Fits w (x.regs Reg.spread + x.regs Reg.column) := hw.of_le (by omega)
+  have haddrR : Fits w (x.regs Reg.spread + x.regs Reg.row) := by fits
+  have haddrC : Fits w (x.regs Reg.spread + x.regs Reg.column) := by fits
   refine ⟨?y, ?run, ?mem, ?position, ?regs⟩
   case run =>
     ram_eval [morton, h2, hreadr, hreadc, hsum, hprod, haddrR, haddrC,
@@ -70,12 +71,10 @@ theorem exec_readResidue {w : ℕ} (transpose : Bool) (x : Data 128)
   have hrow := Nat.mul_le_mul_right (x.regs Reg.side) (Nat.succ_le_of_lt hr)
   have hcol := Nat.mul_le_mul_right (x.regs Reg.side) (Nat.succ_le_of_lt hc)
   rw [Nat.succ_mul] at hrow hcol
-  have hpr : Fits w (x.regs Reg.row * x.regs Reg.side) := hw.of_le (by omega)
-  have hpc : Fits w (x.regs Reg.column * x.regs Reg.side) := hw.of_le (by omega)
-  have hir : Fits w (x.regs Reg.row * x.regs Reg.side + x.regs Reg.column) :=
-    hw.of_le (by omega)
-  have hic : Fits w (x.regs Reg.column * x.regs Reg.side + x.regs Reg.row) :=
-    hw.of_le (by omega)
+  have hpr : Fits w (x.regs Reg.row * x.regs Reg.side) := by fits
+  have hpc : Fits w (x.regs Reg.column * x.regs Reg.side) := by fits
+  have hir : Fits w (x.regs Reg.row * x.regs Reg.side + x.regs Reg.column) := by fits
+  have hic : Fits w (x.regs Reg.column * x.regs Reg.side + x.regs Reg.row) := by fits
   have har : Fits w (x.regs Reg.residueSource +
       (x.regs Reg.row * x.regs Reg.side + x.regs Reg.column)) := hw.of_le (by omega)
   have hac : Fits w (x.regs Reg.residueSource +

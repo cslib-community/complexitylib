@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Spec
 import Complexity.Computability.WordRAM.RegisterFrame
+import Complexity.Tactic.Fits
 
 /-!
 # Actual record and interval-header execution
@@ -61,18 +62,18 @@ theorem exec_readRecord {W n D g i records heap out : ℕ} (x : Data 400) (v : F
   let r := records + i * stride
   have heq : stride = 6 + 2 * (n * D) := by dsimp only [stride]; omega
   have hrange : r + 6 ≤ heap := by simpa only [r, heq] using hrec
-  have h1 : Fits W 1 := hfit.of_le (by omega)
-  have h2 : Fits W 2 := hfit.of_le (by omega)
-  have h3 : Fits W 3 := hfit.of_le (by omega)
-  have h6 : Fits W 6 := hfit.of_le (by omega)
-  have harea : Fits W (n * D) := hfit.of_le (by omega)
-  have htwice : Fits W (n * D + n * D) := hfit.of_le (by omega)
-  have hstride : Fits W stride := hfit.of_le (by dsimp only [stride]; omega)
-  have hmul : Fits W (i * stride) := hfit.of_le (by dsimp only [r] at hrange; omega)
-  have hr : Fits W r := hfit.of_le (by omega)
-  have hr1 : Fits W (r + 1) := hfit.of_le (by omega)
-  have hr2 : Fits W (r + 1 + 1) := hfit.of_le (by omega)
-  have hr3 : Fits W (r + 1 + 1 + 1) := hfit.of_le (by omega)
+  have h1 : Fits W 1 := by fits
+  have h2 : Fits W 2 := by fits
+  have h3 : Fits W 3 := by fits
+  have h6 : Fits W 6 := by fits
+  have harea : Fits W (n * D) := by fits
+  have htwice : Fits W (n * D + n * D) := by fits
+  have hstride : Fits W stride := by fits
+  have hmul : Fits W (i * stride) := by fits
+  have hr : Fits W r := by fits
+  have hr1 : Fits W (r + 1) := by fits
+  have hr2 : Fits W (r + 1 + 1) := by fits
+  have hr3 : Fits W (r + 1 + 1 + 1) := by fits
   have hv1 : x.mem (r + 1) = v 1 := by simpa +decide [r, heq] using hv ⟨1, by decide⟩
   have hv2 : x.mem (r + 1 + 1) = v 2 := by
     change x.mem (r + 2) = v 2
@@ -152,15 +153,15 @@ theorem exec_finishHeader {W n S g k : ℕ} (x : Data 400)
   let first := k * B
   let length := min B (n - first)
   have hquot : (S + g - 1) / g = B := by simp only [B, Nat.ceilDiv_eq_add_pred_div]
-  have hsum : Fits W (S + g) := hfit.of_le (by omega)
-  have hsub : Fits W (S + g - 1) := hsum.of_le (Nat.sub_le ..)
+  have hsum : Fits W (S + g) := by fits
+  have hsub : Fits W (S + g - 1) := by fits
   have hB : Fits W B := by rw [← hquot]; exact hsub.of_le (Nat.div_le_self ..)
   have hfirst : Fits W first := hfit.of_le (by change k * B ≤ n at hc; dsimp only [first]; omega)
-  have hlen : Fits W (n - first) := hfit.of_le (by omega)
-  have harea : Fits W (n * n) := hfit.of_le (by omega)
-  have h5 : Fits W 5 := hfit.of_le (by omega)
-  have hbc : Fits W (5 + n * n) := hfit.of_le (by omega)
-  have hac : Fits W (5 + n * n + n * n) := hfit.of_le (by omega)
+  have hlen : Fits W (n - first) := by fits
+  have harea : Fits W (n * n) := by fits
+  have h5 : Fits W 5 := by fits
+  have hbc : Fits W (5 + n * n) := by fits
+  have hac : Fits W (5 + n * n + n * n) := by fits
   dsimp only [sqrtBank, NatSqrt.root] at hroot
   let y := x.set Reg.blockLength (S + g) |>.set Reg.blockLength (S + g - 1)
     |>.set Reg.blockLength B |>.set Reg.first first |>.set Reg.length (n - first)

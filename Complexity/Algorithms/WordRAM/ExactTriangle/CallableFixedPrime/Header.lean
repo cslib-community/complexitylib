@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Real scalar-header stores for the caller adapter
@@ -37,17 +38,17 @@ theorem exec_header {W : ℕ} (x : Data 640)
       ∀ j : Fin 640, j.val < 609 → y.regs j = x.regs j := by
   let n := x.regs Reg.n
   let b := x.regs Reg.base
-  have h1 : Fits W 1 := hfit.of_le (by omega)
-  have h3 : Fits W 3 := hfit.of_le (by omega)
-  have h4 : Fits W 4 := hfit.of_le (by omega)
-  have h5 : Fits W 5 := hfit.of_le (by omega)
+  have h1 : Fits W 1 := by fits
+  have h3 : Fits W 3 := by fits
+  have h4 : Fits W 4 := by fits
+  have h5 : Fits W 5 := by fits
   have ha : Fits W (n * n) := hfit.of_le (by dsimp only [n]; omega)
   have hat : Fits W (n * n * 3) := hfit.of_le (by dsimp only [n]; omega)
   have hal : Fits W (n * n * 3 + 4) := hfit.of_le (by dsimp only [n]; omega)
-  have hb1 : Fits W (b + 1) := hfit.of_le (by dsimp only [b]; omega)
-  have hb2 : Fits W (b + 2) := hfit.of_le (by dsimp only [b]; omega)
-  have hb3 : Fits W (b + 3) := hfit.of_le (by dsimp only [b]; omega)
-  have hb4 : Fits W (b + 4) := hfit.of_le (by dsimp only [b]; omega)
+  have hb1 : Fits W (b + 1) := by fits
+  have hb2 : Fits W (b + 2) := by fits
+  have hb3 : Fits W (b + 3) := by fits
+  have hb4 : Fits W (b + 4) := by fits
   refine ⟨?y, ?run, ?area, ?constant, ?memory, ?regs⟩
   case run => ram_eval [header, n, b, h1, h3, h4, h5, ha, hat, hal, hb1, hb2, hb3, hb4,
     Reg.n, Reg.dimension, Reg.groups, Reg.prime, Reg.base, Reg.area, Reg.length,

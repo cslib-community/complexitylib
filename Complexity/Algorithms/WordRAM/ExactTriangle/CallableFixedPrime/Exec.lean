@@ -12,6 +12,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Pro
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Adapt
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Admission
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Receive
+import Complexity.Tactic.Fits
 
 /-!
 # Complete caller-safe fixed-prime solver execution
@@ -76,7 +77,6 @@ theorem exec_at {W m n g p b : ℕ} (values : List ℤ)
         ∀ j : Fin 640, j.val < 160 ∨ (600 ≤ j.val ∧ j.val < 608) → y.regs j = x.regs j := by
   let T := rawTotal n values
   have fit : Fits W (b + 4 * windowSize n (D m) g p T + 1024) := hfit
-  have window_fit : Fits W (b + windowSize n (D m) g p T) := fit.of_le (by omega)
   obtain ⟨hw, hS, -, -⟩ := setup_fits fit
   have hT : T ≤ windowSize n (D m) g p T := by omega
   have hI : 5 + 3 * (n * n) ≤ windowSize n (D m) g p T :=
@@ -115,7 +115,7 @@ theorem exec_at {W m n g p b : ℕ} (values : List ℤ)
       (Data.init (PreparationInput.input n (D m) g p values) : Data 64).mem q := by
     rw [smem]; exact ai q hq
   obtain ⟨reference, hout, z, hz, zf, zs, ziff, zw, zframe⟩ := exec_compiled values hlen
-    hD hg hp hN (natAbs_le_rawTotal values hlen) (s.comap sourceBank) sb' sM' sr' si hw window_fit
+    hD hg hp hN (natAbs_le_rawTotal values hlen) (s.comap sourceBank) sb' sM' sr' si hw (by fits)
   let z' := z.extend sourceBank s
   have hsolve : ExecWithin W solve s z'
       (3 * FixedPrime.timeBound (m := m)

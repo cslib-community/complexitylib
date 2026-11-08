@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Spec
 import Complexity.Computability.WordRAM.RegisterFrame
 
 import Complexity.Computability.WordRAM.Call
+import Complexity.Tactic.Fits
 
 /-!
 # Real coordinate delivery, verifier calls and witness returns
@@ -120,10 +121,10 @@ theorem exec_deliverPair {W n first length out queries count i scans a b : ℕ} 
       ∀ j : Fin 400, j.val < 326 ∨ j = Reg.one ∨ j = Reg.zero ∨
         (345 ≤ j.val ∧ j.val ≤ 348) ∨ (351 ≤ j.val ∧ j.val ≤ 352) →
         y.regs j = x.regs j := by
-  have hd : Fits W (i + i) := hfit.of_le (by omega)
-  have hp : Fits W (i + i + queries) := hfit.of_le (by omega)
-  have hp1 : Fits W (i + i + queries + 1) := hfit.of_le (by omega)
-  have hs1 : Fits W (scans + 1) := hfit.of_le (by omega)
+  have hd : Fits W (i + i) := by fits
+  have hp : Fits W (i + i + queries) := by fits
+  have hp1 : Fits W (i + i + queries + 1) := by fits
+  have hs1 : Fits W (scans + 1) := by fits
   have hreadA : x.mem (i + i + queries) = a := by simpa only [two_mul, Nat.add_comm] using ha
   have hreadB : x.mem (i + i + queries + 1) = b := by
     simpa only [two_mul, Nat.add_comm] using hb

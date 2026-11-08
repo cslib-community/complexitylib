@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Program
 public import Complexity.Foundations.Data.Nat.Morton
+import Complexity.Tactic.Fits
 
 /-!
 # Computed native Morton spread table
@@ -72,16 +73,15 @@ theorem exec_spreadTable {w k : ℕ} (x : Data 128)
         Nat.Morton.spread (y.regs Reg.index) := by
       rw [Nat.Morton.spread_eq (y.regs Reg.index)]
       omega
-    have hquot : Fits w (y.regs Reg.index / 2) := hw.of_le (by omega)
+    have hquot : Fits w (y.regs Reg.index / 2) := by fits
     have hreadaddr : Fits w (y.regs Reg.spread + y.regs Reg.index / 2) := hw.of_le (by
       rw [hbase]; omega)
-    have hprod : Fits w (Nat.Morton.spread (y.regs Reg.index / 2) * 4) :=
-      hw.of_le (by omega)
-    have hrem : Fits w (y.regs Reg.index % 2) := hw.of_le (by omega)
-    have hsum : Fits w (Nat.Morton.spread (y.regs Reg.index)) := hw.of_le (by omega)
+    have hprod : Fits w (Nat.Morton.spread (y.regs Reg.index / 2) * 4) := by fits
+    have hrem : Fits w (y.regs Reg.index % 2) := by fits
+    have hsum : Fits w (Nat.Morton.spread (y.regs Reg.index)) := by fits
     have hwrite : Fits w (y.regs Reg.spread + y.regs Reg.index) := hw.of_le (by
       rw [hbase]; omega)
-    have hinc : Fits w (y.regs Reg.index + 1) := hw.of_le (by omega)
+    have hinc : Fits w (y.regs Reg.index + 1) := by fits
     refine ⟨?z, ?run, ?inv, ?decrease⟩
     case run =>
       ram_eval [spreadStep, hy1, hy2, hy4, hread, hquot, hreadaddr, hprod, hrem,
@@ -118,7 +118,7 @@ theorem exec_spreadTable {w k : ℕ} (x : Data 128)
     case decrease =>
       change 2 ^ k - (y.regs Reg.index + 1) < 2 ^ k - y.regs Reg.index
       omega
-  have hfit1 : Fits w 1 := hw.of_le (by omega)
+  have hfit1 : Fits w 1 := by fits
   let y :=
     (((x.set Reg.address (x.regs Reg.spread)).write (x.regs Reg.spread) 0).set Reg.index 1)
   have hinit : ExecWithin w spreadSetup x y

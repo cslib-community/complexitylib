@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.Catalogue
 public import Complexity.Algorithms.WordRAM.ExactTriangle.InstancePair
 import Complexity.Computability.WordRAM.Sequence
 import Mathlib.Tactic.FinCases
+import Complexity.Tactic.Fits
 
 /-!
 # Native ExactTriangle instance preparation
@@ -291,22 +292,22 @@ private theorem exec_setup {w : ℕ} (x : Data 64) (n D p B H K desc out : ℕ)
     |>.set srcRight (N + N + N + N) |>.set srcLeft (N + N + N + N + N)
     |>.set addr 5 |>.set srcLeft (N + N + N + N + N + 5)
     |>.set srcRight (N + N + N + N + 5)
-  have h0 : Fits w 0 := hfit.of_le (by omega)
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h3 : Fits w 3 := hfit.of_le (by omega)
-  have h5 : Fits w 5 := hfit.of_le (by omega)
-  have h6 : Fits w 6 := hfit.of_le (by omega)
-  have hT : Fits w (K * H) := hfit.of_le (by omega)
-  have hN : Fits w N := hfit.of_le (by dsimp [N]; omega)
-  have h2N : Fits w (N + N) := hfit.of_le (by dsimp [N]; omega)
-  have h3N : Fits w (N + N + N) := hfit.of_le (by dsimp [N]; omega)
-  have h4N : Fits w (N + N + N + N) := hfit.of_le (by dsimp [N]; omega)
-  have h5N : Fits w (N + N + N + N + N) := hfit.of_le (by dsimp [N]; omega)
-  have h4N5 : Fits w (N + N + N + N + 5) := hfit.of_le (by dsimp [N]; omega)
-  have h5N5 : Fits w (N + N + N + N + N + 5) := hfit.of_le (by dsimp [N]; omega)
-  have hM : Fits w M := hfit.of_le (by dsimp [M]; omega)
-  have h2M : Fits w (M + M) := hfit.of_le (by dsimp [M]; omega)
-  have hstride : Fits w (M + M + 6) := hfit.of_le (by dsimp [M]; omega)
+  have h0 : Fits w 0 := by fits
+  have h1 : Fits w 1 := by fits
+  have h3 : Fits w 3 := by fits
+  have h5 : Fits w 5 := by fits
+  have h6 : Fits w 6 := by fits
+  have hT : Fits w (K * H) := by fits
+  have hN : Fits w N := by fits
+  have h2N : Fits w (N + N) := by fits
+  have h3N : Fits w (N + N + N) := by fits
+  have h4N : Fits w (N + N + N + N) := by fits
+  have h5N : Fits w (N + N + N + N + N) := by fits
+  have h4N5 : Fits w (N + N + N + N + 5) := by fits
+  have h5N5 : Fits w (N + N + N + N + N + 5) := by fits
+  have hM : Fits w M := by fits
+  have h2M : Fits w (M + M) := by fits
+  have hstride : Fits w (M + M + 6) := by fits
   refine ⟨y, ?_, rfl, ?_⟩
   · ram_eval [setup, y, hn, hp, hB, hH, hK, hd, hout, hD, h0, h1, h3, h5, h6,
       hT, hN, h2N, h3N, h4N, h5N, h4N5, h5N5, hM, h2M, hstride, N, M,
@@ -401,15 +402,15 @@ private theorem exec_select {w : ℕ} (x : Data 64)
   have hj : j < x.regs pieces := Nat.mod_lt _ hH
   have hfirst : f ≤ x.regs pieces * x.regs pieceLength :=
     Nat.mul_le_mul_right _ hj.le
-  have hkfit : Fits w k := hfit.of_le (by omega)
-  have hjfit : Fits w j := hfit.of_le (by omega)
-  have hk3 : Fits w (k * 3) := hfit.of_le (by omega)
-  have ha : Fits w (k * 3 + x.regs descriptors) := hfit.of_le (by omega)
-  have ha1 : Fits w (a + 1) := hfit.of_le (by dsimp [a]; omega)
-  have ha2 : Fits w (a + 1 + 1) := hfit.of_le (by dsimp [a]; omega)
-  have hf : Fits w f := hfit.of_le (by omega)
-  have hsub : Fits w (x.regs size - f) := hfit.of_le (by omega)
-  have hl : Fits w l := hsub.of_le (min_le_right ..)
+  have hkfit : Fits w k := by fits
+  have hjfit : Fits w j := by fits
+  have hk3 : Fits w (k * 3) := by fits
+  have ha : Fits w (k * 3 + x.regs descriptors) := by fits
+  have ha1 : Fits w (a + 1) := by fits
+  have ha2 : Fits w (a + 1 + 1) := by fits
+  have hf : Fits w f := by fits
+  have hsub : Fits w (x.regs size - f) := by fits
+  have hl : Fits w l := by fits
   let y := x.set chunkIndex k |>.set pieceIndex j |>.set addr (k * 3)
     |>.set addr a |>.set rho (x.mem a) |>.set addr (a + 1)
     |>.set queries (x.mem (a + 1)) |>.set addr (a + 1 + 1)
@@ -578,8 +579,8 @@ theorem exec_visit {w : ℕ} (x : Data 64) (L R : ℕ → ℕ)
   have hprefix (i : Fin 64) (hi : 32 ≤ i.val) (hi' : i.val < 50) :
       c.regs i = x.regs i := (ha.seq (hb.seq hc)).regs_eq (prefix_preserves i hi hi')
   let y := c.set heap (x.regs heap + x.regs stride) |>.set produced (x.regs produced + 1)
-  have hheapFit : Fits w (x.regs heap + x.regs stride) := hfit.of_le (by omega)
-  have hcountFit : Fits w (x.regs produced + 1) := hfit.of_le (by omega)
+  have hheapFit : Fits w (x.regs heap + x.regs stride) := by fits
+  have hcountFit : Fits w (x.regs produced + 1) := by fits
   have hadvance : ExecWithin w advance c y 2 := by
     have hh := hprefix heap (by decide) (by decide)
     have hs := hprefix stride (by decide) (by decide)
@@ -1075,7 +1076,7 @@ private theorem exec_prefix {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (in
     omega
   obtain ⟨v, hv, hcatOriginal⟩ := Catalogue.exec_at n D g p values
     (initial.comap pairBank) hDHeader hgHeader hnHeader hpHeader hinput hD hDn hg hp
-    hmod hvalues (hbudget.of_le hCatalogue)
+    hmod hvalues (by fits)
   have hcatSave := hcatOriginal
   obtain ⟨hvn, hvp, -, -, hvd, -, hvB, hvH, hvK, hvheap,
     hvres, hvcounts, hvpairs, hvdesc, hvframe⟩ := hcatOriginal

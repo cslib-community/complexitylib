@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Allocation
 public import Complexity.Computability.WordRAM.Notation
+import Complexity.Tactic.Fits
 
 /-!
 # Native zero/one matrices for an Exact Triangle instance
@@ -231,12 +232,12 @@ private theorem exec_readLabel {w row v : ℕ} (side : Bool) (A : Args) (R : ℕ
   have hpos : pos < A.n * A.n := hpoint
   have hkey := hR pos hpos
   have hr := hinput pos hpos
-  have hmul : Fits w (row * A.n) := hs.of_le (by dsimp [pos] at hpos; omega)
-  have hfirst : Fits w (row * A.n + A.first) := hs.of_le (by dsimp [pos] at hpos; omega)
-  have hindex : Fits w pos := hs.of_le (by omega)
-  have haddr : Fits w (A.src + pos) := hs.of_le (by omega)
-  have hsub : Fits w (A.p - R pos) := hp.of_le (by omega)
-  have hadd : Fits w (R pos + A.rho) := hp.of_le (by omega)
+  have hmul : Fits w (row * A.n) := by fits
+  have hfirst : Fits w (row * A.n + A.first) := by fits
+  have hindex : Fits w pos := by fits
+  have haddr : Fits w (A.src + pos) := by fits
+  have hsub : Fits w (A.p - R pos) := by fits
+  have hadd : Fits w (R pos + A.rho) := by fits
   have hmodsub : Fits w ((A.p - R pos) % A.p) := hsub.of_le (Nat.mod_le ..)
   have hmodadd : Fits w ((R pos + A.rho) % A.p) := hadd.of_le (Nat.mod_le ..)
   let z := x.set addr (row * A.n) |>.set addr (row * A.n + A.first)
@@ -266,7 +267,7 @@ private theorem exec_body {w q : ℕ} (side : Bool) (A : Args) (R : ℕ → ℕ)
     (hmod : Fits w (2 * A.p)) :
     ∃ y, ExecWithin w (body side) x y 18 ∧ y.regs idx = q + 1 ∧
       y.mem = Function.update x.mem (A.dst + q) (entry side A R q) := by
-  have hqfit : Fits w q := hdst.of_le (by omega)
+  have hqfit : Fits w q := by fits
   obtain ⟨b, hb, hba, hbi, hbl, hbv, hbb, hbo, hbz, hbm⟩ :=
     exec_indices side A x hx hq hqfit
   let row := if side then q % A.n else q / A.D
@@ -333,8 +334,8 @@ private theorem exec_body {w q : ℕ} (side : Bool) (A : Args) (R : ℕ → ℕ)
   obtain ⟨z, hzg, hzv, hzi, hzo, hzm⟩ := hgate
   have hzd : z.regs dst = A.dst :=
     (hzg.regs_eq (by cases side <;> decide)).trans hba.dst
-  have haddr : Fits w (A.dst + q) := hdst.of_le (by omega)
-  have hinc : Fits w (q + 1) := hdst.of_le (by omega)
+  have haddr : Fits w (A.dst + q) := by fits
+  have hinc : Fits w (q + 1) := by fits
   let y := (z.set addr (A.dst + q)).write (A.dst + q) (entry side A R q)
     |>.set idx (q + 1)
   have htail : ExecWithin w
@@ -389,8 +390,8 @@ theorem exec {w : ℕ} (side : Bool) (A : Args) (R : ℕ → ℕ) (x : Data 17)
     · intro a ha
       rw [hzm, Function.update_of_ne (by omega)]
       exact hyout a (by omega)
-  have h1 : Fits w 1 := hmod.of_le (by omega)
-  have ha : Fits w (A.n * A.D) := hdst.of_le (by omega)
+  have h1 : Fits w 1 := by fits
+  have ha : Fits w (A.n * A.D) := by fits
   let x₀ := x.set zero 0 |>.set one 1 |>.set idx 0 |>.set area (A.n * A.D)
   have hx₀ : I x₀ := by
     refine ⟨entry_of_regs hx ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩

@@ -9,6 +9,7 @@ module
 
 import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.QueryScan
+import Complexity.Tactic.Fits
 
 /-!
 # Native residue-class query lists
@@ -173,7 +174,7 @@ theorem exec {w : ℕ} (x : Data 20) (R : ℕ → ℕ) (h1 : Fits w 1)
     obtain ⟨v', hv, ⟨-, hvc, hvr, hvpairs, hvframe⟩, -⟩ :=
       ExecWithin.rename_post scanReg_injective (QueryScan.exec (a.comap scanReg) R h1
         (by simpa only [ha_src, ha_size, Data.comap_mem] using hread)
-        (by rw [ha_src, ha_size]; exact hcount.of_le (by omega))
+        (by rw [ha_src, ha_size]; fits)
         (by rw [ha_dst, ha_size]; exact hquery.of_le (by rw [Nat.mul_comm j s]; omega))
         (by rw [ha_src, ha_size, ha_dst, Nat.mul_comm j s]; omega))
     simp only [ha_dst, ha_residue, ha_size] at hvc hvpairs hvframe
@@ -198,8 +199,8 @@ theorem exec {w : ℕ} (x : Data 20) (R : ℕ → ℕ) (h1 : Fits w 1)
     have hvj : v'.regs cursor = j := hvreg cursor (by decide)
     have hvone : v'.regs one = 1 := (hvreg one (by decide)).trans hyo
     have hvb : v'.regs counts = b := (hvreg counts (by decide)).trans hyb
-    have haddr : Fits w (b + j) := hcount.of_le (by dsimp [b, p] at *; omega)
-    have hj : Fits w (j + 1) := hcount.of_le (by dsimp [p] at *; omega)
+    have haddr : Fits w (b + j) := by fits
+    have hj : Fits w (j + 1) := by fits
     let z := v'.set addr (b + j) |>.write (b + j) (C j (n * n)) |>.set cursor (j + 1)
     have hend : ExecWithin w
         (ram[ addr ← counts + cursor; *addr ← count; cursor ← cursor + one ]) v' z 3 := by
@@ -283,7 +284,7 @@ theorem exec {w : ℕ} (x : Data 20) (R : ℕ → ℕ) (h1 : Fits w 1)
       rfl
   have hinit : ExecWithin w
       (ram[ one ← #1; cursor ← #0; stride ← size * size; stride ← stride + stride ]) x x₀ 4 := by
-    have hnfit : Fits w (n * n) := harea.of_le (by change n * n ≤ 2 * (n * n); omega)
+    have hnfit : Fits w (n * n) := by fits
     have hdbl : Fits w (n * n + n * n) := by simpa only [s, two_mul] using harea
     dsimp [n] at hnfit hdbl
     ram_eval [x₀, n, s, two_mul, h1, hnfit, hdbl, one, cursor, stride, size, Fin.mk.injEq]

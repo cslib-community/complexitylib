@@ -11,6 +11,7 @@ import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Parameters
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ResidueClasses
+import Complexity.Tactic.Fits
 
 /-!
 # Computing an ExactTriangle instance catalogue
@@ -187,10 +188,10 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
   have ha2 : a.mem 2 = g := (haframe 2 (Or.inl (by omega))).trans hgHeader
   have ha3 : a.mem 3 = n := (haframe 3 (Or.inl (by omega))).trans hnHeader
   have ha4 : a.mem 4 = p := (haframe 4 (Or.inl (by omega))).trans hpHeader
-  have h1 : Fits (w + 2) 1 := hbudget.of_le (by omega)
-  have h2 : Fits (w + 2) (1 + 1) := hbudget.of_le (by omega)
-  have h3 : Fits (w + 2) (1 + 1 + 1) := hbudget.of_le (by omega)
-  have h4 : Fits (w + 2) 4 := hbudget.of_le (by omega)
+  have h1 : Fits (w + 2) 1 := by fits
+  have h2 : Fits (w + 2) (1 + 1) := by fits
+  have h3 : Fits (w + 2) (1 + 1 + 1) := by fits
+  have h4 : Fits (w + 2) 4 := by fits
   let b := a.set 31 1 |>.set 0 1 |>.set 7 D |>.set 0 2 |>.set 8 g |>.set 0 3 |>.set 6 n
   have hb : ExecWithin (w + 2) deliverParameters a b 7 := by
     ram_eval [deliverParameters, b, ha1, ha2, ha3, h1, h2, h3, Fin.mk.injEq]
@@ -206,8 +207,8 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
     ExecWithin.rename_post bank_injective (Parameters.exec (b.comap bank)
       (by rw [hb7]; exact hbudget.of_le (by omega))
       (by rw [hb6]; exact hbudget.of_le (by dsimp [N]; omega))
-      (by rw [hb7, hb8]; exact hbudget.of_le (by omega))
-      (by rw [hb6, hb7, hb8]; exact hbudget.of_le (by omega)))
+      (by rw [hb7, hb8]; fits)
+      (by rw [hb6, hb7, hb8]; fits))
   have hc : ExecWithin (w + 2) parameters b c (5 * sOf D + 5 * queryCap n D + 27) := by
     simpa only [parameters, hb6, hb7] using hv
   simp only [Data.comap_regs] at hb6 hb7 hb8
@@ -234,8 +235,8 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
     |>.set pieceLength (pieceSize D g) |>.set pieces (numPieces n D g)
     |>.set 25 4 |>.set 17 p |>.set 18 N |>.set 18 (N + N)
     |>.set 18 ((N + N) * p) |>.set 18 ((N + N) * p + queryBase)
-  have hN : Fits (w + 2) (n * n) := hbudget.of_le (by dsimp [N]; omega)
-  have h2N : Fits (w + 2) (n * n + n * n) := hbudget.of_le (by dsimp [N]; omega)
+  have hN : Fits (w + 2) (n * n) := by fits
+  have h2N : Fits (w + 2) (n * n + n * n) := by fits
   have h2Np : Fits (w + 2) ((n * n + n * n) * p) :=
     hbudget.of_le (by dsimp [N]; nlinarith only [])
   have hOut : Fits (w + 2) ((n * n + n * n) * p + queryBase) :=

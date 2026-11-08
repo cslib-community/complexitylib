@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Copy
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.InputSpec
+import Complexity.Tactic.Fits
 
 /-!
 # Complete original-array adaptation and actual word accumulation
@@ -74,7 +75,7 @@ theorem exec_adapt {W : ℕ} (x : Data 640)
   let Sc := ArrayCopySum.wordSum x.mem ac N
   let T := Sa + Sb + Sc
   have fit : Fits W (b + 4 * N + T + 1024) := hfit
-  have h1 : Fits W 1 := fit.of_le (by omega)
+  have h1 : Fits W 1 := by fits
   have sum_eq (mem : ℕ → ℕ) (hmem : ∀ q < b, mem q = x.mem q)
       (src : ℕ) (hsrc : src + N ≤ b) :
       ArrayCopySum.wordSum mem src N = ArrayCopySum.wordSum x.mem src N := by
@@ -98,9 +99,9 @@ theorem exec_adapt {W : ℕ} (x : Data 640)
   have a_below (q : ℕ) (hq : q < b) : a.mem q = x.mem q := by rw [amem]; exact hbelow q hq
   have a_sum : ArrayCopySum.wordSum a.mem ab N = Sa := sum_eq a.mem a_below ab hab
   obtain ⟨c₁, hc₁, post₁, c₁regs⟩ := exec_copy a h1
-    (by rw [a_src, a_len]; exact fit.of_le (by omega))
-    (by rw [a_dst, a_len]; exact fit.of_le (by omega))
-    (by rw [a_total, a_src, a_len, a_sum]; exact fit.of_le (by omega))
+    (by rw [a_src, a_len]; fits)
+    (by rw [a_dst, a_len]; fits)
+    (by rw [a_total, a_src, a_len, a_sum]; fits)
     (by rw [a_src, a_dst, a_len]; omega)
   have hc₁' : ExecWithin W (ArrayCopySum.program.rename copyBank) a c₁ (8 * N + 4) := by
     simpa only [a_len] using hc₁
@@ -128,9 +129,9 @@ theorem exec_adapt {W : ℕ} (x : Data 640)
     rw [d₂mem]; exact c₁_below q hq
   have d₂_sum : ArrayCopySum.wordSum d₂.mem bc N = Sb := sum_eq d₂.mem d₂_below bc hbc
   obtain ⟨c₂, hc₂, post₂, c₂regs⟩ := exec_copy d₂ h1
-    (by rw [d₂_src, d₂_len]; exact fit.of_le (by omega))
-    (by rw [d₂_dst, d₂_len]; exact fit.of_le (by omega))
-    (by rw [d₂_total, d₂_src, d₂_len, d₂_sum]; exact fit.of_le (by omega))
+    (by rw [d₂_src, d₂_len]; fits)
+    (by rw [d₂_dst, d₂_len]; fits)
+    (by rw [d₂_total, d₂_src, d₂_len, d₂_sum]; fits)
     (by rw [d₂_src, d₂_dst, d₂_len]; omega)
   have hc₂' : ExecWithin W (ArrayCopySum.program.rename copyBank) d₂ c₂ (8 * N + 4) := by
     simpa only [d₂_len] using hc₂
@@ -157,9 +158,9 @@ theorem exec_adapt {W : ℕ} (x : Data 640)
     rw [d₃mem]; exact c₂_below q hq
   have d₃_sum : ArrayCopySum.wordSum d₃.mem ac N = Sc := sum_eq d₃.mem d₃_below ac hac
   obtain ⟨c₃, hc₃, post₃, c₃regs⟩ := exec_copy d₃ h1
-    (by rw [d₃_src, d₃_len]; exact fit.of_le (by omega))
-    (by rw [d₃_dst, d₃_len]; exact fit.of_le (by omega))
-    (by rw [d₃_total, d₃_src, d₃_len, d₃_sum]; exact fit.of_le (by omega))
+    (by rw [d₃_src, d₃_len]; fits)
+    (by rw [d₃_dst, d₃_len]; fits)
+    (by rw [d₃_total, d₃_src, d₃_len, d₃_sum]; fits)
     (by rw [d₃_src, d₃_dst, d₃_len]; omega)
   have hc₃' : ExecWithin W (ArrayCopySum.program.rename copyBank) d₃ c₃ (8 * N + 4) := by
     simpa only [d₃_len] using hc₃
