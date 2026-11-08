@@ -2994,6 +2994,7 @@ public import Complexity.Computability.Probabilistic.Selection
 public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Computability.PropertyTesting.DenseGraph.Basic
+public import Complexity.Computability.PropertyTesting.DenseGraph.Bipartite
 public import Complexity.Computability.PropertyTesting.DenseGraph.Canonical
 public import Complexity.Computability.PropertyTesting.DenseGraph.TriangleFree
 public import Complexity.Computability.PropertyTesting.Distribution.Basic
