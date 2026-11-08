@@ -185,18 +185,24 @@ key and emits nested frames directly; its actual prefix/callback bounds avoid a
 growing-group accumulator. Its input/output quarter volume is still charged,
 with a proved quarter-scale uniform time/space bound. Do not equate first-quarter
 buckets with complete two-quarter classes or their maximum balance.
-`ClassJoin` now composes forward/inverse quarter generation, tagged sorting and
-that group writer with all-pair occurrence semantics, count-only products and
-streamed original full-state reconstruction. Its fixed outer counter computes
-the entire forward-class count table, including exhaustive zero-count semantics.
-The stored binary table has a derived quarter-scale wire bound. The actual
-certificates still charge polynomial grouped-volume consumers, captured table
-copying and reversal; table size alone does not bound auxiliary TM workspace.
-Do not promote these profiles to sharp global resources or computed balance:
-connecting both orientations, a near-linear group consumer, fused bounded
-writing/probing with persistent retained tapes and global search/reuse remain.
-Use the complete class-join client from the Operator's Manual for handoff checks;
-leave the older complete solver and every scan/copying charge intact.
+`ClassJoin` composes quarter-query generation and grouping with counted
+occurrence joins. `ClassBalance` now derives unique complete half words, exact
+forward/backward counter counts and the computed balance, then generates only
+the count-selected smaller class. `JoinedDissection.run` is the assembled
+original-input route through generated retention, bounded-batch counter probing,
+fixed outer release/iteration and original witness readback. Its correctness and
+returned balance are proved; use both complete new clients linked in the
+Operator's Manual when handing it over.
+
+Keep its resource limits visible: count-table and retained/live-buffer prefix
+encodings have derived bounds, but actual machine profiles also charge grouped
+polynomial consumers, repeated quarter/count generation, opposite half scans,
+captured dictionary/buffer copying and all internal temporaries. Orientation
+recomputes the counts; no cached-size oracle is input. Do not promote the list
+bounds or batch record-volume accounting to sharp TM time/peak space. A joined
+opposite producer, resource-faithful group consumers and persistent retained-tape
+fusion still need implementation and global resource proofs. The old solvers and
+all their charges remain intact; the new direct route bypasses their interpreter.
 
 ## Correct course and hand work over
 

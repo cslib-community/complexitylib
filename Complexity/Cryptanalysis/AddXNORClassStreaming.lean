@@ -45,6 +45,7 @@ prove the sharp source time or peak-space asymptotics.
 ## Main results
 
 * `count_eq`, `retained_length`, `retain_prefix`: exact occurrence counts and retaining prefixes.
+* `records_nodup`: unique packed words in every counter prefix, despite state collisions.
 * `global_retained_prefix`, `retaining_prefix_wire`: computed-count and physical wire bounds.
 * `original_correct`, `original_machine`: original witness/miss and actual uniform bit execution.
 -/
@@ -937,5 +938,14 @@ theorem retaining_prefix_wire {m : ℕ} (as bs : List (BitVec m)) (s : BitVec m)
   have hw := (RadixSort.wire_bounds (m, rows) (as.length + bs.length) fits).2
   have hn := retained_prefix_length input j hj
   exact hw.trans (Nat.add_le_add_left (Nat.mul_le_mul_right _ hn) _)
+
+/-- Packed-counter prefixes preserve unique operator words even when evaluated states collide. -/
+theorem records_nodup (input : Input) (right : Bool) (n : ℕ) :
+    (records input right n).Nodup := by
+  apply List.Nodup.map_on _ (List.nodup_range.filter _)
+  intro a _ b _ he
+  have h := congrArg Prod.snd he
+  cases right <;> simpa only [row, SortedQuarterMachine.record, SortedMeet.reflect,
+    ite_true, ite_false, Bool.false_eq_true] using h
 
 end Cslib.Cryptanalysis.AddXNOR.ClassStreaming

@@ -2901,6 +2901,7 @@ public import Complexity.Cryptanalysis.AddXNORBitInput
 public import Complexity.Cryptanalysis.AddXNORBits
 public import Complexity.Cryptanalysis.AddXNORChain
 public import Complexity.Cryptanalysis.AddXNORChainReverse
+public import Complexity.Cryptanalysis.AddXNORClassBalance
 public import Complexity.Cryptanalysis.AddXNORClassEnumeration
 public import Complexity.Cryptanalysis.AddXNORClassJoin
 public import Complexity.Cryptanalysis.AddXNORClassStreaming
@@ -2916,6 +2917,7 @@ public import Complexity.Cryptanalysis.AddXNORGeneratedRunInput
 public import Complexity.Cryptanalysis.AddXNORGroupedQuarter
 public import Complexity.Cryptanalysis.AddXNORGuard
 public import Complexity.Cryptanalysis.AddXNORGuardedChain
+public import Complexity.Cryptanalysis.AddXNORJoinedDissection
 public import Complexity.Cryptanalysis.AddXNORNPComplete
 public import Complexity.Cryptanalysis.AddXNORNative
 public import Complexity.Cryptanalysis.AddXNORNativeAllClasses

@@ -302,11 +302,21 @@ computed forward class and produces a binary count table; zero counts have
 original packed-word exhaustive-miss semantics. The stored table has the derived
 quarter-scale bound `2^p (4k+7)`. Actual uniform bit certificates include every
 composed phase and table/control copying, but generic join/count callbacks still
-pay polynomial grouped-wire cost. No near-linear group consumption, both-side
-computed-balance orientation, fused bounded writing/probing/persistent retained
-tapes or sharp global source inequalities follow from these profiles. These
-remain required; table/output encoding is not auxiliary TM workspace. Older
-class/batch counter implementations and the complete solver are unchanged. A real
+pay polynomial grouped-wire cost. `ClassBalance` now derives unique complete
+half words, exact original-half counter counts in both directions, computed
+balance and count-selected retention. `JoinedDissection` assembles that retention
+with the actual bounded-batch counter probe, fixed all-class release/iteration,
+source preparation and original witness readback; witness/miss and returned
+computed-balance correctness are proved. Count-table and simultaneous retained/
+live-buffer prefix encodings are bounded separately from machine temporaries.
+The source's fast reachable-state count prepass remains unimplemented on this
+sorted-list route. Sharp resources still require resource-faithful group consumers, a joined
+opposite-class producer and persistent retained-tape fusion: the current route
+regenerates counts/quarters per class, scans opposite half words and copies
+captured retained/buffer state, with grouped-volume polynomial costs charged.
+No sharp global bit inequalities follow from the encoding or record-volume
+bounds. Older solver sources are preserved; the new direct route bypasses their
+interpreter without removing their costs from their own certificates. A real
 streaming default filter also removes whole-list accumulator copying,
 with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
 component, not installed in the existing cubic-filter uniform execution. Those

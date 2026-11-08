@@ -1552,16 +1552,60 @@ proves an indexed zero is an exhaustive original-input class miss. `table_wire`
 bounds the stored table by $2^p(4k+7)$ bits; it does **not** bound the machine's
 internal workspace by that table size.
 
-The generic join/count consumers still pay polynomial cost in the complete
-grouped wire volume, and the outer certificate also charges captured-table
-copying and final reversal. This route avoids rescanning all half words for a
-count, but does not yet provide a resource-faithful linear group consumer. The
-forward table has not been connected to both-direction computed-balance
-orientation. Fused bounded writing/probing with persistent retained tapes,
-all-class search/reuse and the sharp global time/peak-space inequalities remain
-open. The previous class/batch counter routes retain all their scans/copying
-costs; their complete solver has not been replaced. No sharp source or whole-paper
-result follows from these assembled class-count and full-state producer profiles.
+`ClassBalance` now generates both directions. For a backward class it reverses
+$Q_4,Q_3$, starts from the complemented target and uses the complemented low-bit
+class key; full emitted states are reflected back before matching. Packed
+complete-half payloads preserve leading zero operators and the existing reversed
+suffix readback convention. `records_nodup` derives unique packed words despite
+state collisions. `count_eq_counter` proves exact equality with the original-half
+counter counts, and `balance_eq_counter` proves equality of the computed maximum
+smaller population. Counts or dictionary correctness are not supplied as advice.
+
+`JoinedDissection.run` assembles those producers with the existing actual
+bounded-batch opposite-side counter probe. It receives the original source input,
+computes both count tables and their balance, generates only the selected smaller
+class, probes it in bounded batches, releases the class before the next outer
+counter round, and decodes the original-order output. `original_correct` proves
+exhaustive original-input misses and sound witnesses for arbitrary requested
+depths, including the frontend's physical-width/quarter-depth caps. `original_balance`
+identifies its returned balance with the existing computed source counter balance.
+Orientation recomputes the same generated counts per class; it does not use an
+assumed table lookup or cached class-size oracle. The reachable-state DP's
+$O^*(2^p)$ count preprocessing is not supplied by this quarter-join prepass.
+
+`source_count_prefix_wire` bounds every count-table prefix by $2^p(12k+15)$ bits.
+`ClassBalance.retained_prefix_wire` bounds every generated retained prefix by
+$\mu(4m+2q+3)$ bits, and `simultaneous_wire` bounds the retained dictionary plus
+live opposite buffer by $2\mu(4m+2q+3)$ at every executed logical probe prefix.
+Here $\mu$ is the actual computed balance, not a class expectation. The uniform
+`sourceCertificate` separately charges internal callback tapes, preparation,
+control, input copying, output and readback. The four-record-volume amortization
+of batch rereads is not substituted for bit time.
+
+The generic join/count consumers still pay polynomial cost in whole grouped wire
+volume. The new route recomputes quarters/counts per class, scans opposite half
+words for each class, and copies captured retained/buffer state. The count
+prepass also charges table copying/reversal/reduction. The outer certificate uses
+a maximum-round time bound; a sharp sum over actual class work is not proved.
+These actual costs prevent
+a sharp global time or internal peak-space conclusion; the physical list bounds
+above do not remove them. Resource-faithful group consumption, a joined opposite
+class stream and persistent-tape producer/probe fusion remain required. The old
+complete solvers and their association-list/cubic-compaction costs are unchanged;
+the new direct multitape route bypasses that interpreter but retains the costs
+just listed. Lemma 8/Theorem 7 resources and the whole-paper objective remain open.
+
+From the repository root, build
+`lake build Complexity.Cryptanalysis.AddXNORJoinedDissection`, then run
+`lake env lean ComplexityTests/AddXNORClassBalance.lean` and
+`lake env lean ComplexityTests/AddXNORJoinedDissection.lean`. The
+[class-balance client](../../ComplexityTests/AddXNORClassBalance.lean) checks
+unequal computed populations, both orientations, empty backward classes and
+fourth-quarter residue. The complete
+[joined dissection client](../../ComplexityTests/AddXNORJoinedDissection.lean)
+executes original non-self-inverse additions/collisions through decoded hits and
+exhaustive misses, including zero/empty/capped input. It also applies the general
+correctness, computed-balance, logical-prefix wire and actual machine certificates.
 
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORClassJoin`, then run

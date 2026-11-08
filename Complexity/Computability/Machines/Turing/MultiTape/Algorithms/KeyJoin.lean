@@ -34,6 +34,7 @@ Consequently this module does not claim the sharp global source resources.
 
 * `mem_join`, `same_group`: sorted grouping makes the join exhaustive.
 * `count_eq_length`, `count_le_square`: occurrence counts and generated-volume bound.
+* `join_nodup`: unique tagged payloads give unique pairs despite key collisions.
 * `join_polyTime`, `count_polyTime`: actual, conservatively charged bit consumers.
 -/
 
@@ -247,5 +248,50 @@ theorem count_polyTime : ComputableInPolyTime count KeyGrouping.outputEncoding e
       (encList RadixPartition.recordEncoding) encNat :=
     ComputableTidilyInPolyTime.binary_mul.comp ((length_c false).prod (length_c true))
   exact .of_tidy (ComputableTidilyInPolyTime.binary_sum.comp (pop.map))
+
+private def payloads (right : Bool) (rows : List SortedMatch.Record) : List ℕ :=
+  ((rows.map Prod.snd).filter (fun n => decide (n % 2 = if right then 1 else 0))).map (· / 2)
+
+private theorem payloads_eq (right : Bool) (rows : List SortedMatch.Record) :
+    payloads right rows = (side right rows).map (fun r => r.2 / 2) := by
+  induction rows with
+  | nil => rfl
+  | cons row rows ih =>
+    dsimp only [payloads, side] at ih ⊢
+    cases h : decide (row.2 % 2 = if right then 1 else 0) <;> simp [h, ih]
+
+private theorem payloads_nodup (right : Bool) (rows : List SortedMatch.Record)
+    (h : (rows.map Prod.snd).Nodup) : (payloads right rows).Nodup := by
+  apply List.Nodup.map_on _ (h.filter _)
+  intro a ha b hb he
+  have ha' := of_decide_eq_true (List.mem_filter.mp ha).2
+  have hb' := of_decide_eq_true (List.mem_filter.mp hb).2
+  omega
+
+private theorem pairs_product (group : List SortedMatch.Record) :
+    pairs group = (payloads false group) ×ˢ (payloads true group) := by
+  simp only [payloads_eq, pairs, SProd.sprod, List.product, List.flatMap_map,
+    List.map_map, Function.comp_def]
+
+/-- Globally unique tagged payloads make occurrence pairs unique, even under arbitrary key
+collisions. Grouping itself preserves duplicates when the input really has duplicates. -/
+theorem join_nodup (groups : List (List SortedMatch.Record))
+    (h : (groups.flatten.map Prod.snd).Nodup) : (join groups).Nodup := by
+  have hall (right : Bool) : (groups.flatMap (payloads right)).Nodup := by
+    have he : groups.flatMap (payloads right) = payloads right groups.flatten := by
+      simp only [payloads, List.flatten_eq_flatMap, List.map_flatMap, List.filter_flatMap]
+      rfl
+    rw [he]
+    exact payloads_nodup right _ h
+  have hl := List.nodup_flatMap.mp (hall false)
+  have hr := List.nodup_flatMap.mp (hall true)
+  apply List.nodup_flatMap.mpr
+  refine ⟨fun group hg => ?_, hl.2.imp (fun hd => ?_)⟩
+  · rw [pairs_product]
+    exact (hl.1 group hg).product (hr.1 group hg)
+  · apply List.disjoint_left.mpr
+    intro out ho ho'
+    rw [pairs_product] at ho ho'
+    exact List.disjoint_left.mp hd (List.mem_product.mp ho).1 (List.mem_product.mp ho').1
 
 end Turing.MultiTapeTM.KeyJoin

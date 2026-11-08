@@ -48,6 +48,7 @@ and simultaneous peak space. The complete old uniform solver is unchanged.
 * `fullRecords_computable`: per-pair streamed full-state reconstruction.
 * `tableCertificate`, `original_table_zero_iff`: actual uniform all-class counting.
 * `table_wire`: quarter-scale stored counts, separately from internal machine workspace.
+* `witnesses_nodup`: generated class pairs preserve unique packed quarter words.
 -/
 
 public section
@@ -554,5 +555,46 @@ theorem original_table_zero_iff {m p : ℕ} (hm : p ≤ m) (s : BitVec m)
   rw [table_eq, hd, List.getElem?_map, List.getElem?_range g.isLt]
   simp only [Option.map_some, Option.some.injEq]
   exact original_zero_iff hm s tail hk g
+
+private theorem quarter_payloads_nodup (input : SortedQuarterMachine.Input) :
+    ((SortedQuarterMachine.run input).map Prod.snd).Nodup := by
+  rcases input with ⟨⟨m, s⟩, as⟩
+  have perm := (RadixSort.prefix_invariants
+    ((SortedQuarterMachine.indices as.length).map (SortedQuarterMachine.record ((m, s), as))) m).2
+  have hp := (perm.map Prod.snd).nodup_iff
+  have he : ((SortedQuarterMachine.indices as.length).map
+      (SortedQuarterMachine.record ((m, s), as))).map Prod.snd =
+        SortedQuarterMachine.indices as.length := by
+    simp only [List.map_map, SortedQuarterMachine.record, Function.comp_def]
+    exact List.map_id _
+  rw [he, SortedQuarterMachine.indices_eq_range] at hp
+  simpa only [SortedQuarterMachine.run, RadixSort.sort, SortedQuarterMachine.indices_eq_range]
+    using hp.mpr List.nodup_range
+
+/-- Packed quarter indices remain unique through tagging, sorting and grouping. Consequently
+class witness pairs have no duplicates, even when all evaluated state keys collide. -/
+theorem witnesses_nodup (input : Input) : (witnesses input).Nodup := by
+  let first := (batches input).2.1
+  let second := (batches input).2.2
+  have hl : (first.map Prod.snd).Nodup :=
+    quarter_payloads_nodup (input.1.1, input.1.2.1)
+  have hr : (second.map Prod.snd).Nodup := by
+    have h := quarter_payloads_nodup (SortedMeet.inverseInput ((input.1.1.1, input.2), input.1.2.2))
+    simpa only [second, batches, SortedMeet.inverse, SortedMeet.reflect, List.map_map,
+      Function.comp_def] using h
+  have he : (((first.map Prod.snd).map (fun n => 2 * n)) ++
+      ((second.map Prod.snd).map (fun n => 2 * n + 1))).Nodup := by
+    apply List.nodup_append.mpr
+    refine ⟨hl.map (fun _ _ h => by omega), hr.map (fun _ _ h => by omega), ?_⟩
+    intro a ha b hb hab
+    obtain ⟨u, _, rfl⟩ := List.mem_map.mp ha
+    obtain ⟨v, _, rfl⟩ := List.mem_map.mp hb
+    omega
+  have ht : ((SortedMatch.tagged (batches input)).map Prod.snd).Nodup := by
+    simpa only [SortedMatch.tagged, SortedMatch.tag, List.map_append, List.map_map,
+      Function.comp_def, Bool.false_eq_true, ite_false, ite_true, Nat.add_zero] using he
+  apply KeyJoin.join_nodup
+  rw [groups, KeyGrouping.flatten_run]
+  exact ((SortedMatch.sorted_perm (batches input)).map Prod.snd).nodup_iff.mpr ht
 
 end Cslib.Cryptanalysis.AddXNOR.ClassJoin
