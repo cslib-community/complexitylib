@@ -1159,12 +1159,19 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#3122](https://github.com/cslib-community/complexitylib/issues/3122)). In the dense graph
   (adjacency-matrix) model, triangle-freeness has a one-sided tester whose query bound depends
   only on `ε`, through Mathlib's triangle removal lemma
-  ([#3036](https://github.com/cslib-community/complexitylib/issues/3036)). Remaining: the matching
+  ([#3036](https://github.com/cslib-community/complexitylib/issues/3036)). Monotonicity of Boolean
+  functions on the hypercube `{0,1}ⁿ` has the Goldreich–Goldwasser–Lehman–Ron–Samorodnitsky edge
+  tester: by squashing along each coordinate, a function ε-far from monotone violates at least an
+  `ε / n` fraction of the edges, so `⌈2n / ε⌉` edge trials (`2⌈2n / ε⌉` queries) reject with
+  probability at least `2/3`, and monotone functions always pass
+  ([#3257](https://github.com/cslib-community/complexitylib/issues/3257)). Remaining: the matching
   `Ω(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness lower bound, further access models, the odd-domain
   lower bound, instance-optimal identity testing, tolerant and structured-property distribution
   testing; in the dense graph model, `H`-freeness for general `H` (it needs a general removal
   lemma), bipartiteness and `k`-colourability with `poly(1/ε)` queries, and canonical
-  (non-adaptive sampling) testers; further query and sample lower bounds.
+  (non-adaptive sampling) testers; for monotonicity, the `Ω(√n)` lower bound for non-adaptive
+  one-sided testers (Fischer et al. 2002), larger ranges and hypergrids, and the directed-isoperimetry
+  path testers with `Õ(√n / ε²)` queries (Khot–Minzer–Safra); further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
