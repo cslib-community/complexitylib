@@ -619,12 +619,13 @@ index links to canonical definitions rather than keeping a second set.
   Berman's theorem that `≤ᵖₘ`-complete sets for `E`/`EXP` are not `P`-immune
   (`Classes/Immune/Complete.lean`), witnessed by bounded halting with a binary time bound
   (`Problems/BoundedHalting.lean`, [#3002](https://github.com/cslib-community/complexitylib/issues/3002)),
-  and complexity cores with Lynch's theorem that problems outside `P` have infinite polynomial cores
+  and complexity cores, with Lynch's lemma that problems outside `P` have infinite polynomial cores
   (`Classes/Immune/Core.lean`, `Classes/Immune/PolyTimeCore.lean`,
   [#3080](https://github.com/cslib-community/complexitylib/issues/3080)):
   a SAT-free home for the machine enumeration of `Ladner/Basic.lean` shared by Ladner and the
   immunity modules;
-  Lynch's refinement that a decidable problem outside `P` has an infinite *decidable* core; `EXP`
+  the recursive core of Lynch's Lemma 1 (a decidable problem outside `P` has an infinite
+  *decidable* core); `EXP`
   and `PSPACE` instances of the class-generic core theorem (`exists_infinite_isComplexityCore_subset`
   needs only countability, finite sets and closure under unions); core density for intractable
   sets (Orponen and Schöning) and core sizes for hard sets (Juedes and Lutz);

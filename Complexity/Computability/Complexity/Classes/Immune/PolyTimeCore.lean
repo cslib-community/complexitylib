@@ -7,8 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Classes.EXP.Separation
+public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.Immune.Core
+public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Computable
+import Complexity.Computability.Complexity.Classes.EXP.Separation
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -24,7 +26,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 [Lynch][Lynch1975] defines a polynomial complexity core of a decidable set `A` in terms of the
 machines deciding it: `X` is a core (`Cslib.Complexity.IsPolyTimeCore`) when every machine
 deciding `A` runs for more than `p (|x|)` steps on all but finitely many `x ∈ X`, for every
-polynomially bounded `p`. Machines have a binary alphabet and finitely many states, as in `P`.
+polynomially bounded `p`. Lynch allows any deterministic machine; here machines have a binary
+alphabet and finitely many states, as in `P`, which changes running times only polynomially.
 
 For decidable `A` these are the complexity cores of `A` for `P`
 (`Cslib.Complexity.isPolyTimeCore_iff_isComplexityCore`):
@@ -42,11 +45,14 @@ For decidable `A` these are the complexity cores of `A` for `P`
 No machine decides an undecidable set, so every set is a machine core of an undecidable set; the
 second direction needs decidability.
 
-Combined with Lynch's theorem for classes
-(`Cslib.Complexity.exists_infinite_isComplexityCore_P_subset`), **Lynch's theorem** in its machine
-form follows: a problem is outside `P` exactly when it has an infinite polynomial complexity core
-inside it (`Cslib.Complexity.notMem_P_iff_exists_infinite_isPolyTimeCore`). Lynch also takes the
-core decidable when `A` is. That refinement is not formalized here. Problems hard for `E` or `EXP`
+Combined with the class-generic core theorem
+(`Cslib.Complexity.exists_infinite_isComplexityCore_P_subset`), this gives
+[Lynch, Lemma 1][Lynch1975] in a proper-core form: a problem is outside `P` exactly when it has an
+infinite polynomial complexity core inside it
+(`Cslib.Complexity.notMem_P_iff_exists_infinite_isPolyTimeCore`). Lynch's lemma gives, for a
+recursive set outside `P`, an infinite recursive core that need not lie inside the set. The core
+here lies inside the set, which is stronger, but it is not claimed to be recursive; that
+refinement is not formalized here. Problems hard for `E` or `EXP`
 are outside `P`, so they have infinite cores
 (`Cslib.Complexity.PolyTimeHard.exists_infinite_isPolyTimeCore_E`,
 `Cslib.Complexity.PolyTimeHard.exists_infinite_isPolyTimeCore_EXP`).
@@ -66,7 +72,8 @@ on almost all instances. For decidable `A` with `A` and its complement infinite,
   `Cslib.Complexity.IsPolyTimeCore.isComplexityCore`,
   `Cslib.Complexity.isPolyTimeCore_iff_isComplexityCore`: for decidable problems, machine cores are
   the complexity cores for `P`.
-* `Cslib.Complexity.notMem_P_iff_exists_infinite_isPolyTimeCore`: Lynch's theorem.
+* `Cslib.Complexity.notMem_P_iff_exists_infinite_isPolyTimeCore`: Lynch's Lemma 1, with a proper
+  core that is not claimed to be recursive.
 * `Cslib.Complexity.isBiImmune_P_iff_isPolyTimeCore_univ`: a decidable problem is `P`-bi-immune
   exactly when it and its complement are infinite and every decider runs in superpolynomial time
   almost everywhere.
@@ -209,8 +216,9 @@ theorem IsPolyTimeCore.finite_of_mem_P (h : IsPolyTimeCore enc A X) (hA : A ∈ 
   refine (h k State tm (fun a => (htm a).1) t ht).subset fun x hx => ⟨hx, ?_⟩
   exact ((htm x).runFrom_of_le le_rfl).1
 
-/-- **Lynch's theorem**: a problem is outside `P` exactly when it has an infinite polynomial
-complexity core inside it. -/
+/-- **Problems outside `P` have infinite polynomial complexity cores** ([Lynch, Lemma 1][Lynch1975],
+proper-core strengthening): a problem is outside `P` exactly when it has an infinite polynomial
+complexity core inside it. Unlike Lynch's core, this one is not claimed to be recursive. -/
 theorem notMem_P_iff_exists_infinite_isPolyTimeCore :
     A ∉ P enc ↔ ∃ X ⊆ A, X.Infinite ∧ IsPolyTimeCore enc A X := by
   refine ⟨fun hA => ?_, fun ⟨_, _, hX, h⟩ hA => hX (h.finite_of_mem_P hA)⟩

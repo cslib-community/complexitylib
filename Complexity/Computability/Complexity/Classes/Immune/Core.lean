@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.Immune
-public import Complexity.Computability.Complexity.Classes.P.Countable
+import Complexity.Computability.Complexity.Classes.P.Countable
 
 /-!
 # Complexity cores
@@ -19,7 +19,8 @@ complement, meets `X` in a finite set.
 A member of `C` that accepts only instances in `A`, or only instances outside `A`, accepts only
 finitely many instances of `X`. For `C = P` and decidable `A`, these are the polynomial complexity
 cores of [Lynch][Lynch1975]: every machine deciding `A` runs in superpolynomial time on all but
-finitely many instances of `X`. The machine form is in
+finitely many instances of `X`. The machine form, with binary machines as in `P` where Lynch allows
+any machine (a polynomially robust choice), is in
 `Complexity.Computability.Complexity.Classes.Immune.PolyTimeCore`. Cores were studied further by
 [Orponen and Schöning][OrponenSchoening1986].
 
@@ -27,14 +28,18 @@ A set is bi-immune to `C` exactly when it and its complement are infinite and th
 core (`Cslib.Complexity.isBiImmune_iff_isComplexityCore_univ`). Problems in a class closed under
 complement have only finite cores (`Cslib.Complexity.IsComplexityCore.finite_of_mem`).
 
-**Lynch's theorem** says that problems outside `P` have infinite cores. It holds for every
-countable class `C` that contains the finite sets and is closed under union: a set not in `C` has
-an infinite core inside it (`Cslib.Complexity.exists_infinite_isComplexityCore_subset`). Enumerate
+[Lynch, Lemma 1][Lynch1975] shows that a recursive set outside `P` has an infinite recursive
+polynomial complexity core, a subset of all words. A standard diagonal argument gives a
+class-generic form with a *proper* core, one inside the set: for every countable class `C` that
+contains the finite sets and is closed under union, a set not in `C` has an infinite core inside it
+(`Cslib.Complexity.exists_infinite_isComplexityCore_subset`). Enumerate
 `C` as `e₀, e₁, …`, and let `Dₙ` be the union of the `eᵢ` with `i < n` that lie inside `A`. Then
 `A \ Dₙ` is infinite, since otherwise `A` would be the union of `Dₙ` and a finite set. Choosing
 `xₙ ∈ A \ Dₙ` gives an infinite set `{xₙ}` that meets each `eᵢ` inside `A` only at indices
 `n ≤ i`. `P` is such a class (`Cslib.Complexity.countable_P`), so problems outside `P` have
-infinite cores (`Cslib.Complexity.exists_infinite_isComplexityCore_P_subset`).
+infinite cores inside them (`Cslib.Complexity.exists_infinite_isComplexityCore_P_subset`). Compared
+with Lynch's lemma, the core is proper, which is stronger, but it is chosen without regard to
+decidability: that it can be taken recursive when the set is recursive is not formalized here.
 
 ## Main definitions
 
@@ -48,8 +53,9 @@ infinite cores (`Cslib.Complexity.exists_infinite_isComplexityCore_P_subset`).
 * `Cslib.Complexity.IsComplexityCore.finite_of_mem`: if `A` and its complement are in the class,
   every core of `A` is finite.
 * `Cslib.Complexity.isBiImmune_iff_isComplexityCore_univ`: bi-immunity is a core condition.
-* `Cslib.Complexity.exists_infinite_isComplexityCore_subset`: Lynch's theorem for countable
-  classes containing the finite sets and closed under union.
+* `Cslib.Complexity.exists_infinite_isComplexityCore_subset`: the class-generic core theorem,
+  generalizing [Lynch, Lemma 1][Lynch1975] to countable classes containing the finite sets and
+  closed under union, with a proper core.
 * `Cslib.Complexity.exists_infinite_isComplexityCore_P_subset`,
   `Cslib.Complexity.notMem_P_iff_exists_infinite_isComplexityCore`: a problem is outside `P`
   exactly when it has an infinite core for `P`.
@@ -126,8 +132,9 @@ theorem isBiImmune_iff_isComplexityCore_univ :
     fun ⟨h₁, h₃, h⟩ => ⟨⟨h₁, fun B hB hBA => h B hB (.inl hBA)⟩, h₃,
       fun B hB hBA => h B hB (.inr hBA)⟩⟩
 
-/-- **Lynch's theorem for countable classes**: if `C` is countable, contains the finite sets and is
-closed under union, every set not in `C` has an infinite core inside it. -/
+/-- **Class-generic core theorem**, generalizing [Lynch, Lemma 1][Lynch1975] by a standard diagonal
+argument: if `C` is countable, contains the finite sets and is closed under union, every set not in
+`C` has an infinite core inside it. -/
 theorem exists_infinite_isComplexityCore_subset (hC : C.Countable)
     (hfin : ∀ F : Set α, F.Finite → F ∈ C) (hunion : ∀ B ∈ C, ∀ B' ∈ C, B ∪ B' ∈ C)
     (hA : A ∉ C) : ∃ X ⊆ A, X.Infinite ∧ IsComplexityCore C A X := by
@@ -186,7 +193,9 @@ section P
 
 variable {β : Type} {enc : β ↪ List Bool} {A X : Set β}
 
-/-- **Lynch's theorem**: a problem outside `P` has an infinite core for `P` inside it. -/
+/-- **Problems outside `P` have infinite cores** ([Lynch, Lemma 1][Lynch1975], proper-core
+strengthening): a problem outside `P` has an infinite core for `P` inside it. Unlike Lynch's core,
+this one is not claimed to be recursive. -/
 theorem exists_infinite_isComplexityCore_P_subset (hA : A ∉ P enc) :
     ∃ X ⊆ A, X.Infinite ∧ IsComplexityCore (P enc) A X :=
   exists_infinite_isComplexityCore_subset (countable_P enc) (fun _ hF => hF.mem_P)

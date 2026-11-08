@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Computable
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
+import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
+import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
 
 /-!
 # There are countably many decidable sets
