@@ -30,6 +30,9 @@ public import Complexity.Algorithms.Lean.Dijkstra.Native.Source
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Word
 public import Complexity.Algorithms.Lean.Euler.Circuit
 public import Complexity.Algorithms.Lean.Freivalds
+public import Complexity.Algorithms.Lean.HousingMarket.Basic
+public import Complexity.Algorithms.Lean.HousingMarket.Incentives
+public import Complexity.Algorithms.Lean.HousingMarket.TopTradingCycles
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
@@ -4113,6 +4116,7 @@ public import Complexity.Foundations.Combinatorics.FunctionalGraph.ForestInterva
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.ForestNavigation
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.ForestSegments
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.HittingTime
+public import Complexity.Foundations.Combinatorics.FunctionalGraph.PeriodicPts
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Powers
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Projection
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Spectrum

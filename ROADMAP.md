@@ -1447,6 +1447,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   agents per side): Roth's theorem for every `n ≥ 3` by padding the witness, incomplete lists and
   the rural hospitals theorem, many-to-one college admissions, ties, rotations and the
   stable-matching poset, stable roommates, and a charged native implementation in `O(n^2)` time.
+- **Housing markets and top trading cycles** ([#3286](https://github.com/cslib-community/complexitylib/issues/3286)):
+  beyond the Shapley–Scarf development in `Algorithms/Lean/HousingMarket` (TTC as the unique
+  strict-core and competitive allocation, individual rationality, Pareto efficiency and
+  strategy-proofness): house allocation with existing tenants (Abdulkadiroğlu–Sönmez's
+  you-request-my-house-I-get-your-turn), Ma's characterization of TTC by individual rationality,
+  Pareto efficiency and strategy-proofness, group strategy-proofness, indifferences (top trading
+  absorbing sets), and a charged implementation of TTC in `O(n^2)` time.
 - **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)):
   remaining after greedy set cover, maximal-matching vertex cover and the MST tour for metric
   TSP (`Algorithms/Lean/{SetCover,VertexCover,TSP}`): machine-level polynomial-time

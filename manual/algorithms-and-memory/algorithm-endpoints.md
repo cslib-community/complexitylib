@@ -196,6 +196,19 @@ Import `Complexity.Algorithms.Lean.StableMatching.Incentives` (which also brings
 
 The cost measure is the number of proposals, a property of the algorithm's trace rather than of a machine model; no Word-RAM or Turing implementation is certified. Incomplete lists, ties, unequal sides and many-to-one markets are not modeled; [#2990](https://github.com/cslib-community/complexitylib/issues/2990) tracks these directions. [ComplexityTests/StableMatching.lean](../../ComplexityTests/StableMatching.lean) contains the checked instances.
 
+## Housing markets and top trading cycles
+
+Import `Complexity.Algorithms.Lean.HousingMarket.Incentives` (which also brings in `Basic` and `TopTradingCycles`); the declarations live in the namespace `Cslib.Algorithms.Lean.HousingMarket`. This is the housing market of [Shapley and Scarf][shapleyscarf74]. An `Instance n` gives each of `n` agents a strict complete preference list over the `n` houses, using the stable-matching conventions above (`pref : Fin n → Equiv.Perm (Fin n)`, rank `0` most preferred). Agent `i` owns house `i`, and an `Allocation n` is a permutation. A coalition `S` may only reallocate its own houses, that is, use permutations `ν` with `ν i ∈ S` for `i ∈ S`. There are two notions of blocking. `Blocks` asks for every member strictly better off, and its unblocked allocations are the core (`InCore`). `WeaklyBlocks` asks for all members weakly better off and one strictly better off, and its unblocked allocations are the strict core (`InStrictCore`). [Schummer and Vohra][schummervohra07], §10.3, call the latter "the core". With strict preferences the two notions still differ: the checked tests contain a core allocation outside the strict core. This contradicts the claim of [Schummer and Vohra][schummervohra07], p. 255, that they coincide for strict preferences. Their argument drops weakly blocking members who are not strictly better off as if they kept their own houses, but such a member may keep a house it received in the trade.
+
+`Instance.ttc` is Gale's top trading cycles algorithm as a total, `decide`-evaluable function. In each round every remaining agent points to the owner of its favourite remaining house (`topChoice`). The agents on cycles (`cycleAgents`, the periodic points of the pointer map) receive the houses they point to and leave. All cycles of a round are removed together, as in [Schummer and Vohra][schummervohra07], Definition 10.5, and `n` rounds suffice. The main results:
+
+- `inStrictCore_iff : I.InStrictCore μ ↔ μ = I.ttc`: the strict core is exactly the TTC allocation ([Roth and Postlewaite][rothpostlewaite77]; [Schummer and Vohra][schummervohra07], Theorem 10.6, whose core is defined by weak blocking).
+- `inCore_ttc`, `isIndividuallyRational_ttc`, `isParetoEfficient_ttc`: consequences of strict-core membership. `inCore_ttc` is the existence half of [Roughgarden's CS364A][roughgarden13cs364a], Lecture #9, Theorem 3.2. That lecture defines the core by strict blocking, and for that notion the uniqueness half fails (see the second test market below).
+- `isCompetitive_ttc`, `IsCompetitive.inStrictCore` and `exists_isCompetitive_iff`: TTC is competitive (every agent can afford its house and prefers it to every house it can afford) at the prices `ttcPrice`, the number of agents present in the round in which the house leaves. Competitive allocations lie in the strict core, so an allocation is competitive at some `ℕ` prices iff it is the TTC allocation.
+- `HousingMechanism.isStrategyProof_topTradingCycles`: the TTC mechanism is strategy-proof ([Roth][roth82]; [Schummer and Vohra][schummervohra07], Theorem 10.7; [CS364A][roughgarden13cs364a], Lecture #9, Theorem 3.1). A misreport by agent `i` can only change the pointers of agent `i`. Before agent `i` leaves, the cycles that do not contain `i` are unchanged, and every house that agent `i` can reach is one it could reach under truthful reporting.
+
+Scope: preferences are strict, every agent owns exactly one house, the market size `n` is fixed by `Fin n`, and only individual (not group) strategy-proofness is proved. No running time is charged: `ttc` is a mathematical function, not a `TimeM` or RAM program, so the `O(n²)` bound for TTC is not stated. House allocation with existing tenants (Abdulkadiroğlu–Sönmez), Ma's characterization of TTC, group strategy-proofness and indifferences are directions recorded in [#3286](https://github.com/cslib-community/complexitylib/issues/3286). [ComplexityTests/HousingMarket.lean](../../ComplexityTests/HousingMarket.lean) contains the checked instances: a three-cycle, a two-cycle followed by a fixed point, TTC prices, uniqueness by enumeration, and two small mechanisms: keeping the endowment is strategy-proof but not Pareto efficient, and a two-agent mechanism is manipulable.
+
 ## Scheduling bounds
 
 [Complexity/Algorithms/Lean/Scheduling/](../../Complexity/Algorithms/Lean/Scheduling/) contains
@@ -824,7 +837,12 @@ The numeric values above are transcriptions of checked source statements, not re
 [hierholzer73]: ../sources.md#hierholzer73
 [kortevygen18]: ../sources.md#kortevygen18
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
+[roth82]: ../sources.md#roth82
+[rothpostlewaite77]: ../sources.md#rothpostlewaite77
+[roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
 [schrijver17]: ../sources.md#schrijver17
+[schummervohra07]: ../sources.md#schummervohra07
+[shapleyscarf74]: ../sources.md#shapleyscarf74
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
