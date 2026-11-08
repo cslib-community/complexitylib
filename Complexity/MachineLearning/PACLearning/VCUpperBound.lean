@@ -156,13 +156,16 @@ theorem IsConsistent.measure_pi_lt_error_le_of_vcSampleSize_le {C : ConceptClass
     ((hA.measure_pi_lt_error_mul_two_pow_le hD h8).trans h2)
 
 /-- **The VC upper bound for realizable PAC learning** on a countable domain
-[BlumerEhrenfeuchtHausslerWarmuth1989, Theorem 2.1]: a nonempty class whose shattered finite sets
-have at most `d` points is `(ε, δ)`-PAC learnable over the distributions it realizes from
-`m ≥ (8 / ε) (d log (48 / ε) + log (4 / δ))` examples, by any consistent learner. -/
+[BlumerEhrenfeuchtHausslerWarmuth1989, Theorem 2.1]: a class whose shattered finite sets have at
+most `d` points is `(ε, δ)`-PAC learnable over the distributions it realizes from
+`m ≥ (8 / ε) (d log (48 / ε) + log (4 / δ))` examples, by any consistent learner (by any learner
+at all if the class is empty, since then no distribution is realizable). -/
 theorem isPACLearnerFor_realizableDistributions_of_vcSampleSize_le {C : ConceptClass α Bool}
-    (hne : C.Nonempty) {d : ℕ} (hC : ∀ W : Finset α, SetShatters C ↑W → W.card ≤ d) {m : ℕ}
+    {d : ℕ} (hC : ∀ W : Finset α, SetShatters C ↑W → W.card ≤ d) {m : ℕ}
     {ε δ : Set.Ioo (0 : ℝ≥0) 1} (hm : vcSampleSize d ε.val δ.val ≤ m) :
     IsPACLearnerFor m ε δ C (realizableDistributions C) := by
+  rcases C.eq_empty_or_nonempty with rfl | hne
+  · exact isPACLearnerFor_realizableDistributions_empty (fun _ _ => false) ε δ
   obtain ⟨A, hA⟩ := exists_isConsistent (m := m) hne
   refine ⟨A, fun D _ hD => ?_⟩
   have h := hA.measure_pi_lt_error_le_of_vcSampleSize_le hC hD (by exact_mod_cast ε.2.1)
@@ -171,13 +174,13 @@ theorem isPACLearnerFor_realizableDistributions_of_vcSampleSize_le {C : ConceptC
   rw [IsRealizableBy.optimalError_eq_zero hD, zero_add]
   exact h
 
-/-- The realizable sample complexity of a nonempty class of finite VC dimension on a countable
-domain is at most `⌈(8 / ε) (vcDim C log (48 / ε) + log (4 / δ))⌉`. -/
+/-- The realizable sample complexity of a class of finite VC dimension on a countable domain is at
+most `⌈(8 / ε) (vcDim C log (48 / ε) + log (4 / δ))⌉`. -/
 theorem sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim {C : ConceptClass α Bool}
-    (hne : C.Nonempty) (hC : HasFiniteVCDim C) (ε δ : Set.Ioo (0 : ℝ≥0) 1) :
+    (hC : HasFiniteVCDim C) (ε δ : Set.Ioo (0 : ℝ≥0) 1) :
     sampleComplexity IsPACLearnerFor C ε δ (realizableDistributions C) ≤
       ⌈vcSampleSize (vcDim C) ε.val δ.val⌉₊ :=
-  Nat.sInf_le (isPACLearnerFor_realizableDistributions_of_vcSampleSize_le hne
+  Nat.sInf_le (isPACLearnerFor_realizableDistributions_of_vcSampleSize_le
     (fun W hW => le_csSup hC ⟨W, rfl, hW⟩) (Nat.le_ceil _))
 
 /-- **Finite VC dimension implies realizable PAC learnability** on a countable domain
@@ -185,12 +188,7 @@ theorem sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim {C : Conce
 theorem isPACLearnable_realizableDistributions_of_hasFiniteVCDim {C : ConceptClass α Bool}
     (hC : HasFiniteVCDim C) : IsPACLearnable C (realizableDistributions C) := by
   intro ε δ
-  rcases C.eq_empty_or_nonempty with rfl | hne
-  · -- No distribution is realizable by the empty class.
-    refine ⟨0, fun _ _ => false, fun D _ hD => ?_⟩
-    obtain ⟨c, hc, -⟩ := hD
-    exact absurd hc (Set.notMem_empty c)
   obtain ⟨d, hd⟩ := hasFiniteVCDim_iff.1 hC
-  exact ⟨_, isPACLearnerFor_realizableDistributions_of_vcSampleSize_le hne hd (Nat.le_ceil _)⟩
+  exact ⟨_, isPACLearnerFor_realizableDistributions_of_vcSampleSize_le hd (Nat.le_ceil _)⟩
 
 end Cslib.MachineLearning.PACLearning
