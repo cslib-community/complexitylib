@@ -438,6 +438,16 @@ Outputs use the same `IsMatching`/`VertexCover` vocabulary as the Edmonds–Karp
 
 The combinatorial layer is [Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean](../../Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean). It contains Berge's theorem (`isMaxMatching_iff_forall_not_isAugmentingPath`), the phase lemma (`IsMaximalLayeredAugmentation.noShortAug_augment`) and the phase bound (`IsPhaseRun.le_two_mul_sqrt`). These proofs use a layered counting lemma, `card_mul_le_of_noShortAug`, instead of decomposing `M ⊕ M*` into disjoint augmenting paths; that decomposition is not formalized.
 
+## Chain covers: Dilworth's and Mirsky's theorems
+
+Both theorems are stated for finite posets. Chains and antichains are Mathlib's `IsChain (· ≤ ·)` and `IsAntichain (· ≤ ·)`, and a covering by `k` chains (or antichains) is a colouring `α → Fin k` whose fibres are chains (or antichains). [Complexity/Foundations/Order/Mirsky.lean](../../Complexity/Foundations/Order/Mirsky.lean) proves weak duality in both directions: a chain meets each antichain fibre at most once, and an antichain meets each chain fibre at most once. It also proves Mirsky's theorem, following [Schrijver's lecture notes][schrijver17], Theorem 7.5. Colouring by `Order.height` gives a chain `C` and a covering by `|C|` antichains (`exists_isChain_and_antichain_coloring`). In min–max form, `α` is covered by `k` antichains if and only if every chain has at most `k` elements (`exists_antichain_coloring_iff`). [Mirsky's paper][mirsky1971] was not consulted.
+
+[Complexity/Algorithms/Lean/MaxFlow/Dilworth.lean](../../Complexity/Algorithms/Lean/MaxFlow/Dilworth.lean) proves Dilworth's theorem ([Schrijver][schrijver17], Theorem 7.6; [Dilworth][dilworth1950]) by the bipartite-matching reduction usually credited to [Fulkerson][fulkerson1956], instead of Schrijver's induction. Its graph `ltGraph` joins the left copy of `x` to the right copy of `y` when `x < y`. Folding `mergeLabel` over a matching appends chains along matching edges. `exists_chain_coloring_of_isMatching` turns a matching `M` into `|α| - |M|` chains. `isAntichain_uncovered` and `card_sub_size_le_card_uncovered` show that the elements a vertex cover `C` misses on both sides form an antichain of at least `|α| - |C|` elements. König's theorem (`exists_maxMatching_eq_minVertexCover`) then gives `exists_isAntichain_and_chain_coloring` (an antichain `A` and a covering by `|A|` chains) and the min–max form `exists_chain_coloring_iff`. The Dilworth and Fulkerson papers were not consulted, so the attribution of the reduction to Fulkerson is secondary.
+
+`minChainCoverM e` in [Complexity/Algorithms/Lean/MaxFlow/ChainCover.lean](../../Complexity/Algorithms/Lean/MaxFlow/ChainCover.lean) is the executable version. It is a native `TimeM ℕ` program, not a RAM-model program, on a poset enumerated by `e : Fin n ≃ α` with decidable `<`. It runs `hopcroftKarpDenseM` on `enumLtGraph e`, merges label-table chains along the matching, and reads the antichain off the König cover. `minChainCoverM_correct` shows four things: the label fibres are chains, the returned indices form an antichain, the number of labels (`numChains`) equals the antichain's size, and that size plus the matching's size is `n`. The two optimality statements follow from this. `card_le_card_antichain_of_isAntichain` bounds every antichain by the output's size. `card_antichain_le_of_isChain_fibre` bounds the output's size by the number of chains in any chain cover. `minChainCoverM_time_le` bounds the charged steps by `(2 * Nat.sqrt n + 1) * (10 * n + 1 + 4 * n²) + 2 * n² + 6 * n`, that is `O(n^{5/2})`. Ticks are charged for Hopcroft–Karp, one per label entry allocated or rewritten by a merge, one per scanned pair of indices, and one per index when collecting the antichain. `Finset` membership, `Vector` reads, `Fin n` comparisons and order queries `e i < e j` are free primitives inside those steps; computing `e` is not charged.
+
+[Complexity/Foundations/Combinatorics/ErdosSzekeres.lean](../../Complexity/Foundations/Combinatorics/ErdosSzekeres.lean) derives the Erdős–Szekeres monotone subsequence theorem from Mirsky's theorem ([Erdős–Szekeres][erdosszekeres1935], pp. 467–468). `exists_monotoneOn_or_strictAntiOn_of_mul_lt` gives, for any sequence of more than `r * s` terms in a linear order, a monotone subsequence of `r + 1` terms or a strictly decreasing subsequence of `s + 1` terms. `exists_strictMonoOn_or_strictAntiOn_of_mul_lt` is the injective case. The [checked client](../../ComplexityTests/Dilworth.lean) covers four instances: width `6` and height `4` for divisibility on `{1, …, 12}`, width `3` and height `4` for the Boolean lattice `Finset (Fin 3)`, complete solver runs on divisibility on `{1, …, 6}` and on the rank-`3` Boolean lattice as bitmasks, and the tight sequence `2, 1, 4, 3`.
+
 ## Assignment problem and the Hungarian method
 
 Import `Complexity.Algorithms.Lean.MaxFlow.Hungarian` ([Complexity/Algorithms/Lean/MaxFlow/Hungarian.lean](../../Complexity/Algorithms/Lean/MaxFlow/Hungarian.lean)). It is a native `TimeM ℕ` program, not a RAM-model program. `hungarianM c` takes integer costs `c : Fin n × Fin n → ℤ` on the complete bipartite graph and minimizes. `hungarianM_correct` shows three things: the output matching is a minimum-cost perfect matching (`IsMinCostPerfectMatching`), the output potentials `y`, `z` are feasible (`IsFeasiblePotential`), and the cost equals `∑ y + ∑ z`. `hungarianM_time_le` bounds the charged steps by `6 * n ^ 3 + 6 * n ^ 2 + 3 * n`. Ticks are charged per column scanned for a row minimum, per entry of each allocated or rebuilt table (potentials, mate, tree, slack and path tables), per column scanned by the argmin, per tree extension, and per rematched column. Vector reads and writes, list cons, `ℤ` arithmetic and comparisons, and cost queries `c (u, v)` are free primitives inside those charged steps, as in the Edmonds–Karp and Hopcroft–Karp solvers. The module docstring's "Cost model and limitations" gives the per-round breakdown. Rectangular instances and forbidden edges have to be padded or given large costs. For maximum weight, negate the costs.
@@ -1401,15 +1411,18 @@ The numeric values above are transcriptions of checked source statements, not re
 [clrs09]: ../sources.md#clrs09
 [coverthomas06]: ../sources.md#coverthomas06
 [diestel25]: ../sources.md#diestel25
+[dilworth1950]: ../sources.md#dilworth1950
 [dinic70]: ../sources.md#dinic70
 [edmonds65]: ../sources.md#edmonds65
 [edmonds67b]: ../sources.md#edmonds67b
+[erdosszekeres1935]: ../sources.md#erdosszekeres1935
 [fks84]: ../sources.md#fks84
 [floyd62]: ../sources.md#floyd62
 [fmptw15]: ../sources.md#fmptw15
 [fnw78]: ../sources.md#fnw78
 [fominkratsch10]: ../sources.md#fominkratsch10
 [freivalds79]: ../sources.md#freivalds79
+[fulkerson1956]: ../sources.md#fulkerson1956
 [gilbertpollak68]: ../sources.md#gilbertpollak68
 [goemanswilliamson95]: ../sources.md#goemanswilliamson95
 [goldbergtarjan88]: ../sources.md#goldbergtarjan88
@@ -1432,6 +1445,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [manacher75]: ../sources.md#manacher75
 [manbermyers93]: ../sources.md#manbermyers93
 [menger27]: ../sources.md#menger27
+[mirsky1971]: ../sources.md#mirsky1971
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [knuth1994]: ../sources.md#knuth1994
 [lovasz1979]: ../sources.md#lovasz1979

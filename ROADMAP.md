@@ -1866,6 +1866,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Tutte–Berge formula are proved in `Foundations/Combinatorics/SimpleGraph/{Berge,TutteBerge}`;
   still open are Edmonds' blossom-contraction lemma, an executable blossom algorithm with its
   `O(|V|²|E|)` bound, weighted general matching, and the Gallai–Edmonds decomposition.
+- **Chain decompositions** ([#3371](https://github.com/cslib-community/complexitylib/issues/3371)):
+  Mirsky's theorem (`Foundations/Order/Mirsky`), Dilworth's theorem by Fulkerson's reduction to
+  König's theorem, and a Hopcroft–Karp minimum chain cover with an `O(n^{5/2})` charged bound
+  (`Algorithms/Lean/MaxFlow/{Dilworth,ChainCover}`) are done for finite posets. Remaining: the
+  Greene–Kleitman theorem on `k`-chain and `k`-antichain families, Dilworth's theorem for infinite
+  posets of finite width (compactness), the perfect-graph view (comparability graphs and their
+  complements are perfect), weighted versions, a sparse entry point that charges building the
+  comparability lists, and a RAM-model or Turing-machine realization of the chain-cover solver.
 - **Global minimum cut** ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)):
   beyond Karger's and Karger–Stein's randomized algorithms (`Algorithms/WordRAM/Karger`) and the
   deterministic Stoer–Wagner algorithm with the maximum adjacency ordering lemma and an `O(n³)`
