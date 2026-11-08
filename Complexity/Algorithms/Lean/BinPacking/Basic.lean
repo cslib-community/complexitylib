@@ -89,8 +89,8 @@ at most `K` under a weight `f`, then the items of a packing have total weight at
 the number of bins. -/
 theorem sum_map_le_mul_length (h : IsPacking C l bins) (f : ℕ → ℕ) {K : ℕ}
     (hK : ∀ b : List ℕ, b.sum ≤ C → (b.map f).sum ≤ K) :
-    (l.map f).sum ≤ bins.length * K := by
-  rw [← (h.perm.map f).sum_eq, List.map_flatten, List.sum_flatten, List.map_map]
+    (l.map f).sum ≤ K * bins.length := by
+  rw [Nat.mul_comm, ← (h.perm.map f).sum_eq, List.map_flatten, List.sum_flatten, List.map_map]
   simpa using List.sum_le_length_nsmul (bins.map (List.sum ∘ List.map f)) K fun x hx => by
     obtain ⟨b, hb, rfl⟩ := List.mem_map.1 hx
     exact hK b (h.sum_le b hb)
