@@ -1045,10 +1045,13 @@ class Restack:
     conflicts: list[str] = field(default_factory=list)
 
 
-def compute_restack(repo: Path, head: str, onto: str, trailer: str = "") -> Restack:
+def compute_restack(repo: Path, head: str, onto: str, trailer: str = "",
+                    reference: str | None = None) -> Restack:
     """Restack `head` onto the post-rename commit `onto` without touching any checkout or ref.
     On success the result is an unreferenced merge commit with parents (the branch, merged with
-    the pre-rename counterpart if needed) and `onto`."""
+    the pre-rename counterpart if needed) and `onto`. `reference`, a pre-rename commit whose
+    conversion is cached (main before the rename), lets a stacked branch's pre-rename counterpart
+    be converted from it incrementally instead of in a full checkout."""
     if not has_path(repo, onto, MARKER):
         raise ToolError(f"{onto[:12]} is not a post-rename commit")
     if is_ancestor(repo, onto, head):
@@ -1070,7 +1073,10 @@ def compute_restack(repo: Path, head: str, onto: str, trailer: str = "") -> Rest
         message = f"Merge {pre[:12]} (main before the module-root rename){signature}"
         branch = git(repo, "commit-tree", tree, "-p", head, "-p", pre, "-F", "-",
                      input=message).stdout.strip()
-    base = converted_tree(repo, pre)
+    if reference and reference != pre:
+        base = convert_changes(repo, reference, converted_tree(repo, reference), pre)
+    else:
+        base = converted_tree(repo, pre)
     ours = convert_changes(repo, pre, base, branch)
     tree, stages = merge_trees(repo, scratch_commit(repo, ours), onto,
                                base=scratch_commit(repo, base), attributes=onto)
@@ -1230,6 +1236,8 @@ def verify_carry(repo: Path, old_head: str, new_head: str, onto_ref: str | None,
         git(repo, "show", f"{new_head}:lakefile.toml").stdout)}
     old = deltas(repo, base_old, old_head, convert=True)
     new = deltas(repo, base_new, new_head, convert=False)
+    moved = git(repo, "diff", "--name-only", "--no-renames", "-z", base_old, pre).stdout
+    main_changed = {map_path(p) for p in moved.split("\0") if p}
     report = []
     for path in sorted(set(old) | set(new)):
         if path in aggregates:
@@ -1238,7 +1246,8 @@ def verify_carry(repo: Path, old_head: str, new_head: str, onto_ref: str | None,
         n_add, n_rem = new.get(path, (Counter(), Counter()))
         if (o_add, o_rem) == (n_add, n_rem):
             continue
-        report.append(f"--- {path}")
+        report.append(f"--- {path}" + ("  (main also changed this file after the old head's base)"
+                                         if path in main_changed else ""))
         for sign, only, label in (("+", o_add - n_add, "added only at the old head"),
                                   ("+", n_add - o_add, "added only at the new head"),
                                   ("-", o_rem - n_rem, "removed only at the old head"),

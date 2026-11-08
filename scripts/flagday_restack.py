@@ -20,7 +20,8 @@ request, ordered so that a stacked one follows the pull request it is based on, 
 
 Status is `clean` (restacked; pushed unless `--dry-run`), `up-to-date` (it already contains the
 rename), `conflict` (left untouched), `push-failed`, `blocked` (its base pull request was not
-restacked, or its base branch is neither `main` nor post-rename) or `error`. Carry is `OK`, `DIFF`
+restacked, or its base branch is neither `main` nor post-rename), `merged` or `closed` (skipped),
+or `error`. Carry is `OK`, `DIFF`
 or `n.a.`. Details go to standard error.
 """
 
@@ -80,7 +81,7 @@ def push_url(repository: str, info: dict) -> str | None:
 
 
 def restack_one(repo: Path, info: dict, onto: str, *, dry_run: bool, repository: str,
-                trailer: str) -> tuple[str, str, str, str]:
+                trailer: str, reference: str) -> tuple[str, str, str, str]:
     """Restack one pull request; returns (old head, new head, status, carry)."""
     number = info["number"]
     ref = f"refs/flagday/pr/{number}"
@@ -88,7 +89,7 @@ def restack_one(repo: Path, info: dict, onto: str, *, dry_run: bool, repository:
     old = rmr.rev(repo, ref)
     if old != info["headRefOid"]:
         log(f"#{number}: fetched {old[:12]}, but GitHub reported {info['headRefOid'][:12]}")
-    result = rmr.compute_restack(repo, old, onto, trailer)
+    result = rmr.compute_restack(repo, old, onto, trailer, reference)
     if result.status == "up-to-date":
         log(f"#{number}: already contains {onto[:12]}")
         return old, old, "up-to-date", "n.a."
@@ -137,8 +138,8 @@ def main(argv: list[str] | None = None) -> int:
     repo = Path(rmr.git(args.repo, "rev-parse", "--show-toplevel").stdout.strip())
     rmr.git(repo, "fetch", "-q", "--no-tags", "origin", "main")
     onto_main = rmr.resolve_onto(repo, args.onto, "origin/main")
-    log(f"rename commit {onto_main[:12]}; pre-rename main "
-        f"{rmr.pre_rename_counterpart(repo, onto_main)[:12]}")
+    reference = rmr.pre_rename_counterpart(repo, onto_main)
+    log(f"rename commit {onto_main[:12]}; pre-rename main {reference[:12]}")
     out = args.tsv.open("a") if args.tsv else sys.stdout
     if not args.tsv or args.tsv.stat().st_size == 0:
         print("number\told_head\tnew_head\tstatus\tcarry", file=out, flush=True)
@@ -156,9 +157,11 @@ def main(argv: list[str] | None = None) -> int:
         number, base = info["number"], info["baseRefName"]
         line = (info["headRefOid"], "-", "error", "n.a.")
         try:
+            onto = None
             if info["state"] != "OPEN":
-                raise rmr.ToolError(f"#{number} is {info['state'].lower()}")
-            if base == "main":
+                log(f"#{number} is {info['state'].lower()}; skipped")
+                line = (info["headRefOid"], "-", info["state"].lower(), "n.a.")
+            elif base == "main":
                 onto = onto_main
             elif base in by_head:
                 onto = new_heads.get(base)
@@ -166,17 +169,18 @@ def main(argv: list[str] | None = None) -> int:
                 rmr.git(repo, "fetch", "-q", "--no-tags", "origin", base)
                 candidate = rmr.rev(repo, "FETCH_HEAD")
                 onto = candidate if rmr.has_path(repo, candidate, rmr.MARKER) else None
-            if onto is None:
+            if info["state"] == "OPEN" and onto is None:
                 log(f"#{number}: its base {base} has not been restacked")
                 line = (info["headRefOid"], "-", "blocked", "n.a.")
-            else:
+            elif onto is not None:
                 line = restack_one(repo, info, onto, dry_run=args.dry_run,
-                                   repository=args.repository, trailer=args.trailer)
+                                   repository=args.repository, trailer=args.trailer,
+                                   reference=reference)
                 if line[2] in ("clean", "up-to-date"):
                     new_heads[info["headRefName"]] = line[1]
         except (rmr.ToolError, subprocess.CalledProcessError) as error:
             log(f"#{number}: {getattr(error, 'stderr', '') or error}")
-        failures += line[2] not in ("clean", "up-to-date")
+        failures += line[2] not in ("clean", "up-to-date", "merged", "closed")
         print("\t".join((str(number),) + line), file=out, flush=True)
     if args.tsv:
         out.close()
