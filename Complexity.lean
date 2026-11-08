@@ -3705,6 +3705,7 @@ public import Complexity.Crypto.Computational.ZeroKnowledge.Amplification
 public import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
 public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
 public import Complexity.Crypto.Computational.ZeroKnowledge.Soundness
+public import Complexity.Crypto.Encoding
 public import Complexity.Crypto.Game
 public import Complexity.Crypto.Game.CloseTo
 public import Complexity.Crypto.Game.CloseTo.RandomOracle

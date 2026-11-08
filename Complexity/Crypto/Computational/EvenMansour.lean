@@ -11,6 +11,7 @@ public import Complexity.Crypto.Computational.PseudorandomFunction.MultiKey
 public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Protocols.Cipher.EvenMansour
 public import Complexity.Languages.Probabilistic.Oracle.CoinFixing
+public import Complexity.Crypto.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.BitString.List.Operations
@@ -403,7 +404,7 @@ theorem computableInPolyTime_evenMansourEncrypt {P : ℕ → List Bool → List 
     (hP : ComputableInPolyTime (fun p : ℕ × List Bool => P p.1 p.2)
       (encPair encUnary encBits) encBits) :
     ComputableInPolyTime (fun t : ℕ × List Bool × List Bool => evenMansourEncrypt P t.1 t.2.1 t.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   have hpre : ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool =>
         (t.1, evenMansourPreKeyWord (splitTwoKeys t.1 t.2.1).1 t.2.2))
@@ -429,7 +430,7 @@ theorem computableInPolyTime_evenMansourDecrypt {P_inv : ℕ → List Bool → L
       (encPair encUnary encBits) encBits) :
     ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => evenMansourDecrypt P_inv t.1 t.2.1 t.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   have hpost : ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool =>
         (t.1, evenMansourPostKeyWord (splitTwoKeys t.1 t.2.1).2 t.2.2))
@@ -455,7 +456,7 @@ theorem computableInPolyTime_singleKeyEvenMansourEncrypt {P : ℕ → List Bool 
       (encPair encUnary encBits) encBits) :
     ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => singleKeyEvenMansourEncrypt P t.1 t.2.1 t.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   have hpre : ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => (t.1, evenMansourPreKeyWord t.2.1 t.2.2))
       (encPair encUnary (encPair encBits encBits)) (encPair encUnary encBits) := by
@@ -477,7 +478,7 @@ theorem computableInPolyTime_singleKeyEvenMansourDecrypt {P_inv : ℕ → List B
       (encPair encUnary encBits) encBits) :
     ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => singleKeyEvenMansourDecrypt P_inv t.1 t.2.1 t.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   have hpost : ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => (t.1, evenMansourPostKeyWord t.2.1 t.2.2))
       (encPair encUnary (encPair encBits encBits)) (encPair encUnary encBits) := by
