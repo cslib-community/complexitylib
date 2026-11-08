@@ -16,6 +16,8 @@ public import Complexity.Algorithms.Lean.BellmanFord.Basic
 public import Complexity.Algorithms.Lean.BinPacking.Basic
 public import Complexity.Algorithms.Lean.BinPacking.FirstFit
 public import Complexity.Algorithms.Lean.BinPacking.NextFit
+public import Complexity.Algorithms.Lean.BurrowsWheeler.Basic
+public import Complexity.Algorithms.Lean.BurrowsWheeler.Decode
 public import Complexity.Algorithms.Lean.DFS.Basic
 public import Complexity.Algorithms.Lean.DFS.TopologicalSort
 public import Complexity.Algorithms.Lean.Dijkstra.Client
@@ -4330,6 +4332,7 @@ public import Complexity.Foundations.Data.List.Perm
 public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.RowMajor
 public import Complexity.Foundations.Data.List.SelectDistinct
+public import Complexity.Foundations.Data.List.SortedCount
 public import Complexity.Foundations.Data.List.SumIndicator
 public import Complexity.Foundations.Data.List.TwoBitTable
 public import Complexity.Foundations.Data.Matrix.Binary

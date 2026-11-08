@@ -822,6 +822,14 @@ Import `Complexity.Algorithms.Lean.Euler.Circuit` ([source](../../Complexity/Alg
 
 The [examples](../../ComplexityTests/EulerCircuit.lean) run the algorithm on a bowtie (where a second triangle must be spliced in) and on a multigraph with parallel edges and a self-loop. They also refute Euler circuits for a path with odd endpoints and for two disjoint triangles whose degrees are even.
 
+## Burrows–Wheeler transform
+
+Import `Complexity.Algorithms.Lean.BurrowsWheeler.Basic` ([source](../../Complexity/Algorithms/Lean/BurrowsWheeler/Basic.lean)) and `Complexity.Algorithms.Lean.BurrowsWheeler.Decode` ([source](../../Complexity/Algorithms/Lean/BurrowsWheeler/Decode.lean)). The transform follows Algorithm C of [Burrows and Wheeler][burrowswheeler94], Section 2, over any `LinearOrder` alphabet, with no end-of-word sentinel. `bwtMatrix w` sorts the rotations of `w` lexicographically, and `bwt w = (bwtLast w, bwtIndex w)` is the last column together with the index of the *first* row equal to `w`. The empty word maps to `([], 0)`. Periodic words have repeated rows, and are still handled.
+
+The LF-mapping `lfMap L r = L.countP (· < L[r]) + (L.take r).count L[r]` is computed from the last column alone, as in Section 4.2 of the report. `rotate_one_getElem_bwtMatrix_lfMap` proves its row form: row `lfMap L r`, rotated left by one place, is row `r`. `getElem?_bwtFirst_lfMap` and `count_take_bwtFirst_lfMap` prove the occurrence form (step D2): the `k`-th `c` of `L` corresponds to the `k`-th `c` of the first column. `bwtFirst_eq_mergeSort_bwtLast` says that the first column is the sorted last column (step D1). `getElem?_bwtLast_iterate_lfMap` is the decoding formula `w[n - 1 - i] = L[T^[i] I]` (step D3). `inverseBwt_bwt` and `bwt_injective` state invertibility and injectivity of the transform with its index. `inverseBwtM` is the table-driven decoder of Section 4.2 in `TimeM`, with the rank array `rankTable` and `C c = L.countP (· < c)`. `inverseBwtM_bwt` proves that it returns `w` after exactly `|w|` LF steps, and `inverseBwtM_time_le` bounds it by `|L|` on every input. The cost model charges one tick per LF step. Table lookups are idealized as unit cost, and neither the construction of the `C` and `P` tables nor the sort of the forward transform is charged.
+
+The [examples](../../ComplexityTests/BurrowsWheeler.lean) check the report's running example (`abraca` ↦ `(caraab, 1)`, `T = (4 0 5 1 2 3)`), `banana`, the periodic word `cancan` with its non-cyclic LF orbit, the empty word, a single letter and a constant word. They also show that the last column alone is not injective. Not formalized: move-to-front and entropy coding, compression bounds in terms of empirical entropy, FM-index backward search, the link to suffix arrays, and charged construction of the transform ([ROADMAP](../../ROADMAP.md#string-algorithms)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -831,6 +839,7 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
 [complexitylib]: ../sources.md#complexitylib
+[burrowswheeler94]: ../sources.md#burrowswheeler94
 [clrs09]: ../sources.md#clrs09
 [floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
