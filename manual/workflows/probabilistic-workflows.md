@@ -80,6 +80,44 @@ The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two 
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
 
+## Polarize statistical distance
+
+Sahai and Vadhan's polarization of statistical distance (Sahai–Vadhan 2003, §3) is formalized on
+explicit distributions over finite types, with the half-L1 `dist` above. Lemma numbers in that
+source have not been checked against a copy of the paper.
+
+- **XOR construction.** Import
+  [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
+  `xorMix p₀ p₁ k c` draws selector bits of parity `c` uniformly, then coordinate `i` from `p₀`
+  or `p₁` according to bit `i`. For `k ≠ 0`, `dist_xorMix` proves
+  `dist (xorMix p₀ p₁ k false) (xorMix p₀ p₁ k true) = dist p₀ p₁ ^ k`.
+  `dist_xorMix_le` gives the upper bound for every `k`. The identity fails at `k = 0`, where both
+  sides live on a one-point type.
+- **Direct-product lower bound.** Import
+  [StatisticalDistance/DirectProduct.lean](../../Complexity/Probability/StatisticalDistance/DirectProduct.lean).
+  `one_sub_two_mul_exp_le_dist_iid` proves `1 - 2 exp (-k δ² / 2) ≤ dist (iid μ k) (iid ν k)` from
+  Hoeffding's inequality. The matching upper bound `k δ` is `dist_iid_le`.
+- **Polarization.** Import
+  [StatisticalDistance/Polarization.lean](../../Complexity/Probability/StatisticalDistance/Polarization.lean).
+  `polarize p₀ p₁ λ ℓ k c` applies the XOR construction on `k` coordinates to `ℓ` independent
+  copies of the XOR construction on `λ` coordinates. `dist_polarize_le` bounds its distance by
+  `(ℓ δ^λ)^k`, and `one_sub_mul_exp_le_dist_polarize` bounds it below by
+  `1 - 2 k exp (-ℓ δ^(2λ) / 2)`. For constant thresholds `0 ≤ β < α² ≤ 1`,
+  `exists_polarization` provides constants `m ≠ 0` and `b`. With these, `λ = m (⌊log₂ k⌋ + 1)` and
+  `ℓ = 2 ^ (b (⌊log₂ k⌋ + 1))` are polynomially bounded in `k`. Distance `≥ α` then becomes
+  `≥ 1 - 2⁻ᵏ`, and distance `≤ β` becomes `≤ 2⁻ᵏ`.
+
+The circuit-level Statistical Difference problem and its polynomial-time polarization map are not
+formalized yet; [issue #3205](https://github.com/cslib-community/complexitylib/issues/3205) tracks
+them. The [checked clients](../../ComplexityTests/Polarization.lean) cover the following:
+
+- the exact XOR distance `1/8` of a uniform bit against a point mass;
+- the failure of the identity at `k = 0`;
+- a direct-product bound at `32` copies;
+- the thresholds `α = 2/3`, `β = 1/3`.
+
+Run `scripts/build.sh ComplexityTests.Polarization`.
+
 ## Bound the mixing time of a finite Markov chain
 
 Import [MarkovChain/Coupling.lean](../../Complexity/Probability/MarkovChain/Coupling.lean). A chain
