@@ -9,7 +9,10 @@ module
 
 public import Complexity.Computability.Complexity.Classes.Immune.PolyTimeCore
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Clocked
+import Complexity.Computability.Complexity.Classes.EXP.Decidable
 import Complexity.Computability.Complexity.Classes.Ladner.PolyTime
+import Complexity.Computability.Complexity.Classes.Ladner.Stages
 import Complexity.Computability.Complexity.Classes.P.Closure
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -31,12 +34,16 @@ delayed diagonalization; we did not verify a primary source stating it in this f
 class-generic core theorem (`Cslib.Complexity.exists_infinite_isComplexityCore_P_subset`) gives a
 proper core that is not claimed to be decidable.
 
-The statement is restricted to bit strings (`encBits`). For a general encoding the range of the
-encoding need not be decidable, so decidability does not transfer without an extra hypothesis.
+The statement is restricted to bit strings (`encBits`). The construction runs a decider of `A` on
+every bit string and enumerates every bit string as a candidate. Under a general encoding `enc`, a
+decider of `A` only answers on the range of `enc`, so the construction would need at least that the
+range of `enc` be decidable on all bit strings, which a general encoding does not provide.
 
 ## The construction
 
-Fix the description `d` of a decider of `A` (`Cslib.Complexity.RecursiveCore.Decides`).
+Fix the description `d` of a decider of `A`, whose clocked runs
+(`Turing.MultiTapeTM.Universal.runBool`) are sound and eventually complete
+(`Turing.MultiTapeTM.IsComputable.exists_runBool`).
 
 * **Requirements.** Requirement `e` (`Cslib.Complexity.RecursiveCore.requirement`) is the problem
   of the words `w` that the machine with index `e` (`Cslib.Complexity.Ladner.runIndexed`) accepts
@@ -56,7 +63,9 @@ Fix the description `d` of a decider of `A` (`Cslib.Complexity.RecursiveCore.Dec
 
 Stage `n` runs at most `n` machines on words with indices below `n` for at most `n` steps, so the
 table of the first `n` stages is polynomial-time in `n` in unary, and `selected d` is in `E`
-(`Cslib.Complexity.RecursiveCore.selected_mem_E`). The core is therefore decidable.
+(`Cslib.Complexity.RecursiveCore.selected_mem_E`, through
+`Cslib.Complexity.Ladner.setOf_index_mem_E_of_computableInPolyTime`). The core is therefore
+decidable.
 
 **The core is a core** (`Cslib.Complexity.RecursiveCore.isComplexityCore_core`). Let `B ∈ P` lie
 inside `A`, and let `B` be requirement `e`. Every refutation is sound, so `e` is never refuted. If
@@ -72,7 +81,6 @@ finite union of problems in `P` and a finite set, and `A` would be in `P`.
 ## Main definitions
 
 * `Cslib.Complexity.RecursiveCore.requirement`: the problems in `P`, by clocked machine index.
-* `Cslib.Complexity.RecursiveCore.Decides`: a description of a decider of a problem.
 * `Cslib.Complexity.RecursiveCore.selected`, `Cslib.Complexity.RecursiveCore.core`: the words
   selected by the stages, and the core.
 
@@ -175,7 +183,7 @@ variable (d : Desc)
 
 /-- The decider described by `d` halts on the `m`-th word within `n` steps with answer `b`. -/
 def decAt (n m : ℕ) (b : Bool) : Bool :=
-  decide (universal (d, (word m).map eBit, n) = ([eBit b], true))
+  decide (runBool d (word m) n = some b)
 
 /-- The count at stage `T.length`, from the table `T` of the earlier stages: the number of earlier
 selected words that the decider accepts within `T.length` steps. -/
@@ -267,45 +275,20 @@ theorem computableInPolyTime_table : ComputableInPolyTime (table d) encUnary enc
       rw [length_table]
       exact hi)
 
-/-- Whether `y` is selected, read from the table of the first `2 * N` stages. -/
-private def memTable (p : List Bool × ℕ) : Bool :=
-  ((List.range (2 * p.2)).find? fun j => decide (word j = p.1)).elim false
-    fun j => (table d (2 * p.2)).getD j false
-
-private theorem computableInPolyTime_memTable :
-    ComputableInPolyTime (memTable d) (encPair encBits encUnary) encBool := by
-  have ht := computableInPolyTime_table d
-  unfold memTable
+/-- **The stage decisions are polynomial-time** in the stage, in unary. -/
+theorem computableInPolyTime_selects : ComputableInPolyTime (selects d) encUnary encBool := by
+  have h₁ := computableInPolyTime_stageBit d
+  have h₂ := computableInPolyTime_table d
+  unfold selects
   fun_prop
 
-private theorem memTable_iff {y : List Bool} {N : ℕ} (hN : index y < 2 * N) :
-    memTable d (y, N) = true ↔ y ∈ selected d := by
-  have hfind : (List.range (2 * N)).find? (fun j => decide (word j = y)) = some (index y) := by
-    rw [List.find?_range_eq_some]
-    refine ⟨by simp, List.mem_range.mpr hN, fun j hj => ?_⟩
-    simp only [Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not]
-    rintro rfl
-    rw [index_word] at hj
-    exact lt_irrefl _ hj
-  rw [memTable, hfind, Option.elim_some, table_eq, List.getD_eq_getElem?_getD,
-    List.getElem?_map, List.getElem?_range hN]
-  simp [selected]
-
-/-- **The selected words form a problem in `E`**: the word `y` has index below `2 ^ (|y| + 1)`, so
-whether it is selected is read in polynomial time from `(y, 2 ^ |y|)`. -/
-theorem selected_mem_E : selected d ∈ E encBits := by
-  have h := setOf_mem_E_of_computableInPolyTime_pad (computableInPolyTime_memTable d)
-  convert h using 1
-  ext y
-  simp only [Set.mem_ofPred_eq]
-  rw [memTable_iff]
-  have := index_add_two_le y
-  rw [pow_succ] at this
-  omega
+/-- **The selected words form a problem in `E`**: the decision at each stage is polynomial-time in
+the stage (`Cslib.Complexity.Ladner.setOf_index_mem_E_of_computableInPolyTime`). -/
+theorem selected_mem_E : selected d ∈ E encBits :=
+  setOf_index_mem_E_of_computableInPolyTime (computableInPolyTime_selects d)
 
 theorem isDecidable_selected : IsDecidable (selected d) encBits :=
-  let ⟨_, _, _, _, h⟩ := mem_E_iff.mp (selected_mem_E d)
-  ⟨_, _, h⟩
+  isDecidable_of_mem_E (selected_mem_E d)
 
 /-- **The core of a decidable problem is decidable.** -/
 theorem isDecidable_core {A : Set (List Bool)} (hA : IsDecidable A encBits) :
@@ -318,57 +301,24 @@ end Stages
 
 /-! ### Correctness -/
 
-/-- The description `d` describes a decider of `A`: on every word it halts with the indicator of
-`A` from some number of steps on, and whenever it has halted its answer is the indicator of `A`.
--/
-def Decides (d : Desc) (A : Set (List Bool)) : Prop :=
-  ∀ w : List Bool, (∃ T, ∀ n ≥ T, universal (d, w.map eBit, n) = ([eBit (indicator A w)], true)) ∧
-    ∀ n b, universal (d, w.map eBit, n) = ([eBit b], true) → b = indicator A w
-
-/-- **Every decidable problem has a decider description**: the description of a deciding machine.
--/
-theorem exists_decides_of_isDecidable {A : Set (List Bool)} (hA : IsDecidable A encBits) :
-    ∃ d, Decides d A := by
-  obtain ⟨t, s, k, State, hfinite, tm, htm⟩ := hA
-  have := Fintype.ofFinite State
-  let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  have hrun (x : List Bool) : (tm.runFrom (tm.initCfg x) (t x)).Halted ∧
-      (tm.runFrom (tm.initCfg x) (t x)).output = [indicator A x] :=
-    (htm x).runFrom_of_le le_rfl
-  refine ⟨desc eS eBit tm, fun w => ⟨⟨t w, fun n hn => ?_⟩, fun n b h => ?_⟩⟩
-  · exact universal_desc_of_halted eS tm (t := t) hrun hn
-  · rw [universal_desc, Prod.mk.injEq] at h
-    obtain ⟨hout, hhalt⟩ := h
-    have hh : (tm.runFrom (tm.initCfg w) n).Halted := Option.isNone_iff_eq_none.mp hhalt
-    have hc : tm.Computes w [indicator A w] := (htm w).1
-    rw [hc.output_eq_of_halted hh, List.map_singleton, List.singleton_inj] at hout
-    exact (eBit.injective hout).symm
-
 section Correctness
 
 variable {d : Desc} {A : Set (List Bool)}
 
-private theorem indicator_eq_true_iff {w : List Bool} : indicator A w = true ↔ w ∈ A := by
-  classical
-  by_cases hw : w ∈ A <;> simp [indicator, hw]
-
-private theorem indicator_eq_false_iff {w : List Bool} : indicator A w = false ↔ w ∉ A := by
-  classical
-  by_cases hw : w ∈ A <;> simp [indicator, hw]
-
 private theorem decAt_eq_true_iff {n m : ℕ} {b : Bool} :
-    decAt d n m b = true ↔ universal (d, (word m).map eBit, n) = ([eBit b], true) := by
-  simp [decAt]
+    decAt d n m b = true ↔ runBool d (word m) n = some b :=
+  decide_eq_true_iff
 
 /-- A halted answer of the decider is correct. -/
-private theorem decAt_sound (hd : Decides d A) {n m : ℕ} {b : Bool} (h : decAt d n m b = true) :
-    b = indicator A (word m) :=
-  (hd (word m)).2 n b (decAt_eq_true_iff.mp h)
+private theorem decAt_sound (hs : ∀ w t b, runBool d w t = some b → b = indicator A w) {n m : ℕ}
+    {b : Bool} (h : decAt d n m b = true) : b = indicator A (word m) :=
+  hs _ _ _ (decAt_eq_true_iff.mp h)
 
 /-- The decider eventually halts with the correct answer. -/
-private theorem decAt_complete (hd : Decides d A) (m : ℕ) :
+private theorem decAt_complete
+    (hc : ∀ w, ∃ T, ∀ t, T ≤ t → runBool d w t = some (indicator A w)) (m : ℕ) :
     ∃ T, ∀ n ≥ T, decAt d n m (indicator A (word m)) = true :=
-  let ⟨T, hT⟩ := (hd (word m)).1
+  let ⟨T, hT⟩ := hc (word m)
   ⟨T, fun n hn => decAt_eq_true_iff.mpr (hT n hn)⟩
 
 theorem coreCount_table (n : ℕ) : coreCount d (table d n) =
@@ -388,20 +338,21 @@ theorem selects_eq_true_iff {n : ℕ} : selects d n = true ↔
   simp only [List.mem_range, Bool.or_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true]
 
 /-- **Refutations are sound**: a refuted requirement is not inside `A`. -/
-private theorem not_subset_of_refuted (hd : Decides d A) {e n : ℕ}
-    (h : refuted d e n = true) : ¬ requirement e ⊆ A := by
+private theorem not_subset_of_refuted (hs : ∀ w t b, runBool d w t = some b → b = indicator A w)
+    {e n : ℕ} (h : refuted d e n = true) : ¬ requirement e ⊆ A := by
   intro hsub
   obtain ⟨m, -, hm⟩ := List.any_eq_true.mp h
   simp only [Bool.and_eq_true] at hm
   have hmem := (memReq_iff.mp hm.1).2
-  have hfalse := decAt_sound hd hm.2
+  have hfalse := decAt_sound hs hm.2
   exact (indicator_eq_false_iff.mp hfalse.symm) (hsub hmem)
 
 /-- **Refutations are complete**: a requirement not inside `A` is refuted from some stage on. -/
-private theorem exists_refuted (hd : Decides d A) {e : ℕ} (h : ¬ requirement e ⊆ A) :
+private theorem exists_refuted (hc : ∀ w, ∃ T, ∀ t, T ≤ t → runBool d w t = some (indicator A w))
+    {e : ℕ} (h : ¬ requirement e ⊆ A) :
     ∃ N, ∀ n ≥ N, refuted d e n = true := by
   obtain ⟨w, hwB, hwA⟩ := Set.not_subset.mp h
-  obtain ⟨T, hT⟩ := decAt_complete hd (index w)
+  obtain ⟨T, hT⟩ := decAt_complete hc (index w)
   refine ⟨T + index w + 1 + clock e w.length, fun n hn => List.any_eq_true.mpr
     ⟨index w, List.mem_range.mpr (by omega), ?_⟩⟩
   have hdec := hT n (by omega)
@@ -410,17 +361,20 @@ private theorem exists_refuted (hd : Decides d A) {e : ℕ} (h : ¬ requirement 
   exact ⟨⟨by omega, hwB⟩, hdec⟩
 
 /-- The words counted at any stage are in the core. -/
-private theorem coreCount_le (hd : Decides d A) {S : Finset ℕ}
-    (hS : ∀ m, word m ∈ core d A → m ∈ S) (n : ℕ) : coreCount d (table d n) ≤ S.card := by
+private theorem coreCount_le (hs : ∀ w t b, runBool d w t = some b → b = indicator A w)
+    {S : Finset ℕ} (hS : ∀ m, word m ∈ core d A → m ∈ S) (n : ℕ) :
+    coreCount d (table d n) ≤ S.card := by
   rw [coreCount_table, ← List.toFinset_card_of_nodup (List.nodup_range.filter _)]
   refine Finset.card_le_card fun m hm => hS m ?_
   rw [List.mem_toFinset, List.mem_filter, Bool.and_eq_true] at hm
-  exact ⟨indicator_eq_true_iff.mp (decAt_sound hd hm.2.2).symm, by simpa [selected] using hm.2.1⟩
+  exact ⟨indicator_eq_true_iff.mp (decAt_sound hs hm.2.2).symm, by simpa [selected] using hm.2.1⟩
 
 /-- Finitely many words of the core are all counted from some stage on. -/
-private theorem exists_card_le_coreCount (hd : Decides d A) (F : Finset ℕ)
-    (hF : ∀ m ∈ F, word m ∈ core d A) : ∃ N, ∀ n ≥ N, F.card ≤ coreCount d (table d n) := by
-  choose T hT using decAt_complete hd
+private theorem exists_card_le_coreCount
+    (hc : ∀ w, ∃ T, ∀ t, T ≤ t → runBool d w t = some (indicator A w)) (F : Finset ℕ)
+    (hF : ∀ m ∈ F, word m ∈ core d A) :
+    ∃ N, ∀ n ≥ N, F.card ≤ coreCount d (table d n) := by
+  choose T hT using decAt_complete hc
   refine ⟨F.sup fun m => T m + m + 1, fun n hn => ?_⟩
   rw [coreCount_table, ← List.toFinset_card_of_nodup (List.nodup_range.filter _)]
   refine Finset.card_le_card fun m hm => ?_
@@ -434,7 +388,9 @@ private theorem exists_card_le_coreCount (hd : Decides d A) (F : Finset ℕ)
 /-- **The core is a complexity core of `A` for `P`.** A problem in `P` inside `A` is a requirement
 `e` that is never refuted. If the core is infinite, the count eventually exceeds `e`, so past the
 stages where the clock of `e` has not yet run out, the core avoids the problem. -/
-theorem isComplexityCore_core (hd : Decides d A) : IsComplexityCore (P encBits) A (core d A) := by
+theorem isComplexityCore_core (hs : ∀ w t b, runBool d w t = some b → b = indicator A w)
+    (hc : ∀ w, ∃ T, ∀ t, T ≤ t → runBool d w t = some (indicator A w)) :
+    IsComplexityCore (P encBits) A (core d A) := by
   rw [isComplexityCore_iff]
   rintro B hB (hBA | hBA)
   swap
@@ -448,7 +404,7 @@ theorem isComplexityCore_core (hd : Decides d A) : IsComplexityCore (P encBits) 
     refine (hinf.mono Set.inter_subset_right) ((hfin'.image word).subset fun w hw => ?_)
     exact ⟨index w, by simpa using hw, word_index w⟩
   obtain ⟨F, hFsub, hFcard⟩ := hcore.exists_subset_card_eq (e + 1)
-  obtain ⟨N, hN⟩ := exists_card_le_coreCount hd F fun m hm => hFsub hm
+  obtain ⟨N, hN⟩ := exists_card_le_coreCount hc F fun m hm => hFsub hm
   -- from some length on, the clock of `e` is below `2 ^ l`
   have hclock : PolynomiallyBounded (clock e) := by unfold clock; fun_prop
   obtain ⟨L, hL⟩ := Filter.eventually_atTop.mp (PolynomiallyBounded.eventually_lt_two_pow hclock)
@@ -465,7 +421,7 @@ theorem isComplexityCore_core (hd : Decides d A) : IsComplexityCore (P encBits) 
     have := hN (index w) hNi
     omega
   rcases (selects_eq_true_iff.mp hwY) e he with href | hmem
-  · exact not_subset_of_refuted hd href hBA
+  · exact not_subset_of_refuted hs href hBA
   · have hlt := hL w.length hlen
     have hidx' := two_pow_length_word_le (index w)
     rw [word_index] at hidx'
@@ -476,13 +432,15 @@ theorem isComplexityCore_core (hd : Decides d A) : IsComplexityCore (P encBits) 
 below its size. The requirements below that size that are not inside `A` are refuted from some
 stage on, and from then on every word of `A` outside the core lies in one of the finitely many
 requirements below that size inside `A`. Then `A` would be in `P`. -/
-theorem infinite_core (hd : Decides d A) (hA : A ∉ P encBits) : (core d A).Infinite := by
+theorem infinite_core (hs : ∀ w t b, runBool d w t = some b → b = indicator A w)
+    (hc : ∀ w, ∃ T, ∀ t, T ≤ t → runBool d w t = some (indicator A w))
+    (hA : A ∉ P encBits) : (core d A).Infinite := by
   classical
   intro hfin
   obtain ⟨S, hS⟩ : ∃ S : Finset ℕ, ∀ m, word m ∈ core d A → m ∈ S :=
     ⟨((hfin.preimage word_injective.injOn).toFinset), fun m hm => by simpa using hm⟩
   -- the requirements below `S.card` not inside `A` are all refuted from stage `N` on
-  choose! R hR using fun e (h : ¬ requirement e ⊆ A) => exists_refuted hd h
+  choose! R hR using fun e (h : ¬ requirement e ⊆ A) => exists_refuted hc h
   let N := (Finset.range S.card).sup R
   let U := ((Finset.range S.card).filter fun e => requirement e ⊆ A).sup requirement
   have hUP : U ∈ P encBits :=
@@ -504,7 +462,7 @@ theorem infinite_core (hd : Decides d A) (hA : A ∉ P encBits) : (core d A).Inf
     rw [← Bool.not_eq_true, selects_eq_true_iff] at hnY
     obtain ⟨e, he, hne⟩ := not_forall₂.mp hnY
     obtain ⟨hnref, hmem⟩ := not_or.mp hne
-    have heS : e < S.card := he.trans_le (coreCount_le hd hS _)
+    have heS : e < S.card := he.trans_le (coreCount_le hs hS _)
     replace hmem : memReq e (index w) (word (index w)) = true := by simpa using hmem
     rw [word_index, memReq_iff] at hmem
     by_cases hsub : requirement e ⊆ A
@@ -530,9 +488,10 @@ decidable problem `A` outside `P` has an infinite decidable subset on which ever
 theorem exists_infinite_isDecidable_isPolyTimeCore {A : Set (List Bool)}
     (hdec : IsDecidable A encBits) (hA : A ∉ P encBits) :
     ∃ X ⊆ A, X.Infinite ∧ IsDecidable X encBits ∧ IsPolyTimeCore encBits A X := by
-  obtain ⟨d, hd⟩ := RecursiveCore.exists_decides_of_isDecidable hdec
-  exact ⟨RecursiveCore.core d A, RecursiveCore.core_subset d A, RecursiveCore.infinite_core hd hA,
-    RecursiveCore.isDecidable_core d hdec, (RecursiveCore.isComplexityCore_core hd).isPolyTimeCore⟩
+  obtain ⟨d, hs, hc⟩ := (isDecidable_iff_isComputable_indicator.mp hdec).exists_runBool
+  exact ⟨RecursiveCore.core d A, RecursiveCore.core_subset d A,
+    RecursiveCore.infinite_core hs hc hA, RecursiveCore.isDecidable_core d hdec,
+    (RecursiveCore.isComplexityCore_core hs hc).isPolyTimeCore⟩
 
 /-- **A decidable problem is outside `P` exactly when it has an infinite decidable polynomial
 complexity core inside it.** -/

@@ -1550,6 +1550,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Tru
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedSum
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
+public import Complexity.Computability.Complexity.Classes.EXP.Decidable
 public import Complexity.Computability.Complexity.Classes.EXP.Padding
 public import Complexity.Computability.Complexity.Classes.EXP.Separation
 public import Complexity.Computability.Complexity.Classes.FPAUS
@@ -1604,6 +1605,7 @@ public import Complexity.Computability.Complexity.Classes.Inclusions
 public import Complexity.Computability.Complexity.Classes.Ladner
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
 public import Complexity.Computability.Complexity.Classes.Ladner.PolyTime
+public import Complexity.Computability.Complexity.Classes.Ladner.Stages
 public import Complexity.Computability.Complexity.Classes.LogSpace
 public import Complexity.Computability.Complexity.Classes.LogSpace.Complement
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder
