@@ -20,27 +20,29 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListM
 
 Label Cover is NP-hard with perfect completeness and arbitrarily small soundness, at the price of
 alphabets that grow as the soundness shrinks: Raz's parallel repetition lemma reduces the
-soundness of the two-query projection PCP to an arbitrarily small constant [Arora and Barak,
-Theorem 19.3 and the first paragraph of Section 19.4][AroraBarak07]. The reduction composes three polynomial-time steps.
+soundness of the two-query projection PCP to an arbitrarily small constant
+[Arora and Barak, Theorem 19.3 and the first paragraph of Section 19.4][AroraBarak07].
+The reduction composes three polynomial-time steps.
 
 1. Loop removal (`Cslib.PCP.Encoded.Graph.deloop`) makes the hard binary constraint graphs of
    `Cslib.Complexity.GapTwoCSP_npHard` loopless without changing their value.
 2. The incidence construction (`Cslib.PCP.Encoded.LabelCoverIncidence.reduce`) turns a loopless
-   binary constraint graph into a simple Label Cover instance, losing a factor of at most two in
-   the unsatisfied fraction.
+   binary constraint graph into a Label Cover instance without parallel edges, losing a factor of
+   at most two in the unsatisfied fraction.
 3. The `k`-fold parallel repetition (`Cslib.PCP.Encoded.LabelCoverRepetition.pow`) keeps
-   satisfiability, and parallel repetition for simple instances
+   satisfiability, and parallel repetition for instances without parallel edges
    (`Cslib.PCP.Encoded.LabelCoverRepetition.one_sub_unsatVal_pow_le`) bounds the value of the
    repetition of a no-instance.
 
 For each fixed `k` the repetition is polynomial-time (`isPolyTime_pow`): the output has `m ^ k`
-edges for `m` input edges, each with a complete table on `(Fin k → β)`.
+edges for `m` input edges, each with a complete table on `(Fin k → β)` and unary endpoints below
+`(n + 1) ^ (2 ^ k)` for `n` input vertices. The degree of the polynomial is exponential in `k`.
 
 **Scope.** This is Raz's parallel repetition theorem [Raz1998] applied to the library's own PCP
 instance, through Holenstein's explicit bound [Holenstein2009]. The constants are explicit but
 astronomically large: with `128²` left and `128` right labels per coordinate, the soundness after
-`k` rounds is `(1 - 2⁻¹⁸⁶ / 6000)^{k / 21}`. The loop removal and the simple contradiction instance
-are library adaptations to the executable graph API.
+`k` rounds is `(1 - 2⁻¹⁸⁶ / 6000)^{k / 21}`. The loop removal and the two-left-vertex
+contradiction instance are library adaptations to the executable graph API.
 
 ## Main results
 
@@ -68,31 +70,6 @@ namespace Cslib.PCP.Encoded.LabelCoverRepetition
 open Turing.MultiTapeTM
 
 variable {β γ : Type}
-
-/-- Prepend an edge to a repeated edge: the new first coordinate. -/
-def consEdge {k : ℕ} (d : Edge (β → γ)) (e : Edge ((Fin k → β) → Fin k → γ)) :
-    Edge ((Fin (k + 1) → β) → Fin (k + 1) → γ) :=
-  ⟨Nat.pair d.src e.src, Nat.pair d.dst e.dst,
-    fun a => Fin.cons (d.constraint (a 0)) (e.constraint (Fin.tail a))⟩
-
-/-- Repeating a tuple with a first entry prepends that entry to the repetition of the rest. -/
-theorem repEdge_cons {k : ℕ} (d : Edge (β → γ)) (e : Fin k → Edge (β → γ)) :
-    repEdge (Fin.cons d e : Fin (k + 1) → Edge (β → γ)) = consEdge d (repEdge e) := by
-  simp only [repEdge, consEdge, tupleCode, Fin.cons_zero]
-  congr 1
-  funext a i
-  refine Fin.cases ?_ (fun j => ?_) i <;> simp [Fin.tail]
-
-/-- The edges of the `(k + 1)`-fold repetition, by prepending each edge to each edge of the
-`k`-fold repetition. -/
-theorem edges_pow_succ (k : ℕ) (g : Graph (β → γ)) :
-    (pow (k + 1) g).edges = g.edges.flatMap fun d => (pow k g).edges.map (consEdge d) := by
-  simp only [edges_pow, tuples, List.map_flatMap, List.map_map]
-  congr 1
-  funext d
-  congr 1
-  funext e
-  exact repEdge_cons d e
 
 /-- The vertex count of the repetition is polynomial-time for each fixed `k`. -/
 private theorem isPolyTime_tupleCode_const (k : ℕ) :
@@ -145,7 +122,14 @@ private theorem isPolyTime_edges_pow (encG : γ ↪ List Bool) (k : ℕ) :
 
 /-- **For each fixed `k` the `k`-fold repetition is polynomial-time.** The output lists the
 `m ^ k` tuples of the `m` input edges, each with unary endpoints and a complete table on
-`(Fin k → β)`; for fixed `k` and fixed alphabets this is polynomial in the input length. -/
+`(Fin k → β)`; for fixed `k` and fixed alphabets this is polynomial in the input length.
+
+The polynomial degree grows exponentially in `k`. Iterated `Nat.pair` numbers the `k`-tuples of
+the `n` input vertices below `(n + 1) ^ (2 ^ k)` (`vertices_pow_le`), and the endpoints and the
+vertex count are written in unary, so for fixed alphabets the output of a well-formed input has
+size about `m ^ k * (n + 1) ^ (2 ^ k)`. The statement is therefore polynomial time for each fixed
+`k` only, which is all the NP-hardness reductions below use. A mixed-radix numbering would give
+degree linear in `k`. -/
 @[fun_prop]
 theorem isPolyTime_pow (encG : γ ↪ List Bool) (k : ℕ) :
     ComputableInPolyTime (pow (β := β) (γ := γ) k)
@@ -207,7 +191,7 @@ theorem polyTimeReducible_GapTwoCSP_GapLabelCover_pow {α : Type} [Fintype α] [
     have hgap := LabelCoverIncidence.half_unsatVal_le_reduce pairs a b hab (Graph.deloop g)
     rw [Graph.unsatVal_deloop] at hgap
     have hpow := LabelCoverRepetition.one_sub_unsatVal_pow_le
-      (LabelCoverIncidence.isSimple_reduce pairs a b (Graph.isLoopless_deloop g)) hcard
+      (LabelCoverIncidence.noParallelEdges_reduce pairs a b (Graph.isLoopless_deloop g)) hcard
       (ε := ε / 2) (by linarith) k
     rw [GapLabelCover, PromiseProblem.mem_no_gapMax]
     exact ⟨hpow, by simpa using hs1⟩
@@ -239,8 +223,8 @@ theorem GapLabelCover_npHard_pow {k : ℕ} (hk : 0 < k) :
 
 /-- **Label Cover with arbitrarily small soundness is NP-hard**: for every `δ ∈ (0, 1)` there is a
 number of rounds `k` such that Label Cover with `128^{2k}` left labels and `128^k` right labels is
-NP-hard at completeness `1` and soundness `δ`. The number `k` depends on `δ`; it is `21 n` for
-any `n ≥ 1` with `(1 - 2⁻¹⁸⁶ / 6000)^n ≤ δ`, so astronomically large. -/
+NP-hard at completeness `1` and soundness `δ`. The number `k` depends on `δ`: any `k = 21 n`
+with `n ≥ 1` and `(1 - 2⁻¹⁸⁶ / 6000)^n ≤ δ` works, so `k` is astronomically large. -/
 theorem exists_GapLabelCover_npHard {δ : ℝ} (hδ : 0 < δ) (hδ1 : δ < 1) :
     ∃ k : ℕ, 0 < k ∧ PromiseProblem.NPHard
       (Graph.encoding (encPi (encPi (encPair encBool (encPi encBool)))))

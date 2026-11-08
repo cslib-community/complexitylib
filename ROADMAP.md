@@ -824,12 +824,17 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Håstad's optimal MAX-E3SAT hardness** ([#886]): for `0 < ε < 1/8`, NP-hardness of
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
   `7/8 + ε` of the clauses. Holenstein's parallel repetition theorem for two-prover games is
-  proved (`TwoProverGame.value_pow_le`), and so is parallel repetition for simple Label Cover
-  instances (`LabelCoverRepetition.one_sub_unsatVal_pow_le`), and Label Cover is NP-hard with
-  perfect completeness and every soundness `δ ∈ (0, 1)` (`exists_GapLabelCover_npHard`, with
-  `128^{2k}` and `128^k` labels for `k` depending on `δ`). What remains is Håstad's reduction from
-  small-soundness Label Cover to MAX-E3LIN and MAX-E3SAT (long-code test and its Fourier
-  analysis), and his separate perfect-completeness construction for MAX-E3SAT.
+  proved (`TwoProverGame.value_pow_le`), and so is parallel repetition for Label Cover instances
+  without parallel edges (`LabelCoverRepetition.one_sub_unsatVal_pow_le`), and Label Cover is
+  NP-hard with perfect completeness and every soundness `δ ∈ (0, 1)`
+  (`exists_GapLabelCover_npHard`, with `128^{2k}` and `128^k` labels for `k` depending on `δ`).
+  The completeness and soundness of Håstad's 3-bit test on folded long-code tables are proved
+  (Lemmas 5.1 and 5.2, `Hastad.gapLabelCover_dichotomy_lt_one`, with the threshold uniform in the
+  label sets), and so is the four-clause reduction from three-variable XOR to exact three-CNF
+  (`ThreeXOR`). What remains is the polynomial-time MAX-E3LIN instance built from folded long-code
+  tables and its composition with that lemma and with `exists_GapLabelCover_npHard` (Theorem 5.4),
+  the composition with the four-clause reduction (Theorem 6.1, imperfect completeness), and
+  Håstad's separate test for satisfiable formulas (Theorem 6.5).
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of

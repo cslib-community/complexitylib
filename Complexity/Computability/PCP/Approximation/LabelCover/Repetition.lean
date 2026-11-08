@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.PCP.Approximation.LabelCover
-public import Complexity.Computability.PCP.Encoded.Simple
+public import Complexity.Computability.PCP.Encoded.ParallelEdges
 public import Complexity.Computability.PCP.ParallelRepetition
 import Complexity.Computability.PCP.Encoded.Count
 import Complexity.Probability.PMF.Uniform
@@ -28,19 +28,21 @@ property, as noted in Section 19.4 of the same draft.
 
 A Label Cover instance with at least one edge is a two-prover game (`LabelCoverRepetition.game`):
 the verifier picks a uniformly random edge and asks its left end of the first prover and its right
-end of the second. When the instance is simple (`Cslib.PCP.Encoded.Graph.IsSimple`), the edge is
-determined by its two ends, and the verifier accepts when the answers satisfy it. The value of the
+end of the second. When the instance has no parallel edges
+(`Cslib.PCP.Encoded.Graph.NoParallelEdges`), the edge is determined by its two ends, and the
+verifier accepts when the answers satisfy it. The value of the
 game is at most the value of the instance (`value_game_le`), and the value of its `k`-fold
 repetition is at least the value of the repeated instance (`one_sub_unsatVal_pow_le_value_pow`).
 Holenstein's parallel repetition theorem (`Cslib.PCP.TwoProverGame.value_pow_le_of_value_le`)
 then bounds the value of the repeated instance.
 
-**Scope.** This is the parallel repetition theorem of Raz [Raz1998] for simple Label Cover
-instances, in the explicit form of Holenstein [Holenstein2009]. The constants are explicit but
-astronomically large: an instance of value at most `1 - ε` repeats to value at most
-`(1 - ε³ / 6000)^{k / log₂ (|β| |γ|)}`. Simplicity is assumed: an instance with parallel edges
-need not define a game with the same value. Parallel edges with equal projections do, but
-conflicting parallel projections break the correspondence.
+**Scope.** This is the parallel repetition theorem of Raz [Raz1998] for Label Cover instances
+without parallel edges, in the explicit form of Holenstein [Holenstein2009]. The constants are
+explicit but astronomically large: an instance of value at most `1 - ε` repeats to value at most
+`(1 - ε³ / 6000)^{k / log₂ (|β| |γ|)}`. The absence of parallel edges is a limit of this proof
+route, which reads the instance as the game of a uniformly random edge: parallel edges with
+different projections need not give a game of the same value as the instance. Parallel edges
+with equal projections do.
 
 ## Main definitions
 
@@ -53,10 +55,10 @@ conflicting parallel projections break the correspondence.
 
 * `Cslib.PCP.Encoded.LabelCoverRepetition.satisfiable_pow`: repetition keeps satisfiability.
 * `Cslib.PCP.Encoded.LabelCoverRepetition.value_game_le`: the game is no easier than the instance.
-* `Cslib.PCP.Encoded.LabelCoverRepetition.one_sub_unsatVal_pow_le_value_pow`: for a simple
-  instance, the repeated game is no harder than the repeated instance.
+* `Cslib.PCP.Encoded.LabelCoverRepetition.one_sub_unsatVal_pow_le_value_pow`: without parallel
+  edges, the repeated game is no harder than the repeated instance.
 * `Cslib.PCP.Encoded.LabelCoverRepetition.one_sub_unsatVal_pow_le`: **parallel repetition for
-  simple Label Cover**, with Holenstein's bound.
+  Label Cover without parallel edges**, with Holenstein's bound.
 
 ## References
 
@@ -75,7 +77,9 @@ open Cslib.Complexity Finset
 /-! ### Tuples -/
 
 /-- The number of a `k`-tuple of natural numbers, by iterated `Nat.pair`: the empty tuple is
-`0`, and `Fin.cons a t` is `Nat.pair a (tupleCode t)`. -/
+`0`, and `Fin.cons a t` is `Nat.pair a (tupleCode t)`. Since `Nat.pair a b < (max a b + 1)²`,
+the number of a tuple of entries below `n` is below `n ^ (2 ^ k)` (`tupleCode_lt_pow`):
+polynomial in `n` for fixed `k`, of degree exponential in `k`. -/
 def tupleCode : (k : ℕ) → (Fin k → ℕ) → ℕ
   | 0, _ => 0
   | k + 1, t => Nat.pair (t 0) (tupleCode k (Fin.tail t))
@@ -106,6 +110,19 @@ theorem tupleCode_mono : ∀ (k : ℕ) {s t : Fin k → ℕ}, (∀ i, s i ≤ t 
       fun _ _ hab => Nat.pair_lt_pair_left _ hab
     have hr : StrictMono fun b => Nat.pair (t 0) b := fun _ _ hab => Nat.pair_lt_pair_right _ hab
     exact (hl.monotone (h 0)).trans (hr.monotone (tupleCode_mono k fun i => h i.succ))
+
+/-- The number of a `k`-tuple of entries below `n` is below `n ^ (2 ^ k)`. -/
+theorem tupleCode_lt_pow : ∀ (k : ℕ) {n : ℕ} {t : Fin k → ℕ}, 0 < n → (∀ i, t i < n) →
+    tupleCode k t < n ^ (2 ^ k)
+  | 0, n, _, hn, _ => by simpa [tupleCode] using hn
+  | k + 1, n, t, hn, h => by
+    have ht : t 0 < n ^ (2 ^ k) :=
+      (h 0).trans_le (Nat.le_self_pow (Nat.pos_iff_ne_zero.mp (Nat.two_pow_pos k)) n)
+    have hc := tupleCode_lt_pow k hn fun i => h i.succ
+    calc tupleCode (k + 1) t < (max (t 0) (tupleCode k (Fin.tail t)) + 1) ^ 2 :=
+          Nat.pair_lt_max_add_one_sq _ _
+      _ ≤ (n ^ (2 ^ k)) ^ 2 := Nat.pow_le_pow_left (Nat.succ_le_of_lt (max_lt ht hc)) 2
+      _ = n ^ (2 ^ (k + 1)) := by rw [← pow_mul, pow_succ]
 
 /-- The `k`-tuples of entries of a list, in lexicographic order. -/
 def tuples {α : Type*} : (k : ℕ) → List α → List (Fin k → α)
@@ -173,7 +190,7 @@ def repEdge {k : ℕ} (e : Fin k → Edge (β → γ)) : Edge ((Fin k → β) �
 /-- The **`k`-fold parallel repetition** of a Label Cover instance: the left labels are the
 `k`-tuples of left labels, the right labels the `k`-tuples of right labels, and the edges the
 `k`-tuples of edges (`repEdge`). The vertex count bounds the numbers of tuples of declared
-vertices. -/
+vertices; with `n` declared vertices it is at most `(n + 1) ^ (2 ^ k)` (`vertices_pow_le`). -/
 def pow (k : ℕ) (g : Graph (β → γ)) : Graph ((Fin k → β) → Fin k → γ) :=
   ⟨tupleCode k (fun _ => g.vertices) + 1, (tuples k g.edges).map repEdge⟩
 
@@ -181,11 +198,42 @@ def pow (k : ℕ) (g : Graph (β → γ)) : Graph ((Fin k → β) → Fin k → 
 theorem edges_pow (k : ℕ) (g : Graph (β → γ)) :
     (pow k g).edges = (tuples k g.edges).map repEdge := rfl
 
+/-- The `k`-fold repetition of an instance with `n` declared vertices declares at most
+`(n + 1) ^ (2 ^ k)` vertices: polynomial for fixed `k`, of degree exponential in `k`. -/
+theorem vertices_pow_le (k : ℕ) (g : Graph (β → γ)) :
+    (pow k g).vertices ≤ (g.vertices + 1) ^ (2 ^ k) :=
+  Nat.succ_le_of_lt (tupleCode_lt_pow k (Nat.succ_pos _) fun _ => Nat.lt_succ_self _)
+
 /-- The repetition has the `k`-th power of the number of edges. -/
 @[simp]
 theorem length_edges_pow (k : ℕ) (g : Graph (β → γ)) :
     (pow k g).edges.length = g.edges.length ^ k := by
   simp [pow]
+
+/-- Prepend an edge to a repeated edge: the new first coordinate. -/
+def consEdge {k : ℕ} (d : Edge (β → γ)) (e : Edge ((Fin k → β) → Fin k → γ)) :
+    Edge ((Fin (k + 1) → β) → Fin (k + 1) → γ) :=
+  ⟨Nat.pair d.src e.src, Nat.pair d.dst e.dst,
+    fun a => Fin.cons (d.constraint (a 0)) (e.constraint (Fin.tail a))⟩
+
+/-- Repeating a tuple with a first entry prepends that entry to the repetition of the rest. -/
+theorem repEdge_cons {k : ℕ} (d : Edge (β → γ)) (e : Fin k → Edge (β → γ)) :
+    repEdge (Fin.cons d e : Fin (k + 1) → Edge (β → γ)) = consEdge d (repEdge e) := by
+  simp only [repEdge, consEdge, tupleCode, Fin.cons_zero]
+  congr 1
+  funext a i
+  refine Fin.cases ?_ (fun j => ?_) i <;> simp [Fin.tail]
+
+/-- The edges of the `(k + 1)`-fold repetition, by prepending each edge to each edge of the
+`k`-fold repetition. -/
+theorem edges_pow_succ (k : ℕ) (g : Graph (β → γ)) :
+    (pow (k + 1) g).edges = g.edges.flatMap fun d => (pow k g).edges.map (consEdge d) := by
+  simp only [edges_pow, tuples, List.map_flatMap, List.map_map]
+  congr 1
+  funext d
+  congr 1
+  funext e
+  exact repEdge_cons d e
 
 /-- The repetition of a well-formed instance is well formed: the numbers of tuples of declared
 vertices are below its vertex count. -/
@@ -223,7 +271,7 @@ theorem _root_.Cslib.PCP.Encoded.Graph.exists_endpoint_bound {C : Type} (g : Gra
 /-- The **two-prover game of a Label Cover instance** `g` with at least one edge, whose endpoints
 lie below `N`: the verifier picks a uniformly random edge and asks its left end of the first prover
 and its right end of the second. It accepts answers `a` and `b` when they satisfy every edge with
-these two ends; when `g` is simple, this is the chosen edge. -/
+these two ends; when `g` has no parallel edges, this is the chosen edge. -/
 noncomputable def game (g : Graph (β → γ)) (hg : g.edges ≠ []) (N : ℕ)
     (hN : ∀ d ∈ g.edges, d.src < N ∧ d.dst < N) : TwoProverGame (Fin N) (Fin N) β γ :=
   have : Nonempty (Fin g.edges.length) := ⟨⟨0, List.length_pos_iff.mpr hg⟩⟩
@@ -302,11 +350,11 @@ theorem value_game_le [Nonempty β] [Nonempty γ] (g : Graph (β → γ))
   simp only [projectionEval, decide_eq_true_eq, σ, dite_eq_left hs, dite_eq_left hd]
   exact h
 
-/-- **For a simple instance, the repeated game is no harder than the repeated instance.** A
+/-- **Without parallel edges, the repeated game is no harder than the repeated instance.** A
 labelling of the tuples of vertices gives strategies that answer each tuple of questions by the
 labels of its number; they win on every tuple of edges that the labelling satisfies. -/
 theorem one_sub_unsatVal_pow_le_value_pow [Finite β] [Finite γ] [Nonempty β] [Nonempty γ]
-    {g : Graph (β → γ)} (hsimple : g.IsSimple) (hg : g.edges ≠ []) (N : ℕ)
+    {g : Graph (β → γ)} (hpar : g.NoParallelEdges) (hg : g.edges ≠ []) (N : ℕ)
     (hN : ∀ d ∈ g.edges, d.src < N ∧ d.dst < N) (k : ℕ) :
     1 - ((pow k g).toGraph projectionEval).unsatVal ≤ ((game g hg N hN).pow k).value := by
   classical
@@ -338,16 +386,17 @@ theorem one_sub_unsatVal_pow_le_value_pow [Finite β] [Finite γ] [Nonempty β] 
     TwoProverGame.pow, game]
   intro i d hd hsrc hdst
   obtain ⟨j, rfl⟩ := List.get_of_mem hd
-  obtain rfl : j = t i := hsimple.eq_of_src_eq_of_dst_eq hsrc hdst
+  obtain rfl : j = t i := hpar.eq_of_src_eq_of_dst_eq hsrc hdst
   exact congrFun (of_decide_eq_true hsat) i
 
-/-- **Parallel repetition for simple Label Cover** [Raz1998], with Holenstein's bound
-[Holenstein, Theorem 2.5][Holenstein2009]: if every labelling of a simple instance `g` violates at
-least the proportion `ε` of its edges, then every labelling of its `k`-fold repetition satisfies at
-most the proportion `(1 - ε³ / 6000)^{k / log₂ (|β| |γ|)}` of the edges. The constants are explicit
-but astronomically large. Instances with parallel edges are not covered. -/
+/-- **Parallel repetition for Label Cover without parallel edges** [Raz1998], with Holenstein's
+bound [Holenstein, Theorem 2.5][Holenstein2009]: if every labelling of an instance `g` without
+parallel edges violates at least the proportion `ε` of its edges, then every labelling of its
+`k`-fold repetition satisfies at most the proportion `(1 - ε³ / 6000)^{k / log₂ (|β| |γ|)}` of the
+edges. The constants are explicit but astronomically large. Instances with parallel edges are not
+covered by this proof route. -/
 theorem one_sub_unsatVal_pow_le [Fintype β] [Fintype γ] {g : Graph (β → γ)}
-    (hsimple : g.IsSimple) (hβγ : 2 ≤ Fintype.card β * Fintype.card γ) {ε : ℝ}
+    (hpar : g.NoParallelEdges) (hβγ : 2 ≤ Fintype.card β * Fintype.card γ) {ε : ℝ}
     (hε : ε ≤ (g.toGraph projectionEval).unsatVal) (k : ℕ) :
     1 - ((pow k g).toGraph projectionEval).unsatVal ≤
       (1 - ε ^ 3 / 6000) ^ ((k : ℝ) / Real.logb 2 (Fintype.card β * Fintype.card γ)) := by
@@ -363,7 +412,7 @@ theorem one_sub_unsatVal_pow_le [Fintype β] [Fintype γ] {g : Graph (β → γ)
     linarith [((pow k g).toGraph projectionEval).unsatVal_nonneg]
   obtain ⟨N, hN⟩ := g.exists_endpoint_bound
   have hv : (game g hg N hN).value ≤ 1 - ε := (value_game_le g hg N hN).trans (by linarith)
-  exact (one_sub_unsatVal_pow_le_value_pow hsimple hg N hN k).trans
+  exact (one_sub_unsatVal_pow_le_value_pow hpar hg N hN k).trans
     ((game g hg N hN).value_pow_le_of_value_le hβγ hv k)
 
 end Cslib.PCP.Encoded.LabelCoverRepetition

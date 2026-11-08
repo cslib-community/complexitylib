@@ -10,8 +10,9 @@ import Complexity.Computability.PCP.Encoded.Count
 
 /-! # Parallel repetition of Label Cover instances
 
-Concrete simple and non-simple instances, the edge count and numbering of a repetition, perfect
-completeness, and Holenstein's bound for the repetitions of an instance of value `1/2`.
+Concrete instances with and without parallel edges, the edge count, numbering and vertex bound of
+a repetition, perfect completeness, and Holenstein's bound for the repetitions of an instance of
+value `1/2`.
 -/
 
 namespace ComplexityTests.LabelCoverRepetition
@@ -23,18 +24,19 @@ Every labelling satisfies exactly one of the two edges. -/
 def conflict : Graph (Bool → Bool) :=
   ⟨2, [⟨0, 0, fun _ => false⟩, ⟨1, 0, fun _ => true⟩]⟩
 
-example : conflict.IsSimple := by decide
+example : conflict.NoParallelEdges := by decide
 example : conflict.WellFormed := (Graph.isWellFormed_eq_true _).mp (by decide)
 
--- The fixed contradictory instance of the incidence reduction uses two left vertices, so it is
--- simple.
-example : (LabelCoverIncidence.contradiction false true).IsSimple := by decide
+-- The fixed contradictory instance of the incidence reduction uses two left vertices, so it has
+-- no parallel edges.
+example : (LabelCoverIncidence.contradiction false true).NoParallelEdges := by decide
 
 -- Opposite directions between two vertices, and an edge from left `0` to right `0`, are allowed.
-example : (⟨1, [⟨0, 0, id⟩, ⟨0, 1, id⟩, ⟨1, 0, id⟩]⟩ : Graph (Bool → Bool)).IsSimple := by decide
+example : (⟨1, [⟨0, 0, id⟩, ⟨0, 1, id⟩, ⟨1, 0, id⟩]⟩ : Graph (Bool → Bool)).NoParallelEdges := by
+  decide
 
 -- A pair of parallel edges, even with equal projections, is not.
-example : ¬(⟨1, [⟨0, 1, id⟩, ⟨0, 1, id⟩]⟩ : Graph (Bool → Bool)).IsSimple := by decide
+example : ¬(⟨1, [⟨0, 1, id⟩, ⟨0, 1, id⟩]⟩ : Graph (Bool → Bool)).NoParallelEdges := by decide
 
 -- The two-fold repetition has the four pairs of edges, in lexicographic order. A pair `(a, b)` is
 -- numbered `Nat.pair a (Nat.pair b 0)`, so the left ends `(0, 0)`, `(0, 1)`, `(1, 0)`, `(1, 1)` are
@@ -46,6 +48,11 @@ example : (pow 2 conflict).edges.map (fun d => (d.src, d.dst)) =
   decide
 example : (pow 2 conflict).WellFormed :=
   wellFormed_pow 2 ((Graph.isWellFormed_eq_true _).mp (by decide))
+
+-- With two declared vertices, the two-fold repetition declares `Nat.pair 2 (Nat.pair 2 0) + 1 = 39`
+-- vertices, within the bound `(2 + 1) ^ (2 ^ 2) = 81`.
+example : (pow 2 conflict).vertices = 39 := by decide
+example : (pow 2 conflict).vertices ≤ (conflict.vertices + 1) ^ (2 ^ 2) := vertices_pow_le 2 _
 
 -- Every labelling of `conflict` violates exactly half of the edges.
 theorem unsatVal_conflict : (conflict.toGraph projectionEval).unsatVal = 1 / 2 := by

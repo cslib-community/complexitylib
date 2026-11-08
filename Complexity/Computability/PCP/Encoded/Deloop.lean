@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.PCP.Encoded.Simple
+public import Complexity.Computability.PCP.Encoded.ParallelEdges
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
 import Complexity.Computability.PCP.Encoded.Count
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -28,8 +28,8 @@ original graph. So the two graphs have the same value (`unsatVal_deloop`).
 
 Dinur's preprocessing deliberately adds loops, so the hard binary CSP instances of
 `Cslib.Complexity.GapTwoCSP_npHard` are not loopless; loop removal prepares them for the incidence
-construction of Label Cover, whose output is then simple. The construction is a library adaptation
-to the executable graph API.
+construction of Label Cover, whose output then has no parallel edges. The construction is a library
+adaptation to the executable graph API.
 
 ## Main definitions
 

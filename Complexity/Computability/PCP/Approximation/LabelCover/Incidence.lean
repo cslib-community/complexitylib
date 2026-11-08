@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.PCP.Approximation.LabelCover
 public import Complexity.Computability.PCP.Approximation.MaxCSP
-public import Complexity.Computability.PCP.Encoded.Simple
+public import Complexity.Computability.PCP.Encoded.ParallelEdges
 import Complexity.Computability.PCP.Encoded.Count
 import Complexity.Foundations.Data.List.Filter
 import Complexity.Foundations.Data.BitString.Enumeration
@@ -22,9 +22,9 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fi
 Each edge occurrence becomes a left vertex carrying a pair of symbols, and two total projection
 edges check the two endpoint labels. Invalid pair labels retract to a satisfying pair, using a
 fixed exhaustive list. A relation with no satisfying pair instead produces a fixed contradictory
-projection instance. Loops and parallel edges retain their occurrence identities. The output is
-simple (`Cslib.PCP.Encoded.Graph.IsSimple`) whenever the input is loopless
-(`isSimple_reduce`), which parallel repetition requires.
+projection instance. Loops and parallel edges retain their occurrence identities. The output has
+no parallel edges (`Cslib.PCP.Encoded.Graph.NoParallelEdges`) whenever the input is loopless
+(`noParallelEdges_reduce`), which parallel repetition requires.
 
 The construction and factor-two gap bound are original library adaptations to the existing
 executable graph and total-projection APIs. The source hardness theorem is the already-proved
@@ -42,7 +42,8 @@ Cover, which applies parallel repetition after loop removal in
 
 * `Cslib.PCP.Encoded.LabelCoverIncidence.satisfiable_reduce`: perfect completeness.
 * `Cslib.PCP.Encoded.LabelCoverIncidence.half_unsatVal_le_reduce`: the factor-two gap bound.
-* `Cslib.PCP.Encoded.LabelCoverIncidence.isSimple_reduce`: loopless inputs give simple outputs.
+* `Cslib.PCP.Encoded.LabelCoverIncidence.noParallelEdges_reduce`: loopless inputs give outputs
+  without parallel edges.
 * `Cslib.PCP.Encoded.LabelCoverIncidence.isPolyTime_reduce`: native polynomial-time compilation
   under the existing framed graph/table encodings, for a fixed finite alphabet.
 * `Cslib.Complexity.GapLabelCover_npHard`: constant-gap hardness with `128²` left labels and
@@ -103,19 +104,20 @@ theorem length_edges_incidence (pairs : List (α × α)) (fallback : α × α)
 
 /-- Two constant projections to distinct symbols cannot both be satisfied: two left vertices
 `0` and `1` project to the symbols `a` and `b` at the same right vertex `0`. The two edges have
-different left ends, so the instance is simple. -/
+different left ends, so the instance has no parallel edges. -/
 def contradiction (a b : α) : Graph (α × α → α) :=
   ⟨2, [⟨0, 0, fun _ => a⟩, ⟨1, 0, fun _ => b⟩]⟩
 
-/-- The contradictory instance is simple. -/
-theorem isSimple_contradiction (a b : α) : (contradiction a b).IsSimple := by
-  simp [contradiction, Graph.IsSimple]
+/-- The contradictory instance has no parallel edges. -/
+theorem noParallelEdges_contradiction (a b : α) : (contradiction a b).NoParallelEdges := by
+  simp [contradiction, Graph.NoParallelEdges]
 
 /-- Within an occurrence block the two edges have different right ends when the source edge is not
 a loop, and blocks of different occurrences have different left ends. -/
-theorem isSimple_incidence (pairs : List (α × α)) (fallback : α × α)
-    {g : Graph (α → α → Bool)} (hg : g.IsLoopless) : (incidence pairs fallback g).IsSimple := by
-  unfold Graph.IsSimple incidence
+theorem noParallelEdges_incidence (pairs : List (α × α)) (fallback : α × α)
+    {g : Graph (α → α → Bool)} (hg : g.IsLoopless) :
+    (incidence pairs fallback g).NoParallelEdges := by
+  unfold Graph.NoParallelEdges incidence
   simp only [List.map_flatMap]
   refine List.nodup_flatMap.mpr ⟨fun p hp => ?_, ?_⟩
   · have h := hg p.1 (List.fst_mem_of_mem_zipIdx hp)
@@ -132,13 +134,14 @@ def reduce (pairs : List (α × α)) (a b : α) (g : Graph (α → α → Bool))
     contradiction a b
   else incidence pairs (a, a) g
 
-/-- **The reduction of a loopless binary constraint graph is a simple Label Cover instance.** -/
-theorem isSimple_reduce (pairs : List (α × α)) (a b : α) {g : Graph (α → α → Bool)}
-    (hg : g.IsLoopless) : (reduce pairs a b g).IsSimple := by
+/-- **The reduction of a loopless binary constraint graph is a Label Cover instance without
+parallel edges.** -/
+theorem noParallelEdges_reduce (pairs : List (α × α)) (a b : α) {g : Graph (α → α → Bool)}
+    (hg : g.IsLoopless) : (reduce pairs a b g).NoParallelEdges := by
   unfold reduce
   split
-  · exact isSimple_contradiction a b
-  · exact isSimple_incidence pairs (a, a) hg
+  · exact noParallelEdges_contradiction a b
+  · exact noParallelEdges_incidence pairs (a, a) hg
 
 variable [DecidableEq α]
 

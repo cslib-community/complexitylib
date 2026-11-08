@@ -8,9 +8,8 @@ import Complexity.Computability.PCP.Approximation.LabelCover.SmallSoundness
 
 /-! # Small-soundness Label Cover
 
-Loop removal on a concrete loop, the failure of simplicity for the incidence reduction of a loop
-and its repair by loop removal, and the hardness statements, including a check that their
-no-instances are nonempty. -/
+Loop removal on a concrete loop, the parallel edges of the incidence reduction of a loop and their
+removal by loop removal, the edges of a repetition, and the hardness statements. -/
 
 namespace ComplexityTests.LabelCoverSmallSoundness
 
@@ -40,17 +39,27 @@ example : (Graph.deloop loopy).edges.map (fun d => d.constraint true false) = [f
 example : ((Graph.deloop loopy).toGraph id).unsatVal = (loopy.toGraph id).unsatVal :=
   Graph.unsatVal_deloop loopy
 
--- The incidence projections of a loop join the same left and right vertices twice, so they are not
--- simple; after loop removal they are.
-example : ¬(LabelCoverIncidence.reduce pairs false true loopy).IsSimple := by decide
-example : (LabelCoverIncidence.reduce pairs false true (Graph.deloop loopy)).IsSimple := by decide
-example : (LabelCoverIncidence.reduce pairs false true (Graph.deloop loopy)).IsSimple :=
-  LabelCoverIncidence.isSimple_reduce pairs false true (Graph.isLoopless_deloop loopy)
+-- The incidence projections of a loop join the same left and right vertices twice, so they are
+-- parallel edges; after loop removal there are none.
+example : ¬(LabelCoverIncidence.reduce pairs false true loopy).NoParallelEdges := by decide
+example : (LabelCoverIncidence.reduce pairs false true (Graph.deloop loopy)).NoParallelEdges := by
+  decide
+example : (LabelCoverIncidence.reduce pairs false true (Graph.deloop loopy)).NoParallelEdges :=
+  LabelCoverIncidence.noParallelEdges_reduce pairs false true (Graph.isLoopless_deloop loopy)
 
--- The edges of the `(k + 1)`-fold repetition prepend each edge to each repeated edge.
+-- The three-fold repetition of the two-edge contradiction instance has `2 ^ 3` edges.
 example : (LabelCoverRepetition.pow 3 (LabelCoverIncidence.contradiction false true)).edges.length =
     8 := by
   simp [LabelCoverIncidence.contradiction]
+
+-- The edges of the `(k + 1)`-fold repetition prepend each edge to each repeated edge. The left ends
+-- of the contradiction instance are `0`, `1`; those of its one-fold repetition are
+-- `Nat.pair 0 0 = 0` and `Nat.pair 1 0 = 2`. Prepending gives `Nat.pair 0 0 = 0`,
+-- `Nat.pair 0 2 = 4`, `Nat.pair 1 0 = 2` and `Nat.pair 1 2 = 5`.
+example : (LabelCoverRepetition.pow 2 (LabelCoverIncidence.contradiction false true)).edges.map
+    (fun d => d.src) = [0, 4, 2, 5] := by
+  rw [LabelCoverRepetition.edges_pow_succ]
+  decide
 
 -- The hardness at soundness `(1 - 2⁻¹⁸⁶ / 6000)^{k / 21}`, for one round.
 example : PromiseProblem.NPHard
