@@ -19,9 +19,9 @@ then uses `CloseTo.map`.
 
 ## Main results
 
-* `Cslib.Interactive.CloseTo.iid`: independent product distributions.
-* `Cslib.Interactive.CloseTo.iid_replicate`: ideal independent draws versus repeated programs.
-* `Cslib.Interactive.CloseTo.eval_replicate`: repeated probabilistic programs.
+* `Cslib.Probability.CloseTo.iid`: independent product distributions.
+* `Cslib.Probability.CloseTo.iid_replicate`: ideal independent draws versus repeated programs.
+* `Cslib.Probability.CloseTo.eval_replicate`: repeated probabilistic programs.
 -/
 
 public section

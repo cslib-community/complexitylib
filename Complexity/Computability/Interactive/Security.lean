@@ -46,20 +46,12 @@ PPT simulator over an indexed family of reductions.
 
 ## Main definitions
 
-* `Interactive.language`, `Interactive.Accept`, `Interactive.CloseTo`.
+* `Interactive.language`, `Interactive.Accept`.
 * `Interactive.Reduction.Complete`, `Interactive.Verifier.Sound`,
   `Interactive.Verifier.KnowledgeSound`.
 * `Interactive.Prefix`, `Interactive.Prefix.empty`, `Interactive.PerChallenge.sum`,
   `Interactive.RbrFrom`, `Interactive.Verifier.outputOn`, `Interactive.Verifier.RbrSound`.
 * `Interactive.Reduction.HVZK`.
-
-## Main results
-
-* `Interactive.CloseTo.refl`, `Interactive.CloseTo.mono`, `Interactive.CloseTo.symm`,
-  `Interactive.CloseTo.map`, `Interactive.CloseTo.trans`: equivalence-like and postprocessing laws
-  for all-events statistical distance.
-* `Interactive.CloseTo.bind_left`, `Interactive.CloseTo.bind_right`, `Interactive.CloseTo.bind`:
-  data processing across randomized continuations without finiteness assumptions.
 
 ## References
 
