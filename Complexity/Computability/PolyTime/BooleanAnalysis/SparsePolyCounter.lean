@@ -171,7 +171,7 @@ end BranchEvalInput
 def encBranchEvalInput : BranchEvalInput ↪ List Bool :=
   let encQuad := encPair encNat (encPair encNat (encPair encNat encNat))
   encPair (encPair encUnary encUnary)
-    (encPair encQuad (encPair encQuad (encList (encList (encList encNat)))))
+    (encPair encQuad (encPair encQuad encSparseSystem))
 
 namespace BranchEvalInput
 
@@ -306,7 +306,7 @@ abbrev branchInputEquations (inp : HeavyBranchFold.BranchInput) : List (List (Li
 /-- Native encoding of `SparseSystemInput` (`n` and `k_deg` unary, `s_div` and `b₀` binary). -/
 def encSparseSystemInput : SparseSystemInput ↪ List Bool :=
   encPair encUnary
-    (encPair (encPair encUnary (encPair encNat encNat)) (encList (encList (encList encNat))))
+    (encPair (encPair encUnary (encPair encNat encNat)) encSparseSystem)
 
 /-- Construct the canonical §5.5 `SparseSystemInput` `(n, (k_deg, s_div, b₀), eqs)` (p. 38). -/
 def mkPaperSparseInput (n k_deg : ℕ) (eqs : List (List (List ℕ))) : SparseSystemInput :=
