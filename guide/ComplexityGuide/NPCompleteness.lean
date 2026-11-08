@@ -38,6 +38,7 @@ import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -67,6 +68,7 @@ import Complexity.Computability.Complexity.Problems.Clique
 import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -713,3 +715,32 @@ parallel edges, all face orbits including fixed points, and cyclic vertex orders
 {name}`Cslib.Complexity.CSP.RespectsArgumentOrder` requires the constraint-side
 rotation to follow the scope's cyclic order. This rotation structure imposes no
 genus-zero condition and supplies no planarity recognizer or solver.
+
+
+# Delta-Matroid Closure for Local Contraction
+
+{name}`Cslib.BitString.IsDeltaMatroid.comp` and
+{name}`Cslib.BitString.IsEvenDeltaMatroid.comp` prove relational composition
+along finite shared coordinates. They require a nonempty output: nonempty input
+relations can disagree on the shared values. The proofs use the one-sided
+exchange axiom and permit empty external coordinate types.
+
+For the actual guarded table operation,
+{name}`Cslib.Logic.PL.CSP.Table.isEvenDeltaMatroid_contract` supplies the
+mathematical invariant used by blossom contraction. A feasible reference and
+distinct in-range internal positions are enough; the reference witnesses output
+nonemptiness internally:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP in
+example {table : Table} {reference : List Bool} {positions : List ℕ}
+    (hR : IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem table))
+    (hc : Table.canContract table reference positions = true) :
+    IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem
+      (Table.contract table reference positions)) :=
+  Table.isEvenDeltaMatroid_contract hR hc
+```
+
+The new connector's exactly-one relation is even for every nonempty scope,
+with odd common parity. Empty scopes are excluded. These local mathematical
+closures do not prove whole-blossom lifting, the edge solver, or its native cost.
