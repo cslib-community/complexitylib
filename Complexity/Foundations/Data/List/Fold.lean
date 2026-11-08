@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, Data/List/GetD or Data/List/Basic)
 
 public import Complexity.Init
 public import Mathlib.Data.List.Basic

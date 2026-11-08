@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (tidy branch Encodings, beside Option/Pair/List)
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Nat

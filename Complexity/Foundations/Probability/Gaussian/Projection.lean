@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, beside lattice Gaussian convolution)
 
 public import Complexity.Foundations.Probability.Gaussian.Convolution
 public import Complexity.Foundations.Probability.Gaussian.Standard

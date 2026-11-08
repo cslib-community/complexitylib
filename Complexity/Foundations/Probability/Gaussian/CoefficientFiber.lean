@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, discrete-Gaussian fibers)
 
 public import Complexity.Foundations.Algebra.Module.ZLattice.CoefficientFiber
 public import Complexity.Foundations.Probability.Gaussian.Discrete

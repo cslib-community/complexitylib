@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (consider merging into Circuit/Program)
 
 public import Complexity.Computability.Circuit.Formula
 public import Complexity.Computability.Circuit.MapLines

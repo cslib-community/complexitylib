@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (consider merging into Circuit/Encoding)
 
 public import Complexity.Computability.Circuit.Boolean.Encoding
 public import Complexity.Computability.Circuit.MapOp

@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (after crei/tidy-universal lands)
+-- upstream: candidate (tidy branch Encodings/List, after crei/tidy-universal lands)
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 

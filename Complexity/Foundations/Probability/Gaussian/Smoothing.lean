@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, beside the lattice Gaussian Poisson API)
 
 public import Complexity.Foundations.Probability.Gaussian.ShiftBounds
 public import Complexity.Foundations.Probability.Gaussian.CenteredTail

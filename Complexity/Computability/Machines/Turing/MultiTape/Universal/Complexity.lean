@@ -627,6 +627,8 @@ public abbrev Ctx.input (c : Ctx) : List ℕ := c.1.2
 /-- The configuration of a context. -/
 public abbrev Ctx.cfg (c : Ctx) : SCfg := c.2
 
+-- vendored: the separate description-lookup and input-scanning terms are a local refinement
+-- (complexitylib #1586); keep them when resynchronizing.
 /-- The step bound separates linear configuration passes from a streaming input lookup with
 binary countdown arithmetic. In particular, the whole configuration length is never squared. -/
 @[expose] public def stepTime (c : Ctx) : ℕ :=

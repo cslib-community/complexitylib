@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, basis-coordinate lattice fibers)
 
 public import Complexity.Init
 public import Mathlib.Algebra.Module.Submodule.Pointwise

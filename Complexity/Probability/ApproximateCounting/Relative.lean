@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (natural-number root lemmas to Mathlib)
 
 public import Complexity.Probability.ApproximateCounting
 public import Mathlib.Data.Nat.NthRoot.Defs
