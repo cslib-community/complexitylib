@@ -130,7 +130,7 @@ theorem exists_forall_refutableInSpace_le :
       φ.length ≤ 2 ^ 120 * n ∧ (∀ c ∈ φ, c.width ≤ 120) ∧ ¬ φ.Satisfiable ∧
       ∀ s, φ.RefutableInSpace s → n ≤ 36000 * s := by
   intro n hn
-  obtain ⟨m, hm, ends, χ, hdeg, hG, he, hlen, hw, hunsat⟩ :=
+  obtain ⟨m, hm, ends, χ, hdeg, hG, he, hlen, -, hw, hunsat⟩ :=
     Tseitin.exists_expander_tseitinFormula n (by omega)
   refine ⟨m, hm, tseitinFormula ends χ, hlen, hw, hunsat, fun s hs => ?_⟩
   have he' : n ≤ 18000 * Multigraph.minBalancedCut ends := by
