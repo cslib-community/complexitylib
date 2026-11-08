@@ -17,7 +17,9 @@ public import Complexity.Logics.Propositional.Resolution.Space
 formula of clauses of width at most `k` that is refutable in clause space `s` is refutable in width
 `s + k - 3` (`Cslib.Logic.PL.CNF.RefutableInSpace.refutableInWidth`). The exact constant
 `s + k - 3` is that of [Filmus, Lauria, Mikša, Nordström and Vinyals,
-Theorem 1][FilmusLauriaMiksaNordstromVinyals2014], whose statement we follow:
+Theorem 1][FilmusLauriaMiksaNordstromVinyals2014], whose statement we follow. They state it as a
+result of Atserias and Dalmau, labelling it "Theorem 1 ([2])" with [2] the journal version of
+Atserias and Dalmau's paper:
 
 > Let F be a k-CNF formula and let π : F ⊢ ⊥ be a resolution refutation in space Sp(π) = s. Then
 > there is a resolution refutation π′ of F in width W(π′) ≤ s + k − 3.
@@ -43,10 +45,10 @@ keep one assignment satisfying the whole configuration; asking only for sets of 
 clauses saves one in the width bound and gives the constant of Filmus et al. The constant stated in
 Atserias and Dalmau's Theorem 3 may be weaker and is not quoted or claimed here.
 
-If `φ` has no refutation of width `w` and its clauses have width at most `w`, Duplicator wins with
-`w + 1` pebbles [Atserias and Dalmau, Lemma 2][AtseriasDalmau2008]
+If `φ` has no refutation of width `w` and no clause of width `w + 1`, Duplicator wins with `w + 1`
+pebbles [Atserias and Dalmau, Lemma 2][AtseriasDalmau2008]
 (`Cslib.Logic.PL.CNF.DuplicatorStrategy.ofNotRefutableInWidth`), which gives `add_four_le`; if some
-clause is wider than `w`, then `w < k` and the bound `3 ≤ s` suffices.
+clause has width `w + 1`, then `w < k` and the bound `3 ≤ s` suffices.
 
 ## Main results
 
@@ -82,25 +84,6 @@ and true under `σ`. -/
 private def Satisfies (σ : V → Bool) (d : Finset V) (c : Clause V) : Prop :=
   ∃ l ∈ c, l.1 ∈ d ∧ σ l.1 = l.2
 
-/-- **Extension to a set of variables**: a position of a `p`-pebble strategy on `d` extends to a
-position on `d ∪ e` agreeing with it on `d`, provided `|d| + |e| ≤ p`. -/
-private theorem DuplicatorStrategy.extendSet {p : ℕ} (S : DuplicatorStrategy φ p) {σ : V → Bool}
-    {d : Finset V} (hσ : S.Mem σ d) (e : Finset V) (hde : d.card + e.card ≤ p) :
-    ∃ σ', S.Mem σ' (d ∪ e) ∧ ∀ x ∈ d, σ' x = σ x := by
-  induction e using Finset.induction_on with
-  | empty => exact ⟨σ, by simpa using hσ, fun _ _ => rfl⟩
-  | @insert x e hxe ih =>
-    rw [Finset.card_insert_of_notMem hxe] at hde
-    obtain ⟨σ', hσ', hag⟩ := ih (by omega)
-    by_cases hx : x ∈ d ∪ e
-    · refine ⟨σ', ?_, hag⟩
-      rwa [Finset.union_insert, Finset.insert_eq_of_mem hx]
-    · have hcard : (d ∪ e).card < p :=
-        lt_of_le_of_lt (Finset.card_union_le _ _) (by omega)
-      obtain ⟨τ, hτ, hτm⟩ := S.extend hσ' hcard x
-      exact ⟨τ, by rwa [Finset.union_insert], fun y hy =>
-        (hτ y (Finset.mem_union_left _ hy)).trans (hag y hy)⟩
-
 /-- **Satisfying a clause of the formula**: a position of a `p`-pebble strategy on `d` extends to
 a position satisfying a clause `A ∈ φ` and agreeing with it on `d`, provided
 `|d| + width A ≤ p`. -/
@@ -108,7 +91,7 @@ private theorem DuplicatorStrategy.exists_satisfies {p : ℕ} (S : DuplicatorStr
     {σ : V → Bool} {d : Finset V} (hσ : S.Mem σ d) {A : Clause V} (hA : A ∈ φ)
     (hdA : d.card + A.width ≤ p) :
     ∃ σ' d', S.Mem σ' d' ∧ d ⊆ d' ∧ (∀ x ∈ d, σ' x = σ x) ∧ Satisfies σ' d' A := by
-  obtain ⟨σ', hσ', hag⟩ := S.extendSet hσ (A.toFinset.image Prod.fst)
+  obtain ⟨σ', hσ', hag⟩ := S.exists_extend_union hσ (A.toFinset.image Prod.fst)
     ((Nat.add_le_add_left Finset.card_image_le _).trans hdA)
   refine ⟨σ', _, hσ', Finset.subset_union_left, hag, ?_⟩
   by_contra hns
@@ -269,9 +252,9 @@ namespace RefutableInSpace
 `k` has no refutation of width `w`, its refutations need clause space at least `w + 4 - k`. -/
 theorem add_four_le {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (hw : ¬ φ.RefutableInWidth w)
     (h : φ.RefutableInSpace s) : w + 4 ≤ s + k := by
-  by_cases hkw : ∀ c ∈ φ, c.width ≤ w
+  by_cases hkw : ∀ c ∈ φ, c.width ≠ w + 1
   · exact (DuplicatorStrategy.ofNotRefutableInWidth hkw hw).add_three_le hk h
-  -- otherwise some clause is wider than `w`, so `w < k`
+  -- otherwise some clause has width `w + 1`, so `w < k`
   push Not at hkw
   obtain ⟨c, hc, hcw⟩ := hkw
   have hφ : [] ∉ φ := fun hφ => hw ((refutableInWidth_zero_of_nil_mem hφ).mono (Nat.zero_le _))

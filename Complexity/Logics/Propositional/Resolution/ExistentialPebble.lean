@@ -32,20 +32,20 @@ restricts to the at most `w` variables of the resolvent and extends to the resol
 the extension falsifies one of the two premises. Since the strategy is nonempty and every position
 falsifies the empty clause, the proof is not a refutation.
 
-Conversely, if every clause of `φ` has width at most `w` and `φ` has no refutation of width `w`,
-then Duplicator wins with `w + 1` pebbles
+Conversely, if `φ` has no clause of width exactly `w + 1` and no refutation of width `w`, then
+Duplicator wins with `w + 1` pebbles
 (`Cslib.Logic.PL.CNF.DuplicatorStrategy.ofNotRefutableInWidth`, their Lemma 2). The positions are
 the partial assignments on at most `w + 1` variables that falsify no clause derivable within width
 `w`. The empty assignment is one of them. A position on at most `w` variables extends to any
 further variable, since if both extensions falsified derivable clauses, their resolvent would be a
-derivable clause of width at most `w` falsified by the position. The clauses of `φ` are derivable
-within width `w`, so no position falsifies them. Together, for formulas whose clauses have width at
-most `w`, Duplicator wins with `w + 1` pebbles exactly when there is no refutation of width `w`
-(`Cslib.Logic.PL.CNF.DuplicatorStrategy.nonempty_iff_not_refutableInWidth`, their Theorem 2). The
-hypothesis on the width of the clauses of `φ` is needed for the converse: `(x₀ ∨ x₁ ∨ x₂) ∧ ¬x₀ ∧
-¬x₁ ∧ ¬x₂` has no refutation of width `2`, but Spoiler wins with `3` pebbles. Duplicator strategies
-also give clause-space lower bounds, in
-`Complexity.Logics.Propositional.Resolution.SpaceWidth`.
+derivable clause of width at most `w` falsified by the position. The clauses of `φ` of width at
+most `w` are derivable within width `w`, and those of width more than `w + 1` cannot be falsified on
+at most `w + 1` variables, so no position falsifies a clause of `φ`. Together, for formulas without
+clauses of width `w + 1`, Duplicator wins with `w + 1` pebbles exactly when there is no refutation
+of width `w` (`Cslib.Logic.PL.CNF.DuplicatorStrategy.nonempty_iff_not_refutableInWidth`, their
+Theorem 2). Clauses of width `w + 1` must be excluded: `(x₀ ∨ x₁ ∨ x₂) ∧ ¬x₀ ∧ ¬x₁ ∧ ¬x₂` has no
+refutation of width `2`, but Spoiler wins with `3` pebbles. Duplicator strategies also give
+clause-space lower bounds, in `Complexity.Logics.Propositional.Resolution.SpaceWidth`.
 
 The mathematical symbols of the available copy of Atserias and Dalmau's paper do not extract, so
 neither the side conditions nor the pebble counts of their statements are quoted. The statements
@@ -59,16 +59,18 @@ here are ours, with the off-by-one conventions of the library's
 * `Cslib.Logic.PL.CNF.DuplicatorStrategy`: a winning strategy for Duplicator in the Boolean
   existential `k`-pebble game.
 * `Cslib.Logic.PL.CNF.DuplicatorStrategy.ofNotRefutableInWidth`: the strategy with `w + 1` pebbles
-  on a formula of clauses of width at most `w` without refutations of width `w`.
+  on a formula without clauses of width `w + 1` and without refutations of width `w`.
 
 ## Main results
 
+* `Cslib.Logic.PL.CNF.DuplicatorStrategy.exists_extend_union`: a position extends to further
+  variables, up to the number of pebbles.
 * `Cslib.Logic.PL.CNF.DuplicatorStrategy.not_falsifies_of_isProof`: no position falsifies a line of
   a proof of width `w`, for `w + 1` pebbles.
 * `Cslib.Logic.PL.CNF.DuplicatorStrategy.not_refutableInWidth`: **a Duplicator strategy with
   `w + 1` pebbles rules out refutations of width `w`**.
 * `Cslib.Logic.PL.CNF.DuplicatorStrategy.nonempty_iff_not_refutableInWidth`: **the existential
-  pebble game characterizes width**, for formulas of clauses of width at most `w`.
+  pebble game characterizes width**, for formulas without clauses of width `w + 1`.
 
 ## References
 
@@ -122,6 +124,25 @@ structure DuplicatorStrategy [DecidableEq V] (φ : CNF V) (k : ℕ) where
 namespace DuplicatorStrategy
 
 variable [DecidableEq V] {φ : CNF V} {w : ℕ}
+
+/-- **Extension to a set of variables**: a position of a `k`-pebble strategy on `d` extends to a
+position on `d ∪ e` agreeing with it on `d`, provided `|d| + |e| ≤ k`. -/
+theorem exists_extend_union {k : ℕ} (S : DuplicatorStrategy φ k) {σ : V → Bool} {d : Finset V}
+    (hσ : S.Mem σ d) (e : Finset V) (hde : #d + #e ≤ k) :
+    ∃ σ', S.Mem σ' (d ∪ e) ∧ ∀ x ∈ d, σ' x = σ x := by
+  induction e using Finset.induction_on with
+  | empty => exact ⟨σ, by simpa using hσ, fun _ _ => rfl⟩
+  | @insert x e hxe ih =>
+    rw [Finset.card_insert_of_notMem hxe] at hde
+    obtain ⟨σ', hσ', hag⟩ := ih (by omega)
+    by_cases hx : x ∈ d ∪ e
+    · refine ⟨σ', ?_, hag⟩
+      rwa [Finset.union_insert, Finset.insert_eq_of_mem hx]
+    · have hcard : #(d ∪ e) < k :=
+        lt_of_le_of_lt (Finset.card_union_le _ _) (by omega)
+      obtain ⟨τ, hτ, hτm⟩ := S.extend hσ' hcard x
+      exact ⟨τ, by rwa [Finset.union_insert], fun y hy =>
+        (hτ y (Finset.mem_union_left _ hy)).trans (hag y hy)⟩
 
 /-- **No position falsifies a line of a narrow proof** [Atserias and Dalmau, Lemma 3]
 [AtseriasDalmau2008]: for a strategy with `w + 1` pebbles, no position falsifies a line of a proof
@@ -253,14 +274,16 @@ private theorem Good.extend {σ : V → Bool} {d : Finset V} (h : Good φ w σ d
     exacts [hw₀ c hc, hw₁ c hc]
 
 /-- **A Duplicator strategy from the absence of narrow refutations** [Atserias and Dalmau,
-Lemma 2][AtseriasDalmau2008]: if every clause of `φ` has width at most `w` and `φ` has no
-refutation of width `w`, then Duplicator wins the existential `(w + 1)`-pebble game. The positions
-are the partial assignments on at most `w + 1` variables that falsify no clause derivable from `φ`
-within width `w`.
+Lemma 2][AtseriasDalmau2008]: if `φ` has no clause of width exactly `w + 1` and no refutation of
+width `w`, then Duplicator wins the existential `(w + 1)`-pebble game. The positions are the partial
+assignments on at most `w + 1` variables that falsify no clause derivable from `φ` within width
+`w`. Clauses of width more than `w + 1` play no role, since they cannot be falsified on at most
+`w + 1` variables.
 
-The hypothesis on the clauses of `φ` is needed: `(x₀ ∨ x₁ ∨ x₂) ∧ ¬x₀ ∧ ¬x₁ ∧ ¬x₂` has no
-refutation of width `2`, but Spoiler wins with `3` pebbles by pebbling `x₀`, `x₁` and `x₂`. -/
-def ofNotRefutableInWidth (hk : ∀ c ∈ φ, c.width ≤ w) (h : ¬ φ.RefutableInWidth w) :
+Clauses of width `w + 1` must be excluded: `(x₀ ∨ x₁ ∨ x₂) ∧ ¬x₀ ∧ ¬x₁ ∧ ¬x₂` has no refutation of
+width `2`, but Spoiler wins with `3` pebbles by pebbling `x₀`, `x₁` and `x₂`. From a bound
+`hk : ∀ c ∈ φ, c.width ≤ w`, the hypothesis is `fun c hc => (Nat.lt_succ_of_le (hk c hc)).ne`. -/
+def ofNotRefutableInWidth (hk : ∀ c ∈ φ, c.width ≠ w + 1) (h : ¬ φ.RefutableInWidth w) :
     DuplicatorStrategy φ (w + 1) where
   Mem σ d := #d ≤ w + 1 ∧ Good φ w σ d
   nonempty := ⟨fun _ => false, ∅, by simp, good_empty h _⟩
@@ -276,13 +299,16 @@ def ofNotRefutableInWidth (hk : ∀ c ∈ φ, c.width ≤ w) (h : ¬ φ.Refutabl
         exact hv hx
       · rw [Finset.card_insert_of_notMem hv]
         exact hd
-  not_falsifies h c hc :=
-    h.2 c ⟨[c], IsProof.nil.mem hc, List.mem_singleton_self _, by simpa using hk c hc⟩
+  not_falsifies h c hc hf := by
+    -- a falsified clause has width at most `w + 1`, so at most `w`
+    have hcw : c.width ≤ w :=
+      Nat.le_of_lt_succ (lt_of_le_of_ne ((width_le_of_falsifies hf).trans h.1) (hk c hc))
+    exact h.2 c ⟨[c], IsProof.nil.mem hc, List.mem_singleton_self _, by simpa using hcw⟩ hf
 
 /-- **The existential pebble game characterizes width** [Atserias and Dalmau,
-Theorem 2][AtseriasDalmau2008]: for a formula whose clauses have width at most `w`, Duplicator wins
+Theorem 2][AtseriasDalmau2008]: for a formula without clauses of width `w + 1`, Duplicator wins
 the existential `(w + 1)`-pebble game exactly when there is no refutation of width `w`. -/
-theorem nonempty_iff_not_refutableInWidth (hk : ∀ c ∈ φ, c.width ≤ w) :
+theorem nonempty_iff_not_refutableInWidth (hk : ∀ c ∈ φ, c.width ≠ w + 1) :
     Nonempty (DuplicatorStrategy φ (w + 1)) ↔ ¬ φ.RefutableInWidth w :=
   ⟨fun ⟨S⟩ => S.not_refutableInWidth, fun h => ⟨ofNotRefutableInWidth hk h⟩⟩
 
