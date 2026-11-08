@@ -1456,7 +1456,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
   samplers and native realizations of the AMS sketches and the Count-Sketch; turnstile updates as
-  stream items (the Count-Sketch row analysis already allows real weights), merging of Misra–Gries
+  stream items (the Count-Sketch row analysis already allows real weights; the tug-of-war join
+  signature, [#3551](https://github.com/cslib-community/complexitylib/issues/3551), is insert-only
+  and needs them for the deletions of Alon–Gibbons–Matias–Szegedy), the signature-size lower bound
+  for join sizes (Alon–Gibbons–Matias–Szegedy Theorem 4.3), merging of Misra–Gries
   summaries, heavy-hitter recovery over the whole universe (dyadic or group-testing schemes) and
   space lower bounds for heavy hitters; multi-pass communication-to-streaming transfers with pass
   counts.
