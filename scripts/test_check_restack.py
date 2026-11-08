@@ -28,6 +28,14 @@ GIT_ENV = {
     "GIT_CONFIG_NOSYSTEM": "1",
 }
 
+def entry(key: str) -> str:
+    return f"@article{{{key},\n  author = {{A}},\n  title  = {{T}}\n}}"
+
+
+def bib(*entries: str) -> str:
+    return "\n\n".join(entries) + "\n"
+
+
 AGGREGATE = "-- generated\n\nimport A\nimport C\nimport E\n"
 LIB = "namespace Foo\ndef x := 1\nend Foo\n\nnamespace Bar\ndef y := 2\nend Bar\n"
 
@@ -243,16 +251,90 @@ class RestackTests(unittest.TestCase):
         code, out = self.check(approved, new)
         self.assertEqual(code, 1, out)
 
-    def test_merge_attributes_in_info_are_refused(self) -> None:
+    def test_attributes_in_info_are_refused(self) -> None:
         approved = self.feature()
         self.on_main({"Other.lean": "def o := 0\n"})
         new = self.merge_main()
         info = self.root / ".git" / "info"
         info.mkdir(exist_ok=True)
-        (info / "attributes").write_text("*.lean merge=union\n")
+        for line in ("*.lean merge=union\n", "*.lean binary\n"):
+            (info / "attributes").write_text(f"# local\n{line}")
+            code, out = self.check(approved, new)
+            self.assertEqual(code, 2, out)
+            self.assertIn("sets attributes", out)
+
+    def test_configured_driver_named_by_tracked_attributes_cannot_hide_a_resolution(self) -> None:
+        self.on_main({".gitattributes": "Complexity.lean merge=union\n*.txt merge=keep\n",
+                      "notes.txt": "a\nb\nc\n"})
+        approved = self.feature({"notes.txt": "a\nB\nc\n"})
+        self.on_main({"notes.txt": "a\nb\nc\nd\n"})
+        # The author keeps `main`'s version, dropping the approved edit; a driver that keeps the
+        # current side would replay to the same tree.
+        new = self.merge_main({"notes.txt": "a\nb\nc\nd\n"})
+        self.git("config", "merge.keep.driver", "true")
         code, out = self.check(approved, new)
-        self.assertEqual(code, 2, out)
-        self.assertIn("merge attributes", out)
+        self.assertEqual(code, 1, out)
+        self.assertIn("notes.txt", out)
+
+    def test_merge_default_cannot_select_a_union_merge(self) -> None:
+        approved = self.feature({"Lib.lean": LIB.replace("def y := 2", "def y := 20")})
+        self.on_main({"Lib.lean": LIB.replace("def y := 2", "def y := 3")})
+        both = LIB.replace("def y := 2", "def y := 3\ndef y := 20")
+        new = self.merge_main({"Lib.lean": both})
+        self.git("config", "merge.default", "union")
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Lib.lean", out)
+
+    def test_replace_objects_cannot_substitute_the_new_head(self) -> None:
+        approved = self.feature()
+        self.on_main({"Other.lean": "def o := 0\n"})
+        honest = self.merge_main()
+        self.git("checkout", "-q", "-b", "dishonest", "main")
+        self.git("merge", "-q", "--no-ff", "--no-edit", "feature")
+        dishonest = self.commit("edit", {"B.lean": "theorem b : True := by sorry\n"})
+        self.git("replace", dishonest, honest)
+        code, out = self.check(approved, dishonest)
+        self.assertEqual(code, 1, out)
+        self.assertIn("B.lean", out)
+
+    # The bibliography merges entry by entry, as `scripts/resolve_bib_conflict.py` does.
+
+    def bib_conflict(self) -> str:
+        """A PR adding `Kappa2001` approved, and `main` adding `Beta2001` in the same gap."""
+        self.on_main({".gitattributes": "Complexity.lean merge=union\nreferences.bib merge=bibkeys\n",
+                      "references.bib": bib(entry("Alpha2000"), entry("Zeta2000"))})
+        approved = self.feature({"references.bib": bib(entry("Alpha2000"), entry("Kappa2001"),
+                                                       entry("Zeta2000"))})
+        self.on_main({"references.bib": bib(entry("Alpha2000"), entry("Beta2001"),
+                                            entry("Zeta2000"))})
+        return approved
+
+    def test_bib_merge_written_by_the_resolver_passes(self) -> None:
+        approved = self.bib_conflict()
+        resolver = subprocess.run([sys.executable, str(ROOT / "scripts" / "resolve_bib_conflict.py"),
+                                   "feature", "main"], cwd=self.root, capture_output=True,
+                                  text=True, env=GIT_ENV)
+        self.assertEqual(resolver.returncode, 0, resolver.stderr)
+        code, out = self.check(approved, resolver.stdout.strip())
+        self.assertEqual(code, 0, out)
+
+    def test_bib_merge_dropping_a_pr_entry_is_reported(self) -> None:
+        approved = self.bib_conflict()
+        new = self.merge_main({"references.bib": bib(entry("Alpha2000"), entry("Beta2001"),
+                                                     entry("Zeta2000"))})
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+        self.assertIn("references.bib", out)
+
+    def test_configured_bib_driver_cannot_change_the_replay(self) -> None:
+        approved = self.bib_conflict()
+        new = self.merge_main({"references.bib": bib(entry("Alpha2000"), entry("Beta2001"),
+                                                     entry("Zeta2000"))})
+        self.git("config", "merge.bibkeys.driver", "true")
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+        self.assertIn("references.bib", out)
 
     def test_hidden_submodule_pointer_change_is_reported(self) -> None:
         self.git("checkout", "-q", "-b", "feature", "main")

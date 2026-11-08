@@ -20,9 +20,13 @@ based on another branch (a stacked PR), pass that branch's head at approval time
 `--approved-base`. Otherwise the replayed change includes the lower branch's changes, which were
 not reviewed in this PR, and they would carry the approval if the lower PR never landed.
 
-The replay uses the attributes in the new head's base commit (`--attr-source`), ignores
-`core.attributesFile`, and refuses to run when `info/attributes` sets merge attributes, so local
-Git configuration cannot change its result.
+The replay uses the attributes in the new head's base commit (`--attr-source`) and no others: it
+ignores `core.attributesFile` and the system file, and refuses to run when `info/attributes` sets
+anything. It pins the merge settings, runs the tracked `bibkeys` driver of `references.bib` as this
+checkout's `scripts/resolve_bib_conflict.py`, makes every other configured merge driver report a
+conflict, and ignores replace refs, so local Git configuration cannot change its result. A
+`references.bib` merge written by `scripts/resolve_bib_conflict.py` therefore passes when it keeps
+the PR's entries.
 
 Exit status: 0 when NEW is the replayed approved change; 1 when it differs (the differing paths
 and diffs are printed); 2 on a usage or Git error, including an approved change that is empty
@@ -38,6 +42,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shlex
 import subprocess
 import sys
 from collections import Counter
@@ -51,7 +56,11 @@ AGGREGATES = ("Complexity.lean", "ComplexityResults.lean", "abstracts/Complexity
 MAX_DIFF_LINES = 60
 # Fixed merge settings, so the replay does not depend on the caller's Git configuration.
 MERGE_CONFIG = ("-c", "merge.conflictStyle=merge", "-c", "merge.renames=true",
-                "-c", "merge.directoryRenames=conflict")
+                "-c", "merge.directoryRenames=conflict", "-c", "merge.renormalize=false",
+                "-c", "merge.default=text")
+# The driver that `.gitattributes` names for `references.bib`, and this checkout's implementation.
+BIB_DRIVER = "bibkeys"
+BIB_RESOLVER = ROOT / "scripts" / "resolve_bib_conflict.py"
 CONFLICT_MARKER = re.compile(rb"^(<{7}|={7}|>{7})( |$)")
 
 
@@ -59,8 +68,16 @@ class GitError(Exception):
     pass
 
 
+def environment() -> dict[str, str]:
+    """The caller's environment without system attributes, attribute sources or replace refs."""
+    env = {key: value for key, value in os.environ.items() if key != "GIT_ATTR_SOURCE"}
+    env.update(GIT_ATTR_NOSYSTEM="1", GIT_NO_REPLACE_OBJECTS="1")
+    return env
+
+
 def git(root: Path, *args: str, ok: tuple[int, ...] = (0,)) -> subprocess.CompletedProcess[bytes]:
-    result = subprocess.run(["git", "-C", str(root), *args], capture_output=True)
+    result = subprocess.run(["git", "-C", str(root), *args], capture_output=True,
+                            env=environment())
     if result.returncode not in ok:
         message = result.stderr.decode("utf-8", "replace").strip()
         raise GitError(f"git {' '.join(args)}: {message}")
@@ -97,20 +114,40 @@ def tree(root: Path, commit: str) -> str:
 
 
 def check_local_attributes(root: Path) -> None:
-    """Refuse when the repository's own `info/attributes` could select merge drivers."""
+    """Refuse when the repository's own `info/attributes`, which Git cannot disable, sets anything."""
     path = Path(out(root, "rev-parse", "--path-format=absolute", "--git-path", "info/attributes"))
-    if path.is_file() and any("merge" in line and not line.lstrip().startswith("#")
+    if path.is_file() and any(line.strip() and not line.lstrip().startswith("#")
                               for line in path.read_text(errors="replace").splitlines()):
-        raise GitError(f"{path} sets merge attributes, which would change the replay; "
-                       "run the check in a clone without them")
+        raise GitError(f"{path} sets attributes, which could change the replay; "
+                       "move them aside or run the check in another clone")
+
+
+def driver_config(root: Path) -> list[str]:
+    """`-c` options pinning every merge driver the replay could run: `bibkeys` runs this checkout's
+    resolver, and every other configured driver reports a conflict without merging."""
+    listed = git(root, "config", "--null", "--name-only", "--get-regexp",
+                 r"^merge\..*\.driver$", ok=(0, 1))
+    names = {key[len("merge."):-len(".driver")]
+             for key in listed.stdout.decode("utf-8", "surrogateescape").split("\0") if key}
+    names.discard(BIB_DRIVER)
+    if any("=" in name or "\n" in name for name in names):
+        raise GitError("a configured merge driver name contains `=` or a newline, so the replay "
+                       "cannot disable it; run the check in another clone")
+    # Git expands `%` in a driver command, so a literal `%` in a path is doubled.
+    python, script = (shlex.quote(str(p)).replace("%", "%%") for p in (sys.executable, BIB_RESOLVER))
+    resolver = f"{python} {script} --driver %O %A %B"
+    options = ["-c", f"merge.{BIB_DRIVER}.driver={resolver}"]
+    for name in sorted(names):
+        options += ["-c", f"merge.{name}.driver=exit 1"]
+    return options
 
 
 def replay(root: Path, approved_base: str, approved: str, onto: str) -> tuple[str, set[str]]:
     """The tree of `approved_base..approved` merged onto `onto`, and the paths that conflicted."""
     check_local_attributes(root)
     result = git(root, f"--attr-source={onto}", "-c", f"core.attributesFile={os.devnull}",
-                 *MERGE_CONFIG, "merge-tree", "--write-tree", "--name-only", "-z",
-                 "--no-messages", f"--merge-base={approved_base}", onto, approved, ok=(0, 1))
+                 *MERGE_CONFIG, *driver_config(root), "merge-tree", "--write-tree", "--name-only",
+                 "-z", "--no-messages", f"--merge-base={approved_base}", onto, approved, ok=(0, 1))
     fields = result.stdout.split(b"\0")
     if not re.fullmatch(rb"[0-9a-f]{40,64}", fields[0]):
         raise GitError("unexpected `git merge-tree` output; Git 2.42 or later is required")
