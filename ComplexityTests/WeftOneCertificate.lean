@@ -15,9 +15,10 @@ when all are known true, and unknown otherwise.
 The certificate check (`WeftOne.claimsValid`), evaluated by `decide`, runs on two gate lists. The
 first is a conjunction of three inputs. Claiming the conjunction true is valid. The empty list of
 claims is not valid, and neither is claiming the conjunction false, since a conjunction can only be
-claimed true. The second gate list puts a conjunction of three disjunctions of two inputs on top.
-Claiming the top conjunction true is valid for depth bound `1`, since its checks lie on the small
-disjunctions, but not for depth bound `0`.
+claimed true; such a claim has no checks. Validity does not read the input. The second gate list
+puts a conjunction of three disjunctions of two inputs on top. Claiming the top conjunction true is
+valid for depth bound `1`, since its checks lie on the small disjunctions, but not for depth
+bound `0`.
 -/
 
 namespace ComplexityTests.WeftOneCertificate
@@ -50,8 +51,13 @@ example : WeftOne.claimChecks 3 and3 (3, true) = [(0, true), (1, true), (2, true
 -- Without claims, Kleene evaluation does not know the output.
 example : WeftOne.claimsValid 0 3 and3 3 [] = false := by decide
 
--- A conjunction cannot be claimed false.
+-- A conjunction cannot be claimed false: the claim has no checks and does not replace the gate.
 example : WeftOne.claimsValid 0 3 and3 3 [(3, false)] = false := by decide
+
+example : WeftOne.claimChecks 3 and3 (3, false) = [] := by decide
+
+-- Validity does not read the input: the valid claim above has checks that fail on the input
+-- `(false, false, false)`, which the conjunction rejects.
 
 /-- A conjunction of three disjunctions of two inputs each. -/
 def andOfOrs : List (Op × List ℕ) :=

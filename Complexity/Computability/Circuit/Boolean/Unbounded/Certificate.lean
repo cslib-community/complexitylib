@@ -23,10 +23,11 @@ import Mathlib.Data.List.GetD
 /-!
 # Certificates for circuits of weft one
 
-A wire of a circuit over the unbounded fan-in basis is true on an input exactly when there is a
-short list of *claims* (wire, value) that is valid for it. This is the combinatorial core of the
-W[1]-hardness of `Clique` [Cygan et al., Chapter 13][CyganEtAl2015]; see also
-[Downey and Fellows][DowneyFellows1999].
+A list of *claims* (wire, value) certifies that a wire of a circuit over the unbounded fan-in basis
+is true. The check of the claims (`claimsValid`) does not read the input; what depends on the
+input is whether the *checks* of the claims hold on it. For a wire of weft at most one and depth
+at most `d`, the wire is true on an input exactly when some list of at most `2 ^ d` claims is
+valid for it and all its checks hold on the input (`exists_claimsValid`, `eval_of_claimsValid`).
 
 A claim on a conjunction that it is true, or on a disjunction that it is false, is *checked*
 through the arguments of the gate. A claim on an input is checked by the input itself. The claims
@@ -38,19 +39,34 @@ longest path of gates with at most two arguments that ends at the wire, capped a
 * **Soundness** (`eval_of_claimsValid`): if the claims are valid and every check holds on an
   input, then the output is true on that input.
 * **Completeness** (`exists_claimsValid`): if the output has weft at most one and depth at most
-  `d`, and is true on an input, then at most `2 ^ d` claims that are correct on the input are valid
-  for it.
+  `d`, and is true on an input, then some list of at most `2 ^ d` claims that are correct on the
+  input is valid for it.
 * **Locality** (`exists_determining`): a wire of small depth `D ≤ d` is determined by at most
   `2 ^ D` inputs. Kleene evaluation knows its value from any partial input that agrees with the
   input on them.
 * **Complexity** (`computableInPolyTime_claimsValid`): for a fixed `d`, checking claims is
   polynomial-time.
 
+The claims and their check by Kleene evaluation are an original device of this library, used to
+reduce weighted satisfiability of circuits of weft one to `Clique`. The bound of `2 ^ d` on the
+inputs that determine a wire of depth `d` built from gates with at most two arguments is the
+standard fact behind the `W[1]`-hardness of `Clique` (cf. [Cygan et al., Chapter 13][CyganEtAl2015];
+the precise theorem number there is not verified).
+
 ## Main definitions
 
 * `WeftOne.claimsValid`: the certificate check.
 * `WeftOne.claimChecks`: the checks of a claim.
 * `WeftOne.smallDepths`: the capped small depths of the wires.
+
+## Main results
+
+* `WeftOne.eval_of_claimsValid`, `WeftOne.eval_of_claimsValid_circuit`: soundness.
+* `WeftOne.exists_claimsValid`, `WeftOne.exists_claimsValid_circuit`: completeness.
+* `WeftOne.exists_determining`: locality.
+* `WeftOne.checks_correct`: correct claims have checks that hold.
+* `WeftOne.computableInPolyTime_claimsValid`, `WeftOne.computableInPolyTime_checks`: the check of
+  the claims and the list of their checks are polynomial-time.
 
 ## References
 
@@ -187,7 +203,7 @@ theorem getD_kleeneEval_overrideGates {n : ℕ} {gates : List (Op × List ℕ)}
   split_ifs <;> simp [kleeneOp, kleeneAnd, kleeneOr]
 
 /-- The Boolean value of a gate, for an input list of length `n`. -/
-theorem getD_evalCode_add {n : ℕ} {gates : List (Op × List ℕ)}
+private theorem getD_evalCode_add {n : ℕ} {gates : List (Op × List ℕ)}
     (h : Program.IsCodeFrom signature n 0 gates) {x : List Bool} (hx : x.length = n) {j : ℕ}
     {g : Op × List ℕ} (hg : gates[j]? = some g) :
     (evalCode interpretation false x gates).getD (n + j) false =
@@ -196,7 +212,7 @@ theorem getD_evalCode_add {n : ℕ} {gates : List (Op × List ℕ)}
   subst hx
   exact getD_evalCode interpretation false x h hg
 
-theorem claimable_gateAt_add {n : ℕ} {gates : List (Op × List ℕ)} {j : ℕ} {g : Op × List ℕ}
+private theorem claimable_gateAt_add {n : ℕ} {gates : List (Op × List ℕ)} {j : ℕ} {g : Op × List ℕ}
     (hg : gates[j]? = some g) : claimable (gateAt n gates (n + j)) = claimable g := by
   rw [gateAt_add hg]
 
@@ -348,14 +364,14 @@ theorem length_smallDepths (d n : ℕ) (gates : List (Op × List ℕ)) :
     rw [List.foldl_cons, ih, List.length_append, List.length_singleton, List.length_cons]
     omega
 
-theorem le_maxTwo {l : List ℕ} (hl : l.length ≤ 2) {v : ℕ} (hv : v ∈ l) : v ≤ maxTwo l := by
+private theorem le_maxTwo {l : List ℕ} (hl : l.length ≤ 2) {v : ℕ} (hv : v ∈ l) : v ≤ maxTwo l := by
   obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hv
   unfold maxTwo
   rcases (show i = 0 ∨ i = 1 by omega) with rfl | rfl
   · simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi]
   · simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi]
 
-theorem maxTwo_le {l : List ℕ} {D : ℕ} (h : ∀ v ∈ l, v ≤ D) : maxTwo l ≤ D := by
+private theorem maxTwo_le {l : List ℕ} {D : ℕ} (h : ∀ v ∈ l, v ≤ D) : maxTwo l ≤ D := by
   have key (i : ℕ) : l.getD i 0 ≤ D := by
     rw [List.getD_eq_getElem?_getD]
     rcases hi : l[i]? with _ | v
@@ -439,37 +455,6 @@ theorem exists_determining {d n : ℕ} {gates : List (Op × List ℕ)}
 
 /-! ### Depth bounds -/
 
-/-- In the depth interpretation, a gate is deeper than each of its arguments by its cost. -/
-theorem getD_evalCode_depth_le {σ : Signature} (cost : σ.Op → ℕ) {n : ℕ}
-    {gates : List (σ.Op × List ℕ)} (h : Program.IsCodeFrom σ n 0 gates) {j : ℕ}
-    {g : σ.Op × List ℕ} (hg : gates[j]? = some g) {c : ℕ} (hc : c ∈ g.2) :
-    (evalCode (depthInterpretation cost) 0 (List.replicate n 0) gates).getD c 0 + cost g.1 ≤
-      (evalCode (depthInterpretation cost) 0 (List.replicate n 0) gates).getD (n + j) 0 := by
-  have h' : Program.IsCodeFrom σ (List.replicate n 0).length 0 gates := by
-    rwa [List.length_replicate]
-  have hv := getD_evalCode (depthInterpretation cost) 0 (List.replicate n 0) h' hg
-  rw [List.length_replicate] at hv
-  rw [hv, depthInterpretation, Fin.foldl_max_eq_max_sup, Nat.zero_max]
-  obtain ⟨hj, rfl⟩ := List.getElem?_eq_some_iff.1 hg
-  have hlen := (h.getElem j hj).1
-  obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hc
-  refine Nat.add_le_add_right (le_trans ?_ (Finset.le_sup (Finset.mem_univ
-    (⟨i, hlen ▸ hi⟩ : Fin (σ.Arity gates[j].1))))) _
-  simp [List.getElem?_eq_getElem hi]
-
-/-- In the depth interpretation, a gate is at least as deep as its cost. -/
-theorem cost_le_getD_evalCode_depth {σ : Signature} (cost : σ.Op → ℕ) {n : ℕ}
-    {gates : List (σ.Op × List ℕ)} (h : Program.IsCodeFrom σ n 0 gates) {j : ℕ}
-    {g : σ.Op × List ℕ} (hg : gates[j]? = some g) :
-    cost g.1 ≤
-      (evalCode (depthInterpretation cost) 0 (List.replicate n 0) gates).getD (n + j) 0 := by
-  have h' : Program.IsCodeFrom σ (List.replicate n 0).length 0 gates := by
-    rwa [List.length_replicate]
-  have hv := getD_evalCode (depthInterpretation cost) 0 (List.replicate n 0) h' hg
-  rw [List.length_replicate] at hv
-  rw [hv, depthInterpretation]
-  exact Nat.le_add_left _ _
-
 /-- A wire of weft zero has small depth at most its depth. -/
 theorem getD_smallDepths_le {d n : ℕ} {gates : List (Op × List ℕ)}
     (h : Program.IsCodeFrom signature n 0 gates) {w : ℕ} (hw : w < n + gates.length)
@@ -519,7 +504,7 @@ theorem getD_smallDepths_le {d n : ℕ} {gates : List (Op × List ℕ)}
 /-! ### Completeness -/
 
 /-- Under correct claims, a known Kleene value is the Boolean value. -/
-theorem eq_of_ne_none {n : ℕ} {gates : List (Op × List ℕ)}
+theorem getD_kleeneEval_overrideGates_eq {n : ℕ} {gates : List (Op × List ℕ)}
     (h : Program.IsCodeFrom signature n 0 gates) {x : List Bool} (hx : x.length = n)
     {claims : List (ℕ × Bool)}
     (hcl : ∀ c ∈ claims, (evalCode interpretation false x gates).getD c.1 false = c.2) {w : ℕ}
@@ -532,7 +517,7 @@ theorem eq_of_ne_none {n : ℕ} {gates : List (Op × List ℕ)}
   rw [approx_some.1 this]
 
 /-- A conjunction with a false argument, or a disjunction with a true one, is known. -/
-theorem kleeneOp_of_claimable {g : Op × List ℕ} {b : Bool} (hb : claimable g = some b)
+private theorem kleeneOp_of_claimable {g : Op × List ℕ} {b : Bool} (hb : claimable g = some b)
     {l : List (Option Bool)} (hl : some (!b) ∈ l) : kleeneOp g.1 l = some (!b) := by
   obtain ⟨op, args⟩ := g
   cases op with
@@ -657,7 +642,7 @@ theorem exists_claims {d n : ℕ} {gates : List (Op × List ℕ)}
         · refine hcl_len.trans (Nat.pow_le_pow_right (by norm_num) ?_)
           have := hdpc c hc
           omega
-        have hκc := eq_of_ne_none h hx hcorr (hcl_fin claims hsub hcorr)
+        have hκc := getD_kleeneEval_overrideGates_eq h hx hcorr (hcl_fin claims hsub hcorr)
         rw [getD_kleeneEval_overrideGates h (hρ claims) claims hg]
         split_ifs
         · simp
@@ -712,7 +697,7 @@ theorem exists_claims {d n : ℕ} {gates : List (Op × List ℕ)}
         exact hCL_chk c hc e (List.mem_flatMap.2 ⟨c', hc', he⟩)
       · have hkc : ∀ c ∈ g.2, (kleeneEval (claimInputs n claims)
             (overrideGates n claims gates)).getD c none = some (v.getD c false) := fun c hc =>
-          eq_of_ne_none h hx hcorr (hCL_fin c hc claims
+          getD_kleeneEval_overrideGates_eq h hx hcorr (hCL_fin c hc claims
             (fun c' hc' => hsub (List.mem_flatMap.2 ⟨c, hc, hc'⟩)) hcorr)
         rw [getD_kleeneEval_overrideGates h (hρ claims) claims hg]
         split_ifs
@@ -750,7 +735,8 @@ theorem checks_correct {n : ℕ} {gates : List (Op × List ℕ)}
   · simp at he
 
 /-- **Completeness of the certificate check.** If wire `o`, of weft at most one and depth at most
-`d`, is true on an input, then at most `2 ^ d` correct claims are valid for it. -/
+`d`, is true on an input, then some list of at most `2 ^ d` claims that are correct on the input is
+valid for it. -/
 theorem exists_claimsValid {d n : ℕ} {gates : List (Op × List ℕ)}
     (h : Program.IsCodeFrom signature n 0 gates) {x : List Bool} (hx : x.length = n) {o : ℕ}
     (ho : o < n + gates.length)
@@ -765,7 +751,7 @@ theorem exists_claimsValid {d n : ℕ} {gates : List (Op × List ℕ)}
       claimsValid d n gates o claims = true := by
   obtain ⟨cl, hlen, hcorr, hchk, hfin⟩ := exists_claims h hx ho hwd hdp
   refine ⟨cl, hlen.trans (Nat.pow_le_pow_right (by norm_num) hdp), hcorr, ?_⟩
-  have hk := eq_of_ne_none h hx (fun c hc => (hcorr c hc).2)
+  have hk := getD_kleeneEval_overrideGates_eq h hx (fun c hc => (hcorr c hc).2)
     (hfin cl (List.Subset.refl _) fun c hc => (hcorr c hc).2)
   rw [hv] at hk
   simp only [claimsValid, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true]
@@ -856,7 +842,9 @@ private theorem claimChecks_eq (n : ℕ) (gates : List (Op × List ℕ)) (c : �
       else [] := by
   simp only [claimChecks, claimFlag_eq _ _ (gateAt n gates c.1).2, decide_eq_true_eq]
 
-private theorem computableInPolyTime_checks
+/-- **The checks of claims are polynomial-time**, for inputs, gates and claims computed in
+polynomial time. -/
+theorem computableInPolyTime_checks
     (hn : ComputableInPolyTime nf encIn encUnary)
     (hg : ComputableInPolyTime gf encIn (encList (Circuit.encGate encOp)))
     (hc : ComputableInPolyTime cf encIn (encList (encPair encUnary encBool))) :
@@ -892,7 +880,7 @@ private theorem computableInPolyTime_smallDepthOp (d : ℕ) :
   unfold smallDepthOp maxTwo
   fun_prop
 
-theorem smallDepthOp_le (d : ℕ) (op : Op) (l : List ℕ) : smallDepthOp d op l ≤ d + 1 := by
+private theorem smallDepthOp_le (d : ℕ) (op : Op) (l : List ℕ) : smallDepthOp d op l ≤ d + 1 := by
   unfold smallDepthOp
   split_ifs
   · exact min_le_left _ _
@@ -958,15 +946,6 @@ section Circuits
 
 variable {n : ℕ} (c : Circuit signature n 1)
 
-/-- The gate list of a circuit is a code from its inputs. -/
-theorem isCodeFrom_code : Program.IsCodeFrom signature n 0 c.code.1 :=
-  (Circuit.isSome_ofCode_iff.1 (by rw [Circuit.ofCode_code]; rfl)).1
-
-/-- The output wire of a circuit with one output, read from its code. -/
-theorem lt_of_outputs : (c.outputs 0).toNat < n + c.code.1.length :=
-  (Circuit.isSome_ofCode_iff.1 (by rw [Circuit.ofCode_code]; rfl)).2.2 _
-    (by simp [Circuit.code])
-
 /-- **Soundness for circuits.** If claims are valid for the output of a circuit and every check
 of a claim holds on an input, the circuit accepts the input. -/
 theorem eval_of_claimsValid_circuit {d : ℕ} {claims : List (ℕ × Bool)}
@@ -975,10 +954,10 @@ theorem eval_of_claimsValid_circuit {d : ℕ} {claims : List (ℕ × Bool)}
       (evalCode interpretation false (List.ofFn x) c.code.1).getD e.1 false = e.2) :
     c.eval interpretation x 0 = true := by
   rw [c.eval_eq_getD interpretation false]
-  exact eval_of_claimsValid (isCodeFrom_code c) hvalid (List.length_ofFn) hchecks
+  exact eval_of_claimsValid c.isCodeFrom_code hvalid (List.length_ofFn) hchecks
 
-/-- **Completeness for circuits.** A circuit of weft at most one and depth at most `d` that
-accepts an input has at most `2 ^ d` claims, correct on the input, that are valid for its
+/-- **Completeness for circuits.** If a circuit of weft at most one and depth at most `d` accepts
+an input, some list of at most `2 ^ d` claims that are correct on the input is valid for its
 output. -/
 theorem exists_claimsValid_circuit {d : ℕ} (hw : c.weft ≤ 1) (hd : c.depth ≤ d) (x : BitString n)
     (hx : c.eval interpretation x 0 = true) :
@@ -997,7 +976,7 @@ theorem exists_claimsValid_circuit {d : ℕ} (hw : c.weft ≤ 1) (hd : c.depth �
     rw [← Circuit.depthWith_one]
     exact c.wireDepthsWith_outputs_le_depthWith 1 0
   rw [c.eval_eq_getD interpretation false] at hx
-  exact exists_claimsValid (isCodeFrom_code c) List.length_ofFn (lt_of_outputs c) hwd hdp hx
+  exact exists_claimsValid c.isCodeFrom_code List.length_ofFn (c.toNat_outputs_lt 0) hwd hdp hx
 
 end Circuits
 

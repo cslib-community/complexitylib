@@ -808,7 +808,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `W[t]` by fpt-reduction to weighted satisfiability of circuits of weft at most `t` and bounded
   depth, with `FPT ⊆ W[t] ⊆ W[t+1]`; `IndependentSet` and `Clique` are in `W[1]`. Remaining: the
   W[1]-hardness of `Clique` (fpt-reduction from `WCS 1 d`; Kleene evaluation and the weft-one
-  certificates are in place, the graph construction remains), then `W[t] ⊆ XP`,
+  certificates are in place; remaining is the graph construction, which encodes the exact-weight
+  constraint problem left after fixing the claims, each check reading at most `2 ^ d` inputs, as a
+  `Clique` instance), then `W[t] ⊆ XP`,
   W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound

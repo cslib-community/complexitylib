@@ -39,10 +39,6 @@ correct for every completion of the assignment whenever it is known
 
 ## Main definitions
 
-* `Cslib.Circuits.evalCode_rel`: evaluation of gate lists preserves a relation between
-  interpretations that the operations preserve.
-* `Cslib.Circuits.foldl_eq_evalCode`: a fold reading the arguments of each gate by position is an
-  evaluation.
 * `Cslib.Circuits.Boolean.Unbounded.Approx`: an option is unknown or the given Boolean.
 * `Cslib.Circuits.Boolean.Unbounded.kleeneOp`,
   `Cslib.Circuits.Boolean.Unbounded.kleeneInterpretation`: the operations in Kleene's logic.
@@ -50,12 +46,18 @@ correct for every completion of the assignment whenever it is known
 
 ## Main results
 
+* `Cslib.Circuits.evalCode_rel`: evaluation of gate lists preserves a relation between
+  interpretations that the operations preserve.
+* `Cslib.Circuits.foldl_eq_evalCode`: a fold reading the arguments of each gate by position is an
+  evaluation.
 * `Cslib.Circuits.Boolean.Unbounded.kleeneInterpretation_approx`: the three-valued operations
   approximate the Boolean ones.
 * `Cslib.Circuits.Boolean.Unbounded.kleeneInterpretation_some`: on known arguments they are the
   Boolean operations.
 * `Cslib.Circuits.Boolean.Unbounded.kleeneEval_eq_evalCode`: `kleeneEval` is `evalCode` for
   `kleeneInterpretation` on gates with as many arguments as their arities.
+* `Cslib.Circuits.Boolean.Unbounded.approx_kleeneEval`: Kleene evaluation from a partial input
+  approximates evaluation on every completion of it.
 * `Cslib.Circuits.Boolean.Unbounded.computableInPolyTime_kleeneEval`: `kleeneEval` is
   polynomial-time.
 
@@ -409,6 +411,7 @@ private theorem computableInPolyTime_kleeneStep :
 
 /-- **Kleene evaluation is polynomial-time**, for input values and gates computed in polynomial
 time. -/
+@[fun_prop]
 theorem computableInPolyTime_kleeneEval {γ : Type} {encIn : γ ↪ List Bool}
     {ρ : γ → List (Option Bool)} {gates : γ → List (Op × List ℕ)}
     (hρ : ComputableInPolyTime ρ encIn (encList (encOption encBool)))

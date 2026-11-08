@@ -25,6 +25,12 @@ as a code of layers has a depth with costs bounded by summing the costs of the l
 
 * `Cslib.Circuits.evalCode_layer`: the values of a layer.
 * `Cslib.Circuits.le_of_mem_evalCode_depth_layer`: depths after a layer.
+* `Cslib.Circuits.Circuit.isCodeFrom_code`, `Cslib.Circuits.Circuit.toNat_outputs_lt`: the code
+  of a circuit is a code from its inputs, and its outputs are wires of it.
+* `Cslib.Circuits.getD_evalCode_depth_le`, `Cslib.Circuits.cost_le_getD_evalCode_depth`: in the
+  depth interpretation, a gate is deeper than its arguments, and at least as deep as its cost.
+* `Cslib.Circuits.Circuit.getD_evalCode_depthInterpretation`: the depth with costs of an output
+  is the value of its wire in the depth interpretation.
 * `Cslib.Circuits.Circuit.depthWith_le_of_evalCode`: a bound on all the depths computed by the code
   of a circuit bounds its depth with costs.
 
@@ -94,24 +100,45 @@ theorem le_of_mem_evalCode_depth_layer (cost : σ.Op → ℕ) (x : List ℕ)
     have := hc g hg
     omega
 
-/-- **Depth from the code.** If every value that the code of a circuit computes in the depth
-interpretation from zero inputs is at most `D`, the circuit has depth at most `D` with costs. -/
-theorem Circuit.depthWith_le_of_evalCode (cost : σ.Op → ℕ) (c : Circuit σ n m) {D : ℕ}
-    (h : ∀ v ∈ evalCode (depthInterpretation cost) 0 (List.replicate n 0) c.code.1, v ≤ D) :
-    c.depthWith cost ≤ D := by
-  rw [Circuit.depthWith_le_iff]
-  intro j
-  have heval := c.eval_eq_getD (depthInterpretation cost) 0 (fun _ => 0) j
-  rw [List.ofFn_const] at heval
-  have hw : c.program.wireDepthsWith cost (c.outputs j) = c.eval (depthInterpretation cost)
-      (fun _ => 0) j := by
-    cases hj : c.outputs j <;> simp [Circuit.eval, Program.trace, Program.wireDepthsWith,
-      Program.depthsWith, hj]
-  rw [hw, heval, List.getD_eq_getElem?_getD]
-  rcases hv : (evalCode (depthInterpretation cost) 0 (List.replicate n 0) c.code.1)[
-    (c.outputs j).toNat]? with _ | v
-  · exact Nat.zero_le _
-  · exact h v (List.mem_of_getElem? hv)
+/-- The gate list of a circuit is a code from its inputs. -/
+theorem Circuit.isCodeFrom_code (c : Circuit σ n m) : Program.IsCodeFrom σ n 0 c.code.1 :=
+  (Circuit.isSome_ofCode_iff.1 (by rw [Circuit.ofCode_code]; rfl)).1
+
+/-- The output wires of a circuit are wires of its code. -/
+theorem Circuit.toNat_outputs_lt (c : Circuit σ n m) (j : Fin m) :
+    (c.outputs j).toNat < n + c.code.1.length :=
+  (Circuit.isSome_ofCode_iff.1 (by rw [Circuit.ofCode_code]; rfl)).2.2 _
+    (by simp [Circuit.code])
+
+/-- In the depth interpretation, a gate is deeper than each of its arguments by its cost. -/
+theorem getD_evalCode_depth_le (cost : σ.Op → ℕ) {gates : List (σ.Op × List ℕ)}
+    (h : Program.IsCodeFrom σ n 0 gates) {j : ℕ} {g : σ.Op × List ℕ} (hg : gates[j]? = some g)
+    {c : ℕ} (hc : c ∈ g.2) :
+    (evalCode (depthInterpretation cost) 0 (List.replicate n 0) gates).getD c 0 + cost g.1 ≤
+      (evalCode (depthInterpretation cost) 0 (List.replicate n 0) gates).getD (n + j) 0 := by
+  have h' : Program.IsCodeFrom σ (List.replicate n 0).length 0 gates := by
+    rwa [List.length_replicate]
+  have hv := getD_evalCode (depthInterpretation cost) 0 (List.replicate n 0) h' hg
+  rw [List.length_replicate] at hv
+  rw [hv, depthInterpretation, Fin.foldl_max_eq_max_sup, Nat.zero_max]
+  obtain ⟨hj, rfl⟩ := List.getElem?_eq_some_iff.1 hg
+  have hlen := (h.getElem j hj).1
+  obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hc
+  refine Nat.add_le_add_right (le_trans ?_ (Finset.le_sup (Finset.mem_univ
+    (⟨i, hlen ▸ hi⟩ : Fin (σ.Arity gates[j].1))))) _
+  simp [List.getElem?_eq_getElem hi]
+
+/-- In the depth interpretation, a gate is at least as deep as its cost. -/
+theorem cost_le_getD_evalCode_depth (cost : σ.Op → ℕ) {gates : List (σ.Op × List ℕ)}
+    (h : Program.IsCodeFrom σ n 0 gates) {j : ℕ} {g : σ.Op × List ℕ} (hg : gates[j]? = some g) :
+    cost g.1 ≤
+      (evalCode (depthInterpretation cost) 0 (List.replicate n 0) gates).getD (n + j) 0 := by
+  have h' : Program.IsCodeFrom σ (List.replicate n 0).length 0 gates := by
+    rwa [List.length_replicate]
+  have hv := getD_evalCode (depthInterpretation cost) 0 (List.replicate n 0) h' hg
+  rw [List.length_replicate] at hv
+  rw [hv, depthInterpretation]
+  exact Nat.le_add_left _ _
 
 /-- **Depths through the code.** The depth with costs of the wire of output `j` is the value at
 its number of the code of the circuit evaluated in the depth interpretation from zero inputs. -/
@@ -124,5 +151,18 @@ theorem Circuit.getD_evalCode_depthInterpretation (cost : σ.Op → ℕ) (c : Ci
   rw [← heval]
   cases hj : c.outputs j <;> simp [Circuit.eval, Program.trace, Program.wireDepthsWith,
     Program.depthsWith, hj]
+
+/-- **Depth from the code.** If every value that the code of a circuit computes in the depth
+interpretation from zero inputs is at most `D`, the circuit has depth at most `D` with costs. -/
+theorem Circuit.depthWith_le_of_evalCode (cost : σ.Op → ℕ) (c : Circuit σ n m) {D : ℕ}
+    (h : ∀ v ∈ evalCode (depthInterpretation cost) 0 (List.replicate n 0) c.code.1, v ≤ D) :
+    c.depthWith cost ≤ D := by
+  rw [Circuit.depthWith_le_iff]
+  intro j
+  rw [← c.getD_evalCode_depthInterpretation cost j, List.getD_eq_getElem?_getD]
+  rcases hv : (evalCode (depthInterpretation cost) 0 (List.replicate n 0) c.code.1)[
+    (c.outputs j).toNat]? with _ | v
+  · exact Nat.zero_le _
+  · exact h v (List.mem_of_getElem? hv)
 
 end Cslib.Circuits
