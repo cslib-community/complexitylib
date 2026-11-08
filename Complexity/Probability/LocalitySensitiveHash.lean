@@ -170,6 +170,13 @@ theorem IsUniversalHash.isLocalitySensitive {seed : PMF ι} {hash : ι → X →
   le_of_near x x' h := by rw [h, collisionProb_self]
   le_of_far x x' h := ENNReal.toReal_mono hε (hh x x' h)
 
+/-- A near pair is not far when `p₂ < p₁`. -/
+theorem IsLocalitySensitive.not_far {prob : X → X → ℝ} {near far : X → X → Prop} {p₁ p₂ : ℝ}
+    (h : IsLocalitySensitive prob near far p₁ p₂) (hp : p₂ < p₁) {x x' : X} (hx : near x x') :
+    ¬ far x x' := fun hf => by
+  have := (h.le_of_near x x' hx).trans (h.le_of_far x x' hf)
+  linarith
+
 /-! ### The AND construction -/
 
 /-- The AND construction: concatenate `k` hashes keyed by independent seeds. -/

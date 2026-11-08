@@ -3913,6 +3913,8 @@ public import Complexity.DataStructure.Memory.RecordLink
 public import Complexity.DataStructure.Memory.Region
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.Memory.Triple
+public import Complexity.DataStructure.NearNeighbor.Hamming
+public import Complexity.DataStructure.NearNeighbor.LSH
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
 public import Complexity.DataStructure.Online.SkiRental

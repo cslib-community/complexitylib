@@ -34,6 +34,11 @@ Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating
 
 Noga Alon, Raphael Yuster, Uri Zwick. "Color-Coding." *Journal of the ACM* 42(4), 844–856, 1995. https://doi.org/10.1145/210332.210337 . Bibliographic data from the DOI record. The locator Lemma 3.1 (colorful paths by dynamic programming over color sets) was taken from secondary descriptions; the full text was not inspected in this pass.
 
+<a id="andoniindyk08"></a>
+## andoniindyk08
+
+Alexandr Andoni, Piotr Indyk. “Near-Optimal Hashing Algorithms for Approximate Nearest Neighbor in High Dimensions.” *Communications of the ACM* 51(1), 117–122, 2008. https://doi.org/10.1145/1327452.1327494 . DOI and metadata as reported by search indexes; the full text was not inspected in this pass. Cited, on the basis of secondary summaries, for the query rule that stops after `3L` candidates in the LSH near-neighbour structure.
+
 <a id="anshelevichdktwr08"></a>
 ## anshelevichdktwr08
 
@@ -414,7 +419,7 @@ Dan Gusfield. “Very Simple Methods for All Pairs Network Flow Analysis.” *SI
 <a id="harpeledindykmotwani12"></a>
 ## harpeledindykmotwani12
 
-Sariel Har-Peled, Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbor: Towards Removing the Curse of Dimensionality.” *Theory of Computing* 8(14), 321–350, 2012. https://doi.org/10.4086/toc.2012.v008a014 . DOI and metadata as reported by search indexes; the open-access PDF could not be fetched in this pass (no connection). Cited for the `(r, cr, p₁, p₂)` form of locality-sensitive families.
+Sariel Har-Peled, Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbor: Towards Removing the Curse of Dimensionality.” *Theory of Computing* 8(14), 321–350, 2012. https://doi.org/10.4086/toc.2012.v008a014 . DOI and metadata as reported by search indexes; the open-access PDF could not be fetched in this pass (no connection). Cited for the `(r, cr, p₁, p₂)` form of locality-sensitive families, for the LSH `(c, r)`-near-neighbour structure with exponent `ρ = log (1/p₁) / log (1/p₂)` (locator Theorem 3.4, from secondary summaries; not checked against the text) and for `ρ ≤ 1/c` for bit sampling in Hamming space.
 
 <a id="hartline21"></a>
 ## hartline21
@@ -494,7 +499,7 @@ Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circui
 <a id="indykmotwani98"></a>
 ## indykmotwani98
 
-Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbors: Towards Removing the Curse of Dimensionality.” *Proceedings of the 30th Annual ACM Symposium on Theory of Computing* (STOC 1998), 604–613. https://doi.org/10.1145/276698.276876 . DOI and metadata as reported by search indexes; neither the DOI nor the full text was resolved in this pass. Cited for the definition of locality-sensitive families and for bit sampling under the Hamming distance.
+Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbors: Towards Removing the Curse of Dimensionality.” *Proceedings of the 30th Annual ACM Symposium on Theory of Computing* (STOC 1998), 604–613. https://doi.org/10.1145/276698.276876 . DOI and metadata as reported by search indexes; neither the DOI nor the full text was resolved in this pass. Cited for the definition of locality-sensitive families, for bit sampling under the Hamming distance, and for the LSH near-neighbour structure with `n^ρ` query cost.
 
 <a id="irani91"></a>
 ## irani91
