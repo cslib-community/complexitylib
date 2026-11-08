@@ -552,6 +552,8 @@ section PolyTime
 
 open Turing.MultiTapeTM ComputableInPolyTime
 
+attribute [local irreducible] ComputableInPolyTime
+
 /-- Detours encoded with unary clause, row and slot indices. -/
 abbrev encDetour : Detour ↪ List Bool :=
   encPair encUnary (encPair encUnary (encPair encUnary encBool))
