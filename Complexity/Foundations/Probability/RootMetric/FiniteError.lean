@@ -146,4 +146,27 @@ theorem rowNormPow_sliceMean_fourth_le {N u : ℝ} (hNu : 0 ≤ N * u)
   · rw [expect_const hs, one_mul]
     exact h4
 
+set_option backward.isDefEq.respectTransparency false in
+/-- Bounded root error pays bias after conditional averaging on the identical slice.
+No pointwise error, independence, or environment-cardinality factor is needed. -/
+theorem rowNormPow_sliceMean_sub_le_rootDistPow {N u B : ℝ} (hNu : 0 ≤ N * u)
+    (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+    (A A' : Ω → V → V → ℝ)
+    (hA : ∀ σ x y, A σ x y ∈ Set.Icc 0 B)
+    (hA' : ∀ σ x y, A' σ x y ∈ Set.Icc 0 B) :
+    rowNormPow 4 N u X Y (fun _ x y => rowSliceMean X Y A x y -
+      rowSliceMean X Y A' x y) ≤
+      (4 * B ^ ((3 : ℝ) / 4)) ^ 4 * rootDistPow 4 N u X Y A A' := by
+  have he : (fun _ x y => rowSliceMean X Y A x y - rowSliceMean X Y A' x y) =
+      (fun (_ : Ω) => rowSliceMean X Y (fun σ x y => A σ x y - A' σ x y)) := by
+    funext σ x y
+    simp only [rowSliceMean, expect_sub_distrib]
+  rw [he]
+  apply (rowNormPow_sliceMean_fourth_le hNu X Y _).trans
+  have hb := rowNormPow_sub_le_rootDistPow (s := 4) (N := N) (u := u) (X := X) (Y := Y)
+      (C := B) (H := A) (H' := A') (by decide : 4 ≠ 0) hNu
+      (fun σ x y _ _ => hA σ x y) (fun σ x y _ _ => hA' σ x y)
+  norm_num only [Nat.cast_ofNat, show ((4 : ℝ) - 1) / 4 = 3 / 4 by norm_num] at hb
+  exact hb
+
 end Cslib

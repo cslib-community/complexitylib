@@ -55,6 +55,27 @@ theorem coordinate_padding (hD : D ≠ 0) (ch : Channel P J)
 
 variable {n : ℕ} (r : HierarchyTask.Request n (Fin J) (ZMod P)) (hr : Admissible r)
 
+/-- The true stage detector has one canonical target after integrating spectators
+and transporting both copy suffixes. This does not identify approximate samples. -/
+theorem stage_columnDetector_eq_canonical (hD : D ≠ 0) (C : Matrix V V ℝ) :
+    columnDetector (stageSource D ident r hr) (splitTerminal D ident r)
+      HP.ϕ HP.ρ HP.J HP.K r.terminal.rate C =
+    columnDetector (canonicalChannel ident r.terminal.rate)
+      (canonicalChannel ident r.terminal.rate) HP.ϕ HP.ρ HP.J HP.K r.terminal.rate C := by
+  unfold stageSource splitTerminal
+  rw [columnDetector_source_pi
+    (fun A v => coordinate D {r.source with rate := r.terminal.rate} A (ident v))
+    (fun A v => coordinate D r.terminal A (ident v))
+    (⟨r.source.role, hr.1⟩ : {j : Fin J // j ≠ r.terminal.role})
+    HP.ϕ HP.ρ HP.J HP.K r.terminal.rate C]
+  exact columnDetector_equiv _ _
+    (FrameChannel.affineSubstEquiv (CopyPadding.identifier D r.source.suffix 0)
+      (pow_ne_zero r.source.suffix.length hD))
+    (FrameChannel.affineSubstEquiv (CopyPadding.identifier D r.terminal.suffix 0)
+      (pow_ne_zero r.terminal.suffix.length hD))
+    _ _ (coordinate_padding D ident hD {r.source with rate := r.terminal.rate})
+    (coordinate_padding D ident hD r.terminal) HP.ϕ HP.ρ HP.J HP.K r.terminal.rate C
+
 /-- Integrate the actual source spectators and transport both suffixes. This identifies
 the genuine stage pilot with one common canonical pilot, for every admissible request. -/
 theorem stage_pilot_eq_canonical (hD : D ≠ 0) (C : Matrix V V ℝ) :
@@ -62,18 +83,10 @@ theorem stage_pilot_eq_canonical (hD : D ≠ 0) (C : Matrix V V ℝ) :
       r.terminal.rate C =
     HP.toHierarchyParams.pilot (canonicalChannel ident r.terminal.rate)
       (canonicalChannel ident r.terminal.rate) r.terminal.rate C := by
-  unfold stageSource splitTerminal
-  rw [HierarchyParams.pilot_source_pi
-    (fun A v => coordinate D {r.source with rate := r.terminal.rate} A (ident v))
-    (fun A v => coordinate D r.terminal A (ident v)) HP.toHierarchyParams
-    (⟨r.source.role, hr.1⟩ : {j : Fin J // j ≠ r.terminal.role}) r.terminal.rate C]
-  exact HP.toHierarchyParams.pilot_equiv _ _ _ _
-    (FrameChannel.affineSubstEquiv (CopyPadding.identifier D r.source.suffix 0)
-      (pow_ne_zero r.source.suffix.length hD))
-    (FrameChannel.affineSubstEquiv (CopyPadding.identifier D r.terminal.suffix 0)
-      (pow_ne_zero r.terminal.suffix.length hD))
-    _ _ (coordinate_padding D ident hD {r.source with rate := r.terminal.rate})
-    (coordinate_padding D ident hD r.terminal)
+  simp only [pilot_eq]
+  congr 1
+  funext G
+  exact stage_columnDetector_eq_canonical HP D ident r hr hD G
 
 /-- All genuine correction iterates use the same canonical target, with every role and
 suffix retained until its measure-preserving transport has been proved. Usage does not

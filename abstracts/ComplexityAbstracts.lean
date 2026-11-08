@@ -32,8 +32,6 @@ import ComplexityAbstracts.FibonacciHeapBridge
 import ComplexityAbstracts.FormulaBoundsAbstract
 import ComplexityAbstracts.FormulaBoundsBridge
 import ComplexityAbstracts.GSW
-import ComplexityAbstracts.GSWFHEAbstract
-import ComplexityAbstracts.GSWFHEBridge
 import ComplexityAbstracts.GSWSecurityAbstract
 import ComplexityAbstracts.GSWSecurityBridge
 import ComplexityAbstracts.HashFamiliesAbstract
@@ -69,6 +67,8 @@ import ComplexityAbstracts.SubexponentialSATAbstract
 import ComplexityAbstracts.SubexponentialSATBridge
 import ComplexityAbstracts.SubsetSumAbstract
 import ComplexityAbstracts.SubsetSumBridge
+import ComplexityAbstracts.SuccinctDictionaryAbstract
+import ComplexityAbstracts.SuccinctDictionaryBridge
 import ComplexityAbstracts.TQBFAbstract
 import ComplexityAbstracts.TQBFBridge
 import ComplexityAbstracts.TodaAbstract

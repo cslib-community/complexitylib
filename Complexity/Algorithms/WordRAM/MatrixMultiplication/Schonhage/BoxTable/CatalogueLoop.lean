@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.CatalogueWrite
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Complete native shared-catalogue scan
 
@@ -120,34 +122,25 @@ theorem exec_catalogueLoop {w L H D R : ℕ} (x : Data registers)
       y.regs Reg.count = Nat.count (Eligible L H) ((H + 1) * 10 ^ L) ∧
       CataloguePrefix L H D R ((H + 1) * 10 ^ L) x.mem y.mem := by
   let S := (H + 1) * 10 ^ L
-  let I (y : Data registers) : Prop :=
-    CatalogueParameters L H D R y ∧ y.regs Reg.slot ≤ S ∧
-      y.regs Reg.count = Nat.count (Eligible L H) (y.regs Reg.slot) ∧
-      CataloguePrefix L H D R (y.regs Reg.slot) x.mem y.mem
-  have hi : I x := by
-    refine ⟨hx, by simp [hslot, S], by simp [hslot, hcount], ?_⟩
+  let P (j : ℕ) (y : Data registers) : Prop :=
+    CatalogueParameters L H D R y ∧
+      y.regs Reg.count = Nat.count (Eligible L H) j ∧
+      CataloguePrefix L H D R j x.mem y.mem
+  have hi : P (x.regs Reg.slot) x := by
+    refine ⟨hx, by simp [hslot, hcount], ?_⟩
     simpa only [hslot] using CataloguePrefix.zero L H D R x.mem
-  have hb (y : Data registers) (hy : I y) (hg : (Cond.lt Reg.slot Reg.slots).Holds y) :
-      ∃ z, ExecWithin w catalogueStep y z (11 * L + 26) ∧ I z ∧
-        S - z.regs Reg.slot < S - y.regs Reg.slot := by
-    obtain ⟨hp, hle, hc, hprefix⟩ := hy
-    have hlt : y.regs Reg.slot < S := by
-      simpa only [Cond.holds_lt, hp.slots, S] using hg
+  have hb (y : Data registers) (hy : P (y.regs Reg.slot) y) (hlt : y.regs Reg.slot < S) :
+      ∃ z, ExecWithin w catalogueStep y z (11 * L + 26) ∧ P (y.regs Reg.slot + 1) z ∧
+        z.regs Reg.slot = y.regs Reg.slot + 1 := by
+    obtain ⟨hp, hc, hprefix⟩ := hy
     obtain ⟨z, hz, hzm, hzs, hzc, hzp, _⟩ :=
       exec_catalogueStep y hp rfl hc hlt hfit
-    refine ⟨z, hz, ⟨hzp, by omega, ?_, ?_⟩, by omega⟩
-    · simpa only [hzs] using hzc
-    · rw [hzs, hzm]
-      exact hprefix.step hlt hsep
-  obtain ⟨y, hy, hIy, hstop⟩ := ExecWithin.loop_invariant I
-    (fun y => S - y.regs Reg.slot) hb hi
-  obtain ⟨hp, hle, hc, hprefix⟩ := hIy
-  have hdone : y.regs Reg.slot = S := by
-    simp only [Cond.holds_lt, hp.slots, not_lt] at hstop
-    exact Nat.le_antisymm hle hstop
-  refine ⟨y, ?_, hp, hdone, ?_, ?_⟩
-  · simpa only [hslot, Nat.sub_zero, S, Nat.mul_comm, Nat.add_assoc] using hy
-  · simpa only [hdone] using hc
-  · simpa only [hdone] using hprefix
+    refine ⟨z, hz, ⟨hzp, hzc, ?_⟩, hzs⟩
+    rw [hzm]
+    exact hprefix.step hlt hsep
+  obtain ⟨y, hy, ⟨hp, hc, hprefix⟩, hdone⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.1.slots) hb (by simp [hslot]) hi
+  exact ⟨y, by simpa only [hslot, Nat.sub_zero, S, Nat.mul_comm, Nat.add_assoc] using hy,
+    hp, hdone, hc, hprefix⟩
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable

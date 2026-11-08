@@ -46,6 +46,9 @@ def directory(path: Path) -> None:
 
 
 def source_context(root: Path, env: dict, event: str) -> dict:
+    recovery = str(env.get("DISABLE_CACHE_RESTORE", "")).strip().lower()
+    require(recovery in ("", "0", "false", "no"),
+            "Build handoff is disabled during cache recovery")
     disabled = str(env.get("DISABLE_BUILD_HANDOFF", "")).strip().lower()
     require(disabled in ("", "0", "false", "no"), "Build handoff is disabled by DISABLE_BUILD_HANDOFF")
     require(env.get("GITHUB_EVENT_NAME") == event, f"Expected {event} event")
@@ -65,7 +68,12 @@ def source_context(root: Path, env: dict, event: str) -> dict:
                 for key in ("RUNNER_OS", "RUNNER_ARCH", "ImageOS", "ImageVersion")}
     require(all(isinstance(value, str) and value for value in platform.values()),
             "Runner platform is unknown")
+    generation = env.get("CACHE_RECOVERY_GENERATION", "") or "0"
+    require(isinstance(generation, str)
+            and bool(re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", generation)),
+            "Invalid cache recovery generation")
     return {"version": 1, "repository": repository, "source_sha": sha,
+            "cache_recovery_generation": generation,
             "inputs": {name: digest(root / name) for name in INPUTS}, "platform": platform}
 
 

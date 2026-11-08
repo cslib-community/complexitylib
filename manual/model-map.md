@@ -40,6 +40,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `partrec-description` | [Partrec universal description method](machines-and-classes/computability-and-description.md) | description |
 | `tm-description` | [Described-machine-clock Kolmogorov model](machines-and-classes/computability-and-description.md) | description |
 | `conditional-description` | [Conditional description and composition](machines-and-classes/computability-and-description.md) | description |
+| `blum-measure` | [Blum complexity measures over Mathlib partial-recursive codes](machines-and-classes/computability-and-description.md) | computability |
 | `np-verifier` | [Exact-length NP witness verifier](machines-and-classes/verifiers-counting-interaction.md) | verifier |
 | `alternating-verifier` | [PH witness blocks and alternating games](machines-and-classes/verifiers-counting-interaction.md) | verifier |
 | `bpp-verifier` | [BPP uniform-seed verifier](machines-and-classes/verifiers-counting-interaction.md) | verifier |
@@ -60,6 +61,8 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `awpp` | [AWPP](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `sbp` | [SBP](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `bpppath` | [BPPpath](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
+| `fpras` | [FPRAS approximate counting](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
+| `fpaus` | [FPAUS almost uniform sampling](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
 | `deterministic-oracle` | [Efficient deterministic oracle program](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `counting-oracle` | [#P function-bit oracle](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `ma` | [Merlin-Arthur verifier](machines-and-classes/verifiers-counting-interaction.md) | interactive |
@@ -79,6 +82,9 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `ppp` | [PPP](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `ppad` | [PPAD](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `ppa` | [PPA](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `ppads` | [PPADS](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `eopl` | [EOPL](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `sopl` | [SOPL](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `promise-completion` | [Disjoint promise and completion lift](machines-and-classes/search-and-promises.md) | promise |
 | `promise-randomized` | [Direct randomized promise verifier](machines-and-classes/search-and-promises.md) | promise |
 | `primrec` | [Mathlib primitive-recursive typed functions](machines-and-classes/computability-and-description.md) | computability |
@@ -161,6 +167,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `vp` | [Valiant VP and polynomial families](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `vnp` | [Valiant VNP and p-projection completeness](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `waring` | [Waring sums of powers](circuits-logic-and-other-models/index.md) | algebraic-circuits |
+| `matrix-multiplication-exponent` | [Matrix multiplication exponent, tensor rank and degeneration](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `sum-of-terms` | [Dictionary sum-of-terms circuits](circuits-logic-and-other-models/index.md) | circuits |
 | `rational-formula` | [Noncommutative rational formulas with partial evaluation](circuits-logic-and-other-models/index.md) | algebraic-circuits |
 | `decomposable-dag` | [Smooth decomposable set-of-assignments DAGs](circuits-logic-and-other-models/index.md) | networks |
@@ -184,8 +191,11 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `comparison-tree` | [Monotone/separable comparison queries](circuits-logic-and-other-models/index.md) | information-access |
 | `randomized-query` | [Finite-support randomized decision trees](circuits-logic-and-other-models/index.md) | information-access |
 | `distributional-query` | [Distributional decision-tree complexity](circuits-logic-and-other-models/index.md) | information-access |
+| `cell-probe` | [Adaptive cell-probe trees and deterministic schemes](circuits-logic-and-other-models/query-and-communication.md) | information-access |
+| `randomized-cell-probe` | [Internal-coin cell-probe schemes and zero-error Yao averaging](circuits-logic-and-other-models/query-and-communication.md) | information-access |
 | `quantum-query` | [Phase-oracle quantum query algorithms](circuits-logic-and-other-models/index.md) | quantum |
 | `deterministic-communication` | [Two-party bit communication trees](circuits-logic-and-other-models/index.md) | communication |
+| `local-oriented-cycle` | [Deterministic LOCAL algorithms on oriented cycles](circuits-logic-and-other-models/query-and-communication.md) | distributed |
 | `dag-communication` | [Acyclic networks of communication protocols](circuits-logic-and-other-models/index.md) | communication |
 | `round-communication` | [Bounded-round message protocols](circuits-logic-and-other-models/index.md) | communication |
 | `publiccoin` | [Public-coin communication](circuits-logic-and-other-models/index.md) | communication |
@@ -210,10 +220,14 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `resolution-relation` | [Inductive resolution derivability](circuits-logic-and-other-models/index.md) | proof-systems |
 | `resolution-lines` | [Resolution proofs as ordered line lists](circuits-logic-and-other-models/index.md) | proof-systems |
 | `resolution-tree` | [Tree-like resolution derivations](circuits-logic-and-other-models/index.md) | proof-systems |
+| `cutting-planes-lines` | [Cutting planes proofs as ordered lists of integer inequalities](circuits-logic-and-other-models/index.md) | proof-systems |
+| `semantic-derivation` | [Semantic derivations: sequences of sets of assignments, each initial, everything, or containing the intersection of two earlier ones](circuits-logic-and-other-models/index.md) | proof-systems |
+| `frege-lines` | [Hilbert-style Frege proofs as ordered lists of formulas; implicational completeness not yet formalized](circuits-logic-and-other-models/index.md) | proof-systems |
 | `pac` | [General deterministic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `randomized-pac` | [Randomized agnostic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `uniform-learning` | [Uniform-distribution Boolean sample learning](circuits-logic-and-other-models/index.md) | learning |
 | `membership-learning` | [Randomized membership-query learners](circuits-logic-and-other-models/index.md) | learning |
+| `mistake-bound` | [Realizable online mistake-bound learners](circuits-logic-and-other-models/learning-and-testing.md) | learning |
 | `linearity-test` | [Decision-tree property testers for Boolean linearity](circuits-logic-and-other-models/index.md) | learning |
 | `mcsp` | [Total truth-table minimum circuit size](circuits-logic-and-other-models/index.md) | metacomplexity |
 | `partial-mcsp` | [Partial truth-table circuit minimization](circuits-logic-and-other-models/index.md) | metacomplexity |
@@ -246,8 +260,10 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `crypto-ideal-oracle` | [Random-oracle signatures and ideal-permutation ciphers](programs-crypto-and-probability/protocols-and-privacy.md) | ideal-oracles |
 | `crypto-zero-knowledge` | [Generable and auxiliary-input zero knowledge](programs-crypto-and-probability/protocols-and-privacy.md) | interactive-proofs |
 | `crypto-mpc` | [Synchronous typed oracle-aided MPC](programs-crypto-and-probability/protocols-and-privacy.md) | protocols |
+| `crypto-uc` | [Call-bounded UC execution and emulation](programs-crypto-and-probability/protocols-and-privacy.md) | protocols |
 | `crypto-perfect-secrecy` | [Perfect-secrecy encryption](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
 | `crypto-secret-sharing` | [Authorized-coalition secret sharing](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
+| `privacy-differential` | [Differential privacy of output laws for an explicit adjacency relation](programs-crypto-and-probability/protocols-and-privacy.md) | privacy |
 | `average-exact-ppt` | [MildlyHardOnAverage](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
 | `average-symmetric-ppt` | [MildlyHardOnAverageToApprox](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
 | `average-one-sided-ppt` | [MildlyHardOnAverageToOneSidedApprox](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
@@ -291,8 +307,14 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `online-deterministic` | [Deterministic online competitive problems](algorithms-and-memory/online-and-streaming.md) | online |
 | `count-min-stream` | [Weighted insertion Count-Min sketch](algorithms-and-memory/online-and-streaming.md) | streaming |
 | `native-stream-fold` | [Native input-stream folds](algorithms-and-memory/online-and-streaming.md) | streaming |
+| `cost-game` | [Finite strategic games in cost form, potentials and coarse correlated equilibria](algorithms-and-memory/strategic-games.md) | game-theory |
+| `atomic-congestion-game` | [Atomic congestion games with Rosenthal's potential](algorithms-and-memory/strategic-games.md) | game-theory |
+| `nonatomic-routing` | [Nonatomic selfish routing and Wardrop flows](algorithms-and-memory/strategic-games.md) | game-theory |
+| `hedge-dynamics` | [No-regret (Hedge) dynamics in finite games and their price of anarchy](algorithms-and-memory/strategic-games.md) | game-theory |
 | `retroactive-rebuild` | [Timeline editing by reset and replay](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `catalytic-restoring-operations` | [Borrowed-register and key-table restoration](algorithms-and-memory/catalytic-and-tree-evaluation.md) | catalytic-operations |
 | `tree-evaluation-binary` | [Explicit binary Tree Evaluation](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
 | `tree-evaluation-ary` | [Fan-in-d Tree Evaluation and shared registers](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
 | `tree-evaluation-packed-controller` | [Packed tree registers and uniform raw controller](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
+| `mechanism-single-parameter` | [Single-parameter sealed-bid mechanisms and Myerson's Lemma](algorithms-and-memory/mechanism-design.md) | mechanism-design |
+| `mechanism-general-vcg` | [General-valuation mechanisms and VCG](algorithms-and-memory/mechanism-design.md) | mechanism-design |

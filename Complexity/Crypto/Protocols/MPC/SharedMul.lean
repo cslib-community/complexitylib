@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Karn Seth
 -/
 
 module
@@ -22,9 +22,10 @@ reductions from Goldreich's *Foundations of Cryptography, Volume 2: Basic Applic
    slot `0` (sender) submits a 4-tuple of bits `Fin 4 → Bool` and receives `Unit`, while slot `1`
    (receiver) submits an index `Fin 4` and receives the selected bit.
 2. **$m$-Party Shared Multiplication (`sharedMulFunctionality`, `sharedMulSpec`,
-   `sharedMulWorld`):** the randomized $m$-party functionality mapping
-   $((a_1, b_1), \dots, (a_m, b_m))$ to uniform additive shares $(c_1, \dots, c_m) \in \{0, 1\}^m$
-   summing to $(\sum_i a_i) \cdot (\sum_i b_i)$ over $\mathrm{GF}(2)$ (`BooleanRing Bool`)
+   `sharedMulWorld`):** the randomized $m$-party functionality over a finite commutative ring `R`
+   mapping $((a_1, b_1), \dots, (a_m, b_m))$ to uniform additive shares
+   $(c_1, \dots, c_m) \in R^m$ summing to $(\sum_i a_i) \cdot (\sum_i b_i)$,
+   together with its $\mathrm{GF}(2)$ (`BooleanRing Bool`) oracle specification and world
    (Section 7.3, Eqs. 7.17–7.18, print p. 635 for $m = 2$; Section 7.5.2, Eqs. 7.44–7.45,
    print p. 701 for general $m$).
 3. **2-Party Shared Multiplication in the $\text{OT}_1^4$-Hybrid Model (`twoPartyMulProtocol`,
@@ -102,12 +103,12 @@ def ot14Answer (q : (s : Fin 2) → ot14Spec.Query () s) (s : Fin 2) : ot14Spec.
 def ot14World : MultiOracleWorld ot14Spec :=
   fun _ q => pure (ot14Answer q)
 
-/-- Randomized `m`-party shared-multiplication functionality over $\mathrm{GF}(2)$
-(Goldreich Section 7.3, Eqs. 7.17–7.18, p. 635 for $m = 2$; Section 7.5.2, Eqs. 7.44–7.45, p. 701
-for general $m$): samples uniform additive shares summing to
+/-- Randomized `m`-party shared-multiplication functionality over a finite commutative ring `R`
+(Goldreich Section 7.3, Eqs. 7.17–7.18, p. 635 for $m = 2$ and $R = \mathrm{GF}(2)$;
+Section 7.5.2, Eqs. 7.44–7.45, p. 701 for general $m$): samples uniform additive shares summing to
 $(\sum_{i=1}^m a_i) \cdot (\sum_{i=1}^m b_i)$. -/
-noncomputable def sharedMulFunctionality (m : ℕ) :
-    Functionality m (fun _ => Bool × Bool) (fun _ => Bool) :=
+noncomputable def sharedMulFunctionality (m : ℕ) {R : Type} [CommRing R] [Fintype R] :
+    Functionality m (fun _ => R × R) (fun _ => R) :=
   fun x => ProbComp.sampleAdditiveShares m ((∑ i : Fin m, (x i).1) * (∑ i : Fin m, (x i).2))
 
 /-- `m`-ary oracle specification for shared multiplication (`sharedMulFunctionality m`). -/
@@ -221,7 +222,9 @@ private theorem twoPartyMul_target_eq (x : Fin 2 → Bool × Bool) :
 instance instFintypeFinCasesBoolUnit (i : Fin 2) : Fintype (Fin.cases Bool (fun _ => Unit) i) :=
   Fin.cases (inferInstanceAs (Fintype Bool)) (fun _ => inferInstanceAs (Fintype Unit)) i
 
-private theorem eval_pi_twoPartyMulCoins :
+/-- The independent local coin samplers are a single uniform sender bit and a fixed receiver
+coin. -/
+theorem eval_pi_twoPartyMulCoins :
     ProbComp.eval (OracleComp.pi twoPartyMulProtocol.sampleCoins) =
       (PMF.uniformOfFintype Bool).map twoPartyMulCoins := by
   ext r

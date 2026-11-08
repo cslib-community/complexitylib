@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Encoding
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Charged initialization from the actual depth header
 
@@ -74,14 +76,14 @@ theorem exec_setup {w : ℕ} (L : ℕ) (x : Data 32) (hheader : x.mem 1 = L)
     have hjL := Nat.pow_le_pow_right (by decide : 1 ≤ (10 : ℕ)) hj
     unfold addressBound
     omega
-  let I (y : Data 32) : Prop :=
-    y.mem = x.mem ∧ y.regs depth = L ∧ y.regs inputSize = 7 ^ y.regs stage ∧
-      y.regs capacity = 10 ^ y.regs stage ∧ y.regs stage ≤ L ∧
+  let P (j : ℕ) (y : Data 32) : Prop :=
+    y.mem = x.mem ∧ y.regs depth = L ∧ y.regs inputSize = 7 ^ j ∧
+      y.regs capacity = 10 ^ j ∧
       y.regs one = 1 ∧ y.regs seven = 7 ∧ y.regs ten = 10
-  have hbody (y : Data 32) (hy : I y) (hc : (Cond.lt stage depth).Holds y) :
-      ∃ z, ExecWithin w powerBody y z 3 ∧ I z ∧ L - z.regs stage < L - y.regs stage := by
-    obtain ⟨hm, hd, hi, hcap, hj, ho, hs, ht⟩ := hy
-    have hjL : y.regs stage < L := by simpa only [Cond.holds_lt, hd] using hc
+  have hbody (y : Data 32) (hy : P (y.regs stage) y) (hjL : y.regs stage < L) :
+      ∃ z, ExecWithin w powerBody y z 3 ∧ P (y.regs stage + 1) z ∧
+        z.regs stage = y.regs stage + 1 := by
+    obtain ⟨hm, hd, hi, hcap, ho, hs, ht⟩ := hy
     have hpi : Fits w (y.regs inputSize * y.regs seven) := by
       rw [hi, hs, ← pow_succ]
       exact hpow 7 _ (by decide) (by omega)
@@ -99,30 +101,23 @@ theorem exec_setup {w : ℕ} (L : ℕ) (x : Data 32) (hheader : x.mem 1 = L)
     have he : ExecWithin w powerBody y z 3 := by
       ram_eval [powerBody, z, ho, hs, ht, hpi', hpc', hjfit',
         inputSize, capacity, stage, one, seven, ten, Fin.mk.injEq]
-    refine ⟨z, he, ?_, ?_⟩
-    · refine ⟨hm, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨z, he, ?_, by simp [z]⟩
+    · refine ⟨hm, ?_, ?_, ?_, ?_, ?_, ?_⟩
       · simpa +decide [z, depth, inputSize, capacity, stage, Function.update_apply] using hd
       · simp +decide [z, inputSize, capacity, stage, pow_succ, hi]
       · simp +decide [z, inputSize, capacity, stage, pow_succ, hcap]
-      · simpa [z] using Nat.succ_le_of_lt hjL
       · simpa +decide [z, one, inputSize, capacity, stage, Function.update_apply] using ho
       · simpa +decide [z, seven, inputSize, capacity, stage, Function.update_apply] using hs
       · simpa +decide [z, ten, inputSize, capacity, stage, Function.update_apply] using ht
-    · simp only [z, Data.set_regs, Function.update_self]
-      omega
   let x0 := (((((((x.set one 1).set seven 7).set ten 10).set address 1).set depth L).set
     inputSize 1).set capacity 1).set stage 0
-  have hx0 : I x0 := by
-    simp +decide [I, x0, depth, inputSize, capacity, stage, one, seven, ten, address]
+  have hx0 : P (x0.regs stage) x0 := by
+    simp +decide [P, x0, depth, inputSize, capacity, stage, one, seven, ten, address]
   have hxrun : ExecWithin w setupHead x x0 8 := by
     ram_eval [setupHead, x0, hheader, h1, h7, h10, fits_zero,
       one, seven, ten, address, depth, inputSize, capacity, stage, Fin.mk.injEq]
-  obtain ⟨u, hu, hi, hc⟩ := ExecWithin.loop_invariant I (fun y => L - y.regs stage) hbody hx0
-  obtain ⟨hm, hd, hin, hcap, hj, ho, hs, ht⟩ := hi
-  have hend : u.regs stage = L := by
-    simp only [Cond.holds_lt, hd] at hc
-    omega
-  rw [hend] at hin hcap
+  obtain ⟨u, hu, ⟨hm, hd, hin, hcap, ho, hs, ht⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.2.1) hbody (by simp [x0]) hx0
   have hout : Fits w (2 + 7 ^ L) := haddr.of_le (by
     have := Nat.pow_le_pow_left (by decide : 7 ≤ 10) L
     unfold addressBound

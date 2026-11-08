@@ -15,6 +15,7 @@ import Complexity.Computability.Complexity.Classes.NP.Image
 import Complexity.Computability.Complexity.Classes.NP.Witness
 import Complexity.Computability.Complexity.Classes.Oracle.Closure
 import Complexity.Computability.Complexity.Classes.Oracle.ListOracle
+import Complexity.Computability.Complexity.Classes.PH.OracleNP
 import Complexity.Computability.Complexity.Classes.PH.Projection
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
@@ -29,6 +30,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.S
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Foundations.Data.List.Counting
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
+import Complexity.Tactic.EncLen
 import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
@@ -53,8 +55,9 @@ length at most `m`; it is polynomial in `m` because `S` is sparse.
 So `Σ₂ ⊆ P^{NP[O(log n)]}`. The Companion completes the proof with `Θ₂ ⊆ Σ₂` and closure of `Θ₂`
 under complement, which give `Σ₂ = Π₂`; here `PH = Σ₂` comes instead from the sparse form of the
 Karp–Lipton theorem (`Cslib.Complexity.PH_eq_SigmaP_two_of_SAT_mem_PWithOracle`). The reverse
-inclusion `P^{NP[O(log n)]} ⊆ PH`, which with this gives the Companion's `PH = Θ₂`, is not proved
-here.
+inclusion `P^{NP[O(log n)]} ⊆ Σ₂ ∩ Π₂ ⊆ PH` holds unconditionally
+(`Cslib.Complexity.PNPLog_subset_PH`), and with it this gives the Companion's `PH = Θ₂`
+(`Cslib.Complexity.PH_eq_PNPLog_of_sparse`).
 
 The hypothesis is the Turing-complete case. Kadin's abstract states the result for a sparse
 `S ∈ NP` with `coNP ⊆ NP^S`, of which the Turing-complete case is a consequence; that form is not
@@ -87,6 +90,7 @@ in `[0, N]`.
   plus one, and is strict oracle PPT.
 * `Cslib.Complexity.SigmaP_two_subset_PNPLog_of_sparse`: `Σ₂ ⊆ P^{NP[O(log n)]}`.
 * `Cslib.Complexity.PH_subset_PNPLog_of_sparse`: **Kadin's theorem**, `PH ⊆ P^{NP[O(log n)]}`.
+* `Cslib.Complexity.PH_eq_PNPLog_of_sparse`: Kadin's theorem as `PH = P^{NP[O(log n)]}`.
 
 ## References
 
@@ -279,8 +283,7 @@ theorem language_mem_NP (hS : S ∈ NP encBits) (hsparse : S ∈ SPARSE encBits)
         4 * m.eval n + 2 * pS.eval (m.eval n) + 3 := by
     obtain ⟨hlenS, hc, -⟩ := hpairs sc hsc
     have hpS : pS.eval sc.1.length ≤ pS.eval (m.eval n) := pS.eval_mono hlenS
-    rw [length_encPair, encBits_apply, encBits_apply, hc]
-    omega
+    enc_len [hc]
   have hlist : (encList (encPair encBits encBits) pairs).length ≤
       c * (m.eval n + 1) ^ d * (4 * m.eval n + 2 * pS.eval (m.eval n) + 3) := by
     rw [length_encList]
@@ -381,9 +384,9 @@ theorem length_queriesWith_searchStepProgram_le (answer : Unit × List Bool → 
 
 /-- The algorithm: `count a` rounds of binary search from `(0, N a)` with the requests `req`,
 then one request `fin (a, lo)` at the threshold found. -/
-def program (req fin : α × ℕ → List Bool) (N count : α → ℕ) (a : α) : WordQueryComp Unit Bool :=
-  OracleComp.iterate (count a) (searchStepProgram req a) (0, N a) >>= fun st =>
-    queryBit (fin (a, st.1))
+def program (req fin : α × ℕ → List Bool) (N count : α → ℕ) (a : α) : WordQueryComp Unit Bool := do
+  let st ← OracleComp.iterate (count a) (searchStepProgram req a) (0, N a)
+  queryBit (fin (a, st.1))
 
 open Classical in
 theorem interpret_program (A : Set (List Bool)) (req fin : α × ℕ → List Bool) (N count : α → ℕ)
@@ -469,9 +472,7 @@ theorem isOraclePPTOn_program {enc : α ↪ List Bool} {req fin : α × ℕ → 
       · simp only [h, ↓reduceIte, OracleComp.interpret_pure] at hnext
         rw [OracleComp.eq_of_mem_supportWith_pure hnext]
         exact hinv)
-    hsize (fun a i st _ hinv => by
-      simp only [length_encPair, encUnary_apply, List.length_replicate]
-      omega)
+    hsize (fun a i st _ hinv => by enc_len)
   have hfinal : IsOraclePPTOn (encPair enc (encPair encUnary encUnary)) encBool
       (fun pair : α × ℕ × ℕ => OracleComp.interpret ProbOracleComp.query
         (queryBit (fin (pair.1, pair.2.1)))) :=
@@ -568,5 +569,14 @@ theorem PH_subset_PNPLog_of_sparse (hsparse : S ∈ SPARSE encBits) (hS : S ∈ 
     PH enc ⊆ PNPLog enc := by
   rw [PH_eq_SigmaP_two_of_SAT_mem_PWithOracle hsparse hSAT enc]
   exact SigmaP_two_subset_PNPLog_of_sparse hsparse hS hSAT enc
+
+/-- **Kadin's theorem, `PH = Θ₂ᵖ`** [Kadin][Kadin1989] [Hemaspaandra and Ogihara, Theorem 1.14]
+[HemaspaandraOgihara2002]: if `NP` has a sparse polynomial-time Turing-complete set, then the
+polynomial hierarchy equals `P^{NP[O(log n)]}`. The reverse inclusion holds unconditionally
+(`Cslib.Complexity.PNPLog_subset_PH`). -/
+theorem PH_eq_PNPLog_of_sparse (hsparse : S ∈ SPARSE encBits) (hS : S ∈ NP encBits)
+    (hSAT : SAT ∈ PWithOracle S encCNF) (enc : α ↪ List Bool) :
+    PH enc = PNPLog enc :=
+  (PH_subset_PNPLog_of_sparse hsparse hS hSAT enc).antisymm (PNPLog_subset_PH enc)
 
 end Cslib.Complexity
