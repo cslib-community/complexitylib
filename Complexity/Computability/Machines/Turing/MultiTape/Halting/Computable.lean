@@ -50,6 +50,8 @@ models.
   function without bounds.
 * `Turing.MultiTapeTM.IsComputable.comp`, `.prod`, `Turing.MultiTapeTM.isComputable_id`,
   `Turing.MultiTapeTM.IsComputable.of_finite`: closure properties.
+* `Turing.MultiTapeTM.indicator_eq_true_iff`, `Turing.MultiTapeTM.indicator_eq_false_iff`: the
+  indicator of a set.
 * `Turing.MultiTapeTM.isDecidable_iff`: decidability through any computable Boolean function.
 * `Turing.MultiTapeTM.IsDecidable.compl`, `.inter`, `.union`: decidable sets are closed under
   complement, intersection and union.
@@ -129,6 +131,15 @@ def IsDecidable (L : Set α) (enc : α ↪ List Bool) : Prop :=
   ∃ t s : α → ℕ, DecidableInTimeAndSpace L enc t s
 
 variable {L : Set α} {enc : α ↪ List Bool}
+
+/-- The indicator of `L` is `true` exactly on `L`. -/
+theorem indicator_eq_true_iff {a : α} : indicator L a = true ↔ a ∈ L := by
+  classical
+  by_cases ha : a ∈ L <;> simp [indicator, ha]
+
+/-- The indicator of `L` is `false` exactly off `L`. -/
+theorem indicator_eq_false_iff {a : α} : indicator L a = false ↔ a ∉ L := by
+  rw [← Bool.not_eq_true, indicator_eq_true_iff]
 
 /-- A set is decidable exactly when its Boolean indicator is computable. -/
 theorem isDecidable_iff_isComputable_indicator :
