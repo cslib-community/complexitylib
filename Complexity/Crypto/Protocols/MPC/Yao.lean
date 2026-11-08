@@ -254,7 +254,7 @@ oblivious transfer, evaluates the table and decodes. -/
   steps := .message (yaoSend C I F tw) (.oracle (yaoQuery C I F tw) (.done (yaoOutput C F tw)))
 
 /-- The transcripts received in a run from the local states `st` after coin sampling. -/
-private def yaoReceived [Fintype K] [Nonempty K] (C : Circuit σ (n₀ + n₁) m)
+private def yaoReceived (C : Circuit σ (n₀ + n₁) m)
     (I : Interpretation σ Bool) (F : K → T → K × Bool) (tw : Slot C.topology → T)
     (st : (i : Fin 2) → YaoIn n₀ n₁ i × YaoCoins C K i) (i : Fin 2) :
     (yaoSchedule C K).Received i :=
@@ -340,7 +340,7 @@ private theorem eval_garble [Fintype K] [Nonempty K] (C : Circuit σ (n₀ + n�
     PMF.pure_map]
 
 /-- The evaluator's view in a run with the garbler's coins `c`. -/
-private theorem yaoReceived_one [Fintype K] [Nonempty K] (C : Circuit σ (n₀ + n₁) m)
+private theorem yaoReceived_one (C : Circuit σ (n₀ + n₁) m)
     (I : Interpretation σ Bool) (F : K → T → K × Bool) (tw : Slot C.topology → T)
     (x : (i : Fin 2) → YaoIn n₀ n₁ i) (c : GarblerCoins C K) :
     (⟨x 1, yaoCoins C c 1, yaoReceived C I F tw (fun i => (x i, yaoCoins C c i)) 1⟩ :
@@ -361,7 +361,7 @@ private theorem yaoReceived_one [Fintype K] [Nonempty K] (C : Circuit σ (n₀ +
       exact congrArg _ (Fin.append_right (x 0 : Fin n₀ → Bool) (x 1 : Fin n₁ → Bool) j).symm
 
 /-- The garbler's view in a run with its coins `c`. -/
-private theorem yaoReceived_zero [Fintype K] [Nonempty K] (C : Circuit σ (n₀ + n₁) m)
+private theorem yaoReceived_zero (C : Circuit σ (n₀ + n₁) m)
     (I : Interpretation σ Bool) (F : K → T → K × Bool) (tw : Slot C.topology → T)
     (x : (i : Fin 2) → YaoIn n₀ n₁ i) (c : GarblerCoins C K) :
     (⟨x 0, yaoCoins C c 0, yaoReceived C I F tw (fun i => (x i, yaoCoins C c i)) 0⟩ :
