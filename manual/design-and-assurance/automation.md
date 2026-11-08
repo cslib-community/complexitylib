@@ -40,6 +40,15 @@ explains the joint certificate and charged-space convention in context.
 
 [`polytime`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PolyTime.lean#L25) combines these certificates with `fun_prop` composition and the Aesop `PolyTime` rules. Loops use Hoare-style iteration theorems plus bounds on state growth and iteration count. A bounded number of calls to individually efficient routines is insufficient if intermediate data grows exponentially; the growth hypotheses are part of the proof obligation. Ordinary search failure can expose a failed compositional attempt as a diagnostic, not as evidence of noncomputability.
 
+Before searching, `polytime` and `ppt` prepare the goal the same way. `polytime [f, g]` (or
+`ppt [f, g]`) unfolds the definitions `f` and `g` in the goal and inlines the `let`s this exposes;
+use it for a program defined in the same module, instead of a separate `unfold`. Both forms also
+replace local encoding `let`s, such as `let EIn := encPair encUnary encBits`, by their values, and
+add the certificates stored in fields of local structures as local facts: a scheme `S` contributes
+fields such as `S.encrypt_ppt`, an admissibility hypothesis `hA` its stage certificates. A hint
+that does not occur in the goal is an error. The checked
+[client](../../ComplexityTests/OraclePPTTactic.lean) shows each step.
+
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
 
 ## Rewrite option matches before resource automation
@@ -77,7 +86,7 @@ certificates and bounds. Rewriting alone does not supply a missing resource cert
 | Tactic/interface | Input contract and strategy | Boundary |
 |---|---|---|
 | [`logspace`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/LogSpace.lean#L15) | Named certificates, recomputation-based composition, bounded output vectors and loop rules | Arbitrarily long intermediate output cannot simply be retained in logarithmic workspace |
-| [`ppt`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PPT.lean#L18) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration | Arbitrary ideal PMFs and open oracle programs need additional realization theorems |
+| [`ppt`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PPT.lean#L18) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration; strict oracle programs (`IsOraclePPTOn`, `IsOraclePPT`) by plain `fun_prop` composition of charged reply prefixes, sequencing, maps, conditionals and sampling | Arbitrary ideal PMFs need realization theorems; handler substitution and adaptive oracle loops keep their explicit rules, whose invariants and growth bounds are part of the claim |
 | [`stateful`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/Stateful.lean#L14) | Local semantic/operation-cost Hoare contracts and Aesop rules | Intermediate assertions and implementations for bind/link are supplied explicitly; total machine time remains separate |
 | [`wordram`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/WordRAM.lean#L16) | Registered controller/refinement and polynomial-time certificates | Width, basis and fixed-code realization matter; host-language continuation work is not automatically free |
 
