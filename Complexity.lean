@@ -2889,6 +2889,9 @@ public import Complexity.Cryptanalysis.AddXNORNativeBalance
 public import Complexity.Cryptanalysis.AddXNORNativeBuckets
 public import Complexity.Cryptanalysis.AddXNORNativeCounters
 public import Complexity.Cryptanalysis.AddXNORNativeDictionary
+public import Complexity.Cryptanalysis.AddXNORNativeDictionaryFrame
+public import Complexity.Cryptanalysis.AddXNORNativeDualPreparation
+public import Complexity.Cryptanalysis.AddXNORNativeDualProbe
 public import Complexity.Cryptanalysis.AddXNORNativeEmit
 public import Complexity.Cryptanalysis.AddXNORNativeEnumeration
 public import Complexity.Cryptanalysis.AddXNORNativeForwardRetain

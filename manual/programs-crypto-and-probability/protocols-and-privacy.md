@@ -876,9 +876,39 @@ The bound covers preparation plus one bucket and one second-quarter word.
 The client distinguishes forward states from inverse states and checks zero-width
 collisions. A failed fit or separation premise requires a larger word/layout;
 it cannot be discharged by treating the dictionary as a host oracle.
-Separate inverse fourth-quarter preparation preserving this dictionary, query
-register transfer and original-chain probing are still uncomposed. In particular,
-the following backward-record consumer cannot supply this forward dictionary.
+For consecutive separate inverse preparation, import
+`Complexity.Cryptanalysis.AddXNORNativeDualPreparation` and apply
+`Quarter.dualPrepare_exec`. Put the inverse heads and records after the forward
+records and below the dictionary. Supply reversed fourth-quarter operands outside
+both arenas and below the dictionary, plus the combined physical fit bound.
+Seven native instructions transfer the inverse-stage registers. The theorem derives
+both linked bucket families, the exact retained forward dictionary equation, zero
+base tags, outside-memory preservation and a register frame. `dictionaryBase` is
+proof bookkeeping for the memory below the table after construction; it is not a
+RAM operation or a supplied dictionary. The
+[complete preparation client](../../ComplexityTests/AddXNORNativeDualPreparation.lean)
+checks forward and inverse construction, retained witness tags and a dirty sentinel.
+
+For an actual original-chain witness scan, import
+`Complexity.Cryptanalysis.AddXNORNativeDualProbe` and use `Quarter.dualProbe_exec`.
+Supply reversed full-width third-quarter operands below the dictionary and outside
+both arenas. Ten more native instructions transfer registers and load the selected
+inverse bucket head; the scan then inverts the third quarter and probes the full
+retained states. Any reported witness is proved to solve the original chain.
+The [complete probe client](../../ComplexityTests/AddXNORNativeDualProbe.lean)
+supplies all raw premises, and kernel runs check a hit with zero packed witnesses
+and a miss. From the repository root, build the two modules, then run
+`lake env lean ComplexityTests/AddXNORNativeDualPreparation.lean` and
+`lake env lean ComplexityTests/AddXNORNativeDualProbe.lean`.
+Increase word width or separate the arenas/arrays when fit or separation fails;
+initial dictionary cells must really be zero. Bounds count every construction,
+transfer, load and scan instruction in this sparse WordRAM model.
+
+These APIs select one bucket on each side and fix one word per middle quarter.
+Projected query selection, whole-class completeness, orientation and global
+computed-balance time/peak storage are still uncomposed. A miss is not a global
+no-instance conclusion. The following backward-record consumer cannot substitute
+for the forward retained dictionary.
 
 For consecutive backward preparation and native forward retention, import
 `Complexity.Cryptanalysis.AddXNORNativeBackwardRetain` and apply

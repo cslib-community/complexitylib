@@ -98,10 +98,15 @@ and retained dictionary memory to original-chain scan soundness remains open.
 Forward first-quarter preparation followed by forward second-quarter retention now
 derives its exact retained dictionary, top and provenance from actual native stores,
 with a checked direction-distinguishing client and preservation of all forward buckets.
-This covers one bucket and one second-quarter word only. Preserving this dictionary
-through separate inverse fourth-quarter preparation and connecting both computed
-lists through query/probe remains open. The backward-record consumer below cannot
-substitute for the forward dictionary required by original-chain probe soundness.
+Separate inverse fourth-quarter preparation now preserves this actual forward
+dictionary and derives both native bucket families and the exact dictionary equation.
+The bounded `dualProbe_exec` composes those constructions, native register transfers,
+inverse-bucket head loading and third-quarter scanning, proving any reported hit
+solves the original chain. Complete clients check direction-sensitive operands,
+zero witness tags, dirty outside memory, an actual hit and a miss. These results
+select one bucket per side and one word per middle quarter; projected query selection,
+whole-class completeness and the global endpoint remain open.
+The backward-record consumer below cannot substitute for the forward dictionary required by original-chain probe soundness.
 Consecutive backward preparation followed by native forward retention now derives
 its dictionary and payload provenance from computed inverse records, with operand,
 other-memory and register frames. This bounded component is not the full backward
