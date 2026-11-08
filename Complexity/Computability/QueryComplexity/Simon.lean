@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.QueryComplexity.Randomized
 public import Complexity.Foundations.Data.BitString.Basic
+import Complexity.Computability.DecisionTree.Composition
 
 /-!
 # Simon's problem: the classical randomized lower bound
@@ -37,6 +38,16 @@ promise input has depth `q` with `2 (2^n - 1) (1 - 2ε) ≤ (q² - q)(1 - ε)`
 (`Cslib.QueryComplexity.simon_randomized_lower_bound`); at `ε = 1/3` this gives `2^n ≤ q²`
 (`Cslib.QueryComplexity.simon_two_pow_le_depth_sq`), so `q ≥ 2^{n/2}`. In terms of the input
 length `N = n 2^n` this is `q ≥ (N / n)^{1/2} = N^{1/2 - o(1)}`.
+
+**Search versions.** The search problem of [de Wolf, §3.1][deWolf2019] promises `s ≠ 0` and asks
+for `s`. A randomized decision tree that finds `s` with error `1/3` on every promise input with
+`s ≠ 0`, with no requirement when `s = 0`, has depth `q` with `2^n ≤ (q + 2n)²`
+(`Cslib.QueryComplexity.simon_search_ne_zero_two_pow_le_sq`): appending to every leaf `s'` the `2n`
+bit queries of `f(0)` and `f(s')` and answering whether `s' ≠ 0` and `f(0) = f(s')` decides Simon's
+problem with no larger error, since it answers `false` on every injective input. The variant that
+also requires the output `0` on injective inputs (`s = 0`) has the cleaner bound `2^n ≤ q²`
+(`Cslib.QueryComplexity.simon_search_two_pow_le_depth_sq`), by answering whether the output is
+nonzero; as a requirement on more inputs, that is a weaker lower bound.
 
 The proof is the birthday argument of de Wolf §3.3.2, arranged as a coupling. The hard inputs are
 `f = π ∘ rep_s` for a permutation `π` of `{0,1}^n` and `rep_s(a)` the representative of the pair
@@ -70,6 +81,10 @@ gives the inequality.
 * `Cslib.QueryComplexity.simon_two_pow_le_depth_sq`: `2^n ≤ q²` at `ε = 1/3`, for `n ≥ 1`.
 * `Cslib.QueryComplexity.simon_two_pow_le_randomizedComplexity_sq`: `2^n ≤ R_{1/3}(F)²` for every
   total function `F` that answers Simon's problem on the promise inputs.
+* `Cslib.QueryComplexity.simon_search_ne_zero_two_pow_le_sq`: `2^n ≤ (q + 2n)²` for the search
+  problem with `s ≠ 0` at `ε = 1/3`, for `n ≥ 1`.
+* `Cslib.QueryComplexity.simon_search_two_pow_le_depth_sq`: `2^n ≤ q²` at `ε = 1/3` for the search
+  variant that also requires the output `0` when `s = 0`, for `n ≥ 1`.
 
 ## References
 
@@ -571,6 +586,93 @@ theorem simon_two_pow_le_randomizedComplexity_sq (F : (Fin N → Bool) → Bool)
     exists_computes_depth_eq_randomizedComplexity (ε := 1 / 3) (by norm_num) F
   rw [← hd]
   exact simon_two_pow_le_depth_sq E μ F hF (fun X _ _ => hμ X) hn
+
+/-- **Exponential classical lower bound for the search variant including `s = 0`**: for `n ≥ 1`,
+a randomized decision tree that finds the hidden string with error `1/3` on every promise input,
+including the injective inputs, where it must output `0` (as the restriction to the promise inputs
+of a total function `S`), has depth `q` with `2^n ≤ q²`. Answering whether its output is nonzero
+decides Simon's problem with no further queries and no larger error
+(`Cslib.RandomizedDecisionTree.errorProb_mapOutput_le`). This does not cover trees that only find
+nonzero hidden strings, as in the search problem of [de Wolf, §3.1][deWolf2019]; for those see
+`Cslib.QueryComplexity.simon_search_ne_zero_two_pow_le_sq`. -/
+theorem simon_search_two_pow_le_depth_sq (μ : RandomizedDecisionTree (Fin N) (Fin n → Bool))
+    (S : (Fin N → Bool) → Fin n → Bool)
+    (hS : ∀ X s, SimonPromise (simonFun E X) s → S X = s)
+    (hμ : ∀ X s, SimonPromise (simonFun E X) s → μ.errorProb S X ≤ 1 / 3) (hn : 1 ≤ n) :
+    2 ^ n ≤ μ.depth ^ 2 := by
+  set g : (Fin n → Bool) → Bool := fun s => decide (s ≠ 0) with hg
+  have h := simon_two_pow_le_depth_sq E (RandomizedDecisionTree.mapOutput g μ) (g ∘ S)
+    (fun X s hX => by rw [Function.comp_apply, hS X s hX])
+    (fun X s hX => (RandomizedDecisionTree.errorProb_mapOutput_le g μ S X).trans (hμ X s hX)) hn
+  exact h.trans (Nat.pow_le_pow_left (RandomizedDecisionTree.depth_mapOutput_le g μ) 2)
+
+/-- The tree that reads `f(0)` and `f(s')` (`2n` bit queries) and answers whether `s' ≠ 0` and
+`f(0) = f(s')`: on a promise input it answers `true` exactly when `s'` is the nonzero hidden
+string. -/
+private def simonCheck (E : Fin N ≃ (Fin n → Bool) × Fin n) (s' : Fin n → Bool) :
+    DecisionTree (Fin N) Bool :=
+  DecisionTree.queryAll (fun b => decide (s' ≠ 0 ∧ simonFun E b 0 = simonFun E b s'))
+    (List.ofFn (fun j => E.symm (0, j)) ++ List.ofFn (fun j => E.symm (s', j))) fun _ => false
+
+private theorem eval_simonCheck (E : Fin N ≃ (Fin n → Bool) × Fin n) (s' : Fin n → Bool)
+    (X : Fin N → Bool) :
+    (simonCheck E s').eval X = decide (s' ≠ 0 ∧ simonFun E X 0 = simonFun E X s') := by
+  classical
+  rw [simonCheck, DecisionTree.eval_queryAll]
+  congr 3 <;> funext j <;> simp [simonFun]
+
+private theorem depth_simonCheck_le (E : Fin N ≃ (Fin n → Bool) × Fin n) (s' : Fin n → Bool) :
+    (simonCheck E s').depth ≤ 2 * n :=
+  (DecisionTree.depth_queryAll_le _ _ _).trans_eq (by simp [two_mul])
+
+/-- **Exponential classical lower bound for the search problem with a nonzero hidden string**, as
+stated by [de Wolf, §3.1][deWolf2019]: for `n ≥ 1`, a randomized decision tree that finds the
+hidden string with error `1/3` on every promise input with `s ≠ 0` (as the restriction of a total
+function `S`) has depth `q` with `2^n ≤ (q + 2n)²`, so `q ≥ 2^{n/2} - 2n`. Nothing is required on
+the inputs with `s = 0`. The proof appends to every leaf `s'` the `2n` bit queries of `f(0)` and
+`f(s')` and answers whether `s' ≠ 0` and `f(0) = f(s')`
+(`Cslib.RandomizedDecisionTree.mapTree`); this answers `false` on every injective input and is
+correct whenever the output `s'` is, so it decides Simon's problem with error `1/3`. -/
+theorem simon_search_ne_zero_two_pow_le_sq (μ : RandomizedDecisionTree (Fin N) (Fin n → Bool))
+    (S : (Fin N → Bool) → Fin n → Bool)
+    (hS : ∀ X s, SimonPromise (simonFun E X) s → s ≠ 0 → S X = s)
+    (hμ : ∀ X s, SimonPromise (simonFun E X) s → s ≠ 0 → μ.errorProb S X ≤ 1 / 3)
+    (hn : 1 ≤ n) : 2 ^ n ≤ (μ.depth + 2 * n) ^ 2 := by
+  classical
+  set φ : DecisionTree (Fin N) (Fin n → Bool) → DecisionTree (Fin N) Bool :=
+    fun t => t.bind (simonCheck E) with hφ
+  have heval : ∀ t X, (φ t).eval X = decide (t.eval X ≠ 0 ∧
+      simonFun E X 0 = simonFun E X (t.eval X)) := fun t X => by
+    rw [hφ, DecisionTree.eval_bind, eval_simonCheck]
+  set F : (Fin N → Bool) → Bool :=
+    fun X => decide (S X ≠ 0 ∧ simonFun E X 0 = simonFun E X (S X)) with hFdef
+  have hF : ∀ X s, SimonPromise (simonFun E X) s → F X = decide (s ≠ 0) := by
+    intro X s hX
+    by_cases hs : s = 0
+    · subst hs
+      have hinj := (simonPromise_zero_iff _).mp hX
+      simp only [hFdef, ne_eq, not_true_eq_false, decide_false, decide_eq_false_iff_not, not_and]
+      exact fun h0 he => h0 (hinj he).symm
+    · simp only [hFdef, hS X s hX hs, hs, ne_eq, not_false_eq_true, true_and, decide_true,
+        decide_eq_true_eq]
+      exact (hX 0 s).mpr (Or.inr (zero_add s).symm)
+  have hμ' : ∀ X s, SimonPromise (simonFun E X) s →
+      (RandomizedDecisionTree.mapTree φ μ).errorProb F X ≤ 1 / 3 := by
+    intro X s hX
+    by_cases hs : s = 0
+    · subst hs
+      have hinj := (simonPromise_zero_iff _).mp hX
+      refine (RandomizedDecisionTree.errorProb_mapTree_eq_zero φ μ F X fun t => ?_).trans_le
+        (by norm_num)
+      rw [heval, hF X 0 hX]
+      simp only [ne_eq, not_true_eq_false, decide_false, decide_eq_false_iff_not, not_and]
+      exact fun h0 he => h0 (hinj he).symm
+    · exact (RandomizedDecisionTree.errorProb_mapTree_le φ μ S F X fun t ht => by
+        rw [heval, ht]).trans (hμ X s hX hs)
+  have hd : (RandomizedDecisionTree.mapTree φ μ).depth ≤ μ.depth + 2 * n :=
+    RandomizedDecisionTree.depth_mapTree_le φ μ fun t =>
+      DecisionTree.depth_bind_le t _ (depth_simonCheck_le E)
+  exact (simon_two_pow_le_depth_sq E _ F hF hμ' hn).trans (Nat.pow_le_pow_left hd 2)
 
 end QueryComplexity
 
