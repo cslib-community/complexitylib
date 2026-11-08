@@ -19,6 +19,10 @@ Carathéodory-measurable for it (`PMF.toOuterMeasure_caratheodory`).
 ## Main results
 
 * `Cslib.Probability.PMF.toOuterMeasure_union_of_disjoint`: additivity on two disjoint events.
+* `Cslib.Probability.PMF.toOuterMeasure_biUnion_finset`: additivity on finitely many pairwise
+  disjoint events.
+* `Cslib.Probability.PMF.sum_toOuterMeasure_le_one`: the probabilities of finitely many pairwise
+  disjoint events add up to at most `1`.
 -/
 
 @[expose] public section
@@ -34,5 +38,21 @@ theorem toOuterMeasure_union_of_disjoint (p : PMF α) {s t : Set α} (h : Disjoi
     p.toOuterMeasure (s ∪ t) = p.toOuterMeasure s + p.toOuterMeasure t := by
   rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← tsum_add]
   exact tsum_congr fun y => congrFun (Set.indicator_union_of_disjoint h (⇑p)) y
+
+/-- The probability of a union of finitely many pairwise disjoint events is the sum of their
+probabilities. -/
+theorem toOuterMeasure_biUnion_finset {ι : Type*} (p : PMF α) (J : Finset ι) {B : ι → Set α}
+    (hB : (J : Set ι).PairwiseDisjoint B) :
+    p.toOuterMeasure (⋃ j ∈ J, B j) = ∑ j ∈ J, p.toOuterMeasure (B j) := by
+  simp only [PMF.toOuterMeasure_apply]
+  rw [Finset.indicator_biUnion J B hB]
+  exact Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable
+
+/-- The probabilities of finitely many pairwise disjoint events add up to at most `1`. -/
+theorem sum_toOuterMeasure_le_one {ι : Type*} (p : PMF α) (J : Finset ι) {B : ι → Set α}
+    (hB : (J : Set ι).PairwiseDisjoint B) : ∑ j ∈ J, p.toOuterMeasure (B j) ≤ 1 := by
+  rw [← toOuterMeasure_biUnion_finset p J hB]
+  exact (p.toOuterMeasure.mono (Set.subset_univ _)).trans_eq
+    ((PMF.toOuterMeasure_apply_eq_one_iff p _).mpr (Set.subset_univ _))
 
 end Cslib.Probability.PMF
