@@ -1037,12 +1037,69 @@ covers exercise the stopping/failure distinction. The second client uses an
 infinite hidden type: an observed bit disappears and later reappears, with exact
 correlated public path probabilities and harmless null-history completion.
 
+### Removing a common native clock
+
+Import `Complexity.Computability.Probabilistic.NativeUnboundedExecution` to
+observe actual open native execution without a uniformly sufficient instruction
+bound. The complete [unbounded native client](../../ComplexityTests/NativeUnboundedExecution.lean)
+executes a fair-coin local waiting loop, then queries and halts. Every finite
+clock has positive live mass, but its terminal law and almost-sure termination
+are proved, together with expected bill $4$ and physical duration $7/2$.
+The returned bit, charge and duration are sampled jointly. A second native
+machine diverges surely and its terminal result is `none` with probability one.
+
+`StoppedProcess.terminalMass` takes the supremum of actual clocked halted
+masses. Absorbing halting makes these masses monotone, and monotone convergence
+proves their sum is at most one. `terminal` completes missing mass with explicit
+divergence. It retains the full native world on termination, so its transcript,
+private state and accumulated resources remain correlated. No uniform clock,
+almost-sure halting, representation identity or finite-expectation premise is
+required to construct it. The underlying state and observation types need not
+be finite; the laws remain discrete PMFs.
+
+Use the native API as follows:
+
+1. Supply the actual `MultiTapePTM`, stateful `Environment` and initial `World`
+   from the preceding section. `terminal machine env initial` is the unbounded
+   native law on optional complete worlds. `some world` means actual halting;
+   `none` means divergence, separately from a halted failed output.
+2. Supply the proposal parser, output decoder and acceptance test.
+   `SelectionOnly` requires successful-output provenance on every supported
+   finite native run, with no common fuel bound. `terminal_support` identifies
+   every supported terminal world with an actual halted state at some clock;
+   `terminal_provenance` transfers this admission to terminal outputs.
+3. `behavioral` constructs a stopped public law from the complete-history
+   behavioral kernels and their increasing halted observation masses.
+   `terminal_behavioral_law` proves equality with actual terminal public
+   observations, including divergence. `behavioral_outcome_law` preserves the
+   joint query path, stopping, success, bill and duration under successful-only
+   provenance and failed-family normalization.
+4. `terminal_score` gives monotone convergence for any nonnegative stopped
+   score. For example, use `fun w => (tokenBill w.memory.events : ℝ≥0∞)` to
+   obtain the actual stopped-bill expectation as the supremum of clocked
+   halted-bill expectations. Infinite expectations are allowed.
+
+`terminal_none_eq_zero` characterizes almost-sure termination by exhaustion of
+actual halted mass: $\sup_N \Pr[\text{halted by instruction }N]=1$. The client
+proves this condition from the actual native law while also proving that no
+finite clock suffices on all positive-probability runs. This is a stopping-law
+construction, rather than a choice of a larger deterministic clock.
+
+Costs and durations on **divergent** paths are not encoded as terminal resource
+values. A nonnegative terminal score explicitly excludes divergence; it must
+not be advertised as the total resource cost of an arbitrary diverging machine.
+For almost-surely terminating source policies, the terminal world records their
+entire finite query trace and both accumulated resources. This module does not
+construct or audit an infinite native trajectory with nonterminating-path bills.
+The source's exact local-termination convention must be made explicit when
+admitting machines to a quantitative turn/deadline theorem.
+
 The remaining source bridge must extract actual next-query/halting epochs,
-collapse silent local computation, handle unbounded local stopping and connect
-source turn/deadline constraints to the existing Theorem 5/6 policy accounting.
-General measurable laws, source opportunity/batch/query/output encodings,
-canonical-label recovery and uniform upper-selector realization remain open.
-Theorem 4's native resource/asymptotic/hardness gaps also remain. Neither
-unrestricted Theorems 5/6 nor ALL-main is complete. No selected abstract model or
-statement changes. The Agent Operator's Manual requires no edit because human
-direction, ownership, review and validation procedures are unchanged.
+collapse silent local computation and connect source turn/deadline constraints
+to the existing Theorem 5/6 policy accounting. General measurable laws, source
+opportunity/batch/query/output encodings, parallel-duration/cancellation
+contracts, canonical-label recovery and uniform upper-selector realization
+remain open. Theorem 4's native resource/asymptotic/hardness gaps also remain.
+Neither unrestricted Theorems 5/6 nor ALL-main is complete. No selected abstract
+model or statement changes. The Agent Operator's Manual requires no edit
+because human direction, ownership, review and validation procedures are unchanged.

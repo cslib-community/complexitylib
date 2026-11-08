@@ -108,11 +108,19 @@ joint path/success/bill/duration law under successful-output-only provenance,
 including failed fabricated outputs and accepted empty covers. A real native
 work-tape/answer-dependent two-query client derives correlated execution, early
 stopping, bill 5 and duration 19/4; an infinite-hidden-type client checks full
-observed-history conditioning. These are clocked, instruction-indexed discrete
-semantics. Source oracle-turn epoch extraction through silent local computation,
-unbounded local stopping, general measurable laws, native batch/query/output
-encoding and upper realization remain missing. Unrestricted Theorems 5/6 and
-ALL-main remain incomplete.
+observed-history conditioning. `NativeUnboundedExecution` now removes a common
+instruction clock by constructing increasing actual halted-state masses, with
+missing mass recorded as divergence. Complete native stopped states and derived
+behavioral stopped observations have identical joint laws, including successful
+output provenance, query history, accumulated bill and external duration. A real
+native geometric waiting loop proves almost-sure termination, positive live mass
+at every finite clock, expected bill 4 and duration 7/2; a sure-divergence client
+checks that nontermination is not a halted failure. This covers arbitrary discrete
+unbounded stopped execution, still indexed by native instructions. Source
+next-query/halting epoch extraction, oracle-turn/deadline quantitative-policy
+transfer, nonterminating-path resource semantics, general measurable laws, native
+batch/query/output encoding and upper realization remain missing. Unrestricted
+Theorems 5/6 and ALL-main remain incomplete.
 Theorem 4's native resource/asymptotic/hardness claims also remain open. Neither the
 policy LP nor the binary-input two-batch savings FPTAS supplies those missing claims.
 
