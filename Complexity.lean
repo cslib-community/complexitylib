@@ -813,7 +813,7 @@ public import Complexity.Computability.BlumComplexity.Union
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
 public import Complexity.Computability.BranchingProgram.ReadOnce
-public import Complexity.Computability.BusyBeaver
+public import Complexity.Computability.BusyBeaver.Partrec
 public import Complexity.Computability.Catalytic.Comparison
 public import Complexity.Computability.CellProbe.Chronogram
 public import Complexity.Computability.CellProbe.DecisionTree

@@ -27,64 +27,74 @@ number `encode c` under Mathlib's `Denumerable Code` instance. Since `encode` is
 `ℕ`, exactly `n + 1` codes have size at most `n`, so the maxima below range over finite sets.
 
 * `bbOutput n` is the largest output `c.eval 0` of a code `c` with `encode c ≤ n` that halts on `0`.
-* `bbSteps n` is the largest fuel `evalnFuel c 0` (the least fuel with which Mathlib's clocked
+* `bbFuel n` is the largest fuel `evalnFuel c 0` (the least fuel with which Mathlib's clocked
   evaluator `Code.evaln` succeeds, see `Complexity.Computability.BlumComplexity.Fuel`) of such a
   code. The fuel is the cost measure of `evaln`, not the step count of a machine.
 
 Both maxima are attained, because the code `Code.zero` (of size `0`) halts.
 
-The domination theorem follows Radó's proof. For a computable `f`, let `H m = ∑_{i < m} f i`. By
-the recursion theorem (`Nat.Partrec.Code.fixed_point₂`) there is a code `G` that, on input `k`,
-outputs `H (encode (w (k + 1)))`, where `w k` is the code `succ ∘ G ∘ const k`. The code `w k` halts
-on `0` with output `H (encode (w (k + 1))) + 1`, which exceeds `f n` whenever
-`n < encode (w (k + 1))`, and it needs at least as much fuel as its output. Since `encode (w k)`
-grows without bound, every large `n` satisfies `encode (w k) ≤ n < encode (w (k + 1))` for some
-`k`, so `f n < bbOutput (encode (w k)) ≤ bbOutput n`, and likewise for `bbSteps`.
+For a computable `f`, let `H m = ∑_{i < m} f i`. The domination proof adapts Radó's argument: `H`
+plays the role of his majorant `F`, and the recursion theorem replaces his double application
+`F(F(x))` and machine chaining to absorb the program's own size. By the recursion theorem
+(`Nat.Partrec.Code.fixed_point₂`) there is a code `G` that, on input `k`, outputs
+`H (encode (w (k + 1)))`, where `w k` is the code `succ ∘ G ∘ const k`. The code `w k` halts on `0`
+with output `H (encode (w (k + 1))) + 1`, which exceeds `f n` whenever `n < encode (w (k + 1))`,
+and it needs at least as much fuel as its output. Since `encode (w k)` grows without bound, every
+large `n` satisfies `encode (w k) ≤ n < encode (w (k + 1))` for some `k`, so
+`f n < bbOutput (encode (w k)) ≤ bbOutput n`, and likewise for `bbFuel`.
 
-Independently, fuel `bbSteps n` suffices for every halting code of size at most `n`, so a
-computable upper bound on `bbSteps` would decide the halting problem
-(`not_exists_computable_bbSteps_le`, compare [Aaronson, Proposition 1][Aaronson2020]). The two
-functions bound each other up to computable changes of size:
-`bbOutput n < bbSteps (4 * n ^ 2 + 14)`, and `bbSteps n ≤ bbOutput (h n)` for a computable `h`.
-So a computable upper bound on `bbOutput` would also decide the halting problem.
+Independently, fuel `bbFuel n` suffices for every halting code of size at most `n`, so a
+computable upper bound on `bbFuel` would decide the halting problem
+(`not_exists_computable_bbFuel_le`). This is the unrelativized corollary of
+[Aaronson, Proposition 1][Aaronson2020], which solves the halting problem with oracle access to
+any upper bound on the shift function. The two functions bound each other up to computable changes
+of size: `bbOutput n < bbFuel (4 * n ^ 2 + 14)`, and `bbFuel n ≤ bbOutput (h n)` for a computable
+`h`. So a computable upper bound on `bbOutput` would also decide the halting problem.
 
 The model differs from Radó's: programs are partial recursive codes measured by Gödel number, not
 Turing machines measured by their number of states, and the output is a number rather than a count
-of ones. The results transfer to Turing machines only through a translation between the two
-program classes, which this file does not provide. Within the model, coarser size measures are
-covered: whenever `n ≤ σ n`, the function `n ↦ bbOutput (σ n)` still dominates every computable
-function (`eventually_lt_bbOutput_comp`). For example, `Nat.size (encode c) ≤ ℓ` exactly when
+of ones. The closest analogues in the literature are Aaronson's busy beaver functions for an
+arbitrary programming language `L` whose programs are bit strings
+[Aaronson, Section 1][Aaronson2020]: `BB_L(n)` is the largest number of steps of a halting program
+of at most `n` bits, and a variant defined through Kolmogorov complexity is the largest `m` with
+`K_L(m) ≤ n`, that is, the largest output of such a program. Aaronson states Propositions 1 and 2
+for Turing machines, noting in Section 2 that they hold for any universal model of computation. The
+results transfer to Turing machines only through a translation between the two program classes,
+which this file does not provide. Within the model, coarser size measures are covered: whenever
+`n ≤ σ n`, the function `n ↦ bbOutput (σ n)` still dominates every computable function
+(`eventually_lt_bbOutput_comp`). For example, `Nat.size (encode c) ≤ ℓ` exactly when
 `encode c ≤ 2 ^ ℓ - 1`, so the busy beaver function indexed by bit length is
 `ℓ ↦ bbOutput (2 ^ ℓ - 1)`.
 
 ## Main definitions
 
 * `Cslib.BusyBeaver.bbOutput`: the busy beaver function, output version.
-* `Cslib.BusyBeaver.bbSteps`: the busy beaver function, fuel version.
+* `Cslib.BusyBeaver.bbFuel`: the busy beaver function, fuel version.
 
 ## Main results
 
 * `Cslib.BusyBeaver.le_bbOutput`, `Cslib.BusyBeaver.exists_mem_eval_bbOutput`,
-  `Cslib.BusyBeaver.le_bbSteps`, `Cslib.BusyBeaver.exists_mem_evalnFuel_bbSteps`: the functions
+  `Cslib.BusyBeaver.le_bbFuel`, `Cslib.BusyBeaver.exists_mem_evalnFuel_bbFuel`: the functions
   are the maxima of finite nonempty sets.
-* `Cslib.BusyBeaver.monotone_bbOutput`, `Cslib.BusyBeaver.monotone_bbSteps`: monotonicity.
-* `Cslib.BusyBeaver.eventually_lt_bbOutput`, `Cslib.BusyBeaver.eventually_lt_bbSteps`:
+* `Cslib.BusyBeaver.monotone_bbOutput`, `Cslib.BusyBeaver.monotone_bbFuel`: monotonicity.
+* `Cslib.BusyBeaver.eventually_lt_bbOutput`, `Cslib.BusyBeaver.eventually_lt_bbFuel`:
   **domination**, every computable function is eventually below both functions [Rado1962].
-* `Cslib.BusyBeaver.not_computable_bbOutput`, `Cslib.BusyBeaver.not_computable_bbSteps`: neither
+* `Cslib.BusyBeaver.not_computable_bbOutput`, `Cslib.BusyBeaver.not_computable_bbFuel`: neither
   function is computable.
-* `Cslib.BusyBeaver.dom_eval_iff_isSome_evaln_bbSteps`: a code of size at most `n` halts on `0`
-  exactly when `evaln` succeeds with fuel `bbSteps n`.
-* `Cslib.BusyBeaver.computablePred_dom_eval_of_bbSteps_le`,
-  `Cslib.BusyBeaver.not_exists_computable_bbSteps_le`: a computable upper bound on `bbSteps` decides
+* `Cslib.BusyBeaver.dom_eval_iff_isSome_evaln_bbFuel`: a code of size at most `n` halts on `0`
+  exactly when `evaln` succeeds with fuel `bbFuel n`.
+* `Cslib.BusyBeaver.computablePred_dom_eval_of_bbFuel_le`,
+  `Cslib.BusyBeaver.not_exists_computable_bbFuel_le`: a computable upper bound on `bbFuel` decides
   halting, so none exists.
-* `Cslib.BusyBeaver.bbOutput_lt_bbSteps`, `Cslib.BusyBeaver.exists_computable_bbSteps_le_bbOutput`:
+* `Cslib.BusyBeaver.bbOutput_lt_bbFuel`, `Cslib.BusyBeaver.exists_computable_bbFuel_le_bbOutput`:
   the two functions bound each other up to computable changes of size.
 * `Cslib.BusyBeaver.not_exists_computable_bbOutput_le`: no computable function bounds `bbOutput`.
 
 ## References
 
 * [T. Radó, *On non-computable functions*][Rado1962], Sections V (Theorem) and VI
-* [S. Aaronson, *The Busy Beaver Frontier*][Aaronson2020], Propositions 1 and 2
+* [S. Aaronson, *The Busy Beaver Frontier*][Aaronson2020], Section 1 (`BB_L`), Section 2,
+  Propositions 1 and 2
 * [G. Boolos, J. Burgess, R. Jeffrey, *Computability and Logic*][BoolosBurgessJeffrey2007],
   Section 4.2, "The Productivity Function", a textbook treatment for Turing machines (locator from
   the table of contents; the text was not checked)
@@ -130,12 +140,12 @@ noncomputable def bbOutput (n : ℕ) : ℕ :=
 /-- **Busy beaver, fuel version** [Rado1962]: the largest fuel `evalnFuel c 0` needed by a code
 `c` with Gödel number at most `n` that halts on `0`. This is the analogue of Radó's shift function
 for the evaluator `Code.evaln`; the fuel is not the step count of a machine. -/
-noncomputable def bbSteps (n : ℕ) : ℕ :=
+noncomputable def bbFuel (n : ℕ) : ℕ :=
   sSup {k | ∃ c : Code, encode c ≤ n ∧ k ∈ evalnFuel c 0}
 
 private theorem bbOutput_eq : bbOutput = bbOf fun c => c.eval 0 := rfl
 
-private theorem bbSteps_eq : bbSteps = bbOf fun c => evalnFuel c 0 := rfl
+private theorem bbFuel_eq : bbFuel = bbOf fun c => evalnFuel c 0 := rfl
 
 private theorem dom_eval_zero : (Code.zero.eval 0).Dom := by
   simp [Code.eval, pure, PFun.pure]
@@ -155,17 +165,17 @@ theorem exists_mem_eval_bbOutput (n : ℕ) : ∃ c : Code, encode c ≤ n ∧ bb
 theorem monotone_bbOutput : Monotone bbOutput :=
   monotone_bbOf _ dom_eval_zero
 
-/-- The fuel needed by a halting code of size at most `n` is at most `bbSteps n`. -/
-theorem le_bbSteps {n : ℕ} {c : Code} (hc : encode c ≤ n) {k : ℕ} (hk : k ∈ evalnFuel c 0) :
-    k ≤ bbSteps n :=
+/-- The fuel needed by a halting code of size at most `n` is at most `bbFuel n`. -/
+theorem le_bbFuel {n : ℕ} {c : Code} (hc : encode c ≤ n) {k : ℕ} (hk : k ∈ evalnFuel c 0) :
+    k ≤ bbFuel n :=
   le_bbOf hc hk
 
-/-- Some code of size at most `n` needs fuel exactly `bbSteps n` on input `0`. -/
-theorem exists_mem_evalnFuel_bbSteps (n : ℕ) :
-    ∃ c : Code, encode c ≤ n ∧ bbSteps n ∈ evalnFuel c 0 :=
+/-- Some code of size at most `n` needs fuel exactly `bbFuel n` on input `0`. -/
+theorem exists_mem_evalnFuel_bbFuel (n : ℕ) :
+    ∃ c : Code, encode c ≤ n ∧ bbFuel n ∈ evalnFuel c 0 :=
   bbOf_mem dom_evalnFuel_zero n
 
-theorem monotone_bbSteps : Monotone bbSteps :=
+theorem monotone_bbFuel : Monotone bbFuel :=
   monotone_bbOf _ dom_evalnFuel_zero
 
 /-- The output of `succ ∘ c` is at most the fuel with which `evaln` computes it. -/
@@ -208,8 +218,8 @@ private theorem computable_sum_range {f : ℕ → ℕ} (hf : Computable f) :
   | succ m ih => rw [Finset.sum_range_succ, ← ih]
 
 /-- **Domination** for both functions at once. -/
-private theorem eventually_lt_bbOutput_and_bbSteps {f : ℕ → ℕ} (hf : Computable f) :
-    ∀ᶠ n in atTop, f n < bbOutput n ∧ f n < bbSteps n := by
+private theorem eventually_lt_bbOutput_and_bbFuel {f : ℕ → ℕ} (hf : Computable f) :
+    ∀ᶠ n in atTop, f n < bbOutput n ∧ f n < bbFuel n := by
   -- `H m` bounds `f` below `m`.
   let H : ℕ → ℕ := fun m => ∑ i ∈ Finset.range m, f i
   have hH : Computable H := computable_sum_range hf
@@ -243,58 +253,53 @@ private theorem eventually_lt_bbOutput_and_bbSteps {f : ℕ → ℕ} (hf : Compu
   refine ⟨hfn.trans_le ((le_bbOutput le_rfl (heval k)).trans (monotone_bbOutput hkn)), ?_⟩
   obtain ⟨K, hK⟩ := exists_mem_evalnFuel (heval k)
   exact hfn.trans_le ((le_of_mem_evalnFuel_comp_succ (heval k) hK).trans
-    ((le_bbSteps le_rfl hK).trans (monotone_bbSteps hkn)))
+    ((le_bbFuel le_rfl hK).trans (monotone_bbFuel hkn)))
 
 /-- **Radó's theorem** for partial recursive codes [Rado1962] [Aaronson2020]: every computable
 function is eventually below `bbOutput`. -/
 theorem eventually_lt_bbOutput {f : ℕ → ℕ} (hf : Computable f) :
     ∀ᶠ n in atTop, f n < bbOutput n :=
-  (eventually_lt_bbOutput_and_bbSteps hf).mono fun _ h => h.1
+  (eventually_lt_bbOutput_and_bbFuel hf).mono fun _ h => h.1
 
 /-- **Radó's theorem** for the fuel version [Rado1962]: every computable function is eventually
-below `bbSteps`. -/
-theorem eventually_lt_bbSteps {f : ℕ → ℕ} (hf : Computable f) :
-    ∀ᶠ n in atTop, f n < bbSteps n :=
-  (eventually_lt_bbOutput_and_bbSteps hf).mono fun _ h => h.2
+below `bbFuel`. -/
+theorem eventually_lt_bbFuel {f : ℕ → ℕ} (hf : Computable f) :
+    ∀ᶠ n in atTop, f n < bbFuel n :=
+  (eventually_lt_bbOutput_and_bbFuel hf).mono fun _ h => h.2
 
 /-- Domination survives any reindexing `σ` of sizes with `n ≤ σ n`, computable or not. For
 `σ ℓ = 2 ^ ℓ - 1` this is domination for the busy beaver function indexed by bit length. -/
 theorem eventually_lt_bbOutput_comp {f : ℕ → ℕ} (hf : Computable f) {σ : ℕ → ℕ}
-    (hσ : ∀ n, n ≤ σ n) : ∀ᶠ n in atTop, f n < bbOutput (σ n) := by
-  -- `F m = ∑_{i ≤ m} f i` is computable and bounds `f` up to `m`.
-  let F : ℕ → ℕ := fun m => ∑ i ∈ Finset.range (m + 1), f i
-  have hF : Computable F := (computable_sum_range hf).comp Computable.succ
-  obtain ⟨N, hN⟩ := eventually_atTop.1 (eventually_lt_bbOutput hF)
-  refine eventually_atTop.2 ⟨N, fun n hn => lt_of_le_of_lt ?_ (hN _ (hn.trans (hσ n)))⟩
-  exact Finset.single_le_sum (fun i _ => Nat.zero_le (f i))
-    (Finset.mem_range.2 (Nat.lt_succ_of_le (hσ n)))
+    (hσ : ∀ n, n ≤ σ n) : ∀ᶠ n in atTop, f n < bbOutput (σ n) :=
+  (eventually_lt_bbOutput hf).mono fun n h => h.trans_le (monotone_bbOutput (hσ n))
 
 /-- `bbOutput` is not computable [Rado1962]. -/
 theorem not_computable_bbOutput : ¬ Computable bbOutput := fun h =>
   (eventually_lt_bbOutput h).exists.elim fun _ hn => lt_irrefl _ hn
 
-/-- `bbSteps` is not computable [Rado1962]. -/
-theorem not_computable_bbSteps : ¬ Computable bbSteps := fun h =>
-  (eventually_lt_bbSteps h).exists.elim fun _ hn => lt_irrefl _ hn
+/-- `bbFuel` is not computable [Rado1962]. -/
+theorem not_computable_bbFuel : ¬ Computable bbFuel := fun h =>
+  (eventually_lt_bbFuel h).exists.elim fun _ hn => lt_irrefl _ hn
 
-/-- Fuel `bbSteps n` suffices for every halting code of size at most `n`: such a code halts on `0`
-exactly when `evaln` succeeds with fuel `bbSteps n`. -/
-theorem dom_eval_iff_isSome_evaln_bbSteps {n : ℕ} {c : Code} (hc : encode c ≤ n) :
-    (c.eval 0).Dom ↔ (Code.evaln (bbSteps n) c 0).isSome := by
+/-- Fuel `bbFuel n` suffices for every halting code of size at most `n`: such a code halts on `0`
+exactly when `evaln` succeeds with fuel `bbFuel n`. -/
+theorem dom_eval_iff_isSome_evaln_bbFuel {n : ℕ} {c : Code} (hc : encode c ≤ n) :
+    (c.eval 0).Dom ↔ (Code.evaln (bbFuel n) c 0).isSome := by
   constructor
   · intro h
     obtain ⟨k, hk⟩ := Part.dom_iff_mem.1 ((dom_evalnFuel_iff c 0).2 h)
     obtain ⟨x, hx⟩ := Option.isSome_iff_exists.1 (mem_evalnFuel_iff.1 hk).1
-    rw [Code.evaln_mono (le_bbSteps hc hk) hx]
+    rw [Code.evaln_mono (le_bbFuel hc hk) hx]
     rfl
   · intro h
     obtain ⟨x, hx⟩ := Option.isSome_iff_exists.1 h
     exact Part.dom_iff_mem.2 ⟨x, Code.evaln_sound hx⟩
 
-/-- A computable upper bound on `bbSteps` decides whether a code halts on `0`
-[Aaronson, Proposition 1][Aaronson2020]. -/
-theorem computablePred_dom_eval_of_bbSteps_le {g : ℕ → ℕ} (hg : Computable g)
-    (hle : ∀ n, bbSteps n ≤ g n) : ComputablePred fun c : Code => (c.eval 0).Dom := by
+/-- A computable upper bound on `bbFuel` decides whether a code halts on `0`. This is the
+unrelativized corollary of [Aaronson, Proposition 1][Aaronson2020], which solves the halting
+problem with oracle access to any upper bound. -/
+theorem computablePred_dom_eval_of_bbFuel_le {g : ℕ → ℕ} (hg : Computable g)
+    (hle : ∀ n, bbFuel n ≤ g n) : ComputablePred fun c : Code => (c.eval 0).Dom := by
   refine ComputablePred.computable_iff.2
     ⟨fun c => (Code.evaln (g (encode c)) c 0).isSome, ?_, funext fun c => propext ?_⟩
   · exact Primrec.option_isSome.to_comp.comp (Code.primrec_evaln.to_comp.comp
@@ -302,19 +307,19 @@ theorem computablePred_dom_eval_of_bbSteps_le {g : ℕ → ℕ} (hg : Computable
   · dsimp only
     constructor
     · intro h
-      obtain ⟨x, hx⟩ := Option.isSome_iff_exists.1 ((dom_eval_iff_isSome_evaln_bbSteps le_rfl).1 h)
+      obtain ⟨x, hx⟩ := Option.isSome_iff_exists.1 ((dom_eval_iff_isSome_evaln_bbFuel le_rfl).1 h)
       rw [Code.evaln_mono (hle _) hx]
       rfl
     · intro h
       obtain ⟨x, hx⟩ := Option.isSome_iff_exists.1 h
       exact Part.dom_iff_mem.2 ⟨x, Code.evaln_sound hx⟩
 
-/-- No computable function bounds `bbSteps` from above, since it would decide the halting problem
-(`ComputablePred.halting_problem`). This is a second proof that `bbSteps` is not computable. -/
-theorem not_exists_computable_bbSteps_le :
-    ¬ ∃ g : ℕ → ℕ, Computable g ∧ ∀ n, bbSteps n ≤ g n :=
+/-- No computable function bounds `bbFuel` from above, since it would decide the halting problem
+(`ComputablePred.halting_problem`). This is a second proof that `bbFuel` is not computable. -/
+theorem not_exists_computable_bbFuel_le :
+    ¬ ∃ g : ℕ → ℕ, Computable g ∧ ∀ n, bbFuel n ≤ g n :=
   fun ⟨_, hg, hle⟩ =>
-    ComputablePred.halting_problem 0 (computablePred_dom_eval_of_bbSteps_le hg hle)
+    ComputablePred.halting_problem 0 (computablePred_dom_eval_of_bbFuel_le hg hle)
 
 private theorem encode_comp_succ_le (c : Code) :
     encode (Code.comp Code.succ c) ≤ 4 * encode c ^ 2 + 14 := by
@@ -326,13 +331,13 @@ private theorem encode_comp_succ_le (c : Code) :
 
 /-- The fuel version outgrows the output version, up to the size overhead `4 * n ^ 2 + 14` of
 composing a code with `succ`. -/
-theorem bbOutput_lt_bbSteps (n : ℕ) : bbOutput n < bbSteps (4 * n ^ 2 + 14) := by
+theorem bbOutput_lt_bbFuel (n : ℕ) : bbOutput n < bbFuel (4 * n ^ 2 + 14) := by
   obtain ⟨c, hc, hx⟩ := exists_mem_eval_bbOutput n
   have hx' : bbOutput n + 1 ∈ (Code.comp Code.succ c).eval 0 :=
     Part.mem_bind hx (Part.mem_some _)
   obtain ⟨K, hK⟩ := exists_mem_evalnFuel hx'
   refine Nat.lt_of_succ_le ((le_of_mem_evalnFuel_comp_succ hx' hK).trans
-    ((le_bbSteps le_rfl hK).trans (monotone_bbSteps ?_)))
+    ((le_bbFuel le_rfl hK).trans (monotone_bbFuel ?_)))
   exact (encode_comp_succ_le c).trans (by gcongr)
 
 private theorem strictMono_encode_const : StrictMono fun k => encode (Code.const k) :=
@@ -366,21 +371,21 @@ private theorem exists_code_evalnFuel :
   · exact Computable.encode.comp
       (Code.primrec₂_curry.to_comp.comp (Computable.const d) Computable.id)
 
-/-- `bbSteps` is bounded by `bbOutput` after a computable change of size: the fuel of a code is
+/-- `bbFuel` is bounded by `bbOutput` after a computable change of size: the fuel of a code is
 the output of another code, of computably bounded size. -/
-theorem exists_computable_bbSteps_le_bbOutput :
-    ∃ h : ℕ → ℕ, Computable h ∧ ∀ n, bbSteps n ≤ bbOutput (h n) := by
+theorem exists_computable_bbFuel_le_bbOutput :
+    ∃ h : ℕ → ℕ, Computable h ∧ ∀ n, bbFuel n ≤ bbOutput (h n) := by
   obtain ⟨t, ht, h, hh, hle⟩ := exists_code_evalnFuel
   refine ⟨h, hh, fun n => ?_⟩
-  obtain ⟨c, hc, hk⟩ := exists_mem_evalnFuel_bbSteps n
+  obtain ⟨c, hc, hk⟩ := exists_mem_evalnFuel_bbFuel n
   exact le_bbOutput (hle n c hc) (by rw [ht]; exact hk)
 
 /-- A computable upper bound on `bbOutput` decides whether a code halts on `0`, through
-`exists_computable_bbSteps_le_bbOutput` and `computablePred_dom_eval_of_bbSteps_le`. -/
+`exists_computable_bbFuel_le_bbOutput` and `computablePred_dom_eval_of_bbFuel_le`. -/
 theorem computablePred_dom_eval_of_bbOutput_le {g : ℕ → ℕ} (hg : Computable g)
     (hle : ∀ n, bbOutput n ≤ g n) : ComputablePred fun c : Code => (c.eval 0).Dom := by
-  obtain ⟨h, hh, hsteps⟩ := exists_computable_bbSteps_le_bbOutput
-  exact computablePred_dom_eval_of_bbSteps_le (hg.comp hh) fun n => (hsteps n).trans (hle _)
+  obtain ⟨h, hh, hsteps⟩ := exists_computable_bbFuel_le_bbOutput
+  exact computablePred_dom_eval_of_bbFuel_le (hg.comp hh) fun n => (hsteps n).trans (hle _)
 
 /-- No computable function bounds `bbOutput` from above, since it would decide the halting problem.
 This is a second proof that `bbOutput` is not computable. -/
