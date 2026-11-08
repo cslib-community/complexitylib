@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.GomoryHu.Basic
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Acyclic
 
 /-!
 # Gusfield's algorithm for Gomory–Hu trees
@@ -44,7 +45,9 @@ processed, the parent graph is connected with `n - 1` edges, hence a tree, and b
 * `Cslib.Algorithms.Lean.GomoryHu.gusfieldStep`, `Cslib.Algorithms.Lean.GomoryHu.gusfieldLoop`,
   `Cslib.Algorithms.Lean.GomoryHu.gusfieldParent`: Gusfield's algorithm on parent functions, with
   a cut oracle `C : V → V → Finset V`.
-* `Cslib.Algorithms.Lean.GomoryHu.parentGraph`: the tree of a parent function.
+
+The tree of the output is its parent graph `SimpleGraph.parentGraph`
+(`Complexity.Foundations.Combinatorics.SimpleGraph.Acyclic`).
 
 ## Main results
 
@@ -62,6 +65,7 @@ public section
 namespace Cslib.Algorithms.Lean.GomoryHu
 
 open Cslib.Algorithms.Lean.Submodular
+open SimpleGraph (parentGraph parentGraph_adj edgeSide edgeSide_eq_of_forall_adj edgeSide_swap)
 
 variable {V : Type*} {β : Type*}
 
@@ -73,7 +77,7 @@ variable [DecidableEq V] {ι : Type*}
 
 /-- Uncross `X` successively with the sets `A k`, `k ∈ ks`: add `A k` when `a k ∈ X`, remove it
 otherwise. -/
-private noncomputable def uncrossList (X : Finset V) (a : ι → V) (A : ι → Finset V) :
+private def uncrossList (X : Finset V) (a : ι → V) (A : ι → Finset V) :
     List ι → Finset V
   | [] => X
   | k :: ks => if a k ∈ X then uncrossList X a A ks ∪ A k else uncrossList X a A ks \ A k
@@ -160,15 +164,6 @@ order `l`, starting from the star centred at `r`. -/
   gusfieldLoop C r l fun _ => r
 
 end Algorithm
-
-/-- The graph of a parent function: `x` and `y` are adjacent when one is the parent of the other
-(self-loops at the root are discarded). -/
-def parentGraph (p : V → V) : SimpleGraph V :=
-  SimpleGraph.fromRel fun x y => p x = y
-
-theorem parentGraph_adj {p : V → V} {x y : V} :
-    (parentGraph p).Adj x y ↔ x ≠ y ∧ (p x = y ∨ p y = x) := by
-  simp [parentGraph, SimpleGraph.fromRel_adj]
 
 /-! ### The invariant -/
 

@@ -87,6 +87,7 @@ end Cslib.WeightedCut
 namespace Cslib.Algorithms.Lean.GomoryHu
 
 open Cslib.WeightedCut
+open SimpleGraph (edgeSide mem_edgeSide_of_mem_darts)
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
@@ -142,7 +143,14 @@ end Cslib.Algorithms.Lean.GomoryHu
 
 namespace Cslib.Algorithms.Lean.MaxFlow
 
-open Cslib.WeightedCut
+open Cslib.WeightedCut Cslib.Algorithms.Lean.GomoryHu
+
+/-- A minimum cut of the network with capacities `W`, source `s` and sink `t` is a minimum `s`–`t`
+cut of the cut function of `W`. -/
+theorem Network.IsMinCut.isMinCutBetween {V : Type*} [Fintype V] [DecidableEq V]
+    {W : V → V → ℕ} {s t : V} {S : Finset V} (hS : (Network.mk W s t).IsMinCut S) :
+    IsMinCutBetween (cutWeight W) s t S :=
+  ⟨hS.1.1, hS.1.2, fun Y hs ht => hS.2 Y ⟨hs, ht⟩⟩
 
 /-- **Max-flow min-cut for `λ`.** In the network with capacities `W`, source `s` and sink `t ≠ s`,
 a maximum flow has value `λ(s, t)`, the minimum `s`–`t` cut weight of `W`. -/
@@ -152,6 +160,6 @@ theorem Network.Flow.IsMaxFlow.value_eq_minCutBetween {V : Type*} [Fintype V] [D
   obtain ⟨g, S, hg, hS, hval⟩ := Network.exists_maxFlow_eq_minCut (Network.mk W s t) hst
   rw [le_antisymm (hg f) (hf g), hval]
   congr 1
-  exact (cutWeight_eq_minCutBetween_iff W hS.1.1 hS.1.2).mpr fun Y hs ht => hS.2 Y ⟨hs, ht⟩
+  exact ((isMinCutBetween_cutWeight_iff W).mp hS.isMinCutBetween).2.2
 
 end Cslib.Algorithms.Lean.MaxFlow

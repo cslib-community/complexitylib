@@ -27,6 +27,7 @@ namespace ComplexityTests.GomoryHuConstruction
 
 open Cslib.WeightedCut Cslib.Algorithms.Lean Cslib.Algorithms.Lean.MaxFlow
   Cslib.Algorithms.Lean.GomoryHu
+open SimpleGraph (parentGraph parentGraph_adj edgeSide edgeSide_eq_of_forall_adj)
 
 /-- The weighted graph on `Fin 4` with edges `01:4`, `12:2`, `23:3`, `02:1`, `13:1`. -/
 private def W : Fin 4 → Fin 4 → ℕ := fun u v =>
@@ -71,6 +72,11 @@ private theorem parentGraph_gomoryHuM_zero :
   rw [parentGraph_adj, SimpleGraph.pathGraph_adj, gomoryHuM_zero_ret]
   revert x y
   decide
+
+/-- The output is also a parent array rooted at `0` in the sense of `SimpleGraph.parentTree`. -/
+example : SimpleGraph.parentTree (vget (gomoryHuM W adjW 0).ret) = SimpleGraph.pathGraph 4 := by
+  rw [SimpleGraph.parentTree_eq_parentGraph (by rw [gomoryHuM_zero_ret]; decide),
+    parentGraph_gomoryHuM_zero]
 
 /-- Correctness of the algorithm, instantiated. -/
 example : IsGomoryHuTree (cutWeight W) (parentGraph (vget (gomoryHuM W adjW 0).ret)) :=

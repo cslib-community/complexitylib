@@ -42,12 +42,13 @@ transferred from the abstract algorithm `Cslib.Algorithms.Lean.GomoryHu.gusfield
 
 ## Cost model
 
-The same unit-cost model as `Cslib.Algorithms.Lean.MaxFlow.edmondsKarpM`: `Vector` reads and
-writes, `Finset` membership tests on the returned cut, equality tests on `Fin n`, and evaluating
-`W u v` count as `O(1)` primitives inside charged steps. Charged: `n` ticks to allocate the parent
-array, `1` tick per vertex for the loop test `s = r`, and for each non-root vertex `s`: `1` tick to
-read its parent, the full Edmonds–Karp cost, `n` ticks for the re-hanging scan over all vertices,
-and `1` tick for the final membership test and two writes.
+The unit-cost model of `Cslib.Algorithms.Lean.MaxFlow.edmondsKarpM`, extended with `Finset`
+membership on the returned cut as a free primitive: `Vector` reads and writes, those membership
+tests, equality tests on `Fin n`, and evaluating `W u v` count as `O(1)` primitives inside charged
+steps. (Even an `O(n)` membership test would add only `O(n³)` in total.) Charged: `n` ticks to
+allocate the parent array, `1` tick per vertex for the loop test `s = r`, and for each non-root
+vertex `s`: `1` tick to read its parent, the full Edmonds–Karp cost, `n` ticks for the re-hanging
+scan over all vertices, and `1` tick for the final swap test and its two writes.
 
 ## Limitations
 
@@ -68,6 +69,7 @@ public section
 namespace Cslib.Algorithms.Lean.GomoryHu
 
 open Cslib.Algorithms.Lean Cslib.Algorithms.Lean.MaxFlow Cslib.WeightedCut
+open SimpleGraph (parentGraph)
 
 variable {n : ℕ}
 
@@ -113,7 +115,7 @@ theorem isMinCutBetween_ekCut {W : Fin n → Fin n → ℕ} {adj : Fin n → Lis
     (hadj : ∀ u v, u ≠ v → 0 < W u v + W v u → v ∈ adj u) {s t : Fin n} (hst : s ≠ t) :
     IsMinCutBetween (cutWeight W) s t (ekCut W adj s t) := by
   obtain ⟨-, hmin, -⟩ := edmondsKarpM_correct (N := Network.mk W s t) (adj := adj) hadj hst
-  exact ⟨hmin.1.1, hmin.1.2, fun Y hs ht => hmin.2 Y ⟨hs, ht⟩⟩
+  exact hmin.isMinCutBetween
 
 /-- One step of Gusfield's algorithm on the parent array `p` for the vertex `s`: one
 Edmonds–Karp computation between `s` and its parent `t`, a scan re-hanging the vertices on the
@@ -232,7 +234,7 @@ theorem gomoryHuLoopM_time_le (W : Fin n → Fin n → ℕ) (adj : Fin n → Lis
       rw [Nat.add_mul, Nat.one_mul]
       omega
 
-theorem length_filter_finRange_ne (r : Fin n) :
+private theorem length_filter_finRange_ne (r : Fin n) :
     ((List.finRange n).filter (· ≠ r)).length = n - 1 := by
   have h : (List.finRange n).filter (· ≠ r) = (List.finRange n).erase r := by
     rw [(List.nodup_finRange n).erase_eq_filter]
