@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.Probabilistic.OracleSimulation
 public import Complexity.Crypto.Computational.GMW.Protocol
+public import Complexity.Crypto.Encoding
+public import Complexity.Logics.Propositional.CNF.Encoding
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Probabilistic.Oracle.Composition
@@ -33,6 +35,8 @@ certifies:
 
 ## Main definitions
 
+* `Cslib.Crypto.GMW.encTwoRoundResult`, `Cslib.Crypto.GMW.encCoinPair`: the encodings of the
+  result of `runTwoRound` and of a prover coin pair `(bits, seeds)`.
 * `Cslib.Crypto.GMW.gmwFirstSuccess`: extracts the payload of the first successful simulation
   attempt (`true :: out`) from a list of attempts.
 * `Cslib.Crypto.GMW.gmwSampleSimCoins`, `Cslib.Crypto.GMW.gmwSimWithPads`,
@@ -67,12 +71,12 @@ private theorem bool_xor' {α : Type} {input : α ↪ List Bool} {f g : α → B
   ComputableInPolyTime.bool_xor.comp (hf.prod hg)
 
 private theorem computableInPolyTime_clauseLitVar (i : ℕ) {α : Type} {input : α ↪ List Bool}
-    {c : α → Clause ℕ} (hc : ComputableInPolyTime c input (encList (encPair encNat encBool))) :
+    {c : α → Clause ℕ} (hc : ComputableInPolyTime c input (encClause encNat)) :
     ComputableInPolyTime (fun a => ((c a).getD i (0, false)).1) input encNat :=
   (hc.listGetDWithInput (.const i) (0, false)).fst'
 
 private theorem computableInPolyTime_clauseLitPol (i : ℕ) {α : Type} {input : α ↪ List Bool}
-    {c : α → Clause ℕ} (hc : ComputableInPolyTime c input (encList (encPair encNat encBool))) :
+    {c : α → Clause ℕ} (hc : ComputableInPolyTime c input (encClause encNat)) :
     ComputableInPolyTime (fun a => ((c a).getD i (0, false)).2) input encBool :=
   (hc.listGetDWithInput (.const i) (0, false)).snd'
 
@@ -121,7 +125,7 @@ theorem computableInPolyTime_gmwActiveIdx {α : Type} {input : α ↪ List Bool}
 @[fun_prop]
 theorem computableInPolyTime_clauseEvalBits {α : Type} {input : α ↪ List Bool}
     {c : α → Clause ℕ} {b₀ b₁ b₂ : α → Bool}
-    (hc : ComputableInPolyTime c input (encList (encPair encNat encBool)))
+    (hc : ComputableInPolyTime c input (encClause encNat))
     (hb₀ : ComputableInPolyTime b₀ input encBool) (hb₁ : ComputableInPolyTime b₁ input encBool)
     (hb₂ : ComputableInPolyTime b₂ input encBool) :
     ComputableInPolyTime (fun a => clauseEvalBits (c a) (b₀ a) (b₁ a) (b₂ a)) input encBool :=
@@ -150,7 +154,7 @@ theorem computableInPolyTime_varBit {α : Type} {input : α ↪ List Bool}
 theorem computableInPolyTime_clauseTableRow {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {m : α → List Bool} {c : α → Clause ℕ}
     (hφ : ComputableInPolyTime φ input encCNF) (hm : ComputableInPolyTime m input encBits)
-    (hc : ComputableInPolyTime c input (encList (encPair encNat encBool))) :
+    (hc : ComputableInPolyTime c input (encClause encNat)) :
     ComputableInPolyTime (fun a => clauseTableRow (φ a) (m a) (c a)) input encBits := by
   have hfst := ComputableInPolyTime.fst input encUnary
   have hsnd := ComputableInPolyTime.snd input encUnary
@@ -169,7 +173,7 @@ theorem computableInPolyTime_clauseTableRow {α : Type} {input : α ↪ List Boo
 theorem computableInPolyTime_clauseActiveRow {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} {v : α → List Bool} {c : α → Clause ℕ}
     (hφ : ComputableInPolyTime φ input encCNF) (hv : ComputableInPolyTime v input encBits)
-    (hc : ComputableInPolyTime c input (encList (encPair encNat encBool))) :
+    (hc : ComputableInPolyTime c input (encClause encNat)) :
     ComputableInPolyTime (fun a => clauseActiveRow (φ a) (v a) (c a)) input encBits := by
   have hfst := ComputableInPolyTime.fst input encUnary
   have hsnd := ComputableInPolyTime.snd input encUnary
@@ -467,19 +471,30 @@ theorem isOraclePPTOn_gmwVerifier {α : Type} {enc : α ↪ List Bool}
 
 /-! ### PPT certificates for `runTwoRound` and honest interaction -/
 
+/-- Result `(out, (round, ch))` of `runTwoRound`, with the round counter in unary: the output of a
+program with bit-word output, then the final state of `twoRoundStep`, which is the round counter
+and the recorded challenge as a bit word. The output and the round counter are framed. -/
+abbrev encTwoRoundResult : List Bool × ℕ × List Bool ↪ List Bool :=
+  encPair encBits (encPair encUnary encBits)
+
+/-- A GMW prover coin pair `(bits, seeds)`, as sampled for the honest prover by
+`sampleHonestCoins` or for the simulator by `gmwSampleSimCoins`: the masked bits as a bit word,
+then the list of commitment seeds, each a bit word. The bits are framed, and so is each seed. -/
+abbrev encCoinPair : (List Bool × List (List Bool)) ↪ List Bool :=
+  encPair encBits (encList encBits)
+
 theorem isPPTOn_runTwoRound {α Caller : Type} {enc : α ↪ List Bool} {input : Caller ↪ List Bool}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     {prepare : Caller → ℕ × α × List Bool} {reply1 reply2 : Caller × List Bool → List Bool}
     {bound : Caller → ℕ}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hprep : ComputableInPolyTime prepare input (encPair encUnary (encPair enc encBits)))
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hprep : ComputableInPolyTime prepare input (encInstanceAuxInput enc))
     (hr1 : ComputableInPolyTime reply1 (encPair input encBits) encBits)
     (hr2 : ComputableInPolyTime reply2 (encPair input encBits) encBits)
     (hbound : ComputableInPolyTime bound input encUnary)
     (hle1 : ∀ c q, (reply1 (c, q)).length ≤ bound c)
     (hle2 : ∀ c q, (reply2 (c, q)).length ≤ bound c) :
-    IsPPTOn input (encPair encBits (encPair encUnary encBits))
+    IsPPTOn input encTwoRoundResult
       (fun c => runTwoRound (fun q => reply1 (c, q)) (fun q => reply2 (c, q))
         (Vstar (prepare c).1 (prepare c).2.1 (prepare c).2.2) (0, [false, false, false])) := by
   let stateEncoding : ℕ × List Bool ↪ List Bool := encPair encUnary encBits
@@ -526,8 +541,7 @@ theorem isPPTOn_runTwoRound_prover {α Caller : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {n s m : Caller → ℕ} {a : Caller → α}
     {z : Caller → List Bool} {φ : Caller → CNF ℕ}
     {openFlags bits ch_guess : Caller → List Bool} {seeds pads : Caller → List (List Bool)}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
     (hg : ComputableInPolyTime generator encBits encBits)
     (hn : ComputableInPolyTime n input encUnary) (hs : ComputableInPolyTime s input encUnary)
     (hm : ComputableInPolyTime m input encUnary) (ha : ComputableInPolyTime a input enc)
@@ -537,7 +551,7 @@ theorem isPPTOn_runTwoRound_prover {α Caller : Type} {enc : α ↪ List Bool}
     (hch : ComputableInPolyTime ch_guess input encBits)
     (hseeds : ComputableInPolyTime seeds input (encList encBits))
     (hpads : ComputableInPolyTime pads input (encList encBits)) :
-    IsPPTOn input (encPair encBits (encPair encUnary encBits))
+    IsPPTOn input encTwoRoundResult
       (fun c => runTwoRound
         (fun r => proverReply1 generator (m c) r (openFlags c) (bits c) (seeds c) (pads c))
         (fun _ => proverReply2 (s c) (φ c) (ch_guess c) (bits c) (seeds c))
@@ -580,7 +594,7 @@ private theorem isPPTOn_sampleThreeAndSeeds {α : Type} {input : α ↪ List Boo
     (hcomb : ComputableInPolyTime
       (fun p : ((α × List Bool) × List Bool) × List Bool => combine p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair input encBits) encBits) encBits) encBits) :
-    IsPPTOn input (encPair encBits (encList encBits))
+    IsPPTOn input encCoinPair
       (fun a => do
         let r₀ ← BitString.sampleList (φ a).vars.length
         let r₁ ← BitString.sampleList (φ a).vars.length
@@ -615,8 +629,7 @@ theorem isPPTOn_gmwSampleSimCoins {α : Type} {input : α ↪ List Bool}
     {s : α → ℕ} {φ : α → CNF ℕ} {ch_guess : α → List Bool}
     (hs : ComputableInPolyTime s input encUnary) (hφ : ComputableInPolyTime φ input encCNF)
     (hch : ComputableInPolyTime ch_guess input encBits) :
-    IsPPTOn input (encPair encBits (encList encBits))
-      (fun a => gmwSampleSimCoins (s a) (φ a) (ch_guess a)) := by
+    IsPPTOn input encCoinPair (fun a => gmwSampleSimCoins (s a) (φ a) (ch_guess a)) := by
   let e1 := encPair input encBits; let e2 := encPair e1 encBits; let e3 := encPair e2 encBits
   have hp2 := ComputableInPolyTime.fst e2 encBits; have hp1 := hp2.fst'; have hp0 := hp1.fst'
   exact isPPTOn_sampleThreeAndSeeds hs hφ
@@ -653,9 +666,8 @@ theorem isPPTOn_gmwSimWithPads {α : Type} {enc : α ↪ List Bool}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length) (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z)) :
-    IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) (encList encBits)) encBits
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z)) :
+    IsPPTOn (encPair (encInstanceAuxInput enc) (encList encBits)) encBits
       (fun p : (ℕ × α × List Bool) × List (List Bool) =>
         gmwSimWithPads generator (p.1.1 + 7) (length (p.1.1 + 7))
           (f p.1.2.1) (Vstar p.1.1 p.1.2.1 p.1.2.2) p.2) := by
@@ -690,9 +702,8 @@ theorem isPPTOn_gmwSimAttempt {α : Type} {enc : α ↪ List Bool}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length) (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z)) :
-    IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z)) :
+    IsPPTOn (encInstanceAuxInput enc) encBits
       (fun p : ℕ × α × List Bool =>
         gmwSimAttempt generator (p.1 + 7) (length (p.1 + 7))
           (f p.2.1) (Vstar p.1 p.2.1 p.2.2)) := by
@@ -709,9 +720,8 @@ theorem isPPTOn_gmwSimulator {α : Type} {enc : α ↪ List Bool}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length) (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z)) :
-    IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z)) :
+    IsPPTOn (encInstanceAuxInput enc) encBits
       (fun (n, a, z) => gmwSimulator generator length f Vstar n a z) :=
   ((isPPTOn_gmwSimAttempt hg hlen hf hV).replicate
     ((ComputableInPolyTime.fst encUnary (encPair enc encBits)).unary_add' (.const 1))).map
@@ -723,7 +733,7 @@ theorem computableInPolyTime_honestReply1 {α : Type} {input : α ↪ List Bool}
     {coins : α → List Bool × List (List Bool)} {r : α → List Bool}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hm : ComputableInPolyTime m input encUnary) (hφ : ComputableInPolyTime φ input encCNF)
-    (hcoins : ComputableInPolyTime coins input (encPair encBits (encList encBits)))
+    (hcoins : ComputableInPolyTime coins input encCoinPair)
     (hr : ComputableInPolyTime r input encBits) :
     ComputableInPolyTime (fun a => honestReply1 generator (m a) (φ a) (coins a) (r a))
       input encBits :=
@@ -735,7 +745,7 @@ theorem computableInPolyTime_honestReply1 {α : Type} {input : α ↪ List Bool}
 theorem computableInPolyTime_honestReply2 {α : Type} {input : α ↪ List Bool}
     {s : α → ℕ} {φ : α → CNF ℕ} {coins : α → List Bool × List (List Bool)} {ch : α → List Bool}
     (hs : ComputableInPolyTime s input encUnary) (hφ : ComputableInPolyTime φ input encCNF)
-    (hcoins : ComputableInPolyTime coins input (encPair encBits (encList encBits)))
+    (hcoins : ComputableInPolyTime coins input encCoinPair)
     (hch : ComputableInPolyTime ch input encBits) :
     ComputableInPolyTime (fun a => honestReply2 (s a) (φ a) (coins a) (ch a)) input encBits :=
   computableInPolyTime_proverReply2 hs hφ hch hcoins.fst' hcoins.snd'
@@ -746,14 +756,13 @@ theorem isPPTOn_runTwoRound_honest {α Caller : Type} {enc : α ↪ List Bool}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     {generator : List Bool → List Bool} {n s m : Caller → ℕ} {a : Caller → α}
     {z : Caller → List Bool} {φ : Caller → CNF ℕ} {coins : Caller → List Bool × List (List Bool)}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
     (hg : ComputableInPolyTime generator encBits encBits)
     (hn : ComputableInPolyTime n input encUnary) (hs : ComputableInPolyTime s input encUnary)
     (hm : ComputableInPolyTime m input encUnary) (ha : ComputableInPolyTime a input enc)
     (hz : ComputableInPolyTime z input encBits) (hφ : ComputableInPolyTime φ input encCNF)
-    (hcoins : ComputableInPolyTime coins input (encPair encBits (encList encBits))) :
-    IsPPTOn input (encPair encBits (encPair encUnary encBits))
+    (hcoins : ComputableInPolyTime coins input encCoinPair) :
+    IsPPTOn input encTwoRoundResult
       (fun c => runTwoRound (honestReply1 generator (m c) (φ c) (coins c))
         (honestReply2 (s c) (φ c) (coins c)) (Vstar (n c) (a c) (z c))
         (0, [false, false, false])) := by
@@ -777,8 +786,7 @@ theorem isPPTOn_sampleHonestCoins {α : Type} {input : α ↪ List Bool}
     {s : α → ℕ} {φ : α → CNF ℕ} {w : α → List Bool}
     (hs : ComputableInPolyTime s input encUnary) (hφ : ComputableInPolyTime φ input encCNF)
     (hw : ComputableInPolyTime w input encBits) :
-    IsPPTOn input (encPair encBits (encList encBits))
-      (fun a => sampleHonestCoins (s a) (φ a) (w a)) := by
+    IsPPTOn input encCoinPair (fun a => sampleHonestCoins (s a) (φ a) (w a)) := by
   let e1 := encPair input encBits; let e2 := encPair e1 encBits; let e3 := encPair e2 encBits
   have hp2 := ComputableInPolyTime.fst e2 encBits; have hp1 := hp2.fst'; have hp0 := hp1.fst'
   exact isPPTOn_sampleThreeAndSeeds hs hφ
@@ -789,9 +797,8 @@ theorem isPPTOn_gmwInteract {α : Type} {enc : α ↪ List Bool}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length) (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z)) :
-    IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z)) :
+    IsPPTOn (encInstanceWitnessAuxInput enc) encBits
       (fun (n, a, w, z) =>
         gmwInteract generator (n + 7) (length (n + 7)) (f a) w (Vstar n a z)) := by
   have hlength := PRG.polyTime_length hg hlen

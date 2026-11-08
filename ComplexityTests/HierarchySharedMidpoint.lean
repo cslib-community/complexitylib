@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual shared-midpoint means)
-import Complexity.Foundations.Probability.HierarchySharedMidpoint
+import Complexity.Computability.LogSpaceDerandomization.HierarchySharedMidpoint
 import all ComplexityTests.HierarchySourceSampling
 
 /-! Nonconstant shared-midpoint product on four actual roles: narrower old source,

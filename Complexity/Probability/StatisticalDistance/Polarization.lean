@@ -23,11 +23,11 @@ import Mathlib.Tactic.Ring
 /-!
 # Polarization of statistical distance
 
-The Polarization Lemma of Sahai and Vadhan [SahaiVadhan2003, §3] turns a pair of distributions
-whose statistical distance is either at least `α` or at most `β`, with `β < α²`, into a pair whose
-distance is either at least `1 - 2⁻ᵏ` or at most `2⁻ᵏ`. It alternates the XOR construction
-(`Cslib.Probability.PMF.xorMix`), which pushes small distances to `0`, with independent repetition
-(`Cslib.Probability.PMF.iid`), which pushes large distances to `1`:
+The Polarization Lemma of Sahai and Vadhan [SahaiVadhan2003, Lemma 3.3 and the remark after its
+proof] turns a pair of distributions whose statistical distance is either at least `α` or at most
+`β`, with `β < α²`, into a pair whose distance is either at least `1 - 2⁻ᵏ` or at most `2⁻ᵏ`. It
+alternates the XOR construction (`Cslib.Probability.PMF.xorMix`), which pushes small distances to
+`0`, with independent repetition (`Cslib.Probability.PMF.iid`), which pushes large distances to `1`:
 
 `polarize p₀ p₁ λ ℓ k c = xorMix (iid (xorMix p₀ p₁ λ false) ℓ) (iid (xorMix p₀ p₁ λ true) ℓ) k c`.
 
@@ -40,9 +40,11 @@ are polynomial in `k` and the two bounds give the error `2⁻ᵏ` on each side
 `obtain ⟨m, b, hm, hlam, hell, h⟩ := exists_polarization hβ hβα hα hα1`.
 
 This file works with explicit distributions on finite types. The efficient version on pairs of
-circuits, where the polarized pair is computed from the input pair in polynomial time, is not
-formalized here. The source is cited by section only: the lemma numbers in [SahaiVadhan2003] have
-not been checked against a copy of the paper.
+circuits, where the polarized pair is computed from the input pair in polynomial time, is in
+`Complexity.Computability.Complexity.Problems.StatisticalDifference.PolyTime`. The source states
+Lemma 3.3 for the thresholds `2/3` and `1/3`, and extends it to thresholds `α² > β` in the remark
+after its proof. Its proof applies the XOR construction (Lemma 3.5), independent repetition
+(Lemma 3.4) and the XOR construction again, as `polarize` does, with different parameters.
 
 ## Main definitions
 
@@ -67,8 +69,8 @@ namespace Cslib.Probability.PMF
 
 universe u
 
-/-- The polarization construction [SahaiVadhan2003, §3]: the XOR construction on `k` coordinates
-applied to `ℓ` independent copies of the XOR construction on `λ` coordinates. -/
+/-- The polarization construction [SahaiVadhan2003, proof of Lemma 3.3]: the XOR construction on `k`
+coordinates applied to `ℓ` independent copies of the XOR construction on `λ` coordinates. -/
 noncomputable def polarize {Ω : Type*} [Fintype Ω] (p₀ p₁ : PMF Ω) (lam ell k : ℕ) (c : Bool) :
     PMF (Fin k → Fin ell → Fin lam → Ω) :=
   xorMix (iid (xorMix p₀ p₁ lam false) ell) (iid (xorMix p₀ p₁ lam true) ell) k c
@@ -121,11 +123,11 @@ private theorem two_mul_half_pow_le (k : ℕ) :
   have hkxx : k * x * x ≤ x := by nlinarith
   nlinarith
 
-/-- **Polarization Lemma** [SahaiVadhan2003, §3], for constant thresholds `0 ≤ β < α² ≤ 1`:
-there are constants `m ≥ 1` and `b` such that, with `λ = m (⌊log₂ k⌋ + 1)` and
-`ℓ = 2 ^ (b (⌊log₂ k⌋ + 1))`, both polynomially bounded in `k`, every pair at distance at least `α`
-polarizes to distance at least `1 - 2⁻ᵏ` and every pair at distance at most `β` polarizes to
-distance at most `2⁻ᵏ`. -/
+/-- **Polarization Lemma** [SahaiVadhan2003, Lemma 3.3 and the remark after its proof], for constant
+thresholds `0 ≤ β < α² ≤ 1`: there are constants `m ≥ 1` and `b` such that, with
+`λ = m (⌊log₂ k⌋ + 1)` and `ℓ = 2 ^ (b (⌊log₂ k⌋ + 1))`, both polynomially bounded in `k`, every
+pair at distance at least `α` polarizes to distance at least `1 - 2⁻ᵏ` and every pair at distance at
+most `β` polarizes to distance at most `2⁻ᵏ`. -/
 theorem exists_polarization {α β : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2) (hα : 0 ≤ α)
     (hα1 : α ≤ 1) :
     ∃ m b : ℕ, m ≠ 0 ∧
@@ -221,8 +223,7 @@ theorem exists_polarization {α β : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
         _ = (8 : ℝ) ^ j := by rw [← pow_mul, mul_comm, pow_mul]; norm_num
         _ ≤ (2 ^ b * A) ^ j := pow_le_pow_left₀ (by norm_num) hfar j
         _ = ((2 ^ (b * j) : ℕ) : ℝ) * A ^ j := by push_cast; rw [mul_pow, ← pow_mul]
-        _ ≤ ((2 ^ (b * j) : ℕ) : ℝ) * dist p₀ p₁ ^ (2 * (m * j)) :=
-          mul_le_mul_of_nonneg_left hdpow (by positivity)
+        _ ≤ ((2 ^ (b * j) : ℕ) : ℝ) * dist p₀ p₁ ^ (2 * (m * j)) := by gcongr
     have hcube : 2 * (k + 1 : ℝ) ≤ (k + 1) ^ 3 / 2 := by
       have : 0 ≤ ((k : ℝ) - 1) * (k + 1) * (k + 3) := by
         apply mul_nonneg (mul_nonneg _ _) _ <;> linarith

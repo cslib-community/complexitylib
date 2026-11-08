@@ -352,8 +352,7 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
       Nat.mul_le_mul (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega)))
         (Nat.pow_le_pow_right (by norm_num)
           (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega))))
-    have hKs : a * (n + 1) ^ d ≤ (a + d + K₀) * (n + 1) ^ (a + d + K₀) :=
-      Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega))
+    have hKs : a * (n + 1) ^ d ≤ (a + d + K₀) * (n + 1) ^ (a + d + K₀) := by gcongr <;> omega
     have hgt : (NativeCertificate.ofPolyTime truncGuard_polyTime).time (P, ℓ, r, G) ≤ pg n :=
       (bg (P, ℓ, r, G)).1
     have hgs : (NativeCertificate.ofPolyTime truncGuard_polyTime).space (P, ℓ, r, G) ≤ pg n :=

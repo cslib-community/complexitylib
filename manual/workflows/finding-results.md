@@ -58,7 +58,7 @@ The [circuit reference](../circuits-logic-and-other-models/circuits-and-formulas
 ## Compare compressed row outputs
 
 For deterministic two-signal compression comparisons, import
-[RowCompression/SaturatedRoot](../../Complexity/Foundations/Analysis/RowCompression/SaturatedRoot.lean)
+[RowCompression/SaturatedRoot](../../Complexity/Computability/LogSpaceDerandomization/RowCompression/SaturatedRoot.lean)
 and open `Cslib.RowCompression`. `exists_iterate_root_bound` compares the actual schedule with
 a zero-increment reference sharing its initial loss. Supply first-signal saturation, rank-gate
 closure, a uniform output-root range and global root regularity in both signals and the padded
@@ -68,12 +68,12 @@ the schedule and true first-entry magnitudes. The rank uses the full retained se
 default, so agreement on a smaller usage set does not suffice.
 
 For the scalar upper-cap step, use
-[RowCompression/BoundedCap](../../Complexity/Foundations/Analysis/RowCompression/BoundedCap.lean)'s
+[RowCompression/BoundedCap](../../Complexity/Computability/LogSpaceDerandomization/RowCompression/BoundedCap.lean)'s
 `abs_min_add_sub_min_add_le`: relative error at most `1/2` gives capped absolute error
 `(4 * θ + 5) * ε` when the common loss has magnitude at most `θ`. This bounds a scalar comparison;
 it does not truncate stored states. For the concrete polynomial family, keep importing
-[PolynomialAtomRows/Relative](../../Complexity/Foundations/Probability/PolynomialAtomRows/Relative.lean)
-or [ClippedError](../../Complexity/Foundations/Probability/PolynomialAtomRows/ClippedError.lean);
+[PolynomialAtomRows/Relative](../../Complexity/Computability/LogSpaceDerandomization/PolynomialAtomRows/Relative.lean)
+or [ClippedError](../../Complexity/Computability/LogSpaceDerandomization/PolynomialAtomRows/ClippedError.lean);
 their public theorem contracts are unchanged and discharge the scalar assumptions themselves.
 
 Open the complete
@@ -93,14 +93,14 @@ rank domain or adding a cap. These deterministic lemmas do not supply integrated
 moments, recursive estimator budgets or a native class endpoint.
 
 For the actual hierarchy decoder, import
-[NormalizedAtomRows/BoundedLoss](../../Complexity/Foundations/Probability/NormalizedAtomRows/BoundedLoss.lean)
+[NormalizedAtomRows/BoundedLoss](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/BoundedLoss.lean)
 and open `Matrix.FourthRootHierarchyParams.NormalizedRow`. `output HP ζ d v r` uses the
 actual bounded atom cutoff, core rank gate and `clip (v / ζ)`.
 `boundedLoss_root_bound` derives normalized fourth-root error from raw clipped error,
 nonnegative truth on the full rank set and common first loss bounded by `atomCap`.
 There is no upper bound on true first entries. Its exact saturation identities concern
 only output arguments. For a single full H4 environment,
-[NormalizedAtomRows/Request](../../Complexity/Foundations/Probability/NormalizedAtomRows/Request.lean)'s
+[NormalizedAtomRows/Request](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/Request.lean)'s
 `normalizedRequest_eq_output` identifies the existing request, preserving the narrower
 usage mask and full terminal rank. The [actual-output regressions](../../ComplexityTests/NormalizedAtomRows.lean)
 check off-usage rank closure, unbounded-loss failure and positive output after an increment
@@ -108,12 +108,12 @@ from zero. These deterministic prerequisites feed the conditional moment route b
 recursive/native RL remains open.
 
 For sharp no-overflow and first-overflow comparisons, import
-[NormalizedAtomRows/Sharp](../../Complexity/Foundations/Probability/NormalizedAtomRows/Sharp.lean).
+[NormalizedAtomRows/Sharp](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/Sharp.lean).
 `fixed_shape` supplies positive shape and denominator scales. Choose those first, then
 use `sharp_noOverflow` or `sharp_firstOverflow`: final/tail coefficients precede the later
 positive dyadic floor, while the weighted preloss coefficient may depend on it.
 `sharp_compression` keeps the complementary false-first-overflow exclusion explicit.
-[RequestSharp](../../Complexity/Foundations/Probability/NormalizedAtomRows/RequestSharp.lean)
+[RequestSharp](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/RequestSharp.lean)
 applies both comparisons to the existing single-environment request; its first-overflow
 client derives the preparation mean range from bounded preparation values, even on empty
 slices. The [positive-floor exact-increment client](../../ComplexityTests/NormalizedAtomSharp.lean)
@@ -123,7 +123,7 @@ from a configured checkout. Nonzero raw-prefix moments, false-overflow payments 
 reserve choices still need their own proofs; these comparisons do not establish them.
 
 For actual heavy-first-overflow input tails, import
-[NormalizedAtomRows/ClippedTail](../../Complexity/Foundations/Probability/NormalizedAtomRows/ClippedTail.lean)
+[NormalizedAtomRows/ClippedTail](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ClippedTail.lean)
 and open `Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments`.
 `integrated_actual_clipped_tail_capacity` uses the actual first-overflow masks at any
 capacity sequence dominating `2^(64*dyadicSlack)`. Supply nonnegative genuine row mass,
@@ -142,7 +142,7 @@ These are conditional compression input estimates; deriving their lower-child en
 and noise budgets, recursive reserves and native RL remains separate work.
 
 For the actual normalized-output fourth moment, import
-[NormalizedAtomRows/ActualMoment](../../Complexity/Foundations/Probability/NormalizedAtomRows/ActualMoment.lean)
+[NormalizedAtomRows/ActualMoment](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ActualMoment.lean)
 and keep the same `NormalizedMoments` namespace open.
 For the first-signal endpoint row-noise premise, the
 [FirstSignal route](probabilistic-workflows.md) derives the bound from genuine
@@ -158,7 +158,7 @@ environment, using the actual rho gate and joint source × usage mean. It retain
 rate divisor and ζ scaling; deriving numerical errors from recursive relative estimates
 remains open.
 For an integrated second deterministic envelope, use
-[SecondEnvelope](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondEnvelope.lean).
+[SecondEnvelope](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/SecondEnvelope.lean).
 `secondMeanEnvelope_moment` keeps the width P and inverse rank-rate fourth power;
 `actualEstimatedResidual_second_envelope_moment` pays it from the finite range/support bound on the shared
 `estimatedResidualInput` and finite positive-bin/once-negative child-error costs.
@@ -172,7 +172,7 @@ and an explicit retained width P. Both signal clients use `spectralWalkLength`; 
 positive-tolerance guarantee leaves numerical mean envelopes, recursive budgets/reserves,
 parameter/workspace growth and native RL=L open.
 For the finite conditional output from actual lower-child cost moments, use
-[ReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/ReserveOutput.lean).
+[ReserveOutput](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ReserveOutput.lean).
 It constructs the common B by a finite scaled maximum, chooses both actual walk lengths,
 and discharges the compatible-capacity output theorem at the genuine canonical residual.
 The explicit allocation depends on the positive prefix horizon; recursive reserve induction,
@@ -216,8 +216,8 @@ The abstract is a readable presentation and its bridge proves the connection. Th
 [complexitylib]: ../sources.md#complexitylib
 
 For actual output from per-request rooted moments, use
-[RootReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/RootReserveOutput.lean)
-and its [child reserve payment](../../Complexity/Foundations/Probability/NormalizedAtomRows/ChildRootReserve.lean).
+[RootReserveOutput](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/RootReserveOutput.lean)
+and its [child reserve payment](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ChildRootReserve.lean).
 The full-environment finite allocation is explicit and conservative; it supplies no recursive
 accuracy or parameter/workspace closure. The source-reset guard and exact coefficients are
 explained in the [probabilistic workflow](probabilistic-workflows.md).
@@ -229,14 +229,14 @@ child accuracies. Uniformity of that coefficient does not remove any displayed f
 allocation or walk-length losses and supplies no recursive accuracy theorem.
 
 For changes to the completed pilot maximum with raw and preparation children fixed,
-[HierarchyCorrectionStability](../../Complexity/Foundations/Probability/HierarchyCorrectionStability.lean)
+[HierarchyCorrectionStability](../../Complexity/Computability/LogSpaceDerandomization/HierarchyCorrectionStability.lean)
 gives a pointwise fourth-root bound and an integrated actual-request contract. Its
 [regressions](../../ComplexityTests/HierarchyCorrectionStability.lean) check a nonzero request,
 pilot plateaus, a dyadic change of maximum estimate and an empty vertex domain. These are
 local sensitivity tests, not a two-level recursive approximate estimator.
 
 For changing completed RAW and PREP children as well, use
-[HierarchyCorrectionRawStability](../../Complexity/Foundations/Probability/HierarchyCorrectionRawStability.lean).
+[HierarchyCorrectionRawStability](../../Complexity/Computability/LogSpaceDerandomization/HierarchyCorrectionRawStability.lean).
 Its pointwise theorem displays entry, row, column and full source×terminal maxima at the
 actual inverse terminal rate, and the original joint source/usage prep mean error.
 The integrated theorem pays RAW absolute row errors with explicit width squared and
@@ -247,11 +247,11 @@ perturb RAW and PREP separately and jointly, and distinguish row from incoming r
 This supplies a local correction accuracy contract; it does not construct recursive children.
 
 For the pilot's actual score, detector and running maximum local moments, use
-[PilotRowStability](../../Complexity/Foundations/Probability/PilotRowStability.lean).
+[PilotRowStability](../../Complexity/Computability/LogSpaceDerandomization/PilotRowStability.lean).
 It keeps the raw K-rank, pays detector source maxima on the actual finite slices after
 conditional Jensen, and pays both maximum children. The score row payment displays
 one width and inverse rate to the fourth power; detector payments retain their literal
-conditional means and sums. [HierarchyPilotStability](../../Complexity/Foundations/Probability/HierarchyPilotStability.lean)
+conditional means and sums. [HierarchyPilotStability](../../Complexity/Computability/LogSpaceDerandomization/HierarchyPilotStability.lean)
 feeds the previous/current maximum children into the actual correction contract.
 The [nonzero client](../../ComplexityTests/PilotRowStability.lean) changes a raw rank and
 all three recipe outputs. Allocated recursive calls and full environment/rate/bin

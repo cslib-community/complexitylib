@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Foundations.Analysis.RowCompression.SentinelRelative
-import Complexity.Foundations.Analysis.RowCompression.FalseOverflow
+import Complexity.Computability.LogSpaceDerandomization.RowCompression.SentinelRelative
+import Complexity.Computability.LogSpaceDerandomization.RowCompression.FalseOverflow
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.IntervalCases

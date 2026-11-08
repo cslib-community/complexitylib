@@ -495,8 +495,7 @@ def interactiveSimWord
 theorem isPPTOn_interactiveSimWord {enc : Encoding I YF TF CF ZF}
     {program : I × List Bool × List Bool → ProbComp (List Bool × List Bool)}
     {sampleChallengeWord : I → ProbComp (List Bool)}
-    (hprog : IsPPTOn (encPair enc.index (encPair encBits encBits))
-      (encPair encBits encBits) program)
+    (hprog : IsPPTOn (encSimulatorInput enc.index) (encPair encBits encBits) program)
     (hchal : IsPPTOn enc.index encBits sampleChallengeWord) :
     IsPPTOn (encPair enc.index encBits) encBits
       (interactiveSimWord program sampleChallengeWord) := by

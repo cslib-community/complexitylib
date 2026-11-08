@@ -22,6 +22,7 @@ import Complexity.Crypto.Computational.Stretch
 import Complexity.Crypto.Game.Statistical
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.BitString
 import Complexity.Probability.IID
 import Complexity.Probability.PMF.Bind
@@ -87,7 +88,7 @@ polynomial-time prime-order group family `desc : ℕ → F.Desc`:
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Section 4.11 (Exercise 4.18, p. 172) and Section 10.11
+  Version 0.6][BonehShoup2023], Section 4.10 (Exercise 4.18, p. 172) and Section 10.11
   (Exercises 10.4, 10.8, and 10.11, pp. 424–426).
 * [O. Goldreich, S. Goldwasser, S. Micali, *How to Construct Random Functions*][GGM1986].
 * [M. Naor, O. Reingold, *Number-Theoretic Constructions of Efficient Pseudo-Random
@@ -208,8 +209,8 @@ private noncomputable def binaryZModLaw (width q : ℕ) : PMF (ZMod q) :=
 
 private theorem binaryZModLaw_eq_sampleModNat (width q : ℕ) :
     binaryZModLaw width q = (ProbComp.eval (ProbComp.sampleModNat width q)).map Nat.cast := by
-  simp only [binaryZModLaw, ProbComp.sampleModNat, ProbComp.sampleBinaryNat, ProbComp.eval_map,
-    Cslib.BitString.eval_sampleList, PMF.map_comp, Function.comp_def, ZMod.natCast_mod]
+  simp only [pmf_norm, binaryZModLaw, ProbComp.sampleModNat, ProbComp.sampleBinaryNat,
+    Cslib.BitString.eval_sampleList, ZMod.natCast_mod]
 
 private theorem dist_binaryZModLaw_le {s width q : ℕ} [NeZero q]
     (hw : q.size + s ≤ width) :
@@ -355,7 +356,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
     refine Eq.trans hparse ?_
     change ((μNat.bind fun α₀ => ((PMF.iid μNat m).map List.ofFn).bind fun αs =>
       (Cslib.BitString.uniformList H).map fun seed => (α₀, αs, seed)).bind _) = _
-    simp only [μ, PMF.iid_map, PMF.bind_map, PMF.bind_bind, PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, μ, PMF.iid_map]
     congr 1; funext a₀; congr 1; funext aVec; congr 1; funext seed
     congr 1; funext q
     cases q with
@@ -375,9 +376,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
       F.naorReingoldHashedRealGame (fun k => PMF.pure (desc k)) inLen outLen bound
         (fun k _ => adversary k []) n =
       (ν.bind fun α₀ => (PMF.iid ν m).map (α₀, ·)).bind detRun := by
-    simp only [naorReingoldHashedRealGame, seededSetup, linearHashSeedLen,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind, PMF.bind_bind, PMF.bind_map,
-      Function.comp_def]
+    simp only [pmf_norm, naorReingoldHashedRealGame, seededSetup, linearHashSeedLen]
     change ((Cslib.BitString.uniformList H).bind fun seed =>
       ν.bind fun α₀ => (PMF.uniformOfFintype (Fin m → ZMod (F.order d))).bind fun α =>
         OracleComp.interpret
@@ -677,10 +676,8 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
       ProbComp.eval (prfRealGame (F.naorReingoldSeededPRF desc bound expWidth expand)
         adversary n) =
       distinguishingGame (generatorEnsemble expand n) (D_tape n) := by
-    simp only [prfRealGame, distinguishingGame, generatorEnsemble, ProbComp.eval_bind,
-      ProbOracleComp.eval_interpret, ProbComp.eval_pure, BitString.eval_sampleList,
-      PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def, D_tape,
-      eval_prfTapeDistinguisher]
+    simp only [pmf_norm, prfRealGame, distinguishingGame, generatorEnsemble,
+      ProbOracleComp.eval_interpret, BitString.eval_sampleList, D_tape, eval_prfTapeDistinguisher]
     refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
     have hklen : key.length = n := BitString.length_of_mem_support_uniformList hkey
     congr 1; funext q
@@ -701,8 +698,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
             else []))
           (adversary n []) := by
     rw [← BitString.uniformList_take hneed_le]
-    simp only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
-      D_tape, eval_prfTapeDistinguisher]
+    simp only [pmf_norm, distinguishingGame, D_tape, eval_prfTapeDistinguisher]
     congr 1; funext x; congr 1; funext q
     cases q with
     | inl r => rfl
@@ -991,7 +987,7 @@ theorem DDH.exists_pseudorandomGenerator {F : PrimeOrderGroupFamily} {desc : ℕ
           expWidth n + (inBits n * expWidth n + 1 * (2 * bound (desc n) + 1)) := by
         simp [seedLen, hashLen]
       rw [hsl]
-      simp only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+      simp only [pmf_norm, distinguishingGame]
       congr 1; funext tape
       rw [hinterp (fun q =>
         if q.length = inBits n then
@@ -1008,7 +1004,7 @@ theorem DDH.exists_pseudorandomGenerator {F : PrimeOrderGroupFamily} {desc : ℕ
       have hfit : seedLen n + 1 ≤ 2 ^ (inBits n) := by
         simpa only [seedLen, inBits] using seedLen_succ_le_two_pow (expWidth n) (hashLen n)
       rw [← uniformOfFintype_map_evalLowBitsHom hfit]
-      simp only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+      simp only [pmf_norm, distinguishingGame]
       congr 1; funext f
       rw [hinterp (fun q =>
         if q.length = inBits n then List.ofFn (f (BitString.ofList (inBits n) q)) else [])]

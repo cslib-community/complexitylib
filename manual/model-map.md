@@ -304,6 +304,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `state-transition` | [Relational adaptive data-structure clients](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `randomized-state-transition` | [Randomized state transitions and refinement](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `oblivious-sequence` | [Oblivious operation/transcript contracts](algorithms-and-memory/memory-specifications.md) | state-transition |
+| `cell-probe-data-structure` | [Cell-probe state-transition and oblivious-sequence implementations](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `memory-oracle` | [Allocated word-memory oracle](algorithms-and-memory/memory-specifications.md) | memory |
 | `native-callable` | [Dynamic programs, controllers and graded realization](algorithms-and-memory/memory-specifications.md) | memory |
 | `ram-footprints-traces` | [RAM footprints, traces and memory windows](algorithms-and-memory/memory-specifications.md) | memory |
@@ -314,6 +315,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `atomic-congestion-game` | [Atomic congestion games with Rosenthal's potential](algorithms-and-memory/strategic-games.md) | game-theory |
 | `nonatomic-routing` | [Nonatomic selfish routing and Wardrop flows](algorithms-and-memory/strategic-games.md) | game-theory |
 | `hedge-dynamics` | [No-regret (Hedge) dynamics in finite games and their price of anarchy](algorithms-and-memory/strategic-games.md) | game-theory |
+| `bimatrix-game` | [Bimatrix games, best response polytopes and the Lemke–Howson parity argument](algorithms-and-memory/strategic-games.md) | game-theory |
 | `retroactive-rebuild` | [Timeline editing by reset and replay](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `catalytic-restoring-operations` | [Borrowed-register and key-table restoration](algorithms-and-memory/catalytic-and-tree-evaluation.md) | catalytic-operations |
 | `tree-evaluation-binary` | [Explicit binary Tree Evaluation](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |
@@ -322,3 +324,4 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `mechanism-single-parameter` | [Single-parameter sealed-bid mechanisms and Myerson's Lemma](algorithms-and-memory/mechanism-design.md) | mechanism-design |
 | `mechanism-general-vcg` | [General-valuation mechanisms and VCG](algorithms-and-memory/mechanism-design.md) | mechanism-design |
 | `mechanism-bayes-nash` | [Bayes–Nash equilibrium, revenue equivalence and the first-price auction](algorithms-and-memory/mechanism-design.md) | mechanism-design |
+| `social-welfare-function` | [Social welfare functions on strict rankings and Arrow's theorem](algorithms-and-memory/mechanism-design.md) | social-choice |

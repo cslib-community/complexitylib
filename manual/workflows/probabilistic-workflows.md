@@ -80,10 +80,64 @@ The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two 
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
 
+Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
+upper bound, import [PMF/ToReal.lean](../../Complexity/Probability/PMF/ToReal.lean) and use
+`PMF.toReal_apply_le_one μ a` for an outcome or `PMF.toOuterMeasure_toReal_le_one μ s` for an
+event (these short names need `open Cslib.Probability`), rather than converting `μ a ≤ 1` through
+`ENNReal.toReal` by hand. The `Pr[e]` notation module re-exports this file, so `Pr[e] ≤ 1` is
+`PMF.toReal_apply_le_one _ true`; the
+[checked examples](../../ComplexityTests/ProbabilityNotation.lean) bound a program and a set event.
+Run `scripts/build.sh ComplexityTests.ProbabilityNotation`.
+
+## Count the fair coins used by an exact sampler
+
+Import [DDGTree.lean](../../Complexity/Probability/DDGTree.lean) to describe an exact sampler as
+a discrete distribution generating tree. Such a tree reads fair bits and stops at an
+outcome-labelled leaf, and it may be infinite. A `DDGTree α` is given by its prefix labelling
+`output : List Bool → Option α`, with leaves absorbing. `T.run n` is the law of the outcome after
+`n` fair bits, where `none` means "still running". `T.Generates p` states that the eventual output
+has law `p`. `T.expectedFlips` is the tail sum `∑ₙ P(T > n)`. For trees that halt almost surely,
+`expectedFlips_eq_tsum_mul` converts it to `∑ₖ (k + 1) P(T = k + 1)`, and
+`tendsto_run_none_of_generates` shows that every generator of a finite distribution halts almost
+surely. A tree that fails to halt with positive probability has `expectedFlips = ⊤`
+(`expectedFlips_eq_top`). `T.output <$> BitString.sampleList n` is the same experiment written as a
+`ProbComp`; its `eval` is `T.run n`.
+
+Import [DDGTree/KnuthYao.lean](../../Complexity/Probability/DDGTree/KnuthYao.lean) for the
+entropy bounds ([Knuth–Yao 1976](../sources.md#knuthyao76);
+[Cover–Thomas §5.11](../sources.md#coverthomas06)), stated for distributions on a finite type:
+
+- `entropy_le_expectedFlips hT : ENNReal.ofReal (PMF.entropy p) ≤ T.expectedFlips` for every
+  `hT : T.Generates p`;
+- `knuthYao p` generates `p` (`knuthYao_generates`), has the least expected cost
+  (`isLeast_expectedFlips_knuthYao`; pointwise `run_knuthYao_none_le`), and satisfies
+  `expectedFlips_knuthYao_lt : (knuthYao p).expectedFlips < ENNReal.ofReal (PMF.entropy p + 2)`;
+- `exists_generates_expectedFlips_eq_entropy_iff`: some tree attains `H(p)` exactly when every
+  positive `p a` is a power of `1/2`.
+
+To compute the optimal cost for a concrete `p`, rewrite with `expectedFlips_knuthYao` to
+`∑ₐ knuthYaoCost (p a).toReal`. Then use `knuthYaoCost_inv_two_pow` for dyadic masses, or sum the
+truncation errors `truncErr` directly. To build a tree from a count profile, use `ofCounts t`. In
+that tree, `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`; a leaf at
+depth `j ≤ k` counts `2 ^ (k - j)` times. Equivalently, `t k a / 2 ^ k` is the probability of having
+output `a` within `k` flips (`run_ofCounts`). The profile must be inherited,
+`2 * t k a ≤ t (k + 1) a`, and must satisfy the Kraft-type budget `∑ₐ t k a ≤ 2 ^ k`.
+
+The [checked clients](../../ComplexityTests/KnuthYao.lean) cover the fair coin (`1` flip), the
+dyadic `(1/2, 1/4, 1/4)` (`3/2` flips, equal to the entropy) and `(2/3, 1/3)`. For the last, the
+optimal cost is exactly `2`, no generating tree does better, and the entropy is strictly smaller.
+They also cover a non-halting tree that generates nothing and has infinite cost. Run
+`scripts/build.sh ComplexityTests.KnuthYao`. The model counts coin flips only; it does not certify
+that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
+
 ## Polarize statistical distance
 
-Sahai and Vadhan's polarization of statistical distance (Sahai–Vadhan 2003, §3) is formalized on
-explicit distributions over finite types, with the half-L1 `dist` above.
+Sahai and Vadhan's polarization of statistical distance is formalized on explicit distributions
+over finite types, with the half-L1 `dist` above. The source is Sahai–Vadhan 2003, §3.2: the
+Polarization Lemma is Lemma 3.3, extended to thresholds `α² > β` in the remark after its proof; the
+Direct Product Lemma is Lemma 3.4 and the XOR Lemma is Lemma 3.5. Statistical Difference is defined
+in §3.1 with the strict thresholds `2/3` and `1/3`; the variant `SD^{α,β}` with non-strict
+thresholds, used below, is defined on p. 234.
 
 - **XOR construction.** Import
   [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
@@ -146,19 +200,59 @@ uniform inputs, defined in
   the number of copies, and `k` as the outer argument, so there are `k + 1` outer coordinates.
   `StatisticalDifference.exists_mapsTo_polarize` states the result as `Set.MapsTo` into
   `StatisticalDifference (1 - (1/2)^(k+1)) ((1/2)^(k+1))`, for `k ≠ 0`.
+- **Polynomial-time polarization.** Import
+  [Problems/StatisticalDifference/PolyTime.lean](../../Complexity/Computability/Complexity/Problems/StatisticalDifference/PolyTime.lean).
+  `encSDInstance` encodes the input and output counts in unary, followed by both circuit codes.
+  `SDInstance.computableInPolyTime_polarize` makes `x.polarize (lam x) (ell x) (k x)`
+  polynomial-time whenever the three parameters are polynomial-time with unary output.
+  `SDInstance.computableInPolyTime_polarize_comp` is the general form. There the instance and the
+  parameters are polynomial-time functions of any encoded input; `computableInPolyTime_polarize_log`
+  specializes it to the parameters of `SDInstance.exists_polarize`.
+  `SDInstance.exists_computableInPolyTime_polarize_unary` is the source's form, with the error
+  parameter `k` a separate unary input: one map on `encPair encSDInstance encUnary` with error
+  `(1/2)^(k + 1)`.
+  `SDInstance.exists_computableInPolyTime_polarize` instead takes `k = K x` for a function `K` of
+  the instance. Use
+  `obtain ⟨m, b, hm, h⟩ := …`, then `h K hK` for any polynomial-time unary `K`. It returns the
+  polynomial-time certificate and the two distance bounds with error `(1/2)^(K x + 1)`.
+  Two corollaries cover the common cases. With `K x` the encoded length,
+  `SDInstance.exists_computableInPolyTime_polarize_length` gives error `(1/2)^(|x| + 1)`. With `K`
+  constant, `StatisticalDifference.polyTimeReducible` is a `PromiseProblem.PolyTimeReducible`
+  from `SD^{α,β}` to `SD^{α',β'}`, for all constants `0 < β' < α' < 1`.
+  The raw code generators behind the certificate are in
+  [Circuit/Boolean/Polarization/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Polarization/PolyTime.lean).
+  Import that module directly to use them; `StatisticalDifference/PolyTime.lean` does not
+  re-export it. Each generator has a `_code` lemma stating exact agreement with the typed circuit.
+  `polarizeCode` builds on `replicateCode`, from
+  [CodeReplication.lean](../../Complexity/Computability/Circuit/Boolean/CodeReplication.lean),
+  and on `muxCode`, from
+  [Comparison/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Comparison/PolyTime.lean).
 
-This is the semantic half of the reduction only. Polynomial-time computability of the
-polarization map on encoded instances, with `k` growing with the instance length, is not formalized
-yet. Neither is SZK. [Issue #3205](https://github.com/cslib-community/complexitylib/issues/3205)
-tracks both. The checked clients in
-[StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
+The thresholds are constants with `0 ≤ β < α² ≤ 1`, and the circuits are De Morgan circuits with
+common input and output counts. SZK itself is not formalized yet;
+[issue #3205](https://github.com/cslib-community/complexitylib/issues/3205) tracks it. The checked
+clients in [StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
 
 - parity completion;
 - the XOR circuit on two constant circuits;
 - a far instance and a near instance against `SD^{2/3,1/3}`;
 - both instances pushed through the Polarization Lemma.
 
-Run `scripts/build.sh ComplexityTests.StatisticalDifference`.
+The clients in
+[StatisticalDifferencePolyTime.lean](../../ComplexityTests/StatisticalDifferencePolyTime.lean)
+cover:
+
+- a concrete replicated code and its typed agreement;
+- the multiplexer gate count;
+- a polynomial-time polarization map with fixed parameters;
+- the reduction from `SD^{2/3,1/3}` to `SD^{9/10,1/10}` on the far and the near instance;
+- the length-indexed polarization on the same instances;
+- the polarization with the error parameter `k` in unary on the same instances, for every `k`;
+- `SDInstance.computableInPolyTime_polarize_comp` on `p ↦ p.1.polarize 1 2 p.2` over
+  `encPair encSDInstance encUnary`.
+
+Run `scripts/build.sh ComplexityTests.StatisticalDifference` and
+`scripts/build.sh ComplexityTests.StatisticalDifferencePolyTime`.
 
 ## Bound the mixing time of a finite Markov chain
 
@@ -528,8 +622,8 @@ recursion accepts any constant up to `21`. The final bound has Holenstein's cons
 
 To use the bound for concrete answer types, compute the exponent: rewrite the product of the
 cardinalities as a power of two and apply `Real.logb_rpow`. For CHSH, `|A| |B| = 4` and the
-exponent is `n / 2`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) proves that
-CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
+exponent is `n / 2`. [CHSH.lean](../../Complexity/Computability/PCP/TwoProverGame/CHSH.lean)
+proves that CHSH has value `3/4` (`TwoProverGame.value_chsh`), and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
 repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
 conditioned, which gives a coordinate won with probability at most `G.value`. Run
@@ -915,6 +1009,16 @@ The source's mod-one Gaussian sampling law is represented by its actual measure 
 its periodic-density series, the joint LWE sample law in Lemma 3.11, efficient sampling,
 finite precision and the quantum reduction remain separate work.
 
+## Normalize the law of a program
+
+To compute with `ProbComp.eval` of a `do` block, import
+[Norm.lean](../../Complexity/Languages/Probabilistic/Norm.lean) in the proof and call
+`simp only [pmf_norm]`. It rewrites the law into right-nested `PMF.bind`s, with returned values
+substituted and maps pushed into the continuations: the shape that `PMF.bind_congr_on_support`,
+`PMF.bind_apply` and the support lemmas expect. The set is curated, so later steps may rely on its
+normal form; it does not unfold support membership or probability masses. The checked examples in
+[PMFNorm.lean](../../ComplexityTests/PMFNorm.lean) show the normal form of each kind of term.
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.
@@ -1145,7 +1249,7 @@ recursive frame-stack migration open.
 ## Use the bounded H4 hierarchy clients
 
 For selected correction/pilot cutoffs, import
-[HierarchyCutoffs](../../Complexity/Foundations/Probability/HierarchyCutoffs.lean).
+[HierarchyCutoffs](../../Complexity/Computability/LogSpaceDerandomization/HierarchyCutoffs.lean).
 Supply a `FourthRootHierarchyParams 16 1 16 32 8` witness and both ordered retention laws;
 `correctionSampling` and `pilotSampling` derive the incoming count from the existing detector.
 Their public projection equations let ordinary imports inspect recipe parameters without
@@ -1153,12 +1257,12 @@ unfolding opaque constructors. `correction_col_support` and `pilot_col_support` 
 arbitrary raw, preparation and maximum children. The support margins use the actual Q/ρ gates.
 
 For finite prime frame environments, start with
-[HierarchyRankCutoffs](../../Complexity/Foundations/Probability/HierarchyRankCutoffs.lean)
+[HierarchyRankCutoffs](../../Complexity/Computability/LogSpaceDerandomization/HierarchyRankCutoffs.lean)
 and its [complete regression client](../../ComplexityTests/HierarchyCutoffs.lean).
 The constructor examples use H=4, P=5 and horizon zero on a positive singleton matrix.
 These constructors have two independent full-environment seeds. For the genuine mean of
 one actual environment, import
-[HierarchyCorrectionMean](../../Complexity/Foundations/Probability/HierarchyCorrectionMean.lean)
+[HierarchyCorrectionMean](../../Complexity/Computability/LogSpaceDerandomization/HierarchyCorrectionMean.lean)
 and follow its [complete regression client](../../ComplexityTests/HierarchyCorrectionMean.lean).
 `terminalSplit` retains every spectator coordinate. Use `genuine_request_mean_usage` for
 an independent usage grid rate, including narrower usage; the same-rate specialization is
@@ -1178,7 +1282,7 @@ pilot proved zero from its detector rank. Its narrower-usage example fixes sourc
 complete request mean. Thus the usage change is observable in the actual environment.
 
 For a sampling source narrower than the true stage, import
-[HierarchySourceSampling](../../Complexity/Foundations/Probability/HierarchySourceSampling.lean)
+[HierarchySourceSampling](../../Complexity/Computability/LogSpaceDerandomization/HierarchySourceSampling.lean)
 and use `source_request_mean`; follow its
 [complete regression client](../../ComplexityTests/HierarchySourceSampling.lean).
 Supply source exponent `s`, stage exponent `k`, `k ≤ s`, and a horizon containing `s`.
@@ -1191,7 +1295,7 @@ pair law, preserving the true input, final pilot, gates and incoming budget. The
 `correctionRequest_eq_split` avoids rebuilding the split transport for each choice of children.
 
 To compare genuine targets across request roles and copy suffixes, import
-[HierarchyCanonicalTargets](../../Complexity/Foundations/Probability/HierarchyCanonicalTargets.lean).
+[HierarchyCanonicalTargets](../../Complexity/Computability/LogSpaceDerandomization/HierarchyCanonicalTargets.lean).
 Use `stage_correctionIter_eq_of_terminal_rate` to identify the left and negative correction
 targets at a common stage rate. `source_request_mean_canonical` combines this transport with
 the actual narrower-source correction mean, retaining its literal usage-density divisor.
@@ -1202,12 +1306,12 @@ requests with different terminal roles and radix-two suffixes, a positive target
 unequal-rate complete correction mean.
 
 For a genuine source-reset dense child, import
-[HierarchyDenseChildren](../../Complexity/Foundations/Probability/HierarchyDenseChildren.lean).
+[HierarchyDenseChildren](../../Complexity/Computability/LogSpaceDerandomization/HierarchyDenseChildren.lean).
 Build `denseChild` from the deterministic hierarchy base, bin cutoff and genuine
 `densePreparation`. `dense_normalizer` integrates the actual joint source/usage mean;
 `denseChild_terminal` then removes source and spectator dependence pointwise. For a
 left correction sharing the midpoint with that reset source, use
-[HierarchySharedMidpoint](../../Complexity/Foundations/Probability/HierarchySharedMidpoint.lean).
+[HierarchySharedMidpoint](../../Complexity/Computability/LogSpaceDerandomization/HierarchySharedMidpoint.lean).
 `sourceChild_mul_denseChild_mean` conditions the single full environment on the old
 source and terminal events. Supply three distinct roles, the complete right-source reset,
 the finite horizon and narrower-source hypotheses, and the dense support/gate bounds.
@@ -1216,7 +1320,7 @@ The [checked client](../../ComplexityTests/HierarchySharedMidpoint.lean) evaluat
 product with unequal rates, nonempty suffixes and a free fourth role.
 
 For signed assembly import
-[HierarchySignedMean](../../Complexity/Foundations/Probability/HierarchySignedMean.lean).
+[HierarchySignedMean](../../Complexity/Computability/LogSpaceDerandomization/HierarchySignedMean.lean).
 `canonicalRequestChild` matches normalized index j and evaluates `sourceChild` at j.val;
 `correctionAtomTask_last_succ` proves the final structural dispatch. Request size stays
 `HP.k` as statistical precision varies. `sourceChild_mean_on_terminal_event` derives the
@@ -1232,7 +1336,7 @@ suffixes, unequal rates and a free spectator, checks two statistical walk precis
 positive genuine final correction/product terms, a nonconstant product and two-bin assembly.
 
 For finite absolute estimated-child propagation import
-[HierarchyEstimatedMean](../../Complexity/Foundations/Probability/HierarchyEstimatedMean.lean).
+[HierarchyEstimatedMean](../../Complexity/Computability/LogSpaceDerandomization/HierarchyEstimatedMean.lean).
 `estimated_residual_bins_mean_error` compares actual bounded `incomingChildren` at fixed
 `Request HP.k` with `canonicalRequestChild`. Supply the genuine C/top-rate cap, monotone
 bin scales with adjacent ratio at most 16, and the same cover/horizon and dense-gate contracts.
@@ -1244,7 +1348,7 @@ stay literal; positive-bin errors are summed and the negative error occurs once.
 The [checked error client](../../ComplexityTests/HierarchyChildError.lean) instantiates the
 actual two-bin cap and exact adjacent ratio on the shared spectator/suffix fixture.
 
-[FirstMeanError](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstMeanError.lean)
+[FirstMeanError](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/FirstMeanError.lean)
 then proves `actualEstimatedResidual_first_mean_le`: the completed full-terminal raw walk
 preserves this input mean and the actual first prefix has bound
 `min 1 (absoluteError / (rate kt + genuineResidual x y))`. The genuine residual is nonnegative.
@@ -1258,7 +1362,7 @@ It proves a positive complete actual request mean with the genuine final pilot. 
 exponent 3 is outside the required source/stage horizon 2.
 
 To discharge the raw input fourth moment for a positive-iteration residual, import
-[HierarchyRawMoment](../../Complexity/Foundations/Probability/HierarchyRawMoment.lean)
+[HierarchyRawMoment](../../Complexity/Computability/LogSpaceDerandomization/HierarchyRawMoment.lean)
 and apply `rawIncomingNormalized_noise_le_lower`. Supply positive N, u, row rank K and
 incoming rank Kc. The selected cutoff laws derive the actual left correction child's
 range `CA = 2 * Q(atomCap)`, row support K and incoming support Kc, for arbitrary raw,
@@ -1280,7 +1384,7 @@ positive iterations. Pilot/copy paths, quantitative lower-child budgets, summati
 recursive/native correctness remain open.
 
 For the first compression signal, import
-[FirstSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstSignal.lean)
+[FirstSignal](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/FirstSignal.lean)
 and apply `actualFirstSignal_noise_le_lower`. Its precision-indexed inputs are genuine
 `rawIncomingNormalized` samples on one fixed positive structural `Request q`.
 For a genuine hierarchy use `q = HP.k` and `HP.k_pos`; precision j changes child
@@ -1297,7 +1401,7 @@ or independence assumption is used. The
 [regressions](../../ComplexityTests/ActualFirstSignal.lean) check nonzero nonconstant
 telescoping prefixes, zero inputs, empty slices and a nonconstant random mean/moment.
 For a numerical payment, import
-[FirstPayment](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstPayment.lean).
+[FirstPayment](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/FirstPayment.lean).
 Supply CB≥0 and a proved [0,CB] range for the actual bin cutoff.
 `normalizedRequest_mem_Icc` gives direct/right range 2CB; correction range remains
 CA=2Q(atomCap). `incomingMomentBudget_le_payment` pays all three child norms on the
@@ -1319,7 +1423,7 @@ ratio 16 and explicit CB=max(HP.k+2,16). They check a nonzero complete residual,
 clipping, a chosen actual i=2 noise client, exact logarithmic steps and zero/empty edges.
 
 For the preparatory second signal, import
-[SecondSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondSignal.lean).
+[SecondSignal](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/SecondSignal.lean).
 `selectedPreparation` applies the selected preparation cutoff and full terminal-rank
 gate to a supplied **completed raw child in matrix units**. `completedRawChild` names the
 actual conditional H4 walk of `rawIncomingNormalized` used by FirstSignal and FirstPayment.
@@ -1358,7 +1462,7 @@ chosen steps, D=0 with a nonempty suffix, two-signal prefixes, zero children, an
 usage through compression. Mixing controls noise around the selected input's own mean.
 
 For deterministic preparation bias, import
-[MeanBias](../../Complexity/Foundations/Probability/NormalizedAtomRows/MeanBias.lean).
+[MeanBias](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/MeanBias.lean).
 `preparation_stability_constants` uses polynomial entry-cutoff regularity and the actual
 hierarchy rho fourth-root regularity. `preparation_sub_genuinePrep_le` compares signed
 residual A to G on the same full terminal rank slice: its bound is
@@ -1382,7 +1486,7 @@ of their preparations is 1/2. A seven-step actual H4 completed child retains a p
 preparation and a zero endpoint.
 
 For quantitative second deterministic envelopes, import
-[SecondEnvelope](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondEnvelope.lean).
+[SecondEnvelope](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/SecondEnvelope.lean).
 `secondMeanEnvelope` is the actual B1: `min 1 (|ζ| * jointMean(preparationError))`.
 `actualSelectedSecondSignal_mean_le_envelope` and
 `actualCompletedSecondSignal_mean_le_envelope` bound the actual clipped second mean by B1.
@@ -1399,7 +1503,7 @@ then pays B1 with the same explicit width and inverse rate. Its mean-error hypot
 absolute, before clipping. For actual finite bins,
 `actualEstimatedResidual_second_envelope_moment` discharges that mean-error step with
 `estimated_residual_bins_mean_error`: positive costs sum and the negative cost is charged once.
-The shared [estimated input](../../Complexity/Foundations/Probability/HierarchyEstimatedInput.lean)
+The shared [estimated input](../../Complexity/Computability/LogSpaceDerandomization/HierarchyEstimatedInput.lean)
 names exactly that positive-bin sum minus one negative request, with fixed `Request HP.k`
 and independent precision. Its pointwise range uses the actual left support at most K,
 zero extension off midpoint usage, and dense ranges `2 * CB_i`: the product costs
@@ -1423,7 +1527,7 @@ The [regressions](../../ComplexityTests/SecondEnvelope.lean) check a positive no
 spectator raw child and B1, exact-zero/empty edges, actual clipped-mean comparison and an exact
 two-endpoint counterexample to dropping width.
 
-[ReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/ReserveOutput.lean)
+[ReserveOutput](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ReserveOutput.lean)
 assembles the actual finite output from explicit lower-child conditional-error-cost fourth
 moments. `actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
 matrices by finite maxima of the actual first/B1 envelopes divided by `2^dyadicSlack`.
@@ -1444,9 +1548,9 @@ The bounded fixture does not assert the canonical routed-bin mean or recursive r
 A separate actual lower-child conditional-cost client proves that the finite reserve is
 satisfiable at some positive tolerance; it does not claim that tolerance is small.
 
-[ChildRootReserve](../../Complexity/Foundations/Probability/NormalizedAtomRows/ChildRootReserve.lean)
+[ChildRootReserve](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ChildRootReserve.lean)
 now pays that cost reserve from actual normalized lower-child rooted moments.
-[RootReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/RootReserveOutput.lean)
+[RootReserveOutput](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/RootReserveOutput.lean)
 reuses the same output assembly. Its target is still the genuine canonical residual.
 The cost API retains only the union of actual estimated/canonical left supports. Both left
 children vanish off midpoint usage, so right errors are charged only at their reset source z.
@@ -1522,7 +1626,7 @@ and raw/preparation/maximum families. Select this constant before allocating rec
 child accuracies. Uniformity of that coefficient does not remove any displayed finite
 allocation or walk-length losses and supplies no recursive accuracy theorem.
 
-[HierarchyCorrectionStability](../../Complexity/Foundations/Probability/HierarchyCorrectionStability.lean)
+[HierarchyCorrectionStability](../../Complexity/Computability/LogSpaceDerandomization/HierarchyCorrectionStability.lean)
 factors the actual correction request into its unit-pilot coefficient and `γ(maximum y)`.
 The coefficient lies in `[0, 2 Q(atomCap)]`, even for signed raw/preparation estimates.
 If `Lγ` is the hierarchy's fourth-root Lipschitz constant for γ, the fourth-root output
@@ -1532,7 +1636,7 @@ masks; its loss is `((2 Q(atomCap))^(1/4) Lγ)^4`. It does not silently transpor
 error to a different source or remove any width/rate coefficient from that transport.
 
 For all three changing child classes, use
-[HierarchyCorrectionRawStability](../../Complexity/Foundations/Probability/HierarchyCorrectionRawStability.lean).
+[HierarchyCorrectionRawStability](../../Complexity/Computability/LogSpaceDerandomization/HierarchyCorrectionRawStability.lean).
 Its selected preparation theorem and normalized recipe bound retain the actual HP row
 and pilot gates, auxiliary incoming scores, both ranks, and signed unbounded raw entries.
 The bounded atom cutoff and denominator root regularity control outputs globally; no
@@ -1551,13 +1655,13 @@ separate/joint perturbations and row/incoming rank sensitivity; the dyadic maxim
 regression above remains in place.
 
 For the actual pilot score, detector and running maximum recipes, use
-[PilotRowStability](../../Complexity/Foundations/Probability/PilotRowStability.lean).
+[PilotRowStability](../../Complexity/Computability/LogSpaceDerandomization/PilotRowStability.lean).
 The score contract keeps the signed raw inputs in the original K-rank and pays ordinary
 fourth-moment row error with `width * ((Lϕ + Lρ) / rate)^4`. Its constants come from the
 fixed HP cutoffs before domains, rates or child tables. The detector first takes its actual
 source mean and terminal-conditioned mean: Jensen pays the source-rank maximum by the
 sum of fourth powers on that same finite source slice. The literal-payment theorem retains those means and the finite source sum.
-[PilotDetectorTransport](../../Complexity/Foundations/Probability/PilotDetectorTransport.lean)
+[PilotDetectorTransport](../../Complexity/Computability/LogSpaceDerandomization/PilotDetectorTransport.lean)
 reinserts the terminal conditioning by finite Fubini: its integrated score payment is
 `width * childSourceRate / (parentSourceRate * terminalDensityLowerBound)` times the
 child row moment. All outer coordinates and both actual integration variables remain in
@@ -1566,7 +1670,7 @@ still gives zero in the underlying detector contract.
 The clipped running maximum pays the sum of its previous-maximum and current-detector
 fourth moments, on the original pair masks.
 
-[HierarchyPilotStability](../../Complexity/Foundations/Probability/HierarchyPilotStability.lean)
+[HierarchyPilotStability](../../Complexity/Computability/LogSpaceDerandomization/HierarchyPilotStability.lean)
 also transports this payment through `terminalSplit` to actual full H4 rank environments.
 The child source resets to the terminal stage rate with its role and suffix unchanged;
 the terminal frame keeps its own role and suffix. Composing with the actual score contract
@@ -1585,7 +1689,7 @@ The shared [rank API](../../Complexity/Foundations/Data/Finset/KthLargest/Stabil
 also removes repeated normalization proofs in dense and correction preparation.
 
 For a computed initial-pilot fragment, use
-[InitialPilotScore](../../Complexity/Foundations/Probability/InitialPilotScore.lean).
+[InitialPilotScore](../../Complexity/Computability/LogSpaceDerandomization/InitialPilotScore.lean).
 It evaluates the dense bin from the stage-zero base matrix and its actual preparation,
 uses the literal zero correction of the first pilot input, walks that RAW sample on
 all H4 coordinates, and passes the completed matrix to the actual score recipe on the
@@ -1612,7 +1716,7 @@ positive allocated lengths. The two environments agree on every other role, incl
 the terminal frame. This is a nonconstant correlated exact-on-slice case; it does
 not establish nonzero mixing error or later recursive closure.
 
-The [source-aware detector](../../Complexity/Foundations/Probability/InitialPilotDetector.lean)
+The [source-aware detector](../../Complexity/Computability/LogSpaceDerandomization/InitialPilotDetector.lean)
 now consumes that completed score through the literal source/terminal split. The score request
 resets the source rate to the terminal stage rate while preserving roles and suffixes.
 `environmentDetector` reconstructs the child environment from all source spectators and the
@@ -1637,7 +1741,7 @@ The full-frame initial detector has a checked concrete payment `80 * ε^4`. The 
 RAW/score fixture remains exact on retained slices and does not show nonzero finite-walk
 mixing error. In particular, a large padded detector rank can erase its score variation.
 
-The [first positive direct pilot constructor](../../Complexity/Foundations/Probability/InitialPilotCorrection.lean)
+The [first positive direct pilot constructor](../../Complexity/Computability/LogSpaceDerandomization/InitialPilotCorrection.lean)
 now consumes the actual completed RAW table and the initial clipped maximum of zero and that
 source-aware detector. Its fixed-HP root constants precede the field and requests. The RAW
 length uses the computed dense input moment; the detector uses the existing source-aware
@@ -1666,7 +1770,7 @@ the original clipped denominator and actual source-aware detector/maximum. HP.k 
 constants precede fields, requests and child tables. The same covering single-bin, equal-rate,
 finite-horizon and dense-mean hypotheses remain explicit. No true-PREP oracle is used.
 
-The [completed stochastic first pilot correction](../../Complexity/Foundations/Probability/InitialPilotCompleted.lean)
+The [completed stochastic first pilot correction](../../Complexity/Computability/LogSpaceDerandomization/InitialPilotCompleted.lean)
 now averages that actual normalized child on the original source/usage H4 slice.
 `initialTrueNormalized_mean` specializes the existing pilot sampling law through the
 literal terminal split, deriving incoming margins from the canonical detector and frame
@@ -1870,3 +1974,101 @@ from the repository root to check them; the monomial clients are in
 `ComplexityTests.GaussianNoiseOperator`.
 
 Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.
+
+## Compare bits with Gaussians by the invariance principle
+
+Import
+[`Complexity.Foundations.BooleanAnalysis.Invariance`](../../Complexity/Foundations/BooleanAnalysis/Invariance.lean)
+for functions on the cube, or
+[`Complexity.Foundations.Probability.Multilinear.Invariance`](../../Complexity/Foundations/Probability/Multilinear/Invariance.lean)
+for formal multilinear polynomials. Open `ProbabilityTheory` (and `Cslib.BitString` for the cube).
+A formal multilinear polynomial is its coefficient function `c : Finset ι → ℝ`;
+`multilinearEval c z = ∑ S, c S * ∏ i ∈ S, z i` and `multilinearInfluence c i = ∑ S ∋ i, c S ^ 2`.
+Degree at most `k` is the hypothesis `∀ S, k < #S → c S = 0`. The variables are independent with
+laws `μ i : Measure ℝ`, through `Measure.pi μ`, and `HasInvarianceMoments (μ i)` is O'Donnell's
+Hypothesis 11.65: mean `0`, second moment `1`, third moment `0` and fourth moment at most `9`. Its
+first field, `memLp_four : MemLp id 4 μ`, also requires the fourth moment to be finite, so that the
+moment integrals are meaningful. The structure does not include `IsProbabilityMeasure`; the
+theorems take `[∀ i, IsProbabilityMeasure (μ i)]` as a separate instance argument.
+`hasInvarianceMoments_gaussianReal` and `hasInvarianceMoments_rademacher` supply it for standard
+Gaussians and uniform random signs.
+
+- `abs_integral_comp_multilinearEval_sub_le` is the Basic Invariance Principle (O'Donnell, §11.6,
+  eq. (11.29)): for `ψ` that is `C⁴` with `|iteratedDeriv 4 ψ| ≤ C`, the expectations of
+  `ψ (multilinearEval c ·)` under `Measure.pi μ` and `Measure.pi ν` differ by at most
+  `C / 12 * 9 ^ k * ∑ t, multilinearInfluence c t ^ 2`.
+- `abs_integral_comp_multilinearEval_sub_le_of_influence_le` is Corollary 11.67. It assumes
+  `∑ S with S ≠ ∅, c S ^ 2 ≤ 1` (variance at most one) and `multilinearInfluence c t ≤ ε` for every
+  `t`, together with `0 ≤ ε`, and bounds the difference by `C / 12 * k * 9 ^ k * ε`.
+- `abs_integral_comp_multilinearEval_sub_le_of_contDiff_three` is the `C³` form
+  `C / 3 * 3 ^ k * ∑ t, multilinearInfluence c t ^ ((3 : ℝ) / 2)`. It is the analogue, under
+  Hypothesis 11.65, of Remark 11.66, whose hypothesis is `(2, 3, ρ)`-hypercontractivity instead.
+- On the cube, `abs_expect_comp_sub_integral_comp_multilinearEval_le` and its `_of_influence_le` and
+  `_of_contDiff_three` forms compare `𝔼 x, ψ (f x)` at uniform bits with
+  `∫ y, ψ (multilinearEval (fourierCoeff f) y) ∂Measure.pi μ`. They assume `totalDegree f ≤ k`
+  and use `influence i f` and the variance `𝔼 x, (f x - 𝔼 y, f y) ^ 2`. The translation goes
+  through `integral_pi_rademacher`, `multilinearEval_fourierCoeff_signVal` and
+  `multilinearInfluence_fourierCoeff`.
+
+The proof is the replacement method. `MeasureTheory.abs_integral_pi_sub_le_sum` in
+[`PiUpdate`](../../Complexity/Foundations/MeasureTheory/Integral/PiUpdate.lean) telescopes over the
+hybrids `Measure.pi (s.piecewise ν μ)` and applies to any integrand. The Bonami Lemma for these
+variables, `integral_multilinearEval_pow_four_le`, is in
+[`Multilinear/Bonami`](../../Complexity/Foundations/Probability/Multilinear/Bonami.lean). It covers
+only the case `B ≤ 9` with variance `1` of Corollary 9.6. Cauchy–Schwarz for real integrals,
+`MeasureTheory.sq_integral_mul_le`, needs no sign condition. It is in
+[`Integral/CauchySchwarz`](../../Complexity/Foundations/MeasureTheory/Integral/CauchySchwarz.lean)
+with `MeasureTheory.integrable_pow_of_memLp` and `MeasureTheory.integrable_abs_pow_of_memLp`, which
+give integrability of the moments of order `j ≤ n` of a variable in `Lⁿ`.
+
+The checked [`MultilinearInvariance.lean` clients](../../ComplexityTests/MultilinearInvariance.lean)
+cover Hypothesis 11.65 for Gaussians and signs and its failure for a point mass, and bits versus
+Gaussians for any function of two bits with `ψ = cos` (`C⁴`) and `ψ = sin` (`C³`). They also show
+that a degree-`0` polynomial has exactly equal expectations. Run
+`scripts/build.sh ComplexityTests.MultilinearInvariance` from the repository root to check them.
+
+The test function must be smooth. The following are not formalized: the Lipschitz form
+(Corollary 11.68) and the Lévy-distance form (Corollary 11.70); the forms for functions with small
+high-degree tails, including noise-stable functions (Corollary 11.69), and cdf-closeness through
+the Carbery–Wright theorem (Theorem 11.71); the general Invariance Principle with
+hypercontractive ensembles; and Majority Is Stablest.
+
+## Evaluate a multi-component conditional walk via validated words
+
+Import
+[`Complexity.Probability.PairwiseIndependentHash.ProductValidatedWords`](../../Complexity/Probability/PairwiseIndependentHash/ProductValidatedWords.lean)
+and open `Cslib.Probability` to express `t` steps of the lazy conditional product walk over `J`
+retention slices and a free-bit torus `(ZMod M)^H` on the ambient space
+`ComponentSpace H M P = (∀ j, FrameChannel (P j) H 1) × (Fin H → ZMod M)` (Section 6.1, Lemma 6.3,
+items 1–4 of [OpenAI's logspace preprint](../sources.md#openai-logspace26)).
+The results on the slice `ComponentSlice H M P L y` (`componentWordWrap_mem`,
+`componentWordPerm_wrap_eq` and the two walk identities below) need the instances
+`[∀ j, Fact (P j).Prime]` and `[∀ j, NeZero (L j)]` and a proof `hL : ∀ j, L j ≤ P j`, which also
+fixes the reindexing `componentEquiv M hL y` in their statements; the checked clients below show
+how to discharge them for concrete `P` and `L`.
+
+- Each step label `ComponentLazyStep H J` has `4 * (J + 1) * H^2` choices (`card_componentLazyStep`),
+  and each candidate wrap vector lies in `affineWrapBox H = {-3, …, 3}^H` of size `7^H`
+  (`card_affineWrapBox`), independently of `P`, `L`, `M`, `y` and `t`.
+- Every length-`t` word permutation `componentWordPerm L w z` is a bijection of
+  `ComponentSpace H M P` independent of the retained identifiers `y` and preserves uniform
+  expectations (`expect_componentWordPerm`).
+- Retained identifiers `y` enter only through the endpoint wrap test `IsValidComponentWord`: on
+  `ComponentSlice H M P L y`, a unique wrap word in `(affineWrapBox H)^t` survives
+  (`existsUnique_isValidComponentWord`, `componentWordWrap_mem`). It reaches the endpoint
+  `(G.pow t).neighbor A w` of the walk along `w` (`componentWordPerm_wrap_eq`), where
+  `G = (ofPerms (componentMove H M P L)).lazy.reindex (componentEquiv M hL y).symm` is the
+  reindexed lazy product multigraph and `G.pow t` is its `t`-th power from
+  [`Expander/Power.lean`](../../Complexity/Foundations/Combinatorics/Expander/Power.lean). So
+  averaging over move words `w` and summing over wrap words `z` without dividing by `(7^H)^t`
+  equals `walk^t` (`walk_pow_componentMove_eq_expect_word`, and iteratively
+  `walk_pow_componentMove_eq_iterate`).
+
+The checked [`ProductValidatedWords.lean` clients](../../ComplexityTests/ProductValidatedWords.lean)
+verify concrete alphabet sizes and step wraps on two channels, over `ZMod 5` and `ZMod 7`, plus the
+torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbor, and combine
+`walk_pow_componentMove_eq_expect_word` with `ComponentGap` and `SliceFourthMoment` to bound the
+`L²` and `L⁴` central moments of the explicit validated-word estimator. Run
+`scripts/build.sh ComplexityTests.ProductValidatedWords` from the repository root to check them.
+This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
+or streaming space realization (the post-item space bound of Lemma 6.3) is separate.

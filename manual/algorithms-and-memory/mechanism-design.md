@@ -4,7 +4,10 @@ The modules under `Complexity/GameTheory/Mechanism/` formalize sealed-bid mechan
 quasilinear utilities, following Roughgarden's CS364A lecture notes (2013), Lectures 2–5 and 7.
 They are mathematical models of incentives: allocation and payment rules are arbitrary real
 functions, and no running time is charged. Hardness and approximation of the allocation
-problems, such as knapsack, are separate questions.
+problems, such as knapsack, are separate questions. Preference aggregation without money, starting
+with Arrow's impossibility theorem and the Gibbard–Satterthwaite theorem, is in
+`Complexity/GameTheory/SocialChoice/` and is described
+[below](#social-choice-arrows-impossibility-theorem).
 
 ## Single-parameter environments
 
@@ -187,6 +190,115 @@ To verify a candidate equilibrium of another auction, compute the interim alloca
 apply `isBayesNash_iff`: monotonicity and the payment identity are one-variable facts, and for
 domination exhibit, for each bid outside the range, a type whose bid does at least as well.
 
+## Social choice: Arrow's impossibility theorem
+
+Import `Complexity.GameTheory.SocialChoice.Arrow`. The namespace `Cslib.GameTheory.SocialChoice`
+models preference aggregation: there are no payments or utilities, only rankings. Voters `V` rank
+alternatives `A`. The preference model below is in `Complexity.GameTheory.SocialChoice.Ranking`,
+which the Arrow module imports publicly.
+
+- `Ranking A` is a strict linear order, given by a relation `Prefers` that is irreflexive,
+  transitive and total on distinct alternatives. `toTop b` and `toBottom b` move `b` to one end
+  and keep the other alternatives in order. `IsTop` and `IsBottom` say that `b` is at an end.
+  `Ranking.nonempty` gives a ranking of any type, by the Szpilrajn extension theorem.
+- `WeakRanking A` is a complete preorder `AtLeast`, with strict part
+  `Prefers a b := ¬ AtLeast b a`, so society may be indifferent. `Ranking.toWeakRanking` views a
+  ranking as a weak ranking without ties.
+- A `SocialWelfareFunction V A` maps every profile `V → Ranking A` to a `WeakRanking A`. Every
+  profile of strict rankings is admissible (unrestricted domain); voters cannot be indifferent.
+  This makes Arrow's theorem formally stronger, not weaker: Pareto and IIA are only assumed on
+  strict profiles, so more rules are covered. The version in which voters may be indifferent
+  follows by a short IIA reduction, which is not formalized.
+
+Rankings are bundled structures, not `LinearOrder` instances, because a profile puts different
+orders on the same type and the proof builds rankings pointwise. The bridge instances
+`IsStrictTotalOrder A r.Prefers`, `IsPreorder A R.AtLeast` and `Std.Total R.AtLeast` give access to
+Mathlib's unbundled order API. The axioms and the strict part of a weak ranking are `@[expose]`d,
+so clients can unfold them.
+
+The axioms are `IsPareto` (weak Pareto: if every voter strictly prefers `a` to `b`, so does
+society), `IsIIA` (society's `AtLeast a b` depends only on each voter's `Prefers a b`;
+`IsIIA.prefers_iff` gives the strict form), `IsDictator i` (whenever voter `i` strictly prefers `a`
+to `b`, so does society) and `IsDictatorial`. `dictatorship i` adopts voter `i`'s ranking. The
+main results:
+
+- `isDictatorial_of_isPareto_of_isIIA`: with `[Finite V]` and three distinct alternatives
+  (`∃ a b c : A, a ≠ b ∧ a ≠ c ∧ b ≠ c`), a weakly Pareto rule satisfying IIA is dictatorial.
+  This is Arrow's theorem. `isDictatorial_of_three_le_card` takes `3 ≤ Fintype.card A` instead.
+  The set of alternatives may be infinite.
+- `existsUnique_isDictator_of_isPareto_of_isIIA`: the dictator is unique. By
+  `isDictator_iff_eq_dictatorship`, a rule with dictator `i` is `dictatorship i`, so it has no
+  ties. `isPareto_and_isIIA_iff` combines these: the weakly Pareto IIA rules are exactly the
+  dictatorships.
+- `isTop_or_isBottom_of_extremal`: the extremal lemma used in the proof.
+
+The proof is the first of the three in Geanakoplos, *Three brief proofs of Arrow's impossibility
+theorem* (Economic Theory, 2005). Suppose every voter
+places `b` at one end of their ranking. Then society places `b` strictly at one end: otherwise
+some `a ≥ b ≥ c` socially with `a ≠ c`, and moving `c` above `a` in every ranking, without moving
+`b`, contradicts transitivity by IIA and Pareto. Next, move `b` from the bottom to the top one
+voter at a time. An induction over `Finset`s finds an *extremely pivotal* voter `n`, whose move
+takes `b` from the social bottom to the social top. Voter `n` dictates every pair `x, y ≠ b`:
+consider a profile in which `n` ranks `x ≻ b ≻ y` and everyone else keeps `b` where it was. It
+agrees with the pivotal profiles on `x` versus `b` and on `b` versus `y`. Finally, the pivotal
+voters of different alternatives coincide, which covers the pairs containing `b`.
+
+To apply the theorem to a concrete rule, prove `IsPareto` and `IsIIA` and obtain the dictator.
+To show that a rule escapes it, find the hypothesis that fails. A rule with strict social rankings,
+`F : Profile V A → Ranking A`, is covered through `fun P => (F P).toWeakRanking` and
+`Ranking.toWeakRanking_prefers`, as in the checked example.
+
+## Social choice: the Gibbard–Satterthwaite theorem
+
+Import `Complexity.GameTheory.SocialChoice.GibbardSatterthwaite`. It reuses `Ranking` and `Profile`
+from `Complexity.GameTheory.SocialChoice.Ranking`, and Arrow's theorem. A `SocialChoiceFunction V A`
+maps every profile `V → Ranking A` to one alternative. The definitions, all in
+`SocialChoiceFunction`, are `@[expose]`d:
+
+- `IsStrategyProof`: for all profiles `P` and `Q` that differ only in voter `i`'s ranking, `i` does
+  not strictly prefer `f Q` to `f P` by the true ranking `P i`. `isStrategyProof_iff` restates it
+  with `Function.update`.
+- `IsMaskinMonotone`: if no voter ranks an alternative above `f P` at `Q` that they ranked below it
+  at `P`, then `f Q = f P`.
+- `IsDictator i`: for every profile, voter `i` ranks the outcome above every other alternative in
+  the *range* of `f`. For a rule onto `A`, `isDictator_iff_of_surjective` reduces this to `i`'s top
+  alternative always being chosen. `IsDictatorial` asks for some dictator.
+- `dictatorship i` chooses `(P i).top`, where `Ranking.top` is the top alternative of a ranking of a
+  finite nonempty type.
+
+The main results:
+
+- `isStrategyProof_iff_isMaskinMonotone`: with `[Finite V]`, strategy-proofness and Maskin
+  monotonicity are equivalent (Muller and Satterthwaite, 1977).
+- `isDictatorial_of_isStrategyProof`: with `[Finite V]` and `3 ≤ (Set.range f).encard`, a
+  strategy-proof rule is dictatorial. This is the Gibbard–Satterthwaite theorem in its range form.
+  `isDictatorial_of_isMaskinMonotone` is the Muller–Satterthwaite theorem in the same form.
+- `isDictatorial_of_isStrategyProof_of_surjective` is the onto form of
+  [Nisan][nisan07], Theorem 9.8. It takes `Function.Surjective f` and three distinct alternatives.
+- `isStrategyProof_and_surjective_iff`: with `[Finite V] [Finite A] [Nonempty A]` and three
+  distinct alternatives, the strategy-proof onto rules are exactly the dictatorships.
+  `IsDictator.isStrategyProof` gives one direction for every rule, onto or not.
+
+The proof is the reduction to Arrow's theorem in [Nisan][nisan07], §9.2.4. Changing one voter's
+report at a time shows that a strategy-proof rule is Maskin monotone. Let every voter move the
+alternatives of a set `S` to the top of their ranking (`Ranking.toTopSet`). If `S` meets the range,
+monotonicity and unanimity keep the outcome in `S`. Society then ranks `a` at least as high as `b`
+when the outcome after every voter moves `a` and `b` to the top is `a`. This is a weak ranking,
+weakly Pareto and IIA, so `SocialWelfareFunction.isDictatorial_of_isPareto_of_isIIA` gives a
+dictator. Nisan's construction needs a rule onto `A`. For the range form, the induced social welfare
+function ranks the range: each voter's ranking of the range is extended to `A` by placing the range
+on top (`Ranking.extend`).
+
+The ranking operations used by the proof are in the Ranking module: `Ranking.top`,
+`Ranking.toTopSet`, `Ranking.restrict` and `Ranking.extend`, each with a definitional `_iff` lemma
+or membership lemmas. The set of alternatives may be infinite, as for Arrow's theorem. The
+electorate must be finite, since Arrow's theorem is used.
+
+To apply the theorem to a concrete rule, prove `IsStrategyProof` (or `IsMaskinMonotone`) and
+exhibit three distinct outcomes. To show that a rule escapes it, find the hypothesis that fails:
+majority rule between two alternatives has only two outcomes, and a non-dictatorial rule with three
+outcomes, such as the Borda count, must be manipulable.
+
 ## Worked examples
 
 The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) show the following:
@@ -199,6 +311,35 @@ The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) sh
 - In a two-agent public project, VCG charges the pivotal agent its externality `1`.
 - Knapsack feasibility holds and fails on small inputs, and the existence theorems are
   nonvacuous.
+
+The [social choice examples](../../ComplexityTests/GameTheory/SocialChoice.lean) are a `module`
+that uses only the public surface of the Arrow module. Dictatorship is weakly Pareto and IIA, so
+the theorem is not vacuous. Three hypotheses are each tested against a rule that drops it:
+
+- With three voters and two alternatives, pairwise majority rule is weakly Pareto, IIA and not
+  dictatorial, so three alternatives are needed.
+- With two voters and three alternatives, the Borda count is weakly Pareto and not dictatorial:
+  when the two voters hold opposite rankings, every alternative has Borda score `2`. By Arrow's
+  theorem the Borda count therefore violates IIA, so IIA is needed.
+- Universal indifference is IIA but not weakly Pareto.
+
+The examples also apply the theorem to three voters and three alternatives, and to a rule with
+strict social rankings.
+
+The [Gibbard–Satterthwaite examples](../../ComplexityTests/GameTheory/GibbardSatterthwaite.lean)
+also use only the public surface. A dictatorship is strategy-proof and onto, so the theorem is not
+vacuous; the theorem is applied to three voters and three alternatives and, in range form, to a rule
+with values in `ℕ`. Majority rule between two alternatives `a` and `b`, ties going to `b`, is
+strategy-proof. With at least two voters it is not dictatorial: a lone supporter of `a` cannot get
+`a`. On `Bool` with three voters it is onto, so the theorem needs three alternatives. On `Fin 3` its
+range is `{0, 1}`, so the hypothesis concerns the range, not the number of alternatives. On `Fin 4`,
+the rule choosing voter `0`'s favourite among `{0, 1, 2}` is strategy-proof, has three outcomes and
+is not onto. Voter `0` is its dictator, but the outcome is not always their top alternative, so for
+rules that are not onto, a dictator gets their favourite outcome in the range. Finally, the Borda
+count with two voters and three alternatives, ties going to the smaller alternative, is
+manipulable. Voter `0` ranks `1 ≻ 0 ≻ 2` and voter `1` ranks `0 ≻ 1 ≻ 2`. The scores are
+`(3, 3, 0)`, so the outcome is `0`. If voter `0` reports `1 ≻ 2 ≻ 0` instead, the scores are
+`(2, 3, 1)` and the outcome is `1`. Both outcomes are checked by `decide`.
 
 The [optimal-auction examples](../../ComplexityTests/GameTheory/OptimalAuction.lean) use
 `U[0, 1]`, which has reserve price `1/2`. With two bidders, bids `(0.3, 0.4)` do not sell. On
@@ -235,4 +376,12 @@ Green–Laffont/Holmström characterization of DSIC welfare maximizers, a bridge
 single-parameter mechanisms as general ones (for example VCG specializing to Vickrey), and any
 computational cost of allocation rules. See `ROADMAP.md` and issues #2947, #3001 and #3173.
 
+For social choice, Arrow's theorem and the Gibbard–Satterthwaite theorem are formalized for strict
+individual rankings. A finite electorate is necessary, but the infinite-electorate counterexample
+built from a nonprincipal ultrafilter (Fishburn 1970) is not formalized. Also not formalized are the
+corollary for individual weak orders, May's theorem, quantitative (Kalai) versions of Arrow's
+theorem, and the complexity of winner determination and manipulation. See `ROADMAP.md` and issue
+#3282.
+
 [hartline21]: ../sources.md#hartline21
+[nisan07]: ../sources.md#nisan07
