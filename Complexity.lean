@@ -3020,6 +3020,7 @@ public import Complexity.Computability.QueryComplexity.ApproximateDegree
 public import Complexity.Computability.QueryComplexity.ApproximateDegree.Or
 public import Complexity.Computability.QueryComplexity.BernsteinVazirani
 public import Complexity.Computability.QueryComplexity.Degree
+public import Complexity.Computability.QueryComplexity.DeutschJozsa
 public import Complexity.Computability.QueryComplexity.Huang
 public import Complexity.Computability.QueryComplexity.Midrijanis
 public import Complexity.Computability.QueryComplexity.Monotone
@@ -3033,6 +3034,7 @@ public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary
 public import Complexity.Computability.QueryComplexity.Quantum.BernsteinVazirani
 public import Complexity.Computability.QueryComplexity.Quantum.BitQuery
 public import Complexity.Computability.QueryComplexity.Quantum.Composition
+public import Complexity.Computability.QueryComplexity.Quantum.DeutschJozsa
 public import Complexity.Computability.QueryComplexity.Quantum.Grover
 public import Complexity.Computability.QueryComplexity.Quantum.Polynomial
 public import Complexity.Computability.QueryComplexity.Quantum.Search
@@ -3041,6 +3043,7 @@ public import Complexity.Computability.QueryComplexity.Quantum.SimonSearch
 public import Complexity.Computability.QueryComplexity.Quantum.UnknownSearch
 public import Complexity.Computability.QueryComplexity.Randomized
 public import Complexity.Computability.QueryComplexity.Randomized.Counting
+public import Complexity.Computability.QueryComplexity.Randomized.DeutschJozsa
 public import Complexity.Computability.QueryComplexity.Randomized.Nisan
 public import Complexity.Computability.QueryComplexity.Randomized.ZeroError
 public import Complexity.Computability.QueryComplexity.Relations
@@ -4197,6 +4200,7 @@ public import Complexity.Foundations.Data.BitString.Affine
 public import Complexity.Foundations.Data.BitString.AffineSubspace
 public import Complexity.Foundations.Data.BitString.Agree
 public import Complexity.Foundations.Data.BitString.AgreeExpect
+public import Complexity.Foundations.Data.BitString.Balanced
 public import Complexity.Foundations.Data.BitString.Basic
 public import Complexity.Foundations.Data.BitString.Binary
 public import Complexity.Foundations.Data.BitString.Block

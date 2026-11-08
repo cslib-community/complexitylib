@@ -1323,6 +1323,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Quantum/Search.lean`, `Quantum/Composition.lean`, `Quantum/Grover.lean`,
   `Quantum/UnknownSearch.lean`, `Quantum/Polynomial.lean` and `Quantum/Adversary.lean`. Natural
   later targets are Forrelation and other optimal quantum–classical query separations.
+  Deutsch–Jozsa
+  ([#3310](https://github.com/cslib-community/complexitylib/issues/3310)) has the exact
+  one-query algorithm, the deterministic bound `N/2 + 1` and the constant-query randomized
+  algorithm. Next: exact quantum query lower bounds for promise problems via polynomial degree
+  (`Q_E ≥ deg/2` on the promise domain), a promise-problem form of `randomizedComplexity`, and
+  recursive Fourier sampling (Bernstein–Vazirani's superpolynomial separation).
 
 - **Quantum query lower bounds**
   ([#3239](https://github.com/cslib-community/complexitylib/issues/3239)): Ambainis's relational
