@@ -16,10 +16,12 @@ import Mathlib.Analysis.Convex.Jensen
 # Fano's inequality
 
 **Fano's inequality** bounds the entropy left in a hidden value by the probability that it is
-guessed wrongly [Cover and Thomas, Theorem 2.10.1][CoverThomas2006]. If an estimator `g` recovers a
-value `X : α` from an observation `Y` except with probability `Pe = Pr[g Y ≠ X]`, then
-`H(X | Y) ≤ h₂(Pe) + Pe log₂ (|α| - 1)`, where `h₂(e) = Real.binEntropy e / Real.log 2` is the
-binary entropy in bits. Joint laws list the observation first, as for
+guessed wrongly [Cover and Thomas, Section 2.10, the corollary to Theorem
+2.10.1][CoverThomas2006]. If an estimator `g` recovers a value `X : α` from an observation `Y`
+except with probability `Pe = Pr[g Y ≠ X]`, then `H(X | Y) ≤ h₂(Pe) + Pe log₂ (|α| - 1)`, where
+`h₂(e) = Real.binEntropy e / Real.log 2` is the binary entropy in bits. This is the sharper
+`|α| - 1` form of that corollary, for deterministic estimators `g Y` with values in `α`; it implies
+the theorem's `Pe log₂ |α|` form for them. Joint laws list the observation first, as for
 `Cslib.Probability.PMF.conditionalEntropy`.
 
 The proof averages the unconditional inequality `H(q) ≤ h₂(1 - q a) + (1 - q a) log₂ (|α| - 1)`,
@@ -61,8 +63,9 @@ theorem entropy_bool (q : PMF Bool) :
     linarith
   rw [entropy_eq_sum, Fintype.sum_bool, h, Real.binEntropy_eq_negMulLog_add_negMulLog_one_sub]
 
-/-- **Fano's inequality** without side information: if the guess `a` misses a sample of `q` with
-probability `e = 1 - q a`, then `H(q) ≤ h₂(e) + e log₂ (|α| - 1)`. -/
+/-- **Fano's inequality** without side information [Cover and Thomas, Section 2.10, the remark
+after Theorem 2.10.1][CoverThomas2006]: if the guess `a` misses a sample of `q` with probability
+`e = 1 - q a`, then `H(q) ≤ h₂(e) + e log₂ (|α| - 1)`. -/
 theorem entropy_le_binEntropy_add_mul_logb [Fintype α] (q : PMF α) (a : α) :
     entropy q ≤ Real.binEntropy (1 - (q a).toReal) / Real.log 2 +
       (1 - (q a).toReal) * Real.logb 2 (Fintype.card α - 1) := by
@@ -112,10 +115,11 @@ theorem entropy_le_binEntropy_add_mul_logb [Fintype α] (q : PMF α) (a : α) :
     ← add_div (Real.negMulLog e + Real.negMulLog (q a).toReal)]
   exact div_le_div_of_nonneg_right (by linarith) hlog.le
 
-/-- **Fano's inequality** [Cover and Thomas, Theorem 2.10.1][CoverThomas2006]: for a joint law of
-an observation `Y : β` and a hidden value `X : α`, listed observation first, and an estimator
-`g : β → α` erring with probability `Pe = Pr[g Y ≠ X]`,
-`H(X | Y) ≤ h₂(Pe) + Pe log₂ (|α| - 1)`. -/
+/-- **Fano's inequality** [Cover and Thomas, Section 2.10, the corollary to Theorem
+2.10.1][CoverThomas2006]: for a joint law of an observation `Y : β` and a hidden value `X : α`,
+listed observation first, and an estimator `g : β → α` erring with probability `Pe = Pr[g Y ≠ X]`,
+`H(X | Y) ≤ h₂(Pe) + Pe log₂ (|α| - 1)`. This is the sharper `|α| - 1` form, for deterministic
+estimators with values in `α`. -/
 theorem conditionalEntropy_le_binEntropy_add_mul_logb [Finite β] [Fintype α]
     (joint : PMF (β × α)) (g : β → α) :
     conditionalEntropy joint ≤
