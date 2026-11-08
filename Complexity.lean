@@ -3998,6 +3998,7 @@ public import Complexity.Foundations.Combinatorics.Hypergeometric
 public import Complexity.Foundations.Combinatorics.HypergraphCut
 public import Complexity.Foundations.Combinatorics.InclusionMatrix
 public import Complexity.Foundations.Combinatorics.Janson
+public import Complexity.Foundations.Combinatorics.KovariSosTuran
 public import Complexity.Foundations.Combinatorics.Lautemann
 public import Complexity.Foundations.Combinatorics.LineCode.Basic
 public import Complexity.Foundations.Combinatorics.LineCode.HighRate
@@ -4332,6 +4333,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.PilotCorrection
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rank
 public import Complexity.Foundations.LinearAlgebra.Matrix.RectPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rigidity
+public import Complexity.Foundations.LinearAlgebra.Matrix.Rigidity.TotallyRegular
 public import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
 public import Complexity.Foundations.LinearAlgebra.Matrix.SubmatrixRobust
 public import Complexity.Foundations.LinearAlgebra.Matrix.TimeLayer
