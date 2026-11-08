@@ -197,6 +197,18 @@ private theorem certLength_mono {m₁ m₂ s₁ s₂ : ℕ} (hm : m₁ ≤ m₂)
   unfold certLength
   gcongr
 
+/-- Enumerating all bit strings of a length `c ≤ Nat.log 2 B` costs at most `2 * (B + 1) ^ 2`, the
+budget shape used by `bitsEnumList` and `computableInPolyTime_checkCertificate`. -/
+private theorem two_pow_mul_le_of_le_log {c B : ℕ} (h : c ≤ Nat.log 2 B) :
+    2 ^ c * (2 * c + 1) ≤ 2 * (B + 1) ^ 2 := by
+  have hpow : 2 ^ c ≤ B + 1 :=
+    (Nat.pow_le_pow_right (by norm_num) h).trans (Nat.pow_log_le_add_one 2 B)
+  have hlin : 2 * c + 1 ≤ 2 * (B + 1) := by
+    have := Nat.log_le_self 2 B
+    omega
+  calc 2 ^ c * (2 * c + 1) ≤ (B + 1) * (2 * (B + 1)) := Nat.mul_le_mul hpow hlin
+    _ = 2 * (B + 1) ^ 2 := by ring
+
 /-- Check whether a truth table `T` (of arity `m = Nat.log 2 T.length`) has a circuit of size at
 most `S` by enumerating all certificates of length `min (certLength m S) (Nat.log 2 K)`. Because
 the certificate length is capped at `Nat.log 2 K`, at most `K + 1` certificates are enumerated, so
@@ -238,21 +250,10 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
     fun_prop
   have hbudget_enum (a : γ) :
       2 ^ cLen a * (2 * cLen a + 1) ≤ size_enum (encIn a).length := by
-    have hc_le_log : cLen a ≤ Nat.log 2 (K a) := Nat.min_le_right _ _
-    have hlog_le : Nat.log 2 (K a) ≤ K a := Nat.log_le_self 2 (K a)
-    have hpow_le : 2 ^ cLen a ≤ K a + 1 := by
-      calc 2 ^ cLen a
-          ≤ 2 ^ Nat.log 2 (K a) := Nat.pow_le_pow_right (by norm_num) hc_le_log
-        _ ≤ K a + 1 := by
-          rcases Nat.eq_zero_or_pos (K a) with h0 | hpos
-          · simp [h0]
-          · exact (Nat.pow_log_le_self 2 hpos.ne').trans (Nat.le_succ _)
-    have hlin_le : 2 * cLen a + 1 ≤ 2 * (K a + 1) := by omega
     have hKa : K a + 1 ≤ c_K * ((encIn a).length + 1) ^ d_K + 1 :=
       Nat.add_le_add_right (hK_len a) 1
     calc 2 ^ cLen a * (2 * cLen a + 1)
-        ≤ (K a + 1) * (2 * (K a + 1)) := Nat.mul_le_mul hpow_le hlin_le
-      _ = 2 * (K a + 1) ^ 2 := by ring
+        ≤ 2 * (K a + 1) ^ 2 := two_pow_mul_le_of_le_log (Nat.min_le_right _ _)
       _ ≤ 2 * (c_K * ((encIn a).length + 1) ^ d_K + 1) ^ 2 := by gcongr
   have henum : ComputableInPolyTime (fun a => BitString.enumList (cLen a))
       encIn (encList encBits) :=
@@ -266,13 +267,6 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
   have hbudget_T (p : γ × List Bool) :
       2 ^ m p.1 * (2 * m p.1 + 1) ≤ size_T (encPair encIn encBits p).length := by
     set lenT := (T p.1).length
-    have hpow : 2 ^ m p.1 ≤ lenT + 1 := by
-      rcases Nat.eq_zero_or_pos lenT with h0 | hpos
-      · simp [m, lenT, h0]
-      · exact (Nat.pow_log_le_self 2 hpos.ne').trans (Nat.le_succ _)
-    have hlog : 2 * m p.1 + 1 ≤ 2 * (lenT + 1) := by
-      have : m p.1 ≤ lenT := Nat.log_le_self 2 lenT
-      omega
     have hlen_p : (encIn p.1).length ≤ (encPair encIn encBits p).length :=
       length_le_encPair_left encIn encBits p
     have hlenT_le : lenT + 1 ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 := by
@@ -280,8 +274,7 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
           ≤ c_T * ((encIn p.1).length + 1) ^ d_T + 1 := Nat.add_le_add_right (hT_len p.1) 1
         _ ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 := by gcongr
     calc 2 ^ m p.1 * (2 * m p.1 + 1)
-        ≤ (lenT + 1) * (2 * (lenT + 1)) := Nat.mul_le_mul hpow hlog
-      _ = 2 * (lenT + 1) ^ 2 := by ring
+        ≤ 2 * (lenT + 1) ^ 2 := two_pow_mul_le_of_le_log le_rfl
       _ ≤ 2 * (c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1) ^ 2 := by gcongr
   have haccept : ComputableInPolyTime
       (fun q : ((γ × List Bool) × List Bool) × Bool =>
@@ -352,6 +345,33 @@ namespace Cslib.Complexity
 
 open _root_.Turing _root_.Turing.MultiTapeTM Circuits Circuits.Boolean MCSP
 
+/-- The padded input `frame x ++ replicate (2 ^ (n ^ (k + 1) + 1)) true` of length
+`2 * n + 1 + 2 ^ (n ^ (k + 1) + 1)` pays for a `c₁ * 2 ^ n ^ k + c₂` time bound. -/
+private theorem time_le_padded_length (c₁ c₂ n k : ℕ) :
+    c₁ * 2 ^ n ^ k + c₂ ≤ (c₁ + c₂) * (2 * n + 1 + 2 ^ (n ^ (k + 1) + 1)) := by
+  have hpow_le : 2 ^ n ^ k ≤ 2 ^ (n ^ (k + 1) + 1) := by
+    refine Nat.pow_le_pow_right (by norm_num) ?_
+    rcases Nat.eq_zero_or_pos n with h0 | hpos
+    · rcases k with _ | k <;> simp [h0]
+    · exact (Nat.pow_le_pow_right hpos (Nat.le_succ k)).trans (Nat.le_succ _)
+  have : 1 ≤ 2 * n + 1 + 2 ^ (n ^ (k + 1) + 1) :=
+    (Nat.le_add_left 1 (2 * n)).trans (Nat.le_add_right _ _)
+  nlinarith
+
+/-- An instance whose encoding has length at most `c * (L + 1) ^ d`, where `L + 1 ≤ 2 ^ e`, has
+arity at most `c + e * d`: its truth table alone takes `2 ^ arity` bits. -/
+private theorem arity_le_of_length_encInstance_le {x : Instance} {c d e L : ℕ}
+    (hlen : (MCSP.encInstance x).length ≤ c * (L + 1) ^ d) (hL : L + 1 ≤ 2 ^ e) :
+    x.arity ≤ c + e * d := by
+  have h2_arity : 2 ^ x.arity ≤ (MCSP.encInstance x).length := by
+    enc_len [MCSP.encInstance_apply, List.length_ofFn]
+  have hpow_le : 2 ^ x.arity ≤ 2 ^ (c + e * d) :=
+    calc 2 ^ x.arity
+        ≤ c * (L + 1) ^ d := h2_arity.trans hlen
+      _ ≤ 2 ^ c * (2 ^ e) ^ d := Nat.mul_le_mul Nat.lt_two_pow_self.le (Nat.pow_le_pow_left hL d)
+      _ = 2 ^ (c + e * d) := by rw [← pow_mul, ← pow_add]
+  exact (Nat.pow_le_pow_iff_right (by norm_num : 1 < 2)).mp hpow_le
+
 /-- **Murray–Williams Theorem 4.1 (`NEXP ⊆ EXP`, full-`NPHard` specialization)**
 [Murray and Williams, Section 4.1, Theorem 4.1, p. 13][MurrayWilliams2017]:
 > "If every sparse language in `NP` has a polynomial-time reduction to `MCSP`, then
@@ -408,22 +428,13 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
   let g (n : ℕ) : ℕ := certLength (m_bound n) (s_bound n) + n
   have harity (x : List Bool) : (R (z x)).arity ≤ m_bound x.length := by
     set n := x.length
-    have h2_arity : 2 ^ (R (z x)).arity ≤ (MCSP.encInstance (R (z x))).length := by
-      enc_len [MCSP.encInstance_apply, List.length_ofFn]
     have hn_le : n + 1 ≤ 2 ^ f n :=
       (Nat.lt_two_pow_self (n := n)).trans_le (Nat.pow_le_pow_right (by norm_num) (hnf n))
     have hzx_len : (z x).length + 1 ≤ 2 ^ (f n + 2) := by
       simp only [z, List.length_append, length_frame, List.length_replicate, pow_add]
       change 2 * n + 1 + 2 ^ f n + 1 ≤ 2 ^ f n * 4
       omega
-    have hpow_le : 2 ^ (R (z x)).arity ≤ 2 ^ m_bound n := by
-      calc 2 ^ (R (z x)).arity
-          ≤ (MCSP.encInstance (R (z x))).length := h2_arity
-        _ ≤ c_R * ((z x).length + 1) ^ d_R := hR_len (z x)
-        _ ≤ 2 ^ c_R * (2 ^ (f n + 2)) ^ d_R :=
-            Nat.mul_le_mul Nat.lt_two_pow_self.le (Nat.pow_le_pow_left hzx_len d_R)
-        _ = 2 ^ m_bound n := by simp only [m_bound, ← pow_mul, ← pow_add]
-    exact (Nat.pow_le_pow_iff_right (by norm_num : 1 < 2)).mp hpow_le
+    exact arity_le_of_length_encInstance_le (hR_len (z x)) hzx_len
   have hcomp_le (x : List Bool) :
       complexity interpretation (single (R (z x)).function) ≤ s_bound x.length := by
     let a_frame : Fin (frame x).length → Bool := fun j => (frame x)[j]
@@ -452,22 +463,17 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
   -- Compose the unary bounds explicitly: one `fun_prop` over the unfolded nest is too slow.
   have hid : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary := .id'
   have hc (a : ℕ) : ComputableInPolyTime (fun _ : ℕ => a) encUnary encUnary := .const a
-  have hadd {u v : ℕ → ℕ} (hu : ComputableInPolyTime u encUnary encUnary)
-      (hv : ComputableInPolyTime v encUnary encUnary) :
-      ComputableInPolyTime (fun n => u n + v n) encUnary encUnary :=
-    ComputableInPolyTime.unary_add.comp (hu.prod hv)
-  have hmul {u v : ℕ → ℕ} (hu : ComputableInPolyTime u encUnary encUnary)
-      (hv : ComputableInPolyTime v encUnary encUnary) :
-      ComputableInPolyTime (fun n => u n * v n) encUnary encUnary :=
-    ComputableInPolyTime.unary_mul.comp (hu.prod hv)
   have hm_bound : ComputableInPolyTime m_bound encUnary encUnary :=
-    hadd (hc c_R) (hmul (hadd hf (hc 2)) (hc d_R))
-  have hs_bound : ComputableInPolyTime s_bound encUnary encUnary :=
-    hadd (hmul (hc c_M) ((ComputableInPolyTime.unary_pow d_M).comp
-      (hadd (hadd (hadd (hmul (hc 2) hid) (hc 1)) hm_bound) (hc 1)))) (hc 2)
+    (hc c_R).unary_add' ((hf.unary_add' (hc 2)).unary_mul' (hc d_R))
+  have hs_bound : ComputableInPolyTime s_bound encUnary encUnary := by
+    have hbase : ComputableInPolyTime (fun n => 2 * n + 1 + m_bound n + 1) encUnary encUnary :=
+      ((((hc 2).unary_mul' hid).unary_add' (hc 1)).unary_add' hm_bound).unary_add' (hc 1)
+    exact ((hc c_M).unary_mul' ((ComputableInPolyTime.unary_pow d_M).comp hbase)).unary_add'
+      (hc 2)
   have hg : ComputableInPolyTime g encUnary encUnary := by
-    have hns := hadd hm_bound hs_bound
-    exact hadd (hadd (hadd hs_bound hns) (hmul hs_bound (hadd (hc 3) (hmul (hc 2) hns)))) hid
+    have hns := hm_bound.unary_add' hs_bound
+    exact ((hs_bound.unary_add' hns).unary_add'
+      (hs_bound.unary_mul' ((hc 3).unary_add' ((hc 2).unary_mul' hns)))).unary_add' hid
   let B_search : Set (List Bool × ℕ) :=
     {p : List Bool × ℕ |
       boundedMCSPSearch (List.ofFn (R p.1).table)
@@ -516,17 +522,8 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
       change Nat.card (Turing.Action k_tapes Bool State) * (c₁ * 2 ^ n ^ k + c₂) ≤
         c * (frame x ++ List.replicate (2 ^ f n) true).length
       simp only [List.length_append, length_frame, List.length_replicate]
-      have hpow_le : 2 ^ n ^ k ≤ 2 ^ f n := by
-        refine Nat.pow_le_pow_right (by norm_num) ?_
-        rcases Nat.eq_zero_or_pos n with h0 | hpos
-        · rcases k with _ | k <;> simp [f, h0]
-        · exact (Nat.pow_le_pow_right hpos (Nat.le_succ k)).trans (Nat.le_succ _)
-      have hmul : c₁ * 2 ^ n ^ k + c₂ ≤ (c₁ + c₂) * (2 * n + 1 + 2 ^ f n) := by
-        have : 1 ≤ 2 * n + 1 + 2 ^ f n :=
-          (Nat.le_add_left 1 (2 * n)).trans (Nat.le_add_right _ _)
-        nlinarith
       rw [Nat.mul_assoc]
-      exact Nat.mul_le_mul_left _ hmul
+      exact Nat.mul_le_mul_left _ (time_le_padded_length c₁ c₂ n k)
     exact (hpad_iff.trans (hR_iff (z x))).trans hsearch_iff.symm
   exact hA_eq ▸ hEXP_pre
 
