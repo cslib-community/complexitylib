@@ -51,7 +51,8 @@ both to stay within the fixed-sample model of `acceptProb₂`. It takes a fixed 
 flattening samples instead of a Poisson number. It also flattens with samples of both `p` and `q`
 rather than of `q` alone, so that both split collision probabilities are small. This replaces
 [Diakonikolas–Kane, Lemma 2.3][DiakonikolasKane2016], which needs only one of the two norms to be
-small but estimates both norms first.
+small but estimates both norms first. Statistical distance `dist` is half the `ℓ₁` distance, so
+proximity `ε` here is `‖p - q‖₁ ≥ 2 ε` in the notation of the paper.
 
 ## Main definitions
 
@@ -291,10 +292,11 @@ private theorem acceptProb₂_split_le {m k : ℕ} {ε δ b : ℝ} (hε : 0 ≤ 
       (split p (flatteningCount x y)) (split q (flatteningCount x y))
     linarith
 
-/-- **The closeness tester by flattening** [Diakonikolas–Kane, Proposition 2.10]
-[DiakonikolasKane2016]: on a domain of size `n`, with `m` flattening samples and `k` testing
-samples of each distribution, `closenessFlatteningTester m k ε` is a closeness tester with
-proximity `ε` whenever `0 < ε` and `864 (n + 2m) ≤ 5 (k - 1) ε² √(m + 1)`. -/
+/-- **The closeness tester by flattening**, a fixed-sample, two-sided variant of
+[Diakonikolas–Kane, Proposition 2.10][DiakonikolasKane2016]: on a domain of size `n`, with `m`
+flattening samples and `k` testing samples of each distribution, `closenessFlatteningTester m k ε`
+is a closeness tester with proximity `ε` whenever `0 < ε` and
+`864 (n + 2m) ≤ 5 (k - 1) ε² √(m + 1)`. -/
 theorem isClosenessTester_closenessFlatteningTester {m k : ℕ} {ε : ℝ} (hε : 0 < ε)
     (hk : 864 * ((Fintype.card α : ℝ) + 2 * m) ≤ 5 * (k - 1) * ε ^ 2 * Real.sqrt (m + 1)) :
     IsClosenessTester (closenessFlatteningTester (α := α) m k ε) ε := by
