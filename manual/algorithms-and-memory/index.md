@@ -13,7 +13,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 - [Strategic games, congestion and the price of anarchy](strategic-games.md): cost games, potential games, Rosenthal's theorem, smoothness and coarse correlated equilibria, and the `5/2` and `4/3` price-of-anarchy bounds.
 - [Borrowed registers and native Tree Evaluation](catalytic-and-tree-evaluation.md): exact restoration, explicit gate-table inputs, Cook–Mertz workspace, and fan-in/packed variants.
 - [Representative algorithm endpoints](algorithm-endpoints.md): what the library proves about sorting/selection, shortest paths, heaps, hashing and minimum cut, the classical approximation bounds for set cover, vertex cover and metric TSP, Freivalds' costed randomized matrix-product verifier, Euler circuits in multigraphs, Farkas' lemma and LP duality over ordered fields, and LP feasibility in NP ∩ coNP.
-- [Mechanism design](mechanism-design.md): single-parameter mechanisms, Myerson's Lemma, Vickrey and knapsack auctions, VCG, Myerson's optimal auction, Bayes–Nash equilibrium, revenue equivalence and the first-price auction; incentive properties only, with no running time charged.
+- [Mechanism design](mechanism-design.md): single-parameter mechanisms, Myerson's Lemma, Vickrey and knapsack auctions, VCG, Myerson's optimal auction, Bayes–Nash equilibrium, revenue equivalence and the first-price auction; incentive properties only, with no running time charged. The same page covers social welfare functions and Arrow's impossibility theorem.
 
 ## Taxonomy
 
