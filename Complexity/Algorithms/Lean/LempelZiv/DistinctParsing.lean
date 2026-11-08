@@ -38,7 +38,7 @@ words is at most `∑_{i < m} (m - i) k ^ i ≤ 2 k ^ m`. Choosing `m` gives the
 * `c * log_k c ≤ n + 2 c` with `m = ⌊log_k c⌋` (`length_mul_log_le_of_nodup`);
 * `c * (log_k n - log_k log_k n - 4) ≤ n` (`length_mul_logb_sub_le_of_nodup`). For `k = 2` this
   is the bound `c ≤ n / ((1 - ε_n) log₂ n)` with `ε_n = min(1, (log₂ log₂ n + 4) / log₂ n)` of
-  [CoverThomas2006], Lemma 13.5.3 (`length_le_div_of_nodup`, `tendsto_epsilon`). Here it is
+  [CoverThomas2006], §13.5 (`length_le_div_of_nodup`, `tendsto_epsilon`). Here it is
   proved for every alphabet size `k ≥ 2` with logarithms to base `k`.
 
 The arithmetic steps from the first inequality to the other two are stated separately
@@ -48,34 +48,39 @@ only distinct up to its last phrase and satisfies the first inequality by a vari
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.LempelZiv.epsilon`: the vanishing slack `ε_n` of [CoverThomas2006],
-  Lemma 13.5.3, to base `k`.
+* `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.epsilon`: the vanishing slack `ε_n` of the
+  distinct-parsing lemma of [CoverThomas2006], §13.5, to base `k`; its formula is
+  `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.epsilon_def`.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.LempelZiv.sum_tsub_length_le_of_nodup`: the total deficit bound.
-* `Cslib.Algorithms.Lean.LempelZiv.mul_length_le_of_nodup`,
-  `Cslib.Algorithms.Lean.LempelZiv.mul_length_le_of_nodup_dropLast`: `m * c ≤ n + 2 * k ^ m`,
-  also when only the phrases before the last are distinct (and all phrases are nonempty).
-* `Cslib.Algorithms.Lean.LempelZiv.mul_log_le_of_forall_mul_le`,
-  `Cslib.Algorithms.Lean.LempelZiv.mul_logb_sub_le_of_forall_mul_le`,
-  `Cslib.Algorithms.Lean.LempelZiv.le_div_of_forall_mul_le`: the arithmetic inversions.
-* `Cslib.Algorithms.Lean.LempelZiv.length_mul_log_le_of_nodup`,
-  `Cslib.Algorithms.Lean.LempelZiv.length_mul_logb_sub_le_of_nodup`,
-  `Cslib.Algorithms.Lean.LempelZiv.length_le_div_of_nodup`: the distinct-parsing bound.
-* `Cslib.Algorithms.Lean.LempelZiv.tendsto_epsilon`: `ε_n → 0`.
+* `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.sum_tsub_length_le_of_nodup`: the total
+  deficit bound.
+* `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.mul_length_le_of_nodup`,
+  `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.mul_length_le_of_nodup_dropLast`:
+  `m * c ≤ n + 2 * k ^ m`, also when only the phrases before the last are distinct (and all
+  phrases are nonempty).
+* `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.mul_log_le_of_forall_mul_le`,
+  `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.mul_logb_sub_le_of_forall_mul_le`,
+  `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.le_div_of_forall_mul_le`: the arithmetic
+  inversions.
+* `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.length_mul_log_le_of_nodup`,
+  `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.length_mul_logb_sub_le_of_nodup`,
+  `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.length_le_div_of_nodup`: the distinct-parsing
+  bound.
+* `Cslib.Algorithms.Lean.LempelZiv.DistinctParsing.tendsto_epsilon`: `ε_n → 0`.
 
 ## References
 
 * [ZivLempel1978] J. Ziv and A. Lempel, *Compression of individual sequences via variable-rate
   coding*, IEEE Trans. Inf. Theory 24(5), 1978.
 * [CoverThomas2006] T. M. Cover and J. A. Thomas, *Elements of Information Theory*, 2nd ed.,
-  2006, Ch. 13, Lemma 13.5.3.
+  2006, Ch. 13 (§13.5 for the distinct-parsing lemma).
 -/
 
 public section
 
-namespace Cslib.Algorithms.Lean.LempelZiv
+namespace Cslib.Algorithms.Lean.LempelZiv.DistinctParsing
 
 open Finset
 
@@ -188,7 +193,7 @@ private theorem logb_natCast_nonneg {k : ℝ} (hk : 1 < k) (n : ℕ) : 0 ≤ Rea
 
 /-- **Cover–Thomas form.** If `m * c ≤ n + 2 * k ^ m` for every `m`, with `k ≥ 2`, then
 `c * (log_k n - log_k log_k n - 4) ≤ n`. The proof takes `m = ⌊log_k n - log_k log_k n⌋ - 2`, so
-that `4 (log_k n) k ^ m ≤ n`, following [CoverThomas2006], Lemma 13.5.3. -/
+that `4 (log_k n) k ^ m ≤ n`, following [CoverThomas2006], §13.5. -/
 theorem mul_logb_sub_le_of_forall_mul_le {k c n : ℕ} (hk : 2 ≤ k)
     (hc : ∀ m : ℕ, m * c ≤ n + 2 * k ^ m) :
     (c : ℝ) * (Real.logb k n - Real.logb k (Real.logb k n) - 4) ≤ n := by
@@ -274,10 +279,16 @@ theorem mul_logb_sub_le_of_forall_mul_le {k c n : ℕ} (hk : 2 ≤ k)
   have h2L : 0 < 2 * L + 1 := by linarith
   nlinarith
 
-/-- The slack `ε_n = min(1, (log_k log_k n + 4) / log_k n)` of [CoverThomas2006], Lemma 13.5.3
+/-- The slack `ε_n = min(1, (log_k log_k n + 4) / log_k n)` of [CoverThomas2006], §13.5
 (there with `k = 2`). It tends to `0` (`tendsto_epsilon`). -/
 noncomputable def epsilon (k n : ℕ) : ℝ :=
   min 1 ((Real.logb k (Real.logb k n) + 4) / Real.logb k n)
+
+/-- The formula of `epsilon`, for use outside this module. -/
+theorem epsilon_def (k n : ℕ) :
+    epsilon k n = min 1 ((Real.logb k (Real.logb k n) + 4) / Real.logb k n) := by
+  unfold epsilon
+  rfl
 
 /-- `(1 - ε_n) log_k n` is at most `log_k n - log_k log_k n - 4` whenever the latter is relevant:
 precisely, `c * ((1 - ε_n) log_k n) ≤ n` follows from the Cover–Thomas form. -/
@@ -288,7 +299,7 @@ private theorem mul_one_sub_epsilon_le {k c n : ℕ} (hk : 2 ≤ k)
   have hL0 : 0 ≤ Real.logb k n := logb_natCast_nonneg hk1 n
   have hc0 : (0 : ℝ) ≤ c := c.cast_nonneg
   have hn0 : (0 : ℝ) ≤ n := n.cast_nonneg
-  unfold epsilon
+  rw [epsilon_def]
   set L := Real.logb k n
   set r := (Real.logb k L + 4) / L
   rcases hL0.lt_or_eq with hLpos | hL
@@ -300,8 +311,8 @@ private theorem mul_one_sub_epsilon_le {k c n : ℕ} (hk : 2 ≤ k)
     · rw [min_eq_left hr]; simp [hn0]
   · rw [← hL]; simp [hn0]
 
-/-- **Cover–Thomas Lemma 13.5.3, arithmetic form.** If `m * c ≤ n + 2 * k ^ m` for every `m`
-and `ε_n < 1`, then `c ≤ n / ((1 - ε_n) log_k n)`. -/
+/-- **Cover–Thomas distinct-parsing bound, arithmetic form.** If `m * c ≤ n + 2 * k ^ m` for
+every `m` and `ε_n < 1`, then `c ≤ n / ((1 - ε_n) log_k n)`. -/
 theorem le_div_of_forall_mul_le {k c n : ℕ} (hk : 2 ≤ k)
     (hc : ∀ m : ℕ, m * c ≤ n + 2 * k ^ m) (hε : epsilon k n < 1) (hn : 2 ≤ n) :
     (c : ℝ) ≤ n / ((1 - epsilon k n) * Real.logb k n) := by
@@ -338,7 +349,7 @@ theorem length_mul_log_le_of_nodup [Fintype α] {ws : List (List α)} (hws : ws.
     ws.length * Nat.log (Fintype.card α) ws.length ≤ ws.flatten.length + 2 * ws.length :=
   mul_log_le_of_forall_mul_le fun hk m => mul_length_le_of_nodup hk hws m
 
-/-- **Distinct-parsing bound, Cover–Thomas form** ([CoverThomas2006], Lemma 13.5.3, for any
+/-- **Distinct-parsing bound, Cover–Thomas form** ([CoverThomas2006], §13.5, for any
 alphabet size `k ≥ 2`). A list of `c` pairwise distinct words of total length `n` satisfies
 `c * (log_k n - log_k log_k n - 4) ≤ n`. -/
 theorem length_mul_logb_sub_le_of_nodup [Fintype α] (hα : 2 ≤ Fintype.card α)
@@ -348,7 +359,7 @@ theorem length_mul_logb_sub_le_of_nodup [Fintype α] (hα : 2 ≤ Fintype.card �
       ws.flatten.length :=
   mul_logb_sub_le_of_forall_mul_le hα fun m => mul_length_le_of_nodup hα hws m
 
-/-- **Distinct-parsing bound** ([CoverThomas2006], Lemma 13.5.3, for any alphabet size `k ≥ 2`).
+/-- **Distinct-parsing bound** ([CoverThomas2006], §13.5, for any alphabet size `k ≥ 2`).
 A distinct parsing of a word of length `n ≥ 2` into `c` phrases has
 `c ≤ n / ((1 - ε_n) log_k n)`, where `ε_n → 0` (`tendsto_epsilon`). -/
 theorem length_le_div_of_nodup [Fintype α] (hα : 2 ≤ Fintype.card α)
@@ -359,4 +370,4 @@ theorem length_le_div_of_nodup [Fintype α] (hα : 2 ≤ Fintype.card α)
         Real.logb (Fintype.card α) ws.flatten.length) :=
   le_div_of_forall_mul_le hα (fun m => mul_length_le_of_nodup hα hws m) hε hn
 
-end Cslib.Algorithms.Lean.LempelZiv
+end Cslib.Algorithms.Lean.LempelZiv.DistinctParsing

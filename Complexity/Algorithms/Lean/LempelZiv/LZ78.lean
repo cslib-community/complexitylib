@@ -7,9 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.LempelZiv.DistinctParsing
+public import Complexity.Init
 
 import Mathlib.Data.List.Infix
+import Mathlib.Data.List.Nodup
 
 /-!
 # Lempel–Ziv incremental parsing (LZ78)
@@ -25,10 +26,11 @@ Every phrase is an earlier phrase (or `[]`) followed by one symbol, so the parse
 followed by `a`. The example above becomes
 `(0,A) (0,B) (2,A) (2,B) (1,B) (4,A) (5,A) (3,A)`.
 
-This file defines the parse, the pair encoder and decoder, proves that the code is lossless, and
-specializes the distinct-parsing bound to the parse. The bit-level code and its length bound are
-in `Complexity.Algorithms.Lean.LempelZiv.LZ78Bits`. The functions are reference implementations
-with quadratic dictionary lookups; no running time is claimed.
+This file defines the parse, the pair encoder and decoder, and proves that the code is lossless.
+The number of phrases is bounded in `Complexity.Algorithms.Lean.LempelZiv.LZ78Count`, and the
+bit-level code and its length bound are in `Complexity.Algorithms.Lean.LempelZiv.LZ78Bits`. The
+functions are reference implementations with quadratic dictionary lookups; no running time is
+claimed.
 
 ## Main definitions
 
@@ -53,12 +55,6 @@ with quadratic dictionary lookups; no running time is claimed.
   distinct when the last phrase is new.
 * `Cslib.Algorithms.Lean.LempelZiv.LZ78.isTreeStructured_parse`: the parse is tree structured.
 * `Cslib.Algorithms.Lean.LempelZiv.LZ78.decode_encode`: the pair code is lossless.
-* `Cslib.Algorithms.Lean.LempelZiv.LZ78.mul_length_parse_le`,
-  `Cslib.Algorithms.Lean.LempelZiv.LZ78.length_parse_mul_log_le`,
-  `Cslib.Algorithms.Lean.LempelZiv.LZ78.length_parse_mul_logb_sub_le`,
-  `Cslib.Algorithms.Lean.LempelZiv.LZ78.length_parse_le_div`: the number of phrases `c(n)` of an
-  input of length `n` over an alphabet of size `k ≥ 2` satisfies `c log_k c ≤ n + 2c` and
-  `c(n) ≤ n / ((1 - ε_n) log_k n)` with `ε_n → 0` ([CoverThomas2006], Lemma 13.5.3).
 
 ## References
 
@@ -402,6 +398,7 @@ out-of-range pointer is read as the empty phrase. -/
 /-- **LZ78 decoder**: rebuild the phrases from the pairs and concatenate them. -/
 @[expose] def decode (ps : List (ℕ × α)) : List α := (decodePairs [] ps).flatten
 
+/-- Decoding inverts encoding for a phrase sequence that is tree structured over `dict`. -/
 theorem decodePairs_encodePhrases (dict ws : List (List α)) (ht : IsTreeStructured dict ws) :
     decodePairs dict (encodePhrases dict ws) = ws := by
   induction ws generalizing dict with
@@ -418,6 +415,7 @@ theorem decodePairs_encodePhrases (dict ws : List (List α)) (ht : IsTreeStructu
 @[simp] theorem decode_encode (x : List α) : decode (encode x) = x := by
   rw [decode, encode, decodePairs_encodePhrases _ _ (isTreeStructured_parse x), flatten_parse]
 
+/-- A tree-structured phrase sequence is encoded with one pair per phrase. -/
 theorem length_encodePhrases (dict ws : List (List α)) (ht : IsTreeStructured dict ws) :
     (encodePhrases dict ws).length = ws.length := by
   induction ws generalizing dict with
@@ -429,40 +427,5 @@ theorem length_encodePhrases (dict ws : List (List α)) (ht : IsTreeStructured d
 /-- There is one pair per phrase. -/
 @[simp] theorem length_encode (x : List α) : (encode x).length = (parse x).length :=
   length_encodePhrases _ _ (isTreeStructured_parse x)
-
-/-! ## The number of phrases -/
-
-variable [Fintype α]
-
-/-- The distinct-parsing inequality for LZ78: `m * c ≤ n + 2 * k ^ m` for every `m`, where `c` is
-the number of phrases, `n` the input length and `k ≥ 2` the alphabet size. -/
-theorem mul_length_parse_le (hα : 2 ≤ Fintype.card α) (x : List α) (m : ℕ) :
-    m * (parse x).length ≤ x.length + 2 * Fintype.card α ^ m := by
-  have := mul_length_le_of_nodup_dropLast hα (fun w hw => ne_nil_of_mem_parse w hw)
-    (nodup_dropLast_parse x) m
-  rwa [flatten_parse] at this
-
-/-- The number `c` of LZ78 phrases of an input of length `n` over an alphabet of size `k`
-satisfies `c * ⌊log_k c⌋ ≤ n + 2 * c`. -/
-theorem length_parse_mul_log_le (x : List α) :
-    (parse x).length * Nat.log (Fintype.card α) (parse x).length ≤
-      x.length + 2 * (parse x).length :=
-  mul_log_le_of_forall_mul_le fun hk m => mul_length_parse_le hk x m
-
-/-- The number `c` of LZ78 phrases of an input of length `n` over an alphabet of size `k ≥ 2`
-satisfies `c * (log_k n - log_k log_k n - 4) ≤ n` ([CoverThomas2006], Lemma 13.5.3). -/
-theorem length_parse_mul_logb_sub_le (hα : 2 ≤ Fintype.card α) (x : List α) :
-    ((parse x).length : ℝ) * (Real.logb (Fintype.card α) x.length -
-      Real.logb (Fintype.card α) (Real.logb (Fintype.card α) x.length) - 4) ≤ x.length :=
-  mul_logb_sub_le_of_forall_mul_le hα fun m => mul_length_parse_le hα x m
-
-/-- **The number of LZ78 phrases** ([CoverThomas2006], Lemma 13.5.3, for an alphabet of size
-`k ≥ 2`): `c(n) ≤ n / ((1 - ε_n) log_k n)`, where `ε_n → 0` (`tendsto_epsilon`). -/
-theorem length_parse_le_div (hα : 2 ≤ Fintype.card α) (x : List α) (hn : 2 ≤ x.length)
-    (hε : epsilon (Fintype.card α) x.length < 1) :
-    ((parse x).length : ℝ) ≤
-      x.length / ((1 - epsilon (Fintype.card α) x.length) *
-        Real.logb (Fintype.card α) x.length) :=
-  le_div_of_forall_mul_le hα (fun m => mul_length_parse_le hα x m) hε hn
 
 end Cslib.Algorithms.Lean.LempelZiv.LZ78

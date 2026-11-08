@@ -46,6 +46,7 @@ public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
 public import Complexity.Algorithms.Lean.LempelZiv.DistinctParsing
 public import Complexity.Algorithms.Lean.LempelZiv.LZ78
 public import Complexity.Algorithms.Lean.LempelZiv.LZ78Bits
+public import Complexity.Algorithms.Lean.LempelZiv.LZ78Count
 public import Complexity.Algorithms.Lean.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Matroid.Intersection
 public import Complexity.Algorithms.Lean.Matroid.Intersection.Konig

@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Algorithms.Lean.LempelZiv.LZ78Bits
+module
+
+public import Complexity.Algorithms.Lean.LempelZiv.LZ78Bits
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic.NormNum
 
@@ -19,12 +21,17 @@ Concrete runs of `Complexity.Algorithms.Lean.LempelZiv`:
   is not tree structured, and bit strings that do not decode;
 * `1 ^ 100` with `14` phrases and `55` bits, against the exact length formula;
 * the distinct-parsing inequality on small instances, and an input length (`n = 256`, `k = 2`)
-  at which the hypotheses `2 ≤ n` and `ε_n < 1` of the `n / ((1 - ε_n) log n)` bound hold.
+  at which the hypotheses `2 ≤ n` and `ε_n < 1` of the `n / ((1 - ε_n) log n)` bound hold,
+  evaluated through the public `epsilon_def` (this file is a `module`, so it sees only the
+  public API).
 -/
+
+public section
 
 namespace ComplexityTests.Algorithms.Lean.LempelZiv
 
 open Cslib.Algorithms.Lean.LempelZiv Cslib.Algorithms.Lean.LempelZiv.LZ78
+open Cslib.Algorithms.Lean.LempelZiv.DistinctParsing (epsilon epsilon_def)
 
 /-! ### The Cover–Thomas example -/
 
@@ -108,7 +115,7 @@ example : (encodeBits (Equiv.refl _) (List.replicate 100 (1 : Fin 2))).length = 
 example : 2 * (parse ct).length ≤ ct.length + 2 * Fintype.card (Fin 2) ^ 2 :=
   mul_length_parse_le (by simp) ct 2
 
-/-- The instance is tight up to the additive slack: `c = 8`. -/
+/-- The example has `c = 8` phrases. -/
 example : (parse ct).length = 8 := by
   decide
 
@@ -129,7 +136,7 @@ example : epsilon 2 256 < 1 := by
     rw [show (8 : ℝ) = 2 ^ (3 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one]
     · norm_num
     · norm_num
-  rw [epsilon, Nat.cast_ofNat, h8, h3]
+  rw [epsilon_def, Nat.cast_ofNat, h8, h3]
   norm_num
 
 end ComplexityTests.Algorithms.Lean.LempelZiv

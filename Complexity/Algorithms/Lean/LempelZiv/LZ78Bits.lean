@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.LempelZiv.LZ78
+public import Complexity.Algorithms.Lean.LempelZiv.LZ78Count
 public import Complexity.Foundations.Data.BitString.Counter
 public import Complexity.Foundations.Data.BitString.List.Binary
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
@@ -69,6 +69,7 @@ public section
 namespace Cslib.Algorithms.Lean.LempelZiv.LZ78
 
 open Cslib.BitString
+open Cslib.Algorithms.Lean.LempelZiv.DistinctParsing (epsilon tendsto_epsilon)
 
 variable {α : Type*} {k : ℕ}
 
