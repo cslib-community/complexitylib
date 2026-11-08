@@ -111,11 +111,31 @@ for the lazy hypercube walk `Cslib.BitString.lazyRandomWalk ι`, `mixingTime_laz
 proves `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉`. The ceiling is necessary, as the `n = 1`, `ε = 2/5`
 check shows.
 
+When a coupling of all pairs is hard to build, use path coupling from
+[MarkovChain/PathCoupling.lean](../../Complexity/Probability/MarkovChain/PathCoupling.lean). Choose
+a neighbor relation `N` and a metric `ρ` with `IsPathMetric N ρ`: `ρ` vanishes on the diagonal, is
+at least one off it, and every `x ≠ y` has a neighbor of `x` on a geodesic to `y`. For Hamming
+distance on `∀ i, β i`, `isPathMetric_hammingDist` supplies this. Then couple one step from
+neighbors only: for `N x y`, give `ω : PMF (S × S)` with marginals `P x` and `P y` and
+`∑ p, (ω p).toReal * ρ p.1 p.2 ≤ κ * ρ x y`.
+`IsStationary.mixingTime_le_of_pathCoupling` turns `κ ≤ exp (-α)` and `ρ ≤ D` into
+`t_mix(ε) ≤ ⌈(log D - log ε) / α⌉`, and `dist_pow_le_of_pathCoupling` gives the underlying
+`‖Pᵗ(x, ·) - Pᵗ(y, ·)‖_TV ≤ κᵗ ρ(x, y)`. Optimal couplings of the one-step laws come from
+`exists_coupling_toReal_eq_dist` in
+[StatisticalDistance/OptimalCoupling.lean](../../Complexity/Probability/StatisticalDistance/OptimalCoupling.lean),
+and `dist_uniformOfFinset_le` bounds the distance between uniform laws on nearly equal sets. The
+worked client is [MarkovChain/Coloring.lean](../../Complexity/Probability/MarkovChain/Coloring.lean):
+for Glauber dynamics on `q`-colorings with `q > 2Δ`, `mixingTime_glauberColoring_le` proves
+`t_mix(ε) ≤ ⌈((q - Δ) / (q - 2Δ)) n (log n - log ε)⌉`. Its stationary law needs a proper coloring,
+which `properColorings_nonempty` provides from greedy coloring
+(`SimpleGraph.colorable_of_maxDegree_lt`).
+
 The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
 `t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip
 chain never mixes, compute a Metropolis acceptance probability, and give the hypercube instance
-with `n = 1`. Run
-`scripts/build.sh ComplexityTests.MarkovChain`. A goal of the form `t_mix(ε) = k` needs both
+with `n = 1`. The [path-coupling checks](../../ComplexityTests/PathCoupling.lean) instantiate the
+coloring bound on a single edge and show that the condition `ρ ≥ 1` off the diagonal cannot be
+dropped. Run `scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling`. A goal of the form `t_mix(ε) = k` needs both
 directions: `mixingTime_le_of_distToStationary_le` for `≤`, and
 `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
