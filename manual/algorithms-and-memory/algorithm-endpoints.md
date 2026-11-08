@@ -130,6 +130,18 @@ These are pure Lean functions on adjacency lists, with `TimeM` cost models (as f
 
 The [DFS examples](../../ComplexityTests/DFS.lean) include a triangle and a self-loop, on which topological sort is not a topological order. The [Bellman–Ford examples](../../ComplexityTests/BellmanFord.lean) include a negative edge, a reachable negative cycle and an unreachable one, with exact tick counts. Strongly connected components and linear-time 2-SAT are tracked in [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
 
+## Optimal binary search trees and the Knuth–Yao speedup
+
+These are pure Lean functions with `TimeM` cost models, not machine programs. Import `Complexity.Algorithms.Lean.OptimalBST.Knuth`.
+
+- **The recurrence.** [Basic.lean](../../Complexity/Algorithms/Lean/OptimalBST/Basic.lean) works with an arbitrary interval weight `w : ℕ → ℕ → β` over a linearly ordered additive monoid. `IsBST i j t` says that `t : BinaryTree ℕ` is a search tree whose keys are exactly `i + 1, …, j` (`isBST_iff` relates it to the `Cslib.DataStructure.SearchTree` invariant). `treeCost w i j t` charges `w i' j'` at each node whose subtree holds the keys `i' + 1, …, j'`. For access weights `p` and failure weights `q`, `knuthWeight p q i j = ∑_{i<k≤j} p k + ∑_{i≤g≤j} q g`. `treeCost_knuthWeight` shows that this weight gives the weighted search cost: `p k` times the depth of key `k` plus one, plus `q g` times the number of keys compared by an unsuccessful search in gap `g`. The expected cost `e[1, n]` of [CLRS 15.5][clrs09] also counts the dummy leaf, so it is this cost plus `∑ q g`. `optCost` is the recurrence `c(i, j) = w(i, j) + min_{i<k≤j} (c(i, k−1) + c(k, j))`. `isLeast_optCost` proves that it is the least cost of a tree on the keys, attained by `optTree`, which is read off the largest minimizing roots `optRoot`. No hypothesis on `w` is needed.
+- **Yao's lemma and root monotonicity.** [Yao.lean](../../Complexity/Algorithms/Lean/OptimalBST/Yao.lean) defines `QuadrangleIneq` and `MonotoneOnIntervals`. `quadrangleIneq_optCost` says that when `w` has both properties, `optCost w` satisfies the quadrangle inequality [Yao 1980][yao80]. In an ordered cancellative monoid, `optRoot_mono` then gives `optRoot w i (j−1) ≤ optRoot w i j ≤ optRoot w (i+1) j` for the largest optimal roots, which is Knuth's monotonicity theorem for this problem [Knuth 1971][knuth71]. `knuthWeight` satisfies the quadrangle inequality with equality (`knuthWeight_add_knuthWeight`), and it is monotone on intervals when `p, q ≥ 0`.
+- **The algorithms.** [Knuth.lean](../../Complexity/Algorithms/Lean/OptimalBST/Knuth.lean) fills the table by increasing interval length. `TimeM` charges one tick per candidate root scanned. Table accesses, additions, comparisons, evaluations of `w` and tree extraction are free, and the table is a function, not a RAM array. The cubic program `plainBST` returns `(optCost w 0 n, optTree w 0 n)` for every weight (`ret_plainBST`, `isOptimal_plainBST`) and scans exactly `n(n+1)(n+2)/6` candidates (`time_plainBST`). Knuth's `knuthBST` scans only the window `optRoot(i, j−1), …, optRoot(i+1, j)`. Under the two hypotheses it returns the same solution (`ret_knuthBST`, `isOptimal_knuthBST`), and it scans at most `2n²` candidates (`time_knuthBST_le`), because the windows along each diagonal telescope. `knuthBST_knuthWeight` packages both results for nonnegative `p` and `q`. The constant `2` is not Knuth's sharper count.
+
+The [tests](../../ComplexityTests/OptimalBST.lean) check both algorithms on the five-key example of [CLRS 15.5][clrs09] (weights scaled by 100). Both return cost `235`, so `e[1, 5] = 2.75`. The returned tree has root `4`, whereas CLRS draws the root `k₂`; both trees cost `235`. The tests also check both algorithms against brute force over all search trees for `n ≤ 4`. Three small weights show that each hypothesis is needed. If both fail, or the weight is monotone but violates the quadrangle inequality, or it satisfies the inequality but is not monotone, `knuthBST` returns a cost above the optimum, while `plainBST` stays optimal.
+
+The Hu–Tucker and Garsia–Wachs `O(n log n)` algorithms for the alphabetic case (`p = 0`), Word-RAM realizations, and the SMAWK and Monge-matrix generalizations are not formalized. Neither is matrix-chain multiplication, whose cost does not satisfy the hypotheses in general.
+
 ## Hash families and dictionaries
 
 [abstracts/ComplexityAbstracts/HashTablesAbstract.lean](../../abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `query` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
@@ -860,6 +872,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [freivalds79]: ../sources.md#freivalds79
 [goemanswilliamson95]: ../sources.md#goemanswilliamson95
 [hierholzer73]: ../sources.md#hierholzer73
+[knuth71]: ../sources.md#knuth71
 [kortevygen18]: ../sources.md#kortevygen18
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [roth82]: ../sources.md#roth82
@@ -871,3 +884,4 @@ The numeric values above are transcriptions of checked source statements, not re
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
+[yao80]: ../sources.md#yao80

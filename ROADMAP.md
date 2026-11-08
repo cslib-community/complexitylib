@@ -1500,6 +1500,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   you-request-my-house-I-get-your-turn), Ma's characterization of TTC by individual rationality,
   Pareto efficiency and strategy-proofness, group strategy-proofness, indifferences (top trading
   absorbing sets), and a charged implementation of TTC in `O(n^2)` time.
+- **Interval dynamic programming** ([#3357](https://github.com/cslib-community/complexitylib/issues/3357)):
+  after optimal binary search trees, Yao's quadrangle-inequality lemma, root monotonicity and
+  Knuth's quadratic algorithm with candidate-scan counts in `TimeM` (`Algorithms/Lean/OptimalBST`):
+  the Hu–Tucker and Garsia–Wachs `O(n log n)` algorithms for alphabetic trees; matrix-chain
+  multiplication and optimal polygon triangulation as further instances of the generic interval
+  recurrence (which in general do not satisfy the quadrangle-inequality hypotheses); Knuth's sharper
+  candidate count; the SMAWK algorithm and Monge-matrix speedups; and a Word-RAM realization.
 - **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)):
   remaining after greedy set cover, maximal-matching vertex cover, the MST tour and Christofides'
   `3/2` bound for metric TSP (`Algorithms/Lean/{SetCover,VertexCover,TSP}`): machine-level
