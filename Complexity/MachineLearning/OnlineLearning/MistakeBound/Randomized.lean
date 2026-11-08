@@ -18,12 +18,13 @@ Outside the realizable case, no deterministic learner can compete with the best 
 two-element class (`exists_mistakes_eq_length_of_const_mem` in `MistakeBound.Agnostic`), so the
 learner randomizes. A randomized learner `RandomizedLearner α` maps the labelled history and the
 current instance to the law `PMF Bool` of its prediction. The adversary is *oblivious*: it fixes
-the labelled sequence `S` in advance. `expectedMistakes A S` is the sum over the rounds of `S` of
-the probability that the prediction is wrong. By linearity of expectation this is the expected
-number of mistakes of any learner whose round-`t` prediction, given the history, has the law
-`A (S.take t) S[t].1`. The learner's own earlier coin flips need not be modelled, since against an
-oblivious adversary only these marginal laws matter. A deterministic learner is the special case
-`OnlineLearner.toRandomized` (`expectedMistakes_toRandomized`).
+the labelled sequence `S` in advance, as in [BenDavidPalShalevShwartz2009, §6].
+`expectedMistakes A S` is the sum over the rounds of `S` of the probability that the prediction is
+wrong. By linearity of expectation this is the expected number of mistakes of any learner whose
+round-`t` prediction, given the history, has the law `A (S.take t) S[t].1`. The learner's own
+earlier coin flips need not be modelled, since against an oblivious adversary only these marginal
+laws matter. A deterministic learner is the special case `OnlineLearner.toRandomized`
+(`expectedMistakes_toRandomized`).
 
 `hedgeLearner η E` runs Hedge [FreundSchapire1997] with learning rate `η` over a finite family of
 deterministic learners `E : ι → OnlineLearner α`, with the 0-1 mistake indicators as losses. In
@@ -53,6 +54,8 @@ experts, the expected mistakes exceed those of every expert by at most `2 √(T 
 
 ## References
 
+* [S. Ben-David, D. Pál, S. Shalev-Shwartz, *Agnostic online
+  learning*][BenDavidPalShalevShwartz2009]
 * [Y. Freund, R. E. Schapire, *A decision-theoretic generalization of on-line learning and an
   application to boosting*][FreundSchapire1997]
 -/
@@ -87,17 +90,6 @@ theorem expectedMistakes_toRandomized (A : OnlineLearner α) (S : List (α × Bo
   refine Finset.sum_congr rfl fun t _ => ?_
   simp only [OnlineLearner.toRandomized, PMF.pure_apply]
   cases A (S.take t) S[t].1 <;> cases S[t].2 <;> simp
-
-/-- The mistakes of a fixed classifier `c`, as a learner that ignores its history, are the
-examples it labels wrongly. -/
-theorem mistakesFrom_classifier (c : α → Bool) (h S : List (α × Bool)) :
-    mistakesFrom (fun _ x => c x) h S = S.countP fun p => c p.1 ≠ p.2 := by
-  induction S generalizing h with
-  | nil => simp
-  | cons p S ih =>
-    obtain ⟨x, y⟩ := p
-    rw [mistakesFrom_cons, ih, List.countP_cons]
-    by_cases hc : c x = y <;> simp [hc, add_comm]
 
 /-! ### Hedge over deterministic experts -/
 

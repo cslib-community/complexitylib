@@ -7,9 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Data.Nat.Choose.Sum
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Randomized
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.SOA
+import Complexity.Foundations.Data.Nat.Choose.Sum
 
 /-!
 # Agnostic online learning
@@ -17,33 +17,42 @@ public import Complexity.MachineLearning.OnlineLearning.MistakeBound.SOA
 In the agnostic setting the labels are arbitrary: no concept of `C` need be consistent with them.
 The learner competes with the best concept of `C` in hindsight. Its *regret* on a labelled sequence
 `S` is the excess of its mistakes over `#{(x, y) ∈ S | c x ≠ y}`, the mistakes of the best concept
-`c ∈ C`. Ben-David, Pál and Shalev-Shwartz [BenDavidPalShalevShwartz2009] showed that the
-Littlestone dimension controls the regret. This file proves their upper bound
-(`expectedMistakes_agnosticSOA_le`): if `littlestoneDim C ≤ d`, a randomized learner has expected
-regret at most `2 √(T d log (T + 1))` on every sequence of at most `T` rounds. The constant comes
-from the Hedge bound used here; it is not quoted from the source.
+`c ∈ C`. Ben-David, Pál and Shalev-Shwartz showed that the Littlestone dimension controls the
+regret [BenDavidPalShalevShwartz2009, §1.1, Theorem 1]. This file proves the upper half of their
+Theorem 1, in its Littlestone-dimension form (`expectedMistakes_agnosticSOA_le`): if
+`littlestoneDim C ≤ d`, a randomized learner has expected regret at most `2 √(T d log (T + 1))` on
+every sequence of at most `T` rounds. The source's bound is `√(½ L̃dim(C) T)` with
+`L̃dim(C) = min {ln |C|, Ldim(C) ln T}` [BenDavidPalShalevShwartz2009, eq. (1)], so its
+Littlestone branch is `√(½ Ldim(C) T ln T)`. The constant here comes from the library's Hedge bound
+and the expert count `(T + 1) ^ d`, and is weaker by a factor of about `2 √2`. The `ln |C|` branch
+for finite classes is not stated here. Following the source, the environment is oblivious: the
+labelled sequence is fixed in advance [BenDavidPalShalevShwartz2009, §6].
 
 **The experts.** For a set `I` of rounds, `flipExpert A I` runs the deterministic learner `A` on a
 self-labelled history. It labels each earlier instance by `A`'s prediction, negated at the rounds
-in `I`, and predicts in the same way. Fix a concept `c` and a sequence of instances, and let `I` be
-the rounds on which `A` errs on the `c`-labelled sequence (`mistakeRounds`). Then the
+in `I`, and predicts in the same way. For `A = soa C` this is the source's `Expert(i₁, …, i_L)`
+[BenDavidPalShalevShwartz2009, §3.2, Algorithm 3]. Fix a concept `c` and a sequence of instances,
+and let `I` be the rounds on which `A` errs on the `c`-labelled sequence (`mistakeRounds`). Then the
 self-labelled history is exactly the `c`-labelled one, and `flipExpert A I` predicts `c` in every
 round (`flipExpert_mistakeRounds`). It therefore makes exactly the mistakes of `c` on any labelling
 of these instances (`mistakes_flipExpert_mistakeRounds`). For `A = soa C` and `c ∈ C`, the
 `c`-labelled sequence is realizable, so `I` has at most `littlestoneDim C` elements
-(`mistakesFrom_soa_le`).
+(`mistakesFrom_soa_le`). Together these are the source's Lemma 12 and Corollary 13, stated here
+for any deterministic `A`.
 
 **The learner.** `agnosticSOA C T d` runs Hedge (`hedgeLearner`) over the experts
-`flipExpert (soa C) I` for the sets `I` of at most `d` rounds below `T` (`flipSets T d`). There are
-at most `∑_{j ≤ d} (T choose j) ≤ (T + 1) ^ d` of them (`card_flipSets_le`), so the Hedge regret
+`flipExpert (soa C) I` for the sets `I` of at most `d` rounds below `T` (`flipSets T d`), as in the
+source's Algorithm 4. There are at most `∑_{j ≤ d} (T choose j) ≤ (T + 1) ^ d` of them
+(`card_flipSets_le`; the source's eq. (7) bounds the same sum by `T ^ Ldim(C)`), so the Hedge regret
 `2 √(T log N)` is at most `2 √(T d log (T + 1))`. The learner needs the horizon `T` and the
 dimension bound `d`; it is a noncomputable specification, like `soa`.
 
-**Randomization is necessary.** By Cover's argument, a deterministic learner can be forced to err
-in every round: the adversary labels each round by the negation of the prediction. If `C` contains
-both constant classifiers, one of them errs at most half the time, so the deterministic regret is
-at least `T / 2` (`exists_mistakes_eq_length_of_const_mem`), although this class has Littlestone
-dimension at most `1`.
+**Randomization is necessary.** Against Cover's adversary (`Adversary.cover`), which labels each
+round by the negation of the learner's prediction, a deterministic learner errs in every round. If
+`C` contains both constant classifiers, one of them errs at most half the time, so the
+deterministic regret is at least `T / 2` (`exists_mistakes_eq_length_of_const_mem`), although this
+class has Littlestone dimension at most `1`. The source attributes this observation to Cover
+(1965) [BenDavidPalShalevShwartz2009, §1].
 
 ## Main definitions
 
@@ -52,6 +61,7 @@ dimension at most `1`.
 * `Cslib.MachineLearning.OnlineLearning.MistakeBound.mistakeRounds`: the rounds on which a learner
   errs.
 * `Cslib.MachineLearning.OnlineLearning.MistakeBound.agnosticSOA`: the agnostic learner.
+* `Cslib.MachineLearning.OnlineLearning.MistakeBound.Adversary.cover`: Cover's adversary.
 
 ## Main results
 
@@ -88,7 +98,8 @@ def flipHistory (A : OnlineLearner α) (I : Finset ℕ) (xs : List α) : List (�
   xs.foldl (fun h x => h ++ [(x, if h.length ∈ I then !A h x else A h x)]) []
 
 /-- The expert that runs `A` on its self-labelled history and negates `A`'s prediction at the
-rounds in `I`. It reads only the instances of its history, not their labels. -/
+rounds in `I`. It reads only the instances of its history, not their labels. For `A = soa C` this
+is `Expert(i₁, …, i_L)` [BenDavidPalShalevShwartz2009, §3.2, Algorithm 3]. -/
 def flipExpert (A : OnlineLearner α) (I : Finset ℕ) : OnlineLearner α := fun h x =>
   let h' := flipHistory A I (h.map Prod.fst)
   if h'.length ∈ I then !A h' x else A h' x
@@ -152,7 +163,7 @@ theorem flipHistory_mistakeRounds (A : OnlineLearner α) (S : List (α × Bool))
       exact hm (mem_mistakeRounds.mpr ⟨hn', hne⟩)
 
 /-- The expert that negates `A` at its mistakes on `S` predicts the labels of `S`, after any
-history with the instances of `S`. -/
+history with the instances of `S` [BenDavidPalShalevShwartz2009, §3.2, Lemma 12]. -/
 theorem flipExpert_mistakeRounds (A : OnlineLearner α) (S : List (α × Bool)) {t : ℕ}
     (ht : t < S.length) {h : List (α × Bool)} (hh : h.map Prod.fst = (S.take t).map Prod.fst) :
     flipExpert A (mistakeRounds A S) h S[t].1 = S[t].2 := by
@@ -168,7 +179,7 @@ theorem flipExpert_mistakeRounds (A : OnlineLearner α) (S : List (α × Bool)) 
     exact hm (mem_mistakeRounds.mpr ⟨ht, hne⟩)
 
 /-- The expert that negates `A` at its mistakes on the `c`-labelling of the instances of `S` makes
-exactly the mistakes of `c` on `S`. -/
+exactly the mistakes of `c` on `S` [BenDavidPalShalevShwartz2009, §3.2, Corollary 13]. -/
 theorem mistakes_flipExpert_mistakeRounds (A : OnlineLearner α) (c : α → Bool)
     (S : List (α × Bool)) :
     mistakes (flipExpert A (mistakeRounds A (S.map fun p => (p.1, c p.1)))) S =
@@ -198,7 +209,8 @@ theorem mem_flipSets {T d : ℕ} {I : Finset ℕ} : I ∈ flipSets T d ↔ I ⊆
     exact ⟨I.card, by omega, hI, rfl⟩
 
 /-- There are at most `∑_{j ≤ d} (T choose j) ≤ (T + 1) ^ d` sets of at most `d` rounds below
-`T`. -/
+`T`. Compare [BenDavidPalShalevShwartz2009, §3.2, eq. (7)]: for `d = Ldim(C)` it bounds the sum
+by `T ^ d`. -/
 theorem card_flipSets_le (T d : ℕ) : (flipSets T d).card ≤ (T + 1) ^ d :=
   card_biUnion_le.trans (by
     simpa only [card_powersetCard, card_range] using sum_range_choose_le_add_one_pow T d)
@@ -211,16 +223,18 @@ theorem card_flipSets_le_two_pow (T d : ℕ) : (flipSets T d).card ≤ 2 ^ T :=
 instance (T d : ℕ) : Nonempty (flipSets T d) :=
   ⟨⟨∅, mem_flipSets.mpr ⟨empty_subset _, by simp⟩⟩⟩
 
-/-- The agnostic learner [BenDavidPalShalevShwartz2009] for the horizon `T` and the dimension bound
-`d`: Hedge, with learning rate `√(log N / T)` for its `N` experts, over the experts
-`flipExpert (soa C) I` for the sets `I` of at most `d` rounds below `T`. -/
+/-- The agnostic learner [BenDavidPalShalevShwartz2009, §3.2, Algorithm 4] for the horizon `T` and
+the dimension bound `d`: Hedge, with learning rate `√(log N / T)` for its `N` experts, over the
+experts `flipExpert (soa C) I` for the sets `I` of at most `d` rounds below `T`. -/
 noncomputable def agnosticSOA (C : ConceptClass α Bool) (T d : ℕ) : RandomizedLearner α :=
   hedgeLearner (√(Real.log (Fintype.card (flipSets T d)) / T))
     fun I : flipSets T d => flipExpert (soa C) I
 
-/-- **Agnostic online learning** [BenDavidPalShalevShwartz2009]: if `littlestoneDim C ≤ d`, then on
-every labelled sequence `S` of at most `T` rounds, with arbitrary labels, the agnostic learner makes
-at most `2 √(T d log (T + 1))` more expected mistakes than any concept `c ∈ C`. -/
+/-- **Agnostic online learning**, the upper half of [BenDavidPalShalevShwartz2009, §1.1,
+Theorem 1] in its Littlestone-dimension form: if `littlestoneDim C ≤ d`, then on every labelled
+sequence `S` of at most `T` rounds, with arbitrary labels, the agnostic learner makes at most
+`2 √(T d log (T + 1))` more expected mistakes than any concept `c ∈ C`. The source's constant is
+`√(½ d T ln T)`; the one here comes from the library's Hedge bound. -/
 theorem expectedMistakes_agnosticSOA_le {C : ConceptClass α Bool} {d : ℕ}
     (hC : littlestoneDim C ≤ d) {T : ℕ} (S : List (α × Bool)) (hS : S.length ≤ T)
     {c : α → Bool} (hc : c ∈ C) :
@@ -267,36 +281,35 @@ theorem expectedMistakes_agnosticSOA_le {C : ConceptClass α Bool} {d : ℕ}
 
 /-! ### Deterministic learners have linear regret -/
 
-/-- The sequence on which the deterministic learner `A` errs in every round: the instance `x`,
-labelled by the negation of `A`'s prediction. -/
-def coverSeq (A : OnlineLearner α) (x : α) : ℕ → List (α × Bool)
-  | 0 => []
-  | n + 1 => coverSeq A x n ++ [(x, !A (coverSeq A x n) x)]
+/-- Cover's adversary: it presents the instance `x` in every round and labels it by the negation of
+the learner's prediction. -/
+def Adversary.cover (x : α) : Adversary α where
+  next _ := x
+  label _ b := !b
 
-theorem length_coverSeq (A : OnlineLearner α) (x : α) (n : ℕ) : (coverSeq A x n).length = n := by
+/-- A deterministic learner errs in every round against Cover's adversary. -/
+theorem mistakes_transcript_cover (A : OnlineLearner α) (x : α) (n : ℕ) :
+    mistakes A ((Adversary.cover x).transcript A n) = n := by
   induction n with
-  | zero => rfl
-  | succ n ih => rw [coverSeq, List.length_append, ih, List.length_singleton]
-
-theorem mistakes_coverSeq (A : OnlineLearner α) (x : α) (n : ℕ) :
-    mistakes A (coverSeq A x n) = n := by
-  induction n with
-  | zero => rfl
+  | zero => rw [Adversary.transcript_zero]; rfl
   | succ n ih =>
-    rw [coverSeq, mistakes, mistakesFrom_append, ← mistakes, ih, List.nil_append,
+    rw [Adversary.transcript_succ, mistakes, mistakesFrom_append, ← mistakes, ih, List.nil_append,
       mistakesFrom_cons, mistakesFrom_nil]
-    cases A (coverSeq A x n) x <;> simp
+    simp only [Adversary.cover]
+    cases A ((Adversary.cover x).transcript A n) x <;> simp
 
-/-- **Deterministic learners have linear regret** (Cover's argument): if `C` contains both
-constant classifiers, then for every deterministic learner `A` and every `n` there is a labelled
-sequence of `n` rounds on which `A` errs in every round, while some concept of `C` errs in at most
+/-- **Deterministic learners have linear regret**, an observation of Cover (1965) as cited in
+[BenDavidPalShalevShwartz2009, §1]: if `C` contains both constant classifiers, then for every
+deterministic learner `A` and every `n` there is a labelled sequence of `n` rounds, the transcript
+of `Adversary.cover`, on which `A` errs in every round, while some concept of `C` errs in at most
 `n / 2` rounds. So `expectedMistakes_agnosticSOA_le` needs a randomized learner. -/
 theorem exists_mistakes_eq_length_of_const_mem {C : ConceptClass α Bool}
     (htrue : (fun _ => true) ∈ C) (hfalse : (fun _ => false) ∈ C) (A : OnlineLearner α) (x : α)
     (n : ℕ) :
     ∃ S : List (α × Bool), S.length = n ∧ mistakes A S = n ∧
       ∃ c ∈ C, 2 * S.countP (fun p => c p.1 ≠ p.2) ≤ n := by
-  refine ⟨coverSeq A x n, length_coverSeq A x n, mistakes_coverSeq A x n, ?_⟩
+  set S := (Adversary.cover x).transcript A n
+  refine ⟨S, Adversary.length_transcript _ A n, mistakes_transcript_cover A x n, ?_⟩
   have hsum : ∀ S : List (α × Bool),
       S.countP (fun p => true ≠ p.2) + S.countP (fun p => false ≠ p.2) = S.length := by
     intro S
@@ -304,9 +317,9 @@ theorem exists_mistakes_eq_length_of_const_mem {C : ConceptClass α Bool}
     congr 1
     refine List.countP_congr fun p _ => ?_
     cases p.2 <;> simp
-  have h := hsum (coverSeq A x n)
-  rw [length_coverSeq] at h
-  by_cases ht : 2 * (coverSeq A x n).countP (fun p => true ≠ p.2) ≤ n
+  have h := hsum S
+  rw [Adversary.length_transcript] at h
+  by_cases ht : 2 * S.countP (fun p => true ≠ p.2) ≤ n
   · exact ⟨_, htrue, ht⟩
   · exact ⟨_, hfalse, by omega⟩
 

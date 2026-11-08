@@ -48,7 +48,9 @@ is fixed and the adversary chooses only the instances.
 form here follows the online history directly. This model differs from prediction with expert
 advice, which compares the learner with the best of a set of experts on arbitrary outcomes and
 measures regret. Here a single learner competes with the requirement of realizability and pays
-for each mistake absolutely; there are no experts and no losses beyond the mistake count.
+for each mistake absolutely; there are no experts and no losses beyond the mistake count. The
+non-realizable extension, with randomized learners, Hedge over deterministic experts and regret
+against the best concept, is in `MistakeBound.Randomized` and `MistakeBound.Agnostic`.
 
 ## Main definitions
 
@@ -159,6 +161,17 @@ theorem mistakesFrom_append (A : OnlineLearner α) (h S S' : List (α × Bool)) 
     obtain ⟨x, y⟩ := p
     rw [List.cons_append, mistakesFrom_cons, mistakesFrom_cons, ih]
     simp only [List.append_assoc, List.singleton_append, Nat.add_assoc]
+
+/-- The mistakes of a fixed classifier `c`, as a learner that ignores its history, are the
+examples it labels wrongly. -/
+theorem mistakesFrom_classifier (c : α → Bool) (h S : List (α × Bool)) :
+    mistakesFrom (fun _ x => c x) h S = S.countP fun p => c p.1 ≠ p.2 := by
+  induction S generalizing h with
+  | nil => simp
+  | cons p S ih =>
+    obtain ⟨x, y⟩ := p
+    rw [mistakesFrom_cons, ih, List.countP_cons]
+    by_cases hc : c x = y <;> simp [hc, add_comm]
 
 /-- After the history `h`, the mistakes on `S` are the rounds `t` on which the prediction from
 `h` and the first `t` examples of `S` is wrong. -/
