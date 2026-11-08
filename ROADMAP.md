@@ -929,9 +929,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   the (min,+) product reduce to each other in the query model (repeated squaring costs
   `⌈log₂ (n - 1)⌉` products, the tripartite graph one APSP call on `3 n` vertices), with
   Floyd–Warshall and schoolbook products as instances. The (min,+) product reduces to negative
-  triangle detection (Vassilevska Williams–Williams Lemmas 4.1, 4.2 and Theorem 4.2, weights
-  `ℤ ∪ {∞}`): an `n ^ (3 - δ)` detector gives an `n ^ (3 - δ / 3) log W` product, and one product
-  decides negative triangle. Remaining: `-∞` weights and general (min,⊙) structures; the
+  triangle detection (Vassilevska Williams–Williams Lemma 4.1, Lemma 4.2 in its pairs form and
+  Theorem 4.2, weights `ℤ ∪ {∞}`): an `n ^ (3 - δ)` detector gives an `n ^ (3 - δ / 3) log W`
+  product, and one product decides negative triangle. Remaining: `-∞` weights and general (min,⊙) structures; the
   output-sensitive listing bound (Theorem 4.3); the other APSP-equivalent problems of Vassilevska
   Williams and Williams (minimum-weight cycle, replacement paths, metricity, (min,+) product
   verification); the radius and median equivalences of Abboud, Grandoni and Vassilevska Williams

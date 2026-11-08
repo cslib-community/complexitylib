@@ -44,10 +44,16 @@ Padding a graph with isolated vertices (`padIsolated`) creates no negative trian
 
 ## Main results
 
+* `Cslib.Algorithms.ShortestPaths.IsNegTriangle.ne_zero_left`,
+  `Cslib.Algorithms.ShortestPaths.IsNegTriangle.ne_zero_right`: a negative triangle uses existing
+  edges.
+* `Cslib.Algorithms.ShortestPaths.isNegTriangle_submatrix`: relabelling the parts.
 * `Cslib.Algorithms.ShortestPaths.onNegTriangle_iff`: `(i, j)` lies on a negative triangle iff
   `(A * B) i j + C i j < 0`.
 * `Cslib.Algorithms.ShortestPaths.hasNegTriangle_iff`: the graph has a negative triangle iff some
   `(A * B) i j + C i j < 0`.
+* `Cslib.Algorithms.ShortestPaths.padIsolated_apply_inl`,
+  `Cslib.Algorithms.ShortestPaths.padIsolated_apply_eq_zero`: the entries of a padded matrix.
 * `Cslib.Algorithms.ShortestPaths.onNegTriangle_padIsolated`: padding preserves negative triangles.
 * `Cslib.Algorithms.ShortestPaths.FiniteEntriesBounded.mul`: finite entries of a (min,+) product
   of matrices with finite entries in `[-M, M]` lie in `[-2M, 2M]`.

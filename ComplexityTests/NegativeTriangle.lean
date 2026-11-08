@@ -145,7 +145,7 @@ example : (minPlusViaNegTri det 5 A₂ B₂).eval oracle = A₂ * B₂ :=
 theorem cost_det_le (m : ℕ) (A B C : Matrix (Fin m) (Fin m) T) :
     (det m A B C).cost oracle (fun q => (Nat.castAddMonoidHom ℝ) (ArithQuery.weight 1 1 q)) ≤
       2 * (m : ℝ) ^ ((3 : ℝ) - 0) := by
-  rw [FreeM.cost_map_addMonoidHom, det, cost_negTriViaMinPlus_schoolbook, sub_zero,
+  rw [← FreeM.map_cost, det, cost_negTriViaMinPlus_schoolbook, sub_zero,
     show (3 : ℝ) = (3 : ℕ) from rfl, Real.rpow_natCast, Nat.coe_castAddMonoidHom]
   have : m ^ 2 * (m * 1 + (m - 1) * 1) ≤ 2 * m ^ 3 := by
     have : m - 1 ≤ m := Nat.sub_le m 1
@@ -157,6 +157,7 @@ example (W n : ℕ) (hn : n ≠ 0) (A B : Matrix (Fin n) (Fin n) T) :
     (minPlusViaNegTri det W A B).cost oracle
         (fun q => (Nat.castAddMonoidHom ℝ) (ArithQuery.weight 1 1 q)) ≤
       544 * 2 * Nat.clog 2 (2 * W + 2) * (n : ℝ) ^ ((3 : ℝ) - 0 / 3) :=
-  cost_minPlusViaNegTri_le_rpow oracle _ (by norm_num) (by norm_num) cost_det_le W hn A B
+  cost_minPlusViaNegTri_le_rpow oracle _ (by norm_num) (by norm_num) (fun m _ => cost_det_le m) W
+    hn A B
 
 end ComplexityTests.NegativeTriangle

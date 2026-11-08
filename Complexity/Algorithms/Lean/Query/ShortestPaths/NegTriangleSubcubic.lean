@@ -27,11 +27,12 @@ on sub-instances with `2 ^ l ≤ s` vertices per part.
 
 * **Correctness** (`Cslib.Query.eval_minPlusViaNegTri`). If `det` decides negative triangles and
   the finite entries of `A * B` lie in `[-W, W]`, the result is `A * B`.
-* **Cost** (`Cslib.Query.cost_minPlusViaNegTri_le`). If every call of `det m` costs at most
-  `τ m ≥ 0`, the program costs at most
+* **Cost** (`Cslib.Query.cost_minPlusViaNegTri_le`). If every call of `det m` with `m ≠ 0` costs
+  at most `τ m`, and `τ ≥ 0`, the program costs at most
   `⌈log₂ (2 W + 2)⌉ (t ^ 3 + (t s) ^ 2) (τ 1 + ∑_{l < L} 8 τ (2 ^ l))`.
-* **Exponent** (`Cslib.Query.cost_minPlusViaNegTri_le_rpow`). If `τ m = c m ^ (3 - δ)` with
-  `c ≥ 0` and `δ ≤ 2`, the cost is at most `544 c ⌈log₂ (2 W + 2)⌉ n ^ (3 - δ / 3)` for `n ≥ 1`.
+* **Exponent** (`Cslib.Query.cost_minPlusViaNegTri_le_rpow`). If `τ m = c m ^ (3 - δ)` for
+  `m ≠ 0`, with `c ≥ 0` and `δ ≤ 2`, the cost is at most
+  `544 c ⌈log₂ (2 W + 2)⌉ n ^ (3 - δ / 3)` for `n ≥ 1`.
   So a detector with `O(n ^ (3 - δ))` cost gives a (min,+) product with `O(n ^ (3 - δ / 3) log W)`
   cost: truly subcubic detection gives a truly subcubic product, with `δ' = δ / 3`. This is the
   bound `O(n ^ 2 T(n ^ (1 / 3)) log W)` of Theorem 4.2 for `T(n) = n ^ (3 - δ)`.
@@ -39,11 +40,18 @@ on sub-instances with `2 ^ l ≤ s` vertices per part.
 **What is charged.** `FreeM` charges only the calls of `det`. Building sub-instances, the loops,
 the padding, the bookkeeping of removed edges and the binary search intervals are pure code and
 are free; see the module docstrings of the three steps. The cost bounds hold under every oracle
-and weight, given nonnegative per-call bounds.
+and weight, given nonnegative per-call bounds. They transfer the reduction's pattern of detector
+calls and are not intrinsic bounds on either problem: in this model a detector that decides in
+pure code, issuing no queries, satisfies the hypothesis of `cost_minPlusViaNegTri_le_rpow` with
+`c = 0`.
 
 **Scope.** Vassilevska Williams and Williams allow weights in `{-W, …, W} ∪ {-∞, ∞}`; here there is
-no `-∞`. The detector must be correct on all weights in `ℤ ∪ {⊤}`; the binary search queries it
-with `I`–`J` weights in `[-(W + 1), W]` and the given `A`, `B`.
+no `-∞`. Their `W` is the largest finite weight of the structure, which bounds the inputs, and
+their product saturates outside `[-W, W]` (footnote 6). Here weights are added in `ℤ ∪ {⊤}`
+without saturation, and `W` bounds the finite entries of the product `A * B`; inputs with finite
+entries in `[-M, M]` give `W = 2 M` (`Cslib.Query.eval_minPlusViaNegTri_of_bounded`). The
+detector must be correct on all weights in `ℤ ∪ {⊤}`; the binary search queries it with `I`–`J`
+weights in `[-(W + 1), W]` and the given `A`, `B`.
 
 ## Main definitions
 
@@ -54,6 +62,12 @@ with `I`–`J` weights in `[-(W + 1), W]` and the given `A`, `B`.
 
 ## Main results
 
+* `Cslib.Query.lt_negTriBlocks_mul`, `Cslib.Query.negTriBlockExp_pow_le`,
+  `Cslib.Query.lt_eight_mul_negTriBlockExp_pow`: `n < t 2 ^ L` and
+  `(2 ^ L) ^ 3 ≤ n < 8 (2 ^ L) ^ 3`.
+* `Cslib.Query.negTriBlocks_calls_le`: the blocking reduction makes
+  `t ^ 3 + (t 2 ^ L) ^ 2 ≤ 68 n ^ 2` finder calls.
+* `Cslib.Query.findNegTriCost_rpow_le`: Lemma 4.1 for polynomial costs, `T'(n) = O(T(n))`.
 * `Cslib.Query.eval_minPlusViaNegTri`, `Cslib.Query.eval_minPlusViaNegTri_of_bounded`: correctness.
 * `Cslib.Query.cost_minPlusViaNegTri_le`: the cost in terms of per-call bounds.
 * `Cslib.Query.cost_minPlusViaNegTri_le_rpow`: the exponent `3 - δ / 3`.
@@ -175,7 +189,8 @@ theorem eval_minPlusViaNegTri_of_bounded (oracle : {ι : Type} → Q ι → ι)
     (minPlusViaNegTri det (2 * M) A B).eval oracle = A * B :=
   eval_minPlusViaNegTri oracle hdet (hA.mul hB)
 
-/-- **Theorem 4.2, cost.** If every call of `det m` costs at most `τ m ≥ 0` under `oracle`, then
+/-- **Theorem 4.2, cost.** If every call of `det m` with `m ≠ 0` costs at most `τ m` under
+`oracle`, and `τ ≥ 0`, then
 `minPlusViaNegTri det W A B` costs at most
 `⌈log₂ (2 W + 2)⌉ (t ^ 3 + (t 2 ^ L) ^ 2) (τ 1 + ∑_{l < L} 8 τ (2 ^ l))`. -/
 theorem cost_minPlusViaNegTri_le {T : Type} [AddCommMonoid T] [PartialOrder T]
@@ -183,8 +198,9 @@ theorem cost_minPlusViaNegTri_le {T : Type} [AddCommMonoid T] [PartialOrder T]
     {det : (m : ℕ) → Matrix (Fin m) (Fin m) (MinTropical (WithTop ℤ)) →
       Matrix (Fin m) (Fin m) (MinTropical (WithTop ℤ)) →
       Matrix (Fin m) (Fin m) (MinTropical (WithTop ℤ)) → FreeM Q Bool}
-    {τ : ℕ → T} (hτ : ∀ m, 0 ≤ τ m) (hdet : ∀ m A B C, (det m A B C).cost oracle weight ≤ τ m)
-    (W : ℕ) {n : ℕ} (A B : Matrix (Fin n) (Fin n) (MinTropical (WithTop ℤ))) :
+    {τ : ℕ → T} (hτ : ∀ m, 0 ≤ τ m)
+    (hdet : ∀ m, m ≠ 0 → ∀ A B C, (det m A B C).cost oracle weight ≤ τ m) (W : ℕ) {n : ℕ}
+    (A B : Matrix (Fin n) (Fin n) (MinTropical (WithTop ℤ))) :
     (minPlusViaNegTri det W A B).cost oracle weight ≤
       Nat.clog 2 (2 * W + 2) • ((negTriBlocks n ^ 3 +
         (negTriBlocks n * 2 ^ negTriBlockExp n) ^ 2) • findNegTriCost τ (negTriBlockExp n)) := by
@@ -196,8 +212,10 @@ theorem cost_minPlusViaNegTri_le {T : Type} [AddCommMonoid T] [PartialOrder T]
 
 /-! ### The exponent -/
 
-/-- With `τ m = c m ^ e` and `e ≥ 1`, the finding cost is at most `8 c (2 ^ L) ^ e`. -/
-private theorem findNegTriCost_rpow_le {c e : ℝ} (hc : 0 ≤ c) (he : 1 ≤ e) (L : ℕ) :
+/-- **Lemma 4.1 for polynomial costs.** With `τ m = c m ^ e`, `c ≥ 0` and `e ≥ 1`, the finding
+cost bound `findNegTriCost τ L` is at most `8 c (2 ^ L) ^ e`: finding a negative triangle costs
+`O(T(n))` when detection costs `T(n) = c n ^ e`. -/
+theorem findNegTriCost_rpow_le {c e : ℝ} (hc : 0 ≤ c) (he : 1 ≤ e) (L : ℕ) :
     findNegTriCost (fun m : ℕ => c * (m : ℝ) ^ e) L ≤ 8 * c * ((2 ^ L : ℕ) : ℝ) ^ e := by
   have hx : (2 : ℝ) ≤ (2 : ℝ) ^ e := by
     simpa using Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2) he
@@ -218,7 +236,7 @@ private theorem findNegTriCost_rpow_le {c e : ℝ} (hc : 0 ≤ c) (he : 1 ≤ e)
 
 /-- **A truly subcubic detector gives a truly subcubic (min,+) product** (Vassilevska
 Williams–Williams, Theorem 4.2 with `T(n) = n ^ (3 - δ)`). If every call of `det m` costs at most
-`c m ^ (3 - δ)` under `oracle`, with `c ≥ 0` and `δ ≤ 2`, then for `n ≥ 1`,
+`c m ^ (3 - δ)` under `oracle` for `m ≠ 0`, with `c ≥ 0` and `δ ≤ 2`, then for `n ≥ 1`,
 `minPlusViaNegTri det W A B` costs at most `544 c ⌈log₂ (2 W + 2)⌉ n ^ (3 - δ / 3)`. -/
 theorem cost_minPlusViaNegTri_le_rpow (oracle : {ι : Type} → Q ι → ι)
     (weight : {ι : Type} → Q ι → ℝ)
@@ -226,7 +244,7 @@ theorem cost_minPlusViaNegTri_le_rpow (oracle : {ι : Type} → Q ι → ι)
       Matrix (Fin m) (Fin m) (MinTropical (WithTop ℤ)) →
       Matrix (Fin m) (Fin m) (MinTropical (WithTop ℤ)) → FreeM Q Bool}
     {c δ : ℝ} (hc : 0 ≤ c) (hδ : δ ≤ 2)
-    (hdet : ∀ m A B C, (det m A B C).cost oracle weight ≤ c * (m : ℝ) ^ (3 - δ))
+    (hdet : ∀ m, m ≠ 0 → ∀ A B C, (det m A B C).cost oracle weight ≤ c * (m : ℝ) ^ (3 - δ))
     (W : ℕ) {n : ℕ} (hn : n ≠ 0) (A B : Matrix (Fin n) (Fin n) (MinTropical (WithTop ℤ))) :
     (minPlusViaNegTri det W A B).cost oracle weight ≤
       544 * c * Nat.clog 2 (2 * W + 2) * (n : ℝ) ^ (3 - δ / 3) := by
