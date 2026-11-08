@@ -4321,9 +4321,12 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingSet
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EdgeSide
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Foundations.Combinatorics.SimpleGraph.GreedyColoring
+public import Complexity.Foundations.Combinatorics.SimpleGraph.IndepNum
+public import Complexity.Foundations.Combinatorics.SimpleGraph.LovaszTheta
 public import Complexity.Foundations.Combinatorics.SimpleGraph.MatrixTree
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SimpleGraph.OrientedIncidence
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Pentagon
 public import Complexity.Foundations.Combinatorics.SimpleGraph.PermMatching
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ProperColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Rado
@@ -4331,6 +4334,8 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Basic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Erdos
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.FranklWilson
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Nagy
+public import Complexity.Foundations.Combinatorics.SimpleGraph.ShannonCapacity
+public import Complexity.Foundations.Combinatorics.SimpleGraph.StrongProduct
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Basic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Bounds

@@ -1697,6 +1697,13 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
+- **Lovász theta and perfect graphs** ([#2998](https://github.com/cslib-community/complexitylib/issues/2998)):
+  Shannon capacity, the orthonormal-representation theta function, the sandwich
+  `α(G) ≤ ϑ(G) ≤ χ(Ḡ)`, `Θ(G) ≤ ϑ(G)` and `Θ(C₅) = √5` are in
+  `Foundations/Combinatorics/SimpleGraph`. Remaining: the equivalent SDP and eigenvalue
+  formulations of `ϑ`, and its polynomial-time approximation by the ellipsoid method
+  (Grötschel–Lovász–Schrijver), which makes clique number and chromatic number of perfect graphs
+  polynomial-time computable. This waits on the separation–optimization interface.
 - **Primal–dual approximation and multiplicative weights:** reusable analyses with vertex cover
   and set cover as first primal–dual clients. Real-valued regret bounds for weighted majority,
   multiplicative weights and Hedge (with tuned learning rates), and the algorithmic minimax

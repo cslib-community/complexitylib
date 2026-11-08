@@ -586,6 +586,11 @@ Stephen C. Kleene and Emil L. Post. *The Upper Semi-Lattice of Degrees of Recurs
 
 L. Kou, G. Markowsky and L. Berman. *A Fast Algorithm for Steiner Trees*. Acta Informatica 15(2), 141–145, 1981. https://doi.org/10.1007/BF00288961 . The heuristic's steps (shortest-path distance graph on the terminals, its minimum spanning tree, replacement by shortest paths, a spanning tree of the result, then pruning non-terminal leaves) and the `2 (1 - 1/ℓ)` bound, with `ℓ` the number of leaves of an optimal tree, are taken from the abstract and secondary sources. The body of the paper was not consulted.
 
+<a id="knuth1994"></a>
+## knuth1994
+
+Donald E. Knuth. *The Sandwich Theorem*. Electronic Journal of Combinatorics 1, A1, 1994. https://doi.org/10.37236/1193 ; arXiv text https://arxiv.org/abs/math/9312214 . The arXiv text was consulted on 2026-11-07 for §1 (orthogonal labelings and the lemma `α ≤ ϑ`), §4 (4.9), §5 (5.2), the product lemma of §20 and the pentagon umbrella of §22. The formal umbrella matches §22 up to the vertex relabelling `i ↦ 3i`.
+
 <a id="knuthyao76"></a>
 ## knuthyao76
 
@@ -640,6 +645,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 ## lll82
 
 Arjen K. Lenstra, Hendrik W. Lenstra Jr. and László Lovász. "Factoring Polynomials with Rational Coefficients." *Mathematische Annalen* 261, 515–534, 1982. https://doi.org/10.1007/BF01457454 . Inspected the author-hosted scan https://www.math.leidenuniv.nl/~hwl/PUBLICATIONS/1982f/art.pdf on 2026-11-08: §1, conditions (1.4)–(1.5) and the remark after (1.5), Proposition (1.6) and the remark after it, Proposition (1.11), the algorithm (1.15)–(1.21), the swap formulas (1.22) and the termination argument (1.23)–(1.26).
+
+<a id="lovasz1979"></a>
+## lovasz1979
+
+László Lovász. *On the Shannon Capacity of a Graph*. IEEE Transactions on Information Theory 25(1), 1–7, 1979. https://doi.org/10.1109/TIT.1979.1055985 . Bibliographic data from the DOI record. The full text was not inspected in this pass, so no theorem numbers are quoted. The attributed content (orthonormal representations with orthogonality on nonadjacent pairs, `ϑ`, `Θ ≤ ϑ`, submultiplicativity under strong products and `Θ(C₅) = √5`) follows [knuth1994](#knuth1994) and standard accounts.
 
 <a id="lp09"></a>
 ## lp09
@@ -865,6 +875,11 @@ James Schummer and Rakesh V. Vohra. "Mechanism Design without Money." Chapter 10
 ## shamir1992
 
 Adi Shamir. “IP = PSPACE.” *Journal of the ACM* 39(4), 869–877 (1992). DOI: https://doi.org/10.1145/146585.146609. Original-paper scan inspected: https://crypto.cs.mcgill.ca/~crepeau/COMP647/2007/TOPIC01/Shamir-IP=PSPACE.pdf.
+
+<a id="shannon1956"></a>
+## shannon1956
+
+Claude E. Shannon. *The Zero Error Capacity of a Noisy Channel*. IRE Transactions on Information Theory 2(3), 8–19, 1956. https://doi.org/10.1109/TIT.1956.1056798 . Bibliographic data from the DOI record. The zero-error capacity as a limit over strong powers, and the five-word code in the square of the pentagon, are attributed from secondary accounts; the full text was not inspected in this pass.
 
 <a id="shapleyscarf74"></a>
 ## shapleyscarf74
