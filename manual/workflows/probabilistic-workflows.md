@@ -80,10 +80,55 @@ The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two 
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
 
+## Count the fair coins used by an exact sampler
+
+Import [DDGTree.lean](../../Complexity/Probability/DDGTree.lean) to describe an exact sampler as
+a discrete distribution generating tree. Such a tree reads fair bits and stops at an
+outcome-labelled leaf, and it may be infinite. A `DDGTree α` is given by its prefix labelling
+`output : List Bool → Option α`, with leaves absorbing. `T.run n` is the law of the outcome after
+`n` fair bits, where `none` means "still running". `T.Generates p` states that the eventual output
+has law `p`. `T.expectedFlips` is the tail sum `∑ₙ P(T > n)`. For trees that halt almost surely,
+`expectedFlips_eq_tsum_mul` converts it to `∑ₖ (k + 1) P(T = k + 1)`, and
+`tendsto_run_none_of_generates` shows that every generator of a finite distribution halts almost
+surely. A tree that fails to halt with positive probability has `expectedFlips = ⊤`
+(`expectedFlips_eq_top`). `T.output <$> BitString.sampleList n` is the same experiment written as a
+`ProbComp`; its `eval` is `T.run n`.
+
+Import [DDGTree/KnuthYao.lean](../../Complexity/Probability/DDGTree/KnuthYao.lean) for the
+entropy bounds ([Knuth–Yao 1976](../sources.md#knuthyao76);
+[Cover–Thomas §5.11](../sources.md#coverthomas06)), stated for distributions on a finite type:
+
+- `entropy_le_expectedFlips hT : ENNReal.ofReal (PMF.entropy p) ≤ T.expectedFlips` for every
+  `hT : T.Generates p`;
+- `knuthYao p` generates `p` (`knuthYao_generates`), has the least expected cost
+  (`isLeast_expectedFlips_knuthYao`; pointwise `run_knuthYao_none_le`), and satisfies
+  `expectedFlips_knuthYao_lt : (knuthYao p).expectedFlips < ENNReal.ofReal (PMF.entropy p + 2)`;
+- `exists_generates_expectedFlips_eq_entropy_iff`: some tree attains `H(p)` exactly when every
+  positive `p a` is a power of `1/2`.
+
+To compute the optimal cost for a concrete `p`, rewrite with `expectedFlips_knuthYao` to
+`∑ₐ knuthYaoCost (p a).toReal`. Then use `knuthYaoCost_inv_two_pow` for dyadic masses, or sum the
+truncation errors `truncErr` directly. To build a tree from a leaf profile, use `ofCounts t`. In
+that tree, `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`; a leaf at
+depth `j ≤ k` counts `2 ^ (k - j)` times. Equivalently, `t k a / 2 ^ k` is the probability of having
+output `a` within `k` flips (`run_ofCounts`). The profile must be inherited,
+`2 * t k a ≤ t (k + 1) a`, and must satisfy the Kraft-type budget `∑ₐ t k a ≤ 2 ^ k`.
+
+The [checked clients](../../ComplexityTests/KnuthYao.lean) cover the fair coin (`1` flip), the
+dyadic `(1/2, 1/4, 1/4)` (`3/2` flips, equal to the entropy) and `(2/3, 1/3)`. For the last, the
+optimal cost is exactly `2`, no generating tree does better, and the entropy is strictly smaller.
+They also cover a non-halting tree that generates nothing and has infinite cost. Run
+`scripts/build.sh ComplexityTests.KnuthYao`. The model counts coin flips only; it does not certify
+that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
+
 ## Polarize statistical distance
 
-Sahai and Vadhan's polarization of statistical distance (Sahai–Vadhan 2003, §3) is formalized on
-explicit distributions over finite types, with the half-L1 `dist` above.
+Sahai and Vadhan's polarization of statistical distance is formalized on explicit distributions
+over finite types, with the half-L1 `dist` above. The source is Sahai–Vadhan 2003, §3.2: the
+Polarization Lemma is Lemma 3.3, extended to thresholds `α² > β` in the remark after its proof; the
+Direct Product Lemma is Lemma 3.4 and the XOR Lemma is Lemma 3.5. Statistical Difference is defined
+in §3.1 with the strict thresholds `2/3` and `1/3`; the variant `SD^{α,β}` with non-strict
+thresholds, used below, is defined on p. 234.
 
 - **XOR construction.** Import
   [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
@@ -157,7 +202,7 @@ uniform inputs, defined in
   `SDInstance.exists_computableInPolyTime_polarize_unary` is the source's form, with the error
   parameter `k` a separate unary input: one map on `encPair encSDInstance encUnary` with error
   `(1/2)^(k + 1)`.
-  `SDInstance.exists_polarize_computableInPolyTime` instead takes `k = K x` for a function `K` of
+  `SDInstance.exists_computableInPolyTime_polarize` instead takes `k = K x` for a function `K` of
   the instance. Use
   `obtain ⟨m, b, hm, h⟩ := …`, then `h K hK` for any polynomial-time unary `K`. It returns the
   polynomial-time certificate and the two distance bounds with error `(1/2)^(K x + 1)`.
@@ -167,7 +212,8 @@ uniform inputs, defined in
   from `SD^{α,β}` to `SD^{α',β'}`, for all constants `0 < β' < α' < 1`.
   The raw code generators behind the certificate are in
   [Circuit/Boolean/Polarization/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Polarization/PolyTime.lean).
-  Each generator has a `_code` lemma stating exact agreement with the typed circuit.
+  Import that module directly to use them; `StatisticalDifference/PolyTime.lean` does not
+  re-export it. Each generator has a `_code` lemma stating exact agreement with the typed circuit.
   `polarizeCode` builds on `replicateCode`, from
   [CodeReplication.lean](../../Complexity/Computability/Circuit/Boolean/CodeReplication.lean),
   and on `muxCode`, from
@@ -189,8 +235,12 @@ cover:
 
 - a concrete replicated code and its typed agreement;
 - the multiplexer gate count;
+- a polynomial-time polarization map with fixed parameters;
 - the reduction from `SD^{2/3,1/3}` to `SD^{9/10,1/10}` on the far and the near instance;
-- the length-indexed polarization on the same instances.
+- the length-indexed polarization on the same instances;
+- the polarization with the error parameter `k` in unary on the same instances, for every `k`;
+- `SDInstance.computableInPolyTime_polarize_comp` on `p ↦ p.1.polarize 1 2 p.2` over
+  `encPair encSDInstance encUnary`.
 
 Run `scripts/build.sh ComplexityTests.StatisticalDifference` and
 `scripts/build.sh ComplexityTests.StatisticalDifferencePolyTime`.

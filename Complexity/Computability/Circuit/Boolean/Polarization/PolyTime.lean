@@ -18,7 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 # Native generation of the polarization circuits
 
 Raw code generators for the circuits of the Sahai–Vadhan Polarization Lemma
-[SahaiVadhan2003, §3], built in `Boolean.Polarization`: the exclusive-or chain, the selection
+[SahaiVadhan2003, Lemma 3.3], built in `Boolean.Polarization`: the exclusive-or chain, the selection
 stage, one coordinate of the XOR construction, the XOR construction and the polarization
 construction. Each agrees exactly with the code of the typed circuit, and each is computable in
 polynomial time from the codes of the two input circuits, with the numbers of inputs, outputs,
