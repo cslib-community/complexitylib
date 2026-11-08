@@ -7,8 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Cryptanalysis.AddXNORNativeAllClasses
-import all Complexity.Cryptanalysis.AddXNORNativeAllClasses
+public import Complexity.Cryptanalysis.AddXNORNativeClassLoop
+import all Complexity.Cryptanalysis.AddXNORNativeClassLoop
 import all Complexity.Cryptanalysis.AddXNORNativeCounterPair
 import all Complexity.Cryptanalysis.AddXNORNativeSelectedClass
 import all Complexity.Cryptanalysis.AddXNORNativeOrientedSearch
@@ -22,10 +22,10 @@ search at every class. Each class releases its dictionary, and native conditiona
 composition covers all low-bit classes unless an actual original witness is found.
 
 This gives functional and finite instruction-time components of
-[WangLvShenZhang2027], Theorem 7, PDF p. 22. The outer code is an unrolled
-finite family; a fixed-size class iterator, simultaneous prefix-space bound in
-terms of the computed balance, derived global word width and the source sorted-list
-multitape bit model are not supplied by this theorem.
+[WangLvShenZhang2027], Theorem 7, PDF p. 22. The outer controller is a fixed-size
+native loop with a computed range. A simultaneous prefix-space bound in terms of
+the computed balance, derived global word width and the source sorted-list
+multitape bit model remain separate.
 -/
 
 public section
@@ -106,7 +106,22 @@ theorem selected_count_le_balance {m p : ℕ} (as bs cs ds : List (BitVec m))
     (K : CounterLayout L) (s t : BitVec m) : Code .standard 40 :=
   .seq (prepare K.prefixBase (a + b) K.suffixBase (c + d) K.q K.B K.r K.C
     (2 ^ p) (s.setWidth p).toNat ((~~~t).setWidth p).toNat)
-    (searchClasses L s t 0 (2 ^ p))
+    (searchLoop L s t)
+
+private theorem prepare_size (a n b k q B r C N s t : ℕ) :
+    (prepare a n b k q B r C N s t).size = 148 := by rfl
+
+/-- Counter construction, balance and the uniform class loop together have fixed
+compiled code size; immediates vary with scalar parameters, the graph does not. -/
+theorem dissection_size {W m p a b c d : ℕ} (L : SearchLayout W m p a b c d)
+    (K : CounterLayout L) (s t : BitVec m) : (dissection L K s t).size = 960 := by
+  simp only [dissection, Code.size, prepare_size, searchLoop_size]
+
+/-- Appending the charged final halt produces a fixed 961-instruction program. -/
+theorem dissection_program_length {W m p a b c d : ℕ} (L : SearchLayout W m p a b c d)
+    (K : CounterLayout L) (s t : BitVec m) : ((dissection L K s t).program tag).length = 961 := by
+  simp only [Code.program, List.length_append, Code.length_assemble, dissection_size,
+    List.length_cons, List.length_nil]
 
 /-- Charged setup budget including both projections, counter constructions and
 balance scan. This is a count of actual standard WordRAM instructions. -/
@@ -153,7 +168,7 @@ theorem dissection_exec {W m p : ℕ} (hp : p ≤ m)
     (hload : Fits W (2 * L.q₂ + 2 * 2 ^ p + 4)) :
     ∃ y, ExecWithin W (dissection L K s t) x y
         (prepareTime p (as.length + bs.length) (cs.length + ds.length) +
-          allTime (p := p) as bs cs ds s t 0 (2 ^ p)) ∧
+          (5 + loopTime (p := p) as bs cs ds s t 0 (2 ^ p))) ∧
       (y.regs tag ≠ 0 ↔ ∃ g : BitVec p, PackedClassSolution as bs cs ds s t g) ∧
       (y.regs tag = 0 ↔ ¬∃ g : BitVec p, PackedClassSolution as bs cs ds s t g) ∧
       (y.regs tag ≠ 0 → eval (witness as bs cs ds y) s = t) ∧
@@ -216,9 +231,9 @@ theorem dissection_exec {W m p : ℕ} (hp : p ≤ m)
     · rcases uq with h | h <;> rw [h] <;> have := K.below <;> omega
   have mu : u.regs balance = computedBalance (p := p) as bs cs ds s t :=
     ub.trans (ready_balance_eq as bs cs ds s t L u ready)
-  obtain ⟨y, hy, hit, sound, _, yr, _, yb⟩ := searchClasses_exec hp as bs cs ds s t L
-    0 (2 ^ p) u raw ready hfit hload
-  have iffhit := hit.trans (range_all_iff as bs cs ds s t)
+  obtain ⟨y, hy, hit, sound, _, _, _, yr, _, yb⟩ := searchLoop_exec hp as bs cs ds s t L
+    u raw ready hfit hload
+  have iffhit := hit
   refine ⟨y, ?_, iffhit, ?_, sound, yb.trans mu, yr⟩
   · simpa only [dissection, prepareTime, List.length_append, List.length_reverse] using hu.seq hy
   · constructor

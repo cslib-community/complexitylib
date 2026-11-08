@@ -2891,6 +2891,7 @@ public import Complexity.Cryptanalysis.AddXNORNativeBackwardRetain
 public import Complexity.Cryptanalysis.AddXNORNativeBalance
 public import Complexity.Cryptanalysis.AddXNORNativeBuckets
 public import Complexity.Cryptanalysis.AddXNORNativeClassCounters
+public import Complexity.Cryptanalysis.AddXNORNativeClassLoop
 public import Complexity.Cryptanalysis.AddXNORNativeClassPrepare
 public import Complexity.Cryptanalysis.AddXNORNativeClassProbe
 public import Complexity.Cryptanalysis.AddXNORNativeClassRetain
@@ -2917,6 +2918,7 @@ public import Complexity.Cryptanalysis.AddXNORNativeProjection
 public import Complexity.Cryptanalysis.AddXNORNativeQuarterProjection
 public import Complexity.Cryptanalysis.AddXNORNativeQuery
 public import Complexity.Cryptanalysis.AddXNORNativeQuerySelection
+public import Complexity.Cryptanalysis.AddXNORNativeRegisterClass
 public import Complexity.Cryptanalysis.AddXNORNativeResources
 public import Complexity.Cryptanalysis.AddXNORNativeRetain
 public import Complexity.Cryptanalysis.AddXNORNativeReverse

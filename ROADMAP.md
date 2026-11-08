@@ -142,15 +142,22 @@ smaller retained side by loading those table cells. Inverse retention uses the
 reversed/complemented chain with a proved original-class/witness correspondence;
 it does not use the older backward helper as a forward dictionary substitute.
 Both directions release their actual dictionary chains, restore witness registers,
-and frame original input and counter tables. A general unrolled outer composition
-covers all low-bit classes unless an actual valid hit exits early. Its raw-input
+and frame original input and counter tables. A fixed-size native outer while
+loop now covers all low-bit classes unless an actual valid hit exits early. It
+computes its range by a native shift, passes actual class/complement registers
+to the same proved counter-selected subroutines, advances exactly one class after
+a miss and exits at the bound on a hit without destroying the witness. Its raw-input
 endpoint proves global hit/miss equivalence, original witness soundness and exact
 computed balance, with a conservative charged finite instruction bound.
 The complete client checks strict inverse and forward selection, empty-quarter
-exhaustion, zero-width multiplicity collisions and actual release. This completes
-the computed-orientation/unrolled all-class functional composition milestone.
-A fixed-size outer while program remains open: the current code family has size
-linear in the number of low-bit classes. The selected multiplicity is bounded by
+exhaustion, zero-width multiplicity collisions, actual release and final counters.
+The native outer search has exactly 812 instructions; the complete preprocessing
+and search block has 960 (961 with halt), independent of class count and scalar
+values. The conservative bound adds 7·2^p+6 to the earlier unrolled reference cost,
+charging setup, complement arithmetic, branches, increment and loop control.
+This completes the fixed-size outer-control functional/finite-time milestone.
+Layout/width/seed immediates remain scalar parameters; a fully encoded input-header
+decoder and immediate-bit bounds are not supplied. The selected multiplicity is bounded by
 the computed balance, but simultaneous compiled-prefix occupied storage in terms
 of that balance, global asymptotic time composition, derived global width/address
 fit and the source sorted-list/compact-arena multitape bit model remain unproved.

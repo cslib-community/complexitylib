@@ -96,7 +96,7 @@ private theorem raw : layout.Raw first middle middle middle (input.comap bank) :
 non-self-inverse addition, initially dirty scratch and colliding low keys. -/
 private theorem checked (t : BitVec 3) :
     ∃ y, ExecWithin 16 (dissection layout counters 1#3 t) input y
-        (prepareTime 2 4 2 + allTime (p := 2) first middle middle middle 1#3 t 0 4) ∧
+        (prepareTime 2 4 2 + (5 + loopTime (p := 2) first middle middle middle 1#3 t 0 4)) ∧
       (y.regs tag ≠ 0 ↔
         ∃ g : BitVec 2, PackedClassSolution first middle middle middle 1#3 t g) ∧
       (y.regs tag = 0 ↔
@@ -118,7 +118,7 @@ example : backwardCount middle middle 2#3 0#2 = 1 ∧
   decide +kernel
 
 example : ∃ y, ExecWithin 16 (dissection layout counters 1#3 2#3) input y
-      (prepareTime 2 4 2 + allTime (p := 2) first middle middle middle 1#3 2#3 0 4) ∧
+      (prepareTime 2 4 2 + (5 + loopTime (p := 2) first middle middle middle 1#3 2#3 0 4)) ∧
     y.regs tag ≠ 0 ∧ eval (witness first middle middle middle y) 1#3 = 2#3 ∧
     y.regs balance = 2 ∧ (∀ a, 320 ≤ a → y.mem a = 0) := by
   obtain ⟨y, he, hit, _, sound, mu, yr⟩ := checked 2#3
@@ -194,7 +194,8 @@ private def emptyCounters : CounterLayout emptyLayout where
 
 example : ((dissection emptyLayout emptyCounters 0#1 1#1).eval 16 8
       { regs := fun _ => 99, mem := fun _ => 0 }).map
-      (fun y => (y.1.regs tag, y.1.regs balance, y.1.mem 320)) = some (0, 0, 0) := by
+      (fun y => (y.1.regs tag, y.1.regs balance, y.1.mem 320,
+        y.1.regs classIndex, y.1.regs classLimit)) = some (0, 0, 0, 2, 2) := by
   decide +kernel
 
 /-- Width-zero multiplicity collisions take the tie/forward branch; all actual
@@ -247,9 +248,10 @@ private def collisionCounters : CounterLayout collisionLayout where
 
 example : ((dissection collisionLayout collisionCounters 0#0 0#0).eval 16 16
       { regs := fun _ => 99, mem := fun _ => 0 }).map
-      (fun y => (y.1.regs tag, y.1.regs balance, y.1.regs orientation, y.1.mem 320,
+      (fun y => [y.1.regs tag, y.1.regs balance, y.1.regs orientation, y.1.mem 320,
         y.1.regs (bank Cslib.Cryptanalysis.AddXNOR.Native.Dictionary.top),
-        y.1.regs (bank bits))) = some (1, 4, 0, 0, 0, 1) := by
+        y.1.regs (bank bits), y.1.regs classIndex,
+        y.1.regs classLimit]) = some [1, 4, 0, 0, 0, 1, 1, 1] := by
   decide +kernel
 
 /-- A smaller non-self-inverse raw instance exercises both actual strict
@@ -307,7 +309,8 @@ private def smallInput : Data 40 :=
 
 example : ((dissection smallLayout smallCounters 0#2 0#2).eval 16 8 smallInput).map
       (fun y => (y.1.regs orientation, Decidable.decide (y.1.regs tag ≠ 0),
-        y.1.regs balance, y.1.mem 320)) = some (1, true, 1, 0) := by
+        y.1.regs balance, y.1.mem 320, y.1.regs classIndex,
+        y.1.regs classLimit)) = some (1, true, 1, 0, 2, 2) := by
   decide +kernel
 
 private def smallDual := reverseLayout [1#2, 2#2] [] [] [1#2] smallLayout
@@ -335,5 +338,12 @@ private def smallDualCounters : CounterLayout smallDual where
 
 example : ((dissection smallDual smallDualCounters 3#2 3#2).eval 16 8 smallInput).map
       (fun y => (y.1.regs orientation, Decidable.decide (y.1.regs tag ≠ 0),
-        y.1.regs balance, y.1.mem 320)) = some (0, true, 1, 0) := by
+        y.1.regs balance, y.1.mem 320, y.1.regs classIndex,
+        y.1.regs classLimit)) = some (0, true, 1, 0, 2, 2) := by
   decide +kernel
+
+/-- The whole compiled block has the same size at every projection width,
+quarter length and admitted layout, including zero-width collision instances. -/
+example {W m p a b c d : ℕ} (L : SearchLayout W m p a b c d) (K : CounterLayout L)
+    (s t : BitVec m) : (dissection L K s t).size = 960 :=
+  dissection_size L K s t
