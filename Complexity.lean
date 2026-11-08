@@ -1982,6 +1982,7 @@ public import Complexity.Computability.Complexity.Problems.SAT.Incidence
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence.Compact
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence.Degree
 public import Complexity.Computability.Complexity.Problems.SAT.LeftSet
+public import Complexity.Computability.Complexity.Problems.SAT.Paddable
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverLayout
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverLayoutChecks
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverLayoutData
@@ -2046,6 +2047,9 @@ public import Complexity.Computability.Complexity.ProofSystem
 public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Complexity.Reduction.Autoreducibility
 public import Complexity.Computability.Complexity.Reduction.Isomorphism
+public import Complexity.Computability.Complexity.Reduction.Isomorphism.Conjecture
+public import Complexity.Computability.Complexity.Reduction.Isomorphism.Paddable
+public import Complexity.Computability.Complexity.Reduction.Isomorphism.SchroederBernstein
 public import Complexity.Computability.Complexity.Reduction.Levin
 public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility
 public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeAccess

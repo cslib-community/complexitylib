@@ -606,11 +606,10 @@ index links to canonical definitions rather than keeping a second set.
   `PH ⊆ P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062]): `P^{NP[O(log n)]} ⊆ Σ₂ᴾ ∩ Π₂ᴾ`,
   hence `PH = Θ₂ᴾ` under his hypothesis; his stronger form with a sparse `S ∈ NP` and
   `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
-- **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
-  so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
-  hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
-  reductions (Berman); and the isomorphism theorem for sets complete under AC⁰ reductions (Agrawal,
-  Allender and Rudich).
+- **Berman–Hartmanis:** paddability of the standard NP-complete graph, number and set problems,
+  hence their p-isomorphism to SAT; every many-one complete set for EXP is complete under one-one,
+  length-increasing reductions (Berman); and the isomorphism theorem for sets complete under AC⁰
+  reductions (Agrawal, Allender and Rudich).
 - **Autoreducibility and mitoticity:** for nontrivial sets, `m`-autoreducible equals `m`-mitotic, so
   every NP-complete set splits into two NP-complete sets (Glaßer, Pavan, Selman and Zhang);
   separations of complexity classes by autoreducibility (Buhrman, Fortnow, van Melkebeek and
