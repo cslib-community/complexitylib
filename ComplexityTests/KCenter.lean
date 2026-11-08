@@ -167,6 +167,37 @@ example : ¬ ((∃ T : Finset (Fin 3), T.card ≤ 1 ∧ path3.IsDominatingSet T)
       Finset (Fin 3))) := by
   decide
 
+/-- The approximation hypothesis of the gap theorem holds with `ρ = 2` for Gonzalez's output, by
+the 2-approximation theorem, and the conclusion fails: the hypothesis `ρ < 2` is necessary. -/
+example : (∀ r : ℕ, optRadius (domDist (α := ℕ) path3) 1 ≤ (r : WithTop ℕ) →
+      radius (domDist (α := ℕ) path3)
+        (gonzalez (domDist (α := ℕ) path3) (List.finRange 3) 1).toFinset ≤
+          ((2 * r : ℕ) : WithTop ℕ)) ∧
+    ¬ path3.IsDominatingSet
+      ((gonzalez (domDist (α := ℕ) path3) (List.finRange 3) 1).toFinset : Set (Fin 3)) :=
+  ⟨fun _ hr => radius_gonzalez_le_two_mul domDist_symm domDist_triangle List.mem_finRange hr,
+    by decide⟩
+
+/-- The approximation hypothesis of the gap theorem is satisfiable with `ρ = 1`: the optimal
+center `{1}`, whose single vertex dominates the path. -/
+example : path3.IsDominatingSet ({1} : Finset (Fin 3)) := by
+  refine isDominatingSet_of_radius_le_mul (α := ℕ) (k := 1) (ρ := 1) (by decide) ?_
+    ⟨{1}, by decide, by decide⟩
+  intro r hr
+  have h1 : radius (domDist (α := ℕ) path3) ({1} : Finset (Fin 3)) = (1 : ℕ) := by decide
+  have h2 : optRadius (domDist (α := ℕ) path3) 1 = (1 : ℕ) := by decide
+  rw [h1, one_mul]
+  rw [h2] at hr
+  exact hr
+
+/-- More rounds than points: Gonzalez repeats a center once every point is chosen. -/
+example : gonzalez (domDist (α := ℕ) path3) (List.finRange 3) 5 = [0, 2, 1, 0, 0] := by decide
+
+/-- On the three-point path, the optimum over at most `2` centers is attained by exactly `2`. -/
+example : ∃ S : Finset (Fin 3), S.card = 2 ∧
+    radius (domDist (α := ℕ) path3) S = optRadius (domDist (α := ℕ) path3) 2 :=
+  exists_card_eq_radius_eq_optRadius _ (by decide)
+
 /-- On the empty graph with two vertices no vertex dominates, so one center has optimum `2`. -/
 example : optRadius (domDist (α := ℕ) (⊥ : SimpleGraph (Fin 2))) 1 = (2 : ℕ) :=
   optRadius_domDist_eq_two Nat.one_pos (by decide)

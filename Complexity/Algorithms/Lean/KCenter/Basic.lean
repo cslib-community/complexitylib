@@ -32,8 +32,10 @@ a point to a set of centers lives in `WithTop α` and is `⊤` for the empty set
 
 The radius and the optimum are defined on a finite nonempty type of points, with centers allowed
 anywhere among them. The optimum ranges over center sets of *at most* `k` points; when
-`k ≤ Fintype.card V` this is the same optimum as over sets of exactly `k` points, as in
-[WilliamsonShmoys2011], since adding centers never increases the radius (`radius_anti`).
+`k ≤ Fintype.card V` some set of exactly `k` points attains it
+(`exists_card_eq_radius_eq_optRadius`), so this is the same optimum as over sets of exactly `k`
+points, as in [WilliamsonShmoys2011], because padding a set of centers never increases its radius
+(`radius_anti`).
 
 ## Main definitions
 
@@ -48,6 +50,8 @@ anywhere among them. The optimum ranges over center sets of *at most* `k` points
   with a value.
 * `radius_le_coe_iff`, `optRadius_le_iff`, `le_optRadius_iff`, `exists_radius_eq_optRadius`:
   the radius and the optimum compared with a value; the optimum is attained.
+* `exists_card_eq_radius_eq_optRadius`: for `k ≤ |V|` the optimum is attained by exactly `k`
+  centers.
 * `radius_anti`, `optRadius_antitone`, `optRadius_zero`, `optRadius_lt_top`: monotonicity and the
   degenerate cases.
 * `length_le_card_of_pairwise_lt`: **packing**: points pairwise farther than `2 r` apart need
@@ -219,6 +223,16 @@ theorem le_optRadius_iff {r : WithTop α} :
     r ≤ optRadius d k ↔ ∀ S : Finset V, S.card ≤ k → r ≤ radius d S := by
   rw [optRadius, Finset.le_inf_iff]
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+
+/-- **Exactly `k` centers suffice:** when `k ≤ |V|`, some set of exactly `k` centers attains the
+optimal radius over at most `k` centers, since padding a set of centers never increases its radius
+(`radius_anti`). So `optRadius` agrees with the optimum over sets of exactly `k` points used in
+[WilliamsonShmoys2011], Section 2.2. -/
+theorem exists_card_eq_radius_eq_optRadius (d : V → V → α) (hk : k ≤ Fintype.card V) :
+    ∃ S : Finset V, S.card = k ∧ radius d S = optRadius d k := by
+  obtain ⟨S, hS, hSopt⟩ := exists_radius_eq_optRadius d k
+  obtain ⟨T, hST, hT⟩ := Finset.exists_superset_card_eq hS hk
+  exact ⟨T, hT, le_antisymm (hSopt ▸ radius_anti hST) (optRadius_le_radius hT.le)⟩
 
 /-- Allowing more centers never increases the optimal radius. -/
 theorem optRadius_antitone (d : V → V → α) : Antitone (optRadius d) := fun _ _ hkl =>

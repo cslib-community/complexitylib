@@ -151,8 +151,9 @@ theorem length_farthestStep (hP : P ≠ []) (L : List V) :
   | some x => rw [List.length_append, List.length_singleton]
   | none => exact absurd (List.argmax_eq_none.1 hm) hP
 
-/-- On a nonempty list of points, Gonzalez's algorithm chooses exactly `k` centers (with
-repetitions only if the distance vanishes between distinct points; see `nodup_gonzalez`). -/
+/-- On a nonempty list of points, Gonzalez's algorithm chooses exactly `k` centers. Repetitions
+occur only when the distance vanishes between distinct points or `k` exceeds the number of distinct
+points of `P`; see `nodup_gonzalez`. -/
 theorem length_gonzalez (hP : P ≠ []) (k : ℕ) : (gonzalez d P k).length = k := by
   induction k with
   | zero => rfl
