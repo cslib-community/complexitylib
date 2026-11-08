@@ -5261,6 +5261,7 @@ public import Complexity.Logics.SecondOrder.IndependentSet
 public import Complexity.Logics.SecondOrder.Projection
 public import Complexity.Logics.SecondOrder.Reduction
 public import Complexity.Logics.SecondOrder.WordMSO.Basic
+public import Complexity.Logics.SecondOrder.WordMSO.Composition
 public import Complexity.Logics.SecondOrder.WordMSO.FirstOrder
 public import Complexity.Logics.SecondOrder.WordMSO.OfRegular
 public import Complexity.Logics.SecondOrder.WordMSO.Separation
