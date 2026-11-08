@@ -15,13 +15,15 @@ import Mathlib.Tactic.NormNum
 /-!
 # Statistical Difference
 
-**Statistical Difference** `SD^{α,β}` [SahaiVadhan2003, §3.1] is the promise problem whose
-instances are pairs of circuits, each read as a sampler of its output distribution on uniform
+**Statistical Difference** `SD^{α,β}` [SahaiVadhan2003, §3.1 and p. 234] is the promise problem
+whose instances are pairs of circuits, each read as a sampler of its output distribution on uniform
 inputs (`Cslib.Circuits.Circuit.outputDist`). An instance is a yes-instance when the statistical
 distance between the two output distributions is at least `α`, and a no-instance when it is at most
-`β`. Sahai and Vadhan prove that it is complete for the class SZK of problems with statistical
-zero-knowledge proofs. This file formalizes the problem and the Polarization Lemma on instances,
-not completeness, and not the class SZK.
+`β`. Sahai and Vadhan define SD in §3.1 with the strict thresholds `> 2/3` and `< 1/3`, and prove
+that it is complete for the class SZK of problems with statistical zero-knowledge proofs. The
+variant `SD^{α,β}` with the non-strict thresholds used here is defined on p. 234, where it is noted
+to be interreducible with SD whenever `1 > α² > β > 0`. This file formalizes the problem and the
+Polarization Lemma on instances, not completeness, and not the class SZK.
 
 Instances here are pairs of De Morgan circuits with a common number of inputs and a common number
 of outputs (`SDInstance`). The XOR construction feeds the same data bits to both circuits, so it
@@ -114,8 +116,8 @@ theorem distance_polarize (x : SDInstance) (lam ell k : ℕ) :
 
 end SDInstance
 
-/-- **Statistical Difference** `SD^{α,β}` [SahaiVadhan2003, §3.1]: the yes-instances are the pairs
-of circuits whose output distributions are at statistical distance at least `α`, and the
+/-- **Statistical Difference** `SD^{α,β}` [SahaiVadhan2003, §3.1 and p. 234]: the yes-instances are
+the pairs of circuits whose output distributions are at statistical distance at least `α`, and the
 no-instances those at distance at most `β`, when `β < α`. -/
 noncomputable def StatisticalDifference (α β : ℝ) : PromiseProblem SDInstance :=
   PromiseProblem.gapMax SDInstance.distance (fun _ => α) (fun _ => β)

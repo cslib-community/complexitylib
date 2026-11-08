@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.PCP.ParallelRepetition.CoordinateModel
+import Complexity.Computability.PCP.TwoProverGame.CHSH
 import Complexity.Probability.PMF.Uniform
 
 /-! # The coordinate model of Holenstein's Lemma 6.4
@@ -22,13 +23,10 @@ namespace ComplexityTests.RepetitionCoordinateModel
 open Cslib.PCP Cslib.PCP.ParallelRepetition Cslib.Probability.CorrelatedSampling
 open Cslib.Probability.PMF (uniformOfFintype)
 open scoped Cslib.Probability.PMF
+open Cslib.PCP.TwoProverGame (chsh)
 
-/-- The CHSH game; only its uniform questions `x, y` matter here. -/
-noncomputable def chsh : TwoProverGame Bool Bool Bool Bool where
-  questions := uniformOfFintype (Bool × Bool)
-  accepts x y a b := (a ^^ b) = (x && y)
-
--- Given Bob's question `y`, Alice's question is uniform.
+-- Only the uniform questions `x, y` of the CHSH game (`Cslib.PCP.TwoProverGame.chsh`) matter
+-- here. Given Bob's question `y`, Alice's question is uniform.
 example (y : Bool) : pairGiven chsh (.inr y) = (uniformOfFintype Bool).map (·, y) := by
   have h : chsh.questions.map Prod.swap =
       (uniformOfFintype Bool).bind fun a => (uniformOfFintype Bool).map (a, ·) := by
