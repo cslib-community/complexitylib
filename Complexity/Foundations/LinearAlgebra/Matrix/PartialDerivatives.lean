@@ -34,6 +34,8 @@ independent.
 
 ## Main results
 
+* `Matrix.det_mvPolynomialX_eq_sum`, `Matrix.permanent_mvPolynomialX_eq_sum`: the generic
+  determinant and permanent as weighted sums of permutation monomials.
 * `Matrix.pderiv_prod_X`: differentiating a product of permutation entries.
 * `Matrix.choose_sq_le_rank_partialDerivatives_det_mvPolynomialX`,
   `Matrix.choose_sq_le_rank_partialDerivatives_permanent_mvPolynomialX`: the `k`-th order partial
@@ -57,7 +59,17 @@ variable {K : Type*} [Field K] {n : ℕ}
 private noncomputable def permSum (w : Perm (Fin n) → K) : MvPolynomial (Fin n × Fin n) K :=
   ∑ σ, w σ • ∏ i, X (σ i, i)
 
-omit [Field K] in
+/-- The generic determinant as a signed sum of permutation monomials. -/
+theorem det_mvPolynomialX_eq_sum {ι R : Type*} [Fintype ι] [DecidableEq ι] [CommRing R] :
+    (mvPolynomialX ι ι R).det = ∑ σ : Perm ι, ((Perm.sign σ : ℤ) : R) • ∏ i, X (σ i, i) := by
+  simp [det_apply, Units.smul_def, Int.cast_smul_eq_zsmul]
+
+/-- The generic permanent as a sum of permutation monomials. -/
+theorem permanent_mvPolynomialX_eq_sum {ι R : Type*} [Fintype ι] [DecidableEq ι]
+    [CommSemiring R] :
+    (mvPolynomialX ι ι R).permanent = ∑ σ : Perm ι, (1 : R) • ∏ i, X (σ i, i) := by
+  simp [permanent]
+
 /-- The partial derivative of a product of permutation entries `X (σ i, i)` along `(r, c)`
 deletes the factor of column `c` when it is the entry `(r, c)`, and vanishes otherwise. -/
 theorem pderiv_prod_X {ι R : Type*} [DecidableEq ι] [CommSemiring R] (σ : Perm ι) (r c : ι)
@@ -204,8 +216,8 @@ private theorem choose_sq_le_rank_partialDerivatives_permSum (w : Perm (Fin n) �
     _ ≤ _ := LinearMap.rank_comp_le_right _ _
 
 private theorem det_eq_permSum :
-    (mvPolynomialX (Fin n) (Fin n) K).det = permSum fun σ => ((Perm.sign σ : ℤ) : K) := by
-  simp [det_apply, permSum, Units.smul_def, Int.cast_smul_eq_zsmul]
+    (mvPolynomialX (Fin n) (Fin n) K).det = permSum fun σ => ((Perm.sign σ : ℤ) : K) :=
+  det_mvPolynomialX_eq_sum
 
 /-- The `k`-th order partial derivatives of the generic `n × n` determinant span at least
 `choose n k ^ 2` dimensions: up to sign, the `(n - k) × (n - k)` minors are among them, and they
@@ -225,8 +237,8 @@ field. -/
 theorem choose_sq_le_rank_partialDerivatives_permanent_mvPolynomialX (k : ℕ) :
     ((n.choose k ^ 2 : ℕ) : Cardinal) ≤
       (partialDerivatives k (mvPolynomialX (Fin n) (Fin n) K).permanent).rank := by
-  have : (mvPolynomialX (Fin n) (Fin n) K).permanent = permSum fun _ => 1 := by
-    simp [permanent, permSum]
+  have : (mvPolynomialX (Fin n) (Fin n) K).permanent = permSum fun _ => 1 :=
+    permanent_mvPolynomialX_eq_sum
   rw [this]
   exact choose_sq_le_rank_partialDerivatives_permSum _ (fun _ => one_ne_zero) k
 

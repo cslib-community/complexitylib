@@ -32,9 +32,11 @@ Hessian of the permanent has full rank `n²` at the Mignon–Ressayre point
 (`Matrix.rank_hessian_permanent_mignonRessayrePoint`).
 
 The general-field statement `sq_le_two_mul_determinantalComplexity_permanent` only assumes
-`2 ≠ 0` and `(n - 1)! ≠ 0` in the field, which covers characteristic zero and prime
-characteristics `p ≠ 2` with `n ≤ p`. Mignon and Ressayre state characteristic zero; the
-extension of Cai, Chen and Li to every characteristic other than `2` is not formalized.
+`(n - 1)! ≠ 0` in the field, that is, characteristic zero or a characteristic at least `n`.
+Mignon and Ressayre state characteristic zero; the extension of Cai, Chen and Li to every
+characteristic other than `2` is not formalized. To apply the bound to a concrete matrix, use the
+representation form `sq_le_two_mul_of_hasDeterminantalRepresentation_permanent` or
+`Matrix.card_mul_card_le_two_mul_card_of_permanent_eq_det`.
 
 ## Main definitions
 
@@ -116,10 +118,10 @@ end Defs
 variable {K : Type*} [Field K]
 
 /-- **Mignon–Ressayre bound for representations**: if the generic `n × n` permanent is the
-determinant of an `m × m` matrix of affine polynomials over a field with `2 ≠ 0` and
-`(n - 1)! ≠ 0`, then `n² ≤ 2 m` [Mignon and Ressayre][MignonRessayre2004]. -/
+determinant of an `m × m` matrix of affine polynomials over a field with `(n - 1)! ≠ 0`
+(characteristic `0` or at least `n`), then `n² ≤ 2 m` [Mignon and Ressayre][MignonRessayre2004]. -/
 theorem sq_le_two_mul_of_hasDeterminantalRepresentation_permanent {n m : ℕ}
-    (h2 : (2 : K) ≠ 0) (hfact : ((n - 1).factorial : K) ≠ 0)
+    (hfact : ((n - 1).factorial : K) ≠ 0)
     (h : HasDeterminantalRepresentation (genericMatrix K n).permanent m) : n ^ 2 ≤ 2 * m := by
   obtain ⟨A, hA, hdet⟩ := h
   have h1 : (A.map (rename finProdFinEquiv.symm)).det = rename finProdFinEquiv.symm A.det := by
@@ -134,20 +136,23 @@ theorem sq_le_two_mul_of_hasDeterminantalRepresentation_permanent {n m : ℕ}
     simp
   have hA' : ∀ i j, ((A.map (rename finProdFinEquiv.symm)) i j).totalDegree ≤ 1 := fun i j =>
     (totalDegree_rename_le _ _).trans (hA i j)
-  have := Matrix.card_mul_card_le_two_mul_card_of_permanent_eq_det (ι := Fin n) h2
+  have := Matrix.card_mul_card_le_two_mul_card_of_permanent_eq_det (ι := Fin n)
     (by simpa using hfact) _ hA' hperm
   simpa [sq] using this
 
-/-- **Mignon–Ressayre theorem** over a field with `2 ≠ 0` and `(n - 1)! ≠ 0`: the generic `n × n`
-permanent has determinantal complexity at least `n² / 2`
-[Mignon and Ressayre][MignonRessayre2004]. -/
-theorem sq_le_two_mul_determinantalComplexity_permanent {n : ℕ} (h2 : (2 : K) ≠ 0)
+/-- **Mignon–Ressayre theorem** over a field with `(n - 1)! ≠ 0` (characteristic `0` or at least
+`n`): the generic `n × n` permanent has determinantal complexity at least `n² / 2`
+[Mignon and Ressayre][MignonRessayre2004]. The statement is trivial when the determinantal
+complexity is `⊤`, since Valiant's universality theorem is not formalized; see
+`sq_le_two_mul_of_hasDeterminantalRepresentation_permanent` for the form about a given
+representation. -/
+theorem sq_le_two_mul_determinantalComplexity_permanent {n : ℕ}
     (hfact : ((n - 1).factorial : K) ≠ 0) :
     (n : ℕ∞) ^ 2 ≤ 2 * determinantalComplexity (genericMatrix K n).permanent := by
   have hk : (((n ^ 2 + 1) / 2 : ℕ) : ℕ∞) ≤
       determinantalComplexity (genericMatrix K n).permanent :=
     le_determinantalComplexity_iff.2 fun m hm => by
-      have := sq_le_two_mul_of_hasDeterminantalRepresentation_permanent h2 hfact hm
+      have := sq_le_two_mul_of_hasDeterminantalRepresentation_permanent hfact hm
       exact_mod_cast (show (n ^ 2 + 1) / 2 ≤ m by omega)
   calc (n : ℕ∞) ^ 2 = ((n ^ 2 : ℕ) : ℕ∞) := by push_cast; rfl
     _ ≤ ((2 * ((n ^ 2 + 1) / 2) : ℕ) : ℕ∞) := by exact_mod_cast (by omega)
@@ -156,17 +161,19 @@ theorem sq_le_two_mul_determinantalComplexity_permanent {n : ℕ} (h2 : (2 : K) 
 
 /-- **Mignon–Ressayre theorem** [Mignon and Ressayre][MignonRessayre2004]: over a field of
 characteristic zero, the generic `n × n` permanent has determinantal complexity at least
-`n² / 2`. -/
+`n² / 2`. The statement is trivial when the determinantal complexity is `⊤`, since Valiant's
+universality theorem is not formalized; see
+`sq_le_two_mul_of_hasDeterminantalRepresentation_permanent` for the form about a given
+representation. -/
 theorem sq_le_two_mul_determinantalComplexity_permanent_of_charZero [CharZero K] (n : ℕ) :
     (n : ℕ∞) ^ 2 ≤ 2 * determinantalComplexity (genericMatrix K n).permanent :=
-  sq_le_two_mul_determinantalComplexity_permanent two_ne_zero
-    (Nat.cast_ne_zero.2 (Nat.factorial_ne_zero _))
+  sq_le_two_mul_determinantalComplexity_permanent (Nat.cast_ne_zero.2 (Nat.factorial_ne_zero _))
 
 /-- In characteristic zero, if the generic `n × n` permanent is a projection of the generic
 `m × m` determinant, then `n² ≤ 2 m` [Mignon and Ressayre][MignonRessayre2004]. -/
 theorem sq_le_two_mul_of_isProjection_permanent_det [CharZero K] {n m : ℕ}
     (h : IsProjection (genericMatrix K n).permanent (genericMatrix K m).det) : n ^ 2 ≤ 2 * m :=
-  sq_le_two_mul_of_hasDeterminantalRepresentation_permanent two_ne_zero
+  sq_le_two_mul_of_hasDeterminantalRepresentation_permanent
     (Nat.cast_ne_zero.2 (Nat.factorial_ne_zero _))
     (hasDeterminantalRepresentation_of_isProjection h)
 

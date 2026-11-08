@@ -69,16 +69,6 @@ theorem hessian_sum_smul_prod_X (w : Perm ι → K) (x : ι × ι → K) (a b : 
       simp
   · simp [h']
 
-/-- The generic determinant as a signed permutation sum. -/
-theorem det_mvPolynomialX_eq_sum :
-    (mvPolynomialX ι ι K).det = ∑ σ : Perm ι, ((Perm.sign σ : ℤ) : K) • ∏ i, X (σ i, i) := by
-  simp [det_apply, Units.smul_def, Int.cast_smul_eq_zsmul]
-
-/-- The generic permanent as a permutation sum. -/
-theorem permanent_mvPolynomialX_eq_sum :
-    (mvPolynomialX ι ι K).permanent = ∑ σ : Perm ι, (1 : K) • ∏ i, X (σ i, i) := by
-  simp [permanent]
-
 /-- If column `z` of `x` vanishes, the Hessian of the generic determinant at `x` vanishes off the
 rows and columns indexed by column `z`. -/
 private theorem hessian_det_mvPolynomialX_eq_zero {x : ι × ι → K} {z : ι}

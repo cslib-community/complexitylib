@@ -23,8 +23,9 @@ Fix `o : ι` and let `N = card ι`. The *Mignon–Ressayre point* is the all-one
 This matrix is `p • (J - 1) ⊗ (J - 1) + s • (D (J - 1) D) ⊗ (D (J - 1) D)`, where `J` is the
 all-ones matrix and `D` the diagonal projection away from `o`. The algebraic identities
 `J J = N J`, `J D J = (N - 1) J` and `D D = D` show that it is invertible when `N - 1`, `p` and
-`p + s` are nonzero. Here `p + s = -2 · (N - 3)!` for `N ≥ 3`. So the Hessian has full rank
-`N ^ 2` whenever `2 ≠ 0` and `(N - 1)! ≠ 0` in the field
+`p + s` are nonzero. Here `p = (N - 2)!` and `p + s = -2 · (N - 3)!` for `N ≥ 3`, and `2` divides
+`(N - 1)!`. So the Hessian has full rank `N ^ 2` whenever `(N - 1)! ≠ 0` in the field, that is,
+in characteristic `0` or in a characteristic at least `N`
 [Mignon and Ressayre][MignonRessayre2004].
 
 Together with the upper bound `Matrix.rank_hessian_det_le`, this gives the Mignon–Ressayre
@@ -32,9 +33,9 @@ inequality: if the generic `N × N` permanent is the determinant of a `κ × κ`
 polynomials, then `N ^ 2 ≤ 2 · card κ`.
 
 Mignon and Ressayre state the result over fields of characteristic zero. The proof here only
-uses `2 ≠ 0` and `(N - 1)! ≠ 0`, that is, characteristic `0` or a prime characteristic `p`
-with `N ≤ p` and `p ≠ 2`. Cai, Chen and Li extend the bound to every characteristic other than
-`2` by a different point; that extension is not formalized here.
+uses `(N - 1)! ≠ 0`, that is, characteristic `0` or a characteristic at least `N`. Cai, Chen and
+Li extend the bound to every characteristic other than `2` by a different point; that extension
+is not formalized here.
 
 ## Main definitions
 
@@ -176,11 +177,12 @@ private theorem rank_of_ite_sandwich (o : ι) {p s : K} (hN : (Fintype.card ι :
   rw [Matrix.rank_of_isUnit _ (Matrix.mulVec_injective_iff_isUnit.1 hinj), Fintype.card_prod]
 
 /-- The Mignon–Ressayre point: the all-ones matrix with `1 - card ι` at `(o, o)`. -/
-@[expose] def mignonRessayrePoint (o : ι) : ι × ι → K := fun p =>
+def mignonRessayrePoint (o : ι) : ι × ι → K := fun p =>
   if p = (o, o) then 1 - Fintype.card ι else 1
 
 theorem mignonRessayrePoint_apply (o : ι) (p : ι × ι) :
-    mignonRessayrePoint (K := K) o p = if p = (o, o) then 1 - (Fintype.card ι : K) else 1 :=
+    mignonRessayrePoint (K := K) o p = if p = (o, o) then 1 - (Fintype.card ι : K) else 1 := by
+  unfold mignonRessayrePoint
   rfl
 
 private theorem prod_mignonRessayrePoint (o : ι) (σ : Perm ι) (S : Finset ι) :
@@ -292,9 +294,10 @@ theorem hessian_permanent_mignonRessayrePoint (o : ι) (a b : ι × ι) :
   split_ifs <;> first | (push_cast; ring1) | (exfalso; tauto)
 
 /-- **Mignon–Ressayre lower bound for the permanent**: the Hessian of the generic `N × N`
-permanent at the Mignon–Ressayre point has full rank `N ^ 2`, provided `2 ≠ 0` and
-`(N - 1)! ≠ 0` in `K` and `N ≥ 2` [Mignon and Ressayre][MignonRessayre2004]. -/
-theorem rank_hessian_permanent_mignonRessayrePoint (o : ι) (h2 : (2 : K) ≠ 0)
+permanent at the Mignon–Ressayre point has full rank `N ^ 2`, provided `N ≥ 2` and
+`(N - 1)! ≠ 0` in `K` (characteristic `0` or at least `N`)
+[Mignon and Ressayre][MignonRessayre2004]. -/
+theorem rank_hessian_permanent_mignonRessayrePoint (o : ι)
     (hfact : ((Fintype.card ι - 1).factorial : K) ≠ 0) (hN : 2 ≤ Fintype.card ι) :
     (hessian (mignonRessayrePoint (K := K) o) (mvPolynomialX ι ι K).permanent).rank =
       Fintype.card ι * Fintype.card ι := by
@@ -308,6 +311,9 @@ theorem rank_hessian_permanent_mignonRessayrePoint (o : ι) (h2 : (2 : K) ≠ 0)
     exact hessian_permanent_mignonRessayrePoint o a b
   rw [hH]
   obtain ⟨k, hk⟩ : ∃ k, Fintype.card ι = k + 2 := ⟨_, (Nat.sub_add_cancel hN).symm⟩
+  have h2 : ∀ j, k = j + 1 → (2 : K) ≠ 0 := fun j hj h2 => hfact (by
+    obtain ⟨c, hc⟩ := Nat.dvd_factorial two_pos (show 2 ≤ Fintype.card ι - 1 by omega)
+    rw [hc, Nat.cast_mul, Nat.cast_two, h2, zero_mul])
   rw [hk, show k + 2 - 1 = k + 1 from rfl, Nat.factorial_succ, Nat.cast_mul] at hfact
   obtain ⟨hk1, hkf⟩ := mul_ne_zero_iff.1 hfact
   refine rank_of_ite_sandwich o ?_ ?_ ?_
@@ -324,17 +330,15 @@ theorem rank_hessian_permanent_mignonRessayrePoint (o : ι) (h2 : (2 : K) ≠ 0)
         Nat.factorial_succ]
       rw [Nat.factorial_succ, Nat.cast_mul] at hkf
       have hj : (j.factorial : K) ≠ 0 := right_ne_zero_of_mul hkf
+      convert mul_ne_zero (neg_ne_zero.2 (h2 j rfl)) hj using 1
       push_cast
-      have : ((j : K) + 1) * j.factorial + -((j : K) + 1 + 2) * j.factorial =
-          -2 * j.factorial := by ring
-      rw [this]
-      exact mul_ne_zero (neg_ne_zero.2 h2) hj
+      ring
 
 /-- **Mignon–Ressayre inequality**: if the generic `N × N` permanent is the determinant of a
-`κ × κ` matrix of affine polynomials, then `N ^ 2 ≤ 2 · card κ`, provided `2 ≠ 0` and
-`(N - 1)! ≠ 0` in `K` [Mignon and Ressayre][MignonRessayre2004]. -/
+`κ × κ` matrix of affine polynomials, then `N ^ 2 ≤ 2 · card κ`, provided `(N - 1)! ≠ 0` in `K`
+(characteristic `0` or at least `N`) [Mignon and Ressayre][MignonRessayre2004]. -/
 theorem card_mul_card_le_two_mul_card_of_permanent_eq_det {κ : Type*} [Fintype κ]
-    [DecidableEq κ] (h2 : (2 : K) ≠ 0) (hfact : ((Fintype.card ι - 1).factorial : K) ≠ 0)
+    [DecidableEq κ] (hfact : ((Fintype.card ι - 1).factorial : K) ≠ 0)
     (A : Matrix κ κ (MvPolynomial (ι × ι) K)) (hA : ∀ i j, (A i j).totalDegree ≤ 1)
     (hperm : (mvPolynomialX ι ι K).permanent = A.det) :
     Fintype.card ι * Fintype.card ι ≤ 2 * Fintype.card κ := by
@@ -358,6 +362,6 @@ theorem card_mul_card_le_two_mul_card_of_permanent_eq_det {κ : Type*} [Fintype 
       rw [← hperm]
       exact eval_permanent_mignonRessayrePoint o
     have := rank_hessian_det_le A hA hx
-    rwa [← hperm, rank_hessian_permanent_mignonRessayrePoint o h2 hfact hN] at this
+    rwa [← hperm, rank_hessian_permanent_mignonRessayrePoint o hfact hN] at this
 
 end Matrix

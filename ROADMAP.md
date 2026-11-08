@@ -1122,7 +1122,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   ([#3384](https://github.com/cslib-community/complexitylib/issues/3384)): the Mignon–Ressayre
   bound `n² ≤ 2 · dc(perm_n)` is proved in
   [`Arithmetic/DeterminantalComplexity`](Complexity/Computability/Circuit/Arithmetic/DeterminantalComplexity.lean)
-  over every field with `2 ≠ 0` and `(n - 1)! ≠ 0`, including characteristic zero. Remaining:
+  over every field of characteristic zero or of characteristic at least `n`. Remaining:
   Valiant's universality (every polynomial has a determinantal representation, so `dc` is finite)
   and Grenet's upper bound `dc(perm_n) ≤ 2ⁿ - 1`; the Cai–Chen–Li extension to every
   characteristic other than two; Yabe's real bound `dc(perm_n) ≥ (n - 1)² + 1` through

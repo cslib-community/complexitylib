@@ -16,8 +16,9 @@ import Mathlib.Algebra.Field.ZMod
 The `2 × 2` permanent `X₀ X₃ + X₁ X₂` is the determinant of `!![X₀, -X₁; X₂, X₃]`, so its
 determinantal complexity is exactly `2`; the lower bound comes from the Mignon–Ressayre theorem.
 At `n = 3` the Mignon–Ressayre point is the all-ones matrix with `-2` at `(0, 0)`; the permanent
-vanishes there and the Hessian has full rank `9`. In characteristic two the permanent is the
-determinant, so the hypothesis `2 ≠ 0` cannot be dropped.
+vanishes there and the Hessian has full rank `9`. Over `ZMod 2` the `3 × 3` permanent is the
+`3 × 3` determinant, so the bound fails at `n = 3`, where `(n - 1)! = 0`: the factorial hypothesis
+cannot be dropped.
 -/
 
 namespace ComplexityTests.ArithmeticDeterminantalComplexity
@@ -49,8 +50,7 @@ theorem hasDeterminantalRepresentation_permanent_two :
 example : determinantalComplexity (genericMatrix ℚ 2).permanent = 2 := by
   refine le_antisymm (determinantalComplexity_le hasDeterminantalRepresentation_permanent_two) ?_
   refine le_determinantalComplexity_iff.2 fun m hm => ?_
-  have := sq_le_two_mul_of_hasDeterminantalRepresentation_permanent (K := ℚ) two_ne_zero
-    (by norm_num) hm
+  have := sq_le_two_mul_of_hasDeterminantalRepresentation_permanent (K := ℚ) (by norm_num) hm
   exact_mod_cast (show 2 ≤ m by omega)
 
 example : determinantalComplexity (genericMatrix ℚ 3).det ≤ 3 :=
@@ -63,9 +63,13 @@ example : ¬ IsProjection (genericMatrix ℚ 3).permanent (genericMatrix ℚ 4).
 
 instance : Fact (Nat.Prime 5) := ⟨Nat.prime_five⟩
 
-/-- The bound also holds over `ZMod 5`, where `2 ≠ 0` and `2! ≠ 0`. -/
+/-- The bound also holds over `ZMod 5`, where `2! ≠ 0`. -/
 example : (3 : ℕ∞) ^ 2 ≤ 2 * determinantalComplexity (genericMatrix (ZMod 5) 3).permanent :=
-  sq_le_two_mul_determinantalComplexity_permanent (by decide) (by decide)
+  sq_le_two_mul_determinantalComplexity_permanent (by decide)
+
+/-- Over `ZMod 2` the bound holds at `n = 2`, where `1! ≠ 0`. -/
+example : (2 : ℕ∞) ^ 2 ≤ 2 * determinantalComplexity (genericMatrix (ZMod 2) 2).permanent :=
+  sq_le_two_mul_determinantalComplexity_permanent (by decide)
 
 /-! ### The Mignon–Ressayre point at `n = 3` -/
 
@@ -93,15 +97,16 @@ example : hessian (Matrix.mignonRessayrePoint (K := ℚ) (0 : Fin 3))
 
 example : (hessian (Matrix.mignonRessayrePoint (K := ℚ) (0 : Fin 3))
     (Matrix.mvPolynomialX (Fin 3) (Fin 3) ℚ).permanent).rank = 9 :=
-  Matrix.rank_hessian_permanent_mignonRessayrePoint 0 two_ne_zero (by norm_num) (by simp)
+  Matrix.rank_hessian_permanent_mignonRessayrePoint 0 (by norm_num) (by simp)
 
 /-! ### Characteristic two -/
 
-/-- Over `ZMod 2` the `3 × 3` permanent is the `3 × 3` determinant, which violates `3² ≤ 2 · 3`:
-the hypothesis `2 ≠ 0` cannot be dropped. -/
-example : HasDeterminantalRepresentation (genericMatrix (ZMod 2) 3).permanent 3 ∧ ¬ 3 ^ 2 ≤ 2 * 3 :=
+/-- Over `ZMod 2` the `3 × 3` permanent is the `3 × 3` determinant, which violates `3² ≤ 2 · 3`.
+Here `(3 - 1)! = 2 = 0`, so the hypothesis `(n - 1)! ≠ 0` cannot be dropped. -/
+example : HasDeterminantalRepresentation (genericMatrix (ZMod 2) 3).permanent 3 ∧
+    ¬ 3 ^ 2 ≤ 2 * 3 ∧ (((3 - 1).factorial : ℕ) : ZMod 2) = 0 :=
   ⟨by
     rw [← Matrix.det_eq_permanent_of_charTwo]
-    exact hasDeterminantalRepresentation_det 3, by omega⟩
+    exact hasDeterminantalRepresentation_det 3, by omega, by decide⟩
 
 end ComplexityTests.ArithmeticDeterminantalComplexity
