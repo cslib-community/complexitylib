@@ -106,10 +106,10 @@ private noncomputable def R :
     rcases x with ⟨m, r, a⟩
     unfold child
     split_ifs with hm
-    · show m - 1 + r = m + r - 1
+    · change m - 1 + r = m + r - 1
       have hm' : 0 < m := hm
       omega
-    · show m + (r - 1) = m + r - 1
+    · change m + (r - 1) = m + r - 1
       have hm' : ¬ 0 < m := hm
       omega
   length_child_le x _ b := by
@@ -121,9 +121,9 @@ private noncomputable def R :
     rw [h, h]
     unfold child
     split_ifs with hm
-    · show 2 * (m - 1) + 1 + (2 * r + 1 + 1) ≤ 2 * m + 1 + (2 * r + 1 + 1)
+    · change 2 * (m - 1) + 1 + (2 * r + 1 + 1) ≤ 2 * m + 1 + (2 * r + 1 + 1)
       omega
-    · show 2 * m + 1 + (2 * (r - 1) + 1 + 1) ≤ 2 * m + 1 + (2 * r + 1 + 1)
+    · change 2 * m + 1 + (2 * (r - 1) + 1 + 1) ≤ 2 * m + 1 + (2 * r + 1 + 1)
       omega
   len_polytime := by fun_prop
   child_polytime := by
