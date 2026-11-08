@@ -265,6 +265,20 @@ def blockEmb (o : ℕ) (h : o + m ≤ N) : Fin m ↪ Fin N :=
 @[simp] theorem blockEmb_apply_val (o : ℕ) (h : o + m ≤ N) (i : Fin m) :
     (blockEmb o h i : ℕ) = i + o := rfl
 
+/-- The bits of `glue (blockEmb o h) r X`: those of `r` on the block `o, …, o + m - 1` and those
+of `X` elsewhere. -/
+theorem glue_blockEmb_apply {o : ℕ} (h : o + m ≤ N) (r : Fin m → Bool) (X : Fin N → Bool)
+    (i : Fin N) :
+    glue (blockEmb o h) r X i =
+      if h' : o ≤ i ∧ (i : ℕ) < o + m then r ⟨i - o, by omega⟩ else X i := by
+  split_ifs with h'
+  · have : i = blockEmb o h ⟨i - o, by omega⟩ := Fin.ext (Nat.sub_add_cancel h'.1).symm
+    conv_lhs => rw [this]
+    rw [glue_apply_emb]
+  · refine glue_of_not _ _ _ fun j hj => h' ?_
+    rw [← hj, blockEmb_apply_val]
+    omega
+
 /-- **A shifted well-formed gate code denotes the gate on the shifted block.** -/
 theorem GateCode.toPlacedGate?_shift {o : ℕ} (h : o + m ≤ N) {g : GateCode}
     (hg : WellFormed m g) :
