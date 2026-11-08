@@ -12,7 +12,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 - [Online and streaming models](online-and-streaming.md): demand paging, competitive analysis, Count-Min and native streaming folds.
 - [Strategic games, congestion and the price of anarchy](strategic-games.md): cost games, potential games, Rosenthal's theorem, smoothness and coarse correlated equilibria, and the `5/2` and `4/3` price-of-anarchy bounds.
 - [Borrowed registers and native Tree Evaluation](catalytic-and-tree-evaluation.md): exact restoration, explicit gate-table inputs, Cook–Mertz workspace, and fan-in/packed variants.
-- [Representative algorithm endpoints](algorithm-endpoints.md): what the formal abstracts prove about sorting/selection, shortest paths, heaps, hashing and minimum cut, the classical approximation bounds for set cover, vertex cover and metric TSP, and the Bellman–Held–Karp exact TSP algorithm.
+- [Representative algorithm endpoints](algorithm-endpoints.md): what the formal abstracts prove about sorting/selection, shortest paths, heaps, hashing and minimum cut, the classical approximation bounds for set cover, vertex cover and metric TSP, Freivalds' costed randomized matrix-product verifier, and the Bellman–Held–Karp exact TSP algorithm.
 - [Mechanism design](mechanism-design.md): single-parameter mechanisms, Myerson's Lemma, Vickrey and knapsack auctions, and VCG; incentive properties only, with no running time charged.
 
 ## Taxonomy
