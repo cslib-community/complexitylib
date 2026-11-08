@@ -46,7 +46,8 @@ open Turing.MultiTapeTM
     ComputableInPolyTime RotationCertificate.successor encRotationCertificate (encList encNat) :=
   encRotationCertificate_successor_deg.computableInPolyTime
 
-private theorem incidenceVertices_polyTime :
+/-- Enumerating listed endpoint occurrences is native polynomial-time on every raw graph. -/
+theorem incidenceVertices_polyTime :
     ComputableInPolyTime incidenceVertices encGraph (encList encNat) := by
   unfold incidenceVertices encGraph
   fun_prop
@@ -124,7 +125,8 @@ theorem orbitBool_polyTime {α : Type} {enc : α ↪ List Bool}
 
 attribute [local fun_prop] orbitBool_polyTime
 
-private theorem range_binary :
+/-- A unary-funded range can be enumerated with binary-encoded entries in polynomial time. -/
+theorem range_binary :
     ComputableInPolyTime List.range encUnary (encList encNat) := by
   have h := (ComputableTidilyInPolyTime.map
     ComputableTidilyInPolyTime.unary_to_binary).comp ComputableTidilyInPolyTime.range

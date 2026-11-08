@@ -43,11 +43,6 @@ private theorem read_polyTime {α β : Type} {input : α ↪ List Bool} {enc : �
 
 attribute [local fun_prop] read_polyTime
 
-private theorem range_binary :
-    ComputableTidilyInPolyTime List.range encUnary (encList encNat) := by
-  simpa using (ComputableTidilyInPolyTime.map
-    ComputableTidilyInPolyTime.unary_to_binary).comp ComputableTidilyInPolyTime.range
-
 private theorem graph_polyTime :
     ComputableTidilyInPolyTime FixedRotationInput.graph encFixedRotationInput encGraph :=
   encFixedRotationInput_graph_deg.computableInPolyTime.tidy
@@ -104,21 +99,15 @@ private theorem frameOrder_polyTime :
 
 attribute [local fun_prop] frameCount_polyTime frameSegments_polyTime frameOrder_polyTime
 
-private theorem incidenceVertices_polyTime :
-    ComputableTidilyInPolyTime incidenceVertices encGraph (encList encNat) := by
-  unfold incidenceVertices encGraph
-  fun_prop
-
-attribute [local fun_prop] incidenceVertices_polyTime
-
 /-- Binary-indexed endpoint fibers are computed from the actual edge count on all graphs. -/
 theorem fiber_polyTime :
     ComputableInPolyTime (fun p : Graph × ℕ => fiber p.1 p.2)
       (encPair encGraph encNat) (encList encNat) := by
   apply ComputableInPolyTime.of_tidy
+  have hinc := RotationCertificate.incidenceVertices_polyTime.tidy
   have hr : ComputableTidilyInPolyTime (fun p : Graph × ℕ => List.range (2 * p.1.2.length))
       (encPair encGraph encNat) (encList encNat) :=
-    range_binary.comp (by unfold encGraph; fun_prop)
+    RotationCertificate.range_binary.tidy.comp (by unfold encGraph; fun_prop)
   unfold fiber
   fun_prop
 
@@ -130,14 +119,14 @@ theorem validate_polyTime : ComputableInPolyTime validate encFixedRotationInput 
   have hr : ComputableTidilyInPolyTime
       (fun I : FixedRotationInput => List.range I.graph.1.length)
       encFixedRotationInput (encList encNat) :=
-    range_binary.comp (by fun_prop)
+    RotationCertificate.range_binary.tidy.comp (by fun_prop)
   unfold validate
   apply ComputableTidilyInPolyTime.bool_and'
   · apply ComputableTidilyInPolyTime.bool_and'
     · apply ComputableTidilyInPolyTime.bool_and'
       · fun_prop
       · apply ComputableTidilyInPolyTime.allWithInput
-          (incidenceVertices_polyTime.comp graph_polyTime)
+          (RotationCertificate.incidenceVertices_polyTime.tidy.comp graph_polyTime)
         exact ComputableTidilyInPolyTime.binary_lt' (ComputableTidilyInPolyTime.snd _ _)
           (binaryVertexCount_polyTime.comp (ComputableTidilyInPolyTime.fst _ _))
     · fun_prop
@@ -199,7 +188,7 @@ theorem referenceOrder_polyTime :
     have hr : ComputableTidilyInPolyTime
         (fun I : FixedRotationInput => List.range I.graph.1.length)
         encFixedRotationInput (encList encNat) :=
-      range_binary.comp (by fun_prop)
+      RotationCertificate.range_binary.tidy.comp (by fun_prop)
     unfold centerBlocks
     apply ComputableTidilyInPolyTime.flatMapWithInput hr
     apply ComputableTidilyInPolyTime.cons'
@@ -211,7 +200,7 @@ theorem referenceOrder_polyTime :
   have hr : ComputableTidilyInPolyTime
       (fun I : FixedRotationInput => List.range (2 * I.graph.2.length))
       encFixedRotationInput (encList encNat) :=
-    range_binary.comp (by fun_prop)
+    RotationCertificate.range_binary.tidy.comp (by fun_prop)
   unfold referenceOrder
   fun_prop
 
