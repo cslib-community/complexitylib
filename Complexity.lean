@@ -2778,6 +2778,10 @@ public import Complexity.Computability.WordRAM.Glue
 public import Complexity.Computability.WordRAM.Glue.Basic
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.InputArray
+public import Complexity.Computability.WordRAM.Interpreter.Output
+public import Complexity.Computability.WordRAM.Interpreter.Refinement
+public import Complexity.Computability.WordRAM.Interpreter.Run
+public import Complexity.Computability.WordRAM.Interpreter.Step
 public import Complexity.Computability.WordRAM.Invariance
 public import Complexity.Computability.WordRAM.ListArray
 public import Complexity.Computability.WordRAM.ListOutput
@@ -2954,6 +2958,7 @@ public import Complexity.Cryptanalysis.AddXNORStripping
 public import Complexity.Cryptanalysis.AddXNORSubsetSum
 public import Complexity.Cryptanalysis.AddXNORSwap
 public import Complexity.Cryptanalysis.AddXNORTransfer
+public import Complexity.Cryptanalysis.AddXNORUniformExecution
 public import Complexity.Cryptanalysis.AddXNORWidth
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant

@@ -119,6 +119,11 @@ stored bindings distinct from live nonzero support before transferring resource 
 A uniform code/width/clock/input-state generator does not itself supply one bit machine
 that dispatches the generated program at runtime. Ask for both the generation certificate
 and the runtime execution certificate before reporting a uniform algorithm.
+For example, `AddXNORUniformExecution.original_machine` quantifies one machine before
+all original inputs; `Interpreter.clocked_resources` charges its full encoded
+prefix trajectory and binary clock. Its uniformity proof does not turn native live
+support into a bound on retained sparse zero bindings or supply source sorted-list
+asymptotics. Keep that remaining objective visible when handing this milestone over.
 
 ## Correct course and hand work over
 

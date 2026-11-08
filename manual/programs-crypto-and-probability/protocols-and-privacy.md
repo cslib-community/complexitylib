@@ -1260,8 +1260,8 @@ is `encList (encList encNat)` of its 1,109 rows. For example, the row
 `[2,7,0,1,2]` is XOR into register zero from registers one and two; `[0,1,0]` writes
 literal zero. `deserialize` is a concrete **row-level** parser with proved program
 roundtrip and invalid-tag/register rejection. The wire encoding is injective.
-This does not supply a runtime bit-program interpreter. `generationCertificate`
-and `rawGenerationCertificate` are actual uniform code-emitting machines;
+The separate uniform execution stage below supplies the runtime bit-program interpreter.
+`generationCertificate` and `rawGenerationCertificate` are actual uniform code-emitting machines;
 `sourceGenerationCertificate` additionally computes lengths from the original input.
 The external metadata ABI has six unary sizes `[m,p,a,b,c,d]` and two binary
 endpoints `[s,t]`. The total `readMetadata` conversion defaults missing entries to
@@ -1291,17 +1291,48 @@ witness for arbitrary quarter lengths and $p≤m$, without supplied compiler,
 execution, query, dictionary or witness conclusions. Runtime width/clock, original
 input materialization and executable generation are all derived, not advice.
 
-The remaining uniform execution gap is precise: there is no certificate here for
-one multitape machine implementing `GeneratedRunInput.run` uniformly over generated
-packets. It could dispatch the packet or use a fixed graph with a proved runtime
-literal refinement. The earlier concrete bit simulator fixes its program;
-its parameter-dependent constants cannot be treated as uniform across these
-packets. Native computed-balance bounds remain intact. The existing sparse-store
-simulator also retains zero bindings and scans them, so its stored-entry/prefix
-profiles can grow with elapsed instructions instead of native live support.
-Uniform dispatch, sharp sorted-list lookup/reuse and source bit-time/peak-space
-bounds remain open; polynomial preparation does not complete Lemma 8/Theorem 7
-or 733 ALL-main. Full malformed-input validation is not asserted.
+`UniformExecution.packetExecutionCertificate` now implements `GeneratedRunInput.run`
+with **one** multitape machine on runtime packets. The reusable `WordRAM.Interpreter`
+reads opcode, register index, literal and jump-label fields on tape. Its finite
+opcode dispatcher uses checked standard operations, including overflow-safe shifts,
+and capped binary indexing rather than expanding arbitrary labels in unary.
+`step_serialize` proves exact native step refinement for every program and finite
+state, including faults. The binary-counted loop absorbs faults and returns.
+Runtime halt parking is actually generated; the reader uses the supplied program's
+length, scans its length-prefixed memory output and runs the existing witness decoder.
+
+`UniformExecution.sourceCertificate` composes this machine with packet preparation.
+`original_machine` quantifies its tape count, finite state set and resource constant
+**before** all original-input parameters. It returns an exhaustive miss or a sound,
+correctly sized original-chain witness, without a supplied simulation contract.
+`source_time` and `source_space` charge preparation plus packet execution. For a
+runtime clock $T$, encoded input length $I$ and maximum complete loop encoding $M$
+over all prefixes, `Interpreter.clocked_resources` bounds the simulator's charged
+profiles by
+$3I+(T+1)(C(M+1)^d+M+(ℓ(T)+1)^2)$ time and
+$3I+C(M+1)^d+M+ℓ(T)$ workspace, where $ℓ(T)=|\mathrm{encNat}(T)|$.
+The constant and degree depend on the fixed register count/instruction set, not
+runtime program fields. These are bounds up to a uniform machine constant;
+parking, packet preparation and the output-reading loop carry their additional
+certified profiles. The latter charges every output cell, including unwritten zeros.
+
+This closes uniform execution, without claiming sharp source asymptotics.
+Full sparse encoding includes retained zero bindings and can grow with elapsed
+instructions; native computed-balance live support does not bound it. Specialized
+sorted-list lookup/reuse and sharp source bit-time/peak-space bounds remain open,
+as do the source's seed-at-first-operand/zero-target specialization and the other
+733 ALL-main endpoints. Native computed-balance bounds remain intact. Full
+malformed-bitstream validation is not asserted.
+
+From the repository root, build
+`lake build Complexity.Cryptanalysis.AddXNORUniformExecution`, then run
+`lake env lean ComplexityTests/AddXNORUniformExecution.lean`. The
+[execution client](../../ComplexityTests/AddXNORUniformExecution.lean) uses one
+source machine for an unequal-quarter colliding strict-inverse hit and an exhaustive
+empty-quarter miss. It also checks addition versus overflow, arbitrary runtime
+program fields, empty programs, a huge binary label, parking refinement and the
+prefix resource bound. Inspect both the runtime execution certificate and its
+full encoded trajectory before transferring a source resource claim.
 
 From the repository root build
 `lake build Complexity.Cryptanalysis.AddXNORGeneratedRunInput`, then run
@@ -1312,8 +1343,8 @@ certificates, physical width/clock and stored input cells, strict inverse/collis
 and nonempty forward runs, and empty hit/miss outputs. A native-code change that
 breaks `literals_exact` or `graph_exact` requires updating and rechecking the literal
 template against the actual definitions; do not replace these checks by assumed
-code equality. A uniform runtime or source resource claim needs its remaining
-interpreter and resource proofs rather than an application of `packet_resources`.
+code equality. A source resource claim needs the uniform execution profiles and its remaining
+sharp-resource proofs rather than an application of `packet_resources`.
 
 From the repository root, run
 `lake build Complexity.Cryptanalysis.AddXNORNativeClassSearch` followed by

@@ -213,15 +213,24 @@ does not materialize exponentially long unary numbers. `packet_original` and
 `original_correct` connect the real computed program/configuration/state to the
 actual native run and exhaustive absence or original witness, without executable
 or semantic correctness premises.
-Uniform execution remains open: one multitape machine must realize
-`GeneratedRunInput.run` over generated packets, through runtime dispatch or a fixed
-symbolic graph with proved runtime-literal refinement. The fixed-program simulator's
-constants cannot be silently reused as uniform constants. The total metadata
+Uniform execution is now proved by `UniformExecution.packetExecutionCertificate`
+and `sourceCertificate`: one machine reads a runtime encoded program, computes
+halt parking, executes a binary-counted opcode interpreter, reads the actual
+memory output and runs the witness decoder. `original_machine` places its tape
+count, finite state set and resource constant before all original inputs, deriving
+exhaustive absence or a sound original-chain witness with no simulation premise.
+The reusable `Interpreter.step_serialize` covers every native program/state,
+including faults; its `clocked_resources` charges time in the binary clock and a
+polynomial of the maximum complete encoded prefix state, with no clock multiplier
+in simultaneous workspace. Parking, source/packet preparation and output
+materialization are separately charged. This is a uniform bit-computability
+bridge with explicit overhead, not the source's sharp asymptotic result.
+The total metadata
 reader's default/extra-field behavior is not full malformed-input validation.
 Association-list scans and retained zero bindings also prevent transferring the
 native computed-balance live-space and sharp time bounds to source bit resources.
-Source sorted-list lookup, compact reuse and sharp bit-machine realization remain
-open. No source global bit asymptotic is claimed. Small-operand resources,
+Source sorted-list lookup, compact reuse, sharp bit-machine resources and the
+seed-at-first-operand/zero-target specialization remain open. No source global bit asymptotic is claimed. Small-operand resources,
 reduction multiplicity and
 sparsification refinements, and repaired ideal-model bounds remain open as well.
 These components do not close Lemma 8/Theorem 7 or 733 ALL-main. Earlier component
