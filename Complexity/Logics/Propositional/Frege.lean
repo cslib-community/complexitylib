@@ -15,19 +15,23 @@ import Mathlib.Tactic.Linarith
 # Frege proofs
 
 A *Frege system* [Cook and Reckhow][CookReckhow1979] is a line-based propositional proof system
-given by finitely many sound axiom schemes and inference rules. This file fixes the Hilbert-style
-system with the axiom schemes K, S and double-negation elimination for `→` and `⊥`, the usual
-introduction and elimination schemes for `∧` and `∨`, and modus ponens as the only rule
+given by finitely many sound axiom schemes and inference rules that are implicationally complete:
+whenever `Γ` semantically implies `φ`, there is a proof of `φ` from `Γ`. This file fixes the
+Hilbert-style system with the axiom schemes K, S and double-negation elimination for `→` and `⊥`,
+the usual introduction and elimination schemes for `∧` and `∨`, and modus ponens as the only rule
 (`Cslib.Logic.PL.Frege.IsAxiom`). A *proof* from hypotheses `Γ` is a list of formulas, each a
 hypothesis, an axiom instance, or obtained by modus ponens from two earlier lines
-(`Cslib.Logic.PL.Frege.IsProof`). As in `Complexity.Logics.Propositional.Resolution.Proof`, proofs
-are listed from their last line to their first, and the size of a proof is its number of lines.
+(`Cslib.Logic.PL.Frege.IsProof`). Implicational completeness of this system is standard (the
+schemes form a classical axiomatization of `→`, `⊥`, `∧` and `∨`) but not yet formalized
+([#3069](https://github.com/cslib-community/complexitylib/issues/3069)). As in
+`Complexity.Logics.Propositional.Resolution.Proof`, proofs are listed from their last line to their
+first, and the size of a proof is its number of lines.
 
 Formulas are cslib's propositions `Cslib.Logic.PL.Proposition` over the atoms `WithBot V`, with
-the atom `⊥` read as falsity. cslib's propositions are a syntax for proof systems and carry no
-Boolean semantics, so this file adds one (`Cslib.Logic.PL.Frege.Formula.eval`). No other formula
-type of the library fits: the CNF and QBF types have no implication, and circuit formulas are
-indexed by a fixed number of inputs.
+cslib's `⊥` (the atom `⊥`) read as falsity and cslib's `Proposition.neg φ = φ → ⊥` as negation.
+cslib's propositions are a syntax for proof systems and carry no Boolean semantics, so this file
+adds one (`Cslib.Logic.PL.Frege.Formula.eval`). No other formula type of the library fits: the CNF
+and QBF types have no implication, and circuit formulas are indexed by a fixed number of inputs.
 
 The file proves soundness (`Cslib.Logic.PL.Frege.IsProof.eval`) and the tools used to build proofs
 with explicit line counts:
@@ -44,7 +48,7 @@ with explicit line counts:
 
 * `Cslib.Logic.PL.Frege.Formula`, `Cslib.Logic.PL.Frege.Formula.eval`.
 * `Cslib.Logic.PL.Frege.IsAxiom`, `Cslib.Logic.PL.Frege.IsProof`: the Frege system.
-* `Cslib.Logic.PL.Frege.Derives`: derivability in a bounded number of lines.
+* `Cslib.Logic.PL.Frege.DerivableInSize`: derivability in a bounded number of lines.
 
 ## Main results
 
@@ -57,7 +61,7 @@ with explicit line counts:
   systems*][CookReckhow1979]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.Frege
 
@@ -68,26 +72,20 @@ abbrev Formula (V : Type*) := Proposition (WithBot V)
 
 namespace Formula
 
-/-- Falsity. -/
-abbrev bot : Formula V := Proposition.atom ⊥
-
 /-- A variable. -/
 abbrev var (v : V) : Formula V := Proposition.atom (v : WithBot V)
 
 /-- Implication. -/
 abbrev imp (φ ψ : Formula V) : Formula V := Proposition.imp φ ψ
 
-/-- Negation `φ → ⊥`. -/
-abbrev neg (φ : Formula V) : Formula V := imp φ bot
-
 /-- Boolean value of a formula under an assignment; the atom `⊥` is false. -/
-def eval (σ : V → Bool) : Formula V → Bool
+@[expose] def eval (σ : V → Bool) : Formula V → Bool
   | .atom a => a.recBotCoe false σ
   | .and φ ψ => eval σ φ && eval σ ψ
   | .or φ ψ => eval σ φ || eval σ ψ
   | .imp φ ψ => !eval σ φ || eval σ ψ
 
-@[simp] theorem eval_bot (σ : V → Bool) : eval σ bot = false := rfl
+@[simp] theorem eval_bot (σ : V → Bool) : eval σ (⊥ : Formula V) = false := rfl
 @[simp] theorem eval_var (σ : V → Bool) (v : V) : eval σ (var v) = σ v := rfl
 @[simp] theorem eval_imp (σ : V → Bool) (φ ψ : Formula V) :
     eval σ (imp φ ψ) = (!eval σ φ || eval σ ψ) := rfl
@@ -97,7 +95,7 @@ def eval (σ : V → Bool) : Formula V → Bool
     eval σ (.or φ ψ) = (eval σ φ || eval σ ψ) := rfl
 
 /-- `a₁ → (a₂ → ⋯ → (aₖ → φ))`. -/
-def imps (Δ : List (Formula V)) (φ : Formula V) : Formula V := Δ.foldr imp φ
+@[expose] def imps (Δ : List (Formula V)) (φ : Formula V) : Formula V := Δ.foldr imp φ
 
 @[simp] theorem imps_nil (φ : Formula V) : imps [] φ = φ := rfl
 @[simp] theorem imps_cons (a : Formula V) (Δ φ) : imps (a :: Δ) φ = imp a (imps Δ φ) := rfl
@@ -113,7 +111,7 @@ inductive IsAxiom : Formula V → Prop
   /-- `(φ → (ψ → χ)) → ((φ → ψ) → (φ → χ))`. -/
   | s (φ ψ χ : Formula V) : IsAxiom (imp (imp φ (imp ψ χ)) (imp (imp φ ψ) (imp φ χ)))
   /-- `¬¬φ → φ`. -/
-  | dne (φ : Formula V) : IsAxiom (imp (neg (neg φ)) φ)
+  | dne (φ : Formula V) : IsAxiom (imp (Proposition.neg (Proposition.neg φ)) φ)
   /-- `φ ∧ ψ → φ`. -/
   | andElimL (φ ψ : Formula V) : IsAxiom (imp (.and φ ψ) φ)
   /-- `φ ∧ ψ → ψ`. -/
@@ -247,8 +245,8 @@ theorem IsProof.mono {Γ Γ' L : List (Formula V)} (h : IsProof Γ L) (hΓ : Γ 
   | mp _ h₁ h₂ ih => exact ih.mp h₁ h₂
 
 /-- `φ` is derivable from `Γ` in at most `n` lines. -/
-def Derives (Γ : List (Formula V)) (n : ℕ) (φ : Formula V) : Prop :=
-  ∃ L, IsProof Γ L ∧ L.length ≤ n ∧ φ ∈ L
+@[expose] def DerivableInSize (Γ : List (Formula V)) (φ : Formula V) (n : ℕ) : Prop :=
+  ∃ L, IsProof Γ L ∧ φ ∈ L ∧ L.length ≤ n
 
 /-- Two proofs from the same hypotheses can be stacked. -/
 theorem IsProof.append {Γ L M : List (Formula V)} (hL : IsProof Γ L) (hM : IsProof Γ M) :
@@ -259,85 +257,86 @@ theorem IsProof.append {Γ L M : List (Formula V)} (hL : IsProof Γ L) (hM : IsP
   | ax _ hφ ih => exact ih.ax hφ
   | mp _ h₁ h₂ ih => exact ih.mp (List.mem_append_left _ h₁) (List.mem_append_left _ h₂)
 
-namespace Derives
+namespace DerivableInSize
 
 variable {Γ : List (Formula V)}
 
 /-- Derivability in `n` lines implies derivability in `m ≥ n` lines. -/
-theorem mono_len {n m : ℕ} {φ : Formula V} (h : Derives Γ n φ) (hnm : n ≤ m) :
-    Derives Γ m φ := by
-  obtain ⟨L, hL, hlen, hφ⟩ := h
-  exact ⟨L, hL, hlen.trans hnm, hφ⟩
+theorem mono {n m : ℕ} {φ : Formula V} (h : DerivableInSize Γ φ n) (hnm : n ≤ m) :
+    DerivableInSize Γ φ m := by
+  obtain ⟨L, hL, hφ, hlen⟩ := h
+  exact ⟨L, hL, hφ, hlen.trans hnm⟩
 
 /-- An axiom instance in one line. -/
-theorem ax {φ : Formula V} (h : IsAxiom φ) : Derives Γ 1 φ :=
-  ⟨[φ], IsProof.nil.ax h, le_rfl, List.mem_cons_self⟩
+theorem ax {φ : Formula V} (h : IsAxiom φ) : DerivableInSize Γ φ 1 :=
+  ⟨[φ], IsProof.nil.ax h, List.mem_cons_self, le_rfl⟩
 
 /-- A hypothesis in one line. -/
-theorem hyp {φ : Formula V} (h : φ ∈ Γ) : Derives Γ 1 φ :=
-  ⟨[φ], IsProof.nil.hyp h, le_rfl, List.mem_cons_self⟩
+theorem hyp {φ : Formula V} (h : φ ∈ Γ) : DerivableInSize Γ φ 1 :=
+  ⟨[φ], IsProof.nil.hyp h, List.mem_cons_self, le_rfl⟩
 
 /-- Modus ponens, stacking the two derivations. -/
-theorem mp {m n : ℕ} {φ ψ : Formula V} (h₁ : Derives Γ m (imp φ ψ)) (h₂ : Derives Γ n φ) :
-    Derives Γ (m + n + 1) ψ := by
-  obtain ⟨L₁, hL₁, hlen₁, hφψ⟩ := h₁
-  obtain ⟨L₂, hL₂, hlen₂, hφ⟩ := h₂
+theorem mp {m n : ℕ} {φ ψ : Formula V} (h₁ : DerivableInSize Γ (imp φ ψ) m)
+    (h₂ : DerivableInSize Γ φ n) : DerivableInSize Γ ψ (m + n + 1) := by
+  obtain ⟨L₁, hL₁, hφψ, hlen₁⟩ := h₁
+  obtain ⟨L₂, hL₂, hφ, hlen₂⟩ := h₂
   refine ⟨ψ :: (L₂ ++ L₁), (hL₁.append hL₂).mp (List.mem_append_left _ hφ)
-    (List.mem_append_right _ hφψ), by simp; omega, List.mem_cons_self⟩
+    (List.mem_append_right _ hφψ), List.mem_cons_self, by simp; omega⟩
 
 /-- `φ → φ` in five lines. -/
-theorem id (φ : Formula V) : Derives Γ 5 (imp φ φ) :=
+theorem id (φ : Formula V) : DerivableInSize Γ (imp φ φ) 5 :=
   (((ax (IsAxiom.s φ (imp φ φ) φ)).mp (ax (IsAxiom.k φ (imp φ φ)))).mp
-    (ax (IsAxiom.k φ φ))).mono_len (by omega)
+    (ax (IsAxiom.k φ φ))).mono (by omega)
 
 /-- Weakening under an antecedent `a`. -/
-theorem lift {n : ℕ} {φ : Formula V} (a : Formula V) (h : Derives Γ n φ) :
-    Derives Γ (n + 2) (imp a φ) :=
-  ((ax (IsAxiom.k φ a)).mp h).mono_len (by omega)
+theorem lift {n : ℕ} {φ : Formula V} (a : Formula V) (h : DerivableInSize Γ φ n) :
+    DerivableInSize Γ (imp a φ) (n + 2) :=
+  ((ax (IsAxiom.k φ a)).mp h).mono (by omega)
 
 /-- Hypothetical syllogism. -/
-theorem trans {m n : ℕ} {P Q R : Formula V} (h₁ : Derives Γ m (imp P Q))
-    (h₂ : Derives Γ n (imp Q R)) : Derives Γ (m + n + 5) (imp P R) :=
-  (((ax (IsAxiom.s P Q R)).mp (h₂.lift P)).mp h₁).mono_len (by omega)
+theorem trans {m n : ℕ} {P Q R : Formula V} (h₁ : DerivableInSize Γ (imp P Q) m)
+    (h₂ : DerivableInSize Γ (imp Q R) n) : DerivableInSize Γ (imp P R) (m + n + 5) :=
+  (((ax (IsAxiom.s P Q R)).mp (h₂.lift P)).mp h₁).mono (by omega)
 
 /-- `a → (b₁ → ⋯ → bₖ → a)`. -/
 theorem imp_imps_self (a : Formula V) (Δ : List (Formula V)) :
-    Derives Γ (5 + 6 * Δ.length) (imp a (imps Δ a)) := by
+    DerivableInSize Γ (imp a (imps Δ a)) (5 + 6 * Δ.length) := by
   induction Δ with
   | nil => exact id a
   | cons b Δ ih =>
     have h := ((ax (IsAxiom.s a (imps Δ a) (imp b (imps Δ a)))).mp
       ((ax (IsAxiom.k (imps Δ a) b)).lift a)).mp ih
-    exact h.mono_len (by simp; omega)
+    exact h.mono (by simp; omega)
 
 /-- `b₁ → ⋯ → bₖ → a` for `a` among the `bᵢ`. -/
 theorem imps_mem {a : Formula V} {Δ : List (Formula V)} (h : a ∈ Δ) :
-    Derives Γ (5 + 8 * Δ.length) (imps Δ a) := by
+    DerivableInSize Γ (imps Δ a) (5 + 8 * Δ.length) := by
   induction Δ with
   | nil => simp at h
   | cons b Δ ih =>
     by_cases hab : a = b
     · subst hab
-      exact (imp_imps_self a Δ).mono_len (by simp; omega)
+      exact (imp_imps_self a Δ).mono (by simp; omega)
     · have h' : a ∈ Δ := (List.mem_cons.1 h).resolve_left hab
-      exact ((ih h').lift b).mono_len (by simp; omega)
+      exact ((ih h').lift b).mono (by simp; omega)
 
 /-- Distribution of `b₁ → ⋯ → bₖ →` over implication. -/
 theorem imps_dist (Δ : List (Formula V)) (φ ψ : Formula V) :
-    Derives Γ (5 + 10 * Δ.length) (imp (imps Δ (imp φ ψ)) (imp (imps Δ φ) (imps Δ ψ))) := by
+    DerivableInSize Γ (imp (imps Δ (imp φ ψ)) (imp (imps Δ φ) (imps Δ ψ)))
+      (5 + 10 * Δ.length) := by
   induction Δ with
   | nil => exact id _
   | cons a Δ ih =>
     have h₁ := (ax (IsAxiom.s a (imps Δ (imp φ ψ)) (imp (imps Δ φ) (imps Δ ψ)))).mp (ih.lift a)
     have h := h₁.trans (ax (IsAxiom.s a (imps Δ φ) (imps Δ ψ)))
-    exact h.mono_len (by simp; omega)
+    exact h.mono (by simp; omega)
 
-end Derives
+end DerivableInSize
 
 /-- Appending a derivation from the same hypotheses. -/
-theorem Grows.of_derives {Γ L : List (Formula V)} (hL : IsProof Γ L) {n : ℕ} {φ : Formula V}
-    (h : Derives Γ n φ) : ∃ L', Grows Γ L L' n ∧ φ ∈ L' := by
-  obtain ⟨M, hM, hlen, hφ⟩ := h
+theorem Grows.of_derivableInSize {Γ L : List (Formula V)} (hL : IsProof Γ L) {n : ℕ}
+    {φ : Formula V} (h : DerivableInSize Γ φ n) : ∃ L', Grows Γ L L' n ∧ φ ∈ L' := by
+  obtain ⟨M, hM, hφ, hlen⟩ := h
   exact ⟨M ++ L, ⟨M, rfl, hL.append hM, hlen⟩, List.mem_append_left _ hφ⟩
 
 /-- Weakening an available line under the antecedents `Δ`, two lines per antecedent. -/
@@ -369,7 +368,8 @@ theorem IsProof.deduction {Γ Δ M : List (Formula V)} (hM : IsProof (Γ ++ Δ) 
       rcases List.mem_cons.1 hψ with rfl | hψ
       · exact h₃
       · exact g₃.subset (g₂.subset (h₁ ψ hψ))
-    · obtain ⟨L₂, g₂, h₂⟩ := Grows.of_derives g₁.proof (Derives.imps_mem (Γ := Γ) hφ)
+    · obtain ⟨L₂, g₂, h₂⟩ := Grows.of_derivableInSize g₁.proof
+        (DerivableInSize.imps_mem (Γ := Γ) hφ)
       refine ⟨L₂, (g₁.trans g₂).mono (by simp only [List.length_cons]; nlinarith), ?_⟩
       intro ψ hψ
       rcases List.mem_cons.1 hψ with rfl | hψ
@@ -386,7 +386,8 @@ theorem IsProof.deduction {Γ Δ M : List (Formula V)} (hM : IsProof (Γ ++ Δ) 
     · exact g₃.subset (g₂.subset (h₁ ψ hψ))
   | @mp M φ ψ _ hφ hφψ ih =>
     obtain ⟨L₁, g₁, h₁⟩ := ih
-    obtain ⟨L₂, g₂, h₂⟩ := Grows.of_derives g₁.proof (Derives.imps_dist (Γ := Γ) Δ φ ψ)
+    obtain ⟨L₂, g₂, h₂⟩ := Grows.of_derivableInSize g₁.proof
+      (DerivableInSize.imps_dist (Γ := Γ) Δ φ ψ)
     have g₃ := grows_mp g₂.proof (g₂.subset (h₁ _ hφψ)) h₂
     have g₄ := grows_mp g₃.proof (List.mem_cons_of_mem _ (g₂.subset (h₁ _ hφ)))
       List.mem_cons_self

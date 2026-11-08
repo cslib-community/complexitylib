@@ -15,12 +15,12 @@ import Mathlib.Tactic.Linarith
 # Frege simulates resolution
 
 A clause `C` becomes the formula `¬ℓ₁ → ⋯ → ¬ℓₖ → ⊥` over the distinct literals `ℓᵢ` of `C`
-(`Cslib.Logic.PL.Frege.clauseF`), where `¬v` is `v → ⊥` and the negation of `¬v` is `v` itself.
-It holds exactly when the clause does (`Cslib.Logic.PL.Frege.eval_clauseF`). Every resolution proof
-translates line by line into a Frege proof (`Cslib.Logic.PL.CNF.IsProof.frege`), a standard fact
-in the framework of [Cook and Reckhow][CookReckhow1979]. One resolution step
-(`Cslib.Logic.PL.Frege.derives_clauseF_resolvent`) goes as follows, for premises `C₁` and `C₂`, the
-resolvent `R` on `v` and the negations `Δ` of the literals of `R`:
+(`Cslib.Logic.PL.Clause.toFormula`), where `¬v` is `v → ⊥` and the negation of `¬v` is `v`
+itself. It holds exactly when the clause does (`Cslib.Logic.PL.Clause.eval_toFormula`). Every
+resolution proof translates line by line into a Frege proof (`Cslib.Logic.PL.CNF.IsProof.frege`),
+a standard fact in the framework of [Cook and Reckhow][CookReckhow1979]. One resolution step
+(`Cslib.Logic.PL.Frege.derivableInSize_toFormula_resolvent`) goes as follows, for premises `C₁`
+and `C₂`, the resolvent `R` on `v` and the negations `Δ` of the literals of `R`:
 
 1. from `C₁`, `Δ` and `¬v`, detach the antecedents of the formula of `C₁` to derive `⊥`;
 2. discharge `¬v` with the deduction theorem and apply double-negation elimination to get `v`;
@@ -42,12 +42,12 @@ As a consequence, Frege refutes exactly the unsatisfiable CNFs
 
 ## Main definitions
 
-* `Cslib.Logic.PL.Frege.clauseF`: the formula of a clause.
+* `Cslib.Logic.PL.Clause.toFormula`: the formula of a clause.
 * `Cslib.Logic.PL.Frege.stepBound`: the cost of one resolution step.
 
 ## Main results
 
-* `Cslib.Logic.PL.Frege.derives_clauseF_resolvent`: one resolution step.
+* `Cslib.Logic.PL.Frege.derivableInSize_toFormula_resolvent`: one resolution step.
 * `Cslib.Logic.PL.CNF.IsProof.frege`, `Cslib.Logic.PL.CNF.RefutableInSize.frege`: Frege
   simulates resolution.
 * `Cslib.Logic.PL.CNF.exists_frege_refutation_iff_not_satisfiable`: Frege refutes exactly the
@@ -59,68 +59,75 @@ As a consequence, Frege refutes exactly the unsatisfiable CNFs
   systems*][CookReckhow1979]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 
 open Frege Frege.Formula
 
-variable {V : Type*} [DecidableEq V]
+variable {V : Type*}
 
-namespace Frege
+namespace Frege.Formula
 
-/-- The negation of a literal, as a formula: `¬v` for `(v, true)` and `v` for `(v, false)`. -/
-def negLit (l : Literal V) : Formula V := if l.2 then neg (var l.1) else var l.1
-
-/-- A clause as a formula: the negations of its distinct literals imply `⊥`. -/
-def clauseF (c : Clause V) : Formula V := imps ((c.dedup).map negLit) bot
-
-omit [DecidableEq V] in
-/-- The negation of a literal is true exactly when the literal is false. -/
-theorem eval_negLit (σ : V → Bool) (l : Literal V) : (negLit l).eval σ = !l.eval σ := by
-  obtain ⟨v, b⟩ := l
-  cases b <;> cases h : σ v <;> simp [negLit, Literal.eval, h]
-
-omit [DecidableEq V] in
 /-- `Δ ⇒ ⊥` is true exactly when some formula of `Δ` is false. -/
 theorem eval_imps_bot (σ : V → Bool) (Δ : List (Formula V)) :
-    (imps Δ bot).eval σ = Δ.any fun δ => !δ.eval σ := by
+    (imps Δ ⊥).eval σ = Δ.any fun δ => !δ.eval σ := by
   induction Δ with
   | nil => rfl
   | cons a Δ ih => simp [ih]
 
+end Frege.Formula
+
+/-- The negation of a literal, as a formula: `¬v` for `(v, true)` and `v` for `(v, false)`. -/
+@[expose] def Literal.negFormula (l : Literal V) : Frege.Formula V :=
+  if l.2 then Proposition.neg (var l.1) else var l.1
+
+/-- The negation of a literal is true exactly when the literal is false. -/
+theorem Literal.eval_negFormula (σ : V → Bool) (l : Literal V) :
+    l.negFormula.eval σ = !l.eval σ := by
+  obtain ⟨v, b⟩ := l
+  cases b <;> cases h : σ v <;> simp [negFormula, Literal.eval, h]
+
+variable [DecidableEq V]
+
+/-- A clause as a formula: the negations of its distinct literals imply `⊥`. -/
+@[expose] def Clause.toFormula (c : Clause V) : Frege.Formula V :=
+  imps ((c.dedup).map Literal.negFormula) ⊥
+
 /-- The formula of a clause is true exactly when the clause is. -/
-theorem eval_clauseF (σ : V → Bool) (c : Clause V) : (clauseF c).eval σ = c.eval σ := by
-  rw [clauseF, eval_imps_bot, Clause.eval]
-  simp only [List.any_map, Function.comp_def, eval_negLit, Bool.not_not]
+theorem Clause.eval_toFormula (σ : V → Bool) (c : Clause V) : c.toFormula.eval σ = c.eval σ := by
+  rw [toFormula, eval_imps_bot, Clause.eval]
+  simp only [List.any_map, Function.comp_def, Literal.eval_negFormula, Bool.not_not]
   exact Bool.eq_iff_iff.2 (by simp [List.any_eq_true, List.mem_dedup])
 
 /-- The formula of the empty clause is `⊥`. -/
-theorem clauseF_nil : clauseF ([] : Clause V) = bot := rfl
+theorem Clause.toFormula_nil : Clause.toFormula ([] : Clause V) = ⊥ := rfl
+
+/-- A clause formula has at most as many antecedents as the clause has distinct literals. -/
+private theorem length_dedup_map_le_width (c : Clause V) :
+    ((c.dedup).map Literal.negFormula).length ≤ c.width := by
+  rw [List.length_map, Clause.width, List.card_toFinset]
+
+namespace Frege
 
 /-- The bound on the Frege lines simulating one resolution step on clauses of width at most
 `w`. -/
-def stepBound (w : ℕ) : ℕ := 10 * (2 * w + 1) * (42 * w + 23)
+@[expose] def stepBound (w : ℕ) : ℕ := 10 * (2 * w + 1) * (42 * w + 23)
 
 /-- `stepBound` is monotone. -/
 theorem stepBound_mono {w w' : ℕ} (h : w ≤ w') : stepBound w ≤ stepBound w' := by
   unfold stepBound
   exact Nat.mul_le_mul (Nat.mul_le_mul_left _ (by omega)) (by omega)
 
-/-- A clause formula has at most as many antecedents as the clause has distinct literals. -/
-theorem length_dedup_map_le_width (c : Clause V) :
-    ((c.dedup).map negLit).length ≤ c.width := by
-  rw [List.length_map, Clause.width, List.card_toFinset]
-
 /-- **One resolution step in Frege**: from the formulas of `c₁` and `c₂`, the formula of their
 resolvent on `v` has a proof of at most `stepBound (max (width c₁) (width c₂))` lines. The pivot
 need not occur in the premises. -/
-theorem derives_clauseF_resolvent (c₁ c₂ : Clause V) (v : V) :
-    Derives [clauseF c₁, clauseF c₂] (stepBound (max c₁.width c₂.width))
-      (clauseF (c₁.resolvent c₂ v)) := by
-  set Γ₀ : List (Formula V) := [clauseF c₁, clauseF c₂]
-  set Δ : List (Formula V) := ((c₁.resolvent c₂ v).dedup).map negLit
-  set nv : Formula V := neg (var v)
+theorem derivableInSize_toFormula_resolvent (c₁ c₂ : Clause V) (v : V) :
+    DerivableInSize [c₁.toFormula, c₂.toFormula] (c₁.resolvent c₂ v).toFormula
+      (stepBound (max c₁.width c₂.width)) := by
+  set Γ₀ : List (Formula V) := [c₁.toFormula, c₂.toFormula]
+  set Δ : List (Formula V) := ((c₁.resolvent c₂ v).dedup).map Literal.negFormula
+  set nv : Formula V := Proposition.neg (var v)
   set a := c₁.width
   set b := c₂.width
   have hΔlen : Δ.length ≤ a + b := by
@@ -132,14 +139,14 @@ theorem derives_clauseF_resolvent (c₁ c₂ : Clause V) (v : V) :
     simp only [Finset.mem_union, List.mem_toFinset]
     tauto
   -- negations of the literals of `c₁` other than `(v, true)` are in `Δ`
-  have hΔ₁ : ∀ l ∈ c₁, l ≠ (v, true) → negLit l ∈ Δ := fun l hl hne =>
+  have hΔ₁ : ∀ l ∈ c₁, l ≠ (v, true) → l.negFormula ∈ Δ := fun l hl hne =>
     List.mem_map.2 ⟨l, List.mem_dedup.2 (Clause.mem_resolvent.2 (Or.inl ⟨hl, hne⟩)), rfl⟩
-  have hΔ₂ : ∀ l ∈ c₂, l ≠ (v, false) → negLit l ∈ Δ := fun l hl hne =>
+  have hΔ₂ : ∀ l ∈ c₂, l ≠ (v, false) → l.negFormula ∈ Δ := fun l hl hne =>
     List.mem_map.2 ⟨l, List.mem_dedup.2 (Clause.mem_resolvent.2 (Or.inr ⟨hl, hne⟩)), rfl⟩
   -- from `c₁`, `Δ` and `¬v`, derive `⊥`
   have hp₀ : IsProof ((Γ₀ ++ Δ) ++ [nv]) [] := .nil
   obtain ⟨M₁a, g₁a, h₁a⟩ := Grows.collect hp₀
-    (Δ := clauseF c₁ :: (c₁.dedup).map negLit) (by
+    (Δ := c₁.toFormula :: (c₁.dedup).map Literal.negFormula) (by
       intro δ hδ
       left
       rcases List.mem_cons.1 hδ with rfl | hδ
@@ -147,7 +154,7 @@ theorem derives_clauseF_resolvent (c₁ c₂ : Clause V) (v : V) :
       · obtain ⟨l, hl, rfl⟩ := List.mem_map.1 hδ
         by_cases hlv : l = (v, true)
         · subst hlv
-          simp [nv, negLit]
+          simp [nv, Literal.negFormula]
         · exact List.mem_append_left _ (List.mem_append_right _
             (hΔ₁ l (List.mem_dedup.1 hl) hlv)))
   obtain ⟨M₁, g₁b, h₁b⟩ := Grows.imps_elim g₁a.proof (h₁a _ List.mem_cons_self)
@@ -160,13 +167,13 @@ theorem derives_clauseF_resolvent (c₁ c₂ : Clause V) (v : V) :
   -- discharge `¬v`
   obtain ⟨L₁, g₂, h₂⟩ := IsProof.deduction (Γ := Γ₀ ++ Δ) (Δ := [nv]) (g₁a.trans g₁b).proof
     (L := []) .nil
-  have hnn : neg nv ∈ L₁ := h₂ _ h₁b
+  have hnn : Proposition.neg nv ∈ L₁ := h₂ _ h₁b
   -- `v` by double negation elimination
   have g₃ := grows_ax g₂.proof (IsAxiom.dne (var v))
   have g₄ := grows_mp g₃.proof (List.mem_cons_of_mem _ hnn) List.mem_cons_self
   -- from `c₂`, derive `⊥`
   obtain ⟨L₅, g₅, h₅⟩ := Grows.collect g₄.proof
-    (Δ := clauseF c₂ :: (c₂.dedup).map negLit) (by
+    (Δ := c₂.toFormula :: (c₂.dedup).map Literal.negFormula) (by
       intro δ hδ
       rcases List.mem_cons.1 hδ with rfl | hδ
       · left; simp [Γ₀]
@@ -174,7 +181,7 @@ theorem derives_clauseF_resolvent (c₁ c₂ : Clause V) (v : V) :
         by_cases hlv : l = (v, false)
         · subst hlv
           right
-          simp [negLit]
+          simp [Literal.negFormula]
         · left
           exact List.mem_append_right _ (hΔ₂ l (List.mem_dedup.1 hl) hlv))
   obtain ⟨M₂, g₆, h₆⟩ := Grows.imps_elim g₅.proof (h₅ _ List.mem_cons_self)
@@ -187,7 +194,7 @@ theorem derives_clauseF_resolvent (c₁ c₂ : Clause V) (v : V) :
     omega
   -- discharge `Δ`
   obtain ⟨L₃, g₇, h₇⟩ := IsProof.deduction (Γ := Γ₀) (Δ := Δ) gM₂.proof (L := []) .nil
-  refine ⟨L₃, g₇.proof, ?_, h₇ _ h₆⟩
+  refine ⟨L₃, g₇.proof, h₇ _ h₆, ?_⟩
   have h3 := g₇.length_of_nil
   have hab : a + b ≤ 2 * max a b := by omega
   calc L₃.length ≤ 10 * (Δ.length + 1) * M₂.length := h3
@@ -206,13 +213,13 @@ have width at most `w` becomes a Frege proof from the formulas of the clauses of
 the formula of every line, with at most `stepBound w` Frege lines per resolution line. -/
 theorem CNF.IsProof.frege {φ : CNF V} {ls : List (Clause V)} (h : φ.IsProof ls) {w : ℕ}
     (hw : ∀ c ∈ ls, c.width ≤ w) :
-    ∃ L, Frege.IsProof (φ.map clauseF) L ∧ (∀ c ∈ ls, clauseF c ∈ L) ∧
+    ∃ L, Frege.IsProof (φ.map Clause.toFormula) L ∧ (∀ c ∈ ls, c.toFormula ∈ L) ∧
       L.length ≤ stepBound w * ls.length := by
   induction h with
   | nil => exact ⟨[], .nil, by simp, by simp⟩
   | @mem ls c _ hc ih =>
     obtain ⟨L, hL, hmem, hlen⟩ := ih fun d hd => hw d (List.mem_cons_of_mem _ hd)
-    refine ⟨clauseF c :: L, hL.hyp (List.mem_map_of_mem hc), fun d hd => ?_, ?_⟩
+    refine ⟨c.toFormula :: L, hL.hyp (List.mem_map_of_mem hc), fun d hd => ?_, ?_⟩
     · rcases List.mem_cons.1 hd with rfl | hd
       · exact List.mem_cons_self
       · exact List.mem_cons_of_mem _ (hmem d hd)
@@ -221,8 +228,8 @@ theorem CNF.IsProof.frege {φ : CNF V} {ls : List (Clause V)} (h : φ.IsProof ls
       omega
   | @resolvent ls c₁ c₂ v _ h₁ h₂ hv₁ hv₂ ih =>
     obtain ⟨L, hL, hmem, hlen⟩ := ih fun d hd => hw d (List.mem_cons_of_mem _ hd)
-    obtain ⟨M, hM, hMlen, hR⟩ := derives_clauseF_resolvent c₁ c₂ v
-    have hM' : Frege.IsProof (φ.map clauseF ++ [clauseF c₁, clauseF c₂]) M :=
+    obtain ⟨M, hM, hR, hMlen⟩ := derivableInSize_toFormula_resolvent c₁ c₂ v
+    have hM' : Frege.IsProof (φ.map Clause.toFormula ++ [c₁.toFormula, c₂.toFormula]) M :=
       hM.mono fun x hx => List.mem_append_right _ hx
     obtain ⟨M', hp, hlen', hmem'⟩ := hM'.cut hL (by simp [hmem _ h₁, hmem _ h₂])
     refine ⟨M' ++ L, hp, fun d hd => ?_, ?_⟩
@@ -239,7 +246,7 @@ theorem CNF.IsProof.frege {φ : CNF V} {ls : List (Clause V)} (h : φ.IsProof ls
 clauses of `φ` (a Frege proof containing `⊥`) with at most `stepBound (2 N) * s` lines, where `N`
 is the number of variables of `φ`. -/
 theorem CNF.RefutableInSize.frege {φ : CNF V} {s : ℕ} (h : φ.RefutableInSize s) :
-    ∃ L, Frege.IsProof (φ.map clauseF) L ∧ Formula.bot ∈ L ∧
+    ∃ L, Frege.IsProof (φ.map Clause.toFormula) L ∧ (⊥ : Frege.Formula V) ∈ L ∧
       L.length ≤ stepBound (2 * φ.vars.toFinset.card) * s := by
   obtain ⟨ls, hp, hnil, hlen⟩ := h
   obtain ⟨L, hL, hmem, hlen'⟩ := hp.frege fun c hc => hp.width_le hc
@@ -248,13 +255,14 @@ theorem CNF.RefutableInSize.frege {φ : CNF V} {s : ℕ} (h : φ.RefutableInSize
 /-- **Frege refutes exactly the unsatisfiable CNFs**: the formulas of the clauses of `φ` have a
 Frege proof of `⊥` exactly when `φ` is unsatisfiable. -/
 theorem CNF.exists_frege_refutation_iff_not_satisfiable {φ : CNF V} :
-    (∃ L, Frege.IsProof (φ.map clauseF) L ∧ Formula.bot ∈ L) ↔ ¬ φ.Satisfiable := by
+    (∃ L, Frege.IsProof (φ.map Clause.toFormula) L ∧ (⊥ : Frege.Formula V) ∈ L) ↔
+      ¬ φ.Satisfiable := by
   constructor
   · rintro ⟨L, hL, hbot⟩ ⟨σ, hσ⟩
-    have hΓ : ∀ γ ∈ φ.map clauseF, γ.eval σ = true := by
+    have hΓ : ∀ γ ∈ φ.map Clause.toFormula, γ.eval σ = true := by
       intro γ hγ
       obtain ⟨c, hc, rfl⟩ := List.mem_map.1 hγ
-      rw [eval_clauseF]
+      rw [Clause.eval_toFormula]
       exact List.all_eq_true.1 hσ c hc
     have := hL.eval hΓ _ hbot
     simp at this
