@@ -97,6 +97,10 @@ theorem toCostGame_cost (i : ι) (s : ∀ i, S i) :
 def rosenthalPotential [Fintype E] (s : ∀ i, S i) : ℝ :=
   ∑ e, ∑ k ∈ Finset.range (C.load s e), C.latency e (k + 1)
 
+theorem rosenthalPotential_def [Fintype E] (s : ∀ i, S i) :
+    C.rosenthalPotential s = ∑ e, ∑ k ∈ Finset.range (C.load s e), C.latency e (k + 1) := by
+  rw [rosenthalPotential]
+
 /-- Exchanging the sums over players and resources: summing `f e` over every player's resources
 counts each resource `e` with multiplicity `load s e`. -/
 theorem sum_sum_resources_eq_sum_load_mul [Fintype E] (s : ∀ i, S i) (f : E → ℝ) :

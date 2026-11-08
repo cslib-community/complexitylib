@@ -7,8 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
 public import Complexity.Foundations.Quantum.Measurement
-public import Mathlib.LinearAlgebra.Matrix.Kronecker
 
 /-!
 # Bipartite pure states
@@ -18,8 +18,9 @@ A pure state of a bipartite system with computational bases `ι` and `κ` is a v
 
 * the product state `ψ ⊗ φ` with amplitudes `ψ_i φ_k` (`Cslib.Quantum.prodState`), the coordinate
   form of the tensor product `ℂ^ι ⊗ ℂ^κ ≅ ℂ^{ι × κ}`, with `⟪ψ ⊗ φ, ψ' ⊗ φ'⟫ = ⟪ψ, ψ'⟫ ⟪φ, φ'⟫`;
-* the action of Kronecker products `A ⊗ₖ B` on product states and of `A ⊗ₖ 1`, `1 ⊗ₖ B` on any
-  state;
+* the action of Kronecker products `A ⊗ₖ B` on product states (for the action of `A ⊗ₖ 1` and
+  `1 ⊗ₖ B` on any state, see `Matrix.kronecker_one_mulVec_apply` and
+  `Matrix.one_kronecker_mulVec_apply`);
 * measuring the first system in the computational basis: for outcome `i` the second system is
   left in the conditional state `(⟨i| ⊗ 1) Ψ` (`Cslib.Quantum.condState`), of squared norm the
   probability of `i` (`Cslib.Quantum.measure_map_fst_apply`), which normalizes to the
@@ -97,31 +98,12 @@ theorem norm_prodState [Fintype ι] [Fintype κ] (ψ : EuclideanSpace ℂ ι)
 
 /-! ### Kronecker products -/
 
-/-- `(A ⊗ₖ B)(ψ ⊗ φ) = Aψ ⊗ Bφ`. -/
+/-- `(A ⊗ₖ B)(ψ ⊗ φ) = Aψ ⊗ Bφ`; see `Matrix.kronecker_mulVec_mul` for the action of a
+Kronecker product on vectors over any commutative semiring. -/
 theorem kronecker_mulVec_prodState [Fintype ι] [Fintype κ] (A : Matrix ι ι ℂ)
     (B : Matrix κ κ ℂ) (ψ : EuclideanSpace ℂ ι) (φ : EuclideanSpace ℂ κ) :
-    (A ⊗ₖ B) *ᵥ (prodState ψ φ).ofLp = fun p => (A *ᵥ ψ.ofLp) p.1 * (B *ᵥ φ.ofLp) p.2 := by
-  funext p
-  simp only [mulVec, dotProduct, kroneckerMap_apply, prodState_apply, Fintype.sum_prod_type,
-    Finset.sum_mul_sum]
-  exact sum_congr rfl fun i _ => sum_congr rfl fun k _ => by ring
-
-/-- `A ⊗ₖ 1` acts as `A` on the first system. -/
-theorem kronecker_one_mulVec [Fintype ι] [Fintype κ] [DecidableEq κ] (A : Matrix ι ι ℂ)
-    (v : ι × κ → ℂ) (p : ι × κ) :
-    ((A ⊗ₖ (1 : Matrix κ κ ℂ)) *ᵥ v) p = (A *ᵥ fun i => v (i, p.2)) p.1 := by
-  rw [mulVec, dotProduct, Fintype.sum_prod_type]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [Finset.sum_eq_single p.2 (fun k _ hk => by simp [Ne.symm hk]) (by simp)]
-  simp
-
-/-- `1 ⊗ₖ B` acts as `B` on the second system. -/
-theorem one_kronecker_mulVec [Fintype ι] [Fintype κ] [DecidableEq ι] (B : Matrix κ κ ℂ)
-    (v : ι × κ → ℂ) (p : ι × κ) :
-    (((1 : Matrix ι ι ℂ) ⊗ₖ B) *ᵥ v) p = (B *ᵥ fun k => v (p.1, k)) p.2 := by
-  rw [mulVec, dotProduct, Fintype.sum_prod_type,
-    Finset.sum_eq_single p.1 (fun i _ hi => by simp [Ne.symm hi]) (by simp)]
-  simp [mulVec, dotProduct]
+    (A ⊗ₖ B) *ᵥ (prodState ψ φ).ofLp = fun p => (A *ᵥ ψ.ofLp) p.1 * (B *ᵥ φ.ofLp) p.2 :=
+  kronecker_mulVec_mul A B ψ.ofLp φ.ofLp
 
 /-! ### Measuring the first system -/
 
