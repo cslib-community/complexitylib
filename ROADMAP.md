@@ -1649,6 +1649,16 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
   `O(log n)` equality protocol in `Communication/Randomized`. Native machine or RAM realizations
   with bit-level arithmetic costs are a separate endpoint.
 
+### String algorithms
+
+- **Multi-pattern matching** ([#3358](https://github.com/cslib-community/complexitylib/issues/3358)):
+  Aho–Corasick with states represented by their strings, valid failure and output tables from
+  the level-order construction, exact reporting of all occurrences, and the transition bounds of
+  the paper's Theorems 2 and 4 is in `Algorithms/Lean/AhoCorasick`. Remaining: an explicit
+  integer-state trie with a charged goto table and its linear construction (Algorithm 2,
+  Theorem 3), a construction that charges each shared trie state once, the deterministic
+  automaton of Section 6, and machine-level or RAM realizations.
+
 ## Machines, RAM and data structures
 
 - **Efficient universal simulation** ([#800]): the clocked universal function runs in time

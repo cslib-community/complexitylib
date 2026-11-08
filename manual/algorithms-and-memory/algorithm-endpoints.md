@@ -822,6 +822,24 @@ Import `Complexity.Algorithms.Lean.Euler.Circuit` ([source](../../Complexity/Alg
 
 The [examples](../../ComplexityTests/EulerCircuit.lean) run the algorithm on a bowtie (where a second triangle must be spliced in) and on a multigraph with parallel edges and a self-loop. They also refute Euler circuits for a path with odd endpoints and for two disjoint triangles whose degrees are even.
 
+## Multi-pattern string matching: Aho–Corasick
+
+Import `Complexity.Algorithms.Lean.AhoCorasick.Search` ([Basic.lean](../../Complexity/Algorithms/Lean/AhoCorasick/Basic.lean), [Search.lean](../../Complexity/Algorithms/Lean/AhoCorasick/Search.lean)). It formalizes the pattern matching machine of [Aho and Corasick][ahocorasick75] for a keyword list `P : List (List α)` over any alphabet with decidable equality. As in Section 4 of the paper, a state is represented by its string: the states are `[]` and the prefixes of keywords (`IsNode P`). The goto function sends `u` on `a` to `u ++ [a]` when that is a state, and the start state loops on every other symbol. The specification is `occurrences P t`: the pairs `(i, y)` with `y ∈ P` nonempty and a suffix of `t.take i`, so `i` is the `1`-indexed end position printed by Algorithm 1. Pairs are listed by increasing end position and, at one position, by decreasing length (`pairwise_occurrences`). A keyword listed twice in `P` is reported once per position, and the empty keyword is never reported.
+
+The paper's lemmas are stated for the string representation:
+
+- **Lemma 1:** `failure P u` is the longest proper suffix of `u` that is a state (`eq_failure_iff`).
+- **Lemma 2:** `output P w` lists the keywords that are suffixes of `w` (`mem_output_iff`), and `output_eq_of_ne_nil` is the output recurrence of Algorithm 3.
+- **Lemma 3:** the state after reading `w` is `longestNodeSuffix P w` (`foldl_nextMove`, and `longestNodeSuffix_append_singleton_eq_nextMove` for one cycle).
+
+Algorithm 1 is `scanM P M t`, which runs a machine `M` (failure and output tables, both functions on strings). `ret_scanM` shows that with valid tables (`Machine.IsValid`) the scan returns exactly `occurrences P t`. The cost model charges one `TimeM` tick per goto transition (including the start state's self-loop), one per failure transition and one per reported pair. The goto test, table reads and writes, and list construction are free; these are the paper's constant-time table operations. `time_scanM_silent_lt` is Theorem 2: on a nonempty text of length `n` the scan makes fewer than `2n` transitions, for any failure table. `time_scanM_lt` adds one tick per reported pair.
+
+Algorithm 3 is `buildM P`, which computes the tables level by level, taking the failure state of `p.take (d + 1)` from that of `p.take d` by one operating cycle (`failure_append_singleton`). `isValid_build` proves the tables valid. `time_buildM_le` is Theorem 4: at most `2 * (p.length - 1)` transitions per keyword `p`. The bound is per keyword because `buildM` recomputes the failure state of a prefix shared by several keywords once per keyword (with the same result), where the paper visits each trie state once. The per-level scan of `P` for the keywords longer than the current depth is not charged. `search_eq` and `time_searchM_le` give the end-to-end statement: `search P t = occurrences P t`, with at most `Σ 2 (|p| - 1) + 2|t| + |occurrences P t|` ticks.
+
+For one keyword, [KMP.lean](../../Complexity/Algorithms/Lean/AhoCorasick/KMP.lean) connects the machine to the Knuth–Morris–Pratt matcher of [Complexity/Algorithms/Lean/KMP](../../Complexity/Algorithms/Lean/KMP/Search.lean). `failure_singleton_take` identifies the failure function with the KMP prefix function `borderLen`, and `search_singleton` shows that `search [p] t` is `kmpMatchesList p t` with each shift moved to its end position.
+
+The [checked examples](../../ComplexityTests/AhoCorasick.lean) reproduce Figures 1 and 2 of the paper. The keywords are `he`, `she`, `his` and `hers`, and the text is `ushers`. The examples check the failure and output functions, the three reported pairs, and the seven transitions of the scan. Further examples cover empty text, the empty keyword list and the empty keyword, a repeated keyword, keywords that are suffixes of each other, and the KMP special case. They also show that a failure table that always returns the start state misses two occurrences and is not valid. Not formalized: the integer-state trie of Algorithm 2 and its linear construction (Theorem 3), the deterministic automaton of Section 6, and machine-level or RAM realizations ([ROADMAP](../../ROADMAP.md#string-algorithms)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -830,6 +848,7 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
+[ahocorasick75]: ../sources.md#ahocorasick75
 [complexitylib]: ../sources.md#complexitylib
 [clrs09]: ../sources.md#clrs09
 [floyd62]: ../sources.md#floyd62
