@@ -958,8 +958,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Tseitin formulas on expanders. `TreeLikeSpace.lean`
   ([#3229](https://github.com/cslib-community/complexitylib/issues/3229)) bounds clause space by
   the Strahler number and the logarithm of tree-like size (Esteban–Torán), and by `n + 2` on `n`
-  variables. Next:
-  - space lower bounds for the pigeonhole principle and random `k`-CNFs through width;
+  variables. `ExistentialPebble.lean` and `PigeonholeSpace.lean`
+  ([#3321](https://github.com/cslib-community/complexitylib/issues/3321)) add Duplicator
+  strategies (Atserias–Dalmau Lemma 3) and width and clause space at least `n` for the extended
+  `3`-CNF pigeonhole formula with `n` holes. Next:
+  - space lower bounds for the wide pigeonhole formula and random `k`-CNFs;
+  - the converse direction, Atserias–Dalmau Lemma 2, as a public `DuplicatorStrategy`;
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
   - degree versus space in polynomial calculus.
