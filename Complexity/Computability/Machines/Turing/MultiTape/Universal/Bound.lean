@@ -77,13 +77,16 @@ lemma write_le {e : Key × Act} (he : e ∈ d.table) {ta : TapeAct} (hta : ta �
   simp only [eAct_apply, length_encPair] at *
   omega
 
-lemma q₀_le : d.q₀ ≤ descLen d := by
+/-- The initial state of a description is within its length. -/
+public lemma q₀_le : d.q₀ ≤ descLen d := by
   simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
 
-lemma tapes_le : d.tapes ≤ descLen d := by
+/-- The number of work tapes of a description is within its length. -/
+public lemma tapes_le : d.tapes ≤ descLen d := by
   simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
 
-lemma table_le : d.table.length ≤ descLen d := by
+/-- The number of transitions of a description is within its length. -/
+public lemma table_le : d.table.length ≤ descLen d := by
   have := length_le_length_encList (encPair eKey eAct) d.table
   simp only [descLen, eDesc_apply, length_encPair] at this ⊢
   omega
@@ -218,8 +221,8 @@ public lemma inv_iterate (x : List ℕ) (j : ℕ) :
 
 /-! ### The size bound -/
 
-public lemma length_encInt_le (z : ℤ) : (encInt z).length ≤ z.natAbs + 1 := by
-  rw [length_encInt]; split_ifs <;> omega
+public lemma length_encIntUnary_le (z : ℤ) : (encIntUnary z).length ≤ z.natAbs + 1 := by
+  rw [length_encIntUnary]; split_ifs <;> omega
 
 public lemma length_encNat_le (n : ℕ) : (encNat n).length ≤ n := by
   simpa [Nat.size_eq_bits_len] using Nat.size_le.mpr (Nat.lt_two_pow_self (n := n))
@@ -234,7 +237,7 @@ public abbrev tapeBound (D j : ℕ) : ℕ := 2 * (j + 1) + 2 + 3 * (2 * j) * (2 
 
 lemma length_eTape_le {D j : ℕ} {t : Tape} (h : TapeInv D j t) :
     (eTape t).length ≤ tapeBound D j := by
-  have h₁ := length_encInt_le t.head
+  have h₁ := length_encIntUnary_le t.head
   have h₂ := length_cells_le fun o ho => h.val o (List.mem_append_left t.right ho)
   have h₃ := length_cells_le fun o ho => h.val o (List.mem_append_right t.left ho)
   have h₄ := Nat.mul_le_mul_right (2 * D + 3) h.length

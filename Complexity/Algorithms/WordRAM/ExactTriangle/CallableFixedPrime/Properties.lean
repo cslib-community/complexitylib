@@ -54,7 +54,7 @@ theorem program_preserves (i : Fin 640)
     (fun _ => rfl) i (Or.inl aux_out)
   have hn := Code.preserves_rename_of_offset (MemoryWindow.normalizeRegisters 416)
     sourceBank (fun _ => rfl) i src_out
-  have hsolve := Code.preserves_rename_of_offset (MemoryWindow.compile FixedPrime.program)
+  have hsolve := Code.preserves_rename_of_offset (MemoryWindow.compile StreamingFixedPrime.program)
     sourceBank (fun _ => rfl) i src_out
   have hadapt : adapt.Preserves i := ⟨hh, hf, hc, hb, hc, ha, hc, ht⟩
   have hsetup : setup.Preserves i := ⟨hs, hl, hp, hpow, hm, hn⟩
@@ -70,7 +70,7 @@ private theorem setup_size : setup.size = 446 := by
 theorem program_not_readsWidth : ¬program.ReadsWidth := by
   have hc : ¬solve.ReadsWidth := by
     simpa only [solve, Code.readsWidth_rename, MemoryWindow.readsWidth_compile] using
-      FixedPrime.program_not_readsWidth
+      StreamingFixedPrime.program_not_readsWidth
   have ha : ¬adapt.ReadsWidth := by decide +kernel
   have hs : ¬setup.ReadsWidth := by
     simp only [setup, Code.ReadsWidth, Code.readsWidth_rename,
@@ -84,10 +84,10 @@ and no reads of the physical width. -/
 theorem program_fixed : (program.program Reg.found).length ≤ 400000 ∧
     ¬(program.program Reg.found).ReadsWidth := by
   refine ⟨?_, Code.not_readsWidth_program program_not_readsWidth _⟩
-  have hsource := FixedPrime.program_fixed.1
+  have hsource := StreamingFixedPrime.program_fixed.1
   simp only [Code.program, List.length_append, Code.length_assemble,
     List.length_singleton] at hsource ⊢
-  have hcompile := MemoryWindow.size_compile FixedPrime.program
+  have hcompile := MemoryWindow.size_compile StreamingFixedPrime.program
   simp only [program, Code.size, adapt_size, setup_size, solve, Code.size_rename]
   have hreceive : receive.size = 5 := by decide +kernel
   omega

@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.UniformNat
+import Complexity.Crypto.Game.FourHop
 import Complexity.Crypto.Game.Statistical
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Crypto.Negligible.Dyadic
@@ -45,7 +46,8 @@ in `Complexity/Crypto/Computational/ElGamal.lean` directly to `Encryption.KEMIND
   multiplicative ElGamal encrypts a group element $m \in G$ as $(\beta \cdot g, \beta \cdot u + m)$
   and is IND-CPA secure under DDH; Hashed ElGamal acts as an IND-CPA secure KEM under DDH and
   `SecureKDF`, and composing it with any one-time semantically secure DEM yields an IND-CPA secure
-  public-key encryption scheme.
+  public-key encryption scheme. The KDF output key space is uniform `keyLen n`-bit words;
+  `n` remains the security parameter controlling the modular-sampling error `4 / 2 ^ n`.
 
 ## Main definitions
 
@@ -113,9 +115,9 @@ private theorem dropFrame_encPair_encBits_pair (p : List Bool × List Bool) :
 `a ← sampleExp n (d n)` and output
 `(encPair F.encDesc encBits (d n, encode (a • g)), encNat a)`. -/
 noncomputable def elGamalKeyGenProb (d : ℕ → F.Desc) (n : ℕ) :
-    ProbComp (List Bool × List Bool) :=
-  F.sampleExp n (d n) >>= fun a =>
-    pure (encPair F.encDesc encBits (d n, F.encodeElGamalPublicKey (d n, a)), encNat a)
+    ProbComp (List Bool × List Bool) := do
+  let a ← F.sampleExp n (d n)
+  return (encPair F.encDesc encBits (d n, F.encodeElGamalPublicKey (d n, a)), encNat a)
 
 /-- `elGamalKeyGenProb` is uniformly strict PPT whenever `d` is computable in polynomial time. -/
 theorem isPPTOn_elGamalKeyGenProb {d : ℕ → F.Desc}
@@ -134,11 +136,11 @@ theorem isPPTOn_elGamalKeyGenProb {d : ℕ → F.Desc}
 pp. 460–461): sample `b ← sampleExp n (d n)`, unpack `u = dropFrame pk`, and output
 `(H (d n, encode (b • u)), encode (b • g))`. -/
 noncomputable def hashedElGamalEncapsProb (H : F.Desc × List Bool → List Bool)
-    (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) : ProbComp (List Bool × List Bool) :=
-  F.sampleExp n (d n) >>= fun b =>
-    let u := dropFrame pk
-    pure (H (d n, F.smul (d n, b, u)),
-      F.smul (d n, b, F.encode (d n) (F.generator (d n))))
+    (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) : ProbComp (List Bool × List Bool) := do
+  let b ← F.sampleExp n (d n)
+  let u := dropFrame pk
+  return (H (d n, F.smul (d n, b, u)),
+    F.smul (d n, b, F.encode (d n) (F.generator (d n))))
 
 /-- `hashedElGamalEncapsProb` is uniformly strict PPT whenever `H` and `d` are computable in
 polynomial time. -/
@@ -274,7 +276,8 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
       (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
         (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
           k (a : ZMod (F.order (d n))) (b : ZMod (F.order (d n))) := by
-    simp only [kemRealGame, elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
+    simp only [kemRealGame, kemRealGameWith,
+    elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
       ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, dropFrame_encPair_encBits,
       encodeElGamalPublicKey_eq_encode, F.smul_encode, smul_smul,
       mul_comm _ (_ : ZMod (F.order (d n))), k]
@@ -295,32 +298,35 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
   calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
     _ = 2 / 2 ^ n := by ring
 
-private theorem advantage_kdfIdealGame_eval_kemIdealGame_le
+private theorem advantage_kdfIdealGame_eval_kemIdealGame_le (keyLen : ℕ → ℕ)
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
     (distinguisher : Distinguisher) (n : ℕ) :
     Game.advantage
-      (F.kdfIdealGame (fun m => PMF.pure (d m)) (fun m => m)
+      (F.kdfIdealGame (fun m => PMF.pure (d m)) keyLen
         (F.kemToKDFDistinguisher distinguisher) n)
       (ProbComp.eval
-        (kemIdealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n)) ≤
+        (kemIdealGame keyLen (F.elGamalKeyGenProb d)
+        (F.hashedElGamalEncapsProb H d) distinguisher n)) ≤
       2 / 2 ^ n := by
   let k (α β : ZMod (F.order (d n))) : Game :=
-    (Cslib.BitString.uniformList n).bind fun pad =>
+    (Cslib.BitString.uniformList (keyLen n)).bind fun pad =>
       ProbComp.eval (distinguisher n
         (encPair encBits (encPair encBits encBits)
           (encPair F.encDesc encBits (d n, F.encode (d n) (α • F.generator (d n))),
             (pad, F.encode (d n) (β • F.generator (d n))))))
   have hideal :
       ProbComp.eval
-        (kemIdealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n) =
+        (kemIdealGame keyLen (F.elGamalKeyGenProb d)
+        (F.hashedElGamalEncapsProb H d) distinguisher n) =
       (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
         (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
           k (a : ZMod (F.order (d n))) (b : ZMod (F.order (d n))) := by
-    simp only [kemIdealGame, elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
+    simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
       ProbComp.eval_pure, Cslib.BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind,
       encodeElGamalPublicKey_eq_encode, F.smul_encode, k]
   have hkdf :
-      F.kdfIdealGame (fun m => PMF.pure (d m)) (fun m => m)
+      F.kdfIdealGame (fun m => PMF.pure (d m)) keyLen
         (F.kemToKDFDistinguisher distinguisher) n =
       (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
@@ -341,75 +347,80 @@ private theorem advantage_kdfIdealGame_eval_kemIdealGame_le
 `distinguisher` against `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)` is bounded by the DDH
 advantage of `kemToDDHDistinguisher H distinguisher` plus the KDF advantage of
 `kemToKDFDistinguisher distinguisher` plus `4 / 2 ^ n`. -/
-theorem advantage_kemGame_hashedElGamalEncapsProb_le
+theorem advantage_kemGame_hashedElGamalEncapsProb_le (keyLen : ℕ → ℕ)
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
     (distinguisher : Distinguisher) (n : ℕ) :
     Game.advantage
       (ProbComp.eval
         (kemRealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n))
       (ProbComp.eval
-        (kemIdealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n)) ≤
+        (kemIdealGame keyLen (F.elGamalKeyGenProb d)
+        (F.hashedElGamalEncapsProb H d) distinguisher n)) ≤
       Game.advantage
         (F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
         (F.ddhIdealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n) +
       Game.advantage
         (F.kdfRealGame (fun m => PMF.pure (d m)) H (F.kemToKDFDistinguisher distinguisher) n)
-        (F.kdfIdealGame (fun m => PMF.pure (d m)) (fun m => m)
+        (F.kdfIdealGame (fun m => PMF.pure (d m)) keyLen
           (F.kemToKDFDistinguisher distinguisher) n) +
       4 / 2 ^ n := by
   have h0 := F.advantage_eval_kemRealGame_ddhRealGame_le H d distinguisher n
-  have h3 := F.advantage_kdfIdealGame_eval_kemIdealGame_le H d distinguisher n
+  have h3 := F.advantage_kdfIdealGame_eval_kemIdealGame_le keyLen H d distinguisher n
   have htri1 := Game.advantage_triangle
     (ProbComp.eval
       (kemRealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n))
     (F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
     (ProbComp.eval
-      (kemIdealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n))
+      (kemIdealGame keyLen (F.elGamalKeyGenProb d)
+        (F.hashedElGamalEncapsProb H d) distinguisher n))
   have htri2 := Game.advantage_triangle
     (F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
     (F.ddhIdealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
     (ProbComp.eval
-      (kemIdealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n))
+      (kemIdealGame keyLen (F.elGamalKeyGenProb d)
+        (F.hashedElGamalEncapsProb H d) distinguisher n))
   conv at htri2 => rhs; arg 2; arg 1; rw [F.ddhIdealGame_kemToDDHDistinguisher_eq_kdfRealGame]
   have htri3 := Game.advantage_triangle
     (F.kdfRealGame (fun m => PMF.pure (d m)) H (F.kemToKDFDistinguisher distinguisher) n)
-    (F.kdfIdealGame (fun m => PMF.pure (d m)) (fun m => m)
+    (F.kdfIdealGame (fun m => PMF.pure (d m)) keyLen
       (F.kemToKDFDistinguisher distinguisher) n)
     (ProbComp.eval
-      (kemIdealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n))
+      (kemIdealGame keyLen (F.elGamalKeyGenProb d)
+        (F.hashedElGamalEncapsProb H d) distinguisher n))
   exact (htri1.trans (add_le_add h0 (htri2.trans (add_le_add le_rfl
     (htri3.trans (add_le_add le_rfl h3)))))).trans_eq (by ring)
 
 /-- **Hashed ElGamal KEM is `Encryption.KEMINDCPA`-secure under DDH and `SecureKDF`**
 ([BonehShoup2023], Section 11.5.2, Theorem 11.5, pp. 449–451, and Exercise 11.9, pp. 460–461): for
 any group description family `d : ℕ → F.Desc`, if `F.DDH (fun n => PMF.pure (d n))` and
-`F.SecureKDF (fun n => PMF.pure (d n)) H (fun n => n)` hold and `H` is computable in polynomial
-time, then `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)` satisfies `Encryption.KEMINDCPA`. -/
-theorem DDH.kemINDCPA_hashedElGamalEncapsProb {F : PrimeOrderGroupFamily}
+`F.SecureKDF (fun n => PMF.pure (d n)) H keyLen` hold and `H` is computable in polynomial
+time, then `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)` satisfies
+`Encryption.KEMINDCPA keyLen`. -/
+theorem DDH.kemINDCPA_hashedElGamalEncapsProb {F : PrimeOrderGroupFamily} {keyLen : ℕ → ℕ}
     {H : F.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
     (hDDH : F.DDH (fun n => PMF.pure (d n)))
-    (hKDF : F.SecureKDF (fun n => PMF.pure (d n)) H (fun n => n))
+    (hKDF : F.SecureKDF (fun n => PMF.pure (d n)) H keyLen)
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits) :
-    KEMINDCPA (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) := by
+    KEMINDCPA keyLen (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) := by
   intro distinguisher hD
   have hddh := hDDH _ (F.isPPTOn_kemToDDHDistinguisher hH hD)
   have hkdf := hKDF _ (F.isPPTOn_kemToKDFDistinguisher hD)
   have h4 : Negligible fun n => (4 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 4
   refine negligible_of_le ((hddh.add hkdf).add h4) fun n => ?_
   dsimp only [Pi.add_apply]
-  exact F.advantage_kemGame_hashedElGamalEncapsProb_le H d distinguisher n
+  exact F.advantage_kemGame_hashedElGamalEncapsProb_le keyLen H d distinguisher n
 
 /-- **Theorem 11.5 via `Encryption.INDCPAOf`** ([BonehShoup2023], Section 11.5.2, Theorem 11.5,
 pp. 449–451): combining `DDH.kemINDCPA_hashedElGamalEncapsProb` with `KEMINDCPA.hybrid_indcpa`,
 Hashed ElGamal coupled with any uniform strict-PPT one-time semantically secure symmetric cipher
-`encryptSym` (`DEMOneTimeINDCPAOf encMsg encryptSym`) satisfies `Encryption.INDCPAOf`. -/
-theorem DDH.indcpaOf_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
+`encryptSym` (`DEMOneTimeKeyINDCPAOf encMsg keyLen encryptSym`) satisfies `Encryption.INDCPAOf`. -/
+theorem DDH.indcpaOf_hybrid_hashedElGamal {F : PrimeOrderGroupFamily} {keyLen : ℕ → ℕ}
     {Msg : Type} {encMsg : Msg ↪ List Bool}
     {H : F.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hDDH : F.DDH (fun n => PMF.pure (d n)))
-    (hKDF : F.SecureKDF (fun n => PMF.pure (d n)) H (fun n => n))
-    (hdem : DEMOneTimeINDCPAOf encMsg encryptSym)
+    (hKDF : F.SecureKDF (fun n => PMF.pure (d n)) H keyLen)
+    (hdem : DEMOneTimeKeyINDCPAOf encMsg keyLen encryptSym)
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc)
     (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
@@ -424,15 +435,15 @@ pp. 449–451): combining `DDH.kemINDCPA_hashedElGamalEncapsProb` with `KEMINDCP
 for any polynomial-time admissibility predicate `valid` that ignores the public key (such as
 the equal-length predicate `fun _ _ m₀ m₁ => m₀.length == m₁.length`), Hashed ElGamal coupled with
 any one-time semantically secure symmetric cipher `encryptSym`
-(`DEMOneTimeINDCPAOn valid encMsg encryptSym`) satisfies `Encryption.INDCPAOn`. -/
-theorem DDH.indcpaOn_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
+(`DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym`) satisfies `Encryption.INDCPAOn`. -/
+theorem DDH.indcpaOn_hybrid_hashedElGamal {F : PrimeOrderGroupFamily} {keyLen : ℕ → ℕ}
     {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {H : F.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hDDH : F.DDH (fun n => PMF.pure (d n)))
-    (hKDF : F.SecureKDF (fun n => PMF.pure (d n)) H (fun n => n))
-    (hdem : DEMOneTimeINDCPAOn valid encMsg encryptSym)
+    (hKDF : F.SecureKDF (fun n => PMF.pure (d n)) H keyLen)
+    (hdem : DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
@@ -449,14 +460,15 @@ theorem DDH.indcpaOn_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
 /-- **Theorem 11.5 via `Encryption.WordINDCPA`** ([BonehShoup2023], Section 11.5.2, Theorem 11.5,
 pp. 449–451): combining `DDH.indcpaOn_hybrid_hashedElGamal` with Attack Game 11.1's equal-length
 rule (`fun _ _ m₀ m₁ => m₀.length == m₁.length`), Hashed ElGamal coupled with any equal-length
-one-time semantically secure word cipher `encryptSym` (`DEMOneTimeWordINDCPA encryptSym`) satisfies
+one-time semantically secure word cipher `encryptSym`
+(`DEMOneTimeKeyWordINDCPA keyLen encryptSym`) satisfies
 `Encryption.WordINDCPA`. -/
-theorem DDH.wordINDCPA_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
+theorem DDH.wordINDCPA_hybrid_hashedElGamal {F : PrimeOrderGroupFamily} {keyLen : ℕ → ℕ}
     {H : F.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
     {encryptSym : ℕ → List Bool → List Bool → ProbComp (List Bool)}
     (hDDH : F.DDH (fun n => PMF.pure (d n)))
-    (hKDF : F.SecureKDF (fun n => PMF.pure (d n)) H (fun n => n))
-    (hdem : DEMOneTimeWordINDCPA encryptSym)
+    (hKDF : F.SecureKDF (fun n => PMF.pure (d n)) H keyLen)
+    (hdem : DEMOneTimeKeyWordINDCPA keyLen encryptSym)
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc)
     (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
@@ -474,10 +486,10 @@ theorem DDH.wordINDCPA_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
 `u = dropFrame pk`, and output
 `encPair encBits encBits (encodeElGamalEncrypt (d n, u, encodeMsg (d n) m, b))`. -/
 noncomputable def elGamalEncryptProb {Msg : Type} (encodeMsg : F.Desc → Msg → List Bool)
-    (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) (m : Msg) : ProbComp (List Bool) :=
-  F.sampleExp n (d n) >>= fun b =>
-    let u := dropFrame pk
-    pure (encPair encBits encBits (F.encodeElGamalEncrypt (d n, u, encodeMsg (d n) m, b)))
+    (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) (m : Msg) : ProbComp (List Bool) := do
+  let b ← F.sampleExp n (d n)
+  let u := dropFrame pk
+  return encPair encBits encBits (F.encodeElGamalEncrypt (d n, u, encodeMsg (d n) m, b))
 
 /-- `elGamalEncryptProb` is uniformly strict PPT whenever `encodeMsg` and `d` are computable in
 polynomial time. -/
@@ -611,14 +623,6 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
   calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
     _ = 2 / 2 ^ n := by ring
 
-private theorem advantage_four_hop_le {G0 M0 M1 G1 : Game} {c : ℝ≥0}
-    (h0 : G0.advantage M0 ≤ c) (h1 : G1.advantage M1 ≤ c) :
-    G0.advantage G1 ≤ c + M0.advantage M1 + c := by
-  rw [Game.advantage_comm] at h1
-  rw [add_assoc]
-  exact (G0.advantage_triangle M0 G1).trans
-    (add_le_add h0 ((M0.advantage_triangle M1 G1).trans (add_le_add le_rfl h1)))
-
 /-- **Multiplicative ElGamal satisfies `Encryption.INDCPAOn` under DDH** ([BonehShoup2023],
 Exercise 11.5(a), p. 459): for any polynomial-time group description family `d : ℕ → F.Desc`,
 polynomial-time message encoder `encodeMsg`, and polynomial-time admissibility predicate `valid`
@@ -642,7 +646,7 @@ theorem DDH.indcpaOn_elGamalEncryptProb {F : PrimeOrderGroupFamily}
   have h2 : Negligible fun n => (2 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 2
   refine negligible_of_le ((h2.add hmid).add h2) fun n => ?_
   dsimp only [Pi.add_apply]
-  exact advantage_four_hop_le
+  exact Game.advantage_four_hop_le
     (F.advantage_gameOn_elGamalMsgCPAGameOn_le valid encodeMsg d adversary false n)
     (F.advantage_gameOn_elGamalMsgCPAGameOn_le valid encodeMsg d adversary true n)
 

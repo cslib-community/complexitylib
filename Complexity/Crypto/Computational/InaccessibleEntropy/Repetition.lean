@@ -492,13 +492,14 @@ private noncomputable def repEscapeIdxTerm (t inLen₀ : ℕ → ℕ)
     (A : ℕ → List Bool → ProbComp (List Bool)) (n idx : ℕ) : ℝ :=
   let w₀ := inLen₀ n
   let rCount := t n
-  (((Cslib.BitString.uniformList w₀).bind fun xWord =>
-    (Cslib.BitString.uniformList (rCount * w₀)).bind fun dummy =>
-      let zWord := Cslib.BitString.replaceRow w₀ rCount idx (xWord.take w₀) dummy
-      ProbComp.eval (A n zWord) >>= fun raw =>
-        let xRaw := Cslib.BitString.listRow w₀ idx raw
-        PMF.pure (decide (xRaw.length = w₀ ∧ evalWord₀ n xRaw = evalWord₀ n xWord ∧
-          Cslib.BitString.ofList w₀ xRaw ∉ L₀ n (Cslib.BitString.ofList w₀ xWord))))
+  (((do
+    let xWord ← Cslib.BitString.uniformList w₀
+    let dummy ← Cslib.BitString.uniformList (rCount * w₀)
+    let zWord := Cslib.BitString.replaceRow w₀ rCount idx (xWord.take w₀) dummy
+    let raw ← ProbComp.eval (A n zWord)
+    let xRaw := Cslib.BitString.listRow w₀ idx raw
+    return decide (xRaw.length = w₀ ∧ evalWord₀ n xRaw = evalWord₀ n xWord ∧
+      Cslib.BitString.ofList w₀ xRaw ∉ L₀ n (Cslib.BitString.ofList w₀ xWord))) : PMF Bool)
     true).toReal
 
 private theorem repEscapeInverter_succProbability_eq (t inLen₀ : ℕ → ℕ)
@@ -528,7 +529,7 @@ private theorem repEscapeInverter_succProbability_eq (t inLen₀ : ℕ → ℕ)
     rw [PMF.bind_comm]
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, heval, PMF.bind_apply_toReal,
     PMF.uniformOfFintype_apply, Fintype.card_fin, ENNReal.toReal_inv, ENNReal.toReal_natCast,
-    repEscapeIdxTerm]
+    repEscapeIdxTerm, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
 
 /-- **`[HHRVW2020]`, Section 5.1.1, Lemma 5.3(ii) (pp. 26–27)**: for any adversary `A`, escaping
 `repBitAccessibleSet (t n)` in `accessibleEscapeGame` occurs with probability at most
@@ -606,6 +607,7 @@ theorem repEscape_le_dyadicSize_mul_escape (t inLen₀ outLen₀ : ℕ → ℕ)
         Function.comp_def]
     rw [hmap]
     dsimp only [repEscapeIdxTerm, rCount, w₀]
+    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
     conv_lhs => rw [← Cslib.BitString.uniformList_replaceRow w₀ rCount j, PMF.bind_bind]
     congr 2
     refine PMF.bind_congr_on_support _ _ _ fun xWord hx => ?_

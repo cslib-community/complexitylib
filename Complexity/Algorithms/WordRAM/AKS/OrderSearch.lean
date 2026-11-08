@@ -12,6 +12,8 @@ public import Complexity.Computability.WordRAM.RegisterFrame
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.FinCases
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # The search for `r` in the AKS algorithm on the word RAM
 
@@ -113,14 +115,14 @@ private theorem powers_exec {w : ℕ} (x : Data 13) {N L₀ R : ℕ} (hn : x.reg
       ∀ j ∈ [n, L, r, found, one], y.regs j = x.regs j := by
   have hR0 : 0 < R := by omega
   have h1f : Fits w 1 := hfL.of_le (by omega)
-  let J (y : Data 13) : Prop := y.regs L = L₀ ∧ y.regs r = R ∧ y.regs one = 1 ∧
-    y.regs nr = N % R ∧ y.regs k ≤ L₀ ∧ y.regs p = N ^ y.regs k % R ∧ y.regs ok ≤ 1 ∧
-    (y.regs ok = 1 ↔ ∀ j, 1 ≤ j → j ≤ y.regs k → N ^ j % R ≠ 1)
-  have hstep (y : Data 13) (hy : J y) (hc : (Cond.lt k L).Holds y) :
-      ∃ z, ExecWithin w powBody y z 6 ∧ J z ∧ L₀ - z.regs k < L₀ - y.regs k := by
-    obtain ⟨hyL, hyr, hy1, hynr, hyk, hyp, hyok, hyiff⟩ := hy
+  let J (j : ℕ) (y : Data 13) : Prop := y.regs L = L₀ ∧ y.regs r = R ∧ y.regs one = 1 ∧
+    y.regs nr = N % R ∧ y.regs p = N ^ j % R ∧ y.regs ok ≤ 1 ∧
+    (y.regs ok = 1 ↔ ∀ b, 1 ≤ b → b ≤ j → N ^ b % R ≠ 1)
+  have hstep (y : Data 13) (hy : J (y.regs k) y) (hc : y.regs k < L₀) :
+      ∃ z, ExecWithin w powBody y z 6 ∧ J (y.regs k + 1) z ∧ z.regs k = y.regs k + 1 := by
+    obtain ⟨hyL, hyr, hy1, hynr, hyp, hyok, hyiff⟩ := hy
     obtain ⟨K, hK⟩ : ∃ K, y.regs k = K := ⟨_, rfl⟩
-    have hKL : K < L₀ := by simpa only [Cond.holds_lt, hK, hyL] using hc
+    have hKL : K < L₀ := by simpa only [hK] using hc
     rw [hK] at hyp hyiff
     have hPR : N ^ K % R < R := Nat.mod_lt _ hR0
     have hNR : N % R < R := Nat.mod_lt _ hR0
@@ -147,39 +149,37 @@ private theorem powers_exec {w : ℕ} (x : Data 13) {N L₀ R : ℕ} (hn : x.reg
         ram_eval [powBody, z, o, hyp, hynr, hyr, hK, hy1, hmod, hP, hf₁, hf₂, hf₃, h1f]
       · ram_eval [powBody, z, o, hyp, hynr, hyr, hK, hy1, hmod, hP, hf₁, hf₂, hf₃, h1f]
     have hzk : z.regs k = K + 1 := by simp +decide [z]
-    refine ⟨z, hrun, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+    refine ⟨z, hrun, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
     · simp +decide [z, hyL]
     · simp +decide [z, hyr]
     · simp +decide [z, hy1]
     · simp +decide [z, hynr]
-    · rw [hzk]; omega
-    · rw [hzk]; simp +decide [z]
+    · simp +decide [z, hK]
     · simp only [z, o, Data.set_regs, Function.update_self]
       split_ifs <;> omega
-    · rw [hzk, hiff 0]
+    · rw [hK, hiff 0]
       simp only [z, o, Data.set_regs, Function.update_self]
       split_ifs with hP
       · simp [hP]
       · rw [hyiff]; simp [hP]
-    · rw [hzk, hK]; omega
+    · simp only [hzk, hK]
   let x₀ := (((x.set nr (N % R)).set p 1).set k 0).set ok 1
   have hrun₀ : ExecWithin (B := .standard) w (ram[ nr ← n % r; p ← one; k ← #0; ok ← #1 ])
       x x₀ 4 := by
     ram_eval [x₀, hn, hr, h1, h1f, hfN.of_le (Nat.mod_le N R)]
-  have hx₀ : J x₀ := by
+  have hx₀ : J (x₀.regs k) x₀ := by
     have hk : x₀.regs k = 0 := by simp +decide [x₀]
     have hp : x₀.regs p = 1 := by simp +decide [x₀]
     have ho : x₀.regs ok = 1 := by simp +decide [x₀]
     refine ⟨by simp +decide [x₀, hL], by simp +decide [x₀, hr], by simp +decide [x₀, h1],
-      by simp +decide [x₀], by rw [hk]; omega, ?_, by rw [ho], ?_⟩
+      by simp +decide [x₀], ?_, by rw [ho], ?_⟩
     · rw [hk, hp, pow_zero, Nat.mod_eq_of_lt (by omega : 1 < R)]
     · rw [ho, hk]
       exact ⟨fun _ j hj hj0 => by omega, fun _ => rfl⟩
-  obtain ⟨y, hrun, hy, hc⟩ := ExecWithin.loop_invariant J (fun y => L₀ - y.regs k) hstep hx₀
-  obtain ⟨hyL, -, -, -, hyk, -, hyok, hyiff⟩ := hy
-  have hkL : y.regs k = L₀ := by simp only [Cond.holds_lt, hyL] at hc; omega
+  obtain ⟨y, hrun, ⟨_, _, _, _, _, hyok, hyiff⟩, _⟩ := ExecWithin.loop_count J
+    (fun _ hy => hy.1) hstep (by simp +decide [x₀, k, ok]) hx₀
   have hrun' := hrun₀.seq hrun
-  refine ⟨y, hrun'.mono ?_, hyok, by rw [hyiff, hkL],
+  refine ⟨y, hrun'.mono ?_, hyok, by rw [hyiff],
     fun j hj => hrun'.regs_eq (powers_preserves j hj)⟩
   have : x₀.regs k = 0 := by simp +decide [x₀]
   rw [this]

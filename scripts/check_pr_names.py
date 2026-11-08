@@ -59,6 +59,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from proof_lengths import masks
+
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL_DIRS = ("Complexity", "ComplexityTests", "abstracts", "scripts")
 
@@ -160,35 +162,6 @@ ADDITIVE = [("nsmul", "pow"), ("zsmul", "zpow"), ("vadd", "smul"), ("vsub", "sdi
 WORD_BOUNDARY = r"(?<![\w'!?])"
 
 
-COMMENT_MARK = re.compile(r"/-|-/|--")
-
-
-def strip_comments(text: str) -> str:
-    """Lean source with comments and docstrings blanked, newlines kept."""
-    out: list[str] = []
-    depth, pos = 0, 0
-    for mark in COMMENT_MARK.finditer(text):
-        start = mark.start()
-        if start < pos:
-            continue
-        token = mark.group(0)
-        if depth == 0:
-            if token == "-/":
-                continue
-            out.append(text[pos:start])
-            if token == "--":
-                end = text.find("\n", start)
-                pos = len(text) if end < 0 else end
-            else:
-                depth, pos = 1, mark.end()
-        else:
-            out.append("\n" * text.count("\n", pos, start))
-            depth += 1 if token == "/-" else -1 if token == "-/" else 0
-            pos = mark.end()
-    out.append(text[pos:] if depth == 0 else "\n" * text.count("\n", pos))
-    return "".join(out)
-
-
 @dataclass
 class Declarations:
     """Names declared in a set of sources, indexed by their last component."""
@@ -237,7 +210,9 @@ def parse_source(text: str, decls: Declarations) -> None:
             return name
         return f"{prefix()}.{name}" if prefix() else name
 
-    for raw in strip_comments(text).splitlines():
+    # Keep literals for syntax-keyword extraction; mask only comments here.
+    code, _ = masks(text)
+    for raw in code.splitlines():
         line = raw.rstrip()
         if not line.strip():
             continue

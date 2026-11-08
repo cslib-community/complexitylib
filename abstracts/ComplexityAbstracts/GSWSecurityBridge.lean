@@ -38,7 +38,7 @@ noncomputable def keyGeneration (security : ℕ) : PMF (List Bool × List Bool) 
     (GSW.independentList (dimension security) (GSW.residueLaw (digitWidth security)))
   let errors ← GSW.independentList (sampleCount security) (GSW.errorLaw (dimension security))
   return (GSW.publicWord (dimension security) (sampleCount security) (digitWidth security)
-    (secret, (matrix, errors)), GSW.secretWord (dimension security) (digitWidth security) secret)
+    secret matrix errors, GSW.secretWord (dimension security) (digitWidth security) secret)
 
 /-- Encrypt using only the public word and independent fair matrix coins. This law is total
 on every public word, including malformed lengths. -/

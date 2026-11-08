@@ -1333,12 +1333,12 @@ private noncomputable def unguardedCoinHandler (S : IndexedSignatureScheme) (T :
     StateT GuardedCoinState PMF (List Bool) := fun state =>
   let msg := request.2
   let (cc, (queried, seenLeaves, bad)) := state
-  if msg.length = n then
-    (BitString.uniformList (depth n)).bind fun leaf =>
-      let bad' := bad || seenLeaves.contains leaf
-      let seen' := if bad' then seenLeaves else leaf :: seenLeaves
-      (coinSignBody S T depth M n leaf msg cc).map fun out =>
-        (out.1, (out.2, (msg :: queried, seen', bad')))
+  if msg.length = n then do
+    let leaf ← BitString.uniformList (depth n)
+    let bad' := bad || seenLeaves.contains leaf
+    let seen' := if bad' then seenLeaves else leaf :: seenLeaves
+    (coinSignBody S T depth M n leaf msg cc).map fun out =>
+      (out.1, (out.2, (msg :: queried, seen', bad')))
   else
     PMF.pure ([], (cc, (msg :: queried, seenLeaves, bad)))
 
@@ -1350,13 +1350,13 @@ private noncomputable def guardedCoinHandler (S : IndexedSignatureScheme) (T : S
   if msg.length = n then
     if bad then
       PMF.pure ([], (cc, (msg :: queried, seenLeaves, true)))
-    else
-      (BitString.uniformList (depth n)).bind fun leaf =>
-        if seenLeaves.contains leaf then
-          PMF.pure ([], (cc, (msg :: queried, seenLeaves, true)))
-        else
-          (coinSignBody S T depth M n leaf msg cc).map fun out =>
-            (out.1, (out.2, (msg :: queried, leaf :: seenLeaves, false)))
+    else do
+      let leaf ← BitString.uniformList (depth n)
+      if seenLeaves.contains leaf then
+        pure ([], (cc, (msg :: queried, seenLeaves, true)))
+      else
+        (coinSignBody S T depth M n leaf msg cc).map fun out =>
+          (out.1, (out.2, (msg :: queried, leaf :: seenLeaves, false)))
   else
     PMF.pure ([], (cc, (msg :: queried, seenLeaves, bad)))
 
@@ -1377,8 +1377,8 @@ private theorem identicalUntilBad_coinHandlers (S : IndexedSignatureScheme) (T :
       subst hbad
       change unguardedCoinHandler S T depth M n req (cc, queried, seenLeaves, false) (a, s') =
         guardedCoinHandler S T depth M n req (cc, queried, seenLeaves, false) (a, s')
-      simp only [unguardedCoinHandler, guardedCoinHandler, Bool.false_or, Bool.false_eq_true,
-        ↓reduceIte]
+      simp only [unguardedCoinHandler, guardedCoinHandler, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, Bool.false_or, Bool.false_eq_true, ↓reduceIte]
       split_ifs with hmsg
       · simp only [PMF.bind_apply]
         refine tsum_congr fun leaf => ?_
@@ -1411,7 +1411,7 @@ private theorem identicalUntilBad_coinHandlers (S : IndexedSignatureScheme) (T :
       subst hs
       change x ∈ (unguardedCoinHandler S T depth M n req (cc, queried, seenLeaves, true)).support
         at hx
-      simp only [unguardedCoinHandler, Bool.true_or, ↓reduceIte] at hx
+      simp only [unguardedCoinHandler, PMF.monad_bind_eq_bind, Bool.true_or, ↓reduceIte] at hx
       split_ifs at hx with hmsg
       · obtain ⟨leaf, -, hx⟩ := (PMF.mem_support_bind_iff _ _ _).mp hx
         obtain ⟨out, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
@@ -1543,7 +1543,8 @@ private theorem step_bad_guardedCoinHandler (S : IndexedSignatureScheme) (T : S.
   obtain ⟨cc, queried, seenLeaves, bad⟩ := s
   have hbad : bad = false := Bool.eq_false_iff.mpr hs
   subst hbad
-  simp only [guardedCoinHandler, Bool.false_eq_true, ↓reduceIte]
+  simp only [guardedCoinHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    Bool.false_eq_true, ↓reduceIte]
   split_ifs with hmsg
   · classical
     rw [PMF.toOuterMeasure_bind_apply]
@@ -1607,7 +1608,8 @@ private theorem grow_seen_guardedCoinHandler (S : IndexedSignatureScheme) (T : S
   obtain ⟨cc, queried, seenLeaves, bad⟩ := s
   have hbad : bad = false := Bool.eq_false_iff.mpr hs
   subst hbad
-  simp only [guardedCoinHandler, Bool.false_eq_true, ↓reduceIte] at hx
+  simp only [guardedCoinHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    Bool.false_eq_true, ↓reduceIte] at hx
   split_ifs at hx with hmsg
   · obtain ⟨leaf, -, hx⟩ := (PMF.mem_support_bind_iff _ _ _).mp hx
     split_ifs at hx with hmem
@@ -1641,20 +1643,20 @@ private noncomputable def jointSignAt (S : IndexedSignatureScheme) (T : S.Seeded
     (σ, (out.2, edges'))
 
 private noncomputable def jointCertifyStep (S : IndexedSignatureScheme) (T : S.Seeded) (M n : ℕ)
-    (leaf : List Bool) (st : CoinCache × LazyCertState) : PMF (CoinCache × LazyCertState) :=
+    (leaf : List Bool) (st : CoinCache × LazyCertState) : PMF (CoinCache × LazyCertState) := do
   let (cc, ((node, (_, sk), certs), (nodes, edges))) := st
   let bit := leaf.getD node.length false
   let childPath := node ++ [bit]
-  (jointNodeKey S T M n childPath (cc, nodes)).bind fun (child, (cc', nodes')) =>
-    (jointSignAt S T M node sk bit.toNat child.1 (cc', edges)).map fun (σ, (cc'', edges')) =>
-      (cc'', ((childPath, child, certs ++ [(child.1, σ)]), (nodes', edges')))
+  let (child, (cc', nodes')) ← jointNodeKey S T M n childPath (cc, nodes)
+  (jointSignAt S T M node sk bit.toNat child.1 (cc', edges)).map fun (σ, (cc'', edges')) =>
+    (cc'', ((childPath, child, certs ++ [(child.1, σ)]), (nodes', edges')))
 
 private noncomputable def jointCertify (S : IndexedSignatureScheme) (T : S.Seeded)
     (depth : ℕ → ℕ) (M n : ℕ) (leaf : List Bool)
-    (st : CoinCache × (NodeKeyCache × EdgeSigCache)) : PMF (CoinCache × LazyCertState) :=
-  (jointNodeKey S T M n [] (st.1, st.2.1)).bind fun (root, (cc₀, nodes₀)) =>
-    Nat.iterate (fun m => m.bind (jointCertifyStep S T M n leaf)) (depth n - 1)
-      (PMF.pure (cc₀, (([], root, []), (nodes₀, st.2.2))))
+    (st : CoinCache × (NodeKeyCache × EdgeSigCache)) : PMF (CoinCache × LazyCertState) := do
+  let (root, (cc₀, nodes₀)) ← jointNodeKey S T M n [] (st.1, st.2.1)
+  Nat.iterate (fun m => m.bind (jointCertifyStep S T M n leaf)) (depth n - 1)
+    (PMF.pure (cc₀, (([], root, []), (nodes₀, st.2.2))))
 
 private noncomputable def jointCoinHandler (S : IndexedSignatureScheme) (T : S.Seeded)
     (depth : ℕ → ℕ) (M n : ℕ) (request : Unit × List Bool) :
@@ -1664,17 +1666,17 @@ private noncomputable def jointCoinHandler (S : IndexedSignatureScheme) (T : S.S
   if msg.length = n then
     if bad then
       PMF.pure ([], (cc, ((nodes, edges), (msg :: queried, seenLeaves, true))))
-    else
-      (BitString.uniformList (depth n)).bind fun leaf =>
-        if seenLeaves.contains leaf then
-          PMF.pure ([], (cc, ((nodes, edges), (msg :: queried, seenLeaves, true))))
-        else
-          (jointCertify S T depth M n leaf (cc, (nodes, edges))).bind
-            fun (cc', ((node, (_, sk), certs), (nodes', edges'))) =>
-              (jointSignAt S T M node sk (leaf.getLastD false).toNat msg (cc', edges')).map
-                fun (σ, (cc'', edges'')) =>
-                  (encodeSignature leaf certs σ,
-                    (cc'', ((nodes', edges''), (msg :: queried, leaf :: seenLeaves, false))))
+    else do
+      let leaf ← BitString.uniformList (depth n)
+      if seenLeaves.contains leaf then
+        pure ([], (cc, ((nodes, edges), (msg :: queried, seenLeaves, true))))
+      else
+        let (cc', ((node, (_, sk), certs), (nodes', edges'))) ←
+          jointCertify S T depth M n leaf (cc, (nodes, edges))
+        (jointSignAt S T M node sk (leaf.getLastD false).toNat msg (cc', edges')).map
+          fun (σ, (cc'', edges'')) =>
+            (encodeSignature leaf certs σ,
+              (cc'', ((nodes', edges''), (msg :: queried, leaf :: seenLeaves, false))))
   else
     PMF.pure ([], (cc, ((nodes, edges), (msg :: queried, seenLeaves, bad))))
 
@@ -1782,7 +1784,7 @@ private theorem map_dropCaches_jointCoinHandler (S : IndexedSignatureScheme) (T 
     (jointCoinHandler S T depth M n req s).map (fun (a, s') => (a, (s'.1, s'.2.2))) =
       guardedCoinHandler S T depth M n req (s.1, s.2.2) := by
   obtain ⟨cc, ⟨nodes, edges⟩, queried, seenLeaves, bad⟩ := s
-  simp only [jointCoinHandler, guardedCoinHandler]
+  simp only [jointCoinHandler, guardedCoinHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · simp only [PMF.pure_map]
   · simp only [PMF.map_bind]
@@ -2001,7 +2003,8 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
       have hw : T.keyGenWith n (w.take (T.keyGenBudget n)) = root := Option.some.inj hrel.symm
       simp only [jointNodeKey, lazyCoinRequest, memoize, hcc, hrootSome,
         Probability.PMF.monad_pure_eq_pure, PMF.pure_map, hw]
-  simp only [jointCertify, hnk0_pure, PMF.pure_bind, certifyLazy, eval_iterate_probComp]
+  simp only [jointCertify, PMF.monad_bind_eq_bind, hnk0_pure, PMF.pure_bind, certifyLazy,
+    eval_iterate_probComp]
   let stepInv (m : ℕ) (out : CoinCache × LazyCertState) : Prop :=
     jointLazyInv S T M (depth n) n root (out.1, (out.2.2, (queried, seenLeaves, bad))) ∧
     out.2.1.1 = leaf.take m ∧
@@ -2100,7 +2103,7 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
             exact ⟨(pk, sk), child, hns'_node, hns'_child, rfl⟩
       refine ⟨?_, ?_⟩
       · simp only [jointCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
-          PMF.map_bind, PMF.map_comp, Function.comp_def]
+          PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp, Function.comp_def]
         rw [← hnk_eq, PMF.bind_map]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨child, c', ns'⟩ hmem_nk => ?_
         dsimp only [Function.comp_def, bit]
@@ -2108,7 +2111,8 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
         rw [← hsa_eq, PMF.bind_map]
         simp only [PMF.map, Function.comp_def, bit]
       · intro out' hout'
-        simp only [jointCertifyStep, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hout'
+        simp only [jointCertifyStep, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+          PMF.mem_support_map_iff] at hout'
         obtain ⟨⟨child, c', ns'⟩, hmem_nk, ⟨σ, c'', es'⟩, hmem_sa, rfl⟩ := hout'
         obtain ⟨_, hns'_child, hchild_supp, -⟩ := hnk_inv child c' ns' hmem_nk
         obtain ⟨-, hsa_inv⟩ := hsign_step child c' ns' hmem_nk
@@ -2138,7 +2142,7 @@ private theorem jointCoinHandler_step_lazy (S : IndexedSignatureScheme) (T : S.S
     ∀ a s', (a, s') ∈ (jointCoinHandler S T depth M n req s).support →
       jointLazyInv S T M (depth n) n root s' := by
   obtain ⟨cc, ⟨nodes, edges⟩, queried, seenLeaves, bad⟩ := s
-  simp only [jointCoinHandler, lazySignHandler]
+  simp only [jointCoinHandler, lazySignHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · refine ⟨by simp only [PMF.pure_map, ProbComp.eval_pure], fun a s' hm => ?_⟩
     obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
@@ -2279,7 +2283,7 @@ private theorem run_interpret_signHandler (S : IndexedSignatureScheme) (T : S.Se
       (signHandler S T depth n req queried)).run cc)).map (fun ⟨⟨a, b⟩, c⟩ => (a, b, c)) =
       (unguardedCoinHandler S T depth M n req (cc, (queried, [], false))).map
         (fun (a, s') => (a, (s'.2.1, s'.1))) := by
-  simp only [signHandler, unguardedCoinHandler, signO]
+  simp only [signHandler, unguardedCoinHandler, signO, PMF.monad_bind_eq_bind]
   split_ifs with hmsg
   · rw [bind_assoc, OracleComp.run_interpret_bind, ProbOracleComp.run_interpret_sample,
       BitString.eval_sampleList, Probability.PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind,
@@ -2358,7 +2362,7 @@ theorem succProbability_treeIdealGame_le_lazy (S : IndexedSignatureScheme) (T : 
       (fun req s => by
         obtain ⟨cc, queried, seenLeaves, bad⟩ := s
         rw [run_interpret_signHandler S T depth M n req queried cc]
-        simp only [unguardedCoinHandler]
+        simp only [unguardedCoinHandler, PMF.monad_bind_eq_bind]
         split_ifs with hmsg
         · simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
         · simp only [PMF.pure_map])
@@ -2545,18 +2549,6 @@ private theorem run_interpret_visitNodeM {External : Type}
   cases visited.lookup path <;>
     simp only [pure_bind, OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure]
 
-private theorem lookup_map_val {α β γ : Type} [BEq α] (l : List (α × β)) (f : β → γ)
-    (a : α) :
-    (l.map fun e => (e.1, f e.2)).lookup a = (l.lookup a).map f := by
-  induction l with
-  | nil => rfl
-  | cons hd tl ih =>
-    obtain ⟨k, v⟩ := hd
-    simp only [List.map_cons, List.lookup_cons]
-    cases a == k
-    · exact ih
-    · rfl
-
 private theorem filter_headD_of_mem_unique (visited : NodeSlotCache) {p : List Bool}
     {idx : ℕ} (hmem : (p, idx) ∈ visited)
     (huniq : ∀ e₁ ∈ visited, ∀ e₂ ∈ visited, e₁.2 = e₂.2 → e₁ = e₂) :
@@ -2635,18 +2627,17 @@ private noncomputable def localTreeHandler (S : IndexedSignatureScheme) (depth :
   if msg.length = n then
     if bad then
       PMF.pure ([], (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned))
-    else
-      (BitString.uniformList (depth n)).bind fun leaf =>
-        if seenLeaves.contains leaf then
-          PMF.pure ([], (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned))
-        else
-          (localCertify S depth keys sigCap n leaf (visited, edges, allSigned)).bind
-            fun ((node, idx, certs), (visited', edges', allSigned')) =>
-              (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat msg
-                (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
-                  (encodeSignature leaf certs σ,
-                    (((visited', edges''), (msg :: queried, leaf :: seenLeaves, false)),
-                      allSigned''))
+    else do
+      let leaf ← BitString.uniformList (depth n)
+      if seenLeaves.contains leaf then
+        pure ([], (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned))
+      else
+        let ((node, idx, certs), (visited', edges', allSigned')) ←
+          localCertify S depth keys sigCap n leaf (visited, edges, allSigned)
+        (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat msg
+          (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
+            (encodeSignature leaf certs σ,
+              (((visited', edges''), (msg :: queried, leaf :: seenLeaves, false)), allSigned''))
   else
     PMF.pure ([], (((visited, edges), (msg :: queried, seenLeaves, bad)), allSigned))
 
@@ -2654,13 +2645,13 @@ private noncomputable def localTreeHandler (S : IndexedSignatureScheme) (depth :
 `adversary` against `localTreeHandler`. -/
 private noncomputable def presampledExp (S : IndexedSignatureScheme)
     (depth slotBound sigCap : ℕ → ℕ) (adversary : Forger) (n : ℕ) :
-    PMF (List (List Bool × List Bool) × (List Bool × List Bool) × PresampledState) :=
-  (ProbComp.eval (OracleComp.replicate (dyadicSize (slotBound n)) (S.keyGen n))).bind fun keys =>
-    let pk := encPair encUnary encBits (n, (keys.getD 0 ([], [])).1)
-    ((OracleComp.interpret
-      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-        (localTreeHandler S depth keys (sigCap n) n))
-      (adversary n pk)).run initPresampledState).map fun (msig, st) => (keys, msig, st)
+    PMF (List (List Bool × List Bool) × (List Bool × List Bool) × PresampledState) := do
+  let keys ← ProbComp.eval (OracleComp.replicate (dyadicSize (slotBound n)) (S.keyGen n))
+  let pk := encPair encUnary encBits (n, (keys.getD 0 ([], [])).1)
+  ((OracleComp.interpret
+    (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
+      (localTreeHandler S depth keys (sigCap n) n))
+    (adversary n pk)).run initPresampledState).map fun (msig, st) => (keys, msig, st)
 
 /-- Whether `indexedForgerAt` at `target` wins on a pre-sampled outcome. -/
 private def plantedWin (S : IndexedSignatureScheme) (depth : ℕ → ℕ) (n target : ℕ)
@@ -2958,7 +2949,7 @@ private theorem localTreeHandler_planted_step (S : IndexedSignatureScheme) (dept
       ((visited, edges), (queried, seenLeaves, bad)) =
       plantedTreeHandler S depth keys' target sigCap n req
         ((visited, edges), (queried, seenLeaves, bad)) from rfl]
-  simp only [localTreeHandler, plantedTreeHandler]
+  simp only [localTreeHandler, plantedTreeHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · refine ⟨?_, fun ans st' hm => ?_⟩
     · simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
@@ -3087,8 +3078,8 @@ private theorem map_plantedWin_presampledExp (S : IndexedSignatureScheme)
   set K := dyadicSize (slotBound n) with hK_def
   have hmin : min target (K - 1) = target := Nat.min_eq_left (by omega)
   have hsplit : K = target + ((K - target - 1) + 1) := by omega
-  simp only [presampledExp, IndexedSignatureScheme.indexedEufCmaGame, indexedForgerAt,
-    plantNodeKeys, ← hK_def, hmin]
+  simp only [presampledExp, PMF.monad_bind_eq_bind, IndexedSignatureScheme.indexedEufCmaGame,
+    indexedForgerAt, plantNodeKeys, ← hK_def, hmin]
   conv_lhs => rw [hsplit, ← ProbComp.eval_replicate_splice]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret,
     OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
@@ -3165,16 +3156,16 @@ private abbrev JointKeysCertState :=
   List (List Bool × List Bool) × LocalCertState
 
 private noncomputable def jointKeysCertifyStep (S : IndexedSignatureScheme) (sigCap n : ℕ)
-    (leaf : List Bool) (st : JointKeysCertState) : PMF JointKeysCertState :=
+    (leaf : List Bool) (st : JointKeysCertState) : PMF JointKeysCertState := do
   let (usedKeys, ((node, idx, certs), (visited, edges, allSigned))) := st
   let bit := leaf.getD node.length false
   let childPath := node ++ [bit]
-  (jointVisitKey S n childPath (usedKeys, visited)).bind fun (childIdx, (usedKeys', visited')) =>
-    let childPk := (usedKeys'.getD childIdx ([], [])).1
-    (localSignEdge S usedKeys' sigCap node idx bit.toNat childPk (edges, allSigned)).map
-      fun (σ, (edges', allSigned')) =>
-        (usedKeys', ((childPath, childIdx, certs ++ [(childPk, σ)]),
-          (visited', edges', allSigned')))
+  let (childIdx, (usedKeys', visited')) ← jointVisitKey S n childPath (usedKeys, visited)
+  let childPk := (usedKeys'.getD childIdx ([], [])).1
+  (localSignEdge S usedKeys' sigCap node idx bit.toNat childPk (edges, allSigned)).map
+    fun (σ, (edges', allSigned')) =>
+      (usedKeys', ((childPath, childIdx, certs ++ [(childPk, σ)]),
+        (visited', edges', allSigned')))
 
 private noncomputable def jointKeysCertify (S : IndexedSignatureScheme) (depth : ℕ → ℕ)
     (sigCap n : ℕ) (leaf : List Bool)
@@ -3191,19 +3182,18 @@ private noncomputable def jointKeysHandler (S : IndexedSignatureScheme) (depth :
   if msg.length = n then
     if bad then
       PMF.pure ([], (usedKeys, (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned)))
-    else
-      (BitString.uniformList (depth n)).bind fun leaf =>
-        if seenLeaves.contains leaf then
-          PMF.pure ([],
-            (usedKeys, (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned)))
-        else
-          (jointKeysCertify S depth sigCap n leaf (usedKeys, (visited, edges, allSigned))).bind
-            fun (usedKeys', ((node, idx, certs), (visited', edges', allSigned'))) =>
-              (localSignEdge S usedKeys' sigCap node idx (leaf.getLastD false).toNat msg
-                (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
-                  (encodeSignature leaf certs σ,
-                    (usedKeys', (((visited', edges''),
-                      (msg :: queried, leaf :: seenLeaves, false)), allSigned'')))
+    else do
+      let leaf ← BitString.uniformList (depth n)
+      if seenLeaves.contains leaf then
+        pure ([], (usedKeys, (((visited, edges), (msg :: queried, seenLeaves, true)), allSigned)))
+      else
+        let (usedKeys', ((node, idx, certs), (visited', edges', allSigned'))) ←
+          jointKeysCertify S depth sigCap n leaf (usedKeys, (visited, edges, allSigned))
+        (localSignEdge S usedKeys' sigCap node idx (leaf.getLastD false).toNat msg
+          (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
+            (encodeSignature leaf certs σ,
+              (usedKeys', (((visited', edges''),
+                (msg :: queried, leaf :: seenLeaves, false)), allSigned'')))
   else
     PMF.pure ([], (usedKeys, (((visited, edges), (msg :: queried, seenLeaves, bad)), allSigned)))
 
@@ -3254,7 +3244,7 @@ private theorem jointVisitKey_lazy_spec (S : IndexedSignatureScheme) (n : ℕ)
   simp only [jointVisitKey, memoize]
   have hlkMap : (nodesOf usedKeys visited).lookup path =
       (visited.lookup path).map (fun i => usedKeys.getD i ([], [])) :=
-    lookup_map_val visited (fun i => usedKeys.getD i ([], [])) path
+    List.lookup_map_snd visited (fun i => usedKeys.getD i ([], [])) path
   cases hlk : visited.lookup path with
   | some idx =>
     rw [hlk, Option.map_some] at hlkMap
@@ -3398,7 +3388,7 @@ private theorem jointKeysCertify_lazy_spec (S : IndexedSignatureScheme) (depth :
       have hbu : bit.toNat ≤ 1 := Bool.toNat_le bit
       refine ⟨?_, ?_⟩
       · simp only [jointKeysCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
-          PMF.map_bind, PMF.map_comp, Function.comp_def]
+          PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp, Function.comp_def]
         rw [← hvis_eq, PMF.bind_map]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨childIdx, uk', vis'⟩ hm_v => ?_
         dsimp only [Function.comp_def, bit]
@@ -3414,7 +3404,8 @@ private theorem jointKeysCertify_lazy_spec (S : IndexedSignatureScheme) (depth :
         rw [← hse, PMF.bind_map]
         simp only [PMF.map, Function.comp_def, bit]
       · intro out' hout'
-        simp only [jointKeysCertifyStep, PMF.mem_support_bind_iff, PMF.mem_support_map_iff]
+        simp only [jointKeysCertifyStep, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+          PMF.mem_support_map_iff]
           at hout'
         obtain ⟨⟨childIdx, uk', vis'⟩, hm_v, ⟨σ, edg', all'⟩, -, rfl⟩ := hout'
         obtain ⟨hlen', hrv', hrk', hsp', hv', hcLt, -, -, -⟩ := hvis_inv childIdx uk' vis' hm_v
@@ -3444,7 +3435,7 @@ private theorem jointKeysHandler_lazy_step (S : IndexedSignatureScheme) (depth :
       jointKeysInv S n root st' := by
   obtain ⟨uk, ⟨⟨vis, edg⟩, queried, seenLeaves, bad⟩, allSigned⟩ := st
   dsimp only [lazyStateOfJoint]
-  simp only [jointKeysHandler, lazySignHandler]
+  simp only [jointKeysHandler, lazySignHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · refine ⟨by simp only [PMF.pure_map, ProbComp.eval_pure], fun ans st' hm => ?_⟩
     obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
@@ -3655,7 +3646,7 @@ private theorem jointKeysCertify_expandKeys (S : IndexedSignatureScheme) (depth 
           · have := hvis_m e htail
             omega
       refine ⟨?_, ?_⟩
-      · simp only [jointKeysCertifyStep, PMF.bind_bind]
+      · simp only [jointKeysCertifyStep, PMF.monad_bind_eq_bind, PMF.bind_bind]
         have h1 : (jointVisitKey S n childPath (uk_m, vis_m)).bind
             (fun (childIdx, (uk', vis')) =>
               let childPk := (uk'.getD childIdx ([], [])).1
@@ -3697,7 +3688,8 @@ private theorem jointKeysCertify_expandKeys (S : IndexedSignatureScheme) (depth 
         rw [h2]
         simp only [localCertifyStep, PMF.map_comp, Function.comp_def, bit, childPath]
       · intro uk' cs' hm_step
-        simp only [jointKeysCertifyStep, PMF.mem_support_bind_iff, PMF.mem_support_map_iff]
+        simp only [jointKeysCertifyStep, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+          PMF.mem_support_map_iff]
           at hm_step
         obtain ⟨⟨childIdx, uk₁, vis₁⟩, hmv, ⟨σ, edg', all'⟩, -, heq⟩ := hm_step
         obtain ⟨hl1, hp1, hv1, hcLt, -, hg1⟩ := hvkInv childIdx uk₁ vis₁ hmv
@@ -3752,7 +3744,7 @@ private theorem jointKeysHandler_expandKeys (S : IndexedSignatureScheme) (depth 
   obtain ⟨uk, ⟨⟨vis, edg⟩, queried, seenLeaves, bad⟩, allSigned⟩ := st
   obtain ⟨hlen, hpos, hvis, hbound⟩ := hinv
   dsimp only at hlen hpos hvis hbound ⊢
-  simp only [jointKeysHandler, localTreeHandler]
+  simp only [jointKeysHandler, localTreeHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   split_ifs with hmsg hbad
   · refine ⟨?_, ?_⟩
     · simp only [PMF.pure_bind, PMF.map, Function.comp_def]
@@ -4057,7 +4049,7 @@ private theorem eval_lazyTreeGame_eq_presampled (S : IndexedSignatureScheme)
     conv_lhs => rw [hKeq, OracleComp.replicate_succ]
     simp only [expandKeys, ProbComp.eval_bind, ProbComp.eval_map, List.length_singleton,
       List.singleton_append]
-  simp only [presampledExp, ← hK_def, PMF.map_bind]
+  simp only [presampledExp, PMF.monad_bind_eq_bind, ← hK_def, PMF.map_bind]
   rw [hrep, PMF.bind_bind]
   refine PMF.bind_congr_on_support _ _ _ fun root hroot => ?_
   set pk := encPair encUnary encBits (n, root.1)
@@ -4255,7 +4247,7 @@ private theorem localTreeHandler_bounded_inv (S : IndexedSignatureScheme) (depth
     let ⟨hpv, hdisj⟩ := ha p idx u m hma
     ⟨hpv, hdisj.imp id fun ⟨hl, hmq⟩ => ⟨hl, List.mem_cons_of_mem _ hmq⟩⟩
   intro ans st' hm
-  simp only [localTreeHandler] at hm
+  simp only [localTreeHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hm
   split_ifs at hm with hmsg hbad
   · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
     exact ⟨hroot, by omega, hvis, huniq, liftQ hall req.2⟩
@@ -4555,7 +4547,8 @@ theorem succProbability_lazyTreeGame_le (S : IndexedSignatureScheme)
   have hsupp : ∀ out ∈ X.support,
       out.1.length = K ∧ presampledBoundedInv (depth n) out.1 0 out.2.2 := by
     intro out hout
-    simp only [X, presampledExp, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hout
+    simp only [X, presampledExp, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+      PMF.mem_support_map_iff] at hout
     obtain ⟨keys, hkeys, ⟨msig, st⟩, hrun, rfl⟩ := hout
     obtain ⟨hkLen, hkSupp⟩ := (ProbComp.mem_support_replicate_iff _ _ _).mp hkeys
     have hpos : 0 < keys.length := by

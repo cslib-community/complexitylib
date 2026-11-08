@@ -15,6 +15,7 @@ public import Complexity.Crypto.Computational.Encryption.Basic
 public import Complexity.Crypto.Game.Hybrid
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Crypto.Computational.Encryption.DecryptionBound
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Crypto.Negligible.Dyadic
 import Complexity.Languages.Probabilistic.Oracle.Simulation
@@ -1732,14 +1733,14 @@ theorem isQueryBounded_multiPhase2FilterHandler (decBound : List Bool → ℕ)
 /-- Interpreting `multiPhase2FilterHandler` against `cca2Phase2Oracle` on `ct ∈ cts` has the exact
 same output distribution as running directly against `cca2MultiPhase2Oracle` on `cts`, whenever
 `decBound` upper-bounds every encoded decryption output length. -/
-theorem eval_run_multiPhase2FilterHandler {Out : Type}
+theorem eval_run_multiPhase2FilterHandler {Out α : Type}
     (encOut : Out ↪ List Bool)
     (decrypt : ℕ → List Bool → List Bool → Option Out)
     (decBound : List Bool → ℕ)
     (n : ℕ) (sk ct : List Bool) (cts : List (List Bool))
     (hct : ct ∈ cts)
     (hdecBound : ∀ req, (encOption encOut (decrypt n sk req)).length ≤ decBound req)
-    (prog : WordOracleComp Unit Bool) :
+    (prog : WordOracleComp Unit α) :
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2Phase2Oracle encOut decrypt n sk ct))
@@ -1787,8 +1788,8 @@ theorem eval_run_multiPhase2FilterHandler {Out : Type}
         simp only [PMF.pure_map, List.take_of_length_le (hdecBound req)])
     prog ()
   have hfst := congrArg (PMF.map fun x => (x.1, ())) hsim.symm
-  have hid1 : (fun x : Bool × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
-  have hid2 : (fun x : Bool × Unit => (x.1, ())) = id := rfl
+  have hid1 : (fun x : α × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
+  have hid2 : (fun x : α × Unit => (x.1, ())) = id := rfl
   simpa only [PMF.map_comp, Function.comp_def, hid1, hid2, PMF.map_id] using hfst
 
 /-- Continuation of the multi-challenge hybrid experiment at index `split : ℕ` after
@@ -2433,7 +2434,9 @@ theorem eval_cca2GameOn_cca2MultiToSingle {Msg Out : Type} [Inhabited Msg]
   simp only [hsample, hguess, PMF.bind_bind]
   exact PMF.bind_comm _ _ _
 
-private theorem bind_apply_add_eq_of_support {α β : Type*} {p : PMF α}
+/-- If two pairs of continuations satisfy `f₁ a b + g₂ a b = f₂ a b + g₁ a b` on the support of
+`p`, then `(p.bind f₁) b + (p.bind g₂) b = (p.bind f₂) b + (p.bind g₁) b`. -/
+theorem bind_apply_add_eq_of_support {α β : Type*} {p : PMF α}
     {f₁ f₂ g₁ g₂ : α → PMF β} {b : β}
     (h : ∀ a ∈ p.support, f₁ a b + g₂ a b = f₂ a b + g₁ a b) :
     p.bind f₁ b + p.bind g₂ b = p.bind f₂ b + p.bind g₁ b := by
@@ -2776,24 +2779,11 @@ theorem INDCCA2On.indcca2MultiOn {Msg Out : Type} [Inhabited Msg]
     INDCCA2MultiOn valid encMsg encOut keyGen encrypt decrypt := by
   intro adversary hA
   obtain ⟨ck, dk, hlenKey⟩ := hkeyGen.length_le
-  obtain ⟨cd, dd, hlenDec⟩ := hdecrypt.tidy.polyBounded_length.exists_le
+  obtain ⟨decBound, hdecBoundPoly, hdecBound⟩ := exists_decryption_length_bound hkeyGen hdecrypt
   obtain ⟨_, _, _, _, cq, dq, _, _, hlenCh⟩ := hA.query_bounds
-  let decBound : ℕ → List Bool → ℕ :=
-    fun n req => cd * (2 * n + 2 * (ck * (n + 1) ^ dk) + req.length + 5) ^ dd
   let Q : ℕ → ℕ := fun n => cq * (n + ck * (n + 1) ^ dk + 2) ^ dq
-  have hdecBoundPoly :
-      ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
-        (encPair encUnary encBits) encUnary := by
-    dsimp only [decBound]; exact ComputableInPolyTime.of_tidy (by fun_prop)
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by
     dsimp only [Q]; exact ComputableInPolyTime.of_tidy (by fun_prop)
-  have hdecBound (n : ℕ) (keys : List Bool × List Bool)
-      (hkeys : keys ∈ (ProbComp.eval (keyGen n)).support) (req : List Bool) :
-      (encOption encOut (decrypt n keys.2 req)).length ≤ decBound n req := by
-    have hk := hlenKey n keys hkeys
-    have hd := hlenDec (n, keys.2, req)
-    simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply] at hk hd
-    exact hd.trans (Nat.mul_le_mul_left cd (Nat.pow_le_pow_left (by omega) dd))
   have hQ (n : ℕ) (keys : List Bool × List Bool)
       (hkeys : keys ∈ (ProbComp.eval (keyGen n)).support)
       (choiceOut : (List (Msg × Msg) × List Bool) × Unit)

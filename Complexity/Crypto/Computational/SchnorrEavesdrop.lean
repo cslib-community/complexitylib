@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.SchnorrProtocol
+public import Complexity.Computability.Interactive.Security.Repeat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
@@ -124,44 +125,6 @@ of uniform on `ZMod q` (`closeTo_uniform_sampleExp`). Consequently:
 -/
 
 @[expose] public section
-
-namespace Cslib.Interactive.CloseTo
-
-open Probability
-open scoped ENNReal
-
-/-- `k` independent draws from `ε`-close distributions are `(k * ε)`-close, without finiteness
-assumptions on the sample space. -/
-theorem iid {α : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h : CloseTo μ ν ε) (k : ℕ) :
-    CloseTo (PMF.iid μ k) (PMF.iid ν k) (k * ε) := by
-  induction k with
-  | zero =>
-    simp only [PMF.iid, Nat.cast_zero, zero_mul, CloseTo.refl]
-  | succ k ih =>
-    rw [PMF.iid, PMF.iid, PMF.monad_bind_eq_bind, PMF.monad_bind_eq_bind,
-      Nat.cast_add, Nat.cast_one, add_mul, one_mul, add_comm (k * ε) ε]
-    refine CloseTo.bind h fun a _ => ?_
-    exact ih.map (@Fin.cons k (fun _ => α) a)
-
-/-- `k` independent draws from `μ` collected as a list are `(k * ε)`-close to
-`OracleComp.replicate k prog` whenever `μ` is `ε`-close to `ProbComp.eval prog`. -/
-theorem iid_replicate {α : Type} {μ : PMF α} {prog : ProbComp α} {ε : ℝ≥0∞}
-    (h : CloseTo μ (ProbComp.eval prog) ε) (k : ℕ) :
-    CloseTo ((PMF.iid μ k).map List.ofFn) (ProbComp.eval (OracleComp.replicate k prog))
-      (k * ε) := by
-  rw [ProbComp.eval_replicate_iid]
-  exact (h.iid k).map List.ofFn
-
-/-- `k` independent runs of two `ProbComp` programs whose single-run laws are `ε`-close are
-`(k * ε)`-close. -/
-theorem eval_replicate {α : Type} {prog₁ prog₂ : ProbComp α} {ε : ℝ≥0∞}
-    (h : CloseTo (ProbComp.eval prog₁) (ProbComp.eval prog₂) ε) (k : ℕ) :
-    CloseTo (ProbComp.eval (OracleComp.replicate k prog₁))
-      (ProbComp.eval (OracleComp.replicate k prog₂)) (k * ε) := by
-  rw [ProbComp.eval_replicate_iid]
-  exact h.iid_replicate k
-
-end Cslib.Interactive.CloseTo
 
 namespace Cslib.Crypto.PrimeOrderGroupFamily
 
@@ -623,7 +586,9 @@ def IsIdealEavesdropSecure (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ) : Prop
     ∀ (A : F.SchnorrEavesdropAdversary), A.IsPPT →
       Negligible fun n => Game.succProbability (F.schnorrIdealEavesdropGame setup k Q A n)
 
-private theorem negligible_div_two_pow_of_polyTime {Q : ℕ → ℕ}
+/-- When `Q` is computable in polynomial time on unary inputs, `(Q n : ℝ≥0) / 2 ^ n` is
+negligible. -/
+theorem negligible_div_two_pow_of_polyTime {Q : ℕ → ℕ}
     (hQ : ComputableInPolyTime Q encUnary encUnary) :
     Negligible fun n => (Q n : ℝ≥0) / 2 ^ n := by
   have hpoly : PolynomiallyBounded Q := hQ.tidy.polynomiallyBounded

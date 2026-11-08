@@ -69,6 +69,8 @@ import ComplexityAbstracts.SubexponentialSATAbstract
 import ComplexityAbstracts.SubexponentialSATBridge
 import ComplexityAbstracts.SubsetSumAbstract
 import ComplexityAbstracts.SubsetSumBridge
+import ComplexityAbstracts.SuccinctDictionaryAbstract
+import ComplexityAbstracts.SuccinctDictionaryBridge
 import ComplexityAbstracts.TQBFAbstract
 import ComplexityAbstracts.TQBFBridge
 import ComplexityAbstracts.TodaAbstract

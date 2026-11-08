@@ -46,6 +46,8 @@ ensembles `PMF (List Bool)` and protocol transcripts.
   `Cslib.Crypto.Game.closeTo_iff_forall_coe_advantage_bind_le`,
   `Cslib.Crypto.Game.closeTo_iff_forall_advantage_bind_le`: variational characterizations of
   `CloseTo` via deterministic and randomized Boolean distinguishers.
+* `Cslib.Interactive.CloseTo.bind_right_tsum`: input-dependent error bounds on mixtures
+  under `CloseTo`.
 -/
 
 @[expose] public section
@@ -186,3 +188,25 @@ theorem closeTo_iff_forall_advantage_bind_le {α : Type} {μ ν : PMF α} {ε : 
   exact h _
 
 end Cslib.Crypto.Game
+
+namespace Cslib.Interactive
+
+open scoped ENNReal
+
+/-- Pointwise statistical closeness of continuations on `μ.support` with input-dependent error
+`err : α → ℝ≥0∞` bounds the mixture distance by `∑' a, μ a * err a`. -/
+theorem CloseTo.bind_right_tsum {α β : Type} (μ : PMF α) {f g : α → PMF β} {err : α → ℝ≥0∞}
+    (h : ∀ a ∈ μ.support, CloseTo (f a) (g a) (err a)) :
+    CloseTo (μ.bind f) (μ.bind g) (∑' a, μ a * err a) := fun event => by
+  rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]
+  calc
+    ∑' a, μ a * (f a).toOuterMeasure event
+      ≤ ∑' a, μ a * ((g a).toOuterMeasure event + err a) := by
+        refine tsum_le_tsum fun a => ?_
+        by_cases ha : a ∈ μ.support
+        · exact mul_le_mul_of_nonneg_left (h a ha event) zero_le
+        · simp [(PMF.apply_eq_zero_iff μ a).mpr ha]
+    _ = ∑' a, μ a * (g a).toOuterMeasure event + ∑' a, μ a * err a := by
+        simp only [mul_add, tsum_add]
+
+end Cslib.Interactive

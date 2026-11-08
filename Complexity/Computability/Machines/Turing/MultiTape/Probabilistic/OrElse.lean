@@ -10,7 +10,9 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Nondeterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sequential.CoinTape
 
+import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Space
 import Complexity.Probability.PMF.Bind
 
 /-!
@@ -111,55 +113,6 @@ theorem eval_runClosedConfigFrom_succ_of_step (N : MultiTapePTM k' Symbol S')
     rw [h]
   simp only [hcons, PMF.bind_const]
 
-/-- With a fixed coin, a running first phase of a sequential machine steps as the first machine. -/
-theorem step_withCoin_seq_left {S₀ S₁ : Type} (first : MultiTapePTM k Symbol S₀)
-    (second : MultiTapePTM k Symbol S₁) (bit : Bool) (c : Config k Symbol S₀ Empty input)
-    (hc : c.tapes.state ≠ none) :
-    ((first.seq second).withCoin bit).step (Sequential.left second c) =
-      Sequential.left second ((first.withCoin bit).step c) := by
-  obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp hc
-  rw [Config.eq_iff_tapes_eq]
-  have hstate : (Sequential.left second c).tapes.state = some (.inl q) := by
-    simp [Sequential.left, Cfg.mapState, hq]
-  have hinput : (Sequential.left second c).tapes.inputSymbol = c.tapes.inputSymbol := rfl
-  have hwork : (Sequential.left second c).tapes.workTapeSymbols = c.tapes.workTapeSymbols := rfl
-  have hans : (Sequential.left second c).answerSymbols = c.answerSymbols := Subsingleton.elim _ _
-  have hmap (f : ReaderT Bool Id (MultiTapeMachine.Action k Symbol S₀ Empty)) :
-      (Sequential.leftAction second.initial <$> f) bit =
-        Sequential.leftAction second.initial (f bit) := rfl
-  simp only [MultiTapeMachine.step, hstate, hq, withCoin, seq, MultiTapeMachine.seq, hinput,
-    hwork, hans, hmap]
-  cases first.tr q c.tapes.inputSymbol c.tapes.workTapeSymbols c.answerSymbols bit with
-  | step a s m =>
-    simp [Sequential.leftAction, Sequential.left, Config.step, Turing.Action.apply, Cfg.mapState]
-  | query op _ => exact op.elim
-
-/-- With a fixed coin, the second phase of a sequential machine steps as the second machine. -/
-theorem step_withCoin_seq_right {S₀ S₁ : Type} (first : MultiTapePTM k Symbol S₀)
-    (second : MultiTapePTM k Symbol S₁) (bit : Bool) (c : Config k Symbol S₁ Empty input) :
-    ((first.seq second).withCoin bit).step (Sequential.right (State₀ := S₀) c) =
-      Sequential.right ((second.withCoin bit).step c) := by
-  rw [Config.eq_iff_tapes_eq]
-  cases hq : c.tapes.state with
-  | none => simp [MultiTapeMachine.step, Sequential.right, Cfg.mapState, hq]
-  | some q =>
-    have hstate : (Sequential.right (State₀ := S₀) c).tapes.state = some (.inr q) := by
-      simp [Sequential.right, Cfg.mapState, hq]
-    have hinput : (Sequential.right (State₀ := S₀) c).tapes.inputSymbol =
-        c.tapes.inputSymbol := rfl
-    have hwork : (Sequential.right (State₀ := S₀) c).tapes.workTapeSymbols =
-        c.tapes.workTapeSymbols := rfl
-    have hans : (Sequential.right (State₀ := S₀) c).answerSymbols = c.answerSymbols :=
-      Subsingleton.elim _ _
-    have hmap (f : ReaderT Bool Id (MultiTapeMachine.Action k Symbol S₁ Empty)) :
-        (Sequential.rightAction (State₀ := S₀) <$> f) bit = Sequential.rightAction (f bit) := rfl
-    simp only [MultiTapeMachine.step, hstate, hq, withCoin, seq, MultiTapeMachine.seq, hinput,
-      hwork, hans, hmap]
-    cases second.tr q c.tapes.inputSymbol c.tapes.workTapeSymbols c.answerSymbols bit with
-    | step a s m =>
-      simp [Sequential.rightAction, Sequential.right, Config.step, Turing.Action.apply,
-        Cfg.mapState]
-    | query op _ => exact op.elim
 
 end Simulation
 
@@ -707,16 +660,6 @@ private theorem reachable_initialConfig :
     Reachable first second input ((first.orElse second).initialConfig input) :=
   Or.inl ⟨[], initialConfig_orElse first second input⟩
 
-private theorem workTapePos_mem_window {k : ℕ} {S : Type} (M : MultiTapePTM k Bool S) {s : ℕ}
-    (hs : M.toNTM.RunsInSpace input s) (coins : List Bool) (i : Fin k) :
-    (reach M input coins).tapes.workTapePos i ∈ window s := by
-  obtain ⟨p, hhead, -, hlast⟩ := (M.exists_runPath_toNTM_iff (c := M.toNTM.initCfg input)).mpr
-    ⟨coins, rfl, rfl⟩
-  have hwin := MultiTapeNTM.RunPath.inWindow_of_space_le (p := p) (s := s)
-    (fun i => by rw [hhead]; rfl) (hs ⟨p, hhead⟩)
-  rw [reach, tapes_runClosedConfigFromCoins, ← initCfg_toNTM, ← hlast]
-  exact hwin _ p.last_mem i
-
 private theorem forall_layout {p : Fin (k₁ + k₂ + 1) → Prop} (h₁ : ∀ i, p (tape₁ k₂ i))
     (h₂ : ∀ j, p (tape₂ k₁ j)) (hf : p (flagTape k₁ k₂)) (i : Fin (k₁ + k₂ + 1)) : p i := by
   refine Fin.addCases (fun i => Fin.addCases (fun i => h₁ i) (fun j => h₂ j) i) (fun i => ?_) i
@@ -731,10 +674,10 @@ private theorem workTapePos_mem_window_of_reachable {s₁ s₂ : ℕ}
   have hzero : (0 : ℤ) ∈ window (max s₁ s₂) := by simp [mem_window]
   have h₁ (coins : List Bool) (i : Fin k₁) :
       (reach first input coins).tapes.workTapePos i ∈ window (max s₁ s₂) :=
-    hmono (workTapePos_mem_window input first hs₁ coins i) (le_max_left _ _)
+    hmono (workTapePos_runClosedCoins_mem_window first hs₁ coins i) (le_max_left _ _)
   have h₂ (coins : List Bool) (j : Fin k₂) :
       (reach second input coins).tapes.workTapePos j ∈ window (max s₁ s₂) :=
-    hmono (workTapePos_mem_window input second hs₂ coins j) (le_max_right _ _)
+    hmono (workTapePos_runClosedCoins_mem_window second hs₂ coins j) (le_max_right _ _)
   rcases hc with ⟨coins, rfl⟩ | ⟨coins, W, F, b, pos, rfl, -⟩ | ⟨coins, W, F, pos, out, rfl⟩ |
     ⟨coins, W, F, coins₂, rfl⟩
   · revert i
