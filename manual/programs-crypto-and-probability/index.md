@@ -875,9 +875,83 @@ both, and obtains the strict ratio $5/3$ with the physical turn counts.
 
 This proves the arbitrary finite X3C construction and universal behavioral
 numerical endpoints, rather than only a singleton or supplied-certificate model.
-The encoded-PTM representation and realization bridge is still unproved; neither
+The unrestricted encoded-PTM representation and realization bridge is still unproved; neither
 unrestricted source Theorem 6 nor ALL-main is claimed complete. Theorem 5's
 representation/general-alphabet gaps and Theorem 4's resource/hardness gaps above
 remain material. No curated abstract changes: these modules are outside the
 selected headline dependencies. The Agent Operator's Manual requires no edit:
 ownership, review, validation and human direction are unchanged.
+
+
+### Submission 191: a concrete native-to-behavioral bridge
+
+Import `Complexity.Computability.Probabilistic.NativeOneTurn` for a reusable
+one-turn protocol with actual native fair-coin multi-tape machines, and
+`Complexity.Probability.StochasticOracle.NativeResidualOneTurn` for the residual
+instance lower-bound corollary. The [complete native client](../../ComplexityTests/NativeOneTurn.lean)
+includes its imports, actual transition tables, clocks, adapters and proofs.
+
+`NativeOneTurn A R O` has finite observable action, response and output types.
+Its first native machine emits a private packet. The driver retains that packet
+and passes it, together with the entire response, through `prepare` to the native
+continuation. The action observation must contain all request/query/cutoff data
+on which the environment's response law can depend. A complete earlier transcript
+can be encoded in the initial input; no history-independent oracle assumption is
+made. A joint response table can include arbitrarily correlated responses within
+that external batch. The protocol supplies explicit word observers and an input
+adapter; this interface does not prove their compilation or native resources.
+
+`run` constructs the actual native experiment from `runClosed` and the response
+law. `actionTable` comes from exact saved-coin replay of the first native machine.
+`outputTable` conditions those private coins on the action actually selected and
+averages the actual continuation over that posterior. `Distribution.posterior`
+uses normalized fibers at positive mass and the prior on null actions;
+`posterior_factor` and `posterior_bind` prove the required identities, including
+null actions. The table/PMF conversions in `FiniteTableOfPMF` are exact inverses.
+No representation certificate or desired law equality is an input.
+
+`behavioralRun_toPMF` proves equality of the entire observed joint law.
+`mean_eq_native` therefore preserves every finite observable, including success,
+issued token charge and physical duration. `OutputsEncoded` is the ordinary
+supported raw-word encoding contract; `run_encoded` derives equality with
+`rawRun` when that contract holds (`behavioralRun_encoded` is the direct behavioral corollary). It does not assume a distributional encoding
+identity. `Halts` requires actual supported halting of both native phases;
+`run_pad_first` and `run_pad_finish` prove stability under larger clocks. The
+clocks measure local computation, which the source excludes from oracle tokens
+and its response deadline. An exhausted nonhalting local run is not admitted by
+`NativeAdmitted`.
+
+For the Theorem 6 instance, `nativePolicy_law` identifies the raw behavioral
+representation. Source admission requires provenance only for successful optimal
+outputs. `normalizedNativePolicy` replaces unproposed failed families with the
+empty family, derives supported provenance, and preserves success, issued
+cost and physical duration (`normalized_success`, `normalized_cost`, `normalized_duration`). `native_one_turn_lower` then
+proves the actual expected-token lower bound against every admitted native
+protocol in this interface with actual probability-one optimal success. The
+admission fields contain supported halting and source provenance, without a
+representation law, optimum or lower-bound conclusion. `native_duration_le_one`
+uses concurrent unit call latency and excludes both local clocks.
+
+The native client draws two bits, chooses its public action by their conjunction,
+then reads and emits the retained first bit. The false-action conditional output
+probability is $1/3$, so replacing retained private coins by fresh independent
+coins would give the wrong law. It proves actual halting, raw bit-encoding
+correctness and padding invariance. Its residual-instance clients establish
+source admission, probability-one success and the actual cost five, and also
+admit a protocol with an unproposed fabricated family only on failure. The
+failure normalization removes that family; no all-output provenance premise is
+substituted for the paper's successful-output condition. The residual-family
+observation adapter is explicit; this is not a uniform native implementation of
+the residual upper algorithm or its original candidate encoding.
+
+This is a concrete one-turn native packet-protocol bridge. It does not decompose
+an arbitrary open PTM's query boundaries, retain arbitrary unexported work-tape
+state, handle unbounded local stopping or prove the arbitrary-turn behavioral
+representation required by Theorem 5 and the full two-turn lower optimum in
+Theorem 6. General response alphabets, native query/output adapter realization,
+canonical-label recovery and the upper-selector compiler also remain open.
+The earlier Theorem 4 resource/asymptotic/hardness gaps remain. ROADMAP preserves
+these obligations; no unrestricted theorem or ALL-main completion is claimed.
+The Agent Operator's Manual needs no change because ownership, human direction,
+review and validation procedures are unchanged. No curated abstract depends on
+these new modules or selects this bounded bridge as a headline.

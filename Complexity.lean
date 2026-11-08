@@ -2606,6 +2606,7 @@ public import Complexity.Computability.Probabilistic.CoinTape
 public import Complexity.Computability.Probabilistic.Finite
 public import Complexity.Computability.Probabilistic.LinearHash
 public import Complexity.Computability.Probabilistic.Memoize
+public import Complexity.Computability.Probabilistic.NativeOneTurn
 public import Complexity.Computability.Probabilistic.Oracle
 public import Complexity.Computability.Probabilistic.Oracle.Composition
 public import Complexity.Computability.Probabilistic.Oracle.Iteration
@@ -4250,6 +4251,7 @@ public import Complexity.Probability.EntropyExtraction
 public import Complexity.Probability.Extractor.Basic
 public import Complexity.Probability.Extractor.LeftoverHash
 public import Complexity.Probability.Extractor.TwoSource
+public import Complexity.Probability.FiniteDisintegration
 public import Complexity.Probability.FiniteSampleInformation.AsymmetricPolynomialCorollary
 public import Complexity.Probability.FiniteSampleInformation.ConstantCompensation
 public import Complexity.Probability.FiniteSampleInformation.CopositiveDPIRecognition
@@ -4287,6 +4289,7 @@ public import Complexity.Probability.FiniteSampleInformation.WideSimplexTheorem
 public import Complexity.Probability.FiniteSampleInformation.WideSquarePullback
 public import Complexity.Probability.FiniteSampleInformation.WideTauHomConeContact
 public import Complexity.Probability.FiniteTable
+public import Complexity.Probability.FiniteTableOfPMF
 public import Complexity.Probability.Fooling
 public import Complexity.Probability.Fooling.OneSided
 public import Complexity.Probability.Forking
@@ -4375,6 +4378,7 @@ public import Complexity.Probability.StochasticOracle.AdaptiveStopping
 public import Complexity.Probability.StochasticOracle.CutoffFamilies
 public import Complexity.Probability.StochasticOracle.ExecutionFeasibility
 public import Complexity.Probability.StochasticOracle.FullCover
+public import Complexity.Probability.StochasticOracle.NativeResidualOneTurn
 public import Complexity.Probability.StochasticOracle.PartialCover
 public import Complexity.Probability.StochasticOracle.PartialCoverGreedy
 public import Complexity.Probability.StochasticOracle.PartialCoverRisk

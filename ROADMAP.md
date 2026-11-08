@@ -91,8 +91,17 @@ missing block from the actual residual, and verifies both local certificates.
 over all finite behavioral policies, including mixed first batches and randomized
 conditional selection/extraction. An overlapping-triple, five-block client checks the
 strict ratio 5/3 and universal competitor bounds. These are the source's general finite
-construction and behavioral numerical endpoints; an encoded-PTM representation/realization
-bridge is still missing, so unrestricted source Theorem 6 and ALL-main are not complete.
+construction and behavioral numerical endpoints. `NativeOneTurn` now constructs
+behavioral tables from two actual clocked native fair-coin machines surrounding one
+external batch, conditioning retained private state on the observed action. Joint
+laws, raw output encoding, all finite observables and supported-halting clock padding
+are preserved. `NativeResidualOneTurn` derives the one-turn cost lower bound for this
+concrete admitted protocol class, normalizing unproposed failed outputs without
+strengthening successful-output-only provenance. A native two-bit client checks a
+nontrivial 1/3 posterior, encoding, halting/padding and source-instance cost/admission.
+This is not a decomposition of arbitrary open PTMs: unrestricted local stopping,
+arbitrary-turn/private-storage/query encoding, general response alphabets and upper
+realization are still missing. Unrestricted Theorems 5/6 and ALL-main remain incomplete.
 Theorem 4's native resource/asymptotic/hardness claims also remain open. Neither the
 policy LP nor the binary-input two-batch savings FPTAS supplies those missing claims.
 
