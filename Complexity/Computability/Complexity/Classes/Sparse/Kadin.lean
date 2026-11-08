@@ -15,6 +15,7 @@ import Complexity.Computability.Complexity.Classes.NP.Image
 import Complexity.Computability.Complexity.Classes.NP.Witness
 import Complexity.Computability.Complexity.Classes.Oracle.Closure
 import Complexity.Computability.Complexity.Classes.Oracle.ListOracle
+import Complexity.Computability.Complexity.Classes.PH.OracleNP
 import Complexity.Computability.Complexity.Classes.PH.Projection
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
@@ -54,8 +55,9 @@ length at most `m`; it is polynomial in `m` because `S` is sparse.
 So `Σ₂ ⊆ P^{NP[O(log n)]}`. The Companion completes the proof with `Θ₂ ⊆ Σ₂` and closure of `Θ₂`
 under complement, which give `Σ₂ = Π₂`; here `PH = Σ₂` comes instead from the sparse form of the
 Karp–Lipton theorem (`Cslib.Complexity.PH_eq_SigmaP_two_of_SAT_mem_PWithOracle`). The reverse
-inclusion `P^{NP[O(log n)]} ⊆ PH`, which with this gives the Companion's `PH = Θ₂`, is not proved
-here.
+inclusion `P^{NP[O(log n)]} ⊆ Σ₂ ∩ Π₂ ⊆ PH` holds unconditionally
+(`Cslib.Complexity.PNPLog_subset_PH`), and with it this gives the Companion's `PH = Θ₂`
+(`Cslib.Complexity.PH_eq_PNPLog_of_sparse`).
 
 The hypothesis is the Turing-complete case. Kadin's abstract states the result for a sparse
 `S ∈ NP` with `coNP ⊆ NP^S`, of which the Turing-complete case is a consequence; that form is not
@@ -88,6 +90,7 @@ in `[0, N]`.
   plus one, and is strict oracle PPT.
 * `Cslib.Complexity.SigmaP_two_subset_PNPLog_of_sparse`: `Σ₂ ⊆ P^{NP[O(log n)]}`.
 * `Cslib.Complexity.PH_subset_PNPLog_of_sparse`: **Kadin's theorem**, `PH ⊆ P^{NP[O(log n)]}`.
+* `Cslib.Complexity.PH_eq_PNPLog_of_sparse`: Kadin's theorem as `PH = P^{NP[O(log n)]}`.
 
 ## References
 
@@ -566,5 +569,14 @@ theorem PH_subset_PNPLog_of_sparse (hsparse : S ∈ SPARSE encBits) (hS : S ∈ 
     PH enc ⊆ PNPLog enc := by
   rw [PH_eq_SigmaP_two_of_SAT_mem_PWithOracle hsparse hSAT enc]
   exact SigmaP_two_subset_PNPLog_of_sparse hsparse hS hSAT enc
+
+/-- **Kadin's theorem, `PH = Θ₂ᵖ`** [Kadin][Kadin1989] [Hemaspaandra and Ogihara, Theorem 1.14]
+[HemaspaandraOgihara2002]: if `NP` has a sparse polynomial-time Turing-complete set, then the
+polynomial hierarchy equals `P^{NP[O(log n)]}`. The reverse inclusion holds unconditionally
+(`Cslib.Complexity.PNPLog_subset_PH`). -/
+theorem PH_eq_PNPLog_of_sparse (hsparse : S ∈ SPARSE encBits) (hS : S ∈ NP encBits)
+    (hSAT : SAT ∈ PWithOracle S encCNF) (enc : α ↪ List Bool) :
+    PH enc = PNPLog enc :=
+  (PH_subset_PNPLog_of_sparse hsparse hS hSAT enc).antisymm (PNPLog_subset_PH enc)
 
 end Cslib.Complexity

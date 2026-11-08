@@ -760,6 +760,26 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim`,
   `sampleComplexity_univ_le_of_finite` (agnostic, `AgnosticFiniteClass`) and
   `growthFunction_le_sum_choose_vcDim` will need restating if it lands.
+* **Tree decompositions.** `Foundations/Combinatorics/SimpleGraph/TreeDecomposition/Basic`
+  overlaps Justin Lai's open Mathlib PRs
+  [mathlib4#38334](https://github.com/leanprover-community/mathlib4/pull/38334) (`TreeDecomp`,
+  `ewidth`/`width`, `etreeWidth`/`treeWidth`, `comap`, monotonicity, `treeWidth_bot`,
+  `treeWidth_eq_zero`, `etreeWidth_le_card`),
+  [mathlib4#39939](https://github.com/leanprover-community/mathlib4/pull/39939) (complete graph
+  and clique bound) and
+  [mathlib4#39864](https://github.com/leanprover-community/mathlib4/pull/39864) (Helly property
+  for subtrees). The structures have the same three axioms. The local names are
+  `TreeDecomposition`/`etreewidth`/`treewidth`, the index type is a universe-polymorphic
+  parameter `ι` rather than `W : Type`, and `width` is `ℕ`-valued on a `Fintype` index. The local
+  `etreewidth` minimizes over `Fin n`-indexed decompositions, so it is `⊤` exactly for infinite
+  `V` (`etreewidth_eq_top_iff`); #38334 minimizes over all index types and gives, for example,
+  the edgeless graph on `ℕ` extended treewidth `0`. Both agree for finite `V`. Upstream the core
+  through #38334 and its follow-ups rather than as a competing candidate, and add on top of that
+  work the parts it lacks: the rooted parent-array form (`TreeDecomposition/Rooted`,
+  `SimpleGraph.parentTree`, `IsTree.parent` in `SimpleGraph/Acyclic`), the topmost-node proof
+  that a clique lies in a bag (an alternative to Helly), `minDegree_le_treewidth`,
+  `treewidth_le_one_iff` and `treewidth_cycleGraph`. Renaming to match an unmerged PR is not
+  required.
 
 These are coordination references, not a second record of live PR status. Check the relevant
 upstream discussion before starting or submitting overlapping work.
