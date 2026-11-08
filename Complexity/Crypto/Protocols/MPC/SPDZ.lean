@@ -17,10 +17,34 @@ import Mathlib.Algebra.Group.TransferInstance
 # SPDZ Authenticated Secret Sharing, Online Operations, and Batch `MACCheck` Soundness
 
 This module formalizes the SPDZ authenticated secret-sharing representation and its linear and
-Beaver-triple online operations ([DamgardPastroSmartZakarias2012]), together with the two-round
+Beaver-triple online operations ([DamgardPastroSmartZakarias2012]), together with the
 commit-then-open batch `MACCheck` protocol and the $2 / p$ bound for its standalone
 cheating-equation game over prime fields `ZMod p`
-([DamgardKellerLarraiaPastroSchollSmart2013]):
+([DamgardKellerLarraiaPastroSchollSmart2013]).
+
+## Source map
+
+Locators refer to the IACR ePrint full versions: [DamgardPastroSmartZakarias2012] is ePrint
+2011/535 (revision of 2012-11-05) and [DamgardKellerLarraiaPastroSchollSmart2013] is ePrint 2012/642
+(revision of 2013-08-20). LNCS page and figure numbers are not verified.
+
+* **DPSZ12, §2 "Representation of values and MACs" and "Computations"; online phase Fig. 1:** the
+  authenticated representation with public modifier $\delta$ (`AuthShare`, `AuthShare.Valid`),
+  constant addition (`AuthShare.addConst`), and Beaver multiplication (`AuthShare.mulOnline`).
+  DPSZ12 works over $\mathbb{F}_{p^k}$; this module works over `ZMod p` only.
+* **DKLPSS13, §2:** the representation without $\delta$ (dropped from the MAC definition there).
+* **DKLPSS13, App. D.1, Fig. 10:** `MACCheck`. `checkResidual` and `verifyResiduals` adapt its
+  check $\sigma_i = \gamma_i - \alpha_i \cdot a$ to DPSZ12's $\delta$-representation; at
+  $\delta = 0$ they are the source check. `macCheckProtocol` models steps 5–9 of Fig. 10
+  (commitment and opening of the residual shares); steps 1–4 (coin-flipping a seed and expanding it
+  with a PRG into the weights) are replaced by weights supplied as inputs.
+* **DKLPSS13, §5.1, Lemma 1** (correct, and sound except with probability $2 / p$) and **App. D.3**
+  (its proof game): `macCheckSoundnessGame` and `macCheckSoundnessAdvGame` formalize the App. D.3
+  game, and `eval_macCheckSoundnessGame_le` its $2 / p$ bound. As in App. D.3, tampering with the
+  corrupt parties' MAC shares is absorbed into the adversarial shift (`deltaOpen` / `deltaShift`).
+
+## Contents
+
 
 1. **SPDZ Authenticated Secret Sharing (`AuthShare`):** represents an authenticated value
    $\langle a \rangle = (\delta, (a_0, \dots, a_{n-1}), (\gamma_0, \dots, \gamma_{n-1}))$ over
@@ -40,18 +64,19 @@ cheating-equation game over prime fields `ZMod p`
    `checkResidual`, `macCheckProtocol`, `eval_snd_macCheckProtocol_eq_pure_true`):** two-round
    commit-then-open protocol over `Complexity.Crypto.Protocols.MPC.Basic` and
    `Complexity.Crypto.Protocols.MPC.Broadcast` checking a batch of $T$ publicly opened values via
-   linear combination weights $e \in (\mathbb{Z}_p)^T$ supplied as inputs
-   ([DamgardKellerLarraiaPastroSchollSmart2013]). Honest executions satisfy
+   linear combination weights $e \in (\mathbb{Z}_p)^T$ supplied as inputs (steps 5–9 of
+   [DamgardKellerLarraiaPastroSchollSmart2013], App. D.1, Fig. 10, adapted to the
+   $\delta$-representation). Honest executions satisfy
    $\sum_i \sigma_i = 0$ (`sum_checkResidual_eq_zero`) and accept with probability `1`.
 4. **Residual Cheating Equation & $2 / p$ Standalone Cheating-Equation Game Bound
    (`sum_checkResidual_eq_neg_mul`, `sum_checkResidual_add_eq_zero_iff`, `linearCombZeroGame`,
-   `macCheckSoundnessGame`, `eval_macCheckSoundnessGame_le`, `eval_macCheckSoundness_bind_le`):**
+   `macCheckSoundnessGame`, `eval_macCheckSoundnessGame_le`, `eval_macCheckSoundnessAdvGame_le`):**
    for prime `p` and any nonzero vector of opening errors `err ≠ 0` (even against an adaptive
    residual shift `deltaShift : (Fin T → ZMod p) → ZMod p` chosen as a function of the public
    weights `e`, or generated from prior randomized adversary state `adv : ProbComp S` independent
    of `alpha`), the `MACCheck` cheating equation
    `alpha * linearCombAddHom err e = deltaShift e` (standalone game) holds with probability at
-   most $2 / p$ ([DamgardKellerLarraiaPastroSchollSmart2013]):
+   most $2 / p$ ([DamgardKellerLarraiaPastroSchollSmart2013], §5.1, Lemma 1; App. D.3):
    - Stage 1 (`eval_linearCombZeroGame_eq`): $\Pr_e[\sum_\ell e_\ell \cdot \mathrm{err}_\ell = 0]
      = 1 / p$, proved via `Cslib.Probability.toOuterMeasure_uniform_linearComb_eq_zero`.
    - Stage 2 (`eval_macKey_guess_le`): whenever
@@ -65,11 +90,14 @@ weights are supplied as inputs (`PartyCheckInput.weights`) whose joint generatio
 openings is not modeled, `alpha` is not sampled by the protocol, and the `AddCommMonoid` structures
 on `Coins`, `Comm`, and `ResidualOpening` are only used by the `broadcastSteps` combinator.
 The games `macCheckSoundnessGame` and `macCheckSoundnessAdvGame` analyze the standalone algebraic
-information-theoretic cheating equation given an independent uniform global MAC key
-$\alpha \in \mathbb{Z}_p$ and public weights $e \in (\mathbb{Z}_p)^T$ (modeling the sum
-$\alpha = \sum_i \alpha_i$ when at least one party's additive key share is uniform and unknown to
-the adversary), rather than an execution of `macCheckProtocol`, a computational commitment binding
-reduction, a UC emulation proof, or a polynomial-time simulator certificate.
+information-theoretic cheating equation given an independent uniform MAC key
+$\alpha \in \mathbb{Z}_p$ and public weights $e \in (\mathbb{Z}_p)^T$. The game's $\alpha$ plays
+the role of an honest party's key share $\alpha_H$, uniform and unknown to the adversary; the
+corrupt parties' contribution $\alpha_C \cdot L$ is part of `deltaShift`. The games are analyzed
+directly, not as an execution of `macCheckProtocol`, a computational commitment binding
+reduction, a UC emulation proof, or a polynomial-time simulator certificate. Generalizing the
+$2 / p$ bound to an arbitrary finite field and removing the `AddCommMonoid` requirement from
+`broadcastSteps` are left as follow-ups.
 
 ## Main definitions
 
@@ -126,7 +154,7 @@ reduction, a UC emulation proof, or a polynomial-time simulator certificate.
 * `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macCheckSoundnessGame_le`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.toReal_eval_macCheckSoundnessGame_le`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.succProbability_macCheckSoundnessGame_le`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macCheckSoundness_bind_le`: concrete $2 / p$ bound for the
+  `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macCheckSoundnessAdvGame_le`: concrete $2 / p$ bound for the
   standalone `MACCheck` cheating-equation game.
 
 ## References
@@ -378,7 +406,7 @@ end AuthShare
   deriving DecidableEq, Inhabited, Repr
 
 /-- Party `i`'s local input to a batch `MACCheck` over `T` opened values
-([DamgardKellerLarraiaPastroSchollSmart2013]). -/
+([DamgardKellerLarraiaPastroSchollSmart2013], App. D.1, Fig. 10). -/
 @[ext] structure PartyCheckInput (p T : ℕ) where
   /-- The `T` publicly opened values and modifiers `(a'_ℓ, δ_ℓ)`. -/
   opened : Fin T → OpenedValue p
@@ -411,14 +439,17 @@ instance {p : ℕ} {Coins : Type} [AddCommMonoid Coins] :
     AddCommMonoid (ResidualOpening p Coins) :=
   (ResidualOpening.equivProd p Coins).addCommMonoid
 
-/-- Party `i`'s local `MACCheck` residual share ([DamgardKellerLarraiaPastroSchollSmart2013]):
-`σ_i = (∑ ℓ, e_ℓ * γ(a_ℓ)_i) - α_i * (∑ ℓ, e_ℓ * (a'_ℓ + δ_ℓ))`. -/
+/-- Party `i`'s local `MACCheck` residual share
+`σ_i = (∑ ℓ, e_ℓ * γ(a_ℓ)_i) - α_i * (∑ ℓ, e_ℓ * (a'_ℓ + δ_ℓ))`: an adaptation of the check
+`σ_i = γ_i - α_i * a` of [DamgardKellerLarraiaPastroSchollSmart2013] (App. D.1, Fig. 10) to the
+`δ`-representation of [DamgardPastroSmartZakarias2012]; at `δ = 0` it is the source check. -/
 @[expose] def checkResidual {p T : ℕ} (inp : PartyCheckInput p T) : ZMod p :=
   (∑ l : Fin T, inp.weights l * inp.macShares l) -
     inp.keyShare * ∑ l : Fin T, inp.weights l * ((inp.opened l).value + (inp.opened l).delta)
 
 /-- Verify that every party's Round-2 residual opening matches its Round-1 commitment and that the
-opened residual shares sum to `0` ([DamgardKellerLarraiaPastroSchollSmart2013]). -/
+opened residual shares sum to `0` ([DamgardKellerLarraiaPastroSchollSmart2013], App. D.1,
+Fig. 10). -/
 @[expose] def verifyResiduals {p n : ℕ} {Coins Comm : Type} [DecidableEq Comm]
     (commit : ZMod p → Coins → Comm)
     (commits : Fin n → Comm) (openings : Fin n → ResidualOpening p Coins) : Bool :=
@@ -428,7 +459,10 @@ opened residual shares sum to `0` ([DamgardKellerLarraiaPastroSchollSmart2013]).
 /-- Predicate stating that `inp : Fin n → PartyCheckInput p T` arises from validly authenticated
 shares `shares : Fin T → AuthShare p n` under global key `alpha = ∑ i, α_i` with common public
 `opened` values and common public `weights` `e` (allowing `opened` to differ from the true secrets
-by `err_ℓ = (opened ℓ).value - (shares ℓ).secret`). -/
+by `err_ℓ = (opened ℓ).value - (shares ℓ).secret`). Following
+[DamgardKellerLarraiaPastroSchollSmart2013], App. D.3, tampering with the corrupt parties' MAC
+shares is not modeled here; it is absorbed into the adversarial shift `deltaOpen` /
+`deltaShift`. -/
 structure PartyCheckInput.AuthenticFor {p n T : ℕ} (alpha : ZMod p)
     (shares : Fin T → AuthShare p n) (opened : Fin T → OpenedValue p)
     (e : Fin T → ZMod p) (inp : Fin n → PartyCheckInput p T) : Prop where
@@ -454,9 +488,9 @@ structure PartyCheckInput.Honest {p n T : ℕ} (alpha : ZMod p)
   /-- Every opened value equals the true secret `(shares ℓ).secret`. -/
   value_eq : ∀ l, (opened l).value = (shares l).secret
 
-/-- Core algebraic residual identity of SPDZ `MACCheck`
-([DamgardKellerLarraiaPastroSchollSmart2013]): when `inp` is authenticated for `shares` with
-claimed public openings `opened`,
+/-- Core algebraic residual identity of SPDZ `MACCheck` (the `δ`-adapted check of
+[DamgardKellerLarraiaPastroSchollSmart2013], App. D.1, Fig. 10): when `inp` is authenticated
+for `shares` with claimed public openings `opened`,
 `∑ i, checkResidual (inp i) = - alpha * ∑ ℓ, e_ℓ * ((opened ℓ).value - (shares ℓ).secret)`. -/
 theorem sum_checkResidual_eq_neg_mul {p n T : ℕ} {alpha : ZMod p}
     {shares : Fin T → AuthShare p n} {opened : Fin T → OpenedValue p}
@@ -506,7 +540,7 @@ theorem sum_checkResidual_eq_zero {p n T : ℕ} {alpha : ZMod p}
   rw [sum_checkResidual_eq_neg_mul hhon.toAuthenticFor]
   simp [hhon.value_eq]
 
-/-- Cheating equation equivalence ([DamgardKellerLarraiaPastroSchollSmart2013]): adding an
+/-- Cheating equation equivalence ([DamgardKellerLarraiaPastroSchollSmart2013], App. D.3): adding an
 adversarial residual shift `deltaOpen` to the honest residual sum yields `0` if and only if
 `alpha * linearCombAddHom err e = deltaOpen`. -/
 theorem sum_checkResidual_add_eq_zero_iff {p n T : ℕ} {alpha : ZMod p}
@@ -524,8 +558,10 @@ theorem sum_checkResidual_add_eq_zero_iff {p n T : ℕ} {alpha : ZMod p}
   broadcastSchedule n noOracleSpec Comm ++
     broadcastSchedule n noOracleSpec (ResidualOpening p Coins)
 
-/-- Two-round commit-then-open `MACCheck` protocol over `Complexity.Crypto.Protocols.MPC.Basic`
-([DamgardKellerLarraiaPastroSchollSmart2013]):
+/-- Two-round commit-then-open `MACCheck` protocol over `Complexity.Crypto.Protocols.MPC.Basic`,
+modeling steps 5–9 of [DamgardKellerLarraiaPastroSchollSmart2013], App. D.1, Fig. 10 (steps 1–4,
+which coin-flip a seed and expand it with a PRG into the weights, are replaced by the input
+weights `PartyCheckInput.weights`), with the residual adapted to the `δ`-representation:
 1. Each party `i` samples commitment coins `r_i ← sampleCoins`, computes `σ_i = checkResidual`,
    and broadcasts `commit σ_i r_i` in Round 1.
 2. Each party `i` broadcasts `⟨σ_i, r_i⟩ : ResidualOpening p Coins` in Round 2.
@@ -595,7 +631,8 @@ noncomputable def linearCombZeroGame (p T : ℕ) [NeZero p] (err : Fin T → ZMo
   let e ← ProbComp.uniform (Fin T → ZMod p)
   return decide (linearCombAddHom err e = 0)
 
-/-- Standalone `MACCheck` cheating-equation game ([DamgardKellerLarraiaPastroSchollSmart2013]):
+/-- Standalone `MACCheck` cheating-equation game, the game from the proof of
+[DamgardKellerLarraiaPastroSchollSmart2013], §5.1, Lemma 1 (App. D.3):
 samples an independent uniform MAC key `alpha ← ProbComp.uniform (ZMod p)` and public weights
 `e ← ProbComp.uniform (Fin T → ZMod p)`, and tests whether the adversary's (possibly `e`-adaptive)
 residual shift `deltaShift e` satisfies the cheating equation
@@ -606,7 +643,8 @@ noncomputable def macCheckSoundnessGame (p T : ℕ) [NeZero p]
   let e ← ProbComp.uniform (Fin T → ZMod p)
   return decide (alpha * linearCombAddHom err e = deltaShift e)
 
-/-- Stateful randomized-adversary standalone `MACCheck` cheating-equation game (paralleling
+/-- Stateful randomized-adversary standalone `MACCheck` cheating-equation game (the game of
+[DamgardKellerLarraiaPastroSchollSmart2013], App. D.3, paralleling
 `Complexity.Crypto.Protocols.VOLE.MulCheck`): an arbitrary prior computation `adv : ProbComp S`
 selects state `s` determining both the opening error vector `err s` and the `e`-adaptive shift
 `deltaShift s` before the independent key `alpha` is sampled, winning if `err s ≠ 0` and
@@ -667,8 +705,8 @@ theorem eval_macKey_guess_le {p : ℕ} [Fact (Nat.Prime p)] (L d : ZMod p) :
       ZMod.card, one_div]
 
 /-- Concrete $2 / p$ bound for the standalone `MACCheck` cheating-equation game
-([DamgardKellerLarraiaPastroSchollSmart2013]): for prime `p`, any nonzero opening error vector
-`err ≠ 0`, and any `e`-adaptive residual shift `deltaShift`,
+([DamgardKellerLarraiaPastroSchollSmart2013], §5.1, Lemma 1; App. D.3): for prime `p`, any
+nonzero opening error vector `err ≠ 0`, and any `e`-adaptive residual shift `deltaShift`,
 `macCheckSoundnessGame p T err deltaShift` outputs `true` with probability at most `2 / p`. -/
 theorem eval_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
     {err : Fin T → ZMod p} (herr : err ≠ 0)
@@ -733,7 +771,7 @@ theorem succProbability_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)
 /-- Standalone `MACCheck` cheating-equation bound against any prior randomized adversary
 `adv : ProbComp S` that selects state `s` (fixing `err s` and `deltaShift s`) before the
 independent uniform key `alpha : ZMod p` is sampled. -/
-theorem eval_macCheckSoundness_bind_le {p T : ℕ} [Fact (Nat.Prime p)] {S : Type}
+theorem eval_macCheckSoundnessAdvGame_le {p T : ℕ} [Fact (Nat.Prime p)] {S : Type}
     (adv : ProbComp S) (err : S → Fin T → ZMod p)
     (deltaShift : S → (Fin T → ZMod p) → ZMod p) :
     (ProbComp.eval (macCheckSoundnessAdvGame p T adv err deltaShift)) true ≤ 2 / (p : ℝ≥0∞) := by

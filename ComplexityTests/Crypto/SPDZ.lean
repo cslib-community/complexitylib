@@ -24,7 +24,7 @@ Non-vacuous concrete evaluations, protocol executions, and soundness instantiati
    of `sum_checkResidual_eq_neg_mul` and `sum_checkResidual_add_eq_zero_iff` on a forged opening.
 3. **`2 / p` standalone cheating-equation games (`ZMod 5`, `T = 1` and `T = 2`):** concrete
    instantiations of `eval_linearCombZeroGame_eq`, `eval_macCheckSoundnessGame_le`,
-   `succProbability_macCheckSoundnessGame_le`, and `eval_macCheckSoundness_bind_le`, together with
+   `succProbability_macCheckSoundnessGame_le`, and `eval_macCheckSoundnessAdvGame_le`, together with
    exact counting of accepting `(alpha, e)` pairs (`9` out of `25` pairs on `T = 1`, strictly
    within the `2 / 5 = 10 / 25` bound).
 -/
@@ -186,6 +186,6 @@ example :
         (fun _ => deltaShift))) true ≤ 2 / (5 : ℝ≥0∞) :=
   ⟨eval_macCheckSoundnessGame_le (by decide) _,
    succProbability_macCheckSoundnessGame_le (by decide) _,
-   eval_macCheckSoundness_bind_le _ _ _⟩
+   eval_macCheckSoundnessAdvGame_le _ _ _⟩
 
 end ComplexityTests.Crypto.SPDZ
