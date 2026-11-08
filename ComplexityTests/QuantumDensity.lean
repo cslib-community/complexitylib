@@ -29,30 +29,12 @@ example : ¬ IsDensityMatrix (pureState (ket false) + pureState (ket true)) := b
   rw [trace_add, trace_pureState, trace_pureState, norm_ket, norm_ket] at h1
   norm_num at h1
 
-/-- The reduced state of either half of the maximally entangled state is maximally mixed. -/
-theorem partialTraceLeft_pureState_maxEntangled {ι : Type*} [Fintype ι] [DecidableEq ι] :
-    partialTraceLeft (pureState (maxEntangled ι)) =
-      (Fintype.card ι : ℂ)⁻¹ • (1 : Matrix ι ι ℂ) := by
-  have hs : ((Real.sqrt (Fintype.card ι) : ℂ))⁻¹ * ((Real.sqrt (Fintype.card ι) : ℂ))⁻¹ =
-      (Fintype.card ι : ℂ)⁻¹ := by
-    rw [← mul_inv, ← Complex.ofReal_mul, Real.mul_self_sqrt (Nat.cast_nonneg _)]
-    push_cast; rfl
-  ext k k'
-  simp only [partialTraceLeft_apply, pureState_apply, maxEntangled_apply, Matrix.smul_apply,
-    Matrix.one_apply, smul_eq_mul, mul_ite, mul_one, mul_zero]
-  by_cases h : k = k'
-  · subst h
-    rw [sum_eq_single k (fun i _ hi => by simp [hi]) (by simp)]
-    simp [hs]
-  · rw [ite_eq_right_iff.mpr fun h' => absurd h' h]
-    exact sum_eq_zero fun i _ => by
-      by_cases hi : i = k
-      · subst hi; simp [h]
-      · simp [hi]
-
--- Bob's half of an EPR pair is the maximally mixed qubit `1 / 2`.
+-- Bob's half of an EPR pair is the maximally mixed qubit `1 / 2`; so is Alice's.
 example : partialTraceLeft (pureState bell) = (2 : ℂ)⁻¹ • (1 : Matrix Bool Bool ℂ) := by
   rw [bell, partialTraceLeft_pureState_maxEntangled, Fintype.card_bool, Nat.cast_ofNat]
+
+example : partialTraceRight (pureState bell) = (2 : ℂ)⁻¹ • (1 : Matrix Bool Bool ℂ) := by
+  rw [bell, partialTraceRight_pureState_maxEntangled, Fintype.card_bool, Nat.cast_ofNat]
 
 /-! ### No-signalling -/
 

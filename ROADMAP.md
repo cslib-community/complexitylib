@@ -1580,9 +1580,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   no-signalling and quantum one-time pad of
   [#3490](https://github.com/cslib-community/complexitylib/issues/3490), prove that `2n` key bits
   are necessary to encrypt `n` qubits (Ambainis–Mosca–Tapp–de Wolf), Holevo's bound (in
-  particular, superdense coding is optimal) and Nayak's bound for quantum random access codes. The
-  last two also need von Neumann entropy and mutual information. With channel semantics (CPTP
-  maps), prove no-cloning for mixed states and no-broadcasting.
+  particular, superdense coding is optimal) and Nayak's bound for quantum random access codes. All
+  three need von Neumann entropy (AMTW's Theorem 5.3 uses it; the weaker key-count bound
+  `N ≥ 4ⁿ` may admit a dimension argument), and the last two also need mutual information. With
+  channel semantics (CPTP maps), prove no-cloning for mixed states and no-broadcasting.
 
 - **Quantum query separations**
   ([#2991](https://github.com/cslib-community/complexitylib/issues/2991)): beyond the decision

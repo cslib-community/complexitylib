@@ -22,13 +22,17 @@ twirl (`Cslib.Quantum.sum_pauliTwirl`). So the channel reveals nothing about `ρ
 (`Cslib.Crypto.Protocols.Quantum.OneTimePad.averageCiphertext_eq_averageCiphertext`): `2n` bits of
 key suffice to hide `n` qubits ([Ambainis, Mosca, Tapp, de Wolf][AmbainisMoscaTappdeWolf2000],
 Theorem 4.1, without ancilla; [de Wolf][deWolf2019], Chapter 18, Exercise 5(b), for one qubit).
+AMTW apply a uniformly random tensor product of `I, X, Y, Z`; since `Y = i X Z`, each such
+operator equals some `X^a Z^b` up to a global phase, which cancels in the conjugation, so the two
+encryptions are the same channel.
 
 Secrecy survives entanglement: if the plaintext register is part of a joint state `ρ` with a
 reference system that Eve may also hold, her key-averaged state is `1 / 2ⁿ ⊗ Tr_A ρ`
 (`Cslib.Crypto.Protocols.Quantum.OneTimePad.averageCiphertextWith_eq`), so it depends only on the
-reference system's own state, and not on the plaintext or its correlations with the reference
-(the proof of Theorem 4.1 notes that the twirl works "no matter if it is entangled with other
-qubits").
+reference system's own state, and not on the plaintext or its correlations with the reference.
+This product form (full decoupling) is a standard strengthening of the remark in the proof of
+Theorem 4.1 that the twirled qubit is maximally mixed "no matter if it is entangled with other
+qubits".
 
 Only the sufficiency of `2n` key bits is formalized; the matching lower bound (`2n` bits of key
 entropy are necessary, [Ambainis, Mosca, Tapp, de Wolf][AmbainisMoscaTappdeWolf2000],
@@ -79,6 +83,14 @@ noncomputable def encrypt (k : (ι → Bool) × (ι → Bool)) (ρ : Op ι) : Op
 /-- **Decryption** with the key `(a, b)`: `σ ↦ (X^a Z^b)ᴴ σ X^a Z^b`. -/
 noncomputable def decrypt (k : (ι → Bool) × (ι → Bool)) (σ : Op ι) : Op ι :=
   (pauliString k.1 k.2)ᴴ * σ * pauliString k.1 k.2
+
+theorem encrypt_def (k : (ι → Bool) × (ι → Bool)) (ρ : Op ι) :
+    encrypt k ρ = pauliString k.1 k.2 * ρ * (pauliString k.1 k.2)ᴴ := by
+  rfl
+
+theorem decrypt_def (k : (ι → Bool) × (ι → Bool)) (σ : Op ι) :
+    decrypt k σ = (pauliString k.1 k.2)ᴴ * σ * pauliString k.1 k.2 := by
+  rfl
 
 /-- **Correctness**: decryption with the same key recovers the plaintext. -/
 theorem decrypt_encrypt (k : (ι → Bool) × (ι → Bool)) (ρ : Op ι) :
@@ -133,6 +145,13 @@ noncomputable def encryptWith [Fintype κ] [DecidableEq κ] (k : (ι → Bool) �
     (ρ : Matrix ((ι → Bool) × κ) ((ι → Bool) × κ) ℂ) :
     Matrix ((ι → Bool) × κ) ((ι → Bool) × κ) ℂ :=
   (pauliString k.1 k.2 ⊗ₖ (1 : Matrix κ κ ℂ)) * ρ * (pauliString k.1 k.2 ⊗ₖ (1 : Matrix κ κ ℂ))ᴴ
+
+theorem encryptWith_def [Fintype κ] [DecidableEq κ] (k : (ι → Bool) × (ι → Bool))
+    (ρ : Matrix ((ι → Bool) × κ) ((ι → Bool) × κ) ℂ) :
+    encryptWith k ρ =
+      (pauliString k.1 k.2 ⊗ₖ (1 : Matrix κ κ ℂ)) * ρ *
+        (pauliString k.1 k.2 ⊗ₖ (1 : Matrix κ κ ℂ))ᴴ := by
+  rfl
 
 /-- Joint ciphertexts of joint states are states. -/
 theorem isDensityMatrix_encryptWith [Fintype κ] [DecidableEq κ]

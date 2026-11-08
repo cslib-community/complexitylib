@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Init
+public import Complexity.Foundations.Quantum.Bell
 public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.Analysis.Matrix.Order
 public import Mathlib.LinearAlgebra.Matrix.Kronecker
@@ -50,6 +50,9 @@ pure state") from unitaries on pure states to Kraus families on mixed states.
   `Cslib.Quantum.IsDensityMatrix.partialTraceRight`: reduced states are density matrices.
 * `Cslib.Quantum.partialTraceLeft_kronecker`, `Cslib.Quantum.partialTraceRight_kronecker`: the
   partial traces of a Kronecker product.
+* `Cslib.Quantum.partialTraceLeft_pureState_maxEntangled`,
+  `Cslib.Quantum.partialTraceRight_pureState_maxEntangled`: either half of the maximally entangled
+  state is maximally mixed.
 * `Cslib.Quantum.partialTraceLeft_kraus`: no-signalling for a Kraus family on the first system,
   with the special cases `Cslib.Quantum.partialTraceLeft_conj_unitary` (a unitary) and
   `Cslib.Quantum.partialTraceLeft_measure` (a computational-basis measurement whose outcome is
@@ -150,6 +153,19 @@ theorem partialTraceLeft_smul [Fintype ι] [Semiring R] (c : R) (ρ : Matrix (ι
     partialTraceLeft (c • ρ) = c • partialTraceLeft ρ := by
   ext k k'; simp [mul_sum]
 
+theorem partialTraceRight_add [Fintype κ] [AddCommMonoid R] (ρ σ : Matrix (ι × κ) (ι × κ) R) :
+    partialTraceRight (ρ + σ) = partialTraceRight ρ + partialTraceRight σ := by
+  ext i i'; simp [sum_add_distrib]
+
+theorem partialTraceRight_sum [Fintype κ] [AddCommMonoid R] {α : Type*} (s : Finset α)
+    (ρ : α → Matrix (ι × κ) (ι × κ) R) :
+    partialTraceRight (∑ a ∈ s, ρ a) = ∑ a ∈ s, partialTraceRight (ρ a) := by
+  ext i i'; simp only [partialTraceRight_apply, Matrix.sum_apply]; exact sum_comm
+
+theorem partialTraceRight_smul [Fintype κ] [Semiring R] (c : R) (ρ : Matrix (ι × κ) (ι × κ) R) :
+    partialTraceRight (c • ρ) = c • partialTraceRight ρ := by
+  ext i i'; simp [mul_sum]
+
 /-- The partial trace over the first system preserves the trace. -/
 theorem trace_partialTraceLeft [Fintype ι] [Fintype κ] [AddCommMonoid R]
     (ρ : Matrix (ι × κ) (ι × κ) R) : (partialTraceLeft ρ).trace = ρ.trace := by
@@ -203,6 +219,40 @@ theorem IsDensityMatrix.partialTraceLeft [Fintype ι] [Fintype κ] {ρ : Matrix 
 theorem IsDensityMatrix.partialTraceRight [Fintype ι] [Fintype κ] {ρ : Matrix (ι × κ) (ι × κ) ℂ}
     (hρ : IsDensityMatrix ρ) : IsDensityMatrix (partialTraceRight ρ) :=
   ⟨posSemidef_partialTraceRight hρ.posSemidef, by rw [trace_partialTraceRight, hρ.trace_eq_one]⟩
+
+private theorem inv_sqrt_card_mul_inv_sqrt_card (ι : Type*) [Fintype ι] :
+    ((Real.sqrt (Fintype.card ι) : ℂ))⁻¹ * ((Real.sqrt (Fintype.card ι) : ℂ))⁻¹ =
+      (Fintype.card ι : ℂ)⁻¹ := by
+  rw [← mul_inv, ← Complex.ofReal_mul, Real.mul_self_sqrt (Nat.cast_nonneg _)]
+  push_cast; rfl
+
+/-- The reduced state of either half of the maximally entangled state is maximally mixed:
+`Tr_A |Φ⟩⟨Φ| = 1 / |ι|` ([de Wolf][deWolf2019], §18.3, for the EPR pair). -/
+theorem partialTraceLeft_pureState_maxEntangled [Fintype ι] [DecidableEq ι] :
+    partialTraceLeft (pureState (maxEntangled ι)) =
+      (Fintype.card ι : ℂ)⁻¹ • (1 : Matrix ι ι ℂ) := by
+  ext k k'
+  simp only [partialTraceLeft_apply, pureState_apply, maxEntangled_apply, Matrix.smul_apply,
+    Matrix.one_apply, smul_eq_mul, mul_ite, mul_one, mul_zero]
+  by_cases h : k = k'
+  · subst h
+    rw [sum_eq_single k (fun i _ hi => by simp [hi]) (by simp)]
+    simp [inv_sqrt_card_mul_inv_sqrt_card]
+  · rw [ite_eq_right_iff.mpr fun h' => absurd h' h]
+    exact sum_eq_zero fun i _ => by
+      by_cases hi : i = k
+      · subst hi; simp [h]
+      · simp [hi]
+
+/-- `Tr_B |Φ⟩⟨Φ| = 1 / |ι|` for the maximally entangled state. -/
+theorem partialTraceRight_pureState_maxEntangled [Fintype ι] [DecidableEq ι] :
+    partialTraceRight (pureState (maxEntangled ι)) =
+      (Fintype.card ι : ℂ)⁻¹ • (1 : Matrix ι ι ℂ) := by
+  rw [← partialTraceLeft_pureState_maxEntangled]
+  ext i i'
+  simp only [partialTraceRight_apply, partialTraceLeft_apply, pureState_apply, maxEntangled_apply]
+  refine sum_congr rfl fun k _ => ?_
+  by_cases h : i = k <;> by_cases h' : i' = k <;> simp [h, h', eq_comm]
 
 /-! ### No-signalling -/
 
