@@ -217,10 +217,11 @@ structure IsNbhdIso {k : ℕ} (r : ℕ) (a : Fin k → M) (b : Fin k → N) (h :
 variable (L) in
 /-- The radius-`r` neighborhoods of `a` in `M` and of `b` in `N` are isomorphic.
 
-The isomorphism is encoded by a function `M → N`, so for the empty tuple (`k = 0`, where both
-balls are empty) `NbhdIso L r a b` holds exactly when there is some function `M → N`: if `M` is
-empty and `N` is not, it holds but `NbhdIso L r b a` does not. The main results only use tuples of
-positive length, where this asymmetry does not arise. -/
+The isomorphism is encoded by a function `M → N`. So for the empty tuple (`k = 0`, where both
+balls are empty) `NbhdIso L r a b` holds exactly when there is some function `M → N` and the
+nullary relations agree. In particular, if `M` is empty, `N` is not, and the nullary relations
+agree, then `NbhdIso L r a b` holds but `NbhdIso L r b a` does not. The main results avoid this
+asymmetry: they use tuples of positive length, a single structure, or a bijection `M ≃ N`. -/
 def NbhdIso {k : ℕ} (r : ℕ) (a : Fin k → M) (b : Fin k → N) : Prop :=
   ∃ h : M → N, IsNbhdIso L r a b h
 
