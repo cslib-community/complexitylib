@@ -19,8 +19,9 @@ import Complexity.Tactic.PolyTime
 # Worst-case consequences of easy-on-average `NP`
 
 If every distributional problem in `DistNP` has a polynomial-time heuristic scheme, then
-`NE = E`. This is the theorem of Ben-David, Chor, Goldreich and Luby, stated for `AvgP`
-[Ben-David, Chor, Goldreich and Luby][BenDavidChorGoldreichLuby1992]. The attribution is taken from
+`NE = E`. This is a length-indexed form of the theorem of Ben-David, Chor, Goldreich and Luby for
+`AvgP` [Ben-David, Chor, Goldreich and Luby][BenDavidChorGoldreichLuby1992] (see *Scope*). The
+attribution is taken from
 [Bläser and Manthey, §5][BlaserManthey2015]. The proof is padding with a polynomial-time computable
 ensemble that puts mass `1/poly` on every padded instance.
 
@@ -55,10 +56,13 @@ hypothesis `Cslib.Complexity.ExpPaddedNPEasy` of the padding argument
 ## Scope
 
 [Ben-David, Chor, Goldreich and Luby][BenDavidChorGoldreichLuby1992] state the theorem for
-`DistNP ⊆ AvgP`. The `HeurP` form proved here is stronger because `AvgP ⊆ HeurP`
-(`Cslib.Complexity.AvgP_subset_HeurP`). The `AvgP` form is
-`Cslib.Complexity.NE_subset_E_of_DistNP_subset_AvgP`. The `HeurP` strengthening is the same proof;
-it is not claimed as new. The theorem number in the primary source has not been checked.
+`DistNP ⊆ AvgP` in Levin's model, with a single distribution on all words. The statements here use
+the length-indexed ensembles and the scheme classes `AvgP` and `HeurP` of
+[Bogdanov and Trevisan][BogdanovTrevisan2006]; no bridge between the two models is formalized. The
+`HeurP` form is stronger than the `AvgP` form `Cslib.Complexity.NE_subset_E_of_DistNP_subset_AvgP`
+because `AvgP ⊆ HeurP` (`Cslib.Complexity.AvgP_subset_HeurP`). The primary text has not been
+inspected, so its theorem number and the details of its proof are unverified. The proof here is a
+standard padding argument, and the `HeurP` strengthening is not claimed as new.
 
 ## Main results
 
@@ -206,7 +210,7 @@ theorem valid_iff_exists (r : List Bool) : valid r = true ↔ ∃ u s, r = frame
   exact ⟨unframe r, s, hs.symm⟩
 
 /-- The prefix code of framed words. -/
-@[expose] def parser : HeaderParser where
+def parser : HeaderParser where
   valid := valid
   header := header
   header_isPrefix r hr := (valid_iff r).mp hr
@@ -290,8 +294,9 @@ theorem EXP_eq_NEXP_of_DistNP_subset_HeurP {α : Type} {enc : α ↪ List Bool}
   EXP_subset_NEXP.antisymm
     (NEXP_subset_EXP_of_expPaddedNPEasy (expPaddedNPEasy_of_DistNP_subset_HeurP h))
 
-/-- **If `DistNP ⊆ AvgP`, then `NE ⊆ E`**, the form stated by Ben-David, Chor, Goldreich and Luby
-[Ben-David, Chor, Goldreich and Luby][BenDavidChorGoldreichLuby1992]. -/
+/-- **If `DistNP ⊆ AvgP`, then `NE ⊆ E`**: the `AvgP` form of the theorem of Ben-David, Chor,
+Goldreich and Luby [Ben-David, Chor, Goldreich and Luby][BenDavidChorGoldreichLuby1992], for
+length-indexed ensembles rather than Levin's single distribution. -/
 theorem NE_subset_E_of_DistNP_subset_AvgP {α : Type} {enc : α ↪ List Bool}
     (h : DistNP ⊆ AvgP) : NE enc ⊆ E enc :=
   NE_subset_E_of_DistNP_subset_HeurP (h.trans AvgP_subset_HeurP)

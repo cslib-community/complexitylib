@@ -137,6 +137,14 @@ example {L : Set (List Bool)} (hL : L ∈ P encBits) : L ∈ E encBits :=
 /-- `NP ⊆ P` implies the padding hypothesis. -/
 example (h : NP encBits ⊆ P encBits) : ExpPaddedNPEasy := expPaddedNPEasy_of_NP_subset_P h
 
+/-- The hypothesis `DistNP ⊆ AvgP` is not vacuous: it follows from `NP ⊆ P`. -/
+example (h : NP encBits ⊆ P encBits) : DistNP ⊆ AvgP :=
+  fun _ hL => mem_AvgP_of_mem_P (h (mem_DistNP.mp hL).1)
+
+/-- Hence `NP ⊆ P` also gives `DistNP ⊆ HeurP`. -/
+example (h : NP encBits ⊆ P encBits) : DistNP ⊆ HeurP :=
+  fun _ hL => AvgP_subset_HeurP (mem_AvgP_of_mem_P (h (mem_DistNP.mp hL).1))
+
 /-- If `DistNP ⊆ HeurP`, then `E = NE` and `EXP = NEXP` for problems on bit words. -/
 example (h : DistNP ⊆ HeurP) : E encBits = NE encBits ∧ EXP encBits = NEXP encBits :=
   ⟨E_eq_NE_of_DistNP_subset_HeurP h, EXP_eq_NEXP_of_DistNP_subset_HeurP h⟩

@@ -72,7 +72,7 @@ The formal statement differs from the source in these modelling choices:
 
 ## Worst-case consequences: `DistNP ⊆ HeurP` implies `E = NE`
 
-Ben-David, Chor, Goldreich and Luby proved that `DistNP ⊆ AvgP` implies `NE = E` [bcgl92][bcgl92]. The primary text was not inspected. The attribution is checked against Bläser and Manthey [bm15][bm15], §5. [WorstCase](../../Complexity/Computability/Complexity/Classes/AverageCase/WorstCase.lean) proves the stronger `HeurP` form, by the same padding argument. The strengthening is not claimed as new.
+Ben-David, Chor, Goldreich and Luby proved that `DistNP ⊆ AvgP` implies `NE = E` [bcgl92][bcgl92]. The primary text was not inspected. The attribution is checked against Bläser and Manthey [bm15][bm15], §5. The source works in Levin's model, with a single distribution on all words. The Lean statements use this page's length-indexed ensembles and the scheme classes `AvgP` and `HeurP`, and no bridge between the two models is formalized. [WorstCase](../../Complexity/Computability/Complexity/Classes/AverageCase/WorstCase.lean) proves the stronger `HeurP` form by a standard padding argument. The strengthening is not claimed as new. The hypothesis is not vacuous: `NP ⊆ P` gives `DistNP ⊆ AvgP` through `mem_AvgP_of_mem_P`.
 
 | Statement | Lean |
 |---|---|
@@ -112,7 +112,7 @@ The padded ensemble is the collapse of the uniform ensemble (`HeaderParser.ensem
 - the exact probability `2^{-3}` of the padded word `frame [true] ++ 1^2` under `PaddedFrame.ensemble`; which concrete words begin with a framed word; `(B, PaddedFrame.ensemble) ∈ DistNP` for `B ∈ NP`;
 - the threshold of `correct_of_lt` is sharp: a heuristic scheme for `(∅, U)` errs on `[true]`, whose probability is exactly `1/(1+1)`;
 - under the all-ones ensemble, a heuristic scheme gives an exact polynomial-time decider on the support;
-- `L ∈ P` gives `L ∈ E` through `AvgP`; `NP ⊆ P` gives `ExpPaddedNPEasy`; and the `E = NE` and `EXP = NEXP` conclusions.
+- `L ∈ P` gives `L ∈ E` through `AvgP`; `NP ⊆ P` gives `ExpPaddedNPEasy`, and `DistNP ⊆ AvgP` and `DistNP ⊆ HeurP`, so the hypotheses are not vacuous; and the `E = NE` and `EXP = NEXP` conclusions.
 
 [bcgl92]: ../sources.md#bcgl92
 [bm15]: ../sources.md#bm15
