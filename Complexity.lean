@@ -30,6 +30,9 @@ public import Complexity.Algorithms.Lean.Dijkstra.Native.Source
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Word
 public import Complexity.Algorithms.Lean.Euler.Circuit
 public import Complexity.Algorithms.Lean.Freivalds
+public import Complexity.Algorithms.Lean.GomoryHu.Basic
+public import Complexity.Algorithms.Lean.GomoryHu.Existence
+public import Complexity.Algorithms.Lean.GomoryHu.WeightedCut
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
@@ -4126,6 +4129,7 @@ public import Complexity.Foundations.Combinatorics.Sunflower.Pluck
 public import Complexity.Foundations.Combinatorics.UniformSchedules
 public import Complexity.Foundations.Combinatorics.WeightBudget
 public import Complexity.Foundations.Combinatorics.WeightedCut
+public import Complexity.Foundations.Combinatorics.WeightedCut.MinCutBetween
 public import Complexity.Foundations.Combinatorics.WeightedCut.Multigraph
 public import Complexity.Foundations.Computability.ComputablePred
 public import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
