@@ -44,8 +44,12 @@ enc_structure encTraceCode : TraceCode where
 
 /-- Follow one actual parent through a strictly older expansion. -/
 @[expose] def traceStep (F : CSP Table ℕ) (s : TraceCode) (e : ExpansionCode × ℕ) : TraceCode :=
-  (e.1.outputs.find? fun o => (EdgeAugmenting.recordAt F o).2.2 == s.start).elim s fun o =>
-    ⟨(EdgeAugmenting.recordAt F e.1.input).2.2, (e.1.input, o) :: s.steps, e.2 :: s.times⟩
+  let (expansion, time) := e
+  (expansion.outputs.find? fun o =>
+    let (_constraint, _argument, variableName) := EdgeAugmenting.recordAt F o
+    variableName == s.start).elim s fun output =>
+    let (_constraint, _argument, parent) := EdgeAugmenting.recordAt F expansion.input
+    ⟨parent, (expansion.input, output) :: s.steps, time :: s.times⟩
 
 /-- Scan newest-first expansions with the actual decreasing copy timestamps. -/
 @[expose] def trace (F : CSP Table ℕ) (es : List ExpansionCode) (s : TraceCode) : TraceCode :=
@@ -67,7 +71,9 @@ abbrev encNodeCode := encSum encNat (encPair encUnary encUnary)
 /-- Original variables alternate with actual timestamped copied constraints. -/
 @[expose] def nodes (F : CSP Table ℕ) (p : TraceCode) : List NodeCode :=
   .inl p.start :: (p.steps.zip p.times).flatMap fun ((a, b), t) =>
-    [.inr ((EdgeAugmenting.recordAt F a).1, t), .inl (EdgeAugmenting.recordAt F b).2.2]
+    let (constraint, _inputArgument, _inputVariable) := EdgeAugmenting.recordAt F a
+    let (_outputConstraint, _outputArgument, variableName) := EdgeAugmenting.recordAt F b
+    [.inr (constraint, t), .inl variableName]
 
 /-- The full common root-path prefix, retaining both coordinates of a copied constraint. -/
 @[expose] def common (F : CSP Table ℕ) (left right : TraceCode) : List NodeCode :=
@@ -89,15 +95,19 @@ enc_structure encBlossomCode : BlossomCode where
 
 /-- Candidate augmentation: the left ancestry, meeting pair, and reversed right ancestry. -/
 @[expose] def meetingWalk (F : CSP Table ℕ) (m : MeetingCode) : WalkCode :=
-  let left := walk (ancestry F m.older (EdgeAugmenting.recordAt F m.current.input).2.2)
-  let right := walk (ancestry F m.older (EdgeAugmenting.recordAt F m.output).2.2)
+  let (_inputConstraint, _inputArgument, inputVariable) := EdgeAugmenting.recordAt F m.current.input
+  let (_outputConstraint, _outputArgument, outputVariable) := EdgeAugmenting.recordAt F m.output
+  let left := walk (ancestry F m.older inputVariable)
+  let right := walk (ancestry F m.older outputVariable)
   append (NativeWalk.snoc left m.current.input m.output) (NativeWalk.reverse F right)
 
 /-- Both actual LCA cases, including the final child-to-child pair for a copied-constraint LCA.
 Every scope lookup and prefix length is bounded by an actual list. -/
 @[expose] def blossom (F : CSP Table ℕ) (m : MeetingCode) : Option BlossomCode :=
-  let left := ancestry F m.older (EdgeAugmenting.recordAt F m.current.input).2.2
-  let right := ancestry F m.older (EdgeAugmenting.recordAt F m.output).2.2
+  let (_inputConstraint, _inputArgument, inputVariable) := EdgeAugmenting.recordAt F m.current.input
+  let (_outputConstraint, _outputArgument, outputVariable) := EdgeAugmenting.recordAt F m.output
+  let left := ancestry F m.older inputVariable
+  let right := ancestry F m.older outputVariable
   let shared := common F left right
   let k := (shared.length - 1) / 2
   shared.reverse.head?.elim none fun ancestor =>
@@ -110,8 +120,10 @@ Every scope lookup and prefix length is bounded by an actual list. -/
     | .inr _ =>
       (left.steps[k]?).elim none fun (_, lport) =>
         (right.steps[k]?).map fun (_, rport) =>
-          let a : WalkCode := ⟨(EdgeAugmenting.recordAt F lport).2.2, left.steps.drop (k + 1)⟩
-          let b : WalkCode := ⟨(EdgeAugmenting.recordAt F rport).2.2, right.steps.drop (k + 1)⟩
+          let (_leftConstraint, _leftArgument, leftVariable) := EdgeAugmenting.recordAt F lport
+          let (_rightConstraint, _rightArgument, rightVariable) := EdgeAugmenting.recordAt F rport
+          let a : WalkCode := ⟨leftVariable, left.steps.drop (k + 1)⟩
+          let b : WalkCode := ⟨rightVariable, right.steps.drop (k + 1)⟩
           ⟨NativeWalk.take (walk left) (k + 1),
             NativeWalk.snoc
               (append (NativeWalk.snoc a m.current.input m.output) (NativeWalk.reverse F b))

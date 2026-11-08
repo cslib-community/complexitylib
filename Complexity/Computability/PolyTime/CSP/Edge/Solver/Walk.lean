@@ -59,7 +59,9 @@ open EdgeAugmenting (WalkCode encWalkCode Record encRecord)
 
 /-- Original binary variable names selected by a cycle, with duplicates erased. -/
 @[expose] def internal (F : CSP Table ℕ) (w : WalkCode) : List ℕ :=
-  ((edges w).map fun i => (EdgeAugmenting.recordAt F i).2.2).dedup
+  ((edges w).map fun i =>
+    let (_constraint, _argument, variableName) := EdgeAugmenting.recordAt F i
+    variableName).dedup
 
 /-- Native prefix arm at one actual step. -/
 @[expose] def inputArm (w : WalkCode) (step : ℕ) (input output : ℕ) : WalkCode :=

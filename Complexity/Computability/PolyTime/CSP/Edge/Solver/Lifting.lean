@@ -35,8 +35,9 @@ open EdgeAugmenting (WalkCode Record)
 /-- Record of a surviving original port in the actual contracted body. Its constraint position
 and original binary name are retained; its argument position is its outside-list rank. -/
 @[expose] def oldRecord (F : CSP Table ℕ) (vs : List ℕ) (o : Record) : Record :=
+  let (constraint, argument, variableName) := o
   let os := Table.outsidePositions (scope F o).length (Blossom.positions vs (scope F o))
-  (o.1, os.idxOf o.2.1, o.2.2)
+  (constraint, os.idxOf argument, variableName)
 
 /-- Invert surviving ports by the original finite incidence scan, preserving source tie order.
 The fallback is an actual cycle port on certified inputs; malformed raw positions remain total. -/
@@ -44,7 +45,9 @@ The fallback is an actual cycle port on certified inputs; malformed raw position
     (fallback index : ℕ) : ℕ :=
   let target := EdgeAugmenting.recordAt (Contraction.contract input vs) index
   let records := CSP.occurrences input.body
-  ((records.find? fun o => !vs.contains o.2.2 && oldRecord input.body vs o == target).map
+  ((records.find? fun o =>
+    let (_constraint, _argument, variableName) := o
+    !vs.contains variableName && oldRecord input.body vs o == target).map
     fun o => records.idxOf o).getD fallback
 
 /-- Restore the actual outside prefix, retaining its original start and step order. -/
@@ -61,10 +64,11 @@ port must be unused; pair feasibility is tested on the prefix's current finite b
   let current := NativeWalk.flip input.labels used
   let records := CSP.occurrences input.body
   records.flatMap fun o =>
+    let (constraint, _argument, variableName) := o
     ((NativeWalk.edges w).filter fun e =>
       let index := records.idxOf o
-      o.2.2 == EdgeAugmenting.finish ⟨input.body, [], [], 0⟩ front &&
-        o.1 == (EdgeAugmenting.recordAt input.body e).1 && !used.contains index &&
+      variableName == EdgeAugmenting.finish ⟨input.body, [], [], 0⟩ front &&
+        constraint == (EdgeAugmenting.recordAt input.body e).1 && !used.contains index &&
         EdgeAugmenting.valid input.body
           (NativeWalk.flip (NativeWalk.flip current [index]) [e])).map
       fun e => (records.idxOf o, e)
@@ -117,13 +121,17 @@ connector and execute the actual original exit/arm construction. -/
   w.steps.head?.elim none fun (fallback, _) =>
     let vs := NativeWalk.internal input.body w
     let connectors := Contraction.connectors input.body vs
-    if (NativeWalk.edges p).all fun i => !connectors.contains
-        (EdgeAugmenting.recordAt (Contraction.contract input vs) i).2.2 then
+    if (NativeWalk.edges p).all fun i =>
+        let (_constraint, _argument, variableName) :=
+          EdgeAugmenting.recordAt (Contraction.contract input vs) i
+        !connectors.contains variableName then
       some (NativeWalk.flip input.labels
         (NativeWalk.edges (restoreWalk input vs fallback p)))
     else
-      let n := p.steps.findIdx fun pair => connectors.contains
-        (EdgeAugmenting.recordAt (Contraction.contract input vs) pair.2).2.2
+      let n := p.steps.findIdx fun (_input, output) =>
+        let (_constraint, _argument, variableName) :=
+          EdgeAugmenting.recordAt (Contraction.contract input vs) output
+        connectors.contains variableName
       liftPrefix input w (restoreWalk input vs fallback (NativeWalk.take p n))
 
 /-- Actual native comparison augmentation followed by whole-instance lifting. Every width

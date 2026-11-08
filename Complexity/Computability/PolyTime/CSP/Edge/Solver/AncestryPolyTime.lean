@@ -102,7 +102,12 @@ private theorem traceStep_growth (F : CSP Table ℕ) (es : List ExpansionCode)
     (s : TraceCode) (e : TimedExpansion) (he : e ∈ timed es) :
     (encTraceCode (traceStep F s e)).length ≤ (encTraceCode s).length +
       (encList encTraceCode (atoms F es)).length := by
-  unfold traceStep
+  -- Normalize the named-component body before splitting its scan result.
+  change (encTraceCode
+    ((e.1.outputs.find? fun o => (EdgeAugmenting.recordAt F o).2.2 == s.start).elim s fun o =>
+      ⟨(EdgeAugmenting.recordAt F e.1.input).2.2, (e.1.input, o) :: s.steps,
+        e.2 :: s.times⟩)).length ≤
+      (encTraceCode s).length + (encList encTraceCode (atoms F es)).length
   cases ho : e.1.outputs.find? (fun o => (EdgeAugmenting.recordAt F o).2.2 == s.start) with
   | none => simp
   | some o =>
