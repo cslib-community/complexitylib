@@ -626,7 +626,7 @@ theorem childRouterBitPerm_symm {s L : ℕ} (hsL : s ≤ L) (c q b : ℕ)
   exact feistelBitEquiv_symm hsL (childRouterRound c q b s (2 ^ (L - s)) θ)
 
 private theorem dens_prod_le_of_good {α β : Type*} [Fintype α] [Nonempty α] [DecidableEq α]
-    [Fintype β] [Nonempty β] (G : Finset α) (P : α → β → Prop)
+    [Fintype β] (G : Finset α) (P : α → β → Prop)
     [∀ a, DecidablePred (P a)] [DecidablePred (fun p : α × β => P p.1 p.2)]
     {δ : ℝ} (hδ0 : 0 ≤ δ) (hgood : ∀ a ∈ G, (dens {y : β | P a y} : ℝ) ≤ δ) :
     (dens {p : α × β | P p.1 p.2} : ℝ) ≤ (dens {a : α | a ∉ G} : ℝ) + δ := by
