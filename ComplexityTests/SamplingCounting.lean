@@ -309,7 +309,7 @@ private theorem goodEstimate_exact (p : ℕ) (x : ℕ × ℕ × Bool) :
 example (x : ℕ × ℕ × Bool) (q : ℕ) :
     Interactive.CloseTo (ProbComp.eval (R.sampler exactCounter x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) :=
-  R.closeTo_sampler (fun x p t _ => exactCounter_approx x p t) x q
+  R.closeTo_sampler (fun p t _ y => exactCounter_approx y p t) x q
 
 /-- The round trip: the FPRAS obtained from the exact sampler gives back a sampler with the output
 law of an almost uniform sampler. -/
@@ -322,7 +322,7 @@ example (x : ℕ × ℕ × Bool) (q : ℕ) :
 example (q : ℕ) :
     Interactive.CloseTo (ProbComp.eval (R.sampler exactCounter (2, 3, false) q)) (PMF.pure none)
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) := by
-  have h := R.closeTo_sampler (fun x p t _ => exactCounter_approx x p t) (2, 3, false) q
+  have h := R.closeTo_sampler (fun p t _ y => exactCounter_approx y p t) (2, 3, false) q
   rwa [show W (2, 3, false) = ∅ by simp [W], uniformWitness_empty] at h
 
 /-- At the exact root estimate `4 / 1` of `(1, 2, true)`, a trial rejects with probability at most
@@ -356,11 +356,9 @@ example : ProbComp.eval (SelfReducible.branch 2 1 2) (some true) = 2 / 4 := by
   norm_num
 
 /-- The counter that always answers `0` misses the accuracy hypothesis of `closeTo_sampler`. -/
-example : ¬ ∀ (x : ℕ × ℕ × Bool) (p t : ℕ), 0 < p → 1 - (1 / 2 : ℝ) ^ t ≤
-    ((ProbComp.eval (pure (0, 1) : ProbComp (ℕ × ℕ))).toOuterMeasure
-      {out | ApproxWithin (W x).card p out.1 out.2}).toReal := by
+example : ¬ SelfReducible.CounterAccurate W (fun _ _ _ => pure (0, 1)) 2 1 := by
   intro h
-  have h1 := h (0, 1, true) 2 1 (by norm_num)
+  have h1 := h (0, 1, true)
   have hn : ¬ ApproxWithin (W (0, 1, true)).card 2 0 1 := by
     rw [card_W]
     rintro ⟨-, h⟩

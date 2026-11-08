@@ -772,8 +772,9 @@ attribute [local irreducible] ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-/-- A jet array with its dimensions in unary: the pair `((J, ℓ), A)` of the framed unary `J` and
-`ℓ`, then the array `A` encoded by `encIntTable` with binary entries. -/
+/-- A jet array with its dimensions in unary: the pair `((J, ℓ), A)`. The dimension pair is framed,
+and inside it the unary `J` is framed again before the unary `ℓ`; the array `A` follows, encoded by
+`encIntTable` with binary entries. -/
 abbrev encJetWithDims : (ℕ × ℕ) × List (List ℤ) ↪ List Bool :=
   encPair (encPair encUnary encUnary) encIntTable
 
