@@ -45,6 +45,8 @@ encUnary encUnary`).
   its `ProbComp` interaction realization.
 * `Cslib.Crypto.GMW.gmwSeqVerifier`: sequentially amplified GMW verifier running `gmwVerifier`
   `k n` times and accepting iff all `k n` executions accept.
+* `Cslib.Crypto.GMW.encBudgetedConfig`: the encoding of a machine configuration with its remaining
+  step and query budgets, the state of `oneSessionStep`.
 
 ## Main results
 
@@ -195,10 +197,6 @@ theorem eval_gmwSeqInteract (generator : List Bool → List Bool) (s m : ℕ) (�
   simpa only [gmwSeqInteract, bind_pure_comp] using
     (run_gmwSeqProver_fst generator s m φ w k prog).symm
 
-/-- Encode a single GMW prover coin pair `(bits, seeds)`. -/
-abbrev encCoinPair : (List Bool × List (List Bool)) ↪ List Bool :=
-  encPair encBits (encList encBits)
-
 /-- Encode the multi-session prover state `(inRound2, coinsList)`. -/
 abbrev encSeqState : (Bool × List (List Bool × List (List Bool))) ↪ List Bool :=
   encPair encBool (encList encCoinPair)
@@ -250,8 +248,7 @@ theorem isPPTOn_runSeq_honest {α Caller : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool}
     {n s m : Caller → ℕ} {a : Caller → α} {z : Caller → List Bool}
     {φ : Caller → CNF ℕ} {coinsList : Caller → List (List Bool × List (List Bool))}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
     (hg : ComputableInPolyTime generator encBits encBits)
     (hn : ComputableInPolyTime n input encUnary)
     (hs : ComputableInPolyTime s input encUnary)
@@ -314,9 +311,8 @@ theorem isPPTOn_gmwSeqInteract {α : Type} {enc : α ↪ List Bool}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hk : ComputableInPolyTime k encUnary encUnary)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z)) :
-    IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z)) :
+    IsPPTOn (encInstanceWitnessAuxInput enc) encBits
       (fun (n, a, w, z) =>
         gmwSeqInteract generator (n + 7) (length (n + 7)) (f a) w (k n)
           (Vstar n a z)) := by
@@ -756,10 +752,8 @@ theorem isPPTOn_gmwSimWithPadsOpt {α β : Type} {enc : α ↪ List Bool} {encB 
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encB
-      (fun p => Vstar p.1 p.2.1 p.2.2)) :
-    IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) (encList encBits))
-      (encOption encB)
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encB (fun p => Vstar p.1 p.2.1 p.2.2)) :
+    IsPPTOn (encPair (encInstanceAuxInput enc) (encList encBits)) (encOption encB)
       (fun p : (ℕ × α × List Bool) × List (List Bool) =>
         gmwSimWithPadsOpt generator (p.1.1 + 7) (length (p.1.1 + 7))
           (f p.1.2.1) (Vstar p.1.1 p.1.2.1 p.1.2.2) p.2) := by
@@ -774,9 +768,8 @@ theorem isPPTOn_gmwSimAttemptOpt {α β : Type} {enc : α ↪ List Bool} {encB :
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encB
-      (fun p => Vstar p.1 p.2.1 p.2.2)) :
-    IsPPTOn (encPair encUnary (encPair enc encBits)) (encOption encB)
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encB (fun p => Vstar p.1 p.2.1 p.2.2)) :
+    IsPPTOn (encInstanceAuxInput enc) (encOption encB)
       (fun p : ℕ × α × List Bool =>
         gmwSimAttemptOpt generator (p.1 + 7) (length (p.1 + 7))
           (f p.2.1) (Vstar p.1 p.2.1 p.2.2)) := by
@@ -792,8 +785,7 @@ theorem isPPTOn_gmwRealWithPadsOpt {α β Param : Type} {enc : α ↪ List Bool}
     {n s m : Param → ℕ} {a : Param → α} {z w : Param → List Bool}
     {φ : Param → CNF ℕ} {pads : Param → List (List Bool)}
     (hg : ComputableInPolyTime generator encBits encBits)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encB
-      (fun p => Vstar p.1 p.2.1 p.2.2))
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encB (fun p => Vstar p.1 p.2.1 p.2.2))
     (hn : ComputableInPolyTime n input encUnary)
     (hs : ComputableInPolyTime s input encUnary)
     (hm : ComputableInPolyTime m input encUnary)
@@ -996,12 +988,19 @@ theorem mem_support_oneSessionStep {k : ℕ} {Control : Type}
         exact ⟨by omega, by omega,
           hstep ▸ hcfg.receive channel nextState _ (List.length_take_le _ _)⟩
 
+/-- State `(rem, q, cfg)` of `oneSessionStep`, with both budgets in unary: the remaining step
+budget `rem`, the remaining query budget `q`, then the machine's finite configuration encoded by
+`encFiniteConfig`. Both budgets are framed. -/
+noncomputable abbrev encBudgetedConfig {k : ℕ} {Control : Type} [Finite Control] :
+    ℕ × ℕ × FiniteConfig k Bool Control Unit ↪ List Bool :=
+  encPair encUnary (encPair encUnary encFiniteConfig)
+
 /-- `oneSessionStep` is uniform strict oracle PPT. -/
 theorem isOraclePPTOn_oneSessionStep {k : ℕ} {Control : Type} [Finite Control]
     (machine : _root_.Turing.MultiTapePTM k Bool Control Unit) :
     IsOraclePPTOn
-      (encPair encUnary (encPair encUnary (encPair encUnary encFiniteConfig)))
-      (encPair encUnary (encPair encUnary encFiniteConfig))
+      (encPair encUnary encBudgetedConfig)
+      encBudgetedConfig
       (fun p => oneSessionStep machine p.1 p.2) := by
   let encHMid := encPair (encPair (encFinEnum Unit) encBits) encUnary
   let encHIn := encPair encUnary encHMid
@@ -1042,7 +1041,7 @@ theorem isOraclePPTOn_oneSessionStep {k : ℕ} {Control : Type} [Finite Control]
 theorem isOraclePPTOn_sessionStep {k : ℕ} {Control : Type} [Finite Control]
     (machine : _root_.Turing.MultiTapePTM k Bool Control Unit) :
     IsOraclePPTOn
-      (encPair encUnary (encPair encUnary (encPair encUnary encFiniteConfig)))
+      (encPair encUnary encBudgetedConfig)
       (encPair encUnary encFiniteConfig)
       (fun p => sessionStep machine p.1 p.2.1 p.2.2.1 p.2.2.2) := by
   let encCfg := encFiniteConfig (k := k) (State := Control) (Oracle := Unit)

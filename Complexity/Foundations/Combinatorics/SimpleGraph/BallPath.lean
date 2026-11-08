@@ -31,10 +31,12 @@ The radius-`r` balls of the cycle graph `cycleGraph N` with `N ≥ 2r + 2` are b
 `[-r, r]` (`SimpleGraph.exists_isBallPath_cycleGraph`). Around vertex `j` of the path graph
 `pathGraph N`, the radius-`r` ball is a ball path over `[-min r j, min r (N - 1 - j)]`
 (`SimpleGraph.exists_isBallPath_pathGraph`). The bound `N ≥ 2r + 2` is needed: in `cycleGraph 3`
-the radius-`1` ball is the whole triangle, which is not a path.
+the radius-`1` ball is the whole triangle, which is not a path. Distances in `pathGraph N` are
+differences of indices (`SimpleGraph.edist_pathGraph`).
 
 These descriptions are the cycle-graph distance computations behind Hanf-locality proofs that
-connectivity, acyclicity and being a tree are not first-order definable.
+connectivity, acyclicity and being a tree are not first-order definable, and the path-graph
+distances behind Gaifman-locality proofs that transitive closure and reachability are not.
 
 ## Main definitions
 
@@ -46,6 +48,7 @@ connectivity, acyclicity and being a tree are not first-order definable.
 * `SimpleGraph.IsBallPath.sumInl`, `SimpleGraph.IsBallPath.sumInr`: ball paths in a disjoint union.
 * `SimpleGraph.exists_isBallPath_cycleGraph`: balls in cycle graphs.
 * `SimpleGraph.exists_isBallPath_pathGraph`: balls in path graphs.
+* `SimpleGraph.edist_pathGraph`: distances in path graphs.
 -/
 
 public section
@@ -265,6 +268,49 @@ theorem exists_isBallPath_pathGraph {N r : ℕ} (j : Fin N) {lo hi : ℤ}
     rcases hy with hy | hy
     · exact ⟨s + 1, ⟨by omega, by omega⟩, Fin.ext (by rw [hv]; omega)⟩
     · exact ⟨s - 1, ⟨by omega, by omega⟩, Fin.ext (by rw [hv]; omega)⟩
+
+/-- Every walk in `pathGraph N` is at least as long as the distance of the endpoint indices. -/
+private theorem pathGraph_length_walk {N : ℕ} {i j : Fin N} (p : (pathGraph N).Walk i j) :
+    (j : ℕ) - i + (i - j) ≤ p.length := by
+  induction p with
+  | nil => simp
+  | cons h p ih =>
+    rw [pathGraph_adj] at h
+    rw [Walk.length_cons]
+    omega
+
+/-- The vertex `d` steps after `i` in `pathGraph N` is at distance at most `d` from `i`. -/
+private theorem edist_pathGraph_add_le {N : ℕ} :
+    ∀ (d : ℕ) (i : Fin N) (hi : i + d < N), (pathGraph N).edist i ⟨i + d, hi⟩ ≤ d
+  | 0, i, _ => by simp
+  | d + 1, i, hi => by
+    have h1 := edist_pathGraph_add_le d i (by omega)
+    have h2 : (pathGraph N).edist ⟨i + d, by omega⟩ ⟨i + (d + 1), hi⟩ ≤ 1 :=
+      edist_le_one_iff_adj_or_eq.2 (.inl (pathGraph_adj.2 (.inl rfl)))
+    calc (pathGraph N).edist i ⟨i + (d + 1), hi⟩
+        ≤ (pathGraph N).edist i ⟨i + d, by omega⟩ +
+          (pathGraph N).edist ⟨i + d, by omega⟩ ⟨i + (d + 1), hi⟩ := SimpleGraph.edist_triangle
+      _ ≤ d + 1 := add_le_add h1 h2
+      _ = ((d + 1 : ℕ) : ℕ∞) := by push_cast; rfl
+
+/-- **Distances in path graphs.** The distance between `i` and `j` in `pathGraph N` is
+`|j - i|`, written `(j - i) + (i - j)` in truncated subtraction. -/
+theorem edist_pathGraph {N : ℕ} (i j : Fin N) :
+    (pathGraph N).edist i j = ((j : ℕ) - i + (i - j) : ℕ) := by
+  refine le_antisymm ?_ ?_
+  · rcases le_total (i : ℕ) j with h | h
+    · have := edist_pathGraph_add_le (j - i) i (by omega)
+      rw [show (⟨i + (j - i), by omega⟩ : Fin N) = j from Fin.ext (by simp only; omega)] at this
+      rwa [show (j : ℕ) - i + (i - j) = j - i by omega]
+    · have := edist_pathGraph_add_le (i - j) j (by omega)
+      rw [show (⟨j + (i - j), by omega⟩ : Fin N) = i from Fin.ext (by simp only; omega),
+        edist_comm] at this
+      rwa [show (j : ℕ) - i + (i - j) = i - j by omega]
+  · have : NeZero N := ⟨by have := i.2; omega⟩
+    obtain ⟨p, hp⟩ := ((connected_pathGraph.2 (by have := i.2; omega)).preconnected i j)
+      |>.exists_walk_length_eq_edist
+    rw [← hp]
+    exact_mod_cast pathGraph_length_walk p
 
 end Path
 

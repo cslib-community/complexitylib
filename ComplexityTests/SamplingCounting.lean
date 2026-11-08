@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Complexity.Classes.FPAUS.FPRAS
+import Complexity.Computability.Complexity.Classes.FPAUS.OfFPRAS
 import Complexity.Computability.Complexity.Classes.FPAUS.Sampler
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.PPT.Capture
@@ -22,7 +23,8 @@ cover zero-count instances, witness length `0`, and a sampler that is not almost
 other direction, the exact counter and the FPRAS obtained from the exact sampler give checked
 instances of `closeTo_sampler` and `closeTo_sampler_of_isFPRAS`, with checks of good estimates,
 the branching coin, the acceptance bound of a trial, and a counter that misses the accuracy
-hypothesis. -/
+hypothesis. The exact counter is strict PPT, which gives checked instances of
+`isFPAUS_of_isFPRAS`, `mem_FPAUS_of_mem_FPRAS` and `mem_FPAUS_iff_mem_FPRAS`. -/
 
 namespace ComplexityTests.SamplingCounting
 
@@ -309,7 +311,7 @@ private theorem goodEstimate_exact (p : ℕ) (x : ℕ × ℕ × Bool) :
 example (x : ℕ × ℕ × Bool) (q : ℕ) :
     Interactive.CloseTo (ProbComp.eval (R.sampler exactCounter x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) :=
-  R.closeTo_sampler (fun x p t _ => exactCounter_approx x p t) x q
+  R.closeTo_sampler (fun p t _ y => exactCounter_approx y p t) x q
 
 /-- The round trip: the FPRAS obtained from the exact sampler gives back a sampler with the output
 law of an almost uniform sampler. -/
@@ -322,7 +324,7 @@ example (x : ℕ × ℕ × Bool) (q : ℕ) :
 example (q : ℕ) :
     Interactive.CloseTo (ProbComp.eval (R.sampler exactCounter (2, 3, false) q)) (PMF.pure none)
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) := by
-  have h := R.closeTo_sampler (fun x p t _ => exactCounter_approx x p t) (2, 3, false) q
+  have h := R.closeTo_sampler (fun p t _ y => exactCounter_approx y p t) (2, 3, false) q
   rwa [show W (2, 3, false) = ∅ by simp [W], uniformWitness_empty] at h
 
 /-- At the exact root estimate `4 / 1` of `(1, 2, true)`, a trial rejects with probability at most
@@ -356,11 +358,10 @@ example : ProbComp.eval (SelfReducible.branch 2 1 2) (some true) = 2 / 4 := by
   norm_num
 
 /-- The counter that always answers `0` misses the accuracy hypothesis of `closeTo_sampler`. -/
-example : ¬ ∀ (x : ℕ × ℕ × Bool) (p t : ℕ), 0 < p → 1 - (1 / 2 : ℝ) ^ t ≤
-    ((ProbComp.eval (pure (0, 1) : ProbComp (ℕ × ℕ))).toOuterMeasure
-      {out | ApproxWithin (W x).card p out.1 out.2}).toReal := by
+private theorem not_counterAccurate_zero :
+    ¬ SelfReducible.CounterAccurate W (fun _ _ _ => pure (0, 1)) 2 1 := by
   intro h
-  have h1 := h (0, 1, true) 2 1 (by norm_num)
+  have h1 := h (0, 1, true)
   have hn : ¬ ApproxWithin (W (0, 1, true)).card 2 0 1 := by
     rw [card_W]
     rintro ⟨-, h⟩
@@ -368,5 +369,53 @@ example : ¬ ∀ (x : ℕ × ℕ × Bool) (p t : ℕ), 0 < p → 1 - (1 / 2 : �
   simp only [ProbComp.eval_pure, PMF.toOuterMeasure_pure_apply, Set.mem_ofPred_eq, hn,
     ↓reduceIte, ENNReal.toReal_zero] at h1
   norm_num at h1
+
+/-! ### FPRAS ⇒ FPAUS with the runtime certificate -/
+
+/-- The exact counter is strict PPT: `2 ^ r` in binary when alive, `0` otherwise. -/
+private theorem isPPTOn_exactCounter :
+    IsPPTOn (encPair (encPair encUnary (encPair encUnary encBool)) (encPair encUnary encUnary))
+      (encPair encNat encNat) (Function.uncurry fun x => Function.uncurry (exactCounter x)) := by
+  have hc : ComputableInPolyTime (fun a : (ℕ × ℕ × Bool) × ℕ × ℕ =>
+      ((if a.1.2.2 then 2 ^ a.1.2.1 else 0, 1) : ℕ × ℕ))
+      (encPair (encPair encUnary (encPair encUnary encBool)) (encPair encUnary encUnary))
+      (encPair encNat encNat) := by
+    fun_prop
+  refine hc.isPPTOn.congr fun a => ?_
+  rcases a with ⟨⟨m, r, _ | _⟩, p, t⟩
+  · simp [exactCounter, W]
+  · simp [exactCounter, card_W]
+
+private theorem isFPRAS_exactCounter :
+    IsFPRAS (encPair encUnary (encPair encUnary encBool)) (fun x => (W x).card) exactCounter :=
+  ⟨isPPTOn_exactCounter, fun x p t _ => exactCounter_approx x p t⟩
+
+/-- The sampler built from the exact counter is a fully polynomial almost uniform sampler. -/
+example : IsFPAUS (encPair encUnary (encPair encUnary encBool)) W (R.sampler exactCounter) :=
+  R.isFPAUS_of_isFPRAS exactCounter isFPRAS_exactCounter
+
+/-- The round trip through both reductions: the FPRAS obtained from the exact sampler gives back a
+fully polynomial almost uniform sampler. -/
+example : IsFPAUS (encPair encUnary (encPair encUnary encBool)) W (R.sampler (R.estimate S)) :=
+  R.isFPAUS_of_isFPRAS _ (R.isFPRAS_of_isFPAUS isFPAUS_S)
+
+example : W ∈ FPAUS (encPair encUnary (encPair encUnary encBool)) :=
+  R.mem_FPAUS_of_mem_FPRAS ⟨exactCounter, isFPRAS_exactCounter⟩
+
+example : W ∈ FPAUS (encPair encUnary (encPair encUnary encBool)) ↔
+    (fun x => (W x).card) ∈ FPRAS (encPair encUnary (encPair encUnary encBool)) :=
+  R.mem_FPAUS_iff_mem_FPRAS
+
+/-- The always-zero counter is strict PPT but not an FPRAS for the family, so the accuracy half of
+the hypothesis of `isFPAUS_of_isFPRAS` is not automatic. -/
+example :
+    IsPPTOn (encPair (encPair encUnary (encPair encUnary encBool)) (encPair encUnary encUnary))
+      (encPair encNat encNat)
+      (Function.uncurry fun (_ : ℕ × ℕ × Bool) => Function.uncurry fun (_ _ : ℕ) =>
+        (pure (0, 1) : ProbComp (ℕ × ℕ))) ∧
+    ¬ IsFPRAS (encPair encUnary (encPair encUnary encBool)) (fun x => (W x).card)
+      (fun _ _ _ => pure (0, 1)) :=
+  ⟨(ComputableInPolyTime.const (0, 1)).isPPTOn,
+    fun h => not_counterAccurate_zero fun y => h.2 y 2 1 (by norm_num)⟩
 
 end ComplexityTests.SamplingCounting

@@ -23,10 +23,13 @@ of the branching program, is the `m × m` determinant of `N - 1` with its last r
 column deleted (`Matrix.eq_det_submatrix_sub_one_of_eq_single_add_vecMul`). This is the step
 from algebraic branching programs to determinants in Grenet's construction
 (`Matrix.permanent_eq_det_grenetMatrix`). The general form for any `B` with `det B = 1` is
-`Matrix.eq_det_neg_submatrix_of_vecMul_eq_single`.
+`Matrix.eq_det_neg_submatrix_of_vecMul_eq_single`, a special case of the form without
+`det B = 1`, `Matrix.det_mul_eq_det_neg_submatrix_of_vecMul_eq_single`.
 
 ## Main results
 
+* `Matrix.det_mul_eq_det_neg_submatrix_of_vecMul_eq_single`: if `q ᵥ* B = Pi.single 0 1`, then
+  `det B * q (last m)` is the determinant of `-B` without its last row and first column.
 * `Matrix.eq_det_neg_submatrix_of_vecMul_eq_single`: if `q ᵥ* B = Pi.single 0 1` and
   `det B = 1`, then `q (last m)` is the determinant of `-B` without its last row and first column.
 * `Matrix.eq_det_submatrix_sub_one_of_eq_single_add_vecMul`: the value of a branching program is
@@ -39,16 +42,26 @@ namespace Matrix
 
 variable {R : Type*} [CommRing R] {m : ℕ}
 
+/-- If `q ᵥ* B = Pi.single 0 1`, then `det B * q (last m)` is the `m × m` determinant of `-B`
+with its last row and first column deleted: by Cramer's rule, `det B • q` is the first row of the
+adjugate of `B`. -/
+theorem det_mul_eq_det_neg_submatrix_of_vecMul_eq_single
+    (B : Matrix (Fin (m + 1)) (Fin (m + 1)) R) {q : Fin (m + 1) → R}
+    (hq : q ᵥ* B = Pi.single 0 1) :
+    B.det * q (Fin.last m) = (-B.submatrix Fin.castSucc Fin.succ).det := by
+  have hq' : B.det • q = Pi.single 0 1 ᵥ* B.adjugate := by
+    rw [← hq, vecMul_vecMul, mul_adjugate, vecMul_smul, vecMul_one]
+  rw [← smul_eq_mul, ← Pi.smul_apply, hq', single_one_vecMul, row_apply,
+    adjugate_fin_succ_eq_det_submatrix, det_neg, Fintype.card_fin, Fin.succAbove_last,
+    Fin.succAbove_zero]
+  simp
+
 /-- If `q ᵥ* B = Pi.single 0 1` and `det B = 1`, then `q (last m)` is the `m × m` determinant
 of `-B` with its last row and first column deleted. -/
 theorem eq_det_neg_submatrix_of_vecMul_eq_single (B : Matrix (Fin (m + 1)) (Fin (m + 1)) R)
     (hB : B.det = 1) {q : Fin (m + 1) → R} (hq : q ᵥ* B = Pi.single 0 1) :
     q (Fin.last m) = (-B.submatrix Fin.castSucc Fin.succ).det := by
-  have hq' : q = Pi.single 0 1 ᵥ* B.adjugate := by
-    rw [← hq, vecMul_vecMul, mul_adjugate, hB, one_smul, vecMul_one]
-  rw [hq', single_one_vecMul, row_apply, adjugate_fin_succ_eq_det_submatrix, det_neg,
-    Fintype.card_fin, Fin.succAbove_last, Fin.succAbove_zero]
-  simp
+  rw [← det_mul_eq_det_neg_submatrix_of_vecMul_eq_single B hq, hB, one_mul]
 
 /-- **Branching programs as determinants.** Let `N` be the weighted adjacency matrix of a
 directed acyclic graph on `0, …, m` in topological order (`N i j = 0` unless `i < j`), and let
