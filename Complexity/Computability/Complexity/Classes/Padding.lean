@@ -186,6 +186,46 @@ def ExpPaddedNPEasy : Prop :=
 theorem expPaddedNPEasy_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : ExpPaddedNPEasy :=
   fun B hB => ⟨B, hNP hB, fun _ _ _ => Iff.rfl⟩
 
+/-! ### Writing padded instances -/
+
+/-- Framing an instance and appending `t |x|` ones costs linear time plus the cost of writing
+`t |x|` in unary. -/
+private theorem computableInO_frame_append_replicate {t : ℕ → ℕ} {T S : List Bool → ℕ}
+    (hpad : ComputableInO (fun x : List Bool => t x.length) encBits encUnary T S) :
+    ComputableInO (fun a => frame (enc a) ++ List.replicate (t (enc a).length) true) enc encBits
+      (fun a => (enc a).length + T (enc a)) fun a => (enc a).length + S (enc a) :=
+  (ComputableInO.of_linear (.of_frame (f := id) (encMid := encFramed enc) fun _ => rfl)).append
+    (hpad.comp_enc enc) fun _ => rfl
+
+/-- Writing `2 ^ f |x|` in unary, for `f` polynomial-time in unary: compute `f |x|`, then double
+`f |x|` times. -/
+private theorem exists_computableInO_two_pow_length {f : ℕ → ℕ}
+    (hf : Turing.MultiTapeTM.ComputableInPolyTime f encUnary encUnary) :
+    ∃ d, ComputableInO (fun x : List Bool => 2 ^ f x.length) encBits encUnary
+      (fun x => x.length + (x.length + 1) ^ d + (f x.length + 1) * 2 ^ f x.length)
+      fun x => x.length + (x.length + 1) ^ d + 2 ^ f x.length := by
+  obtain ⟨d, e, hd⟩ := hf.exists_degree
+  exact ⟨d, (ComputableInO.unary_two_pow.comp (hd.inO.comp ComputableInO.lengthUnary)).mono_le
+    (fun x => by simp [encUnary_apply]) fun x => by simp [encUnary_apply]⟩
+
+/-- The cost of writing an exponentially padded instance: with `n, m ≤ M`, the instance length
+`n`, a polynomial `(n + 1) ^ d` and the doubling cost `(m + 1) * 2 ^ m` of `2 ^ m` stay within
+`2 ^ ((d + 2) * M + 2)`. -/
+private theorem padTime_add_one_le {n m d M : ℕ} (hn : n ≤ M) (hm : m ≤ M) :
+    n + (n + (n + 1) ^ d + (m + 1) * 2 ^ m) + 1 ≤ 2 ^ ((d + 2) * M + 2) := by
+  have hM : M < 2 ^ M := Nat.lt_two_pow_self
+  have hpow : (n + 1) ^ d ≤ 2 ^ (d * M) := by
+    rw [pow_mul']
+    exact Nat.pow_le_pow_left (by omega) d
+  have hdbl : (m + 1) * 2 ^ m ≤ 2 ^ (2 * M) := by
+    rw [two_mul, pow_add]
+    exact Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by norm_num) hm)
+  have h₁ : 2 ^ M ≤ 2 ^ ((d + 2) * M) := Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+  have h₂ : 2 ^ (d * M) ≤ 2 ^ ((d + 2) * M) := Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+  have h₃ : 2 ^ (2 * M) ≤ 2 ^ ((d + 2) * M) := Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+  rw [pow_add]
+  omega
+
 /-- **The translation lemma on padded instances.** Suppose every problem in `NP` agrees with some
 problem in `P` on the words `frame u ++ 1^{t |u|}`, and `t n` is computable in unary from any word
 of length `n` within time `O(T n)`. Then every problem decidable by a nondeterministic machine
@@ -208,8 +248,7 @@ theorem NTIME_subset_iUnion_DTIME_of_agree_padded {t T : ℕ → ℕ}
   let g (a : α) : List Bool := frame (enc a) ++ List.replicate (t (enc a).length) true
   have hg : ComputableInO g enc encBits (fun a => (enc a).length + T (enc a).length)
       fun a => (enc a).length + S (enc a) :=
-    (ComputableInO.of_linear (.of_frame (f := id) (encMid := encFramed enc)
-      fun _ => rfl)).append (hpad.comp_enc enc) fun _ => rfl
+    computableInO_frame_append_replicate hpad
   obtain ⟨c', hc'⟩ := hpad.length_le_time
   have hlen (a : α) : (g a).length = 2 * (enc a).length + 1 + t (enc a).length := by
     simp [g]
@@ -266,37 +305,23 @@ theorem NTIME_two_pow_subset_iUnion_DTIME_of_expPaddedNPEasy (hNP : ExpPaddedNPE
       (hn : ∀ n, n ≤ f n) :
     NTIME enc (fun n => 2 ^ f n) ⊆ ⋃ d, DTIME enc fun n => 2 ^ (d * f n) := by
   intro A hA
-  obtain ⟨d, e, hd⟩ := hf.exists_degree
-  have hpad := ComputableInO.unary_two_pow.comp (hd.inO.comp ComputableInO.lengthUnary)
-  have hpad' : ComputableInO (fun x : List Bool => 2 ^ f x.length) encBits encUnary
-      (fun x => x.length + (x.length + 1) ^ d + (f x.length + 1) * 2 ^ f x.length)
-      fun x => x.length + (x.length + 1) ^ d + 2 ^ f x.length :=
-    hpad.mono_le (fun x => by simp [encUnary_apply]) fun x => by simp [encUnary_apply]
+  obtain ⟨d, hpad⟩ := exists_computableInO_two_pow_length hf
   have hagree : ∀ B ∈ NP encBits, ∃ B' ∈ P encBits, ∀ u : List Bool,
       (frame u ++ List.replicate (2 ^ f u.length) true ∈ B' ↔
         frame u ++ List.replicate (2 ^ f u.length) true ∈ B) := fun B hB => by
     obtain ⟨B', hB', h⟩ := hNP B hB
     exact ⟨B', hB', fun u => h u _ (Nat.pow_le_pow_right (by norm_num) (hn _))⟩
   obtain ⟨D, hD⟩ := Set.mem_iUnion.mp (NTIME_subset_iUnion_DTIME_of_agree_padded hagree
-    (T := fun n => n + (n + 1) ^ d + (f n + 1) * 2 ^ f n) hpad' hA)
-  obtain ⟨C₀, hC₀⟩ := (PolynomiallyBounded.of_forall_le 1 d fun n => by
-    simp only [one_mul]; exact le_rfl).exists_le_mul_two_pow (p := fun n => (n + 1) ^ d)
-  refine Set.mem_iUnion.mpr ⟨2 * D, DTIME_mono_of_le_mul_add (C := (C₀ + 3) ^ D)
+    (T := fun n => n + (n + 1) ^ d + (f n + 1) * 2 ^ f n) hpad hA)
+  -- the padded instances are written within time `2 ^ O(f n)`
+  refine Set.mem_iUnion.mpr ⟨(d + 2) * D, DTIME_mono_of_le_mul_add (C := 2 ^ (2 * D))
     (fun n => ?_) hD⟩
-  have h₁ : 2 ^ n ≤ 2 ^ f n := Nat.pow_le_pow_right (by norm_num) (hn n)
-  have h₂ : 2 * n + 1 ≤ 2 * 2 ^ n := by have := @Nat.lt_two_pow_self n; omega
-  have h₃ : f n + 1 ≤ 2 ^ f n := Nat.lt_two_pow_self
-  have h₄ : 2 ^ f n ≤ 2 ^ (2 * f n) := Nat.pow_le_pow_right (by norm_num) (by omega)
-  have h₅ : (f n + 1) * 2 ^ f n ≤ 2 ^ (2 * f n) := by
-    rw [two_mul, pow_add]
-    exact Nat.mul_le_mul_right _ h₃
-  have hle : n + (n + (n + 1) ^ d + (f n + 1) * 2 ^ f n) + 1 ≤ (C₀ + 3) * 2 ^ (2 * f n) := by
-    have := hC₀ n
-    have : C₀ * 2 ^ n ≤ C₀ * 2 ^ (2 * f n) := Nat.mul_le_mul_left _ (h₁.trans h₄)
-    nlinarith
   calc (n + (n + (n + 1) ^ d + (f n + 1) * 2 ^ f n) + 1) ^ D
-      ≤ ((C₀ + 3) * 2 ^ (2 * f n)) ^ D := Nat.pow_le_pow_left hle D
-    _ = (C₀ + 3) ^ D * 2 ^ (2 * D * f n) := by rw [Nat.mul_pow, ← Nat.pow_mul]; ring_nf
+      ≤ (2 ^ ((d + 2) * f n + 2)) ^ D := Nat.pow_le_pow_left (padTime_add_one_le (hn n) le_rfl) D
+    _ = 2 ^ (2 * D) * 2 ^ ((d + 2) * D * f n) := by
+      rw [← pow_mul, ← pow_add]
+      congr 1
+      ring
     _ ≤ _ := Nat.le_add_right _ _
 
 /-- **Padding exponential time.** If `NP ⊆ P` for problems on bit words, and `f` is computable in
@@ -475,61 +500,15 @@ theorem preimage_pad_mem_NEXP {B : Set (List Bool)} (hB : B ∈ NP encBits) {f :
     (hf : Turing.MultiTapeTM.ComputableInPolyTime f encUnary encUnary) (hn : ∀ n, n ≤ f n) :
     (fun a : α => frame (enc a) ++ List.replicate (2 ^ f (enc a).length) true) ⁻¹' B ∈
       NEXP enc := by
-  obtain ⟨d₀, e₀, hd₀⟩ := hf.exists_degree
-  have hpad := ComputableInO.unary_two_pow.comp (hd₀.inO.comp ComputableInO.lengthUnary)
-  have hpad' : ComputableInO (fun x : List Bool => 2 ^ f x.length) encBits encUnary
-      (fun x => x.length + (x.length + 1) ^ d₀ + (f x.length + 1) * 2 ^ f x.length)
-      (fun x => x.length + (x.length + 1) ^ d₀ + 2 ^ f x.length) :=
-    hpad.mono_le (fun x => by simp [encUnary_apply]) fun x => by simp [encUnary_apply]
-  let g (a : α) : List Bool := frame (enc a) ++ List.replicate (2 ^ f (enc a).length) true
-  let T₀ (n : ℕ) : ℕ := n + (n + (n + 1) ^ d₀ + (f n + 1) * 2 ^ f n)
-  have hg : ComputableInO g enc encBits (fun a => T₀ (enc a).length)
-      (fun a => (enc a).length + ((enc a).length + ((enc a).length + 1) ^ d₀ +
-        2 ^ f (enc a).length)) :=
-    (ComputableInO.of_linear (.of_frame (f := id) (encMid := encFramed enc)
-      fun _ => rfl)).append (hpad'.comp_enc enc) fun _ => rfl
-  obtain ⟨D, hD⟩ := preimage_mem_NTIME_of_mem_NP hB hg
-  obtain ⟨C₀, hC₀⟩ := (PolynomiallyBounded.of_forall_le 1 d₀ fun n => by
-    simp only [one_mul]; exact le_rfl).exists_le_mul_two_pow (p := fun n => (n + 1) ^ d₀)
-  obtain ⟨c_f, d_f, hf_le⟩ := hf.polyBounded_length.exists_le
-  simp only [encUnary_apply, List.length_replicate] at hf_le
-  have hNTIME : g ⁻¹' B ∈ NTIME enc fun n => 2 ^ (2 * D * f n) := by
-    obtain ⟨c₁, c₂, k, State, hfinite, ntm, hdec⟩ := hD
-    refine ⟨c₁ * (C₀ + 3) ^ D, c₂, k, State, hfinite, ntm, hdec.mono fun a => ?_⟩
-    set n := (enc a).length
-    have h₁ : 2 ^ n ≤ 2 ^ f n := Nat.pow_le_pow_right (by norm_num) (hn n)
-    have h₂ : 2 * n + 1 ≤ 2 * 2 ^ n := by have := @Nat.lt_two_pow_self n; lia
-    have h₃ : f n + 1 ≤ 2 ^ f n := Nat.lt_two_pow_self
-    have h₄ : 2 ^ f n ≤ 2 ^ (2 * f n) := Nat.pow_le_pow_right (by norm_num) (by lia)
-    have h₅ : (f n + 1) * 2 ^ f n ≤ 2 ^ (2 * f n) := by
-      rw [two_mul, pow_add]
-      exact Nat.mul_le_mul_right _ h₃
-    have hle : T₀ n + 1 ≤ (C₀ + 3) * 2 ^ (2 * f n) := by
-      have := hC₀ n
-      have : C₀ * 2 ^ n ≤ C₀ * 2 ^ (2 * f n) := Nat.mul_le_mul_left _ (h₁.trans h₄)
-      simp only [T₀]
-      nlinarith
-    have hpow : (T₀ n + 1) ^ D ≤ (C₀ + 3) ^ D * 2 ^ (2 * D * f n) := by
-      calc (T₀ n + 1) ^ D
-          ≤ ((C₀ + 3) * 2 ^ (2 * f n)) ^ D := Nat.pow_le_pow_left hle D
-        _ = (C₀ + 3) ^ D * 2 ^ (2 * D * f n) := by rw [Nat.mul_pow, ← Nat.pow_mul]; ring_nf
-    calc c₁ * (T₀ n + 1) ^ D + c₂
-        ≤ c₁ * ((C₀ + 3) ^ D * 2 ^ (2 * D * f n)) + c₂ :=
-          Nat.add_le_add_right (Nat.mul_le_mul_left c₁ hpow) c₂
-      _ = c₁ * (C₀ + 3) ^ D * 2 ^ (2 * D * f n) + c₂ := by ring
-  refine mem_NEXP_iff.mpr ⟨d_f + 1, NTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr
-    ⟨2 * D * c_f * 2 ^ d_f + 2, fun n hn' => Nat.pow_le_pow_right (by norm_num) ?_⟩) hNTIME⟩
-  have hn1 : n + 1 ≤ 2 * n := by lia
-  have hpow_n1 : (n + 1) ^ d_f ≤ 2 ^ d_f * n ^ d_f := by
-    calc (n + 1) ^ d_f ≤ (2 * n) ^ d_f := Nat.pow_le_pow_left hn1 d_f
-      _ = 2 ^ d_f * n ^ d_f := Nat.mul_pow 2 n d_f
-  have hfn : f n ≤ c_f * (2 ^ d_f * n ^ d_f) :=
-    (hf_le n).trans (Nat.mul_le_mul_left c_f hpow_n1)
-  calc 2 * D * f n
-      ≤ 2 * D * (c_f * (2 ^ d_f * n ^ d_f)) := Nat.mul_le_mul_left (2 * D) hfn
-    _ = (2 * D * c_f * 2 ^ d_f) * n ^ d_f := by ring
-    _ ≤ n * n ^ d_f := Nat.mul_le_mul_right (n ^ d_f) (by lia)
-    _ = n ^ (d_f + 1) := (pow_succ' n d_f).symm
+  obtain ⟨d, hpad⟩ := exists_computableInO_two_pow_length hf
+  obtain ⟨D, hD⟩ := preimage_mem_NTIME_of_mem_NP hB
+    (T₀ := fun n => n + (n + (n + 1) ^ d + (f n + 1) * 2 ^ f n))
+    (computableInO_frame_append_replicate (t := fun n => 2 ^ f n) hpad)
+  -- the padded instance is written within time `2 ^ O(f n)`, and `f` is polynomially bounded
+  refine NTIME_two_pow_subset_NEXP (h := fun n => ((d + 2) * f n + 2) * D)
+    (by have := hf.polynomiallyBounded; fun_prop) (NTIME_mono (fun n => ?_) hD)
+  rw [pow_mul]
+  exact Nat.pow_le_pow_left (padTime_add_one_le (hn n) le_rfl) D
 
 /-- Pulling back `B ∈ NP encBits` along `x ↦ x ++ List.replicate (2 ^ x.length) true` gives a
 problem in `NEXP encBits`. -/
@@ -543,28 +522,15 @@ theorem preimage_append_two_pow_mem_NEXP {B : Set (List Bool)} (hB : B ∈ NP en
     (ComputableInO.of_linear (.of_eq (f := id) (encIn := encBits) (encMid := encBits)
       fun _ => rfl)).append hpad fun _ => rfl
   obtain ⟨D, hD⟩ := preimage_mem_NTIME_of_mem_NP hB hg
-  have hNTIME : g ⁻¹' B ∈ NTIME encBits fun n => 2 ^ (2 * D * n) := by
-    obtain ⟨c₁, c₂, k, State, hfinite, ntm, hdec⟩ := hD
-    refine ⟨c₁ * 4 ^ D, c₂, k, State, hfinite, ntm, hdec.mono fun x => ?_⟩
-    set n := x.length
-    have h₁ : 2 * n + 1 ≤ 2 * 2 ^ n := by have := @Nat.lt_two_pow_self n; omega
-    have h₂ : n + 1 ≤ 2 ^ n := Nat.lt_two_pow_self
-    have h₃ : 2 ^ n ≤ 2 ^ (2 * n) := Nat.pow_le_pow_right (by norm_num) (by omega)
-    have h₄ : (n + 1) * 2 ^ n ≤ 2 ^ (2 * n) := by
-      rw [two_mul, pow_add]
-      exact Nat.mul_le_mul_right _ h₂
-    have hle : T₀ n + 1 ≤ 4 * 2 ^ (2 * n) := by
-      simp only [T₀]
-      nlinarith
-    have hpow : (T₀ n + 1) ^ D ≤ 4 ^ D * 2 ^ (2 * D * n) := by
-      calc (T₀ n + 1) ^ D
-          ≤ (4 * 2 ^ (2 * n)) ^ D := Nat.pow_le_pow_left hle D
-        _ = 4 ^ D * 2 ^ (2 * D * n) := by rw [Nat.mul_pow, ← Nat.pow_mul]; ring_nf
-    calc c₁ * (T₀ n + 1) ^ D + c₂
-        ≤ c₁ * (4 ^ D * 2 ^ (2 * D * n)) + c₂ :=
-          Nat.add_le_add_right (Nat.mul_le_mul_left c₁ hpow) c₂
-      _ = c₁ * 4 ^ D * 2 ^ (2 * D * n) + c₂ := by ring
-  exact NE_subset_NEXP (mem_NE_iff.mpr ⟨2 * D, hNTIME⟩)
+  -- the padded word is written within time `2 ^ O(n)`
+  refine NTIME_two_pow_subset_NEXP (h := fun n => (2 * n + 2) * D) (by fun_prop)
+    (NTIME_mono (fun n => ?_) hD)
+  rw [pow_mul]
+  refine Nat.pow_le_pow_left ?_ D
+  have := padTime_add_one_le (d := 0) (le_refl n) (le_refl n)
+  rw [pow_zero, zero_add] at this
+  simp only [T₀]
+  omega
 
 /-- Pulling back `B ∈ P (encPair encBits encBits)` along
 `(a, y) ↦ (frame (enc a) ++ List.replicate (2 ^ f (enc a).length) true, y)`, where `f` is
@@ -576,103 +542,38 @@ theorem preimage_pad_prod_id_mem_EXP {B : Set (List Bool × List Bool)}
       (frame (enc p.1) ++ List.replicate (2 ^ f (enc p.1).length) true, p.2)) ⁻¹' B ∈
       EXP (encPair enc encBits) := by
   obtain ⟨d, hd⟩ := mem_P_iff_exists_mem_DTIME.mp hB
-  obtain ⟨d₀, e₀, hd₀⟩ := hf.exists_degree
-  have hpad := ComputableInO.unary_two_pow.comp (hd₀.inO.comp ComputableInO.lengthUnary)
-  have hpad' : ComputableInO (fun x : List Bool => 2 ^ f x.length) encBits encUnary
-      (fun x => x.length + (x.length + 1) ^ d₀ + (f x.length + 1) * 2 ^ f x.length)
-      (fun x => x.length + (x.length + 1) ^ d₀ + 2 ^ f x.length) :=
-    hpad.mono_le (fun x => by simp [encUnary_apply]) fun x => by simp [encUnary_apply]
-  let g₁ (a : α) : List Bool := frame (enc a) ++ List.replicate (2 ^ f (enc a).length) true
-  have hg₁ : ComputableInO g₁ enc encBits
-      (fun a => (enc a).length + ((enc a).length + ((enc a).length + 1) ^ d₀ +
-        (f (enc a).length + 1) * 2 ^ f (enc a).length))
-      (fun a => (enc a).length + ((enc a).length + ((enc a).length + 1) ^ d₀ +
-        2 ^ f (enc a).length)) :=
-    (ComputableInO.of_linear (.of_frame (f := id) (encMid := encFramed enc)
-      fun _ => rfl)).append (hpad'.comp_enc enc) fun _ => rfl
-  have hg := (hg₁.comp (ComputableInO.fst enc encBits)).prod
-    (ComputableInO.snd enc encBits)
-  obtain ⟨C₀, hC₀⟩ := (PolynomiallyBounded.of_forall_le 1 d₀ fun m => by
-    simp only [one_mul]; exact le_rfl).exists_le_mul_two_pow (p := fun m => (m + 1) ^ d₀)
-  obtain ⟨c_f, d_f, hf_le⟩ := hf.polyBounded_length.exists_le
-  simp only [encUnary_apply, List.length_replicate] at hf_le
-  let F (N : ℕ) : ℕ := N + c_f * (N + 1) ^ (d_f + 1)
-  have hDTIME : (fun p : α × List Bool => (g₁ p.1, p.2)) ⁻¹' B ∈
-      DTIME (encPair enc encBits) fun N => 2 ^ (2 * (d + 1) * F N) := by
-    refine preimage_mem_DTIME (C := C₀ + 6 + 5 ^ d) hd hg fun p => ?_
-    set n := (enc p.1).length
-    set N := (encPair enc encBits p).length
-    have hN_eq : 2 * n + 1 + p.2.length = N := by
-      simp [N, n]
-    have hnN : n ≤ N := by omega
-    have hyN : p.2.length ≤ N := by omega
-    have hfn_F : f n ≤ F N := by
-      have h₁ : (n + 1) ^ d_f ≤ (N + 1) ^ (d_f + 1) :=
-        (Nat.pow_le_pow_left (by omega) d_f).trans
-          (Nat.pow_le_pow_right (by omega) (Nat.le_succ d_f))
-      have h₂ := (hf_le n).trans (Nat.mul_le_mul_left c_f h₁)
-      simp only [F]
-      omega
-    have hN_F : N ≤ F N := Nat.le_add_right _ _
-    have h₁ : 2 ^ N ≤ 2 ^ F N := Nat.pow_le_pow_right (by norm_num) hN_F
-    have h₂ : 2 ^ f n ≤ 2 ^ F N := Nat.pow_le_pow_right (by norm_num) hfn_F
-    have h₃ : 2 * N + 3 ≤ 3 * 2 ^ N := by have := @Nat.lt_two_pow_self N; omega
-    have h₄ : F N + 1 ≤ 2 ^ F N := Nat.lt_two_pow_self
-    have h₅ : 2 ^ F N ≤ 2 ^ (2 * F N) := Nat.pow_le_pow_right (by norm_num) (by omega)
-    have h₆ : (f n + 1) * 2 ^ f n ≤ 2 ^ (2 * F N) := by
-      calc (f n + 1) * 2 ^ f n
-          ≤ (F N + 1) * 2 ^ F N := Nat.mul_le_mul (by omega) h₂
-        _ ≤ 2 ^ F N * 2 ^ F N := Nat.mul_le_mul_right _ h₄
-        _ = 2 ^ (2 * F N) := by rw [← pow_add, ← two_mul]
-    have h₇ : (n + 1) ^ d₀ ≤ C₀ * 2 ^ (2 * F N) := by
-      calc (n + 1) ^ d₀
-          ≤ (N + 1) ^ d₀ := Nat.pow_le_pow_left (by omega) d₀
-        _ ≤ C₀ * 2 ^ N := hC₀ N
-        _ ≤ C₀ * 2 ^ (2 * F N) := Nat.mul_le_mul_left C₀ (h₁.trans h₅)
-    have hT_le : N + (n + (n + (n + 1) ^ d₀ + (f n + 1) * 2 ^ f n)) + N ≤
-        (C₀ + 6) * 2 ^ (2 * F N) := by
-      nlinarith
-    have hlen_g : (encPair encBits encBits (g₁ p.1, p.2)).length ≤ 5 * 2 ^ (2 * F N) := by
-      have hlen_eq : (encPair encBits encBits (g₁ p.1, p.2)).length =
-          2 * (2 * n + 1 + 2 ^ f n) + 1 + p.2.length := by
-        simp [g₁, n]
-      rw [hlen_eq]
-      nlinarith
-    have hpow_g : (encPair encBits encBits (g₁ p.1, p.2)).length ^ d ≤
-        5 ^ d * 2 ^ (2 * (d + 1) * F N) := by
-      calc (encPair encBits encBits (g₁ p.1, p.2)).length ^ d
-          ≤ (5 * 2 ^ (2 * F N)) ^ d := Nat.pow_le_pow_left hlen_g d
-        _ = 5 ^ d * 2 ^ (2 * d * F N) := by rw [Nat.mul_pow, ← Nat.pow_mul]; ring_nf
-        _ ≤ 5 ^ d * 2 ^ (2 * (d + 1) * F N) :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) (by nlinarith))
-    have hT_le' : N + (n + (n + (n + 1) ^ d₀ + (f n + 1) * 2 ^ f n)) + N ≤
-        (C₀ + 6) * 2 ^ (2 * (d + 1) * F N) := by
-      refine hT_le.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) ?_))
-      nlinarith
-    calc N + (n + (n + (n + 1) ^ d₀ + (f n + 1) * 2 ^ f n)) + N +
-          (encPair encBits encBits (g₁ p.1, p.2)).length ^ d
-        ≤ (C₀ + 6) * 2 ^ (2 * (d + 1) * F N) + 5 ^ d * 2 ^ (2 * (d + 1) * F N) :=
-          Nat.add_le_add hT_le' hpow_g
-      _ = (C₀ + 6 + 5 ^ d) * 2 ^ (2 * (d + 1) * F N) := by ring
-      _ ≤ _ := Nat.le_add_right _ _
-  refine mem_EXP_iff.mpr ⟨d_f + 2, DTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr
-    ⟨2 * (d + 1) * (c_f + 1) * 2 ^ (d_f + 1) + 2, fun N hN =>
-      Nat.pow_le_pow_right (by norm_num) ?_⟩) hDTIME⟩
-  have hN1 : N + 1 ≤ 2 * N := by omega
-  have hpow_N1 : (N + 1) ^ (d_f + 1) ≤ 2 ^ (d_f + 1) * N ^ (d_f + 1) := by
-    calc (N + 1) ^ (d_f + 1) ≤ (2 * N) ^ (d_f + 1) := Nat.pow_le_pow_left hN1 (d_f + 1)
-      _ = 2 ^ (d_f + 1) * N ^ (d_f + 1) := Nat.mul_pow 2 N (d_f + 1)
-  have hFN : F N ≤ (c_f + 1) * (2 ^ (d_f + 1) * N ^ (d_f + 1)) := by
-    have : N ≤ (N + 1) ^ (d_f + 1) :=
-      (Nat.le_succ N).trans (Nat.le_self_pow (by omega) (N + 1))
-    have : F N ≤ (c_f + 1) * (N + 1) ^ (d_f + 1) := by simp only [F]; nlinarith
-    exact this.trans (Nat.mul_le_mul_left (c_f + 1) hpow_N1)
-  calc 2 * (d + 1) * F N
-      ≤ 2 * (d + 1) * ((c_f + 1) * (2 ^ (d_f + 1) * N ^ (d_f + 1))) :=
-        Nat.mul_le_mul_left (2 * (d + 1)) hFN
-    _ = (2 * (d + 1) * (c_f + 1) * 2 ^ (d_f + 1)) * N ^ (d_f + 1) := by ring
-    _ ≤ N * N ^ (d_f + 1) := Nat.mul_le_mul_right (N ^ (d_f + 1)) (by omega)
-    _ = N ^ (d_f + 2) := (pow_succ' N (d_f + 1)).symm
+  obtain ⟨d₀, hpad⟩ := exists_computableInO_two_pow_length hf
+  have hg := ((computableInO_frame_append_replicate (t := fun n => 2 ^ f n) hpad).comp
+    (ComputableInO.fst enc encBits)).prod (ComputableInO.snd enc encBits)
+  -- `f` is bounded by a monotone polynomial
+  obtain ⟨c, e, hce⟩ := polynomiallyBounded_iff_le.mp hf.polynomiallyBounded
+  refine DTIME_two_pow_subset_EXP (h := fun N => (d₀ + d + 2) * (N + c * (N + 1) ^ e + 3))
+    (by fun_prop) (preimage_mem_DTIME (C := 4) hd hg fun p => ?_)
+  set n := (enc p.1).length
+  set N := (encPair enc encBits p).length
+  have hnN : 2 * n + 1 + p.2.length = N := by simp [N, n]
+  set X := N + c * (N + 1) ^ e with hX
+  have hfX : f n ≤ X := (hce n).trans
+    ((Nat.mul_le_mul_left c (Nat.pow_le_pow_left (by omega) e)).trans (Nat.le_add_left _ _))
+  have hXX : X < 2 ^ X := Nat.lt_two_pow_self
+  -- each part of the cost is within `2 ^ E`
+  set E := (d₀ + d + 2) * (X + 3) with hE
+  have hXE : 2 ^ X ≤ 2 ^ E := Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+  have hT := (padTime_add_one_le (n := n) (d := d₀) (by omega) hfX).trans
+    (Nat.pow_le_pow_right (by norm_num) (by nlinarith : (d₀ + 2) * X + 2 ≤ E))
+  have hlen : (encPair encBits encBits
+      (frame (enc p.1) ++ List.replicate (2 ^ f n) true, p.2)).length + 1 ≤ 2 ^ (X + 3) := by
+    have h2f : 2 ^ f n ≤ 2 ^ X := Nat.pow_le_pow_right (by norm_num) hfX
+    simp only [length_encPair, encBits_apply, List.length_append, length_frame,
+      List.length_replicate]
+    rw [pow_add]
+    omega
+  have hpow : (encPair encBits encBits
+      (frame (enc p.1) ++ List.replicate (2 ^ f n) true, p.2)).length ^ d ≤ 2 ^ E :=
+    calc _ ≤ (2 ^ (X + 3)) ^ d := Nat.pow_le_pow_left (by omega) d
+      _ = 2 ^ (d * (X + 3)) := (pow_mul' 2 d (X + 3)).symm
+      _ ≤ 2 ^ E := Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ (by omega))
+  omega
 
 /-- Pulling back `B ∈ P (encPair encBits encUnary)` along
 `a ↦ (frame (enc a) ++ List.replicate (2 ^ f (enc a).length) true, 2 ^ g (enc a).length)`, where
@@ -685,116 +586,37 @@ theorem preimage_pad_prod_two_pow_mem_EXP {B : Set (List Bool × ℕ)}
       (frame (enc a) ++ List.replicate (2 ^ f (enc a).length) true,
         2 ^ g (enc a).length)) ⁻¹' B ∈ EXP enc := by
   obtain ⟨d, hd⟩ := mem_P_iff_exists_mem_DTIME.mp hB
-  obtain ⟨d₀, e₀, hd₀⟩ := hf.exists_degree
-  obtain ⟨d₁, e₁, hd₁⟩ := hg.exists_degree
-  have hpad_f :=
-    ComputableInO.unary_two_pow.comp (hd₀.inO.comp ComputableInO.lengthUnary)
-  have hpad_f' : ComputableInO (fun x : List Bool => 2 ^ f x.length) encBits encUnary
-      (fun x => x.length + (x.length + 1) ^ d₀ + (f x.length + 1) * 2 ^ f x.length)
-      (fun x => x.length + (x.length + 1) ^ d₀ + 2 ^ f x.length) :=
-    hpad_f.mono_le (fun x => by simp [encUnary_apply]) fun x => by simp [encUnary_apply]
-  have hpad_g :=
-    ComputableInO.unary_two_pow.comp (hd₁.inO.comp ComputableInO.lengthUnary)
-  have hpad_g' : ComputableInO (fun x : List Bool => 2 ^ g x.length) encBits encUnary
-      (fun x => x.length + (x.length + 1) ^ d₁ + (g x.length + 1) * 2 ^ g x.length)
-      (fun x => x.length + (x.length + 1) ^ d₁ + 2 ^ g x.length) :=
-    hpad_g.mono_le (fun x => by simp [encUnary_apply]) fun x => by simp [encUnary_apply]
-  let g₁ (a : α) : List Bool := frame (enc a) ++ List.replicate (2 ^ f (enc a).length) true
-  have hg₁ : ComputableInO g₁ enc encBits
-      (fun a => (enc a).length + ((enc a).length + ((enc a).length + 1) ^ d₀ +
-        (f (enc a).length + 1) * 2 ^ f (enc a).length))
-      (fun a => (enc a).length + ((enc a).length + ((enc a).length + 1) ^ d₀ +
-        2 ^ f (enc a).length)) :=
-    (ComputableInO.of_linear (.of_frame (f := id) (encMid := encFramed enc)
-      fun _ => rfl)).append (hpad_f'.comp_enc enc) fun _ => rfl
-  have hφ := hg₁.prod (hpad_g'.comp_enc enc)
-  obtain ⟨C₀, hC₀⟩ := (PolynomiallyBounded.of_forall_le 1 (max d₀ d₁) fun m => by
-    simp only [one_mul]; exact le_rfl).exists_le_mul_two_pow (p := fun m => (m + 1) ^ max d₀ d₁)
-  obtain ⟨c_f, d_f, hf_le⟩ := hf.polyBounded_length.exists_le
-  obtain ⟨c_g, d_g, hg_le⟩ := hg.polyBounded_length.exists_le
-  simp only [encUnary_apply, List.length_replicate] at hf_le hg_le
-  let H (n : ℕ) : ℕ := f n + g n
-  have hDTIME : (fun a : α => (g₁ a, 2 ^ g (enc a).length)) ⁻¹' B ∈
-      DTIME enc fun n => 2 ^ (2 * (d + 1) * H n) := by
-    refine preimage_mem_DTIME (C := 2 * C₀ + 6 + 7 ^ d) hd hφ fun a => ?_
-    set n := (enc a).length
-    have hnH : n ≤ H n := (hnf n).trans (Nat.le_add_right _ _)
-    have hfH : f n ≤ H n := Nat.le_add_right _ _
-    have hgH : g n ≤ H n := Nat.le_add_left _ _
-    have h₁ : 2 ^ n ≤ 2 ^ H n := Nat.pow_le_pow_right (by norm_num) hnH
-    have h₂ : 2 ^ f n ≤ 2 ^ H n := Nat.pow_le_pow_right (by norm_num) hfH
-    have h₃ : 2 ^ g n ≤ 2 ^ H n := Nat.pow_le_pow_right (by norm_num) hgH
-    have h₄ : 3 * n + 3 ≤ 3 * 2 ^ n := by have := @Nat.lt_two_pow_self n; omega
-    have h₅ : H n + 1 ≤ 2 ^ H n := Nat.lt_two_pow_self
-    have h₆ : 2 ^ H n ≤ 2 ^ (2 * H n) := Nat.pow_le_pow_right (by norm_num) (by omega)
-    have h₇ : (f n + 1) * 2 ^ f n ≤ 2 ^ (2 * H n) := by
-      calc (f n + 1) * 2 ^ f n
-          ≤ (H n + 1) * 2 ^ H n := Nat.mul_le_mul (by omega) h₂
-        _ ≤ 2 ^ H n * 2 ^ H n := Nat.mul_le_mul_right _ h₅
-        _ = 2 ^ (2 * H n) := by rw [← pow_add, ← two_mul]
-    have h₈ : (g n + 1) * 2 ^ g n ≤ 2 ^ (2 * H n) := by
-      calc (g n + 1) * 2 ^ g n
-          ≤ (H n + 1) * 2 ^ H n := Nat.mul_le_mul (by omega) h₃
-        _ ≤ 2 ^ H n * 2 ^ H n := Nat.mul_le_mul_right _ h₅
-        _ = 2 ^ (2 * H n) := by rw [← pow_add, ← two_mul]
-    have h₉ : (n + 1) ^ d₀ ≤ C₀ * 2 ^ (2 * H n) := by
-      calc (n + 1) ^ d₀
-          ≤ (n + 1) ^ max d₀ d₁ := Nat.pow_le_pow_right (by omega) (le_max_left _ _)
-        _ ≤ C₀ * 2 ^ n := hC₀ n
-        _ ≤ C₀ * 2 ^ (2 * H n) := Nat.mul_le_mul_left C₀ (h₁.trans h₆)
-    have h₁₀ : (n + 1) ^ d₁ ≤ C₀ * 2 ^ (2 * H n) := by
-      calc (n + 1) ^ d₁
-          ≤ (n + 1) ^ max d₀ d₁ := Nat.pow_le_pow_right (by omega) (le_max_right _ _)
-        _ ≤ C₀ * 2 ^ n := hC₀ n
-        _ ≤ C₀ * 2 ^ (2 * H n) := Nat.mul_le_mul_left C₀ (h₁.trans h₆)
-    have hT_le : n + (n + (n + 1) ^ d₀ + (f n + 1) * 2 ^ f n) +
-        (n + (n + 1) ^ d₁ + (g n + 1) * 2 ^ g n) ≤ (2 * C₀ + 6) * 2 ^ (2 * (d + 1) * H n) := by
-      have : n + (n + (n + 1) ^ d₀ + (f n + 1) * 2 ^ f n) +
-          (n + (n + 1) ^ d₁ + (g n + 1) * 2 ^ g n) ≤ (2 * C₀ + 6) * 2 ^ (2 * H n) := by nlinarith
-      exact this.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) (by nlinarith)))
-    have hlen_φ : (encPair encBits encUnary (g₁ a, 2 ^ g n)).length ≤ 7 * 2 ^ (2 * H n) := by
-      have hlen_eq : (encPair encBits encUnary (g₁ a, 2 ^ g n)).length =
-          2 * (2 * n + 1 + 2 ^ f n) + 1 + 2 ^ g n := by
-        simp [g₁, n]
-      rw [hlen_eq]
-      nlinarith
-    have hpow_φ : (encPair encBits encUnary (g₁ a, 2 ^ g n)).length ^ d ≤
-        7 ^ d * 2 ^ (2 * (d + 1) * H n) := by
-      calc (encPair encBits encUnary (g₁ a, 2 ^ g n)).length ^ d
-          ≤ (7 * 2 ^ (2 * H n)) ^ d := Nat.pow_le_pow_left hlen_φ d
-        _ = 7 ^ d * 2 ^ (2 * d * H n) := by rw [Nat.mul_pow, ← Nat.pow_mul]; ring_nf
-        _ ≤ 7 ^ d * 2 ^ (2 * (d + 1) * H n) :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) (by nlinarith))
-    calc n + (n + (n + 1) ^ d₀ + (f n + 1) * 2 ^ f n) +
-          (n + (n + 1) ^ d₁ + (g n + 1) * 2 ^ g n) +
-          (encPair encBits encUnary (g₁ a, 2 ^ g n)).length ^ d
-        ≤ (2 * C₀ + 6) * 2 ^ (2 * (d + 1) * H n) + 7 ^ d * 2 ^ (2 * (d + 1) * H n) :=
-          Nat.add_le_add hT_le hpow_φ
-      _ = (2 * C₀ + 6 + 7 ^ d) * 2 ^ (2 * (d + 1) * H n) := by ring
-      _ ≤ _ := Nat.le_add_right _ _
-  set D_fg := max d_f d_g
-  refine mem_EXP_iff.mpr ⟨D_fg + 1, DTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr
-    ⟨2 * (d + 1) * (c_f + c_g) * 2 ^ D_fg + 2, fun n hn =>
-      Nat.pow_le_pow_right (by norm_num) ?_⟩) hDTIME⟩
-  have hn1 : n + 1 ≤ 2 * n := by omega
-  have hpow_n1 : (n + 1) ^ D_fg ≤ 2 ^ D_fg * n ^ D_fg := by
-    calc (n + 1) ^ D_fg ≤ (2 * n) ^ D_fg := Nat.pow_le_pow_left hn1 D_fg
-      _ = 2 ^ D_fg * n ^ D_fg := Nat.mul_pow 2 n D_fg
-  have hHn : H n ≤ (c_f + c_g) * (2 ^ D_fg * n ^ D_fg) := by
-    have h₁ : f n ≤ c_f * (n + 1) ^ D_fg :=
-      (hf_le n).trans (Nat.mul_le_mul_left c_f
-        (Nat.pow_le_pow_right (by omega) (le_max_left _ _)))
-    have h₂ : g n ≤ c_g * (n + 1) ^ D_fg :=
-      (hg_le n).trans (Nat.mul_le_mul_left c_g
-        (Nat.pow_le_pow_right (by omega) (le_max_right _ _)))
-    have h₃ : H n ≤ (c_f + c_g) * (n + 1) ^ D_fg := by simp only [H]; nlinarith
-    exact h₃.trans (Nat.mul_le_mul_left (c_f + c_g) hpow_n1)
-  calc 2 * (d + 1) * H n
-      ≤ 2 * (d + 1) * ((c_f + c_g) * (2 ^ D_fg * n ^ D_fg)) :=
-        Nat.mul_le_mul_left (2 * (d + 1)) hHn
-    _ = (2 * (d + 1) * (c_f + c_g) * 2 ^ D_fg) * n ^ D_fg := by ring
-    _ ≤ n * n ^ D_fg := Nat.mul_le_mul_right (n ^ D_fg) (by omega)
-    _ = n ^ (D_fg + 1) := (pow_succ' n D_fg).symm
+  obtain ⟨d₀, hpad_f⟩ := exists_computableInO_two_pow_length hf
+  obtain ⟨d₁, hpad_g⟩ := exists_computableInO_two_pow_length hg
+  have hφ := (computableInO_frame_append_replicate (t := fun n => 2 ^ f n) hpad_f).prod
+    (hpad_g.comp_enc enc)
+  refine DTIME_two_pow_subset_EXP (h := fun n => (d₀ + d₁ + d + 2) * (f n + g n + 3))
+    (by have := hf.polynomiallyBounded; have := hg.polynomiallyBounded; fun_prop)
+    (preimage_mem_DTIME (C := 3) hd hφ fun a => ?_)
+  set n := (enc a).length
+  set X := f n + g n with hX
+  have hnX : n ≤ X := (hnf n).trans (Nat.le_add_right _ _)
+  have hXX : X < 2 ^ X := Nat.lt_two_pow_self
+  -- each part of the cost is within `2 ^ E`
+  set E := (d₀ + d₁ + d + 2) * (X + 3) with hE
+  have hT_f := (padTime_add_one_le (d := d₀) hnX (Nat.le_add_right (f n) (g n))).trans
+    (Nat.pow_le_pow_right (by norm_num) (by nlinarith : (d₀ + 2) * X + 2 ≤ E))
+  have hT_g := (padTime_add_one_le (d := d₁) hnX (Nat.le_add_left (g n) (f n))).trans
+    (Nat.pow_le_pow_right (by norm_num) (by nlinarith : (d₁ + 2) * X + 2 ≤ E))
+  have hlen : (encPair encBits encUnary
+      (frame (enc a) ++ List.replicate (2 ^ f n) true, 2 ^ g n)).length + 1 ≤ 2 ^ (X + 3) := by
+    have h2f : 2 ^ f n ≤ 2 ^ X := Nat.pow_le_pow_right (by norm_num) (Nat.le_add_right _ _)
+    have h2g : 2 ^ g n ≤ 2 ^ X := Nat.pow_le_pow_right (by norm_num) (Nat.le_add_left _ _)
+    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_append, length_frame,
+      List.length_replicate]
+    rw [pow_add]
+    omega
+  have hpow : (encPair encBits encUnary
+      (frame (enc a) ++ List.replicate (2 ^ f n) true, 2 ^ g n)).length ^ d ≤ 2 ^ E :=
+    calc _ ≤ (2 ^ (X + 3)) ^ d := Nat.pow_le_pow_left (by omega) d
+      _ = 2 ^ (d * (X + 3)) := (pow_mul' 2 d (X + 3)).symm
+      _ ≤ 2 ^ E := Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ (by omega))
+  omega
 
 end Translation
 

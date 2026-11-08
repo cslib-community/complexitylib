@@ -51,6 +51,8 @@ in exponential time and applying the timed-reduction API.
   `Cslib.Complexity.NP_subset_NEXP`: the same for nondeterministic time.
 * `Cslib.Complexity.E_subset_NE`, `Cslib.Complexity.EXP_subset_NEXP`: determinism is a special
   case.
+* `Cslib.Complexity.DTIME_two_pow_subset_EXP`, `Cslib.Complexity.NTIME_two_pow_subset_NEXP`: time
+  `2 ^ h n` for a polynomially bounded `h` is exponential time.
 * `Cslib.Complexity.P_ssubset_EXP`: polynomial time is strictly within exponential time.
 * `Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad`: polynomial time on inputs
   padded to length `2 ^ n` gives `E`.
@@ -148,6 +150,22 @@ theorem EXP_subset_NEXP : EXP enc ⊆ NEXP enc := fun _ hA =>
 /-- **Polynomial time is within exponential time.** -/
 theorem P_subset_EXP : P enc ⊆ EXP enc :=
   P_subset_E.trans E_subset_EXP
+
+/-- Deterministic time `2 ^ h n`, for a polynomially bounded exponent `h`, is within exponential
+time. -/
+theorem DTIME_two_pow_subset_EXP {h : ℕ → ℕ} (hh : PolynomiallyBounded h) :
+    DTIME enc (fun n => 2 ^ h n) ⊆ EXP enc := fun _ hA =>
+  let ⟨k, hk⟩ := hh
+  mem_EXP_iff.mpr ⟨k, DTIME_mono_of_eventually_le
+    (hk.mono fun _ hn => Nat.pow_le_pow_right (by norm_num) hn) hA⟩
+
+/-- Nondeterministic time `2 ^ h n`, for a polynomially bounded exponent `h`, is within
+nondeterministic exponential time. -/
+theorem NTIME_two_pow_subset_NEXP {α : Type} {enc : α ↪ List Bool} {h : ℕ → ℕ}
+    (hh : PolynomiallyBounded h) : NTIME enc (fun n => 2 ^ h n) ⊆ NEXP enc := fun _ hA =>
+  let ⟨k, hk⟩ := hh
+  mem_NEXP_iff.mpr ⟨k, NTIME_mono_of_eventually_le
+    (hk.mono fun _ hn => Nat.pow_le_pow_right (by norm_num) hn) hA⟩
 
 /-- The diagonal problem is in exponential time. -/
 theorem setOf_diagonal_mem_EXP : {x | diagonal x = true} ∈ EXP encBits :=
@@ -249,11 +267,8 @@ theorem PolyTimeReducible.mem_EXP {α β : Type} {encA : α ↪ List Bool} {encB
     omega
   have hA_eq : A = f ⁻¹' B := Set.ext hred
   rw [hA_eq]
-  have hpoly : PolynomiallyBounded
-      (fun n => c * (n + 1) ^ d + (c * (n + 1) ^ d) ^ k + 1) := by fun_prop
-  obtain ⟨D, hD⟩ := hpoly
-  refine mem_EXP_iff.mpr ⟨D, DTIME_mono_of_eventually_le ?_ hpre⟩
-  filter_upwards [hD] with n hn
+  refine DTIME_two_pow_subset_EXP (h := fun n => c * (n + 1) ^ d + (c * (n + 1) ^ d) ^ k + 1)
+    (by fun_prop) (DTIME_mono (fun n => ?_) hpre)
   set M := c * (n + 1) ^ d + (c * (n + 1) ^ d) ^ k
   have h1 : c * (n + 1) ^ d ≤ 2 ^ M :=
     (Nat.le_add_right _ _).trans (Nat.lt_two_pow_self.le)
@@ -262,6 +277,5 @@ theorem PolyTimeReducible.mem_EXP {α β : Type} {encA : α ↪ List Bool} {encB
   calc
     c * (n + 1) ^ d + 2 ^ (c * (n + 1) ^ d) ^ k ≤ 2 ^ M + 2 ^ M := Nat.add_le_add h1 h2
     _ = 2 ^ (M + 1) := by rw [← two_mul, pow_succ']
-    _ ≤ 2 ^ n ^ D := Nat.pow_le_pow_right (by norm_num) hn
 
 end Cslib.Complexity

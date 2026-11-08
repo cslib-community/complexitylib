@@ -168,13 +168,7 @@ private theorem EXP_encPair_subset_PPolyOn_of_EXP_subset_PPoly
     change n + n + 2 ^ (encPair encBits encBits (decodePair w)).length ^ (k + 1) ≤
       3 * 2 ^ (n + 1) ^ (k + 1) + 3
     omega
-  have hpre_EXP : decodePair ⁻¹' L ∈ EXP encBits := by
-    refine mem_EXP_iff.mpr ⟨2 * (k + 1), DTIME_mono_of_eventually_le
-      (eventually_atTop.mpr ⟨2, fun n hn => Nat.pow_le_pow_right (by norm_num) ?_⟩) hpre⟩
-    have hn2 : n + 1 ≤ n ^ 2 := by nlinarith
-    calc (n + 1) ^ (k + 1)
-        ≤ (n ^ 2) ^ (k + 1) := Nat.pow_le_pow_left hn2 (k + 1)
-      _ = n ^ (2 * (k + 1)) := (pow_mul n 2 (k + 1)).symm
+  have hpre_EXP : decodePair ⁻¹' L ∈ EXP encBits := DTIME_two_pow_subset_EXP (by fun_prop) hpre
   have hpre_PPoly : decodePair ⁻¹' L ∈ PPolyOn encBits := hEXP hpre_EXP
   have hred : PolyTimeReducible (encPair encBits encBits) encBits L (decodePair ⁻¹' L) :=
     ⟨encPair encBits encBits, .of_eq fun _ => rfl, fun p => by
