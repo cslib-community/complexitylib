@@ -59,7 +59,7 @@ no hypothesis on `w` is needed here.
 * [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*, Section 15.5][CLRS2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.Lean.OptimalBST
 
@@ -150,13 +150,13 @@ variable [AddCommMonoid β]
 
 /-- The interval-weighted cost of a tree on the keys `i + 1, …, j`: every node whose subtree holds
 the keys `i' + 1, …, j'` contributes `w i' j'`. -/
-def treeCost (w : ℕ → ℕ → β) : ℕ → ℕ → BinaryTree ℕ → β
+@[expose] def treeCost (w : ℕ → ℕ → β) : ℕ → ℕ → BinaryTree ℕ → β
   | _, _, .nil => 0
   | i, j, .node k l r => w i j + treeCost w i (k - 1) l + treeCost w k j r
 
 /-- Knuth's interval weight: the access weights `p k` of the keys `i < k ≤ j` and the failure
 weights `q g` of the gaps `i ≤ g ≤ j`. -/
-def knuthWeight (p q : ℕ → β) (i j : ℕ) : β :=
+@[expose] def knuthWeight (p q : ℕ → β) (i j : ℕ) : β :=
   ∑ k ∈ Ioc i j, p k + ∑ g ∈ Icc i j, q g
 
 open Cslib.DataStructure.SearchTree in
@@ -259,7 +259,7 @@ theorem optCostAux_eq_optCost (w : ℕ → ℕ → β) {f i j : ℕ} (hf : j - i
   optCostAux_eq w hf le_rfl
 
 /-- The cost of choosing root `k` for the keys `i + 1, …, j`, beyond the weight `w i j`. -/
-def splitCost (w : ℕ → ℕ → β) (i j k : ℕ) : β := optCost w i (k - 1) + optCost w k j
+@[expose] def splitCost (w : ℕ → ℕ → β) (i j k : ℕ) : β := optCost w i (k - 1) + optCost w k j
 
 theorem optCost_of_le (w : ℕ → ℕ → β) {i j : ℕ} (h : j ≤ i) : optCost w i j = 0 := by
   rw [optCost, show j - i = 0 by omega, optCostAux]
@@ -313,13 +313,13 @@ theorem optCost_eq_optRoot (w : ℕ → ℕ → β) {i j : ℕ} (h : i < j) :
 
 /-- The tree read off a root table `R`, with fuel: the root of the keys `i + 1, …, j` is
 `R i j`. -/
-def buildTree (R : ℕ → ℕ → ℕ) : ℕ → ℕ → ℕ → BinaryTree ℕ
+@[expose] def buildTree (R : ℕ → ℕ → ℕ) : ℕ → ℕ → ℕ → BinaryTree ℕ
   | 0, _, _ => .nil
   | f + 1, i, j =>
     if i < j then .node (R i j) (buildTree R f i (R i j - 1)) (buildTree R f (R i j) j) else .nil
 
 /-- An optimal tree on the keys `i + 1, …, j`, read off the largest optimal roots. -/
-def optTree (w : ℕ → ℕ → β) (i j : ℕ) : BinaryTree ℕ := buildTree (optRoot w) (j - i) i j
+@[expose] def optTree (w : ℕ → ℕ → β) (i j : ℕ) : BinaryTree ℕ := buildTree (optRoot w) (j - i) i j
 
 /-- Two root tables that agree on all subintervals of `(i, j]` and choose roots inside them build
 the same tree. -/

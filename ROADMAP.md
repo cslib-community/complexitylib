@@ -1569,9 +1569,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Interval dynamic programming** ([#3357](https://github.com/cslib-community/complexitylib/issues/3357)):
   after optimal binary search trees, Yao's quadrangle-inequality lemma, root monotonicity and
   Knuth's quadratic algorithm with candidate-scan counts in `TimeM` (`Algorithms/Lean/OptimalBST`):
-  the Hu–Tucker and Garsia–Wachs `O(n log n)` algorithms for alphabetic trees; matrix-chain
-  multiplication and optimal polygon triangulation as further instances of the generic interval
-  recurrence (which in general do not satisfy the quadrangle-inequality hypotheses); Knuth's sharper
+  the Hu–Tucker and Garsia–Wachs `O(n log n)` algorithms for alphabetic trees; a generalization of
+  the recurrence to split-dependent costs `w(i, k, j)` (matrix-chain multiplication, optimal polygon
+  triangulation), to which the Knuth–Yao hypotheses do not apply in general; Knuth's sharper
   candidate count; the SMAWK algorithm and Monge-matrix speedups; and a Word-RAM realization.
 - **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)):
   remaining after greedy set cover, maximal-matching vertex cover, the MST tour and Christofides'

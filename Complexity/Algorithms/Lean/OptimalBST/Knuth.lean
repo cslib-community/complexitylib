@@ -34,7 +34,7 @@ hypotheses Knuth's algorithm can return a suboptimal cost; see the test module
 `Cslib.Algorithms.Lean.TimeM` charges one unit per candidate root scanned, so a window
 `lo, …, hi` costs `hi - lo + 1`. Table reads and writes, additions, comparisons of costs, the
 weight `w` and the final tree extraction are free; the table is a function, not a RAM array. This
-counts candidate-root evaluations, the measure of Knuth's analysis; it is not a Word-RAM bound.
+counts candidate-root evaluations; it is not a Word-RAM bound.
 The cubic algorithm scans exactly `n (n + 1) (n + 2) / 6` candidates (`time_plainBST`). Knuth's
 scans at most `2 n²` (`time_knuthBST_le`): along a diagonal the windows telescope, so diagonal `d`
 costs at most `2 n` (`time_diagM_knuth_le`).
@@ -65,7 +65,7 @@ costs at most `2 n` (`time_diagM_knuth_le`).
 * [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*, Section 15.5][CLRS2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.Lean.OptimalBST
 
@@ -96,15 +96,15 @@ structure Window (β : Type*) where
   hi : Table β → ℕ → ℕ → ℕ
 
 /-- Every root `i + 1, …, j` (the cubic dynamic program). -/
-def Window.plain : Window β := ⟨fun _ i _ => i + 1, fun _ _ j => j⟩
+@[expose] def Window.plain : Window β := ⟨fun _ i _ => i + 1, fun _ _ j => j⟩
 
 /-- Knuth's window `root(i, j - 1), …, root(i + 1, j)`, or the only root `j` when `j = i + 1`. -/
-def Window.knuth : Window β :=
+@[expose] def Window.knuth : Window β :=
   ⟨fun T i j => if i + 1 < j then (T i (j - 1)).root else j,
     fun T i j => if i + 1 < j then (T (i + 1) j).root else j⟩
 
 /-- Overwrite the entry of the interval `(i, i + d]`. -/
-def setCell (d : ℕ) (T : Table β) (i : ℕ) (e : Entry β) : Table β :=
+@[expose] def setCell (d : ℕ) (T : Table β) (i : ℕ) (e : Entry β) : Table β :=
   fun a b => if a = i ∧ b = i + d then e else T a b
 
 theorem foldl_setCell (d : ℕ) (F : ℕ → Entry β) : ∀ (l : List ℕ) (U : Table β) (a b : ℕ),
@@ -129,12 +129,12 @@ section Scan
 variable [LinearOrder β]
 
 /-- Keep the cheaper of the current best entry and candidate `k`, preferring `k` on ties. -/
-def bestStep (c : ℕ → β) (best : Entry β) (k : ℕ) : Entry β :=
+@[expose] def bestStep (c : ℕ → β) (best : Entry β) (k : ℕ) : Entry β :=
   if c k ≤ best.cost then ⟨c k, k⟩ else best
 
 /-- Scan the candidates `lo, …, hi` for a largest minimizer of `c`, charging one unit per
 candidate. -/
-def scanM (c : ℕ → β) (lo hi : ℕ) : TimeM ℕ (Entry β) := do
+@[expose] def scanM (c : ℕ → β) (lo hi : ℕ) : TimeM ℕ (Entry β) := do
   ✓ (List.range' (lo + 1) (hi - lo)).foldlM (fun e k => do ✓ return bestStep c e k) ⟨c lo, lo⟩
 
 private def ScanInv (c : ℕ → β) (lo hi : ℕ) (e : Entry β) : Prop :=
@@ -188,36 +188,36 @@ section Algorithm
 variable [AddCommMonoid β] [LinearOrder β]
 
 /-- The cost of root `k` for the keys `i + 1, …, j`, read from the table. -/
-def Table.candidate (T : Table β) (i j k : ℕ) : β := (T i (k - 1)).cost + (T k j).cost
+@[expose] def Table.candidate (T : Table β) (i j k : ℕ) : β := (T i (k - 1)).cost + (T k j).cost
 
 /-- The entry for the keys `i + 1, …, j`, scanning the candidate roots `lo, …, hi`. -/
-def cellM (w : ℕ → ℕ → β) (T : Table β) (i j lo hi : ℕ) : TimeM ℕ (Entry β) := do
+@[expose] def cellM (w : ℕ → ℕ → β) (T : Table β) (i j lo hi : ℕ) : TimeM ℕ (Entry β) := do
   let e ← scanM (T.candidate i j) lo hi
   return ⟨w i j + e.cost, e.root⟩
 
 /-- Fill the diagonal of intervals `(i, i + d]` with `i + d ≤ n`, reading only `T`. -/
-def diagM (w : ℕ → ℕ → β) (W : Window β) (n d : ℕ) (T : Table β) : TimeM ℕ (Table β) :=
+@[expose] def diagM (w : ℕ → ℕ → β) (W : Window β) (n d : ℕ) (T : Table β) : TimeM ℕ (Table β) :=
   (List.range (n + 1 - d)).foldlM (fun U i => do
     let e ← cellM w T i (i + d) (W.lo T i (i + d)) (W.hi T i (i + d))
     return setCell d U i e) T
 
 /-- The table after filling the diagonals `1, …, d`. -/
-def tableM (w : ℕ → ℕ → β) (W : Window β) (n : ℕ) : ℕ → TimeM ℕ (Table β)
+@[expose] def tableM (w : ℕ → ℕ → β) (W : Window β) (n : ℕ) : ℕ → TimeM ℕ (Table β)
   | 0 => pure fun _ _ => ⟨0, 0⟩
   | d + 1 => do
     let T ← tableM w W n d
     diagM w W n (d + 1) T
 
 /-- Fill the table for the keys `1, …, n` and read off the cost and the tree. -/
-def solveM (w : ℕ → ℕ → β) (W : Window β) (n : ℕ) : TimeM ℕ (Solution β) := do
+@[expose] def solveM (w : ℕ → ℕ → β) (W : Window β) (n : ℕ) : TimeM ℕ (Solution β) := do
   let T ← tableM w W n n
   return ⟨(T 0 n).cost, buildTree (fun i j => (T i j).root) n 0 n⟩
 
 /-- The cubic dynamic program for optimal binary search trees. -/
-def plainBST (w : ℕ → ℕ → β) (n : ℕ) : TimeM ℕ (Solution β) := solveM w .plain n
+@[expose] def plainBST (w : ℕ → ℕ → β) (n : ℕ) : TimeM ℕ (Solution β) := solveM w .plain n
 
 /-- Knuth's quadratic algorithm for optimal binary search trees. -/
-def knuthBST (w : ℕ → ℕ → β) (n : ℕ) : TimeM ℕ (Solution β) := solveM w .knuth n
+@[expose] def knuthBST (w : ℕ → ℕ → β) (n : ℕ) : TimeM ℕ (Solution β) := solveM w .knuth n
 
 /-! ### Correctness -/
 

@@ -20,10 +20,11 @@ These kernel-checked examples (using no `native_decide`) exercise:
 2. Brute force over all trees: `allTrees` enumerates every binary search tree on `i + 1, …, j`
    (`mem_allTrees`), and for `n ≤ 4` the cost returned by each algorithm is at most every tree's
    cost and is attained by the returned tree.
-3. The hypotheses of Knuth's speedup are needed: for a weight violating both, one that is monotone
-   on intervals but violates the quadrangle inequality, and one (integer-valued) that satisfies the
-   quadrangle inequality but is not monotone, Knuth's algorithm returns a cost above the optimum,
-   while the cubic algorithm stays optimal.
+3. The hypotheses of Knuth's speedup are needed: for a weight that is not monotone although it
+   satisfies the strict quadrangle inequality, one that is monotone on intervals but violates the
+   quadrangle inequality, and one (integer-valued) that satisfies the quadrangle inequality but is
+   not monotone on nonempty intervals, Knuth's algorithm returns a cost above the optimum, while the
+   cubic algorithm stays optimal.
 -/
 
 public section
@@ -111,7 +112,9 @@ example : ∀ n ≤ 4, (∀ t ∈ allTrees n 0 n, (knuthBST wC n).ret.cost ≤ t
 
 /-! ### The hypotheses of Knuth's speedup are needed -/
 
-/-- A nonnegative weight violating both hypotheses. -/
+/-- A nonnegative weight that is not monotone on intervals (`w 1 2 > w 0 2`). It satisfies the
+quadrangle inequality on every strict quadruple `i < i' < j < j'` and violates it only when
+`i' = j`, so monotonicity is needed even when the strict quadrangle inequality holds. -/
 def wBad : ℕ → ℕ → ℕ := fun i j => if i = 1 ∧ j = 2 then 2 else if i = 2 ∧ j = 3 then 1 else 0
 
 example : (plainBST wBad 3).ret.cost = 0 ∧ (knuthBST wBad 3).ret.cost = 1 := by decide
@@ -120,7 +123,7 @@ example : ¬ QuadrangleIneq wBad := fun h =>
   absurd (h (show 1 ≤ 2 by decide) (show 2 ≤ 2 by decide) (show 2 ≤ 3 by decide)) (by decide)
 
 example : ¬ MonotoneOnIntervals wBad := fun h =>
-  absurd (h (show 1 ≤ 1 by decide) (show 1 ≤ 2 by decide) (show 2 ≤ 3 by decide)) (by decide)
+  absurd (h (show 0 ≤ 1 by decide) (show 1 ≤ 2 by decide) (show 2 ≤ 2 by decide)) (by decide)
 
 /-- Look up a `5 × 5` table, clamping the indices to `4`. -/
 def table5 {γ : Type*} (t : List (List γ)) (z : γ) (i j : ℕ) : γ :=
@@ -160,8 +163,9 @@ theorem quadrangleIneq_wQI : QuadrangleIneq wQI := by
   exact H ⟨_, by omega⟩ ⟨_, by omega⟩ ⟨_, by omega⟩ ⟨_, by omega⟩ (by dsimp only; omega)
     (by dsimp only; omega) (by dsimp only; omega)
 
+/-- `wQI` is not monotone on nonempty intervals: `w 0 3 = 7 > w 0 4 = 6`. -/
 example : ¬ MonotoneOnIntervals wQI := fun h =>
-  absurd (h (show 0 ≤ 0 by decide) (show 0 ≤ 0 by decide) (show 0 ≤ 1 by decide)) (by decide)
+  absurd (h (show 0 ≤ 0 by decide) (show 0 ≤ 3 by decide) (show 3 ≤ 4 by decide)) (by decide)
 
 example : (plainBST wQI 4).ret.cost = 6 ∧ (knuthBST wQI 4).ret.cost = 7 := by decide
 
