@@ -231,10 +231,9 @@ games is not formalized. Correlated equilibria (with swap regret), existence of 
 weighted congestion games are not formalized. The same holds for the Monderer–Shapley isomorphism
 between potential games and congestion games (Theorems 2.8 and 3.2) and for the complexity of
 finding equilibria (PLS- and PPAD-completeness, including two-player Nash in PPAD). These are
-ROADMAP directions under [#2900](https://github.com/cslib-community/complexitylib/issues/2900)
-and [#3334](https://github.com/cslib-community/complexitylib/issues/3334). Hedge dynamics are
-full-information and deterministic: they work with expected costs, not sampled play or bandit
-feedback, and only time-average guarantees are proved, not last-iterate convergence.
+ROADMAP directions under [#2900](https://github.com/cslib-community/complexitylib/issues/2900).
+Hedge dynamics are full-information and deterministic: they work with expected costs, not sampled
+play or bandit feedback, and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
