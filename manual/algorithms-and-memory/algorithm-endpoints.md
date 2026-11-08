@@ -1008,6 +1008,19 @@ Import `Complexity.Computability.Complexity.Problems.TSP.Christofides` ([source]
 
 `minPerfectMatching` is exhaustive search over `(2k − 1)!!` matchings, with optimality proved by `sum_minPerfectMatching_le`. So these results certify the approximation ratio, not a polynomial running time. Edmonds' weighted matching algorithm ([Edmonds][edmonds65]) and any machine-level certificate remain open. The [examples](../../ComplexityTests/TSPChristofides.lean) run the algorithm on a four-city star whose three perfect matchings cost `5`, `6` and `6`; exhaustive search picks the cheapest. The Euler circuit `[0, 1, 2, 0, 3, 0]` is shortcut to an optimal tour of length `11`. The examples also instantiate the general bound with Kruskal's tree, and check the empty and one-city instances.
 
+## String algorithms
+
+String algorithms are written in `Cslib.Algorithms.Lean.TimeM` and charge one tick per character comparison. Array reads and writes, index arithmetic, allocation and list/array conversions are free. Exact matching against a single pattern is Knuth–Morris–Pratt ([source](../../Complexity/Algorithms/Lean/KMP/Search.lean)). It makes at most `2 * (|p| - 1) + 2 * |t|` comparisons (`kmpSearchM_time_le`), and `mem_kmpMatchesList_iff` characterizes its output.
+
+Suffix arrays index one text for many patterns. Import `Complexity.Algorithms.Lean.SuffixArray.Basic`, `.Kasai` and `.Search` ([Basic](../../Complexity/Algorithms/Lean/SuffixArray/Basic.lean), [Kasai](../../Complexity/Algorithms/Lean/SuffixArray/Kasai.lean), [Search](../../Complexity/Algorithms/Lean/SuffixArray/Search.lean)). The alphabet is any `LinearOrder`, ordered with Mathlib's lexicographic order on lists, so a proper prefix comes before the words that extend it. No end-of-word sentinel is assumed, and only the nonempty suffixes `w.drop i` with `i < |w|` are listed.
+
+- **Specification.** `IsSuffixArray w sa` says that `sa` is a permutation of `List.range w.length` whose suffixes strictly increase [Manber and Myers][manbermyers93]. `IsSuffixArray.unique` shows that suffix arrays are unique. `suffixArray w` sorts the positions by their suffixes with `List.mergeSort`, and `isSuffixArray_suffixArray` proves it correct. This reference construction is uncharged and not linear-time.
+- **LCP array.** `lcpArray w sa` has `0` at rank `0` and the longest-common-prefix length (`lcpLen`) of the suffixes of ranks `r - 1` and `r` at rank `r > 0`. `IsSuffixArray.getElem_lcpArray_sub_one_le` is the height lemma `lcp[rank[i + 1]] ≥ lcp[rank[i]] - 1` of [Kasai et al.][kasai01].
+- **Kasai et al.'s algorithm.** `kasaiM w sa` visits positions in text order. It extends each common prefix from the previous length minus one. `ret_kasaiM` and `kasai_eq_lcpArray` show that it returns `lcpArray` whenever `sa` is a suffix array. `kasaiM_time_le` bounds its cost by `2 * |w|` comparisons for every input, valid suffix array or not. Building the rank array is uncharged.
+- **Pattern search.** `searchM w sa p` runs two binary searches (`lowerBoundM`, in `Complexity.Algorithms.Lean.BinarySearch`) and returns a rank interval `[lo, hi)`. Each probe compares `p` with at most `|p|` characters of a suffix. `searchM_spec` shows that the suffix of rank `r` starts with `p` exactly when `lo ≤ r < hi`, so the occurrences form a contiguous interval of the suffix array. `mem_occurrences` turns this into membership of text positions. `searchM_time_le` bounds the cost by `2 * |p| * (⌊log₂ |sa|⌋ + 1)` comparisons. This is the plain `O(|p| log n)` search. The `O(|p| + log n)` search, which reuses precomputed LCP information between probes, is not formalized.
+
+For the empty pattern the search returns every position `i < |w|`. KMP also reports the position `|w|` of the empty suffix. The [examples](../../ComplexityTests/SuffixArray.lean) check `banana` and `mississippi`: the suffix and LCP arrays, the comparison counts, and agreement with KMP on several patterns. They also include a kernel-checked suffix array with its uniqueness, a rejected non-sorted permutation, and absent and empty patterns. Linear-time construction (SA-IS, DC3), LCP-accelerated search and suffix trees remain open ([ROADMAP](../../ROADMAP.md#string-algorithms)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -1033,9 +1046,11 @@ The numeric values above are transcriptions of checked source statements, not re
 [gusfield90]: ../sources.md#gusfield90
 [hierholzer73]: ../sources.md#hierholzer73
 [hmu06]: ../sources.md#hmu06
+[kasai01]: ../sources.md#kasai01
 [kasami65]: ../sources.md#kasami65
 [kortevygen18]: ../sources.md#kortevygen18
 [lll82]: ../sources.md#lll82
+[manbermyers93]: ../sources.md#manbermyers93
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77

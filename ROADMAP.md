@@ -1848,6 +1848,22 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   `O(log n)` equality protocol in `Communication/Randomized`. Native machine or RAM realizations
   with bit-level arithmetic costs are a separate endpoint.
 
+### String algorithms
+
+- **Suffix arrays** ([#3331](https://github.com/cslib-community/complexitylib/issues/3331)):
+  `Algorithms/Lean/SuffixArray` has the suffix-array specification with uniqueness, a sort-based
+  reference construction, Kasai et al.'s LCP construction with at most `2|w|` character
+  comparisons, and plain binary-search pattern matching with at most `2|p|(⌊log₂ n⌋ + 1)`
+  comparisons. Remaining: linear-time construction (SA-IS of Nong, Zhang and Chan, or the DC3
+  skew algorithm of Kärkkäinen and Sanders) with a charged cost model for integer alphabets; a
+  comparison-count bound for the sort-based reference construction (through `mergeSortM` with a
+  charged suffix comparator);
+  Manber–Myers `O(|p| + log n)` search with precomputed LCP information; suffix trees (Ukkonen or
+  McCreight construction) and their equivalence with suffix arrays plus LCP arrays; and
+  applications such as longest repeated substring and the Burrows–Wheeler transform. Once a second
+  client appears (Z-function, LCP-accelerated search), move `lcpLen` and its lemmas to a
+  `Foundations/Data/List` module in the `List` namespace.
+
 ## Machines, RAM and data structures
 
 - **Efficient universal simulation** ([#800]): the clocked universal function runs in time

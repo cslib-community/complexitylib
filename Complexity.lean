@@ -22,6 +22,7 @@ public import Complexity.Algorithms.Lean.BellmanFord.Basic
 public import Complexity.Algorithms.Lean.BinPacking.Basic
 public import Complexity.Algorithms.Lean.BinPacking.FirstFit
 public import Complexity.Algorithms.Lean.BinPacking.NextFit
+public import Complexity.Algorithms.Lean.BinarySearch
 public import Complexity.Algorithms.Lean.CYK.Basic
 public import Complexity.Algorithms.Lean.DFS.Basic
 public import Complexity.Algorithms.Lean.DFS.TopologicalSort
@@ -115,6 +116,9 @@ public import Complexity.Algorithms.Lean.StableMatching.Incentives
 public import Complexity.Algorithms.Lean.StableMatching.Lattice
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
+public import Complexity.Algorithms.Lean.SuffixArray.Basic
+public import Complexity.Algorithms.Lean.SuffixArray.Kasai
+public import Complexity.Algorithms.Lean.SuffixArray.Search
 public import Complexity.Algorithms.Lean.TSP.Christofides
 public import Complexity.Algorithms.Lean.TSP.MSTTour
 public import Complexity.Algorithms.Lean.TSP.PerfectMatching
