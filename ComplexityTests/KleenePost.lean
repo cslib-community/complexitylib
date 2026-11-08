@@ -87,20 +87,24 @@ theorem evens_le (g : ℕ →. ℕ) : (evens.indicator 1 : ℕ → ℕ) ≤ᵀ g
   exact (Primrec.ite (Primrec.eq.comp (Primrec.nat_mod.comp Primrec.id (Primrec.const 2))
     (Primrec.const 0)) (Primrec.const 1) (Primrec.const 0)).to_comp
 
-/-- Only countably many partial functions are reducible to the empty oracle, and the Kleene–Post
-degrees have countably many predecessors. -/
+/-- Only countably many partial functions are reducible to the empty oracle. -/
 example : {f | f ≤ᵀ fun _ => Part.none}.Countable :=
   countable_setOf_turingReducible _
 
 /-! ### The Kleene–Post sets -/
 
 /-- Neither Kleene–Post set is computable: a computable set is below every oracle. -/
-theorem kleene_post_not_partrec :
+theorem kleene_post_not_computable :
     ∃ A B : Set ℕ, ¬Computable (A.indicator 1 : ℕ → ℕ) ∧ ¬Computable (B.indicator 1 : ℕ → ℕ) ∧
       ¬(A.indicator 1 : ℕ → ℕ) ≤ᵀ (B.indicator 1 : ℕ → ℕ) := by
   obtain ⟨A, B, hAB, hBA⟩ := kleene_post
   exact ⟨A, B, fun h => hAB h.partrec.turingReducible, fun h => hBA h.partrec.turingReducible,
     hAB⟩
+
+/-- A Kleene–Post degree has countably many predecessors. -/
+example : ∃ d₁ d₂ : TuringDegree, ¬d₁ ≤ d₂ ∧ (Set.Iic d₁).Countable := by
+  obtain ⟨d₁, d₂, h₁, -⟩ := TuringDegree.exists_incomparable
+  exact ⟨d₁, d₂, h₁, d₁.countable_Iic⟩
 
 /-- The Kleene–Post degrees are distinct. -/
 example : ∃ d₁ d₂ : TuringDegree, d₁ ≠ d₂ := by

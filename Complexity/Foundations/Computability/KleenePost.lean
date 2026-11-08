@@ -26,8 +26,8 @@ and its soundness and completeness (the use principle) carry the conclusion to t
 
 This proves the incomparability statement of Kleene–Post. The construction is noncomputable here:
 it decides by classical choice whether some extension forces convergence. The bound
-`A, B ≤ᵀ ∅′` from the source, which says that this question is a `Σ₁` question answered by the
-halting problem, is not formalized in this file.
+`A, B ≤ᵀ ∅′` from the source, which holds because this question is `Σ₁` and hence decided by
+`∅′`, is not formalized in this file.
 
 ## Main results
 

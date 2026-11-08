@@ -9,7 +9,6 @@ module
 
 public import Complexity.Init
 public import Mathlib.Computability.TuringDegree
-public import Mathlib.Computability.PartrecCode
 public import Mathlib.Data.Set.Countable
 
 /-!
@@ -45,8 +44,19 @@ oracle values.
 * `Nat.RecursiveIn.Code.evaln_take`: a stage-`k` computation reads only the first `k` oracle
   values.
 * `Nat.RecursiveIn.Code.exists_use`: the use principle.
-* `Nat.RecursiveIn.Code.countable_setOf_turingReducible`,
-  `TuringDegree.countable_Iic`: a function or degree has only countably many predecessors.
+* `Nat.RecursiveIn.countable_setOf_turingReducible`, `TuringDegree.countable_Iic`: a function
+  or degree has only countably many predecessors.
+
+## Implementation notes
+
+The open Mathlib PR
+[mathlib4#38973](https://github.com/leanprover-community/mathlib4/pull/38973)
+(`Mathlib/Computability/SingleOracle`) proposes overlapping infrastructure: oracle codes
+`Oracle.Single.Code` with `eval` and a relativized `evaln`, a code for `evaln`, and the jump,
+related back to `RecursiveIn`. Its oracles are total functions and its `evaln` reads the whole
+oracle. This file instead builds on merged Mathlib's `Nat.RecursiveIn` with partial oracles, and
+its `evaln` runs against a finite prefix `List ℕ`, which gives `evaln_take` and `exists_use`
+directly. Upstreaming must be reconciled with that PR (see `UPSTREAM.md`).
 
 ## References
 
@@ -279,6 +289,7 @@ theorem evaln_take (σ : List ℕ) (k : ℕ) (c : Code) (n : ℕ) :
   · refine evaln_mono_of_agree (K := k) (fun i hi y hy => ?_) le_rfl le_rfl h
     rwa [List.getElem?_take_of_lt hi]
 
+-- As in Mathlib's `Nat.Partrec.Code.evaln_sound`: the `simp` calls unfold `PFun` coercions.
 set_option backward.isDefEq.respectTransparency false in
 /-- Soundness of stage-bounded evaluation: a result computed against the prefix `σ` is a value of
 the evaluation relative to every oracle `g` extending `σ`. -/
@@ -362,6 +373,7 @@ theorem prefixOf_mem (f : ℕ → ℕ) (N : ℕ) :
   rw [getElem_prefixOf]
   exact Part.mem_some _
 
+-- As in Mathlib's `Nat.Partrec.Code.evaln_complete`: the `simp` calls unfold `PFun` coercions.
 set_option backward.isDefEq.respectTransparency false in
 /-- Completeness of stage-bounded evaluation for total oracles: every convergent computation
 relative to `f` converges at some stage against some finite prefix of `f`. -/
@@ -495,10 +507,10 @@ end Code
 
 open Code
 
-/-- `Nat.RecursiveIn {g}` is closed under the unbounded search with offset used by
+/-- `Nat.RecursiveIn O` is closed under the unbounded search with offset used by
 `Code.rfind'`. -/
-theorem rfind' {g : ℕ →. ℕ} {f : ℕ →. ℕ} (hf : Nat.RecursiveIn {g} f) :
-    Nat.RecursiveIn {g}
+theorem rfind' {O : Set (ℕ →. ℕ)} {f : ℕ →. ℕ} (hf : Nat.RecursiveIn O f) :
+    Nat.RecursiveIn O
       (Nat.unpaired fun a m =>
         (Nat.rfind fun n => (fun m => m = 0) <$> f (Nat.pair a (n + m))).map (· + m)) := by
   have hq : Nat.Primrec fun p => Nat.pair p.unpair.1.unpair.1 (p.unpair.2 + p.unpair.1.unpair.2) :=
@@ -510,7 +522,7 @@ theorem rfind' {g : ℕ →. ℕ} {f : ℕ →. ℕ} (hf : Nat.RecursiveIn {g} f
   have hadd : Nat.Primrec fun p => p.unpair.1 + p.unpair.2.unpair.2 :=
     (Nat.Primrec.add.comp (Nat.Primrec.pair Nat.Primrec.left
       (Nat.Primrec.right.comp Nat.Primrec.right))).of_eq fun n => by simp
-  have h3 := hadd.recursiveIn.comp (h2.pair (Nat.Primrec.id.recursiveIn (O := {g})))
+  have h3 := hadd.recursiveIn.comp (h2.pair (Nat.Primrec.id.recursiveIn (O := O)))
   have hb : ∀ x, (Part.some x >>= f) = f x := fun x => Part.bind_some x f
   refine h3.of_eq fun n => ?_
   simp [Seq.seq, Nat.unpaired, Part.map_eq_map, Part.bind_eq_bind, hb,
@@ -562,6 +574,8 @@ open scoped Computability in
 theorem turingReducible_iff_exists_code {f g : ℕ →. ℕ} : f ≤ᵀ g ↔ ∃ c : Code, eval g c = f :=
   RecursiveIn.iff_nat.trans exists_code
 
+end Code
+
 open scoped Computability in
 /-- Only countably many partial functions are Turing reducible to a given oracle. -/
 theorem countable_setOf_turingReducible (g : ℕ →. ℕ) : {f | f ≤ᵀ g}.Countable := by
@@ -571,15 +585,13 @@ theorem countable_setOf_turingReducible (g : ℕ →. ℕ) : {f | f ≤ᵀ g}.Co
   rw [this]
   exact Set.countable_range _
 
-end Code
-
 end Nat.RecursiveIn
 
 /-- A Turing degree has only countably many degrees below it. -/
 theorem TuringDegree.countable_Iic (d : TuringDegree) : (Set.Iic d).Countable := by
   induction d using Antisymmetrization.ind with
   | _ g =>
-  refine ((Nat.RecursiveIn.Code.countable_setOf_turingReducible g).image
+  refine ((Nat.RecursiveIn.countable_setOf_turingReducible g).image
     (toAntisymmetrization _)).mono ?_
   intro d hd
   induction d using Antisymmetrization.ind with
