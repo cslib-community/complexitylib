@@ -74,9 +74,9 @@ public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
 public import Complexity.Algorithms.Lean.Sort.Bitonic.ZeroOne
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
-public import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet
 public import Complexity.Algorithms.Lean.TSP.MSTTour
 public import Complexity.Algorithms.Lean.TimeM.Loops
+public import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet
 public import Complexity.Algorithms.Lean.VertexCover.Matching
 public import Complexity.Algorithms.Lean.Yates
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
