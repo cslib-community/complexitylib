@@ -897,7 +897,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Fortnow–Santhanam theorem that an OR-distillation of an `NP`-hard problem gives
   `coNP ⊆ NP/poly`, in the class-wise form over a polynomial equivalence relation; polynomial
   compressions, OR-cross-composition and the Bodlaender–Jansen–Kratsch theorem ruling out
-  polynomial kernels and compressions unless `coNP ⊆ NP/poly`. Remaining: concrete lower bounds
+  polynomial kernels and compressions unless `coNP ⊆ NP/poly`. Remaining
+  ([#3266](https://github.com/cslib-community/complexitylib/issues/3266)): concrete lower bounds
   (k-Path, Clique parameterized by vertex cover); cross-compositions of bounded cost and the
   complementary witness lemma; Yap's collapse `coNP ⊆ NP/poly → PH = Σ₃`; AND-composition
   (Drucker).

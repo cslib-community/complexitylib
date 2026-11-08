@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Complexity.Parameterized.CrossComposition
+import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
 
 /-!
@@ -13,9 +14,11 @@ import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
 The hypotheses of the Bodlaender–Jansen–Kratsch theorem satisfied by concrete maps: "some entry is
 `true`" is an OR-cross-composition of `{true}` into `{true}` with parameter `0`, and the identity
 is a compression of `{true}` with size bound `1`, so the theorem places `{false}` in `NP/poly`.
-"Every entry is `true`" is not an OR-cross-composition. Buss's kernel for vertex cover is a
-polynomial compression, and the identity on bit strings is no compression when the parameter is
-constant.
+"Every entry is `true`" is not an OR-cross-composition. Every problem OR-cross-composes into its OR
+by the identity, with parameter the largest entry length plus `⌊log₂ t⌋`; for `SAT` the theorem
+then says that a polynomial compression of OR-SAT gives `coNP ⊆ NP/poly`. Buss's kernel for vertex
+cover is a polynomial compression, and the identity on bit strings is no compression when the
+parameter is constant.
 -/
 
 namespace ComplexityTests.CrossComposition
@@ -60,6 +63,33 @@ example : ¬ IsORCrossComposition encBool (fun _ => true) {true} encBool (fun _ 
   intro h
   have := h.mem_iff [true, false] (by simp) (by simp)
   simp at this
+
+/-! ### The OR of an `NP`-hard problem -/
+
+/-- The parameter of a list of instances: the largest encoded length of an entry plus
+`⌊log₂ t⌋`, for `t` entries. -/
+private def orParam {α : Type} (enc : α ↪ List Bool) (l : List α) : ℕ :=
+  (l.map fun a => (enc a).length).toFinset.sup id + Nat.log 2 l.length
+
+/-- Every problem OR-cross-composes into its OR by the identity, with parameter `orParam`. -/
+theorem orCrossComposes_or {α : Type} (enc : α ↪ List Bool) (A : Set α) :
+    ORCrossComposes enc A (encList enc) (orParam enc) {l | ∃ a ∈ l, a ∈ A} := by
+  refine ⟨fun _ => true, id, id, isPolyEquivalence_const_true enc, by fun_prop,
+    id', fun l _ _ => Iff.rfl, fun n l _ _ hl => ?_⟩
+  have : (l.map fun a => (enc a).length).toFinset.sup id ≤ n := by
+    refine Finset.sup_le fun m hm => ?_
+    simp only [List.mem_toFinset, List.mem_map] at hm
+    obtain ⟨a, ha, rfl⟩ := hm
+    exact hl a ha
+  simp only [orParam, id]
+  omega
+
+/-- **OR-SAT is incompressible unless `coNP ⊆ NP/poly`**: a polynomial compression of the OR of
+`SAT`, with parameter `orParam`, gives `coNP ⊆ NP/poly`. -/
+example (h : HasPolyCompression (encList encCNF) (orParam encCNF) {l | ∃ a ∈ l, a ∈ SAT})
+    {δ : Type} (encC : δ ↪ List Bool) : coNP encC ⊆ NPPoly encC :=
+  coNP_subset_NPPoly_of_orCrossComposes CookLevin.SAT_npComplete.2 (orCrossComposes_or _ _) h
+    encC
 
 /-! ### Kernels and compressions -/
 

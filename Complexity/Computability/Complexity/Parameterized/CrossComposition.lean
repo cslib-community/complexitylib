@@ -35,11 +35,13 @@ collapse of the polynomial hierarchy that follows from `NP ⊆ coNP/poly` by Yap
 The proof follows [BodlaenderJansenKratsch2014, Theorem 5]. Given a list of instances, keep the
 entries related to every entry, and erase repeated entries. On a list of related instances of
 length at most `n` nothing is dropped but repeats, and fewer than `2 ^ (n + 1)` distinct instances
-remain, so the logarithm of their number is at most `n`. Cross-composing them gives a parameter
-at most `g (2 n)`, and compressing the result gives a word of length at most `h (g (2 n))`, a
-polynomial in `n` independent of the length of the list. Lists of `h (g (2 n)) + 1` related
-instances are thus compressed to shorter words, and the class-wise theorem of Fortnow and
-Santhanam (`Cslib.Complexity.compl_mem_NPPoly_of_orCompression`,
+remain, so the logarithm of their number is at most `n`. Neither `g` nor `h` is assumed monotone,
+so the proof bounds them by monotone polynomial majorants `G m = c_g (m + 1) ^ d_g` of `g` and
+`H k = c_h (k + 1) ^ d_h` of `h`. Cross-composing the remaining entries gives a parameter at most
+`G (2 n)`, and compressing the result gives a word of length at most `H (G (2 n))`, a polynomial in
+`n` independent of the length of the list. (`h (g (2 n))` itself need not bound that length.)
+Lists of `t n = H (G (2 n)) + 1` related instances are thus compressed to shorter words, and the
+class-wise theorem of Fortnow and Santhanam (`Cslib.Complexity.compl_mem_NPPoly_of_orCompression`,
 `Cslib.Complexity.coNP_subset_NPPoly_of_orCompression`) puts the complement of `A` in `NP/poly`.
 Theorem 5 builds instead a weak OR-distillation into the OR of the target language, compressing
 each equivalence class separately; the class-wise theorem covers the classes directly.
@@ -203,7 +205,8 @@ private theorem exists_orCompression_of_orCrossComposition {r : α × α → Boo
     have := log_length_select_le (enc := enc) r hl
     exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
   refine ⟨fun l => K (C (select r l)), fun n => ch * (cg * (2 * n + 1) ^ dg + 1) ^ dh + 1,
-    hK.comp (hC.polyTime.comp (select_computableInPolyTime hr.polyTime)) ?_,
+    hK.computableInPolyTime_comp (hC.polyTime.comp (select_computableInPolyTime hr.polyTime))
+      ?_,
     fun l hl hrel => ?_, by fun_prop, fun n l hlen hl hrel => ?_⟩
   · -- the parameter of the cross-composed instance is polynomially bounded
     have hbound : PolyBounded (fun l : List α => (encList enc l).length)

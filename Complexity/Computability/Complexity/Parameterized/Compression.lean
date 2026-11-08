@@ -25,23 +25,28 @@ when `a ∈ A`, of length at most `h (κ a)`. It is *polynomial* when `h` is pol
 (`Cslib.Complexity.HasPolyCompression`). Unlike a kernelization, a compression may change the
 problem, and it need not bound any parameter of its output.
 
-Two differences with kernelizations (`Cslib.Complexity.IsKernelization`) are deliberate, and
-follow [BodlaenderJansenKratsch2014, Definitions 1 and 2]:
+Compressions differ from kernelizations (`Cslib.Complexity.IsKernelization`) in two ways:
 
-* The time bound is a polynomial in `|enc a| + κ a`, not in `|enc a|`: the parameter may be much
-  larger than the encoded instance, for instance when it is written in binary. Every
-  kernelization is computable in time polynomial in `|enc a|`, so a polynomial kernel is a
-  polynomial compression (`Cslib.Complexity.HasPolyKernel.hasPolyCompression`).
+* The time bound is a polynomial in `|enc a| + κ a`, as in
+  [BodlaenderJansenKratsch2014, Definition 2]. The parameter may be much larger than the encoded
+  instance, for instance when it is written in binary. [BodlaenderJansenKratsch2014, Definition 1]
+  allows kernelizations the same time bound; the difference here comes from the library's
+  stricter `Cslib.Complexity.IsKernelization`, which asks for time polynomial in `|enc a|` alone,
+  not from the source. Every kernelization in the library's sense is therefore a compression, and
+  a polynomial kernel is a polynomial compression
+  (`Cslib.Complexity.HasPolyKernel.hasPolyCompression`).
 * The target of a polynomial compression is any problem on bit strings
-  (`Set (List Bool)`); a compression into a problem with another encoding gives one into the
-  encoded problem (`Cslib.Complexity.IsCompression.hasPolyCompression`).
+  (`Set (List Bool)`), as in [BodlaenderJansenKratsch2014, Definition 2]; a compression into a
+  problem with another encoding gives one into the encoded problem
+  (`Cslib.Complexity.IsCompression.hasPolyCompression`).
 
 As for `Cslib.Complexity.HasPolyKernel`, the size bound `h` is arbitrary, where the cited
 definition requires it to be computable; the definitions here are therefore weaker, and the lower
 bounds proved with them stronger.
 
 A compression of `(Q, κ)` composes with a polynomial-time map into `Q` whose parameter is
-polynomially bounded in the length of its input (`Cslib.Complexity.IsCompression.comp`); this is
+polynomially bounded in the length of its input
+(`Cslib.Complexity.IsCompression.computableInPolyTime_comp`); this is
 how [BodlaenderJansenKratsch2014, Theorem 5] combines a compression with a cross-composition.
 
 ## Main definitions
@@ -50,7 +55,8 @@ how [BodlaenderJansenKratsch2014, Theorem 5] combines a compression with a cross
 
 ## Main results
 
-* `Cslib.Complexity.IsCompression.comp`: a compression composed with a polynomial-time map of
+* `Cslib.Complexity.IsCompression.computableInPolyTime_comp`: a compression composed with a
+  polynomial-time map of
   polynomially bounded parameter is computable in polynomial time.
 * `Cslib.Complexity.HasPolyKernel.hasPolyCompression`: a polynomial kernel is a polynomial
   compression.
@@ -116,9 +122,9 @@ theorem IsCompression.hasPolyCompression (hK : IsCompression enc κ A encB B K h
   ⟨_, _, h, hh, hK.encode⟩
 
 /-- **Composing a compression with a polynomial-time map.** Let `K` be a compression of `(B, κ)`,
-and let `g` be computable in polynomial time, with `κ (g c)` bounded by a polynomially bounded
-function of `|encC c|`. Then `K ∘ g` is computable in polynomial time. -/
-theorem IsCompression.comp {encC : γ ↪ List Bool} {κ : β → ℕ}
+and let `g` be computable in polynomial time, with `κ (g a)` bounded by a polynomially bounded
+function of `|enc a|`. Then `K ∘ g` is computable in polynomial time. -/
+theorem IsCompression.computableInPolyTime_comp {encC : γ ↪ List Bool} {κ : β → ℕ}
     {B : Set β} {Z : Set γ} {K : β → γ} {h : ℕ → ℕ} {g : α → β}
     (hK : IsCompression encB κ B encC Z K h) (hg : ComputableInPolyTime g enc encB)
     (hκ : PolyBounded (fun a => (enc a).length) fun a => κ (g a)) :
