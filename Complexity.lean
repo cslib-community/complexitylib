@@ -1409,8 +1409,10 @@ public import Complexity.Computability.Circuit.SumOfTerms.Basic
 public import Complexity.Computability.Circuit.SumOfTerms.Coverage
 public import Complexity.Computability.Circuit.Support
 public import Complexity.Computability.Circuit.Synthesis
+public import Complexity.Computability.Circuit.Topology
 public import Complexity.Computability.Circuit.Unfolding
 public import Complexity.Computability.Circuit.Weft
+public import Complexity.Computability.Circuit.WireNumber
 public import Complexity.Computability.Circuit.Wiring
 public import Complexity.Computability.Communication.Amplification
 public import Complexity.Computability.Communication.BinarySearch
@@ -3514,6 +3516,9 @@ public import Complexity.Crypto.Negligible.Basic
 public import Complexity.Crypto.Negligible.Dyadic
 public import Complexity.Crypto.Primitives.BlockCipher.CBCMAC
 public import Complexity.Crypto.Primitives.BlockCipher.Modes
+public import Complexity.Crypto.Primitives.Garbling.Basic
+public import Complexity.Crypto.Primitives.Garbling.Privacy
+public import Complexity.Crypto.Primitives.PRF.Finite
 public import Complexity.Crypto.Primitives.PRG.Circuit
 public import Complexity.Crypto.Primitives.PRG.Game
 public import Complexity.Crypto.Primitives.PRG.NextBit
@@ -4616,6 +4621,7 @@ public import Complexity.Languages.Probabilistic.Oracle.Interaction
 public import Complexity.Languages.Probabilistic.Oracle.QueryCount
 public import Complexity.Languages.Probabilistic.Oracle.Simulation
 public import Complexity.Languages.Probabilistic.Oracle.Support
+public import Complexity.Languages.Probabilistic.Oracle.Tabulate
 public import Complexity.Languages.Probabilistic.Oracle.Transcript
 public import Complexity.Languages.Probabilistic.Presample
 public import Complexity.Languages.Probabilistic.QueriesWith
