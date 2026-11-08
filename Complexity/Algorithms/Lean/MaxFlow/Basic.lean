@@ -68,9 +68,13 @@ Chapter I, Sections 4–8; [CLRS2009], Sections 26.1–26.2, Theorem 26.6).
   `isMaxFlow_iff_exists_cut_value_eq`: Ford–Fulkerson optimality characterizations.
 * `Cslib.Algorithms.Lean.MaxFlow.Network.exists_maxFlow_eq_minCut`: existence of an integral
   maximum flow and minimum `s`-`t` cut of equal value when `N.s ≠ N.t`.
-* `Cslib.Algorithms.Lean.MaxFlow.forall_mem_pathArcs_iff_isChain`,
+* `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.value_eq_zero_of_s_eq_t`: every flow has value `0`
+  when `N.s = N.t`.
+* `Cslib.Algorithms.Lean.MaxFlow.forall_mem_pathArcs_iff_isChain`, `exists_list_of_reflTransGen`,
   `exists_nodup_list_of_reflTransGen`, `reflTransGen_of_pathArcs`: the bridge between `pathArcs`,
   `List.IsChain` and `Relation.ReflTransGen`.
+* `Cslib.Algorithms.Lean.MaxFlow.exists_mem_pathArcs_boundary`, `exists_mem_pathArcs_snd_eq`:
+  a vertex list leaving a set has a boundary arc, and every non-head vertex is entered by an arc.
 
 ## References
 

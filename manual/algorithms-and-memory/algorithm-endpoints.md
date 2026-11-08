@@ -309,7 +309,7 @@ Each form has a weak-duality lemma: `card_le_card_of_arcDisjoint_of_isArcCut`, `
 
 The reusable flow layer is [Decomposition.lean](../../Complexity/Algorithms/Lean/MaxFlow/Decomposition.lean). `Network.Flow.exists_flowPaths` decomposes an integral flow of value `k` into `k` simple paths along positive-flow arcs, with each arc `(u, v)` on at most `f u v` of them. `Network.Flow.cancel` removes antiparallel flow and keeps the value.
 
-The [tests](../../ComplexityTests/Menger.lean) check two examples. In the 3-cube, between antipodal vertices, the edge and vertex connectivity are both `3`: they give three explicit paths, show `IsEdgeReachable 3`, refute `IsEdgeReachable 4` with the three edges at `0`, and refute four internally disjoint paths with the separator `{1, 2, 4}`. They also check a small digraph with arc and vertex connectivity `2`.
+The [tests](../../ComplexityTests/Menger.lean) check two examples. In the 3-cube, between antipodal vertices, the edge and vertex connectivity are both `3`: they give three explicit paths, show `IsEdgeReachable 3`, refute `IsEdgeReachable 4` with the three edges at `0`, and refute four internally disjoint paths with the separator `{1, 2, 4}`. One test applies `exists_internallyDisjoint_eq_isVertexSeparator` as stated and pins its common size `m` to `3` by weak duality. They also check a small digraph with arc and vertex connectivity `2`.
 
 Limitations:
 
