@@ -810,7 +810,11 @@ index links to canonical definitions rather than keeping a second set.
   polynomial-time counting of arborescences and of weighted spanning trees, and Kasteleyn's
   Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
   #P-completeness.
-- For composite moduli: the prime-power collapse `Mod_{p^e}P = Mod_pP` and union closure.
+- For composite moduli
+  ([#3495](https://github.com/cslib-community/complexitylib/issues/3495)): the prime-power
+  collapse `Mod_{p^e}P = Mod_pP` is done. Remaining: union closure for every modulus through
+  Hertrampf's characterization of `Mod_{jk}P` for coprime `j, k` (Beigel–Gill, Theorem 32 and
+  Corollary 35).
   Complement closure for moduli that are not prime powers is open, and relativizing proofs
   cannot give it (Barrington–Beigel–Rudich), so it is not a library direction.
 - Target-relativized `LWPP^A`, `WPP^A` and `SBP^A` with `FP^A` targets; adaptive WPP closure and
@@ -883,9 +887,14 @@ universe size, not supplied as unverified input tables. In dependency order:
   by interpretation from finite linear orders, and on [Hanf and Gaifman locality](Complexity/Logics/FirstOrder/Locality/Hanf.lean)
   with its [game-free proofs](Complexity/Logics/FirstOrder/Locality/GraphProperties.lean) that
   connectivity, acyclicity and being a tree are not definable
-  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), add Gaifman's
-  normal form theorem, further nondefinability applications of locality (Libkin's balanced binary
-  trees and transitive closure, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`),
+  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), and the
+  [Gaifman-locality proofs](Complexity/Logics/FirstOrder/Locality/Reachability.lean) that
+  transitive closure and reachability are not definable, with an exponential lower bound on the
+  locality radius and FO ⊊ FO(TC) on unordered graphs
+  ([#3483](https://github.com/cslib-community/complexitylib/issues/3483)), add Gaifman's normal
+  form theorem, the exact locality ranks `2 ^ (n - 1) - 1` and `2 ^ n - 1` (Libkin, Exercises 4.10
+  and 4.11), further nondefinability applications of locality (Libkin's balanced binary trees and
+  same generation, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`),
   games for vocabularies with constants, and pebble games with their finite-variable equivalence
   theorems; then counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style
   separations. Connect the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
@@ -950,6 +959,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Sperner (Papadimitriou 1994). Optional: the classical form on a triangulated `d`-simplex (not
   formalized), and a bridge identifying `Cslib.Sperner.triangles` with the two-dimensional Kuhn
   triangulation.
+- **Brouwer's fixed-point theorem** ([#3514](https://github.com/cslib-community/complexitylib/issues/3514)):
+  the unit cube in `Fin n → ℝ` via hypergrid Sperner and compactness, with the weak
+  approximation (a grid point displaced by at most `(K + 1)/N` for `K`-Lipschitz maps), is in
+  place. Remaining: arbitrary compact convex sets (by retraction onto the cube or a simplex), and
+  the computational problem Brouwer^f with its `PPAD` membership and hardness
+  ([#3087](https://github.com/cslib-community/complexitylib/issues/3087)).
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
@@ -1004,9 +1019,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   three is done for general `m` (`FineGrained.Diameter`, the `OV` form of Roditty–Vassilevska
   Williams Theorem 9). Remaining: the `(3/2 - ε)`-approximation corollary for diameter; the
   sparse-graph `m ^ (2 - ε)` statement, which needs the low-dimension form of `OVH` (dimension
-  `c log N`, from `SETH` with sparsification); the quadratic dynamic programs for longest common
-  subsequence and edit distance, and their `OV` hardness by alignment gadgets (Backurs–Indyk;
-  Abboud–Backurs–Vassilevska Williams; Bringmann–Künnemann).
+  `c log N`, from `SETH` with sparsification); the `OV` hardness of longest common subsequence
+  and edit distance by alignment gadgets (Backurs–Indyk; Abboud–Backurs–Vassilevska Williams;
+  Bringmann–Künnemann). Their quadratic dynamic programs are in `Algorithms/Lean/EditDistance`
+  ([#3472](https://github.com/cslib-community/complexitylib/issues/3472)).
 
 ### Approximation and PCP
 
@@ -1024,6 +1040,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   tables and its composition with that lemma and with `exists_GapLabelCover_npHard` (Theorem 5.4),
   the composition with the four-clause reduction (Theorem 6.1, imperfect completeness), and
   Håstad's separate test for satisfiable formulas (Theorem 6.5).
+- **MAX 2-SAT** ([#3481](https://github.com/cslib-community/complexitylib/issues/3481)): the
+  decision problem is NP-complete by the Garey–Johnson–Stockmeyer ten-clause gadget
+  (`Problems/MaxTwoSAT`). Remaining: APX-hardness with explicit inapproximability constants,
+  and a reduction from MAX 2-SAT to unweighted MAX CUT (the library's `MaxCut` is weighted and
+  reduces from `Partition`).
 - **Unique Games with perfect completeness**
   ([#3363](https://github.com/cslib-community/complexitylib/issues/3363)): label propagation
   decides satisfiable unique games (`Cslib.Complexity.solvedBy_gapUniqueGames_one`), with
@@ -1077,8 +1098,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `3`-CNF pigeonhole formula with `n` holes. The converse, Atserias–Dalmau Lemma 2
   ([#3375](https://github.com/cslib-community/complexitylib/issues/3375)), gives their Theorem 2
   for formulas without clauses of width exactly `w + 1`, and the space–width inequality is proved
-  from any Duplicator strategy. Next:
-  - space lower bounds for the wide pigeonhole formula and random `k`-CNFs;
+  from any Duplicator strategy. `WidePigeonholeSpace.lean`
+  ([#3498](https://github.com/cslib-community/complexitylib/issues/3498)) gives Torán's exact clause
+  space `n + 2` of the wide pigeonhole formula with `0 < n < m`, whatever the number of pigeons.
+  Next:
+  - space lower bounds for random `k`-CNFs;
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
   - degree versus space in polynomial calculus.
@@ -1315,6 +1339,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   (Theorems 3 and 4) and extractor (Theorem 1) are not yet formalized;
   condensers, limited independence, explicit expanders and space-bounded generators, with finite
   guarantees separate from uniform construction and decoding costs.
+- **Random graph connectivity** ([#3485](https://github.com/cslib-community/complexitylib/issues/3485)):
+  for Mathlib's binomial random graph `G(n, p)`, connectivity with high probability when
+  `n p - log n → ∞` (union bound over cuts, explicit bound `35 n exp (-(n p))`) is in
+  `Foundations/Probability/Combinatorics/BinomialRandomGraph/Connectivity.lean`. Remaining: the
+  lower half (`n p - log n → -∞`, isolated vertices by the second moment), the limit
+  `e ^ (-e ^ (-c))` at `p = (log n + c) / n`, and the hitting-time theorem.
 - **Explicit Ramsey graphs** ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)):
   strongly explicit graphs with no `k`-clique and no `k`-independent set, on more vertices than
   Frankl–Wilson's `k ^ Θ(log k / log log k)`, toward Erdős's existential `2 ^ (k / 2)`: the
@@ -1486,10 +1516,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   Rademacher complexity
   ([#3297](https://github.com/cslib-community/complexitylib/issues/3297)): Massart's lemma,
   symmetrization, the McDiarmid generalization bounds with expected and empirical complexity,
-  and the growth-function and VC bounds for `{-1, +1}` classes are in place on finite domains.
-  Remaining: Talagrand's contraction lemma, the 0-1 loss relation and the resulting VC
-  generalization bound, margin bounds, local Rademacher complexity, and general measurable
-  domains.
+  the growth-function and VC bounds for `{-1, +1}` classes, the 0-1 loss relation, and the
+  resulting growth-function, VC and agnostic ERM bounds for binary classification are in place
+  on finite domains. Remaining: Talagrand's contraction lemma, margin bounds, local Rademacher
+  complexity, and general measurable domains.
   Statistical queries
   ([#2910](https://github.com/cslib-community/complexitylib/issues/2910)): the deterministic SQ
   model has correlational and SQ-dimension query lower bounds, including parities, the
@@ -1753,9 +1783,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   deterministic Stoer–Wagner algorithm with the maximum adjacency ordering lemma and an `O(n³)`
   `TimeM` bound on natural-number weights (`Algorithms/Lean/StoerWagner`,
   `WeightedCut/MAOrdering`), both built on the probability-free contraction API of
-  `WeightedCut/Contraction`: the `O(n m + n² log n)` priority-queue version, real weights,
+  `WeightedCut/Contraction`, and the per-cut bound `1 / C(n, 2)` of the contraction algorithm with
+  the `C(n, 2)` bound on the number of minimum cuts (`Algorithms/Lean/Karger/MinCutCount`,
+  `WeightedCut/Blocks`, [#3489](https://github.com/cslib-community/complexitylib/issues/3489)):
+  the `O(n m + n² log n)` priority-queue version, real weights,
   Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
-  Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
+  Karger's near-linear minimum cut algorithm, the `O((2n)^(2α))` bound on `α`-minimal cuts, the
+  enumeration and cactus representation of all minimum cuts, the per-cut bound for recursive
+  Karger–Stein, deriving the untracked Karger theorems from the block-tracking ones
+  ([#3539](https://github.com/cslib-community/complexitylib/issues/3539)), and Queyranne's
+  minimization of symmetric submodular
   functions (which generalizes the maximum adjacency argument to hypergraph cuts).
 - **Gomory–Hu trees** ([#3422](https://github.com/cslib-community/complexitylib/issues/3422)):
   remaining after the existence theorem for cut-equivalent trees, flow-equivalence, the
@@ -1771,6 +1808,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   scanning (`O(|V|² |E|)`), the FIFO and relabel-to-front rules (`O(|V|³)`), highest-label
   selection (`O(|V|² √|E|)`), gap and global-relabelling heuristics, and dynamic trees
   (`O(|V| |E| log(|V|² / |E|))`).
+- **Menger's theorem** ([#3409](https://github.com/cslib-community/complexitylib/issues/3409)):
+  remaining after the two-terminal arc, edge and vertex forms for finite digraphs and simple
+  graphs, derived from integral max-flow/min-cut via flow decomposition
+  (`Algorithms/Lean/MaxFlow/Menger`, `MaxFlow/Decomposition`,
+  [#3380](https://github.com/cslib-community/complexitylib/issues/3380)): the directed-multigraph
+  (capacity) form, the `A`–`B` set version and the global `k`-connectivity form, Menger for
+  infinite graphs (the Erdős–Menger conjecture, proved by Aharoni and Berger), and a native
+  `k`-connectivity test with a charged running-time bound.
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core
@@ -1845,7 +1890,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   leaf bound `2 (1 - 1/ℓ)` and their pruning steps; Zelikovsky's `11/6` and Robins–Zelikovsky's
   `1.55` greedy algorithms; the Byrka–Grandoni–Rothvoß–Sanità LP-rounding bounds (`1.694` in
   Williamson–Shmoys Section 12.3, and `ln 4 + ε`); NP-hardness of the decision version (Karp, within
-  [#2904](https://github.com/cslib-community/complexitylib/issues/2904)); and a polynomial-time
+  [#2904](https://github.com/cslib-community/complexitylib/issues/2904)), already with unit
+  weights by reduction from `VertexCover` (Garey and Johnson ND12, locator from secondary sources:
+  a root adjacent to every vertex and one terminal per edge, adjacent to its endpoints); and a
+  polynomial-time
   certificate for the heuristic with an executable shortest-path oracle.
 - **Metric k-center** ([#3281](https://github.com/cslib-community/complexitylib/issues/3281)):
   remaining after Gonzalez's farthest-first 2-approximation, the combinatorial dominating-set
@@ -1979,11 +2027,15 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
 ### Social choice ([#3282](https://github.com/cslib-community/complexitylib/issues/3282))
 
 Social welfare functions on strict rankings and Arrow's impossibility theorem (Geanakoplos's
-pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
+pivotal-voter proof) are in `GameTheory/SocialChoice`, with social choice functions, the
+equivalence of strategy-proofness and Maskin monotonicity, and the Gibbard–Satterthwaite and
+Muller–Satterthwaite theorems for a range of at least three alternatives (Nisan's reduction to
+Arrow's theorem). Remaining directions:
 
-- **Strategy-proofness:** the Gibbard–Satterthwaite theorem for social choice functions onto at
-  least three alternatives, for example by Reny's side-by-side proof (Economics Letters 70, 2001),
-  sharing the pivotal-voter infrastructure with Arrow's theorem.
+- **Strategy-proofness beyond the full domain:** the Gibbard–Satterthwaite theorem allowing
+  individual indifference, Gibbard's 1977 theorem on random social choice functions (strategy-proof
+  lotteries are mixtures of unilateral and duple rules), and escape routes such as single-peaked
+  domains (the median voter rule, Moulin's characterization of strategy-proof rules there).
 - **Characterizations:** May's theorem (majority rule is the only anonymous, neutral, positively
   responsive rule on two alternatives); derive the individual-weak-order corollary of Arrow's
   theorem (by an IIA reduction to strict profiles); the infinite-electorate counterexample from a
@@ -2129,6 +2181,20 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   bookkeeping in the failure construction (currently an uncharged scan of all keywords per
   depth), a construction that charges each shared trie state once, the deterministic automaton
   of Section 6, and machine-level or RAM realizations.
+- **Edit distance and longest common subsequence**
+  ([#3472](https://github.com/cslib-community/complexitylib/issues/3472)):
+  `Algorithms/Lean/EditDistance` has the Wagner–Fischer table under arbitrary letter costs. It is
+  the least cost of an edit script (alignment, trace), with an optimal script by traceback. It
+  also has the LCS table, the greatest length of a common subsequence, with a witness. The two
+  are related by `editDist indel + 2 · lcsLength = |x| + |y|`, and `editDist indel` is the
+  insertion–deletion distance. Both cost exactly `(|x| + 1)(|y| + 1)` in `TimeM`. Remaining: for
+  unit costs, the metric axioms and the equivalence with the least number of single-letter edits
+  at arbitrary positions (and, for general costs, Wagner–Fischer's equivalence of traces with edit
+  sequences under their cost conditions); Hirschberg's linear-space recovery of an optimal
+  alignment with `O(|x| |y|)` cost (Kleinberg–Tardos §6.7); a machine-level polynomial-time
+  computation; Ukkonen's and Myers' `O((|x| + |y|) d)` algorithms for distance `d`; the
+  Masek–Paterson four-Russians speedup; and `OV` hardness
+  ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)).
 - **Palindromes** ([#3372](https://github.com/cslib-community/complexitylib/issues/3372)):
   `Algorithms/Lean/Palindrome` has the maximal palindromic radii at all `2|w| + 1` centers, the
   characterization of palindromic factors and prefixes by the radii, a longest palindromic factor,

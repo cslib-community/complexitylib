@@ -10,8 +10,10 @@ module
 public import Complexity.Init
 public import Complexity.Computability.Complexity.Classes.IP.Games.Emulation
 public import Complexity.Computability.Complexity.Classes.IP.Games.Repetition
+public import Complexity.Computability.Complexity.Classes.NP.Advice
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse
 
+import Complexity.Computability.Complexity.Classes.ArthurMerlin.Advice
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -67,6 +69,7 @@ an odd `k`; there the bound `k + 2` comes from round collapse.
 * `Cslib.Complexity.IPGameClass_subset_AMGameClass`: **private coins versus public coins**.
 * `Cslib.Complexity.IPk_subset_AMk`: `IP[k] ⊆ AM[k + 2]`.
 * `Cslib.Complexity.IPk_eq_AM`: `IP[k] = AM` for `k ≥ 2`.
+* `Cslib.Complexity.IPGameClass_subset_NPPoly`: private-coin games are in `NP/poly`.
 
 ## References
 
@@ -545,5 +548,12 @@ theorem IPk_subset_AMk {enc : α ↪ List Bool} (k : ℕ) : IPk enc k ⊆ AMk en
 [Babai and Moran][BabaiMoran1988]. -/
 theorem IPk_eq_AM {enc : α ↪ List Bool} {k : ℕ} (hk : 2 ≤ k) : IPk enc k = AM enc :=
   le_antisymm (IPGameClass_subset_AM _) (by rw [← AMk_eq_AM hk]; exact AMk_subset_IPk k)
+
+/-- **Private-coin games are in `NP/poly`**: a problem with a polynomial-time private-coin game
+verifier of any fixed pattern is in `AM` (`Cslib.Complexity.IPGameClass_subset_AM`), which is
+contained in `NP/poly` (`Cslib.Complexity.AM_subset_NPPoly`). In particular `IP[k] ⊆ NP/poly`. -/
+theorem IPGameClass_subset_NPPoly {enc : α ↪ List Bool} (π : List IPMove) :
+    IPGameClass enc π ⊆ NPPoly enc :=
+  (IPGameClass_subset_AM π).trans AM_subset_NPPoly
 
 end Cslib.Complexity
