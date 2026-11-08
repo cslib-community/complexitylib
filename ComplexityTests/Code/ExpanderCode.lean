@@ -28,7 +28,7 @@ open Finset Cslib Cslib.Bipartite Cslib.BitString Cslib.BitString.ExpanderCode
 /-- Point `i` lies on line `j` iff `i - j ∈ {0, 1, 3}`. -/
 def fano (i j : Fin 7) : Prop := i - j = 0 ∨ i - j = 1 ∨ i - j = 3
 
-instance : ∀ i j, Decidable (fano i j) := fun _ _ => by unfold fano; infer_instance
+instance (i j : Fin 7) : Decidable (fano i j) := inferInstanceAs (Decidable (_ ∨ _))
 
 /-! ### The expansion hypothesis -/
 
@@ -39,9 +39,9 @@ theorem fano_isLeftBounded : IsLeftBounded fano 3 := fano_isBiregular.isLeftBoun
 
 /-- Sets of at most two points have at least `5 / 2` neighbours per point. -/
 theorem fano_isVertexExpander : IsVertexExpander fano 2 (5 / 2) := by
-  have h : ∀ S : Finset (Fin 7), #S ≤ 2 → 5 * #S ≤ 2 * #(nbhd fano S) := by decide +kernel
+  have h : ∀ S : Finset (Fin 7), #S ≤ 2 → 5 * #S ≤ 2 * #(neighbors fano S) := by decide +kernel
   intro S hS
-  have : (5 * #S : ℝ) ≤ 2 * #(nbhd fano S) := by exact_mod_cast h S hS
+  have : (5 * #S : ℝ) ≤ 2 * #(neighbors fano S) := by exact_mod_cast h S hS
   linarith
 
 /-- The decoding hypothesis `3 c < 4 α` holds: `9 < 10`. -/
@@ -49,13 +49,13 @@ example : (3 : ℝ) * (3 : ℕ) < 4 * (5 / 2) := by norm_num
 
 /-- Unique neighbours: two points share exactly one line, so they have `4` unique neighbours,
 matching `(2 α - c) |S| = 2 · 2 = 4`. -/
-example : #(uniqueNbhd fano {0, 1}) = 4 := by decide
+example : #(uniqueNeighbors fano {0, 1}) = 4 := by decide
 
 /-- Expansion fails for the three collinear points `{0, 1, 3}` of line `0`. -/
 theorem fano_not_isVertexExpander_three : ¬ IsVertexExpander fano 3 (5 / 2) := by
   intro h
   have h1 := h {0, 1, 3} (by decide)
-  rw [show #(nbhd fano {0, 1, 3}) = 7 by decide,
+  rw [show #(neighbors fano {0, 1, 3}) = 7 by decide,
     show #({0, 1, 3} : Finset (Fin 7)) = 3 by decide] at h1
   norm_num at h1
 

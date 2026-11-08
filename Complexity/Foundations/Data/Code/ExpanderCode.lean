@@ -13,7 +13,6 @@ public import Complexity.Foundations.Data.BitString.Parity
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.LinearAlgebra.Matrix.ToLin
 import Complexity.Foundations.Data.BitString.Parity.DotProduct
-import Complexity.Foundations.Data.Code.Linear
 
 /-!
 # Expander codes: rate and distance
@@ -26,7 +25,7 @@ i.e. when it lies in the kernel of the `0/1` incidence matrix
 [GuruswamiRudraSudan2025, Definition 11.3.1], a binary linear code given as a
 `Submodule Bool (ι → Bool)`; when `G` has small degrees it is a low-density parity-check code.
 
-* **Rate** [GuruswamiRudraSudan2025, Proposition 11.3.5]: the code has at least
+* **Rate** [GuruswamiRudraSudan2025, Theorem 11.3.6, dimension part]: the code has at least
   `2 ^ (n - m)` codewords, where `n = |ι|` and `m = |κ|`
   (`Cslib.BitString.ExpanderCode.two_pow_sub_le_card_code`), so its rate
   `log₂ |C(G)| / n` is at least `1 - m / n`, and at least `1 - c / d` when `G` is
@@ -126,12 +125,6 @@ theorem mem_code_iff_unsat_eq_empty {x : ι → Bool} : x ∈ code G ↔ unsat G
   simp only [Pi.zero_apply, mem_univ, true_implies, Bool.not_eq_true]
   rfl
 
-omit [Fintype ι] in
-private theorem add_apply_eq_true {x y : ι → Bool} {i : ι} :
-    (x + y) i = true ↔ x i ≠ y i := by
-  rw [Pi.add_apply]
-  cases x i <;> cases y i <;> decide
-
 /-- A check is violated by `y` iff it sees an odd number of errors, the positions where `y`
 differs from a codeword `w`. -/
 theorem mem_unsat_iff {y w : ι → Bool} (hw : w ∈ code G) {j : κ} :
@@ -141,29 +134,30 @@ theorem mem_unsat_iff {y w : ι → Bool} (hw : w ∈ code G) {j : κ} :
   simp only [mem_univ, true_and]
   congr! 2
   ext i
-  simp only [mem_filter, mem_univ, true_and, mem_bipartiteBelow, add_apply_eq_true]
+  simp only [mem_filter, mem_univ, true_and, mem_bipartiteBelow, Pi.add_apply, Bool.add_eq_xor,
+    Bool.xor_iff_ne]
   exact and_comm
 
 /-- The unique neighbours of the errors are violated checks. -/
-theorem uniqueNbhd_subset_unsat {y w : ι → Bool} (hw : w ∈ code G) :
-    uniqueNbhd G {i | y i ≠ w i} ⊆ unsat G y := by
+theorem uniqueNeighbors_subset_unsat {y w : ι → Bool} (hw : w ∈ code G) :
+    uniqueNeighbors G {i | y i ≠ w i} ⊆ unsat G y := by
   intro j hj
-  rw [mem_unsat_iff hw, mem_uniqueNbhd.1 hj]
+  rw [mem_unsat_iff hw, mem_uniqueNeighbors.1 hj]
   exact odd_one
 
 /-- Violated checks are neighbours of the errors. -/
-theorem unsat_subset_nbhd {y w : ι → Bool} (hw : w ∈ code G) :
-    unsat G y ⊆ nbhd G {i | y i ≠ w i} := by
+theorem unsat_subset_neighbors {y w : ι → Bool} (hw : w ∈ code G) :
+    unsat G y ⊆ neighbors G {i | y i ≠ w i} := by
   intro j hj
   obtain ⟨i, hi⟩ := card_pos.1 (mem_unsat_iff hw |>.1 hj).pos
   rw [mem_bipartiteBelow] at hi
-  exact mem_nbhd.2 ⟨i, hi⟩
+  exact mem_neighbors.2 ⟨i, hi⟩
 
 /-- If left degrees are at most `c`, a word at distance `e` from a codeword violates at most
 `c e` checks. -/
 theorem card_unsat_le {c : ℕ} (hG : IsLeftBounded G c) {y w : ι → Bool} (hw : w ∈ code G) :
     #(unsat G y) ≤ c * hammingDist y w :=
-  (card_le_card (unsat_subset_nbhd hw)).trans (card_nbhd_le hG _)
+  (card_le_card (unsat_subset_neighbors hw)).trans (card_neighbors_le hG _)
 
 /-! ### Rate -/
 
@@ -182,8 +176,9 @@ theorem two_pow_card_le :
   rw [← h]
   exact Nat.mul_le_mul_left _ hrange
 
-/-- **Rate** [GuruswamiRudraSudan2025, Proposition 11.3.5]: with `n` variables and `m` checks the
-code has dimension at least `n - m`, i.e. at least `2 ^ (n - m)` codewords. -/
+/-- **Rate** [GuruswamiRudraSudan2025, proof of Theorem 11.3.6] [GuruswamiSharma2010, §1]: with
+`n` variables and `m` checks the code, the solution space of `m` homogeneous linear equations, has
+dimension at least `n - m`, i.e. at least `2 ^ (n - m)` codewords. -/
 theorem two_pow_sub_le_card_code :
     2 ^ (Fintype.card ι - Fintype.card κ) ≤ Nat.card (code G) := by
   rcases le_total (Fintype.card κ) (Fintype.card ι) with hle | hle
@@ -229,10 +224,10 @@ theorem one_sub_div_le_rate_of_isBiregular {c d : ℕ} (hG : IsBiregular G c d) 
 /-! ### Distance -/
 
 /-- The set where two codewords differ has no unique neighbour. -/
-theorem uniqueNbhd_eq_empty {x w : ι → Bool} (hx : x ∈ code G) (hw : w ∈ code G) :
-    uniqueNbhd G {i | x i ≠ w i} = ∅ := by
+theorem uniqueNeighbors_eq_empty {x w : ι → Bool} (hx : x ∈ code G) (hw : w ∈ code G) :
+    uniqueNeighbors G {i | x i ≠ w i} = ∅ := by
   refine eq_empty_of_forall_notMem fun j hj => ?_
-  have := uniqueNbhd_subset_unsat hw hj
+  have := uniqueNeighbors_subset_unsat hw hj
   rw [mem_code_iff_unsat_eq_empty.1 hx] at this
   exact notMem_empty j this
 
@@ -244,8 +239,8 @@ theorem lt_hammingDist {c k : ℕ} {α : ℝ} (hG : IsLeftBounded G c) (hE : IsV
     k < hammingDist x w := by
   by_contra hk
   push Not at hk
-  have h := hE.le_card_uniqueNbhd hG hk
-  rw [uniqueNbhd_eq_empty hx hw, card_empty, Nat.cast_zero] at h
+  have h := hE.le_card_uniqueNeighbors hG hk
+  rw [uniqueNeighbors_eq_empty hx hw, card_empty, Nat.cast_zero] at h
   have hpos : 0 < #({i | x i ≠ w i} : Finset ι) := hammingDist_pos.2 hxw
   have hpos' : (0 : ℝ) < #({i | x i ≠ w i} : Finset ι) := by exact_mod_cast hpos
   have : (0 : ℝ) < (2 * α - c) * #({i | x i ≠ w i} : Finset ι) := mul_pos (by linarith) hpos'
@@ -268,24 +263,24 @@ theorem two_mul_mul_le_hammingDist {c k : ℕ} {α : ℝ} (hG : IsLeftBounded G 
   set E : Finset ι := {i | x i ≠ w i}
   have hEk : k ≤ #E := (lt_hammingDist hG hE hα hx hw hxw).le
   obtain ⟨T, hTE, hT⟩ := exists_subset_card_eq hEk
-  have hsub : uniqueNbhd G T ⊆ nbhd G (E \ T) := by
+  have hsub : uniqueNeighbors G T ⊆ neighbors G (E \ T) := by
     intro j hj
     by_contra hj'
-    have hU : j ∈ uniqueNbhd G E := by
-      rw [mem_uniqueNbhd, ← mem_uniqueNbhd.1 hj]
+    have hU : j ∈ uniqueNeighbors G E := by
+      rw [mem_uniqueNeighbors, ← mem_uniqueNeighbors.1 hj]
       congr 1
       ext i
       simp only [mem_bipartiteBelow]
       refine ⟨fun h => ⟨?_, h.2⟩, fun h => ⟨hTE h.1, h.2⟩⟩
       by_contra hiT
-      exact hj' (mem_nbhd.2 ⟨i, mem_sdiff.2 ⟨h.1, hiT⟩, h.2⟩)
-    rw [uniqueNbhd_eq_empty hx hw] at hU
+      exact hj' (mem_neighbors.2 ⟨i, mem_sdiff.2 ⟨h.1, hiT⟩, h.2⟩)
+    rw [uniqueNeighbors_eq_empty hx hw] at hU
     exact notMem_empty j hU
-  have h1 := hE.le_card_uniqueNbhd hG hT.le
-  have h2 : #(uniqueNbhd G T) ≤ c * (#E - k) := by
-    refine (card_le_card hsub).trans ((card_nbhd_le hG _).trans ?_)
+  have h1 := hE.le_card_uniqueNeighbors hG hT.le
+  have h2 : #(uniqueNeighbors G T) ≤ c * (#E - k) := by
+    refine (card_le_card hsub).trans ((card_neighbors_le hG _).trans ?_)
     rw [card_sdiff_of_subset hTE, hT]
-  have h3 : (#(uniqueNbhd G T) : ℝ) ≤ c * (#E - k) := by
+  have h3 : (#(uniqueNeighbors G T) : ℝ) ≤ c * (#E - k) := by
     have : ((#E - k : ℕ) : ℝ) = #E - k := by push_cast [hEk]; ring
     rw [← this]
     exact_mod_cast h2
