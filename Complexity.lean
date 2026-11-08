@@ -65,6 +65,7 @@ public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
 public import Complexity.Algorithms.Lean.Huffman.TwoQueue
+public import Complexity.Algorithms.Lean.IterativeCompression.OddCycleTransversal
 public import Complexity.Algorithms.Lean.KCenter.Basic
 public import Complexity.Algorithms.Lean.KCenter.DominatingSet
 public import Complexity.Algorithms.Lean.KCenter.Gonzalez
@@ -104,6 +105,7 @@ public import Complexity.Algorithms.Lean.MaxFlow.LevelGraph
 public import Complexity.Algorithms.Lean.MaxFlow.Menger
 public import Complexity.Algorithms.Lean.MaxFlow.Preflow
 public import Complexity.Algorithms.Lean.MaxFlow.PushRelabel
+public import Complexity.Algorithms.Lean.MaxFlow.VertexSeparator
 public import Complexity.Algorithms.Lean.MaxFlow.WeightedMatching
 public import Complexity.Algorithms.Lean.MergeSort.Comparator
 public import Complexity.Algorithms.Lean.OptimalBST.Basic
@@ -4384,6 +4386,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.IndepNum
 public import Complexity.Foundations.Combinatorics.SimpleGraph.LovaszTheta
 public import Complexity.Foundations.Combinatorics.SimpleGraph.MatrixTree
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
+public import Complexity.Foundations.Combinatorics.SimpleGraph.OddCycleTransversal
 public import Complexity.Foundations.Combinatorics.SimpleGraph.OrientedIncidence
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Pentagon
 public import Complexity.Foundations.Combinatorics.SimpleGraph.PermMatching
@@ -4393,6 +4396,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Basic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Erdos
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.FranklWilson
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Nagy
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Separator
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ShannonCapacity
 public import Complexity.Foundations.Combinatorics.SimpleGraph.StrongProduct
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
