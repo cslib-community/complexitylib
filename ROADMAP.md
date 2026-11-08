@@ -933,8 +933,19 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `Algorithms/Lean/Query/Arith/Karatsuba`. Integer Karatsuba as De Morgan circuits for the full
   `2w`-bit product, with `O(w ^ log₂ 3)` gates, is in `Circuit/Boolean/Karatsuba`. Open: smaller
   constants, logarithmic or polylogarithmic depth, uniform generation, and a native or word-RAM
-  realization; Toom–Cook (`O(n ^ log₃ 5)` for Toom-3) and FFT-based multiplication over rings
-  with suitable roots of unity; and lower bounds such as rank `3` for the two-term product tensor.
+  realization; Toom–Cook (`O(n ^ log₃ 5)` for Toom-3); and lower bounds such as rank `3` for the
+  two-term product tensor.
+- **Fast Fourier transform and FFT multiplication**
+  ([#2979](https://github.com/cslib-community/complexitylib/issues/2979)): the radix-2
+  Cooley–Tukey transform over any commutative ring with `ω ^ (2 ^ k) = -1`, with exactly
+  `(n / 2) log₂ n` multiplications and `n log₂ n` additions, its inverse, the convolution theorem
+  and `O(n log n)` polynomial multiplication, is in `Algorithms/Lean/Query/Arith/FFT` and
+  `Foundations/Algebra/DFT`. Open: arbitrary lengths on coefficient lists (zero padding to a power
+  of two) with a list-level `UpperBound`; the transform as an arithmetic circuit of size
+  `O(n log n)` and depth `O(log n)`; rings without suitable roots of unity (Schönhage–Strassen over
+  `R[x] / (x ^ m + 1)` and the `O(n log n log log n)` integer bound); mixed-radix and Bluestein
+  transforms; and lower bounds such as Morgenstern's `Ω(n log n)` for bounded-coefficient linear
+  circuits.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
@@ -970,6 +981,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
   list-size/agreement guarantees and decoding runtime as separate obligations; concrete
   list-decodable codes for Nisan–Wigderson.
+- **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)):
+  query-bounded decoders, the Hadamard code, Katz–Trevisan smoothing for oblivious-read decoders
+  and the one-query bound are in place. Remaining: the adaptive-to-non-adaptive reduction (so that
+  smoothing covers every adaptive decoder), the matching/XOR normal form and the Katz–Trevisan bound
+  `n ≥ Ω(k^{q/(q-1)})` with explicit `(δ, ε, q)` dependence, and the Goldreich–Karloff–Schulman–
+  Trevisan and Kerenidis–de Wolf exponential bounds for two-query codes.
 - **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications; coverage of
   O'Donnell's *Analysis of Boolean Functions*
   ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the book-form
@@ -987,6 +1004,14 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 - **Lifting** ([#890]): applications of deterministic lifting, such as partition-number
   separations, and randomized lifting.
+- **Randomized query complexity of game trees**
+  ([#3060](https://github.com/cslib-community/complexitylib/issues/3060)): the AND–OR tree on
+  `n = 4 ^ k` leaves is evasive, and the directional algorithm gives Motwani–Raghavan's
+  `R₀ ≤ n ^ (log₄ 3)` and Snir's sharp `R₀ = O(n ^ (log₂ α))`, `α = (1 + √33) / 4`, `≈ n ^ 0.7537`.
+  Remaining: the Saks–Wigderson lower bound `R₀ = Ω(n ^ (log₂ α))` for the NAND tree, which would
+  match the upper bound, via Yao's principle for expected cost; Monte Carlo (bounded-error) bounds
+  for the same trees; and Saks–Wigderson's general read-once formula and game-tree (MIN/MAX over
+  integer leaves) results.
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
@@ -1126,6 +1151,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   residual-network and duality machinery. Remaining matching directions: the decomposition of
   `M ⊕ M*` into vertex-disjoint augmenting paths, general (non-bipartite) matching with blossoms,
   and a sparse Hopcroft–Karp entry point that also charges construction of the adjacency lists.
+- **Graph search and shortest paths** ([#3053](https://github.com/cslib-community/complexitylib/issues/3053)):
+  after `TimeM` depth-first search, topological sort and Bellman–Ford
+  (`Algorithms/Lean/{DFS,BellmanFord}`), strongly connected components in linear time with the
+  linear-time 2-SAT algorithm as a client of the `TwoSAT` problem module; the Bellman–Ford
+  predecessor tree; and bridges from Bellman–Ford to Dijkstra's distances and to the matrix
+  shortest-path model.
 - **Matroids:** matroid intersection with explicit oracle and implementation costs, beyond the
   weighted greedy algorithm and its independence-oracle interface.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
@@ -1309,14 +1340,14 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   ([#2884](https://github.com/cslib-community/complexitylib/issues/2884)): crossing sequences,
   translation invariance, cut-and-paste across boundaries at different positions (with the
   crossing sequences on the kept sides), the quadratic palindrome lower bound for cslib
-  `SingleTapeTM` deciders that answer under the head, and the fact that bounded crossing sequences
-  at the input boundaries force `Language.IsRegular` are proved. Remaining: an explicit
-  single-tape palindrome decider in time `O(n²)`, which shows the bound is tight and gives a
-  positive instance of `DecidesPalindromesInTime`; a linear-time multi-tape palindrome decider,
-  which gives the one-tape/two-tape time separation; and the gap theorem that single-tape deciders
-  running in time `o(n log n)` accept only regular languages
-  ([#2965](https://github.com/cslib-community/complexitylib/issues/2965)), by bounding the
-  crossing sequences of a shortest counterexample.
+  `SingleTapeTM` deciders that answer under the head, the fact that bounded crossing sequences
+  at the input boundaries force `Language.IsRegular`, and the gap theorem that single-tape
+  deciders running in time `o(n log n)` accept only regular languages
+  ([#2965](https://github.com/cslib-community/complexitylib/issues/2965)) are proved.
+  Remaining: an explicit single-tape palindrome decider in time `O(n²)`, which shows the bound is
+  tight and gives a positive instance of `DecidesPalindromesInTime`; a linear-time multi-tape
+  palindrome decider, which gives the one-tape/two-tape time separation; and the nondeterministic
+  analogue of the gap theorem under the accept measure.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
