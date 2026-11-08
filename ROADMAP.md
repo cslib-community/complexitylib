@@ -2471,6 +2471,14 @@ Arrow's theorem). Remaining directions:
   search trees; uniform preprocessing and dynamic updates for fusion trees; deletion and
   predecessor for van Emde Boas sets; and deallocation,
   shrinking and compiled client controllers for the doubling array.
+- **B-trees:** classic B-trees with model equations and node-visit bounds are in
+  `DataStructure/BTree`, ported from EpsilonEridani. Open, following the
+  [B-tree roadmap](https://github.com/cslib-community/EpsilonEridaniRoadmap/blob/main/EpsilonEridaniRoadmap/BTree/README.md):
+  comparison bounds in CSLib's query framework with linear and binary in-node search, and the
+  `⌈log₂ (n + 1)⌉` comparison lower bound for search and rank (begun in the unmerged
+  [EpsilonEridani#39](https://github.com/cslib-community/EpsilonEridani/pull/39)); read-only
+  operations behind a node-access oracle; and B+-trees with their updates, bulk loading and
+  costs.
 - **A typed-call evaluator** for fixed-program Word-RAM clients, returning the typed observation,
   final state and halt-inclusive instruction cost, so the prefix-sum clients no longer
   assemble preparation, evaluation and halt accounting by hand.

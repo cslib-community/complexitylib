@@ -4038,6 +4038,11 @@ public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFil
 public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.Cluster
 public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import Complexity.DataStructure.BTree.Basic
+public import Complexity.DataStructure.BTree.Cost.Erase
+public import Complexity.DataStructure.BTree.Cost.Insert
+public import Complexity.DataStructure.BTree.Cost.OfSortedList
+public import Complexity.DataStructure.BTree.Cost.Query
+public import Complexity.DataStructure.BTree.Cost.Range
 public import Complexity.DataStructure.BTree.Erase.Basic
 public import Complexity.DataStructure.BTree.Erase.MinMax
 public import Complexity.DataStructure.BTree.Height
