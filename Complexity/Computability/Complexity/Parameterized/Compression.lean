@@ -28,12 +28,13 @@ problem, and it need not bound any parameter of its output.
 Compressions differ from kernelizations (`Cslib.Complexity.IsKernelization`) in two ways:
 
 * The time bound is a polynomial in `|enc a| + κ a`, as in
-  [BodlaenderJansenKratsch2014, Definition 2]. The parameter may be much larger than the encoded
-  instance, for instance when it is written in binary. [BodlaenderJansenKratsch2014, Definition 1]
-  allows kernelizations the same time bound; the difference here comes from the library's
-  stricter `Cslib.Complexity.IsKernelization`, which asks for time polynomial in `|enc a|` alone,
-  not from the source. Every kernelization in the library's sense is therefore a compression, and
-  a polynomial kernel is a polynomial compression
+  [BodlaenderJansenKratsch2014, Definition 2], where the parameter is written in unary, so that
+  `|x| + k` is the input length. Here `κ` is a function of the instance and may be much larger
+  than `|enc a|`, for instance when it is written in binary.
+  [BodlaenderJansenKratsch2014, Definition 1] allows kernelizations the same time bound; the
+  difference here comes from the library's stricter `Cslib.Complexity.IsKernelization`, which
+  asks for time polynomial in `|enc a|` alone, not from the source. Every kernelization in the
+  library's sense is therefore a compression, and a polynomial kernel is a polynomial compression
   (`Cslib.Complexity.HasPolyKernel.hasPolyCompression`).
 * The target of a polynomial compression is any problem on bit strings
   (`Set (List Bool)`), as in [BodlaenderJansenKratsch2014, Definition 2]; a compression into a
