@@ -73,12 +73,12 @@ variable {ι X Y : Type*}
 
 /-- The number of ordered pairs `(x, y)` of distinct elements of `S` that `h` maps to the same
 value. Each unordered colliding pair is counted twice. -/
-def orderedCollisionCount [DecidableEq X] [DecidableEq Y] (h : X → Y) (S : Finset X) : ℕ :=
+def orderedCollisionCount [DecidableEq Y] (h : X → Y) (S : Finset X) : ℕ :=
   (S.offDiag.filter fun p => h p.1 = h p.2).card
 
 section Deterministic
 
-variable [DecidableEq X] [DecidableEq Y]
+variable [DecidableEq Y]
 
 theorem orderedCollisionCount_eq_sum (h : X → Y) (S : Finset X) :
     orderedCollisionCount h S = ∑ p ∈ S.offDiag, if h p.1 = h p.2 then 1 else 0 := by
@@ -99,6 +99,7 @@ theorem orderedCollisionCount_eq_zero_iff {h : X → Y} {S : Finset X} :
 /-- A collision of `x ≠ y` is counted as `(x, y)` and as `(y, x)`. -/
 theorem two_le_orderedCollisionCount {h : X → Y} {S : Finset X} (hS : ¬ Set.InjOn h S) :
     2 ≤ orderedCollisionCount h S := by
+  classical
   simp only [Set.InjOn, not_forall] at hS
   obtain ⟨x, hx, y, hy, hxy, hne⟩ := hS
   rw [orderedCollisionCount, ← card_pair (a := (x, y)) (b := (y, x)) (by simp [hne])]
@@ -113,6 +114,7 @@ theorem two_le_orderedCollisionCount {h : X → Y} {S : Finset X} (hS : ¬ Set.I
 pair: `∑ⱼ bⱼ² = |S| + #{(x, y) : x ≠ y, h x = h y}`. -/
 theorem sum_card_filter_sq [Fintype Y] (h : X → Y) (S : Finset X) :
     ∑ j, (S.filter fun x => h x = j).card ^ 2 = S.card + orderedCollisionCount h S := by
+  classical
   have hsq : ∀ j, (S.filter fun x => h x = j).card ^ 2 =
       ((S ×ˢ S).filter fun p => h p.1 = j ∧ h p.2 = j).card := by
     intro j
@@ -158,7 +160,7 @@ theorem mul_toOuterMeasure_le_tsum (p : PMF ι) (f : ι → ℝ≥0∞) (t : ℝ
   · rw [Set.indicator_of_notMem (by exact hi), mul_zero]
     positivity
 
-variable [DecidableEq X] [DecidableEq Y]
+variable [DecidableEq Y]
 
 /-- **Expected collisions** of an `ε`-universal family: on a set of `n` keys the expected number of
 ordered colliding pairs is at most `n (n - 1) ε`, twice the `C(n, 2) ε` bound for unordered pairs
@@ -184,7 +186,6 @@ theorem IsUniversalHash.tsum_orderedCollisionCount_le {seed : PMF ι} {hash : ι
     _ = (S.card * (S.card - 1) : ℕ) * ε := by
         rw [sum_const, nsmul_eq_mul, offDiag_card, ← Nat.mul_sub_one]
 
-omit [DecidableEq X] in
 /-- The expected sum of squared bucket sizes is `n` plus the expected number of ordered
 collisions, so at most `n + n (n - 1) ε` for an `ε`-universal family. -/
 theorem IsUniversalHash.tsum_sum_card_filter_sq_le [Fintype Y] {seed : PMF ι} {hash : ι → X → Y}
@@ -196,7 +197,7 @@ theorem IsUniversalHash.tsum_sum_card_filter_sq_le [Fintype Y] {seed : PMF ι} {
   rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
   exact add_le_add le_rfl (hh.tsum_orderedCollisionCount_le S)
 
-omit [DecidableEq X] [DecidableEq Y] in
+omit [DecidableEq Y] in
 /-- **Perfect hashing into `n²` cells** ([CLRS2009], Section 11.5): a universal family into at
 least `n²` values is injective on a fixed set of `n` keys except with probability at most `1 / 2`.
 -/
@@ -221,7 +222,6 @@ theorem IsTwoUniversal.toOuterMeasure_not_injOn_le [Fintype Y] {seed : PMF ι} {
         mul_toOuterMeasure_le_tsum seed _ 2
     _ ≤ 1 := (hh.tsum_orderedCollisionCount_le S).trans hle
 
-omit [DecidableEq X] in
 /-- **Linear total secondary space** ([CLRS2009], Section 11.5): with a universal family into at
 least `n` values, the expected sum of squared bucket sizes is at most `2n - 1`. -/
 theorem IsTwoUniversal.tsum_sum_card_filter_sq_le [Fintype Y] {seed : PMF ι} {hash : ι → X → Y}
@@ -243,7 +243,6 @@ theorem IsTwoUniversal.tsum_sum_card_filter_sq_le [Fintype Y] {seed : PMF ι} {h
         congr 1
         omega
 
-omit [DecidableEq X] in
 /-- **Markov bound for the top level** ([CLRS2009], Section 11.5): with a universal family into
 at least `n` values, the sum of squared bucket sizes exceeds `4n` with probability at most
 `1 / 2`. -/

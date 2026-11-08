@@ -178,13 +178,13 @@ def assemble {F : Family X} (top : Member F) (sec : Fin (top.range + 1) → Opti
   if hs : ∀ j, (sec j).isSome then some ⟨top, fun j => (sec j).get (hs j)⟩ else none
 
 /-- After a successful top-level attempt, build the block of every bucket. -/
-def buildRest (F : Family X) [DecidableEq X] (fuel : ℕ) (keys : List X)
+def buildRest (F : Family X) (fuel : ℕ) (keys : List X)
     (t : Trial F (keys.length - 1)) : OracleComp (buildSpec F) (Option (Description F)) :=
   assemble ⟨keys.length - 1, t.seed⟩ <$>
     OracleComp.pi fun j => buildSecondary F fuel (bucketOf keys t.values j)
 
 /-- **The FKS construction** for the key list `keys`, with at most `fuel` attempts per level. -/
-def build (F : Family X) [DecidableEq X] (fuel : ℕ) (keys : List X) :
+def build (F : Family X) (fuel : ℕ) (keys : List X) :
     OracleComp (buildSpec F) (Option (Description F)) :=
   retry (TopGood keys) (trial F (keys.length - 1) keys) fuel >>= fun o =>
     o.elim (pure none) (buildRest F fuel keys)
@@ -397,9 +397,8 @@ end Correctness
 
 section Probability
 
-variable {F : Family X} [DecidableEq X]
+variable {F : Family X}
 
-omit [DecidableEq X] in
 /-- A top-level attempt into `n` values fails with probability at most `1 / 2` (Markov's
 inequality on the expected squared bucket sizes, `Collisions`). -/
 theorem toOuterMeasure_not_topGood_le (hF : ∀ r, IsTwoUniversal (F.seed r) (F.hash r))
@@ -417,7 +416,6 @@ theorem toOuterMeasure_not_topGood_le (hF : ∀ r, IsTwoUniversal (F.seed r) (F.
   simp only [card_filter_eq_length hkeys, List.toFinset_card_of_nodup hkeys]
   exact hs
 
-omit [DecidableEq X] in
 /-- A secondary attempt into `b²` values on a duplicate-free bucket of `b` keys fails with
 probability at most `1 / 2` (`Collisions`). -/
 theorem toOuterMeasure_not_secGood_le (hF : ∀ r, IsTwoUniversal (F.seed r) (F.hash r))
@@ -435,7 +433,6 @@ theorem toOuterMeasure_not_secGood_le (hF : ∀ r, IsTwoUniversal (F.seed r) (F.
   apply hs
   exact hbk.map_on fun x hx y hy hxy => hinj (by simpa using hx) (by simpa using hy) hxy
 
-omit [DecidableEq X] in
 private theorem evalWith_map_option_none {α β : Type} (f : α → β)
     (program : OracleComp (buildSpec F) (Option α)) :
     evalWith (answer F) (Option.map f <$> program) none = evalWith (answer F) program none := by
@@ -445,7 +442,6 @@ private theorem evalWith_map_option_none {α β : Type} (f : α → β)
   ext o
   cases o <;> simp
 
-omit [DecidableEq X] in
 /-- The block of a bucket is built except with probability `2^{-fuel}` (always, for an empty
 bucket and positive fuel). -/
 theorem evalWith_buildSecondary_none_le (hF : ∀ r, IsTwoUniversal (F.seed r) (F.hash r))
@@ -496,7 +492,6 @@ theorem evalWith_build_none_le (hF : ∀ r, IsTwoUniversal (F.seed r) (F.hash r)
         push_cast
         ring
 
-omit [DecidableEq X] in
 /-- The block of a bucket costs at most twice one attempt in expectation, whatever the fuel. -/
 theorem expectedCost_buildSecondary_le (hF : ∀ r, IsTwoUniversal (F.seed r) (F.hash r))
     (cost : Query F → ℝ≥0∞) (fuel : ℕ) {bk : List X} (hbk : bk.Nodup) :
