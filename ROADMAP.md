@@ -451,13 +451,21 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Structure, time and space
 
-- **Planar Boolean CSP dichotomy** ([#3091](https://github.com/cslib-community/complexitylib/issues/3091)):
+- **Planar Boolean CSP dichotomy** ([#3091](https://github.com/cslib-community/cslib-frontier/issues/3091)):
   extend the native Boolean classification to ordered planar instances of arbitrary fixed
   relation arity. Preserve individual incidence occurrences and cyclic argument order; prove
   the embedding/recognition interface, cyclic-difference reduction, even delta-matroid
   edge-CSP algorithm and planar hardness transfer. The full endpoint must discharge these
   ingredients internally, including the additional self-complementary tractable family.
   Supplied-embedding or matching-realizable-only milestones leave this objective open.
+  The finite frozen-XOR query and guarded candidate recovery now have native runtime proofs
+  on all raw inputs, finite equation semantics and certificate success soundness. Complete
+  recognition still requires `Valid I → (XORSAT.Satisfiable (compile I) ↔ Feasible I)`,
+  the directed-block split feasibility equivalence with clockwise order, nonloop contraction
+  and duplicate-declaration cleanup, and geometric/source correspondence with frozen-switch
+  and Hanani–Tutte proofs. Recovery failure supplies no nonplanarity or CSP UNSAT conclusion;
+  there is no final planarity P theorem. Preserve the distinction between Dvořák–Kupec's
+  constraint sets and indexed CSPs with duplicate constraints when bridging source models.
   Actual indexed dualization and componentwise numerical Euler preservation are proved,
   together with arbitrary-size face-parity lifting to vertex spins under the numerical
   genus-zero and declared-endpoint guards. Geometric realization and native compilation

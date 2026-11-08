@@ -1911,6 +1911,17 @@ public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.PermutationCycles
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Bounds
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.CSPBounds
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Declarations
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Frame
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Input
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Moves
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Parity
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Recovery
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.RecoveryBudget
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.RecoveryInvariants
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Split
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Relabel
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Star
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Transport
@@ -2885,6 +2896,8 @@ public import Complexity.Computability.PolyTime.GaloisRingInterpolation
 public import Complexity.Computability.PolyTime.GaloisRingSeries
 public import Complexity.Computability.PolyTime.GaloisRingUnits
 public import Complexity.Computability.PolyTime.Graph.RotationSystem
+public import Complexity.Computability.PolyTime.Graph.RotationSystem.Recognition.Query
+public import Complexity.Computability.PolyTime.Graph.RotationSystem.Recognition.Recovery
 public import Complexity.Computability.PolyTime.GreedyLabelSchedule
 public import Complexity.Computability.PolyTime.GreedySlotScore
 public import Complexity.Computability.PolyTime.Int.DotProduct
