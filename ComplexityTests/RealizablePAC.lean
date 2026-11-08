@@ -93,7 +93,7 @@ theorem measurableSet_misclassified_constants :
 theorem isPACLearnerFor_constants_three : IsPACLearnerFor 3 half half
     (constants : Set (Bool → Bool)) (realizableDistributions (constants : Set (Bool → Bool))) := by
   refine isPACLearnerFor_realizableDistributions_of_log_card_add_log_inv_le
-    measurableSet_misclassified_constants ⟨_, const_mem_constants true⟩ ?_
+    measurableSet_misclassified_constants ?_
   simp only [card_constants, half, Nat.cast_ofNat, NNReal.coe_div, NNReal.coe_one,
     NNReal.coe_ofNat, inv_div, div_one]
   linarith [Real.log_two_lt_d9]
@@ -136,7 +136,7 @@ example : 1 ≤ sampleComplexity IsPACLearnerFor (constants : Set (Bool → Bool
     unfold sampleComplexity at h0
     rwa [h0] at hmem
   · refine (sampleComplexity_realizableDistributions_le_of_finite
-      measurableSet_misclassified_constants ⟨_, const_mem_constants true⟩ half half).trans ?_
+      measurableSet_misclassified_constants half half).trans ?_
     refine Nat.ceil_le.2 ?_
     simp only [card_constants, half, Nat.cast_ofNat, NNReal.coe_div, NNReal.coe_one,
       NNReal.coe_ofNat, inv_div, div_one]
@@ -279,7 +279,12 @@ example (μ : Measure ℕ) [IsProbabilityMeasure μ] {ε δ : ℝ} (hε : 0 < ε
 example : IsPACLearnable thresholds (realizableDistributions thresholds) :=
   isPACLearnable_realizableDistributions_of_hasFiniteVCDim hasFiniteVCDim_thresholds
 
-theorem thresholds_nonempty : thresholds.Nonempty := ⟨fun x => decide (0 ≤ x), 0, rfl⟩
+/-- The empty class realizes no distribution, so zero examples learn it and its realizable sample
+complexity is `0`; this is why the VC and Occam corollaries need no nonemptiness hypothesis. -/
+example : sampleComplexity IsPACLearnerFor (∅ : ConceptClass ℕ Bool) half half
+    (realizableDistributions ∅) = 0 :=
+  Nat.eq_zero_of_le_zero
+    (Nat.sInf_le (isPACLearnerFor_realizableDistributions_empty (fun _ _ => false) half half))
 
 /-- `vcSampleSize 1 (1 / 2) (1 / 2) = 16 (log 96 + log 8) ≤ 112`, since `96 ≤ 2 ^ 7` and
 `log 2 < 0.7`. -/
@@ -299,7 +304,7 @@ theorem vcSampleSize_one_half_half_le : vcSampleSize 1 (1 / 2) (1 / 2) ≤ 112 :
 `1 / 2` over every realizable distribution on `ℕ`. -/
 theorem isPACLearnerFor_thresholds_112 :
     IsPACLearnerFor 112 half half thresholds (realizableDistributions thresholds) := by
-  refine isPACLearnerFor_realizableDistributions_of_vcSampleSize_le thresholds_nonempty
+  refine isPACLearnerFor_realizableDistributions_of_vcSampleSize_le
     (fun _ hW => card_le_one_of_setShatters_thresholds hW) ?_
   simp only [half, NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat, Nat.cast_ofNat]
   exact vcSampleSize_one_half_half_le
