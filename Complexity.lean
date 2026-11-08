@@ -2266,11 +2266,11 @@ public import Complexity.Computability.Kolmogorov.Uncomputability
 public import Complexity.Computability.Languages.ChomskyNormalForm
 public import Complexity.Computability.Languages.RegularLanguage
 public import Complexity.Computability.Languages.Slice
+public import Complexity.Computability.Languages.StarFree
 public import Complexity.Computability.LocallyDecodable.Basic
 public import Complexity.Computability.LocallyDecodable.Hadamard
 public import Complexity.Computability.LocallyDecodable.OneQuery
 public import Complexity.Computability.LocallyDecodable.Smoothing
-public import Complexity.Computability.Languages.StarFree
 public import Complexity.Computability.MCSP.AntiChecker
 public import Complexity.Computability.MCSP.AntiChecker.Certificate
 public import Complexity.Computability.MCSP.Basic

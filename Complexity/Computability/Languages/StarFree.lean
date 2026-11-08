@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Init
 public import Cslib.Computability.Languages.RegularLanguage
 
 /-!
@@ -23,6 +24,10 @@ finite (`isStarFree_one_iff`). Over a finite alphabet `{ε}` is the complement o
 infinite alphabet some letter `c` does not occur in a given expression, and on the words `cⁿ` the
 expression's language is all or nothing.
 
+Other presentations start from `∅`, `{ε}` and the letters, or from all finite languages. Over a
+finite alphabet they define the same class, because `{ε}` and every finite language are star-free
+in the sense above (`IsStarFree.one`, `IsStarFree.of_finite`).
+
 ## Main definitions
 
 * `Cslib.Language.StarFreeExpression`: star-free expressions.
@@ -35,6 +40,9 @@ expression's language is all or nothing.
   star-free languages are regular.
 * `Cslib.Language.IsStarFree.zero`, `char`, `add`, `compl`, `mul`, `top`, `inf`: closure
   properties.
+* `Cslib.Language.IsStarFree.one`, `Cslib.Language.IsStarFree.singleton`,
+  `Cslib.Language.IsStarFree.of_finite`: over a finite alphabet, `{ε}`, every one-word language
+  and every finite language are star-free.
 * `Cslib.Language.isStarFree_one_iff`: `{ε}` is star-free if and only if the alphabet is finite.
 
 ## References
@@ -265,6 +273,47 @@ theorem one [Finite α] : IsStarFree (1 : _root_.Language α) := by
     simp only [List.length_append, List.length_nil] at this
     change y.length = 1 at hy
     omega
+
+/-- Over a finite alphabet, every one-word language `{w}` is star-free: `{ε}` is, and
+`{a :: w} = {a} · {w}`. -/
+theorem singleton [Finite α] (w : List α) : IsStarFree ({w} : _root_.Language α) := by
+  induction w with
+  | nil => exact one
+  | cons a w ih =>
+    refine cast (congrArg IsStarFree ?_) ((char a).mul ih)
+    ext u
+    rw [Language.mem_mul]
+    constructor
+    · rintro ⟨x, hx, y, hy, rfl⟩
+      change x = [a] at hx
+      change y = w at hy
+      subst hx hy
+      rfl
+    · intro hu
+      change u = a :: w at hu
+      exact ⟨[a], rfl, w, rfl, hu.symm⟩
+
+/-- Over a finite alphabet, every finite language is star-free, as a finite union of one-word
+languages. -/
+theorem of_finite [Finite α] {L : _root_.Language α} (hL : Set.Finite (L : Set (List α))) :
+    IsStarFree L := by
+  classical
+  have key : ∀ s : Finset (List α), IsStarFree {w : List α | w ∈ s} := by
+    intro s
+    induction s using Finset.induction_on with
+    | empty =>
+      refine cast (congrArg IsStarFree ?_) zero
+      ext w
+      exact iff_of_false (Language.notMem_zero w) (Finset.notMem_empty w)
+    | insert a s _ ih =>
+      refine cast (congrArg IsStarFree ?_) ((singleton a).add ih)
+      ext w
+      refine (Language.mem_add _ _ w).trans ?_
+      change w = a ∨ w ∈ s ↔ w ∈ insert a s
+      rw [Finset.mem_insert]
+  refine cast (congrArg IsStarFree ?_) (key hL.toFinset)
+  ext w
+  exact hL.mem_toFinset
 
 end IsStarFree
 

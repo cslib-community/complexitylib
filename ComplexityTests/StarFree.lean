@@ -14,7 +14,7 @@ import Complexity.Logics.SecondOrder.WordMSO.StarFree
 * the translated sentence `starFreeSentence` on concrete words, including a concatenation whose
   first factor is empty;
 * `{ε}` is star-free over the finite alphabet `Bool` and not over the infinite alphabet `ℕ`, where
-  it is first-order definable;
+  it is first-order definable; finite languages over `Bool` are star-free;
 * even length is regular but not star-free over a one-letter alphabet (`(aa)*`).
 -/
 
@@ -98,8 +98,17 @@ example : FODefinable (1 : Language ℕ) := foDefinable_one
 
 example : ∃ L : Language ℕ, FODefinable L ∧ ¬ IsStarFree L := exists_foDefinable_not_isStarFree
 
-example : IsStarFree (1 : Language (Fin 3)) ↔ True :=
-  iff_true_intro (isStarFree_one_iff.2 inferInstance)
+example : IsStarFree (1 : Language (Fin 3)) := isStarFree_one_iff.2 inferInstance
+
+/-- A finite language over a finite alphabet is star-free. -/
+example : IsStarFree ({[true, false], []} : Language Bool) :=
+  IsStarFree.of_finite ((Set.finite_singleton _).insert _)
+
+/-- Every word gives a star-free one-word language over a finite alphabet, but not over `ℕ`:
+`{ε}` is a one-word language. -/
+example : IsStarFree ({[true, false, true]} : Language Bool) := IsStarFree.singleton _
+
+example : ¬ IsStarFree ({[]} : Language ℕ) := not_isStarFree_one
 
 /-! ### Even length is regular but not star-free -/
 

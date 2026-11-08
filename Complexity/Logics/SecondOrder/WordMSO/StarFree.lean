@@ -23,14 +23,16 @@ quantifiers of the two translations to the positions up to `x` and after `x`.
 Nested concatenations relativize to nested windows, so the translation keeps two optional bounds
 `lo < x ≤ hi`, given by bound variables, where a missing bound means the start or the end of the
 word. A concatenation whose `e`-factor is empty has no last position `x`; it adds the disjunct for
-`f` alone exactly when `e` matches the empty word (`StarFreeExpression.matchEpsilon`).
+`f` alone exactly when `e` matches the empty word (`StarFreeExpression.matchEpsilon`). Libkin's
+proof sketch quantifies over a split point `x` only, which leaves this case implicit.
 
 With `not_foDefinable_even` this gives [Libkin, Corollary 7.27][Libkin2004]: even length is
 regular but not star-free (over a one-letter alphabet, `(aa)*`), over any nonempty alphabet.
 
 The converse, FO ⇒ star-free, holds over a finite alphabet [Libkin, Theorem 7.26][Libkin2004] and
 is not formalized here. It fails over an infinite alphabet, where `{ε}` is first-order definable
-but not star-free (`exists_foDefinable_not_isStarFree`, an elementary remark). For the connections
+but not star-free (`exists_foDefinable_not_isStarFree`). This is an elementary remark outside the
+finite-alphabet setting of the cited sources, not a result taken from them. For the connections
 between automata, logical definability and circuit complexity, Libkin refers to Straubing's book
 [Straubing1994].
 
