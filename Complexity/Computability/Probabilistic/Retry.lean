@@ -17,6 +17,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.PPT.Composition
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Strict PPT bounded retries
@@ -84,6 +85,7 @@ variable {α β : Type} {input : α ↪ List Bool} {output : β ↪ List Bool}
 polynomial time and the fuel is computed in unary, then running `program` at most `fuel a` times
 and returning the first good result is strict PPT, with the optional result encoded by
 `encOption`. -/
+@[program_certificate]
 theorem IsPPTOn.retry {program : α → ProbComp β} {good : β → Bool} {fuel : α → ℕ}
     (hprogram : IsPPTOn input output program) (hgood : ComputableInPolyTime good output encBool)
     (hfuel : ComputableInPolyTime fuel input encUnary) :
