@@ -82,6 +82,9 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `ppp` | [PPP](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `ppad` | [PPAD](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `ppa` | [PPA](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `ppads` | [PPADS](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `eopl` | [EOPL](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `sopl` | [SOPL](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `promise-completion` | [Disjoint promise and completion lift](machines-and-classes/search-and-promises.md) | promise |
 | `promise-randomized` | [Direct randomized promise verifier](machines-and-classes/search-and-promises.md) | promise |
 | `primrec` | [Mathlib primitive-recursive typed functions](machines-and-classes/computability-and-description.md) | computability |
