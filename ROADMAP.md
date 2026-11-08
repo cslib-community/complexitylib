@@ -1054,6 +1054,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   - the full Positivstellensatz calculus with inequality constraints and products of constraints,
     and its relation to the equational form here;
   - size–degree relations for sum-of-squares, and size lower bounds.
+- **Tree-like resolution** ([#3499](https://github.com/cslib-community/complexitylib/issues/3499)):
+  `Resolution/ProverDelayer.lean` turns splitting potentials (asymmetric Prover–Delayer games,
+  Beyersdorff–Galesi–Lauria Theorem 1) into tree-like size lower bounds, and
+  `TreeLikePigeonhole.lean` gives `(n + 1 - h) ^ h` nodes for `PHP^m_n`, `m > n`, which is
+  `2 ^ Ω(n log n)` at `h = n / 2`. Next:
+  - the asymptotic statement and the matching `2 ^ O(n log n)` upper bound (Dantchev–Riis);
+  - the functional pigeonhole principle, for which BGL note that the same strategy works;
+  - a tree-like versus general resolution separation (Ben-Sasson–Impagliazzo–Wigderson).
 - Polynomial calculus, and certified DPLL solver runtimes.
 - **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
   completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of
