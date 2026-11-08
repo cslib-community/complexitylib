@@ -1645,7 +1645,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#3201](https://github.com/cslib-community/complexitylib/issues/3201)): reconstruction from
   `O(n)` random `±1` queries with `o(√n)` error (Dwork–Roth Theorem 8.2), and `(ε, δ)` lower
   bounds via fingerprinting codes. The transfer of Theorem 8.8 to add/remove adjacency on
-  histograms (group privacy with `ε` doubled) is a small open follow-up.
+  histograms is a small open follow-up: group privacy doubles `ε` (covering Dwork–Roth's
+  `ε ≤ 1 / 40` with noise `min(k, d) / (2048 ε)`), and the query must be extended from weight-`n`
+  histograms to `ℕ ^ d` (McShane in `ℓ₁` with constant `1 / 2`).
 
 ## Algorithms and optimization
 
