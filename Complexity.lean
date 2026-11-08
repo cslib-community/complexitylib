@@ -3675,6 +3675,7 @@ public import Complexity.Crypto.Computational.GoldreichLevin.Parameters
 public import Complexity.Crypto.Computational.GoldreichLevin.Reduction
 public import Complexity.Crypto.Computational.GoldreichLevin.WordDecoder
 public import Complexity.Crypto.Computational.GoldreichLevin.WordReduction
+public import Complexity.Crypto.Computational.GoldwasserMicali
 public import Complexity.Crypto.Computational.HardCore
 public import Complexity.Crypto.Computational.Homomorphic.Basic
 public import Complexity.Crypto.Computational.Homomorphic.BitEncryption
