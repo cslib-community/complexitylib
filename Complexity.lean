@@ -1115,7 +1115,9 @@ public import Complexity.Computability.Circuit.Boolean.Tournament
 public import Complexity.Computability.Circuit.Boolean.Tribes
 public import Complexity.Computability.Circuit.Boolean.Tseitin
 public import Complexity.Computability.Circuit.Boolean.Unbounded
+public import Complexity.Computability.Circuit.Boolean.Unbounded.Certificate
 public import Complexity.Computability.Circuit.Boolean.Unbounded.Encoding
+public import Complexity.Computability.Circuit.Boolean.Unbounded.Kleene
 public import Complexity.Computability.Circuit.Boolean.Unbounded.Restriction
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activation
