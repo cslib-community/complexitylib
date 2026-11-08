@@ -1638,6 +1638,8 @@ public import Complexity.Computability.Complexity.Classes.IP
 public import Complexity.Computability.Complexity.Classes.IP.CoinFixing
 public import Complexity.Computability.Complexity.Classes.IP.GameTree
 public import Complexity.Computability.Complexity.Classes.IP.Games
+public import Complexity.Computability.Complexity.Classes.IP.Games.Emulation
+public import Complexity.Computability.Complexity.Classes.IP.Games.GoldwasserSipser
 public import Complexity.Computability.Complexity.Classes.IP.Games.Repetition
 public import Complexity.Computability.Complexity.Classes.IP.GraphNonIsomorphism
 public import Complexity.Computability.Complexity.Classes.IP.Guessing
