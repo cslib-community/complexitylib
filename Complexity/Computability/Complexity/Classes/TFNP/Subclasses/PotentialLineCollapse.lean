@@ -71,7 +71,7 @@ The collapse `EOPL = PLS ∩ PPAD` of [Göös et al., Theorem 1][GoosEtAl2022] a
   TFNP*][GoosEtAl2022]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -85,9 +85,9 @@ variable {α : Type}
 `y ≠ 0`) follow the pruned successor of the sink-of-potential-line family; pigeons
 (`b = false`, `x = 0`) follow the end-of-line graph to a hole; reversed copies (`b = false`,
 `y ≠ 0`, `x ≠ 0`) follow the pruned predecessor, and proper sources bridge to their forward copy. -/
-def soplPpadSuccCore (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List Bool) (V₁ : α × List Bool → ℕ)
-    (n₂ : α → ℕ) (P₂ S₂ : α × List Bool → List Bool) (a : α) (b : Bool) (y x : List Bool) :
-    List Bool :=
+@[expose] def soplPpadSuccCore (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List Bool)
+    (V₁ : α × List Bool → ℕ) (n₂ : α → ℕ) (P₂ S₂ : α × List Bool → List Bool) (a : α) (b : Bool)
+    (y x : List Bool) : List Bool :=
   if b then
     if decide (y = zeroVertex (n₂ a)) then true :: (y ++ x)
     else if hasPotentialOut n₁ P₁ S₁ V₁ a x then true :: (y ++ S₁ (a, x))
@@ -103,9 +103,9 @@ def soplPpadSuccCore (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List B
 
 /-- The predecessor map of the combined instance on `b :: (y ++ x)`, inverse to
 `soplPpadSuccCore` on its edges. -/
-def soplPpadPredCore (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List Bool) (V₁ : α × List Bool → ℕ)
-    (n₂ : α → ℕ) (P₂ S₂ : α × List Bool → List Bool) (a : α) (b : Bool) (y x : List Bool) :
-    List Bool :=
+@[expose] def soplPpadPredCore (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List Bool)
+    (V₁ : α × List Bool → ℕ) (n₂ : α → ℕ) (P₂ S₂ : α × List Bool → List Bool) (a : α) (b : Bool)
+    (y x : List Bool) : List Bool :=
   if b then
     if decide (y = zeroVertex (n₂ a)) then true :: (y ++ x)
     else if decide (x = zeroVertex (n₁ a)) then
@@ -121,21 +121,21 @@ def soplPpadPredCore (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List B
 
 /-- The successor map of the combined instance, reading `b`, `y` and `x` off a string of length
 `n₂ a + n₁ a + 1`. -/
-def soplPpadSucc (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List Bool) (V₁ : α × List Bool → ℕ)
+@[expose] def soplPpadSucc (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List Bool) (V₁ : α × List Bool → ℕ)
     (n₂ : α → ℕ) (P₂ S₂ : α × List Bool → List Bool) (p : α × List Bool) : List Bool :=
   soplPpadSuccCore n₁ P₁ S₁ V₁ n₂ P₂ S₂ p.1 (p.2.headD false) (p.2.tail.take (n₂ p.1))
     (p.2.tail.drop (n₂ p.1))
 
 /-- The predecessor map of the combined instance, reading `b`, `y` and `x` off a string of length
 `n₂ a + n₁ a + 1`. -/
-def soplPpadPred (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List Bool) (V₁ : α × List Bool → ℕ)
+@[expose] def soplPpadPred (n₁ : α → ℕ) (P₁ S₁ : α × List Bool → List Bool) (V₁ : α × List Bool → ℕ)
     (n₂ : α → ℕ) (P₂ S₂ : α × List Bool → List Bool) (p : α × List Bool) : List Bool :=
   soplPpadPredCore n₁ P₁ S₁ V₁ n₂ P₂ S₂ p.1 (p.2.headD false) (p.2.tail.take (n₂ p.1))
     (p.2.tail.drop (n₂ p.1))
 
 /-- The potential of the combined instance: `B a + 1 + V₁ x` on forward copies and `B a - V₁ x` on
 reversed copies, where `B a` bounds `V₁` on `{0, 1} ^ (n₁ a)`. -/
-def soplPpadPotential (V₁ : α × List Bool → ℕ) (n₂ B : α → ℕ) (p : α × List Bool) : ℕ :=
+@[expose] def soplPpadPotential (V₁ : α × List Bool → ℕ) (n₂ B : α → ℕ) (p : α × List Bool) : ℕ :=
   if p.2.headD false then B p.1 + 1 + V₁ (p.1, p.2.tail.drop (n₂ p.1))
   else B p.1 - V₁ (p.1, p.2.tail.drop (n₂ p.1))
 
@@ -417,6 +417,11 @@ theorem soplPpad_end
     simp only [hasOut, decide_eq_true_eq] at h; exact h.2.1
   have f₄ : hasIn n₂ P₂ S₂ a y = true → P₂ (a, y) ≠ y := fun h => by
     simp only [hasIn, decide_eq_true_eq] at h; exact h.2.1
+  -- The case split covers every end type. `0 ^ N` without an outgoing edge means `0 ^ (n₂ a)` has
+  -- none in the end-of-line graph. A sink of a forward copy is a sink at `x`. A source of a
+  -- reversed copy is a sink at `x`, since proper sources are bridged. A forward copy of the
+  -- distinguished source without a pigeon is a proper source `y` of the end-of-line graph. A
+  -- pigeon without a hole is a sink `y`. All other strings with `y = 0 ^ (n₂ a)` are isolated.
   unfold sinkOfPotentialLineRel endOfLineRel
   cases b <;> by_cases hy0 : y = zeroVertex (n₂ a) <;> by_cases hx0 : x = zeroVertex (n₁ a) <;>
     cases hpo : hasPotentialOut n₁ P₁ S₁ V₁ a x <;> cases hpi : hasPotentialIn n₁ P₁ S₁ V₁ a x <;>
@@ -572,7 +577,9 @@ theorem SOPL_inter_PPAD_subset_EOPL : SOPL enc ∩ PPAD enc ⊆ EOPL enc := by
     (hP₂.comp hpair₂) (hS₂.comp hpair₂) (fun a => hP₂_len (f₂ a)) (fun a => hS₂_len (f₂ a)) hg₁
     hg₂ (fun a w hw => h₁ a w hw) (fun a w hw => h₂ a w hw)
 
-/-- **`EOPL = SOPL ∩ PPAD`** [Göös et al.][GoosEtAl2022]. -/
+/-- **`EOPL = SOPL ∩ PPAD`**: the reduction of [Göös et al., Section 5, Lemma 4][GoosEtAl2022]
+(`SOPL_inter_PPAD_subset_EOPL`) together with the easy inclusions `EOPL_subset_SOPL` and
+`EOPL_subset_PPAD`. -/
 theorem EOPL_eq_SOPL_inter_PPAD : EOPL enc = SOPL enc ∩ PPAD enc :=
   Set.Subset.antisymm (fun _ h => ⟨EOPL_subset_SOPL h, EOPL_subset_PPAD h⟩)
     SOPL_inter_PPAD_subset_EOPL

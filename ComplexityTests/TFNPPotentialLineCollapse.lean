@@ -48,12 +48,12 @@ example : succ ((), [false, false, false]) = [true, true, false] ∧
 
 /-- The ends of the combined instance are exactly `111`, `011` and `010`: the sink of the forward
 line, and the source and sink of the reversed line. The new source `000`, the inner vertex `110`
-and the isolated junk vertices `001`, `100` are not ends. -/
+and the isolated junk vertices `001`, `100`, `101` are not ends. -/
 example :
     let E := endOfPotentialLineRel (fun a => n1 a + n1 a + 1) pred succ pot ()
     E [true, true, true] ∧ E [false, true, true] ∧ E [false, true, false] ∧
       ¬E [false, false, false] ∧ ¬E [true, true, false] ∧ ¬E [false, false, true] ∧
-      ¬E [true, false, false] := by
+      ¬E [true, false, false] ∧ ¬E [true, false, true] := by
   unfold endOfPotentialLineRel
   decide
 
