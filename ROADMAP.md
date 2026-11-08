@@ -468,7 +468,7 @@ index links to canonical definitions rather than keeping a second set.
   A native compiler now maps supplied checked ordered numerical rotations to explicit-table
   even edge CSPs, handling nullaries internally and using linear parity chains. It proves
   guarded SAT equivalence, complete framed encoded-output polynomiality and occurrence-based
-  combinatorial bounds; bare recognition and the general edge solver remain open.
+  combinatorial bounds; bare recognition and the final planar assembly remain open.
   Arbitrary-arity cyclic-obstruction normalization now supplies an ordered finite recipe,
   its actual primitive-positive gadget and combinatorial size bounds; geometric realization
   of those operations and the planar hardness/solver assembly remain outstanding.
@@ -482,7 +482,12 @@ index links to canonical definitions rather than keeping a second set.
   contraction/lifting now has an executable grouped constructor, forward projection,
   arbitrary improving-comparison lifting and optimality transfer. The concrete
   2*numVars-positiveCount measure strictly decreases even when variable count does not.
-  Native recursive compilation and the full solver remain open.
+  The complete explicit-table edge layer now supplies an executable minimum-defect optimizer,
+  SAT solver and ordinary native P endpoint, with internal model guards and complete framed
+  polynomial-time certificates. Its one-improvement recursion and finite stack account for
+  all contractions, lifting, parent frames and outer rounds; no comparison or solver is supplied.
+  Geometric realization/recognition, ordered planar hardness transfer and final dichotomy
+  assembly remain open.
   The fresh search also has an ordinary native polynomial-time compiler, exact width-only
   decoding agreement and a composed semantic specification; it still stops at its first event.
 

@@ -55,6 +55,7 @@ import Complexity.Algorithms.Lean.EdgeCSP.Forest.Optimality
 import Complexity.Computability.PolyTime.CSP.Edge.Forest.Spec
 import Complexity.Algorithms.Lean.EdgeCSP.Blossom.Optimality
 import Complexity.Algorithms.Lean.EdgeCSP.Blossom.Size
+import Complexity.Computability.PolyTime.CSP.Edge.Solver.Endpoint
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -694,8 +695,8 @@ example {ι : Type} [Fintype ι] [DecidableEq ι]
 
 Twists, coordinate transport and feasible two-bit connectivity are also proved.
 The difference tests show that ternary NAE has an even delta-matroid difference
-relation. These are mathematical prerequisites; a planar embedding algorithm,
-general edge-CSP solver and full planar dichotomy remain to be formalized.
+relation. These are mathematical prerequisites. Geometry, recognition and the full planar
+dichotomy remain open; the complete edge solver appears below.
 
 
 # Indexed CSP and Table Operations
@@ -792,7 +793,7 @@ Original variable labels remain binary. Iteration uses actual list lengths,
 never a maximum label or supplied successor index. Nullary port order is
 vacuous; semantic rejection and exact relation arity remain separate guards.
 These supplied-certificate theorems leave bare-instance construction, geometric
-correspondence, an edge solver and the dichotomy open. The finite duality and
+correspondence and the dichotomy open. The complete edge solver appears below. The finite duality and
 Boolean difference interface is proved below.
 
 
@@ -945,7 +946,7 @@ exponentially on fixed arity. Runtime has no input-validity premise.
 `ComplexityTests/CSPCyclicCompiler.lean` gives concrete SAT/UNSAT NAE runs,
 long chains, nullaries, repeated arguments, bad guards and huge binary labels.
 This proves the supplied numerical-certificate compiler stage, without a bare
-recognizer, geometric correspondence, edge solver or full planar dichotomy.
+recognizer, geometric correspondence or full planar dichotomy. The edge solver is below.
 
 
 # Delta-Matroid Closure for Local Contraction
@@ -974,8 +975,7 @@ example {table : Table} {reference : List Bool} {positions : List ℕ}
 
 The new connector's exactly-one relation is even for every nonempty scope,
 with odd common parity. Empty scopes are excluded. These local mathematical
-closures feed the whole-instance layer below; the edge solver and its native
-cost remain open.
+closures feed the whole-instance layer and complete native edge solver below.
 
 
 # Prefix-Valid Edge-CSP Augmentation
@@ -1012,8 +1012,8 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
   h.isOptimalLabeling_iff_no_augmentingWalk hM
 ```
 
-The test module also rejects final-only validity. A complete solver still needs
-DAG/forest/blossom search and certification of the complete solver.
+The test module also rejects final-only validity. The search, contraction and
+complete native edge solver are documented below.
 
 
 For explicit tables, {name}`Cslib.Complexity.CSP.EdgeAugmenting.run` takes the CSP,
@@ -1150,8 +1150,8 @@ Complete actual-run clients are in `ComplexityTests/EdgeCSPForestEvents.lean`,
 `ComplexityTests/EdgeCSPForestOptimality.lean`. They include nonempty preparation,
 repeated original constraints, timestamp zero, odd parity and sparse labels.
 These mathematical endpoints compose with the native compiler and whole-instance
-contraction/lifting below. Recursive solving and the full planar dichotomy remain
-open.
+contraction/lifting and complete native edge solver below. The full planar
+dichotomy remains open.
 
 
 # Native Fresh Forest Search
@@ -1271,8 +1271,75 @@ and shortest exit using the full no-shortcut blossom. Forward projection is
 constraints, nonempty preparation, changed outside values, sparse binary names,
 and exact `r=b` accounting. Old table row counts do not increase; the new
 exactly-one table has `r` rows of width `r`. These mathematical and executable
-results do not yet certify native cost or compile the complete recursive solver.
+results feed the complete native recursive solver documented next.
 Geometric recognition, planar hardness and the full dichotomy remain open.
+
+
+# Complete Native Even Edge-CSP Solver
+
+Import `Complexity.Computability.PolyTime.CSP.Edge.Solver.Endpoint`.
+The ordinary decision problem checks the actual edge/even-delta-matroid model
+internally and accepts exactly its satisfiable instances:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity
+  Cslib.Complexity.CSP Turing.MultiTapeTM in
+example : EdgeSolver.evenEdgeSAT ∈ P (encCSP encTable encNat) :=
+  EdgeSolver.evenEdgeSAT_mem_P
+```
+
+Each scope has distinct names; every occurring name appears twice in distinct
+constraints. Relations are nonempty even delta-matroids, with either common
+parity permitted. Duplicate constraints/rows, empty CSPs and true nullaries are
+included. Empty/false or malformed relations, wrong arities, repeated scope
+names and non-even relations reject. The all-raw runtime has no model premise:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity Cslib.Complexity.CSP
+  Turing.MultiTapeTM in
+example : ComputableInPolyTime EdgeSolver.solve
+    (encCSP encTable encNat) (encOption (encList encBool)) :=
+  EdgeSolver.computableInPolyTime_solve
+```
+
+{name}`Cslib.Complexity.CSP.EdgeSolver.optimize` returns one original-order
+occurrence bit per port and minimizes the actual number of defective variables:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity.CSP in
+example (F : CSP Table ℕ) (h : EdgeSolver.checkModel F = true) :
+    ∃ bits, EdgeSolver.optimize F = some bits ∧
+      IsOptimalLabeling Table.sem (EdgeAugmenting.labeling F bits) :=
+  EdgeSolver.optimize_spec F h
+```
+
+`optimize = none` means model rejection. An accepted unsatisfiable instance still
+has an optimal buffer; `solve = none` also covers positive minimum defect count.
+The actual finite program agrees with the semantic optimizer and decision:
+
+```lean
+open Cslib.Complexity.CSP.EdgeSolver in
+example : Program.decideSAT [] = true := by decide
+
+open Cslib.Complexity.CSP.EdgeSolver in
+example : Program.decideSAT
+    [(⟨1, [[false]]⟩, [2 ^ 100]), (⟨1, [[true]]⟩, [2 ^ 100])] = false := by
+  decide +kernel
+```
+
+One improvement makes one recursive child call per blossom and immediately
+returns its lifted improvement or transferred optimum. The strict measure
+`2*numVars−positiveCount` bounds contraction depth by `2*numVars`; at most
+`numVars+1` outer rounds are needed. Complete native bounds include framed rows,
+binary names/arities/positions, parent frames and quadratic central table data.
+Clocks traverse actual lists rather than intervals below binary values.
+
+This completes the explicit-table edge layer of KKR v6 Theorem 21, using its
+Algorithm 1 and contraction/lifting mathematics; the recursion organization and
+encoded bookkeeping are original. `ComplexityTests/EdgeCSPSolver.lean` executes
+nonempty preparation, repeated copied constraints, changed outside values,
+multiple improvements, `r=b` and sparse `2^250` names. Geometry/recognition,
+ordered planar hardness and full #3091 remain open.
 
 
 # Finite Crossover Gadget Semantics
