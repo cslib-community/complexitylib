@@ -361,8 +361,18 @@ CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTest
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
 repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
 conditioned, which gives a coordinate won with probability at most `G.value`. Run
-`scripts/build.sh ComplexityTests.ParallelRepetition`. The library does not yet use
-the theorem for small-soundness Label Cover
+`scripts/build.sh ComplexityTests.ParallelRepetition`.
+
+For Label Cover, import
+[LabelCover/Repetition.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/Repetition.lean)
+and apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hsimple hβγ hε k`. Its premises are that the
+instance is simple (`Graph.IsSimple`, decidable), that `2 ≤ |β| |γ|` and that `ε` is at most the
+unsatisfied value of the instance. The conclusion bounds the satisfied proportion of the `k`-fold
+repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be nonempty
+or well formed. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
+compute the numbering of a two-fold repetition, separate simple from non-simple instances, and
+bound the repetitions of an instance of value `1/2` by `(1 - (1/2)³ / 6000)^{k / 2}`. NP-hardness of
+small-soundness Label Cover is not yet derived
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
