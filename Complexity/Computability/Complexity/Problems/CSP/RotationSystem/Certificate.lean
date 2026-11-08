@@ -183,16 +183,6 @@ theorem verifyRotationCertificate_eq_true_iff (F : CSP Rel V) (c : Graph.Rotatio
     exact ⟨(Graph.RotationCertificate.verifyGenusZero_eq_true_iff _ _).mpr ⟨h, he⟩,
       (verifyArgumentOrder_eq_true_iff h).mpr ho⟩
 
-private theorem incidenceVertices_declared (F : CSP Rel V) :
-    ∀ v ∈ (incidenceGraph F).incidenceVertices, v ∈ (incidenceGraph F).1 := by
-  intro v hv
-  obtain ⟨e, he, hv⟩ := List.mem_flatMap.mp hv
-  rcases List.mem_cons.mp hv with rfl | hv
-  · exact (incidenceGraph_endpoints he).1
-  · have hv' := List.mem_singleton.mp hv
-    subst v
-    exact (incidenceGraph_endpoints he).2
-
 /-- Every existing ordered numerical genus-zero incidence rotation has an accepted finite
 certificate. Original scope positions are retained; no embedding construction is assumed. -/
 theorem verifyRotationCertificate_ofRotation
