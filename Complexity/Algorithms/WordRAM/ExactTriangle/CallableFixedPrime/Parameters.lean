@@ -48,10 +48,8 @@ private theorem admission_mono {n D g p A B : ℕ}
   have hr : RecordProduct.admissionWidth n D g p A ≤
       RecordProduct.admissionWidth B B B B B :=
     Nat.add_le_add hw (Nat.mul_le_mul_left 256 (Nat.clog_mono_right 2 harg))
-  have hM : CallableProduct.windowSize n (n ^ 2) ≤ CallableProduct.windowSize B (B ^ 2) := by
-    unfold CallableProduct.windowSize CallableProduct.sourceWidth
-    apply Nat.pow_le_pow_right (by decide)
-    exact Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega))
+  have hM : CallableProduct.windowSize n (n ^ 2) ≤ CallableProduct.windowSize B (B ^ 2) :=
+    CallableProduct.windowSize_mono hn hn2
   have henv' : RecordWitness.envelope n D g p A ≤ RecordWitness.envelope B B B B B := by
     unfold RecordWitness.envelope
     gcongr

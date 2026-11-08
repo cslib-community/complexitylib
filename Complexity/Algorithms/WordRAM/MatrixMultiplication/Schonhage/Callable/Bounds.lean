@@ -13,10 +13,10 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Calla
 # Original-parameter width, space and charge for callable products
 
 The virtual window reservation is polynomial in the original row and occurrence counts, and
-monotone in the occurrence count. Its large fixed exponent is explicit; the program does not
-initialize that whole interval. Actual
-setup and return work is linear in original matrix/input size, plus the translated product.
-Distinct-set sparsity retains the additive occurrence charge; occurrence sparsity absorbs it.
+monotone in both. Its large fixed exponent is explicit; the program does not initialize that
+whole interval. Actual setup and return work is linear in original matrix/input size, plus the
+translated product. Distinct-set sparsity retains the additive occurrence charge; occurrence
+sparsity absorbs it.
 -/
 
 public section
@@ -38,9 +38,14 @@ theorem windowSize_le (N Q : ℕ) : windowSize N Q ≤ (2 * (N + Q + 3)) ^ 128 :
   have h := Nat.pow_le_pow_left hceil 128
   simpa only [windowSize, sourceWidth, ← pow_mul, Nat.mul_comm 128] using h
 
+/-- The reserved window grows monotonically with the row and query occurrence counts. -/
+theorem windowSize_mono {N N' Q Q' : ℕ} (hN : N ≤ N') (hQ : Q ≤ Q') :
+    windowSize N Q ≤ windowSize N' Q' :=
+  Nat.pow_le_pow_right (by decide) (Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega)))
+
 /-- The reserved window grows monotonically with the query occurrence count. -/
 theorem windowSize_mono_right (N : ℕ) : Monotone (windowSize N) := fun _ _ hQ =>
-  Nat.pow_le_pow_right (by decide) (Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega)))
+  windowSize_mono le_rfl hQ
 
 /-- Every physical width at least a positive logarithmic threshold admits the complete runtime
 window and all setup/return addresses. No intermediate-fit certificate is needed. -/

@@ -57,10 +57,8 @@ theorem physical_fits {w m n g p A heap Q : ℕ}
     Fits (w + 2) (4 * heap + 4 * CallableProduct.windowSize n Q +
       QueriedProduct.outputBase (21 * m) m n Q + 4 * Q + 4 * D m +
       2 * (n * D m) + 9 * (n * n) + 4 * n + g + 4096) := by
-  have hwindow : CallableProduct.windowSize n Q ≤ CallableProduct.windowSize n (n ^ 2) := by
-    unfold CallableProduct.windowSize CallableProduct.sourceWidth
-    apply Nat.pow_le_pow_right (by decide)
-    exact Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega))
+  have hwindow : CallableProduct.windowSize n Q ≤ CallableProduct.windowSize n (n ^ 2) :=
+    CallableProduct.windowSize_mono_right n hQ
   have hout := (outputBase_lt_window (Q := Q) hN).le.trans hwindow
   have he : Fits (w + 2) (envelope n (D m) g p A) := by
     exact fits_of_clog_lt (by unfold admissionWidth at hW; omega)
