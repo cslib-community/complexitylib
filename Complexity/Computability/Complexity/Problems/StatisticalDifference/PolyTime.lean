@@ -230,8 +230,8 @@ theorem exists_computableInPolyTime_polarize_length {α β : ℝ} (hβ : 0 ≤ �
 
 end SDInstance
 
-/-- **Statistical Difference reduces to each of its gap versions** [SahaiVadhan2003, Lemma 3.3 and
-the remark after its proof]: for constant thresholds `0 ≤ β < α² ≤ 1` and `0 < β' < α' < 1`,
+/-- **Statistical Difference reduces to each of its gap versions** [SahaiVadhan2003, Lemma 3.3, the
+remark after its proof, and p. 234]: for constant thresholds `0 ≤ β < α² ≤ 1` and `0 < β' < α' < 1`,
 `SD^{α,β}` reduces to `SD^{α',β'}` in polynomial time, by polarization with a constant number of
 outer coordinates. -/
 theorem StatisticalDifference.polyTimeReducible {α β α' β' : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
