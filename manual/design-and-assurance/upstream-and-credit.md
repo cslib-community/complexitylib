@@ -24,7 +24,7 @@ This table is a provenance taxonomy, not a complete author list. The [module cen
 
 ## Documented adaptations and open coordination
 
-The current machine calculus uses local adaptations of upstream development, including tape-bound handling and efficient primitives. The universal simulation's later windowed divide-and-conquer construction is explicitly distinguished from a Hennie–Stearns buffered implementation. The Mathlib TM2 bridge and native Word-RAM bridge have their own quantitative scopes; no source-history statement should imply tight resource preservation beyond the proved bounds. [upstream coordination](../../CONTRIBUTING.md#upstreaming)
+The current machine calculus uses local adaptations of upstream development, including tape-bound handling and efficient primitives. The universal simulation's later windowed divide-and-conquer construction is explicitly distinguished from a Hennie–Stearns buffered implementation. The Mathlib TM2 bridge and native Word-RAM bridge have their own quantitative scopes; no source-history statement should imply tight resource preservation beyond the proved bounds. [Upstream coordination notes](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/UPSTREAM.md#coordination-before-submission)
 
 The probabilistic free-program interfaces also connect to in-flight CSLib work. Generic RAM and bounded Word-RAM coexist because their value domains, instructions and cost conventions differ. A typed-RAM redesign recorded upstream is not automatically a locally proved bridge. The [algorithm survey](../algorithms-and-memory/index.md) records the current local endpoints rather than inferring them from upstream plans.
 

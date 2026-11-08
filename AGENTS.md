@@ -319,9 +319,8 @@ requirement above; documentation-only checks need not invoke quick mode.
 4. **Every module publicly imports `Cslib.Init`** (through `Complexity.Init`); the test driver
    runs `checkInitImports`.
 5. **Reuse upstream first.** Before defining anything, search cslib (`.lake/packages/cslib/Cslib`,
-   or the local `../cslib/Cslib` checkout) and the
-   in-flight PRs recorded in source markers, and consult the coordination threads in
-   `CONTRIBUTING.md` (Upstreaming). A thin local copy of an
+   or the local `../cslib/Cslib` checkout) and the in-flight PRs recorded in source markers, and
+   consult the coordination threads in `CONTRIBUTING.md` (Upstreaming). A thin local copy of an
    unmerged upstream PR (or an unsubmitted branch of an upstream contributor) is allowed at the
    mirrored path, keeping the
    original authors and declaration names, marked `-- upstream: submitted #N @SHA` (or
@@ -346,8 +345,7 @@ upstream code or removes a merged copy. Merely inspecting upstream does not requ
 
 Run `scripts/upstream_sync.py` during synchronization work. Inspect changed, merged or closed
 upstream PRs against source markers, `-- vendored:` comments and module docstrings; preserve
-documented local adaptations
-and contributor work rather than blindly replacing copies. When adopting merged work, advance
+documented local adaptations and contributor work rather than blindly replacing copies. When adopting merged work, advance
 the pin past it and remove the superseded local copy together. Record unresolved decisions in
 the module's marker or docstring, the coordination threads in `CONTRIBUTING.md`, or a linked issue
 instead of expanding an unrelated PR.

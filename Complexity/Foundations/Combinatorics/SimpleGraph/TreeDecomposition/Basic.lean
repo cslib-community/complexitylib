@@ -38,15 +38,17 @@ would satisfy it vacuously; condition 1 rules that out.
 
 ## Relation to open Mathlib pull requests
 
-Justin Lai's open Mathlib pull requests mathlib4#38334, #39939 and #39864 define the same
-structure as `TreeDecomp`, with the same three axioms. Here the index type is a
+Justin Lai's open pull request mathlib4#38334 defines the same structure, `TreeDecomp`, with the
+same three axioms; mathlib4#39864 (the Helly property for subtrees) and mathlib4#39939 (complete
+graphs and the clique bound) build on it. Here the index type is a
 universe-polymorphic parameter `ι` rather than `W : Type`, and `width` is `ℕ`-valued on a
 `Fintype` index. `etreewidth` minimizes over `Fin n`-indexed decompositions, so it is `⊤` exactly
 for infinite `V`, whereas #38334 minimizes over all index types, giving the edgeless graph on `ℕ`
 extended treewidth `0`. The two agree for finite `V`. The rooted parent-array form
-(`TreeDecomposition/Rooted`, `SimpleGraph.parentTree`, `IsTree.parent`), the topmost-node clique
-proof, `minDegree_le_treewidth`, `treewidth_le_one_iff` and `treewidth_cycleGraph` are additions
-on top of that work, which upstreaming should follow rather than compete with.
+(`TreeDecomposition/Rooted`, `SimpleGraph.parentTree`, `IsTree.parent`), `minDegree_le_treewidth`,
+`treewidth_le_one_iff` and `treewidth_cycleGraph` are additions on top of that work; the
+topmost-node proof that a clique lies in a bag is an alternative to the Helly argument.
+Upstreaming should follow that work rather than compete with it.
 
 ## Main definitions
 

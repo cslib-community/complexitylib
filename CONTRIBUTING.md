@@ -396,8 +396,10 @@ lists copies; without `--offline` it compares recorded revisions and the base pi
 ### Coordination threads
 
 These are pointers to upstream discussions that affect local work, not a record of live PR status;
-check the thread before starting or submitting overlapping work. Add or remove a line when a thread
-opens or closes, and keep details in the linked thread or the module docstring.
+check the thread before starting or submitting overlapping work. Add a line when a thread starts to
+affect local work and remove it when it no longer does; keep details in the linked thread or the
+module docstring. A destination named in a `candidate` marker is a proposal for upstream review,
+not a decision.
 
 * **Machine calculus (Christian Reitwiessner).** The calculus copies
   [`crei/tidy-universal`](https://github.com/crei/cslib/tree/crei/tidy-universal),
@@ -434,18 +436,21 @@ opens or closes, and keep details in the linked thread or the module docstring.
   [#966](https://github.com/leanprover/cslib/pull/966) would make `sampleComplexity` and `vcDim`
   `ℕ∞`-valued; if it lands, restate the bounds in `FiniteClass`, `VCUpperBound`,
   `AgnosticFiniteClass` and `GrowthFunction`. Before submission, reconcile names with
-  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline).
+  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline),
+  which proves the EHKV `Ω(d/ε)` lower bound; do not reprove it locally.
 * **Tree decompositions.** Upstream `SimpleGraph/TreeDecomposition` through Justin Lai's
   [mathlib4#38334](https://github.com/leanprover-community/mathlib4/pull/38334),
   [#39939](https://github.com/leanprover-community/mathlib4/pull/39939) and
   [#39864](https://github.com/leanprover-community/mathlib4/pull/39864), not as a competing
-  candidate; the module docstring records the differences.
+  candidate; the module docstring records the differences. Renaming to match the unmerged PRs is
+  not required.
 * **Withdrawn submissions.** The redos of
   [#1099](https://github.com/leanprover/cslib/pull/1099)–[#1101](https://github.com/leanprover/cslib/pull/1101)
   (`Circuit/Boolean/{PPoly,MachineSimulation,PolynomialTime}`) should answer the review requests
   for abstract word encodings and textbook sources. The review of
   [#874](https://github.com/leanprover/cslib/pull/874) (series #869, #871–#875) asked for
-  composition above the configuration level, with `TransformsTapes`-style specifications.
+  composition above the configuration level; `TransformsTapes`-style specifications are the local
+  answer.
 
 Earlier coordination notes, placement suggestions and the pre-release deprecation list are in
 [`UPSTREAM.md` at its retirement](https://github.com/cslib-community/complexitylib/blob/9886447e2de18946a08dc3377543e532979fdce2/UPSTREAM.md).
