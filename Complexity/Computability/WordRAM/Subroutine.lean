@@ -12,6 +12,8 @@ public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Computability.WordRAM.RegisterFrame
 
+import Complexity.Computability.WordRAM.SymbolicExec
+
 /-!
 # Composable Word-RAM subroutine infrastructure
 
@@ -212,138 +214,48 @@ theorem zeroFillCode_exec (P : SubroutineCode B r_ds k_init)
       (∀ j, x₂.regs (P.initParams j) = params j) ∧
       (∀ a ∈ (Block.mk base space).footprint, x₂.mem a = 0) ∧
       Modifies (Block.mk base space).footprint x₁.mem x₂.mem := by
-  have hfit0 : Fits w 0 := (hx₁.1 P.baseReg).of_le (Nat.zero_le _)
   have hfit_stop : Fits w (base + space) := hfr₁ ▸ hx₁.1 P.frontierReg
-  obtain ⟨hcur_not, hzero_not, hone_not, hbase_ne_fr, _⟩ :=
-    (List.nodup_cons.mp hclear).imp_right fun h =>
-      (List.nodup_cons.mp h).imp_right fun h =>
-        (List.nodup_cons.mp h).imp_right List.nodup_cons.mp
-  have hcur_ne_zero : P.curReg ≠ P.zeroReg := fun h => hcur_not (by simp [h])
-  have hcur_ne_one : P.curReg ≠ P.oneReg := fun h => hcur_not (by simp [h])
-  have hcur_ne_base : P.curReg ≠ P.baseReg := fun h => hcur_not (by simp [h])
-  have hcur_ne_fr : P.curReg ≠ P.frontierReg := fun h => hcur_not (by simp [h])
-  have hzero_ne_one : P.zeroReg ≠ P.oneReg := fun h => hzero_not (by simp [h])
-  have hzero_ne_base : P.zeroReg ≠ P.baseReg := fun h => hzero_not (by simp [h])
-  have hzero_ne_fr : P.zeroReg ≠ P.frontierReg := fun h => hzero_not (by simp [h])
-  have hone_ne_base : P.oneReg ≠ P.baseReg := fun h => hone_not (by simp [h])
-  have hone_ne_fr : P.oneReg ≠ P.frontierReg := fun h => hone_not (by simp [h])
-  by_cases hsp : 0 < space
-  · have hc_pos : (Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
-      simp only [Cond.Holds, hb₁, hfr₁]
-      omega
-    have hfit1 : Fits w 1 := hfit_stop.of_le (by omega)
-    let x_z := x₁.set P.zeroReg 0
-    let x_o := x_z.set P.oneReg 1
-    let x_c := x_o.set P.curReg (x_o.regs P.baseReg)
-    have hxc_base : x_c.regs P.baseReg = base := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_base.symm,
-        Function.update_of_ne hone_ne_base.symm, Function.update_of_ne hzero_ne_base.symm, hb₁]
-    have hxc_fr : x_c.regs P.frontierReg = base + space := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_fr.symm,
-        Function.update_of_ne hone_ne_fr.symm, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
-    have hxc_zero : x_c.regs P.zeroReg = 0 := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_zero.symm,
-        Function.update_of_ne hzero_ne_one]
-    have hxc_one : x_c.regs P.oneReg = 1 := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_one.symm]
-    have hxc_cur : x_c.regs P.curReg = base := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hone_ne_base.symm,
-        Function.update_of_ne hzero_ne_base.symm, hb₁]
-    let xs : ℕ → Data r_ds := fun i =>
-      ⟨Function.update x_c.regs P.curReg (base + i), clear x₁.mem base i⟩
-    have hxs0 : xs 0 = x_c := by
-      ext r
-      · by_cases hr : r = P.curReg
-        · subst hr
-          simp [xs, hxc_cur]
-        · simp [xs, Function.update_of_ne hr, x_c, x_o, x_z, Data.set]
-      · simp [xs, x_c, x_o, x_z, Data.set]
-    have hloop_cond : ∀ i < space, (Cond.lt P.curReg P.frontierReg).Holds (xs i) := by
-      intro i hi
-      simp only [Cond.Holds, xs, Function.update_self,
-        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
-      omega
-    have hloop_exit : ¬(Cond.lt P.curReg P.frontierReg).Holds (xs space) := by
-      simp only [Cond.Holds, xs, Function.update_self,
-        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
-      omega
-    have hloop_body : ∀ i < space,
-        ExecWithin w (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur))
-          (xs i) (xs (i + 1)) 2 := by
-      intro i hi
-      have hsi_zero : (xs i).regs P.zeroReg = 0 := by
-        simp [xs, Function.update_of_ne hcur_ne_zero.symm, hxc_zero]
-      have hsi_one : (xs i).regs P.oneReg = 1 := by
-        simp [xs, Function.update_of_ne hcur_ne_one.symm, hxc_one]
-      have hsi_cur : (xs i).regs P.curReg = base + i := by simp [xs]
-      let x_st := (xs i).write ((xs i).regs P.curReg) ((xs i).regs P.zeroReg)
-      have hst_one : x_st.regs P.oneReg = 1 := hsi_one
-      have hst_fit : Fits w (x_st.regs P.curReg + 1) := by
-        change Fits w ((xs i).regs P.curReg + 1)
-        rw [hsi_cur]
-        exact hfit_stop.of_le (by omega)
-      have hinc : ExecWithin w (.op P.incCur) x_st (x_st.set P.curReg (x_st.regs P.curReg + 1)) 1 :=
-        (Exec.op (hinc hst_one hst_fit)).within
-      have htarget : x_st.set P.curReg (x_st.regs P.curReg + 1) = xs (i + 1) := by
-        ext r
-        · simp only [x_st, Data.set, Data.write, xs, hsi_cur]
-          by_cases hr : r = P.curReg
-          · subst hr
-            simp [Nat.add_assoc]
-          · simp [Function.update_of_ne hr]
-        · simp only [x_st, Data.set, Data.write, hsi_cur, hsi_zero]
-          simp [xs, clear_succ]
-      rw [htarget] at hinc
-      exact ExecWithin.store.seq hinc
-    have hloop : ExecWithin w
-        (.loop (.lt P.curReg P.frontierReg) (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
-        x_c (xs space) (space * (2 + 2) + 2) := by
-      simpa [hxs0] using ExecWithin.loop xs space 2 hloop_cond hloop_exit hloop_body
-    have hbranch : ExecWithin w P.zeroFillCode x₁ (xs space) (4 * space + 6) := by
-      have hseq : ExecWithin w
-          (.seq (.op (.const P.zeroReg 0)) <|
-           .seq (.op (.const P.oneReg 1)) <|
-           .seq (.op (.copy P.curReg P.baseReg)) <|
-           .loop (.lt P.curReg P.frontierReg)
-             (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
-          x₁ (xs space) (3 + (space * 4 + 2)) := by
-        obtain ⟨n₁, hn₁, he₁⟩ := (ExecWithin.const (x := x₁) (d := P.zeroReg) hfit0)
-        obtain ⟨n₂, hn₂, he₂⟩ := (ExecWithin.const (x := x_z) (d := P.oneReg) hfit1)
-        obtain ⟨n₃, hn₃, he₃⟩ := (ExecWithin.copy (B := B) (w := w) (x := x_o)
-          (d := P.curReg) (s := P.baseReg))
-        obtain ⟨n₄, hn₄, he₄⟩ := hloop
-        exact ⟨n₁ + (n₂ + (n₃ + n₄)), by omega, he₁.seq (he₂.seq (he₃.seq he₄))⟩
-      exact (ExecWithin.branch_pos hc_pos hseq).mono (by omega)
-    refine ⟨xs space, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
-    · simp [xs, Function.update_of_ne hcur_ne_base.symm, hxc_base]
-    · simp [xs, Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
-    · intro j
-      have hne := hparams j
-      have h1 : P.initParams j ≠ P.curReg := fun h => hne (by simp [h])
-      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
-      have h3 : P.initParams j ≠ P.oneReg := fun h => hne (by simp [h])
-      simp [xs, x_c, x_o, x_z, Data.set, Function.update_of_ne h1, Function.update_of_ne h2,
-        Function.update_of_ne h3, hpar₁ j]
-    · intro a ha
-      exact clear_of_owns (Block.mem_footprint.mp ha)
-    · intro a ha
-      exact clear_of_not_owns (mt Block.mem_footprint.mpr ha)
-  · have hsp0 : space = 0 := by omega
-    have hc_neg : ¬(Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
-      simp only [Cond.Holds, hb₁, hfr₁, hsp0]
-      omega
-    have hbranch : ExecWithin w P.zeroFillCode x₁ (x₁.set P.zeroReg 0) (4 * space + 6) :=
-      (ExecWithin.branch_neg hc_neg (ExecWithin.const hfit0)).mono (by omega)
-    refine ⟨x₁.set P.zeroReg 0, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
-    · simp [Data.set, Function.update_of_ne hzero_ne_base.symm, hb₁]
-    · simp [Data.set, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
-    · intro j
-      have hne := hparams j
-      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
-      simp [Data.set, Function.update_of_ne h2, hpar₁ j]
-    · intro a ha
-      simp [hsp0, Block.footprint] at ha
-    · exact Modifies.refl _ _
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or] at hclear
+  obtain ⟨⟨hcz, hco, hcb, hcf⟩, ⟨hzo, hzb, hzf⟩, ⟨hob, hof⟩, -⟩ := hclear
+  have hpar (j) : ¬P.initParams j = P.curReg ∧ ¬P.initParams j = P.zeroReg ∧
+      ¬P.initParams j = P.oneReg := by
+    simpa only [List.mem_cons, List.not_mem_nil, or_false, not_or] using hparams j
+  let x_c := ((x₁.set P.zeroReg 0).set P.oneReg 1).set P.curReg base
+  let xs : ℕ → Data r_ds := fun i => ⟨(x_c.set P.curReg (base + i)).regs, clear x₁.mem base i⟩
+  have hloop_body (i : ℕ) (hi : i < space) :
+      ExecWithin w (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur))
+        (xs i) (xs (i + 1)) 2 := by
+    wram_exec [xs, x_c]
+    refine WP.of_execWithin (Exec.op (hinc (by wram_simp [xs, x_c]) ?_)).within ⟨le_rfl, ?_⟩
+    · wram_simp [xs, x_c]
+      exact hfit_stop.of_le (by omega)
+    · ext a <;> simp [xs, x_c, Data.set, Data.write, Function.update_idem, clear_succ,
+        Nat.add_assoc]
+  have hloop : ExecWithin w
+      (.loop (.lt P.curReg P.frontierReg) (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
+      x_c (xs space) (space * (2 + 2) + 2) := by
+    refine (show xs 0 = x_c by ext a <;> simp [xs, x_c, Data.set_set]) ▸
+      ExecWithin.loop xs space 2 (fun i hi => ?_) ?_ hloop_body
+    all_goals simp only [Cond.holds_lt, xs]; wram_simp [x_c, hfr₁]
+    omega
+  refine WP.exists_execWithin (WP.bounded hx₁ ?_)
+  unfold zeroFillCode
+  wram_exec [hb₁, hfr₁]
+  case pos =>
+    refine WP.of_execWithin hloop fun hb => ⟨by omega, hb, ?_, ?_, fun j => ?_,
+      fun a ha => clear_of_owns (Block.mem_footprint.mp ha),
+      fun a ha => clear_of_not_owns (mt Block.mem_footprint.mpr ha)⟩
+    · wram_simp [xs, x_c, hb₁]
+    · wram_simp [xs, x_c, hfr₁]
+    · obtain ⟨h₁, h₂, h₃⟩ := hpar j
+      wram_simp [xs, x_c, hpar₁]
+  case hfit => exact hfit_stop.of_le (by omega)
+  case neg =>
+    have hsp0 : space = 0 := by omega
+    refine fun hb => ⟨by omega, hb, by wram_simp [hb₁], by wram_simp [hfr₁], fun j => ?_,
+      fun a ha => by simp [hsp0, Block.footprint] at ha, Modifies.refl _ _⟩
+    obtain ⟨-, h₂, -⟩ := hpar j
+    wram_simp [hpar₁]
 
 end SubroutineCode
 
