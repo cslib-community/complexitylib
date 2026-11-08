@@ -13,7 +13,7 @@ public import Complexity.Foundations.Data.Finset.Median
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.UniversalHash
 import Complexity.Probability.KWiseIndependent.CountSketch
-import Complexity.Probability.MedianOfMeans
+import Complexity.Probability.MedianTrick
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform
 import Mathlib.Algebra.Order.BigOperators.Group.List

@@ -8,9 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Data.Finset.Median
+public import Complexity.Probability.MedianTrick
 public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Data.Fintype.Pi
-import Complexity.Foundations.Combinatorics.MajorityVote
 import Complexity.Foundations.Data.Finset.Expect
 import Complexity.Probability.KWiseIndependent.SecondMoment
 import Mathlib.Algebra.BigOperators.Field
@@ -33,10 +33,10 @@ fraction of the samples (`Cslib.Probability.dens_abs_medianOfMeans_sub_gt_le`). 
 amplification step of the frequency moment estimators of Alon, Matias and Szegedy
 [AlonMatiasSzegedy1999, Theorem 2.2]. Probabilities over the samples are densities `Finset.dens`.
 
-The last step is the **median trick** [Chakrabarti2025, Section 2.4], which holds for any estimate
-that misses by more than `t` with probability at most `1 / 3`, whatever its distribution
-(`Cslib.Probability.dens_abs_median_sub_gt_le`); the Count-Sketch uses it for estimates that are
-not averages.
+The last step is the **median trick** [Chakrabarti2025, Section 2.4]
+(`Cslib.Probability.dens_abs_median_sub_gt_le`, in `Complexity.Probability.MedianTrick`), which
+holds for any estimate that misses by more than `t` with probability at most `1 / 3`, whatever its
+distribution; the Count-Sketch uses it for estimates that are not averages.
 
 ## Main definitions
 
@@ -45,9 +45,6 @@ not averages.
 ## Main results
 
 * `Cslib.Probability.expect_expect_sub_sq`: the variance of an average of `k` independent samples.
-* `Cslib.Probability.dens_abs_median_sub_gt_le`: the median trick: the median of `2 r` independent
-  estimates that each miss by more than `t` with probability at most `1 / 3` misses by more than
-  `t` with probability at most `(8 / 9) ^ r`.
 * `Cslib.Probability.dens_abs_medianOfMeans_sub_gt_le`: the median of means misses the mean by
   more than `t` with probability at most `(8 / 9) ^ r`.
 
@@ -87,48 +84,6 @@ theorem expect_expect_sub_sq [Nonempty Ω] {k : ℕ} [NeZero k] (g : Ω → ℝ)
     field_simp
   simp only [hrw, key, div_pow, ← expect_div, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul]
   field_simp
-
-/-- **The median trick** [Chakrabarti2025, Section 2.4]: if the estimate `g x` misses `μ` by more
-than `t` for at most a third of the samples `x`, the median of `2 r` independent estimates misses
-`μ` by more than `t` for at most an `(8 / 9) ^ r` fraction of the samples. -/
-theorem dens_abs_median_sub_gt_le [Nonempty Ω] (g : Ω → ℝ) {μ t : ℝ}
-    (hg : (dens {x | t < |g x - μ|} : ℝ) ≤ 1 / 3) (r : ℕ) :
-    (dens {ω : Fin (2 * r) → Ω | t < |median (fun i => g (ω i)) - μ|} : ℝ) ≤ (8 / 9) ^ r := by
-  classical
-  let G : Finset Ω := {x | |g x - μ| ≤ t}
-  have hGc : Gᶜ = ({x | t < |g x - μ|} : Finset Ω) := by
-    ext x
-    simp only [G, mem_compl, mem_filter, mem_univ, true_and, not_le]
-  have hG : 2 * Fintype.card Ω ≤ 3 * G.card := by
-    have h := card_compl_add_card G
-    have hc : 3 * Gᶜ.card ≤ Fintype.card Ω := by
-      rw [hGc]
-      rw [nnratCast_dens, div_le_iff₀ (Nat.cast_pos.2 Fintype.card_pos)] at hg
-      exact_mod_cast (by linarith : (3 * #({x | t < |g x - μ|} : Finset Ω) : ℝ) ≤
-        Fintype.card Ω)
-    omega
-  have hmaj := card_filter_card_filter_le_le G hG r
-  -- A sample with a majority of good estimates has a good median.
-  have hsub : ({ω : Fin (2 * r) → Ω | t < |median (fun i => g (ω i)) - μ|} :
-      Finset (Fin (2 * r) → Ω)) ⊆ ({ω | #{i | ω i ∈ G} ≤ r} : Finset (Fin (2 * r) → Ω)) :=
-    fun ω hω => by
-      simp only [mem_filter, mem_univ, true_and] at hω ⊢
-      by_contra hlt
-      rw [not_le] at hlt
-      refine not_le.2 hω (abs_median_sub_le ?_)
-      have : #{i | ω i ∈ G} = #{j | |g (ω j) - μ| ≤ t} := by
-        congr 1
-        ext i
-        simp only [G, mem_filter, mem_univ, true_and]
-      rw [Fintype.card_fin, ← this]
-      omega
-  calc (dens {ω : Fin (2 * r) → Ω | t < |median (fun i => g (ω i)) - μ|} : ℝ)
-      ≤ dens ({ω | #{i | ω i ∈ G} ≤ r} : Finset (Fin (2 * r) → Ω)) := by
-        exact_mod_cast dens_le_dens hsub
-    _ ≤ (8 / 9) ^ r := by
-      rw [nnratCast_dens, div_le_iff₀ (Nat.cast_pos.2 Fintype.card_pos), div_pow,
-        div_mul_eq_mul_div, le_div_iff₀ (by positivity), Fintype.card_pi_const Ω, mul_comm]
-      exact_mod_cast hmaj
 
 /-- **Median of means** [AlonMatiasSzegedy1999, Theorem 2.2]: if `g` has variance at most
 `k t² / 3`, the median of `2 r` averages of `k` independent samples of `g` is farther than `t` from

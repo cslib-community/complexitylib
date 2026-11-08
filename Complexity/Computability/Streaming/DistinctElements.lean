@@ -16,7 +16,7 @@ public import Mathlib.Order.Prod.Lex.Basic
 import Complexity.Foundations.Combinatorics.SmallSubsets
 import Complexity.Foundations.Data.Finset.LowestInsert
 import Complexity.Foundations.Data.Nat.Choose.Sum
-import Complexity.Probability.MedianOfMeans
+import Complexity.Probability.MedianTrick
 import Complexity.Probability.PairwiseIndependentHash.Retention
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform

@@ -5560,6 +5560,7 @@ public import Complexity.Probability.MarkovChain.Metropolis
 public import Complexity.Probability.MarkovChain.Mixing
 public import Complexity.Probability.MarkovChain.PathCoupling
 public import Complexity.Probability.MedianOfMeans
+public import Complexity.Probability.MedianTrick
 public import Complexity.Probability.MinEntropy
 public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
