@@ -891,8 +891,17 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 ### Proof complexity
 
-- Proof-space lower bounds, polynomial calculus and sum-of-squares, and certified DPLL solver
-  runtimes.
+- **Proof space** ([#3200](https://github.com/cslib-community/complexitylib/issues/3200)):
+  `Resolution/Space.lean`, `SpaceWidth.lean` and `TseitinSpace.lean` cover configuration-style
+  clause space, the Atserias–Dalmau inequality (Atserias–Dalmau Theorem 3) with the constant
+  `W ≤ s + k - 3` of Filmus–Lauria–Mikša–Nordström–Vinyals Theorem 1, and linear clause space for
+  Tseitin formulas on expanders. Next:
+  - the Esteban–Torán upper bound by tree-like size;
+  - space lower bounds for the pigeonhole principle and random `k`-CNFs through width;
+  - total and variable space;
+  - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
+  - degree versus space in polynomial calculus.
+- Polynomial calculus and sum-of-squares, and certified DPLL solver runtimes.
 - **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
   completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of
   resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and translation
