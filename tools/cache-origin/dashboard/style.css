@@ -85,6 +85,8 @@ strong {
 }
 .site-header {
   display:flex;
+  flex-wrap:wrap;
+  gap:14px;
   justify-content:space-between;
   align-items:center;
   padding:27px 0;
@@ -133,12 +135,6 @@ strong {
   align-items:center;
   gap:26px;
   font-size:13px
-}
-.host-label {
-  letter-spacing:1.5px;
-  font-size:10px;
-  font-weight:650;
-  color:var(--muted)
 }
 .intro {
   display:flex;
@@ -764,9 +760,6 @@ footer {
   }
   .gc-metrics {
     gap:20px
-  }
-  .host-label {
-    display:none
   }
   .mini-stats {
     grid-template-columns:repeat(3,1fr)

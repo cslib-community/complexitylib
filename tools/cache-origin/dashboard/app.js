@@ -133,7 +133,7 @@
     svg.setAttribute("viewBox", `0 0 ${outerWidth} ${outerHeight}`);
     const x0 = 54, y0 = 15, width = outerWidth - 68, height = outerHeight - 56;
     const format = selectedChart === "body_bytes" ? bytes : selectedChart === "average_mbps" ? bitrate : count;
-    const labels = {body_bytes: "Response-body bytes per hour", average_mbps: "Average served bitrate per hour", requests: "Cache requests per hour"};
+    const labels = {body_bytes: "Response-body bytes per hour", average_mbps: "Average traffic rate per hour, including idle time", requests: "Cache requests per hour"};
     text("chart-label", labels[selectedChart]);
     const total = selectedChart === "body_bytes" ? bytes(snapshot.windows[selectedWindow].body_bytes) : selectedChart === "average_mbps" ? bitrate(snapshot.windows[selectedWindow].average_mbps) : count(snapshot.windows[selectedWindow].requests);
     text("chart-total", total + (selectedChart === "average_mbps" ? " observed average" : " in this window"));

@@ -11,7 +11,7 @@ The cache publisher and reader protocol stay unchanged.
   they do not count distinct people or complete restores. Mapping requests show interest in
   a build, including automated probes. HTTP HEAD and dashboard views are not downloads.
 - Served bytes count successful cache GET response bodies, not uploaded request bodies or
-  HTTP/TLS overhead. Average served bitrate is those bytes × 8 divided by the observed
+  HTTP/TLS overhead. Average traffic rate is those bytes × 8 divided by the observed
   wall-clock window, including idle time. It is not the mean speed of individual transfers.
 - Latency is the elapsed nginx request time of successful cache GETs, including response
   transfer and client speed. It is not time to first byte or isolated server processing time.
