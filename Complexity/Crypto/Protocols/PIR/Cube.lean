@@ -36,8 +36,9 @@ server for the exclusive or of the database bits over a set of positions.
   `2 ^ d`-server scheme with `2 ^ d (d ℓ + 1)` bits (`PIR.hasScheme_two_pow_of_le_pow`). A
   database of `n` bits is placed in the grid or cube through an embedding, padding with `false`.
 
-The covering-code schemes of Section 3.3, with two servers and `O(n ^ (1/3))` bits, are not
-covered.
+Flipping one coordinate of a server changes its query in a single set
+(`PIR.query_update_cube`). The covering-code schemes of Section 3.3 (`PIR.CoveringCode`) use this
+to let fewer servers emulate all `2 ^ d`.
 
 ## Main definitions
 
@@ -219,6 +220,34 @@ theorem communication_cube :
   rw [communication_eq, Fintype.card_fun, Fintype.card_fun, Fintype.card_fun, Fintype.card_bool,
     ← pow_mul, Nat.clog_pow 2 _ (by norm_num), Nat.clog_eq_one le_rfl le_rfl,
     Nat.mul_comm (Fintype.card ι)]
+
+theorem answer_cube (σ : D → Bool) (x : (D → ι) → Bool) (a : D → ι → Bool) :
+    (cube D ι).answer σ x a = ∑ j : D → ι, x j * ∏ l, a l (j l) := by
+  rfl
+
+theorem reconstruct_cube (i : D → ι) (r : Unit) (a : (D → Bool) → Bool) :
+    (cube D ι).reconstruct i r a = ∑ σ, a σ := by
+  rfl
+
+/-- Flipping the coordinate `l` of a server of the subcube scheme flips the membership of `i l` in
+its `l`-th set: the query of `update σ l (!σ l)` is that of `σ` with `e_{i l}` added at `l`. This is
+what lets one server emulate its neighbours [CGKS, Section 3.3][ChorGoldreichKushilevitzSudan1998].
+-/
+theorem query_update_cube {i : D → ι} {r : Unit} {q : (D → Bool) → D → ι → Bool}
+    (hrq : (r, q) ∈ (ProbComp.eval ((cube D ι).query i)).support) (σ : D → Bool) (l : D) :
+    q (Function.update σ l (!σ l)) =
+      Function.update (q σ) l (q σ l + Pi.single (i l) true) := by
+  simp only [cube, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
+    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
+  obtain ⟨t, -, -, rfl⟩ := hrq
+  funext l'
+  beta_reduce
+  by_cases hl : l' = l
+  · rw [hl]
+    simp only [Function.update_self]
+    rw [add_assoc, ← Pi.single_add]
+    cases σ l <;> rfl
+  · simp only [Function.update_of_ne hl]
 
 end Cube
 
