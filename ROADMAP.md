@@ -613,9 +613,9 @@ index links to canonical definitions rather than keeping a second set.
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
 - **Sparse and tally sets:** after Kadin's
-  `PH ⊆ P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062]): `P^{NP[O(log n)]} ⊆ Σ₂ᴾ ∩ Π₂ᴾ`,
-  hence `PH = Θ₂ᴾ` under his hypothesis; his stronger form with a sparse `S ∈ NP` and
-  `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
+  `PH = P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062],
+  [#3155](https://github.com/cslib-community/complexitylib/issues/3155)): his stronger form with a
+  sparse `S ∈ NP` and `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
 - **Berman–Hartmanis:** paddability of the standard NP-complete graph, number and set problems,
   hence their p-isomorphism to SAT; every many-one complete set for EXP is complete under one-one,
   length-increasing reductions (Berman); and the isomorphism theorem for sets complete under AC⁰
@@ -733,6 +733,12 @@ index links to canonical definitions rather than keeping a second set.
 - The Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that
   depend on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
   statistical and perfect zero knowledge.
+- **Statistical zero knowledge** ([#3205](https://github.com/cslib-community/complexitylib/issues/3205)):
+  the Sahai–Vadhan polarization of statistical distance is available on explicit finite
+  distributions. Next come the Statistical Difference promise problem on pairs of encoded circuits
+  with a polynomial-time polarization map, honest-verifier SZK with `SD` in it, `SD` being
+  SZK-complete, Entropy Difference (Goldreich–Vadhan), closure under complement (Okamoto), and
+  `SZK ⊆ AM ∩ coAM` (Fortnow; Aiello–Håstad).
 
 ### Descriptive complexity and first-order reductions
 
@@ -817,6 +823,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 ### Search, parameterized and fine-grained complexity
 
 - **TFNP:** CLS, further local search, fixed-point and equilibrium problems.
+- **Potential-line classes** ([#3206](https://github.com/cslib-community/complexitylib/issues/3206)):
+  `PPADS`, `EOPL` and `SOPL` with their easy inclusions are in place. Next: `SOPL ∩ PPAD ⊆ EOPL`,
+  then `PLS ∩ PPADS ⊆ SOPL` (Göös et al. 2022, Lemmas 2–4), giving `SOPL = PLS ∩ PPADS` and
+  `EOPL = PLS ∩ PPAD`; also `UEOPL`.
 - **Sperner's lemma** ([#2999](https://github.com/cslib-community/complexitylib/issues/2999)):
   the parity form on the triangulated square grid by door-following, and circuit `Sperner2D` in
   `PPAD` as the end-of-line relation of its door graph. Remaining
@@ -835,8 +845,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **W-hierarchy** ([#2966](https://github.com/cslib-community/complexitylib/issues/2966)):
   `W[t]` by fpt-reduction to weighted satisfiability of circuits of weft at most `t` and bounded
   depth, with `FPT ⊆ W[t] ⊆ W[t+1]`; `IndependentSet` and `Clique` are in `W[1]`. Remaining: the
-  W[1]-hardness of `Clique` (fpt-reduction from `WCS 1 d`), then `W[t] ⊆ XP`, W[2]-completeness of
-  Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
+  W[1]-hardness of `Clique` (fpt-reduction from `WCS 1 d`; Kleene evaluation and the weft-one
+  certificates are in place; remaining is the graph construction, which encodes the exact-weight
+  constraint problem left after fixing the claims, each check reading at most `2 ^ d` inputs, as a
+  `Clique` instance), then `W[t] ⊆ XP`,
+  W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
@@ -897,8 +910,17 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 ### Proof complexity
 
-- Proof-space lower bounds, polynomial calculus and sum-of-squares, and certified DPLL solver
-  runtimes.
+- **Proof space** ([#3200](https://github.com/cslib-community/complexitylib/issues/3200)):
+  `Resolution/Space.lean`, `SpaceWidth.lean` and `TseitinSpace.lean` cover configuration-style
+  clause space, the Atserias–Dalmau inequality (Atserias–Dalmau Theorem 3) with the constant
+  `W ≤ s + k - 3` of Filmus–Lauria–Mikša–Nordström–Vinyals Theorem 1, and linear clause space for
+  Tseitin formulas on expanders. Next:
+  - the Esteban–Torán upper bound by tree-like size;
+  - space lower bounds for the pigeonhole principle and random `k`-CNFs through width;
+  - total and variable space;
+  - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
+  - degree versus space in polynomial calculus.
+- Polynomial calculus and sum-of-squares, and certified DPLL solver runtimes.
 - **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
   completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of
   resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and translation
@@ -951,8 +973,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - Formula lower bounds beyond Andreev's, following Jukna; Raz–Wigderson's monotone depth bound for
   matching on general graphs.
 - **Monotone circuits versus P:** Razborov's `n ^ Ω(log n)` monotone bound for bipartite perfect
-  matching is proved ([#2063]); the separation also needs bipartite perfect matching in
-  `Complexity.P`.
+  matching ([#2063]) and bipartite perfect matching in `Complexity.P encBits` now give a monotone
+  language in P whose monotone circuit complexity is superpolynomial
+  ([#3147](https://github.com/cslib-community/complexitylib/issues/3147)). An exponential gap
+  (Tardos's function) remains open.
 - **An explicit frontier extractor:** port v1's sumset-extractor construction with an explicit
   family in `Complexity.P encBits` that discharges the frontier lower bounds' hypotheses. It would
   exceed the library's unconditional `3.5 N - o(N)` bound in P, so it needs an independent
@@ -1119,6 +1143,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   integer leaves) results.
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
+- **Dynamic cell-probe lower bounds**
+  ([#3207](https://github.com/cslib-community/complexitylib/issues/3207)): the problem-independent
+  chronogram bookkeeping is in `Complexity.Computability.CellProbe.Chronogram`. Remaining: the
+  Fredman–Saks bound for dynamic prefix parity, `t_q = Ω(log n / log(t_u (w + 1)))` for
+  deterministic schemes with worst-case update depth `t_u` and `S ≤ 2 ^ w` cells (milestone 2
+  of the issue); amortized updates; Las Vegas randomization through the cell-probe Yao averaging;
+  and Pătraşcu–Demaine's `Ω(log n)` information-transfer bound.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
   storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
@@ -1214,6 +1245,15 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Quantum/UnknownSearch.lean`, `Quantum/Polynomial.lean` and `Quantum/Adversary.lean`. Natural
   later targets are Forrelation and other optimal quantum–classical query separations.
 
+- **Quantum query lower bounds**
+  ([#3203](https://github.com/cslib-community/complexitylib/issues/3203)): Ambainis's relational
+  adversary bound (Theorems 2 and 6 of the source) gives the bounded-error parity, majority,
+  threshold, Tribes and `AND`-of-`OR`s lower bounds, including promise versions. Next: the
+  Nayak–Wu promise-threshold bound `Ω(√(N/Δ) + √(a(N − a))/Δ)` via relations between distant weight
+  layers, and the weighted, spectral and negative-weight (general) adversaries for arbitrary
+  relations. Non-Boolean input alphabets (permutation inversion, Theorem 7) need the
+  value-query model above.
+
 - **Shor's algorithm:** bounded-error polynomial-time integer factoring and discrete logarithms
   in the native uniform quantum-circuit model, with explicit input/output encodings, success
   probabilities and gate-approximation costs. Develop quantum period/order finding and phase
@@ -1290,8 +1330,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   and a sparse Hopcroft–Karp entry point that also charges construction of the adjacency lists.
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
-  graphs (`Algorithms/Matching/Edmonds`): the Mulmuley–Vazirani–Vazirani core (isolating weights
-  and reading the matching off the adjugate), Tutte's matrix for general graphs, a machine-level
+  graphs (`Algorithms/Matching/Edmonds`) and the bipartite Mulmuley–Vazirani–Vazirani core
+  (`Algorithms/Matching/MVV`): Tutte's matrix and MVV for general graphs, a machine-level
   running-time certificate for the determinant test, and an RNC implementation.
 - **Graph search and shortest paths** ([#3053](https://github.com/cslib-community/complexitylib/issues/3053)):
   after `TimeM` depth-first search, topological sort and Bellman–Ford
@@ -1299,8 +1339,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   linear-time 2-SAT algorithm as a client of the `TwoSAT` problem module; the Bellman–Ford
   predecessor tree; and bridges from Bellman–Ford to Dijkstra's distances and to the matrix
   shortest-path model.
-- **Matroids:** matroid intersection with explicit oracle and implementation costs, beyond the
-  weighted greedy algorithm and its independence-oracle interface.
+- **Matroids:** Edmonds' matroid intersection theorem, the exchange-graph augmenting-path step and
+  König's theorem via partition matroids are in `Algorithms/Lean/Matroid/Intersection`. Remaining:
+  a verified executable matroid-intersection solver, with independence-oracle query counts kept
+  separate from `TimeM` implementation costs
+  ([#2018](https://github.com/cslib-community/complexitylib/issues/2018)); then weighted matroid
+  intersection.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
   cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
   concrete realizations.
