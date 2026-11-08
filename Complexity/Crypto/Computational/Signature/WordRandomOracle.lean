@@ -88,12 +88,11 @@ theorem run_interpret_routeWordProgram (digestEncoding : Digest ↪ List Bool)
     (program : WordOracleComp Bool α) {Store : Type}
     (handler : (q : List Bool ⊕ List Bool) →
       StateT Store PMF (ForgerSpec (List Bool) (List Bool) (List Bool) Digest q)) (s : Store) :
-    (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler)
-      (routeWordProgram digestEncoding program)).run s =
-    (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
-      (fun request => interpret handler (wordQuery digestEncoding request.1 request.2)))
-        program).run s := by
-  unfold routeWordProgram
+    ProbOracleComp.runWith handler (routeWordProgram digestEncoding program) s =
+      ProbOracleComp.runWith
+        (fun request => interpret handler (wordQuery digestEncoding request.1 request.2))
+        program s := by
+  unfold routeWordProgram ProbOracleComp.runWith OracleComp.runWith
   rw [interpret_interpret]
   congr 2 with q : 1
   cases q with
@@ -242,27 +241,23 @@ private theorem run_interpret_decode_mixture (digestEncoding : Digest ↪ List B
     (replay : List Bool → WordOracleComp Bool (List Bool))
     (h : ∀ (Store : Type)
       (handler : Bool × List Bool → StateT Store PMF (List Bool)) s,
-      (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler)
-        (encPair encBits encBits <$> program)).run s = coins.bind (fun r =>
-          (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler)
-            (replay r)).run s))
+      ProbOracleComp.runWith handler (encPair encBits encBits <$> program) s =
+        coins.bind (fun r => ProbOracleComp.runWith handler (replay r) s))
     (Store : Type) (handler : (q : List Bool ⊕ List Bool) →
       StateT Store PMF (ForgerSpec (List Bool) (List Bool) (List Bool) Digest q)) (s : Store) :
-    (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler)
-      (routeWordProgram digestEncoding program)).run s = coins.bind (fun r =>
-        (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler)
-          ((Decoder.bits.pair Decoder.bits).decode <$>
-            routeWordProgram digestEncoding (replay r))).run s) := by
-  have heq := congrArg (PMF.map (fun result =>
-      ((Decoder.bits.pair Decoder.bits).decode result.1, result.2)))
-    (h Store (fun request => interpret handler
-      (wordQuery digestEncoding request.1 request.2)) s)
-  simp only [interpret_map, StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp,
-    Function.comp_def, Decoder.decode_enc, Prod.mk.eta, PMF.map_bind] at heq
-  change (PMF.map id _) = _ at heq
-  rw [PMF.map_id] at heq
-  simpa only [run_interpret_routeWordProgram, interpret_map, StateT.run_map,
-    PMF.monad_map_eq_map] using heq
+    ProbOracleComp.runWith handler (routeWordProgram digestEncoding program) s =
+      coins.bind (fun r => ProbOracleComp.runWith handler
+        ((Decoder.bits.pair Decoder.bits).decode <$>
+          routeWordProgram digestEncoding (replay r)) s) := by
+  have heq := congrArg (PMF.map (Prod.map (Decoder.bits.pair Decoder.bits).decode id))
+    (h Store (fun request => interpret handler (wordQuery digestEncoding request.1 request.2)) s)
+  simp only [PMF.map_bind, ← ProbOracleComp.runWith_map, Functor.map_map, Decoder.decode_enc,
+    id_map'] at heq
+  have hmap (p : WordOracleComp Bool (List Bool)) :
+      (Decoder.bits.pair Decoder.bits).decode <$> routeWordProgram digestEncoding p =
+        routeWordProgram digestEncoding ((Decoder.bits.pair Decoder.bits).decode <$> p) :=
+    (interpret_map _ _ _).symm
+  simpa only [hmap, run_interpret_routeWordProgram] using heq
 
 /-- An actual uniform native forger has a key-independent saved-coin adapter. The key-size guard
 is derived from actual strict-PPT key generation. Equality retains the complete state of every
@@ -280,13 +275,12 @@ theorem exists_savedCoinForger
         ∀ (Digest : Type) (digestEncoding : Digest ↪ List Bool) (Store : Type)
           (handler : (q : List Bool ⊕ List Bool) →
           StateT Store PMF (ForgerSpec (List Bool) (List Bool) (List Bool) Digest q)) s,
-        (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler)
-          (routeWordProgram digestEncoding (program n keys.1))).run s =
+        ProbOracleComp.runWith handler (routeWordProgram digestEncoding (program n keys.1)) s =
         (savedCoinForger machine digestEncoding c d keyC keyD n).coins.bind (fun coins =>
-          (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler)
+          ProbOracleComp.runWith handler
             (liftOracleForger
               ((savedCoinForger machine digestEncoding c d keyC keyD n).forge
-                keys.1 coins))).run s) := by
+                keys.1 coins)) s) := by
   obtain ⟨k, Control, hfinite, machine, c, d, keyC, keyD, hkeys, _, _, hrun⟩ :=
     hprogram.exists_savedCoins_of_keyGen hgen
   let := hfinite
