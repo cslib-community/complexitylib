@@ -10,36 +10,36 @@ for the actual algorithms, with explicit models, encodings and assumptions. An a
 a class definition or an assumed reconstruction theorem does not complete it. Search Mathlib,
 CSLib and this library before starting, and check upstream work.
 
-The [pre-rewrite roadmap][archive] is the archive of past detail and design records, including
+The [pre-rewrite roadmap](https://github.com/cslib-community/complexitylib/blob/c89dd48c/ROADMAP.md) is the archive of past detail and design records, including
 the FHE industrial context, the first-order design decisions and the repository's history.
 
 ## Programs
 
 | Program | Issues |
 | --- | --- |
-| Frontier program: ambitious theorems toward the research frontier | [#897]; its tracks are linked below |
-| Optional experiment: formalize unformalized STOC 2027 submission results, subject to independent source-correspondence review | [#2527] |
-| Metacomplexity: time-bounded Kolmogorov complexity, partial MCSP, hardness magnification | [#798], audit [#884] |
-| Plain computability: delete the tidy calculus, keeping a machine-level kernel | [#862], from [#456] |
-| Consolidation: duplicates, accurate statements and docs, less churn | [#949], [#939] |
-| Fully homomorphic encryption: follow-ups to the instantiated bootstrapping theorem, then modern schemes | [#2585] |
-| Boneh–Shoup cryptography tracks; zero-knowledge architecture | [#640], [#643] |
-| Crypto frontier track: Kilian's succinct arguments | [#999] |
-| OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002] |
-| A Verso guide with a chapter per area | [#585] |
-| Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
-| Proof automation: predictable polynomial-time certificate search | [#1155] |
+| Frontier program: ambitious theorems toward the research frontier | [#897](https://github.com/cslib-community/complexitylib/issues/897); its tracks are linked below |
+| Optional experiment: formalize unformalized STOC 2027 submission results, subject to independent source-correspondence review | [#2527](https://github.com/cslib-community/complexitylib/issues/2527) |
+| Metacomplexity: time-bounded Kolmogorov complexity, partial MCSP, hardness magnification | [#798](https://github.com/cslib-community/complexitylib/issues/798), audit [#884](https://github.com/cslib-community/complexitylib/issues/884) |
+| Plain computability: delete the tidy calculus, keeping a machine-level kernel | [#862](https://github.com/cslib-community/complexitylib/issues/862), from [#456](https://github.com/cslib-community/complexitylib/issues/456) |
+| Consolidation: duplicates, accurate statements and docs, less churn | [#949](https://github.com/cslib-community/complexitylib/issues/949), [#939](https://github.com/cslib-community/complexitylib/issues/939) |
+| Fully homomorphic encryption: follow-ups to the instantiated bootstrapping theorem, then modern schemes | [#2585](https://github.com/cslib-community/complexitylib/issues/2585) |
+| Boneh–Shoup cryptography tracks; zero-knowledge architecture | [#640](https://github.com/cslib-community/complexitylib/issues/640), [#643](https://github.com/cslib-community/complexitylib/issues/643) |
+| Crypto frontier track: Kilian's succinct arguments | [#999](https://github.com/cslib-community/complexitylib/issues/999) |
+| OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002](https://github.com/cslib-community/complexitylib/issues/1002) |
+| A Verso guide with a chapter per area | [#585](https://github.com/cslib-community/complexitylib/issues/585) |
+| Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124](https://github.com/cslib-community/complexitylib/issues/1124) |
+| Proof automation: predictable polynomial-time certificate search | [#1155](https://github.com/cslib-community/complexitylib/issues/1155) |
 
 ### Landmark theorems, in priority order
 
-Priorities live in this list and in the tiers of [#897].
+Priorities live in this list and in the tiers of [#897](https://github.com/cslib-community/complexitylib/issues/897).
 
 1. [Completeness of oblivious transfer](#cryptographic-landmarks)
-2. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
-3. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity) ([#321])
-5. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
-6. [MIP = NEXP](#interactive-proofs) ([#892])
+2. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886](https://github.com/cslib-community/complexitylib/issues/886))
+3. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889](https://github.com/cslib-community/complexitylib/issues/889))
+4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity) ([#321](https://github.com/cslib-community/complexitylib/issues/321))
+5. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891](https://github.com/cslib-community/complexitylib/issues/891))
+6. [MIP = NEXP](#interactive-proofs) ([#892](https://github.com/cslib-community/complexitylib/issues/892))
 7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
 
 ### Optional landmark projects
@@ -99,7 +99,7 @@ Shared statistical infrastructure now propagates all-state, joint reply/state re
 bounds through an adaptive oracle program using its existing query-cost budget
 ([#2724](https://github.com/cslib-community/complexitylib/issues/2724)). Zero-cost cache operations
 retain their state effects. Applying this composition law to the actual Schnorr signing game,
-transporting key-generation error, and realizing the efficient forking reduction remain [#2568].
+transporting key-generation error, and realizing the efficient forking reduction remain [#2568](https://github.com/cslib-community/complexitylib/issues/2568).
 
 ### Cryptographic landmarks
 
@@ -188,7 +188,7 @@ transporting key-generation error, and realizing the efficient forking reduction
   marginal weights. The joint LWE sample bound of Lemma 3.11 remains separate in
   [#2767](https://github.com/cslib-community/complexitylib/issues/2767); no uniform-residue or
   efficient-sampling claim follows from disintegration alone.
-- **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
+- **Kilian's succinct arguments** ([#999](https://github.com/cslib-community/complexitylib/issues/999)). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
   to a PCP with Merkle trees; Micali's CS proofs and the BCS transform give the random-oracle
   versions. `exists_kilianSound_of_mem_NP` and `exists_micaliCSProof_of_mem_NP` prove these with
@@ -197,10 +197,10 @@ transporting key-generation error, and realizing the efficient forking reduction
 
 ### Modern fully homomorphic encryption
 
-Gentry's bootstrapping is instantiated with GSW ([#486];
+Gentry's bootstrapping is instantiated with GSW ([#486](https://github.com/cslib-community/complexitylib/issues/486);
 [theorems](Complexity/Crypto/Computational/Homomorphic/GSW/FullyHomomorphic.lean)), including
 uniform compactness for the leveled wrapper decryption circuits and level-indexed multi-hop
-evaluation. After the bounded unified reduction in [#1104], the remaining objective ([#2585])
+evaluation. After the bounded unified reduction in [#1104](https://github.com/cslib-community/complexitylib/issues/1104), the remaining objective ([#2585](https://github.com/cslib-community/complexitylib/issues/2585))
 is Gentry's exact concrete-security loss together with the `poly(ℓ, d)` running-time clause
 of his Theorem 4. The complete existing modular reduction game now has an exact saved-tape law
 in both challenge worlds, with a native evaluator and polynomial allocated coin budget derived
@@ -214,7 +214,7 @@ uses a finite-attempt selector over `2 * depth * capacity + 1` signed hybrid ste
 failure mass and improving the original selector loss without additive error. The literal
 source loss mapping and multiplicative machine-runtime comparison remain open. Develop these in reviewable
 milestones, reusing the finite sampling, gadget algebra, native certificates and game reductions
-where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
+where their hypotheses match. The [pre-rewrite FHE section](https://github.com/cslib-community/complexitylib/blob/c89dd48c/ROADMAP.md#modern-fhe-methods-and-deployment-priorities) maps the schemes to
 current libraries and workloads.
 
 The actual buffered probabilistic compiler now has an all-prefix workspace bound with an
@@ -284,7 +284,7 @@ keys; keep LWE/RLWE, circular/KDM assumptions and attack-cost estimates distinct
 decryption-failure game when correctness is not perfect; and require nonvacuous parameter
 families and full-input native runtime.
 
-### Public-key, lattice and symmetric constructions ([#640])
+### Public-key, lattice and symmetric constructions ([#640](https://github.com/cslib-community/complexitylib/issues/640))
 
 - **Fiat–Shamir query representations**: the finite theorem permits an injective hash-point
   embedding into an arbitrary query domain, retaining every out-of-image query and the same bound
@@ -293,30 +293,30 @@ families and full-input native runtime.
 - **Fiat–Shamir reduction failure output** ([#2774](https://github.com/cslib-community/complexitylib/issues/2774)):
   the existing reduction and quantitative bound accept an explicit fallback; Schnorr uses zero.
   Native fork execution, transcript/answer nonexhaustion and actual simulator-sampling transport
-  remain prerequisites for [#2568].
-- **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
+  remain prerequisites for [#2568](https://github.com/cslib-community/complexitylib/issues/2568).
+- **Sigma protocols and Fiat–Shamir** ([#581](https://github.com/cslib-community/complexitylib/issues/581)): computational Schnorr signatures under discrete
   log against strict PPT forgers. Word verification now enforces canonical commitments for canonical
   public keys ([#2672](https://github.com/cslib-community/complexitylib/issues/2672)).
   The arithmetic algorithms and exact typed ROM reduction are
   proved; strict-PPT identification and eavesdropping results do not discharge this signature
   endpoint. Remaining work includes shared encoded signing/hash access, final-message freshness,
-  and an efficient realization of the full forking reduction ([#2568]).
+  and an efficient realization of the full forking reduction ([#2568](https://github.com/cslib-community/complexitylib/issues/2568)).
 - **Oracle forger replay**: the private-coin replay prerequisite now includes a full-input
-  oracle-PPT certificate, tape preparation, and joint external-state preservation ([#2579]).
+  oracle-PPT certificate, tape preparation, and joint external-state preservation ([#2579](https://github.com/cslib-community/complexitylib/issues/2579)).
   Shared replacement laws derive a key-independent tape from actual PPT key-generation support
   and transport joint-state mixtures through the existing
-  ROM game ([#2652]). The word-forger adapter ([#2636]) now has an efficient full-input guarded
+  ROM game ([#2652](https://github.com/cslib-community/complexitylib/issues/2652)). The word-forger adapter ([#2636](https://github.com/cslib-community/complexitylib/issues/2636)) now has an efficient full-input guarded
   replay and exact shared-world/EUF-CMA equality with separate signing/hash channels. Applying it
   to Schnorr's encoded query space and realizing the complete efficient reduction remain open.
 - **Lattices**: full random-oracle EUF-CMA signatures from SIS (Lyubashevsky 2009,
   2012) remain open. Strict-PPT box sampling, bounded signing and negligible availability are
-  proved. The public-key-only fork milestone ([#2620]) bounds accepting-fork probability by
+  proved. The public-key-only fork milestone ([#2620](https://github.com/cslib-community/complexitylib/issues/2620)) bounds accepting-fork probability by
   actual homogeneous SIS success plus `k*q^n/(2η+1)^m`, for independent uniform box secrets
   and an arbitrary kernel receiving only `(A,T)`. This joint-law extraction uses the sampled
   secret; an `A`-only native reduction and the actual signing/fork distribution bridge remain
-  open. Full-view witness invariance ([#2642]) retains aborted commitments for common
+  open. Full-view witness invariance ([#2642](https://github.com/cslib-community/complexitylib/issues/2642)) retains aborted commitments for common
   commitment-dependent challenges and finite independent attempt histories. The canonical ROM
-  bridge ([#2661]) extends this to sequential shared-cache signing and adaptive forger views,
+  bridge ([#2661](https://github.com/cslib-community/complexitylib/issues/2661)) extends this to sequential shared-cache signing and adaptive forger views,
   retaining abort queries and later attempts after success. Average-key cache-hit bounds for
   actual box commitments and the simulator's published commitments follow from matrix
   universality and the joint leftover-hash bound
@@ -357,13 +357,13 @@ families and full-input native runtime.
   unpredictability and the finite ROM bound retain every word hash query. Public keys remain
   actual group elements and scalar sampling is ideal; native adapter composition,
   key-generation/signing approximation transport and the complete efficient forking reduction
-  remain open under [#2568].
+  remain open under [#2568](https://github.com/cslib-community/complexitylib/issues/2568).
 - **Native Schnorr ROM algorithms** ([#2708](https://github.com/cslib-community/complexitylib/issues/2708)):
   actual sampled signing and verification have full-input oracle-PPT certificates with bounded
   hash-reply reads. Joint signature/cache realization under typed `m`-bit replies is exact after
   retaining the actual scalar-sampling law; replacing that law by ideal signing costs at most
   `2⁻ⁿ` per signature. The actual key-generation error is a separate `2⁻ⁿ` bound. Adaptive signing
-  composition, native forger transport and efficient forking still belong to [#2568].
+  composition, native forger transport and efficient forking still belong to [#2568](https://github.com/cslib-community/complexitylib/issues/2568).
 - **Paillier encryption and composite residuosity:** `Crypto/Computational/Paillier` certifies
   word key generation, dyadic-sampled encryption, decryption, perfect correctness and
   plaintext-addition preservation under decryption over a supplied balanced-modulus generator,
@@ -379,7 +379,7 @@ families and full-input native runtime.
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
 
-### Zero-knowledge proof systems toward libzk ([#643])
+### Zero-knowledge proof systems toward libzk ([#643](https://github.com/cslib-community/complexitylib/issues/643))
 
 In order:
 - the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding
@@ -463,7 +463,7 @@ index links to canonical definitions rather than keeping a second set.
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
-- **Abstract (Blum) complexity** ([#2866]): Blum complexity measures over Mathlib's
+- **Abstract (Blum) complexity** ([#2866](https://github.com/cslib-community/complexitylib/issues/2866)): Blum complexity measures over Mathlib's
   `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
   almost-everywhere classes (also with a two-argument stretch), recursive relatedness, Blum's
   speedup theorem, arbitrarily complex functions with the resulting strict hierarchy of
@@ -477,9 +477,9 @@ index links to canonical definitions rather than keeping a second set.
   faster program for a finite variant of `f` (M. Blum, *On effective procedures for speeding up
   algorithms*, J. ACM 18(2), 1971), and Blum measures for
   native multitape time and space through a Gödel-numbering bridge from native descriptions.
-- **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
+- **Time hierarchies** ([#1572](https://github.com/cslib-community/complexitylib/issues/1572)): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
-  universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
+  universal simulation ([#800](https://github.com/cslib-community/complexitylib/issues/800)) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
   `(f + 1) * polylog f ≤ g`, with an absolute exponent (`Hierarchy/TimePolylog`). Composing it
   with the word-RAM simulations gives `RAMTIME T ⊂ RAMTIME T⁵` over `Basis.additive` for
   polynomial `T` (`Hierarchy/WordRAM`). For nondeterministic time, padding amplifies the coarse
@@ -490,7 +490,7 @@ index links to canonical definitions rather than keeping a second set.
   machine's own steps, noninteger polynomial degrees, a word-RAM hierarchy by direct
   diagonalization with a smaller gap, and sharp nondeterministic and alternating time
   hierarchies with certified simulators.
-- **Probabilistic time hierarchies** ([#2084]): the hierarchy for promise problems
+- **Probabilistic time hierarchies** ([#2084](https://github.com/cslib-community/complexitylib/issues/2084)): the hierarchy for promise problems
   (`PromiseBPTIME`), by delayed diagonalization following He (ECCC TR25-004), and the
   one-bit-advice hierarchy for languages of van Melkebeek and Pervyshev. `PromiseBPTIME` and its
   explicit-time sample-and-verify characterization are in place (`Classes/Promise/Time` and
@@ -510,7 +510,7 @@ index links to canonical definitions rather than keeping a second set.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
-- **Catalytic space and KMPS collapses** ([#2521]): define native `CSPACE(s,c)` and its
+- **Catalytic space and KMPS collapses** ([#2521](https://github.com/cslib-community/complexitylib/issues/2521)): define native `CSPACE(s,c)` and its
   nondeterministic/randomized variants, with exact restoration for every initial catalyst and
   every computation branch; existing `Catalytic/Comparison` routines are only algebraic tools.
   Formalize Koucký–Mertz–Pyne–Sami, [*Collapsing Catalytic Classes*](https://arxiv.org/abs/2504.08444):
@@ -521,7 +521,7 @@ index links to canonical definitions rather than keeping a second set.
   Track the newer Koucký–Mertz–Sami [robust catalytic extensions](https://arxiv.org/abs/2605.09648)
   separately: their broader collapse is conditional on the explicit circuit-hardness assumption,
   with resetting-error and time regimes distinguished from KMPS's unconditional results.
-- **Randomized logspace** ([#459], [#474]): two-sided `BPL` amplification, the random-walk proof
+- **Randomized logspace** ([#459](https://github.com/cslib-community/complexitylib/issues/459), [#474](https://github.com/cslib-community/complexitylib/issues/474)): two-sided `BPL` amplification, the random-walk proof
   of `USTCON ∈ RL` (membership already follows from `L_subset_RL` and `USTCON_mem_L`), the
   space-efficient computability of Nisan's generator and the bridge from configuration graphs to
   read-once programs (its fooling theorem for read-once branching programs is
@@ -559,7 +559,7 @@ index links to canonical definitions rather than keeping a second set.
   `BPL ⊆ L^{3/2}`.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
-- **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): the native implicit
+- **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888](https://github.com/cslib-community/complexitylib/issues/888)): the native implicit
   Tree Evaluation/block-tree evaluator, complete Hopcroft–Paul–Valiant block-simulation driver
   and final
   [`DTIME_subset_DSPACE_sqrt`](Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean)
@@ -569,10 +569,10 @@ index links to canonical definitions rather than keeping a second set.
   arbitrary injective input encodings and every `t(n) ≥ n`, without time constructibility;
   its fixed driver scans the original input, searches schedules and increases balanced time
   guesses. The paper's time–space separation corollaries (including for linear space) and a
-  curated headline abstract with independent review remain open in [#2855]; landing the inclusion
+  curated headline abstract with independent review remain open in [#2855](https://github.com/cslib-community/complexitylib/issues/2855); landing the inclusion
   and registry does not complete that broader scope.
   For Cook–Mertz itself: malformed-input handling and the refined
-  `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
+  `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855](https://github.com/cslib-community/complexitylib/issues/2855)).
 - **Time–space lower bounds for nondeterministic linear time**
   ([#2896](https://github.com/cslib-community/complexitylib/issues/2896)): simultaneous
   `TISP(t, s)`, two-quantifier alternating time `Σ₂TIME(t)` (bridged to `Σ₂ᵖ`) and the slowdown
@@ -621,11 +621,11 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Reducibilities and the structure of complete sets
 
-- **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
+- **Reducibilities** ([#1351](https://github.com/cslib-community/complexitylib/issues/1351)): logspace Turing reductions, in an oracle model whose query tape is
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
 - **Sparse and tally sets:** after Kadin's
-  `PH = P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062],
+  `PH = P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062](https://github.com/cslib-community/complexitylib/issues/2062),
   [#3155](https://github.com/cslib-community/complexitylib/issues/3155)): his stronger form with a
   sparse `S ∈ NP` and `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
 - **Berman–Hartmanis:** paddability of the standard NP-complete graph, number and set problems,
@@ -636,7 +636,7 @@ index links to canonical definitions rather than keeping a second set.
   every NP-complete set splits into two NP-complete sets (Glaßer, Pavan, Selman and Zhang);
   separations of complexity classes by autoreducibility (Buhrman, Fortnow, van Melkebeek and
   Torenvliet).
-- **Logspace autoreducibility of complete sets** ([#2468]): the full expanded 2013 paper of
+- **Logspace autoreducibility of complete sets** ([#2468](https://github.com/cslib-community/complexitylib/issues/2468)): the full expanded 2013 paper of
   Glaßer, Nguyen, Reitwießner, Selman and Witek: native transfer from local self-reducibility
   (Lemma 3.3), including virtual-input/answer regeneration and adaptive-to-tt conversion.
   Uniform runtime initialization and generic virtual-input simulation of component-certified
@@ -706,7 +706,7 @@ index links to canonical definitions rather than keeping a second set.
 - **Completeness beyond computable ensembles** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the bounded-halting completeness for
   `DistNP` to samplable distributions (Impagliazzo–Levin, `SampNP`), and bridge the verifier-form
   bounded halting problem to a nondeterministic machine model. Connect the framework to one-way
-  functions, learning and the metacomplexity track ([#798]), preserving the distribution and
+  functions, learning and the metacomplexity track ([#798](https://github.com/cslib-community/complexitylib/issues/798)), preserving the distribution and
   reduction conventions.
 
 ### Counting and modular classes
@@ -737,7 +737,7 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Interactive proofs
 
-- **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
+- **MIP = NEXP** ([#892](https://github.com/cslib-community/complexitylib/issues/892)): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
 - **Goldwasser–Sipser** ([#2981](https://github.com/cslib-community/complexitylib/issues/2981)):
   `IP[k] ⊆ AM[k + 2]` for the private-coin games `IPk`, by the set lower bound protocol on the
@@ -865,7 +865,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   are the polynomial-time bound of the graph construction and the fpt-reduction), then
   `W[t] ⊆ XP`,
   W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
-- **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
+- **Exponential-time SAT** ([#894](https://github.com/cslib-community/complexitylib/issues/894)): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
   abstracts, and the uniform `o(n)` forms of the PPSZ bounds with `w` growing in `n`.
@@ -891,7 +891,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 ### Approximation and PCP
 
-- **Håstad's optimal MAX-E3SAT hardness** ([#886]): for `0 < ε < 1/8`, NP-hardness of
+- **Håstad's optimal MAX-E3SAT hardness** ([#886](https://github.com/cslib-community/complexitylib/issues/886)): for `0 < ε < 1/8`, NP-hardness of
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
   `7/8 + ε` of the clauses. Holenstein's parallel repetition theorem for two-prover games is
   proved (`TwoProverGame.value_pow_le`), and so is parallel repetition for Label Cover instances
@@ -909,10 +909,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
   PCP, CSP classifications and relaxation gaps, with assumptions such as the Unique Games
-  Conjecture stated explicitly. The 2-to-2 games theorem waits for [#886].
+  Conjecture stated explicitly. The 2-to-2 games theorem waits for [#886](https://github.com/cslib-community/complexitylib/issues/886).
 - **Approximation algorithms:** a general interface for approximation ratios of optimization
   problems, under which polynomial-time algorithms such as Johnson's `7 / 8` algorithm for
-  MAX-E3SAT meet matching hardness results such as Håstad's ([#886]); LP and SDP rounding, such
+  MAX-E3SAT meet matching hardness results such as Håstad's ([#886](https://github.com/cslib-community/complexitylib/issues/886)); LP and SDP rounding, such
   as Goemans–Williamson for MAX-CUT and MAX-SAT.
 - **Packing approximation**
   ([#2964](https://github.com/cslib-community/complexitylib/issues/2964)): the asymptotic
@@ -957,8 +957,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   coefficient-size measures; Buss–Clote cutting planes with division by 2 only; and the
   simulation of resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and
   translation time.
-- **Feasible interpolation** ([#1817]): further clients of Krajíček's interpolation theorem for
-  semantic derivations ([#2019]): resolution through Theorem 6.1, the linear equational calculus,
+- **Feasible interpolation** ([#1817](https://github.com/cslib-community/complexitylib/issues/1817)): further clients of Krajíček's interpolation theorem for
+  semantic derivations ([#2019](https://github.com/cslib-community/complexitylib/issues/2019)): resolution through Theorem 6.1, the linear equational calculus,
   and the monotone case for the `ℬ` side. The remaining cutting-planes work is under **Cutting
   planes**.
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
@@ -967,7 +967,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 ## Circuits and algebraic complexity
 
-- **Williams's NEXP ⊄ ACC⁰ and Murray–Williams's NQP ⊄ ACC⁰** ([#889]): no polynomial-size,
+- **Williams's NEXP ⊄ ACC⁰ and Murray–Williams's NQP ⊄ ACC⁰** ([#889](https://github.com/cslib-community/complexitylib/issues/889)): no polynomial-size,
   constant-depth circuits over AND, OR, NOT and fixed-modulus counting gates for some language in
   NEXP. `SymAnd/ACC0.lean` defines the `SYM ∘ AND` circuit `Circuit.toSymAnd` of every circuit
   with `MOD_m` gates, `m > 0`, and proves that it computes the same function with polylogarithmic
@@ -979,7 +979,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   ([#3023](https://github.com/cslib-community/complexitylib/issues/3023)). Still open: a machine
   computing that circuit in quasi-polynomial time, a Turing-machine or word-RAM evaluator, the
   ACC-SAT algorithm, a fine nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
-- **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
+- **Circuit lower bounds from refuting ETH** ([#1539](https://github.com/cslib-community/complexitylib/issues/1539)): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
   Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
   and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`.
@@ -996,7 +996,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - Formula lower bounds beyond Andreev's, following Jukna; Raz–Wigderson's monotone depth bound for
   matching on general graphs.
 - **Monotone circuits versus P:** Razborov's `n ^ Ω(log n)` monotone bound for bipartite perfect
-  matching ([#2063]) and bipartite perfect matching in `Complexity.P encBits` now give a monotone
+  matching ([#2063](https://github.com/cslib-community/complexitylib/issues/2063)) and bipartite perfect matching in `Complexity.P encBits` now give a monotone
   language in P whose monotone circuit complexity is superpolynomial
   ([#3147](https://github.com/cslib-community/complexitylib/issues/3147)). An exponential gap
   (É. Tardos 1988) remains open.
@@ -1006,7 +1006,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   correctness review of the frontier core.
 - **Weighted threshold representations:** v1's explicit source-reduction family, universal scalar
   circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
-- **Depth-two threshold circuits for Andreev's function** ([#2347]): the exact quadratic
+- **Depth-two threshold circuits for Andreev's function** ([#2347](https://github.com/cslib-community/complexitylib/issues/2347)): the exact quadratic
   `2 * 4 ^ b + b * m * 2 ^ b + 1` depth-two weighted threshold upper bound
   (`WeightedThreshold/Andreev.lean`), the windowed average-case `(1 - δ)`-agreement and
   `(1 / 2 + ε)`-correlation depth-two upper bounds (`WeightedThreshold/AndreevWindowed.lean` and
@@ -1023,15 +1023,15 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   extends these bounds to `ε`-approximate majorities of depth-two circuits, so a majority vote of
   `t` depth-two circuits with at most `s` gates each needs top fan-in
   `t = Ω(n ^ (3 / 4) / (log n · √s))` once `t ≤ √(2 ^ b) / (6 (b + 2))`
-  (`WeightedThreshold/AndreevApproxMajority.lean`, [#2812]; Kane–Williams, Corollary 1.1, have
+  (`WeightedThreshold/AndreevApproxMajority.lean`, [#2812](https://github.com/cslib-community/complexitylib/issues/2812); Kane–Williams, Corollary 1.1, have
   `Ω̃(n ^ (1 / 2) / s ^ (1 / 3))`). The vote is stated through its number of correct members rather
   than as a depth-three circuit model. Closing the worst-case depth-two threshold gate gap between
-  `Ω̃(n ^ (3 / 2))` and `O(n ^ 2)` remains open, as do the other [#2812] milestones.
+  `Ω̃(n ^ (3 / 2))` and `O(n ^ 2)` remains open, as do the other [#2812](https://github.com/cslib-community/complexitylib/issues/2812) milestones.
 - **Construction runtimes**, certified separately from gate counts: the mass-production
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
   hitting-list matrices.
-- **Algebraic complexity** ([#891]): the rest of Limaye–Srinivasan–Tavenas. Proved: simple
+- **Algebraic complexity** ([#891](https://github.com/cslib-community/complexitylib/issues/891)): the rest of Limaye–Srinivasan–Tavenas. Proved: simple
   circuits (product gates reading distinct wires) of constant product-depth computing iterated
   matrix multiplication need superpolynomial size over any field, at `d = ⌊log₂ ⌊log₂ n⌋⌋`, from an
   explicit bound with exponent `d ^ (1 / (4 ^ Δ - 1))`. Remaining: their semantic set-multilinear
@@ -1039,7 +1039,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
   Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
   has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
-  fields of characteristic other than two ([#321]; membership has an explicit Ryser witness over
+  fields of characteristic other than two ([#321](https://github.com/cslib-community/complexitylib/issues/321); membership has an explicit Ryser witness over
   every commutative ring, and arithmetic formulas project to the permanent with dimension
   `Formula.size + 1` over every commutative semiring; a selector occurring in one permanent entry
   can be eliminated with one extra dimension when `2` is invertible; the conversion from VP
@@ -1133,7 +1133,7 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 - **Derandomization from hardness:** the infinitely-often variant, and the EXP ⊄ P/poly endpoint
   of Babai, Fortnow, Nisan and Wigderson.
-- **Extractors** ([#895]) beyond Chor–Goldreich: two-source extractors for lower min-entropy,
+- **Extractors** ([#895](https://github.com/cslib-community/complexitylib/issues/895)) beyond Chor–Goldreich: two-source extractors for lower min-entropy,
   where the `t`-wise independent parts of Chattopadhyay–Zuckerman's Theorem 4.1 are formalized with
   exponent `O(d²)` in place of their `3 d + 6` (the almost `t`-wise independent parts are not), with
   Tribes as a small instance (coalitions of fewer than `w` bits only), and their resilient functions
@@ -1172,7 +1172,7 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 ## Communication, queries, learning and other models
 
-- **Lifting** ([#890]): applications of deterministic lifting, such as partition-number
+- **Lifting** ([#890](https://github.com/cslib-community/complexitylib/issues/890)): applications of deterministic lifting, such as partition-number
   separations, and randomized lifting.
 - **Randomized query complexity of game trees**
   ([#3060](https://github.com/cslib-community/complexitylib/issues/3060)): the AND–OR tree on
@@ -1275,7 +1275,7 @@ each statement against the numbered result. Organize modules by subject, not cha
   and `O(q²)` queries), and deciding by the property itself when it is closed under induced
   subgraphs (their Proposition D.2, due to Alon) or is a graph partition property (Corollary 5.9);
   further query and sample lower bounds.
-- **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
+- **Kolmogorov complexity and metacomplexity** ([#798](https://github.com/cslib-community/complexitylib/issues/798), [#884](https://github.com/cslib-community/complexitylib/issues/884)): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
   multi-tape steps for a constant `c < 1`; prefix-free complexity,
@@ -1287,7 +1287,7 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Kolmogorov/Conditional.lean`, and `Kolmogorov/MINcKT.lean`), as independently scoped
   developments; the reverse
   multi-tape-to-single-tape simulation and machine-backed Nisan–Wigderson decoding.
-- **Quantum computation** ([#896]): channel semantics and approximation costs alongside the
+- **Quantum computation** ([#896](https://github.com/cslib-community/complexitylib/issues/896)): channel semantics and approximation costs alongside the
   circuit and measurement semantics, reusing suitable quantum foundations rather than
   incompatible models, and a bridge between the query and circuit models; complete problems for
   BQP; for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
@@ -1604,16 +1604,16 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
 
 ## Machines, RAM and data structures
 
-- **Efficient universal simulation** ([#800]): the clocked universal function runs in time
+- **Efficient universal simulation** ([#800](https://github.com/cslib-community/complexitylib/issues/800)): the clocked universal function runs in time
   `O(N + poly(D, M) · (t + 1) log(t + 2))`, for encoded input length `N`, description length `D`
   and largest input symbol `M`, by a divide-and-conquer windowed simulation
   (`computableInO_universal_nlogn`). Remaining: a source-space-sensitive storage bound (the
   space is currently bounded only by the time), and an unclocked form that runs until the
   simulated machine halts.
-- **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
+- **Plain computability** ([#862](https://github.com/cslib-community/complexitylib/issues/862)): complete the plain calculus ([#608](https://github.com/cslib-community/complexitylib/issues/608)), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
   abstract bridges to the shared predicate.
-- **Certificate APIs and automation** ([#1155]): predictable search, with fixed heartbeat budgets
+- **Certificate APIs and automation** ([#1155](https://github.com/cslib-community/complexitylib/issues/1155)): predictable search, with fixed heartbeat budgets
   on regression goals, failures that name the subterm lacking a certificate, and cheap
   syntax-directed composition for glue code. Infer encodings for ordinary functional expressions
   through constructor, projection, lookup and composition rules; generalize list, bounded-table,
@@ -1649,12 +1649,12 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
   `uniformDecidableInO_one9992`); size-based width selection
   with an input-fit guarantee and explicit overhead;
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
-  equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
+  equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124](https://github.com/cslib-community/complexitylib/issues/1124)); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Sharper native Exact Triangle exponent** ([#2423]): the automatic box-backed Exact Triangle
+- **Sharper native Exact Triangle exponent** ([#2423](https://github.com/cslib-community/complexitylib/issues/2423)): the automatic box-backed Exact Triangle
   host runs in `Oκ(n^(3−33/20000))` (exponent 2.99835) after integer retuning; reaching the
   source's stated 2.9983 under the same native conventions remains open.
-- **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
+- **Memory-oracle realization** ([#2205](https://github.com/cslib-community/complexitylib/issues/2205), [#2213](https://github.com/cslib-community/complexitylib/issues/2213)): the foundational graded kernel certifies
   all four memory queries, register-word glue, native branches and binds with one fixed
   continuation emitter for all runtime replies. Its functional representation retains the
   complete memory and frontier, and its instruction currency adds local work to memory charges.
@@ -1682,7 +1682,7 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
   framed queue/faithful-allocation client, generic stateful and whole-client composition, Fibonacci
   execution migration and the full C2/M1b objective; arbitrary host continuations do not acquire
   runtime bounds.
-  The Fibonacci method family ([#2290]) realizes all five original memory methods with one fixed
+  The Fibonacci method family ([#2290](https://github.com/cslib-community/complexitylib/issues/2290)) realizes all five original memory methods with one fixed
   native factor, exact typed-source/history transport and the existing nonzero amortized
   potential. The Fibonacci Dijkstra consumer now reserves the original zero tail without clearing,
   derives its reached callee domains from the shared framed history, and pays the nonzero heap
@@ -1692,12 +1692,12 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
   implementation-specific coefficient 640 are superseded; the original existential endpoints
   are unchanged. MinPQ migration and the execution core it still uses remain open, as do generic
   whole-client transfer and the abstract-space decision.
-  The Karger–Stein specification bridge ([#2289]) gives the existing recursive native code the
+  The Karger–Stein specification bridge ([#2289](https://github.com/cslib-community/complexitylib/issues/2289)) gives the existing recursive native code the
   exact answer law of its contraction-oracle client, preserving pathwise instruction/random-call
   bounds, word fits and memory frames. Probability and amplification are proved at the
   specification layer. This does not complete its memory-oracle native realization: the
   randomized realization adapters, contraction implementation and recursive frame-stack
-  migration remain part of [#2205].
+  migration remain part of [#2205](https://github.com/cslib-community/complexitylib/issues/2205).
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -1709,7 +1709,7 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
 - **A typed-call evaluator** for fixed-program Word-RAM clients, returning the typed observation,
   final state and halt-inclusive instruction cost, so the prefix-sum clients no longer
   assemble preparation, evaluation and halt accounting by hand.
-- **Priority-queue and shortest-path consolidation** ([#949]): lift operation-count helpers
+- **Priority-queue and shortest-path consolidation** ([#949](https://github.com/cslib-community/complexitylib/issues/949)): lift operation-count helpers
   (`numQueries`, `numInserts`, `numDecreaseKeys`, `numExtractMins`) to `IndexedMinPQ`, parameterize
   flat-program operation-sequence execution (`RunsOps`) over `PQCode` in
   `DataStructure/PriorityQueue/WordRAM/Basic.lean`
@@ -1797,7 +1797,7 @@ reuse is demonstrated.
   `n ⌈log₂ n⌉` is sharper, and the halving lemma's subtracted-term form is needed by
   `addCount_add_le_pow_clog`; the halving lemma stays as the sharp tool for `b = 2`.
 
-### OpenAI math results ([#1002])
+### OpenAI math results ([#1002](https://github.com/cslib-community/complexitylib/issues/1002))
 
 Review Lance Fortnow's [expository rewrites](https://github.com/fortnow/AI-Papers) of the OpenAI
 math papers and his [TCS catalogue](https://lance.fortnow.com/openai-math-tcs.htm) of the
@@ -1830,7 +1830,7 @@ and credited.
 
 ## Documentation and repository
 
-- **The guide** ([#585]): a chapter per area, including Foundations (bit strings, Fourier
+- **The guide** ([#585](https://github.com/cslib-community/complexitylib/issues/585)): a chapter per area, including Foundations (bit strings, Fourier
   analysis, PMF and `ProbComp`, codes), proof complexity, descriptive complexity, and Word RAM
   and algorithms, reusing checked examples.
 - **Curated formal abstracts:** improve readability, and compare each changed abstract with its
@@ -1842,78 +1842,7 @@ and credited.
 These remain coverage targets but are deferred from the active queue; their issues were closed as
 not planned, not as proved.
 
-- General auxiliary-input zero knowledge ([#324]); the GMW protocol's auxiliary-input results and
+- General auxiliary-input zero knowledge ([#324](https://github.com/cslib-community/complexitylib/issues/324)); the GMW protocol's auxiliary-input results and
   their limits are in [`GMW/Simulator.lean`](Complexity/Crypto/Computational/GMW/Simulator.lean).
-- Vollmer's generalized-quantifier survey ([#399]): ordered leaf words, explicit uniformity and
+- Vollmer's generalized-quantifier survey ([#399](https://github.com/cslib-community/complexitylib/issues/399)): ordered leaf words, explicit uniformity and
   input-access models, finite-monoid classification and generalized logical quantifiers.
-
-[archive]: https://github.com/cslib-community/complexitylib/blob/c89dd48c/ROADMAP.md
-[archive-fhe]: https://github.com/cslib-community/complexitylib/blob/c89dd48c/ROADMAP.md#modern-fhe-methods-and-deployment-priorities
-[#321]: https://github.com/cslib-community/complexitylib/issues/321
-[#324]: https://github.com/cslib-community/complexitylib/issues/324
-[#399]: https://github.com/cslib-community/complexitylib/issues/399
-[#456]: https://github.com/cslib-community/complexitylib/issues/456
-[#459]: https://github.com/cslib-community/complexitylib/issues/459
-[#474]: https://github.com/cslib-community/complexitylib/issues/474
-[#486]: https://github.com/cslib-community/complexitylib/issues/486
-[#581]: https://github.com/cslib-community/complexitylib/issues/581
-[#585]: https://github.com/cslib-community/complexitylib/issues/585
-[#608]: https://github.com/cslib-community/complexitylib/issues/608
-[#640]: https://github.com/cslib-community/complexitylib/issues/640
-[#643]: https://github.com/cslib-community/complexitylib/issues/643
-[#798]: https://github.com/cslib-community/complexitylib/issues/798
-[#800]: https://github.com/cslib-community/complexitylib/issues/800
-[#862]: https://github.com/cslib-community/complexitylib/issues/862
-[#884]: https://github.com/cslib-community/complexitylib/issues/884
-[#886]: https://github.com/cslib-community/complexitylib/issues/886
-[#888]: https://github.com/cslib-community/complexitylib/issues/888
-[#889]: https://github.com/cslib-community/complexitylib/issues/889
-[#890]: https://github.com/cslib-community/complexitylib/issues/890
-[#891]: https://github.com/cslib-community/complexitylib/issues/891
-[#892]: https://github.com/cslib-community/complexitylib/issues/892
-[#894]: https://github.com/cslib-community/complexitylib/issues/894
-[#895]: https://github.com/cslib-community/complexitylib/issues/895
-[#896]: https://github.com/cslib-community/complexitylib/issues/896
-[#897]: https://github.com/cslib-community/complexitylib/issues/897
-[#939]: https://github.com/cslib-community/complexitylib/issues/939
-[#949]: https://github.com/cslib-community/complexitylib/issues/949
-[#999]: https://github.com/cslib-community/complexitylib/issues/999
-[#1002]: https://github.com/cslib-community/complexitylib/issues/1002
-[#1104]: https://github.com/cslib-community/complexitylib/issues/1104
-[#1124]: https://github.com/cslib-community/complexitylib/issues/1124
-[#1155]: https://github.com/cslib-community/complexitylib/issues/1155
-[#1351]: https://github.com/cslib-community/complexitylib/issues/1351
-[#1539]: https://github.com/cslib-community/complexitylib/issues/1539
-[#1572]: https://github.com/cslib-community/complexitylib/issues/1572
-[#2468]: https://github.com/cslib-community/complexitylib/issues/2468
-[#1817]: https://github.com/cslib-community/complexitylib/issues/1817
-[#2019]: https://github.com/cslib-community/complexitylib/issues/2019
-[#2062]: https://github.com/cslib-community/complexitylib/issues/2062
-[#2063]: https://github.com/cslib-community/complexitylib/issues/2063
-[#2205]: https://github.com/cslib-community/complexitylib/issues/2205
-[#2213]: https://github.com/cslib-community/complexitylib/issues/2213
-[#2289]: https://github.com/cslib-community/complexitylib/issues/2289
-[#2145]: https://github.com/cslib-community/complexitylib/issues/2145
-[#2084]: https://github.com/cslib-community/complexitylib/issues/2084
-[#2290]: https://github.com/cslib-community/complexitylib/issues/2290
-[#2347]: https://github.com/cslib-community/complexitylib/issues/2347
-[#2423]: https://github.com/cslib-community/complexitylib/issues/2423
-
-[#2521]: https://github.com/cslib-community/complexitylib/issues/2521
-
-[#2527]: https://github.com/cslib-community/complexitylib/issues/2527
-
-[#2568]: https://github.com/cslib-community/complexitylib/issues/2568
-
-[#2579]: https://github.com/cslib-community/complexitylib/issues/2579
-[#2585]: https://github.com/cslib-community/complexitylib/issues/2585
-
-[#2620]: https://github.com/cslib-community/complexitylib/issues/2620
-[#2636]: https://github.com/cslib-community/complexitylib/issues/2636
-[#2642]: https://github.com/cslib-community/complexitylib/issues/2642
-[#2652]: https://github.com/cslib-community/complexitylib/issues/2652
-
-[#2661]: https://github.com/cslib-community/complexitylib/issues/2661
-[#2812]: https://github.com/cslib-community/complexitylib/issues/2812
-[#2855]: https://github.com/cslib-community/complexitylib/issues/2855
-[#2866]: https://github.com/cslib-community/complexitylib/issues/2866
