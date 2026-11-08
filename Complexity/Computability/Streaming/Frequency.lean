@@ -33,6 +33,7 @@ of the stream, and the items of a stream are distinct exactly when `F∞ ≤ 1`
 
 ## Main results
 
+* `Cslib.Streaming.freqMoment_zero`: `F₀` is the number of distinct items.
 * `Cslib.Streaming.freqMoment_map`: renaming the items injectively keeps the frequency moments.
 * `Cslib.Streaming.freqMoment_eq_sum_of_subset`, `Cslib.Streaming.freqMoment_cons_add`,
   `Cslib.Streaming.freqMoment_pos`: for `k ≠ 0`, `F_k` sums over any set containing the items, and
@@ -56,6 +57,11 @@ variable {α : Type*} [DecidableEq α]
 /-- The `k`-th **frequency moment** `F_k = ∑ₐ (count a s) ^ k` of a stream. -/
 @[expose] def freqMoment (k : ℕ) (s : List α) : ℕ :=
   ∑ a ∈ s.toFinset, s.count a ^ k
+
+/-- `F₀` is the number of distinct items of the stream. -/
+theorem freqMoment_zero (s : List α) : freqMoment 0 s = s.toFinset.card := by
+  rw [freqMoment, Finset.card_eq_sum_ones]
+  simp only [pow_zero]
 
 /-- Renaming the items of a stream injectively keeps its frequency moments. -/
 theorem freqMoment_map {α' : Type*} [DecidableEq α'] {f : α → α'} (hf : Function.Injective f)

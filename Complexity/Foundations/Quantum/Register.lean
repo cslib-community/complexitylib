@@ -25,6 +25,7 @@ register acts on the whole system as `U ⊗ I`, the Kronecker product with the i
 ## Main results
 
 * `Cslib.Quantum.onFirst_apply`: its entries.
+* `Cslib.Quantum.coe_onFirst`: its matrix is the Kronecker product `U ⊗ₖ 1`.
 -/
 
 public section
@@ -44,6 +45,10 @@ noncomputable def onFirst (U : unitaryGroup ι ℂ) : unitaryGroup (ι × κ) �
 theorem onFirst_apply (U : unitaryGroup ι ℂ) (p q : ι × κ) :
     (onFirst (κ := κ) U : Matrix (ι × κ) (ι × κ) ℂ) p q =
       (U : Matrix ι ι ℂ) p.1 q.1 * if p.2 = q.2 then 1 else 0 := by
+  rfl
+
+theorem coe_onFirst (U : unitaryGroup ι ℂ) :
+    (onFirst (κ := κ) U : Matrix (ι × κ) (ι × κ) ℂ) = (U : Matrix ι ι ℂ) ⊗ₖ 1 := by
   rfl
 
 end Cslib.Quantum

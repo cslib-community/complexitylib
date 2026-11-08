@@ -35,6 +35,26 @@ For an executable arithmetic trace, import `Complexity.Computability.Circuit.Ari
 For validity before execution, import `Complexity.Computability.Circuit.Encoding.Check` ([source](../../Complexity/Computability/Circuit/Encoding/Check.lean)). `codeCheck σ n gates` is exactly the existing `Program.IsCodeFrom σ n 0 gates`: each gate has the required arity and reads only inputs or earlier gates. `computableInPolyTime_codeCheck` charges the operator encoding and a supplied polynomial-time binary arity computation, with unary input count and binary wire indices. It traverses actual argument lists, so even a huge encoded arity is compared without allocating that many argument slots. Output-wire and output-count checks remain separate. The [arithmetic specialization](../../Complexity/Computability/Circuit/Arithmetic/Encoding/Check.lean) supplies the certificate for a fixed finite scalar carrier; the Boolean certificate API publicly imports the same checker and retains its specialized certificate. [Checked clients](../../ComplexityTests/CircuitCodeCheck.lean) cover F4, canonical typed programs, varying gate counts, malformed lists and operators whose arities are arbitrary binary naturals.
 
 
+## Parse flat syntax without changing its encoding
+
+Import [PrefixParser](../../Complexity/Foundations/Syntax/PrefixParser.lean) to interpret tokens
+as leaves, unary constructors, or binary constructors. `parse` returns one value and its unused
+suffix; `decode` requires an empty suffix. Both return `none` on missing operands or invalid
+tokens, and neither needs a default value. A syntax-specific `parseFuel_tokens` round-trip gives
+prefix uniqueness through `PrefixParser.append_injective`.
+
+[QBF](../../Complexity/Computability/Complexity/Problems/TQBF.lean) and
+[arithmetic QBF](../../Complexity/Computability/Complexity/Classes/IP/TQBF/Tokens.lean) use this
+shared parser with their existing token formats. Variable numbers keep their existing binary
+encoding. Structural tokens with nonzero payloads are rejected. These are executable token
+parsers and correctness proofs; they do not certify native parsing resources or validate the
+binary framing by themselves. The existing `TQBF.isCode` binary validator remains necessary.
+
+Run `scripts/build.sh ComplexityTests.PrefixParser` to check the
+[examples](../../ComplexityTests/PrefixParser.lean): prefix remainders, malformed payloads,
+missing operands, trailing tokens, empty input, and a chain of 128 negations. The parser uses one
+flat token stream; it does not introduce recursive binary framing or change any size bound.
+
 ## Boolean bases and related models
 
 | Model | Meaning | Main use or boundary |

@@ -80,10 +80,63 @@ The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two 
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
 
+Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
+upper bound, import [PMF/ToReal.lean](../../Complexity/Probability/PMF/ToReal.lean) and use
+`PMF.toReal_apply_le_one μ a` for an outcome or `PMF.toOuterMeasure_toReal_le_one μ s` for an
+event, rather than converting `μ a ≤ 1` through `ENNReal.toReal` by hand. The `Pr[e]` notation
+module re-exports this file, so `Pr[e] ≤ 1` is `PMF.toReal_apply_le_one _ true`; the
+[checked examples](../../ComplexityTests/ProbabilityNotation.lean) bound a program and a set event.
+Run `scripts/build.sh ComplexityTests.ProbabilityNotation`.
+
+## Count the fair coins used by an exact sampler
+
+Import [DDGTree.lean](../../Complexity/Probability/DDGTree.lean) to describe an exact sampler as
+a discrete distribution generating tree. Such a tree reads fair bits and stops at an
+outcome-labelled leaf, and it may be infinite. A `DDGTree α` is given by its prefix labelling
+`output : List Bool → Option α`, with leaves absorbing. `T.run n` is the law of the outcome after
+`n` fair bits, where `none` means "still running". `T.Generates p` states that the eventual output
+has law `p`. `T.expectedFlips` is the tail sum `∑ₙ P(T > n)`. For trees that halt almost surely,
+`expectedFlips_eq_tsum_mul` converts it to `∑ₖ (k + 1) P(T = k + 1)`, and
+`tendsto_run_none_of_generates` shows that every generator of a finite distribution halts almost
+surely. A tree that fails to halt with positive probability has `expectedFlips = ⊤`
+(`expectedFlips_eq_top`). `T.output <$> BitString.sampleList n` is the same experiment written as a
+`ProbComp`; its `eval` is `T.run n`.
+
+Import [DDGTree/KnuthYao.lean](../../Complexity/Probability/DDGTree/KnuthYao.lean) for the
+entropy bounds ([Knuth–Yao 1976](../sources.md#knuthyao76);
+[Cover–Thomas §5.11](../sources.md#coverthomas06)), stated for distributions on a finite type:
+
+- `entropy_le_expectedFlips hT : ENNReal.ofReal (PMF.entropy p) ≤ T.expectedFlips` for every
+  `hT : T.Generates p`;
+- `knuthYao p` generates `p` (`knuthYao_generates`), has the least expected cost
+  (`isLeast_expectedFlips_knuthYao`; pointwise `run_knuthYao_none_le`), and satisfies
+  `expectedFlips_knuthYao_lt : (knuthYao p).expectedFlips < ENNReal.ofReal (PMF.entropy p + 2)`;
+- `exists_generates_expectedFlips_eq_entropy_iff`: some tree attains `H(p)` exactly when every
+  positive `p a` is a power of `1/2`.
+
+To compute the optimal cost for a concrete `p`, rewrite with `expectedFlips_knuthYao` to
+`∑ₐ knuthYaoCost (p a).toReal`. Then use `knuthYaoCost_inv_two_pow` for dyadic masses, or sum the
+truncation errors `truncErr` directly. To build a tree from a count profile, use `ofCounts t`. In
+that tree, `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`; a leaf at
+depth `j ≤ k` counts `2 ^ (k - j)` times. Equivalently, `t k a / 2 ^ k` is the probability of having
+output `a` within `k` flips (`run_ofCounts`). The profile must be inherited,
+`2 * t k a ≤ t (k + 1) a`, and must satisfy the Kraft-type budget `∑ₐ t k a ≤ 2 ^ k`.
+
+The [checked clients](../../ComplexityTests/KnuthYao.lean) cover the fair coin (`1` flip), the
+dyadic `(1/2, 1/4, 1/4)` (`3/2` flips, equal to the entropy) and `(2/3, 1/3)`. For the last, the
+optimal cost is exactly `2`, no generating tree does better, and the entropy is strictly smaller.
+They also cover a non-halting tree that generates nothing and has infinite cost. Run
+`scripts/build.sh ComplexityTests.KnuthYao`. The model counts coin flips only; it does not certify
+that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
+
 ## Polarize statistical distance
 
-Sahai and Vadhan's polarization of statistical distance (Sahai–Vadhan 2003, §3) is formalized on
-explicit distributions over finite types, with the half-L1 `dist` above.
+Sahai and Vadhan's polarization of statistical distance is formalized on explicit distributions
+over finite types, with the half-L1 `dist` above. The source is Sahai–Vadhan 2003, §3.2: the
+Polarization Lemma is Lemma 3.3, extended to thresholds `α² > β` in the remark after its proof; the
+Direct Product Lemma is Lemma 3.4 and the XOR Lemma is Lemma 3.5. Statistical Difference is defined
+in §3.1 with the strict thresholds `2/3` and `1/3`; the variant `SD^{α,β}` with non-strict
+thresholds, used below, is defined on p. 234.
 
 - **XOR construction.** Import
   [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
@@ -157,7 +210,7 @@ uniform inputs, defined in
   `SDInstance.exists_computableInPolyTime_polarize_unary` is the source's form, with the error
   parameter `k` a separate unary input: one map on `encPair encSDInstance encUnary` with error
   `(1/2)^(k + 1)`.
-  `SDInstance.exists_polarize_computableInPolyTime` instead takes `k = K x` for a function `K` of
+  `SDInstance.exists_computableInPolyTime_polarize` instead takes `k = K x` for a function `K` of
   the instance. Use
   `obtain ⟨m, b, hm, h⟩ := …`, then `h K hK` for any polynomial-time unary `K`. It returns the
   polynomial-time certificate and the two distance bounds with error `(1/2)^(K x + 1)`.
@@ -167,7 +220,8 @@ uniform inputs, defined in
   from `SD^{α,β}` to `SD^{α',β'}`, for all constants `0 < β' < α' < 1`.
   The raw code generators behind the certificate are in
   [Circuit/Boolean/Polarization/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Polarization/PolyTime.lean).
-  Each generator has a `_code` lemma stating exact agreement with the typed circuit.
+  Import that module directly to use them; `StatisticalDifference/PolyTime.lean` does not
+  re-export it. Each generator has a `_code` lemma stating exact agreement with the typed circuit.
   `polarizeCode` builds on `replicateCode`, from
   [CodeReplication.lean](../../Complexity/Computability/Circuit/Boolean/CodeReplication.lean),
   and on `muxCode`, from
@@ -189,8 +243,12 @@ cover:
 
 - a concrete replicated code and its typed agreement;
 - the multiplexer gate count;
+- a polynomial-time polarization map with fixed parameters;
 - the reduction from `SD^{2/3,1/3}` to `SD^{9/10,1/10}` on the far and the near instance;
-- the length-indexed polarization on the same instances.
+- the length-indexed polarization on the same instances;
+- the polarization with the error parameter `k` in unary on the same instances, for every `k`;
+- `SDInstance.computableInPolyTime_polarize_comp` on `p ↦ p.1.polarize 1 2 p.2` over
+  `encPair encSDInstance encUnary`.
 
 Run `scripts/build.sh ComplexityTests.StatisticalDifference` and
 `scripts/build.sh ComplexityTests.StatisticalDifferencePolyTime`.
@@ -563,8 +621,8 @@ recursion accepts any constant up to `21`. The final bound has Holenstein's cons
 
 To use the bound for concrete answer types, compute the exponent: rewrite the product of the
 cardinalities as a power of two and apply `Real.logb_rpow`. For CHSH, `|A| |B| = 4` and the
-exponent is `n / 2`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) proves that
-CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
+exponent is `n / 2`. [CHSH.lean](../../Complexity/Computability/PCP/TwoProverGame/CHSH.lean)
+proves that CHSH has value `3/4` (`TwoProverGame.value_chsh`), and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
 repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
 conditioned, which gives a coordinate won with probability at most `G.value`. Run
@@ -1972,6 +2030,11 @@ and open `Cslib.Probability` to express `t` steps of the lazy conditional produc
 retention slices and a free-bit torus `(ZMod M)^H` on the ambient space
 `ComponentSpace H M P = (∀ j, FrameChannel (P j) H 1) × (Fin H → ZMod M)` (Section 6.1, Lemma 6.3,
 items 1–4 of [OpenAI's logspace preprint](../sources.md#openai-logspace26)).
+The results on the slice `ComponentSlice H M P L y` (`componentWordWrap_mem`,
+`componentWordPerm_wrap_eq` and the two walk identities below) need the instances
+`[∀ j, Fact (P j).Prime]` and `[∀ j, NeZero (L j)]` and a proof `hL : ∀ j, L j ≤ P j`, which also
+fixes the reindexing `componentEquiv M hL y` in their statements; the checked clients below show
+how to discharge them for concrete `P` and `L`.
 
 - Each step label `ComponentLazyStep H J` has `4 * (J + 1) * H^2` choices (`card_componentLazyStep`),
   and each candidate wrap vector lies in `affineWrapBox H = {-3, …, 3}^H` of size `7^H`
@@ -1981,15 +2044,20 @@ items 1–4 of [OpenAI's logspace preprint](../sources.md#openai-logspace26)).
   expectations (`expect_componentWordPerm`).
 - Retained identifiers `y` enter only through the endpoint wrap test `IsValidComponentWord`: on
   `ComponentSlice H M P L y`, a unique wrap word in `(affineWrapBox H)^t` survives
-  (`existsUnique_isValidComponentWord`, `componentWordWrap_mem`) and matches the exact slice walk
-  trajectory (`componentWordPerm_wrap_eq`), so averaging over move words `w` and summing over
-  wrap words `z` without dividing by `(7^H)^t` equals `walk^t`
-  (`walk_pow_componentMove_eq_expect_word`, and iteratively `walk_pow_componentMove_eq_iterate`).
+  (`existsUnique_isValidComponentWord`, `componentWordWrap_mem`). It reaches the endpoint
+  `(G.pow t).neighbor A w` of the walk along `w` (`componentWordPerm_wrap_eq`), where
+  `G = (ofPerms (componentMove H M P L)).lazy.reindex (componentEquiv M hL y).symm` is the
+  reindexed lazy product multigraph and `G.pow t` is its `t`-th power from
+  [`Expander/Power.lean`](../../Complexity/Foundations/Combinatorics/Expander/Power.lean). So
+  averaging over move words `w` and summing over wrap words `z` without dividing by `(7^H)^t`
+  equals `walk^t` (`walk_pow_componentMove_eq_expect_word`, and iteratively
+  `walk_pow_componentMove_eq_iterate`).
 
 The checked [`ProductValidatedWords.lean` clients](../../ComplexityTests/ProductValidatedWords.lean)
-verify concrete alphabet sizes and step wraps on two channels (`𝔽₅`, `𝔽₇`) plus `(ZMod 8)^3` and
-combine `walk_pow_componentMove_eq_expect_word` with `ComponentGap` and `SliceFourthMoment` to
-bound the `L²` and `L⁴` central moments of the explicit validated-word estimator. Run
+verify concrete alphabet sizes and step wraps on two channels, over `ZMod 5` and `ZMod 7`, plus the
+torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbor, and combine
+`walk_pow_componentMove_eq_expect_word` with `ComponentGap` and `SliceFourthMoment` to bound the
+`L²` and `L⁴` central moments of the explicit validated-word estimator. Run
 `scripts/build.sh ComplexityTests.ProductValidatedWords` from the repository root to check them.
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.

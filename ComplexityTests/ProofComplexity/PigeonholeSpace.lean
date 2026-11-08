@@ -14,7 +14,8 @@ Duplicator strategies exist for satisfiable formulas and with no pebble, and fai
 with one pebble. The extended pigeonhole formula is a `3`-CNF that is unsatisfiable exactly when
 there are more pigeons than holes. Its width and clause-space lower bounds apply to formulas that
 are refutable, and the space bound beats the bound `3` that holds for every formula without the
-empty clause.
+empty clause. Atserias and Dalmau's Lemma 2 gives back a strategy from the width bound, and the
+space bound also follows from the strategy directly.
 -/
 
 namespace ComplexityTests.ProofComplexity.PigeonholeSpace
@@ -99,6 +100,20 @@ example : (∃ s, (CNF.pigeonholeExt 6 5).RefutableInSpace s) ∧
   ⟨CNF.exists_refutableInSpace_iff_not_satisfiable.2
       (CNF.not_satisfiable_pigeonholeExt (by decide : 5 < 6)),
     fun _ h => CNF.le_of_refutableInSpace_pigeonholeExt h⟩
+
+/-- Atserias and Dalmau's Lemma 2 rebuilds a strategy from the width bound: `EPHP^m_4` is a
+`3`-CNF with no refutation of width `3`, so Duplicator wins with `4` pebbles. -/
+example (m : ℕ) : Nonempty (CNF.DuplicatorStrategy (CNF.pigeonholeExt m 4) 4) :=
+  (CNF.DuplicatorStrategy.nonempty_iff_not_refutableInWidth
+    fun _ hc => (Nat.lt_succ_of_le (CNF.width_le_three_of_mem_pigeonholeExt hc)).ne).2
+    (CNF.not_refutableInWidth_pigeonholeExt m 3)
+
+/-- The space bound straight from the strategy: `n + 1` pebbles on a `3`-CNF give clause space at
+least `n + 1`. -/
+example (m n s : ℕ) (h : (CNF.pigeonholeExt m (n + 1)).RefutableInSpace s) : n + 1 ≤ s := by
+  have := (CNF.pigeonholeExtStrategy m n).add_three_le
+    (fun _ hc => CNF.width_le_three_of_mem_pigeonholeExt hc) h
+  omega
 
 /-- The width and space bounds for any numbers of pigeons and holes. -/
 example (m n w s : ℕ) (hw : (CNF.pigeonholeExt m n).RefutableInWidth w)

@@ -67,6 +67,48 @@ There are two ways to prove a new streaming lower bound. The first starts from a
 
 [Complexity/Computability/Streaming/FkEstimator.lean](../../Complexity/Computability/Streaming/FkEstimator.lean) implements the AMS estimator for every `F_k` with `k ≥ 1` from Theorem 2.1 [alonmatiasszegedy99][alonmatiasszegedy99]. The basic estimator `fkBasicEstimate` samples a position `p` and sets `X = m(r^k − (r−1)^k)`, where `r = suffixCount s p` counts the occurrences of the item `a_p` at positions `q ≥ p`. Telescoping gives `expect_fkBasicEstimate` (`𝔼X = F_k`). The bound `(c+1)^k − c^k ≤ k(c+1)^(k−1)` (`Nat.succ_pow_sub_pow_le`) gives `expect_fkBasicEstimate_sq_le` (`𝔼X² ≤ kF₁F_{2k−1}`). The source's power-sum fact `F₁F_{2k−1} ≤ n^(1−1/k)F_k²` is `Finset.sum_mul_sum_pow_le` in [Finset/PowerSum.lean](../../Complexity/Foundations/Data/Finset/PowerSum.lean), raised to the `k`-th power to avoid real exponents. `fkSketch` keeps a step counter and, for each of `2rK` copies, a sampled position, the item there and its count. Its answer is the median of means of the basic estimator (`run_fkSketch_eq_medianOfMeans`). As in the source's main argument, the stream length `m` is fixed in advance: positions are drawn from `Fin m` and the guarantees are for streams of exactly `m` items. `dens_fkSketch_error_le` and `solves_fkEstimator` give error `(8/9)^r` for relative accuracy `η` when `(3k)^k n^(k−1) ≤ (Kη²)^k`. `solves_fkEstimator_of_rpow` takes the hypothesis in the form `3k·n^(1−1/k) ≤ Kη²`. The group size `3k·n^(1−1/k)/η²` replaces the source's `8k·n^(1−1/k)/λ²`, because the median step uses the `(8/9)^r` bound of `MedianOfMeans.lean` instead of a Chernoff bound. For memory, `spaceLE_fkEstimator` does not charge the positions, while `exists_injOn_iUnion_reachable_fkSketch` stores them (`m^(2rK)(M+1)((n+1)(M+1))^(2rK) ≤ 2^b`). Together they give the `O(rK(log n + log m))` memory of Theorem 2.1. The [test file](../../ComplexityTests/StreamingFkEstimator.lean) evaluates the basic estimator on the stream `0, 1, 0`, shows that `k = 0` must be excluded, and instantiates the error and memory bounds.
 
+## Distinct elements: the k-minimum-values sketch
+
+[Complexity/Computability/Streaming/DistinctElements.lean](../../Complexity/Computability/Streaming/DistinctElements.lean) implements the first algorithm of Bar-Yossef, Jayram, Kumar, Sivakumar and Trevisan [bjkst02][bjkst02] (Section 2, Theorem 1). It estimates the number of distinct items `F₀ = #s.toFinset` (`freqMoment_zero`).
+
+Each copy of `kmvSketch` hashes the items with a pairwise independent family `h θ : α → Fin M` and keeps the `t` lowest keys `kmvKey h θ a = (h θ a, a)` in lexicographic order. Selection by `Finset.lowest` can be maintained online (`Finset.lowest_insert_lowest`, in [Finset/LowestInsert.lean](../../Complexity/Foundations/Data/Finset/LowestInsert.lean)). So `state_kmvSketch` shows that after the stream `s` a copy holds the `t` lowest keys of the distinct items of `s`.
+
+While a copy holds fewer than `t` keys, it reports their number, which is exactly `F₀` (`run_kmvSketch_of_card_lt`). Otherwise it reports `tM/(v+1)`, where `v` is the largest hash value it keeps (`kmvEstimate`). The sketch answers the median over its copies, and `kmv` draws the seeds uniformly.
+
+The error analysis uses `Finset.forall_mem_lowest_iff`: the `t` lowest hash values of `d ≥ t` items are all below `K` exactly when at least `t` items hash below `K`. The number of such items has variance at most its mean, so Chebyshev's inequality bounds each tail. `dens_abs_kmvEstimate_sub_gt_le` gives a per-copy failure probability `Pr[|estimate − d| > εd] ≤ 2/(tε²)` for `0 < ε ≤ 1` and `d ≤ M`: the upper tail contributes `(1+ε)/(tε²)` and the lower tail `(1−ε)/(tε²)`. The source instead bounds each tail by `1/6` with `t = ⌈96/ε²⌉`.
+
+With `6 ≤ tε²` one copy fails with probability at most `1/3`. The amplified bound for the median of `2r` copies (the median trick) and the `Solves` statement for the relation `|Y − F₀| ≤ εF₀` are not yet formalized ([#3340](https://github.com/cslib-community/complexitylib/issues/3340)).
+
+Ties between hash values are broken by the item, so the source's `1/m` collision term and its requirement `M = m³` disappear; only `d ≤ M` is needed.
+
+For fixed seeds, the reachable states of a copy are determined by the at most `t` items behind its keys. The memory bounds therefore depend neither on the stream length nor on `M`:
+
+- under the public-coin convention, `spaceLE_kmv` shows that every drawn sketch uses `b` bits whenever `(n+1)^(ct) ≤ 2^b`, for a universe of `n` items;
+- `exists_injOn_iUnion_reachable_kmvSketch` gives one `b`-bit encoding with the seeds stored as well, whenever `(|ι|(n+1)^t)^c ≤ 2^b`.
+
+With `t = ⌈6/ε²⌉` and `c = 2r = O(log(1/δ))`, this is the `O(ε⁻² log(1/δ) log n)` memory of Theorem 1. The bound complements the `Ω(n)` lower bounds for exact and for deterministic approximate `F₀` (`le_of_solves_freqMoment`, `Algorithm.le_of_approx_freqMoment` with `k = 0`). The matching `Ω(ε⁻²)` lower bound is not formalized.
+
+The [test file](../../ComplexityTests/StreamingDistinctElements.lean) runs the sketch with a fixed hash on a concrete stream. It applies the error bound to the affine maps over `ZMod 31`, a pairwise independent family with a 10-bit seed, and instantiates the memory bounds with 240 and 260 bits. It also shows two failure cases: a constant hash overestimates `F₀` by a factor `2`, and `t = 0` always answers `0`.
+
+## MinHash and locality-sensitive hashing
+
+[Probability/LocalitySensitiveHash.lean](../../Complexity/Probability/LocalitySensitiveHash.lean) works with keyed families `hash : ι → X → Y` with seed law `seed : PMF ι`, as for universal hashing. `collisionProb seed hash x x'` is the real probability that `x` and `x'` collide. It differs from `PMF.collisionProbability`, the probability that two independent samples of one law agree. `IsLocalitySensitive prob near far p₁ p₂` says that near pairs collide with probability at least `p₁` and far pairs with probability at most `p₂`. With `near := d ≤ r₁` and `far := r₂ ≤ d` this is the `(r₁, r₂, p₁, p₂)`-sensitive family of Indyk and Motwani [indykmotwani98][indykmotwani98] [harpeledindykmotwani12][harpeledindykmotwani12]. Every `ε`-universal family with `ε ≠ ⊤` is `(=, ≠, 1, ε)`-sensitive (`IsUniversalHash.isLocalitySensitive`). Independent repetitions use `PMF.iid`, and the collision laws are exact:
+
+- the AND construction `andHash` (concatenate `k` independently keyed hashes) collides with probability `p^k` (`collisionProb_andHash`);
+- the OR construction (some one of `L` independent hashes collides) collides with probability `1 − (1 − p)^L` (`orCollisionProb_eq`);
+- `L` bands of `k` rows give the S-curve `sCurve k L p = 1 − (1 − p^k)^L` (`orCollisionProb_andHash`).
+
+The general event laws behind these, `Pr[∀ j, s j ∈ E] = μ(E)^k` and `Pr[∃ j, s j ∈ E] = 1 − (1 − μ(E))^k` under `PMF.iid μ k`, are in [IID/Event.lean](../../Complexity/Probability/IID/Event.lean). `IsLocalitySensitive.and`, `.or` and `.banded` transport sensitivity. For `0 ≤ p₂ < p₁ ≤ 1`, `δ > 0` and `δ' > 0`, `exists_sCurve_gap` and `IsLocalitySensitive.exists_banded` choose `k` and `L = ⌈log(1/δ)/p₁^k⌉₊` so that near pairs collide with probability at least `1 − δ` and far pairs with probability at most `δ'`. The explicit bounds are `le_sCurve` (`1 − δ ≤ sCurve k L p` once `log(1/δ) ≤ L p₁^k`) and `sCurve_le` (`sCurve k L p ≤ L p₂^k`, Bernoulli's inequality). `collisionProb_triangle` is Charikar's Lemma 1 [charikar02][charikar02]: `1 − collisionProb` satisfies the triangle inequality.
+
+[LocalitySensitiveHash/MinHash.lean](../../Complexity/Probability/LocalitySensitiveHash/MinHash.lean) proves Broder's theorem [broder97][broder97]. On a finite linear order, `minHash σ A` is the least rank `min σ(A)` (`⊤` for `∅`). Under a uniform `σ : Equiv.Perm α`, `collisionProb_minHash` gives `Pr[minHash σ A = minHash σ B] = jaccard A B = |A ∩ B|/|A ∪ B|`, with `jaccard ∅ ∅ = 1`. Consequences: `isLocalitySensitive_minHash` (MinHash is `(d₁, d₂, 1 − d₁, 1 − d₂)`-sensitive for the Jaccard distance `1 − J`), `orCollisionProb_andHash_minHash` (the banding curve `1 − (1 − J^r)^b` of [leskovecrajaramanullman20][leskovecrajaramanullman20], Section 3.4.2), and `jaccard_triangle` (the triangle inequality for the Jaccard distance on finite subsets of any type with decidable equality). With `jaccard_comm` and `jaccard_eq_one_iff` (`J(A, B) = 1 ↔ A = B`), it makes `1 − J` a metric. [LocalitySensitiveHash/BitSampling.lean](../../Complexity/Probability/LocalitySensitiveHash/BitSampling.lean) proves the bit-sampling law `collisionProb_bitSampling`: a uniform coordinate of `x, y : n → β` agrees with probability `1 − d_H(x, y)/|n|`. It follows that bit sampling is `(r₁, r₂, 1 − r₁/|n|, 1 − r₂/|n|)`-sensitive (`isLocalitySensitive_bitSampling`).
+
+The [test file](../../ComplexityTests/LocalitySensitiveHash.lean) contains:
+
+- Jaccard values and exact MinHash collision probabilities on `Fin 4`;
+- banding numerics for `r = 5`, `b = 20` (`sCurve 5 20 0.8 > 0.9996`, `sCurve 5 20 0.2 < 0.007`);
+- a bit-sampling family on `Fin 8 → Bool`, banded to `(0.9965, 0.48)` and amplified with `exists_banded`;
+- a negative example: the same family is not `(7/8, 1/4)`-sensitive.
+
 ## Native streaming folds
 
 [Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean) gives actual machine-backed scans of raw bit strings through Christian Reitwiessner's streaming backend. A round holds an encoded accumulator and one input bit instead of copying the remaining input list. Time sums the round computation, old/new state encoding sizes and control; workspace takes a peak bound and charges retained accumulators. Read-only input and write-only output are excluded from work-tape space.
@@ -74,6 +116,12 @@ There are two ways to prove a new streaming lower bound. The first starts from a
 `foldl_bits_stream_sum` and `_spec` give cumulative costs and invariants. `foldl_bits_pair_stream_sum` includes a runtime initial accumulator. `iterate_unary_stream_sum` gives repeated state updates emitting output without workspace proportional to the iteration count. `foldl_bits_finite` specializes to linear time and constant workspace for a fixed finite state, and `map_bits` gives linear time with zero work space. The encoding and combinator source markers record the upstream/vendored backend origin.
 
 These are compositional native resource theorems on the [machine model](../machines-and-classes/index.md), not a separate RAM primitive. Their current declarations still expose tidy backend predicates in this source module; broader plain-computability migration policy does not change what this pinned file actually states.
+
+## Dimension reduction: the Johnson–Lindenstrauss lemma
+
+[Complexity/Probability/JohnsonLindenstrauss.lean](../../Complexity/Probability/JohnsonLindenstrauss.lean) proves the Johnson–Lindenstrauss lemma [johnsonlindenstrauss84][johnsonlindenstrauss84] for random sign matrices, following Achlioptas, Theorem 1.1, with the `±1` distribution [achlioptas03][achlioptas03]. Achlioptas states the theorem for every `ε > 0`. Lean requires `0 < ε < 3/2`, and some restriction is necessary: for `ε = 2` the dimension threshold is negative, yet one sign row maps `(1, 1, 1, 1)` to the squared norm `16 > 3 · 4` with probability `1/8`. The seed is `b : Fin k → ι → Bool`, drawn uniformly, and `signProjection b : EuclideanSpace ℝ ι →ₗ[ℝ] EuclideanSpace ℝ (Fin k)` is the linear map with matrix entries `signVal (b j i) / √k`. Probabilities are densities of finsets of seeds, as for the AMS sketch. For a fixed vector `x` and `0 ≤ ε`, each tail `Pr[‖signProjection b x‖² > (1 + ε)‖x‖²]` and `Pr[‖signProjection b x‖² < (1 - ε)‖x‖²]` is at most `exp (-(k/2)(ε²/2 - ε³/3))` (`dens_lt_norm_signProjection_sq_le`, `dens_norm_signProjection_sq_lt_le`). The two-sided bound `dens_lt_abs_norm_signProjection_sq_sub_le` is twice that. A union bound over the `n(n-1)/2` pairs of `n` points gives `one_sub_le_dens_forall_norm_signProjection_sq_mem_Icc`. For `0 < ε < 3/2`, any real `β` and `k ≥ (4 + 2β) log n / (ε²/2 - ε³/3)`, `one_sub_rpow_le_dens_forall_norm_signProjection_sq_mem_Icc` keeps every squared pairwise distance within `[1 - ε, 1 + ε]` with probability at least `1 - n^(-β)`. Here `log` is the natural logarithm. With `β = 0`, `exists_signProjection_forall_norm_sq_mem_Icc` is the Dasgupta–Gupta dimension `k ≥ 4 log n / (ε²/2 - ε³/3)` [dasguptagupta03][dasguptagupta03]. `exists_linearMap_forall_norm_sq_mem_Icc` states the lemma for `0 < ε ≤ 1` and `k ≥ 24 log n / ε²` without mentioning sign matrices.
+
+The proof goes through the moment generating function rather than Achlioptas's even-moment comparison. This is the standard comparison of squared sub-Gaussian and Gaussian variables, as in Gupta's lecture notes, §11.6.2, Lemma 11.9 [gupta23][gupta23]. Each row gives a Rademacher sum `Y = ∑ i, x i signVal (b j i)`. [BitString/Rademacher.lean](../../Complexity/Probability/BitString/Rademacher.lean) derives its second and fourth moments from the tug-of-war moments of the AMS sketch, using the identity hash family. It also shows that `Y` is sub-Gaussian, `𝔼 exp (sY) ≤ exp (s²‖x‖²/2)`, and that `𝔼 exp (tY²) ≤ (1 - 2t‖x‖²)^(-1/2)`. The last bound averages the sub-Gaussian bound against a Gaussian, using the Gaussian integral `∫ exp (cz²) d𝒩(0, v) = (1 - 2cv)^(-1/2)` of [Gaussian/ExpSq.lean](../../Complexity/Foundations/Probability/Gaussian/ExpSq.lean). The lower tail uses `exp (-u) ≤ 1 - u + u²/2` and `𝔼 Y⁴ ≤ 3‖x‖⁴`, then closes with an explicit polynomial inequality. The scalar inequalities are in [SpecialFunctions/ExpBounds.lean](../../Complexity/Foundations/Analysis/SpecialFunctions/ExpBounds.lean). The [test file](../../ComplexityTests/JohnsonLindenstrauss.lean) exhibits a seed whose projection doubles a squared norm and one that preserves it. It also instantiates the dimension hypotheses with explicit parameters, for example probability at least `1/2` for two points with `ε = 1/2` and `k = 50`.
 
 ## Optimal stopping
 
@@ -95,7 +143,18 @@ The four meanings of “streaming” here should not be conflated: an input-list
 
 The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketches have no `ProbComp` sampler or machine realization. The `F_k` estimator assumes that the stream length is known in advance; the source's reservoir-sampling variant for unknown lengths is not formalized. Multi-pass algorithms, turnstile updates and CountSketch are not formalized. The Proposition 3.7 bound is stated for streams of at most `N/8` items rather than the source's `n/2`, and the Proposition 3.8 bound for a universe of `3n` items (`Fin n × Fin 3`) rather than `n`, so that the threshold `2n` does not depend on the inputs.
 
+The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine realization either, and its error is bounded only for a single copy: the median amplification and the `Solves` statement are open. Its error analysis needs a pairwise independent family into `Fin M` with at least as many values as distinct items. The space-optimal estimators for `F₀` (Bar-Yossef et al., Theorems 2–3; Kane–Nelson–Woodruff's `O(ε⁻² + log n)`) are not formalized, and neither are the `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`.
+
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
+
+The locality-sensitive hashing modules prove information-theoretic statements only. The following are not formalized:
+
+- the `(c, r)`-approximate near-neighbour data structure with query time `n^ρ`, where `ρ = log(1/p₁)/log(1/p₂)`;
+- the cost of evaluating or storing the hashes;
+- SimHash, p-stable LSH, and LSH lower bounds;
+- MinHash over smaller min-wise independent families: it uses a uniform permutation of the whole universe.
+
+The Johnson–Lindenstrauss development covers only dense `±1` matrices: the sparse `{-√3, 0, √3}` distribution of Achlioptas, Gaussian and spherical projections, fast and sparse JL transforms, the optimal Larsen–Nelson lower bound, a `ProbComp` sampler and any native cost for applying the projection are not formalized.
 
 The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions, so the randomized ski-rental bound `e/(e-1)` and randomized list update (BIT, COMB) are open. List update covers access requests only; insertions and deletions are not modelled.
 
@@ -103,12 +162,22 @@ The optimal-stopping modules are semantic probability statements over determinis
 
 The `k`-server modules use natural-number distances, so Double Coverage is proved on the integer line rather than the real line. Double Coverage on trees, the work-function algorithm's `2k-1` bound, the `k`-server conjecture, randomized `k`-server and an algorithm computing the offline optimum are not formalized, and the Lean step functions carry no time bounds.
 
+[achlioptas03]: ../sources.md#achlioptas03
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
+[bjkst02]: ../sources.md#bjkst02
 [borodinelyaniv98]: ../sources.md#borodinelyaniv98
+[broder97]: ../sources.md#broder97
+[charikar02]: ../sources.md#charikar02
 [chrobakkarloffpaynevishwanathan91]: ../sources.md#chrobakkarloffpaynevishwanathan91
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
+[dasguptagupta03]: ../sources.md#dasguptagupta03
+[gupta23]: ../sources.md#gupta23
+[harpeledindykmotwani12]: ../sources.md#harpeledindykmotwani12
+[indykmotwani98]: ../sources.md#indykmotwani98
 [irani91]: ../sources.md#irani91
+[johnsonlindenstrauss84]: ../sources.md#johnsonlindenstrauss84
 [karlin88]: ../sources.md#karlin88
+[leskovecrajaramanullman20]: ../sources.md#leskovecrajaramanullman20
 [manassemcgeochsleator90]: ../sources.md#manassemcgeochsleator90
 [sleatortarjan85]: ../sources.md#sleatortarjan85
