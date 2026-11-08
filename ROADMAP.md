@@ -1096,8 +1096,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   match the upper bound, via Yao's principle for expected cost; Monte Carlo (bounded-error) bounds
   for the same trees; and Saks–Wigderson's general read-once formula and game-tree (MIN/MAX over
   integer leaves) results.
-- Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
-  results, and reductions to streaming, sketching and cell-probe lower bounds.
+- **Information complexity**
+  ([#3243](https://github.com/cslib-community/complexitylib/issues/3243)): internal and external
+  information cost of deterministic, private-coin and public-coin protocols, with
+  `IC ≤ IC^ext ≤ CC` and equality on product inputs. Remaining: distributional-error information
+  complexity; additivity and the direct-sum theorem `IC_{μⁿ}(fⁿ) = n · IC_μ(f)`
+  (Braverman–Rao); information equals amortized communication; and the
+  Bar-Yossef–Jayram–Kumar–Sivakumar `Ω(n)` disjointness lower bound via the information cost of
+  AND.
+- Multiparty protocols, discrepancy, direct-product results, and reductions to streaming,
+  sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
   storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`

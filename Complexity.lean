@@ -1423,6 +1423,7 @@ public import Complexity.Computability.Communication.Equality
 public import Complexity.Computability.Communication.FoolingSet
 public import Complexity.Computability.Communication.Functions
 public import Complexity.Computability.Communication.Inclusion
+public import Complexity.Computability.Communication.Information
 public import Complexity.Computability.Communication.InnerProductRank
 public import Complexity.Computability.Communication.KarchmerWigderson
 public import Complexity.Computability.Communication.Lifting.Density
@@ -5024,6 +5025,7 @@ public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
 public import Complexity.Probability.Minimax
 public import Complexity.Probability.Minimax.Value
+public import Complexity.Probability.MutualInformation
 public import Complexity.Probability.OptimalStopping.Basic
 public import Complexity.Probability.OptimalStopping.Prophet
 public import Complexity.Probability.OptimalStopping.Secretary
