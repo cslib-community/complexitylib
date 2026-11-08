@@ -66,9 +66,13 @@ theorem quarters_lengths {α : Type} (xs : List α) :
 /-- All quarter splitting, first-operand selection, class-depth capping and zero target are
 computed from the original runtime input, with no supplied semantic parameters. -/
 def prepare (x : Input) : ProgramGeneration.Source :=
-  let tail := x.2.tail
+  let parameters := x.1
+  let width := parameters.1
+  let depth := parameters.2
+  let operands := x.2
+  let tail := operands.tail
   let parts := quarters tail
-  (((x.1.1, min x.1.2 (min x.1.1 (tail.length / 4))), (x.2.headD 0, 0)), parts)
+  (((width, min depth (min width (tail.length / 4))), (operands.headD 0, 0)), parts)
 
 /-- The complete source-to-packet-input materialization is uniformly polynomial in bit size. -/
 theorem prepare_polyTime : ComputableInPolyTime prepare encoding sourceEncoding := by

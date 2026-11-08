@@ -53,8 +53,14 @@ noncomputable def finiteRunCertificate : NativeCertificate
 
 /-- The actual compacted final state, with the same total fallback on faults/returns. -/
 def finalState (x : Packet) : FiniteState Basis.standard.genericModel 40 :=
+  let configuration := x.1
+  let program := configuration.1
+  let parameters := configuration.2
+  let width := parameters.1
+  let clock := parameters.2
+  let state := x.2
   (FiniteState.continuing (Interpreter.compactResult
-    (FiniteState.run x.1.2.1 x.1.1.parkHalts.toGeneric x.1.2.2 x.2))).getD
+    (FiniteState.run width program.parkHalts.toGeneric clock state))).getD
       (initState .standard 40 [])
 
 /-- Compaction leaves the parked output register unchanged. -/
@@ -81,6 +87,7 @@ theorem readback_eq (x : Packet) :
     BitExecution.decodeWords (parkedOutput x.1.1.length (finalState x)) =
       GeneratedRunInput.run x := by
   unfold finalState GeneratedRunInput.run
+  dsimp only
   cases h : FiniteState.run x.1.2.1 x.1.1.parkHalts.toGeneric x.1.2.2 x.2 with
   | none => rfl
   | some out =>
