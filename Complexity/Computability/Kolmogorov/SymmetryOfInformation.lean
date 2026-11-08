@@ -50,11 +50,13 @@ enumeration, written with exactly `k + 1 - l` digits, from which `l` can be reco
 descriptions together cost `k + 2` bits besides two self-delimiting codes of `k`. The enumerations
 are `Nat.nthDistinctValue` of primitive recursive sequences of clocked runs of `universal`.
 
-With the chain rule this gives the two-sided form (`exists_abs_complexity_universal_pair_sub_le`)
-and the symmetry of the algorithmic information `I(x : y) = C(y) - C(y | x)`
-(`exists_abs_algorithmicInformation_sub_le`) [Shen, Uspensky and Vereshchagin, Section
-2.3][ShenUspenskyVereshchagin2017]. The logarithmic term cannot be removed for plain complexity
-(loc. cit.); the exact symmetry of prefix complexity is not formalized here.
+With the chain rule this gives the two-sided form (`exists_abs_complexity_universal_pair_sub_le`),
+the comparison of `I(x : y) = C(y) - C(y | x)` with `C(x) + C(y) - C(x, y)`
+(`exists_abs_algorithmicInformation_sub_le`), and the symmetry of the algorithmic information
+(`exists_abs_algorithmicInformation_sub_algorithmicInformation_le`) [Shen, Uspensky and
+Vereshchagin, Section 2.3][ShenUspenskyVereshchagin2017]. The logarithmic term cannot be removed
+for plain complexity [Shen, Uspensky and Vereshchagin, Section 2.2][ShenUspenskyVereshchagin2017];
+the exact symmetry of prefix complexity is not formalized here.
 
 ## Main definitions
 
@@ -66,7 +68,8 @@ and the symmetry of the algorithmic information `I(x : y) = C(y) - C(y | x)`
 * `Cslib.Kolmogorov.DescriptionMethod.finite_setOf_ecomplexity_pair_le`,
   `Cslib.Kolmogorov.DescriptionMethod.ncard_setOf_ecomplexity_pair_le_lt`: fewer than
   `2 ^ (k + 1)` numbers `v` have `C(x, v) ≤ k`.
-* `Cslib.Kolmogorov.DescriptionMethod.two_pow_mul_ncard_setOf_two_pow_le_ncard_lt`: fewer than
+* `Cslib.Kolmogorov.DescriptionMethod.finite_setOf_two_pow_le_ncard`,
+  `Cslib.Kolmogorov.DescriptionMethod.two_pow_mul_ncard_setOf_two_pow_le_ncard_lt`: fewer than
   `2 ^ (k + 1 - l)` numbers `u` have at least `2 ^ l` partners `v` with `C(u, v) ≤ k`.
 * `Cslib.Kolmogorov.DescriptionMethod.exists_complexity_universal_add_condUniversal_le`: the
   **Kolmogorov–Levin theorem**, the hard direction.

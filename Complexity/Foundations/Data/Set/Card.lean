@@ -95,7 +95,8 @@ theorem finite_setOf_le_ncard_fiber {s : Set α} (hs : s.Finite) (f : α → β)
   exact ⟨a, ha, hab⟩
 
 /-- **Heavy fibers are few.** A finite set has at most `s.ncard / n` points whose fiber under `f`
-has at least `n` elements. -/
+has at least `n` elements. This is the `Set.ncard` counterpart of Mathlib's
+`Finset.mul_card_image_le_card_of_maps_to`. -/
 theorem mul_ncard_setOf_le_ncard_fiber_le {s : Set α} (hs : s.Finite) (f : α → β) (n : ℕ) :
     n * {b | n ≤ {a ∈ s | f a = b}.ncard}.ncard ≤ s.ncard := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
