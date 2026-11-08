@@ -26,9 +26,8 @@ then uses `CloseTo.map`.
 
 public section
 
-namespace Cslib.Interactive.CloseTo
+namespace Cslib.Probability.CloseTo
 
-open Probability
 open scoped ENNReal
 
 /-- `k` independent draws from `ε`-close distributions are `(k * ε)`-close, without finiteness
@@ -61,5 +60,11 @@ theorem eval_replicate {α : Type} {prog₁ prog₂ : ProbComp α} {ε : ℝ≥0
       (ProbComp.eval (OracleComp.replicate k prog₂)) (k * ε) := by
   rw [ProbComp.eval_replicate_iid]
   exact h.iid_replicate k
+
+end Cslib.Probability.CloseTo
+
+namespace Cslib.Interactive.CloseTo
+
+export Cslib.Probability.CloseTo (iid iid_replicate eval_replicate)
 
 end Cslib.Interactive.CloseTo
