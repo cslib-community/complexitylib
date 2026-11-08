@@ -9,6 +9,7 @@ import Complexity.Computability.BlumComplexity.Gap
 import Complexity.Computability.BlumComplexity.Hierarchy
 import Complexity.Computability.BlumComplexity.RecursiveRelatedness
 import Complexity.Computability.BlumComplexity.Speedup
+import Complexity.Computability.BlumComplexity.Union
 
 /-!
 # Blum complexity measure clients
@@ -25,7 +26,11 @@ resulting function has a program, so the universally quantified conclusion is no
 is also hard: it lies outside the class of the bound `n + 1`. The speedup can be applied twice.
 The arbitrarily complex function for the bound `2 ^ n` has a program, every program for it needs
 fuel above `2 ^ n` almost everywhere, and the fuel class of `2 ^ n` is strictly contained in the
-fuel class of a larger computable bound.
+fuel class of a larger computable bound. The union theorem is instantiated for the polynomial
+bounds `(n + 1) ^ i`: the resulting class contains the constant-zero function, which is not in the
+class of the constant bound `1`, and it is not the class of all computable functions. The
+almost-everywhere form handles `n ^ i`, which does not increase pointwise at `n = 0`, and the
+pointwise form bounds the union bound by the diagonal `(n + 1) ^ n`.
 -/
 
 namespace ComplexityTests.BlumComplexity
@@ -198,5 +203,56 @@ example : ∃ t' : ℕ → ℕ, Computable t' ∧ (∀ n, 2 ^ n ≤ t' n) ∧
     fuelMeasure.complexityClass (fun n => 2 ^ n) ⊂ fuelMeasure.complexityClass t' :=
   fuelMeasure.exists_complexityClass_ssubset
     (primrec_pow.comp (Primrec.const 2) Primrec.id).to_comp
+
+private theorem computable_succ_pow : Computable₂ fun i n : ℕ => (n + 1) ^ i :=
+  (primrec_pow.comp (Primrec.succ.comp Primrec.snd) Primrec.fst).to_comp
+
+/-- The union theorem for the polynomial bounds `(n + 1) ^ i` and the fuel measure: one computable
+bound `t` has the union of the polynomial fuel classes as its class. That class contains the
+constant-zero function, which needs fuel `n + 1` and so is not in the class of `(n + 1) ^ 0 = 1`.
+It is not the class of all computable functions. -/
+example : ∃ t : ℕ → ℕ, Computable t ∧
+    fuelMeasure.complexityClass t = ⋃ i, fuelMeasure.complexityClass (fun n => (n + 1) ^ i) ∧
+    (fun _ => 0) ∈ fuelMeasure.complexityClass t ∧
+    (fun _ => 0) ∉ fuelMeasure.complexityClass (fun n => (n + 1) ^ 0) ∧
+    ¬∀ f : ℕ → ℕ, Computable f → f ∈ fuelMeasure.complexityClass t := by
+  obtain ⟨t, ht, -, heq⟩ := fuelMeasure.union_theorem computable_succ_pow
+    fun i n => Nat.pow_le_pow_right (Nat.succ_pos n) (Nat.le_succ i)
+  refine ⟨t, ht, heq, ?_, fun hmem => ?_, fuelMeasure.not_forall_mem_complexityClass ht⟩
+  · refine heq ▸ Set.mem_iUnion.2 ⟨1, mem_complexityClass.2 ⟨Code.zero, mem_eval_zero,
+      Eventually.of_forall fun n m hm => ?_⟩⟩
+    rw [fuelMeasure_cost, evalnFuel_zero, Part.mem_some_iff] at hm
+    rw [hm, pow_one]
+  · obtain ⟨c, hc, hev⟩ := mem_complexityClass.1 hmem
+    obtain ⟨n, hn, hn1⟩ := (hev.and (eventually_ge_atTop 1)).exists
+    obtain ⟨k, hk⟩ := Part.dom_iff_mem.1 (fuelMeasure.dom_cost_of_total hc n)
+    have h1 := hn k hk
+    rw [fuelMeasure_cost] at hk
+    have h2 := lt_of_mem_evalnFuel hk
+    rw [pow_zero] at h1
+    omega
+
+/-- The almost-everywhere form of the union theorem applies to `n ^ i`, which does not increase
+pointwise in `i` (at `n = 0`, `0 ^ 0 = 1 > 0 = 0 ^ 1`). -/
+example : ∃ t : ℕ → ℕ, Computable t ∧
+    fuelMeasure.complexityClass t = ⋃ i, fuelMeasure.complexityClass (fun n => n ^ i) := by
+  refine fuelMeasure.union_theorem_of_eventuallyLE
+    (primrec_pow.comp Primrec.snd Primrec.fst).to_comp fun i => ?_
+  filter_upwards [eventually_ge_atTop 1] with n hn
+  exact Nat.pow_le_pow_right hn (Nat.le_succ i)
+
+/-- The pointwise union bound: a program that halts within `t` almost everywhere, even one that
+diverges at finitely many inputs, halts within a single polynomial almost everywhere; and `t`
+dominates every polynomial almost everywhere while staying below the diagonal `(n + 1) ^ n`. -/
+example : ∃ t : ℕ → ℕ, Computable t ∧ (∀ n, t n ≤ (n + 1) ^ n) ∧
+    (∀ i, ∀ᶠ n in atTop, (n + 1) ^ i ≤ t n) ∧
+    ∀ c : Code, (∀ᶠ n in atTop, ∃ m ∈ evalnFuel c n, m ≤ t n) →
+      ∃ i, ∀ᶠ n in atTop, ∃ m ∈ evalnFuel c n, m ≤ (n + 1) ^ i := by
+  obtain ⟨t, ht, hdiag, hle, hcls⟩ := fuelMeasure.exists_union_bound computable_succ_pow
+    fun i n => Nat.pow_le_pow_right (Nat.succ_pos n) (Nat.le_succ i)
+  refine ⟨t, ht, fun n => ?_, hle, hcls⟩
+  obtain ⟨i, hi, he⟩ := hdiag n
+  rw [he]
+  exact Nat.pow_le_pow_right (Nat.succ_pos n) hi
 
 end ComplexityTests.BlumComplexity
