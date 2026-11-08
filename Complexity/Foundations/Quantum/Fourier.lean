@@ -35,6 +35,7 @@ polynomial-size circuit for `N = 2^n` ([de Wolf][deWolf2019], §4.5) is not form
 * `Cslib.Quantum.qft_apply`: its entries `stdAddChar (j * k) / √N`.
 * `Cslib.Quantum.qft_apply_eq_exp`: its entries `exp(2πi · j k / N) / √N`.
 * `Cslib.Quantum.qft_mulVec`: it acts on amplitude vectors as `√N • 𝓕⁻`.
+* `Cslib.Quantum.sqrt_inv_mul_sqrt_inv`: the normalization identity `(√N)⁻¹ (√N)⁻¹ = N⁻¹`.
 
 ## References
 
@@ -51,8 +52,9 @@ open Matrix Finset ZMod
 
 variable {N : ℕ} [NeZero N]
 
-/-- `(√N)⁻¹ · (√N)⁻¹ = N⁻¹` in `ℂ`. -/
-private theorem sqrt_inv_mul_sqrt_inv (N : ℕ) :
+/-- `(√N)⁻¹ · (√N)⁻¹ = N⁻¹` in `ℂ`: the squared normalization of a uniform superposition over `N`
+basis states. -/
+theorem sqrt_inv_mul_sqrt_inv (N : ℕ) :
     (((Real.sqrt N)⁻¹ : ℝ) : ℂ) * (((Real.sqrt N)⁻¹ : ℝ) : ℂ) = (N : ℂ)⁻¹ := by
   rw [← Complex.ofReal_mul, ← mul_inv, Real.mul_self_sqrt (Nat.cast_nonneg N)]
   push_cast

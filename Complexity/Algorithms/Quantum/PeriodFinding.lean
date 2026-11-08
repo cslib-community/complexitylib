@@ -36,12 +36,13 @@ transform to the first register again (`Cslib.Quantum.periodState`, Shor eqs. (5
 measure the first register (`Cslib.Quantum.periodFindingOutcome`).
 
 **The analysis.** The amplitude of `|y, f x₀⟩` is `N⁻¹ ∑_{x : f x = f x₀} ω^{xy}`, a character sum
-over the coset `x₀ + ⟨r⟩` (Shor eq. (5.5)). By orthogonality over the subgroup `⟨r⟩`
-(`ZMod.sum_dvd_val_stdAddChar_mul`) it is `ω^{x₀ y} / r` when `N / r` divides `y`, and `0`
-otherwise (`Cslib.Quantum.HasExactPeriod.periodState_apply`). Since `f` takes `r` values, each
-multiple of `N / r` is measured with probability exactly `1 / r`: the outcome is uniformly
-distributed on the `r` multiples of `N / r`
-(`Cslib.Quantum.HasExactPeriod.periodFindingOutcome_eq`).
+over the coset `x₀ + ⟨r⟩`, whose squared modulus is the probability of Shor's eq. (5.5). By
+orthogonality over the subgroup `⟨r⟩` (`ZMod.sum_dvd_val_stdAddChar_mul`) it is `ω^{x₀ y} / r` when
+`N / r` divides `y`, and `0` otherwise (`Cslib.Quantum.HasExactPeriod.periodState_apply`). Since
+`f` takes `r` values, each multiple of `N / r` is measured with probability exactly `1 / r`: the
+outcome is uniformly distributed on the `r` multiples of `N / r`
+(`Cslib.Quantum.HasExactPeriod.periodFindingOutcome_eq`; for the whole circuit
+`(F_N ⊗ I) U (F_N ⊗ I)|0, s₀⟩`, `Cslib.Quantum.HasExactPeriod.measure_period_circuit`).
 
 **Classical recovery.** An outcome `y = c · N / r` with `0 ≤ c < r` satisfies
 `y / N = c / r`, so the reduced denominator `N / gcd(N, y)` of `y / N` equals `r` exactly when `c`
@@ -78,6 +79,8 @@ annihilator.
   if it is a multiple of `N / r`, and `0` otherwise.
 * `Cslib.Quantum.HasExactPeriod.periodFindingOutcome_eq`: the outcome is uniform on the multiples
   of `N / r`.
+* `Cslib.Quantum.HasExactPeriod.measure_period_circuit`: the same for the first register of the
+  measured circuit `(F_N ⊗ I) U (F_N ⊗ I)|0, s₀⟩`, for any oracle unitary `U`.
 * `Cslib.Quantum.HasExactPeriod.periodFindingOutcome_recover`: `N / gcd(N, y) = r` with probability
   exactly `φ(r) / r`.
 * `Cslib.Quantum.HasExactPeriod.inv_log_add_one_le_periodFindingOutcome_recover`: that probability
@@ -242,16 +245,12 @@ theorem norm_periodState (f : ZMod N → S) : ‖periodState f‖ = 1 := by
 theorem periodState_apply (f : ZMod N → S) (y : ZMod N) (s : S) :
     (periodState f).ofLp (y, s) =
       (N : ℂ)⁻¹ * ∑ x : ZMod N, if f x = s then stdAddChar (x * y) else 0 := by
-  have hN : (((Real.sqrt N)⁻¹ : ℝ) : ℂ) * (((Real.sqrt N)⁻¹ : ℝ) : ℂ) = (N : ℂ)⁻¹ := by
-    rw [← Complex.ofReal_mul, ← mul_inv, Real.mul_self_sqrt (Nat.cast_nonneg N)]
-    push_cast
-    rfl
   rw [periodState, unitaryEquiv_apply, mulVec, dotProduct, Fintype.sum_prod_type, mul_sum]
   refine sum_congr rfl fun x _ => ?_
   simp only [onFirst_apply, oracleState_apply, mul_ite, mul_one, mul_zero, ite_mul, zero_mul,
     sum_ite_eq, mem_univ, ite_true, qft_apply]
   by_cases hx : f x = s
-  · rw [ite_eq_left hx.symm, ite_eq_left hx, ← hN, mul_comm y x]; ring
+  · rw [ite_eq_left hx.symm, ite_eq_left hx, ← sqrt_inv_mul_sqrt_inv, mul_comm y x]; ring
   · rw [ite_eq_right (Ne.symm hx), ite_eq_right hx]
 
 /-- Values that `f` never takes have amplitude `0`. -/
@@ -259,9 +258,9 @@ theorem periodState_apply_of_forall_ne {f : ZMod N → S} {s : S} (hs : ∀ x, f
     (y : ZMod N) : (periodState f).ofLp (y, s) = 0 := by
   rw [periodState_apply, sum_eq_zero fun x _ => ite_eq_right (hs x), mul_zero]
 
-/-- **The final amplitudes** under exact period `r` ([Shor][Shor1997], eq. (5.5), in the case
-`r ∣ N`): the amplitude of `|y, f x₀⟩` is `ω^{x₀ y} / r` when `N / r` divides `y`, and `0`
-otherwise. -/
+/-- **The final amplitudes** under exact period `r`, in the case `r ∣ N`: the amplitude of
+`|y, f x₀⟩` is `ω^{x₀ y} / r` when `N / r` divides `y`, and `0` otherwise. Its squared modulus is
+the probability of [Shor][Shor1997], eq. (5.5) (`HasExactPeriod.norm_periodState_apply_sq`). -/
 theorem HasExactPeriod.periodState_apply {f : ZMod N → S} {r : ℕ} (h : HasExactPeriod f r)
     (x₀ y : ZMod N) :
     (periodState f).ofLp (y, f x₀) =
@@ -286,7 +285,8 @@ theorem HasExactPeriod.periodState_apply {f : ZMod N → S} {r : ℕ} (h : HasEx
   · rw [mul_zero, mul_zero]
 
 /-- Under exact period `r`, each joint outcome `(y, f x₀)` has probability `1 / r²` when `N / r`
-divides `y`, and `0` otherwise. -/
+divides `y`, and `0` otherwise: the probability of [Shor][Shor1997], eq. (5.5), in the case
+`r ∣ N`. -/
 theorem HasExactPeriod.norm_periodState_apply_sq {f : ZMod N → S} {r : ℕ}
     (h : HasExactPeriod f r) (x₀ y : ZMod N) :
     ‖(periodState f).ofLp (y, f x₀)‖ ^ 2 = if N / r ∣ y.val then ((r : ℝ) ^ 2)⁻¹ else 0 := by
@@ -348,6 +348,27 @@ theorem HasExactPeriod.periodFindingOutcome_eq {f : ZMod N → S} {r : ℕ}
   rw [h.periodFindingOutcome_apply, Cslib.Probability.PMF.uniformOfFinset_apply,
     card_filter_dvd_val (Nat.div_dvd_of_dvd h.dvd), Nat.div_div_self h.dvd (NeZero.ne N)]
   simp only [mem_filter, mem_univ, true_and]
+
+/-- **Exact period finding, end to end**: for any oracle unitary `U` with `U|x, s₀⟩ = |x, f x⟩`,
+measuring the state `(F_N ⊗ I) U (F_N ⊗ I)|0, s₀⟩` and reading the first register gives a uniformly
+distributed multiple of `N / r` ([Shor][Shor1997], eqs. (5.1)–(5.5), in the case `r ∣ N`;
+[de Wolf][deWolf2019], §5.3). -/
+theorem HasExactPeriod.measure_period_circuit {f : ZMod N → S} {r : ℕ} (h : HasExactPeriod f r)
+    (U : unitaryGroup (ZMod N × S) ℂ) (s₀ : S)
+    (hU : ∀ x, unitaryEquiv U (ket (x, s₀)) = ket (x, f x)) :
+    (measure (unitaryEquiv (onFirst (qft N))
+        (unitaryEquiv U (unitaryEquiv (onFirst (qft N)) (ket ((0 : ZMod N), s₀)))))
+        (by rw [LinearIsometryEquiv.norm_map, LinearIsometryEquiv.norm_map,
+          LinearIsometryEquiv.norm_map, norm_ket])).map Prod.fst =
+      Cslib.Probability.PMF.uniformOfFinset {y : ZMod N | N / r ∣ y.val}
+        (filter_dvd_val_nonempty _) := by
+  have hψ : unitaryEquiv (onFirst (qft N))
+      (unitaryEquiv U (unitaryEquiv (onFirst (qft N)) (ket ((0 : ZMod N), s₀)))) =
+      periodState f := by
+    rw [unitaryEquiv_oracle_qft_ket_zero U s₀ hU]
+    rfl
+  rw [← h.periodFindingOutcome_eq, periodFindingOutcome]
+  congr 2
 
 /-- **Classical recovery** ([Shor][Shor1997], §5; [de Wolf][deWolf2019], §5.3): the reduced
 denominator `N / gcd(N, y)` of `y / N` is the period `r` with probability exactly `φ(r) / r`. -/

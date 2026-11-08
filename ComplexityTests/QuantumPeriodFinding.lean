@@ -8,7 +8,7 @@ import Complexity.Algorithms.Quantum.PeriodFinding
 import Complexity.Foundations.Data.Nat.Totient
 
 /-! Exact quantum period finding: instances and failures of the exact-period promise, the
-quantum Fourier transform for `N = 2` (the Hadamard gate), concrete outcome distributions and
+quantum Fourier transform for `N = 2` (the Hadamard matrix), concrete outcome distributions and
 recovery probabilities, and edge cases of the totient bound. -/
 
 namespace ComplexityTests.QuantumPeriodFinding
@@ -37,7 +37,7 @@ example : ¬HasExactPeriod mod3 6 := fun h => by
   revert this
   decide
 
--- A constant function has exact period `1`, and no other.
+-- A constant function has exact period `1`, and not period `2`.
 example : HasExactPeriod (fun _ : ZMod 4 => (0 : ZMod 2)) 1 :=
   ⟨one_dvd _, fun _ _ => by simp [Nat.modEq_one]⟩
 
@@ -64,15 +64,23 @@ theorem hasExactPeriod_two5 : HasExactPeriod (fun a : ZMod 8 => two5 ^ a.val) 4 
 
 /-! ### The quantum Fourier transform -/
 
--- For `N = 2` the Fourier transform is the Hadamard gate: its `(1, 1)` entry is `-1 / √2`.
-example : (qft 2 : Matrix (ZMod 2) (ZMod 2) ℂ) 1 1 = -1 / Real.sqrt 2 := by
-  rw [qft_apply_eq_exp]
-  have : (2 * Real.pi * Complex.I * ((1 : ZMod 2).val : ℂ) * ((1 : ZMod 2).val : ℂ) /
+-- For `N = 2` the Fourier transform is the Hadamard matrix `Gate.hadamardMatrix`, with `ZMod 2`
+-- indexed by `Bool` via `x ↦ (x = 1)`.
+example : (qft 2 : Matrix (ZMod 2) (ZMod 2) ℂ) =
+    Gate.hadamardMatrix.submatrix (fun x : ZMod 2 => decide (x = 1)) fun x => decide (x = 1) := by
+  have h11 : (2 * Real.pi * Complex.I * ((1 : ZMod 2).val : ℂ) * ((1 : ZMod 2).val : ℂ) /
       ((2 : ℕ) : ℂ)) = Real.pi * Complex.I := by
     simp only [ZMod.val_one, Nat.cast_one, mul_one, Nat.cast_ofNat]
     field_simp
-  rw [this, Complex.exp_pi_mul_I]
-  norm_num
+  have hcases : ∀ i : ZMod 2, i = 0 ∨ i = 1 := by decide
+  ext i j
+  rw [qft_apply_eq_exp, Matrix.submatrix_apply]
+  rcases hcases i with rfl | rfl <;> rcases hcases j with rfl | rfl
+  · simp [Gate.hadamardMatrix]
+  · simp [Gate.hadamardMatrix]
+  · simp [Gate.hadamardMatrix]
+  · rw [h11, Complex.exp_pi_mul_I]
+    simp [Gate.hadamardMatrix, div_eq_mul_inv]
 
 -- The first row of the Fourier transform is constant: it maps `|0⟩` to the uniform superposition.
 example (k : ZMod 5) :
