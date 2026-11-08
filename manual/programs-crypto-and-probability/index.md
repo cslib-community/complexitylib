@@ -1149,10 +1149,9 @@ This connection uses the library's typed `MultiTapePTM` model; it does not decod
 an arbitrary externally encoded PTM or prove a compiler/resource theorem for
 that encoding. The raw interface is a channel plus a bit-string request. To use
 the source's oracle-turn quantitative theorems, first use the stopping epochs
-in the following section. General batch-record identification, source call
-opportunities, simultaneous preformed batches, turn bounds, deadlines and
-accrued cancellation charges still need separate contracts. The finite behavioral
-Theorem 5/6 APIs cannot be applied directly to raw instruction ticks.
+in the following sections, including the checked concurrent-batch protocol.
+The finite behavioral Theorem 5/6 APIs cannot be applied directly to raw
+instruction ticks; whole-policy quantitative transfer still needs proof.
 
 ### Stopping at the next query or halt
 
@@ -1220,22 +1219,70 @@ every admissible one-turn behavioral competitor at that success target, and
 the actual unbounded native selector attains it. This is an end-to-end checked
 client, not unrestricted Theorem 5 or 6.
 
-The general source adapter remains open. Raw native query epochs still need
-source opportunity/batch/query/candidate/output codecs, nonempty simultaneous
-preformed concurrent batches, exactly-once opportunities, maximum-latency and
-cutoff/cancellation accounting and output extraction. The quantitative APIs
-still use finite batch/response tables. General policies may read unbounded
-response or usage metadata, so a sufficient finite record abstraction cannot
-be assumed; either its sufficiency or a more general quantitative kernel API
-needs proof.
-Those contracts must be proved from actual code/interface behavior; a semantic
-parser alone cannot supply source validity. The general finite quantitative
-policy connection, fixed-oracle conditional laws across all admitted native
-competitors, source epoch envelopes and uniform native upper selectors are not
-established by the singleton client. External PTM encodings, canonical residual
-recovery, general measurable responses and the exact local-termination convention
-also remain open. Divergent-path resource costs are still outside terminal bill
-values, as described above.
+### Checked concurrent batch packets and source epochs
+
+Import `Complexity.Computability.Probabilistic.NativeBatch` and
+`Complexity.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle`. Start with
+[the correlated batch client](../../ComplexityTests/ConcurrentBatch.lean) and
+[the actual packet-writing PTM](../../ComplexityTests/NativeBatch.lean).
+`ConcurrentBatch.Batch n` stores one optional preformed query word for each labeled
+opportunity and proves that at least one is selected. `encodeBatch`/`decodeBatch`
+use the existing self-delimiting word codec, reject malformed/noncanonical packets,
+and round-trip the entire selection. Response packets distinguish cancellation
+from a completed empty word, retain natural token invoices and decode completed
+candidate families through checked fixed-length membership masks.
+
+`Limits` fixes positive per-opportunity cutoffs, a nonnegative absolute oracle
+deadline and a turn budget. `admit` checks bytes, remaining deadline/turn budget and
+unused opportunities before invoking `Sampler`. Rejections are deterministic and
+have no oracle charge or source turn. The sampler may depend on the complete
+source history, whole selected batch and arbitrary private state; its joint vector
+of potential call trajectories need not be independent across calls or batches.
+Each `CallTrace` supplies a return time/word (or no return) and a monotone accrued
+token function. `observe` truncates each active call at its own cutoff and the
+remaining deadline. It charges through that actual return/cancellation, sums tokens,
+and takes the maximum concurrent duration. An early acceptable reply does not cancel
+another call. Sequential batch maxima add. Local native computation is excluded.
+
+`NativeBatch.execute_invariant`, `seekSource_invariant` and `terminal_invariant`
+derive source feasibility, matching native/source bills and duration, and candidate
+provenance from actual execution. Successful-output-only `terminal_provenance`
+uses the concrete candidate-mask parser and the original selection-only admission;
+no parser-validity or representation identity supplies the source protocol checks.
+Source subinstance semantics and role-specific encodings remain separate obligations.
+
+`sourceBoundary` recognizes an actual halt or a query accepted by those concrete
+guards. `sourceSilent` executes malformed/repeated/exhausted requests silently and
+holds an accepted whole batch before sampling. `sourceSilent_independent` proves
+that this kernel cannot consult the joint response sampler. `source_disintegration`
+and `source_history_kernel` derive the actual selected-before-response conditional
+law and full-history behavioral kernel while retaining hidden tapes/state and null
+history completion. `source_restart` and `resume_source_prefix` preserve the complete
+native terminal law through any finite prefix of these source epochs. Divergence
+stays distinct from a halted failure; this is not an infinite macro-process fixed-point
+uniqueness theorem or a resource definition on divergent infinite paths.
+
+For a finite joint trajectory table, `FiniteProfile` constructs `oracleAt` at a
+reached remaining-deadline snapshot. Its proposals, charges and durations are computed
+from the actual receipt. `serve_observation_law` and `native_dispatch_law` derive
+joint quantitative observation and complete next-world laws for the encoded selected
+batch. The correlated client computes expected first-batch bill $7$ and latency $5$;
+its two accepted batches have total duration $8$ and bills $20$ or $6$. The native
+packet-writing PTM actually constructs and submits the two-call packet and retains
+the same report, hidden bit and resource law, even though it copies no reply bits
+onto its output tape. It is not the source's native upper selector.
+
+This adapter supports a fixed finite opportunity index and discrete joint PMF laws.
+Physical nonnegative real clocks and monotone token trajectories are external handler
+semantics, not a compiled real-time timer or a verified oracle implementation.
+The finite table transfer is batch-local: a latent scenario label is not automatically
+visible to the machine, and no sufficient finite abstraction of unbounded response,
+usage or private metadata is assumed. A whole-policy quantitative transfer with
+fixed-oracle conditional consistency and epoch envelopes for every admitted native
+competitor remains open. Uniform native upper selectors, source subinstance/role and
+external PTM encodings, canonical residual recovery, general measurable/nonatomic
+responses and exact local-termination conventions also remain open. Divergent-path
+accrued resources require separate semantics from terminal bills.
 
 Theorem 4's native resource/asymptotic/hardness gaps remain. Neither unrestricted
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement

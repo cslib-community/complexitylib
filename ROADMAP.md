@@ -137,9 +137,23 @@ policy API with matching joint record/output/cost/duration laws, certified succe
 4 for every admissible one-turn behavioral competitor meeting that success target.
 The client's nonempty preformed singleton batch, exactly-once opportunity use,
 maximum latency and concrete cutoff are checked; correlated two-query and sure
-silent-divergence clients also pass. General source concurrent-batch/codec and
-finite quantitative-policy transfer for every admitted native competitor remain
-open, as do nonterminating-path resource semantics, general measurable laws,
+silent-divergence clients also pass. The general finite-opportunity concurrent
+protocol now checks actual binary whole-batch packets before response sampling:
+nonempty preformed requests, exactly-once opportunity use, turn/deadline guards,
+per-call cutoff/deadline cancellation, accrued token invoices and concurrent maxima.
+Arbitrary native executions and actual source stopping boundaries preserve source
+feasibility, candidate-mask provenance and exact joint resource meters. Rejected
+native transactions are silent source computation. Actual selected-batch full-history
+kernels and finite-prefix resumption retain hidden correlation and divergence.
+A correlated three-opportunity/two-batch client checks early success, cutoff and
+deadline cancellation, reuse and zero-budget rejection; an actual native packet-writing
+PTM derives the two-call memory/resource law. A constructed finite joint trajectory
+table instantiates the quantitative oracle at one reached physical snapshot. This
+batch-local transfer is not a compiler from arbitrary native policies into finite
+tables. Fixed-oracle conditional consistency and quantitative epoch envelopes for
+every admitted native competitor, source subinstance/role codecs, a sufficient finite
+record abstraction (or generalized quantitative kernels), and native upper selectors
+remain open, as do nonterminating-path resource semantics, general measurable laws,
 external PTM/source encodings, residual-label recovery and native upper realization.
 Unrestricted Theorems 5/6 and ALL-main remain incomplete.
 Theorem 4's native resource/asymptotic/hardness claims also remain open. Neither the

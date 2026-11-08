@@ -2606,6 +2606,7 @@ public import Complexity.Computability.Probabilistic.CoinTape
 public import Complexity.Computability.Probabilistic.Finite
 public import Complexity.Computability.Probabilistic.LinearHash
 public import Complexity.Computability.Probabilistic.Memoize
+public import Complexity.Computability.Probabilistic.NativeBatch
 public import Complexity.Computability.Probabilistic.NativeEpoch
 public import Complexity.Computability.Probabilistic.NativeInterface
 public import Complexity.Computability.Probabilistic.NativeOneTurn
@@ -4384,6 +4385,10 @@ public import Complexity.Probability.StochasticOracle.AdaptivePath
 public import Complexity.Probability.StochasticOracle.AdaptiveReachable
 public import Complexity.Probability.StochasticOracle.AdaptiveSelection
 public import Complexity.Probability.StochasticOracle.AdaptiveStopping
+public import Complexity.Probability.StochasticOracle.ConcurrentBatch.Codec
+public import Complexity.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle
+public import Complexity.Probability.StochasticOracle.ConcurrentBatch.Protocol
+public import Complexity.Probability.StochasticOracle.ConcurrentBatch.Resources
 public import Complexity.Probability.StochasticOracle.CutoffFamilies
 public import Complexity.Probability.StochasticOracle.ExecutionFeasibility
 public import Complexity.Probability.StochasticOracle.FullCover
