@@ -103,6 +103,16 @@ executor is removed, while Model/Trees/Forest, PQCode and the execution core sti
 MinPQ/FibonacciHeapBridge remain. F2, its abstract-space decision and general whole-client
 transfer remain open; the selected abstract statements are unchanged.
 
+## Depth-first search, topological sort and Bellman–Ford
+
+These are pure Lean functions on adjacency lists, with `TimeM` cost models (as for Kruskal and Edmonds–Karp), not machine programs.
+
+- **Depth-first search.** Import `Complexity.Algorithms.Lean.DFS.Basic` ([source](../../Complexity/Algorithms/Lean/DFS/Basic.lean)). `dfs adj k roots` on `adj : V → List V` visits the roots in turn, with recursion budget `k`; `Fintype.card V ≤ k` suffices. `mem_dfs_visited_iff` and `mem_dfs_finished_iff` say that it discovers and finishes exactly the vertices reachable from the roots. `dfs_finished_order` says that for an edge `u → v` out of a finished vertex, `u` finishes after `v` unless `v` reaches `u`. This is the finishing-time argument in the proof of [Cormen et al., Theorem 22.12][clrs09], which rests on the no-back-edge lemma (Lemma 22.11 there). `time_dfsM` charges one unit per root and one per adjacency-list entry examined. The membership test, insertion and cons are treated as constant-time steps, not charged separately.
+- **Topological sort.** Import `Complexity.Algorithms.Lean.DFS.TopologicalSort` ([source](../../Complexity/Algorithms/Lean/DFS/TopologicalSort.lean)). `topologicalSort adj vs` lists the vertices in reverse finishing order. When `vs` lists every vertex, `isTopologicalOrder_topologicalSort_iff` says that the output is a topological order exactly when `Relation.Acyclic (Edge adj)` holds [Cormen et al., Theorem 22.12][clrs09]. `time_topologicalSortM` gives the exact cost `|vs| + ∑ v, |adj v|`.
+- **Bellman–Ford.** Import `Complexity.Algorithms.Lean.BellmanFord.Basic` ([source](../../Complexity/Algorithms/Lean/BellmanFord/Basic.lean)). Weights may be negative: they lie in a linearly ordered cancellative additive commutative monoid such as `ℤ`. Walks are `Quiver.Path`s, as for Dijkstra's `Instance.dist`. For a list `vs` of all the vertices, `bellmanFord_eq_none_iff` says that the algorithm returns `none` exactly when a negative cycle is reachable from the source. Otherwise `isShortestDist_of_bellmanFord_eq_some` says that each returned value is the least walk weight, or `⊤` with no walk. Together these are [Cormen et al., Theorem 24.4][clrs09] without the predecessor tree. `time_bellmanFordM` gives the exact cost `n + n (n + m)` for `n = |vs|` and `m` adjacency-list entries.
+
+The [DFS examples](../../ComplexityTests/DFS.lean) include a triangle and a self-loop, on which topological sort is not a topological order. The [Bellman–Ford examples](../../ComplexityTests/BellmanFord.lean) include a negative edge, a reachable negative cycle and an unreachable one, with exact tick counts. Strongly connected components and linear-time 2-SAT are tracked in [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
+
 ## Hash families and dictionaries
 
 [abstracts/ComplexityAbstracts/HashTablesAbstract.lean](../../abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `query` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
@@ -655,6 +665,17 @@ Two more classical approximation algorithms are stated as plain inequalities aga
 
 The [vertex-cover examples](../../ComplexityTests/VertexCoverApproximation.lean) pin the optimum of a path and a star exactly, so the factor `2` is attained. The [TSP examples](../../ComplexityTests/TSPApproximation.lean) include a matrix violating the triangle inequality where the tour costs `202` against a tour of cost `4`, so the metric hypothesis cannot be dropped. Concrete TSP runs first pin the sorted edge list with `simp [sortEdges_cons_cons]`, because `List.mergeSort` does not reduce in the kernel. No machine running time is certified for the TSP tour yet; that needs a polynomial-time certificate for Kruskal's algorithm on encoded matrices.
 
+## Freivalds' matrix-product verification
+
+Import `Complexity.Algorithms.Lean.Freivalds` ([Complexity/Algorithms/Lean/Freivalds.lean](../../Complexity/Algorithms/Lean/Freivalds.lean)). It checks a claimed product `A * B = C` of rectangular matrices `l × m`, `m × n` and `l × n` over any ring with decidable equality, following [Freivalds][freivalds79]. The deterministic check `checkM A B C x` computes `A *ᵥ (B *ᵥ x)` and `C *ᵥ x` in `TimeM` and compares them. The cost model charges `2` per dot-product entry (one multiplication, one addition) and `1` per compared entry; reads, sampling and the vector encoding are free, and ring operations have unit cost whatever the operand size. Under it, `time_checkM` is exactly `2 * (m * n + l * m + l * n) + l`, independent of `x`, and `time_checkAllM_square` gives `k * (6 * n ^ 2 + n)` for `k` checks of square matrices.
+
+`verify e k A B C` is a `ProbComp` that draws `k` uniform vectors in `Fin n → S`, encodes the entries with `e : S → R` and runs every check. The guarantees are one-sided:
+
+- **Completeness:** `eval_verify_of_mul_eq` gives acceptance with probability exactly `1` when `A * B = C`.
+- **Soundness:** `eval_verify_true_le` bounds acceptance of an incorrect product by `(1/|S|)^k`, given that `s ↦ d * e s` is injective for every nonzero `d`. With `0`/`1` vectors (`bit`) this hypothesis holds over every ring and `eval_verify_bool_true_le` gives `(1/2)^k`; for `k = 1` this is Theorem 1.4 of [Mitzenmacher and Upfal][mitzenmacherupfal17]. Over a finite field with uniform vectors, `eval_verify_field_true_le` gives `(1/|F|)^k`.
+
+The probability core is in [Complexity/Probability/Freivalds.lean](../../Complexity/Probability/Freivalds.lean). It contains the counting bound `card_filter_mulVec_eq_mul_card_le`, its `k`-vector form, and `isUniversalHash_mulVec`, which states `M ↦ M *ᵥ (e ∘ x)` as a `1/|S|`-universal family under the existing `IsUniversalHash` predicate. The [checked examples](../../ComplexityTests/Freivalds.lean) include several things. One is a `2 × 2` product that one vector misses and another exposes. Another is a `1 × 1` instance whose acceptance probability is exactly `1/2`, which shows the `0`/`1` bound is attained. A third is a `ZMod 4` instance where the encoding `id` fails the injectivity hypothesis and the counting bound fails with it. The randomized verifier is not a machine program: Karp–Rabin fingerprinting, rolling-hash matching, the fingerprint equality protocol and bit-level costs remain open ([ROADMAP](../../ROADMAP.md#randomized-verification-and-fingerprinting)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -665,5 +686,7 @@ The numeric values above are transcriptions of checked source statements, not re
 
 [complexitylib]: ../sources.md#complexitylib
 [clrs09]: ../sources.md#clrs09
+[freivalds79]: ../sources.md#freivalds79
+[mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11

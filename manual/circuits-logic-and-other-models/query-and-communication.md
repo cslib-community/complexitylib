@@ -14,6 +14,8 @@ The [superquadratic sensitivity separation](https://github.com/cslib-community/c
 
 [RandomizedDecisionTree](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Randomized.lean#L78) is a finite-support real simplex over deterministic trees. Its cost is the largest structural depth of any supported tree, and its error bound holds separately on every input. This is a worst-case randomized-query model, not an expected-query model. The natural-valued infimum has the documented convention zero for an impossible negative-error requirement; normal theorems assume nonnegative error.
 
+The [zero-error module](../../Complexity/Computability/QueryComplexity/Randomized/ZeroError.lean) adds the expected-query view on the same simplex type, not a second randomized-tree type. `RandomizedDecisionTree.expectedCost` is the weighted average of the queries the drawn tree actually makes on one input (`DecisionTree.cost`, counting repeats), and `QueryComplexity.zeroErrorComplexity` is the real-valued Las Vegas complexity `R₀`, which takes the infimum over always-correct trees of the worst-input expected cost. It satisfies `R₀ <= D`. Worst-case `randomizedComplexity 0` equals `D`, so `R₀` is the measure that can drop below it. `RandomizedDecisionTree.uniformMixture` builds the algorithm whose coins select a deterministic tree uniformly. For the complete binary AND–OR tree `T_{2,k}` on `n = 4^k` leaves, with AND at the root as in Motwani–Raghavan, every deterministic tree reads all leaves on some input, so `D = n`. This is in [AndOrTree](../../Complexity/Computability/QueryComplexity/AndOrTree.lean), via the Rivest–Vuillemin top-Fourier-coefficient criterion in [Evasive](../../Complexity/Computability/DecisionTree/Evasive.lean). The directional algorithm in [AndOrTree/Randomized](../../Complexity/Computability/QueryComplexity/AndOrTree/Randomized.lean) has an exact expected-cost recurrence. From it come Motwani–Raghavan's `R₀ <= 3^k = n^(log₄ 3)` and Snir's sharp `R₀ <= (α - 1/2) n^(log₂ α)` with `α = (1 + √33)/4`, about `n^0.7537`. Nonconstant functions have `1 <= R₀`. The AND-rooted and OR-rooted orientations transfer through [dual trees](../../Complexity/Computability/DecisionTree/Dual.lean), which swap children and negate leaves. The matching Saks–Wigderson lower bound `Ω(n^(log₂ α))` is not formalized.
+
 [distributionalComplexity](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Yao.lean#L74) instead fixes a distribution on inputs and minimizes deterministic depth subject to average error. Yao's theorem equates randomized complexity to the supremum of these distributional complexities on the finite domain and supplies an attaining hard distribution. The [Nisan relation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Randomized/Nisan.lean) gives `D <= 27 R_(1/3)^3`; approximate degree and block-sensitivity lower bounds are stated over the same cost convention.
 
 Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../Complexity/Computability/QueryComplexity/Simon.lean).
@@ -44,9 +46,11 @@ The deterministic lifting theorem composes a Boolean function with an index gadg
 
 ## Distributed rounds in the LOCAL model
 
-Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity` or
-`Complexity.Computability.Distributed.OrientedCycle.MIS` (or one of the modules below them) for
-deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented cycles.
+Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity`,
+`Complexity.Computability.Distributed.OrientedCycle.MIS` or
+`Complexity.Computability.Distributed.OrientedCycle.LCL.Flexible` (or one of the modules below
+them) for deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented
+cycles.
 The nodes of the oriented `n`-cycle are `ZMod n`: node `v` has predecessor `v - 1` and successor
 `v + 1`, and `n = 0` gives the infinite oriented path `ℤ`. An
 `Algorithm I S O` has an initial state from each node's input, a step function from the round
@@ -109,14 +113,50 @@ standard consequences of the 3-colouring bounds. Compose algorithms with `Algori
 convert an algorithm to a `LocalRule` with `Algorithm.toLocalRule` just to compose it, since
 flooding its whole window makes `decide` impractical.
 
+[LCL/Basic.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Basic.lean) and
+[LCL/Flexible.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Flexible.lean)
+cover part of the classification of LCL problems without inputs on directed cycles by Chang,
+Studený and Suomela (TCS 2023, Table 1). A problem is a relation `R : L → L → Prop`, and
+`LCL.IsSolution R ℓ` asks `R (ℓ v) (ℓ (v + 1))` at every node. Their node-edge-checkable problems
+are the instance `LCL.nodeEdge` (`isSolution_nodeEdge_iff`, `nodeEdge_iff`), and MIS is an example
+with `L = Bool × Bool` in the tests. `Algorithm.SolvesLCL A R n t` quantifies over identifier
+bijections onto `{0, …, n - 1}`, like `ColorsCycle`. With a loop `R a a`, `Algorithm.const a`
+solves `R` in `0` rounds (`Algorithm.solvesLCL_const`). Without a loop every solution is a proper
+colouring, so `Algorithm.SolvesLCL.logStar_le` gives `log* n ≤ 2t + log* |L|` from Linial's bound,
+and `Algorithm.SolvesLCL.exists_loop` is the resulting `ω(1)`/`o(log* n)` gap.
+`LCL.IsFlexible R q K` asks for closed walks `q ⇝ q` of every length `m ≥ K`, stated with cslib's
+`Relation.RelatesInSteps`; `IsFlexible.of_two_three` gives `K = 2` from walks of lengths `2` and
+`3`.
+`IsFlexible.exists_solvesLCL` solves such a problem for `n ≥ K` in
+`(K - 1) (s + 2 · 3 ^ (K - 1) + 2) + 1` rounds when `log* n ≤ 2s`. The algorithm builds a
+distance-`(K - 1)` colouring from `K - 1` dilated runs of `fastThreeColoringRule` (the
+Cole–Vishkin algorithm as a `LocalRule`), takes its strict local minima as anchors and fills each
+gap with a closed walk. These anchors are spaced like a ruling set but need not form the source's
+maximal anchoring (Def. 3.8). `IsFlexible.exists_solvesLCL_and_logStar_le`
+packages the `Θ(log* n)` bounds for flexible problems without a loop. The leading coefficient
+`(K - 1) / 2` is not tight. These rules are compositions of `LocalRule`s (`LocalRule.comp`,
+`LocalRule.apply_comp` in `Basic.lean`), so run them with `LocalRule.toAlgorithm_run` instead of
+unfolding `Algorithm.run`. Problems with no flexible state (`Ω(n)` rounds, their Thm 6.5) are not
+covered yet.
+
 [Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
 algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no
 proper colouring and no MIS, and that two rounds of 3-colouring fail on the cycle of length
 `2 ↑↑ 6 + 1`. The 5-cycle examples include the greedy MIS steps and the full `misAlgorithm 2` run.
+[LCL examples](../../ComplexityTests/Computability/Distributed/LCL.lean) check that 3-colouring
+and MIS are flexible without a loop, that 2-colouring has no flexible state, and the anchors and
+filling on a 6-cycle.
 
 Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
-`(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound and
-randomized LOCAL algorithms remain open; see `ROADMAP.md`.
+`(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound,
+randomized LOCAL algorithms and the `Ω(n)` row of the LCL classification remain open; see
+`ROADMAP.md`.
+
+## Locally decodable codes
+
+[LocallyDecodable/Basic](../../Complexity/Computability/LocallyDecodable/Basic.lean) is the local-decoding model. A code is `C : (ι → Bool) → P → Γ`. A decoder for the bit `i` is a `ProbOracleComp (fun _ : P => Γ) Bool`: it draws private uniform coins and queries positions of a received word `y : P → Γ`, possibly adaptively. `decodeLaw program y` is its output law with the queries answered by `y`. The query budget is the worst-case `ProbOracleComp.IsQueryBounded`, which counts queries on every path and not private samples. `IsLocalDecoder C q δ ε A` asks for at most `q` queries and success probability at least `1/2 + ε` from every word within Hamming distance `δ |P|` of a codeword. `IsSmoothDecoder C q c ε A` asks only for success on codewords, and for each position to be read at most `c / |P|` times in expectation. `expectedReads` is an `OracleComp.expectedCost` from [QueryCount/Expected](../../Complexity/Languages/Probabilistic/QueryCount/Expected.lean). This expected-reads notion bounds the probability of reading a position, so it implies the read-probability bound of Katz–Trevisan smoothness (Kerenidis–de Wolf, Definition 3 in arXiv:quant-ph/0208062v2). It does not imply the non-adaptivity that the source definitions require, because the decoders here may be adaptive. For `δ < 0` the local-decoding condition is vacuous, so the results assume `0 < δ` where it matters. `nonadaptive coins Q output` builds a non-adaptive decoder, and its reads do not depend on the received word (`hasObliviousReads_nonadaptive`).
+
+The [Hadamard decoder](../../Complexity/Computability/LocallyDecodable/Hadamard.lean) reads `y r` and `y (eᵢ + r)` for a uniform `r`. It is a `(2, δ, 1/2 − 2δ)` local decoder for every `δ` and a `(2, 2, 1/2)` smooth decoder. [Smoothing](../../Complexity/Computability/LocallyDecodable/Smoothing.lean) proves Katz–Trevisan smoothing (Katz–Trevisan, Theorem 1, restated as Kerenidis–de Wolf, Theorem 9 for non-adaptive decoders): `isSmoothDecoder_mask_heavyPositions` turns a `(q, δ, ε)` local decoder with oblivious reads into a `(q, q/δ, ε)` smooth decoder. It does so by answering queries to the heavy positions from a fixed word. Every non-adaptive decoder and every one-query decoder has oblivious reads. Smoothing adaptive decoders that make several queries is not covered. [OneQuery](../../Complexity/Computability/LocallyDecodable/OneQuery.lean) proves an original explicit one-query bound by a degree-one Fourier argument. Katz and Trevisan proved that one-query locally decodable codes have bounded message length. The inequality here is a different one, polynomial in `|Γ| − 1`, and we did not find it in the literature. `IsSmoothDecoder.four_mul_card_mul_sq_le` proves `4 |ι| ε² ≤ c² (|Γ| − 1)` for `(1, c, ε)` smooth decoders with `0 ≤ ε`. `IsLocalDecoder.four_mul_sq_mul_card_mul_sq_le` proves `4 δ² |ι| ε² ≤ |Γ| − 1` for `(1, δ, ε)` local decoders, whatever the length `|P|`. The proof uses `BitString.sq_sum_sum_abs_fourierCoeff_fiber_le` from [FiberWeight](../../Complexity/Foundations/BooleanAnalysis/FiberWeight.lean), a bound on the degree-one weight of the fibers of a map from the cube. The [checked examples](../../ComplexityTests/LocallyDecodable.lean) include the Hadamard and smoothed Hadamard decoders, and a repetition code. The repetition code is a `(1, 1/3, 1/6)` locally decodable code, its Katz–Trevisan smoothing is `(1, 3, 1/6)`, and it attains the one-query bound. They also show that no two-bit binary code is `(1, 1, 1/2)` smooth. The general Katz–Trevisan bound `n ≥ Ω(k^{q/(q−1)})` and the two-query exponential bounds remain open; see `ROADMAP.md`.
 
 ## Known Limitations
 
