@@ -13,7 +13,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 - [Strategic games, congestion and the price of anarchy](strategic-games.md): cost games, potential games, Rosenthal's theorem, smoothness and coarse correlated equilibria, and the `5/2` and `4/3` price-of-anarchy bounds.
 - [Borrowed registers and native Tree Evaluation](catalytic-and-tree-evaluation.md): exact restoration, explicit gate-table inputs, Cook–Mertz workspace, and fan-in/packed variants.
 - [Representative algorithm endpoints](algorithm-endpoints.md): what the formal abstracts prove about sorting/selection, shortest paths, heaps, hashing and minimum cut, the classical approximation bounds for set cover, vertex cover and metric TSP, Freivalds' costed randomized matrix-product verifier, Euler circuits in multigraphs, and Farkas' lemma and LP duality over ordered fields.
-- [Mechanism design](mechanism-design.md): single-parameter mechanisms, Myerson's Lemma, Vickrey and knapsack auctions, and VCG; incentive properties only, with no running time charged.
+- [Mechanism design](mechanism-design.md): single-parameter mechanisms, Myerson's Lemma, Vickrey and knapsack auctions, VCG, Myerson's optimal auction, Bayes–Nash equilibrium, revenue equivalence and the first-price auction; incentive properties only, with no running time charged.
 
 ## Taxonomy
 
@@ -35,7 +35,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 | Restoring operations | Arbitrary borrowed vector registers or key tables | Exact restoration; native realization not bundled |
 | Tree-evaluation problem family | Binary/fan-in-d gate trees and packed controllers | Explicit input encoding; native Cook–Mertz workspace distinct from algebraic correctness |
 | History transformation | Timeline editing by reset and replay | Explicit edit/reset/replay calls; no automatic rollback or constant-time list copying |
-| Incentive model | Single-parameter and general sealed-bid mechanisms | None: allocation and payment rules are arbitrary real functions; DSIC/IR over nonnegative bids |
+| Incentive model | Single-parameter and general sealed-bid mechanisms | None: allocation and payment rules are arbitrary real functions; DSIC/IR over nonnegative bids; Bayes–Nash equilibrium over independent priors (revenue results assume densities) |
 
 ## Major bridge statements
 
