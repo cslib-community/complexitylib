@@ -5264,6 +5264,7 @@ public import Complexity.Logics.Propositional.Resolution.TreeLikeSpace
 public import Complexity.Logics.Propositional.Resolution.Tseitin
 public import Complexity.Logics.Propositional.Resolution.TseitinExpander
 public import Complexity.Logics.Propositional.Resolution.TseitinSpace
+public import Complexity.Logics.Propositional.Resolution.WidePigeonholeSpace
 public import Complexity.Logics.Propositional.SemanticDerivation
 public import Complexity.Logics.Propositional.SigmaThree
 public import Complexity.Logics.Propositional.Tseitin
