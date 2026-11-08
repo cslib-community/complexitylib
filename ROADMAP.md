@@ -1417,6 +1417,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Adaptive search trees:** working-set and dynamic-finger bounds for splay trees, and a BST
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
+- **Beyond deterministic ski rental and list update:** the randomized `e/(e-1)` ski-rental bound
+  against an oblivious adversary, randomized list update (BIT, COMB), list update with insertions
+  and deletions, and the `k`-server problem, starting with Double Coverage on the line and on
+  trees ([#3057](https://github.com/cslib-community/complexitylib/issues/3057)).
 - **Optimal stopping:** `Probability/OptimalStopping/*` covers the rank-based secretary problem
   (exact cutoff-rule success, optimality among all rank-based rules, `1/e` bounds and limit), the
   single-threshold `½` prophet inequality for independent discrete (`PMF`) laws with tightness

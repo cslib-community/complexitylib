@@ -6,6 +6,16 @@
 
 `adaptiveRequests` constructs a request list by observing the deterministic strategy. Replaying that list produces the same deterministic behavior. This is suitable for deterministic lower bounds; it is not a randomized online-adversary interface identifying adaptive and oblivious adversaries in expectation.
 
+## Ski rental
+
+[Complexity/DataStructure/Online/SkiRental.lean](../../Complexity/DataStructure/Online/SkiRental.lean) instantiates the online problem for rent-or-buy. Each request is a ski day, the state records whether the skis are owned, buying cannot be undone, a rented day costs `1` and buying costs `B`. Offline schedules live in the same model, so the optimum on `n` days is `min n B` (`exists_optimal_schedule`, `min_le_scheduleCost`). `cost_rentThenBuy` computes the cost of every rent-then-buy threshold strategy exactly. The break-even strategy (`breakEven`, rent for `B - 1` days) satisfies `B * ALG ≤ (2B - 1) * OPT` against every valid offline schedule (`breakEven_mul_cost_le`). This is ratio `2 - 1/B` with no additive constant, stated cross-multiplied because the predicates take natural coefficients. `exists_witness` stops skiing on the day an arbitrary deterministic strategy buys, or after `2B - 1` days. `exists_ratio_violation_of_lt` then rules out every rational ratio below `2 - 1/B`. The break-even strategy is `(1, B - 1)`-competitive (`breakEven_isCompetitive_one`), so with an additive constant the factor-`1` question is trivial; the meaningful ratio has no additive constant. The rent-or-buy framing is credited to [karlin88][karlin88]; [borodinelyaniv98][borodinelyaniv98] is the textbook pointer.
+
+## List update and move-to-front
+
+[Complexity/DataStructure/ListUpdate/Basic.lean](../../Complexity/DataStructure/ListUpdate/Basic.lean) takes as configurations the arrangements of a finite universe (`IsArrangement`). Moving from `s` to `s'` while serving `r` costs `inversions s s' + (s'.idxOf r + 1)`: the Kendall tau distance, paid as exchanges, plus the access position. The module docstring explains, informally, why this is the cheapest Sleator–Tarjan implementation of the step with paid and free exchanges. `scheduleCost_eq_accessCost_add_exchangeCost` splits a schedule's cost into its access and rearrangement parts. [MoveToFront.lean](../../Complexity/DataStructure/ListUpdate/MoveToFront.lean) proves Sleator–Tarjan Theorem 1 with different initial lists, using the inversion potential (`inversions_moveToFront_le`, `mtf_cost_add_inversions_add_length_le`). Corollaries: `mtf_isCompetitive` (factor `2`, no additive constant) and `mtf_isCompetitiveAnyInit` (additive `n(n-1)/2`) [sleatortarjan85][sleatortarjan85].
+
+[ListUpdate/LowerBound.lean](../../Complexity/DataStructure/ListUpdate/LowerBound.lean) is the cruel-adversary bound. `cruelRequests` always asks for the strategy's last item, and `le_cost_cruelRequests` charges at least `n` per request. Against it, the cheaper of the two static schedules (keep `s₀`, or reverse it once) is charged at most `(m(n+1) + n(n-1)/2)/2` over `m` requests. `exists_ratio_violation_of_lt` therefore rules out every rational ratio below `2n/(n+1)`, with any additive constant. For `n ≥ 2`, `not_isCompetitive_one` combined with move-to-front shows that `2` is the best integer factor. Textbook proofs average over all `n!` static lists; the two-list average gives the same constant. The bound is the standard deterministic list-accessing argument. It is credited to Karp and Raghavan as reported in [irani91][irani91], with [borodinelyaniv98][borodinelyaniv98] as a textbook pointer.
+
 ## Demand paging
 
 [Complexity/DataStructure/Paging/Basic.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/Paging/Basic.lean) instantiates an online problem with a cache of capacity `k`, a page request, and unit charge for a fault. [Complexity/DataStructure/Paging/LRU.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/Paging/LRU.lean) implements LRU with a duplicate-free recency list and proves a potential inequality. `lruStrategy_isCompetitive` gives factor `k` with no additive charge from a common initial cache. `lruStrategy_isCompetitiveAnyInit` gives additive `k` for arbitrary valid initial caches.
@@ -79,11 +89,14 @@ The abstract model counts reachable memory states and imposes no uniformity or t
 
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
-The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions.
+The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions, so the randomized ski-rental bound `e/(e-1)` and randomized list update (BIT, COMB) are open. The `k`-server problem (Double Coverage on the line and on trees) is not formalized. List update covers access requests only; insertions and deletions are not modelled.
 
 The optimal-stopping modules are semantic probability statements over deterministic rules, with randomization only through explicit coin observations. They do not charge the rules' computation and are not phrased through the online `Problem` interface.
 
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
+[borodinelyaniv98]: ../sources.md#borodinelyaniv98
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
+[irani91]: ../sources.md#irani91
+[karlin88]: ../sources.md#karlin88
 [sleatortarjan85]: ../sources.md#sleatortarjan85
