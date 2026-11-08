@@ -1001,8 +1001,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   below `2 ^ D` computing `A x` gives `R_A(2 t s / D) ≤ m 2 ^ (2 ^ (D - t))` for every `t ≤ D`, so a
   matrix with `R_A(n / e) > n 2 ^ (log₂ n / k)` needs `Ω(n log log n)` gates in depth `O(log n)`.
   The criterion also covers polynomial gates over infinite fields. The explicit lower bound
-  `R(r) ≥ n² / (4 (r + 1)) · log₂(n / r)` for Cauchy and other totally regular matrices is proved
-  (`Matrix/Rigidity/TotallyRegular.lean`, Lokam, Theorem 2.5), through the Kővári–Sós–Turán bound
+  `R(r) ≥ n² / (4 (r + 1)) · log₂(n / r)` for Cauchy and other totally regular matrices, for
+  `n ≤ 2 ^ r` and `2 r ≤ n`, is proved (`Matrix/Rigidity/TotallyRegular.lean`; Lokam, Theorem 2.5,
+  states it for `log² n ≤ r ≤ n / 2`), through the Kővári–Sós–Turán bound
   (`Combinatorics/KovariSosTuran.lean`) and the untouched-minor lemma. Open:
   Shparlinsky's Vandermonde and the Sylvester–Hadamard bounds; the upper bound `R(r) ≤ (n - r)²`
   and the counting proof that random matrices over finite fields are nearly maximally rigid;

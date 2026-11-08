@@ -21,7 +21,9 @@ A matrix is *totally regular* when all of its square submatrices are nonsingular
 explicit rigidity lower bound of Friedman [Friedman1993] and Shokrollahi, Spielman and Stemann
 [ShokrollahiSpielmanStemann1997], in the form of [Lokam2009], Theorem 2.5: an `n × n` totally
 regular matrix needs at least `n ^ 2 / (4 (r + 1)) · log₂ (n / r)` changes to bring its rank down
-to at most `r`, for `log₂ n ≤ r ≤ n / 2` (`Matrix.IsTotallyRegular.le_rigidity_of_le_two_pow`).
+to at most `r`. [Lokam2009] proves this for `log² n ≤ r ≤ n / 2`; here it is proved for
+`n ≤ 2 ^ r` and `2 r ≤ n` (`Matrix.IsTotallyRegular.le_rigidity_of_le_two_pow`), a wider range
+(see below).
 
 The proof follows [Lokam2009], §2.2 (pp. 15–17). If few entries are changed, then by the
 Kővári–Sós–Turán theorem (`Cslib.kovari_sos_turan`) some `(r + 1) × (r + 1)` submatrix contains no
@@ -29,13 +31,15 @@ changed entry (`Cslib.exists_disjoint_product_of_card_lt`, [Lokam2009], Lemma 2.
 submatrix of the original totally regular matrix, so it is nonsingular and the changed matrix has
 rank at least `r + 1`.
 
-The general statements are for `m × n` matrices (`Matrix.IsTotallyRegular.le_rigidity`):
-`n (m - r) / (2 (r + 1)) · log₂ (n / r)` changes are needed whenever `r < m` and
-`n ≤ r 2 ^ (r + 1)`. This rectangular form, and the hypothesis `n ≤ r 2 ^ (r + 1)` in place of
-Lokam's `log₂ n ≤ r`, come from the same proof; at `m = n` the hypothesis `log₂ n ≤ r` implies
-`n ≤ r 2 ^ (r + 1)` for `r ≥ 1`. The logarithm in the bound is to base `2`, as in the hypothesis
-`log₂ n ≤ r`; [Lokam2009] leaves the base of `log (n / r)` unstated, and base `2` gives the
-strongest of the usual readings.
+The general statement is for `m × n` matrices (`Matrix.IsTotallyRegular.le_rigidity`):
+`n (m - r) / (2 (r + 1)) · log₂ (n / r)` changes are needed whenever `n ≤ r 2 ^ (r + 1)` (for
+`r ≥ m` the bound is `0`). [Lokam2009] states Lemma 2.4 and Theorem 2.5 for square matrices and
+`log² n ≤ r`, with the square of the logarithm. The same proof works under the weaker hypotheses
+used here: with logarithms to base `2`, `log² n ≤ r` implies `log₂ n ≤ r`, that is `n ≤ 2 ^ r`,
+which implies `n ≤ r 2 ^ (r + 1)` for `r ≥ 1`. The range is genuinely wider (`n = 64`, `r = 6`
+satisfies `n ≤ 2 ^ r` but not `log² n ≤ r`); this extends the stated range of the same argument
+and is not a new result. The logarithm in the bound is to base `2`; [Lokam2009] leaves the base of
+`log (n / r)` unstated, and base `2` gives the strongest of the usual readings.
 
 The library's Cauchy matrices are `1 / (x i - y j)` (`Matrix.cauchy`); [Lokam2009] uses
 `1 / (x i + y j)`, which is `Matrix.cauchy x (-y)`. Both are totally regular when the nodes are
@@ -67,7 +71,8 @@ open Finset
 
 namespace Cslib
 
-/-- `2 ^ (-2 w) ≤ 1 - w` for `0 ≤ w ≤ 1 / 2`, by concavity of `p ↦ (1 / 2) ^ p` on `[0, 1]`. -/
+/-- `2 ^ (-2 w) ≤ 1 - w` for `0 ≤ w ≤ 1 / 2`: Bernoulli's inequality `(1 + x) ^ p ≤ 1 + p x` for
+`p ∈ [0, 1]`, at `x = -1 / 2` and `p = 2 w` (equivalently, convexity of `p ↦ (1 / 2) ^ p`). -/
 private theorem two_rpow_neg_le_one_sub {w : ℝ} (hw0 : 0 ≤ w) (hw1 : w ≤ 1 / 2) :
     (2 : ℝ) ^ (-(2 * w)) ≤ 1 - w := by
   have h := rpow_one_add_le_one_add_mul_self (s := -1 / 2) (by norm_num) (p := 2 * w)
@@ -81,15 +86,21 @@ variable {α β : Type*} [Fintype α] [Fintype β]
 
 /-- **Untouched rectangles** ([Lokam2009], Lemma 2.4). If fewer than
 `n (m - r) / (2 (r + 1)) · log₂ (n / r)` positions of an `m × n` grid (`m = |α|`, `n = |β|`) are
-marked, where `r < m` and `n ≤ r 2 ^ (r + 1)`, then some `(r + 1) × (r + 1)` rectangle contains no
-marked position. [Lokam2009] states the square case `m = n` under `log₂ n ≤ r`, which implies
-`n ≤ r 2 ^ (r + 1)` for `r ≥ 1`. -/
+marked, where `n ≤ r 2 ^ (r + 1)`, then some `(r + 1) × (r + 1)` rectangle contains no marked
+position (for `r ≥ m` the bound is `0`, so there is nothing to prove). [Lokam2009] states the
+square case `m = n` under `log² n ≤ r`; with base-`2` logarithms this implies
+`n ≤ 2 ^ r ≤ r 2 ^ (r + 1)` for `r ≥ 1`, so the hypothesis here is weaker. -/
 theorem exists_disjoint_product_of_card_lt (S : Finset (α × β)) {r : ℕ}
-    (hrm : r < Fintype.card α) (hn : Fintype.card β ≤ r * 2 ^ (r + 1))
+    (hn : Fintype.card β ≤ r * 2 ^ (r + 1))
     (hS : (#S : ℝ) < Fintype.card β * (Fintype.card α - r : ℕ) / (2 * (r + 1)) *
       Real.logb 2 (Fintype.card β / r)) :
     ∃ I : Finset α, ∃ J : Finset β, #I = r + 1 ∧ #J = r + 1 ∧ Disjoint (I ×ˢ J) S := by
   classical
+  -- For `r ≥ m` the bound is `0`.
+  have hrm : r < Fintype.card α := by
+    by_contra h
+    rw [Nat.sub_eq_zero_of_le (not_lt.1 h), Nat.cast_zero, mul_zero, zero_div, zero_mul] at hS
+    exact absurd hS (not_lt.2 (Nat.cast_nonneg _))
   by_contra hne
   simp only [not_exists, not_and] at hne
   -- The unmarked positions contain no `(r + 1) × (r + 1)` rectangle.
@@ -184,13 +195,14 @@ namespace Matrix
 variable {m n K : Type*} [Fintype m] [Fintype n] [Field K]
 
 /-- **Rigidity of totally regular matrices** ([Lokam2009], Theorem 2.5, after [Friedman1993] and
-[ShokrollahiSpielmanStemann1997]), for `m × n` matrices. If `A` is totally regular, `r < |m|` and
+[ShokrollahiSpielmanStemann1997]), for `m × n` matrices. If `A` is totally regular and
 `|n| ≤ r 2 ^ (r + 1)`, then bringing the rank of `A` down to at most `r` needs at least
 `|n| (|m| - r) / (2 (r + 1)) · log₂ (|n| / r)` changes: with fewer changes, some
 `(r + 1) × (r + 1)` submatrix is unchanged (`Cslib.exists_disjoint_product_of_card_lt`), and it is
-nonsingular. -/
+nonsingular. [Lokam2009] states the square case for `log² n ≤ r ≤ n / 2`, which implies the
+hypothesis here for `r ≥ 1`. -/
 theorem IsTotallyRegular.le_rigidity {A : Matrix m n K} (hA : A.IsTotallyRegular) {r : ℕ}
-    (hrm : r < Fintype.card m) (hn : Fintype.card n ≤ r * 2 ^ (r + 1)) :
+    (hn : Fintype.card n ≤ r * 2 ^ (r + 1)) :
     (Fintype.card n * (Fintype.card m - r : ℕ) / (2 * (r + 1)) *
       Real.logb 2 (Fintype.card n / r) : ℝ) ≤ A.rigidity r := by
   classical
@@ -201,7 +213,7 @@ theorem IsTotallyRegular.le_rigidity {A : Matrix m n K} (hA : A.IsTotallyRegular
       Real.logb 2 (Fintype.card n / r) := by
     rw [hSdef, ← diffCount_eq_card_filter, hAB]
     exact not_le.1 hlt
-  obtain ⟨I, J, hI, hJ, hdisj⟩ := Cslib.exists_disjoint_product_of_card_lt S hrm hn hS
+  obtain ⟨I, J, hI, hJ, hdisj⟩ := Cslib.exists_disjoint_product_of_card_lt S hn hS
   -- `A` and `B` agree on `I × J`.
   have hagree : ∀ i ∈ I, ∀ j ∈ J, A i j = B i j := fun i hi j hj => by
     by_contra hne
@@ -224,7 +236,8 @@ theorem IsTotallyRegular.le_rigidity {A : Matrix m n K} (hA : A.IsTotallyRegular
 
 /-- **Rigidity of totally regular matrices** ([Lokam2009], Theorem 2.5). An `n × n` totally
 regular matrix needs at least `n ^ 2 / (4 (r + 1)) · log₂ (n / r)` changes to bring its rank down
-to at most `r`, for `log₂ n ≤ r ≤ n / 2`. The hypothesis `log₂ n ≤ r` is stated as `n ≤ 2 ^ r`. -/
+to at most `r`, for `n ≤ 2 ^ r` and `2 r ≤ n`. [Lokam2009] states this for `log² n ≤ r ≤ n / 2`;
+with base-`2` logarithms `log² n ≤ r` implies `n ≤ 2 ^ r`, so the range here is wider. -/
 theorem IsTotallyRegular.le_rigidity_of_le_two_pow {A : Matrix n n K} (hA : A.IsTotallyRegular)
     {r : ℕ} (hn : Fintype.card n ≤ 2 ^ r) (hr : 2 * r ≤ Fintype.card n) :
     (Fintype.card n ^ 2 / (4 * (r + 1)) * Real.logb 2 (Fintype.card n / r) : ℝ) ≤
@@ -237,7 +250,7 @@ theorem IsTotallyRegular.le_rigidity_of_le_two_pow {A : Matrix n n K} (hA : A.Is
     rcases Nat.eq_zero_or_pos N with h | h
     · omega
     · omega
-  refine le_trans ?_ (hA.le_rigidity hrN (hn.trans ?_))
+  refine le_trans ?_ (hA.le_rigidity (hn.trans ?_))
   · -- `N / 2 ≤ N - r` and `log₂ (N / r) ≥ 1`.
     have hrpos : (0 : ℝ) < r := by exact_mod_cast hr0
     have hL : 0 ≤ Real.logb 2 (N / r) := by
@@ -263,7 +276,8 @@ variable {F : Type*} [Field F]
 /-- **Rigidity of Cauchy matrices** ([Lokam2009], Theorem 2.5). The `n × n` Cauchy matrix
 `1 / (x i - y j)`, with distinct `x i`, distinct `y j` and `x i ≠ y j`, needs at least
 `n ^ 2 / (4 (r + 1)) · log₂ (n / r)` changes to bring its rank down to at most `r`, for
-`log₂ n ≤ r ≤ n / 2`. [Lokam2009] writes the Cauchy matrix as `1 / (x i + y j)`, which is
+`n ≤ 2 ^ r` and `2 r ≤ n` (a wider range than the `log² n ≤ r ≤ n / 2` of [Lokam2009]).
+[Lokam2009] writes the Cauchy matrix as `1 / (x i + y j)`, which is
 `cauchy x (-y)`. -/
 theorem le_rigidity_cauchy {x y : n → F} (hx : Function.Injective x)
     (hy : Function.Injective y) (hxy : ∀ i j, x i ≠ y j) {r : ℕ} (hn : Fintype.card n ≤ 2 ^ r)
@@ -274,7 +288,7 @@ theorem le_rigidity_cauchy {x y : n → F} (hx : Function.Injective x)
 
 /-- The explicit Cauchy matrices `1 / (i - (N + j))` over a field of characteristic zero need at
 least `N ^ 2 / (4 (r + 1)) · log₂ (N / r)` changes to bring their rank down to at most `r`, for
-`log₂ N ≤ r ≤ N / 2`. -/
+`N ≤ 2 ^ r` and `2 r ≤ N`. -/
 theorem le_rigidity_cauchyNat [CharZero F] {N r : ℕ} (hN : N ≤ 2 ^ r) (hr : 2 * r ≤ N) :
     (N ^ 2 / (4 * (r + 1)) * Real.logb 2 (N / r) : ℝ) ≤ (cauchyNat F N).rigidity r := by
   simpa using (isTotallyRegular_cauchyNat (F := F) N).le_rigidity_of_le_two_pow
@@ -282,7 +296,7 @@ theorem le_rigidity_cauchyNat [CharZero F] {N r : ℕ} (hN : N ≤ 2 ^ r) (hr : 
 
 /-- The explicit Cauchy matrices `1 / (i - (N + j))` over `ZMod q`, for a prime `q ≥ 2 N`, need at
 least `N ^ 2 / (4 (r + 1)) · log₂ (N / r)` changes to bring their rank down to at most `r`, for
-`log₂ N ≤ r ≤ N / 2`. -/
+`N ≤ 2 ^ r` and `2 r ≤ N`. -/
 theorem le_rigidity_cauchyNat_zmod {q : ℕ} [Fact q.Prime] {N r : ℕ} (hq : 2 * N ≤ q)
     (hN : N ≤ 2 ^ r) (hr : 2 * r ≤ N) :
     (N ^ 2 / (4 * (r + 1)) * Real.logb 2 (N / r) : ℝ) ≤ (cauchyNat (ZMod q) N).rigidity r := by

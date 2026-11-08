@@ -9,11 +9,11 @@ module
 
 public import Complexity.Init
 public import Mathlib.Data.Fintype.Prod
+import Complexity.Foundations.Data.Nat.Choose
 import Mathlib.Algebra.Order.Chebyshev
 import Mathlib.Combinatorics.Enumerative.DoubleCounting
-import Mathlib.Data.Nat.Choose.Basic
-import Mathlib.Data.Nat.Factorial.BigOperators
 import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Ring
 
 /-!
 # The Kővári–Sós–Turán bound
@@ -22,16 +22,18 @@ A set `S ⊆ α × β` of positions in a grid (equivalently, the edges of a bipa
 and `β`) *contains an `s × s` rectangle* when `I ×ˢ J ⊆ S` for some `s`-element sets `I ⊆ α` and
 `J ⊆ β`. The **Kővári–Sós–Turán theorem** bounds the size of a set without such rectangles
 (`Cslib.kovari_sos_turan`): with `m = |α|` and `n = |β|`,
-`n (|S| - (s - 1) n) ^ s ≤ (s - 1) (n (m - s + 1)) ^ s`, that is,
-`|S| ≤ (s - 1) ^ (1 / s) (m - s + 1) n ^ (1 - 1 / s) + (s - 1) n`. This is the form of
-[Bollobás, §IV.2, Theorem 10][Bollobas1998] quoted as [Lokam2009], Lemma 2.3 (for `m = n`), stated
-with natural-number powers instead of real roots. It is an upper bound for the Zarankiewicz
+`n (|S| - (s - 1) n) ^ s ≤ (s - 1) (n (m + 1 - s)) ^ s`, with truncated subtraction. For
+`1 ≤ s ≤ m + 1` this is `|S| ≤ (s - 1) ^ (1 / s) (m - s + 1) n ^ (1 - 1 / s) + (s - 1) n`; outside
+that range the real-root form can fail (a full `1 × 1` grid with `s = 3`), while the
+natural-number form still holds. The real-root form is [Bollobás, §IV.2, Theorem 10][Bollobas1998]
+as quoted in [Lokam2009], Lemma 2.3 (for `m = n`). It is an upper bound for the Zarankiewicz
 problem (Mathlib's `SimpleGraph.zarankiewicz` counts the analogous quantity for simple graphs).
 
 The proof double counts pairs `(I, b)` of an `s`-element set `I ⊆ α` and a column `b` with
 `I × {b} ⊆ S`: each `I` lies in fewer than `s` columns, so `∑_b C(d_b, s) ≤ (s - 1) C(m, s)`,
 where `d_b` is the number of positions of `S` in column `b`. The bound
-`(d + 1 - s) ^ s C(m, s) ≤ C(d, s) (m + 1 - s) ^ s` for `d ≤ m` and the power-mean inequality
+`(d + 1 - s) ^ s C(m, s) ≤ C(d, s) (m + 1 - s) ^ s` for `d ≤ m`
+(`Nat.pow_mul_choose_le_choose_mul_pow`) and the power-mean inequality
 `(∑_b x_b) ^ s ≤ n ^ (s - 1) ∑_b x_b ^ s` then finish the proof.
 
 ## Main results
@@ -50,45 +52,13 @@ namespace Cslib
 
 open Finset
 
-/-- `(d + 1 - s) ^ s C(m, s) ≤ C(d, s) (m + 1 - s) ^ s` for `d ≤ m`: compare
-`(d + 1 - s) (m - i) ≤ (d - i) (m + 1 - s)` factor by factor in the falling factorials. -/
-private theorem pow_mul_choose_le_choose_mul_pow {d m s : ℕ} (hdm : d ≤ m) :
-    (d + 1 - s) ^ s * m.choose s ≤ d.choose s * (m + 1 - s) ^ s := by
-  rcases Nat.lt_or_ge d s with hds | hsd
-  · rcases Nat.eq_zero_or_pos s with rfl | hs
-    · simp
-    · rw [show d + 1 - s = 0 by omega, zero_pow hs.ne', zero_mul]
-      exact Nat.zero_le _
-  refine Nat.le_of_mul_le_mul_left ?_ (Nat.factorial_pos s)
-  calc s.factorial * ((d + 1 - s) ^ s * m.choose s)
-      = (d + 1 - s) ^ s * m.descFactorial s := by
-        rw [Nat.descFactorial_eq_factorial_mul_choose]; ring
-    _ = ∏ i ∈ range s, ((d + 1 - s) * (m - i)) := by
-        rw [Nat.descFactorial_eq_prod_range, prod_mul_distrib, prod_const, card_range]
-    _ ≤ ∏ i ∈ range s, ((d - i) * (m + 1 - s)) := by
-        refine prod_le_prod fun i hi => ?_
-        rw [mem_range] at hi
-        obtain ⟨k, rfl⟩ : ∃ k, s = i + k + 1 := ⟨s - i - 1, by omega⟩
-        obtain ⟨a, rfl⟩ : ∃ a, d = i + a := ⟨d - i, by omega⟩
-        obtain ⟨b, rfl⟩ : ∃ b, m = i + b := ⟨m - i, by omega⟩
-        rw [show i + a + 1 - (i + k + 1) = a - k by omega, show i + b - i = b by omega,
-          show i + a - i = a by omega, show i + b + 1 - (i + k + 1) = b - k by omega]
-        have hab : a ≤ b := by omega
-        have hka : k ≤ a := by omega
-        obtain ⟨a, rfl⟩ : ∃ a', a = k + a' := ⟨a - k, by omega⟩
-        obtain ⟨b, rfl⟩ : ∃ b', b = k + a + b' := ⟨b - k - a, by omega⟩
-        rw [show k + a - k = a by omega, show k + a + b - k = a + b by omega]
-        nlinarith
-    _ = s.factorial * (d.choose s * (m + 1 - s) ^ s) := by
-        rw [prod_mul_distrib, prod_const, card_range, ← Nat.descFactorial_eq_prod_range,
-          Nat.descFactorial_eq_factorial_mul_choose]; ring
-
 variable {α β : Type*} [Fintype α] [Fintype β]
 
 /-- **The Kővári–Sós–Turán theorem** ([Bollobás, §IV.2, Theorem 10][Bollobas1998];
 [Lokam2009], Lemma 2.3). If a set `S` of positions in an `m × n` grid (`m = |α|`, `n = |β|`)
 contains no `s × s` rectangle `I ×ˢ J`, then
-`n (|S| - (s - 1) n) ^ s ≤ (s - 1) (n (m + 1 - s)) ^ s`. Taking `s`-th roots gives the classical
+`n (|S| - (s - 1) n) ^ s ≤ (s - 1) (n (m + 1 - s)) ^ s`, with truncated subtraction. For
+`1 ≤ s ≤ m + 1`, taking `s`-th roots gives the classical
 `|S| ≤ (s - 1) ^ (1 / s) (m - s + 1) n ^ (1 - 1 / s) + (s - 1) n`. -/
 theorem kovari_sos_turan (S : Finset (α × β)) {s : ℕ}
     (hS : ∀ I : Finset α, ∀ J : Finset β, #I = s → #J = s → ¬ I ×ˢ J ⊆ S) :
@@ -164,7 +134,7 @@ theorem kovari_sos_turan (S : Finset (α × β)) {s : ℕ}
           refine sum_congr rfl fun b _ => ?_
           rw [hx, show #(col b) + 1 - (t + 1) = #(col b) - t by omega]
       _ ≤ ∑ b, (#(col b)).choose (t + 1) * (m + 1 - (t + 1)) ^ (t + 1) :=
-          sum_le_sum fun b _ => pow_mul_choose_le_choose_mul_pow (hcolm b)
+          sum_le_sum fun b _ => Nat.pow_mul_choose_le_choose_mul_pow (hcolm b)
       _ = (∑ b, (#(col b)).choose (t + 1)) * (m - t) ^ (t + 1) := by
           rw [sum_mul, show m + 1 - (t + 1) = m - t by omega]
       _ ≤ (t * m.choose (t + 1)) * (m - t) ^ (t + 1) := by

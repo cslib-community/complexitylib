@@ -21,7 +21,8 @@ Checked instances:
   matrix, and the bound is positive there.
 * The `64 × 64` explicit Cauchy matrix over `ℚ` and over `ZMod 131` needs at least `438` changes to
   reach rank at most `6`, well above the trivial bound `64 - 6 = 58` from
-  `Matrix.rank_sub_le_rigidity`.
+  `Matrix.rank_sub_le_rigidity`. Here `64 ≤ 2 ^ 6`, but `log² 64 = 36 > 6`: the parameters lie in
+  the range proved here and outside the `log² n ≤ r` stated in [Lokam2009], Theorem 2.5.
 -/
 
 namespace ComplexityTests.MatrixRigidityCauchy
@@ -66,7 +67,7 @@ example (S : Finset (Fin 7 × Fin 7))
 -- Every `5` cells of a `4 × 4` grid miss some `2 × 2` rectangle.
 example (S : Finset (Fin 4 × Fin 4)) (hS : #S ≤ 5) :
     ∃ I J : Finset (Fin 4), #I = 2 ∧ #J = 2 ∧ Disjoint (I ×ˢ J) S := by
-  refine Cslib.exists_disjoint_product_of_card_lt S (r := 1) (by simp) (by simp) ?_
+  refine Cslib.exists_disjoint_product_of_card_lt S (r := 1) (by simp) ?_
   have hL : Real.logb 2 4 = 2 := by
     rw [show (4 : ℝ) = 2 ^ (2 : ℝ) by norm_num, Real.logb_rpow (by norm_num) (by norm_num)]
   have hS' : (#S : ℝ) ≤ 5 := by exact_mod_cast hS
@@ -86,7 +87,7 @@ noncomputable def cauchyRect : Matrix (Fin 4) (Fin 8) ℚ :=
 example : 6 ≤ cauchyRect.rigidity 2 := by
   have hA : cauchyRect.IsTotallyRegular :=
     (isTotallyRegular_cauchyNat 8).submatrix (Fin.castLE_injective _) Function.injective_id
-  have h := hA.le_rigidity (r := 2) (by simp) (by simp)
+  have h := hA.le_rigidity (r := 2) (by simp)
   have hL : Real.logb 2 4 = 2 := by
     rw [show (4 : ℝ) = 2 ^ (2 : ℝ) by norm_num, Real.logb_rpow (by norm_num) (by norm_num)]
   simp only [Fintype.card_fin] at h
