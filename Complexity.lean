@@ -3727,6 +3727,9 @@ public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.ReducedKWise
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
+public import Complexity.DataStructure.KServer.Basic
+public import Complexity.DataStructure.KServer.DoubleCoverage
+public import Complexity.DataStructure.KServer.LowerBound
 public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Memory.Copy
 public import Complexity.DataStructure.Memory.Field
