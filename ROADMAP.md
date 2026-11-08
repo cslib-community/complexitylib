@@ -1386,8 +1386,8 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   ([#3295](https://github.com/cslib-community/complexitylib/issues/3295)); coloring and
   SAT/CSP decision and counting clients that specify the graph whose width is measured;
   normalizing the node count so runtimes are stated in the number of vertices; and an encoded
-  treewidth parameter connected to `FPT`. Also: nice decompositions, treewidth under minors, and its grid and separator
-  characterizations.
+  treewidth parameter connected to `FPT`. Also: nice decompositions, treewidth under minors, and
+  its grid and separator characterizations.
 - **Algorithmic metatheorems:** MSO-to-automata/evaluator compilation and a Courcelle-style
   theorem with computable parameter dependence on width and formula size. Keep the supplied
   decomposition and its encoding explicit; certify decomposition finding separately. Connect
