@@ -26,11 +26,11 @@ branch halts with every register at most `(N + 1) ^ (d + w)` for input length `N
 arity `d` and closure width `w`, so the program runs in logarithmic space.
 
 [Immerman1987], Theorem 3.1, places FO(positive TC) in NL; closures under negation add nothing
-because NL is closed under complementation ([Immerman1988], [Szelepcsenyi1987]). Here both
-polarities are compiled directly. A closure at polarity `true` is evaluated by a bounded guessed
-path. A closure at polarity `false` (under an odd number of negations, counted afresh inside each
-closure body) is evaluated by an inductive-counting block whose tests run the compiled body at
-both polarities. The converse inclusion NL ⊆ FO(TC) remains open.
+because NL is closed under complementation ([Immerman1988], Corollary 3; [Szelepcsenyi1987]).
+Here both polarities are compiled directly. A closure at polarity `true` is evaluated by a
+bounded guessed path. A closure at polarity `false` (under an odd number of negations, counted
+afresh inside each closure body) is evaluated by an inductive-counting block whose tests run the
+compiled body at both polarities. The converse inclusion NL ⊆ FO(TC) remains open.
 
 ## Main definitions
 
@@ -48,7 +48,7 @@ both polarities. The converse inclusion NL ⊆ FO(TC) remains open.
 ## References
 
 * [N. Immerman, *Languages That Capture Complexity Classes*, Theorem 3.1][Immerman1987]
-* [N. Immerman, *Nondeterministic Space is Closed Under Complementation*][Immerman1988]
+* [N. Immerman, *Nondeterministic Space is Closed Under Complementation*, Corollary 3][Immerman1988]
 * [R. Szelepcsényi, *The Method of Forcing for Nondeterministic Automata*][Szelepcsenyi1987]
 -/
 
@@ -68,9 +68,6 @@ section Correct
 
 variable {a : EncodedStructure} [L.Structure (Fin a.1)] [Fact (2 ≤ a.1)]
   {P : CounterProgram} {B : ℕ} {Post : Config → Prop} {R : ℕ}
-
-private theorem codeAt_of_eq {l l' : ℕ} {c : List Instr} (h : P.CodeAt l c) (hl : l = l') :
-    P.CodeAt l' c := hl ▸ h
 
 private theorem sound_of_eq {w : List Bool} {l l' T T' : ℕ} {regs : List ℕ}
     {G : List ℕ → Prop} (h : Sound P w B Post l regs T G) (hl : l = l') (hT : T = T') :
@@ -143,7 +140,7 @@ private theorem test_correct (hE : Env v a P B Post R) {Γ : List ℕ} {α : Typ
     (hEiff : ∀ us ws, E us ws ↔ (body ⟨0, Nat.one_pos⟩).Realize TC.interpretation
       (RelEnv.empty.append ρ) (Sum.elim val (TC.pair us ws)))
     {l l' T : ℕ}
-    (hP : P.CodeAt l' (cTestCode l base k (fun i => termE fv (TC.left args i))
+    (hP : P.CodeAt l' (countTestCode l base k (fun i => termE fv (TC.left args i))
       (compile v (α := α ⊕ Fin ((TC.shape k).binder ⟨0, Nat.one_pos⟩).vars)
         (Sum.elim fv fun i => base + 7 + 2 * k + i.val) (base + 9 + 4 * k)
         (body ⟨0, Nat.one_pos⟩) true (l + 6 + 2 * k + 2 * k + 7)
@@ -160,12 +157,12 @@ private theorem test_correct (hE : Env v a P B Post R) {Γ : List ℕ} {α : Typ
       T R))
     (hl : l' = l) {i y : ℕ} {regs : List ℕ} (hpre : TestPre B base E s₀ regs₀ i y regs) :
     Sound P (encStructure a) B Post l regs T (fun regs' => Kept B (base + 4) regs regs' ∧
-      regs'.getD (base + 6) 0 = if y ∈ cRound E s₀ (i + 1) then 1 else 0) ∧
+      regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) ∧
     Complete P (encStructure a) l regs T (fun regs' => Kept B (base + 4) regs regs' ∧
-      regs'.getD (base + 6) 0 = if y ∈ cRound E s₀ (i + 1) then 1 else 0) := by
+      regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) := by
   replace hP := codeAt_of_eq hP hl
   obtain ⟨-, -, -, -, -, -, -, -, h9, -, -, -, -, -, -, -, -, h18, -, h20, -⟩ :=
-    cTestCode_parts (w₁ := l + 14 + 5 * k + len (body ⟨0, Nat.one_pos⟩) true)
+    countTestCode_parts (w₁ := l + 14 + 5 * k + len (body ⟨0, Nat.one_pos⟩) true)
       (by rw [length_compile]) hP
   have hwb := (tcCode_parts h9).2.2.2.2.2.2.1
   refine ⟨test_sound (w₁ := l + 14 + 5 * k + len (body ⟨0, Nat.one_pos⟩) true)
@@ -236,26 +233,26 @@ theorem correct_op (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type} (k : �
     have hEiff : ∀ us ws, E us ws ↔ (body ⟨0, Nat.one_pos⟩).Realize TC.interpretation
         (RelEnv.empty.append ρ) (Sum.elim val (TC.pair us ws)) := fun _ _ => Iff.rfl
     have hd' : base + 9 + 4 * k + scratch (body ⟨0, Nat.one_pos⟩) ≤ regs.length := by omega
-    obtain ⟨-, -, -, -, -, -, c7, -, -, -, -, -, c13, -⟩ := cCountCode_parts hP
+    obtain ⟨-, -, -, -, -, -, c7, -, -, -, -, -, c13, -⟩ := countCode_parts hP
     refine ⟨count_sound (E := E) (s₀ := s₀) (z₀ := z₀) hP hbase hE.one_le hNB hE.halts hE.post
       hdst ?_ ?_ (by omega) h0 hregs, fun hn => count_complete (E := E) (s₀ := s₀) (z₀ := z₀)
       hP hbase hE.one_le hNB hdst ?_ ?_ (by omega) h0 hregs hn⟩
     · intro i y regs' hpre
       exact sound_of_eq (test_correct hE ih hΓ hNB hWb hbase hfv hd' h0 hv hsrc hEiff c7 rfl
-        hpre).1 rfl (by simp only [length_cTestCode, length_compile]; omega)
+        hpre).1 rfl (by simp only [length_countTestCode, length_compile]; omega)
     · intro i y regs' hpre
       exact sound_of_eq (test_correct hE ih hΓ hNB hWb hbase hfv hd' h0 hv hsrc hEiff c13
-        (by simp only [length_cTestCode, length_compile]; omega) hpre).1
-        (by simp only [length_cTestCode, length_compile]; omega)
-        (by simp only [length_cTestCode, length_compile]; omega)
+        (by simp only [length_countTestCode, length_compile]; omega) hpre).1
+        (by simp only [length_countTestCode, length_compile]; omega)
+        (by simp only [length_countTestCode, length_compile]; omega)
     · intro i y regs' hpre
       exact complete_of_eq (test_correct hE ih hΓ hNB hWb hbase hfv hd' h0 hv hsrc hEiff c7 rfl
-        hpre).2 rfl (by simp only [length_cTestCode, length_compile]; omega)
+        hpre).2 rfl (by simp only [length_countTestCode, length_compile]; omega)
     · intro i y regs' hpre
       exact complete_of_eq (test_correct hE ih hΓ hNB hWb hbase hfv hd' h0 hv hsrc hEiff c13
-        (by simp only [length_cTestCode, length_compile]; omega) hpre).2
-        (by simp only [length_cTestCode, length_compile]; omega)
-        (by simp only [length_cTestCode, length_compile]; omega)
+        (by simp only [length_countTestCode, length_compile]; omega) hpre).2
+        (by simp only [length_countTestCode, length_compile]; omega)
+        (by simp only [length_countTestCode, length_compile]; omega)
   | true =>
   have hdb : base + 2 * k + 2 + scratch (body ⟨0, Nat.one_pos⟩) ≤ regs.length := by omega
   -- the body block
