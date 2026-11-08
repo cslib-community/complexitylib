@@ -26,9 +26,10 @@ exactly `S / 2` each, and either is one side of a partition. Lists with a number
 `⌊S / 2⌋` have no partition, and the empty list and lists of zeros always have one.
 
 The algorithm is a function `A : List ℕ × ℕ → List (List ℕ)` from items and capacity to bins,
-with the numbers in binary. It is required to return a packing only when one exists, that is when
-every item fits into a bin (`Cslib.Algorithms.Lean.BinPacking.exists_isPacking_iff`), and its
-ratio is compared with every packing of a nonempty list.
+with the numbers in binary (`BinPacking.encBinPacking` and `BinPacking.encBins`). It is required
+to return a packing only when one exists, that is when every item fits into a bin
+(`Cslib.Algorithms.Lean.BinPacking.exists_isPacking_iff`), and its ratio is compared with every
+packing of a nonempty list.
 
 ## Main results
 
@@ -52,6 +53,16 @@ open Turing.MultiTapeTM ComputableInPolyTime Cslib.Algorithms.Lean.BinPacking
 open scoped List
 
 namespace BinPacking
+
+/-- A bin-packing instance `(l, C)`, all numbers in binary: the item sizes `l` as a framed list of
+framed entries, followed by the capacity `C`, unframed. -/
+abbrev encBinPacking : List ℕ × ℕ ↪ List Bool := encPair (encList encNat) encNat
+
+/-- A list of bins, such as the packing an algorithm returns: the concatenation of the framed bins,
+each the concatenation of its framed item sizes in binary. This is the layout
+`encList (encList encNat)` that other modules name by their own roles, such as
+`Cslib.Complexity.KCenter.encDistMatrix`; the name records the role. -/
+abbrev encBins : List (List ℕ) ↪ List Bool := encList (encList encNat)
 
 /-- The decider for `Partition` built from a bin-packing algorithm `A`: accept lists summing to
 zero, and otherwise accept when every number fits into a bin of capacity `⌊S / 2⌋` and `A` packs
@@ -119,7 +130,7 @@ theorem decidePartition_iff {A : List ℕ × ℕ → List (List ℕ)}
 
 /-- The decider built from a polynomial-time algorithm is polynomial-time. -/
 theorem computableInPolyTime_decidePartition {A : List ℕ × ℕ → List (List ℕ)}
-    (hA : ComputableInPolyTime A (encPair (encList encNat) encNat) (encList (encList encNat))) :
+    (hA : ComputableInPolyTime A encBinPacking encBins) :
     ComputableInPolyTime (decidePartition A) (encList encNat) encBool := by
   unfold decidePartition
   fun_prop
@@ -131,7 +142,7 @@ end BinPacking
 returns a packing whenever every item fits into a bin, and on nonempty lists uses fewer than `3/2`
 times as many bins as any packing, gives `P = NP`. -/
 theorem P_eq_NP_of_binPacking_approx {A : List ℕ × ℕ → List (List ℕ)}
-    (hA : ComputableInPolyTime A (encPair (encList encNat) encNat) (encList (encList encNat)))
+    (hA : ComputableInPolyTime A BinPacking.encBinPacking BinPacking.encBins)
     (hvalid : ∀ l C, (∀ a ∈ l, a ≤ C) → IsPacking C l (A (l, C)))
     (hratio : ∀ l C Q, l ≠ [] → IsPacking C l Q → 2 * (A (l, C)).length < 3 * Q.length)
     {α : Type} (enc : α ↪ List Bool) : P enc = NP enc :=
@@ -144,7 +155,7 @@ theorem P_eq_NP_of_binPacking_approx {A : List ℕ × ℕ → List (List ℕ)}
 returns a packing whenever every item fits into a bin, and on nonempty lists uses at most `ρ`
 times as many bins as any packing, gives `P = NP`. -/
 theorem P_eq_NP_of_binPacking_ratio {A : List ℕ × ℕ → List (List ℕ)} {ρ : ℝ} (hρ : ρ < 3 / 2)
-    (hA : ComputableInPolyTime A (encPair (encList encNat) encNat) (encList (encList encNat)))
+    (hA : ComputableInPolyTime A BinPacking.encBinPacking BinPacking.encBins)
     (hvalid : ∀ l C, (∀ a ∈ l, a ≤ C) → IsPacking C l (A (l, C)))
     (hratio : ∀ l C Q, l ≠ [] → IsPacking C l Q → ((A (l, C)).length : ℝ) ≤ ρ * Q.length)
     {α : Type} (enc : α ↪ List Bool) : P enc = NP enc := by

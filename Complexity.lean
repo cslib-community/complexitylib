@@ -74,6 +74,8 @@ public import Complexity.Algorithms.Lean.KMP.Basic
 public import Complexity.Algorithms.Lean.KMP.Search
 public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Algorithms.Lean.Karger.FastCut
+public import Complexity.Algorithms.Lean.Karger.Memory
+public import Complexity.Algorithms.Lean.Karger.Memory.Contract
 public import Complexity.Algorithms.Lean.Karger.Memory.Layout
 public import Complexity.Algorithms.Lean.Karger.MinCutCount
 public import Complexity.Algorithms.Lean.Knapsack.FPTAS
@@ -2275,6 +2277,7 @@ public import Complexity.Computability.Complexity.Reduction.Levin
 public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility
 public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeAccess
 public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeEvaluator
+public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeGenerate
 public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.VirtualWord
 public import Complexity.Computability.Complexity.Reduction.LogSpaceAutoreducibility
 public import Complexity.Computability.Complexity.Reduction.LogSpaceBoundedAutoreducibility
@@ -2555,6 +2558,7 @@ public import Complexity.Computability.Machines.ReadMachine.StepMachine
 public import Complexity.Computability.Machines.ReadMachine.Tidy
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Evaluator
+public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Generate
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Native
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Simulation
@@ -3181,6 +3185,7 @@ public import Complexity.Computability.PCP.Encoded.Constraints
 public import Complexity.Computability.PCP.Encoded.Count
 public import Complexity.Computability.PCP.Encoded.DegreeReduction
 public import Complexity.Computability.PCP.Encoded.Deloop
+public import Complexity.Computability.PCP.Encoded.Encoding
 public import Complexity.Computability.PCP.Encoded.GapTheorem
 public import Complexity.Computability.PCP.Encoded.GenericComposition
 public import Complexity.Computability.PCP.Encoded.GenericComposition.Enumeration
@@ -5113,6 +5118,11 @@ public import Complexity.Languages.Probabilistic.UniformNat.Support
 public import Complexity.Languages.Probabilistic.UntilBad
 public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 public import Complexity.Languages.Probabilistic.Vector
+public import Complexity.Logics.BooleanClone.Basic
+public import Complexity.Logics.BooleanClone.Classification
+public import Complexity.Logics.BooleanClone.Formula
+public import Complexity.Logics.BooleanClone.Generated
+public import Complexity.Logics.BooleanClone.Post
 public import Complexity.Logics.FirstOrder.Atom
 public import Complexity.Logics.FirstOrder.Basic
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
@@ -5626,6 +5636,7 @@ public import Complexity.Probability.SmallBias.Powering
 public import Complexity.Probability.SmallBias.Random
 public import Complexity.Probability.Split
 public import Complexity.Probability.StatisticalDistance
+public import Complexity.Probability.StatisticalDistance.CloseTo
 public import Complexity.Probability.StatisticalDistance.ClosedForm
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.DirectProduct

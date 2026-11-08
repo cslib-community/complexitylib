@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.PCP.Encoded.Encoding
 public import Complexity.Computability.PCP.Encoded.ParallelEdges
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
 import Complexity.Computability.PCP.Encoded.Count
@@ -135,7 +136,7 @@ record, reading its unary endpoints and its complete relation table. -/
 @[fun_prop]
 theorem isPolyTime_deloop [Fintype α] :
     ComputableInPolyTime (deloop (α := α))
-      (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi (encPi encBool))) := by
+      (Graph.encoding encConstraintTable) (Graph.encoding encConstraintTable) := by
   let encE := Edge.encoding (encPi (encPi encBool) : (α → α → Bool) ↪ List Bool)
   have hd : ComputableInPolyTime (fun d : Edge (α → α → Bool) => d) encE encE := .id'
   have hdiag : ComputableInPolyTime (fun R : α → α → Bool => fun a (_ : α) => R a a)
