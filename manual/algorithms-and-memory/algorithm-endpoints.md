@@ -182,6 +182,22 @@ Import `Complexity.Algorithms.Lean.StableMatching.Incentives` (which also brings
 
 The cost measure is the number of proposals, a property of the algorithm's trace rather than of a machine model; no Word-RAM or Turing implementation is certified. Incomplete lists, ties, unequal sides and many-to-one markets are not modeled; [#2990](https://github.com/cslib-community/complexitylib/issues/2990) tracks these directions. [ComplexityTests/StableMatching.lean](../../ComplexityTests/StableMatching.lean) contains the checked instances.
 
+## Assignment problem: Bertsekas's auction algorithm
+
+Import `Complexity.Algorithms.Lean.Assignment.Auction` ([Complexity/Algorithms/Lean/Assignment/Auction.lean](../../Complexity/Algorithms/Lean/Assignment/Auction.lean)); the declarations live in the namespace `Cslib.Algorithms.Lean.Assignment`. This is a pure Lean development, not a RAM client. The input is an integer cost matrix `c : Fin n × Fin n → ℤ` on the complete bipartite graph, and an assignment is a permutation `σ : Equiv.Perm (Fin n)` of cost `∑ i, c (i, σ i)`, to be minimized. `auction c ε` is the Gauss–Seidel auction of [Bertsekas][bertsekas88] in the cost form of [Bertsekas][bertsekas98], §7.1.1: an unassigned person bids for an object of least reduced cost `c (i, j) + p j`, raising its price by the gap to the second least reduced cost plus `ε`, and evicts the previous owner. Unassigned persons are kept on a stack. Fuel `bidBound n (costSpread c) ε` is computed from the data, so the function is total and `decide`-evaluable.
+
+- **Invariant:** `AuctionInv.bidStep` is Prop. 7.1, which says that each bid preserves `ε`-complementary slackness (`IsEpsCompSlack`).
+- **Termination:** `auction_free` gives termination with every person assigned. `bids_auction_le` bounds the number of bids by `bidBound n C ε = n (C + ε) / ε + 1` whenever every row cost range `c (i, k) - c (i, j)` is at most `C`. The proof uses the explicit measure `n (C + ε) - ∑ j, p j` (`sum_price_bidStep`, `AuctionInv.price_le`) in place of the book's argument by contradiction for Prop. 7.2.
+- **Quality:** `auctionPerm c hε` is the output. `sum_auctionPerm_le` shows that it is within `n * ε` of every permutation (Props. 1.4 and 7.2). `sum_auctionPerm_le_rowPotential` turns the final prices into the feasible dual `(rowPotential c p, -p)` certifying this.
+- **Exactness:** `scaledAuctionPerm c` runs on `(n + 1) * c` with `ε = 1`. `sum_scaledAuctionPerm_le` proves it optimal, and `bids_scaledAuctionPerm_le` bounds its bids by `n ((n + 1) C + 1) + 1`.
+
+The general layer [Complexity/Algorithms/Lean/Assignment/Basic.lean](../../Complexity/Algorithms/Lean/Assignment/Basic.lean) states `ε`-complementary slackness, weak duality over permutations and the `n ε` bound for any finite index type and ordered additive group. The cost measure is the number of bids: the `O(n)` scan per bid is not charged and there is no `TimeM` accounting. The bound is pseudo-polynomial, linear in `C / ε`. The `ε`-scaling version with its `O(n A log (n C))` bound (Prop. 7.3), the Jacobi, reverse and asymmetric auctions, rectangular or sparse instances, and a bridge to the Hungarian method's potentials are open; [#3317](https://github.com/cslib-community/complexitylib/issues/3317) tracks these directions. [ComplexityTests/AuctionAssignment.lean](../../ComplexityTests/AuctionAssignment.lean) contains the checked instances:
+
+- a `3 × 3` optimum checked against all six permutations, with its dual certificate;
+- a `2 × 2` instance on which the unscaled auction is suboptimal, showing that the scaling is needed;
+- Bertsekas's price war (Figs. 1.12–1.14), whose bid count grows with `C / ε`;
+- the cases `n = 0` and `n = 1`.
+
 ## Scheduling bounds
 
 [Complexity/Algorithms/Lean/Scheduling/](../../Complexity/Algorithms/Lean/Scheduling/) contains
@@ -762,6 +778,8 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
 [complexitylib]: ../sources.md#complexitylib
+[bertsekas88]: ../sources.md#bertsekas88
+[bertsekas98]: ../sources.md#bertsekas98
 [clrs09]: ../sources.md#clrs09
 [floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79

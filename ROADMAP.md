@@ -1367,6 +1367,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   graphs (`Algorithms/Matching/Edmonds`) and the bipartite Mulmuley–Vazirani–Vazirani core
   (`Algorithms/Matching/MVV`): Tutte's matrix and MVV for general graphs, a machine-level
   running-time certificate for the determinant test, and an RNC implementation.
+- **Auction algorithms** ([#3317](https://github.com/cslib-community/complexitylib/issues/3317)):
+  remaining after Bertsekas's Gauss–Seidel auction for square, complete integer assignment
+  instances (`Algorithms/Lean/Assignment`: `ε`-complementary slackness, termination within
+  `n (C + ε) / ε + 1` bids, `n ε`-optimality and exact optimality after scaling by `n + 1`):
+  `ε`-scaling and its `O(n A log (n C))` bound, a charged `TimeM` implementation, the Jacobi,
+  reverse and asymmetric auctions, sparse and rectangular instances, a bridge to the Hungarian
+  method's potentials, and `ε`-relaxation for minimum-cost flow.
 - **Graph search and shortest paths** ([#3053](https://github.com/cslib-community/complexitylib/issues/3053)):
   after `TimeM` depth-first search, topological sort and Bellman–Ford
   (`Algorithms/Lean/{DFS,BellmanFord}`), strongly connected components in linear time with the

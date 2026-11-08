@@ -12,6 +12,8 @@ public import Complexity.Algorithms.ExactTriangle.PieceBounds
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
+public import Complexity.Algorithms.Lean.Assignment.Auction
+public import Complexity.Algorithms.Lean.Assignment.Basic
 public import Complexity.Algorithms.Lean.BellmanFord.Basic
 public import Complexity.Algorithms.Lean.BinPacking.Basic
 public import Complexity.Algorithms.Lean.BinPacking.FirstFit
