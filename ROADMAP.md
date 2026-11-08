@@ -2,8 +2,8 @@
 
 The directions Complexitylib aims to cover, grouped by area. This file lists directions only:
 status, progress and completion notes live on the linked issues and pull requests, module
-docstrings describe what is proved, and the [README](README.md) and the curated formal abstracts
-present completed results. A PR edits this file when it opens or closes a direction.
+docstrings describe what is proved, and the [results inventory](results/README.md) collects
+completed named results. A PR edits this file when it opens or closes a direction.
 
 A direction is complete only when its machine, resource and quantitative conclusions are proved
 for the actual algorithms, with explicit models, encodings and assumptions. An abstract algorithm,
@@ -646,9 +646,8 @@ index links to canonical definitions rather than keeping a second set.
   [#2143](https://github.com/cslib-community/complexitylib/pull/2143)). The inclusion covers
   arbitrary injective input encodings and every `t(n) ≥ n`, without time constructibility;
   its fixed driver scans the original input, searches schedules and increases balanced time
-  guesses. The paper's time–space separation corollaries (including for linear space) and a
-  curated headline abstract with independent review remain open in [#2855]; landing the inclusion
-  and registry does not complete that broader scope.
+  guesses. The paper's time–space separation corollaries (including for linear space) remain open
+  in [#2855]; landing the inclusion and registry does not complete that broader scope.
   For Cook–Mertz itself: malformed-input handling and the refined
   `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
 - **Time–space lower bounds for nondeterministic linear time**
@@ -670,11 +669,7 @@ index links to canonical definitions rather than keeping a second set.
   ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): play the circuit-value
   game on the tableau of a polynomial-time machine (`Tableau.ValueGame`, which gives
   `APSPACE = EXP`) in logarithmic space. This needs a word game machine whose round reads the
-  input from the input tape and keeps only the `O(log n)`-bit wire claim on its work tape. Once it
-  is proved, add `AL = P` to the
-  [alternation abstract](abstracts/ComplexityAbstracts/AlternationAbstract.lean), which states
-  `AP = PSPACE` and `APSPACE = EXP`, as part of
-  [#2873](https://github.com/cslib-community/complexitylib/issues/2873).
+  input from the input tape and keeps only the `O(log n)`-bit wire claim on its work tape.
 - **Pebble games and space lower bounds**
   ([#2995](https://github.com/cslib-community/complexitylib/issues/2995)): the black pebble game
   on a `Digraph`, the path-blocking lower-bound engine, and the exact prices `h + 2` of the
@@ -1020,8 +1015,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   inclusion–exclusion colouring.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
-  `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
-  abstracts, and the uniform `o(n)` forms of the PPSZ bounds with `w` growing in `n`.
+  `a / b ≥ 1 - qbar k h`). Optional remainder: the uniform `o(n)` forms of the PPSZ bounds with
+  `w` growing in `n`.
   Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
 - **APSP class** ([#3076](https://github.com/cslib-community/complexitylib/issues/3076)): APSP and
   the (min,+) product reduce to each other in the query model (repeated squaring costs
@@ -2375,9 +2370,8 @@ Arrow's theorem). Remaining directions:
   (`computableInO_universal_nlogn`). Remaining: a source-space-sensitive storage bound (the
   space is currently bounded only by the time), and an unclocked form that runs until the
   simulated machine halts.
-- **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
-  calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
-  abstract bridges to the shared predicate.
+- **Plain computability** ([#862]): complete the plain calculus ([#608]) and delete the tidy
+  calculus, keeping only a machine-level kernel inside the Machines layer.
 - **Certificate APIs and automation** ([#1155]): predictable search, with fixed heartbeat budgets
   on regression goals, failures that name the subterm lacking a certificate, and cheap
   syntax-directed composition for glue code. Infer encodings for ordinary functional expressions
@@ -2620,8 +2614,6 @@ and credited.
 - **The guide** ([#585]): a chapter per area, including Foundations (bit strings, Fourier
   analysis, PMF and `ProbComp`, codes), proof complexity, descriptive complexity, and Word RAM
   and algorithms, reusing checked examples.
-- **Curated formal abstracts:** improve readability, and compare each changed abstract with its
-  final source statements.
 - **Archive `complexitylib-v1`** once its remaining work is dispositioned.
 
 ## Deferred scopes

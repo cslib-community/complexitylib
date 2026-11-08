@@ -166,15 +166,8 @@ class RestatementTests(unittest.TestCase):
         self.assertFalse(c.restatement_only(self.HEADER + "example : Foo where\n  x := y\n"))
         self.assertFalse(c.restatement_only(self.HEADER + "example : Nat → Nat\n  | n => n\n"))
 
-    def test_files_without_examples_and_abstract_clients_pass(self) -> None:
+    def test_files_without_examples_pass(self) -> None:
         self.assertFalse(c.restatement_only(self.HEADER + "theorem t : True := trivial\n"))
-        self.assertFalse(c.restatement_only(
-            "import ComplexityAbstracts.DemoAbstract\n\nexample := @Demo.thing\n"))
-        self.assertFalse(c.restatement_only(
-            "open ComplexityAbstracts.DemoAbstract in\nexample := @demoHeadline\n"))
-        # A mention in a comment does not pin anything.
-        self.assertTrue(c.restatement_only(
-            "-- see ComplexityAbstracts\nexample := @Demo.thing\n"))
 
 
 class ChangedFileTests(unittest.TestCase):

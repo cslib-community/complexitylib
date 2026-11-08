@@ -97,8 +97,7 @@ when a milestone completes only part of it.
    resolve overlapping claims before editing, and check ownership when returning.
 4. Implement, self-review and validate. Assess both manuals for every change and update affected
    instructions, reference sections and checked examples in the same change, following
-   [the manual requirements](CONTRIBUTING.md#maintaining-the-manuals). Update selected
-   abstracts when the change affects them, according to the requirements below.
+   [the manual requirements](CONTRIBUTING.md#maintaining-the-manuals).
 5. Open a PR with validation and limitations; link its issue when there is one and request
    coordinator review. Record the handoff once. Awaiting review is not abandoned work. Keep
    linked issues open until integration or an explicit disposition.
@@ -127,7 +126,8 @@ tooling.
 - Resolve ownership and dependency conflicts, and help stale tasks reach a useful next step.
 - Require review of both the Operator's Manual and the Agent Operator's Manual, including any
   reason that no edit is needed. Make this part of reviewing and integrating each change.
-  Check affected `ROADMAP.md`, `abstracts/catalogue.json`, `UPSTREAM.md` and other documentation.
+  Check affected `ROADMAP.md`, the [results inventory](results/README.md), `UPSTREAM.md` and other
+  documentation.
   Preserve source credit and the distinction between a completed milestone and its open objective.
 - Merge only with required validation and independent review of the current revision. Reviewers
   queue the heads they approve ([Approve and queue](#approve-and-queue)); coordinators queue any
@@ -373,7 +373,7 @@ purpose, not its letter.
   intermediate value would not improve readability. Check affected proofs when changing notation.
 - Before the first supported release, do not add deprecated aliases or compatibility wrappers
   for renamed, moved, removed or privatized declarations. Update all in-repository clients
-  (library, tests, abstracts and guide) and remove the superseded interface in the same change.
+  (library, tests, results inventory and guide) and remove the superseded interface in the same change.
   Remove obsolete aliases as part of the relevant migration, not unrelated cleanup. Revisit
   compatibility guarantees before supporting external consumers.
 - `ComplexityTests/Axioms.lean` audits all declarations stored in imported `Complexity` modules
@@ -426,8 +426,8 @@ that it preserves meaning, exported availability, attributes, imports and automa
 and checks affected clients. Record that limited carry-forward decision. A typo fix may qualify,
 and [Restacks](#restacks) gives a mechanical check for merging `main` or rebasing; a proof repair,
 privatization, changed test coverage or a conflict resolution that changes the PR's own lines is
-not automatically mechanical. Changed reasoning, API, source claims, security claims or abstracts,
-and uncertain cases, need fresh non-author review of the affected delta.
+not automatically mechanical. Changed reasoning, API, source claims or security claims, and
+uncertain cases, need fresh non-author review of the affected delta.
 
 A non-authoring agent may independently review work from the same coordinator or account. It must
 inspect the source and evidence in a separate review context and reach its own verdict; an
@@ -552,45 +552,7 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    and matrices, and framing that changes a length bound stay visible: the name or the first line
    of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.
 7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
-   the `enc%` proposal (#1830) is parked. Curated abstracts stay fully spelled out: they write each
-   encoding in place or define it in the abstract itself.
-
-## Curated formal abstracts
-
-`abstracts/catalogue.json` selects the public headline results. Each selected group has a checked
-`*Abstract.lean` and `*Bridge.lean` under `abstracts/ComplexityAbstracts/`, imported by the
-dedicated `ComplexityAbstracts` library. `ComplexityTests/Abstracts/All.lean` imports that library,
-and its regression tests sit beside it. Existing declaration namespaces remain stable across the
-source relocation. The Lean definitions and statements are the source of truth; PDFs are generated
-from them, with proof bodies omitted. There is no separately maintained paper/TeX index.
-
-Selection has a higher bar than inclusion in the library: a headline must be a substantial proved
-endpoint with conventional, inspectable semantics, hypotheses that are satisfiable or are standard
-open assumptions stated as such, explicit models and encodings, and honest quantitative bounds.
-Partial constructions, conditional substitutes for a standard theorem, bounded experiments and
-helper APIs do not become headlines by acquiring an abstract. Prefer a small coherent selection.
-Preserve Samuel's editorial choices and source credit; keep outstanding endpoints in `ROADMAP.md`.
-
-Assess abstract impact when Lean statements, definitions, models, encodings, bounds or catalogue
-selection change. Update affected statements and scope notes, and record the assessment once in
-the PR. Reuse it while the relevant source is unchanged; metadata edits and unrelated changes
-need no new no-impact report. New library theorems need not become headlines.
-
-For abstract changes, follow the local `lean-abstract` skill and run the affected `#check_abstract`
-audits. An allowlist may expose narrowly identified foundational models with their meaning
-explained; it must not hide the result or its complexity-class semantics. The audit checks elaborated dependencies, not human interpretation.
-Independent review must cover API quality, correctness and each changed abstract against the final
-Lean sources, including quantifiers, encoding, resource bounds, nonvacuity and readability. This may
-be part of the same review above; reuse unchanged evidence. Record revisions and findings once in
-the PR. Do not imply human editorial approval.
-
-`scripts/build_abstracts.py` generates individual PDFs, a combined catalogue and provenance with
-source digests and exact declaration links. The **Formal abstract PDFs** workflow uploads review
-and main artifacts, and the **API documentation** workflow publishes main builds under
-`https://www.cslib.io/complexitylib/abstracts/`. When abstracts or rendering
-change, inspect affected rendered pages and declaration links before integration; record the
-artifact/run and revisions. Unaffected abstracts and rendering need no new PDF review. Local
-generation is supported. Generated TeX, PDFs and auxiliary products are not versioned.
+   the `enc%` proposal (#1830) is parked.
 
 ## Design commitments (do not re-litigate casually)
 

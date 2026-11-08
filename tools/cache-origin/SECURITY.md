@@ -61,7 +61,7 @@ deleting suspect objects; do not copy the suspect outputs into a replacement cac
    a lifecycle policy is not an immediate purge, and GC will not purge its newest mapping.
 3. **Rotate recovery identity and credentials.** Set `CACHE_RECOVERY_GENERATION` to a new,
    never-used value of 1–64 letters, digits, dots, underscores or hyphens, such as
-   `incident-20261106-1`. Updated Lean CI, Guide and Comparator include this value in both the
+   `incident-20261106-1`. Updated Lean CI and Guide include this value in both the
    exact Actions cache key and its restore prefix; merge-group handoffs include it in their
    checked metadata. Pre-incident or unmarked handoffs are rejected. This is an emergency
    invalidation token, not a change to Lake's URLs or an ordinary GC epoch. Rotate the HTTP

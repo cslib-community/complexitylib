@@ -206,9 +206,9 @@ class RatchetTests(unittest.TestCase):
         self.module = self.root / "Complexity/Area/A.lean"
         self.module.parent.mkdir(parents=True)
         self.write("abc")
-        # Not checked: an `Internal` module, the tests and the abstracts.
+        # Not checked: an `Internal` module, the tests and sources outside `Complexity/`.
         for rel in ("Complexity/Area/Internal/B.lean", "ComplexityTests/C.lean",
-                    "abstracts/D.lean"):
+                    "guide/D.lean"):
             path = self.root / rel
             path.parent.mkdir(parents=True)
             path.write_text(HEADER + "".join(theorem(n) for n in "abc"))

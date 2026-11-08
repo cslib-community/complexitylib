@@ -3,8 +3,7 @@
 
 Checks enforced by default (see AGENTS.md):
 1. Every module under Complexity/ has a valid standalone `-- upstream:` line comment.
-2. No `sorry`, custom `axiom`, or `native_decide` in Complexity/, ComplexityTests/ or the
-   dedicated abstract library.
+2. No `sorry`, custom `axiom`, or `native_decide` in Complexity/ or ComplexityTests/.
 3. Every `set_option maxHeartbeats` or `set_option maxRecDepth` has an explanatory comment
    on the same line, within the preceding 3 lines, or (for `set_option ... in`) on the next
    line, where Mathlib's `linter.style.maxHeartbeats` expects it.
@@ -38,11 +37,7 @@ Checks enforced by default (see AGENTS.md):
    Inline and multiline settings and decimal/hexadecimal numerals are checked. With the default
    selection, an entry whose file no longer needs it (no budget above the default, or a cap above the largest
    budget) is reported as stale, so the allowlist only shrinks as budgets are reduced (#1528).
-8. (Default selection only.) Every `abstracts/catalogue.json` entry is linked from the top-level
-   `README.md` (`](abstracts/ComplexityAbstracts/<Name>.lean)`) and from `abstracts/README.md`
-   (`](ComplexityAbstracts/<Name>.lean)`), and neither README links an abstract module that the
-   catalogue does not select (#1921).
-9. (Default selection only.) `ROADMAP.md` adds no issue-link reference definitions
+8. (Default selection only.) `ROADMAP.md` adds no issue-link reference definitions
    (`[#N]: https://…`): only the labels in `ROADMAP_ISSUE_DEFINITIONS`, which predate the rule,
    may be defined. New links are written inline, since every PR appending a definition to the
    shared tail block conflicts with the others in the merge queue. Each `[#N]` shortcut that is
@@ -57,7 +52,6 @@ Opt-in heuristic checks:
 from __future__ import annotations
 
 import argparse
-import json
 import pathlib
 import re
 import sys
@@ -566,40 +560,6 @@ def check_bibliography(text: str, rel: str = "references.bib") -> list[str]:
     return errors
 
 
-# Each README with the prefix of its links to abstract modules.
-ABSTRACT_READMES = (("README.md", "abstracts/"), ("abstracts/README.md", ""))
-# A Markdown link to an abstract module (not to a bridge or a shared foundation).
-ABSTRACT_LINK_RE = re.compile(
-    r"\]\((?P<target>(?:abstracts/)?ComplexityAbstracts/[A-Za-z0-9_]+Abstract\.lean)\)")
-
-
-def check_abstract_readmes(root: pathlib.Path = ROOT) -> list[str]:
-    """Both READMEs link exactly the abstract modules that the catalogue selects."""
-    rel_catalogue = "abstracts/catalogue.json"
-    try:
-        entries = json.loads((root / rel_catalogue).read_text(encoding="utf-8"))["entries"]
-        sources = {entry["module"].replace(".", "/") + ".lean": entry["id"] for entry in entries}
-    except (OSError, ValueError, KeyError, TypeError, AttributeError) as err:
-        return [f"{rel_catalogue}: cannot read the catalogue entries ({err})"]
-    errors: list[str] = []
-    for rel, prefix in ABSTRACT_READMES:
-        try:
-            text = (root / rel).read_text(encoding="utf-8")
-        except OSError as err:
-            errors.append(f"{rel}: cannot read ({err})")
-            continue
-        linked = {m.group("target") for m in ABSTRACT_LINK_RE.finditer(text)}
-        for source, entry_id in sources.items():
-            if prefix + source not in linked:
-                errors.append(f"{rel}: catalogue entry `{entry_id}` is not listed; add a line "
-                              f"linking `{prefix}{source}`")
-        for target in sorted(linked):
-            if not target.startswith(prefix) or target[len(prefix):] not in sources:
-                errors.append(f"{rel}: links `{target}`, which is not a catalogue entry of "
-                              f"`{rel_catalogue}` (or uses the wrong relative path)")
-    return errors
-
-
 # The issue-link reference definitions that `ROADMAP.md` may keep: those on `main` when inline
 # links became the rule, and those of pull requests then open, so that queued work is not failed
 # for following the old convention. The set never grows; a closed direction drops its definition
@@ -679,7 +639,7 @@ def main() -> int:
     parser.add_argument(
         "paths",
         nargs="*",
-        help="Files or directories to check (defaults to library, test and abstract sources); "
+        help="Files or directories to check (defaults to library and test sources); "
              "the selection must contain at least one source file",
     )
     parser.add_argument(
@@ -698,7 +658,7 @@ def main() -> int:
     if args.paths:
         targets = [pathlib.Path(p).resolve() for p in args.paths]
     else:
-        targets = [ROOT / "Complexity", ROOT / "ComplexityTests", ROOT / "abstracts/ComplexityAbstracts"]
+        targets = [ROOT / "Complexity", ROOT / "ComplexityTests"]
 
     bibliography = (ROOT / "references.bib").read_text(encoding="utf-8")
     heartbeat_caps = load_heartbeat_allowlist()
@@ -713,7 +673,6 @@ def main() -> int:
     if not args.paths:
         errors += check_bibliography(bibliography)
         errors += check_heartbeat_allowlist_stale(heartbeat_caps)
-        errors += check_abstract_readmes()
         errors += check_roadmap_links((ROOT / "ROADMAP.md").read_text(encoding="utf-8"))
     if errors:
         for err in errors:

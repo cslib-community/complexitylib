@@ -59,7 +59,7 @@ instead of allowing a downloader to race compilation; ordinary cache misses and 
 timeouts remain optional. The helpers never remove Git locks; forced termination can still
 leave one behind.
 
-Lean CI, API docs and Comparator call this helper with `--lean-action`, preserving the Mathlib URL
+Lean CI and API docs call this helper with `--lean-action`, preserving the Mathlib URL
 handling that lean-action had (API docs still run lean-action, with its own Mathlib fetch disabled): unset `MATHLIB_CACHE_GET_URL` selects
 `https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
 explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
@@ -69,8 +69,8 @@ the Actions cache and then uses the same missing-only restore. Cache failures re
 installation and validation failures remain strict.
 
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
-about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI,
-the guide and Comparator no longer run `leanprover/lean-action`: with every feature off it only
+about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI
+and the guide no longer run `leanprover/lean-action`: with every feature off it only
 reinstalled elan from GitHub releases, without retries, so a release outage failed every run. On a
 miss, `.github/actions/install-lean` installs them with bounded
 retries and saves the entry before any Lake command runs, so it never contains the local artifact

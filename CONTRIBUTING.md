@@ -71,7 +71,7 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    list the actual public API; each area has a chapter in the guide.
 8. **Tests.** Checked, nonvacuous examples exercise concrete inputs, runs, counterexamples or
    meaningful client behavior such as inference, imports and automation. Merely restating a
-   signature adds no behavioral coverage (curated abstracts separately pin public claims).
+   signature adds no behavioral coverage.
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
@@ -117,7 +117,7 @@ state paired with the bit read, with the state framed. Because the name is reduc
 statement is definitionally unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas
 see through it; syntactic tools such as `omega` do not. New and changed statements follow the
 exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
-checks the repetition rule. Abstracts stay fully spelled out.
+checks the repetition rule.
 
 To sweep an area, `python3 scripts/check_encoding_readability.py --list Complexity/Logics` lists
 its repeated compound encodings with their declarations, ignoring the baseline, and the local
@@ -165,7 +165,8 @@ also loads private information, so such edits do reach its clients.
   Write `attribute [local fun_prop] helper` instead. Private `simp` lemmas, Aesop rules and
   instances stay local.
 - Ordinary imports cannot name private declarations. When privatizing, update the tests and
-  abstracts that name them in the same PR, or give a companion module `import all`.
+  results inventory entries that name them in the same PR, or give a companion module
+  `import all`.
 - For an audit, `python3 scripts/audit_queries.py references PREFIX` lists where each declaration
   under a source path is referenced, and `duplicates` lists declarations with alpha-equivalent
   statements in different modules. Uses through `rfl`, `decide`, simp sets or instances leave no
@@ -348,29 +349,6 @@ instructions, as well as affected role, delegation and handoff guidance. Record 
 the existing code review; an additional reviewer is needed
 only for an uncovered question. Compilation, excerpt checks and a completed PR field do not by
 themselves establish that the manual is usable or correct.
-
-## Maintaining the headline abstracts
-
-The small selection in [abstracts/catalogue.json](abstracts/catalogue.json) is the public headline
-catalogue. Every selected result has a checked Lean abstract and bridge, with explicit definitions,
-models, encodings, hypotheses, bounds and limitations. The library contains many other results;
-selection is an editorial decision, not an automatic consequence of adding a theorem. A headline
-must establish a substantial full endpoint with conventional semantics and nonvacuous premises.
-Keep incomplete endpoints in `ROADMAP.md` and credit mathematical and formalization sources.
-List every selected entry in the top-level README's selected results and in the table of
-[abstracts/README.md](abstracts/README.md); `scripts/check_hygiene.py` checks both lists against
-the catalogue.
-
-Follow [the abstract requirements](AGENTS.md#curated-formal-abstracts) for impact assessment,
-source layout, independent review and `#check_abstract` audits. These apply to affected claims
-and artifacts; unrelated edits need no no-impact boilerplate or repeated PDF inspection.
-
-When selection or abstract sources change, run `python3 -B scripts/build_abstracts.py --check`.
-When abstracts or rendering change, inspect affected rendered pages and declaration links before
-integration and link the artifact/run and source revision. The **Formal abstract PDFs** workflow
-generates review artifacts; **API documentation** publishes main builds under
-`https://www.cslib.io/complexitylib/abstracts/`. See [the build guide](abstracts/README.md) for local
-generation. Generated TeX and PDFs stay untracked.
 
 ## Upstreaming
 

@@ -49,7 +49,7 @@ self-queries, negate the OR. Clause (3) uses the direct dual argument: a self-qu
 conjunctive complement witness forces membership; otherwise negate AND. This replaces the
 paper's route through complement duality in Propositions 2.5 and 2.6, with the same conclusion.
 Neither the remaining full-paper results nor the additional parity-logspace application is
-claimed here. No headline abstract is selected.
+claimed here.
 -/
 
 public section

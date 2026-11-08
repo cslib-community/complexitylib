@@ -28,8 +28,7 @@ Names in the examples link to the [API documentation][api], which lists every de
 docstring and source. Other entry points:
 
 * The README's [Start here][start] table points to checked examples for each kind of task.
-* The [selected formal abstracts][abstracts] state the library's headline results with every
-  definition they use, also as [PDFs][pdfs].
+* The [results inventory][results] collects named results with their theorem names and sources.
 * [ROADMAP.md][roadmap] records outstanding work, and [CONTRIBUTING.md][contributing] explains how
   to propose and review changes.
 
@@ -40,8 +39,7 @@ fixed in the library rather than documented around.
 [cslib]: https://github.com/leanprover/cslib
 [api]: https://www.cslib.io/complexitylib/
 [start]: https://github.com/cslib-community/complexitylib#start-here
-[abstracts]: https://github.com/cslib-community/complexitylib/blob/main/abstracts/README.md
-[pdfs]: https://www.cslib.io/complexitylib/abstracts/catalogue.pdf
+[results]: https://github.com/cslib-community/complexitylib/blob/main/results/README.md
 [roadmap]: https://github.com/cslib-community/complexitylib/blob/main/ROADMAP.md
 [contributing]: https://github.com/cslib-community/complexitylib/blob/main/CONTRIBUTING.md
 

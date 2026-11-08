@@ -116,11 +116,11 @@ def tidy_usage_report(lib: Library, prefixes: tuple[str, ...] = TIDY_INTERNAL_PR
     Public statement counts use exactly S3's source-declaration/type rule. Private counts
     require a source declaration range and a tidy constant in its elaborated type; generated
     constants sharing the owner's range are excluded by matching the selected source name.
-    Tests/abstracts use their own metadata. Guide files have source-only signals and explicitly
+    Tests use their own metadata. Guide files have source-only signals and explicitly
     unknown statement counts, since the root build does not elaborate the separate guide.
     """
     modules = sorted(m for m in lib.ileans if m.startswith(
-        ("Complexity.", "ComplexityTests.", "ComplexityAbstracts.")))
+        ("Complexity.", "ComplexityTests.")))
     extra = [m for m in modules if m not in lib.modules]
     constants = dict(lib.constants)
     if extra:
@@ -175,7 +175,7 @@ def tidy_usage_report(lib: Library, prefixes: tuple[str, ...] = TIDY_INTERNAL_PR
                   "dirty": bool(run(["git", "status", "--porcelain"],
                                     capture_output=True).stdout.strip()),
                   "source_dirty": bool(run(["git", "status", "--porcelain", "--",
-                      "Complexity", "ComplexityTests", "abstracts", "guide",
+                      "Complexity", "ComplexityTests", "guide",
                       "Complexity.lean"],
                       capture_output=True).stdout.strip()),
                   "scanned_source_sha256": source_hash.hexdigest(),

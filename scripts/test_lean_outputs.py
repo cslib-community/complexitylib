@@ -17,8 +17,6 @@ class ModuleTests(unittest.TestCase):
     def test_module_roles(self) -> None:
         self.assertEqual(lo.module_role("Complexity.Foundations.Data.List.Basic"), "lib")
         self.assertEqual(lo.module_role("ComplexityTests.Smoke"), "test")
-        self.assertEqual(lo.module_role("ComplexityTests.Abstracts.All"), "abstract")
-        self.assertEqual(lo.module_role("ComplexityAbstracts.CookLevinBridge"), "abstract")
 
 
 class OutputCheckTests(unittest.TestCase):
@@ -96,23 +94,23 @@ class OutputCheckTests(unittest.TestCase):
                 {"module": module, "directImports": [[i, False, False, False] for i in imports]}))
 
     def test_outputs_of_deleted_modules_are_ignored(self) -> None:
-        self.write_ileans({"Complexity": ["Complexity.A"], "ComplexityAbstracts": [],
+        self.write_ileans({"Complexity": ["Complexity.A"],
                            "Complexity.A": ["Mathlib.Init"], "Complexity.Deleted": []})
         self.assertEqual(list(lo.load_ileans(self.reference, glob=lambda root: [])),
                          ["Complexity.A"])
 
     def test_glob_library_modules_are_read_from_sources(self) -> None:
-        self.write_ileans({"Complexity": [], "ComplexityAbstracts": [],
+        self.write_ileans({"Complexity": [],
                            "ComplexityTests.T": ["Complexity.B"], "Complexity.B": [],
                            "ComplexityTests.Stale": []})
         glob = lambda root: ["ComplexityTests.T"] if root == "ComplexityTests" else []
         self.assertEqual(sorted(lo.load_ileans(self.reference, glob=glob)),
                          ["Complexity.B", "ComplexityTests.T"])
         self.assertEqual(lo.root_modules(glob),
-                         ["Complexity", "ComplexityTests.T", "ComplexityAbstracts"])
+                         ["Complexity", "ComplexityTests.T"])
 
     def test_missing_reachable_output_is_refused(self) -> None:
-        self.write_ileans({"Complexity": ["Complexity.Live"], "ComplexityAbstracts": [],
+        self.write_ileans({"Complexity": ["Complexity.Live"],
                            "Complexity.Live": ["Complexity.Missing"]})
         with self.assertRaises(SystemExit) as error:
             lo.load_ileans(self.reference, glob=lambda root: [])
@@ -120,10 +118,10 @@ class OutputCheckTests(unittest.TestCase):
                       str(error.exception.code))
 
     def test_missing_root_output_is_refused(self) -> None:
-        self.write_ileans({"Complexity": []})
+        self.write_ileans({"Complexity.A": []})
         with self.assertRaises(SystemExit) as error:
             lo.load_ileans(self.reference, glob=lambda root: [])
-        self.assertIn("ComplexityAbstracts.ilean is missing (a root)", str(error.exception.code))
+        self.assertIn("Complexity.ilean is missing (a root)", str(error.exception.code))
 
 
 if __name__ == "__main__":

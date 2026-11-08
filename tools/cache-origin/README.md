@@ -220,5 +220,5 @@ Review references: [Go filesystem confinement](https://pkg.go.dev/os#Root),
 
 Manual impact: the Operator's Manual reaches the updated canonical cache guide, security recovery
 procedure and operator examples; local restoration now supports bounded ordered mirrors. The Agent Operator's Manual needs no edit:
-roles, authorization and handoffs are unchanged. No Lean/API/abstract/roadmap/upstream impact.
+roles, authorization and handoffs are unchanged. No Lean/API/roadmap/upstream impact.
 AI assistance: OpenAI Codex wrote the origin and its tests. Agent review is not human approval.

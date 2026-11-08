@@ -18,8 +18,8 @@ set_option linter.style.header false
 
 Adapted from Mathlib's `scripts/mk_all.lean` by Yaël Dillies and Damiano Testa. The command-line
 options, module-style inference, import sorting and update exit codes follow that script.
-Each library is scanned relative to its configured `srcDir`, so a root such as
-`abstracts/ComplexityAbstracts.lean` imports `ComplexityAbstracts.*`, without an `abstracts` prefix.
+Each library is scanned relative to its configured `srcDir`, so a root such as `src/Lib.lean`
+imports `Lib.*`, without a `src` prefix.
 The shared `Mathlib.Util.GetAllModules` utility supplies discovery and deterministic sorting.
 -/
 

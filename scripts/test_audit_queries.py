@@ -79,8 +79,7 @@ class HelperTests(unittest.TestCase):
 def declaration(name: str, line: int, sort: str = "theorem", **refs) -> dict:
     return {"name": name, "module": "Complexity.A", "path": "A.lean", "role": "decl",
             "range": [line, 0, line, 1, line, 8, line, 9], "sort": sort, "local_uses": 0,
-            "implicit": [], "lib_refs": set(), "test_refs": set(), "abstract_refs": set(),
-            **refs}
+            "implicit": [], "lib_refs": set(), "test_refs": set(), **refs}
 
 
 class QueryTests(unittest.TestCase):
@@ -90,7 +89,7 @@ class QueryTests(unittest.TestCase):
                                   test_refs={"ComplexityTests.A"}),
             "A.local": declaration("A.local", 5, local_uses=2, implicit=["simp"]),
             "A.none": declaration("A.none", 7, sort="definition"),
-            "A.tested": declaration("A.tested", 9, abstract_refs={"ComplexityAbstracts.X"}),
+            "A.tested": declaration("A.tested", 9, test_refs={"ComplexityTests.X"}),
         }
         self.decls["B.used"] = {**declaration("B.used", 4), "module": "Complexity.B",
                                 "path": "B.lean"}
@@ -102,13 +101,13 @@ class QueryTests(unittest.TestCase):
             "Complexity/A.lean:5: A.local (theorem): only its own module "
             "[used implicitly through simp?]",
             "Complexity/A.lean:7: A.none (definition): nowhere",
-            "Complexity/A.lean:9: A.tested (theorem): abstracts ComplexityAbstracts.X",
+            "Complexity/A.lean:9: A.tested (theorem): tests ComplexityTests.X",
         ])
 
     def test_unused_keeps_declarations_no_other_module_names(self) -> None:
         for decl in self.decls.values():
             decl["category"] = ("outside" if decl["lib_refs"] else "tests_only"
-                                if decl["test_refs"] or decl["abstract_refs"] else "unreferenced")
+                                if decl["test_refs"] else "unreferenced")
         lines = aq.reference_lines(self.decls, ["Complexity/"], unused=True)
         self.assertEqual([line.split(": ")[1].split()[0] for line in lines],
                          ["A.local", "A.none", "B.used"])
