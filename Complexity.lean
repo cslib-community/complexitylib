@@ -2826,6 +2826,7 @@ public import Complexity.Computability.PCP.Approximation.Johnson
 public import Complexity.Computability.PCP.Approximation.LabelCover
 public import Complexity.Computability.PCP.Approximation.LabelCover.Incidence
 public import Complexity.Computability.PCP.Approximation.LabelCover.Repetition
+public import Complexity.Computability.PCP.Approximation.LabelCover.SmallSoundness
 public import Complexity.Computability.PCP.Approximation.MaxCSP
 public import Complexity.Computability.PCP.Approximation.MaxExactThreeSAT
 public import Complexity.Computability.PCP.Approximation.MaxThreeSAT
@@ -2852,17 +2853,18 @@ public import Complexity.Computability.PCP.Encoded.Composition.Enumeration
 public import Complexity.Computability.PCP.Encoded.Constraints
 public import Complexity.Computability.PCP.Encoded.Count
 public import Complexity.Computability.PCP.Encoded.DegreeReduction
+public import Complexity.Computability.PCP.Encoded.Deloop
 public import Complexity.Computability.PCP.Encoded.GapTheorem
 public import Complexity.Computability.PCP.Encoded.GenericComposition
 public import Complexity.Computability.PCP.Encoded.GenericComposition.Enumeration
 public import Complexity.Computability.PCP.Encoded.Iteration
+public import Complexity.Computability.PCP.Encoded.ParallelEdges
 public import Complexity.Computability.PCP.Encoded.Power
 public import Complexity.Computability.PCP.Encoded.Preprocess
 public import Complexity.Computability.PCP.Encoded.Preprocess.Programs
 public import Complexity.Computability.PCP.Encoded.SelectedAssignmentTester
 public import Complexity.Computability.PCP.Encoded.SelectedComposition
 public import Complexity.Computability.PCP.Encoded.SelectedComposition.Enumeration
-public import Complexity.Computability.PCP.Encoded.Simple
 public import Complexity.Computability.PCP.Encoded.Size
 public import Complexity.Computability.PCP.Encoded.ThreeSAT
 public import Complexity.Computability.PCP.Encoded.Verifier

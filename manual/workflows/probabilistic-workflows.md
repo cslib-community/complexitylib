@@ -472,14 +472,35 @@ conditioned, which gives a coordinate won with probability at most `G.value`. Ru
 
 For Label Cover, import
 [LabelCover/Repetition.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/Repetition.lean)
-and apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hsimple hβγ hε k`. Its premises are that the
-instance is simple (`Graph.IsSimple`, decidable), that `2 ≤ |β| |γ|` and that `ε` is at most the
-unsatisfied value of the instance. The conclusion bounds the satisfied proportion of the `k`-fold
-repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be nonempty
-or well formed. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
-compute the numbering of a two-fold repetition, separate simple from non-simple instances, and
-bound the repetitions of an instance of value `1/2` by `(1 - (1/2)³ / 6000)^{k / 2}`. NP-hardness of
-small-soundness Label Cover is not yet derived
+and open `Cslib.PCP.Encoded`. For an instance `g : Graph (β → γ)` with `[Fintype β] [Fintype γ]`
+and `[DecidableEq γ]`, apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hpar hβγ hε k`. Its
+premises are that the instance has no parallel edges (`hpar : g.NoParallelEdges`, decidable), that
+`2 ≤ Fintype.card β * Fintype.card γ`, and `hε : ε ≤ (g.toGraph projectionEval).unsatVal`. The
+conclusion bounds the satisfied proportion `1 - ((pow k g).toGraph projectionEval).unsatVal` of the
+`k`-fold repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be
+nonempty or well formed. The vertex numbers of the repetition grow like `(n + 1) ^ (2 ^ k)`
+(`LabelCoverRepetition.vertices_pow_le`), so its polynomial-time compilation holds for each fixed
+`k` only. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
+compute the numbering of a two-fold repetition, separate instances without parallel edges from
+instances with them, and bound the repetitions of an instance of value `1/2` by
+`(1 - (1/2)³ / 6000)^{k / 2}`.
+
+For a hardness result, import
+[LabelCover/SmallSoundness.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/SmallSoundness.lean).
+`polyTimeReducible_GapTwoCSP_GapLabelCover_pow a b hab encA hε hε1 hk` reduces
+`GapTwoCSP α (1 - ε)` to Label Cover over `k`-tuples, for any finite alphabet `α` with two
+distinct symbols, `0 < ε ≤ 1` and `0 < k`. The soundness is
+`(1 - (ε / 2)³ / 6000)^{k / log₂ (|α|² |α|)}`. Apply `Graph.deloop` before
+`LabelCoverIncidence.reduce`: loop removal makes a binary CSP instance loopless without changing
+its value (`Graph.isLoopless_deloop`, `Graph.unsatVal_deloop`), and the incidence reduction of a
+loopless instance has no parallel edges (`LabelCoverIncidence.noParallelEdges_reduce`). Compose with a hard source through
+`PromiseProblem.NPHard.trans`, as `GapLabelCover_npHard_pow` does with `GapTwoCSP_npHard`, and
+weaken the soundness with `PromiseProblem.NPHard.mono`, as `exists_GapLabelCover_npHard` does. The
+[small-soundness clients](../../ComplexityTests/LabelCoverSmallSoundness.lean) remove a concrete
+loop, show that the incidence reduction of a loop has parallel edges and has none after loop
+removal, and instantiate both hardness theorems. Run
+`scripts/build.sh ComplexityTests.LabelCoverRepetition ComplexityTests.LabelCoverSmallSoundness`.
+Håstad's reductions from Label Cover remain open
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
