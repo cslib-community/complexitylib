@@ -60,6 +60,9 @@ programming or the ellipsoid method [Knuth1994]; that algorithmic statement is n
 * `SimpleGraph.lovaszTheta_strongProd_le`, `SimpleGraph.lovaszTheta_strongPow_le`:
   submultiplicativity.
 * `SimpleGraph.shannonCapacity_le_lovaszTheta`: Lovász's bound `Θ(G) ≤ ϑ(G)`.
+* `SimpleGraph.natCard_le_lovaszTheta_mul_lovaszTheta_compl`: `|V| ≤ ϑ(G) ϑ(Gᶜ)`, from the
+  inequality `SimpleGraph.sum_inner_sq_mul_inner_sq_le` for orthonormal representations of a graph
+  and its complement [Knuth1994, §11, (11.1); §23, (23.2)].
 
 ## References
 
@@ -331,5 +334,76 @@ theorem lovaszTheta_strongPow_le [Finite V] (k : ℕ) :
 theorem shannonCapacity_le_lovaszTheta [Finite V] : G.shannonCapacity ≤ G.lovaszTheta :=
   shannonCapacity_le fun k =>
     (indepNum_le_lovaszTheta (G := G.strongPow (k + 1))).trans (lovaszTheta_strongPow_le _)
+
+/-! ### A graph and its complement -/
+
+/-- A lower bound on every feasible value of the infimum defining `ϑ(G)` is a lower bound on
+`ϑ(G)`. -/
+theorem le_lovaszTheta_of_forall [Finite V] [Nonempty V] {s : ℝ}
+    (h : ∀ t : ℝ, 0 < t → ∀ (d : ℕ) (u : V → EuclideanSpace ℝ (Fin d))
+      (c : EuclideanSpace ℝ (Fin d)), G.IsOrthonormalRepresentation u → ‖c‖ = 1 →
+      (∀ v, 1 ≤ t * ⟪c, u v⟫ ^ 2) → s ≤ t) :
+    s ≤ G.lovaszTheta :=
+  le_csInf nonempty_feasible fun _ ⟨ht, d, u, c, hu, hc, hv⟩ => h _ ht d u c hu hc hv
+
+/-- **Knuth's inequality (11.1)** for unit weights: if `u` represents `G` and `w` represents `Gᶜ`,
+then for unit handles `c` and `d`, `∑ ⟪c, u v⟫² ⟪d, w v⟫² ≤ 1`. The tensors `u v ⊗ w v` are
+orthonormal, since distinct `v, v'` are nonadjacent in `G` or in `Gᶜ`, and Bessel's inequality
+applies to `c ⊗ d`. -/
+theorem sum_inner_sq_mul_inner_sq_le [Fintype V] {E F : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] [NormedAddCommGroup F] [InnerProductSpace ℝ F] {u : V → E}
+    {w : V → F} (hu : G.IsOrthonormalRepresentation u) (hw : Gᶜ.IsOrthonormalRepresentation w)
+    {c : E} {d : F} (hc : ‖c‖ = 1) (hd : ‖d‖ = 1) :
+    ∑ v, ⟪c, u v⟫ ^ 2 * ⟪d, w v⟫ ^ 2 ≤ 1 := by
+  classical
+  have horth : Orthonormal ℝ (fun v => u v ⊗ₜ[ℝ] w v) := by
+    rw [orthonormal_iff_ite]
+    intro v v'
+    rw [TensorProduct.inner_tmul]
+    by_cases hvv : v = v'
+    · subst hvv
+      simp only [↓reduceIte, real_inner_self_eq_norm_sq, hu.norm_eq_one, hw.norm_eq_one, one_pow,
+        mul_one]
+    · simp only [hvv, ↓reduceIte]
+      by_cases hadj : G.Adj v v'
+      · rw [hw.inner_eq_zero hvv (by simp [compl_adj, hadj]), mul_zero]
+      · rw [hu.inner_eq_zero hvv hadj, zero_mul]
+  have hB := horth.sum_inner_products_le (s := Finset.univ) (c ⊗ₜ[ℝ] d)
+  simp only [TensorProduct.inner_tmul, TensorProduct.norm_tmul, hc, hd, mul_one, one_pow,
+    Real.norm_eq_abs, sq_abs] at hB
+  calc ∑ v, ⟪c, u v⟫ ^ 2 * ⟪d, w v⟫ ^ 2 = ∑ v, (⟪u v, c⟫ * ⟪w v, d⟫) ^ 2 := by
+        refine Finset.sum_congr rfl fun v _ => ?_
+        rw [real_inner_comm c, real_inner_comm d, mul_pow]
+    _ ≤ 1 := hB
+
+/-- **A graph and its complement**: `|V| ≤ ϑ(G) ϑ(Gᶜ)` [Knuth1994, §23, (23.2)]. -/
+theorem natCard_le_lovaszTheta_mul_lovaszTheta_compl [Finite V] :
+    (Nat.card V : ℝ) ≤ G.lovaszTheta * Gᶜ.lovaszTheta := by
+  have := Fintype.ofFinite V
+  rcases isEmpty_or_nonempty V with hV | hV
+  · rw [Nat.card_of_isEmpty, Nat.cast_zero]
+    exact mul_nonneg lovaszTheta_nonneg lovaszTheta_nonneg
+  have hpos : 0 < G.lovaszTheta := lovaszTheta_pos
+  -- every feasible `t'` for `Gᶜ` satisfies `|V| / t' ≤ ϑ(G)`
+  have key : ∀ t' : ℝ, 0 < t' → ∀ (d' : ℕ) (w : V → EuclideanSpace ℝ (Fin d'))
+      (c' : EuclideanSpace ℝ (Fin d')), Gᶜ.IsOrthonormalRepresentation w → ‖c'‖ = 1 →
+      (∀ v, 1 ≤ t' * ⟪c', w v⟫ ^ 2) → (Nat.card V : ℝ) / t' ≤ G.lovaszTheta := by
+    intro t' ht' d' w c' hw hc' hw'
+    refine le_lovaszTheta_of_forall fun t ht d u c hu hc hu' => ?_
+    rw [div_le_iff₀ ht']
+    have hsum := sum_inner_sq_mul_inner_sq_le hu hw hc hc'
+    calc (Nat.card V : ℝ) = ∑ _v : V, (1 : ℝ) := by simp [Nat.card_eq_fintype_card]
+      _ ≤ ∑ v, (t * ⟪c, u v⟫ ^ 2) * (t' * ⟪c', w v⟫ ^ 2) :=
+          Finset.sum_le_sum fun v _ => one_le_mul_of_one_le_of_one_le (hu' v) (hw' v)
+      _ = t * t' * ∑ v, ⟪c, u v⟫ ^ 2 * ⟪c', w v⟫ ^ 2 := by
+          rw [Finset.mul_sum]
+          exact Finset.sum_congr rfl fun v _ => by ring
+      _ ≤ t * t' * 1 := mul_le_mul_of_nonneg_left hsum (mul_pos ht ht').le
+      _ = t * t' := mul_one _
+  have : (Nat.card V : ℝ) / G.lovaszTheta ≤ Gᶜ.lovaszTheta := by
+    refine le_lovaszTheta_of_forall fun t' ht' d' w c' hw hc' hw' => ?_
+    rw [div_le_iff₀ hpos, mul_comm]
+    exact (div_le_iff₀ ht').1 (key t' ht' d' w c' hw hc' hw')
+  rwa [div_le_iff₀ hpos, mul_comm] at this
 
 end SimpleGraph
