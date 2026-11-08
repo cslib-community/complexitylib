@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
 public import Complexity.GameTheory.Congestion.Basic
+import Complexity.Foundations.Data.List.Blocks
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
@@ -91,12 +92,6 @@ abbrev CongestionCode : Type := List (List (List ℕ)) × List (List ℕ)
 /-- The encoding of explicit congestion games: resource indices in unary, costs in binary. -/
 abbrev encCongestion : CongestionCode ↪ List Bool :=
   encPair (encList (encList (encList encUnary))) (encList (encList encNat))
-
-@[fun_prop]
-private theorem sum_polyTime {γ : Type} {encIn : γ ↪ List Bool} {l : γ → List ℕ}
-    (hl : ComputableInPolyTime l encIn (encList encNat)) :
-    ComputableInPolyTime (fun x => (l x).sum) encIn encNat :=
-  (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_sum).comp hl
 
 namespace CongestionCode
 
@@ -367,21 +362,13 @@ private theorem sum_range_getD (l : List ℕ) (m : ℕ) :
     rw [Finset.sum_range_succ, ih, List.take_add_one, List.sum_append, Nat.cast_add]
     rcases h : l[m]? with _ | x <;> simp [List.getD_eq_getElem?_getD, h]
 
-private theorem sum_map_range {M : Type*} [AddCommMonoid M] (n : ℕ) (g : ℕ → M) :
-    ((List.range n).map g).sum = ∑ i ∈ Finset.range n, g i := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [List.range_succ, List.map_append, List.sum_append, ih, Finset.sum_range_succ]
-    simp
-
 /-- Rosenthal's potential of `c.toGame` is the natural-number `potential`. -/
 theorem rosenthalPotential_toGame (c : CongestionCode)
     (s : ∀ i : Fin c.players, Fin (c.numStrategies i)) :
     c.toGame.rosenthalPotential s = (c.potential (c.profileList s) : ℝ) := by
   rw [CongestionGame.rosenthalPotential_def]
   unfold potential
-  rw [sum_map_range, Nat.cast_sum, ← Fin.sum_univ_eq_sum_range]
+  rw [List.sum_map_range_eq_sum_range, Nat.cast_sum, ← Fin.sum_univ_eq_sum_range]
   refine Finset.sum_congr rfl fun e _ => ?_
   rw [load_toGame]
   simp only [toGame, Nat.add_sub_cancel]
