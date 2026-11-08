@@ -80,11 +80,11 @@ theorem retainLoop_exec {W m a b boundary ptr D t v : ℕ} (as : List (BitVec m)
     ∃ y, ExecWithin W retainLoop x y (rs.length * (11 * as.length + 30) + 2) ∧
       y.mem = Dictionary.filledMemory D (retainedEntries as v rs) x.mem t ∧
       y.regs Dictionary.top = Dictionary.filledTop D (retainedEntries as v rs) x.mem t ∧
-      y.regs link = 0 := by
+      y.regs link = 0 ∧ y.regs one = 1 ∧ y.regs zero = 0 := by
   induction rs generalizing x ptr t with
   | nil =>
     cases hlinked
-    refine ⟨x, ?_, rfl, ht, hl⟩
+    refine ⟨x, ?_, rfl, ht, hl, hone, hz⟩
     simpa only [List.length_nil, Nat.zero_mul, Nat.zero_add, retainLoop] using
       (ExecWithin.loop_exit (w := W) (x := x) (cond := .lt zero link) (body := retainBody)
         (by simp [Cond.holds_lt, hz, hl]))
@@ -145,7 +145,7 @@ theorem retainLoop_exec {W m a b boundary ptr D t v : ℕ} (as : List (BitVec m)
         intro i hi
         rw [memoryFrame _ (by omega)]
         exact hinput i hi
-      obtain ⟨y, heTail, ym, yt, yl⟩ := ih next
+      obtain ⟨y, heTail, ym, yt, yl, yo, yz⟩ := ih next
         ((heBody.regs_eq (by decide)).trans hb)
         ((heBody.regs_eq (by decide)).trans hc)
         ((heBody.regs_eq (by decide)).trans hn)
@@ -156,7 +156,7 @@ theorem retainLoop_exec {W m a b boundary ptr D t v : ℕ} (as : List (BitVec m)
         ((heBody.regs_eq (by decide)).trans hD) ntop no nz nlinked ninput
         (fun r hr => hstates r (List.mem_cons_of_mem _ hr))
         (fun r hr => hindices r (List.mem_cons_of_mem _ hr))
-      refine ⟨y, ?_, ?_, ?_, yl⟩
+      refine ⟨y, ?_, ?_, ?_, yl, yo, yz⟩
       · exact (ExecWithin.loop_iter (by simp only [Cond.holds_lt, hz, hl]; exact hp)
           heBody heTail).mono (by simp only [List.length_cons, Nat.add_mul, Nat.one_mul]; omega)
       · simpa only [retainedEntries, List.map_cons, Dictionary.filledMemory, nmem, result] using ym

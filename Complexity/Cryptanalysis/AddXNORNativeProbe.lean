@@ -138,7 +138,7 @@ theorem probeScan_witness_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec
     (hinput : ∀ i (hi : i < as.reverse.length), x.mem (b + i) = as.reverse[i].toNat)
     (hfit : Fits W (D + boundary + b + as.length + 8 * 2 ^ m + 2 ^ as.length + 4)) :
     ∃ y, ExecWithin W probeScan x y (rs.length * (18 * as.length + 39) + 2) ∧
-      y.mem = x.mem ∧ y.regs link = 0 ∧
+      y.mem = x.mem ∧ y.regs link = 0 ∧ y.regs one = 1 ∧ y.regs operators = v ∧
       (y.regs operand ≠ 0 ↔ ∃ r ∈ rs, x.mem (Dictionary.slot D
         (backward ((decode as.length v).zip as) (BitVec.ofNat m r.1)).toNat) ≠ 0) ∧
       (y.regs operand ≠ 0 → ∃ r ∈ rs,
@@ -150,7 +150,7 @@ theorem probeScan_witness_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec
   induction rs generalizing x ptr with
   | nil =>
     cases hlinked
-    refine ⟨x, ?_, rfl, hl, ?_, ?_⟩
+    refine ⟨x, ?_, rfl, hl, hone, hv, ?_, ?_⟩
     · simpa only [probeScan, List.length_nil, Nat.zero_mul, Nat.zero_add] using
         (ExecWithin.loop_exit (w := W) (x := x) (cond := .lt zero link)
           (body := probeScanBody) (by simp [Cond.holds_lt, hz, hl]))
@@ -172,7 +172,7 @@ theorem probeScan_witness_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec
         have nm : n.mem = x.mem := zm
         have nl : n.regs link = x.mem ptr := by simpa [n] using zl
         have nt : n.regs operand = 0 := by simpa +decide [n, operand, link] using hit
-        obtain ⟨y, hy, ym, yl, hiff, hw⟩ := ih n
+        obtain ⟨y, hy, ym, yl, yo, yv, hiff, hw⟩ := ih n
           ((hnstep.regs_eq (by decide)).trans hb)
           ((hnstep.regs_eq (by decide)).trans hc)
           ((hnstep.regs_eq (by decide)).trans hn)
@@ -183,7 +183,7 @@ theorem probeScan_witness_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec
           (by simpa only [nm] using htail)
           (fun r hr => hstates r (List.mem_cons_of_mem _ hr))
           (by simpa only [nm] using hinput)
-        refine ⟨y, ?_, ym.trans nm, yl, ?_, ?_⟩
+        refine ⟨y, ?_, ym.trans nm, yl, yo, yv, ?_, ?_⟩
         · exact (ExecWithin.loop_iter (cond := .lt zero link) (by simp [Cond.holds_lt, hz, hl, hp])
             hnstep hy).mono (by simp only [List.length_cons, Nat.add_mul, Nat.one_mul]; omega)
         · rw [hiff, nm]
@@ -202,7 +202,9 @@ theorem probeScan_witness_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec
               (w := W) (x := z) (d := link) (s := zero))
           exact (he.seq (ExecWithin.branch_neg
             (by simp [Cond.holds_eq, hit, zz]) hcopy)).mono (by omega)
-        refine ⟨n, ?_, zm, by simp [n], ?_, ?_⟩
+        refine ⟨n, ?_, zm, by simp [n],
+          by simpa +decide [n, one, link] using zone,
+          by simpa +decide [n, operators, link] using zv, ?_, ?_⟩
         · exact (ExecWithin.loop_iter (cond := .lt zero link)
             (by simp [Cond.holds_lt, hz, hl, hp]) hnstep
             (ExecWithin.loop_exit (x := n) (cond := .lt zero link)
@@ -247,7 +249,7 @@ theorem probeScan_original_exec {W m b boundary ptr D v : ℕ}
           ((decode a₂.length (y.regs bits)).zip a₂) ++
           ((decode a₃.length (y.regs operators)).zip a₃) ++
           ((decode a₄.length (y.regs firstOperators)).zip a₄)) s = t) := by
-  obtain ⟨y, he, hm, hl, _, hw⟩ := probeScan_witness_exec a₃
+  obtain ⟨y, he, hm, hl, _, _, _, hw⟩ := probeScan_witness_exec a₃
     (ws.map fun u => ((backward ((decode a₄.length u).zip a₄) t).toNat, u))
     x hb hc hn hv hfv hl hD hone hz htag hlinked
     (by
@@ -294,7 +296,7 @@ theorem probeScan_exec {W m b boundary ptr D v : ℕ} (as : List (BitVec m))
       y.mem = x.mem ∧ y.regs link = 0 ∧
       (y.regs operand ≠ 0 ↔ ∃ r ∈ rs, x.mem (Dictionary.slot D
         (backward ((decode as.length v).zip as) (BitVec.ofNat m r.1)).toNat) ≠ 0) := by
-  obtain ⟨y, he, hm, hl, hit, _⟩ := probeScan_witness_exec as rs x
+  obtain ⟨y, he, hm, hl, _, _, hit, _⟩ := probeScan_witness_exec as rs x
     hb hc hn hv hfv hl hD hone hz htag hlinked hstates hinput hfit
   exact ⟨y, he, hm, hl, hit⟩
 

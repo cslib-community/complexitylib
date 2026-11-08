@@ -161,6 +161,10 @@ theorem selectQueries_exec {W m p c b₃ q₂ q₃ v₂ v₃ h h₄ : ℕ}
       y.regs selectedBackward = h₄ +
         (eval ((decode cs.length v₃).zip (cs.map (BitVec.setWidth p))) g).toNat ∧
       y.regs state = g.toNat ∧ y.regs backwardCounterIndex = (~~~g).toNat ∧
+      (∀ i (hi : i < (bs.map (BitVec.setWidth p)).reverse.length),
+        y.mem (q₂ + i) = (bs.map (BitVec.setWidth p)).reverse[i].toNat) ∧
+      (∀ i (hi : i < (cs.map (BitVec.setWidth p)).length),
+        y.mem (q₃ + i) = (cs.map (BitVec.setWidth p))[i].toNat) ∧
       (∀ a, a < q₂ ∨ q₃ + cs.length ≤ a → y.mem a = x.mem a) := by
   have hB := Nat.two_pow_pos bs.length
   have hC := Nat.two_pow_pos cs.length
@@ -193,7 +197,7 @@ theorem selectQueries_exec {W m p c b₃ q₂ q₃ v₂ v₃ h h₄ : ℕ}
     (hfit.of_le (by simp only [List.length_map]; omega))
   obtain ⟨z, hz, zg, zi, zm, _⟩ := selectCounterIndices_exec g y (hfit.of_le (by omega))
   have exec := he₂.seq (he₃.seq (hu.seq (hy.seq hz)))
-  refine ⟨z, ?_, ?_, ?_, zg, zi, ?_⟩
+  refine ⟨z, ?_, ?_, ?_, zg, zi, ?_, ?_, ?_⟩
   · simpa only [selectQueries, List.length_map, List.length_reverse,
       Bool.false_eq_true, ↓reduceIte] using exec
   · rw [hz.regs_eq (by
@@ -209,6 +213,10 @@ theorem selectQueries_exec {W m p c b₃ q₂ q₃ v₂ v₃ h h₄ : ℕ}
       simp only [Code.Preserves, Op.dest, ne_eq, Option.some.injEq]
       decide)]
     simpa only [List.length_map, Bool.false_eq_true, ↓reduceIte] using yb
+  · intro i hi
+    rw [zm, ym, um]; exact read₂ i hi
+  · intro i hi
+    rw [zm, ym, um]; exact read₃ i hi
   · intro a ha
     rw [zm, ym, um, zf₃ _ (by simp only [List.length_reverse]; omega), zf₂ _ (by omega)]
 

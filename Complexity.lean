@@ -2888,8 +2888,14 @@ public import Complexity.Cryptanalysis.AddXNORNativeBackward
 public import Complexity.Cryptanalysis.AddXNORNativeBackwardRetain
 public import Complexity.Cryptanalysis.AddXNORNativeBalance
 public import Complexity.Cryptanalysis.AddXNORNativeBuckets
+public import Complexity.Cryptanalysis.AddXNORNativeClassPrepare
+public import Complexity.Cryptanalysis.AddXNORNativeClassProbe
+public import Complexity.Cryptanalysis.AddXNORNativeClassRetain
+public import Complexity.Cryptanalysis.AddXNORNativeClassSearch
+public import Complexity.Cryptanalysis.AddXNORNativeClassSemantics
 public import Complexity.Cryptanalysis.AddXNORNativeCounters
 public import Complexity.Cryptanalysis.AddXNORNativeDictionary
+public import Complexity.Cryptanalysis.AddXNORNativeDictionaryComplete
 public import Complexity.Cryptanalysis.AddXNORNativeDictionaryFrame
 public import Complexity.Cryptanalysis.AddXNORNativeDualPreparation
 public import Complexity.Cryptanalysis.AddXNORNativeDualProbe

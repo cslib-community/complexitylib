@@ -93,8 +93,9 @@ with self-inverse fourth-quarter operations and one retained second-quarter inde
 these restrictions do not establish the general construction premises.
 General native backward preparation now derives full inverse-state bucket records
 and original packed indices for arbitrary operand lists and widths, including
-non-self-inverse additions. Its connection to the source complete class enumerator remains open; the bounded
-projected-query/retained-dictionary scan is described below.
+non-self-inverse additions. The complete native selected-class enumerator now connects
+these buckets to a decision and witness endpoint, described below; global class iteration
+and source resource composition remain open.
 Forward first-quarter preparation followed by forward second-quarter retention now
 derives its exact retained dictionary, top and provenance from actual native stores,
 with a checked direction-distinguishing client and preservation of all forward buckets.
@@ -112,8 +113,16 @@ charged. Native forward/complemented backward counter indices are also computed;
 actual counter-table reads and orientation are not yet composed. Checked clients
 include non-self-inverse addition, colliding full-state low keys, multiword
 projection order, nonzero counter indices and whole-program zero-width/local-miss
-runs. The two middle-quarter words remain fixed parameters; whole-class iteration,
-termination/completeness and the global endpoint remain open.
+runs. The older bounded API fixes the middle-quarter words; the new full-class
+`searchClass_exec` computes their bounds and iterates both natively. From original
+arrays it derives both bucket families, the complete forward-class dictionary,
+valid release chain and full opposite stream. Its tag is nonzero exactly when the
+selected class has an original indexed solution, a zero tag proves class absence,
+and returned registers reconstruct the original witness. The packed predicate is
+proved equivalent to existing `Dissection.Meets`. General finite termination/time
+includes all setup/projection/preparation and actual bucket hits; early exit and
+exhaustion are proved, with empty-quarter, zero-width and collision clients.
+This completes the selected-class native decision milestone, not the global endpoint.
 The backward-record consumer below cannot substitute for the forward dictionary
 required by original-chain probe soundness.
 Consecutive backward preparation followed by native forward retention now derives
@@ -126,13 +135,12 @@ The arbitrary-width query and zero-width collision clients are checked.
 The bounded projected preparation/query/probe and original-chain reconstruction
 connection is now supplied by `projectedProbe_exec` above; these older components
 do not by themselves provide whole-class completeness.
-General whole-class termination/time and an integrated original-input class-search
-decision/witness theorem remain unproved. This is a sparse WordRAM
-implementation, not the source's sorted lists or a compact arena. The general correctness/resource certificates for the
-second-quarter/class iterator and streaming opposite-side consumer, counter-selected
-orientation and single global counter/balance/decision/witness execution remain
-unproved, as do global width and computed-balance peak-space composition and a
-source-bit-model realization. These components do not close Lemma 8 or Theorem 7;
+The new class endpoint always retains the forward class. Counter-table reads,
+smaller-side orientation, release/reuse and iteration across all classes, and a
+single global counter/balance/decision/witness execution remain unproved, as do
+global width and simultaneous computed-balance peak-space composition. This is a
+sparse WordRAM implementation, not the source's sorted lists, compact arena or
+multitape bit model. These components do not close Lemma 8 or Theorem 7;
 per-bucket space bounds must not be summed or reused as an unproved global peak
 certificate.
 The pointer/Boolean and counter-operation

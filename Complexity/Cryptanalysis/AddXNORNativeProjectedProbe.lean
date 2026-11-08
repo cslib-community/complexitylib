@@ -80,7 +80,7 @@ theorem projectedProbe_exec {W m p b c b₃ b₄ q₂ q₃ h f h₄ f₄ D v₂ 
   dsimp only
   let fk := backward ((decode bs.length v₂).zip (bs.map (BitVec.setWidth p))) g
   let bk := eval ((decode cs.length v₃).zip (cs.map (BitVec.setWidth p))) g
-  obtain ⟨z, hz, zf, zb, _, _, zmem⟩ := selectQueries_exec bs cs g x hsecond hthird
+  obtain ⟨z, hz, zf, zb, _, _, _, _, zmem⟩ := selectQueries_exec bs cs g x hsecond hthird
     hend₂ hend₃ hproj hqueryFit
   let u := z.set base b |>.set count as.length |>.set modulus (2 ^ m)
     |>.set initial s.toNat |>.set heads h |>.set frontier f |>.set keyModulus (2 ^ p)

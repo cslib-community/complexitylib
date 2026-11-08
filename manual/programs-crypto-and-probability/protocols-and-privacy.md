@@ -612,9 +612,10 @@ witness arithmetic, original input values and all registers. A physical width
 that fits only the state is insufficient. These are instruction and occupied-bit
 bounds for this RAM model, not a multitape bit-time simulation.
 
-The full second-quarter/class iterator, streaming opposite-side dictionary
-consumer, counter-selected orientation, joint counter/balance execution and
-single original-input decision/witness run remain unproved. In particular,
+The native full-class iterator and original-input decision/witness run for one
+selected class are now proved by `AddXNORNativeClassSearch`, described below.
+Counter-selected orientation, joint counter/balance execution and a decision run
+across all classes remain unproved. In particular,
 no theorem yet composes the per-bucket lifetimes across all classes or derives
 the global peak bound from the computed $\mu_p$. The native components do not
 complete Lemma 8 or Theorem 7. A compact sorted-list/arena realization or a
@@ -701,9 +702,9 @@ $4k2^{p+k}+2k2^{2k}$. Each quarter index has at most $(p+1)2^k$ trie nodes.
 These statements separate counted chain calls, inspected dictionary nodes and
 retained dictionary size. The dictionary is now bound before its consumer fold.
 The separate native projection, both counter directions and balance traversal
-certificates do not yet compose with this streaming implementation. Native
-key/list construction, word-bit costs, address capacity, allocation and compiled
-peak storage remain unproved. Thus the streaming implementation is functionally certified,
+certificates do not yet compose with this streaming implementation. The fixed-class native endpoint below now derives key/list construction with
+explicit address-fit hypotheses. Word-bit simulation, global allocation and compiled
+peak storage remain unproved. Thus this streaming implementation is functionally certified,
 while the paper's full runtime/space endpoint remains open. The existing
 per-class means still give no bound on expected maximum balance.
 
@@ -826,9 +827,9 @@ originating retained bucket record. No assumed decoded-witness correctness is
 needed. The complete client above supplies all premises for four original
 operands and zero packed witnesses, and checks last-writer replacement.
 This theorem still requires constructed memory and semantic bucket records:
-connecting native projected preparation and class filtering to those premises,
-executing retention and probing consecutively, general whole-class termination,
-and the original-input global endpoint remain open. It does not change the
+the raw-input `searchClass_exec` endpoint below now derives those premises and
+executes complete retention and opposite-side probing with general termination.
+The original-input global endpoint remains open. This component does not change the
 instruction model or establish the source's sorted-list bit-runtime theorem.
 
 The same checked client now includes `constructedPipeline`: starting with only
@@ -857,9 +858,9 @@ address/index fit premises. The complete
 checks non-self-inverse addition, collisions, dirty memory, and an empty
 zero-width quarter. From the repository root, check it with
 `lake env lean ComplexityTests/AddXNORNativeBackward.lean` after building its
-import. This API supplies backward bucket semantics; connecting both prepared
-sides through actual dictionary retention and projected queries to
-`probeScan_original_exec` remains open.
+import. This API supplies backward bucket semantics. The `searchClass_exec` endpoint
+below connects both prepared sides through actual forward dictionary retention
+and a complete native projected-query stream, deriving original-chain soundness.
 
 For the retained **forward** side, import
 `Complexity.Cryptanalysis.AddXNORNativeForwardRetain` and apply
@@ -940,9 +941,53 @@ oracle. `RegisterParameter` in `Complexity.Computability.WordRAM.RegisterParamet
 is also available for clients replacing selected immediate writes by copies of
 an already computed, preserved register.
 
-These APIs fix one word per middle quarter. Whole-class completeness, actual
-counter-table/orientation composition and global computed-balance time/peak
-storage are still open. A miss is not a global no-instance conclusion. The following backward-record consumer cannot substitute
+Those bounded APIs fix one word per middle quarter. For a complete selected-class
+search, import `Complexity.Cryptanalysis.AddXNORNativeClassSearch` and use
+`Quarter.searchClass_exec`. Its raw input order and layout are the same: original
+first/second-quarter arrays in forward order, third/fourth arrays in reverse order,
+then scratch projections, heads and record arenas, and an initially zero dictionary.
+Supply $p\le m$, separation and the combined physical word-fit bound. Initial
+registers need no semantic setup. The program computes both middle-word bounds
+with shifts and visits every admissible packed index, rather than accepting words
+or correct bucket keys from the caller.
+
+The program projects both middle quarters and prepares both quarter bucket families
+before retaining the complete forward class. The native opposite-class iterator
+then streams every third-quarter word and its computed inverse bucket. A hit sets
+`stop` to the current word to exit without destroying the witnesses; exhaustion
+leaves a zero tag and `operators = stop = 2^{cs.length}`. The theorem proves a
+nonzero tag exactly when an original solution occurs in the selected class, and
+a zero tag exactly when that class has no solution. `PackedClassSolution` states
+all four admissible packed-index bounds explicitly; `packedClassSolution_iff_meets`
+identifies it with the existing `Dissection.Meets` predicate. Reported registers
+solve the original four-quarter chain. A valid dictionary release chain and a
+bound on its distinct states are derived from construction, not assumed.
+
+`classRetainTime_eq` and `classProbeTime_eq` expose the loop budgets. If $b,c$ are
+the second/third quarter lengths, $H_F$ is the number of emitted retained entries,
+and $H_B$ is the number of records in the full opposite stream, the loop budgets are
+$H_F(11b+30)+2^b(18b+35)+2$ and
+$H_B(18c+39)+2^c(11c+22)+2$. Early exit uses at most the full-stream budget.
+The endpoint also charges projection, both preparations, register transfers,
+initialization and bound computation. These are standard WordRAM instructions,
+not bit operations or a derived global word-width theorem.
+
+From the repository root, run
+`lake build Complexity.Cryptanalysis.AddXNORNativeClassSearch` followed by
+`lake env lean ComplexityTests/AddXNORNativeClassSearch.lean`.
+The [complete client](../../ComplexityTests/AddXNORNativeClassSearch.lean)
+instantiates every raw premise at nontrivial widths for arbitrary targets/classes,
+then checks a class hit and an exhausted class for the same original instance,
+non-self-inverse additions, replacement collisions, zero-width indexed duplicates,
+and whole-program empty-quarter hit/miss runs. Separate arenas or increase width
+when fit/separation fails; dictionary cells must actually start at zero. The scan
+and retention contracts expose their returned increment register, and the scan also
+exposes its restored packed word, so outer loops reuse proved register facts.
+
+This searches one class and always retains the forward side. Actual counter-table
+reads, smaller-side orientation, iteration/release across classes and global
+computed-balance time/peak storage remain open. A local miss is not a global
+no-instance conclusion. The following backward-record consumer cannot substitute
 for the forward retained dictionary.
 
 For consecutive backward preparation and native forward retention, import
@@ -991,7 +1036,10 @@ index as `operand - 1` only when its tag is nonzero.
 The checked client executes later-index success, full exhaustion, empty buckets,
 an empty index range and success before an invalid later bucket. The
 `probeClass_prefix_memory` theorem proves memory preservation at every execution
-prefix. General class termination/time and semantic returned-witness correctness
-are still unproved; these concrete runs do not supply those theorems. Neither
-counter-selected orientation nor original-input/global computed-balance resources
-are established. The source sorted-list bit-operation model remains distinct.
+prefix. `probeClass_exec` in `Complexity.Cryptanalysis.AddXNORNativeClassProbe`
+now proves general termination, exact complete-stream hit/miss semantics and
+payload provenance, with a decreasing finite counter and a charged budget.
+`searchClass_exec` above supplies its constructed buckets/dictionary and original
+chain interpretation from raw input. Counter-selected orientation and global
+computed-balance resources remain open. The source sorted-list bit-operation
+model remains distinct.

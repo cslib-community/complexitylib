@@ -60,7 +60,7 @@ private def scanInput (second : ℕ) : Data 32 :=
 
 /-- The first node misses; the second hits with two retained zero witnesses. -/
 example : ∃ y, ExecWithin 8 probeScan (scanInput 2) y 116 ∧
-    y.mem = (scanInput 2).mem ∧ y.regs link = 0 ∧
+    y.mem = (scanInput 2).mem ∧ y.regs link = 0 ∧ y.regs one = 1 ∧ y.regs operators = 0 ∧
     (y.regs operand ≠ 0 ↔ ∃ r ∈ [(0, 3), (2, 7)],
       (scanInput 2).mem (slot 40
         (Cslib.Cryptanalysis.AddXNOR.backward
