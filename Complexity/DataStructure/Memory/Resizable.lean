@@ -32,8 +32,9 @@ may **grow** (`grow k`, `growDirty k`) or **shrink** (`shrink k`) the active pre
 * `Cslib.DataStructure.Memory.Resizable.Op`: `read`, `write`, `grow`, `growDirty`, and `shrink`.
 * `Cslib.DataStructure.Memory.Resizable.demonicStep`,
   `Cslib.DataStructure.Memory.Resizable.demonicSpec`: relational demonic specification at word
-  width `w`, allowing arbitrary `w`-bit initial words in `[s.frontier, s.frontier + k)` on `grow`
-  and `growDirty` ([KuszmaulLiangZhou2026], Section 5.1, Footnote 10).
+  width `w`, zero-initializing `[s.frontier, s.frontier + k)` on `grow` and allowing arbitrary
+  `w`-bit initial words in `[s.frontier, s.frontier + k)` on `growDirty`
+  ([KuszmaulLiangZhou2026], Section 5.1, Footnote 10).
 * `Cslib.DataStructure.Memory.Resizable.step`, `Cslib.DataStructure.Memory.Resizable.spec`:
   deterministic zero-initialized specification (`HasStepFn`) at word width `w`.
 * `Cslib.DataStructure.Memory.Resizable.specRefinesDemonicSpec`,
@@ -50,8 +51,8 @@ may **grow** (`grow k`, `growDirty k`) or **shrink** (`shrink k`) the active pre
 * `Cslib.DataStructure.Memory.Resizable.canonical_step`,
   `Cslib.DataStructure.Memory.Resizable.canonical_demonicStep`: admissible transitions preserve
   `WellFormed w` and `ZeroAbove`.
-* `Cslib.DataStructure.Memory.Resizable.demonicStep_grow_of_demonicGrow`: machine-level
-  `WordRAM.Resizable.DemonicGrow` transitions satisfy `demonicStep w`.
+* `Cslib.DataStructure.Memory.Resizable.demonicStep_growDirty_of_demonicGrow`: machine-level
+  `WordRAM.Resizable.DemonicGrow` transitions satisfy `demonicStep w` on `.growDirty`.
 * `Cslib.DataStructure.Memory.Resizable.Block.realizes_of_unchangedOutside`: `UnchangedOutside`
   preserves `Block.Realizes` across resizes.
 
@@ -103,7 +104,8 @@ inductive Op where
   | write (a v : ℕ)
   /-- Grow `[0, frontier)` by `k` zeroed words to `[0, frontier + k)`, returning old `frontier`. -/
   | grow (k : ℕ)
-  /-- Grow `[0, frontier)` by `k` uninitialized words, returning old `frontier`. -/
+  /-- Grow `[0, frontier)` by `k` words without caller zero-fill (arbitrary `w`-bit words in
+  `demonicSpec w`, zeroed in canonical `spec w`), returning old `frontier`. -/
   | growDirty (k : ℕ)
   /-- Shrink `[0, frontier)` by `k ≤ frontier` words, clearing `[frontier - k, frontier)`. -/
   | shrink (k : ℕ)
@@ -117,7 +119,8 @@ abbrev Op.Result : Op → Type
   | .growDirty _ => ℕ
   | .shrink _ => Unit
 
-/-- Deterministic zero-initialized transition function on `Memory.State`. -/
+/-- Deterministic zero-initialized transition function on `Memory.State` (the canonical instance of
+`demonicStep w` that chooses `0` for newly allocated `growDirty` words as well as `grow` words). -/
 def step (s : State) : (o : Op) → State × o.Result
   | .read a => (s, s.mem a)
   | .write a v => (⟨Function.update s.mem a v, s.frontier⟩, ())
@@ -149,16 +152,14 @@ instance decidableValidHistory (w : ℕ) (s : State) (os : List Op) :
   | cons o os ih =>
     exact decidable_of_iff (valid w s o ∧ (spec w).ValidHistory (step s o).1 os) Iff.rfl
 
-/-- Demonic relational transition at word width `w`: `.grow k` and `.growDirty k` permit any
-post-state `s'` preserving `s.mem` outside `[s.frontier, s.frontier + k)` and placing arbitrary
-`w`-bit words in `[s.frontier, s.frontier + k)` ([KuszmaulLiangZhou2026], Section 5.1). -/
+/-- Demonic relational transition at word width `w`: `.grow k` zero-initializes
+`[s.frontier, s.frontier + k)`, whereas `.growDirty k` permits any post-state `s'` preserving
+`s.mem` outside `[s.frontier, s.frontier + k)` and placing arbitrary `w`-bit words in
+`[s.frontier, s.frontier + k)` ([KuszmaulLiangZhou2026], Section 5.1, Footnote 10). -/
 def demonicStep (w : ℕ) (s : State) : (o : Op) → State → o.Result → Prop
   | .read a, s', r => s' = s ∧ r = s.mem a
   | .write a v, s', _ => s' = ⟨Function.update s.mem a v, s.frontier⟩
-  | .grow k, s', r =>
-      s'.frontier = s.frontier + k ∧ r = s.frontier ∧
-        (∀ a, a < s.frontier ∨ s.frontier + k ≤ a → s'.mem a = s.mem a) ∧
-        (∀ a, s.frontier ≤ a → a < s.frontier + k → Fits w (s'.mem a))
+  | .grow k, s', r => s' = ⟨clear s.mem s.frontier k, s.frontier + k⟩ ∧ r = s.frontier
   | .growDirty k, s', r =>
       s'.frontier = s.frontier + k ∧ r = s.frontier ∧
         (∀ a, a < s.frontier ∨ s.frontier + k ≤ a → s'.mem a = s.mem a) ∧
@@ -187,7 +188,8 @@ abbrev write (a v : ℕ) : Prog Unit := PFunctor.FreeM.lift (P := ⟨Op, Op.Resu
 /-- Grow the active prefix by `k` zeroed words, returning the old `frontier`. -/
 abbrev grow (k : ℕ) : Prog ℕ := PFunctor.FreeM.lift (P := ⟨Op, Op.Result⟩) (.grow k)
 
-/-- Grow the active prefix by `k` uninitialized words, returning the old `frontier`. -/
+/-- Grow the active prefix by `k` words without caller zero-fill (arbitrary `w`-bit words in
+`demonicSpec w`, zeroed in canonical `spec w`), returning the old `frontier`. -/
 abbrev growDirty (k : ℕ) : Prog ℕ := PFunctor.FreeM.lift (P := ⟨Op, Op.Result⟩) (.growDirty k)
 
 /-- Shrink the active prefix by `k` words. -/
@@ -196,7 +198,7 @@ abbrev shrink (k : ℕ) : Prog Unit := PFunctor.FreeM.lift (P := ⟨Op, Op.Resul
 /-- Allocate a single zeroed word at `frontier`. -/
 abbrev allocWord : Prog ℕ := grow 1
 
-/-- Allocate a single uninitialized word at `frontier`. -/
+/-- Allocate a single word at `frontier` without caller zero-fill (`growDirty 1`). -/
 abbrev allocWordDirty : Prog ℕ := growDirty 1
 
 /-- Release a single word from `frontier`. -/
@@ -296,7 +298,8 @@ theorem wellFormed_demonicStep {w : ℕ} {s s' : State} {o : Op} {r : o.Result}
   cases o with
   | read _ => rcases hstep with ⟨rfl, -⟩; exact hs
   | write a v => subst hstep; exact hs.step (o := .write a v) hv
-  | grow k | growDirty k =>
+  | grow k => rcases hstep with ⟨rfl, -⟩; exact wellFormed_step (o := .grow k) hs hv
+  | growDirty k =>
     rcases hstep with ⟨hfront, -, hout, hin⟩
     refine ⟨hfront.symm ▸ hv, fun a => ?_⟩
     by_cases ha : s.frontier ≤ a ∧ a < s.frontier + k
@@ -311,7 +314,8 @@ theorem zeroAbove_demonicStep {w : ℕ} {s s' : State} {o : Op} {r : o.Result}
   cases o with
   | read _ => rcases hstep with ⟨rfl, -⟩; exact hs
   | write a v => subst hstep; exact zeroAbove_step (o := .write a v) hs hv
-  | grow k | growDirty k =>
+  | grow k => rcases hstep with ⟨rfl, -⟩; exact zeroAbove_step (o := .grow k) hs hv
+  | growDirty k =>
     rcases hstep with ⟨hfront, -, hout, -⟩
     intro a ha
     rw [hfront] at ha
@@ -325,15 +329,15 @@ theorem canonical_demonicStep {w : ℕ} {s s' : State} {o : Op} {r : o.Result}
     Canonical w s' :=
   ⟨wellFormed_demonicStep hs.1 hv hstep, zeroAbove_demonicStep hs.2 hv hstep⟩
 
-/-! ## Refinement `specRefinesDemonicSpec` and lifting `Memory.Prog` -/
+/-! ## Refinement `specRefinesDemonicSpec` -/
 
 /-- Every deterministic `step` transition satisfies `demonicStep w`. -/
 theorem demonicStep_of_step (w : ℕ) (s : State) (o : Op) :
     demonicStep w s o (step s o).1 (step s o).2 := by
   cases o with
-  | read _ => exact ⟨rfl, rfl⟩
+  | read _ | grow _ => exact ⟨rfl, rfl⟩
   | write _ _ | shrink _ => rfl
-  | grow k | growDirty k =>
+  | growDirty k =>
     refine ⟨rfl, rfl, fun a ha => clear_of_not_owns (by simp only [Block.Owns]; omega), ?_⟩
     intro a hlo hhi
     dsimp only [step]
@@ -341,11 +345,11 @@ theorem demonicStep_of_step (w : ℕ) (s : State) (o : Op) :
     exact fits_zero w
 
 /-- Any machine-level `WordRAM.Resizable.DemonicGrow` transition from a `ZeroAbove` state satisfies
-`demonicStep w s (.grow k)`. -/
-theorem demonicStep_grow_of_demonicGrow {w k : ℕ} {s s' : State}
+`demonicStep w s (.growDirty k)`. -/
+theorem demonicStep_growDirty_of_demonicGrow {w k : ℕ} {s s' : State}
     (hs : ZeroAbove s) (hfront : s'.frontier = s.frontier + k)
     (hg : WordRAM.Resizable.DemonicGrow w s.frontier k s.mem s'.mem) :
-    demonicStep w s (.grow k) s' s.frontier := by
+    demonicStep w s (.growDirty k) s' s.frontier := by
   refine ⟨hfront, rfl, fun a ha => ?_, hg.2.1⟩
   rcases ha with hlt | hge
   · exact hg.1 a hlt
@@ -372,14 +376,6 @@ def specRefinesDemonicSpec (w : ℕ) : Refinement (demonicSpec w) (spec w) where
 /-- `Prop`-valued witness that `spec w` refines `demonicSpec w`. -/
 theorem spec_refines_demonicSpec (w : ℕ) : Nonempty (Refinement (demonicSpec w) (spec w)) :=
   ⟨specRefinesDemonicSpec w⟩
-
-/-- Lift a program written against grow-only `Memory.Prog` into `Resizable.Prog`. -/
-def liftMemory {α : Type} : Memory.Prog α → Prog α
-  | .pure a => .pure a
-  | .liftBind (.read a) k => .liftBind (.read a) (fun r => liftMemory (k r))
-  | .liftBind (.write a v) k => .liftBind (.write a v) (fun r => liftMemory (k r))
-  | .liftBind (.alloc n) k => .liftBind (.grow n) (fun r => liftMemory (k r))
-  | .liftBind (.allocDirty n) k => .liftBind (.growDirty n) (fun r => liftMemory (k r))
 
 /-! ## Cost, live space measures, and resize-aware frame condition -/
 

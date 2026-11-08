@@ -31,11 +31,9 @@ via `ExecRCodeDist.of_demonicExec`, compose with `.rand`, `.seq`, `.branch`, `.l
 
 ## Main definitions
 
-* `Cslib.WordRAM.Resizable.loopStepRPMF`, `Cslib.WordRAM.Resizable.loopIterRPMF`,
-  `Cslib.WordRAM.Resizable.RLoopStateInv`, `Cslib.WordRAM.Resizable.loopExitRPMF`: `while`-loop
-  step, iterate, invariant, and limiting exit distributions on `RData r`.
 * `Cslib.WordRAM.Resizable.ExecRCodeDist`: compositional structured execution certificate on
-  `RCode B r` with expected step bound `T : ℝ≥0∞` and peak hardware frontier bound `L_peak : ℕ`.
+  `RCode B r` with expected step bound `T : ℝ≥0∞` and peak hardware frontier bound `L_peak : ℕ`
+  (publicly re-exporting `Clocked` and `LoopDist`).
 
 ## Main results
 

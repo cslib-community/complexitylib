@@ -16,7 +16,9 @@ import Complexity.Foundations.Analysis.ENNRealTsum
 
 Iteration and limiting exit distributions (`loopStepRPMF`, `loopIterRPMF`, `loopExitRPMF`) and
 state invariants (`RLoopStateInv`) on `RData r` for randomized Las Vegas `while` loops over the
-word-granular **Resizable Word RAM** (`Cslib.WordRAM.Resizable`).
+word-granular **Resizable Word RAM** (`Cslib.WordRAM.Resizable`), mirroring the fixed-memory
+absorbing `while`-loop exit calculus in `Cslib.WordRAM.Randomized.Expected` on `RData r` (including
+the dynamic word frontier `frontier`).
 
 ## Main definitions
 

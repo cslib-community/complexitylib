@@ -814,7 +814,7 @@ theorem zeroFillExact_execBounded {w : ℕ} {cur stop zero one : Fin r} {x : Dat
 
 /-- Basis-generic (`Basis.exact`) subroutine that executes demonic `grow result count` and then
 zeroes `[frontier, frontier + count)` via `zeroFillExact` in `4 * count + 7` instructions.
-Use `.mapSimulates Basis.exact_simulates_standard` to obtain the `Basis.standard` program. -/
+Use `.mapSimulates Basis.Simulates.exactStandard` to obtain the `Basis.standard` program. -/
 def growZeroCode (count result cur stop zero one : Fin r) : RCode .exact r :=
   .seq (.op (.const zero 0)) <|
   .seq (.op (.const one 1)) <|
@@ -911,49 +911,48 @@ public meta section
 namespace Cslib.WordRAM
 
 open Lean Meta Elab Tactic Cslib.WordRAM.Realization in
-/-- Translate an elaborated `Realizes` proof term to `RealizesBounded`. -/
+/-- Map a `Realizes` proof-combinator constant to its `RealizesBounded` counterpart. -/
+def mapRealizesConst (c : Name) : Option Name :=
+  if c == ``Realizes.consequence then some ``RealizesBounded.consequence
+  else if c == ``Realizes.consequence_valid then some ``RealizesBounded.consequence_valid
+  else if c == ``Realizes.congr then some ``RealizesBounded.congr
+  else if c == ``Realizes.reindex then some ``RealizesBounded.reindex
+  else if c == ``Realizes.mono_mul then some ``RealizesBounded.mono_mul
+  else if c == ``Realizes.pure₀ then some ``RealizesBounded.pure₀
+  else if c == ``Realizes.bind₀_of_run then some ``RealizesBounded.bind₀_of_run
+  else if c == ``Realizes.read then some ``RealizesBounded.read
+  else if c == ``Realizes.write then some ``RealizesBounded.write
+  else if c == ``Realizes.alloc then some ``RealizesBounded.alloc
+  else if c == ``Realizes.allocDirty then some ``RealizesBounded.allocDirty
+  else if c == ``Realizes.branch₀ then some ``RealizesBounded.branch₀
+  else if c == ``Realizes.iterate₀ then some ``RealizesBounded.iterate₀
+  else if c == ``Realizes.while₀ then some ``RealizesBounded.while₀
+  else none
+
+open Lean Meta Elab Tactic Cslib.WordRAM.Realization in
+/-- Translate the `Realizes` proof spine to `RealizesBounded` without touching client terms. -/
 partial def translateRealizesProof (shadowMap : Std.HashMap FVarId FVarId) (e : Expr) :
     Expr :=
   match e with
-  | .fvar fid =>
-    match shadowMap[fid]? with
-    | some orig => .fvar orig
-    | none => e
-  | .const c us =>
-    let c' :=
-      if c == ``Realizes then ``RealizesBounded
-      else if c == ``Realizes.consequence then ``RealizesBounded.consequence
-      else if c == ``Realizes.consequence_valid then ``RealizesBounded.consequence_valid
-      else if c == ``Realizes.congr then ``RealizesBounded.congr
-      else if c == ``Realizes.reindex then ``RealizesBounded.reindex
-      else if c == ``Realizes.mono_mul then ``RealizesBounded.mono_mul
-      else if c == ``Realizes.pure₀ then ``RealizesBounded.pure₀
-      else if c == ``Realizes.bind₀_of_run then ``RealizesBounded.bind₀_of_run
-      else if c == ``Realizes.read then ``RealizesBounded.read
-      else if c == ``Realizes.write then ``RealizesBounded.write
-      else if c == ``Realizes.alloc then ``RealizesBounded.alloc
-      else if c == ``Realizes.allocDirty then ``RealizesBounded.allocDirty
-      else if c == ``Realizes.branch₀ then ``RealizesBounded.branch₀
-      else if c == ``Realizes.iterate₀ then ``RealizesBounded.iterate₀
-      else if c == ``Realizes.while₀ then ``RealizesBounded.while₀
-      else c
-    .const c' us
-  | .app f a => .app (translateRealizesProof shadowMap f) (translateRealizesProof shadowMap a)
-  | .lam n t b bi =>
-    .lam n (translateRealizesProof shadowMap t) (translateRealizesProof shadowMap b) bi
-  | .forallE n t b bi =>
-    .forallE n (translateRealizesProof shadowMap t) (translateRealizesProof shadowMap b) bi
-  | .letE n t v b nd =>
-    .letE n (translateRealizesProof shadowMap t) (translateRealizesProof shadowMap v)
-      (translateRealizesProof shadowMap b) nd
+  | .fvar fid => shadowMap[fid]?.map .fvar |>.getD e
+  | .lam n t b bi => .lam n t (translateRealizesProof shadowMap b) bi
   | .mdata md b => .mdata md (translateRealizesProof shadowMap b)
-  | .proj tn idx s => .proj tn idx (translateRealizesProof shadowMap s)
+  | .app .. =>
+    let fn := e.getAppFn
+    let args := e.getAppArgs
+    if fn.isConstOf ``id && args.size == 2 && args[0]!.isAppOfArity ``Realizes 10 then
+      mkApp2 fn (mkAppN (.const ``RealizesBounded []) args[0]!.getAppArgs)
+        (translateRealizesProof shadowMap args[1]!)
+    else match fn with
+      | .const c us =>
+        match mapRealizesConst c with
+        | some c' => mkAppN (.const c' us) (args.map (translateRealizesProof shadowMap))
+        | none => e
+      | _ => e
   | _ => e
 
 open Lean Meta Elab Tactic Cslib.WordRAM.Realization in
-/-- Extend `realize` transparently to `RealizesBounded` goals without modifying
-`Complexity/Tactic/Realize.lean`: delegates `Realizes` goals via `throwUnsupportedSyntax` and
-translates elaborated `Realizes` certificates on `RealizesBounded` goals. -/
+/-- Extend `realize` to `RealizesBounded` goals without editing `Complexity/Tactic/Realize.lean`. -/
 elab_rules : tactic | `(tactic| realize) => withMainContext do
   let goal ← getMainGoal
   let target ← instantiateMVars (← whnfR (← goal.getType))
@@ -962,32 +961,37 @@ elab_rules : tactic | `(tactic| realize) => withMainContext do
   let args := target.getAppArgs
   let mut shadowMap : Std.HashMap FVarId FVarId := {}
   let mut shadowIds : Array FVarId := #[]
+  let mut rawRealizesIds : Array FVarId := #[]
   let mut gWork := goal
   for decl in ← getLCtx do
     if decl.isImplementationDetail then continue
-    let ty ← instantiateMVars decl.type
-    if ty.isAppOfArity ``RealizesBounded 10 then
+    let ty ← instantiateMVars (← whnfR decl.type)
+    if ty.isAppOfArity ``Realizes 10 then
+      rawRealizesIds := rawRealizesIds.push decl.fvarId
+    else if ty.isAppOfArity ``RealizesBounded 10 then
       let val ← mkAppM ``RealizesBounded.toRealizes #[decl.toExpr]
-      let valTy ← inferType val
-      gWork ← gWork.assert (decl.userName.appendAfter "_realizes") valTy val
+      gWork ← gWork.assert (decl.userName.appendAfter "_realizes") (← inferType val) val
       let (fid, gNext) ← gWork.intro1P
       gWork := gNext
       shadowMap := shadowMap.insert fid decl.fvarId
       shadowIds := shadowIds.push fid
   gWork.withContext do
-    let auxTy := mkAppN (mkConst ``Realizes []) args
-    let mAux ← mkFreshExprMVar auxTy
-    setGoals [mAux.mvarId!]
+    let mAux ← mkFreshExprMVar (mkAppN (mkConst ``Realizes []) args)
+    let mut mGoal := mAux.mvarId!
+    for rId in rawRealizesIds.reverse do
+      mGoal ← try mGoal.clear rId catch _ => pure mGoal
+    setGoals [mGoal]
     evalTactic (← `(tactic| realize))
-    let rawGoals ← getGoals
     let mut cleanGoals : Array MVarId := #[]
-    for rg in rawGoals do
+    for rg in (← getGoals) do
       let mut cg := rg
       for sfid in shadowIds.reverse do
         cg ← try cg.clear sfid catch _ => pure cg
       cleanGoals := cleanGoals.push cg
-    let prf ← instantiateMVars mAux
-    let prfBounded := translateRealizesProof shadowMap prf
+    let prfBounded := translateRealizesProof shadowMap (← instantiateMVars mAux)
+    check prfBounded
+    unless ← isDefEq (← inferType prfBounded) target do
+      throwError "realize: translated proof does not match RealizesBounded goal"
     gWork.assign prfBounded
     setGoals cleanGoals.toList
 

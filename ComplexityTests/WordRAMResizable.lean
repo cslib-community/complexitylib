@@ -30,8 +30,8 @@ Concrete end-to-end checks for Milestone M1 of the word-granular **Resizable Wor
 3. Randomized `while` termination via `ExecRCodeDist.loop_geometric`.
 4. Soundness check `not_execRProgramDist_halt` confirming `[.halt out]` cannot satisfy any
    state-changing or frontier-growing transition.
-5. `Memory.Resizable.spec_refines_demonicSpec`, `demonicStep_grow_of_demonicGrow`, and
-   `Block.realizes_of_unchangedOutside`.
+5. `Memory.Resizable.spec_refines_demonicSpec`, `demonicStep_growDirty_of_demonicGrow`, zeroed
+   `demonicStep` on `.grow`, and `Block.realizes_of_unchangedOutside`.
 -/
 
 @[expose] public section
@@ -80,6 +80,44 @@ theorem chaseProg_realizes :
     Realizes .exact chaseProg pairWords singleWord
       (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
+
+/-- Helper method reading a single word, used to test local `RealizesBounded` `reindex` lookup. -/
+def readHelper (a : ℕ) : Memory.Prog ℕ := Memory.read a
+
+/-- Branch between `alloc` and `allocDirty`, then invoke a local `RealizesBounded` subroutine. -/
+def branchAllocCallProg (d : ℕ × ℕ) : Memory.Prog ℕ := do
+  let base ← if d.1 < d.2 then Memory.alloc d.1 else Memory.allocDirty d.2
+  readHelper base
+
+/-- `by realize` synthesizes `RealizesBounded` across `branch₀`, `alloc`, `allocDirty`, and a local
+`RealizesBounded` method (`reindex`), while ignoring raw `Realizes` hypotheses in context. -/
+theorem branchAllocCallProg_realizesBounded
+    (hsub : RealizesBounded .exact readHelper singleWord singleWord
+      (fun _ _ _ => True) (fun _ _ => 0))
+    (_hraw : Realizes .exact readHelper singleWord singleWord
+      (fun _ _ _ => False) (fun _ _ => 0)) :
+    RealizesBounded .exact branchAllocCallProg pairWords singleWord
+      (fun _ _ _ => True) (fun _ _ => 0) := by
+  realize
+
+/-- Load a count at `b` and count down via `boundedWhile`, reading `b + 1` on each iteration. -/
+def countdownWhileProg (b : ℕ) : Memory.Prog ℕ := do
+  let n ← Memory.read b
+  boundedWhile (fun _ r => 0 < r) (fun (c, r) => do
+    let _ ← Memory.read c
+    pure (r - 1)) (b + 1) n n
+
+/-- `by realize` synthesizes `RealizesBounded` for `boundedWhile`
+(`while₀` + `consequence_valid`). -/
+theorem countdownWhileProg_realizesBounded :
+    RealizesBounded .exact countdownWhileProg singleWord singleWord
+      (fun w b _ => Fits w (b + 1)) (fun _ _ => 0) := by
+  realize
+  intro hv
+  refine whileSafe_of_measure _ _ _ w _ (fun _ _ => True) (fun r _ => r)
+    (fun r _ _ hr hg => by omega) (fun r t _ hg _ => ⟨⟨h, hg⟩, trivial, ?_⟩) trivial le_rfl hv
+  change r - 1 < r
+  omega
 
 /-- `addToNext` preserves `s.frontier`, so `RDemonicExec.of_realizesBounded` lifts its compiled
 `Code .exact` directly onto the Resizable Word RAM and compiles to `ExecRProgramDist`. -/
@@ -388,5 +426,19 @@ theorem memoryResizable_refinement_and_frame (w : ℕ) (b : Block)
     (Memory.Resizable.UnchangedOutside.step_grow s 8) (fun _ _ hmem => hmem)
   simp only [Memory.Resizable.step_grow]
   omega
+
+/-- Under `demonicSpec w`, `.grow k` guarantees zeroed words on `[s.frontier, s.frontier + k)`,
+whereas `.growDirty k` accepts arbitrary `w`-bit hardware `DemonicGrow` transitions. -/
+theorem memoryResizable_demonicGrow_and_zeroedGrow {w k : ℕ} {s s_zero s_dirty : Memory.State}
+    {r₀ : ℕ} (hs : Memory.Resizable.ZeroAbove s)
+    (hz : Memory.Resizable.demonicStep w s (.grow k) s_zero r₀)
+    (hfront : s_dirty.frontier = s.frontier + k)
+    (hg : DemonicGrow w s.frontier k s.mem s_dirty.mem) :
+    (∀ a, s.frontier ≤ a → a < s.frontier + k → s_zero.mem a = 0) ∧
+      Memory.Resizable.demonicStep w s (.growDirty k) s_dirty s.frontier := by
+  refine ⟨?_, Memory.Resizable.demonicStep_growDirty_of_demonicGrow hs hfront hg⟩
+  rcases hz with ⟨rfl, -⟩
+  intro a hlo hhi
+  exact clear_of_owns ⟨hlo, hhi⟩
 
 end ComplexityTests.WordRAMResizable
