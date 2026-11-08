@@ -9,10 +9,11 @@ module
 
 public import Complexity.Init
 public import Mathlib.Algebra.Ring.Parity
+public import Mathlib.Data.Finset.Prod
 public import Mathlib.Data.Fintype.Perm
 public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Logic.Equiv.Fin.Rotate
-public import Mathlib.GroupTheory.Perm.Fin
+import Mathlib.GroupTheory.Perm.Fin
 import Mathlib.Algebra.BigOperators.Ring.Nat
 import Mathlib.Data.ZMod.Basic
 
@@ -36,7 +37,8 @@ Colours are `Fin (n + 1)`; colour `0` is the colour `d + 1` of Chen, Deng and Te
 (`IsValidColoring`, agreeing on the boundary with `hypergridBoundaryColor`: colour `i + 1` for the
 largest `i` with `p i = 0`, colour `0` if there is none) satisfies it. The converse fails: the
 condition restricts the boundary colours without fixing them, as the classical Sperner condition
-on a simplex does.
+on a simplex does. Note the naming: the two-dimensional `Cslib.Sperner.IsSpernerColoring` fixes the
+boundary colours and so corresponds to `IsValidColoring`, not to the weaker `IsHypergridSperner`.
 
 The proof is by induction on `n` and counts *doors*: facets carrying every colour except `0`
 (`KuhnSimplex.IsDoor`). A simplex has an odd number of doors exactly when it is panchromatic
@@ -49,7 +51,8 @@ of that face, one dimension lower, whose number is odd by induction. No orientat
 ## Main definitions
 
 * `Cslib.Sperner.KuhnSimplex`, `Cslib.Sperner.KuhnSimplex.vertex`: Kuhn simplices.
-* `Cslib.Sperner.kuhnSimplices`: the Kuhn triangulation of the hypergrid `∏ i, [0, N i]`.
+* `Cslib.Sperner.kuhnSimplices`: the simplices of the Kuhn triangulation of the hypergrid
+  `∏ i, [0, N i]` (the name is descriptive: that they cover the hypergrid is not proved here).
 * `Cslib.Sperner.IsPanchromatic`: a simplex whose vertices carry all `n + 1` colours.
 * `Cslib.Sperner.IsHypergridSperner`: the Sperner boundary condition.
 * `Cslib.Sperner.hypergridBoundaryColor`, `Cslib.Sperner.IsValidColoring`: the valid colourings of
@@ -61,8 +64,8 @@ of that face, one dimension lower, whose number is odd by induction. No orientat
 ## Main results
 
 * `Cslib.Sperner.odd_card_doors_iff_surjective`: the door count of a single simplex.
-* `Cslib.Sperner.KuhnSimplex.across_across`, `Cslib.Sperner.KuhnSimplex.across_mem`: every
-  interior facet is shared by exactly two simplices of the hypergrid.
+* `Cslib.Sperner.KuhnSimplex.across_across`, `Cslib.Sperner.KuhnSimplex.across_mem`: crossing an
+  interior facet of a simplex of the hypergrid lands in the hypergrid, and crossing back returns.
 * `Cslib.Sperner.IsHypergridSperner.odd_card_isPanchromatic`: **Sperner's lemma**, parity form.
 * `Cslib.Sperner.IsHypergridSperner.exists_isPanchromatic`: **Sperner's lemma**.
 * `Cslib.Sperner.IsValidColoring.isHypergridSperner`: valid colourings satisfy the Sperner boundary
@@ -274,8 +277,9 @@ def mate (k : Fin (n + 2)) : Fin (n + 2) :=
 `x i = N i` of the hypergrid `∏ i, [0, N i]`. The facet opposite the upper corner lies in the
 hyperplane `x i = base i` for the coordinate `i` lowered first, and the facet opposite the lower
 corner in the hyperplane `x i = base i + 1` for the coordinate `i` lowered last; the other facets
-cross the interior of the cube of `s`. An interior facet of a simplex of the hypergrid is shared
-with exactly one other simplex of the hypergrid, `across s k` (`across_mem`, `across_across`). -/
+cross the interior of the cube of `s`. Crossing an interior facet of a simplex of the hypergrid
+lands in the hypergrid (`across_mem`), and crossing back returns (`across_across`); that no other
+simplex of the hypergrid contains the facet is not needed and not proved. -/
 def IsInteriorFacet (N : Fin (n + 1) → ℕ) (s : KuhnSimplex (n + 1)) (k : Fin (n + 2)) : Prop :=
   (k = 0 → ∀ i, s.rank i = 0 → 0 < s.base i) ∧
     (k = Fin.last (n + 1) → ∀ i, s.rank i = Fin.last n → s.base i + 1 < N i)

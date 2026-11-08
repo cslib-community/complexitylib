@@ -889,7 +889,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   ([#3087](https://github.com/cslib-community/complexitylib/issues/3087)): `PPAD` membership of
   circuit `d`-dimensional Sperner/Brouwer (needs an oriented door graph), `PPAD`-hardness of
   two-dimensional Sperner/Brouwer (Chen–Deng), and `PPAD`-completeness of three-dimensional
-  Sperner (Papadimitriou 1994).
+  Sperner (Papadimitriou 1994). Optional: the classical form on a triangulated `d`-simplex (not
+  formalized), and a bridge identifying `Cslib.Sperner.triangles` with the two-dimensional Kuhn
+  triangulation.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
