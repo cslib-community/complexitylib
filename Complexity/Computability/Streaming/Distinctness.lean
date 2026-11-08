@@ -11,7 +11,6 @@ public import Complexity.Computability.Communication.Functions
 public import Complexity.Computability.Streaming.Basic
 public import Complexity.Computability.Streaming.Frequency
 public import Complexity.Foundations.Data.BitString.Positions
-import Complexity.Computability.Communication.Amplification
 import Complexity.Computability.Communication.Disjointness
 import Complexity.Computability.Streaming.Communication
 import Complexity.Probability.PMF.Event
@@ -115,20 +114,7 @@ theorem le_of_solves_nodup {σ : Type*} {n b r : ℕ} {ε : ℝ} (hε : ε ≤ 1
           decide (BitString.positions x ++ BitString.positions y).Nodup := by
         rw [Bool.eq_iff_iff, decide_eq_true_iff, nodup_positions_append]
       rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, id, hd]
-  have h1 := PublicCoin.le_mul_ecomplexityFun_disjointness_add_of_le hr n
-  have h2 := PublicCoin.ecomplexityFun_le_two_mul_mul
-    (f := (disjointness : BitString n → BitString n → Bool)) hε r
-  have h3 : (n : ℕ∞) ≤ ((2 ^ 10 * r * (b + 1) + 2 ^ 12 : ℕ) : ℕ∞) := by
-    refine h1.trans ?_
-    calc 2 ^ 9 * PublicCoin.ecomplexityFun ((4 * ε * (1 - ε)) ^ r)
-          (disjointness : BitString n → BitString n → Bool) + 2 ^ 12
-        ≤ 2 ^ 9 * (2 * r * ((b + 1 : ℕ) : ℕ∞)) + 2 ^ 12 := by
-          gcongr
-          exact h2.trans (by gcongr; exact_mod_cast hcc)
-      _ = ((2 ^ 10 * r * (b + 1) + 2 ^ 12 : ℕ) : ℕ∞) := by
-          push_cast
-          ring
-  exact_mod_cast h3
+  exact PublicCoin.le_of_ecomplexityFun_disjointness_le hε hr (by exact_mod_cast hcc)
 
 /-- **Detecting a repeated item needs `Ω(n)` bits of memory**, for error `1 / 3`:
 `n ≤ 36864 (b + 1) + 2 ^ 12`. -/
