@@ -14,6 +14,7 @@ public import Complexity.Algorithms.WordRAM.Schoening.Trial
 public import Complexity.Algorithms.WordRAM.Schoening.TrialCount
 public import Mathlib.Analysis.Complex.Exponential
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.ToReal
 
 import Complexity.Computability.WordRAM.CountingLoop
 
@@ -859,8 +860,7 @@ theorem ampProgram_failure_le_exp {k c : ℕ} (hk : 3 ≤ k) {φ : CNF (Fin n)} 
       _ = 1 := by rw [h1, h2, one_pow, one_pow, one_mul]
   have hp1 : succeedProb φ (trial φ) ≤ 1 := by
     rw [succeedProb]
-    exact ENNReal.toReal_le_of_le_ofReal zero_le_one
-      (by rw [ENNReal.ofReal_one]; exact Probability.PMF.toOuterMeasure_le_one _ _)
+    exact Probability.PMF.toOuterMeasure_toReal_le_one _ _
   refine one_sub_pow_le_exp hp1 ?_
   rw [schoeningTrials, hinv]
   push_cast
