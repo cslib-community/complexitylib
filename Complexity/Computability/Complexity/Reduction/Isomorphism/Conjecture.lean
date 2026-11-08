@@ -20,11 +20,8 @@ The Berman–Hartmanis conjecture says that all `NP`-complete languages are poly
 isomorphic [Berman and Hartmanis][BermanHartmanis1975]. It is stated here, as a hypothesis, for
 languages of bit strings: `Cslib.Complexity.BermanHartmanisConjecture`.
 
-Following the source, the conjecture is stated for languages of strings, here bit strings.
-Quantifying instead over `NP`-complete languages of arbitrary instance types gives a different
-statement, which is refuted rather than equivalent if `P = NP`: every nontrivial language in `P`
-is then `NP`-complete, including languages over finite types, which are not in bijection with
-infinite ones.
+Following the source, the conjecture is stated for languages of strings, here bit strings. Like
+the source's, it implies `P ≠ NP` (`Cslib.Complexity.BermanHartmanisConjecture.P_ne_NP`).
 
 ## Source and adaptations
 
