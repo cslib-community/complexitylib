@@ -14,6 +14,7 @@ public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPZ.Round
 public import Complexity.Algorithms.WordRAM.Schoening.Amplify
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.ToReal
 
 /-!
 # The PPZ algorithm on the randomized word RAM
@@ -174,8 +175,7 @@ theorem repeatRound_false_toReal (φ : CNF (Fin n)) (R : ℕ) :
 /-- The success probability of a round is at most `1`. -/
 theorem roundSuccessProbWith_le_one (O : (Fin n → Option Bool) → Fin n → Option Bool)
     (φ : CNF (Fin n)) : roundSuccessProbWith O φ ≤ 1 :=
-  ENNReal.toReal_le_of_le_ofReal zero_le_one
-    (by rw [ENNReal.ofReal_one]; exact Probability.PMF.toOuterMeasure_le_one _ _)
+  Probability.PMF.toOuterMeasure_toReal_le_one _ _
 
 /-- A round's success test on a total assignment is satisfaction. -/
 theorem succeeds_some (φ : CNF (Fin n)) (σ : Fin n → Bool) :

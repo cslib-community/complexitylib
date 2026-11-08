@@ -7,9 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.Karger.Graph
+public import Complexity.Foundations.Combinatorics.WeightedCut.Contraction
 public import Complexity.Foundations.Combinatorics.WeightedCut.MAOrdering
 public import Cslib.Algorithms.Lean.TimeM
+public import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -25,11 +26,12 @@ is left, and the lightest cut of the phase is a global minimum cut.
 Correctness has two parts. By the MA-ordering lemma
 (`Cslib.WeightedCut.cutWeight_singleton_le_of_isMAOrdering`), the cut of the phase weighs at most
 every cut separating `s` and `t`. A cut not separating `s` and `t` survives merging them with the
-same weight (`cutWeight_contractCut`), so the minimum cut weight is the smaller of the weight of the
-cut of the phase and the minimum cut weight after the merge (`minCut_eq_min_contractMatrix`, the
-phase recursion of [StoerWagner1997]). Contraction is `Karger.Graph`'s (`contractMatrix`,
-`contractPart`), which keeps the supervertices as `Fin m` and moves the last one into the freed
-slot.
+same weight (`Cslib.WeightedCut.cutWeight_contractCut`), so the minimum cut weight is the smaller of
+the weight of the cut of the phase and the minimum cut weight after the merge
+(`minCut_eq_min_contractMatrix`, the phase recursion of [StoerWagner1997]). Contraction is that of
+`Complexity.Foundations.Combinatorics.WeightedCut.Contraction` (`contractMatrix`, `contractPart`),
+which keeps the supervertices as `Fin m` and moves the last one into the freed slot; it is shared
+with Karger's algorithm and needs no probability.
 
 ## Main definitions
 
@@ -85,7 +87,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.StoerWagner
 
-open Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger
+open Cslib.WeightedCut
 
 /-! ### The algorithm -/
 
@@ -161,17 +163,6 @@ def stoerWagner : {n : ℕ} → (Fin n → Fin n → ℕ) → CutResult n
   | n + 2, W => run n W id
 
 /-! ### Correctness -/
-
-private theorem pullbackCut_id {n : ℕ} (C : Finset (Fin n)) : pullbackCut id C = C := by
-  ext x
-  simp [pullbackCut]
-
-/-- Merging `t` into `s` preserves the weight of the cuts that do not separate `s` and `t`. -/
-theorem cutWeight_contractCut {k : ℕ} {W : Fin (k + 1) → Fin (k + 1) → ℕ} (hW : IsMultigraph W)
-    {s t : Fin (k + 1)} (hst : s ≠ t) {C : Finset (Fin (k + 1))} (hC : s ∈ C ↔ t ∈ C) :
-    cutWeight (contractMatrix W s t) (contractCut t C) = cutWeight W C := by
-  have hc := isContractionOf_contract (isContractionOf_id hW) hst
-  rw [← cutWeight_pullbackCut hc, pullbackCut_contractCut id hst hC, pullbackCut_id]
 
 /-- **The phase recursion** of [StoerWagner1997]: if `X` is a minimum cut separating `s` and `t`,
 the global minimum cut weight is the smaller of the weight of `X` and the global minimum cut weight
