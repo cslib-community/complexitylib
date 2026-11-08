@@ -154,6 +154,11 @@ Stephen A. Cook, Robert A. Reckhow. “The Relative Efficiency of Propositional 
 
 Graham Cormode, S. Muthukrishnan. “An Improved Data Stream Summary: The Count-Min Sketch and its Applications.” *Journal of Algorithms* 55(1), 58–75, 2005. https://doi.org/10.1016/j.jalgor.2003.12.001 ; author PDF https://www.cs.ox.ac.uk/people/graham.cormode/pubs/papers/cm-full.pdf . Sections 3–4.1 and fixed point-query guarantee consulted.
 
+<a id="coverthomas06"></a>
+## coverthomas06
+
+Thomas M. Cover, Joy A. Thomas. *Elements of Information Theory*, second edition. Wiley-Interscience, 2006. https://doi.org/10.1002/047174882X . Cited for Theorem 2.10.1 (Fano's inequality), Section 7.1 (capacity of the binary symmetric channel), Lemma 7.9.2 and Theorem 7.9.1 (the converse to the channel coding theorem). These locators were checked against secondary course material, not the printed book.
+
 <a id="cslib"></a>
 ## cslib
 
