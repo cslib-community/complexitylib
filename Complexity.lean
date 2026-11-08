@@ -1699,10 +1699,12 @@ public import Complexity.Computability.Complexity.Classes.Time.BoundedExists
 public import Complexity.Computability.Complexity.Classes.Time.Polynomial
 public import Complexity.Computability.Complexity.Classes.Time.SampleVerify
 public import Complexity.Computability.Complexity.Classes.Time.SigmaTwo
+public import Complexity.Computability.Complexity.Classes.Time.SigmaTwoChain
 public import Complexity.Computability.Complexity.Classes.Time.Verifier
 public import Complexity.Computability.Complexity.Classes.Time.WordRAM
 public import Complexity.Computability.Complexity.Classes.TimeSpace.Basic
 public import Complexity.Computability.Complexity.Classes.TimeSpace.Slowdown
+public import Complexity.Computability.Complexity.Classes.TimeSpace.Speedup
 public import Complexity.Computability.Complexity.Classes.TimeSpace.Williams
 public import Complexity.Computability.Complexity.Classes.Toda
 public import Complexity.Computability.Complexity.Classes.Toda.Counting
@@ -2641,6 +2643,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Corre
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Decode
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Input
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.LookupRun
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.ResourceBound
