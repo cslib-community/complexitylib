@@ -10,6 +10,7 @@ module
 public import Complexity.MachineLearning.PACLearning.GrowthFunction
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.MeasureTheory.Constructions.Pi
+import Complexity.MachineLearning.PACLearning.DoubleSample
 import Complexity.Probability.Chernoff
 import Complexity.Probability.PMF.Event
 import Mathlib.Analysis.Complex.ExponentialBounds
@@ -38,7 +39,8 @@ at most twice that of the *double-sample event*: some `g ∈ G` is `false` on th
 `true` on at least `k = ⌈εm / 2⌉` points of the second. Swapping any set of coordinates between
 the two samples preserves the product measure. For a fixed double sample, at most
 `Π_G(2m) 2^(m - k)` of the `2^m` swaps land in the double-sample event, because each realized
-labeling of the `2m` points is compatible with at most `2^(m - k)` swaps.
+labeling of the `2m` points is compatible with at most `2^(m - k)` swaps. The measure-theoretic
+steps of this argument (the ghost sample and swap averaging) are in `DoubleSample.lean`.
 
 The domain is assumed countable with measurable singletons, so every set of samples is measurable.
 Over general domains the theorem needs a measurability hypothesis on the class (the
@@ -132,15 +134,6 @@ private theorem card_filter_swap_mul_two_pow_le {m k : ℕ} (a b : Fin m → Boo
 
 variable {Z : Type*}
 
-/-- Swap the coordinates `i` with `σ i = true` between the two samples of a double sample. -/
-private def swapSamples {m : ℕ} (σ : Fin m → Bool) (z : (Fin m → Z) × (Fin m → Z)) :
-    (Fin m → Z) × (Fin m → Z) :=
-  (fun i => if σ i then z.2 i else z.1 i, fun i => if σ i then z.1 i else z.2 i)
-
-private theorem swapSamples_swapSamples {m : ℕ} (σ : Fin m → Bool)
-    (z : (Fin m → Z) × (Fin m → Z)) : swapSamples σ (swapSamples σ z) = z := by
-  ext i <;> simp only [swapSamples] <;> cases σ i <;> rfl
-
 /-- The double-sample event: some `g ∈ G` is `false` on the first sample and `true` on at least
 `k` points of the second. -/
 private def doubleSampleEvent (G : ConceptClass Z Bool) (m k : ℕ) :
@@ -188,13 +181,12 @@ private theorem card_filter_swapSamples_mem_mul_two_pow_le (G : ConceptClass Z B
     refine Finset.mem_filter.2 ⟨Finset.mem_univ _, fun i => ?_, ?_⟩
     · rw [hva, hvb]
       have := h1 i
-      simp only [swapSamples] at this
+      simp only [fst_swapSamples_apply] at this
       cases hσi : σ i
       · simpa [hσi] using this
       · simpa [hσi] using this
     · refine h2.trans_eq (congrArg Finset.card (Finset.filter_congr fun i _ => ?_))
-      rw [hva, hvb]
-      simp only [swapSamples]
+      rw [hva, hvb, snd_swapSamples_apply]
       cases σ i <;> rfl
   have himg : (Good.image v).card ≤ growthFunction G (m + m) := by
     calc (Good.image v).card = ((Good.image v : Finset _) : Set (Fin (m + m) → Bool)).ncard :=
@@ -327,31 +319,6 @@ end EpsNet
 
 variable [MeasurableSpace Z] [MeasurableSingletonClass Z] [Countable Z]
 
-/-- Swapping coordinates preserves the product of two i.i.d. sample distributions. -/
-private theorem map_swapSamples (μ : Measure Z) [IsProbabilityMeasure μ] {m : ℕ}
-    (σ : Fin m → Bool) :
-    ((Measure.pi fun _ : Fin m => μ).prod (Measure.pi fun _ : Fin m => μ)).map
-      (swapSamples σ) = (Measure.pi fun _ : Fin m => μ).prod (Measure.pi fun _ : Fin m => μ) := by
-  refine Measure.ext_of_singleton fun p => ?_
-  rw [Measure.map_apply (measurable_of_countable _) (measurableSet_singleton _)]
-  have hpre : swapSamples σ ⁻¹' {p} = {swapSamples σ p} := by
-    ext z
-    simp only [Set.mem_preimage, Set.mem_singleton_iff]
-    constructor
-    · rintro rfl
-      rw [swapSamples_swapSamples]
-    · rintro rfl
-      rw [swapSamples_swapSamples]
-  rw [hpre, ← Prod.mk.eta (p := swapSamples σ p), ← Set.singleton_prod_singleton,
-    Measure.prod_prod, ← Prod.mk.eta (p := p), ← Set.singleton_prod_singleton,
-    Measure.prod_prod, Measure.pi_singleton, Measure.pi_singleton, Measure.pi_singleton,
-    Measure.pi_singleton, ← Finset.prod_mul_distrib, ← Finset.prod_mul_distrib]
-  refine Finset.prod_congr rfl fun i _ => ?_
-  simp only [swapSamples]
-  cases σ i
-  · rfl
-  · exact mul_comm _ _
-
 /-- Lower tail for the number of points of `m` i.i.d. samples in an event of probability at
 least `ε`: if `8 ≤ ε m`, fewer than `ε m / 2` of them fall in the event with probability at most
 `1 / 2`. -/
@@ -429,24 +396,11 @@ private theorem measure_doubleSampleEvent_mul_two_pow_le (μ : Measure Z)
   classical
   set ρ := (Measure.pi (fun _ : Fin m => μ)).prod (Measure.pi fun _ : Fin m => μ) with hρ
   set J := doubleSampleEvent G m k
-  have hsw : ∀ σ : Fin m → Bool, ρ (swapSamples σ ⁻¹' J) = ρ J := fun σ => by
-    rw [← Measure.map_apply (measurable_of_countable _) .of_discrete, hρ, map_swapSamples]
   -- Average the indicator of `J` over all `2 ^ m` swaps.
   have hsum : (2 : ℝ≥0∞) ^ m * ρ J =
       ∫⁻ z, ((Finset.univ.filter fun σ : Fin m → Bool => swapSamples σ z ∈ J).card : ℝ≥0∞)
-        ∂ρ := by
-    calc (2 : ℝ≥0∞) ^ m * ρ J = ∑ σ : Fin m → Bool, ρ (swapSamples σ ⁻¹' J) := by
-          simp only [hsw, Finset.sum_const, Finset.card_univ, Fintype.card_fun,
-            Fintype.card_bool, Fintype.card_fin, nsmul_eq_mul, Nat.cast_pow, Nat.cast_ofNat]
-      _ = ∑ σ : Fin m → Bool, ∫⁻ z, (swapSamples σ ⁻¹' J).indicator 1 z ∂ρ := by
-          refine Finset.sum_congr rfl fun σ _ => ?_
-          rw [lintegral_indicator_one .of_discrete]
-      _ = ∫⁻ z, ∑ σ : Fin m → Bool, (swapSamples σ ⁻¹' J).indicator 1 z ∂ρ :=
-          (lintegral_finsetSum _ fun σ _ => measurable_of_countable _).symm
-      _ = _ := by
-          refine lintegral_congr fun z => ?_
-          simp only [Set.indicator_apply, Set.mem_preimage, Pi.one_apply]
-          rw [Finset.sum_boole]
+        ∂ρ :=
+    (lintegral_card_filter_swapSamples_mem μ .of_discrete).symm
   have hpt : ∀ z, ((Finset.univ.filter fun σ : Fin m → Bool => swapSamples σ z ∈ J).card :
       ℝ≥0∞) * 2 ^ k ≤ growthFunction G (m + m) * 2 ^ m := fun z => by
     exact_mod_cast card_filter_swapSamples_mem_mul_two_pow_le G k z
@@ -492,17 +446,8 @@ theorem measure_pi_not_isEpsNet_mul_two_pow_le (μ : Measure Z) [IsProbabilityMe
     rw [ENNReal.add_halves]
     exact h1
   have hJB : ν B ≤
-      2 * ((Measure.pi fun _ : Fin m => μ).prod (Measure.pi fun _ : Fin m => μ) J) := by
-    rw [Measure.prod_apply .of_discrete]
-    calc ν B = 2 * ∫⁻ _S in B, 1 / 2 ∂ν := by
-          rw [setLIntegral_const, ← mul_assoc, ENNReal.mul_div_cancel two_ne_zero
-            ENNReal.ofNat_ne_top, one_mul]
-      _ ≤ 2 * ∫⁻ S in B, ν (Prod.mk S ⁻¹' J) ∂ν := by
-          gcongr 2 * ?_
-          exact setLIntegral_mono (measurable_of_countable _) hfib
-      _ ≤ 2 * ∫⁻ S, ν (Prod.mk S ⁻¹' J) ∂ν := by
-          gcongr 2 * ?_
-          exact setLIntegral_le_lintegral _ _
+      2 * ((Measure.pi fun _ : Fin m => μ).prod (Measure.pi fun _ : Fin m => μ) J) :=
+    measure_le_two_mul_measure_prod ν ν B .of_discrete hfib
   have hρJ := measure_doubleSampleEvent_mul_two_pow_le μ G m k
   calc ν B * 2 ^ k
       ≤ 2 * ((Measure.pi fun _ : Fin m => μ).prod (Measure.pi fun _ : Fin m => μ) J) *

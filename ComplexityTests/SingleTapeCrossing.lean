@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Machines.Turing.SingleTape.BoundedCrossings
+import Complexity.Computability.Machines.Turing.SingleTape.NLogNGap
 import Complexity.Computability.Machines.Turing.SingleTape.Palindrome
 
 /-!
@@ -12,8 +13,9 @@ import Complexity.Computability.Machines.Turing.SingleTape.Palindrome
 
 A concrete single-tape machine with computed crossing sequences, the sum and halting edge cases,
 translation invariance, cut-and-paste at different positions (and why the prefix hypothesis is
-needed), a decider that answers under the head, the hard palindrome inputs, and failing instances
-of both palindrome decision notions.
+needed), deciders that answer under the head, nonvacuity of the regularity criteria (bounded
+crossings, also with nonempty crossing sequences, the explicit `n log n` bound and `o(n log n)`
+time), the hard palindrome inputs, and failing instances of both palindrome decision notions.
 -/
 
 namespace ComplexityTests.SingleTapeCrossing
@@ -81,7 +83,8 @@ example : ((stayer.absInit ([] ++ [false])).run 1).state = none ∧
 
 /-- Nonvacuity of `DecidesByHeadInTime`: `stayer` decides within one step the words whose first
 letter is `true`, answering with the symbol it leaves under the head. -/
-example : stayer.DecidesByHeadInTime id {w : List Bool | w.head? = some true} true fun _ => 1 := by
+lemma stayer_decidesByHeadInTime :
+    stayer.DecidesByHeadInTime id {w : List Bool | w.head? = some true} true fun _ => 1 := by
   intro w
   refine ⟨⟨none, BiTape.mk₁ (w.map id)⟩, RelatesWithinSteps.single ?_, rfl, ?_⟩
   · simp only [TransitionRelation, step, initCfg, stayer, List.map_id]
@@ -98,16 +101,65 @@ lemma stayer_crossings (w : List Bool) (b : ℕ) (hb : 1 ≤ b) :
 
 /-- Nonvacuity of `isRegular_of_crossings_le`: `stayer` satisfies its hypotheses with `K = 0`,
 so the language of words starting with `true` is regular. -/
-example : Language.IsRegular ({w : List Bool | w.head? = some true} : Language Bool) := by
-  refine isRegular_of_crossings_le (tm := stayer) (ι := id) (yes := true) (T := fun _ => 1) ?_ 0
-    fun w b hb _ => by simp [stayer_crossings _ b hb]
+example : Language.IsRegular ({w : List Bool | w.head? = some true} : Language Bool) :=
+  isRegular_of_crossings_le stayer_decidesByHeadInTime 0 fun w b hb _ => by
+    simp [stayer_crossings _ b hb]
+
+/-- A two-state machine that moves right once and halts. -/
+def stepper : SingleTapeTM Bool where
+  State := Bool
+  q₀ := false
+  tr q s := if q then (⟨s, none⟩, none) else (⟨s, some .right⟩, some true)
+
+/-- `stepper` decides within two steps the words whose second letter is `true`. -/
+lemma stepper_decidesByHeadInTime :
+    stepper.DecidesByHeadInTime id {w : List Bool | w[1]? = some true} true fun _ => 2 := by
   intro w
-  refine ⟨⟨none, BiTape.mk₁ (w.map id)⟩, RelatesWithinSteps.single ?_, rfl, ?_⟩
-  · simp only [TransitionRelation, step, initCfg, stayer, List.map_id]
-    rw [BiTape.write_head_self]
-    rfl
-  · simp only [BiTape.head_mk₁, List.map_id]
-    exact Iff.rfl
+  refine ⟨⟨none, (BiTape.mk₁ (w.map id)).moveRight⟩, ?_, rfl, ?_⟩
+  · refine RelatesWithinSteps.trans (n₁ := 1) (n₂ := 1)
+      (RelatesWithinSteps.single (b := ⟨some true, (BiTape.mk₁ (w.map id)).moveRight⟩) ?_)
+      (RelatesWithinSteps.single ?_)
+    · simp only [TransitionRelation, step, initCfg, stepper, Bool.false_eq_true, ↓reduceIte,
+        BiTape.write_head_self]
+      rfl
+    · simp [TransitionRelation, stepper, BiTape.write_head_self, BiTape.optionMove]
+  · rcases w with _ | ⟨a, _ | ⟨b, w⟩⟩ <;> rfl
+
+/-- `stepper` crosses boundary `1` once, entering its second state, and no other boundary. -/
+example : (stepper.absInit [false, true]).crossings 1 2 = [some true] := rfl
+
+example : (stepper.absInit [false, true]).crossings 2 2 = [] := by decide
+
+/-- Every crossing sequence of `stepper` has length at most `1`. -/
+lemma stepper_crossings_le (w : List Bool) (b : ℕ) :
+    ((stepper.absInit w).crossings (b : ℤ) 2).length ≤ 1 := by
+  simp only [AbsCfg.crossings]
+  split_ifs <;> simp_all [AbsCfg.next, absInit, stepper, moveShift]
+
+/-- `isRegular_of_crossings_le` with a nonempty crossing sequence: `K = 1` for `stepper`. -/
+example : Language.IsRegular ({w : List Bool | w[1]? = some true} : Language Bool) :=
+  isRegular_of_crossings_le stepper_decidesByHeadInTime 1 fun w b _ _ => stepper_crossings_le w b
+
+/-- Nonvacuity of `isRegular_of_time_le_mul_log`: `stayer` has one state, so `d = 2`, and
+`16 ≤ n ⌊log₂ n⌋` once `n ≥ 8`. -/
+example : Language.IsRegular ({w : List Bool | w.head? = some true} : Language Bool) := by
+  refine isRegular_of_time_le_mul_log stayer_decidesByHeadInTime (N := 8) fun n hn => ?_
+  have hd : Nat.clog 2 (Fintype.card stayer.State + 2) = 2 := by decide
+  have hlog : 3 ≤ Nat.log 2 n := Nat.le_log_of_pow_le one_lt_two hn
+  rw [hd]
+  nlinarith
+
+/-- Nonvacuity of `isRegular_of_isLittleO`: constant time is `o(n log n)`. -/
+example : Language.IsRegular ({w : List Bool | w.head? = some true} : Language Bool) := by
+  refine isRegular_of_isLittleO stayer_decidesByHeadInTime ?_
+  refine Asymptotics.IsLittleO.trans_isBigO (g := fun n : ℕ => Real.log n) ?_ ?_
+  · exact (Real.isLittleO_const_log_atTop (c := ((1 : ℕ) : ℝ))).comp_tendsto
+      tendsto_natCast_atTop_atTop
+  · refine Asymptotics.IsBigO.of_bound 1 ?_
+    filter_upwards [Filter.eventually_ge_atTop 1] with n hn
+    have hn' : (1 : ℝ) ≤ n := by exact_mod_cast hn
+    rw [one_mul, norm_mul, Real.norm_natCast]
+    exact le_mul_of_one_le_left (norm_nonneg _) hn'
 
 /-- The hard inputs are palindromes. -/
 example : palWord 1 [true, false] = [true, false, false, false, true] := rfl

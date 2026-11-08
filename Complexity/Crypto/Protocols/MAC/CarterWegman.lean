@@ -1198,11 +1198,6 @@ theorem prfOneTimeStrongGame_ofProbComp_le {n : ℕ} {seed : ProbComp K}
   rw [prfOneTimeStrongGame_eq_prfOneTimeGame]
   exact prfOneTimeGame_ofProbComp_le hh hε family query forge
 
-private theorem ofList_take (n : ℕ) (w : List Bool) :
-    BitString.ofList n (w.take n) = BitString.ofList n w := by
-  funext i
-  simp [BitString.ofList, i.isLt]
-
 /-- `prfPadDistinguisher test` is uniformly strict oracle-PPT (`IsOraclePPT encBool`) whenever
 running `test n` on the `n`-bit view of a raw pad word is uniformly strict PPT in `(n, word)`. -/
 theorem isOraclePPT_prfPadDistinguisher
@@ -1215,7 +1210,7 @@ theorem isOraclePPT_prfPadDistinguisher
         let reply ← List.take n <$> ProbOracleComp.query ((), List.replicate n false)
         ProbOracleComp.sample (test n (BitString.ofList n reply))) := by
     funext n _
-    simp [prfPadDistinguisher, ofList_take]
+    simp [prfPadDistinguisher, BitString.ofList_take]
   rw [heq]
   have hq : IsOraclePPTOn (encPair encUnary encBits) encBits
       (fun p : ℕ × List Bool =>
@@ -1701,7 +1696,7 @@ private theorem ofList_getD_map_range_take (n q : ℕ) (g : ℕ → List Bool) {
     BitString.ofList n (((List.range q).map (fun j => (g j).take n)).getD i []) =
       BitString.ofList n (g i) := by
   rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by simp [hi]), Option.getD_some,
-    List.getElem_map, List.getElem_range, ofList_take]
+    List.getElem_map, List.getElem_range, BitString.ofList_take]
 
 /-- In `prfRealGame`, when `forger` makes at most `Q n` signing queries and `test n` realizes
 `counterPadSeqDistinguisher seed hash forger`, `prfMultiPadDistinguisher Q nonce test` has the exact
@@ -3228,7 +3223,7 @@ private theorem cwNonceIdealCheck_imp_checkNonceSUF (msgLen : ℕ → ℕ)
     simp only [verify, toBitTriple, BitString.ofFn_ofList hmsg, decide_eq_true_eq]
     have h1 := congrArg (BitString.ofList n) htag_eq
     simpa only [randomFunctionOracle, hnonce, ↓reduceIte, BitString.listXor_pair,
-      ofList_take, BitString.ofList_ofFn] using h1
+      BitString.ofList_take, BitString.ofList_ofFn] using h1
   simp only [checkNonceSUF, Bool.and_eq_true, Bool.not_eq_true', List.contains_eq_mem,
     decide_eq_true_eq, decide_eq_false_iff_not]
   exact ⟨⟨htr_nodup, htr_notmem⟩, hverify⟩
@@ -3322,7 +3317,7 @@ private theorem eval_cwNonceLogHandler_randomFunctionOracle_le
         have htag : List.ofFn t =
             BitString.listXor n [hash n k msg, (randomFunctionOracle n table nonce).take n] := by
           simp only [t, sign, BitString.ofFn_ofList hmsg, randomFunctionOracle, hnonce,
-            ↓reduceIte, BitString.listXor_pair, ofList_take, BitString.ofList_ofFn]
+            ↓reduceIte, BitString.listXor_pair, BitString.ofList_take, BitString.ofList_ofFn]
         rw [← htag]
         have hsub' :
             (tr ++ [((BitString.ofList (msgLen n) msg, BitString.ofList n nonce), t)]).map
@@ -5004,7 +4999,7 @@ private theorem cwRandomNonceIdealCheck_imp_checkRandomNonceSUF
   · simp only [verify, toRandomBitTriple, BitString.ofFn_ofList hmsg, decide_eq_true_eq]
     rw [hdrop]
     simp only [randomFunctionOracle, hnonce, ↓reduceIte, BitString.listXor_pair,
-      ofList_take, BitString.ofList_ofFn]
+      BitString.ofList_take, BitString.ofList_ofFn]
 
 private theorem eval_cwRandomNonceLogHandler_randomFunctionOracle_le
     (msgLen : ℕ → ℕ) (hash : ℕ → List Bool → List Bool → List Bool)
@@ -5098,7 +5093,7 @@ private theorem eval_cwRandomNonceLogHandler_randomFunctionOracle_le
             BitString.listXor n
               [hash n k msg, (randomFunctionOracle n table (List.ofFn x)).take n] := by
           simp only [t, sign, BitString.ofFn_ofList hcond, randomFunctionOracle, List.length_ofFn,
-            ↓reduceIte, BitString.listXor_pair, ofList_take, BitString.ofList_ofFn]
+            ↓reduceIte, BitString.listXor_pair, BitString.ofList_take, BitString.ofList_ofFn]
         rw [← htag]
         let fullTag := encPair encBits encBits (List.ofFn x, List.ofFn t)
         have hsub' :
