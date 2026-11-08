@@ -214,6 +214,8 @@ Graham Cormode, S. Muthukrishnan. “An Improved Data Stream Summary: The Count-
 
 Thomas M. Cover and Joy A. Thomas. *Elements of Information Theory*, second edition. Wiley-Interscience, 2006. https://doi.org/10.1002/047174882X . Section 5.11, "Generation of discrete distributions from fair coins": Theorem 5.11.1 (`H(X) ≤ E[T]` for every generating tree), Theorem 5.11.2 (equality for dyadic distributions) and Theorem 5.11.3 (`H(X) ≤ E[T] < H(X) + 2` for the optimal tree). The theorem numbers and statements were taken from secondary summaries and course notes on 2026-11-08; the printed book was not inspected. Also cited for Theorem 2.10.1 (Fano's inequality), Section 7.1 (capacity of the binary symmetric channel), Lemma 7.9.2 and Theorem 7.9.1 (the converse to the channel coding theorem); these locators were likewise checked against secondary course material, not the printed book.
 
+Chapter 13 (universal source coding): the Lempel–Ziv tree-structured (incremental) parsing, its example `ABBABBABBBAABABAA`, and the distinct-parsing lemma `c(n) ≤ n / ((1 - ε_n) log n)` with `ε_n = min(1, (log log n + 4) / log n)` in §13.5. The library cites only the section; secondary sources disagree on the lemma's number. The section, the lemma's statement and the example were taken from secondary course material and search summaries and were not checked against the printed book.
+
 <a id="cslib"></a>
 ## cslib
 
@@ -788,3 +790,8 @@ Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretica
 ## younger67
 
 Daniel H. Younger. "Recognition and Parsing of Context-Free Languages in Time n³." *Information and Control* 10(2), 189–208, 1967. https://doi.org/10.1016/S0019-9958(67)80007-X . Bibliographic metadata was checked on 2026-11-08; the article body was not inspected. It is cited, with [Kasami 1965](#kasami65), as an original source of the CYK algorithm.
+
+<a id="zivlempel78"></a>
+## zivlempel78
+
+Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-Rate Coding." *IEEE Transactions on Information Theory* 24(5), 530–536, 1978. https://doi.org/10.1109/TIT.1978.1055934 . Bibliographic data from the DOI record and secondary summaries. The incremental parsing rule (each phrase is the shortest new prefix) is attributed through [Cover and Thomas](#coverthomas06); the paper's text was not inspected in this pass.

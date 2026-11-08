@@ -1074,6 +1074,14 @@ Suffix arrays index one text for many patterns. Import `Complexity.Algorithms.Le
 
 For the empty pattern the search returns every position `i < |w|`. KMP also reports the position `|w|` of the empty suffix. The [examples](../../ComplexityTests/SuffixArray.lean) check `banana` and `mississippi`: the suffix and LCP arrays, the comparison counts, and agreement with KMP on several patterns. They also include a kernel-checked suffix array with its uniqueness, a rejected non-sorted permutation, and absent and empty patterns. Linear-time construction (SA-IS, DC3), LCP-accelerated search and suffix trees remain open ([ROADMAP](../../ROADMAP.md#string-algorithms)).
 
+## Lempel–Ziv incremental parsing (LZ78)
+
+Import `Complexity.Algorithms.Lean.LempelZiv.LZ78Bits`. The parse and pair code are in [LZ78.lean](../../Complexity/Algorithms/Lean/LempelZiv/LZ78.lean), which needs only list imports. The phrase count is in [LZ78Count.lean](../../Complexity/Algorithms/Lean/LempelZiv/LZ78Count.lean), the bit code in [LZ78Bits.lean](../../Complexity/Algorithms/Lean/LempelZiv/LZ78Bits.lean), and the alphabet-generic [distinct-parsing bound](../../Complexity/Algorithms/Lean/LempelZiv/DistinctParsing.lean) in the namespace `DistinctParsing`. `LZ78.parse` is the incremental parsing of [Ziv and Lempel][zivlempel78] on `List α` for any type with decidable equality. Each phrase is the shortest prefix of the remaining input that is not an earlier phrase; when the input runs out first, the last phrase is the nonempty remainder and may repeat an earlier phrase. The phrases concatenate to the input (`flatten_parse`) and are nonempty. Each phrase is the shortest new prefix (`prefix_mem_take_parse`, `getElem_parse_notMem_take`), and the phrases before the last are pairwise distinct (`nodup_dropLast_parse`; all are distinct when the last phrase is new, `nodup_parse_of_getLast_notMem`). `LZ78.encode` writes phrase `w` as the pair (index of `w.dropLast` among `[]` and the earlier phrases, last symbol of `w`), and `decode_encode` says that `LZ78.decode` inverts it. `LZ78.encodeBits e` fixes a numbering `e : α ≃ Fin k` and writes the `i`-th pair with `⌈log₂ i⌉` pointer bits and `⌈log₂ k⌉` symbol bits, least significant bit first. `decodeBits_encodeBits` gives the round trip for `k ≥ 2`.
+
+The bounds are for an alphabet of size `k ≥ 2`, an input of length `n` and `c` phrases. The basic inequality is `m * c ≤ n + 2 * k ^ m` for every `m` (`mul_length_le_of_nodup` for distinct parsings and `mul_length_parse_le` for LZ78, whose last phrase may repeat). Choosing `m` gives `c * ⌊log_k c⌋ ≤ n + 2c` (`length_parse_mul_log_le`) and `c (log_k n - log_k log_k n - 4) ≤ n` (`length_parse_mul_logb_sub_le`). It also gives `c ≤ n / ((1 - ε_n) log_k n)` for `n ≥ 2` and `ε_n < 1` (`length_parse_le_div`), where `epsilon k n = min 1 ((log_k log_k n + 4) / log_k n)` (`epsilon_def`) tends to `0` (`tendsto_epsilon`). For `k = 2` this is the distinct-parsing lemma of [Cover and Thomas][coverthomas06], §13.5; the general-`k` form, with logarithms to base `k`, is the same argument. The code length is exactly `∑_{i=1}^{c} (⌈log₂ i⌉ + ⌈log₂ k⌉)` (`length_encodeBits`). It is at most `c (⌈log₂ c⌉ + ⌈log₂ k⌉)` (`length_encodeBits_le`) and at most `⌈log₂ k⌉ (n + 4c)` (`length_encodeBits_le_mul_add`). It is also at most `⌈log₂ k⌉ n (1 + 4 / ((1 - ε_n) log_k n))` (`length_encodeBits_le_mul_one_add`), so LZ78 expands no input by more than a vanishing fraction over the fixed-length code (`exists_length_encodeBits_le`). The functions are reference implementations with list-based dictionary lookups, and no running time is claimed.
+
+The [examples](../../ComplexityTests/Algorithms/Lean/LempelZiv.lean) check the Cover–Thomas input `ABBABBABBBAABABAA`: its phrases `A, B, BA, BB, AB, BBA, ABA, BAA`, its pairs, and its 25-bit code. They also cover the empty input and `AA`, whose repeated last phrase makes the parse not duplicate free. Further checks are a phrase list that is not tree structured, bit strings that fail to decode, `1 ^ 100` with 14 phrases and 55 bits, and an input length (`n = 256`) at which the `ε_n` hypotheses hold. Not formalized: optimality for stationary ergodic sources (Ziv's inequality, a compression ratio tending to the entropy rate), LZ77 and sliding windows, and the links to Kolmogorov complexity and finite-state compressibility ([ROADMAP](../../ROADMAP.md#pseudorandomness-coding-and-boolean-analysis)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -1091,6 +1099,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [ccpv11]: ../sources.md#ccpv11
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
+[coverthomas06]: ../sources.md#coverthomas06
 [edmonds65]: ../sources.md#edmonds65
 [fks84]: ../sources.md#fks84
 [floyd62]: ../sources.md#floyd62
@@ -1123,3 +1132,4 @@ The numeric values above are transcriptions of checked source statements, not re
 [wattenhofer16]: ../sources.md#wattenhofer16
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
 [younger67]: ../sources.md#younger67
+[zivlempel78]: ../sources.md#zivlempel78
