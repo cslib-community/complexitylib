@@ -75,14 +75,14 @@ private theorem read_eq_ite (tape : BiTape Bool) (d : ℤ) :
 
 private theorem computableInPolyTime_read :
     ComputableInPolyTime (fun p : BiTape Bool × ℤ => p.1.read p.2)
-      (encPair (encBiTape encBool) encInt) (encOption encBool) := by
+      (encPair (encBiTape encBool) encIntUnary) (encOption encBool) := by
   simp only [read_eq_ite]
   have hright := (stackTape_toList encBool).comp ((biTape_right encBool).comp
-    (fst (encBiTape encBool) encInt))
+    (fst (encBiTape encBool) encIntUnary))
   have hleft := (stackTape_toList encBool).comp ((biTape_left encBool).comp
-    (fst (encBiTape encBool) encInt))
-  have hhead := (biTape_head encBool).comp (fst (encBiTape encBool) encInt)
-  have hd := snd (encBiTape encBool) encInt
+    (fst (encBiTape encBool) encIntUnary))
+  have hhead := (biTape_head encBool).comp (fst (encBiTape encBool) encIntUnary)
+  have hd := snd (encBiTape encBool) encIntUnary
   have hpos := int_pos.comp hd
   have hneg := int_neg.comp hd
   have hr := listGetDWithInput hright (unary_sub.comp ((int_toNat.comp hd).prod (const 1))) none
@@ -100,7 +100,7 @@ theorem computableInPolyTime_trueFeatures :
   have hcfg : ComputableInPolyTime (fun p : ℕ × (FiniteCfg k Bool State × (Fin k → ℤ)) => p.2.1)
       (encPair encUnary encTrackedCfg) encFiniteCfg := (fst _ _).comp hc
   have hpos : ComputableInPolyTime (fun p : ℕ × (FiniteCfg k Bool State × (Fin k → ℤ)) => p.2.2)
-      (encPair encUnary encTrackedCfg) (encPi encInt) := (snd _ _).comp hc
+      (encPair encUnary encTrackedCfg) (encPi encIntUnary) := (snd _ _).comp hc
   have hkey := (finiteCfg_state.comp hcfg).prod ((finiteCfg_inputSymbol.comp hcfg).prod
     ((finiteCfg_workTapeSymbols.comp hcfg).prod
       (computableInPolyTime_ofList.comp (finiteCfg_output.comp hcfg))))
@@ -110,13 +110,13 @@ theorem computableInPolyTime_trueFeatures :
     (finiteFeatures (k := k) (State := State))).comp hkey
   refine listAppend' hfin (cons' (computableInPolyTime_inPos.comp
     (finiteCfg_inputPos.comp hcfg)) (flatMapConst _ fun i _ => cons'
-      ((computableInPolyTime_head i).comp ((pi_apply encInt i).comp hpos)) ?_))
+      ((computableInPolyTime_head i).comp ((pi_apply encIntUnary i).comp hpos)) ?_))
   -- The cells of tape `i` in the window, each read relative to the head.
-  have hz := snd (encPair encUnary (encTrackedCfg (k := k) (State := State))) encInt
-  have hx := fst (encPair encUnary (encTrackedCfg (k := k) (State := State))) encInt
+  have hz := snd (encPair encUnary (encTrackedCfg (k := k) (State := State))) encIntUnary
+  have hx := fst (encPair encUnary (encTrackedCfg (k := k) (State := State))) encIntUnary
   have hsym := computableInPolyTime_read.comp
     (((pi_apply (encBiTape encBool) i).comp (finiteCfg_workTapes.comp (hcfg.comp hx))).prod
-      (int_sub.comp (hz.prod ((pi_apply encInt i).comp (hpos.comp hx)))))
+      (int_sub.comp (hz.prod ((pi_apply encIntUnary i).comp (hpos.comp hx)))))
   refine mapWithInput (computableInPolyTime_windowList.comp (fst _ _)) ?_
   exact finite_cases (tagEncoding := encOption encBool) hsym fun s =>
     (computableInPolyTime_cell i s).comp hz

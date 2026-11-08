@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.Immune
+public import Complexity.Computability.Complexity.Problems.BoundedHalting
 import Complexity.Computability.Complexity.Classes.Ladner.Basic
 import Complexity.Computability.Complexity.Classes.Padding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -29,6 +30,9 @@ Berman's theorem in their study of the complexity and distribution of hard probl
 The argument below gives the same for the complement, so a complete problem is not `P`-bi-immune
 (`Cslib.Complexity.not_isBiImmune_P_of_polyTimeComplete_E`). The same holds for `EXP`
 (`Cslib.Complexity.not_isBiImmune_P_of_polyTimeComplete_EXP`). Problems are on bit words.
+Bounded halting with a binary time bound is complete for `E`
+(`Cslib.Complexity.BoundedHalting.polyTimeComplete_E`), so the hypothesis is met, and
+`Cslib.Complexity.BoundedHalting.not_isBiImmune_P` applies the theorem to it.
 
 Let `A` be decided within time `T`, and fix `b : Bool`. The test `C_b` reads the machine described
 at the start of its input `w` (`Turing.MultiTapeTM.Universal.decodeDesc` of the first framed word)
@@ -52,6 +56,9 @@ try the `m ≤ |y|`. This problem lies inside `A` for `b = true` and inside `A�
 * `Cslib.Complexity.not_isBiImmune_P_of_polyTimeComplete_E`,
   `Cslib.Complexity.not_isBiImmune_P_of_polyTimeComplete_EXP`: such a problem is not
   `P`-bi-immune; in fact neither it nor its complement is `P`-immune.
+* `Cslib.Complexity.BoundedHalting.exists_infinite_subset_mem_P`,
+  `Cslib.Complexity.BoundedHalting.not_isBiImmune_P`: in particular for bounded halting with a
+  binary time bound.
 
 ## References
 
@@ -249,5 +256,17 @@ theorem not_isBiImmune_P_of_polyTimeComplete_E (h : PolyTimeComplete @E encBits 
 theorem not_isBiImmune_P_of_polyTimeComplete_EXP (h : PolyTimeComplete @EXP encBits A) :
     ¬ IsBiImmune (P encBits) A :=
   fun hA => (not_isImmune_P_of_polyTimeComplete_EXP h).1 hA.isImmune
+
+/-- **Berman's theorem for bounded halting**: bounded halting with a binary time bound, which is
+complete for `E`, has an infinite subset in `P`, and so does its complement. -/
+theorem BoundedHalting.exists_infinite_subset_mem_P :
+    (∃ B ∈ P encBits, B.Infinite ∧ B ⊆ BoundedHalting) ∧
+      (∃ B ∈ P encBits, B.Infinite ∧ B ⊆ BoundedHaltingᶜ) :=
+  exists_infinite_subset_mem_P_of_polyTimeComplete_E BoundedHalting.polyTimeComplete_E
+
+/-- **Bounded halting is not `P`-bi-immune**, although it is not in `P`
+(`Cslib.Complexity.BoundedHalting.notMem_P`). -/
+theorem BoundedHalting.not_isBiImmune_P : ¬ IsBiImmune (P encBits) BoundedHalting :=
+  not_isBiImmune_P_of_polyTimeComplete_E BoundedHalting.polyTimeComplete_E
 
 end Cslib.Complexity
