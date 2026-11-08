@@ -31,6 +31,13 @@ example : 63 * (3 + 1) ^ 2 < Karatsuba.gates 3 + 1 := by decide +kernel
 /-- At `w = 1024` it is smaller, although it returns twice as many bits. -/
 example : Karatsuba.gates 1024 + 1 < 63 * (1024 + 1) ^ 2 := by decide +kernel
 
+/-- Against the schoolbook bound at width `2w`, the comparison holds at every width. At `w = 3`
+it is `1824 < 3087`. -/
+example : Karatsuba.gates 3 + 1 < 63 * (3 + 3 + 1) ^ 2 := Karatsuba.gates_add_one_lt 3
+
+/-- The general lemma also covers widths beyond the bounded check in its proof. -/
+example : Karatsuba.gates 100 + 1 < 63 * (100 + 100 + 1) ^ 2 := Karatsuba.gates_add_one_lt 100
+
 /-- The closed bound `419 · 3 ^ ⌈log₂ w⌉` at `w = 4`, where it is `3771`. -/
 example : Karatsuba.gates 4 ≤ 3771 := by
   have h := Karatsuba.gates_le_pow_clog 4
