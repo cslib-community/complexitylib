@@ -567,9 +567,12 @@ index links to canonical definitions rather than keeping a second set.
 - **Pebble games and space lower bounds**
   ([#2995](https://github.com/cslib-community/complexitylib/issues/2995)): the black pebble game
   on a `Digraph`, the path-blocking lower-bound engine, and the exact prices `h + 2` of the
-  complete binary tree and the pyramid (Cook) are in `Complexity/Computability/Pebbling`. Next:
+  complete binary tree and the pyramid (Cook) are in `Complexity/Computability/Pebbling`, with
+  Bennett's reversible game and its exact prices `⌈log₂ (v + 2)⌉` on the path
+  ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)). Next:
   connect `s`-pebble black pebblings to `s`-register evaluation of `Cslib.Circuits.Program`
-  straight-line programs; black-white and reversible pebbling; the Hopcroft–Paul–Valiant
+  straight-line programs; black-white pebbling; reversible time–space and erasure trade-offs
+  (Li–Tromp–Vitányi); the Hopcroft–Paul–Valiant
   `O(n / log n)` pebbling of bounded-indegree DAGs and the matching Paul–Tarjan–Celoni
   `Ω(n / log n)` family; Gilbert–Tarjan and Lengauer–Tarjan time–space trade-offs.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
