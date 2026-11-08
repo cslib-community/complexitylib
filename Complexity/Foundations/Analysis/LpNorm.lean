@@ -18,9 +18,10 @@ import Mathlib.Algebra.Order.BigOperators.Expect
 
 The *`L^p` norm* of a real function `f` on a finite type `α`, for the uniform distribution,
 is `‖f‖_p = (𝔼_x |f x| ^ p) ^ (1 / p)` (`Cslib.lpNorm`) [O'Donnell, Section 1.3][ODonnell2014].
-Its `p`-th power is the `p`-th absolute moment (`Cslib.lpNorm_rpow`), and `‖f‖_2` is the square
-root of the second moment (`Cslib.lpNorm_two`). See `Complexity.Foundations.Analysis.LpNormMeasure`
-for its agreement with Mathlib's `MeasureTheory.lpNorm`.
+Its `p`-th power is the `p`-th absolute moment (`Cslib.lpNorm_rpow`), `‖f‖_2` is the square root
+of the second moment (`Cslib.lpNorm_two`), and `‖f‖_1` is the mean absolute value
+(`Cslib.lpNorm_one`). See `Complexity.Foundations.Analysis.LpNormMeasure` for its agreement with
+Mathlib's `MeasureTheory.lpNorm`.
 
 The norm is invariant under equivalences (`Cslib.lpNorm_equiv`), on a product `α × β` it is the
 iterated norm (`Cslib.lpNorm_prod`), and on a subsingleton type it is the absolute value
@@ -32,8 +33,9 @@ iterated norm (`Cslib.lpNorm_prod`), and on a subsingleton type it is the absolu
 
 ## Main results
 
-* `Cslib.lpNorm_rpow`, `Cslib.lpNorm_two`, `Cslib.lpNorm_two_sq`: the `p`-th power of `‖f‖_p` is
-  the `p`-th absolute moment, and `‖f‖_2` is the root mean square.
+* `Cslib.lpNorm_rpow`, `Cslib.lpNorm_two`, `Cslib.lpNorm_two_sq`, `Cslib.lpNorm_one`: the `p`-th
+  power of `‖f‖_p` is the `p`-th absolute moment, `‖f‖_2` is the root mean square, and `‖f‖_1` is
+  the mean absolute value.
 * `Cslib.lpNorm_equiv`, `Cslib.lpNorm_prod`, `Cslib.lpNorm_subsingleton`: invariance under
   equivalence, iterated norm on a product, and value on a subsingleton type.
 
@@ -78,6 +80,10 @@ theorem lpNorm_two (f : α → ℝ) : lpNorm 2 f = √(𝔼 x, f x ^ 2) := by
 /-- The square of `‖f‖_2` is the second moment of `f`. -/
 theorem lpNorm_two_sq (f : α → ℝ) : lpNorm 2 f ^ 2 = 𝔼 x, f x ^ 2 := by
   rw [lpNorm_two, Real.sq_sqrt (expect_nonneg fun _ _ => sq_nonneg _)]
+
+/-- `‖f‖_1` is the mean absolute value of `f`. -/
+theorem lpNorm_one (f : α → ℝ) : lpNorm 1 f = 𝔼 x, |f x| := by
+  simp only [lpNorm, Real.rpow_one, inv_one]
 
 /-! ### Equivalences, products, and subsingletons -/
 

@@ -142,12 +142,27 @@ If the chain is confined to a set `C` closed under `P` and does not mix on all o
 only for neighbors in `C`, and bound the distance from starts in `C`, for a stationary law
 supported in `C`. The client is Glauber dynamics with a frozen boundary,
 `glauberColoringOn G q U hU`, which recolors only vertices of `U`. On the proper colorings
-`frozenColorings G q U b` that agree with `b` off `U`, `dist_glauberColoringOn_frozen_le_of_le`
-gives the sampling time of Levin and Peres, (14.23). For approximate counting,
+`G.frozenColorings q U b` that agree with `b` off `U`, `dist_glauberColoringOn_frozen_le_of_le`
+gives the sampling time of Levin and Peres, (14.23). It needs `2Δ < q`, `|U| ≤ n`, a start `x`
+that agrees with `b` off `U`, a nonempty `G.frozenColorings q U b` (from `mem_frozenColorings_self`
+when `b` is proper), `0 < δ` and `t ≥ ((q - Δ) / (q - 2Δ)) n (log n - log δ)`, and gives distance
+at most `δ` to the uniform law on `G.frozenColorings q U b`; `dist_glauberColoringOn_edge` in the
+checks below instantiates it. For approximate counting,
 [Coloring/Ratio.lean](../../Complexity/Probability/MarkovChain/Coloring/Ratio.lean) proves their
 Lemma 14.16, `inv_exp_mul_le_card_frozenColorings_erase_div`: freezing one more vertex keeps at
-least a `1 / (e q)` fraction of the colorings. The estimator of Theorem 14.14 is not yet
-formalized.
+least a `1 / (e q)` fraction of the colorings.
+[Coloring/Count.lean](../../Complexity/Probability/MarkovChain/Coloring/Count.lean) proves their
+Theorem 14.14, `le_toOuterMeasure_coloringCountEstimator`: `coloringCountEstimator` multiplies,
+over the `n` vertices, the fraction of `a` frozen-boundary samples in which one more vertex keeps
+its color, and with `t` and `a` as in (14.21) it is within relative error `ε` of
+`1 / |properColorings|` with probability at least `1 - η`. The concentration step is the generic
+product estimator of [Product/Estimator.lean](../../Complexity/Probability/Product/Estimator.lean):
+`le_toOuterMeasure_productEstimate` needs each stage probability within relative error
+`ε / (6 n)` of a target `r k ≥ b > 0` and `48 n ≤ 5 η ε² a b`, and proves it from the exact
+mean and second moment of independent empirical frequencies by Chebyshev's inequality. Both
+results concern only the law of `W`. The `n t a` Glauber updates are not charged in any cost
+model, so this is not yet the fully polynomial randomized approximation scheme of Levin and Peres,
+Remark 14.15.
 
 The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
 `t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip
@@ -155,9 +170,42 @@ chain never mixes, compute a Metropolis acceptance probability, and give the hyp
 with `n = 1`. The [path-coupling checks](../../ComplexityTests/PathCoupling.lean) instantiate the
 coloring bound on a single edge, show that the condition `ρ ≥ 1` off the diagonal cannot be
 dropped, and compute the frozen colorings, the ratio of Lemma 14.16 and the frozen sampling time
-on a single edge. Run `scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling`.
+on a single edge. The [counting checks](../../ComplexityTests/ColoringCount.lean) instantiate
+Theorem 14.14 on a single edge, show that its sample sizes can always be met, and show that one
+sample per stage never gives relative error `1 / 2` there. Run
+`scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling ComplexityTests.ColoringCount`.
 A goal of the form `t_mix(ε) = k` needs both directions: `mixingTime_le_of_distToStationary_le`
 for `≤`, and `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
+
+## Test for a perfect matching with a random determinant
+
+Import [Matching/Edmonds.lean](../../Complexity/Algorithms/Matching/Edmonds.lean). A bipartite
+graph is `G : V × V → Bool` on a finite type `V` of left and right vertices, the representation
+of `Cslib.Circuits.BipartiteMatching.HasPerfectMatching`. `edmondsMatrix G` has the indeterminate
+`X (i, j)` at each edge and `0` elsewhere. `det_edmondsMatrix_ne_zero_iff` is Edmonds' criterion
+(Edmonds 1967):
+over any nontrivial commutative ring, the determinant is a nonzero polynomial exactly when `G` has
+a perfect matching. The randomized test of Lovász evaluates `edmondsEval G r`, the same matrix
+with values `r : V × V → R`. Its error is one-sided: `det_edmondsEval_eq_zero` gives determinant
+`0` at every `r` when there is no perfect matching. When there is one, over an integral domain,
+`card_det_edmondsEval_eq_zero_div_le` bounds the proportion of `r ∈ S ^ (V × V)` with determinant
+`0` by `|V| / |S|`. `exists_det_edmondsEval_ne_zero` turns any `S` with more than `|V|`
+elements into a detecting choice of values. The probability is a counting ratio over
+`Fintype.piFinset`, not a `PMF`, and no machine running time is certified for the determinant.
+
+The bound comes from two lemmas in
+[MvPolynomial/SchwartzZippel.lean](../../Complexity/Foundations/Data/MvPolynomial/SchwartzZippel.lean):
+`MvPolynomial.schwartz_zippel_totalDegree_fintype` extends Mathlib's Schwartz–Zippel lemma from
+the variables `Fin n` to any finite type, and `MvPolynomial.totalDegree_det_le` bounds the total
+degree of a determinant of polynomials. Use them for other symbolic-determinant tests.
+
+The [checked clients](../../ComplexityTests/EdmondsMatching.lean) compute the `2 × 2`
+determinant of the complete graph, apply the test to a graph whose right vertex `1` is
+unmatched, and show that values from the one-element set `{0}` miss the matching of a single edge.
+The bound `|V| < |S|` comes from Schwartz–Zippel and is not sharp in general: the determinant has
+degree at most `1` in each variable, so over an integral domain any `S` with two elements detects a
+perfect matching (not formalized). Run
+`scripts/build.sh ComplexityTests.EdmondsMatching`.
 
 ## Compose local embeddings and extract a strategy
 
@@ -869,6 +917,8 @@ length `4*n+1` and are not uniform words of that length. For perfect correctness
 provides it for every seed, while the simple split map needs real keys of length `3*n`.
 The clients also distinguish failed decapsulation from accepted empty keys, detect omitted
 postprocessing on forwarded replies, and exhibit a failed real hop without KEM correctness.
+
+When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../Complexity/Crypto/Protocols/KEM/FujisakiOkamoto.lean) rather than `KEMFromPKE.lean`. That module supplies `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`) together with the deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`; checked clients in [`ComplexityTests/Crypto/FujisakiOkamoto.lean`](../../ComplexityTests/Crypto/FujisakiOkamoto.lean)); random-oracle IND-CCA security games and reductions are not included in this module.
 
 ## Certify a list accumulator
 
