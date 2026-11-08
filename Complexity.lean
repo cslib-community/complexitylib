@@ -5121,10 +5121,13 @@ public import Complexity.Probability.Split
 public import Complexity.Probability.StatisticalDistance
 public import Complexity.Probability.StatisticalDistance.ClosedForm
 public import Complexity.Probability.StatisticalDistance.Coupling
+public import Complexity.Probability.StatisticalDistance.DirectProduct
 public import Complexity.Probability.StatisticalDistance.Event
 public import Complexity.Probability.StatisticalDistance.OptimalCoupling
+public import Complexity.Probability.StatisticalDistance.Polarization
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
+public import Complexity.Probability.StatisticalDistance.XOR
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
