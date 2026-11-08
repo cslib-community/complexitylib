@@ -358,7 +358,6 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.NumericBoun
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Potential
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.TimeBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Width
-public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Window
 public import Complexity.Algorithms.WordRAM.ExactTriangle.InstancePair
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
 public import Complexity.Algorithms.WordRAM.ExactTriangle.MatrixSpec
