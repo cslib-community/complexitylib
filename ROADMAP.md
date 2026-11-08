@@ -675,9 +675,16 @@ index links to canonical definitions rather than keeping a second set.
 - **Distributional framework** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the length-indexed ensembles, `AvgP`/`HeurP`,
   `DistNP` and dominating reductions with polynomial-time computable ensembles being samplable,
   Levin's runtime-moment definition of average polynomial time and its relation to errorless
-  schemes (instances of probability zero obstruct a literal equivalence), randomized
-  average-case classes, and `(L, U) ∈ AvgP` implying `L ∈ E`-style consequences. Reuse the
-  specialized Liu–Pass hardness notions through further proved bridges.
+  schemes (instances of probability zero obstruct a literal equivalence), and randomized
+  average-case classes. Reuse the specialized Liu–Pass hardness notions through further proved
+  bridges.
+- **Heuristic hierarchy and universal distributions** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): prove that
+  `(BH, U^BH) ∈ Heur_{1/n} P` gives `DistNP ⊆ HeurP`, and the `Avg` analogue
+  (Bogdanov–Trevisan Prop. 21). The source pads instances to `(M, x, 1^{t + ⌈1/δ⌉})`, which can
+  change `BH` membership, so the proof should route through a fixed clocked universal program
+  whose input carries `(c, z, 1^t)`. Also prove the theorem of Levin, Li and Vitányi
+  (Bogdanov–Trevisan Thm 16): under the ensemble `K_n(x) ∝ 2^{-C(x)}` on each length, a decidable
+  `L` with `(L, K) ∈ Heur_{1/n³} P` is in `P`.
 - **Completeness beyond computable ensembles** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the bounded-halting completeness for
   `DistNP` to samplable distributions (Impagliazzo–Levin, `SampNP`), and bridge the verifier-form
   bounded halting problem to a nondeterministic machine model. Connect the framework to one-way

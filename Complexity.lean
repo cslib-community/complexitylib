@@ -1482,6 +1482,7 @@ public import Complexity.Computability.Complexity.Classes.AverageCase.Distributi
 public import Complexity.Computability.Complexity.Classes.AverageCase.Ensemble
 public import Complexity.Computability.Complexity.Classes.AverageCase.MildHardness
 public import Complexity.Computability.Complexity.Classes.AverageCase.Reduction
+public import Complexity.Computability.Complexity.Classes.AverageCase.WorstCase
 public import Complexity.Computability.Complexity.Classes.BPP
 public import Complexity.Computability.Complexity.Classes.BPP.Amplification
 public import Complexity.Computability.Complexity.Classes.BPP.Collapse
