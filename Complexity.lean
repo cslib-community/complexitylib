@@ -4353,6 +4353,8 @@ public import Complexity.Foundations.Combinatorics.LittlewoodOfford
 public import Complexity.Foundations.Combinatorics.MajorityTree
 public import Complexity.Foundations.Combinatorics.MajorityVote
 public import Complexity.Foundations.Combinatorics.MajorityVote.Weighted
+public import Complexity.Foundations.Combinatorics.Multidigraph.Arborescence
+public import Complexity.Foundations.Combinatorics.Multidigraph.BEST
 public import Complexity.Foundations.Combinatorics.Multigraph
 public import Complexity.Foundations.Combinatorics.Multigraph.CutSpace
 public import Complexity.Foundations.Combinatorics.PacketPacking

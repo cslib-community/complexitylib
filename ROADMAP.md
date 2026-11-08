@@ -807,11 +807,11 @@ index links to canonical definitions rather than keeping a second set.
   approximate counting.
 - **Exact counting by determinants**
   ([#3081](https://github.com/cslib-community/complexitylib/issues/3081)): Kirchhoff's
-  matrix-tree theorem (with polynomial-time spanning-tree counting), its weighted form and Tutte's
-  directed (arborescence) form are done. Remaining: the BEST theorem for Eulerian circuits,
-  polynomial-time counting of arborescences and of weighted spanning trees, and Kasteleyn's
-  Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
-  #P-completeness.
+  matrix-tree theorem (with polynomial-time spanning-tree counting), its weighted form, Tutte's
+  directed (arborescence) form and the BEST theorem for Eulerian circuits of multidigraphs are
+  done. Remaining: polynomial-time counting of arborescences, of weighted spanning trees and of
+  Eulerian circuits, the root independence of the BEST count, and Kasteleyn's Pfaffian method
+  for perfect matchings of planar graphs, in contrast with permanent #P-completeness.
 - For composite moduli
   ([#3495](https://github.com/cslib-community/complexitylib/issues/3495)): the prime-power
   collapse `Mod_{p^e}P = Mod_pP` is done. Remaining: union closure for every modulus through
