@@ -7,10 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
-public import Complexity.Logics.FirstOrder.Interpretation
+public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.DefinedGraph
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
-public import Mathlib.ModelTheory.Graph
 import Mathlib.Data.Finset.Sort
 
 /-!
@@ -27,12 +25,12 @@ order joins each element to the element two steps above it, and closes the ends:
 is joined to the second one and the penultimate element to the first one (`stepTwoGraph`). On an
 order with an odd number of elements this graph is a single cycle through all elements; on an order
 with an even number of elements it is the disjoint union of the even and the odd positions
-(`stepTwoGraph_connected_iff_odd`). Its adjacency relation is first-order definable from `≤`, so it
-is the graph interpreted in the order by a one-dimensional first-order interpretation
-(`stepTwoInterp`, `stepTwoModelEquiv`). A sentence `φ` defining connectivity would pull back to a
-sentence of the language of orders (`realize_onSentence_stepTwoInterp`) that holds in a finite
-linear order exactly when it has an odd number of elements. By the Ehrenfeucht–Fraïssé theorem for
-finite linear orders (`FiniteLinearOrder.realize_iff_of_two_pow_le_card`), no such sentence exists.
+(`stepTwoGraph_connected_iff_odd`). Its arcs are first-order definable from `≤`
+(`stepTwoArcFormula`), so it is the graph defined by a formula in the sense of
+`Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.DefinedGraph` (`stepTwoGraph_eq_definedGraph`), and
+the parity transfer `DefinedGraph.not_exists_sentence_of_odd` turns a sentence defining
+connectivity into a sentence of the language of orders expressing that a finite linear order has an
+odd number of elements, which the Ehrenfeucht–Fraïssé theorem for finite linear orders rules out.
 
 The sentences range over the pure graph vocabulary, with no built-in order or arithmetic. In
 ordered descriptive complexity (Immerman's conventions, with numeric predicates `≤` and `BIT`),
@@ -44,15 +42,15 @@ order cannot express.
 ## Main definitions
 
 * `Cslib.Logic.FO.Connectivity.stepTwoGraph`: the step-two graph of a linear order.
-* `Cslib.Logic.FO.Connectivity.stepTwoInterp`: the first-order interpretation of the language of
-  graphs in the language of orders that defines the step-two graph.
+* `Cslib.Logic.FO.Connectivity.stepTwoArcFormula`: the formula of the language of orders defining
+  its arcs.
 
 ## Main results
 
 * `Cslib.Logic.FO.Connectivity.stepTwoGraph_connected_iff_odd`: the step-two graph of a finite
   linear order is connected iff the order has an odd number of elements.
-* `Cslib.Logic.FO.Connectivity.realize_onSentence_stepTwoInterp`: a linear order satisfies the
-  pullback of a graph sentence iff its step-two graph satisfies the sentence.
+* `Cslib.Logic.FO.Connectivity.stepTwoGraph_eq_definedGraph`: the step-two graph is the graph
+  defined by `stepTwoArcFormula`.
 * `Cslib.Logic.FO.Connectivity.not_exists_sentence_connected`: connectivity of finite graphs is
   not first-order definable.
 * `Cslib.Logic.FO.Connectivity.not_exists_sentence_connected_of_le_card`: the same for graphs with
@@ -62,7 +60,7 @@ order cannot express.
 
 * [H.-D. Ebbinghaus and J. Flum, *Finite Model Theory*][EbbinghausFlum1999], Chapter 2
   (Ehrenfeucht–Fraïssé games and nondefinability of connectivity).
-* [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Chapter 3 (connectivity is not
+* [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Corollary 3.19 (connectivity is not
   definable, by a reduction from EVEN on linear orders).
 -/
 
@@ -72,49 +70,18 @@ open FirstOrder Language Structure
 
 namespace Cslib.Logic.FO.Connectivity
 
+open DefinedGraph
+
 universe u
 
-/-! ### Order formulas -/
+/-! ### The arc formula -/
 
 variable {α : Type*}
-
-/-- The formula `x ⋖ y` of the language of orders: `y` covers `x`. -/
-noncomputable def covByFormula (x y : α) : Language.order.Formula α :=
-  (Term.var (Sum.inl x)).lt (Term.var (Sum.inl y)) ⊓
-    ∀' ∼(((Term.var (Sum.inl x)).lt (&0)) ⊓ ((&0).lt (Term.var (Sum.inl y))))
-
-/-- The formula of the language of orders saying that `x` is the least element. -/
-noncomputable def isBotFormula (x : α) : Language.order.Formula α :=
-  ∀' ((Term.var (Sum.inl x)).le (&0))
-
-/-- The formula of the language of orders saying that `x` is the greatest element. -/
-noncomputable def isTopFormula (x : α) : Language.order.Formula α :=
-  ∀' ((&0).le (Term.var (Sum.inl x)))
-
-/-- The formula of the language of orders saying that `y` is two steps above `x`. -/
-noncomputable def twoAboveFormula (x y : α) : Language.order.Formula α :=
-  Formula.iExs (Fin 1)
-    (covByFormula (α := α ⊕ Fin 1) (.inl x) (.inr 0) ⊓
-      covByFormula (α := α ⊕ Fin 1) (.inr 0) (.inl y))
-
-/-- The formula of the language of orders saying that `x` is the second least element. -/
-noncomputable def isSecondFormula (x : α) : Language.order.Formula α :=
-  Formula.iExs (Fin 1)
-    (isBotFormula (α := α ⊕ Fin 1) (.inr 0) ⊓ covByFormula (α := α ⊕ Fin 1) (.inr 0) (.inl x))
-
-/-- The formula of the language of orders saying that `x` is the second greatest element. -/
-noncomputable def isPenultimateFormula (x : α) : Language.order.Formula α :=
-  Formula.iExs (Fin 1)
-    (isTopFormula (α := α ⊕ Fin 1) (.inr 0) ⊓ covByFormula (α := α ⊕ Fin 1) (.inl x) (.inr 0))
 
 /-- The formula of the language of orders defining `StepTwoArc`. -/
 noncomputable def stepTwoArcFormula (x y : α) : Language.order.Formula α :=
   twoAboveFormula x y ⊔ (isTopFormula x ⊓ isSecondFormula y) ⊔
     (isPenultimateFormula x ⊓ isBotFormula y)
-
-/-- The formula of the language of orders defining adjacency in `stepTwoGraph`. -/
-noncomputable def stepTwoAdjFormula (x y : α) : Language.order.Formula α :=
-  ∼(Term.equal (Term.var x) (Term.var y)) ⊓ (stepTwoArcFormula x y ⊔ stepTwoArcFormula y x)
 
 /-! ### The step-two graph -/
 
@@ -148,59 +115,11 @@ theorem stepTwoGraph_adj {x y : M} :
     (stepTwoGraph M).Adj x y ↔ x ≠ y ∧ (StepTwoArc M x y ∨ StepTwoArc M y x) :=
   Iff.rfl
 
-/-! ### Realizing the order formulas -/
+/-! ### Realizing the arc formula -/
 
 section Realize
 
 variable [Language.order.Structure M] [Language.order.OrderedStructure M]
-
-/-- `covByFormula x y` holds iff the value of `y` covers the value of `x`. -/
-@[simp]
-theorem realize_covByFormula (v : α → M) (x y : α) :
-    (covByFormula x y).Realize v ↔ v x ⋖ v y := by
-  simp [covByFormula, Formula.Realize, Fin.snoc, CovBy]
-
-/-- `isBotFormula x` holds iff the value of `x` is the least element. -/
-@[simp]
-theorem realize_isBotFormula (v : α → M) (x : α) :
-    (isBotFormula x).Realize v ↔ ∀ t, v x ≤ t := by
-  simp [isBotFormula, Formula.Realize, Fin.snoc]
-
-/-- `isTopFormula x` holds iff the value of `x` is the greatest element. -/
-@[simp]
-theorem realize_isTopFormula (v : α → M) (x : α) :
-    (isTopFormula x).Realize v ↔ ∀ t, t ≤ v x := by
-  simp [isTopFormula, Formula.Realize, Fin.snoc]
-
-omit [LinearOrder M] [Language.order.Structure M] [Language.order.OrderedStructure M] in
-private theorem exists_fin_one {p : M → Prop} : (∃ i : Fin 1 → M, p (i 0)) ↔ ∃ z, p z :=
-  ⟨fun ⟨i, h⟩ => ⟨i 0, h⟩, fun ⟨z, h⟩ => ⟨fun _ => z, h⟩⟩
-
-/-- `twoAboveFormula x y` holds iff the value of `y` is two steps above the value of `x`. -/
-@[simp]
-theorem realize_twoAboveFormula (v : α → M) (x y : α) :
-    (twoAboveFormula x y).Realize v ↔ ∃ z, v x ⋖ z ∧ z ⋖ v y := by
-  rw [twoAboveFormula, Formula.realize_iExs]
-  simp only [Formula.realize_inf, realize_covByFormula, Sum.elim_inl, Sum.elim_inr]
-  exact exists_fin_one (p := fun z => v x ⋖ z ∧ z ⋖ v y)
-
-/-- `isSecondFormula x` holds iff the value of `x` covers the least element. -/
-@[simp]
-theorem realize_isSecondFormula (v : α → M) (x : α) :
-    (isSecondFormula x).Realize v ↔ ∃ z, (∀ t, z ≤ t) ∧ z ⋖ v x := by
-  rw [isSecondFormula, Formula.realize_iExs]
-  simp only [Formula.realize_inf, realize_covByFormula, realize_isBotFormula, Sum.elim_inl,
-    Sum.elim_inr]
-  exact exists_fin_one (p := fun z => (∀ t, z ≤ t) ∧ z ⋖ v x)
-
-/-- `isPenultimateFormula x` holds iff the greatest element covers the value of `x`. -/
-@[simp]
-theorem realize_isPenultimateFormula (v : α → M) (x : α) :
-    (isPenultimateFormula x).Realize v ↔ ∃ z, (∀ t, t ≤ z) ∧ v x ⋖ z := by
-  rw [isPenultimateFormula, Formula.realize_iExs]
-  simp only [Formula.realize_inf, realize_covByFormula, realize_isTopFormula, Sum.elim_inl,
-    Sum.elim_inr]
-  exact exists_fin_one (p := fun z => (∀ t, t ≤ z) ∧ v x ⋖ z)
 
 /-- `stepTwoArcFormula` defines `StepTwoArc`. -/
 @[simp]
@@ -209,13 +128,6 @@ theorem realize_stepTwoArcFormula (v : α → M) (x y : α) :
   simp only [stepTwoArcFormula, Formula.realize_sup, Formula.realize_inf,
     realize_twoAboveFormula, realize_isTopFormula, realize_isSecondFormula,
     realize_isPenultimateFormula, realize_isBotFormula, stepTwoArc_iff, or_assoc]
-
-/-- `stepTwoAdjFormula` defines adjacency in `stepTwoGraph`. -/
-@[simp]
-theorem realize_stepTwoAdjFormula (v : α → M) (x y : α) :
-    (stepTwoAdjFormula x y).Realize v ↔ (stepTwoGraph M).Adj (v x) (v y) := by
-  simp only [stepTwoAdjFormula, Formula.realize_inf, Formula.realize_not, Formula.realize_equal,
-    Term.realize_var, Formula.realize_sup, realize_stepTwoArcFormula, stepTwoGraph_adj]
 
 end Realize
 
@@ -346,74 +258,31 @@ theorem stepTwoGraph_connected_iff_odd [Finite M] :
       (Fintype.orderIsoFinOfCardEq M Nat.card_eq_fintype_card.symm)).connected_iff,
     stepTwoGraph_fin_connected_iff]
 
-/-! ### The interpretation -/
-
-/-- The one-dimensional first-order interpretation of the language of graphs in the language of
-orders whose interpreted graph is the step-two graph: every element is in the domain, and adjacency
-is defined by `stepTwoAdjFormula`. -/
-noncomputable def stepTwoInterp : Interpretation Language.order Language.graph Unit where
-  domain := ⊤
-  rel := fun {n} R => match n, R with
-    | 2, .adj => stepTwoAdjFormula ((0 : Fin 2), ()) ((1 : Fin 2), ())
-
-variable [Language.order.Structure M] [Language.order.OrderedStructure M]
+/-! ### The step-two graph as a defined graph -/
 
 variable (M) in
-/-- The graph interpreted by `stepTwoInterp` in a linear order is its step-two graph. -/
-noncomputable def stepTwoModelEquiv :
-    letI := (stepTwoGraph M).structure
-    stepTwoInterp.Model M ≃[Language.graph] M :=
-  letI := (stepTwoGraph M).structure
-  { toFun x := x.1 ()
-    invFun y := Interpretation.Model.mk (fun _ => y) (Formula.realize_top.2 trivial)
-    left_inv _ := Interpretation.Model.ext rfl
-    right_inv _ := rfl
-    map_fun' f := isEmptyElim f
-    map_rel' {n} R x := by
-      match n, R with
-      | 2, .adj => exact (realize_stepTwoAdjFormula (fun p => (x p.1).1 p.2) ((0 : Fin 2), ())
-          ((1 : Fin 2), ())).symm }
-
-variable (M) in
-/-- A linear order satisfies the pullback along `stepTwoInterp` of a sentence of the language of
-graphs exactly when its step-two graph satisfies the sentence. -/
-theorem realize_onSentence_stepTwoInterp (φ : Language.graph.Sentence) :
-    M ⊨ stepTwoInterp.onSentence φ ↔ (letI := (stepTwoGraph M).structure; M ⊨ φ) := by
-  let := (stepTwoGraph M).structure
-  rw [Interpretation.realize_onSentence]
-  exact StrongHomClass.realize_sentence (stepTwoModelEquiv M) φ
+/-- The step-two graph of a linear order is the graph defined by `stepTwoArcFormula`. -/
+theorem stepTwoGraph_eq_definedGraph [Language.order.Structure M]
+    [Language.order.OrderedStructure M] :
+    stepTwoGraph M = definedGraph M (stepTwoArcFormula 0 1) := by
+  ext x y
+  simp only [stepTwoGraph_adj, definedGraph_adj, realize_stepTwoArcFormula, Matrix.cons_val_zero,
+    Matrix.cons_val_one]
 
 /-! ### Nondefinability of connectivity -/
 
 /-- **Connectivity is not first-order definable** on finite graphs, even on graphs with at least
 `t` vertices: no sentence of the language of graphs holds in exactly the connected ones among the
-finite simple graphs with at least `t` vertices [Libkin, Chapter 3][Libkin2004]. -/
+finite simple graphs with at least `t` vertices [Libkin, Corollary 3.19][Libkin2004]. -/
 theorem not_exists_sentence_connected_of_le_card (t : ℕ) :
     ¬ ∃ φ : Language.graph.Sentence, ∀ (V : Type u) [Finite V] (G : SimpleGraph V),
-      t ≤ Nat.card V → ((letI := G.structure; V ⊨ φ) ↔ G.Connected) := by
-  rintro ⟨φ, hφ⟩
-  obtain ⟨n, hn, htn⟩ : ∃ n, quantifierRank (stepTwoInterp.onSentence φ) ≤ n ∧ t ≤ n :=
-    ⟨max (quantifierRank (stepTwoInterp.onSentence φ)) t, le_max_left _ _, le_max_right _ _⟩
-  have ht : t ≤ 2 ^ n := htn.trans Nat.lt_two_pow_self.le
-  have key : ∀ (M : Type u) [LinearOrder M] [Finite M] [Language.order.Structure M]
-      [Language.order.OrderedStructure M], t ≤ Nat.card M →
-      (M ⊨ stepTwoInterp.onSentence φ ↔ Odd (Nat.card M)) := by
-    intro M _ _ _ _ hM
-    rw [realize_onSentence_stepTwoInterp, hφ _ _ hM, stepTwoGraph_connected_iff_odd]
-  let := orderStructure (ULift.{u} (Fin (2 ^ n)))
-  let := orderStructure (ULift.{u} (Fin (2 ^ n + 1)))
-  have : Language.order.OrderedStructure (ULift.{u} (Fin (2 ^ n))) := ⟨fun _ => Iff.rfl⟩
-  have : Language.order.OrderedStructure (ULift.{u} (Fin (2 ^ n + 1))) := ⟨fun _ => Iff.rfl⟩
-  have h := FiniteLinearOrder.realize_iff_of_two_pow_le_card (M := ULift.{u} (Fin (2 ^ n)))
-    (N := ULift.{u} (Fin (2 ^ n + 1))) (by rw [Nat.card_ulift, Nat.card_fin]; omega)
-    (by rw [Nat.card_ulift, Nat.card_fin]; omega) hn
-  rw [key _ (by rw [Nat.card_ulift, Nat.card_fin]; omega),
-    key _ (by rw [Nat.card_ulift, Nat.card_fin]; omega), Nat.card_ulift, Nat.card_ulift,
-    Nat.card_fin, Nat.card_fin, Nat.odd_add_one] at h
-  exact iff_not_self h
+      t ≤ Nat.card V → ((letI := G.structure; V ⊨ φ) ↔ G.Connected) :=
+  not_exists_sentence_of_odd (fun _ G => G.Connected) (stepTwoArcFormula 0 1) 0
+    (fun M _ _ _ _ _ => by rw [← stepTwoGraph_eq_definedGraph, stepTwoGraph_connected_iff_odd])
+    t
 
 /-- **Connectivity is not first-order definable** on finite graphs: no sentence of the language of
-graphs holds in exactly the connected finite simple graphs [Libkin, Chapter 3][Libkin2004]. -/
+graphs holds in exactly the connected finite simple graphs [Libkin, Corollary 3.19][Libkin2004]. -/
 theorem not_exists_sentence_connected :
     ¬ ∃ φ : Language.graph.Sentence, ∀ (V : Type u) [Finite V] (G : SimpleGraph V),
       (letI := G.structure; V ⊨ φ) ↔ G.Connected := fun ⟨φ, hφ⟩ =>

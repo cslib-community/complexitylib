@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 public import Mathlib.Data.Finset.Lattice.Fold
 public import Mathlib.Data.List.Count
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.List.Nodup
 import Mathlib.Tactic.Push
 
@@ -31,6 +32,7 @@ of the stream, and the items of a stream are distinct exactly when `F∞ ≤ 1`
 
 ## Main results
 
+* `Cslib.Streaming.freqMoment_map`: renaming the items injectively keeps the frequency moments.
 * `Cslib.Streaming.one_le_maxFreq`, `Cslib.Streaming.two_le_maxFreq_of_not_nodup`,
   `Cslib.Streaming.maxFreq_le_one_iff`: `F∞` is at least `1` on nonempty streams, and at most `1`
   exactly on streams of distinct items.
@@ -50,6 +52,16 @@ variable {α : Type*} [DecidableEq α]
 /-- The `k`-th **frequency moment** `F_k = ∑ₐ (count a s) ^ k` of a stream. -/
 @[expose] def freqMoment (k : ℕ) (s : List α) : ℕ :=
   ∑ a ∈ s.toFinset, s.count a ^ k
+
+/-- Renaming the items of a stream injectively keeps its frequency moments. -/
+theorem freqMoment_map {α' : Type*} [DecidableEq α'] {f : α → α'} (hf : Function.Injective f)
+    (k : ℕ) (s : List α) : freqMoment k (s.map f) = freqMoment k s := by
+  unfold freqMoment
+  have hT : (s.map f).toFinset = s.toFinset.image f := by
+    ext b
+    simp only [List.mem_toFinset, List.mem_map, Finset.mem_image]
+  rw [hT, Finset.sum_image fun a _ b _ h => hf h]
+  exact Finset.sum_congr rfl fun a _ => by rw [List.count_map_of_injective _ _ hf]
 
 /-- The largest number of occurrences of an item in the stream `s` (`F∞`; zero for the empty
 stream). -/
