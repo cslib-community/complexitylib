@@ -1117,10 +1117,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   residual-network and duality machinery. Remaining matching directions: the decomposition of
   `M ⊕ M*` into vertex-disjoint augmenting paths, general (non-bipartite) matching with blossoms,
   and a sparse Hopcroft–Karp entry point that also charges construction of the adjacency lists.
-- **Matroids:** Edmonds' matroid intersection theorem, the exchange-graph augmenting-path step and
-  König's theorem via partition matroids are in `Algorithms/Lean/Matroid/Intersection`. Remaining:
-  a verified executable matroid-intersection solver, with independence-oracle query counts kept
-  separate from `TimeM` implementation costs
+- **Matroids:** Edmonds' matroid intersection theorem, the exchange-graph augmenting-path step,
+  König's theorem via partition matroids and a verified executable solver with exact
+  independence-oracle query counts are in `Algorithms/Lean/Matroid/Intersection` and
+  `Algorithms/Lean/Query/Matroid/Intersection`. Remaining: `TimeM` costs for the solver's host
+  computation, kept separate from the query counts
   ([#2018](https://github.com/cslib-community/complexitylib/issues/2018)); then weighted matroid
   intersection.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
