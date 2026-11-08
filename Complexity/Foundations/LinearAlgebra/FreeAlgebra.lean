@@ -34,6 +34,7 @@ length `k` has this form (`FreeMonoid.exists_ofFn_eq`).
 
 ## Main results
 
+* `FreeAlgebra.coeff_def`: `coeff` reads the coefficients of `equivMonoidAlgebraFreeMonoid`.
 * `FreeAlgebra.ext_coeff`: polynomials with the same coefficients are equal.
 * `FreeAlgebra.coeff_mul`: the product rule.
 * `FreeAlgebra.IsHomogeneous.mul`: degrees add under multiplication.

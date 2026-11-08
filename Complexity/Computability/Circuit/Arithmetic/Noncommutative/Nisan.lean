@@ -32,17 +32,19 @@ recovers `coeff u f`.
 
 * **Exactness** (`NoncommABP.exists_width_eq_rank`). Every nonzero homogeneous `f` of degree
   `d ≥ 1` is computed by an ABP with layer `k` of width exactly `rank M_k(f)`.
-* **Nisan's theorem** (`NoncommABP.isLeast_size`; [Nisan1991NonCommutative];
+* **Nisan's theorem** (`NoncommABP.isLeast_size`; [Nisan1991NonCommutative], Theorem 1;
   [Saptharishi2026Survey], Theorem 11.2). The least size of an ABP computing such an `f` is
-  `∑_{k ≤ d} rank M_k(f)`. This sum includes the sink layer, where `rank M_d(f) = 1`.
-  Saptharishi's statement sums over `k < d` and so does not count the sink; the two counts
-  differ by exactly one.
+  `∑_{k ≤ d} rank M_k(f)`, the number of vertices, as in Nisan's Theorem 1. The displayed
+  statement of the survey's Theorem 11.2 leaves out the final term `rank M_d(f)`, which is `1`.
 
 **Scope.** The ABPs are homogeneous and layered: every edge is labelled by a homogeneous linear
 form. The model is `NoncommABP`. The reduction from general non-commutative ABPs, with
 `s · poly(d)` blow-up ([Saptharishi2026Survey], Exercise 11.1), is not formalized. The degree
 `d = 0` is excluded: a degree-`0` ABP computes the constant `1`, not an arbitrary nonzero scalar.
-`f = 0` is excluded because the model has a source-to-sink path.
+`f = 0` is excluded because exactness fails there: every Nisan matrix of `0` has rank `0`, while
+`width_zero` and `width_deg` force a source and a sink, so every ABP of positive degree has size
+at least `2`. ABPs computing `0` exist, for instance with an empty middle layer or zero edge
+labels; the lower bound holds for them.
 
 ## Main definitions
 
@@ -59,11 +61,13 @@ form. The model is `NoncommABP`. The reduction from general non-commutative ABPs
 
 ## References
 
-* [N. Nisan, *Lower bounds for non-commutative computation*][Nisan1991NonCommutative]
+* [N. Nisan, *Lower bounds for non-commutative computation*][Nisan1991NonCommutative],
+  extended abstract, §3 (Theorem 1). Nisan's sketch of the upper bound removes vertices from a
+  layer with more than `rank M_k(f)` vertices; the proof here instead builds the optimal ABP
+  directly from the rows, as sketched above.
 * [R. Saptharishi, *A survey of lower bounds in arithmetic circuit
   complexity*][Saptharishi2026Survey], Chapter 11 (Theorem 11.2, Exercises 11.1 and 11.2); the
-  chapter is unchanged from release v9.0.3. The survey leaves the construction as an exercise;
-  the proof here follows the rows argument sketched above.
+  chapter is unchanged from release v9.0.3. The survey leaves the construction as an exercise.
 -/
 
 public section
@@ -343,9 +347,10 @@ private theorem polynomial_optABP {f : FreeAlgebra K X} {d : ℕ} (hd : f.IsHomo
     rw [h, NoncommABP.polynomial, map_sum]
   · rw [hd.coeff_eq_zero hw, (optABP f d hd hf).isHomogeneous_polynomial.coeff_eq_zero hw]
 
-/-- **Nisan's theorem, exactness** ([Nisan1991NonCommutative]; [Saptharishi2026Survey],
-Theorem 11.2 and Exercise 11.2). Every nonzero homogeneous polynomial of degree `d ≥ 1` is
-computed by a homogeneous layered ABP whose layer `k` has exactly `rank M_k(f)` vertices. -/
+/-- **Nisan's theorem, exactness** ([Nisan1991NonCommutative], Theorem 1;
+[Saptharishi2026Survey], Theorem 11.2 and Exercise 11.2). Every nonzero homogeneous polynomial
+of degree `d ≥ 1` is computed by a homogeneous layered ABP whose layer `k` has exactly
+`rank M_k(f)` vertices. -/
 theorem NoncommABP.exists_width_eq_rank {f : FreeAlgebra K X} {d : ℕ} (hd : f.IsHomogeneous d)
     (hf : f ≠ 0) (hd0 : d ≠ 0) :
     ∃ A : NoncommABP K X d, A.polynomial = f ∧
@@ -354,10 +359,10 @@ theorem NoncommABP.exists_width_eq_rank {f : FreeAlgebra K X} {d : ℕ} (hd : f.
   subst hkm
   exact (rank_nisanMatrix_eq_finrank_nisanRowSpace hd).symm
 
-/-- **Nisan's theorem** ([Nisan1991NonCommutative]; [Saptharishi2026Survey], Theorem 11.2). The
-least size of a homogeneous layered ABP computing a nonzero homogeneous `f` of degree `d ≥ 1` is
-`∑_{k ≤ d} rank M_k(f)`. The size counts the sink layer, where `rank M_d(f) = 1`; the survey's sum
-over `k < d` leaves out the sink and is one less. -/
+/-- **Nisan's theorem** ([Nisan1991NonCommutative], Theorem 1; [Saptharishi2026Survey],
+Theorem 11.2). The least size of a homogeneous layered ABP computing a nonzero homogeneous `f` of
+degree `d ≥ 1` is `∑_{k ≤ d} rank M_k(f)`, counting every vertex as in Nisan's Theorem 1. The
+survey's displayed statement leaves out the final term `rank M_d(f) = 1`. -/
 theorem NoncommABP.isLeast_size {f : FreeAlgebra K X} {d : ℕ} (hd : f.IsHomogeneous d)
     (hf : f ≠ 0) (hd0 : d ≠ 0) :
     IsLeast {s | ∃ A : NoncommABP K X d, A.polynomial = f ∧ A.size = s}

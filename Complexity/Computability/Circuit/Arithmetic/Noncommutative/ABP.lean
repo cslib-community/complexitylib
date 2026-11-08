@@ -27,20 +27,21 @@ layer `d` are ignored.
 rows indexed by the words of length `k`, columns by the words of length `m`, and entry `(u, v)` the
 coefficient of the word `u v` in `f`. Words are tuples `Fin k → X`, read by `FreeMonoid.ofFn`.
 
-* **Factorization** (Saptharishi, Subclaim 11.3). If `k + m = d`, then `M_k` of the computed
-  polynomial is the product of the `n^k × width k` matrix of coefficients of the polynomials
-  `pre k l` computed from the source to the vertices of layer `k`, and the `width k × n^m` matrix
-  of coefficients of the polynomials `suf k m l` computed from those vertices to the sink
-  (`NoncommABP.nisanMatrix_eq_mul`).
-* **Nisan's lower bound** (Saptharishi, proof of Theorem 11.2). Hence layer `k` has at least
-  `rank M_k(f)` vertices (`NoncommABP.rank_nisanMatrix_le_width`), and the size is at least
-  `∑_{k ≤ d} rank M_k(f)` (`NoncommABP.sum_rank_nisanMatrix_le_size`).
+* **Factorization** (Nisan, proof of Theorem 1; Saptharishi, Subclaim 11.3). If `k + m = d`,
+  then `M_k` of the computed polynomial is the product of the `n^k × width k` matrix of
+  coefficients of the polynomials `pre k l` computed from the source to the vertices of layer `k`,
+  and the `width k × n^m` matrix of coefficients of the polynomials `suf k m l` computed from those
+  vertices to the sink (`NoncommABP.nisanMatrix_eq_mul`).
+* **Nisan's lower bound** (Nisan, Theorem 1; Saptharishi, proof of Theorem 11.2). Hence layer `k`
+  has at least `rank M_k(f)` vertices (`NoncommABP.rank_nisanMatrix_le_width`), and the size is at
+  least `∑_{k ≤ d} rank M_k(f)` (`NoncommABP.sum_rank_nisanMatrix_le_size`).
 
 The matching construction is in `Complexity.Computability.Circuit.Arithmetic.Noncommutative.Nisan`.
 
-**Size convention.** Here the size counts every layer, including the sink. Saptharishi's
-statement of Theorem 11.2 sums `rank M_k(f)` over `k < d`; the sink layer adds
-`rank M_d(f) = 1` for nonzero `f`, so the two counts differ by exactly one.
+**Size convention.** The size counts every vertex, the source and the sink included, as in
+Nisan's Definition 1, and the bound sums `rank M_k(f)` over `0 ≤ k ≤ d`, as in Nisan's Theorem 1.
+The displayed statement of Theorem 11.2 in Saptharishi's survey leaves out the final term
+`rank M_d(f)`, which is `1` for nonzero `f`.
 
 ## Main definitions
 
@@ -56,7 +57,8 @@ statement of Theorem 11.2 sums `rank M_k(f)` over `k < d`; the sink layer adds
 
 ## References
 
-* [N. Nisan, *Lower bounds for non-commutative computation*][Nisan1991NonCommutative]
+* [N. Nisan, *Lower bounds for non-commutative computation*][Nisan1991NonCommutative],
+  extended abstract, §2 (Definition 1) and §3 (Theorem 1 and its proof sketch).
 * [R. Saptharishi, *A survey of lower bounds in arithmetic circuit
   complexity*][Saptharishi2026Survey], Chapter 11 (Definition 11.1, Theorem 11.2,
   Subclaim 11.3); the chapter is unchanged from release v9.0.3.
@@ -221,18 +223,19 @@ section Rank
 
 variable {K : Type*} [Field K] {X : Type*} [Fintype X] {d : ℕ} (A : NoncommABP K X d)
 
-/-- **Nisan's width bound** ([Nisan1991NonCommutative]; [Saptharishi2026Survey], proof of
-Theorem 11.2). Layer `k` of an ABP computing `f` has at least `rank M_k(f)` vertices. -/
+/-- **Nisan's width bound** ([Nisan1991NonCommutative], proof of Theorem 1;
+[Saptharishi2026Survey], proof of Theorem 11.2). Layer `k` of an ABP computing `f` has at least
+`rank M_k(f)` vertices. -/
 theorem NoncommABP.rank_nisanMatrix_le_width (k m : ℕ) (h : k + m = d) :
     (nisanMatrix k m A.polynomial).rank ≤ A.width k := by
   rw [A.nisanMatrix_eq_mul k m h]
   exact (Matrix.rank_mul_le_left _ _).trans
     ((Matrix.rank_le_card_width _).trans (Fintype.card_fin _).le)
 
-/-- **Nisan's size bound** ([Nisan1991NonCommutative]; [Saptharishi2026Survey], Theorem 11.2,
-lower bound). An ABP computing `f` has size at least `∑_{k ≤ d} rank M_k(f)`. The sum includes
-the sink layer `k = d`; see the module docstring for the comparison with the survey's
-`∑_{k < d}`. -/
+/-- **Nisan's size bound** ([Nisan1991NonCommutative], Theorem 1, lower bound;
+[Saptharishi2026Survey], Theorem 11.2). An ABP computing `f` has size at least
+`∑_{k ≤ d} rank M_k(f)`. The sum includes the sink layer `k = d`, as in Nisan's Theorem 1; the
+survey's displayed statement leaves out this term. -/
 theorem NoncommABP.sum_rank_nisanMatrix_le_size :
     ∑ k ∈ Finset.range (d + 1), (nisanMatrix k (d - k) A.polynomial).rank ≤ A.size :=
   Finset.sum_le_sum fun k hk =>

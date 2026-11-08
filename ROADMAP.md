@@ -950,8 +950,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   [`Arithmetic/Noncommutative`](Complexity/Computability/Circuit/Arithmetic/Noncommutative/Nisan.lean)
   ([#3198](https://github.com/cslib-community/complexitylib/issues/3198)); open there: the `n^m`
   palindrome bound and the separation from non-commutative circuits, the reduction from general
-  non-commutative ABPs, and non-commutative formula lower bounds for the determinant and
-  permanent), identity testing, hitting sets, and tensor and rank methods, including partial-derivative
+  non-commutative ABPs, non-commutative formula lower bounds for the determinant and permanent,
+  and ROABPs), identity testing, hitting sets, and tensor and rank methods, including partial-derivative
   measures (the order-`k` measure and bounded-product-fan-in depth-three determinant and permanent
   lower bounds, covering homogeneous depth-three circuits, are proved in
   [`Arithmetic/DepthThree`](Complexity/Computability/Circuit/Arithmetic/DepthThree.lean);

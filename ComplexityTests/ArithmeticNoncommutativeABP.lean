@@ -13,7 +13,9 @@ A concrete width-one ABP of degree `1` computing `x₀ + x₁` (nonvacuity of `N
 homogeneity holding and failing, and two entries of Nisan's matrix `M_1(x₀ x₁)` showing that the
 order of the variables matters. A width-one ABP of degree `2` computes `x₀ x₁`. With
 `one_le_rank_nisanMatrix` this gives `rank M_k(x₀ x₁) = 1` for `k ≤ 2`, so the least ABP size for
-`x₀ x₁` is exactly `3`: Nisan's theorem with the bound attained.
+`x₀ x₁` is exactly `3`: Nisan's theorem with the bound attained. For `x₀ x₀ + x₁ x₁` the middle
+matrix `M_1` is the `2 × 2` identity, so the least ABP size is exactly `1 + 2 + 1 = 4`, attained
+by the construction with a middle layer of width `2`.
 -/
 
 namespace ComplexityTests.ArithmeticNoncommutativeABP
@@ -104,6 +106,55 @@ example : IsLeast {s | ∃ A : NoncommABP ℚ (Fin 2) 2, A.polynomial = f01 ∧ 
   have h := NoncommABP.isLeast_size isHomogeneous_f01 f01_ne_zero two_ne_zero
   rwa [Finset.sum_congr rfl fun k hk => rank_f01 k (Nat.lt_succ_iff.mp (Finset.mem_range.mp hk)),
     Finset.sum_const, Finset.card_range, smul_eq_mul, mul_one] at h
+
+/-- `x₀ x₀ + x₁ x₁`. -/
+private noncomputable def g : FreeAlgebra ℚ (Fin 2) := ι ℚ 0 * ι ℚ 0 + ι ℚ 1 * ι ℚ 1
+
+private theorem isHomogeneous_g : g.IsHomogeneous 2 :=
+  ((isHomogeneous_ι 0).mul (isHomogeneous_ι 0)).add ((isHomogeneous_ι 1).mul (isHomogeneous_ι 1))
+
+private theorem coeff_g (a b : Fin 2) :
+    coeff (FreeMonoid.of a * FreeMonoid.of b) g = if a = b then 1 else 0 := by
+  have h1 : ∀ x : Fin 2, (ι ℚ x).IsHomogeneous (FreeMonoid.of a).length := fun x => by
+    simpa using isHomogeneous_ι (R := ℚ) x
+  rw [g, map_add, coeff_mul_mul_of_isHomogeneous _ _ _ (h1 0),
+    coeff_mul_mul_of_isHomogeneous _ _ _ (h1 1), coeff_ι, coeff_ι, coeff_ι, coeff_ι]
+  fin_cases a <;> fin_cases b <;> simp [FreeMonoid.of_injective.eq_iff]
+
+private theorem g_ne_zero : g ≠ 0 := by
+  intro h
+  have := coeff_g 0 0
+  simp [h] at this
+
+/-- `M_1(x₀ x₀ + x₁ x₁)` is the identity matrix. -/
+private theorem nisanMatrix_g : nisanMatrix 1 1 g = 1 := by
+  ext u v
+  have hu : FreeMonoid.ofFn u = FreeMonoid.of (u 0) := rfl
+  have hv : FreeMonoid.ofFn v = FreeMonoid.of (v 0) := rfl
+  rw [nisanMatrix_apply, hu, hv, coeff_g, Matrix.one_apply]
+  refine if_congr ⟨fun h => funext fun i => ?_, fun h => congrFun h 0⟩ rfl rfl
+  rwa [Subsingleton.elim i 0]
+
+/-- `rank M_1(x₀ x₀ + x₁ x₁) = 2`: the optimal ABP has a middle layer of width `2`. -/
+example : (nisanMatrix 1 1 g).rank = 2 := by
+  rw [nisanMatrix_g, Matrix.rank_one, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin]
+  rfl
+
+private theorem rank_outer (k : ℕ) (hk : k = 0 ∨ k = 2) : (nisanMatrix k (2 - k) g).rank = 1 := by
+  have hk' : k + (2 - k) = 2 := by omega
+  have hf : g.IsHomogeneous (k + (2 - k)) := by rw [hk']; exact isHomogeneous_g
+  refine le_antisymm ?_ (one_le_rank_nisanMatrix hf g_ne_zero)
+  rcases hk with rfl | rfl
+  · exact (Matrix.rank_le_card_height _).trans (by simp)
+  · exact (Matrix.rank_le_card_width _).trans (by simp)
+
+/-- The least ABP size for `x₀ x₀ + x₁ x₁` is `1 + 2 + 1 = 4`. -/
+example : IsLeast {s | ∃ A : NoncommABP ℚ (Fin 2) 2, A.polynomial = g ∧ A.size = s} 4 := by
+  have h := NoncommABP.isLeast_size isHomogeneous_g g_ne_zero two_ne_zero
+  rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_one,
+    rank_outer 0 (Or.inl rfl), rank_outer 2 (Or.inr rfl), show 2 - 1 = 1 from rfl, nisanMatrix_g,
+    Matrix.rank_one, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin] at h
+  exact h
 
 /-- Nisan's theorem at `x₀ x₁`: an ABP with optimal widths exists. -/
 example : ∃ A : NoncommABP ℚ (Fin 2) 2, A.polynomial = f01 ∧
