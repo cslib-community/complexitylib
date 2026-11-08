@@ -169,6 +169,11 @@ Craig Gentry. “Fully Homomorphic Encryption Using Ideal Lattices.” *STOC 200
 
 Oded Goldreich, Shafi Goldwasser, Silvio Micali. “How to Construct Random Functions.” *Journal of the ACM* 33(4), 792–807, 1986. Author-hosted version of record: https://www.wisdom.weizmann.ac.il/~oded/X/ggm-jacm.pdf . Adaptive function-test definition consulted.
 
+<a id="gglrs00"></a>
+## gglrs00
+
+Oded Goldreich, Shafi Goldwasser, Eric Lehman, Dana Ron and Alex Samorodnitsky. *Testing Monotonicity*. Combinatorica 20(3), 301–337, 2000. https://doi.org/10.1007/s004930070011 . Bibliographic metadata checked against the Crossref record on 2026-11-08. The journal version is paywalled, and the author-hosted pages could not be reached (connection reset), so the text was not inspected and no theorem locator is claimed. The manual attributes the edge tester for Boolean functions on the hypercube to this paper, as [roughgarden15cc](#roughgarden15cc) does.
+
 <a id="gkr15"></a>
 ## gkr15
 
@@ -368,6 +373,11 @@ Tim Roughgarden. *CS364A: Algorithmic Game Theory*, lecture notes, Stanford Univ
 ## roughgarden15
 
 Tim Roughgarden. *Intrinsic Robustness of the Price of Anarchy*. Journal of the ACM 62(5), Article 32, 2015. https://doi.org/10.1145/2806883 . The author's version of 14 July 2015 was consulted on 2026-11-07 for Definition 2.1, derivation (3)–(5), Example 2.5, (15) and Theorems 3.2–3.3; locators follow that version.
+
+<a id="roughgarden15cc"></a>
+## roughgarden15cc
+
+Tim Roughgarden. *Communication Complexity (for Algorithm Designers)*. Lecture notes, arXiv:1509.06257v1, 2015; published in Foundations and Trends in Theoretical Computer Science 11(3–4), 217–404, 2016. https://arxiv.org/abs/1509.06257v1 . arXiv version 1 was consulted on 2026-11-08 for §8.3.1 (pp. 125–129): the edge tester, display (8.2), the Key Claim and Theorem 8.2, which the notes attribute to [gglrs00](#gglrs00). The monotonicity-testing modules follow this proof, and their locators follow version 1. Theorem 8.2 takes `t = Θ(n / ε)` trials. The library proves the upper bound with explicit constants and claims nothing about fewer trials.
 
 <a id="roughgardentardos02"></a>
 ## roughgardentardos02

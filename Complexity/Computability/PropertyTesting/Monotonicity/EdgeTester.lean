@@ -37,8 +37,9 @@ They accept monotone functions with probability one and functions `ε`-far from 
 probability at most `(1 - ε / n) ^ k` (`BitString.acceptProb_repeatAll_edgeTest_le`), hence at most
 `1 / 3` as soon as `2 n ≤ ε k` (`BitString.acceptProb_repeatAll_edgeTest_le_one_third`). With
 `k = ⌈2 n / ε⌉` this is a one-sided tester making `2 ⌈2 n / ε⌉ = O(n / ε)` queries
-(`BitString.acceptProb_repeatAll_edgeTest_ceil_le_one_third`), which is
-[Roughgarden, Theorem 8.2][Roughgarden2015CC] with explicit constants.
+(`BitString.acceptProb_repeatAll_edgeTest_ceil_le_one_third`). This is the upper bound of
+[Roughgarden, Theorem 8.2][Roughgarden2015CC], with explicit constants; the theorem takes
+`Θ(n / ε)` trials, and nothing is claimed here about fewer.
 
 `ε`-far means `ε ≤ relDistMonotone f`: every monotone function differs from `f` on at least
 `ε 2 ^ n` points. Completeness needs `ι` nonempty: the cube of dimension `0` has no edges, and the
@@ -156,8 +157,8 @@ theorem acceptProb_repeatAll_edgeTest_le {f : (ι → Bool) → Bool} {ε : ℝ}
   rw [LocalTest.acceptProb_repeatAll]
   exact pow_le_pow_left₀ ((edgeTest ι).acceptProb_nonneg f) (acceptProb_edgeTest_le hε) k
 
-/-- **The edge tester** [Roughgarden, Theorem 8.2][Roughgarden2015CC]: once `2 n ≤ ε k`, `k` trials
-accept a function `ε`-far from monotone with probability at most `1 / 3`. -/
+/-- **The edge tester** (upper bound of [Roughgarden, Theorem 8.2][Roughgarden2015CC]): once
+`2 n ≤ ε k`, `k` trials accept a function `ε`-far from monotone with probability at most `1 / 3`. -/
 theorem acceptProb_repeatAll_edgeTest_le_one_third {f : (ι → Bool) → Bool} {ε : ℝ}
     (hε0 : 0 < ε) (hε : ε ≤ relDistMonotone f) {k : ℕ}
     (hk : 2 * Fintype.card ι ≤ ε * k) :
