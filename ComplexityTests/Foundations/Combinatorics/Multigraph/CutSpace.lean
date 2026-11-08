@@ -46,17 +46,11 @@ example : Multigraph.edgeCut triangle {0, 1} =
   rw [← Multigraph.edgeCut_symmDiff]
   decide
 
-/-- Hence at most `2 + 2` edges leave `{0, 1}`; in fact only two do, since the shared edge `0`
-cancels. -/
+/-- By `Finset.card_symmDiff_le`, at most `2 + 2` edges leave `{0, 1}`. The bound is not
+attained: only two edges leave, since the shared edge `0` cancels. -/
 example : #(Multigraph.edgeCut triangle {0, 1}) ≤ 4 := by
   rw [show ({0, 1} : Finset (Fin 3)) = symmDiff {0} {1} by decide, Multigraph.edgeCut_symmDiff]
   exact (card_symmDiff_le _ _).trans (by decide)
-
-/-- `#(s ∆ t) ≤ #s + #t` is attained by disjoint sets and strict for overlapping ones. -/
-example (s t : Finset (Fin 3)) (hs : s = {0, 1}) (ht : t = {1}) :
-    #(symmDiff s {2}) = #s + #({2} : Finset (Fin 3)) ∧ #(symmDiff s t) < #s + #t := by
-  subst hs ht
-  decide
 
 /-! ### Connectivity is needed for empty cuts -/
 
@@ -67,12 +61,18 @@ private theorem connected_triangle : (Multigraph.toSimpleGraph triangle).Connect
 example {S : Finset (Fin 3)} (hS : Multigraph.edgeCut triangle S = ∅) : S = ∅ ∨ S = univ :=
   Multigraph.eq_empty_or_eq_univ_of_edgeCut_eq_empty connected_triangle hS
 
-/-- Two vertices joined by nothing but a self-loop at `0`: `{0}` has empty cut but is neither `∅`
-nor everything. -/
+/-- Two vertices whose only edge is a self-loop at `0`. -/
 private def loopAndPoint : Fin 1 → Sym2 (Fin 2) := fun _ => s(0, 0)
 
-example : Multigraph.edgeCut loopAndPoint {0} = ∅ ∧ ({0} : Finset (Fin 2)) ≠ ∅ ∧
+/-- This multigraph is not connected, and `{0}` has empty cut but is neither `∅` nor everything,
+so connectivity cannot be dropped. -/
+example : ¬ (Multigraph.toSimpleGraph loopAndPoint).Connected ∧
+    Multigraph.edgeCut loopAndPoint {0} = ∅ ∧ ({0} : Finset (Fin 2)) ≠ ∅ ∧
     ({0} : Finset (Fin 2)) ≠ univ := by
+  refine ⟨fun h => ?_, by decide⟩
+  obtain ⟨e, he⟩ := ((Multigraph.connected_toSimpleGraph_iff loopAndPoint).1 h).2 {0}
+    (by decide) (by decide)
+  revert e
   decide
 
 /-! ### The expansion dichotomy on `K₄` -/
