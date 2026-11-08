@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Logics.SecondOrder.WordMSO.OfRegular
+import Complexity.Logics.SecondOrder.WordMSO.Separation
 
 /-!
 # Tests: monadic second-order logic over words and the Büchi–Elgot–Trakhtenbrot theorem
@@ -16,7 +16,11 @@ import Complexity.Logics.SecondOrder.WordMSO.OfRegular
 * the run sentence `dfaSentence` of a concrete parity DFA on accepted and rejected words;
 * the equivalence `definable_iff_isRegular` instantiated at a concrete regular language;
 * MSO ⇒ regular over the infinite alphabet `ℕ`, and the extended-alphabet languages of formulas
-  with free variables.
+  with free variables;
+* a Mathlib first-order sentence over the word vocabulary, evaluated on concrete words, and its
+  language's first-order definability and regularity;
+* `FO[<] ⊊ MSO`: even length is not first-order definable over a nonempty alphabet, including
+  for Mathlib sentences, while over the empty alphabet it is (by `⊤`), so nonemptiness is needed.
 -/
 
 namespace ComplexityTests.WordMSO
@@ -68,9 +72,8 @@ example : [] ∈ (evenSentence : Sentence Unit).language := by
   rw [evenSentence_language]
   exact ⟨0, rfl⟩
 
-/-- `evenSentence` quantifies a set variable, so it is not a first-order sentence. (That no
-first-order sentence defines even length is the Ehrenfeucht–Fraïssé separation, which is not
-proved here.) -/
+/-- `evenSentence` quantifies a set variable, so it is not a first-order sentence. (No first-order
+sentence defines even length: see `not_foDefinable_even` below.) -/
 example : ¬ (evenSentence : Sentence Unit).IsFO :=
   not_isFO_exSet _
 
@@ -134,5 +137,64 @@ example (φ : Formula Bool 1 0) :
   have h0 := (hv ⟨0, by decide⟩ 0).1 rfl
   have h1 := (hv ⟨1, by decide⟩ 0).1 rfl
   exact absurd (h0.symm.trans h1) (by decide)
+
+/-! ### Mathlib first-order sentences over the word vocabulary -/
+
+section MathlibFO
+
+open FirstOrder Language
+
+/-- "Some position carries `true`", as a Mathlib sentence over the word vocabulary. -/
+def someTrue : (wordLanguage Bool).Sentence :=
+  ((wordLanguage.letterSymb true).boundedFormula₁ (Term.var (Sum.inr 0))).ex
+
+theorem mem_someTrue (w : List Bool) :
+    w ∈ WordFO.language someTrue ↔ ∃ i : Fin w.length, w[i] = true := by
+  let := wordStructure w
+  change BoundedFormula.Realize someTrue (default : Empty → Fin w.length) default ↔ _
+  simp only [someTrue, BoundedFormula.realize_ex, BoundedFormula.realize_rel₁, Term.realize_var,
+    Sum.elim_inr, wordStructure.relMap_letterSymb, Matrix.cons_val_fin_one, Fin.snoc_zero]
+
+example : [false, true] ∈ WordFO.language someTrue :=
+  (mem_someTrue _).2 ⟨1, rfl⟩
+
+example : [false, false] ∉ WordFO.language someTrue := by
+  rw [mem_someTrue]
+  decide
+
+example : FODefinable (WordFO.language someTrue) :=
+  WordFO.foDefinable_language someTrue
+
+example : (WordFO.language someTrue).IsRegular :=
+  (WordFO.foDefinable_language someTrue).isRegular
+
+/-- A first-order word sentence translates back to a Mathlib sentence with the same language. -/
+example : ∃ φ : (wordLanguage Bool).Sentence,
+    WordFO.language φ = trueBeforeFalse.language :=
+  foDefinable_iff_exists_sentence.1 ⟨trueBeforeFalse, by simp [trueBeforeFalse], rfl⟩
+
+end MathlibFO
+
+/-! ### `FO[<] ⊊ MSO` -/
+
+example : ¬ FODefinable {w : List Unit | Even w.length} :=
+  not_foDefinable_even
+
+example : ∃ L : Language Bool, Definable L ∧ ¬ FODefinable L :=
+  exists_definable_not_foDefinable
+
+example : ∃ L : Language ℕ, L.IsRegular ∧ ¬ FODefinable L :=
+  exists_isRegular_not_foDefinable
+
+example : ¬ ∃ φ : (wordLanguage Bool).Sentence,
+    WordFO.language φ = {w : List Bool | Even w.length} :=
+  not_exists_sentence_language_eq_even
+
+/-- Over the empty alphabet the only word is `[]`, so even length is defined by `⊤`: the
+hypothesis `Nonempty α` of `not_foDefinable_even` is needed. -/
+example : FODefinable {w : List Empty | Even w.length} := by
+  refine ⟨top, by simp, Set.ext fun w => ?_⟩
+  match w with
+  | [] => exact iff_of_true realize_top ⟨0, rfl⟩
 
 end ComplexityTests.WordMSO
