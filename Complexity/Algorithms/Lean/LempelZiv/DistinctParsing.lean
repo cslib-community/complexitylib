@@ -128,7 +128,7 @@ private theorem sum_range_sub_mul_pow_add_le {k : ℕ} (hk : 2 ≤ k) (m : ℕ) 
       ring
     rw [hshift, pow_succ]
     simp only [Nat.sub_zero, pow_zero, mul_one]
-    nlinarith [Nat.mul_le_mul_left k ih, Nat.mul_le_mul_right (m + 2) hk]
+    linarith [Nat.mul_le_mul_left k ih, Nat.mul_le_mul_right (m + 2) hk]
 
 private theorem mul_length_le_add_deficit (m : ℕ) (ws : List (List α)) :
     m * ws.length ≤ ws.flatten.length + (ws.map fun w => m - w.length).sum := by
@@ -207,7 +207,7 @@ theorem mul_logb_sub_le_of_forall_mul_le {k c n : ℕ} (hk : 2 ≤ k)
   have hc0 : (0 : ℝ) ≤ c := c.cast_nonneg
   have hn0 : (0 : ℝ) ≤ n := n.cast_nonneg
   rcases le_or_gt t 0 with ht0 | ht0
-  · nlinarith
+  · linarith [mul_nonpos_of_nonneg_of_nonpos hc0 ht0]
   have hL0 : 0 ≤ L := logb_natCast_nonneg hk1 n
   have hLpos : 0 < L := by grind [Real.logb_zero, sub_zero, zero_sub]
   have hn1 : (1 : ℝ) < n := by
@@ -241,7 +241,7 @@ theorem mul_logb_sub_le_of_forall_mul_le {k c n : ℕ} (hk : 2 ≤ k)
       have hlogn0 : 0 < Real.log n := by linarith
       have h3 : 1 / L < 3 * Real.log k := by
         rw [h2, div_lt_iff₀ hlogn0]
-        nlinarith
+        linarith [mul_pos hlogk (by linarith : (0 : ℝ) < 3 * Real.log n - 1)]
       linarith
     linarith
   have hlogbL : 0 ≤ Real.logb k L := Real.logb_nonneg hk1 hL1
@@ -261,17 +261,21 @@ theorem mul_logb_sub_le_of_forall_mul_le {k c n : ℕ} (hk : 2 ≤ k)
       Real.rpow_logb hk0 hkne (by linarith)] at this
     rw [← hL] at this
     simpa [Real.rpow_natCast, mul_assoc] using this
-  have hk2 : (4 : ℝ) ≤ (k : ℝ) ^ 2 := by nlinarith
+  have hk2 : (4 : ℝ) ≤ (k : ℝ) ^ 2 := by
+    linarith [mul_le_mul hk2' hk2' (by norm_num) (by linarith), sq (k : ℝ)]
   have hpow' : 4 * L * (k : ℝ) ^ m ≤ n := by
     have : 0 ≤ (k : ℝ) ^ m := by positivity
-    nlinarith
+    linarith [mul_nonneg (by linarith : (0 : ℝ) ≤ (k : ℝ) ^ 2 - 4) (mul_nonneg this hL0)]
   have hcm : (m : ℝ) * c ≤ n + 2 * (k : ℝ) ^ m := by exact_mod_cast hc m
-  have htm : t * (2 * L + 1) ≤ 2 * L * m := by rw [hmR]; nlinarith
+  have htm : t * (2 * L + 1) ≤ 2 * L * m := by
+    rw [hmR]
+    linarith [mul_le_mul_of_nonneg_left hfl'.le (by linarith : (0 : ℝ) ≤ 2 * L)]
   have key : (c : ℝ) * t * (2 * L + 1) ≤ n * (2 * L + 1) := by
     have : 0 ≤ (k : ℝ) ^ m := by positivity
-    nlinarith
+    linarith [mul_le_mul_of_nonneg_left htm hc0,
+      mul_le_mul_of_nonneg_left hcm (by linarith : (0 : ℝ) ≤ 2 * L)]
   have h2L : 0 < 2 * L + 1 := by linarith
-  nlinarith
+  exact le_of_mul_le_mul_right key h2L
 
 /-- The slack `ε_n = min(1, (log_k log_k n + 4) / log_k n)` of [CoverThomas2006], §13.5
 (there with `k = 2`). It tends to `0` (`tendsto_epsilon`). -/

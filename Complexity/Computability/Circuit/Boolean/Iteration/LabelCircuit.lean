@@ -181,7 +181,7 @@ private theorem labelCost_le (n s M L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^ n) (h
       13824 * P * (L + N / L + 1) := by
     have h1 : (d + 1) ^ 2 ≤ 9 * (n + 1) ^ 2 := by
       have := Nat.pow_le_pow_left (show d + 1 ≤ 3 * (n + 1) by omega) 2
-      nlinarith
+      linarith
     have h2 : n + (labelWidth n + 1) + 1 ≤ 8 * (n + 1) := by unfold labelWidth; omega
     have h3 : (2 * L + 1) + M + 1 ≤ 4 * (L + N / L + 1) := by omega
     calc 48 * ((2 * L + 1) + M + 1) * (d + 1) ^ 2 * (n + (labelWidth n + 1) + 1)
@@ -189,17 +189,17 @@ private theorem labelCost_le (n s M L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^ n) (h
       _ = 13824 * P * (L + N / L + 1) := by simp only [P]; ring
   have hfour : (n + 4) ^ 2 ≤ 16 * (n + 1) ^ 2 := by
     have := Nat.pow_le_pow_left (show n + 4 ≤ 4 * (n + 1) by omega) 2
-    nlinarith
+    linarith
   have hrest : (2 * L + 1) * (50 * (n + 4) ^ 2) + ((2 * L + 1) * (30 * n + 27) +
       50 * (n + 4) ^ 2) + (2 * L + 1) * (4 * labelWidth n) + 2 ≤ 6000 * (P * (L + N / L + 1)) := by
     have h3L : 2 * L + 1 ≤ 3 * L := by omega
     have hw : 4 * labelWidth n ≤ 24 * (n + 1) := by unfold labelWidth; omega
     have e1 : (2 * L + 1) * (50 * (n + 4) ^ 2) ≤ 3 * L * (800 * P) :=
-      Nat.mul_le_mul h3L (by nlinarith)
+      Nat.mul_le_mul h3L (by linarith)
     have e2 : (2 * L + 1) * (30 * n + 27) ≤ 3 * L * (57 * P) := Nat.mul_le_mul h3L (by omega)
     have e3 : (2 * L + 1) * (4 * labelWidth n) ≤ 3 * L * (24 * P) :=
       Nat.mul_le_mul h3L (hw.trans (by omega))
-    have e4 : 50 * (n + 4) ^ 2 + 2 ≤ 802 * P := by nlinarith
+    have e4 : 50 * (n + 4) ^ 2 + 2 ≤ 802 * P := by linarith
     have hLP : L * P ≤ P * (L + N / L + 1) := by nlinarith
     nlinarith
   nlinarith [Nat.zero_le (L * s)]

@@ -200,7 +200,7 @@ theorem stateBudget_le {ℓ H : ℕ} {s : State} (hb : Bounds ℓ H s) :
   simp only [stateBudget, stepBudget, encStepInT, encTuple, encRegs, encCtlTuple, length_encPair,
     State.toTuple, Tuple.ell, Tuple.height, Tuple.p, Tuple.stack, spaceBound, encBool_apply,
     List.length_singleton] at hXY ⊢
-  nlinarith
+  linarith [Nat.zero_le (ℓ * L), Nat.zero_le (H * L)]
 
 end Reader
 

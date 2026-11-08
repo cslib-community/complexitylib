@@ -248,7 +248,7 @@ private theorem batch_construction_cost (n s M N r L : ℕ) (hN : N ≤ 2 ^ n)
   have hwidth : (d + 1) ^ 2 * (n + (n + 1) + 1) ≤ 18 * P := by
     have h1 : (d + 1) ^ 2 ≤ 9 * (n + 1) ^ 2 := by
       have := Nat.pow_le_pow_left (show d + 1 ≤ 3 * (n + 1) by omega) 2
-      nlinarith
+      linarith
     calc (d + 1) ^ 2 * (n + (n + 1) + 1) ≤ 9 * (n + 1) ^ 2 * (2 * (n + 1)) := by
           gcongr; omega
       _ = 18 * P := by simp only [P]; ring
@@ -266,15 +266,15 @@ private theorem batch_construction_cost (n s M N r L : ℕ) (hN : N ≤ 2 ^ n)
     have h1 : (2 * L + 1) * (4 * ((n + 2) + n + 1)) ≤ 36 * (L * P) := by
       have := Nat.mul_le_mul (show 2 * L + 1 ≤ 3 * L by omega)
         (show 4 * ((n + 2) + n + 1) ≤ 12 * P by omega)
-      nlinarith
+      linarith
     have h2 : 200 * (2 * L + 1) * (n + (n + 2) + 1) ^ 2 ≤ 5400 * (L * P) := by
       have hs : (n + (n + 2) + 1) ^ 2 ≤ 9 * P := by
         have := Nat.pow_le_pow_left (show n + (n + 2) + 1 ≤ 3 * (n + 1) by omega) 2
-        nlinarith
+        linarith
       have := Nat.mul_le_mul (show 2 * L + 1 ≤ 3 * L by omega) hs
-      nlinarith
+      linarith
     have h3 : 40000 * (P * (L + 0 + 1)) ≤ 80000 * (L * P) := by nlinarith
-    have h4 : 4 * n ≤ 4 * (L * P) := by nlinarith
+    have h4 : 4 * n ≤ 4 * (L * P) := by linarith
     omega
   have hmembers := Nat.mul_le_mul_left r hmember
   simp only [powerBudget, Nat.zero_div] at hmembers ⊢
@@ -283,7 +283,7 @@ private theorem batch_construction_cost (n s M N r L : ℕ) (hN : N ≤ 2 ^ n)
     (n + (n + 1) + 1) + r * ((2 * L + 1) * (4 * ((n + 2) + n + 1)) + 2 * L * s +
       200 * (2 * L + 1) * (n + (n + 2) + 1) ^ 2 + 40000 * (L * s + P * (L + 0 + 1)) +
         4 * n)) ≤ _
-  nlinarith [Nat.zero_le (r * L * s), Nat.zero_le (P * (N / L)), Nat.zero_le (r * (L * P))]
+  linarith [Nat.zero_le (r * L * s), Nat.zero_le (P * (N / L)), Nat.zero_le (r * (L * P))]
 
 /-- **Batched powers on promised prefixes.** If the first `L` states of each input trajectory
 lie in `S`, one shared checkpoint table costs `S.card / L` in the batched tradeoff. The set need
