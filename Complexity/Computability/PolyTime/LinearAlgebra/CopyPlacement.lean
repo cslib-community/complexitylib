@@ -54,6 +54,7 @@ routines (`fiberRanks`, `flatPlacement`, `varGroupList`, `pullbackMeasurementRow
   `Cslib.LinearAlgebra.CopyPlacement.pullbackReplacementRow`.
 * `Cslib.LinearAlgebra.CopyPlacement.encCopyPlacements`: the encoding of the copy placements
   `(c_e, u_e)`, both in binary.
+* `Cslib.LinearAlgebra.encSchedules`: the encoding of schedule words, with labels in binary.
 
 ## Main results
 
@@ -1131,6 +1132,13 @@ both in binary: the concatenation of the framed pairs, each pair the framed `c` 
 abbrev encCopyPlacements : List (ℕ × ℕ) ↪ List Bool :=
   encList (encPair encNat encNat)
 
+/-- Schedules with labels in binary, one word per variable or factor: the concatenation of the
+framed words, each word the concatenation of its framed group labels, each encoded by `encNat`.
+This is the layout `encList (encList encNat)` of `Cslib.LinearAlgebra.encVarSets` and
+`Cslib.Complexity.encSparseEquation`; the name records the role. -/
+abbrev _root_.Cslib.LinearAlgebra.encSchedules : List (List ℕ) ↪ List Bool :=
+  encList (encList encNat)
+
 private theorem cp_take : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.take p.2)
     (encPair (encList encNat) encUnary) (encList encNat) := by fun_prop
 
@@ -1176,7 +1184,7 @@ private theorem cp_intBin_sum : ComputableInPolyTime List.sum (encList encIntBin
 /-- Compositional plain polynomial-time certificate for `varGroupList`. -/
 @[fun_prop] theorem computableInPolyTime_varGroupListWithInput {Input : Type}
     {encIn : Input ↪ List Bool} {varSchedules : Input → List (List ℕ)} {t g : Input → ℕ}
-    (hsched : ComputableInPolyTime varSchedules encIn (encList (encList encNat)))
+    (hsched : ComputableInPolyTime varSchedules encIn encSchedules)
     (ht : ComputableInPolyTime t encIn encNat) (hg : ComputableInPolyTime g encIn encNat) :
     ComputableInPolyTime (fun x => varGroupList (varSchedules x) (t x) (g x))
       encIn (encList encNat) := by
@@ -1195,7 +1203,7 @@ private theorem cp_intBin_sum : ComputableInPolyTime List.sum (encList encIntBin
 @[fun_prop] theorem computableInPolyTime_varGroupList :
     ComputableInPolyTime
       (fun ((varSchedules, t, g) : List (List ℕ) × (ℕ × ℕ)) => varGroupList varSchedules t g)
-      (encPair (encList (encList encNat)) (encPair encNat encNat)) (encList encNat) := by fun_prop
+      (encPair encSchedules (encPair encNat encNat)) (encList encNat) := by fun_prop
 
 private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂ b₁ b₂ : Q → ℕ}
     {val : Q → ℤ} (ha₁ : ComputableInPolyTime a₁ encQ encNat)

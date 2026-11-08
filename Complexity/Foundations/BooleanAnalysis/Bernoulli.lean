@@ -54,6 +54,8 @@ power `h` (`bernoulliAverage_lowerSet_pow_le`). This transference principle appe
   restricting the coordinates of a random mask.
 * `Cslib.BitString.bernoulliAverage_zero`, `Cslib.BitString.bernoulliWeight_one_half`,
   `Cslib.BitString.bernoulliAverage_one_half`: sampling at rates `0` and `1 / 2`.
+* `Cslib.BitString.bernoulliAverage_one_sub`: complementing the mask exchanges the rates `p` and
+  `1 - p`.
 * `Cslib.BitString.bernoulliAverage_coordinate`,
   `Cslib.BitString.bernoulliAverage_nonempty`, `Cslib.BitString.bernoulliAverage_hits`,
   `Cslib.BitString.bernoulliAverage_weight`: the probability that a coordinate is selected,
@@ -288,6 +290,18 @@ theorem bernoulliAverage_one_half (f : (ι → Bool) → ℝ) :
     Fintype.expect_eq_sum_div_card, Fintype.card_fun, Fintype.card_bool, Nat.cast_pow,
     Nat.cast_ofNat]
   rw [one_div, inv_pow, div_eq_inv_mul]
+
+/-- **Complementing the mask** exchanges the rates `p` and `1 - p`: the expectation of `f` at
+rate `1 - p` is the expectation of `f` of the complemented mask at rate `p`. -/
+theorem bernoulliAverage_one_sub (p : ℝ) (f : (ι → Bool) → ℝ) :
+    bernoulliAverage (1 - p) f = bernoulliAverage p (fun s => f fun i => !s i) := by
+  let e : (ι → Bool) ≃ (ι → Bool) :=
+    ⟨fun s i => !s i, fun s i => !s i, fun s => by simp, fun s => by simp⟩
+  refine (Fintype.sum_equiv e _ _ fun s => ?_).symm
+  congr 1
+  refine prod_congr rfl fun i _ => ?_
+  change (if s i then p else 1 - p) = if !s i then 1 - p else 1 - (1 - p)
+  cases s i <;> simp
 
 /-- A coordinate is selected with probability `p`. -/
 theorem bernoulliAverage_coordinate (p : ℝ) (i : ι) :

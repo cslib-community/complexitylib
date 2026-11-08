@@ -44,6 +44,11 @@ Noga Alon, Raphael Yuster, Uri Zwick. "Color-Coding." *Journal of the ACM* 42(4)
 
 Elliot Anshelevich, Anirban Dasgupta, Jon Kleinberg, Éva Tardos, Tom Wexler and Tim Roughgarden. *The Price of Stability for Network Design with Fair Cost Allocation*. SIAM Journal on Computing 38(4), 1602–1623, 2008; preliminary version in FOCS 2004. https://doi.org/10.1137/070680096 . Bibliographic metadata only, as given in [roughgarden13cs364a](#roughgarden13cs364a), Lecture #15, reference [1]; the DOI was taken from a search summary. The paper's text was not inspected (the author-hosted copies tried returned 404), so no locator in it is cited. The `H_k` price-of-stability theorem is attributed to it as in [roughgarden13cs364a](#roughgarden13cs364a), Lecture #15, Theorem 2.1, and proved following [tardoswexler07](#tardoswexler07), §19.3.
 
+<a id="baloghbekesidosaepsteinlevin18"></a>
+## baloghbekesidosaepsteinlevin18
+
+János Balogh, József Békési, György Dósa, Leah Epstein and Asaf Levin. *A new lower bound for classic online bin packing*. arXiv:1807.05554v1, 2018. https://arxiv.org/abs/1807.05554 ; published in *Algorithmica* 83(7), 2047–2062, 2021, https://doi.org/10.1007/s00453-021-00818-7 (bibliographic data from the Crossref record; the locators follow arXiv v1). Worker w156-ff read the arXiv version on 2026-11-08 UTC. Section 1 reports that Yao's first lower bound on the asymptotic competitive ratio uses at most three types of items, `1/7 + ε`, `1/3 + ε` and `1/2 + ε`; it does not state the value of that bound. It also reports the later bounds of Brown and Liang (`1.53635`), van Vliet (`1.5401474`) and Balogh, Békési and Galambos (`248/161`). The library's [OnlineLowerBound](../Complexity/Algorithms/Lean/BinPacking/OnlineLowerBound.lean) module takes its item types from this report.
+
 <a id="barak-steurer16"></a>
 ## barak-steurer16
 
@@ -63,6 +68,11 @@ Shai Ben-David, Benny Chor, Oded Goldreich and Michael Luby. *On the Theory of A
 ## bcs16
 
 Eli Ben-Sasson, Alessandro Chiesa and Nicholas Spooner. *Interactive Oracle Proofs*. TCC 2016-B II, 31–60. https://doi.org/10.1007/978-3-662-53644-5_2 .
+
+<a id="beigelgill92"></a>
+## beigelgill92
+
+Richard Beigel and John Gill. "Counting Classes: Thresholds, Parity, Mods, and Fewness." *Theoretical Computer Science* 103(1), 3–23, 1992. https://doi.org/10.1016/0304-3975(92)90084-S ; the author's full version (dated June 10, 1996) is linked from https://cis.temple.edu/~beigel/papers/bg-mods-tcs.html . Checked against that author's version on 2026-11-08 UTC by worker w167-modpe: Property 8(ii) (binomial coefficients `C(f, g)` of #P functions with polynomially bounded UPF `g` are in #P), Corollary 20 (`C(n, p^k) ≢ 0 mod p` iff the base-`p` digit of `n` at `p^k` is nonzero), Proposition 29 (`j ∣ k` gives `MOD_jP ⊆ MOD_kP`) and Theorem 30 (`MOD_{k^i}P = MOD_kP` for prime `k` and `i ≥ 1`). Numbering follows the author's version; the journal pagination is from the DOI record and the typeset journal numbering was not checked.
 
 <a id="bellman58"></a>
 ## bellman58
@@ -446,10 +456,21 @@ Craig Gentry, Amit Sahai, Brent Waters. “Homomorphic Encryption from Learning 
 
 Anupam Gupta. “Dimension Reduction and the JL Lemma.” Chapter 11 of the lecture notes for CMU 15-850 *Advanced Algorithms*; PDF dated 2023-02-17. https://www.cs.cmu.edu/~15850/notes/lec12.pdf . Checked on 2026-11-07 UTC: §11.6.2, Lemma 11.9 bounds `𝔼 exp (tV²)` for a symmetric σ-sub-Gaussian `V` by the corresponding Gaussian moment generating function. The proof linearizes the square with an independent Gaussian, exchanges the averages and applies the sub-Gaussian bound. The notes apply the lemma to Rademacher projection matrices.
 
+<a id="guruswamirudrasudan25"></a>
+## guruswamirudrasudan25
+
+Venkatesan Guruswami, Atri Rudra and Madhu Sudan. *Essential Coding Theory*. Draft book, version of 26 August 2025. https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/ ; open PDF https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/web-coding-book.pdf . The library's key is `GuruswamiRudraSudan2019`. Read in the open PDF on 2026-11-08 for Chapter 6:
+- §6.2 (the binary symmetric channel) and §6.2.2 (capacity: reliable communication is possible below it and impossible above it);
+- Theorem 6.3.1 (p. 119): part (1), achievability with error `2^(−δn)`, and part (2), for `0 ≤ p < 1/2` and `k ≥ ⌈(1 − H(p) + ε) n⌉` with `0 ≤ ε ≤ 1/2 − p`, some message misdecoded with probability more than `1/2`;
+- §6.3.1, the packing proof of part (2) (pp. 120–122), and Remark 6.3.2, the error bound `1 − 2^(−βn)`;
+- §6.3.2 and Claim 6.3.3, the random-coding proof of part (1).
+
+The draft does not name Wolfowitz. The manual's attribution of the strong converse for discrete memoryless channels to him is standard background and was not checked against his paper.
+
 <a id="gusfield90"></a>
 ## gusfield90
 
-Dan Gusfield. “Very Simple Methods for All Pairs Network Flow Analysis.” *SIAM Journal on Computing* 19(1), 143–155, 1990. https://doi.org/10.1137/0219009 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. Cited only for the variant of the Gomory–Hu construction without contraction, which is not formalized.
+Dan Gusfield. “Very Simple Methods for All Pairs Network Flow Analysis.” *SIAM Journal on Computing* 19(1), 143–155, 1990. https://doi.org/10.1137/0219009 . Bibliographic metadata checked through the publisher record; the article body (paywalled) was not inspected, so no theorem or page locator is given. Cited for the variant of the Gomory–Hu construction without contraction: a parent array, one minimum cut computation per non-root vertex in the original graph, the re-hanging of vertices on the source side, and the swap of `s` and `t` when the parent of `t` is on the source side. That description was taken from secondary accounts of the algorithm. The Lean proof of correctness (`isGomoryHuTree_gusfieldParent`) is self-contained and does not follow the article's argument.
 
 <a id="harpeledindykmotwani12"></a>
 ## harpeledindykmotwani12
@@ -581,6 +602,11 @@ Stephen C. Kleene and Emil L. Post. *The Upper Semi-Lattice of Degrees of Recurs
 
 L. Kou, G. Markowsky and L. Berman. *A Fast Algorithm for Steiner Trees*. Acta Informatica 15(2), 141–145, 1981. https://doi.org/10.1007/BF00288961 . The heuristic's steps (shortest-path distance graph on the terminals, its minimum spanning tree, replacement by shortest paths, a spanning tree of the result, then pruning non-terminal leaves) and the `2 (1 - 1/ℓ)` bound, with `ℓ` the number of leaves of an optimal tree, are taken from the abstract and secondary sources. The body of the paper was not consulted.
 
+<a id="knuth1994"></a>
+## knuth1994
+
+Donald E. Knuth. *The Sandwich Theorem*. Electronic Journal of Combinatorics 1, A1, 1994. https://doi.org/10.37236/1193 ; arXiv text https://arxiv.org/abs/math/9312214 . The arXiv text was consulted on 2026-11-07 for §1 (orthogonal labelings and the lemma `α ≤ ϑ`), §4 (4.9), §5 (5.2), the product lemma of §20 and the pentagon umbrella of §22. The formal umbrella matches §22 up to the vertex relabelling `i ↦ 3i`.
+
 <a id="knuth98"></a>
 ## knuth98
 
@@ -640,6 +666,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 ## lll82
 
 Arjen K. Lenstra, Hendrik W. Lenstra Jr. and László Lovász. "Factoring Polynomials with Rational Coefficients." *Mathematische Annalen* 261, 515–534, 1982. https://doi.org/10.1007/BF01457454 . Inspected the author-hosted scan https://www.math.leidenuniv.nl/~hwl/PUBLICATIONS/1982f/art.pdf on 2026-11-08: §1, conditions (1.4)–(1.5) and the remark after (1.5), Proposition (1.6) and the remark after it, Proposition (1.11), the algorithm (1.15)–(1.21), the swap formulas (1.22) and the termination argument (1.23)–(1.26).
+
+<a id="lovasz1979"></a>
+## lovasz1979
+
+László Lovász. *On the Shannon Capacity of a Graph*. IEEE Transactions on Information Theory 25(1), 1–7, 1979. https://doi.org/10.1109/TIT.1979.1055985 . Bibliographic data from the DOI record. The full text was not inspected in this pass, so no theorem numbers are quoted. The attributed content (orthonormal representations with orthogonality on nonadjacent pairs, `ϑ`, `Θ ≤ ϑ`, submultiplicativity under strong products and `Θ(C₅) = √5`) follows [knuth1994](#knuth1994) and standard accounts.
 
 <a id="lp09"></a>
 ## lp09
@@ -801,10 +832,15 @@ Alvin E. Roth. *Incentive Compatibility in a Market with Indivisible Goods*. Eco
 
 Alvin E. Roth and Andrew Postlewaite. *Weak versus Strong Domination in a Market with Indivisible Goods*. Journal of Mathematical Economics 4(2), 131–137, 1977. https://doi.org/10.1016/0304-4068(77)90004-0 . Bibliographic metadata only; the publisher's text is paywalled and was not inspected, so no theorem number is cited. The housing-market modules attribute to it, as the standard primary reference and without a verified locator, the uniqueness of the strict-core (weak-domination) allocation and its agreement with the competitive allocation; neither [schummervohra07](#schummervohra07) nor [roughgarden13cs364a](#roughgarden13cs364a), Lecture #9, cites it.
 
+<a id="rothsotomayor90"></a>
+## rothsotomayor90
+
+Alvin E. Roth and Marilda A. Oliveira Sotomayor. *Two-Sided Matching: A Study in Game-Theoretic Modeling and Analysis*. Econometric Society Monographs, Cambridge University Press, 1990. https://doi.org/10.1017/CCOL052139015X . Bibliographic metadata checked against Crossref on 2026-11-08. The book itself was not inspected. Its Chapter 2 theorem numbers and statements were checked against Muriel Niederle's lecture notes *Matching: The Theory* (Stanford, 26 September 2011, https://web.stanford.edu/~niederle/MarketDesignClassIntro2.pdf), which follow the book's numbering. They are Theorem 2.8 (a stable matching exists for every marriage market), Theorem 2.12 (with strict preferences there are M-optimal and W-optimal stable matchings), Theorem 2.13 (opposing interests, credited to Knuth) and Theorem 2.22 (with strict preferences, the set of people who are single is the same for all stable matchings). The incomplete-list stable-matching modules cite these theorems.
+
 <a id="roughgarden03"></a>
 ## roughgarden03
 
-Tim Roughgarden. *The Price of Anarchy is Independent of the Network Topology*. Journal of Computer and System Sciences 67(2), 341–364, 2003. https://doi.org/10.1016/S0022-0000(03)00044-8 . The author's version of 23 December 2002 (https://theory.stanford.edu/~tim/papers/indep.pdf) was consulted on 2026-11-08 for Section 2.4, Definitions 2.5 and 3.1–3.3, Theorem 3.8, Lemma 4.1, Theorem 4.2, Proposition 5.1 and Remark 5.2; locators follow that version. Its anarchy value is defined through marginal costs for latencies with `x c(x)` convex, and Proposition 5.1 takes the degree `p ≥ 1`. The library uses the equivalent Pigou-ratio definition of [roughgarden13cs364a](#roughgarden13cs364a), Lecture #11, (2), which needs no convexity, and includes `d = 0`.
+Tim Roughgarden. *The Price of Anarchy is Independent of the Network Topology*. Journal of Computer and System Sciences 67(2), 341–364, 2003. https://doi.org/10.1016/S0022-0000(03)00044-8 . The author's version of 23 December 2002 (https://theory.stanford.edu/~tim/papers/indep.pdf) was consulted on 2026-11-08 for Section 2.4, Definitions 2.5 and 3.1–3.3, Theorem 3.8, Lemma 4.1, Theorem 4.2, Proposition 5.1 and Remark 5.2; locators follow that version. Its anarchy value is defined through marginal costs for latencies with `x c(x)` convex, and Proposition 5.1 takes the degree `p ≥ 1`. The library uses the Pigou-ratio definition of [roughgarden13cs364a](#roughgarden13cs364a), Lecture #11, (2), which agrees with it on standard classes (Definition 3.1; up to the degenerate convention when `c(r) = 0`), needs no convexity, and includes `d = 0`.
 
 <a id="roughgarden13cs364a"></a>
 ## roughgarden13cs364a
@@ -865,6 +901,11 @@ James Schummer and Rakesh V. Vohra. "Mechanism Design without Money." Chapter 10
 ## shamir1992
 
 Adi Shamir. “IP = PSPACE.” *Journal of the ACM* 39(4), 869–877 (1992). DOI: https://doi.org/10.1145/146585.146609. Original-paper scan inspected: https://crypto.cs.mcgill.ca/~crepeau/COMP647/2007/TOPIC01/Shamir-IP=PSPACE.pdf.
+
+<a id="shannon1956"></a>
+## shannon1956
+
+Claude E. Shannon. *The Zero Error Capacity of a Noisy Channel*. IRE Transactions on Information Theory 2(3), 8–19, 1956. https://doi.org/10.1109/TIT.1956.1056798 . Bibliographic data from the DOI record. The zero-error capacity as a limit over strong powers, and the five-word code in the square of the pentagon, are attributed from secondary accounts; the full text was not inspected in this pass.
 
 <a id="shapleyscarf74"></a>
 ## shapleyscarf74
@@ -929,7 +970,7 @@ Bernhard von Stengel. "Equilibrium Computation for Two-Player Games in Strategic
 <a id="vww18"></a>
 ## vww18
 
-Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Between Path, Matrix, and Triangle Problems." *Journal of the ACM* 65(5), 27:1–27:38, 2018; preliminary version in FOCS 2010. https://doi.org/10.1145/3186893 . Bibliographic metadata checked on 2026-11-07; the manual cites it only as the standard reference for the APSP class and the negative-triangle equivalence, without a theorem locator.
+Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Between Path, Matrix, and Triangle Problems." *Journal of the ACM* 65(5), 27:1–27:38, 2018; preliminary version in FOCS 2010. https://doi.org/10.1145/3186893 . Bibliographic metadata checked on 2026-11-07. The authors' journal manuscript https://people.csail.mit.edu/virgi/tria-mmult-jv.pdf was consulted on 2026-11-08 for the negative triangle problem over a structure (Section 2), Theorem 4.1, Theorem 4.2, Lemma 4.1 and Lemma 4.2 (and its proof with parts of size `n^{1−a}`). Theorem and lemma numbers follow that manuscript.
 
 <a id="wattenhofer16"></a>
 ## wattenhofer16
@@ -945,6 +986,11 @@ R. Ryan Williams. *Simulating Time With Square-Root Space*. arXiv:2502.17779v1 (
 ## williamsonshmoys11
 
 David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms*. Cambridge University Press, 2011. https://doi.org/10.1017/CBO9780511921735 . Section 1.6 (Algorithm 1.2, Theorems 1.11 and 1.12) and the Chapter 1 Chapter Notes attribution of the greedy set-cover analysis to Chvátal (Mathematics of Operations Research 4(3), 233–235, 1979, https://doi.org/10.1287/moor.4.3.233) were checked against the authors' electronic edition at https://www.designofapproxalgs.com on 2026-11-07, as were Section 2.4 (Lemma 2.10, Theorems 2.11 and 2.12) and the Chapter 2 Chapter Notes, which attribute nearest addition and its analysis to Rosenkrantz, Stearns and Lewis (1977) and call the double-tree algorithm folklore. The handshake argument, Theorem 2.13 (Christofides' algorithm is a 3/2-approximation) and its proof, and the Chapter 2 Notes attribution to Christofides (reference [73]) were checked against the same edition on 2026-11-08, as were Exercise 2.5 (the MST 2-approximation for Steiner tree, metric part (a) and metric completion part (b)), Section 12.3 and the Chapter 12 Notes attribution of the factor-2 Steiner heuristic to Moore via Gilbert and Pollak (reference [130]). Section 2.2 (Algorithm 2.1, Theorems 2.3 and 2.4) and the Chapter 2 Chapter Notes, which attribute the k-center algorithm and analysis to Gonzalez (Theoretical Computer Science 38, 293–306, 1985, https://doi.org/10.1016/0304-3975(85)90224-5), an alternative 2-approximation to Hochbaum and Shmoys (Mathematics of Operations Research 10(2), 180–184, 1985, https://doi.org/10.1287/moor.10.2.180) and Theorem 2.4 to Hsu and Nemhauser (Discrete Applied Mathematics 1(3), 209–215, 1979, https://doi.org/10.1016/0166-218X(79)90044-1), were checked against the same electronic edition on 2026-11-08; the three original papers were not checked.
+
+<a id="yao80"></a>
+## yao80
+
+Andrew Chi-Chih Yao. "New Algorithms for Bin Packing." *Journal of the ACM* 27(2), 207–227, 1980. https://doi.org/10.1145/322186.322187 . Bibliographic data and the abstract are from the Crossref record of the DOI, checked on 2026-11-08 UTC. The abstract defines `r(S)` as the maximum ratio `S(L)/L*` for large `L*`, where `S(L)` is the number of bins used by algorithm `S` and `L*` the minimum number needed. It states that every on-line algorithm `S` has `r(S) ≥ 3/2`. The item types `1/7 + ε`, `1/3 + ε` and `1/2 + ε` of the construction are as reported in [baloghbekesidosaepsteinlevin18](#baloghbekesidosaepsteinlevin18), Section 1. The full text was not inspected, since no open copy was found, so the theorem number and Yao's own proof are not recorded. [OnlineLowerBound](../Complexity/Algorithms/Lean/BinPacking/OnlineLowerBound.lean) cites the paper on that basis.
 
 <a id="yekhanin12"></a>
 ## yekhanin12
