@@ -51,8 +51,9 @@ Combined with the class-generic core theorem
 infinite polynomial complexity core inside it
 (`Cslib.Complexity.notMem_P_iff_exists_infinite_isPolyTimeCore`). Lynch's lemma gives, for a
 recursive set outside `P`, an infinite recursive core that need not lie inside the set. The core
-here lies inside the set, which is stronger, but it is not claimed to be recursive; that
-refinement is not formalized here. Problems hard for `E` or `EXP`
+here lies inside the set, which is stronger, but it is not claimed to be recursive. For decidable
+problems on bit strings, `Immune.RecursiveCore` chooses it decidable as well
+(`Cslib.Complexity.exists_infinite_isDecidable_isPolyTimeCore`). Problems hard for `E` or `EXP`
 are outside `P`, so they have infinite cores
 (`Cslib.Complexity.PolyTimeHard.exists_infinite_isPolyTimeCore_E`,
 `Cslib.Complexity.PolyTimeHard.exists_infinite_isPolyTimeCore_EXP`).
@@ -218,7 +219,9 @@ theorem IsPolyTimeCore.finite_of_mem_P (h : IsPolyTimeCore enc A X) (hA : A ∈ 
 
 /-- **Problems outside `P` have infinite polynomial complexity cores** ([Lynch, Lemma 1][Lynch1975],
 proper-core strengthening): a problem is outside `P` exactly when it has an infinite polynomial
-complexity core inside it. Unlike Lynch's core, this one is not claimed to be recursive. -/
+complexity core inside it. Unlike Lynch's core, this one is not claimed to be recursive; for a
+decidable core of a decidable problem on bit strings, see
+`Cslib.Complexity.exists_infinite_isDecidable_isPolyTimeCore`. -/
 theorem notMem_P_iff_exists_infinite_isPolyTimeCore :
     A ∉ P enc ↔ ∃ X ⊆ A, X.Infinite ∧ IsPolyTimeCore enc A X := by
   refine ⟨fun hA => ?_, fun ⟨_, _, hX, h⟩ hA => hX (h.finite_of_mem_P hA)⟩
