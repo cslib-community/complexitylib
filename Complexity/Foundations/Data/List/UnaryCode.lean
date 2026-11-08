@@ -14,8 +14,8 @@ public import Mathlib.Computability.Primrec.List
 /-!
 # Unary coding of natural numbers
 
-The comma-free unary code `unaryCode n = 1ⁿ 0` encodes natural numbers as Boolean words such that
-concatenations of encoded words are uniquely decodable (`flatMap_unaryCode_injective`).
+The delimiter-terminated unary code `unaryCode n = 1ⁿ 0` encodes natural numbers as Boolean words
+such that concatenations of encoded words are uniquely decodable (`flatMap_unaryCode_injective`).
 
 ## Main definitions
 
@@ -57,6 +57,3 @@ theorem primrec_unaryCode : Primrec unaryCode := by
   rw [unaryCode, List.map_const', List.length_range]
 
 end List
-
-theorem Primrec.unaryCode : Primrec List.unaryCode :=
-  List.primrec_unaryCode
