@@ -570,10 +570,11 @@ index links to canonical definitions rather than keeping a second set.
   transfer needs a quasi-linear-size Cook–Levin reduction.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
-- **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`**
-  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): an alternating machine
-  checks one cell of a deterministic tableau. It guesses the cell's predecessor window
-  existentially and checks each predecessor cell universally.
+- **Alternating logspace, `P ⊆ AL`**
+  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): play the circuit-value
+  game on the tableau of a polynomial-time machine (`Tableau.ValueGame`, which gives
+  `APSPACE = EXP`) in logarithmic space. This needs a word game machine whose round reads the
+  input from the input tape and keeps only the `O(log n)`-bit wire claim on its work tape.
 - **Pebble games and space lower bounds**
   ([#2995](https://github.com/cslib-community/complexitylib/issues/2995)): the black pebble game
   on a `Digraph`, the path-blocking lower-bound engine, and the exact prices `h + 2` of the
