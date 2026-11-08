@@ -1289,6 +1289,14 @@ When the window covers the input, every LZ78 phrase is an earlier phrase followe
 
 The [examples](../../ComplexityTests/Algorithms/Lean/LempelZivLZ77.lean) parse `ABBABBABBBAABABAA` into the seven phrases `A, B, BA, BBABBB, AA, BABA, A` (LZ78 uses eight) and check its triples and decoding. They also check the overlapping copy in `a ^ 8` (two phrases, against four for LZ78) and window `0`. The period-3 input `abcabcabc` needs nine phrases with window `2` and four with window `3`. Further checks are a history that is not exhaustive, a factorization that is not a history, and the `n = 256` instance of the bound. Not formalized: bit-level LZ77 codes with bounded match length, the optimality of LZ77 for stationary ergodic sources, and the links to Kolmogorov complexity and finite-state compressibility ([ROADMAP](../../ROADMAP.md#pseudorandomness-coding-and-boolean-analysis)).
 
+## Burrows–Wheeler transform
+
+Import `Complexity.Algorithms.Lean.BurrowsWheeler.Basic` ([source](../../Complexity/Algorithms/Lean/BurrowsWheeler/Basic.lean)) and `Complexity.Algorithms.Lean.BurrowsWheeler.Decode` ([source](../../Complexity/Algorithms/Lean/BurrowsWheeler/Decode.lean)). The transform follows Algorithm C of [Burrows and Wheeler][burrowswheeler94], Section 2, over any `LinearOrder` alphabet, with no end-of-word sentinel. `bwtMatrix w` sorts the rotations of `w` lexicographically, and `bwt w = (bwtLast w, bwtIndex w)` is the last column together with the index of the *first* row equal to `w`. The empty word maps to `([], 0)`. Periodic words have repeated rows, and are still handled.
+
+The LF-mapping `lfMap L r = L.countP (· < L[r]) + (L.take r).count L[r]` is computed from the last column alone, as in Section 4.2 of the report. `rotate_one_getElem_bwtMatrix_lfMap` proves its row form: row `lfMap L r`, rotated left by one place, is row `r`. `getElem?_bwtFirst_lfMap` and `count_take_bwtFirst_lfMap` prove the occurrence form (step D2): the `k`-th `c` of `L` corresponds to the `k`-th `c` of the first column. `lfMap_bwtLast_injOn` and `map_lfMap_range_perm` show that the LF-mapping is a permutation of the rows, which completes step D2. `bwtFirst_eq_mergeSort_bwtLast` says that the first column is the sorted last column (step D1). `getElem?_bwtLast_iterate_lfMap` is the decoding formula `w[n - 1 - i] = L[T^[i] I]` (step D3). `inverseBwt_bwt` and `bwt_injective` state invertibility and injectivity of the transform with its index. `inverseBwtM` is the table-driven decoder of Section 4.2 in `TimeM`, with the rank array `rankTable` and `C c = L.countP (· < c)`. `inverseBwtM_bwt` proves that it returns `w` after exactly `|w|` LF steps, and `inverseBwtM_time_le` bounds it by `|L|` on every input. The cost model charges one tick per LF step. Table lookups are idealized as unit cost, and neither the construction of the `C` and `P` tables nor the sort of the forward transform is charged.
+
+The [examples](../../ComplexityTests/BurrowsWheeler.lean) check the report's running example (`abraca` ↦ `(caraab, 1)`, `T = (4 0 5 1 2 3)`), `banana`, the periodic word `cancan`, whose LF orbit `[2, 4, 0, 2, 4, 0]` repeats with period 3 and is not a permutation of the rows, the empty word, a single letter and a constant word. They also show that the last column alone is not injective. Not formalized: move-to-front and entropy coding, compression bounds in terms of empirical entropy, FM-index backward search, the link to suffix arrays, and charged construction of the transform ([ROADMAP](../../ROADMAP.md#string-algorithms)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -1306,6 +1314,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [bertsekas98]: ../sources.md#bertsekas98
 [bfprt73]: ../sources.md#bfprt73
 [bland77]: ../sources.md#bland77
+[burrowswheeler94]: ../sources.md#burrowswheeler94
 [ccpv11]: ../sources.md#ccpv11
 [christofides76]: ../sources.md#christofides76
 [chuliu65]: ../sources.md#chuliu65

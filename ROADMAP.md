@@ -2208,6 +2208,15 @@ Arrow's theorem). Remaining directions:
 
 ### String algorithms
 
+- **Burrows–Wheeler transform** ([#3354](https://github.com/cslib-community/complexitylib/issues/3354)):
+  the rotation-sort transform with its index, the LF-mapping (row and occurrence forms), the
+  decoding formula, invertibility and a table-driven `TimeM` decoder with exactly `|w|` LF steps
+  are in `Algorithms/Lean/BurrowsWheeler`. Remaining: charged construction of the rank tables and
+  of the forward transform (comparison counts for the rotation sort); move-to-front and entropy
+  coding of the last column; compression bounds in terms of the empirical entropy `H_k` (Manzini);
+  FM-index backward search and rank/select structures; and the link to suffix arrays for
+  sentinel-terminated words, once [#3331](https://github.com/cslib-community/complexitylib/issues/3331)
+  lands.
 - **Suffix arrays** ([#3331](https://github.com/cslib-community/complexitylib/issues/3331)):
   `Algorithms/Lean/SuffixArray` has the suffix-array specification with uniqueness, a sort-based
   reference construction, Kasai et al.'s LCP construction with at most `2|w|` character
