@@ -624,13 +624,49 @@ private theorem ceil_subexp_le {C L d d_max : ℕ} {A X : ℝ}
   have h1 := one_le_mul_of_one_le_of_one_le (one_le_pow₀ hbase (n := d_max)) htwo
   push_cast; linarith
 
+/-- A polynomial bound `len ≤ C * (L + 1) ^ d` also bounds `len + 1`, with coefficient `C + 1`. -/
+private theorem succ_le_succ_mul_pow {len C L d : ℕ} (h : len ≤ C * (L + 1) ^ d) :
+    len + 1 ≤ (C + 1) * (L + 1) ^ d := by
+  rw [Nat.add_one_mul]
+  exact Nat.add_le_add h (Nat.one_le_pow d (L + 1) (Nat.succ_pos L))
+
+/-- Substituting a polynomial length bound `len + 1 ≤ (C_l + 1) * (L + 1) ^ d_l` into a power of
+degree `d ≤ d_all` gives a polynomial bound in `L` (over `ℕ`). -/
+private theorem comp_poly_pow_le_nat {len C_l L d_l d d_all : ℕ}
+    (hM : len + 1 ≤ (C_l + 1) * (L + 1) ^ d_l) (hd : d ≤ d_all) :
+    (len + 1) ^ d ≤ (C_l + 1) ^ d_all * (L + 1) ^ (d_l * d_all) :=
+  (Nat.pow_le_pow_right (Nat.succ_pos len) hd).trans
+    ((Nat.pow_le_pow_left hM d_all).trans_eq (by rw [mul_pow, ← pow_mul]))
+
+/-- Real-valued form of `comp_poly_pow_le_nat`. -/
 private theorem comp_poly_pow_le {len C_l L d_l d d_all : ℕ}
     (hM : len + 1 ≤ (C_l + 1) * (L + 1) ^ d_l) (hd : d ≤ d_all) :
     (len + 1 : ℝ) ^ d ≤ (((C_l + 1) ^ d_all : ℕ) : ℝ) * (L + 1 : ℝ) ^ (d_l * d_all) := by
-  have hnat : (len + 1) ^ d ≤ (C_l + 1) ^ d_all * (L + 1) ^ (d_l * d_all) :=
-    (Nat.pow_le_pow_right (Nat.succ_pos len) hd).trans
-      ((Nat.pow_le_pow_left hM d_all).trans_eq (by rw [mul_pow, ← pow_mul]))
-  exact_mod_cast hnat
+  exact_mod_cast comp_poly_pow_le_nat hM hd
+
+/-- Two bounds of the shape `C * P * E` with a common factor `P * E ≥ 0` add up to such a bound,
+for any natural coefficient dominating the sum of the two coefficients. -/
+private theorem add_le_coeff_mul {x y P E : ℝ} {C₁ C₂ C : ℕ}
+    (hx : x ≤ (C₁ : ℝ) * P * E) (hy : y ≤ (C₂ : ℝ) * P * E) (hC : C₁ + C₂ ≤ C)
+    (hPE : 0 ≤ P * E) :
+    x + y ≤ (C : ℝ) * P * E := by
+  have hC' : (C₁ : ℝ) + C₂ ≤ C := by exact_mod_cast hC
+  have := mul_le_mul_of_nonneg_right hC' hPE
+  linarith only [hx, hy, this]
+
+/-- Multiplying a `C₁ * 2 ^ (a * ρ)` bound by a `C₂ * P * 2 ^ (b * ρ)` bound gives a
+`C * P * 2 ^ (A * ρ)` bound, where `C = C₁ * C₂` and `A = a + b`. -/
+private theorem mul_le_coeff_mul_two_rpow {x y C₁ P a b ρ A : ℝ} {C₂ C : ℕ}
+    (hx : x ≤ C₁ * (2 : ℝ) ^ (a * ρ)) (hy : y ≤ (C₂ : ℝ) * P * (2 : ℝ) ^ (b * ρ))
+    (hx0 : 0 ≤ x) (hP : 0 ≤ P) (hC : (C : ℝ) = C₁ * C₂) (hA : A = a + b) :
+    x * y ≤ (C : ℝ) * P * (2 : ℝ) ^ (A * ρ) := by
+  have hy0 : 0 ≤ (C₂ : ℝ) * P * (2 : ℝ) ^ (b * ρ) :=
+    mul_nonneg (mul_nonneg (Nat.cast_nonneg C₂) hP) (Real.rpow_nonneg zero_le_two _)
+  calc x * y ≤ (C₁ * (2 : ℝ) ^ (a * ρ)) * ((C₂ : ℝ) * P * (2 : ℝ) ^ (b * ρ)) :=
+        mul_le_mul_of_nonneg hx hy hx0 hy0
+    _ = (C : ℝ) * P * (2 : ℝ) ^ (A * ρ) := by
+        rw [hC, hA, add_mul, Real.rpow_add two_pos]
+        ring
 
 private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : ℕ)
     {branchEval : BranchEvalInput → ℕ}
@@ -668,13 +704,14 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
   set C_sys := C_mk + 2 * (C_p1 + C_p2 + 1); set A_sys := 2 * A_br + 32
   refine ⟨N_sys, C_sys, d_in, A_sys, le_trans (le_max_left 16384 N₀_top) (le_max_left _ _),
     fun {N m sys} hN hm hsys => ?_⟩
-  have hN16 : 16384 ≤ N := le_trans (le_trans (le_max_left _ _) (le_max_left _ _)) hN
-  have hN_top : max N₀_top 2 ≤ N :=
-    max_le (le_trans (le_trans (le_max_right _ _) (le_max_left _ _)) hN) (by omega)
+  -- Unpack the threshold `N_sys ≤ N` into its components.
+  simp only [N_sys, max_le_iff] at hN
+  obtain ⟨⟨hN16, hN_top⟩, hN_br, hN_inc⟩ := hN
   set inp := mkPaperSparseInput N k sys
   have hinp1 : inp.1 = N := rfl; have hinp_sys : inp.2.2 = sys := rfl
   have htop : checkTopFeasible N₀_top inp = true :=
-    checkTopFeasible_mkPaperSparseInput_of_le hN_top (fun eq heq => (hsys.2 eq heq).1)
+    checkTopFeasible_mkPaperSparseInput_of_le (max_le hN_top (by omega))
+      (fun eq heq => (hsys.2 eq heq).1)
       (fun eq heq mon hmon v hv => ((hsys.2 eq heq).2.2 mon hmon).2 v hv)
       (fun eq heq mon hmon => ((hsys.2 eq heq).2.2 mon hmon).1)
   obtain ⟨hb0_inc, hw_inc⟩ := hInc (by omega : 2 ≤ N) (hCB N (by omega)) hm hsys
@@ -690,24 +727,19 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
   have hs2 : 2 ≤ inp.2.1.2.1 := by
     rw [hs_eq]; have := Nat.le_sqrt.mpr (show 1 * 1 ≤ lam - 1 by omega); omega
   have hsqrt_le_s : lam.sqrt ≤ inp.2.1.2.1 := by
-    rw [hs_eq]; by_contra hgt
-    have h1 : ((lam - 1).sqrt + 2) * ((lam - 1).sqrt + 2) ≤ lam := Nat.le_sqrt.mp (by omega)
-    have h2 := Nat.lt_succ_sqrt (lam - 1); simp only [Nat.succ_eq_add_one] at h2
-    have h3 : ((lam - 1).sqrt + 1) * ((lam - 1).sqrt + 1) <
-        ((lam - 1).sqrt + 2) * ((lam - 1).sqrt + 2) :=
-      Nat.mul_lt_mul_of_lt_of_lt (by omega) (by omega)
-    omega
+    rw [hs_eq]
+    calc lam.sqrt = (lam - 1 + 1).sqrt := by rw [Nat.sub_add_cancel (by omega : 1 ≤ lam)]
+      _ ≤ (lam - 1).sqrt + 1 := Nat.sqrt_succ_le_succ_sqrt (lam - 1)
   have hS_le_sqrt : (HeavyBranchFold.heavyVarList N inp.2.1.2.2 sys).length ≤ N / lam.sqrt :=
     (checkTopFeasible_eq_true_iff.mp htop).2.2.2.2.2.trans
       (Nat.div_le_div_left hsqrt_le_s (Nat.sqrt_pos.mpr (by omega)))
+  -- Polynomial bounds on the encoded top-level and branch inputs, in terms of `Ly`.
   set Ly := (encPair encUnary encSparseSystem (N, sys)).length
-  have hinp_len : (encSparseSystemInput inp).length + 1 ≤ (C_ml + 1) * (Ly + 1) ^ d_ml := by
-    rw [Nat.add_one_mul]
-    exact Nat.add_le_add (hMkLen (N, sys)) (Nat.one_le_pow d_ml (Ly + 1) (Nat.succ_pos Ly))
+  have hinp_len : (encSparseSystemInput inp).length + 1 ≤ (C_ml + 1) * (Ly + 1) ^ d_ml :=
+    succ_le_succ_mul_pow (hMkLen (N, sys))
   have hbr_in_len : (HeavyBranchFold.encBranchInput (toBranchInput inp)).length + 1 ≤
-      (C_bl + 1) * (Ly + 1) ^ d_bl := by
-    rw [Nat.add_one_mul]
-    exact Nat.add_le_add (hBrLen (N, sys)) (Nat.one_le_pow d_bl (Ly + 1) (Nat.succ_pos Ly))
+      (C_bl + 1) * (Ly + 1) ^ d_bl :=
+    succ_le_succ_mul_pow (hBrLen (N, sys))
   have hrho_nn : 0 ≤ interpolationScale N := interpolationScale_nonneg N
   set R_branch : ℕ := ⌈((C_p2 : ℕ) : ℝ) * (Ly + 1 : ℝ) ^ (d_bl * d_br_all) *
     (2 : ℝ) ^ ((2 * (A_br : ℝ)) * interpolationScale N)⌉₊
@@ -722,21 +754,16 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
       reduced_branch_invariants htop hs2 hred
     rw [hinp1] at hn'_eq hN_2n'
     have hn'_le_N : n' ≤ N := hn'_eq.symm ▸ Nat.sub_le N _
-    have hn'_N1_br : max N₁ N₀_br ≤ n' := by
-      have : 2 * max N₁ N₀_br ≤ N := le_trans (le_trans (le_max_left _ _) (le_max_right _ _)) hN
-      omega
-    have hCinc_le_clog : C_inc ≤ Nat.clog 2 n' := by
-      have : 2 * 2 ^ C_inc ≤ N := le_trans (le_trans (le_max_right _ _) (le_max_right _ _)) hN
-      exact (Nat.clog_pow 2 C_inc Nat.one_lt_two).symm.le.trans (Nat.clog_mono_right 2 (by omega))
+    have hn'_N1_br : max N₁ N₀_br ≤ n' := by omega
+    have hCinc_le_clog : C_inc ≤ Nat.clog 2 n' :=
+      (Nat.clog_pow 2 C_inc Nat.one_lt_two).symm.le.trans (Nat.clog_mono_right 2 (by omega))
+    -- Transfer the incidence and width bounds from `N` to the branch size `n' ≥ N / 2`.
     have hclog_tr := clog_pow_le_clog_pow_two_mul (by omega : 4 ≤ n') hN_2n' α_inc
     have hb_2a := hb'.trans (hb0_inc.trans (Nat.mul_le_mul_left C_inc hclog_tr))
     have hw_2a := hw'.trans (hw_inc.trans (Nat.mul_le_mul_left C_inc hclog_tr))
-    have hb_b0 : branchMaxFactorIncidence n' sys' ≤ Nat.clog 2 n' ^ β₀ :=
-      (hb_2a.trans (Nat.mul_le_mul_right _ hCinc_le_clog)).trans_eq
-        (by dsimp only [β₀]; rw [pow_succ'])
-    have hw_b0 : branchMaxFactorWidth n' sys' ≤ Nat.clog 2 n' ^ β₀ :=
-      (hw_2a.trans (Nat.mul_le_mul_right _ hCinc_le_clog)).trans_eq
-        (by dsimp only [β₀]; rw [pow_succ'])
+    have hto_b0 {v : ℕ} (hv : v ≤ C_inc * Nat.clog 2 n' ^ (2 * α_inc)) :
+        v ≤ Nat.clog 2 n' ^ β₀ :=
+      (hv.trans (Nat.mul_le_mul_right _ hCinc_le_clog)).trans_eq (by rw [pow_succ'])
     have hlen_sys' : sys'.length ≤ C_inc * n' := by
       obtain ⟨_, _, _, hsys'_eq⟩ := HeavyBranchFold.prepareBranch_eq_reduced_iff.mp hred
       have hle6 : sys'.length ≤ 6 * N := by
@@ -744,7 +771,8 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
         exact (List.length_filter_le _ _).trans (by rw [List.length_map, hinp_sys]; exact hsys.1)
       exact (hle6.trans (by omega : 6 * N ≤ 12 * n')).trans (Nat.mul_le_mul_right n' hCinc12)
     have hchk : checkBranchFeasible N₀_branch (n', sys') = true :=
-      (hBranchOk ((le_max_left N₁ N₀_br).trans hn'_N1_br) hcan' hvars' hb_b0 hw_b0).2.2
+      (hBranchOk ((le_max_left N₁ N₀_br).trans hn'_N1_br) hcan' hvars' (hto_b0 hb_2a)
+        (hto_b0 hw_2a)).2.2
     have hgt := hGuardT (n', sys') (by simp only [hchk, Bool.true_eq_false, IsEmpty.forall_iff])
     simp only [hchk, ↓reduceIte] at hgt
     have hc_br := hBrT n' sys' hchk ((le_max_right N₁ N₀_br).trans hn'_N1_br)
@@ -758,11 +786,10 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
         ((mul_le_mul_of_nonneg_left
           (interpolationScale_le_two_mul_of_le_two_mul hn'_le_N hN_2n')
           (Nat.cast_nonneg A_br)).trans_eq (by ring))
+    -- Runtime of the branch evaluator (`ht1`) and of the guard (`ht2`), in terms of `Ly` and `N`.
     have ht2_nat : C_g * ((encPair encUnary encSparseSystem (n', sys')).length + 1) ^ d_g ≤
         (C_g * (C_bl + 1) ^ d_br_all) * (Ly + 1) ^ (d_bl * d_br_all) :=
-      (Nat.mul_le_mul_left C_g ((Nat.pow_le_pow_right (Nat.succ_pos _)
-        (le_max_right d_br d_g)).trans
-        ((Nat.pow_le_pow_left hlen_red d_br_all).trans_eq (by rw [mul_pow, ← pow_mul])))).trans_eq
+      (Nat.mul_le_mul_left C_g (comp_poly_pow_le_nat hlen_red (le_max_right d_br d_g))).trans_eq
         (mul_assoc _ _ _).symm
     have ht2 := nat_poly_le_subexp ht2_nat le_rfl (by positivity : (0 : ℝ) ≤ 2 * (A_br : ℝ)) hrho_nn
     have ht1 : (cBranch.time (prepareBranchEvalInput (n', sys')) : ℝ) ≤
@@ -779,6 +806,7 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
         exact_mod_cast hgt
       exact hgt_cast.trans ((add_le_add ht1 ht2).trans_eq (by dsimp only [C_p2]; push_cast; ring))
     exact Nat.cast_le.mp (htot_br.trans (Nat.le_ceil _))
+  -- Runtime of the top-level heavy-branch fold: `(2 ^ |S| + 1) * (overhead + R_branch)`.
   have hsp_t := hFeasT inp R_branch htop hper_branch
   have hcov_nat : C_ov * ((encSparseSystemInput inp).length + 1) ^ d_ov ≤
       C_p1 * (Ly + 1) ^ (d_ml * d_ov) :=
@@ -793,9 +821,8 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
       (((C_ov * ((encSparseSystemInput inp).length + 1) ^ d_ov + R_branch : ℕ)) : ℝ) ≤
         ((C_p1 + C_p2 + 1 : ℕ) : ℝ) * (Ly + 1 : ℝ) ^ d_in *
           (2 : ℝ) ^ ((2 * (A_br : ℝ)) * interpolationScale N) := by
-    rw [Nat.cast_add, show ((C_p1 + C_p2 + 1 : ℕ) : ℝ) = (C_p1 : ℝ) + ((C_p2 + 1 : ℕ) : ℝ) by
-      push_cast; ring, add_mul, add_mul]
-    exact add_le_add hcov_r hRbr_r
+    rw [Nat.cast_add]
+    exact add_le_coeff_mul hcov_r hRbr_r (by omega) (by positivity)
   have hS_pow_r :
       ((2 ^ (HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2).length + 1 : ℕ) : ℝ) ≤
         2 * (2 : ℝ) ^ (32 * interpolationScale N) := by
@@ -813,26 +840,16 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
         ((2 ^ (HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2).length + 1 : ℕ) : ℝ) *
           (((C_ov * ((encSparseSystemInput inp).length + 1) ^ d_ov + R_branch : ℕ)) : ℝ) := by
       exact_mod_cast hsp_t
-    calc ((sparsePolyCounterCertificate N₀_top N₀_branch cBranch hbound).time inp : ℝ)
-        ≤ (2 * (2 : ℝ) ^ (32 * interpolationScale N)) *
-            (((C_p1 + C_p2 + 1 : ℕ) : ℝ) * (Ly + 1 : ℝ) ^ d_in *
-              (2 : ℝ) ^ ((2 * (A_br : ℝ)) * interpolationScale N)) :=
-          hcast.trans (mul_le_mul hS_pow_r hinner_r (by positivity) (by positivity))
-      _ = ((2 * (C_p1 + C_p2 + 1) : ℕ) : ℝ) * (Ly + 1 : ℝ) ^ d_in *
-            ((2 : ℝ) ^ (32 * interpolationScale N) *
-              (2 : ℝ) ^ ((2 * (A_br : ℝ)) * interpolationScale N)) := by push_cast; ring
-      _ = ((2 * (C_p1 + C_p2 + 1) : ℕ) : ℝ) * (Ly + 1 : ℝ) ^ d_in *
-            (2 : ℝ) ^ ((A_sys : ℝ) * interpolationScale N) := by
-          rw [← Real.rpow_add two_pos]; dsimp only [A_sys]; push_cast; ring_nf
+    exact hcast.trans (mul_le_coeff_mul_two_rpow hS_pow_r hinner_r (Nat.cast_nonneg _)
+      (by positivity) (by push_cast; ring) (by dsimp only [A_sys]; push_cast; ring))
+  -- Total: the input preparation `mkPaperInputConst` plus the heavy-branch fold.
   have hmk_r := nat_poly_le_subexp (hMkT (N, sys))
     ((le_max_right _ _).trans (le_max_right _ _) : d_mk ≤ d_in) (Nat.cast_nonneg A_sys) hrho_nn
   have htot : (branchedPolyCertificate k N₀_top N₀_branch cBranch hbound).time (N, sys) =
       (NativeCertificate.ofPolyTime hmk).time (N, sys) +
         (sparsePolyCounterCertificate N₀_top N₀_branch cBranch hbound).time inp := rfl
-  rw [htot, Nat.cast_add,
-    show (C_sys : ℝ) = (C_mk : ℝ) + ((2 * (C_p1 + C_p2 + 1) : ℕ) : ℝ) from Nat.cast_add _ _,
-    add_mul, add_mul]
-  exact add_le_add hmk_r hsp_r
+  rw [htot, Nat.cast_add]
+  exact add_le_coeff_mul hmk_r hsp_r le_rfl (by positivity)
 
 private theorem exists_branchedSparseCNFLeafCertificate_time_le
     (k N₀_leaf N₀_top N₀_branch : ℕ) {branchEval : BranchEvalInput → ℕ}
@@ -889,6 +906,7 @@ private theorem fast_path_arith_bound
     Real.rpow_le_rpow_of_exponent_le one_le_two
       (mul_le_mul_of_nonneg_right (by exact_mod_cast (Nat.succ_pos A_sys : 1 ≤ A_t)) hrho_nn)
   have hlam1 : 1 ≤ lam := (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by omega : 2 ^ 0 < N)
+  -- The initial-query enumeration `2 ^ q_val` is `2 ^ (C_i * lam ^ d_i)`, hence subexponential.
   have hinit_exp : q_val ≤ C_i * lam ^ d_i := by
     have hm2_le : m + 2 ≤ (B + 1) * N := by rw [Nat.add_one_mul]; exact Nat.add_le_add hmB hN2
     have hB1_le : B + 1 ≤ (C_B + 1) * lam ^ β_B := by
@@ -923,9 +941,12 @@ private theorem fast_path_arith_bound
           rw [hPowE]; exact Nat.cast_le.mpr (Nat.pow_le_pow_right Nat.zero_lt_two he_le)
         exact h1.trans (le_mul_of_one_le_right (by positivity)
           (Real.one_le_rpow one_le_two (mul_nonneg zero_le_one hrho_nn)))
-    exact ((hbase_init.trans (mul_le_mul_of_nonneg_left h1_to_At (by positivity))).trans
-      (mul_le_mul_of_nonneg_left ((one_mul _).symm.le.trans
-        (mul_le_mul_of_nonneg_right h1_dt (by positivity))) (by positivity))).trans_eq (by ring)
+    calc ((2 ^ q_val : ℕ) : ℝ) ≤ (PowE : ℝ) * (2 : ℝ) ^ (1 * interpolationScale N) := hbase_init
+      _ ≤ (PowE : ℝ) * (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) :=
+        mul_le_mul_of_nonneg_left h1_to_At (by positivity)
+      _ ≤ (PowE : ℝ) * (L + 1 : ℝ) ^ d_t * (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) :=
+        mul_le_mul_of_nonneg_right (le_mul_of_one_le_right (by positivity) h1_dt) (by positivity)
+  -- The candidate loop costs `(3N + 1) * (candidates + 1) * (poly_L + R_x)`.
   set P := greedyRowListLength B m
   have hP_le : P ≤ 20000 * B ^ 2 * Nat.clog 2 (2 * m + 4) ^ 2 := by
     have hlt_clog : Nat.log 2 m < Nat.clog 2 (2 * m + 4) := by
@@ -948,24 +969,16 @@ private theorem fast_path_arith_bound
     exact hcast.trans (mul_le_mul_of_nonneg_left hq_ev zero_le_three)
   have hpolR_r : ((poly_L + R_x : ℕ) : ℝ) ≤ ((C_pol + C_R0 + 1 : ℕ) : ℝ) * (L + 1 : ℝ) ^ d_t *
       (2 : ℝ) ^ ((A_sys : ℝ) * interpolationScale N) := by
-    rw [Nat.cast_add, show ((C_pol + C_R0 + 1 : ℕ) : ℝ) = (C_pol : ℝ) + ((C_R0 + 1 : ℕ) : ℝ) by
-      push_cast; ring, add_mul, add_mul]
-    exact add_le_add (nat_poly_le_subexp hPol hd_pol (Nat.cast_nonneg A_sys) hrho_nn)
-      (ceil_subexp_le hd_R0 (Nat.cast_nonneg A_sys) hrho_nn)
+    rw [Nat.cast_add]
+    exact add_le_coeff_mul (nat_poly_le_subexp hPol hd_pol (Nat.cast_nonneg A_sys) hrho_nn)
+      (ceil_subexp_le hd_R0 (Nat.cast_nonneg A_sys) hrho_nn) (by omega) (by positivity)
   have hprod_r : (((3 * N + 1) * (candidateTupleCount m P + 1) * (poly_L + R_x) : ℕ) : ℝ) ≤
       ((3 * (C_pol + C_R0 + 1) : ℕ) : ℝ) * (L + 1 : ℝ) ^ d_t *
         (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) := by
-    calc (((3 * N + 1) * (candidateTupleCount m P + 1) * (poly_L + R_x) : ℕ) : ℝ)
-        ≤ (3 * (2 : ℝ) ^ (1 * interpolationScale N)) *
-            (((C_pol + C_R0 + 1 : ℕ) : ℝ) * (L + 1 : ℝ) ^ d_t *
-              (2 : ℝ) ^ ((A_sys : ℝ) * interpolationScale N)) := by
-          rw [Nat.cast_mul]; exact mul_le_mul hcand_r hpolR_r (by positivity) (by positivity)
-      _ = ((3 * (C_pol + C_R0 + 1) : ℕ) : ℝ) * (L + 1 : ℝ) ^ d_t *
-            ((2 : ℝ) ^ (1 * interpolationScale N) *
-              (2 : ℝ) ^ ((A_sys : ℝ) * interpolationScale N)) := by push_cast; ring
-      _ = ((3 * (C_pol + C_R0 + 1) : ℕ) : ℝ) * (L + 1 : ℝ) ^ d_t *
-            (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) := by
-          rw [← Real.rpow_add two_pos]; dsimp only [A_t]; push_cast; ring_nf
+    rw [Nat.cast_mul]
+    exact mul_le_coeff_mul_two_rpow hcand_r hpolR_r (Nat.cast_nonneg _) (by positivity)
+      (by push_cast; ring) (by dsimp only [A_t]; push_cast; ring)
+  -- Sum up the guard, the inner certificate's terms and the constant overhead.
   have hpol_At := nat_poly_le_subexp hPol hd_pol (Nat.cast_nonneg A_t) hrho_nn
   have h1_At := one_le_mul_of_one_le_of_one_le h1_dt htwo_At
   have hin_cast : (t_in : ℝ) ≤ 2 * ((poly_L : ℝ) + ((2 ^ q_val : ℕ) : ℝ) +
@@ -1081,12 +1094,13 @@ theorem exists_threshold_branchedSparseCNF_time_bound (k N₀_top N₀_branch : 
   set C_t := C_decl + C_nm; refine ⟨C_t, d_t, A_t, Nat.succ_pos _, fun x hlen_x => ?_⟩
   set L := (encLeafInput x).length
   have hrho_nn : 0 ≤ interpolationScale x.1.2 := interpolationScale_nonneg x.1.2
-  have hd_dg : d_dg ≤ d_t := (le_max_left _ _).trans (le_max_left _ _)
-  have hd_ex0 : d_ex0 ≤ d_t := (le_max_right _ _).trans (le_max_left _ _)
-  have hd_pol : d_pol ≤ d_t := (le_max_left _ _).trans (le_max_right _ _)
-  have hd_R0 : d_R0 ≤ d_t := (le_max_left _ _).trans ((le_max_right _ _).trans (le_max_right _ _))
-  have hd_nm : d_nm ≤ d_t := (le_max_right _ _).trans ((le_max_right _ _).trans (le_max_right _ _))
+  have hd_t : d_dg ≤ d_t ∧ d_ex0 ≤ d_t ∧ d_pol ≤ d_t ∧ d_R0 ≤ d_t ∧ d_nm ≤ d_t := by
+    simp only [d_t]
+    omega
+  obtain ⟨hd_dg, hd_ex0, hd_pol, hd_R0, hd_nm⟩ := hd_t
   have hdg_r := nat_poly_le_subexp (hDg x) hd_dg (Nat.cast_nonneg A_t) hrho_nn
+  -- The declared certificate: the dense-fallback guard plus either the sparse inner certificate
+  -- (slow or fast path) or, when the guard fires (`N = 0`), the exhaustive counter.
   have hdecl_bound : (cDecl.time x : ℝ) ≤
       (C_decl : ℝ) * (L + 1 : ℝ) ^ d_t * (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale x.1.2) := by
     rw [hcDecl_time x]; cases hd : denseFallbackGuard k x
@@ -1095,39 +1109,27 @@ theorem exists_threshold_branchedSparseCNF_time_bound (k N₀_top N₀_branch : 
       unfold sparseCNFTimeBound at hinner_t; dsimp only at hinner_t
       cases hfast : entersSparseFastPath k (max 1 N₀_leaf) x.1.2 (leafDensityRatio k x.1.2) x.2
       · simp only [hfast, Bool.false_eq_true, ↓reduceIte] at hinner_t
-        have hpol_nat : 2 * (poly L + 1) ≤ (2 * (C_pol + 1)) * (L + 1) ^ d_pol := by
-          have h1 : poly L + 1 ≤ (C_pol + 1) * (L + 1) ^ d_pol := by
-            rw [Nat.add_one_mul]
-            exact Nat.add_le_add (hPol L) (Nat.one_le_pow d_pol (L + 1) (Nat.succ_pos L))
-          exact (Nat.mul_le_mul_left 2 h1).trans_eq (Nat.mul_assoc 2 _ _).symm
+        have hpol_nat : 2 * (poly L + 1) ≤ (2 * (C_pol + 1)) * (L + 1) ^ d_pol :=
+          (Nat.mul_le_mul_left 2 (succ_le_succ_mul_pow (hPol L))).trans_eq
+            (Nat.mul_assoc 2 _ _).symm
         have hpol_r := nat_poly_le_subexp (hinner_t.trans hpol_nat) hd_pol
           (Nat.cast_nonneg A_t) hrho_nn
-        have hle_C : (C_dg : ℝ) + ((2 * (C_pol + 1) : ℕ) : ℝ) ≤ (C_decl : ℝ) := by
-          exact_mod_cast (show C_dg + 2 * (C_pol + 1) ≤ C_decl by rw [hC_decl]; omega)
-        exact (add_le_add hdg_r hpol_r).trans (by
-          rw [← add_mul, ← add_mul]
-          exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hle_C (by positivity))
-            (by positivity))
+        exact add_le_coeff_mul hdg_r hpol_r (by rw [hC_decl]; omega) (by positivity)
       · simp only [hfast, ↓reduceIte] at hinner_t
         obtain ⟨_, he, _, hge, hmB⟩ := entersSparseFastPath_eq_true_iff.mp hfast
         have hN_min : N_min ≤ x.1.2 := hN₀.trans ((le_max_right 1 N₀_leaf).trans hge)
         have hN2 : 2 ≤ x.1.2 :=
           (by omega : 2 ≤ 16384).trans ((hNsys16.trans (le_max_left _ _)).trans hN_min)
-        have hm1 : 1 ≤ x.2.length := by
-          rcases eq : x.2 with _ | ⟨_, _⟩
-          · rw [eq] at he; cases he
-          · exact Nat.succ_pos _
+        have hm1 : 1 ≤ x.2.length :=
+          List.length_pos_iff.mpr fun h => by rw [h] at he; cases he
         exact fast_path_arith_bound rfl rfl hPowE hNinit
           (hNq x.1.2 ((le_max_right _ _).trans hN_min)) hN2 hm1 hmB (hCB x.1.2 hN2)
           (hQi _) (hPol L) hd_pol hd_R0 hdg_r hinner_t hC_decl
     · simp only [↓reduceIte, Nat.cast_add]
       have hgt_dense : leafDensityRatio k x.1.2 * x.1.2 < x.2.length := by
         simp only [denseFallbackGuard, Bool.and_eq_true, decide_eq_true_eq] at hd; exact hd.2
-      have hN0 : x.1.2 = 0 := by
-        rcases Nat.eq_zero_or_pos x.1.2 with h0 | hpos
-        · exact h0
-        · exact False.elim ((leafOccBound_mul_succ_le_leafDensityRatio_mul hpos).not_gt
-            (lt_of_lt_of_le hgt_dense hlen_x))
+      have hN0 : x.1.2 = 0 := Nat.eq_zero_of_not_pos fun hpos =>
+        (leafOccBound_mul_succ_le_leafDensityRatio_mul hpos).not_gt (hgt_dense.trans_le hlen_x)
       have hex_nat : (countCNFExhaustiveCertificate.comp
           (NativeCertificate.ofPolyTime computableInPolyTime_leafExhProj)).time x ≤
             C_ex0 * (L + 1) ^ d_ex0 := by
@@ -1136,21 +1138,14 @@ theorem exists_threshold_branchedSparseCNF_time_bound (k N₀_top N₀_branch : 
         dsimp only [computableInPolyTime_leafExhProj] at *; rw [hpow0] at hex
         exact (Nat.add_le_add_left hex _).trans (hEx0 x)
       have hex_r := nat_poly_le_subexp hex_nat hd_ex0 (Nat.cast_nonneg A_t) hrho_nn
-      have hle_C : (C_dg : ℝ) + (C_ex0 : ℝ) ≤ (C_decl : ℝ) := by
-        exact_mod_cast (show C_dg + C_ex0 ≤ C_decl by rw [hC_decl]; omega)
-      exact (add_le_add hdg_r hex_r).trans (by
-        rw [← add_mul, ← add_mul]
-        exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hle_C (by positivity))
-          (by positivity))
-  refine ⟨hdecl_bound.trans (mul_le_mul_of_nonneg_right
-    (mul_le_mul_of_nonneg_right (Nat.cast_le.mpr (Nat.le_add_right _ _)) (by positivity))
-    (by positivity)), ?_⟩
+      exact add_le_coeff_mul hdg_r hex_r (by rw [hC_decl]; omega) (by positivity)
+  -- The leaf certificate adds the normalization overhead `C_nm * (L + 1) ^ d_nm`.
+  refine ⟨hdecl_bound.trans (by gcongr; exact Nat.le_add_right _ _), ?_⟩
   have hnt_r : (cLeaf.time x : ℝ) ≤
       (cDecl.time x : ℝ) + ((C_nm * (L + 1) ^ d_nm : ℕ) : ℝ) := by exact_mod_cast hLeafT x
   have hnm_r := nat_poly_le_subexp (le_rfl : C_nm * (L + 1) ^ d_nm ≤ C_nm * (L + 1) ^ d_nm)
     hd_nm (Nat.cast_nonneg A_t) hrho_nn
-  rw [show (C_t : ℝ) = (C_decl : ℝ) + (C_nm : ℝ) from Nat.cast_add _ _, add_mul, add_mul]
-  exact hnt_r.trans (add_le_add hdecl_bound hnm_r)
+  exact hnt_r.trans (add_le_coeff_mul hdecl_bound hnm_r le_rfl (by positivity))
 
 /-- **Existential fast-regime `2 ^ {O_k(interpolationScale N)}` runtime bound
 (§5.5, §6.3 eq. (6.4), §6.4 Proposition 6.4)**:
