@@ -1190,13 +1190,8 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_le_demKeyGameOn {Msg : Typ
         keyLen encryptSym adversary false n)
       (F.hashedElGamalCipherUniformKeyGameOn valid (fun m => ProbComp.eval (setupProb m))
         keyLen encryptSym adversary true n) ≤
-      Game.advantage
-        (ProbComp.eval
-          (Encryption.demKeyGameOn validSym keyLen encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-        (ProbComp.eval
-          (Encryption.demKeyGameOn validSym keyLen encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+      Encryption.advantage (Encryption.demKeyGameOn validSym keyLen encryptSym
+        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
       4 / 2 ^ n := by
   have hf := F.advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le
     valid validSym setupProb keyLen encryptSym adversary false n hvalid_imp
@@ -1226,13 +1221,8 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_le_demKeyGameOn {Msg : Typ
           (adversary.restrict valid)) true n))] at htri2
   have hcomb := htri1.trans (add_le_add hf (htri2.trans (add_le_add le_rfl ht)))
   calc _ ≤ (2 : ℝ≥0) / 2 ^ n +
-        (Game.advantage
-          (ProbComp.eval
-            (Encryption.demKeyGameOn validSym keyLen encryptSym
-              (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-          (ProbComp.eval
-            (Encryption.demKeyGameOn validSym keyLen encryptSym
-              (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+        (Encryption.advantage (Encryption.demKeyGameOn validSym keyLen encryptSym
+          (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
         2 / 2 ^ n) := hcomb
     _ = _ := by ring
 
@@ -1254,15 +1244,11 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_le_demGameOn {Msg : Type}
         keyLen encryptSym adversary false n)
       (F.hashedElGamalCipherUniformKeyGameOn valid (fun m => ProbComp.eval (setupProb m))
         keyLen encryptSym adversary true n) ≤
-      Game.advantage
-        (ProbComp.eval
-          (Encryption.demGameOn validSym encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-        (ProbComp.eval
-          (Encryption.demGameOn validSym encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+      Encryption.advantage (Encryption.demGameOn validSym encryptSym
+        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
       4 / 2 ^ n := by
-  rw [← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ false hkeyLen,
+  rw [Encryption.advantage,
+    ← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ false hkeyLen,
     ← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ true hkeyLen]
   exact F.advantage_hashedElGamalCipherUniformKeyGameOn_le_demKeyGameOn
     valid validSym setupProb keyLen encryptSym adversary n hvalid_imp
@@ -1305,13 +1291,8 @@ theorem advantage_hashedElGamalCipherCPAGameOn_le_demKeyGameOn {Msg : Type}
         (F.kdfIdealGame (fun m => ProbComp.eval (setupProb m)) keyLen
           (F.hashedElGamalCipherToKDFHiddenBitDistinguisher encryptSym
             (adversary.restrict valid)) n) +
-      Game.advantage
-        (ProbComp.eval
-          (Encryption.demKeyGameOn validSym keyLen encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-        (ProbComp.eval
-          (Encryption.demKeyGameOn validSym keyLen encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+      Encryption.advantage (Encryption.demKeyGameOn validSym keyLen encryptSym
+        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
       4 / 2 ^ n := by
   have h1 := F.advantage_hashedElGamalCipherCPAGameOn_le_two_mul
     valid (fun m => ProbComp.eval (setupProb m)) H keyLen encryptSym adversary n
@@ -1357,15 +1338,11 @@ theorem advantage_hashedElGamalCipherCPAGameOn_le_demGameOn {Msg : Type}
         (F.kdfIdealGame (fun m => ProbComp.eval (setupProb m)) keyLen
           (F.hashedElGamalCipherToKDFHiddenBitDistinguisher encryptSym
             (adversary.restrict valid)) n) +
-      Game.advantage
-        (ProbComp.eval
-          (Encryption.demGameOn validSym encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-        (ProbComp.eval
-          (Encryption.demGameOn validSym encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+      Encryption.advantage (Encryption.demGameOn validSym encryptSym
+        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
       4 / 2 ^ n := by
-  rw [← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ false hkeyLen,
+  rw [Encryption.advantage,
+    ← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ false hkeyLen,
     ← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ true hkeyLen]
   exact F.advantage_hashedElGamalCipherCPAGameOn_le_demKeyGameOn
     valid validSym setupProb H keyLen encryptSym adversary n hvalid_imp
