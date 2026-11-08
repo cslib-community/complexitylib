@@ -57,7 +57,7 @@ optimality, not running time.
 
 * [D. P. Williamson and D. B. Shmoys, *The Design of Approximation
   Algorithms*][WilliamsonShmoys2011], Section 2.4.
-* [J. Edmonds, *Paths, trees, and flowers*][Edmonds1965]
+* [J. Edmonds, *Maximum matching and a polyhedron with 0,1-vertices*][Edmonds1965]
 -/
 
 public section

@@ -71,6 +71,8 @@ theorem sum_map_degree {H : List (α × α)} {V : List α} (hV : V.Nodup)
     omega
 
 omit [DecidableEq α] in
+/-- The list analogue of Mathlib's `Finset.even_sum_iff_even_card_odd`, for lists that may repeat
+entries. -/
 private theorem even_sum_iff_even_length_filter_odd (V : List α) (f : α → ℕ) :
     Even (V.map f).sum ↔ Even (V.filter fun x => Odd (f x)).length := by
   induction V with

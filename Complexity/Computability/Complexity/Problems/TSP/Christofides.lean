@@ -78,7 +78,8 @@ theorem christofidesTour_perm (D : List (List ℕ)) :
 
 /-- **Christofides' 3/2-approximation for metric TSP** ([Christofides1976];
 [WilliamsonShmoys2011], Theorem 2.13): on a metric matrix, twice the length of Christofides' tour
-is at most three times the length of any tour, in particular an optimal one. -/
+is at most three times the length of any tour, in particular an optimal one. The matching step is
+exhaustive search, so this certifies the approximation ratio, not a polynomial running time. -/
 theorem two_mul_tourLength_christofidesTour_le_three_mul {D : List (List ℕ)} (hD : IsMetric D)
     {p : List ℕ} (hp : p.Perm (List.range D.length)) :
     2 * tourLength D (christofidesTour D) ≤ 3 * tourLength D p := by
