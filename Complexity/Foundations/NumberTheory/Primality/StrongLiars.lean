@@ -21,17 +21,23 @@ Write `n - 1 = 2 ^ s * t` with `t` odd. The Miller–Rabin test [Rabin][Rabin198
 residue is a strong liar, because the only square roots of `1` are `±1`. Modulo an odd composite
 `n`, the strong liars lie in a proper subgroup of `(ZMod n)ˣ`: for the largest `j < s` such that
 some unit has `b ^ (2 ^ j * t) = -1`, the units whose `2 ^ j * t`-th power is `±1`. Hence at most
-half of the units are strong liars. The sharper bound `φ(n) / 4` of Rabin and Monier is not
-formalized here.
+half of the units are strong liars. The sharper Rabin–Monier bound `φ(n) / 4` for `n ≠ 9` is in
+`Complexity.Foundations.NumberTheory.Primality.RabinMonier`.
 
 ## Main definitions
 
 * `ZMod.IsStrongLiar n a`: `a` passes the Miller–Rabin test modulo `n`.
+* `ZMod.powEqOneOrNegOne n m`: the subgroup of units whose `m`-th power is `±1`.
 
 ## Main results
 
 * `ZMod.isStrongLiar_of_prime`: modulo a prime, every nonzero residue is a strong liar.
 * `ZMod.IsStrongLiar.isUnit`: for `n > 1`, a strong liar is a unit.
+* `ZMod.exists_pow_eq_neg_one_forall_isStrongLiar`: for odd `n > 1`, there is an `m` with
+  `2 m ∣ n - 1` and a unit `b` with `b ^ m = -1` such that every strong liar lies in
+  `powEqOneOrNegOne n m`.
+* `ZMod.card_isStrongLiar_le_card`: the strong liars number at most the elements of any subgroup
+  of the units that contains them.
 * `ZMod.exists_subgroup_ne_top_isStrongLiar`: modulo an odd composite, the strong liars lie in a
   proper subgroup of the units.
 * `ZMod.two_mul_card_isStrongLiar_le`: modulo an odd composite `n`, twice the number of strong
@@ -91,7 +97,7 @@ theorem isStrongLiar_of_prime {p : ℕ} [Fact p.Prime] {a : ZMod p} (ha : a ≠ 
   exact ZMod.pow_card_sub_one_eq_one ha
 
 /-- The units whose `m`-th power is `1` or `-1`. -/
-private def powEqOneOrNegOne (n m : ℕ) : Subgroup (ZMod n)ˣ where
+def powEqOneOrNegOne (n m : ℕ) : Subgroup (ZMod n)ˣ where
   carrier := {a | a ^ m = 1 ∨ a ^ m = -1}
   mul_mem' := by
     rintro a b (ha | ha) (hb | hb) <;> simp [mul_pow, ha, hb]
@@ -99,15 +105,17 @@ private def powEqOneOrNegOne (n m : ℕ) : Subgroup (ZMod n)ˣ where
   inv_mem' := by
     rintro a (ha | ha) <;> simp [inv_pow, ha]
 
-/-- **Strong liars of a composite**: modulo an odd composite `n`, the strong liars lie in a proper
-subgroup of the units. With `n - 1 = 2 ^ s * t`, take the largest `j < s` such that some unit `b`
-has `b ^ (2 ^ j * t) = -1` (`j = 0` works with `b = -1`), and the subgroup of units whose
-`2 ^ j * t`-th power is `±1`. It contains every strong liar. If `p ^ 2 ∣ n` for an odd prime `p`,
-the unit `1 + n / p` is outside it. Otherwise `n = p q` with `p` an odd prime coprime to `q > 1`,
-and the unit that agrees with `b` modulo `p` and is `1` modulo `q` is outside it. -/
-theorem exists_subgroup_ne_top_isStrongLiar {n : ℕ} [NeZero n] (hodd : Odd n) (h1 : 1 < n)
-    (hn : ¬ n.Prime) :
-    ∃ H : Subgroup (ZMod n)ˣ, H ≠ ⊤ ∧ ∀ a : (ZMod n)ˣ, IsStrongLiar n a → a ∈ H := by
+theorem mem_powEqOneOrNegOne {n m : ℕ} {a : (ZMod n)ˣ} :
+    a ∈ powEqOneOrNegOne n m ↔ a ^ m = 1 ∨ a ^ m = -1 :=
+  Iff.rfl
+
+/-- **The exponent of the strong-liar test.** For odd `n > 1`, write `n - 1 = 2 ^ s * t` with `t`
+odd and take the largest `j < s` such that some unit `b` has `b ^ (2 ^ j * t) = -1` (`j = 0` works
+with `b = -1`). Then `m = 2 ^ j * t` has `2 m ∣ n - 1`, `b ^ m = -1`, and every strong liar `a`
+has `a ^ m = ±1`. -/
+theorem exists_pow_eq_neg_one_forall_isStrongLiar {n : ℕ} (hodd : Odd n) (h1 : 1 < n) :
+    ∃ m, 2 * m ∣ n - 1 ∧ (∃ b : (ZMod n)ˣ, b ^ m = -1) ∧
+      ∀ a : (ZMod n)ˣ, IsStrongLiar n a → a ∈ powEqOneOrNegOne n m := by
   classical
   have hst : 2 ^ (n - 1).factorization 2 * ordCompl[2] (n - 1) = n - 1 :=
     Nat.ordProj_mul_ordCompl_eq_self (n - 1) 2
@@ -129,42 +137,9 @@ theorem exists_subgroup_ne_top_isStrongLiar {n : ℕ} [NeZero n] (hodd : Odd n) 
   have hjmax : ∀ i ∈ S, i ≤ j := fun i hi => S.le_max' i hi
   obtain ⟨hjs, b, hb⟩ : j < s ∧ ∃ b : (ZMod n)ˣ, b ^ (2 ^ j * t) = -1 := by
     simpa [S] using hjS
-  refine ⟨powEqOneOrNegOne n (2 ^ j * t), ?_, fun a ha => ?_⟩
-  · have hm : 2 ^ j * t ∣ n - 1 := by
-      rw [← hst]
-      exact Nat.mul_dvd_mul_right (Nat.pow_dvd_pow 2 hjs.le) t
-    intro htop
-    rcases Nat.exists_sq_dvd_or_eq_mul_coprime hodd h1 hn with ⟨p, hp, hp2, hpn⟩ |
-      ⟨p, q, rfl, hp, hp2, hpq, hqodd, hq1⟩
-    · obtain ⟨c, hc1, hcn⟩ := exists_unit_pow_of_sq_dvd hp hp2 (NeZero.ne n) hpn
-      have hc : c ∈ powEqOneOrNegOne n (2 ^ j * t) := htop ▸ Subgroup.mem_top c
-      rcases hc with hc | hc
-      · have hpm := (hc1 _ (by simpa using congrArg Units.val hc)).trans hm
-        have hpn' : p ∣ n := (Dvd.intro_left _ rfl : p ∣ p ^ 2).trans hpn
-        have : p ∣ 1 := by
-          have := Nat.dvd_sub hpn' hpm
-          rwa [show n - (n - 1) = 1 by omega] at this
-        exact hp.one_lt.ne' (Nat.dvd_one.1 this)
-      · exact hcn _ (by simpa using congrArg Units.val hc)
-    · have : NeZero q := ⟨by omega⟩
-      obtain ⟨c, hcp, hcq⟩ := exists_unit_castHom_eq hpq
-        (Units.map (castHom (dvd_mul_right p q) (ZMod p)).toMonoidHom b) 1
-      have hc : c ∈ powEqOneOrNegOne (p * q) (2 ^ j * t) := htop ▸ Subgroup.mem_top c
-      rcases hc with hc | hc
-      · have h' := congrArg (fun u : (ZMod (p * q))ˣ =>
-          castHom (dvd_mul_right p q) (ZMod p) (u : ZMod (p * q))) hc
-        have hb' := congrArg (fun u : (ZMod (p * q))ˣ =>
-          castHom (dvd_mul_right p q) (ZMod p) (u : ZMod (p * q))) hb
-        simp only [Units.val_pow_eq_pow_val, map_pow, Units.val_one, map_one, Units.val_neg,
-          map_neg] at h' hb'
-        rw [hcp, Units.coe_map] at h'
-        simp only [RingHom.toMonoidHom_eq_coe, MonoidHom.coe_ofClass] at h'
-        exact neg_one_ne_one_of_odd (hp.odd_of_ne_two hp2) hp.one_lt (hb'.symm.trans h')
-      · have h' := congrArg (fun u : (ZMod (p * q))ˣ =>
-          castHom (dvd_mul_left q p) (ZMod q) (u : ZMod (p * q))) hc
-        simp only [Units.val_pow_eq_pow_val, map_pow, Units.val_one, map_one, Units.val_neg,
-          map_neg, hcq, one_pow] at h'
-        exact neg_one_ne_one_of_odd hqodd hq1 h'.symm
+  refine ⟨2 ^ j * t, ?_, ⟨b, hb⟩, fun a ha => ?_⟩
+  · rw [← mul_assoc, ← pow_succ', ← hst]
+    exact Nat.mul_dvd_mul_right (Nat.pow_dvd_pow 2 hjs) t
   · rcases ha with ha | ⟨i, his, hi⟩
     · left
       have : a ^ t = 1 := Units.ext (by simpa using ha)
@@ -182,12 +157,57 @@ theorem exists_subgroup_ne_top_isStrongLiar {n : ℕ} [NeZero n] (hodd : Odd n) 
       · right
         exact hi'
 
-/-- **The Miller–Rabin bound**: modulo an odd composite `n`, at most half of the units are strong
-liars. -/
-theorem two_mul_card_isStrongLiar_le {n : ℕ} [NeZero n] (hodd : Odd n) (h1 : 1 < n)
-    (hn : ¬ n.Prime) : 2 * (Finset.univ.filter (IsStrongLiar n)).card ≤ n.totient := by
+/-- **Strong liars of a composite**: modulo an odd composite `n`, the strong liars lie in a proper
+subgroup of the units, namely `powEqOneOrNegOne n m` for the exponent `m` of
+`exists_pow_eq_neg_one_forall_isStrongLiar`, which contains every strong liar. If `p ^ 2 ∣ n` for
+an odd prime `p`, the unit `1 + n / p` is outside it. Otherwise `n = p q` with `p` an odd prime
+coprime to `q > 1`, and the unit that agrees with `b` modulo `p` and is `1` modulo `q` is outside
+it. -/
+theorem exists_subgroup_ne_top_isStrongLiar {n : ℕ} [NeZero n] (hodd : Odd n) (h1 : 1 < n)
+    (hn : ¬ n.Prime) :
+    ∃ H : Subgroup (ZMod n)ˣ, H ≠ ⊤ ∧ ∀ a : (ZMod n)ˣ, IsStrongLiar n a → a ∈ H := by
+  obtain ⟨m, hm2, ⟨b, hb⟩, hliar⟩ := exists_pow_eq_neg_one_forall_isStrongLiar hodd h1
+  refine ⟨powEqOneOrNegOne n m, ?_, hliar⟩
+  have hm : m ∣ n - 1 := (Dvd.intro_left 2 rfl).trans hm2
+  intro htop
+  rcases Nat.exists_sq_dvd_or_eq_mul_coprime hodd h1 hn with ⟨p, hp, hp2, hpn⟩ |
+    ⟨p, q, rfl, hp, hp2, hpq, hqodd, hq1⟩
+  · obtain ⟨c, hc1, hcn⟩ := exists_unit_pow_of_sq_dvd hp hp2 (NeZero.ne n) hpn
+    have hc : c ∈ powEqOneOrNegOne n m := htop ▸ Subgroup.mem_top c
+    rcases hc with hc | hc
+    · have hpm := (hc1 _ (by simpa using congrArg Units.val hc)).trans hm
+      have hpn' : p ∣ n := (Dvd.intro_left _ rfl : p ∣ p ^ 2).trans hpn
+      have : p ∣ 1 := by
+        have := Nat.dvd_sub hpn' hpm
+        rwa [show n - (n - 1) = 1 by omega] at this
+      exact hp.one_lt.ne' (Nat.dvd_one.1 this)
+    · exact hcn _ (by simpa using congrArg Units.val hc)
+  · have : NeZero q := ⟨by omega⟩
+    obtain ⟨c, hcp, hcq⟩ := exists_unit_castHom_eq hpq
+      (Units.map (castHom (dvd_mul_right p q) (ZMod p)).toMonoidHom b) 1
+    have hc : c ∈ powEqOneOrNegOne (p * q) m := htop ▸ Subgroup.mem_top c
+    rcases hc with hc | hc
+    · have h' := congrArg (fun u : (ZMod (p * q))ˣ =>
+        castHom (dvd_mul_right p q) (ZMod p) (u : ZMod (p * q))) hc
+      have hb' := congrArg (fun u : (ZMod (p * q))ˣ =>
+        castHom (dvd_mul_right p q) (ZMod p) (u : ZMod (p * q))) hb
+      simp only [Units.val_pow_eq_pow_val, map_pow, Units.val_one, map_one, Units.val_neg,
+        map_neg] at h' hb'
+      rw [hcp, Units.coe_map] at h'
+      simp only [RingHom.toMonoidHom_eq_coe, MonoidHom.coe_ofClass] at h'
+      exact neg_one_ne_one_of_odd (hp.odd_of_ne_two hp2) hp.one_lt (hb'.symm.trans h')
+    · have h' := congrArg (fun u : (ZMod (p * q))ˣ =>
+        castHom (dvd_mul_left q p) (ZMod q) (u : ZMod (p * q))) hc
+      simp only [Units.val_pow_eq_pow_val, map_pow, Units.val_one, map_one, Units.val_neg,
+        map_neg, hcq, one_pow] at h'
+      exact neg_one_ne_one_of_odd hqodd hq1 h'.symm
+
+/-- The strong liars modulo `n > 1` number at most the elements of any subgroup of the units that
+contains them. -/
+theorem card_isStrongLiar_le_card {n : ℕ} [NeZero n] (h1 : 1 < n) {H : Subgroup (ZMod n)ˣ}
+    (hsub : ∀ a : (ZMod n)ˣ, IsStrongLiar n a → a ∈ H) :
+    (Finset.univ.filter (IsStrongLiar n)).card ≤ Nat.card H := by
   classical
-  obtain ⟨H, hH, hsub⟩ := exists_subgroup_ne_top_isStrongLiar hodd h1 hn
   let f : {a // IsStrongLiar n a} → H := fun a =>
     ⟨(a.2.isUnit h1).unit, hsub _ (by simpa using a.2)⟩
   have hf : Function.Injective f := fun a b h => Subtype.ext (by
@@ -195,10 +215,16 @@ theorem two_mul_card_isStrongLiar_le {n : ℕ} [NeZero n] (hodd : Odd n) (h1 : 1
     simpa [f] using this)
   have hle := Nat.card_le_card_of_injective f hf
   rw [Nat.card_eq_fintype_card, Fintype.card_subtype] at hle
+  convert hle using 2
+
+/-- **The Miller–Rabin bound**: modulo an odd composite `n`, at most half of the units are strong
+liars. -/
+theorem two_mul_card_isStrongLiar_le {n : ℕ} [NeZero n] (hodd : Odd n) (h1 : 1 < n)
+    (hn : ¬ n.Prime) : 2 * (Finset.univ.filter (IsStrongLiar n)).card ≤ n.totient := by
+  obtain ⟨H, hH, hsub⟩ := exists_subgroup_ne_top_isStrongLiar hodd h1 hn
+  have hle := card_isStrongLiar_le_card h1 hsub
   have := Subgroup.two_mul_card_le_of_ne_top hH
   rw [Nat.card_eq_fintype_card (α := (ZMod n)ˣ), ZMod.card_units_eq_totient] at this
-  have hle' : (Finset.univ.filter (IsStrongLiar n)).card ≤ Nat.card H := by
-    convert hle using 2
   omega
 
 end ZMod
