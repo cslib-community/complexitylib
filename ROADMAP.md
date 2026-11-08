@@ -943,6 +943,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Sperner (Papadimitriou 1994). Optional: the classical form on a triangulated `d`-simplex (not
   formalized), and a bridge identifying `Cslib.Sperner.triangles` with the two-dimensional Kuhn
   triangulation.
+- **Brouwer's fixed-point theorem** ([#3514](https://github.com/cslib-community/complexitylib/issues/3514)):
+  the unit cube in `Fin n → ℝ` via hypergrid Sperner and compactness, with the weak
+  approximation (a grid point displaced by at most `(K + 1)/N` for `K`-Lipschitz maps), is in
+  place. Remaining: arbitrary compact convex sets (by retraction onto the cube or a simplex), and
+  the computational problem Brouwer^f with its `PPAD` membership and hardness
+  ([#3087](https://github.com/cslib-community/complexitylib/issues/3087)).
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
