@@ -702,6 +702,46 @@ def delete {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
   else
     b
 
+/-- `insert` of an active key overwrites its value in place. -/
+private theorem insert_of_mem {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
+    (b : BoundedEncoded U' n' X) (u : Fin U') (v : ℕ) (hv : v < X)
+    (hcap : b.size.val < n' ∨ u ∈ activeSet b.encoded) (hu : u ∈ activeSet b.encoded) :
+    insert h b u v hv hcap =
+      ⟨b.size, Minimap.overwrite (Nat.le_of_lt_succ b.size.isLt) h b.encoded u v hv hu⟩ := by
+  unfold insert
+  simp only [hu, ↓reduceDIte]
+
+/-- `insert` of a new key grows the size by one. -/
+private theorem insert_of_notMem {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
+    (b : BoundedEncoded U' n' X) (u : Fin U') (v : ℕ) (hv : v < X)
+    (hcap : b.size.val < n' ∨ u ∈ activeSet b.encoded) (hu : u ∉ activeSet b.encoded) :
+    insert h b u v hv hcap =
+      ⟨⟨b.size.val + 1, Nat.succ_lt_succ (hcap.resolve_right hu)⟩,
+        Minimap.insertNew (hcap.resolve_right hu) h b.encoded u v hv hu⟩ := by
+  unfold insert
+  simp only [hu, ↓reduceDIte]
+
+/-- An empty minimap has no active key. -/
+private theorem notMem_activeSet_of_size_zero {U' n' X : ℕ} (e : Encoded U' n' X 0) (u : Fin U') :
+    u ∉ activeSet e := by
+  rw [card_eq_zero.mp (card_activeSet e)]
+  exact notMem_empty u
+
+/-- `delete` of an active key shrinks the size by one. -/
+private theorem delete_of_mem {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n')
+    (hm : m + 1 < n' + 1) (e : Encoded U' n' X (m + 1)) (u : Fin U') (hu : u ∈ activeSet e) :
+    delete h ⟨⟨m + 1, hm⟩, e⟩ u =
+      ⟨⟨m, Nat.lt_of_succ_lt hm⟩, Minimap.deleteMem (Nat.le_of_lt_succ hm) h e u hu⟩ := by
+  unfold delete
+  simp only [hu, ↓reduceDIte]
+
+/-- `delete` of an inactive key is a no-op. -/
+private theorem delete_of_notMem {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
+    (b : BoundedEncoded U' n' X) (u : Fin U') (hu : u ∉ activeSet b.encoded) :
+    delete h b u = b := by
+  unfold delete
+  simp only [hu, ↓reduceDIte]
+
 @[simp]
 theorem query_encode {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (s : Dictionary.State U') (hb : Dictionary.ValuesBounded X s)
@@ -741,25 +781,14 @@ theorem activeSet_insert {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (hcap : b.size.val < n' ∨ u ∈ activeSet b.encoded) :
     activeSet (insert h b u v hv hcap).encoded = Insert.insert u (activeSet b.encoded) := by
   by_cases hu : u ∈ activeSet b.encoded
-  · have hins : insert h b u v hv hcap =
-        ⟨b.size, Minimap.overwrite (Nat.le_of_lt_succ b.size.isLt) h b.encoded u v hv hu⟩ := by
-      unfold insert; simp only [hu, ↓reduceDIte]
-    rw [hins, Minimap.activeSet_overwrite, insert_eq_of_mem hu]
-  · have hins : insert h b u v hv hcap =
-        ⟨⟨b.size.val + 1, Nat.succ_lt_succ (hcap.resolve_right hu)⟩,
-          Minimap.insertNew (hcap.resolve_right hu) h b.encoded u v hv hu⟩ := by
-      unfold insert; simp only [hu, ↓reduceDIte]
-    rw [hins, Minimap.activeSet_insertNew]
+  · rw [insert_of_mem h b u v hv hcap hu, Minimap.activeSet_overwrite, insert_eq_of_mem hu]
+  · rw [insert_of_notMem h b u v hv hcap hu, Minimap.activeSet_insertNew]
 
 theorem size_insert_of_notMem {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (b : BoundedEncoded U' n' X) (u : Fin U') (v : ℕ) (hv : v < X)
     (hcap : b.size.val < n' ∨ u ∈ activeSet b.encoded) (hu : u ∉ activeSet b.encoded) :
     (insert h b u v hv hcap).size.val = b.size.val + 1 := by
-  have hins : insert h b u v hv hcap =
-      ⟨⟨b.size.val + 1, Nat.succ_lt_succ (hcap.resolve_right hu)⟩,
-        Minimap.insertNew (hcap.resolve_right hu) h b.encoded u v hv hu⟩ := by
-    unfold insert; simp only [hu, ↓reduceDIte]
-  rw [hins]
+  rw [insert_of_notMem h b u v hv hcap hu]
 
 theorem size_insert_of_mem {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (b : BoundedEncoded U' n' X) (u : Fin U') (v : ℕ) (hv : v < X)
@@ -774,19 +803,9 @@ theorem activeSet_delete {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
   rcases b with ⟨⟨m, hm⟩, e⟩
   by_cases hu : u ∈ activeSet e
   · cases m with
-    | zero =>
-      have hc := card_activeSet e
-      rw [card_eq_zero.mp hc] at hu
-      exact False.elim (notMem_empty u hu)
-    | succ m =>
-      have hdel : delete h ⟨⟨m + 1, hm⟩, e⟩ u =
-          ⟨⟨m, Nat.lt_of_succ_lt hm⟩,
-            Minimap.deleteMem (Nat.le_of_lt_succ hm) h e u hu⟩ := by
-        unfold delete; simp only [hu, ↓reduceDIte]
-      rw [hdel, Minimap.activeSet_deleteMem]
-  · have hdel : delete h ⟨⟨m, hm⟩, e⟩ u = ⟨⟨m, hm⟩, e⟩ := by
-      unfold delete; simp only [hu, ↓reduceDIte]
-    rw [hdel, erase_eq_of_notMem hu]
+    | zero => exact absurd hu (notMem_activeSet_of_size_zero e u)
+    | succ m => rw [delete_of_mem h hm e u hu, Minimap.activeSet_deleteMem]
+  · rw [delete_of_notMem h ⟨⟨m, hm⟩, e⟩ u hu, erase_eq_of_notMem hu]
 
 theorem size_delete_of_mem {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (b : BoundedEncoded U' n' X) (u : Fin U') (hu : u ∈ activeSet b.encoded) :
@@ -804,18 +823,9 @@ theorem query_insert {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (hcap : b.size.val < n' ∨ u ∈ activeSet b.encoded) (u' : Fin U') :
     query h (insert h b u v hv hcap) u' = Function.update (query h b) u (some v) u' := by
   by_cases hu : u ∈ activeSet b.encoded
-  · have hins : insert h b u v hv hcap =
-        ⟨b.size, Minimap.overwrite (Nat.le_of_lt_succ b.size.isLt) h b.encoded u v hv hu⟩ := by
-      unfold insert
-      simp only [hu, ↓reduceDIte]
-    rw [hins]
+  · rw [insert_of_mem h b u v hv hcap hu]
     exact Minimap.query_overwrite _ h b.encoded u v hv hu u'
-  · have hins : insert h b u v hv hcap =
-        ⟨⟨b.size.val + 1, Nat.succ_lt_succ (hcap.resolve_right hu)⟩,
-          Minimap.insertNew (hcap.resolve_right hu) h b.encoded u v hv hu⟩ := by
-      unfold insert
-      simp only [hu, ↓reduceDIte]
-    rw [hins]
+  · rw [insert_of_notMem h b u v hv hcap hu]
     exact Minimap.query_insertNew (hcap.resolve_right hu) h b.encoded u v hv hu u'
 
 @[simp]
@@ -825,22 +835,11 @@ theorem query_delete {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
   rcases b with ⟨⟨m, hm⟩, e⟩
   by_cases hu : u ∈ activeSet e
   · cases m with
-    | zero =>
-      have hc := card_activeSet e
-      rw [card_eq_zero.mp hc] at hu
-      exact False.elim (notMem_empty u hu)
+    | zero => exact absurd hu (notMem_activeSet_of_size_zero e u)
     | succ m =>
-      have hdel : delete h ⟨⟨m + 1, hm⟩, e⟩ u =
-          ⟨⟨m, Nat.lt_of_succ_lt hm⟩,
-            Minimap.deleteMem (Nat.le_of_lt_succ hm) h e u hu⟩ := by
-        unfold delete
-        simp only [hu, ↓reduceDIte]
-      rw [hdel]
+      rw [delete_of_mem h hm e u hu]
       exact Minimap.query_deleteMem (Nat.le_of_lt_succ hm) h e u hu u'
-  · have hdel : delete h ⟨⟨m, hm⟩, e⟩ u = ⟨⟨m, hm⟩, e⟩ := by
-      unfold delete
-      simp only [hu, ↓reduceDIte]
-    rw [hdel]
+  · rw [delete_of_notMem h ⟨⟨m, hm⟩, e⟩ u hu]
     by_cases heq : u' = u
     · subst heq; simp [query, Minimap.query, queryFin_of_notMem h e hu]
     · simp [Function.update_of_ne heq]
@@ -1089,16 +1088,9 @@ theorem wellFormed_insert {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (hcap : b.size.val < n' ∨ u ∈ activeSet b.encoded) :
     WellFormed h (insert h b u v hv hcap) := by
   by_cases hu : u ∈ activeSet b.encoded
-  · have hins : insert h b u v hv hcap =
-        ⟨b.size, Minimap.overwrite (Nat.le_of_lt_succ b.size.isLt) h b.encoded u v hv hu⟩ := by
-      unfold insert; simp only [hu, ↓reduceDIte]
-    rw [hins]
+  · rw [insert_of_mem h b u v hv hcap hu]
     exact Minimap.wellFormed_overwrite _ h hwf u v hv hu
-  · have hins : insert h b u v hv hcap =
-        ⟨⟨b.size.val + 1, Nat.succ_lt_succ (hcap.resolve_right hu)⟩,
-          Minimap.insertNew (hcap.resolve_right hu) h b.encoded u v hv hu⟩ := by
-      unfold insert; simp only [hu, ↓reduceDIte]
-    rw [hins]
+  · rw [insert_of_notMem h b u v hv hcap hu]
     exact Minimap.wellFormed_insertNew (hcap.resolve_right hu) h hwf u v hv hu
 
 theorem wellFormed_delete {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
@@ -1107,20 +1099,11 @@ theorem wellFormed_delete {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
   rcases b with ⟨⟨m, hm⟩, e⟩
   by_cases hu : u ∈ activeSet e
   · cases m with
-    | zero =>
-      have hc := card_activeSet e
-      rw [card_eq_zero.mp hc] at hu
-      exact False.elim (notMem_empty u hu)
+    | zero => exact absurd hu (notMem_activeSet_of_size_zero e u)
     | succ m =>
-      have hdel : delete h ⟨⟨m + 1, hm⟩, e⟩ u =
-          ⟨⟨m, Nat.lt_of_succ_lt hm⟩,
-            Minimap.deleteMem (Nat.le_of_lt_succ hm) h e u hu⟩ := by
-        unfold delete; simp only [hu, ↓reduceDIte]
-      rw [hdel]
+      rw [delete_of_mem h hm e u hu]
       exact Minimap.wellFormed_deleteMem (Nat.le_of_lt_succ hm) h hwf u hu
-  · have hdel : delete h ⟨⟨m, hm⟩, e⟩ u = ⟨⟨m, hm⟩, e⟩ := by
-      unfold delete; simp only [hu, ↓reduceDIte]
-    rw [hdel]
+  · rw [delete_of_notMem h ⟨⟨m, hm⟩, e⟩ u hu]
     exact hwf
 
 theorem unusedSlotsZero_empty {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n') :
@@ -1138,16 +1121,9 @@ theorem unusedSlotsZero_insert {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n'
     (hcap : b.size.val < n' ∨ u ∈ activeSet b.encoded) :
     UnusedSlotsZero h (insert h b u v hv hcap).encoded := by
   by_cases hu : u ∈ activeSet b.encoded
-  · have hins : insert h b u v hv hcap =
-        ⟨b.size, Minimap.overwrite (Nat.le_of_lt_succ b.size.isLt) h b.encoded u v hv hu⟩ := by
-      unfold insert; simp only [hu, ↓reduceDIte]
-    rw [hins]
+  · rw [insert_of_mem h b u v hv hcap hu]
     exact Minimap.unusedSlotsZero_overwrite _ h b.encoded u v hv hu
-  · have hins : insert h b u v hv hcap =
-        ⟨⟨b.size.val + 1, Nat.succ_lt_succ (hcap.resolve_right hu)⟩,
-          Minimap.insertNew (hcap.resolve_right hu) h b.encoded u v hv hu⟩ := by
-      unfold insert; simp only [hu, ↓reduceDIte]
-    rw [hins]
+  · rw [insert_of_notMem h b u v hv hcap hu]
     exact Minimap.unusedSlotsZero_insertNew (hcap.resolve_right hu) h b.encoded u v hv hu
 
 theorem unusedSlotsZero_delete {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
@@ -1156,20 +1132,11 @@ theorem unusedSlotsZero_delete {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n'
   rcases b with ⟨⟨m, hm⟩, e⟩
   by_cases hu : u ∈ activeSet e
   · cases m with
-    | zero =>
-      have hc := card_activeSet e
-      rw [card_eq_zero.mp hc] at hu
-      exact False.elim (notMem_empty u hu)
+    | zero => exact absurd hu (notMem_activeSet_of_size_zero e u)
     | succ m =>
-      have hdel : delete h ⟨⟨m + 1, hm⟩, e⟩ u =
-          ⟨⟨m, Nat.lt_of_succ_lt hm⟩,
-            Minimap.deleteMem (Nat.le_of_lt_succ hm) h e u hu⟩ := by
-        unfold delete; simp only [hu, ↓reduceDIte]
-      rw [hdel]
+      rw [delete_of_mem h hm e u hu]
       exact Minimap.unusedSlotsZero_deleteMem (Nat.le_of_lt_succ hm) h e u hu
-  · have hdel : delete h ⟨⟨m, hm⟩, e⟩ u = ⟨⟨m, hm⟩, e⟩ := by
-      unfold delete; simp only [hu, ↓reduceDIte]
-    rw [hdel]
+  · rw [delete_of_notMem h ⟨⟨m, hm⟩, e⟩ u hu]
     exact hz
 
 end BoundedEncoded
