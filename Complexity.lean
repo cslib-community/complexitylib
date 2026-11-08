@@ -1511,6 +1511,7 @@ public import Complexity.Computability.Communication.Disjointness
 public import Complexity.Computability.Communication.Distributional
 public import Complexity.Computability.Communication.Equality
 public import Complexity.Computability.Communication.FoolingSet
+public import Complexity.Computability.Communication.Forster
 public import Complexity.Computability.Communication.Functions
 public import Complexity.Computability.Communication.Inclusion
 public import Complexity.Computability.Communication.Information
@@ -4642,6 +4643,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Farkas
 public import Complexity.Foundations.LinearAlgebra.Matrix.FourierMotzkin
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianDeterminant
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianPermanent
+public import Complexity.Foundations.LinearAlgebra.Matrix.IsotropicPosition
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
 public import Complexity.Foundations.LinearAlgebra.Matrix.Laplacian
 public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
