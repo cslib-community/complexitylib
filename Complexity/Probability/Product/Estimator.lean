@@ -12,6 +12,7 @@ import Complexity.Foundations.Combinatorics.Janson
 import Complexity.Probability.PMF.Chebyshev
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
+import Complexity.Probability.PMF.ToReal
 
 /-!
 # The product estimator
@@ -293,8 +294,7 @@ theorem le_toOuterMeasure_productEstimate (μ : κ → PMF S) (A : κ → Set S)
   have hp0 (k : κ) : 0 ≤ p k := by rw [← hpk]; exact ENNReal.toReal_nonneg
   have hp1 (k : κ) : p k ≤ 1 := by
     rw [← hpk]
-    have := ENNReal.toReal_mono ENNReal.one_ne_top (toOuterMeasure_le_one (μ k) (A k))
-    rwa [ENNReal.toReal_one] at this
+    exact toOuterMeasure_toReal_le_one (μ k) (A k)
   have hr0 (k : κ) : 0 < r k := hb.trans_le (hr k)
   have hplo (k : κ) : (1 - δ) * r k ≤ p k := by
     have := (abs_le.1 (hp k)).1

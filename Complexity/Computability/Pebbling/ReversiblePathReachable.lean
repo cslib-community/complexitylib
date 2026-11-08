@@ -38,10 +38,10 @@ of `x`" reads `x + 1 ≤ 2 ^ i`.
 **Proof.** A weakly solvable configuration is reachable, since its big steps played backwards are
 runs. Conversely, each move of the game places or removes a pebble whose predecessor is pebbled,
 hence an available pebble. Placing one keeps the configuration weakly solvable. Removing one keeps
-it weakly solvable by Theorem 1, which is `IsPathRemovalNumbering.erase_of_pathAvailable`. Pebbles
-numbered below the removed pebble move up by one. A pebble whose witness was the removed pebble
-follows the chain of witnesses to the left (`IsPathRemovalNumbering.chain`). The distances along
-the chain add up to at most `2 ^ (i + 1)`, which is LTV's estimate.
+it weakly solvable by the key step of Theorem 1, `IsPathRemovalNumbering.erase_of_pathAvailable`:
+pebbles numbered below the removed pebble move up by one, and a pebble whose witness was the
+removed pebble follows the chain of witnesses to the left (`IsPathRemovalNumbering.chain`). The
+distances along the chain add up to at most `2 ^ (i + 1)`, which is LTV's estimate.
 
 **Deciding reachability.** By Theorem 1, removing the least available pebble until none is left
 frees every pebble exactly when the configuration is weakly solvable (`pathGreedySolvable`). This
@@ -87,7 +87,7 @@ position `-1`. -/
 @[expose] def PathAvailable (C : Finset ℕ) (f x : ℕ) : Prop :=
   x + 1 ≤ 2 ^ f ∨ ∃ y ∈ C, y < x ∧ x ≤ y + 2 ^ f
 
-instance (C : Finset ℕ) (f x : ℕ) : Decidable (PathAvailable C f x) :=
+instance instDecidablePathAvailable (C : Finset ℕ) (f x : ℕ) : Decidable (PathAvailable C f x) :=
   inferInstanceAs (Decidable (_ ∨ _))
 
 /-- One big step of [LiTrompVitanyi1998], Section 7, with `n` pebbles: remove a pebble that is
@@ -190,7 +190,7 @@ theorem card_le (h : IsPathRemovalNumbering n C σ) : C.card ≤ n := by
   rwa [Finset.card_range] at this
 
 /-- Some pebble carries the least number `n - #C`. -/
-theorem exists_eq (h : IsPathRemovalNumbering n C σ) (hne : C.Nonempty) :
+private theorem exists_eq (h : IsPathRemovalNumbering n C σ) (hne : C.Nonempty) :
     ∃ x ∈ C, σ x = n - C.card := by
   have hsub : C.image σ ⊆ Finset.Ico (n - C.card) n := fun y hy => by
     obtain ⟨x, hx, rfl⟩ := Finset.mem_image.1 hy
@@ -238,7 +238,7 @@ theorem erase (h : IsPathRemovalNumbering n C σ) {x : ℕ} (hx : x ∈ C)
       omega
 
 /-- Adding an available pebble with the least number gives a removal numbering. -/
-theorem update {x : ℕ} (h : IsPathRemovalNumbering n (C.erase x) σ) (hx : x ∈ C)
+private theorem update {x : ℕ} (h : IsPathRemovalNumbering n (C.erase x) σ) (hx : x ∈ C)
     (hcard : C.card ≤ n) (havail : PathAvailable C (n - C.card) x) :
     IsPathRemovalNumbering n C (Function.update σ x (n - C.card)) := by
   have hce := Finset.card_erase_of_mem hx
@@ -307,7 +307,7 @@ theorem chain (h : IsPathRemovalNumbering n C σ) {j : ℕ} :
         · exact .inr ⟨w', hw', by omega, hjw', by omega⟩
 
 /-- A pebble numbered `i` lies at a vertex `y` with `y + 1 + 2 ^ i ≤ 2 ^ n`. -/
-theorem add_one_add_pow_le (h : IsPathRemovalNumbering n C σ) {y : ℕ} (hy : y ∈ C) :
+theorem add_one_add_two_pow_le (h : IsPathRemovalNumbering n C σ) {y : ℕ} (hy : y ∈ C) :
     y + 1 + 2 ^ σ y ≤ 2 ^ n := by
   rcases h.chain y hy (h.lt y hy) with h' | ⟨w, hw, -, hnw, -⟩
   · exact h'
@@ -550,7 +550,7 @@ theorem add_one_add_two_pow_le_of_reversiblePebbleGame_pathDigraph_mTr {n : ℕ}
     {v : ℕ} (hv : v ∈ C) : v + 1 + 2 ^ (n - C.card) ≤ 2 ^ n := by
   obtain ⟨σ, hσ⟩ := exists_reversiblePebbleGame_pathDigraph_mTr_iff.1 ⟨ms, h⟩
   have := Nat.pow_le_pow_right Nat.two_pos (hσ.le v hv)
-  have := hσ.add_one_add_pow_le hv
+  have := hσ.add_one_add_two_pow_le hv
   omega
 
 /-! ## Deciding reachability -/
@@ -588,13 +588,15 @@ theorem pathGreedySolvable_iff {n : ℕ} :
       · exact he
       · exact absurd ⟨x, Finset.mem_filter.2 ⟨hx, havail⟩⟩ hC
 
-instance (n : ℕ) (C : Finset ℕ) : Decidable (PathWeaklySolvable n C) :=
+instance instDecidablePathWeaklySolvable (n : ℕ) (C : Finset ℕ) :
+    Decidable (PathWeaklySolvable n C) :=
   decidable_of_iff (C.card ≤ n ∧ pathGreedySolvable n C.card C = true)
     ⟨fun h => (pathGreedySolvable_iff _ C le_rfl h.1).1 h.2,
       fun h => ⟨h.card_le, (pathGreedySolvable_iff _ C le_rfl h.card_le).2 h⟩⟩
 
 /-- By Corollary 1, reachability on the path is decidable through removal numberings. -/
-instance (n : ℕ) (C : Finset ℕ) : Decidable (HasPathRemovalNumbering n C) :=
+instance instDecidableHasPathRemovalNumbering (n : ℕ) (C : Finset ℕ) :
+    Decidable (HasPathRemovalNumbering n C) :=
   decidable_of_iff _ pathWeaklySolvable_iff_hasPathRemovalNumbering
 
 end Cslib.Pebbling

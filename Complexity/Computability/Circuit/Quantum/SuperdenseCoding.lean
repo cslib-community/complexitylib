@@ -87,8 +87,8 @@ theorem superdenseState_eq (a b : Bool) :
     norm_num
   ext ⟨x, y⟩
   simp only [superdenseState, superdenseDecoding, unitaryEquiv_apply, Submonoid.coe_mul,
-    coe_onFirst, ← mulVec_mulVec, kronecker_one_mulVec, hadamardMatrix_mulVec, cnotMatrix_mulVec,
-    superdenseEncoding_mulVec, bell_apply]
+    coe_onFirst, ← mulVec_mulVec, kronecker_one_mulVec_apply, hadamardMatrix_mulVec,
+    cnotMatrix_mulVec, superdenseEncoding_mulVec, bell_apply]
   cases a <;> cases b <;> cases x <;> cases y <;>
     simp only [WithLp.ofLp_smul, Pi.smul_apply, ket_apply, smul_eq_mul, Bool.bne_true,
       Bool.bne_false, Bool.not_false, Bool.not_true, Bool.and_true, Bool.and_false,
