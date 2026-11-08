@@ -1341,9 +1341,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   public-coin NOF protocols, cylinder intersections and the multiparty discrepancy bound
   `2 γ ≤ 2 ^ c disc_ν(f)`, with the two-player case matching the two-party discrepancy; the cube
   bound `disc(f) ^ (2 ^ k) ≤ E(f)` and the Babai–Nisan–Szegedy lower bound `Ω(n / 4 ^ k)` for
-  generalized inner product. Remaining: the sharper `Ω(n / 2 ^ k)` bound for
-  generalized inner product (source to be verified before citing) and Grolmusz's `O(k n / 2 ^ k)`
-  protocol; matrix multiplication (Raz) and NOF disjointness lower bounds; and applications to
+  generalized inner product; leaves as cylinder intersections (the star lemma) and the
+  Chandra–Furst–Lipton lower bound `D(Exactly-N) → ∞` for three players via Mathlib's corners
+  theorem ([#3424](https://github.com/cslib-community/complexitylib/issues/3424)). Remaining: the
+  sharper `Ω(n / 2 ^ k)` bound for generalized inner product (source to be verified before citing)
+  and Grolmusz's `O(k n / 2 ^ k)` protocol; for Exactly-N, the converse from corner-free colorings,
+  upper bounds from Behrend's construction, quantitative corners bounds and the `k`-player version;
+  matrix multiplication (Raz) and NOF disjointness lower bounds; and applications to
   `ACC⁰` and branching-program lower bounds. A two-party companion is the Aho–Ullman–Yannakakis bound
   `D(f) = O(N⁰(f) N¹(f))` relating deterministic and nondeterministic communication.
 - Multiparty number-in-hand protocols, direct-product results, and reductions to streaming,
