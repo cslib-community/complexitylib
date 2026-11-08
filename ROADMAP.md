@@ -1853,11 +1853,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   the work-function algorithm's `2k - 1` bound (Koutsoupias–Papadimitriou), the `k`-server
   conjecture as a research target with explicit quantifiers, the `k = 2` case on every metric,
   randomized `k`-server, and the offline optimum by min-cost flow.
-- **Online bin packing** ([#3466](https://github.com/cslib-community/complexitylib/issues/3466)):
+- **Online bin packing** ([#2964](https://github.com/cslib-community/complexitylib/issues/2964)):
   `Algorithms/Lean/BinPacking/{Online,OnlineLowerBound}` covers deterministic online packers and
-  Yao's `3/2` lower bound. Remaining: the stronger lower bounds of Brown–Liang (`1.536`), van Vliet
+  Yao's `3/2` lower bound, which with First Fit's `17/10` brackets the deterministic asymptotic
+  ratio in `[3/2, 17/10]`. Remaining: the stronger lower bounds of Brown–Liang (`1.536`), van Vliet
   (`1.5401`), Balogh–Békési–Galambos (`248/161`) and the fully adaptive constructions; Harmonic-type
-  upper bounds; randomized lower bounds; and an `Online.Problem` instance.
+  upper bounds; randomized lower bounds; and an `Online.Problem` instance (a bin-packing problem
+  charging `1` per opened bin, `OnlinePacker` as a `DetStrategy`, and a `not_isCompetitive_of_lt`
+  corollary).
 
 ### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
 

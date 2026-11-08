@@ -13,9 +13,12 @@ import Mathlib.Tactic.Linarith
 /-!
 # Yao's `3/2` lower bound for online bin packing
 
-No deterministic online bin-packing algorithm has asymptotic competitive ratio below `3/2`
-([Yao][Yao1980], reported in
-[Balogh, Békési, Dósa, Epstein and Levin, Section 1][BaloghBekesiDosaEpsteinLevin2018]).
+No deterministic online bin-packing algorithm has asymptotic competitive ratio below `3/2`:
+the abstract of [Yao][Yao1980] defines `r(S)` as the maximum ratio `S(L) / L*` for large `L*` and
+states that every on-line algorithm `S` has `r(S) ≥ 3/2`. The construction uses the item types
+`1/7 + ε`, `1/3 + ε` and `1/2 + ε`, as reported in
+[Balogh, Békési, Dósa, Epstein and Levin, Section 1][BaloghBekesiDosaEpsteinLevin2018]; Yao's full
+text, and so his theorem number and proof, were not inspected.
 The input has three phases of `6 * m` items each, of sizes just above `1/7`, `1/3` and `1/2`.
 Here the capacity is `41` and the sizes are `6`, `14` and `21`. These give the same 20 feasible
 bin patterns (counts of the three sizes that fit into one bin) as `1/7 + ε`, `1/3 + ε` and
@@ -69,6 +72,14 @@ additive constant `c`, every online packer violates `b * ALG ≤ a * OPT + c` on
 * `Cslib.Algorithms.Lean.BinPacking.OnlinePacker.exists_ratio_violation_of_lt`: no ratio below
   `3/2` with any additive constant.
 * `Cslib.Algorithms.Lean.BinPacking.OnlinePacker.four_thirds_lower_bound`: the two-phase `4/3`.
+* `Cslib.Algorithms.Lean.BinPacking.OnlinePacker.sum_map_yaoWeight_le_run`: Yao's counting, for
+  every three-phase input whose later phases avoid the earlier sizes.
+* `Cslib.Algorithms.Lean.BinPacking.isPacking_yao₁` and
+  `Cslib.Algorithms.Lean.BinPacking.le_length_of_isPacking_yao₁` (and `₂`, `₃`): the optima `m`,
+  `3 * m` and `6 * m` after the three phases.
+* `Cslib.Algorithms.Lean.BinPacking.isPacking_twoPhase₁` and
+  `Cslib.Algorithms.Lean.BinPacking.le_length_of_isPacking_twoPhase₁` (and `₂`): the optima
+  `3 * m` and `6 * m` of the two-phase input.
 
 ## References
 
@@ -196,8 +207,9 @@ theorem yao_lower_bound (m : ℕ) :
   omega
 
 /-- **The two-phase bound `4/3`.** Against `6 * m` items of size `14`, then `6 * m` of size
-`21`, every online packer uses at least `4/3` times the optimum (`3 * m`, then `6 * m`) after one
-of the two phases. -/
+`21`, every online packer uses at least `4/3` times the optimum (`3 * m`, then `6 * m`, by
+`isPacking_twoPhase₁` and `le_length_of_isPacking_twoPhase₁`, and so on) after one of the two
+phases. -/
 theorem four_thirds_lower_bound (m : ℕ) :
     4 * (3 * m) ≤ 3 * (A.run (replicate (6 * m) 14)).length ∨
       4 * (6 * m) ≤ 3 * (A.run (replicate (6 * m) 14 ++ replicate (6 * m) 21)).length := by
@@ -284,6 +296,42 @@ size `21`. -/
 theorem le_length_of_isPacking_yao₃ {m : ℕ} {Q : List (List ℕ)}
     (hQ : IsPacking 41 (replicate (6 * m) 6 ++ replicate (6 * m) 14 ++ replicate (6 * m) 21) Q) :
     6 * m ≤ Q.length := by
+  have := hQ.count_le_mul_length 21 fun b hb => count_twentyOne_le hb
+  simp [count_replicate] at this
+  omega
+
+/-- The `6 * m` items of size `14` of the two-phase input fit into `3 * m` bins. -/
+theorem isPacking_twoPhase₁ (m : ℕ) :
+    IsPacking 41 (replicate (6 * m) 14) (replicate (3 * m) [14, 14]) := by
+  refine ⟨perm_iff_count.2 fun x => ?_, fun b hb => ?_⟩
+  · by_cases h14 : x = 14
+    · subst h14; simp [count_flatten]; omega
+    simp [count_flatten, count_replicate, Ne.symm h14]
+  · rw [eq_of_mem_replicate hb]
+    decide
+
+/-- Both phases of the two-phase input fit into `6 * m` bins. -/
+theorem isPacking_twoPhase₂ (m : ℕ) :
+    IsPacking 41 (replicate (6 * m) 14 ++ replicate (6 * m) 21) (replicate (6 * m) [14, 21]) := by
+  refine ⟨perm_iff_count.2 fun x => ?_, fun b hb => ?_⟩
+  · by_cases h14 : x = 14
+    · subst h14; simp [count_flatten, count_replicate]
+    by_cases h21 : x = 21
+    · subst h21; simp [count_flatten, count_replicate]
+    simp [count_flatten, count_replicate, Ne.symm h14, Ne.symm h21]
+  · rw [eq_of_mem_replicate hb]
+    decide
+
+/-- Every packing of `6 * m` items of size `14` has at least `3 * m` bins. -/
+theorem le_length_of_isPacking_twoPhase₁ {m : ℕ} {Q : List (List ℕ)}
+    (hQ : IsPacking 41 (replicate (6 * m) 14) Q) : 3 * m ≤ Q.length := by
+  have := hQ.count_le_mul_length 14 fun b hb => count_fourteen_le hb
+  simp at this
+  omega
+
+/-- Every packing of both phases of the two-phase input has at least `6 * m` bins. -/
+theorem le_length_of_isPacking_twoPhase₂ {m : ℕ} {Q : List (List ℕ)}
+    (hQ : IsPacking 41 (replicate (6 * m) 14 ++ replicate (6 * m) 21) Q) : 6 * m ≤ Q.length := by
   have := hQ.count_le_mul_length 21 fun b hb => count_twentyOne_le hb
   simp [count_replicate] at this
   omega

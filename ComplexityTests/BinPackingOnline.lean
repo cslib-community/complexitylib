@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
+public import Complexity.Algorithms.Lean.BinPacking.FirstFitWeight
 public import Complexity.Algorithms.Lean.BinPacking.OnlineLowerBound
 
 /-!
@@ -26,6 +27,10 @@ These kernel-checked examples (using no `native_decide`) exercise
    after every phase, so the constant `3/2` of `OnlinePacker.yao_lower_bound` cannot be raised on
    this input.
 4. An online packer whose rule always opens a new bin still yields a valid packing.
+5. The bracket `[3/2, 17/10]`. First Fit, as the online packer `firstFitPacker`, satisfies
+   `10 * ALG ≤ 17 * OPT + 8` against every packing (`ten_mul_length_firstFit_le`). Together with
+   `OnlinePacker.exists_ratio_violation_of_lt`, this brackets the best asymptotic competitive ratio
+   of deterministic online bin packing between `3/2` and `17/10`.
 -/
 
 public section
@@ -102,5 +107,21 @@ example : newBinPacker.run [6, 14, 21] = [[6], [14], [21]] := by decide
 
 example : IsPacking 41 [6, 14, 21] (newBinPacker.run [6, 14, 21]) :=
   newBinPacker.isPacking_run (by decide)
+
+/-! ### 5. The bracket `[3/2, 17/10]` -/
+
+/-- An online upper bound: First Fit, run online, is within `17/10` of every packing, up to the
+additive constant `4/5`. -/
+example {l : List ℕ} {Q : List (List ℕ)} (hQ : IsPacking 41 l Q) :
+    10 * ((firstFitPacker 41).run l).length ≤ 17 * Q.length + 8 := by
+  rw [run_firstFitPacker]
+  exact ten_mul_length_firstFit_le hQ
+
+/-- The matching lower bound: no online packer is within `a / b < 3/2` with any additive
+constant; here `a / b = 7/5`. -/
+example (A : OnlinePacker 41) (c : ℕ) :
+    ∃ (l : List ℕ) (Q : List (List ℕ)), IsPacking 41 l Q ∧
+      (∀ Q', IsPacking 41 l Q' → Q.length ≤ Q'.length) ∧ 7 * Q.length + c < 5 * (A.run l).length :=
+  A.exists_ratio_violation_of_lt (by decide) c
 
 end ComplexityTests.BinPackingOnline
