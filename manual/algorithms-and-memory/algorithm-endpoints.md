@@ -957,6 +957,19 @@ Import `Complexity.Algorithms.Lean.SetCover.Greedy` ([Complexity/Algorithms/Lean
 
 The [checked examples](../../ComplexityTests/SetCoverGreedy.lean) include an instance where greedy pays `11/6` against an optimum of `11/10`, inside the bound `121/60`. They also show a fractional cover strictly cheaper than every integral cover. Machine-level running time is open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
 
+## Greedy submodular maximization over matroids and `p`-systems
+
+Import `Complexity.Algorithms.Lean.Submodular.MatroidGreedy` ([source](../../Complexity/Algorithms/Lean/Submodular/MatroidGreedy.lean)) for the algorithm and its guarantees, and `Complexity.Algorithms.Lean.Query.Submodular.MatroidGreedy` ([source](../../Complexity/Algorithms/Lean/Query/Submodular/MatroidGreedy.lean)) for the oracle program. Like greedy set cover, this is analyzed for solution quality and query counts, not for machine running time. `submodularMatroidGreedy f indep xs` takes a value function `f : Finset α → β`, an independence test `indep : Finset α → Bool` and a ground list `xs`. Starting from `∅`, each round adds an element `c ∉ S` of `xs` with `indep (insert c S)` that maximizes `f (insert c S)`, with ties going to the earliest element of `xs`. It stops when no element can be added. This is the greedy algorithm of [Fisher, Nemhauser and Wolsey][fnw78], as described in [Călinescu et al.][ccpv11].
+
+- **Constraint families:** `IsPSystem indep p` in [Complexity/Algorithms/Lean/Matroid/PSystem.lean](../../Complexity/Algorithms/Lean/Matroid/PSystem.lean) asks that `∅` is independent, that independence is inherited by subsets, and that any two maximal independent subsets `A, B` of a finite set satisfy `|A| ≤ p * |B|` ([Călinescu et al.][ccpv11], Section 1). `isPSystem_matroid` shows that every Mathlib `Matroid` is a `1`-system on finite sets, and `isPSystem_iInter_matroid` that the intersection of `k ≥ 1` matroids is a `k`-system. The analysis uses the blocking form `IsPSystem.card_le_mul_card_of_blocked`: if every element of an independent `T` outside an independent `S` is blocked by `S`, then `|T| ≤ p * |S|`.
+- **Feasibility:** `indep_submodularMatroidGreedy` (the output is independent whenever `∅` is) and `not_indep_insert_submodularMatroidGreedy` (no element of `xs` can be added). Under a matroid oracle, `submodularMatroidGreedy_isBasis'` makes the output a basis of the ground list.
+- **Ratio, stated against any independent set:** for monotone submodular `f`, a `p`-system `indep` and any independent `O ⊆ xs.toFinset`, `add_nsmul_le_succ_nsmul_submodularMatroidGreedy` proves `f O + p • f ∅ ≤ (p + 1) • f G` in any linearly ordered additive group. Over an ordered field with `0 ≤ f ∅`, `div_succ_le_submodularMatroidGreedy` gives `f O / (p + 1) ≤ f G`. Specializations: `half_le_submodularMatroidGreedy_of_matroid` (`1/2` for a matroid) and `div_card_succ_le_submodularMatroidGreedy_of_iInter_matroid` (`1/(k+1)` for `k` matroids). Nonnegativity of `f` is not assumed in the group form; it is replaced by the `f ∅` terms. The proof charges each element of `O` to the greedy rounds in which it was still feasible, and the blocking bound limits how many elements of `O` can stop being feasible early. This is a different bookkeeping from the explicit partition of `O` in [Călinescu et al.][ccpv11], Appendix B.
+- **Modular objectives:** for nonnegative weights `w`, `sum_le_nsmul_sum_submodularMatroidGreedy` gives `∑ O w ≤ p • ∑ G w`, the `1/p` bound that [Călinescu et al.][ccpv11] attribute to Jenkyns, and `sum_le_sum_submodularMatroidGreedy_of_matroid` gives optimality over a matroid.
+- **Tightness:** `exists_tight_submodularMatroidGreedy` gives a coverage objective and a partition matroid on three elements on which the greedy value is exactly half the value of an independent set.
+- **Queries:** `submodularMatroidGreedyQuery xs` runs the same algorithm in `FreeM (SumQuery (ValueQuery α β) (IndepQuery α))`. `SumQuery` ([source](../../Complexity/Algorithms/Lean/Query/SumQuery.lean)) charges value queries (`countInl`) and independence queries (`countInr`) separately. These counts describe this implementation, which re-tests every remaining element in each round; they are not claimed optimal. With `n` distinct ground elements and output `G`, `countInr_submodularMatroidGreedyQuery` gives exactly `∑ t ∈ range (|G| + 1), (n - t)` independence queries, and under a matroid oracle `|G|` is the rank of the ground list (`countInr_submodularMatroidGreedyQuery_of_isBasis'`). `countInl_submodularMatroidGreedyQuery` counts one value query per feasible candidate in each round, which is never more than the independence count. Each count is at most `n (n + 1) / 2`, and `submodularMatroidGreedyQuery_upperBound` bounds the total by `m (m + 1)` for ground lists of length at most `m`. `half_le_eval_submodularMatroidGreedyQuery` restates the `1/2` bound for the query program under `IndepQuery.ImplementsMatroid`.
+
+The [checked examples](../../ComplexityTests/SubmodularMatroidGreedy.lean) run the tight instance, where greedy makes `6` independence and `4` value queries, also on a ground list with repeated elements. They also show that matchings of a three-edge path form a `2`-system (as the intersection of two partition matroids) but not a matroid, and that greedy gets exactly half of the maximum modular weight there, so the `1/p` bound is attained at `p = 2`. The continuous greedy with pipage rounding (`1 - 1/e` over a matroid), knapsack constraints and non-monotone objectives remain open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
+
 ## Vertex cover and metric TSP 2-approximations
 
 Two more classical approximation algorithms are stated as plain inequalities against the optimum.
@@ -1075,11 +1088,13 @@ The numeric values above are transcriptions of checked source statements, not re
 [bertsekas88]: ../sources.md#bertsekas88
 [bertsekas98]: ../sources.md#bertsekas98
 [bfprt73]: ../sources.md#bfprt73
+[ccpv11]: ../sources.md#ccpv11
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
 [edmonds65]: ../sources.md#edmonds65
 [fks84]: ../sources.md#fks84
 [floyd62]: ../sources.md#floyd62
+[fnw78]: ../sources.md#fnw78
 [freivalds79]: ../sources.md#freivalds79
 [goemanswilliamson95]: ../sources.md#goemanswilliamson95
 [goldbergtarjan88]: ../sources.md#goldbergtarjan88

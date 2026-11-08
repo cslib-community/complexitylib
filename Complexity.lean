@@ -66,6 +66,7 @@ public import Complexity.Algorithms.Lean.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Matroid.Intersection
 public import Complexity.Algorithms.Lean.Matroid.Intersection.Konig
 public import Complexity.Algorithms.Lean.Matroid.Intersection.Solver
+public import Complexity.Algorithms.Lean.Matroid.PSystem
 public import Complexity.Algorithms.Lean.MaxCut.GoemansWilliamson
 public import Complexity.Algorithms.Lean.MaxCut.GoemansWilliamsonCutWeight
 public import Complexity.Algorithms.Lean.MaxFlow.AugmentingPath
@@ -101,7 +102,9 @@ public import Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlus
 public import Complexity.Algorithms.Lean.Query.Sort.Merge.CountBound
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
 public import Complexity.Algorithms.Lean.Query.Submodular.LowerBound
+public import Complexity.Algorithms.Lean.Query.Submodular.MatroidGreedy
 public import Complexity.Algorithms.Lean.Query.Submodular.ValueQuery
+public import Complexity.Algorithms.Lean.Query.SumQuery
 public import Complexity.Algorithms.Lean.Scheduling.Brent
 public import Complexity.Algorithms.Lean.Scheduling.IdenticalMachines
 public import Complexity.Algorithms.Lean.Scheduling.LPT
@@ -119,6 +122,7 @@ public import Complexity.Algorithms.Lean.StableMatching.Lattice
 public import Complexity.Algorithms.Lean.StoerWagner.Basic
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
+public import Complexity.Algorithms.Lean.Submodular.MatroidGreedy
 public import Complexity.Algorithms.Lean.SuffixArray.Basic
 public import Complexity.Algorithms.Lean.SuffixArray.Kasai
 public import Complexity.Algorithms.Lean.SuffixArray.Search

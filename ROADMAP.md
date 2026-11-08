@@ -1656,8 +1656,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   ([#2018](https://github.com/cslib-community/complexitylib/issues/2018)); then weighted matroid
   intersection.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
-  cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
-  concrete realizations.
+  cardinality-constrained `1 - 1/e` greedy and the Fisher–Nemhauser–Wolsey `1/(p+1)` greedy over
+  `p`-systems (`1/2` over a matroid, with separately charged value and independence queries;
+  [#3145](https://github.com/cslib-community/complexitylib/issues/3145)): the continuous greedy
+  with pipage rounding for `1 - 1/e` over a matroid, the `α/(p+α)` bound for greedy with an
+  `α`-approximate marginal-gain oracle, knapsack constraints and non-monotone objectives, charging
+  value-oracle calls separately from their concrete realizations.
 - **Stable matching** ([#2990](https://github.com/cslib-community/complexitylib/issues/2990)):
   beyond the one-to-one, complete-list deferred-acceptance development in
   `Algorithms/Lean/StableMatching` (stability, the `n^2 - n + 1` proposal bound, optimality, the
