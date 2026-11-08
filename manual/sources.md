@@ -341,6 +341,11 @@ Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of th
 
 Dima Grigoriev. *Linear lower bound on degrees of Positivstellensatz calculus proofs for the parity*. Theoretical Computer Science 259(1–2), 613–622, 2001. https://doi.org/10.1016/S0304-3975(00)00157-2 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. The article is behind a publisher paywall, so its text was not consulted, and no theorem or page locator in it is claimed. The library attributes the linear degree lower bound for Tseitin parity systems on expanders to this paper. The precise statement used is that of [barak-steurer16](#barak-steurer16), lecture "Higher-degree integrality gaps", Lemma 24.
 
+<a id="grigorievhirschpasechnik02"></a>
+## grigorievhirschpasechnik02
+
+Dima Grigoriev, Edward A. Hirsch and Dmitrii V. Pasechnik. *Complexity of Semialgebraic Proofs*. Moscow Mathematical Journal 2(4), 647–679, 2002; extended abstracts in STACS 2002 and ICALP 2002. https://doi.org/10.17323/1609-4514-2002-2-4-647-679 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. On the same date worker w96-sos consulted the author-hosted copy https://edwardahirsch.github.io/edwardahirsch/papers/02mmj.pdf for Section 2.3 (the translation of a CNF into the inequalities (2.4)–(2.6)), Section 2.5 (static `LS₊`) and Example 2.1 (p. 10 of that copy: the degree-`2` static `LS₊` refutation of `PHP^m_{m-1}`). The ECCC version (TR01-103) could not be retrieved, and the typeset journal pagination of Example 2.1 was not checked.
+
 <a id="grs12"></a>
 ## grs12
 

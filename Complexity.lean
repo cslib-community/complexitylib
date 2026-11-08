@@ -5008,7 +5008,10 @@ public import Complexity.Logics.FirstOrder.ZeroOneLaw.UniformStructure
 public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Polymorphism.BooleanClone
 public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Basic
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.CNF
 public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Parity
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Pigeonhole
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Positivstellensatz
 public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Tseitin
 public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.TseitinExpander
 public import Complexity.Logics.Propositional.CNF
