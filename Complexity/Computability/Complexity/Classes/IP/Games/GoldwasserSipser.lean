@@ -47,8 +47,9 @@ to the count of accepted coins:
   verifier moves, which the gap `2 ^ R(n)` beats for `R` a large multiple of the game size.
 
 With round collapse [Babai and Moran][BabaiMoran1988] (`Cslib.Complexity.AMk_eq_AM`) this gives
-`IP[k] ⊆ AM[k + 2]` and `IP[k] = AM` for every constant `k ≥ 2`. For an odd `k` the pattern of
-the emulation has `k + 3` moves and the bound `k + 2` comes from round collapse.
+`IP[k] ⊆ AM[k + 2]` and `IP[k] = AM` for every constant `k ≥ 2`. Merging adjacent Merlin moves,
+the pattern of the emulation alternates in `k + 2` moves for an even `k` and in `k + 3` moves for
+an odd `k`; there the bound `k + 2` comes from round collapse.
 
 ## Main definitions
 
@@ -532,8 +533,8 @@ theorem IPGameClass_subset_AM {enc : α ↪ List Bool} (π : List IPMove) :
 
 /-- **`IP[k] ⊆ AM[k + 2]`** [Goldwasser and Sipser][GoldwasserSipser1986], [Arora and
 Barak][AroraBarak09] (Theorem 8.8 of the January 2007 draft), for every constant `k`. The proof
-goes through round collapse [Babai and Moran][BabaiMoran1988]: the pattern of the emulation has
-`k + 2` moves for an even `k` and `k + 3` moves for an odd `k`. -/
+goes through round collapse [Babai and Moran][BabaiMoran1988]: with adjacent Merlin moves merged,
+the pattern of the emulation has `k + 2` moves for an even `k` and `k + 3` moves for an odd `k`. -/
 theorem IPk_subset_AMk {enc : α ↪ List Bool} (k : ℕ) : IPk enc k ⊆ AMk enc (k + 2) := by
   rw [AMk_eq_AM (by omega)]
   exact IPGameClass_subset_AM _

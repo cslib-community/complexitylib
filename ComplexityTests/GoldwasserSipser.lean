@@ -19,8 +19,8 @@ open Cslib Cslib.Complexity Cslib.Complexity.IPGame Cslib.Complexity.Emulation T
 /-- A verifier move becomes an Arthur move and a Merlin move, a prover move a Merlin move. -/
 example : pattern [.verifier, .prover] = [.arthur, .merlin, .merlin] := rfl
 
-/-- `IP[2]` emulated with the coins revealed: four moves, so `IP[2] ⊆ AM[4]` before round
-collapse. -/
+/-- `IP[2]` emulated with the coins revealed: two adjacent Merlin moves, which merge into the
+alternating pattern of `AM[4]`, so `IP[2] ⊆ AM[4]` before round collapse. -/
 example : pattern ((alternatingMoves .arthur 2).map AMMove.toIP ++ [.verifier]) =
     [.arthur, .merlin, .merlin, .arthur, .merlin] := rfl
 
