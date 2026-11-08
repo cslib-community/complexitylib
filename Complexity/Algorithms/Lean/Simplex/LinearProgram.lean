@@ -26,7 +26,7 @@ linearly ordered field, and reads off a dual certificate from the final dictiona
 ## Model
 
 A dictionary `D` on variables `ι` *represents* the program `max c ⬝ᵥ x` subject to `A *ᵥ x = b`,
-`x ≥ 0` (equational form, [MatousekGartner2007], Section 4.1) when the solutions of `D` are the
+`x ≥ 0` (the equational form of [MatousekGartner2007]) when the solutions of `D` are the
 solutions of `A *ᵥ x = b` and its objective agrees with `c ⬝ᵥ x` on them (`Represents`).
 Representation is invariant under equivalence of dictionaries, hence under pivoting.
 
