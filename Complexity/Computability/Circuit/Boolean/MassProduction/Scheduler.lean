@@ -105,9 +105,7 @@ private theorem exists_phases_circuit (bits : K ≃+ BitString b) (scalar : Fin 
   have hkD (q : ℕ) (hq : q ≤ D) : arity q ≤ 2 ^ D := by
     rw [arity_eq_two_pow]
     exact Nat.pow_le_pow_right (by decide) hq
-  have hk1 (q : ℕ) : 0 < arity q := by
-    rw [arity_eq_two_pow]
-    exact Nat.two_pow_pos q
+  have hk1 (q : ℕ) : 0 < arity q := by grind [arity_eq_two_pow]
   -- One phase with `2 ^ q` pending requests.
   have phase (q : ℕ) (hq : q ≤ D) :
       ∃ c : Circuit signature (2 ^ D * width D (ℓ * b) s) (2 ^ D * width D (ℓ * b) s),
@@ -126,10 +124,7 @@ private theorem exists_phases_circuit (bits : K ≃+ BitString b) (scalar : Fin 
     obtain ⟨c, hc, hsize⟩ := phase 0 (Nat.zero_le D)
     refine ⟨c, fun targets x hx => ?_, by lia⟩
     have h := hc targets x hx
-    have e : 2 ^ D - arity 0 + (arity 0 + 1) / 2 = 2 ^ D := by
-      have := hkD 0 (Nat.zero_le D)
-      simp only [arity] at this ⊢
-      lia
+    have e : 2 ^ D - arity 0 + (arity 0 + 1) / 2 = 2 ^ D := by grind [arity]
     rwa [e] at h
   | succ p ih =>
     obtain ⟨c', hc', hsize'⟩ := ih (by lia)

@@ -395,11 +395,7 @@ theorem length_qPorts_le (w : ℕ) : (qPorts os w).length ≤ 4 := by
   have hnd : ((List.range os.length).filter fun u => prev os u = w).Nodup :=
     List.nodup_range.filter _
   set l := (List.range os.length).filter fun u => prev os u = w
-  have hsplit : l.toFinset ⊆ {w} ∪ (l.toFinset.filter fun u => u ≠ w) := by
-    intro u hu
-    by_cases h : u = w
-    · simp [h]
-    · simp [hu, h]
+  have hsplit : l.toFinset ⊆ {w} ∪ (l.toFinset.filter fun u => u ≠ w) := by grind
   have hcard : (l.toFinset.filter fun u => u ≠ w).card ≤ 1 := by
     refine Finset.card_le_one.mpr fun a ha b hb => ?_
     simp only [Finset.mem_filter, List.mem_toFinset, l, List.mem_filter, List.mem_range,
@@ -687,9 +683,7 @@ private theorem eq_of_var_eq {X : ℕ → Bool} (h : Consistent os X) {u w : ℕ
       rcases Nat.eq_or_lt_of_le huw with rfl | hlt
       · rfl
       rcases prev_spec os w with ⟨hp, hpv, hbetween⟩ | ⟨-, hfirst⟩
-      · have hup : u ≤ prev os w := by
-          by_contra hc
-          exact hbetween u (by omega) hlt hv
+      · have hup : u ≤ prev os w := by grind
         obtain ⟨h1, h2, h3⟩ := consistent_edges os h hw
         rw [ih (prev os w) hp (by omega) u hup (by rw [hv, hpv]), h1, h2, h3]
       · exact (hfirst u hlt hv).elim

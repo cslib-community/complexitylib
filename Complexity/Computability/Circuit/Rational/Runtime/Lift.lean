@@ -395,9 +395,7 @@ theorem length_encList_coeffRow_le (c : ℤ) {i k : ℕ} (hik : i ≤ k) :
   have hc_lt : c.natAbs < 2 ^ L := by
     rw [← intBits_le_iff, intBits_eq_length_encIntBin]
     exact Nat.le_succ L
-  have h2w : 2 * (c.natAbs + 1) ≤ 2 ^ (L + 1) := by
-    rw [pow_succ']
-    exact Nat.mul_le_mul_left 2 hc_lt
+  have h2w : 2 * (c.natAbs + 1) ≤ 2 ^ (L + 1) := by grind
   have hentry {z : ℤ} (hz : z ∈ coeffRow c i) :
       (encIntBin z).length ≤ coeffEntryBound L k := by
     obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hz

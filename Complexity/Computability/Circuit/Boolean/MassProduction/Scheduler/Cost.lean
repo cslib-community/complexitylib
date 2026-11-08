@@ -48,9 +48,7 @@ theorem size_bitonicSortCircuit_le {k R : ℕ} (key : Fin k → Fin R) (p : ℕ)
   have h := four_mul_size_bitonicSortCircuit key p ascending
   have hite : (if R = 0 then 0 else 6 * k + 6 * R + 2) ≤ 3 * (2 * k + 2 * R + 1) := by
     split_ifs <;> lia
-  have hp : p * (p + 1) ≤ (p + 1) ^ 2 := by
-    rw [pow_two]
-    exact Nat.mul_le_mul_right _ (Nat.le_succ p)
+  have hp : p * (p + 1) ≤ (p + 1) ^ 2 := by grind
   have := Nat.mul_le_mul (Nat.mul_le_mul_right (2 ^ p) hp) hite
   have e : (p + 1) ^ 2 * 2 ^ p * (3 * (2 * k + 2 * R + 1)) =
       3 * ((p + 1) ^ 2 * 2 ^ p * (2 * k + 2 * R + 1)) := by ring

@@ -44,9 +44,7 @@ theorem length_encCode_le {n m : ℕ} (c : Circuit signature n m) :
       have h := length_encList_le encNat line.code.2 (b := n + c.size) (fun i hi => by
         obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hi
         exact (length_encNat_le_self _).trans (Wire.toNat_lt (line.wires j)).le)
-      have ha : line.code.2.length ≤ 2 := by
-        rw [Line.length_code_snd]
-        cases line.op <;> simp
+      have ha : line.code.2.length ≤ 2 := by grind [Line.length_code_snd]
       exact h.trans (Nat.mul_le_mul_right _ ha)
     simp only [encGate, length_encPair, Line.code_fst]
     omega

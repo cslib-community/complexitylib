@@ -174,10 +174,7 @@ theorem IsAcceptingPath.splice {x y z : ι → U} {γ δ : ℕ → M} (hγ : P.I
     exact hγ.edge s hs
   · have hz : (P.newly s).domRestrict z = (P.newly s).domRestrict y :=
       funext fun i => hzy (P.newly_subset_compl hts i.2)
-    have hδs : (if s ≤ t then γ s else δ s) = δ s := by
-      split_ifs with h
-      · rw [le_antisymm h hts, ht]
-      · rfl
+    have hδs : (if s ≤ t then γ s else δ s) = δ s := by grind
     rw [hδs, ite_eq_right (by omega), hz]
     exact hδ.edge s hs
 

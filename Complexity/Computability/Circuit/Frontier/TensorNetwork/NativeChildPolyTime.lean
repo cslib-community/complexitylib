@@ -622,9 +622,7 @@ group `g`. -/
 theorem numEdges_nativeChild_le :
     (nativeChild fl a i pt t ζ r D pk β g).numEdges ≤ 2 * D.numEdges := by
   have hends : D.edgeEnds.length = D.numEdges := by simp [DescribedNetwork.edgeEnds]
-  have hzip : (D.edgeEnds.zip (pk.2.2.map Prod.fst)).length ≤ D.numEdges := by
-    rw [List.length_zip]
-    omega
+  have hzip : (D.edgeEnds.zip (pk.2.2.map Prod.fst)).length ≤ D.numEdges := by grind
   simp only [nativeChild, childEdgeList, List.length_append, List.length_map]
   have h₁ := List.length_filter_le (fun q : (ℕ × ℕ) × ℕ =>
     decide ((groupsOf r i D.vertices.length pk.1).getD q.1.1 0 = g))

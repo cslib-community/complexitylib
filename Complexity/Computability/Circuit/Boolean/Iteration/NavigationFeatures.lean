@@ -81,9 +81,7 @@ theorem synthesis_depthWord (f : BitString n → BitString n)
     have hlt := transientDepth_lt_two_pow f (x z)
     have hpow2 : 2 ^ (n + 2) = 4 * 2 ^ n := by rw [pow_add]; ring
     have hpow3 : 2 ^ (n + 3) = 8 * 2 ^ n := by rw [pow_add]; ring
-    have hraw_toNat : (raw z).toNat = transientDepth f (x z) := by
-      dsimp only [raw]
-      rw [hd (x z), BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by omega)]
+    have hraw_toNat : (raw z).toNat = transientDepth f (x z) := by grind
     rw [BitVec.toNat_setWidth, toNat_depthWord, hraw_toNat, Nat.mod_eq_of_lt (by omega)]
   rw [he] at hresize
   exact hc.trans (Synthesis.of_subset hresize)

@@ -474,9 +474,7 @@ private theorem QuadOK.wt_add_le {S : State n} (hS : S.Valid f) {x y z G D : ℕ
   · rw [ite_eq_right huD]
     by_cases hu' : u ∈ (S.quad x y z G D α β γ c).unpaired
     · obtain ⟨hup, hun⟩ := mem_unpaired.1 hu'
-      have hup' : u ∈ S.params := by
-        simp only [quad_params, Finset.mem_insert, Finset.mem_erase] at hup
-        exact (hup.resolve_left huD).2
+      have hup' : u ∈ S.params := by grind
       have hus : u ∈ S.unpaired := mem_unpaired.2 ⟨hup', fun ⟨pr, hpr, hu⟩ =>
         hun ⟨pr, Finset.mem_insert_of_mem hpr, hu⟩⟩
       rw [wt_of_mem hu', wt_of_mem hus]

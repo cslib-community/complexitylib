@@ -676,9 +676,7 @@ theorem layer_ok (P : Program Unbounded.extSignature n g) (hm : 0 < m)
   rcases hL with rfl | ⟨p₀, hp₀, rfl⟩
   · exact ⟨Nat.prime_two, show 2 ≤ m + 2 by omega, fun r s => combineQ_mem_lowDegree P r s⟩
   · obtain ⟨hlt, hp⟩ := mem_primes.1 hp₀
-    have hm2 : m ≤ 2 * ℓ + 2 + (m + 1) ^ 2 := by
-      have := Nat.le_self_pow (two_ne_zero) (m + 1)
-      omega
+    have hm2 : m ≤ 2 * ℓ + 2 + (m + 1) ^ 2 := by grind
     exact ⟨hp, by simp only; omega, fun _ s => lowDegree_mono hm2 (digitQ_mem_lowDegree P hm p₀ s)⟩
 
 /-! ### Size bounds -/

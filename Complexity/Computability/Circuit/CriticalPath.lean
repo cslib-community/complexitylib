@@ -493,8 +493,7 @@ theorem Circuit.rank_lt_criticalPathAux_getElem (C : Circuit σ n m) :
         | zero => omega
         | succ j' =>
           have hj' : j' < (C.criticalPathAux fuel (.gate s.1)).length := by
-            simp only [Circuit.criticalPathAux, h, List.length_cons] at hj
-            omega
+            grind [Circuit.criticalPathAux, List.length_cons]
           have hmem : (C.criticalPathAux fuel (.gate s.1))[j'] ∈
               (C.criticalPathAux (fuel + 1) v).tail := by
             simp only [Circuit.criticalPathAux, h, List.tail_cons]
@@ -507,11 +506,9 @@ theorem Circuit.rank_lt_criticalPathAux_getElem (C : Circuit σ n m) :
         | zero => omega
         | succ j' =>
           have hi' : i' < (C.criticalPathAux fuel (.gate s.1)).length := by
-            simp only [Circuit.criticalPathAux, h, List.length_cons] at hi
-            omega
+            grind [Circuit.criticalPathAux, List.length_cons]
           have hj' : j' < (C.criticalPathAux fuel (.gate s.1)).length := by
-            simp only [Circuit.criticalPathAux, h, List.length_cons] at hj
-            omega
+            grind [Circuit.criticalPathAux, List.length_cons]
           simpa only [Circuit.criticalPathAux, h, List.getElem_cons_succ] using
             C.rank_lt_criticalPathAux_getElem fuel (.gate s.1) hi' hj' (by omega)
 
@@ -541,8 +538,7 @@ theorem Circuit.criticalPathAux_step (C : Circuit σ n m) :
             C.head_criticalPathAux]
       | succ i' =>
         have hi' : i' + 1 < (C.criticalPathAux fuel (.gate s.1)).length := by
-          simp only [Circuit.criticalPathAux, h, List.length_cons] at hi
-          omega
+          grind [Circuit.criticalPathAux, List.length_cons]
         simpa only [Circuit.criticalPathAux, h, List.getElem_cons_succ] using
           C.criticalPathAux_step fuel (.gate s.1) hi'
 
@@ -628,12 +624,7 @@ theorem Circuit.two_mul_sub_two_mul_le_size (C : Circuit σ n m)
       by_contra hnot
       exact hiso ⟨i, hv, hnot⟩
     | gate k => exact hnoDead k hv
-  have hge1 : ∀ v : Wire n C.size, 1 ≤ C.outDeg v + bonus v := by
-    intro v
-    by_cases hv : C.outDeg v = 0
-    · have hout := hzero_out v hv
-      simp [bonus, hout]
-    · omega
+  have hge1 : ∀ v : Wire n C.size, 1 ≤ C.outDeg v + bonus v := by grind
   have hge2_end :
       ∀ x : Fin n, 2 ≤ C.outDeg (C.criticalEndpoint x) + bonus (C.criticalEndpoint x) := by
     intro x
@@ -650,9 +641,7 @@ theorem Circuit.two_mul_sub_two_mul_le_size (C : Circuit σ n m)
   let E : Finset (Wire n C.size) := Finset.univ.image C.criticalEndpoint
   have hcardE : E.card = n := by
     simp [E, Finset.card_image_of_injective _ hinj]
-  have hcardCompl : Eᶜ.card = C.size := by
-    rw [Finset.card_compl, Wire.card, hcardE]
-    omega
+  have hcardCompl : Eᶜ.card = C.size := by grind [Finset.card_compl, Wire.card]
   have hlowE : 2 * n ≤ ∑ v ∈ E, (C.outDeg v + bonus v) := by
     calc
       2 * n = ∑ _v ∈ E, 2 := by simp [hcardE, Nat.mul_comm]
@@ -698,9 +687,7 @@ theorem Circuit.outDeg_output_eq_zero_of_noDeadGates (C : Circuit σ n 1) (hnoDe
   let S : Finset (Fin C.size) :=
     Finset.univ.filter fun k => Relation.TransGen Reach (C.outputs 0) (.gate k)
   have hne : S.Nonempty := by
-    have hnotNil : C.slotReaders (C.outputs 0) ≠ [] := by
-      intro hnil
-      exact hpos (by simp [Circuit.outDeg, hnil])
+    have hnotNil : C.slotReaders (C.outputs 0) ≠ [] := by grind [Circuit.outDeg]
     obtain ⟨s, hs⟩ := List.exists_mem_of_ne_nil _ hnotNil
     exact ⟨s.1, Finset.mem_filter.mpr ⟨Finset.mem_univ _,
       Relation.TransGen.single ⟨s, C.mem_slotReaders.mp hs, rfl⟩⟩⟩
@@ -771,9 +758,7 @@ theorem Circuit.exists_bottleneck_of_not_disjoint_criticalPath {U : Type u} [Dec
     have hz : j₀val = 0 := by omega
     have hhead : py[j₀val] = .input y := by simp [py, hz]
     have hmemTail : px[i₀] ∈ px.tail := by
-      have htailIdx : i₀.val - 1 < px.tail.length := by
-        simp only [List.length_tail]
-        omega
+      have htailIdx : i₀.val - 1 < px.tail.length := by grind
       have hget : px.tail[i₀.val - 1] = px[i₀] := by
         rw [List.getElem_tail]
         congr 1
@@ -816,12 +801,7 @@ theorem Circuit.exists_bottleneck_of_not_disjoint_criticalPath {U : Type u} [Dec
       subst hGeq
       rfl
     rwa [hsigma]
-  have hslotsNe : sx.2 ≠ sySlot := by
-    intro heq
-    have hpxaEq : px[a]'(Nat.lt_of_succ_lt haLt) = py[b]'(Nat.lt_of_succ_lt hbLt) := by
-      rw [← hsxWire, ← hsyWire, heq]
-    exact hi₀Min a (Nat.lt_of_succ_lt haLt) (by omega)
-      (hpxaEq ▸ List.getElem_mem (Nat.lt_of_succ_lt hbLt))
+  have hslotsNe : sx.2 ≠ sySlot := by grind
   have harityG : σ.Arity (C.program.lines G).op ≤ 2 :=
     Program.fanInAtMost_iff.mp hfan G
   let opG : U → U → U := fun u v =>

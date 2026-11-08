@@ -268,10 +268,7 @@ theorem kernelValue_eq_sum (κ : ℤ₍₂₎ →+* R) (ζ : R) {p a i : ℕ} (h
   have hUρ : U * ρ = 2 ^ (i + 1 - v) := by
     rw [hρ, mul_left_comm, Ring.mul_inverse_cancel U hU, mul_one]
   -- Cancel `U`: `W_d (1 - ρ j) = W_{d₀}`.
-  have hcancel : kernelValue κ ζ a t d * (1 - ρ * j) = kernelValue κ ζ a t d₀ := by
-    have h' : kernelValue κ ζ a t d * (1 - ρ * j) * U = kernelValue κ ζ a t d₀ * U := by
-      linear_combination h - (kernelValue κ ζ a t d * j) * hUρ
-    exact hU.mul_right_cancel h'
+  have hcancel : kernelValue κ ζ a t d * (1 - ρ * j) = kernelValue κ ζ a t d₀ := by grind
   -- The geometric series inverts `1 - ρ j`, as `(ρ j) ^ p = 0`.
   have hnil : (ρ * j) ^ p = 0 := by
     have : ρ = 2 * (2 ^ (i - v) * Ring.inverse U) := by
@@ -331,14 +328,7 @@ theorem not_dvd_sub_sub_of_testBit_eq {t : ℤ} {i x y₀ : ℕ} (hti : (2 : ℤ
   rw [hpow', hpow] at hn
   -- Digit `i` of both is `h`; write `x = K (2 q + h) + lx` and `y₀ = K h + ly`.
   have hy₀K : y₀ / K < 2 := Nat.div_lt_of_lt_mul hy₀'
-  have hh : x / K % 2 = y₀ / K := by
-    have h1 := Nat.mod_lt (x / K) two_pos
-    have h2 : y₀ / K % 2 = y₀ / K := Nat.mod_eq_of_lt hy₀K
-    by_cases hx1 : x / K % 2 = 1
-    · have := hbit.mp hx1
-      omega
-    · have := mt hbit.mpr hx1
-      omega
+  have hh : x / K % 2 = y₀ / K := by grind
   have hx := Nat.div_add_mod x K
   have hx2 := Nat.div_add_mod (x / K) 2
   have hy := Nat.div_add_mod y₀ K
@@ -580,9 +570,7 @@ noncomputable def cauchyModeSplitting (side : V → Bool) (hsrc : ∀ e, side (N
     unfold cauchyModeForm at h
     obtain ⟨hq, -, hy⟩ := not_not.mp fun hc => h (ite_eq_right hc)
     refine ⟨hq.symm, ?_⟩
-    have hb : (slot e).testBit i = (Z.2.1 : ℕ).testBit i := by
-      rw [← hy, Nat.testBit_mod_two_pow]
-      simp
+    have hb : (slot e).testBit i = (Z.2.1 : ℕ).testBit i := by grind
     rw [group_tgt_eq horient e, hb, hq]
 
 section Fields

@@ -381,9 +381,7 @@ theorem length_toRealCodes_le (r : ℕ) (gs : List PhaseGateCode) :
   | nil => simp [toRealCodes]
   | cons c gs ih =>
     simp only [toRealCodes, List.flatMap_cons, List.length_append, List.length_cons] at ih ⊢
-    have : (realCodes r c).length ≤ 4 := by
-      unfold realCodes phaseCodes
-      cases c.1 <;> cases c.2.1 <;> simp
+    have : (realCodes r c).length ≤ 4 := by grind [realCodes, phaseCodes]
     omega
 
 /-- **Four Hadamard and classical gates simulate a controlled phase gate** through the real
