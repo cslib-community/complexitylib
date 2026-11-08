@@ -200,7 +200,9 @@ For a hardness-of-approximation statement in this style, state the algorithm as 
 a plain `ComputableInPolyTime` hypothesis, a validity hypothesis and a ratio hypothesis. Derive
 `P = NP` from a known `NPComplete` problem through `NPComplete.P_eq_NP_of_mem_P`, as
 [PCP/Approximation/BinPacking.lean](../../Complexity/Computability/PCP/Approximation/BinPacking.lean)
-does from `Partition`.
+does from `Partition` and
+[PCP/Approximation/KCenter.lean](../../Complexity/Computability/PCP/Approximation/KCenter.lean)
+does from `DominatingSet`.
 
 Check the clients with
 `scripts/build.sh ComplexityTests.KnapsackFPTAS ComplexityTests.BinPackingApprox`. The

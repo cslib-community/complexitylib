@@ -32,6 +32,8 @@ radius `r` at most `(D + 1) ^ r` (`SimpleGraph.card_edist_le_le`). The closed ba
 * `SimpleGraph.Adj.edist_le_edist_add_one`: distances change by at most one along an edge.
 * `SimpleGraph.exists_adj_edist_eq_of_edist_eq_add_one`: a vertex at distance `k + 1` has a
   neighbour at distance `k`.
+* `SimpleGraph.exists_edist_le_of_edist_le_add`: a shortest walk of length at most `a + b` passes
+  through a vertex at distance at most `a` from its start and `b` from its end.
 * `SimpleGraph.card_edist_eq_add_one_le`: the sphere bound `D (D - 1) ^ d`.
 * `SimpleGraph.card_edist_le_le`: the ball bound `(D + 1) ^ r`.
 -/
@@ -69,6 +71,18 @@ theorem exists_adj_edist_eq_of_edist_eq_add_one {k : ℕ} (h : G.edist u w = k +
     rw [hn]
     have : k + 1 ≤ n + 1 := by exact_mod_cast htri
     exact_mod_cast (by omega : k ≤ n)
+
+/-- If `u` and `v` are at extended distance at most `a + b`, some vertex is at distance at most `a`
+from `u` and at most `b` from `v`: the vertex at position `a` of a shortest walk. -/
+theorem exists_edist_le_of_edist_le_add {a b : ℕ} (h : G.edist u v ≤ (a + b : ℕ)) :
+    ∃ w, G.edist u w ≤ a ∧ G.edist w v ≤ b := by
+  obtain ⟨p, hp⟩ := exists_walk_of_edist_ne_top (ne_top_of_le_ne_top (ENat.natCast_ne_top _) h)
+  rw [← hp, Nat.cast_le] at h
+  refine ⟨p.getVert a, (edist_le (p.take a)).trans ?_, (edist_le (p.drop a)).trans ?_⟩
+  · rw [Walk.take_length]
+    exact_mod_cast min_le_left _ _
+  · rw [Walk.drop_length]
+    exact_mod_cast (by omega : p.length - a ≤ b)
 
 variable [Fintype V] [DecidableRel G.Adj] {D : ℕ}
 

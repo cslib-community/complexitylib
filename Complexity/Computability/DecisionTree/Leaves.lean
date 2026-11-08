@@ -201,10 +201,30 @@ def rank : DecisionTree ι β → ℕ
 theorem rank_leaf (b : β) : (leaf b : DecisionTree ι β).rank = 0 :=
   rfl
 
-private theorem rank_node (i : ι) (left right : DecisionTree ι β) :
+/-- The rank of a node: the larger rank of its subtrees, plus one if they are equal. -/
+theorem rank_node (i : ι) (left right : DecisionTree ι β) :
     (node i left right).rank =
       if left.rank = right.rank then left.rank + 1 else max left.rank right.rank :=
   rfl
+
+/-- The left subtree has rank at most that of the node. -/
+theorem rank_left_le_rank_node (i : ι) (left right : DecisionTree ι β) :
+    left.rank ≤ (node i left right).rank := by
+  rw [rank_node]
+  split_ifs <;> omega
+
+/-- The right subtree has rank at most that of the node. -/
+theorem rank_right_le_rank_node (i : ι) (left right : DecisionTree ι β) :
+    right.rank ≤ (node i left right).rank := by
+  rw [rank_node]
+  split_ifs <;> omega
+
+/-- The rank of a node is monotone in the ranks of its subtrees. -/
+theorem rank_node_le_rank_node {i j : ι} {left right left' right' : DecisionTree ι β}
+    (hl : left.rank ≤ left'.rank) (hr : right.rank ≤ right'.rank) :
+    (node i left right).rank ≤ (node j left' right').rank := by
+  rw [rank_node, rank_node]
+  split_ifs <;> omega
 
 /-- Relabelling queries preserves the rank. -/
 @[simp]
