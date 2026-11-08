@@ -3873,6 +3873,7 @@ public import Complexity.Foundations.Analysis.RowCompression.SentinelRelative
 public import Complexity.Foundations.Analysis.RowCompression.Stationary
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
 public import Complexity.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
+public import Complexity.Foundations.Analysis.SpecialFunctions.ExpOneSubInvPow
 public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
@@ -5002,6 +5003,7 @@ public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
 public import Complexity.Probability.MarkovChain.Basic
 public import Complexity.Probability.MarkovChain.Coloring
+public import Complexity.Probability.MarkovChain.Coloring.Count
 public import Complexity.Probability.MarkovChain.Coloring.Ratio
 public import Complexity.Probability.MarkovChain.Coupling
 public import Complexity.Probability.MarkovChain.Metropolis
@@ -5054,6 +5056,7 @@ public import Complexity.Probability.PairwiseIndependentHash.Universal
 public import Complexity.Probability.PairwiseIndependentHash.ValidatedWords
 public import Complexity.Probability.Pinsker
 public import Complexity.Probability.Product
+public import Complexity.Probability.Product.Estimator
 public import Complexity.Probability.Product.Event
 public import Complexity.Probability.Product.Reindex
 public import Complexity.Probability.Product.Split

@@ -1372,12 +1372,12 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   Metropolis chains and path coupling, with the lazy hypercube walk
   (`Probability/BitString/LazyRandomWalk`, #2857) and Glauber dynamics for `q > 2Δ` colorings
   (`Probability/MarkovChain/Coloring`, #2933) as clients. Extend with conductance,
-  canonical-path and spectral-gap arguments. For the reduction from approximately counting
-  colorings to sampling them, frozen-boundary Glauber dynamics and the ratio bound are in place
-  (`Probability/MarkovChain/Coloring/Ratio`); finish with the product estimator and its
-  second-moment analysis (#3003). Implement Metropolis sampling for encoded
-  rational target weights, charging initialization, arithmetic and every transition, with support and
-  mixing hypotheses explicit.
+  canonical-path and spectral-gap arguments. Approximate counting of colorings from samples
+  (`Probability/MarkovChain/Coloring/Count`, with the generic product estimator in
+  `Probability/Product/Estimator`) is in place as a distributional statement; charge its
+  `n t a` Glauber updates in a cost model to obtain an FPRAS in the sense of `Classes/FPRAS`.
+  Implement Metropolis sampling for encoded rational target weights, charging initialization,
+  arithmetic and every transition, with support and mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** `Classes/FPRAS` and `Classes/FPAUS` give the two
   interfaces, and `Classes/FPAUS/FPRAS` proves FPAUS ⇒ FPRAS for one-bit self-reducible
   witness families (#3039). Prove the converse FPRAS ⇒ FPAUS with Jerrum–Valiant–Vazirani
