@@ -1132,10 +1132,12 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContra
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCertificate
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCorrectness
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkSize
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelections
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.KernelProduct
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
@@ -3426,6 +3428,7 @@ public import Complexity.Foundations.BooleanAnalysis.LowDegreeParity
 public import Complexity.Foundations.BooleanAnalysis.MaximalSupport
 public import Complexity.Foundations.BooleanAnalysis.MirrorSets
 public import Complexity.Foundations.BooleanAnalysis.Mobius
+public import Complexity.Foundations.BooleanAnalysis.MobiusInsert
 public import Complexity.Foundations.BooleanAnalysis.Monotone
 public import Complexity.Foundations.BooleanAnalysis.MultilinearExtension
 public import Complexity.Foundations.BooleanAnalysis.Noise

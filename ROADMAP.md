@@ -1041,3 +1041,28 @@ correctness/space endpoints currently cover only serialized positive occurrence
 rows with a common occurrence count `m`; arbitrary variable-length raw rows are
 a material frontend gap, alongside table and graph endpoints. No Theorem 7.1 or
 ALL-main completion is claimed.
+
+
+The next entry-extraction correctness link is now proved.
+`IncidenceNetwork.val_factorCoeffs` connects actual binary modular
+lists to the source integer parity factors. `val_rowTerm` and `val_rowSum`
+connect the existing modular multiplication and signed Boolean-word stream to
+the subset Möbius coefficient of the test-group product (OpenAI2026ETH,
+Lemma D.2, PDF p. 56). `IncidenceSelections` proves actual block selections are
+sublists and constructed row blocks contain no duplicate incidence, even with
+repeated raw variables/tests or invalid indices. Thus `val_rowVertex` has no
+supplied distinctness or entry-correctness premise; `val_colEntry` gives the
+unselected-bit weight. A checked constructed row has coefficient -6V modulo 16.
+The native entry program and its already proved resource bounds are unchanged.
+
+The old extra factor is algorithmic: `ReplacementParams.numGroups` uses
+`floor(sqrt(lambda)/nu^2)`, so its division/interpolation charges retain `nu^2`.
+The sharper route replaces that evaluator by truncated incidence networks at
+size `n*nu`. Remaining concrete next stage: executable degree-array enumeration
+and network writing, followed by exact decomposition of the incidence sum into
+the streamed contractions. Then assemble high-incidence branching, every greedy
+parity query, sharper sparsification and final weighted time composition.
+No single-log-log bound for the complete counting algorithm is claimed. Weighted
+correctness/space still assumes positive serialized rows with a common occurrence
+count `m`; arbitrary variable-length raw rows, table/graph endpoints, full
+Theorem 7.1 and ALL-main remain open.

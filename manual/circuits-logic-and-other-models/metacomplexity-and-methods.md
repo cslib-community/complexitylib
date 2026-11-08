@@ -842,3 +842,50 @@ parity queries and general-density counter. Those steps and final weighted-plan
 time composition remain open. Weighted correctness still requires the typed
 rows to share a common occurrence count `m`; arbitrary variable-length raw rows,
 tables and graphs remain material gaps. No Theorem 7.1 or ALL-main completion follows.
+
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCorrectness`
+for the semantics of the actual entry-extraction program, in the same
+`IncidenceNetwork` namespace. `val_factorCoeffs` proves that the binary residue
+list represents the integer parity factor in the truncated ring, including its
+negative coefficients and zero precision or truncation order. `rowPolynomial`
+is a mathematical specification: the product of the parity factors evaluated
+on the indicator of a finite set of test-variable incidences. It is not the
+program's output or an input to its native certificate.
+
+`val_rowTerm` proves the actual modular product equals that source product.
+`val_rowSum` proves that the signed word stream computes its subset Möbius
+coefficient; this is the multilinear coefficient formula of Lemma D.2, PDF p. 56.
+The insertion law `BitString.subsetMobius_insert` justifies the signs, and the
+word/subset correspondence requires distinct selected incidences.
+`IncidenceSelections` discharges that requirement for the actual constructed
+rows: block selection only removes entries, scopes are deduplicated, and
+variable-group blocks are disjoint. `val_rowVertex` therefore needs no supplied
+selection or entry-correctness premise. Invalid wire indices give zero.
+`val_colEntry` proves the corresponding power of two counts unselected bits in
+the variable group. These results cover repeated raw variables and tests; they
+do not assert a complete raw-system counting frontend.
+
+The implementation remains the existing certified entry stream. It enumerates
+subsets of the selected incidences in one group, not assignments to all original
+variables. The preceding entry-resource theorem already charges that stream's
+actual time and polynomial workspace. The new specification introduces no
+counting oracle or runtime assumption.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceEntryCorrectness`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceEntryCorrectness.lean)
+checks signed coefficients, zero parameters, exact selections, repeated variables
+and rows, invalid indices, free-variable columns and a constructed row whose
+coefficient is $-6V$ modulo $16$.
+
+The extra factor in the old counter comes from its replacement group schedule
+`floor(sqrt(lambda)/nu^2)`, with `lambda=ceil(log₂ n)` and
+`nu=ceil(log₂ lambda)`; its division and interpolation charges retain `nu^2`.
+The sharper route uses truncated incidence-network contraction at size `n*nu`.
+This entry-correctness milestone does not change the old end-to-end algorithm.
+Actual degree-array enumeration, network construction, exact array/contraction
+summation, high-incidence branches and parity-query composition still need to be
+connected before the source eta-time bound can be claimed. The common occurrence
+count restriction on weighted rows, variable-length raw rows, tables and graphs
+remain material limitations.
