@@ -4102,6 +4102,7 @@ public import Complexity.Foundations.Analysis.BernoulliInequality
 public import Complexity.Foundations.Analysis.Brouwer
 public import Complexity.Foundations.Analysis.Calculus.Taylor
 public import Complexity.Foundations.Analysis.Convex.FirstOrder
+public import Complexity.Foundations.Analysis.Convex.Strong
 public import Complexity.Foundations.Analysis.ENNRealFraction
 public import Complexity.Foundations.Analysis.ENNRealTsum
 public import Complexity.Foundations.Analysis.Fourier.ZModMultiples
@@ -5315,6 +5316,7 @@ public import Complexity.Logics.SecondOrder.WordMSO.OfRegular
 public import Complexity.Logics.SecondOrder.WordMSO.Separation
 public import Complexity.Logics.SecondOrder.WordMSO.StarFree
 public import Complexity.Logics.SecondOrder.WordMSO.ToRegular
+public import Complexity.MachineLearning.OnlineLearning.FTRL
 public import Complexity.MachineLearning.OnlineLearning.Hedge
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Agnostic
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Basic
