@@ -2387,29 +2387,6 @@ private theorem runOTSteps_append {m : ℕ} {State Mid Out : Fin m → Type}
     simp only [bind_assoc, pure_bind, ih]
     rfl
 
-private theorem eval_pi_twoPartyMulSampleCoins :
-    ProbComp.eval (OracleComp.pi twoPartyMulProtocol.sampleCoins) =
-      ProbComp.eval (twoPartyMulCoins <$> ProbComp.uniform Bool) := by
-  rw [ProbComp.eval_map, ProbComp.eval_uniform]
-  ext r
-  rw [ProbComp.eval_pi, PMF.pi_apply, Fin.prod_univ_two, PMF.map_apply]
-  have hr : r = twoPartyMulCoins (r 0) := by
-    ext i
-    fin_cases i <;> rfl
-  have h0 : ProbComp.eval (twoPartyMulProtocol.sampleCoins 0) (r 0) =
-      PMF.uniformOfFintype Bool (r 0) :=
-    congrFun (congrArg DFunLike.coe (ProbComp.eval_uniform (α := Bool))) (r 0)
-  have h1 : ProbComp.eval (twoPartyMulProtocol.sampleCoins 1) (r 1) = 1 :=
-    PMF.pure_apply_self ()
-  rw [h0, h1, mul_one, tsum_bool]
-  have hne : twoPartyMulCoins false ≠ twoPartyMulCoins true :=
-    fun h => Bool.false_ne_true (congrFun h 0)
-  cases hr0 : r 0
-  · have heq : r = twoPartyMulCoins false := hr0 ▸ hr
-    simp [heq, hne]
-  · have heq : r = twoPartyMulCoins true := hr0 ▸ hr
-    simp [heq, hne.symm]
-
 private theorem runEncoded_twoPartyMulSteps (q : Fin 2 → Bool × Bool) (c₀ : Bool) :
     twoPartyMulProtocol.steps.runEncoded (fun s => (q s, twoPartyMulCoins c₀ s)) = (do
       let rep ← List.take 1 <$>
@@ -2519,8 +2496,8 @@ private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState 
             OracleComp.pi
               (Composition.sampleSubCoins (fun _ : Unit => twoPartyMulProtocol) rest)) := by
       simp only [Composition.sampleSubCoins, eval_pi_pair, Composition.eval_pi_sampleSlotCoins,
-        eval_pi_twoPartyMulSampleCoins, ProbComp.eval_bind, ProbComp.eval_map,
-        PMF.bind_map, PMF.map_comp, Function.comp_def]
+        eval_pi_twoPartyMulCoins, ProbComp.eval_bind, ProbComp.eval_map,
+        ProbComp.eval_uniform, PMF.bind_map, PMF.map_comp, Function.comp_def]
     rw [runWith_sample_congr_eq oracle _ _ hpi, ProbOracleComp.sample_bind, bind_assoc]
     simp only [ProbOracleComp.sample_map, bind_map_left, runOTSteps]
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_bind]

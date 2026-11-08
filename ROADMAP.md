@@ -18,6 +18,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Program | Issues |
 | --- | --- |
 | Frontier program: ambitious theorems toward the research frontier | [#897]; its tracks are linked below |
+| Optional experiment: formalize unformalized STOC 2027 submission results, subject to independent source-correspondence review | [#2527] |
 | Metacomplexity: time-bounded Kolmogorov complexity, partial MCSP, hardness magnification | [#798], audit [#884] |
 | Plain computability: delete the tidy calculus, keeping a machine-level kernel | [#862], from [#456] |
 | Consolidation: duplicates, accurate statements and docs, less churn | [#949], [#939] |
@@ -36,10 +37,61 @@ Priorities live in this list and in the tiers of [#897].
 1. [Completeness of oblivious transfer](#cryptographic-landmarks)
 2. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
 3. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
+4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity) ([#321])
 5. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
 6. [MIP = NEXP](#interactive-proofs) ([#892])
 7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
+
+### Optional landmark projects
+
+These are optional coverage targets, outside the priority queue above. Each requires substantial
+new proof infrastructure; a useful prerequisite milestone does not complete the landmark.
+Choose a source version and proof route before implementation, and reassess scope against
+existing library and upstream developments. The size labels describe prerequisite breadth,
+not staffing or calendar estimates.
+
+- **Babai: graph isomorphism in quasipolynomial time — optional, very large.** Prove a
+  deterministic `exp((log n)^O(1))` decision bound for the existing encoded graph-isomorphism
+  problem, following the [manuscript](https://arxiv.org/abs/1512.03547v2) together with the
+  [January 2017 correction](https://people.cs.uchicago.edu/~laci/upcc-fix.pdf).
+  Reuse the graph encoding, indexed-permutation characterization and native verification API.
+  Develop encoded permutation groups with certified orbit/stabilizer and membership algorithms;
+  the Luks string-isomorphism/coset framework; canonical partition, Johnson-configuration and
+  local-certificate arguments; then the full recursion, termination and native quasipolynomial
+  runtime. Those four stages are independently reviewable projects; an NP verifier is not the
+  required decision algorithm.
+- **Bulatov–Zhuk: the finite-domain CSP dichotomy — optional, very large.** For every fixed
+  finite constraint language, prove its CSP is in P or NP-complete, following either
+  [Bulatov](https://arxiv.org/abs/1703.03021) or
+  [Zhuk](https://arxiv.org/abs/1704.01914v11). Choose one tractability proof route rather than
+  formalizing both. Bridge fixed-arity finite templates to the existing CSP semantics and
+  CNF-compilation APIs; develop polymorphisms and primitive-positive reductions; prove the
+  core/idempotent reductions and algebraic hardness criterion; then the chosen tractability
+  algorithm and its native polynomial bound. Keep template-dependent constants separate from
+  instance size. Special cases and reductions are useful milestones, not the full dichotomy.
+- **QIP = PSPACE — optional, large.** Following
+  [Jain–Ji–Upadhyay–Watrous](https://cs.uwaterloo.ca/~watrous/Papers/QIPequalsPSPACE.pdf),
+  characterize polynomial-time quantum interactive proofs using a uniform verifier, unrestricted
+  prover strategies and explicit completeness/soundness gaps. Reuse quantum circuit and
+  measurement foundations and the classical IP/PSPACE development where their models agree.
+  Supply mixed-state/channel and interactive-strategy semantics, the protocol normal form,
+  the semidefinite optimization and matrix multiplicative-weights argument, and a polynomial-space
+  implementation with controlled precision; prove both inclusions through model bridges.
+  Quantum circuit simulation alone does not provide the interactive upper bound.
+- **MIP* = RE — optional, large integration project; exceptional if rebuilt from scratch.**
+  Target the entangled-multiprover characterization of recursively enumerable languages in
+  [Ji–Natarajan–Vidick–Wright–Yuen, v4](https://arxiv.org/abs/2001.04383v4). Start with an audit
+  and reuse assessment of the Apache-2.0
+  [MIPRE formalization](https://github.com/vidick/MIPRE-formalization), including its low-degree-test
+  dependency, rather than duplicating the compression proof. Pin its source and dependencies;
+  check theorem assumptions, entangled-value semantics, toolchain compatibility and the bridge
+  from its verifier-cost model to this library's native resource conventions. Then integrate
+  compatible operator/game foundations, transfer the halting-to-game reduction and RE upper
+  bound, and establish the native class equality. Preserve finite-dimensional tensor-product
+  strategies, their supremum over unbounded finite dimensions and a uniform polynomial-time
+  verifier; distinguish classical MIP and commuting-operator models. If reuse fails, rigidity,
+  low-degree testing and recursive compression are separate major projects to scope before
+  attempting the endpoint.
 
 ## Cryptography
 
@@ -80,9 +132,13 @@ transporting key-generation error, and realizing the efficient forking reduction
   unary `k`; actual OT rows, seal-time ideal commitment, terminal first opening attempts and abort
   retain the same majority-extraction coupling, including `2^-n` at `k = 2n`. A globally polynomial
   private-buffer client lies outside the old constant-growth premise. This does not supply a
-  universal two-sided realization: a global receiver-program adapter and common honest execution
-  with role-local corruption adapters and uniform observation/phase/input contracts still need
-  to connect both real experiments. Arbitrary two-sided scheduling and composition remain open.
+  universal two-sided realization. `OTCommitment/Serial` supplies a common role-local OT world:
+  one pending row is consumed once, and the first terminal attempt freezes further selections.
+  Its explicit honest-party schedulers reproduce both existing real experiments, retaining the
+  receiver's raw opening as well as transcript, state and continuation. This connects those
+  executions under their stated serial schedules; a global receiver-program adapter, uniform
+  native contracts for the common execution, arbitrary two-sided scheduling and composition
+  remain open.
 - **Regev's worst-case to average-case reduction.** For suitable `q` and Gaussian noise rate
   `α` with `αq > 2√n`, an efficient search-LWE algorithm yields a quantum polynomial-time
   algorithm for worst-case GapSVP and SIVP within `Õ(n/α)`. The noise distribution, modulus
@@ -104,18 +160,27 @@ transporting key-generation error, and realizing the efficient forking reduction
   [#2646](https://github.com/cslib-community/complexitylib/issues/2646). Uniform shifted-mass
   control by the actual nonzero dual Gaussian mass, with a quantitative sufficient width
   criterion and eventual satisfiability, is proved in
-  [#2659](https://github.com/cslib-community/complexitylib/issues/2659). Quotient-distribution
-  consequences, convolution bounds, efficient sampling and the quantum reduction remain open in
-  [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
+  [#2659](https://github.com/cslib-community/complexitylib/issues/2659).
   `Foundations/MeasureTheory/Group/QuotientDensity` folds arbitrary measurable nonnegative
-  densities onto countable subgroup quotients, with no finite-mass assumption. Its Gaussian
-  quotient normalization and distance consumer remains separate in
-  [#2681](https://github.com/cslib-community/complexitylib/issues/2681).
+  densities onto countable subgroup quotients, with no finite-mass assumption. The actual
+  normalized continuous Gaussian and fundamental-domain quotient measures are probabilities;
+  their density identity gives full-L1 distance at most the actual nonzero dual Gaussian mass,
+  with eventual small error, in [#2681](https://github.com/cslib-community/complexitylib/issues/2681).
+  This is a precise quotient consequence of Claim 3.8. The actual arbitrary-width
+  coset discrete-Gaussian convolution density and Claim 3.9 full-L1 bound, with a sufficient
+  dual-gap width criterion, are proved in
+  [#2707](https://github.com/cslib-community/complexitylib/issues/2707). The actual scalar and
+  canonical mod-one pushforward bounds of Corollary 3.10, including a discharged dual-gap
+  criterion (covering `z = 0` under the same dual-mass or gap premise), are proved in
+  [#2734](https://github.com/cslib-community/complexitylib/issues/2734). An attained minimum
+  smoothing parameter, the periodic-density series, arbitrary-modulus search-LWE sampling
+  experiment, efficient finite-precision sampling and quantum reduction remain open in
+  [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
   `Foundations/MeasureTheory/Group/ConvolutionDensity` proves the convolution density formula
   for an arbitrary s-finite first measure, including singular inputs. Its actual shifted
-  discrete-Gaussian convolution consumer is tracked separately in
+  discrete-Gaussian convolution consumer is the Claim 3.9 bound of
   [#2707](https://github.com/cslib-community/complexitylib/issues/2707); the shared measure
-  identity alone does not establish Claim 3.9 or a sampler.
+  identity alone does not establish a sampler.
   Exact coefficient-fiber disintegration is proved in
   [#2766](https://github.com/cslib-community/complexitylib/issues/2766): reducing integer basis
   coordinates modulo any positive integer, including composite moduli, gives actual positive
@@ -126,7 +191,9 @@ transporting key-generation error, and realizing the efficient forking reduction
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
   to a PCP with Merkle trees; Micali's CS proofs and the BCS transform give the random-oracle
-  versions.
+  versions. `exists_kilianSound_of_mem_NP` and `exists_micaliCSProof_of_mem_NP` prove these with
+  honest provers that hold an accepted PCP table; efficient honest provers from arbitrary NP
+  witnesses and the verifier's runtime and message-truncation accounting remain.
 
 ### Modern fully homomorphic encryption
 
@@ -160,16 +227,24 @@ modular-game time/space assembly and prepared-metadata accounting remain
    over a nontrivial commutative coefficient ring. `SIS/Native` now bridges a certified list
    product to the existing negacyclic multiplication, uniformly over unary dimension and binary
    modulus/coefficients, with a rank-one key-generation client. Full native scheme execution
-   still needs matrix/vector traversal and canonical key/ciphertext packing and parsing.
+   still needs native encryption and seed codecs.
    Remaining: further certified polynomial-ring operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
    conversions, rounding and modulus-switching error bounds, and negacyclic NTTs implementing
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
    experiment separately; an ordinary-LWE reduction does not give them. Module-LWE sampling now
    permits explicit small-secret laws, with a native centered-binomial instance.
-   `SIS/ModuleEncryption/Native` realizes the existing deterministic key-generation/sample codec
-   uniformly with unary rank/degree and binary modulus/coefficients, given the expanded structured
-   matrix word. Native construction of that matrix from polynomial samples, encryption/decryption
-   and seed codecs remain open; independent uniform scalar entries do not give the module law.
+   `SIS/ModuleEncryption/Native` realizes deterministic key generation in `ModuleLWE.encodeSample`
+   and deterministic decryption (`exists_computableInPolyTime_moduleLWEDecrypt`) uniformly with
+   unary rank/degree and binary modulus/coefficients, given the expanded structured matrix or
+   ciphertext word. `SIS/Module/MatrixSampling` natively constructs the existing rectangular rotation
+   blocks and exactly samples their encoded law from independent power-of-two polynomial
+   coefficients, uniformly in unary dimensions/width. `SIS/Module/ApproximateSampling` uses the
+   existing bounded modular sampler for arbitrary positive binary moduli, with actual structured
+   law error at most `d*k*n*q/2^width`, or `d*k*n/2^precision` at width `q.size+precision`.
+   Independent uniform scalar entries do not give this law. `ModuleEncryption/Sampling/Native`
+   composes exact CBD secret/error draws with the matrix sampler and existing keygen, returning
+   the same signed secret and public key with ideal joint/public-law error `k*k*n/2^precision`.
+   Native encryption, seed codecs and small-secret security remain open.
    `SIS/ModulusSwitch/Failure` bounds randomized switched-decryption failure by the actual noise
    tail under explicit secret-support and decoding margins; small-secret security remains open.
    Nearest-integer coefficient conversion and the Module-LWE phase-error bound are available in
@@ -246,8 +321,23 @@ families and full-input native runtime.
   actual box commitments and the simulator's published commitments follow from matrix
   universality and the joint leftover-hash bound
   ([#2712](https://github.com/cslib-community/complexitylib/issues/2712)), for ideal uniform
-  prime-modulus matrices and histories sampled before fresh masks. An efficient secret-free
-  simulator, corrected abort-query simulation, paired same-coins fork equality, native
+  prime-modulus matrices and histories sampled before fresh masks. The one-call all-attempt
+  read-to-program hop ([#2750](https://github.com/cslib-community/complexitylib/issues/2750))
+  retains the complete cache, with an unconditional finite sum of collision bounds. The one-attempt
+  visible simulation milestone ([#2788](https://github.com/cslib-community/complexitylib/issues/2788))
+  bounds the statistical distance between the one-attempt programmed signing hybrid (which prepends
+  a fresh challenge even on an abort) and simulated signing with accepted-transcript caching under
+  any query-bounded visible continuation by `R / q^n + sqrt(q^n / (2γ + 1)^m) / 2`, with exact
+  visible equality for zero-read continuations. Full executions retaining the final cache
+  verify the 0 vs 24/49 empty-cache divergence on the canonical q=17 counterexample.
+  For `K`-attempt visible simulation, `lyubashevskySimAttempts`,
+  `lyubashevskySignAttemptsVisibleProg`, and `lyubashevskySignAttemptsVisibleSim` define the
+  stopping secret-free simulator and visible experiments, with `K ≤ 1` reductions to the
+  single-attempt bridge (`lyubashevskySignAttemptsVisibleProg_zero_eq_sim`,
+  `lyubashevskySignAttemptsVisibleProg_eq_sim_of_pure_le_one`,
+  `closeTo_lyubashevskySignAttempts_simulate_le_one`); the `K ≥ 2` visible simulation induction
+  ([#2798](https://github.com/cslib-community/complexitylib/issues/2798)), adaptive multiple-call
+  replacement, an efficient secret-free simulator, paired same-coins fork equality, native
   shared-oracle reduction and a security parameter family remain open. Other endpoints include
   identification security under SIS and Dilithium-style
   signature schemes over module SIS and module LWE, as theory.
@@ -274,6 +364,17 @@ families and full-input native runtime.
   retaining the actual scalar-sampling law; replacing that law by ideal signing costs at most
   `2⁻ⁿ` per signature. The actual key-generation error is a separate `2⁻ⁿ` bound. Adaptive signing
   composition, native forger transport and efficient forking still belong to [#2568].
+- **Paillier encryption and composite residuosity:** `Crypto/Computational/Paillier` certifies
+  word key generation, dyadic-sampled encryption, decryption, perfect correctness and
+  plaintext-addition preservation under decryption over a supplied balanced-modulus generator,
+  alongside the Decisional Composite Residuosity assumption (`DCR`) in
+  `Crypto/Computational/CompositeResiduosity`. The second condition of Katz–Lindell
+  Definition 15.14 (exact distributional equality of multiplied ciphertexts with fresh
+  encryptions) fails for the implemented dyadic `unitOrOne` sampler and needs an exact or
+  statistical-closeness formulation. The IND-CPA security reduction under `DCR` (Theorem 15.13,
+  accounting for approximate unit sampling) is proved as `DCR.indcpaOn_paillier` for a supplied
+  generator whose primes have at least `n` bits (hypothesis `hsize`); native balanced-modulus
+  generation remains open.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -281,7 +382,9 @@ families and full-input native runtime.
 ### Zero-knowledge proof systems toward libzk ([#643])
 
 In order:
-- the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding;
+- the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding
+  (`Verifier.wordVerifierWith`, `Verifier.Sound.acceptProb_wordVerifier`, `Reduction.mem_IP` in
+  `Interactive/ToIP.lean`);
 - parallel and AND/OR composition (`Verifier.seqProd`, `Reduction.seqProd`, `relProd`, `relDisj`
   in `Interactive/AuxZK.lean`) and round-by-round knowledge soundness (`Verifier.RbrKnowledgeSound`,
   `Verifier.RbrKnowledgeSound.append`, `Verifier.RbrKnowledgeSound.seqProd`,
@@ -293,7 +396,10 @@ In order:
   auxiliary-input zero knowledge on the core (`Reduction.AuxHVZK`, `Reduction.ZK`,
   `Reduction.EfficientAuxHVZK`, `Reduction.ComputationalAuxHVZK` in `Interactive/AuxZK.lean`);
 - polynomial commitment and evaluation-query reductions, and the Ligero IOP;
-- the BCS transform to non-interactive arguments in the random-oracle model;
+- the BCS transform to non-interactive arguments in the random-oracle model (`BCS/Basic.lean`;
+  `bcsROMSoundness_bound` and `bcsROMKnowledgeSoundness_bound` in `BCS/ROM.lean`; machine-level
+  verifier and extractor runtime, polynomial-time NP-witness-to-IOP encoding and zero knowledge
+  remain);
 - VOLE constraint reductions and VOLE-in-the-head: `VOLE/Basic.lean` supplies ideal correlations,
   and `VOLE/MulCheck.lean` bounds arbitrary single-gate affine claims by `2 / |F|` with an
   independent secret key. `VOLE/BatchMulCheck.lean` batches constraints using a public vector of
@@ -345,9 +451,29 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Structure, time and space
 
+- **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
+  the stack proves native polynomial-time tractability for all six common-polymorphism cases
+  and native NP-completeness outside them, for each fixed finite Boolean constraint language
+  of arbitrary fixed arities. `CSPSAT.schaefer_dichotomy` assembles the actual solvers, fixed
+  compilers, clone classification and gadgets under binary labels and exact-arity rejection,
+  including empty/nullary relations. The hard branch has a native 3SAT reduction with
+  `output.numVars + output.length ≤ C * input.length`, for a language-dependent constant.
+  Symmetric and larger-domain dichotomies are outside the current scope.
+
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
+- **Abstract (Blum) complexity** ([#2866]): Blum complexity measures over Mathlib's
+  `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
+  almost-everywhere classes (also with a two-argument stretch), recursive relatedness, Blum's
+  speedup theorem, and arbitrarily complex functions with the resulting strict hierarchy of
+  classes, are in `Computability/BlumComplexity`. Remaining: the McCreight–Meyer union theorem;
+  Blum's compression theorem in its running-time form (a single computable `h` such that every
+  total `φ_i` has `C_{Φ_i} ⊂ C_{n ↦ h n (Φ_i n)}`; the value form with `φ_i` in place of `Φ_i`
+  is false, by the gap theorem); honesty; effective forms of speedup such as Blum's
+  pseudo-speedup, which computes a faster program for a finite variant of `f` (M. Blum, *On
+  effective procedures for speeding up algorithms*, J. ACM 18(2), 1971), and Blum measures for
+  native multitape time and space through a Gödel-numbering bridge from native descriptions.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
@@ -367,6 +493,14 @@ index links to canonical definitions rather than keeping a second set.
   explicit-time sample-and-verify characterization are in place (`Classes/Promise/Time` and
   `Classes/Promise/Time/Verifier`). The advice-free hierarchy for `BPTIME` itself is open and is
   not a target.
+- **Randomized primality tests**
+  ([#2917](https://github.com/cslib-community/complexitylib/issues/2917)): the Euler-liar
+  (Solovay–Strassen) and strong-liar (Miller–Rabin) bounds `2 · #liars ≤ φ(n)` for odd composite
+  `n` are in `Foundations/NumberTheory/Primality`, and an explicit Miller–Rabin verifier puts the
+  primes in `coRP` independently of AKS (`Problems/Primes/MillerRabin`). Remaining
+  ([#2958](https://github.com/cslib-community/complexitylib/issues/2958)): the Rabin–Monier bound
+  `#strong liars ≤ φ(n) / 4`, a polynomial-time Jacobi symbol, and the Solovay–Strassen verifier
+  stated as a `coRP` membership (with its gcd step, since non-units can satisfy Euler's congruence).
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -381,8 +515,9 @@ index links to canonical definitions rather than keeping a second set.
   Track the newer Koucký–Mertz–Sami [robust catalytic extensions](https://arxiv.org/abs/2605.09648)
   separately: their broader collapse is conditional on the explicit circuit-hardness assumption,
   with resetting-error and time regimes distinguished from KMPS's unconditional results.
-- **Randomized logspace** ([#459], [#474]): RL and BPL, `USTCON ∈ RL`, Nisan's generator,
-  `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
+- **Randomized logspace** ([#459], [#474]): two-sided `BPL` amplification, the random-walk proof
+  of `USTCON ∈ RL` (membership already follows from `L_subset_RL` and `USTCON_mem_L`), Nisan's
+  generator, `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
   [#1444](https://github.com/cslib-community/complexitylib/issues/1444). Its estimator work in
   [#1721](https://github.com/cslib-community/complexitylib/issues/1721) has an integer-grid slack
   schedule with endpointwise telescoping and summable available-scale precision payments.
@@ -409,17 +544,44 @@ index links to canonical definitions rather than keeping a second set.
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
-- **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): implicit Tree Evaluation with the
-  fan-in-`d` space bound and the native block-tree evaluator are developed in the stacked
-  work tracked by the issue. The full `DTIME_subset_DSPACE_sqrt` inclusion is proved in
-  `Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean` for arbitrary
-  injective input encodings and every `t(n) ≥ n`, without time constructibility. Its fixed
-  driver scans the original input, searches schedules and increases balanced time guesses.
-  The stacked development still needs final CI and integration; the broad issue remains
-  open until it lands. For Cook–Mertz itself: malformed-input handling
-  and the refined `O(ℓ + H log(ℓ + 2))` parameter bound.
+- **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): the native implicit
+  Tree Evaluation/block-tree evaluator, complete Hopcroft–Paul–Valiant block-simulation driver
+  and final
+  [`DTIME_subset_DSPACE_sqrt`](Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean)
+  inclusion have landed, together with the [checked registry entry](ComplexityResults/Entries.lean)
+  ([#2142](https://github.com/cslib-community/complexitylib/pull/2142),
+  [#2143](https://github.com/cslib-community/complexitylib/pull/2143)). The inclusion covers
+  arbitrary injective input encodings and every `t(n) ≥ n`, without time constructibility;
+  its fixed driver scans the original input, searches schedules and increases balanced time
+  guesses. The paper's time–space separation corollaries (including for linear space) and a
+  curated headline abstract with independent review remain open in [#2855]; landing the inclusion
+  and registry does not complete that broader scope.
+  For Cook–Mertz itself: malformed-input handling and the refined
+  `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
+- **Time–space lower bounds for nondeterministic linear time**
+  ([#2896](https://github.com/cslib-community/complexitylib/issues/2896)): simultaneous
+  `TISP(t, s)`, two-quantifier alternating time `Σ₂TIME(t)` (bridged to `Σ₂ᵖ`) and the slowdown
+  lemma `NTIME(n) ⊆ DTIME(t') ⇒ Σ₂TIME(t) ⊆ NTIME(t'(O(t)))` are in
+  [`TimeSpace/Slowdown.lean`](Complexity/Computability/Complexity/Classes/TimeSpace/Slowdown.lean).
+  Still open: the speedup lemma `TISP(t, s) ⊆ Σ₂TIME(...)` by guessing configurations of the
+  universal machine, and the Arora–Barak lower bound `NTIME(n) ⊄ TISP(n^1.2, n^0.2)` with the
+  Lipton–Viglas `n^(√2 − ε)` form. Beyond these: the `√(t·s)` windowed speedup, the golden-ratio
+  deterministic bound of Fortnow, Lipton, van Melkebeek and Viglas, and the transfer to SAT. The
+  transfer needs a quasi-linear-size Cook–Levin reduction.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
+- **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`**
+  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): an alternating machine
+  checks one cell of a deterministic tableau. It guesses the cell's predecessor window
+  existentially and checks each predecessor cell universally.
+- **Pebble games and space lower bounds**
+  ([#2995](https://github.com/cslib-community/complexitylib/issues/2995)): the black pebble game
+  on a `Digraph`, the path-blocking lower-bound engine, and the exact prices `h + 2` of the
+  complete binary tree and the pyramid (Cook) are in `Complexity/Computability/Pebbling`. Next:
+  connect `s`-pebble black pebblings to `s`-register evaluation of `Cslib.Circuits.Program`
+  straight-line programs; black-white and reversible pebbling; the Hopcroft–Paul–Valiant
+  `O(n / log n)` pebbling of bounded-indegree DAGs and the matching Paul–Tarjan–Celoni
+  `Ω(n / log n)` family; Gilbert–Tarjan and Lengauer–Tarjan time–space trade-offs.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
@@ -453,33 +615,55 @@ index links to canonical definitions rather than keeping a second set.
 - **Logspace autoreducibility of complete sets** ([#2468]): the full expanded 2013 paper of
   Glaßer, Nguyen, Reitwießner, Selman and Witek: native transfer from local self-reducibility
   (Lemma 3.3), including virtual-input/answer regeneration and adaptive-to-tt conversion.
-  Uniform runtime initialization, virtual-word reads and a two-pass Boolean-state native
-  evaluator are certified; arbitrary logspace query-generator/evaluator consumption, supplied
-  header preparation, answer regeneration and the resource-certified suffix loop remain open;
+  Uniform runtime initialization and generic virtual-input simulation of component-certified
+  query machines are proved, with arbitrary saved outer state/output continuations and an additive
+  native space bound. Generic extraction from existing native machines and ordinary logspace
+  word-function certificates is proved, with streaming output and workspace-derived saved-state
+  bounds. Preparing supplied headers from live query generators, regenerating answer words and
+  the resource-certified suffix loop remain open;
   bounded and many-one self-reducibility specializations; concrete complete self-reducible
   problems (Theorem 3.5); Section 4
   bounded/logarithmic-query results and
   separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
   application needs a native path-counting class and complement closure.
 - **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
-- **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE.
-  P-selective sets (Selman): a P-selective NP-complete set gives `P = NP`, P-selective sets lie in
-  `P/poly` (Ko), and self-reducible P-selective sets lie in P.
+- **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE,
+  self-reducible P-selective sets lie in P, and P-selective sets are not `≤ₜₜᵖ`-hard for NP unless
+  P = NP.
 - **Low and high hierarchies in NP** (Schöning): sparse NP sets lie in `Low₂` (Ko and Schöning), and
   so does graph isomorphism, via graph non-isomorphism in AM.
-- **Immunity:** immune and bi-immune sets, P-bi-immune sets in EXP (Balcázar and Schöning), and
-  almost-everywhere hardness.
+- **Immunity** ([#2899](https://github.com/cslib-community/complexitylib/issues/2899)): after
+  `IsImmune`/`IsBiImmune`, a `P`-bi-immune set in `E` (`Classes/Immune/Construction.lean`) and
+  Berman's theorem that `≤ᵖₘ`-complete sets for `E`/`EXP` are not `P`-immune
+  (`Classes/Immune/Complete.lean`), witnessed by bounded halting with a binary time bound
+  (`Problems/BoundedHalting.lean`, [#3002](https://github.com/cslib-community/complexitylib/issues/3002)):
+  a SAT-free home for the machine enumeration of `Ladner/Basic.lean` shared by Ladner and the
+  immunity modules;
+  `DTIME(t)`-bi-immune sets in larger time classes for general constructible `t`, the remaining
+  Balcázar–Schöning results, complexity cores (Lynch; Orponen and Schöning) and their sizes for
+  hard sets (Juedes and Lutz), almost-everywhere hardness, and measure strengthenings (almost every
+  set in `E` is `P`-bi-immune, Mayordomo).
+- **Exponential-time complete problems**
+  ([#3002](https://github.com/cslib-community/complexitylib/issues/3002)): after bounded halting
+  with a binary time bound (`E`- and `EXP`-complete, `Problems/BoundedHalting.lean`) and Book's
+  separations (`E ⊊ EXP`, `E ≠ NP`, `E ≠ PSPACE`, `Classes/EXP/Separation.lean`): succinct
+  versions of `P`- and `NP`-complete problems (succinct circuit value for `EXP`, succinct SAT for
+  `NEXP`), generalized games complete for `EXP`, nondeterministic bounded halting for `NE`/`NEXP`,
+  and the isomorphism and density structure of `E`-complete sets.
 
 ### Average-case complexity
 
-- Distribution ensembles with computability and samplability certificates; distributional
-  reductions with explicit domination and resource bounds; DistNP, errorless average-case
-  classes and heuristic classes, keeping runtime tails and permitted error distinct. Reuse the
-  specialized Liu–Pass hardness notions through proved bridges.
-- **Levin completeness:** a distributional bounded-halting problem complete for the chosen
-  polynomial-time computable-distribution class, followed by a separately scoped extension to
-  samplable distributions. Connect the framework to one-way functions, learning and the
-  metacomplexity track ([#798]), preserving the distribution and reduction conventions.
+- **Distributional framework** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the length-indexed ensembles, `AvgP`/`HeurP`,
+  `DistNP` and dominating reductions with polynomial-time computable ensembles being samplable,
+  Levin's runtime-moment definition of average polynomial time and its relation to errorless
+  schemes (instances of probability zero obstruct a literal equivalence), randomized
+  average-case classes, and `(L, U) ∈ AvgP` implying `L ∈ E`-style consequences. Reuse the
+  specialized Liu–Pass hardness notions through further proved bridges.
+- **Completeness beyond computable ensembles** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the bounded-halting completeness for
+  `DistNP` to samplable distributions (Impagliazzo–Levin, `SampNP`), and bridge the verifier-form
+  bounded halting problem to a nondeterministic machine model. Connect the framework to one-way
+  functions, learning and the metacomplexity track ([#798]), preserving the distribution and
+  reduction conventions.
 
 ### Counting and modular classes
 
@@ -505,8 +689,12 @@ index links to canonical definitions rather than keeping a second set.
 
 - **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- Private-to-public-coin transformations, `AM[k] = AM`, interactive-machine characterizations
-  of Arthur–Merlin classes, and statistical and perfect zero knowledge.
+- **Goldwasser–Sipser** ([#2981](https://github.com/cslib-community/complexitylib/issues/2981)):
+  `IP[k] ⊆ AM[k + 2]` for the private-coin games `IPk`, by the set lower bound protocol on the
+  gap-amplified game (`IPGameClass.exists_repeat`).
+- The Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that
+  depend on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
+  statistical and perfect zero knowledge.
 
 ### Descriptive complexity and first-order reductions
 
@@ -524,23 +712,55 @@ universe size, not supplied as unverified input tables. In dependency order:
   projections.
 - **Circuit Value P-complete under first-order reductions**, via `REACHa → MCVP → CVP` (Immerman,
   Theorem 3.26 and Exercise 3.28), with the alternating-logspace simulation of polynomial-time
-  machines and the translation to `encCircuitValue`.
+  machines (the machine-level `P ⊆ AL`, see
+  [#2873](https://github.com/cslib-community/complexitylib/issues/2873)) and the translation to
+  `encCircuitValue`.
 - Numeric certificates for further restricted-domain families; canonical BIT on a restricted
   domain need not be first-order definable.
 - Order-free: SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded
   problems.
 - Extend the synthesis rules to nested operator bodies and give regular-language quantifiers
   their ordered characteristic-word semantics.
-- Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
+- **FO(TC) = NL** on ordered structures
+  ([#1246](https://github.com/cslib-community/complexitylib/issues/1246)): NL ⊆ FO(TC) via
+  configuration-graph reachability under the ordered encoding (FO(TC) ⊆ NL is done). Separately,
+  the native NL closure facts the in-compiler inductive counting bypasses: intersection, union,
+  logspace reductions and NL^NL = NL.
+- Further logical characterizations on ordered structures: FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,
   structures and algorithms.
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
-- **Logical lower-bound methods:** Ehrenfeucht–Fraïssé and pebble games with their logical
-  equivalence theorems, locality and concrete nondefinability results; then counting and
-  fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Reuse upstream
-  model-theoretic foundations and connect the methods to the ordered capture theorems.
+- **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
+  vocabularies and the nondefinability of
+  [connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean),
+  [bipartiteness and acyclicity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/GraphProperties.lean)
+  by interpretation from finite linear orders, add Hanf and Gaifman locality
+  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)) and use it for
+  further graph nondefinability results, such as planarity, Hamiltonicity and `k`-colorability
+  for `k ≥ 3`. Then add games for vocabularies with constants, pebble games with their
+  finite-variable equivalence theorems, and counting and fixed-point expressiveness, including
+  Cai–Fürer–Immerman-style separations. Connect the methods to the ordered capture theorems,
+  where FO(≤, BIT) defines EVEN.
+- **Undecidability in the finite:** Trakhtenbrot's theorem holds for raw relational sentences
+  over unboundedly many symbols of arity at most three. Next, sharpen it to a fixed vocabulary
+  and then to a single binary relation (Libkin, Theorem 9.2), and add a computable `Primcodable`
+  bridge from Mathlib `L.Sentence` that transfers the results to Mathlib syntax
+  ([#2886](https://github.com/cslib-community/complexitylib/issues/2886)).
+- **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
+  regular, [#2885](https://github.com/cslib-community/complexitylib/issues/2885)): the strict
+  inclusion FO[<] ⊊ MSO via EVEN, through a translation of first-order word sentences into
+  Mathlib's order language; FO[<] = star-free = aperiodic (McNaughton–Papert, Schützenberger);
+  closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
+  lower bound on formula-to-automaton translation; and Büchi's theorem for ω-words (S1S) over
+  cslib's ω-regular languages.
+- **Asymptotic probabilities:** extend the 0-1 laws for `G(n, 1/2)` and for uniform structures
+  over finite relational vocabularies
+  ([#2967](https://github.com/cslib-community/complexitylib/issues/2967)) to constant edge
+  probabilities, unlabelled structures and classes defined by parametric axioms such as the
+  simple-graph axioms; then the Kolaitis–Vardi laws for fixed-point and finite-variable infinitary
+  logics, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
@@ -556,36 +776,83 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 ### Search, parameterized and fine-grained complexity
 
 - **TFNP:** CLS, further local search, fixed-point and equilibrium problems.
+- **Sperner's lemma** ([#2999](https://github.com/cslib-community/complexitylib/issues/2999)):
+  the parity form on the triangulated square grid by door-following, and circuit `Sperner2D` in
+  `PPAD` as the end-of-line relation of its door graph. Remaining
+  ([#3087](https://github.com/cslib-community/complexitylib/issues/3087)): `PPAD`-hardness of
+  two-dimensional Sperner/Brouwer (Chen–Deng), `PPAD`-completeness of three-dimensional Sperner
+  (Papadimitriou 1994), and the `d`-dimensional simplex form with general Sperner boundary
+  conditions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
+- **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
+  colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
+  colorings (a fixed `k`-set is colorful with probability `K.descFactorial k / K ^ k ≥ e ^ (-k)`)
+  and the one-sided-error randomized fpt algorithm for `LongPath`; derandomization by perfect hash
+  families; W[1] and the W[1]-hardness of `Clique`.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
-  `a / b ≥ 1 - qbar k h`). Remaining: curated abstracts, and the uniform `o(n)` forms of the PPSZ
-  bounds with `w` growing in `n`.
+  `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
+  abstracts, and the uniform `o(n)` forms of the PPSZ bounds with `w` growing in `n`.
   Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
+- **Reductions from orthogonal vectors**
+  ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)): diameter two versus
+  three is done for general `m` (`FineGrained.Diameter`, the `OV` form of Roditty–Vassilevska
+  Williams Theorem 9). Remaining: the `(3/2 - ε)`-approximation corollary for diameter; the
+  sparse-graph `m ^ (2 - ε)` statement, which needs the low-dimension form of `OVH` (dimension
+  `c log N`, from `SETH` with sparsification); the quadratic dynamic programs for longest common
+  subsequence and edit distance, and their `OV` hardness by alignment gadgets (Backurs–Indyk;
+  Abboud–Backurs–Vassilevska Williams; Bringmann–Künnemann).
 
 ### Approximation and PCP
 
 - **Håstad's optimal MAX-E3SAT hardness** ([#886]): for `0 < ε < 1/8`, NP-hardness of
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
-  `7/8 + ε` of the clauses. This needs Raz–Holenstein parallel repetition for small-soundness
-  Label Cover and Håstad's separate perfect-completeness construction for MAX-E3SAT.
+  `7/8 + ε` of the clauses. Holenstein's parallel repetition theorem for two-prover games is
+  proved (`TwoProverGame.value_pow_le`). What remains is small-soundness Label Cover through
+  parallel repetition and Håstad's separate perfect-completeness construction for MAX-E3SAT.
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
   PCP, CSP classifications and relaxation gaps, with assumptions such as the Unique Games
   Conjecture stated explicitly. The 2-to-2 games theorem waits for [#886].
+- **Approximation algorithms:** a general interface for approximation ratios of optimization
+  problems, under which polynomial-time algorithms such as Johnson's `7 / 8` algorithm for
+  MAX-E3SAT meet matching hardness results such as Håstad's ([#886]); LP and SDP rounding, such
+  as Goemans–Williamson for MAX-CUT and MAX-SAT.
+- **Packing approximation**
+  ([#2964](https://github.com/cslib-community/complexitylib/issues/2964)): the asymptotic
+  approximation scheme for bin packing of Fernandez de la Vega and Lueker, First Fit's `17/10`
+  bound, First Fit Decreasing's `11/9` bound and Lawler's faster knapsack FPTAS, building on the
+  knapsack FPTAS and Next Fit and First Fit (`Algorithms/Lean/{Knapsack,BinPacking}`) and the
+  `3/2` bin-packing hardness (`PCP/Approximation/BinPacking`).
+- **Scheduling:** beyond Graham's list-scheduling, LPT and precedence bounds in
+  `Algorithms/Lean/Scheduling`: real-valued processing times with precedences, Graham's anomaly
+  instances as checked examples, a general tight family for LPT, the Hochbaum–Shmoys PTAS for
+  `P || C_max`, and runtime bounds for `listSchedule` and `lptSchedule`
+  ([#2909](https://github.com/cslib-community/complexitylib/issues/2909)).
 - **A practical PCP construction:** a reasonably runnable construction and its cost on complete
   reductions; rotation certificates polynomial in the bit length of a vertex name; machine-level
   error reduction and extractors from expander walks, with certified seed and evaluation costs.
 
 ### Proof complexity
 
-- Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
-  certified DPLL solver runtimes.
-- **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
-  lower bounds ([#2019]).
+- Proof-space lower bounds, Frege, polynomial calculus and sum-of-squares, and certified DPLL
+  solver runtimes.
+- **Cutting planes:** the clique–colouring lower bound for cutting planes with bounded
+  coefficients from Krajíček's feasible interpolation, Corollary 7.3
+  ([#2019](https://github.com/cslib-community/complexitylib/issues/2019), M4b), and the
+  monotone case of the interpolation theorem in which the shared variables occur in `Γ_B` with
+  nonpositive coefficients only; Pudlák's
+  lower bound for unrestricted coefficients via monotone real circuits (untracked);
+  coefficient-size measures; Buss–Clote cutting planes with division by 2 only; and the
+  simulation of resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and
+  translation time.
+- **Feasible interpolation** ([#1817]): further clients of Krajíček's interpolation theorem for
+  semantic derivations ([#2019]): resolution through Theorem 6.1, the linear equational calculus,
+  and the monotone case for the `ℬ` side. The remaining cutting-planes work is under **Cutting
+  planes**.
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
@@ -594,7 +861,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Williams's NEXP ⊄ ACC⁰ and Murray–Williams's NQP ⊄ ACC⁰** ([#889]): no polynomial-size,
   constant-depth circuits over AND, OR, NOT and fixed-modulus counting gates for some language in
-  NEXP.
+  NEXP. `SymAnd/ACC0.lean` defines the `SYM ∘ AND` circuit `Circuit.toSymAnd` of every circuit
+  with `MOD_m` gates, `m > 0`, and proves that it computes the same function with polylogarithmic
+  fan-in and quasi-polynomial size, with explicit bounds (Yao; Beigel–Tarui, Theorem 1.1); every
+  language of `AC0Mod m` (any `m`) and of `ACC0` follows. `SymAnd/Evaluate.lean` proves Williams's
+  Evaluation Lemma in the unit-cost `TimeM` model: Yates's fast zeta transform gives the truth
+  table of a `SYM ∘ AND` circuit with `s` gates, whose symmetric gate costs `T`, in
+  `(n + 2)(2^n + (s + 1)(T + 1))` ticks
+  ([#3023](https://github.com/cslib-community/complexitylib/issues/3023)). Still open: a machine
+  computing that circuit in quasi-polynomial time, a Turing-machine or word-RAM evaluator, the
+  ACC-SAT algorithm, a fine nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
   Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
@@ -621,7 +897,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Weighted threshold representations:** v1's explicit source-reduction family, universal scalar
   circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
 - **Depth-two threshold circuits for Andreev's function** ([#2347]): the exact quadratic
-  `4 * 4 ^ b + b * m * 2 ^ b + 1` depth-two weighted threshold upper bound
+  `2 * 4 ^ b + b * m * 2 ^ b + 1` depth-two weighted threshold upper bound
   (`WeightedThreshold/Andreev.lean`), the windowed average-case `(1 - δ)`-agreement and
   `(1 / 2 + ε)`-correlation depth-two upper bounds (`WeightedThreshold/AndreevWindowed.lean` and
   `WeightedThreshold/AndreevAverage.lean`), Erdős–Littlewood–Offord anti-concentration
@@ -633,8 +909,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `Ω(ε² n ^ (5 / 2) / log ^ (5 / 2) n)` active-wire lower bounds for
   `3 * (b + 2) / √(2 ^ b) ≤ ε ≤ 1 / 2` in the balanced regime
   (`WeightedThreshold/AndreevLowerBound.lean`, improving the
-  `ε³` dependence in Theorem 1.1 and Section 5 of arXiv:1511.07860v1) are proved; closing the
-  worst-case depth-two threshold gate gap between `Ω̃(n ^ (3 / 2))` and `O(n ^ 2)` remains open.
+  `ε³` dependence in Theorem 1.1 and Section 5 of arXiv:1511.07860v1) are proved. Averaging
+  extends these bounds to `ε`-approximate majorities of depth-two circuits, so a majority vote of
+  `t` depth-two circuits with at most `s` gates each needs top fan-in
+  `t = Ω(n ^ (3 / 4) / (log n · √s))` once `t ≤ √(2 ^ b) / (6 (b + 2))`
+  (`WeightedThreshold/AndreevApproxMajority.lean`, [#2812]; Kane–Williams, Corollary 1.1, have
+  `Ω̃(n ^ (1 / 2) / s ^ (1 / 3))`). The vote is stated through its number of correct members rather
+  than as a depth-three circuit model. Closing the worst-case depth-two threshold gate gap between
+  `Ω̃(n ^ (3 / 2))` and `O(n ^ 2)` remains open, as do the other [#2812] milestones.
 - **Construction runtimes**, certified separately from gate counts: the mass-production
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
@@ -647,13 +929,57 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
   Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
   has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
-  fields of characteristic other than two (membership now has an explicit Ryser witness over
-  every commutative ring; VNP-hardness remains open); formula and branching-program models,
+  fields of characteristic other than two ([#321]; membership has an explicit Ryser witness over
+  every commutative ring, and arithmetic formulas project to the permanent with dimension
+  `Formula.size + 1` over every commutative semiring; a selector occurring in one permanent entry
+  can be eliminated with one extra dimension when `2` is invertible; the conversion from VP
+  witnesses to formulas, the two-entry gadget and the general Boolean-sum elimination needed for
+  VNP-hardness remain open); formula and branching-program models,
   identity testing, hitting sets, and tensor and rank methods, including partial-derivative
-  measures (Nisan–Wigderson depth-3 bounds and shifted partials) and the depth-reduction chasms at
+  measures (the order-`k` measure and bounded-product-fan-in depth-three determinant and permanent
+  lower bounds, covering homogeneous depth-three circuits, are proved in
+  [`Arithmetic/DepthThree`](Complexity/Computability/Circuit/Arithmetic/DepthThree.lean);
+  Nisan–Wigderson's all-orders measure, their elementary symmetric polynomial and iterated matrix
+  multiplication bounds, and shifted partial derivatives remain open) and the depth-reduction chasms at
   depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
   construction costs certified
-  separately from gate counts.
+  separately from gate counts. Also Strassen's degree bound (Bézout's inequality and the
+  `n log d` multiplication lower bound for the power map), which through the proved Baur–Strassen
+  transfer in [`Arithmetic/Gradient`](Complexity/Computability/Circuit/Arithmetic/Gradient.lean)
+  ([#2906](https://github.com/cslib-community/complexitylib/issues/2906)) would give the
+  `Ω(n log d)` bound for the single power sum `∑ xᵢ^(d+1)`; and matrix inversion from the
+  determinant through the adjugate circuits of
+  [`Arithmetic/Adjugate`](Complexity/Computability/Circuit/Arithmetic/Adjugate.lean), which needs
+  a circuit model with division.
+- **The matrix multiplication exponent** (ω ≤ 9/4): Pass's constructive proof
+  (arXiv:2610.28627v2) of OpenAI's bound is formalized over every field of characteristic zero:
+  for every `τ > 9/4` an exact bilinear algorithm for some `v × v` multiplication with fewer than
+  `v ^ τ` multiplications (`Foundations/LinearAlgebra/Tensor/Round.lean`), hence circuits of size
+  `O(n ^ τ)` by block recursion and `omega K ≤ 9/4`
+  (`Circuit/Arithmetic/MatrixMultiplication/NineQuarters.lean`). The tensor framework
+  (`Foundations/LinearAlgebra/Tensor/`: restrictions, degenerations over `K[ε]`, Bini's
+  conversion, rank) is general. Open: every field (the interpolation nodes are the integers of
+  characteristic zero), the rectangular and dual exponents, explicit sizes and constants (the
+  algorithm is galactic), and the lower bound `omega K ≥ 2` only as the trivial output count.
+- **Fast integer and polynomial multiplication**
+  ([#2923](https://github.com/cslib-community/complexitylib/issues/2923)): Karatsuba on coefficient
+  lists in the arithmetic query model, with exact counts and `O(n ^ log₂ 3)` bounds, is in
+  `Algorithms/Lean/Query/Arith/Karatsuba`. Integer Karatsuba as De Morgan circuits for the full
+  `2w`-bit product, with `O(w ^ log₂ 3)` gates, is in `Circuit/Boolean/Karatsuba`. Open: smaller
+  constants, logarithmic or polylogarithmic depth, uniform generation, and a native or word-RAM
+  realization; Toom–Cook (`O(n ^ log₃ 5)` for Toom-3); and lower bounds such as rank `3` for the
+  two-term product tensor.
+- **Fast Fourier transform and FFT multiplication**
+  ([#2979](https://github.com/cslib-community/complexitylib/issues/2979)): the radix-2
+  Cooley–Tukey transform over any commutative ring with `ω ^ (2 ^ k) = -1`, with exactly
+  `(n / 2) log₂ n` multiplications and `n log₂ n` additions, its inverse, the convolution theorem
+  and `O(n log n)` polynomial multiplication, is in `Algorithms/Lean/Query/Arith/FFT` and
+  `Foundations/Algebra/DFT`. Open: arbitrary lengths on coefficient lists (zero padding to a power
+  of two) with a list-level `UpperBound`; the transform as an arithmetic circuit of size
+  `O(n log n)` and depth `O(log n)`; rings without suitable roots of unity (Schönhage–Strassen over
+  `R[x] / (x ^ m + 1)` and the `O(n log n log log n)` integer bound); mixed-radix and Bluestein
+  transforms; and lower bounds such as Morgenstern's `Ω(n log n)` for bounded-coefficient linear
+  circuits.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
@@ -689,7 +1015,20 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
   list-size/agreement guarantees and decoding runtime as separate obligations; concrete
   list-decodable codes for Nisan–Wigderson.
-- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications.
+- **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)):
+  query-bounded decoders, the Hadamard code, Katz–Trevisan smoothing for oblivious-read decoders
+  and the one-query bound are in place. Remaining: the adaptive-to-non-adaptive reduction (so that
+  smoothing covers every adaptive decoder), the matching/XOR normal form and the Katz–Trevisan bound
+  `n ≥ Ω(k^{q/(q-1)})` with explicit `(δ, ε, q)` dependence, and the Goldreich–Karloff–Schulman–
+  Trevisan and Kerenidis–de Wolf exponential bounds for two-query codes.
+- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications; coverage of
+  O'Donnell's *Analysis of Boolean Functions*
+  ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the book-form
+  statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta theorem
+  with its spectral concentration) and the low-degree consequences of hypercontractivity beyond
+  the FKN Theorem ([#3054](https://github.com/cslib-community/complexitylib/issues/3054)): the
+  `L¹`–`L²` comparison for low-degree functions, the low-degree tail bound, and the Gotsman–Linial
+  lower bound on the low-degree weight of polynomial threshold functions.
 - **Resource-bounded measure and dimension:** martingales and gales with explicit computation
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds
@@ -699,22 +1038,59 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 - **Lifting** ([#890]): applications of deterministic lifting, such as partition-number
   separations, and randomized lifting.
+- **Randomized query complexity of game trees**
+  ([#3060](https://github.com/cslib-community/complexitylib/issues/3060)): the AND–OR tree on
+  `n = 4 ^ k` leaves is evasive, and the directional algorithm gives Motwani–Raghavan's
+  `R₀ ≤ n ^ (log₄ 3)` and Snir's sharp `R₀ = O(n ^ (log₂ α))`, `α = (1 + √33) / 4`, `≈ n ^ 0.7537`.
+  Remaining: the Saks–Wigderson lower bound `R₀ = Ω(n ^ (log₂ α))` for the NAND tree, which would
+  match the upper bound, via Yao's principle for expected cost; Monte Carlo (bounded-error) bounds
+  for the same trees; and Saks–Wigderson's general read-once formula and game-tree (MIN/MAX over
+  integer leaves) results.
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
-  storage and evaluation; AMS frequency moments, CountSketch, turnstile updates, and heavy-hitter
-  recovery; communication-to-streaming transfers with explicit state encodings and pass counts.
+  storage and evaluation; the AMS sketches for `F₀` and `F_k` with `k > 2` and the `n^{Ω(1)}`
+  lower bounds for `F_k` with `k ≥ 6`; `ProbComp` samplers and native realizations of the AMS `F₂`
+  sketch; CountSketch, turnstile updates, and heavy-hitter recovery; multi-pass
+  communication-to-streaming transfers with pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
-  PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. Give the
-  computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
-  costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
+  PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable
+  PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), extend
+  the countable-domain VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)` to general
+  well-behaved classes over measurable domains. Statistical queries
+  ([#2910](https://github.com/cslib-community/complexitylib/issues/2910)): the deterministic SQ
+  model has correlational and SQ-dimension query lower bounds, including parities. Remaining:
+  simulating SQ learners from random examples, without noise and under random classification
+  noise (Kearns's Theorems 1 and 3); the low-degree algorithm as an SQ algorithm; randomized SQ
+  learners; and Feldman's statistical dimension for a specified planted problem, with matching
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
   comparisons where justified, distinguishing restricted-model bounds from unrestricted
   computational hardness. Use the [distributional framework](#average-case-complexity).
+- **Online learning in the mistake-bound model**
+  ([#2908](https://github.com/cslib-community/complexitylib/issues/2908)): the realizable model,
+  the halving algorithm, the Littlestone dimension with the standard optimal algorithm (optimal
+  mistake bound equals Littlestone dimension), the VC comparison with the threshold gap,
+  Novikoff's perceptron bound, and WINNOW1 for monotone disjunctions with Littlestone's matching
+  `k ⌊log₂ (n / k)⌋` lower bound are in `MachineLearning/OnlineLearning/MistakeBound`. Remaining:
+  WINNOW2 for linearly separable Boolean functions with separation `δ` and Littlestone's
+  attribute transformations (Littlestone 1988, Theorems 9 and 10); randomized learners and the
+  agnostic setting, with Littlestone-dimension regret bounds (Ben-David–Pál–Shalev-Shwartz 2009);
+  multiclass and real-valued analogues; online-to-batch conversion into the PAC framework; and
+  running-time bounds, since the standard optimal algorithm is a noncomputable specification.
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
-  linearity testing have explicit decision-tree query bounds. Remaining: further access models,
-  tolerant and distribution testing, query and sample bounds, canonical testers and lower bounds.
+  linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
+  `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
+  lower bound. Identity testing to any fixed distribution reduces to uniformity on `4n` points
+  through Goldreich's kernel, which gives `O(√n / ε²)` samples
+  ([#2930](https://github.com/cslib-community/complexitylib/issues/2930)). Closeness testing has
+  the two-sample model and the collision-based tolerant `ℓ₂` tester with `O(√b / ε²)` samples
+  when both squared `ℓ₂` norms are at most `b`, hence `O(n / ε²)` samples in statistical distance
+  ([#3017](https://github.com/cslib-community/complexitylib/issues/3017)). Remaining: the optimal
+  `O(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness tester by flattening and its matching lower bound,
+  further access models, the odd-domain lower bound, instance-optimal identity testing, tolerant
+  and structured-property distribution testing, canonical testers and further query and sample
+  lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
@@ -730,10 +1106,24 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Quantum computation** ([#896]): channel semantics and approximation costs alongside the
   circuit and measurement semantics, reusing suitable quantum foundations rather than
   incompatible models, and a bridge between the query and circuit models; complete problems for
-  BQP; QMA and related query, communication and interactive classes, with amplification,
-  containments and complete problems. Supply the
+  BQP; for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
+  reduction from an inverse-polynomial gap, strong error reduction that keeps the witness length,
+  `PromiseQMA(c, s) ⊆ PP` for non-constant `c(n), s(n)` with an inverse-polynomial gap,
+  `QMA ⊆ A₀PP`, `MA ⊆ QMA`, mixed witnesses, QCMA and the local Hamiltonian problem; related query,
+  communication and interactive classes, with amplification, containments and complete problems.
+  Supply the
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
   reductions.
+
+- **Quantum query separations**
+  ([#2991](https://github.com/cslib-community/complexitylib/issues/2991)): beyond the decision
+  and search versions of Simon's problem, give the search version polynomial-time
+  post-processing (Gaussian elimination over `ZMod 2` in place of the exhaustive `simonSolve`),
+  and prove separations in the value-query model. The latter needs quantum states over an
+  arbitrary finite query index type rather than `Fin N`; generalizing `State N W` affects
+  `Quantum/Search.lean`, `Quantum/Composition.lean`, `Quantum/Grover.lean`,
+  `Quantum/UnknownSearch.lean`, `Quantum/Polynomial.lean` and `Quantum/Adversary.lean`. Natural
+  later targets are Forrelation and other optimal quantum–classical query separations.
 
 - **Shor's algorithm:** bounded-error polynomial-time integer factoring and discrete logarithms
   in the native uniform quantum-circuit model, with explicit input/output encodings, success
@@ -746,7 +1136,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 - Dataset adjacency and `(ε, δ)`-differential privacy for probabilistic programs, with
   postprocessing and adaptive composition. Start with a finite or discrete mechanism proving
-  both privacy and utility, including sampling cost and finite-precision error.
+  both privacy and utility, including sampling cost and finite-precision error. The foundations
+  ([#2867](https://github.com/cslib-community/complexitylib/issues/2867)) leave the advanced
+  composition theorem, exact-sampling costs for discrete noise, and continuous Laplace/Gaussian
+  mechanisms with their finite-precision analysis.
 - The exponential mechanism, private query answering and private learning; privacy–accuracy
   and sample-complexity lower bounds; then adaptive data-analysis and generalization guarantees.
   Keep the adjacency relation, interaction model, privacy parameters and computational resources
@@ -764,23 +1157,50 @@ each statement against the numbered result. Organize modules by subject, not cha
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
 - **Primal–dual approximation and multiplicative weights:** reusable analyses with vertex cover
-  and set cover as first primal–dual clients; multiplicative-weights regret and approximation
-  bounds with finite-precision implementations, then applications to games, learning and
-  optimization.
+  and set cover as first primal–dual clients. Real-valued regret bounds for weighted majority,
+  multiplicative weights and Hedge (with tuned learning rates), and the algorithmic minimax
+  theorem for zero-sum games, are in `MachineLearning/OnlineLearning`
+  ([#2874](https://github.com/cslib-community/complexitylib/issues/2874)). Remaining:
+  randomized weighted majority and sampled Hedge as probabilistic computations, the regret lower
+  bound, finite-precision implementations with charged running time, and applications to packing
+  and covering LPs, boosting and learning.
+- **Online convex optimization:** projected online gradient descent and its `O(GD√T)` and
+  strongly convex `O(log T)` regret bounds (Zinkevich; Hazan Theorems 3.1 and 3.3), over the
+  metric projection onto complete convex sets, are in `MachineLearning/OnlineLearning`
+  ([#2983](https://github.com/cslib-community/complexitylib/issues/2983)). Remaining:
+  follow-the-regularized-leader and online mirror descent (recovering Hedge as the entropic
+  case), the `Ω(GD√T)` lower bound, online Newton step for exp-concave losses, Blackwell
+  approachability and calibration, and finite-precision implementations.
 
 ### Combinatorial optimization
 
 Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions](https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md#graph-algorithms-and-graph-foundations),
 reusing graph and matroid foundations and the shared data-structure interfaces.
 
-- **Flows and matching:** integral max-flow/min-cut and a native augmenting-path algorithm with
-  charged runtime; then minimum-cost flow and weighted bipartite matching through common
-  residual-network and duality machinery.
+- **Flows and matching:** a native augmenting-path algorithm with charged runtime (integral
+  max-flow/min-cut, a `TimeM` Edmonds–Karp solver and Hopcroft–Karp bipartite matching are in
+  `Algorithms/Lean/MaxFlow`); then minimum-cost flow and weighted bipartite matching through common
+  residual-network and duality machinery. Remaining matching directions: the decomposition of
+  `M ⊕ M*` into vertex-disjoint augmenting paths, general (non-bipartite) matching with blossoms,
+  and a sparse Hopcroft–Karp entry point that also charges construction of the adjacency lists.
+- **Graph search and shortest paths** ([#3053](https://github.com/cslib-community/complexitylib/issues/3053)):
+  after `TimeM` depth-first search, topological sort and Bellman–Ford
+  (`Algorithms/Lean/{DFS,BellmanFord}`), strongly connected components in linear time with the
+  linear-time 2-SAT algorithm as a client of the `TwoSAT` problem module; the Bellman–Ford
+  predecessor tree; and bridges from Bellman–Ford to Dijkstra's distances and to the matrix
+  shortest-path model.
 - **Matroids:** matroid intersection with explicit oracle and implementation costs, beyond the
   weighted greedy algorithm and its independence-oracle interface.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
   cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
   concrete realizations.
+- **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)):
+  remaining after greedy set cover, maximal-matching vertex cover and the MST tour for metric
+  TSP (`Algorithms/Lean/{SetCover,VertexCover,TSP}`): machine-level polynomial-time
+  certificates for greedy set cover and for Kruskal-based TSP tours on encoded matrices, and
+  stronger guarantees such as Christofides' `3/2` for metric TSP. LP-based and primal–dual
+  analyses of the same problems belong to the primal–dual approximation direction under
+  Optimization and duality.
 
 ### Online algorithms and competitive analysis
 
@@ -790,6 +1210,58 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Adaptive search trees:** working-set and dynamic-finger bounds for splay trees, and a BST
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
+- **Optimal stopping:** `Probability/OptimalStopping/*` covers the rank-based secretary problem
+  (exact cutoff-rule success, optimality among all rank-based rules, `1/e` bounds and limit) and
+  the single-threshold `½` prophet inequality for independent discrete (`PMF`) laws, with
+  tightness ([#2913](https://github.com/cslib-community/complexitylib/issues/2913)). Extend to
+  the i.i.d. `1 - 1/e` and `≈0.745` bounds, prophet secretary and random-order models, matroid
+  and multiple-choice prophet inequalities, the full-information secretary problem, existence of
+  medians of the maximum, randomized rules as mixtures, and the posted-price mechanism corollary.
+
+### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
+
+- **Computing equilibria:** PLS-completeness of finding a pure Nash equilibrium of a congestion
+  game (Fabrikant–Papadimitriou–Talwar) through an explicit local-search problem interface and
+  succinct game encodings; polynomial-time algorithms for symmetric network congestion games;
+  exponentially long better-response paths. Mixed Nash equilibria of finite games
+  (Nash's theorem) and PPAD-completeness of computing them.
+- **Equilibrium concepts and dynamics:** mixed and correlated equilibria between pure Nash and
+  coarse correlated equilibria; swap regret and convergence to correlated equilibria, extending
+  the Hedge dynamics of [#3034](https://github.com/cslib-community/complexitylib/issues/3034);
+  last-iterate convergence of no-regret dynamics; bandit feedback and sampled play; convergence
+  time of better-response dynamics in potential games.
+- **Price of anarchy:** Wardrop equilibrium existence and essential uniqueness for continuous
+  nondecreasing latencies (Beckmann's convex potential); the Pigou bound for general latency
+  classes and polynomial latencies of bounded degree; the price of stability by the potential
+  method, including the `H_k` bound for network cost-sharing games
+  ([#3035](https://github.com/cslib-community/complexitylib/issues/3035)); Braess's paradox;
+  weighted and mixed-strategy atomic congestion games; the Monderer–Shapley characterization of
+  potential games as congestion games.
+
+### Mechanism design ([#2947](https://github.com/cslib-community/complexitylib/issues/2947))
+
+Single-parameter mechanisms with Myerson's Lemma for arbitrary monotone allocation rules, the
+Vickrey auction, knapsack auctions with welfare-maximizing rules, Groves/VCG mechanisms over
+finite outcome sets, and Myerson's optimal auction for independent regular distributions with
+densities (expected revenue equals expected virtual welfare; Vickrey with a reserve price) are in
+`GameTheory/Mechanism`. Remaining directions:
+
+- **Single-parameter corollaries:** the sponsored-search payment formula (rank-by-bid
+  allocation with slot click-through rates) and the greedy knapsack rule with its monotonicity
+  and ½-approximation. State allocation algorithms with charged running time, so that
+  approximation and truthfulness are both proved for an actual algorithm.
+- **Revenue maximization beyond the regular DSIC case:** ironing for irregular distributions;
+  regular distributions (Lecture 5, Definition 3.1) whose virtual valuation is unbounded below at
+  `0`, such as `f(v) = 2v` on `[0, 1]`, which the endpoint convention of `IsRegular` excludes (this
+  needs an explicit treatment of zero bids);
+  optimality among Bayesian incentive-compatible mechanisms (interim allocation rules, the
+  revelation principle); revenue equivalence and the symmetric first-price equilibrium
+  `b(v) = (n - 1) v / n` for i.i.d. uniform values; a measurable virtual-welfare maximizer for a
+  finite feasible set, removing the measurability hypothesis; and distributions without a bounded
+  density (atoms, unbounded support).
+- **Multi-parameter characterizations:** Groves mechanisms as the only DSIC welfare maximizers
+  on rich valuation domains (Green–Laffont, Holmström), and limits of VCG such as revenue
+  monotonicity and collusion.
 
 ### Structural graph algorithms
 
@@ -810,17 +1282,27 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `Circuit/Arithmetic/EvaluationTime.lean` certifies the full existing code trace uniformly in the
   runtime circuit and input over any fixed finite semiring, with binary indices and an F4 client.
   The public circuit-bound VOLE session (#2688) consumes F4 and gives single-copy error 5/8.
-  Growing extension-field arithmetic, complete native circuit-bound VOLE execution (#2765; #643;
-  prerequisite #2738), raw-bit adversarial transport (#2744) and fresh-session amplification
-  remain separate endpoints.
-- **Markov-chain sampling:** finite kernels, stationarity, reversibility and total-variation
-  mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
-  Metropolis sampling for encoded rational target weights, charging initialization, arithmetic
-  and every transition, with support and mixing hypotheses explicit.
-- **FPRAS and almost-uniform sampling:** interfaces separating relative error, failure
-  probability, output-distribution error and runtime, including zero-count instances. Start
-  with a complete DNF-counting FPRAS; prove sampling/counting reductions for suitably
-  self-reducible relations, with the sampling and counting oracle costs included.
+  The shared `Circuit/Encoding/Check.lean` validates the existing gate-code predicate with
+  certified binary arity, including arithmetic codes and malformed huge indices/arity (#2770).
+  Output/count validation and complete native circuit-bound VOLE execution (#2765; #643;
+  prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
+  and fresh-session amplification remain separate endpoints.
+- **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
+  stationarity, reversibility, total-variation mixing times, Markovian couplings, reversible
+  Metropolis chains and path coupling, with the lazy hypercube walk
+  (`Probability/BitString/LazyRandomWalk`, #2857) and Glauber dynamics for `q > 2Δ` colorings
+  (`Probability/MarkovChain/Coloring`, #2933) as clients. Extend with conductance,
+  canonical-path and spectral-gap arguments. For the reduction from approximately counting
+  colorings to sampling them, frozen-boundary Glauber dynamics and the ratio bound are in place
+  (`Probability/MarkovChain/Coloring/Ratio`); finish with the product estimator and its
+  second-moment analysis (#3003). Implement Metropolis sampling for encoded
+  rational target weights, charging initialization, arithmetic and every transition, with support and
+  mixing hypotheses explicit.
+- **FPRAS and almost-uniform sampling:** `Classes/FPRAS` and `Classes/FPAUS` give the two
+  interfaces, and `Classes/FPAUS/FPRAS` proves FPAUS ⇒ FPRAS for one-bit self-reducible
+  witness families (#3039). Prove the converse FPRAS ⇒ FPAUS with Jerrum–Valiant–Vazirani
+  rejection sampling, allow self-reductions fixing several symbols per step, and instantiate both
+  directions for concrete relations such as DNF assignments.
 - Extend to randomized approximate counting for matchings and permanents of nonnegative
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
   expander APIs and connect to the separate Stockmeyer oracle-counting track where their
@@ -828,13 +1310,38 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 ### Constructive probabilistic methods
 
-- **Moser–Tardos resampling:** an actual resampling program, its correctness and expected
-  resampling bound, and native sampling and event-detection costs, building on the variable
-  form of the Local Lemma.
-- **Conditional expectations and pessimistic estimators:** certified choice and update rules,
-  algorithmic alteration, and concrete coloring, satisfiability or combinatorial-construction
-  clients. Preserve the quantitative guarantee when converting an existence argument into a
-  deterministic or randomized algorithm.
+- **Moser–Tardos resampling:** `Logics/Propositional/CNF/Moser*` runs Moser's `k`-SAT
+  resampling algorithm on an explicit tape and bounds its resamplings by entropy compression when
+  every clause shares a variable with fewer than `2 ^ (k - 3)` others
+  ([#2879](https://github.com/cslib-community/complexitylib/issues/2879)). Extend it to the
+  variable form of the Local Lemma under `e p (d + 1) ≤ 1` (witness trees, sharper expected
+  bounds), with native sampling and event-detection costs. The Kolmogorov form of the argument
+  is relative to an explicit decoder
+  ([#3043](https://github.com/cslib-community/complexitylib/issues/3043)); implement the decoder
+  as a multi-tape machine taking the formula to transfer it to the conditional universal
+  complexity `condPlain`.
+- **Conditional expectations and pessimistic estimators:** algorithmic alteration, and coloring,
+  MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
+  (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting
+  an existence argument into a deterministic or randomized algorithm.
+- **Small sample spaces** ([#2935](https://github.com/cslib-community/complexitylib/issues/2935)):
+  searching a `k`-wise independent space finds an assignment as good as a uniformly random one on
+  clauses of at least `k` distinct literals (`exists_two_pow_mul_countUnsat_le`). The
+  polynomial-time search is certified only for the three-wise parity space. Remaining: a runtime
+  certificate for searching the trinomial-field space
+  (`exists_assignments_two_pow_mul_countUnsat_le`) for fixed `k > 3`. Further directions are
+  small-bias and almost `k`-wise independent spaces and their clients.
+
+### Randomized verification and fingerprinting
+
+- **Fingerprinting** ([#2980](https://github.com/cslib-community/complexitylib/issues/2980)):
+  Freivalds' matrix-product verifier with exact `TimeM` operation counts and `(1/|S|)^k`
+  soundness for admissible random-vector encodings is in `Algorithms/Lean/Freivalds` and
+  `Probability/Freivalds`. Remaining: Karp–Rabin fingerprints (random evaluation point over a
+  finite field, and random prime modulus with explicit prime-counting bounds), a rolling-hash
+  pattern matcher with charged updates and a union bound over all windows, and the private-coin
+  `O(log n)` equality protocol in `Communication/Randomized`. Native machine or RAM realizations
+  with bit-level arithmetic costs are a separate endpoint.
 
 ## Machines, RAM and data structures
 
@@ -862,12 +1369,25 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
+- **Single-tape lower bounds**
+  ([#2884](https://github.com/cslib-community/complexitylib/issues/2884)): crossing sequences,
+  translation invariance, cut-and-paste across boundaries at different positions (with the
+  crossing sequences on the kept sides), the quadratic palindrome lower bound for cslib
+  `SingleTapeTM` deciders that answer under the head, the fact that bounded crossing sequences
+  at the input boundaries force `Language.IsRegular`, and the gap theorem that single-tape
+  deciders running in time `o(n log n)` accept only regular languages
+  ([#2965](https://github.com/cslib-community/complexitylib/issues/2965)) are proved.
+  Remaining: an explicit single-tape palindrome decider in time `O(n²)`, which shows the bound is
+  tight and gives a positive instance of `DecidesPalindromesInTime`; a linear-time multi-tape
+  palindrome decider, which gives the one-tape/two-tape time separation; and the nondeterministic
+  analogue of the gap theorem under the accept measure.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
-  transfer of Anthropic's modular machine and 3SUM/APSP algorithms; size-based width selection
+  transfer of Anthropic's modular machine and APSP algorithms (3SUM is native:
+  `uniformDecidableInO_one9992`); size-based width selection
   with an input-fit guarantee and explicit overhead;
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
@@ -940,16 +1460,31 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 ### Parallel, external-memory and distributed models
 
-- **Parallel algorithms:** work–span semantics and a processor-scheduling or simulation theorem,
-  followed by prefix scan, sorting and graph primitives with both work and span bounds. State
-  processor access, synchronization and scheduling overhead explicitly.
+- **Parallel algorithms:** work–span semantics for a parallel language or PRAM model whose
+  computation DAGs feed the unit-time DAG scheduling bounds (work and span laws, greedy bound and
+  Brent's lemma are in `Algorithms/Lean/Scheduling/Brent.lean`), followed by prefix scan, sorting
+  and graph primitives with both work and span bounds. State processor access, synchronization and
+  scheduling overhead explicitly, including work stealing (Blumofe–Leiserson).
 - **Memory hierarchies:** external-memory and ideal-cache models with explicit capacity and
   block-size parameters; scanning, B-tree operations, blocked matrix multiplication and
   cache-oblivious sorting as clients. Connect arithmetic-step, memory-access and cache-miss
   bounds through concrete realizations, including replacement and initialization conventions.
 - **Distributed complexity:** LOCAL and CONGEST models with explicit identifiers, round,
   message-size and randomness conventions; locality lower bounds and communication-to-round
-  reductions with corresponding algorithmic examples.
+  reductions with corresponding algorithmic examples. The deterministic LOCAL model on oriented
+  cycles, Cole–Vishkin and Linial's `log*` bound, the bridge to Mathlib's `cycleGraph` colourings
+  and the `Θ(log* n)` bounds for maximal independent sets on cycles exist
+  (`Complexity/Computability/Distributed/OrientedCycle/`). For LCL problems without inputs on
+  directed cycles (Chang–Studený–Suomela, Table 1), the `O(1)`/`Ω(log* n)` gap and the
+  `Θ(log* n)` bound for problems with a flexible state exist (`OrientedCycle/LCL/`). Open: the
+  `Ω(n)` lower bound for problems without a flexible state
+  ([#3009](https://github.com/cslib-community/complexitylib/issues/3009)), a tight
+  `½ log* n + O_|L|(1)` upper bound for flexible problems, LCLs with inputs, on paths (directed
+  or undirected) and on undirected cycles, general graphs with port numbering, Linial's `O(Δ²)` colouring and
+  `(Δ + 1)`-colouring/MIS on bounded-degree graphs, CONGEST message bounds, randomized LOCAL
+  algorithms such as Luby's MIS, and closing the additive gaps between the
+  `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles and between
+  `⌈(log* n) / 2⌉ + 5` and `(log* n) / 2 - 2` for MIS on cycles.
 
 ## Coverage and reuse
 
@@ -964,7 +1499,7 @@ reuse is demonstrated.
 - **Measure postprocessing.** Canonical full-L1 total variation contracts under measurable
   maps of arbitrary finite measures, including unequal masses
   ([#2732](https://github.com/cslib-community/complexitylib/issues/2732)). The actual Gaussian
-  projection/mod-one consumer remains separate in
+  projection/mod-one consumer is proved in
   [#2734](https://github.com/cslib-community/complexitylib/issues/2734).
 - **Finite weighted measure mixtures.** `Foundations/MeasureTheory/Measure/TotalVariation/Mixture`
   bounds the existing full-L1 distance when both finite component measures and their nonnegative
@@ -973,6 +1508,11 @@ reuse is demonstrated.
   the error-composition step for [#2767](https://github.com/cslib-community/complexitylib/issues/2767);
   identifying and bounding the actual Regev conditional laws remains that separate consumer.
 
+- **Gaussian density and projection laws (available):** the positive-width normalized
+  Gaussian weight is proved equal to a scaled standard Gaussian, and its actual scalar
+  projection has variance `(s ‖z‖)² / (2π)`, including the zero vector and dimension zero
+  (#2733). The discrete-coset convolution projection and mod-one bound are proved in #2734;
+  efficient sampling and the quantum reduction remain #1213.
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
@@ -1026,14 +1566,8 @@ and credited.
 These remain coverage targets but are deferred from the active queue; their issues were closed as
 not planned, not as proved.
 
-- The full VNP-completeness reduction for the permanent ([#321]). Arithmetic formulas now
-  project to the permanent with dimension `Formula.size + 1` over every commutative semiring;
-  a selector occurring in one permanent entry can be eliminated with one extra dimension when
-  `2` is invertible. The conversion from VP witnesses to formulas, the two-entry gadget and
-  general Boolean-sum elimination needed for VNP-hardness remain open.
-- General auxiliary-input zero knowledge ([#324]); see the GMW theorem above.
-- Williams's square-root-space simulation ([#361]) and implicit Tree Evaluation ([#367]), now the
-  frontier track [#888].
+- General auxiliary-input zero knowledge ([#324]); the GMW protocol's auxiliary-input results and
+  their limits are in [`GMW/Simulator.lean`](Complexity/Crypto/Computational/GMW/Simulator.lean).
 - Vollmer's generalized-quantifier survey ([#399]): ordered leaf words, explicit uniformity and
   input-access models, finite-monoid classification and generalized logical quantifiers.
 
@@ -1041,8 +1575,6 @@ not planned, not as proved.
 [archive-fhe]: https://github.com/cslib-community/complexitylib/blob/c89dd48c/ROADMAP.md#modern-fhe-methods-and-deployment-priorities
 [#321]: https://github.com/cslib-community/complexitylib/issues/321
 [#324]: https://github.com/cslib-community/complexitylib/issues/324
-[#361]: https://github.com/cslib-community/complexitylib/issues/361
-[#367]: https://github.com/cslib-community/complexitylib/issues/367
 [#399]: https://github.com/cslib-community/complexitylib/issues/399
 [#456]: https://github.com/cslib-community/complexitylib/issues/456
 [#459]: https://github.com/cslib-community/complexitylib/issues/459
@@ -1088,9 +1620,12 @@ not planned, not as proved.
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
 [#2290]: https://github.com/cslib-community/complexitylib/issues/2290
+[#2347]: https://github.com/cslib-community/complexitylib/issues/2347
 [#2423]: https://github.com/cslib-community/complexitylib/issues/2423
 
 [#2521]: https://github.com/cslib-community/complexitylib/issues/2521
+
+[#2527]: https://github.com/cslib-community/complexitylib/issues/2527
 
 [#2568]: https://github.com/cslib-community/complexitylib/issues/2568
 
@@ -1103,3 +1638,6 @@ not planned, not as proved.
 [#2652]: https://github.com/cslib-community/complexitylib/issues/2652
 
 [#2661]: https://github.com/cslib-community/complexitylib/issues/2661
+[#2812]: https://github.com/cslib-community/complexitylib/issues/2812
+[#2855]: https://github.com/cslib-community/complexitylib/issues/2855
+[#2866]: https://github.com/cslib-community/complexitylib/issues/2866

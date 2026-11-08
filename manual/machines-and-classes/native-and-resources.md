@@ -40,7 +40,7 @@ The specialization to no channels and `Id` is [step-exactly equivalent to the de
 | Nondeterministic `MultiTapeNTM` | Set of actions | Existence of an accepting path; repeated equal actions have no multiplicity | NP, NL, NSPACE, NPSPACE |
 | `MultiTapePTM` | A Boolean-indexed pair of actions | One fresh fair bit per live instruction; equal successor actions still receive their full probability mass | Strict PPT, BPP/RP, randomized logspace, oracle verifiers |
 | `MultiTapeCTM` | List of actions | Occurrences are distinguished by list indices, even when actions coincide | #P, GapP, exact acceptance/rejection counts |
-| `MultiTapeATM` | Boolean pair plus state polarity | Existential control chooses one child; universal control requires both | AP and polynomial-length alternating games |
+| `MultiTapeATM` | Boolean pair plus state polarity | Existential control chooses one child; universal control requires both | AP, APSPACE, AL and polynomial-length alternating games |
 
 The definitions are [PTM](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Probabilistic.lean#L41), [CTM](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Counting.lean#L63), and [ATM](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Alternating.lean#L76). These differences cannot be recovered simply by reusing a set of successors: sets forget multiplicity, and probability and universal branching evaluate the resulting tree differently.
 
@@ -49,6 +49,8 @@ Nondeterministic acceptance is specifically a halted configuration whose output 
 For counting, halting branches are counted at first halt. The CTM labelled transition system does not add artificial choices after halt. `HaltsWithin` and the nonblocking condition rule out the loss of branches at stuck live states where needed for class characterizations. This is distinct from the harmless halted self-loop used to pad nondeterministic reachability paths. [Counting definitions](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Counting.lean#L222)
 
 For alternation, [AcceptsWithin](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Alternating.lean#L128) is a finite accepting-tree relation. A halted `[true]` configuration accepts; live existential and universal configurations use one or both successors respectively. `Accepts` existentially quantifies a finite depth. Infinite branches therefore do not obtain acceptance from coinductive interpretation. The polynomial-time class also supplies an all-branches time bound.
+
+[Space-bounded alternation](../../Complexity/Computability/Machines/Turing/MultiTape/Alternating/Space.lean) follows the nondeterministic pattern. `MultiTapeATM.RecognizesInSpace` bounds every computation path of the table's nondeterministic machine and permits infinite branches. `MultiTapeATM.DecidesInSpace` also bounds path length for each input. The classes `APSPACE` and `AL` use the deciding form. The [simulation](../../Complexity/Computability/Machines/Turing/MultiTape/Alternating/Marking.lean) marks the reachable views bottom-up. Because `Accepts` is a least fixed point, `markAccepts_iff` shows that a bounded number of rounds computes it exactly, with no halting assumption. [Class inclusions](../../Complexity/Computability/Complexity/Classes/Alternation/Space.lean) are proved for recognizers: `RecognizesInSpace.mem_P` and `RecognizesInSpace.mem_EXP` give `AL ⊆ P` and `APSPACE ⊆ EXP`. Towards the converse, the [word game machine](../../Complexity/Computability/Machines/Turing/MultiTape/Alternating/WordGame.lean) keeps one position on a work tape and recomputes the next one after each move. Its space is that of one round, independent of the number of rounds, and `wordGame_spec` matches its acceptance with the least-fixed-point game semantics `WordGame.Wins`. [`mem_APSPACE_of_wins`](../../Complexity/Computability/Complexity/Classes/Alternation/SpaceGame.lean) puts every game with polynomial-time initial position and update, polynomially long positions and finite plays in `APSPACE`; its [checked client](../../ComplexityTests/AlternatingSpaceGame.lean) solves the `List.tail` game and discharges every hypothesis. The converse inclusions `EXP ⊆ APSPACE` and `P ⊆ AL` are still open: they need the tableau game and a logspace word game machine ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)). The [checked clients](../../ComplexityTests/AlternatingSpace.lean) include a universal machine with an infinite branch. It recognizes `∅` within zero space but decides nothing, and marking its views rejects.
 
 ## Independent time, workspace, and encoded output
 
@@ -68,6 +70,8 @@ Complexitylib deliberately has both output-uncharged and output-charged APIs:
 
 The definitions and the documented reason for the output charge are in [ResourceBounds.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/ResourceBounds.lean#L88). The charge supports composition when returned values must subsequently occupy work tapes. It matters below linear space: copying an arbitrary input is a logarithmic-workspace transduction but cannot satisfy `ComputableInSpace` with a logarithmic output charge. For decision problems, one output bit makes the distinction asymptotically immaterial. The intended public direction uses plain computability; tidy cleanup and head rewinding remain in machine-level construction proofs and some transitional interfaces at this snapshot.
 
+[Degree.BitString](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/Degree/BitString.lean) certifies linear conversion between raw words (`encBits`) and the existing framed Boolean-list encoding (`encList encBool`). Its [Cut module](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/Degree/BitString/Cut.lean) composes those streaming conversions with the existing unary list cutters. `ComputableInDegree.bitsTake` and `bitsDrop` charge the complete raw word and unary count, including empty words and counts beyond their length. Existing plain polynomial wrappers now reuse these stronger certificates. The [adaptive-game tape client](../../ComplexityTests/Crypto/LeveledTapePartition.lean) certifies its actual choose/encrypt/guess partition in time and output-charged workspace `O(tape.length + chooseCoins + encCoins + 1)`; callback execution and the complete reduction clock remain separate obligations.
+
 `FTIME` is the corresponding function-time class with explicit input and output encodings and affine time `c₁ t(n) + c₂`; its workspace has an arbitrary length-dependent bound. It adds no output charge beyond the time required to write the output. [FTIME](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/FunctionTime.lean#L46) `DTIME`, `NTIME`, `BPTIME`, `DSPACE` and `NSPACE` attach affine bounds to the relevant machine predicates; `P`, `NP`, `BPP`, `L`, `NL`, `PSPACE`, `NPSPACE`, `E`, `NE`, `EXP` and `NEXP` derive familiar bound families.
 
 ## Fair-coin efficiency
@@ -85,6 +89,15 @@ Randomized logarithmic space is defined directly over PTMs. Workspace is bounded
 The source of [MachinePrograms.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/MachinePrograms.lean#L24) distinguishes two nondeterministic successors, a stuck state, and a halted self-loop; it also checks channel isolation and fair-coin semantics. [CountingMachine.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/CountingMachine.lean#L25) contains repeated equal accepting actions and checks three accepting versus one rejecting branch, first-halt padding stability, and malformed certificates. [Alternation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Alternation.lean#L1) uses the same two choices with existential and universal polarity and obtains different acceptance outcomes. These are inspected regression witnesses, not test executions performed during the initial source review.
 
 ## Composing polynomial resource envelopes
+
+For a polynomial-time map on pairs, import
+[`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Families`](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Families.lean).
+Given `hg : ComputableInPolyTime g (encPair encA encB) encC` and polynomial bounds `ha`, `hb`
+on the encoded lengths of two input families, `hg.polynomiallyBounded_length_prod ha hb`
+bounds the encoded output family. The families themselves need not be computable. The
+[Levin](../../Complexity/Crypto/Computational/ZeroKnowledge/Levin.lean) and
+[amplification](../../Complexity/Crypto/Computational/ZeroKnowledge/Amplification.lean)
+proofs use this rule to transport witness families through the same deterministic reduction.
 
 Import
 [`ResourceBounds.Polynomial.Automation`](../../Complexity/Computability/Machines/Turing/MultiTape/ResourceBounds/Polynomial/Automation.lean)
@@ -109,6 +122,14 @@ this polynomial envelope. The
 [native packet resource proofs](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
 combine polynomial preprocessing/postprocessing this way while retaining their separate
 exponential time and polynomial space conclusions.
+
+Pure lookup in `frame u ++ v` uses the small
+[`Encodings.Frame.Lookup`](../../Complexity/Computability/Machines/Turing/MultiTape/Encodings/Frame/Lookup.lean)
+module. `getElem?_frame_append` identifies each marker and data bit;
+`getElem?_frame_append_length` identifies the terminator and
+`getElem?_frame_append_boundary` the suffix, including out-of-bounds
+lookup. Both the unary take/drop and zip-transducer machine proofs use these list laws, so
+clients can reuse them without importing either machine implementation.
 
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib

@@ -11,6 +11,8 @@ public import Complexity.Algorithms.WordRAM.RadixSort.Model
 public import Complexity.Computability.WordRAM.ListArray
 import Complexity.Computability.WordRAM.MemoryView
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Native stable digit-selection scan
 
@@ -147,23 +149,21 @@ theorem exec {w s d b t : ℕ} (xs acc : List ℕ) (x : Data 16)
     simp only [selected, List.length_append] at hcap ⊢
     have := hsub.length_le
     omega
-  let I (y : Data 16) : Prop :=
+  let P (j : ℕ) (y : Data 16) : Prop :=
     (∀ j : Fin 16, j.val ≤ 6 → y.regs j = x.regs j) ∧
-    y.regs idx ≤ xs.length ∧ y.regs out = (selected (y.regs idx)).length ∧
-    Block.HoldsList s xs y.mem ∧ Block.HoldsList d (selected (y.regs idx)) y.mem ∧
+    y.regs out = (selected j).length ∧
+    Block.HoldsList s xs y.mem ∧ Block.HoldsList d (selected j) y.mem ∧
     Modifies (Block.mk d xs.length).footprint x.mem y.mem
-  have hbody (y : Data 16) (hy : I y) (hc : (Cond.lt idx len).Holds y) :
-      ∃ z, ExecWithin w body y z 9 ∧ I z ∧
-        xs.length - z.regs idx < xs.length - y.regs idx := by
-    obtain ⟨hr, hle, hu, hm, ha, hf⟩ := hy
-    have hyl : y.regs len = xs.length := (hr len (by decide)).trans hn
+  have hbody (y : Data 16) (hy : P (y.regs idx) y) (hi : y.regs idx < xs.length) :
+      ∃ z, ExecWithin w body y z 9 ∧ P (y.regs idx + 1) z ∧
+        z.regs idx = y.regs idx + 1 := by
+    obtain ⟨hr, hu, hm, ha, hf⟩ := hy
     have hys : y.regs src = s := (hr src (by decide)).trans hs
     have hyd : y.regs dst = d := (hr dst (by decide)).trans hd
     have hyb : y.regs bit = b := (hr bit (by decide)).trans hb
     have hyt : y.regs tag = t := (hr tag (by decide)).trans ht
     have hyo : y.regs one = 1 := (hr one (by decide)).trans ho
     have hy2 : y.regs two = 2 := (hr two (by decide)).trans h2
-    have hi : y.regs idx < xs.length := by simpa only [Cond.holds_lt, hyl] using hc
     have hread : y.mem (y.regs src + y.regs idx) = xs[y.regs idx] := by
       rw [hys]; exact hm.get _ hi
     have hv : Fits w (y.mem (y.regs src + y.regs idx)) := by
@@ -187,15 +187,15 @@ theorem exec {w s d b t : ℕ} (xs acc : List ℕ) (x : Data 16)
       obtain ⟨z, he, hzi, hzu, hzm⟩ := step y hyo hy2 hsa hda hic
         (fun _ => hdfit.of_le (by omega)) hv
       rw [hyb, hread, hyt, ite_eq_left heq] at hzu hzm
-      refine ⟨z, he, ?_, by omega⟩
-      refine ⟨?_, by omega, ?_, ?_, ?_, ?_⟩
+      refine ⟨z, he, ?_, hzi⟩
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
       · intro j hj
         exact (he.regs_eq (preserves_low j hj)).trans (hr j hj)
-      · rw [hzi, hsuc, ite_eq_left heq, List.length_append, List.length_singleton]
+      · rw [hsuc, ite_eq_left heq, List.length_append, List.length_singleton]
         omega
       · rw [hzm, hyd]
         rcases hdisj with h | h <;> ram_keep hm
-      · rw [hzi, hsuc, ite_eq_left heq, hzm, hyd, hu]
+      · rw [hsuc, ite_eq_left heq, hzm, hyd, hu]
         exact ha.append_one _
       · intro a hnot
         have hne : a ≠ d + y.regs out := by
@@ -211,17 +211,17 @@ theorem exec {w s d b t : ℕ} (xs acc : List ℕ) (x : Data 16)
       rw [hyb, hread, hyt, ite_eq_right heq] at hzu hzm
       have hsel : selected (y.regs idx + 1) = selected (y.regs idx) := by
         rw [hsuc, ite_eq_right heq, List.append_nil]
-      refine ⟨z, he, ?_, by omega⟩
-      refine ⟨?_, by omega, ?_, ?_, ?_, ?_⟩
+      refine ⟨z, he, ?_, hzi⟩
+      refine ⟨?_, ?_, ?_, ?_, ?_⟩
       · intro j hj
         exact (he.regs_eq (preserves_low j hj)).trans (hr j hj)
-      · rw [hzi, hsel, hzu, Nat.add_zero, hu]
+      · rw [hsel, hzu, Nat.add_zero, hu]
       · simpa only [hzm] using hm
-      · simpa only [hzi, hsel, hzm] using ha
+      · simpa only [hsel, hzm] using ha
       · simpa only [hzm] using hf
   let x₀ := x.set idx 0
-  have hx₀ : I x₀ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+  have hx₀ : P (x₀.regs idx) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
     · intro j hj
       have hne : j ≠ idx := by
         intro h
@@ -229,26 +229,20 @@ theorem exec {w s d b t : ℕ} (xs acc : List ℕ) (x : Data 16)
         change j.val = 7 at hv
         omega
       exact Function.update_of_ne hne _ _
-    · simp [x₀]
     · simpa +decide [x₀, selected, select] using hout
     · exact hsrc
     · simpa [x₀, selected, select] using hacc
     · exact Modifies.refl _ _
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => xs.length - y.regs idx) hbody hx₀
-  obtain ⟨hr, hle, hu, hm, ha, hf⟩ := hy
-  have hend : y.regs idx = xs.length := by
-    have hyl : y.regs len = xs.length := (hr len (by decide)).trans hn
-    simp only [Cond.holds_lt, hyl] at hc
-    omega
+  obtain ⟨y, he, ⟨hr, hu, hm, ha, hf⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => (hy.1 len (by decide)).trans hn) hbody (by simp [x₀]) hx₀
   have hi := (ExecWithin.const (d := idx) (x := x) (fits_zero w)).seq he
   refine ⟨y, ?_, ?_, hm, ?_, hf⟩
   · convert hi using 1
     · rfl
     · simp only [x₀, Data.set_regs, Function.update_self, Nat.sub_zero]
       omega
-  · simpa only [hend, selected, List.take_length] using ha
-  · simpa only [hend, selected, List.take_length] using hu
+  · simpa only [selected, List.take_length] using ha
+  · simpa only [selected, List.take_length] using hu
 
 end Scan
 end Cslib.Algorithms.WordRAM.RadixSort

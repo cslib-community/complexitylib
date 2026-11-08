@@ -22,6 +22,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
+import Complexity.Tactic.EncLen
 
 /-!
 # Structural consequences of the NP-hardness of MCSP
@@ -138,9 +139,7 @@ private theorem length_encPair_decodePair_le :
   | false :: b :: v => by simp [decodePair, unframe, dropFrame]
   | true :: b :: v => by
     have ih := length_encPair_decodePair_le v
-    simp only [decodePair, unframe, dropFrame, length_encPair, encBits_apply,
-      List.length_cons] at ih ⊢
-    omega
+    enc_len [decodePair, unframe, dropFrame] at ih ⊢
 
 /-- If `EXP encBits ⊆ PPolyOn encBits`, then `EXP` on paired bitstrings `encPair encBits encBits`
 also lies in `PPolyOn (encPair encBits encBits)`. -/
@@ -414,8 +413,7 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
   have harity (x : List Bool) : (R (z x)).arity ≤ m_bound x.length := by
     set n := x.length
     have h2_arity : 2 ^ (R (z x)).arity ≤ (MCSP.encInstance (R (z x))).length := by
-      rw [MCSP.encInstance_apply, length_encPair, encBits_apply, List.length_ofFn]
-      omega
+      enc_len [MCSP.encInstance_apply, List.length_ofFn]
     have hn_le : n + 1 ≤ 2 ^ f n :=
       (Nat.lt_two_pow_self (n := n)).trans_le (Nat.pow_le_pow_right (by norm_num) (hnf n))
     have hzx_len : (z x).length + 1 ≤ 2 ^ (f n + 2) := by
