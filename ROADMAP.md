@@ -434,11 +434,15 @@ In order:
 ### Private information retrieval ([#3251](https://github.com/cslib-community/complexitylib/issues/3251))
 
 - **Information-theoretic PIR:** `Crypto/Protocols/PIR` covers one-round schemes with perfect
-  correctness and single-server privacy, the subcube schemes with the rows transformation, and
-  schemes from perfectly smooth decoders. It also has the single-server bound with and without
-  interaction, and the two-server linear-summation bound with its tight even-set scheme (CGKS
-  Section 5, [#3426](https://github.com/cslib-community/complexitylib/issues/3426)). Next targets:
-  - the covering-code two-server scheme with `O(n^{1/3})` bits (CGKS Section 3.3);
+  correctness and single-server privacy, the subcube schemes with the rows transformation, the
+  covering-code schemes for balanced covers (CGKS Section 3.3,
+  [#3451](https://github.com/cslib-community/complexitylib/issues/3451)), and schemes from
+  perfectly smooth decoders. It also has the single-server bound with and without interaction,
+  and the two-server linear-summation bound with its tight even-set scheme (CGKS Section 5,
+  [#3426](https://github.com/cslib-community/complexitylib/issues/3426)). Next targets:
+  - variable-length answers, so that unbalanced covers meet CGKS Theorem 1 exactly;
+  - the rest of CGKS Section 3.3: radius-`2` covering codes, the other dimensions of Figure 1,
+    the asymptotic lower estimate and server time;
   - `t`-private schemes against coalitions;
   - block retrieval;
   - the converse from schemes to smooth codes (Katz–Trevisan);

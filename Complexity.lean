@@ -3744,6 +3744,7 @@ public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.PIR.Basic
+public import Complexity.Crypto.Protocols.PIR.CoveringCode
 public import Complexity.Crypto.Protocols.PIR.Cube
 public import Complexity.Crypto.Protocols.PIR.Interactive
 public import Complexity.Crypto.Protocols.PIR.LinearSummation
