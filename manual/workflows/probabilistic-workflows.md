@@ -88,6 +88,18 @@ module re-exports this file, so `Pr[e] ≤ 1` is `PMF.toReal_apply_le_one _ true
 [checked examples](../../ComplexityTests/ProbabilityNotation.lean) bound a program and a set event.
 Run `scripts/build.sh ComplexityTests.ProbabilityNotation`.
 
+For a Boolean distribution `p : PMF Bool`, import
+[PMF/Bool.lean](../../Complexity/Probability/PMF/Bool.lean) and use
+`PMF.apply_true_add_apply_false p : p true + p false = 1` rather than rewriting with `tsum_bool`
+and `PMF.tsum_coe` by hand. Its real forms are `PMF.toReal_true_add_toReal_false` and
+`PMF.toReal_false_eq_one_sub`. The same module bounds Boolean events written as `(p.map E) true`:
+`PMF.map_true_mono`, `PMF.map_true_le_add` and `PMF.map_any_range_true_le_sum` (a union bound),
+and `PMF.map_not_true` for complements. To compose an event bound through `PMF.bind`, use the
+`PMF.toOuterMeasure_bind_*` lemmas in
+[PMF/EventBind.lean](../../Complexity/Probability/PMF/EventBind.lean). The
+[checked examples](../../ComplexityTests/PMFBool.lean) recover the mass of `false` from the mass of
+`true`; run `scripts/build.sh ComplexityTests.PMFBool`.
+
 ## Count the fair coins used by an exact sampler
 
 Import [DDGTree.lean](../../Complexity/Probability/DDGTree.lean) to describe an exact sampler as
@@ -278,7 +290,7 @@ that bounds `(((Q ^ t) (x, y)).toOuterMeasure {w | w.1 ≠ w.2}).toReal` for all
 The bounded event is "the copies differ at time `t`", not the source's coupling-time tail, and is
 never larger. The theorem covers time-homogeneous Markovian couplings only, but needs no
 stickiness. To bound the event, `PMF.toOuterMeasure_bind_le_mul_ennreal` from
-[PMF/Event.lean](../../Complexity/Probability/PMF/Event.lean) gives a step-by-step induction. The
+[PMF/EventBind.lean](../../Complexity/Probability/PMF/EventBind.lean) gives a step-by-step induction. The
 worked client is [BitString/LazyRandomWalk.lean](../../Complexity/Probability/BitString/LazyRandomWalk.lean):
 for the lazy hypercube walk `Cslib.BitString.lazyRandomWalk ι`, `mixingTime_lazyRandomWalk_le`
 proves `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉`. The ceiling is necessary, as the `n = 1`, `ε = 2/5`

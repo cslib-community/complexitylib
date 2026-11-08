@@ -11,6 +11,7 @@ public import Complexity.Languages.Probabilistic.Semantics
 public import Mathlib.Data.List.OfFn
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Bounded adaptive probabilistic iteration

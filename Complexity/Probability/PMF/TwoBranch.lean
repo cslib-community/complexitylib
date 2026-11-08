@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Retained success across two probabilistic branches

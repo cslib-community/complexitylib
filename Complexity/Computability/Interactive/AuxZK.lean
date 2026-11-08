@@ -14,6 +14,7 @@ public import Complexity.Crypto.Game.CloseTo
 import Complexity.Computability.Probabilistic.PPT.Composition
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Auxiliary-input zero knowledge and product composition for interactive reductions

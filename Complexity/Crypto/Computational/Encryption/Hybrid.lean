@@ -16,7 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Op
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.BitString.List
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Probability.PMF
 
 /-!

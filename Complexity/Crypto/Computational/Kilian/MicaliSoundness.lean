@@ -18,7 +18,7 @@ import Complexity.Computability.PCP.Completeness
 import Complexity.Foundations.Data.List.Lookup
 import Complexity.Languages.Probabilistic.QueryCount.Support
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 import Mathlib.Data.List.GetD
 
 /-!

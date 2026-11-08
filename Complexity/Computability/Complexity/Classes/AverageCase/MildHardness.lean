@@ -11,7 +11,7 @@ public import Complexity.Computability.Complexity.AverageCase
 public import Complexity.Computability.Complexity.Classes.AverageCase.Distributional
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Tactic.PolyTime
 
 /-!

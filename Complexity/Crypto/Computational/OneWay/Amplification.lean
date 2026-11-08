@@ -20,7 +20,7 @@ import Complexity.Foundations.Data.Finset.Sampling
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Probability.BitString.List.All
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 
 /-!
 # Yao's Weak-to-Strong One-Way Function Hardness Amplification

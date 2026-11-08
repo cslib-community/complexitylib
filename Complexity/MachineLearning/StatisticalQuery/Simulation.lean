@@ -14,6 +14,7 @@ import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF
 import Complexity.Probability.Product.Reindex
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Simulating statistical queries from examples

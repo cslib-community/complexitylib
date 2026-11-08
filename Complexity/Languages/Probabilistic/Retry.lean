@@ -10,6 +10,7 @@ module
 public import Complexity.Languages.Probabilistic.QueryCount.Expected
 public import Complexity.Languages.Probabilistic.Vector
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Bounded retries and independent coordinates

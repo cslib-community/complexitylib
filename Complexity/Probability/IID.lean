@@ -12,6 +12,7 @@ import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
+import Complexity.Probability.PMF.Bool
 
 /-!
 # Independent draws from a distribution

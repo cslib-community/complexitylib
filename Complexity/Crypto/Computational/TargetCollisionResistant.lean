@@ -30,7 +30,7 @@ import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 
 /-!
 # Target collision resistance and universal one-way hash families

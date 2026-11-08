@@ -9,7 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.Encryption.Basic
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Probability.PMF
 import Complexity.Tactic.PPT
 

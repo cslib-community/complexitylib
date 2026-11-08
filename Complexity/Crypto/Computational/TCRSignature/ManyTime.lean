@@ -26,7 +26,7 @@ import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Languages.Probabilistic.Oracle.Support
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Tactic.PPT
 
 /-!

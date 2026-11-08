@@ -13,6 +13,7 @@ public import Mathlib.Data.Fin.Tuple.Take
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Uniform
 import Complexity.Probability.PMF
+import Complexity.Probability.PMF.Bool
 
 /-!
 # The next-bit test
@@ -103,8 +104,7 @@ private theorem map_decide_eq_apply_true {α : Type*} [DecidableEq α] (q : PMF 
 /-- The distinguisher/predictor lemma for a single bit, without subtraction. -/
 private theorem guessOfDistinguisher_apply_add (d : Bool → PMF Bool) (b : Bool) :
     guessOfDistinguisher d b + (uniformOfFintype Bool).bind d true = d b true + 2⁻¹ := by
-  have hd (r : Bool) : d r true + d r false = 1 := by
-    simpa [tsum_bool] using (d r).tsum_coe
+  have hd (r : Bool) : d r true + d r false = 1 := apply_true_add_apply_false (d r)
   have h2 : (2⁻¹ : ℝ≥0∞) * 2 = 1 := ENNReal.inv_mul_cancel two_ne_zero ENNReal.ofNat_ne_top
   simp only [guessOfDistinguisher, monad_bind_eq_bind, PMF.bind_apply, PMF.map_apply, tsum_bool,
     uniformOfFintype_apply, Fintype.card_bool, Nat.cast_ofNat]

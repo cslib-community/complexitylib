@@ -11,7 +11,7 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature
 public import Complexity.Probability.Guessing.Leakage
 import Complexity.Probability.PMF.Uniform
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 
 /-!
 # Nonzero SIS extraction from public-key-only lattice forks

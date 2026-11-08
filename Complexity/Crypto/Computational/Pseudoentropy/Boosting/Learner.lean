@@ -13,6 +13,8 @@ import Complexity.Probability.PMF.Event
 import Complexity.Languages.Probabilistic.Notation
 import Complexity.Probability.PMF.Expect
 import Complexity.Tactic.PPT
+import Complexity.Probability.PMF.EventBind
+import Complexity.Probability.PMF.Bool
 
 /-!
 # Learning a predictor from sampled descriptions

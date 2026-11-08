@@ -12,7 +12,7 @@ public import Complexity.Logics.Propositional.CNF
 public import Mathlib.InformationTheory.Hamming
 public import Complexity.Probability.PMF
 import Complexity.Foundations.Data.BitString.Hamming
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity

@@ -10,7 +10,7 @@ module
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Session
 public import Complexity.Computability.Probabilistic.Oracle
 public import Complexity.Languages.Probabilistic.Oracle.Simulation
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Complete corrupted-sender executions

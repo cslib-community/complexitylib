@@ -15,7 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Probability.BitString.List
 import Complexity.Probability.Concentration
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Probability.PMF.Map
 import Complexity.Probability.PMF.Uniform
 import Complexity.Probability.Product

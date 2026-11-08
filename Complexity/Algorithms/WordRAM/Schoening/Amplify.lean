@@ -17,6 +17,7 @@ import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.ToReal
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Schöning's algorithm on the randomized word RAM

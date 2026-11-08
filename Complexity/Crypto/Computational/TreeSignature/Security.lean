@@ -38,6 +38,7 @@ import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 import Complexity.Languages.Probabilistic.UntilBad
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 
 /-!
 # Security of stateless tree signatures

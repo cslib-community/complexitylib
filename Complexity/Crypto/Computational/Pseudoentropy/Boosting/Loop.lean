@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Pseudoentropy.Boosting.Program
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Correctness of the clocked boosting loop

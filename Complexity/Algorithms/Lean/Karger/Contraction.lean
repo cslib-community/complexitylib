@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.DataStructure.StateTransition.Randomized
 public import Complexity.Languages.Probabilistic.Iteration
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Karger's contraction algorithm as a randomized client

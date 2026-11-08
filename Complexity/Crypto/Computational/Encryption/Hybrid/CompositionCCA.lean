@@ -11,7 +11,7 @@ public import Complexity.Crypto.Computational.Encryption.Hybrid.DEMCCA
 import Complexity.Computability.Probabilistic.Oracle.Substitution
 import Complexity.Crypto.Computational.Encryption.DecryptionBound
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Tactic.PPT
 
 /-!

@@ -23,7 +23,7 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 import Complexity.Probability.BitString.List
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Computability.Probabilistic.PPT.Capture
 
 /-!

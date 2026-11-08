@@ -10,7 +10,7 @@ module
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Opening
 public import Complexity.Foundations.Data.BitString.Threshold
 public import Complexity.Probability.StatisticalDistance.Coupling
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Extracting the bit committed through ideal OT

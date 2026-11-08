@@ -24,6 +24,7 @@ import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF
 import Complexity.Tactic.PolyTime.Init
 import Mathlib.FieldTheory.Finite.Basic
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # The Computational and Decisional Diffie–Hellman assumptions

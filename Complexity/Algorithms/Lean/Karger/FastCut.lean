@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Algorithms.WordRAM.Karger.FastCut
 import Complexity.Probability.PMF.TwoBranch
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Karger–Stein recursion as a client of the contraction specification

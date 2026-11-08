@@ -14,6 +14,7 @@ public import Complexity.Languages.Probabilistic.Iteration
 public import Complexity.Languages.Probabilistic.Repeat
 import Complexity.Languages.Probabilistic.Concentration
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Almost uniform sampling gives approximate counting for self-reducible families

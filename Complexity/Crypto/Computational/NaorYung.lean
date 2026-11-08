@@ -23,7 +23,7 @@ import Complexity.Crypto.Game.Hybrid
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Tactic.PolyTime.Init
 
 /-!

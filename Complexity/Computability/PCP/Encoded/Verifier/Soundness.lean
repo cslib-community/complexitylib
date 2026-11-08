@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.PCP.Encoded.Verifier
 public import Complexity.Probability.BitString
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Probability.UniformNat
 import Complexity.Foundations.Data.Nat.Log
 

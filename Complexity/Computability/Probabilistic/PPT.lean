@@ -11,7 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.D
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 
 /-!

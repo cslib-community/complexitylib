@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch.Correctness
 public import Complexity.Probability.Product.Event
 public import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Randomized correctness after Module-LWE modulus switching

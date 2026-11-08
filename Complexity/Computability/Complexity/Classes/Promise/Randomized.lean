@@ -16,6 +16,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Randomized reductions with one-sided error on promise problems

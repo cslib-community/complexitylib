@@ -14,6 +14,7 @@ import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
 import Complexity.Probability.PMF.ToReal
 import Complexity.Probability.PMF.Uniform
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # The lazy random walk on the hypercube

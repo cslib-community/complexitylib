@@ -9,7 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Probability.Entropy
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Languages.Probabilistic.Notation
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling

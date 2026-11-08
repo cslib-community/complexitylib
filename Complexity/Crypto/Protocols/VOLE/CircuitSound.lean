@@ -10,7 +10,7 @@ module
 public import Complexity.Crypto.Protocols.VOLE.Circuit
 public import Complexity.Crypto.Protocols.VOLE.BatchMulCheck
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Soundness of the circuit-bound ideal VOLE session

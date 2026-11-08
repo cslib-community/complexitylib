@@ -13,6 +13,7 @@ public import Complexity.Probability.StatisticalDistance
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # The coupling inequality and approximate couplings

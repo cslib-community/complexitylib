@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.Basic
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Languages.Probabilistic.Notation
 import Complexity.Probability.PMF
 import Complexity.Tactic.PPT

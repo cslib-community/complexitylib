@@ -11,7 +11,7 @@ public import Complexity.Computability.Interactive.AuxZK
 public import Complexity.Computability.Interactive.Bundle
 public import Complexity.Computability.Interactive.Efficient
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Round-by-round knowledge soundness of interactive reductions

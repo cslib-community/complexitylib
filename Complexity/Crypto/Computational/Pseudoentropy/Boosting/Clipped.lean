@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Foundations.Data.BitString.List.Vote
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Tactic.PPT
 import Complexity.Probability.Quantile

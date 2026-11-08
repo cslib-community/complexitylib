@@ -11,6 +11,7 @@ public import Complexity.Probability.MarkovChain.Mixing
 public import Complexity.Probability.StatisticalDistance.Coupling
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Markovian couplings and the coupling bound on mixing

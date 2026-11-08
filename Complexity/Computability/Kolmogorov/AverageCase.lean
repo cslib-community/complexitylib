@@ -11,7 +11,7 @@ public import Complexity.Computability.Complexity.AverageCase
 public import Complexity.Computability.Kolmogorov.TimeBounded
 public import Complexity.Probability.Entropy.BitString
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Probability.PMF.Map
 import Complexity.Probability.PMF.ToReal
 import Mathlib.Algebra.Polynomial.Eval.Defs

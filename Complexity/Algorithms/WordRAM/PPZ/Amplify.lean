@@ -15,6 +15,7 @@ public import Complexity.Algorithms.WordRAM.PPZ.Round
 public import Complexity.Algorithms.WordRAM.Schoening.Amplify
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.ToReal
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # The PPZ algorithm on the randomized word RAM

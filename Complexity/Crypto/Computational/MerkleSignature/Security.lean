@@ -28,7 +28,7 @@ import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.List.Lookup
 import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Probability.PMF.Bind
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Probability.UniformNat
 
 /-!

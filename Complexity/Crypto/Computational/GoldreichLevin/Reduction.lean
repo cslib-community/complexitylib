@@ -9,7 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.GoldreichLevin.Decoding
 public import Complexity.Foundations.Data.BitString.Enumeration
-import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Bool
 import Complexity.Crypto.Game
 
 /-!

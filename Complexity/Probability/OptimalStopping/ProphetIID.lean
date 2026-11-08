@@ -12,6 +12,7 @@ public import Mathlib.Analysis.SpecialFunctions.Exponential
 import Complexity.Probability.PMF.TailQuantile
 import Complexity.Probability.PMF.Bind
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
+import Complexity.Probability.PMF.Bool
 
 /-!
 # The i.i.d. prophet inequality with one randomized threshold
@@ -117,10 +118,6 @@ private theorem payoff_tieRule (τ : ℝ≥0) :
       change (if tieAccept τ o = true then (o.1 : ℝ≥0∞) else _) = _
       rw [payoff_tieRule τ (o :: past) os]
 
-private theorem coin_true_add_coin_false (coin : PMF Bool) : coin true + coin false = 1 := by
-  have h := coin.tsum_coe
-  rwa [tsum_fintype, Fintype.sum_bool] at h
-
 /-- An expectation under `withCoin coin μ` averages over the value and the independent coin. -/
 theorem tsum_withCoin_mul (coin : PMF Bool) (μ : PMF ℝ≥0) (f : ℝ≥0 × Bool → ℝ≥0∞) :
     ∑' o, withCoin coin μ o * f o =
@@ -135,7 +132,7 @@ private theorem tsum_withCoin_mul_fst (coin : PMF Bool) (μ : PMF ℝ≥0) (g : 
     ∑' o, withCoin coin μ o * g o.1 = ∑' x, μ x * g x := by
   rw [tsum_withCoin_mul]
   refine tsum_congr fun x => ?_
-  rw [← add_mul, coin_true_add_coin_false, one_mul]
+  rw [← add_mul, PMF.apply_true_add_apply_false, one_mul]
 
 private theorem toOuterMeasure_eq_tsum_bool {α : Type*} (p : PMF α) (a : α → Bool) :
     p.toOuterMeasure {o | a o = true} = ∑' o, p o * (if a o then 1 else 0) := by
@@ -153,7 +150,7 @@ theorem toOuterMeasure_tieAccept (τ : ℝ≥0) (coin : PMF Bool) (μ : PMF ℝ�
     simp [mul_comm]
   rw [hτ, ← tsum_add]
   refine tsum_congr fun x => ?_
-  have hcoin := coin_true_add_coin_false coin
+  have hcoin := PMF.apply_true_add_apply_false coin
   rcases lt_trichotomy τ x with h | h | h
   · simp [tieAccept, h, h.ne', hcoin]
   · subst h
@@ -350,7 +347,7 @@ private theorem tsum_tiePayoff_le_valueFrom (τ : ℝ≥0) (coin : PMF Bool) :
               (valueFrom reward laws (x :: past)) +
             coin false * max (∑' xs, jointLaw laws xs * reward (x :: past) xs)
               (valueFrom reward laws (x :: past)) := by gcongr <;> exact hle _
-        _ = _ := by rw [← add_mul, coin_true_add_coin_false, one_mul]
+        _ = _ := by rw [← add_mul, PMF.apply_true_add_apply_false, one_mul]
 
 /-- A randomized threshold collects no more than the optimal deterministic gambler. -/
 theorem tieExpectedReward_le_valueFrom (τ : ℝ≥0) (coin : PMF Bool) (laws : List (PMF ℝ≥0)) :
