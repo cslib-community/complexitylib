@@ -14,7 +14,7 @@ public import Mathlib.Data.List.Palindrome
 # Palindromic factors of lists
 
 Index characterizations of Mathlib's `List.Palindrome`, for whole lists
-(`List.palindrome_iff_getElem?`) and for factors `l.extract a b` (`List.palindrome_extract_iff`),
+(`List.Palindrome.iff_getElem?`) and for factors `l.extract a b` (`List.palindrome_extract_iff`),
 and the three facts about palindromic factors that center-based palindrome algorithms use:
 shrinking a palindromic factor symmetrically keeps it a palindrome
 (`List.Palindrome.extract_of_le`), a palindromic factor extends by one letter on each side iff those
@@ -23,8 +23,8 @@ palindromic factor reflect to palindromic factors (`List.Palindrome.extract_refl
 
 ## Main results
 
-* `List.palindrome_iff_getElem?`: `l` is a palindrome iff `l[i]? = l[l.length - 1 - i]?` for every
-  `i < l.length`.
+* `List.Palindrome.iff_getElem?`: `l` is a palindrome iff `l[i]? = l[l.length - 1 - i]?` for
+  every `i < l.length`.
 * `List.palindrome_extract_iff`: for `b ≤ l.length`, the factor `l.extract a b` is a palindrome iff
   `l[i]? = l[a + b - 1 - i]?` for every `a ≤ i < b`.
 * `List.Palindrome.extract_of_le`: shrinking a palindromic factor symmetrically about its center
@@ -42,7 +42,7 @@ namespace List
 variable {α : Type*}
 
 /-- Index characterization of palindromes. -/
-theorem palindrome_iff_getElem? {l : List α} :
+theorem Palindrome.iff_getElem? {l : List α} :
     Palindrome l ↔ ∀ i < l.length, l[i]? = l[l.length - 1 - i]? := by
   rw [Palindrome.iff_reverse_eq]
   constructor
@@ -59,7 +59,7 @@ theorem palindrome_iff_getElem? {l : List α} :
 symmetric about the midpoint of `[a, b)` agree. -/
 theorem palindrome_extract_iff {l : List α} {a b : ℕ} (hb : b ≤ l.length) :
     Palindrome (l.extract a b) ↔ ∀ i, a ≤ i → i < b → l[i]? = l[a + b - 1 - i]? := by
-  rw [palindrome_iff_getElem?]
+  rw [Palindrome.iff_getElem?]
   have hlen : (l.extract a b).length = b - a := by
     simp only [extract_eq_take_drop, length_take, length_drop]
     omega

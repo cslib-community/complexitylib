@@ -230,7 +230,7 @@ theorem maxPalindrome_isInfix (w : List α) (c : ℕ) : maxPalindrome w c <:+: w
 theorem palindrome_maxPalindrome (w : List α) (c : ℕ) : (maxPalindrome w c).Palindrome := by
   by_cases hc : c ≤ 2 * w.length
   · exact ((isPalRadius_iff_le_radius hc).mpr le_rfl).2.2
-  · rw [maxPalindrome, radius_eq_zero_of_length_lt (by omega), List.palindrome_iff_getElem?]
+  · rw [maxPalindrome, radius_eq_zero_of_length_lt (by omega), List.Palindrome.iff_getElem?]
     intro i hi
     simp only [List.extract_eq_take_drop, List.length_take, List.length_drop] at hi
     omega
