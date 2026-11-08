@@ -618,13 +618,9 @@ candidates, inconsistency, duplicate partial-rank rows, repeated opposite
 polarities, empty input and rank zero. A test-only exhaustive oracle checks
 small emitted queries; it is not used by the dispatcher.
 
-This is an executable finite-input algorithm with correctness and output budgets,
-not a composed multitape binary time/peak-space theorem. The common occurrence
-length representation has no encoded ragged-input adapter here. Binary encoding
-and resource certification for original normalization and backend analysis are
-provided below. Whole-pipeline resource composition, advertised counting runtime,
-full table frontend and graph endpoints remain open. Theorem 7.1 and ALL-main
-therefore remain incomplete.
+This stage proves correctness and output budgets. The later `WeightedRaggedResources`
+continuation composes its binary cost with actual counting and supplies a parsed ragged-input
+adapter. Table construction and graph endpoints remain separate.
 
 
 Import `Complexity.Computability.PolyTime.CNF.WeightedNormalization` for the
@@ -717,7 +713,8 @@ query counts on declared bits, computed original-row selection, repeated opposit
 occurrences and a `2^80` coefficient. Test-only exhaustive counting is absent
 from the implementation. The complete tagged continuation below resolves the
 remaining construction branches. The native continuation below supplies sharper counting time
-on the common-occurrence model; full raw/table frontend and graph endpoints remain open.
+on dependent occurrence families; the parsed ragged adapter follows below. Table/graph endpoints
+remain open.
 
 
 Import `Complexity.Computability.PolyTime.CNF.WeightedPlan` for the complete
@@ -761,8 +758,8 @@ binary `2^80` direct answer. Exhaustive counting appears only in tiny test oracl
 This completes binary time/space certification of tagged plan construction,
 including simultaneous intermediate workspace and actual output writes. Construction stops
 before counting. The native continuation below now supplies polynomial space and sharper time
-on the stated common-occurrence model. The arbitrary raw frontend, full table/graph endpoints,
-Theorem 7.1 at its full source scope and ALL-main remain incomplete.
+on dependent occurrence families, with the parsed ragged adapter below. Table/graph endpoints
+and ALL-main remain incomplete.
 
 
 Import `Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan`
@@ -815,9 +812,41 @@ From the repository root run `scripts/build.sh ComplexityTests.WeightedCountingR
 The [complete client](../../ComplexityTests/WeightedCountingResources.lean) couples one actual
 machine with repeated-occurrence partial-rank queries, fractional full-rank rejection, a $2^{80}$
 coefficient, unused variables, an 81-bit direct answer, and real resource bounds for declared
-empty systems at arbitrary size. The restriction to one shared occurrence count per finite row
-family remains material. Arbitrary ragged raw-row correctness and its sharp-time transfer,
-table construction/resources, graph endpoints and full Theorem 7.1/ALL-main remain open.
+empty systems at arbitrary size. These APIs now allow each row its own occurrence length.
+The actual parsed arbitrary-row frontend follows.
+
+Import `Complexity.Computability.Complexity.FineGrained.WeightedRaggedResources`, namespace
+`Cslib.Logic.PL.WeightedRow.BinaryRagged`. `Input` is the declared size paired with a list of
+rows; each row is a list of `(index, polarity, weight)` occurrences and a signed target.
+`encInput` uses a unary declaration and framed ragged lists, binary indices, and signed binary
+weights/targets. The unary declaration accounts for unused declared variables in the input size;
+it must not be replaced by a succinct binary declaration without revisiting the resource claim.
+`parse_eq_some_iff` accepts exactly canonical encodings, including canonical signed integers.
+
+`admit d` computes declaration/strict-positive-weight checks and normalized minimized demands.
+Signed targets and empty rows are retained. Contradictory intervals have truncated demand zero
+and are rejected by the existing compiler. `recode` caps binary indices at the declaration before
+unary conversion, has a polynomial machine certificate even on invalid inputs, and is the
+identity on admitted inputs. `admitted_refinement` converts each checked list into its own exact
+finite occurrence type; no padding, zero-weight literals, fresh variables or supplied backend
+data occur. `compile_admitted_budget` transfers the actual two-query/width/variable/clause budget.
+
+`exists_countWords_sharp_certificate d` constructs one framed-word counting algorithm and native
+certificate. It proves global polynomial workspace, time $C(L+1)^e2^{A\eta_{\mathrm{rounded}}(n)}$,
+exact original assignment counts on admitted encodings, and zero on malformed/rejected inputs.
+`exists_countWords_real_sharp_certificate d` gives $C(L+1)^e2^{A\eta(n)}$ for $n\ge16$;
+constants depend only on fixed $d$. Parsing/canonicality, admission, integer growth, normalization,
+query writing, both counting calls and binary reconstruction/output are charged by composed
+machine certificates, rather than inferred from output length. All declared assignments are
+counted, including unused variables; small sizes use the rounded theorem's actual direct paths.
+This supplies Theorem 7.1's weighted-row frontend and counting resources for this explicit encoding.
+
+From the repository root run `scripts/build.sh ComplexityTests.WeightedRagged`.
+The [complete client](../../ComplexityTests/WeightedRagged.lean) couples one actual machine with
+rows of lengths 0, 1 and 3, repeated mixed polarities, an 81-bit coefficient, an unused variable,
+empty contradictions, zero-variable systems, invalid large indices/nonpositive coefficients and
+malformed words. Table closure/equation/separator/overlap resources, graph endpoints and ALL-main
+remain open.
 
 
 Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds`
@@ -1027,9 +1056,9 @@ still needs to be reindexed globally into the original per-test incidence
 families, with invalid binary ranks removed and listed-test coefficients
 identified with the finite normalized equations. High-incidence branches, parity
 queries, sharper sparsification and actual eta-time absorption/rescaling remain.
-The old counter's extra log-log factor and the weighted common-occurrence,
-variable-length raw-row, table, graph and full Theorem 7.1/ALL-main gaps remain
-explicitly open.
+These are the limits of this intermediate stage. The later native general counter and parsed
+ragged weighted continuation resolve the counting-resource and weighted frontend gaps; table,
+graph and ALL-main endpoints remain open.
 
 
 ### Identify physical wire assignments, padding and coefficient products
@@ -1088,9 +1117,9 @@ incidence polynomial still needs identification with the polynomial on original
 finite normalized equations. The new identity is not yet original-assignment
 count correctness. High-incidence branch and parity-query composition, sharper
 sparsification, explicit exponent absorption and weighted eta-time rescaling
-remain after it. The old complete counter still retains its extra log-log
-factor; the common-occurrence weighted frontend, arbitrary variable-length raw
-rows, table/graph endpoints, full Theorem 7.1 and ALL-main remain open.
+remain at this intermediate stage. The later native general counter and parsed ragged weighted
+continuation resolve these counting/frontend gaps. The older interpolation counter is unchanged;
+table/graph endpoints and ALL-main remain open.
 
 
 ### Read the actual native stream as a fitting-rank incidence sum
@@ -1363,8 +1392,7 @@ checks a family with $n^2$ repeated clauses and $n-1$ unused variables, original
 and the actual source time/space witness. It also covers zero-variable contradiction/tautology
 and an unbounded invalid-support family rejected in polynomial charged time at declared size zero.
 
-The sharper source counter and weighted common-occurrence execution are now certified. The
-arbitrary ragged weighted frontend, original-input representation/encoding transfer at full
-source generality, table closure/equation/separator/overlap construction resources, graph
-endpoints, full Theorem 7.1 and ALL-main remain open. The source composition is
-OpenAI2026ETH Appendix D.3, PDF p.57, imported by STOC1575 Lemma 3.2 p.11.
+The sharper source counter and parsed ragged weighted execution are now certified as described
+above. Table closure/equation/separator/overlap construction resources, graph endpoints and
+ALL-main remain open. The source composition is OpenAI2026ETH Appendix D.3, PDF p.57, imported
+by STOC1575 Lemma 3.2 p.11.

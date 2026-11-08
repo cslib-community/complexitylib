@@ -152,13 +152,15 @@ space for fixed d, including direct count bits, both query lists and declared-va
       ((q false).relabel (flattenVar (n := n)), (q true).relabel (flattenVar (n := n))))
 
 /-- Constant-assignment checking agrees pointwise with the original occurrence equations. -/
-theorem constantTest_ofOccurrences {n m t : ℕ} (R : Fin t → Occurrences n m) (b : Bool) :
+theorem constantTest_ofOccurrences {n t : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j)) (b : Bool) :
     constantTest ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) b = true ↔
       ∀ j, ((R j).value (fun _ => b) : ℤ) = (R j).target := by
   simp [constantTest, BinaryNormalization.ofOccurrences, List.sum_ofFn,
     Occurrences.value, Nat.cast_sum, Nat.cast_ite]
 
-private theorem constantTest_normalized {n m t d : ℕ} (R : Fin t → Occurrences n m)
+private theorem constantTest_normalized {n t d : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) (b : Bool) :
     constantTest ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) b =
       normalizedTest ((List.finRange t).map fun j => (R j).normalize d (hd j)) (fun _ => b) := by
@@ -193,7 +195,8 @@ private theorem smallCount_one {d : ℕ} (ns : List (Normalized 1 d)) :
       simp [Finset.filter_insert, Finset.filter_singleton, hf, ht]
 
 /-- Exactly the reviewed direct count is emitted at n≤1, with no large Boolean cube. -/
-theorem smallAnswer_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem smallAnswer_ofOccurrences {n t d : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) (hn : n ≤ 1) :
     smallAnswer n ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) =
       smallCount ((List.finRange t).map fun j => (R j).normalize d (hd j)) := by
@@ -203,7 +206,7 @@ theorem smallAnswer_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m
 
 /-- The actual tagged binary compiler equals serialization of the reviewed executable plan,
 case by case, on original positive-weight occurrences with bounded computed demands. -/
-theorem compile_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem compile_ofOccurrences {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     compile d n ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) =
       serialize (executableCountingPlan
@@ -248,7 +251,7 @@ theorem compile_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m)
   · simp [hc, serialize]
 
 /-- The full original-input endpoint agrees with the exact reviewed all-cases output. -/
-theorem compile_original {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem compile_original {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     compile d n ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) =
       serialize (executableOriginalCountingPlan R hd).val :=
@@ -296,7 +299,7 @@ theorem serialize_count {n d : ℕ} (p : CountingPlan n d) :
     simp only [serialize, Output.count, CountingPlan.count, queryCount_relabel]
 
 /-- End-to-end exact counting for the actual tagged output on original positive occurrences. -/
-theorem compile_count {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem compile_count {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     (compile d n ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j))).count =
       Fintype.card {σ : Fin n → Bool // ∀ j, ((R j).value σ : ℤ) = (R j).target} := by
@@ -335,7 +338,7 @@ theorem serialize_withinBudget {n d : ℕ} (p : CountingPlan n d) :
     · exact hb true
 
 /-- End-to-end variable/width/clause/index bounds for the actual compiled output. -/
-theorem compile_withinBudget {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem compile_withinBudget {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     WithinBudget n d
       (compile d n ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j))) := by
@@ -343,7 +346,7 @@ theorem compile_withinBudget {n m t d : ℕ} (R : Fin t → Occurrences n m)
   exact serialize_withinBudget _
 
 /-- The complete interpreted output never counts more than all declared Boolean assignments. -/
-theorem compile_count_le {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem compile_count_le {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     (compile d n ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j))).count ≤
       2 ^ n := by
@@ -355,7 +358,7 @@ theorem compile_count_le {n m t d : ℕ} (R : Fin t → Occurrences n m)
   simpa using h
 
 /-- A directly emitted answer has at most n+1 binary bits, even for the 2^n branch. -/
-theorem compile_direct_bits {n m t d a : ℕ} (R : Fin t → Occurrences n m)
+theorem compile_direct_bits {n t d a : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d)
     (ha : compile d n ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) =
       .inl a) : (encNat a).length ≤ n + 1 := by

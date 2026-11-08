@@ -213,7 +213,8 @@ def executableCountingPlan {n d : ℕ} (ns : List (Normalized n d)) :
 
 /-- Normalize actual repeated signed occurrences, then execute the entire counting plan.
 The only supplied bound is on computed normalized demand; no rank/basis/output advice is used. -/
-def executableOriginalCountingPlan {n d m t : ℕ} (R : Fin t → Occurrences n m)
+def executableOriginalCountingPlan {n d t : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     {p : CountingPlan n d // p.count =
       Fintype.card {σ : Fin n → Bool // ∀ j, ((R j).value σ : ℤ) = (R j).target}} := by
@@ -227,8 +228,8 @@ def executableOriginalCountingPlan {n d m t : ℕ} (R : Fin t → Occurrences n 
 
 /-- Execution and the reviewed mathematical dispatcher have the same full-input count.
 Their query lists may differ in ordering; correspondence is semantic. -/
-theorem executableOriginalCountingPlan_count {n d m t : ℕ}
-    (R : Fin t → Occurrences n m) (hd : ∀ j, (R j).demand ≤ d) :
+theorem executableOriginalCountingPlan_count {n d t : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j)) (hd : ∀ j, (R j).demand ≤ d) :
     (executableOriginalCountingPlan R hd).val.count = (originalCountingPlan R hd).val.count :=
   (executableOriginalCountingPlan R hd).property.trans (originalCountingPlan R hd).property.symm
 

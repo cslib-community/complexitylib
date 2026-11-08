@@ -1118,10 +1118,9 @@ factorization are now proved below. Global reindexing into the original finite
 per-test incidence families, invalid-rank removal and listed/finite coefficient
 identification remain. High-incidence branches, parity queries, sharper
 sparsification, actual eta-time absorption and weighted rescaling then remain.
-The old complete counter retains the extra log-log
-factor. No complete sharper counter or Theorem 7.1/ALL-main completion is claimed;
-common-occurrence positive weighted rows and raw-row/table/graph limitations
-remain as above.
+These are stage-local limits; the later native general counter and parsed ragged weighted
+continuation below resolve the counting-resource/frontend gaps. The old interpolation counter
+retains its extra log-log factor, while table/graph and ALL-main endpoints remain open.
 
 
 The physical-wire/global-product components are now proved. `IncidenceWireDecoding`
@@ -1147,9 +1146,9 @@ unused binary-rank removal. The identification with the original equation/subset
 families still needs the listed-test integer lifts and group-local coordinates
 connected to the finite normalized equations. Then compose
 high-incidence branches, every parity query, sharper sparsification, explicit
-exponent absorption and weighted eta-time rescaling. The old counter's extra
-log-log factor and the raw-row/common-occurrence/table/graph/Theorem 7.1/ALL-main
-limitations remain; no complete sharper-counter endpoint is claimed.
+exponent absorption and weighted eta-time rescaling, as completed by the later continuation
+below. The old interpolation counter is unchanged. The final status below records the parsed
+ragged weighted frontend; table/graph and ALL-main endpoints remain open.
 
 
 `IncidenceRankSum` now proves the actual finite-sum support/reconstruction
@@ -1212,16 +1211,22 @@ length/encoding transfer, all reduced solver costs and binary accumulation are
 charged. General natural/real estimates also prove fixed linear query-variable
 rescaling without adding an iterated-log factor.
 
-Remaining STOC1575 work is lifting the typed common-occurrence weighted frontend
-and its encoding/correctness/resource transfer to arbitrary variable-length raw
-rows, and completing the table closure/equation/separator/overlap construction
-resources and graph endpoints. The source-schedule whole general-density CNF
-machine now has its actual unrestricted-density sharp time/polynomial-space
-certificate, including source prefactors polynomial in N+M. Actual tagged weighted
-construction, sequential counting, binary reconstruction and eta rescaling now
-have sharp resources on the reviewed common-occurrence model; this restriction
-remains material and does not establish full Theorem 7.1.
+The arbitrary explicit ragged weighted-row frontend is now implemented in
+`WeightedRagged`/`WeightedRaggedResources`: canonical binary parsing, positive-weight/index and
+computed-demand admission, safe binary-to-unary index conversion, exact dependent-family
+refinement, and composed original-count correctness/sharp time/polynomial space. Empty rows,
+repeated opposite literals, signed targets and unused declared variables are preserved. The
+explicit encoding has a unary declaration, binary indices/weights/targets and framed variable-length
+lists; no succinct binary declaration resource claim is made. Native word certificates charge
+all parsing/construction/counting/output operations, with single-loglog eta and no counter advice.
+`ComplexityTests.WeightedRagged` supplies mixed-length/empty/contradictory/large-weight clients.
 
-The older interpolation counter is unchanged; its extra loglog and nu²-denominator
-schedule are not relabeled. Full raw weighted/Table/graph endpoints, other-paper
-objectives and ALL-main remain open.
+Remaining STOC1575 work includes table closure/equation/separator/overlap construction resources
+and graph endpoints. The source-schedule whole general-density CNF machine and actual tagged
+weighted construction, sequential counting, binary reconstruction and eta rescaling have sharp
+resources, now with the parsed ragged weighted frontend above. Theorem 7.1's counting reduction
+is covered for that explicit nonsuccinct input encoding; full paper/other-main/ALL-main endpoints
+remain open.
+
+The older interpolation counter is unchanged; its extra loglog and nu²-denominator schedule are
+not relabeled. Table/graph endpoints and other-paper objectives remain open.

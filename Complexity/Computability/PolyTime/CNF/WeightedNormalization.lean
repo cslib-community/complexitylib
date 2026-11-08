@@ -281,6 +281,12 @@ theorem demand_ofOccurrences {n m : ℕ} (R : Occurrences n m)
     decide_eq_true_eq, Occurrences.demand]
   split <;> omega
 
+/-- Truncated minimized demand agrees even for inconsistent signed targets. -/
+theorem demand_toNat_ofOccurrences {n m : ℕ} (R : Occurrences n m) :
+    (demand n (ofOccurrences R)).toNat = R.demand := by
+  simp only [demand, shifted_ofOccurrences, total_ofOccurrences, Occurrences.demand,
+    decide_eq_true_eq, min_def]
+
 /-- Complementation agrees with the original normalization on every declared variable. -/
 theorem sign_ofOccurrences {n m : ℕ} (R : Occurrences n m) (i : Fin n) :
     sign n (ofOccurrences R) i = R.normalSign i := by
@@ -379,7 +385,7 @@ selection, consistency and the full-rank candidate test. No desired bound is sup
   exact rejects_polytime.prod (hids.prod (hc.prod (ht.ite' hbool (by fun_prop))))
 
 /-- Filtering and writing the serialized original rows matches the actual retained capped rows. -/
-private theorem retained_pairs {n m t d : ℕ} (R : Fin t → Occurrences n m)
+private theorem retained_pairs {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) (js : List (Fin t)) :
     ((js.map fun j => ofOccurrences (R j)).filter (retained n)).map
         (fun p => (coefficients n p, rhs n p)) =
@@ -400,7 +406,8 @@ private theorem retained_pairs {n m t d : ℕ} (R : Fin t → Occurrences n m)
         Occurrences.normalize, hv, cappedRows, ih]
 
 /-- Both emitted tables equal the actual original-input normalized/capped affine tables. -/
-theorem materialize_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem materialize_ofOccurrences {n t d : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     materialize n ((List.finRange t).map fun j => ofOccurrences (R j)) =
       (cappedMatrix ((List.finRange t).map fun j => (R j).normalize d (hd j)),
@@ -412,7 +419,7 @@ theorem materialize_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m
   exact Prod.ext ha hb
 
 /-- Rejection is preserved even though invalid rows do not enter the emitted matrix. -/
-theorem rejects_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem rejects_ofOccurrences {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     rejects n ((List.finRange t).map fun j => ofOccurrences (R j)) =
       rejected ((List.finRange t).map fun j => (R j).normalize d (hd j)) := by
@@ -433,7 +440,7 @@ theorem rejects_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m)
     · simp [valid_ofOccurrences, hv]
 
 /-- Exact link from the certified binary stage to every computed large-dimension dispatcher test. -/
-theorem analyze_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem analyze_ofOccurrences {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     let ns := (List.finRange t).map fun j => (R j).normalize d (hd j)
     analyze n ((List.finRange t).map fun j => ofOccurrences (R j)) =
@@ -503,7 +510,8 @@ private theorem row_rhs_bound {n d : ℕ} (R : Row (Fin n) d) :
   nlinarith
 
 /-- Actual post-cap matrix entries have demand-controlled magnitude, including default zeros. -/
-theorem materialize_coefficient_bound {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem materialize_coefficient_bound {n t d : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) (i j : ℕ) :
     (rowEntry (materialize n ((List.finRange t).map fun j => ofOccurrences (R j))).1 i j).natAbs ≤
       d + 1 := by
@@ -516,7 +524,7 @@ theorem materialize_coefficient_bound {n m t d : ℕ} (R : Fin t → Occurrences
   exact row_coefficient_bound Q c
 
 /-- Actual post-cap RHS entries have demand/width-controlled magnitude. -/
-theorem materialize_rhs_bound {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem materialize_rhs_bound {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) (i : ℕ) :
     ((materialize n ((List.finRange t).map fun j => ofOccurrences (R j))).2.getD i 0).natAbs ≤
       (n + 1) * (d + 1) := by
@@ -528,7 +536,7 @@ theorem materialize_rhs_bound {n m t d : ℕ} (R : Fin t → Occurrences n m)
   exact row_rhs_bound Q
 
 /-- Bird determinant intermediate widths on the actual normalized matrix and computed basis. -/
-theorem original_gram_stage_bits {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem original_gram_stage_bits {n t d : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) (k i j : ℕ) :
     let A := (materialize n ((List.finRange t).map fun j => ofOccurrences (R j))).1
     let ids := LinearSystem.gramRowBasis n A
@@ -553,7 +561,8 @@ theorem original_gram_stage_bits {n m t d : ℕ} (R : Fin t → Occurrences n m)
 
 /-- Explicit binary growth for the actual recovered solver certificate after original normalization.
 The bound is derived from capping and declared width, not supplied as rank/size advice. -/
-theorem original_certificate_bits {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem original_certificate_bits {n t d : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     let (A, b) := materialize n ((List.finRange t).map fun j => ofOccurrences (R j))
     let β := (n + 1) * (d + 1)

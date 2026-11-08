@@ -151,7 +151,7 @@ def countingPlan (ns : List (Normalized n d)) :
 
 open Classical in
 /-- Normalize the actual repeated-occurrence input before dispatching every case. -/
-def originalCountingPlan {m t : ℕ} (R : Fin t → Occurrences n m)
+def originalCountingPlan {t : ℕ} {m : Fin t → ℕ} (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     {p : CountingPlan n d // p.count =
       Fintype.card {σ : Fin n → Bool // ∀ j, ((R j).value σ : ℤ) = (R j).target}} := by

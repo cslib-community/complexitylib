@@ -440,7 +440,8 @@ theorem normalizedData_ofOccurrences {n m d : ℕ} (R : Occurrences n m)
     BinaryNormalization.weight_ofOccurrences R hv, BinaryNormalization.demand_ofOccurrences R hv,
     ofRow, supportList, Occurrences.toRow, Function.comp_def]
 
-private theorem preparedRows_original {n m t d : ℕ} (R : Fin t → Occurrences n m)
+private theorem preparedRows_original {n t d : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) (js : List (Fin t)) :
     preparedRows n (js.map fun j => BinaryNormalization.ofOccurrences (R j)) =
       (cappedRows (js.map fun j => (R j).normalize d (hd j))).map ofRow := by
@@ -462,14 +463,16 @@ private theorem preparedRows_original {n m t d : ℕ} (R : Fin t → Occurrences
         BinaryNormalization.valid_ofOccurrences, Occurrences.normalize, hv, cappedRows] using ih
 
 /-- Exact normalized original-row list correspondence before computed basis lookup. -/
-theorem preparedRows_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem preparedRows_ofOccurrences {n t d : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     preparedRows n ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) =
       (cappedRows ((List.finRange t).map fun j => (R j).normalize d (hd j))).map ofRow :=
   preparedRows_original R hd _
 
 /-- Every emitted selected row is the actual row chosen by the reviewed computed basis. -/
-theorem selectedRows_ofOccurrences {n m t d : ℕ} (R : Fin t → Occurrences n m)
+theorem selectedRows_ofOccurrences {n t d : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d) :
     let ns := (List.finRange t).map fun j => (R j).normalize d (hd j)
     selectedRows n ((List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) =
@@ -536,7 +539,8 @@ theorem query_ofRows_polynomial {n d h : ℕ} (R : Fin (h + 1) → Row (Fin n) d
 
 /-- Query-branch correspondence for the computed original-row basis. The shape equality is
 used only to state the finite index type; the certified program computes the basis itself. -/
-theorem selectedQuery_ofOccurrences {n m t d k : ℕ} (R : Fin t → Occurrences n m)
+theorem selectedQuery_ofOccurrences {n t d k : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j))
     (hd : ∀ j, (R j).demand ≤ d)
     (hk : k + 1 = (cappedBasis ((List.finRange t).map fun j => (R j).normalize d (hd j))).length)
     (β : Bool) :

@@ -16,10 +16,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 # Sharp resources for actual binary weighted-plan execution
 
 Compose the actual tagged compiler, sharp general-density counter, sequential query calls and
-binary subtraction. Direct tags perform no counting calls. The finite common-occurrence frontend
-of the reviewed correctness theorem is retained: all rows have one shared occurrence index type.
-This does not prove the arbitrary variable-length raw-row frontend of [ChenJiangZhu2027],
-Theorem 7.1, or any table/graph endpoint. Bounds charge the complete binary input/output.
+binary subtraction. Direct tags perform no counting calls. The occurrence-family theorem allows
+each row its own length, including zero. `WeightedRaggedResources` supplies binary parsing,
+admission and exact refinement of arbitrary explicit rows for [ChenJiangZhu2027], Theorem 7.1.
+Table/graph endpoints are separate. Bounds charge the complete binary input/output.
 -/
 
 public section
@@ -43,7 +43,7 @@ private theorem dimension_le {n d : ℕ} {p : Output} (hp : WithinBudget n d p) 
     exact hp.1.trans (by omega)
 
 /-- One actual weighted algorithm has global polynomial workspace, exact original counts on
-common-occurrence inputs, and sharp rounded time at every declared size. All machine/resource
+dependent occurrence-family inputs, and sharp rounded time at every declared size. Machine/resource
 witnesses are derived, rather than supplied as a counting-oracle contract. -/
 theorem exists_count_sharp_certificate (d : ℕ) :
     ∃ count : ℕ × List BinaryNormalization.Input → ℕ,
@@ -51,7 +51,8 @@ theorem exists_count_sharp_certificate (d : ℕ) :
     ∃ C e A : ℕ,
       (∀ x, cs.space x ≤ C *
         ((encPair encUnary (encList BinaryNormalization.encInput) x).length + 1) ^ e) ∧
-      ∀ {n m t : ℕ} (R : Fin t → Occurrences n m) (_hd : ∀ j, (R j).demand ≤ d),
+      ∀ {n t : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j)) (_hd : ∀ j, (R j).demand ≤ d),
         let x := (n, (List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j))
         count x = Fintype.card {σ : Fin n → Bool // ∀ j, ((R j).value σ : ℤ) = (R j).target} ∧
         cs.time x ≤ C *
@@ -122,7 +123,7 @@ theorem exists_count_sharp_certificate (d : ℕ) :
     ((PolyBounded.const K).mul ((hO.add hBf).add hBt)).add hcsS
   obtain ⟨C, e, hCe⟩ := hZ.exists_le
   refine ⟨_, cs, C, e, 40 * D, fun x => (Nat.le_add_left _ _).trans (hCe x), ?_⟩
-  intro n m t R hd
+  intro n t m R hd
   let x : Input := (n, (List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j))
   have hb : WithinBudget n d (out x) := compile_withinBudget R hd
   have hscale (b : Bool) : Nat.logLogSqrtLogScale (counterInput b (out x)).1 ≤
@@ -172,14 +173,15 @@ theorem exists_count_sharp_certificate (d : ℕ) :
       _ ≤ _ := Nat.mul_le_mul_right E (hCe x)
 
 /-- Actual weighted binary reconstruction with the real source eta exponent. The input frontend
-is the explicitly stated common-occurrence model; arbitrary ragged raw rows remain outside it. -/
+uses dependent occurrence families; `WeightedRaggedResources` supplies the raw binary adapter. -/
 theorem exists_count_real_sharp_certificate (d : ℕ) :
     ∃ count : ℕ × List BinaryNormalization.Input → ℕ,
     ∃ cs : NativeCertificate count (encPair encUnary (encList BinaryNormalization.encInput)) encNat,
     ∃ C e A : ℕ,
       (∀ x, cs.space x ≤ C *
         ((encPair encUnary (encList BinaryNormalization.encInput) x).length + 1) ^ e) ∧
-      ∀ {n m t : ℕ} (R : Fin t → Occurrences n m) (_hd : ∀ j, (R j).demand ≤ d),
+      ∀ {n t : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j)) (_hd : ∀ j, (R j).demand ≤ d),
         count (n, (List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) =
           Fintype.card {σ : Fin n → Bool // ∀ j, ((R j).value σ : ℤ) = (R j).target} ∧
         (16 ≤ n →
@@ -189,7 +191,7 @@ theorem exists_count_real_sharp_certificate (d : ℕ) :
             (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) := by
   obtain ⟨count, cs, C, e, A, hs, h⟩ := exists_count_sharp_certificate d
   refine ⟨count, cs, C, e, 6 * A, hs, ?_⟩
-  intro n m t R hd
+  intro n t m R hd
   refine ⟨(h R hd).1, fun hn => ?_⟩
   let x : Input := (n, (List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j))
   have htR : (cs.time x : ℝ) ≤ (C : ℝ) * ((encInput x).length + 1 : ℕ) ^ e *

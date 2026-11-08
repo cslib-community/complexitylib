@@ -1725,6 +1725,7 @@ public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceRed
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingResources
 public import Complexity.Computability.Complexity.FineGrained.WideClauseCounting
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan
+public import Complexity.Computability.Complexity.FineGrained.WeightedRaggedResources
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
 public import Complexity.Computability.Complexity.HardnessEncoding.Program
 public import Complexity.Computability.Complexity.ImmermanVardi
@@ -2278,6 +2279,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Confi
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.DPi
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Int
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Nat
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
@@ -2603,6 +2605,7 @@ public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CNF.WeightedNormalization
 public import Complexity.Computability.PolyTime.CNF.WeightedPlan
 public import Complexity.Computability.PolyTime.CNF.WeightedQuery
+public import Complexity.Computability.PolyTime.CNF.WeightedRagged
 public import Complexity.Computability.PolyTime.CSP.ToCNF
 public import Complexity.Computability.PolyTime.CSP.Vars
 public import Complexity.Computability.PolyTime.CommonCountingAccum

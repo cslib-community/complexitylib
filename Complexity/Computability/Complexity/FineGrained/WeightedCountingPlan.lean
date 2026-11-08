@@ -27,8 +27,9 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptio
 Compose the actual tagged original-input construction with the proved native declared CNF
 counter and binary subtraction. The counter is obtained from its machine theorem, not assumed
 as an oracle. This establishes the whole counting algorithm's polynomial space, including both
-answers and reconstruction, on the common-occurrence frontend toward [ChenJiangZhu2027],
-Section 7.1, Theorem 7.1 (PDF pp. 23–24). Arbitrary ragged raw rows remain separate.
+answers and reconstruction, on dependent occurrence families toward [ChenJiangZhu2027],
+Section 7.1, Theorem 7.1 (PDF pp. 23–24). The raw binary adapter is in
+`WeightedRaggedResources`.
 
 The native counter is the proved sharper general-density implementation of source Lemma 3.2
 (PDF p. 11), with exponent `N log log N / sqrt (log N)`. This module retains the polynomial-space
@@ -162,7 +163,8 @@ theorem exists_count_polySpace (d : ℕ) :
     ∃ count : ℕ × List BinaryNormalization.Input → ℕ,
       ComputableInPolySpace count
         (encPair encUnary (encList BinaryNormalization.encInput)) encNat ∧
-      ∀ {n m t : ℕ} (R : Fin t → Occurrences n m) (_hd : ∀ j, (R j).demand ≤ d),
+      ∀ {n t : ℕ} {m : Fin t → ℕ}
+    (R : (j : Fin t) → Occurrences n (m j)) (_hd : ∀ j, (R j).demand ≤ d),
         count (n, (List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) =
           Fintype.card {σ : Fin n → Bool // ∀ j, ((R j).value σ : ℤ) = (R j).target} := by
   obtain ⟨β, N₀, Ncut, cs, D, hresource, hspec⟩ :=
@@ -174,7 +176,7 @@ theorem exists_count_polySpace (d : ℕ) :
   have hcounter := ComputableInPolySpace.of_inSpace hs (ComputableInSpace.of_inO cs.computes)
   refine ⟨fun p => execute counter (compile d p.1 p.2),
     (execute_polySpace hcounter).comp (.of_polyTime (compile_polytime d)), ?_⟩
-  intro n m t R hd
+  intro n t m R hd
   dsimp only
   rw [execute_correct hspec (compile_withinBudget R hd), compile_count R hd]
 
