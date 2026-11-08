@@ -10,6 +10,7 @@ module
 public import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 public import Complexity.Logics.Propositional.CSP.Edge.DAGPaths.Blossom
 import Mathlib.Data.List.GetD
+import Mathlib.Data.List.MinMax
 
 /-!
 # Whole-instance blossom contraction
@@ -110,16 +111,7 @@ zero at all connector occurrences would not satisfy its exactly-one relation. -/
 
 /-- The constructor never visits an integer interval funded by variable names. -/
 theorem freshBase_gt {v : ℕ} (hv : v ∈ F.vars) : v < freshBase F := by
-  have hm : ∀ (xs : List ℕ), ∀ x ∈ xs, x ≤ xs.foldr max 0 := by
-    intro xs
-    induction xs with
-    | nil => simp
-    | cons y xs ih =>
-      intro x hx
-      rcases List.mem_cons.mp hx with rfl | hx
-      · exact Nat.le_max_left _ _
-      · exact (ih x hx).trans (Nat.le_max_right _ _)
-  exact Nat.lt_succ_of_le (hm _ _ hv)
+  exact Nat.lt_succ_of_le (List.le_max_of_le hv le_rfl)
 
 /-- Fresh connectors cannot coincide with any old occurring variable. -/
 theorem connector_not_mem (i : Fin F.length) : connector F i ∉ F.vars := by
