@@ -39,8 +39,8 @@ yes-instances of `SD^{α,β}` to yes-instances of `SD^{1 - 2⁻⁽ᵏ⁺¹⁾, 2
 no-instances, for every `k ≥ 1` (`StatisticalDifference.exists_mapsTo_polarize`).
 
 This is the semantic half of the Sahai–Vadhan polarization reduction. The efficiency half, that
-the polarized instance is computable in polynomial time from the instance, with `k` growing with
-the instance length, is not formalized here.
+the polarized instance is computable in polynomial time from the encoded instance, with `k` growing
+with the instance length, is in `Problems.StatisticalDifference.PolyTime`.
 
 ## Main definitions
 

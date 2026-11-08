@@ -267,7 +267,7 @@ linked inline as `[#N](https://github.com/cslib-community/complexitylib/issues/N
 Status and progress live on issues and PRs, so a PR edits ROADMAP only when it opens or closes a
 direction, and a direction leaves ROADMAP only when it is completed or deliberately dropped.
 `scripts/check_hygiene.py` rejects link reference definitions, nested bullets and entries over 600
-visible characters: definitions appended to the end of the file and growing progress notes
+characters of Markdown (a link counts as its text): definitions appended to the end of the file and growing progress notes
 conflicted between PRs in the merge queue.
 UPSTREAM records coordination and exceptional integration decisions, while source markers record
 module status.

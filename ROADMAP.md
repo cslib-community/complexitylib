@@ -141,13 +141,16 @@ Containments, separations, closure properties, complete problems and reductions 
 
 ### Structure, time and space
 
+- **Planar Boolean CSP dichotomy** ([#3091](https://github.com/cslib-community/complexitylib/issues/3091)): extend the native Boolean classification to ordered planar instances of arbitrary fixed relation arity, preserving individual incidence occurrences and cyclic argument order.
+  The endpoint proves the embedding and recognition interface, the cyclic-difference reduction, the even delta-matroid edge-CSP algorithm and planar hardness transfer internally, including the additional self-complementary tractable family.
+  Supplied-embedding or matching-realizable-only milestones leave it open.
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)): for every fixed finite Boolean constraint language of any fixed arity, native polynomial-time tractability in the six common-polymorphism cases and native NP-completeness otherwise, including empty and nullary relations.
   Hardness uses a native 3SAT reduction with `output.numVars + output.length ≤ C * input.length` for a language-dependent constant.
   Symmetric and larger-domain dichotomies are out of scope.
 - **Structural classes and relativization:** time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes; completeness, padding, self-reducibility, relativization and oracle separations, preserving each reduction's resource bound.
 - **Abstract (Blum) complexity** ([#2866](https://github.com/cslib-community/complexitylib/issues/2866)): Blum measures over Mathlib's `Nat.Partrec.Code`, with gap, speedup, union and compression theorems, recursive relatedness and arbitrarily complex functions.
   Compression is in running-time form, one computable `h` with `C_{Φ_i} ⊂ C_{n ↦ h n (Φ_i n)}` for every total `φ_i`; the value form is false by the gap theorem.
-  Also McCreight–Meyer honesty and naming ([#3234](https://github.com/cslib-community/complexitylib/issues/3234)), `g`-honesty for partial functions (Odifreddi II, Exercises VII.2.14b–d), effective speedup and multitape measures.
+  Also McCreight–Meyer honesty and naming ([#3234](https://github.com/cslib-community/complexitylib/issues/3234)), `g`-honesty for partial functions (Odifreddi II, Exercises VII.2.14b–d), effective speedup (Blum's pseudo-speedup), and native multitape time and space as measures.
 - **Time hierarchies** ([#1572](https://github.com/cslib-community/complexitylib/issues/1572)): native deterministic and nondeterministic time hierarchies, including separations of all polynomial degrees (noninteger ones too) and the textbook `f log f = o(g)` hierarchy from the `O(t log t)` universal simulation ([#800](https://github.com/cslib-community/complexitylib/issues/800)).
   Also a word-RAM hierarchy by direct diagonalization with a gap smaller than `T` versus `T⁵`, and sharp nondeterministic and alternating time hierarchies with certified simulators.
 - **Probabilistic time hierarchies** ([#2084](https://github.com/cslib-community/complexitylib/issues/2084)): the `PromiseBPTIME` hierarchy for promise problems by delayed diagonalization, following He (ECCC TR25-004), and the one-bit-advice hierarchy for languages of van Melkebeek and Pervyshev.
@@ -220,7 +223,7 @@ Containments, separations, closure properties, complete problems and reductions 
 - **MIP = NEXP** ([#892](https://github.com/cslib-community/complexitylib/issues/892)): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
 - **Goldwasser–Sipser** ([#2981](https://github.com/cslib-community/complexitylib/issues/2981)): `IP[k] ⊆ AM[k + 2]` for the private-coin games `IPk`, by the set lower bound protocol on the gap-amplified game.
 - **Arthur–Merlin classes:** the Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that depend on the input length), interactive-machine characterizations of Arthur–Merlin classes, and statistical and perfect zero knowledge.
-- **Statistical zero knowledge** ([#3205](https://github.com/cslib-community/complexitylib/issues/3205)): Sahai–Vadhan polarization as a polynomial-time map on encoded Statistical Difference instances with error `2^-|x|`, honest-verifier SZK containing `SD`, `SD` being SZK-complete, Entropy Difference (Goldreich–Vadhan), closure under complement (Okamoto), and `SZK ⊆ AM ∩ coAM` (Fortnow; Aiello–Håstad).
+- **Statistical zero knowledge** ([#3205](https://github.com/cslib-community/complexitylib/issues/3205)): Sahai–Vadhan polarization as a polynomial-time map on encoded Statistical Difference instances with error `2^-(|x|+1)`, honest-verifier SZK containing `SD`, `SD` being SZK-complete, Entropy Difference (Goldreich–Vadhan), closure under complement (Okamoto), and `SZK ⊆ AM ∩ coAM` (Fortnow; Aiello–Håstad).
   Instances are pairs of De Morgan circuits, with general pairs padded to common input and output counts.
 
 ### Descriptive complexity and first-order reductions
@@ -242,8 +245,6 @@ In dependency order:
 - **Witness-carrying reductions:** a witness-carrying reduction structure once a client needs one, for example size bounds for Cook–Levin.
 - **Logical lower-bound methods** ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)): Ehrenfeucht–Fraïssé games (also with constants), pebble games with finite-variable equivalence, Hanf and Gaifman locality with Gaifman's normal form, and counting and fixed-point expressiveness with Cai–Fürer–Immerman separations, linked to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
   Applications: Libkin's balanced binary trees and transitive closure, planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`.
-- **Color refinement and Weisfeiler–Leman** ([#3265](https://github.com/cslib-community/complexitylib/issues/3265)): stabilization, the coarsest equitable partition and soundness of the 1-WL test; equitable partitions as fractional automorphisms and isomorphisms (Tinhofer; Ramana–Scheinerman–Ullman; Grohe–Kersting–Mladenov–Selman, Theorems 4.1 and 5.2); a certified polynomial-time algorithm; and `k`-dimensional Weisfeiler–Leman.
-  Also the Immerman–Lander correspondence with the counting logic C² and its finite-variable extensions, and Cai–Fürer–Immerman graphs.
 - **Undecidability in the finite** ([#2886](https://github.com/cslib-community/complexitylib/issues/2886)): Trakhtenbrot's theorem over any vocabulary with a binary relation symbol (Libkin, Theorem 9.2), transferred from raw relational sentences to Mathlib's `L.Sentence` through a computable `Primcodable` bridge.
 - **Logic and automata on words** ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)): Büchi–Elgot–Trakhtenbrot (MSO = regular on finite words), FO[<] ⊊ MSO, and FO[<] = star-free = aperiodic (McNaughton–Papert, Schützenberger; star-free ⇒ FO is [#3075](https://github.com/cslib-community/complexitylib/issues/3075)).
   Homomorphic-image closure of regular languages (upstream to cslib), the non-elementary formula-to-automaton lower bound, Büchi's theorem for ω-words (S1S), and MSO on finite trees (Thatcher–Wright, Doner) and infinite trees (Rabin, S2S).
@@ -254,8 +255,10 @@ In dependency order:
 
 Independent of that order:
 
+- **Color refinement and Weisfeiler–Leman** ([#3265](https://github.com/cslib-community/complexitylib/issues/3265)): stabilization, the coarsest equitable partition and soundness of the 1-WL test; equitable partitions as fractional automorphisms and isomorphisms (Tinhofer; Ramana–Scheinerman–Ullman; Grohe–Kersting–Mladenov–Selman, Theorems 4.1 and 5.2); a certified polynomial-time algorithm; and `k`-dimensional Weisfeiler–Leman.
+  Also the Immerman–Lander correspondence with the counting logic C² and its finite-variable extensions, and Cai–Fürer–Immerman graphs.
 - **Vollmer's generalized quantifier framework** ([#399](https://github.com/cslib-community/complexitylib/issues/399)): Vollmer's survey [*A Generalized Quantifier Concept in Computational Complexity Theory*](https://arxiv.org/abs/cs/9809115), covering ordered leaf words, explicit uniformity and input-access models, finite-monoid classification and generalized logical quantifiers.
-  The formalization keeps the paper's resource models and quantifier bounds.
+  The formalization must keep the paper's resource models and quantifier bounds.
 
 ### Uniform circuit families
 
@@ -287,13 +290,15 @@ Define logspace and DLOGTIME uniformity with explicit gate-address, direct-conne
 - **Approximation classes and gap reductions:** gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of PCP, CSP classifications and relaxation gaps, with assumptions such as the Unique Games Conjecture stated explicitly.
   The 2-to-2 games theorem waits for [#886](https://github.com/cslib-community/complexitylib/issues/886).
 - **Approximation algorithms:** a general interface for approximation ratios of optimization problems, under which polynomial-time algorithms such as Johnson's `7 / 8` algorithm for MAX-E3SAT meet matching hardness results such as Håstad's ([#886](https://github.com/cslib-community/complexitylib/issues/886)); LP and SDP rounding, such as Goemans–Williamson for MAX-CUT and MAX-SAT.
+  Goemans–Williamson ([#3230](https://github.com/cslib-community/complexitylib/issues/3230)) needs polynomial-time SDP solving with precision accounting, a `ProbComp` realization of the Gaussian sample, the Feige–Schechtman tightness gap, the MAX-2SAT and MAX-DICUT extensions, and derandomization.
 - **Packing approximation** ([#2964](https://github.com/cslib-community/complexitylib/issues/2964)): the asymptotic approximation scheme for bin packing of Fernandez de la Vega and Lueker, First Fit's `17/10` bound, First Fit Decreasing's `11/9` bound and Lawler's faster knapsack FPTAS, building on the knapsack FPTAS, Next Fit, First Fit and the `3/2` bin-packing hardness.
 - **Scheduling** ([#2909](https://github.com/cslib-community/complexitylib/issues/2909)): Graham's list-scheduling, LPT and precedence bounds, extended to real-valued processing times with precedences; Graham's anomaly instances as checked examples, a general tight family for LPT, the Hochbaum–Shmoys PTAS for `P || C_max`, and runtime bounds for `listSchedule` and `lptSchedule`.
 - **A practical PCP construction:** a reasonably runnable construction and its cost on complete reductions; rotation certificates polynomial in the bit length of a vertex name; machine-level error reduction and extractors from expander walks, with certified seed and evaluation costs.
 
 ### Proof complexity
 
-- **Proof space** ([#3200](https://github.com/cslib-community/complexitylib/issues/3200)): clause, total and variable space for resolution, with the Atserias–Dalmau inequality, linear clause space for Tseitin formulas on expanders, tree-like space bounds (Esteban–Torán, [#3229](https://github.com/cslib-community/complexitylib/issues/3229)), and space lower bounds for the pigeonhole principle and random `k`-CNFs through width.
+- **Proof space** ([#3200](https://github.com/cslib-community/complexitylib/issues/3200)): clause, total and variable space for resolution, with the Atserias–Dalmau inequality, linear clause space for Tseitin formulas on expanders, tree-like space bounds (Esteban–Torán, [#3229](https://github.com/cslib-community/complexitylib/issues/3229)), and space lower bounds for the wide pigeonhole formula and random `k`-CNFs ([#3321](https://github.com/cslib-community/complexitylib/issues/3321)).
+  Also Atserias–Dalmau Lemma 2 as a public `DuplicatorStrategy`.
   Also time–space trade-offs for pebbling formulas and degree versus space in polynomial calculus.
 - **Polynomial calculus, sum-of-squares and DPLL:** polynomial calculus and sum-of-squares, and certified DPLL solver runtimes.
 - **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and translation time; the mutual p-simulation of Frege systems; and Extended Frege.
@@ -379,7 +384,7 @@ Organize modules by subject, not chapter.
 - **Number-on-forehead multiparty protocols** ([#3197](https://github.com/cslib-community/complexitylib/issues/3197)): cylinder intersections and discrepancy, the Chung–Raz cube bound, Babai–Nisan–Szegedy's `Ω(n / 4 ^ k)` and a sharper `Ω(n / 2 ^ k)` (source unverified) for generalized inner product, Grolmusz's protocol, Raz's matrix multiplication and NOF disjointness bounds, and `ACC⁰` and branching-program applications.
   A two-party companion is the Aho–Ullman–Yannakakis bound `D(f) = O(N⁰(f) N¹(f))`.
 - **Number-in-hand and information complexity**: multiparty number-in-hand protocols, information complexity, direct-sum and direct-product results, and reductions to streaming, sketching and cell-probe lower bounds.
-- **Dynamic cell-probe lower bounds** ([#3207](https://github.com/cslib-community/complexitylib/issues/3207)): by the chronogram method, the Fredman–Saks bound `t_q = Ω(log n / log(t_u (w + 1)))` for dynamic prefix parity with worst-case update depth `t_u` and `S ≤ 2 ^ w` cells, then amortized updates and Las Vegas randomization through cell-probe Yao averaging.
+- **Dynamic cell-probe lower bounds** ([#3207](https://github.com/cslib-community/complexitylib/issues/3207)): by the chronogram method, the Fredman–Saks bound `t_q = Ω(log n / log(t_u (w + 1)))` for dynamic prefix parity with deterministic worst-case update depth `t_u` and `S ≤ 2 ^ w` cells, then amortized updates and Las Vegas randomization through cell-probe Yao averaging.
   Also Pătraşcu–Demaine's trade-off `t_q lg(t_u / t_q) = Ω(lg n)` and reductions to dynamic connectivity.
 - **Streaming and sketching**: native time and space bounds for Count-Min with hash-seed storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown length, and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp` samplers and native realizations of the AMS sketches.
   Also CountSketch, turnstile updates, heavy-hitter recovery, and multi-pass communication-to-streaming transfers with pass counts.
@@ -410,7 +415,7 @@ Organize modules by subject, not chapter.
 - **Quantum query lower bounds** ([#3239](https://github.com/cslib-community/complexitylib/issues/3239)): Ambainis's relational adversary (Theorems 2, 5 and 6 of the source), the Nayak–Wu promise-threshold bound with its approximate-median, approximate-count and `k`th-smallest consequences, and the weighted, spectral and negative-weight (general) adversaries for arbitrary relations.
   Non-Boolean input alphabets (permutation inversion, Theorem 7) need the value-query model above.
 - **Shor's algorithm** ([#3252](https://github.com/cslib-community/complexitylib/issues/3252)): bounded-error polynomial-time integer factoring and discrete logarithms in the native uniform quantum-circuit model, with explicit encodings, success probabilities and gate-approximation costs.
-  It needs the quantum Fourier transform with its circuits, period finding including `r ∤ N` by continued fractions and the `Ω(1 / log log r)` totient bound, phase estimation, reversible modular exponentiation and the classical reductions.
+  It needs the quantum Fourier transform with its circuits, period finding including `r ∤ N` by continued fractions and the `Ω(1 / log log r)` totient bound, phase estimation, reversible modular exponentiation and the classical reductions, certifying uniform generation and polynomial gate bounds.
 
 ### Differential privacy and adaptive data analysis
 
@@ -451,8 +456,9 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
 - **Stable matching** ([#2990](https://github.com/cslib-community/complexitylib/issues/2990)): deferred acceptance and its theory (stability, optimality, the lattice, strategy-proofness), extended to Roth's impossibility theorem for every `n ≥ 3`, incomplete lists and the rural hospitals theorem, many-to-one college admissions, ties, rotations and the stable-matching poset, and stable roommates.
   A charged native implementation should run in `O(n^2)` time.
 - **Housing markets and top trading cycles** ([#3286](https://github.com/cslib-community/complexitylib/issues/3286)): the Shapley–Scarf model with TTC as the unique strict-core and competitive allocation, individually rational, Pareto efficient and strategy-proof; house allocation with existing tenants (Abdulkadiroğlu–Sönmez), Ma's characterization of TTC, group strategy-proofness, indifferences (top trading absorbing sets), and a charged `O(n^2)` TTC.
-- **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)): greedy set cover, maximal-matching vertex cover and the MST tour for metric TSP, with machine-level polynomial-time certificates for greedy set cover and for Kruskal-based TSP tours on encoded matrices, and stronger guarantees such as Christofides' `3/2` for metric TSP.
-  LP-based and primal–dual analyses of these problems belong to the primal–dual direction under Optimization and duality.
+- **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)): greedy set cover, maximal-matching vertex cover and the MST tour for metric TSP, with machine-level polynomial-time certificates for greedy set cover and for Kruskal-based TSP tours on encoded matrices, and Christofides' `3/2` for metric TSP ([#3055](https://github.com/cslib-community/complexitylib/issues/3055)) with a polynomial-time minimum-weight perfect matching (Edmonds' blossom) and a tightness family approaching `3/2`.
+  Karlin–Klein–Oveis Gharan's `3/2 - 10^{-36}` is a long-range target.
+  LP-based and primal–dual analyses belong to the primal–dual direction.
 
 ### Online algorithms and competitive analysis
 
@@ -483,6 +489,15 @@ The directions below extend the single-parameter, Groves/VCG, optimal-auction an
 - **Bayes–Nash equilibria of auctions:** the symmetric first-price equilibrium `b(v) = E[max of the other values | it is below v]` for general i.i.d. priors with densities and its uniqueness (Hartline, *Mechanism Design and Approximation*, §2.8–2.9); the all-pay auction; truthful bidding as a Bayes–Nash equilibrium of every DSIC mechanism.
   The exact optimal revenue `(n - 1 + 2^(-n)) / (n + 1)` for i.i.d. uniform values (`5/12` for two bidders).
 - **Multi-parameter characterizations:** Groves mechanisms as the only DSIC welfare maximizers on rich valuation domains (Green–Laffont, Holmström), and limits of VCG such as revenue monotonicity and collusion.
+
+### Social choice ([#3282](https://github.com/cslib-community/complexitylib/issues/3282))
+
+Social welfare and social choice functions on strict rankings, from Arrow's impossibility theorem (Geanakoplos's pivotal-voter proof) onward.
+
+- **Strategy-proofness:** the Gibbard–Satterthwaite theorem for social choice functions onto at least three alternatives, for example by Reny's side-by-side proof (Economics Letters 70, 2001), sharing the pivotal-voter infrastructure with Arrow's theorem.
+- **Characterizations:** May's theorem (majority rule is the only anonymous, neutral, positively responsive rule on two alternatives), the individual-weak-order corollary of Arrow's theorem by an IIA reduction to strict profiles, and the infinite-electorate counterexample from a nonprincipal ultrafilter (Fishburn 1970).
+- **Quantitative Arrow** ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)): Kalai's Fourier-analytic bound on the probability of a Condorcet paradox and its robust version via FKN.
+- **Computational social choice:** polynomial-time manipulation of greedy-manipulable rules, NP-hardness of manipulating second-order Copeland (Bartholdi–Tovey–Trick 1989), and the complexity of winner determination for Dodgson and Kemeny rules, with explicit profile encodings and charged running time.
 
 ### Structural graph algorithms
 

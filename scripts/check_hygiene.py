@@ -46,7 +46,7 @@ Checks enforced by default (see AGENTS.md):
    Documentation): it has no link reference definitions (`[label]: https://…`), since every PR
    appending one to a shared tail block conflicted with the others in the merge queue, so every
    link, including each `[#N]`, is written inline. Each top-level entry has no nested bullets
-   and at most `ROADMAP_ENTRY_MAX` characters of visible text (a link counts as its text), which
+   and at most `ROADMAP_ENTRY_MAX` characters of Markdown (a link counts as its text), which
    keeps status and progress notes on issues, where the file says they belong.
 
 Opt-in heuristic checks:
