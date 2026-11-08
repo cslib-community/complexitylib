@@ -8,19 +8,18 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.EdgeDeletion
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Transport
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.EdgeDeletionParity
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexFibers
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.ConnectedEuler
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 
 /-!
 # Numerical Euler bounds in edge deletion
 
-The literal two-end deletion and complete orbit balance give a face-count lower bound when
-every declared vertex retains an incidence. The matrix Euler bound supplies the opposite
-inequality for a connected retained graph. This is an original numerical argument; no
-geometric planarity theorem is used. The connected result requires a retained dart and does
-not cover deletion that splits a component or leaves only points.
+The literal two-end deletion and complete orbit balance give an exact account of faces and
+endpoints that become isolated. Face-even labels extend internally across every deletion;
+the existing incidence lifting theorem and its algebraic converse then prove componentwise
+numerical genus preservation. Splitting bridges, pendant edges, loops, disconnected and point
+components require no provider. This is an original numerical argument, not a geometric theorem.
 -/
 
 public section
@@ -85,55 +84,25 @@ theorem card_faces_deleteLastEdge_le {G : Graph} {u v : ℕ}
     change Nat.card (Quotient (Perm.SameCycle.setoid r.faceNext)) ≤ _
     omega
 
-private theorem connected_euler_le {G : Graph} (r : RotationSystem G)
-    (hG : ∀ w ∈ G.incidenceVertices, w ∈ G.1)
-    (hc : ∀ a ∈ G.1, ∀ b ∈ G.1, SameComponent G a b) (d : Dart G) :
-    G.1.toFinset.card + Nat.card r.Face ≤ G.2.length + 2 := by
-  classical
-  have hv : G.componentVertexSet d.vertex = G.1.toFinset := by
-    apply Finset.filter_eq_self.mpr
-    intro v hv
-    exact hc _ (vertex_mem hG d) _ (List.mem_toFinset.mp hv)
-  have he : G.componentEdgeSet d.vertex = Finset.univ := by
-    apply Finset.filter_eq_self.mpr
-    intro i _
-    exact hc _ (vertex_mem hG d) _ (vertex_mem hG (i, false))
-  have hf : (r.componentFaceIndices d.vertex).card = Nat.card r.Face := by
-    rw [card_componentFaceIndices, r.count_faceRepresentatives_eq_card_componentFace hG]
-    exact Nat.card_congr (r.connectedFaceEquiv hG hc d)
-  simpa only [hv, he, hf, Finset.card_univ, Fintype.card_fin] using r.component_euler_le hG d
-
-/-- Deleting the last edge of a numerically genus-zero rotation preserves numerical genus
-zero when the retained declared graph is connected and has an actual dart. Cofaciality is
-derived from the literal face count and the universal matrix Euler bound, not assumed. The
-separate point convention and splitting deletions require their own component accounting. -/
-theorem numericalGenusZero_deleteLastEdge_of_connected {G : Graph} {u v : ℕ}
+/-- Deleting an arbitrary last indexed edge preserves componentwise numerical genus zero.
+The internally constructed face-even extension applies also when the edge splits a component,
+creates isolated points, or is a loop. No connectedness or face-location premise is required. -/
+theorem numericalGenusZero_deleteLastEdge {G : Graph} {u v : ℕ}
     (r : RotationSystem (lastEdgeGraph G u v))
     (hH : ∀ w ∈ (lastEdgeGraph G u v).incidenceVertices, w ∈ (lastEdgeGraph G u v).1)
-    (hr : r.NumericalGenusZero)
-    (hc : ∀ a ∈ G.1, ∀ b ∈ G.1, SameComponent G a b) (d : Dart G) :
-    r.deleteLastEdge.NumericalGenusZero := by
-  classical
+    (hr : r.NumericalGenusZero) : r.deleteLastEdge.NumericalGenusZero := by
   have hG := endpoints_declared_deleteLastEdge hH
-  have hi (w : ℕ) (hw : w ∈ G.1) : ∃ a : Dart G, a.vertex = w :=
-    Dart.exists_of_sameComponent d w (hc _ (vertex_mem hG d) _ hw)
-  have hconn : ∀ a ∈ (lastEdgeGraph G u v).1,
-      ∀ b ∈ (lastEdgeGraph G u v).1, SameComponent (lastEdgeGraph G u v) a b := by
-    intro a ha b hb
-    obtain ⟨p, hp⟩ := hi a ha
-    obtain ⟨q, hq⟩ := hi b hb
-    have hh := sameComponent_map_darts (retainedLastEdgeDart G u v)
-      (fun p q he => by simp only [vertex_retainedLastEdgeDart, he])
-      (retainedLastEdgeDart_reverse G u v) hH (hc _ (vertex_mem hG p) _ (vertex_mem hG q))
-    simpa only [vertex_retainedLastEdgeDart, hp, hq] using hh
-  have hold := (r.numericalGenusZero_iff_connected_euler hH hconn
-    (retainedLastEdgeDart G u v d)).mp hr
-  have hlo := r.card_faces_deleteLastEdge_le hH hi
-  have hhi := connected_euler_le r.deleteLastEdge hG hc d
-  apply (r.deleteLastEdge.numericalGenusZero_iff_connected_euler hG hc d).mpr
-  change G.1.toFinset.card + Nat.card r.Face = _ at hold
-  rw [show (lastEdgeGraph G u v).2.length = G.2.length + 1 by simp [lastEdgeGraph]] at hold
-  omega
+  apply r.deleteLastEdge.numericalGenusZero_of_faceEven_lifts hG
+  intro x hx
+  obtain ⟨y, hy, hxy⟩ := r.exists_faceEven_extension_deleteLastEdge x hx
+  obtain ⟨spin, hspin⟩ := r.exists_vertexSpins_of_faceEven hH hr y hy
+  refine ⟨spin, funext fun i => ?_⟩
+  let d : Dart G := (i, false)
+  have hs := Graph.edgeGradient_dart (lastEdgeGraph G u v) spin (retainedLastEdgeDart G u v d)
+  rw [← retainedLastEdgeDart_reverse, vertex_retainedLastEdgeDart,
+    vertex_retainedLastEdgeDart] at hs
+  have ht := Graph.edgeGradient_dart G spin d
+  exact ht.trans (hs.symm.trans ((congrFun hspin (retainedLastEdgeDart G u v d).1).trans (hxy i)))
 
 /-- If no edges remain, every declared component is a point and uses the existing
 conventional face. No dart or connectedness premise is required, including an empty declared

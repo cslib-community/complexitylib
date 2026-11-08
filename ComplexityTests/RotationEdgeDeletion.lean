@@ -137,13 +137,7 @@ private theorem bigonGenus : sphereBigon.NumericalGenusZero := by
 -- Actual deletion consumes the universal bound to prove genus zero; its target certificate
 -- and forward successor table are checked independently as well.
 example : sphereBigon.deleteLastEdge.NumericalGenusZero :=
-  sphereBigon.numericalGenusZero_deleteLastEdge_of_connected (by decide) bigonGenus
-    (by
-      intro a ha b hb
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at ha hb
-      rcases ha with rfl | rfl <;> rcases hb with rfl | rfl
-      all_goals
-        exact (RotationCertificate.componentBool_eq_true_iff (by decide)).mp (by decide)) (0, false)
+  sphereBigon.numericalGenusZero_deleteLastEdge (by decide) bigonGenus
 
 example : RotationCertificate.ofRotation sphereBigon.deleteLastEdge = ⟨[0, 1]⟩ := by
   decide +kernel
