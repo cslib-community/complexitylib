@@ -1678,6 +1678,7 @@ public import Complexity.Computability.Complexity.Classes.PH.Closure
 public import Complexity.Computability.Complexity.Classes.PH.Collapse
 public import Complexity.Computability.Complexity.Classes.PH.Kannan
 public import Complexity.Computability.Complexity.Classes.PH.KarpLipton
+public import Complexity.Computability.Complexity.Classes.PH.OracleNP
 public import Complexity.Computability.Complexity.Classes.PH.Projection
 public import Complexity.Computability.Complexity.Classes.PH.SipserLautemann
 public import Complexity.Computability.Complexity.Classes.PP

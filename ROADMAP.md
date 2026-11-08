@@ -607,9 +607,9 @@ index links to canonical definitions rather than keeping a second set.
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
 - **Sparse and tally sets:** after Kadin's
-  `PH ⊆ P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062]): `P^{NP[O(log n)]} ⊆ Σ₂ᴾ ∩ Π₂ᴾ`,
-  hence `PH = Θ₂ᴾ` under his hypothesis; his stronger form with a sparse `S ∈ NP` and
-  `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
+  `PH = P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062],
+  [#3155](https://github.com/cslib-community/complexitylib/issues/3155)): his stronger form with a
+  sparse `S ∈ NP` and `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
 - **Berman–Hartmanis:** paddability of the standard NP-complete graph, number and set problems,
   hence their p-isomorphism to SAT; every many-one complete set for EXP is complete under one-one,
   length-increasing reductions (Berman); and the isomorphism theorem for sets complete under AC⁰
