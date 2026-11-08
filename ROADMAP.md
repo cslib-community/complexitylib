@@ -1235,13 +1235,27 @@ construction has polynomial resources for every raw input; correctness/sharp cou
 the promise. Other table formats and parser/admission transfers remain separate. Certificates use
 the existing native word/resource calculus, rather than a fresh bit-transition machine simulation.
 
+The generic Theorem 1.1 frontend is now executable and composed in `TwoBoundaryFrontend`
+(computability, correctness and fine-grained resource modules). Actual original term lists need
+no VC-one assumption/conversion: a tautological DNF can realize the full cube. The one-query
+empty-condition branch and two boundary writers preserve all declared counts and exact source
+variable/width/clause budgets. Polynomial binary construction and native single-loglog sharp
+counting/global polynomial space are proved with exponent parameter `n + number of conditions`,
+without assuming a linear condition count. The explicit encoding has unary declarations, binary
+literal indices and framed term lists; arbitrary untrusted-byte admission is separate.
+
+`IndependentDomination` now supplies an actual explicit adjacency-matrix graph frontend and
+complete original-selection counting/sharp-time/global-space composition. Edge exclusions and
+closed-neighborhood coverage give width three, `2v-1` variables and at most `3v²` clauses; the
+empty graph is retained. This is the no-size-test fixed-rule subcase of Corollary 7.2, not all
+of that corollary or Proposition D.3's variable input cardinality test. The original vertex-count
+eta rescaling is proved; no marking multiplicity or assumed constructor/runtime is used.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
-- Theorems 1.1–1.2: preserve the reviewed two-boundary/counting mathematics and reduced query
-  budgets; finish source-wide executable resource bridges where the existing specialized weighted
-  endpoint does not already supply them. Arbitrary side 2-CNF with distinct-variable signed
-  equations is now covered by the actual `ExactOnePlan` dispatcher and sharp native composition;
-  arbitrary bounded-term DNF constructor/resource transfer remains open.
+- Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
+  signed-equation/side-2-CNF route are covered for the explicit encodings above. Alternative byte
+  formats/admission and succinct declarations are separate, not implicit source promises.
 - Theorem 1.3 / 6.3 tables: actual representation and complete original-count/sharp-time/global
   polynomial-space composition are covered under the explicit canonical promise/encoding above.
   Alternative raw table formats/parser/admission transfers remain separate.
@@ -1249,14 +1263,16 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   nonsuccinct unary-declaration input encoding, with actual sharp time/polynomial space.
 - Corollary 7.2 / Theorem 7.3: fixed finite/cofinite degree rules and fixed labeled partition
   matrices need functional threshold/size-test constructions and their complete resource/count
-  transfer; q and cutoff D must remain fixed independently of the input.
+  transfer; q and cutoff D must remain fixed independently of the input. The no-size-test
+  independent-domination specialization is now implemented; functional size-test and general
+  threshold/rule/matrix construction remain open.
 - Corollaries 7.4–7.5 / Proposition 7.6: graph decision/witness/optimum and induced-matching
   distribution endpoints remain open. Upper-domination width-3 differences count set–marking
   pairs, not original sets. Query budgets, directed/undirected promises, empty graphs and
   polynomially many distribution/threshold queries must be retained.
 
-Graph, generic bounded-term DNF and other-paper/ALL-main endpoints remain open; this table
-milestone does not complete the original ALL-main objective.
+Remaining graph/general-rule and other-paper/ALL-main endpoints remain open; the generic DNF
+and independent-domination milestones do not complete the original ALL-main objective.
 
 The older interpolation counter is unchanged; its extra loglog and nu²-denominator schedule are
 not relabeled. Graph endpoints and other-paper objectives remain open.

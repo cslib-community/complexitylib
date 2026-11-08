@@ -1693,6 +1693,7 @@ public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import Complexity.Computability.Complexity.FineGrained.Exponents
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
+public import Complexity.Computability.Complexity.FineGrained.IndependentDomination
 public import Complexity.Computability.Complexity.FineGrained.LocalMapCounting
 public import Complexity.Computability.Complexity.FineGrained.MaxSAT
 public import Complexity.Computability.Complexity.FineGrained.MaxSAT.Histogram
@@ -1723,6 +1724,7 @@ public import Complexity.Computability.Complexity.FineGrained.SparseCountingScal
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
+public import Complexity.Computability.Complexity.FineGrained.TwoBoundaryFrontend
 public import Complexity.Computability.Complexity.FineGrained.VCOneCountingResources
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingResources
@@ -2603,8 +2605,10 @@ public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 public import Complexity.Computability.PolyTime.CNF.ExactOnePlan
 public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
+public import Complexity.Computability.PolyTime.CNF.IndependentDomination
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
+public import Complexity.Computability.PolyTime.CNF.TwoBoundaryFrontend
 public import Complexity.Computability.PolyTime.CNF.VCOneClosure
 public import Complexity.Computability.PolyTime.CNF.VCOneDispatch
 public import Complexity.Computability.PolyTime.CNF.VCOneFrontend
@@ -4178,6 +4182,7 @@ public import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoBoundary
+public import Complexity.Logics.Propositional.CNF.TwoBoundaryFrontend
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CNF.VCOne

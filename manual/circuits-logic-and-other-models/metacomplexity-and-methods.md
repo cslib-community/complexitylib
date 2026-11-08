@@ -546,6 +546,70 @@ and fractional/full-rank candidates, rank-zero side constraints, deficient-rank 
 original overlapping tables with unused bits. Its exhaustive small counter is a test oracle only;
 the resource theorem instantiates the proved native sharp counter.
 
+### Generic explicit DNF conditions without a VC-one promise
+
+Import `Complexity.Computability.Complexity.FineGrained.TwoBoundaryFrontend` and open
+`Cslib.Logic.PL.TwoBoundary.BinaryFrontend`. The original input contains a unary declaration,
+a side CNF and an explicit list of DNFs. Literal indices are binary and lists are framed.
+Use `declared`, `side` and `conditions` to inspect the input, and `compile` to write the plan.
+It emits one ordinary query when there are no conditions and the two endpoint-substituted queries
+otherwise. Repeated, contradictory and empty terms are preserved. No relation table or assignment
+cube is materialized. In particular, arbitrary DNFs need not define VC-one relations: the DNF
+containing one empty term admits the entire cube. The source's generic Theorem 1.1 therefore uses
+the path writer directly, rather than a conversion to the separate table theorem.
+
+For finite-variable formulas, `ofFinite B P` erases only the original bounded labels.
+`compile_count` proves the original declared-assignment count, including unused bits and arbitrary
+inter-condition overlap. `compile_budget` gives exactly $n+h-1$ variables when $h>0$, at most
+$m_B+2\sum_j|P_j|$ clauses, width at most $\max(b,d+2)$ and declared output indices; the $h=0$
+branch retains the original side query. `compile_polytime` certifies the actual binary constructor,
+including list traversal, endpoint substitution and every literal/encoding write. There is no
+normalization or VC-one promise conversion to trust: the explicit original terms themselves
+satisfy the proved correspondence.
+
+`exists_count_sharp_certificate b d` instantiates the actual general-density counter at fixed
+width $\max(b,d+2)$, sequentially executes the emitted queries and charges binary reconstruction.
+It supplies one original-input algorithm with global polynomial peak workspace and promised time
+$L^{O_{b,d}(1)}2^{O_{b,d}(\eta(n+h))}$, where $h$ is the actual number of conditions and $L$ is the
+complete framed input length. `exists_count_realEta_certificate` states the real single-log-log
+eta bound for $n+h\ge16$; rounded bounds include all smaller cases. This does not silently assume
+that the number of conditions is linear in $n$. These are the existing native word/resource
+certificates, with a unary declaration; untrusted-byte parsing/admission and succinct declarations
+are not added by these statements.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.TwoBoundaryFrontend`.
+The [complete checked client](../../ComplexityTests/PaperEndpoints/TwoBoundaryFrontend.lean)
+checks arbitrary two-literal terms, overlapping/repeated/contradictory terms, empty conditions and
+terms, side clauses, unused bits, zero variables, one-versus-two calls and a 256-variable writer.
+It also proves the full-cube counterexample to a generic VC-one conversion.
+
+### Original-graph independent domination without a cardinality test
+
+Import `Complexity.Computability.Complexity.FineGrained.IndependentDomination` and open
+`Cslib.Logic.PL.IndependentDomination`. `ofGraph G` is the canonical explicit square Boolean
+adjacency matrix of a simple undirected graph on `Fin n`, with unary vertex declaration and
+framed literal Boolean cells. `build` writes edge exclusions and one closed-neighborhood DNF
+condition per vertex. `build_polytime` charges matrix lookups, loops and all writes, without
+vertex-subset enumeration. The literal labels of the resulting DNF input are binary.
+
+`finite_semantics` and `plan_count` identify the original independent dominating selections.
+Each Boolean vector specifies exactly its selected original vertices; there are no extra markings.
+`plan_budget` gives $2n-1$ declared variables, width three and at most $3n^2$ clauses per emitted
+query. The empty graph uses the one-query zero-variable branch and has one selection. The actual
+`exists_count_sharp_certificate` composes construction and native counting with global polynomial
+space and $L^{O(1)}2^{O(\eta(n))}$ time, proving the fixed-linear $2n$ rescaling.
+`exists_count_realEta_certificate` gives real eta for $n\ge16$, with rounded bounds at every size.
+
+This covers the no-size-test fixed independent-domination rule in Corollary 7.2 and the local
+predicate of Appendix D.4, Proposition D.3. It does not supply input cardinality bounds, size
+distributions, general finite/cofinite rules, labeled partition matrices or the remaining graph
+applications. Graph correctness uses the canonical simple undirected input; arbitrary raw matrix
+shapes have total polynomial construction/global space without an additional graph-admission claim.
+Run `scripts/build.sh ComplexityTests.PaperEndpoints.IndependentDomination` from the root.
+The [complete checked client](../../ComplexityTests/PaperEndpoints/IndependentDomination.lean)
+checks empty/isolated/edge/path/triangle/star graphs, original counts and exact query budgets.
+Its small exhaustive oracle is a test instrument, not the production counting algorithm.
+
 ## Known Limitations
 
 The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.
