@@ -34,8 +34,8 @@ images of the Nash equilibria (`BimatrixGame.setOf_completelyLabeled_eq`). Combi
 parity of completely labelled vertex pairs in the Lemke–Howson graph
 (`Cslib.GameTheory.LemkeHowson.even_ncard_completelyLabeled`) this gives
 [vonStengel2007], Corollary 3.7: **a nondegenerate bimatrix game has an odd number of Nash
-equilibria** (`BimatrixGame.odd_ncard_isNash`); in particular it has one
-(`BimatrixGame.exists_isNash`).
+equilibria** (`BimatrixGame.IsNondegenerate.odd_ncard_isNash`); in particular it has one
+(`BimatrixGame.IsNondegenerate.exists_isNash`).
 
 The argument is the undirected parity argument behind the Lemke–Howson algorithm
 [LemkeHowson1964]; it does not formalize the algorithm's running time, the orientation of its
@@ -56,9 +56,11 @@ paths, or the membership of two-player Nash in PPAD.
   completely labelled pairs and Nash equilibria.
 * `BimatrixGame.setOf_completelyLabeled_eq`: the completely labelled vertex pairs of a
   nondegenerate game with positive payoffs.
-* `BimatrixGame.odd_ncard_isNash`: a nondegenerate bimatrix game has an odd number of Nash
-  equilibria ([vonStengel2007], Corollary 3.7).
-* `BimatrixGame.exists_isNash`: a nondegenerate bimatrix game has a Nash equilibrium.
+* `BimatrixGame.IsNondegenerate.odd_ncard_isNash`: a nondegenerate bimatrix game has an odd
+  number of Nash equilibria ([vonStengel2007], Corollary 3.7).
+* `BimatrixGame.IsNondegenerate.exists_isNash`: a nondegenerate bimatrix game has a Nash
+  equilibrium. The name `BimatrixGame.exists_isNash` is left for Nash's theorem for all bimatrix
+  games.
 
 ## References
 
@@ -519,7 +521,7 @@ theorem setOf_completelyLabeled_eq [Nonempty M] [Nonempty N] (hG : G.IsNondegene
 
 omit [DecidableEq M] [DecidableEq N] in
 /-- A nondegenerate bimatrix game with positive payoffs has an odd number of Nash equilibria. -/
-theorem odd_ncard_isNash_of_pos [Nonempty M] [Nonempty N] (hG : G.IsNondegenerate)
+theorem IsNondegenerate.odd_ncard_isNash_of_pos [Nonempty M] [Nonempty N] (hG : G.IsNondegenerate)
     (hA : ∀ i j, 0 < G.A i j) (hB : ∀ i j, 0 < G.B i j) :
     Odd {p : (M → ℝ) × (N → ℝ) | G.IsNash p.1 p.2}.ncard := by
   classical
@@ -544,24 +546,25 @@ Corollary 3.7). The proof is the parity argument behind the Lemke–Howson algor
 [LemkeHowson1964]: after making all payoffs positive, the Nash equilibria correspond to the
 completely labelled vertex pairs of the best response polytopes other than `(0, 0)`, and there is
 an even number of those (`Cslib.GameTheory.LemkeHowson.even_ncard_completelyLabeled`). -/
-theorem odd_ncard_isNash [Nonempty M] [Nonempty N] (hG : G.IsNondegenerate) :
+theorem IsNondegenerate.odd_ncard_isNash [Nonempty M] [Nonempty N] (hG : G.IsNondegenerate) :
     Odd {p : (M → ℝ) × (N → ℝ) | G.IsNash p.1 p.2}.ncard := by
   obtain ⟨c, hA, hB⟩ := G.exists_addConst_pos
-  have := odd_ncard_isNash_of_pos (isNondegenerate_addConst.2 hG) hA hB
+  have := (isNondegenerate_addConst.2 hG).odd_ncard_isNash_of_pos hA hB
   simpa only [isNash_addConst] using this
 
 omit [DecidableEq M] [DecidableEq N] in
 /-- A nondegenerate bimatrix game has a Nash equilibrium. This is the special case of Nash's
-theorem for nondegenerate bimatrix games, obtained here from `odd_ncard_isNash`. -/
-theorem exists_isNash [Nonempty M] [Nonempty N] (hG : G.IsNondegenerate) :
+theorem for nondegenerate bimatrix games, obtained here from
+`BimatrixGame.IsNondegenerate.odd_ncard_isNash`. -/
+theorem IsNondegenerate.exists_isNash [Nonempty M] [Nonempty N] (hG : G.IsNondegenerate) :
     ∃ x y, G.IsNash x y := by
-  obtain ⟨⟨x, y⟩, h⟩ := Set.nonempty_of_ncard_ne_zero (odd_ncard_isNash hG).pos.ne'
+  obtain ⟨⟨x, y⟩, h⟩ := Set.nonempty_of_ncard_ne_zero hG.odd_ncard_isNash.pos.ne'
   exact ⟨x, y, h⟩
 
 omit [DecidableEq M] [DecidableEq N] in
 /-- A nondegenerate bimatrix game has finitely many Nash equilibria. -/
-theorem finite_setOf_isNash [Nonempty M] [Nonempty N] (hG : G.IsNondegenerate) :
+theorem IsNondegenerate.finite_setOf_isNash [Nonempty M] [Nonempty N] (hG : G.IsNondegenerate) :
     {p : (M → ℝ) × (N → ℝ) | G.IsNash p.1 p.2}.Finite :=
-  Set.finite_of_ncard_ne_zero (odd_ncard_isNash hG).pos.ne'
+  Set.finite_of_ncard_ne_zero hG.odd_ncard_isNash.pos.ne'
 
 end Cslib.GameTheory.BimatrixGame

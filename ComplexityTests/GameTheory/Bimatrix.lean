@@ -13,10 +13,11 @@ import Complexity.GameTheory.Bimatrix.BestResponsePolytope
   the two mixed equilibria `((4/5, 1/5, 0), (2/3, 1/3))` and `((0, 1/3, 2/3), (1/3, 2/3))`
   computed there; we check all three.
 * The coordination game `A = B = 1` (the identity matrix) on any finite set of pure strategies is
-  nondegenerate, so `odd_ncard_isNash` applies to it. With two strategies it has the three
-  equilibria (both pure pairs and uniform mixing).
+  nondegenerate, so `IsNondegenerate.odd_ncard_isNash` applies to it. With two strategies it has
+  the three equilibria (both pure pairs and uniform mixing).
 * The zero game is degenerate, and every pair of mixed strategies is an equilibrium: the
-  nondegeneracy hypothesis of `odd_ncard_isNash` cannot be dropped (here `ncard = 0`).
+  nondegeneracy hypothesis of `IsNondegenerate.odd_ncard_isNash` cannot be dropped (here
+  `ncard = 0`).
 * For the polyhedral API: the interval `0 ≤ t ≤ 1` has the vertex `0` but not the vertex `1/2`;
   repeating a row gives a degenerate system.
 * In the positive coordination game `1 + 1`, the artificial pair `(0, 0)` is a node of degree `1`
@@ -110,7 +111,7 @@ theorem coord_isNondegenerate : (coord ι).IsNondegenerate := by
 `2ⁿ - 1`, uniform mixing over any nonempty common support; this count is not proved here.) -/
 theorem coord_odd_ncard_isNash [Nonempty ι] :
     Odd {p : (ι → ℝ) × (ι → ℝ) | (coord ι).IsNash p.1 p.2}.ncard :=
-  odd_ncard_isNash coord_isNondegenerate
+  coord_isNondegenerate.odd_ncard_isNash
 
 /-- Uniform mixing is an equilibrium of the two-strategy coordination game. -/
 theorem coord_isNash_uniform : (coord (Fin 2)).IsNash ![1 / 2, 1 / 2] ![1 / 2, 1 / 2] := by
@@ -151,8 +152,9 @@ theorem zeroGame_not_isNondegenerate : ¬ zeroGame.IsNondegenerate := by
     Fintype.card_fin] at this
   omega
 
-/-- The zero game has infinitely many Nash equilibria, so the conclusion of `odd_ncard_isNash`
-fails for it: `ncard` of an infinite set is `0`, which is even. -/
+/-- The zero game has infinitely many Nash equilibria, so the conclusion of
+`IsNondegenerate.odd_ncard_isNash` fails for it: `ncard` of an infinite set is `0`, which is
+even. -/
 theorem zeroGame_infinite_isNash :
     {p : (Fin 2 → ℝ) × (Fin 2 → ℝ) | zeroGame.IsNash p.1 p.2}.Infinite := by
   have := Set.Icc.infinite (zero_lt_one' ℝ)

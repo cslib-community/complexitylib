@@ -15,7 +15,6 @@ public import Mathlib.Geometry.Convex.ConvexSpace.Defs
 import Mathlib.Algebra.BigOperators.Pi
 import Mathlib.Data.Set.Finite.Lattice
 import Mathlib.Data.Set.Finite.Range
-import Mathlib.Order.Filter.Basic
 import Mathlib.Tactic.Linarith
 
 /-!

@@ -23,15 +23,15 @@ label `k`, *`k`-almost completely labelled* if every label other than `k` is.
 
 This is the combinatorial core of the Lemke–Howson algorithm [LemkeHowson1964], in the polytope
 form of [vonStengel2007], Section 3.4. Suppose both systems are nondegenerate and bounded, and
-`card κ = card ι₁ + card ι₂`. The vertices of a `k`-almost completely labelled vertex pair are the
-nodes of the graph `LemkeHowson.graph`, whose edges change one of the two vertices along an edge of
-its polyhedron. A node has degree `1` if it is completely labelled
-(`LemkeHowson.ncard_neighborSet_of_completelyLabeled`) and degree `2` otherwise
-(`LemkeHowson.ncard_neighborSet_of_not_completelyLabeled`): at a completely labelled pair exactly
-one label is shared by neither side but missing on the other (the label `k`), while at any other
-node exactly one label is duplicate, and each can be dropped. Since a finite graph has an even
-number of odd-degree vertices, the number of completely labelled vertex pairs is even
-(`LemkeHowson.even_ncard_completelyLabeled`).
+`card κ = card ι₁ + card ι₂`. The `k`-almost completely labelled vertex pairs are the nodes of the
+graph `LemkeHowson.graph`, whose edges keep one of the two vertices and replace the other by an
+adjacent vertex of its polyhedron (`Matrix.VertexAdj`, a pivot). A node has degree `1` if it is
+completely labelled (`LemkeHowson.ncard_neighborSet_of_completelyLabeled`) and degree `2` otherwise
+(`LemkeHowson.ncard_neighborSet_of_not_completelyLabeled`). At a completely labelled pair the two
+label sets are disjoint, so only `k` can be dropped, from the side that has it. At any other node
+`k` is missing and exactly one label is duplicate, and it can be dropped from either side. Since a
+finite graph has an even number of odd-degree vertices, the number of completely labelled vertex
+pairs is even (`LemkeHowson.even_ncard_completelyLabeled`).
 
 For a bimatrix game, the completely labelled vertex pairs of the two best response polytopes are
 the Nash equilibria together with the artificial pair `(0, 0)`, so a nondegenerate bimatrix game
@@ -84,9 +84,12 @@ structure Node (k : κ) where
   x : ι₁ → K
   /-- The vertex of the second polyhedron. -/
   y : ι₂ → K
+  /-- `x` is a vertex of the first polyhedron. -/
   isVertex_x : IsVertex A₁ b₁ x
+  /-- `y` is a vertex of the second polyhedron. -/
   isVertex_y : IsVertex A₂ b₂ y
-  acl : ∀ j, j ≠ k → j ∈ tightRows A₁ b₁ x ∨ j ∈ tightRows A₂ b₂ y
+  /-- The pair is `k`-almost completely labelled. -/
+  almostCompletelyLabeled : ∀ j, j ≠ k → j ∈ tightRows A₁ b₁ x ∨ j ∈ tightRows A₂ b₂ y
 
 variable {A₁ b₁ A₂ b₂} {k : κ}
 
@@ -256,14 +259,15 @@ theorem graph_adj_iff {p q : Node A₁ b₁ A₂ b₂ k} :
     · obtain ⟨l, hl, hq⟩ := (vertexAdj_iff_exists_pivotVertex hnd₂ hrec₂ p.isVertex_y).1 hadj
       obtain ⟨-, -, hT⟩ := p.isVertex_y.pivotVertex_spec hnd₂ hrec₂ hl
       have hlq := p.isVertex_y.notMem_tightRows_pivotVertex hnd₂ hrec₂ hl
-      have key := (acl_pivot_iff (S := tightRows A₁ b₁ p.x) (fun j hj => (p.acl j hj).symm) hT
-        hlq).1 (fun j hj => by rw [← hq, hxe]; exact (q.acl j hj).symm)
+      have key := (acl_pivot_iff (S := tightRows A₁ b₁ p.x)
+        (fun j hj => (p.almostCompletelyLabeled j hj).symm) hT hlq).1
+        (fun j hj => by rw [← hq, hxe]; exact (q.almostCompletelyLabeled j hj).symm)
       exact .inr ⟨l, hl, key, hq, hxe.symm⟩
     · obtain ⟨l, hl, hq⟩ := (vertexAdj_iff_exists_pivotVertex hnd₁ hrec₁ p.isVertex_x).1 hadj
       obtain ⟨-, -, hT⟩ := p.isVertex_x.pivotVertex_spec hnd₁ hrec₁ hl
       have hlq := p.isVertex_x.notMem_tightRows_pivotVertex hnd₁ hrec₁ hl
-      have key := (acl_pivot_iff (S := tightRows A₂ b₂ p.y) p.acl hT hlq).1
-        (fun j hj => by rw [← hq, hye]; exact q.acl j hj)
+      have key := (acl_pivot_iff (S := tightRows A₂ b₂ p.y) p.almostCompletelyLabeled hT hlq).1
+        (fun j hj => by rw [← hq, hye]; exact q.almostCompletelyLabeled j hj)
       exact .inl ⟨l, hl, key, hq, hye.symm⟩
   · rintro (⟨l, hl, -, hqx, hqy⟩ | ⟨l, hl, -, hqy, hqx⟩)
     · exact .inr ⟨hqy.symm, hqx ▸ (vertexAdj_iff_exists_pivotVertex hnd₁ hrec₁ p.isVertex_x).2
@@ -297,13 +301,14 @@ theorem ncard_neighborSet (p : Node A₁ b₁ A₂ b₂ k) :
       · obtain ⟨hv, -, hT⟩ := p.isVertex_x.pivotVertex_spec hnd₁ hrec₁ hl
         have hlq := p.isVertex_x.notMem_tightRows_pivotVertex hnd₁ hrec₁ hl
         refine ⟨⟨pivotVertex A₁ b₁ p.x l, p.y, hv, p.isVertex_y,
-          (acl_pivot_iff p.acl hT hlq).2 hlk⟩, ?_, he⟩
+          (acl_pivot_iff p.almostCompletelyLabeled hT hlq).2 hlk⟩, ?_, he⟩
         rw [graph_adj_iff hnd₁ hrec₁ hnd₂ hrec₂]
         exact .inl ⟨l, hl, hlk, rfl, rfl⟩
       · obtain ⟨hv, -, hT⟩ := p.isVertex_y.pivotVertex_spec hnd₂ hrec₂ hl
         have hlq := p.isVertex_y.notMem_tightRows_pivotVertex hnd₂ hrec₂ hl
         refine ⟨⟨p.x, pivotVertex A₂ b₂ p.y l, p.isVertex_x, hv, fun j hj =>
-          ((acl_pivot_iff (fun j hj => (p.acl j hj).symm) hT hlq).2 hlk j hj).symm⟩, ?_, he⟩
+          ((acl_pivot_iff (fun j hj => (p.almostCompletelyLabeled j hj).symm) hT hlq).2 hlk j
+            hj).symm⟩, ?_, he⟩
         rw [graph_adj_iff hnd₁ hrec₁ hnd₂ hrec₂]
         exact .inr ⟨l, hl, hlk, rfl, rfl⟩
   rw [← Set.ncard_image_of_injective _ Node.toProd_injective, himage, Set.ncard_coe_finset,
@@ -339,7 +344,8 @@ theorem ncard_neighborSet_of_not_completelyLabeled
     ((graph A₁ b₁ A₂ b₂ k).neighborSet p).ncard = 2 := by
   rw [ncard_neighborSet hnd₁ hrec₁ hnd₂ hrec₂]
   exact card_filter_add_card_filter_of_not_forall
-    (by rw [p.isVertex_x.card_tightRows hnd₁, p.isVertex_y.card_tightRows hnd₂, hcard]) p.acl h
+    (by rw [p.isVertex_x.card_tightRows hnd₁, p.isVertex_y.card_tightRows hnd₂, hcard])
+    p.almostCompletelyLabeled h
 
 omit [DecidableEq κ] in
 /-- **Parity of completely labelled vertex pairs** ([vonStengel2007], Section 3.4). For two bounded

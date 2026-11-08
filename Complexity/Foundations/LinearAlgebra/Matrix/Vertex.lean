@@ -97,8 +97,9 @@ def IsNondegenerateSystem (A : Matrix κ ι K) (b : κ → K) : Prop :=
   ∀ x, A *ᵥ x ≤ b → #(tightRows A b x) ≤ Fintype.card ι
 
 /-- Two vertices of `A *ᵥ x ≤ b` are *adjacent* if they are distinct and share at least
-`card ι - 1` tight rows. For a nondegenerate system these are the endpoints of the edges of the
-polyhedron. -/
+`card ι - 1` tight rows. For a bounded nondegenerate system adjacent pairs correspond to the edges
+of the polyhedron ([Schrijver1986], Section 8.5); that geometric statement is not formalized here.
+What is proved is the pivot characterization `Matrix.vertexAdj_iff_exists_pivotVertex`. -/
 def VertexAdj [DecidableEq κ] (A : Matrix κ ι K) (b : κ → K) (x y : ι → K) : Prop :=
   IsVertex A b x ∧ IsVertex A b y ∧ x ≠ y ∧
     Fintype.card ι ≤ #(tightRows A b x ∩ tightRows A b y) + 1

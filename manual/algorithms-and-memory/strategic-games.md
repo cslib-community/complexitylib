@@ -185,11 +185,13 @@ instantiates this with the best response polytopes `P = {x ≥ 0, Bᵀ x ≤ 1}`
 positive payoffs, `setOf_completelyLabeled_eq` shows that the completely labelled vertex pairs are
 `(0, 0)` and the Nash equilibria rescaled by the inverse equilibrium payoffs (`toPolytopes`). The
 source assumes (3.5) (`A` and `Bᵀ` nonnegative without zero columns); the library instead shifts
-payoffs to be positive with `exists_addConst_pos`. The headline is `odd_ncard_isNash`: a
-nondegenerate bimatrix game (with `M` and `N` nonempty) has an odd number of Nash equilibria, the
-source's Corollary 3.7. `exists_isNash` and `finite_setOf_isNash` follow. Existence here is the
-special case of Nash's theorem for nondegenerate bimatrix games only. The algorithm is due to
-Lemke and Howson [lemkehowson64][lemkehowson64].
+payoffs to be positive with `exists_addConst_pos`. The headline is
+`IsNondegenerate.odd_ncard_isNash`: a nondegenerate bimatrix game (with `M` and `N` nonempty) has
+an odd number of Nash equilibria, the source's Corollary 3.7. `IsNondegenerate.exists_isNash` and
+`IsNondegenerate.finite_setOf_isNash` follow, so `hG.exists_isNash` works for
+`hG : G.IsNondegenerate`. Existence here is the special case of Nash's theorem for nondegenerate
+bimatrix games only. The name `BimatrixGame.exists_isNash` is kept free for the general theorem.
+The algorithm is due to Lemke and Howson [lemkehowson64][lemkehowson64].
 
 Only the undirected parity argument is formalized. The Lemke–Howson path is not run as an
 algorithm, and nothing is said about its length. There is no orientation of the paths and no bit
@@ -218,10 +220,11 @@ price-of-anarchy bound to the two-link game for every horizon.
 
 [ComplexityTests/GameTheory/Bimatrix.lean](../../ComplexityTests/GameTheory/Bimatrix.lean) checks
 the three equilibria of von Stengel's `3 × 2` example (3.3). It shows that the identity
-coordination game is nondegenerate, so `odd_ncard_isNash` applies. The zero game is degenerate, and
-its infinitely many equilibria show that the hypothesis cannot be dropped. The file also checks a
-vertex and a non-vertex of an interval and a degenerate system. Finally, the artificial pair
-`(0, 0)` has degree `1` in the Lemke–Howson graph of the shifted coordination game.
+coordination game is nondegenerate, so `IsNondegenerate.odd_ncard_isNash` applies. The zero game
+is degenerate, and its infinitely many equilibria show that the hypothesis cannot be dropped. The
+file also checks a vertex and a non-vertex of an interval and a degenerate system. Finally, the
+artificial pair `(0, 0)` has degree `1` in the Lemke–Howson graph of the shifted coordination
+game.
 
 ## Known Limitations
 
@@ -230,8 +233,10 @@ nondegenerate bimatrix games, through the parity argument above; Nash's theorem 
 games is not formalized. Correlated equilibria (with swap regret), existence of Wardrop flows, and
 weighted congestion games are not formalized. The same holds for the Monderer–Shapley isomorphism
 between potential games and congestion games (Theorems 2.8 and 3.2) and for the complexity of
-finding equilibria (PLS- and PPAD-completeness, including two-player Nash in PPAD). These are
-ROADMAP directions under [#2900](https://github.com/cslib-community/complexitylib/issues/2900).
+finding equilibria (PLS- and PPAD-completeness). These are ROADMAP directions under
+[#2900](https://github.com/cslib-community/complexitylib/issues/2900). Two-player Nash in PPAD,
+degenerate bimatrix games and the Lemke–Howson algorithm are tracked in
+[#3391](https://github.com/cslib-community/complexitylib/issues/3391).
 Hedge dynamics are full-information and deterministic: they work with expected costs, not sampled
 play or bandit feedback, and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
