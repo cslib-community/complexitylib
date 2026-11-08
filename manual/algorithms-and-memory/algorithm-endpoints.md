@@ -13,6 +13,21 @@ These results are clients of the RAM and specification models, not additional ex
 
 Quickselect receives the index followed by the array; an invalid index has an explicit eight-step, no-write, no-randomness behavior returning zero. The expected costs are machine instruction counts. They do not price the `rand` instruction as an exact strict-PPT finite-coin sampler.
 
+### Deterministic selection in the comparison model
+
+Import `Complexity.Algorithms.Lean.Query.Select.Correctness` and `Complexity.Algorithms.Lean.Query.Select.Cost`. [Defs.lean](../../Complexity/Algorithms/Lean/Query/Select/Defs.lean) defines `Cslib.Query.select k xs`, the groups-of-five median-of-medians algorithm in cslib's comparison-query model `FreeM (LEQuery α)`, the model of `Cslib.Query.mergeSort`. Every comparison `a ≤ b` is an oracle query and list manipulation is free. The program sorts lists of at most `selectCutoff = 730` elements with `mergeSort`. For a longer list it takes the lower median of each group of five, selects the median of these medians recursively as the pivot, partitions three ways (below, equivalent to and above the pivot) and recurses into the part holding rank `k` [BFPRT 1973][bfprt73], [CLRS 9.3][clrs09]. The three-way partition makes the algorithm correct for total preorders with ties. Before recursing into a side, the program checks without comparisons that the side has at most `selectSideBound n` elements, and returns `none` otherwise. Under an oracle implementing a total preorder the check always passes. It makes the recursion well founded and lets the comparison bound hold for every oracle.
+
+| Declaration | Statement |
+|---|---|
+| `select_isOrderStatistic`, `eval_select_eq_none` | under an oracle implementing a total preorder `r`, `select k xs` returns an element of rank `k` when `k < xs.length`, and `none` otherwise. No antisymmetry is assumed |
+| `eval_select_eq_getElem?_mergeSort` | in a linear order, `select k xs` returns `xs.mergeSort[k]?` |
+| `length_filter_lt_le_selectSideBound`, `length_filter_gt_le_selectSideBound` | the median-of-medians counting bound: if the pivot has rank `⌊(g−1)/2⌋` among the `g = ⌈n/5⌉` group medians, at most `n − 3⌊(g−1)/2⌋ − 1` elements lie strictly on either side of it |
+| `select_countQueries_le`, `select_upperBound` | `select k` makes at most `37 n` comparisons under every oracle, as `UpperBound (select k) List.length (37 * ·)` |
+
+The cost proof solves `T(n) ≤ 8n/5 + T(⌈n/5⌉) + 2n + T(selectSideBound n)` by strong induction. Sorting the groups costs `8n/5` (`medians_countQueries_le`), the partition costs `2n` (`partition3_countQueries_le`), and the base case costs `n⌈log₂ n⌉ ≤ 10n`. The group cost uses [CountBound.lean](../../Complexity/Algorithms/Lean/Query/Sort/Merge/CountBound.lean), which sharpens cslib's merge bound: a merge makes at most `|xs| + |ys| − 1` comparisons (`merge_countQueries_le_sub_one`), so `mergeSort` sorts five elements with at most `8` (`mergeSortCountBound_five`). Ranks are stated with `List.IsOrderStatistic` in [OrderStatistic.lean](../../Complexity/Foundations/Data/List/OrderStatistic.lean): at most `k` elements lie strictly below `y` and more than `k` lie at or below it. `List.isOrderStatistic_iff_mergeSort` identifies the rank-`k` element of a linear order with `xs.mergeSort[k]`. The [tests](../../ComplexityTests/QuerySelect.lean) run lists longer than the cutoff, duplicates, out-of-range ranks, a preorder with ties and a dishonest oracle.
+
+The constant `37` comes from this simple accounting. Blum, Floyd, Pratt, Rivest and Tarjan refine the algorithm (`PICK`) to at most `5.4305 n` comparisons [BFPRT 1973][bfprt73]; that constant is not formalized. Group sizes other than five, the comparison lower bounds (`n − 1` for the minimum, `⌈3n/2⌉ − 2` for the minimum and maximum together, and the selection lower bounds) and a word-RAM implementation also remain open; see `ROADMAP.md`.
+
 ## Shortest paths and priority queues
 
 [abstracts/ComplexityAbstracts/DijkstraAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/DijkstraAbstract.lean) represents directed weighted multigraphs by adjacency lists with natural weights; parallel edges and self-loops are allowed. Output distance is an extended natural, encoded as zero for infinity and `d+1` for a finite distance. The word condition is `8*(n+m+2)*(W+2) < 2^w`.
@@ -877,6 +892,16 @@ Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearP
 
 The [checked examples](../../ComplexityTests/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean) give an infeasible system with its certificate, a feasible system with no certificate, an empty system, programs with values `3` and `22 / 5`, and an unbounded program with infeasible dual. Not formalized: bit-size bounds on solutions and certificates, membership of rational LP feasibility in NP ∩ coNP, and any polynomial-time LP algorithm ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
 
+## LLL-reduced bases and lattice basis reduction
+
+Import `Complexity.Algorithms.LatticeReduction.Potential` ([Reduced.lean](../../Complexity/Algorithms/LatticeReduction/Reduced.lean), [Potential.lean](../../Complexity/Algorithms/LatticeReduction/Potential.lean)). This is mathematics with no machine model or running time, following [Lenstra, Lenstra and Lovász, §1][lll82]. A family `b : Fin n → E` lives in an arbitrary real inner product space (for example `EuclideanSpace ℝ (Fin m)`). Its Gram–Schmidt vectors are Mathlib's `gramSchmidt ℝ b`, and its coefficients are `gramSchmidtCoeff ℝ b i j = ⟪b*ⱼ, bᵢ⟫ / ‖b*ⱼ‖²` ([GramSchmidtOrtho.lean](../../Complexity/Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho.lean), a Mathlib candidate). The lattice is `Submodule.span ℤ (Set.range b)`.
+
+- **Reduced bases and Proposition (1.11):** `IsReduced δ b` is size reduction (1.4) together with the exchange condition (1.5), where the constant `3/4` is replaced by `δ`. `IsReduced.norm_sq_le` proves `‖b₀‖² ≤ (4/(4δ-1))ⁿ ‖x‖²` for `b : Fin (n + 1) → E`, `1/4 < δ ≤ 1` and every nonzero lattice vector `x`. `IsReduced.norm_le_sqrt_two_pow_mul` is the case `δ = 3/4`, `‖b₀‖ ≤ (√2)ⁿ ‖x‖`. Neither statement assumes linear independence.
+- **Steps:** `IsSizeStep` (`bᵢ ← bᵢ - r bⱼ`, `j < i`, `r ∈ ℤ`) keeps the lattice and every Gram–Schmidt vector. `abs_gramSchmidtCoeff_round_le` shows that rounding `μᵢⱼ` gives `|μᵢⱼ| ≤ 1/2`. `IsSwapStep δ` swaps `bᵢ, bᵢ₊₁` when (1.5) fails, and `gramSchmidt_swap_self` is the swap formula (1.22).
+- **Potential:** `gramPrefixDet b k = ∏_{j<k} ‖b*ⱼ‖²` equals the Gram determinant of the first `k` vectors (`gramPrefixDet_eq_det`, via `det_gram_eq_prod_norm_gramSchmidt_sq`). `potential b` is their product `D`. `IsSwapStep.potential_lt` proves `D' < δ D`. For linearly independent `b` with integral inner products (`HasIntegralGram`, e.g. `bᵢ ∈ ℤᵐ`) and `‖bᵢ‖² ≤ B`, `one_le_potential` and `potential_le` give `1 ≤ D ≤ B^{n(n-1)/2}`. Along any run of `IsStep`s, `inv_pow_swapCount_le` and `swapCount_le` bound the number of exchange steps by `(n(n-1)/2) log B / log (1/δ)`.
+
+The [checked examples](../../ComplexityTests/Algorithms/LatticeReduction.lean) show that the standard basis of `ℤ²` is `3/4`-reduced and apply the SVP bound to it. They also show that `(e₀, e₀ + e₁)` is not size reduced, and that swapping `(2 e₀, e₀ + e₁)` is an exchange step taking the potential from `4` to `2 < (3/4) · 4`. Not formalized: an executable LLL algorithm, the count of size-reduction steps, the arithmetic and bit-size bounds of (1.26), and a polynomial-time statement ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
+
 ## Goemans–Williamson MAX-CUT rounding
 
 Import `Complexity.Algorithms.Lean.MaxCut.GoemansWilliamson` ([GoemansWilliamson.lean](../../Complexity/Algorithms/Lean/MaxCut/GoemansWilliamson.lean)). This analyzes random-hyperplane rounding of a given vector solution of the MAX-CUT semidefinite relaxation [Goemans and Williamson, Sections 2–3][goemanswilliamson95]. The rounding is an expectation under Mathlib's exact `stdGaussian`; no SDP solver, finite-precision sampler or running time is involved. A weighted multigraph is a `Fintype` of edges `ι` with `ends : ι → V × V` and weights `w : ι → ℝ`. `cutValue ends w side` is the weight of a cut and `sdpValue ends w v = ∑ e, w e * (1 - ⟪v (ends e).1, v (ends e).2⟫) / 2` is the relaxation's objective at a vector assignment `v : V → F`. `hyperplaneSide v r i = decide (0 ≤ ⟪v i, r⟫)` is the rounded cut. The source draws `r` uniformly from the sphere; the side depends only on the direction of `r`, so a standard Gaussian gives the same distribution.
@@ -898,6 +923,16 @@ Import `Complexity.Algorithms.Lean.Freivalds` ([Complexity/Algorithms/Lean/Freiv
 - **Soundness:** `eval_verify_true_le` bounds acceptance of an incorrect product by `(1/|S|)^k`, given that `s ↦ d * e s` is injective for every nonzero `d`. With `0`/`1` vectors (`bit`) this hypothesis holds over every ring and `eval_verify_bool_true_le` gives `(1/2)^k`; for `k = 1` this is Theorem 1.4 of [Mitzenmacher and Upfal][mitzenmacherupfal17]. Over a finite field with uniform vectors, `eval_verify_field_true_le` gives `(1/|F|)^k`.
 
 The probability core is in [Complexity/Probability/Freivalds.lean](../../Complexity/Probability/Freivalds.lean). It contains the counting bound `card_filter_mulVec_eq_mul_card_le`, its `k`-vector form, and `isUniversalHash_mulVec`, which states `M ↦ M *ᵥ (e ∘ x)` as a `1/|S|`-universal family under the existing `IsUniversalHash` predicate. The [checked examples](../../ComplexityTests/Freivalds.lean) include several things. One is a `2 × 2` product that one vector misses and another exposes. Another is a `1 × 1` instance whose acceptance probability is exactly `1/2`, which shows the `0`/`1` bound is attained. A third is a `ZMod 4` instance where the encoding `id` fails the injectivity hypothesis and the counting bound fails with it. The randomized verifier is not a machine program: Karp–Rabin fingerprinting, rolling-hash matching, the fingerprint equality protocol and bit-level costs remain open ([ROADMAP](../../ROADMAP.md#randomized-verification-and-fingerprinting)).
+
+## Luby's randomized maximal independent set
+
+Import `Complexity.Algorithms.Lean.LubyMIS` ([Complexity/Algorithms/Lean/LubyMIS.lean](../../Complexity/Algorithms/Lean/LubyMIS.lean)). It formalizes the random-priority variant of Luby's algorithm, Algorithm 7.12 ("Fast MIS 2") of [Wattenhofer][wattenhofer16], which the source attributes to Métivier, Robson, Saheb-Djahromi and Zemmari. The graph is a Mathlib `SimpleGraph V` on a finite type, and the target is Mathlib's `Maximal G.IsIndepSet`. A `State` holds the chosen and the live vertices. `phase` is a `ProbComp` that draws a uniform ranking `σ : V ≃ Fin (card V)`, a uniform random permutation. It then takes the deterministic `step`: every live vertex that ranks below all its live neighbours joins (`joiners`), and the joiners and their neighbours stop being live. `run k` iterates `phase` `k` times from the all-live state (`OracleComp.iterate`), and `lubyMIS k` answers the chosen set. Probabilities are statements about `ProbComp.eval`.
+
+- **Correctness:** `isIndepSet_of_mem_support_lubyMIS` says that every output is independent after any number of phases. `Invariant.maximal_iff` says that a reachable chosen set is maximal exactly when nothing is live. `maximal_of_mem_support_lubyMIS` says that after any `k ≥ card V` phases every output is maximal, because the least-ranked live vertex always joins. `liveGraph L` is Mathlib's `(G.induce L).spanningCoe` (`liveGraph_eq_spanningCoe_induce`).
+- **Edge removal:** `two_mul_expect_liveEdges_phase_le` says that one phase keeps at most half the live edges in expectation (Lemma 7.14). It follows from the counting form `two_mul_sum_liveEdges_step_le`, a sum over all rankings, and from `card_filter_least_mul_card`: a fixed vertex of a set `S` ranks least on `S` for exactly `1/|S|` of the rankings.
+- **Round bounds:** iterating gives `two_pow_mul_expect_liveEdges_run_le`, at most `|E| / 2^k` expected live edges after `k` phases. Markov's inequality then gives `two_pow_mul_toOuterMeasure_live_nonempty_le`. If `|E| ≤ 2^m`, `toOuterMeasure_not_maximal_lubyMIS_le` says that `m + t + 1` phases fail to give a maximal independent set with probability at most `2^-t`. `one_sub_le_toOuterMeasure_maximal_lubyMIS` and its `_clog` and `_card` forms state this as success at least `1 - 2^-t`, with `m` instantiated to `⌈log₂ |E|⌉` and to `2⌈log₂ n⌉`. `toOuterMeasure_not_maximal_lubyMIS_le_inv_pow` bounds the failure probability after `(c + 2)⌈log₂ n⌉ + 1` phases by `n^-c`.
+
+The source draws independent reals in `[0, 1]`. Restricted to the live vertices, a uniform ranking has the same law as the order of those reals, but this equivalence is not formalized. The source gets its high-probability bound from Lemma 7.14 by a Chernoff argument (Corollary 7.18). Here the `O(log n)` bound comes from the first moment, with explicit constants. Theorem 7.15, the expected number of phases, is not formalized. The model is a centralized simulation of the synchronous phases, not a LOCAL message-passing algorithm. Messages, the rounds inside a phase and per-vertex views are not modelled, so it is not connected to the oriented-cycle LOCAL model of [Distributed rounds in the LOCAL model](../circuits-logic-and-other-models/query-and-communication.md#distributed-rounds-in-the-local-model). Luby's original marking algorithm with pairwise independence, its NC derandomization, Ghaffari's `O(log Δ) + poly(log log n)` bound and the Kuhn–Moscibroda–Wattenhofer lower bounds remain open; see `ROADMAP.md`. The [checked examples](../../ComplexityTests/Algorithms/Lean/LubyMIS.lean) run the phases on the paths with three and four vertices and on the triangle. They show that a phase need not remove every edge, count the live edges left on the four-vertex path over all `24` rankings, and show that the intermediate chosen set is not maximal. They also instantiate the Las Vegas statement nonvacuously and check one instance of the high-probability bound.
 
 ## Euler circuits in multigraphs
 
@@ -935,6 +970,7 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
 [complexitylib]: ../sources.md#complexitylib
+[bfprt73]: ../sources.md#bfprt73
 [burrowswheeler94]: ../sources.md#burrowswheeler94
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
@@ -949,6 +985,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [hmu06]: ../sources.md#hmu06
 [kasami65]: ../sources.md#kasami65
 [kortevygen18]: ../sources.md#kortevygen18
+[lll82]: ../sources.md#lll82
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
@@ -960,5 +997,6 @@ The numeric values above are transcriptions of checked source statements, not re
 [sipser13]: ../sources.md#sipser13
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
+[wattenhofer16]: ../sources.md#wattenhofer16
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
 [younger67]: ../sources.md#younger67
