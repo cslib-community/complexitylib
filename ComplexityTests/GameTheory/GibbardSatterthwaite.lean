@@ -21,6 +21,8 @@ exposed definitions.
 
 * A dictatorship is strategy-proof and onto, so the theorem is not vacuous, and the theorem
   applies to three voters and three alternatives.
+* **The range form.** On `Fin 4`, voter `0`'s favourite among `{0, 1, 2}` is a strategy-proof
+  rule with three outcomes that is not onto; voter `0` is its dictator in the range sense.
 * **Three alternatives in the range are needed.** Majority rule between two alternatives `a` and
   `b`, with ties going to `b`, is strategy-proof and, with at least two voters, not dictatorial.
   On `Bool` it is onto two alternatives. On three alternatives its range is `{a, b}`, so it also
@@ -56,6 +58,70 @@ example (f : SocialChoiceFunction (Fin 5) ℕ) (hf : f.IsStrategyProof)
     (h3 : 3 ≤ (Set.range f).encard) :
     ∃ i, ∀ P x, x ∈ Set.range f → x ≠ f P → (P i).Prefers (f P) x :=
   isDictatorial_of_isStrategyProof hf h3
+
+/-! ### A dictatorship on a subset of the alternatives: the range form -/
+
+section Restricted
+
+variable {V A : Type*}
+
+/-- Voter `i`'s favourite alternative of a finite nonempty set `S` of alternatives. -/
+noncomputable def restrictedDictatorship (S : Set A) [Finite S] [Nonempty S] (i : V) :
+    SocialChoiceFunction V A :=
+  fun P => (((P i).restrict S).top : A)
+
+theorem restrictedDictatorship_mem (S : Set A) [Finite S] [Nonempty S] (i : V)
+    (P : Profile V A) : restrictedDictatorship S i P ∈ S :=
+  ((P i).restrict S).top.2
+
+/-- The range of the restricted dictatorship is `S`. -/
+theorem range_restrictedDictatorship (S : Set A) [Finite S] [Nonempty S] (i : V) :
+    Set.range (restrictedDictatorship S i) = S := by
+  refine Set.Subset.antisymm (fun _ ⟨P, hP⟩ => hP ▸ restrictedDictatorship_mem S i P)
+    fun x hx => ?_
+  obtain ⟨r⟩ := Ranking.nonempty A
+  have htop : ((r.toTop x).restrict S).IsTop ⟨x, hx⟩ := fun y hy =>
+    (Ranking.restrict_prefers _).2 (r.isTop_toTop x y fun h => hy (Subtype.ext h))
+  exact ⟨fun _ => r.toTop x,
+    congrArg Subtype.val (((r.toTop x).restrict S).isTop_iff_eq_top.1 htop).symm⟩
+
+/-- Voter `i` is a dictator for the restricted dictatorship: the outcome is `i`'s favourite
+alternative of the range `S`. -/
+theorem isDictator_restrictedDictatorship (S : Set A) [Finite S] [Nonempty S] (i : V) :
+    (restrictedDictatorship S i).IsDictator i := by
+  intro P x hx hne
+  rw [range_restrictedDictatorship] at hx
+  exact (Ranking.restrict_prefers _).1
+    (((P i).restrict S).isTop_top ⟨x, hx⟩ fun h => hne (congrArg Subtype.val h))
+
+end Restricted
+
+instance : Nonempty ({a | a ≠ 3} : Set (Fin 4)) := ⟨⟨0, show (0 : Fin 4) ≠ 3 by decide⟩⟩
+
+/-- On `Fin 4`, voter `0`'s favourite among `{0, 1, 2}` is a strategy-proof rule with three
+outcomes that is not onto. Voter `0` is its dictator, yet it is not the dictatorship of `0`,
+which is onto: for a rule that is not onto, a dictator gets their favourite outcome in the range,
+not their top alternative. -/
+example : (restrictedDictatorship (V := Fin 3) {a : Fin 4 | a ≠ 3} 0).IsStrategyProof ∧
+    (restrictedDictatorship (V := Fin 3) {a : Fin 4 | a ≠ 3} 0).IsDictator 0 ∧
+    3 ≤ (Set.range (restrictedDictatorship (V := Fin 3) {a : Fin 4 | a ≠ 3} 0)).encard ∧
+    ¬ Function.Surjective (restrictedDictatorship (V := Fin 3) {a : Fin 4 | a ≠ 3} 0) ∧
+    restrictedDictatorship (V := Fin 3) {a : Fin 4 | a ≠ 3} 0 ≠ dictatorship 0 := by
+  have hns : ¬ Function.Surjective (restrictedDictatorship (V := Fin 3) {a : Fin 4 | a ≠ 3} 0) :=
+    fun hs => by
+      obtain ⟨P, hP⟩ := hs 3
+      have hmem := restrictedDictatorship_mem {a : Fin 4 | a ≠ 3} 0 P
+      simp only [Set.mem_ofPred_eq] at hmem
+      exact hmem hP
+  have h3 : ({a | a ≠ 3} : Set (Fin 4)).encard = 3 :=
+    Set.encard_eq_three.2 ⟨0, 1, 2, by decide, by decide, by decide, Set.ext (by
+      simp only [Set.mem_ofPred_eq, Set.mem_insert_iff, Set.mem_singleton_iff]
+      decide)⟩
+  refine ⟨(isDictator_restrictedDictatorship _ 0).isStrategyProof,
+    isDictator_restrictedDictatorship _ 0, ?_, hns, fun h => hns ?_⟩
+  · rw [range_restrictedDictatorship, h3]
+  · rw [h]
+    exact surjective_dictatorship 0
 
 /-! ### Majority rule between two alternatives: three alternatives are needed -/
 

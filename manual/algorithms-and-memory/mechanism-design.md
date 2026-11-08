@@ -194,7 +194,8 @@ domination exhibit, for each bid outside the range, a type whose bid does at lea
 
 Import `Complexity.GameTheory.SocialChoice.Arrow`. The namespace `Cslib.GameTheory.SocialChoice`
 models preference aggregation: there are no payments or utilities, only rankings. Voters `V` rank
-alternatives `A`.
+alternatives `A`. The preference model below is in `Complexity.GameTheory.SocialChoice.Ranking`,
+which the Arrow module imports publicly.
 
 - `Ranking A` is a strict linear order, given by a relation `Prefers` that is irreflexive,
   transitive and total on distinct alternatives. `toTop b` and `toBottom b` move `b` to one end
@@ -250,8 +251,9 @@ To show that a rule escapes it, find the hypothesis that fails. A rule with stri
 ## Social choice: the Gibbard–Satterthwaite theorem
 
 Import `Complexity.GameTheory.SocialChoice.GibbardSatterthwaite`. It reuses `Ranking` and `Profile`
-from the Arrow module. A `SocialChoiceFunction V A` maps every profile `V → Ranking A` to one
-alternative. The definitions, all in `SocialChoiceFunction`, are `@[expose]`d:
+from `Complexity.GameTheory.SocialChoice.Ranking`, and Arrow's theorem. A `SocialChoiceFunction V A`
+maps every profile `V → Ranking A` to one alternative. The definitions, all in
+`SocialChoiceFunction`, are `@[expose]`d:
 
 - `IsStrategyProof`: for all profiles `P` and `Q` that differ only in voter `i`'s ranking, `i` does
   not strictly prefer `f Q` to `f P` by the true ranking `P i`. `isStrategyProof_iff` restates it
@@ -287,8 +289,15 @@ dictator. Nisan's construction needs a rule onto `A`. For the range form, the in
 function ranks the range: each voter's ranking of the range is extended to `A` by placing the range
 on top (`Ranking.extend`).
 
-The set of alternatives may be infinite, as for Arrow's theorem. The electorate must be finite,
-since Arrow's theorem is used.
+The ranking operations used by the proof are in the Ranking module: `Ranking.top`,
+`Ranking.toTopSet`, `Ranking.restrict` and `Ranking.extend`, each with a definitional `_iff` lemma
+or membership lemmas. The set of alternatives may be infinite, as for Arrow's theorem. The
+electorate must be finite, since Arrow's theorem is used.
+
+To apply the theorem to a concrete rule, prove `IsStrategyProof` (or `IsMaskinMonotone`) and
+exhibit three distinct outcomes. To show that a rule escapes it, find the hypothesis that fails:
+majority rule between two alternatives has only two outcomes, and a non-dictatorial rule with three
+outcomes, such as the Borda count, must be manipulable.
 
 ## Worked examples
 
@@ -323,8 +332,11 @@ vacuous; the theorem is applied to three voters and three alternatives and, in r
 with values in `ℕ`. Majority rule between two alternatives `a` and `b`, ties going to `b`, is
 strategy-proof. With at least two voters it is not dictatorial: a lone supporter of `a` cannot get
 `a`. On `Bool` with three voters it is onto, so the theorem needs three alternatives. On `Fin 3` its
-range is `{0, 1}`, so the hypothesis concerns the range, not the number of alternatives. Finally, the
-Borda count with two voters and three alternatives, ties going to the smaller alternative, is
+range is `{0, 1}`, so the hypothesis concerns the range, not the number of alternatives. On `Fin 4`,
+the rule choosing voter `0`'s favourite among `{0, 1, 2}` is strategy-proof, has three outcomes and
+is not onto. Voter `0` is its dictator, but the outcome is not always their top alternative, so for
+rules that are not onto, a dictator gets their favourite outcome in the range. Finally, the Borda
+count with two voters and three alternatives, ties going to the smaller alternative, is
 manipulable. Voter `0` ranks `1 ≻ 0 ≻ 2` and voter `1` ranks `0 ≻ 1 ≻ 2`. The scores are
 `(3, 3, 0)`, so the outcome is `0`. If voter `0` reports `1 ≻ 2 ≻ 0` instead, the scores are
 `(2, 3, 1)` and the outcome is `1`. Both outcomes are checked by `decide`.

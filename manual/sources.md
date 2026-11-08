@@ -309,7 +309,7 @@ Oded Goldreich, Shafi Goldwasser, Eric Lehman, Dana Ron and Alex Samorodnitsky. 
 <a id="gibbard73"></a>
 ## gibbard73
 
-Allan Gibbard. "Manipulation of Voting Schemes: A General Result." *Econometrica* 41(4), 587–601, 1973. https://doi.org/10.2307/1914083 . Bibliographic data from secondary search summaries on 2026-11-08 UTC; the paper was not inspected. The attribution of the Gibbard–Satterthwaite theorem, in the form "a strategy-proof rule with at least three possible outcomes is dictatorial", follows [Nisan, *Introduction to Mechanism Design*](#nisan07), p. 239, and standard secondary accounts; no theorem number is claimed.
+Allan Gibbard. "Manipulation of Voting Schemes: A General Result." *Econometrica* 41(4), 587–601, 1973. https://doi.org/10.2307/1914083 . Bibliographic data from secondary search summaries on 2026-11-08 UTC; the paper was not inspected. [Nisan, *Introduction to Mechanism Design*](#nisan07), p. 239, credits the theorem to Gibbard (1973) and Satterthwaite (1975); Nisan's own statement (Theorem 9.8) is the form for rules onto at least three alternatives. The range form (at least three possible outcomes), formalized as the main theorem, is the standard statement in secondary accounts and was not checked against the original; no theorem number is claimed.
 
 <a id="gkr15"></a>
 ## gkr15

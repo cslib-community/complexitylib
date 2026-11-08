@@ -9,7 +9,6 @@ module
 
 public import Complexity.GameTheory.SocialChoice.Arrow
 public import Mathlib.Data.Set.Card
-import Mathlib.Data.Fintype.Card
 
 /-!
 # The Gibbard–Satterthwaite theorem
@@ -54,10 +53,8 @@ dictatorial.
 * `SocialChoiceFunction.IsMaskinMonotone`: Maskin monotonicity (strong positive association).
 * `SocialChoiceFunction.IsDictator`, `SocialChoiceFunction.IsDictatorial`: voter `i` always gets
   their favourite alternative of the range.
-* `SocialChoiceFunction.dictatorship`: the rule choosing voter `i`'s top alternative.
-* `Ranking.top`: the top alternative of a ranking of a finite nonempty type. `Ranking.toTopSet`,
-  `Ranking.extend` and `Ranking.restrict` move a set of alternatives to the top, extend a ranking
-  of a set to all alternatives, and restrict a ranking to a set.
+* `SocialChoiceFunction.dictatorship`: the rule choosing voter `i`'s top alternative
+  (`Ranking.top`).
 
 ## Main results
 
@@ -85,119 +82,6 @@ public section
 namespace Cslib.GameTheory.SocialChoice
 
 variable {A : Type*}
-
-namespace Ranking
-
-variable (r : Ranking A)
-
-/-- Two alternatives at the top of the same ranking coincide. -/
-theorem IsTop.eq {r : Ranking A} {a b : A} (ha : r.IsTop a) (hb : r.IsTop b) : a = b := by
-  by_contra hab
-  exact r.asymm (ha b (Ne.symm hab)) (hb a hab)
-
-/-- The **top** alternative of a ranking of a finite nonempty type. -/
-noncomputable def top [Finite A] [Nonempty A] : A :=
-  (Finite.wellFounded_of_trans_of_irrefl r.Prefers).min Set.univ Set.univ_nonempty
-
-theorem isTop_top [Finite A] [Nonempty A] : r.IsTop r.top := by
-  intro x hx
-  have hwf := Finite.wellFounded_of_trans_of_irrefl r.Prefers
-  refine r.prefers_of_not_prefers hx fun h => ?_
-  exact hwf.not_lt_min Set.univ (Set.mem_univ x) h
-
-theorem isTop_iff_eq_top [Finite A] [Nonempty A] {a : A} : r.IsTop a ↔ a = r.top :=
-  ⟨fun h => h.eq r.isTop_top, fun h => h ▸ r.isTop_top⟩
-
-/-- Move the alternatives of `S` to the top of `r`, keeping the order within `S` and within its
-complement ([Nisan2007], Definition 9.9). -/
-def toTopSet (S : Set A) : Ranking A where
-  Prefers x y := (x ∈ S ∧ y ∉ S) ∨ ((x ∈ S ↔ y ∈ S) ∧ r.Prefers x y)
-  irrefl x h := h.elim (fun h => h.2 h.1) fun h => r.irrefl x h.2
-  trans x y z := by
-    rintro (⟨hx, hy⟩ | ⟨hxy, h1⟩) (⟨hy', hz⟩ | ⟨hyz, h2⟩)
-    · exact absurd hy' hy
-    · exact Or.inl ⟨hx, fun hz => hy (hyz.2 hz)⟩
-    · exact Or.inl ⟨hxy.2 hy', hz⟩
-    · exact Or.inr ⟨hxy.trans hyz, r.trans _ _ _ h1 h2⟩
-  total x y hxy := by
-    by_cases hx : x ∈ S <;> by_cases hy : y ∈ S
-    · exact (r.total x y hxy).imp (fun h => Or.inr ⟨iff_of_true hx hy, h⟩)
-        fun h => Or.inr ⟨iff_of_true hy hx, h⟩
-    · exact Or.inl (Or.inl ⟨hx, hy⟩)
-    · exact Or.inr (Or.inl ⟨hy, hx⟩)
-    · exact (r.total x y hxy).imp (fun h => Or.inr ⟨iff_of_false hx hy, h⟩)
-        fun h => Or.inr ⟨iff_of_false hy hx, h⟩
-
-theorem toTopSet_prefers_of_mem_of_notMem {S : Set A} {x y : A} (hx : x ∈ S) (hy : y ∉ S) :
-    (r.toTopSet S).Prefers x y :=
-  Or.inl ⟨hx, hy⟩
-
-theorem toTopSet_prefers_iff_of_mem {S : Set A} {x y : A} (hx : x ∈ S) (hy : y ∈ S) :
-    (r.toTopSet S).Prefers x y ↔ r.Prefers x y :=
-  ⟨fun h => h.elim (fun h => absurd hy h.2) And.right,
-    fun h => Or.inr ⟨iff_of_true hx hy, h⟩⟩
-
-/-- If `x ∈ S`, `toTopSet S` ranks `x` above `y` exactly when `y ∉ S` or `r` ranks `x` above
-`y`. -/
-theorem toTopSet_prefers_of_mem {S : Set A} {x y : A} (hx : x ∈ S) :
-    (r.toTopSet S).Prefers x y ↔ y ∉ S ∨ r.Prefers x y := by
-  by_cases hy : y ∈ S
-  · rw [r.toTopSet_prefers_iff_of_mem hx hy]
-    exact ⟨Or.inr, fun h => h.resolve_left (not_not.2 hy)⟩
-  · exact iff_of_true (r.toTopSet_prefers_of_mem_of_notMem hx hy) (Or.inl hy)
-
-/-- Extend a ranking `s` of the alternatives in `S` to all alternatives, ranking `S` above its
-complement, which is ordered by `r`. -/
-def extend {S : Set A} (s : Ranking S) : Ranking A where
-  Prefers x y :=
-    (∃ (hx : x ∈ S) (hy : y ∈ S), s.Prefers ⟨x, hx⟩ ⟨y, hy⟩) ∨ (x ∈ S ∧ y ∉ S) ∨
-      (x ∉ S ∧ y ∉ S ∧ r.Prefers x y)
-  irrefl x := by
-    rintro (⟨hx, hx₂, h⟩ | ⟨hx, hx'⟩ | ⟨-, -, h⟩)
-    · exact s.irrefl _ h
-    · exact hx' hx
-    · exact r.irrefl x h
-  trans x y z := by
-    rintro (⟨hx, hy, h1⟩ | ⟨hx, hy⟩ | ⟨hx, hy, h1⟩) (⟨hy', hz, h2⟩ | ⟨hy', hz⟩ | ⟨hy', hz, h2⟩)
-    · exact Or.inl ⟨hx, hz, s.trans _ _ _ h1 h2⟩
-    · exact Or.inr (Or.inl ⟨hx, hz⟩)
-    · exact absurd hy hy'
-    · exact absurd hy' hy
-    · exact absurd hy' hy
-    · exact Or.inr (Or.inl ⟨hx, hz⟩)
-    · exact absurd hy' hy
-    · exact absurd hy' hy
-    · exact Or.inr (Or.inr ⟨hx, hz, r.trans _ _ _ h1 h2⟩)
-  total x y hxy := by
-    by_cases hx : x ∈ S <;> by_cases hy : y ∈ S
-    · have hne : (⟨x, hx⟩ : S) ≠ ⟨y, hy⟩ := fun h => hxy (congrArg Subtype.val h)
-      exact (s.total _ _ hne).imp (fun h => Or.inl ⟨hx, hy, h⟩) fun h => Or.inl ⟨hy, hx, h⟩
-    · exact Or.inl (Or.inr (Or.inl ⟨hx, hy⟩))
-    · exact Or.inr (Or.inr (Or.inl ⟨hy, hx⟩))
-    · exact (r.total x y hxy).imp (fun h => Or.inr (Or.inr ⟨hx, hy, h⟩))
-        fun h => Or.inr (Or.inr ⟨hy, hx, h⟩)
-
-/-- On alternatives of `S`, the extension of `s` agrees with `s`. -/
-theorem extend_prefers_of_mem {S : Set A} (s : Ranking S) {x y : A} (hx : x ∈ S) (hy : y ∈ S) :
-    (r.extend s).Prefers x y ↔ s.Prefers ⟨x, hx⟩ ⟨y, hy⟩ := by
-  constructor
-  · rintro (⟨hx₂, hy₂, h⟩ | ⟨-, hy'⟩ | ⟨hx', -⟩)
-    · exact h
-    · exact absurd hy hy'
-    · exact absurd hx hx'
-  · exact fun h => Or.inl ⟨hx, hy, h⟩
-
-/-- The restriction of a ranking to the alternatives in `S`. -/
-def restrict (S : Set A) : Ranking S where
-  Prefers x y := r.Prefers x y
-  irrefl x := r.irrefl x
-  trans x y z := r.trans x y z
-  total x y hxy := r.total x y fun h => hxy (Subtype.ext h)
-
-@[simp] theorem restrict_prefers {S : Set A} {x y : S} :
-    (r.restrict S).Prefers x y ↔ r.Prefers x y := Iff.rfl
-
-end Ranking
 
 /-- A **social choice function** chooses one alternative from every preference profile. -/
 abbrev SocialChoiceFunction (V A : Type*) := Profile V A → A
@@ -459,14 +343,6 @@ private theorem IsMaskinMonotone.apply_raise_pair_trans (P : Profile V A) {a b c
 private def extendProfile (r₀ : Ranking A) (P : Profile V (Set.range f)) : Profile V A :=
   fun i => r₀.extend (P i)
 
-omit hf in
-/-- Two rankings that agree on `a` versus `b` agree on `b` versus `a`. -/
-private theorem prefers_comm_iff {s t : Ranking A} {a b : A}
-    (h : s.Prefers a b ↔ t.Prefers a b) : s.Prefers b a ↔ t.Prefers b a := by
-  by_cases hab : a = b
-  · subst hab; exact h
-  · rw [← s.not_prefers_iff hab, ← t.not_prefers_iff hab, h]
-
 /-- The social welfare function on the range of `f` induced by a strategy-proof rule
 ([Nisan2007], Definition 9.9): extend every voter's ranking of the range to `A` and rank `a` at
 least as high as `b` when the outcome after every voter moves `a` and `b` to the top is `a`. -/
@@ -506,7 +382,7 @@ private theorem isIIA_induced (r₀ : Ranking A) : (induced hf r₀).IsIIA := by
   rcases hx with rfl | rfl <;> rcases hy with rfl | rfl
   · exact iff_of_false ((r₀.extend (P i)).irrefl _) ((r₀.extend (Q i)).irrefl _)
   · exact hab
-  · exact prefers_comm_iff hab
+  · exact Ranking.prefers_iff_swap hab
   · exact iff_of_false ((r₀.extend (P i)).irrefl _) ((r₀.extend (Q i)).irrefl _)
 
 end Induced
@@ -534,7 +410,7 @@ theorem isDictatorial_of_isMaskinMonotone [Finite V] (hf : f.IsMaskinMonotone)
   refine ⟨n, fun P x hx hxP => (P n).prefers_of_not_prefers hxP fun hnx => ?_⟩
   -- Society, which follows `n`, ranks `x` above `f P` on the restriction of `P` to the range.
   let P' : Profile V (Set.range f) := fun i => (P i).restrict (Set.range f)
-  have hsoc := hn P' ⟨x, hx⟩ ⟨f P, ⟨P, rfl⟩⟩ hnx
+  have hsoc := hn P' ⟨x, hx⟩ ⟨f P, ⟨P, rfl⟩⟩ ((P n).restrict_prefers.2 hnx)
   apply hsoc
   change f (raise (extendProfile r₀ P') {f P, x}) = f P
   rw [hf.apply_raise_congr (Set.mem_insert (f P) _) ⟨P, rfl⟩ (P := P)
@@ -542,7 +418,7 @@ theorem isDictatorial_of_isMaskinMonotone [Finite V] (hf : f.IsMaskinMonotone)
   · exact hf.apply_raise_of_mem (Set.mem_insert _ _)
   · have hS : ({f P, x} : Set A) ⊆ Set.range f :=
       Set.insert_subset ⟨P, rfl⟩ (Set.singleton_subset_iff.2 hx)
-    exact ((r₀.extend_prefers_of_mem (P' i) (hS hy) (hS hz)).trans Iff.rfl).symm
+    exact ((r₀.extend_prefers_of_mem (P' i) (hS hy) (hS hz)).trans (P i).restrict_prefers).symm
 
 /-- **The Gibbard–Satterthwaite theorem** ([Gibbard1973], [Satterthwaite1975]; [Nisan2007],
 Theorem 9.8): with finitely many voters, a strategy-proof social choice function whose range has
