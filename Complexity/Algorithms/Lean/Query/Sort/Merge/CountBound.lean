@@ -33,6 +33,7 @@ short lists the difference is substantial: five elements take at most `8` compar
   `xs.length + ys.length - 1` comparisons.
 * `Cslib.Query.mergeSort_countQueries_le_countBound`: merge sort takes at most
   `mergeSortCountBound n` comparisons on a list of length `n`.
+* `Cslib.Query.mergeSortCountBound_five`: five elements are sorted with at most `8` comparisons.
 
 ## References
 

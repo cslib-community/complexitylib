@@ -27,8 +27,8 @@ public import Complexity.Foundations.Data.List.Counting
 ## Main results
 
 * `List.Pairwise.length_sub_le_countP`, `List.Pairwise.add_one_le_countP`: in a sorted list, an
-  element above (below) the `i`-th entry is below (above) at least `length - i` (`i + 1`)
-  entries.
+  element at or below (at or above) the `i`-th entry is at or below (at or above) at least
+  `length - i` (`i + 1`) entries.
 * `List.isOrderStatistic_getElem_of_perm`: the `k`-th entry of a sorted permutation of `xs` is an
   order statistic of rank `k`.
 * `List.IsOrderStatistic.rel`, `List.IsOrderStatistic.unique`: order statistics of the same rank

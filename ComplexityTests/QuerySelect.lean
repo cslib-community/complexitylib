@@ -92,6 +92,16 @@ example : [(1, 0), (1, 1)].IsOrderStatistic FstLE 0 (1, 1) ∧
 def fstOracle : {ι : Type} → LEQuery (ℕ × ℕ) ι → ι :=
   LEQuery.oracleOf fun p q => decide (FstLE p q)
 
+/-- `2000` pairs with only seven distinct first coordinates, in scrambled order. -/
+def tiedPairs : List (ℕ × ℕ) := (List.range 2000).map fun i => (i * 7919 % 2003 % 7, i)
+
+-- Through the median-of-medians recursion with heavy ties, the first coordinate of the result
+-- agrees with merge sort by first coordinate.
+#guard [0, 1000, 1999].all fun k =>
+  ((select k tiedPairs).eval fstOracle).map Prod.fst ==
+    ((tiedPairs.mergeSort fun p q => decide (FstLE p q))[k]?).map Prod.fst
+#guard (select 2000 tiedPairs).eval fstOracle == none
+
 -- Under the tie-breaking preorder, `select` returns one of the tied elements.
 #guard (select 1 [(2, 0), (1, 0), (1, 1), (0, 0)]).eval fstOracle ∈
   [some (1, 0), some (1, 1)]
