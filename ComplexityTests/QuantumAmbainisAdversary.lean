@@ -6,13 +6,15 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.Symmetric
 import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.Tribes
+import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.WeightLayers
 import Complexity.Computability.QueryComplexity.Quantum.UnknownSearch
 import ComplexityTests.QuantumPolynomial
 
 /-! Ambainis's adversary method: a concrete relation that meets the counting hypotheses of the
-core bound (with nonempty `R`), and the parity, threshold, majority, Tribes and `AND`-of-`OR`s
-bounds applied to the exact one-query algorithm `readBit` and to the `OR_N` algorithm `orSearch`.
-This shows that their hypotheses are satisfiable by non-constant functions. -/
+core bound (with nonempty `R`), and the parity, threshold, majority, Tribes, `AND`-of-`OR`s and
+weight-layer (Nayak–Wu) bounds applied to the exact one-query algorithm `readBit` and to the
+`OR_N` algorithm `orSearch`. This shows that their hypotheses are satisfiable by non-constant
+functions. -/
 
 namespace ComplexityTests.QuantumAmbainisAdversary
 
@@ -58,26 +60,34 @@ example : 1 ≤ 36 * 1 :=
     rw [this, sub_self, abs_zero]
     norm_num
 
+/-- `readBit` accepts every string of weight `1` with certainty. -/
+theorem readBit_weight_one (x : BitString 1) (hx : weight x = 1) :
+    1 - (0 : ℝ) ≤ measureProb (run readBit ψ₀ x 1) accept := by
+  rw [measureProb_readBit]
+  have : x 0 = true := by
+    by_contra h
+    rw [weight, card_eq_zero.2 (filter_eq_empty_iff.2 fun i _ => by
+      rw [Subsingleton.elim i 0]
+      simpa using h)] at hx
+    exact zero_ne_one hx
+  rw [this, bitVal_true]
+  norm_num
+
+/-- `readBit` rejects every string of weight `0` with certainty. -/
+theorem readBit_weight_zero (y : BitString 1) (hy : weight y = 0) :
+    measureProb (run readBit ψ₀ y 1) accept ≤ 0 := by
+  rw [measureProb_readBit]
+  have : y 0 = false := by
+    by_contra h
+    have : 1 ≤ weight y := card_pos.2 ⟨0, by simpa using h⟩
+    omega
+  rw [this, bitVal_false]
+
 -- `readBit` tells weight `1` from weight `0` on one bit with error `0`.
 example :
-    (1 - 2 * √((0 : ℝ) * (1 - 0))) * √((1 : ℕ) * ((1 : ℕ) + 1 - (1 : ℕ))) ≤ 2 * (1 : ℕ) := by
-  refine one_sub_mul_sqrt_le_two_mul_of_weight readBit norm_ψ₀ 1 accept (k := 1) (ε := 0)
-    (fun x hx => ?_) (fun y hy => ?_) (by norm_num)
-  · rw [measureProb_readBit]
-    have : x 0 = true := by
-      by_contra h
-      rw [weight, card_eq_zero.2 (filter_eq_empty_iff.2 fun i _ => by
-        rw [Subsingleton.elim i 0]
-        simpa using h)] at hx
-      exact zero_ne_one hx
-    rw [this, bitVal_true]
-    norm_num
-  · rw [measureProb_readBit]
-    have : y 0 = false := by
-      by_contra h
-      have : 1 ≤ weight y := card_pos.2 ⟨0, by simpa using h⟩
-      omega
-    rw [this, bitVal_false]
+    (1 - 2 * √((0 : ℝ) * (1 - 0))) * √((1 : ℕ) * ((1 : ℕ) + 1 - (1 : ℕ))) ≤ 2 * (1 : ℕ) :=
+  one_sub_mul_sqrt_le_two_mul_of_weight readBit norm_ψ₀ 1 accept (k := 1) (ε := 0)
+    readBit_weight_one (fun y hy => readBit_weight_zero y (by omega)) (by norm_num)
 
 -- `readBit` computes `MAJ_1`, the threshold function `Th^1_1`, exactly.
 example : 1 ≤ 72 * 1 :=
@@ -115,5 +125,53 @@ example : 1 * 1 ≤ 1296 * 1 ^ 2 :=
   mul_le_mul_sq_of_forall_exists (w := 1) (s := 1) readBit norm_ψ₀ 1 accept fun x _ => by
     rw [measureProb_readBit, forall_exists_one_one, sub_self, abs_zero]
     norm_num
+
+/-! ### Two weight layers and the Nayak–Wu bound -/
+
+-- Weight `1` against weight `0` on `readBit`, error `0`: `√((1 - 0) · 1) ≤ 2 · 1 · |1 - 0|`.
+example : (1 - 2 * √((0 : ℝ) * (1 - 0))) * √(((1 : ℕ) - (min 1 0 : ℕ)) * (max 1 0 : ℕ)) ≤
+    2 * (1 : ℕ) * |((1 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)| :=
+  one_sub_mul_sqrt_le_two_mul_mul_abs_sub_of_weight readBit norm_ψ₀ 1 accept (by decide) le_rfl
+    (Nat.zero_le _) readBit_weight_one readBit_weight_zero (by norm_num)
+
+-- Weights on both sides of `N/2 = 1/2` on `readBit`: `1 ≤ 4 · 1 · |1 - 0|`.
+example : (1 - 2 * √((0 : ℝ) * (1 - 0))) * ((1 : ℕ) : ℝ) ≤
+    4 * (1 : ℕ) * |((1 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)| :=
+  one_sub_mul_card_le_four_mul_mul_abs_sub_of_weight readBit norm_ψ₀ 1 accept (by decide)
+    (by decide) (by decide) le_rfl (Nat.zero_le _) readBit_weight_one readBit_weight_zero
+    (by norm_num)
+
+-- The Nayak–Wu bound on `orSearch`, which tells weight `1` from weight `0` with error `1/3`:
+-- with `m = 0` it gives the search lower bound `(1 - 2√(2/9)) √N ≤ 4T`.
+example (N : ℕ) (hN : 0 < N) :
+    (1 - 2 * √((1 / 3 : ℝ) * (1 - 1 / 3))) *
+        (√(N * |((1 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)|) + √(((0 : ℕ) : ℝ) * (N - ((0 : ℕ) : ℝ)))) ≤
+      4 * (orRange N + orRange N : ℕ) * |((1 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)| := by
+  refine one_sub_mul_add_le_four_mul_mul_abs_sub_of_weight (orSearch N) (norm_orSearchInit hN) _
+    (orAccept N) (k := 1) (k' := 0) (by decide) hN (Nat.zero_le _) (fun x hx => ?_)
+    (fun y hy => ?_) (by norm_num) (Nat.zero_le _) (Nat.zero_le _)
+  · have := (abs_le.1 (abs_measureProb_run_orSearch_sub_le hN x)).1
+    rw [threshold_apply, decide_eq_true hx.ge, bitVal_true] at this
+    linarith
+  · have := (abs_le.1 (abs_measureProb_run_orSearch_sub_le hN y)).2
+    rw [threshold_apply, decide_eq_false (by omega), bitVal_false] at this
+    linarith
+
+-- The Nayak–Wu bound on `orSearch` for weight `2` against weight `0` (`Δ = 2`), with `m = 1`:
+-- `(1 - 2√(2/9)) (√(2N) + √(N - 1)) ≤ 8T`.
+example (N : ℕ) (hN : 2 ≤ N) :
+    (1 - 2 * √((1 / 3 : ℝ) * (1 - 1 / 3))) *
+        (√(N * |((2 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)|) + √(((1 : ℕ) : ℝ) * (N - ((1 : ℕ) : ℝ)))) ≤
+      4 * (orRange N + orRange N : ℕ) * |((2 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)| := by
+  have hN0 : 0 < N := by omega
+  refine one_sub_mul_add_le_four_mul_mul_abs_sub_of_weight (orSearch N) (norm_orSearchInit hN0) _
+    (orAccept N) (k := 2) (k' := 0) (by decide) hN (Nat.zero_le _) (fun x hx => ?_)
+    (fun y hy => ?_) (by norm_num) (by decide) (by decide)
+  · have := (abs_le.1 (abs_measureProb_run_orSearch_sub_le hN0 x)).1
+    rw [threshold_apply, decide_eq_true (by omega), bitVal_true] at this
+    linarith
+  · have := (abs_le.1 (abs_measureProb_run_orSearch_sub_le hN0 y)).2
+    rw [threshold_apply, decide_eq_false (by omega), bitVal_false] at this
+    linarith
 
 end ComplexityTests.QuantumAmbainisAdversary
