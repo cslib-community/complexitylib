@@ -64,6 +64,11 @@ Allan Borodin. *Computational Complexity and the Existence of Complexity Gaps*. 
 
 Allan Borodin, Ran El-Yaniv. *Online Computation and Competitive Analysis*. Cambridge University Press, 1998. The chapter outline, in particular Chapter 1 on list accessing, comes from the publisher's table of contents; the book text was not inspected in this pass. The manual cites it only as a textbook pointer for ski rental and for the deterministic list-accessing lower bound, with no theorem numbers.
 
+<a id="broder97"></a>
+## broder97
+
+Andrei Z. Broder. “On the Resemblance and Containment of Documents.” *Proceedings of Compression and Complexity of Sequences 1997* (SEQUENCES 1997), IEEE, 21–29. https://doi.org/10.1109/SEQUEN.1997.666900 . Bibliographic data from the DOI record and secondary indexes; the full text was not inspected in this pass (no connection to the publisher). The manual credits it with the MinHash identity `Pr[min σ(A) = min σ(B)] = |A ∩ B|/|A ∪ B|` for a uniform permutation, which secondary sources attribute to it.
+
 <a id="bs23"></a>
 ## bs23
 
@@ -78,6 +83,11 @@ Andrej Bogdanov and Luca Trevisan. *Average-Case Complexity*. Foundations and Tr
 ## canetti20
 
 Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Article 28, 2020; full version Cryptology ePrint Archive 2000/067. https://doi.org/10.1145/3402457 .
+
+<a id="charikar02"></a>
+## charikar02
+
+Moses S. Charikar. “Similarity Estimation Techniques from Rounding Algorithms.” *Proceedings of the 34th Annual ACM Symposium on Theory of Computing* (STOC 2002), 380–388. https://doi.org/10.1145/509907.509965 . Bibliographic data from the DOI record and secondary indexes. The locator Lemma 1 (for a similarity admitting a locality-sensitive hashing scheme, `1 − sim` satisfies the triangle inequality) was not checked against the full text in this pass.
 
 <a id="chattopadhyayliao20"></a>
 ## chattopadhyayliao20
@@ -209,6 +219,11 @@ Arpita Ghosh, Tim Roughgarden and Mukund Sundararajan. *Universally Utility-Maxi
 
 Craig Gentry, Amit Sahai, Brent Waters. “Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based.” *CRYPTO 2013*, LNCS 8042, 75–92. https://doi.org/10.1007/978-3-642-40041-4_5 ; authors' full-version record https://eprint.iacr.org/2013/340 . Metadata/abstract checked; PDF fetch was blocked in this source pass.
 
+<a id="harpeledindykmotwani12"></a>
+## harpeledindykmotwani12
+
+Sariel Har-Peled, Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbor: Towards Removing the Curse of Dimensionality.” *Theory of Computing* 8(14), 321–350, 2012. https://doi.org/10.4086/toc.2012.v008a014 . Bibliographic data from the journal's listing in secondary search results; the open-access PDF could not be fetched in this pass (no connection). Cited for the `(r, cr, p₁, p₂)` form of locality-sensitive families.
+
 <a id="hartline21"></a>
 ## hartline21
 
@@ -279,6 +294,11 @@ Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal 
 
 Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circuits: Derandomizing the XOR Lemma*. Proceedings of the 29th Annual ACM Symposium on Theory of Computing, 220–229, 1997. DOI: [10.1145/258533.258590](https://doi.org/10.1145/258533.258590). ACM metadata checked by the coordinated source pass on 2026-11-02; no complete literature proof audit is asserted.
 
+<a id="indykmotwani98"></a>
+## indykmotwani98
+
+Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbors: Towards Removing the Curse of Dimensionality.” *Proceedings of the 30th Annual ACM Symposium on Theory of Computing* (STOC 1998), 604–613. https://doi.org/10.1145/276698.276876 . Bibliographic data from the DOI record and secondary indexes; the full text was not inspected in this pass. Cited for the definition of locality-sensitive families and for bit sampling under the Hamming distance.
+
 <a id="irani91"></a>
 ## irani91
 
@@ -313,6 +333,11 @@ Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Dif
 ## lean-validation
 
 Lean development team. *Validating a Lean Proof*, The Lean Language Reference, accessed 2026-11-02 UTC. https://lean-lang.org/doc/reference/latest/ValidatingProofs/ . The page was inspected live; the requested version-specific URL was unavailable, and no verified archival snapshot was obtained. Version-specific library assertions in this dossier instead rely on pinned repository sources.
+
+<a id="leskovecrajaramanullman20"></a>
+## leskovecrajaramanullman20
+
+Jure Leskovec, Anand Rajaraman, Jeffrey D. Ullman. *Mining of Massive Datasets*, 3rd edition. Cambridge University Press, 2020. https://doi.org/10.1017/9781108684163 . The section locators used here (3.3.3 minhashing and Jaccard similarity, 3.4.2 analysis of the banding technique, 3.6.1 locality-sensitive functions, 3.6.2 families for the Jaccard distance, 3.6.3 amplification, 3.7.1 families for the Hamming distance) were matched against section titles reported by secondary sources; the book text was not inspected in this pass (no connection to the authors' site).
 
 <a id="lev86"></a>
 ## lev86

@@ -59,6 +59,25 @@ There are two ways to prove a new streaming lower bound. The first starts from a
 
 [Complexity/Computability/Streaming/FkEstimator.lean](../../Complexity/Computability/Streaming/FkEstimator.lean) implements the AMS estimator for every `F_k` with `k ≥ 1` from Theorem 2.1 [alonmatiasszegedy99][alonmatiasszegedy99]. The basic estimator `fkBasicEstimate` samples a position `p` and sets `X = m(r^k − (r−1)^k)`, where `r = suffixCount s p` counts the occurrences of the item `a_p` at positions `q ≥ p`. Telescoping gives `expect_fkBasicEstimate` (`𝔼X = F_k`). The bound `(c+1)^k − c^k ≤ k(c+1)^(k−1)` (`Nat.succ_pow_sub_pow_le`) gives `expect_fkBasicEstimate_sq_le` (`𝔼X² ≤ kF₁F_{2k−1}`). The source's power-sum fact `F₁F_{2k−1} ≤ n^(1−1/k)F_k²` is `Finset.sum_mul_sum_pow_le` in [Finset/PowerSum.lean](../../Complexity/Foundations/Data/Finset/PowerSum.lean), raised to the `k`-th power to avoid real exponents. `fkSketch` keeps a step counter and, for each of `2rK` copies, a sampled position, the item there and its count. Its answer is the median of means of the basic estimator (`run_fkSketch_eq_medianOfMeans`). As in the source's main argument, the stream length `m` is fixed in advance: positions are drawn from `Fin m` and the guarantees are for streams of exactly `m` items. `dens_fkSketch_error_le` and `solves_fkEstimator` give error `(8/9)^r` for relative accuracy `η` when `(3k)^k n^(k−1) ≤ (Kη²)^k`. `solves_fkEstimator_of_rpow` takes the hypothesis in the form `3k·n^(1−1/k) ≤ Kη²`. The group size `3k·n^(1−1/k)/η²` replaces the source's `8k·n^(1−1/k)/λ²`, because the median step uses the `(8/9)^r` bound of `MedianOfMeans.lean` instead of a Chernoff bound. For memory, `spaceLE_fkEstimator` does not charge the positions, while `exists_injOn_iUnion_reachable_fkSketch` stores them (`m^(2rK)(M+1)((n+1)(M+1))^(2rK) ≤ 2^b`). Together they give the `O(rK(log n + log m))` memory of Theorem 2.1. The [test file](../../ComplexityTests/StreamingFkEstimator.lean) evaluates the basic estimator on the stream `0, 1, 0`, shows that `k = 0` must be excluded, and instantiates the error and memory bounds.
 
+## MinHash and locality-sensitive hashing
+
+[Probability/LocalitySensitiveHash.lean](../../Complexity/Probability/LocalitySensitiveHash.lean) works with keyed families `hash : ι → X → Y` with seed law `seed : PMF ι`, as for universal hashing. `collisionProb seed hash x x'` is the real probability that `x` and `x'` collide. `IsLocalitySensitive prob near far p₁ p₂` says that near pairs collide with probability at least `p₁` and far pairs with probability at most `p₂`. With `near := d ≤ r₁` and `far := r₂ ≤ d` this is the `(r₁, r₂, p₁, p₂)`-sensitive family of Indyk and Motwani [indykmotwani98][indykmotwani98] [harpeledindykmotwani12][harpeledindykmotwani12]. Every `ε`-universal family is `(=, ≠, 1, ε)`-sensitive (`IsUniversalHash.isLocalitySensitive`). Independent repetitions use `PMF.iid`, and the collision laws are exact:
+
+- the AND construction `andHash` (concatenate `k` independently keyed hashes) collides with probability `p^k` (`collisionProb_andHash`);
+- the OR construction (some one of `L` independent hashes collides) collides with probability `1 − (1 − p)^L` (`orCollisionProb_eq`);
+- `L` bands of `k` rows give the S-curve `sCurve k L p = 1 − (1 − p^k)^L` (`orCollisionProb_andHash`).
+
+The general event laws behind these, `Pr[∀ j, s j ∈ E] = μ(E)^k` and `Pr[∃ j, s j ∈ E] = 1 − (1 − μ(E))^k` under `PMF.iid μ k`, are in [IID/Event.lean](../../Complexity/Probability/IID/Event.lean). `IsLocalitySensitive.and`, `.or` and `.banded` transport sensitivity. For `0 ≤ p₂ < p₁ ≤ 1`, `exists_sCurve_gap` and `IsLocalitySensitive.exists_banded` choose `k` and `L = ⌈log(1/δ)/p₁^k⌉₊` so that near pairs collide with probability at least `1 − δ` and far pairs with probability at most `δ'`. The explicit bounds are `le_sCurve` (`1 − δ ≤ sCurve k L p` once `log(1/δ) ≤ L p₁^k`) and `sCurve_le` (`sCurve k L p ≤ L p₂^k`, Bernoulli's inequality). `collisionProb_triangle` is Charikar's Lemma 1 [charikar02][charikar02]: `1 − collisionProb` satisfies the triangle inequality.
+
+[LocalitySensitiveHash/MinHash.lean](../../Complexity/Probability/LocalitySensitiveHash/MinHash.lean) proves Broder's theorem [broder97][broder97]. On a finite linear order, `minHash σ A` is the least rank `min σ(A)` (`⊤` for `∅`). Under a uniform `σ : Equiv.Perm α`, `collisionProb_minHash` gives `Pr[minHash σ A = minHash σ B] = jaccard A B = |A ∩ B|/|A ∪ B|`, with `jaccard ∅ ∅ = 1`. Consequences: `isLocalitySensitive_minHash` (MinHash is `(d₁, d₂, 1 − d₁, 1 − d₂)`-sensitive for the Jaccard distance `1 − J`), `orCollisionProb_andHash_minHash` (the banding curve `1 − (1 − J^r)^b` of [leskovecrajaramanullman20][leskovecrajaramanullman20], Section 3.4.2), and `jaccard_triangle` (the Jaccard distance is a metric on finite subsets of any type with decidable equality). [LocalitySensitiveHash/BitSampling.lean](../../Complexity/Probability/LocalitySensitiveHash/BitSampling.lean) proves the bit-sampling law `collisionProb_bitSampling`: a uniform coordinate of `x, y : n → β` agrees with probability `1 − d_H(x, y)/|n|`. It follows that bit sampling is `(r₁, r₂, 1 − r₁/|n|, 1 − r₂/|n|)`-sensitive (`isLocalitySensitive_bitSampling`).
+
+The [test file](../../ComplexityTests/LocalitySensitiveHash.lean) contains:
+
+- Jaccard values and exact MinHash collision probabilities on `Fin 4`;
+- banding numerics for `r = 5`, `b = 20` (`sCurve 5 20 0.8 > 0.9996`, `sCurve 5 20 0.2 < 0.007`);
+- a bit-sampling family on `Fin 8 → Bool`, banded to `(0.9965, 0.48)` and amplified with `exists_banded`;
+- a negative example: the same family is not `(7/8, 1/4)`-sensitive.
+
 ## Native streaming folds
 
 [Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean) gives actual machine-backed scans of raw bit strings through Christian Reitwiessner's streaming backend. A round holds an encoded accumulator and one input bit instead of copying the remaining input list. Time sums the round computation, old/new state encoding sizes and control; workspace takes a peak bound and charges retained accumulators. Read-only input and write-only output are excluded from work-tape space.
@@ -89,14 +108,26 @@ The abstract model counts reachable memory states and imposes no uniformity or t
 
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
+The locality-sensitive hashing modules prove information-theoretic statements only. The following are not formalized:
+
+- the `(c, r)`-approximate near-neighbour data structure with query time `n^ρ`, where `ρ = log(1/p₁)/log(1/p₂)`;
+- the cost of evaluating or storing the hashes;
+- SimHash, p-stable LSH, and LSH lower bounds;
+- MinHash over smaller min-wise independent families: it uses a uniform permutation of the whole universe.
+
 The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions, so the randomized ski-rental bound `e/(e-1)` and randomized list update (BIT, COMB) are open. The `k`-server problem (Double Coverage on the line and on trees) is not formalized. List update covers access requests only; insertions and deletions are not modelled.
 
 The optimal-stopping modules are semantic probability statements over deterministic rules, with randomization only through explicit coin observations. They do not charge the rules' computation and are not phrased through the online `Problem` interface.
 
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
 [borodinelyaniv98]: ../sources.md#borodinelyaniv98
+[broder97]: ../sources.md#broder97
+[charikar02]: ../sources.md#charikar02
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
+[harpeledindykmotwani12]: ../sources.md#harpeledindykmotwani12
+[indykmotwani98]: ../sources.md#indykmotwani98
 [irani91]: ../sources.md#irani91
 [karlin88]: ../sources.md#karlin88
+[leskovecrajaramanullman20]: ../sources.md#leskovecrajaramanullman20
 [sleatortarjan85]: ../sources.md#sleatortarjan85
