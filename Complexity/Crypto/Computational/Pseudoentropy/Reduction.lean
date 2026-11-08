@@ -12,6 +12,7 @@ public import Complexity.Probability.UniversalHash
 
 import Complexity.Probability.Guessing
 import Complexity.Probability.PMF.Expect
+import Complexity.Probability.PMF.ToReal
 
 /-!
 # Inversion from a predictor with partially uniform leakage
@@ -98,8 +99,7 @@ theorem correlation_le_guessInverter [Fintype Seed]
       (fun x => f x == image)) true).toReal
   have hsuccess (s : Seed) (digest : Prefix × Suffix) :
       0 ≤ success s digest ∧ success s digest ≤ 1 :=
-    ⟨ENNReal.toReal_nonneg, (ENNReal.toReal_mono ENNReal.one_ne_top
-      (PMF.coe_le_one _ _)).trans_eq ENNReal.toReal_one⟩
+    ⟨ENNReal.toReal_nonneg, toReal_apply_le_one _ _⟩
   have hpoint (s : Seed) (x : BitString n) :
       (source x).toReal * (2 * agreement (predictor s (hash s x)) x - 1) ≤
         (source x).toReal * (1 / (precision : ℝ) + 2 * success s (hash s x)) := by
