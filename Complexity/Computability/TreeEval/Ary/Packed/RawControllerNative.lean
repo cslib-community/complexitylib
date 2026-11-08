@@ -139,13 +139,6 @@ theorem validBank_inSpace :
   · have hle : 2 ≤ q.1.1 := by omega
     simp [validBank, h, hle]
 
-private theorem optionSome_budget {α β : Type} {encIn : α ↪ List Bool}
-    {encB : β ↪ List Bool} {f : α → β} {S : α → ℕ}
-    (hf : ComputableInSpace f encIn encB S) :
-    ComputableInSpace (fun a => some (f a)) encIn (encOption encB) S :=
-  budget_comp_linear
-    (of_inO (ComputableInDegree.optionSome (enc₁ := encB) (enc := encOption encB)).inO_one) hf
-
 private theorem optionIsSome_budget {α β : Type} {encIn : α ↪ List Bool}
     {encB : β ↪ List Bool} {f : α → Option β} {S : α → ℕ}
     (hf : ComputableInSpace f encIn (encOption encB) S) :
@@ -173,9 +166,9 @@ private theorem needCore_inSpace :
   have hpoint := budget_comp_linear point_inSpace
     (budget_prod (budget_prod hd (budget_prod hr htarget)) hbank)
   have hz := budget_const (encIn := encFullState) (encB := encNat) 0 (.refl _)
-  have hnode := optionSome_budget (budget_prod hz (budget_prod hpath
+  have hnode := budget_optionSome (budget_prod hz (budget_prod hpath
     (budget_prod (budget_const (encB := encList encNat) [] (.refl _)) hz)))
-  have hgate := optionSome_budget (budget_prod
+  have hgate := budget_optionSome (budget_prod
     (budget_const (encB := encNat) 1 (.refl _)) (budget_prod hparent (budget_prod hpoint hz)))
   have hnone := budget_const (encIn := encFullState) (encB := encOption encNeed) none (.refl _)
   have hskip := budget_finite (encC := encBool) (fun q : Bool × Bool => q.1 || q.2)
@@ -273,7 +266,7 @@ private theorem beginRound_budget {α : Type} {encIn : α ↪ List Bool} {S : α
   have hreg := reg_budget hd ht hz
   exact (state_budget (scale_budget hp hr hreg (budget_natSucc hi) hb)
     (budget_cons (frame_budget hi hz (budget_const false hlen) hc ht) hs)
-    (optionSome_budget (budget_prod hone hreg))).of_enc_eq fun _ => rfl
+    (budget_optionSome (budget_prod hone hreg))).of_enc_eq fun _ => rfl
 
 private def checkedCall (p d r : ℕ) (reply : Reply) (bank : List ℕ) (stack : List Frame)
     (ct : ℕ × ℕ) : State :=
@@ -366,7 +359,7 @@ private theorem return_budget {α : Type} {encIn : α ↪ List Bool} {S : α →
   have hneg := budget_natPred hp
   have hundoNext := state_budget hscaled
     (budget_cons (frame_budget hround hnext htrue hc ht) hs)
-    (optionSome_budget (budget_prod hneg hregNext))
+    (budget_optionSome (budget_prod hneg hregNext))
   have hnextRound := beginRound_budget hp hd hr (budget_natSucc hround) hc ht hscaled hs hlen
   have hpop := state_budget hscaled hs hnone
   have hundoResult := budget_ite (budget_natLt hnext hd) hundoNext
@@ -374,10 +367,10 @@ private theorem return_budget {α : Type} {encIn : α ↪ List Bool} {S : α →
   have hforwardNext := state_budget
     (scale_budget hp hr hregNext (budget_natSucc hround) hb)
     (budget_cons (frame_budget hround hnext hfalse hc ht) hs)
-    (optionSome_budget (budget_prod hone hregNext))
+    (budget_optionSome (budget_prod hone hregNext))
   have hforwardLast := state_budget (sub_budget hp hr ht hc hv hb)
     (budget_cons (frame_budget hround hz htrue hc ht) hs)
-    (optionSome_budget (budget_prod hneg hregZero))
+    (budget_optionSome (budget_prod hneg hregZero))
   refine (budget_ite hundo hundoResult
     (budget_ite (budget_natLt hnext hd) hforwardNext hforwardLast)).of_enc_eq ?_
   intro a
