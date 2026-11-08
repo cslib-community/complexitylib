@@ -10,7 +10,8 @@ import Complexity.Logics.SecondOrder.WordMSO.StarFree
 # Tests: star-free languages and first-order logic over words
 
 * Libkin's star-free expressions for `Σ*` and `a*b*` over `{a, b} = {false, true}`, with words in
-  and out of their languages, their regularity, and their first-order definability;
+  (including the nonempty `ab` and `aab`) and out of their languages, their regularity, and their
+  first-order definability;
 * the translated sentence `starFreeSentence` on concrete words, including a concatenation whose
   first factor is empty;
 * `{ε}` is star-free over the finite alphabet `Bool` and not over the infinite alphabet `ℕ`, where
@@ -47,6 +48,30 @@ theorem notMem_aStarBStar : [true, false] ∉ aStarBStar.matches' := fun h =>
 
 example : [] ∈ aStarBStar.matches' := (matchEpsilon_iff _).1 rfl
 
+/-- A word of `Σ* · b · a · Σ*` has a `b` (`true`) immediately followed by an `a` (`false`). -/
+theorem exists_true_false {w : List Bool}
+    (h : w ∈ (comp (comp (comp all (char true)) (char false)) all).matches') :
+    ∃ u v, w = u ++ true :: false :: v := by
+  obtain ⟨x, hx, v, -, rfl⟩ := Language.mem_mul.1 h
+  obtain ⟨y, hy, z, hz, rfl⟩ := Language.mem_mul.1 hx
+  obtain ⟨u, -, t, ht, rfl⟩ := Language.mem_mul.1 hy
+  change t = [true] at ht
+  change z = [false] at hz
+  subst ht hz
+  exact ⟨u, v, by simp⟩
+
+/-- `ab ∈ a*b*`: the nonempty word `[false, true]` has no `b` immediately before an `a`. -/
+example : [false, true] ∈ aStarBStar.matches' := by
+  intro h
+  obtain ⟨u, v, huv⟩ := exists_true_false h
+  match u, huv with
+  | [], h => simp at h
+  | [_], h => simp at h
+  | _ :: _ :: u, h =>
+    have := congrArg List.length h
+    simp only [List.length_cons, List.length_append, List.length_nil] at this
+    omega
+
 example : aStarBStar.matchEpsilon = true := rfl
 
 example : aStarBStar.matches'.IsRegular := aStarBStar.isRegular_matches'
@@ -68,6 +93,20 @@ example : [true, false] ∉ (starFreeSentence aStarBStar).language := by
 example : [] ∈ (starFreeSentence aStarBStar).language := by
   rw [starFreeSentence_language]
   exact (matchEpsilon_iff _).1 rfl
+
+/-- The translated sentence of `a*b*` accepts the nonempty word `aab`. -/
+example : [false, false, true] ∈ (starFreeSentence aStarBStar).language := by
+  rw [starFreeSentence_language]
+  intro h
+  obtain ⟨u, v, huv⟩ := exists_true_false h
+  match u, huv with
+  | [], h => simp at h
+  | [_], h => simp at h
+  | [_, _], h => simp at h
+  | _ :: _ :: _ :: u, h =>
+    have := congrArg List.length h
+    simp only [List.length_cons, List.length_append, List.length_nil] at this
+    omega
 
 /-- `[false] ∈ Σ* · a` through the empty first factor, the case of the translation that does not
 guess a split position. -/

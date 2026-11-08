@@ -15,9 +15,11 @@ One-state machines without work tapes exercise the acceptance rules. The machine
 halts with output `[true]` on move `false` and stays forever on move `true`. Existentially
 (`u = false`) it accepts. Universally (`u = true`) it does not: its infinite branch never
 accepts, so acceptance is the least and not the greatest fixed point of the labelling. The machine
-`constant b` writes `b` and halts on either move, so it accepts exactly when `b = true`. It
-halts within one step, which puts the trivial problems in `AP` and `APSPACE` under every
-encoding; the headline theorems then place them in `PSPACE` and `EXP`.
+`constant b` writes `b` and halts on either move, so it accepts exactly when `b = true`. The
+universal machine `split b₀ b₁` halts with output `[b₀]` or `[b₁]`, so it accepts when both moves
+accept and rejects when one of them rejects. `constant b` halts within one step, which puts the
+trivial problems in `AP` and `APSPACE` under every encoding; the headline theorems then place them
+in `PSPACE` and `EXP`.
 -/
 
 namespace ComplexityTests.Abstracts.AlternationTests
@@ -44,6 +46,13 @@ def constant (b : Bool) : ATM 0 Unit where
   start := ()
   move _ _ _ _ := haltWith b
   universal _ := false
+
+/-- A universal state whose two moves halt: move `false` writes `b₀` and move `true` writes
+`b₁`. -/
+def split (b₀ b₁ : Bool) : ATM 0 Unit where
+  start := ()
+  move b _ _ _ := haltWith (if b then b₁ else b₀)
+  universal _ := true
 
 /-- The configurations accepting without moves: halted with output `[true]`. -/
 def acceptingNow (input : List Bool) : Set (Turing.Cfg 0 Bool Unit input) :=
@@ -91,6 +100,25 @@ theorem not_constant_false_accepts (input : List Bool) : ¬(constant false).Acce
       have hout := congrArg List.getLast? hdS.2
       simp [constant, haltWith, Turing.Action.apply] at hout)
     (fun _ _ _ hq _ => Bool.noConfusion hq)
+  simp [Turing.Cfg.init, acceptingNow] at hinit
+
+/-- A universal state whose two halting moves both accept is accepting. -/
+theorem split_true_true_accepts (input : List Bool) : (split true true).Accepts input := by
+  intro S hhalt _ hall
+  refine hall _ () rfl rfl fun d hd => ?_
+  obtain ⟨b, rfl⟩ := eq_of_step _ rfl hd
+  cases b <;> exact hhalt _ rfl rfl
+
+/-- A universal state with one rejecting halting move is not accepting, although its other move
+accepts. -/
+theorem not_split_true_false_accepts (input : List Bool) :
+    ¬(split true false).Accepts input := by
+  intro h
+  have hinit := h (acceptingNow input) (fun _ hc hout => ⟨hc, hout⟩)
+    (fun _ _ _ hq _ => Bool.noConfusion hq)
+    (fun c _ hc _ hall => by
+      have hout := congrArg List.getLast? (hall _ (step_of_move _ hc true)).2
+      simp [split, haltWith, Turing.Action.apply] at hout)
   simp [Turing.Cfg.init, acceptingNow] at hinit
 
 /-- `constant b` halts within one step. -/

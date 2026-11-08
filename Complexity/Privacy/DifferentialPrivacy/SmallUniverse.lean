@@ -60,10 +60,13 @@ Scope, relative to [DworkRoth2014, Theorem 8.8]:
 
 * Adjacency replaces one of exactly `n` rows. Dwork and Roth add or remove a row of a histogram of
   weight at most `n`. Replacing a row is removing one and adding one, so a mechanism that is
-  `(ε, 0)`-private for their adjacency is `(2 ε, 0)`-private for this one and the bound transfers
-  with `ε` doubled. That transfer is not formalized here.
+  `(ε, 0)`-private for their adjacency is `(2 ε, 0)`-private for this one. With `2 ε ≤ 1 / 18`
+  this covers their range `ε ≤ 1 / 40`, with noise `min (k, d) / (2048 ε)`. The transfer also
+  needs `F` extended from histograms of weight `n` to all of `ℕ ^ d`: on weight `n`, a query that
+  is invariant under reordering and `1`-Lipschitz in Hamming distance is `1 / 2`-Lipschitz in
+  `ℓ₁`, and McShane's extension keeps that constant. The transfer is not formalized here.
 * The theorem needs `k ≥ 2` and `d ≥ 33`. Dwork and Roth's proof needs `min (k, d) ≥ 400` for its
-  code to have more than one word. It assumes `ε ≤ 1 / 24`, which Dwork and Roth's `ε ≤ 1 / 40`
+  code to have more than one word. It assumes `ε ≤ 1 / 18`, which Dwork and Roth's `ε ≤ 1 / 40`
   implies.
 * As everywhere in the library, mechanisms have discrete output laws (`PMF`).
 
@@ -185,7 +188,9 @@ variable {ι X H : Type*} [Fintype ι] [Fintype X] [DecidableEq X] [Finite H] [N
 /-- **Symmetric Lipschitz extension.** Let `D h` (`h : H`) be finitely many datasets and `g h`
 real labels with `g h ≤ g h' + countExcess (D h') (D h)`. Then some query `G` that depends only
 on the histogram and is `1`-Lipschitz in Hamming distance takes the value `g h` on `D h`. It is
-McShane's extension `G y = min_h (g h + countExcess (D h) y)`. -/
+McShane's extension `G y = min_h (g h + countExcess (D h) y)`, the construction of Mathlib's
+`LipschitzOnWith.extend_real` specialized to the excess, for which `ι → X` carries no metric
+instance; the minimum also makes `G` invariant under reordering the rows. -/
 theorem exists_symmetric_lipschitz_extension (D : H → ι → X) (g : H → ℝ)
     (hg : ∀ h h', g h ≤ g h' + countExcess (D h') (D h)) :
     ∃ G : (ι → X) → ℝ, (∀ (y : ι → X) (σ : Equiv.Perm ι), G (y ∘ σ) = G y) ∧
@@ -396,7 +401,7 @@ theorem exists_symmetric_query_two_pow_mul_le {k L t : ℕ} (hLk : L ≤ k)
         rw [abs_lt] at h1 h2 <;> linarith [h1.1, h1.2, h2.1, h2.2]
 
 /-- **De's lower bound over a small universe, [DworkRoth2014, Theorem 8.8].** Let the universe `X`
-have `d ≥ 33` items, let `k ≥ 2`, let `ε ∈ (0, 1 / 24]` and let there be `n ≥ min (k, d) / ε`
+have `d ≥ 33` items, let `k ≥ 2`, let `ε ∈ (0, 1 / 18]` and let there be `n ≥ min (k, d) / ε`
 rows. Some query `F : (ι → X) → (Fin k → ℝ)` that depends only on the histogram and changes by at
 most `1` in each coordinate between Hamming-adjacent datasets has the following property. Every
 `(ε, 0)`-private mechanism `M` has, on some dataset, noise of `ℓ∞` norm at least
@@ -405,7 +410,7 @@ most `1` in each coordinate between Hamming-adjacent datasets has the following 
 Dwork and Roth assume `ε ≤ 1 / 40` and compare histograms by adding or removing a row; see the
 module docstring for the scope. -/
 theorem exists_symmetric_query_forall_exists_half_lt {k : ℕ} (hk : 2 ≤ k)
-    (hX : 33 ≤ Fintype.card X) {ε : ℝ} (hε : 0 < ε) (hε' : ε ≤ 1 / 24)
+    (hX : 33 ≤ Fintype.card X) {ε : ℝ} (hε : 0 < ε) (hε' : ε ≤ 1 / 18)
     (hι : min (k : ℝ) (Fintype.card X) / ε ≤ Fintype.card ι) :
     ∃ F : (ι → X) → Fin k → ℝ, (∀ (x : ι → X) (σ : Equiv.Perm ι), F (x ∘ σ) = F x) ∧
       (∀ x y : ι → X, HammingAdjacent x y → ∀ j, |F x j - F y j| ≤ 1) ∧
@@ -431,11 +436,19 @@ theorem exists_symmetric_query_forall_exists_half_lt {k : ℕ} (hk : 2 ≤ k)
   -- `1 / (8 ε) ≤ t ≤ 1 / (6 ε)`
   have ht_le : (t : ℝ) ≤ 1 / (6 * ε) := Nat.floor_le (by positivity)
   have ht_ge : 1 / (8 * ε) ≤ (t : ℝ) := by
-    have h := Nat.sub_one_lt_floor (1 / (6 * ε))
-    have : 1 / (8 * ε) ≤ 1 / (6 * ε) - 1 := by
-      rw [div_sub_one (by positivity), div_le_div_iff₀ (by positivity) (by positivity)]
-      nlinarith
-    linarith
+    -- `⌊u⌋ ≥ 3 u / 4` for `u = 1 / (6 ε) ≥ 3`
+    have h8 : 1 / (8 * ε) = 3 / 4 * (1 / (6 * ε)) := by
+      field_simp
+      ring
+    have hu : 3 ≤ 1 / (6 * ε) := by
+      rw [le_div_iff₀ (by positivity)]
+      linarith
+    rw [h8]
+    by_cases h4 : 4 ≤ 1 / (6 * ε)
+    · have h := Nat.sub_one_lt_floor (1 / (6 * ε))
+      linarith
+    · have h3 : (3 : ℝ) ≤ t := by exact_mod_cast Nat.le_floor (by exact_mod_cast hu)
+      linarith
   have htL : t * L ≤ Fintype.card ι := by
     have : (t * L : ℝ) ≤ Fintype.card ι := by
       calc (t * L : ℝ) ≤ 1 / (6 * ε) * min (k : ℝ) d := by gcongr

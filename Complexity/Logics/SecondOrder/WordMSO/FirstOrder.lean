@@ -77,6 +77,15 @@ every letter `a`. -/
 
 instance (n : ℕ) : IsEmpty ((wordLanguage α).Functions n) := inferInstanceAs (IsEmpty Empty)
 
+/-- For finitely many letters, the word vocabulary has finitely many relation symbols. -/
+instance [Finite α] : Finite (Σ l, (wordLanguage α).Relations l) :=
+  Finite.of_surjective
+    (fun o : Option α => o.elim (⟨2, WordRel.lt⟩ : Σ l, (wordLanguage α).Relations l)
+      fun a => ⟨1, WordRel.letter a⟩)
+    fun
+      | ⟨_, .lt⟩ => ⟨none, rfl⟩
+      | ⟨_, .letter a⟩ => ⟨some a, rfl⟩
+
 namespace wordLanguage
 
 /-- The relation symbol `<` of the word vocabulary. -/
