@@ -16,6 +16,7 @@ public import Mathlib.Order.Prod.Lex.Basic
 import Complexity.Foundations.Combinatorics.SmallSubsets
 import Complexity.Foundations.Data.Finset.LowestInsert
 import Complexity.Foundations.Data.Nat.Choose.Sum
+import Complexity.Probability.MedianOfMeans
 import Complexity.Probability.PairwiseIndependentHash.Retention
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform
@@ -54,8 +55,12 @@ Chebyshev's inequality bounds each side. For `0 < ε ≤ 1` and `d ≤ M`, one c
 than `ε d` for at most a `2 / (t ε²)` fraction of seeds
 (`Cslib.Streaming.dens_abs_kmvEstimate_sub_gt_le`). The two tails contribute `(1 + ε) / (t ε²)` and
 `(1 - ε) / (t ε²)`; the source bounds each by `1 / 6` with `t = ⌈96 / ε²⌉`. For `6 ≤ t ε²` one
-copy thus fails with probability at most `1 / 3`. The amplified bound for the median of the copies
-is not proved here.
+copy thus fails with probability at most `1 / 3`. The median trick
+(`Cslib.Probability.dens_abs_median_sub_gt_le`, [Chakrabarti2025, Section 2.4]) brings the failure
+probability of the median of `2 r` copies down to `(8 / 9) ^ r`
+(`Cslib.Streaming.dens_kmvSketch_error_le`), so `kmv h t (2 r)` solves `F₀` estimation with
+relative error `ε` and error probability `δ ≥ (8 / 9) ^ r` on streams of length at most `M`
+(`Cslib.Streaming.solves_kmv`).
 
 **Memory.** For fixed seeds, the reachable states are determined by the at most `t` items behind
 each copy's keys. Their number is at most `(n + 1) ^ t` for a universe of `n` items. Under the
@@ -95,6 +100,9 @@ approximation brings the memory down to `O(ε⁻² log n)` bits for constant err
 * `Cslib.Streaming.dens_abs_kmvEstimate_sub_gt_le`: one copy misses `d` by more than `ε d` with
   probability at most `2 / (t ε²)`.
 * `Cslib.Streaming.errorProb_kmv`: the error of the randomized sketch is the fraction of bad seeds.
+* `Cslib.Streaming.dens_kmvSketch_error_le`: the median of `2 r` copies misses `F₀` by more than
+  `ε F₀` with probability at most `(8 / 9) ^ r` when `6 ≤ t ε²`.
+* `Cslib.Streaming.solves_kmv`: the randomized sketch solves `F₀` estimation.
 * `Cslib.Streaming.spaceLE_kmv`: its memory under the public-coin convention.
 * `Cslib.Streaming.exists_injOn_iUnion_reachable_kmvSketch`: its memory with the seeds stored.
 
@@ -102,6 +110,7 @@ approximation brings the memory down to `O(ε⁻² log n)` bits for constant err
 
 * [Z. Bar-Yossef, T. S. Jayram, R. Kumar, D. Sivakumar, L. Trevisan, *Counting distinct elements
   in a data stream*, Theorem 1][BarYossefJayramKumarSivakumarTrevisan2002]
+* [A. Chakrabarti, *Data Stream Algorithms*, Section 2.4][Chakrabarti2025]
 -/
 
 public section
@@ -487,6 +496,41 @@ theorem errorProb_kmv [Fintype ι] [Nonempty ι] (R : List α → ℝ → Prop) 
   rw [PMF.toOuterMeasure_map_apply, nnratCast_dens]
   exact Probability.PMF.toOuterMeasure_uniformOfFintype_toReal
     {ω : Fin c → ι | ¬R s ((kmvSketch h t c ω).run s)}
+
+/-! ### Amplification -/
+
+/-- **The median of `2 r` copies misses `F₀` by more than `ε F₀` for at most an `(8 / 9) ^ r`
+fraction of seeds** once `6 ≤ t ε²` [BarYossefJayramKumarSivakumarTrevisan2002, Theorem 1]: one
+copy fails for at most a third of the seeds, and the median trick
+(`Cslib.Probability.dens_abs_median_sub_gt_le`) amplifies this. -/
+theorem dens_kmvSketch_error_le [Fintype ι] [Nonempty ι] (hh : IsPairwiseIndependentHash h)
+    {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) (ht : 6 ≤ t * ε ^ 2) {s : List α}
+    (hsM : s.toFinset.card ≤ M) (r : ℕ) :
+    (dens {ω : Fin (2 * r) → ι |
+      ε * s.toFinset.card < |(kmvSketch h t (2 * r) ω).run s - s.toFinset.card|} : ℝ) ≤
+      (8 / 9) ^ r := by
+  classical
+  have htpos : 0 < t := Nat.pos_of_ne_zero fun h0 => by norm_num [h0] at ht
+  have h3 : 2 / ((t : ℝ) * ε ^ 2) ≤ 1 / 3 := by
+    rw [div_le_div_iff₀ (by linarith) (by norm_num)]
+    linarith
+  simp only [run_kmvSketch]
+  exact dens_abs_median_sub_gt_le (fun θ => kmvEstimate M t (lowest t (s.toFinset.image
+    (kmvKey h θ)))) ((dens_abs_kmvEstimate_sub_gt_le hh hε hε1 htpos hsM).trans h3) r
+
+/-- **The randomized sketch with `2 r` copies solves `F₀` estimation** with relative error `ε` and
+failure probability `δ ≥ (8 / 9) ^ r` on streams of length at most `M`
+[BarYossefJayramKumarSivakumarTrevisan2002, Theorem 1]. -/
+theorem solves_kmv [Fintype ι] [Nonempty ι] (hh : IsPairwiseIndependentHash h) {ε δ : ℝ}
+    (hε : 0 < ε) (hε1 : ε ≤ 1) (ht : 6 ≤ t * ε ^ 2) {r : ℕ} (hδ : (8 / 9 : ℝ) ^ r ≤ δ) {m : ℕ}
+    (hm : m ≤ M) :
+    (kmv h t (2 * r)).Solves δ (fun s Y => |Y - freqMoment 0 s| ≤ ε * freqMoment 0 s) m := by
+  classical
+  intro s hs
+  rw [errorProb_kmv]
+  simp only [freqMoment_zero, not_le]
+  exact (dens_kmvSketch_error_le hh hε hε1 ht
+    ((List.toFinset_card_le s).trans (hs.trans hm)) r).trans hδ
 
 /-! ### Memory -/
 

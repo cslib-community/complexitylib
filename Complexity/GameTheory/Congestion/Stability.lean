@@ -71,16 +71,6 @@ theorem rosenthalPotential_le_socialCost [Fintype E] (hmono : ∀ e, Monotone (C
     _ = (C.load s e : ℝ) * C.latency e (C.load s e) := by
         rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
 
-omit [Fintype ι] [DecidableEq E] in
-/-- Nonnegative affine latencies are nondecreasing. -/
-theorem HasAffineLatencies.monotone_latency {C : CongestionGame ι S E} (h : C.HasAffineLatencies)
-    (e : E) : Monotone (C.latency e) := by
-  obtain ⟨a, b, ha, -, hl⟩ := h
-  intro k l hkl
-  rw [hl, hl]
-  have : (k : ℝ) ≤ l := by exact_mod_cast hkl
-  nlinarith [ha e]
-
 /-- With nonnegative affine latencies, **the social cost is at most twice Rosenthal's potential**
 ([Roughgarden2013CS364A], Exercise Set #7, Exercise 55, the inequality `C(f) ≤ 2 Φ(f)`): a
 resource with load `n` and latency `a * k + b` contributes `n * (a * n + b)` to the social cost and

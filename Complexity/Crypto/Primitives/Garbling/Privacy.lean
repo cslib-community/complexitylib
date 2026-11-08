@@ -319,18 +319,18 @@ noncomputable def simulate (τ : Circuit.Topology n m s) (F : K → T → K × B
 
 /-- The real privacy experiment: garble `C`, and run `D` on the view of the garbled circuit on
 `x`. -/
-noncomputable def realGame (C : Circuit σ n m) (I : Interpretation σ Bool) (F : K → T → K × Bool)
-    (tw : Slot C.topology → T) (x : Fin n → Bool) (D : View C.topology K → ProbComp Bool) :
-    Game :=
+@[expose] noncomputable def realGame (C : Circuit σ n m) (I : Interpretation σ Bool)
+    (F : K → T → K × Bool) (tw : Slot C.topology → T) (x : Fin n → Bool)
+    (D : View C.topology K → ProbComp Bool) : Game :=
   ProbComp.eval do
     let G ← garble C I F tw
     D (G.view x)
 
 /-- The simulated privacy experiment: run `D` on a view simulated from the topology of `C` and
 its output on `x`. -/
-noncomputable def simGame (C : Circuit σ n m) (I : Interpretation σ Bool) (F : K → T → K × Bool)
-    (tw : Slot C.topology → T) (x : Fin n → Bool) (D : View C.topology K → ProbComp Bool) :
-    Game :=
+@[expose] noncomputable def simGame (C : Circuit σ n m) (I : Interpretation σ Bool)
+    (F : K → T → K × Bool) (tw : Slot C.topology → T) (x : Fin n → Bool)
+    (D : View C.topology K → ProbComp Bool) : Game :=
   ProbComp.eval do
     let V ← simulate C.topology F tw (C.eval I x)
     D V
