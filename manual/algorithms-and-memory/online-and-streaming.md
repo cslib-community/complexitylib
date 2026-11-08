@@ -69,7 +69,15 @@ These are compositional native resource theorems on the [machine model](../machi
 
 ## Known Limitations
 
-The four meanings of “streaming” here should not be conflated: an input-list fold, an accurate stored probabilistic sketch, the abstract one-pass memory model with communication lower bounds, and a native machine scan with measured workspace. The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketches have no `ProbComp` sampler or machine realization. The `F_k` estimator assumes that the stream length is known in advance; the source's reservoir-sampling variant for unknown lengths is not formalized. Multi-pass algorithms, turnstile updates and CountSketch are not formalized. The Proposition 3.7 bound is stated for streams of at most `N/8` items rather than the source's `n/2`, and the Proposition 3.8 bound for a universe of `3n` items (`Fin n × Fin 3`) rather than `n`, so that the threshold `2n` does not depend on the inputs. No automatic native realization of the Count-Min sketch was identified in its four source modules. The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions. The optimal-stopping modules are semantic probability statements over deterministic rules: they do not charge the rules' computation and are not phrased through the online `Problem` interface.
+The four meanings of “streaming” here should not be conflated: an input-list fold, an accurate stored probabilistic sketch, the abstract one-pass memory model with communication lower bounds, and a native machine scan with measured workspace.
+
+The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketches have no `ProbComp` sampler or machine realization. The `F_k` estimator assumes that the stream length is known in advance; the source's reservoir-sampling variant for unknown lengths is not formalized. Multi-pass algorithms, turnstile updates and CountSketch are not formalized. The Proposition 3.7 bound is stated for streams of at most `N/8` items rather than the source's `n/2`, and the Proposition 3.8 bound for a universe of `3n` items (`Fin n × Fin 3`) rather than `n`, so that the threshold `2n` does not depend on the inputs.
+
+No automatic native realization of the Count-Min sketch was identified in its four source modules.
+
+The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions.
+
+The optimal-stopping modules are semantic probability statements over deterministic rules: they do not charge the rules' computation and are not phrased through the online `Problem` interface.
 
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
 [complexitylib]: ../sources.md#complexitylib
