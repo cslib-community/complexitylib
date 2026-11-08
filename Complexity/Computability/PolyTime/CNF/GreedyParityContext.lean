@@ -25,6 +25,7 @@ initial Tanner matrix of [OpenAI2026ETH], §§6.2–6.3 (pp. 42–43).
 
 ## Main definitions
 
+* `GreedyContext.encContextRows`: the encoding of a counter input `(context, rows)`.
 * `GreedyContext.selectCertificate`: uniform context-dependent candidate selection.
 * `GreedyContext.greedyCertificate`: the existing `greedyParityRows` on a runtime context.
 
@@ -47,6 +48,11 @@ namespace Cslib.Logic.PL.CNF.GreedyContext
 open Finset Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM
 
 variable {C : Type} (encC : C ↪ List Bool)
+
+/-- Counter input: the pair `(c, rows)` of the framed context `c`, then the concatenation of the
+framed rows, each row a bit string written as is (`encBits`). -/
+abbrev encContextRows : C × List (List Bool) ↪ List Bool :=
+  encPair encC (encList encBits)
 
 /-- Full selector input: context, unary width and tuple length, and retained rows. -/
 def encInput : (C × ℕ × ℕ × List (List Bool)) ↪ List Bool :=
@@ -177,7 +183,7 @@ private theorem selectCertificate_eq (count : C × List (List Bool) → ℕ)
 /-- One fixed native selector for all encoded contexts. Empty candidate spaces return the zero
 row, exactly as `selectBestTestRow`; otherwise its first-minimum semantics are unchanged. -/
 noncomputable def selectCertificate {count : C × List (List Bool) → ℕ}
-    (cCount : NativeCertificate count (encPair encC (encList encBits)) encNat) :
+    (cCount : NativeCertificate count (encContextRows encC) encNat) :
     NativeCertificate
       (fun ((c, m, P, rows) : C × ℕ × ℕ × List (List Bool)) =>
         selectBestTestRow (fun rows => count (c, rows)) m P rows)
@@ -235,7 +241,7 @@ private theorem outerInit_polyTime :
 /-- One fixed machine runs `3n` greedy rounds for the runtime context. The context survives every
 candidate and round; the returned rows are the original `greedyParityRows` specialization. -/
 noncomputable def greedyCertificate {count : C × List (List Bool) → ℕ}
-    (cCount : NativeCertificate count (encPair encC (encList encBits)) encNat) :
+    (cCount : NativeCertificate count (encContextRows encC) encNat) :
     NativeCertificate
       (fun ((c, n, m, P, rows) : C × ℕ × ℕ × ℕ × List (List Bool)) =>
         greedyParityRows (fun rows => count (c, rows)) n m P rows)
@@ -430,8 +436,8 @@ private theorem select_bounds {count : C × List (List Bool) → ℕ}
 The counter-time premise includes `j = (2m)^P`: the native iterator uses inclusive prefix maxima,
 so this endpoint is charged even though that candidate is not executed. -/
 theorem computableInO_select {count : C × List (List Bool) → ℕ}
-    (cCount : NativeCertificate count (encPair encC (encList encBits)) encNat)
-    (hSpace : PolyBounded (fun r => (encPair encC (encList encBits) r).length) cCount.space)
+    (cCount : NativeCertificate count (encContextRows encC) encNat)
+    (hSpace : PolyBounded (fun r => (encContextRows encC r).length) cCount.space)
     (R : C × ℕ × ℕ × List (List Bool) → ℕ)
     (hR : ∀ a,
       let (c, m, P, rows) := a
@@ -472,8 +478,8 @@ their row-length bound can exceed the correctness theorem's candidate bound by o
 counter workspace is a separate, global joint-input assumption; counter time need not be polynomial.
 This supplies the context interface for [OpenAI2026ETH], §6.3, not its common-zero counter. -/
 theorem computableInO_greedy {count : C × List (List Bool) → ℕ}
-    (cCount : NativeCertificate count (encPair encC (encList encBits)) encNat)
-    (hSpace : PolyBounded (fun r => (encPair encC (encList encBits) r).length) cCount.space)
+    (cCount : NativeCertificate count (encContextRows encC) encNat)
+    (hSpace : PolyBounded (fun r => (encContextRows encC r).length) cCount.space)
     (R : C × ℕ × ℕ × ℕ × List (List Bool) → ℕ)
     (hR : ∀ a,
       let (c, n, m, P, rows) := a
@@ -599,8 +605,8 @@ theorem computableInO_greedy {count : C × List (List Bool) → ℕ}
 
 /-- Whenever `cCount` uses polynomial workspace, `greedyParityRows` runs in polynomial space. -/
 theorem computableInPolySpace_greedy {count : C × List (List Bool) → ℕ}
-    (cCount : NativeCertificate count (encPair encC (encList encBits)) encNat)
-    (hSpace : PolyBounded (fun r => (encPair encC (encList encBits) r).length) cCount.space) :
+    (cCount : NativeCertificate count (encContextRows encC) encNat)
+    (hSpace : PolyBounded (fun r => (encContextRows encC r).length) cCount.space) :
     ComputableInPolySpace
       (fun ((c, n, m, P, rows) : C × ℕ × ℕ × ℕ × List (List Bool)) =>
         greedyParityRows (fun r => count (c, r)) n m P rows)

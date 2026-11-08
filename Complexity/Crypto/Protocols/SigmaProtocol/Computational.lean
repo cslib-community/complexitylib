@@ -249,7 +249,7 @@ structure ComputationalSpecialHVZK
     (sim : I × List Bool × List Bool → ProbComp (List Bool × List Bool))
     (δ : I → ℝ≥0∞) : Prop where
   /-- The simulator is uniform strict PPT in the index and the encoded statement and challenge. -/
-  ppt : IsPPTOn (encPair enc.index (encPair encBits encBits)) (encPair encBits encBits) sim
+  ppt : IsPPTOn (encSimulatorInput enc.index) (encPair encBits encBits) sim
   /-- On every statement and challenge, `sim` outputs an encoded accepting conversation with
   probability at least `1 - δ i`. -/
   accepts : ∀ i (y : Y i) (c : C i), 1 - δ i ≤
@@ -347,7 +347,7 @@ error `δ'`. -/
 theorem SimulatorRealizedBy.computationalSpecialHVZK_of_accepts
     {δ' : I → ℝ≥0∞}
     (hS : ∀ i, (P i).SpecialHVZK (R i) (simulate i))
-    (hppt : IsPPTOn (encPair enc.index (encPair encBits encBits)) (encPair encBits encBits) sim)
+    (hppt : IsPPTOn (encSimulatorInput enc.index) (encPair encBits encBits) sim)
     (hreal : SimulatorRealizedBy enc simulate sim δ)
     (hacc : ∀ i (y : Y i) (c : C i), 1 - δ' i ≤
       (ProbComp.eval (sim (i, enc.statement i y, enc.challenge i c))).toOuterMeasure
@@ -364,7 +364,7 @@ theorem SimulatorRealizedBy.computationalSpecialHVZK_of_accepts
 error along `setup` satisfies `ComputationalSpecialHVZK` with acceptance error `δ`. -/
 theorem SimulatorRealizedBy.computationalSpecialHVZK
     (hS : ∀ i, (P i).SpecialHVZK (R i) (simulate i))
-    (hppt : IsPPTOn (encPair enc.index (encPair encBits encBits)) (encPair encBits encBits) sim)
+    (hppt : IsPPTOn (encSimulatorInput enc.index) (encPair encBits encBits) sim)
     (hreal : SimulatorRealizedBy enc simulate sim δ)
     (hnegl : ∃ ε : ℕ → ℝ≥0, Negligible ε ∧ ∀ n, ∀ i ∈ (setup n).support, δ i ≤ ε n) :
     ComputationalSpecialHVZK P R enc encW setup sim δ :=

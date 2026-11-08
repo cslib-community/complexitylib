@@ -3,7 +3,7 @@ Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
-import Complexity.Foundations.Probability.FourthRootHierarchyParams
+import Complexity.Computability.LogSpaceDerandomization.FourthRootHierarchyParams
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith

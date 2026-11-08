@@ -242,10 +242,7 @@ theorem one_sub_mul_spectralSensitivity_le {f : BooleanFunction N} {ε : ℝ}
     (1 - 2 * √(ε * (1 - ε))) * spectralSensitivity f ≤ 2 * T := by
   set c := 1 - 2 * √(ε * (1 - ε))
   have hε0 : 0 ≤ ε := (abs_nonneg _).trans (h fun _ => false)
-  have hc : 0 ≤ c := by
-    have : √(ε * (1 - ε)) ≤ 1 / 2 :=
-      (Real.sqrt_le_left (by norm_num)).2 (by nlinarith [sq_nonneg (1 - 2 * ε)])
-    linarith
+  have hc : 0 ≤ c := one_sub_two_mul_sqrt_nonneg ε
   rcases hc.eq_or_lt with hc0 | hc0
   · rw [← hc0, zero_mul]
     positivity

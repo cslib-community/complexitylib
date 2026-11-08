@@ -682,7 +682,7 @@ private theorem length_enc_substituteEquation_le (S : List ℕ) (vals : List Boo
 theorem computableInPolyTime_heavyVarList :
     ComputableInPolyTime
       (fun (((n, b₀), sys) : (ℕ × ℕ) × List (List (List ℕ))) => heavyVarList n b₀ sys)
-      (encPair (encPair encUnary encNat) (encList (encList (encList encNat))))
+      (encPair (encPair encUnary encNat) encSparseSystem)
       (encList encNat) := by
   let encSys := encList (encList (encList encNat))
   have hrange : ComputableInPolyTime
@@ -703,7 +703,7 @@ theorem computableInPolyTime_heavyVarList :
 @[fun_prop] theorem computableInPolyTime_heavyVarList_comp {α : Type} {encIn : α ↪ List Bool}
     {fn fb : α → ℕ} {fsys : α → List (List (List ℕ))}
     (hn : ComputableInPolyTime fn encIn encUnary) (hb : ComputableInPolyTime fb encIn encNat)
-    (hsys : ComputableInPolyTime fsys encIn (encList (encList (encList encNat)))) :
+    (hsys : ComputableInPolyTime fsys encIn encSparseSystem) :
     ComputableInPolyTime (fun a => heavyVarList (fn a) (fb a) (fsys a)) encIn (encList encNat) :=
   computableInPolyTime_heavyVarList.comp ((hn.prod hb).prod hsys)
 
@@ -725,7 +725,7 @@ theorem computableInPolyTime_relabelFreeVar :
 /-- `relabelEquation` is computable in polynomial time. -/
 theorem computableInPolyTime_relabelEquation :
     ComputableInPolyTime (fun p : List ℕ × List (List ℕ) => relabelEquation p.1 p.2)
-      (encPair (encList encNat) (encList (encList encNat))) (encList (encList encNat)) := by
+      (encPair (encList encNat) encSparseEquation) encSparseEquation := by
   unfold relabelEquation
   apply ComputableInPolyTime.mapWithInput (by fun_prop)
   apply ComputableInPolyTime.mapWithInput (by fun_prop)
@@ -734,8 +734,8 @@ theorem computableInPolyTime_relabelEquation :
 
 @[fun_prop] theorem computableInPolyTime_relabelEquation_comp {α : Type} {encIn : α ↪ List Bool}
     {S : α → List ℕ} {eq : α → List (List ℕ)} (hS : ComputableInPolyTime S encIn (encList encNat))
-    (heq : ComputableInPolyTime eq encIn (encList (encList encNat))) :
-    ComputableInPolyTime (fun a => relabelEquation (S a) (eq a)) encIn (encList (encList encNat)) :=
+    (heq : ComputableInPolyTime eq encIn encSparseEquation) :
+    ComputableInPolyTime (fun a => relabelEquation (S a) (eq a)) encIn encSparseEquation :=
   computableInPolyTime_relabelEquation.comp (hS.prod heq)
 
 /-- `substituteEquation` is computable in polynomial time. -/
@@ -743,8 +743,8 @@ theorem computableInPolyTime_substituteEquation :
     ComputableInPolyTime
       (fun ((S, vals, eq) : List ℕ × (List Bool × List (List ℕ))) =>
         substituteEquation S vals eq)
-      (encPair (encList encNat) (encPair encBits (encList (encList encNat))))
-      (encList (encList encNat)) := by
+      (encPair (encList encNat) (encPair encBits encSparseEquation))
+      encSparseEquation := by
   let encEq := encList (encList encNat)
   have hraw : ComputableInPolyTime
       (fun p : List ℕ × (List Bool × List (List ℕ)) =>
@@ -758,9 +758,9 @@ theorem computableInPolyTime_substituteEquation :
     {S : α → List ℕ} {vals : α → List Bool} {eq : α → List (List ℕ)}
     (hS : ComputableInPolyTime S encIn (encList encNat))
     (hvals : ComputableInPolyTime vals encIn encBits)
-    (heq : ComputableInPolyTime eq encIn (encList (encList encNat))) :
+    (heq : ComputableInPolyTime eq encIn encSparseEquation) :
     ComputableInPolyTime (fun a => substituteEquation (S a) (vals a) (eq a))
-      encIn (encList (encList encNat)) :=
+      encIn encSparseEquation :=
   computableInPolyTime_substituteEquation.comp (hS.prod (hvals.prod heq))
 
 /-- `prepareBranch` is computable in polynomial time. -/
@@ -769,7 +769,7 @@ theorem computableInPolyTime_prepareBranch :
       (fun ((n, S, vals, sys) : ℕ × List ℕ × List Bool × List (List (List ℕ))) =>
         prepareBranch n S vals sys)
       (encPair encUnary (encPair (encList encNat)
-        (encPair encBits (encList (encList (encList encNat)))))) encBranchOutcome := by
+        (encPair encBits encSparseSystem))) encBranchOutcome := by
   let P := ℕ × List ℕ × List Bool × List (List (List ℕ))
   let encEq := encList (encList encNat); let encSys := encList encEq
   let encOptSys := encOption encSys; let encInner := encPair encUnary encOptSys
@@ -813,7 +813,7 @@ theorem computableInPolyTime_prepareBranch :
     (hn : ComputableInPolyTime n encIn encUnary)
     (hS : ComputableInPolyTime S encIn (encList encNat))
     (hvals : ComputableInPolyTime vals encIn encBits)
-    (hsys : ComputableInPolyTime sys encIn (encList (encList (encList encNat)))) :
+    (hsys : ComputableInPolyTime sys encIn encSparseSystem) :
     ComputableInPolyTime (fun a => prepareBranch (n a) (S a) (vals a) (sys a))
       encIn encBranchOutcome := by
   simpa only [Function.comp_def] using
@@ -851,23 +851,23 @@ abbrev BranchStreamState.totalCount (st : BranchStreamState) : ℕ := st.finalAc
 
 /-- Native encoding of `BranchInput` (`n` in unary, `S` and `sys` as framed lists). -/
 def encBranchInput : BranchInput ↪ List Bool :=
-  encPair encUnary (encPair (encList encNat) (encList (encList (encList encNat))))
+  encPair encUnary (encPair (encList encNat) encSparseSystem)
 
 /-- Encoded-size non-expansion against the parent system: every `.reduced n' sys'` branch produced
 by `prepareBranch` has encoded solver input `(n', sys')` no longer than the parent `(n, sys)`. -/
 theorem length_enc_reduced_le_parent {n n' : ℕ} {S : List ℕ} {vals : List Bool}
     {sys sys' : List (List (List ℕ))} (hred : prepareBranch n S vals sys = .reduced n' sys') :
-    (encPair encUnary (encList (encList (encList encNat))) (n', sys')).length ≤
-      (encPair encUnary (encList (encList (encList encNat))) (n, sys)).length := by
+    (encPair encUnary encSparseSystem (n', sys')).length ≤
+      (encPair encUnary encSparseSystem (n, sys)).length := by
   obtain ⟨_, _, rfl, rfl⟩ := prepareBranch_eq_reduced_iff.mp hred
   have hrel : ∀ eq₁ : List (List ℕ), (encList (encList encNat) (relabelEquation S eq₁)).length ≤
       (encList (encList encNat) eq₁).length := fun eq₁ =>
     length_encList_map_le (encList encNat) (encList encNat) fun m _ =>
       length_encList_map_le encNat encNat fun v _ => by
         simpa [Nat.size_eq_bits_len, relabelFreeVar] using Nat.size_le_size (Nat.sub_le v _)
-  have hsys : (encList (encList (encList encNat))
+  have hsys : (encSparseSystem
       (((sys.map (substituteEquation S vals)).filter fun eq => !eq.isEmpty).map
-        (relabelEquation S))).length ≤ (encList (encList (encList encNat)) sys).length :=
+        (relabelEquation S))).length ≤ (encSparseSystem sys).length :=
     (length_encList_map_le _ _ fun eq₁ _ => hrel eq₁).trans
       ((length_encList_sublist _ List.filter_sublist).trans
         (length_encList_map_le _ _ fun eq₀ _ => length_enc_substituteEquation_le S vals eq₀))
@@ -877,7 +877,7 @@ theorem length_enc_reduced_le_parent {n n' : ℕ} {S : List ℕ} {vals : List Bo
 encoded solver input `(n', sys')` no longer than the parent `encBranchInput (n, S, sys)`. -/
 theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
     {sys sys' : List (List (List ℕ))} (hred : prepareBranch n S vals sys = .reduced n' sys') :
-    (encPair encUnary (encList (encList (encList encNat))) (n', sys')).length ≤
+    (encPair encUnary encSparseSystem (n', sys')).length ≤
       (encBranchInput (n, S, sys)).length := by
   refine (length_enc_reduced_le_parent hred).trans ?_
   enc_len [encBranchInput]
@@ -1018,7 +1018,7 @@ on `.reduced n' sys'` outcomes, while `.contradiction` emits `0` and `.tautology
 via `BooleanFold.clock` in linear time and space. -/
 noncomputable def branchCountCertificate {solver : ℕ → List (List (List ℕ)) → ℕ}
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
-      (encPair encUnary (encList (encList (encList encNat)))) encNat) :
+      (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (branchCountOracle solver) encBranchOutcome encNat :=
   let encSys := encList (encList (encList encNat))
   let encInner := encPair encUnary (encOption encSys)
@@ -1093,7 +1093,7 @@ private noncomputable def prepVisitCert := NativeCertificate.ofPolyTime
 /-- Per-branch native callback certificate for `branchBody solver` (for a fixed `solver`). -/
 noncomputable def branchBodyCertificate {solver : ℕ → List (List (List ℕ)) → ℕ}
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
-      (encPair encUnary (encList (encList (encList encNat)))) encNat) :
+      (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (branchBody solver)
       (encPair (encPair encUnary encBits) (encPair encBranchInput encNat))
       (encPair encBranchInput encNat) :=
@@ -1103,14 +1103,14 @@ noncomputable def branchBodyCertificate {solver : ℕ → List (List (List ℕ))
 /-- Full streaming native certificate for `streamBranches solver` (for a fixed `solver`). -/
 noncomputable def certificate {solver : ℕ → List (List (List ℕ)) → ℕ}
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
-      (encPair encUnary (encList (encList (encList encNat)))) encNat) :
+      (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (streamBranches solver)
       encBranchInput (encPair encNat (encPair encUnary (encPair encBranchInput encNat))) :=
   BooleanFold.certificate dimCert initAccCert (branchBodyCertificate csolver)
 /-- Full streaming native certificate for `countByBranching solver` (for a fixed `solver`). -/
 noncomputable def countCertificate {solver : ℕ → List (List (List ℕ)) → ℕ}
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
-      (encPair encUnary (encList (encList (encList encNat)))) encNat) :
+      (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (countByBranching solver) encBranchInput encNat :=
   (((certificate csolver).snd).snd).snd
 private theorem length_le_encBranchInput (inp : BranchInput) :
@@ -1338,7 +1338,7 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
 (stepOverhead |inp| + R_solver inp))` and workspace `O(stepOverhead |inp| + Q_solver inp)`. -/
 theorem streamBranches_computableInO {solver : ℕ → List (List (List ℕ)) → ℕ}
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
-      (encPair encUnary (encList (encList (encList encNat)))) encNat)
+      (encPair encUnary encSparseSystem) encNat)
     (R_solver Q_solver : BranchInput → ℕ)
     (hbound : ∀ (inp : BranchInput) idx,
       idx < 2 ^ inp.vars.length → ∀ n' sys',
@@ -1406,7 +1406,7 @@ theorem streamBranches_computableInO {solver : ℕ → List (List (List ℕ)) �
 Q_solver inp)` (with no `2 ^ |S|` factor in workspace). -/
 theorem countByBranching_computableInO {solver : ℕ → List (List (List ℕ)) → ℕ}
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
-      (encPair encUnary (encList (encList (encList encNat)))) encNat)
+      (encPair encUnary encSparseSystem) encNat)
     (R_solver Q_solver : BranchInput → ℕ)
     (hbound : ∀ (inp : BranchInput) idx,
       idx < 2 ^ inp.vars.length → ∀ n' sys',
