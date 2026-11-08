@@ -7,13 +7,17 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Complexity.Classes.FPAUS.FPRAS
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Probability.BitString
 
-/-! Checks of the sampling-to-counting reduction: a concrete self-reducible family with an
-exact sampler, giving a checked instance of `mem_FPRAS_of_mem_FPAUS`, its zero-count instances,
-the witness length `0`, and a sampler that is not almost uniform. -/
+/-! Checks of the sampling-to-counting reduction. The family below has as witnesses of
+`(m, r, true)` the words of length `m + r` whose first `m` bits are `false`. Fixing a `true` bit
+inside that prefix leads to a dead instance without witnesses, so the estimator must avoid empty
+branches. An exact sampler gives a checked instance of `mem_FPRAS_of_mem_FPAUS`; the tests also
+cover zero-count instances, witness length `0`, and a sampler that is not almost uniform. -/
 
 namespace ComplexityTests.SamplingCounting
 
@@ -37,41 +41,119 @@ private theorem card_allWords (n : ℕ) : (allWords n).card = 2 ^ n := by
 private theorem allWords_nonempty (n : ℕ) : (allWords n).Nonempty :=
   ⟨List.replicate n false, mem_allWords.2 List.length_replicate⟩
 
-/-- The instance `(n, b)` has as witnesses all words of length `n` if `b`, and none otherwise. -/
-private noncomputable def W (x : ℕ × Bool) : Finset (List Bool) :=
-  if x.2 then allWords x.1 else ∅
+/-- Prefixing `m` false bits. -/
+private def pad (m : ℕ) : List Bool ↪ List Bool :=
+  ⟨fun w => List.replicate m false ++ w, List.append_right_injective _⟩
 
-private theorem mem_W {x : ℕ × Bool} {w : List Bool} : w ∈ W x ↔ x.2 = true ∧ w.length = x.1 := by
-  rcases x with ⟨n, _ | _⟩ <;> simp [W, mem_allWords]
+/-- The instance `(m, r, alive)`: if `alive`, the words `false^m ++ v` with `|v| = r`; otherwise
+none. -/
+private noncomputable def W (x : ℕ × ℕ × Bool) : Finset (List Bool) :=
+  if x.2.2 then (allWords x.2.1).map (pad x.1) else ∅
 
-/-- Fixing the first bit leaves all words of one bit fewer. -/
-private noncomputable def R : SelfReducible (encPair encUnary encBool) W where
-  len x := x.1
-  child x _ := (x.1 - 1, x.2)
-  length_eq x w hw := (mem_W.1 hw).2
-  cons_mem_iff x hx b w := by
-    simp only [mem_W, List.length_cons]
+private theorem mem_W {x : ℕ × ℕ × Bool} {w : List Bool} :
+    w ∈ W x ↔ x.2.2 = true ∧ ∃ v, v.length = x.2.1 ∧ w = List.replicate x.1 false ++ v := by
+  rcases x with ⟨m, r, _ | _⟩
+  · simp [W]
+  · simp only [W, ite_true, Finset.mem_map, mem_allWords, pad, Function.Embedding.coeFn_mk,
+      true_and]
     constructor
-    · rintro ⟨h, h'⟩
-      exact ⟨h, by omega⟩
-    · rintro ⟨h, h'⟩
-      exact ⟨h, by omega⟩
-  len_child x _ _ := rfl
-  length_child_le x _ _ := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate]
-    omega
-  len_polytime := ComputableInPolyTime.fst _ _
-  child_polytime := by fun_prop
+    · rintro ⟨v, hv, rfl⟩
+      exact ⟨v, hv, rfl⟩
+    · rintro ⟨v, hv, rfl⟩
+      exact ⟨v, hv, rfl⟩
+
+private theorem card_W (m r : ℕ) : (W (m, r, true)).card = 2 ^ r := by
+  simp [W, card_allWords]
+
+/-- Fixing a bit: inside the prefix the bit must be `false`, and a `true` bit kills the instance;
+after the prefix every bit is free. -/
+private def child (x : ℕ × ℕ × Bool) (b : Bool) : ℕ × ℕ × Bool :=
+  if 0 < x.1 then (x.1 - 1, x.2.1, x.2.2 && !b) else (x.1, x.2.1 - 1, x.2.2)
+
+private theorem cons_mem_W {x : ℕ × ℕ × Bool} (hx : 0 < x.1 + x.2.1) (b : Bool)
+    (w : List Bool) : b :: w ∈ W x ↔ w ∈ W (child x b) := by
+  rcases x with ⟨_ | m, r, alive⟩
+  · simp only [mem_W, child, lt_irrefl, ite_false, List.replicate_zero, List.nil_append]
+    constructor
+    · rintro ⟨ha, v, hv, rfl⟩
+      rw [List.length_cons] at hv
+      exact ⟨ha, w, by omega, rfl⟩
+    · rintro ⟨ha, v, hv, hw⟩
+      have hr : 0 < r := by simpa using hx
+      refine ⟨ha, b :: v, ?_, by rw [hw]⟩
+      rw [List.length_cons]
+      omega
+  · simp only [mem_W, child, Nat.succ_pos, ite_true, Nat.add_sub_cancel, List.replicate_succ,
+      List.cons_append, List.cons.injEq, Bool.and_eq_true, Bool.not_eq_true']
+    constructor
+    · rintro ⟨ha, v, hv, hb, hw⟩
+      exact ⟨⟨ha, hb⟩, v, hv, hw⟩
+    · rintro ⟨⟨ha, hb⟩, v, hv, hw⟩
+      exact ⟨ha, v, hv, hb, hw⟩
+
+private theorem length_W {x : ℕ × ℕ × Bool} {w : List Bool} (hw : w ∈ W x) :
+    w.length = x.1 + x.2.1 := by
+  obtain ⟨-, v, hv, rfl⟩ := mem_W.1 hw
+  simp [hv]
+
+private noncomputable def R :
+    SelfReducible (encPair encUnary (encPair encUnary encBool)) W where
+  len x := x.1 + x.2.1
+  child := child
+  length_eq _ _ := length_W
+  cons_mem_iff _ hx b w := cons_mem_W hx b w
+  len_child x _ b := by
+    rcases x with ⟨m, r, a⟩
+    unfold child
+    split_ifs with hm
+    · show m - 1 + r = m + r - 1
+      have hm' : 0 < m := hm
+      omega
+    · show m + (r - 1) = m + r - 1
+      have hm' : ¬ 0 < m := hm
+      omega
+  length_child_le x _ b := by
+    have h (y : ℕ × ℕ × Bool) : (encPair encUnary (encPair encUnary encBool) y).length =
+        2 * y.1 + 1 + (2 * y.2.1 + 1 + 1) := by
+      simp only [length_encPair, encUnary_apply, List.length_replicate, encBool_apply,
+        List.length_singleton]
+    rcases x with ⟨m, r, a⟩
+    rw [h, h]
+    unfold child
+    split_ifs with hm
+    · show 2 * (m - 1) + 1 + (2 * r + 1 + 1) ≤ 2 * m + 1 + (2 * r + 1 + 1)
+      omega
+    · show 2 * m + 1 + (2 * (r - 1) + 1 + 1) ≤ 2 * m + 1 + (2 * r + 1 + 1)
+      omega
+  len_polytime := by fun_prop
+  child_polytime := by
+    unfold child
+    fun_prop
   nil_mem_polytime := by
-    have heq : (fun x : ℕ × Bool => decide ([] ∈ W x)) = fun x => x.2 && !decide (0 < x.1) := by
+    have hiff (m r : ℕ) (a : Bool) : [] ∈ W (m, r, a) ↔ a = true ∧ m + r = 0 := by
+      rw [mem_W]
+      constructor
+      · rintro ⟨ha, v, hv, hnil⟩
+        have := congrArg List.length hnil
+        rw [List.length_nil, List.length_append, List.length_replicate, hv] at this
+        exact ⟨ha, this.symm⟩
+      · rintro ⟨ha, hlen⟩
+        obtain ⟨rfl, rfl⟩ : m = 0 ∧ r = 0 := by omega
+        exact ⟨ha, [], rfl, rfl⟩
+    have heq : (fun x : ℕ × ℕ × Bool => decide ([] ∈ W x)) =
+        fun x => x.2.2 && !decide (0 < x.1 + x.2.1) := by
       funext x
-      rcases x with ⟨_ | n, _ | _⟩ <;> simp [mem_W]
+      rcases x with ⟨m, r, a⟩
+      rw [Bool.eq_iff_iff, decide_eq_true_iff, hiff]
+      cases a <;> simp
     rw [heq]
     fun_prop
 
-/-- The exact sampler: a uniform word of length `n` if `b`, and `none` otherwise. -/
-private noncomputable def S (x : ℕ × Bool) (_ : ℕ) : ProbComp (Option (List Bool)) :=
-  if x.2 then some <$> BitString.sampleList x.1 else pure none
+/-- The exact sampler: if alive, `m` false bits followed by `r` uniform bits; otherwise
+`none`. -/
+private noncomputable def S (x : ℕ × ℕ × Bool) (_ : ℕ) : ProbComp (Option (List Bool)) :=
+  if x.2.2 then (fun v => some (List.replicate x.1 false ++ v)) <$> BitString.sampleList x.2.1
+  else pure none
 
 private theorem uniformList_eq (n : ℕ) :
     BitString.uniformList n = PMF.uniformOfFinset (allWords n) (allWords_nonempty n) := by
@@ -89,67 +171,107 @@ private theorem uniformList_eq (n : ℕ) :
     have hne : w ≠ List.ofFn a := fun h => hw (h ▸ mem_allWords.2 List.length_ofFn)
     simp [hne]
 
-private theorem eval_S (x : ℕ × Bool) (q : ℕ) : ProbComp.eval (S x q) = uniformWitness (W x) := by
-  rcases x with ⟨n, _ | _⟩
+/-- Mapping a uniform law along an embedding gives the uniform law on the image. -/
+private theorem map_uniformOfFinset (s : Finset (List Bool)) (hs : s.Nonempty)
+    (f : List Bool ↪ List Bool) :
+    (PMF.uniformOfFinset s hs).map f = PMF.uniformOfFinset (s.map f) (hs.map) := by
+  classical
+  ext w
+  rw [PMF.map_apply, PMF.uniformOfFinset_apply, Finset.card_map]
+  by_cases hw : w ∈ s.map f
+  · obtain ⟨a₀, ha₀, rfl⟩ := Finset.mem_map.1 hw
+    rw [ite_eq_left hw, tsum_eq_single a₀]
+    · simp [ha₀]
+    · intro a ha
+      have : f a₀ ≠ f a := fun h => ha (f.injective h).symm
+      simp [this]
+  · rw [ite_eq_right hw]
+    refine tsum_eq_zero_iff.2 fun a => ?_
+    by_cases ha : a ∈ s
+    · have : w ≠ f a := fun h => hw (h ▸ Finset.mem_map_of_mem f ha)
+      simp [this]
+    · simp [ha]
+
+private theorem eval_S (x : ℕ × ℕ × Bool) (q : ℕ) :
+    ProbComp.eval (S x q) = uniformWitness (W x) := by
+  rcases x with ⟨m, r, _ | _⟩
   · simp [S, W, uniformWitness_empty]
-  · simp only [S, W, ite_true]
-    rw [uniformWitness_of_nonempty (allWords_nonempty n), ProbComp.eval_map,
-      BitString.eval_sampleList, uniformList_eq]
+  · have hne : (W (m, r, true)).Nonempty :=
+      ⟨List.replicate m false ++ List.replicate r false,
+        mem_W.2 ⟨rfl, List.replicate r false, List.length_replicate, rfl⟩⟩
+    rw [uniformWitness_of_nonempty hne]
+    simp only [S, ite_true, ProbComp.eval_map, BitString.eval_sampleList, uniformList_eq]
+    have hcomp : (fun v => some (List.replicate m false ++ v)) = some ∘ pad m := rfl
+    rw [hcomp, ← PMF.map_comp, map_uniformOfFinset]
+    rfl
 
 private theorem isPPTOn_S :
-    IsPPTOn (encPair (encPair encUnary encBool) encUnary) (encOption encBits)
+    IsPPTOn (encPair (encPair encUnary (encPair encUnary encBool)) encUnary) (encOption encBits)
       (Function.uncurry S) := by
-  have hcond : ComputableInPolyTime (fun a : (ℕ × Bool) × ℕ => a.1.2)
-      (encPair (encPair encUnary encBool) encUnary) encBool := by fun_prop
-  have hsome : ComputableInPolyTime (some (α := List Bool)) encBits (encOption encBits) := by
+  have hcond : ComputableInPolyTime (fun a : (ℕ × ℕ × Bool) × ℕ => a.1.2.2)
+      (encPair (encPair encUnary (encPair encUnary encBool)) encUnary) encBool := by fun_prop
+  have hout : ComputableInPolyTime
+      (fun u : ((ℕ × ℕ × Bool) × ℕ) × List Bool => some (List.replicate u.1.1.1 false ++ u.2))
+      (encPair (encPair (encPair encUnary (encPair encUnary encBool)) encUnary) encBits)
+      (encOption encBits) := by
     fun_prop
-  have hyes : IsPPTOn (encPair (encPair encUnary encBool) encUnary) (encOption encBits)
-      (fun a : (ℕ × Bool) × ℕ => some <$> BitString.sampleList a.1.1) :=
-    (isPPTOn_sampleList.preprocess (by fun_prop)).map hsome
-  have hno : IsPPTOn (encPair (encPair encUnary encBool) encUnary) (encOption encBits)
-      (fun _ : (ℕ × Bool) × ℕ => (pure none : ProbComp (Option (List Bool)))) :=
+  have hyes : IsPPTOn (encPair (encPair encUnary (encPair encUnary encBool)) encUnary)
+      (encOption encBits) (fun a : (ℕ × ℕ × Bool) × ℕ =>
+        (fun v => some (List.replicate a.1.1 false ++ v)) <$> BitString.sampleList a.1.2.1) :=
+    IsPPTOn.of_seeded (count := fun a : (ℕ × ℕ × Bool) × ℕ => a.1.2.1)
+      (f := fun u : ((ℕ × ℕ × Bool) × ℕ) × List Bool =>
+        some (List.replicate u.1.1.1 false ++ u.2)) (by fun_prop) hout
+  have hno : IsPPTOn (encPair (encPair encUnary (encPair encUnary encBool)) encUnary)
+      (encOption encBits)
+      (fun _ : (ℕ × ℕ × Bool) × ℕ => (pure none : ProbComp (Option (List Bool)))) :=
     (ComputableInPolyTime.const none).isPPTOn
   exact IsPPTOn.cond' hcond hyes hno
 
-private theorem isFPAUS_S : IsFPAUS (encPair encUnary encBool) W S :=
+private theorem isFPAUS_S : IsFPAUS (encPair encUnary (encPair encUnary encBool)) W S :=
   ⟨isPPTOn_S, fun x q => by
     rw [eval_S]
-    exact TVWithin.refl _ (by positivity)⟩
+    exact (Interactive.CloseTo.refl _).mono (by positivity)⟩
 
 /-! ### A checked instance of the theorem -/
 
 /-- The witness counts of the family have an FPRAS, obtained from its exact sampler. -/
-example : (fun x => (W x).card) ∈ FPRAS (encPair encUnary encBool) :=
+example : (fun x => (W x).card) ∈ FPRAS (encPair encUnary (encPair encUnary encBool)) :=
   R.mem_FPRAS_of_mem_FPAUS ⟨S, isFPAUS_S⟩
 
-example : IsFPRAS (encPair encUnary encBool) (fun x => (W x).card) (R.estimate S) :=
+example : IsFPRAS (encPair encUnary (encPair encUnary encBool)) (fun x => (W x).card)
+    (R.estimate S) :=
   R.isFPRAS_of_isFPAUS isFPAUS_S
 
-/-! ### Counts, zero counts and witness length `0` -/
+/-! ### Counts, empty branches, zero counts and witness length `0` -/
 
-example : (W (3, true)).card = 8 := by
-  simp [W, card_allWords]
+example : (W (2, 3, true)).card = 8 := card_W 2 3
 
-example : (W (3, false)).card = 0 := by
+/-- Fixing `true` inside the prefix leaves no witnesses, while fixing `false` keeps all of them:
+the estimator has to choose the nonempty branch. -/
+example : (W (child (2, 3, true) true)).card = 0 ∧ (W (child (2, 3, true) false)).card = 8 := by
+  refine ⟨?_, card_W 1 3⟩
+  simp [child, W]
+
+example : (W (2, 3, false)).card = 0 := by
   simp [W]
 
 /-- A zero-count instance is estimated exactly as `0`, with positive denominator. -/
-example (n p t : ℕ) :
-    ∀ out ∈ (ProbComp.eval (R.estimate S (n, false) p t)).support, out.1 = 0 ∧ 0 < out.2 :=
+example (m r p t : ℕ) :
+    ∀ out ∈ (ProbComp.eval (R.estimate S (m, r, false) p t)).support, out.1 = 0 ∧ 0 < out.2 :=
   R.estimate_eq_zero S (by simp [W]) p t
 
 /-- With witness length `0` no samples are drawn: the estimate is `1 / 1`. -/
-example (p t : ℕ) : R.estimate S (0, true) p t = pure (1, 1) := by
+example (p t : ℕ) : R.estimate S (0, 0, true) p t = pure (1, 1) := by
   simp [SelfReducible.estimate, R, mem_W]
 
 /-! ### A sampler that is not almost uniform -/
 
 /-- The sampler that always reports no witness is not an almost uniform sampler for the family:
-on `(1, true)` the event `{none}` has probability `1` instead of `0`. -/
-example : ¬ IsFPAUS (encPair encUnary encBool) W (fun _ _ => pure none) := by
+on `(0, 1, true)` the event `{none}` has probability `1` instead of `0`. -/
+example : ¬ IsFPAUS (encPair encUnary (encPair encUnary encBool)) W (fun _ _ => pure none) := by
   rintro ⟨-, h⟩
-  have hW : (W (1, true)).Nonempty := ⟨[true], mem_W.2 ⟨rfl, rfl⟩⟩
-  have h1 := h (1, true) 1 {none}
+  have hW : (W (0, 1, true)).Nonempty := ⟨[true], mem_W.2 ⟨rfl, [true], rfl, rfl⟩⟩
+  have h1 := (h (0, 1, true) 1).abs_toReal_sub_le (by norm_num) {none}
   have hpre : (some : List Bool → Option (List Bool)) ⁻¹' {none} = ∅ := by
     ext
     simp

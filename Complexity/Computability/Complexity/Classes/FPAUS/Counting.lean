@@ -138,10 +138,12 @@ theorem preimage_startsWith (b : Bool) :
 /-- An almost uniform sampler's frequency of outputs beginning with `b` is within its tolerance
 of the fraction of witnesses beginning with `b`. -/
 theorem abs_eval_startsWith_sub_le {μ : ProbComp (Option (List Bool))} {V : Finset (List Bool)}
-    {ε : ℝ} (hμ : TVWithin (ProbComp.eval μ) (uniformWitness V) ε) (hV : V.Nonempty) (b : Bool) :
+    {ε : ℝ} (hε : 0 ≤ ε)
+    (hμ : Interactive.CloseTo (ProbComp.eval μ) (uniformWitness V) (ENNReal.ofReal ε))
+    (hV : V.Nonempty) (b : Bool) :
     |(ProbComp.eval (startsWith b <$> μ) true).toReal -
       ((V.filter (fun w => w.head? = some b)).card : ℝ) / V.card| ≤ ε := by
-  have h := hμ (some '' {w : List Bool | w.head? = some b})
+  have h := hμ.abs_toReal_sub_le hε (some '' {w : List Bool | w.head? = some b})
   rw [uniformWitness_toOuterMeasure_some hV] at h
   rw [ProbComp.eval_map, ← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply,
     preimage_startsWith]
@@ -220,7 +222,7 @@ variable (R : SelfReducible enc W)
 /-- The invariant after `i` levels on an instance with witnesses: the current instance is `i`
 levels down, the current count is positive, and `num * |W y| / den` is within factor
 `(1 - θ) ^ i` of `|W x|` in both directions, with `θ = 8 / M`. -/
-def Good (x : α) (p i : ℕ) (s : State α) : Prop :=
+private def Good (x : α) (p i : ℕ) (s : State α) : Prop :=
   R.len s.1 + i = R.len x ∧ 0 < s.2.2 ∧ 0 < (W s.1).card ∧
     (1 - 8 / (tolerance (R.len x) p : ℝ)) ^ i * s.2.2 * (W x).card ≤
       s.2.1 * (W s.1).card ∧
@@ -267,8 +269,8 @@ private theorem good_update {x : α} {p i : ℕ} {s : State α} (hs : R.Good x p
 the sampler is `1 / M`-close to uniform at the current instance. -/
 private theorem good_next {x : α} {p t i : ℕ} {s : State α} (hi : i < R.len x)
     (hs : R.Good x p i s) {μ : ProbComp (Option (List Bool))}
-    (hμ : TVWithin (ProbComp.eval μ) (uniformWitness (W s.1))
-      (1 / (tolerance (R.len x) p : ℝ)))
+    (hμ : Interactive.CloseTo (ProbComp.eval μ) (uniformWitness (W s.1))
+      (ENNReal.ofReal (1 / (tolerance (R.len x) p : ℝ))))
     {c₀ c₁ : ℕ}
     (h₀ : |(c₀ : ℝ) / (sampleCount (R.len x) p t : ℕ) -
       (ProbComp.eval (startsWith false <$> μ) true).toReal| < 1 / (tolerance (R.len x) p : ℝ))
@@ -281,8 +283,8 @@ private theorem good_next {x : α} {p t i : ℕ} {s : State α} (hi : i < R.len 
   have hN : 0 < sampleCount (R.len x) p t := by unfold sampleCount; positivity
   have hsplit := R.card_eq_add hlen
   have hne : (W s.1).Nonempty := Finset.card_pos.1 hW
-  have hP₀ := abs_eval_startsWith_sub_le hμ hne false
-  have hP₁ := abs_eval_startsWith_sub_le hμ hne true
+  have hP₀ := abs_eval_startsWith_sub_le (by positivity) hμ hne false
+  have hP₁ := abs_eval_startsWith_sub_le (by positivity) hμ hne true
   rw [R.card_filter_head hlen] at hP₀ hP₁
   unfold next
   by_cases hlt : c₀ < c₁
@@ -311,8 +313,8 @@ theorem mem_support_step {S : α → ℕ → ProbComp (Option (List Bool))} {ℓ
 a `1 / M`-close sampler at the current instance. -/
 private theorem step_failure {S : α → ℕ → ProbComp (Option (List Bool))} {x : α} {p t i : ℕ}
     (hi : i < R.len x) {s : State α} (hs : R.Good x p i s)
-    (hS : TVWithin (ProbComp.eval (S s.1 (tolerance (R.len x) p))) (uniformWitness (W s.1))
-      (1 / (tolerance (R.len x) p : ℝ))) :
+    (hS : Interactive.CloseTo (ProbComp.eval (S s.1 (tolerance (R.len x) p)))
+      (uniformWitness (W s.1)) (ENNReal.ofReal (1 / (tolerance (R.len x) p : ℝ)))) :
     ((ProbComp.eval (R.step S (R.len x) p t s)).toOuterMeasure
       {s' | ¬ R.Good x p (i + 1) s'}).toReal ≤ 2 * (1 / 2 : ℝ) ^ (t + R.len x + 1) := by
   set M := tolerance (R.len x) p with hM_def
@@ -442,7 +444,8 @@ theorem estimate_eq_zero (S : α → ℕ → ProbComp (Option (List Bool))) {x :
 distance `2 ^ (-q)` of uniform on `W x` for every `x` and `q`, then for `p > 0` the estimate is
 within relative error `1 / p` of `|W x|` with probability at least `1 - 2 ^ (-t)`. -/
 theorem approxWithin_estimate {S : α → ℕ → ProbComp (Option (List Bool))}
-    (hS : ∀ x q, TVWithin (ProbComp.eval (S x q)) (uniformWitness (W x)) ((1 / 2 : ℝ) ^ q))
+    (hS : ∀ x q, Interactive.CloseTo (ProbComp.eval (S x q)) (uniformWitness (W x))
+      (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)))
     (x : α) {p : ℕ} (hp : 0 < p) (t : ℕ) :
     1 - (1 / 2 : ℝ) ^ t ≤ ((ProbComp.eval (R.estimate S x p t)).toOuterMeasure
       {out | ApproxWithin (W x).card p out.1 out.2}).toReal := by
@@ -458,8 +461,9 @@ theorem approxWithin_estimate {S : α → ℕ → ProbComp (Option (List Bool))}
   set ℓ := R.len x
   set M := tolerance ℓ p
   have hMpos : 0 < M := by unfold M tolerance; positivity
-  have hS' : ∀ y, TVWithin (ProbComp.eval (S y M)) (uniformWitness (W y)) (1 / (M : ℝ)) :=
-    fun y => (hS y M).mono (half_pow_le_inv M hMpos)
+  have hS' : ∀ y, Interactive.CloseTo (ProbComp.eval (S y M)) (uniformWitness (W y))
+      (ENNReal.ofReal (1 / (M : ℝ))) :=
+    fun y => (hS y M).mono (ENNReal.ofReal_le_ofReal (half_pow_le_inv M hMpos))
   have hfail := ProbComp.iterate_failure_toReal_le_mul ℓ (R.step S ℓ p t) (x, 1, 1)
     (R.Good x p) ⟨by simp, Nat.one_pos, hx, by simp, by simp⟩ (by positivity)
     (fun i hi s hs => R.step_failure hi hs (hS' s.1))

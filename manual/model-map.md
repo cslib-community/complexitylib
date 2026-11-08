@@ -1,6 +1,6 @@
 # Model map
 
-This maintained map contains **266 curated entries** from the November 2 survey across four areas. Entries include models, behavior-changing variants, resource predicates and semantic interfaces; they are not asserted to be mathematically independent models. Follow each entry to the chapter explaining its semantics, resources, declarations, results and limitations. The optional [index script](data/coverage.py) exports these table rows; it does not discover models or reconstruct semantic judgments.
+This maintained map contains **265 curated entries** from the November 2 survey across four areas. Entries include models, behavior-changing variants, resource predicates and semantic interfaces; they are not asserted to be mathematically independent models. Follow each entry to the chapter explaining its semantics, resources, declarations, results and limitations. The optional [index script](data/coverage.py) exports these table rows; it does not discover models or reconstruct semantic judgments.
 
 The [module census script](data/census.py) can enumerate every tracked Lean source file at the fixed snapshot. Its broad ownership assignment is an indexing aid, not a claim that every line was reviewed. Model-family completeness remains a semantic judgment; generated inventories are optional and untracked.
 

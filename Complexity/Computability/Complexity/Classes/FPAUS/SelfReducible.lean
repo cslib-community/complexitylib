@@ -45,7 +45,7 @@ where the only possible witness is the empty word.
 * [A. Sinclair, *CS294 Partition Functions*, Lecture 4, Section 4.2.1][Sinclair2025]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

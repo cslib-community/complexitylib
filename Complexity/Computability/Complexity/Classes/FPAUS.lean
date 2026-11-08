@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Interactive.Security
 public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option
@@ -34,15 +35,15 @@ left unconstrained. The requirements stay separate:
 
 * **runtime**: `S` is a strict probabilistic polynomial-time program (`Cslib.Probability.IsPPTOn`)
   on the encoded input `(x, q)`, with the result encoded by `encOption encBits`;
-* **output-distribution error**: for every event `E`, the probability of `E` under `S x q` differs
-  from its probability under the target law by at most `(1 / 2) ^ q`
-  (`Cslib.Complexity.TVWithin`). This is the total-variation distance `max_E |μ E - ν E|`, stated
-  event-wise because `Option (List Bool)` is infinite.
+* **output-distribution error**: for every event `E`, the probability of `E` under `S x q` exceeds
+  its probability under the target law by at most `(1 / 2) ^ q` (`Cslib.Interactive.CloseTo`,
+  which quantifies over all events and is therefore symmetric). This is the total-variation
+  distance `max_E |μ E - ν E|`; `Cslib.Interactive.CloseTo.abs_toReal_sub_le` gives the real,
+  two-sided form.
 
 ## Main definitions
 
 * `Cslib.Complexity.uniformWitness`: the uniform law on a finite set of witnesses.
-* `Cslib.Complexity.TVWithin`: total-variation closeness, event by event.
 * `Cslib.Complexity.IsFPAUS`: a fully polynomial almost uniform sampler.
 * `Cslib.Complexity.FPAUS`: the witness families admitting one.
 
@@ -50,7 +51,7 @@ left unconstrained. The requirements stay separate:
 
 * `Cslib.Complexity.uniformWitness_toOuterMeasure_some`: the probability of an event of witnesses
   is its relative cardinality.
-* `Cslib.Complexity.TVWithin.mono`, `Cslib.Complexity.TVWithin.of_one_le`: basic closure.
+* `Cslib.Interactive.CloseTo.abs_toReal_sub_le`: closeness bounds real probability differences.
 
 ## References
 
@@ -62,7 +63,7 @@ left unconstrained. The requirements stay separate:
   4.2][Sinclair2025]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -75,23 +76,21 @@ none. -/
 noncomputable def uniformWitness (W : Finset (List Bool)) : PMF (Option (List Bool)) :=
   if h : W.Nonempty then (PMF.uniformOfFinset W h).map some else PMF.pure none
 
-/-- `μ` is within total-variation distance `ε` of `ν`: every event has probability under `μ`
-within `ε` of its probability under `ν`. -/
-def TVWithin {β : Type} (μ ν : PMF β) (ε : ℝ) : Prop :=
-  ∀ E : Set β, |(μ.toOuterMeasure E).toReal - (ν.toOuterMeasure E).toReal| ≤ ε
-
 /-- **A fully polynomial almost uniform sampler** for the witness sets `W`, on instances encoded
 by `enc`. The sampler `S x q` receives the instance `x` and the accuracy `q` (so the tolerance is
 `ε = 2 ^ (-q)`), with `q` in unary. It is a strict probabilistic polynomial-time program on the
 encoded pair `(x, q)`, outputs an optional bit string, and its output law is within
-total-variation distance `(1 / 2) ^ q` of `uniformWitness (W x)`. -/
+total-variation distance `(1 / 2) ^ q` of `uniformWitness (W x)` (`Cslib.Interactive.CloseTo`). -/
+@[expose]
 def IsFPAUS (enc : α ↪ List Bool) (W : α → Finset (List Bool))
     (S : α → ℕ → ProbComp (Option (List Bool))) : Prop :=
   IsPPTOn (encPair enc encUnary) (encOption encBits) (Function.uncurry S) ∧
-    ∀ x q, TVWithin (ProbComp.eval (S x q)) (uniformWitness (W x)) ((1 / 2 : ℝ) ^ q)
+    ∀ x q, Interactive.CloseTo (ProbComp.eval (S x q)) (uniformWitness (W x))
+      (ENNReal.ofReal ((1 / 2 : ℝ) ^ q))
 
 /-- The witness families with a fully polynomial almost uniform sampler, on instances encoded by
 `enc`. -/
+@[expose]
 def FPAUS (enc : α ↪ List Bool) : Set (α → Finset (List Bool)) :=
   {W | ∃ S, IsFPAUS enc W S}
 
@@ -120,27 +119,22 @@ theorem uniformWitness_toOuterMeasure_some {W : Finset (List Bool)} (h : W.Nonem
   rw [hsum, Finset.sum_const, nsmul_eq_mul, ENNReal.toReal_mul, ENNReal.toReal_inv]
   simp [div_eq_mul_inv]
 
-namespace TVWithin
-
-variable {β : Type} {μ ν : PMF β} {ε ε' : ℝ}
-
-theorem mono (h : TVWithin μ ν ε) (hε : ε ≤ ε') : TVWithin μ ν ε' :=
-  fun E => (h E).trans hε
-
-/-- Every two laws are within total-variation distance `1`. -/
-theorem of_one_le (hε : 1 ≤ ε) : TVWithin μ ν ε := by
-  intro E
-  have h₁ := ENNReal.toReal_mono ENNReal.one_ne_top (PMF.toOuterMeasure_le_one μ E)
-  have h₂ := ENNReal.toReal_mono ENNReal.one_ne_top (PMF.toOuterMeasure_le_one ν E)
-  rw [ENNReal.toReal_one] at h₁ h₂
-  rw [abs_le]
-  constructor <;> linarith [ENNReal.toReal_nonneg (a := μ.toOuterMeasure E),
-    ENNReal.toReal_nonneg (a := ν.toOuterMeasure E)]
-
-theorem refl (μ : PMF β) {ε : ℝ} (hε : 0 ≤ ε) : TVWithin μ μ ε := by
-  intro E
-  simpa using hε
-
-end TVWithin
-
 end Cslib.Complexity
+
+namespace Cslib.Interactive
+
+/-- Closeness within a real tolerance `ε ≥ 0` bounds the real difference of the probabilities of
+every event by `ε`. -/
+theorem CloseTo.abs_toReal_sub_le {β : Type} {μ ν : PMF β} {ε : ℝ} (hε : 0 ≤ ε)
+    (h : CloseTo μ ν (ENNReal.ofReal ε)) (E : Set β) :
+    |(μ.toOuterMeasure E).toReal - (ν.toOuterMeasure E).toReal| ≤ ε := by
+  have hμ := Cslib.Probability.PMF.toOuterMeasure_ne_top μ E
+  have hν := Cslib.Probability.PMF.toOuterMeasure_ne_top ν E
+  have h₁ := ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨hν, ENNReal.ofReal_ne_top⟩) (h E)
+  have h₂ := ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨hμ, ENNReal.ofReal_ne_top⟩) (h.symm E)
+  rw [ENNReal.toReal_add hν ENNReal.ofReal_ne_top, ENNReal.toReal_ofReal hε] at h₁
+  rw [ENNReal.toReal_add hμ ENNReal.ofReal_ne_top, ENNReal.toReal_ofReal hε] at h₂
+  rw [abs_le]
+  constructor <;> linarith
+
+end Cslib.Interactive
