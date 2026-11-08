@@ -44,6 +44,7 @@ upstream in CSLib.
 
 ## Main results
 
+- `mem_lossClass`: membership in the loss class.
 - `growthFunction_lossClass_le`: the loss class has at most the growth function of `C`.
 - `IsConsistent.ae_not_isEpsNet_of_lt_error`: a consistent learner with error above `ε` on a
   realizable sample witnesses that the sample is not an ε-net for the loss class.
@@ -79,6 +80,10 @@ variable {α : Type*}
 examples `(x, y)` that `h` misclassifies. -/
 def lossClass (C : ConceptClass α Bool) : ConceptClass (α × Bool) Bool :=
   (fun h p => decide (h p.1 ≠ p.2)) '' C
+
+theorem mem_lossClass {C : ConceptClass α Bool} {f : α × Bool → Bool} :
+    f ∈ lossClass C ↔ ∃ h ∈ C, (fun p : α × Bool => decide (h p.1 ≠ p.2)) = f := by
+  rw [lossClass, Set.mem_image]
 
 /-- Passing to the loss class does not increase the growth function: the misclassification
 pattern on labeled points is determined by the labeling of their domain points. -/
