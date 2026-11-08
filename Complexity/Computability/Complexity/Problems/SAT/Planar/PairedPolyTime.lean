@@ -51,6 +51,10 @@ namespace Cslib.Complexity.SAT.ParsimoniousPlanar
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal Turing.MultiTapeTM
 
+-- `fun_prop` tries lemmas whose encodings do not match the goal; keep each failed attempt from
+-- unfolding `ComputableInPolyTime` down to the machine semantics.
+attribute [local irreducible] ComputableInPolyTime
+
 /-- Explicit constructive enumeration of the eight split internal crossover variables. -/
 local instance : FinEnum Crossover.Internal :=
   FinEnum.ofList [.aInnerLeft, .upperLeft, .lowerLeft, .bInnerTop, .bInnerBottom,

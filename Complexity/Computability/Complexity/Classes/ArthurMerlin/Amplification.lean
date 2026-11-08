@@ -89,6 +89,10 @@ namespace Cslib.Complexity
 
 open Finset Turing.MultiTapeTM
 
+-- `fun_prop` tries lemmas whose encodings do not match the goal; keep each failed attempt from
+-- unfolding `ComputableInPolyTime` down to the machine semantics.
+attribute [local irreducible] ComputableInPolyTime
+
 variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
 
 /-! ### Error reduction for `MA` -/
