@@ -21,6 +21,7 @@ identifies different copies of the same original constraint.
 
 * `scan_saturated`: a completed scan covers every feasible positional partner.
 * `Log.SameParent.mem_outgoing`: step 4b identifies the exact already-used port.
+* `Log.mem_outgoing_of_arc`: outgoing arcs use discovery ports.
 -/
 
 public section
@@ -56,6 +57,19 @@ theorem outgoing_subset_used (es : Log F) : es.outgoing ⊆ es.used := by
     rcases List.mem_append.mp ho with ho | ho
     · exact List.mem_cons_of_mem _ (List.mem_append_left _ ho)
     · exact List.mem_cons_of_mem _ (List.mem_append_right _ (ih ho))
+
+omit [DecidableEq V] in
+/-- Every recorded outgoing arc uses a discovery port. -/
+theorem mem_outgoing_of_arc {es : Log F} {a : Arc F}
+    (ha : a ∈ es.arcs) (hi : a.incoming = false) : a.occurrence ∈ es.outgoing := by
+  induction es with
+  | nil => simp [arcs] at ha
+  | cons e es ih =>
+    simp only [arcs, List.mem_cons, List.mem_append, List.mem_map] at ha
+    rcases ha with rfl | ⟨o, ho, rfl⟩ | ha
+    · cases hi
+    · exact List.mem_append_left _ ho
+    · exact List.mem_append_right _ (ih ha)
 
 /-- The parent lookup returns actual output ports with the requested variable. -/
 theorem parent?_sound (es : Log F) (v : V) {p : Parent F}

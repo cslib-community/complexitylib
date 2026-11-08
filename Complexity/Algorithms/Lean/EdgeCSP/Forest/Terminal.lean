@@ -60,18 +60,6 @@ theorem sameParent_of_mem_outgoing {es : Log F} (hn : es.children.Nodup)
         simpa only [beq_iff_eq] using hnot
       simpa only [SameParent, parent?, hnone] using ih hn'.2.1 ho
 
-omit [DecidableEq V] in
-/-- Every recorded outgoing arc uses a discovery port. -/
-theorem mem_outgoing_of_arc {es : Log F} {a : Arc F}
-    (ha : a ∈ es.arcs) (hi : a.incoming = false) : a.occurrence ∈ es.outgoing := by
-  induction es with
-  | nil => simp [arcs] at ha
-  | cons e es ih =>
-    simp only [arcs, List.mem_cons, List.mem_append, List.mem_map] at ha
-    rcases ha with rfl | ⟨o, ho, rfl⟩ | ha
-    · cases hi
-    · exact List.mem_append_left _ ho
-    · exact List.mem_append_right _ (ih ha)
 
 end Log
 

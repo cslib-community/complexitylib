@@ -311,16 +311,6 @@ theorem ancestry_disjoint_copies (hg : Grown sem f rs es) {u v : V}
   obtain ⟨t, ht, htc⟩ := (hg.ancestry_directed hv).mem_copies.mp hd
   exact hne (hg.ancestry_root_eq_of_copy hs ht (hsc.trans htc.symm))
 
-/-- Every discovery variable is a nonroot, including across repeated constraint copies. -/
-theorem outgoing_not_root (hg : Grown sem f rs es) {o : Occurrence F}
-    (ho : o ∈ es.outgoing) : o.var ∉ rs := by
-  induction hg with
-  | nil => simp [Log.outgoing] at ho
-  | @cons es e hp hv hu hf hn hfe hsat ih =>
-    rcases List.mem_append.mp ho with ho | ho
-    · exact fun hr => hf o ho (Or.inl hr)
-    · exact ih ho
-
 /-- Every output variable of a reconstructed ancestry is consistent in the reference
 labeling. Inconsistent variables are roots, never discovered children. -/
 theorem ancestry_output_consistent (hg : Grown sem f (roots f) es) (v : V)
