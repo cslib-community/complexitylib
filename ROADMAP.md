@@ -1202,12 +1202,18 @@ each statement against the numbered result. Organize modules by subject, not cha
   Statistical queries
   ([#2910](https://github.com/cslib-community/complexitylib/issues/2910)): the deterministic SQ
   model has correlational and SQ-dimension query lower bounds, including parities, the
-  noise-free block simulation from random examples with a fixed-distribution PAC corollary, and
-  the low-degree algorithm as a non-adaptive SQ learner. Remaining: simulation under random
-  classification noise of known and of unknown rate (Kearns's Lemma 2 and Theorem 3); the
-  single-sample form of Kearns's Theorem 1 (finite query space and finite VC dimension) and a
-  distribution-free variant; randomized SQ learners; and Feldman's statistical dimension for a
-  specified planted problem, with matching sample and runtime upper bounds. Develop low-degree
+  noise-free block simulation from random examples with a fixed-distribution PAC corollary,
+  the low-degree algorithm as a non-adaptive SQ learner, and the characterization of weak
+  learning under a fixed distribution by the absolute-correlation SQ dimension, polynomially
+  related to the one-sided variant
+  ([#3204](https://github.com/cslib-community/complexitylib/issues/3204)). Remaining: simulation
+  under random classification noise of known and of unknown rate (Kearns's Lemma 2 and
+  Theorem 3); the single-sample form of Kearns's Theorem 1 (finite query space and finite VC
+  dimension) and a distribution-free variant; the Bshouty–Feldman transfer from statistical to
+  correlational queries for a fixed distribution; the worst-case SQ dimension and its comparison
+  with the VC dimension (Reyzin's Observations 20 and 21); Feldman's strong SQ dimension
+  characterizing strong learning; randomized SQ learners; and Feldman's statistical dimension for
+  a specified planted problem, with matching sample and runtime upper bounds. Develop low-degree
   likelihood-ratio and sum-of-squares comparisons where justified, distinguishing restricted-model
   bounds from unrestricted computational hardness. Use the
   [distributional framework](#average-case-complexity).

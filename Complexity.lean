@@ -4693,6 +4693,7 @@ public import Complexity.Languages.Probabilistic.Sum
 public import Complexity.Languages.Probabilistic.Transcript
 public import Complexity.Languages.Probabilistic.Traverse
 public import Complexity.Languages.Probabilistic.Traverse.CoinTape
+public import Complexity.Languages.Probabilistic.Traverse.SupportWith
 public import Complexity.Languages.Probabilistic.UniformNat
 public import Complexity.Languages.Probabilistic.UniformNat.Support
 public import Complexity.Languages.Probabilistic.UntilBad
@@ -4988,6 +4989,7 @@ public import Complexity.MachineLearning.PACLearning.UniformConvergence
 public import Complexity.MachineLearning.PACLearning.VCDimension
 public import Complexity.MachineLearning.PACLearning.VCUpperBound
 public import Complexity.MachineLearning.StatisticalQuery.Basic
+public import Complexity.MachineLearning.StatisticalQuery.Dimension
 public import Complexity.MachineLearning.StatisticalQuery.LowDegree
 public import Complexity.MachineLearning.StatisticalQuery.LowerBound
 public import Complexity.MachineLearning.StatisticalQuery.Parity
