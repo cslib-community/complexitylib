@@ -6,14 +6,20 @@ Authors: Samuel Schlesinger
 import VersoManual
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.CircuitSAT
+import Complexity.Computability.Complexity.Problems.ChromaticNumber
 import Complexity.Computability.Complexity.Problems.Clique
+import Complexity.Computability.Complexity.Problems.CliqueCover
 import Complexity.Computability.Complexity.Problems.Coloring
 import Complexity.Computability.Complexity.Problems.ExactThreeSAT
+import Complexity.Computability.Complexity.Problems.FeedbackArcSet
+import Complexity.Computability.Complexity.Problems.FeedbackVertexSet
 import Complexity.Computability.Complexity.Problems.NAEThreeSAT
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Directed
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Undirected
 import Complexity.Computability.Complexity.Problems.IntegerProgramming
+import Complexity.Computability.Complexity.Problems.JobSequencing
 import Complexity.Computability.Complexity.Problems.Knapsack
+import Complexity.Computability.Complexity.Problems.MaxCut
 import Complexity.Computability.Complexity.Problems.Partition
 import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
@@ -314,15 +320,28 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   their satisfying extensions are unique.
 * Subset sum reduces to partition ({name}`polyTimeReducible_SubsetSum_Partition`,
   {name}`Partition_npComplete`), knapsack ({name}`polyTimeReducible_SubsetSum_Knapsack`,
-  {name}`Knapsack_npComplete`) and zero-one integer programming
-  ({name}`polyTimeReducible_SubsetSum_ZeroOneIP`, {name}`ZeroOneIP_npComplete`).
+  {name}`Knapsack_npComplete`), zero-one integer programming
+  ({name}`polyTimeReducible_SubsetSum_ZeroOneIP`, {name}`ZeroOneIP_npComplete`) and sequencing
+  with deadlines and penalties ({name}`polyTimeReducible_SubsetSum_JobSequencing`,
+  {name}`JobSequencing_npComplete`). Partition reduces to weighted maximum cut through Karp's
+  complete graph weighted by products ({name}`polyTimeReducible_Partition_MaxCut`,
+  {name}`MaxCut_npComplete`).
 * SAT reduces to independent set ({name}`polyTimeReducible_SAT_IndependentSet`,
   {name}`IndependentSet_npComplete`), which reduces to clique
   ({name}`polyTimeReducible_IndependentSet_Clique`, {name}`Clique_npComplete`) and vertex cover
   ({name}`polyTimeReducible_IndependentSet_VertexCover`, {name}`VertexCover_npComplete`).
+* Vertex cover reduces to directed feedback vertex set by replacing every edge with two opposite
+  arcs ({name}`polyTimeReducible_VertexCover_FeedbackVertexSet`,
+  {name}`FeedbackVertexSet_npComplete`), which reduces to feedback arc set by splitting every
+  vertex into an arc ({name}`polyTimeReducible_FeedbackVertexSet_FeedbackArcSet`,
+  {name}`FeedbackArcSet_npComplete`).
 * SAT reduces to three-colorability ({name}`polyTimeReducible_SAT_ThreeColoring`,
   {name}`ThreeColoring_npComplete`) and to `k`-colorability for every `k ≥ 3`
-  ({name}`polyTimeReducible_SAT_KColoring`, {name}`KColoring_npComplete`).
+  ({name}`polyTimeReducible_SAT_KColoring`, {name}`KColoring_npComplete`). Fixed colorability
+  reduces to chromatic number, with the number of colors in the input
+  ({name}`polyTimeReducible_KColoring_ChromaticNumber`, {name}`ChromaticNumber_npComplete`), which
+  reduces to clique cover by complementing the graph
+  ({name}`polyTimeReducible_ChromaticNumber_CliqueCover`, {name}`CliqueCover_npComplete`).
 * SAT reduces to directed Hamiltonian paths and cycles ({name}`polyTimeReducible_SAT_DirHamPath`,
   {name}`DirHamPath_npComplete`, {name}`polyTimeReducible_SAT_DirHamCycle`,
   {name}`DirHamCycle_npComplete`), these reduce to their undirected versions

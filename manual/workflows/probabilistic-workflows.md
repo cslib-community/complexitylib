@@ -111,13 +111,53 @@ for the lazy hypercube walk `Cslib.BitString.lazyRandomWalk ι`, `mixingTime_laz
 proves `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉`. The ceiling is necessary, as the `n = 1`, `ε = 2/5`
 check shows.
 
+When a coupling of all pairs is hard to build, use path coupling from
+[MarkovChain/PathCoupling.lean](../../Complexity/Probability/MarkovChain/PathCoupling.lean). Choose
+a neighbor relation `N` and a cost `ρ` with `IsPathMetric N ρ`: `ρ` vanishes on the diagonal, is
+at least one off it, and every `x ≠ y` has a neighbor `z ≠ x` of `x` with
+`ρ x z + ρ z y ≤ ρ x y`. The path metric of `N` with edge lengths at least one satisfies this, but
+`ρ` need not be symmetric or satisfy the triangle inequality. For Hamming distance on
+`∀ i, β i`, `isPathMetric_hammingDist` supplies this. Then couple one step from neighbors only:
+for `N x y`, give `ω : PMF (S × S)` with marginals `P x` and `P y` and
+`∑ p, (ω p).toReal * ρ p.1 p.2 ≤ κ * ρ x y`.
+`IsStationary.mixingTime_le_of_pathCoupling` turns `0 ≤ κ ≤ exp (-α)` with `0 < α`, and
+`ρ ≤ D` with `0 < D`, into `t_mix(ε) ≤ ⌈(log D - log ε) / α⌉` for `0 < ε`, and
+`dist_pow_le_of_pathCoupling` gives the underlying
+`‖Pᵗ(x, ·) - Pᵗ(y, ·)‖_TV ≤ κᵗ ρ(x, y)`. Optimal couplings of the one-step laws come from
+`exists_coupling_toReal_eq_dist` in
+[StatisticalDistance/OptimalCoupling.lean](../../Complexity/Probability/StatisticalDistance/OptimalCoupling.lean),
+and `dist_uniformOfFinset_le` bounds the distance between uniform laws on nearly equal sets. The
+worked client is [MarkovChain/Coloring.lean](../../Complexity/Probability/MarkovChain/Coloring.lean):
+for Glauber dynamics on `q`-colorings with `q > 2Δ`, `mixingTime_glauberColoring_le` proves
+`t_mix(ε) ≤ ⌈((q - Δ) / (q - 2Δ)) n (log n - log ε)⌉`. Its stationary law needs a proper coloring,
+which `SimpleGraph.properColorings_nonempty` provides from greedy coloring
+(`SimpleGraph.colorable_of_maxDegree_lt`). Proper colorings, allowed colors and the closure of
+proper colorings under recoloring live in
+[SimpleGraph/ProperColoring.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/ProperColoring.lean).
+
+If the chain is confined to a set `C` closed under `P` and does not mix on all of `S`, use the
+`_on` forms: `IsPathMetricOn C N ρ` asks for the conditions only on `C`, with geodesic steps in
+`C`, and `isPathMetricOn_hammingDist` supplies it for any `C` closed under copying one coordinate.
+`dist_pow_le_of_pathCoupling_on` and `IsStationary.dist_le_of_pathCoupling_on` then need couplings
+only for neighbors in `C`, and bound the distance from starts in `C`, for a stationary law
+supported in `C`. The client is Glauber dynamics with a frozen boundary,
+`glauberColoringOn G q U hU`, which recolors only vertices of `U`. On the proper colorings
+`frozenColorings G q U b` that agree with `b` off `U`, `dist_glauberColoringOn_frozen_le_of_le`
+gives the sampling time of Levin and Peres, (14.23). For approximate counting,
+[Coloring/Ratio.lean](../../Complexity/Probability/MarkovChain/Coloring/Ratio.lean) proves their
+Lemma 14.16, `inv_exp_mul_le_card_frozenColorings_erase_div`: freezing one more vertex keeps at
+least a `1 / (e q)` fraction of the colorings. The estimator of Theorem 14.14 is not yet
+formalized.
+
 The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
 `t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip
 chain never mixes, compute a Metropolis acceptance probability, and give the hypercube instance
-with `n = 1`. Run
-`scripts/build.sh ComplexityTests.MarkovChain`. A goal of the form `t_mix(ε) = k` needs both
-directions: `mixingTime_le_of_distToStationary_le` for `≤`, and
-`(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
+with `n = 1`. The [path-coupling checks](../../ComplexityTests/PathCoupling.lean) instantiate the
+coloring bound on a single edge, show that the condition `ρ ≥ 1` off the diagonal cannot be
+dropped, and compute the frozen colorings, the ratio of Lemma 14.16 and the frozen sampling time
+on a single edge. Run `scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling`.
+A goal of the form `t_mix(ε) = k` needs both directions: `mixingTime_le_of_distToStationary_le`
+for `≤`, and `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
 ## Compose local embeddings and extract a strategy
 
@@ -761,7 +801,7 @@ First specify the operation set and request representation. Then bound the amoun
 
 Next inspect behavior under a concrete handler. The same client defines `counting`, which increments a counter on every call. Its semantic examples establish final count one on the unselected branch and two on the selected branch. This catches interaction differences that equality of output marginals could hide. For the simpler `runWith` interface, open [ComplexityTests/OracleSemantics.lean](../../ComplexityTests/OracleSemantics.lean).
 
-Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on external call count and request length. A separately proved `IsCostBounded` charges chosen requests along every path; `ProbOracleComp.IsQueryBounded` counts external calls rather than private samples. Neither bound by itself pays for arbitrary Lean callbacks.
+Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on external call count and request length. A separately proved `IsCostBounded` charges chosen requests along every path; `ProbOracleComp.IsQueryBounded` counts external calls rather than private samples. Neither bound by itself pays for arbitrary Lean callbacks. For an average rather than a worst-case charge, [QueryCount/Expected.lean](../../Complexity/Languages/Probabilistic/QueryCount/Expected.lean) defines `OracleComp.expectedCost handler cost program`, the expected total cost when the calls are answered by PMF-valued `handler`. `expectedCost_bind` is Wald's identity for sequencing, `expectedCost_interpret` follows a handler substitution, and `expectedCost_le_of_isCostBounded` bounds the expectation by a pathwise `IsCostBounded` budget. The [local-decoding model](../circuits-logic-and-other-models/query-and-communication.md#locally-decodable-codes) measures smoothness this way.
 
 **When it fails:** if `fun_prop` fails on returning an entire oracle reply, check whether the requested conclusion permits unbounded output. The linked client contains explicit failure examples and the bounded-prefix repair.
 

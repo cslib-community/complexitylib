@@ -27,7 +27,11 @@ related mechanical fixes when they share a contract and validation; split at ind
 boundaries rather than creating a PR per cleanup. Include a checked client for a new API and
 instances showing that bundled hypotheses can be met. Preserve
 the original authors and licenses when porting code; cite mathematical sources in module
-docstrings through [references.bib](references.bib), whose entries stay sorted by key.
+docstrings through [references.bib](references.bib), whose entries stay sorted by key. Two
+branches that add entries between the same neighbours conflict as text;
+`scripts/resolve_bib_conflict.py` merges the file entry by entry and refuses when both sides
+changed one entry. To have `git merge` use it for `references.bib`, run once per clone:
+`git config merge.bibkeys.driver 'python3 scripts/resolve_bib_conflict.py --driver %O %A %B'`.
 
 Develop against representative clients and state the public contract: model or encodings,
 mathematical behavior, and resource or security claim. Test automation on ordinary expressions,
@@ -94,6 +98,21 @@ Two places keep projections, as standing exceptions:
   lambda in a section `variable` of a `public section` elaborates to `sorry`, with only a warning
   ([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Use projections there,
   or bind the hypothesis in the theorem's own signature.
+
+**Readable encodings** ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)).
+An encoding is part of what a statement claims, so statements show it; they should not make the
+reader parse the same nested encoding again and again. Name a compound encoding that recurs in a
+module's statements with a documented, reducible `abbrev`, give domain encodings their own names,
+declare field-tuple structure encodings with `enc_structure`, and keep unary versus binary,
+representations and framing visible in the name or its docstring. For example, the query-machine
+certificates take
+`ComputableInSpace M.next (encStateRead encS) encS fun p => (encStateRead encS p).length`
+rather than restating `encPair encS (encOption encBool)` twice; `encStateRead` is documented as a
+state paired with the bit read, with the state framed. Because the name is reducible, the
+elaborated statement is unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas see
+through it. New and changed statements follow the exact rules in
+[AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint checks the
+repetition rule. Abstracts stay fully spelled out.
 
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
@@ -183,13 +202,20 @@ the root checkout and, when `<branch>` exists only on `origin`, checks it out tr
 `origin/<branch>`). Pass `--source-only` to skip the initial copy; the
 [cache guide](scripts/cache/README.md#automatic-restoration) explains bootstrap and dependency costs.
 Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
-forbidden proof tokens, `set_option` justifications, the key order of `references.bib` and that
-every docstring citation key has an entry there
+forbidden proof tokens, `set_option` justifications, the key order of `references.bib`, that
+every docstring citation key has an entry there and that `ROADMAP.md` adds no `[#N]:` link
+definitions
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
 listed in a module docstring's "Main …" sections must exist, and a new test file must do more
-than restate signatures with `example … := name`. CI runs both. On pull requests CI also runs
+than restate signatures with `example … := name`. CI runs both, and also
+`python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
+public statements ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)). It
+enforces its baseline only in the modules a pull request changes, and merge groups only report,
+so `main` can drift above the baseline; the next change to a drifted module names the encoding
+or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
+options. On pull requests CI also runs
 `python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another
@@ -228,9 +254,12 @@ findings without requiring a duplicate local run.
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
 ROADMAP lists open directions only; status and progress live on issues and PRs, so a PR does not
-edit ROADMAP unless it opens or closes a direction. UPSTREAM records coordination and exceptional
-integration decisions, while source markers record module status. Batch measurements and
-validation/review evidence belong in commit or PR descriptions.
+edit ROADMAP unless it opens or closes a direction. Write a new issue or PR link in ROADMAP inline,
+as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`, rather than as a
+`[#N]: …` reference definition appended to the end of the file: such appended lines conflict
+between PRs in the merge queue, and `scripts/check_hygiene.py` rejects new ones. UPSTREAM records
+coordination and exceptional integration decisions, while source markers record module status.
+Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
 
@@ -279,6 +308,8 @@ where they teach a reusable method or a model boundary. Agents should be able to
 maintained account without repeating the investigation or relying on earlier conversations.
 Keep the Agent Operator's Manual short and directed at the person driving the agents; put
 participant procedures in the Operator's Manual and historical evidence in its supplement.
+Place a new section where its topic belongs in a chapter rather than at the end: sections that
+concurrent PRs append at the same place conflict in the merge queue.
 
 Keep executable Lean examples in `ComplexityTests/` or the checked Verso guide and link their
 complete source, including imports and local context. Use checked excerpts rather than a second

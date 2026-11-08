@@ -165,7 +165,7 @@ variable [Finite State]
 
 /-- The encoding of tracked storage: the finite configuration and the unary head positions. -/
 noncomputable abbrev encTrackedCfg : FiniteCfg k Bool State × (Fin k → ℤ) ↪ List Bool :=
-  encPair encFiniteCfg (encPi encInt)
+  encPair encFiniteCfg (encPi encIntUnary)
 
 /-- One tracked step of a fixed machine is polynomial-time: a finite case analysis on the
 control and the symbols read selects a fixed action. -/
@@ -196,8 +196,8 @@ theorem computableInPolyTime_trackedStep (tm : MultiTapeTM k Bool State) :
     · refine ((ComputableInPolyTime.finiteCfg_step _).comp (.fst _ _)).prod
         (ComputableInPolyTime.pi fun i => ?_)
       have hi : ComputableInPolyTime (fun c : FiniteCfg k Bool State × (Fin k → ℤ) => c.2 i)
-          (encTrackedCfg) encInt :=
-        (ComputableInPolyTime.pi_apply encInt i).comp (.snd _ _)
+          (encTrackedCfg) encIntUnary :=
+        (ComputableInPolyTime.pi_apply encIntUnary i).comp (.snd _ _)
       have hmove := (ComputableInPolyTime.int_sub_sign
         (-((tm.tr q symbol work).workTapes i).2)).comp hi
       simpa only [SignType.coe_neg, sub_neg_eq_add, Function.comp_def] using hmove
@@ -244,10 +244,10 @@ private theorem length_encTracked_le : ∃ C : ℕ, ∀ (inputSize steps : ℕ)
     refine le_trans ?_ (hC _ _ _ _ hbound)
     simp only [encFiniteConfig_apply, length_encPair]
     lia
-  have hpos : (encPi encInt c.2).length ≤ k * (2 * (steps + 1) + 1) := by
-    simpa using length_encPi_le encInt c.2 (bound := steps + 1) fun i => by
+  have hpos : (encPi encIntUnary c.2).length ≤ k * (2 * (steps + 1) + 1) := by
+    simpa using length_encPi_le encIntUnary c.2 (bound := steps + 1) fun i => by
       have := abs_le.mp (h.positions i)
-      rw [length_encInt]
+      rw [length_encIntUnary]
       split <;> omega
   simp only [length_encPair]
   nlinarith

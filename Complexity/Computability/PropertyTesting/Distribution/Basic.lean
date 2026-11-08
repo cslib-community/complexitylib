@@ -26,13 +26,23 @@ tester is a semantic Markov kernel: this file counts samples and does not bound 
 Le Cam's two-point method in mixture form (`one_third_le_dist_iid_bind`) turns a tester into a
 lower bound: the `k`-sample distribution of any `p ∈ P` is at statistical distance at least
 `1 / 3` from every mixture of `k`-sample distributions of distributions `ε`-far from `P`. Testers
-transport along bijections of the domain (`IsTester.map_equiv`).
+transport along bijections of the domain (`IsTester.map_equiv`) and, more generally, along any
+randomized map `F` of the samples that sends `P` into a property `P'` and far distributions to far
+distributions (`IsTester.bind_pi`): a tester for `P'` run on the mapped samples tests `P`.
+
+A *`k`-sample closeness tester* (`IsClosenessTester`) receives `k` independent samples of each of
+two unknown distributions `p` and `q` (`acceptProb₂`). It must accept with probability at least
+`2 / 3` when `p = q` and with probability at most `1 / 3` when `p` and `q` are at statistical
+distance at least `ε` [Canonne][Canonne2020].
 
 ## Main definitions
 
 * `Cslib.DistributionTesting.acceptProb`: the acceptance probability of a decision rule on `k`
   independent samples.
 * `Cslib.DistributionTesting.IsTester`: the `k`-sample tester property with proximity `ε`.
+* `Cslib.DistributionTesting.acceptProb₂`: the acceptance probability of a decision rule on `k`
+  independent samples of each of two distributions.
+* `Cslib.DistributionTesting.IsClosenessTester`: the `k`-sample closeness tester property.
 
 ## Main results
 
@@ -40,6 +50,10 @@ transport along bijections of the domain (`IsTester.map_equiv`).
   the statistical distance of the sample distributions.
 * `Cslib.DistributionTesting.one_third_le_dist_iid_bind`: Le Cam's method for testers.
 * `Cslib.DistributionTesting.IsTester.map_equiv`, `.comp_equiv_uniform`: relabelling the domain.
+* `Cslib.DistributionTesting.acceptProb_bind_pi`, `IsTester.bind_pi`: reductions along a
+  randomized map of the samples.
+* `Cslib.DistributionTesting.acceptProb₂_pure`, `acceptProb₂_pure_eq_one_sub`: deterministic
+  two-sample rules.
 
 ## References
 
@@ -73,9 +87,54 @@ structure IsTester [Fintype α] {k : ℕ} (T : (Fin k → α) → PMF Bool) (P :
   accept : ∀ p ∈ P, 2 / 3 ≤ acceptProb T p
   reject : ∀ p, (∀ q ∈ P, ε ≤ dist p q) → acceptProb T p ≤ 1 / 3
 
+/-- The probability that the randomized decision rule `T` accepts `k` independent samples of `p`
+together with `k` further independent samples of `q`. -/
+noncomputable def acceptProb₂ {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool)
+    (p q : PMF α) : ℝ :=
+  (((iid p k).bind fun x => (iid q k).bind fun y => T x y) true).toReal
+
+/-- Unfolding lemma for `acceptProb₂`. -/
+theorem acceptProb₂_eq {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool) (p q : PMF α) :
+    acceptProb₂ T p q = (((iid p k).bind fun x => (iid q k).bind fun y => T x y) true).toReal := by
+  rw [acceptProb₂]
+
+/-- `T` is a `k`-sample closeness tester with proximity `ε`: given `k` independent samples of each
+of two unknown distributions, it accepts with probability at least `2 / 3` when they are equal and
+with probability at most `1 / 3` when they are at statistical distance at least `ε`. -/
+structure IsClosenessTester [Fintype α] {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool)
+    (ε : ℝ) : Prop where
+  accept : ∀ p, 2 / 3 ≤ acceptProb₂ T p p
+  reject : ∀ p q, ε ≤ dist p q → acceptProb₂ T p q ≤ 1 / 3
+
 section Fintype
 
 variable [Fintype α]
+
+/-- A deterministic two-sample decision rule accepts with the probability of its acceptance
+region. -/
+theorem acceptProb₂_pure {k : ℕ} (A : (Fin k → α) → (Fin k → α) → Bool) (p q : PMF α) :
+    acceptProb₂ (fun x y => PMF.pure (A x y)) p q =
+      ∑ x, ∑ y, (iid p k x).toReal * (iid q k y).toReal * (if A x y then 1 else 0) := by
+  rw [acceptProb₂, bind_apply_toReal]
+  refine sum_congr rfl fun x _ => ?_
+  rw [bind_apply_toReal, mul_sum]
+  refine sum_congr rfl fun y _ => ?_
+  cases A x y <;> simp
+
+/-- A deterministic two-sample rule accepts with probability one minus the mass of its rejection
+region. -/
+theorem acceptProb₂_pure_eq_one_sub {k : ℕ} (A : (Fin k → α) → (Fin k → α) → Bool)
+    (p q : PMF α) :
+    acceptProb₂ (fun x y => PMF.pure (A x y)) p q =
+      1 - ∑ x, ∑ y, (iid p k x).toReal * (iid q k y).toReal * (if !A x y then 1 else 0) := by
+  rw [acceptProb₂_pure, eq_sub_iff_add_eq, ← sum_add_distrib]
+  refine (sum_congr rfl fun x _ => ?_).trans (sum_toReal (iid p k))
+  rw [← sum_add_distrib]
+  calc ∑ y, ((iid p k x).toReal * (iid q k y).toReal * (if A x y then 1 else 0) +
+        (iid p k x).toReal * (iid q k y).toReal * (if !A x y then 1 else 0))
+      = ∑ y, (iid p k x).toReal * (iid q k y).toReal :=
+        sum_congr rfl fun y _ => by cases A x y <;> simp
+    _ = (iid p k x).toReal := by rw [← mul_sum, sum_toReal, mul_one]
 
 /-- A deterministic decision rule accepts with the probability of its acceptance region. -/
 theorem acceptProb_pure {k : ℕ} (A : (Fin k → α) → Bool) (p : PMF α) :
@@ -139,6 +198,29 @@ theorem IsTester.map_equiv [Fintype α] [Fintype β] {k : ℕ} {T : (Fin k → �
     refine hT.reject _ fun q hq => ?_
     have h := hp (q.map e) ⟨q, hq, rfl⟩
     rwa [← dist_map_of_injective _ _ e.injective, PMF.map_comp, e.self_comp_symm, PMF.map_id]
+
+/-- Running a decision rule on samples passed independently through a randomized map `F` accepts
+`p` with the probability that the rule accepts `p.bind F`. -/
+theorem acceptProb_bind_pi [Finite α] [Finite β] {k : ℕ} (F : α → PMF β)
+    (T : (Fin k → β) → PMF Bool) (p : PMF α) :
+    acceptProb (fun x => (pi fun i => F (x i)).bind T) p = acceptProb T (p.bind F) := by
+  rw [acceptProb_eq, acceptProb_eq, iid_bind, PMF.bind_bind]
+
+/-- **Reduction along a randomized map.** If `F` sends every member of `P` into `P'` and every
+distribution `ε`-far from `P` to one `ε'`-far from `P'`, then a `k`-sample tester for `P'` with
+proximity `ε'`, run on the samples passed independently through `F`, is a `k`-sample tester for `P`
+with proximity `ε`. -/
+theorem IsTester.bind_pi [Fintype α] [Fintype β] {k : ℕ} {T : (Fin k → β) → PMF Bool}
+    {P' : Set (PMF β)} {ε' : ℝ} (hT : IsTester T P' ε') (F : α → PMF β) {P : Set (PMF α)}
+    {ε : ℝ} (hmem : ∀ q ∈ P, q.bind F ∈ P')
+    (hfar : ∀ p, (∀ q ∈ P, ε ≤ dist p q) → ∀ q' ∈ P', ε' ≤ dist (p.bind F) q') :
+    IsTester (fun x => (pi fun i => F (x i)).bind T) P ε where
+  accept q hq := by
+    rw [acceptProb_bind_pi]
+    exact hT.accept _ (hmem q hq)
+  reject p hp := by
+    rw [acceptProb_bind_pi]
+    exact hT.reject _ (hfar p hp)
 
 /-- A uniformity tester transports along any bijection of the domain. -/
 theorem IsTester.comp_equiv_uniform [Fintype α] [Fintype β] [Nonempty α] [Nonempty β] {k : ℕ}
