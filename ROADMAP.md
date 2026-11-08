@@ -1436,11 +1436,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   place: Broder's MinHash theorem, sensitive families, exact AND/OR/banding collision laws, the
   S-curve gap, bit sampling for the Hamming distance, and the `(c, r)`-approximate
   near-neighbour structure: failure at most `e⁻¹ + 1/3` with `k = ⌈log n / log(1/p₂)⌉`,
-  `L = ⌈n^ρ/p₁⌉` and the stop rule after `3L` candidates, with `ρ ≤ 1/c` for bit sampling. Its
-  costs are counted in hash evaluations and distance tests. Next: a word-RAM realization with
-  hashed buckets, seed storage and native query and preprocessing time. Remaining: SimHash, p-stable
-  LSH for `ℓ_p` distances, MinHash over min-wise independent families smaller than the symmetric
-  group, and LSH lower bounds (O'Donnell–Wu–Zhou; source to be verified before citing).
+  `L = ⌈n^ρ/p₁⌉` and the stop rule after `3L` candidates, with `ρ ≤ 1/c` for bit sampling. Only
+  `k`, `L`, `ρ` and the number of inspected candidates are bounded; no operation counts or time
+  are formalized. Next: a word-RAM realization with hashed buckets, seed storage and native
+  `n^ρ` query and preprocessing time. Remaining: SimHash, p-stable LSH for `ℓ_p` distances,
+  MinHash over min-wise independent families smaller than the symmetric group, and LSH lower
+  bounds (O'Donnell–Wu–Zhou; source to be verified before citing).
 - **Dimension reduction** ([#2996](https://github.com/cslib-community/complexitylib/issues/2996)):
   extend the Johnson–Lindenstrauss lemma for dense `±1` sign matrices to Achlioptas's sparse
   `{-√3, 0, √3}` distribution, Gaussian and spherical projections, and fast and sparse JL

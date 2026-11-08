@@ -19,7 +19,8 @@ import Complexity.Probability.PMF.Markov
 The `(c, r)`-approximate near-neighbour problem asks for a data structure over a finite point set
 `P`. Given a query `q` with some point of `P` within distance `r`, it must return a point of `P`
 within distance `c r`. Indyk and Motwani solve it with locality-sensitive hashing
-[IndykMotwani1998]; [HarPeledIndykMotwani2012], Theorem 3.4. The structure stores `L` hash tables,
+[IndykMotwani1998]; [HarPeledIndykMotwani2012], Theorem 3.4. Only the static structure is
+formalized here; insertions and deletions are not modelled. The structure stores `L` hash tables,
 each keyed by a hash `g (s j)` drawn independently from a seed law `ν`. In the source, `g` is the
 AND of `k` hashes of an `(r, c r, p₁, p₂)`-sensitive family (`Cslib.Probability.andHash`).
 
@@ -41,16 +42,20 @@ The bound uses only the marginal law of each table, never independence across fa
 `ρ = log (1 / p₁) / log (1 / p₂)` (`Cslib.DataStructure.NearNeighbor.rho`). Take
 `k = ⌈log n / log (1 / p₂)⌉` (`numHashes`), `L = ⌈n ^ ρ / p₁⌉` (`numTables`) and `T = 3 L`. Then
 `n p₂ ^ k ≤ 1` and `L p₁ ^ k ≥ 1`, so the query fails with probability at most `e⁻¹ + 1 / 3 < 1`
-(`toOuterMeasure_query_andHash_eq_none_le`). Repeating with `R` independent structures fails with
-probability at most `(e⁻¹ + 1 / 3) ^ R` (`toOuterMeasure_queryRepeat_andHash_eq_none_le`).
+(`toOuterMeasure_query_numTables_eq_none_le`). Repeating with `R` independent structures fails
+with probability at most `(e⁻¹ + 1 / 3) ^ R` (`toOuterMeasure_queryRepeat_numTables_eq_none_le`).
+Stopping after `3 L` candidates is the scanning rule of Indyk and Motwani [IndykMotwani1998]; see
+[AndoniIndyk2008], Section 2.4 ("Strategy 1"), for an exposition.
 
-**Costs.** The stop rule after `3 L` candidates is that of Andoni and Indyk [AndoniIndyk2008]. A
-query evaluates `k L` base hashes and makes at most `T = 3 L` distance tests. The tables hold `n L`
-entries. Here `k < log n / log (1 / p₂) + 1` and `L < n ^ ρ / p₁ + 1` (`numHashes_lt`,
-`numTables_lt`), so these are `O(n ^ ρ log n / p₁)`, `O(n ^ ρ / p₁)` and `O(n ^ (1 + ρ) / p₁)`.
-These are the quantities in which the query time of [HarPeledIndykMotwani2012] is stated. A bucket
-is described here by filtering `P`, so the lookup of a bucket in a dictionary keyed by hash values,
-its word-RAM cost, and the cost of one hash evaluation or distance test, are not modelled.
+**What is bounded, and what is not counted.** The query inspects at most `T` candidates, so it
+tests `far` at most `T` times (`length_take_candidates_le`); there are at most `L |P|` candidates
+in all (`length_candidates_le`). The parameters satisfy `k < log n / log (1 / p₂) + 1` and
+`L < n ^ ρ / p₁ + 1` (`numHashes_lt`, `numTables_lt`), with `0 ≤ ρ < 1` (`rho_nonneg`,
+`rho_lt_one`). No declaration counts operations. In a bucketed implementation a query would
+evaluate `k L` base hashes and the tables would hold `n L` entries, but here a bucket is described
+by filtering `P`, so `candidates` evaluates `g (s j)` on all of `P`. A dictionary keyed by hash
+values, its word-RAM cost, the cost of one hash evaluation or distance test, and hence the
+`n ^ ρ` query time, are not formalized.
 
 ## Main definitions
 
@@ -66,10 +71,14 @@ its word-RAM cost, and the cost of one hash evaluation or distance test, are not
   `q`.
 * `Cslib.DataStructure.NearNeighbor.toOuterMeasure_query_eq_none_le`: the failure bound
   `(1 - P₁) ^ L + L |P| P₂ / T`.
-* `Cslib.DataStructure.NearNeighbor.toOuterMeasure_query_andHash_eq_none_le`: with the parameters
-  `k`, `L`, `3 L`, failure at most `e⁻¹ + 1 / 3`.
-* `Cslib.DataStructure.NearNeighbor.toOuterMeasure_queryRepeat_andHash_eq_none_le`: `R`
+* `Cslib.DataStructure.NearNeighbor.toOuterMeasure_query_andHash_eq_none_le`: the failure bound
+  `(1 - p₁ ^ k) ^ L + L |P| p₂ ^ k / T` for AND tables.
+* `Cslib.DataStructure.NearNeighbor.toOuterMeasure_query_numTables_eq_none_le`: with the
+  parameters `k`, `L`, `3 L`, failure at most `e⁻¹ + 1 / 3`.
+* `Cslib.DataStructure.NearNeighbor.toOuterMeasure_queryRepeat_numTables_eq_none_le`: `R`
   repetitions fail with probability at most `(e⁻¹ + 1 / 3) ^ R`.
+* `Cslib.DataStructure.NearNeighbor.length_take_candidates_le`, `length_candidates_le`: at most
+  `min T (L |P|)` candidates are inspected.
 * `Cslib.DataStructure.NearNeighbor.rho_lt_one`, `numHashes_lt`, `numTables_lt`: `ρ < 1` and the
   size of the parameters.
 
@@ -157,6 +166,23 @@ theorem le_countP_candidates {g : ι → X → Y} {L : ℕ} {s : Fin L → ι} {
     _ = (C.take T).countP fun y => decide (far y q) :=
         (List.countP_eq_length.2 fun y hy => decide_eq_true (hall y hy)).symm
     _ ≤ C.countP fun y => decide (far y q) := (List.take_sublist T C).countP_le
+
+/-- Each of the `L` tables contributes at most `|P|` candidates. -/
+theorem length_candidates_le (g : ι → X → Y) {L : ℕ} (s : Fin L → ι) (P : List X) (q : X) :
+    (candidates g s P q).length ≤ L * P.length := by
+  rw [candidates, List.length_flatMap]
+  calc ((List.finRange L).map fun j => (P.filter fun x => g (s j) x = g (s j) q).length).sum
+      ≤ ((List.finRange L).map fun _ => P.length).sum :=
+        List.sum_le_sum fun j _ => List.length_filter_le _ _
+    _ = L * P.length := by
+        rw [List.map_const', List.sum_replicate, List.length_finRange, smul_eq_mul]
+
+/-- **The query inspects few candidates**: the scanned prefix has length at most `min T (L |P|)`,
+so the query tests `far` at most `T` times. -/
+theorem length_take_candidates_le (g : ι → X → Y) {L : ℕ} (s : Fin L → ι) (T : ℕ) (P : List X)
+    (q : X) : ((candidates g s P q).take T).length ≤ min T (L * P.length) := by
+  rw [List.length_take]
+  exact min_le_min le_rfl (length_candidates_le g s P q)
 
 end Structure
 
@@ -272,7 +298,7 @@ theorem toOuterMeasure_query_eq_none_le [DecidableEq Y] {far : X → X → Prop}
 /-- **The failure bound for AND tables.** Each of `L` tables concatenates `k` hashes of a
 `(p₁, p₂)`-sensitive family with `p₂ < p₁`. If some point of `P` is near `q`, the query with stop
 rule `T > 0` fails with probability at most `(1 - p₁ ^ k) ^ L + L |P| p₂ ^ k / T`. -/
-theorem toOuterMeasure_query_andHash_eq_none_le' [DecidableEq Y] {near far : X → X → Prop}
+theorem toOuterMeasure_query_andHash_eq_none_le [DecidableEq Y] {near far : X → X → Prop}
     [DecidableRel far] {seed : PMF ι} {hash : ι → X → Y} {p₁ p₂ : ℝ}
     (h : IsLocalitySensitive (collisionProb seed hash) near far p₁ p₂) (hp₂ : 0 ≤ p₂)
     (hp : p₂ < p₁) (k L : ℕ) {T : ℕ} (hT : 0 < T) {P : List X} {q x₀ : X} (hx₀ : x₀ ∈ P)
@@ -295,7 +321,7 @@ theorem toOuterMeasure_query_andHash_eq_none_le' [DecidableEq Y] {near far : X �
   ⌈Real.log n / Real.log (1 / p₂)⌉₊
 
 /-- The number of tables, `L = ⌈n ^ ρ / p₁⌉`. -/
-@[expose] noncomputable def numTables (n : ℕ) (p₁ p₂ : ℝ) : ℕ :=
+noncomputable def numTables (n : ℕ) (p₁ p₂ : ℝ) : ℕ :=
   ⌈(n : ℝ) ^ rho p₁ p₂ / p₁⌉₊
 
 theorem rho_nonneg {p₁ p₂ : ℝ} (hp₂ : 0 < p₂) (hp₂₁ : p₂ < p₁) (hp₁ : p₁ ≤ 1) :
@@ -366,12 +392,13 @@ theorem numTables_lt (n : ℕ) {p₁ p₂ : ℝ} (hp₁ : 0 < p₁) :
     (numTables n p₁ p₂ : ℝ) < (n : ℝ) ^ rho p₁ p₂ / p₁ + 1 :=
   Nat.ceil_lt_add_one (div_nonneg (Real.rpow_nonneg (Nat.cast_nonneg n) _) hp₁.le)
 
-/-- **The `(c, r)`-near-neighbour guarantee with explicit parameters** ([HarPeledIndykMotwani2012],
-Theorem 3.4; stop rule of [AndoniIndyk2008]). Let `hash` be `(p₁, p₂)`-sensitive with
+/-- **The `(c, r)`-near-neighbour guarantee with explicit parameters**, for the static structure
+([HarPeledIndykMotwani2012], Theorem 3.4, which also covers updates). The scanning rule is that of
+[IndykMotwani1998]; see [AndoniIndyk2008], Section 2.4. Let `hash` be `(p₁, p₂)`-sensitive with
 `0 < p₂ < p₁ ≤ 1`. Use `L = numTables n p₁ p₂` tables of `k = numHashes n p₂` hashes each, with
 `n = |P|`, and stop after `3 L` candidates. If some point of `P` is near `q`, the query fails with
 probability at most `e⁻¹ + 1 / 3`. -/
-theorem toOuterMeasure_query_andHash_eq_none_le [DecidableEq Y] {near far : X → X → Prop}
+theorem toOuterMeasure_query_numTables_eq_none_le [DecidableEq Y] {near far : X → X → Prop}
     [DecidableRel far] {seed : PMF ι} {hash : ι → X → Y} {p₁ p₂ : ℝ}
     (h : IsLocalitySensitive (collisionProb seed hash) near far p₁ p₂) (hp₂ : 0 < p₂)
     (hp₂₁ : p₂ < p₁) (hp₁ : p₁ ≤ 1) {P : List X} {q x₀ : X} (hx₀ : x₀ ∈ P)
@@ -391,7 +418,7 @@ theorem toOuterMeasure_query_andHash_eq_none_le [DecidableEq Y] {near far : X �
     by_contra h0
     rw [show L = 0 by omega, Nat.cast_zero, zero_mul] at hLp
     linarith
-  have hbound := toOuterMeasure_query_andHash_eq_none_le' h hp₂.le hp₂₁ k L
+  have hbound := toOuterMeasure_query_andHash_eq_none_le h hp₂.le hp₂₁ k L
     (by omega : 0 < 3 * L) hx₀ hnear
   refine hbound.trans (add_le_add ?_ ?_)
   · calc (1 - p₁ ^ k) ^ L ≤ Real.exp (-p₁ ^ k) ^ L := by
@@ -438,9 +465,9 @@ theorem toOuterMeasure_queryRepeat_eq_none (ν : PMF ι) (g : ι → X → Y) (R
   rw [hset, PMF.toOuterMeasure_iid_forall]
 
 /-- **Amplification by repetition.** With the parameters of
-`toOuterMeasure_query_andHash_eq_none_le`, `R` independent structures all fail with probability at
+`toOuterMeasure_query_numTables_eq_none_le`, `R` independent structures all fail with probability at
 most `(e⁻¹ + 1 / 3) ^ R`. -/
-theorem toOuterMeasure_queryRepeat_andHash_eq_none_le {near : X → X → Prop} {seed : PMF ι}
+theorem toOuterMeasure_queryRepeat_numTables_eq_none_le {near : X → X → Prop} {seed : PMF ι}
     {hash : ι → X → Y} {p₁ p₂ : ℝ}
     (h : IsLocalitySensitive (collisionProb seed hash) near far p₁ p₂) (hp₂ : 0 < p₂)
     (hp₂₁ : p₂ < p₁) (hp₁ : p₁ ≤ 1) (R : ℕ) {P : List X} {q x₀ : X} (hx₀ : x₀ ∈ P)
@@ -450,7 +477,7 @@ theorem toOuterMeasure_queryRepeat_andHash_eq_none_le {near : X → X → Prop} 
           (3 * numTables P.length p₁ p₂) P q = none}).toReal ≤ (Real.exp (-1) + 1 / 3) ^ R := by
   rw [toOuterMeasure_queryRepeat_eq_none, ENNReal.toReal_pow]
   exact pow_le_pow_left₀ ENNReal.toReal_nonneg
-    (toOuterMeasure_query_andHash_eq_none_le h hp₂ hp₂₁ hp₁ hx₀ hnear) R
+    (toOuterMeasure_query_numTables_eq_none_le h hp₂ hp₂₁ hp₁ hx₀ hnear) R
 
 end Repetition
 

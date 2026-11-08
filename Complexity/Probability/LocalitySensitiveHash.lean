@@ -50,9 +50,10 @@ inequality is `collisionProb_triangle`.
 
 Probabilities are real numbers, the `toReal` of `PMF.toOuterMeasure`, so that the S-curve can be
 manipulated by ordinary real analysis. No finiteness of the seed space is assumed; independent
-draws use `Cslib.Probability.PMF.iid`. These are information-theoretic statements: the
-`(c, r)`-approximate near-neighbour data structure built from them, its `n ^ ρ` query time and the
-cost of evaluating the hashes are not formalized here.
+draws use `Cslib.Probability.PMF.iid`. These are information-theoretic statements. The
+`(c, r)`-approximate near-neighbour structure built from them, with its failure bound and
+parameters, is in `Complexity.DataStructure.NearNeighbor.LSH`; its `n ^ ρ` query time and the
+cost of evaluating the hashes are not formalized.
 
 ## Main definitions
 

@@ -19,11 +19,12 @@ length `d` (`Cslib.Probability.isLocalitySensitive_bitSampling`). Its exponent s
 `ρ ≤ 1 / c` ([IndykMotwani1998]; [HarPeledIndykMotwani2012], Section 3.2.1). The function
 `t ↦ log (1 - t)` is concave and vanishes at `0`, so `log (1 - r / d) ≥ log (1 - c r / d) / c`
 (`Cslib.DataStructure.NearNeighbor.rho_one_sub_le`). With the parameters of
-`Cslib.DataStructure.NearNeighbor.toOuterMeasure_query_andHash_eq_none_le`, the `(c, r)`-near
-neighbour query on `n` words fails with probability at most `e⁻¹ + 1 / 3`
+`Cslib.DataStructure.NearNeighbor.toOuterMeasure_query_numTables_eq_none_le`, the
+`(c, r)`-near neighbour query on `n` words fails with probability at most `e⁻¹ + 1 / 3`
 (`toOuterMeasure_query_bitSampling_eq_none_le`). It uses `L < n ^ (1 / c) / p₁ + 1` tables
-(`numTables_bitSampling_lt`). This is the `n ^ (1 / c)` query bound of Indyk and Motwani for the
-Hamming cube, counted in hash evaluations and distance tests.
+(`numTables_bitSampling_lt`), the table count behind the `n ^ (1 / c)` query bound of Indyk and
+Motwani for the Hamming cube. The query time itself is not formalized (see the module
+`Complexity.DataStructure.NearNeighbor.LSH`).
 
 ## Main results
 
@@ -88,7 +89,7 @@ theorem toOuterMeasure_query_bitSampling_eq_none_le {r c : ℝ} (hr : 0 < r) (hc
             none}).toReal ≤ Real.exp (-1) + 1 / 3 := by
   have hd : (0 : ℝ) < Fintype.card κ := by exact_mod_cast Fintype.card_pos
   have hc0 : 0 < c := one_pos.trans hc
-  refine toOuterMeasure_query_andHash_eq_none_le (isLocalitySensitive_bitSampling r (c * r))
+  refine toOuterMeasure_query_numTables_eq_none_le (isLocalitySensitive_bitSampling r (c * r))
     ?_ ?_ ?_ hx₀ hnear
   · rw [sub_pos, div_lt_one hd]
     exact hcr

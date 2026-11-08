@@ -117,10 +117,10 @@ The results:
 
 - **Soundness.** Every answer is a point of `P` not far from `q` (`query_eq_some`).
 - **Exact failure bound** (`toOuterMeasure_query_eq_none_le`). Suppose `x₀ ∈ P` is not far from `q` and collides with it with probability at least `P₁`, and every far point of `P` collides with probability at most `P₂ ≥ 0`. Then for `T > 0` the query returns `none` with probability at most `(1 − P₁)^L + L|P|P₂/T`. The first term is the event that `x₀` collides with `q` in no table, using independence of the tables (`PMF.toOuterMeasure_iid_forall`). The second is Markov's inequality for the number of far candidates (`le_countP_candidates`, `tsum_iid_mul_countP_candidates_le`). That bound uses only the marginal law of each table (`PMF.toOuterMeasure_iid_eval`).
-- **AND tables** (`toOuterMeasure_query_andHash_eq_none_le'`). For a `(p₁, p₂)`-sensitive family with `0 ≤ p₂ < p₁` and `g = andHash hash k`, and some point of `P` near `q`, the bound is `(1 − p₁^k)^L + L|P|p₂^k/T`.
-- **Explicit parameters** (`toOuterMeasure_query_andHash_eq_none_le`). Assume `0 < p₂ < p₁ ≤ 1`, and take `n = |P|`, `ρ = rho p₁ p₂ = log(1/p₁)/log(1/p₂)`, `k = numHashes n p₂ = ⌈log n / log(1/p₂)⌉₊`, `L = numTables n p₁ p₂ = ⌈n^ρ/p₁⌉₊` and `T = 3L`. Then `n p₂^k ≤ 1` (`mul_pow_numHashes_le`) and `L p₁^k ≥ 1` (`one_le_numTables_mul_pow`), so the query fails with probability at most `e⁻¹ + 1/3 < 0.71`. The stop rule after `3L` candidates follows Andoni and Indyk [andoniindyk08][andoniindyk08].
-- **Repetition.** `queryRepeat` runs `R` independent structures, and all of them fail with probability at most `(e⁻¹ + 1/3)^R` (`toOuterMeasure_queryRepeat_andHash_eq_none_le`).
-- **Costs.** A query evaluates `kL` base hashes and makes at most `3L` distance tests, and the tables hold `nL` entries. `numHashes_lt`, `numTables_lt` and `rho_lt_one` bound these by `O(n^ρ log n / p₁)`, `O(n^ρ / p₁)` and `O(n^{1+ρ} / p₁)` with `ρ < 1`.
+- **AND tables** (`toOuterMeasure_query_andHash_eq_none_le`). For a `(p₁, p₂)`-sensitive family with `0 ≤ p₂ < p₁` and `g = andHash hash k`, and some point of `P` near `q`, the bound is `(1 − p₁^k)^L + L|P|p₂^k/T`.
+- **Explicit parameters** (`toOuterMeasure_query_numTables_eq_none_le`). Assume `0 < p₂ < p₁ ≤ 1`, and take `n = |P|`, `ρ = rho p₁ p₂ = log(1/p₁)/log(1/p₂)`, `k = numHashes n p₂ = ⌈log n / log(1/p₂)⌉₊`, `L = numTables n p₁ p₂ = ⌈n^ρ/p₁⌉₊` and `T = 3L`. Then `n p₂^k ≤ 1` (`mul_pow_numHashes_le`) and `L p₁^k ≥ 1` (`one_le_numTables_mul_pow`), so the query fails with probability at most `e⁻¹ + 1/3 < 0.71`. Stopping after `3L` candidates is the scanning rule of Indyk and Motwani [indykmotwani98][indykmotwani98], as presented by Andoni and Indyk [andoniindyk08][andoniindyk08], §2.4 ("Strategy 1", p. 119). This is the static structure; [harpeledindykmotwani12][harpeledindykmotwani12], Theorem 3.4, also supports insertions and deletions.
+- **Repetition.** `queryRepeat` runs `R` independent structures, and all of them fail with probability at most `(e⁻¹ + 1/3)^R` (`toOuterMeasure_queryRepeat_numTables_eq_none_le`).
+- **What is bounded.** The query inspects at most `min T (L|P|)` candidates, so it tests `far` at most `T = 3L` times (`length_take_candidates_le`, `length_candidates_le`). The parameters satisfy `k < log n / log(1/p₂) + 1` and `L < n^ρ/p₁ + 1` (`numHashes_lt`, `numTables_lt`), with `0 ≤ ρ < 1` (`rho_nonneg`, `rho_lt_one`). No declaration counts operations. The counts of a bucketed implementation, namely `kL` base-hash evaluations per query and `nL` stored entries, are not formalized: `candidates` describes a bucket by filtering `P`, so it evaluates each table hash on all of `P`.
 
 [NearNeighbor/Hamming.lean](../../Complexity/DataStructure/NearNeighbor/Hamming.lean) specializes to bit sampling on words of length `d` with `0 < r`, `1 < c` and `cr < d`. `rho_one_sub_le` proves `ρ(1 − r/d, 1 − cr/d) ≤ 1/c` by concavity of `log`. `toOuterMeasure_query_bitSampling_eq_none_le` is the Hamming-space guarantee, and `numTables_bitSampling_lt` gives `L < n^{1/c}/p₁ + 1`.
 
@@ -164,9 +164,9 @@ The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine real
 
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
-The locality-sensitive hashing modules prove probabilistic statements and counted costs only. The near-neighbour structure counts hash evaluations, distance tests and stored entries. Its buckets are described by filtering the point set, so the following are not formalized:
+The locality-sensitive hashing modules prove probabilistic statements only. The near-neighbour structure bounds the parameters `k`, `L` and `ρ` and the number of inspected candidates, but no declaration counts hash evaluations, stored entries or time. Its buckets are described by filtering the point set, so the following are not formalized:
 
-- a dictionary from hash values to buckets, its word-RAM lookup time, and the time to build the tables;
+- a dictionary from hash values to buckets, its word-RAM lookup time, the `n^ρ` query time, and the time to build the tables;
 - the cost of one hash evaluation or distance test, and the bits needed to store the seeds;
 - dynamic insertions and deletions, and the reduction from approximate nearest neighbour to the `(c, r)` problem;
 - SimHash, p-stable LSH, and LSH lower bounds;
