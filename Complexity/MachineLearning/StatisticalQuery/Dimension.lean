@@ -25,8 +25,10 @@ largest `d` such that `C` contains `d` concepts whose pairwise correlations unde
 
 * **Lower bound.** A learner using `q` queries of tolerance `τ` whose hypotheses have correlation
   at least `τ` with the target (`1 - 2 ε ≥ τ`) has `sqDim D C · τ ^ 2 ≤ 2 q + 2`
-  (`LearnsStateless.sqDim_mul_sq_le`). This restates the bound of
-  `Complexity/MachineLearning/StatisticalQuery/LowerBound.lean` [Reyzin, Theorem 12][Reyzin2020].
+  (`LearnsStateless.sqDim_mul_sq_le`), from the bound of
+  `Complexity/MachineLearning/StatisticalQuery/LowerBound.lean`. This is one weaker than the
+  count `d τ ^ 2 ≤ 2 q + 1` of [Reyzin, Theorem 12][Reyzin2020]: a hypothesis with error `ε > 0`
+  may correlate with one more concept of the family.
 * **Upper bound.** For `d = sqDim D C` there is a learner making at most `d` queries, each a
   correlational query `E_D [g (x) · y]` (in `±1` values) for a concept `g ∈ C`, that learns `C`
   under `D` with tolerance `τ` and error `1/2 - 1/(2 (d + 1)) + τ`, for every `τ`
@@ -66,9 +68,9 @@ domain `X` is finite and the distribution `D` is fixed and known to the learner.
   by the size of the class.
 * `Cslib.MachineLearning.StatisticalQuery.exists_cover_sqDim`: at most `sqDim D C` concepts of `C`
   cover `C` with correlation more than `1 / (sqDim D C + 1)`.
-* `Cslib.MachineLearning.StatisticalQuery.corrLearner_isQueryBounded`,
-  `Cslib.MachineLearning.StatisticalQuery.corrLearner_queriesSatisfy`,
-  `Cslib.MachineLearning.StatisticalQuery.corrLearner_learns`: the correlational learner makes one
+* `Cslib.MachineLearning.StatisticalQuery.isQueryBounded_corrLearner`,
+  `Cslib.MachineLearning.StatisticalQuery.queriesSatisfy_corrLearner`,
+  `Cslib.MachineLearning.StatisticalQuery.learns_corrLearner`: the correlational learner makes one
   correlational query per concept and learns a covered class.
 * `Cslib.MachineLearning.StatisticalQuery.exists_learns_sqDim`: the weak learner from the
   statistical query dimension.
@@ -96,7 +98,14 @@ variable {X : Type} [Fintype X]
 
 /-- The **statistical query dimension** of `C` under `D` [Reyzin, Definition 11][Reyzin2020]: the
 largest `d` such that `C` contains `d` distinct concepts whose pairwise correlations under `D` are
-at most `1 / d`. -/
+at most `1 / d`.
+
+The bound is one-sided, as in the source. The two-sided variant, with `|corr D f g| ≤ 1 / d`, is
+at most this dimension. The two are polynomially related: the cover argument of
+`exists_cover_sqDim` at threshold `1 / (d₂ + 1)`, with a learner returning `g` or its negation,
+weakly learns from `d₂` queries, and the lower bound `LearnsStateless.sqDim_mul_sq_le` then gives
+`d₁ = O(d₂ ^ 3)`. So polynomial boundedness, and hence `tfae_polynomiallyBounded_sqDim`, does not
+depend on the convention. Only the one-sided dimension is formalized here. -/
 noncomputable def sqDim (D : PMF X) (C : PACLearning.ConceptClass X Bool) : ℕ :=
   sSup {d | ∃ F : Finset (X → Bool), (F : Set (X → Bool)) ⊆ C ∧ F.card = d ∧
     (F : Set (X → Bool)).Pairwise fun f g => corr D f g ≤ 1 / d}
@@ -228,7 +237,7 @@ noncomputable def corrLearner (gs : List (X → Bool)) : OracleComp (spec X) (X 
 
 omit [Fintype X] in
 /-- The correlational learner makes one query for each concept of the list. -/
-theorem corrLearner_isQueryBounded (gs : List (X → Bool)) :
+theorem isQueryBounded_corrLearner (gs : List (X → Bool)) :
     (corrLearner gs).IsQueryBounded gs.length := by
   have h := (OracleComp.IsCostBounded.mapM (cost := fun _ => 1) (n := 1) (inputs := gs)
     (program := askCorr) fun g _ => (OracleComp.isCostBounded_map_iff _ _ _).2 (.query _)).bind
@@ -239,7 +248,7 @@ theorem corrLearner_isQueryBounded (gs : List (X → Bool)) :
 omit [Fintype X] in
 /-- Every query of the correlational learner is the correlational query of a concept of the
 list. -/
-theorem corrLearner_queriesSatisfy (gs : List (X → Bool)) :
+theorem queriesSatisfy_corrLearner (gs : List (X → Bool)) :
     OracleComp.QueriesSatisfy (fun φ => ∃ g ∈ gs, φ = corrQuery g) (corrLearner gs) :=
   (OracleComp.QueriesSatisfy.mapM fun g hg =>
     (OracleComp.queriesSatisfy_map_iff _ _).2 (.query ⟨g, hg, rfl⟩)).bind
@@ -269,7 +278,7 @@ private theorem forall₂_askCorr {possible : Query X → Set ℝ} {gs : List (X
 /-- **The correlational learner learns a covered class.** If every concept `c ∈ C` has
 correlation more than `γ` with some concept of `gs`, then `corrLearner gs` learns `C` under `D`
 with tolerance `τ` and error `(1 - γ) / 2 + τ`. -/
-theorem corrLearner_learns {D : PMF X} {C : PACLearning.ConceptClass X Bool}
+theorem learns_corrLearner {D : PMF X} {C : PACLearning.ConceptClass X Bool}
     {gs : List (X → Bool)} {γ : ℝ} (hcover : ∀ c ∈ C, ∃ g ∈ gs, γ < corr D c g) (τ : ℝ) :
     Learns (corrLearner gs) D C τ ((1 - γ) / 2 + τ) := by
   intro c hc h hh
@@ -310,9 +319,9 @@ theorem exists_learns_sqDim (D : PMF X) (C : PACLearning.ConceptClass X Bool) :
   classical
   obtain ⟨G, hGC, hcard, hcover⟩ := exists_cover_sqDim D C
   refine ⟨corrLearner G.toList, ?_, ?_, fun τ => ?_⟩
-  · exact (corrLearner_isQueryBounded _).mono (by rw [length_toList]; exact hcard)
-  · refine (corrLearner_queriesSatisfy _).mono fun φ ⟨g, hg, hφ⟩ => ⟨g, hGC (mem_toList.1 hg), hφ⟩
-  · have h := corrLearner_learns (D := D) (C := C) (gs := G.toList)
+  · exact (isQueryBounded_corrLearner _).mono (by rw [length_toList]; exact hcard)
+  · refine (queriesSatisfy_corrLearner _).mono fun φ ⟨g, hg, hφ⟩ => ⟨g, hGC (mem_toList.1 hg), hφ⟩
+  · have h := learns_corrLearner (D := D) (C := C) (gs := G.toList)
       (fun c hc => by
         obtain ⟨g, hg, hlt⟩ := hcover c hc
         exact ⟨g, mem_toList.2 hg, hlt⟩) τ
@@ -322,7 +331,10 @@ theorem exists_learns_sqDim (D : PMF X) (C : PACLearning.ConceptClass X Bool) :
 
 /-- **The statistical query dimension lower bound** [Reyzin, Theorem 12][Reyzin2020]
 [BlumEtAl1994]. A learner learning `C` under `D` from at most `q` queries of tolerance `τ ≥ 0`
-with error `ε ≥ 0`, where `1 - 2 ε ≥ τ`, has `sqDim D C · τ ^ 2 ≤ 2 q + 2`. -/
+with error `ε ≥ 0`, where `1 - 2 ε ≥ τ`, has `sqDim D C · τ ^ 2 ≤ 2 q + 2`. This is one weaker
+than Reyzin's count `d τ ^ 2 ≤ 2 q + 1`, because a hypothesis with error `ε > 0` may correlate
+with one more concept of the family; for exact learning see
+`LearnsStateless.card_mul_sq_sub_one_le_two_mul`. -/
 theorem LearnsStateless.sqDim_mul_sq_le {D : PMF X} {C : PACLearning.ConceptClass X Bool}
     {A : Algorithm X} {τ ε : ℝ} (hA : LearnsStateless A D C τ ε) {q : ℕ}
     (hq : A.IsQueryBounded q) (hτ : 0 ≤ τ) (hε : 0 ≤ ε) (hετ : τ ≤ 1 - 2 * ε) :

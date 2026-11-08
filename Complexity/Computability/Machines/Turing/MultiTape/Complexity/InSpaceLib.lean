@@ -631,10 +631,10 @@ theorem budget_finMod {w : ℕ} (hw : 0 < w) {m : α → ℕ}
       (Fin.valEmbedding.trans encNat) Bs :=
   (budget_natMod hm (budget_const (encB := encNat) w hin)).of_enc_eq fun _ => rfl
 
-/-- `some` of a number, within the budget. -/
-theorem budget_optionSome {a : α → ℕ} (ha : ComputableInSpace a encIn encNat Bs) :
-    ComputableInSpace (fun x => some (a x)) encIn (encOption encNat) Bs :=
-  budget_comp_linear (of_inO (ComputableInDegree.optionSome (enc₁ := encNat)).inO_one) ha
+/-- `some` of a value, within the budget. -/
+theorem budget_optionSome {a : α → β} (ha : ComputableInSpace a encIn encB Bs) :
+    ComputableInSpace (fun x => some (a x)) encIn (encOption encB) Bs :=
+  budget_comp_linear (of_inO (ComputableInDegree.optionSome (enc₁ := encB)).inO_one) ha
 
 end ComputableInSpace
 

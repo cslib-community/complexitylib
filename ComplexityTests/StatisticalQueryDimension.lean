@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.MachineLearning.StatisticalQuery.Dimension
 import Complexity.MachineLearning.StatisticalQuery.Parity
+import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-! Checks for the statistical query dimension and its characterization of weak learning: the
 dimension of the empty class, of a singleton and of the identity and negation on a bit; the weak
@@ -81,7 +82,7 @@ theorem exists_learns_idNot :
 /-- The correlational learner for the list `[id, not]` learns the class exactly with tolerance
 `1/8`: each concept has correlation `1 > 1/2` with itself. -/
 example : Learns (corrLearner [id, not]) (PMF.uniformOfFintype Bool) idNot (1 / 8) 0 := by
-  have h := corrLearner_learns (D := PMF.uniformOfFintype Bool) (C := idNot) (gs := [id, not])
+  have h := learns_corrLearner (D := PMF.uniformOfFintype Bool) (C := idNot) (gs := [id, not])
     (γ := 1 / 2) (fun c hc => ⟨c, by rcases hc with rfl | rfl <;> simp, by
       rw [corr_self]
       norm_num⟩) (1 / 8)
@@ -121,14 +122,9 @@ theorem two_pow_le_sqDim_parities (n : ℕ) :
     positivity
 
 /-- `2 ^ n` is not polynomially bounded. -/
-theorem not_polynomiallyBounded_two_pow : ¬ PolynomiallyBounded fun n => 2 ^ n := by
-  rintro ⟨d, hd⟩
-  have hev : ∀ᶠ n : ℕ in atTop, (n : ℝ) ^ d / 2 ^ n < 1 :=
-    (tendsto_pow_const_div_const_pow_of_one_lt d one_lt_two).eventually (gt_mem_nhds one_pos)
-  obtain ⟨n, hn, hlt⟩ := (hd.and hev).exists
-  have hle : (2 : ℝ) ^ n ≤ (n : ℝ) ^ d := by exact_mod_cast hn
-  rw [div_lt_one (by positivity)] at hlt
-  linarith
+theorem not_polynomiallyBounded_two_pow : ¬ PolynomiallyBounded fun n => 2 ^ n := fun h => by
+  obtain ⟨n, hn⟩ := h.eventually_lt_two_pow.exists
+  exact lt_irrefl _ hn
 
 /-- **Parities are not weakly learnable from statistical queries**, through the characterization:
 there are no polynomially bounded `q` and `p` with learners for the parities on `n` bits under the
