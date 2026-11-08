@@ -39,6 +39,10 @@ finite `α` and no `Fintype` instance: statements that sum over the partitions a
 * `Cslib.SetPartition.blocks_le_of_le`: a coarser partition has at most as many blocks.
 * `Cslib.SetPartition.eq_of_le_of_blocks_eq`: a partition equals any coarser partition with as
   many blocks.
+* `Cslib.SetPartition.blocks_lt_of_lt`: on a finite type, a strictly coarser partition has strictly
+  fewer blocks.
+* `Cslib.SetPartition.blocks_le_card`: a partition has at most as many blocks as elements.
+* `Cslib.SetPartition.blocks_ker`: the fibers of `f` are as many as the values of `f`.
 * `Cslib.SetPartition.pow_le_card_setoid`: $j^{N-j} \le B_N$, where $B_N$ is the number of
   partitions of $N$ elements.
 -/
@@ -90,6 +94,19 @@ theorem eq_of_le_of_blocks_eq [Finite α] {r s : Setoid α} (h : r ≤ s)
       (Quot.map_surjective h Function.surjective_id) hb.le).1
   refine le_antisymm h fun a b hab => ?_
   exact Quotient.exact (hinj (Quotient.sound hab : Quotient.mk s a = Quotient.mk s b))
+
+/-- A strictly coarser partition of a finite type has strictly fewer blocks. -/
+theorem blocks_lt_of_lt [Finite α] {r s : Setoid α} (h : r < s) : blocks s < blocks r :=
+  (blocks_le_of_le h.le).lt_of_ne fun hb => h.ne (eq_of_le_of_blocks_eq h.le hb.symm)
+
+/-- A partition of a finite type has at most as many blocks as there are elements. -/
+theorem blocks_le_card [Finite α] (s : Setoid α) : blocks s ≤ Nat.card α :=
+  blocks_bot (α := α) ▸ blocks_le_of_le bot_le
+
+/-- The blocks of the kernel of `f`, the partition into the fibers of `f`, correspond to the
+values of `f`. -/
+theorem blocks_ker {β : Type*} (f : α → β) : blocks (Setoid.ker f) = Nat.card (Set.range f) :=
+  Nat.card_congr (Setoid.quotientKerEquivRange f)
 
 end Blocks
 
