@@ -75,6 +75,12 @@ There are two ways to prove a new streaming lower bound. The first starts from a
 
 These are compositional native resource theorems on the [machine model](../machines-and-classes/index.md), not a separate RAM primitive. Their current declarations still expose tidy backend predicates in this source module; broader plain-computability migration policy does not change what this pinned file actually states.
 
+## Dimension reduction: the Johnson–Lindenstrauss lemma
+
+[Complexity/Probability/JohnsonLindenstrauss.lean](../../Complexity/Probability/JohnsonLindenstrauss.lean) proves the Johnson–Lindenstrauss lemma [johnsonlindenstrauss84][johnsonlindenstrauss84] for random sign matrices, following Achlioptas, Theorem 1.1, with the `±1` distribution [achlioptas03][achlioptas03]. Achlioptas states the theorem for every `ε > 0`. Lean requires `0 < ε < 3/2`, and some restriction is necessary: for `ε = 2` the dimension threshold is negative, yet one sign row maps `(1, 1, 1, 1)` to the squared norm `16 > 3 · 4` with probability `1/8`. The seed is `b : Fin k → ι → Bool`, drawn uniformly, and `signProjection b : EuclideanSpace ℝ ι →ₗ[ℝ] EuclideanSpace ℝ (Fin k)` is the linear map with matrix entries `signVal (b j i) / √k`. Probabilities are densities of finsets of seeds, as for the AMS sketch. For a fixed vector `x` and `0 ≤ ε`, each tail `Pr[‖signProjection b x‖² > (1 + ε)‖x‖²]` and `Pr[‖signProjection b x‖² < (1 - ε)‖x‖²]` is at most `exp (-(k/2)(ε²/2 - ε³/3))` (`dens_lt_norm_signProjection_sq_le`, `dens_norm_signProjection_sq_lt_le`). The two-sided bound `dens_lt_abs_norm_signProjection_sq_sub_le` is twice that. A union bound over the `n(n-1)/2` pairs of `n` points gives `one_sub_le_dens_forall_norm_signProjection_sq_mem_Icc`. For `0 < ε < 3/2`, any real `β` and `k ≥ (4 + 2β) log n / (ε²/2 - ε³/3)`, `one_sub_rpow_le_dens_forall_norm_signProjection_sq_mem_Icc` keeps every squared pairwise distance within `[1 - ε, 1 + ε]` with probability at least `1 - n^(-β)`. Here `log` is the natural logarithm. With `β = 0`, `exists_signProjection_forall_norm_sq_mem_Icc` is the Dasgupta–Gupta dimension `k ≥ 4 log n / (ε²/2 - ε³/3)` [dasguptagupta03][dasguptagupta03]. `exists_linearMap_forall_norm_sq_mem_Icc` states the lemma for `0 < ε ≤ 1` and `k ≥ 24 log n / ε²` without mentioning sign matrices.
+
+The proof goes through the moment generating function rather than Achlioptas's even-moment comparison. This is the standard comparison of squared sub-Gaussian and Gaussian variables, as in Gupta's lecture notes, §11.6.2, Lemma 11.9 [gupta23][gupta23]. Each row gives a Rademacher sum `Y = ∑ i, x i signVal (b j i)`. [BitString/Rademacher.lean](../../Complexity/Probability/BitString/Rademacher.lean) derives its second and fourth moments from the tug-of-war moments of the AMS sketch, using the identity hash family. It also shows that `Y` is sub-Gaussian, `𝔼 exp (sY) ≤ exp (s²‖x‖²/2)`, and that `𝔼 exp (tY²) ≤ (1 - 2t‖x‖²)^(-1/2)`. The last bound averages the sub-Gaussian bound against a Gaussian, using the Gaussian integral `∫ exp (cz²) d𝒩(0, v) = (1 - 2cv)^(-1/2)` of [Gaussian/ExpSq.lean](../../Complexity/Foundations/Probability/Gaussian/ExpSq.lean). The lower tail uses `exp (-u) ≤ 1 - u + u²/2` and `𝔼 Y⁴ ≤ 3‖x‖⁴`, then closes with an explicit polynomial inequality. The scalar inequalities are in [SpecialFunctions/ExpBounds.lean](../../Complexity/Foundations/Analysis/SpecialFunctions/ExpBounds.lean). The [test file](../../ComplexityTests/JohnsonLindenstrauss.lean) exhibits a seed whose projection doubles a squared norm and one that preserves it. It also instantiates the dimension hypotheses with explicit parameters, for example probability at least `1/2` for two points with `ε = 1/2` and `k = 50`.
+
 ## Optimal stopping
 
 [OptimalStopping/Basic](../../Complexity/Probability/OptimalStopping/Basic.lean) models stopping on independent observations with discrete laws. `jointLaw` is the product `PMF` of a list of laws. A deterministic stopping rule sees the history so far, most recent observation first, and decides whether to stop. `payoff` evaluates a rule, paying `0` if it never stops. `tsum_payoff_le_valueFrom` is the backward-induction bound: no rule beats the dynamic-programming value `valueFrom`. `tsum_payoff_optimalRule` shows that `optimalRule` attains it; that rule stops exactly when stopping is at least as good as continuing. `valueFrom_eq_iSup` combines the two: the value is the optimum over all rules. Randomized rules are mixtures of deterministic ones. They are modelled only where needed, by pairing each observation with an independent coin, as in the i.i.d. prophet inequality below.
@@ -97,18 +103,24 @@ The abstract model counts reachable memory states and imposes no uniformity or t
 
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
+The Johnson–Lindenstrauss development covers only dense `±1` matrices: the sparse `{-√3, 0, √3}` distribution of Achlioptas, Gaussian and spherical projections, fast and sparse JL transforms, the optimal Larsen–Nelson lower bound, a `ProbComp` sampler and any native cost for applying the projection are not formalized.
+
 The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions, so the randomized ski-rental bound `e/(e-1)` and randomized list update (BIT, COMB) are open. List update covers access requests only; insertions and deletions are not modelled.
 
 The optimal-stopping modules are semantic probability statements over deterministic rules, with randomization only through explicit coin observations. They do not charge the rules' computation and are not phrased through the online `Problem` interface.
 
 The `k`-server modules use natural-number distances, so Double Coverage is proved on the integer line rather than the real line. Double Coverage on trees, the work-function algorithm's `2k-1` bound, the `k`-server conjecture, randomized `k`-server and an algorithm computing the offline optimum are not formalized, and the Lean step functions carry no time bounds.
 
+[achlioptas03]: ../sources.md#achlioptas03
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
 [borodinelyaniv98]: ../sources.md#borodinelyaniv98
 [chrobakkarloffpaynevishwanathan91]: ../sources.md#chrobakkarloffpaynevishwanathan91
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
+[dasguptagupta03]: ../sources.md#dasguptagupta03
+[gupta23]: ../sources.md#gupta23
 [irani91]: ../sources.md#irani91
+[johnsonlindenstrauss84]: ../sources.md#johnsonlindenstrauss84
 [karlin88]: ../sources.md#karlin88
 [manassemcgeochsleator90]: ../sources.md#manassemcgeochsleator90
 [sleatortarjan85]: ../sources.md#sleatortarjan85
