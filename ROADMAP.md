@@ -124,10 +124,23 @@ and two interface ticks equal one original instruction. Cofinal clocks identify
 complete stopped interface/native/behavioral laws, including divergence and
 successful-output provenance. A complete client reuses the actual correlated
 work-tape and unbounded waiting machines and checks a positive-probability query
-posterior before its response. Silent instructions remain explicit. Source
-next-query/halting epoch extraction, oracle-turn/deadline quantitative-policy
-transfer, nonterminating-path resource semantics, general measurable laws, external
-PTM/batch/query/output encoding and native upper realization remain missing.
+posterior before its response. `NativeEpoch` now actually executes silent
+computation to the first selected query or committed halt, retaining silent
+divergence. Its pre-response seek law is independent of the response handler,
+preserves oracle memory and receipts, and has a proved pause/resume identity with
+the original native terminal law. Actual epoch prefixes append at most one query
+record per decision; halt decisions add none. Full observed-history kernels
+factor through the actual selected epoch before sampling its response. A concrete
+unbounded native singleton-opportunity client instantiates the finite quantitative
+policy API with matching joint record/output/cost/duration laws, certified success
+1/2 and expected bill 4. The existing universal lower theorem proves cost at least
+4 for every admissible one-turn behavioral competitor meeting that success target.
+The client's nonempty preformed singleton batch, exactly-once opportunity use,
+maximum latency and concrete cutoff are checked; correlated two-query and sure
+silent-divergence clients also pass. General source concurrent-batch/codec and
+finite quantitative-policy transfer for every admitted native competitor remain
+open, as do nonterminating-path resource semantics, general measurable laws,
+external PTM/source encodings, residual-label recovery and native upper realization.
 Unrestricted Theorems 5/6 and ALL-main remain incomplete.
 Theorem 4's native resource/asymptotic/hardness claims also remain open. Neither the
 policy LP nor the binary-input two-batch savings FPTAS supplies those missing claims.

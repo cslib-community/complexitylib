@@ -1148,18 +1148,96 @@ law, unbounded waiting, expected bill $4$ and sure divergence.
 This connection uses the library's typed `MultiTapePTM` model; it does not decode
 an arbitrary externally encoded PTM or prove a compiler/resource theorem for
 that encoding. The raw interface is a channel plus a bit-string request. To use
-the source's oracle-turn quantitative theorems, a further proof must compress
-silent local instructions into actual next-query/halting epochs, identify batch
-records and enforce source call opportunities, simultaneous preformed batches,
-turn bounds, deadlines and accrued cancellation charges. The finite behavioral
-Theorem 5/6 APIs cannot yet be applied directly to these raw instruction ticks.
+the source's oracle-turn quantitative theorems, first use the stopping epochs
+in the following section. General batch-record identification, source call
+opportunities, simultaneous preformed batches, turn bounds, deadlines and
+accrued cancellation charges still need separate contracts. The finite behavioral
+Theorem 5/6 APIs cannot be applied directly to raw instruction ticks.
 
-The remaining source bridge must extract actual next-query/halting epochs,
-collapse silent local computation and connect source turn/deadline constraints
-to the existing Theorem 5/6 policy accounting. General measurable laws, source
-opportunity/batch/query/output encodings, parallel-duration/cancellation
-contracts, canonical-label recovery and uniform upper-selector realization
-remain open. Theorem 4's native resource/asymptotic/hardness gaps also remain.
-Neither unrestricted Theorems 5/6 nor ALL-main is complete. No selected abstract
-model or statement changes. The Agent Operator's Manual requires no edit
-because human direction, ownership, review and validation procedures are unchanged.
+### Stopping at the next query or halt
+
+Import `Complexity.Computability.Probabilistic.NativeEpoch`. The actual
+[next-epoch client](../../ComplexityTests/NativeEpoch.lean) and
+[quantitative policy client](../../ComplexityTests/NativeEpochPolicy.lean) check
+unbounded silent waiting, response-dependent queries, silent halting and
+probability-one silent divergence. These are actual stopping epochs, rather
+than another instruction-level posterior.
+
+`boundary` recognizes a committed native halt or a selected pending query.
+`silentStep` executes the real interface transition everywhere else and holds
+at the first boundary. `seek machine env world` is its actual unbounded stopped
+law, with `none` for silent divergence and `some checkpoint` for a reached query
+or halt. `seek_independent` proves that this law cannot sample the selected
+query's response. `seek_memory` retains the exact previous oracle private state
+and response/resource history while local native tapes may change.
+
+`StoppedProcess.terminal_restart` proves a general first-boundary pause/resume
+identity from actual stopped masses, without assuming almost-sure boundary reach
+or a common clock. `seek_restart` applies it to the native interface, and
+`native_epoch_equation` proves that seeking, dispatching the one selected query
+and resuming original native execution leaves the entire terminal law unchanged.
+Divergence is propagated, not conditioned away. Accepted-output provenance
+continues to use the original native terminal law and its successful-only
+normalization; no target representation identity is an admission hypothesis.
+
+`nextEpoch` performs this seek and at most one dispatch. `nextEpoch_trace` and
+`nextEpoch_resources` prove that a supported returned world either halts with no
+new call or appends one actual response record with its joint bill/duration.
+`epochs_trace` retains the original prefix and bounds new records by the number
+of epoch decisions. A halt decision adds zero records: the epoch decision index
+must not be reported as the number of issued oracle turns. `resume_after_epochs`
+proves equality with original native termination after any finite actual epoch
+prefix followed by its native continuation.
+
+For conditional history analysis, use `historyPrior` at a complete observed
+epoch prefix. `history_kernel` instantiates `ObservedProcess.nextHistory` with
+the actual stopped epoch process and factors it into a selected raw query/halt
+signal and `epochResponse`. This response kernel is derived by conditioning the
+full hidden checkpoint, retaining private tape/oracle correlations. Null histories
+and signals use harmless completion. `epoch_disintegration` and
+`epochJoint_transition` prove the joint selected-before-response and hidden
+transition laws. These kernels use the actual stopping construction, not an
+instruction count substituted for an oracle turn.
+
+The geometric waiting client derives probability one of reaching the first
+query, even though every finite native clock leaves positive live mass. It then
+returns a correlated bit/bill/duration and halts by silent native verification,
+without issuing a second call. A second actual machine never reaches a query or
+halt and gives probability-one silent divergence. The two-query client retains
+a work-tape bit and first response across the next query and checks the actual
+correlated second reply and charge.
+
+The quantitative client supplies a concrete source interpretation for one fixed
+opportunity: the actual empty raw request on the unit channel denotes the
+nonempty preformed singleton batch. Its opportunity is used exactly once, its
+singleton maximum duration is the call duration, and both possible responses
+return by cutoff $5$. No cancellation is left unfinished in this client. The
+existing finite `SelectionPolicy.Oracle`/`Policy` tables have exactly the actual
+native epoch record and terminal output/bill/duration law. A checked feasible
+dual and singleton cover give certified deadline success $1/2$; expected bill is
+$4$. The existing `universal_lower_cost` theorem derives cost at least $4$ for
+every admissible one-turn behavioral competitor at that success target, and
+the actual unbounded native selector attains it. This is an end-to-end checked
+client, not unrestricted Theorem 5 or 6.
+
+The general source adapter remains open. Raw native query epochs still need
+source opportunity/batch/query/candidate/output codecs, nonempty simultaneous
+preformed concurrent batches, exactly-once opportunities, maximum-latency and
+cutoff/cancellation accounting and output extraction. The quantitative APIs
+still use finite batch/response tables. General policies may read unbounded
+response or usage metadata, so a sufficient finite record abstraction cannot
+be assumed; either its sufficiency or a more general quantitative kernel API
+needs proof.
+Those contracts must be proved from actual code/interface behavior; a semantic
+parser alone cannot supply source validity. The general finite quantitative
+policy connection, fixed-oracle conditional laws across all admitted native
+competitors, source epoch envelopes and uniform native upper selectors are not
+established by the singleton client. External PTM encodings, canonical residual
+recovery, general measurable responses and the exact local-termination convention
+also remain open. Divergent-path resource costs are still outside terminal bill
+values, as described above.
+
+Theorem 4's native resource/asymptotic/hardness gaps remain. Neither unrestricted
+Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement
+changes. The Agent Operator's Manual requires no edit because human direction,
+ownership, review and validation procedures are unchanged.

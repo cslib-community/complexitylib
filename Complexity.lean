@@ -2606,6 +2606,7 @@ public import Complexity.Computability.Probabilistic.CoinTape
 public import Complexity.Computability.Probabilistic.Finite
 public import Complexity.Computability.Probabilistic.LinearHash
 public import Complexity.Computability.Probabilistic.Memoize
+public import Complexity.Computability.Probabilistic.NativeEpoch
 public import Complexity.Computability.Probabilistic.NativeInterface
 public import Complexity.Computability.Probabilistic.NativeOneTurn
 public import Complexity.Computability.Probabilistic.NativeOpenExecution
@@ -4329,6 +4330,7 @@ public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Map
 public import Complexity.Probability.PMF.ObservedProcess
 public import Complexity.Probability.PMF.StoppedProcess
+public import Complexity.Probability.PMF.StoppedProcess.Boundary
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound
