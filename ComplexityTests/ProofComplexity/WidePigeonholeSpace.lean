@@ -13,7 +13,7 @@ import Complexity.Logics.Propositional.Resolution.TreeLikeSpace
 `PHP^m_n` with `0 < n < m` needs clause space exactly `n + 2`, whatever the number of pigeons. With
 two pigeons and one hole this is the bound `3` that every formula without the empty clause needs;
 with many pigeons and few holes it is far below the number of clauses. With no holes the formula
-contains the empty clause, so the hypothesis `1 ≤ n` of the lower bound is needed. A DPLL tree of
+contains the empty clause, so the hypothesis `0 < n` of the lower bound is needed. A DPLL tree of
 rank `1` refutes `x ∧ ¬x` in clause space `3`.
 -/
 
@@ -26,7 +26,7 @@ open Cslib Cslib.Logic.PL
 /-- Two pigeons and one hole: clause space exactly `3`. -/
 example : (CNF.pigeonhole 2 1).RefutableInSpace 3 ∧ ¬ (CNF.pigeonhole 2 1).RefutableInSpace 2 :=
   ⟨CNF.refutableInSpace_pigeonhole (by norm_num),
-    fun h => by have := CNF.add_two_le_of_refutableInSpace_pigeonhole le_rfl h; omega⟩
+    fun h => by have := CNF.add_two_le_of_refutableInSpace_pigeonhole Nat.one_pos h; omega⟩
 
 /-- A thousand pigeons and five holes: clause space exactly `7`, independently of the number of
 pigeons. -/

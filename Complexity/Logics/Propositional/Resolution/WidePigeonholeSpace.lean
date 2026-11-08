@@ -9,16 +9,17 @@ module
 
 public import Complexity.Logics.Propositional.Pigeonhole
 public import Complexity.Logics.Propositional.Resolution.Space
+import Complexity.Computability.Circuit.BipartiteMatching
 import Complexity.Logics.Propositional.Resolution.TreeLikeSpace
 
 /-!
-# Clause space of the pigeonhole formula
+# Clause space of the wide pigeonhole formula
 
 **Torán's pigeonhole space bound**: the wide pigeonhole formula `PHP^m_n`
 (`Cslib.Logic.PL.CNF.pigeonhole`) with `n ≥ 1` holes needs clause space `n + 2`, and it is
 refutable in this space when `m > n`, whatever the number `m` of pigeons:
 
-* `Cslib.Logic.PL.CNF.add_two_le_of_refutableInSpace_pigeonhole`: for `1 ≤ n`, a refutation in
+* `Cslib.Logic.PL.CNF.add_two_le_of_refutableInSpace_pigeonhole`: for `0 < n`, a refutation in
   clause space `s` has `n + 2 ≤ s`;
 * `Cslib.Logic.PL.CNF.refutableInSpace_pigeonhole`: for `n < m`, `PHP^m_n` is refutable in clause
   space `n + 2`;
@@ -34,11 +35,12 @@ holes, `PHP^m_0` contains the empty clause for `m ≥ 1` and is refutable in cla
 pigeonhole formulas with `m > n` have resolution space exactly `n + 1`, independently of the number
 of pigeons. It credits this to Torán's paper *Lower bounds for the space used in resolution* (CSL
 1999), which was not inspected for this formalization; the proofs below are a reconstruction and
-are not claimed to follow it. The space of the survey is that of a pebble game that may shift a
-pebble from a premise to the resolvent [Torán, Definition 7 and Lemma 8][Toran2004], while
-configurations here (`Cslib.Logic.PL.CNF.configLTS`) keep both premises while they add the
-resolvent. As explained in `Complexity.Logics.Propositional.Resolution.TreeLikeSpace`, this makes
-every bound one larger, and Torán's `n + 1` becomes `n + 2`.
+are not claimed to follow it. The survey's numbers are those of a pebble game that may shift a
+pebble from a premise to the resolvent [Torán, Definition 7 and Lemma 8][Toran2004].
+Configurations here (`Cslib.Logic.PL.CNF.configLTS`, following the survey's Definition 2) keep
+both premises while they add the resolvent, which costs at most one extra clause (see
+`Complexity.Logics.Propositional.Resolution.TreeLikeSpace`). Both bounds below are proved directly
+for `configLTS`: Torán's shift-game value `n + 1` is attained here with one extra clause, `n + 2`.
 
 **Lower bound.** A partial matching of pigeons to holes *implies* a clause if every matching
 containing it satisfies the clause, reading a matching as the assignment that is `true` exactly
@@ -78,21 +80,18 @@ open Finset
 
 namespace WidePigeonhole
 
+open Cslib.Circuits.BipartiteMatching (IsMatching)
+
 variable {m n : ℕ}
 
-/-! ### Implication by partial matchings -/
+/-! ### Implication by partial matchings
 
-/-- A set of pigeon–hole pairs is a partial matching: no two pairs share a pigeon or a hole. -/
-private def IsMatching (α : Finset (Fin m × Fin n)) : Prop :=
-  ∀ x ∈ α, ∀ y ∈ α, (x.1 = y.1 ∨ x.2 = y.2) → x = y
+A partial matching of pigeons to holes is a matching `Cslib.Circuits.BipartiteMatching.IsMatching`
+of the complete bipartite graph on pigeons and holes. -/
 
 /-- `α` implies `c` if every matching containing `α`, read as an assignment, satisfies `c`. -/
 private def MatchImplies (α : Finset (Fin m × Fin n)) (c : Clause (Fin m × Fin n)) : Prop :=
   ∀ β : Finset (Fin m × Fin n), IsMatching β → α ⊆ β → c.eval (fun x => decide (x ∈ β)) = true
-
-private theorem IsMatching.mono {α β : Finset (Fin m × Fin n)} (h : IsMatching β)
-    (hαβ : α ⊆ β) : IsMatching α :=
-  fun x hx y hy => h x (hαβ hx) y (hαβ hy)
 
 private theorem MatchImplies.mono {α β : Finset (Fin m × Fin n)} {c : Clause (Fin m × Fin n)}
     (h : MatchImplies α c) (hαβ : α ⊆ β) : MatchImplies β c :=
@@ -201,19 +200,6 @@ private theorem not_matchImplies_nil {α : Finset (Fin m × Fin n)} (hα : IsMat
     ¬ MatchImplies α [] := fun h => by
   simpa using h α hα subset_rfl
 
-/-- Adding a pair with a new pigeon and a free hole to a matching gives a matching. -/
-private theorem IsMatching.insert {α : Finset (Fin m × Fin n)} (hα : IsMatching α)
-    {x : Fin m × Fin n} (h₁ : ∀ y ∈ α, y.1 ≠ x.1) (h₂ : ∀ y ∈ α, y.2 ≠ x.2) :
-    IsMatching (insert x α) := by
-  intro y hy z hz hyz
-  rcases mem_insert.1 hy with hyx | hyα <;> rcases mem_insert.1 hz with hzx | hzα
-  · rw [hyx, hzx]
-  · subst hyx
-    exact absurd (hyz.imp Eq.symm Eq.symm) (by simpa using ⟨h₁ z hzα, h₂ z hzα⟩)
-  · subst hzx
-    exact absurd hyz (by simpa using ⟨h₁ y hyα, h₂ y hyα⟩)
-  · exact hα y hyα z hzα hyz
-
 /-! ### The invariant of refutations in clause space `n + 1` -/
 
 /-- A matching implying every clause of `M`. -/
@@ -299,7 +285,7 @@ private theorem Inv.mTr {s : ℕ} (hs : s ≤ n + 1) {M M' : Finset (Clause (Fin
 
 /-- With at least one hole, a configuration satisfying the invariant does not contain the empty
 clause. -/
-private theorem Inv.nil_notMem (hn : 1 ≤ n) {M : Finset (Clause (Fin m × Fin n))} (h : Inv M) :
+private theorem Inv.nil_notMem (hn : 0 < n) {M : Finset (Clause (Fin m × Fin n))} (h : Inv M) :
     [] ∉ M := by
   intro hnil
   rcases h with ⟨α, hα⟩ | ⟨i, α, hα⟩
@@ -471,9 +457,10 @@ namespace CNF
 /-- **Torán's lower bound** [Torán, Section 4][Toran2004]: with at least one hole, every resolution
 refutation of the pigeonhole formula `PHP^m_n` in clause space `s` has `n + 2 ≤ s`, whatever the
 number `m` of pigeons. The survey states space `n + 1` for a pebble game that shifts a pebble from
-a premise to the resolvent, credited to Torán's CSL 1999 paper, which was not inspected; clause
-space here is one larger, and the proof is a reconstruction. -/
-theorem add_two_le_of_refutableInSpace_pigeonhole {m n s : ℕ} (hn : 1 ≤ n)
+a premise to the resolvent, credited to Torán's CSL 1999 paper, which was not inspected; the bound
+`n + 2` is proved directly for `Cslib.Logic.PL.CNF.configLTS`, and the proof is a
+reconstruction. -/
+theorem add_two_le_of_refutableInSpace_pigeonhole {m n s : ℕ} (hn : 0 < n)
     (h : (pigeonhole m n).RefutableInSpace s) : n + 2 ≤ s := by
   by_contra! hs
   obtain ⟨ms, M, hM, hnil⟩ := h
@@ -482,9 +469,9 @@ theorem add_two_le_of_refutableInSpace_pigeonhole {m n s : ℕ} (hn : 1 ≤ n)
 
 /-- **Torán's upper bound** [Torán, Section 4][Toran2004]: with more pigeons than holes, the
 pigeonhole formula `PHP^m_n` is refutable in clause space `n + 2`, whatever the number `m` of
-pigeons. This is the survey's space `n + 1`, for a pebble game that shifts a pebble from a premise
-to the resolvent, in the convention of `Cslib.Logic.PL.CNF.configLTS`; the proof, by a DPLL tree
-of rank at most `n`, is a reconstruction. -/
+pigeons. The survey states space `n + 1` for a pebble game that shifts a pebble from a premise to
+the resolvent; in the convention of `Cslib.Logic.PL.CNF.configLTS` it is attained with one extra
+clause. The proof, by a DPLL tree of rank at most `n`, is a reconstruction. -/
 theorem refutableInSpace_pigeonhole {m n : ℕ} (h : n < m) :
     (pigeonhole m n).RefutableInSpace (n + 2) :=
   (WidePigeonhole.findsFalsifiedClause_phpTree h).refutableInSpace.mono <| by
