@@ -23,8 +23,9 @@ cube [O'Donnell, Section 9.5][ODonnell2014]:
 * **the `L^p`–`L^2` comparison** (`BitString.lpNorm_two_le_exp_mul_lpNorm`): for `0 < p ≤ 2`,
   `‖f‖_2 ≤ e ^ (k (2 / p - 1)) ‖f‖_p`, in particular `‖f‖_2 ≤ e ^ k ‖f‖_1`
   (`BitString.lpNorm_two_le_exp_mul_lpNorm_one`) [O'Donnell, Theorem 9.22][ODonnell2014];
-* **the low-degree tail bound** (`BitString.dens_le_exp_neg_mul_rpow`): for `t ≥ √(2 e) ^ k`,
-  `Pr[|f| ≥ t ‖f‖_2] ≤ exp (-(k / (2 e)) t ^ (2 / k))` [O'Donnell, Theorem 9.23][ODonnell2014];
+* **the low-degree tail bound** (`BitString.dens_le_exp_neg_mul_rpow`): if `f ≢ 0` and
+  `t ≥ √(2 e) ^ k`, then `Pr[|f| ≥ t ‖f‖_2] ≤ exp (-(k / (2 e)) t ^ (2 / k))`
+  [O'Donnell, Theorem 9.23][ODonnell2014];
 * **one-sided anticoncentration** (`BitString.exp_neg_two_mul_div_four_le_dens_lt`): if `f` is
   nonconstant, `Pr[f > 𝔼 f] ≥ e ^ (-2 k) / 4` [O'Donnell, Theorem 9.24][ODonnell2014];
 * **Khintchine's inequality**, the case `k = 1` of Theorems 9.21 and 9.22 [O'Donnell, Section

@@ -53,28 +53,18 @@ theorem IsPTF.exp_neg_two_mul_le_sum_fourierCoeff_sq {k : ℕ} {f : (ι → Bool
     (hf : IsPTF k f) :
     Real.exp (-(2 * k)) ≤ ∑ S with #S ≤ k, fourierCoeff (fun x => signVal (f x)) S ^ 2 := by
   classical
-  obtain ⟨p, hpdeg, hpos⟩ := isPTF_iff.1 hf
-  set F : (ι → Bool) → ℝ := fun x => signVal (f x) with hF
+  obtain ⟨p, hpT, hpos⟩ := hf
+  have hpdeg (S : Finset ι) (hS : k < #S) : fourierCoeff p S = 0 :=
+    hpT S fun h => (mem_filter.1 h).2.not_gt hS
+  set F : (ι → Bool) → ℝ := fun x => signVal (f x)
   set W := ∑ S with #S ≤ k, fourierCoeff F S ^ 2 with hW
   set m := 𝔼 x, p x ^ 2 with hm
-  -- `|p| = F p`
-  have habs (x : ι → Bool) : |p x| = F x * p x := by
-    calc |p x| = |F x| * |p x| := by rw [hF, abs_signVal, one_mul]
-      _ = |F x * p x| := (abs_mul _ _).symm
-      _ = F x * p x := abs_of_pos (hpos x)
   -- `‖p‖₁ = ⟨F, p⟩ = ∑_{|S| ≤ k} F̂(S) p̂(S) ≤ √W √m`
-  have hinner : 𝔼 x, |p x| = ∑ S with #S ≤ k, fourierCoeff F S * fourierCoeff p S := by
-    rw [expect_congr rfl fun x _ => habs x, expect_mul_eq_sum_fourierCoeff_mul, sum_filter]
-    refine sum_congr rfl fun S _ => ?_
-    split_ifs with hS
-    · rfl
-    · rw [hpdeg S (by omega), mul_zero]
+  have hinner : 𝔼 x, |p x| = ∑ S with #S ≤ k, fourierCoeff F S * fourierCoeff p S :=
+    (expect_congr rfl fun x _ => (signVal_mul_eq_abs (fun x => (hpos x).le) x).symm).trans
+      (expect_mul_eq_sum_of_fourierCoeff_eq_zero hpT F)
   have hpm : m = ∑ S with #S ≤ k, fourierCoeff p S ^ 2 := by
-    rw [hm, expect_sq_eq_sum_fourierCoeff_sq, sum_filter]
-    refine sum_congr rfl fun S _ => ?_
-    split_ifs with hS
-    · rfl
-    · rw [hpdeg S (by omega)]; ring
+    simpa only [hm, sq] using expect_mul_eq_sum_of_fourierCoeff_eq_zero hpT p
   have hcs := Finset.sum_mul_sq_le_sq_mul_sq ({S | #S ≤ k} : Finset (Finset ι))
     (fun S => fourierCoeff F S) (fun S => fourierCoeff p S)
   rw [← hinner, ← hW, ← hpm] at hcs
