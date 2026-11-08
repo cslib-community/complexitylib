@@ -4,7 +4,7 @@
     {
       "id": "cook-levin",
       "title": "Cook–Levin: SAT is NP-complete",
-      "module": "ComplexityAbstracts.CookLevinAbstract",
+      "module": "CslibFrontierAbstracts.CookLevinAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.CookLevinAbstract.sat_npComplete",
         "ComplexityTests.Abstracts.CookLevinAbstract.unsat_coNPComplete"
@@ -13,14 +13,14 @@
       "scope": "Explicit CNF encoding, total native-machine reductions, and UNSAT coNP-completeness.",
       "namespace": "ComplexityTests.Abstracts.CookLevinAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation"
+        "CslibFrontierAbstracts.Encoding",
+        "CslibFrontierAbstracts.Computation"
       ]
     },
     {
       "id": "pcp",
       "title": "The PCP theorem",
-      "module": "ComplexityAbstracts.PCPAbstract",
+      "module": "CslibFrontierAbstracts.PCPAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.PCPAbstract.pcp_theorem"
       ],
@@ -28,14 +28,14 @@
       "scope": "Perfect completeness, soundness at most one half, and explicit native efficiency; construction constants are large.",
       "namespace": "ComplexityTests.Abstracts.PCPAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation"
+        "CslibFrontierAbstracts.Encoding",
+        "CslibFrontierAbstracts.Computation"
       ]
     },
     {
       "id": "fagin",
       "title": "Fagin: logic captures NP",
-      "module": "ComplexityAbstracts.FaginAbstract",
+      "module": "CslibFrontierAbstracts.FaginAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.FaginAbstract.fagin"
       ],
@@ -43,14 +43,14 @@
       "scope": "Finite relational signatures, explicit encodings, empty universes and nullary relations.",
       "namespace": "ComplexityTests.Abstracts.FaginAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation"
+        "CslibFrontierAbstracts.Encoding",
+        "CslibFrontierAbstracts.Computation"
       ]
     },
     {
       "id": "savitch",
       "title": "Savitch: NPSPACE equals PSPACE",
-      "module": "ComplexityAbstracts.SavitchAbstract",
+      "module": "CslibFrontierAbstracts.SavitchAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.SavitchAbstract.savitch"
       ],
@@ -61,18 +61,19 @@
     {
       "id": "alternation",
       "title": "Chandra–Kozen–Stockmeyer: AP equals PSPACE and APSPACE equals EXP",
-      "module": "ComplexityAbstracts.AlternationAbstract",
+      "module": "CslibFrontierAbstracts.AlternationAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.AlternationAbstract.ap_eq_pspace",
         "ComplexityAbstracts.AlternationAbstract.apspace_eq_exp"
       ],
       "summary": "Alternation trades one exponential between time and space: alternating polynomial time is deterministic polynomial space, and alternating polynomial space is deterministic exponential time.",
-      "scope": "One finite-state alternating multi-tape machine per problem, with two transition functions as in Arora–Barak and least-fixed-point acceptance; every branch halting; polynomial time or polynomial space; arbitrary injective encodings. AL = P is not included: the library proves only AL ⊆ P."
+      "scope": "One finite-state alternating multi-tape machine per problem, with two transition functions as in Arora–Barak and least-fixed-point acceptance; every branch halting; polynomial time or polynomial space; arbitrary injective encodings. AL = P is not included: the library proves only AL ⊆ P.",
+      "namespace": "ComplexityAbstracts.AlternationAbstract"
     },
     {
       "id": "reingold",
       "title": "Reingold: undirected reachability is in L",
-      "module": "ComplexityAbstracts.USTCONAbstract",
+      "module": "CslibFrontierAbstracts.USTCONAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.USTCONAbstract.ustcon_mem_l"
       ],
@@ -83,21 +84,22 @@
     {
       "id": "primes",
       "title": "Agrawal–Kayal–Saxena: PRIMES is in P",
-      "module": "ComplexityAbstracts.PrimesAbstract",
+      "module": "CslibFrontierAbstracts.PrimesAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.PrimesAbstract.primes_mem_P"
       ],
       "summary": "Primality of a natural number given in binary is decidable in deterministic polynomial time.",
       "scope": "Binary digits least significant first, and native multi-tape P with polynomial time and space; the library decider is the AKS algorithm with integer thresholds on the word RAM, simulated by a Turing machine; no exponent is stated.",
+      "namespace": "ComplexityAbstracts.PrimesAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation"
+        "CslibFrontierAbstracts.Encoding",
+        "CslibFrontierAbstracts.Computation"
       ]
     },
     {
       "id": "immerman-szelepcsenyi",
       "title": "Immerman–Szelepcsényi: nondeterministic space is closed under complement",
-      "module": "ComplexityAbstracts.ImmermanSzelepcsenyiAbstract",
+      "module": "CslibFrontierAbstracts.ImmermanSzelepcsenyiAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.ImmermanSzelepcsenyiAbstract.nspace_eq_conspace",
         "ComplexityAbstracts.ImmermanSzelepcsenyiAbstract.nl_eq_conl"
@@ -106,12 +108,13 @@
         "ComplexityAbstracts.ImmermanSzelepcsenyiAbstract.stcon_compl_mem_nl"
       ],
       "summary": "Nondeterministic space at least logarithmic is closed under complement; in particular NL equals coNL.",
-      "scope": "One finite-state native machine per problem, every-prefix work space c₁ s(n) + c₂ for any s with log₂ n ≤ s(n), no constructibility assumed, every branch terminating, arbitrary injective encodings; directed non-reachability on unary-header adjacency matrices as a corollary."
+      "scope": "One finite-state native machine per problem, every-prefix work space c₁ s(n) + c₂ for any s with log₂ n ≤ s(n), no constructibility assumed, every branch terminating, arbitrary injective encodings; directed non-reachability on unary-header adjacency matrices as a corollary.",
+      "namespace": "ComplexityAbstracts.ImmermanSzelepcsenyiAbstract"
     },
     {
       "id": "shamir",
       "title": "Shamir: IP equals PSPACE",
-      "module": "ComplexityAbstracts.ShamirAbstract",
+      "module": "CslibFrontierAbstracts.ShamirAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.ShamirAbstract.ip_eq_pspace"
       ],
@@ -122,7 +125,7 @@
     {
       "id": "toda",
       "title": "Toda: a counting oracle decides the polynomial hierarchy",
-      "module": "ComplexityAbstracts.TodaAbstract",
+      "module": "CslibFrontierAbstracts.TodaAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.TodaAbstract.toda"
       ],
@@ -130,28 +133,29 @@
       "scope": "Witness counts and oracle bit answers are explicit; correctness holds for every extension of valid oracle answers.",
       "namespace": "ComplexityTests.Abstracts.TodaAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation"
+        "CslibFrontierAbstracts.Encoding",
+        "CslibFrontierAbstracts.Computation"
       ]
     },
     {
       "id": "bqp-pp",
       "title": "Adleman–DeMarrais–Huang: BQP is contained in PP",
-      "module": "ComplexityAbstracts.BQPAbstract",
+      "module": "CslibFrontierAbstracts.BQPAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.BQPAbstract.BQP_subset_PP"
       ],
       "summary": "Every problem decided with bounded error by a polynomial-time uniform family of quantum circuits is decided by a polynomial-time strict-majority vote over random strings.",
       "scope": "Explicit amplitude semantics for the fixed gate set {Hadamard, NOT, CNOT, Toffoli}, acceptance by measuring qubit 0 from the zero-padded input, uniformity in polynomial time from n in unary, and native multi-tape PP; equivalence to textbook BQP over arbitrary elementary gates (universality and Solovay–Kitaev) is a cited, unformalized remark.",
+      "namespace": "ComplexityAbstracts.BQPAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation"
+        "CslibFrontierAbstracts.Encoding",
+        "CslibFrontierAbstracts.Computation"
       ]
     },
     {
       "id": "barrington",
       "title": "Barrington: five states capture NC¹",
-      "module": "ComplexityAbstracts.BarringtonAbstract",
+      "module": "CslibFrontierAbstracts.BarringtonAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.BarringtonAbstract.barrington"
       ],
@@ -162,7 +166,7 @@
     {
       "id": "constant-depth",
       "title": "Håstad and Razborov–Smolensky: parity resists shallow circuits",
-      "module": "ComplexityAbstracts.ConstantDepthAbstract",
+      "module": "CslibFrontierAbstracts.ConstantDepthAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.ConstantDepthAbstract.hastad",
         "ComplexityTests.Abstracts.ConstantDepthAbstract.razborov_smolensky"
@@ -174,17 +178,18 @@
     {
       "id": "braverman",
       "title": "Braverman: polylogarithmic independence fools AC⁰",
-      "module": "ComplexityAbstracts.BravermanAbstract",
+      "module": "CslibFrontierAbstracts.BravermanAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.BravermanAbstract.braverman"
       ],
       "summary": "Every k-wise independent distribution on n-bit strings with k ≥ (64q)^((2d+3)(d+7)+1) makes a circuit of NOT and unbounded fan-in AND/OR gates of depth at most d, with at most 2^q gates of fan-in below 2^q, output true with probability within 2^(-q) of the fraction of inputs on which it is true; for size and fan-in at most m and error ε this is k = (log(m/ε))^O(d²).",
-      "scope": "Arbitrary distributions with uniform marginals on every set of at most k positions; explicit bound with our own constants and exponent, weaker than Braverman's; size and depth count NOT gates and constants; one parameter q bounds the size, the fan-in and log₂ of the inverse error; nonuniform and information-theoretic."
+      "scope": "Arbitrary distributions with uniform marginals on every set of at most k positions; explicit bound with our own constants and exponent, weaker than Braverman's; size and depth count NOT gates and constants; one parameter q bounds the size, the fan-in and log₂ of the inverse error; nonuniform and information-theoretic.",
+      "namespace": "ComplexityAbstracts.BravermanAbstract"
     },
     {
       "id": "formula-bounds",
       "title": "Formula lower bounds: parity and Andreev",
-      "module": "ComplexityAbstracts.FormulaBoundsAbstract",
+      "module": "CslibFrontierAbstracts.FormulaBoundsAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.FormulaBoundsAbstract.parity_lower_bound",
         "ComplexityTests.Abstracts.FormulaBoundsAbstract.andreev_lower_bound"
@@ -196,7 +201,7 @@
     {
       "id": "andreev-threshold",
       "title": "Depth-two threshold circuits for Andreev's function: quadratic upper bound and average-case bounds tight up to polylogarithmic factors",
-      "module": "ComplexityAbstracts.AndreevThresholdAbstract",
+      "module": "CslibFrontierAbstracts.AndreevThresholdAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_upper_bound",
         "ComplexityAbstracts.AndreevThresholdAbstract.high_agreement_upper_bound",
@@ -215,12 +220,13 @@
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_wire_lower_bound"
       ],
       "summary": "For Andreev's function on n = 2^b + b m bits, an alternating-linear shift identity gives an exact depth-two weighted threshold circuit of 2·4^b + b m 2^b + 1 gates ((3/4)n^2 + 1 at 2^b = b m, improving Kane–Williams O(n^3 / log n)) and windowed average-case upper bounds for 1 - δ agreement (O(n^(3/2) sqrt(log(n / δ))) gates, O(n^(5/2) sqrt(log(n / δ))) wires) and 1/2 + ε agreement (O(ε^2 n^(3/2) sqrt(log n)) gates, O(ε^2 n^(5/2) sqrt(log n)) wires); fixed-weight threshold-shift counting and Cauchy–Schwarz improve the Kane–Williams average-case lower bounds to Omega(ε² n^(3/2) / log² n) gates and Omega(ε² n^(5/2) / log^(5/2) n) active wires in the balanced regime for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2. Averaging extends these bounds to ε-approximate majorities of depth-two circuits, so a majority vote of t such circuits with at most s gates each needs top fan-in t = Omega(n^(3/4) / (log n · sqrt(s))) whenever 3(b + 2) / sqrt(2^b) ≤ 1/(2t) (Kane–Williams: Omega~(n^(1/2) / s^(1/3))).",
-      "scope": "Arbitrary real-weight threshold gates (THR ∘ THR), size counting all threshold gates, active wireCount summing nonzero-weight wires across gates, explicit non-asymptotic finite bounds, simultaneous fixed-weight Hoeffding–Chow union-bound tail, and explicit linear-in-b counting losses with m ≤ 2^b for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2; majority votes are stated through the number of correct depth-two members on each input, not as a depth-three circuit, and the top gate is not counted; nonuniform."
+      "scope": "Arbitrary real-weight threshold gates (THR ∘ THR), size counting all threshold gates, active wireCount summing nonzero-weight wires across gates, explicit non-asymptotic finite bounds, simultaneous fixed-weight Hoeffding–Chow union-bound tail, and explicit linear-in-b counting losses with m ≤ 2^b for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2; majority votes are stated through the number of correct depth-two members on each input, not as a depth-three circuit, and the top gate is not counted; nonuniform.",
+      "namespace": "ComplexityAbstracts.AndreevThresholdAbstract"
     },
     {
       "id": "constant-depth-arithmetic",
       "title": "Limaye–Srinivasan–Tavenas over any field (after Forbes): constant-depth algebraic circuits for IMM need superpolynomial size",
-      "module": "ComplexityAbstracts.ConstantDepthArithmeticAbstract",
+      "module": "CslibFrontierAbstracts.ConstantDepthArithmeticAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.ConstantDepthArithmeticAbstract.superpolynomial"
       ],
@@ -228,12 +234,13 @@
         "ComplexityAbstracts.ConstantDepthArithmeticAbstract.explicit_bound"
       ],
       "summary": "Over every field, simple algebraic circuits (product gates reading distinct wires) of constant product-depth computing iterated matrix multiplication of d = ⌊log₂ ⌊log₂ n⌋⌋ generic n × n matrices need more than n^c gates for every c and all large n.",
-      "scope": "Any field, formal polynomials, unbounded fan-in sum and product gates, product gates reading distinct wires, size counting all gates; explicit non-asymptotic bound with exponent d^(1/(4^Δ-1)); constant product-depth Δ and the single value d = ⌊log₂ ⌊log₂ n⌋⌋; nonuniform."
+      "scope": "Any field, formal polynomials, unbounded fan-in sum and product gates, product gates reading distinct wires, size counting all gates; explicit non-asymptotic bound with exponent d^(1/(4^Δ-1)); constant product-depth Δ and the single value d = ⌊log₂ ⌊log₂ n⌋⌋; nonuniform.",
+      "namespace": "ComplexityAbstracts.ConstantDepthArithmeticAbstract"
     },
     {
       "id": "cryptography",
       "title": "One-way functions yield pseudorandom generators and adaptive functions",
-      "module": "ComplexityAbstracts.CryptographyAbstract",
+      "module": "CslibFrontierAbstracts.CryptographyAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.CryptographyAbstract.hill",
         "ComplexityTests.Abstracts.CryptographyAbstract.adaptive_functions"
@@ -242,15 +249,15 @@
       "scope": "Uniform probabilistic polynomial time with explicit native evaluators, negligible advantage and full stateful oracle semantics; asymptotic security, not a concrete implementation audit.",
       "namespace": "ComplexityTests.Abstracts.CryptographyAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation",
-        "ComplexityAbstracts.Randomized"
+        "CslibFrontierAbstracts.Encoding",
+        "CslibFrontierAbstracts.Computation",
+        "CslibFrontierAbstracts.Randomized"
       ]
     },
     {
       "id": "resolution",
       "title": "Haken: pigeonhole formulas require long resolution proofs",
-      "module": "ComplexityAbstracts.ResolutionAbstract",
+      "module": "CslibFrontierAbstracts.ResolutionAbstract",
       "headline_theorems": [
         "ComplexityTests.Abstracts.ResolutionAbstract.haken"
       ],
@@ -264,7 +271,7 @@
     {
       "id": "communication",
       "title": "Communication: disjointness and inner product resist randomness",
-      "module": "ComplexityAbstracts.CommunicationAbstract",
+      "module": "CslibFrontierAbstracts.CommunicationAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.CommunicationAbstract.disjointness_lower_bound",
         "ComplexityAbstracts.CommunicationAbstract.innerProduct_lower_bound"
@@ -273,22 +280,24 @@
         "ComplexityAbstracts.CommunicationAbstract.equality"
       ],
       "summary": "Disjointness and parity of intersection require linear communication even with shared randomness and bounded error.",
-      "scope": "Binary protocol trees with depth bounded on the support, including unreachable branches, and error at most one third on every input pair; explicit finite bounds and the final-answer convention."
+      "scope": "Binary protocol trees with depth bounded on the support, including unreachable branches, and error at most one third on every input pair; explicit finite bounds and the final-answer convention.",
+      "namespace": "ComplexityAbstracts.CommunicationAbstract"
     },
     {
       "id": "sipser-lautemann",
       "title": "Sipser–Gács–Lautemann: BPP lies in the second polynomial level",
-      "module": "ComplexityAbstracts.SipserLautemannAbstract",
+      "module": "CslibFrontierAbstracts.SipserLautemannAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.SipserLautemannAbstract.sipserLautemann"
       ],
       "summary": "Bounded-error randomized polynomial time admits both existential–universal and universal–existential polynomial descriptions.",
-      "scope": "Bit-string languages, fair independent random bits, correctness at least two thirds on every input, and total native polynomial-time tests; no derandomization assumption."
+      "scope": "Bit-string languages, fair independent random bits, correctness at least two thirds on every input, and total native polynomial-time tests; no derandomization assumption.",
+      "namespace": "ComplexityAbstracts.SipserLautemannAbstract"
     },
     {
       "id": "chor-goldreich",
       "title": "Chor–Goldreich: the inner product extracts from two weak sources",
-      "module": "ComplexityAbstracts.ChorGoldreichAbstract",
+      "module": "CslibFrontierAbstracts.ChorGoldreichAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.ChorGoldreichAbstract.chor_goldreich",
         "ComplexityAbstracts.ChorGoldreichAbstract.chor_goldreich_strong"
@@ -297,22 +306,24 @@
         "ComplexityAbstracts.ChorGoldreichAbstract.orthogonal_sources"
       ],
       "summary": "Two independent weak random sources whose min-entropies add up to more than the string length give a nearly fair bit through the inner product modulo two.",
-      "scope": "Arbitrary sources with real min-entropy bounds, the exact bias bound 2^((n - k1 - k2)/2)/2 and its strong form, and sharpness at k1 + k2 = n; information-theoretic, with no running time asserted."
+      "scope": "Arbitrary sources with real min-entropy bounds, the exact bias bound 2^((n - k1 - k2)/2)/2 and its strong form, and sharpness at k1 + k2 = n; information-theoretic, with no running time asserted.",
+      "namespace": "ComplexityAbstracts.ChorGoldreichAbstract"
     },
     {
       "id": "schoening",
       "title": "Schöning: 3-SAT in time (4/3)^n on the randomized word RAM",
-      "module": "ComplexityAbstracts.SchoeningAbstract",
+      "module": "CslibFrontierAbstracts.SchoeningAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.SchoeningAbstract.schoening3SAT"
       ],
       "summary": "One fixed randomized word-RAM program runs R = ⌈(3n + 1)(4/3)^n⌉·c independent trials of Schöning's local search on a CNF formula with n variables. It never errs on unsatisfiable formulas, fails with probability exactly (1 - p)^R for the success probability p of one restated trial, and fails on satisfiable 3-CNFs with probability at most e^(-c).",
-      "scope": "Unit-cost randomized word RAM over the standard basis (truncated subtraction, x / 0 = 0, x % 0 = x; unit-cost uniform rand), restated in the abstract, with words of O(log(n + L + c)) bits for input length L. Worst-case time ⌊900 (n + L + 4)^3 (4/3)^n (c + 1)⌋ = O((n + L)^3 (4/3)^n (c + 1)) on every random path. Explicit word encoding of CNF formulas; exact output law; one-sided error. The source's O*((4/3)^n) bound with an explicit polynomial factor, not the PPSZ improvement."
+      "scope": "Unit-cost randomized word RAM over the standard basis (truncated subtraction, x / 0 = 0, x % 0 = x; unit-cost uniform rand), restated in the abstract, with words of O(log(n + L + c)) bits for input length L. Worst-case time ⌊900 (n + L + 4)^3 (4/3)^n (c + 1)⌋ = O((n + L)^3 (4/3)^n (c + 1)) on every random path. Explicit word encoding of CNF formulas; exact output law; one-sided error. The source's O*((4/3)^n) bound with an explicit polynomial factor, not the PPSZ improvement.",
+      "namespace": "ComplexityAbstracts.SchoeningAbstract"
     },
     {
       "id": "subexponential-sat",
       "title": "OpenAI: the Exponential Time Hypothesis is false",
-      "module": "ComplexityAbstracts.SubexponentialSATAbstract",
+      "module": "CslibFrontierAbstracts.SubexponentialSATAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.SubexponentialSATAbstract.exact_count",
         "ComplexityAbstracts.SubexponentialSATAbstract.decidableInExpTime_KSAT",
@@ -325,14 +336,15 @@
       ],
       "summary": "For each fixed clause width, one deterministic native machine exactly counts satisfying assignments in subexponential time and polynomial space. Each fixed-width k-SAT problem is therefore decidable in time 2^(δn)·poly(L) for every δ > 0, every fixed-width SAT exponent is zero, and ETH and SETH are false. Native formalization of OpenAI's manuscript, revised 25 October 2026, by the contributors to #1226.",
       "scope": "Explicit CNF semantics, model counts over the occurring variables, and binary formula/output encodings; the interpolation-scale exponent n (log log (n + 16))² / sqrt(log(n + 16)) from §§3–6 and Proposition 6.4, where n is the number of variables, with polynomial time overhead and polynomial workspace in the encoded formula length. Includes all fixed widths and sizes; the count is exact on every formula of the given width. This does not establish the sharper Theorem 1.1 / Appendix D bound.",
+      "namespace": "ComplexityAbstracts.SubexponentialSATAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding"
+        "CslibFrontierAbstracts.Encoding"
       ]
     },
     {
       "id": "partial-mcsp",
       "title": "Ilango: Partial MCSP is hard under the Exponential Time Hypothesis",
-      "module": "ComplexityAbstracts.PartialMCSPAbstract",
+      "module": "CslibFrontierAbstracts.PartialMCSPAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.PartialMCSPAbstract.not_decidableInSubexpTime_partialMCSP",
         "ComplexityAbstracts.PartialMCSPAbstract.not_decidableInSubexpTime_partialMCSP_tableSize"
@@ -345,15 +357,16 @@
       ],
       "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions cannot be done in time N^o(log log N), where N is the truth-table size. Note (October 2026): the native formalization of OpenAI's manuscript now proves ETH false; see the catalogue entry ‘OpenAI: the Exponential Time Hypothesis is false’. This conditional theorem is retained and remains valid, but its premise is false.",
       "scope": "Explicit 3SAT and PartialMCSP encodings (both unary and binary size thresholds), De Morgan all-gates and binary-gate cost measures, and deterministic multi-tape subexponential-time lower bounds 2^o(m log m) = N^o(log log N).",
+      "namespace": "ComplexityAbstracts.PartialMCSPAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation"
+        "CslibFrontierAbstracts.Encoding",
+        "CslibFrontierAbstracts.Computation"
       ]
     },
     {
       "id": "magnification",
       "title": "McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P from NP",
-      "module": "ComplexityAbstracts.MagnificationAbstract",
+      "module": "CslibFrontierAbstracts.MagnificationAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.MagnificationAbstract.np_not_subset_ppoly_of_mcsp_hard",
         "ComplexityAbstracts.MagnificationAbstract.p_ne_np_of_mcsp_hard"
@@ -364,21 +377,23 @@
       ],
       "summary": "If NP has polynomial-size circuits, then MCSP on 2^n-bit truth tables has circuits of size 2^n poly(n + s(n)); hence barely superlinear MCSP lower bounds imply NP is not in P/poly and P ≠ NP.",
       "scope": "Plain De Morgan circuits counting all operation gates, decision MCSP[n^k] on N = 2^n-bit truth tables in standard binary order, and native multi-tape P and NP; conditional magnification from a size lower bound at some arity per exponent.",
+      "namespace": "ComplexityAbstracts.MagnificationAbstract",
       "foundations": [
-        "ComplexityAbstracts.Encoding",
-        "ComplexityAbstracts.Computation"
+        "CslibFrontierAbstracts.Encoding",
+        "CslibFrontierAbstracts.Computation"
       ]
     },
     {
       "id": "matrix-multiplication",
       "title": "Matrix multiplication: the exponent is at most 9/4",
-      "module": "ComplexityAbstracts.MatrixMultiplicationAbstract",
+      "module": "CslibFrontierAbstracts.MatrixMultiplicationAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.MatrixMultiplicationAbstract.circuits_nine_quarters",
         "ComplexityAbstracts.MatrixMultiplicationAbstract.exponent_le_nine_quarters"
       ],
       "summary": "Exact matrix multiplication over every characteristic-zero field has nonuniform arithmetic circuits of size O(n^(9/4 + γ)) for every γ > 0.",
-      "scope": "Binary addition and multiplication and field constants, every gate charged one; inputs and outputs free. Existential circuits, without uniform generation, computable parameter extraction, explicit constants or integer bit complexity."
+      "scope": "Binary addition and multiplication and field constants, every gate charged one; inputs and outputs free. Existential circuits, without uniform generation, computable parameter extraction, explicit constants or integer bit complexity.",
+      "namespace": "ComplexityAbstracts.MatrixMultiplicationAbstract"
     }
   ]
 }

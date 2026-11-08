@@ -35,7 +35,7 @@ class BuildAbstractsTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="test-abstract-builder-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        source = self.root / "abstracts/ComplexityAbstracts/ExampleAbstract.lean"
+        source = self.root / "abstracts/CslibFrontierAbstracts/ExampleAbstract.lean"
         source.parent.mkdir(parents=True)
         source.write_text(SOURCE)
         scripts = self.root / "scripts"
@@ -44,7 +44,7 @@ class BuildAbstractsTests(unittest.TestCase):
             shutil.copyfile(Path(build.__file__).with_name(name), scripts / name)
         self.entry = {"id": "example", "title": "An example", "summary": "The selected result.",
                       "scope": "No algorithmic claim.",
-                      "module": "ComplexityAbstracts.ExampleAbstract",
+                      "module": "CslibFrontierAbstracts.ExampleAbstract",
                       "namespace": "ComplexityTests.Abstracts.ExampleAbstract",
                       "headline_theorems": ["ComplexityTests.Abstracts.ExampleAbstract.chosen"]}
         self.manifest = self.root / "catalogue.json"
@@ -54,21 +54,21 @@ class BuildAbstractsTests(unittest.TestCase):
         self.manifest.write_text(json.dumps({"title": "Selected abstracts", "entries": entries}))
 
     def add_foundations(self):
-        modules = ["ComplexityAbstracts.Encoding", "ComplexityAbstracts.Computation"]
+        modules = ["CslibFrontierAbstracts.Encoding", "CslibFrontierAbstracts.Computation"]
         for module, imports, name in (
-            (modules[0], "import Complexity.ProofOnly\n", "binaryCode"),
-            (modules[1], "import ComplexityAbstracts.Encoding\n", "polynomialTime"),
+            (modules[0], "import CslibFrontier.ProofOnly\n", "binaryCode"),
+            (modules[1], "import CslibFrontierAbstracts.Encoding\n", "polynomialTime"),
         ):
             build.module_source_path(module, self.root).write_text(
                 imports + f"/-! # {module.rsplit('.', 1)[-1]} foundation\n"
                 "Exact checked definitions.\n-/\n"
-                f"namespace ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\n"
+                f"namespace ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\n"  # rename-module-root: keep
                 f"/-- The foundational definition {name}. -/\ndef {name} : Nat := 0\n"
-                f"end ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\n")
+                f"end ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\n")  # rename-module-root: keep
         source = build.module_source_path(self.entry["module"], self.root)
-        source.write_text("import ComplexityAbstracts.Check\n"
-                          "import ComplexityAbstracts.ExampleBridge\n"
-                          "import ComplexityAbstracts.Computation\n" + SOURCE)
+        source.write_text("import CslibFrontierAbstracts.Check\n"
+                          "import CslibFrontierAbstracts.ExampleBridge\n"
+                          "import CslibFrontierAbstracts.Computation\n" + SOURCE)
         self.entry["foundations"] = modules
         self.write_manifest([self.entry])
         return modules
@@ -86,8 +86,8 @@ class BuildAbstractsTests(unittest.TestCase):
         for listed, message in ((None, "list of module"), (modules * 2, "Duplicate foundation"),
                                 ([modules[1]], "missing"), ([], "missing"),
                                 (["Other.Encoding"], "formal-abstract module"),
-                                (["ComplexityAbstracts.Missing"], "Missing shared foundation"),
-                                (["ComplexityAbstracts.ExampleAbstract"], "Not a shared")):
+                                (["CslibFrontierAbstracts.Missing"], "Missing shared foundation"),
+                                (["CslibFrontierAbstracts.ExampleAbstract"], "Not a shared")):
             self.entry["foundations"] = listed
             self.write_manifest([self.entry])
             with self.subTest(listed=listed), self.assertRaisesRegex(ValueError, message):
@@ -100,14 +100,14 @@ class BuildAbstractsTests(unittest.TestCase):
 
     def test_comment_import_spoofs_do_not_create_foundation_dependencies(self):
         source = build.module_source_path(self.entry["module"], self.root)
-        source.write_text('/- import ComplexityAbstracts.Missing -/\n' + SOURCE +
-                          '\ndef banner := "import ComplexityAbstracts.Missing"\n')
+        source.write_text('/- import CslibFrontierAbstracts.Missing -/\n' + SOURCE +
+                          '\ndef banner := "import CslibFrontierAbstracts.Missing"\n')
         self.assertEqual(build.entry_foundations(self.entry, self.root), [])
 
     def test_cyclic_foundations_fail_closed(self):
         modules = self.add_foundations()
         source = build.module_source_path(modules[0], self.root)
-        source.write_text("import ComplexityAbstracts.Computation\n" + source.read_text())
+        source.write_text("import CslibFrontierAbstracts.Computation\n" + source.read_text())
         with self.assertRaisesRegex(ValueError, "Cyclic shared foundations"):
             build.load_catalogue(self.manifest, self.root)
 
@@ -129,7 +129,7 @@ class BuildAbstractsTests(unittest.TestCase):
 
     def test_combined_catalogue_includes_shared_foundations_once(self):
         modules = self.add_foundations()
-        other = {**self.entry, "id": "second", "module": "ComplexityAbstracts.SecondAbstract",
+        other = {**self.entry, "id": "second", "module": "CslibFrontierAbstracts.SecondAbstract",
                  "namespace": "ComplexityTests.Abstracts.SecondAbstract",
                  "headline_theorems": ["ComplexityTests.Abstracts.SecondAbstract.chosen"]}
         source = build.module_source_path(self.entry["module"], self.root).read_text()
@@ -198,9 +198,9 @@ class BuildAbstractsTests(unittest.TestCase):
 
     def test_module_source_path_uses_dedicated_library_root(self):
         self.assertEqual(build.module_source_path(self.entry["module"], self.root),
-                         self.root / "abstracts/ComplexityAbstracts/ExampleAbstract.lean")
+                         self.root / "abstracts/CslibFrontierAbstracts/ExampleAbstract.lean")
         for module in ("ComplexityTests.Abstracts.ExampleAbstract", "Other.ExampleAbstract",
-                       "ComplexityAbstracts../ExampleAbstract", "ComplexityAbstracts.9Abstract"):
+                       "CslibFrontierAbstracts../ExampleAbstract", "CslibFrontierAbstracts.9Abstract"):
             with self.subTest(module=module), self.assertRaisesRegex(ValueError, "module"):
                 build.module_source_path(module, self.root)
 
@@ -295,7 +295,7 @@ class BuildAbstractsTests(unittest.TestCase):
         self.assertNotIn("supporting result", rendered)
         self.assertNotIn("other", rendered)
         self.assertNotIn("rfl", rendered)
-        self.assertIn("a" * 40 + "/abstracts/ComplexityAbstracts/ExampleAbstract.lean", rendered)
+        self.assertIn("a" * 40 + "/abstracts/CslibFrontierAbstracts/ExampleAbstract.lean", rendered)
         self.assertIn(r"\textcolor{leanblue}", rendered)
 
     def test_selected_statement_with_bindings_is_displayed_in_full(self):
@@ -446,7 +446,7 @@ class BuildAbstractsTests(unittest.TestCase):
         for package in ("libertine.sty", "newtxmath.sty", "zi4.sty", "tcolorbox.sty"):
             if subprocess.run(["kpsewhich", package], capture_output=True).returncode:
                 self.skipTest(f"TeX package missing: {package}")
-        gsw_source = build.ROOT / "abstracts/ComplexityAbstracts/GSWSecurityAbstract.lean"
+        gsw_source = build.ROOT / "abstracts/CslibFrontierAbstracts/GSWSecurityAbstract.lean"
         for name in (
             "Encoding.lean",
             "Computation.lean",
@@ -456,8 +456,8 @@ class BuildAbstractsTests(unittest.TestCase):
             "GSWSecurityBridge.lean",
         ):
             shutil.copyfile(
-                build.ROOT / "abstracts/ComplexityAbstracts" / name,
-                self.root / "abstracts/ComplexityAbstracts" / name,
+                build.ROOT / "abstracts/CslibFrontierAbstracts" / name,
+                self.root / "abstracts/CslibFrontierAbstracts" / name,
             )
         gsw_entry = {
             "id": "gsw-security",
@@ -467,17 +467,17 @@ class BuildAbstractsTests(unittest.TestCase):
                        "decision LWE for their exact centered-binomial error family.",
             "scope": "Classical public-key IND-CPA under exact decision LWE; no LWE hardness, "
                      "circular security, or bootstrappability claim.",
-            "module": "ComplexityAbstracts.GSWSecurityAbstract",
+            "module": "CslibFrontierAbstracts.GSWSecurityAbstract",
             "namespace": "ComplexityTests.Abstracts.GSWSecurityAbstract",
             "headline_theorems": [
                 "ComplexityTests.Abstracts.GSWSecurityAbstract.native_algorithms",
                 "ComplexityTests.Abstracts.GSWSecurityAbstract.indCPA",
             ],
             "foundations": [
-                "ComplexityAbstracts.Encoding",
-                "ComplexityAbstracts.Computation",
-                "ComplexityAbstracts.Randomized",
-                "ComplexityAbstracts.GSW",
+                "CslibFrontierAbstracts.Encoding",
+                "CslibFrontierAbstracts.Computation",
+                "CslibFrontierAbstracts.Randomized",
+                "CslibFrontierAbstracts.GSW",
             ],
         }
         self.write_manifest([gsw_entry])
@@ -546,13 +546,13 @@ class BuildAbstractsTests(unittest.TestCase):
         self.assertEqual(result["documents"][0]["pdf_sha256"],
                          build.digest(self.root / "build/example.pdf"))
         self.assertEqual(result["documents"][0]["source_sha256"],
-                         build.digest(self.root / "abstracts/ComplexityAbstracts/ExampleAbstract.lean"))
+                         build.digest(self.root / "abstracts/CslibFrontierAbstracts/ExampleAbstract.lean"))
         self.assertTrue(result["documents"][0]["headlines"][0]["url"].endswith("#L10"))
         self.assertEqual(result["documents"][0]["source"],
-                         "abstracts/ComplexityAbstracts/ExampleAbstract.lean")
-        self.assertIn("/abstracts/ComplexityAbstracts/ExampleAbstract.lean#L10",
+                         "abstracts/CslibFrontierAbstracts/ExampleAbstract.lean")
+        self.assertIn("/abstracts/CslibFrontierAbstracts/ExampleAbstract.lean#L10",
                       result["documents"][0]["headlines"][0]["url"])
-        self.assertIn({"path": "abstracts/ComplexityAbstracts/ExampleBridge.lean",
+        self.assertIn({"path": "abstracts/CslibFrontierAbstracts/ExampleBridge.lean",
                        "sha256": build.digest(bridge)}, result["inputs"])
         # The renderer's command and statement scanner is part of the rendering source.
         self.assertIn({"path": "scripts/proof_lengths.py",
@@ -589,7 +589,7 @@ class BuildAbstractsTests(unittest.TestCase):
         def changing_pdf(tex):
             pdf = tex.with_suffix(".pdf")
             pdf.write_bytes(b"%PDF-fixture")
-            source = self.root / "abstracts/ComplexityAbstracts/ExampleAbstract.lean"
+            source = self.root / "abstracts/CslibFrontierAbstracts/ExampleAbstract.lean"
             source.write_text(source.read_text() + "\n-- changed during generation\n")
             return pdf
 
