@@ -4805,6 +4805,7 @@ public import Complexity.Foundations.Order.UpperLower
 public import Complexity.Foundations.Probability.AtomCutoffs
 public import Complexity.Foundations.Probability.ColumnDetector
 public import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.Connectivity
+public import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.IsolatedVertices
 public import Complexity.Foundations.Probability.ConditionalProductMean
 public import Complexity.Foundations.Probability.CoordinateExpectation
 public import Complexity.Foundations.Probability.CoordinateFactorization
