@@ -188,29 +188,34 @@ theorem NAEThreeSAT_paddable : Paddable encCNF NAEThreeSAT :=
     (SAT.forall_clause_pad (fun _ h => h.le) φ y) (SAT.naeSatisfiable_pad φ y)
 
 /-- An `NP`-complete language, over an instance type with a total polynomial-time decoder, is
-polynomial-time isomorphic to `SAT` exactly when it is paddable
-[Berman and Hartmanis][BermanHartmanis1975]. The Berman–Hartmanis conjecture therefore says,
-over such instance types, that every `NP`-complete language is paddable. -/
+polynomial-time isomorphic to `SAT` exactly when it is paddable: the reverse direction is
+[Berman and Hartmanis][BermanHartmanis1975], §III, Theorem 1 combined with Lemmas 3 and 5, applied
+to `SAT_paddable`, and the forward direction is derived here (see
+`Cslib.Complexity.NPComplete.polyTimeIsomorphic_iff_paddable`). The Berman–Hartmanis conjecture
+therefore says, over such instance types, that every `NP`-complete language is paddable. -/
 theorem NPComplete.polyTimeIsomorphic_SAT_iff_paddable {α : Type} {encA : α ↪ List Bool}
     {A : Set α} (hA : NPComplete encA A) (DA : Decoder encA) :
     PolyTimeIsomorphic encA encCNF A SAT ↔ Paddable encA A :=
   hA.polyTimeIsomorphic_iff_paddable CookLevin.SAT_npComplete SAT_paddable DA cnfDecoder
 
 /-- `SAT` and `ThreeSAT` are polynomial-time isomorphic
-[Berman and Hartmanis][BermanHartmanis1975]. -/
+([Berman and Hartmanis][BermanHartmanis1975], §III, Theorem 1 and Lemmas 3 and 5, with the
+paddability of both languages from `SAT.pad`). -/
 theorem polyTimeIsomorphic_SAT_ThreeSAT : PolyTimeIsomorphic encCNF encCNF SAT ThreeSAT :=
   CookLevin.SAT_npComplete.polyTimeIsomorphic_of_paddable ThreeSAT_npComplete SAT_paddable
     ThreeSAT_paddable cnfDecoder cnfDecoder
 
 /-- `SAT` and `ExactThreeSAT` are polynomial-time isomorphic
-[Berman and Hartmanis][BermanHartmanis1975]. -/
+([Berman and Hartmanis][BermanHartmanis1975], §III, Theorem 1 and Lemmas 3 and 5, with the
+paddability of both languages from `SAT.pad`). -/
 theorem polyTimeIsomorphic_SAT_ExactThreeSAT :
     PolyTimeIsomorphic encCNF encCNF SAT ExactThreeSAT :=
   CookLevin.SAT_npComplete.polyTimeIsomorphic_of_paddable ExactThreeSAT_npComplete SAT_paddable
     ExactThreeSAT_paddable cnfDecoder cnfDecoder
 
 /-- `SAT` and `NAEThreeSAT` are polynomial-time isomorphic
-[Berman and Hartmanis][BermanHartmanis1975]. -/
+([Berman and Hartmanis][BermanHartmanis1975], §III, Theorem 1 and Lemmas 3 and 5, with the
+paddability of both languages from `SAT.pad`). -/
 theorem polyTimeIsomorphic_SAT_NAEThreeSAT : PolyTimeIsomorphic encCNF encCNF SAT NAEThreeSAT :=
   CookLevin.SAT_npComplete.polyTimeIsomorphic_of_paddable NAEThreeSAT_npComplete SAT_paddable
     NAEThreeSAT_paddable cnfDecoder cnfDecoder

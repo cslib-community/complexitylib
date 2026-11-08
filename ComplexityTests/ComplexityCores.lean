@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.Complexity.Classes.EXP.Decidable
 import Complexity.Computability.Complexity.Classes.Immune.Construction
 import Complexity.Computability.Complexity.Classes.Immune.PolyTimeCore
 import Complexity.Computability.Complexity.Classes.Immune.RecursiveCore
@@ -68,16 +69,16 @@ example (X : Set (List Bool × List Bool)) :
   exact absurd (isDecidable_iff_isComputable_indicator.mpr
     (isComputable_iff.mpr ⟨k, State, inferInstance, tm, htm⟩)) not_isDecidable_haltingProblem
 
-/-- Bounded halting is decidable: it is in `E`. -/
-theorem isDecidable_boundedHalting : IsDecidable BoundedHalting encBits :=
-  let ⟨_, _, _, _, h⟩ := mem_E_iff.mp BoundedHalting.mem_E
-  ⟨_, _, h⟩
+/-- Decidability of problems in `P` agrees with the time-bounded case. -/
+example (A : Set (List Bool)) (hA : A ∈ P encBits) : IsDecidable A encBits :=
+  let ⟨_, hk⟩ := mem_P_iff_exists_mem_DTIME.mp hA
+  isDecidable_of_mem_DTIME hk
 
 /-- Bounded halting is decidable and outside `P`, so it has an infinite decidable polynomial
 complexity core inside it. -/
 example : ∃ X ⊆ BoundedHalting, X.Infinite ∧ IsDecidable X encBits ∧
     IsPolyTimeCore encBits BoundedHalting X :=
-  exists_infinite_isDecidable_isPolyTimeCore isDecidable_boundedHalting BoundedHalting.notMem_P
+  exists_infinite_isDecidable_isPolyTimeCore BoundedHalting.isDecidable BoundedHalting.notMem_P
 
 /-- The universe is decidable and in `P`, so it has no infinite decidable core. -/
 example : ¬ ∃ X ⊆ (Set.univ : Set (List Bool)), X.Infinite ∧ IsDecidable X encBits ∧
@@ -87,13 +88,18 @@ example : ¬ ∃ X ⊆ (Set.univ : Set (List Bool)), X.Infinite ∧ IsDecidable 
 
 /-- The recursive core construction applied to a decider of the universe, a problem in `P`, yields
 a finite set. -/
-example (d : Universal.Desc) (hd : RecursiveCore.Decides d Set.univ) :
+example (d : Universal.Desc)
+    (hs : ∀ w t b, Universal.runBool d w t = some b → b = indicator Set.univ w)
+    (hc : ∀ w, ∃ T, ∀ t, T ≤ t → Universal.runBool d w t = some (indicator Set.univ w)) :
     (RecursiveCore.core d Set.univ).Finite :=
-  (RecursiveCore.isComplexityCore_core hd).finite_of_mem_P univ_mem_P
+  (RecursiveCore.isComplexityCore_core hs hc).finite_of_mem_P univ_mem_P
 
-/-- The `P`-bi-immune problem in `E` has a decider description, so `Decides` is not vacuous. -/
-example : ∃ d, RecursiveCore.Decides d BiImmune.language :=
-  RecursiveCore.exists_decides_of_isDecidable BiImmune.isDecidable_language
+/-- The `P`-bi-immune problem in `E` has a description whose clocked runs are sound and eventually
+complete, so the hypotheses on the decider are not vacuous. -/
+example : ∃ d : Universal.Desc,
+    (∀ w t b, Universal.runBool d w t = some b → b = indicator BiImmune.language w) ∧
+      ∀ w, ∃ T, ∀ t, T ≤ t → Universal.runBool d w t = some (indicator BiImmune.language w) :=
+  (isDecidable_iff_isComputable_indicator.mp BiImmune.isDecidable_language).exists_runBool
 
 /-- The requirements are exactly the problems in `P`. -/
 example (B : Set (List Bool)) : B ∈ P encBits ↔ ∃ e, RecursiveCore.requirement e = B :=
@@ -103,7 +109,7 @@ example (B : Set (List Bool)) : B ∈ P encBits ↔ ∃ e, RecursiveCore.require
 /-- Decidable problems are closed under intersection and union. -/
 example : IsDecidable (BoundedHalting ∩ BiImmune.language) encBits ∧
     IsDecidable (BoundedHalting ∪ BiImmune.language) encBits :=
-  ⟨isDecidable_boundedHalting.inter BiImmune.isDecidable_language,
-    isDecidable_boundedHalting.union BiImmune.isDecidable_language⟩
+  ⟨BoundedHalting.isDecidable.inter BiImmune.isDecidable_language,
+    BoundedHalting.isDecidable.union BiImmune.isDecidable_language⟩
 
 end ComplexityTests.ComplexityCores
