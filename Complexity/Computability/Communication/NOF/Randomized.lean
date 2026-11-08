@@ -11,6 +11,7 @@ public import Complexity.Computability.Communication.NOF.Protocol
 public import Cslib.Probability.PMF
 public import Mathlib.Basic.Real.Basic
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.ToReal
 import Complexity.Probability.Minimax
 import Mathlib.Order.SuccPred.ENat
 
@@ -118,8 +119,8 @@ theorem depth_le_depth (hp : p ∈ μ.support) : (p.depth : ℕ∞) ≤ μ.depth
 theorem errorProb_nonneg : 0 ≤ μ.errorProb R x :=
   ENNReal.toReal_nonneg
 
-theorem errorProb_le_one : μ.errorProb R x ≤ 1 := by
-  simpa [errorProb] using ENNReal.toReal_mono ENNReal.one_ne_top (PMF.toOuterMeasure_le_one μ _)
+theorem errorProb_le_one : μ.errorProb R x ≤ 1 :=
+  PMF.toOuterMeasure_toReal_le_one μ _
 
 open Classical in
 theorem errorProb_pure (p : Protocol X Z) (R : (∀ i, X i) → Z → Prop) (x : ∀ i, X i) :

@@ -9,19 +9,17 @@ module
 
 public import Complexity.Init
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Subtree
-public import Cslib.Algorithms.Lean.TimeM
-import Mathlib.Tactic.Linarith
 
 /-!
 # Maximum-weight independent set over a tree decomposition
 
 Given a graph `G` with a rooted tree decomposition `R : G.RootedTreeDecomposition n` and vertex
 weights `w : V → ℕ`, the dynamic program `mwisValue R w` is the maximum total weight of an
-independent set of `G`. The charged version `mwisM R w` returns the same value. If `R` has width at
-most `k`, its declared cost is at most `(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)`
-ticks, where `n + 1` is the number of decomposition nodes, not the number of vertices. These ticks
-are a declared per-node cost function, not a count of the operations the Lean program performs;
-see "Cost model and limitations" below.
+independent set of `G`. This module is the specification: it defines the program with `Finset`
+tables and proves it correct. The executable program `mwisFPT` of
+`Complexity.Algorithms.Lean.TreeDecomposition.IndependentSetFPT` materializes the tables, returns
+`mwisValue R w` (`ret_mwisFPT`) and charges its ticks inside the loops that do the work
+(`time_mwisFPT_le`).
 
 The program processes the nodes in decreasing order, so every child is handled before its
 parent. Node `i` keeps a table indexed by the subsets `S` of its bag. Once all children of `i`
@@ -36,8 +34,6 @@ no nice decomposition and no separate join nodes.
 ## Main definitions
 
 * `Cslib.Algorithms.Lean.TreeDecomposition.mwisValue`: the value computed by the program.
-* `Cslib.Algorithms.Lean.TreeDecomposition.mwisM`: the same value in `TimeM ℕ`, with the declared
-  per-node cost.
 
 ## Main results
 
@@ -45,46 +41,15 @@ no nice decomposition and no separate join nodes.
   of `∑ v ∈ I, w v` over the independent finite sets `I`.
 * `Cslib.Algorithms.Lean.TreeDecomposition.mwisValue_one_eq_indepNum`: with unit weights it is
   the independence number.
-* `Cslib.Algorithms.Lean.TreeDecomposition.time_mwisM_le`: if `R` has width at most `k`, the
-  declared cost is at most `(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)` ticks.
 
-## Cost model and limitations
+## Implementation notes
 
-The ticks of `mwisM` are a declared cost function: `tablesM` charges one lump tick
-`stepCost (#bag j) (#bag (parent j))` per nonroot node `j` and `mwisM` charges `rootCost (#bag 0)`
-at the root. They describe an implementation that is not formalized here. That implementation
-stores each bag as an array of at most `k + 1` vertices, represents subsets of a bag as bit masks,
-stores each table as an array indexed by masks, and answers adjacency queries `G.Adj u v` and
-weight lookups `w v` in unit time (a unit-cost RAM with an adjacency matrix). Additions and
-comparisons of weights cost one unit. Processing a child with bag size `b` and parent bag size
-`q` is charged `stepCost b q`:
-
-* `b * q` to locate the bag vertices of the child in the parent bag;
-* for each of the `2 ^ b` subsets `T` of the child bag: `b * b` adjacency tests for independence,
-  `b` membership and weight operations to project `T` onto the parent bag and sum the weight of
-  the forgotten vertices, and `4` for the table lookup, comparison, update and zero
-  initialization of the child-side table;
-* for each of the `2 ^ q` subsets `S` of the parent bag: `q` operations to project `S` onto the
-  child bag and `2` for the lookup and addition.
-
-The root is charged `rootCost r = 2 ^ r * (r * r + r + 3)` for root bag size `r`. A node's own
-table is zero-initialized once, at `2 ^ (#bag)` unit steps; this is charged as the zero
-initialization in the node's own `stepCost` (or in `rootCost` at the root), so it changes only the
-constant. Reading the input and building the bag arrays are not charged.
-
-The value is computed by the specification-level functions `forget`, `step` and `tables`. They
-are not that array implementation, and it is not proved that the array implementation computes
-the same values or performs the charged number of operations. In particular, the tables are
-closures and are never materialized, so `forget` re-evaluates the child closures, and evaluating
-`mwisM` or `mwisValue` as written takes time exponential in the depth of the decomposition. It is
-not an FPT computation. An executable program whose ticks track the operations it performs is
-remaining work ([#3295](https://github.com/cslib-community/complexitylib/issues/3295)).
-
-The node count `n + 1` is a parameter of the decomposition and is not bounded in terms of
-`card V` here. The decomposition is supplied by the caller; computing one is a separate problem.
-The specification and the correctness theorems are universe polymorphic. The charged part takes
-`V : Type`, because the tables `Fin (n + 1) → Finset V → ℕ` must live in the universe of the
-`TimeM` monad's values, and `TimeM ℕ` is a monad on `Type`.
+The tables of `forget`, `step` and `tables` are closures and are never materialized, so `forget`
+re-evaluates the child closures, and evaluating `mwisValue` as written takes time exponential in
+the depth of the decomposition. These functions are a specification, not an algorithm; the
+executable program is `mwisFPT`. The decomposition is supplied by the caller, and its node count
+`n + 1` is not bounded in terms of `card V` here. The definitions and theorems are universe
+polymorphic.
 
 ## References
 
@@ -500,103 +465,5 @@ theorem mwisValue_one_eq_indepNum (R : G.RootedTreeDecomposition n) :
     rwa [Finset.sum_const, smul_eq_mul, mul_one, hs.card_eq] at this
 
 end Correctness
-
-
-/-! ### Declared cost -/
-
-/-- Ticks charged for processing a child with bag size `b` whose parent has bag size `q`, in the
-declared cost model of the module docstring. -/
-@[expose] def stepCost (b q : ℕ) : ℕ :=
-  b * q + 2 ^ b * (b * b + b + 4) + 2 ^ q * (q + 2)
-
-/-- Ticks charged at the root, with root bag size `r`, in the declared cost model. -/
-@[expose] def rootCost (r : ℕ) : ℕ :=
-  2 ^ r * (r * r + r + 3)
-
-/-- The per-node bound `2 ^ m (2 m ^ 2 + 2 m + 6)` for bags of size at most `m`. -/
-@[expose] def nodeCost (m : ℕ) : ℕ :=
-  2 ^ m * (2 * m * m + 2 * m + 6)
-
-theorem stepCost_mono {b b' q q' : ℕ} (hb : b ≤ b') (hq : q ≤ q') :
-    stepCost b q ≤ stepCost b' q' := by
-  unfold stepCost
-  have h1 : 2 ^ b ≤ 2 ^ b' := Nat.pow_le_pow_right (by norm_num) hb
-  have h2 : 2 ^ q ≤ 2 ^ q' := Nat.pow_le_pow_right (by norm_num) hq
-  gcongr
-
-theorem rootCost_mono {r r' : ℕ} (hr : r ≤ r') : rootCost r ≤ rootCost r' := by
-  unfold rootCost
-  have h1 : 2 ^ r ≤ 2 ^ r' := Nat.pow_le_pow_right (by norm_num) hr
-  gcongr
-
-theorem stepCost_le_nodeCost (m : ℕ) : stepCost m m ≤ nodeCost m := by
-  unfold stepCost nodeCost
-  have h : 1 ≤ 2 ^ m := Nat.one_le_two_pow
-  have h2 : m * m ≤ 2 ^ m * (m * m) := Nat.le_mul_of_pos_left _ h
-  nlinarith
-
-theorem rootCost_le_nodeCost (m : ℕ) : rootCost m ≤ nodeCost m := by
-  unfold rootCost nodeCost
-  gcongr <;> omega
-
-section Charged
-
-variable {V : Type} {G : SimpleGraph V} {n : ℕ} [DecidableEq V] [DecidableRel G.Adj]
-
-/-- `tables` in `TimeM ℕ`, charging the declared lump cost `stepCost` per processed node. The
-tick is not a count of the operations performed by `step`. -/
-@[expose] def tablesM (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
-    ℕ → TimeM ℕ (Fin (n + 1) → Finset V → ℕ)
-  | 0 => pure fun _ _ => 0
-  | t + 1 => do
-    let acc ← tablesM R w t
-    let j : Fin (n + 1) := Fin.ofNat (n + 1) (n - t)
-    TimeM.tick (stepCost (R.bag j).card (R.bag (R.parent j)).card)
-    pure (step R w acc j)
-
-/-- The dynamic program in `TimeM ℕ`, with the declared per-node cost of the module docstring. -/
-@[expose] def mwisM (R : G.RootedTreeDecomposition n) (w : V → ℕ) : TimeM ℕ ℕ := do
-  let acc ← tablesM R w n
-  TimeM.tick (rootCost (R.bag 0).card)
-  pure (((R.bag 0).powerset.filter fun S : Finset V => G.IsIndepSet (↑S : Set V)).sup fun S =>
-    (∑ v ∈ S, w v) + acc 0 S)
-
-@[simp] theorem ret_tablesM (R : G.RootedTreeDecomposition n) (w : V → ℕ) (t : ℕ) :
-    (tablesM R w t).ret = tables R w t := by
-  induction t with
-  | zero => rfl
-  | succ t ih => simp only [tablesM, tables, TimeM.ret_bind, TimeM.ret_pure, ih]
-
-@[simp] theorem ret_mwisM (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
-    (mwisM R w).ret = mwisValue R w := by
-  simp only [mwisM, mwisValue, TimeM.ret_bind, TimeM.ret_pure, ret_tablesM]
-
-theorem time_tablesM_le (R : G.RootedTreeDecomposition n) (w : V → ℕ) {k : ℕ}
-    (hk : R.width ≤ k) (t : ℕ) : (tablesM R w t).time ≤ t * nodeCost (k + 1) := by
-  induction t with
-  | zero => simp only [tablesM, TimeM.time_pure, zero_mul, le_refl]
-  | succ t ih =>
-    simp only [tablesM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, add_zero]
-    have hb := R.width_le_iff.1 hk
-    have := (stepCost_mono (hb (Fin.ofNat (n + 1) (n - t)))
-      (hb (R.parent (Fin.ofNat (n + 1) (n - t))))).trans (stepCost_le_nodeCost (k + 1))
-    rw [Nat.succ_mul]
-    omega
-
-/-- **Declared cost.** On a rooted decomposition with `n + 1` nodes (decomposition nodes, not
-vertices of `G`) and width at most `k`, the declared cost of `mwisM` is at most
-`(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)` ticks: linear in the number of nodes and
-`2 ^ k · poly(k)` per node. The ticks are the declared per-node cost function of the module
-docstring for an unformalized array implementation; they do not count the operations of `mwisM`
-itself, whose evaluation as written is not FPT. -/
-theorem time_mwisM_le (R : G.RootedTreeDecomposition n) (w : V → ℕ) {k : ℕ}
-    (hk : R.width ≤ k) : (mwisM R w).time ≤ (n + 1) * nodeCost (k + 1) := by
-  simp only [mwisM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, add_zero]
-  have h1 := time_tablesM_le R w hk n
-  have h2 := (rootCost_mono (R.width_le_iff.1 hk 0)).trans (rootCost_le_nodeCost (k + 1))
-  rw [Nat.succ_mul]
-  omega
-
-end Charged
 
 end Cslib.Algorithms.Lean.TreeDecomposition

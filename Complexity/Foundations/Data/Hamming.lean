@@ -27,11 +27,12 @@ most `r` followed by one of at most `s` (`exists_hammingDist_le_and_hammingDist_
 
 Two functions are at Hamming distance one when they differ at exactly one coordinate
 (`hammingDist_eq_one_iff`); changing one coordinate of a function to a new value moves it to
-distance one (`hammingDist_update_of_ne`), and updating two functions at the same coordinate
-changes their distance only through that coordinate (`hammingDist_update_update`). The pairs of
-`A × B` at Hamming distance one are the edges of the Hamming graph between `A` and `B`
-(`hammingEdges`); counting them from either side gives the same number (`card_hammingEdges_comm`,
-`card_hammingEdges_eq_sum_card_filter`).
+distance one (`hammingDist_update_of_ne`), and two functions at distance at most one that differ
+at a coordinate differ only there (`update_eq_of_hammingDist_le_one`). Updating two functions at
+the same coordinate changes their distance only through that coordinate
+(`hammingDist_update_update`). The pairs of `A × B` at Hamming distance one are the edges of the
+Hamming graph between `A` and `B` (`hammingEdges`); counting them from either side gives the same
+number (`card_hammingEdges_comm`, `card_hammingEdges_eq_sum_card_filter`).
 
 ## Main definitions
 
@@ -44,6 +45,8 @@ changes their distance only through that coordinate (`hammingDist_update_update`
 * `hammingDist_div_eq_expect`: the relative Hamming distance is a probability.
 * `exists_hammingDist_le_and_hammingDist_le`: splitting a distance.
 * `hammingDist_eq_one_iff`: Hamming distance one.
+* `update_eq_of_hammingDist_le_one`, `update_not_eq_of_hammingDist_le_one`: functions at distance
+  at most one differ at most at one coordinate.
 * `hammingDist_update_update`: updating two functions at the same coordinate.
 * `card_hammingEdges_eq_sum_card_filter`: counting the edges of the Hamming graph.
 -/
@@ -123,6 +126,24 @@ theorem hammingDist_eq_one_iff {x y : ∀ i, β i} :
 theorem hammingDist_update_of_ne [DecidableEq ι] {x : ∀ i, β i} {i : ι} {v : β i}
     (h : x i ≠ v) : hammingDist x (update x i v) = 1 :=
   hammingDist_eq_one_iff.2 ⟨i, by simpa using h, fun j hj => (update_of_ne hj _ _).symm⟩
+
+/-- Two functions at Hamming distance at most one that differ at `i` differ only at `i`: changing
+the `i`-th coordinate of the first to that of the second gives the second. -/
+theorem update_eq_of_hammingDist_le_one [DecidableEq ι] {x y : ∀ i, β i}
+    (h : hammingDist x y ≤ 1) {i : ι} (hi : x i ≠ y i) : update x i (y i) = y := by
+  funext j
+  by_cases hj : j = i
+  · subst hj
+    exact update_self _ _ _
+  · rw [update_of_ne hj]
+    by_contra hne
+    exact hj (card_le_one.1 h j (by simpa using hne) i (by simpa using hi))
+
+/-- Two Boolean functions at Hamming distance at most one that differ at `i` differ only at `i`:
+the second is the first with its `i`-th bit flipped. -/
+theorem update_not_eq_of_hammingDist_le_one [DecidableEq ι] {x y : ι → Bool}
+    (h : hammingDist x y ≤ 1) {i : ι} (hi : x i ≠ y i) : update x i (!x i) = y := by
+  rw [← Bool.eq_not_of_ne (Ne.symm hi), update_eq_of_hammingDist_le_one h hi]
 
 /-- Updating two functions at the same coordinate changes their Hamming distance only through
 that coordinate. -/

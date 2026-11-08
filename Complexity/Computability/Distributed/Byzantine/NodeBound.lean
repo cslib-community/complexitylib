@@ -34,8 +34,8 @@ processes of one run, and agreement fails.
 
 Unlike the source, the middle group `B` may be empty, so the argument also covers `n = 2`, where
 it is the familiar two-process scenario. The bound is sharp: for `n ≤ 1` agreement is trivial,
-and for `t = 1` and `n ≥ 4` it is solved in two rounds
-(`Complexity.Computability.Distributed.Byzantine.OralMessages`).
+and for `n > 3t` it is solved in `t + 1` rounds
+(`Complexity.Computability.Distributed.Byzantine.RecursiveOralMessages`).
 
 ## Main results
 
