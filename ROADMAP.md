@@ -813,8 +813,9 @@ and credited.
   `DensityBranchCounting.exists_modelCounter` combines it with the interpolation-scale counter in
   one machine. `CountingSimulation.truncEntryContractionAlgorithm` now supplies polynomial
   truncation order and precision `O(s log s)`, with a linear vertex bound. The arbitrary-density
-  bound `2^{O_k(n log log n / √log n)}` still needs the Lemma D.2 construction and its native
-  application to this interface; #1538 remains open.
+  bound `2^{O_k(n log log n / √log n)}` still needs the full Lemma D.2 branch/array
+  composition and its application to parity queries. The incidence entry-resource link below
+  now instantiates native truncated contraction on the constructed networks; #1538 remains open.
 - **Exact optimization and large weights:** `MaxSAT.exists_histogram_algorithm` and
   `MaxSAT.exists_optimum_algorithm` compute the complete score distribution and optimum value in
   contraction time measured by literal occurrences plus clauses. Their sparse fixed-width
@@ -1016,3 +1017,27 @@ counter refinement, followed by time composition and variable rescaling; it is
 not a consequence of polynomial-space closure or output-size bounds. No weaker
 exponent is substituted for the source claim. Full malformed-input parsing,
 table frontend, graph endpoints, Theorem 7.1 and ALL-main remain open.
+
+
+A concrete core-counter resource link now supplies
+`IncidenceNetwork.exists_entry_admissible` and `exists_contraction_bound` for the
+actual incidence networks of OpenAI2026ETH Lemma D.2 (PDF pp. 54–56), at size
+`s = n * ceil(log₂ ceil(log₂ n))` and precision/truncation order `n+1`.
+The existing native row-entry machine has time polynomial in its encoded input
+times `2^descInc`; the new bound derives `descInc ≤ ceil(s^(9/10))` from actual
+test-group incidences and proves polynomial workspace against the actual network
+encoding. The proved truncated contraction machine therefore has time
+`poly(L) * 2^O(s/sqrt(log s))` and polynomial space on these networks, without a
+supplied contraction/entry resource contract. The sparse-branch corollary
+computes the source degree cap `k*(sys.length+2*n)` from the input.
+
+Remaining core work: compose streaming degree-array summation and high-incidence
+branching, prove their exact sparse-system reconstruction, and apply this solver
+to every greedy parity query under the sharper sparsification schedule. Then
+compose the resulting general-density counter and rescale its actual time through
+the two weighted queries. The old interpolation counter's extra log-log factor
+has not been removed from that end-to-end algorithm. The weighted original-input
+correctness/space endpoints currently cover only serialized positive occurrence
+rows with a common occurrence count `m`; arbitrary variable-length raw rows are
+a material frontend gap, alongside table and graph endpoints. No Theorem 7.1 or
+ALL-main completion is claimed.

@@ -747,9 +747,10 @@ of its two model counts. Those counts range over every declared variable,
 including unused variables. `compile_withinBudget` transfers the variable bound
 `2n-2`, sharp clause budget, width `d+2` and literal-index bounds to the actual
 output. `compile_output_polyBounded` derives encoded output storage from the
-machine certificate. Correctness uses the positive-weight `Occurrences` domain
-and its normalized-demand hypothesis; total execution on raw lists does not
-certify an arbitrary parser or malformed input semantics.
+machine certificate. Correctness uses `R : Fin t → Occurrences n m`: positive
+weights and a common occurrence count `m` across all rows, with bounded normalized
+demands. Arbitrary variable-length raw rows are not covered by this semantic
+bridge. Total execution on raw lists does not certify their parser or semantics.
 
 From the repository root run `scripts/build.sh ComplexityTests.WeightedBinaryPlan`.
 The [complete client](../../ComplexityTests/WeightedBinaryPlan.lean) checks zero/one
@@ -780,8 +781,9 @@ library endpoint, then composes the actual original-input compiler, query calls
 and reconstruction. Its conclusion is an existential exact counter in plain
 `ComputableInPolySpace`, not a caller-supplied counting oracle. Workspace charges
 include retained queries, both answers, binary reconstruction and output. The
-same positive-occurrence and bounded normalized-demand hypotheses govern exact
-counting; they do not serve as rank, basis, output or resource advice. All direct
+same hypotheses govern exact counting: positive weights, a common occurrence
+count `m` and bounded normalized demands. They do not serve as rank, basis, output
+or resource advice. All direct
 and query branches are covered by the previously proved original-plan equality.
 
 From the repository root run `scripts/build.sh ComplexityTests.WeightedCountingPlan`.
@@ -799,3 +801,44 @@ Polynomial-space composition does not remove that extra factor. No theorem here
 claims the advertised $L^{O_d(1)}2^{O_d(\eta(r))}$ time. Refining the core counter,
 then composing and rescaling its sharper rate through both calls, remains work;
 table frontend and graph endpoints also remain open.
+
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds`
+for a resource link in the sharper counter, in namespace
+`Cslib.Circuits.Frontier.IncidenceNetwork`. This is the construction of Lemma D.2
+of [the counter manuscript](https://github.com/openai/math/blob/7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/paper.pdf),
+PDF pp. 54–56, rather than a tighter estimate for the old interpolation schedule.
+
+`descInc_rowVertex` and `descInc_le` bound the exponent of the actual streaming
+row-entry machine by incidences in one quarter-root test group, including dead
+arrays and padding. `exists_groupInc_le` proves this number is eventually at most
+`ceilNineTenths (sizeParam n)`, where `sizeParam n` is
+`n * Nat.clog 2 (Nat.clog 2 n)`. The scopes and per-variable incidence counts must
+be bounded by a fixed power of `Nat.clog 2 n`, and the number of tests by a fixed
+multiple of `n`.
+
+`exists_entry_admissible` combines these bounds with the existing graph shape,
+actual entry certificate and encoded descriptor sizes. It charges entry time,
+workspace and output without expanding tensor tables. `exists_contraction_bound`
+then instantiates `CountingSimulation.truncEntryContractionAlgorithm incCertificate`
+at precision and truncation order `n+1`: its actual time is bounded by
+`A * (L+1)^A * 2^(A*s / Nat.sqrt (Nat.log 2 s))` and space by `A*(L+1)^A`, for
+`s = sizeParam n` and the actual encoded network input length `L`.
+Constants and an exceptional-size threshold are chosen before the instance.
+`exists_sparseBranch_contraction_bound` accepts the existing `IsSparseBranch`
+contract and computes the source degree cap `k*(sys.length+2*n)` itself. It does
+not take an entry-time bound, contraction oracle or chosen answer as advice.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceEntryBounds`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceEntryBounds.lean)
+checks row/column/dead/padding incidence counts and actual admissible padded
+networks at all sufficiently large sizes.
+
+This establishes one constructed network's native contraction resources at the
+smaller size `n*ceil(log₂ ceil(log₂ n))`. It does not sum degree arrays or
+high-incidence branches, prove their full count reconstruction, or assemble the
+parity queries and general-density counter. Those steps and final weighted-plan
+time composition remain open. Weighted correctness still requires the typed
+rows to share a common occurrence count `m`; arbitrary variable-length raw rows,
+tables and graphs remain material gaps. No Theorem 7.1 or ALL-main completion follows.

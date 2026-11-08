@@ -1130,6 +1130,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContra
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntry
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCertificate
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetwork
