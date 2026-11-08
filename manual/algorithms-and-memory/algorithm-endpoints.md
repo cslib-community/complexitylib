@@ -1052,6 +1052,16 @@ Import `Complexity.Algorithms.Lean.Euler.Circuit` ([source](../../Complexity/Alg
 
 The [examples](../../ComplexityTests/EulerCircuit.lean) run the algorithm on a bowtie (where a second triangle must be spliced in) and on a multigraph with parallel edges and a self-loop. They also refute Euler circuits for a path with odd endpoints and for two disjoint triangles whose degrees are even.
 
+## Counting Eulerian circuits: the BEST theorem
+
+Import `Complexity.Foundations.Combinatorics.Multidigraph.BEST` ([source](../../Complexity/Foundations/Combinatorics/Multidigraph/BEST.lean)). A finite multidigraph is a pair of maps `src tgt : E → V` on a finite arc type, with parallel arcs and loops allowed. `IsEulerianCircuit src tgt e₀ l` says that `l` lists every arc exactly once, starts with `e₀`, and closes up: each arc ends where the next starts, and the last ends where `e₀` starts. This is Stanley's Eulerian tour starting with `e₀` ([Stanley][stanley13], p. 189). `IsInArborescence src tgt r f` ([Arborescence.lean](../../Complexity/Foundations/Combinatorics/Multidigraph/Arborescence.lean)) chooses an arc `f v` out of every `v ≠ r` such that following the chosen arcs leads to `r`. These are the oriented spanning trees rooted at `r`, given by their arcs, so arborescences that differ in a parallel arc count separately.
+
+`natCard_isEulerianCircuit` is the BEST theorem of [van Aardenne-Ehrenfest and de Bruijn][vanaardenneehrenfestdebruijn51] ([Stanley][stanley13], Theorem 10.2). If every vertex has as many outgoing as incoming arcs and at least one outgoing arc, the number of Eulerian circuits starting with `e₀` is the number of arborescences rooted at `src e₀` times `∏ v, (d⁺ v − 1)!`. Stanley assumes a connected balanced digraph, which implies these hypotheses. The proof is his last-exit bijection. The last arcs out of each vertex `v ≠ src e₀` form an arborescence. A circuit is determined by the order in which it leaves each vertex. Every family of orders that starts with `e₀` and otherwise ends with the arborescence arc is realized by the walk that always takes the next arc in order.
+
+`det_laplacian_arcMatrix_submatrix_eq_natCard_isInArborescence` is the directed matrix-tree theorem for multidigraphs ([Tutte][tutte48]; [Stanley][stanley13], Theorem 10.4, there for connected digraphs). The reduced Laplacian of the arc-count matrix `arcMatrix src tgt R` has determinant equal to the number of arborescences, over any commutative ring. It is derived from `Digraph.det_laplacian_submatrix_eq_finsum_reachable`, the parent-function form of the theorem for weight matrices ([MatrixTree.lean](../../Complexity/Foundations/Combinatorics/Digraph/MatrixTree.lean)). Together they give `natCard_isEulerianCircuit_eq_det_mul` ([Stanley][stanley13], Corollary 10.5). `IsEulerianCircuit.card_filter_src_eq` gives the converse balance condition. The name also credits [Smith and Tutte][smithtutte41], who according to Stanley counted the Eulerian tours of a special class of balanced digraphs. The root independence of the arborescence count for connected balanced digraphs (Corollary 10.3, proved there through the independence of the circuit count from `e₀`) and any polynomial-time counting algorithm are not formalized.
+
+The [examples](../../ComplexityTests/BEST.lean) show three counts. The doubled `2`-cycle has `2` Eulerian circuits from a fixed arc, and both are exhibited. A `2`-cycle with a loop has `1`, since the loop does not enter the Laplacian. Two disjoint loops are balanced and have `0`. A loop next to an isolated vertex has one circuit and no arborescence, which shows that the outgoing-arc hypothesis is needed.
+
 ## Christofides' 3/2-approximation for metric TSP
 
 Import `Complexity.Computability.Complexity.Problems.TSP.Christofides` ([source](../../Complexity/Computability/Complexity/Problems/TSP/Christofides.lean)); the generic algorithm is in `Complexity/Algorithms/Lean/TSP/Christofides.lean`. It uses the cost model of the MST 2-approximation above: vertices `Fin n`, costs `δ : Fin n → Fin n → ℕ` and closed-walk cost `cycleCost δ`. `christofides δ` takes Kruskal's tree `T` of the complete graph and the odd-degree vertices `oddVertices T`. It computes a minimum-weight perfect matching `M` on them with `minPerfectMatching`, runs Hierholzer's `eulerCircuit` on the edge list `T.map WeightedEdge.endpoints ++ M` (the multigraph `T ⊎ M`, where an edge in both appears twice) from vertex `0`, and shortcuts the result with `List.dedup`. A perfect matching on `O` is an edge list whose `VertexCover.endpoints` are a permutation of `O`. The proof follows Theorem 2.13 of [Williamson and Shmoys][williamsonshmoys11] ([Christofides][christofides76]):
@@ -1128,9 +1138,13 @@ The numeric values above are transcriptions of checked source statements, not re
 [schummervohra07]: ../sources.md#schummervohra07
 [shapleyscarf74]: ../sources.md#shapleyscarf74
 [sipser13]: ../sources.md#sipser13
+[smithtutte41]: ../sources.md#smithtutte41
+[stanley13]: ../sources.md#stanley13
 [stoerwagner97]: ../sources.md#stoerwagner97
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
+[tutte48]: ../sources.md#tutte48
+[vanaardenneehrenfestdebruijn51]: ../sources.md#vanaardenneehrenfestdebruijn51
 [wattenhofer16]: ../sources.md#wattenhofer16
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
 [younger67]: ../sources.md#younger67

@@ -736,10 +736,20 @@ Michael Sipser. *Introduction to the Theory of Computation*, third edition. Ceng
 
 Daniel D. Sleator, Robert E. Tarjan. “Amortized Efficiency of List Update and Paging Rules.” *Communications of the ACM* 28(2), 202–208, 1985. https://doi.org/10.1145/2786.2793 ; author PDF https://www.cs.cmu.edu/~sleator/papers/amortized-efficiency.pdf . Paging scope and equal-capacity specialization checked against source and local mapping. The list-update cost model of Section 2, Theorem 1 (`C_MF(s) ≤ 2C_A(s) + X_A(s) − F_A(s) − m`) and the remark after its proof (different initial lists, plus the initial inversion count) were checked against the author PDF on 2026-11-07 UTC.
 
+<a id="smithtutte41"></a>
+## smithtutte41
+
+C. A. B. Smith and W. T. Tutte. "On Unicursal Paths in a Network of Degree 4." *The American Mathematical Monthly* 48(4), 233–237, 1941. https://doi.org/10.2307/2302716 . Bibliographic data from [Stanley's notes](#stanley13) (reference [101]) and the DOI record, checked 2026-11-08 UTC. The paper was not inspected. It is cited because the BEST theorem is named partly after its authors. Stanley (Chapter 10 notes, pp. 198–199) says that they give a determinantal formula for the number of Eulerian tours in a special class of balanced digraphs and were not involved in the original discovery.
+
 <a id="soare87"></a>
 ## soare87
 
 Robert I. Soare. *Recursively Enumerable Sets and Degrees*. Perspectives in Mathematical Logic, Springer, 1987. https://doi.org/10.1007/978-3-662-02460-7 . Bibliographic metadata checked on 2026-11-08; the book was not inspected, and no open copy was used. It is cited as a standard reference for oracle computations, the use principle and finite extension constructions. No chapter or theorem locator is claimed.
+
+<a id="stanley13"></a>
+## stanley13
+
+Richard P. Stanley. *Topics in Algebraic Combinatorics*. Course notes, version of 1 February 2013, author-hosted at https://math.mit.edu/~rstan/algcomb/algcomb.pdf ; published as *Algebraic Combinatorics: Walks, Trees, Tableaux, and More*, Springer, 2013. Read in the author-hosted version on 2026-11-08 UTC, Chapter 10 ("Eulerian digraphs and oriented trees"): the definitions of tours, Eulerian tours, balanced digraphs and oriented trees (pp. 189–190); Theorem 10.2, the BEST theorem `ε(D, e) = τ(D, v) ∏_u (outdeg(u) − 1)!` for a connected balanced digraph, with the last-exit proof (pp. 191–192); Theorem 10.4, the directed matrix-tree theorem `det L₀ = τ(D, v_p)` for a connected digraph with parallel edges and loops (p. 193); Corollary 10.5, the determinant form of the BEST theorem (p. 194); and the chapter notes (pp. 198–199), which attribute Theorem 10.2 to van Aardenne-Ehrenfest and de Bruijn, Theorem 5a, and Theorem 10.4 to Tutte, Theorem 3.6. The page numbers are those of the notes; the printed book was not checked.
 
 <a id="stoerwagner97"></a>
 ## stoerwagner97
@@ -770,6 +780,16 @@ Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High
 ## toda1991
 
 Seinosuke Toda. “PP Is as Hard as the Polynomial-Time Hierarchy.” *SIAM Journal on Computing* 20(5), 865–877 (1991). Publisher abstract inspected 2026-11-01: https://doi.org/10.1137/0220053.
+
+<a id="tutte48"></a>
+## tutte48
+
+W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
+
+<a id="vanaardenneehrenfestdebruijn51"></a>
+## vanaardenneehrenfestdebruijn51
+
+T. van Aardenne-Ehrenfest and N. G. de Bruijn. "Circuits and trees in oriented linear graphs." *Simon Stevin* 28, 203–217, 1951. Bibliographic data from [Stanley's notes](#stanley13) (reference [1]), checked 2026-11-08 UTC. The paper was not inspected. Stanley (Chapter 10 notes, p. 198) attributes the BEST theorem to its Theorem 5a.
 
 <a id="vonstengel07"></a>
 ## vonstengel07
